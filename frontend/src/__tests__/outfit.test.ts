@@ -127,7 +127,7 @@ vi.mock('@babylonjs/core/Materials/Textures/texture', () => {
 
 // 拦截 outfit.ts 内 `await import('../scene/scene')` 的动态导入，避免加载真实 scene.ts
 // 重依赖链（scene.ts → renderer/lighting/env/...）在全测并发下超 5s test timeout。
-// timeout 后 _applyingVariant lock 不释放（finally 未执行），污染后续测试。
+// timeout 后 _applyingVariantGuard lock 不释放（finally 未执行），污染后续测试。
 // 测试 variant 均无 meshFile，scene 仅传给 loadOverlay（不调用），空对象即可。
 vi.mock('../scene/scene', () => ({ scene: {} }));
 

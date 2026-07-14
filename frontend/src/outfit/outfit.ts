@@ -13,7 +13,7 @@ import {
     ModelInstance,
 } from '../core/config';
 import type { Scene } from '@babylonjs/core/scene';
-import { getBaseName, normPath, getDirPath, delay, logWarn } from '@/core/utils';
+import { getBaseName, normPath, getDirPath, delay, logWarn, LoadingGuard } from '@/core/utils';
 import { col3FromTriple } from '@/core/color-helpers';
 import { _catOf } from '../scene/manager/material';
 import { triggerAutoSave } from '../core/config';
@@ -99,10 +99,9 @@ function _collectSlotMappings(inst: ModelInstance): _SlotMapping[] {
 // _encodePath 已改为复用 normPath（@/core/utils）
 
 export async function loadOutfits(id: string): Promise<OutfitFile | null> {
-    if (_loadingOutfits.has(id)) {
+    if (!_loadingOutfitsGuard.tryEnter(id)) {
         return null;
     }
-    _loadingOutfits.add(id);
     try {
         const inst = modelRegistry.get(id);
         if (!inst) {
@@ -218,7 +217,7 @@ export async function loadOutfits(id: string): Promise<OutfitFile | null> {
             return null;
         }
     } finally {
-        _loadingOutfits.delete(id);
+        _loadingOutfitsGuard.leave(id);
     }
 }
 
@@ -390,13 +389,13 @@ function _captureOrigParams(inst: ModelInstance): void {
 }
 
 // 并发锁：防止同一模型的变体应用并发执行导致竞态
-const _applyingVariant = new Map<string, boolean>();
+const _applyingVariantGuard = new LoadingGuard();
 
 // R3 去重：防止对同一模型并发执行 loadOutfits 导致重复请求
-const _loadingOutfits = new Set<string>();
+const _loadingOutfitsGuard = new LoadingGuard();
 
 export async function applyOutfitVariant(id: string, variantName: string): Promise<void> {
-    if (_applyingVariant.get(id)) {
+    if (_applyingVariantGuard.isLoading(id)) {
         return;
     }
     const inst = modelRegistry.get(id);
@@ -406,7 +405,7 @@ export async function applyOutfitVariant(id: string, variantName: string): Promi
     if (!inst.outfitFile) {
         return;
     }
-    _applyingVariant.set(id, true);
+    _applyingVariantGuard.tryEnter(id);
     try {
         const variant =
             variantName === '默认'
@@ -554,7 +553,7 @@ export async function applyOutfitVariant(id: string, variantName: string): Promi
         setStatus(t('outfit.switched', { name: variantName }), true);
         triggerAutoSave();
     } finally {
-        _applyingVariant.delete(id);
+        _applyingVariantGuard.leave(id);
     }
 }
 

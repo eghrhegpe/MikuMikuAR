@@ -83,7 +83,7 @@ import {
     setCurrentState,
 } from '../core/ui-helpers';
 import type { ResourceItem } from '../core/ui-helpers';
-import { tryCatchStatus, getBrowseDir, isUnderRoot, getBaseName, logWarn, fireAndForget, swallowError } from '../core/utils';
+import { tryCatchStatus, getBrowseDir, isUnderRoot, getBaseName, logWarn, fireAndForget, swallowError, LoadingGuard } from '../core/utils';
 import { showConfirm } from '../core/dialog';
 import { t } from '../core/i18n/t'; // [doc:adr-059] i18n 翻译
 import { getLang } from '../core/i18n/locale'; // [doc:adr-059] 用于列表 collation 随语言切换
@@ -529,13 +529,13 @@ async function _loadThumbnailsForLevel(level: PopupLevel): Promise<void> {
 }
 
 async function _ensureModelMeta(pmxPaths: string[]): Promise<void> {
-    const uncached = pmxPaths.filter((p) => !modelMetaCache.has(p) && !_pendingMeta.has(p));
+    const uncached = pmxPaths.filter((p) => !modelMetaCache.has(p) && !_pendingMetaGuard.isLoading(p));
     if (uncached.length === 0) {
         return;
     }
     // 标记为飞行中，防止并发重复请求
     for (const p of uncached) {
-        _pendingMeta.add(p);
+        _pendingMetaGuard.tryEnter(p);
     }
     try {
         const batch = await GetModelMetaBatch(uncached);
@@ -550,11 +550,11 @@ async function _ensureModelMeta(pmxPaths: string[]): Promise<void> {
         logWarn('library-core', 'ensureModelMeta:', err);
     } finally {
         for (const p of uncached) {
-            _pendingMeta.delete(p);
+            _pendingMetaGuard.leave(p);
         }
     }
 }
-const _pendingMeta = new Set<string>();
+const _pendingMetaGuard = new LoadingGuard();
 
 // ======== Build list from scan data ========
 
