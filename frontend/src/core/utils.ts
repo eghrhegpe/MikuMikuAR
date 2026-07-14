@@ -552,6 +552,108 @@ export async function tryCatchStatus<T>(
     }
 }
 
+// ======== Pure Functions (ADR-101 P3) ========
+
+/** 百分比钳制到 [0, 100]。 */
+export function clampPct(v: number): number {
+    return Math.max(0, Math.min(100, v));
+}
+
+/** 2D 欧几里得距离。 */
+export function dist2d(a: { x: number; y: number }, b: { x: number; y: number }): number {
+    const dx = a.x - b.x;
+    const dy = a.y - b.y;
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
+/** 3D 欧几里得距离。 */
+export function dist3d(
+    a: { x: number; y: number; z: number },
+    b: { x: number; y: number; z: number }
+): number {
+    const dx = a.x - b.x;
+    const dy = a.y - b.y;
+    const dz = a.z - b.z;
+    return Math.sqrt(dx * dx + dy * dy + dz * dz);
+}
+
+/** 角度 → 弧度。 */
+export function degToRad(deg: number): number {
+    return (deg * Math.PI) / 180;
+}
+
+/** 弧度 → 角度。 */
+export function radToDeg(rad: number): number {
+    return (rad * 180) / Math.PI;
+}
+
+/** 确保值为数组；非数组则包裹为单元素数组。 */
+export function ensureArray<T>(x: T | T[]): T[] {
+    return Array.isArray(x) ? x : [x];
+}
+
+/** 按谓词过滤对象键，返回仅含满足条件键值对的新对象。 */
+export function filterKeys<T extends object>(obj: T, pred: (key: keyof T) => boolean): Partial<T> {
+    const result: Partial<T> = {};
+    for (const key of Object.keys(obj) as (keyof T)[]) {
+        if (pred(key)) {
+            result[key] = obj[key];
+        }
+    }
+    return result;
+}
+
+/** 轻量泛型缓存——Map 封装，统一 get/set/has/delete/clear 接口。 */
+export class Cache<K, V> {
+    private _map = new Map<K, V>();
+
+    get(key: K): V | undefined {
+        return this._map.get(key);
+    }
+    set(key: K, value: V): void {
+        this._map.set(key, value);
+    }
+    has(key: K): boolean {
+        return this._map.has(key);
+    }
+    delete(key: K): boolean {
+        return this._map.delete(key);
+    }
+    clear(): void {
+        this._map.clear();
+    }
+    get size(): number {
+        return this._map.size;
+    }
+}
+
+/**
+ * 等待全部 promise 结束，仅返回 fulfilled 结果（rejected 被静默丢弃）。
+ * 适用于"批量加载、尽力而为"场景。
+ */
+export async function allSettledFilter<T>(
+    promises: Promise<T>[]
+): Promise<PromiseFulfilledResult<Awaited<T>>[]> {
+    const results = await Promise.allSettled(promises);
+    return results.filter(
+        (r): r is PromiseFulfilledResult<Awaited<T>> => r.status === 'fulfilled'
+    );
+}
+
+/** 格式化 JSON 字符串（2 空格缩进）。 */
+export function jsonStringify(x: unknown): string {
+    return JSON.stringify(x, null, 2);
+}
+
+/** 安全 JSON 解析；解析失败返回 null。 */
+export function jsonParse<T>(s: string): T | null {
+    try {
+        return JSON.parse(s) as T;
+    } catch {
+        return null;
+    }
+}
+
 // ======== Resource Path Resolution ========
 
 /** 资源类别到 OverridePaths 键名的映射 */
