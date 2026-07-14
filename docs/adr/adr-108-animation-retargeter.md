@@ -1,6 +1,6 @@
 # ADR-108: AnimationRetargeter + HumanoidMmd 接入 — 扩展动作来源
 
-**状态**: 草案 · 待立项
+**状态**: 部分落地（2026-07-14 — 桥接模块 + UI 入口已实现，骨骼映射选择 UI 待完善）
 
 **决策者**: Riku（联邦首席架构师 AI）、Jieling（人类侧首席架构师）
 

@@ -257,7 +257,10 @@ export async function loadPMXFile(
     const abortCtrl = new AbortController();
     _loadAbortController = abortCtrl;
     // 合并外部 signal（调用方取消）与内部 abortCtrl.signal（自动取消前一个加载，ADR-096）
-    const effectiveSignal = signal ?? abortCtrl.signal;
+    // 两者任一 abort 即生效；用 ?? 回退会忽略内部 abortCtrl，导致 ADR-096 机制失效
+    const effectiveSignal = signal
+        ? AbortSignal.any([signal, abortCtrl.signal])
+        : abortCtrl.signal;
 
     let loadedMeshes: Mesh[] = [];
     let wasmModel: IMmdModel | null = null;

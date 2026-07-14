@@ -60,7 +60,7 @@ export async function loadVMDMotion(
     signal?: AbortSignal
 ): Promise<void> {
     if (signal?.aborted) {
-        return;
+        throw new DOMException('Aborted', 'AbortError');
     }
     if (!isValidVmd(data)) {
         setStatus(t('scene.vmd.loadFailed'), false);
@@ -75,7 +75,7 @@ export async function loadVMDMotion(
         focusedModel: _focusedModel,
     } = await getScene();
     if (signal?.aborted) {
-        return;
+        throw new DOMException('Aborted', 'AbortError');
     }
     // If user loads a real VMD, stop procedural motion
     if (isProcVmdActive() && name !== PROC_VMD_NAME_IDLE && name !== PROC_VMD_NAME_AUTODANCE) {
@@ -205,6 +205,11 @@ export async function loadVMDFromPath(path: string, targetModelId?: string, sign
             // 尝试加载同目录下的同名音频文件
             await _tryLoadCompanionAudio(path, url);
         } catch (err) {
+            // 中止（AbortError）不算失败：loadVMDMotion 在 signal 中止时抛此错，
+            // 此时 vmdPath/addRecentMotion/音频等副作用已被 throw 跳过，无需报错 UI
+            if ((err as DOMException)?.name === 'AbortError') {
+                return;
+            }
             console.error('loadVMDFromPath:', err);
             setStatus(t('scene.vmd.loadFailed'), false);
         }

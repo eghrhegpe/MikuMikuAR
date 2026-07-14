@@ -45,6 +45,8 @@ import {
     clearVmdLayers,
 } from '../scene/motion/vmd-layers';
 import { clearAudio, getAudioName } from '../outfit/audio';
+import { loadAndRetargetAnimation, playRetargetedAnimation, getBoneMapPresets } from '../scene/motion/animation-retargeter';
+import { SelectImportFile } from '../core/wails-bindings';
 import {
     setProcMotionMode,
     setProcMotionAutoSwitch,
@@ -596,6 +598,10 @@ function motionOnItemClick(row: PopupRow): void {
         }
         return;
     }
+    if (row.target === '__retarget_import__') {
+        _importExternalAnimation();
+        return;
+    }
 }
 
 // ======== Playback Speed (VMD timeScale) ========
@@ -812,6 +818,15 @@ function buildMotionRootItems(): PopupRow[] {
         icon: 'lucide:settings-2',
         target: 'motion:advanced',
     });
+    // Card 4: 外部动作导入
+    if (modelManager.size > 0) {
+        items.push({
+            kind: 'action',
+            label: '外部动作导入',
+            icon: 'lucide:upload',
+            target: '__retarget_import__',
+        });
+    }
     return items;
 }
 
@@ -825,4 +840,45 @@ function buildMotionRootLevel(): PopupLevel {
 
 export function hideMotionPopup(): void {
     closeAllOverlays();
+}
+
+// ======== 外部动作导入 ========
+
+/** 外部动作导入：选文件 → 重定向骨骼 → 播放。 */
+async function _importExternalAnimation(): Promise<void> {
+    // 1. 选文件
+    let path: string;
+    try {
+        path = await SelectImportFile();
+    } catch {
+        return; // 用户取消
+    }
+    if (!path) return;
+
+    // 2. 找聚焦模型
+    const foc = modelManager.focused();
+    if (!foc || !foc.mmdModel) {
+        setStatus('请先选择一个模型', false);
+        return;
+    }
+
+    // 3. 获取模型骨骼
+    const mesh = foc.mmdModel.mesh;
+    if (!mesh || !mesh.skeleton) {
+        setStatus('模型无骨骼数据', false);
+        return;
+    }
+
+    // 4. 加载并重定向
+    const scene = mesh.getScene();
+    const result = await loadAndRetargetAnimation(scene, path, mesh.skeleton, 'mixamo');
+    if (!result) {
+        // 错误已在 loadAndRetargetAnimation 中通过 setStatus 报告
+        return;
+    }
+
+    // 5. 播放
+    hideMotionPopup();
+    playRetargetedAnimation(scene, result);
+    setStatus('外部动作已加载', true);
 }
