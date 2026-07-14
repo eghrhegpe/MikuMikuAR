@@ -4,7 +4,6 @@
 // Toast notifications → toast.ts
 // UI builders → ui-helpers.ts
 
-import { createIconifyIcon } from './icons';
 import { dom } from './dom';
 import {
     libraryRoot,
