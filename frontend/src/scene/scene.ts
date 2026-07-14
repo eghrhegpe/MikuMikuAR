@@ -211,9 +211,11 @@ export async function initScene(): Promise<void> {
     runtime.register(scene);
     setMmdRuntime(runtime);
     // 同步用户记忆的播放速度到新 runtime，防状态漂移
-    import('../menus/motion-popup')
-        .then(({ syncPlaybackSpeedToRuntime }) => syncPlaybackSpeedToRuntime(runtime))
-        .catch(() => {});
+    swallowError(
+        import('../menus/motion-popup').then(({ syncPlaybackSpeedToRuntime }) =>
+            syncPlaybackSpeedToRuntime(runtime)
+        )
+    );
 
     // 2. 各子系统初始化（相机系统已在模块顶层初始化）
     initLighting(scene, modelRegistry, propRegistry, _envSys.shadow, triggerAutoSave);
@@ -235,21 +237,27 @@ export async function initScene(): Promise<void> {
         onModelRemoved(id);
 
         // WASM 图层混合器 teardown（observer + evaluator 清理）
-        import('./motion/wasm-layers-blender')
-            .then(({ teardownWasmLayersBlender }) => teardownWasmLayersBlender(id))
-            .catch(() => {});
+        swallowError(
+            import('./motion/wasm-layers-blender').then(({ teardownWasmLayersBlender }) =>
+                teardownWasmLayersBlender(id)
+            )
+        );
 
         // 解除此模型上的所有骨骼锚定道具
-        import('./env/accessory')
-            .then(({ detachModelAccessories }) => detachModelAccessories(id))
-            .catch(() => {});
+        swallowError(
+            import('./env/accessory').then(({ detachModelAccessories }) =>
+                detachModelAccessories(id)
+            )
+        );
 
         // ADR-084 P3b: 模型卸载时释放该模型的虚拟裙骨控制器，避免 dispose 泄漏。
         // 经动态 import（motion-cloth-levels 内部仍以 await import 加载 virtual-skirt），
         // 不破坏 ADR-081/084 的 virtual-skirt 非 eager 导入约束。
-        import('../menus/motion-cloth-levels')
-            .then(({ disposeVirtualSkirtForModel }) => disposeVirtualSkirtForModel(id))
-            .catch(() => {});
+        swallowError(
+            import('../menus/motion-cloth-levels').then(({ disposeVirtualSkirtForModel }) =>
+                disposeVirtualSkirtForModel(id)
+            )
+        );
 
         const inst = modelRegistry.get(id);
         if (inst.mmdModel && mmdRuntime) {

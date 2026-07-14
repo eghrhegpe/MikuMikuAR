@@ -409,9 +409,9 @@ export async function loadPMXFile(
         setFocusedModelId(id);
 
         // 加载完成后自动激活默认视线追踪（眼球 + 头部），使配置立即生效
-        import('../motion/proc-motion-bridge')
-            .then((m) => m.activateGazeTracking())
-            .catch(() => {});
+        swallowError(
+            import('../motion/proc-motion-bridge').then((m) => m.activateGazeTracking())
+        );
 
         // 道具路径下的模型同时注册到 propRegistry（兼容灯光/阴影/序列化）
         const propDir = (

@@ -24,7 +24,7 @@ import { SETTINGS_FONT_RESTORE } from '../menus/settings-shared';
 import { initScene, tryRestoreLastScene, setEnvState } from '../scene/scene';
 import { initRuntimeBadge } from './runtime-mode';
 import { hexToRgb, rgbToString } from './color-helpers';
-import { logWarn } from './utils';
+import { logWarn, fireAndForget, swallowError } from './utils';
 import { setPerformanceMode } from '../scene/render/performance';
 import { initLibrary, showModelPopup, showMotionPopup, refreshLibrary } from '../menus/library';
 import { showPlaza, closePlaza } from '../menus/plaza';
@@ -114,9 +114,10 @@ async function init(): Promise<void> {
         console.info('MikuMikuAR initialized');
         initLibrary().catch((err) => logWarn('init', 'Library init', err));
         // [doc:adr-008] 启动时预加载自动导入开关，供 watch:newfile 自动导入分支判定
-        import('../menus/settings')
-            .then((m) => m.preloadAutoImportState().catch(() => {}))
-            .catch(() => {});
+        fireAndForget(async () => {
+            const m = await import('../menus/settings');
+            swallowError(m.preloadAutoImportState());
+        });
         // Restore env state from config (authoritative — scene restore skips env)
         await restoreEnvState();
         // Apply persisted UI state
