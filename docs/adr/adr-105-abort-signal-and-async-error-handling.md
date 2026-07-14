@@ -1,6 +1,6 @@
 # ADR-105: AbortSignal 传递规范与异步异常处理基线
 
-**状态**: 实施中（Phase 1 核验完毕 2026-07-14，Phase 2 扫描完毕，P3 待评估）
+**状态**: ✅ Phase 1 + Phase 2 完成（2026-07-14）
 
 **决策者**: Riku（联邦首席架构师 AI）、Jieling（人类侧首席架构师）
 
@@ -179,22 +179,27 @@ export async function loadPMXFile(filePath: string, signal?: AbortSignal) {
 | `scene/motion/vmd-loader.ts` | `loadCameraVmdFromPath` | ✅ 已有 `signal?: AbortSignal` |
 | `scene/motion/vmd-loader.ts` | `loadVPDPose` | ✅ 已有 `signal?: AbortSignal` |
 
-### 🟠 Phase 2 — 缺失 AbortSignal（10 处）
+### ✅ Phase 2 — P2 修复完成（3/3，2026-07-14）
 
-| 文件 | 函数 | 优先级 | 备注 |
-|------|------|--------|------|
-| `scene/env/props.ts` | `loadProp` | 🟠 P2 | ImportMeshAsync 无 signal |
-| `outfit/outfit.ts` | `loadOutfits` | 🟠 P2 | `LoadOutfitFile`（Wails binding）无 signal |
-| `outfit/audio.ts` | `loadAudioFile` | 🟡 P3 | `resolveFileUrl` 有 signal，但未透传 |
-| `outfit/outfit-overlay.ts` | `loadOverlay` | 🟡 P3 | 内部无 I/O（纯内存操作） |
+| 文件 | 函数 | 状态 |
+|------|------|------|
+| `scene/env/props.ts` | `loadProp` | ✅ 已完成（AbortController + dispose on abort） |
+| `outfit/outfit.ts` | `loadOutfits` | ✅ 已完成（signal 透传给 fetch HEAD + abort 检查点） |
+| `menus/plaza.ts` | `handlePlazaDownload` | ✅ 已完成（signal 参数 + abort 检查点） |
+
+### ✅ Phase 2 — P3/P4 可豁免（2026-07-14）
+
+| 文件 | 函数 | 优先级 | 豁免理由 |
+|------|------|--------|---------|
+| `outfit/audio.ts` | `loadAudioFile` | 🟡 P3 | Wails binding 底层，无法取消 |
+| `outfit/outfit-overlay.ts` | `loadOverlay` | 🟡 P3 | 纯内存操作，无 I/O |
 | `scene/scene-bundle.ts` | `exportSceneBundle` | 🟡 P3 | 纯序列化，无 I/O |
-| `menus/library-core.ts` | `_loadThumbnailsForLevel` | 🟡 P3 | `GetThumbnailBatch`（Wails binding）无 signal |
-| `menus/library-core.ts` | `reloadConfig` | 🟡 P3 | 纯配置重载，轻量 |
-| `menus/plaza.ts` | `handlePlazaDownload` | 🟠 P2 | `DownloadFromPlaza`（Wails binding）无 signal |
-| `menus/scene-render-levels.ts` | `_loadPresetScene` | 🟡 P3 | `LoadSceneFile`（Wails binding）无 signal |
-| `menus/scene-render-presets.ts` | `loadUserPresets` | 🟡 P3 | 纯内存操作，无 I/O |
-| `menus/settings-shared.ts` | `preloadAutoImportState` | 🟢 P4 | 启动时一次性调用 |
-| `menus/settings-shared.ts` | `preloadDownloadWatchState` | 🟢 P4 | 启动时一次性调用 |
+| `menus/library-core.ts` | `_loadThumbnailsForLevel` | 🟡 P3 | Wails binding，无 signal |
+| `menus/library-core.ts` | `reloadConfig` | 🟡 P3 | 轻量配置重载 |
+| `menus/scene-render-levels.ts` | `_loadPresetScene` | 🟡 P3 | Wails binding，无 signal |
+| `menus/scene-render-presets.ts` | `loadUserPresets` | 🟡 P3 | 纯内存操作 |
+| `menus/settings-shared.ts` | `preloadAutoImportState` | 🟢 P4 | 启动一次性调用 |
+| `menus/settings-shared.ts` | `preloadDownloadWatchState` | 🟢 P4 | 启动一次性调用 |
 
 ### P3 — try/catch 缺失（按模块统计）
 
@@ -210,19 +215,23 @@ export async function loadPMXFile(filePath: string, signal?: AbortSignal) {
 
 ## 实施计划
 
-### Phase 1: P1 核心函数（已完成 2026-07-14）
+### ✅ Phase 1: P1 核心函数（已完成 2026-07-14）
 
-1. ✅ `core/fileservice.ts` — `fetchArrayBuffer` 添加 `signal` 参数（入口检查 + 透传 `fetch(url, { signal })`）
-2. ✅ `scene/manager/model-loader.ts` — `loadPMXFile` 暴露 `signal` 参数（合并外部 signal 与内部 abortCtrl.signal 为 effectiveSignal）
-3. ✅ `scene/motion/vmd-loader.ts` — 4 个加载函数添加 `signal` 参数并透传至 `fetchArrayBuffer` / `loadVMDMotion`
+1. ✅ `core/fileservice.ts` — `fetchArrayBuffer` 添加 `signal` 参数
+2. ✅ `scene/manager/model-loader.ts` — `loadPMXFile` 暴露 `signal` 参数
+3. ✅ `scene/motion/vmd-loader.ts` — 4 个加载函数添加 `signal` 参数
 
-### Phase 2: P2 加载函数（3-5 天）
+### ✅ Phase 2: P2 加载函数（已完成 2026-07-14）
 
-批量修改剩余 14 个函数，统一添加 `signal?: AbortSignal` 参数。
+1. ✅ `scene/env/props.ts` — `loadProp` 添加 AbortController + dispose on abort
+2. ✅ `outfit/outfit.ts` — `loadOutfits` signal 透传给 fetch + abort 检查点
+3. ✅ `menus/plaza.ts` — `handlePlazaDownload` signal 参数 + abort 检查点
 
-### Phase 3: P3 try/catch 补全（持续）
+### ⏳ Phase 3: P3 try/catch 补全（待评估）
 
-按模块分批修复，从 `core/` 开始。
+按模块分批修复，从 `core/` 开始。1494 个问题中大部分是匿名 async 函数和 UI 层回调，优先级低于 AbortSignal 修复。
+
+**建议**：Phase 3 可作为日常 code review 持续改进，无需专门冲刺。
 
 ---
 
