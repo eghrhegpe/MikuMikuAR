@@ -36,7 +36,7 @@ export function generateIdleVmd(
 
     if (larmBone || rarmBone) {
         const armAmp = 0.04 * intensity;
-        for (let f = 0; f <= loopFrames; f += 4) {
+        for (let f = 0; f < loopFrames; f += 4) {
             const phase = (f / loopFrames) * Math.PI * 2;
             const rz = clamp1(Math.sin(phase + 1.5) * armAmp);
             const w = Math.sqrt(Math.max(0, 1 - rz * rz));
@@ -78,7 +78,7 @@ export function generateIdleVmd(
     if (shoulderLBone || shoulderRBone) {
         const shoulderAmp = 0.015 * intensity;
         const rotAmp = 0.01 * intensity;
-        for (let f = 0; f <= loopFrames; f += 4) {
+        for (let f = 0; f < loopFrames; f += 4) {
             const phase = (f / loopFrames) * Math.PI * 2;
             const breath = Math.sin(phase + 0.3);
             const yOffset = breath * shoulderAmp;
@@ -124,7 +124,7 @@ export function generateIdleVmd(
 
     if (wristLBone || wristRBone) {
         const wristAmp = 0.015 * intensity;
-        for (let f = 0; f <= loopFrames; f += 4) {
+        for (let f = 0; f < loopFrames; f += 4) {
             const phase = (f / loopFrames) * Math.PI * 2;
             const rx = clamp1(Math.sin(phase + 0.8) * wristAmp);
             const w = Math.sqrt(Math.max(0, 1 - rx * rx));

@@ -346,6 +346,42 @@ const BONES_108_STANDARD = [
 /** 完整 morph 集 */
 const MORPHS_STANDARD = ['まばたき', '笑い', 'ウィンク', 'ウィンク２'];
 
+/** 解析 VMD buffer，返回 (骨骼名@帧号) 复合键的出现次数（用于重复帧检测）。 */
+function _parseBoneFrameKeys(buf: ArrayBuffer): Map<string, number> {
+    const view = new DataView(buf);
+    const boneCount = view.getUint32(50, true);
+    const keys = new Map<string, number>();
+    for (let i = 0; i < boneCount; i++) {
+        const off = 54 + i * 111;
+        const raw = new Uint8Array(buf, off, 15);
+        const name = (Encoding.convert(raw, { to: 'UNICODE', from: 'SJIS', type: 'string' }) as string)
+            .replace(/\0/g, '')
+            .trim();
+        const frame = view.getUint32(off + 15, true);
+        const key = `${name}@${frame}`;
+        keys.set(key, (keys.get(key) ?? 0) + 1);
+    }
+    return keys;
+}
+
+describe('重复关键帧守卫（P1 回归防护）', () => {
+    // speed=1 → idle loopFrames=round(120/1)=120（步长 4 的倍数），旧实现会在 f=120
+    // 处产生「循环末帧 + 复位帧」双关键帧。修复后循环 f < loopFrames，复位帧唯一。
+    it('Idle: speed=1 时无同骨骼同帧号重复关键帧', () => {
+        const buf = generateIdleVmd({ ...state, speed: 1 }, [], BONES_108_STANDARD);
+        const dups = [...(_parseBoneFrameKeys(buf).entries())].filter(([, c]) => c > 1);
+        expect(dups).toEqual([]);
+    });
+
+    it('Idle: 多种 speed 下均无重复关键帧', () => {
+        for (const speed of [0.5, 1, 1.5, 2, 3]) {
+            const buf = generateIdleVmd({ ...state, speed }, [], BONES_108_STANDARD);
+            const dups = [...(_parseBoneFrameKeys(buf).entries())].filter(([, c]) => c > 1);
+            expect(dups, `speed=${speed} 存在重复帧`).toEqual([]);
+        }
+    });
+});
+
 describe('VMD 骨骼诊断', () => {
     it('Idle: 用 108 标准骨骼集生成，报告各骨骼帧数', () => {
         const buf = generateIdleVmd(state, MORPHS_STANDARD, BONES_108_STANDARD);
