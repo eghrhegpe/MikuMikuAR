@@ -39,6 +39,8 @@
 | 存储 | zip 原档 + 惰性 cache |
 | 命令行 | pwsh + GitHub cli|
 
+请别说wails v3 alpha是测试版，风险很大什么的，这个项目很完善了。
+
 ## 构建
 
 ```bash
