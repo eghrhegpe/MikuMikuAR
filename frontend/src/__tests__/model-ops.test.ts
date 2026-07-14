@@ -515,10 +515,9 @@ describe('applyVPDPose', () => {
 describe('removeModel', () => {
     beforeEach(resetState);
 
-    it('calls disposeModelMaterialState, modelManager.remove, and refreshWaterRenderList', () => {
+    it('calls modelManager.remove and refreshWaterRenderList', () => {
         modelRegistry.set('m1', makeInst({ id: 'm1' }));
         removeModel('m1');
-        expect(disposeModelMaterialState).toHaveBeenCalledWith('m1');
         expect(mockModelManager.remove).toHaveBeenCalledWith('m1');
         expect(refreshWaterRenderList).toHaveBeenCalled();
     });

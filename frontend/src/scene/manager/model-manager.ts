@@ -27,6 +27,7 @@ import {
 import { orbitToCartesian, cartesianToOrbit, normalizeOrbit } from '@/core/orbit';
 import { disposeOverlay, restoreMaterials } from '@/outfit/outfit-overlay';
 import { clamp01, logWarn, swallowError } from '@/core/utils';
+import { disposeModelMaterialState } from './material';
 
 // ======== Per-model state maps ========
 // (owned by ModelManager, not exported directly)
@@ -174,9 +175,10 @@ export class ModelManager {
     private _physicsCatState = new Map<string, Map<string, boolean>>();
     private _boneOverlayMap = new Map<
         string,
-        { lineSystem: Mesh; overlay: Mesh; joints: Mesh[]; update: () => void }
+        { lineSystem: Mesh; overlay: Mesh; joints: Mesh[]; update: () => void; dirty: boolean; markDirty: () => void }
     >();
     private _boneUpdateObserver: Nullable<Observer<Scene>> = null;
+    private _boneAnimationDirty = new Set<string>();
 
     /** Currently active formation type, or null if custom/manual arrangement. */
     private _activeFormation: FormationType | null = null;
@@ -278,6 +280,8 @@ export class ModelManager {
         this._boneOverlayMap.delete(id);
         this.destroyBoneOverlay(id);
 
+        disposeModelMaterialState(id);
+
         // Update focus
         if (configFocusedId === id) {
             setFocusedModelId(
@@ -314,20 +318,25 @@ export class ModelManager {
         );
 
         if (frameCamera) {
-            // Auto-frame camera: compute bounding box from all meshes
             const min = new Vector3(Infinity, Infinity, Infinity);
             const max = new Vector3(-Infinity, -Infinity, -Infinity);
+            let hasVisibleMesh = false;
             for (const m of inst.meshes) {
+                if (!m.isVisible) {
+                    continue;
+                }
+                hasVisibleMesh = true;
                 m.computeWorldMatrix(true);
                 const bb = m.getBoundingInfo().boundingBox;
                 min.minimizeInPlace(bb.minimumWorld);
                 max.maximizeInPlace(bb.maximumWorld);
             }
-            const center = min.add(max).scale(0.5);
-            const size = max.subtract(min);
-            const extent = Math.max(size.x, size.y, size.z);
-
-            this.autoFrame(center, extent);
+            if (hasVisibleMesh) {
+                const center = min.add(max).scale(0.5);
+                const size = max.subtract(min);
+                const extent = Math.max(size.x, size.y, size.z);
+                this.autoFrame(center, extent);
+            }
         }
 
         this.triggerAutoSave();
@@ -806,9 +815,17 @@ export class ModelManager {
         lineSystem.isPickable = false;
         lineSystem.setEnabled(inst.showBoneLines);
 
-        // Update function: reposition joints and lines each frame
+        let dirty = true;
+        const markDirty = () => {
+            dirty = true;
+        };
+
         const updateFn = () => {
-            // 更新骨骼线
+            if (!dirty) {
+                return;
+            }
+            dirty = false;
+
             if (inst.showBoneLines && lineSystem.isEnabled()) {
                 const positions = lineSystem.getVerticesData('position');
                 if (positions) {
@@ -818,13 +835,11 @@ export class ModelManager {
                         const parentBone = bones[ld.parentIndex];
 
                         if (childBone && parentBone) {
-                            // 父骨骼位置 (line 开头)
                             parentBone.getWorldTranslationToRef(tmp);
                             positions[i * 6] = tmp.x;
                             positions[i * 6 + 1] = tmp.y;
                             positions[i * 6 + 2] = tmp.z;
 
-                            // 子骨骼位置 (line 结尾)
                             childBone.getWorldTranslationToRef(tmp);
                             positions[i * 6 + 3] = tmp.x;
                             positions[i * 6 + 4] = tmp.y;
@@ -835,7 +850,6 @@ export class ModelManager {
                 }
             }
 
-            // 更新关节球
             if (!inst.showBoneJoints) {
                 return;
             }
@@ -868,6 +882,8 @@ export class ModelManager {
             overlay: overlay || joints[0],
             joints,
             update: updateFn,
+            dirty: true,
+            markDirty,
         });
         this.ensureBoneUpdateObserver();
     }
@@ -900,6 +916,11 @@ export class ModelManager {
                     }
                     toDelete.push(id);
                     continue;
+                }
+                if (inst.showBoneLines || inst.showBoneJoints) {
+                    if (inst.vmdData || inst.physicsEnabled || this._boneAnimationDirty.has(id)) {
+                        entry.markDirty();
+                    }
                 }
                 entry.update();
             }

@@ -167,6 +167,7 @@ function _applyParamsToMaterial(
 }
 
 const _origValues = new WeakMap<Material, _OrigMat>();
+const _matCategoryCache = new WeakMap<Material, MaterialCategory>();
 
 /** @internal exported for testing */
 export const _catState = new Map<string, Map<string, MaterialCategoryParams>>();
@@ -329,9 +330,7 @@ const CATEGORY_RULES: [string[], MaterialCategory][] = [
     ],
 ];
 
-/** @internal exported for testing */
-export function _catOf(name: string): MaterialCategory {
-    // 优先使用用户自定义映射
+function _catOfUncached(name: string): MaterialCategory {
     const customMap = uiState.materialCategoryMap;
     if (customMap) {
         for (const [pattern, category] of Object.entries(customMap)) {
@@ -340,12 +339,10 @@ export function _catOf(name: string): MaterialCategory {
                     return category as MaterialCategory;
                 }
             } catch {
-                // 无效正则，跳过
             }
         }
     }
 
-    // 按优先级匹配，命中即返回（包含匹配，不区分大小写）
     const lowerName = name.toLowerCase();
     for (const [keywords, cat] of CATEGORY_RULES) {
         if (keywords.some((k) => lowerName.includes(k))) {
@@ -353,6 +350,41 @@ export function _catOf(name: string): MaterialCategory {
         }
     }
     return '服装';
+}
+
+/** @internal exported for testing */
+export function _catOf(mat: Material | string): MaterialCategory {
+    if (typeof mat === 'string') {
+        return _catOfUncached(mat);
+    }
+    let cached = _matCategoryCache.get(mat);
+    if (cached !== undefined) {
+        return cached;
+    }
+    cached = _catOfUncached(mat.name);
+    _matCategoryCache.set(mat, cached);
+    return cached;
+}
+
+/**
+ * Per-material category cache.
+ * Material names are immutable, but the resolved category also depends on
+ * `uiState.materialCategoryMap` (user-overridable at runtime). We therefore
+ * key the cache by the *current* map reference and recompute whenever it
+ * changes, keeping the hot path in `_applyAll` free of repeated string scans
+ * without risking staleness. WeakMap ⇒ no retention after a Material is disposed.
+ */
+const _catCache = new WeakMap<Material, { mapRef: unknown; cat: MaterialCategory }>();
+
+function categoryOfMaterial(mat: Material): MaterialCategory {
+    const mapRef = uiState.materialCategoryMap ?? null;
+    const hit = _catCache.get(mat);
+    if (hit && hit.mapRef === mapRef) {
+        return hit.cat;
+    }
+    const cat = _catOf(mat.name);
+    _catCache.set(mat, { mapRef, cat });
+    return cat;
 }
 
 /** @internal exported for testing + pre-capture in scene-loader */
@@ -375,6 +407,67 @@ export function _capture(mat: Material): void {
     });
 }
 
+function _applyMaterial(id: string, mi: number): void {
+    const meshes = _getMeshesById(id);
+    if (!meshes || mi < 0 || mi >= meshes.length) {
+        return;
+    }
+    const m = meshes[mi].material;
+    if (!m || !(m instanceof StandardMaterial)) {
+        return;
+    }
+    const mmdMat = m as MmdStandardMaterial;
+    _capture(m);
+    const o = _origValues.get(m)!;
+    const state = _catState.get(id);
+    if (state) {
+        const p = state.get(categoryOfMaterial(m));
+        if (p) {
+            _applyParamsToMaterial(m, mmdMat, o, p);
+        }
+    }
+    const perMat = _matState.get(id);
+    if (perMat) {
+        const mp = perMat.get(mi);
+        if (mp) {
+            _applyParamsToMaterial(m, mmdMat, o, mp);
+        }
+    }
+}
+
+function _applyCategory(id: string, cat: string): void {
+    const meshes = _getMeshesById(id);
+    if (!meshes) {
+        return;
+    }
+    const state = _catState.get(id);
+    if (!state) {
+        return;
+    }
+    const p = state.get(cat);
+    if (!p) {
+        return;
+    }
+    const perMat = _matState.get(id) ?? new Map();
+    for (let mi = 0; mi < meshes.length; mi++) {
+        const m = meshes[mi].material;
+        if (!m || !(m instanceof StandardMaterial)) {
+            continue;
+        }
+        if (categoryOfMaterial(m) !== cat) {
+            continue;
+        }
+        const mmdMat = m as MmdStandardMaterial;
+        _capture(m);
+        const o = _origValues.get(m)!;
+        _applyParamsToMaterial(m, mmdMat, o, p);
+        const mp = perMat.get(mi);
+        if (mp) {
+            _applyParamsToMaterial(m, mmdMat, o, mp);
+        }
+    }
+}
+
 /** @internal exported for testing */
 export function _applyAll(id: string): void {
     const meshes = _getMeshesById(id);
@@ -387,22 +480,7 @@ export function _applyAll(id: string): void {
     }
     const perMat = _matState.get(id) ?? new Map();
     for (let mi = 0; mi < meshes.length; mi++) {
-        const m = meshes[mi].material;
-        if (!m || !(m instanceof StandardMaterial)) {
-            continue;
-        }
-        const mmdMat = m as MmdStandardMaterial;
-        _capture(m);
-        const o = _origValues.get(m)!;
-        const p = state.get(_catOf(m.name));
-        if (!p) {
-            continue;
-        }
-        _applyParamsToMaterial(m, mmdMat, o, p);
-        const mp = perMat.get(mi);
-        if (mp) {
-            _applyParamsToMaterial(m, mmdMat, o, mp);
-        }
+        _applyMaterial(id, mi);
     }
 }
 
@@ -457,7 +535,7 @@ export function getMatCatGroups(id: string): Map<string, { name: string; mat: Ma
         if (!m || !(m instanceof StandardMaterial)) {
             continue;
         }
-        const cat = _catOf(m.name);
+        const cat = categoryOfMaterial(m);
         if (!groups.has(cat)) {
             groups.set(cat, []);
         }
@@ -485,7 +563,7 @@ export function setMatCatParams(
     }
     const target = _ensureState(id).get(cat)!;
     _clampAndAssign(target, params);
-    _applyAll(id);
+    _applyCategory(id, cat);
     triggerAutoSave();
 }
 
@@ -594,7 +672,7 @@ export function setMatParams(
         state.set(matIndex, entry);
     }
     _clampAndAssign(entry, params);
-    _applyAll(id);
+    _applyMaterial(id, matIndex);
     triggerAutoSave();
 }
 
@@ -638,7 +716,7 @@ export function isMatCategoryAllEnabled(id: string, cat: string): boolean {
         if (!m || !(m instanceof StandardMaterial)) {
             continue;
         }
-        if (_catOf(m.name) !== cat) {
+        if (categoryOfMaterial(m) !== cat) {
             continue;
         }
         if (!isMatEnabled(id, mi)) {
@@ -666,7 +744,7 @@ export function setMatCategoryEnabled(id: string, cat: string, enabled: boolean)
         if (!m || !(m instanceof StandardMaterial)) {
             continue;
         }
-        if (_catOf(m.name) !== cat) {
+        if (categoryOfMaterial(m) !== cat) {
             continue;
         }
         const current = isMatEnabled(id, mi);
