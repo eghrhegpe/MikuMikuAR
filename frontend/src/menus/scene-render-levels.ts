@@ -29,7 +29,6 @@ import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 import {
-    isDebugMirrorActive,
     setDebugMirrorSize,
     setDebugMirrorResolution,
     getDebugMirrorInfo,

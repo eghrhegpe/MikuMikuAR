@@ -64,7 +64,6 @@ import {
     triggerAutoSave,
     setTriggerAutoSave,
     getMmdRuntimeType,
-    setStatus,
     focusedModelId,
 } from '../core/config';
 import { attachBeatDetector, getStreamPlayer } from '../outfit/audio';

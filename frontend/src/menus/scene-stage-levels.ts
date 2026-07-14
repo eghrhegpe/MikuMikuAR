@@ -8,13 +8,11 @@ import {
     overridePaths,
     libraryRoot,
     escapeHtml,
-    propRegistry,
 } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow, addSectionTitle, addCollapsible } from '../core/ui-helpers';
 import { removeModel, setModelVisibility } from '../scene/manager/model-ops';
-import { loadManager } from '../core/load-manager';
 import { getPropList, removeProp, modelManager } from '../scene/scene';
 import { reRenderSceneMenu, getSceneMenu } from './scene-menu';
 import { buildStageLightLevel } from './scene-stage-lights';

@@ -2,14 +2,7 @@
 // 从 settings.ts 拆出，供各 settings-* 子模块引用。
 
 import {
-    SetDownloadAutoImport,
     SetUIAccent,
-    SetUIAnimations,
-    SetUIBlurBg,
-    SetUIFontFamily,
-    SetUIPopupWidth,
-    SetUIScale,
-    SetPerformanceMode,
 } from '../core/wails-bindings';
 import { setStatus, UIState } from '../core/config';
 import { tryCatchStatus, clamp01 } from '../core/utils';

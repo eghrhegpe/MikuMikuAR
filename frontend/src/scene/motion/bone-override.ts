@@ -63,8 +63,8 @@ function _propagateChildrenWasm(
     parentOldMat: Matrix,
     parentNewMat: Matrix
 ): void {
-    const parentOldInv = _q(); // 复用 temp Quaternion
-    const pQ = _q();
+    const _parentOldInv = _q(); // 复用 temp Quaternion
+    const _pQ = _q();
     // 用 Matrix.invert 太贵，改为：localMat = childOldMat × parentOld⁻¹
     // 使用 Matrix 运算
     const invMat = new Matrix().copyFrom(parentOldMat);

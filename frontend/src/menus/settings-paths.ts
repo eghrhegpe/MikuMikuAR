@@ -5,7 +5,6 @@ import {
     ClearThumbnailCache,
     ClearAllCaches,
     GetStorageMode,
-    SetStorageMode,
     SetDownloadWatchEnabled,
     GetDownloadWatchStatus,
     SetDownloadWatchDir,

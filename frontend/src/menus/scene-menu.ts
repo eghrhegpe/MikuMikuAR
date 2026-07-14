@@ -6,21 +6,16 @@
 
 import {
     dom,
-    closeAllOverlays,
     setStatus,
     PopupRow,
     PopupLevel,
-    cardContainer,
     modelRegistry,
     focusedModelId,
     setFocusedModelId,
     uiState,
     setUIState,
-    envState,
 } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
-import { createIconifyIcon } from '../core/icons';
-import { slideRow } from '../core/ui-helpers';
 import { serializeScene, isARModeActive, takeARScreenshot } from '../scene/scene';
 import { SelectDir, SaveScreenshot, SaveScenePreset } from '../core/wails-bindings';
 import { waitForFrame, tryCatchStatus, showErrorToast } from '../core/utils';

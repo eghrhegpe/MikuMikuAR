@@ -116,7 +116,7 @@ function retargetSkeleton(inst: ModelInstance, fbxMeshes: Mesh[]): boolean {
         const newIndices = new Float32Array(matricesIndices.length);
         const newWeights = new Float32Array(matricesWeights); // 复制原权重，仅供 dropped 槽重归一化
         const vertexCount = matricesIndices.length / 4;
-        let remapped = 0;
+        let _remapped = 0;
         let unmatched = 0;
         let meshDropped = false;
         for (let v = 0; v < vertexCount; v++) {
@@ -128,7 +128,7 @@ function retargetSkeleton(inst: ModelInstance, fbxMeshes: Mesh[]): boolean {
                 const eff = effectivePmxIdx[fbxIdx];
                 if (eff !== null) {
                     newIndices[slot] = eff;
-                    remapped++;
+                    _remapped++;
                 } else {
                     // 无匹配祖先：该权重槽失效，置 0 并将骨骼指向占位（权重为 0 不影响形变）
                     newIndices[slot] = 0;

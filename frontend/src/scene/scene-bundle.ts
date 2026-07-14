@@ -2,11 +2,10 @@
 // 职责: 收集场景引用资源、重写 libraryRef、调用 Go 后端打包/解包
 // 依赖: scene-serialize.ts + config.ts + wails bindings
 
-import { libraryRoot, externalPaths, setStatus, setLibraryRoot } from '../core/config';
+import { libraryRoot, setStatus, setLibraryRoot } from '../core/config';
 import { t } from '../core/i18n/t';
 import {
     computeLibraryRef,
-    resolveLibraryRef,
     getBaseName,
     normPath,
     deepClone,
@@ -77,7 +76,7 @@ function collectSceneAssets(scene: SceneFile): string[] {
 // ======== libraryRef Rewriting ========
 
 /** 将 SceneFile 中的 libraryRef 重写为 bundle 内部路径。 */
-function rewriteRefsForBundle(scene: SceneFile, libraryRoot: string): SceneFile {
+function rewriteRefsForBundle(scene: SceneFile, _libraryRoot: string): SceneFile {
     const rewritten = deepClone(scene);
 
     function rewritePath(

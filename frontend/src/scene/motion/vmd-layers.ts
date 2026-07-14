@@ -3,7 +3,6 @@
 // 依赖: config.ts + scene.ts (懒加载避免循环依赖)
 
 import { VmdLoader } from 'babylon-mmd/esm/Loader/vmdLoader';
-import { MmdWasmAnimation } from 'babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmAnimation';
 import { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
 import {
     MmdCompositeAnimation,
@@ -11,7 +10,6 @@ import {
 } from 'babylon-mmd/esm/Runtime/Animation/mmdCompositeAnimation';
 // 导入以激活 babylon-mmd 的 module augmentation：
 // MmdCompositeAnimation 经此声明已实现 IMmdBindableModelAnimation，可直接传入 createRuntimeAnimation
-import type { MmdCompositeRuntimeModelAnimation } from 'babylon-mmd/esm/Runtime/Animation/mmdCompositeRuntimeModelAnimation';
 import type { VmdLayer } from '@/core/types';
 import {
     mmdRuntime,
@@ -20,7 +18,7 @@ import {
     setStatus,
     triggerAutoSave,
 } from '@/core/config';
-import { normPath, fetchArrayBuffer } from '@/core/fileservice';
+import { fetchArrayBuffer } from '@/core/fileservice';
 import { getBaseName, clamp01, logWarn } from '@/core/utils';
 import { t } from '@/core/i18n/t';
 import Encoding from 'encoding-japanese';
