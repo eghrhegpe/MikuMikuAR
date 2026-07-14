@@ -99,8 +99,12 @@ export function slideRow(
         toggle.appendChild(slider);
 
         if (!headerToggle.disabled) {
+            // 修复：<label> 包裹 checkbox 时浏览器会原生二次派发 click 到 input，导致 handler 双触发。
+            // 跳过 synthetic click(target===input) 并 preventDefault 阻止原生切换造成的视觉错位。
             toggle.addEventListener('click', (e) => {
                 e.stopPropagation();
+                if (e.target === input) return;
+                e.preventDefault();
                 input.checked = !input.checked;
                 headerToggle.onChange(input.checked);
             });
