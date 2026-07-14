@@ -35,12 +35,17 @@ import { setupE2ECapture } from './dev-hooks';
 import { startRenderLoop } from './render-loop';
 import {
     registerEventHandlers,
+    disposeEventHandlers,
     buildNavMaps,
     registerAppShortcuts,
     initDropHandler,
     showUpdateToast,
     toggleOverlay,
 } from './events';
+import { addDisposableListener } from './dom';
+
+// [adr:audit] init 层本地事件监听收集，配合 disposeEventHandlers 实现 HMR 幂等清理
+const _initDisposables: { dispose(): void }[] = [];
 
 function _updateStaticHtmlTexts(): void {
     // Update hardcoded HTML text with i18n translations
@@ -63,6 +68,12 @@ function _updateStaticHtmlTexts(): void {
 // ======== Init ========
 async function init(): Promise<void> {
     try {
+        // [adr:audit] 幂等清理入口：HMR 重跑 init 时先销毁旧监听器，避免重复绑定
+        for (const d of _initDisposables) {
+            d.dispose();
+        }
+        _initDisposables.length = 0;
+        disposeEventHandlers();
         // 注册本地图标 bundle，使 iconify 离线可用
         registerIconBundle();
         initI18n(); // [doc:adr-059] 在菜单渲染前确定语言并同步 <html lang>
@@ -77,8 +88,10 @@ async function init(): Promise<void> {
 
         // [doc:e2e] 按钮监听器在 initScene 之前注册，确保纯 Vite 模式下 overlay 可打开
         // 即使 WASM 加载失败或场景初始化异常，用户仍能点击导航按钮查看菜单
-        dom.btnMainAction.addEventListener('click', () =>
-            toggleOverlay('sceneOverlay', showModelPopup)
+        _initDisposables.push(
+            addDisposableListener(dom.btnMainAction, 'click', () =>
+                toggleOverlay('sceneOverlay', showModelPopup)
+            )
         );
         dom.btnMotionPopup.addEventListener('click', () =>
             toggleOverlay('sceneOverlay', showMotionPopup)

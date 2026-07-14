@@ -9,6 +9,32 @@ import { getCameraMode, switchCameraMode } from '../scene/camera/camera';
 import { t } from './i18n/t';
 import { openExternalURL } from './platform';
 import { addDisposableListener } from './dom';
+
+// [adr:audit] 统一收集 app 级事件监听，支持幂等清理（防 HMR 重复绑定）。
+// 所有 register* 函数改用 _reg 注册；disposeEventHandlers() 在 init 入口统一销毁。
+const _eventDisposables: { dispose(): void }[] = [];
+// handler 以 any 接收：wrapper 无法复刻 DOM addEventListener 的事件名重载
+// （keyof WindowEventMap），集中豁免单点，避免给 17 处调用逐一补事件类型注解。
+function _reg(
+    target: EventTarget,
+    event: string,
+    handler: (evt: any) => void,
+    options?: AddEventListenerOptions,
+): void {
+    _eventDisposables.push(addDisposableListener(target, event, handler, options));
+}
+export function disposeEventHandlers(): void {
+    for (const d of _eventDisposables) {
+        d.dispose();
+    }
+    _eventDisposables.length = 0;
+    // 清理可能残留的长按定时器
+    if (_longPressTimer) {
+        clearTimeout(_longPressTimer);
+        _longPressTimer = null;
+    }
+}
+
 import { Browser } from '@wailsio/runtime';
 import { showModelPopup, showMotionPopup, refreshLibrary } from '../menus/library';
 import { showPlaza, closePlaza } from '../menus/plaza';
@@ -172,7 +198,7 @@ function _toggleOverlays(): void {
 // ======== Register all DOM/window event listeners ========
 export function registerEventHandlers(): void {
     // Play/Pause — only toggles play state, does NOT touch autoLoop
-    dom.btnPlayPause.addEventListener('click', async () => {
+    _reg(dom.btnPlayPause, 'click', async () => {
         if (!mmdRuntime) {
             return;
         }
@@ -187,27 +213,27 @@ export function registerEventHandlers(): void {
     });
 
     // Loop toggle
-    dom.btnLoopToggle.addEventListener('click', () => {
+    _reg(dom.btnLoopToggle, 'click', () => {
         setAutoLoop(!autoLoop);
         updatePlaybackUI();
         setStatus(t('status.loop', { state: autoLoop ? t('common.on') : t('common.off') }), true);
     });
 
     // ======== Ctrl shortcuts hint ========
-    window.addEventListener('keydown', (e) => {
+    _reg(window, 'keydown', (e) => {
         if (e.key === 'Control' && !e.repeat) {
             document.body.classList.add('shortcuts-visible');
         }
     });
-    window.addEventListener('keyup', (e) => {
+    _reg(window, 'keyup', (e) => {
         if (e.key === 'Control') {
             document.body.classList.remove('shortcuts-visible');
         }
     });
-    window.addEventListener('blur', () => document.body.classList.remove('shortcuts-visible'));
+    _reg(window, 'blur', () => document.body.classList.remove('shortcuts-visible'));
 
     // ======== Freefly WASD (only respond in freefly mode) ========
-    window.addEventListener('keydown', (e) => {
+    _reg(window, 'keydown', (e) => {
         if (getCameraMode() === 'freefly') {
             if (e.code === 'KeyW') {
                 freeflyInput.forward = true;
@@ -232,7 +258,7 @@ export function registerEventHandlers(): void {
     });
 
     // Freefly WASD release
-    window.addEventListener('keyup', (e) => {
+    _reg(window, 'keyup', (e) => {
         if (getCameraMode() !== 'freefly') {
             return;
         }
@@ -262,7 +288,7 @@ export function registerEventHandlers(): void {
     });
 
     // Seek bar
-    dom.seekBar.addEventListener('pointerdown', (e) => {
+    _reg(dom.seekBar, 'pointerdown', (e) => {
         setSeekDragging(true);
         seekWasPlaying = isPlaying;
         if (isPlaying && mmdRuntime) {
@@ -272,12 +298,12 @@ export function registerEventHandlers(): void {
         seekFromEvent(e);
         dom.seekBar.setPointerCapture(e.pointerId);
     });
-    window.addEventListener('pointermove', (e) => {
+    _reg(window, 'pointermove', (e) => {
         if (seekDragging) {
             seekFromEvent(e);
         }
     });
-    window.addEventListener('pointerup', async () => {
+    _reg(window, 'pointerup', async () => {
         if (!seekDragging) {
             return;
         }
@@ -290,7 +316,7 @@ export function registerEventHandlers(): void {
     });
 
     // ======== Click canvas to toggle overlays ========
-    window.addEventListener('pointerdown', (e) => {
+    _reg(window, 'pointerdown', (e) => {
         _pointerDownPos = { x: e.clientX, y: e.clientY };
         // 长按检测：500ms 后弹出模型面板
         _longPressTimer = setTimeout(() => {
@@ -312,7 +338,7 @@ export function registerEventHandlers(): void {
         }, 500);
     });
 
-    window.addEventListener('pointerup', (e) => {
+    _reg(window, 'pointerup', (e) => {
         if (_longPressTimer) {
             clearTimeout(_longPressTimer);
             _longPressTimer = null;
@@ -340,7 +366,7 @@ export function registerEventHandlers(): void {
         _toggleOverlays();
     });
 
-    window.addEventListener('pointermove', (e) => {
+    _reg(window, 'pointermove', (e) => {
         if (_longPressTimer) {
             const dx = e.clientX - _pointerDownPos.x;
             const dy = e.clientY - _pointerDownPos.y;
@@ -589,14 +615,14 @@ async function handleDropFile(path: string): Promise<void> {
 
 export function initDropHandler(): void {
     let dragCounter = 0;
-    window.addEventListener('dragenter', (e) => {
+    _reg(window, 'dragenter', (e) => {
         e.preventDefault();
         dragCounter++;
         if (dragCounter === 1) {
             document.getElementById('dropOverlay')!.classList.add('visible');
         }
     });
-    window.addEventListener('dragleave', (e) => {
+    _reg(window, 'dragleave', (e) => {
         e.preventDefault();
         dragCounter--;
         if (dragCounter <= 0) {
@@ -604,8 +630,8 @@ export function initDropHandler(): void {
             hideDropOverlay();
         }
     });
-    window.addEventListener('dragover', (e) => e.preventDefault());
-    window.addEventListener('drop', async (e) => {
+    _reg(window, 'dragover', (e) => e.preventDefault());
+    _reg(window, 'drop', async (e) => {
         e.preventDefault();
         hideDropOverlay();
         // Wails v2 used to provide file.path on dropped files
