@@ -42,7 +42,7 @@ export function generateLifelikeVmd(
 
     if (upper2Bone && state.boneToggles.upper2) {
         const amp2 = 0.008 * intensity;
-        for (let f = 0; f <= loopFrames; f += 3) {
+        for (let f = 0; f < loopFrames; f += 3) {
             const t = f / loopFrames;
             const rx = clamp1(Math.sin(t * Math.PI * 2 * 0.43 + 1.2) * amp2);
             const ry = clamp1(Math.sin(t * Math.PI * 2 * 0.31 + 0.5) * amp2 * 0.6);
@@ -65,7 +65,7 @@ export function generateLifelikeVmd(
     if (centerBone && state.boneToggles.center) {
         const driftAmp = 0.012 * intensity;
         const bobAmp = 0.003 * intensity;
-        for (let f = 0; f <= loopFrames; f += 3) {
+        for (let f = 0; f < loopFrames; f += 3) {
             const t = f / loopFrames;
             const rz = clamp1(
                 Math.sin(t * Math.PI * 2 * 0.15 + 0.3) * driftAmp * 0.6 +
@@ -92,7 +92,7 @@ export function generateLifelikeVmd(
 
     if (waistBone && state.boneToggles.waist) {
         const waistAmp = 0.008 * intensity;
-        for (let f = 0; f <= loopFrames; f += 3) {
+        for (let f = 0; f < loopFrames; f += 3) {
             const t = f / loopFrames;
             const rz = clamp1(Math.sin(t * Math.PI * 2 * 0.17 + 1.1) * waistAmp);
             const w = Math.sqrt(Math.max(0, 1 - rz * rz));
@@ -108,7 +108,7 @@ export function generateLifelikeVmd(
 
     if ((shoulderLBone || shoulderRBone) && state.boneToggles.shoulder) {
         const shoulderAmp = 0.006 * intensity;
-        for (let f = 0; f <= loopFrames; f += 3) {
+        for (let f = 0; f < loopFrames; f += 3) {
             const t = f / loopFrames;
             const yL = Math.sin(t * Math.PI * 2 + 0.3) * shoulderAmp;
             const yR = Math.sin(t * Math.PI * 2 + 0.7) * shoulderAmp * 0.8;
@@ -153,7 +153,7 @@ export function generateLifelikeVmd(
 
     if ((larmBone || rarmBone) && state.boneToggles.arm) {
         const armAmp = 0.012 * intensity;
-        for (let f = 0; f <= loopFrames; f += 3) {
+        for (let f = 0; f < loopFrames; f += 3) {
             const t = f / loopFrames;
             const rz = clamp1(Math.sin(t * Math.PI * 2 * 0.25 + 1.5) * armAmp);
             const w = Math.sqrt(Math.max(0, 1 - rz * rz));
@@ -194,7 +194,7 @@ export function generateLifelikeVmd(
 
     if ((wristLBone || wristRBone) && state.boneToggles.wrist) {
         const wristAmp = 0.008 * intensity;
-        for (let f = 0; f <= loopFrames; f += 3) {
+        for (let f = 0; f < loopFrames; f += 3) {
             const t = f / loopFrames;
             const rx = clamp1(Math.sin(t * Math.PI * 2 * 0.33 + 0.8) * wristAmp);
             const w = Math.sqrt(Math.max(0, 1 - rx * rx));
@@ -237,7 +237,7 @@ export function generateLifelikeVmd(
 
     if (allParentBone && state.boneToggles.allParent) {
         const parentAmp = 0.003 * intensity;
-        for (let f = 0; f <= loopFrames; f += 4) {
+        for (let f = 0; f < loopFrames; f += 4) {
             const t = f / loopFrames;
             const rx = clamp1(Math.sin(t * Math.PI * 2 * 0.08 + 1.1) * parentAmp);
             const rz = clamp1(Math.sin(t * Math.PI * 2 * 0.12 + 2.3) * parentAmp);
