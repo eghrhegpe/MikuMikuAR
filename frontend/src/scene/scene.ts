@@ -164,6 +164,14 @@ export { focusedMmdModel, focusedModel } from './manager/model-ops';
 
 // ======== Init Scene ========
 export async function initScene(): Promise<void> {
+    // 0. HMR 重入清理：拆除上一轮注册的 observer / 定时器 / 订阅，避免累积（ADR-106 D3 / Phase 3）
+    //    首次调用时各 stop* 内部有守卫（_observerHandle 为 null 即 no-op），安全。
+    _disposePlaybackObservables?.();
+    (await import('./motion/bone-override')).stopBoneOverride();
+    (await import('./motion/feet-adjustment')).stopFeetAdjustment();
+    (await import('../core/reactivity')).unsubscribeAll();
+    (await import('./env/env-bridge')).cancelEnvPersistTimer();
+
     // 1. MMD 运行时初始化
     RegisterMmdModelLoaders();
     RegisterDxBmpTextureLoader();
