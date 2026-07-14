@@ -175,8 +175,8 @@ const inst = focusedModel();  // 隐含假设
 
 | 文件 | 行号 | 问题 | 规则 |
 |------|------|------|------|
-| `scene/env/env-bridge.ts` | 650 | `_envPersistTimer` HMR 时悬挂 | D3 |
-| `scene/manager/model-loader.ts` | 102 | `withTimeout` 超时后原始 Promise 不取消 | D4（可选） |
+| `scene/env/env-bridge.ts` | 650 | `_envPersistTimer` HMR 时悬挂（已修复：新增 `cancelEnvPersistTimer` 导出，2026-07-14） | D3 |
+| `scene/manager/model-loader.ts` | 102 | `withTimeout` 超时后原始 Promise 不取消（已评估 N/A：Promise 不可取消 + captureThumbnail 有 generation counter 防护，2026-07-14） | D4（可选） |
 
 ---
 
@@ -195,10 +195,10 @@ const inst = focusedModel();  // 隐含假设
 4. `scene/motion/feet-adjustment.ts` — 导出 `stopFeetAdjustment()`
 5. `scene/scene-serialize.ts` — `deserializeScene` 改用 `loadPMXFile` 返回的 ID
 
-### Phase 3: 新增 HMR 清理入口（1 天）
+### Phase 3: 新增 HMR 清理入口（已完成 2026-07-14）
 
-1. 在 `initScene` 开头调用所有已注册的 `stop*` 函数
-2. 在 `init` 函数开头调用 `unsubscribeAll()`
+1. ✅ 在 `initScene` 开头调用所有已注册的 `stop*` 函数（`_disposePlaybackObservables?.()` + `stopBoneOverride()` + `stopFeetAdjustment()` + `unsubscribeAll()` + `cancelEnvPersistTimer()`）
+2. ✅ 在 `initScene` 开头调用 `unsubscribeAll()`（同上清理块，D3 要求）
 
 ---
 
