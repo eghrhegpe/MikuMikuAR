@@ -10,7 +10,7 @@ import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { envState, EnvState, triggerAutoSave, mmdRuntime } from '@/core/config';
 import { uiState, setUIPersistCallback } from '@/core/state';
 import type { UIState } from '@/core/types';
-import { lerp as lerpUtil, lerpArray, formatTimestamp, clamp01, swallowError, logWarn } from '@/core/utils';
+import { lerp as lerpUtil, lerpArray, formatTimestamp, clamp01, swallowError, logWarn, DebouncedTimer } from '@/core/utils';
 import { col3FromTriple } from '@/core/color-helpers';
 import { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
 import { deriveLighting, TIME_OF_DAY_PRESETS } from './env-lighting';
@@ -301,7 +301,7 @@ export function getGroundCollisionEnabled(): boolean {
 // ======== Environment Sun Angle ========
 
 let envSunAngle = 45;
-let _envPersistTimer: ReturnType<typeof setTimeout> | null = null;
+const _envPersistTimer = new DebouncedTimer();
 
 export function setEnvSunAngle(deg: number): void {
     envSunAngle = Math.max(-15, Math.min(90, deg));
@@ -647,12 +647,7 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
         applyLightingPresetFromEnv(partial.lightingPresetName);
     }
 
-    if (_envPersistTimer) {
-        clearTimeout(_envPersistTimer);
-    }
-    _envPersistTimer = setTimeout(() => {
-        swallowError(SetEnvState(envState));
-    }, 500);
+    _envPersistTimer.schedule(() => swallowError(SetEnvState(envState)), 500);
 
     if (!skipAutoSave) {
         triggerAutoSave();
@@ -661,16 +656,13 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
 
 /** 立即刷写 env state 到后端（无防抖）。关闭/隐藏页面时调用。 */
 export function flushEnvState(): void {
-    if (_envPersistTimer) {
-        clearTimeout(_envPersistTimer);
-        _envPersistTimer = null;
-    }
+    _envPersistTimer.cancel();
     swallowError(SetEnvState(envState));
 }
 
 // ======== UIState Persistence ========
 
-let _uiPersistTimer: ReturnType<typeof setTimeout> | null = null;
+const _uiPersistTimer = new DebouncedTimer();
 
 /** 以当前 uiState 完整对象构建持久化载荷，剔除未定义字段。 */
 function _buildUIStatePayload(): Record<string, unknown> {
@@ -687,21 +679,12 @@ function _buildUIStatePayload(): Record<string, unknown> {
 
 /** 防抖调度 UIState 持久化。修改 uiState 后调用此函数。 */
 export function schedulePersistUI(): void {
-    if (_uiPersistTimer) {
-        clearTimeout(_uiPersistTimer);
-    }
-    _uiPersistTimer = setTimeout(() => {
-        _uiPersistTimer = null;
-        flushUIState();
-    }, 500);
+    _uiPersistTimer.schedule(() => flushUIState(), 500);
 }
 
 /** 立即刷写 UI state 到后端（无防抖）。关闭/隐藏页面时调用。 */
 export function flushUIState(): void {
-    if (_uiPersistTimer) {
-        clearTimeout(_uiPersistTimer);
-        _uiPersistTimer = null;
-    }
+    _uiPersistTimer.cancel();
     const payload = _buildUIStatePayload();
     if (Object.keys(payload).length === 0) {
         return;
