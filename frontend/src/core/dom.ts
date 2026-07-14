@@ -8,6 +8,7 @@ export const dom = {
     statusBar: document.getElementById('statusBar') as HTMLElement,
     statusText: document.getElementById('statusText') as HTMLElement,
     fpsClock: document.getElementById('fpsClock') as HTMLElement,
+    runtimeBadge: document.getElementById('runtimeBadge') as HTMLElement,
     loadingEl: document.getElementById('loading') as HTMLElement,
     btnMainAction: document.getElementById('btnMainAction') as HTMLButtonElement,
     btnMotionPopup: document.getElementById('btnMotionPopup') as HTMLButtonElement,

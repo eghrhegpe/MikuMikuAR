@@ -22,6 +22,7 @@ import { isAndroidPlatform } from './platform';
 import { generateTextColors } from '../menus/settings';
 import { SETTINGS_FONT_RESTORE } from '../menus/settings-shared';
 import { initScene, tryRestoreLastScene, setEnvState } from '../scene/scene';
+import { initRuntimeBadge } from './runtime-mode';
 import { hexToRgb, rgbToString } from './color-helpers';
 import { setPerformanceMode } from '../scene/render/performance';
 import { initLibrary, showModelPopup, showMotionPopup, refreshLibrary } from '../menus/library';
@@ -65,6 +66,7 @@ async function init(): Promise<void> {
         registerIconBundle();
         initI18n(); // [doc:adr-059] 在菜单渲染前确定语言并同步 <html lang>
         _updateStaticHtmlTexts(); // 更新 HTML 模板中的硬编码文案
+        initRuntimeBadge(); // [adr-099] 立即渲染持久化的运行时模式徽标（刷新不丢）
         registerEventHandlers(); // [adr-102] P3: 全局 DOM/window 监听器迁至 events.ts
         buildNavMaps();
         // Register keyboard shortcuts via ShortcutRegistry

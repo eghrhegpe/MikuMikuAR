@@ -319,6 +319,22 @@ input, textarea, [contenteditable] {
     white-space: nowrap;
 }
 
+/* ===== 运行时模式徽标 — 右上角 HUD（fpsClock 下方） ===== */
+#runtimeBadge {
+    position: absolute;
+    top: calc(16px * var(--ui-scale) + 30px * var(--ui-scale));
+    right: calc(16px * var(--ui-scale));
+    font-variant-numeric: tabular-nums;
+    color: rgba(255, 255, 255, 0.35);
+    font-size: calc(var(--font-time) - 1px);
+    background: rgba(0, 0, 0, 0.25);
+    padding: calc(4px * var(--ui-scale)) calc(14px * var(--ui-scale));
+    border-radius: calc(8px * var(--ui-scale));
+    pointer-events: none;
+    z-index: 500;
+    white-space: nowrap;
+}
+
 /* ===== 状态栏 ===== */
 #statusBar {
     position: absolute;
