@@ -1,7 +1,6 @@
 export * from './proc-motion-shared';
 export { generateIdleVmd } from './proc-motion-idle';
 export { generateAutoDanceVmd } from './proc-motion-autodance';
-export { generateLifelikeVmd } from './proc-motion-lifelike';
 
 import type { ProcMotionMode } from './proc-motion-shared';
 

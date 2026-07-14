@@ -21,6 +21,8 @@ export interface DerivedLighting {
 
 const TO_RAD = Math.PI / 180;
 
+// 亮度系数采用 sRGB 感知权重（0.299/0.587/0.114）：本函数输入 skyColor 为 UI 直供的 sRGB 显示值（0..1），
+// 故 sRGB 系数恰当。若改用线性空间系数（0.2126/0.7152/0.0722），须先对输入做 sRGB→线性解码，否则结果偏暗。
 export function calcLuminance(rgb: [number, number, number]): number {
     return 0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2];
 }

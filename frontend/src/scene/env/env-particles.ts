@@ -65,6 +65,8 @@ function makeParticleTexture(kind: string, externalUrl?: string): Texture {
         return cached;
     }
     // 经统一工厂创建（优先 DynamicTexture，回退 toDataURL→Texture）；hasAlpha 标记自带透明通道。
+    // 缓存进模块局部 _particleTextures（非 env-texture 的 _texCache），由 disposeParticles 统一释放（见 433 行）；
+    // 此处直调工厂仅为生成，缓存生命周期由本模块自管。
     const tex = createCanvasTexture({
         size: 64,
         draw: (ctx) => drawParticleShape(ctx, kind),

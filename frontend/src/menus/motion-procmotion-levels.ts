@@ -23,8 +23,6 @@ import {
     setLipSyncSensitivity,
     setLipSyncIntensity,
     setProcMotionInterpOverride,
-    setLifelikeEnabled,
-    setLifelikeIntensity,
 } from '../scene/scene';
 import {
     setProcMotionBoneToggle,
@@ -109,20 +107,7 @@ function buildProcMotionSchema(): MenuNode[] {
                             bind: () => getLipSyncState().enabled,
                         }
                     );
-                    addToggleRow(
-                        inner,
-                        t('motion.lifelike'),
-                        st.lifelikeEnabled,
-                        (v) => {
-                            setLifelikeEnabled(v);
-                            getMotionMenu()?.updateControls();
-                        },
-                        'lucide:sparkles',
-                        {
-                            bind: () => getProcMotionState().lifelikeEnabled,
-                        }
-                    );
-                });
+                    });
             },
         },
         // 卡片 2：强度/速度
@@ -168,33 +153,7 @@ function buildProcMotionSchema(): MenuNode[] {
                 });
             },
         },
-        // 卡片 3：Lifelike 强度（条件渲染）
-        {
-            id: 'procmotion:lifelike',
-            kind: 'custom',
-            visibleWhen: () => getProcMotionState().lifelikeEnabled,
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    addSliderRow(
-                        inner,
-                        t('motion.lifelikeIntensity'),
-                        st.lifelikeIntensity,
-                        0,
-                        1,
-                        0.05,
-                        (v) => {
-                            setLifelikeIntensity(v);
-                        },
-                        'lucide:sparkles',
-                        undefined,
-                        {
-                            bind: () => getProcMotionState().lifelikeIntensity,
-                        }
-                    );
-                });
-            },
-        },
-        // 卡片 4：骨骼微动（folder 折叠）
+        // 卡片 3：骨骼微动（folder 折叠）
         {
             id: 'procmotion:boneMicro',
             kind: 'folder',
