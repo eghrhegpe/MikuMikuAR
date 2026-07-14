@@ -510,15 +510,24 @@ export function clearAllMenuWrappers(): void {
 // ======== Auto-save Trigger ========
 
 let _triggerAutoSaveImpl: (() => void) | null = null;
+let _autoSaveTimeout: ReturnType<typeof setTimeout> | null = null;
+const AUTO_SAVE_DEBOUNCE_MS = 1500;
 
 export function setTriggerAutoSave(fn: () => void): void {
     _triggerAutoSaveImpl = fn;
 }
 
 export function triggerAutoSave(): void {
-    if (_triggerAutoSaveImpl) {
-        _triggerAutoSaveImpl();
+    if (!_triggerAutoSaveImpl) {
+        return;
     }
+    if (_autoSaveTimeout) {
+        clearTimeout(_autoSaveTimeout);
+    }
+    _autoSaveTimeout = setTimeout(() => {
+        _autoSaveTimeout = null;
+        _triggerAutoSaveImpl!();
+    }, AUTO_SAVE_DEBOUNCE_MS);
 }
 
 // ======== Generic try/catch + status helper ========

@@ -11,7 +11,6 @@ import {
     setPendingVmd,
     mmdRuntime,
 } from '@/core/config';
-import { _catState, _matState, _matEnabled, disposeModelMaterialState } from './material';
 import { refreshWaterRenderList } from '../env/env';
 import { getCameraMode, switchCameraMode } from '../camera/camera';
 import { updatePlaybackUI } from '../motion/playback';
@@ -30,7 +29,6 @@ import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 // ======== Model Lifecycle ========
 
 export function removeModel(id: string): void {
-    disposeModelMaterialState(id);
     modelManager?.remove(id);
     refreshWaterRenderList();
 

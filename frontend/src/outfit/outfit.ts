@@ -538,7 +538,7 @@ async function _applyOutfitVariantCore(id: string, variantName: string): Promise
             continue;
         }
         const origParams = inst._origParams.get(mi)!;
-        const cat = _catOf(sm.name);
+        const cat = _catOf(sm);
 
         promises.push(
             _applySlot(

@@ -38,7 +38,7 @@ import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
 import { MmdWasmModel } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmModel';
 import { loadVMDMotion } from '../motion/vmd-loader';
 import { retryWindPhysicsSubscription } from '../../physics/wind-physics';
-import { _capture } from './material';
+import { _capture, disposeModelMaterialState } from './material';
 import { rebuildShadowCasters } from '../render/lighting';
 import { getGroundHeightAt, setOnTerrainReady, setOnGroundChanged } from '../env/env-impl';
 
@@ -173,43 +173,49 @@ export async function captureThumbnail(
         try {
             rt.render();
 
-            await new Promise((r) => requestAnimationFrame(r));
-            if (gen !== _thumbCaptureGen) return;
-
-            const floatPixels = await _scene.getEngine().readPixels(0, 0, rtSize, rtSize, true);
-            if (gen !== _thumbCaptureGen) return;
-
-            const canvas = document.createElement('canvas');
-            canvas.width = rtSize;
-            canvas.height = rtSize;
-            const ctx = canvas.getContext('2d');
-            if (!ctx) {
-                return;
-            }
-
-            const imageData = ctx.createImageData(rtSize, rtSize);
-            const pixelsArr = floatPixels as Float32Array;
-            for (let i = 0; i < pixelsArr.length; i++) {
-                imageData.data[i] = Math.min(255, Math.max(0, Math.round(pixelsArr[i] * 255)));
-            }
-            ctx.putImageData(imageData, 0, 0);
-
-            const base64 = canvas.toDataURL('image/png', 0.8);
-            const raw = base64.replace(/^data:image\/png;base64,/, '');
-
-            let thumbKey = libraryPath && libraryPath !== filePath ? libraryPath : filePath;
-            if (innerPath) {
-                thumbKey = `${thumbKey}::${innerPath}`;
-            }
-
+            // readPixels 读取的是「当前绑定的 framebuffer」。
+            // rt.render() 结束会 unBindFramebuffer 回到默认 backbuffer，
+            // 必须重新绑定 RTT 自身的 framebuffer 才能读到离屏渲染结果（否则截到的是主场景）。
+            const engine = _scene.getEngine();
+            engine.bindFramebuffer(rt.renderTarget!);
             try {
-                await SaveThumbnail(thumbKey, raw);
+                const floatPixels = await engine.readPixels(0, 0, rtSize, rtSize, true);
                 if (gen !== _thumbCaptureGen) return;
-                const updated = new Map(thumbnailCache);
-                updated.set(thumbKey, raw);
-                setThumbnailCache(updated);
-            } catch (saveErr) {
-                logWarn('model-loader', 'SaveThumbnail failed:', saveErr);
+
+                const canvas = document.createElement('canvas');
+                canvas.width = rtSize;
+                canvas.height = rtSize;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    return;
+                }
+
+                const imageData = ctx.createImageData(rtSize, rtSize);
+                // readPixels 返回 Uint8Array（0–255 字节），已是最终像素值，直接拷贝即可。
+                // 原代码误当作 Float32Array 再 *255，导致所有非 0 像素被饱和成 255（全白）。
+                const pixelsArr = floatPixels as Uint8Array;
+                imageData.data.set(pixelsArr);
+                ctx.putImageData(imageData, 0, 0);
+
+                const base64 = canvas.toDataURL('image/png', 0.8);
+                const raw = base64.replace(/^data:image\/png;base64,/, '');
+
+                let thumbKey = libraryPath && libraryPath !== filePath ? libraryPath : filePath;
+                if (innerPath) {
+                    thumbKey = `${thumbKey}::${innerPath}`;
+                }
+
+                try {
+                    await SaveThumbnail(thumbKey, raw);
+                    if (gen !== _thumbCaptureGen) return;
+                    const updated = new Map(thumbnailCache);
+                    updated.set(thumbKey, raw);
+                    setThumbnailCache(updated);
+                } catch (saveErr) {
+                    logWarn('model-loader', 'SaveThumbnail failed:', saveErr);
+                }
+            } finally {
+                engine.unBindFramebuffer(rt.renderTarget!);
             }
         } finally {
             rt.dispose();
@@ -490,15 +496,6 @@ export async function loadPMXFile(
 
         return registeredId;
     } catch (err) {
-        // 🔴 2: If model was registered, use remove() for clean disposal (handles meshes + cloth)
-        // 🟡 3: Destroy leaked MMD runtime model before mesh disposal
-        if (wasmModel && _mmdRuntime) {
-            try {
-                _mmdRuntime.destroyMmdModel(wasmModel);
-            } catch (destroyErr) {
-                logWarn('model-loader', 'destroyMmdModel in cleanup:', destroyErr);
-            }
-        }
         if (registeredId && _modelManager) {
             try {
                 _modelManager.remove(registeredId);
@@ -506,12 +503,17 @@ export async function loadPMXFile(
                 logWarn('model-loader', 'Cleanup after load failure:', removeErr);
             }
         } else {
-            // Not yet registered — dispose meshes directly
+            if (wasmModel && _mmdRuntime) {
+                try {
+                    _mmdRuntime.destroyMmdModel(wasmModel);
+                } catch (destroyErr) {
+                    logWarn('model-loader', 'destroyMmdModel in cleanup:', destroyErr);
+                }
+            }
             loadedMeshes.forEach((m) => {
                 try {
                     m.dispose();
                 } catch {
-                    // Intentionally empty — 清理阶段单个 mesh dispose 失败不影响整体回滚
                 }
             });
         }

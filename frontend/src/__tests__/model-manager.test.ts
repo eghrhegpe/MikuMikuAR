@@ -130,6 +130,7 @@ function makeModelInstance(id: string, overrides?: any): ModelInstance {
 function createTestMesh(name, mat) {
     const mesh = new Mesh(name);
     mesh.material = mat || new StandardMaterial(name + '_mat');
+    mesh.isVisible = true;
     mesh.position = {
         x: 0,
         y: 0,
