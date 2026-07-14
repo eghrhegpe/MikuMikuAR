@@ -32,3 +32,8 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } {
 export function rgbToString(rgb: { r: number; g: number; b: number }): string {
     return `${rgb.r}, ${rgb.g}, ${rgb.b}`;
 }
+
+/** 将 Color3 转为 CSS `rgb(r, g, b)` 字符串（0–255 整数）。 */
+export function rgbString(c: Color3): string {
+    return `rgb(${Math.round(c.r * 255)}, ${Math.round(c.g * 255)}, ${Math.round(c.b * 255)})`;
+}
