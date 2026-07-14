@@ -2,10 +2,9 @@
 // 职责: 将外部 mesh 挂载到指定骨骼，随骨骼变换实时跟随
 // 依赖: Babylon mesh.attachToBone（POC 验证通过：standard PMX linkedBone 即为原生 Bone）
 
-import { Vector3, Quaternion, Matrix } from '@babylonjs/core/Maths/math.vector';
+import { Quaternion } from '@babylonjs/core/Maths/math.vector';
 import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import { propRegistry, modelRegistry, setStatus, triggerAutoSave } from '../../core/config';
-import { scene } from '../scene';
 import { t } from '../../core/i18n/t';
 import { logWarn } from '../../core/utils';
 

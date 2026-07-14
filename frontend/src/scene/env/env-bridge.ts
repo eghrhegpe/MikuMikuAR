@@ -9,12 +9,10 @@ import { Color3 } from '@babylonjs/core/Maths/math.color';
 
 import { envState, EnvState, triggerAutoSave, mmdRuntime } from '@/core/config';
 import { uiState, setUIPersistCallback } from '@/core/state';
-import type { UIState } from '@/core/types';
 import {
     lerp as lerpUtil,
     lerpArray,
     formatTimestamp,
-    clamp01,
     swallowError,
     logWarn,
     DebouncedTimer,
@@ -32,7 +30,7 @@ import {
 } from '../render/lighting';
 import type { LightState } from '../render/lighting';
 import { applyLightingPresetFromEnv } from '../render/lighting';
-import { scene, setRenderState } from '../scene';
+import { scene } from '../scene';
 import { setKey } from '@/core/utils';
 
 // 时间戳格式化已收敛至 utils.formatTimestamp

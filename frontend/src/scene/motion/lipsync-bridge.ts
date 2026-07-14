@@ -11,10 +11,7 @@ import { clamp01 } from '@/core/utils';
 import { focusedModelId, triggerAutoSave } from '@/core/config';
 import { setModelMorphWeight } from '../scene';
 
-let _modelManager: import('../manager/model-manager').ModelManager | null = null;
-
-export function initLipSync(mm: import('../manager/model-manager').ModelManager): void {
-    _modelManager = mm;
+export function initLipSync(_mm: import('../manager/model-manager').ModelManager): void {
 }
 
 let lipSyncState: LipSyncStateType = { ...DEFAULT_LIPSYNC_STATE };
@@ -25,11 +22,6 @@ let lipSyncMorphSet: {
     pucker: string | null;
     smile: string | null;
 } | null = null;
-const VOICE_BIN_START = 10;
-const VOICE_BIN_END = 50;
-// 高频频段（用于 smile morph 驱动）
-const HIGH_BIN_START = 25;
-const HIGH_BIN_END = 50;
 
 export function setLipSyncEnabled(on: boolean): void {
     lipSyncState.enabled = on;

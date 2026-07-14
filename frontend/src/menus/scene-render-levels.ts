@@ -28,12 +28,6 @@ import { FILTER_PRESET_LABELS, getFilterPreset } from './scene-render-presets';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
-import {
-    isDebugMirrorActive,
-    setDebugMirrorSize,
-    setDebugMirrorResolution,
-    getDebugMirrorInfo,
-} from '../scene/env/env';
 
 // ======== Scene Preset ========
 
@@ -576,80 +570,6 @@ function buildPostProcessCoreSchema(): MenuNode[] {
                         max: 32,
                         step: 1,
                         onChange: () => triggerAutoSave(),
-                    },
-                },
-            ],
-        },
-    ];
-}
-
-/** 后处理 schema — 调试镜面（反射排查工具） */
-function buildDebugMirrorSchema(): MenuNode[] {
-    return [
-        {
-            id: 'debugMirror',
-            kind: 'folder',
-            label: 'scene.debugMirror',
-            icon: 'lucide:scan',
-            defaultOpen: false,
-            headerToggle: { bind: 'env.debugMirrorEnabled' },
-            children: [
-                {
-                    id: 'debugMirror:controls',
-                    kind: 'custom',
-                    renderCustom: (c) => {
-                        const info = getDebugMirrorInfo();
-                        addModeSlider(
-                            c,
-                            t('scene.debugMirrorWidth'),
-                            Array.from({ length: 15 }, (_, i) => ({
-                                value: String(2 + i * 2),
-                                label: `${2 + i * 2}m`,
-                            })),
-                            String(info.width),
-                            (v) => {
-                                const w = parseFloat(v);
-                                const cur = getDebugMirrorInfo();
-                                setDebugMirrorSize(w, cur.height);
-                            },
-                            'lucide:move-horizontal'
-                        );
-                        addModeSlider(
-                            c,
-                            t('scene.debugMirrorHeight'),
-                            Array.from({ length: 10 }, (_, i) => ({
-                                value: String(1 + i * 2),
-                                label: `${1 + i * 2}m`,
-                            })),
-                            String(info.height),
-                            (v) => {
-                                const h = parseFloat(v);
-                                const cur = getDebugMirrorInfo();
-                                setDebugMirrorSize(cur.width, h);
-                            },
-                            'lucide:move-vertical'
-                        );
-                        addModeSlider(
-                            c,
-                            t('scene.debugMirrorResolution'),
-                            [
-                                { value: '128', label: '128' },
-                                { value: '256', label: '256' },
-                                { value: '512', label: '512' },
-                                { value: '1024', label: '1024' },
-                            ],
-                            String(info.resolution),
-                            (v) => setDebugMirrorResolution(parseInt(v)),
-                            'lucide:grid-3x3'
-                        );
-                        const p = info.position;
-                        const infoDiv = document.createElement('div');
-                        infoDiv.style.cssText =
-                            'padding:4px 12px;font-size:11px;color:var(--text-dim);';
-                        infoDiv.textContent = info.active
-                            ? `mesh: ${info.meshCount} | pos: (${p[0].toFixed(1)}, ${p[1].toFixed(1)}, ${p[2].toFixed(1)}) | ${info.width}×${info.height}m @ ${info.resolution}px`
-                            : t('scene.debugMirrorHint');
-                        c.appendChild(infoDiv);
                     },
                 },
             ],
