@@ -131,7 +131,17 @@ const mockBeatDetector = {
 };
 
 beforeEach(() => {
-    // 重置 mock 状态
+    // 重置 mock 变量（防跨测试泄漏）
+    mockPlay.mockReset().mockResolvedValue(undefined);
+    mockPause.mockReset();
+    mockDispose.mockReset();
+    mockCurrentTime = 0;
+    mockVolume = 1;
+    mockDuration = 120;
+    mockPaused = true;
+    mockSource = '';
+    mockMetadataLoaded = false;
+    mockOnDurationChanged = null;
     (globalThis as any).__audioTestUiState = { volume: 1, audioOffset: 0 };
     mockTriggerAutoSave.mockReset();
     mockBeatDetector.attach.mockReset().mockReturnValue(true);

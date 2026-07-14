@@ -55,10 +55,14 @@ export async function resolveFileUrl(
  * @throws 当 HTTP 响应非 2xx 时抛出 `Error('HTTP <status>')`
  */
 export async function fetchArrayBuffer(
-    filePath: string
+    filePath: string,
+    signal?: AbortSignal
 ): Promise<{ url: string; data: ArrayBuffer }> {
+    if (signal?.aborted) {
+        throw new DOMException('Aborted', 'AbortError');
+    }
     const { url } = await resolveFileUrl(filePath);
-    const resp = await fetch(url);
+    const resp = await fetch(url, { signal });
     if (!resp.ok) {
         throw new Error(`HTTP ${resp.status}`);
     }
