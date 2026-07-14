@@ -169,166 +169,51 @@ function _applyParamsToMaterial(
 const _origValues = new WeakMap<Material, _OrigMat>();
 const _matCategoryCache = new WeakMap<Material, MaterialCategory>();
 
-/** @internal exported for testing */
-export const _catState = new Map<string, Map<string, MaterialCategoryParams>>();
-/** @internal exported for testing */
-export const _matState = new Map<string, Map<number, MaterialCategoryParams>>();
-/** @internal exported for testing */
-export const _matEnabled = new Map<string, Map<number, boolean>>();
+/** 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 */
+export class MaterialStateManager {
+    catState = new Map<string, Map<string, MaterialCategoryParams>>();
+    matState = new Map<string, Map<number, MaterialCategoryParams>>();
+    matEnabled = new Map<string, Map<number, boolean>>();
 
-/**
- * 材质分类规则（按优先级排序）
- * 每条规则：[关键词数组, 分类名]
- * 匹配逻辑：材质名包含任意关键词即命中
- */
-const CATEGORY_RULES: [string[], MaterialCategory][] = [
-    // 服装（最高优先级，确保裙-腰带、裙-蝶结等不会被身体/配件干扰）
-    [
-        [
-            '裙',
-            '衣',
-            '服',
-            'cloth',
-            'dress',
-            'skirt',
-            'sleeve',
-            'collar',
-            'belt',
-            '袴',
-            '袖',
-            '襟',
-            '帯',
-            '外套',
-            '胖次',
-            '带',
-        ],
-        '服装',
-    ],
-    // 配件（帽子/鞋子/装饰）
-    [
-        [
-            '帽',
-            '鞋',
-            '飾',
-            'accessory',
-            'acc',
-            'ring',
-            'earring',
-            'necklace',
-            'bracelet',
-            '蝶结',
-            '结',
-            '星星',
-            '领带',
-            '扣',
-        ],
-        '配件',
-    ],
-    // 眼睛
-    [
-        [
-            '眼',
-            '目',
-            'eye',
-            'iris',
-            '瞳',
-            '白目',
-            'pupil',
-            'eyebrow',
-            '眉',
-            'eyelash',
-            '睫毛',
-            '泪',
-            '表情',
-        ],
-        '眼睛',
-    ],
-    // 头发
-    [
-        [
-            '发',
-            '髪',
-            '頭',
-            'hair',
-            'ahoge',
-            '前髪',
-            '後髪',
-            'まとめ髪',
-            'ponytail',
-            'braid',
-            '刘海',
-            '呆毛',
-            '辫子',
-            '侧发',
-            '后发',
-            '后脑',
-        ],
-        '头发',
-    ],
-    // 皮肤（嘴巴/牙齿/身体）
-    [
-        [
-            '皮',
-            '肌',
-            '肤',
-            'skin',
-            'face',
-            'body',
-            'neck',
-            '顔',
-            '首',
-            'cheek',
-            '頬',
-            'kihada',
-            '嘴',
-            '唇',
-            '齿',
-            '牙',
-            '舌',
-            '口',
-            'lip',
-            'tooth',
-            'teeth',
-            'tongue',
-            '体',
-            '臂',
-            '指',
-            '甲',
-            '手',
-            '足',
-            '腿',
-            '脚',
-            '背',
-            '胸',
-            '腹',
-            '腰',
-        ],
-        '皮肤',
-    ],
-    // 道具（武器）
-    [
-        [
-            '武',
-            '刀',
-            '剑',
-            '枪',
-            '矛',
-            '弓',
-            '矢',
-            'weapon',
-            'gun',
-            'sword',
-            'shield',
-            'rod',
-            'staff',
-            'blade',
-            'axe',
-            'bow',
-            'arrow',
-        ],
-        '道具',
-    ],
-];
+    dispose(id: string): void {
+        this.catState.delete(id);
+        this.matState.delete(id);
+        this.matEnabled.delete(id);
+    }
+
+    clear(): void {
+        this.catState.clear();
+        this.matState.clear();
+        this.matEnabled.clear();
+    }
+}
+
+const _stateMgr = new MaterialStateManager();
+
+/** @internal 直接访问底层 Map（仅用于兼容存量代码和测试）。新代码应优先使用 MaterialStateManager 实例。 */
+export const _catState = _stateMgr.catState;
+/** @internal 直接访问底层 Map（仅用于兼容存量代码和测试）。 */
+export const _matState = _stateMgr.matState;
+/** @internal 直接访问底层 Map（仅用于兼容存量代码和测试）。 */
+export const _matEnabled = _stateMgr.matEnabled;
+/** @internal exported for testing — 可注入 mock 实例 */
+export const _materialStateManager = _stateMgr;
+
+/** 材质分类关键词表（按优先级排序）。
+ *  用户可通过 uiState.materialCategoryMap 覆盖默认规则。
+ *  提取为命名常量便于集中维护和本地化扩展。 */
+const MATERIAL_KEYWORDS: Record<MaterialCategory, string[]> = {
+    服装: ['裙', '衣', '服', 'cloth', 'dress', 'skirt', 'sleeve', 'collar', 'belt', '袴', '袖', '襟', '帯', '外套', '胖次', '带'],
+    配件: ['帽', '鞋', '飾', 'accessory', 'acc', 'ring', 'earring', 'necklace', 'bracelet', '蝶结', '结', '星星', '领带', '扣'],
+    眼睛: ['眼', '目', 'eye', 'iris', '瞳', '白目', 'pupil', 'eyebrow', '眉', 'eyelash', '睫毛', '泪', '表情'],
+    头发: ['发', '髪', '頭', 'hair', 'ahoge', '前髪', '後髪', 'まとめ髪', 'ponytail', 'braid', '刘海', '呆毛', '辫子', '侧发', '后发', '后脑'],
+    皮肤: ['皮', '肌', '肤', 'skin', 'face', 'body', 'neck', '顔', '首', 'cheek', '頬', 'kihada', '嘴', '唇', '齿', '牙', '舌', '口', 'lip', 'tooth', 'teeth', 'tongue', '体', '臂', '指', '甲', '手', '足', '腿', '脚', '背', '胸', '腹', '腰'],
+    道具: ['武', '刀', '剑', '枪', '矛', '弓', '矢', 'weapon', 'gun', 'sword', 'shield', 'rod', 'staff', 'blade', 'axe', 'bow', 'arrow'],
+};
+
+const CATEGORY_RULES: [string[], MaterialCategory][] = Object.entries(MATERIAL_KEYWORDS).map(
+    ([cat, keywords]) => [keywords, cat as MaterialCategory]
+);
 
 function _catOfUncached(name: string): MaterialCategory {
     const customMap = uiState.materialCategoryMap;
@@ -693,9 +578,7 @@ export function resetSingleMatParams(id: string, matIndex: number): void {
 /** 清理指定模型的全部材质状态（分类 + 逐材质 + 启用标记）。
  *  供模型移除时统一调用，替代外部直接操作内部 Map。 */
 export function disposeModelMaterialState(id: string): void {
-    _catState.delete(id);
-    _matState.delete(id);
-    _matEnabled.delete(id);
+    _stateMgr.dispose(id);
 }
 
 /**

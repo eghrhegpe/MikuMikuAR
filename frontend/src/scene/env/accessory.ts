@@ -150,6 +150,8 @@ export function reattachAllAccessories(): void {
  * 移除指定模型的所有骨骼锚定道具（模型卸载时调用）。
  */
 export function detachModelAccessories(modelId: string): void {
+    // 契约：本函数在对应模型 destroyMmdModel 之后（微任务）被调用，只遍历 propRegistry，
+    // 绝不访问已销毁的 mmdModel 或 modelRegistry。若需模型实例须先加 modelRegistry.get(id) 守卫。
     for (const [propId, prop] of propRegistry) {
         if (prop.targetModelId === modelId) {
             detachPropFromBone(propId);

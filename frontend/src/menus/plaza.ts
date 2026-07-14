@@ -30,6 +30,8 @@ import { refreshLibrary } from './library';
 import { registerShortcuts } from '../core/shortcut-registry';
 import { addDisposableListener, type Disposable } from '../core/dom';
 
+const CUSTOM_SITES_PATH = 'plaza_sites.json';
+
 const L = {
     title: '模型广场',
     openInBrowser: '在浏览器打开',
@@ -49,6 +51,10 @@ const L = {
     loading: '加载中...',
     downloading: '下载中',
     downloadComplete: '下载完成',
+    // Tab 标签
+    tabSites: '模型站',
+    tabCreators: '创作者',
+    tabLibrary: '资源库',
 };
 
 // 打开方式：embed=内嵌 iframe；window=Wails 新窗口；external=系统浏览器。
@@ -123,6 +129,199 @@ function hasSiteOverride(site: PlazaSite): boolean {
     } catch {
         return false;
     }
+}
+
+async function loadCustomSites(): Promise<PlazaSite[]> {
+    try {
+        const { ReadTextFile } = await import('../core/wails-bindings');
+        const content = await ReadTextFile(CUSTOM_SITES_PATH);
+        const json = JSON.parse(content) as PlazaSite[];
+        return json.filter((s) => s.id && s.name && s.url && s.mode);
+    } catch {
+        return [];
+    }
+}
+
+let allSites: PlazaSite[] = [];
+
+async function ensureSitesLoaded(): Promise<void> {
+    if (allSites.length > 0) {
+        return;
+    }
+    const custom = await loadCustomSites();
+    const builtinIds = new Set(PLAZA_SITES.map((s) => s.id));
+    allSites = [...PLAZA_SITES, ...custom.filter((s) => !builtinIds.has(s.id))];
+}
+
+function buildSearchBar(): HTMLElement {
+    const wrap = document.createElement('div');
+    wrap.className = 'plaza-search-bar';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'plaza-search-input';
+    input.placeholder = '搜索站点...';
+    input.addEventListener('input', () => {
+        renderHome(input.value);
+    });
+    wrap.appendChild(input);
+    return wrap;
+}
+
+function buildPresetTags(site: PlazaSite): HTMLElement | null {
+    if (!site.presetSearches || site.presetSearches.length === 0) {
+        return null;
+    }
+    const wrap = document.createElement('div');
+    wrap.className = 'plaza-card-presets';
+    for (const p of site.presetSearches) {
+        const tag = document.createElement('button');
+        tag.className = 'plaza-preset-tag';
+        tag.textContent = p.label;
+        tag.onclick = (e) => {
+            e.stopPropagation();
+            const url = site.searchUrl?.replace('{{q}}', encodeURIComponent(p.q));
+            if (url) {
+                const mode = effectiveMode(site);
+                if (mode === 'external') {
+                    openExternal({ ...site, url });
+                } else if (mode === 'window') {
+                    openInWindow({ ...site, url });
+                } else {
+                    renderEmbed({ ...site, url });
+                }
+            }
+        };
+        wrap.appendChild(tag);
+    }
+    return wrap;
+}
+
+type PlazaTab = 'sites' | 'creators' | 'library';
+let currentTab: PlazaTab = 'sites';
+
+function buildTabBar(): HTMLElement {
+    const wrap = document.createElement('div');
+    wrap.className = 'plaza-tabs';
+
+    const tabs: { key: PlazaTab; label: string; icon: string }[] = [
+        { key: 'sites', label: L.tabSites, icon: 'lucide:globe' },
+        { key: 'creators', label: L.tabCreators, icon: 'lucide:users' },
+        { key: 'library', label: L.tabLibrary, icon: 'lucide:folder' },
+    ];
+
+    for (const tab of tabs) {
+        const btn = document.createElement('button');
+        btn.className = 'plaza-tab' + (currentTab === tab.key ? ' active' : '');
+        btn.innerHTML = `<iconify-icon icon="${tab.icon}"></iconify-icon><span>${tab.label}</span>`;
+        btn.onclick = () => {
+            if (currentTab === tab.key) return;
+            currentTab = tab.key;
+            renderHome();
+        };
+        wrap.appendChild(btn);
+    }
+
+    return wrap;
+}
+
+function renderSitesTab(searchQuery: string): HTMLElement {
+    const filtered = allSites.filter((site) => {
+        if (!searchQuery) {
+            return true;
+        }
+        const q = searchQuery.toLowerCase();
+        return (
+            site.name.toLowerCase().includes(q) ||
+            site.desc?.toLowerCase().includes(q) ||
+            site.group?.toLowerCase().includes(q) ||
+            site.presetSearches?.some((p) => p.label.toLowerCase().includes(q))
+        );
+    });
+
+    const grid = document.createElement('div');
+    grid.className = 'plaza-grid';
+    for (const site of filtered) {
+        const eff = effectiveMode(site);
+        const overridden = hasSiteOverride(site);
+        const card = document.createElement('button');
+        card.className = 'plaza-card';
+        card.title = overridden ? `${site.name}（右键切换打开方式）` : '右键切换打开方式';
+
+        const iconEl = document.createElement('iconify-icon');
+        iconEl.setAttribute('icon', site.icon ?? 'lucide:globe');
+
+        const nameEl = document.createElement('div');
+        nameEl.className = 'plaza-card-name';
+        nameEl.textContent = site.name;
+
+        const modeEl = document.createElement('div');
+        modeEl.className = `plaza-card-mode${overridden ? ' plaza-card-mode-overridden' : ''}`;
+        modeEl.textContent = eff === 'external' ? 'chrome' : eff === 'window' ? 'wails' : 'iframe';
+
+        const descEl = document.createElement('div');
+        descEl.className = 'plaza-card-desc';
+        descEl.textContent = site.desc || '';
+
+        card.appendChild(iconEl);
+        card.appendChild(nameEl);
+        card.appendChild(descEl);
+        card.appendChild(modeEl);
+
+        const presets = buildPresetTags(site);
+        if (presets) {
+            card.appendChild(presets);
+        }
+
+        card.onclick = () => {
+            if (eff === 'external') {
+                openExternal(site);
+            } else if (eff === 'window') {
+                openInWindow(site);
+            } else {
+                renderEmbed(site);
+            }
+        };
+        card.oncontextmenu = (e: MouseEvent) => {
+            e.preventDefault();
+            showSiteModePopup(site, e.clientX, e.clientY);
+        };
+        grid.appendChild(card);
+    }
+    return grid;
+}
+
+function renderCreatorsTab(): HTMLElement {
+    const container = document.createElement('div');
+    container.className = 'plaza-creators';
+
+    const comingSoon = document.createElement('div');
+    comingSoon.className = 'plaza-coming-soon';
+    comingSoon.innerHTML = `
+        <iconify-icon icon="lucide:users" style="font-size:48px;color:var(--accent);opacity:0.5"></iconify-icon>
+        <div style="font-size:14px;color:var(--text);margin-top:12px">创作者频道</div>
+        <div style="font-size:11px;color:rgba(232,246,244,0.5);margin-top:4px">敬请期待...</div>
+        <div style="font-size:10px;color:rgba(232,246,244,0.3);margin-top:8px">支持创作者订阅、作品追踪、本地模型关联</div>
+    `;
+    container.appendChild(comingSoon);
+
+    return container;
+}
+
+function renderLibraryTab(): HTMLElement {
+    const container = document.createElement('div');
+    container.className = 'plaza-library';
+
+    const comingSoon = document.createElement('div');
+    comingSoon.className = 'plaza-coming-soon';
+    comingSoon.innerHTML = `
+        <iconify-icon icon="lucide:folder" style="font-size:48px;color:var(--accent);opacity:0.5"></iconify-icon>
+        <div style="font-size:14px;color:var(--text);margin-top:12px">全屏资源库</div>
+        <div style="font-size:11px;color:rgba(232,246,244,0.5);margin-top:4px">敬请期待...</div>
+        <div style="font-size:10px;color:rgba(232,246,244,0.3);margin-top:8px">全屏浏览本地模型、缩略图网格、快速搜索</div>
+    `;
+    container.appendChild(comingSoon);
+
+    return container;
 }
 
 let layer: HTMLElement | null = null;
@@ -605,8 +804,9 @@ function buildToolbar(opts: {
     return bar;
 }
 
-function renderHome(): void {
+async function renderHome(searchQuery: string = ''): Promise<void> {
     stopProxy();
+    await ensureSitesLoaded();
     const el = getLayer();
     el.innerHTML = '';
     const root = document.createElement('div');
@@ -616,41 +816,21 @@ function renderHome(): void {
         buildToolbar({
             title: L.title,
             onClose: closePlaza,
-            globalModeSwitch: buildGlobalModeSwitch(),
+            globalModeSwitch: currentTab === 'sites' ? buildGlobalModeSwitch() : undefined,
         })
     );
 
-    const grid = document.createElement('div');
-    grid.className = 'plaza-grid';
-    for (const site of PLAZA_SITES) {
-        const eff = effectiveMode(site);
-        const overridden = hasSiteOverride(site);
-        const card = document.createElement('button');
-        card.className = 'plaza-card';
-        card.title = overridden ? `${site.name}（右键切换打开方式）` : '右键切换打开方式';
-        card.innerHTML =
-            `<iconify-icon icon="${site.icon ?? 'lucide:globe'}"></iconify-icon>` +
-            `<div class="plaza-card-name">${site.name}</div>` +
-            `<div class="plaza-card-mode${overridden ? ' plaza-card-mode-overridden' : ''}">${
-                eff === 'external' ? 'chrome' : eff === 'window' ? 'wails' : 'iframe'
-            }</div>`;
-        card.onclick = () => {
-            if (eff === 'external') {
-                openExternal(site);
-            } else if (eff === 'window') {
-                openInWindow(site);
-            } else {
-                renderEmbed(site);
-            }
-        };
-        // [ADR-087 P3-优化] 右键弹出单站覆写菜单（power user 精细控制）
-        card.oncontextmenu = (e: MouseEvent) => {
-            e.preventDefault();
-            showSiteModePopup(site, e.clientX, e.clientY);
-        };
-        grid.appendChild(card);
+    root.appendChild(buildTabBar());
+
+    if (currentTab === 'sites') {
+        root.appendChild(buildSearchBar());
+        root.appendChild(renderSitesTab(searchQuery));
+    } else if (currentTab === 'creators') {
+        root.appendChild(renderCreatorsTab());
+    } else if (currentTab === 'library') {
+        root.appendChild(renderLibraryTab());
     }
-    root.appendChild(grid);
+
     el.appendChild(root);
 }
 
@@ -719,12 +899,12 @@ function renderEmbed(site: PlazaSite): void {
         });
 }
 
-export function showPlaza(): void {
+export async function showPlaza(): Promise<void> {
     installDownloadListener();
     installEventListeners();
     installShortcuts();
     ensureObserver();
-    renderHome();
+    await renderHome();
 }
 
 export function closePlaza(): void {

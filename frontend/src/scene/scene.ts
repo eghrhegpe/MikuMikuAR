@@ -69,8 +69,8 @@ import { detectRuntimeMode, persistRuntimeMode, renderRuntimeBadge } from '../co
 import { _catState, _matState, _matEnabled } from './manager/material';
 import { updatePlaybackUI, initPlaybackObservables } from './motion/playback';
 import { initLighting, _updateSunDisc } from './render/lighting';
-import { initRenderer, rebuildOutlineState, pipeline } from './render/renderer';
-import { initLoader } from './manager/model-loader';
+import { initRenderer, rebuildOutlineState, pipeline, bindReflectionProbeToModel } from './render/renderer';
+import { initLoader, setOnMeshesReady, setOnModelLoaded } from './manager/model-loader';
 
 // Re-export material system (extracted to material.ts for file size)
 export {
@@ -241,6 +241,22 @@ export async function initScene(): Promise<void> {
         // 见 proc-motion-bridge.ts onModelRemoved
         onModelRemoved(id);
 
+        // 同步销毁 MMD 模型：必须在网格释放 / modelRegistry.delete 之前执行
+        // （见 model-manager.ts remove() 的调用顺序），且必须早于下方三个 fire-and-forget 清理。
+        // 下方动态 import 仅「调度」Promise，其 .then 体在微任务中于本同步块结束后、即 destroyMmdModel 之后才运行。
+        const inst = modelRegistry.get(id);
+        if (inst?.mmdModel && mmdRuntime) {
+            try {
+                mmdRuntime.destroyMmdModel(inst.mmdModel);
+            } catch (e) {
+                logWarn('scene', 'removeModel: destroyMmdModel failed', e);
+            }
+        }
+
+        // 三个清理均为 fire-and-forget：在 destroyMmdModel 之后（微任务）才真正执行。
+        // 显式契约：它们只操作各自独立的 registry（_blenderStates / propRegistry / controllers），
+        // 绝不访问已销毁的 mmdModel 或 modelRegistry.get(id)。
+        // 若未来修改任一实现、新增对模型的访问，必须先加 modelRegistry.get(id) 守卫。
         // WASM 图层混合器 teardown（observer + evaluator 清理）
         swallowError(
             import('./motion/wasm-layers-blender').then(({ teardownWasmLayersBlender }) =>
@@ -263,20 +279,17 @@ export async function initScene(): Promise<void> {
                 disposeVirtualSkirtForModel(id)
             )
         );
-
-        const inst = modelRegistry.get(id);
-        if (inst.mmdModel && mmdRuntime) {
-            try {
-                mmdRuntime.destroyMmdModel(inst.mmdModel);
-            } catch (e) {
-                logWarn('scene', 'removeModel: destroyMmdModel failed', e);
-            }
-        }
     };
     setModelRegistry(modelManager.modelRegistry);
     setTriggerAutoSave(triggerAutoSaveImpl);
 
-    // 5. Loader（必须在 modelManager + setTriggerAutoSave 之后）
+    // 5. 注入回调解耦：model-loader / model-manager 不再直接动态导入 renderer / proc-motion-bridge
+    setOnMeshesReady((meshes) => bindReflectionProbeToModel(meshes));
+    const procMotionMod = await import('./motion/proc-motion-bridge');
+    modelManager.onModelFocused = () => procMotionMod.activateGazeTracking();
+    setOnModelLoaded(() => procMotionMod.activateGazeTracking());
+
+    // 6. Loader（必须在 modelManager + setTriggerAutoSave 之后）
     // 破除循环依赖：scene.ts 不再静态 import outfit / model-preset，
     // 改在 initScene(async) 内动态 import（同 scene.ts:187，adr-053/adr-064）。
     const outfitMod = await import('../outfit/outfit');

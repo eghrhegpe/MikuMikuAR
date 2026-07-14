@@ -115,9 +115,9 @@
 
 ## 后续（未落地项 · 待排期）
 
-| 项 | 内容 | 阻塞 / 前置 |
-|----|------|------------|
-| 默认构建磁盘零 MPR（可选） | 若要求默认 dist 不含 MPR worker/wasm，改用 `resolve.alias` 将 `multiPhysicsRelease` 别名到空桩模块（flag 关时），彻底避免打包 | 当前 Vite 动态 import 必打包，默认构建含 ~1.2MB 未加载 wasm；桌面 app 可接受，低优先级 |
-| 修正 research POC 路径 | `docs/research/babylon-mmd-api-analysis.md` 原「仅 basenameFallbackFS 注入」改为「包住 AssetFileServerFS（顶层文档）」 | 文档同步 |
-| 两项异常处置 | `proxy_test.go:300` 陈旧测试修复（**已完成**：重命名 `OpenPlazaWindow`→`NavigatePlazaWindow`）/ 工作区非我改动提交或搁置 | 用户指示 |
-| 同源调研剩余 | `StreamAudioPlayer`（Item 3，收益低暂缓）、`AnimationRetargeter` + `HumanoidMmd`（Item 5，复用 ADR-061 骨骼映射） | 视需求排期 |
+| 项 | 内容 | 阻塞 / 前置 | 状态 |
+|----|------|------------|------|
+| 默认构建磁盘零 MPR（可选） | 若要求默认 dist 不含 MPR worker/wasm，改用 `resolve.alias` 将 `multiPhysicsRelease` 别名到空桩模块（flag 关时），彻底避免打包 | 当前 Vite 动态 import 必打包，默认构建含 ~1.2MB 未加载 wasm；桌面 app 可接受，低优先级 | ⏳ |
+| ~~修正 research POC 路径~~ | ~~`docs/research/babylon-mmd-api-analysis.md` 原「仅 basenameFallbackFS 注入」改为「包住 AssetFileServerFS（顶层文档）」~~ | ~~文档同步~~ | ✅ 已同步（2026-07-14） |
+| 两项异常处置 | `proxy_test.go:300` 陈旧测试修复（**已完成**：重命名 `OpenPlazaWindow`→`NavigatePlazaWindow`）/ 工作区非我改动提交或搁置 | 用户指示 | ✅ |
+| 同源调研剩余 | `StreamAudioPlayer`（Item 3，收益低暂缓）、`AnimationRetargeter` + `HumanoidMmd`（Item 5，复用 ADR-061 骨骼映射）、`SdefInjector` + `SdefMesh`（零风险视觉提升） | 视需求排期 | ⏳ |

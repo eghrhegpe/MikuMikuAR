@@ -61,6 +61,8 @@ export function disposeAllVirtualSkirts(): void {
 
 /** 释放指定模型的虚拟裙骨控制器（供模型卸载流程调用） */
 export function disposeVirtualSkirtForModel(modelId: string): void {
+    // 契约：本函数在对应模型 destroyMmdModel 之后（微任务）被调用，只操作 controllers，
+    // 绝不访问已销毁的 mmdModel 或 modelRegistry。若需模型实例须先加 modelRegistry.get(id) 守卫。
     const ctrl = controllers.get(modelId);
     if (ctrl) {
         ctrl.dispose();
