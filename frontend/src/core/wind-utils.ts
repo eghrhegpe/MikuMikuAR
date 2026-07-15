@@ -5,12 +5,12 @@
  * 避免各自重复实现 windDirection × windSpeed 的读取逻辑。
  *
  * 使用方式：
- *   import { getWindVector } from '../core/physics/wind-utils';
+ *   import { getWindVector } from '../core/wind-utils';
  *   const wind = getWindVector(); // Vector3
  */
 
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
-import { envState } from '../config';
+import { envState } from './config';
 
 /** 风场强度倍率（各系统可在此统一调节灵敏度） */
 const WIND_STRENGTH_SCALE = 1.0;

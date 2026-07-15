@@ -18,7 +18,7 @@ import type { PopupLevel } from '../core/config';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 
-function buildAudioSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
+function buildAudioCoreSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
     const refresh = () => getSettingsMenu()?.updateControls();
 
     return [
@@ -114,6 +114,13 @@ function buildAudioSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                 },
             },
         },
+    ];
+}
+
+function buildSfxSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
+    const refresh = () => getSettingsMenu()?.updateControls();
+
+    return [
         {
             id: 'audio:sfx',
             kind: 'toggle',
@@ -189,9 +196,15 @@ export function buildSettingsAudioLevel(getSettingsMenu: () => SettingsMenuHandl
         dir: '',
         items: [],
         renderCustom: (container) => {
+            // 卡片 1：音频（音量、偏移、BPM、伴奏）
             cardContainer(container, (c) => {
                 addSectionTitle(c, t('settings.audio'));
-                renderMenu(buildAudioSchema(getSettingsMenu), c);
+                renderMenu(buildAudioCoreSchema(getSettingsMenu), c);
+            });
+            // 卡片 2：音效（SFX 总开关、音量、脚步声）
+            cardContainer(container, (c) => {
+                addSectionTitle(c, t('settings.sfx.title'));
+                renderMenu(buildSfxSchema(getSettingsMenu), c);
             });
         },
     };

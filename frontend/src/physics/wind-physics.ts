@@ -17,7 +17,7 @@ import { logWarn } from '../core/utils';
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import { MmdWasmRuntime as MmdWasmRuntimeClass } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
 import type { MmdWasmPhysicsRuntimeImpl } from 'babylon-mmd/esm/Runtime/Optimized/Physics/mmdWasmPhysicsRuntimeImpl';
-import { getWindVector, isWindActive } from '../core/physics/wind-utils';
+import { getWindVector, isWindActive } from '../core/wind-utils';
 
 /** 风力系数 — Bullet 刚体质量惯性大，需要比 XPBD 布料更大的系数 */
 const WIND_FORCE_SCALE = 0.15;

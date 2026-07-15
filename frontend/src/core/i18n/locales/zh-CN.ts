@@ -1119,6 +1119,7 @@ export const zhCN: Record<string, string> = {
     'settings.bpmQuantOff': '✓ BPM 量化已关闭',
     'settings.companionOn': '✓ 伴音自动加载已开启',
     'settings.companionOff': '✓ 伴音自动加载已关闭',
+    'settings.sfx.title': '音效',
     'settings.sfx.enabled': '音效总开关',
     'settings.sfx.volume': '音效音量',
     'settings.footstep.enabled': '启用脚步声',

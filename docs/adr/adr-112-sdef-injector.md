@@ -1,4 +1,4 @@
-# ADR-109: SdefInjector + SdefMesh 接入 — SDEF 球面变形
+# ADR-112: SdefInjector + SdefMesh 接入 — SDEF 球面变形
 
 **状态**: 已完成（2026-07-14 落地 — side-effect import 已加入 `scene.ts`）
 

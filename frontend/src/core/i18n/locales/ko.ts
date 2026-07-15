@@ -1127,6 +1127,7 @@ export const ko: Record<string, string> = {
     'settings.audio.companionAutoLoad': '모션과 함께 반주 음악 자동 로드',
     'settings.companionOn': '✓ 반주 자동 로드 켜짐',
     'settings.companionOff': '✓ 반주 자동 로드 꺼짐',
+    'settings.sfx.title': '효과음',
     'settings.sfx.enabled': '효과음 마스터',
     'settings.sfx.volume': '효과음 볼륨',
     'settings.footstep.enabled': '발소리 사용',

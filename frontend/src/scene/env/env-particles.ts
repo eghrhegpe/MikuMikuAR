@@ -8,7 +8,7 @@ import {
     Scene,
 } from '@babylonjs/core';
 import { EnvState, envState } from '@/core/config';
-import { getWindVector } from '@/core/physics/wind-utils';
+import { getWindVector } from '@/core/wind-utils';
 import { logWarn } from '@/core/utils';
 import {
     _envSys,

@@ -1135,6 +1135,7 @@ export const en: Record<string, string> = {
     'settings.bpmQuantOff': '✓ BPM quantization off',
     'settings.companionOn': '✓ Companion audio auto-load on',
     'settings.companionOff': '✓ Companion audio auto-load off',
+    'settings.sfx.title': 'Sound Effects',
     'settings.sfx.enabled': 'SFX Master',
     'settings.sfx.volume': 'SFX Volume',
     'settings.footstep.enabled': 'Enable Footsteps',
