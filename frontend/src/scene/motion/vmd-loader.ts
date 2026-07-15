@@ -78,10 +78,6 @@ export async function loadVMDMotion(
     if (signal?.aborted) {
         throw new DOMException('Aborted', 'AbortError');
     }
-    // If user loads a real VMD, stop procedural motion
-    if (isProcVmdActive() && name !== PROC_VMD_NAME_IDLE && name !== PROC_VMD_NAME_AUTODANCE) {
-        stopProcMotion();
-    }
     if (!mmdRuntime) {
         setPendingVmd({ data, name });
         setStatus(t('scene.vmd.cachedWaiting'), false);
@@ -162,6 +158,18 @@ export async function loadVMDMotion(
         const handle = inst.mmdModel.createRuntimeAnimation(runtimeAnimation);
         inst.mmdModel.setRuntimeAnimation(handle);
 
+        // [fix] 切换动作时将 runtime 全局时钟归零到第 0 帧：setRuntimeAnimation 只换动画句柄，
+        // 不会重置 _currentFrameTime。若上一动作播到 50s、新动作仅 10s，currentTime 仍滞留 50s，
+        // 缩略图 renderInstanceThumbnail 内部 rt.render() 触发的 beforePhysics 会判定
+        // elapsedFrameTime(50s) > 新动作时长(10s) → 立即置 _animationPaused 并 onPause →
+        // setIsPlaying(false)，表现为「点击动作 0.01s 后被重置为无动作」。
+        // seekAnimation(0, true) 同步归零时钟+摆到第 0 帧，且不改变 _animationPaused（播放中则继续播、暂停则停留）。
+        try {
+            await mmdRuntime.seekAnimation(0, true);
+        } catch {
+            // 归零失败不影响动作绑定，下一帧主循环会纠正
+        }
+
         // 为动作生成缩略图：仅把「本模型」摆到动作初始帧（第 0 帧）后离屏截图，
         // 不触碰全局 mmdRuntime 时钟，因此不会打断主窗口其他模型的播放（ADR-106 生命周期隔离）。
         // 独立 try：失败不影响动作加载主流程。
@@ -187,6 +195,11 @@ export async function loadVMDMotion(
         }
 
         inst.vmdData = data;
+        // 停止程序化动作（延迟到 vmdData 赋值后，确保 stopProcMotion 内 userVmdPresent=true，
+        // 不会清空刚绑定的动画——否则缩略图截帧时动画已被清空，截到空姿态）
+        if (isProcVmdActive() && name !== PROC_VMD_NAME_IDLE && name !== PROC_VMD_NAME_AUTODANCE) {
+            stopProcMotion();
+        }
         _companionAudioCache.clear();
         inst.vmdName = name;
         // Convert from 30fps frames to seconds（异常 VMD 兜底，避免 NaN 时长）
