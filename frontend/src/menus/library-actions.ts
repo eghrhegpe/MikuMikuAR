@@ -59,6 +59,23 @@ let _isExtracting = false;
 /** 链式替换加载中标记：阻止mmku:modelLoaded事件自动重置菜单 */
 let _isReplaceLoading = false;
 
+// mmku:modelLoaded 事件：模型加载完成后刷新模型库弹窗根级列表
+document.addEventListener('mmku:modelLoaded', () => {
+    if (_isReplaceLoading) return;
+    // 懒加载避免循环依赖
+    import('../core/config').then(({ dom, stackRegistry }) => {
+        if (dom.sceneOverlay.classList.contains('visible') && dom.sceneOverlay.dataset.popupType === 'model') {
+            const stack = stackRegistry.modelStack;
+            if (stack) {
+                import('./library-core').then(({ buildModelRootItems }) => {
+                    stack.setLevel(0, { label: t('library.model'), dir: '', items: buildModelRootItems(), itemBuilder: buildModelRootItems });
+                    stack.reRender();
+                });
+            }
+        }
+    });
+});
+
 // ======== 缩略图 ========
 
 export async function loadThumbnailsForLevel(level: PopupLevel): Promise<void> {

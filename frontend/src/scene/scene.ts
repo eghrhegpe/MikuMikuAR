@@ -150,12 +150,14 @@ export let modelManager: ModelManager;
 /** 播放观察者 dispose 函数，场景销毁时调用以清理 observable。 */
 let _disposePlaybackObservables: (() => void) | null = null;
 
-// Dev debug helper — exposes internals for Console inspection
-window.__envDebug = () => ({
-    clearColor: `rgba(${scene.clearColor.r.toFixed(2)},${scene.clearColor.g.toFixed(2)},${scene.clearColor.b.toFixed(2)},${scene.clearColor.a})`,
-    matType: _envSys.sky.skyMesh.material.getClassName() || 'none',
-    skyMode: envState.skyMode,
-});
+// Dev debug helper — module-level export for Console inspection (no window pollution)
+export const __envDebug = import.meta.env.DEV
+    ? () => ({
+          clearColor: `rgba(${scene.clearColor.r.toFixed(2)},${scene.clearColor.g.toFixed(2)},${scene.clearColor.b.toFixed(2)},${scene.clearColor.a})`,
+          matType: _envSys.sky.skyMesh.material.getClassName() || 'none',
+          skyMode: envState.skyMode,
+      })
+    : undefined;
 
 // 相机系统不依赖 MMD runtime，模块顶层初始化（确保渲染循环启动时有 activeCamera）
 initCameraSystem(scene, dom.canvas);
