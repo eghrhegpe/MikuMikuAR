@@ -357,47 +357,8 @@ export function analyzeSkirt(
         skirtVertices = Array.from(visited);
         method = 'boundary-edge';
     } else {
-        // fallback: Y 阈值法（无清晰底部 boundary edge 时）
-        // P2a 防误判：仅取「外扩裙摆」区域，排除中央腿/裤柱。
-        // 计算该 Y 带内顶点在 XZ 平面的质心与最大径向距离，
-        // 仅保留径向距离 ≥ 35% 最大径向的顶点（裙摆为外扩锥，腿/裤为中央柱）。
-        let bcx = 0,
-            bcz = 0,
-            bandCount = 0;
-        for (let i = 0; i < vertexCount; i++) {
-            if (posArr[i * 3 + 1] <= skirtYThreshold) {
-                bcx += posArr[i * 3];
-                bcz += posArr[i * 3 + 2];
-                bandCount++;
-            }
-        }
-        if (bandCount > 0) {
-            bcx /= bandCount;
-            bcz /= bandCount;
-        }
-        let maxRadial = 1e-6;
-        for (let i = 0; i < vertexCount; i++) {
-            if (posArr[i * 3 + 1] <= skirtYThreshold) {
-                const dx = posArr[i * 3] - bcx;
-                const dz = posArr[i * 3 + 2] - bcz;
-                const r = Math.sqrt(dx * dx + dz * dz);
-                if (r > maxRadial) {
-                    maxRadial = r;
-                }
-            }
-        }
-        const radialCut = maxRadial * 0.35;
-        skirtVertices = [];
-        for (let i = 0; i < vertexCount; i++) {
-            if (posArr[i * 3 + 1] <= skirtYThreshold) {
-                const dx = posArr[i * 3] - bcx;
-                const dz = posArr[i * 3 + 2] - bcz;
-                if (Math.sqrt(dx * dx + dz * dz) >= radialCut) {
-                    skirtVertices.push(i);
-                }
-            }
-        }
-        method = 'y-threshold';
+        // Fail-Fast: 无清晰底部 boundary edge 时直接抛错
+        throw new Error('skirt-analyzer: 无清晰底部 boundary edge，无法分析裙摆');
     }
 
     if (skirtVertices.length < MIN_SKIRT_VERTICES) {

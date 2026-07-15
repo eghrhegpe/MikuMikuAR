@@ -83,15 +83,18 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
     );
     let buf: ArrayBuffer;
 
-    // Issue #2: bpm 无效时降级为 idle，保持状态一致
+    // Issue #2: bpm 无效时直接抛错，保持状态一致
     const bpmValid = bpm !== null && bpm !== undefined && bpm > 0 && Number.isFinite(bpm);
+    if (targetMode === 'autodance' && !bpmValid) {
+        throw new Error('proc-motion: autodance 模式需要有效 BPM，当前 BPM 无效');
+    }
     if (targetMode === 'autodance' && bpmValid) {
         buf = generateAutoDanceVmd(procState, bpm!, morphNames, boneNames);
         lastBeatBpm = bpm!;
         procActiveKind = 'autodance';
     } else {
         buf = generateIdleVmd(procState, morphNames, boneNames);
-        procActiveKind = targetMode === 'autodance' ? 'idle' : targetMode;
+        procActiveKind = targetMode;
     }
 
     // 【已移除 debug 下载代码】

@@ -491,8 +491,6 @@ export interface EnvState {
 
 // ======== Miscellaneous Types ========
 
-export type MmdRuntimeType = 'wasm' | 'js';
-
 // babylon-mmd 的 IMmdRuntimeBone 接口未声明 worldMatrix 和 updateWorldMatrix，
 // 但 WASM 与 JS 运行时在运行时均提供这些成员。
 export interface MmdRuntimeBoneExtended extends IMmdRuntimeBone {

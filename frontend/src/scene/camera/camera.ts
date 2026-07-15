@@ -25,7 +25,7 @@ import { addDisposableListener, type Disposable } from '@/core/dom';
  * @deprecated ADR-100：单枚举混淆「控制方案 × 运动行为」两轴，保留为兼容别名。
  * 新代码请用 {@link CameraControl} × {@link CameraBehavior}。双写于 `core/types.ts`。
  */
-export type CameraMode = 'orbit' | 'freefly' | 'surround' | 'concert' | 'oneshot' | 'vmd' | 'ar';
+export type CameraMode = 'orbit' | 'freefly' | 'surround' | 'concert' | 'oneshot' | 'vmd' | 'ar' | 'beatcut';
 
 /** ADR-100 轴 A — 控制方案（相机类 + 输入）。双写于 `core/types.ts`。 */
 export type CameraControl = 'orbit' | 'freefly' | 'ar';
@@ -48,11 +48,12 @@ export const LEGACY_MODE_MAP: Record<
     oneshot: { control: 'orbit', behavior: 'scripted', scripted: 'oneshot' },
     freefly: { control: 'freefly', behavior: 'none' },
     ar: { control: 'ar', behavior: 'none' },
+    beatcut: { control: 'orbit', behavior: 'beatcut' },
 };
 
 /**
  * ADR-100 §6.2 — 双轴 → 旧模式反查（getCameraState 降级双写 / shim 内部路由）。
- * beatcut 无旧模式对应，降级为 orbit（配合 UIState.autoCameraEnabled 供旧版本识别）。
+ * beatcut 为独立模式，直接返回（不再降级为 orbit）。
  */
 export function deriveLegacyMode(
     control: CameraControl,
@@ -74,7 +75,7 @@ export function deriveLegacyMode(
         case 'scripted':
             return scripted === 'oneshot' ? 'oneshot' : 'vmd';
         case 'beatcut':
-            return 'orbit'; // 旧版本无 beatcut，降级 orbit
+            return 'beatcut';
         case 'none':
         default:
             return 'orbit';

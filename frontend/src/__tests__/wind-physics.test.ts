@@ -28,19 +28,16 @@ vi.mock('../core/utils', () => ({
 }));
 
 import { _getBundles } from '../physics/wind-physics';
-import { logWarn } from '../core/utils';
 
 describe('_getBundles reflection degradation', () => {
-    it('warns once when _rigidBodyBundleMap is missing (renamed field) — no silent failure', () => {
+    it('throws when _rigidBodyBundleMap is missing (renamed field)', () => {
         const impl: any = {};
-        const result = [..._getBundles(impl)];
-        expect(result).toHaveLength(0);
-        expect(logWarn).toHaveBeenCalled();
+        expect(() => [..._getBundles(impl)]).toThrow();
     });
 
-    it('returns empty iterator when field type is wrong', () => {
+    it('throws when field type is wrong', () => {
         const impl: any = { _rigidBodyBundleMap: { not: 'a map' } };
-        expect([..._getBundles(impl)]).toHaveLength(0);
+        expect(() => [..._getBundles(impl)]).toThrow();
     });
 
     it('returns bundle keys when map is present', () => {

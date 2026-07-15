@@ -13,7 +13,6 @@
  */
 
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
-import { logWarn } from '../core/utils';
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import { MmdWasmRuntime as MmdWasmRuntimeClass } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
 import type { MmdWasmPhysicsRuntimeImpl } from 'babylon-mmd/esm/Runtime/Optimized/Physics/mmdWasmPhysicsRuntimeImpl';
@@ -31,8 +30,6 @@ interface _WindSub {
     observer: { remove(): void } | null;
 }
 const _subs = new Map<IMmdRuntime, _WindSub>();
-/** 反射字段缺失/异常的一次性 warn 标记，避免每帧刷屏 */
-let _bundleWarnLogged = false;
 
 /**
  * 尝试从 MmdWasmRuntime 获取 PhysicsRuntimeImpl。
@@ -51,7 +48,7 @@ function _getPhysicsImpl(runtime: IMmdRuntime): MmdWasmPhysicsRuntimeImpl | null
 /**
  * 从 PhysicsRuntimeImpl 获取所有 RigidBodyBundle。
  * 反射访问 _rigidBodyBundleMap（Map<RigidBodyBundle, number>）。
- * babylon-mmd 升级若重命名此字段，降级为空数组并 warn。
+ * babylon-mmd 升级若重命名此字段，直接抛错。
  */
 export function _getBundles(
     impl: MmdWasmPhysicsRuntimeImpl
@@ -60,23 +57,15 @@ export function _getBundles(
     if (map instanceof Map) {
         return map.keys();
     }
-    // babylon-mmd 升级可能重命名/移除该字段：一次性 warn，
-    // 防止字段缺失时静默失效（风力消失但用户无感知）
-    if (!_bundleWarnLogged) {
-        _bundleWarnLogged = true;
-        if (map === undefined) {
-            logWarn(
-                'wind-physics',
-                '_rigidBodyBundleMap 不存在（可能已被 babylon-mmd 重命名），风力物理已禁用。检查 babylon-mmd 版本兼容性'
-            );
-        } else {
-            logWarn(
-                'wind-physics',
-                '_rigidBodyBundleMap 类型异常，风力物理已禁用。检查 babylon-mmd 版本兼容性'
-            );
-        }
+    // babylon-mmd 升级可能重命名/移除该字段：直接抛错
+    if (map === undefined) {
+        throw new Error(
+            'wind-physics: _rigidBodyBundleMap 不存在（可能已被 babylon-mmd 重命名）。检查 babylon-mmd 版本兼容性'
+        );
     }
-    return [];
+    throw new Error(
+        'wind-physics: _rigidBodyBundleMap 类型异常。检查 babylon-mmd 版本兼容性'
+    );
 }
 
 /**
@@ -165,7 +154,6 @@ export function disposeWindPhysics(): void {
         }
     }
     _subs.clear();
-    _bundleWarnLogged = false;
 }
 
 /**

@@ -47,19 +47,8 @@ export function computeWaveDirs(windDir: [number, number, number]): number[] {
     // Float32Array → number[] 因为 Babylon setArray2 需要 number[]
     const arr: number[] = new Array(8).fill(0); // 4 × vec2
     if (!windDir || (windDir[0] === 0 && windDir[2] === 0)) {
-        // 无有效风向 → 回退到原硬编码的均匀分布
-        const fallback: [number, number][] = [
-            [0.8, 0.6],
-            [-0.3, 0.9],
-            [-0.7, -0.5],
-            [0.5, -0.8],
-        ];
-        for (let i = 0; i < 4; i++) {
-            const len = Math.sqrt(fallback[i][0] ** 2 + fallback[i][1] ** 2);
-            arr[i * 2] = fallback[i][0] / len;
-            arr[i * 2 + 1] = fallback[i][1] / len;
-        }
-        return arr;
+        // Fail-Fast: 无有效风向直接抛错
+        throw new Error('env-water: 无有效风向，请先设置风向');
     }
     // 从 windDirection 计算风向角（XZ 平面）
     const angle = Math.atan2(windDir[0], windDir[2]);

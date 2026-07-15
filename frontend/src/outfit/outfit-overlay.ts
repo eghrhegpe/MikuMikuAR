@@ -241,11 +241,8 @@ export async function loadOverlay(
         }
 
         if (!skeletonOk) {
-            // 降级：静态叠加，parent 到 rootMesh
-            console.info('[outfit-overlay] Falling back to static overlay (parent rootMesh)');
-            for (const m of meshes) {
-                m.parent = inst.rootMesh;
-            }
+            // Fail-Fast: 骨骼重定向失败，直接抛错
+            throw new Error('outfit-overlay: 骨骼重定向匹配率过低，无法叠加');
         }
 
         // 标记为 overlay（避免被 outfit 纹理替换逻辑处理）

@@ -192,6 +192,9 @@ import {
     mmdRuntime,
 } from '../core/config';
 import { updatePlaybackUI } from '../scene/motion/playback';
+vi.mock('../scene/motion/playback', () => ({
+    updatePlaybackUI: vi.fn(),
+}));
 
 // ======== Test setup ========
 
