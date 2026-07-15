@@ -175,13 +175,21 @@ jobs:
           cd frontend
           npm ci
       - name: Build Frontend
+        env:
+          VITE_MMD_WASM_MT: '1'
         run: |
           cd frontend
           npx vite build
       - name: Build
+        env:
+          VITE_MMD_WASM_MT: '1'
         run: |
           mkdir -p bin
-          go build -tags production -ldflags="-X main.AppVersion=${{ needs.prepare.outputs.version }} -s -w" -o "bin/mikumikuar-${{ needs.prepare.outputs.version }}-linux-amd64"
+          BUILD_TIME=$(date +%Y-%m-%d)
+          COMMIT_HASH=$(git rev-parse --short HEAD)
+          go build -tags production \
+            -ldflags="-X main.AppVersion=${{ needs.prepare.outputs.version }} -X main.BuildTime=${BUILD_TIME} -X main.CommitHash=${COMMIT_HASH} -s -w" \
+            -o "bin/mikumikuar-${{ needs.prepare.outputs.version }}-linux-amd64"
       - name: Upload artifact
         uses: actions/upload-artifact@v5
         with:
@@ -261,6 +269,8 @@ jobs:
           cd frontend
           npm ci
       - name: Build Frontend
+        env:
+          VITE_MMD_WASM_MT: '1'
         run: |
           cd frontend
           npx vite build

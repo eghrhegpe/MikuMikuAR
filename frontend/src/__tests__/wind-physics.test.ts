@@ -19,7 +19,7 @@ vi.mock('@babylonjs/core/Maths/math.vector', () => ({
 vi.mock('babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime', () => ({
     MmdWasmRuntime: class {},
 }));
-vi.mock('../core/physics/wind-utils', () => ({
+vi.mock('../core/wind-utils', () => ({
     getWindVector: () => ({ x: 0, y: 0, z: 0 }),
     isWindActive: () => true,
 }));

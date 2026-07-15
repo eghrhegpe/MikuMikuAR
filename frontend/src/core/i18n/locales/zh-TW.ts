@@ -1118,6 +1118,7 @@ export const zhTW: Record<string, string> = {
     'settings.audio.companionAutoLoad': '載入動作時自動載入同目錄音樂',
     'settings.companionOn': '✓ 伴音自動載入已開啟',
     'settings.companionOff': '✓ 伴音自動載入已關閉',
+    'settings.sfx.title': '音效',
     'settings.sfx.enabled': '音效總開關',
     'settings.sfx.volume': '音效音量',
     'settings.footstep.enabled': '啟用腳步聲',

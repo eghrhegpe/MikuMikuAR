@@ -1133,6 +1133,7 @@ export const ja: Record<string, string> = {
     'settings.audio.companionAutoLoad': 'モーションと一緒に伴奏を自動ロード',
     'settings.companionOn': '✓ 伴奏自動ロードをオン',
     'settings.companionOff': '✓ 伴奏自動ロードをオフ',
+    'settings.sfx.title': '効果音',
     'settings.sfx.enabled': '効果音マスター',
     'settings.sfx.volume': '効果音音量',
     'settings.footstep.enabled': '足音を有効にする',
