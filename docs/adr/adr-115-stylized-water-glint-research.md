@@ -109,12 +109,16 @@ normal = normalize(normal + (n1 + n2) * uNormalStrength);
 ```
 需配套：法线贴图资源（可在 `createCanvasTexture` 程序化生成或引入贴图）、`uNormalTex`/`uNormalStrength` uniform 与 `EnvState` 字段。
 
+> ⚠️ **涟漪系统兼容性（P1 实施前置）**：当前 `env-water.ts:374/479-482` 已有 `rippleNormalStrength`/`rippleGlintStrength` 涟漪法线（由 `addRipple` 注入），同样在高频段修改 `normal`。新增法线层若直接相加，两者高频扰动叠加会产生**莫尔纹**。P1 实施前须确认新法线层与涟漪法线是**叠加还是替换**；建议按 `rippleSum` 加权融合或仅在 `abs(rippleSum) < eps` 时启用新层（见 §六）。
+
 ### 4.2 加入 Sun Glitter 项（P1，待资源解锁）
 ```glsl
 float spec = pow(max(dot(reflectDir, lightDir), 0.0), 128.0);
 float glitter = spec * noise(vWorldPos.xz * 50.0 + time);
 color += lightColor * glitter * uGlintStrength;
 ```
+
+> ✅ **光照数据可用性（已核实）**：`WATER_FRAG_SRC` 中 `uniform vec3 lightDir;`（`env-water.ts:364`）已存在，并由 `mat.setVector3('lightDir', dirLight.direction)`（`:536`，无方向光时 fallback `(-0.5,-1,-0.5)` 见 `:539`）传入。Sun Glitter 可直接复用 `lightDir`，**无需新增光照数据通路**——原「可能未传入方向光方向」担忧已化解。
 
 ### 4.3 焦散强度暴露给用户（P2，优先排期）
 将 `env-water.ts:547` 的 `mat.setFloat('uCausticIntensity', 0.15)` 改为读 `state.causticIntensity`，并在 `EnvState`（`types.ts`）与水面 UI（`env-feature-levels.ts` 的 `buildWaterLevel`）增加滑块。
@@ -136,7 +140,7 @@ color += lightColor * glitter * uGlintStrength;
 
 ### 4.6 天空-水面颜色联动（P3，氛围统一）
 - 在 `env-water.ts` 的 `_syncWaterUniforms` 或每帧 observer 中，让 `waterColor`/`waterFogColor` 从天空色（`skyColorBot` 或 `envTexture` 平均色）派生一定比例。
-- 增加一个 `waterSkyColorBlend` 参数（0=完全自定义，1=完全跟随天空），默认 0.3 左右。
+- 增加一个 `waterSkyColorBlend` 参数（0=完全自定义/不联动，1=完全跟随天空），**默认 0（不联动）**——避免覆盖用户已手动调好的水色。
 - 此改动与 ADR-024 的环境/天空系统天然联动，不引入新依赖。
 
 ---
@@ -155,6 +159,7 @@ color += lightColor * glitter * uGlintStrength;
 **P1 解锁前置条件（必须先解决）**：
 1. **法线资源来源**：程序化生成（`createCanvasTexture` 噪声法线）or 引入贴图。优先程序化，避免新增 bundled 资源依赖。
 2. **Gerstner 去重**：法线扰动与现有 Gerstner 法线叠加存在 double-count 风险（见 §六）。须明确分工——Gerstner 负责大尺度波向、法线贴图仅接管高频细节（或降低 Gerstner 高频段波高贡献），实测校准后方可合入。
+3. **涟漪系统兼容性**：确认新法线层与现有 `addRipple` 涟漪法线（`env-water.ts:374/479-482`）是叠加还是替换；两者均在高频段改 `normal`，直接相加产生莫尔纹，须做加权融合或条件启用（见 §六）。
 
 ---
 
@@ -163,6 +168,10 @@ color += lightColor * glitter * uGlintStrength;
 | 等级 | 风险 | 说明 | 缓解 / 决策 |
 |------|------|------|------------|
 | 🔴 P1 阻塞 | 法线与 Gerstner 叠加 double-count | 我方水面法线已含 Gerstner 波形贡献；再叠一层法线贴图扰动，高频段会与 Gerstner 法线重复累积，导致"波浪过密/高光发糊"而非干净波光 | **P1 实施前置条件**：分层——Gerstner 掌大尺度波向，法线贴图仅接高频细节；或降 Gerstner 高频段贡献，实测校准后合入 |
+| 🟡 P1 | 法线扰动与涟漪系统冲突（莫尔纹） | `env-water.ts:374/479-482` 已有 `rippleNormalStrength`/`rippleGlintStrength` 涟漪法线（由 `addRipple` 注入），与新增高频法线层均在高频段改 `normal`，直接相加产生莫尔纹 | **P1 实施前置**：确认新法线层与涟漪是叠加还是替换；建议按 `rippleSum` 加权融合或仅 `abs(rippleSum)<eps` 时启用新层（见 §4.1 / §五） |
+| 🟢 已化解 | Sun Glitter 光照方向依赖 | 原担忧 glitter 需 `lightDir` 而 shader 可能未传入方向光方向 | **已核实**：`WATER_FRAG_SRC` 中 `uniform vec3 lightDir;`（`env-water.ts:364`）已存在并由 `:536/:539` 传入方向光方向（含 fallback），可直接复用，无需新增通路 |
+| 🟢 P2 | 焦散强度 UI 暴露后用户误调 | 焦散强度过高导致水下光斑过亮、失真 | 设合理上限（建议 `max ≤ 0.5`）；滑块 `max` 封顶，默认值取原硬编码 0.15 |
+| 🟡 P3 | 天空-水面颜色联动破坏自定义水色 | `waterSkyColorBlend` 若默认 >0，用户手动调好的水色会被天空覆盖 | **默认值定为 0（不联动）**，用户须主动上调才生效（见 §4.6） |
 | 🟡 中 | 性能 | 额外法线贴图采样 + glitter 噪声增加 fragment 开销 | 复用现有 RT/纹理预算；移动端默认低强度 |
 | 🟡 中 | 资源依赖 | 法线贴图引入外部资产 | 优先程序化生成，避免新增 bundled 资源 |
 | 🟢 低 | 过度仿制 | 竞品走"美术夸张"，我方用户群更重视"物理可控" | 仅借鉴波光手段，不削弱现有参数体系 |
