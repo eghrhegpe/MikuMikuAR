@@ -3056,3 +3056,16 @@ input, textarea, [contenteditable] {
     padding: 8px 12px;
     border-bottom: calc(1px * var(--ui-scale)) solid var(--white-06);
 }
+
+/* 滑块轨道 */
+.slider-track {
+    flex: 1;
+    height: 3px;
+}
+
+/* 弱化提示文本 */
+.weak-text {
+    font-size: 11px;
+    opacity: 0.5;
+    padding: 4px 0;
+}

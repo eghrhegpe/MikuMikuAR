@@ -157,7 +157,7 @@ export function buildPropDetailLevel(propId: string): PopupLevel {
                         slider.step = '0.05';
                         const offset = p.boneOffset ?? [0, 0, 0];
                         slider.value = String(offset[s.idx]);
-                        slider.style.cssText = 'flex:1;height:3px;';
+                        slider.className = 'slider-track';
                         slider.addEventListener('input', () => {
                             const newOffset: [number, number, number] = [
                                 ...(p.boneOffset ?? [0, 0, 0]),
