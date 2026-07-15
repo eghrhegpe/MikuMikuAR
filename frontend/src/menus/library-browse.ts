@@ -33,6 +33,40 @@ import { onModelRowClick, replaceModel, buildTagsOverviewLevel, buildTagDetailLe
 import { refreshLibrary } from './library-setup';
 import { getPendingAutoExpand, setPendingAutoExpand, getPendingFocusModel, setPendingFocusModel } from './library-core';
 
+// [修复] 数据未就绪时撤销本次 autoExpand，轮询等待 allModels 扫描/解压完成后
+// 再补做 push，避免解压未完成时进入空层（用户感知的"分类1为空/未刷新就进菜单"）。
+let _restoreTimer: ReturnType<typeof setTimeout> | null = null;
+
+function _isDirDataReady(targetDir: string): boolean {
+    const t = normPath(targetDir);
+    return (allModels || []).some(
+        (m) => m.format === 'pmx' && (normPath(m.dir) === t || isUnderRoot(t, normPath(m.dir)))
+    );
+}
+
+function deferRestore(menu: SlideMenu, dir: string, seg: string): void {
+    if (_restoreTimer) clearTimeout(_restoreTimer);
+    let tries = 0;
+    const tick = () => {
+        tries++;
+        if (tries > 40) { _restoreTimer = null; return; } // ~6s 上限，避免永久挂起
+        const nextDir = normPath(dir + '/' + seg);
+        if (!_isDirDataReady(nextDir)) {
+            _restoreTimer = setTimeout(tick, 150);
+            return;
+        }
+        _restoreTimer = null;
+        // 校验：菜单仍停留在该层且恢复态未被改写才补做 push，避免与 restoreBrowsePath 重复或误推
+        const cur = menu.currentLevel;
+        if (!cur || normPath(cur.dir) !== normPath(dir)) return;
+        const pa = getPendingAutoExpand();
+        if (!pa || pa[0] !== seg) return;
+        setPendingAutoExpand(pa.length > 1 ? pa.slice(1) : null);
+        menu.push(buildLevel(nextDir, seg, (m) => m.format === 'pmx', stackRegistry.modelStack!, []));
+    };
+    _restoreTimer = setTimeout(tick, 150);
+}
+
 // ======== 模型菜单创建 ========
 
 const makeModelMenu = (container: HTMLElement): SlideMenu => {
@@ -139,6 +173,13 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
             if (pendingAuto && pendingAuto.length > 0) {
                 const seg = pendingAuto[0];
                 const nextDir = normPath(dir + '/' + seg);
+                // [修复] 数据守卫：仅当 allModels 已扫描到该目录的 pmx 才进入，
+                // 否则解压/扫描未完成时 push 会得到空层（"分类1为空"）。
+                if (!_isDirDataReady(nextDir)) {
+                    logWarn('library-browse', '[restore] defer autoExpand, data not ready', { nextDir });
+                    deferRestore(menu, dir, seg);
+                    return;
+                }
                 setPendingAutoExpand(pendingAuto.length > 1 ? pendingAuto.slice(1) : null);
                 logWarn('library-browse', '[restore] autoExpand push', { from: dir, seg, nextDir, transitioning: menu.isTransitioning });
                 menu.push(buildLevel(nextDir, seg, (m) => m.format === 'pmx', stackRegistry.modelStack!, []));

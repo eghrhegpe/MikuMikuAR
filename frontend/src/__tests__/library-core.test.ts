@@ -131,6 +131,14 @@ vi.mock('../core/config', () => ({
     setMotionBindingTargetId: vi.fn(),
     closeAllOverlays: vi.fn(),
     modelRegistry: new Map(),
+    // [修复] library-core.ts 模块加载时 new LoadingGuard()（来自 config 的 re-export），
+    // 原 mock 缺该导出导致套件装配失败。补一个兼容 stub（测试不调用其方法）。
+    LoadingGuard: class {
+        tryEnter() { return true; }
+        leave() {}
+        isLoading() { return false; }
+        clear() {}
+    },
 }));
 
 // ----- SUT -----
