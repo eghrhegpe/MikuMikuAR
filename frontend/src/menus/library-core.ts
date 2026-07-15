@@ -268,10 +268,17 @@ function highlightRow(root: HTMLElement, rowKey: string): void {
     }
 }
 
-// [doc:model-memory] 模块级恢复状态：modelStack 即 makeModelMenu 单例（library-core.ts:1495），无并发冲突。
-// onLevelEnter（实例级）已挂好消费逻辑；以下状态由 onFolderEnter('models:browse') 与「更换模型」路径共用填充。
+// [doc:model-memory] 模块级恢复状态：由 prepareModelRestore 写入，makeModelMenu.onLevelEnter 消费
 let pendingAutoExpand: string[] | null = null;
 let pendingFocusModel: { dir: string; rowKey: string } | null = null;
+/** 供子模块读取恢复状态 */
+export function getPendingAutoExpand(): string[] | null { return pendingAutoExpand; }
+export function setPendingAutoExpand(v: string[] | null): void { pendingAutoExpand = v; }
+export function getPendingFocusModel(): { dir: string; rowKey: string } | null { return pendingFocusModel; }
+export function setPendingFocusModel(v: { dir: string; rowKey: string } | null): void { pendingFocusModel = v; }
+
+const _pendingMetaGuard = new LoadingGuard();
+export function getPendingMetaGuard(): LoadingGuard { return _pendingMetaGuard; }
 
 // [doc:model-memory] 计算并填充恢复计划：自动展开到上次浏览目录 + 高亮上次模型。
 // 供 onFolderEnter('models:browse') 与「更换模型」路径（model:replace 卡片 / 替换续接）共用，

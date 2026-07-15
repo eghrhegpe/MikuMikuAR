@@ -71,7 +71,7 @@ npm run check                                          # 确认未新增错误
 - **不要新增 `any` 逃生** — 即使 `strict: false` 允许，新代码仍要避免 `as any` / `@ts-ignore` / `@ts-expect-error`。需要时加注释说明业务理由。
 - **类型定义就近放置** — 项目**没有**集中的 `src/types/` 目录。interface/type 与使用它的文件同模块放置；跨模块共享类型放 `core/types.ts`（config.ts 已拆分为 types / state / dom / utils 四个子模块，通过 barrel re-export 保持 import 兼容）。
 - **路径别名** — `tsconfig.json` 配置了 `@/` → `src/`、`@bindings/` → `bindings/` 别名（2026-07-08 添加）。新代码优先使用别名导入，已有代码逐步迁移。
-- **binding 自动生成（禁手写 `bindings/`）** — `frontend/bindings/` 由 `wails3 generate bindings -ts -i -d frontend/bindings ./...`（= `npm run generate:bindings`）自动产出 .ts 绑定，含全部 `export function` 包装与 FNV-1a 32-bit method ID（**生成器自动算，无需手写**）。新增/删除 Go 方法后**重跑生成器**即可，禁止手维护 `bindings/` 下 .ts（手写多余且易漂移）。`app.contract.test.ts` 动态校验导出函数存在性 + FNV-1a ID，仅作生成器输出一致性护栏。`src/core/wails-bindings.ts`（model 类型登记 + re-export 聚合）**不归生成器管、保持手维护**（生成器只写 `bindings/`，不碰 `src/`）。**唯一真陷阱：`-clean` 默认 true 会先清空输出目录**——脚本已带 `-d frontend/bindings` 故安全；切勿裸跑 `wails3 generate bindings -dry`（仍会清空默认目录，已踩坑并用 `git restore frontend/bindings` 救回）。TS 侧统一通过 `src/core/wails-bindings.ts` re-export 引入。
+- **binding 自动生成（禁手写 `bindings/`）** — `frontend/bindings/` 由 `wails3 generate bindings -ts -i -d frontend/bindings ./...`（= `npm run generate:bindings`）自动产出 .ts 绑定，含全部 `export function` 包装与 FNV-1a 32-bit method ID（**生成器自动算，无需手写**）。新增/删除 Go 方法后**重跑生成器**即可，禁止手维护 `bindings/` 下 .ts（手写多余且易漂移）。`app.contract.test.ts` 动态校验 126 个导出函数存在性 + FNV-1a ID，仅作生成器输出一致性护栏。`src/core/wails-bindings.ts`（model 类型登记 + re-export 聚合）**不归生成器管、保持手维护**（生成器只写 `bindings/`，不碰 `src/`）。**唯一真陷阱：`-clean` 默认 true 会先清空输出目录**——脚本已带 `-d frontend/bindings` 故安全；切勿裸跑 `wails3 generate bindings -dry`（仍会清空默认目录，已踩坑并用 `git restore frontend/bindings` 救回）。TS 侧统一通过 `src/core/wails-bindings.ts` re-export 引入。
 
 ---
 
@@ -307,7 +307,9 @@ frontend/src/
 
 | ADR | 标题 | 状态 | 主要影响模块 |
 |-----|------|------|-------------|
-| ADR-093 | 菜单声明式 Schema（单一数据源 + 单渲染器） | 实施中（P0-P2 完成） | menus/ 全域（menu-schema.ts / menu-factory.ts） |
+| ADR-093 | 菜单声明式 Schema（单一数据源 + 单渲染器） | ✅ 已完成 | menus/ 全域（menu-schema.ts / menu-factory.ts） |
+| ADR-106 | 时序审核与异步生命周期规范 | 🔄 部分实现（Phase 3 完成；P1/P2 待修复） | 全域（env-bridge.ts 已修复） |
+| ADR-112 | SdefInjector + SdefMesh 接入 — SDEF 球面变形 | ✅ 已完成 | scene/（side-effect import 已加入 scene.ts） |
 | ADR-092 | 贴图与反射统一（纹理工厂 + 平面反射引擎） | 已完成 | scene/env/（env-texture.ts / planar-reflection.ts） |
 | ADR-091 | 地面纹理统一（4→1 canvas 路径） | 已完成 | scene/env/（env-texture.ts） |
 | ADR-090 | 对话框默认目录记忆 | 已完成 | core/ui-resource-panel.ts |
