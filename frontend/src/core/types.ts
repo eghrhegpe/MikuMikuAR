@@ -7,6 +7,7 @@ import type { IkSolver } from 'babylon-mmd/esm/Runtime/ikSolver';
 import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 import type { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import type { UIState as GoUIState } from './wails-bindings';
+import type { TrailingAction } from './ui-slide-row';
 
 export type { GoUIState };
 
@@ -233,6 +234,11 @@ export type PopupRow = {
     favRef?: string;
     onAddClick?: () => void;
     onDetailClick?: () => void;
+    /** 统一尾部行为区：设置第二点击事件+图标后，装饰性 `>` 会被替换为该可点击按钮。
+     *  与装饰 `>` 及 `+`(onAddClick) 互斥——从构造上杜绝误渲染 `>`。 */
+    trailing?: TrailingAction;
+    /** 选中态（radio/单选行）：渲染时附加 slide-focused 类。 */
+    focused?: boolean;
     rowKey?: string;
     headerToggle?: {
         value: boolean;

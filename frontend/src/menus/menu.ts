@@ -1,6 +1,7 @@
 import { PopupLevel, PopupRow, showHint, hideHint } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow, addSliderRow, addToggleRow, addModeSlider } from '../core/ui-helpers';
+import { createTrailingBtn } from '../core/ui-slide-row';
 import { subscribe } from '../core/reactivity';
 import { t } from '../core/i18n/t';
 import { logWarn } from '../core/utils';
@@ -979,7 +980,7 @@ export class SlideMenu {
         }
 
         const el = document.createElement('div');
-        el.className = 'slide-item';
+        el.className = 'slide-item' + (row.focused ? ' slide-focused' : '');
         el.dataset.rowKey = this.rowKey(row);
         const hint = row.sublabel || (row.model ? t('menu.noDesc') : t('menu.noHint'));
         el.setAttribute('data-hint', hint);
@@ -999,14 +1000,12 @@ export class SlideMenu {
         labelSpan.textContent = row.label;
         el.appendChild(labelSpan);
 
-        if (row.kind === 'folder') {
-            const arrow = document.createElement('span');
-            arrow.className = 'slide-arrow';
-            arrow.textContent = '>';
-            el.appendChild(arrow);
-        }
-
-        if (row.onAddClick) {
+        // === 统一尾部行为区：trailing | +(onAddClick) | 装饰 `>`（三者互斥）===
+        // 只要设置了第二点击事件+图标(trailing)，或 +(onAddClick)，装饰性 `>` 即被取代，
+        // 从构造上杜绝「文件夹既渲染 > 又渲染第二按钮」的误渲染。
+        if (row.trailing) {
+            el.appendChild(createTrailingBtn(row.trailing));
+        } else if (row.onAddClick) {
             const addBtn = document.createElement('span');
             addBtn.className = 'slide-add-btn';
             addBtn.textContent = '+';
@@ -1015,6 +1014,11 @@ export class SlideMenu {
                 row.onAddClick!();
             });
             el.appendChild(addBtn);
+        } else if (row.kind === 'folder') {
+            const arrow = document.createElement('span');
+            arrow.className = 'slide-arrow';
+            arrow.textContent = '>';
+            el.appendChild(arrow);
         }
 
         if (row.kind === 'folder') {

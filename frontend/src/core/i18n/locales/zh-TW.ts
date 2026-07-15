@@ -750,6 +750,7 @@ export const zhTW: Record<string, string> = {
     'library.importFile': '匯入檔案',
     'library.rescan': '重新掃描',
     'library.model': '模型',
+    'library.modelSettings': '模型設定',
     'library.firstUseHint': '📦 首次使用？在這裡開啟模型庫 → 載入模型。模型目錄請在 ⚙ 設定中配置',
     'library.browseHint2': '📦 點此瀏覽模型 · 💃 點此載入動作 · 拖曳旋轉 · 滾輪縮放',
     'library.loadLibraryFailed': '✗ 模型庫載入失敗：',

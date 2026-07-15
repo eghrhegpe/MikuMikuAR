@@ -10,7 +10,6 @@ import {
     computeLibraryRef,
     dom,
     stackRegistry,
-    setModelReplaceTargetId,
 } from '../core/config';
 import { modelManager } from '../scene/scene';
 import { getModelMorphs, setModelMorphWeight, resetModelMorphs } from '../scene/manager/model-ops';
@@ -33,7 +32,7 @@ import {
     ScanSoftwareDir,
 } from '../core/wails-bindings';
 import type { SoftwareEntry } from '../core/wails-bindings';
-import { tryCatchStatus, getBrowseDir, logWarn } from '../core/utils';
+import { tryCatchStatus, logWarn } from '../core/utils';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
@@ -272,36 +271,7 @@ function buildModelSchema(id: string): MenuNode[] {
                 });
             },
         },
-        // 卡片 2：更换模型
-        {
-            id: 'model:replace',
-            kind: 'custom',
-            renderCustom: (container) => {
-                cardContainer(container, (c) => {
-                    slideRow(
-                        c,
-                        'lucide:refresh-cw',
-                        t('model-detail.replaceModel'),
-                        true,
-                        async () => {
-                            setModelReplaceTargetId(id);
-                            const m = await import('./library-core');
-                            // [doc:model-memory] 更换模型打开的浏览器同样自动展开+高亮上次模型
-                            await m.prepareModelRestore(getBrowseDir('pmx'), 'pmx');
-                            const level = m.buildLevel(
-                                getBrowseDir('pmx'),
-                                t('model-detail.replaceModelTo', { name: inst.name }),
-                                (model) => model.format === 'pmx',
-                                stackRegistry.modelStack!,
-                                []
-                            );
-                            stackRegistry.modelStack?.push(level);
-                        }
-                    );
-                });
-            },
-        },
-        // 卡片 3：危险区块
+        // 卡片 2：危险区块
         {
             id: 'model:danger',
             kind: 'custom',

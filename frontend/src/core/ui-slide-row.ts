@@ -14,22 +14,47 @@ export interface HeaderToggleConfig {
     bind?: () => boolean;
 }
 
-export interface SlideAction {
+export interface TrailingAction {
+    /** 图标：含 ':' 视为 iconify 名（如 'lucide:settings-2'）渲染为 SVG；否则作为字面字符（如 '▶'）。 */
     icon: string;
     title?: string;
     danger?: boolean;
     onClick: (e: MouseEvent) => void;
 }
 
+/**
+ * 统一尾部第二动作按钮工厂——供 slideRow 与 menu.ts createRow 共用，
+ * 确保两条渲染路径的第二按钮观感与行为一致（22px .slide-add-btn；iconify 名渲染 SVG，
+ * 否则 textContent；点击 stopPropagation 防冒泡触发整行 onClick）。
+ */
+export function createTrailingBtn(act: TrailingAction): HTMLElement {
+    const btn = document.createElement('span');
+    btn.className = 'slide-add-btn' + (act.danger ? ' slide-act-danger' : '');
+    if (act.icon.includes(':')) {
+        const iconEl = createIconifyIcon(act.icon);
+        if (iconEl) {
+            btn.appendChild(iconEl);
+        } else {
+            btn.textContent = act.icon;
+        }
+    } else {
+        btn.textContent = act.icon;
+    }
+    btn.title = act.title || '';
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        act.onClick(e);
+    });
+    return btn;
+}
+
 export interface SlideRowExtra {
     /** label 颜色变体：danger(红), accent(主题色) */
     variant?: 'default' | 'danger' | 'accent';
-    /** 右侧操作按钮图标（如 '✕', '▶', '✎'）— 单个按钮快捷方式 */
-    actionIcon?: string;
-    /** 操作按钮点击回调（配合 actionIcon） */
-    onActionClick?: (e: MouseEvent) => void;
-    /** 多操作按钮数组（与 actionIcon 叠加渲染） */
-    actionIcons?: SlideAction[];
+    /** 统一尾部行为区：传入则在行最右侧渲染为可点击图标，并【不】渲染装饰性 `>`。
+     *  用于「+ 加载」「▶ 播放」「✕ 删除」等第二动作；与 hasArrow 互斥，
+     *  从构造上杜绝「文件行既渲染 + 又渲染 >」的误渲染。 */
+    trailing?: TrailingAction;
     /** 自定义右侧 label（key-value 布局用） */
     rightLabel?: string;
     /** 动态图标工厂函数——替代 icon 字符串参数，每次渲染调用 */
@@ -201,38 +226,10 @@ export function slideRow(
             row.appendChild(sub);
         }
 
-        // 操作按钮 (actionBtn)
-        if (extra?.actionIcon !== undefined) {
-            const btn = document.createElement('button');
-            btn.className = 'btn btn-ghost btn-sm btn-icon slide-act-btn';
-            btn.textContent = extra.actionIcon;
-            if (extra.onActionClick) {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    extra.onActionClick!(e);
-                });
-            }
-            row.appendChild(btn);
-        }
-        // 多操作按钮数组
-        if (extra?.actionIcons?.length) {
-            for (const act of extra.actionIcons) {
-                const btn = document.createElement('button');
-                btn.className = 'btn btn-ghost btn-sm btn-icon slide-act-btn';
-                if (act.danger) {
-                    btn.classList.add('slide-act-danger');
-                }
-                btn.textContent = act.icon;
-                btn.title = act.title || '';
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    act.onClick(e);
-                });
-                row.appendChild(btn);
-            }
-        }
-
-        if (hasArrow) {
+        // === 统一尾部行为区：trailing 优先于装饰性 `>`（互斥，避免误渲染 `>`）===
+        if (extra?.trailing) {
+            row.appendChild(createTrailingBtn(extra.trailing));
+        } else if (hasArrow) {
             const arrowSpan = document.createElement('span');
             arrowSpan.className = 'slide-arrow';
             arrowSpan.textContent = '>';

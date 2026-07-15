@@ -62,7 +62,7 @@ import {
     setPendingVmd,
 } from '../core/config';
 import { loadManager } from '../core/load-manager';
-import { removeModel } from '../scene/scene';
+import { removeModel, focusModel } from '../scene/scene';
 import { addVmdLayerFromPath } from '../scene/motion/vmd-layers';
 import { loadVPDPose } from '../scene/scene';
 import { buildModelLevel } from './model-detail';
@@ -76,7 +76,7 @@ import {
     closeFullscreen,
     setCurrentState,
 } from '../core/ui-helpers';
-import type { ResourceItem } from '../core/ui-helpers';
+import type { ResourceItem, SlideRowExtra } from '../core/ui-helpers';
 import {
     tryCatchStatus,
     getBrowseDir,
@@ -335,15 +335,8 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
         container,
         onClose: closeAllOverlays,
         onFolderEnter: async (row) => {
-            if (row.target && row.target.startsWith('scene:')) {
-                setMotionBindingTargetId(null);
-                const id = row.target.replace('scene:', '');
-                const inst = modelRegistry.get(id);
-                if (!inst) {
-                    return null;
-                }
-                return inst.kind === 'stage' ? buildStageTransformLevel(id) : buildModelLevel(id);
-            }
+            // 注：角色行已改为 radio action（scene: 目标由 onItemClick 处理焦点切换 +
+            //   trailing 工具图标进入详情），此处不再处理 scene: 前缀。
             if (row.target === '__recent__') {
                 const recentMap = new Map<string, number>();
                 recentModels.forEach((ref, i) => recentMap.set(ref, i));
@@ -422,6 +415,21 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
             return null;
         },
         onItemClick: (row: PopupRow) => {
+            // radio 角色行：点击整行 = 切换焦点角色（工具图标点击已被 trailing stopPropagation 拦截）
+            if (row.target && row.target.startsWith('scene:')) {
+                const id = row.target.replace('scene:', '');
+                const inst = modelRegistry.get(id);
+                if (!inst) {
+                    return;
+                }
+                if (inst.kind === 'stage') {
+                    stackRegistry.modelStack?.push(buildStageTransformLevel(id));
+                    return;
+                }
+                focusModel(id);
+                refreshModelRoot();
+                return;
+            }
             if (row.model) {
                 // closeAllOverlays 会自动清 binding targets，需先取到本地变量
                 if (row.model.format === 'vmd' && layerBindingTargetId) {
@@ -583,6 +591,63 @@ function renderItemsWithRAF(
     filter: ((m: LibraryModel) => boolean) | undefined,
     targetStack: SlideMenu | undefined
 ): void {
+    // 行激活（整行点击）：文件夹下钻，模型/文件执行原 onModelRowClick 语义
+    const activateItem = (item: PopupRow): void => {
+        if (item.kind === 'folder') {
+            const next = buildLevel(item.target, item.label, filter, targetStack);
+            const stack = targetStack || stackRegistry.modelStack;
+            stack.push(next);
+        } else if (item.model) {
+            if (item.model.format === 'vmd' && layerBindingTargetId) {
+                const id = layerBindingTargetId;
+                setLayerBindingTargetId(null);
+                closeAllOverlays();
+                addVmdLayerFromPath(item.model.file_path, id);
+            } else if (item.model.format === 'vmd' && motionBindingTargetId) {
+                const id = motionBindingTargetId;
+                setMotionBindingTargetId(null);
+                closeAllOverlays();
+                loadManager.load({
+                    kind: 'vmd',
+                    path: item.model.file_path,
+                    modelId: id,
+                });
+            } else {
+                onModelRowClick(item.model);
+            }
+        }
+    };
+    // 整行点击（非 `+` 区）：模型/文件 → 替换当前焦点角色；文件夹 → 下钻
+    const onRowClick = (item: PopupRow): void => {
+        if (item.kind === 'folder') {
+            activateItem(item);
+            return;
+        }
+        if (item.model && item.model.format !== 'vmd') {
+            replaceModel(item.model);
+            return;
+        }
+        activateItem(item);
+    };
+    // 统一尾部区：文件夹 → 仅装饰性 `>`；文件/模型 → `+` 加载动作（二者互斥，避免误渲染 `>`）
+    const buildRowExtra = (item: PopupRow): SlideRowExtra | undefined => {
+        const e: SlideRowExtra = {};
+        if (item.wrapLabel) {
+            e.wrapLabel = true;
+        }
+        if (item.kind !== 'folder') {
+            // `+` = 显式新增；清除整行替换可能遗留的 replace 目标，保证「+」恒为新增
+            e.trailing = {
+                icon: '+',
+                onClick: () => {
+                    setModelReplaceTargetId(null);
+                    activateItem(item);
+                },
+            };
+        }
+        return e.wrapLabel || e.trailing ? e : undefined;
+    };
+
     if (items.length <= RAF_BATCH_THRESHOLD) {
         for (const item of items) {
             if (item.kind === 'divider') {
@@ -593,36 +658,12 @@ function renderItemsWithRAF(
                 item.icon,
                 item.label,
                 item.kind === 'folder',
-                () => {
-                    if (item.kind === 'folder') {
-                        const next = buildLevel(item.target, item.label, filter, targetStack);
-                        const stack = targetStack || stackRegistry.modelStack;
-                        stack.push(next);
-                    } else if (item.model) {
-                        if (item.model.format === 'vmd' && layerBindingTargetId) {
-                            const id = layerBindingTargetId;
-                            setLayerBindingTargetId(null);
-                            closeAllOverlays();
-                            addVmdLayerFromPath(item.model.file_path, id);
-                        } else if (item.model.format === 'vmd' && motionBindingTargetId) {
-                            const id = motionBindingTargetId;
-                            setMotionBindingTargetId(null);
-                            closeAllOverlays();
-                            loadManager.load({
-                                kind: 'vmd',
-                                path: item.model.file_path,
-                                modelId: id,
-                            });
-                        } else {
-                            onModelRowClick(item.model);
-                        }
-                    }
-                },
+                () => onRowClick(item),
                 item.sublabel,
                 undefined,
                 undefined,
                 undefined,
-                item.wrapLabel === true ? { wrapLabel: true } : undefined
+                buildRowExtra(item)
             );
         }
         return;
@@ -642,36 +683,12 @@ function renderItemsWithRAF(
                 item.icon,
                 item.label,
                 item.kind === 'folder',
-                () => {
-                    if (item.kind === 'folder') {
-                        const next = buildLevel(item.target, item.label, filter, targetStack);
-                        const stack = targetStack || stackRegistry.modelStack;
-                        stack.push(next);
-                    } else if (item.model) {
-                        if (item.model.format === 'vmd' && layerBindingTargetId) {
-                            const id = layerBindingTargetId;
-                            setLayerBindingTargetId(null);
-                            closeAllOverlays();
-                            addVmdLayerFromPath(item.model.file_path, id);
-                        } else if (item.model.format === 'vmd' && motionBindingTargetId) {
-                            const id = motionBindingTargetId;
-                            setMotionBindingTargetId(null);
-                            closeAllOverlays();
-                            loadManager.load({
-                                kind: 'vmd',
-                                path: item.model.file_path,
-                                modelId: id,
-                            });
-                        } else {
-                            onModelRowClick(item.model);
-                        }
-                    }
-                },
+                () => onRowClick(item),
                 item.sublabel,
                 undefined,
                 undefined,
                 undefined,
-                item.wrapLabel === true ? { wrapLabel: true } : undefined
+                buildRowExtra(item)
             );
         }
         if (index < items.length) {
@@ -1320,12 +1337,20 @@ function onModelRowClick(m: LibraryModel): void {
             loadManager
                 .load({ kind: loadKind, path, libraryPath })
                 .then(async (handle) => {
-                    if (handle?.id) {
-                        // 加载成功后再删除旧模型，失败则保留旧模型
-                        removeModel(replaceId);
-                        // Auto-activate replace mode for the newly loaded model
-                        // so user can immediately pick the next replacement without navigating back
-                        setModelReplaceTargetId(handle.id);
+                    // 防呆闸门：新模型未成功加载（返回 null / 无 id）→ 保留旧模型，绝不删除
+                    if (!handle?.id) {
+                        setModelReplaceTargetId(replaceId);
+                        stackRegistry.modelStack?.reRender();
+                        setStatus(t('library.modelLoadFailed'), false);
+                        return;
+                    }
+                    // 新模型加载成功 → 删旧模型（替换核心状态已一致，不可回滚）
+                    removeModel(replaceId);
+                    // Auto-activate replace mode for the newly loaded model
+                    // so user can immediately pick the next replacement without navigating back
+                    setModelReplaceTargetId(handle.id);
+                    // ↓ 以下为纯 UI 导航：其异常绝不影响已完成的替换，也不得误入外层「加载失败」catch
+                    try {
                         stackRegistry.modelStack?.resetToRoot();
                         // Push library browser so user sees the model list with replace mode active
                         let newName = handle.name;
@@ -1347,14 +1372,14 @@ function onModelRowClick(m: LibraryModel): void {
                             )
                         );
                         setStatus(t('status.done'), true);
-                    } else {
-                        // 加载失败恢复替换目标为旧模型，保持状态一致
-                        setModelReplaceTargetId(replaceId);
-                        stackRegistry.modelStack?.reRender();
+                    } catch (uiErr) {
+                        // 替换已成功完成，仅导航 UI 失败：不回滚、不丢角色
+                        logWarn('library-core', 'replace UI navigation failed', uiErr);
+                        setStatus(t('status.done'), true);
                     }
                 })
                 .catch((err) => {
-                    // 加载失败恢复替换目标为旧模型，保持状态一致
+                    // load 本身 reject（新模型从未加载）→ 旧模型未删，安全恢复替换目标
                     setModelReplaceTargetId(replaceId);
                     setStatus(t('library.modelLoadFailed') + formatError(err), false);
                     stackRegistry.modelStack?.reRender();
@@ -1425,11 +1450,11 @@ function onModelRowClick(m: LibraryModel): void {
     }
 }
 
-/** 移除当前聚焦模型后加载新模型。无聚焦模型时直接添加（非严格"替换"语义）。 */
+/** 移除当前替换目标模型后加载新模型。无替换目标时直接添加。 */
 function replaceModel(m: LibraryModel): void {
-    if (focusedModelId) {
-        setPendingVmd(null);
-        removeModel(focusedModelId);
+    // 整行点击 = 替换当前焦点角色：replace 目标未显式设置时，以当前焦点模型作为被替换对象
+    if (!modelReplaceTargetId && focusedModelId) {
+        setModelReplaceTargetId(focusedModelId);
     }
     onModelRowClick(m);
 }
@@ -1561,12 +1586,32 @@ export function buildModelRootItems(): PopupRow[] {
     const actors = Array.from(modelRegistry.entries()).filter(([, inst]) => inst.kind === 'actor');
     logWarn('library-core', '[buildModelRootItems] actors:', { actorsLength: actors.length, allModelsLength: allModels.length, libraryRoot });
     for (const [id, inst] of actors) {
+        const isFocused = focusedModelId === id;
         items.push({
-            kind: 'folder',
+            // radio 式单选：点击整行 = 切换焦点角色；工具图标 = 进入该模型管理面板
+            kind: 'action',
             label: inst.name,
-            icon: 'tabler:cube-3d-sphere',
+            icon: isFocused ? 'lucide:check-circle' : 'lucide:circle',
             target: `scene:${id}`,
             wrapLabel: true,
+            focused: isFocused,
+            // rowKey 编码焦点态：焦点切换时 key 变化 → patchPanel 整行替换 → 图标同步刷新
+            rowKey: 'actor:' + id + (isFocused ? ':on' : ':off'),
+            trailing: {
+                icon: 'lucide:settings-2',
+                title: t('library.modelSettings'),
+                onClick: () => {
+                    const cur = modelRegistry.get(id);
+                    if (!cur) {
+                        return;
+                    }
+                    stackRegistry.modelStack?.push(
+                        cur.kind === 'stage'
+                            ? buildStageTransformLevel(id)
+                            : buildModelLevel(id)
+                    );
+                },
+            },
         });
     }
 
@@ -1620,6 +1665,7 @@ export function showModelPopup(): void {
             label: t('library.model'),
             dir: '',
             items: buildModelRootItems(),
+            itemBuilder: buildModelRootItems,
         });
         stackRegistry.modelStack.reRender();
         return;
@@ -1631,6 +1677,24 @@ export function showModelPopup(): void {
         label: t('library.model'),
         dir: '',
         items: buildModelRootItems(),
+        itemBuilder: buildModelRootItems,
+    });
+}
+
+/**
+ * 切换焦点角色后刷新模型库根层 radio 选中态。
+ * 仅当模型栈处于根层时触发重绘（角色行只存在于根层）；深层时静默更新，回退后自然生效。
+ */
+export function refreshModelRoot(): void {
+    const stack = stackRegistry.modelStack;
+    if (!stack) {
+        return;
+    }
+    stack.setLevel(0, {
+        label: t('library.model'),
+        dir: '',
+        items: buildModelRootItems(),
+        itemBuilder: buildModelRootItems,
     });
 }
 

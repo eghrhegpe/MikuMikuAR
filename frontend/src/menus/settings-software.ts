@@ -109,21 +109,23 @@ function buildSoftwareListSchema(): MenuNode[] {
                                 undefined,
                                 undefined,
                                 {
-                                    actionIcon: '▶',
-                                    onActionClick: async () => {
-                                        const r = await tryCatchStatus(
-                                            async () => {
-                                                await LaunchSoftware(entry.path, entry.args || '');
-                                                return true as const;
-                                            },
-                                            t('settings.softwareStartFail', { name: entry.name })
-                                        );
-                                        if (r !== undefined) {
-                                            setStatus(
-                                                t('settings.softwareStarted', { name: entry.name }),
-                                                true
+                                    trailing: {
+                                        icon: '▶',
+                                        onClick: async () => {
+                                            const r = await tryCatchStatus(
+                                                async () => {
+                                                    await LaunchSoftware(entry.path, entry.args || '');
+                                                    return true as const;
+                                                },
+                                                t('settings.softwareStartFail', { name: entry.name })
                                             );
-                                        }
+                                            if (r !== undefined) {
+                                                setStatus(
+                                                    t('settings.softwareStarted', { name: entry.name }),
+                                                    true
+                                                );
+                                            }
+                                        },
                                     },
                                 }
                             );
