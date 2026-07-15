@@ -348,6 +348,8 @@ func (a *App) ListSubDirs(dirPath string) ([]string, error) {
 // Caller must hold configMu (at least RLock) if concurrent writes are possible.
 // Used internally by updateConfig (which holds Lock) and by GetConfig (RLock).
 func (a *App) getConfigUnsafe() (*Config, error) {
+	// cachedCfg is only written by writeConfig (under Lock), so reading it
+	// under RLock (from GetConfig) or Lock (from updateConfig) is safe.
 	if a.cachedCfg != nil {
 		return a.cachedCfg, nil
 	}
@@ -377,14 +379,12 @@ func (a *App) getConfigUnsafe() (*Config, error) {
 						var settingCfg Config
 						if uErr := json.Unmarshal(settingData, &settingCfg); uErr == nil {
 							a.finaliseConfig(&settingCfg)
-							a.cachedCfg = &settingCfg
 							return &settingCfg, nil
 						}
 					}
 				}
 			}
 			// No ResourceRoot or settingDir failed — use bootstrap as-is.
-			a.cachedCfg = &bootstrap
 			return &bootstrap, nil
 		}
 	}

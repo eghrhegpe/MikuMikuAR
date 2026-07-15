@@ -37,6 +37,11 @@ type ExtractResult struct {
 
 const extractCacheVersion = 6
 
+// maxZipEntries limits the number of files extracted from a single zip archive
+// to prevent ZIP bombs with millions of tiny entries from exhausting disk inodes
+// or causing excessive extraction time.
+const maxZipEntries = 10000
+
 // manifest stores source zip metadata for cache validation.
 type manifest struct {
 	Source  string `json:"source"`
@@ -121,7 +126,16 @@ func (a *App) extractZipUnsafe(zipPath, innerPath string) (*ExtractResult, error
 	}
 	destPrefix := destAbs + string(filepath.Separator)
 
+	// Track extracted entry count for ZIP bomb protection
+	var extractedCount int
+
 	for _, zf := range zr.File {
+		// ZIP bomb protection: reject archives with excessive entries
+		extractedCount++
+		if extractedCount > maxZipEntries {
+			return nil, fmt.Errorf("%s: 压缩包条目数 %d 超过上限 %d", op, len(zr.File), maxZipEntries)
+		}
+
 		// Decode entry name (Shift-JIS → UTF-8) so extracted files match model entries
 		entryName := decodeZipName(zf.Name, zf.NonUTF8)
 
@@ -143,16 +157,19 @@ func (a *App) extractZipUnsafe(zipPath, innerPath string) (*ExtractResult, error
 
 		// Create parent directories
 		if err := os.MkdirAll(filepath.Dir(targetAbs), 0755); err != nil {
+			a.safeLogError("ExtractZip: mkdir error for %s: %v", entryName, err)
 			continue
 		}
 
 		rc, err := zf.Open()
 		if err != nil {
+			a.safeLogError("ExtractZip: open entry error for %s: %v", entryName, err)
 			continue
 		}
 
 		outFile, err := os.OpenFile(targetAbs, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, zf.Mode())
 		if err != nil {
+			a.safeLogError("ExtractZip: create file error for %s: %v", entryName, err)
 			rc.Close()
 			continue
 		}

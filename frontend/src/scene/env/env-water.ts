@@ -650,10 +650,99 @@ export function _applyWaterLOD(scene: Scene): void {
     _waterLODs[1].setEnabled(level === 2);
 }
 
+const WATER_UNIFORMS = [
+    'world', 'viewProjection', 'time', 'waveHeight', 'wavePhase',
+    'cameraPosition', 'waterColor', 'waterTransparency', 'waterLevel',
+    'uWaterFlip', 'envIntensity', 'foamColor', 'foamThreshold', 'foamIntensity',
+    'lightDir', 'lightColor', 'ambientIntensity',
+    'uRipplePosRad', 'uRippleStrSpdLife', 'uRippleCount',
+    'uCausticIntensity', 'uCausticSpeed', 'uCausticScale',
+    'fresnelBias', 'fresnelPower', 'diffuseStrength', 'ambientStrength',
+    'foamTransitionRange', 'rippleNormalStrength', 'rippleGlintStrength',
+    'causticColor1', 'causticColor2', 'causticScrollX', 'causticScrollY',
+    'fresnelAlphaInfluence', 'foamOpacity',
+    'waterFogColor', 'waterFogDensity', 'waterFogOpacityInfluence',
+    'uWindDir', 'planarReflectBlend',
+];
+
+function _createWaterMaterial(scene: Scene, state: EnvState): ShaderMaterial {
+    const hasEnv = !!scene.environmentTexture;
+    const hasReflection = state.reflectionQuality !== 'off';
+    const mat = new ShaderMaterial(
+        'customWaterMat', scene,
+        { vertexSource: WATER_VERT_SRC, fragmentSource: WATER_FRAG_SRC },
+        {
+            attributes: ['position', 'uv', 'normal'],
+            uniforms: WATER_UNIFORMS,
+            uniformBuffers: [],
+            samplers: ['uCausticTex']
+                .concat(hasEnv ? ['envTexture'] : [])
+                .concat(hasReflection ? ['reflectionTexture'] : []),
+            defines: (hasEnv ? ['ENV_TEXTURE'] : [])
+                .concat(hasReflection ? ['PLANAR_REFLECTION'] : []),
+            needAlphaBlending: true,
+        }
+    );
+    mat.backFaceCulling = false;
+    mat.disableDepthWrite = true;
+    return mat;
+}
+
+function _waterUpdateCallback(scene: Scene): void {
+    if (!_envSys.water.material) return;
+    const m = _envSys.water.material as ShaderMaterial;
+    const dt = Math.min(scene.deltaTime / 1000, 0.1);
+    const now = performance.now() / 1000;
+
+    _waterPhase += dt * _waterWaveSpeed;
+    m.setFloat('time', now);
+    m.setFloat('wavePhase', _waterPhase);
+    const cam = scene.activeCamera;
+    if (cam) m.setVector3('cameraPosition', cam.position);
+    m.setColor3('waterColor', col3FromTriple(envState.waterColor));
+    const dl = scene.getLightByName('dir') as DirectionalLight | null;
+    if (dl) {
+        m.setVector3('lightDir', dl.direction);
+        m.setColor3('lightColor', dl.diffuse);
+    }
+
+    // 涟漪衰减
+    if (dt > 0) {
+        let anyAlive = false;
+        for (const r of _ripples) {
+            if (r.life > 0) {
+                r.life = Math.max(0, r.life - dt);
+                if (r.life > 0) anyAlive = true;
+            }
+        }
+        if (!anyAlive && _ripples.length > 0) _ripples = [];
+    }
+
+    waterReflection.update(envState, scene);
+    _applyWaterLOD(scene);
+
+    // 上传涟漪数据到 shader
+    const posRad = new Array<number>(MAX_RIPPLES * 4).fill(0);
+    const strSpdLife = new Array<number>(MAX_RIPPLES * 4).fill(0);
+    let aliveCount = 0;
+    for (const r of _ripples) {
+        if (r.life <= 0 || aliveCount >= MAX_RIPPLES) continue;
+        const i = aliveCount * 4;
+        posRad[i] = r.position.x; posRad[i + 1] = r.position.y;
+        posRad[i + 2] = r.position.z; posRad[i + 3] = r.radius;
+        strSpdLife[i] = r.strength; strSpdLife[i + 1] = r.speed;
+        strSpdLife[i + 2] = r.life; strSpdLife[i + 3] = r.maxLife;
+        aliveCount++;
+    }
+    m.setArray4('uRipplePosRad', posRad);
+    m.setArray4('uRippleStrSpdLife', strSpdLife);
+    m.setInt('uRippleCount', aliveCount);
+}
+
 export function createWater(state: EnvState): void {
     ensureEnvUpdateObserver();
 
-    // **惰性路径**：水面已初始化且启用 → 只同步参数，不销毁重建
+    // 惰性路径：已初始化 → 只同步参数
     if (state.waterEnabled && _envSys.water.material && _envSys.water.mesh) {
         const scene = getScene();
         _syncWaterUniforms(state, scene);
@@ -663,29 +752,23 @@ export function createWater(state: EnvState): void {
         return;
     }
 
-    // **关闭路径**：水面未启用 → 清理资源
     if (!state.waterEnabled) {
         disposeWater();
         return;
     }
 
-    // **首次创建路径**：水面不存在且启用 → 全量构建
+    // 首次创建
     const scene = getScene();
     if (!scene) {
         logWarn('env-water', 'createWater: scene not ready');
         return;
     }
 
-    // 三级细分网格，作为兄弟根网格（非父子），由 _applyWaterLOD 按相机距离
-    // 手动切换 setEnabled。避免 Babylon addLODLevel + 父子嵌套导致的多重水面重叠
-    // （z-fighting/重复绘制）：父级 LOD 切换只替换主网格，子节点恒常独立渲染。
     const scale = Math.max(1, state.waterSize / WATER_BASE_SIZE);
     const rotX = state.waterFlip ? Math.PI : 0;
     const makeGround = (name: string, subdivisions: number): Mesh => {
         const m = MeshBuilder.CreateGround(
-            name,
-            { width: WATER_BASE_SIZE, height: WATER_BASE_SIZE, subdivisions },
-            scene
+            name, { width: WATER_BASE_SIZE, height: WATER_BASE_SIZE, subdivisions }, scene
         );
         m.isPickable = false;
         m.position.y = state.waterLevel;
@@ -697,162 +780,24 @@ export function createWater(state: EnvState): void {
     const meshHigh = makeGround('envWater', 48);
     const meshMid = makeGround('envWater_LOD1', 16);
     const meshLow = makeGround('envWater_LOD2', 6);
-    // 默认仅显示最高精度层，其余由 _applyWaterLOD 按需启用
     meshMid.setEnabled(false);
     meshLow.setEnabled(false);
     _waterLODs = [meshMid, meshLow];
     _activeWaterLOD = 0;
 
-    const hasEnv = !!scene.environmentTexture;
-    const mat = new ShaderMaterial(
-        'customWaterMat',
-        scene,
-        {
-            vertexSource: WATER_VERT_SRC,
-            fragmentSource: WATER_FRAG_SRC,
-        },
-        {
-            attributes: ['position', 'uv', 'normal'],
-            uniforms: [
-                'world',
-                'viewProjection',
-                'time',
-                'waveHeight',
-                'wavePhase',
-                'cameraPosition',
-                'waterColor',
-                'waterTransparency',
-                'waterLevel',
-                'uWaterFlip',
-                'envIntensity',
-                'foamColor',
-                'foamThreshold',
-                'foamIntensity',
-                'lightDir',
-                'lightColor',
-                'ambientIntensity',
-                'uRipplePosRad',
-                'uRippleStrSpdLife',
-                'uRippleCount',
-                'uCausticIntensity',
-                'uCausticSpeed',
-                'uCausticScale',
-                'fresnelBias',
-                'fresnelPower',
-                'diffuseStrength',
-                'ambientStrength',
-                'foamTransitionRange',
-                'rippleNormalStrength',
-                'rippleGlintStrength',
-                'causticColor1',
-                'causticColor2',
-                'causticScrollX',
-                'causticScrollY',
-                'fresnelAlphaInfluence',
-                'foamOpacity',
-                'waterFogColor',
-                'waterFogDensity',
-                'waterFogOpacityInfluence',
-                'uWindDir',
-                'planarReflectBlend',
-            ],
-            uniformBuffers: [],
-            samplers: ['uCausticTex']
-                .concat(hasEnv ? ['envTexture'] : [])
-                .concat(state.reflectionQuality !== 'off' ? ['reflectionTexture'] : []),
-            defines: (hasEnv ? ['ENV_TEXTURE'] : []).concat(
-                state.reflectionQuality !== 'off' ? ['PLANAR_REFLECTION'] : []
-            ),
-            needAlphaBlending: true,
-        }
-    );
-
-    mat.backFaceCulling = false;
-    mat.disableDepthWrite = true;
-
+    const mat = _createWaterMaterial(scene, state);
     meshHigh.material = mat;
     meshMid.material = mat;
     meshLow.material = mat;
-
     _envSys.water.mesh = meshHigh;
     _envSys.water.material = mat;
 
-    // 同步所有 uniform（复用 _syncWaterUniforms 逻辑）
     _syncWaterUniforms(state, scene);
-    // ADR-062 P1: 初始化平面反射 RT
     _setupMirrorRT(scene, state);
-    // 初始 LOD 层级（后续由每帧 observer 维护）
     _applyWaterLOD(scene);
 
-    // —— 每帧更新 observer（涟漪衰减 + 动态数据）——
     if (!_waterUpdateObserver) {
-        _waterUpdateObserver = scene.onBeforeRenderObservable.add(() => {
-            if (!_envSys.water.material) {
-                return;
-            }
-            const m = _envSys.water.material as ShaderMaterial;
-            // 钳制 deltaTime，避免切后台返回时 dt 过大导致相位/涟漪寿命跳变
-            const dt = Math.min(scene.deltaTime / 1000, 0.1);
-            const now = performance.now() / 1000;
-            // 逐帧累加波相位：改波速只改变累加速率，不会造成相位跳变（视觉跳帧）
-            _waterPhase += dt * _waterWaveSpeed;
-            m.setFloat('time', now);
-            m.setFloat('wavePhase', _waterPhase);
-            const cam = scene.activeCamera;
-            if (cam) {
-                m.setVector3('cameraPosition', cam.position);
-            }
-            m.setColor3('waterColor', col3FromTriple(envState.waterColor));
-            const dl = scene.getLightByName('dir') as DirectionalLight | null;
-            if (dl) {
-                m.setVector3('lightDir', dl.direction);
-                m.setColor3('lightColor', dl.diffuse);
-            }
-
-            if (dt > 0) {
-                let anyAlive = false;
-                for (const r of _ripples) {
-                    if (r.life > 0) {
-                        r.life -= dt;
-                        if (r.life < 0) {
-                            r.life = 0;
-                        }
-                        if (r.life > 0) {
-                            anyAlive = true;
-                        }
-                    }
-                }
-                if (!anyAlive && _ripples.length > 0) {
-                    _ripples = [];
-                }
-            }
-            // 平面反射（委托统一平面反射引擎，ADR-092：镜像相机/脏标记/帧跳过/入水跳过/互斥内聚）
-            waterReflection.update(envState, scene);
-            // 手动 LOD 可见性切换（按相机距离）
-            _applyWaterLOD(scene);
-            // 每帧更新涟漪数据（life 逐帧变化，shader 需要最新值才能正确动画）
-            const posRad: number[] = new Array(MAX_RIPPLES * 4).fill(0);
-            const strSpdLife: number[] = new Array(MAX_RIPPLES * 4).fill(0);
-            let aliveCount = 0;
-            for (let i = 0; i < _ripples.length && aliveCount < MAX_RIPPLES; i++) {
-                const r = _ripples[i];
-                if (r.life <= 0) {
-                    continue;
-                }
-                posRad[aliveCount * 4 + 0] = r.position.x;
-                posRad[aliveCount * 4 + 1] = r.position.y;
-                posRad[aliveCount * 4 + 2] = r.position.z;
-                posRad[aliveCount * 4 + 3] = r.radius;
-                strSpdLife[aliveCount * 4 + 0] = r.strength;
-                strSpdLife[aliveCount * 4 + 1] = r.speed;
-                strSpdLife[aliveCount * 4 + 2] = r.life;
-                strSpdLife[aliveCount * 4 + 3] = r.maxLife;
-                aliveCount++;
-            }
-            m.setArray4('uRipplePosRad', posRad);
-            m.setArray4('uRippleStrSpdLife', strSpdLife);
-            m.setInt('uRippleCount', aliveCount);
-        });
+        _waterUpdateObserver = scene.onBeforeRenderObservable.add(() => _waterUpdateCallback(scene));
     }
 }
 

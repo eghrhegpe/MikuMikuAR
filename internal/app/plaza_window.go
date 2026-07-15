@@ -48,7 +48,8 @@ func (a *App) prewarmPlazaWindow() {
 	// Intercept WindowClosing: cancel the event (prevents the default
 	// destroy-listener from running) and hide the window instead. This keeps
 	// the WebView2 renderer process alive for instant reuse next time.
-	win.RegisterHook(events.Common.WindowClosing, func(event *application.WindowEvent) {
+	// 保存 unregister 函数，供 ServiceShutdown 在退出前移除 hook 以彻底关闭窗口。
+	a.plazaWinCloseHook = win.RegisterHook(events.Common.WindowClosing, func(event *application.WindowEvent) {
 		event.Cancel()
 		win.Hide()
 	})
