@@ -63,7 +63,6 @@ import {
 } from '../core/config';
 import { loadManager } from '../core/load-manager';
 import { removeModel, focusModel } from '../scene/scene';
-import { addVmdLayerFromPath } from '../scene/motion/vmd-layers';
 import { loadVPDPose } from '../scene/scene';
 import { buildModelLevel, buildModelToolsLevel } from './model-detail';
 import { buildStageTransformLevel } from './scene-menu';
@@ -435,7 +434,7 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                 if (row.model.format === 'vmd' && layerBindingTargetId) {
                     const targetId = layerBindingTargetId;
                     closeAllOverlays();
-                    addVmdLayerFromPath(row.model.file_path, targetId);
+                    loadManager.load({ kind: 'vmd', path: row.model.file_path, modelId: targetId });
                     return;
                 }
                 if (row.model.format === 'vmd' && motionBindingTargetId) {
@@ -602,7 +601,7 @@ function renderItemsWithRAF(
                 const id = layerBindingTargetId;
                 setLayerBindingTargetId(null);
                 closeAllOverlays();
-                addVmdLayerFromPath(item.model.file_path, id);
+                loadManager.load({ kind: 'vmd', path: item.model.file_path, modelId: id });
             } else if (item.model.format === 'vmd' && motionBindingTargetId) {
                 const id = motionBindingTargetId;
                 setMotionBindingTargetId(null);
@@ -638,7 +637,8 @@ function renderItemsWithRAF(
         if (item.kind !== 'folder') {
             // `+` = 显式新增；清除整行替换可能遗留的 replace 目标，保证「+」恒为新增
             e.trailing = {
-                icon: '+',
+                icon: 'lucide:plus',
+                title: t('library.loadModel'),
                 onClick: () => {
                     setModelReplaceTargetId(null);
                     activateItem(item);
@@ -1303,6 +1303,7 @@ function onModelRowClick(m: LibraryModel): void {
     }
     const replaceId = modelReplaceTargetId;
     const isStage = m.type === 'stage' || m.type === 'scene' || m.type === 'prop';
+    const isActor = m.format === 'pmx' && !isStage;
     if (m.format === 'pmx') {
         const ref = computeLibraryRef(m.file_path);
         if (ref) {
@@ -1314,7 +1315,8 @@ function onModelRowClick(m: LibraryModel): void {
     }
 
     // ===== Replace mode: after load, return to library with new model's replace mode active =====
-    if (replaceId && m.format === 'pmx') {
+    // 仅角色模型适用替换；舞台/道具即使有残留 replaceId 也不走替换路径
+    if (replaceId && isActor) {
         setPendingVmd(null);
         _isReplaceLoading = true;
 
@@ -1453,7 +1455,9 @@ function onModelRowClick(m: LibraryModel): void {
 /** 移除当前替换目标模型后加载新模型。无替换目标时直接添加。 */
 function replaceModel(m: LibraryModel): void {
     // 整行点击 = 替换当前焦点角色：replace 目标未显式设置时，以当前焦点模型作为被替换对象
-    if (!modelReplaceTargetId && focusedModelId) {
+    // 仅角色模型（非舞台/道具）适用替换逻辑；舞台/道具始终为新增
+    const isActor = m.format === 'pmx' && m.type !== 'stage' && m.type !== 'scene' && m.type !== 'prop';
+    if (!modelReplaceTargetId && focusedModelId && isActor) {
         setModelReplaceTargetId(focusedModelId);
     }
     onModelRowClick(m);
