@@ -1181,6 +1181,7 @@ export const ja: Record<string, string> = {
     'settings.about.cache.total': '合計',
     'settings.about.cache.extracted': '抽出',
     'settings.about.cache.thumbnails': 'サムネイル',
+    'settings.about.cache.resource': 'ライブラリ',
     'settings.about.cache.serve': '分離',
     'settings.about.update': 'アップデート',
     'settings.about.update.autoCheck': '自動更新チェック（起動時）',
@@ -1257,6 +1258,7 @@ export const ja: Record<string, string> = {
     'shortcuts.group.playbackControl': '再生制御',
     'shortcuts.group.global': 'グローバル',
     'shortcuts.group.screenshot': 'スクリーンショット',
+    'shortcuts.group.plaza': '広場',
     'shortcuts.title': 'ショートカット',
     'shortcuts.pressNewCombo': '新しいキーを押してください...',
     'shortcuts.confirmOverride':
@@ -1328,6 +1330,7 @@ export const ja: Record<string, string> = {
     'plaza.downloading': 'ダウンロード中: {name}',
     'plaza.openFail': 'ウィンドウのオープンに失敗: {err}',
     'plaza.opening': '{name} をオープン中...',
+    'plaza.viewLibrary': 'モデルライブラリを表示',
     'scene.accessory.attachToBone': 'ボーンにアタッチ',
     'scene.accessory.attached': '✓ {name} を {bone} にアタッチしました',
     'scene.accessory.boneNoLink': '✗ ボーンにリンクできません（プロキシボーンは未対応）',

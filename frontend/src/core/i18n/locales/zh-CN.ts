@@ -1244,6 +1244,7 @@ export const zhCN: Record<string, string> = {
     'settings.about.cache.extracted': '解压缓存',
     'settings.about.cache.thumbnails': '缩略图',
     'settings.about.cache.resource': '仓库',
+    'settings.about.cache.serve': '隔离',
     'settings.about.update': '更新',
     'settings.about.update.autoCheck': '自动检查更新（启动时）',
     'settings.about.update.checkNow': '检查更新',

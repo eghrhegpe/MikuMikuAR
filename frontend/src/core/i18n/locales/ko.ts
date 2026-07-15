@@ -1175,6 +1175,7 @@ export const ko: Record<string, string> = {
     'settings.about.cache.total': '합계',
     'settings.about.cache.extracted': '추출',
     'settings.about.cache.thumbnails': '썸네일',
+    'settings.about.cache.resource': '라이브러리',
     'settings.about.cache.serve': '격리',
     'settings.about.update': '업데이트',
     'settings.about.update.autoCheck': '자동 업데이트 확인 (시작 시)',
@@ -1250,6 +1251,7 @@ export const ko: Record<string, string> = {
     'shortcuts.group.playbackControl': '재생 제어',
     'shortcuts.group.global': '전역',
     'shortcuts.group.screenshot': '스크린샷',
+    'shortcuts.group.plaza': '플라자',
     'shortcuts.title': '단축키',
     'shortcuts.pressNewCombo': '새 키 조합을 누르세요...',
     'shortcuts.confirmOverride':
@@ -1321,6 +1323,7 @@ export const ko: Record<string, string> = {
     'plaza.downloading': '다운로드 중: {name}',
     'plaza.openFail': '윈도우 열기 실패: {err}',
     'plaza.opening': '{name} 열기 중...',
+    'plaza.viewLibrary': '모델 라이브러리 보기',
     'scene.accessory.attachToBone': '뼈에 부착',
     'scene.accessory.attached': '✓ {name}을(를) {bone}에 부착함',
     'scene.accessory.boneNoLink': '✗ 뼈에 링크할 수 없음 (프록시 뼈대는 미지원)',
