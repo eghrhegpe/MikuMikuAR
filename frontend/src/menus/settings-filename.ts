@@ -123,26 +123,24 @@ function buildFilenameSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
                             undefined,
                             undefined,
                             {
-                                actionIcons: [
-                                    {
-                                        icon: 'lucide:x',
-                                        title: '删除',
-                                        danger: true,
-                                        onClick: () => {
-                                            delete uiState.materialCategoryMap![pattern];
-                                            if (
-                                                Object.keys(uiState.materialCategoryMap!).length ===
-                                                0
-                                            ) {
-                                                delete uiState.materialCategoryMap;
-                                            }
-                                            setUIState({
-                                                materialCategoryMap: uiState.materialCategoryMap,
-                                            });
-                                            getSettingsMenu()?.reRender();
-                                        },
+                                trailing: {
+                                    icon: 'lucide:x',
+                                    title: '删除',
+                                    danger: true,
+                                    onClick: () => {
+                                        delete uiState.materialCategoryMap![pattern];
+                                        if (
+                                            Object.keys(uiState.materialCategoryMap!).length ===
+                                            0
+                                        ) {
+                                            delete uiState.materialCategoryMap;
+                                        }
+                                        setUIState({
+                                            materialCategoryMap: uiState.materialCategoryMap,
+                                        });
+                                        getSettingsMenu()?.reRender();
                                     },
-                                ],
+                                },
                             }
                         );
                     }

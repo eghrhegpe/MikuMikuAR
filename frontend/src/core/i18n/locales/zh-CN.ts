@@ -628,6 +628,7 @@ export const zhCN: Record<string, string> = {
     'library.importFile': '导入文件',
     'library.rescan': '重新扫描',
     'library.model': '模型',
+    'library.modelSettings': '模型设置',
     'library.firstUseHint': '📦 首次使用：点击这里打开模型库 → 加载模型，模型目录请在 ⚙ 设置中配置',
     'library.browseHint2': '📦 点击这里浏览模型 · 💃 点击这里加载动作 · 拖拽旋转 · 滚轮缩放',
     'library.loadLibraryFailed': '✗ 模型库加载失败: ',

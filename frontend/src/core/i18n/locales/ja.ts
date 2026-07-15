@@ -757,6 +757,7 @@ export const ja: Record<string, string> = {
     'library.importFile': 'ファイルをインポート',
     'library.rescan': '再スキャン',
     'library.model': 'モデル',
+    'library.modelSettings': 'モデル設定',
     'library.firstUseHint':
         '📦 初めてですか？ここでライブラリを開いて→モデルを読み込んでください。モデルディレクトリは ⚙ 設定で変更できます',
     'library.browseHint2':

@@ -631,6 +631,7 @@ export const en: Record<string, string> = {
     'library.importFile': 'Import File',
     'library.rescan': 'Rescan',
     'library.model': 'Model',
+    'library.modelSettings': 'Model settings',
     'library.firstUseHint':
         '📦 First time? Open the library here → load a model. Set the library dir in ⚙ Settings',
     'library.browseHint2':
