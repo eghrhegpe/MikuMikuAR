@@ -57,7 +57,12 @@ export type ResourceViewMode = 'list' | 'grid';
 let resourceViewMode: ResourceViewMode = 'list';
 
 export function getResourceViewMode(): ResourceViewMode { return resourceViewMode; }
-export function setResourceViewMode(mode: ResourceViewMode): void { resourceViewMode = mode; }
+export function setResourceViewMode(mode: ResourceViewMode): void {
+    resourceViewMode = mode;
+    import('../core/wails-bindings').then(({ SetUIState }) =>
+        SetUIState({ resourceViewMode: mode }).catch(() => {})
+    );
+}
 
 // ======== 模型目录检测 ========
 
@@ -84,7 +89,7 @@ export function splitSubdirSegments(rootRaw: string, dirRaw: string): string[] |
     const dir = normPath(dirRaw);
     if (!isUnderRoot(root, dir)) return null;
     const rel = dir.substring(root.length + 1);
-    return rel ? rel.split('/').filter(Boolean) : null;
+    return rel ? rel.split('/').filter(Boolean) : [];
 }
 
 export function getRelativePathUnderDir(mdirRaw: string, baseDirRaw: string): string | null {
@@ -101,13 +106,23 @@ export function isLeafFlattenDir(
     filter?: (m: LibraryModel) => boolean
 ): boolean {
     const d = normPath(dir);
+    let directModelCount = 0;
+    let zipModelCount = 0;
     for (const m of modelList) {
         if (filter && !filter(m)) continue;
         const mdir = normPath(m.dir);
-        if (mdir === d) continue;
+        if (mdir === d) {
+            directModelCount++;
+            if (m.container === 'zip') zipModelCount++;
+            continue;
+        }
         const rel = getRelativePathUnderDir(mdir, d);
-        if (rel !== null && rel.includes('/')) return false;
+        if (rel) return false; // model in subdirectory → not a leaf
     }
+    // No models under this directory → not a leaf
+    if (directModelCount === 0) return false;
+    // Multiple zip-only models → keep as folder
+    if (directModelCount > 1 && zipModelCount === directModelCount) return false;
     return true;
 }
 
@@ -119,18 +134,21 @@ export function computeRestoreSegments(
 ): string[] | null {
     const root = normPath(rootRaw);
     const target = normPath(targetRaw);
+    if (root === target) return [];
     const segs = splitSubdirSegments(root, target);
     if (!segs) return null;
-    // 从根开始逐段验证：每段对应目录下至少有一个符合条件的模型
+    // 逐段检查：leaf flatten dir 可折叠（单模型目录），多模型目录保留全路径
     let current = root;
     for (let i = 0; i < segs.length; i++) {
         current = current + '/' + segs[i];
-        let hasModel = false;
-        for (const m of modelList) {
-            if (filter && !filter(m)) continue;
-            if (isUnderRoot(current, normPath(m.dir))) { hasModel = true; break; }
+        if (isLeafFlattenDir(current, modelList, filter)) {
+            const modelCount = modelList.filter(
+                (m) => (!filter || filter(m)) && normPath(m.dir) === current
+            ).length;
+            if (modelCount <= 1) {
+                return segs.slice(0, i);
+            }
         }
-        if (!hasModel) return segs.slice(0, i);
     }
     return segs;
 }
@@ -224,8 +242,20 @@ export function buildResourceItemsForDir(
             subdirs.add(parts[0]);
         }
     }
+    // Flatten leaf subdirs: single-model dirs show their model directly instead of as a folder
     for (const d of Array.from(subdirs).sort()) {
-        items.unshift({ id: dir + '/' + d, label: d, filePath: dir + '/' + d, icon: 'folder', isFolder: true });
+        const subdirPath = dir + '/' + d;
+        if (isLeafFlattenDir(subdirPath, modelList, filter)) {
+            // Flatten: add models from this leaf subdir directly
+            for (const m of modelList) {
+                if (filter && !filter(m)) continue;
+                if (normPath(m.dir) === subdirPath) {
+                    items.push(modelToResourceItem(m));
+                }
+            }
+        } else {
+            items.unshift({ id: subdirPath, label: d, filePath: subdirPath, icon: 'folder', isFolder: true });
+        }
     }
     return items;
 }
@@ -455,11 +485,14 @@ function renderGridMode(
 
 // ======== 构建层级 ========
 
-export function buildLevel(
-    dir: string, label: string, filter?: (m: LibraryModel) => boolean,
-    targetStack?: SlideMenu, extraFolders?: { label: string; path: string }[]
-): PopupLevel {
-    dir = normPath(dir);
+// [修复] 从 allModels 实时构建某目录的 PopupRow 列表（对齐网格模式的自愈行为）。
+// 抽出为独立函数，使 buildLevel 的 renderCustom 可在每次重渲染时重算，
+// 不再依赖 buildLevel 调用时刻的闭包快照（旧实现在 allModels 未就绪时得到空快照且 reRender 后永不刷新）。
+function buildPopupRows(
+    dirIn: string, filter: ((m: LibraryModel) => boolean) | undefined,
+    extraFolders?: { label: string; path: string }[]
+): PopupRow[] {
+    const dir = normPath(dirIn);
     const isRoot = filter ? false : normPath(libraryRoot) === dir;
     const items: PopupRow[] = [];
     const subdirs = new Set<string>();
@@ -497,15 +530,26 @@ export function buildLevel(
     if (librarySortMode === 'name') {
         items.sort((a, b) => a.label.localeCompare(b.label, getLang()));
     }
+    return items;
+}
+
+export function buildLevel(
+    dir: string, label: string, filter?: (m: LibraryModel) => boolean,
+    targetStack?: SlideMenu, extraFolders?: { label: string; path: string }[]
+): PopupLevel {
+    dir = normPath(dir);
     return {
         label, dir, items: [], filter,
         renderCustom: (container) => {
+            // [修复] 每次重渲染实时重算 items：列表模式不再依赖 buildLevel 时刻的闭包快照，
+            // 解压/扫描未完成时进入空层，待数据就绪后任意一次 reRender（含导航 push/pop、视图切换）即自愈填充。
+            const liveItems = buildPopupRows(dir, filter, extraFolders);
             const resourceItems = buildResourceItemsForDir(dir, filter);
             if (resourceViewMode === 'grid') {
-                renderGridMode(container, dir, items, filter, targetStack);
+                renderGridMode(container, dir, liveItems, filter, targetStack);
             } else {
-                addListViewToolbar(container, dir, items, filter, targetStack, resourceItems);
-                renderItemsWithRAF(container, items, filter, targetStack);
+                addListViewToolbar(container, dir, liveItems, filter, targetStack, resourceItems);
+                renderItemsWithRAF(container, liveItems, filter, targetStack);
             }
         },
     };
