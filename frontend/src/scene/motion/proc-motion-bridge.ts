@@ -210,7 +210,7 @@ export async function updateProcMotion(): Promise<void> {
     }
 
     if (wantAutoDance && !hasUserVmd && procBeatDetector) {
-        const bpm = procBeatDetector.getBPM();
+        const bpm = procBeatDetector.getBPM() ?? 120;
         if (!_procVmdActive || procActiveKind !== 'autodance' || Math.abs(bpm - lastBeatBpm) > 10) {
             await startProcMotion('autodance', bpm);
         }

@@ -54,6 +54,9 @@ export function removeFocusedModel(): void {
 
 export function focusModel(id: string): void {
     modelManager?.focus(id);
+    if (!mmdRuntime) {
+        return;
+    }
     updatePlaybackUI();
 }
 
