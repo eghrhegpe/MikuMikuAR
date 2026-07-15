@@ -57,7 +57,8 @@ export async function loadVMDMotion(
     data: ArrayBuffer,
     name: string,
     targetModelId?: string,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    vmdPath?: string
 ): Promise<void> {
     if (signal?.aborted) {
         throw new DOMException('Aborted', 'AbortError');
@@ -161,6 +162,22 @@ export async function loadVMDMotion(
         const handle = inst.mmdModel.createRuntimeAnimation(runtimeAnimation);
         inst.mmdModel.setRuntimeAnimation(handle);
 
+        // 为动作生成缩略图：定位到初始帧（第 0 帧）截当前模型姿态。
+        // 独立 try：失败不影响动作加载主流程。
+        try {
+            const { captureMotionThumbnail } = await import('../manager/thumbnail-capture');
+            const savedT = mmdRuntime.currentTime;
+            // 定位到第 0 帧（forceApply=true 立即应用骨骼姿态）
+            await mmdRuntime.seekAnimation(0, true).catch(() => {});
+            // 等主循环把骨骼 world matrix 更新到第 0 帧（seekAnimation 为异步 apply）
+            await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+            await captureMotionThumbnail(inst, vmdPath || name);
+            // 恢复动画时间，避免干扰正在进行的播放
+            await mmdRuntime.seekAnimation(savedT, true).catch(() => {});
+        } catch {
+            // 缩略图生成失败不阻断动作加载
+        }
+
         inst.vmdData = data;
         _companionAudioCache.clear();
         inst.vmdName = name;
@@ -193,7 +210,7 @@ export async function loadVMDFromPath(
             const vmdDisplayName = vmdName.replace(/\.vmd$/i, '');
 
             if (mmdRuntime && (targetModelId || focusedMmdModel())) {
-                await loadVMDMotion(vmdData, vmdName.replace(/\.vmd$/i, ''), targetModelId, signal);
+                await loadVMDMotion(vmdData, vmdName.replace(/\.vmd$/i, ''), targetModelId, signal, path);
                 const foc = targetModelId ? modelRegistry.get(targetModelId) : focusedModel();
                 if (foc) {
                     foc.vmdPath = path;
