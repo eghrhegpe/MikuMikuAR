@@ -26,22 +26,12 @@ func (a *App) LoadModelPreset(path string) (string, error) {
 
 // SelectPresetSaveFile opens a save dialog for model preset files.
 func (a *App) SelectPresetSaveFile() (string, error) {
-	path, err := dialogs.SelectPresetSave(a.wailsApp, a.getLastDir("preset"))
-	if err != nil || path == "" {
-		return path, err
-	}
-	a.setLastDir("preset", filepath.Dir(path))
-	return path, nil
+	return a.selectFile("preset", dialogs.SelectPresetSave)
 }
 
 // SelectPresetOpenFile opens a file dialog to pick a model preset file.
 func (a *App) SelectPresetOpenFile() (string, error) {
-	path, err := dialogs.SelectPresetOpen(a.wailsApp, a.getLastDir("preset"))
-	if err != nil || path == "" {
-		return path, err
-	}
-	a.setLastDir("preset", filepath.Dir(path))
-	return path, nil
+	return a.selectFile("preset", dialogs.SelectPresetOpen)
 }
 
 // ModelPresetEntry is a listing entry for a model preset in the library.
@@ -124,23 +114,7 @@ func (a *App) SaveModelPresetToLibAuto(jsonStr string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// Find the next available number
-	next := 1
-	entries, _ := os.ReadDir(dir)
-	for _, e := range entries {
-		if !e.IsDir() && strings.HasSuffix(e.Name(), ".mcupreset.json") {
-			var n int
-			if _, err := fmt.Sscanf(e.Name(), "%d.mcupreset.json", &n); err == nil && n >= next {
-				next = n + 1
-			}
-		}
-	}
-	filename := fmt.Sprintf("%03d.mcupreset.json", next)
-	path := filepath.Join(dir, filename)
-	if err := os.WriteFile(path, []byte(jsonStr), 0644); err != nil {
-		return "", err
-	}
-	return filename, nil
+	return autoNumberedSave(dir, "mcupreset.json", jsonStr)
 }
 
 // SaveModelPresetToLib saves a model preset JSON to the library with the given name.
@@ -177,15 +151,11 @@ func (a *App) LoadModelPresetFromLib(name string) (string, error) {
 
 // DeleteModelPreset removes a named model preset from the library.
 func (a *App) DeleteModelPreset(name string) error {
-	clean := validatePresetName(name)
-	if clean == "" {
-		return fmt.Errorf("invalid preset name: %q", name)
-	}
 	dir, err := a.modelPresetDir()
 	if err != nil {
 		return err
 	}
-	return os.Remove(filepath.Join(dir, clean+".mcupreset.json"))
+	return deletePresetFile(dir, name, "mcupreset.json")
 }
 
 // RenameModelPreset renames a model preset in the library.

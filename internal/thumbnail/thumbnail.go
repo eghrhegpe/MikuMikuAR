@@ -1,19 +1,14 @@
 package thumbnail
 
 import (
-	"crypto/sha256"
 	"encoding/base64"
-	"encoding/hex"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
-)
 
-func sha256Hex(s string) string {
-	h := sha256.Sum256([]byte(s))
-	return hex.EncodeToString(h[:])
-}
+	"mikumikuar/internal/util"
+)
 
 // CacheKey generates a cache key for the given model path.
 // If rootPath is provided, the relative path under rootPath is used instead of
@@ -27,11 +22,11 @@ func CacheKey(modelPath string, rootPath string) string {
 		}
 	}
 	// Still stat the absolute path for mtime/size
-	info, err := os.Stat(modelPath)
-	if err != nil {
-		return sha256Hex(keyPath)
-	}
-	return sha256Hex(keyPath + "|" + info.ModTime().Format("20060102-150405.000") + "|" + strconv.FormatInt(info.Size(), 10))
+	  info, err := os.Stat(modelPath)
+	  if err != nil {
+	   return util.SHA256Hex(keyPath)
+	  }
+	  return util.SHA256Hex(keyPath + "|" + info.ModTime().Format("20060102-150405.000") + "|" + strconv.FormatInt(info.Size(), 10))
 }
 
 func Save(thumbDir string, modelPath string, rootPath string, base64PNG string) error {

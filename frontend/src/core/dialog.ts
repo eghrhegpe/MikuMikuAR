@@ -315,6 +315,14 @@ function getOverlay2(): HTMLDivElement {
     return _overlay2;
 }
 
+/** 移除 showPrompt2 创建的 overlay2 DOM（供 HMR 清理入口调用）。 */
+export function disposeOverlay2(): void {
+    if (_overlay2) {
+        _overlay2.remove();
+        _overlay2 = null;
+    }
+}
+
 /**
  * 双字段输入对话框。返回 [value1, value2] 或 null（取消）。
  * 替代连续两次 showPrompt，用户一次交互完成。

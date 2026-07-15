@@ -367,8 +367,9 @@ export function attachPropGizmo(id: string): boolean {
         id,
         node,
         types: ['position'],
-        onPositionDragEnd: (n) => {
-            const v = (n as unknown as { position: Vector3 }).position;
+        onPositionDragEnd: () => {
+            // node 已在上方验证为 TransformNode，直接读取更新后的位置
+            const v = node.position;
             setPropTransform(id, { position: [v.x, v.y, v.z] });
         },
     });

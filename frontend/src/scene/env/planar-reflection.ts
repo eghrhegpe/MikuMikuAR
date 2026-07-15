@@ -24,10 +24,9 @@ import {
 } from '@babylonjs/core';
 import type { EnvState } from '@/core/config';
 import { logWarn } from '@/core/utils';
+import { REFRESHRATE_RENDER_ONCE, type FrozenCamera } from './env-type-helpers';
 
-const RT_REFRESH_ONCE =
-    (RenderTargetTexture as unknown as { REFRESHRATE_RENDER_ONCE?: number })
-        .REFRESHRATE_RENDER_ONCE ?? 0;
+const RT_REFRESH_ONCE = REFRESHRATE_RENDER_ONCE;
 
 /** 帧跳过：high 每帧、medium 每 2 帧、low 每 4 帧、off 跳帧。两模式共用。 */
 const FRAME_SKIP: Record<string, number> = { high: 0, medium: 1, low: 3, off: 999 };
@@ -191,18 +190,9 @@ export class PlanarReflection {
         if (this.cfg.getMirrorCameraMatrix) {
             const m = this.cfg.getMirrorCameraMatrix(state, scene);
             if (m && this.mirrorCam) {
-                (
-                    this.mirrorCam as unknown as {
-                        _worldMatrix: Matrix;
-                        _isWorldMatrixFrozen: boolean;
-                    }
-                )._worldMatrix = m;
-                (
-                    this.mirrorCam as unknown as {
-                        _worldMatrix: Matrix;
-                        _isWorldMatrixFrozen: boolean;
-                    }
-                )._isWorldMatrixFrozen = true;
+                const cam = this.mirrorCam as unknown as FrozenCamera;
+                cam._worldMatrix = m;
+                cam._isWorldMatrixFrozen = true;
             }
         }
         if (this.renderListDirty) {
@@ -305,7 +295,7 @@ export class PlanarReflection {
         // 清理材质上的反射纹理引用（避免悬空指针指向已 dispose 的 RT）
         const mat = this.cfg.getMaterial();
         if (mat) {
-            this.cfg.mount(null as unknown as BaseTexture);
+            this.cfg.mount(null);
             this.cfg.setBlend(0); // 清零反射强度（水面 planarReflectBlend / 地面 level）
         }
         this.cfg.onDisable?.();

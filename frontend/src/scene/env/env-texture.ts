@@ -4,6 +4,7 @@
 // toDataURL→Texture，且回退路径同样吞掉受约束环境（NullEngine 无完整 2D 上下文）的绘制异常。
 
 import { DynamicTexture, Texture, Scene } from '@babylonjs/core';
+import { getCanvasCtx } from './env-type-helpers';
 
 export interface CanvasTextureOptions {
     /** 正方形画布边长（px） */
@@ -53,7 +54,7 @@ export function createCanvasTexture(opts: CanvasTextureOptions): Texture {
     // 优先 DynamicTexture
     try {
         const dt = new DynamicTexture(name, size, scene, generateMipMaps);
-        const dtCtx = dt.getContext() as unknown as CanvasRenderingContext2D | null;
+        const dtCtx = getCanvasCtx(dt);
         if (!dtCtx) {
             throw new Error('DynamicTexture 无 2D 上下文');
         }
