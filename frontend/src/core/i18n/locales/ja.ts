@@ -758,6 +758,8 @@ export const ja: Record<string, string> = {
     'library.rescan': '再スキャン',
     'library.model': 'モデル',
     'library.modelSettings': 'モデル設定',
+    'library.focusModel': 'フォーカスに設定',
+    'library.modelTools': 'モデルツール',
     'library.firstUseHint':
         '📦 初めてですか？ここでライブラリを開いて→モデルを読み込んでください。モデルディレクトリは ⚙ 設定で変更できます',
     'library.browseHint2':

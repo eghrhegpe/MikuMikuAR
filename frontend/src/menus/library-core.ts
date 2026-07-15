@@ -65,7 +65,7 @@ import { loadManager } from '../core/load-manager';
 import { removeModel, focusModel } from '../scene/scene';
 import { addVmdLayerFromPath } from '../scene/motion/vmd-layers';
 import { loadVPDPose } from '../scene/scene';
-import { buildModelLevel } from './model-detail';
+import { buildModelLevel, buildModelToolsLevel } from './model-detail';
 import { buildStageTransformLevel } from './scene-menu';
 import { SlideMenu } from './menu';
 import { createIconifyIcon } from '../core/icons';
@@ -415,7 +415,8 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
             return null;
         },
         onItemClick: (row: PopupRow) => {
-            // radio 角色行：点击整行 = 切换焦点角色（工具图标点击已被 trailing stopPropagation 拦截）
+            // 角色行：整行（中文本区）点击 = 打开模型详情（主要功能区）；
+            // 左侧 radio 切焦点、右齿轮开工具菜单已通过 leading/trailing stopPropagation 解耦。
             if (row.target && row.target.startsWith('scene:')) {
                 const id = row.target.replace('scene:', '');
                 const inst = modelRegistry.get(id);
@@ -426,8 +427,7 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                     stackRegistry.modelStack?.push(buildStageTransformLevel(id));
                     return;
                 }
-                focusModel(id);
-                refreshModelRoot();
+                stackRegistry.modelStack?.push(buildModelLevel(id));
                 return;
             }
             if (row.model) {
@@ -1587,29 +1587,31 @@ export function buildModelRootItems(): PopupRow[] {
     logWarn('library-core', '[buildModelRootItems] actors:', { actorsLength: actors.length, allModelsLength: allModels.length, libraryRoot });
     for (const [id, inst] of actors) {
         const isFocused = focusedModelId === id;
+        const radioIcon = isFocused ? 'lucide:check-circle' : 'lucide:circle';
         items.push({
-            // radio 式单选：点击整行 = 切换焦点角色；工具图标 = 进入该模型管理面板
             kind: 'action',
             label: inst.name,
-            icon: isFocused ? 'lucide:check-circle' : 'lucide:circle',
+            icon: radioIcon,
             target: `scene:${id}`,
             wrapLabel: true,
             focused: isFocused,
             // rowKey 编码焦点态：焦点切换时 key 变化 → patchPanel 整行替换 → 图标同步刷新
             rowKey: 'actor:' + id + (isFocused ? ':on' : ':off'),
+            // 左侧 radio 指示 = 点击切焦点（与整行 onClick=开详情 解耦，stopPropagation）
+            leading: {
+                icon: radioIcon,
+                title: t('library.focusModel'),
+                onClick: () => {
+                    focusModel(id);
+                    refreshModelRoot();
+                },
+            },
+            // 右齿轮 = 工具菜单（port 自详情面板「工具」组）
             trailing: {
                 icon: 'lucide:settings-2',
-                title: t('library.modelSettings'),
+                title: t('library.modelTools'),
                 onClick: () => {
-                    const cur = modelRegistry.get(id);
-                    if (!cur) {
-                        return;
-                    }
-                    stackRegistry.modelStack?.push(
-                        cur.kind === 'stage'
-                            ? buildStageTransformLevel(id)
-                            : buildModelLevel(id)
-                    );
+                    stackRegistry.modelStack?.push(buildModelToolsLevel(id));
                 },
             },
         });
