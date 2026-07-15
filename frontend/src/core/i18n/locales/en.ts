@@ -396,6 +396,7 @@ export const en: Record<string, string> = {
 
     // ===== Scene =====
     'scene.formation': 'Formation',
+    'scene.advanced': 'Advanced',
     'scene.screenshot': 'Screenshot',
     'scene.presetScenes': 'Preset Scenes',
     'scene.saveScene': 'Save Scene',

@@ -476,6 +476,7 @@ export const ko: Record<string, string> = {
 
     // —— Scene ——
     'scene.formation': '대형',
+    'scene.advanced': '고급',
     'scene.screenshot': '스크린샷',
     'scene.presetScenes': '프리셋 장면',
     'scene.saveScene': '장면 저장',

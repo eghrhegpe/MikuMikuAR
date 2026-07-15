@@ -104,24 +104,35 @@ function buildFormationLevel(): PopupLevel {
     };
 }
 
+// ======== Scene Advanced Level ========
+
+function buildSceneAdvancedLevel(): PopupLevel {
+    return {
+        label: t('scene.advanced'),
+        dir: '',
+        items: [
+            {
+                kind: 'folder',
+                label: t('scene.presetScenes'),
+                icon: 'lucide:bookmark',
+                target: 'scene:presets',
+            },
+            {
+                kind: 'action',
+                label: t('scene.saveScene'),
+                icon: 'lucide:save',
+                target: 'scene:save',
+            },
+        ],
+    };
+}
+
 // ======== Scene Root ========
 
 /** 场景弹窗根级 items 构建器——items-based，支持增量 patch */
 function buildSceneRootItems(): PopupRow[] {
     const items: PopupRow[] = [];
-    items.push({
-        kind: 'folder',
-        label: t('scene.presetScenes'),
-        icon: 'lucide:bookmark',
-        target: 'scene:presets',
-    });
-    items.push({
-        kind: 'action',
-        label: t('scene.saveScene'),
-        icon: 'lucide:save',
-        target: 'scene:save',
-    });
-    items.push({ kind: 'divider', label: '', icon: '', target: '' });
+    // 高频功能前置：舞台加载 > 灯光 > 物理 > 阵型
     items.push({
         kind: 'folder',
         label: t('scene.stage'),
@@ -134,7 +145,6 @@ function buildSceneRootItems(): PopupRow[] {
         icon: 'lucide:lightbulb',
         target: 'scene:stageLight',
     });
-    items.push({ kind: 'divider', label: '', icon: '', target: '' });
     items.push({
         kind: 'folder',
         label: t('scene.physics'),
@@ -149,6 +159,14 @@ function buildSceneRootItems(): PopupRow[] {
             target: 'scene:formation',
         });
     }
+    // 低频功能收入高级菜单
+    items.push({ kind: 'divider', label: '', icon: '', target: '' });
+    items.push({
+        kind: 'folder',
+        label: t('scene.advanced'),
+        icon: 'lucide:settings-2',
+        target: 'scene:advanced',
+    });
     return items;
 }
 
@@ -164,6 +182,7 @@ function buildSceneRoot(): PopupLevel {
 
 // [doc:adr-065] 子层路由表：target → 纯 items 构建器（零参）；自动挂 itemBuilder 实现语言热刷新
 const SCENE_FOLDER_ROUTES: Record<string, () => PopupLevel> = {
+    'scene:advanced': buildSceneAdvancedLevel,
     'scene:presets': buildPresetScenesLevel,
     'scene:render': buildRenderLevel,
     'scene:render:stage': buildStageLevel,

@@ -476,6 +476,7 @@ export const ja: Record<string, string> = {
 
     // —— Scene ——
     'scene.formation': '隊形',
+    'scene.advanced': '詳細設定',
     'scene.screenshot': 'スクリーンショット',
     'scene.presetScenes': 'プリセットシーン',
     'scene.saveScene': 'シーンを保存',

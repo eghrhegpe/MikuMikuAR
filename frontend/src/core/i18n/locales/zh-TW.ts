@@ -469,6 +469,7 @@ export const zhTW: Record<string, string> = {
 
     // —— Scene ——
     'scene.formation': '隊形',
+    'scene.advanced': '進階',
     'scene.screenshot': '螢幕截圖',
     'scene.presetScenes': '預設場景',
     'scene.saveScene': '儲存場景',
