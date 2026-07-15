@@ -211,75 +211,53 @@ func shutdownServers(ctx context.Context, servers []*http.Server) error {
 	return firstErr
 }
 
-// SelectPMXFile opens a file dialog to select a PMX file
-func (a *App) SelectPMXFile() (string, error) {
-	path, err := dialogs.SelectPMX(a.wailsApp, a.getLastDir("model"))
+// fileSelector is a function type for dialog selection functions in dialogs package.
+type fileSelector func(*application.App, string) (string, error)
+
+// selectFile is a helper that wraps the common dialog pattern:
+// call selector → save last dir → return path.
+func (a *App) selectFile(category string, fn fileSelector) (string, error) {
+	path, err := fn(a.wailsApp, a.getLastDir(category))
 	if err != nil || path == "" {
 		return path, err
 	}
-	a.setLastDir("model", filepath.Dir(path))
+	a.setLastDir(category, filepath.Dir(path))
 	return path, nil
 }
 
+// SelectPMXFile opens a file dialog to select a PMX file
+func (a *App) SelectPMXFile() (string, error) {
+	return a.selectFile("model", dialogs.SelectPMX)
+}
+
 // SelectImportFile opens a file dialog to select PMX / ZIP / VMD files.
-// Used by the "导入文件" menu entry in library-core.ts.
 func (a *App) SelectImportFile() (string, error) {
-	path, err := dialogs.SelectImport(a.wailsApp, a.getLastDir("import"))
-	if err != nil || path == "" {
-		return path, err
-	}
-	a.setLastDir("import", filepath.Dir(path))
-	return path, nil
+	return a.selectFile("import", dialogs.SelectImport)
 }
 
 // SelectVMDMotion opens a file dialog to select a VMD motion file
 func (a *App) SelectVMDMotion() (string, error) {
-	path, err := dialogs.SelectVMD(a.wailsApp, a.getLastDir("motion"))
-	if err != nil || path == "" {
-		return path, err
-	}
-	a.setLastDir("motion", filepath.Dir(path))
-	return path, nil
+	return a.selectFile("motion", dialogs.SelectVMD)
 }
 
 // SelectVPDPose opens a file dialog to select a VPD pose file
 func (a *App) SelectVPDPose() (string, error) {
-	path, err := dialogs.SelectVPD(a.wailsApp, a.getLastDir("pose"))
-	if err != nil || path == "" {
-		return path, err
-	}
-	a.setLastDir("pose", filepath.Dir(path))
-	return path, nil
+	return a.selectFile("pose", dialogs.SelectVPD)
 }
 
 // SelectAudioFile opens a file dialog to select an audio file
 func (a *App) SelectAudioFile() (string, error) {
-	path, err := dialogs.SelectAudio(a.wailsApp, a.getLastDir("audio"))
-	if err != nil || path == "" {
-		return path, err
-	}
-	a.setLastDir("audio", filepath.Dir(path))
-	return path, nil
+	return a.selectFile("audio", dialogs.SelectAudio)
 }
 
 // SelectEnvTextureFile opens a file dialog to select an environment/skybox texture.
 func (a *App) SelectEnvTextureFile() (string, error) {
-	path, err := dialogs.SelectEnvTexture(a.wailsApp, a.getLastDir("environment"))
-	if err != nil || path == "" {
-		return path, err
-	}
-	a.setLastDir("environment", filepath.Dir(path))
-	return path, nil
+	return a.selectFile("environment", dialogs.SelectEnvTexture)
 }
 
 // SelectExeFile opens a file dialog to select an executable file.
 func (a *App) SelectExeFile() (string, error) {
-	path, err := dialogs.SelectExe(a.wailsApp, a.getLastDir("exe"))
-	if err != nil || path == "" {
-		return path, err
-	}
-	a.setLastDir("exe", filepath.Dir(path))
-	return path, nil
+	return a.selectFile("exe", dialogs.SelectExe)
 }
 
 // ======== Model Library Types ========
@@ -395,6 +373,13 @@ type OverridePaths struct {
 	Environment string `json:"environment"` // 默认 resource_root/environment
 	MDDress     string `json:"md_dress"`    // 默认 resource_root/MD-dress
 	Setting     string `json:"setting"`     // 默认 resource_root/setting
+}
+
+// catDef describes a resource category directory mapping (override field + default subdir name).
+// Used by ensureResourceDirs and GetPath to avoid duplicate category-list definitions.
+type catDef struct {
+	override *string
+	subdir   string
 }
 
 // Config holds persistent user settings.
@@ -736,11 +721,7 @@ func (a *App) ensureResourceDirs(cfg *Config) {
 		root = DefaultResourceRoot()
 		cfg.ResourceRoot = root
 	}
-	type catDef struct {
-		override *string
-		subdir   string
-	}
-	defs := []catDef{
+	  defs := []catDef{
 		{&cfg.OverridePaths.PMX, "PMX"},
 		{&cfg.OverridePaths.VMD, "VMD"},
 		{&cfg.OverridePaths.Audio, "audio"},
@@ -764,10 +745,6 @@ func (a *App) GetPath(cfg *Config, category string) string {
 	root := cfg.ResourceRoot
 	if root == "" {
 		root = DefaultResourceRoot()
-	}
-	type catDef struct {
-		override *string
-		subdir   string
 	}
 	defs := map[string]catDef{
 		"pmx":         {&cfg.OverridePaths.PMX, "PMX"},

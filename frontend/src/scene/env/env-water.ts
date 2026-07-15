@@ -19,11 +19,7 @@ import { _envSys, getScene, ensureEnvUpdateObserver } from './env-impl';
 import { PlanarReflection, registerReflectionSurface } from './planar-reflection';
 import { createCanvasTexture } from './env-texture';
 import { clamp01, logWarn } from '@/core/utils';
-
-// PostProcess 私有属性 _enabled 的类型声明（用于控制后处理启用/禁用）
-interface PostProcessInternal {
-    _enabled: boolean;
-}
+import { isWorldMatrixFrozen, setPostProcessEnabled } from './env-type-helpers';
 
 // ======== 常量定义 ========
 const WATER_BASE_SIZE = 60; // 水面基准尺寸（世界单位），通过缩放调整最终大小
@@ -92,8 +88,7 @@ const waterReflection = new PlanarReflection({
     predicate: (mesh, level) =>
         !mesh.name.startsWith('envWater') &&
         mesh.isEnabled() &&
-        // _worldMatrixFrozen 是 Babylon 内部属性，冻结矩阵的 mesh 不参与反射
-        !(mesh as unknown as { _worldMatrixFrozen?: boolean })._worldMatrixFrozen &&
+        !isWorldMatrixFrozen(mesh) &&
         mesh.getBoundingInfo().boundingBox.maximumWorld.y >= level,
     getMaterial: () => _envSys.water.material as ShaderMaterial | null,
     mount: (rt) => {
@@ -156,7 +151,7 @@ function ensureTintPostProcess(camera: Camera): void {
         Constants.TEXTURE_BILINEAR_SAMPLINGMODE
     );
     // PostProcess 没有 .disable() 实例方法；用 _enabled 属性控制
-    (_tintPostProcess as unknown as PostProcessInternal)._enabled = false;
+    setPostProcessEnabled(_tintPostProcess, false);
 }
 
 function disposeTintPostProcess(): void {
@@ -922,7 +917,7 @@ export function updateUnderwaterTransition(scene: Scene, pipeline: DefaultRender
             ensureTintPostProcess(scene.activeCamera);
         }
         if (_tintPostProcess) {
-            (_tintPostProcess as unknown as PostProcessInternal)._enabled = true;
+            setPostProcessEnabled(_tintPostProcess, true);
             const wc = envState.waterColor;
             _tintPostProcess.onApply = (effect) => {
                 // tintColor 由 waterColor × underwaterTintStrength 派生（默认强度 0.5，即水色×0.5）
@@ -941,7 +936,7 @@ export function updateUnderwaterTransition(scene: Scene, pipeline: DefaultRender
     } else if (!_underwaterActive) {
         pipeline.chromaticAberrationEnabled = false;
         if (_tintPostProcess) {
-            (_tintPostProcess as unknown as PostProcessInternal)._enabled = false;
+            setPostProcessEnabled(_tintPostProcess, false);
         }
     }
 }
@@ -958,7 +953,7 @@ export function resetUnderwaterState(scene: Scene, pipeline: DefaultRenderingPip
     _underwaterTarget = false;
     pipeline.chromaticAberrationEnabled = false;
     if (_tintPostProcess) {
-        (_tintPostProcess as unknown as PostProcessInternal)._enabled = false;
+        setPostProcessEnabled(_tintPostProcess, false);
     }
 }
 

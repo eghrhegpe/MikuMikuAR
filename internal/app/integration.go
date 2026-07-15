@@ -373,21 +373,8 @@ func (a *App) LoadSceneFile(path string) (string, error) {
 // ======== Env Presets (user-saved .env files) ========
 
 // envPresetsDir returns the env-presets/ subdirectory under settingDir.
-// In portable mode (ResourceRoot set), presets live under <ResourceRoot>/setting/env-presets/.
 func (a *App) envPresetsDir() (string, error) {
-	cfg, err := a.GetConfig()
-	if err != nil {
-		return "", err
-	}
-	base, err := settingDir(cfg)
-	if err != nil {
-		return "", err
-	}
-	presetDir := filepath.Join(base, "env-presets")
-	if err := os.MkdirAll(presetDir, 0755); err != nil {
-		return "", err
-	}
-	return presetDir, nil
+	return a.presetDir("env-presets")
 }
 
 // EnvPresetEntry is a catalog item returned by ListEnvPresets.
@@ -423,23 +410,7 @@ func (a *App) SaveEnvPresetAuto(jsonStr string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		// Find the next available number
-		next := 1
-		entries, _ := os.ReadDir(dir)
-		for _, e := range entries {
-			if !e.IsDir() && strings.HasSuffix(e.Name(), ".env") {
-				var n int
-				if _, err := fmt.Sscanf(e.Name(), "%d.env", &n); err == nil && n >= next {
-					next = n + 1
-				}
-			}
-		}
-		filename := fmt.Sprintf("%03d.env", next)
-		path := filepath.Join(dir, filename)
-		if err := os.WriteFile(path, []byte(jsonStr), 0644); err != nil {
-			return "", err
-		}
-		return filename, nil
+		return autoNumberedSave(dir, "env", jsonStr)
 	})
 }
 
@@ -515,30 +486,17 @@ func (a *App) ListEnvPresets() ([]EnvPresetEntry, error) {
 // DeleteEnvPreset removes a .env file by name.
 func (a *App) DeleteEnvPreset(name string) error {
 	return util.SafeCallVoid(func() error {
-		clean := validatePresetName(name)
-		if clean == "" {
-			return fmt.Errorf("invalid preset name: %q", name)
-		}
 		dir, err := a.envPresetsDir()
 		if err != nil {
 			return err
 		}
-		path := filepath.Join(dir, clean+".env")
-		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
-			return err
-		}
-		return nil
+		return deletePresetFile(dir, name, "env")
 	})
 }
 
 // SelectSceneOpenFile opens a file dialog to pick a scene file.
 func (a *App) SelectSceneOpenFile() (string, error) {
-	path, err := dialogs.SelectSceneOpen(a.wailsApp, a.getLastDir("scene"))
-	if err != nil || path == "" {
-		return path, err
-	}
-	a.setLastDir("scene", filepath.Dir(path))
-	return path, nil
+	return a.selectFile("scene", dialogs.SelectSceneOpen)
 }
 
 // SaveLastScene stores the current scene state for auto-recovery on next launch.
@@ -740,10 +698,5 @@ func _copyFileToZip(zw *zip.Writer, srcPath string, entryPath string) error {
 
 // SelectBundleSaveFile opens a save dialog for scene bundle files.
 func (a *App) SelectBundleSaveFile() (string, error) {
-	path, err := dialogs.SelectBundleSave(a.wailsApp, a.getLastDir("scene"))
-	if err != nil || path == "" {
-		return path, err
-	}
-	a.setLastDir("scene", filepath.Dir(path))
-	return path, nil
+	return a.selectFile("scene", dialogs.SelectBundleSave)
 }

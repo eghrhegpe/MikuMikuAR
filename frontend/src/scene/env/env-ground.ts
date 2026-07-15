@@ -23,6 +23,7 @@ import { createHeightmapGround, applyTerrainMaterial } from './env-terrain';
 import { PlanarReflection, registerReflectionSurface } from './planar-reflection';
 import { createCanvasTexture, getOrCreateCanvasTexture } from './env-texture';
 import { _envSys, getScene, ensureEnvUpdateObserver } from './env-impl';
+import { getCanvasCtx } from './env-type-helpers';
 
 // ======== Module state ========
 let _currentGroundKey: string = '';
@@ -318,7 +319,7 @@ function _syncTextureGroundTexture(mat: StandardMaterial, state: EnvState, scene
     _ensureTextureGroundImage(url, (img) => {
         const cur = mat.diffuseTexture as DynamicTexture | null;
         if (!(cur instanceof DynamicTexture) || cur !== dt) return;
-        const ctx = cur.getContext() as unknown as CanvasRenderingContext2D | null;
+        const ctx = getCanvasCtx(cur);
         if (!ctx) return;
         _drawTextureGroundCanvas(ctx, _TEX_GROUND_SIZE, img, state);
         cur.update(false);

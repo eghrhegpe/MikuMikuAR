@@ -44,6 +44,7 @@ import {
     toggleOverlay,
 } from './events';
 import { addDisposableListener } from './dom';
+import { disposeOverlay2 } from './dialog';
 
 // [adr:audit] init 层本地事件监听收集，配合 disposeEventHandlers 实现 HMR 幂等清理
 const _initDisposables: { dispose(): void }[] = [];
@@ -75,6 +76,7 @@ async function init(): Promise<void> {
         }
         _initDisposables.length = 0;
         disposeEventHandlers();
+        disposeOverlay2(); // 清理 showPrompt2 创建的双字段输入 overlay（HMR 幂等）
         // 注册本地图标 bundle，使 iconify 离线可用
         registerIconBundle();
         initI18n(); // [doc:adr-059] 在菜单渲染前确定语言并同步 <html lang>
@@ -94,35 +96,45 @@ async function init(): Promise<void> {
                 toggleOverlay('sceneOverlay', showModelPopup)
             )
         );
-        dom.btnMotionPopup.addEventListener('click', () =>
-            toggleOverlay('sceneOverlay', showMotionPopup)
+        _initDisposables.push(
+            addDisposableListener(dom.btnMotionPopup, 'click', () =>
+                toggleOverlay('sceneOverlay', showMotionPopup)
+            )
         );
-        dom.btnScene.addEventListener('click', async () => {
-            const m = await import('../menus/scene-menu');
-            toggleOverlay('sceneOverlay', m.showSceneMenu);
-        });
-        dom.btnEnv.addEventListener('click', async () => {
-            const m = await import('../menus/env-menu');
-            toggleOverlay('sceneOverlay', m.showEnvMenu);
-        });
-        dom.btnSettings.addEventListener('click', async () => {
-            const m = await import('../menus/settings');
-            await m
-                .preloadAutoImportState()
-                .catch((err) => logWarn('init', 'preloadAutoImportState', err)); // 静默失败，避免阻塞 UI
-            await m
-                .preloadDownloadWatchState()
-                .catch((err) => logWarn('init', 'preloadDownloadWatchState', err)); // 预加载监听开关状态
-            toggleOverlay('sceneOverlay', m.showSettings);
-        });
-        dom.btnPlaza.addEventListener('click', () => {
-            const layer = document.getElementById('webviewLayer');
-            if (layer && layer.classList.contains('visible')) {
-                closePlaza();
-            } else {
-                toggleOverlay('webviewLayer', showPlaza);
-            }
-        });
+        _initDisposables.push(
+            addDisposableListener(dom.btnScene, 'click', async () => {
+                const m = await import('../menus/scene-menu');
+                toggleOverlay('sceneOverlay', m.showSceneMenu);
+            })
+        );
+        _initDisposables.push(
+            addDisposableListener(dom.btnEnv, 'click', async () => {
+                const m = await import('../menus/env-menu');
+                toggleOverlay('sceneOverlay', m.showEnvMenu);
+            })
+        );
+        _initDisposables.push(
+            addDisposableListener(dom.btnSettings, 'click', async () => {
+                const m = await import('../menus/settings');
+                await m
+                    .preloadAutoImportState()
+                    .catch((err) => logWarn('init', 'preloadAutoImportState', err)); // 静默失败，避免阻塞 UI
+                await m
+                    .preloadDownloadWatchState()
+                    .catch((err) => logWarn('init', 'preloadDownloadWatchState', err)); // 预加载监听开关状态
+                toggleOverlay('sceneOverlay', m.showSettings);
+            })
+        );
+        _initDisposables.push(
+            addDisposableListener(dom.btnPlaza, 'click', () => {
+                const layer = document.getElementById('webviewLayer');
+                if (layer && layer.classList.contains('visible')) {
+                    closePlaza();
+                } else {
+                    toggleOverlay('webviewLayer', showPlaza);
+                }
+            })
+        );
 
         initDropHandler(); // 拖拽导入处理不依赖场景初始化
 

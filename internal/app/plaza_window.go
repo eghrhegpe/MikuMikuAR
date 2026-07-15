@@ -121,81 +121,58 @@ func (a *App) ClosePlazaWindow() error {
 	return nil
 }
 
-// PlazaGoBack navigates the plaza window history backward. No-op if the
-// window is not ready. ExecJS runs the browser's history.back() which is
-// async and returns before navigation completes (ADR-087 P0).
-func (a *App) PlazaGoBack() error {
+// plazaCall is a helper that acquires plazaWinMu, checks the window is ready,
+// and calls the given function. It is used by all Plaza* methods to avoid
+// repeating the lock/nil-check boilerplate.
+func (a *App) plazaCall(fn func(*application.WebviewWindow)) error {
 	return util.SafeCallVoid(func() error {
 		a.plazaWinMu.Lock()
 		defer a.plazaWinMu.Unlock()
 		if a.plazaWin == nil {
 			return fmt.Errorf("plaza window not ready")
 		}
-		a.plazaWin.ExecJS("history.back()")
+		fn(a.plazaWin)
 		return nil
+	})
+}
+
+// PlazaGoBack navigates the plaza window history backward.
+func (a *App) PlazaGoBack() error {
+	return a.plazaCall(func(w *application.WebviewWindow) {
+		w.ExecJS("history.back()")
 	})
 }
 
 // PlazaGoForward navigates the plaza window history forward (ADR-087 P0).
 func (a *App) PlazaGoForward() error {
-	return util.SafeCallVoid(func() error {
-		a.plazaWinMu.Lock()
-		defer a.plazaWinMu.Unlock()
-		if a.plazaWin == nil {
-			return fmt.Errorf("plaza window not ready")
-		}
-		a.plazaWin.ExecJS("history.forward()")
-		return nil
+	return a.plazaCall(func(w *application.WebviewWindow) {
+		w.ExecJS("history.forward()")
 	})
 }
 
 // PlazaReload reloads the current page in the plaza window (ADR-087 P0).
 func (a *App) PlazaReload() error {
-	return util.SafeCallVoid(func() error {
-		a.plazaWinMu.Lock()
-		defer a.plazaWinMu.Unlock()
-		if a.plazaWin == nil {
-			return fmt.Errorf("plaza window not ready")
-		}
-		a.plazaWin.Reload()
-		return nil
+	return a.plazaCall(func(w *application.WebviewWindow) {
+		w.Reload()
 	})
 }
 
 // PlazaZoomIn / PlazaZoomOut / PlazaZoomReset control page zoom of the plaza
 // window. These map directly to WebView2's zoom API (ADR-087 P0).
 func (a *App) PlazaZoomIn() error {
-	return util.SafeCallVoid(func() error {
-		a.plazaWinMu.Lock()
-		defer a.plazaWinMu.Unlock()
-		if a.plazaWin == nil {
-			return fmt.Errorf("plaza window not ready")
-		}
-		a.plazaWin.ZoomIn()
-		return nil
+	return a.plazaCall(func(w *application.WebviewWindow) {
+		w.ZoomIn()
 	})
 }
 
 func (a *App) PlazaZoomOut() error {
-	return util.SafeCallVoid(func() error {
-		a.plazaWinMu.Lock()
-		defer a.plazaWinMu.Unlock()
-		if a.plazaWin == nil {
-			return fmt.Errorf("plaza window not ready")
-		}
-		a.plazaWin.ZoomOut()
-		return nil
+	return a.plazaCall(func(w *application.WebviewWindow) {
+		w.ZoomOut()
 	})
 }
 
 func (a *App) PlazaZoomReset() error {
-	return util.SafeCallVoid(func() error {
-		a.plazaWinMu.Lock()
-		defer a.plazaWinMu.Unlock()
-		if a.plazaWin == nil {
-			return fmt.Errorf("plaza window not ready")
-		}
-		a.plazaWin.ZoomReset()
-		return nil
+	return a.plazaCall(func(w *application.WebviewWindow) {
+		w.ZoomReset()
 	})
 }

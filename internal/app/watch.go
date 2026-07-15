@@ -109,7 +109,7 @@ func (a *App) ImportLocalFile(path string) (*ExtractResult, error) {
 			}
 		}
 
-		if err := copyFileToLocal(path, destPath); err != nil {
+		if err := copyFile(path, destPath); err != nil {
 			return nil, util.WrapErrorf(op, "复制文件失败", err)
 		}
 		a.safeLogInfo("ImportLocalFile: %s → %s", path, destPath)
@@ -215,26 +215,6 @@ func (a *App) importRarToLibrary(rarPath string) (*ExtractResult, error) {
 	}
 	a.safeLogInfo("ImportLocalFile.rar: %s → %s (%d files)", rarPath, destDir, extractedCount)
 	return &ExtractResult{FilePath: firstPMX, Dir: filepath.ToSlash(destDir)}, nil
-}
-
-// copyFileToLocal copies a file from src to dst, creating parent dirs as needed.
-func copyFileToLocal(src, dst string) error {
-	in, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer in.Close()
-
-	out, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	if _, err := io.Copy(out, in); err != nil {
-		return err
-	}
-	return nil
 }
 
 // StartWatchDir starts fsnotify-based watching on the specified directory.
