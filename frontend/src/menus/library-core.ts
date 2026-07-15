@@ -956,6 +956,27 @@ function renderFullscreenFolder(
     renderFiltered('');
 }
 
+/** [doc:adr-066] 视图切换按钮（grid/list），列表模式与 grid 模式共享 */
+function _buildViewToggleButtons(toolbar: HTMLElement, targetStack?: SlideMenu): void {
+    const modeBtn = (mode: 'grid' | 'list', icon: string, titleKey: string) => {
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-ghost btn-sm' + (resourceViewMode === mode ? ' btn-active' : '');
+        btn.textContent = icon;
+        btn.title = t(titleKey);
+        btn.addEventListener('click', () => {
+            setResourceViewMode(mode);
+            const stack = targetStack || stackRegistry.modelStack;
+            const cl = stack?.currentLevel;
+            if (cl) {
+                stack!.replaceCurrentLevel(buildLevel(cl.dir, cl.label, cl.filter, targetStack));
+            }
+        });
+        toolbar.appendChild(btn);
+    };
+    modeBtn('grid', '⊞', 'library.gridView');
+    modeBtn('list', '≡', 'library.listView');
+}
+
 /** [doc:adr-066] 列表模式视图切换工具栏 */
 function addListViewToolbar(
     card: HTMLElement,
@@ -968,37 +989,7 @@ function addListViewToolbar(
     const toolbar = document.createElement('div');
     toolbar.className = 'toolbar';
 
-    const gridBtn = document.createElement('button');
-    gridBtn.className = 'btn btn-ghost btn-sm' + (resourceViewMode === 'grid' ? ' btn-active' : '');
-    gridBtn.textContent = '⊞';
-    gridBtn.title = t('library.gridView');
-    gridBtn.addEventListener('click', () => {
-        setResourceViewMode('grid');
-        const stack = targetStack || stackRegistry.modelStack;
-        if (stack) {
-            const cl = stack.currentLevel;
-            if (cl) {
-                stack.replaceCurrentLevel(buildLevel(cl.dir, cl.label, cl.filter, targetStack));
-            }
-        }
-    });
-    toolbar.appendChild(gridBtn);
-
-    const listBtn = document.createElement('button');
-    listBtn.className = 'btn btn-ghost btn-sm' + (resourceViewMode === 'list' ? ' btn-active' : '');
-    listBtn.textContent = '≡';
-    listBtn.title = t('library.listView');
-    listBtn.addEventListener('click', () => {
-        setResourceViewMode('list');
-        const stack = targetStack || stackRegistry.modelStack;
-        if (stack) {
-            const cl = stack.currentLevel;
-            if (cl) {
-                stack.replaceCurrentLevel(buildLevel(cl.dir, cl.label, cl.filter, targetStack));
-            }
-        }
-    });
-    toolbar.appendChild(listBtn);
+    _buildViewToggleButtons(toolbar, targetStack);
 
     const expandBtn = document.createElement('button');
     expandBtn.className = 'btn btn-ghost btn-sm';
@@ -1049,13 +1040,10 @@ function renderGridMode(
     // [doc:adr-066] 进入 grid 模式时设置状态机
     setCurrentState('EMBEDDED_GRID');
 
-    // [fix:thumbnail] 捕获面板句柄，缩略图异步加载完成后触发重绘
-    const resourcePanel: ReturnType<typeof createResourcePanel> | null = null;
-
     // 复用 buildResourceItemsForDir 获取当前目录的 ResourceItem 列表
     const allResourceItems = buildResourceItemsForDir(dir, filter);
 
-    // [doc:adr-066] 预加载当前目录所有缩略图
+    // [doc:adr-066] 预加载当前目录所有缩略图（预热缓存，下次渲染直接命中）
     const thumbKeys2 = allResourceItems
         .filter((item) => !item.isFolder && item.thumbKey)
         .map((item) => item.thumbKey!);
@@ -1067,8 +1055,6 @@ function renderGridMode(
                     merged.set(path, data);
                 }
                 setThumbnailCache(merged);
-                // [fix:thumbnail] 缩略图异步返回后重绘面板，否则已渲染的卡片永远空
-                resourcePanel?.updateItems(allResourceItems);
             })
             .catch((err) => logWarn('library-core', 'GetThumbnailBatch failed:', err));
     }
@@ -1079,55 +1065,7 @@ function renderGridMode(
         const toolbar = document.createElement('div');
         toolbar.className = 'toolbar';
 
-        const gridBtn = document.createElement('button');
-        gridBtn.className =
-            'btn btn-ghost btn-sm' + (resourceViewMode === 'grid' ? ' btn-active' : '');
-        gridBtn.textContent = '⊞';
-        gridBtn.title = t('library.gridView');
-        gridBtn.addEventListener('click', () => {
-            setResourceViewMode('grid');
-            // 切换视图需要重建当前层级
-            const stack = targetStack || stackRegistry.modelStack;
-            if (stack) {
-                const currentLevel = stack.currentLevel;
-                if (currentLevel) {
-                    stack.replaceCurrentLevel(
-                        buildLevel(
-                            currentLevel.dir,
-                            currentLevel.label,
-                            currentLevel.filter,
-                            targetStack
-                        )
-                    );
-                }
-            }
-        });
-
-        const listBtn = document.createElement('button');
-        listBtn.className =
-            'btn btn-ghost btn-sm' + (resourceViewMode === 'list' ? ' btn-active' : '');
-        listBtn.textContent = '≡';
-        listBtn.title = t('library.listView');
-        listBtn.addEventListener('click', () => {
-            setResourceViewMode('list');
-            const stack = targetStack || stackRegistry.modelStack;
-            if (stack) {
-                const currentLevel = stack.currentLevel;
-                if (currentLevel) {
-                    stack.replaceCurrentLevel(
-                        buildLevel(
-                            currentLevel.dir,
-                            currentLevel.label,
-                            currentLevel.filter,
-                            targetStack
-                        )
-                    );
-                }
-            }
-        });
-
-        toolbar.appendChild(gridBtn);
-        toolbar.appendChild(listBtn);
+        _buildViewToggleButtons(toolbar, targetStack);
 
         // 展开全屏按钮
         const expandBtn = document.createElement('button');

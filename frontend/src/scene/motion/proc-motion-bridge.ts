@@ -91,7 +91,7 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
         lastBeatBpm = bpm!;
         procActiveKind = 'autodance';
     } else {
-        buf = generateIdleVmd(procState, morphNames, boneNames);
+        buf = generateIdleVmd(procState, boneNames);
         procActiveKind = targetMode;
     }
 

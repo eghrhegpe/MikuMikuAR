@@ -125,7 +125,7 @@ export function generateAutoDanceVmd(
     if (overrideInterp) {
         applyInterpOverride(bones, overrideInterp);
     } else {
-        applyInterp(bones, resolution, overrideInterp);
+        applyInterp(bones, resolution);
     }
 
     // ========================================================================

@@ -394,6 +394,7 @@ export const zhCN: Record<string, string> = {
 
     // ===== 场景 Scene =====
     'scene.formation': '队形',
+    'scene.advanced': '高级',
     'scene.screenshot': '截图',
     'scene.presetScenes': '预设场景',
     'scene.saveScene': '保存场景',

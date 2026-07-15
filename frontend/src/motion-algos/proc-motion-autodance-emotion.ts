@@ -109,6 +109,22 @@ export function findBestEmotionMorphs(morphNames: readonly string[]): Map<Emotio
 // 帧生成
 // ============================================================================
 
+/** 向 morphs 追加一个 fade-in → hold → fade-out 四帧序列 */
+function pushFadeMorph(
+    morphs: MorphKeyFrame[],
+    name: string,
+    start: number,
+    peak: number,
+    hold: number,
+    end: number,
+    weight: number
+): void {
+    morphs.push({ name, frame: start, weight: 0 });
+    morphs.push({ name, frame: peak, weight });
+    morphs.push({ name, frame: hold, weight });
+    morphs.push({ name, frame: end, weight: 0 });
+}
+
 /**
  * 生成情绪轮播帧（多个情绪依次出现）
  */
@@ -140,10 +156,7 @@ export function genEmotionCycles(
         const fadeOut = Math.max(end - Math.floor(beatFrames * 0.3), start + fadeIn);
         const weight = 0.5 + 0.3 * intensity;
 
-        morphs.push({ name: morphName, frame: start, weight: 0 });
-        morphs.push({ name: morphName, frame: start + fadeIn, weight: weight });
-        morphs.push({ name: morphName, frame: fadeOut, weight: weight });
-        morphs.push({ name: morphName, frame: end, weight: 0 });
+        pushFadeMorph(morphs, morphName, start, start + fadeIn, fadeOut, end, weight);
     }
 }
 
@@ -172,10 +185,7 @@ export function genAccentMorph(
             const t = base + Math.floor(beatFrames * 0.2);
             if (t + 6 <= loopFrames) {
                 const w = 0.5 + 0.3 * intensity;
-                morphs.push({ name: accentMorph, frame: t, weight: 0 });
-                morphs.push({ name: accentMorph, frame: t + 1, weight: w });
-                morphs.push({ name: accentMorph, frame: t + 3, weight: w });
-                morphs.push({ name: accentMorph, frame: t + 6, weight: 0 });
+                pushFadeMorph(morphs, accentMorph, t, t + 1, t + 3, t + 6, w);
             }
         }
     }
@@ -198,22 +208,16 @@ export function genShyMorph(
 
     const shyStart = loopFrames - beatFrames * 4;
     if (shyStart > 0) {
-        morphs.push({ name: shyMorph, frame: shyStart, weight: 0 });
-        morphs.push({
-            name: shyMorph,
-            frame: shyStart + Math.floor(beatFrames * 0.5),
-            weight: 0.6 * intensity,
-        });
-        morphs.push({
-            name: shyMorph,
-            frame: shyStart + beatFrames * 2,
-            weight: 0.6 * intensity,
-        });
-        morphs.push({
-            name: shyMorph,
-            frame: shyStart + beatFrames * 2 + 2,
-            weight: 0,
-        });
+        const w = 0.6 * intensity;
+        pushFadeMorph(
+            morphs,
+            shyMorph,
+            shyStart,
+            shyStart + Math.floor(beatFrames * 0.5),
+            shyStart + beatFrames * 2,
+            shyStart + beatFrames * 2 + 2,
+            w
+        );
     }
 }
 
