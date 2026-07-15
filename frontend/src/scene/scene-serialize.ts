@@ -139,11 +139,18 @@ export function migrateLipSyncFromOldState(old: {
 
 /** 从旧 procMotion 状态迁移为 PerceptionState（供测试与序列化共用） */
 export function migratePerceptionFromProcMotion(
-    old: Partial<ProcMotionState>
+    old: Partial<ProcMotionState> & {
+        lipSync?: {
+            enabled?: boolean;
+            sensitivity?: number;
+            intensity?: number;
+            multiMorphEnabled?: boolean;
+        };
+    }
 ): Partial<PerceptionState> {
     const t = old.boneToggles;
     // lip-sync：旧存档独立的 lipSync state 映射为 PerceptionState 字段
-    const lipSync = migrateLipSyncFromOldState(old as any);
+    const lipSync = migrateLipSyncFromOldState(old);
     return {
         eyeTrackingEnabled: old.eyeTrackingEnabled ?? true,
         headTrackingEnabled: old.headTrackingEnabled ?? true,
@@ -734,8 +741,8 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                         } else {
                             resumeAudio();
                         }
-                    } catch {
-                        // If AudioContext is unavailable, just try resumeAudio
+                    } catch (e) {
+                        logWarn('scene-serialize', '场景恢复: AudioContext 创建失败，尝试直接 resume:', e);
                         resumeAudio();
                     }
                 }

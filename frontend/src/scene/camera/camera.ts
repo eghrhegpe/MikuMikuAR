@@ -681,7 +681,7 @@ export function switchCameraMode(mode: CameraMode): void {
                     _currentPreset.mode = _previousMode;
                 }
             })
-            .catch(() => {});
+            .catch((e) => logWarn('camera', 'setARMode failed:', e));
         return;
     }
 

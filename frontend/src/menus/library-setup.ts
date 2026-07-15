@@ -27,15 +27,13 @@ import {
     displayNamePriority,
     setDisplayNamePriority,
     DisplayNamePriority,
-    closeAllOverlays,
     stackRegistry,
 } from '../core/config';
 import { tryCatchStatus, logWarn, isUnderRoot } from '../core/utils';
 import { showConfirm } from '../core/dialog';
 import { t } from '../core/i18n/t';
-import { buildLevel, buildModelRootItems, getResourceViewMode, setResourceViewMode } from './library-core';
+import { buildLevel, buildModelRootItems, setResourceViewMode } from './library-core';
 import { showModelPopup } from './library-browse';
-import { prepareModelRestore } from './library-actions';
 
 // ======== 初始化 ========
 
