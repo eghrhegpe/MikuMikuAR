@@ -2503,6 +2503,14 @@ input, textarea, [contenteditable] {
     border-radius: 4px;
 }
 
+/* 卡片标题 */
+.card-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    padding: 8px 14px 4px;
+}
+
 /* 居中操作按钮（菜单内全宽按钮） */
 .slide-action-center {
     display: flex;
