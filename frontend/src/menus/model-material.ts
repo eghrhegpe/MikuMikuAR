@@ -56,7 +56,7 @@ function buildMatBatchSchema(id: string, _modelName: string): MenuNode[] {
                 cardContainer(c, (inner) => {
                     if (overrideCount > 0) {
                         const hint = document.createElement('div');
-                        hint.className = 'mat-override-hint';
+                        hint.className = 'warn-hint';
                         hint.textContent = t('model-material.overrideHint', {
                             count: overrideCount,
                         });
@@ -204,12 +204,12 @@ function buildPerMatSchema(
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
                     const nameEl = document.createElement('div');
-                    nameEl.className = 'mat-name-breadcrumb';
+                    nameEl.style.cssText = 'font-size:11px;color:var(--white-65);margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
                     nameEl.textContent = modelName + ' > ' + matName;
                     inner.appendChild(nameEl);
 
                     const stackingHint = document.createElement('div');
-                    stackingHint.className = 'mat-stacking-hint';
+                    stackingHint.className = 'accent-hint';
                     stackingHint.textContent = t('model-material.stackingHint');
                     inner.appendChild(stackingHint);
 
@@ -362,7 +362,7 @@ function buildMatRootSchema(
                 cardContainer(c, (inner) => {
                     if (groups.size === 0) {
                         const empty = document.createElement('div');
-                        empty.className = 'mat-empty-hint';
+                        empty.className = 'empty-hint';
                         empty.textContent = t('model-material.noMaterialData');
                         inner.appendChild(empty);
                         return;
@@ -390,7 +390,8 @@ function buildMatRootSchema(
                                     const matEnabled = isMatEnabled(id, idx);
 
                                     const row = document.createElement('div');
-                                    row.className = `slide-item mat-row-indent${!matEnabled ? ' mat-disabled' : ''}`;
+                                    row.className = `slide-item${!matEnabled ? ' mat-disabled' : ''}`;
+                                    row.style.paddingLeft = '28px';
                                     row.dataset.matIdx = String(idx);
                                     row.dataset.matCat = cat;
 
@@ -401,7 +402,8 @@ function buildMatRootSchema(
 
                                     if (detail.modified) {
                                         const sub = document.createElement('span');
-                                        sub.className = 'slide-sublabel mat-modified-mark';
+                                        sub.className = 'slide-sublabel';
+                                        sub.style.color = 'var(--accent)';
                                         sub.textContent = t('model-material.modified');
                                         row.appendChild(sub);
                                     }

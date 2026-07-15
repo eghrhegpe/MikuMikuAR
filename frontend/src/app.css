@@ -2482,8 +2482,8 @@ input, textarea, [contenteditable] {
     text-align: center;
 }
 
-/* 材质覆盖警告 */
-.mat-override-hint {
+/* 警告提示（warn 色） */
+.warn-hint {
     font-size: 11px;
     color: var(--warn);
     margin-bottom: 8px;
@@ -2493,42 +2493,14 @@ input, textarea, [contenteditable] {
     text-align: center;
 }
 
-/* 材质名称面包屑 */
-.mat-name-breadcrumb {
-    font-size: 11px;
-    color: var(--white-65);
-    margin-bottom: 8px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-/* 堆叠提示 */
-.mat-stacking-hint {
+/* 强调提示（accent 色背景） */
+.accent-hint {
     font-size: 10px;
     color: var(--white-55);
     margin-bottom: 10px;
     padding: 4px 8px;
     background: var(--accent-dim);
     border-radius: 4px;
-}
-
-/* 空状态提示 */
-.mat-empty-hint {
-    padding: 12px 14px;
-    text-align: center;
-    font-size: 11px;
-    color: var(--white-65);
-}
-
-/* 材质行缩进 */
-.mat-row-indent {
-    padding-left: 28px;
-}
-
-/* 材质已修改标记 */
-.mat-modified-mark {
-    color: var(--accent);
 }
 
 /* 居中操作按钮（菜单内全宽按钮） */
