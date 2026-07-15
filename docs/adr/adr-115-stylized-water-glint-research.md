@@ -20,9 +20,12 @@
 | 吸收距离 5.000 | 水体颜色按 Beer-Lambert 吸收的距离 | 接近 `waterFogDensity` / `waterTransparency` |
 | 焦散 0.500 | 水下焦散强度 | 我方程序化焦散，强度固定 `uCausticIntensity=0.15`（`env-water.ts:547`），未暴露 |
 | 吸收倍数 2.000 | 颜色吸收系数（越深越偏水色） | **无直接对应** |
-| 有效范围 0.100 | 波浪/效果影响范围或 LOD 裁剪 | 接近 `waterSize`（`types.ts:429`） |
+| 有效范围 0.100 | 波浪/效果影响范围或地平线衰减范围 | 接近 `waterSize`（`types.ts:429`） |
 
-**关键观察**：竞品把"波纹/大波"拆成**两层独立尺度**（高频法线 + 低频波形），而非我方单一 `waterWaveHeight`。这是"波光粼粼"与第一眼差异的核心。
+**关键观察**：
+- 竞品把"波纹/大波"拆成**两层独立尺度**（高频法线 + 低频波形），而非我方单一 `waterWaveHeight`。
+- 截图 2（类型：海洋）显示水面与远处地平线融合，说明存在**地平线淡出/无限水体**处理。
+- 星空被反射在水面，说明反射源是**cubemap 环境贴图**（场景 `environmentTexture`），而非平面反射 RT。
 
 ---
 
@@ -45,7 +48,30 @@
 4. **焦散（Caustics）**
    - 水下光斑滚动，强化"水在动"的感知。
 
-**结论**：波光粼粼 = 高频法线 + specular glitter + 动态反射 + 焦散，技术门槛低、视觉收益高。
+### 2.5 地平线扩展与星空反射
+
+新增截图（类型：海洋）显示两个关键特征：
+
+1. **水面延伸至地平线**
+   - 通常不是单张无限大平面，而是：
+     - **远距离 LOD 降级**：近处高细分，远处用低细分或 billboard 平面。
+     - **地平线雾/颜色融合**：远处水面与天空颜色通过雾统一，消除硬边。
+     - **径向边缘淡出**：类似我方 `groundEdgeFade`，但作用于水面。
+   - 实现成本低，且能改善"方块水面"感。
+
+2. **反射星空贴图**
+   - 水面反射的是环境 cubemap（`scene.environmentTexture`），即天空盒/星空球。
+   - 这是**环境反射**，我方当前在 `WATER_FRAG_SRC` 中已采样 `envTexture`（当 `ENV_TEXTURE` define 启用时），但受限于：
+     - 需要环境贴图已设置（ADR-024 ReflectionProbe 提供）。
+     - 我方水面默认可能未启用/不明显。
+   - 对方效果强的原因：天空-水面-雾统一 color grading，反射率与 Fresnel 调得高。
+
+3. **水光联动**
+   - 天空颜色/时间变化自动驱动水面颜色与反射。
+   - 我方可通过让 `waterColor`/`waterFogColor` 从天空色派生，或加强 `envIntensity` 调制来实现类似联动。
+
+**结论**：波光粼粼 = 高频法线 + specular glitter + 动态反射 + 焦散；
+**地平线/星空感 = 无限水体 + 环境 cubemap 反射 + 天空-水面统一颜色分级**。
 
 ---
 
@@ -59,6 +85,8 @@
 | 波光粼粼 | 靠法线贴图 + specular 直接出 | 靠 Gerstner 法线 + 涟漪 + 焦散，缺高频 glitter |
 | 焦散 | 单一滑块暴露 | 程序化生成，强度固定 0.15，未暴露 UI |
 | 反射 | 默认开启的简单混合 | 可选平面反射 RT（高/中/低/关，ADR-062） |
+| 地平线扩展 | 无限水体 + 边缘雾融合 | `waterSize` 有限方形，远处硬边 |
+| 环境反射/星空联动 | cubemap 环境反射强，天空-水色统一 | 已采样 `envTexture`，但强度受环境贴图与 `envIntensity` 限制 |
 | 泡沫 | UI 未暴露 | 独立阈值/强度/透明度三参数 |
 | 水下 | UI 未暴露 | 完整雾 + 色调 + 色散后处理（`updateUnderwaterTransition`） |
 
@@ -94,6 +122,23 @@ color += lightColor * glitter * uGlintStrength;
 ### 4.4 UI 预设化（P2，交互优化）
 顶层以"类型：河流/海洋/池塘"驱动，默认仅显示：类型、高度、波纹、大波、焦散、有效范围；其余（Fresnel/泡沫/水下/反射）收进"高级"折叠组。复用现有 `addSliderRow`/`headerToggle` 与 `WATER_PRESETS` 体系，不引入新 UI 范式。
 
+### 4.5 无限水面 + 地平线雾融合（P3，地平线视觉）
+解决我方水面"方块硬边"问题：
+- 把现有 3 级 LOD（`meshHigh`/`meshMid`/`meshLow`，`env-water.ts:697-699`）扩展到更大尺寸，或新增第 4 级远景平面。
+- 在 shader 中加入**径向边缘雾/透明度衰减**：
+  ```glsl
+  float radialDist = length(vWorldPos.xz - cameraPosition.xz);
+  float horizonFade = 1.0 - smoothstep(horizonStart, horizonEnd, radialDist);
+  color = mix(skyColor, color, horizonFade);
+  alpha *= horizonFade;
+  ```
+- 或复用场景雾（`scene.fogMode`/`scene.fogColor`）统一远处融合，无需额外 shader 代码。
+
+### 4.6 天空-水面颜色联动（P3，氛围统一）
+- 在 `env-water.ts` 的 `_syncWaterUniforms` 或每帧 observer 中，让 `waterColor`/`waterFogColor` 从天空色（`skyColorBot` 或 `envTexture` 平均色）派生一定比例。
+- 增加一个 `waterSkyColorBlend` 参数（0=完全自定义，1=完全跟随天空），默认 0.3 左右。
+- 此改动与 ADR-024 的环境/天空系统天然联动，不引入新依赖。
+
 ---
 
 ## 五、实施路径与排序
@@ -102,7 +147,8 @@ color += lightColor * glitter * uGlintStrength;
 |------|------|------|------|
 | P1 | shader 高频法线扰动层 + Sun Glitter 项 | 中（需法线资源 + uniform 接入） | 高（直接出波光粼粼） |
 | P2 | 焦散强度 UI 暴露 + 水面 UI 预设化折叠 | 低 | 中（可调性 + 降低面板复杂度） |
-| P3 | "波纹/大波"双层尺度拆分（替代单一 waveHeight） | 中 | 中（更贴近竞品手感，需重测预设） |
+| P3 | 无限水面 + 地平线雾融合 + 天空-水面颜色联动 | 中 | 高（解决方块硬边、强化氛围统一） |
+| P4 | "波纹/大波"双层尺度拆分（替代单一 waveHeight） | 中 | 中（更贴近竞品手感，需重测预设） |
 
 **决策待定项**：
 - 是否引入法线贴图资源，还是程序化生成（影响体积与依赖）。
@@ -131,4 +177,4 @@ color += lightColor * glitter * uGlintStrength;
 
 ## 八、结论
 
-竞品是「少参数、强预设、重法线」的美术水体；我方是「多参数、强物理、重波形」的可控水体。波光粼粼技术门槛低，核心是**高频法线 + specular glitter + 反射/焦散**组合。建议优先以 P1（法线扰动 + glitter）补强视觉，P2 暴露焦散并预设化 UI，P3 再评估"波纹/大波"双层拆分。是否进入实施，待架构评审拍板。
+竞品是「少参数、强预设、重法线」的美术水体；我方是「多参数、强物理、重波形」的可控水体。波光粼粼技术门槛低，核心是**高频法线 + specular glitter + 反射/焦散**组合；地平线/星空感则来自**无限水体 + 环境 cubemap 反射 + 天空-水面统一颜色分级**。建议优先以 P1（法线扰动 + glitter）补强视觉，P2 暴露焦散并预设化 UI，P3 解决无限水面与颜色联动，P4 再评估"波纹/大波"双层拆分。是否进入实施，待架构评审拍板。
