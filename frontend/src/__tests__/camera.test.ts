@@ -784,10 +784,10 @@ describe('CameraMode type discrimination', () => {
 
 // ── ADR-100：控制方案 × 运动行为 双轴（P1 契约 + P2 运行时） ──────────
 describe('ADR-100 dual-axis mapping (P1 契约)', () => {
-    it('LEGACY_MODE_MAP 覆盖全部 7 个旧模式', () => {
+    it('LEGACY_MODE_MAP 覆盖全部 8 个模式（含 beatcut）', () => {
         const keys = Object.keys(cameraModule.LEGACY_MODE_MAP).sort();
         expect(keys).toEqual(
-            ['ar', 'concert', 'freefly', 'oneshot', 'orbit', 'surround', 'vmd'].sort()
+            ['ar', 'beatcut', 'concert', 'freefly', 'oneshot', 'orbit', 'surround', 'vmd'].sort()
         );
     });
 
@@ -820,8 +820,8 @@ describe('ADR-100 dual-axis mapping (P1 契约)', () => {
         }
     });
 
-    it('deriveLegacyMode 对无旧模式的 beatcut 降级为 orbit', () => {
-        expect(cameraModule.deriveLegacyMode('orbit', 'beatcut')).toBe('orbit');
+    it('deriveLegacyMode 对 beatcut 直接返回 beatcut（不再降级为 orbit）', () => {
+        expect(cameraModule.deriveLegacyMode('orbit', 'beatcut')).toBe('beatcut');
     });
 });
 
@@ -906,14 +906,14 @@ describe('ADR-100 serialization dual-write (P3)', () => {
         expect(st.mode).toBe('orbit'); // deriveLegacyMode(orbit, none, loop)
     });
 
-    it('getCameraState 在 beatcut 下 mode 降级为 orbit（旧版本可读）', () => {
+    it('getCameraState 在 beatcut 下 mode 为 beatcut（不再降级为 orbit）', () => {
         const unsub = vi.fn();
         const detector = { onBeat: vi.fn(() => unsub) };
         cameraModule.setAutoCameraEnabled(true, detector);
         const st = cameraModule.getCameraState();
         expect(st.behavior).toBe('beatcut');
         expect(st.control).toBe('orbit');
-        expect(st.mode).toBe('orbit'); // beatcut 无旧模式，降级 orbit
+        expect(st.mode).toBe('beatcut'); // 不再降级 orbit
         expect(st.scriptedSubMode).toBe('loop');
     });
 

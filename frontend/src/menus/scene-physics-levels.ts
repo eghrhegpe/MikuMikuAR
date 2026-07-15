@@ -5,8 +5,6 @@ import type { PopupLevel } from '../core/config';
 import {
     focusedModelId,
     cardContainer,
-    getMmdRuntimeType,
-    setMmdRuntimeType,
 } from '../core/config';
 import { getGravityStrength, setGravityStrength } from '../scene/env/env-bridge';
 import {
@@ -21,11 +19,10 @@ import {
     getGroundCollisionEnabled,
     setGroundCollisionEnabled,
 } from '../scene/env/env-bridge';
-import { getSceneMenu, refreshSceneRoot } from './scene-menu';
-import { showConfirm } from '../core/dialog';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
+import { getSceneMenu, refreshSceneRoot } from './scene-menu';
 import {
     slideRow,
     addSliderRow,
@@ -182,34 +179,6 @@ function buildWasmPhysicsSchema(): MenuNode[] {
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    addModeSlider(
-                        inner,
-                        t('scene.runtime'),
-                        [
-                            { value: 'wasm', label: t('scene.runtimeWasm') },
-                            { value: 'js', label: t('scene.runtimeJs') },
-                        ],
-                        getMmdRuntimeType(),
-                        (v) => {
-                            if (v === getMmdRuntimeType()) {
-                                return;
-                            }
-                            (async () => {
-                                const ok = await showConfirm(
-                                    v === 'js' ? t('scene.confirmJs') : t('scene.confirmWasm')
-                                );
-                                if (!ok) {
-                                    getSceneMenu()?.updateControls();
-                                    return;
-                                }
-                                setMmdRuntimeType(v as 'wasm' | 'js');
-                                location.reload();
-                            })();
-                        },
-                        'lucide:cpu',
-                        undefined,
-                        { bind: () => getMmdRuntimeType() }
-                    );
                     addSliderRow(
                         inner,
                         t('scene.gravityStrength'),

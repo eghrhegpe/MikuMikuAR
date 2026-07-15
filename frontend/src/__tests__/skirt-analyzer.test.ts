@@ -322,14 +322,9 @@ describe('skirt-analyzer — 退化 & 边界情况', () => {
         expect(result.chains).toEqual([]);
     });
 
-    it('封闭球体 → 无 boundary edges, fallback 到 y-threshold', () => {
+    it('封闭球体 → 无 boundary edges, 直接抛错（Fail-Fast）', () => {
         const mesh = createSphere(1.0, 8);
-        const result = analyzeSkirt(mesh.positions, mesh.indices, defaultOpts);
-
-        expect(result.boundaryEdgeCount).toBe(0);
-        expect(result.method).toBe('y-threshold');
-        // 球体下半部分应该有顶点
-        expect(result.skirtVertexCount).toBeGreaterThan(0);
+        expect(() => analyzeSkirt(mesh.positions, mesh.indices, defaultOpts)).toThrow();
     });
 
     it('极小 mesh（< MIN_SKIRT_VERTICES）→ 返回空', () => {

@@ -12,7 +12,6 @@ import type {
     LibraryModel,
     UIState,
     EnvState,
-    MmdRuntimeType,
     PendingVmd,
     RecentMotion,
     DisplayNamePriority,
@@ -29,27 +28,20 @@ export function setMmdRuntime(r: IMmdRuntime | null): void {
 }
 
 // ======== MMD Runtime Type Switch (WASM 物理 / JS 调试) ========
+// [doc:adr-105] Fail-Fast：localStorage 不可用直接抛错，不再静默回落 env
 
 const MMD_RUNTIME_TYPE_KEY = 'mmdRuntimeType';
 
-export function getMmdRuntimeType(): MmdRuntimeType {
-    try {
-        const v = localStorage.getItem(MMD_RUNTIME_TYPE_KEY);
-        if (v === 'js' || v === 'wasm') {
-            return v;
-        }
-    } catch {
-        /* localStorage 不可用时回落 env */
+export function getMmdRuntimeType(): 'wasm' | 'js' {
+    const v = localStorage.getItem(MMD_RUNTIME_TYPE_KEY);
+    if (v === 'js' || v === 'wasm') {
+        return v;
     }
     return import.meta.env.VITE_MMD_RUNTIME === 'js' ? 'js' : 'wasm';
 }
 
-export function setMmdRuntimeType(v: MmdRuntimeType): void {
-    try {
-        localStorage.setItem(MMD_RUNTIME_TYPE_KEY, v);
-    } catch {
-        /* 忽略 localStorage 写入失败 */
-    }
+export function setMmdRuntimeType(v: 'wasm' | 'js'): void {
+    localStorage.setItem(MMD_RUNTIME_TYPE_KEY, v);
 }
 
 // ======== Model Registry ========

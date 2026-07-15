@@ -157,15 +157,9 @@ export function updatePlaybackUI(): void {
         return;
     }
 
-    // Graceful fallback: 无 mmdRuntime 时显示占位 UI，不隐藏整个栏
-    // [doc:e2e] 纯 Vite 模式下 playbackBar 保持可见，E2E 测试可定位按钮
+    // Fail-Fast: 无 mmdRuntime 或 seekBar 时直接抛错
     if (!mmdRuntime || !dom.seekBar) {
-        dom.playbackBar.style.display = 'flex';
-        dom.btnPlayPause.textContent = '▶'; // 默认暂停状态
-        dom.btnLoopToggle.style.opacity = '0.35'; // 默认不循环
-        dom.timeDisplay.textContent = '--:-- / --:--'; // 占位时间
-        dom.seekProgress.style.width = '0%';
-        return;
+        throw new Error('playback: mmdRuntime 或 dom.seekBar 未初始化，请检查场景初始化顺序');
     }
 
     // 到达此处的 guard 保证了 mmdRuntime 和 dom.seekBar 均可用

@@ -854,17 +854,6 @@ const _autoSaveDebounced = debounce((): void => {
     swallowError(saveSceneImmediate());
 }, 500);
 
-/** localStorage key for backup auto-save (sync fallback when async Go call can't complete). */
-const LOCAL_SAVE_KEY = 'mikumikuar_last_scene_backup';
-
-function clearLocalSceneBackup(): void {
-    try {
-        localStorage.removeItem(LOCAL_SAVE_KEY);
-    } catch {
-        // ignore
-    }
-}
-
 export function triggerAutoSaveImpl(): void {
     _autoSaveDebounced();
 }
@@ -885,19 +874,8 @@ export async function saveSceneImmediate(suppressToast = false): Promise<void> {
             );
         }
 
-        // localStorage 作为主存储（同步写入，保证进程退出前完成）
-        try {
-            localStorage.setItem(LOCAL_SAVE_KEY, json);
-        } catch {
-            // localStorage may be full or unavailable — ignore
-        }
-
-        // Go 端作为备份（异步，失败不影响）
-        try {
-            await SaveLastScene(json);
-        } catch {
-            // Go 端失败不影响，localStorage 已有完整数据
-        }
+        // Go 端作为唯一存储（Fail-Fast：失败直接抛错）
+        await SaveLastScene(json);
     } catch (_err) {
         if (!suppressToast) {
             showErrorToast(
@@ -961,24 +939,8 @@ function migrateScene(data: Record<string, unknown>): Record<string, unknown> {
 export async function tryRestoreLastScene(): Promise<void> {
     let json: string | null = null;
 
-    // 优先从 localStorage 读取（同步，不受进程退出影响）
-    try {
-        json = localStorage.getItem(LOCAL_SAVE_KEY);
-        if (json) {
-            console.info('从本地存储恢复场景');
-        }
-    } catch {
-        // localStorage unavailable
-    }
-
-    // localStorage 没有时再尝试 Go 端
-    if (!json) {
-        try {
-            json = await LoadLastScene();
-        } catch {
-            // No saved scene from Go backend
-        }
-    }
+    // Go 端作为唯一存储（Fail-Fast：失败直接抛错）
+    json = await LoadLastScene();
 
     if (!json) {
         return;
@@ -990,7 +952,6 @@ export async function tryRestoreLastScene(): Promise<void> {
         // 防御二次序列化：parse 后仍是字符串说明数据异常
         if (!raw || typeof raw !== 'object') {
             logWarn('scene-serialize', '场景数据格式异常（可能被二次序列化），跳过恢复');
-            clearLocalSceneBackup();
             return;
         }
 
@@ -1003,14 +964,12 @@ export async function tryRestoreLastScene(): Promise<void> {
                 'scene-serialize',
                 `场景文件版本 v${version} 不受支持（支持: ${SUPPORTED_VERSIONS.join(', ')}）`
             );
-            clearLocalSceneBackup();
             return;
         }
 
         // 确保 models 字段存在且是数组
         if (!Array.isArray(data.models)) {
             logWarn('scene-serialize', '场景数据缺少有效的 models 字段，跳过恢复');
-            clearLocalSceneBackup();
             return;
         }
 
@@ -1019,6 +978,5 @@ export async function tryRestoreLastScene(): Promise<void> {
         console.info(`从 v${version} 场景文件恢复成功`);
     } catch (err) {
         logWarn('scene-serialize', '场景恢复失败（数据可能已损坏）:', err);
-        clearLocalSceneBackup();
     }
 }

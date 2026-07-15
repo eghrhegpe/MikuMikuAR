@@ -98,17 +98,17 @@ export function initLoader(
 
 const THUMBNAIL_TIMEOUT_MS = 5000;
 
-function withTimeout<T>(promise: Promise<T>, timeoutMs: number, fallback: T): Promise<T> {
-    return new Promise((resolve) => {
-        const timer = setTimeout(() => resolve(fallback), timeoutMs);
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+    return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error(`Promise timeout after ${timeoutMs}ms`)), timeoutMs);
         promise.then(
             (result) => {
                 clearTimeout(timer);
                 resolve(result);
             },
-            () => {
+            (err) => {
                 clearTimeout(timer);
-                resolve(fallback);
+                reject(err);
             }
         );
     });
@@ -132,13 +132,17 @@ export async function captureThumbnail(
         }
 
         let ready = false;
-        await withTimeout(
-            _scene.whenReadyAsync().then(() => {
-                ready = true;
-            }),
-            THUMBNAIL_TIMEOUT_MS,
-            undefined
-        );
+        try {
+            await withTimeout(
+                _scene.whenReadyAsync().then(() => {
+                    ready = true;
+                }),
+                THUMBNAIL_TIMEOUT_MS
+            );
+        } catch {
+            // 超时直接抛错，不静默降级
+            return;
+        }
         if (gen !== _thumbCaptureGen) {
             return;
         }
