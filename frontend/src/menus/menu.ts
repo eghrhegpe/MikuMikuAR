@@ -1013,14 +1013,12 @@ export class SlideMenu {
         if (row.trailing) {
             el.appendChild(createTrailingBtn(row.trailing));
         } else if (row.onAddClick) {
-            const addBtn = document.createElement('span');
-            addBtn.className = 'slide-add-btn';
-            addBtn.textContent = '+';
-            addBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                row.onAddClick!();
-            });
-            el.appendChild(addBtn);
+            // `+` 用 lucide:plus 图标，与 trailing 齿轮/leading radio 统一 iconify 渲染（21px 顶满）
+            el.appendChild(createTrailingBtn({
+                icon: 'lucide:plus',
+                title: t('library.loadModel'),
+                onClick: (e) => row.onAddClick!(),
+            }));
         } else if (row.kind === 'folder') {
             const arrow = document.createElement('span');
             arrow.className = 'slide-arrow';

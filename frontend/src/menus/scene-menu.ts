@@ -30,6 +30,7 @@ import {
     buildPresetScenesLevel,
 } from './scene-render-levels';
 import { buildStageLevel } from './scene-stage-levels';
+import { buildStageLightLevel } from './scene-stage-lights';
 import { buildPropLevel } from './scene-prop-levels';
 import {
     buildPhysicsLevel,
@@ -127,6 +128,12 @@ function buildSceneRootItems(): PopupRow[] {
         icon: 'lucide:monitor',
         target: 'scene:render:stage',
     });
+    items.push({
+        kind: 'folder',
+        label: t('scene.stageLight'),
+        icon: 'lucide:lightbulb',
+        target: 'scene:stageLight',
+    });
     items.push({ kind: 'divider', label: '', icon: '', target: '' });
     items.push({
         kind: 'folder',
@@ -160,6 +167,7 @@ const SCENE_FOLDER_ROUTES: Record<string, () => PopupLevel> = {
     'scene:presets': buildPresetScenesLevel,
     'scene:render': buildRenderLevel,
     'scene:render:stage': buildStageLevel,
+    'scene:stageLight': buildStageLightLevel,
     'scene:render:props': buildPropLevel,
     'scene:physics': buildPhysicsLevel,
     'scene:formation': buildFormationLevel,

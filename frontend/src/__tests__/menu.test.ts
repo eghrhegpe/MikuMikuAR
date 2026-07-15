@@ -571,7 +571,8 @@ describe('SlideMenu — 创建行 (createRow DOM 类型)', () => {
         });
         const addBtn = el.querySelector('.slide-add-btn');
         expect(addBtn).toBeTruthy();
-        expect(addBtn?.textContent).toBe('+');
+        // `+` 现渲染为 lucide:plus 图标（iconify-icon），不再用文本 textContent
+        expect(addBtn?.querySelector('iconify-icon')).toBeTruthy();
         addBtn?.click();
         expect(addClick).toHaveBeenCalledTimes(1);
     });

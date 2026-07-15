@@ -296,11 +296,9 @@ type CacheStats struct {
 	TotalBytes     int64 `json:"totalBytes"`
 }
 
-// knownResourceDirs lists the subdirectory names under ResourceRoot that constitute
-// the user's asset library ("仓库"). Includes the standard categories from
-// ensureResourceDirs plus commonly used custom directories.
-var knownResourceDirs = []string{
-	"PMX", "VMD", "audio", "stage", "prop", "environment", "MD-dress", "setting",
+// customResourceDirs lists additional subdirectory names under ResourceRoot that
+// are commonly used for user assets but are not standard categories with overrides.
+var customResourceDirs = []string{
 	"text-model",
 }
 
@@ -317,10 +315,28 @@ func (a *App) GetCacheStats() (*CacheStats, error) {
 	if dir, err := serveRootDir(); err == nil {
 		stats.ServeBytes, stats.ServeCount = dirSize(dir)
 	}
-	// Resource root: sum sizes of known asset directories
+	// Resource root: sum sizes of all category directories (respecting overrides)
+	// plus custom subdirectories. Use a seen-set to avoid double-counting when
+	// an override points to a nested directory.
 	if cfg, err := a.GetConfig(); err == nil && cfg != nil && cfg.ResourceRoot != "" {
-		for _, name := range knownResourceDirs {
+		seen := make(map[string]struct{})
+		categories := []string{"pmx", "vmd", "audio", "stage", "prop", "environment", "md_dress", "setting"}
+		for _, cat := range categories {
+			dir := a.GetPath(cfg, cat)
+			if _, ok := seen[dir]; ok {
+				continue
+			}
+			seen[dir] = struct{}{}
+			bytes, count := dirSize(dir)
+			stats.ResourceBytes += bytes
+			stats.ResourceCount += count
+		}
+		for _, name := range customResourceDirs {
 			dir := filepath.Join(cfg.ResourceRoot, name)
+			if _, ok := seen[dir]; ok {
+				continue
+			}
+			seen[dir] = struct{}{}
 			bytes, count := dirSize(dir)
 			stats.ResourceBytes += bytes
 			stats.ResourceCount += count

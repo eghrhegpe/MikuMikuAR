@@ -1864,6 +1864,14 @@ input, textarea, [contenteditable] {
 .slide-add-btn:hover {
     background: var(--white-12);
 }
+/* 修复：trailing/del 按钮内的 iconify 图标需显式尺寸，否则回退 1em(≈--font-ui)
+ * 在 22px 盒内显得又小又空；与左侧 .slide-lead-btn 21px 对齐。 */
+.slide-add-btn iconify-icon {
+    width: var(--slide-icon-size);
+    height: var(--slide-icon-size);
+    font-size: var(--slide-icon-size);
+    display: block;
+}
 .slide-del-btn {
     cursor: pointer;
     margin-left: calc(4px * var(--ui-scale));
@@ -1882,6 +1890,12 @@ input, textarea, [contenteditable] {
 }
 .slide-del-btn:hover {
     background: var(--white-12);
+}
+.slide-del-btn iconify-icon {
+    width: var(--slide-icon-size);
+    height: var(--slide-icon-size);
+    font-size: var(--slide-icon-size);
+    display: block;
 }
 
 /* ===== 统一样式滚动条 ===== */

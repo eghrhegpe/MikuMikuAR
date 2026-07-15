@@ -206,6 +206,7 @@ describe('focusModel / arrangeModels', () => {
     beforeEach(resetState);
 
     it('focusModel delegates to modelManager.focus and updates playback UI', () => {
+        setMmdRuntime({} as any);
         focusModel('model-1');
         expect(mockModelManager.focus).toHaveBeenCalledWith('model-1');
         expect(updatePlaybackUI).toHaveBeenCalled();

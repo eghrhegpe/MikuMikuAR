@@ -18,9 +18,10 @@ import {
     stackRegistry,
     closeAllOverlays,
     cardContainer,
+    focusedModelId,
 } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
-import { slideRow, addToggleRow, addSliderRow } from '../core/ui-helpers';
+import { slideRow, addToggleRow, addSliderRow, addEmptyRow } from '../core/ui-helpers';
 import { getCurrentRenderingMenu } from './menu';
 import { loadManager } from '../core/load-manager';
 
@@ -77,7 +78,7 @@ import type { MenuNode } from './menu-schema';
 //   _focusedLayerId      = 当前「焦点动作」：null=基础动作，string=具体叠加层 id。
 //                         行 leading check-circle 写入；顶层 browse 读取，按需替换该动作。
 //                         「添加动作」语义：无动作→新增基础；焦点层→替换该层；焦点基础→替换基础。
-//                         进入动作绑定面板（motionOnFolderEnter）重置为 null（基础）。
+//                         进入动作绑定面板（motionOnItemClick）重置为 null（基础）。
 let _focusedLayerId: string | null = null;
 
 // ======== 从子文件导入 ========
@@ -121,44 +122,7 @@ function buildActionBindingSchema(id: string): MenuNode[] {
                 });
             },
         },
-        // 卡片 2：物理分类 toggles（条件：角色且有物理类别）
-        {
-            id: 'binding:physics',
-            kind: 'custom',
-            visibleWhen: () => {
-                const inst = modelManager.get(id);
-                return inst?.kind === 'actor' && getPhysicsCategories(id).length > 0;
-            },
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    const cats = getPhysicsCategories(id);
-                    for (const cat of cats) {
-                        const enabled = isPhysicsCategoryEnabled(id, cat);
-                        addToggleRow(
-                            inner,
-                            t(CAT_KEYS[cat] || cat),
-                            enabled,
-                            (v) => {
-                                setPhysicsCategory(id, cat, v);
-                                getMotionMenu()?.updateControls();
-                                const catLabel = t(CAT_KEYS[cat] || cat);
-                                setStatus(
-                                    v
-                                        ? t('motion.catEnabled', { cat: catLabel })
-                                        : t('motion.catDisabled', { cat: catLabel }),
-                                    true
-                                );
-                            },
-                            'lucide:settings',
-                            {
-                                bind: () => isPhysicsCategoryEnabled(id, cat),
-                            }
-                        );
-                    }
-                });
-            },
-        },
-        // 卡片 4：动作图层（统一为模型库 actor 行同款三栏样式）
+        // 卡片 3：动作图层（统一为模型库 actor 行同款三栏样式）
         //  · 已加载动作（基础 inst.vmdData + 各叠加层 inst.vmdLayers）统一渲染，
         //    复用模型栏选中范式：leading(check-circle=设为焦点→focusModel) | label(wrap-2) | trailing(settings-2=图层工具)
         //  · 移除独立「基础行」：基础动作不再特殊渲染，与叠加层同列——
@@ -316,6 +280,54 @@ function buildActionBindingLevel(id: string): PopupLevel {
     };
 }
 
+/**
+ * 动作工具菜单——动作弹窗根层行右齿轮 trailing 的【唯一】入口（对齐模型库 buildModelToolsLevel 范式）。
+ * 承载该模型物理类别开关；无物理类别时显示空状态。
+ */
+function buildActionToolsLevel(id: string): PopupLevel {
+    const inst = modelManager.get(id);
+    if (!inst) {
+        return { label: t('motion.tools'), dir: '', items: [], renderCustom: () => {} };
+    }
+    return {
+        label: t('motion.tools'),
+        dir: '',
+        items: [],
+        renderCustom: (container) => {
+            cardContainer(container, (inner) => {
+                const cats = getPhysicsCategories(id);
+                if (cats.length === 0) {
+                    addEmptyRow(inner, t('motion.noPhysics'));
+                    return;
+                }
+                for (const cat of cats) {
+                    const enabled = isPhysicsCategoryEnabled(id, cat);
+                    addToggleRow(
+                        inner,
+                        t(CAT_KEYS[cat] || cat),
+                        enabled,
+                        (v) => {
+                            setPhysicsCategory(id, cat, v);
+                            getMotionMenu()?.updateControls();
+                            const catLabel = t(CAT_KEYS[cat] || cat);
+                            setStatus(
+                                v
+                                    ? t('motion.catEnabled', { cat: catLabel })
+                                    : t('motion.catDisabled', { cat: catLabel }),
+                                true
+                            );
+                        },
+                        'lucide:settings',
+                        {
+                            bind: () => isPhysicsCategoryEnabled(id, cat),
+                        }
+                    );
+                }
+            });
+        },
+    };
+}
+
 /** 单图层次级菜单：将「内联权重进度条」下沉为可扩展的次级菜单项。
  *  行三区(leading eye / label / trailing trash)仅做快操，细节编辑走此菜单，
  *  与模型库「齿轮→工具菜单」范式一致，为后续大统一铺路。 */
@@ -442,14 +454,6 @@ const MOTION_FOLDER_ROUTES: Record<string, () => PopupLevel> = {
 };
 
 function motionOnFolderEnter(row: PopupRow): PopupLevel | null {
-    if (row.target && row.target.startsWith('action:binding:')) {
-        const id = row.target.replace('action:binding:', '');
-        // 进入动作绑定面板：焦点动作重置为基础（清跨模型残留焦点）
-        _focusedLayerId = null;
-        const lvl = buildActionBindingLevel(id);
-        lvl.itemBuilder = () => buildActionBindingLevel(id).items;
-        return lvl;
-    }
     const builder = MOTION_FOLDER_ROUTES[row.target as string];
     if (builder) {
         const lvl = builder();
@@ -535,6 +539,17 @@ function motionOnItemClick(row: PopupRow): void {
         if (row.model.format === 'vpd') {
             loadVPDPose(row.model.file_path);
             return;
+        }
+        return;
+    }
+    if (row.target && row.target.startsWith('action:binding:')) {
+        const id = row.target.replace('action:binding:', '');
+        // 进入动作绑定面板：焦点动作重置为基础（清跨模型残留焦点）
+        _focusedLayerId = null;
+        const lvl = buildActionBindingLevel(id);
+        lvl.itemBuilder = () => buildActionBindingLevel(id).items;
+        if (getMotionMenu()) {
+            getMotionMenu()?.push(lvl);
         }
         return;
     }
@@ -801,13 +816,38 @@ function buildMotionRootItems(): PopupRow[] {
             if (isUnderRoot(propDir, inst.filePath)) {
                 continue;
             }
+            const isFocused = focusedModelId === id;
+            const radioIcon = isFocused ? 'lucide:check-circle' : 'lucide:circle';
             items.push({
-                kind: 'folder',
+                kind: 'action',
                 label: inst.name,
-                icon: 'tabler:cube-3d-sphere',
+                icon: radioIcon,
                 target: `action:binding:${id}`,
                 sublabel: inst.vmdName || undefined,
                 wrapLabel: true,
+                focused: isFocused,
+                // rowKey 编码焦点态：焦点切换时 key 变化 → patchPanel 整行替换 → 图标同步刷新
+                rowKey: 'actor:' + id + (isFocused ? ':on' : ':off'),
+                // 左侧 radio 指示 = 点击切焦点（与整行 onClick=开动作绑定 解耦，stopPropagation）
+                leading: {
+                    icon: radioIcon,
+                    title: t('motion.focusModel'),
+                    onClick: () => {
+                        focusModel(id);
+                        getMotionMenu()?.reRender();
+                    },
+                },
+                // 右齿轮 = 工具设置（物理开关等）
+                trailing: {
+                    icon: 'lucide:settings-2',
+                    title: t('motion.modelTools'),
+                    onClick: () => {
+                        const lvl = buildActionToolsLevel(id);
+                        if (getMotionMenu()) {
+                            getMotionMenu()?.push(lvl);
+                        }
+                    },
+                },
             });
         }
         items.push({ kind: 'divider', label: '', icon: '', target: '' });

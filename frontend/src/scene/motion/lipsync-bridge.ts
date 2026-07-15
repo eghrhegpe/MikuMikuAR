@@ -1,73 +1,69 @@
-// [doc:architecture] LipSync — 口型同步
+// [doc:architecture] LipSync — 口型同步桥接层
 // 规范文档: docs/architecture.md §LipSync
-// 职责: 人声频段能量检测 → morph 权重映射
-// 依赖: initLipSync(mm) 注入 ModelManager，由 scene.ts 在 initScene 中调用
+// 职责: 保持外部导入路径兼容，所有 setter/getter 转发到 perception.ts
+// 运行时逻辑已由 perception.ts 的 _applyLipSync 负责，本文件仅做状态桥接。
 
+import { LipSyncState as LipSyncStateType } from '@/motion-algos/lipsync';
 import {
-    LipSyncState as LipSyncStateType,
-    DEFAULT_LIPSYNC_STATE,
-} from '@/motion-algos/lipsync';
-import { clamp01 } from '@/core/utils';
-import { focusedModelId, triggerAutoSave } from '@/core/config';
-import { setModelMorphWeight } from '../scene';
+    setLipSyncEnabled as _setPerceptionLipSyncEnabled,
+    setLipSyncSensitivity as _setPerceptionLipSyncSensitivity,
+    setLipSyncIntensity as _setPerceptionLipSyncIntensity,
+    setLipSyncMultiMorphEnabled as _setPerceptionLipSyncMultiMorph,
+    getPerceptionState,
+    setPerceptionState,
+} from './perception';
+import type { PerceptionState } from './perception-shared';
 
 export function initLipSync(_mm: import('../manager/model-manager').ModelManager): void {
+    // no-op: 逻辑已迁入 perception.ts
 }
 
-let lipSyncState: LipSyncStateType = { ...DEFAULT_LIPSYNC_STATE };
-let lipSyncMorphName: string | null = null;
-let lipSyncMorphSet: {
-    open: string | null;
-    close: string | null;
-    pucker: string | null;
-    smile: string | null;
-} | null = null;
+/** 从 PerceptionState 提取 LipSyncState（兼容旧序列化格式） */
+function _toLipSyncState(p: PerceptionState): LipSyncStateType {
+    return {
+        enabled: p.lipSyncEnabled,
+        sensitivity: p.lipSyncSensitivity,
+        intensity: p.lipSyncIntensity,
+        multiMorphEnabled: p.lipSyncMultiMorphEnabled,
+    };
+}
+
+/** 从 LipSyncState 写回 PerceptionState 的 lip-sync 字段 */
+function _fromLipSyncState(s: LipSyncStateType): Partial<PerceptionState> {
+    return {
+        lipSyncEnabled: s.enabled,
+        lipSyncSensitivity: s.sensitivity,
+        lipSyncIntensity: s.intensity,
+        lipSyncMultiMorphEnabled: s.multiMorphEnabled,
+    };
+}
 
 export function setLipSyncEnabled(on: boolean): void {
-    lipSyncState.enabled = on;
-    if (!on) {
-        resetLipMorph();
-        lipSyncMorphName = null; // 立即失效，防止后续误用
-    }
-    triggerAutoSave();
+    _setPerceptionLipSyncEnabled(on);
 }
 
 export function setLipSyncSensitivity(v: number): void {
-    lipSyncState.sensitivity = clamp01(v);
-    triggerAutoSave();
+    _setPerceptionLipSyncSensitivity(v);
 }
 
 export function setLipSyncIntensity(v: number): void {
-    lipSyncState.intensity = clamp01(v);
-    triggerAutoSave();
+    _setPerceptionLipSyncIntensity(v);
 }
 
 export function setLipSyncMultiMorphEnabled(v: boolean): void {
-    lipSyncState.multiMorphEnabled = v;
-    triggerAutoSave();
+    _setPerceptionLipSyncMultiMorph(v);
 }
 
 export function getLipSyncState(): LipSyncStateType {
-    return { ...lipSyncState };
+    return _toLipSyncState(getPerceptionState());
 }
 
 export function setLipSyncState(s: LipSyncStateType): void {
-    lipSyncState = { ...s };
+    setPerceptionState(_fromLipSyncState(s));
 }
 
 export function resetLipSyncOnFocusChange(): void {
-    lipSyncMorphName = null;
-    lipSyncMorphSet = null;
-}
-
-function resetLipMorph(): void {
-    if (lipSyncMorphName && focusedModelId) {
-        setModelMorphWeight(focusedModelId, lipSyncMorphName, 0);
-    }
-    // 重置 smile morph
-    if (lipSyncMorphSet?.smile && focusedModelId) {
-        setModelMorphWeight(focusedModelId, lipSyncMorphSet.smile, 0);
-    }
+    // no-op: morph 缓存由 perception-lipsync.ts 按 modelId 自动重建
 }
 
 /**

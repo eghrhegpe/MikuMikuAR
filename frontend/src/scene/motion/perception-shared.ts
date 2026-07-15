@@ -48,32 +48,11 @@ export interface MeshMetadata {
 }
 
 // ── 对象池（避免每帧 new Vector3/Matrix/Quaternion，消除 GC 压力） ──
-const _v3Pool = [
-    new Vector3(),
-    new Vector3(),
-    new Vector3(),
-    new Vector3(),
-    new Vector3(),
-    new Vector3(),
-];
-const _mPool = [
-    new Matrix(),
-    new Matrix(),
-    new Matrix(),
-    new Matrix(),
-    new Matrix(),
-    new Matrix(),
-    new Matrix(),
-    new Matrix(),
-];
-const _qPool = [
-    new Quaternion(),
-    new Quaternion(),
-    new Quaternion(),
-    new Quaternion(),
-    new Quaternion(),
-    new Quaternion(),
-];
+// 池容量需 ≥ 单帧最大消费数，否则循环覆写会污染已外泄的引用。
+// 单帧最大消费：breathing(2) + balance(8) + gaze-js head(8) + gaze-js eye(10) ≈ 28
+const _v3Pool = Array.from({ length: 16 }, () => new Vector3());
+const _mPool = Array.from({ length: 16 }, () => new Matrix());
+const _qPool = Array.from({ length: 32 }, () => new Quaternion());
 let _v3Idx = 0,
     _mIdx = 0,
     _qIdx = 0;
@@ -100,12 +79,16 @@ export function _writeMatToBuffer(buf: Float32Array, m: Matrix): void {
 //   childWorld = childLocal × parentWorld
 //   childLocal = childWorld × parentWorld⁻¹ = childOldMat × parentOldInv
 //   childNewWorld = childLocal × parentNewMat = localMat × parentNewMat
+//
+// 注意：递归内部不使用全局 _m() 池，避免深层递归时池槽被覆写导致外层数据污染。
+// 骨骼链深度有限（通常 ≤10），局部 Matrix 的 GC 压力可控。
 export function _propagateChildrenWasm(
     parent: IMmdRuntimeBone,
     parentOldMat: Matrix,
     parentNewMat: Matrix
 ): void {
-    const parentOldInv = _m().copyFrom(parentOldMat);
+    const parentOldInv = new Matrix();
+    parentOldInv.copyFrom(parentOldMat);
     parentOldInv.invert();
 
     for (const child of parent.childBones) {
@@ -114,11 +97,11 @@ export function _propagateChildrenWasm(
             continue;
         }
 
-        const childOldMat = Matrix.FromArrayToRef(childBuf, 0, _m());
-        const localMat = _m();
+        const childOldMat = Matrix.FromArray(childBuf);
+        const localMat = new Matrix();
         childOldMat.multiplyToRef(parentOldInv, localMat);
 
-        const childNewMat = _m();
+        const childNewMat = new Matrix();
         localMat.multiplyToRef(parentNewMat, childNewMat);
 
         _writeMatToBuffer(childBuf, childNewMat);

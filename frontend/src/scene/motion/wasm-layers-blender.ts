@@ -228,23 +228,31 @@ function _applyLayersBlending(modelId: string): void {
         let blendedRot: Quaternion | null = null;
         let blendedPos: Vector3 | null = null;
 
+        // 权重混合：使用累积权重 Slerp，避免逐次 Slerp 偏向首层。
+        // 第 i 层的 effectiveWeight = weight_i / totalWeight，
+        // 累积权重 cumWeight 用于 Slerp 的插值因子 = effectiveWeight / (已累积权重)。
+        let cumWeight = 0;
         for (const entry of entries) {
-            const normalizedWeight = entry.weight / totalWeight;
+            const effectiveWeight = entry.weight / totalWeight;
+            cumWeight += effectiveWeight;
             const { rotation, position } = entry.frame;
 
             if (blendedRot === null) {
                 blendedRot = rotation.clone();
             } else {
-                blendedRot = Quaternion.Slerp(blendedRot, rotation, normalizedWeight);
+                // 插值因子 = 本层权重 / 累积权重，保证加权平均语义
+                const t = effectiveWeight / cumWeight;
+                blendedRot = Quaternion.Slerp(blendedRot, rotation, t);
             }
 
             if (position !== null) {
                 if (blendedPos === null) {
                     blendedPos = position.clone();
                 } else {
-                    blendedPos.x += (position.x - blendedPos.x) * normalizedWeight;
-                    blendedPos.y += (position.y - blendedPos.y) * normalizedWeight;
-                    blendedPos.z += (position.z - blendedPos.z) * normalizedWeight;
+                    const t = effectiveWeight / cumWeight;
+                    blendedPos.x += (position.x - blendedPos.x) * t;
+                    blendedPos.y += (position.y - blendedPos.y) * t;
+                    blendedPos.z += (position.z - blendedPos.z) * t;
                 }
             }
         }

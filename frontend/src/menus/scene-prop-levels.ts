@@ -1,7 +1,7 @@
 // [doc:architecture] Scene Prop Levels — 舞台道具弹窗层级
 // 从 env-prop-levels.ts 迁移至舞台域
 
-import { cardContainer, escapeHtml, propRegistry, modelRegistry } from '../core/config';
+import { cardContainer, propRegistry, modelRegistry } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { slideRow, addCollapsible } from '../core/ui-helpers';
 import { logWarn } from '../core/utils';
@@ -17,44 +17,46 @@ import type { MenuNode } from './menu-schema';
 
 function buildPropSchema(): MenuNode[] {
     const props = getPropList();
-    return [
-        // 卡片 1：已加载道具列表
-        {
+    const nodes: MenuNode[] = [];
+
+    // 卡片 1：已加载道具列表（空时隐藏）
+    if (props.length > 0) {
+        nodes.push({
             id: 'prop:list',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    if (props.length > 0) {
-                        for (const p of props) {
-                            const row = document.createElement('div');
-                            row.className = 'slide-item';
-                            row.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:box"></iconify-icon></span><span class="slide-label">${escapeHtml(p.name)}</span><span class="slide-arrow">&gt;</span>`;
-                            row.addEventListener('click', () =>
-                                getSceneMenu()?.push(buildPropDetailLevel(p.id))
-                            );
-                            const delBtn = document.createElement('span');
-                            delBtn.className = 'slide-del-btn';
-                            delBtn.textContent = '×';
-                            delBtn.title = t('scene.deleteProp');
-                            delBtn.addEventListener('click', (e) => {
-                                e.stopPropagation();
-                                removeProp(p.id);
-                                getSceneMenu()?.reRender();
-                            });
-                            row.appendChild(delBtn);
-                            inner.appendChild(row);
-                        }
-                    } else {
-                        const empty = document.createElement('div');
-                        empty.className = 'empty-hint';
-                        empty.textContent = t('scene.noProps');
-                        inner.appendChild(empty);
+                    for (const p of props) {
+                        slideRow(
+                            inner,
+                            'lucide:box',
+                            p.name,
+                            false,
+                            () => getSceneMenu()?.push(buildPropDetailLevel(p.id)),
+                            undefined,
+                            undefined,
+                            false,
+                            undefined,
+                            {
+                                trailing: {
+                                    icon: '×',
+                                    title: t('scene.deleteProp'),
+                                    onClick: (e) => {
+                                        e.stopPropagation();
+                                        removeProp(p.id);
+                                        getSceneMenu()?.reRender();
+                                    },
+                                },
+                            }
+                        );
                     }
                 });
             },
-        },
-        // 卡片 2：加载入口
-        {
+        });
+    }
+
+    // 卡片 2：加载入口
+    nodes.push({
             id: 'prop:add',
             kind: 'custom',
             renderCustom: (c) => {
@@ -72,7 +74,9 @@ function buildPropSchema(): MenuNode[] {
                 });
             },
         },
-    ];
+    );
+
+    return nodes;
 }
 
 export function buildPropLevel(): PopupLevel {

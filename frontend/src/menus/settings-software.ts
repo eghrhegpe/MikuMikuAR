@@ -234,7 +234,7 @@ function buildSoftwareDetailManagedSchema(
                 cardContainer(c, (inner) => {
                     addSectionTitle(inner, '操作');
                     slideRow(inner, 'lucide:play', t('settings.software.launch'), false, () => {
-                        LaunchSoftware(entry.path, '')
+                        LaunchSoftware(entry.path, entry.args || '')
                             .then(() =>
                                 setStatus(t('settings.softwareStarted', { name: entry.name }), true)
                             )

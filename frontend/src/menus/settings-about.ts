@@ -380,7 +380,7 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                             })
                     );
                     slideRow(
-                        c,
+                        inner,
                         'lucide:trash',
                         t('settings.about.maintenance.clearAll'),
                         false,

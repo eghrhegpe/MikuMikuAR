@@ -187,49 +187,6 @@ function buildModelSchema(id: string): MenuNode[] {
         },
     ];
 
-    // 工具折叠组子节点
-    const toolsChildren: MenuNode[] = [
-        {
-            id: 'model:tools:tags',
-            kind: 'custom',
-            renderCustom: (inner) => {
-                slideRow(inner, 'lucide:tag', t('model-detail.tags'), true, () => {
-                    const level = buildModelTagsLevel(id);
-                    stackRegistry.modelStack.push(level);
-                });
-            },
-        },
-        {
-            id: 'model:tools:savePreset',
-            kind: 'custom',
-            renderCustom: (inner) => {
-                slideRow(inner, 'lucide:save', t('model-detail.savePreset'), false, () => {
-                    savePresetToLibDialog(id);
-                });
-            },
-        },
-        {
-            id: 'model:tools:loadPreset',
-            kind: 'custom',
-            renderCustom: (inner) => {
-                slideRow(inner, 'lucide:folder-open', t('model-detail.loadPreset'), true, () => {
-                    const level = buildPresetListLevel(id);
-                    stackRegistry.modelStack.push(level);
-                });
-            },
-        },
-        {
-            id: 'model:tools:openWith',
-            kind: 'custom',
-            renderCustom: (inner) => {
-                slideRow(inner, 'lucide:external-link', t('model-detail.openWith'), true, () => {
-                    const level = buildOpenWithLevel(id);
-                    stackRegistry.modelStack.push(level);
-                });
-            },
-        },
-    ];
-
     // 卡片 1 内的折叠组 schema
     const foldersSchema: MenuNode[] = [
         {
@@ -249,14 +206,6 @@ function buildModelSchema(id: string): MenuNode[] {
             renderCustom: (inner) => {
                 buildTransformCard(inner, handle);
             },
-        },
-        {
-            id: 'model:tools',
-            kind: 'folder',
-            label: 'model-detail.tools',
-            icon: 'lucide:wrench',
-            defaultOpen: false,
-            children: toolsChildren,
         },
     ];
 
@@ -295,9 +244,9 @@ function buildModelSchema(id: string): MenuNode[] {
 }
 
 /**
- * 模型工具菜单（port 自详情面板「工具」组）——供角色库根层行右齿轮 trailing 打开，
- * 作为行级快捷入口；与详情面板内联工具组内容保持一致。
- * 采用整体 renderCustom + 每行 slideRow 自带 onClick（与详情面板工具组同范式），
+ * 模型工具菜单——角色库根层行右齿轮 trailing 的【唯一】入口。
+ * 详情面板内联「工具」折叠组已移除，工具动作统一收敛到此菜单（消除重复）。
+ * 采用整体 renderCustom + cardContainer 包裹（与详情面板卡片同 lcard 范式）+ 每行 slideRow 自带 onClick，
  * 不依赖 SlideMenu 级 onItemClick。
  */
 export function buildModelToolsLevel(id: string): PopupLevel {
@@ -310,17 +259,19 @@ export function buildModelToolsLevel(id: string): PopupLevel {
         label: t('model-detail.tools'),
         items: [],
         renderCustom: (container) => {
-            slideRow(container, 'lucide:tag', t('model-detail.tags'), true, () => {
-                stackRegistry.modelStack?.push(buildModelTagsLevel(id));
-            });
-            slideRow(container, 'lucide:save', t('model-detail.savePreset'), false, () => {
-                savePresetToLibDialog(id);
-            });
-            slideRow(container, 'lucide:folder-open', t('model-detail.loadPreset'), true, () => {
-                stackRegistry.modelStack?.push(buildPresetListLevel(id));
-            });
-            slideRow(container, 'lucide:external-link', t('model-detail.openWith'), true, () => {
-                stackRegistry.modelStack?.push(buildOpenWithLevel(id));
+            cardContainer(container, (c) => {
+                slideRow(c, 'lucide:tag', t('model-detail.tags'), true, () => {
+                    stackRegistry.modelStack?.push(buildModelTagsLevel(id));
+                });
+                slideRow(c, 'lucide:save', t('model-detail.savePreset'), false, () => {
+                    savePresetToLibDialog(id);
+                });
+                slideRow(c, 'lucide:folder-open', t('model-detail.loadPreset'), true, () => {
+                    stackRegistry.modelStack?.push(buildPresetListLevel(id));
+                });
+                slideRow(c, 'lucide:external-link', t('model-detail.openWith'), true, () => {
+                    stackRegistry.modelStack?.push(buildOpenWithLevel(id));
+                });
             });
         },
     };
