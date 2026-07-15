@@ -1,7 +1,7 @@
 // [doc:adr-079] 感知层 — 微表情（情绪 morph 实时脉冲）
 
 import { matchBone } from '../../motion-algos/proc-motion-shared';
-import type { Emotion } from './perception-shared';
+import type { Emotion, MmdModelLike } from './perception-shared';
 
 /** 情绪 → morph 名候选（按优先级降序匹配，复用 matchBone） */
 const EMOTION_MORPH_CANDIDATES: Record<Exclude<Emotion, 'neutral'>, string[]> = {
@@ -25,7 +25,7 @@ export function _resetLastEmotionMorphName(): void {
 }
 
 export function _applyMicroExpression(
-    mmdModel: any,
+    mmdModel: MmdModelLike,
     time: number,
     enabled: boolean,
     emotion: Emotion
@@ -38,7 +38,7 @@ export function _applyMicroExpression(
     // 关闭或 neutral：复位上次 morph 并退出（防止非零权重定格）
     if (!enabled || emotion === 'neutral') {
         if (_lastEmotionMorphName) {
-            const old = morphManager.getMorphTargetByName?.(_lastEmotionMorphName);
+            const old = morphManager.getTargetByName(_lastEmotionMorphName);
             if (old) {
                 old.influence = 0;
             }
@@ -53,20 +53,23 @@ export function _applyMicroExpression(
     }
 
     // 复用 matchBone 匹配候选 morph 名（与 _applyBlinking 同款模式）
-    const morphNames = morphManager.getMorphTargetNames?.() || [];
+    const morphNames: string[] = [];
+    for (let i = 0; i < morphManager.numTargets; i++) {
+        morphNames.push(morphManager.getTarget(i).name);
+    }
     const targetName = matchBone(morphNames, candidates);
     if (!targetName) {
         return;
     }
 
-    const targetMorph = morphManager.getMorphTargetByName?.(targetName);
+    const targetMorph = morphManager.getTargetByName(targetName);
     if (!targetMorph) {
         return;
     }
 
     // 情绪切换时复位旧 morph（如 happy→angry，清零笑み防串味）
     if (_lastEmotionMorphName && _lastEmotionMorphName !== targetName) {
-        const old = morphManager.getMorphTargetByName?.(_lastEmotionMorphName);
+        const old = morphManager.getTargetByName(_lastEmotionMorphName);
         if (old) {
             old.influence = 0;
         }

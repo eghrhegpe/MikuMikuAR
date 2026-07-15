@@ -6,12 +6,13 @@ import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 import { BONE_UPPER_CANDIDATES, matchBone } from '../../motion-algos/proc-motion-shared';
 import type { MmdRuntimeBoneExtended } from '@/core/types';
 import { _q } from './perception-shared';
+import type { MmdModelLike } from './perception-shared';
 
 // ── 呼吸参数 ──
 const BREATH_FREQ = 0.3; // Hz
 const BREATH_AMP = 0.02; // radians
 
-export function _applyBreathing(mmdModel: any, time: number): void {
+export function _applyBreathing(mmdModel: MmdModelLike, time: number): void {
     const phase = time * BREATH_FREQ * 2 * Math.PI;
     const breathOffset = BREATH_AMP * Math.sin(phase);
 

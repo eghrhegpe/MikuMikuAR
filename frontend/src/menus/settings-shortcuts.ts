@@ -4,6 +4,7 @@ import { setStatus, uiState, setUIState, cardContainer } from '../core/config';
 import { slideRow, addSectionTitle } from '../core/ui-helpers';
 import {
     getAllShortcuts,
+    formatKeyBinding,
     setKeyBinding,
     resetKeyBinding,
     resetAllKeyBindings,
@@ -17,41 +18,6 @@ import type { PopupLevel } from '../core/config';
 import type { MenuNode } from './menu-schema';
 import type { SettingsMenuHandle } from './settings-shared';
 import { addDisposableListener, type Disposable } from '../core/dom';
-
-function _fmtKeyBinding(key: string, ctrl: boolean, shift: boolean, alt: boolean): string {
-    const parts: string[] = [];
-    if (ctrl) {
-        parts.push('Ctrl');
-    }
-    if (shift) {
-        parts.push('Shift');
-    }
-    if (alt) {
-        parts.push('Alt');
-    }
-    let display = key;
-    if (key === 'Space') {
-        display = 'Space';
-    } else if (key === 'Escape') {
-        display = 'Esc';
-    } else if (key === 'ArrowLeft') {
-        display = '←';
-    } else if (key === 'ArrowRight') {
-        display = '→';
-    } else if (key === 'ArrowUp') {
-        display = '↑';
-    } else if (key === 'ArrowDown') {
-        display = '↓';
-    } else if (key === 'Enter') {
-        display = 'Enter';
-    } else if (key.startsWith('Digit')) {
-        display = key.slice(5);
-    } else if (key.startsWith('Key')) {
-        display = key.slice(3);
-    }
-    parts.push(display);
-    return parts.join('+');
-}
 
 function _isModifierOnly(code: string): boolean {
     return (
@@ -101,7 +67,7 @@ function buildShortcutsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
                     cardContainer(container, (c) => {
                         addSectionTitle(c, t(groupName));
                         for (const s of items) {
-                            const combo = _fmtKeyBinding(
+                            const combo = formatKeyBinding(
                                 s.currentKey,
                                 s.currentCtrl,
                                 s.currentShift,

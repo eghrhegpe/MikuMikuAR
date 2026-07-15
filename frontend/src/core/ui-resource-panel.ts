@@ -5,6 +5,7 @@
 import { createIconifyIcon } from './icons';
 import { createVirtualGrid, type VirtualGridHandle } from './ui-virtual-grid';
 import { thumbnailCache as liveThumbnailCache } from './state';
+import { thumbDataUrl } from '@/scene/manager/thumbnail-capture';
 
 // ======== Types ========
 
@@ -91,7 +92,7 @@ export function createResourcePanel(
                     const el = entry.target as HTMLElement;
                     const path = el.dataset.resourcePath;
                     if (path && liveThumbnailCache.has(path)) {
-                        el.style.backgroundImage = `url(data:image/png;base64,${liveThumbnailCache.get(path)})`;
+                        el.style.backgroundImage = `url(${thumbDataUrl(liveThumbnailCache.get(path)!)})`;
                         observer?.unobserve(el);
                     }
                 }
@@ -106,7 +107,7 @@ export function createResourcePanel(
             return;
         }
         if (liveThumbnailCache.has(path)) {
-            el.style.backgroundImage = `url(data:image/png;base64,${liveThumbnailCache.get(path)})`;
+            el.style.backgroundImage = `url(${thumbDataUrl(liveThumbnailCache.get(path)!)})`;
             observer?.unobserve(el);
         } else {
             observer?.observe(el);
@@ -288,7 +289,7 @@ function createGridCard(
     // 缩略图或 fallback 图标
     const tKey = item.thumbKey ?? item.filePath;
     if (cache.has(tKey)) {
-        thumb.style.backgroundImage = `url(data:image/png;base64,${cache.get(tKey)})`;
+        thumb.style.backgroundImage = `url(${thumbDataUrl(cache.get(tKey)!)})`;
     } else {
         const iconEl = createIconifyIcon(item.isFolder ? 'folder' : item.icon);
         if (iconEl) {
@@ -406,7 +407,7 @@ function createListRow(
 
     const tKey2 = item.thumbKey ?? item.filePath;
     if (cache.has(tKey2)) {
-        thumb.style.backgroundImage = `url(data:image/png;base64,${cache.get(tKey2)})`;
+        thumb.style.backgroundImage = `url(${thumbDataUrl(cache.get(tKey2)!)})`;
     } else {
         const iconEl = createIconifyIcon(item.isFolder ? 'folder' : item.icon);
         if (iconEl) {

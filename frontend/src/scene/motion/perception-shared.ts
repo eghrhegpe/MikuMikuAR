@@ -2,6 +2,7 @@
 // 供 perception.ts 及各 perception-*.ts 子模块复用
 
 import { Quaternion, Vector3, Matrix } from '@babylonjs/core/Maths/math.vector';
+import type { MorphTargetManager } from '@babylonjs/core/Morph/morphTargetManager';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 import type { MmdRuntimeBoneExtended } from '@/core/types';
 
@@ -45,6 +46,15 @@ export const DEFAULT_PERCEPTION_STATE: PerceptionState = {
 
 export interface MeshMetadata {
     skeleton?: { _markAsDirty?(): void };
+}
+
+/** MMD 模型最小接口（供 perception 子系统使用，避免 any） */
+export interface MmdModelLike {
+    runtimeBones: readonly IMmdRuntimeBone[];
+    mesh: {
+        metadata?: MeshMetadata;
+        morphTargetManager?: MorphTargetManager;
+    };
 }
 
 // ── 对象池（避免每帧 new Vector3/Matrix/Quaternion，消除 GC 压力） ──

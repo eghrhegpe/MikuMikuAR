@@ -8,7 +8,7 @@ import { SelectDir, OpenScreenshotDir } from '../core/wails-bindings';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 import type { PopupLevel } from '../core/config';
-import type { SettingsMenuHandle } from './settings-shared';
+import { truncatePath, type SettingsMenuHandle } from './settings-shared';
 
 function buildScreenshotSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
     return [
@@ -98,7 +98,60 @@ function buildScreenshotSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
                 });
             },
         },
-        // 卡片 3：保存目录
+        // 卡片 3：缩略图分辨率
+        {
+            id: 'screenshot:thumbRes',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    addSectionTitle(inner, '缩略图分辨率');
+                    const resolutions: Array<{ key: number; label: string }> = [
+                        { key: 512, label: '512px' },
+                        { key: 1024, label: '1024px' },
+                        { key: 2048, label: '2048px' },
+                        { key: 4096, label: '4096px (4K)' },
+                    ];
+                    const resRows: HTMLElement[] = [];
+                    for (const r of resolutions) {
+                        const isActive = (uiState.thumbnailResolution ?? 512) === r.key;
+                        const row = slideRow(
+                            inner,
+                            `lucide:${isActive ? 'check-circle' : 'circle'}`,
+                            r.label,
+                            false,
+                            () => {
+                                setUIState({ thumbnailResolution: r.key });
+                                getSettingsMenu()?.updateControls();
+                                setStatus(`✓ 缩略图分辨率已设为 ${r.label}`, true);
+                            },
+                            undefined,
+                            undefined,
+                            isActive
+                        );
+                        row.dataset.resKey = String(r.key);
+                        resRows.push(row);
+                    }
+                    getCurrentRenderingMenu()?.registerControl(() => {
+                        const current = uiState.thumbnailResolution ?? 512;
+                        for (const row of resRows) {
+                            const key = Number(row.dataset.resKey);
+                            const isActive = current === key;
+                            row.className = 'slide-item' + (isActive ? ' slide-focused' : '');
+                            const icon = row.querySelector(
+                                '.slide-icon iconify-icon'
+                            ) as HTMLElement | null;
+                            if (icon) {
+                                icon.setAttribute(
+                                    'icon',
+                                    `lucide:${isActive ? 'check-circle' : 'circle'}`
+                                );
+                            }
+                        }
+                    });
+                });
+            },
+        },
+        // 卡片 4：保存目录
         {
             id: 'screenshot:dir',
             kind: 'custom',
@@ -107,9 +160,7 @@ function buildScreenshotSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
                     addSectionTitle(inner, '保存目录');
                     const dir = uiState.screenshotDir ?? '';
                     const dirSub = dir
-                        ? dir.length > 20
-                            ? '...' + dir.slice(-17)
-                            : dir
+                        ? truncatePath(dir)
                         : '（尚未设置，截图时会选择）';
 
                     slideRow(inner, 'lucide:folder', '选择目录', false, async () => {

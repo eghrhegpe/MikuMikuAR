@@ -136,6 +136,47 @@ export function getAllShortcuts(): ShortcutWithBinding[] {
     return result;
 }
 
+/** 格式化按键绑定为可读字符串，如 "Ctrl+1"、"Shift+←" */
+export function formatKeyBinding(
+    key: string,
+    ctrl: boolean,
+    shift: boolean,
+    alt: boolean
+): string {
+    const parts: string[] = [];
+    if (ctrl) {
+        parts.push('Ctrl');
+    }
+    if (shift) {
+        parts.push('Shift');
+    }
+    if (alt) {
+        parts.push('Alt');
+    }
+    let display = key;
+    if (key === 'Space') {
+        display = 'Space';
+    } else if (key === 'Escape') {
+        display = 'Esc';
+    } else if (key === 'ArrowLeft') {
+        display = '←';
+    } else if (key === 'ArrowRight') {
+        display = '→';
+    } else if (key === 'ArrowUp') {
+        display = '↑';
+    } else if (key === 'ArrowDown') {
+        display = '↓';
+    } else if (key === 'Enter') {
+        display = 'Enter';
+    } else if (key.startsWith('Digit')) {
+        display = key.slice(5);
+    } else if (key.startsWith('Key')) {
+        display = key.slice(3);
+    }
+    parts.push(display);
+    return parts.join('+');
+}
+
 /**
  * Set custom key binding for a shortcut ID.
  * Returns { ok: true } on success, or conflict info if the key combo is taken.

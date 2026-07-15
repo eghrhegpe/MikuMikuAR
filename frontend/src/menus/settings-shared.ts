@@ -225,3 +225,8 @@ export function formatBytes(bytes: number): string {
     const val = bytes / Math.pow(1024, idx);
     return `${val.toFixed(idx === 0 ? 0 : 1)} ${units[idx]}`;
 }
+
+/** 路径截断显示：超长时保留尾部（用户更关心文件名/末级目录） */
+export function truncatePath(p: string, max = 20): string {
+    return p.length > max ? '...' + p.slice(-(max - 3)) : p;
+}

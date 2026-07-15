@@ -33,11 +33,14 @@ export function _applyHeadGazeWasm(headRuntime: IMmdRuntimeBone, gazeTarget: Vec
     const targetWorldQ = _q().copyFrom(Quaternion.FromLookDirectionRH(lookDir, Vector3.UpReadOnly));
 
     const parentWorldQ = _q();
-    const parentBoneWasm = (headRuntime as any).parentBone as IMmdRuntimeBone | undefined;
-    if (parentBoneWasm && (parentBoneWasm as any).worldMatrix) {
-        parentWorldQ.copyFrom(
-            Quaternion.FromRotationMatrix(Matrix.FromArray((parentBoneWasm as any).worldMatrix))
-        );
+    const parentBoneWasm = headRuntime.parentBone;
+    if (parentBoneWasm) {
+        const pb = parentBoneWasm as MmdRuntimeBoneExtended;
+        if (pb.worldMatrix) {
+            parentWorldQ.copyFrom(Quaternion.FromRotationMatrix(Matrix.FromArray(pb.worldMatrix)));
+        } else {
+            parentWorldQ.copyFrom(Quaternion.Identity());
+        }
     } else {
         parentWorldQ.copyFrom(Quaternion.Identity());
     }

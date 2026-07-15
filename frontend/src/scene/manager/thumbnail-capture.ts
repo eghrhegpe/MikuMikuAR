@@ -14,15 +14,23 @@ import { Color4 } from '@babylonjs/core/Maths/math.color';
 import type { Scene } from '@babylonjs/core/scene';
 import { SaveThumbnail } from '@/core/wails-bindings';
 import { thumbnailCache, setThumbnailCache, type ModelInstance } from '@/core/config';
+import { uiState } from '@/core/state';
 import { logWarn } from '@/core/utils';
 
-const THUMB_MAX = 512;
+/** base64 缩略图数据的 MIME 嗅探：PNG/JPEG/WebP 头部字节不同 */
+export function thumbDataUrl(base64: string): string {
+    if (base64.startsWith('iVBOR')) return `data:image/png;base64,${base64}`;
+    if (base64.startsWith('/9j/')) return `data:image/jpeg;base64,${base64}`;
+    if (base64.startsWith('UklGR')) return `data:image/webp;base64,${base64}`;
+    // 兜底：默认 PNG
+    return `data:image/png;base64,${base64}`;
+}
 
 /**
  * 用离屏 RenderTargetTexture 渲染指定模型实例的「当前骨骼姿态」并保存为缩略图。
  *
  * 调用方负责先把场景/动画定位到目标帧（例如动作第 0 帧）再调用——本函数只截当前姿态，
- * 不推进动画时间轴。RT 渲染复用主相机视角（仅借用，不改主相机），无活动相机时兜底 3/4 角。
+ * 不推进动画时间轴。始终创建独立缩略图相机，基于包围盒聚焦上半身（凸显服饰特征）。
  */
 export async function renderInstanceThumbnail(
     scene: Scene,
@@ -34,38 +42,60 @@ export async function renderInstanceThumbnail(
     }
     const engine = scene.getEngine();
     const activeCam = scene.activeCamera;
+    // 缩略图分辨率复用用户设置（默认 512，可选 1024/2048/4096）
+    const thumbMax = uiState.thumbnailResolution ?? 512;
     // RTT 尺寸跟随主相机宽高比，使投影宽高比与缓冲一致，否则 16:9 塞进正方缓冲会横向压缩。
     // 卡片用 object-fit:cover 再裁切，比例始终正确、绝不拉伸。
     const camAspect = activeCam ? engine.getAspectRatio(activeCam) : 1;
-    let rtW = THUMB_MAX;
-    let rtH = THUMB_MAX;
+    let rtW = thumbMax;
+    let rtH = thumbMax;
     if (camAspect >= 1) {
-        rtH = Math.max(1, Math.round(THUMB_MAX / camAspect));
+        rtH = Math.max(1, Math.round(thumbMax / camAspect));
     } else {
-        rtW = Math.max(1, Math.round(THUMB_MAX * camAspect));
+        rtW = Math.max(1, Math.round(thumbMax * camAspect));
     }
 
     const rt = new RenderTargetTexture('thumbRT', { width: rtW, height: rtH }, scene, false);
     rt.clearColor = new Color4(0, 0, 0, 0);
 
-    // 沿用主相机视角（RT 渲染只借用相机，不会改动主相机）；
-    // 仅当无活动相机时兜底用包围盒算一个 3/4 视角。
-    let thumbCam: FreeCamera | null = null;
+    // 始终创建独立缩略图相机，不复用主相机（主相机为全身远景，缩略图需拉近聚焦上半身）。
+    // 方向：有主相机则复用其朝向（保证正面不背身），无主相机默认从 -Z 看（MMD 正面朝 -Z）。
+    const bb = inst.rootMesh.getHierarchyBoundingVectors(true);
+    const fullHeight = bb.max.y - bb.min.y;
+    const centerX = (bb.max.x + bb.min.x) * 0.5;
+    const centerZ = (bb.max.z + bb.min.z) * 0.5;
+    const extent = bb.max.subtract(bb.min);
+
+    // 焦点：全身 60% 高度（胸部），能看到面部+上半身服饰
+    const focusCenterY = bb.min.y + fullHeight * 0.6;
+    // 聚焦区域：头顶到胸部以下（全身上 48%），只拍头胸
+    const focusHeight = fullHeight * 0.44;
+    const focusWidth = extent.x * 0.55; // 横向取 70% 宽度，收紧画面
+
+    const fov = activeCam ? activeCam.fov : 0.8;
+    // 边距系数 0.88：略微裁切边缘，让角色尽量填满画面
+    const targetSize = Math.max(focusHeight, focusWidth) * 0.88;
+    const dist = targetSize / (2 * Math.tan(fov / 2));
+
+    // 相机朝向：复用主相机方向，或默认 -Z（MMD 正面）
+    let dirX = 0, dirY = 0, dirZ = -1;
     if (activeCam) {
-        rt.activeCamera = activeCam;
-    } else {
-        const bb = inst.rootMesh.getHierarchyBoundingVectors(true);
-        const center = bb.max.add(bb.min).scale(0.5);
-        const extent = bb.max.subtract(bb.min);
-        const size = Math.max(extent.x, extent.y, extent.z);
-        const dist = size * 0.8 + 2;
-        thumbCam = new FreeCamera('thumbCam', Vector3.Zero(), scene);
-        thumbCam.minZ = 0.1;
-        thumbCam.maxZ = 5000;
-        thumbCam.position.set(center.x - dist, center.y + dist * 0.5, center.z);
-        thumbCam.setTarget(new Vector3(center.x, center.y, center.z));
-        rt.activeCamera = thumbCam;
+        const fwd = activeCam.getDirection(Vector3.Forward());
+        dirX = fwd.x; dirY = fwd.y; dirZ = fwd.z;
     }
+
+    const thumbCam = new FreeCamera('thumbCam', Vector3.Zero(), scene);
+    thumbCam.minZ = 0.1;
+    thumbCam.maxZ = 5000;
+    thumbCam.fov = fov;
+    // 沿朝向反方向放置相机（dir 是相机看向目标的方向，相机在 target - dir*dist）
+    thumbCam.position.set(
+        centerX - dirX * dist,
+        focusCenterY - dirY * dist,
+        centerZ - dirZ * dist
+    );
+    thumbCam.setTarget(new Vector3(centerX, focusCenterY, centerZ));
+    rt.activeCamera = thumbCam;
 
     const renderList: Mesh[] = [];
     inst.rootMesh.getChildMeshes().forEach((m) => {
@@ -108,7 +138,10 @@ export async function renderInstanceThumbnail(
             imageData.data.set(flipped);
             ctx.putImageData(imageData, 0, 0);
 
-            const base64 = canvas.toDataURL('image/png', 0.8).replace(/^data:image\/png;base64,/, '');
+            // 复用截图格式/质量设置（PNG 无损，JPEG/WebP 受 quality 控制）
+            const fmt = uiState.screenshotFormat ?? 'image/png';
+            const q = uiState.screenshotQuality ?? 0.9;
+            const base64 = canvas.toDataURL(fmt, q).replace(/^data:image\/\w+;base64,/, '');
 
             try {
                 await SaveThumbnail(key, base64);
@@ -123,7 +156,7 @@ export async function renderInstanceThumbnail(
         }
     } finally {
         rt.dispose();
-        thumbCam?.dispose();
+        thumbCam.dispose();
     }
 }
 

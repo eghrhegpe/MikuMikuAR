@@ -1200,40 +1200,41 @@ function renderGridMode(
 // Register buildLevel for use by motion-popup.ts (avoids circular import)
 stackRegistry.buildLevel = buildLevel;
 
-export function modelToRow(m: LibraryModel): PopupRow {
-    let icon = 'box';
-    if (m.format === 'vmd') {
-        icon = 'music';
-    } else if (m.format === 'audio') {
-        icon = 'volume-2';
-    } else if (m.format === 'vpd') {
-        icon = 'user';
-    } else if (m.container === 'zip' && m.format === 'pmx') {
-        icon = 'archive';
-    }
+// ======== 模型显示名/图标 公共解析（modelToRow ↔ modelToResourceItem 共享）========
+
+/** 按 format/container 解析图标名 */
+function resolveModelIcon(m: LibraryModel): string {
+    if (m.format === 'vmd') return 'music';
+    if (m.format === 'audio') return 'volume-2';
+    if (m.format === 'vpd') return 'user';
+    if (m.container === 'zip' && m.format === 'pmx') return 'archive';
+    return 'box';
+}
+
+/** 按 displayNamePriority 解析显示名。filenameFallback 为文件名兜底文字（行用「未知」、资源项用 ''） */
+function resolveModelLabel(m: LibraryModel, filenameFallback: string): string {
     const fp = m.file_path || '';
     const filename =
         m.container === 'zip' && m.zip_inner
-            ? getBaseName(m.zip_inner) || t('library.unknown')
-            : getBaseName(fp) || t('library.unknown');
+            ? getBaseName(m.zip_inner) || filenameFallback
+            : getBaseName(fp) || filenameFallback;
     const cached = modelMetaCache.get(fp);
-    let label: string;
     switch (displayNamePriority) {
         case 'filename':
-            label = filename;
-            break;
+            return filename;
         case 'name_en':
-            label = cached?.name_en || m.name_en || cached?.name_jp || m.name_jp || filename;
-            break;
+            return cached?.name_en || m.name_en || cached?.name_jp || m.name_jp || filename;
         case 'name_jp':
         default:
-            label = cached?.name_jp || m.name_jp || cached?.name_en || m.name_en || filename;
-            break;
+            return cached?.name_jp || m.name_jp || cached?.name_en || m.name_en || filename;
     }
+}
+
+export function modelToRow(m: LibraryModel): PopupRow {
     return {
         kind: 'model',
-        label,
-        icon,
+        label: resolveModelLabel(m, t('library.unknown')),
+        icon: resolveModelIcon(m),
         target: m.file_path,
         sublabel: undefined,
         model: m,
@@ -1248,40 +1249,13 @@ export function modelToRow(m: LibraryModel): PopupRow {
 
 export function modelToResourceItem(m: LibraryModel): ResourceItem {
     const fp = m.file_path || '';
-    const filename =
-        m.container === 'zip' && m.zip_inner
-            ? getBaseName(m.zip_inner) || ''
-            : getBaseName(fp) || '';
     const cached = modelMetaCache.get(fp);
-    let label: string;
-    switch (displayNamePriority) {
-        case 'filename':
-            label = filename;
-            break;
-        case 'name_en':
-            label = cached?.name_en || m.name_en || cached?.name_jp || m.name_jp || filename;
-            break;
-        case 'name_jp':
-        default:
-            label = cached?.name_jp || m.name_jp || cached?.name_en || m.name_en || filename;
-            break;
-    }
-    let icon = 'box';
-    if (m.format === 'vmd') {
-        icon = 'music';
-    } else if (m.format === 'audio') {
-        icon = 'volume-2';
-    } else if (m.format === 'vpd') {
-        icon = 'user';
-    } else if (m.container === 'zip' && m.format === 'pmx') {
-        icon = 'archive';
-    }
     return {
         id: fp,
-        label,
+        label: resolveModelLabel(m, ''),
         filePath: fp,
         thumbKey: thumbnailKeyForModel(m),
-        icon,
+        icon: resolveModelIcon(m),
         isFolder: false,
         sublabel: cached?.comment || m.comment || undefined,
         data: m,

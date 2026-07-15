@@ -38,6 +38,7 @@ import type { MenuNode } from './menu-schema';
 import type { PopupLevel } from '../core/config';
 import type { SlideMenu } from './menu';
 import type { SettingsMenuHandle } from './settings-shared';
+import { truncatePath } from './settings-shared';
 import {
     getDownloadWatchEnabledCached,
     setDownloadWatchEnabledCached,
@@ -113,11 +114,7 @@ export function handleSettingsAction(row: PopupRow, menu?: SlideMenu): void {
 
 function buildPathsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
     const root = resourceRoot;
-    const rootSub = root
-        ? root.length > 20
-            ? '...' + root.slice(-17)
-            : root
-        : t('settings.paths.notSet');
+    const rootSub = root ? truncatePath(root) : t('settings.paths.notSet');
     const paths = overridePaths || {};
     const isAndroid = isAndroidPlatform();
     const pathSub = (key: string, defSub: string) => {
@@ -130,7 +127,7 @@ function buildPathsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
         } else {
             return defSub;
         }
-        return actual.length > 20 ? '...' + actual.slice(-17) : actual;
+        return truncatePath(actual);
     };
 
     return [

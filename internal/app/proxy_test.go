@@ -138,6 +138,9 @@ func TestPlazaInjectScript_NoHead(t *testing.T) {
 }
 
 func TestDownloadFromPlaza(t *testing.T) {
+	// Isolate config dir so we don't read the user's real config
+	testConfigDir(t)
+
 	// Mock target server with a file endpoint
 	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/model/test.pmx" {
@@ -176,8 +179,8 @@ func TestDownloadFromPlaza(t *testing.T) {
 	if result.Size != 16 {
 		t.Errorf("Size = %d, want 16", result.Size)
 	}
-	// .pmx should go to model/ subdir
-	wantDir := filepath.Join(tmpDir, "model")
+	// .pmx should go to PMX/ subdir (default category path name)
+	wantDir := filepath.Join(tmpDir, "PMX")
 	if !strings.HasPrefix(result.FilePath, wantDir) {
 		t.Errorf("FilePath = %q, should be under %s", result.FilePath, wantDir)
 	}

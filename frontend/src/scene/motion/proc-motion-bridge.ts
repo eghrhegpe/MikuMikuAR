@@ -20,11 +20,7 @@ import { BeatDetector } from '@/motion-algos/beat-detector';
 import { mmdRuntime, triggerAutoSave, focusedModelId, setUIState } from '@/core/config';
 import { isAudioPlaying } from '@/outfit/audio';
 import { modelManager, focusedMmdModel, focusedModel, loadVMDMotion } from '../scene';
-import {
-    setGazeConfig,
-    onPerceptionModelRemoved,
-    activatePerception,
-} from './perception';
+import { setGazeConfig, onPerceptionModelRemoved, activatePerception } from './perception';
 import { clamp01, logWarn } from '@/core/utils';
 
 let procState: ProcMotionState = { ...DEFAULT_PROC_STATE };
@@ -32,6 +28,7 @@ let procBeatDetector: BeatDetector | null = null;
 let _procVmdActive = false;
 let lastBeatBpm = 120;
 let procStarting = false;
+let _stopRequested = false; // await 期间被 stop 时置位，防止 start 完成后重新激活
 let _regeneratePending = false;
 let procActiveKind: ProcMotionMode = 'idle';
 let procModelId: string | null = null;
@@ -63,6 +60,7 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
         return;
     }
     procStarting = true;
+    _stopRequested = false;
 
     // 保存加载前的模型 ID，防止 await 后焦点切换导致操作错配（Issue #3）
     const modelAtStart = focusedMmdModel();
@@ -137,12 +135,22 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
             _procVmdActive = false;
             procModelId = null;
             procActiveKind = 'idle';
+        } else if (_stopRequested) {
+            // await 期间用户调用了 stopProcMotion，丢弃本次结果
+            logWarn('proc-motion', '加载完成但已被 stop，丢弃结果');
+            _procVmdActive = false;
+            procModelId = null;
+            procActiveKind = 'idle';
         } else {
+            // await 成功且无竞态：重新断言 _procVmdActive=true
+            // （await 期间 stopProcMotion 可能将其置 false，此处校正）
+            _procVmdActive = true;
             _clearVmdData(focusedModel());
             // 感知层独立激活，不依赖程序化动作生命周期
             // gaze 由 perception.ts 管理，在模型加载后自动激活
         }
-    } catch {
+    } catch (err) {
+        logWarn('proc-motion', 'loadVMDMotion 失败:', err);
         _procVmdActive = false;
         _clearVmdData(focusedModel());
     } finally {
@@ -155,7 +163,10 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
         if (procModelId && focusedModelId === procModelId) {
             const mode = procState.mode === 'autodance' ? 'autodance' : 'idle';
             const bpm = procBeatDetector?.getBPM() ?? 120;
-            startProcMotion(mode, mode === 'autodance' ? bpm : undefined);
+            // fire-and-forget 需 catch 防止 unhandled rejection
+            void startProcMotion(mode, mode === 'autodance' ? bpm : undefined).catch((e) => {
+                logWarn('proc-motion', 'Re-trigger startProcMotion 失败:', e);
+            });
         } else {
             logWarn(
                 'proc-motion',
@@ -167,6 +178,7 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
 
 export function stopProcMotion(): void {
     _procVmdActive = false;
+    _stopRequested = true;
     // 感知层独立于程序化动作，不再随 stopProcMotion 注销
     // gaze 由 perception.ts 管理，always-on
     if (procModelId) {
@@ -366,8 +378,6 @@ export function activateGazeTracking(): void {
     activatePerception();
 }
 
-let _gazeLayerActive = false;
-
 /** 图层驱动的视线/头部控制。
  *  由 vmd-layers 在调整 gaze 图层时调用。
  *  - intensity > 0 且 active → 启用眼部追踪
@@ -375,7 +385,6 @@ let _gazeLayerActive = false;
  *  - 否则禁用两者。
  *  不干涉 _setGazeTrackingSetting 内部重建逻辑。 */
 export function setGazeLayerActive(active: boolean, intensity: number): void {
-    _gazeLayerActive = active;
     const shouldEnable = active && intensity > 0;
     setProcMotionEyeTrackingEnabled(shouldEnable);
     setProcMotionHeadTrackingEnabled(shouldEnable && intensity >= 0.5);

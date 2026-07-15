@@ -321,15 +321,21 @@ describe('microExpression state', () => {
 // _applyMicroExpression 实时叠加（通过 observer 回调触发）
 // =====================================================================
 
-// Mock morphTargetManager（与 _applyBlinking 用的 API 一致）
+// Mock morphTargetManager（与 Babylon.js MorphTargetManager API 一致）
 function makeMockMorphManager(names: string[]) {
     const influences = new Map<string, number>();
     for (const n of names) {
         influences.set(n, 0);
     }
     return {
-        getMorphTargetNames: () => names,
-        getMorphTargetByName: (name: string) =>
+        numTargets: names.length,
+        getTarget: (i: number) => ({
+            name: names[i],
+            set influence(v: number) {
+                influences.set(names[i], v);
+            },
+        }),
+        getTargetByName: (name: string) =>
             influences.has(name)
                 ? {
                       set influence(v: number) {
@@ -566,18 +572,33 @@ function makeMockRuntimeBones(names: string[]) {
     }));
 }
 
-// linkedBone：rotationQuaternion 支持 copyFrom 读取 + 重新赋值追踪；
+// linkedBone：rotationQuaternion 支持 copyFrom 写入 + 写入追踪；
 // position 支持 y 读写 + 写入追踪
 function makeMockLinkedBone() {
     const pos = makeMockVector3();
-    let rotQ: any = { x: 0, y: 0, z: 0, w: 1 };
     let rotWritten = false;
+    const rotQ: any = {
+        x: 0,
+        y: 0,
+        z: 0,
+        w: 1,
+        copyFrom(src: any) {
+            rotQ.x = src.x;
+            rotQ.y = src.y;
+            rotQ.z = src.z;
+            rotQ.w = src.w;
+            rotWritten = true;
+        },
+    };
     return {
         get rotationQuaternion() {
             return rotQ;
         },
         set rotationQuaternion(v: any) {
-            rotQ = v;
+            rotQ.x = v.x;
+            rotQ.y = v.y;
+            rotQ.z = v.z;
+            rotQ.w = v.w;
             rotWritten = true;
         },
         get _rotWritten() {
