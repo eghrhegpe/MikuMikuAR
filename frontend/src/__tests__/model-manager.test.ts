@@ -852,14 +852,16 @@ describe('ModelManager physics', function () {
         expect(Array.from(states)).toEqual([1, 1, 1]);
     });
 
-    it('setPhysics clears physics category state on toggle', function () {
+    it('setPhysics preserves physics category state (does not clear on toggle)', function () {
         const states = new Uint8Array([1, 1]);
         const mmd = makeMmdModel([], [], states);
         mgr.register(makeModelInstance('m1', { mmdModel: mmd }));
         mgr._physicsCatState.set('m1', new Map([['skirt', false]]));
 
         mgr.setPhysics('m1', false);
-        expect(mgr._physicsCatState.has('m1')).toBe(false);
+        // setPhysics 只控制总开关，不应清除分类状态（防止 setPhysicsCategory 联动时丢失其他类别）
+        expect(mgr._physicsCatState.has('m1')).toBe(true);
+        expect(mgr._physicsCatState.get('m1')?.get('skirt')).toBe(false);
     });
 
     it('setPhysics with null rigidBodyStates does not crash', function () {
