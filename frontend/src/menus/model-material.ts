@@ -21,7 +21,7 @@ import {
     DEFAULT_MAT_PARAMS,
 } from '../scene/scene';
 import { createIconifyIcon } from '../core/icons';
-import { slideRow, addSliderRow, addCollapsible } from '../core/ui-helpers';
+import { slideRow, addSliderRow, addCollapsible, addSectionTitle } from '../core/ui-helpers';
 import type { SlideMenu } from './menu';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
@@ -33,13 +33,7 @@ let _paramCardEl: HTMLElement | null = null;
 
 /** 添加分组分隔线 + 小标题，将颜色乘率与贴图强度视觉分区。 */
 function _addGroupSeparator(panel: HTMLElement, label: string): void {
-    const sep = document.createElement('div');
-    sep.className = 'mat-group-sep';
-    const text = document.createElement('span');
-    text.className = 'mat-group-sep-label';
-    text.textContent = label;
-    sep.appendChild(text);
-    panel.appendChild(sep);
+    addSectionTitle(panel, label);
 }
 
 function buildMatBatchSchema(id: string, _modelName: string): MenuNode[] {
@@ -563,10 +557,7 @@ function _renderParamCard(
         icon: 'lucide:sliders-horizontal',
         defaultOpen: true,
         renderContent: (panel) => {
-            const breadcrumb = document.createElement('div');
-            breadcrumb.className = 'mat-breadcrumb';
-            breadcrumb.textContent = `${cat} > ${matName}`;
-            panel.appendChild(breadcrumb);
+            addSectionTitle(panel, `${cat} > ${matName}`);
 
             addSliderRow(
                 panel,
