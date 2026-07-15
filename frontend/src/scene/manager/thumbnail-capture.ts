@@ -2,8 +2,8 @@
 //
 // 架构说明：model-loader 已静态 import vmd-loader（加载动作），若 vmd-loader 再静态
 // import model-loader 会形成循环依赖。故将 RT 渲染逻辑独立成本模块：
-//   - model-loader 静态 import 本模块（captureThumbnail 复用）
-//   - vmd-loader 通过动态 import 调用 captureMotionThumbnail（规避静态循环）
+//   - model-loader 通过 captureThumbnail 复用 renderInstanceThumbnail（封装 pmx 特有 key 计算）
+//   - vmd-loader 通过动态 import 调用 renderInstanceThumbnail（规避静态循环）
 // 本模块内部仅动态 import '../scene' 取 Scene 实例，不反向引入 model-loader / vmd-loader。
 
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
@@ -127,21 +127,5 @@ export async function renderInstanceThumbnail(
     }
 }
 
-/**
- * 为动作（VMD）生成缩略图：截指定模型在动作初始帧（第 0 帧）的姿态。
- *
- * 本函数只负责离屏渲染 + 保存；调用方须先 `mmdRuntime.seekAnimation(0, true)` 把动画
- * 定位到第 0 帧并等待主循环把骨骼 world matrix 更新到该帧，再调用本函数。
- */
-export async function captureMotionThumbnail(inst: ModelInstance, vmdKey: string): Promise<void> {
-    try {
-        const { getScene } = await import('../scene');
-        const scene = getScene();
-        if (!scene) {
-            return;
-        }
-        await renderInstanceThumbnail(scene, inst, vmdKey);
-    } catch (err) {
-        logWarn('thumbnail-capture', 'captureMotionThumbnail:', err);
-    }
-}
+// 注意：动作（VMD）缩略图不再有专属封装函数——vmd-loader 在加载动作流程中
+// 摆姿（currentAnimation.animate(0)）后直接调用 renderInstanceThumbnail(scene, inst, vmdKey)。
