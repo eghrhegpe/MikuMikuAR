@@ -1082,7 +1082,7 @@ export const ko: Record<string, string> = {
     'settings.physOn': '✓ 기본 물리 시뮬레이션 활성화',
     'settings.physOff': '✓ 기본 물리 시뮬레이션 비활성화 (이후 로드에만 영향)',
     'settings.renderScale': '✓ 렌더링 스케일: {pct}%',
-    'settings.camSens': '✓ 카메라 감도: {x}x',
+    'settings.camSens': '✓ 카메라 감도: {s}x',
     'settings.invertY': '✓ Y축 반전: {state}',
     'settings.toggleState': '✓ {label}: {state}',
     'settings.perf.auto': '자동',

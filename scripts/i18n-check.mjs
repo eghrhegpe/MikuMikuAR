@@ -38,6 +38,26 @@ function loadBundle(lang) {
     return { lang, file, keys: extractKeys(file) };
 }
 
+// [doc:adr-059] 占位符一致性校验：提取 bundle 里每个 key 的 {xxx} 占位符集合，
+// 比对各语言 bundle 与基准（zh-CN）是否一致。不一致说明某语言漏了占位符或拼错，
+// 运行时 t() 会静默不替换，用户看到 {xxx} 裸露。
+function extractPlaceholders(file) {
+    const text = readFileSync(file, 'utf8');
+    const map = new Map(); // key -> Set<string> of placeholder names
+    const re = /^\s*['"]([^'"]+)['"]\s*:\s*['"]((?:[^'"\\]|\\.)*)['"]/gm;
+    let m;
+    while ((m = re.exec(text)) !== null) {
+        const key = m[1];
+        const val = m[2];
+        const ph = new Set();
+        const phRe = /\{(\w+)\}/g;
+        let p;
+        while ((p = phRe.exec(val)) !== null) ph.add(p[1]);
+        if (ph.size > 0) map.set(key, ph);
+    }
+    return map;
+}
+
 const base = loadBundle(BASE_LANG);
 const refs = REFERENCE_LANGS.map(loadBundle);
 
@@ -58,6 +78,34 @@ for (const ref of refs) {
 
 console.log(`i18n parity — base lang: ${BASE_LANG} (${base.keys.size} keys)`);
 console.log(report.join('\n'));
+
+// 占位符一致性校验
+const basePH = extractPlaceholders(resolve(LOCALES_DIR, `${BASE_LANG}.ts`));
+let phIssues = 0;
+const phReport = [];
+for (const ref of refs) {
+    const refPH = extractPlaceholders(resolve(LOCALES_DIR, `${ref.lang}.ts`));
+    for (const [key, baseSet] of basePH) {
+        const refSet = refPH.get(key);
+        if (!refSet) continue; // 该 key 无占位符或缺失（缺失已在上面报）
+        const missing = [...baseSet].filter((p) => !refSet.has(p));
+        const extra = [...refSet].filter((p) => !baseSet.has(p));
+        if (missing.length || extra.length) {
+            phIssues++;
+            const parts = [];
+            if (missing.length) parts.push(`missing {${missing.join('},{')}}`);
+            if (extra.length) parts.push(`extra {${extra.join('},{')}}`);
+            phReport.push(`  [${ref.lang}] ${key}: ${parts.join('; ')}`);
+        }
+    }
+}
+if (phReport.length) {
+    console.log(`\n⚠ ${phIssues} placeholder mismatch(es) across bundles:`);
+    console.log(phReport.join('\n'));
+    console.log('  These cause t() to silently leave {xxx} unreplaced at runtime.');
+} else {
+    console.log('\n✅ All placeholder sets are consistent across bundles.');
+}
 
 if (totalMissing > 0) {
     console.log(`\n⚠ ${totalMissing} key(s) missing across translation bundles.`);

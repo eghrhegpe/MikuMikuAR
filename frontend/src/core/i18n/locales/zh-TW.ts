@@ -1073,7 +1073,7 @@ export const zhTW: Record<string, string> = {
     'settings.physOn': '✓ 預設啟用物理模擬',
     'settings.physOff': '✓ 預設關閉物理模擬（僅影響後續載入）',
     'settings.renderScale': '✓ 渲染縮放: {pct}%',
-    'settings.camSens': '✓ 相機靈敏度: {x}x',
+    'settings.camSens': '✓ 相機靈敏度: {s}x',
     'settings.invertY': '✓ 反轉 Y 軸: {state}',
     'settings.toggleState': '✓ {label}: {state}',
     'settings.perf.auto': '自動',

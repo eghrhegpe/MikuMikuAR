@@ -1087,7 +1087,7 @@ export const ja: Record<string, string> = {
     'settings.physOn': '✓ デフォルトで物理シミュレーションを有効化',
     'settings.physOff': '✓ デフォルトで物理シミュレーションを無効化（以降のロードのみ影響）',
     'settings.renderScale': '✓ レンダリングスケール: {pct}%',
-    'settings.camSens': '✓ カメラ感度: {x}x',
+    'settings.camSens': '✓ カメラ感度: {s}x',
     'settings.invertY': '✓ Y軸反転: {state}',
     'settings.toggleState': '✓ {label}: {state}',
     'settings.perf.auto': '自動',

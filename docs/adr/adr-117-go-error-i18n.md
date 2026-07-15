@@ -1,0 +1,220 @@
+# ADR-117: Go 端用户可见错误的 i18n 化
+
+> **状态**: 规划
+> **背景**: ADR-059 已完成前端 i18n 框架（`core/i18n/` + 五语言 bundle + 热切换 + CI 奇偶校验），但 Go 后端返回给前端的**用户可见错误**仍是硬编码中文（如 `fmt.Errorf("未找到 Blender，请在设置中配置路径")`）。当用户切到英文/日文后，前端 UI 已本地化，但弹窗里的 Go 错误仍是中文，造成体验断裂。本 ADR 锁定 Go 错误的 i18n 契约，使前端能用 `t()` 翻译 Go 错误。
+> **关联**: [ADR-059](adr-059-i18n-framework.md)（前端 i18n 框架）、[terminology.md](../terminology.md) §三（Go 错误消息规范）
+
+---
+
+## 一、问题边界
+
+### 1.1 现状清点
+
+| 项 | 事实 | 来源 |
+|----|------|------|
+| Go 用户可见错误 | 硬编码中文字符串，散落于 `internal/app/*.go` | grep `fmt.Errorf("...中文...")` |
+| Go 内部错误 | 英文 + `%w` 包装，仅日志 | `runtime.LogErrorf` |
+| 前端错误展示 | 直接显示 Go 返回的 `error.Error()` 字符串 | `catch(e) { setStatus(e.message) }` 等 |
+| i18n 覆盖 | 前端 `t()` 覆盖 UI 标签/状态消息，**不覆盖** Go 错误 | ADR-059 §六边界声明 |
+| 影响范围 | 约 20 处用户可见 Go 错误（`integration.go`/`watch.go`/`dancesets.go` 等） | grep 实测 |
+
+### 1.2 痛点
+
+- **体验断裂**：用户切到 `en` 后，菜单标签变英文，但"未找到 Blender"弹窗仍是中文。
+- **无法本地化**：前端 `t()` 无法翻译 Go 返回的字符串，因为 Go 返回的是最终文本而非 key。
+- **测试盲区**：Go 错误文本是中文，前端测试无法断言本地化后的错误消息。
+
+### 1.3 与 ADR-059 的边界
+
+ADR-059 §六明确"MVP 阶段不修改 Go 后端"，该边界至今未突破。本 ADR 是该边界的**正式升级**：将 Go 错误从"返回最终文本"改为"返回 error code + 可选 params"，前端用 `t()` 翻译。
+
+---
+
+## 二、方案设计
+
+### 2.1 核心契约：Go 返回 error code，前端翻译
+
+```
+Go 端                        前端
+─────                        ────
+return ErrSoftwareNotFound    catch(e) {
+  + params {name:"Blender"}    const {code, params} = parseGoError(e);
+                                setStatus(t(`goerr.${code}`, params));
+                              }
+```
+
+### 2.2 Go 端：结构化错误类型
+
+新增 `internal/i18nerr/errors.go`：
+
+```go
+package i18nerr
+
+// UserError 是面向用户的错误，携带 i18n code 与占位符参数。
+// 前端通过绑定层解析 code + params，用 t() 翻译。
+type UserError struct {
+    Code   string            // 形如 "software.notFound"，对应前端 t('goerr.software.notFound')
+    Params map[string]string // 占位符，如 {"name": "Blender"}
+    msg    string            // 开发期 fallback 文本（中文，仅用于 Go 侧日志/调试）
+}
+
+func (e *UserError) Error() string { return e.msg } // Go 侧日志仍可读
+
+func New(code, fallbackMsg string, params ...map[string]string) *UserError {
+    p := map[string]string{}
+    if len(params) > 0 { p = params[0] }
+    return &UserError{Code: code, Params: p, msg: fallbackMsg}
+}
+```
+
+**改造前**：
+```go
+return fmt.Errorf("未找到 Blender，请在设置中配置路径")
+```
+
+**改造后**：
+```go
+return i18nerr.New("software.notFound", "未找到 Blender，请在设置中配置路径", map[string]string{"name": "Blender"})
+```
+
+`fallbackMsg` 保留中文，用于 Go 侧日志与开发期调试；前端通过绑定层拿到 `Code` + `Params` 后用 `t()` 翻译，不再读 `fallbackMsg`。
+
+### 2.3 绑定层：UserError 透传到前端
+
+Wails v3 绑定层默认将 `error` 序列化为 `error.Error()` 字符串，丢失结构。需在绑定生成时让 `UserError` 实现自定义序列化，或在前端接收侧用约定格式解析。
+
+**方案 A（推荐）：UserError 实现 `MarshalJSON`**
+
+```go
+func (e *UserError) MarshalJSON() ([]byte, error) {
+    return json.Marshal(struct {
+        Code   string            `json:"code"`
+        Params map[string]string  `json:"params"`
+        Msg    string            `json:"msg"` // 仅供开发期，生产可省略
+    }{e.Code, e.Params, e.msg})
+}
+```
+
+前端接收到的 `error` 变成结构化对象 `{code, params, msg}`，`catch` 块解析后调 `t()`。
+
+**方案 B（备选）：error.Error() 编码 code 前缀**
+
+```go
+func (e *UserError) Error() string {
+    return fmt.Sprintf("[goerr:%s]", e.Code) + e.msg
+}
+```
+
+前端用正则提取 `[goerr:xxx]` 前缀作为 code。简单但脆弱，不推荐。
+
+### 2.4 前端：错误翻译工具
+
+新增 `core/i18n/goerr.ts`：
+
+```ts
+import { t } from './t';
+
+interface GoError { code: string; params?: Record<string, string>; msg?: string }
+
+/**
+ * [doc:adr-117] 将 Go 端返回的 error 翻译为当前语言。
+ * 若 error 是结构化 UserError，用 t('goerr.<code>', params) 翻译；
+ * 否则回退到 error.message（兼容旧式 fmt.Errorf 中文错误）。
+ */
+export function translateGoError(e: unknown): string {
+    const err = e as GoError | { message?: string } | string;
+    if (typeof err === 'object' && err && 'code' in err) {
+        return t(`goerr.${(err as GoError).code}`, (err as GoError).params);
+    }
+    // 回退：旧式字符串错误（未迁移的 Go 错误仍显示原始文本）
+    if (typeof err === 'object' && err && 'message' in err) return (err as { message: string }).message;
+    return String(err);
+}
+```
+
+前端所有 `catch(e) { setStatus(e.message) }` 改为 `catch(e) { setStatus(translateGoError(e)) }`。
+
+### 2.5 i18n bundle 新增 `goerr.*` 命名空间
+
+`locales/zh-CN.ts` 新增：
+```ts
+'goerr.software.notFound': '未找到 {name}，请在设置中配置路径',
+'goerr.software.launchFailed': '启动 {name} 失败',
+'goerr.file.readFailed': '读取文件失败',
+'goerr.dir.notExist': '目录不存在',
+'goerr.zip.noPmx': '压缩包内未找到模型文件',
+'goerr.cache.writeFailed': '写入缓存失败',
+'goerr.android.noExec': 'Android 不支持直接启动外部可执行文件',
+'goerr.android.noWatch': 'Android 不支持文件系统监听，请手动导入文件',
+'goerr.watch.dirInaccessible': '监听目录不可访问',
+'goerr.watch.createFailed': '创建文件监听器失败',
+'goerr.screenshot.dirNotSet': '尚未设置截图保存目录，请先截图一次',
+'goerr.screenshot.dirCreateFailed': '创建截图目录失败',
+'goerr.config.readFailed': '读取配置失败',
+'goerr.vmd.emptyPath': 'VMD 文件路径不能为空',
+// ... 完整清单见 §五实施路标
+```
+
+`en.ts` / `ja.ts` / `ko.ts` / `zh-TW.ts` 同步翻译，CI `i18n-check.mjs --strict` 守门。
+
+---
+
+## 三、决策对比
+
+| 方案 | 描述 | 优点 | 缺点 |
+|------|------|------|------|
+| **A. Go 返回 error code + 前端 t() 翻译（本 ADR）** | `UserError{Code,Params}` + `goerr.*` bundle 命名空间 | 彻底解决体验断裂；翻译与前端 i18n 体系统一；CI 可守门 | 需改 Go 错误契约 + 绑定层序列化 + 前端 catch 改造 |
+| B. Go 端也接 i18n bundle | Go 侧读语言偏好 + 本地 bundle 翻译 | 前端零改动 | Go 侧需维护 bundle（与前端重复）；语言切换需通知 Go；耦合重 |
+| C. 维持现状 | Go 错误永远中文 | 零改动 | 非中文用户体验断裂；无法本地化 Go 错误 |
+
+**选 A**：与 ADR-059 的"前端为 i18n 单一入口"原则一致，Go 侧只负责结构化错误，翻译仍归前端 `t()`。`UserError` 的 `fallbackMsg` 保留中文确保 Go 侧日志可读，不依赖前端语言。
+
+---
+
+## 四、风险与边界
+
+| 风险 | 等级 | 缓解 |
+|------|------|------|
+| 绑定层 `UserError` 序列化未覆盖 | 中 | Phase 1 先验证 Wails v3 对 `error` 接口的自定义序列化行为；若不支持 `MarshalJSON`，回退方案 B（code 前缀） |
+| 旧式 `fmt.Errorf` 遗漏未迁移 | 中 | `translateGoError` 对无 code 的错误回退到 `e.message`（显示原始中文），不阻塞；后续逐步迁移 |
+| `goerr.*` key 翻译质量 | 中 | 与 ADR-059 同流程，CI 奇偶校验守门；术语遵循 terminology.md |
+| Go 侧 `fallbackMsg` 与 bundle 文本漂移 | 低 | `fallbackMsg` 仅日志用，不展示给用户；bundle 是唯一展示源 |
+
+### 边界
+
+- 本 ADR **仅处理用户可见错误**（前端会展示的）。Go 内部错误（`runtime.LogErrorf` 英文日志）不变。
+- 本 ADR **不涉及** Go 侧返回的成功消息（如"已启动 MMD"），那些由前端 `t()` 自行生成。
+- 本 ADR **不改变** `terminology.md §三` 的"用户错误中文、内部日志英文"原则——`fallbackMsg` 仍是中文，只是前端不再直接展示它。
+
+---
+
+## 五、实施路标
+
+### Phase 1: 契约验证（~1 天）
+
+- [ ] 新建 `internal/i18nerr/errors.go`（`UserError` 类型 + `New()` 构造）
+- [ ] 验证 Wails v3 绑定层对 `UserError` 的序列化行为（`MarshalJSON` 是否生效）
+- [ ] 若 `MarshalJSON` 不生效，实现方案 B（`Error()` 编码 code 前缀）+ 前端正则解析
+- [ ] 新建 `frontend/src/core/i18n/goerr.ts`（`translateGoError`）
+- [ ] 试点：迁移 `integration.go` 的 3 个 Blender/MMD 错误为 `UserError`，前端 `translateGoError` 翻译
+- [ ] 验证：切到 `en` 后，Blender 未找到弹窗显示英文
+
+### Phase 2: 全量迁移（~2 天）
+
+- [ ] 迁移 `internal/app/*.go` 所有用户可见错误为 `i18nerr.New()`
+- [ ] `locales/*.ts` 五语言同步新增 `goerr.*` key（约 20 条）
+- [ ] 前端所有 `catch(e) { ... e.message ... }` 改为 `translateGoError(e)`
+- [ ] `npm run check:i18n` 确认 key 对齐
+- [ ] 验证：`npm run check && npm run test && npm run build` 全绿
+
+### Phase 3: 防回归（~0.5 天）
+
+- [ ] Go 侧加 lint：`internal/app/` 内禁止 `fmt.Errorf` 直接返回中文字符串（须用 `i18nerr.New`）
+- [ ] 前端加 lint：`catch` 块内禁止直接读 `e.message` 展示给用户（须过 `translateGoError`）
+
+---
+
+## 六、相关 ADR
+
+- [ADR-059](adr-059-i18n-framework.md) — 前端 i18n 框架（本 ADR 是其 Go 侧延伸）
+- [ADR-105](adr-105-abort-signal-and-async-error-handling.md) — AbortSignal 与异步错误处理（Go 错误的异步传递规范）
