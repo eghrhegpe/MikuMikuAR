@@ -45,7 +45,7 @@ export { buildPresetLevel, SCENE_PRESETS } from './env-preset-levels';
 
 // ======== Env Texture Binding Target ========
 
-type EnvTextureBindingTarget = 'ground' | 'particle' | 'sky' | 'stars' | null;
+export type EnvTextureBindingTarget = 'ground' | 'particle' | 'sky' | 'stars' | null;
 
 let _envTextureBindingTarget: EnvTextureBindingTarget = null;
 

@@ -225,12 +225,17 @@ export async function loadOverlay(
     const url = `http://127.0.0.1:${inst.port}/?f=${encodeFileRef(normalizedMeshFile)}`;
     console.info(`[outfit-overlay] Loading FBX overlay: ${meshFile}`);
 
+    let meshes: Mesh[] = [];
     try {
         const result = await ImportMeshAsync(url, scene);
-        const meshes = result.meshes.filter((m): m is Mesh => m instanceof Mesh);
+        meshes = result.meshes.filter((m): m is Mesh => m instanceof Mesh);
 
         if (meshes.length === 0) {
             logWarn('outfit-overlay', 'FBX loaded but no meshes found');
+            // 清理已加载到 scene 的 mesh（虽然 filter 为空，但 ImportMeshAsync 可能添加了非 Mesh 资源）
+            for (const m of result.meshes) {
+                try { m.dispose(); } catch { /* ignore */ }
+            }
             return { meshes: [], retargetOk: false };
         }
 
@@ -242,6 +247,9 @@ export async function loadOverlay(
 
         if (!skeletonOk) {
             // Fail-Fast: 骨骼重定向失败，直接抛错
+            for (const m of meshes) {
+                try { m.dispose(); } catch { /* ignore */ }
+            }
             throw new Error('outfit-overlay: 骨骼重定向匹配率过低，无法叠加');
         }
 
@@ -254,6 +262,10 @@ export async function loadOverlay(
         return { meshes, retargetOk: skeletonOk };
     } catch (err) {
         console.error('[outfit-overlay] Failed to load FBX overlay:', err);
+        // 确保已加载的 mesh 被清理（meshes 在 try 块外声明，catch 可访问）
+        for (const m of meshes) {
+            try { m.dispose(); } catch { /* ignore */ }
+        }
         return { meshes: [], retargetOk: false };
     }
 }

@@ -16,7 +16,7 @@ const BONES_CENTER_UPPER = ['センター', '上半身'];
 const BONES_ALL = ['センター', '上半身', '頭', '左腕', '右腕'];
 
 describe('generateIdleVmd', () => {
-    const buf = generateIdleVmd(state, ['まばたき'], BONES_ALL);
+    const buf = generateIdleVmd(state, BONES_ALL);
 
     it('produces non-empty VMD', () => {
         expect(buf.byteLength).toBeGreaterThan(200);
@@ -35,7 +35,7 @@ describe('generateIdleVmd', () => {
     });
 
     it('omits blink morph frames when no まばたき', () => {
-        const buf2 = generateIdleVmd(state, [], BONES_CENTER_UPPER);
+        const buf2 = generateIdleVmd(state, BONES_CENTER_UPPER);
         const view = new DataView(buf2);
         const boneCount = view.getUint32(50, true);
         const morphCountOff = 54 + boneCount * 111;
@@ -43,7 +43,7 @@ describe('generateIdleVmd', () => {
     });
 
     it('loop closes (first and last bone frame match)', () => {
-        const buf2 = generateIdleVmd(state, [], BONES_ALL);
+        const buf2 = generateIdleVmd(state, BONES_ALL);
         const view = new DataView(buf2);
         const boneCount = view.getUint32(50, true);
         const lastOff = 54 + (boneCount - 1) * 111 + 15 + 4 + 12;
@@ -58,7 +58,7 @@ describe('generateIdleVmd', () => {
 
     it('intensity=0 produces minimal rotation', () => {
         const zeroState = { ...state, intensity: 0 };
-        const buf2 = generateIdleVmd(zeroState, [], BONES_ALL);
+        const buf2 = generateIdleVmd(zeroState, BONES_ALL);
         const view = new DataView(buf2);
         const off = 54 + 15 + 4;
         const rotX = view.getFloat32(off + 12, true);
@@ -66,29 +66,29 @@ describe('generateIdleVmd', () => {
     });
 
     it('works with no bones at all (empty skeleton)', () => {
-        const buf2 = generateIdleVmd(state, [], []);
+        const buf2 = generateIdleVmd(state, []);
         expect(buf2.byteLength).toBeGreaterThan(50); // at least VMD header
         const sig = new TextDecoder().decode(new Uint8Array(buf2, 0, 25));
         expect(sig).toBe('Vocaloid Motion Data 0002');
     });
 
     it('speed=0.1 (minimum) produces longer loop', () => {
-        const slow = generateIdleVmd({ ...state, speed: 0.1 }, [], BONES_ALL);
-        const fast = generateIdleVmd({ ...state, speed: 10 }, [], BONES_ALL);
+        const slow = generateIdleVmd({ ...state, speed: 0.1 }, BONES_ALL);
+        const fast = generateIdleVmd({ ...state, speed: 10 }, BONES_ALL);
         // 极慢速度 → 更多帧 → 更大文件
         expect(slow.byteLength).toBeGreaterThan(fast.byteLength);
     });
 
     it('intensity=1 produces larger rotations than intensity=0.1', () => {
-        const high = generateIdleVmd({ ...state, intensity: 1 }, ['まばたき'], BONES_ALL);
-        const low = generateIdleVmd({ ...state, intensity: 0.1 }, ['まばたき'], BONES_ALL);
+        const high = generateIdleVmd({ ...state, intensity: 1 }, BONES_ALL);
+        const low = generateIdleVmd({ ...state, intensity: 0.1 }, BONES_ALL);
         // 更高强度 → 更大旋转值 → 更多非零帧 → 更大文件（或至少不更小）
         expect(high.byteLength).toBeGreaterThanOrEqual(low.byteLength);
     });
 
     it('includes shoulder bone frames', () => {
         const bonesWithShoulders = ['センター', '左肩', '右肩'];
-        const buf2 = generateIdleVmd(state, [], bonesWithShoulders);
+        const buf2 = generateIdleVmd(state, bonesWithShoulders);
         const view = new DataView(buf2);
         const boneCount = view.getUint32(50, true);
         expect(boneCount).toBeGreaterThanOrEqual(2);
@@ -96,7 +96,7 @@ describe('generateIdleVmd', () => {
 
     it('includes wrist bone frames', () => {
         const bonesWithWrists = ['センター', '左手首', '右手首'];
-        const buf2 = generateIdleVmd(state, [], bonesWithWrists);
+        const buf2 = generateIdleVmd(state, bonesWithWrists);
         const view = new DataView(buf2);
         const boneCount = view.getUint32(50, true);
         expect(boneCount).toBeGreaterThanOrEqual(2);
@@ -369,14 +369,14 @@ describe('重复关键帧守卫（P1 回归防护）', () => {
     // speed=1 → idle loopFrames=round(120/1)=120（步长 4 的倍数），旧实现会在 f=120
     // 处产生「循环末帧 + 复位帧」双关键帧。修复后循环 f < loopFrames，复位帧唯一。
     it('Idle: speed=1 时无同骨骼同帧号重复关键帧', () => {
-        const buf = generateIdleVmd({ ...state, speed: 1 }, [], BONES_108_STANDARD);
+        const buf = generateIdleVmd({ ...state, speed: 1 }, BONES_108_STANDARD);
         const dups = [..._parseBoneFrameKeys(buf).entries()].filter(([, c]) => c > 1);
         expect(dups).toEqual([]);
     });
 
     it('Idle: 多种 speed 下均无重复关键帧', () => {
         for (const speed of [0.5, 1, 1.5, 2, 3]) {
-            const buf = generateIdleVmd({ ...state, speed }, [], BONES_108_STANDARD);
+            const buf = generateIdleVmd({ ...state, speed }, BONES_108_STANDARD);
             const dups = [..._parseBoneFrameKeys(buf).entries()].filter(([, c]) => c > 1);
             expect(dups, `speed=${speed} 存在重复帧`).toEqual([]);
         }
@@ -385,7 +385,7 @@ describe('重复关键帧守卫（P1 回归防护）', () => {
 
 describe('VMD 骨骼诊断', () => {
     it('Idle: 用 108 标准骨骼集生成，报告各骨骼帧数', () => {
-        const buf = generateIdleVmd(state, MORPHS_STANDARD, BONES_108_STANDARD);
+        const buf = generateIdleVmd(state, BONES_108_STANDARD);
         const bones = _parseVmdBones(buf);
         const totalFrames = Object.values(bones).reduce((a, b) => a + b, 0);
         expect(totalFrames).toBeGreaterThan(10);

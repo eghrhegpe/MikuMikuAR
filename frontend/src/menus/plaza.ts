@@ -48,6 +48,35 @@ function escapeHtml(s: string): string {
     );
 }
 
+// ======== 公共 DOM 辅助函数（统一表达方式，替代手动 createElement 样板）========
+
+/** 创建 plaza 按钮 */
+function _plazaBtn(html: string, onClick: () => void, className = 'plaza-btn', title?: string): HTMLButtonElement {
+    const btn = document.createElement('button');
+    btn.className = className;
+    if (title) btn.title = title;
+    btn.innerHTML = html;
+    btn.onclick = onClick;
+    return btn;
+}
+
+/** 创建 plaza 节区标题 */
+function _plazaSectionHeader(titleHtml: string, ...actions: HTMLElement[]): HTMLDivElement {
+    const header = document.createElement('div');
+    header.className = 'plaza-section-header';
+    const title = document.createElement('div');
+    title.className = 'plaza-section-title';
+    title.innerHTML = titleHtml;
+    header.appendChild(title);
+    if (actions.length > 0) {
+        const actionBar = document.createElement('div');
+        actionBar.className = 'plaza-section-actions';
+        for (const a of actions) actionBar.appendChild(a);
+        header.appendChild(actionBar);
+    }
+    return header;
+}
+
 const L = {
     title: '模型广场',
     openInBrowser: '在浏览器打开',
@@ -380,10 +409,12 @@ function renderSiteContent(site: PlazaSite): HTMLElement {
     searchActions.className = 'plaza-section-actions';
 
     // ➕ 添加自定义搜索词
-    const addBtn = document.createElement('button');
-    addBtn.className = 'plaza-btn';
-    addBtn.title = '添加搜索词';
-    addBtn.innerHTML = '<iconify-icon icon="lucide:plus"></iconify-icon>';
+    const addBtn = _plazaBtn(
+        '<iconify-icon icon="lucide:plus"></iconify-icon>',
+        () => {},
+        'plaza-btn',
+        '添加搜索词'
+    );
     addBtn.onclick = (e) => {
         e.stopPropagation();
         addBtn.style.display = 'none';
@@ -393,12 +424,16 @@ function renderSiteContent(site: PlazaSite): HTMLElement {
         input.type = 'text';
         input.className = 'plaza-preset-input';
         input.placeholder = '输入搜索词…';
-        const confirmBtn = document.createElement('button');
-        confirmBtn.className = 'plaza-btn plaza-btn-primary';
-        confirmBtn.innerHTML = '<iconify-icon icon="lucide:check"></iconify-icon>';
-        const cancelBtn = document.createElement('button');
-        cancelBtn.className = 'plaza-btn';
-        cancelBtn.innerHTML = '<iconify-icon icon="lucide:x"></iconify-icon>';
+        const confirmBtn = _plazaBtn(
+            '<iconify-icon icon="lucide:check"></iconify-icon>',
+            () => {},
+            'plaza-btn plaza-btn-primary'
+        );
+        const cancelBtn = _plazaBtn(
+            '<iconify-icon icon="lucide:x"></iconify-icon>',
+            () => {},
+            'plaza-btn'
+        );
         inputRow.append(input, confirmBtn, cancelBtn);
         searchSection.insertBefore(inputRow, presetArea);
 
@@ -432,9 +467,11 @@ function renderSiteContent(site: PlazaSite): HTMLElement {
     };
     searchActions.appendChild(addBtn);
 
-    const moreBtn = document.createElement('button');
-    moreBtn.className = 'plaza-btn';
-    moreBtn.innerHTML = '<iconify-icon icon="lucide:more-horizontal"></iconify-icon>';
+    const moreBtn = _plazaBtn(
+        '<iconify-icon icon="lucide:more-horizontal"></iconify-icon>',
+        () => {},
+        'plaza-btn'
+    );
     moreBtn.onclick = (e) => {
         e.stopPropagation();
         showActionsMenu(site, moreBtn);
@@ -768,85 +805,42 @@ function installShortcuts(): void {
         return;
     }
     shortcutsRegistered = true;
-    registerShortcuts([
-        {
-            id: 'plaza:reload',
-            label: 'shortcuts.label.plaza',
-            defaultKey: 'F5',
+
+    const visibleGuard = (fn: () => Promise<unknown> | void) => () => {
+        if (getLayer().classList.contains('visible')) {
+            const r = fn();
+            if (r) swallowError(r);
+        }
+    };
+
+    interface PlazaShortcutDef {
+        id: string;
+        key: string;
+        ctrl?: boolean;
+        alt?: boolean;
+        handler: () => Promise<unknown> | void;
+    }
+    const PLAZA_SHORTCUTS: PlazaShortcutDef[] = [
+        { id: 'plaza:reload',      key: 'F5',                  handler: PlazaReload },
+        { id: 'plaza:reload-ctrl',  key: 'KeyR', ctrl: true,   handler: PlazaReload },
+        { id: 'plaza:goBack',      key: 'ArrowLeft',  alt: true, handler: PlazaGoBack },
+        { id: 'plaza:goForward',   key: 'ArrowRight', alt: true, handler: PlazaGoForward },
+        { id: 'plaza:zoomIn',      key: 'Equal',      ctrl: true, handler: PlazaZoomIn },
+        { id: 'plaza:zoomOut',     key: 'Minus',      ctrl: true, handler: PlazaZoomOut },
+    ];
+
+    registerShortcuts(
+        PLAZA_SHORTCUTS.map((s) => ({
+            id: s.id,
+            label: 'shortcuts.label.plaza' as const,
+            group: 'shortcuts.group.plaza' as const,
+            defaultKey: s.key,
+            defaultCtrl: s.ctrl ?? false,
+            defaultAlt: s.alt ?? false,
             prevent: true,
-            handler: () => {
-                if (getLayer().classList.contains('visible')) {
-                    swallowError(PlazaReload());
-                }
-            },
-            group: 'shortcuts.group.plaza',
-        },
-        {
-            id: 'plaza:reload-ctrl',
-            label: 'shortcuts.label.plaza',
-            defaultKey: 'KeyR',
-            defaultCtrl: true,
-            prevent: true,
-            handler: () => {
-                if (getLayer().classList.contains('visible')) {
-                    swallowError(PlazaReload());
-                }
-            },
-            group: 'shortcuts.group.plaza',
-        },
-        {
-            id: 'plaza:goBack',
-            label: 'shortcuts.label.plaza',
-            defaultKey: 'ArrowLeft',
-            defaultAlt: true,
-            prevent: true,
-            handler: () => {
-                if (getLayer().classList.contains('visible')) {
-                    swallowError(PlazaGoBack());
-                }
-            },
-            group: 'shortcuts.group.plaza',
-        },
-        {
-            id: 'plaza:goForward',
-            label: 'shortcuts.label.plaza',
-            defaultKey: 'ArrowRight',
-            defaultAlt: true,
-            prevent: true,
-            handler: () => {
-                if (getLayer().classList.contains('visible')) {
-                    swallowError(PlazaGoForward());
-                }
-            },
-            group: 'shortcuts.group.plaza',
-        },
-        {
-            id: 'plaza:zoomIn',
-            label: 'shortcuts.label.plaza',
-            defaultKey: 'Equal',
-            defaultCtrl: true,
-            prevent: true,
-            handler: () => {
-                if (getLayer().classList.contains('visible')) {
-                    swallowError(PlazaZoomIn());
-                }
-            },
-            group: 'shortcuts.group.plaza',
-        },
-        {
-            id: 'plaza:zoomOut',
-            label: 'shortcuts.label.plaza',
-            defaultKey: 'Minus',
-            defaultCtrl: true,
-            prevent: true,
-            handler: () => {
-                if (getLayer().classList.contains('visible')) {
-                    swallowError(PlazaZoomOut());
-                }
-            },
-            group: 'shortcuts.group.plaza',
-        },
-    ]);
+            handler: visibleGuard(s.handler),
+        }))
+    );
 }
 
 // [ADR-087 P1] 监听 Go 端发射的 plaza 事件：urlChanged（导航完成）、
@@ -1127,23 +1121,24 @@ function showActionsMenu(site: PlazaSite, anchor: HTMLElement): void {
     divider.className = 'plaza-actions-menu-divider';
     menu.appendChild(divider);
 
-    const openBtn = document.createElement('button');
-    openBtn.className = 'plaza-actions-menu-item plaza-actions-menu-item-accent';
-    openBtn.innerHTML =
-        '<iconify-icon icon="lucide:external-link"></iconify-icon><span>打开网站</span>';
-    openBtn.onclick = () => {
-        openSiteByMode(site);
-        menu.remove();
-    };
+    const openBtn = _plazaBtn(
+        '<iconify-icon icon="lucide:external-link"></iconify-icon><span>打开网站</span>',
+        () => {
+            openSiteByMode(site);
+            menu.remove();
+        },
+        'plaza-actions-menu-item plaza-actions-menu-item-accent'
+    );
     menu.appendChild(openBtn);
 
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'plaza-actions-menu-item';
-    closeBtn.innerHTML = '<iconify-icon icon="lucide:x"></iconify-icon><span>关闭</span>';
-    closeBtn.onclick = () => {
-        closePlaza();
-        menu.remove();
-    };
+    const closeBtn = _plazaBtn(
+        '<iconify-icon icon="lucide:x"></iconify-icon><span>关闭</span>',
+        () => {
+            closePlaza();
+            menu.remove();
+        },
+        'plaza-actions-menu-item'
+    );
     menu.appendChild(closeBtn);
 
     document.body.appendChild(menu);
@@ -1181,11 +1176,7 @@ function buildToolbar(opts: {
     const left = document.createElement('div');
     left.className = 'plaza-toolbar-left';
     if (opts.onBack) {
-        const back = document.createElement('button');
-        back.className = 'plaza-btn';
-        back.textContent = '‹ ' + L.back;
-        back.onclick = opts.onBack;
-        left.appendChild(back);
+        left.appendChild(_plazaBtn('‹ ' + L.back, opts.onBack));
     }
     const title = document.createElement('div');
     title.className = 'plaza-title';
@@ -1203,24 +1194,13 @@ function buildToolbar(opts: {
         right.appendChild(label);
     }
     if (opts.onOpen) {
-        const open = document.createElement('button');
-        open.className = 'plaza-btn plaza-btn-accent';
-        open.textContent = L.openInBrowser;
-        open.onclick = opts.onOpen;
-        right.appendChild(open);
+        right.appendChild(_plazaBtn(L.openInBrowser, opts.onOpen, 'plaza-btn plaza-btn-accent'));
     }
     if (opts.onRefresh) {
-        const refresh = document.createElement('button');
-        refresh.className = 'plaza-btn';
-        refresh.textContent = L.refresh;
-        refresh.onclick = opts.onRefresh;
-        right.appendChild(refresh);
+        right.appendChild(_plazaBtn(L.refresh, opts.onRefresh));
     }
-    const close = document.createElement('button');
-    close.className = 'plaza-btn';
-    close.textContent = L.close;
+    const close = _plazaBtn(L.close, opts.onClose);
     close.title = L.close;
-    close.onclick = opts.onClose;
     right.appendChild(close);
     bar.appendChild(right);
 

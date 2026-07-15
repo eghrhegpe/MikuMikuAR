@@ -1,4 +1,4 @@
-import { canEncodeName } from './vmd-writer';
+import { canEncodeName, type BoneKeyFrame } from './vmd-writer';
 import { clamp, logWarn } from '@/core/utils';
 
 export type ProcMotionMode = 'off' | 'idle' | 'autodance';
@@ -173,3 +173,15 @@ export const FPS = 30;
 export const MAX_FRAMES = 600;
 
 export const clamp1 = (v: number) => clamp(v, -1, 1);
+
+/** 四元数 w 分量：sqrt(max(0, 1 - x² - y² - z²)) */
+export const quatW = (x: number, y: number, z: number): number =>
+    Math.sqrt(Math.max(0, 1 - x * x - y * y - z * z));
+
+/** 循环末尾的 identity 闭合帧（确保动画无缝循环） */
+export const closingFrame = (bone: string, frame: number): BoneKeyFrame => ({
+    name: bone,
+    frame,
+    position: [0, 0, 0],
+    rotation: [0, 0, 0, 1],
+});

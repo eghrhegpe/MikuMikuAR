@@ -9,13 +9,14 @@ import {
     MAX_FRAMES,
     matchBone,
     clamp1,
+    quatW,
+    closingFrame,
     PROC_VMD_NAME_IDLE,
     type ProcMotionState,
 } from './proc-motion-shared';
 
 export function generateIdleVmd(
     state: ProcMotionState,
-    _morphNames: string[] = [],
     boneNames: string[] = []
 ): ArrayBuffer {
     const safeSpeed = Math.max(0.1, Math.min(10, state.speed));
@@ -38,7 +39,7 @@ export function generateIdleVmd(
         for (let f = 0; f < loopFrames; f += 4) {
             const phase = (f / loopFrames) * Math.PI * 2;
             const rz = clamp1(Math.sin(phase + 1.5) * armAmp);
-            const w = Math.sqrt(Math.max(0, 1 - rz * rz));
+            const w = quatW(0, 0, rz);
             if (larmBone) {
                 bones.push({
                     name: larmBone,
@@ -56,22 +57,8 @@ export function generateIdleVmd(
                 });
             }
         }
-        if (larmBone) {
-            bones.push({
-                name: larmBone,
-                frame: loopFrames,
-                position: [0, 0, 0],
-                rotation: [0, 0, 0, 1],
-            });
-        }
-        if (rarmBone) {
-            bones.push({
-                name: rarmBone,
-                frame: loopFrames,
-                position: [0, 0, 0],
-                rotation: [0, 0, 0, 1],
-            });
-        }
+        if (larmBone) bones.push(closingFrame(larmBone, loopFrames));
+        if (rarmBone) bones.push(closingFrame(rarmBone, loopFrames));
     }
 
     if (shoulderLBone || shoulderRBone) {
@@ -82,7 +69,7 @@ export function generateIdleVmd(
             const breath = Math.sin(phase + 0.3);
             const yOffset = breath * shoulderAmp;
             const rz = clamp1(Math.sin(phase + 0.1) * rotAmp);
-            const w = Math.sqrt(Math.max(0, 1 - rz * rz));
+            const w = quatW(0, 0, rz);
             if (shoulderLBone) {
                 bones.push({
                     name: shoulderLBone,
@@ -94,7 +81,7 @@ export function generateIdleVmd(
             if (shoulderRBone) {
                 const rOffset = Math.sin(phase + 0.5) * shoulderAmp;
                 const rrz = clamp1(Math.sin(phase + 0.4) * rotAmp);
-                const rw = Math.sqrt(Math.max(0, 1 - rrz * rrz));
+                const rw = quatW(0, 0, rrz);
                 bones.push({
                     name: shoulderRBone,
                     frame: f,
@@ -103,22 +90,8 @@ export function generateIdleVmd(
                 });
             }
         }
-        if (shoulderLBone) {
-            bones.push({
-                name: shoulderLBone,
-                frame: loopFrames,
-                position: [0, 0, 0],
-                rotation: [0, 0, 0, 1],
-            });
-        }
-        if (shoulderRBone) {
-            bones.push({
-                name: shoulderRBone,
-                frame: loopFrames,
-                position: [0, 0, 0],
-                rotation: [0, 0, 0, 1],
-            });
-        }
+        if (shoulderLBone) bones.push(closingFrame(shoulderLBone, loopFrames));
+        if (shoulderRBone) bones.push(closingFrame(shoulderRBone, loopFrames));
     }
 
     if (wristLBone || wristRBone) {
@@ -126,7 +99,7 @@ export function generateIdleVmd(
         for (let f = 0; f < loopFrames; f += 4) {
             const phase = (f / loopFrames) * Math.PI * 2;
             const rx = clamp1(Math.sin(phase + 0.8) * wristAmp);
-            const w = Math.sqrt(Math.max(0, 1 - rx * rx));
+            const w = quatW(rx, 0, 0);
             if (wristLBone) {
                 bones.push({
                     name: wristLBone,
@@ -137,7 +110,7 @@ export function generateIdleVmd(
             }
             if (wristRBone) {
                 const rxR = clamp1(Math.sin(phase + 1.1) * wristAmp);
-                const wR = Math.sqrt(Math.max(0, 1 - rxR * rxR));
+                const wR = quatW(rxR, 0, 0);
                 bones.push({
                     name: wristRBone,
                     frame: f,
@@ -146,22 +119,8 @@ export function generateIdleVmd(
                 });
             }
         }
-        if (wristLBone) {
-            bones.push({
-                name: wristLBone,
-                frame: loopFrames,
-                position: [0, 0, 0],
-                rotation: [0, 0, 0, 1],
-            });
-        }
-        if (wristRBone) {
-            bones.push({
-                name: wristRBone,
-                frame: loopFrames,
-                position: [0, 0, 0],
-                rotation: [0, 0, 0, 1],
-            });
-        }
+        if (wristLBone) bones.push(closingFrame(wristLBone, loopFrames));
+        if (wristRBone) bones.push(closingFrame(wristRBone, loopFrames));
     }
 
     for (const b of bones) {

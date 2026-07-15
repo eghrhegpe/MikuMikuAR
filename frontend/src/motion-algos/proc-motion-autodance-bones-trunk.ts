@@ -3,7 +3,7 @@
  * 躯干骨骼帧生成（Center / Upper / Upper2 / Waist / Groove / AllParent）
  */
 import type { BoneKeyFrame } from './vmd-writer';
-import { type ProcMotionState, clamp1 } from './proc-motion-shared';
+import { type ProcMotionState, clamp1, quatW, closingFrame } from './proc-motion-shared';
 import type { TrigCache } from './proc-motion-autodance-bones';
 import { sinVal, cosVal } from './proc-motion-autodance-bones';
 
@@ -26,7 +26,7 @@ export function genCenterBone(
         const c = cosVal(cache, f);
         const ry = clamp1(s * bodyAmp);
         const rz = clamp1(c * sideAmp);
-        const w = Math.sqrt(Math.max(0, 1 - ry * ry - rz * rz));
+        const w = quatW(0, ry, rz);
         const bob = Math.abs(s) * bobAmp;
         frames.push({
             name: bone,
@@ -35,12 +35,7 @@ export function genCenterBone(
             rotation: [0, ry, rz, w],
         });
     }
-    frames.push({
-        name: bone,
-        frame: cache.loopFrames,
-        position: [0, 0, 0],
-        rotation: [0, 0, 0, 1],
-    });
+    frames.push(closingFrame(bone, cache.loopFrames));
     return frames;
 }
 
@@ -59,15 +54,10 @@ export function genUpperBone(
     for (let f = 0; f <= cache.loopFrames; f += 3) {
         const s = sinVal(cache, f + Math.round(cache.beatFrames / 2));
         const rx = clamp1(s * upperAmp);
-        const w = Math.sqrt(Math.max(0, 1 - rx * rx));
+        const w = quatW(rx, 0, 0);
         frames.push({ name: bone, frame: f, position: [0, 0, 0], rotation: [rx, 0, 0, w] });
     }
-    frames.push({
-        name: bone,
-        frame: cache.loopFrames,
-        position: [0, 0, 0],
-        rotation: [0, 0, 0, 1],
-    });
+    frames.push(closingFrame(bone, cache.loopFrames));
     return frames;
 }
 
@@ -86,15 +76,10 @@ export function genUpper2Bone(
     for (let f = 0; f <= cache.loopFrames; f += 3) {
         const s = sinVal(cache, f);
         const ry = clamp1(s * 0.6 * amp2);
-        const w = Math.sqrt(Math.max(0, 1 - ry * ry));
+        const w = quatW(0, ry, 0);
         frames.push({ name: bone, frame: f, position: [0, 0, 0], rotation: [0, ry, 0, w] });
     }
-    frames.push({
-        name: bone,
-        frame: cache.loopFrames,
-        position: [0, 0, 0],
-        rotation: [0, 0, 0, 1],
-    });
+    frames.push(closingFrame(bone, cache.loopFrames));
     return frames;
 }
 
@@ -113,15 +98,10 @@ export function genWaistBone(
     for (let f = 0; f <= cache.loopFrames; f += 3) {
         const s = sinVal(cache, f + Math.round(cache.beatFrames / 4));
         const rz = clamp1(-s * waistAmp);
-        const w = Math.sqrt(Math.max(0, 1 - rz * rz));
+        const w = quatW(0, 0, rz);
         frames.push({ name: bone, frame: f, position: [0, 0, 0], rotation: [0, 0, rz, w] });
     }
-    frames.push({
-        name: bone,
-        frame: cache.loopFrames,
-        position: [0, 0, 0],
-        rotation: [0, 0, 0, 1],
-    });
+    frames.push(closingFrame(bone, cache.loopFrames));
     return frames;
 }
 
@@ -141,15 +121,10 @@ export function genGrooveBone(
         const s = sinVal(cache, f);
         const bob = Math.abs(s) * 0.08 * intensity;
         const ry = clamp1(s * grooveAmp);
-        const w = Math.sqrt(Math.max(0, 1 - ry * ry));
+        const w = quatW(0, ry, 0);
         frames.push({ name: bone, frame: f, position: [0, bob, 0], rotation: [0, ry, 0, w] });
     }
-    frames.push({
-        name: bone,
-        frame: cache.loopFrames,
-        position: [0, 0, 0],
-        rotation: [0, 0, 0, 1],
-    });
+    frames.push(closingFrame(bone, cache.loopFrames));
     return frames;
 }
 
@@ -169,14 +144,9 @@ export function genAllParentBone(
         const t = (f / cache.loopFrames) * Math.PI * 2;
         const rx = clamp1(Math.sin(t * 0.7 + 1.1) * parentAmp);
         const rz = clamp1(Math.sin(t * 0.5 + 2.3) * parentAmp);
-        const w = Math.sqrt(Math.max(0, 1 - rx * rx - rz * rz));
+        const w = quatW(rx, 0, rz);
         frames.push({ name: bone, frame: f, position: [0, 0, 0], rotation: [rx, 0, rz, w] });
     }
-    frames.push({
-        name: bone,
-        frame: cache.loopFrames,
-        position: [0, 0, 0],
-        rotation: [0, 0, 0, 1],
-    });
+    frames.push(closingFrame(bone, cache.loopFrames));
     return frames;
 }

@@ -15,7 +15,7 @@ import {
     disposeWater,
     createWater,
 } from '../scene/env/env-water';
-import { getEnvMenu, setEnvTextureBindingTarget } from './env-menu';
+import { getEnvMenu, setEnvTextureBindingTarget, type EnvTextureBindingTarget } from './env-menu';
 import { TIME_OF_DAY_PRESETS } from '../scene/env/env-lighting';
 import { applyEnvPreset } from '../scene/env/env-bridge';
 import { activeTimeOfDayPreset, setActiveTimeOfDayPreset } from '../core/state';
@@ -24,14 +24,34 @@ import type { MenuNode } from './menu-schema';
 import { stackRegistry } from '../core/config';
 import { closeAllOverlays } from '../core/utils';
 
-export function buildSkyLevel(): PopupLevel {
+// ======== 公共辅助函数 ========
+
+/** 通用的环境功能层级构建器：包裹 cardContainer + renderMenu 模板 */
+function _buildLevel(label: string, buildSchema: (c: HTMLElement) => void): PopupLevel {
     return {
-        label: t('env.sky'),
-        dir: '',
-        items: [],
+        label, dir: '', items: [],
         renderCustom: (container) => {
-            cardContainer(container, (c) => {
-                const skySchema: MenuNode[] = [
+            cardContainer(container, buildSchema);
+        },
+    };
+}
+
+/** 打开纹理选择浏览器（环境纹理选择器公共逻辑） */
+function _openTexturePicker(target: EnvTextureBindingTarget, label: string, browseDir?: string, noCloseOverlay?: boolean): void {
+    setEnvTextureBindingTarget(target);
+    if (!noCloseOverlay) closeAllOverlays();
+    const level = stackRegistry.buildLevel!(
+        browseDir ?? getBrowseDir('environment'),
+        label,
+        (m) => ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format),
+        getEnvMenu()!
+    );
+    getEnvMenu()!.push(level);
+}
+
+export function buildSkyLevel(): PopupLevel {
+    return _buildLevel(t('env.sky'), (c) => {
+        const skySchema: MenuNode[] = [
                     // 时光预设芯片（黎明/正午/夕阳/夜景/阴天/霓虹）
                     {
                         id: 'env:sky:presets',
@@ -116,18 +136,7 @@ export function buildSkyLevel(): PopupLevel {
                                 'lucide:image',
                                 t('env.skyTexture'),
                                 false,
-                                async () => {
-                                    setEnvTextureBindingTarget('sky');
-                                    closeAllOverlays();
-                                    const level = stackRegistry.buildLevel!(
-                                        getBrowseDir('environment'),
-                                        t('env.skyTexture'),
-                                        (m) =>
-                                            ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format),
-                                        getEnvMenu()!
-                                    );
-                                    getEnvMenu()!.push(level);
-                                },
+                                () => _openTexturePicker('sky', t('env.skyTexture')),
                                 fileName
                             );
                             addSliderRow(
@@ -213,20 +222,7 @@ export function buildSkyLevel(): PopupLevel {
                                         'lucide:image',
                                         t('env.starsTexture'),
                                         false,
-                                        () => {
-                                            setEnvTextureBindingTarget('stars');
-                                            closeAllOverlays();
-                                            const level = stackRegistry.buildLevel!(
-                                                getBrowseDir('environment'),
-                                                t('env.starsTexture'),
-                                                (m) =>
-                                                    ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(
-                                                        m.format
-                                                    ),
-                                                getEnvMenu()!
-                                            );
-                                            getEnvMenu()!.push(level);
-                                        },
+                                        () => _openTexturePicker('stars', t('env.starsTexture')),
                                         fileName
                                     );
                                     if (envState.starsTexture) {
@@ -248,19 +244,11 @@ export function buildSkyLevel(): PopupLevel {
                     },
                 ];
                 renderMenu(skySchema, c);
-            });
-        },
-    };
+    });
 }
 
 export function buildGroundLevel(): PopupLevel {
-    return {
-        label: t('env.ground'),
-        dir: '',
-        items: [],
-
-        renderCustom: (container) => {
-            cardContainer(container, (c) => {
+    return _buildLevel(t('env.ground'), (c) => {
                 // ===== 基础设置（schema 驱动，ADR-093 PoC）=====
                 const baseSchema: MenuNode[] = [
                     {
@@ -366,17 +354,7 @@ export function buildGroundLevel(): PopupLevel {
                                 'lucide:image',
                                 t('env.customTexture'),
                                 false,
-                                () => {
-                                    setEnvTextureBindingTarget('ground');
-                                    const level = stackRegistry.buildLevel!(
-                                        'environment',
-                                        t('env.customTexture'),
-                                        (m) =>
-                                            ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format),
-                                        getEnvMenu()!
-                                    );
-                                    getEnvMenu()!.push(level);
-                                },
+                                () => _openTexturePicker('ground', t('env.customTexture'), 'environment', true),
                                 groundFileName
                             );
                             if (
@@ -701,9 +679,7 @@ export function buildGroundLevel(): PopupLevel {
                     },
                 ];
                 renderMenu(reflectionSchema, c);
-            });
-        },
-    };
+    });
 }
 
 export function buildWaterLevel(): PopupLevel {
@@ -953,13 +929,8 @@ export function buildWaterLevel(): PopupLevel {
 }
 
 export function buildWindLevel(): PopupLevel {
-    return {
-        label: t('env.wind'),
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            cardContainer(container, (c) => {
-                const windSchema: MenuNode[] = [
+    return _buildLevel(t('env.wind'), (c) => {
+        const windSchema: MenuNode[] = [
                     {
                         id: 'env:wind:angle',
                         kind: 'slider',
@@ -989,19 +960,12 @@ export function buildWindLevel(): PopupLevel {
                     },
                 ];
                 renderMenu(windSchema, c);
-            });
-        },
-    };
+    });
 }
 
 export function buildCloudLevel(): PopupLevel {
-    return {
-        label: t('env.cloud'),
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            cardContainer(container, (c) => {
-                const cloudSchema: MenuNode[] = [
+    return _buildLevel(t('env.cloud'), (c) => {
+        const cloudSchema: MenuNode[] = [
                     {
                         id: 'env:cloud:cover',
                         kind: 'slider',
@@ -1064,19 +1028,12 @@ export function buildCloudLevel(): PopupLevel {
                     },
                 ];
                 renderMenu(cloudSchema, c);
-            });
-        },
-    };
+    });
 }
 
 export function buildExperimentalLevel(): PopupLevel {
-    return {
-        label: t('env.experimental'),
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            cardContainer(container, (c) => {
-                const expSchema: MenuNode[] = [
+    return _buildLevel(t('env.experimental'), (c) => {
+        const expSchema: MenuNode[] = [
                     {
                         id: 'env:exp:warn',
                         kind: 'custom',
@@ -1129,19 +1086,12 @@ export function buildExperimentalLevel(): PopupLevel {
                     },
                 ];
                 renderMenu(expSchema, c);
-            });
-        },
-    };
+    });
 }
 
 export function buildFogLevel(): PopupLevel {
-    return {
-        label: t('env.fog'),
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            cardContainer(container, (c) => {
-                const fogSchema: MenuNode[] = [
+    return _buildLevel(t('env.fog'), (c) => {
+        const fogSchema: MenuNode[] = [
                     {
                         id: 'env:fog:mode',
                         kind: 'modeSlider',
@@ -1198,19 +1148,12 @@ export function buildFogLevel(): PopupLevel {
                     },
                 ];
                 renderMenu(fogSchema, c);
-            });
-        },
-    };
+    });
 }
 
 export function buildShadowLevel(): PopupLevel {
-    return {
-        label: t('env.shadow'),
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            cardContainer(container, (c) => {
-                const shadowSchema: MenuNode[] = [
+    return _buildLevel(t('env.shadow'), (c) => {
+        const shadowSchema: MenuNode[] = [
                     {
                         id: 'env:shadow:env',
                         kind: 'folder',
@@ -1330,7 +1273,5 @@ export function buildShadowLevel(): PopupLevel {
                     },
                 ];
                 renderMenu(shadowSchema, c);
-            });
-        },
-    };
+    });
 }

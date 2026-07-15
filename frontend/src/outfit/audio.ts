@@ -15,6 +15,8 @@ import { uiState } from '../core/state';
 let streamPlayer: StreamAudioPlayer | null = null;
 let audioName = '';
 let audioPath = '';
+let beatDetector: BeatDetector | null = null;
+let beatDetectorAttached = false;
 
 /** 获取或创建 StreamAudioPlayer 单例。 */
 function ensurePlayer(): StreamAudioPlayer {
@@ -222,9 +224,6 @@ export function syncAudioPlayback(vmdTime: number, isPlaying: boolean, vmdDurati
     }
 
 // ======== Beat Detector 桥接 ========
-
-let beatDetector: BeatDetector | null = null;
-let beatDetectorAttached = false;
 
 export function attachBeatDetector(detector: BeatDetector): void {
     beatDetector = detector;

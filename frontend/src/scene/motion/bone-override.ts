@@ -7,6 +7,7 @@ import { Quaternion, Matrix, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 import type { MmdRuntimeBoneExtended } from '@/core/types';
 import { clamp01 } from '@/core/utils';
+import { focusedModelId } from '@/core/state';
 
 /** 持久化的单条骨骼覆盖配置 */
 export type BoneOverrideEntry = {
@@ -103,10 +104,8 @@ function _resolveModelId(modelId?: string): string | null {
     if (modelId) {
         return modelId;
     }
-    // 懒加载 focusedModelId（避免静态循环依赖）
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const sceneMod = require('../scene');
-    return sceneMod.focusedModelId ?? null;
+    // 懒加载 focusedModelId（避免静态循环依赖，已从 @/core/state 直接导入）
+    return focusedModelId ?? null;
 }
 
 /**

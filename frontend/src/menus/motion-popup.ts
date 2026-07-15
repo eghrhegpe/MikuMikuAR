@@ -100,51 +100,21 @@ function buildActionBindingSchema(id: string): MenuNode[] {
     }
 
     return [
-        // 卡片 1：姿势库（「更换动作」已移除——基础动作改由卡片 4 的「添加图层」统一承接：
-        //   无基础时载入即基底座，已有基础时叠加为图层，基础行点击 = 更换）
-        {
-            id: 'binding:pose',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    slideRow(inner, 'lucide:user', t('motion.poseLibrary'), true, () => {
-                        const level = stackRegistry.buildLevel!(
-                            getBrowseDir('vpd'),
-                            t('motion.poseLibrary'),
-                            (m) => m.format === 'vpd',
-                            getMotionMenu() ?? undefined
-                        );
-                        level.label = t('motion.poseTo', { name: inst.name });
-                        if (getMotionMenu()) {
-                            getMotionMenu()?.push(level);
-                        }
-                    });
-                });
-            },
-        },
-        // 卡片 3：动作图层（统一为模型库 actor 行同款三栏样式）
-        //  · 已加载动作（基础 inst.vmdData + 各叠加层 inst.vmdLayers）统一渲染，
-        //    复用模型栏选中范式：leading(check-circle=设为焦点→focusModel) | label(wrap-2) | trailing(settings-2=图层工具)
-        //  · 移除独立「基础行」：基础动作不再特殊渲染，与叠加层同列——
-        //    既消除「同名动作出现两次」的视觉冲突（别纠结基础动作），也贴合模型栏一贯标准
-        //  · 已加载动作在前（置顶），「添加图层」folder 浏览行在后（第二），不再抢风头
-        //  · 行 onClick / trailing 均 → 次级菜单 buildLayerLevel（权重·启用·删除，原行内进度条与 eye 开关下沉至此）
+        // 卡片 1：动作图层（核心功能前置——已加载动作 + 添加动作）
         {
             id: 'binding:layers',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
                     // 统一动作行渲染器：复用模型栏 actor 行三栏结构
-                    //   · leading check-circle(选中焦点) | label(wrap-2) | trailing settings-2(图层工具，仅图层行)
-                    //   · 基础行无 trailing（移除「添加叠加图层」后无次级设置），仅通过 leading 选中→「添加动作」替换
                     const renderActionRow = (
                         name: string,
                         layerId?: string,
                         onClick?: () => void
                     ) => {
                         const isFocused = layerId === undefined
-                            ? _focusedLayerId === null  // 基础动作：焦点在 base 时
-                            : _focusedLayerId === layerId; // 图层：焦点在该层时
+                            ? _focusedLayerId === null
+                            : _focusedLayerId === layerId;
                         slideRow(
                             inner,
                             '',
@@ -160,7 +130,6 @@ function buildActionBindingSchema(id: string): MenuNode[] {
                                     icon: isFocused ? 'lucide:check-circle' : 'lucide:circle',
                                     title: t('library.focusModel'),
                                     onClick: () => {
-                                        // 写入焦点动作：基础行 layerId=undefined→null，图层行=layer.id
                                         _focusedLayerId = layerId ?? null;
                                         focusModel(id);
                                         getMotionMenu()?.reRender();
@@ -184,17 +153,11 @@ function buildActionBindingSchema(id: string): MenuNode[] {
                             }
                         );
                     };
-                    // 基础动作（inst.vmdData）—— 仅作已加载动作之一，无特殊标记
-                    // 标签只取第一个 VMD 名（inst.vmdName 可能被旧版 composite 写入 "A + B + C"，
-                    // 现已不再覆盖，但内存中已有值的仍需处理）
                     if (inst.vmdData && inst.vmdName) {
                         const baseName = inst.vmdName.split(' + ')[0];
-                        // 有叠加层时在 base 名后加「(基础)」标签，避免与同名图层混淆
                         const hasLayers = getVmdLayers(id).length > 0;
-                        // 基础行：仅通过 leading 选中（_focusedLayerId=null），交由顶层「添加动作」替换
                         renderActionRow(hasLayers ? `${baseName} (基础)` : baseName, undefined, undefined);
                     }
-                    // 叠加层（inst.vmdLayers）
                     const curLayers = getVmdLayers(id);
                     for (let i = 0; i < curLayers.length; i++) {
                         const layer = curLayers[i];
@@ -205,8 +168,6 @@ function buildActionBindingSchema(id: string): MenuNode[] {
                             }
                         });
                     }
-                    // 「添加动作」：folder + > 浏览行（模型库「加载模型」同款），置于已加载动作之后
-                    //   上下文敏感：无动作→新增基础；焦点层→替换该层；焦点基础→替换基础（见 motionOnItemClick）
                     slideRow(inner, 'lucide:folder', t('motion.addLayer'), true, () => {
                         setLayerBindingTargetId(id);
                         const level = stackRegistry.buildLevel!(
@@ -223,20 +184,33 @@ function buildActionBindingSchema(id: string): MenuNode[] {
                 });
             },
         },
-        // 卡片 5：聚焦模型 + 清除 VMD
+        // 卡片 2：姿势库
+        {
+            id: 'binding:pose',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    slideRow(inner, 'lucide:user', t('motion.poseLibrary'), true, () => {
+                        const level = stackRegistry.buildLevel!(
+                            getBrowseDir('vpd'),
+                            t('motion.poseLibrary'),
+                            (m) => m.format === 'vpd',
+                            getMotionMenu() ?? undefined
+                        );
+                        level.label = t('motion.poseTo', { name: inst.name });
+                        if (getMotionMenu()) {
+                            getMotionMenu()?.push(level);
+                        }
+                    });
+                });
+            },
+        },
+        // 卡片 3：清除 VMD
         {
             id: 'binding:actions',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    const group = document.createElement('div');
-                    group.className = 'preset-group';
-                    group.style.padding = '0';
-                    const focusBtn = document.createElement('button');
-                    focusBtn.className = 'preset-chip';
-                    focusBtn.innerHTML = t('motion.focusModel');
-                    focusBtn.addEventListener('click', () => focusModel(id));
-                    group.appendChild(focusBtn);
                     const clearBtn = document.createElement('button');
                     clearBtn.className = 'preset-chip';
                     clearBtn.textContent = t('motion.clearVmd');
@@ -257,8 +231,7 @@ function buildActionBindingSchema(id: string): MenuNode[] {
                             setStatus(t('motion.motionCleared'), true);
                         }
                     });
-                    group.appendChild(clearBtn);
-                    inner.appendChild(group);
+                    inner.appendChild(clearBtn);
                 });
             },
         },
@@ -722,21 +695,9 @@ function buildPlaybackSpeedLevel(): PopupLevel {
 
 // ======== Advanced (收纳高级/技术向功能) ========
 
-/** 高级菜单 items：收纳程序化动作 / 视线追踪 / 骨骼覆盖 / 脚部调整 / 虚拟裙骨。 */
+/** 高级菜单 items：收纳骨骼覆盖 / 脚部调整 / 虚拟裙骨。 */
 function buildAdvancedItems(): PopupRow[] {
     const items: PopupRow[] = [];
-    items.push({
-        kind: 'folder',
-        label: t('motion.procMotion'),
-        icon: 'lucide:wind',
-        target: 'motion:procmotion',
-    });
-    items.push({
-        kind: 'folder',
-        label: t('motion.gazeTracking'),
-        icon: 'lucide:eye',
-        target: 'motion:gaze',
-    });
     items.push({
         kind: 'folder',
         label: t('motion.boneOverride.title'),
@@ -852,14 +813,7 @@ function buildMotionRootItems(): PopupRow[] {
         }
         items.push({ kind: 'divider', label: '', icon: '', target: '' });
     }
-    // Card 2: 相机 + 音乐库 + 程序化动作
-    items.push({
-        kind: 'folder',
-        label: t('motion.playbackSpeed'),
-        icon: 'lucide:gauge',
-        target: 'motion:playbackSpeed',
-        sublabel: `${_playbackSpeed.toFixed(2)}x`,
-    });
+    // Card 2: 相机 + 音乐库 + 姿势工作室
     items.push({
         kind: 'folder',
         label: t('motion.camera'),
@@ -887,7 +841,26 @@ function buildMotionRootItems(): PopupRow[] {
         icon: 'lucide:camera',
         target: 'motion:poseStudio',
     });
+    items.push({
+        kind: 'folder',
+        label: t('motion.playbackSpeed'),
+        icon: 'lucide:gauge',
+        target: 'motion:playbackSpeed',
+        sublabel: `${_playbackSpeed.toFixed(2)}x`,
+    });
     items.push({ kind: 'divider', label: '', icon: '', target: '' });
+    items.push({
+        kind: 'folder',
+        label: t('motion.procMotion'),
+        icon: 'lucide:wind',
+        target: 'motion:procmotion',
+    });
+    items.push({
+        kind: 'folder',
+        label: t('motion.gazeTracking'),
+        icon: 'lucide:eye',
+        target: 'motion:gaze',
+    });
     items.push({
         kind: 'folder',
         label: t('motion.advanced'),

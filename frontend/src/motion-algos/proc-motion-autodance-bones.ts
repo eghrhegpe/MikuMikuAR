@@ -108,11 +108,7 @@ export function resolveBones(boneNames: string[]): BoneResolution {
 type InterpType = typeof INTERP_SHARP | typeof INTERP_EASE_IN_OUT | typeof INTERP_EASE_OUT;
 
 /** 根据骨骼名应用插值类型 */
-export function applyInterp(
-    bones: BoneKeyFrame[],
-    resolution: BoneResolution,
-    _override: null | typeof INTERP_SHARP
-): void {
+export function applyInterp(bones: BoneKeyFrame[], resolution: BoneResolution): void {
     for (const b of bones) {
         const n = b.name;
         if (n === resolution.larmBone || n === resolution.rarmBone) {
