@@ -204,7 +204,6 @@ export class ModelManager {
         }
     >();
     private _boneUpdateObserver: Nullable<Observer<Scene>> = null;
-    private _boneAnimationDirty = new Set<string>();
 
     /** Currently active formation type, or null if custom/manual arrangement. */
     private _activeFormation: FormationType | null = null;
@@ -462,6 +461,7 @@ export class ModelManager {
         } else if (hadOverlay) {
             const entry = this._boneOverlayMap.get(id)!;
             entry.lineSystem.setEnabled(show);
+            entry.markDirty();
         }
         this.triggerAutoSave();
     }
@@ -481,6 +481,7 @@ export class ModelManager {
         } else if (hadOverlay) {
             const entry = this._boneOverlayMap.get(id)!;
             entry.overlay.setEnabled(show);
+            entry.markDirty();
         }
         this.triggerAutoSave();
     }
@@ -507,7 +508,6 @@ export class ModelManager {
                 }
             }
         }
-        this._physicsCatState.delete(id);
         this.triggerAutoSave();
     }
 
@@ -781,17 +781,9 @@ export class ModelManager {
         if (this._boneOverlayMap.has(id)) {
             return;
         }
-
         const bones = inst.mmdModel.runtimeBones;
         if (!bones || bones.length === 0) {
             return;
-        }
-
-        const physicsBoneSet = new Set<number>();
-        for (let i = 0; i < bones.length; i++) {
-            if (bones[i].rigidBodyIndices.length > 0) {
-                physicsBoneSet.add(i);
-            }
         }
 
         const lines: Vector3[][] = [];
@@ -945,11 +937,8 @@ export class ModelManager {
                     toDelete.push(id);
                     continue;
                 }
-                if (inst.showBoneLines || inst.showBoneJoints) {
-                    if (inst.vmdData || inst.physicsEnabled || this._boneAnimationDirty.has(id)) {
-                        entry.markDirty();
-                    }
-                }
+                // WASM 物理恒启用，叠加层可见即每帧更新
+                entry.markDirty();
                 entry.update();
             }
             for (const id of toDelete) {
@@ -964,7 +953,16 @@ export class ModelManager {
             this.scene.onBeforeRenderObservable.remove(this._boneUpdateObserver);
             this._boneUpdateObserver = null;
         }
-        // Dispose all remaining overlays
+        // Dispose all bone overlay resources (lineSystem + overlay + joints)
+        for (const [, entry] of this._boneOverlayMap) {
+            entry.lineSystem.dispose();
+            entry.overlay.dispose();
+            for (const j of entry.joints) {
+                j.dispose();
+            }
+        }
+        this._boneOverlayMap.clear();
+        // Dispose all remaining outfit overlays
         for (const [, inst] of this.modelRegistry) {
             disposeOverlay(inst);
             restoreMaterials(inst);
