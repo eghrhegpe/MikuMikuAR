@@ -67,6 +67,7 @@ type App struct {
 	// 避免 NewWithOptions 的 WebView2 冷启动（1–3s → 200ms）。
 	plazaWin             *application.WebviewWindow
 	plazaWinMu           sync.Mutex
+	plazaWinCloseHook    func()       // RegisterHook 返回的 unregister 函数，用于 ServiceShutdown 前置移除
 	lastPlazaNavReport   time.Time // [ADR-087 P3] debounce 300ms
 }
 
@@ -113,7 +114,9 @@ func (a *App) GetBuildInfo() *BuildInfo {
 // ServiceStartup implements application.ServiceStartup interface.
 func (a *App) ServiceStartup(ctx context.Context, options application.ServiceOptions) error {
 	// Restore download directory watching from saved config
-	a.restoreWatcher()
+	if err := a.restoreWatcher(); err != nil {
+		a.safeLogWarning("ServiceStartup: 恢复目录监听失败: %v", err)
+	}
 	// Auto-clean orphaned extraction cache (source zip gone) in background
 	go func() {
 		if cleaned, err := a.CleanOrphanCache(); err == nil && cleaned > 0 {
@@ -143,9 +146,14 @@ func (a *App) ServiceShutdown() error {
 	a.watchMu.Unlock()
 
 	// [ADR-087 P3] 关闭 plaza 预热窗口，避免应用退出后残留 WebView2 引用。
-	// WindowClosing hook 可能拦截 Close()（改为 Hide），但清空引用可防止 dangling pointer。
+	// 先移除 WindowClosing hook（否则 Close() 触发 hook 被 Cancel 后只隐藏不销毁），
+	// 再调用 Close() 让默认 destroy-listener 执行真正销毁。
 	a.plazaWinMu.Lock()
 	if a.plazaWin != nil {
+		if a.plazaWinCloseHook != nil {
+			a.plazaWinCloseHook()
+			a.plazaWinCloseHook = nil
+		}
 		a.plazaWin.Close()
 		a.plazaWin = nil
 	}

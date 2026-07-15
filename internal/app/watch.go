@@ -37,7 +37,7 @@ var magicSigs = [][]byte{
 // checkMagicNumber reads the first bytes of a file and checks against known signatures.
 // Returns true if the file header matches a known archive format.
 func checkMagicNumber(path string) bool {
-	f, err := os.Open(path)
+	f, err := fileAccessor.Open(path)
 	if err != nil {
 		return false
 	}
@@ -491,18 +491,20 @@ func (a *App) notifyNewFile(filePath string) {
 
 // restoreWatcher resumes directory watching from saved config on startup.
 // Applies the first-run default (Downloads/ + enabled) exactly once before restoring.
-func (a *App) restoreWatcher() {
+func (a *App) restoreWatcher() error {
 	if isAndroid {
-		return
+		return nil
 	}
 	a.ensureDefaultWatchDir()
 	cfg, err := a.GetConfig()
 	if err != nil || !cfg.DownloadWatchEnabled || cfg.DownloadWatchDir == "" {
-		return
+		return err
 	}
 	if err := a.StartWatchDir(cfg.DownloadWatchDir); err != nil {
 		a.safeLogError("restoreWatcher: 恢复监听失败 %s: %v", cfg.DownloadWatchDir, err)
+		return err
 	}
+	return nil
 }
 
 // ensureDefaultWatchDir applies the first-run default watch directory exactly once.
