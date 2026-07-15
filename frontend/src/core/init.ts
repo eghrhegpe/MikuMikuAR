@@ -23,7 +23,7 @@ import { generateTextColors } from '../menus/settings';
 import { SETTINGS_FONT_RESTORE } from '../menus/settings-shared';
 import { initScene, tryRestoreLastScene, setEnvState } from '../scene/scene';
 import { initRuntimeBadge } from './runtime-mode';
-import { applyHudVisibility } from './status-bar';
+import { applyHudVisibility, disposeStatusBar } from './status-bar';
 import { hexToRgb, rgbToString } from './color-helpers';
 import { logWarn, fireAndForget, swallowError } from './utils';
 import { setPerformanceMode } from '../scene/render/performance';
@@ -38,11 +38,11 @@ import {
     registerEventHandlers,
     disposeEventHandlers,
     buildNavMaps,
-    registerAppShortcuts,
     initDropHandler,
     showUpdateToast,
     toggleOverlay,
 } from './events';
+import { registerAppShortcuts } from './shortcut-app';
 import { addDisposableListener } from './dom';
 import { disposeOverlay2 } from './dialog';
 
@@ -77,6 +77,7 @@ async function init(): Promise<void> {
         _initDisposables.length = 0;
         disposeEventHandlers();
         disposeOverlay2(); // 清理 showPrompt2 创建的双字段输入 overlay（HMR 幂等）
+        disposeStatusBar(); // 清理 status 定时器（HMR 幂等）
         // 注册本地图标 bundle，使 iconify 离线可用
         registerIconBundle();
         initI18n(); // [doc:adr-059] 在菜单渲染前确定语言并同步 <html lang>

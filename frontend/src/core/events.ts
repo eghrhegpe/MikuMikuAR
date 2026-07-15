@@ -21,7 +21,7 @@ import {
 } from './config';
 import { focusedModel, updatePlaybackUI, seekFromEvent, focusedMmdModel } from '../scene/scene';
 import { freeflyInput } from './freefly-state';
-import { getCameraMode, switchCameraMode } from '../scene/camera/camera';
+import { getCameraMode } from '../scene/camera/camera';
 import { t } from './i18n/t';
 import { openExternalURL } from './platform';
 import { addDisposableListener } from './dom';
@@ -54,13 +54,10 @@ export function disposeEventHandlers(): void {
 import { Browser } from '@wailsio/runtime';
 import { showModelPopup, showMotionPopup, refreshLibrary } from '../menus/library';
 import { showPlaza, closePlaza } from '../menus/plaza';
-import { screenshotCurrent } from '../menus/scene-menu';
-import { registerShortcuts } from './shortcut-registry';
 import { loadManager } from './load-manager';
-import { ImportZip, ImportLocalFile, Events } from './wails-bindings';
-import { getAutoImportCached } from '../menus/settings-shared';
+import { ImportZip, Events } from './wails-bindings';
 import { focusModel } from '../scene/manager/model-ops';
-import { logWarn, DebouncedTimer } from './utils';
+import { logWarn } from './utils';
 
 // ======== Module-level state ========
 const _lastOverlayFn = new Map<string, () => void>();
@@ -75,7 +72,7 @@ let _pointerDownPos = { x: 0, y: 0 };
 let _longPressTimer: ReturnType<typeof setTimeout> | null = null;
 let _lastHiddenOverlay: { id: string; showFn: () => void } | null = null;
 let _lastTapTime = 0;
-const navLabels: Record<number, string> = {};
+export const navLabels: Record<number, string> = {};
 
 // ======== Nav / overlay helpers ========
 function syncNavAriaExpanded(): void {
@@ -143,7 +140,7 @@ export async function toggleOverlay(id: string, showFn: () => void): Promise<voi
     syncNavAriaExpanded();
 }
 
-const navActions: Record<number, () => void | Promise<void>> = {
+export const navActions: Record<number, () => void | Promise<void>> = {
     1: () => toggleOverlay('sceneOverlay', showModelPopup),
     2: () => toggleOverlay('sceneOverlay', showMotionPopup),
     3: async () => {
@@ -417,157 +414,6 @@ export function buildNavMaps(): void {
     });
 }
 
-// ======== Register global shortcuts via ShortcutRegistry ========
-export function registerAppShortcuts(): void {
-    registerShortcuts([
-        {
-            id: 'toggle:models',
-            label: 'shortcuts.label.models',
-            defaultKey: 'Digit1',
-            defaultCtrl: true,
-            prevent: true,
-            handler: () => {
-                navActions[1]();
-                setStatus(navLabels[1] || '', false);
-            },
-            group: 'shortcuts.group.popupNav',
-        },
-        {
-            id: 'toggle:motion',
-            label: 'shortcuts.label.motion',
-            defaultKey: 'Digit2',
-            defaultCtrl: true,
-            prevent: true,
-            handler: () => {
-                navActions[2]();
-                setStatus(navLabels[2] || '', false);
-            },
-            group: 'shortcuts.group.popupNav',
-        },
-        {
-            id: 'toggle:scene',
-            label: 'shortcuts.label.scene',
-            defaultKey: 'Digit3',
-            defaultCtrl: true,
-            prevent: true,
-            handler: () => {
-                navActions[3]();
-                setStatus(navLabels[3] || '', false);
-            },
-            group: 'shortcuts.group.popupNav',
-        },
-        {
-            id: 'toggle:env',
-            label: 'shortcuts.label.env',
-            defaultKey: 'Digit4',
-            defaultCtrl: true,
-            prevent: true,
-            handler: () => {
-                navActions[4]();
-                setStatus(navLabels[4] || '', false);
-            },
-            group: 'shortcuts.group.popupNav',
-        },
-        {
-            id: 'camera:ar',
-            label: 'shortcuts.label.arCamera',
-            defaultKey: 'Digit6',
-            defaultCtrl: true,
-            prevent: true,
-            handler: () => {
-                const currentMode = getCameraMode();
-                if (currentMode === 'ar') {
-                    switchCameraMode('orbit');
-                } else {
-                    switchCameraMode('ar');
-                }
-            },
-            group: 'shortcuts.group.cameraControl',
-        },
-        {
-            id: 'toggle:plaza',
-            label: 'shortcuts.label.plaza',
-            defaultKey: 'Digit7',
-            defaultCtrl: true,
-            prevent: true,
-            handler: () => {
-                navActions[7]();
-                setStatus(navLabels[7] || '', false);
-            },
-            group: 'shortcuts.group.popupNav',
-        },
-        {
-            id: 'playback:toggle',
-            label: 'shortcuts.label.playPause',
-            defaultKey: 'Space',
-            prevent: true,
-            handler: () => {
-                if (mmdRuntime && focusedMmdModel()) {
-                    dom.btnPlayPause.click();
-                }
-            },
-            group: 'shortcuts.group.playbackControl',
-        },
-        {
-            id: 'global:close',
-            label: 'shortcuts.label.closePopup',
-            defaultKey: 'Escape',
-            handler: () => {
-                closeAllOverlays();
-                document.body.classList.remove('ui-hidden');
-            },
-            group: 'shortcuts.group.global',
-        },
-        {
-            id: 'playback:seek-back',
-            label: 'shortcuts.label.seekBack',
-            defaultKey: 'ArrowLeft',
-            prevent: true,
-            handler: () => {
-                if (!mmdRuntime) {
-                    return;
-                }
-                const foc = focusedModel();
-                const dur = foc.animationDuration ?? mmdRuntime.animationDuration;
-                if (dur <= 0) {
-                    return;
-                }
-                mmdRuntime.seekAnimation(Math.max(0, mmdRuntime.currentTime - 5), true);
-                updatePlaybackUI();
-            },
-            group: 'shortcuts.group.playbackControl',
-        },
-        {
-            id: 'playback:seek-forward',
-            label: 'shortcuts.label.seekForward',
-            defaultKey: 'ArrowRight',
-            prevent: true,
-            handler: () => {
-                if (!mmdRuntime) {
-                    return;
-                }
-                const foc = focusedModel();
-                const dur = foc.animationDuration ?? mmdRuntime.animationDuration;
-                if (dur <= 0) {
-                    return;
-                }
-                mmdRuntime.seekAnimation(Math.min(dur, mmdRuntime.currentTime + 5), true);
-                updatePlaybackUI();
-            },
-            group: 'shortcuts.group.playbackControl',
-        },
-        {
-            id: 'screenshot:current',
-            label: 'shortcuts.label.screenshot',
-            defaultKey: 'F6',
-            defaultCtrl: true,
-            prevent: true,
-            handler: () => void screenshotCurrent(),
-            group: 'shortcuts.group.screenshot',
-        },
-    ]);
-}
-
 // ======== Update Notification ========
 export function showUpdateToast(latest: string, url: string): void {
     const toast = document.getElementById('updateToast');
@@ -664,62 +510,4 @@ export function initDropHandler(): void {
     });
 }
 
-// ======== Download Watch Notification ========
-const importToastTimer = new DebouncedTimer();
-
-export async function importToLibrary(path: string, displayName: string): Promise<void> {
-    setStatus(t('main.importing') + ': ' + displayName, false);
-    try {
-        await ImportLocalFile(path);
-        setStatus(t('main.imported', { name: displayName }), true);
-        refreshLibrary().catch((err) => logWarn('events', 'refresh after import', err));
-    } catch (err: unknown) {
-        setStatus(t('main.importFailed') + ': ' + formatError(err), false);
-        console.error('[watch] import failed:', err);
-    }
-}
-
-Events.On('watch:newfile', (ev) => {
-    const payload = ev.data as { path: string; name: string; type: string };
-    const displayName = payload.name || payload.path;
-
-    // 自动导入模式：跳过 toast，直接入库（不加载到场景）
-    if (getAutoImportCached()) {
-        void importToLibrary(payload.path, displayName);
-        return;
-    }
-
-    // 手动导入模式：显示 toast，用户点击导入按钮触发入库
-    importToastTimer.cancel();
-    const toast = document.getElementById('importToast');
-    if (!toast) {
-        return;
-    }
-    const nameEl = toast.querySelector('.toast-file');
-    if (nameEl) {
-        nameEl.textContent = displayName;
-    }
-    toast.classList.add('visible');
-
-    const importBtn = toast.querySelector('.toast-import-btn') as HTMLButtonElement | null;
-    if (importBtn) {
-        importBtn.onclick = async () => {
-            importBtn.disabled = true;
-            importBtn.textContent = t('main.importing');
-            toast.classList.remove('visible');
-            await importToLibrary(payload.path, displayName);
-            importBtn.disabled = false;
-            importBtn.textContent = t('main.importImport');
-        };
-    }
-
-    const ignoreBtn = toast.querySelector('.toast-ignore-btn') as HTMLButtonElement | null;
-    if (ignoreBtn) {
-        ignoreBtn.onclick = () => {
-            toast.classList.remove('visible');
-        };
-    }
-
-    // Auto-hide after 10 seconds
-    importToastTimer.schedule(() => toast.classList.remove('visible'), 10000);
-});
+// ======== Update Notification ========

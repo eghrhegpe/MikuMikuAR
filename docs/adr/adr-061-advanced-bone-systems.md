@@ -1,6 +1,6 @@
 # ADR-061: 高级骨骼操控与姿态工作室实现计划
 
-> **状态**: 已完成（2026-07-10）— Pose Studio ✅、Ragdoll ✅、Motion Override ✅、Accessory ✅、T-pose/A-pose ✅（并入 Pose Studio）
+> **状态**: 已完成（2026-07-10，2026-07-16 对账修正）— Pose Studio ✅、Motion Override ✅、Accessory ✅、T-pose/A-pose ✅（并入 Pose Studio）。Ragdoll ❌ 永久废弃（随 XPBD 全栈移除 530af6e，不再恢复）。
 > **背景**: 本域五项功能已在 ADR-054 路线图中零散记录（道具挂载 P2、T-pose/A-pose P1、Ragdoll P3、Pose Studio P2），但缺集中式技术方案与代码事实核实；「Motion Override（逐骨骼）」仅见于 ADR-043 gap-analysis，未进任一路线图。本 ADR 补此空白，给出现状核实、技术路线与分期细化。
 > **范围**: 仅规划，不实现。落地时各子项应单独立项（可沿用本 ADR 编号作前缀，如 ADR-061.1）。
 > **排除**: Playback Modes（列表播放/随机/顺序）已评估后移除——MMD 工作流是单模型+单VMD精调，非批量播放场景，边际效益低。
@@ -37,7 +37,7 @@
 |------|-----------|-------------------|------|
 | Motion Override（逐骨骼） | ✅ 已实现 | `MmdCompositeAnimation` 的 `boneFilter`（屏蔽骨骼动画，ADR-051）；`proc-motion-bridge` 程序化动作 | `scene/motion/bone-override.ts`（overrideMap + 每帧 Slerp 写入 + `_propagateChildrenWasm`）；`menus/motion-override-levels.ts`（骨骼选择器 + 欧拉角/权重 UI）；`scene-serialize.ts` 持久化恢复；`scene.ts` 注册时序在 ragdoll 之前 |
 | T-pose / A-pose 转换 | ✅ 已实现（并入 Pose Studio） | VPD loader（ADR-054 baseline 已列 VPD/程序化动作）；`procedural-motion` | `motion-pose-levels.ts` 含 T-pose/A-pose 子开关，VPD 预置文件零运行时逻辑 |
-| 布娃娃物理 Ragdoll | ✅ 已实现（XPBD 3A 求解器） | XPBD 引擎（体积约束已预置）；WASM Bullet（服装/头发摆动已用） | `physics/xpbd-ragdoll.ts` + `ragdoll-manager.ts`，接入模型骨骼回写；`xpbd-ragdoll.test.ts` / `scene-ragdoll-wiring.test.ts` 落地；接入点见 `scene.ts` / `model-manager.ts` / `scene-physics-levels.ts` / `scene-menu.ts`；头部骨骼冲突风险见 §五.3 |
+| 布娃娃物理 Ragdoll | ❌ **永久废弃**（随 XPBD 全栈移除，530af6e） | XPBD 引擎（体积约束已预置）；WASM Bullet（服装/头发摆动已用） | `physics/xpbd-ragdoll.ts` + `ragdoll-manager.ts` 已删除（2026-07-10 移除）；接入点见 `scene.ts` / `model-manager.ts` / `scene-physics-levels.ts` / `scene-menu.ts` |
 | 道具挂载（骨骼锚点 Accessory） | ✅ 已实现 | `scene/env/props.ts` 场景级道具系统；`scene-prop-levels.ts` UI | `scene/env/accessory.ts`（`attachToBone`/`detachFromBone`，POC 验证通过）；`menus/scene-prop-levels.ts`（骨骼选择器 + 偏移编辑 UI）；`scene-serialize.ts` 持久化恢复；i18n 翻译键 `scene.accessory.*` |
 | Pose Studio / 拍照模式 | ✅ 已实现 | `scene/camera/` 相机系统；`renderer.ts` 后处理管线；截图功能 | `motion-pose-levels.ts`（300行，构图辅助+DOF+T-pose/A-pose+批量截图+水印）；i18n 翻译键 `motion.poseStudio.*` |
 

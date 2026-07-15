@@ -39,8 +39,9 @@ const extractCacheVersion = 6
 
 // maxZipEntries limits the number of files extracted from a single zip archive
 // to prevent ZIP bombs with millions of tiny entries from exhausting disk inodes
-// or causing excessive extraction time.
-const maxZipEntries = 10000
+// or causing excessive extraction time. Only actual files (not directories) are
+// counted, since MMD model zips legitimately contain many texture files.
+const maxZipEntries = 50000
 
 // manifest stores source zip metadata for cache validation.
 type manifest struct {
@@ -130,12 +131,6 @@ func (a *App) extractZipUnsafe(zipPath, innerPath string) (*ExtractResult, error
 	var extractedCount int
 
 	for _, zf := range zr.File {
-		// ZIP bomb protection: reject archives with excessive entries
-		extractedCount++
-		if extractedCount > maxZipEntries {
-			return nil, fmt.Errorf("%s: 压缩包条目数 %d 超过上限 %d", op, len(zr.File), maxZipEntries)
-		}
-
 		// Decode entry name (Shift-JIS → UTF-8) so extracted files match model entries
 		entryName := decodeZipName(zf.Name, zf.NonUTF8)
 
@@ -153,6 +148,13 @@ func (a *App) extractZipUnsafe(zipPath, innerPath string) (*ExtractResult, error
 		if zf.FileInfo().IsDir() {
 			os.MkdirAll(targetAbs, 0755)
 			continue
+		}
+
+		// ZIP bomb protection: only count actual files (not directories),
+		// since MMD model zips legitimately contain many texture files.
+		extractedCount++
+		if extractedCount > maxZipEntries {
+			return nil, fmt.Errorf("%s: 压缩包内文件数 %d 超过上限 %d", op, extractedCount, maxZipEntries)
 		}
 
 		// Create parent directories
