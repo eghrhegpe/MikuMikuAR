@@ -70,7 +70,7 @@ MikuMikuAR 的 Release CI 由 `.github/workflows/release.yml` 驱动，触发条
 | `.github/workflows/release.yml` | `e749d20`：`npm ci` 受缓存命中守卫；其余缓存步不变 |
 | `.github/workflows/ci.yml` | 不变（仍只 `setup-*` 自带缓存，不存 wails/nm） |
 | `scripts/wails/build.ps1` | `1f1ed6c`：wails3 安装提示对齐 go.mod（去 `@latest`） |
-| `docs/Releases/v1.2.6.md` / `v1.2.7.md` | 发版说明与实测命中表 |
+| `docs/releases/v1.2.6.md` / `v1.2.7.md` | 发版说明与实测命中表 |
 
 ## 七、后续注意
 

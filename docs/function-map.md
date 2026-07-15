@@ -1,6 +1,7 @@
 # 函数映射表
 
 > AI 找代码用。改前端功能时先 grep 此表定位文件。
+> **⚠️ 部分过时**：本表创建于 main.ts 拆分前（ADR-102），`core/main.ts` 已拆分为多个子模块。入口/事件部分请以 `frontend/AGENTS.md` + `frontend/src/core/main/` 目录为准。3D 场景与模型部分仍有效。
 
 ## 入口 & 事件
 
