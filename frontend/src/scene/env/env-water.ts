@@ -27,6 +27,24 @@ const LOD_HIGH_DISTANCE = 30; // LOD 切换距离（近）
 const LOD_LOW_DISTANCE = 80; // LOD 切换距离（远）
 const UNDERWATER_TRANSITION_SPEED = 0.8; // 水下过渡速度（秒）
 
+// 波方向偏移（Gerstner 波 4 层）
+const WAVE_DIR_OFFSETS: [number, number, number, number] = [0, 0.3, -0.2, 0.1];
+// 涟漪参数
+const RIPPLE_MIN_RADIUS = 0.1;
+const RIPPLE_MIN_SPEED = 0.1;
+const RIPPLE_INFINITY_LIFE = 9999;
+// 焦散着色系数（暗部底色 / 亮部增量）
+const CAUSTIC_DARK_FACTOR = 0.3;
+const CAUSTIC_BRIGHT_FACTOR = 0.9;
+// 涟漪扩展速率
+const RIPPLE_EXPANSION_RATE = 0.15;
+// 涟漪 shader 衰减系数
+const RIPPLE_SHADER_FADE_FACTOR = 0.8;
+// deltaTime 钳制上限（秒），防止切后台返回时跳变
+const DT_CLAMP_MAX = 0.1;
+// 水下雾密度系数
+const UNDERWATER_FOG_DENSITY_FACTOR = 0.5;
+
 // ======== 水下状态（供 Env Update Observer 和 disposeWater 使用）========
 export let _underwaterActive = false;
 export let _underwaterSavedFog: { mode: number; color: Color3; density: number } | null = null;
@@ -49,7 +67,7 @@ export function computeWaveDirs(windDir: [number, number, number]): number[] {
     // 从 windDirection 计算风向角（XZ 平面）
     const angle = Math.atan2(windDir[0], windDir[2]);
     // 4 个波方向：主方向对齐风向，其余偏移以保持波面复杂度
-    const offsets = [0, 0.3, -0.2, 0.1];
+    const offsets = WAVE_DIR_OFFSETS;
     for (let i = 0; i < 4; i++) {
         const a = angle + offsets[i];
         arr[i * 2] = Math.sin(a);
@@ -190,10 +208,10 @@ export function addRipple(pos: Vector3, radius = 5, strength = 0.5, speed = 2, m
     }
     const r = _ripples[idx];
     r.position.copyFrom(pos);
-    r.radius = Math.max(0.1, radius);
+    r.radius = Math.max(RIPPLE_MIN_RADIUS, radius);
     r.strength = clamp01(strength);
-    r.speed = Math.max(0.1, speed);
-    r.life = maxLife > 0 ? maxLife : 9999;
+    r.speed = Math.max(RIPPLE_MIN_SPEED, speed);
+    r.life = maxLife > 0 ? maxLife : RIPPLE_INFINITY_LIFE;
     r.maxLife = maxLife;
 }
 
@@ -233,12 +251,12 @@ function regenerateCausticTexture(scene: Scene, waterColor: [number, number, num
                 }
                 n = (n / total) * 0.5 + 0.5; // 灰度 0~1
 
-                // 灰度映射到 [水色×0.3, 水色×1.2]，让暗部偏水色，亮部更亮
+                // 灰度映射到 [水色×DARK, 水色×BRIGHT]，让暗部偏水色，亮部更亮
                 const i = (y * s + x) * 4;
                 const t = n; // 0=暗纹, 1=亮纹
-                data[i] = Math.min(255, Math.floor((wr * 0.3 + t * wr * 0.9) * 255));
-                data[i + 1] = Math.min(255, Math.floor((wg * 0.3 + t * wg * 0.9) * 255));
-                data[i + 2] = Math.min(255, Math.floor((wb * 0.3 + t * wb * 0.9) * 255));
+                data[i] = Math.min(255, Math.floor((wr * CAUSTIC_DARK_FACTOR + t * wr * CAUSTIC_BRIGHT_FACTOR) * 255));
+                data[i + 1] = Math.min(255, Math.floor((wg * CAUSTIC_DARK_FACTOR + t * wg * CAUSTIC_BRIGHT_FACTOR) * 255));
+                data[i + 2] = Math.min(255, Math.floor((wb * CAUSTIC_DARK_FACTOR + t * wb * CAUSTIC_BRIGHT_FACTOR) * 255));
                 data[i + 3] = 255;
             }
         }
@@ -686,7 +704,7 @@ function _createWaterMaterial(scene: Scene, state: EnvState): ShaderMaterial {
 function _waterUpdateCallback(scene: Scene): void {
     if (!_envSys.water.material) return;
     const m = _envSys.water.material as ShaderMaterial;
-    const dt = Math.min(scene.deltaTime / 1000, 0.1);
+    const dt = Math.min(scene.deltaTime / 1000, DT_CLAMP_MAX);
     const now = performance.now() / 1000;
 
     _waterPhase += dt * _waterWaveSpeed;
@@ -910,7 +928,7 @@ export function updateUnderwaterTransition(scene: Scene, pipeline: DefaultRender
             wc[1] * envState.underwaterTintStrength,
             wc[2] * envState.underwaterTintStrength
         );
-        scene.fogDensity = envState.underwaterFogDensity * t * 0.5;
+        scene.fogDensity = envState.underwaterFogDensity * t * UNDERWATER_FOG_DENSITY_FACTOR;
 
         // 自定义 Tint PostProcess（替代不存在的 tintColor/tintAmount）
         if (scene.activeCamera) {

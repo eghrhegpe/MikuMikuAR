@@ -2,8 +2,6 @@ package app
 
 import (
 	"archive/zip"
-	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"

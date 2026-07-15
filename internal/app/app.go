@@ -17,7 +17,6 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 
 	"mikumikuar/internal/dialogs"
-	"mikumikuar/internal/util"
 )
 
 // isAndroid returns true when running on Android (GOOS=android).
@@ -693,23 +692,19 @@ func (a *App) setLastDir(cat, dir string) {
 // Used by the frontend resource library browser to resume from the last visited subdirectory.
 // Relative paths (./...) are resolved against ResourceRoot; absolute paths returned as-is.
 func (a *App) GetLastBrowseDir(category string) (string, error) {
-	return util.SafeCall(func() (string, error) {
-		dir := a.getLastDir("browse:" + category)
-		if dir == "" {
-			return "", nil
-		}
-		return dir, nil
-	})
+	dir := a.getLastDir("browse:" + category)
+	if dir == "" {
+		return "", nil
+	}
+	return dir, nil
 }
 
 // SetLastBrowseDir persists the current browse directory for a resource category.
 // Paths under ResourceRoot are stored as relative (./...) for cross-platform portability;
 // paths outside ResourceRoot are stored as absolute (desktop only).
 func (a *App) SetLastBrowseDir(category, dir string) error {
-	return util.SafeCallVoid(func() error {
-		a.setLastDir("browse:" + category, dir)
-		return nil
-	})
+	a.setLastDir("browse:" + category, dir)
+	return nil
 }
 
 // ensureResourceDirs creates the default subdirectories under ResourceRoot if they don't exist.
