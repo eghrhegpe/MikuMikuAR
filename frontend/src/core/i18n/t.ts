@@ -25,6 +25,13 @@ const bundles: Record<string, Bundle> = {
 export const AVAILABLE_LANGS: string[] = Object.keys(bundles);
 
 /**
+ * [doc:adr-059] dev-only 缺失 key 告警去重集合。
+ * 同一 (lang,key) 组合在一次会话内只 warn 一次，避免列表渲染时刷屏。
+ * 生产构建（import.meta.env.DEV === false）下整个 warn 逻辑被 tree-shake 移除。
+ */
+const _warnedMissing = new Set<string>();
+
+/**
  * 翻译一个 key。
  * @param key 形如 'settings.appearance' 的命名空间 key
  * @param params 可选占位符，用于动态字符串，如 t('status.modelsLoaded', { n: 3 })
@@ -32,7 +39,39 @@ export const AVAILABLE_LANGS: string[] = Object.keys(bundles);
  */
 export function t(key: string, params?: Record<string, string | number>): string {
     const lang = getLang();
-    let s = (bundles[lang] && bundles[lang][key]) || zhCN[key] || key;
+    const langBundle = bundles[lang];
+    const hasLang = langBundle && key in langBundle;
+    const hasBase = key in zhCN;
+    let s: string;
+    if (hasLang) {
+        s = langBundle[key];
+    } else if (hasBase) {
+        s = zhCN[key];
+    } else {
+        s = key;
+    }
+    // [doc:adr-059] dev-only：缺失 key 告警，帮助发现翻译缺口与拼写错误
+    if (import.meta.env.DEV) {
+        if (!hasLang && lang !== 'zh-CN') {
+            // 当前语言缺该 key（回退到 zh-CN 或 key 本身）
+            const sig = `${lang}:${key}`;
+            if (!_warnedMissing.has(sig)) {
+                _warnedMissing.add(sig);
+                if (hasBase) {
+                    console.warn(`[i18n] missing key "${key}" for "${lang}" — fell back to zh-CN`);
+                } else {
+                    console.warn(`[i18n] missing key "${key}" for "${lang}" — key not in any bundle (typo?)`);
+                }
+            }
+        } else if (!hasBase && lang === 'zh-CN') {
+            // zh-CN 基准语言也缺该 key —— 极可能是拼写错误
+            const sig = `zh-CN:${key}`;
+            if (!_warnedMissing.has(sig)) {
+                _warnedMissing.add(sig);
+                console.warn(`[i18n] key "${key}" not found in zh-CN base bundle — possible typo`);
+            }
+        }
+    }
     if (params) {
         for (const k of Object.keys(params)) {
             s = s.replace(new RegExp(`\\{${k}\\}`, 'g'), String(params[k]));

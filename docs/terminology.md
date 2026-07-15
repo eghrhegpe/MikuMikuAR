@@ -72,7 +72,47 @@
 | 打开软件目录 | 打开目录 | 📂 打开目录、Open Dir | `OpenSoftwareDir` |
 | 重新扫描 | 重新扫描 | 🔄 重新扫描、Rescan | `ScanModelDir` |
 
-### 2.2 sublabel 规范
+### 2.2 多语言翻译基准（五语言对照）
+
+> **定位**：本表是翻译决策的单一事实源，`frontend/src/core/i18n/locales/*.ts` 的对应 key 应与本表一致。新增 UI 字符串时，先在此表登记推荐译法，再写入 bundle。
+> **与 bundle 的关系**：bundle 是完整数据源（1236 key），本表只收录**需要术语决策的关键概念**（约 30 项），避免重复维护。社区惯用变体允许译者在 bundle 内微调，但本表的"推荐译法"是默认值。
+
+| 概念 (zh-CN) | i18n key | en | ja | ko | zh-TW | 备注 |
+|------|----------|----|----|----|-------|------|
+| 加载模型 | `library.loadModel` | Load Model | モデルを読み込む | 모델 로드 | 載入模型 | ja 社区变体：`モデル読込`（名词化，更紧凑，MMD UI 常见） |
+| 模型库 | `library.title` | Model Library | モデルライブラリ | 모델 라이브러리 | 模型庫 | — |
+| 动作 | `motion.title` | Motion | モーション | 모션 | 動作 | ja 社区亦用 `アニメーション`，但 MMD 语境 `モーション` 更准确 |
+| 动作绑定 | `motion.bindingTitle` | Motion Binding | モーション割当 | 모션 바인딩 | 動作綁定 | — |
+| 变换 | `model-detail.transform` | Transform | 変換 | 변환 | 變換 | ja 禁用 `トランスフォーム`（片假名冗余） |
+| 可见性 | `model-detail.visibility` | Visibility | 表示切替 | 표시 여부 | 可見性 | ja `表示切替` 比 `可視性` 更自然 |
+| 聚焦 | `library.focusModel` | Set as focus | フォーカス | 포커스 | 聚焦 | — |
+| 舞台 | `scene.stage` | Stage | ステージ | 무대 | 舞台 | — |
+| 渲染 | `scene.render` | Render | レンダー | 렌더 | 渲染 | ja 亦用 `レンダリング`（名词化），`レンダー` 更短适合菜单 |
+| 后处理 | `scene.postProcess` | Post-processing | ポストプロセス | 포스트 프로세싱 | 後處理 | ja 社区亦用 `ポストエフェクト` |
+| 物理 | `scene.physics` | Physics | 物理 | 물리 | 物理 | — |
+| 渲染预设 | `scene.renderPresets` | Render Presets | レンダープリセット | 렌더 프리셋 | 渲染預設 | — |
+| 保存场景 | `scene.saveScene` | Save Scene | シーン保存 | 장면 저장 | 儲存場景 | zh-TW 用「儲存」非「保存」（「保存」在繁中偏「保留」义） |
+| 软件 | `settings.software` | Software | ソフトウェア | 소프트웨어 | 軟體 | zh-TW 用「軟體」非「軟件」 |
+| 路径 | `settings.paths` | Paths | パス | 경로 | 路徑 | — |
+| 截图 | `settings.screenshot` | Screenshot | スクリーンショット | 스크린샷 | 截圖 | — |
+| 音频 | `settings.audio` | Audio | オーディオ | 오디오 | 音訊 | zh-TW 用「音訊」非「音頻」 |
+| 关于 | `settings.about` | About | バージョン情報 | 정보 | 關於 | ja 用 `バージョン情報`（版本信息）比直译 `について` 更符合设置页语境 |
+| 语言 | `settings.language` | Language | 言語 | 언어 | 語言 | — |
+| 确认 | `dialog.confirm` | Confirm | 確認 | 확인 | 確認 | — |
+| 取消 | `dialog.cancel` | Cancel | キャンセル | 취소 | 取消 | — |
+| 收藏 | `model-detail.faved` | Favorited | お気に入り | 즐겨찾기 | 收藏 | ja `お気に入り` 是社区惯用，ko 亦用 `즐겨찾기`（浏览器沿用） |
+| 标签 | `model-detail.tags` | Tags | タグ | 태그 | 標籤 | — |
+| 模型信息 | `model-detail.info` | Info | 情報 | 정보 | 模型資訊 | ja `情報`、ko `정보`、zh-TW `資訊`（非「信息」） |
+| 更换动作 | `motion.changeMotion` | Change Motion | モーション変更 | 모션 변경 | 更換動作 | — |
+
+**翻译决策原则**：
+
+1. **推荐译法是默认值，不是唯一合法值**。译者在 bundle 内可按上下文微调（如按钮用动词形、标题用名词形），但不得偏离概念语义。
+2. **社区惯用优先于直译**。如 ja「加载模型」推荐 `モデルを読み込む`（动词形），但 UI 空间紧张时可用 `モデル読込`（名词化）；ko「收藏」用 `즐겨찾기`（沿袭浏览器用语）而非生造 `즐겨찾기하기`。
+3. **zh-TW 用语差异须遵守**：保存→儲存、软件→軟體、音频→音訊、信息→資訊、视频→影片、数据→資料。这些是繁中用户的硬性预期，机翻常错。
+4. **新增 key 时本表与 bundle 同步**：CI 的 `i18n-check.mjs --strict` 守门 key 集合对齐，本表守门术语决策一致性。两者互补。
+
+### 2.3 sublabel 规范
 
 sublabel 是灰色辅助说明，分三种类型：
 
@@ -84,7 +124,7 @@ sublabel 是灰色辅助说明，分三种类型：
 
 **禁止**：技术术语裸露（如 "PMX 元数据" → 改为 "模型名称与描述"）
 
-### 2.3 底部导航栏
+### 2.4 底部导航栏
 
 | 按钮 | 标签 | 图标 | data-hint |
 |------|------|------|-----------|
