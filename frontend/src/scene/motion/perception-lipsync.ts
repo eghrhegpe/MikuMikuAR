@@ -3,7 +3,7 @@
 import { getProcBeatDetector } from './proc-motion-bridge';
 import { isAudioPlaying, getAudioPath } from '@/outfit/audio';
 import { findLipMorph, findAllLipMorphs, amplitudeToWeight } from '@/motion-algos/lipsync';
-import type { PerceptionState } from './perception-shared';
+import type { PerceptionState, MmdModelLike } from './perception-shared';
 
 /** 人声频段范围（与 lipsync-bridge.ts 一致） */
 const VOICE_BIN_START = 10;
@@ -27,7 +27,7 @@ let _smoothHigh = 0;
 let _lastLipSyncAudioPath = '';
 
 export function _applyLipSync(
-    mmdModel: any,
+    mmdModel: MmdModelLike,
     time: number,
     enabled: boolean,
     perceptionModelId: string | null,
@@ -41,7 +41,7 @@ export function _applyLipSync(
     // 关闭时复位 morph influence（防残留冻结，与 _applyMicroExpression 同款）
     if (!enabled) {
         if (_lipSyncMorphName) {
-            const old = morphManager.getMorphTargetByName?.(_lipSyncMorphName);
+            const old = morphManager.getTargetByName(_lipSyncMorphName);
             if (old) {
                 old.influence = 0;
             }
@@ -51,7 +51,7 @@ export function _applyLipSync(
             for (const key of ['close', 'pucker', 'smile'] as const) {
                 const name = _lipSyncMorphSet[key];
                 if (name) {
-                    const m = morphManager.getMorphTargetByName?.(name);
+                    const m = morphManager.getTargetByName(name);
                     if (m) {
                         m.influence = 0;
                     }
@@ -83,7 +83,7 @@ export function _applyLipSync(
             _smoothHigh = 0;
             // 衰减完成：复位所有口型 morph（open/close/pucker/smile）
             if (_lipSyncMorphName) {
-                const morph = morphManager.getMorphTargetByName?.(_lipSyncMorphName);
+                const morph = morphManager.getTargetByName(_lipSyncMorphName);
                 if (morph) {
                     morph.influence = 0;
                 }
@@ -92,7 +92,7 @@ export function _applyLipSync(
                 for (const key of ['close', 'pucker', 'smile'] as const) {
                     const name = _lipSyncMorphSet[key];
                     if (name) {
-                        const m = morphManager.getMorphTargetByName?.(name);
+                        const m = morphManager.getTargetByName(name);
                         if (m) {
                             m.influence = 0;
                         }
@@ -108,7 +108,10 @@ export function _applyLipSync(
     const modelId = perceptionModelId;
     if (modelId !== _lastLipSyncModelId) {
         _lastLipSyncModelId = modelId;
-        const morphNames = morphManager.getMorphTargetNames?.() || [];
+        const morphNames: string[] = [];
+        for (let i = 0; i < morphManager.numTargets; i++) {
+            morphNames.push(morphManager.getTarget(i).name);
+        }
         _lastLipSyncMorphNames = morphNames;
         _lastLipSyncMorphNameSet = new Set(morphNames);
         _lipSyncMorphName = null;
@@ -141,7 +144,7 @@ export function _applyLipSync(
         perceptionState.lipSyncSensitivity,
         perceptionState.lipSyncIntensity
     );
-    const openMorph = morphManager.getMorphTargetByName?.(_lipSyncMorphName);
+    const openMorph = morphManager.getTargetByName(_lipSyncMorphName);
     if (openMorph) {
         openMorph.influence = openWeight;
     }
@@ -155,7 +158,7 @@ export function _applyLipSync(
                 perceptionState.lipSyncSensitivity,
                 perceptionState.lipSyncIntensity
             );
-            const closeMorph = morphManager.getMorphTargetByName?.(_lipSyncMorphSet.close);
+            const closeMorph = morphManager.getTargetByName(_lipSyncMorphSet.close);
             if (closeMorph) {
                 closeMorph.influence = closeWeight;
             }
@@ -167,7 +170,7 @@ export function _applyLipSync(
                 perceptionState.lipSyncSensitivity,
                 perceptionState.lipSyncIntensity
             );
-            const puckerMorph = morphManager.getMorphTargetByName?.(_lipSyncMorphSet.pucker);
+            const puckerMorph = morphManager.getTargetByName(_lipSyncMorphSet.pucker);
             if (puckerMorph) {
                 puckerMorph.influence = puckerWeight;
             }
@@ -177,7 +180,7 @@ export function _applyLipSync(
     // smile：高频能量大时轻微微笑（模拟说话表情）
     if (_lipSyncMorphSet?.smile) {
         const smileWeight = Math.max(0, openWeight * 0.3 - 0.1);
-        const smileMorph = morphManager.getMorphTargetByName?.(_lipSyncMorphSet.smile);
+        const smileMorph = morphManager.getTargetByName(_lipSyncMorphSet.smile);
         if (smileMorph) {
             smileMorph.influence = smileWeight;
         }

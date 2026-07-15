@@ -129,6 +129,16 @@ export async function addVmdLayer(
         return null;
     }
 
+    // 重复检测：同名且同数据字节数的 VMD 不重复添加
+    // ArrayBuffer 版没有路径，用 name + byteLength 作为近似去重键
+    const dup = inst.vmdLayers.find(
+        (l) => l.kind === 'vmd' && l.name === name && l.data.byteLength === data.byteLength
+    );
+    if (dup) {
+        setStatus(t('scene.vmd.layerExists', { name }), false);
+        return null;
+    }
+
     const layer: VmdLayer = {
         id: _nextLayerId(),
         name,
@@ -526,7 +536,9 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
     if (vmdEnabledLayers.length === 0) {
         if (hasBaseVmd) {
             const { loadVMDMotion } = await import('./vmd-loader');
-            if (_rebuildGenMap.get(modelId) !== gen) return;
+            if (_rebuildGenMap.get(modelId) !== gen) {
+                return;
+            }
             await loadVMDMotion(inst.vmdData, inst.vmdName, modelId);
         }
         return;
@@ -536,7 +548,9 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
     if (vmdEnabledLayers.length === 1 && !hasBaseVmd) {
         const layer = vmdEnabledLayers[0];
         const { loadVMDMotion } = await import('./vmd-loader');
-        if (_rebuildGenMap.get(modelId) !== gen) return;
+        if (_rebuildGenMap.get(modelId) !== gen) {
+            return;
+        }
         const loadData = layer.boneFilter?.length
             ? _filterVmdBones(layer.data, layer.boneFilter)
             : layer.data;

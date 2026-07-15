@@ -11,6 +11,7 @@ import {
     matchBone,
 } from '../../motion-algos/proc-motion-shared';
 import { _q } from './perception-shared';
+import type { MmdModelLike } from './perception-shared';
 
 /** 重心微动周期（秒，从 idle loopFrames=120@60fps 转换：120/60=2s） */
 const BALANCE_SWAY_PERIOD = 2.0;
@@ -58,14 +59,14 @@ export function _resetBalanceSwayState(): void {
     _lastSwayTime = 0;
 }
 
-export function _applyBalanceSway(mmdModel: any, time: number, enabled: boolean): void {
+export function _applyBalanceSway(mmdModel: MmdModelLike, time: number, enabled: boolean): void {
     const boneNames: string[] = mmdModel.runtimeBones.map((b: IMmdRuntimeBone) => b.name);
     const centerName = matchBone(boneNames, BONE_CENTER_CANDIDATES);
     const upper2Name = matchBone(boneNames, BONE_UPPER2_CANDIDATES);
     const waistName = matchBone(boneNames, BONE_WAIST_CANDIDATES);
     const allParentName = matchBone(boneNames, BONE_ALLPARENT_CANDIDATES);
 
-    // 关闭时撤销 center position 的 bob 残留（恢复真实基准 position.y，避免塌到地面）
+    // 关闭时撤销 center position 的 bob 残留 + 重置增量状态（避免残留冻结）
     if (!enabled) {
         if (_lastBobY !== 0 && _swayCenterName) {
             const bone = mmdModel.runtimeBones.find(
@@ -75,8 +76,7 @@ export function _applyBalanceSway(mmdModel: any, time: number, enabled: boolean)
                 bone.linkedBone.position.y -= _lastBobY;
             }
         }
-        _lastBobY = 0;
-        _swayCenterName = null;
+        _resetBalanceSwayState();
         _lastBalanceSwayBones = [];
         return;
     }
@@ -101,7 +101,10 @@ export function _applyBalanceSway(mmdModel: any, time: number, enabled: boolean)
             // 避免 Slerp 平均吃掉非零基准旋转 / VMD 旋转，同时控制振幅感知）
             const deltaCenterRz = (rz - _lastCenterRz) * SWAY_DELTA_FACTOR;
             const deltaCenterRx = (rx - _lastCenterRx) * SWAY_DELTA_FACTOR;
-            if ((deltaCenterRz !== 0 || deltaCenterRx !== 0) && bone.linkedBone.rotationQuaternion) {
+            if (
+                (deltaCenterRz !== 0 || deltaCenterRx !== 0) &&
+                bone.linkedBone.rotationQuaternion
+            ) {
                 const deltaQ = _q().copyFrom(
                     Quaternion.FromEulerAngles(deltaCenterRx, 0, deltaCenterRz)
                 );

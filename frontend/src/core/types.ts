@@ -327,6 +327,8 @@ export interface UIState {
     materialCategoryMap?: Record<string, string>;
     screenshotFormat?: 'image/png' | 'image/jpeg' | 'image/webp';
     screenshotQuality?: number;
+    /** 缩略图分辨率（最长边 px），默认 512 */
+    thumbnailResolution?: number;
     /** 截图默认保存目录（用户选择后持久化） */
     screenshotDir?: string;
     autoCameraEnabled?: boolean;

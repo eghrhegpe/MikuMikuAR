@@ -7,7 +7,7 @@ import { Camera } from '@babylonjs/core/Cameras/camera';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 
 import { isARActive } from '../ar/ar-camera';
-import type { MeshMetadata, GazeConfig } from './perception-shared';
+import type { MeshMetadata, GazeConfig, MmdModelLike } from './perception-shared';
 import { _v3, _q, _isWasmRuntime } from './perception-shared';
 import { _applyHeadGazeWasm, _applyEyeGazeWasm } from './perception-gaze-wasm';
 import { _applyHeadGazeJS, _applyEyeGazeJS } from './perception-gaze-js';
@@ -91,7 +91,7 @@ export function _clampEyeGazeTarget(
 
 /** 统一调度入口（perception.ts observer 调用） */
 export function _applyGaze(
-    mmdModel: any,
+    mmdModel: MmdModelLike,
     cam: Camera,
     config: { headEnabled: boolean; eyeEnabled: boolean }
 ): void {
@@ -99,12 +99,11 @@ export function _applyGaze(
         return;
     }
 
-    const headRuntime = mmdModel.runtimeBones.find(
-        (b: IMmdRuntimeBone) =>
-            b.name === '頭' || b.name === '首' || b.name === 'head' || b.name === 'Head'
+    const headRuntime = mmdModel.runtimeBones.find((b: IMmdRuntimeBone) =>
+        HEAD_BONE_CANDIDATES.includes(b.name)
     );
     const eyeRuntimes: IMmdRuntimeBone[] = mmdModel.runtimeBones.filter((b: IMmdRuntimeBone) =>
-        ['右目', '左目', 'Eye_R', 'Eye_L', 'eye_r', 'eye_l', 'RightEye', 'LeftEye'].includes(b.name)
+        EYE_BONE_CANDIDATES.includes(b.name)
     );
 
     const needHead = config.headEnabled && !!headRuntime;
@@ -135,6 +134,20 @@ export function _applyGaze(
     }
 }
 
+/** 头部骨骼候选名（JS/WASM 路径共用） */
+const HEAD_BONE_CANDIDATES = ['頭', '首', 'head', 'Head'];
+/** 眼球骨骼候选名（JS/WASM 路径共用） */
+const EYE_BONE_CANDIDATES = [
+    '右目',
+    '左目',
+    'Eye_R',
+    'Eye_L',
+    'eye_r',
+    'eye_l',
+    'RightEye',
+    'LeftEye',
+];
+
 /** WASM 模式下的 gaze 应用（供 wasm-layers-blender.ts 调用） */
 export function applyGazeWasm(
     bones: readonly IMmdRuntimeBone[],
@@ -145,8 +158,9 @@ export function applyGazeWasm(
         return;
     }
 
-    const headRuntime = bones.find((b) => b.name === '頭' || b.name === '首');
-    const eyeRuntimes = bones.filter((b) => b.name.includes('目'));
+    // 与 _applyGaze 使用相同的骨骼候选列表，避免 WASM 路径漏匹配英文名骨骼
+    const headRuntime = bones.find((b) => HEAD_BONE_CANDIDATES.includes(b.name));
+    const eyeRuntimes = bones.filter((b) => EYE_BONE_CANDIDATES.includes(b.name));
     const needHead = config.headEnabled && !!headRuntime;
     const needEye = config.eyeEnabled && eyeRuntimes.length > 0;
 

@@ -24,6 +24,7 @@ import type { PopupLevel } from '../core/config';
 import type { MenuNode } from './menu-schema';
 import { SETTINGS_ACTION } from './settings-targets';
 import { applyUIAppearanceDom, formatBytes, type SettingsMenuHandle } from './settings-shared';
+import { getAllShortcuts, formatKeyBinding } from '../core/shortcut-registry';
 import { setPerformanceMode } from '../scene/render/performance';
 import { engine, applyFrameControl } from '../scene/scene';
 import { refreshCameraUserSettings } from '../scene/camera/camera';
@@ -117,18 +118,17 @@ function resetAllSettings(getSettingsMenu: () => SettingsMenuHandle): void {
 }
 
 function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
-    const shortcuts: Array<{ key: string; desc: string }> = [
-        { key: 'Ctrl+1', desc: t('settings.about.shortcuts.modelLib') },
-        { key: 'Ctrl+2', desc: t('settings.about.shortcuts.motionPanel') },
-        { key: 'Ctrl+3', desc: t('settings.about.shortcuts.sceneSettings') },
-        { key: 'Ctrl+4', desc: t('settings.about.shortcuts.envSettings') },
-        { key: 'Ctrl+5', desc: t('settings.about.shortcuts.settings') },
-        { key: 'Space', desc: t('settings.about.shortcuts.playPause') },
-        { key: 'Esc', desc: t('settings.about.shortcuts.closePopup') },
-        { key: '← / →', desc: t('settings.about.shortcuts.seek') },
+    // 从注册表动态读取快捷键，避免硬编码漂移
+    const registeredShortcuts = getAllShortcuts().map((s) => ({
+        key: formatKeyBinding(s.currentKey, s.currentCtrl, s.currentShift, s.currentAlt),
+        desc: t(s.label),
+    }));
+    // 补充：非注册表的连续移动控制（WASD/Q-E 不适合进 shortcut-registry）
+    const extraControls: Array<{ key: string; desc: string }> = [
         { key: 'WASD', desc: t('settings.about.shortcuts.freefly') },
         { key: 'Q / E', desc: t('settings.about.shortcuts.freeflyUpDown') },
     ];
+    const shortcuts = [...registeredShortcuts, ...extraControls];
 
     return [
         // 卡片 1：版本信息

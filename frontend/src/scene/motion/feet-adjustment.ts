@@ -319,4 +319,5 @@ export function stopFeetAdjustment(): void {
         _observerHandle = null;
     }
     _cache.clear();
+    _lastTickTime = 0; // 重置时间戳，避免重启后首帧 dt 异常
 }

@@ -35,8 +35,9 @@ function getScene() {
 // 缓存已加载的同名伴音，避免重复加载
 const _companionAudioCache = new Set<string>();
 
-// Generation counter: 每次 loadVMDMotion 调用递增，await 后检查是否过期
-let _vmdLoadGeneration = 0;
+// Generation counter: per-model，每次 loadVMDMotion 调用递增，await 后检查是否过期
+// 全局单例会导致多模型同时加载时互相干扰（慢的被错误判定为过期）
+const _vmdLoadGenMap = new Map<string, number>();
 
 // VMD 签名：前 25 字节为 "Vocaloid Motion Data 0002"，共 30 字节（含 \0 填充）
 const VMD_SIGNATURE = 'Vocaloid Motion Data 0002';
@@ -93,7 +94,9 @@ export async function loadVMDMotion(
         setStatus(t('scene.vmd.targetNotFound'), false);
         return;
     }
-    const capturedGen = ++_vmdLoadGeneration;
+    const prevGen = _vmdLoadGenMap.get(targetId) ?? 0;
+    const capturedGen = prevGen + 1;
+    _vmdLoadGenMap.set(targetId, capturedGen);
     try {
         // Load VMD from buffer using VmdLoader
         const vmdLoader = new VmdLoader(scene);
@@ -102,8 +105,8 @@ export async function loadVMDMotion(
         // 用于释放解析器内部 ArrayBuffer 引用，避免大 VMD 文件内存驻留
         (vmdLoader as unknown as { dispose?: () => void }).dispose?.();
 
-        // 检查是否在 await 期间有新的 loadVMDMotion 调用，过期则丢弃
-        if (_vmdLoadGeneration !== capturedGen) {
+        // 检查是否在 await 期间有新的 loadVMDMotion 调用（同模型），过期则丢弃
+        if (_vmdLoadGenMap.get(targetId) !== capturedGen) {
             logWarn('vmd-loader', 'Stale loadVMDMotion result discarded:', name);
             setStatus(t('scene.vmd.loadFailed'), false);
             return;
@@ -177,7 +180,8 @@ export async function loadVMDMotion(
             const { renderInstanceThumbnail } = await import('../manager/thumbnail-capture');
             const mm = inst.mmdModel;
             const anim = mm
-                ? (mm as { currentAnimation?: { animate?: (f: number) => void } | null }).currentAnimation
+                ? (mm as { currentAnimation?: { animate?: (f: number) => void } | null })
+                      .currentAnimation
                 : null;
             if (anim && typeof anim.animate === 'function') {
                 // 仅给本模型按指定帧摆姿（animate 为局部操作，不触发运行时可观察量、不改全局时钟）。
@@ -231,7 +235,13 @@ export async function loadVMDFromPath(
             const vmdDisplayName = vmdName.replace(/\.vmd$/i, '');
 
             if (mmdRuntime && (targetModelId || focusedMmdModel())) {
-                await loadVMDMotion(vmdData, vmdName.replace(/\.vmd$/i, ''), targetModelId, signal, path);
+                await loadVMDMotion(
+                    vmdData,
+                    vmdName.replace(/\.vmd$/i, ''),
+                    targetModelId,
+                    signal,
+                    path
+                );
                 const foc = targetModelId ? modelRegistry.get(targetModelId) : focusedModel();
                 if (foc) {
                     foc.vmdPath = path;
@@ -245,7 +255,8 @@ export async function loadVMDFromPath(
             addRecentMotion(path, vmdDisplayName);
 
             // 尝试加载同目录下的同名音频文件
-            await _tryLoadCompanionAudio(path, url);
+            const audioTargetId = targetModelId || focusedModelId;
+            await _tryLoadCompanionAudio(path, url, audioTargetId);
         } catch (err) {
             // 中止（AbortError）不算失败：loadVMDMotion 在 signal 中止时抛此错，
             // 此时 vmdPath/addRecentMotion/音频等副作用已被 throw 跳过，无需报错 UI
@@ -259,7 +270,11 @@ export async function loadVMDFromPath(
 }
 
 /** 尝试加载 VMD 同目录下的同名音频文件（.mp3/.wav/.ogg/.flac）。 */
-async function _tryLoadCompanionAudio(vmdPath: string, vmdUrl: string): Promise<void> {
+async function _tryLoadCompanionAudio(
+    vmdPath: string,
+    vmdUrl: string,
+    targetModelId?: string
+): Promise<void> {
     if (!isAutoLoadCompanionAudioEnabled()) {
         return;
     }
@@ -271,6 +286,11 @@ async function _tryLoadCompanionAudio(vmdPath: string, vmdUrl: string): Promise<
     if (_companionAudioCache.has(basePath)) {
         return;
     }
+
+    // 记录加载前的 generation 值，加载完成后校验是否过期
+    // （用户在加载期间切换了 VMD 则丢弃本次伴音结果）
+    const genBefore = _vmdLoadGenMap.get(targetModelId || '') ?? 0;
+
     const exts = ['.mp3', '.wav', '.ogg', '.flac', '.wma'];
 
     // 并行 HEAD 探针，取首个成功的扩展名（Promise.any 只取最快的成功结果）
@@ -287,6 +307,13 @@ async function _tryLoadCompanionAudio(vmdPath: string, vmdUrl: string): Promise<
 
     try {
         const { audioPath, audioName } = await Promise.any(probes);
+
+        // 竞态检查：加载期间模型 VMD 是否被切换
+        const tid = targetModelId || '';
+        if (tid && _vmdLoadGenMap.get(tid) !== genBefore) {
+            return; // VMD 已被切换，丢弃本次伴音
+        }
+
         await loadAudioFile(audioPath);
         _companionAudioCache.add(basePath);
         setStatus(t('scene.vmd.loadedWithAudio', { name: audioName }), true);

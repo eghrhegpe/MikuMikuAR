@@ -553,30 +553,26 @@ func (a *App) DownloadFromPlaza(fileURL string, fileName string) (*PlazaDownload
 			return nil, fmt.Errorf("download returned status %d", resp.StatusCode)
 		}
 
-		// Determine target directory from extension
+		// Determine target directory from extension — use GetPath to respect overrides
 		cfg, err := a.GetConfig()
 		if err != nil {
 			return nil, fmt.Errorf("read config: %w", err)
 		}
-		root := cfg.ResourceRoot
-		if root == "" {
-			root = DefaultResourceRoot()
-		}
 
 		ext := lowerExt(fileName)
-		var subdir string
+		var category string
 		switch ext {
 		case ".pmx", ".zip":
-			subdir = "model"
+			category = "model"
 		case ".vmd":
-			subdir = "motion"
+			category = "motion"
 		case ".vpd":
-			subdir = "pose"
+			category = "pose"
 		default:
-			subdir = "model"
+			category = "model"
 		}
 
-		destDir := filepath.Join(root, subdir)
+		destDir := a.GetPath(cfg, mapCategoryKey(category))
 		if err := os.MkdirAll(destDir, 0o755); err != nil {
 			return nil, fmt.Errorf("create dir %s: %w", destDir, err)
 		}

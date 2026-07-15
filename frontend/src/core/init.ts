@@ -267,6 +267,9 @@ async function restoreUIState(): Promise<void> {
     if (s.screenshotQuality !== undefined) {
         uiState.screenshotQuality = s.screenshotQuality;
     }
+    if (s.thumbnailResolution !== undefined) {
+        uiState.thumbnailResolution = s.thumbnailResolution;
+    }
     if (s.screenshotDir !== undefined) {
         uiState.screenshotDir = s.screenshotDir;
     }

@@ -597,15 +597,14 @@ func (a *App) BundleScene(targetPath string, sceneJSON string, assetPaths []stri
 		return fmt.Errorf("write scene.json: %w", err)
 	}
 
-	// Determine the library root for computing relative paths
+	// Determine the best library root for computing relative paths.
+	// We try all category paths (respecting overrides) and pick the longest
+	// matching prefix, so models in override directories keep their structure.
 	cfg, err := a.GetConfig()
 	if err != nil {
 		return err
 	}
-	libRoot := ""
-	if cfg.ResourceRoot != "" {
-		libRoot = cfg.ResourceRoot
-	}
+	libRoot := a.findBestLibRoot(cfg, assetPaths)
 
 	// Expand asset paths: a PMX references textures/material maps by relative
 	// paths that are NOT listed in the scene file. Walk each asset's parent
@@ -667,6 +666,36 @@ func expandBundleAssets(assetPaths []string) []string {
 		})
 	}
 	return out
+}
+
+// findBestLibRoot finds the longest directory path that is a prefix of most
+// asset paths among all category paths (respecting OverridePaths).
+// Returns empty string if no root contains any of the paths.
+func (a *App) findBestLibRoot(cfg *Config, assetPaths []string) string {
+	candidates := []string{}
+	cats := []string{"pmx", "vmd", "audio", "stage", "prop", "environment", "md_dress", "setting"}
+	for _, cat := range cats {
+		candidates = append(candidates, a.GetPath(cfg, cat))
+	}
+	bestRoot := ""
+	bestCount := 0
+	for _, root := range candidates {
+		if root == "" {
+			continue
+		}
+		count := 0
+		rootNorm := filepath.ToSlash(root) + "/"
+		for _, p := range assetPaths {
+			if strings.HasPrefix(filepath.ToSlash(p), rootNorm) {
+				count++
+			}
+		}
+		if count > bestCount || (count == bestCount && len(root) > len(bestRoot)) {
+			bestRoot = root
+			bestCount = count
+		}
+	}
+	return bestRoot
 }
 
 // _bundleRelPath computes the relative path for a bundle asset.

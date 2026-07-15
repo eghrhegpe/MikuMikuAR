@@ -6,6 +6,7 @@
 // 各功能实现见 perception-*.ts 子模块。
 
 import type { Observer } from '@babylonjs/core/Misc/observable';
+import type { Scene } from '@babylonjs/core/scene';
 
 import { modelManager, focusedModelId, scene, triggerAutoSave } from '../scene';
 
@@ -46,7 +47,7 @@ export {
 
 let perceptionState: PerceptionState = { ...DEFAULT_PERCEPTION_STATE };
 let perceptionModelId: string | null = null;
-let perceptionObserver: Observer<any> | null = null;
+let perceptionObserver: Observer<Scene> | null = null;
 
 // ══════════════════════════════════════════════════════════════
 // 公共 API
@@ -81,47 +82,75 @@ export function activatePerception(modelId?: string): void {
     const mmdModel = inst.mmdModel;
 
     // ── 注册统一 observer ──
+    // 顺序约束：breath → blink → micro → balance → lipsync → gaze
+    // gaze 必须最后（读 balance/breath 写入后的骨骼状态）；
+    // lipsync 在 micro 之后（避免 smile morph 覆写冲突）。
+    // 单帧异常不中断下游（try/catch 包裹每步）。
     perceptionObserver = scene.onBeforeRenderObservable.add(() => {
         const time = performance.now() / 1000;
 
         // 1. 呼吸
         if (perceptionState.breathEnabled) {
-            _applyBreathing(mmdModel, time);
+            try {
+                _applyBreathing(mmdModel, time);
+            } catch (e) {
+                logWarn('perception', 'breathing 异常:', (e as Error)?.message);
+            }
         }
 
         // 2. 眨眼
         if (perceptionState.blinkEnabled) {
-            _applyBlinking(mmdModel, time);
+            try {
+                _applyBlinking(mmdModel, time);
+            } catch (e) {
+                logWarn('perception', 'blinking 异常:', (e as Error)?.message);
+            }
         }
 
         // 3. 微表情（无条件调用，内部处理关闭/neutral 复位）
-        _applyMicroExpression(
-            mmdModel,
-            time,
-            perceptionState.microExpressionEnabled,
-            perceptionState.emotion
-        );
+        try {
+            _applyMicroExpression(
+                mmdModel,
+                time,
+                perceptionState.microExpressionEnabled,
+                perceptionState.emotion
+            );
+        } catch (e) {
+            logWarn('perception', 'micro-expression 异常:', (e as Error)?.message);
+        }
 
         // 4. 重心微动（无条件调用，内部处理关闭复位）
-        _applyBalanceSway(mmdModel, time, perceptionState.balanceSwayEnabled);
+        try {
+            _applyBalanceSway(mmdModel, time, perceptionState.balanceSwayEnabled);
+        } catch (e) {
+            logWarn('perception', 'balance 异常:', (e as Error)?.message);
+        }
 
         // 5. Lip-sync（无条件调用，内部处理关闭复位）
-        _applyLipSync(
-            mmdModel,
-            time,
-            perceptionState.lipSyncEnabled,
-            perceptionModelId,
-            perceptionState
-        );
+        try {
+            _applyLipSync(
+                mmdModel,
+                time,
+                perceptionState.lipSyncEnabled,
+                perceptionModelId,
+                perceptionState
+            );
+        } catch (e) {
+            logWarn('perception', 'lipsync 异常:', (e as Error)?.message);
+        }
 
         // 6. 头部跟随 + 眼部跟随（gaze）
         if (perceptionState.headTrackingEnabled || perceptionState.eyeTrackingEnabled) {
             const cam = scene.activeCamera;
             if (cam) {
-                _applyGaze(mmdModel, cam, {
-                    headEnabled: perceptionState.headTrackingEnabled,
-                    eyeEnabled: perceptionState.eyeTrackingEnabled,
-                });
+                try {
+                    _applyGaze(mmdModel, cam, {
+                        headEnabled: perceptionState.headTrackingEnabled,
+                        eyeEnabled: perceptionState.eyeTrackingEnabled,
+                    });
+                } catch (e) {
+                    logWarn('perception', 'gaze 异常:', (e as Error)?.message);
+                }
             }
         }
     });

@@ -26,14 +26,24 @@ interface _OverrideSlot {
     enabled: boolean;
 }
 
-// ── 单例管理器 ──
+// ── 管理器（per-model） ──
 
 let _observerHandle: (() => void) | null = null; // unregister function
-const _overrideMap = new Map<string, _OverrideSlot>();
+const _overrideMaps = new Map<string, Map<string, _OverrideSlot>>();
 const _qPool = [new Quaternion(), new Quaternion(), new Quaternion(), new Quaternion()];
 let _qIdx = 0;
 function _q(): Quaternion {
     return _qPool[_qIdx++ % _qPool.length];
+}
+
+/** 懒加载获取指定模型的 override map */
+function _getOverrideMap(modelId: string): Map<string, _OverrideSlot> {
+    let map = _overrideMaps.get(modelId);
+    if (!map) {
+        map = new Map();
+        _overrideMaps.set(modelId, map);
+    }
+    return map;
 }
 
 // ── 工具：欧拉角 → 四元数（ZYX 顺序：yaw→pitch→roll） ──
@@ -86,6 +96,18 @@ function _propagateChildrenWasm(
 }
 
 // ── 核心 API ──
+// 所有 API 均支持可选 modelId 参数，不传则作用于当前聚焦模型。
+// 内部使用 per-model Map 存储，避免多模型场景下互相串扰。
+
+function _resolveModelId(modelId?: string): string | null {
+    if (modelId) {
+        return modelId;
+    }
+    // 懒加载 focusedModelId（避免静态循环依赖）
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const sceneMod = require('../scene');
+    return sceneMod.focusedModelId ?? null;
+}
 
 /**
  * 设置单条骨骼覆盖。
@@ -93,14 +115,20 @@ function _propagateChildrenWasm(
  * @param euler 欧拉角（度）[pitch, yaw, roll]
  * @param weight 混合权重 0–1
  * @param enabled 是否启用
+ * @param modelId 目标模型 ID（可选，默认聚焦模型）
  */
 export function setBoneOverride(
     boneName: string,
     euler: [number, number, number],
     weight: number,
-    enabled = true
+    enabled = true,
+    modelId?: string
 ): void {
-    _overrideMap.set(boneName, {
+    const mid = _resolveModelId(modelId);
+    if (!mid) {
+        return;
+    }
+    _getOverrideMap(mid).set(boneName, {
         quat: _eulerToQuat(euler[0], euler[1], euler[2]),
         weight: clamp01(weight),
         enabled,
@@ -114,9 +142,14 @@ export function setBoneOverrideQuat(
     boneName: string,
     quat: Quaternion,
     weight: number,
-    enabled = true
+    enabled = true,
+    modelId?: string
 ): void {
-    _overrideMap.set(boneName, {
+    const mid = _resolveModelId(modelId);
+    if (!mid) {
+        return;
+    }
+    _getOverrideMap(mid).set(boneName, {
         quat: quat.clone(),
         weight: clamp01(weight),
         enabled,
@@ -124,19 +157,35 @@ export function setBoneOverrideQuat(
 }
 
 /** 清除指定骨骼的覆盖。 */
-export function clearBoneOverride(boneName: string): void {
-    _overrideMap.delete(boneName);
+export function clearBoneOverride(boneName: string, modelId?: string): void {
+    const mid = _resolveModelId(modelId);
+    if (!mid) {
+        return;
+    }
+    _getOverrideMap(mid).delete(boneName);
 }
 
 /** 清除所有骨骼覆盖。 */
-export function clearAllOverrides(): void {
-    _overrideMap.clear();
+export function clearAllOverrides(modelId?: string): void {
+    const mid = _resolveModelId(modelId);
+    if (!mid) {
+        return;
+    }
+    _getOverrideMap(mid).clear();
 }
 
 /** 获取当前所有覆盖的条目列表（用于持久化/UI 展示）。 */
-export function getAllOverrides(): BoneOverrideEntry[] {
+export function getAllOverrides(modelId?: string): BoneOverrideEntry[] {
+    const mid = _resolveModelId(modelId);
+    if (!mid) {
+        return [];
+    }
+    const map = _overrideMaps.get(mid);
+    if (!map) {
+        return [];
+    }
     const result: BoneOverrideEntry[] = [];
-    for (const [boneName, slot] of _overrideMap) {
+    for (const [boneName, slot] of map) {
         if (!slot.enabled) {
             continue;
         }
@@ -159,10 +208,19 @@ export function getAllOverrides(): BoneOverrideEntry[] {
 /**
  * 从持久化的条目列表批量恢复覆盖。
  */
-export function restoreOverrides(entries: BoneOverrideEntry[]): void {
-    _overrideMap.clear();
+export function restoreOverrides(entries: BoneOverrideEntry[], modelId?: string): void {
+    const mid = _resolveModelId(modelId);
+    if (!mid) {
+        return;
+    }
+    const map = _getOverrideMap(mid);
+    map.clear();
     for (const e of entries) {
-        setBoneOverride(e.boneName, e.euler, e.weight, e.enabled);
+        map.set(e.boneName, {
+            quat: _eulerToQuat(e.euler[0], e.euler[1], e.euler[2]),
+            weight: clamp01(e.weight),
+            enabled: e.enabled,
+        });
     }
 }
 
@@ -181,7 +239,13 @@ export function startBoneOverride(
     } // 已启动
 
     const callback = () => {
-        if (_overrideMap.size === 0) {
+        // 只对当前聚焦模型生效（per-model 存储，单模型应用）
+        const focusedId = _resolveModelId();
+        if (!focusedId) {
+            return;
+        }
+        const overrideMap = _overrideMaps.get(focusedId);
+        if (!overrideMap || overrideMap.size === 0) {
             return;
         }
         const bones = getRuntimeBones();
@@ -191,7 +255,7 @@ export function startBoneOverride(
 
         const isWasm = _isWasmRuntime(bones[0]);
 
-        for (const [boneName, slot] of _overrideMap) {
+        for (const [boneName, slot] of overrideMap) {
             if (!slot.enabled) {
                 continue;
             }
