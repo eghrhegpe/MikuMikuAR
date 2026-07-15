@@ -376,8 +376,7 @@ function renderOrbitParams(container: HTMLElement): void {
     } else if (boneLock.enabled && boneNames.length === 0) {
         // 有锁定但无骨骼（例如模型未加载）——显示提示
         const hint = document.createElement('div');
-        hint.className = 'cs-hint';
-        hint.style.cssText = 'font-size:11px;opacity:0.5;padding:4px 0;';
+        hint.className = 'cs-hint weak-text';
         hint.textContent = t('motion.boneOverride.noModel');
         container.appendChild(hint);
     }

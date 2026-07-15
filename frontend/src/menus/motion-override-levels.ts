@@ -339,7 +339,7 @@ function _createSlider(
     slider.max = String(max);
     slider.step = String(step);
     slider.value = String(defaultValue);
-    slider.style.cssText = 'flex:1;height:3px;';
+    slider.className = 'slider-track';
 
     const valueLabel = document.createElement('span');
     valueLabel.textContent = String(defaultValue);

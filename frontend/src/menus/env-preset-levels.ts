@@ -59,7 +59,7 @@ export function renderUserEnvPresets(container: HTMLElement): void {
         if (entries.length === 0) {
             const empty = document.createElement('div');
             empty.textContent = t('env-preset.noCustom');
-            empty.style.cssText = 'opacity:0.5;font-size:11px;padding:4px 0;';
+            empty.className = 'weak-text';
             listHost.appendChild(empty);
             return;
         }
