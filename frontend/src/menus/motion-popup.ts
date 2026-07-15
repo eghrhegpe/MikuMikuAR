@@ -110,7 +110,8 @@ function buildActionBindingSchema(id: string): MenuNode[] {
                             const level = stackRegistry.buildLevel!(
                                 getBrowseDir('vmd'),
                                 t('motion.motionLibrary'),
-                                (m) => m.format === 'vmd'
+                                (m) => m.format === 'vmd',
+                                getMotionMenu() ?? undefined
                             );
                             level.label = t('motion.bindMotionTo', { name: inst.name });
                             if (getMotionMenu()) {
@@ -136,7 +137,8 @@ function buildActionBindingSchema(id: string): MenuNode[] {
                         const level = stackRegistry.buildLevel!(
                             getBrowseDir('vpd'),
                             t('motion.poseLibrary'),
-                            (m) => m.format === 'vpd'
+                            (m) => m.format === 'vpd',
+                            getMotionMenu() ?? undefined
                         );
                         level.label = t('motion.poseTo', { name: inst.name });
                         if (getMotionMenu()) {
@@ -564,7 +566,8 @@ function motionOnItemClick(row: PopupRow): void {
                     const level = stackRegistry.buildLevel!(
                         getBrowseDir('vpd'),
                         t('motion.poseLibrary'),
-                        (m) => m.format === 'vpd'
+                        (m) => m.format === 'vpd',
+                        getMotionMenu() ?? undefined
                     );
                     level.label = t('motion.poseTo', { name: inst.name });
                     if (getMotionMenu()) {
@@ -587,7 +590,8 @@ function motionOnItemClick(row: PopupRow): void {
         const level = stackRegistry.buildLevel!(
             getBrowseDir('audio'),
             t('motion.musicLibrary'),
-            (m) => m.format === 'audio'
+            (m) => m.format === 'audio',
+            getMotionMenu() ?? undefined
         );
         if (getMotionMenu()) {
             getMotionMenu()?.push(level);
