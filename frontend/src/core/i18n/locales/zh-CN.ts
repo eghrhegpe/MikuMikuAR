@@ -650,6 +650,9 @@ export const zhCN: Record<string, string> = {
     'library.loadingMotion': '⏳ 加载动作...',
     'library.vmdLoadFailed': '✗ VMD 加载失败: ',
     'library.unsupportedFormat': '不支持的文件格式（支持 PMX / ZIP / VMD）',
+    'library.gridView': '网格视图',
+    'library.listView': '列表视图',
+    'library.expandPanel': '展开资源库',
 
     // dialog — 跨平台对话框按钮/标题
     'dialog.confirm': '确定',
