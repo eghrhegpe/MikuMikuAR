@@ -1,4 +1,4 @@
-# GitHub Secrets 配置助手
+﻿# GitHub Secrets 配置助手
 # 用法: .\scripts\setup-github-secrets.ps1
 # 将本地 keystore 编码并输出设置 secrets 的命令
 

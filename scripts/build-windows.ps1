@@ -1,4 +1,4 @@
-# Windows 桌面构建脚本
+﻿# Windows 桌面构建脚本
 # 用法: .\scripts\build-windows.ps1 [-Production] [-Clean]
 param(
     [switch]$Production,
@@ -39,9 +39,9 @@ Write-Output "[build-windows] 版本: $version"
 # 同步 config.yml version（Wails 框架会读取此字段嵌入到 Windows 版本信息资源）
 $configYml = "$projectDir\build\config.yml"
 if (Test-Path $configYml) {
-    $content = Get-Content $configYml -Raw
+    $content = Get-Content $configYml -Raw -Encoding UTF8
     $content = $content -replace '(?m)^(\s+version:\s*)"([^"]*)"', "`$1`"$version`""
-    Set-Content $configYml $content -NoNewline
+    Set-Content $configYml $content -NoNewline -Encoding UTF8
     Write-Output "[build-windows] 同步 config.yml version -> $version"
 }
 
@@ -51,11 +51,11 @@ if (Test-Path $configYml) {
 # 应用「关于 / 检查更新」会显示 dev 而非真实版本。此处像同步 config.yml 一样在构建前替换占位符。）
 $winTaskfile = "$projectDir\build\windows\Taskfile.yml"
 if (Test-Path $winTaskfile) {
-    $tf = Get-Content $winTaskfile -Raw
+    $tf = Get-Content $winTaskfile -Raw -Encoding UTF8
     $tf = $tf -replace '\{\{\.APP_VERSION\}\}', $version
     $tf = $tf -replace '\{\{\.BUILD_TIME\}\}', (Get-Date -Format 'yyyy-MM-dd')
     $tf = $tf -replace '\{\{\.COMMIT_HASH\}\}', (git rev-parse --short HEAD 2>$null)
-    Set-Content $winTaskfile $tf -NoNewline
+    Set-Content $winTaskfile $tf -NoNewline -Encoding UTF8
     Write-Output "[build-windows] 同步 Taskfile 版本占位符 -> $version"
 }
 
