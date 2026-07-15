@@ -355,6 +355,13 @@ export async function loadPMXFile(
         _modelManager.register(inst);
         registeredId = id;
         if (effectiveSignal.aborted) {
+            // 清理已注册的模型和 wasm 资源，避免泄漏
+            try {
+                _modelManager.remove(registeredId);
+            } catch (e) {
+                logWarn('model-loader', 'Cleanup after abort:', e);
+            }
+            _mmdRuntime.destroyMmdModel(wasmModel);
             return null;
         }
         // 贴地：把模型根节点放到当前地面高度（heightmap 模式=真实起伏，其他模式=groundLevel）。
@@ -428,6 +435,13 @@ export async function loadPMXFile(
             }
         }
         if (effectiveSignal.aborted) {
+            // 清理已注册的模型和 wasm 资源，避免泄漏
+            try {
+                _modelManager.remove(registeredId);
+            } catch (e) {
+                logWarn('model-loader', 'Cleanup after abort:', e);
+            }
+            _mmdRuntime.destroyMmdModel(wasmModel);
             return null;
         }
 

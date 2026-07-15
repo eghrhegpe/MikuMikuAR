@@ -89,6 +89,8 @@ let _lastProbeRefresh = 0;
 // 卡通化渲染预设状态
 let _celShadingMode = false;
 let _originalRenderState: RenderState | null = null;
+/** 当前渲染过渡动画 observer（用于去重） */
+let _renderTransitionObserver: Observer<import('@babylonjs/core/scene').Scene> | null = null;
 
 // ======== 初始化与释放 ========
 
@@ -127,8 +129,8 @@ export function initRenderer(
             );
             // 强制刷新：直接渲染探针 cubeTexture 的 6 个面（语义明确，替代 refreshRate 1→0 双写黑魔法）
             _reflectionProbe!.cubeTexture.render();
-        } catch {
-            // Intentionally empty — refresh 失败不影响渲染
+        } catch (err) {
+            logWarn('renderer', 'ReflectionProbe 自动刷新失败:', err);
         }
     });
 }
@@ -387,7 +389,7 @@ function _applyRenderState(s: Partial<RenderState>): void {
     // GlowLayer + Bloom 互斥：Bloom weight > 0.5 时自动降低 Glow 强度防止白出
     if (s.glowEnabled !== undefined || gl !== undefined) {
         const targetGlow = gl ?? (_glowLayer ? _glowLayer.intensity : 0);
-        const bloomW = pipeline.bloomWeight ?? 0;
+        const bloomW = s.bloomWeight !== undefined ? s.bloomWeight : (pipeline.bloomWeight ?? 0);
         const adjustedGlow = bloomW > 0.5 ? targetGlow * (1 - (bloomW - 0.5)) : targetGlow;
         if (s.glowEnabled !== undefined) {
             if (s.glowEnabled && !_glowLayer && _scene) {
@@ -616,6 +618,14 @@ export function setRenderState(s: Partial<RenderState>): void {
 
 // ======== 平滑过渡 ========
 
+/** 取消当前渲染过渡动画（若有）。 */
+function _cancelRenderTransition(): void {
+    if (_renderTransitionObserver && _scene) {
+        _scene.onBeforeRenderObservable.remove(_renderTransitionObserver);
+        _renderTransitionObserver = null;
+    }
+}
+
 /**
  * 平滑过渡渲染状态到目标值，默认 2 秒。
  * 数值/颜色字段做 lerp 插值；布尔字段按阈值提前启用；枚举字段在动画结束时切换。
@@ -629,6 +639,9 @@ export function transitionRenderState(
     if (!pipeline || !_scene || !_triggerAutoSave) {
         return;
     }
+
+    // 取消上一次过渡动画，避免多个动画循环互相覆盖
+    _cancelRenderTransition();
 
     const source = getRenderState();
     const startTime = performance.now();
@@ -770,7 +783,7 @@ export function transitionRenderState(
         }
     };
 
-    _scene.onBeforeRenderObservable.addOnce(animLoop);
+    _renderTransitionObserver = _scene.onBeforeRenderObservable.addOnce(animLoop);
 }
 
 // ======== 相机重挂接 ========

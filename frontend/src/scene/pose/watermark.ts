@@ -50,7 +50,14 @@ export function applyWatermark(base64: string, format: string, quality: number):
         }
 
         const img = new Image();
+        // 超时守卫：防止畸形 base64 导致 Promise 永久 pending
+        const timeoutId = setTimeout(() => {
+            img.onload = null;
+            img.onerror = null;
+            reject(new Error('Watermark image load timeout'));
+        }, 10000);
         img.onload = () => {
+            clearTimeout(timeoutId);
             const canvas = document.createElement('canvas');
             canvas.width = img.width;
             canvas.height = img.height;
@@ -71,7 +78,6 @@ export function applyWatermark(base64: string, format: string, quality: number):
             ctx.textBaseline = 'bottom';
 
             const textWidth = ctx.measureText(_config.text).width;
-            const _padding = 16;
             const margin = 12;
 
             let x: number, y: number;
@@ -114,7 +120,10 @@ export function applyWatermark(base64: string, format: string, quality: number):
                 .replace(/^data:image\/\w+;base64,/, '');
             resolve(result);
         };
-        img.onerror = () => reject(new Error('Failed to load image for watermark'));
+        img.onerror = () => {
+            clearTimeout(timeoutId);
+            reject(new Error('Failed to load image for watermark'));
+        };
         img.src = `data:image/png;base64,${base64}`;
     });
 }

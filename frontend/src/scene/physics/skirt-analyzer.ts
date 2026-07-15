@@ -357,8 +357,8 @@ export function analyzeSkirt(
         skirtVertices = Array.from(visited);
         method = 'boundary-edge';
     } else {
-        // Fail-Fast: 无清晰底部 boundary edge 时直接抛错
-        throw new Error('skirt-analyzer: 无清晰底部 boundary edge，无法分析裙摆');
+        // 无清晰底部 boundary edge 时返回空结果，由调用方决定是否跳过
+        return { ...empty, boundaryEdgeCount: boundaryEdges.length, hasExistingSkirtBones: false };
     }
 
     if (skirtVertices.length < MIN_SKIRT_VERTICES) {

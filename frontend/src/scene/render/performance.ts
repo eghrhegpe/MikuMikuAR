@@ -179,14 +179,6 @@ function levelDiff(
     return { light, render };
 }
 
-/** 检查变化集合是否非空。 */
-function hasChanges(changes: {
-    light: Partial<LightState>;
-    render: Partial<RenderState>;
-}): boolean {
-    return Object.keys(changes.light).length > 0 || Object.keys(changes.render).length > 0;
-}
-
 // ======== Apply Degradation ========
 
 /**
@@ -253,7 +245,7 @@ function applyDegrade(level: DegradeLevel, force = false): void {
     const nextCfg = LEVEL_CONFIGS[level];
     const changes = levelDiff(prevCfg, nextCfg);
 
-    if (hasChanges(changes)) {
+    if (Object.keys(changes.light).length > 0 || Object.keys(changes.render).length > 0) {
         _suppressSnapshotReset = true;
         try {
             if (Object.keys(changes.light).length > 0) {

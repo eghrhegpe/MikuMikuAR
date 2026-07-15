@@ -24,7 +24,8 @@ import {
     isGizmoActive,
     getGizmoTargetId,
 } from '../render/transform-gizmo';
-import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { Vector3, Quaternion } from '@babylonjs/core/Maths/math.vector';
+import type { VPDBoneData, VPDMorphData } from '@/motion-algos/vpd-parser';
 
 // ======== Model Lifecycle ========
 
@@ -250,9 +251,6 @@ export function resetModelMorphs(id: string): void {
 }
 
 // ======== VPD Pose ========
-
-import type { VPDBoneData, VPDMorphData } from '@/motion-algos/vpd-parser';
-import { Quaternion } from '@babylonjs/core/Maths/math.vector';
 
 /**
  * 应用 VPD 姿势到模型（静态姿势，停掉 VMD 播放）。
