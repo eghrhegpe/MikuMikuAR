@@ -785,6 +785,9 @@ export const ja: Record<string, string> = {
     'library.loadingMotion': '⏳ モーションを読み込み中...',
     'library.vmdLoadFailed': '✗ VMD の読み込みに失敗: ',
     'library.unsupportedFormat': '未対応の形式です（PMX / ZIP / VMD のみ対応）',
+    'library.gridView': 'グリッド表示',
+    'library.listView': 'リスト表示',
+    'library.expandPanel': 'リソースを展開',
 
     // —— Outfit Variants ——
     'outfit.variant': 'テクスチャ置換',

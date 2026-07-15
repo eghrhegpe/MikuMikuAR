@@ -781,6 +781,9 @@ export const ko: Record<string, string> = {
     'library.loadingMotion': '⏳ 모션 로드 중...',
     'library.vmdLoadFailed': '✗ VMD 로드 실패: ',
     'library.unsupportedFormat': '지원되지 않는 형식 (PMX / ZIP / VMD만 가능)',
+    'library.gridView': '그리드 보기',
+    'library.listView': '리스트 보기',
+    'library.expandPanel': '리소스 펼치기',
 
     // —— Outfit Variants ——
     'outfit.variant': '텍스처 교체',

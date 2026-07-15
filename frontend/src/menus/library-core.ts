@@ -986,7 +986,7 @@ function addListViewToolbar(
     const expandBtn = document.createElement('button');
     expandBtn.className = 'btn btn-ghost btn-sm';
     expandBtn.textContent = '⛶';
-    expandBtn.title = t('library.fullscreen');
+    expandBtn.title = t('library.expandPanel');
     expandBtn.style.marginLeft = 'auto';
     expandBtn.addEventListener('click', () => {
         const currentTitle = items[0]?.label || '资源库';
@@ -1116,7 +1116,7 @@ function renderGridMode(
         const expandBtn = document.createElement('button');
         expandBtn.className = 'btn btn-ghost btn-sm';
         expandBtn.textContent = '⛶';
-        expandBtn.title = t('library.fullscreen');
+        expandBtn.title = t('library.expandPanel');
         expandBtn.style.marginLeft = 'auto';
         expandBtn.addEventListener('click', () => {
             // 从 items 中获取当前目录名作为标题

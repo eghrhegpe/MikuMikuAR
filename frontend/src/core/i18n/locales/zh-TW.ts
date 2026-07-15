@@ -772,6 +772,9 @@ export const zhTW: Record<string, string> = {
     'library.loadingMotion': '⏳ 載入動作中...',
     'library.vmdLoadFailed': '✗ VMD 載入失敗：',
     'library.unsupportedFormat': '不支援的檔案格式（僅限 PMX / ZIP / VMD）',
+    'library.gridView': '網格視圖',
+    'library.listView': '列表視圖',
+    'library.expandPanel': '展開資源庫',
 
     // —— Outfit Variants ——
     'outfit.variant': '替換紋理',

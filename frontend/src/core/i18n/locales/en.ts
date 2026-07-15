@@ -658,6 +658,9 @@ export const en: Record<string, string> = {
     'library.loadingMotion': '⏳ Loading motion...',
     'library.vmdLoadFailed': '✗ VMD load failed: ',
     'library.unsupportedFormat': 'Unsupported format (PMX / ZIP / VMD only)',
+    'library.gridView': 'Grid view',
+    'library.listView': 'List view',
+    'library.expandPanel': 'Expand library',
 
     // dialog — cross-platform dialog buttons/titles
     'dialog.confirm': 'Confirm',
