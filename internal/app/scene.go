@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"mikumikuar/internal/dialogs"
-	"mikumikuar/internal/util"
 )
 
 // ======== Scene File I/O ========

@@ -4,6 +4,27 @@
 
 import { clamp01 } from '@/core/utils';
 
+// ======== deriveLighting 系数常量 ========
+/** 默认太阳方位角（度），西北方向 */
+const DEFAULT_AZIMUTH_DEG = -45;
+/** 地平线渐变：太阳角度阈值（度）。低于 -5° 完全关闭方向光，高于 5° 完全开启 */
+const HORIZON_FADE_MIN = -5;
+const HORIZON_FADE_RANGE = 10;
+/** 方向光强度系数：亮度缩放倍率 + 最小保底值 */
+const DIR_INTENSITY_SCALE = 1.2;
+const DIR_INTENSITY_MIN = 0.15;
+/** 半球光强度系数：夜晚 / 白天各 6 个参数 */
+const HEMI_NIGHT_MAX = 0.8;
+const HEMI_NIGHT_BASE = 0.3;
+const HEMI_NIGHT_LUMINANCE_SCALE = 0.5;
+const HEMI_DAY_MAX = 1;
+const HEMI_DAY_BASE = 0.6;
+const HEMI_DAY_COMPENSATION_SCALE = 0.4;
+/** dirDiffuse 颜色缩放：目标亮度 + 最大缩放倍率 + 最小通道阈值 */
+const DIFFUSE_TARGET_BRIGHTNESS = 0.95;
+const DIFFUSE_MAX_SCALE = 2.0;
+const DIFFUSE_MIN_CHANNEL = 0.01;
+
 export interface EnvPreset {
     label: string;
     skyColorTop: [number, number, number];
@@ -34,21 +55,22 @@ export function calcLuminance(rgb: [number, number, number]): number {
 export function deriveLighting(
     skyColor: [number, number, number],
     sunAngle: number,
-    azimuthDeg: number = -45
+    azimuthDeg: number = DEFAULT_AZIMUTH_DEG
 ): DerivedLighting {
     const L = calcLuminance(skyColor);
 
-    // 渐变过渡：太阳角度 0°~10° 方向光平滑衰减，-5° 以下完全关闭
-    const horizonFade = clamp01((sunAngle + 5) / 10); // -5→0, 0→0.5, 5→1
-    const dirIntensity = horizonFade * Math.max(L * 1.2, 0.15);
-    // 半球光：白天随方向光反向补偿，夜晚保持足够亮度
+    // 渐变过渡：太阳角度在 [MIN, MIN+RANGE] 间平滑衰减
+    const horizonFade = clamp01((sunAngle - HORIZON_FADE_MIN) / HORIZON_FADE_RANGE);
+    const dirIntensity = horizonFade * Math.max(L * DIR_INTENSITY_SCALE, DIR_INTENSITY_MIN);
+    // 半球光：夜晚随亮度补偿，白天随方向光反向补偿
     const hemiIntensity =
-        sunAngle <= 0 ? Math.min(0.8, 0.3 + L * 0.5) : Math.min(1, 0.6 + (1 - dirIntensity) * 0.4);
+        sunAngle <= 0
+            ? Math.min(HEMI_NIGHT_MAX, HEMI_NIGHT_BASE + L * HEMI_NIGHT_LUMINANCE_SCALE)
+            : Math.min(HEMI_DAY_MAX, HEMI_DAY_BASE + (1 - dirIntensity) * HEMI_DAY_COMPENSATION_SCALE);
 
-    // dirDiffuse: preserve sky hue, scale so brightest channel ≈ 0.9-1.0
-    // (old formula: sky*0.3+0.7 → washed out to white)
+    // dirDiffuse: preserve sky hue, scale so brightest channel ≈ DIFFUSE_TARGET_BRIGHTNESS
     const maxCh = Math.max(skyColor[0], skyColor[1], skyColor[2]);
-    const scale = maxCh > 0.01 ? Math.min(2.0, 0.95 / maxCh) : 1.0;
+    const scale = maxCh > DIFFUSE_MIN_CHANNEL ? Math.min(DIFFUSE_MAX_SCALE, DIFFUSE_TARGET_BRIGHTNESS / maxCh) : 1.0;
     const dirDiffuse: [number, number, number] = [
         Math.min(skyColor[0] * scale, 1.0),
         Math.min(skyColor[1] * scale, 1.0),
@@ -83,8 +105,8 @@ export const TIME_OF_DAY_PRESETS: Record<string, EnvPreset & DerivedLighting> = 
         skyColorTop: [0.53, 0.71, 0.91],
         skyColorBot: [0.3, 0.5, 0.8],
         sunAngle: 75,
-        azimuth: -45,
-        ...deriveLighting([0.53, 0.71, 0.91], 75, -45),
+        azimuth: DEFAULT_AZIMUTH_DEG,
+        ...deriveLighting([0.53, 0.71, 0.91], 75, DEFAULT_AZIMUTH_DEG),
     },
     sunset: {
         label: '夕阳',
@@ -107,8 +129,8 @@ export const TIME_OF_DAY_PRESETS: Record<string, EnvPreset & DerivedLighting> = 
         skyColorTop: [0.4, 0.4, 0.45],
         skyColorBot: [0.25, 0.25, 0.3],
         sunAngle: 45,
-        azimuth: -45,
-        ...deriveLighting([0.4, 0.4, 0.45], 45, -45),
+        azimuth: DEFAULT_AZIMUTH_DEG,
+        ...deriveLighting([0.4, 0.4, 0.45], 45, DEFAULT_AZIMUTH_DEG),
     },
     neon: {
         label: '霓虹夜',
@@ -129,7 +151,7 @@ export function exportEnvPreset(p: EnvPreset): string {
             skyColorTop: p.skyColorTop,
             skyColorBot: p.skyColorBot,
             sunAngle: p.sunAngle,
-            azimuth: p.azimuth ?? -45,
+            azimuth: p.azimuth ?? DEFAULT_AZIMUTH_DEG,
         },
         null,
         2
@@ -148,7 +170,7 @@ export function importEnvPreset(json: string): (EnvPreset & DerivedLighting) | n
         ) {
             return null;
         }
-        const azimuth = typeof raw.azimuth === 'number' ? raw.azimuth : -45;
+        const azimuth = typeof raw.azimuth === 'number' ? raw.azimuth : DEFAULT_AZIMUTH_DEG;
         return {
             label: raw.label,
             skyColorTop: raw.skyColorTop,
