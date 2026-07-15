@@ -58,8 +58,7 @@ function buildPoseStudioSchema(): MenuNode[] {
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
                     const title = document.createElement('div');
-                    title.style.cssText =
-                        'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
+                    title.className = 'card-title';
                     title.textContent = t('motion.poseStudio.composition');
                     inner.appendChild(title);
 
@@ -99,8 +98,7 @@ function buildPoseStudioSchema(): MenuNode[] {
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
                     const title = document.createElement('div');
-                    title.style.cssText =
-                        'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
+                    title.className = 'card-title';
                     title.textContent = t('motion.poseStudio.posePreset');
                     inner.appendChild(title);
 
@@ -157,8 +155,7 @@ function buildPoseStudioSchema(): MenuNode[] {
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
                     const title = document.createElement('div');
-                    title.style.cssText =
-                        'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
+                    title.className = 'card-title';
                     title.textContent = t('motion.poseStudio.depthOfField');
                     inner.appendChild(title);
 
@@ -183,8 +180,7 @@ function buildPoseStudioSchema(): MenuNode[] {
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
                     const title = document.createElement('div');
-                    title.style.cssText =
-                        'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
+                    title.className = 'card-title';
                     title.textContent = t('motion.poseStudio.cameraPresets');
                     inner.appendChild(title);
 
@@ -245,8 +241,7 @@ function buildPoseStudioSchema(): MenuNode[] {
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
                     const title = document.createElement('div');
-                    title.style.cssText =
-                        'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
+                    title.className = 'card-title';
                     title.textContent = t('motion.poseStudio.watermark');
                     inner.appendChild(title);
 
