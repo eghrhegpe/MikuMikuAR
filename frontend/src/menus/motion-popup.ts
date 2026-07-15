@@ -13,17 +13,14 @@ import {
     mmdRuntime,
     autoLoop,
     setAutoLoop,
-    motionBindingTargetId,
-    setMotionBindingTargetId,
     layerBindingTargetId,
     setLayerBindingTargetId,
     stackRegistry,
     closeAllOverlays,
     cardContainer,
-    getRecentMotions,
 } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
-import { slideRow, addToggleRow, addEmptyRow, addSliderRow } from '../core/ui-helpers';
+import { slideRow, addToggleRow, addSliderRow } from '../core/ui-helpers';
 import { getCurrentRenderingMenu } from './menu';
 import { loadManager } from '../core/load-manager';
 
@@ -41,8 +38,8 @@ import {
     toggleVmdLayer,
     setVmdLayerWeight,
     removeVmdLayer,
-    addVmdLayerFromPath,
     clearVmdLayers,
+    replaceVmdLayerVmd,
 } from '../scene/motion/vmd-layers';
 import { clearAudio, getAudioName } from '../outfit/audio';
 import {
@@ -75,6 +72,14 @@ import { renderMenu } from './render-menu';
 import { isUnderRoot, logWarn } from '../core/utils';
 import type { MenuNode } from './menu-schema';
 
+// 模块级状态（动作绑定面板）：
+//   layerBindingTargetId = 顶层「添加动作」浏览入口的目标模型 id（承接 VMD 选择）
+//   _focusedLayerId      = 当前「焦点动作」：null=基础动作，string=具体叠加层 id。
+//                         行 leading check-circle 写入；顶层 browse 读取，按需替换该动作。
+//                         「添加动作」语义：无动作→新增基础；焦点层→替换该层；焦点基础→替换基础。
+//                         进入动作绑定面板（motionOnFolderEnter）重置为 null（基础）。
+let _focusedLayerId: string | null = null;
+
 // ======== 从子文件导入 ========
 // ======== Barrel Re-Exports ========
 // ======== 物理类别 → i18n key 映射（运行时 t()，支持热切换）========
@@ -94,45 +99,13 @@ function buildActionBindingSchema(id: string): MenuNode[] {
     }
 
     return [
-        // 卡片 1：更换动作 + 姿势库
+        // 卡片 1：姿势库（「更换动作」已移除——基础动作改由卡片 4 的「添加图层」统一承接：
+        //   无基础时载入即基底座，已有基础时叠加为图层，基础行点击 = 更换）
         {
-            id: 'binding:change',
+            id: 'binding:pose',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    slideRow(
-                        inner,
-                        'lucide:music',
-                        t('motion.changeMotion'),
-                        true,
-                        () => {
-                            setMotionBindingTargetId(id);
-                            const level = stackRegistry.buildLevel!(
-                                getBrowseDir('vmd'),
-                                t('motion.motionLibrary'),
-                                (m) => m.format === 'vmd',
-                                getMotionMenu() ?? undefined
-                            );
-                            level.label = t('motion.bindMotionTo', { name: inst.name });
-                            if (getMotionMenu()) {
-                                getMotionMenu()?.push(level);
-                            }
-                        },
-                        inst.vmdName || t('motion.none')
-                    );
-                    const firstRow = inner.querySelector('.slide-item');
-                    if (firstRow) {
-                        const sublabelEl = firstRow.querySelector('.slide-sublabel');
-                        if (sublabelEl) {
-                            getCurrentRenderingMenu()?.registerControl(() => {
-                                const currentInst = modelManager.get(id);
-                                if (currentInst) {
-                                    sublabelEl.textContent =
-                                        currentInst.vmdName || t('motion.none');
-                                }
-                            });
-                        }
-                    }
                     slideRow(inner, 'lucide:user', t('motion.poseLibrary'), true, () => {
                         const level = stackRegistry.buildLevel!(
                             getBrowseDir('vpd'),
@@ -185,136 +158,104 @@ function buildActionBindingSchema(id: string): MenuNode[] {
                 });
             },
         },
-        // 卡片 3：添加额外动作图层
+        // 卡片 4：动作图层（统一为模型库 actor 行同款三栏样式）
+        //  · 已加载动作（基础 inst.vmdData + 各叠加层 inst.vmdLayers）统一渲染，
+        //    复用模型栏选中范式：leading(check-circle=设为焦点→focusModel) | label(wrap-2) | trailing(settings-2=图层工具)
+        //  · 移除独立「基础行」：基础动作不再特殊渲染，与叠加层同列——
+        //    既消除「同名动作出现两次」的视觉冲突（别纠结基础动作），也贴合模型栏一贯标准
+        //  · 已加载动作在前（置顶），「添加图层」folder 浏览行在后（第二），不再抢风头
+        //  · 行 onClick / trailing 均 → 次级菜单 buildLayerLevel（权重·启用·删除，原行内进度条与 eye 开关下沉至此）
         {
-            id: 'binding:addLayer',
+            id: 'binding:layers',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    slideRow(inner, 'lucide:plus', t('motion.addLayer'), true, () => {
+                    // 统一动作行渲染器：复用模型栏 actor 行三栏结构
+                    //   · leading check-circle(选中焦点) | label(wrap-2) | trailing settings-2(图层工具，仅图层行)
+                    //   · 基础行无 trailing（移除「添加叠加图层」后无次级设置），仅通过 leading 选中→「添加动作」替换
+                    const renderActionRow = (
+                        name: string,
+                        layerId?: string,
+                        onClick?: () => void
+                    ) => {
+                        const isFocused = layerId === undefined
+                            ? _focusedLayerId === null  // 基础动作：焦点在 base 时
+                            : _focusedLayerId === layerId; // 图层：焦点在该层时
+                        slideRow(
+                            inner,
+                            '',
+                            name,
+                            false,
+                            onClick ?? (() => {}),
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            {
+                                leading: {
+                                    icon: isFocused ? 'lucide:check-circle' : 'lucide:circle',
+                                    title: t('library.focusModel'),
+                                    onClick: () => {
+                                        // 写入焦点动作：基础行 layerId=undefined→null，图层行=layer.id
+                                        _focusedLayerId = layerId ?? null;
+                                        focusModel(id);
+                                        getMotionMenu()?.reRender();
+                                    },
+                                },
+                                wrapLabel: true,
+                                ...(layerId !== undefined
+                                    ? {
+                                          trailing: {
+                                              icon: 'lucide:settings-2',
+                                              title: t('library.modelTools'),
+                                              onClick: () => {
+                                                  const lvl = buildLayerLevel(layerId, id);
+                                                  if (getMotionMenu()) {
+                                                      getMotionMenu()?.push(lvl);
+                                                  }
+                                              },
+                                          },
+                                      }
+                                    : {}),
+                            }
+                        );
+                    };
+                    // 基础动作（inst.vmdData）—— 仅作已加载动作之一，无特殊标记
+                    // 标签只取第一个 VMD 名（inst.vmdName 可能被旧版 composite 写入 "A + B + C"，
+                    // 现已不再覆盖，但内存中已有值的仍需处理）
+                    if (inst.vmdData && inst.vmdName) {
+                        const baseName = inst.vmdName.split(' + ')[0];
+                        // 有叠加层时在 base 名后加「(基础)」标签，避免与同名图层混淆
+                        const hasLayers = getVmdLayers(id).length > 0;
+                        // 基础行：仅通过 leading 选中（_focusedLayerId=null），交由顶层「添加动作」替换
+                        renderActionRow(hasLayers ? `${baseName} (基础)` : baseName, undefined, undefined);
+                    }
+                    // 叠加层（inst.vmdLayers）
+                    const curLayers = getVmdLayers(id);
+                    for (let i = 0; i < curLayers.length; i++) {
+                        const layer = curLayers[i];
+                        renderActionRow(layer.name, layer.id, () => {
+                            const lvl = buildLayerLevel(layer.id, id);
+                            if (getMotionMenu()) {
+                                getMotionMenu()?.push(lvl);
+                            }
+                        });
+                    }
+                    // 「添加动作」：folder + > 浏览行（模型库「加载模型」同款），置于已加载动作之后
+                    //   上下文敏感：无动作→新增基础；焦点层→替换该层；焦点基础→替换基础（见 motionOnItemClick）
+                    slideRow(inner, 'lucide:folder', t('motion.addLayer'), true, () => {
                         setLayerBindingTargetId(id);
                         const level = stackRegistry.buildLevel!(
                             getBrowseDir('vmd'),
                             t('motion.motionLibrary'),
-                            (m) => m.format === 'vmd'
+                            (m) => m.format === 'vmd',
+                            getMotionMenu() ?? undefined
                         );
                         level.label = t('motion.addLayerTo', { name: inst?.name ?? '?' });
                         if (getMotionMenu()) {
                             getMotionMenu()?.push(level);
                         }
                     });
-                });
-            },
-        },
-        // 卡片 4：图层列表（条件：有图层）
-        {
-            id: 'binding:layers',
-            kind: 'custom',
-            visibleWhen: () => getVmdLayers(id).length > 0,
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    const curLayers = getVmdLayers(id);
-                    for (let i = 0; i < curLayers.length; i++) {
-                        const layer = curLayers[i];
-                        const isBase = i === 0;
-                        const row = document.createElement('div');
-                        row.className = 'slide-item';
-                        if (isBase) {
-                            row.style.borderLeft = '3px solid rgba(128, 128, 128, 0.3)';
-                            row.style.paddingLeft = 'calc(14px - 3px)';
-                        }
-
-                        const left = document.createElement('div');
-                        left.className = 'slide-left';
-                        left.style.flex = '1';
-                        left.style.minWidth = '0';
-
-                        const label = document.createElement('div');
-                        label.className = 'slide-label';
-                        label.textContent = isBase
-                            ? '◆ ' + layer.name + ' (' + t('motion.baseAction') + ')'
-                            : layer.name;
-                        label.style.overflow = 'hidden';
-                        label.style.textOverflow = 'ellipsis';
-                        label.style.whiteSpace = 'nowrap';
-                        left.appendChild(label);
-
-                        const sliderRow = document.createElement('div');
-                        sliderRow.style.display = 'flex';
-                        sliderRow.style.alignItems = 'center';
-                        sliderRow.style.gap = '6px';
-                        sliderRow.style.marginTop = '4px';
-
-                        const slider = document.createElement('input');
-                        slider.type = 'range';
-                        slider.min = '0';
-                        slider.max = '1';
-                        slider.step = '0.05';
-                        slider.value = String(layer.weight);
-                        slider.style.flex = '1';
-                        slider.style.height = '3px';
-                        if (isBase) {
-                            slider.disabled = true;
-                            slider.value = '1';
-                        } else {
-                            slider.disabled = !layer.enabled;
-                            slider.addEventListener('input', () => {
-                                setVmdLayerWeight(layer.id, parseFloat(slider.value), id);
-                            });
-                        }
-
-                        const weightLabel = document.createElement('span');
-                        weightLabel.textContent = isBase
-                            ? '100%'
-                            : `${Math.round(layer.weight * 100)}%`;
-                        weightLabel.style.fontSize = 'var(--font-ui-sm)';
-                        weightLabel.style.opacity = '0.6';
-                        weightLabel.style.minWidth = '32px';
-                        weightLabel.style.textAlign = 'right';
-                        if (!isBase) {
-                            getCurrentRenderingMenu()?.registerControl(() => {
-                                const cur = getVmdLayers(id).find((l) => l.id === layer.id);
-                                if (cur) {
-                                    weightLabel.textContent = `${Math.round(cur.weight * 100)}%`;
-                                    slider.value = String(cur.weight);
-                                }
-                            });
-                        }
-
-                        sliderRow.appendChild(slider);
-                        sliderRow.appendChild(weightLabel);
-                        left.appendChild(sliderRow);
-
-                        row.appendChild(left);
-
-                        if (!isBase) {
-                            const toggle = document.createElement('button');
-                            toggle.className = 'slide-action';
-                            toggle.textContent = layer.enabled ? '👁' : '🚫';
-                            toggle.title = layer.enabled ? t('motion.disable') : t('motion.enable');
-                            toggle.style.opacity = layer.enabled ? '1' : '0.4';
-                            toggle.addEventListener('click', () => {
-                                toggleVmdLayer(layer.id, id);
-                                getMotionMenu()?.reRender();
-                            });
-                            row.appendChild(toggle);
-                        }
-
-                        if (!isBase) {
-                            const delBtn = document.createElement('button');
-                            delBtn.className = 'slide-action';
-                            delBtn.textContent = '✕';
-                            delBtn.title = t('motion.deleteLayer');
-                            delBtn.style.opacity = '0.5';
-                            delBtn.addEventListener('click', () => {
-                                removeVmdLayer(layer.id, id);
-                                getMotionMenu()?.reRender();
-                            });
-                            row.appendChild(delBtn);
-                        }
-
-                        inner.appendChild(row);
-                    }
                 });
             },
         },
@@ -375,6 +316,93 @@ function buildActionBindingLevel(id: string): PopupLevel {
     };
 }
 
+/** 单图层次级菜单：将「内联权重进度条」下沉为可扩展的次级菜单项。
+ *  行三区(leading eye / label / trailing trash)仅做快操，细节编辑走此菜单，
+ *  与模型库「齿轮→工具菜单」范式一致，为后续大统一铺路。 */
+function buildLayerLevel(layerId: string, id: string): PopupLevel {
+    return {
+        label: t('motion.layerSettings'),
+        dir: '',
+        items: [],
+        renderCustom: (container) => {
+            const layer = getVmdLayers(id).find((l) => l.id === layerId);
+            if (!layer) {
+                return;
+            }
+            const schema: MenuNode[] = [
+                // 启用开关（原行内 eye 开关下沉至此）
+                {
+                    id: 'layer:enable',
+                    kind: 'custom',
+                    renderCustom: (c) => {
+                        cardContainer(c, (inner) => {
+                            addToggleRow(
+                                inner,
+                                t('motion.enable'),
+                                layer.enabled,
+                                () => {
+                                    toggleVmdLayer(layerId, id);
+                                    getMotionMenu()?.reRender();
+                                },
+                                'lucide:eye',
+                                {
+                                    bind: () =>
+                                        getVmdLayers(id).find((l) => l.id === layerId)?.enabled ?? false,
+                                }
+                            );
+                        });
+                    },
+                },
+                // 权重滑块（原行内进度条的等价功能，下沉至此）
+                {
+                    id: 'layer:weight',
+                    kind: 'custom',
+                    renderCustom: (c) => {
+                        cardContainer(c, (inner) => {
+                            addSliderRow(
+                                inner,
+                                t('motion.weight'),
+                                layer.weight,
+                                0,
+                                1,
+                                0.05,
+                                (v) => setVmdLayerWeight(layerId, v, id),
+                                'lucide:sliders-horizontal'
+                            );
+                        });
+                    },
+                },
+                // 删除图层
+                {
+                    id: 'layer:delete',
+                    kind: 'custom',
+                    renderCustom: (c) => {
+                        cardContainer(c, (inner) => {
+                            slideRow(
+                                inner,
+                                'lucide:trash-2',
+                                t('motion.deleteLayer'),
+                                false,
+                                () => {
+                                    removeVmdLayer(layerId, id);
+                                    getMotionMenu()?.pop();
+                                    getMotionMenu()?.reRender();
+                                },
+                                undefined,
+                                undefined,
+                                undefined,
+                                undefined,
+                                { variant: 'danger' }
+                            );
+                        });
+                    },
+                },
+            ];
+            renderMenu(schema, container);
+        },
+    };
+}
+
 // ======== Motion Stack ========
 
 const {
@@ -399,7 +427,7 @@ export { getMotionMenu, refreshMotionRoot, showMotionPopup };
 // [doc:adr-065] 子层路由表：target → 纯 items 构建器；自动挂 itemBuilder 实现语言热刷新
 const MOTION_FOLDER_ROUTES: Record<string, () => PopupLevel> = {
     'motion:camera': buildCameraLevel,
-    'motion:recent': buildRecentMotionsLevel,
+
     'motion:playbackSpeed': buildPlaybackSpeedLevel,
     'motion:procmotion': buildProcMotionLevel,
     'motion:gaze': buildGazeTrackingLevel,
@@ -416,7 +444,8 @@ const MOTION_FOLDER_ROUTES: Record<string, () => PopupLevel> = {
 function motionOnFolderEnter(row: PopupRow): PopupLevel | null {
     if (row.target && row.target.startsWith('action:binding:')) {
         const id = row.target.replace('action:binding:', '');
-        setMotionBindingTargetId(null);
+        // 进入动作绑定面板：焦点动作重置为基础（清跨模型残留焦点）
+        _focusedLayerId = null;
         const lvl = buildActionBindingLevel(id);
         lvl.itemBuilder = () => buildActionBindingLevel(id).items;
         return lvl;
@@ -433,44 +462,51 @@ function motionOnFolderEnter(row: PopupRow): PopupLevel | null {
 /** motion-popup 的 onItemClick（从 makeMotionMenu 提取） */
 function motionOnItemClick(row: PopupRow): void {
     if (row.model) {
-        // 图层添加优先：从模型选择 VMD → 添加为图层而非替换基础动作
+        // 顶层「添加动作」上下文敏感语义（对齐模型库「加载首个/替换已选」能力，移除叠加入口）：
+        //   · 无动作            → 新增为第一个基础动作（loadManager.load 写 vmdData）
+        //   · 焦点在具体叠加层  → 仅替换该层 VMD（replaceVmdLayerVmd，保留层 id/权重/启用，不清旧）
+        //   · 焦点在基础动作    → 替换基础动作（loadManager.load 覆盖 vmdData，保留其余图层）
+        // 基础/图层选中由行 leading check-circle 写入 _focusedLayerId；进入面板默认 null=基础。
         if (row.model.format === 'vmd' && layerBindingTargetId) {
             const targetId = layerBindingTargetId;
+            const focusedLayerId = _focusedLayerId; // 捕获当前焦点动作（null=基础）
             setLayerBindingTargetId(null);
-            // 返回图层管理页（pop VMD 浏览器层）
+            // 返回动作管理页（pop VMD 浏览器层）
             if (getMotionMenu()) {
                 getMotionMenu()?.pop();
             }
-            // 等待图层添加完成后再刷新 UI，避免竞态导致图层列表为空
-            addVmdLayerFromPath(row.model.file_path, targetId)
-                .then(() => {
-                    getMotionMenu()?.reRender();
-                })
-                .catch((err) => {
-                    setStatus(t('motion.motionLoadFailed'), false);
-                    logWarn('motion-popup', 'motion-popup addVmdLayerFromPath:', err);
-                    getMotionMenu()?.reRender();
-                });
-            return;
-        }
-        if (row.model.format === 'vmd' && motionBindingTargetId) {
-            const targetId = motionBindingTargetId;
-            setMotionBindingTargetId(null);
-            // 返回动作详情页（pop VMD 浏览器层）
-            if (getMotionMenu()) {
-                getMotionMenu()?.pop();
+            const after = (): void => {
+                getMotionMenu()?.reRender();
+            };
+            const fail = (label: string, err: unknown): void => {
+                setStatus(t('motion.motionLoadFailed'), false);
+                logWarn('motion-popup', label, err);
+                after();
+            };
+            const inst = modelManager.get(targetId);
+            const hasActions = !!inst?.vmdData || getVmdLayers(targetId).length > 0;
+            if (!hasActions) {
+                // 无动作 → 新增为第一个基础动作
+                loadManager
+                    .load({ kind: 'vmd', path: row.model.file_path, modelId: targetId })
+                    .then(after)
+                    .catch((err) => fail('motion-popup add base VMD:', err));
+                return;
             }
-            // 先清除所有旧图层，再将新动作作为 Layer 0 添加
-            clearVmdLayers(targetId)
-                .then(() => addVmdLayerFromPath(row.model.file_path, targetId))
-                .then(() => {
-                    getMotionMenu()?.reRender();
-                })
-                .catch((err) => {
-                    setStatus(t('motion.motionLoadFailed'), false);
-                    logWarn('motion-popup', 'motion-popup replace base VMD:', err);
-                    getMotionMenu()?.reRender();
-                });
+            // 有动作：优先替换焦点层（若仍存在），否则替换基础（保留其余图层）
+            if (
+                focusedLayerId &&
+                getVmdLayers(targetId).some((l) => l.id === focusedLayerId)
+            ) {
+                replaceVmdLayerVmd(focusedLayerId, row.model.file_path, targetId)
+                    .then(after)
+                    .catch((err) => fail('motion-popup replace layer VMD:', err));
+                return;
+            }
+            loadManager
+                .load({ kind: 'vmd', path: row.model.file_path, modelId: targetId })
+                .then(after)
+                .catch((err) => fail('motion-popup replace base VMD:', err));
             return;
         }
         hideMotionPopup();
@@ -669,44 +705,6 @@ function buildPlaybackSpeedLevel(): PopupLevel {
     };
 }
 
-function buildRecentMotionsSchema(): MenuNode[] {
-    const recent = getRecentMotions();
-    return [
-        {
-            id: 'recent:list',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    if (recent.length === 0) {
-                        addEmptyRow(inner, t('motion.noRecent'));
-                        return;
-                    }
-                    for (const r of recent) {
-                        slideRow(inner, 'lucide:music', r.name, false, () => {
-                            hideMotionPopup();
-                            loadManager.load({ kind: 'vmd', path: r.path }).catch((err) => {
-                                setStatus(t('motion.motionLoadFailed'), false);
-                                logWarn('motion-popup', 'recent motion load:', err);
-                            });
-                        });
-                    }
-                });
-            },
-        },
-    ];
-}
-
-function buildRecentMotionsLevel(): PopupLevel {
-    return {
-        label: t('motion.recent'),
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            renderMenu(buildRecentMotionsSchema(), container);
-        },
-    };
-}
-
 // ======== Advanced (收纳高级/技术向功能) ========
 
 /** 高级菜单 items：收纳程序化动作 / 视线追踪 / 骨骼覆盖 / 脚部调整 / 虚拟裙骨。 */
@@ -814,17 +812,7 @@ function buildMotionRootItems(): PopupRow[] {
         }
         items.push({ kind: 'divider', label: '', icon: '', target: '' });
     }
-    // Card 2: 最近使用
-    if (getRecentMotions().length > 0) {
-        items.push({
-            kind: 'folder',
-            label: t('motion.recent'),
-            icon: 'lucide:clock',
-            target: 'motion:recent',
-        });
-        items.push({ kind: 'divider', label: '', icon: '', target: '' });
-    }
-    // Card 3: 相机 + 音乐库 + 程序化动作
+    // Card 2: 相机 + 音乐库 + 程序化动作
     items.push({
         kind: 'folder',
         label: t('motion.playbackSpeed'),
