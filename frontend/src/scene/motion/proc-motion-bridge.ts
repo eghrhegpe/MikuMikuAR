@@ -172,7 +172,14 @@ export function stopProcMotion(): void {
     if (procModelId) {
         const inst = modelManager.get(procModelId);
         if (inst && inst.mmdModel && mmdRuntime) {
-            inst.mmdModel.setRuntimeAnimation(null);
+            // [fix] 若用户已在程序化动作 active 期间加载了真实 VMD（vmdData 非 null），
+            // 不可盲目 setRuntimeAnimation(null) —— 否则会覆盖用户刚点击的动作，
+            // 表现为「点击动作 0.01s（下一帧）后被重置为无动作」。
+            // 仅在模型未持有用户真实 VMD 时才将其复位到静止姿（程序化动作正常退场）。
+            const userVmdPresent = inst.vmdData !== null && inst.vmdData !== undefined;
+            if (!userVmdPresent) {
+                inst.mmdModel.setRuntimeAnimation(null);
+            }
         }
         procModelId = null;
     }

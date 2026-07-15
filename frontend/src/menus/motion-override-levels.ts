@@ -10,6 +10,7 @@ import {
     focusedModelId,
 } from '../core/config';
 import { addEmptyRow } from '../core/ui-helpers';
+import { createTrailingBtn } from '../core/ui-slide-row';
 import { getMotionMenu } from './motion-popup';
 import type { BoneOverrideEntry } from '../core/types';
 import {
@@ -196,25 +197,25 @@ function buildBoneOverrideSchema(): MenuNode[] {
                         info.style.opacity = ov.enabled ? '1' : '0.35';
                         info.textContent = `${ov.boneName}  P:${ov.euler[0].toFixed(0)} Y:${ov.euler[1].toFixed(0)} R:${ov.euler[2].toFixed(0)}  W:${ov.weight.toFixed(2)}`;
 
-                        const delBtn = document.createElement('button');
-                        delBtn.className = 'slide-action';
-                        delBtn.textContent = '✕';
-                        delBtn.style.opacity = '0.5';
-                        delBtn.title = t('motion.boneOverride.remove');
-                        delBtn.addEventListener('click', () => {
-                            clearBoneOverride(ov.boneName);
-                            inst.boneOverrides = inst.boneOverrides.filter(
-                                (b) => b.boneName !== ov.boneName
-                            );
-                            setStatus(
-                                t('motion.boneOverride.removed', { bone: ov.boneName }),
-                                true
-                            );
-                            menu?.reRender();
-                        });
-
                         row.appendChild(info);
-                        row.appendChild(delBtn);
+                        row.appendChild(
+                            createTrailingBtn({
+                                icon: 'lucide:trash-2',
+                                title: t('motion.boneOverride.remove'),
+                                danger: true,
+                                onClick: () => {
+                                    clearBoneOverride(ov.boneName);
+                                    inst.boneOverrides = inst.boneOverrides.filter(
+                                        (b) => b.boneName !== ov.boneName
+                                    );
+                                    setStatus(
+                                        t('motion.boneOverride.removed', { bone: ov.boneName }),
+                                        true
+                                    );
+                                    menu?.reRender();
+                                },
+                            })
+                        );
                         inner.appendChild(row);
                     }
                 });

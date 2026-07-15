@@ -46,10 +46,16 @@ export function _applyLipSync(
                 old.influence = 0;
             }
         }
-        if (_lipSyncMorphSet?.smile) {
-            const oldSmile = morphManager.getMorphTargetByName?.(_lipSyncMorphSet.smile);
-            if (oldSmile) {
-                oldSmile.influence = 0;
+        // 复位所有 multiMorph 口型（close/pucker/smile），防止冻结在最后值
+        if (_lipSyncMorphSet) {
+            for (const key of ['close', 'pucker', 'smile'] as const) {
+                const name = _lipSyncMorphSet[key];
+                if (name) {
+                    const m = morphManager.getMorphTargetByName?.(name);
+                    if (m) {
+                        m.influence = 0;
+                    }
+                }
             }
         }
         _lipSyncMorphName = null;
@@ -75,10 +81,22 @@ export function _applyLipSync(
         if (_smoothLow < 0.005 && _smoothHigh < 0.005) {
             _smoothLow = 0;
             _smoothHigh = 0;
+            // 衰减完成：复位所有口型 morph（open/close/pucker/smile）
             if (_lipSyncMorphName) {
                 const morph = morphManager.getMorphTargetByName?.(_lipSyncMorphName);
                 if (morph) {
                     morph.influence = 0;
+                }
+            }
+            if (_lipSyncMorphSet) {
+                for (const key of ['close', 'pucker', 'smile'] as const) {
+                    const name = _lipSyncMorphSet[key];
+                    if (name) {
+                        const m = morphManager.getMorphTargetByName?.(name);
+                        if (m) {
+                            m.influence = 0;
+                        }
+                    }
                 }
             }
             return;

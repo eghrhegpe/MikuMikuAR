@@ -44,7 +44,11 @@ export function _applyHeadGazeJS(headRuntime: IMmdRuntimeBone, gazeTarget: Vecto
     const localQ = _q();
     parentInvQ.multiplyToRef(blended, localQ);
 
-    headRuntime.linkedBone.rotationQuaternion = localQ;
+    // 写入既有实例，不外泄池引用
+    const headQ = headRuntime.linkedBone.rotationQuaternion;
+    if (headQ) {
+        headQ.copyFrom(localQ);
+    }
 
     _updateBoneChain(headRuntime);
 }
@@ -95,7 +99,11 @@ export function _applyEyeGazeJS(eyeRuntimes: IMmdRuntimeBone[], gazeTarget: Vect
         const localQ = _q();
         parentInvQ.multiplyToRef(newWorldQ, localQ);
 
-        eyeRb.linkedBone.rotationQuaternion = localQ;
+        // 写入既有实例，不外泄池引用
+        const eyeQ = eyeRb.linkedBone.rotationQuaternion;
+        if (eyeQ) {
+            eyeQ.copyFrom(localQ);
+        }
         (eyeRb as MmdRuntimeBoneExtended).updateWorldMatrix?.(false, false);
     }
 }

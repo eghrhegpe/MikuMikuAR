@@ -27,9 +27,13 @@ export interface TrailingAction {
  * 确保两条渲染路径的第二按钮观感与行为一致（22px .slide-add-btn；iconify 名渲染 SVG，
  * 否则 textContent；点击 stopPropagation 防冒泡触发整行 onClick）。
  */
-export function createTrailingBtn(act: TrailingAction): HTMLElement {
+/**
+ * 动作按钮内部构造器——供 createTrailingBtn / createLeadingBtn 共用，
+ * 消除两份 ~90% 相同的函数体（仅 class 名不同：右侧 22px 盒装 / 左侧 21px 透明指示）。
+ */
+function buildActionBtn(act: TrailingAction, cls: string): HTMLElement {
     const btn = document.createElement('span');
-    btn.className = 'slide-add-btn' + (act.danger ? ' slide-act-danger' : '');
+    btn.className = cls + (act.danger ? ' slide-act-danger' : '');
     if (act.icon.includes(':')) {
         const iconEl = createIconifyIcon(act.icon);
         if (iconEl) {
@@ -49,29 +53,21 @@ export function createTrailingBtn(act: TrailingAction): HTMLElement {
 }
 
 /**
+ * 统一尾部第二动作按钮工厂——供 slideRow 与 menu.ts createRow 共用，
+ * 确保两条渲染路径的第二按钮观感与行为一致（22px .slide-add-btn；iconify 名渲染 SVG，
+ * 否则 textContent；点击 stopPropagation 防冒泡触发整行 onClick）。
+ */
+export function createTrailingBtn(act: TrailingAction): HTMLElement {
+    return buildActionBtn(act, 'slide-add-btn');
+}
+
+/**
  * 统一左侧行为区按钮工厂——镜像 createTrailingBtn，但渲染为 21px 透明可点击
  * `.slide-lead-btn`（复用 .slide-icon 尺寸，非 22px 盒装），保持指示图标（如 radio）
  * 视觉一致；点击 stopPropagation 防冒泡触发整行 onClick。
  */
 export function createLeadingBtn(act: TrailingAction): HTMLElement {
-    const btn = document.createElement('span');
-    btn.className = 'slide-lead-btn' + (act.danger ? ' slide-act-danger' : '');
-    if (act.icon.includes(':')) {
-        const iconEl = createIconifyIcon(act.icon);
-        if (iconEl) {
-            btn.appendChild(iconEl);
-        } else {
-            btn.textContent = act.icon;
-        }
-    } else {
-        btn.textContent = act.icon;
-    }
-    btn.title = act.title || '';
-    btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        act.onClick(e);
-    });
-    return btn;
+    return buildActionBtn(act, 'slide-lead-btn');
 }
 
 export interface SlideRowExtra {

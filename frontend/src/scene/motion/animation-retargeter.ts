@@ -134,6 +134,8 @@ export async function loadAndRetargetAnimation(
             return null;
         }
         setStatus(t('motion.retarget.success'), true);
+        // retarget 成功且 cloneAnimation:true 后，源 mesh 不再需要（动画已克隆到目标骨骼）
+        _cleanupTempMeshes(result.meshes);
         return {
             animationGroup: retargeted,
             sourceSkeleton,
@@ -159,7 +161,8 @@ export function playRetargetedAnimation(
     const { animationGroup } = result;
     animationGroup.isAdditive = true;
     animationGroup.weight = 1;
-    animationGroup.play(loop ? undefined : null); // null = play once, undefined = loop
+    // Babylon.js AnimationGroup.play(loop?: boolean)：true=循环, false/undefined=单次
+    animationGroup.play(loop);
 
     // 返回 stop 函数
     let stopped = false;

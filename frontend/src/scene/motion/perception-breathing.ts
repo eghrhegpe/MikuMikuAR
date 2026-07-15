@@ -24,11 +24,16 @@ export function _applyBreathing(mmdModel: any, time: number): void {
         return;
     }
 
+    const curQ = spine.linkedBone.rotationQuaternion;
+    if (!curQ) {
+        return;
+    }
     const targetQ = _q().copyFrom(Quaternion.RotationAxis(Vector3.Up(), breathOffset));
-    const localQ = _q().copyFrom(spine.linkedBone.rotationQuaternion);
+    const localQ = _q().copyFrom(curQ);
     Quaternion.SlerpToRef(localQ, targetQ, 0.5, localQ);
 
-    spine.linkedBone.rotationQuaternion = localQ;
+    // 写入既有实例，不外泄池引用（与 bone-override.ts 的 .clone() 约定一致）
+    curQ.copyFrom(localQ);
 
     if ('updateWorldMatrix' in spine) {
         (spine as MmdRuntimeBoneExtended).updateWorldMatrix(false, false);

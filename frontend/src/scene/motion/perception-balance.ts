@@ -101,13 +101,13 @@ export function _applyBalanceSway(mmdModel: any, time: number, enabled: boolean)
             // 避免 Slerp 平均吃掉非零基准旋转 / VMD 旋转，同时控制振幅感知）
             const deltaCenterRz = (rz - _lastCenterRz) * SWAY_DELTA_FACTOR;
             const deltaCenterRx = (rx - _lastCenterRx) * SWAY_DELTA_FACTOR;
-            if (deltaCenterRz !== 0 || deltaCenterRx !== 0) {
+            if ((deltaCenterRz !== 0 || deltaCenterRx !== 0) && bone.linkedBone.rotationQuaternion) {
                 const deltaQ = _q().copyFrom(
                     Quaternion.FromEulerAngles(deltaCenterRx, 0, deltaCenterRz)
                 );
                 const localQ = _q().copyFrom(bone.linkedBone.rotationQuaternion);
                 deltaQ.multiplyToRef(localQ, localQ);
-                bone.linkedBone.rotationQuaternion = localQ;
+                bone.linkedBone.rotationQuaternion.copyFrom(localQ);
             }
             _lastCenterRz = rz;
             _lastCenterRx = rx;
@@ -121,11 +121,11 @@ export function _applyBalanceSway(mmdModel: any, time: number, enabled: boolean)
         if (bone?.linkedBone) {
             const rx = Math.sin(phase * 0.7 + 0.3) * SWAY_AMP.upper2_rx;
             const deltaRx = (rx - _lastUpperRx) * SWAY_DELTA_FACTOR;
-            if (deltaRx !== 0) {
+            if (deltaRx !== 0 && bone.linkedBone.rotationQuaternion) {
                 const deltaQ = _q().copyFrom(Quaternion.FromEulerAngles(deltaRx, 0, 0));
                 const localQ = _q().copyFrom(bone.linkedBone.rotationQuaternion);
                 deltaQ.multiplyToRef(localQ, localQ);
-                bone.linkedBone.rotationQuaternion = localQ;
+                bone.linkedBone.rotationQuaternion.copyFrom(localQ);
             }
             _lastUpperRx = rx;
             written.push(upper2Name);
@@ -138,11 +138,11 @@ export function _applyBalanceSway(mmdModel: any, time: number, enabled: boolean)
         if (bone?.linkedBone) {
             const rz = Math.sin(phase + 0.5) * SWAY_AMP.waist_rz;
             const deltaRz = (rz - _lastWaistRz) * SWAY_DELTA_FACTOR;
-            if (deltaRz !== 0) {
+            if (deltaRz !== 0 && bone.linkedBone.rotationQuaternion) {
                 const deltaQ = _q().copyFrom(Quaternion.FromEulerAngles(0, 0, deltaRz));
                 const localQ = _q().copyFrom(bone.linkedBone.rotationQuaternion);
                 deltaQ.multiplyToRef(localQ, localQ);
-                bone.linkedBone.rotationQuaternion = localQ;
+                bone.linkedBone.rotationQuaternion.copyFrom(localQ);
             }
             _lastWaistRz = rz;
             written.push(waistName);
@@ -157,11 +157,11 @@ export function _applyBalanceSway(mmdModel: any, time: number, enabled: boolean)
             const rz = Math.sin(phase * 0.3 + 2.3) * SWAY_AMP.allParent_rz;
             const deltaRx = (rx - _lastAllParentRx) * SWAY_DELTA_FACTOR;
             const deltaRz = (rz - _lastAllParentRz) * SWAY_DELTA_FACTOR;
-            if (deltaRx !== 0 || deltaRz !== 0) {
+            if ((deltaRx !== 0 || deltaRz !== 0) && bone.linkedBone.rotationQuaternion) {
                 const deltaQ = _q().copyFrom(Quaternion.FromEulerAngles(deltaRx, 0, deltaRz));
                 const localQ = _q().copyFrom(bone.linkedBone.rotationQuaternion);
                 deltaQ.multiplyToRef(localQ, localQ);
-                bone.linkedBone.rotationQuaternion = localQ;
+                bone.linkedBone.rotationQuaternion.copyFrom(localQ);
             }
             _lastAllParentRx = rx;
             _lastAllParentRz = rz;

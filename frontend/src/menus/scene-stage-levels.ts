@@ -15,7 +15,6 @@ import { slideRow, addSectionTitle, addCollapsible } from '../core/ui-helpers';
 import { removeModel, setModelVisibility } from '../scene/manager/model-ops';
 import { getPropList, removeProp, modelManager } from '../scene/scene';
 import { reRenderSceneMenu, getSceneMenu } from './scene-menu';
-import { buildStageLightLevel } from './scene-stage-lights';
 import { buildTransformCard, buildMaterialCard, buildDangerCard } from './resource-detail-helpers';
 
 import { buildPropDetailLevel } from './scene-prop-levels';
@@ -58,124 +57,115 @@ function buildStageSchema(): MenuNode[] {
         })),
     ];
 
-    return [
-        // 卡片 1：已加载舞台列表
-        {
+    const nodes: MenuNode[] = [];
+
+    // 卡片 1：已加载舞台列表（空时隐藏）
+    if (stageModels.length > 0) {
+        nodes.push({
             id: 'stage:loaded',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    if (stageModels.length > 0) {
-                        addSectionTitle(inner, t('scene.loadedStages'));
-                        for (const [id, inst] of stageModels) {
-                            const row = document.createElement('div');
-                            row.className = 'slide-item';
-                            row.style.cursor = 'pointer';
-
-                            const eyeSpan = document.createElement('span');
-                            eyeSpan.className = 'slide-icon';
-                            const eyeIcon = createIconifyIcon(
-                                inst.visible ? 'lucide:eye' : 'lucide:eye-off'
-                            );
-                            if (eyeIcon) {
-                                eyeSpan.appendChild(eyeIcon);
-                            }
-                            eyeSpan.style.cursor = 'pointer';
-                            eyeSpan.addEventListener('click', (e) => {
-                                e.stopPropagation();
-                                const newVis = !inst.visible;
-                                setModelVisibility(id, newVis);
-                                reRenderSceneMenu();
-                                setStatus(
-                                    newVis ? t('scene.stageShown') : t('scene.stageHidden'),
-                                    true
-                                );
-                            });
-                            row.appendChild(eyeSpan);
-
-                            const label = document.createElement('span');
-                            label.className = 'slide-label';
-                            label.textContent = inst.name;
-                            row.appendChild(label);
-
-                            const arrow = document.createElement('span');
-                            arrow.className = 'slide-arrow';
-                            arrow.textContent = '>';
-                            row.appendChild(arrow);
-
-                            const del = document.createElement('span');
-                            del.textContent = '✕';
-                            del.style.cssText =
-                                'font-size:10px;color:var(--text-dim);cursor:pointer;padding:2px 4px;margin-left:4px;';
-                            del.title = t('scene.unloadStage');
-                            del.addEventListener('click', (e) => {
-                                e.stopPropagation();
-                                removeModel(id);
-                                reRenderSceneMenu();
-                                setStatus(t('scene.unloaded', { name: inst.name }), true);
-                            });
-                            row.appendChild(del);
-
-                            row.addEventListener('click', () => {
+                    addSectionTitle(inner, t('scene.loadedStages'));
+                    for (const [id, inst] of stageModels) {
+                        slideRow(
+                            inner,
+                            '',
+                            inst.name,
+                            false,
+                            () => {
                                 const sm = getSceneMenu();
                                 if (sm) {
                                     sm.push(buildStageTransformLevel(id));
                                 }
-                            });
-
-                            inner.appendChild(row);
-                        }
-                    } else {
-                        const empty = document.createElement('div');
-                        empty.style.cssText =
-                            'font-size:11px;color:var(--text-dim);text-align:center;padding:8px 0;';
-                        empty.textContent = t('scene.noLoadedStages');
-                        inner.appendChild(empty);
+                            },
+                            undefined,
+                            undefined,
+                            false,
+                            undefined,
+                            {
+                                iconFactory: () => {
+                                    const iconEl = createIconifyIcon(
+                                        inst.visible ? 'lucide:eye' : 'lucide:eye-off'
+                                    );
+                                    const span = document.createElement('span');
+                                    span.className = 'slide-icon';
+                                    if (iconEl) span.appendChild(iconEl);
+                                    return span;
+                                },
+                                leading: {
+                                    icon: inst.visible ? 'lucide:eye' : 'lucide:eye-off',
+                                    title: t('scene.toggleVisibility'),
+                                    onClick: (e) => {
+                                        e.stopPropagation();
+                                        const newVis = !inst.visible;
+                                        setModelVisibility(id, newVis);
+                                        reRenderSceneMenu();
+                                        setStatus(
+                                            newVis ? t('scene.stageShown') : t('scene.stageHidden'),
+                                            true
+                                        );
+                                    },
+                                },
+                                trailing: {
+                                    icon: '✕',
+                                    title: t('scene.unloadStage'),
+                                    onClick: (e) => {
+                                        e.stopPropagation();
+                                        removeModel(id);
+                                        reRenderSceneMenu();
+                                        setStatus(t('scene.unloaded', { name: inst.name }), true);
+                                    },
+                                },
+                            }
+                        );
                     }
                 });
             },
-        },
-        // 卡片 2：已加载道具列表
-        {
+        });
+    }
+
+    // 卡片 2：已加载道具列表（空时隐藏）
+    if (propItems.length > 0) {
+        nodes.push({
             id: 'stage:props',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    if (propItems.length > 0) {
-                        for (const item of propItems) {
-                            const row = document.createElement('div');
-                            row.className = 'slide-item';
-                            row.style.cursor = 'pointer';
-                            row.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:box"></iconify-icon></span><span class="slide-label">${escapeHtml(item.name)}</span><span class="slide-arrow">&gt;</span>`;
-                            row.addEventListener('click', () =>
-                                getSceneMenu()?.push(buildPropDetailLevel(item.id))
-                            );
-                            const delBtn = document.createElement('span');
-                            delBtn.className = 'slide-del-btn';
-                            delBtn.textContent = '×';
-                            delBtn.title = t('scene.deleteProp');
-                            delBtn.addEventListener('click', (e) => {
-                                e.stopPropagation();
-                                if (item.fromPropRegistry) {
-                                    removeProp(item.id);
-                                } else {
-                                    removeModel(item.id);
-                                }
-                                reRenderSceneMenu();
-                            });
-                            row.appendChild(delBtn);
-                            inner.appendChild(row);
-                        }
-                    } else {
-                        const empty = document.createElement('div');
-                        empty.style.cssText =
-                            'font-size:11px;color:var(--text-dim);text-align:center;padding:8px 0;';
-                        empty.textContent = t('scene.noProps');
-                        inner.appendChild(empty);
+                    for (const item of propItems) {
+                        slideRow(
+                            inner,
+                            'lucide:box',
+                            item.name,
+                            false,
+                            () => getSceneMenu()?.push(buildPropDetailLevel(item.id)),
+                            undefined,
+                            undefined,
+                            false,
+                            undefined,
+                            {
+                                trailing: {
+                                    icon: '×',
+                                    title: t('scene.deleteProp'),
+                                    onClick: (e) => {
+                                        e.stopPropagation();
+                                        if (item.fromPropRegistry) {
+                                            removeProp(item.id);
+                                        } else {
+                                            removeModel(item.id);
+                                        }
+                                        reRenderSceneMenu();
+                                    },
+                                },
+                            }
+                        );
                     }
                 });
             },
-        },
+        });
+    }
+
+    nodes.push(
         // 卡片 3：功能入口
         {
             id: 'stage:actions',
@@ -208,12 +198,6 @@ function buildStageSchema(): MenuNode[] {
                                 console.error('Stage library error:', err);
                             }
                         })();
-                    });
-                    slideRow(inner, 'lucide:lightbulb', t('scene.stageLight'), true, () => {
-                        const sm = getSceneMenu();
-                        if (sm) {
-                            sm.push(buildStageLightLevel());
-                        }
                     });
                     slideRow(inner, 'lucide:box', t('scene.loadProp'), true, () => {
                         (async () => {
@@ -395,7 +379,9 @@ function buildStageSchema(): MenuNode[] {
                 });
             },
         },
-    ];
+    );
+
+    return nodes;
 }
 
 export function buildStageLevel(): PopupLevel {
