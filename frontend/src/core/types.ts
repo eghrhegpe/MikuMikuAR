@@ -237,6 +237,10 @@ export type PopupRow = {
     /** 统一尾部行为区：设置第二点击事件+图标后，装饰性 `>` 会被替换为该可点击按钮。
      *  与装饰 `>` 及 `+`(onAddClick) 互斥——从构造上杜绝误渲染 `>`。 */
     trailing?: TrailingAction;
+    /** 统一左侧行为区：设置后，左侧图标（如 radio 指示）被渲染为可点击按钮，
+     *  点击 stopPropagation 后触发该动作（如切焦点），与整行 onClick 解耦。
+     *  视觉上复用 .slide-icon 尺寸（非 22px 盒装），保持指示图标一致性。 */
+    leading?: TrailingAction;
     /** 选中态（radio/单选行）：渲染时附加 slide-focused 类。 */
     focused?: boolean;
     rowKey?: string;

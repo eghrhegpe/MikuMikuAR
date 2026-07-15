@@ -294,6 +294,38 @@ function buildModelSchema(id: string): MenuNode[] {
     ];
 }
 
+/**
+ * 模型工具菜单（port 自详情面板「工具」组）——供角色库根层行右齿轮 trailing 打开，
+ * 作为行级快捷入口；与详情面板内联工具组内容保持一致。
+ * 采用整体 renderCustom + 每行 slideRow 自带 onClick（与详情面板工具组同范式），
+ * 不依赖 SlideMenu 级 onItemClick。
+ */
+export function buildModelToolsLevel(id: string): PopupLevel {
+    const inst = modelManager.get(id);
+    if (!inst) {
+        return { dir: '', label: t('model-detail.tools'), items: [], renderCustom: () => {} };
+    }
+    return {
+        dir: '',
+        label: t('model-detail.tools'),
+        items: [],
+        renderCustom: (container) => {
+            slideRow(container, 'lucide:tag', t('model-detail.tags'), true, () => {
+                stackRegistry.modelStack?.push(buildModelTagsLevel(id));
+            });
+            slideRow(container, 'lucide:save', t('model-detail.savePreset'), false, () => {
+                savePresetToLibDialog(id);
+            });
+            slideRow(container, 'lucide:folder-open', t('model-detail.loadPreset'), true, () => {
+                stackRegistry.modelStack?.push(buildPresetListLevel(id));
+            });
+            slideRow(container, 'lucide:external-link', t('model-detail.openWith'), true, () => {
+                stackRegistry.modelStack?.push(buildOpenWithLevel(id));
+            });
+        },
+    };
+}
+
 export function buildModelLevel(id: string): PopupLevel {
     const inst = modelManager.get(id);
     if (!inst) {

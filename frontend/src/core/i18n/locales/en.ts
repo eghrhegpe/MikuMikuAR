@@ -632,6 +632,8 @@ export const en: Record<string, string> = {
     'library.rescan': 'Rescan',
     'library.model': 'Model',
     'library.modelSettings': 'Model settings',
+    'library.focusModel': 'Set as focus',
+    'library.modelTools': 'Model tools',
     'library.firstUseHint':
         '📦 First time? Open the library here → load a model. Set the library dir in ⚙ Settings',
     'library.browseHint2':

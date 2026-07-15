@@ -754,6 +754,8 @@ export const ko: Record<string, string> = {
     'library.rescan': '다시 검색',
     'library.model': '모델',
     'library.modelSettings': '모델 설정',
+    'library.focusModel': '초점으로 설정',
+    'library.modelTools': '모델 도구',
     'library.firstUseHint':
         '📦 처음 사용하시나요? 여기서 라이브러리를 열어 → 모델을 로드하세요. ⚙ 설정에서 라이브러리 디렉터리를 지정할 수 있습니다',
     'library.browseHint2':

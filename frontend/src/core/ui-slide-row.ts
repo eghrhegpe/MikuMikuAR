@@ -48,6 +48,32 @@ export function createTrailingBtn(act: TrailingAction): HTMLElement {
     return btn;
 }
 
+/**
+ * 统一左侧行为区按钮工厂——镜像 createTrailingBtn，但渲染为 21px 透明可点击
+ * `.slide-lead-btn`（复用 .slide-icon 尺寸，非 22px 盒装），保持指示图标（如 radio）
+ * 视觉一致；点击 stopPropagation 防冒泡触发整行 onClick。
+ */
+export function createLeadingBtn(act: TrailingAction): HTMLElement {
+    const btn = document.createElement('span');
+    btn.className = 'slide-lead-btn' + (act.danger ? ' slide-act-danger' : '');
+    if (act.icon.includes(':')) {
+        const iconEl = createIconifyIcon(act.icon);
+        if (iconEl) {
+            btn.appendChild(iconEl);
+        } else {
+            btn.textContent = act.icon;
+        }
+    } else {
+        btn.textContent = act.icon;
+    }
+    btn.title = act.title || '';
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        act.onClick(e);
+    });
+    return btn;
+}
+
 export interface SlideRowExtra {
     /** label 颜色变体：danger(红), accent(主题色) */
     variant?: 'default' | 'danger' | 'accent';
@@ -55,6 +81,10 @@ export interface SlideRowExtra {
      *  用于「+ 加载」「▶ 播放」「✕ 删除」等第二动作；与 hasArrow 互斥，
      *  从构造上杜绝「文件行既渲染 + 又渲染 >」的误渲染。 */
     trailing?: TrailingAction;
+    /** 统一左侧行为区：传入则左侧图标（如 radio 指示）被渲染为可点击按钮，
+     *  点击 stopPropagation 后触发该动作（如切焦点），与整行 onClick 解耦。
+     *  视觉复用 .slide-icon 尺寸（非 22px 盒装），保持指示图标一致性。 */
+    leading?: TrailingAction;
     /** 自定义右侧 label（key-value 布局用） */
     rightLabel?: string;
     /** 动态图标工厂函数——替代 icon 字符串参数，每次渲染调用 */
@@ -171,25 +201,32 @@ export function slideRow(
         const variant = extra?.variant ?? 'default';
         row.className = 'slide-item' + (focused ? ' slide-focused' : '');
 
-        const iconSpan = document.createElement('span');
-        iconSpan.className = 'slide-icon';
-        if (extra?.iconFactory) {
-            const el = extra.iconFactory();
-            if (el) {
-                iconSpan.appendChild(el);
-            }
+        // === 统一左侧行为区：leading 优先于纯展示 .slide-icon（互斥）===
+        // leading 存在时，左侧图标被渲染为可点击按钮（保持 radio 指示视觉），
+        // 点击 stopPropagation 后触发该动作（如切焦点），与整行 onClick 解耦。
+        if (extra?.leading) {
+            row.appendChild(createLeadingBtn(extra.leading));
         } else {
-            const iconEl = createIconifyIcon(icon);
-            if (iconEl) {
-                iconSpan.appendChild(iconEl);
+            const iconSpan = document.createElement('span');
+            iconSpan.className = 'slide-icon';
+            if (extra?.iconFactory) {
+                const el = extra.iconFactory();
+                if (el) {
+                    iconSpan.appendChild(el);
+                }
             } else {
-                const fb = document.createElement('span');
-                fb.className = 'cs-icon-fallback';
-                fb.textContent = label.charAt(0) || '?';
-                iconSpan.appendChild(fb);
+                const iconEl = createIconifyIcon(icon);
+                if (iconEl) {
+                    iconSpan.appendChild(iconEl);
+                } else {
+                    const fb = document.createElement('span');
+                    fb.className = 'cs-icon-fallback';
+                    fb.textContent = label.charAt(0) || '?';
+                    iconSpan.appendChild(fb);
+                }
             }
+            row.appendChild(iconSpan);
         }
-        row.appendChild(iconSpan);
 
         // 右侧 label（key-value 布局）
         if (extra?.rightLabel !== undefined) {

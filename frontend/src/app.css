@@ -1764,6 +1764,28 @@ input, textarea, [contenteditable] {
     font-size: var(--slide-icon-size);
     display: block;
 }
+/* 统一左侧行为区按钮：复用 .slide-icon 尺寸（21px）的透明可点击按钮，
+   保持 radio 指示图标视觉一致；非 22px 盒装 .slide-add-btn。 */
+.slide-lead-btn {
+    width: var(--slide-icon-size);
+    height: var(--slide-icon-size);
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: calc(4px * var(--ui-scale));
+    transition: background 0.12s;
+}
+.slide-lead-btn:hover {
+    background: var(--white-08);
+}
+.slide-lead-btn iconify-icon {
+    width: var(--slide-icon-size);
+    height: var(--slide-icon-size);
+    font-size: var(--slide-icon-size);
+    display: block;
+}
 .slide-label {
     flex: 1;
     overflow: hidden;

@@ -1,7 +1,7 @@
 import { PopupLevel, PopupRow, showHint, hideHint } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow, addSliderRow, addToggleRow, addModeSlider } from '../core/ui-helpers';
-import { createTrailingBtn } from '../core/ui-slide-row';
+import { createTrailingBtn, createLeadingBtn } from '../core/ui-slide-row';
 import { subscribe } from '../core/reactivity';
 import { t } from '../core/i18n/t';
 import { logWarn } from '../core/utils';
@@ -985,15 +985,22 @@ export class SlideMenu {
         const hint = row.sublabel || (row.model ? t('menu.noDesc') : t('menu.noHint'));
         el.setAttribute('data-hint', hint);
 
-        const iconSpan = document.createElement('span');
-        iconSpan.className = 'slide-icon';
-        const iconEl = createIconifyIcon(row.icon);
-        if (iconEl) {
-            iconSpan.appendChild(iconEl);
+        // === 统一左侧行为区：leading 优先于纯展示 .slide-icon（互斥）===
+        // leading 存在时，左侧图标被渲染为可点击按钮（保持 radio 指示视觉），
+        // 点击 stopPropagation 后触发该动作（如切焦点），与整行 onClick 解耦。
+        if (row.leading) {
+            el.appendChild(createLeadingBtn(row.leading));
         } else {
-            iconSpan.textContent = row.icon;
+            const iconSpan = document.createElement('span');
+            iconSpan.className = 'slide-icon';
+            const iconEl = createIconifyIcon(row.icon);
+            if (iconEl) {
+                iconSpan.appendChild(iconEl);
+            } else {
+                iconSpan.textContent = row.icon;
+            }
+            el.appendChild(iconSpan);
         }
-        el.appendChild(iconSpan);
 
         const labelSpan = document.createElement('span');
         labelSpan.className = 'slide-label' + (row.wrapLabel ? ' wrap-2' : '');
