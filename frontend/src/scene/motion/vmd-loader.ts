@@ -162,18 +162,26 @@ export async function loadVMDMotion(
         const handle = inst.mmdModel.createRuntimeAnimation(runtimeAnimation);
         inst.mmdModel.setRuntimeAnimation(handle);
 
-        // 为动作生成缩略图：定位到初始帧（第 0 帧）截当前模型姿态。
+        // 为动作生成缩略图：仅把「本模型」摆到动作初始帧（第 0 帧）后离屏截图，
+        // 不触碰全局 mmdRuntime 时钟，因此不会打断主窗口其他模型的播放（ADR-106 生命周期隔离）。
         // 独立 try：失败不影响动作加载主流程。
         try {
-            const { captureMotionThumbnail } = await import('../manager/thumbnail-capture');
-            const savedT = mmdRuntime.currentTime;
-            // 定位到第 0 帧（forceApply=true 立即应用骨骼姿态）
-            await mmdRuntime.seekAnimation(0, true).catch(() => {});
-            // 等主循环把骨骼 world matrix 更新到第 0 帧（seekAnimation 为异步 apply）
-            await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-            await captureMotionThumbnail(inst, vmdPath || name);
-            // 恢复动画时间，避免干扰正在进行的播放
-            await mmdRuntime.seekAnimation(savedT, true).catch(() => {});
+            const { renderInstanceThumbnail } = await import('../manager/thumbnail-capture');
+            const mm = inst.mmdModel;
+            const anim = mm
+                ? (mm as { currentAnimation?: { animate?: (f: number) => void } | null }).currentAnimation
+                : null;
+            if (anim && typeof anim.animate === 'function') {
+                // 仅给本模型按指定帧摆姿（animate 为局部操作，不触发运行时可观察量、不改全局时钟）。
+                // 必须先摆姿、再调用 renderInstanceThumbnail（其内部 rt.render 同步截帧），两者之间不得 await，
+                // 否则主循环会在截帧前把模型重新摆回当前帧，截到错误姿态。
+                const savedFrame = mmdRuntime.currentTime * 30; // currentTime 单位为秒，animate 接收 30fps 帧
+                anim.animate(0);
+                await renderInstanceThumbnail(scene, inst, vmdPath || name);
+                anim.animate(savedFrame); // 立即恢复本模型到当前帧；主循环下一帧也会再次校正
+            } else {
+                await renderInstanceThumbnail(scene, inst, vmdPath || name);
+            }
         } catch {
             // 缩略图生成失败不阻断动作加载
         }
