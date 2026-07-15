@@ -235,16 +235,6 @@ export function waitForFrame(): Promise<void> {
     return new Promise((resolve) => requestAnimationFrame(() => resolve()));
 }
 
-/**
- * 动态导入并取出指定导成名。
- * 不内含 catch——调用方显式配合 swallowError 或 try/catch。
- * `mod[name] as T` 是类型断言，调用方需确保 name 对应的导出类型与 T 一致。
- */
-export async function lazyImport<T>(path: string, name: string): Promise<T> {
-    const mod = await import(path);
-    return mod[name] as T;
-}
-
 // ======== Lifecycle Guards (ADR-101 P2) ========
 
 /**

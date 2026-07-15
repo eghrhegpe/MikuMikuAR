@@ -205,12 +205,164 @@ function drawParticleShape(ctx: CanvasRenderingContext2D, kind: string): void {
     }
 }
 
+// ---- 粒子配置表：数据驱动，消除 switch-case 重复 ----
+
+interface ParticleConfig {
+    blendMode: number;
+    emitRate: number;
+    gravity: [number, number, number];
+    minLifeTime: number;
+    maxLifeTime: number;
+    minEmitPower: number;
+    maxEmitPower: number;
+    minSize: number;
+    maxSize: number;
+    angularSpeed?: [number, number];
+    /** 'box' = 全景天气盒发射器；'sphere' = 局部球发射器；undefined = 不设置 */
+    emitter?: { kind: 'box'; dir1: [number, number, number]; dir2: [number, number, number]; radius?: number }
+           | { kind: 'sphere'; radius: number };
+    colors: Array<[number, Color4, Color4]>;
+}
+
+const WEATHER_EMITTER: ParticleConfig['emitter'] = undefined; // 各天气类型覆盖
+
+const PARTICLE_CONFIGS: Record<string, ParticleConfig> = {
+    sakura: {
+        blendMode: ParticleSystem.BLENDMODE_STANDARD,
+        emitRate: 40, gravity: [0, -0.8, 0],
+        minLifeTime: 8, maxLifeTime: 15,
+        minEmitPower: 0.5, maxEmitPower: 1.5,
+        angularSpeed: [-1, 1], minSize: 0.15, maxSize: 0.35,
+        colors: [
+            [0,   new Color4(1, 0.72, 0.78, 1), new Color4(1, 0.8, 0.85, 1)],
+            [0.8, new Color4(1, 0.72, 0.78, 1), new Color4(1, 0.8, 0.85, 1)],
+            [1,   new Color4(1, 0.72, 0.78, 0), new Color4(1, 0.8, 0.85, 0)],
+        ],
+    },
+    rain: {
+        blendMode: ParticleSystem.BLENDMODE_STANDARD,
+        emitRate: 3000, gravity: [0, -25, 0],
+        minLifeTime: 1, maxLifeTime: 2,
+        minEmitPower: 15, maxEmitPower: 20,
+        minSize: 0.08, maxSize: 0.15,
+        colors: [
+            [0,   new Color4(0.7, 0.8, 1, 0.6), new Color4(0.8, 0.9, 1, 0.8)],
+            [1,   new Color4(0.7, 0.8, 1, 0),   new Color4(0.8, 0.9, 1, 0)],
+        ],
+    },
+    snow: {
+        blendMode: ParticleSystem.BLENDMODE_STANDARD,
+        emitRate: 250, gravity: [0, -1.5, 0],
+        minLifeTime: 6, maxLifeTime: 12,
+        minEmitPower: 0.3, maxEmitPower: 0.8,
+        angularSpeed: [-0.5, 0.5], minSize: 0.1, maxSize: 0.25,
+        colors: [
+            [0, new Color4(1, 1, 1, 0.9), new Color4(1, 1, 1, 1)],
+            [1, new Color4(1, 1, 1, 0),   new Color4(1, 1, 1, 0)],
+        ],
+    },
+    fireworks: {
+        blendMode: ParticleSystem.BLENDMODE_ADD,
+        emitRate: 5, gravity: [0, -2, 0],
+        minLifeTime: 1.5, maxLifeTime: 3,
+        minEmitPower: 2, maxEmitPower: 5,
+        minSize: 0.05, maxSize: 0.12,
+        emitter: { kind: 'sphere', radius: 2 },
+        colors: [
+            [0, new Color4(1, 0.9, 0.4, 0.3), new Color4(1, 0.8, 0.2, 0.2)],
+            [1, new Color4(1, 0.5, 0.1, 0),   new Color4(0.8, 0.3, 0, 0)],
+        ],
+    },
+    fireflies: {
+        blendMode: ParticleSystem.BLENDMODE_ADD,
+        emitRate: 15, gravity: [0, 0, 0],
+        minLifeTime: 4, maxLifeTime: 8,
+        minEmitPower: 0.2, maxEmitPower: 0.5,
+        minSize: 0.1, maxSize: 0.2,
+        emitter: { kind: 'sphere', radius: 8 },
+        colors: [
+            [0,   new Color4(0.6, 1, 0.3, 0), new Color4(0.8, 1, 0.4, 0)],
+            [0.3, new Color4(0.6, 1, 0.3, 1), new Color4(0.8, 1, 0.4, 1)],
+            [0.6, new Color4(0.6, 1, 0.3, 0.2), new Color4(0.8, 1, 0.4, 0.2)],
+            [1,   new Color4(0.6, 1, 0.3, 1), new Color4(0.8, 1, 0.4, 1)],
+        ],
+    },
+    leaves: {
+        blendMode: ParticleSystem.BLENDMODE_STANDARD,
+        emitRate: 30, gravity: [0, -1, 0],
+        minLifeTime: 8, maxLifeTime: 14,
+        minEmitPower: 0.5, maxEmitPower: 1.5,
+        angularSpeed: [-2, 2], minSize: 0.2, maxSize: 0.4,
+        colors: [
+            [0, new Color4(0.9, 0.5, 0.2, 1), new Color4(0.8, 0.6, 0.1, 1)],
+            [1, new Color4(0.9, 0.5, 0.2, 0), new Color4(0.8, 0.6, 0.1, 0)],
+        ],
+    },
+};
+
+const WEATHER_TYPES = ['sakura', 'rain', 'snow', 'leaves'];
+
+/** 天气类型的盒发射器方向参数 */
+const WEATHER_BOX_DIRS: Record<string, { dir1: [number, number, number]; dir2: [number, number, number] }> = {
+    sakura: { dir1: [-0.5, -0.2, -0.5], dir2: [0.5, 0.2, 0.5] },
+    rain:   { dir1: [-0.1, -1, -0.1],   dir2: [0.1, -1, 0.1] },
+    snow:   { dir1: [-0.5, -0.3, -0.5], dir2: [0.5, -0.3, 0.5] },
+    leaves: { dir1: [-0.8, -0.3, -0.8], dir2: [0.8, 0.3, 0.8] },
+};
+
+function _applyParticleConfig(ps: ParticleSystem, cfg: ParticleConfig, type: string): void {
+    ps.blendMode = cfg.blendMode;
+    ps.emitRate = cfg.emitRate;
+    ps.gravity = new Vector3(...cfg.gravity);
+    ps.minLifeTime = cfg.minLifeTime;
+    ps.maxLifeTime = cfg.maxLifeTime;
+    ps.minEmitPower = cfg.minEmitPower;
+    ps.maxEmitPower = cfg.maxEmitPower;
+    ps.minSize = cfg.minSize;
+    ps.maxSize = cfg.maxSize;
+    if (cfg.angularSpeed) {
+        ps.minAngularSpeed = cfg.angularSpeed[0];
+        ps.maxAngularSpeed = cfg.angularSpeed[1];
+    }
+    if (cfg.emitter) {
+        if (cfg.emitter.kind === 'sphere') {
+            ps.createSphereEmitter(cfg.emitter.radius);
+        }
+    } else if (WEATHER_TYPES.includes(type)) {
+        // 天气类型使用盒发射器
+        const dirs = WEATHER_BOX_DIRS[type];
+        if (dirs) {
+            ps.createBoxEmitter(
+                new Vector3(...dirs.dir1), new Vector3(...dirs.dir2),
+                new Vector3(-WEATHER_BOX_XZ_HALF, 0, -WEATHER_BOX_XZ_HALF),
+                new Vector3(WEATHER_BOX_XZ_HALF, WEATHER_BOX_Y_RANGE, WEATHER_BOX_XZ_HALF)
+            );
+        }
+    }
+    for (const [t, c1, c2] of cfg.colors) {
+        ps.addColorGradient(t, c1, c2);
+    }
+}
+
+/** 计算粒子发射器 Y 坐标（天气类型在世界地面以上，局部效果按类型偏移） */
+function _getEmitterY(type: string, groundY: number): number {
+    if (WEATHER_TYPES.includes(type)) {
+        return groundY + WEATHER_HEIGHT_ABOVE_GROUND;
+    }
+    if (type === 'fireflies') {
+        return groundY + FIREFLY_HEIGHT_OFFSET;
+    }
+    if (type === 'fireworks') {
+        return groundY + FIREWORK_HEIGHT_OFFSET;
+    }
+    return groundY;
+}
+
 export function createParticleEmitter(type: EnvState['particleType'], windEnabled: boolean): void {
-    ensureEnvUpdateObserver(); // 粒子风力/参数/启停检测等每帧逻辑依赖统一 observer（Fix: 避免隐式依赖云/水模块注册）
+    ensureEnvUpdateObserver();
     if (_envSys.particles.system && _currentParticleType === type) {
         return;
     }
-
     if (_envSys.particles.system) {
         disposeParticles();
     }
@@ -220,227 +372,64 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
     }
 
     const scene = getScene();
+    const cfg = PARTICLE_CONFIGS[type];
+    if (!cfg) {
+        logWarn('env', `unknown particle type: ${type}`);
+        return;
+    }
 
-    // 方案A: CPU ParticleSystem — 真实碰撞检测，粒子触地即消失
-    // 容量 15000（支持暴雨级：emitRate 3000 × lifeTime 2s × 2.5 余量）
     const ps = new ParticleSystem('envParticles', 15000, scene);
     ps.particleTexture = makeParticleTexture(type, envState.particleCustomTexture || undefined);
     _prevCustomTexKey = envState.particleCustomTexture
-        ? `_custom_${envState.particleCustomTexture}`
-        : null;
+        ? `_custom_${envState.particleCustomTexture}` : null;
     ps.updateSpeed = 0.01;
-    // 初始 emitter 占位（实际位置在 followObserver 中设置）
     ps.emitter = new Vector3(0, 0, 0);
 
-    // 判断当前类型是全景天气还是局部效果
-    const isWeather = ['sakura', 'rain', 'snow', 'leaves'].includes(type);
+    _applyParticleConfig(ps, cfg, type);
 
-    switch (type) {
-        case 'sakura': {
-            ps.blendMode = ParticleSystem.BLENDMODE_STANDARD;
-            ps.emitRate = 40;
-            ps.gravity = new Vector3(0, -0.8, 0);
-            ps.minLifeTime = 8;
-            ps.maxLifeTime = 15;
-            ps.minEmitPower = 0.5;
-            ps.maxEmitPower = 1.5;
-            ps.minAngularSpeed = -1;
-            ps.maxAngularSpeed = 1;
-            ps.minSize = 0.15;
-            ps.maxSize = 0.35;
-            if (isWeather) {
-                // 全景天气：XZ 大幅覆盖，出生 Y 在 emitter 附近窄带
-                ps.createBoxEmitter(
-                    new Vector3(-0.5, -0.2, -0.5),
-                    new Vector3(0.5, 0.2, 0.5),
-                    new Vector3(-WEATHER_BOX_XZ_HALF, 0, -WEATHER_BOX_XZ_HALF),
-                    new Vector3(WEATHER_BOX_XZ_HALF, WEATHER_BOX_Y_RANGE, WEATHER_BOX_XZ_HALF)
-                );
-            }
-            ps.addColorGradient(0, new Color4(1, 0.72, 0.78, 1), new Color4(1, 0.8, 0.85, 1));
-            ps.addColorGradient(0.8, new Color4(1, 0.72, 0.78, 1), new Color4(1, 0.8, 0.85, 1));
-            ps.addColorGradient(1, new Color4(1, 0.72, 0.78, 0), new Color4(1, 0.8, 0.85, 0));
-            break;
-        }
-        case 'rain': {
-            ps.blendMode = ParticleSystem.BLENDMODE_STANDARD;
-            ps.emitRate = 3000;
-            ps.gravity = new Vector3(0, -25, 0);
-            ps.minLifeTime = 1;
-            ps.maxLifeTime = 2;
-            ps.minEmitPower = 15;
-            ps.maxEmitPower = 20;
-            ps.minSize = 0.08;
-            ps.maxSize = 0.15;
-            if (isWeather) {
-                ps.createBoxEmitter(
-                    new Vector3(-0.1, -1, -0.1),
-                    new Vector3(0.1, -1, 0.1),
-                    new Vector3(-WEATHER_BOX_XZ_HALF, 0, -WEATHER_BOX_XZ_HALF),
-                    new Vector3(WEATHER_BOX_XZ_HALF, WEATHER_BOX_Y_RANGE, WEATHER_BOX_XZ_HALF)
-                );
-            }
-            ps.addColorGradient(0, new Color4(0.7, 0.8, 1, 0.6), new Color4(0.8, 0.9, 1, 0.8));
-            ps.addColorGradient(1, new Color4(0.7, 0.8, 1, 0), new Color4(0.8, 0.9, 1, 0));
-            break;
-        }
-        case 'snow': {
-            ps.blendMode = ParticleSystem.BLENDMODE_STANDARD;
-            ps.emitRate = 250;
-            ps.gravity = new Vector3(0, -1.5, 0);
-            ps.minLifeTime = 6;
-            ps.maxLifeTime = 12;
-            ps.minEmitPower = 0.3;
-            ps.maxEmitPower = 0.8;
-            ps.minAngularSpeed = -0.5;
-            ps.maxAngularSpeed = 0.5;
-            ps.minSize = 0.1;
-            ps.maxSize = 0.25;
-            if (isWeather) {
-                ps.createBoxEmitter(
-                    new Vector3(-0.5, -0.3, -0.5),
-                    new Vector3(0.5, -0.3, 0.5),
-                    new Vector3(-WEATHER_BOX_XZ_HALF, 0, -WEATHER_BOX_XZ_HALF),
-                    new Vector3(WEATHER_BOX_XZ_HALF, WEATHER_BOX_Y_RANGE, WEATHER_BOX_XZ_HALF)
-                );
-            }
-            ps.addColorGradient(0, new Color4(1, 1, 1, 0.9), new Color4(1, 1, 1, 1));
-            ps.addColorGradient(1, new Color4(1, 1, 1, 0), new Color4(1, 1, 1, 0));
-            break;
-        }
-        case 'fireworks': {
-            ps.blendMode = ParticleSystem.BLENDMODE_ADD;
-            ps.emitRate = 5; // 低发射率环境光晕；实际爆发由 burst 管理器生成临时系统
-            ps.gravity = new Vector3(0, -2, 0);
-            ps.minLifeTime = 1.5;
-            ps.maxLifeTime = 3;
-            ps.minEmitPower = 2;
-            ps.maxEmitPower = 5;
-            ps.minSize = 0.05;
-            ps.maxSize = 0.12;
-            ps.createSphereEmitter(2);
-            ps.addColorGradient(0, new Color4(1, 0.9, 0.4, 0.3), new Color4(1, 0.8, 0.2, 0.2));
-            ps.addColorGradient(1, new Color4(1, 0.5, 0.1, 0), new Color4(0.8, 0.3, 0, 0));
-            break;
-        }
-        case 'fireflies': {
-            ps.blendMode = ParticleSystem.BLENDMODE_ADD;
-            ps.emitRate = 15;
-            ps.gravity = new Vector3(0, 0, 0);
-            ps.minLifeTime = 4;
-            ps.maxLifeTime = 8;
-            ps.minEmitPower = 0.2;
-            ps.maxEmitPower = 0.5;
-            ps.minSize = 0.1;
-            ps.maxSize = 0.2;
-            ps.createSphereEmitter(8);
-            ps.addColorGradient(0, new Color4(0.6, 1, 0.3, 0), new Color4(0.8, 1, 0.4, 0));
-            ps.addColorGradient(0.3, new Color4(0.6, 1, 0.3, 1), new Color4(0.8, 1, 0.4, 1));
-            ps.addColorGradient(0.6, new Color4(0.6, 1, 0.3, 0.2), new Color4(0.8, 1, 0.4, 0.2));
-            ps.addColorGradient(1, new Color4(0.6, 1, 0.3, 1), new Color4(0.8, 1, 0.4, 1));
-            break;
-        }
-        case 'leaves': {
-            ps.blendMode = ParticleSystem.BLENDMODE_STANDARD;
-            ps.emitRate = 30;
-            ps.gravity = new Vector3(0, -1, 0);
-            ps.minLifeTime = 8;
-            ps.maxLifeTime = 14;
-            ps.minEmitPower = 0.5;
-            ps.maxEmitPower = 1.5;
-            ps.minAngularSpeed = -2;
-            ps.maxAngularSpeed = 2;
-            ps.minSize = 0.2;
-            ps.maxSize = 0.4;
-            if (isWeather) {
-                ps.createBoxEmitter(
-                    new Vector3(-0.8, -0.3, -0.8),
-                    new Vector3(0.8, 0.3, 0.8),
-                    new Vector3(-WEATHER_BOX_XZ_HALF, 0, -WEATHER_BOX_XZ_HALF),
-                    new Vector3(WEATHER_BOX_XZ_HALF, WEATHER_BOX_Y_RANGE, WEATHER_BOX_XZ_HALF)
-                );
-            }
-            ps.addColorGradient(0, new Color4(0.9, 0.5, 0.2, 1), new Color4(0.8, 0.6, 0.1, 1));
-            ps.addColorGradient(1, new Color4(0.9, 0.5, 0.2, 0), new Color4(0.8, 0.6, 0.1, 0));
-            break;
-        }
-    }
-
-    // 保存基础参数值（供运行时滑条更新使用）
     _baseEmitRate = ps.emitRate;
     _baseMinSize = ps.minSize;
     _baseMaxSize = ps.maxSize;
     _baseMinEmitPower = ps.minEmitPower;
     _baseMaxEmitPower = ps.maxEmitPower;
-
-    // 保存初始发射方向，风力始终基于初始值计算，避免叠加
     _initialDir1 = ps.direction1.clone();
     _initialDir2 = ps.direction2.clone();
 
     // 应用 multiplier
-    const er = envState.particleEmitRate;
-    if (er !== 1) {
-        ps.emitRate = Math.max(0, ps.emitRate * er);
+    if (envState.particleEmitRate !== 1) {
+        ps.emitRate = Math.max(0, ps.emitRate * envState.particleEmitRate);
     }
-
-    const sz = envState.particleSize;
-    if (sz !== 1) {
-        ps.minSize *= sz;
-        ps.maxSize *= sz;
+    if (envState.particleSize !== 1) {
+        ps.minSize *= envState.particleSize;
+        ps.maxSize *= envState.particleSize;
     }
-
-    const sp = envState.particleSpeed;
-    if (sp !== 1) {
-        ps.minEmitPower *= sp;
-        ps.maxEmitPower *= sp;
+    if (envState.particleSpeed !== 1) {
+        ps.minEmitPower *= envState.particleSpeed;
+        ps.maxEmitPower *= envState.particleSpeed;
     }
-
     if (windEnabled) {
         applyWindToParticles(ps);
     }
 
-    // 每帧更新 emitter 位置（基于 groundLevel 和类型定位策略）
+    // 每帧跟随相机（XZ 跟随，Y 按类型策略定位）
     _envSys.particles.followObserver = scene.onBeforeRenderObservable.add(() => {
         const cam = scene.activeCamera;
-        if (!cam) {
-            return;
-        }
+        if (!cam) return;
         const e = ps.emitter;
-        if (!(e instanceof Vector3)) {
-            return;
-        }
-
+        if (!(e instanceof Vector3)) return;
         const groundY = envState.groundLevel ?? 0;
-
-        if (isWeather) {
-            // 全景天气：XZ 跟随相机，Y 固定在世界空间地面以上
-            e.x = cam.position.x;
-            e.z = cam.position.z;
-            e.y = groundY + WEATHER_HEIGHT_ABOVE_GROUND;
-        } else {
-            // 局部效果：XZ 跟随相机，Y 相对于地面偏移
-            e.x = cam.position.x;
-            e.z = cam.position.z;
-            if (type === 'fireflies') {
-                e.y = groundY + FIREFLY_HEIGHT_OFFSET;
-            } else if (type === 'fireworks') {
-                e.y = groundY + FIREWORK_HEIGHT_OFFSET;
-            }
-        }
+        e.x = cam.position.x;
+        e.z = cam.position.z;
+        e.y = _getEmitterY(type, groundY);
     });
 
     _envSys.particles.system = ps;
     ps.start();
 
-    // 天气类型启动地面碰撞检测（每帧遍历 particles[] 检测 y < groundHeight）
-    if (isWeather) {
+    if (WEATHER_TYPES.includes(type)) {
         startCollisionDetection(ps, type);
     }
-
-    // 粒子类型变更后同步溅射状态（雨/雪才有溅射）
     syncSplashState();
-
-    // 烟花类型启动 burst 调度
     if (type === 'fireworks') {
         scheduleNextFireworkBurst();
     }

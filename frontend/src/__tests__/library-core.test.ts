@@ -74,6 +74,7 @@ vi.mock('../core/ui-helpers', () => ({
 }));
 
 vi.mock('../core/config', () => ({
+    getBaseName: vi.fn((p: string) => p.split('/').pop() || p),
     get allModels() {
         return mockState.allModels;
     },

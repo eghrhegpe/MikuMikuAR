@@ -7,7 +7,6 @@ import {
     fireAndForget,
     delay,
     waitForFrame,
-    lazyImport,
     LoadingGuard,
     DebouncedTimer,
     Abortable,
@@ -178,23 +177,6 @@ describe('ADR-101 P1-a: error & async helpers', () => {
             await p;
             expect(resolved).toBe(true);
             rafSpy.mockRestore();
-        });
-    });
-
-    describe('lazyImport', () => {
-        it('dynamically imports and returns named export', async () => {
-            const clamp = await lazyImport<(v: number, lo: number, hi: number) => number>(
-                '../core/utils',
-                'clamp'
-            );
-            expect(clamp(5, 0, 10)).toBe(5);
-            expect(clamp(-1, 0, 10)).toBe(0);
-            expect(clamp(20, 0, 10)).toBe(10);
-        });
-
-        it('returns undefined for non-existent export name', async () => {
-            const result = await lazyImport<unknown>('../core/utils', '__nonExistentExport__');
-            expect(result).toBeUndefined();
         });
     });
 });

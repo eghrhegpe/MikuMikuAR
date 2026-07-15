@@ -92,7 +92,7 @@ export function getRelativePathUnderDir(mdirRaw: string, baseDirRaw: string): st
     const base = normPath(baseDirRaw);
     if (!isUnderRoot(base, mdir)) return null;
     const rel = mdir.substring(base.length + 1);
-    return rel || null;
+    return rel;
 }
 
 export function isLeafFlattenDir(

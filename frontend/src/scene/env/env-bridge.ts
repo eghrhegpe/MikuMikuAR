@@ -6,6 +6,8 @@
 import { SetEnvState, SetUIState } from '@/core/wails-bindings';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
+import type { Observer } from '@babylonjs/core/Misc/observable';
+import type { Scene } from '@babylonjs/core/scene';
 
 import { envState, EnvState, triggerAutoSave, mmdRuntime } from '@/core/config';
 import { uiState, setUIPersistCallback } from '@/core/state';
@@ -35,187 +37,100 @@ import { setKey } from '@/core/utils';
 
 // 时间戳格式化已收敛至 utils.formatTimestamp
 
+/**
+ * 条件执行辅助：仅当 changed 包含 keys 中任意一个（或 changed 为 null 表示全量）时执行 fn。
+ * 统一 try/catch + logWarn，消除子系统分支的重复模式。
+ */
+function _applyIfChanged(
+    changed: string[] | null,
+    keys: string[],
+    label: string,
+    fn: () => void
+): void {
+    if (changed && !changed.some((k) => keys.includes(k))) {
+        return;
+    }
+    try {
+        fn();
+    } catch (e) {
+        logWarn('env', `${label} fail:`, e);
+    }
+}
+
+// 子系统 key 表 — 集中定义，便于维护
+const _SKY_KEYS = [
+    'skyMode', 'skyColorTop', 'skyColorMid', 'skyColorBot',
+    'skyTexture', 'skyRotationY', 'skyRotationSpeed', 'skyBrightness',
+    'starsEnabled', 'starsTexture', 'envIntensity', 'sunAngle', 'azimuth',
+];
+const _GROUND_KEYS = [
+    'groundVisible', 'groundType', 'groundStyle', 'groundDecoStyle',
+    'groundColor', 'groundAlpha', 'groundTexture', 'groundTextureEnabled',
+    'groundTextureScale', 'groundTextureRotation', 'groundTerrainHeight',
+    'groundTerrainScale', 'groundTerrainSeed', 'groundTerrainOctaves',
+    'groundSize', 'groundGridSize', 'groundLineColor', 'groundEdgeFade',
+    'groundPitch', 'groundRoll', 'groundScrollSpeedX', 'groundScrollSpeedZ',
+    'groundPattern', 'groundReflectionBlend', 'groundReflectionQuality',
+    'groundNormalTexture', 'groundNormalStrength', 'groundElevationColoring',
+    'groundFollowCamera', 'groundLevel',
+];
+const _FOG_KEYS = ['fogEnabled', 'fogColor', 'fogDensity', 'fogMode', 'fogStart', 'fogEnd'];
+const _WATER_KEYS = [
+    'waterEnabled', 'waterLevel', 'waterColor', 'waterTransparency',
+    'waterWaveHeight', 'waterSize', 'waterAnimSpeed', 'fresnelBias',
+    'fresnelPower', 'diffuseStrength', 'ambientStrength', 'foamTransitionRange',
+    'rippleNormalStrength', 'rippleGlintStrength', 'causticColor1', 'causticColor2',
+    'causticScrollX', 'causticScrollY', 'fresnelAlphaInfluence', 'foamOpacity',
+    'waterFogColor', 'waterFogDensity', 'waterFogOpacityInfluence',
+];
+const _PARTICLE_KEYS = [
+    'particleEnabled', 'particleType', 'particleEmitRate',
+    'particleSize', 'particleSpeed', 'particleSplash', 'particleCustomTexture',
+];
+const _CLOUD_KEYS = [
+    'cloudsEnabled', 'cloudCover', 'cloudScale', 'cloudHeight',
+    'cloudThickness', 'cloudVisibility', 'cloudGap',
+];
+
 /** 等同于 scene-env.ts 的 applyEnvState，但避免循环依赖。 */
 function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): void {
     const changed = partial ? Object.keys(partial) : null;
 
-    // Guard: skip sky rebuild unless a sky-related property changed
-    const skyKeys = [
-        'skyMode',
-        'skyColorTop',
-        'skyColorMid',
-        'skyColorBot',
-        'skyTexture',
-        'skyRotationY',
-        'skyRotationSpeed',
-        'skyBrightness',
-        'starsEnabled',
-        'starsTexture',
-        'envIntensity',
-        'sunAngle',
-        'azimuth',
-    ];
-    if (!changed || changed.some((k) => skyKeys.includes(k))) {
-        try {
-            const _skyStart = performance.now();
-            impl.applySky(state);
-            const _skyElapsed = performance.now() - _skyStart;
-            if (_skyElapsed > 2) {
-                logWarn(
-                    'perf:env',
-                    `[${formatTimestamp()}] applySky took ${_skyElapsed.toFixed(1)}ms`
-                );
-            }
-        } catch (e) {
-            logWarn('env', 'sky fail:', e);
+    _applyIfChanged(changed, _SKY_KEYS, 'sky', () => {
+        const t0 = performance.now();
+        impl.applySky(state);
+        const elapsed = performance.now() - t0;
+        if (elapsed > 2) {
+            logWarn('perf:env', `[${formatTimestamp()}] applySky took ${elapsed.toFixed(1)}ms`);
         }
-    }
+    });
 
-    // Guard: skip ground rebuild unless ground-related property changed
-    const groundKeys = [
-        'groundVisible',
-        'groundType',
-        'groundStyle',
-        'groundDecoStyle',
-        'groundColor',
-        'groundAlpha',
-        'groundTexture',
-        'groundTextureEnabled',
-        'groundTextureScale',
-        'groundTextureRotation',
-        'groundTerrainHeight',
-        'groundTerrainScale',
-        'groundTerrainSeed',
-        'groundTerrainOctaves',
-        'groundSize',
-        'groundGridSize',
-        'groundLineColor',
-        'groundEdgeFade',
-        'groundPitch',
-        'groundRoll',
-        'groundScrollSpeedX',
-        'groundScrollSpeedZ',
-        'groundPattern',
-        'groundReflectionBlend',
-        'groundReflectionQuality',
-        'groundNormalTexture',
-        'groundNormalStrength',
-        'groundElevationColoring',
-        'groundFollowCamera',
-        'groundLevel',
-    ];
-    if (!changed || changed.some((k) => groundKeys.includes(k))) {
-        try {
-            impl.applyGround(state);
-        } catch (e) {
-            logWarn('env', 'ground fail:', e);
-        }
-    }
+    _applyIfChanged(changed, _GROUND_KEYS, 'ground', () => impl.applyGround(state));
 
-    // Guard: skip fog rebuild unless fog-related property changed
-    const fogKeys = ['fogEnabled', 'fogColor', 'fogDensity', 'fogMode', 'fogStart', 'fogEnd'];
-    if (!changed || changed.some((k) => fogKeys.includes(k))) {
-        try {
-            impl.applyFog(state);
-        } catch (e) {
-            logWarn('env', 'fog fail:', e);
-        }
-    }
+    _applyIfChanged(changed, _FOG_KEYS, 'fog', () => impl.applyFog(state));
 
-    // Water
-    const waterKeys = [
-        'waterEnabled',
-        'waterLevel',
-        'waterColor',
-        'waterTransparency',
-        'waterWaveHeight',
-        'waterSize',
-        'waterAnimSpeed',
-        'fresnelBias',
-        'fresnelPower',
-        'diffuseStrength',
-        'ambientStrength',
-        'foamTransitionRange',
-        'rippleNormalStrength',
-        'rippleGlintStrength',
-        'causticColor1',
-        'causticColor2',
-        'causticScrollX',
-        'causticScrollY',
-        'fresnelAlphaInfluence',
-        'foamOpacity',
-        'waterFogColor',
-        'waterFogDensity',
-        'waterFogOpacityInfluence',
-    ];
-    if (!changed || changed.some((k) => waterKeys.includes(k))) {
-        try {
-            if (state.waterEnabled) {
-                impl.createWater(state);
-            } else {
-                impl.disposeWater();
-            }
-        } catch (e) {
-            logWarn('env', 'water fail:', e);
-        }
-    }
+    _applyIfChanged(changed, _WATER_KEYS, 'water', () => {
+        if (state.waterEnabled) impl.createWater(state);
+        else impl.disposeWater();
+    });
 
-    // Particles
-    const particleKeys = [
-        'particleEnabled',
-        'particleType',
-        'particleEmitRate',
-        'particleSize',
-        'particleSpeed',
-        'particleSplash',
-        'particleCustomTexture',
-    ];
-    if (!changed || changed.some((k) => particleKeys.includes(k))) {
-        try {
-            if (state.particleEnabled && state.particleType && state.particleType !== 'none') {
-                impl.createParticleEmitter(state.particleType, state.windEnabled);
-            } else {
-                impl.disposeParticles();
-            }
-        } catch (e) {
-            logWarn('env', 'particle fail:', e);
+    _applyIfChanged(changed, _PARTICLE_KEYS, 'particle', () => {
+        if (state.particleEnabled && state.particleType && state.particleType !== 'none') {
+            impl.createParticleEmitter(state.particleType, state.windEnabled);
+        } else {
+            impl.disposeParticles();
         }
-    }
+    });
 
-    // Clouds
-    const cloudKeys = [
-        'cloudsEnabled',
-        'cloudCover',
-        'cloudScale',
-        'cloudHeight',
-        'cloudThickness',
-        'cloudVisibility',
-        'cloudGap',
-    ];
-    if (!changed || changed.some((k) => cloudKeys.includes(k))) {
-        try {
-            if (state.cloudsEnabled) {
-                impl.createClouds(state);
-            } else {
-                impl.disposeClouds();
-            }
-        } catch (e) {
-            logWarn('env', 'cloud fail:', e);
-        }
-    }
+    _applyIfChanged(changed, _CLOUD_KEYS, 'cloud', () => {
+        if (state.cloudsEnabled) impl.createClouds(state);
+        else impl.disposeClouds();
+    });
 
-    // Debug Mirror
-    if (!changed || changed.includes('debugMirrorEnabled')) {
-        try {
-            if (state.debugMirrorEnabled && !impl.isDebugMirrorActive()) {
-                impl.createDebugMirror();
-            } else if (!state.debugMirrorEnabled && impl.isDebugMirrorActive()) {
-                impl.disposeDebugMirror();
-            }
-        } catch (e) {
-            logWarn('env', 'debugMirror fail:', e);
-        }
-    }
+    _applyIfChanged(changed, ['debugMirrorEnabled'], 'debugMirror', () => {
+        if (state.debugMirrorEnabled && !impl.isDebugMirrorActive()) impl.createDebugMirror();
+        else if (!state.debugMirrorEnabled && impl.isDebugMirrorActive()) impl.disposeDebugMirror();
+    });
 
     // 半球光 — 强度跟随当前灯光状态，颜色随天空色（灯光未初始化时跳过）
     const skyMid = state.skyColorMid ?? [
@@ -226,11 +141,9 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
     if (hemiLight) {
         hemiLight.intensity = getLightState().hemiIntensity;
         hemiLight.diffuse = col3FromTriple(skyMid);
-        // 半球光地面色固定为中性灰，不跟随地面材质色，避免「地面色拖了灯光」的混淆。
         hemiLight.groundColor = new Color3(0.3, 0.3, 0.4);
     }
-    // 场景环境色 — 直接影响 MMD 材质的 ambient 项，envIntensity 控制渗透力度
-    // 0→0, 默认2→0.3, 3→0.45，最大不超过 0.5 以免冲淡方向光
+    // 场景环境色 — envIntensity 控制渗透力度，最大不超过 0.5 以免冲淡方向光
     const ambientStrength = Math.min(state.envIntensity * 0.15, 0.5);
     scene.ambientColor = new Color3(
         skyMid[0] * ambientStrength,
@@ -238,13 +151,12 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
         skyMid[2] * ambientStrength
     );
 
-    // 方向光同步：当太阳角度/方位角/天空色变化时，推导并更新 dirLight 参数
-    // 跳过预设动画期间（applyEnvPresetObject 有自己的动画循环管理 dirLight）
-    const lightSyncKeys = ['sunAngle', 'azimuth', 'skyColorTop', 'skyColorBot'];
+    // 方向光同步：跳过预设动画期间（applyEnvPresetObject 有自己的动画循环管理 dirLight）
+    const _LIGHT_SYNC_KEYS = ['sunAngle', 'azimuth', 'skyColorTop', 'skyColorBot'];
     if (
         _timeOfDayBeforePreset === null &&
         changed &&
-        changed.some((k) => lightSyncKeys.includes(k))
+        changed.some((k) => _LIGHT_SYNC_KEYS.includes(k))
     ) {
         const derived = deriveLighting(state.skyColorTop, state.sunAngle, state.azimuth ?? -45);
         setLightState({
@@ -426,6 +338,92 @@ export function applyEnvPreset(name: string): boolean {
     return applyEnvPresetObject(preset);
 }
 
+interface PresetAnimCtx {
+    myId: number;
+    preset: Parameters<typeof applyEnvPresetObject>[0];
+    startSkyTop: [number, number, number];
+    startSkyBot: [number, number, number];
+    startSkyMid: [number, number, number];
+    mid: [number, number, number];
+    startLight: LightState;
+    targetLight: Partial<LightState>;
+    startTime: number;
+    lastSkyUpdate: number;
+}
+
+const PRESET_ANIM_DURATION = 2000;
+const SKY_UPDATE_INTERVAL = 50; // ms — 显示器刷新率无关，始终 ~20fps
+
+function _presetAnimLoop(ctx: PresetAnimCtx, observer: Observer<Scene>): void {
+    if (_presetAnimId !== ctx.myId) {
+        scene.onBeforeRenderObservable.remove(observer);
+        return;
+    }
+    const elapsed = performance.now() - ctx.startTime;
+    const t = Math.min(elapsed / PRESET_ANIM_DURATION, 1.0);
+    const lerp = (a: number, b: number) => lerpUtil(a, b, t);
+
+    // 天空纹理重建开销大，50ms 间隔节流（~20fps）
+    if (elapsed - ctx.lastSkyUpdate >= SKY_UPDATE_INTERVAL || t >= 0.999) {
+        const skyTop: [number, number, number] = [
+            lerp(ctx.startSkyTop[0], ctx.preset.skyColorTop[0]),
+            lerp(ctx.startSkyTop[1], ctx.preset.skyColorTop[1]),
+            lerp(ctx.startSkyTop[2], ctx.preset.skyColorTop[2]),
+        ];
+        const skyBot: [number, number, number] = [
+            lerp(ctx.startSkyBot[0], ctx.preset.skyColorBot[0]),
+            lerp(ctx.startSkyBot[1], ctx.preset.skyColorBot[1]),
+            lerp(ctx.startSkyBot[2], ctx.preset.skyColorBot[2]),
+        ];
+        const skyMid: [number, number, number] = [
+            lerp(ctx.startSkyMid[0], ctx.mid[0]),
+            lerp(ctx.startSkyMid[1], ctx.mid[1]),
+            lerp(ctx.startSkyMid[2], ctx.mid[2]),
+        ];
+
+        setEnvState(
+            {
+                skyMode: 'procedural',
+                skyColorTop: skyTop,
+                skyColorMid: skyMid,
+                skyColorBot: skyBot,
+                skyBrightness: 1.0,
+                sunAngle: ctx.preset.sunAngle,
+                azimuth: ctx.preset.azimuth ?? -45,
+                envIntensity: 2,
+            },
+            true
+        );
+        ctx.lastSkyUpdate = elapsed;
+    }
+
+    // 灯光每帧插值（开销小，无纹理重建）
+    const interpLight: Partial<LightState> = {};
+    for (const key of Object.keys(ctx.targetLight) as (keyof LightState)[]) {
+        const a = ctx.startLight[key];
+        const b = ctx.targetLight[key];
+        if (typeof a === 'number' && typeof b === 'number') {
+            setKey(interpLight, key, lerp(a, b) as LightState[typeof key]);
+        } else if (Array.isArray(a) && Array.isArray(b)) {
+            setKey(interpLight, key, lerpArray(a, b, t) as LightState[typeof key]);
+        }
+    }
+    setLightState(interpLight);
+
+    if (t >= 1) {
+        scene.onBeforeRenderObservable.remove(observer);
+        setSkipLightAutoSave(false);
+        if (_timeOfDayBeforePreset) {
+            _timeOfDayActive = true;
+            _lastSkySunAngle = envSunAngle;
+            _lastAutoLinkSunAngle = envSunAngle;
+        }
+        _timeOfDayBeforePreset = null;
+        swallowError(SetEnvState(envState));
+        triggerAutoSave();
+    }
+}
+
 /** 应用任意 EnvPreset 对象（支持用户自定义预设）。 */
 export function applyEnvPresetObject(preset: {
     label: string;
@@ -442,8 +440,6 @@ export function applyEnvPresetObject(preset: {
     const myId = _presetAnimId;
     envSunAngle = preset.sunAngle;
 
-    // 暂停 time-of-day，防止其每帧覆盖 sunAngle 导致天空纹理重复重建
-    // 仅在第一个预设动画开始时记录原始状态（后续切换保持记录不变）
     if (_timeOfDayBeforePreset === null) {
         _timeOfDayBeforePreset = _timeOfDayActive;
     }
@@ -459,8 +455,8 @@ export function applyEnvPresetObject(preset: {
 
     const startSkyTop = [...envState.skyColorTop] as [number, number, number];
     const startSkyBot = [...envState.skyColorBot] as [number, number, number];
-    const startSkyMid = envState.skyColorMid
-        ? ([...envState.skyColorMid] as [number, number, number])
+    const startSkyMid: [number, number, number] = envState.skyColorMid
+        ? [...envState.skyColorMid]
         : [
               (startSkyTop[0] + startSkyBot[0]) / 2,
               (startSkyTop[1] + startSkyBot[1]) / 2,
@@ -483,138 +479,16 @@ export function applyEnvPresetObject(preset: {
         hemiIntensity: derived.hemiIntensity,
     };
 
-    const duration = 2000;
-    const startTime = performance.now();
-    let lastSkyUpdate = 0;
-    const SKY_UPDATE_INTERVAL = 50; // ms — 显示器刷新率无关，始终 ~20fps
-
     setSkipLightAutoSave(true);
 
-    const animLoop = () => {
-        if (_presetAnimId !== myId) {
-            // 旧动画被取消：不重置 _skipLightAutoSave（新动画已接管）
-            // 不恢复 time-of-day（新动画已接管）
-            scene.onBeforeRenderObservable.remove(animObserver);
-            return;
-        }
-        const elapsed = performance.now() - startTime;
-        const t = Math.min(elapsed / duration, 1.0);
-        const lerp = (a: number, b: number) => lerpUtil(a, b, t);
-
-        const _obsStart = scene.onBeforeRenderObservable.observers
-            ? scene.onBeforeRenderObservable.observers.length
-            : 0;
-
-        // 天空纹理重建开销大（dispose + 重新生成），50ms 间隔节流（~20fps），
-        // 显示器刷新率无关，texture rebuild 从 ~120 次降到 ~40 次。
-        if (elapsed - lastSkyUpdate >= SKY_UPDATE_INTERVAL || t >= 0.999) {
-            const skyTop: [number, number, number] = [
-                lerp(startSkyTop[0], preset.skyColorTop[0]),
-                lerp(startSkyTop[1], preset.skyColorTop[1]),
-                lerp(startSkyTop[2], preset.skyColorTop[2]),
-            ];
-            const skyBot: [number, number, number] = [
-                lerp(startSkyBot[0], preset.skyColorBot[0]),
-                lerp(startSkyBot[1], preset.skyColorBot[1]),
-                lerp(startSkyBot[2], preset.skyColorBot[2]),
-            ];
-            const skyMid: [number, number, number] = [
-                lerp(startSkyMid[0], mid[0]),
-                lerp(startSkyMid[1], mid[1]),
-                lerp(startSkyMid[2], mid[2]),
-            ];
-
-            const _skyStart = performance.now();
-            setEnvState(
-                {
-                    skyMode: 'procedural',
-                    skyColorTop: skyTop,
-                    skyColorMid: skyMid,
-                    skyColorBot: skyBot,
-                    skyBrightness: 1.0,
-                    sunAngle: preset.sunAngle,
-                    azimuth: preset.azimuth ?? -45,
-                    envIntensity: 2,
-                },
-                true
-            );
-            logWarn(
-                'perf:sky',
-                `[${formatTimestamp()}] setEnvState took ${performance.now() - _skyStart}ms (t=${t.toFixed(2)})`
-            );
-            const _obsNow = scene.onBeforeRenderObservable.observers
-                ? scene.onBeforeRenderObservable.observers.length
-                : 0;
-            logWarn('perf:obs', `[${formatTimestamp()}] observers=${_obsNow} (t=${t.toFixed(2)})`);
-            lastSkyUpdate = elapsed;
-        }
-
-        // 灯光每帧更新（开销小，无纹理重建）
-        const interpLight: Partial<LightState> = {};
-        for (const key of Object.keys(targetLight) as (keyof LightState)[]) {
-            const a = startLight[key];
-            const b = targetLight[key];
-            if (typeof a === 'number' && typeof b === 'number') {
-                setKey(interpLight, key, lerp(a, b) as LightState[typeof key]);
-            } else if (Array.isArray(a) && Array.isArray(b)) {
-                setKey(interpLight, key, lerpArray(a, b, t) as LightState[typeof key]);
-            }
-        }
-        const _lightStart = performance.now();
-        setLightState(interpLight);
-        if (performance.now() - _lightStart > 2) {
-            logWarn(
-                'perf:light',
-                `[${formatTimestamp()}] setLightState took ${performance.now() - _lightStart}ms (t=${t.toFixed(2)})`
-            );
-        }
-
-        const _obsAfterLight = scene.onBeforeRenderObservable.observers
-            ? scene.onBeforeRenderObservable.observers.length
-            : 0;
-        if (_obsAfterLight > 100) {
-            logWarn(
-                'perf:obs',
-                `[${formatTimestamp()}] animLoop Δ=${_obsAfterLight - _obsStart} (start=${_obsStart} afterLight=${_obsAfterLight} t=${t.toFixed(2)})`
-            );
-        }
-
-        if (t >= 1) {
-            scene.onBeforeRenderObservable.remove(animObserver);
-            setSkipLightAutoSave(false);
-            // 恢复 time-of-day（如果预设动画前是激活的）
-            if (_timeOfDayBeforePreset) {
-                _timeOfDayActive = true;
-                _lastSkySunAngle = envSunAngle;
-                _lastAutoLinkSunAngle = envSunAngle;
-            }
-            _timeOfDayBeforePreset = null;
-            const _obsBeforeEnd = scene.onBeforeRenderObservable.observers
-                ? scene.onBeforeRenderObservable.observers.length
-                : 0;
-            const _endStart = performance.now();
-            swallowError(SetEnvState(envState));
-            const _endElapsed = performance.now() - _endStart;
-            const _obsAfterSetEnv = scene.onBeforeRenderObservable.observers
-                ? scene.onBeforeRenderObservable.observers.length
-                : 0;
-            logWarn(
-                'perf:sky',
-                `[${formatTimestamp()}] animLoop ended: SetEnvState=${_endElapsed.toFixed(1)}ms, observers=${_obsBeforeEnd}→${_obsAfterSetEnv}, triggerAutoSave next`
-            );
-            triggerAutoSave();
-            const _obsAfterAutoSave = scene.onBeforeRenderObservable.observers
-                ? scene.onBeforeRenderObservable.observers.length
-                : 0;
-            logWarn(
-                'perf:sky',
-                `[${formatTimestamp()}] after triggerAutoSave: observers=${_obsAfterAutoSave}`
-            );
-            return;
-        }
+    const ctx: PresetAnimCtx = {
+        myId, preset, startSkyTop, startSkyBot, startSkyMid,
+        mid, startLight, targetLight,
+        startTime: performance.now(), lastSkyUpdate: 0,
     };
-
-    const animObserver = scene.onBeforeRenderObservable.add(animLoop);
+    const observer = scene.onBeforeRenderObservable.add(
+        () => _presetAnimLoop(ctx, observer)
+    );
     return true;
 }
 

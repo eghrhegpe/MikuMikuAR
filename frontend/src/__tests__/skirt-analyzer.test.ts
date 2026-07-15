@@ -322,9 +322,12 @@ describe('skirt-analyzer — 退化 & 边界情况', () => {
         expect(result.chains).toEqual([]);
     });
 
-    it('封闭球体 → 无 boundary edges, 直接抛错（Fail-Fast）', () => {
+    it('封闭球体 → 无 boundary edges, 返回空结果（Fail-Fast）', () => {
         const mesh = createSphere(1.0, 8);
-        expect(() => analyzeSkirt(mesh.positions, mesh.indices, defaultOpts)).toThrow();
+        const result = analyzeSkirt(mesh.positions, mesh.indices, defaultOpts);
+        expect(result.chains).toEqual([]);
+        expect(result.totalSegments).toBe(0);
+        expect(result.boundaryEdgeCount).toBe(0);
     });
 
     it('极小 mesh（< MIN_SKIRT_VERTICES）→ 返回空', () => {

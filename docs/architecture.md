@@ -337,12 +337,28 @@ type DanceSet struct {
 
 ### 13. 目录结构
 
+> 更新于 2026-07-16（v1.3.1 发布线 + ADR-093 全量落地）
+
 ```
 MikuMikuAR/
 ├── internal/
 │   ├── app/
 │   │   ├── app.go             # ★ Go 后端入口（Wails Binding 核心）
-│   │   └── dancesets.go       # 舞蹈套装 Go binding
+│   │   ├── dancesets.go       # 舞蹈套装 Go binding
+│   │   ├── library.go         # 库扫描 + 配置持久化
+│   │   ├── zipextract.go      # zip 解压 + 缓存 + 文件服务器
+│   │   ├── watch.go           # 下载目录监听 + 自动导入
+│   │   ├── proxy.go           # 模型广场反向代理 + Cookie 中继
+│   │   ├── integration.go     # Blender/MMD 唤起 + 场景/环境预设
+│   │   ├── render_preset.go   # 渲染预设
+│   │   ├── scene_preset.go    # 场景预设
+│   │   ├── model_preset.go    # 模型预设
+│   │   ├── tags.go            # 标签系统
+│   │   ├── thumbnail.go       # 缩略图 + 截图
+│   │   ├── plaza_config.go    # 广场配置获取
+│   │   ├── plaza_window.go    # 广场窗口管理
+│   │   ├── update.go          # 版本更新检查
+│   │   └── httpserver.go      # 文件服务器 + 安全隔离
 │   └── util/
 │       └── pmx.go             # PMX Header 二进制解析
 ├── main.go                 # Wails 应用入口
@@ -350,74 +366,183 @@ MikuMikuAR/
 ├── wails.json              # Wails 项目配置
 └── frontend/
     └── src/
-        ├── core/
-        │   ├── main.ts         # ★ 前端入口（事件绑定 + 快捷键 + 初始化）
-        │   ├── config.ts       # barrel re-export → types.ts / state.ts / dom.ts / utils.ts
-        │   ├── fileservice.ts  # 统一文件 URL 解析层（resolveFileUrl）
-        │   ├── icons.ts        # Iconify 图标创建函数（createIconifyIcon）
-        │   ├── iconify-registry.ts  # Iconify 本地图标注册表
-        │   ├── ui-helpers.ts   # DOM 构建函数（slideRow/addToggleRow/addSliderRow）
-        │   └── physics/
-        │       └── wind-utils.ts   # 风场辅助函数（getWindVector / isWindActive）
-        ├── scene/
-        │   ├── scene.ts              # 3D 场景编排入口
+        ├── core/                     # ★ 基础设施
+        │   ├── main.ts               # 应用入口（事件绑定 + 快捷键 + 初始化）
+        │   ├── config.ts             # barrel re-export → types.ts / state.ts / dom.ts / utils.ts
+        │   ├── types.ts              # 全局类型定义
+        │   ├── state.ts              # UI/环境状态管理
+        │   ├── fileservice.ts        # resolveFileUrl 统一文件 URL 解析
+        │   ├── dialog.ts             # 通用对话框
+        │   ├── reactivity.ts         # 简易响应式（signal / effect）
+        │   ├── wails-bindings.ts     # Wails Go binding 类型封装（手维护）
+        │   ├── audio-bus.ts          # 音效总线（ADR-088）
+        │   ├── load-manager.ts       # 资源加载管理器
+        │   ├── shortcut-registry.ts  # 快捷键注册表
+        │   ├── status-bar.ts         # 状态栏组件
+        │   ├── toast.ts              # Toast 提示
+        │   ├── platform.ts           # 平台判断（桌面 vs Android）
+        │   ├── icons.ts              # Iconify 图标创建
+        │   ├── icons-bundle.ts       # 本地图标包
+        │   ├── orbit.ts              # 轨道控制
+        │   ├── ui-helpers.ts         # DOM 构建工具（slideRow / addToggleRow 等）
+        │   ├── ui-types.ts           # UI 组件类型定义
+        │   ├── ui-rows.ts            # 通用行组件
+        │   ├── ui-slide-row.ts       # 滑块行
+        │   ├── ui-advanced-rows.ts   # 高级行组件
+        │   ├── ui-collapsible.ts     # 可折叠面板
+        │   ├── ui-fullscreen-overlay.ts # 全屏覆盖层
+        │   ├── ui-virtual-grid.ts    # 虚拟网格
+        │   ├── ui-resource-panel.ts  # 资源面板（目录记忆，ADR-090）
+        │   └── i18n/                 # 国际化（5 语言：zh-CN/zh-TW/ja/en/ko）
+        │
+        ├── scene/                    # 3D 场景（Babylon.js）
+        │   ├── scene.ts              # ★ 场景编排入口
+        │   ├── scene-bundle.ts       # 场景模块聚合导出
         │   ├── scene-serialize.ts    # 场景序列化
-        │   ├── camera/
-        │   │   └── camera.ts         # 相机模式管理
-        │   ├── motion/
-        │   │   ├── vmd-loader.ts     # VMD 加载/播放入口
-        │   │   ├── proc-motion-bridge.ts  # 程序化动作桥接 + 视线追踪
-        │   │   ├── lipsync-bridge.ts # LipSync 桥接
-        │   │   └── playback.ts       # 播放控制（进度条/seek）
-        │   ├── manager/
-        │   │   ├── model-manager.ts  # ModelManager（模型注册表 + 生命周期）
-        │   │   ├── material.ts       # 材质系统（分类/批量/逐材质）
-        │   │   ├── model-loader.ts   # PMX 加载 + 缩略图
-        │   │   └── model-ops.ts      # 模型操作（变换/可见性/VMD清空）
-        │   ├── env/
-        │   │   ├── env.ts            # 环境系统门面
-        │   │   ├── env-impl.ts       # 环境实现（天空/地面/雾）
-        │   │   ├── env-bridge.ts     # 环境→灯光联动 + 预设 + 时间流转
-        │   │   ├── env-water.ts      # 水面系统（Gerstner波浪+焦散+水下）
-        │   │   ├── env-clouds.ts     # 体积云
-        │   │   ├── env-particles.ts  # 粒子（雨/雪/樱花/萤火虫/烟花）
-        │   │   ├── env-lighting.ts   # 光照推导（天空色→方向光参数）
-        │   │   └── props.ts          # 道具系统
-        │   └── render/
-        │       ├── renderer.ts       # 渲染管线（Bloom/DOF/色调映射）
-        │       ├── lighting.ts       # 灯光 + 阴影生成器 + 太阳盘
-        │       └── performance.ts    # 性能降级
-        ├── menus/
-        │   ├── menu.ts               # SlideMenu 通用菜单导航（动画+键盘）
-        │   ├── library.ts            # 模型库入口 barrel
-        │   ├── library-core.ts       # 模型库核心（扫描/搜索/层级/标签）
-        │   ├── model-detail.ts       # 模型详情（信息/变换/可见性/表情）
-        │   ├── model-material.ts     # 逐材质 + 分类调参
-        │   ├── model-preset.ts       # 模型预设保存/加载/自动应用
-        │   ├── outfit-ui.ts          # 服装变体子菜单
-        │   ├── scene-menu.ts         # 场景弹窗入口 + 路由器
-        │   ├── scene-render-levels.ts # 后处理/舞台/渲染预设
-        │   ├── scene-prop-levels.ts  # 道具系统
-        │   ├── env-menu.ts           # 环境弹窗入口 + 导航
-        │   ├── env-feature-levels.ts # 天空/地面/水面/风/云
-        │   ├── env-preset-levels.ts  # 环境预设（内置+用户保存）
-        │   ├── motion-popup.ts       # 动作弹窗入口 + 动作绑定/音乐/相机
-        │   ├── motion-camera-levels.ts   # 相机控制/行为双轴 + 参数面板（ADR-100）
-        │   ├── motion-procmotion-levels.ts # 程序化动作 + LipSync
-        │   ├── motion-cloth-levels.ts    # 布料参数面板
-        │   ├── settings.ts           # 设置页（UI/主题/字体/外部库）
-        │   └── settings-software.ts  # 软件管理子菜单（MMD/Blender）
-        ├── motion-algos/
-        │   ├── procedural-motion.ts  # 程序化动作（Idle/AutoDance VMD生成）
-        │   ├── vmd-writer.ts         # VMD 二进制写入（Shift-JIS骨骼名）
-        │   ├── vpd-parser.ts         # VPD 姿势解析→VMD转换
-        │   ├── beat-detector.ts      # 音乐节拍检测（Web Audio API）
-        │   └── lipsync.ts            # 口型同步（振幅→morph权重）
-        ├── outfit/
-        │   ├── outfit.ts             # 换装核心（load/apply/reset + 自动发现）
-        │   └── audio.ts              # 音频播放 + VMD同步 + 节拍检测挂载
-        ├── physics/
-        │   ├── wind-utils.ts         # 风场辅助函数（已移除 XPBD，仅保留风力）
+        │   ├── camera/               # 相机模式
+        │   ├── render/               # 渲染管线
+        │   │   ├── renderer.ts       # 渲染器
+        │   │   ├── lighting.ts       # 灯光管理
+        │   │   ├── lighting-presets.ts # 灯光预设
+        │   │   ├── performance.ts    # 性能监控
+        │   │   └── transform-gizmo.ts # 变换控制器
+        │   ├── manager/              # 模型管理
+        │   │   ├── model-manager.ts  # 模型管理器
+        │   │   ├── model-loader.ts   # 模型加载器
+        │   │   ├── model-ops.ts      # 模型操作
+        │   │   └── material.ts       # 材质管理
+        │   ├── motion/               # ★ 动作桥接层（ADR-079 感知层 + ADR-086 猫步）
+        │   │   ├── perception.ts     # 感知层总入口（呼吸/眨眼/注视/表情/平衡/LipSync）
+        │   │   ├── perception-balance.ts    # 平衡系统
+        │   │   ├── perception-blinking.ts   # 眨眼系统
+        │   │   ├── perception-breathing.ts  # 呼吸系统
+        │   │   ├── perception-expression.ts # 表情系统
+        │   │   ├── perception-gaze.ts       # 注视系统（总入口）
+        │   │   ├── perception-gaze-js.ts    # 注视 JS 实现
+        │   │   ├── perception-gaze-wasm.ts  # 注视 WASM 实现
+        │   │   ├── perception-lipsync.ts    # LipSync 层
+        │   │   ├── perception-shared.ts     # 共享工具
+        │   │   ├── feet-adjustment.ts       # 脚部地面跟随（ADR-085）
+        │   │   ├── footstep.ts              # 脚步声触发（ADR-088）
+        │   │   ├── bone-override.ts         # 骨骼覆盖
+        │   │   ├── vmd-layers.ts            # VMD 图层管理
+        │   │   ├── wasm-layers-blender.ts   # WASM 图层混合器
+        │   │   ├── wasm-layers-config.ts    # WASM 图层配置
+        │   │   ├── vmd-loader.ts            # VMD 加载器
+        │   │   ├── proc-motion-bridge.ts    # 程序化动作桥接
+        │   │   ├── lipsync-bridge.ts        # LipSync 桥接
+        │   │   └── playback.ts              # 播放控制
+        │   ├── physics/              # 物理（WASM Bullet）
+        │   │   ├── skirt-analyzer.ts  # 裙装分析器（ADR-084）
+        │   │   └── virtual-skirt.ts   # 虚拟裙骨（ADR-084）
+        │   ├── env/                  # ★ 环境系统（ADR-091/092 贴图与反射统一）
+        │   │   ├── env.ts             # 环境状态总入口
+        │   │   ├── env-impl.ts        # 环境实现
+        │   │   ├── env-bridge.ts      # 环境桥接
+        │   │   ├── env-terrain.ts     # 地形（ADR-089 模式拆分）
+        │   │   ├── env-texture.ts     # 纹理工厂（ADR-091）
+        │   │   ├── env-water.ts       # 水面 + 平面反射（ADR-092）
+        │   │   ├── env-clouds.ts      # 云层
+        │   │   ├── env-particles.ts   # 粒子
+        │   │   ├── env-lighting.ts    # 环境灯光
+        │   │   ├── accessory.ts       # 配件
+        │   │   ├── props.ts           # 道具
+        │   │   └── planar-reflection.ts # 平面反射引擎（ADR-092）
+        │   ├── ar/                   # AR 场景（ADR-055）
+        │   │   ├── ar-camera.ts
+        │   │   └── ar-scene.ts
+        │   └── pose/                 # 构图与水印
+        │       ├── camera-angle.ts
+        │       ├── composition-guide.ts
+        │       └── watermark.ts
+        │
+        ├── menus/                    # ★ 声明式菜单系统（ADR-093 Schema 全量落地）
+        │   ├── menu.ts               # 通用菜单导航组件
+        │   ├── menu-schema.ts        # ★ 声明式 Schema 核心（ControlSpec / MenuNode / StatePath）
+        │   ├── menu-factory.ts       # Schema 渲染器
+        │   │
+        │   │── library.ts            # 模型库主菜单
+        │   │── library-core.ts       # 库核心（扫描/搜索/层级/标签）
+        │   │── model-detail.ts       # 模型详情
+        │   │── model-material.ts     # 材质编辑器
+        │   │── model-preset.ts       # 预设管理
+        │   │
+        │   │── env-menu.ts           # 环境菜单总入口
+        │   │── env-feature-levels.ts # 环境功能层级
+        │   │── env-preset-levels.ts  # 环境预设层级
+        │   │
+        │   │── motion-popup.ts       # 动作菜单总入口
+        │   │── motion-camera-levels.ts    # 相机控制
+        │   │── motion-cloth-levels.ts     # 布料质量（ADR-084）
+        │   │── motion-feet-levels.ts      # 脚部调整（ADR-085）
+        │   │── motion-gaze-levels.ts      # 注视控制
+        │   │── motion-override-levels.ts  # 骨骼覆盖
+        │   │── motion-pose-levels.ts      # 姿势控制
+        │   │── motion-procmotion-levels.ts # 程序化动作
+        │   │
+        │   │── scene-menu.ts         # 场景菜单总入口
+        │   │── scene-physics-levels.ts    # 物理设置
+        │   │── scene-prop-levels.ts       # 道具管理
+        │   │── scene-render-levels.ts     # 渲染设置
+        │   │── scene-render-presets.ts    # 渲染预设
+        │   │── scene-stage-levels.ts      # 舞台设置
+        │   │── scene-stage-lights.ts      # 舞台灯光
+        │   │
+        │   │── settings.ts           # 设置页总入口
+        │   │── settings-appearance.ts     # 外观主题
+        │   │── settings-audio.ts          # 音频设置
+        │   │── settings-external.ts       # 外部库
+        │   │── settings-filename.ts       # 文件命名
+        │   │── settings-language.ts       # 语言
+        │   │── settings-paths.ts          # 路径管理
+        │   │── settings-performance.ts    # 性能设置
+        │   │── settings-screenshot.ts     # 截图设置
+        │   │── settings-shared.ts         # 共享配置
+        │   │── settings-shortcuts.ts      # 快捷键
+        │   │── settings-software.ts       # 软件管理
+        │   │── settings-targets.ts        # 输出目标
+        │   │
+        │   │── outfit-ui.ts              # 换装 UI
+        │   │── plaza.ts                  # 模型广场
+        │   │── plaza-sites.ts            # 广场站点列表
+        │   │── preset-list-viewer.ts     # 预设列表查看器
+        │   │── resource-detail-helpers.ts # 资源详情辅助
+        │   │── render-menu.ts            # 渲染菜单（遗留，待 ADR-093 迁移）
+        │   │
+        │   └── __tests__/              # 单元测试
+        │
+        ├── motion-algos/             # ★ 动作生成算法层（无 Babylon 依赖）
+        │   ├── procedural-motion.ts  # barrel re-export → shared / idle / autodance / lifelike
+        │   ├── proc-motion-shared.ts  # 类型定义 + 骨骼候选名 + 常量
+        │   ├── proc-motion-idle.ts    # Idle VMD（呼吸+眨眼）
+        │   ├── proc-motion-autodance.ts       # AutoDance 主流程
+        │   ├── proc-motion-autodance-bones.ts       # 骨骼动作生成（骨架）
+        │   ├── proc-motion-autodance-bones-limbs.ts # 四肢骨骼
+        │   ├── proc-motion-autodance-bones-trunk.ts # 躯干骨骼
+        │   ├── proc-motion-autodance-emotion.ts     # 情绪动作
+        │   ├── proc-motion-lifelike.ts  # Lifelike（微动叠加层）
+        │   ├── vmd-writer.ts            # VMD 二进制写入（Shift-JIS）
+        │   ├── vmd-evaluator.ts         # VMD 多图层混合求值器
+        │   ├── vpd-parser.ts            # VPD 姿势解析→VMD
+        │   ├── beat-detector.ts         # 节拍检测（Web Audio API）
+        │   ├── lipsync.ts               # 振幅→morph 权重
+        │   ├── feet-adjustment-math.ts  # 脚部调整数学（ADR-085）
+        │   ├── footstep-detect.ts       # 脚步声检测（ADR-088）
+        │   └── pose-preset.ts           # 姿势预设
+        │
+        ├── outfit/                   # 换装系统
+        │   ├── outfit.ts           # 加载/应用/重置 + 自动发现
+        │   ├── outfit-overlay.ts   # 换装覆盖层
+        │   └── audio.ts            # 音频播放 + VMD 同步 + 节拍检测
+        │
+        ├── physics/                  # 物理辅助（XPBD 已移除，布料由 WASM Bullet 驱动）
+        │   ├── physics-bridge.ts   # 物理桥接
+        │   └── wind-physics.ts     # 风场辅助函数
+        │
+        ├── __tests__/                # 测试夹具
+        │   ├── mocks/
+        │   └── setup-wails.ts
+        │
         └── app.css                   # 全局样式（CSS 变量体系）
 ```
 
