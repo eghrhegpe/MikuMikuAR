@@ -2472,37 +2472,6 @@ input, textarea, [contenteditable] {
     display: block;
 }
 
-/* 材质参数面包屑路径 */
-.mat-breadcrumb {
-    font-size: var(--font-ui-xs);
-    color: var(--white-85);
-    padding: 2px calc(14px * var(--ui-scale)) 6px;
-    text-align: center;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-/* 分组分隔线（左右横线 + 中间小标题） */
-.mat-group-sep {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin: 8px 4px 4px;
-}
-.mat-group-sep::before,
-.mat-group-sep::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-}
-.mat-group-sep-label {
-    font-size: 9px;
-    color: var(--white-85);
-    white-space: nowrap;
-}
-
 /* 关于页版本信息 */
 .about-version-info {
     font-size: 10px;
