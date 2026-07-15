@@ -499,9 +499,7 @@ export function OpenWithSoftware(modelPath: string, softwarePath: string, args: 
 }
 
 /**
- * PlazaGoBack navigates the plaza window history backward. No-op if the
- * window is not ready. ExecJS runs the browser's history.back() which is
- * async and returns before navigation completes (ADR-087 P0).
+ * PlazaGoBack navigates the plaza window history backward.
  */
 export function PlazaGoBack(): $CancellablePromise<void> {
     return $Call.ByID(4230790282);
@@ -579,7 +577,6 @@ export function SaveDanceSet(id: string, ds: $models.DanceSet): $CancellableProm
 
 /**
  * SaveEnvPreset writes a .env JSON file under env-presets/<name>.env.
- * The name is sanitized; the JSON content is the caller's responsibility.
  */
 export function SaveEnvPreset(name: string, jsonStr: string): $CancellablePromise<void> {
     return $Call.ByID(1971888366, name, jsonStr);
@@ -587,8 +584,7 @@ export function SaveEnvPreset(name: string, jsonStr: string): $CancellablePromis
 
 /**
  * SaveEnvPresetAuto writes a .env JSON file under env-presets/<NNN>.env,
- * auto-numbered to avoid name collisions. Returns the generated name without
- * extension (e.g. "001", "002"). Mirrors SaveScenePreset's behaviour.
+ * auto-numbered to avoid name collisions.
  */
 export function SaveEnvPresetAuto(jsonStr: string): $CancellablePromise<string> {
     return $Call.ByID(3692206065, jsonStr);
@@ -718,7 +714,6 @@ export function SelectExeFile(): $CancellablePromise<string> {
 
 /**
  * SelectImportFile opens a file dialog to select PMX / ZIP / VMD files.
- * Used by the "导入文件" menu entry in library-core.ts.
  */
 export function SelectImportFile(): $CancellablePromise<string> {
     return $Call.ByID(750228192);

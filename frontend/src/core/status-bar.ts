@@ -95,6 +95,14 @@ export function hideHint(): void {
     syncStatusBarVisibility();
 }
 
+/** 清理 status 定时器（供 HMR 清理入口调用）。 */
+export function disposeStatusBar(): void {
+    if (_statusTimer) {
+        clearTimeout(_statusTimer);
+        _statusTimer = null;
+    }
+}
+
 export function initHints(): void {
     document.querySelectorAll('[data-hint]').forEach((el) => {
         el.addEventListener('mouseenter', () => {

@@ -1,6 +1,10 @@
 # ADR-106: 时序审核与异步生命周期规范
 
-**状态**: 部分实现（Phase 3 完成；P1/P2 待修复）
+**状态**: ✅ 全部完成（Phase 1 ✅ + Phase 2 ✅ + Phase 3 ✅）
+
+> 2026-07-16 对账修正：P1 `waitForTransition` 安全网（events.ts:105 `Math.max(dur*2,500)`）与 `enqueue` 显式 onRejected（load-manager.ts）经代码核实已修复，更新从"待修复"→✅ 已完成。
+>
+> 2026-07-16 再次对账：P2 全部 5 项经代码核实已实现（3 项在 Phase 3 整改中顺手修完，2 项在 P2 审计时即已满足），更新状态从"P2 🟡 待修复"→✅ 已完成。
 
 **决策者**: Riku（联邦首席架构师 AI）、Jieling（人类侧首席架构师）
 

@@ -53,6 +53,24 @@ function getOverlay(): HTMLDivElement {
     return _overlay;
 }
 
+/**
+ * 通过 cloneNode + replaceWith 移除按钮旧监听器，再挂新监听器。
+ * 消除 showDialog / showErrorAction / showPrompt2 三份重复。
+ */
+function _replaceButtonListeners(
+    confirmBtn: HTMLButtonElement,
+    cancelBtn: HTMLButtonElement,
+    onConfirm: () => void,
+    onCancel: () => void
+): void {
+    const newConfirm = confirmBtn.cloneNode(true) as HTMLButtonElement;
+    const newCancel = cancelBtn.cloneNode(true) as HTMLButtonElement;
+    confirmBtn.replaceWith(newConfirm);
+    cancelBtn.replaceWith(newCancel);
+    newConfirm.addEventListener('click', onConfirm);
+    newCancel.addEventListener('click', onCancel);
+}
+
 function showDialog(opts: DialogOptions): Promise<string | boolean | null> {
     return new Promise((resolve) => {
         const overlay = getOverlay();
@@ -115,13 +133,7 @@ function showDialog(opts: DialogOptions): Promise<string | boolean | null> {
         };
 
         // Remove old listeners by cloning
-        const newConfirm = confirmBtn.cloneNode(true) as HTMLButtonElement;
-        const newCancel = cancelBtn.cloneNode(true) as HTMLButtonElement;
-        confirmBtn.replaceWith(newConfirm);
-        cancelBtn.replaceWith(newCancel);
-
-        newConfirm.addEventListener('click', onConfirm);
-        newCancel.addEventListener('click', onCancel);
+        _replaceButtonListeners(confirmBtn, cancelBtn, onConfirm, onCancel);
         document.addEventListener('keydown', onKeyDown, { once: true });
 
         // Click on backdrop closes
@@ -202,14 +214,8 @@ export function showErrorAction(title: string, message: string): void {
     };
 
     // Clone to remove old listeners
-    const newConfirm = confirmBtn.cloneNode(true) as HTMLButtonElement;
-    const newCancel = cancelBtn.cloneNode(true) as HTMLButtonElement;
-    confirmBtn.replaceWith(newConfirm);
-    cancelBtn.replaceWith(newCancel);
-
-    newConfirm.addEventListener('click', onCopy);
-    newCancel.addEventListener('click', onClose);
-    document.addEventListener(
+            _replaceButtonListeners(confirmBtn, cancelBtn, onCopy, onClose);
+            document.addEventListener(
         'keydown',
         (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
@@ -371,12 +377,7 @@ export function showPrompt2(opts: Prompt2Options): Promise<[string, string] | nu
             }
         };
 
-        const newConfirm = confirmBtn.cloneNode(true) as HTMLButtonElement;
-        const newCancel = cancelBtn.cloneNode(true) as HTMLButtonElement;
-        confirmBtn.replaceWith(newConfirm);
-        cancelBtn.replaceWith(newCancel);
-        newConfirm.addEventListener('click', onConfirm);
-        newCancel.addEventListener('click', onCancel);
+        _replaceButtonListeners(confirmBtn, cancelBtn, onConfirm, onCancel);
         document.addEventListener('keydown', onKeyDown, { once: true });
         overlay.addEventListener(
             'click',
