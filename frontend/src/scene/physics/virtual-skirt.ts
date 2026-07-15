@@ -424,9 +424,6 @@ export class VirtualSkirtController {
         }
 
         const rest = this.restPositions;
-        if (!rest) {
-            return;
-        }
         // 复用类成员工作缓冲，避免每帧 new Float32Array（GC 压力）
         if (!this._workBuf || this._workBuf.length !== rest.length) {
             this._workBuf = new Float32Array(rest.length);

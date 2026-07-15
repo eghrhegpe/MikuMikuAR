@@ -130,6 +130,8 @@ export function detachGizmo(): void {
     }
     if (_gizmoLayer) {
         _gizmoLayer.shouldRender = false;
+        _gizmoLayer.dispose();
+        _gizmoLayer = null;
     }
     _gizmoTargetId = null;
     _gizmoNode = null;

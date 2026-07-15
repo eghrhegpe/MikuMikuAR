@@ -26,6 +26,7 @@ import { scheduleRefresh } from '@/core/reactivity';
 import { resetPerformanceSnapshot, isSnapshotResetSuppressed } from './performance';
 import { col3FromTriple } from '@/core/color-helpers';
 import { setKey } from '@/core/utils';
+import { LIGHTING_PRESETS } from './lighting-presets';
 
 // ======== Light State ========
 
@@ -545,6 +546,31 @@ export function _disposeSunDisc(): void {
 
 // ======== Shadow Generator ========
 
+/** 遍历所有模型/道具的 Mesh，加入阴影生成器。 */
+function _addAllMeshesToShadow(
+    gen: ShadowGenerator | CascadedShadowGenerator
+): void {
+    if (!_modelRegistry || !_propRegistry) {
+        return;
+    }
+    for (const [, inst] of _modelRegistry) {
+        for (const m of inst.meshes) {
+            if (m instanceof Mesh) {
+                gen.addShadowCaster(m);
+                m.receiveShadows = true;
+            }
+        }
+    }
+    for (const [, inst] of _propRegistry) {
+        for (const m of inst.meshes) {
+            if (m instanceof Mesh) {
+                gen.addShadowCaster(m);
+                m.receiveShadows = true;
+            }
+        }
+    }
+}
+
 function _ensureShadow(): void {
     if (!_scene || !_modelRegistry || !_propRegistry || !_envSysShadow) {
         return;
@@ -568,22 +594,7 @@ function _ensureShadow(): void {
     }
     gen.bias = _shadowBias;
 
-    for (const [, inst] of _modelRegistry) {
-        for (const m of inst.meshes) {
-            if (m instanceof Mesh) {
-                gen.addShadowCaster(m);
-                m.receiveShadows = true;
-            }
-        }
-    }
-    for (const [, inst] of _propRegistry) {
-        for (const m of inst.meshes) {
-            if (m instanceof Mesh) {
-                gen.addShadowCaster(m);
-                m.receiveShadows = true;
-            }
-        }
-    }
+    _addAllMeshesToShadow(gen);
 
     _envSysShadow.generator = gen;
 }
@@ -705,7 +716,9 @@ export function setStageLightState(s: Partial<StageLightState>, id?: string): vo
     // 更新指示器
     _updateIndicator(entry);
 
-    triggerAutoSave();
+    if (!_skipLightAutoSave) {
+        triggerAutoSave();
+    }
 }
 
 export function addStageLight(
@@ -729,7 +742,7 @@ export function addStageLight(
     _activeStageLightId = id;
     _ensureStageShadow(id);
     _updateIndicator(entry);
-    if (triggerAutoSave) {
+    if (triggerAutoSave && !_skipLightAutoSave) {
         triggerAutoSave();
     }
     return id;
@@ -750,7 +763,7 @@ export function removeStageLight(id: string): boolean {
     if (_activeStageLightId === id) {
         _activeStageLightId = _stageLights.keys().next().value ?? null;
     }
-    if (triggerAutoSave) {
+    if (triggerAutoSave && !_skipLightAutoSave) {
         triggerAutoSave();
     }
     return true;
@@ -997,22 +1010,7 @@ function _ensureStageShadow(id: string): void {
     gen.useKernelBlur = state.shadowType === 'pcf';
     gen.bias = state.shadowBias;
 
-    for (const [, inst] of _modelRegistry) {
-        for (const m of inst.meshes) {
-            if (m instanceof Mesh) {
-                gen.addShadowCaster(m);
-                m.receiveShadows = true;
-            }
-        }
-    }
-    for (const [, inst] of _propRegistry) {
-        for (const m of inst.meshes) {
-            if (m instanceof Mesh) {
-                gen.addShadowCaster(m);
-                m.receiveShadows = true;
-            }
-        }
-    }
+    _addAllMeshesToShadow(gen);
     _stageShadows.set(id, gen);
 }
 
@@ -1142,20 +1140,16 @@ function _tweenColor3(
     durationMs: number,
     onUpdate: (c: Color3) => void
 ): void {
-    let curR = from.r,
-        curG = from.g,
-        curB = from.b;
+    const result = new Color3(0, 0, 0);
     _tweenValue(0, 1, durationMs, (t) => {
-        curR = from.r + (to.r - from.r) * t;
-        curG = from.g + (to.g - from.g) * t;
-        curB = from.b + (to.b - from.b) * t;
-        onUpdate(new Color3(curR, curG, curB));
+        result.r = from.r + (to.r - from.r) * t;
+        result.g = from.g + (to.g - from.g) * t;
+        result.b = from.b + (to.b - from.b) * t;
+        onUpdate(result);
     });
 }
 
 // ======== Lighting Preset Application ========
-
-import { LIGHTING_PRESETS } from './lighting-presets';
 
 /**
  * 应用灯光预设——复用现有灯光，平滑过渡参数。
@@ -1188,6 +1182,8 @@ export function applyLightingPresetFromEnv(presetName: string | null): void {
     }
 
     // 3. 平滑过渡每盏灯的参数
+    // 动画期间抑制自动保存（tween 每帧触发 setStageLightState，避免大量写盘）
+    _skipLightAutoSave = true;
     const ids = Array.from(_stageLights.keys());
     for (let i = 0; i < ids.length; i++) {
         const entry = _stageLights.get(ids[i]);
