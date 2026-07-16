@@ -563,14 +563,14 @@ func corsMiddleware(next http.Handler) http.Handler {
 // This is required for SharedArrayBuffer, which babylon-mmd's multi-threaded
 // WASM physics (MmdWasmInstanceTypeMPR) depends on.
 //
-// [doc:adr-099] Gated behind VITE_MMD_WASM_MT so the default single-threaded
-// (SPR) app behavior is unchanged. When enabled, cross-origin subresource
-// fetches (model/wasm asset servers) remain COEP-compliant via corsMiddleware's
-// Access-Control-Allow-Origin: * — no extra CORP header needed.
+// [doc:adr-099] Gated behind "mpr" build tag so the default single-threaded
+// (SPR) app behavior is unchanged. When enabled (go build -tags mpr),
+// cross-origin subresource fetches (model/wasm asset servers) remain
+// COEP-compliant via corsMiddleware's Access-Control-Allow-Origin: *.
 // Applied to both the embedded asset server (top-level document, which is what
 // actually grants SharedArrayBuffer) and the runtime file servers for symmetry.
 func CoopCoepMiddleware(next http.Handler) http.Handler {
-	if os.Getenv("VITE_MMD_WASM_MT") == "" {
+	if !coopCoepEnabled {
 		return next
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

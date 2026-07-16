@@ -6,10 +6,13 @@ import (
 	"testing"
 )
 
-// TestCoopCoepMiddlewareOff verifies that with the flag unset the middleware
+// TestCoopCoepMiddlewareOff verifies that without "mpr" build tag the middleware
 // is a pass-through — no COOP/COEP headers, default app behavior unchanged.
 // [doc:adr-099]
 func TestCoopCoepMiddlewareOff(t *testing.T) {
+	if coopCoepEnabled {
+		t.Skip("mpr build tag set; skipping SPR-only test")
+	}
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
@@ -26,11 +29,14 @@ func TestCoopCoepMiddlewareOff(t *testing.T) {
 	}
 }
 
-// TestCoopCoepMiddlewareOn verifies that with VITE_MMD_WASM_MT set the
+// TestCoopCoepMiddlewareOn verifies that with "mpr" build tag the
 // middleware injects both cross-origin-isolation headers (grants SharedArrayBuffer).
+// Run with: go test -tags mpr ./internal/app/ -run TestCoopCoepMiddlewareOn
 // [doc:adr-099]
 func TestCoopCoepMiddlewareOn(t *testing.T) {
-	t.Setenv("VITE_MMD_WASM_MT", "1")
+	if !coopCoepEnabled {
+		t.Skip("mpr build tag not set; skipping COOP/COEP test")
+	}
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})

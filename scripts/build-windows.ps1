@@ -1,4 +1,4 @@
-﻿# Windows 桌面构建脚本
+# Windows 桌面构建脚本
 # 用法: .\scripts\build-windows.ps1 [-Production] [-Clean]
 param(
     [switch]$Production,
@@ -74,8 +74,8 @@ if (Test-Path $distDir) {
 Set-Location $projectDir
 
 # 启用 MPR 多线程物理（ADR-099）
-# Go 侧 CoopCoepMiddleware 读取此变量注入 COOP/COEP 双头；
-# 前端 Vite define 注入 __MMD_ENABLE_MPR__ 门控 MPR/SPR 路径。
+# 前端 Vite define 注入 __MMD_ENABLE_MPR__ 门控 MPR/SPR 路径；
+# Go 侧通过 "mpr" build tag 启用 CoopCoepMiddleware 注入 COOP/COEP 双头。
 $env:VITE_MMD_WASM_MT = "1"
 
 # 前端构建
@@ -104,9 +104,9 @@ Set-Location $projectDir
 
 # Go 编译
 if ($Production) {
-    $buildTags = "production"
+    $buildTags = "production mpr"
 } else {
-    $buildTags = "debug"
+    $buildTags = "debug mpr"
 }
 
 Write-Output "[build-windows] 编译 Go (tags=$buildTags)..."
