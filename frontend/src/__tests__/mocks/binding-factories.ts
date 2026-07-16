@@ -202,6 +202,8 @@ export function createMockEnvState(overrides?: Partial<EnvState>): EnvState {
         cloudThickness: 15,
         cloudVisibility: 3000,
         cloudGap: 0.5,
+        cloudErosion: 0.4,
+        cloudWeatherStrength: 0.6,
         debugMirrorEnabled: false,
         debugClouds: false,
         fogEnabled: false,

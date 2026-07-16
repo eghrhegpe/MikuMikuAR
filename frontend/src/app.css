@@ -367,6 +367,15 @@ textarea,
 .ui-hidden #statusBar {
     display: none !important;
 }
+/* 沉浸模式下，所有浮层（侧边菜单 / 广场层 / 拖放层 / toast）由 ui-hidden 统一接管隐藏，
+   不再依赖画布点击显式 remove('visible')。 */
+.ui-hidden [data-overlay],
+.ui-hidden #sceneOverlay,
+.ui-hidden #webviewLayer,
+.ui-hidden #dropOverlay,
+.ui-hidden .toast {
+    display: none !important;
+}
 
 /* ===== 图标默认尺寸（约束 iconify-icon 避免 bundle 注册后尺寸异常） ===== */
 .menu-icon-svg {

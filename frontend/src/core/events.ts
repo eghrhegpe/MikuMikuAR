@@ -70,7 +70,6 @@ setOnCloseAllOverlays(() => {
 let seekWasPlaying = false;
 let _pointerDownPos = { x: 0, y: 0 };
 let _longPressTimer: ReturnType<typeof setTimeout> | null = null;
-let _lastHiddenOverlay: { id: string; showFn: () => void } | null = null;
 let _lastTapTime = 0;
 export const navLabels: Record<number, string> = {};
 
@@ -165,47 +164,11 @@ export const navActions: Record<number, () => void | Promise<void>> = {
     },
 };
 
-function _getAllOverlays(): HTMLElement[] {
-    const seen = new Set<string>();
-    const overlays: HTMLElement[] = [];
-    document.querySelectorAll<HTMLElement>('[aria-controls]').forEach((btn) => {
-        const id = btn.getAttribute('aria-controls');
-        if (id && !seen.has(id)) {
-            seen.add(id);
-            const el = document.getElementById(id);
-            if (el) {
-                overlays.push(el);
-            }
-        }
-    });
-    return overlays;
-}
-
 function _toggleOverlays(): void {
-    const all = _getAllOverlays();
-    const visible = all.find((el) => el.classList.contains('visible'));
-
-    if (visible) {
-        // Canvas click hides the visible overlay and remembers it for restore
-        const showFn = _lastOverlayFn.get(visible.id);
-        if (showFn) {
-            _lastHiddenOverlay = { id: visible.id, showFn };
-        }
-        all.forEach((el) => el.classList.remove('visible'));
-        setPopupOpen(false);
-        // 无 UI 模式：隐藏菜单后连导航栏一起隐藏
-        document.body.classList.add('ui-hidden');
-    } else {
-        // 无菜单时点击 canvas：如果有上次记住的菜单则恢复，否则切换无 UI 模式
-        if (_lastHiddenOverlay) {
-            // Second canvas click restores the previously hidden overlay
-            toggleOverlay(_lastHiddenOverlay.id, _lastHiddenOverlay.showFn);
-            _lastHiddenOverlay = null;
-        } else {
-            // 没有记住的菜单 → 切换无 UI 模式
-            document.body.classList.toggle('ui-hidden');
-        }
-    }
+    // 画布点击：唯一职责是切换「无 UI / 沉浸」模式。
+    // 所有 overlay（菜单/弹窗）的显示与否由 `ui-hidden` 统一接管，
+    // 不再单独关弹窗或记忆/恢复，避免「点画布把弹窗直接关掉」的诡异手感。
+    document.body.classList.toggle('ui-hidden');
     syncNavAriaExpanded();
 }
 

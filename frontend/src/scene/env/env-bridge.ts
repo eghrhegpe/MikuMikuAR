@@ -153,6 +153,9 @@ const _CLOUD_KEYS = [
     'cloudThickness',
     'cloudVisibility',
     'cloudGap',
+    'cloudErosion',
+    'cloudWeatherStrength',
+    'groundLevel', // 云层地面裁剪依赖此值，groundLevel 变化时需重新同步云 shader uniform
 ];
 // ADR-114 Phase 3: 接触阴影后处理（转发到 renderer.setContactShadow）
 const _CONTACT_SHADOW_KEYS = [
