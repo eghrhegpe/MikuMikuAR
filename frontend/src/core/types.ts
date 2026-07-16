@@ -353,6 +353,8 @@ export interface UIState {
     footstepEnabled?: boolean;
     /** 脚步声音量 0-1 */
     footstepVolume?: number;
+    /** 音乐循环模式：none=不循环, one=单曲循环, all=列表循环, shuffle=随机播放 */
+    audioRepeatMode?: 'none' | 'one' | 'all' | 'shuffle';
     /** 快捷键自定义绑定 */
     keyBindings?: Record<string, { key: string; ctrl?: boolean; shift?: boolean; alt?: boolean }>;
     /** 顶部 HUD：帧率时钟显隐；undefined/null=显示 */

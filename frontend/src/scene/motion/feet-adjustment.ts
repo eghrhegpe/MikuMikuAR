@@ -108,6 +108,11 @@ export function setOnFootLand(cb: ((e: FootLandEvent) => void) | null): void {
     _onFootLand = cb;
 }
 
+/** 查询脚部跟随系统是否正在运行（observer 已注册）。 */
+export function isFeetAdjustmentRunning(): boolean {
+    return _observerHandle !== null;
+}
+
 /** 沿 parentBone 向上找大腿根骨骼（用于估算髋世界坐标与腿长） */
 function _findHip(ik: IMmdRuntimeBone, side: 'L' | 'R'): IMmdRuntimeBone | null {
     const cands = side === 'L' ? BONE_THIGH_L : BONE_THIGH_R;
