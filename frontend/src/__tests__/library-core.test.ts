@@ -102,8 +102,12 @@ vi.mock('../core/config', () => ({
 
     normPath: (p: string) => p.replace(/\\/g, '/').replace(/\/+$/, ''),
     getBrowseDir: (category: string) => {
-        if (category === 'prop') return '/test/root/props';
-        if (category === 'stage') return '/test/root/stages';
+        if (category === 'prop') {
+            return '/test/root/props';
+        }
+        if (category === 'stage') {
+            return '/test/root/stages';
+        }
         return '/test/root/models';
     },
     cardContainer: (container: HTMLElement, fn: (c: HTMLElement) => void) => {
@@ -140,9 +144,13 @@ vi.mock('../core/config', () => ({
     // [修复] library-core.ts 模块加载时 new LoadingGuard()（来自 config 的 re-export），
     // 原 mock 缺该导出导致套件装配失败。补一个兼容 stub（测试不调用其方法）。
     LoadingGuard: class {
-        tryEnter() { return true; }
+        tryEnter() {
+            return true;
+        }
         leave() {}
-        isLoading() { return false; }
+        isLoading() {
+            return false;
+        }
         clear() {}
     },
 }));
@@ -937,9 +945,15 @@ describe('resolveDisplayBrowseDir', () => {
     it('returns the model dir unchanged for a normal (non-flatten) subfolder', () => {
         mockState.allModels = [
             makeModel({ file_path: '/test/root/models/sub/a.pmx', dir: '/test/root/models/sub' }),
-            makeModel({ file_path: '/test/root/models/sub/deep/b.pmx', dir: '/test/root/models/sub/deep' }),
+            makeModel({
+                file_path: '/test/root/models/sub/deep/b.pmx',
+                dir: '/test/root/models/sub/deep',
+            }),
         ];
-        const m = makeModel({ file_path: '/test/root/models/sub/a.pmx', dir: '/test/root/models/sub' });
+        const m = makeModel({
+            file_path: '/test/root/models/sub/a.pmx',
+            dir: '/test/root/models/sub',
+        });
         expect(resolveDisplayBrowseDir(m, 'pmx')).toBe('/test/root/models/sub');
     });
 

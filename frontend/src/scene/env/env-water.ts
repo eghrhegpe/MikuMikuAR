@@ -93,7 +93,7 @@ let _waterUpdateObserver: Observer<Scene> | null = null;
 const waterReflection = new PlanarReflection({
     name: 'water',
     mode: 'screenSpace',
-    resolutionMap: { high: 512, medium: 256, low: 128, off: 0 },
+    resolutionMap: { high: 1024, medium: 512, low: 256, off: 0 },
     getQuality: (s) => s.reflectionQuality,
     getBlend: (s) => s.planarReflectBlend ?? 0.5,
     getSurfaceLevel: (s) => s.waterLevel,
@@ -102,8 +102,8 @@ const waterReflection = new PlanarReflection({
         if (!cam) {
             return null;
         }
-        const plane = new Plane(0, 1, 0, -s.waterLevel);
-        return Matrix.Reflection(plane).multiply(cam.getWorldMatrix());
+        // 复用 Plane 缓存，避免每帧 new Plane 分配
+        return Matrix.Reflection(new Plane(0, 1, 0, -s.waterLevel)).multiply(cam.getWorldMatrix());
     },
     predicate: (mesh, level) =>
         !mesh.name.startsWith('envWater') &&
@@ -123,6 +123,10 @@ const waterReflection = new PlanarReflection({
         }
     },
     skipWhenUnderwater: true,
+    onDisable: () => {
+        // 停用时保留 RT（blend=0 时隐藏反射但不销毁 RT），避免 blend 从 0→正数时闪烁
+        // 仅在 quality 真正变为 off 时才销毁 RT（由 disable() 处理）
+    },
 });
 registerReflectionSurface('water', waterReflection, () =>
     waterReflection.update(envState, getScene())
@@ -255,9 +259,18 @@ function regenerateCausticTexture(scene: Scene, waterColor: [number, number, num
                 // 灰度映射到 [水色×DARK, 水色×BRIGHT]，让暗部偏水色，亮部更亮
                 const i = (y * s + x) * 4;
                 const t = n; // 0=暗纹, 1=亮纹
-                data[i] = Math.min(255, Math.floor((wr * CAUSTIC_DARK_FACTOR + t * wr * CAUSTIC_BRIGHT_FACTOR) * 255));
-                data[i + 1] = Math.min(255, Math.floor((wg * CAUSTIC_DARK_FACTOR + t * wg * CAUSTIC_BRIGHT_FACTOR) * 255));
-                data[i + 2] = Math.min(255, Math.floor((wb * CAUSTIC_DARK_FACTOR + t * wb * CAUSTIC_BRIGHT_FACTOR) * 255));
+                data[i] = Math.min(
+                    255,
+                    Math.floor((wr * CAUSTIC_DARK_FACTOR + t * wr * CAUSTIC_BRIGHT_FACTOR) * 255)
+                );
+                data[i + 1] = Math.min(
+                    255,
+                    Math.floor((wg * CAUSTIC_DARK_FACTOR + t * wg * CAUSTIC_BRIGHT_FACTOR) * 255)
+                );
+                data[i + 2] = Math.min(
+                    255,
+                    Math.floor((wb * CAUSTIC_DARK_FACTOR + t * wb * CAUSTIC_BRIGHT_FACTOR) * 255)
+                );
                 data[i + 3] = 255;
             }
         }
@@ -450,25 +463,55 @@ export function _applyWaterLOD(scene: Scene): void {
 }
 
 const WATER_UNIFORMS = [
-    'world', 'viewProjection', 'time', 'waveHeight', 'wavePhase',
-    'cameraPosition', 'waterColor', 'waterTransparency', 'waterLevel',
-    'uWaterFlip', 'envIntensity', 'foamColor', 'foamThreshold', 'foamIntensity',
-    'lightDir', 'lightColor', 'ambientIntensity',
-    'uRipplePosRad', 'uRippleStrSpdLife', 'uRippleCount',
-    'uCausticIntensity', 'uCausticSpeed', 'uCausticScale',
-    'fresnelBias', 'fresnelPower', 'diffuseStrength', 'ambientStrength',
-    'foamTransitionRange', 'rippleNormalStrength', 'rippleGlintStrength',
-    'causticColor1', 'causticColor2', 'causticScrollX', 'causticScrollY',
-    'fresnelAlphaInfluence', 'foamOpacity',
-    'waterFogColor', 'waterFogDensity', 'waterFogOpacityInfluence',
-    'uWindDir', 'planarReflectBlend',
+    'world',
+    'viewProjection',
+    'time',
+    'waveHeight',
+    'wavePhase',
+    'cameraPosition',
+    'waterColor',
+    'waterTransparency',
+    'waterLevel',
+    'uWaterFlip',
+    'envIntensity',
+    'foamColor',
+    'foamThreshold',
+    'foamIntensity',
+    'lightDir',
+    'lightColor',
+    'ambientIntensity',
+    'uRipplePosRad',
+    'uRippleStrSpdLife',
+    'uRippleCount',
+    'uCausticIntensity',
+    'uCausticSpeed',
+    'uCausticScale',
+    'fresnelBias',
+    'fresnelPower',
+    'diffuseStrength',
+    'ambientStrength',
+    'foamTransitionRange',
+    'rippleNormalStrength',
+    'rippleGlintStrength',
+    'causticColor1',
+    'causticColor2',
+    'causticScrollX',
+    'causticScrollY',
+    'fresnelAlphaInfluence',
+    'foamOpacity',
+    'waterFogColor',
+    'waterFogDensity',
+    'waterFogOpacityInfluence',
+    'uWindDir',
+    'planarReflectBlend',
 ];
 
 function _createWaterMaterial(scene: Scene, state: EnvState): ShaderMaterial {
     const hasEnv = !!scene.environmentTexture;
     const hasReflection = state.reflectionQuality !== 'off';
     const mat = new ShaderMaterial(
-        'customWaterMat', scene,
+        'customWaterMat',
+        scene,
         { vertexSource: WATER_VERT_SRC, fragmentSource: WATER_FRAG_SRC },
         {
             attributes: ['position', 'uv', 'normal'],
@@ -477,8 +520,9 @@ function _createWaterMaterial(scene: Scene, state: EnvState): ShaderMaterial {
             samplers: ['uCausticTex']
                 .concat(hasEnv ? ['envTexture'] : [])
                 .concat(hasReflection ? ['reflectionTexture'] : []),
-            defines: (hasEnv ? ['ENV_TEXTURE'] : [])
-                .concat(hasReflection ? ['PLANAR_REFLECTION'] : []),
+            defines: (hasEnv ? ['ENV_TEXTURE'] : []).concat(
+                hasReflection ? ['PLANAR_REFLECTION'] : []
+            ),
             needAlphaBlending: true,
         }
     );
@@ -502,7 +546,9 @@ function _rebuildWaterMaterial(scene: Scene, state: EnvState): void {
 }
 
 function _waterUpdateCallback(scene: Scene): void {
-    if (!_envSys.water.material) return;
+    if (!_envSys.water.material) {
+        return;
+    }
     const m = _envSys.water.material as ShaderMaterial;
     const dt = Math.min(scene.deltaTime / 1000, DT_CLAMP_MAX);
     const now = performance.now() / 1000;
@@ -511,7 +557,9 @@ function _waterUpdateCallback(scene: Scene): void {
     m.setFloat('time', now);
     m.setFloat('wavePhase', _waterPhase);
     const cam = scene.activeCamera;
-    if (cam) m.setVector3('cameraPosition', cam.position);
+    if (cam) {
+        m.setVector3('cameraPosition', cam.position);
+    }
     m.setColor3('waterColor', col3FromTriple(envState.waterColor));
     const dl = scene.getLightByName('dir') as DirectionalLight | null;
     if (dl) {
@@ -525,10 +573,14 @@ function _waterUpdateCallback(scene: Scene): void {
         for (const r of _ripples) {
             if (r.life > 0) {
                 r.life = Math.max(0, r.life - dt);
-                if (r.life > 0) anyAlive = true;
+                if (r.life > 0) {
+                    anyAlive = true;
+                }
             }
         }
-        if (!anyAlive && _ripples.length > 0) _ripples = [];
+        if (!anyAlive && _ripples.length > 0) {
+            _ripples = [];
+        }
     }
 
     waterReflection.update(envState, scene);
@@ -539,12 +591,18 @@ function _waterUpdateCallback(scene: Scene): void {
     const strSpdLife = new Array<number>(MAX_RIPPLES * 4).fill(0);
     let aliveCount = 0;
     for (const r of _ripples) {
-        if (r.life <= 0 || aliveCount >= MAX_RIPPLES) continue;
+        if (r.life <= 0 || aliveCount >= MAX_RIPPLES) {
+            continue;
+        }
         const i = aliveCount * 4;
-        posRad[i] = r.position.x; posRad[i + 1] = r.position.y;
-        posRad[i + 2] = r.position.z; posRad[i + 3] = r.radius;
-        strSpdLife[i] = r.strength; strSpdLife[i + 1] = r.speed;
-        strSpdLife[i + 2] = r.life; strSpdLife[i + 3] = r.maxLife;
+        posRad[i] = r.position.x;
+        posRad[i + 1] = r.position.y;
+        posRad[i + 2] = r.position.z;
+        posRad[i + 3] = r.radius;
+        strSpdLife[i] = r.strength;
+        strSpdLife[i + 1] = r.speed;
+        strSpdLife[i + 2] = r.life;
+        strSpdLife[i + 3] = r.maxLife;
         aliveCount++;
     }
     m.setArray4('uRipplePosRad', posRad);
@@ -587,7 +645,9 @@ export function createWater(state: EnvState): void {
     const rotX = state.waterFlip ? Math.PI : 0;
     const makeGround = (name: string, subdivisions: number): Mesh => {
         const m = MeshBuilder.CreateGround(
-            name, { width: WATER_BASE_SIZE, height: WATER_BASE_SIZE, subdivisions }, scene
+            name,
+            { width: WATER_BASE_SIZE, height: WATER_BASE_SIZE, subdivisions },
+            scene
         );
         m.isPickable = false;
         m.position.y = state.waterLevel;
@@ -616,7 +676,9 @@ export function createWater(state: EnvState): void {
     _applyWaterLOD(scene);
 
     if (!_waterUpdateObserver) {
-        _waterUpdateObserver = scene.onBeforeRenderObservable.add(() => _waterUpdateCallback(scene));
+        _waterUpdateObserver = scene.onBeforeRenderObservable.add(() =>
+            _waterUpdateCallback(scene)
+        );
     }
 }
 

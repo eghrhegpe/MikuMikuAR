@@ -264,7 +264,9 @@ function buildPerfSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] 
                 get: (v) => (v as number) ?? 1,
                 set: (v) => Math.round((v as number) * 100) / 100,
                 onChange: (v) => {
-                    engine.setHardwareScalingLevel(calcHardwareScaling(window.devicePixelRatio || 1, v as number));
+                    engine.setHardwareScalingLevel(
+                        calcHardwareScaling(window.devicePixelRatio || 1, v as number)
+                    );
                     setStatus(
                         t('settings.renderScale', { pct: Math.round((v as number) * 100) }),
                         true

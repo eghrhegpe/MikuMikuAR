@@ -25,7 +25,8 @@ import { addDisposableListener, type Disposable } from '@/core/dom';
  * @deprecated ADR-100：单枚举混淆「控制方案 × 运动行为」两轴，保留为兼容别名。
  * 新代码请用 {@link CameraControl} × {@link CameraBehavior}。双写于 `core/types.ts`。
  */
-export type CameraMode = 'orbit' | 'freefly' | 'surround' | 'concert' | 'oneshot' | 'vmd' | 'ar' | 'beatcut';
+export type CameraMode =
+    'orbit' | 'freefly' | 'surround' | 'concert' | 'oneshot' | 'vmd' | 'ar' | 'beatcut';
 
 /** ADR-100 轴 A — 控制方案（相机类 + 输入）。双写于 `core/types.ts`。 */
 export type CameraControl = 'orbit' | 'freefly' | 'ar';

@@ -432,6 +432,10 @@ export function serializeScene(): SceneFile {
  *   from Go Config.Env to avoid double-application.
  */
 export async function deserializeScene(data: SceneFile, skipEnv = false): Promise<void> {
+    // 抑制恢复过程中的 auto-save，防止 setCameraState/setLightState/setRenderState
+    // 等函数触发级联保存覆盖 last_scene.json。
+    _suppressAutoSave = true;
+
     // --- Clear existing scene ---
     for (const id of Array.from(modelRegistry.keys())) {
         removeModel(id);
@@ -742,7 +746,11 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                             resumeAudio();
                         }
                     } catch (e) {
-                        logWarn('scene-serialize', '场景恢复: AudioContext 创建失败，尝试直接 resume:', e);
+                        logWarn(
+                            'scene-serialize',
+                            '场景恢复: AudioContext 创建失败，尝试直接 resume:',
+                            e
+                        );
                         resumeAudio();
                     }
                 }
@@ -853,15 +861,31 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
             );
         }
     }
+
+    // 恢复完成，允许 auto-save 再次触发
+    _suppressAutoSave = false;
 }
 
 // ======== Auto-save Debounce ========
+// 反序列化期间的抑制标志，防止恢复过程中的 setCameraState/setLightState/setRenderState
+// 等函数触发级联 auto-save 覆盖 last_scene.json。
+let _suppressAutoSave = false;
+
+export function setSuppressAutoSave(v: boolean): void {
+    _suppressAutoSave = v;
+}
 
 const _autoSaveDebounced = debounce((): void => {
+    console.info(`[auto-save] debounce fired → saveSceneImmediate()`);
     swallowError(saveSceneImmediate());
 }, 500);
 
 export function triggerAutoSaveImpl(): void {
+    if (_suppressAutoSave) {
+        console.info(`[auto-save] triggerAutoSaveImpl() suppressed (deserializeScene in progress)`);
+        return;
+    }
+    console.info(`[auto-save] triggerAutoSaveImpl() called — debounce scheduled (500ms)`);
     _autoSaveDebounced();
 }
 
@@ -874,6 +898,9 @@ export async function saveSceneImmediate(suppressToast = false): Promise<void> {
         const _sSerialize = performance.now() - _sStart;
         const json = JSON.stringify(data);
         const _sJson = performance.now() - _sStart - _sSerialize;
+        console.info(
+            `[auto-save] serialize=${_sSerialize.toFixed(1)}ms json=${_sJson.toFixed(1)}ms len=${json.length} → SaveLastScene()`
+        );
         if (_sSerialize + _sJson > 2) {
             logWarn(
                 'perf:save',
@@ -883,7 +910,9 @@ export async function saveSceneImmediate(suppressToast = false): Promise<void> {
 
         // Go 端作为唯一存储（Fail-Fast：失败直接抛错）
         await SaveLastScene(json);
+        console.info('[auto-save] SaveLastScene succeeded');
     } catch (_err) {
+        console.warn('[auto-save] SaveLastScene FAILED:', _err);
         if (!suppressToast) {
             showErrorToast(
                 t('scene.serialize.autosaveFailed'),
@@ -895,6 +924,7 @@ export async function saveSceneImmediate(suppressToast = false): Promise<void> {
 
 /** Clean up pending timers and save state. Must be called before window unload. */
 function cleanupAndFlushSave(): void {
+    console.info('[auto-save] cleanupAndFlushSave() — visibilitychange/beforeunload triggered');
     // Clear any pending debounced save — we're about to flush immediately
     _autoSaveDebounced.cancel();
     flushEnvState();
@@ -944,14 +974,17 @@ function migrateScene(data: Record<string, unknown>): Record<string, unknown> {
 }
 
 export async function tryRestoreLastScene(): Promise<void> {
+    console.info('[auto-load] tryRestoreLastScene() called — attempting to load last scene');
     let json: string | null = null;
 
     // Go 端作为唯一存储（Fail-Fast：失败直接抛错）
     json = await LoadLastScene();
 
     if (!json) {
+        console.info('[auto-load] LoadLastScene returned empty — no last scene to restore');
         return;
     }
+    console.info(`[auto-load] LoadLastScene succeeded: ${json.length} bytes`);
 
     try {
         const raw = JSON.parse(json);
@@ -964,6 +997,7 @@ export async function tryRestoreLastScene(): Promise<void> {
 
         const data = migrateScene(raw);
         const version = data.version as number;
+        console.info(`[auto-load] Scene file version: v${version}, models: ${Array.isArray(data.models) ? data.models.length : 'N/A'}`);
 
         // 版本校验 + 基础字段完整性校验
         if (!SUPPORTED_VERSIONS.includes(version)) {
@@ -982,7 +1016,20 @@ export async function tryRestoreLastScene(): Promise<void> {
 
         await deserializeScene(data as unknown as SceneFile, true);
         logCameraAlpha(); // 记录当前 alpha 诊断
-        console.info(`从 v${version} 场景文件恢复成功`);
+
+        // 场景文件中有 env 状态时，覆盖 config.json 中的 env 状态
+        // 因为 config.json 的 env 可能在页面关闭时未及时写入（SetEnvState binding 异步未完成），
+        // 而场景文件（saveSceneImmediate）的写入时机更可靠。
+        // 注意：lambda 内捕获 data.env 的值，避免闭包引用问题
+        const envFromScene = (data as Record<string, unknown>).env;
+        if (envFromScene && typeof envFromScene === 'object') {
+            console.info('[auto-load] 场景文件中包含 env 状态，覆盖 config.json 的 env 状态');
+            setSuppressAutoSave(true);
+            setEnvState(envFromScene as Partial<EnvState>, true);
+            setSuppressAutoSave(false);
+        }
+
+        console.info('[auto-load] Scene restored successfully');
     } catch (err) {
         logWarn('scene-serialize', '场景恢复失败（数据可能已损坏）:', err);
     }

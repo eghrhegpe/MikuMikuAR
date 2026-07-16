@@ -17,12 +17,7 @@ import {
 import { EnvState, envState } from '@/core/config';
 import { col3FromTriple } from '@/core/color-helpers';
 import { logWarn } from '@/core/utils';
-import {
-    _envSys,
-    getScene,
-    ensureEnvUpdateObserver,
-    resolveStaticAsset,
-} from './env-impl';
+import { _envSys, getScene, ensureEnvUpdateObserver, resolveStaticAsset } from './env-impl';
 import { _disposeSunDisc } from '../render/lighting';
 
 // ======== Module state ========
@@ -65,12 +60,16 @@ function _ensureStarsTextureImage(url: string, onReady: (img: HTMLImageElement) 
     const generation = ++_texStarsGeneration;
     const img = new Image();
     img.onload = () => {
-        if (generation !== _texStarsGeneration) return;
+        if (generation !== _texStarsGeneration) {
+            return;
+        }
         _texStarsImg = img;
         onReady(img);
     };
     img.onerror = () => {
-        if (generation !== _texStarsGeneration) return;
+        if (generation !== _texStarsGeneration) {
+            return;
+        }
         logWarn('stars', 'texture load failed:', url);
     };
     img.src = url;
@@ -88,7 +87,8 @@ function drawSkyGradient(
     starsEnabled: boolean,
     starsTextureImg?: HTMLImageElement | null
 ): void {
-    const W = SKY_TEX_SIZE, H = SKY_TEX_SIZE;
+    const W = SKY_TEX_SIZE,
+        H = SKY_TEX_SIZE;
     ctx.clearRect(0, 0, W, H);
 
     const grad = ctx.createLinearGradient(0, 0, 0, H);
@@ -144,7 +144,10 @@ function updateSkyDynamicTexture(state: EnvState): DynamicTexture {
     let tex = _envSys.sky.skyDynamicTex;
     if (!tex) {
         tex = new DynamicTexture(
-            'skyGradient', { width: SKY_TEX_SIZE, height: SKY_TEX_SIZE }, scene, false
+            'skyGradient',
+            { width: SKY_TEX_SIZE, height: SKY_TEX_SIZE },
+            scene,
+            false
         );
         tex.wrapU = Constants.TEXTURE_CLAMP_ADDRESSMODE;
         tex.wrapV = Constants.TEXTURE_CLAMP_ADDRESSMODE;
@@ -154,14 +157,24 @@ function updateSkyDynamicTexture(state: EnvState): DynamicTexture {
     const ctx = tex.getContext() as CanvasRenderingContext2D;
 
     let starsImg: HTMLImageElement | null = null;
-    if (state.starsTexture && _texStarsImg && _texStarsImgUrl === state.starsTexture && _texStarsImg.complete) {
+    if (
+        state.starsTexture &&
+        _texStarsImg &&
+        _texStarsImgUrl === state.starsTexture &&
+        _texStarsImg.complete
+    ) {
         starsImg = _texStarsImg;
     }
 
     drawSkyGradient(
-        ctx, col3FromTriple(state.skyColorTop), col3FromTriple(state.skyColorMid),
-        col3FromTriple(state.skyColorBot), state.skyBrightness, state.sunAngle,
-        state.starsEnabled, starsImg
+        ctx,
+        col3FromTriple(state.skyColorTop),
+        col3FromTriple(state.skyColorMid),
+        col3FromTriple(state.skyColorBot),
+        state.skyBrightness,
+        state.sunAngle,
+        state.starsEnabled,
+        starsImg
     );
     tex.update();
 
@@ -169,13 +182,22 @@ function updateSkyDynamicTexture(state: EnvState): DynamicTexture {
         const url = resolveStaticAsset(state.starsTexture);
         _ensureStarsTextureImage(url, (img) => {
             const cur = _envSys.sky.skyDynamicTex;
-            if (!cur) return;
+            if (!cur) {
+                return;
+            }
             const curCtx = cur.getContext() as CanvasRenderingContext2D | null;
-            if (!curCtx) return;
+            if (!curCtx) {
+                return;
+            }
             drawSkyGradient(
-                curCtx, col3FromTriple(state.skyColorTop), col3FromTriple(state.skyColorMid),
-                col3FromTriple(state.skyColorBot), state.skyBrightness, state.sunAngle,
-                state.starsEnabled, img
+                curCtx,
+                col3FromTriple(state.skyColorTop),
+                col3FromTriple(state.skyColorMid),
+                col3FromTriple(state.skyColorBot),
+                state.skyBrightness,
+                state.sunAngle,
+                state.starsEnabled,
+                img
             );
             cur.update();
         });
@@ -192,7 +214,9 @@ function createProceduralSky(state: EnvState): void {
     const farZ = cam?.maxZ ?? 10000;
     const diameter = Math.min(20000, Math.max(2000, farZ * 1.8));
     const sphere = MeshBuilder.CreateSphere(
-        'envSkySphere', { diameter, segments: 32, sideOrientation: Mesh.BACKSIDE }, scene
+        'envSkySphere',
+        { diameter, segments: 32, sideOrientation: Mesh.BACKSIDE },
+        scene
     );
     sphere.isPickable = false;
 
@@ -221,7 +245,13 @@ function loadSkyCube(path: string, rotationY: number, intensity: number): void {
         return;
     }
 
-    const cubeTex = new CubeTexture(path, scene, null, false, null, null,
+    const cubeTex = new CubeTexture(
+        path,
+        scene,
+        null,
+        false,
+        null,
+        null,
         (message?: string, exception?: any) => {
             logWarn('sky', `loadSkyCube failed: ${message}`, exception);
             disposeSky();
@@ -238,7 +268,9 @@ function loadSkyCube(path: string, rotationY: number, intensity: number): void {
     const farZ = cam?.maxZ ?? 10000;
     const diameter = Math.min(20000, Math.max(2000, farZ * 1.8));
     const sphere = MeshBuilder.CreateSphere(
-        'envSkyDome', { diameter, segments: 32, sideOrientation: Mesh.BACKSIDE }, scene
+        'envSkyDome',
+        { diameter, segments: 32, sideOrientation: Mesh.BACKSIDE },
+        scene
     );
     sphere.isPickable = false;
     const mat = new StandardMaterial('envSkyDomeMat', scene);
@@ -279,7 +311,10 @@ export function applySky(state: EnvState): void {
     if (state.skyMode === 'color') {
         disposeSky();
         scene.clearColor = new Color4(
-            state.skyColorTop[0], state.skyColorTop[1], state.skyColorTop[2], 1
+            state.skyColorTop[0],
+            state.skyColorTop[1],
+            state.skyColorTop[2],
+            1
         );
         return;
     }

@@ -245,16 +245,24 @@ export function buildDangerCard(
     cardContainer(container, (c) => {
         // stage/actor 提供"重置变换"
         if (kind === 'actor' || kind === 'stage') {
-            slideRow(c, 'lucide:rotate-ccw', t('settings.transformReset', { kind: kind === 'stage' ? t('common.stage') : t('common.model') }), false, () => {
-                resetModelTransform(id);
-                setStatus(
-                    t('settings.transformReset', {
-                        kind: kind === 'stage' ? t('common.stage') : t('common.model'),
-                    }),
-                    true
-                );
-                onRemoved?.();
-            });
+            slideRow(
+                c,
+                'lucide:rotate-ccw',
+                t('settings.transformReset', {
+                    kind: kind === 'stage' ? t('common.stage') : t('common.model'),
+                }),
+                false,
+                () => {
+                    resetModelTransform(id);
+                    setStatus(
+                        t('settings.transformReset', {
+                            kind: kind === 'stage' ? t('common.stage') : t('common.model'),
+                        }),
+                        true
+                    );
+                    onRemoved?.();
+                }
+            );
         }
         addDangerRow(
             c,

@@ -95,7 +95,10 @@ const THUMBNAIL_TIMEOUT_MS = 5000;
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
     return new Promise((resolve, reject) => {
-        const timer = setTimeout(() => reject(new Error(`Promise timeout after ${timeoutMs}ms`)), timeoutMs);
+        const timer = setTimeout(
+            () => reject(new Error(`Promise timeout after ${timeoutMs}ms`)),
+            timeoutMs
+        );
         promise.then(
             (result) => {
                 clearTimeout(timer);
@@ -276,19 +279,19 @@ export async function loadPMXFile(
             // Stage: pure static mesh, no MMD runtime, no physics
             const inst: ModelInstance = {
                 id,
-            name: displayName,
-            filePath,
-            libraryPath,
-            port,
-            modelDir,
-            meshes,
-            rootMesh: meshes[0],
-            vmdData: null,
-            vmdName: '',
-            vmdPath: null,
-            animationDuration: 0,
-            vmdLayers: [],
-            kind: 'stage',
+                name: displayName,
+                filePath,
+                libraryPath,
+                port,
+                modelDir,
+                meshes,
+                rootMesh: meshes[0],
+                vmdData: null,
+                vmdName: '',
+                vmdPath: null,
+                animationDuration: 0,
+                vmdLayers: [],
+                kind: 'stage',
                 visible: true,
                 opacity: 1.0,
                 wireframe: false,

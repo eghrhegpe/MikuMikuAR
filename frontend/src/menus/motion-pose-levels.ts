@@ -62,7 +62,10 @@ function buildPoseStudioSchema(): MenuNode[] {
                     title.textContent = t('motion.poseStudio.composition');
                     inner.appendChild(title);
 
-                    const modes: Array<{ key: 'off' | 'ruleOfThirds' | 'goldenRatio' | 'diagonal'; label: string }> = [
+                    const modes: Array<{
+                        key: 'off' | 'ruleOfThirds' | 'goldenRatio' | 'diagonal';
+                        label: string;
+                    }> = [
                         { key: 'off', label: t('motion.poseStudio.off') },
                         { key: 'ruleOfThirds', label: t('motion.poseStudio.ruleOfThirds') },
                         { key: 'goldenRatio', label: t('motion.poseStudio.goldenRatio') },

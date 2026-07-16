@@ -1,9 +1,7 @@
 // settings-shared.ts — 设置子模块共享的工具函数与状态
 // 从 settings.ts 拆出，供各 settings-* 子模块引用。
 
-import {
-    SetUIAccent,
-} from '../core/wails-bindings';
+import { SetUIAccent } from '../core/wails-bindings';
 import { setStatus, UIState } from '../core/config';
 import { tryCatchStatus, clamp01 } from '../core/utils';
 import { hexToRgb, rgbToString } from '../core/color-helpers';

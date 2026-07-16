@@ -708,7 +708,8 @@ export function setContactShadow(state: EnvState): void {
     }
 
     // 中/高质量守卫：low/off 时自动关闭
-    const qualityOk = state.groundReflectionQuality === 'medium' || state.groundReflectionQuality === 'high';
+    const qualityOk =
+        state.groundReflectionQuality === 'medium' || state.groundReflectionQuality === 'high';
     const shouldEnable = state.groundContactShadowEnabled && qualityOk;
 
     if (shouldEnable) {
@@ -720,16 +721,25 @@ export function setContactShadow(state: EnvState): void {
 
         // 构造 onApply handler（创建和更新路径共用）
         const handler = (effect: Effect) => {
-            effect.setTexture('depthSampler', _scene!.enableDepthRenderer(_scene!.activeCamera).getDepthMap());
+            effect.setTexture(
+                'depthSampler',
+                _scene!.enableDepthRenderer(_scene!.activeCamera).getDepthMap()
+            );
             // setVector2/setVector3 接受 plain {x,y} / {x,y,z} 对象（Babylon 内部解构，不要求 Vector2/Vector3 实例）
-            effect.setVector2('resolution', { x: _scene!.getEngine().getRenderWidth(), y: _scene!.getEngine().getRenderHeight() });
+            effect.setVector2('resolution', {
+                x: _scene!.getEngine().getRenderWidth(),
+                y: _scene!.getEngine().getRenderHeight(),
+            });
             // 方向光反向作为光线方向；转换到视图空间
             const lightDir = dirLight ? dirLight.direction : { x: 0, y: -1, z: 0 };
             const viewMat = camera.getViewMatrix();
             // 视图空间 = viewMatrix * worldDir（仅方向，忽略平移）
-            const vlx = viewMat.m[0] * lightDir.x + viewMat.m[4] * lightDir.y + viewMat.m[8] * lightDir.z;
-            const vly = viewMat.m[1] * lightDir.x + viewMat.m[5] * lightDir.y + viewMat.m[9] * lightDir.z;
-            const vlz = viewMat.m[2] * lightDir.x + viewMat.m[6] * lightDir.y + viewMat.m[10] * lightDir.z;
+            const vlx =
+                viewMat.m[0] * lightDir.x + viewMat.m[4] * lightDir.y + viewMat.m[8] * lightDir.z;
+            const vly =
+                viewMat.m[1] * lightDir.x + viewMat.m[5] * lightDir.y + viewMat.m[9] * lightDir.z;
+            const vlz =
+                viewMat.m[2] * lightDir.x + viewMat.m[6] * lightDir.y + viewMat.m[10] * lightDir.z;
             effect.setVector3('lightDirVS', { x: vlx, y: vly, z: vlz });
             effect.setFloat('shadowDistance', state.groundContactShadowDistance);
             effect.setFloat('intensity', state.groundContactShadowIntensity);
@@ -744,7 +754,15 @@ export function setContactShadow(state: EnvState): void {
                 _contactShadowPP = new PostProcess(
                     'contactShadow',
                     'contactShadow', // shader name
-                    ['resolution', 'lightDirVS', 'shadowDistance', 'intensity', 'nearZ', 'farZ', 'tanHalfFov'],
+                    [
+                        'resolution',
+                        'lightDirVS',
+                        'shadowDistance',
+                        'intensity',
+                        'nearZ',
+                        'farZ',
+                        'tanHalfFov',
+                    ],
                     ['depthSampler'],
                     1.0, // scaling
                     null, // sampler

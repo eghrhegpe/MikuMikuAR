@@ -161,7 +161,8 @@ export const zhCN: Record<string, string> = {
     'motion.off': '关',
     'motion.recent': '最近使用',
     'motion.noRecent': '暂无最近使用动作',
-    'motion.addLayer': '添加动作',    'motion.addLayerTo': '添加动作 → {name}',
+    'motion.addLayer': '添加动作',
+    'motion.addLayerTo': '添加动作 → {name}',
     'motion.baseAction': '基础动作',
     'motion.replaceBase': '更换基础动作 → {name}',
     'motion.deleteLayer': '删除图层',
@@ -844,6 +845,12 @@ export const zhCN: Record<string, string> = {
     'env-preset.saveErrorToast': '保存环境预设失败',
     'env-preset.saved': '✓ 已保存预设：{name}',
     'env-preset.title': '环境预设',
+    'env-preset.sceneMood': '场景氛围',
+    'env-preset.category.sky': '天空',
+    'env-preset.category.ground': '地面',
+    'env-preset.category.water': '水面',
+    'env-preset.category.atmosphere': '大气',
+    'env-preset.saveCurrentCategory': '＋ 保存当前{category}为预设',
 
     // menu — 菜单兜底文案
     'menu.noHint': '暂无提示',

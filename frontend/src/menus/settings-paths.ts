@@ -20,7 +20,13 @@ import {
     cardContainer,
     PopupRow,
 } from '../core/config';
-import { slideRow, addModeRow, addToggleRow, addWatchDirRow, addSectionTitle } from '../core/ui-helpers';
+import {
+    slideRow,
+    addModeRow,
+    addToggleRow,
+    addWatchDirRow,
+    addSectionTitle,
+} from '../core/ui-helpers';
 import { showConfirm } from '../core/dialog';
 import { addDisposableListener } from '../core/dom';
 import {
@@ -191,7 +197,12 @@ function buildPathsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                             'margin:6px 12px 8px;padding:8px 10px;background:rgba(0,0,0,0.12);border-radius:6px;font-size:11px;color:var(--text-secondary);line-height:1.7;word-break:break-all';
 
                         const modeRow = document.createElement('div');
-                        modeRow.textContent = t('settings.storageMode') + '：' + (currentMode === 'shared' ? t('settings.paths.storageModeShared') : t('settings.paths.storageModePrivate'));
+                        modeRow.textContent =
+                            t('settings.storageMode') +
+                            '：' +
+                            (currentMode === 'shared'
+                                ? t('settings.paths.storageModeShared')
+                                : t('settings.paths.storageModePrivate'));
                         diag.appendChild(modeRow);
 
                         const rootRow = document.createElement('div');
@@ -207,7 +218,8 @@ function buildPathsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                         diag.appendChild(rootRow);
 
                         const countRow = document.createElement('div');
-                        countRow.textContent = t('settings.paths.modelCount') || '模型数量：' + allModels.length;
+                        countRow.textContent =
+                            t('settings.paths.modelCount') || '模型数量：' + allModels.length;
                         diag.appendChild(countRow);
 
                         inner.appendChild(diag);

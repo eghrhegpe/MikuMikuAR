@@ -137,12 +137,7 @@ export function getAllShortcuts(): ShortcutWithBinding[] {
 }
 
 /** 格式化按键绑定为可读字符串，如 "Ctrl+1"、"Shift+←" */
-export function formatKeyBinding(
-    key: string,
-    ctrl: boolean,
-    shift: boolean,
-    alt: boolean
-): string {
+export function formatKeyBinding(key: string, ctrl: boolean, shift: boolean, alt: boolean): string {
     const parts: string[] = [];
     if (ctrl) {
         parts.push('Ctrl');

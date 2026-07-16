@@ -204,7 +204,8 @@ function buildPerMatSchema(
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
                     const nameEl = document.createElement('div');
-                    nameEl.style.cssText = 'font-size:11px;color:var(--white-65);margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+                    nameEl.style.cssText =
+                        'font-size:11px;color:var(--white-65);margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
                     nameEl.textContent = modelName + ' > ' + matName;
                     inner.appendChild(nameEl);
 

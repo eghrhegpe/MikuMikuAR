@@ -234,7 +234,11 @@ export async function loadOverlay(
             logWarn('outfit-overlay', 'FBX loaded but no meshes found');
             // 清理已加载到 scene 的 mesh（虽然 filter 为空，但 ImportMeshAsync 可能添加了非 Mesh 资源）
             for (const m of result.meshes) {
-                try { m.dispose(); } catch { /* ignore */ }
+                try {
+                    m.dispose();
+                } catch {
+                    /* ignore */
+                }
             }
             return { meshes: [], retargetOk: false };
         }
@@ -248,7 +252,11 @@ export async function loadOverlay(
         if (!skeletonOk) {
             // Fail-Fast: 骨骼重定向失败，直接抛错
             for (const m of meshes) {
-                try { m.dispose(); } catch { /* ignore */ }
+                try {
+                    m.dispose();
+                } catch {
+                    /* ignore */
+                }
             }
             throw new Error('outfit-overlay: 骨骼重定向匹配率过低，无法叠加');
         }
@@ -264,7 +272,11 @@ export async function loadOverlay(
         console.error('[outfit-overlay] Failed to load FBX overlay:', err);
         // 确保已加载的 mesh 被清理（meshes 在 try 块外声明，catch 可访问）
         for (const m of meshes) {
-            try { m.dispose(); } catch { /* ignore */ }
+            try {
+                m.dispose();
+            } catch {
+                /* ignore */
+            }
         }
         return { meshes: [], retargetOk: false };
     }

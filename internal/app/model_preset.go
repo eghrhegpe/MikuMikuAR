@@ -206,6 +206,7 @@ func (a *App) writeConfig(cfg *Config) error {
 	}
 	// 写入后缓存，防止后续 GetConfig 因 bootstrap 不存在而读到空配置
 	a.cachedCfg = cfg
+	a.safeLogInfo("[config-persist] writeConfig: %d bytes written to %s", len(data), path)
 	return nil
 }
 

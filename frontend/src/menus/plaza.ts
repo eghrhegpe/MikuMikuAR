@@ -51,10 +51,17 @@ function escapeHtml(s: string): string {
 // ======== 公共 DOM 辅助函数（统一表达方式，替代手动 createElement 样板）========
 
 /** 创建 plaza 按钮 */
-function _plazaBtn(html: string, onClick: () => void, className = 'plaza-btn', title?: string): HTMLButtonElement {
+function _plazaBtn(
+    html: string,
+    onClick: () => void,
+    className = 'plaza-btn',
+    title?: string
+): HTMLButtonElement {
     const btn = document.createElement('button');
     btn.className = className;
-    if (title) btn.title = title;
+    if (title) {
+        btn.title = title;
+    }
     btn.innerHTML = html;
     btn.onclick = onClick;
     return btn;
@@ -71,7 +78,9 @@ function _plazaSectionHeader(titleHtml: string, ...actions: HTMLElement[]): HTML
     if (actions.length > 0) {
         const actionBar = document.createElement('div');
         actionBar.className = 'plaza-section-actions';
-        for (const a of actions) actionBar.appendChild(a);
+        for (const a of actions) {
+            actionBar.appendChild(a);
+        }
         header.appendChild(actionBar);
     }
     return header;
@@ -145,7 +154,6 @@ function effectiveMode(site: PlazaSite): OpenMode {
     }
     return site.mode ?? 'embed';
 }
-
 
 let allSites: PlazaSite[] = [];
 let allCreators: PlazaCreator[] = [];
@@ -296,8 +304,16 @@ async function ensureSitesLoaded(): Promise<void> {
 let currentSiteId: string = '';
 
 const SITE_GROUPS: { label: string; icon: string; ids: string[] }[] = [
-    { label: '国内', icon: 'lucide:map-pin', ids: ['mzhouse', 'bilibili', 'afdian', 'github', 'cms-blueprint'] },
-    { label: '海外', icon: 'lucide:globe-2', ids: ['bowlroll', 'booth', 'nicovideo', 'deviantart', 'vroid'] },
+    {
+        label: '国内',
+        icon: 'lucide:map-pin',
+        ids: ['mzhouse', 'bilibili', 'afdian', 'github', 'cms-blueprint'],
+    },
+    {
+        label: '海外',
+        icon: 'lucide:globe-2',
+        ids: ['bowlroll', 'booth', 'nicovideo', 'deviantart', 'vroid'],
+    },
 ];
 
 function buildSiteTabs(): HTMLElement {
@@ -306,7 +322,9 @@ function buildSiteTabs(): HTMLElement {
 
     for (const grp of SITE_GROUPS) {
         const grpSites = allSites.filter((s) => grp.ids.includes(s.id));
-        if (grpSites.length === 0) continue;
+        if (grpSites.length === 0) {
+            continue;
+        }
 
         const grpWrap = document.createElement('div');
         grpWrap.className = 'plaza-tab-group';
@@ -323,7 +341,9 @@ function buildSiteTabs(): HTMLElement {
             btn.className = 'plaza-site-tab' + (currentSiteId === site.id ? ' active' : '');
             btn.innerHTML = `<iconify-icon icon="${site.icon ?? 'lucide:globe'}"></iconify-icon><span>${site.name}</span>`;
             btn.onclick = () => {
-                if (currentSiteId === site.id) return;
+                if (currentSiteId === site.id) {
+                    return;
+                }
                 currentSiteId = site.id;
                 renderHome();
             };
@@ -344,7 +364,9 @@ function buildSiteTabs(): HTMLElement {
             btn.className = 'plaza-site-tab' + (currentSiteId === site.id ? ' active' : '');
             btn.innerHTML = `<iconify-icon icon="${site.icon ?? 'lucide:globe'}"></iconify-icon><span>${site.name}</span>`;
             btn.onclick = () => {
-                if (currentSiteId === site.id) return;
+                if (currentSiteId === site.id) {
+                    return;
+                }
                 currentSiteId = site.id;
                 renderHome();
             };
@@ -457,7 +479,9 @@ function renderSiteContent(site: PlazaSite): HTMLElement {
             addBtn.style.display = '';
         };
         input.addEventListener('keydown', (ev) => {
-            if (ev.key === 'Enter') commit();
+            if (ev.key === 'Enter') {
+                commit();
+            }
             if (ev.key === 'Escape') {
                 inputRow.remove();
                 addBtn.style.display = '';
@@ -511,7 +535,9 @@ function renderSiteContent(site: PlazaSite): HTMLElement {
                     return;
                 }
                 const url = site.searchUrl?.replace('{{q}}', encodeURIComponent(cp.q || cp.label));
-                if (url) openSiteByMode(site, url);
+                if (url) {
+                    openSiteByMode(site, url);
+                }
             };
             presetArea.appendChild(btn);
         }
@@ -524,7 +550,9 @@ function renderSiteContent(site: PlazaSite): HTMLElement {
             btn.onclick = () => {
                 const keyword = ps.q || ps.label;
                 const url = site.searchUrl?.replace('{{q}}', encodeURIComponent(keyword));
-                if (url) openSiteByMode(site, url);
+                if (url) {
+                    openSiteByMode(site, url);
+                }
             };
             presetArea.appendChild(btn);
         }
@@ -809,7 +837,9 @@ function installShortcuts(): void {
     const visibleGuard = (fn: () => Promise<unknown> | void) => () => {
         if (getLayer().classList.contains('visible')) {
             const r = fn();
-            if (r) swallowError(r);
+            if (r) {
+                swallowError(r);
+            }
         }
     };
 
@@ -821,12 +851,12 @@ function installShortcuts(): void {
         handler: () => Promise<unknown> | void;
     }
     const PLAZA_SHORTCUTS: PlazaShortcutDef[] = [
-        { id: 'plaza:reload',      key: 'F5',                  handler: PlazaReload },
-        { id: 'plaza:reload-ctrl',  key: 'KeyR', ctrl: true,   handler: PlazaReload },
-        { id: 'plaza:goBack',      key: 'ArrowLeft',  alt: true, handler: PlazaGoBack },
-        { id: 'plaza:goForward',   key: 'ArrowRight', alt: true, handler: PlazaGoForward },
-        { id: 'plaza:zoomIn',      key: 'Equal',      ctrl: true, handler: PlazaZoomIn },
-        { id: 'plaza:zoomOut',     key: 'Minus',      ctrl: true, handler: PlazaZoomOut },
+        { id: 'plaza:reload', key: 'F5', handler: PlazaReload },
+        { id: 'plaza:reload-ctrl', key: 'KeyR', ctrl: true, handler: PlazaReload },
+        { id: 'plaza:goBack', key: 'ArrowLeft', alt: true, handler: PlazaGoBack },
+        { id: 'plaza:goForward', key: 'ArrowRight', alt: true, handler: PlazaGoForward },
+        { id: 'plaza:zoomIn', key: 'Equal', ctrl: true, handler: PlazaZoomIn },
+        { id: 'plaza:zoomOut', key: 'Minus', ctrl: true, handler: PlazaZoomOut },
     ];
 
     registerShortcuts(

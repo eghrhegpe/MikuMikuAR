@@ -67,9 +67,9 @@ describe('FullscreenOverlay navigation', () => {
         expect(renders).toEqual(['root', 'child']);
 
         // 点击返回（← 按钮）
-        const backBtn = Array.from(
-            document.querySelectorAll('.fullscreen-overlay button')
-        ).find((b) => (b as HTMLButtonElement).textContent === '←') as HTMLButtonElement;
+        const backBtn = Array.from(document.querySelectorAll('.fullscreen-overlay button')).find(
+            (b) => (b as HTMLButtonElement).textContent === '←'
+        ) as HTMLButtonElement;
         expect(backBtn).toBeTruthy();
         backBtn.click();
 
@@ -91,9 +91,9 @@ describe('FullscreenOverlay navigation', () => {
         });
         (document.querySelector('.folder-trigger') as HTMLButtonElement).click();
 
-        const closeBtn = Array.from(
-            document.querySelectorAll('.fullscreen-overlay button')
-        ).find((b) => (b as HTMLButtonElement).textContent === '✕') as HTMLButtonElement;
+        const closeBtn = Array.from(document.querySelectorAll('.fullscreen-overlay button')).find(
+            (b) => (b as HTMLButtonElement).textContent === '✕'
+        ) as HTMLButtonElement;
         closeBtn.click();
 
         // 关闭后状态还原；overlay 已从 DOM 移除

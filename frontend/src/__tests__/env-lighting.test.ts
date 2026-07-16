@@ -1,5 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { deriveLighting, calcLuminance, TIME_OF_DAY_PRESETS } from '../scene/env/env-lighting';
+import {
+    deriveLighting,
+    calcLuminance,
+    TIME_OF_DAY_PRESETS,
+    snapshotEnvPresetByCategory,
+    exportCategorizedEnvPreset,
+    importCategorizedEnvPreset,
+    ENV_PRESET_FIELDS,
+} from '../scene/env/env-lighting';
+import { createMockEnvState } from './mocks/binding-factories';
 
 // ── scene-lighting-smoke: Babylon mocks ──────────────────────────
 vi.mock('@babylonjs/core/Lights/hemisphericLight', () => ({ HemisphericLight: vi.fn() }));
@@ -211,5 +220,152 @@ describe('scene-lighting — transitionLighting smoke', () => {
         expect(() => {
             sceneLighting.transitionLighting({ dirIntensity: 0.5 }, 2000);
         }).not.toThrow();
+    });
+});
+
+// ====================================================================
+// 分类预设（ADR-120）
+// ====================================================================
+
+describe('ADR-120 分类预设', () => {
+    describe('ENV_PRESET_FIELDS 白名单', () => {
+        it('4 个类别', () => {
+            expect(Object.keys(ENV_PRESET_FIELDS).sort()).toEqual([
+                'atmosphere',
+                'ground',
+                'sky',
+                'water',
+            ]);
+        });
+
+        it('各类字段无重叠', () => {
+            const all: string[] = [];
+            for (const keys of Object.values(ENV_PRESET_FIELDS)) {
+                all.push(...(keys as string[]));
+            }
+            const unique = new Set(all);
+            expect(all.length).toBe(unique.size); // 无重复
+        });
+
+        it('排除 collision* 物理字段', () => {
+            const all: string[] = [];
+            for (const keys of Object.values(ENV_PRESET_FIELDS)) {
+                all.push(...(keys as string[]));
+            }
+            expect(all).not.toContain('collisionEnabled');
+            expect(all).not.toContain('bodyCollisionEnabled');
+            expect(all).not.toContain('groundCollisionEnabled');
+        });
+    });
+
+    describe('snapshotEnvPresetByCategory', () => {
+        it('sky 类只含 sky 字段', () => {
+            const state = createMockEnvState();
+            const preset = snapshotEnvPresetByCategory('测试天空', 'sky', state);
+            expect(preset.version).toBe(3);
+            expect(preset.category).toBe('sky');
+            expect(preset.label).toBe('测试天空');
+            const keys = Object.keys(preset.fields);
+            // 不含 ground/water/atmosphere 字段
+            expect(keys).not.toContain('groundColor');
+            expect(keys).not.toContain('waterColor');
+            expect(keys).not.toContain('particleType');
+            // 含 sky 字段
+            expect(keys).toContain('skyMode');
+            expect(keys).toContain('sunAngle');
+        });
+
+        it('ground 类只含 ground 字段', () => {
+            const state = createMockEnvState();
+            const preset = snapshotEnvPresetByCategory('草地', 'ground', state);
+            expect(preset.category).toBe('ground');
+            const keys = Object.keys(preset.fields);
+            expect(keys).toContain('groundColor');
+            expect(keys).toContain('groundType');
+            expect(keys).not.toContain('skyMode');
+            expect(keys).not.toContain('waterColor');
+        });
+
+        it('数组字段是拷贝（修改原 state 不影响 preset）', () => {
+            const state = createMockEnvState({ skyColorTop: [1, 0, 0] });
+            const preset = snapshotEnvPresetByCategory('红天', 'sky', state);
+            expect(preset.fields.skyColorTop).toEqual([1, 0, 0]);
+            // 修改原 state
+            state.skyColorTop[0] = 0;
+            // preset 不受影响
+            expect(preset.fields.skyColorTop).toEqual([1, 0, 0]);
+        });
+    });
+
+    describe('exportCategorizedEnvPreset / importCategorizedEnvPreset 往返', () => {
+        it('v3 序列化 → 反序列化一致', () => {
+            const state = createMockEnvState();
+            const preset = snapshotEnvPresetByCategory('水面预设', 'water', state);
+            const json = exportCategorizedEnvPreset(preset);
+            const restored = importCategorizedEnvPreset(json);
+            expect(restored).not.toBeNull();
+            expect(restored!.version).toBe(3);
+            expect(restored!.category).toBe('water');
+            expect(restored!.label).toBe('水面预设');
+            expect(restored!.fields.waterColor).toEqual(state.waterColor);
+            expect(restored!.fields.fogColor).toBeUndefined(); // fog 属于 atmosphere
+        });
+    });
+
+    describe('importCategorizedEnvPreset v2 兼容', () => {
+        it('旧 v2 格式（顶层 skyColorTop/Bot/sunAngle）归 sky 类', () => {
+            const v2Json = JSON.stringify({
+                version: 2,
+                label: '旧天空预设',
+                skyColorTop: [0.5, 0.5, 1],
+                skyColorBot: [0.8, 0.8, 1],
+                sunAngle: 30,
+                azimuth: -45,
+            });
+            const preset = importCategorizedEnvPreset(v2Json);
+            expect(preset).not.toBeNull();
+            expect(preset!.category).toBe('sky');
+            expect(preset!.label).toBe('旧天空预设');
+            expect(preset!.fields.skyColorTop).toEqual([0.5, 0.5, 1]);
+            expect(preset!.fields.sunAngle).toBe(30);
+        });
+
+        it('无 azimuth 时用默认值', () => {
+            const v2Json = JSON.stringify({
+                version: 2,
+                label: '无方位',
+                skyColorTop: [0, 0, 0],
+                skyColorBot: [1, 1, 1],
+                sunAngle: 0,
+            });
+            const preset = importCategorizedEnvPreset(v2Json);
+            expect(preset).not.toBeNull();
+            expect(preset!.fields.azimuth).toBe(-45);
+        });
+    });
+
+    describe('importCategorizedEnvPreset 异常', () => {
+        it('无效 JSON 返回 null', () => {
+            expect(importCategorizedEnvPreset('{not json')).toBeNull();
+        });
+
+        it('缺 label 返回 null', () => {
+            expect(
+                importCategorizedEnvPreset(JSON.stringify({ version: 3, category: 'sky' }))
+            ).toBeNull();
+        });
+
+        it('非法 category 返回 null', () => {
+            expect(
+                importCategorizedEnvPreset(
+                    JSON.stringify({
+                        version: 3,
+                        category: 'invalid',
+                        label: 'x',
+                        fields: {},
+                    })
+                )
+            ).toBeNull();
+        });
     });
 });

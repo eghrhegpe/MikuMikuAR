@@ -1,5 +1,6 @@
-// [doc:architecture] Env Preset Levels — 环境预设弹窗层级
+// [doc:architecture] Env Preset Levels — 环境预设弹窗层级（ADR-120 分类预设）
 // 从 env-menu.ts 拆分
+// 4 类预设：sky/ground/water/atmosphere，各类独立保存/加载，互不覆盖
 
 import { envState, cardContainer, setStatus } from '../core/config';
 import type { PopupLevel } from '../core/config';
@@ -8,13 +9,18 @@ import { tryCatchStatus, showErrorToast, logWarn } from '../core/utils';
 import { t } from '../core/i18n/t';
 import {
     setEnvState,
-    getEnvSunAngle,
-    applyEnvPresetObject,
+    applyEnvPresetByCategory,
     transitionRenderState,
     defaultRenderState,
 } from '../scene/scene';
 import { transitionLighting } from '../scene/render/lighting';
-import { exportEnvPreset, importEnvPreset, type EnvPreset } from '../scene/env/env-lighting';
+import {
+    snapshotEnvPresetByCategory,
+    exportCategorizedEnvPreset,
+    importCategorizedEnvPreset,
+    type EnvPresetCategory,
+    type CategorizedEnvPreset,
+} from '../scene/env/env-lighting';
 import {
     SaveEnvPresetAuto,
     LoadEnvPreset,
@@ -24,22 +30,24 @@ import {
 
 import { getEnvMenu } from './env-menu';
 
-// ======== User-Saved Env Presets ========
+// ======== 分类元数据 ========
 
-export function snapshotCurrentEnvPreset(label: string): EnvPreset {
-    return {
-        label,
-        skyColorTop: [...envState.skyColorTop] as [number, number, number],
-        skyColorBot: [...envState.skyColorBot] as [number, number, number],
-        sunAngle: getEnvSunAngle(),
-        azimuth: envState.azimuth ?? -45,
-    };
-}
+const CATEGORIES: { id: EnvPresetCategory; labelKey: string }[] = [
+    { id: 'sky', labelKey: 'env-preset.category.sky' },
+    { id: 'ground', labelKey: 'env-preset.category.ground' },
+    { id: 'water', labelKey: 'env-preset.category.water' },
+    { id: 'atmosphere', labelKey: 'env-preset.category.atmosphere' },
+];
 
-export function renderUserEnvPresets(container: HTMLElement): void {
+/** [adr-120] 渲染单个分类的用户预设区域：标题 + 保存按钮 + 预设列表。 */
+function renderCategorizedPresets(
+    container: HTMLElement,
+    category: EnvPresetCategory,
+    labelKey: string
+): void {
     const wrapper = document.createElement('div');
     wrapper.style.paddingTop = '4px';
-    addSectionTitle(wrapper, t('env-preset.myPresets'));
+    addSectionTitle(wrapper, t(labelKey));
 
     const listHost = document.createElement('div');
     listHost.style.paddingBottom = '6px';
@@ -47,65 +55,68 @@ export function renderUserEnvPresets(container: HTMLElement): void {
 
     const renderList = async () => {
         listHost.innerHTML = '';
-        let entries: { name: string; label: string; createdAt: number }[] = [];
+        let entries: { name: string; label: string; category: string; createdAt: number }[] = [];
         try {
             entries = await ListEnvPresets();
         } catch (err) {
-            logWarn('env-menu', 'ListEnvPresets failed:', err);
+            logWarn('env-preset', 'ListEnvPresets failed:', err);
         }
         if (!listHost.isConnected) {
             return;
         } // 菜单已重渲染/卸载，放弃本次异步结果
-        if (entries.length === 0) {
+        // 仅显示当前分类的预设
+        const filtered = entries
+            .filter((e) => (e.category || 'sky') === category)
+            .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+        if (filtered.length === 0) {
             const empty = document.createElement('div');
             empty.textContent = t('env-preset.noCustom');
             empty.className = 'weak-text';
             listHost.appendChild(empty);
-            return;
-        }
-        entries.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
-        for (const e of entries) {
-            const row = document.createElement('div');
-            row.className = 'cs-row';
-            const labelEl = document.createElement('button');
-            labelEl.className = 'preset-chip';
-            labelEl.textContent = e.label || e.name;
-            labelEl.style.flex = '1';
-            labelEl.addEventListener('click', async () => {
-                const r = await tryCatchStatus(async () => {
-                    const json = await LoadEnvPreset(e.name);
-                    const preset = importEnvPreset(json);
-                    if (!preset) {
-                        setStatus(t('env-preset.formatError'), false);
-                        return;
+        } else {
+            for (const e of filtered) {
+                const row = document.createElement('div');
+                row.className = 'cs-row';
+                const labelEl = document.createElement('button');
+                labelEl.className = 'preset-chip';
+                labelEl.textContent = e.label || e.name;
+                labelEl.style.flex = '1';
+                labelEl.addEventListener('click', async () => {
+                    const r = await tryCatchStatus(async () => {
+                        const json = await LoadEnvPreset(e.name);
+                        const preset = importCategorizedEnvPreset(json);
+                        if (!preset) {
+                            setStatus(t('env-preset.formatError'), false);
+                            return null;
+                        }
+                        applyEnvPresetByCategory(preset);
+                        getEnvMenu()?.reRender();
+                        return preset;
+                    }, t('env-preset.loadFailed'));
+                    if (r) {
+                        setStatus(t('env-preset.applied', { label: r.label }), true);
                     }
-                    applyEnvPresetObject(preset);
-                    getEnvMenu()?.reRender(); // 应用后刷新环境菜单高亮/绑定状态
-                    return preset;
-                }, t('env-preset.loadFailed'));
-                if (r) {
-                    setStatus(t('env-preset.applied', { label: r.label }), true);
-                }
-            });
-            row.appendChild(labelEl);
+                });
+                row.appendChild(labelEl);
 
-            const delBtn = document.createElement('button');
-            delBtn.className = 'preset-chip';
-            delBtn.style.cssText = 'flex:0 0 auto;padding:0 8px;color:var(--text-dim);';
-            delBtn.textContent = '✕';
-            delBtn.title = t('env-preset.deletePreset');
-            delBtn.addEventListener('click', async () => {
-                const r = await tryCatchStatus(async () => {
-                    await DeleteEnvPreset(e.name);
-                    return true;
-                }, t('env-preset.deleteFailed'));
-                if (r) {
-                    setStatus(t('env-preset.deleted', { label: e.label }), true);
-                    renderList();
-                }
-            });
-            row.appendChild(delBtn);
-            listHost.appendChild(row);
+                const delBtn = document.createElement('button');
+                delBtn.className = 'preset-chip';
+                delBtn.style.cssText = 'flex:0 0 auto;padding:0 8px;color:var(--text-dim);';
+                delBtn.textContent = '✕';
+                delBtn.title = t('env-preset.deletePreset');
+                delBtn.addEventListener('click', async () => {
+                    const r = await tryCatchStatus(async () => {
+                        await DeleteEnvPreset(e.name);
+                        return true;
+                    }, t('env-preset.deleteFailed'));
+                    if (r) {
+                        setStatus(t('env-preset.deleted', { label: e.label }), true);
+                        renderList();
+                    }
+                });
+                row.appendChild(delBtn);
+                listHost.appendChild(row);
+            }
         }
     };
 
@@ -114,10 +125,11 @@ export function renderUserEnvPresets(container: HTMLElement): void {
     const saveBtn = document.createElement('button');
     saveBtn.className = 'preset-chip';
     saveBtn.style.flex = '1';
-    saveBtn.textContent = t('env-preset.saveCurrent');
+    saveBtn.textContent = t('env-preset.saveCurrentCategory', { category: t(labelKey) });
     saveBtn.addEventListener('click', async () => {
         const autoLabel =
-            '自定义 ' +
+            t(labelKey) +
+            ' ' +
             new Date().toLocaleString('zh-CN', {
                 year: 'numeric',
                 month: '2-digit',
@@ -127,8 +139,8 @@ export function renderUserEnvPresets(container: HTMLElement): void {
             });
         const r = await tryCatchStatus(
             async () => {
-                const preset = snapshotCurrentEnvPreset(autoLabel);
-                const json = exportEnvPreset(preset);
+                const preset = snapshotEnvPresetByCategory(autoLabel, category, envState);
+                const json = exportCategorizedEnvPreset(preset);
                 const filename = await SaveEnvPresetAuto(json);
                 return filename;
             },
@@ -151,7 +163,7 @@ export function renderUserEnvPresets(container: HTMLElement): void {
     renderList();
 }
 
-// ======== Env Preset Config ========
+// ======== Env Preset Config（场景氛围快速预设，跨类别） ========
 
 interface EnvPresetConfig {
     env: Partial<import('../core/config').EnvState>;
@@ -329,17 +341,6 @@ export const SCENE_PRESETS: Record<string, EnvPresetConfig> = {
     },
 };
 
-/** [adr-111] 快照 envState 中所有 ground/water 字段，用于预设应用后恢复。 */
-function _snapshotGroundWaterFields(state: typeof envState): Partial<typeof envState> {
-    const snapshot: Record<string, unknown> = {};
-    for (const key of Object.keys(state) as (keyof typeof envState)[]) {
-        if (key.startsWith('ground') || key.startsWith('water')) {
-            snapshot[key] = state[key];
-        }
-    }
-    return snapshot as Partial<typeof envState>;
-}
-
 export function buildPresetLevel(): PopupLevel {
     const entries = Object.entries(SCENE_PRESETS);
     return {
@@ -349,6 +350,8 @@ export function buildPresetLevel(): PopupLevel {
         renderCustom: (container) => {
             container.classList.remove('render-card');
             cardContainer(container, (c) => {
+                // 场景氛围（跨类别内置快速预设）
+                addSectionTitle(c, t('env-preset.sceneMood'));
                 const chipGroup = document.createElement('div');
                 chipGroup.className = 'preset-group';
                 chipGroup.style.paddingBottom = '6px';
@@ -367,11 +370,8 @@ export function buildPresetLevel(): PopupLevel {
                                 (envUpdate.skyColorTop[2] + envUpdate.skyColorBot[2]) / 2,
                             ] as [number, number, number];
                         }
-                        // [adr-111] 环境预设不覆盖地面/水面参数：快照后恢复
-                        const groundWaterSnapshot = _snapshotGroundWaterFields(envState);
+                        // [adr-120] 场景氛围预设为跨类别整体切换，直接 apply（不再快照恢复 ground/water）
                         setEnvState(envUpdate);
-                        // 恢复地面/水面参数，确保预设不覆盖用户手动调整的值
-                        setEnvState(groundWaterSnapshot, true);
                         if (preset.lights) {
                             transitionLighting(preset.lights, 2000);
                         }
@@ -385,7 +385,11 @@ export function buildPresetLevel(): PopupLevel {
                     });
                 }
                 c.appendChild(chipGroup);
-                renderUserEnvPresets(c);
+
+                // 4 个分类预设区域
+                for (const cat of CATEGORIES) {
+                    renderCategorizedPresets(c, cat.id, cat.labelKey);
+                }
             });
         },
     };

@@ -161,7 +161,8 @@ export const en: Record<string, string> = {
     'motion.off': 'Off',
     'motion.recent': 'Recent',
     'motion.noRecent': 'No recent motions',
-    'motion.addLayer': 'Add Action',    'motion.addLayerTo': 'Add Action → {name}',
+    'motion.addLayer': 'Add Action',
+    'motion.addLayerTo': 'Add Action → {name}',
     'motion.baseAction': 'Base',
     'motion.replaceBase': 'Replace Base → {name}',
     'motion.deleteLayer': 'Delete Layer',
@@ -856,6 +857,12 @@ export const en: Record<string, string> = {
     'env-preset.saveErrorToast': 'Failed to save environment preset',
     'env-preset.saved': '✓ Preset saved: {name}',
     'env-preset.title': 'Environment Presets',
+    'env-preset.sceneMood': 'Scene Mood',
+    'env-preset.category.sky': 'Sky',
+    'env-preset.category.ground': 'Ground',
+    'env-preset.category.water': 'Water',
+    'env-preset.category.atmosphere': 'Atmosphere',
+    'env-preset.saveCurrentCategory': '＋ Save current {category} as preset',
 
     // menu — menu fallback text
     'menu.noHint': 'No hint',

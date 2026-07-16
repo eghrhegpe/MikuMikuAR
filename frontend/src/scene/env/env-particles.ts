@@ -219,8 +219,14 @@ interface ParticleConfig {
     maxSize: number;
     angularSpeed?: [number, number];
     /** 'box' = 全景天气盒发射器；'sphere' = 局部球发射器；undefined = 不设置 */
-    emitter?: { kind: 'box'; dir1: [number, number, number]; dir2: [number, number, number]; radius?: number }
-           | { kind: 'sphere'; radius: number };
+    emitter?:
+        | {
+              kind: 'box';
+              dir1: [number, number, number];
+              dir2: [number, number, number];
+              radius?: number;
+          }
+        | { kind: 'sphere'; radius: number };
     colors: Array<[number, Color4, Color4]>;
 }
 
@@ -229,70 +235,97 @@ const WEATHER_EMITTER: ParticleConfig['emitter'] = undefined; // 各天气类型
 const PARTICLE_CONFIGS: Record<string, ParticleConfig> = {
     sakura: {
         blendMode: ParticleSystem.BLENDMODE_STANDARD,
-        emitRate: 40, gravity: [0, -0.8, 0],
-        minLifeTime: 8, maxLifeTime: 15,
-        minEmitPower: 0.5, maxEmitPower: 1.5,
-        angularSpeed: [-1, 1], minSize: 0.15, maxSize: 0.35,
+        emitRate: 40,
+        gravity: [0, -0.8, 0],
+        minLifeTime: 8,
+        maxLifeTime: 15,
+        minEmitPower: 0.5,
+        maxEmitPower: 1.5,
+        angularSpeed: [-1, 1],
+        minSize: 0.15,
+        maxSize: 0.35,
         colors: [
-            [0,   new Color4(1, 0.72, 0.78, 1), new Color4(1, 0.8, 0.85, 1)],
+            [0, new Color4(1, 0.72, 0.78, 1), new Color4(1, 0.8, 0.85, 1)],
             [0.8, new Color4(1, 0.72, 0.78, 1), new Color4(1, 0.8, 0.85, 1)],
-            [1,   new Color4(1, 0.72, 0.78, 0), new Color4(1, 0.8, 0.85, 0)],
+            [1, new Color4(1, 0.72, 0.78, 0), new Color4(1, 0.8, 0.85, 0)],
         ],
     },
     rain: {
         blendMode: ParticleSystem.BLENDMODE_STANDARD,
-        emitRate: 3000, gravity: [0, -25, 0],
-        minLifeTime: 1, maxLifeTime: 2,
-        minEmitPower: 15, maxEmitPower: 20,
-        minSize: 0.08, maxSize: 0.15,
+        emitRate: 3000,
+        gravity: [0, -25, 0],
+        minLifeTime: 1,
+        maxLifeTime: 2,
+        minEmitPower: 15,
+        maxEmitPower: 20,
+        minSize: 0.08,
+        maxSize: 0.15,
         colors: [
-            [0,   new Color4(0.7, 0.8, 1, 0.6), new Color4(0.8, 0.9, 1, 0.8)],
-            [1,   new Color4(0.7, 0.8, 1, 0),   new Color4(0.8, 0.9, 1, 0)],
+            [0, new Color4(0.7, 0.8, 1, 0.6), new Color4(0.8, 0.9, 1, 0.8)],
+            [1, new Color4(0.7, 0.8, 1, 0), new Color4(0.8, 0.9, 1, 0)],
         ],
     },
     snow: {
         blendMode: ParticleSystem.BLENDMODE_STANDARD,
-        emitRate: 250, gravity: [0, -1.5, 0],
-        minLifeTime: 6, maxLifeTime: 12,
-        minEmitPower: 0.3, maxEmitPower: 0.8,
-        angularSpeed: [-0.5, 0.5], minSize: 0.1, maxSize: 0.25,
+        emitRate: 250,
+        gravity: [0, -1.5, 0],
+        minLifeTime: 6,
+        maxLifeTime: 12,
+        minEmitPower: 0.3,
+        maxEmitPower: 0.8,
+        angularSpeed: [-0.5, 0.5],
+        minSize: 0.1,
+        maxSize: 0.25,
         colors: [
             [0, new Color4(1, 1, 1, 0.9), new Color4(1, 1, 1, 1)],
-            [1, new Color4(1, 1, 1, 0),   new Color4(1, 1, 1, 0)],
+            [1, new Color4(1, 1, 1, 0), new Color4(1, 1, 1, 0)],
         ],
     },
     fireworks: {
         blendMode: ParticleSystem.BLENDMODE_ADD,
-        emitRate: 5, gravity: [0, -2, 0],
-        minLifeTime: 1.5, maxLifeTime: 3,
-        minEmitPower: 2, maxEmitPower: 5,
-        minSize: 0.05, maxSize: 0.12,
+        emitRate: 5,
+        gravity: [0, -2, 0],
+        minLifeTime: 1.5,
+        maxLifeTime: 3,
+        minEmitPower: 2,
+        maxEmitPower: 5,
+        minSize: 0.05,
+        maxSize: 0.12,
         emitter: { kind: 'sphere', radius: 2 },
         colors: [
             [0, new Color4(1, 0.9, 0.4, 0.3), new Color4(1, 0.8, 0.2, 0.2)],
-            [1, new Color4(1, 0.5, 0.1, 0),   new Color4(0.8, 0.3, 0, 0)],
+            [1, new Color4(1, 0.5, 0.1, 0), new Color4(0.8, 0.3, 0, 0)],
         ],
     },
     fireflies: {
         blendMode: ParticleSystem.BLENDMODE_ADD,
-        emitRate: 15, gravity: [0, 0, 0],
-        minLifeTime: 4, maxLifeTime: 8,
-        minEmitPower: 0.2, maxEmitPower: 0.5,
-        minSize: 0.1, maxSize: 0.2,
+        emitRate: 15,
+        gravity: [0, 0, 0],
+        minLifeTime: 4,
+        maxLifeTime: 8,
+        minEmitPower: 0.2,
+        maxEmitPower: 0.5,
+        minSize: 0.1,
+        maxSize: 0.2,
         emitter: { kind: 'sphere', radius: 8 },
         colors: [
-            [0,   new Color4(0.6, 1, 0.3, 0), new Color4(0.8, 1, 0.4, 0)],
+            [0, new Color4(0.6, 1, 0.3, 0), new Color4(0.8, 1, 0.4, 0)],
             [0.3, new Color4(0.6, 1, 0.3, 1), new Color4(0.8, 1, 0.4, 1)],
             [0.6, new Color4(0.6, 1, 0.3, 0.2), new Color4(0.8, 1, 0.4, 0.2)],
-            [1,   new Color4(0.6, 1, 0.3, 1), new Color4(0.8, 1, 0.4, 1)],
+            [1, new Color4(0.6, 1, 0.3, 1), new Color4(0.8, 1, 0.4, 1)],
         ],
     },
     leaves: {
         blendMode: ParticleSystem.BLENDMODE_STANDARD,
-        emitRate: 30, gravity: [0, -1, 0],
-        minLifeTime: 8, maxLifeTime: 14,
-        minEmitPower: 0.5, maxEmitPower: 1.5,
-        angularSpeed: [-2, 2], minSize: 0.2, maxSize: 0.4,
+        emitRate: 30,
+        gravity: [0, -1, 0],
+        minLifeTime: 8,
+        maxLifeTime: 14,
+        minEmitPower: 0.5,
+        maxEmitPower: 1.5,
+        angularSpeed: [-2, 2],
+        minSize: 0.2,
+        maxSize: 0.4,
         colors: [
             [0, new Color4(0.9, 0.5, 0.2, 1), new Color4(0.8, 0.6, 0.1, 1)],
             [1, new Color4(0.9, 0.5, 0.2, 0), new Color4(0.8, 0.6, 0.1, 0)],
@@ -303,10 +336,13 @@ const PARTICLE_CONFIGS: Record<string, ParticleConfig> = {
 const WEATHER_TYPES = ['sakura', 'rain', 'snow', 'leaves'];
 
 /** 天气类型的盒发射器方向参数 */
-const WEATHER_BOX_DIRS: Record<string, { dir1: [number, number, number]; dir2: [number, number, number] }> = {
+const WEATHER_BOX_DIRS: Record<
+    string,
+    { dir1: [number, number, number]; dir2: [number, number, number] }
+> = {
     sakura: { dir1: [-0.5, -0.2, -0.5], dir2: [0.5, 0.2, 0.5] },
-    rain:   { dir1: [-0.1, -1, -0.1],   dir2: [0.1, -1, 0.1] },
-    snow:   { dir1: [-0.5, -0.3, -0.5], dir2: [0.5, -0.3, 0.5] },
+    rain: { dir1: [-0.1, -1, -0.1], dir2: [0.1, -1, 0.1] },
+    snow: { dir1: [-0.5, -0.3, -0.5], dir2: [0.5, -0.3, 0.5] },
     leaves: { dir1: [-0.8, -0.3, -0.8], dir2: [0.8, 0.3, 0.8] },
 };
 
@@ -333,7 +369,8 @@ function _applyParticleConfig(ps: ParticleSystem, cfg: ParticleConfig, type: str
         const dirs = WEATHER_BOX_DIRS[type];
         if (dirs) {
             ps.createBoxEmitter(
-                new Vector3(...dirs.dir1), new Vector3(...dirs.dir2),
+                new Vector3(...dirs.dir1),
+                new Vector3(...dirs.dir2),
                 new Vector3(-WEATHER_BOX_XZ_HALF, 0, -WEATHER_BOX_XZ_HALF),
                 new Vector3(WEATHER_BOX_XZ_HALF, WEATHER_BOX_Y_RANGE, WEATHER_BOX_XZ_HALF)
             );
@@ -381,7 +418,8 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
     const ps = new ParticleSystem('envParticles', 15000, scene);
     ps.particleTexture = makeParticleTexture(type, envState.particleCustomTexture || undefined);
     _prevCustomTexKey = envState.particleCustomTexture
-        ? `_custom_${envState.particleCustomTexture}` : null;
+        ? `_custom_${envState.particleCustomTexture}`
+        : null;
     ps.updateSpeed = 0.01;
     ps.emitter = new Vector3(0, 0, 0);
 
@@ -414,9 +452,13 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
     // 每帧跟随相机（XZ 跟随，Y 按类型策略定位）
     _envSys.particles.followObserver = scene.onBeforeRenderObservable.add(() => {
         const cam = scene.activeCamera;
-        if (!cam) return;
+        if (!cam) {
+            return;
+        }
         const e = ps.emitter;
-        if (!(e instanceof Vector3)) return;
+        if (!(e instanceof Vector3)) {
+            return;
+        }
         const groundY = envState.groundLevel ?? 0;
         e.x = cam.position.x;
         e.z = cam.position.z;

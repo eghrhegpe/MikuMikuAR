@@ -56,7 +56,10 @@ function _ensureFadeGain(): void {
     // 若已有 GainNode 且 audio 已连接，跳过
     // 每次 source 变化后 _audio 是新的，所以需要重新连接
     try {
-        const ctx = new (window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+        const ctx = new (
+            window.AudioContext ??
+            (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+        )();
         if (_fadeGain) {
             _fadeGain.disconnect();
             _fadeGain = null;
@@ -195,7 +198,10 @@ function _crossfadeTo(player: StreamAudioPlayer): void {
         // 渐入（0 → targetVol）
         if (_fadeGain) {
             _fadeGain.gain.setValueAtTime(0, _fadeGain.context.currentTime);
-            _fadeGain.gain.linearRampToValueAtTime(1, _fadeGain.context.currentTime + fadeMs / 1000);
+            _fadeGain.gain.linearRampToValueAtTime(
+                1,
+                _fadeGain.context.currentTime + fadeMs / 1000
+            );
         } else {
             // 无 GainNode 时逐步渐入
             let step = 0;
@@ -387,7 +393,11 @@ export function disposeAudio(): void {
     _playlist = [];
     _playlistIndex = -1;
     if (_fadeGain) {
-        try { _fadeGain.disconnect(); } catch { /* noop */ }
+        try {
+            _fadeGain.disconnect();
+        } catch {
+            /* noop */
+        }
         _fadeGain = null;
     }
 
@@ -490,8 +500,7 @@ export function syncAudioPlayback(vmdTime: number, isPlaying: boolean, vmdDurati
             }
         }
     }
-
-    }
+}
 
 // ======== Beat Detector 桥接 ========
 

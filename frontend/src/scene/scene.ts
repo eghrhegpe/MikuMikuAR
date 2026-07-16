@@ -487,6 +487,7 @@ export {
 } from '../core/config';
 export type { EnvState, ModelInstance, PropInstance } from '../core/config';
 export { resolveFileUrl, normPath } from '../core/fileservice';
+export { applyEnvState } from './env/env';
 export * from './motion/proc-motion-bridge';
 export * from './motion/lipsync-bridge';
 export * from './env/props';

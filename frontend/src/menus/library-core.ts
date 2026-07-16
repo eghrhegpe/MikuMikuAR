@@ -34,12 +34,7 @@ import {
 } from '../core/config';
 import { SlideMenu } from './menu';
 import { createIconifyIcon } from '../core/icons';
-import {
-    slideRow,
-    createResourcePanel,
-    openFullscreen,
-    closeFullscreen,
-} from '../core/ui-helpers';
+import { slideRow, createResourcePanel, openFullscreen, closeFullscreen } from '../core/ui-helpers';
 import type { ResourceItem, SlideRowExtra, ResourcePanelHandle } from '../core/ui-helpers';
 import { isUnderRoot, isStageLike, getDirPath } from '../core/utils';
 import { libraryModelBaseKey, buildThumbnailKey } from '@/scene/manager/thumbnail-key';
@@ -49,7 +44,13 @@ import { GetThumbnailBatch, GetModelMetaBatch } from '../core/wails-bindings';
 import { loadManager } from '../core/load-manager';
 import { focusModel } from '../scene/scene';
 import { buildModelToolsLevel } from './model-detail';
-import { onModelRowClick, replaceModel, replaceMotion, prepareModelRestore, importFile } from './library-actions';
+import {
+    onModelRowClick,
+    replaceModel,
+    replaceMotion,
+    prepareModelRestore,
+    importFile,
+} from './library-actions';
 
 // ======== Resource View Mode ========
 
@@ -57,12 +58,15 @@ export type ResourceViewMode = 'list' | 'grid';
 
 let resourceViewMode: ResourceViewMode = 'list';
 
-export function getResourceViewMode(): ResourceViewMode { return resourceViewMode; }
+export function getResourceViewMode(): ResourceViewMode {
+    return resourceViewMode;
+}
 export function setResourceViewMode(mode: ResourceViewMode): void {
     resourceViewMode = mode;
     import('../core/wails-bindings').then(({ SetUIState }) =>
-        SetUIState({ resourceViewMode: mode } as import('../core/wails-bindings').UIState)
-            .catch((err) => logWarn('library-core', 'SetUIState failed:', err))
+        SetUIState({ resourceViewMode: mode } as import('../core/wails-bindings').UIState).catch(
+            (err) => logWarn('library-core', 'SetUIState failed:', err)
+        )
     );
 }
 
@@ -76,20 +80,32 @@ export function isModelDirTarget(target: string | undefined): boolean {
 
 let pendingAutoExpand: string[] | null = null;
 let pendingFocusModel: { dir: string; rowKey: string } | null = null;
-export function getPendingAutoExpand(): string[] | null { return pendingAutoExpand; }
-export function setPendingAutoExpand(v: string[] | null): void { pendingAutoExpand = v; }
-export function getPendingFocusModel(): { dir: string; rowKey: string } | null { return pendingFocusModel; }
-export function setPendingFocusModel(v: { dir: string; rowKey: string } | null): void { pendingFocusModel = v; }
+export function getPendingAutoExpand(): string[] | null {
+    return pendingAutoExpand;
+}
+export function setPendingAutoExpand(v: string[] | null): void {
+    pendingAutoExpand = v;
+}
+export function getPendingFocusModel(): { dir: string; rowKey: string } | null {
+    return pendingFocusModel;
+}
+export function setPendingFocusModel(v: { dir: string; rowKey: string } | null): void {
+    pendingFocusModel = v;
+}
 
 const _pendingMetaGuard = new LoadingGuard();
-export function getPendingMetaGuard(): LoadingGuard { return _pendingMetaGuard; }
+export function getPendingMetaGuard(): LoadingGuard {
+    return _pendingMetaGuard;
+}
 
 // ======== 路径工具 ========
 
 export function splitSubdirSegments(rootRaw: string, dirRaw: string): string[] | null {
     const root = normPath(rootRaw);
     const dir = normPath(dirRaw);
-    if (!isUnderRoot(root, dir)) return null;
+    if (!isUnderRoot(root, dir)) {
+        return null;
+    }
     const rel = dir.substring(root.length + 1);
     return rel ? rel.split('/').filter(Boolean) : [];
 }
@@ -97,7 +113,9 @@ export function splitSubdirSegments(rootRaw: string, dirRaw: string): string[] |
 export function getRelativePathUnderDir(mdirRaw: string, baseDirRaw: string): string | null {
     const mdir = normPath(mdirRaw);
     const base = normPath(baseDirRaw);
-    if (!isUnderRoot(base, mdir)) return null;
+    if (!isUnderRoot(base, mdir)) {
+        return null;
+    }
     const rel = mdir.substring(base.length + 1);
     return rel;
 }
@@ -111,20 +129,30 @@ export function isLeafFlattenDir(
     let directModelCount = 0;
     let zipModelCount = 0;
     for (const m of modelList) {
-        if (filter && !filter(m)) continue;
+        if (filter && !filter(m)) {
+            continue;
+        }
         const mdir = normPath(m.dir);
         if (mdir === d) {
             directModelCount++;
-            if (m.container === 'zip') zipModelCount++;
+            if (m.container === 'zip') {
+                zipModelCount++;
+            }
             continue;
         }
         const rel = getRelativePathUnderDir(mdir, d);
-        if (rel) return false; // model in subdirectory → not a leaf
+        if (rel) {
+            return false;
+        } // model in subdirectory → not a leaf
     }
     // No models under this directory → not a leaf
-    if (directModelCount === 0) return false;
+    if (directModelCount === 0) {
+        return false;
+    }
     // Multiple zip-only models → keep as folder
-    if (directModelCount > 1 && zipModelCount === directModelCount) return false;
+    if (directModelCount > 1 && zipModelCount === directModelCount) {
+        return false;
+    }
     return true;
 }
 
@@ -137,16 +165,24 @@ export function isLeafFlattenDir(
  * 故向上回退到第一个非叶子展平目录（通常为根目录），使其与用户视线一致。
  */
 export function resolveDisplayBrowseDir(
-    m: LibraryModel, category: 'pmx' | 'stage' | 'prop'
+    m: LibraryModel,
+    category: 'pmx' | 'stage' | 'prop'
 ): string {
     const root = normPath(getBrowseDir(category));
     let cur = normPath(m.dir);
-    if (!root || cur === root) return cur;
+    if (!root || cur === root) {
+        return cur;
+    }
     const list = allModels || [];
     while (isLeafFlattenDir(cur, list, undefined)) {
         const parent = getDirPath(cur);
-        if (!parent || parent === cur) break;
-        if (parent === root) { cur = root; break; }
+        if (!parent || parent === cur) {
+            break;
+        }
+        if (parent === root) {
+            cur = root;
+            break;
+        }
         cur = parent;
     }
     return cur;
@@ -160,9 +196,13 @@ export function computeRestoreSegments(
 ): string[] | null {
     const root = normPath(rootRaw);
     const target = normPath(targetRaw);
-    if (root === target) return [];
+    if (root === target) {
+        return [];
+    }
     const segs = splitSubdirSegments(root, target);
-    if (!segs) return null;
+    if (!segs) {
+        return null;
+    }
     // 逐段检查：leaf flatten dir 可折叠（单模型目录），多模型目录保留全路径
     let current = root;
     for (let i = 0; i < segs.length; i++) {
@@ -192,51 +232,80 @@ export function thumbnailKeyForModel(m: LibraryModel, resolution?: number): stri
 async function ensureModelMeta(pmxPaths: string[]): Promise<void> {
     const guard = getPendingMetaGuard();
     const uncached = pmxPaths.filter((p) => !modelMetaCache.has(p) && !guard.isLoading(p));
-    if (uncached.length === 0) return;
-    for (const p of uncached) guard.tryEnter(p);
+    if (uncached.length === 0) {
+        return;
+    }
+    for (const p of uncached) {
+        guard.tryEnter(p);
+    }
     try {
         const batch = await GetModelMetaBatch(uncached);
         if (batch) {
             const merged = new Map(modelMetaCache);
-            for (const [path, meta] of Object.entries(batch)) merged.set(path, meta);
+            for (const [path, meta] of Object.entries(batch)) {
+                merged.set(path, meta);
+            }
             setModelMetaCache(merged);
         }
     } catch (err) {
         logWarn('library-core', 'ensureModelMeta:', err);
     } finally {
-        for (const p of uncached) guard.leave(p);
+        for (const p of uncached) {
+            guard.leave(p);
+        }
     }
 }
 
 // ======== 模型显示名/图标 公共解析 ========
 
 function resolveModelIcon(m: LibraryModel): string {
-    if (m.format === 'vmd') return 'music';
-    if (m.format === 'audio') return 'volume-2';
-    if (m.format === 'vpd') return 'user';
-    if (m.container === 'zip' && m.format === 'pmx') return 'archive';
+    if (m.format === 'vmd') {
+        return 'music';
+    }
+    if (m.format === 'audio') {
+        return 'volume-2';
+    }
+    if (m.format === 'vpd') {
+        return 'user';
+    }
+    if (m.container === 'zip' && m.format === 'pmx') {
+        return 'archive';
+    }
     return 'box';
 }
 
 function resolveModelLabel(m: LibraryModel, filenameFallback: string): string {
     const fp = m.file_path || '';
-    const filename = m.container === 'zip' && m.zip_inner
-        ? getBaseName(m.zip_inner) || filenameFallback
-        : getBaseName(fp) || filenameFallback;
+    const filename =
+        m.container === 'zip' && m.zip_inner
+            ? getBaseName(m.zip_inner) || filenameFallback
+            : getBaseName(fp) || filenameFallback;
     const cached = modelMetaCache.get(fp);
     switch (displayNamePriority) {
-        case 'filename': return filename;
-        case 'name_en': return cached?.name_en || m.name_en || cached?.name_jp || m.name_jp || filename;
+        case 'filename':
+            return filename;
+        case 'name_en':
+            return cached?.name_en || m.name_en || cached?.name_jp || m.name_jp || filename;
         case 'name_jp':
-        default: return cached?.name_jp || m.name_jp || cached?.name_en || m.name_en || filename;
+        default:
+            return cached?.name_jp || m.name_jp || cached?.name_en || m.name_en || filename;
     }
 }
 
 export function modelToRow(m: LibraryModel): PopupRow {
     return {
-        kind: 'model', label: resolveModelLabel(m, t('library.unknown')), icon: resolveModelIcon(m),
-        target: m.file_path, sublabel: undefined, model: m, editable: m.format === 'pmx', wrapLabel: true,
-        onAddClick: () => { closeAllOverlays(); onModelRowClick(m); },
+        kind: 'model',
+        label: resolveModelLabel(m, t('library.unknown')),
+        icon: resolveModelIcon(m),
+        target: m.file_path,
+        sublabel: undefined,
+        model: m,
+        editable: m.format === 'pmx',
+        wrapLabel: true,
+        onAddClick: () => {
+            closeAllOverlays();
+            onModelRowClick(m);
+        },
     };
 }
 
@@ -245,28 +314,41 @@ export function modelToResourceItem(m: LibraryModel): ResourceItem {
     const cached = modelMetaCache.get(fp);
     const isStage = isStageLike(m.type);
     return {
-        id: fp, label: resolveModelLabel(m, ''), filePath: fp, thumbKey: thumbnailKeyForModel(m),
+        id: fp,
+        label: resolveModelLabel(m, ''),
+        filePath: fp,
+        thumbKey: thumbnailKeyForModel(m),
         thumbAspect: isStage ? '16/9' : '2/3',
-        icon: resolveModelIcon(m), isFolder: false,
-        sublabel: cached?.comment || m.comment || undefined, data: m,
+        icon: resolveModelIcon(m),
+        isFolder: false,
+        sublabel: cached?.comment || m.comment || undefined,
+        data: m,
     };
 }
 
 // ======== 构建列表 ========
 
 export function buildResourceItemsForDir(
-    dir: string, filter?: (m: LibraryModel) => boolean, browseDir?: string
+    dir: string,
+    filter?: (m: LibraryModel) => boolean,
+    browseDir?: string
 ): ResourceItem[] {
     const items: ResourceItem[] = [];
     const subdirs = new Set<string>();
     const modelList = allModels || [];
     for (const m of modelList) {
-        if (filter && !filter(m)) continue;
+        if (filter && !filter(m)) {
+            continue;
+        }
         const mdir = normPath(m.dir);
         const targetDir = browseDir ? normPath(browseDir) : '';
-        if (browseDir && !isUnderRoot(targetDir, mdir)) continue;
+        if (browseDir && !isUnderRoot(targetDir, mdir)) {
+            continue;
+        }
         const rel = getRelativePathUnderDir(mdir, dir);
-        if (rel === null) continue;
+        if (rel === null) {
+            continue;
+        }
         const parts = rel.split('/').filter(Boolean);
         if (parts.length === 0) {
             items.push(modelToResourceItem(m));
@@ -280,13 +362,21 @@ export function buildResourceItemsForDir(
         if (isLeafFlattenDir(subdirPath, modelList, filter)) {
             // Flatten: add models from this leaf subdir directly
             for (const m of modelList) {
-                if (filter && !filter(m)) continue;
+                if (filter && !filter(m)) {
+                    continue;
+                }
                 if (normPath(m.dir) === subdirPath) {
                     items.push(modelToResourceItem(m));
                 }
             }
         } else {
-            items.unshift({ id: subdirPath, label: d, filePath: subdirPath, icon: 'folder', isFolder: true });
+            items.unshift({
+                id: subdirPath,
+                label: d,
+                filePath: subdirPath,
+                icon: 'folder',
+                isFolder: true,
+            });
         }
     }
     return items;
@@ -304,7 +394,9 @@ function _buildViewToggleButtons(toolbar: HTMLElement, targetStack?: SlideMenu):
             setResourceViewMode(mode);
             const stack = targetStack || stackRegistry.modelStack;
             const cl = stack?.currentLevel;
-            if (cl) stack!.replaceCurrentLevel(buildLevel(cl.dir, cl.label, cl.filter, targetStack));
+            if (cl) {
+                stack!.replaceCurrentLevel(buildLevel(cl.dir, cl.label, cl.filter, targetStack));
+            }
         });
         toolbar.appendChild(btn);
     };
@@ -315,9 +407,12 @@ function _buildViewToggleButtons(toolbar: HTMLElement, targetStack?: SlideMenu):
 // ======== 列表模式渲染 ========
 
 function addListViewToolbar(
-    card: HTMLElement, _dir: string, items: PopupRow[],
+    card: HTMLElement,
+    _dir: string,
+    items: PopupRow[],
     filter: ((m: LibraryModel) => boolean) | undefined,
-    targetStack: SlideMenu | undefined, allResourceItems: ResourceItem[]
+    targetStack: SlideMenu | undefined,
+    allResourceItems: ResourceItem[]
 ): void {
     const toolbar = document.createElement('div');
     toolbar.className = 'toolbar';
@@ -328,11 +423,8 @@ function addListViewToolbar(
     expandBtn.title = t('library.expandPanel');
     expandBtn.style.marginLeft = 'auto';
     expandBtn.addEventListener('click', () => {
-        openResourceFullscreen(
-            items[0]?.label || '资源库',
-            allResourceItems,
-            filter,
-            (m) => onModelRowClick(m)
+        openResourceFullscreen(items[0]?.label || '资源库', allResourceItems, filter, (m) =>
+            onModelRowClick(m)
         );
     });
     toolbar.appendChild(expandBtn);
@@ -340,7 +432,8 @@ function addListViewToolbar(
 }
 
 function renderItemsWithRAF(
-    card: HTMLElement, items: PopupRow[],
+    card: HTMLElement,
+    items: PopupRow[],
     filter: ((m: LibraryModel) => boolean) | undefined,
     targetStack: SlideMenu | undefined
 ): void {
@@ -368,26 +461,50 @@ function renderItemsWithRAF(
         }
     };
     const onRowClick = (item: PopupRow): void => {
-        if (item.kind === 'folder') { activateItem(item); return; }
-        if (item.model && item.model.format !== 'vmd') { replaceModel(item.model); return; }
+        if (item.kind === 'folder') {
+            activateItem(item);
+            return;
+        }
+        if (item.model && item.model.format !== 'vmd') {
+            replaceModel(item.model);
+            return;
+        }
         activateItem(item);
     };
     const buildRowExtra = (item: PopupRow): SlideRowExtra | undefined => {
         const e: SlideRowExtra = {};
-        if (item.wrapLabel) e.wrapLabel = true;
+        if (item.wrapLabel) {
+            e.wrapLabel = true;
+        }
         if (item.kind !== 'folder') {
             e.trailing = {
-                icon: 'lucide:plus', title: t('library.loadModel'),
-                onClick: () => { setModelReplaceTargetId(null); activateItem(item); },
+                icon: 'lucide:plus',
+                title: t('library.loadModel'),
+                onClick: () => {
+                    setModelReplaceTargetId(null);
+                    activateItem(item);
+                },
             };
         }
         return e.wrapLabel || e.trailing ? e : undefined;
     };
     if (items.length <= RAF_BATCH_THRESHOLD) {
         for (const item of items) {
-            if (item.kind === 'divider') continue;
-            slideRow(card, item.icon, item.label, item.kind === 'folder', () => onRowClick(item),
-                item.sublabel, undefined, undefined, undefined, buildRowExtra(item));
+            if (item.kind === 'divider') {
+                continue;
+            }
+            slideRow(
+                card,
+                item.icon,
+                item.label,
+                item.kind === 'folder',
+                () => onRowClick(item),
+                item.sublabel,
+                undefined,
+                undefined,
+                undefined,
+                buildRowExtra(item)
+            );
         }
         return;
     }
@@ -396,11 +513,25 @@ function renderItemsWithRAF(
         const end = Math.min(index + RAF_BATCH_SIZE, items.length);
         for (; index < end; index++) {
             const item = items[index];
-            if (item.kind === 'divider') continue;
-            slideRow(card, item.icon, item.label, item.kind === 'folder', () => onRowClick(item),
-                item.sublabel, undefined, undefined, undefined, buildRowExtra(item));
+            if (item.kind === 'divider') {
+                continue;
+            }
+            slideRow(
+                card,
+                item.icon,
+                item.label,
+                item.kind === 'folder',
+                () => onRowClick(item),
+                item.sublabel,
+                undefined,
+                undefined,
+                undefined,
+                buildRowExtra(item)
+            );
         }
-        if (index < items.length) requestAnimationFrame(renderBatch);
+        if (index < items.length) {
+            requestAnimationFrame(renderBatch);
+        }
     }
     renderBatch();
 }
@@ -428,7 +559,9 @@ function openResourceFullscreen(
             thumbnailCache,
             onSelect: (item) => {
                 const m = item.data as LibraryModel | undefined;
-                if (!m) return;
+                if (!m) {
+                    return;
+                }
                 closeFullscreen();
                 onSelectModel(m);
             },
@@ -440,7 +573,10 @@ function openResourceFullscreen(
     };
     openFullscreen({
         title,
-        onBack: () => { currentPanel?.dispose(); currentPanel = null; },
+        onBack: () => {
+            currentPanel?.dispose();
+            currentPanel = null;
+        },
         renderContent: (container, navigate) => renderPanelAt(null, container, navigate),
     });
 }
@@ -448,16 +584,23 @@ function openResourceFullscreen(
 // ======== Grid 模式渲染 ========
 
 function renderGridMode(
-    container: HTMLElement, dir: string, items: PopupRow[],
-    filter?: (m: LibraryModel) => boolean, targetStack?: SlideMenu
+    container: HTMLElement,
+    dir: string,
+    items: PopupRow[],
+    filter?: (m: LibraryModel) => boolean,
+    targetStack?: SlideMenu
 ): void {
     const allResourceItems = buildResourceItemsForDir(dir, filter);
-    const thumbKeys2 = allResourceItems.filter((item) => !item.isFolder && item.thumbKey).map((item) => item.thumbKey!);
+    const thumbKeys2 = allResourceItems
+        .filter((item) => !item.isFolder && item.thumbKey)
+        .map((item) => item.thumbKey!);
     if (thumbKeys2.length > 0) {
         GetThumbnailBatch(thumbKeys2)
             .then((batch) => {
                 const merged = new Map(thumbnailCache);
-                for (const [path, data] of Object.entries(batch)) merged.set(path, data);
+                for (const [path, data] of Object.entries(batch)) {
+                    merged.set(path, data);
+                }
                 setThumbnailCache(merged);
             })
             .catch((err) => logWarn('library-core', 'GetThumbnailBatch failed:', err));
@@ -472,27 +615,37 @@ function renderGridMode(
         expandBtn.title = t('library.expandPanel');
         expandBtn.style.marginLeft = 'auto';
         expandBtn.addEventListener('click', () => {
-            openResourceFullscreen(
-                items[0]?.label || '资源库',
-                allResourceItems,
-                filter,
-                (m) => { if (m.format === 'vmd') replaceMotion(m); else replaceModel(m); }
-            );
+            openResourceFullscreen(items[0]?.label || '资源库', allResourceItems, filter, (m) => {
+                if (m.format === 'vmd') {
+                    replaceMotion(m);
+                } else {
+                    replaceModel(m);
+                }
+            });
         });
         toolbar.appendChild(expandBtn);
         card.appendChild(toolbar);
         createResourcePanel(card, {
-            items: allResourceItems, thumbnailCache,
+            items: allResourceItems,
+            thumbnailCache,
             onSelect: (item) => {
                 const m = item.data as LibraryModel | undefined;
-                if (!m) return;
-                if (m.format === 'vmd') replaceMotion(m);
-                else replaceModel(m);
+                if (!m) {
+                    return;
+                }
+                if (m.format === 'vmd') {
+                    replaceMotion(m);
+                } else {
+                    replaceModel(m);
+                }
             },
             onEnterFolder: (path) => {
                 const stack = targetStack || stackRegistry.modelStack;
                 if (stack) {
-                    const folderLabel = allResourceItems.find((fi) => fi.id === path)?.label || getBaseName(path) || path;
+                    const folderLabel =
+                        allResourceItems.find((fi) => fi.id === path)?.label ||
+                        getBaseName(path) ||
+                        path;
                     stack.push(buildLevel(path, folderLabel, filter, targetStack));
                 }
             },
@@ -507,7 +660,8 @@ function renderGridMode(
 // 抽出为独立函数，使 buildLevel 的 renderCustom 可在每次重渲染时重算，
 // 不再依赖 buildLevel 调用时刻的闭包快照（旧实现在 allModels 未就绪时得到空快照且 reRender 后永不刷新）。
 function buildPopupRows(
-    dirIn: string, filter: ((m: LibraryModel) => boolean) | undefined,
+    dirIn: string,
+    filter: ((m: LibraryModel) => boolean) | undefined,
     extraFolders?: { label: string; path: string }[]
 ): PopupRow[] {
     const dir = normPath(dirIn);
@@ -516,34 +670,57 @@ function buildPopupRows(
     const subdirs = new Set<string>();
     const subdirIsLeaf = new Set<string>();
     const modelList = allModels || [];
-    const pmxPaths = modelList.filter((m) => !filter || filter(m)).map((m) => m.file_path).filter(Boolean) as string[];
-    if (pmxPaths.length > 0) ensureModelMeta(pmxPaths);
+    const pmxPaths = modelList
+        .filter((m) => !filter || filter(m))
+        .map((m) => m.file_path)
+        .filter(Boolean) as string[];
+    if (pmxPaths.length > 0) {
+        ensureModelMeta(pmxPaths);
+    }
     for (const m of modelList) {
-        if (filter && !filter(m)) continue;
+        if (filter && !filter(m)) {
+            continue;
+        }
         const mdir = normPath(m.dir);
         const rel = getRelativePathUnderDir(mdir, dir);
-        if (rel === null) continue;
+        if (rel === null) {
+            continue;
+        }
         const parts = rel.split('/').filter(Boolean);
         if (parts.length === 0) {
             items.push(modelToRow(m));
         } else {
             subdirs.add(parts[0]);
-            if (parts.length === 1) subdirIsLeaf.add(parts[0]);
+            if (parts.length === 1) {
+                subdirIsLeaf.add(parts[0]);
+            }
         }
     }
     for (const d of Array.from(subdirs).sort()) {
         const fullPath = dir + '/' + d;
         if (subdirIsLeaf.has(d) && !isRoot && isLeafFlattenDir(fullPath, modelList, filter)) {
             for (const m of modelList) {
-                if (filter && !filter(m)) continue;
-                if (normPath(m.dir) === fullPath) items.push(modelToRow(m));
+                if (filter && !filter(m)) {
+                    continue;
+                }
+                if (normPath(m.dir) === fullPath) {
+                    items.push(modelToRow(m));
+                }
             }
             continue;
         }
-        items.unshift({ kind: 'folder', label: d, icon: 'folder', target: fullPath, wrapLabel: true });
+        items.unshift({
+            kind: 'folder',
+            label: d,
+            icon: 'folder',
+            target: fullPath,
+            wrapLabel: true,
+        });
     }
     if (extraFolders) {
-        for (const ef of extraFolders) items.unshift({ kind: 'folder', label: ef.label, icon: 'plug', target: ef.path });
+        for (const ef of extraFolders) {
+            items.unshift({ kind: 'folder', label: ef.label, icon: 'plug', target: ef.path });
+        }
     }
     if (librarySortMode === 'name') {
         items.sort((a, b) => a.label.localeCompare(b.label, getLang()));
@@ -552,12 +729,18 @@ function buildPopupRows(
 }
 
 export function buildLevel(
-    dir: string, label: string, filter?: (m: LibraryModel) => boolean,
-    targetStack?: SlideMenu, extraFolders?: { label: string; path: string }[]
+    dir: string,
+    label: string,
+    filter?: (m: LibraryModel) => boolean,
+    targetStack?: SlideMenu,
+    extraFolders?: { label: string; path: string }[]
 ): PopupLevel {
     dir = normPath(dir);
     return {
-        label, dir, items: [], filter,
+        label,
+        dir,
+        items: [],
+        filter,
         renderCustom: (container) => {
             // [修复] 每次重渲染实时重算 items：列表模式不再依赖 buildLevel 时刻的闭包快照，
             // 解压/扫描未完成时进入空层，待数据就绪后任意一次 reRender（含导航 push/pop、视图切换）即自愈填充。
@@ -582,25 +765,77 @@ export function buildModelRootItems(): PopupRow[] {
         const isFocused = focusedModelId === id;
         const radioIcon = isFocused ? 'lucide:check-circle' : 'lucide:circle';
         items.push({
-            kind: 'action', label: inst.name, icon: radioIcon, target: `scene:${id}`, wrapLabel: true,
-            focused: isFocused, rowKey: 'actor:' + id + (isFocused ? ':on' : ':off'),
-            leading: { icon: radioIcon, title: t('library.focusModel'), onClick: () => { focusModel(id); refreshModelRoot(); } },
-            trailing: { icon: 'lucide:settings-2', title: t('library.modelTools'), onClick: () => { stackRegistry.modelStack?.push(buildModelToolsLevel(id)); } },
+            kind: 'action',
+            label: inst.name,
+            icon: radioIcon,
+            target: `scene:${id}`,
+            wrapLabel: true,
+            focused: isFocused,
+            rowKey: 'actor:' + id + (isFocused ? ':on' : ':off'),
+            leading: {
+                icon: radioIcon,
+                title: t('library.focusModel'),
+                onClick: () => {
+                    focusModel(id);
+                    refreshModelRoot();
+                },
+            },
+            trailing: {
+                icon: 'lucide:settings-2',
+                title: t('library.modelTools'),
+                onClick: () => {
+                    stackRegistry.modelStack?.push(buildModelToolsLevel(id));
+                },
+            },
         });
     }
-    if (actors.length > 0) items.push({ kind: 'divider', label: '', icon: '', target: '' });
-    items.push({ kind: 'folder', label: t('library.loadModel'), icon: 'lucide:folder', target: 'models:browse' });
-    items.push({ kind: 'action', label: t('library.importFile'), icon: 'lucide:file-plus', target: 'models:import-file' });
-    items.push({ kind: 'action', label: t('library.rescan'), icon: 'lucide:refresh-cw', target: 'models:rescan' });
-    items.push({ kind: 'folder', label: t('library.recent'), icon: 'lucide:clock', target: '__recent__' });
-    items.push({ kind: 'folder', label: t('library.tags'), icon: 'lucide:tag', target: '__tags__' });
+    if (actors.length > 0) {
+        items.push({ kind: 'divider', label: '', icon: '', target: '' });
+    }
+    items.push({
+        kind: 'folder',
+        label: t('library.loadModel'),
+        icon: 'lucide:folder',
+        target: 'models:browse',
+    });
+    items.push({
+        kind: 'action',
+        label: t('library.importFile'),
+        icon: 'lucide:file-plus',
+        target: 'models:import-file',
+    });
+    items.push({
+        kind: 'action',
+        label: t('library.rescan'),
+        icon: 'lucide:refresh-cw',
+        target: 'models:rescan',
+    });
+    items.push({
+        kind: 'folder',
+        label: t('library.recent'),
+        icon: 'lucide:clock',
+        target: '__recent__',
+    });
+    items.push({
+        kind: 'folder',
+        label: t('library.tags'),
+        icon: 'lucide:tag',
+        target: '__tags__',
+    });
     return items;
 }
 
 export function refreshModelRoot(): void {
     const stack = stackRegistry.modelStack;
-    if (!stack) return;
-    stack.setLevel(0, { label: t('library.model'), dir: '', items: buildModelRootItems(), itemBuilder: buildModelRootItems });
+    if (!stack) {
+        return;
+    }
+    stack.setLevel(0, {
+        label: t('library.model'),
+        dir: '',
+        items: buildModelRootItems(),
+        itemBuilder: buildModelRootItems,
+    });
 }
 
 // Register buildLevel for use by motion-popup.ts (avoids circular import)
@@ -610,4 +845,12 @@ stackRegistry.buildLevel = buildLevel;
 
 export { showModelPopup } from './library-browse';
 export { importFile, prepareModelRestore } from './library-actions';
-export { initLibrary, selectResourceRoot, selectOverridePath, switchStorageMode, rescanAndSync, reloadConfig, refreshLibrary } from './library-setup';
+export {
+    initLibrary,
+    selectResourceRoot,
+    selectOverridePath,
+    switchStorageMode,
+    rescanAndSync,
+    reloadConfig,
+    refreshLibrary,
+} from './library-setup';

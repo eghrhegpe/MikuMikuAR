@@ -3,12 +3,7 @@
 
 import { cardContainer } from '../core/config';
 import type { PopupLevel } from '../core/config';
-import {
-    addSliderRow,
-    addToggleRow,
-    addModeSlider,
-    addSectionTitle,
-} from '../core/ui-helpers';
+import { addSliderRow, addToggleRow, addModeSlider, addSectionTitle } from '../core/ui-helpers';
 import {
     setProcMotionMode,
     setProcMotionIntensity,
@@ -22,9 +17,7 @@ import {
     setLipSyncIntensity,
     setProcMotionInterpOverride,
 } from '../scene/scene';
-import {
-    setProcMotionBoneToggle,
-} from '../scene/motion/proc-motion-bridge';
+import { setProcMotionBoneToggle } from '../scene/motion/proc-motion-bridge';
 import { getProcMotionBoneCategories } from '../motion-algos/procedural-motion';
 import type { ProcMotionMode } from '../motion-algos/procedural-motion';
 import { getMotionMenu } from './motion-popup';

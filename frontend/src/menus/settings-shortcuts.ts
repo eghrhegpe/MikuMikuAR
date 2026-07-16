@@ -153,7 +153,13 @@ function buildShortcutsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
                                                         });
                                                     }
                                                 })
-                                                .catch((err) => logWarn('settings-shortcuts', 'setUIState failed:', err));
+                                                .catch((err) =>
+                                                    logWarn(
+                                                        'settings-shortcuts',
+                                                        'setUIState failed:',
+                                                        err
+                                                    )
+                                                );
                                         }
                                     };
                                     keyDisp = addDisposableListener(document, 'keydown', handler, {

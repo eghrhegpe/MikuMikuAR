@@ -121,9 +121,7 @@ function buildRenderingSchema(): MenuNode[] {
     ];
 }
 
-export function buildSettingsRenderingLevel(
-    getSettingsMenu: () => SettingsMenuHandle
-): PopupLevel {
+export function buildSettingsRenderingLevel(getSettingsMenu: () => SettingsMenuHandle): PopupLevel {
     return {
         label: t('settings.rendering'),
         dir: '',

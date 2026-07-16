@@ -28,7 +28,9 @@ export interface ThumbnailBaseKeyInput {
 export function thumbnailBaseKey(input: ThumbnailBaseKeyInput): string {
     const { libraryPath, filePath, innerPath } = input;
     let base = libraryPath && libraryPath !== filePath ? libraryPath : filePath;
-    if (innerPath) base = `${base}::${innerPath}`;
+    if (innerPath) {
+        base = `${base}::${innerPath}`;
+    }
     return base;
 }
 

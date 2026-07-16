@@ -38,30 +38,43 @@ func (a *App) SelectSceneOpenFile() (string, error) {
 func (a *App) SaveLastScene(jsonStr string) error {
 	dir, err := configDir()
 	if err != nil {
+		a.safeLogError("[auto-save] SaveLastScene: configDir error: %v", err)
 		return err
 	}
 	path := filepath.Join(dir, "last_scene.json")
+	a.safeLogInfo("[auto-save] SaveLastScene: writing %d bytes to %s", len(jsonStr), path)
 	f, err := os.Create(path)
 	if err != nil {
+		a.safeLogError("[auto-save] SaveLastScene: os.Create error: %v", err)
 		return err
 	}
 	defer f.Close()
 	if _, err := f.WriteString(jsonStr); err != nil {
+		a.safeLogError("[auto-save] SaveLastScene: WriteString error: %v", err)
 		return err
 	}
-	return f.Sync()
+	if err := f.Sync(); err != nil {
+		a.safeLogError("[auto-save] SaveLastScene: Sync error: %v", err)
+		return err
+	}
+	a.safeLogInfo("[auto-save] SaveLastScene: completed successfully")
+	return nil
 }
 
 // LoadLastScene reads the auto-saved scene state.
 func (a *App) LoadLastScene() (string, error) {
 	dir, err := configDir()
 	if err != nil {
+		a.safeLogError("[auto-load] LoadLastScene: configDir error: %v", err)
 		return "", err
 	}
-	data, err := os.ReadFile(filepath.Join(dir, "last_scene.json"))
+	path := filepath.Join(dir, "last_scene.json")
+	data, err := os.ReadFile(path)
 	if err != nil {
+		a.safeLogInfo("[auto-load] LoadLastScene: no last scene file at %s: %v", path, err)
 		return "", err
 	}
+	a.safeLogInfo("[auto-load] LoadLastScene: read %d bytes from %s", len(data), path)
 	return string(data), nil
 }
 

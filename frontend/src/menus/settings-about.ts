@@ -48,7 +48,9 @@ function exportSettings(): void {
 
 function reapplyImportedSettings(): void {
     applyFrameControl();
-    engine.setHardwareScalingLevel(calcHardwareScaling(window.devicePixelRatio || 1, uiState.renderScale ?? 1));
+    engine.setHardwareScalingLevel(
+        calcHardwareScaling(window.devicePixelRatio || 1, uiState.renderScale ?? 1)
+    );
     refreshCameraUserSettings();
     setVolume(getVolume());
     setAudioOffset(getAudioOffset());
@@ -145,7 +147,8 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
 
                     const appVersion = document.createElement('div');
                     appVersion.dataset.appVersion = '';
-                    appVersion.style.cssText = 'font-size:11px;color:var(--text-dim);margin-top:2px;';
+                    appVersion.style.cssText =
+                        'font-size:11px;color:var(--text-dim);margin-top:2px;';
                     appVersion.textContent = 'v…';
                     title.appendChild(appVersion);
 

@@ -51,8 +51,12 @@ export function genArmBones(
             });
         }
     }
-    if (larmBone) frames.push(closingFrame(larmBone, cache.loopFrames));
-    if (rarmBone) frames.push(closingFrame(rarmBone, cache.loopFrames));
+    if (larmBone) {
+        frames.push(closingFrame(larmBone, cache.loopFrames));
+    }
+    if (rarmBone) {
+        frames.push(closingFrame(rarmBone, cache.loopFrames));
+    }
     return frames;
 }
 
@@ -93,8 +97,12 @@ export function genWristBones(
             frames.push({ name: rBone, frame: f, position: [0, 0, 0], rotation: [rx, 0, rzR, wR] });
         }
     }
-    if (lBone) frames.push(closingFrame(lBone, cache.loopFrames));
-    if (rBone) frames.push(closingFrame(rBone, cache.loopFrames));
+    if (lBone) {
+        frames.push(closingFrame(lBone, cache.loopFrames));
+    }
+    if (rBone) {
+        frames.push(closingFrame(rBone, cache.loopFrames));
+    }
     return frames;
 }
 
@@ -128,8 +136,12 @@ export function genShoulderBones(
             frames.push({ name: rBone, frame: f, position: [0, up, 0], rotation: [0, 0, rot, w] });
         }
     }
-    if (lBone) frames.push(closingFrame(lBone, cache.loopFrames));
-    if (rBone) frames.push(closingFrame(rBone, cache.loopFrames));
+    if (lBone) {
+        frames.push(closingFrame(lBone, cache.loopFrames));
+    }
+    if (rBone) {
+        frames.push(closingFrame(rBone, cache.loopFrames));
+    }
     return frames;
 }
 
@@ -164,7 +176,11 @@ export function genFootIkBones(
             frames.push({ name: rBone, frame: f, position: [0, ry, rz], rotation: [0, 0, 0, 1] });
         }
     }
-    if (lBone) frames.push(closingFrame(lBone, cache.loopFrames));
-    if (rBone) frames.push(closingFrame(rBone, cache.loopFrames));
+    if (lBone) {
+        frames.push(closingFrame(lBone, cache.loopFrames));
+    }
+    if (rBone) {
+        frames.push(closingFrame(rBone, cache.loopFrames));
+    }
     return frames;
 }

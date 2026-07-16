@@ -352,7 +352,9 @@ function buildAppearanceSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
                     const cur = getLang();
                     const langRows: HTMLElement[] = [];
                     for (const l of SUPPORTED_LANGS) {
-                        if (!AVAILABLE_LANGS.includes(l.code)) continue;
+                        if (!AVAILABLE_LANGS.includes(l.code)) {
+                            continue;
+                        }
                         const isActive = l.code === cur;
                         const row = slideRow(
                             inner,

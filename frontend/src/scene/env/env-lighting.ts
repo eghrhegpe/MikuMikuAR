@@ -3,6 +3,7 @@
 // skyColor → dirDiffuse + dirDirection + hemiIntensity + dirIntensity + exposure
 
 import { clamp01 } from '@/core/utils';
+import type { EnvState } from '@/core/types';
 
 // ======== deriveLighting 系数常量 ========
 /** 默认太阳方位角（度），西北方向 */
@@ -66,11 +67,17 @@ export function deriveLighting(
     const hemiIntensity =
         sunAngle <= 0
             ? Math.min(HEMI_NIGHT_MAX, HEMI_NIGHT_BASE + L * HEMI_NIGHT_LUMINANCE_SCALE)
-            : Math.min(HEMI_DAY_MAX, HEMI_DAY_BASE + (1 - dirIntensity) * HEMI_DAY_COMPENSATION_SCALE);
+            : Math.min(
+                  HEMI_DAY_MAX,
+                  HEMI_DAY_BASE + (1 - dirIntensity) * HEMI_DAY_COMPENSATION_SCALE
+              );
 
     // dirDiffuse: preserve sky hue, scale so brightest channel ≈ DIFFUSE_TARGET_BRIGHTNESS
     const maxCh = Math.max(skyColor[0], skyColor[1], skyColor[2]);
-    const scale = maxCh > DIFFUSE_MIN_CHANNEL ? Math.min(DIFFUSE_MAX_SCALE, DIFFUSE_TARGET_BRIGHTNESS / maxCh) : 1.0;
+    const scale =
+        maxCh > DIFFUSE_MIN_CHANNEL
+            ? Math.min(DIFFUSE_MAX_SCALE, DIFFUSE_TARGET_BRIGHTNESS / maxCh)
+            : 1.0;
     const dirDiffuse: [number, number, number] = [
         Math.min(skyColor[0] * scale, 1.0),
         Math.min(skyColor[1] * scale, 1.0),
@@ -179,6 +186,230 @@ export function importEnvPreset(json: string): (EnvPreset & DerivedLighting) | n
             azimuth,
             ...deriveLighting(raw.skyColorTop, raw.sunAngle, azimuth),
         };
+    } catch {
+        return null;
+    }
+}
+
+// ======== 分类预设（ADR-120） ========
+// 旧版 EnvPreset（version 2）只存天空 5 字段；新版（version 3）按 4 类保存字段子集。
+// 旧版 API（EnvPreset / exportEnvPreset / importEnvPreset）保留供 TIME_OF_DAY_PRESETS 使用。
+
+/** 环境预设分类：天空/地面/水面/大气。 */
+export type EnvPresetCategory = 'sky' | 'ground' | 'water' | 'atmosphere';
+
+/** 各类别包含的 EnvState 字段白名单。未列入的字段（如 collision*）不参与任何预设。 */
+export const ENV_PRESET_FIELDS: Record<EnvPresetCategory, (keyof EnvState)[]> = {
+    sky: [
+        'skyMode',
+        'skyColorTop',
+        'skyColorMid',
+        'skyColorBot',
+        'skyTexture',
+        'skyRotationY',
+        'skyRotationSpeed',
+        'skyBrightness',
+        'starsEnabled',
+        'starsTexture',
+        'envIntensity',
+        'sunAngle',
+        'azimuth',
+        'lightingPresetName',
+        'timeOfDayActive',
+        'timeOfDaySpeed',
+    ],
+    ground: [
+        'groundVisible',
+        'groundType',
+        'groundStyle',
+        'groundDecoStyle',
+        'groundColor',
+        'groundAlpha',
+        'groundTexture',
+        'groundTextureEnabled',
+        'groundTextureScale',
+        'groundTextureRotation',
+        'groundGridSize',
+        'groundLineColor',
+        'groundTerrainHeight',
+        'groundTerrainScale',
+        'groundTerrainSeed',
+        'groundTerrainOctaves',
+        'groundPitch',
+        'groundRoll',
+        'groundScrollSpeedX',
+        'groundScrollSpeedZ',
+        'groundPattern',
+        'groundReflectionBlend',
+        'groundReflectionQuality',
+        'groundNormalTexture',
+        'groundNormalStrength',
+        'groundElevationColoring',
+        'groundFollowCamera',
+        'groundPbrEnabled',
+        'groundProceduralTexture',
+        'groundProceduralSeed',
+        'groundProceduralScale',
+        'groundRoughness',
+        'groundMetallic',
+        'groundReflectionBlur',
+        'groundReflectionDistort',
+        'groundContactShadowEnabled',
+        'groundContactShadowIntensity',
+        'groundContactShadowDistance',
+        'groundLevel',
+        'groundSize',
+        'groundEdgeFade',
+    ],
+    water: [
+        'waterEnabled',
+        'waterLevel',
+        'waterFlip',
+        'waterColor',
+        'waterTransparency',
+        'waterWaveHeight',
+        'waterSize',
+        'waterAnimSpeed',
+        'planarReflectBlend',
+        'reflectionQuality',
+        'foamThreshold',
+        'foamIntensity',
+        'foamOpacity',
+        'waterFogColor',
+        'waterFogDensity',
+        'waterFogOpacityInfluence',
+        'fresnelBias',
+        'fresnelPower',
+        'diffuseStrength',
+        'ambientStrength',
+        'foamTransitionRange',
+        'rippleNormalStrength',
+        'rippleGlintStrength',
+        'causticColor1',
+        'causticColor2',
+        'causticScrollX',
+        'causticScrollY',
+        'fresnelAlphaInfluence',
+        'underwaterFogDensity',
+        'underwaterChromaticAmount',
+        'underwaterToneIntensity',
+        'underwaterFogMultiplier',
+        'underwaterTintStrength',
+    ],
+    atmosphere: [
+        'windEnabled',
+        'windDirection',
+        'windSpeed',
+        'particleEnabled',
+        'particleType',
+        'particleEmitRate',
+        'particleSize',
+        'particleSpeed',
+        'particleSplash',
+        'particleCustomTexture',
+        'cloudsEnabled',
+        'debugClouds',
+        'cloudCover',
+        'cloudScale',
+        'cloudHeight',
+        'cloudThickness',
+        'cloudVisibility',
+        'cloudGap',
+        'fogEnabled',
+        'fogMode',
+        'fogColor',
+        'fogDensity',
+        'fogStart',
+        'fogEnd',
+        'debugMirrorEnabled',
+    ],
+};
+
+/** 分类预设（version 3 格式）。 */
+export interface CategorizedEnvPreset {
+    version: 3;
+    category: EnvPresetCategory;
+    label: string;
+    fields: Partial<EnvState>;
+}
+
+/** 从当前 envState 快照指定类别的字段。数组字段做浅拷贝避免别名。 */
+export function snapshotEnvPresetByCategory(
+    label: string,
+    category: EnvPresetCategory,
+    state: EnvState
+): CategorizedEnvPreset {
+    const keys = ENV_PRESET_FIELDS[category];
+    const fields: Record<string, unknown> = {};
+    for (const k of keys) {
+        const v = state[k];
+        // 颜色/方向等 [number,number,number] 数组浅拷贝，避免预设引用 reactive state
+        if (Array.isArray(v)) {
+            fields[k as string] = (v as number[]).slice();
+        } else {
+            fields[k as string] = v;
+        }
+    }
+    return { version: 3, category, label, fields: fields as Partial<EnvState> };
+}
+
+/** 序列化分类预设为 JSON 字符串。 */
+export function exportCategorizedEnvPreset(p: CategorizedEnvPreset): string {
+    return JSON.stringify(
+        {
+            version: 3,
+            category: p.category,
+            label: p.label,
+            fields: p.fields,
+        },
+        null,
+        2
+    );
+}
+
+/**
+ * 从 JSON 字符串反序列化分类预设，失败返回 null。
+ * 兼容 version 2（旧天空预设）：无 category/fields，顶层有 skyColorTop/Bot/sunAngle/azimuth → 归 sky 类。
+ */
+export function importCategorizedEnvPreset(json: string): CategorizedEnvPreset | null {
+    try {
+        const raw = JSON.parse(json);
+        if (!raw.label || typeof raw.label !== 'string') {
+            return null;
+        }
+        // version 3：有 fields + category
+        if (raw.version === 3 && raw.fields && typeof raw.category === 'string') {
+            const cat = raw.category as EnvPresetCategory;
+            if (!['sky', 'ground', 'water', 'atmosphere'].includes(cat)) {
+                return null;
+            }
+            return {
+                version: 3,
+                category: cat,
+                label: raw.label,
+                fields: raw.fields as Partial<EnvState>,
+            };
+        }
+        // version 2（旧）：顶层 skyColorTop/Bot/sunAngle/azimuth → 归 sky 类
+        if (
+            Array.isArray(raw.skyColorTop) &&
+            Array.isArray(raw.skyColorBot) &&
+            typeof raw.sunAngle === 'number'
+        ) {
+            const azimuth = typeof raw.azimuth === 'number' ? raw.azimuth : DEFAULT_AZIMUTH_DEG;
+            return {
+                version: 3,
+                category: 'sky',
+                label: raw.label,
+                fields: {
+                    skyColorTop: [...raw.skyColorTop] as [number, number, number],
+                    skyColorBot: [...raw.skyColorBot] as [number, number, number],
+                    sunAngle: raw.sunAngle,
+                    azimuth,
+                },
+            };
+        }
+        return null;
     } catch {
         return null;
     }

@@ -33,19 +33,29 @@ import { getCanvasCtx } from './env-type-helpers';
 type GroundMat = StandardMaterial | PBRMaterial;
 
 function _getAlbedoTex(mat: GroundMat): Texture | null {
-    if (mat instanceof PBRMaterial) return mat.albedoTexture as Texture | null;
+    if (mat instanceof PBRMaterial) {
+        return mat.albedoTexture as Texture | null;
+    }
     return mat.diffuseTexture as Texture | null;
 }
 function _setAlbedoTex(mat: GroundMat, tex: Texture | null): void {
-    if (mat instanceof PBRMaterial) { mat.albedoTexture = tex; return; }
+    if (mat instanceof PBRMaterial) {
+        mat.albedoTexture = tex;
+        return;
+    }
     mat.diffuseTexture = tex;
 }
 function _getAlbedoColor(mat: GroundMat): Color3 {
-    if (mat instanceof PBRMaterial) return mat.albedoColor;
+    if (mat instanceof PBRMaterial) {
+        return mat.albedoColor;
+    }
     return mat.diffuseColor;
 }
 function _setAlbedoColor(mat: GroundMat, color: Color3): void {
-    if (mat instanceof PBRMaterial) { mat.albedoColor = color; return; }
+    if (mat instanceof PBRMaterial) {
+        mat.albedoColor = color;
+        return;
+    }
     mat.diffuseColor = color;
 }
 
@@ -100,9 +110,9 @@ function generateWoodAlbedo(ctx: CanvasRenderingContext2D, size: number, seed: n
     const data = img.data;
     for (let y = 0; y < size; y++) {
         for (let x = 0; x < size; x++) {
-            const nLow = fbm(x * 0.02, y * 0.005, seed, 4, 1.0);     // ~[-1, 1]
+            const nLow = fbm(x * 0.02, y * 0.005, seed, 4, 1.0); // ~[-1, 1]
             const nHigh = fbm(x * 0.2, y * 0.2, seed + 100, 2, 1.0);
-            const n = (nLow + nHigh * 0.2 + 1) * 0.5;                // 归一化 ~[0, 1]
+            const n = (nLow + nHigh * 0.2 + 1) * 0.5; // 归一化 ~[0, 1]
 
             const r = Math.round(139 + n * 40 - 10);
             const g = Math.round(69 + n * 25 - 5);
@@ -124,7 +134,7 @@ function generateWoodRoughness(ctx: CanvasRenderingContext2D, size: number, seed
     for (let y = 0; y < size; y++) {
         for (let x = 0; x < size; x++) {
             const n = (fbm(x * 0.015, y * 0.004, seed, 3, 1.0) + 1) * 0.5; // [0,1]
-            const roughness = 0.4 + n * 0.2;  // [0.2, 0.6]
+            const roughness = 0.4 + n * 0.2; // [0.2, 0.6]
             const v = Math.round(roughness * 255);
 
             const i = (y * size + x) * 4;
@@ -153,9 +163,9 @@ function generateWoodNormal(ctx: CanvasRenderingContext2D, size: number, seed: n
             const len = Math.sqrt(dx * dx + dy * dy + nz * nz);
 
             const i = (y * size + x) * 4;
-            data[i] = Math.round((dx / len * 0.5 + 0.5) * 255);
-            data[i + 1] = Math.round((dy / len * 0.5 + 0.5) * 255);
-            data[i + 2] = Math.round((nz / len * 0.5 + 0.5) * 255);
+            data[i] = Math.round(((dx / len) * 0.5 + 0.5) * 255);
+            data[i + 1] = Math.round(((dy / len) * 0.5 + 0.5) * 255);
+            data[i + 2] = Math.round(((nz / len) * 0.5 + 0.5) * 255);
             data[i + 3] = 255;
         }
     }
@@ -174,28 +184,45 @@ function generateProceduralGroundTextures(
     scene: Scene
 ): ProceduralTextures {
     // 目前仅支持 wood，marble/concrete 为后续扩展预留
-    const genAlbedo = (ctx: CanvasRenderingContext2D, s: number) => generateWoodAlbedo(ctx, s, seed);
-    const genRoughness = (ctx: CanvasRenderingContext2D, s: number) => generateWoodRoughness(ctx, s, seed);
-    const genNormal = (ctx: CanvasRenderingContext2D, s: number) => generateWoodNormal(ctx, s, seed);
+    const genAlbedo = (ctx: CanvasRenderingContext2D, s: number) =>
+        generateWoodAlbedo(ctx, s, seed);
+    const genRoughness = (ctx: CanvasRenderingContext2D, s: number) =>
+        generateWoodRoughness(ctx, s, seed);
+    const genNormal = (ctx: CanvasRenderingContext2D, s: number) =>
+        generateWoodNormal(ctx, s, seed);
 
     const albedo = createCanvasTexture({
-        size: PROCEDURAL_SIZE, draw: genAlbedo, scene,
-        name: `groundProcedural_${type}_albedo`, wrap: 'wrap', generateMipMaps: true,
+        size: PROCEDURAL_SIZE,
+        draw: genAlbedo,
+        scene,
+        name: `groundProcedural_${type}_albedo`,
+        wrap: 'wrap',
+        generateMipMaps: true,
     });
     const roughness = createCanvasTexture({
-        size: PROCEDURAL_SIZE, draw: genRoughness, scene,
-        name: `groundProcedural_${type}_roughness`, wrap: 'wrap', generateMipMaps: true,
+        size: PROCEDURAL_SIZE,
+        draw: genRoughness,
+        scene,
+        name: `groundProcedural_${type}_roughness`,
+        wrap: 'wrap',
+        generateMipMaps: true,
     });
     const normal = createCanvasTexture({
-        size: PROCEDURAL_SIZE, draw: genNormal, scene,
-        name: `groundProcedural_${type}_normal`, wrap: 'wrap', generateMipMaps: true,
+        size: PROCEDURAL_SIZE,
+        draw: genNormal,
+        scene,
+        name: `groundProcedural_${type}_normal`,
+        wrap: 'wrap',
+        generateMipMaps: true,
     });
     return { albedo, roughness, normal };
 }
 
 /** 释放材质及其所有纹理（PBR 和 Standard 共用 opacity/bump/reflection，差异在 albedo/diffuse） */
 function disposeGroundMaterial(mat: Material | null): void {
-    if (!mat) return;
+    if (!mat) {
+        return;
+    }
     if (mat instanceof PBRMaterial) {
         mat.albedoTexture?.dispose();
         mat.metallicTexture?.dispose();
@@ -258,7 +285,9 @@ const groundReflection = new PlanarReflection({
     getMaterial: () => _envSys.ground.mesh?.material ?? null,
     mount: (rt) => {
         const mat = _envSys.ground.mesh?.material as GroundMat | null;
-        if (!mat) return;
+        if (!mat) {
+            return;
+        }
         if (rt) {
             mat.reflectionTexture = rt as MirrorTexture | null;
             // 用当前 blend 值初始化 level，避免默认 1.00 闪烁
@@ -282,7 +311,9 @@ const groundReflection = new PlanarReflection({
     },
     setBlend: (b) => {
         const mat = _envSys.ground.mesh?.material as GroundMat | null;
-        if (!mat || !mat.reflectionTexture) return;
+        if (!mat || !mat.reflectionTexture) {
+            return;
+        }
         mat.reflectionTexture.level = b;
     },
 });
@@ -338,11 +369,26 @@ export function getGroundHeightAt(x: number, z: number): number {
             if (Math.abs(gm.rotation.x) > 0.001 || Math.abs(gm.rotation.z) > 0.001) {
                 const worldMat = gm.getWorldMatrix();
                 worldMat.invertToRef(_terrainInvWorld);
-                Vector3.TransformCoordinatesFromFloatsToRef(x, 0, z, _terrainInvWorld, _terrainLocalPos);
-                const localHeight = gm.getHeightAtCoordinates(_terrainLocalPos.x, _terrainLocalPos.z);
-                if (!isFinite(localHeight)) return envState.groundLevel;
                 Vector3.TransformCoordinatesFromFloatsToRef(
-                    _terrainLocalPos.x, localHeight, _terrainLocalPos.z, worldMat, _terrainWorldPos
+                    x,
+                    0,
+                    z,
+                    _terrainInvWorld,
+                    _terrainLocalPos
+                );
+                const localHeight = gm.getHeightAtCoordinates(
+                    _terrainLocalPos.x,
+                    _terrainLocalPos.z
+                );
+                if (!isFinite(localHeight)) {
+                    return envState.groundLevel;
+                }
+                Vector3.TransformCoordinatesFromFloatsToRef(
+                    _terrainLocalPos.x,
+                    localHeight,
+                    _terrainLocalPos.z,
+                    worldMat,
+                    _terrainWorldPos
                 );
                 return _terrainWorldPos.y;
             }
@@ -380,10 +426,16 @@ function _generateGroundTexture(state: EnvState, scene: Scene): Texture {
             ctx.strokeStyle = c1;
             ctx.lineWidth = Math.max(1, Math.round(tileSize / 24));
             for (let x = tileSize; x < s; x += tileSize) {
-                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, s); ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, s);
+                ctx.stroke();
             }
             for (let y = tileSize; y < s; y += tileSize) {
-                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(s, y); ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(s, y);
+                ctx.stroke();
             }
         } else if (state.groundDecoStyle === 'checker') {
             const tileSize = Math.max(8, Math.round(64 * state.groundGridSize));
@@ -397,12 +449,19 @@ function _generateGroundTexture(state: EnvState, scene: Scene): Texture {
                     }
                     break;
                 case 'dots':
-                    ctx.fillStyle = c0; ctx.fillRect(0, 0, s, s);
+                    ctx.fillStyle = c0;
+                    ctx.fillRect(0, 0, s, s);
                     ctx.fillStyle = c1;
                     for (let y = 0; y < s; y += tileSize) {
                         for (let x = 0; x < s; x += tileSize) {
                             ctx.beginPath();
-                            ctx.arc(x + tileSize / 2, y + tileSize / 2, tileSize / 3, 0, Math.PI * 2);
+                            ctx.arc(
+                                x + tileSize / 2,
+                                y + tileSize / 2,
+                                tileSize / 3,
+                                0,
+                                Math.PI * 2
+                            );
                             ctx.fill();
                         }
                     }
@@ -415,8 +474,10 @@ function _generateGroundTexture(state: EnvState, scene: Scene): Texture {
                     break;
                 case 'radial': {
                     const grad = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
-                    grad.addColorStop(0, c0); grad.addColorStop(1, c1);
-                    ctx.fillStyle = grad; ctx.fillRect(0, 0, s, s);
+                    grad.addColorStop(0, c0);
+                    grad.addColorStop(1, c1);
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(0, 0, s, s);
                     break;
                 }
                 default:
@@ -437,11 +498,16 @@ function _generateGroundTexture(state: EnvState, scene: Scene): Texture {
 // ======== Texture mode: external image compositing ========
 
 function _drawTextureGroundCanvas(
-    ctx: CanvasRenderingContext2D, size: number, img: HTMLImageElement, state: EnvState
+    ctx: CanvasRenderingContext2D,
+    size: number,
+    img: HTMLImageElement,
+    state: EnvState
 ): void {
     ctx.clearRect(0, 0, size, size);
     ctx.drawImage(img, 0, 0, size, size);
-    if (state.groundDecoStyle === 'none') return;
+    if (state.groundDecoStyle === 'none') {
+        return;
+    }
 
     const r = Math.round(state.groundLineColor[0] * 255);
     const g = Math.round(state.groundLineColor[1] * 255);
@@ -453,10 +519,16 @@ function _drawTextureGroundCanvas(
         ctx.strokeStyle = lineColor;
         ctx.lineWidth = Math.max(1, Math.round(tileSize / 24));
         for (let x = tileSize; x < size; x += tileSize) {
-            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, size); ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, size);
+            ctx.stroke();
         }
         for (let y = tileSize; y < size; y += tileSize) {
-            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(size, y); ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(size, y);
+            ctx.stroke();
         }
     } else if (state.groundDecoStyle === 'checker') {
         for (let y = 0; y < size; y += tileSize) {
@@ -482,25 +554,35 @@ function _ensureTextureGroundImage(url: string, onReady: (img: HTMLImageElement)
     const generation = ++_texGroundGeneration;
     const img = new Image();
     img.onload = () => {
-        if (generation !== _texGroundGeneration) return;
+        if (generation !== _texGroundGeneration) {
+            return;
+        }
         _texGroundImg = img;
         onReady(img);
     };
     img.onerror = () => {
-        if (generation !== _texGroundGeneration) return;
+        if (generation !== _texGroundGeneration) {
+            return;
+        }
         logWarn('ground', 'texture load failed:', url);
     };
     img.src = url;
 }
 
 function _syncTextureGroundTexture(mat: GroundMat, state: EnvState, scene: Scene): void {
-    const url = state.groundTexture ? new URL(state.groundTexture, window.location.origin).href : null;
-    if (!url) return;
+    const url = state.groundTexture
+        ? new URL(state.groundTexture, window.location.origin).href
+        : null;
+    if (!url) {
+        return;
+    }
 
     let dt = _getAlbedoTex(mat) as DynamicTexture | null;
     const needCreate = !dt || !(dt instanceof DynamicTexture) || dt.name !== 'envGroundTex';
     if (needCreate) {
-        if (dt) dt.dispose();
+        if (dt) {
+            dt.dispose();
+        }
         dt = new DynamicTexture('envGroundTex', _TEX_GROUND_SIZE, scene, false);
         dt.wrapU = dt.wrapV = Texture.WRAP_ADDRESSMODE;
         dt.uScale = dt.vScale = 1 / Math.max(0.1, state.groundTextureScale);
@@ -513,9 +595,13 @@ function _syncTextureGroundTexture(mat: GroundMat, state: EnvState, scene: Scene
 
     _ensureTextureGroundImage(url, (img) => {
         const cur = _getAlbedoTex(mat) as DynamicTexture | null;
-        if (!(cur instanceof DynamicTexture) || cur !== dt) return;
+        if (!(cur instanceof DynamicTexture) || cur !== dt) {
+            return;
+        }
         const ctx = getCanvasCtx(cur);
-        if (!ctx) return;
+        if (!ctx) {
+            return;
+        }
         _drawTextureGroundCanvas(ctx, _TEX_GROUND_SIZE, img, state);
         cur.update(false);
     });
@@ -524,7 +610,9 @@ function _syncTextureGroundTexture(mat: GroundMat, state: EnvState, scene: Scene
 // ======== Edge fade / normal / offset helpers ========
 
 function getGroundEdgeFadeTexture(fade: number, scene: Scene): Texture | null {
-    if (fade <= 0) return null;
+    if (fade <= 0) {
+        return null;
+    }
     const key = Math.round(fade * 100);
     const S = 256;
     const draw = (ctx: CanvasRenderingContext2D, s: number) => {
@@ -536,7 +624,12 @@ function getGroundEdgeFadeTexture(fade: number, scene: Scene): Texture | null {
         ctx.fillRect(0, 0, s, s);
     };
     return getOrCreateCanvasTexture(`env-ground-edge-fade-${key}`, {
-        size: S, draw, scene, name: 'envGroundEdgeFade', wrap: 'clamp', getAlphaFromRGB: true,
+        size: S,
+        draw,
+        scene,
+        name: 'envGroundEdgeFade',
+        wrap: 'clamp',
+        getAlphaFromRGB: true,
     });
 }
 
@@ -546,7 +639,9 @@ function applyGroundEdgeFade(mat: GroundMat, fade: number, scene: Scene): void {
 
 function _syncGroundTextureOffset(mat: GroundMat, state: EnvState): void {
     const tex = _getAlbedoTex(mat);
-    if (!tex) return;
+    if (!tex) {
+        return;
+    }
     const angle = (state.groundTextureRotation * Math.PI) / 180;
     const cos = Math.cos(angle);
     const sin = Math.sin(angle);
@@ -554,8 +649,12 @@ function _syncGroundTextureOffset(mat: GroundMat, state: EnvState): void {
     let v = 0.5 * (1 - cos) - 0.5 * sin + _groundScrollV;
     u = u - Math.floor(u);
     v = v - Math.floor(v);
-    if (u < 0) u += 1;
-    if (v < 0) v += 1;
+    if (u < 0) {
+        u += 1;
+    }
+    if (v < 0) {
+        v += 1;
+    }
     tex.uOffset = u;
     tex.vOffset = v;
 }
@@ -568,7 +667,9 @@ function _updateGroundTexture(mat: GroundMat, state: EnvState): void {
     newTex.vScale = oldTex instanceof Texture ? oldTex.vScale : 1;
     _setAlbedoTex(mat, newTex);
     _setAlbedoColor(mat, new Color3(1, 1, 1));
-    if (oldTex) oldTex.dispose();
+    if (oldTex) {
+        oldTex.dispose();
+    }
 }
 
 function _syncGroundNormalTexture(mat: GroundMat, state: EnvState): void {
@@ -608,9 +709,10 @@ export function applyGround(state: EnvState): void {
 
     // ADR-114: typeKey 加入 PBR / 程序化字段；Phase 2: blur/distort 影响反射视觉需重建
     const pbrKey = `:pbr:${state.groundPbrEnabled}:rough:${state.groundRoughness}:metal:${state.groundMetallic}:blur:${state.groundReflectionBlur}:distort:${state.groundReflectionDistort}`;
-    const proceduralKey = state.groundProceduralTexture !== 'none' && !state.groundTextureEnabled
-        ? `:proc:${state.groundProceduralTexture}:${state.groundProceduralSeed}:${state.groundProceduralScale}`
-        : '';
+    const proceduralKey =
+        state.groundProceduralTexture !== 'none' && !state.groundTextureEnabled
+            ? `:proc:${state.groundProceduralTexture}:${state.groundProceduralSeed}:${state.groundProceduralScale}`
+            : '';
     const typeKey =
         state.groundType === 'terrain'
             ? `heightmap:${state.groundTerrainHeight}:${state.groundTerrainScale}:${state.groundTerrainSeed}:${state.groundTerrainOctaves}:${state.groundLevel}:${state.groundSize}:${state.groundColor.join(',')}:${state.groundAlpha}:${state.groundTextureEnabled}:${state.groundTexture}:${state.groundTextureScale}:${state.groundTextureRotation}${pbrKey}`
@@ -636,8 +738,7 @@ export function applyGround(state: EnvState): void {
             }
             const albedoTex = _getAlbedoTex(mat);
             if (albedoTex && albedoTex instanceof Texture) {
-                albedoTex.uScale = albedoTex.vScale =
-                    1 / Math.max(0.1, state.groundTextureScale);
+                albedoTex.uScale = albedoTex.vScale = 1 / Math.max(0.1, state.groundTextureScale);
                 _syncGroundTextureOffset(mat, state);
             }
             _syncGroundNormalTexture(mat, state);
@@ -677,7 +778,9 @@ export function applyGround(state: EnvState): void {
         oldMesh.dispose();
         _envSys.ground.mesh = null;
     }
-    if (!state.groundVisible) return;
+    if (!state.groundVisible) {
+        return;
+    }
 
     // 地形模式
     if (state.groundType === 'terrain') {
@@ -694,7 +797,9 @@ export function applyGround(state: EnvState): void {
 
     // 平面模式
     const ground = MeshBuilder.CreateGround(
-        'envGround', { width: state.groundSize, height: state.groundSize, subdivisions: 2 }, scene
+        'envGround',
+        { width: state.groundSize, height: state.groundSize, subdivisions: 2 },
+        scene
     );
     ground.isPickable = false;
     ground.position.y = state.groundLevel;
@@ -704,10 +809,16 @@ export function applyGround(state: EnvState): void {
     mat.backFaceCulling = false;
     ground.material = mat;
 
-    if (state.groundPbrEnabled && state.groundProceduralTexture !== 'none' && !state.groundTextureEnabled) {
+    if (
+        state.groundPbrEnabled &&
+        state.groundProceduralTexture !== 'none' &&
+        !state.groundTextureEnabled
+    ) {
         // ADR-114: 程序化纹理模式（PBR 专属）
         const texs = generateProceduralGroundTextures(
-            state.groundProceduralTexture, state.groundProceduralSeed, scene
+            state.groundProceduralTexture,
+            state.groundProceduralSeed,
+            scene
         );
         const scale = 1 / Math.max(0.1, state.groundProceduralScale);
         texs.albedo.uScale = texs.albedo.vScale = scale;
@@ -732,7 +843,10 @@ export function applyGround(state: EnvState): void {
         _syncGroundNormalTexture(mat, state);
     } else {
         // 纯色模式
-        _setAlbedoColor(mat, new Color3(state.groundColor[0], state.groundColor[1], state.groundColor[2]));
+        _setAlbedoColor(
+            mat,
+            new Color3(state.groundColor[0], state.groundColor[1], state.groundColor[2])
+        );
     }
 
     applyGroundEdgeFade(mat, state.groundEdgeFade, scene);
@@ -754,7 +868,9 @@ export function tickGround(dt: number): void {
         _envSys.ground.mesh &&
         (envState.groundScrollSpeedX !== 0 || envState.groundScrollSpeedZ !== 0) &&
         (envState.groundStyle === 'checker' ||
-            (envState.groundStyle === 'texture' && envState.groundTextureEnabled && envState.groundTexture))
+            (envState.groundStyle === 'texture' &&
+                envState.groundTextureEnabled &&
+                envState.groundTexture))
     ) {
         const mat = _envSys.ground.mesh.material;
         if (mat && (mat instanceof StandardMaterial || mat instanceof PBRMaterial)) {
@@ -764,8 +880,12 @@ export function tickGround(dt: number): void {
                 _groundScrollV += envState.groundScrollSpeedZ * dt;
                 _groundScrollU = _groundScrollU - Math.floor(_groundScrollU);
                 _groundScrollV = _groundScrollV - Math.floor(_groundScrollV);
-                if (_groundScrollU < 0) _groundScrollU += 1;
-                if (_groundScrollV < 0) _groundScrollV += 1;
+                if (_groundScrollU < 0) {
+                    _groundScrollU += 1;
+                }
+                if (_groundScrollV < 0) {
+                    _groundScrollV += 1;
+                }
                 _syncGroundTextureOffset(mat as GroundMat, envState);
             }
         }

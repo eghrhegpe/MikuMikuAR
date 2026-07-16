@@ -114,14 +114,21 @@ function buildSoftwareListSchema(): MenuNode[] {
                                         onClick: async () => {
                                             const r = await tryCatchStatus(
                                                 async () => {
-                                                    await LaunchSoftware(entry.path, entry.args || '');
+                                                    await LaunchSoftware(
+                                                        entry.path,
+                                                        entry.args || ''
+                                                    );
                                                     return true as const;
                                                 },
-                                                t('settings.softwareStartFail', { name: entry.name })
+                                                t('settings.softwareStartFail', {
+                                                    name: entry.name,
+                                                })
                                             );
                                             if (r !== undefined) {
                                                 setStatus(
-                                                    t('settings.softwareStarted', { name: entry.name }),
+                                                    t('settings.softwareStarted', {
+                                                        name: entry.name,
+                                                    }),
                                                     true
                                                 );
                                             }

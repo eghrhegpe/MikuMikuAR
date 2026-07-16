@@ -116,8 +116,6 @@ export function initHints(): void {
                 showHint(el.getAttribute('data-hint') || t('menu.noHint'));
             })
         );
-        _hintDisposables.push(
-            addDisposableListener(el, 'mouseleave', () => hideHint())
-        );
+        _hintDisposables.push(addDisposableListener(el, 'mouseleave', () => hideHint()));
     });
 }

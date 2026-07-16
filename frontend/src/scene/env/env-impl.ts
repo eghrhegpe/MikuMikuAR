@@ -18,30 +18,58 @@ import { disposeTextureCache } from './env-texture';
 
 // ======== Re-exports: Water / Clouds / MirrorDebug ========
 export {
-    createWater, disposeWater, refreshWaterRenderList,
-    addRipple, clearRipples, updateWaterAnimSpeed,
-    _underwaterActive, _underwaterSavedFog,
-    _underwaterTransitionProgress, _underwaterTarget,
+    createWater,
+    disposeWater,
+    refreshWaterRenderList,
+    addRipple,
+    clearRipples,
+    updateWaterAnimSpeed,
+    _underwaterActive,
+    _underwaterSavedFog,
+    _underwaterTransitionProgress,
+    _underwaterTarget,
 } from './env-water';
 import { updateUnderwaterTransition, resetUnderwaterState } from './env-water';
 export { createClouds, disposeClouds } from './env-clouds';
-export { createDebugMirror, disposeDebugMirror, isDebugMirrorActive, updateDebugMirrorClearColor } from './mirror-debug';
+export {
+    createDebugMirror,
+    disposeDebugMirror,
+    isDebugMirrorActive,
+    updateDebugMirrorClearColor,
+} from './mirror-debug';
 
 // ======== Re-exports: Sky ========
 export { applySky, disposeSky } from './env-sky';
 
 // ======== Re-exports: Ground ========
-export { applyGround, getGroundHeightAt, setOnTerrainReady, setOnGroundChanged, disposeGround } from './env-ground';
+export {
+    applyGround,
+    getGroundHeightAt,
+    setOnTerrainReady,
+    setOnGroundChanged,
+    disposeGround,
+} from './env-ground';
 import { tickGround } from './env-ground';
 
 // ======== Re-exports: Particles ========
 import {
-    createParticleEmitter, disposeParticles,
-    applyWindToParticles, updateParticleWind,
-    updateParticleParams, updateParticleTexture,
-    syncSplashState, disposeSplash, getCurrentParticleType,
+    createParticleEmitter,
+    disposeParticles,
+    applyWindToParticles,
+    updateParticleWind,
+    updateParticleParams,
+    updateParticleTexture,
+    syncSplashState,
+    disposeSplash,
+    getCurrentParticleType,
 } from './env-particles';
-export { createParticleEmitter, disposeParticles, applyWindToParticles, updateParticleWind, updateParticleTexture };
+export {
+    createParticleEmitter,
+    disposeParticles,
+    applyWindToParticles,
+    updateParticleWind,
+    updateParticleTexture,
+};
 
 // ======== Static Asset URL Resolver (Android 安全) ========
 export function resolveStaticAsset(path: string): string {
@@ -69,12 +97,16 @@ export function initEnvImpl(scene: Scene, pipeline: DefaultRenderingPipeline): v
 }
 
 export function getScene(): Scene {
-    if (!_scene) throw new Error('[scene-env-impl] Scene not initialized');
+    if (!_scene) {
+        throw new Error('[scene-env-impl] Scene not initialized');
+    }
     return _scene;
 }
 
 export function getPipeline(): DefaultRenderingPipeline {
-    if (!_pipeline) throw new Error('[scene-env-impl] Pipeline not initialized');
+    if (!_pipeline) {
+        throw new Error('[scene-env-impl] Pipeline not initialized');
+    }
     return _pipeline;
 }
 
@@ -117,7 +149,9 @@ let _prevCustomTexture = '';
 export function ensureEnvUpdateObserver(): void {
     const scene = getScene();
     const pipeline = getPipeline();
-    if (_envUpdateObserver) return;
+    if (_envUpdateObserver) {
+        return;
+    }
 
     _envUpdateObserver = scene.onBeforeRenderObservable.add(() => {
         const dt = scene.deltaTime / 1000;
@@ -125,20 +159,31 @@ export function ensureEnvUpdateObserver(): void {
         // Cloud drift
         if (envState.cloudsEnabled && _envSys.clouds.postProcess) {
             const cam = scene.activeCamera;
-            const dx = envState.windEnabled ? envState.windDirection[0] * envState.windSpeed * 0.3 * dt : 0;
-            const dz = envState.windEnabled ? envState.windDirection[2] * envState.windSpeed * 0.3 * dt : 0;
+            const dx = envState.windEnabled
+                ? envState.windDirection[0] * envState.windSpeed * 0.3 * dt
+                : 0;
+            const dz = envState.windEnabled
+                ? envState.windDirection[2] * envState.windSpeed * 0.3 * dt
+                : 0;
             for (const key of ['postProcess', 'postProcess2'] as const) {
                 const m = _envSys.clouds[key];
                 if (m) {
                     const speedMul = key === 'postProcess2' ? 0.7 : 1.0;
-                    if (cam) { m.position.x = cam.position.x; m.position.z = cam.position.z; }
+                    if (cam) {
+                        m.position.x = cam.position.x;
+                        m.position.z = cam.position.z;
+                    }
                     const mat = m.material as StandardMaterial | null;
                     if (mat.diffuseTexture) {
                         const tex = mat.diffuseTexture as Texture;
                         tex.uOffset = (tex.uOffset + dx * speedMul) % 1;
-                        if (tex.uOffset < 0) tex.uOffset += 1;
+                        if (tex.uOffset < 0) {
+                            tex.uOffset += 1;
+                        }
                         tex.vOffset = (tex.vOffset + dz * speedMul) % 1;
-                        if (tex.vOffset < 0) tex.vOffset += 1;
+                        if (tex.vOffset < 0) {
+                            tex.vOffset += 1;
+                        }
                     }
                 }
             }
@@ -153,7 +198,11 @@ export function ensureEnvUpdateObserver(): void {
             if (!envState.particleEnabled && _envSys.particles.system) {
                 disposeParticles();
                 disposeSplash();
-            } else if (envState.particleEnabled && !_envSys.particles.system && getCurrentParticleType() !== 'none') {
+            } else if (
+                envState.particleEnabled &&
+                !_envSys.particles.system &&
+                getCurrentParticleType() !== 'none'
+            ) {
                 createParticleEmitter(getCurrentParticleType(), envState.windEnabled);
             }
         }
@@ -163,14 +212,19 @@ export function ensureEnvUpdateObserver(): void {
         }
         if (_prevCustomTexture !== envState.particleCustomTexture) {
             _prevCustomTexture = envState.particleCustomTexture ?? '';
-            if (_envSys.particles.system) updateParticleTexture();
+            if (_envSys.particles.system) {
+                updateParticleTexture();
+            }
         }
 
         // Sky rotation
         if (envState.skyRotationSpeed > 0.001 && _envSys.sky.skyMesh) {
             _envSys.sky.skyMesh.rotation.y += envState.skyRotationSpeed * 0.6 * dt;
-            if (_envSys.sky.skyMesh.rotation.y > Math.PI * 2) _envSys.sky.skyMesh.rotation.y -= Math.PI * 2;
-            else if (_envSys.sky.skyMesh.rotation.y < -Math.PI * 2) _envSys.sky.skyMesh.rotation.y += Math.PI * 2;
+            if (_envSys.sky.skyMesh.rotation.y > Math.PI * 2) {
+                _envSys.sky.skyMesh.rotation.y -= Math.PI * 2;
+            } else if (_envSys.sky.skyMesh.rotation.y < -Math.PI * 2) {
+                _envSys.sky.skyMesh.rotation.y += Math.PI * 2;
+            }
         }
 
         // Ground per-frame updates (scroll, reflection, follow-camera)
@@ -180,7 +234,9 @@ export function ensureEnvUpdateObserver(): void {
         updateUnderwaterTransition(scene, pipeline);
 
         // Scene tick callbacks
-        for (const cb of _sceneTickCallbacks) cb();
+        for (const cb of _sceneTickCallbacks) {
+            cb();
+        }
     });
 }
 
@@ -190,7 +246,9 @@ import { clearStarsTexCache } from './env-sky';
 export function disposeEnvUpdateObserver(): void {
     // 首启 / HMR 重入幂等：initScene() step0 清理在 initEnvImpl 之前调用，
     // 此时 _scene 仍为 null，无 observer / 资源可释放，直接 no-op 返回避免抛错（ADR-106 Phase 3）。
-    if (!_scene) return;
+    if (!_scene) {
+        return;
+    }
     const scene = getScene();
     const pipeline = getPipeline();
     if (_envUpdateObserver) {

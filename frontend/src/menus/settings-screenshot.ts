@@ -159,19 +159,24 @@ function buildScreenshotSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
                 cardContainer(c, (inner) => {
                     addSectionTitle(inner, '保存目录');
                     const dir = uiState.screenshotDir ?? '';
-                    const dirSub = dir
-                        ? truncatePath(dir)
-                        : '（尚未设置，截图时会选择）';
+                    const dirSub = dir ? truncatePath(dir) : '（尚未设置，截图时会选择）';
 
-                    slideRow(inner, 'lucide:folder', '选择目录', false, async () => {
-                        const d = await SelectDir();
-                        if (!d) {
-                            return;
-                        }
-                        setUIState({ screenshotDir: d });
-                        getSettingsMenu()?.reRender();
-                        setStatus(t('settings.screenshotDirSet', { dir: d }), true);
-                    }, dirSub);
+                    slideRow(
+                        inner,
+                        'lucide:folder',
+                        '选择目录',
+                        false,
+                        async () => {
+                            const d = await SelectDir();
+                            if (!d) {
+                                return;
+                            }
+                            setUIState({ screenshotDir: d });
+                            getSettingsMenu()?.reRender();
+                            setStatus(t('settings.screenshotDirSet', { dir: d }), true);
+                        },
+                        dirSub
+                    );
 
                     slideRow(inner, 'lucide:folder-open', '打开目录', false, () => {
                         OpenScreenshotDir().catch((err: unknown) => {

@@ -547,9 +547,7 @@ export function _disposeSunDisc(): void {
 // ======== Shadow Generator ========
 
 /** 遍历所有模型/道具的 Mesh，加入阴影生成器。 */
-function _addAllMeshesToShadow(
-    gen: ShadowGenerator | CascadedShadowGenerator
-): void {
+function _addAllMeshesToShadow(gen: ShadowGenerator | CascadedShadowGenerator): void {
     if (!_modelRegistry || !_propRegistry) {
         return;
     }

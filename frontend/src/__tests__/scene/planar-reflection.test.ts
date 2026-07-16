@@ -170,12 +170,19 @@ describe('PlanarReflection — 互斥协调', () => {
             specularColor: { r: 0, g: 0, b: 0 },
             reflectionFresnelParameters: { isEnabled: true },
         };
-        const setBlendSpy = vi.fn((b: number) => { mockLevel.value = b; mockReflectionTex.level = b; });
-        const ref = new PlanarReflection(makeConfig('levelTest', {
-            setBlend: setBlendSpy,
-            getMaterial: () => mockMat as any,
-            mount: (rt: any) => { (mockMat as any).reflectionTexture = rt ? mockReflectionTex : null; },
-        }));
+        const setBlendSpy = vi.fn((b: number) => {
+            mockLevel.value = b;
+            mockReflectionTex.level = b;
+        });
+        const ref = new PlanarReflection(
+            makeConfig('levelTest', {
+                setBlend: setBlendSpy,
+                getMaterial: () => mockMat as any,
+                mount: (rt: any) => {
+                    (mockMat as any).reflectionTexture = rt ? mockReflectionTex : null;
+                },
+            })
+        );
         // quality=high + blend=0.6 → 应该调用 setBlend(0.6)
         ref.update(makeState({ reflectionQuality: 'high', planarReflectBlend: 0.6 }), scene);
         expect(setBlendSpy).toHaveBeenCalledWith(0.6);
