@@ -5,6 +5,8 @@
 import { DefaultRenderingPipeline } from '@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline';
 import { SSRRenderingPipeline } from '@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/ssrRenderingPipeline';
 import { SSAO2RenderingPipeline } from '@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/ssao2RenderingPipeline';
+import { PostProcess } from '@babylonjs/core/PostProcesses/postProcess';
+import { Effect } from '@babylonjs/core/Materials/effect';
 import { Color4 } from '@babylonjs/core/Maths/math.color';
 import type { Camera } from '@babylonjs/core/Cameras/camera';
 import { GlowLayer } from '@babylonjs/core/Layers/glowLayer';
@@ -13,6 +15,8 @@ import type { Observer } from '@babylonjs/core/Misc/observable';
 import { scheduleRefresh } from '@/core/reactivity';
 import { resetPerformanceSnapshot, isSnapshotResetSuppressed } from './performance';
 import { clamp, clamp01, lerp, lerpArray, setKey, logWarn } from '@/core/utils';
+import type { EnvState } from '@/core/config';
+import { dirLight } from './lighting';
 
 // ======== Tone Mapping Modes ========
 
@@ -86,6 +90,8 @@ let _ssaoPipeline: SSAO2RenderingPipeline | null = null;
 let _reflectionProbe: ReflectionProbe | null = null;
 let _probeRefreshObserver: Observer<import('@babylonjs/core/scene').Scene> | null = null;
 let _lastProbeRefresh = 0;
+// ADR-114 Phase 3: 接触阴影后处理（屏幕空间 ray marching）
+let _contactShadowPP: PostProcess | null = null;
 // 卡通化渲染预设状态
 let _celShadingMode = false;
 let _originalRenderState: RenderState | null = null;
@@ -159,6 +165,10 @@ export function disposeRenderer(): void {
     if (_ssaoPipeline) {
         _ssaoPipeline.dispose();
         _ssaoPipeline = null;
+    }
+    if (_contactShadowPP) {
+        _contactShadowPP.dispose();
+        _contactShadowPP = null;
     }
     if (_reflectionProbe) {
         _reflectionProbe.dispose();
@@ -595,6 +605,182 @@ function _applyRenderState(s: Partial<RenderState>): void {
             if (_originalRenderState) {
                 _applyRenderState(_originalRenderState);
             }
+        }
+    }
+}
+
+// ======== ADR-114 Phase 3: 接触阴影（屏幕空间 ray marching 后处理）========
+
+/**
+ * 接触阴影后处理：从每个像素出发，沿方向光反向在屏幕空间做有限步长 ray marching，
+ * 检查深度缓冲是否有遮挡物，填补方向光阴影贴图分辨率不足导致的「悬浮感」。
+ *
+ * 约束：
+ * - 仅在 groundContactShadowEnabled 且 groundReflectionQuality ≥ medium 时启用
+ * - 输出与方向光阴影相乘（darken 现有颜色）
+ * - 16 步 ray marching + 深度采样，性能预算 <3% FPS
+ */
+// 注册接触阴影 fragment shader
+Effect.ShadersStore['contactShadowFragmentShader'] = `
+uniform sampler2D depthSampler;
+uniform vec2 resolution;
+uniform vec3 lightDirVS;      // 视图空间光线方向（方向光反向）
+uniform float shadowDistance; // 光线步进最大距离（视图空间）
+uniform float intensity;      // 阴影强度 0-1
+uniform float nearZ;
+uniform float farZ;
+
+varying vec2 vUV;
+
+// 非线性深度 → 线性深度（视图空间 z 正值）
+float linearizeDepth(float d) {
+    return (2.0 * nearZ * farZ) / (farZ + nearZ - (2.0 * d - 1.0) * (farZ - nearZ));
+}
+
+// 屏幕空间 UV → 视图空间位置
+vec3 viewPosFromDepth(vec2 uv, float depth) {
+    float z = linearizeDepth(depth);
+    vec2 ndc = uv * 2.0 - 1.0;
+    // 假设透视投影：x/y 由 ndc 与 z 恢复（~45° fov 兜底）
+    float tanHalfFov = tan(0.5 * 0.785398);
+    float aspect = resolution.x / resolution.y;
+    vec3 pos;
+    pos.x = ndc.x * z * tanHalfFov * aspect;
+    pos.y = ndc.y * z * tanHalfFov;
+    pos.z = -z;
+    return pos;
+}
+
+float contactShadow(vec2 uv, float depth) {
+    vec3 viewPos = viewPosFromDepth(uv, depth);
+
+    // 光线步进方向与步长
+    float stepLen = shadowDistance / 16.0;
+    vec3 rayStep = normalize(lightDirVS) * stepLen;
+    vec3 rayPos = viewPos;
+    float shadow = 0.0;
+    float aspect = resolution.x / resolution.y;
+    float tanHalfFov = tan(0.5 * 0.785398);
+
+    for (int i = 0; i < 16; i++) {
+        rayPos += rayStep;
+        // 投影回屏幕空间（透视投影）
+        vec2 screenUV = vec2(
+            (rayPos.x / -rayPos.z) / (tanHalfFov * aspect) * 0.5 + 0.5,
+            (rayPos.y / -rayPos.z) / tanHalfFov * 0.5 + 0.5
+        );
+
+        if (screenUV.x < 0.0 || screenUV.x > 1.0 ||
+            screenUV.y < 0.0 || screenUV.y > 1.0) break;
+
+        float sampleDepth = texture2D(depthSampler, screenUV).r;
+        float rayDepth = -rayPos.z;
+        float sampleDepthLinear = linearizeDepth(sampleDepth);
+
+        // 采样深度比光线深度小（更靠近相机），且差值在范围内 → 被遮挡
+        float diff = rayDepth - sampleDepthLinear;
+        if (diff > 0.0 && diff < shadowDistance) {
+            shadow += 1.0 / 16.0;
+        }
+    }
+    return 1.0 - shadow * intensity;
+}
+
+void main(void) {
+    vec4 baseColor = texture2D(textureSampler, vUV);
+    float depth = texture2D(depthSampler, vUV).r;
+    float shadow = contactShadow(vUV, depth);
+    // 阴影因子 darken 现有颜色
+    gl_FragColor = vec4(baseColor.rgb * shadow, baseColor.a);
+}
+`;
+
+/**
+ * 应用接触阴影后处理（由 env-bridge 转发 envState 变化调用）。
+ * - enabled 且质量 ≥ medium：创建/更新 PostProcess
+ * - 否则：销毁 PostProcess
+ */
+export function setContactShadow(state: EnvState): void {
+    if (!_scene) {
+        return;
+    }
+
+    // 中/高质量守卫：low/off 时自动关闭
+    const qualityOk = state.groundReflectionQuality === 'medium' || state.groundReflectionQuality === 'high';
+    const shouldEnable = state.groundContactShadowEnabled && qualityOk;
+
+    if (shouldEnable) {
+        const camera = _pipelineCamera ?? _scene.activeCamera;
+        if (!camera) {
+            logWarn('renderer', 'setContactShadow: 无可用相机，跳过创建');
+            return;
+        }
+
+        if (!_contactShadowPP) {
+            // 创建 PostProcess
+            try {
+                _contactShadowPP = new PostProcess(
+                    'contactShadow',
+                    'contactShadow', // shader name
+                    ['resolution', 'lightDirVS', 'shadowDistance', 'intensity', 'nearZ', 'farZ'],
+                    ['depthSampler'],
+                    1.0, // scaling
+                    null, // sampler
+                    0, // texture type
+                    _scene.getEngine()
+                );
+                _contactShadowPP.onApplyObservable.add((effect) => {
+                    effect.setTexture('depthSampler', _scene!.enableDepthRenderer(_scene!.activeCamera).getDepthMap());
+                    effect.setVector2('resolution', { x: _scene!.getEngine().getRenderWidth(), y: _scene!.getEngine().getRenderHeight() } as any);
+                    // 方向光反向作为光线方向；转换到视图空间
+                    const lightDir = dirLight ? dirLight.direction : { x: 0, y: -1, z: 0 };
+                    // 方向光 direction 是世界空间，需转到视图空间
+                    const viewMat = camera.getViewMatrix();
+                    // 简化：用方向光方向的视图空间表示
+                    const lx = lightDir.x, ly = lightDir.y, lz = lightDir.z;
+                    // 视图空间 = viewMatrix * worldDir（仅方向，忽略平移）
+                    const vlx = viewMat.m[0] * lx + viewMat.m[4] * ly + viewMat.m[8] * lz;
+                    const vly = viewMat.m[1] * lx + viewMat.m[5] * ly + viewMat.m[9] * lz;
+                    const vlz = viewMat.m[2] * lx + viewMat.m[6] * ly + viewMat.m[10] * lz;
+                    effect.setVector3('lightDirVS', { x: vlx, y: vly, z: vlz } as any);
+                    effect.setFloat('shadowDistance', state.groundContactShadowDistance);
+                    effect.setFloat('intensity', state.groundContactShadowIntensity);
+                    effect.setFloat('nearZ', camera.minZ);
+                    effect.setFloat('farZ', camera.maxZ);
+                });
+                camera.attachPostProcess(_contactShadowPP);
+            } catch (err) {
+                logWarn('renderer', 'ContactShadow PostProcess 创建失败:', err);
+                _contactShadowPP = null;
+            }
+        } else {
+            // 更新参数
+            _contactShadowPP.onApplyObservable.clear();
+            _contactShadowPP.onApplyObservable.add((effect) => {
+                effect.setTexture('depthSampler', _scene!.enableDepthRenderer(_scene!.activeCamera).getDepthMap());
+                effect.setVector2('resolution', { x: _scene!.getEngine().getRenderWidth(), y: _scene!.getEngine().getRenderHeight() } as any);
+                const lightDir = dirLight ? dirLight.direction : { x: 0, y: -1, z: 0 };
+                const viewMat = camera.getViewMatrix();
+                const lx = lightDir.x, ly = lightDir.y, lz = lightDir.z;
+                const vlx = viewMat.m[0] * lx + viewMat.m[4] * ly + viewMat.m[8] * lz;
+                const vly = viewMat.m[1] * lx + viewMat.m[5] * ly + viewMat.m[9] * lz;
+                const vlz = viewMat.m[2] * lx + viewMat.m[6] * ly + viewMat.m[10] * lz;
+                effect.setVector3('lightDirVS', { x: vlx, y: vly, z: vlz } as any);
+                effect.setFloat('shadowDistance', state.groundContactShadowDistance);
+                effect.setFloat('intensity', state.groundContactShadowIntensity);
+                effect.setFloat('nearZ', camera.minZ);
+                effect.setFloat('farZ', camera.maxZ);
+            });
+        }
+    } else {
+        // 销毁
+        if (_contactShadowPP) {
+            const cam = _pipelineCamera ?? _scene.activeCamera;
+            if (cam) {
+                cam.detachPostProcess(_contactShadowPP);
+            }
+            _contactShadowPP.dispose();
+            _contactShadowPP = null;
         }
     }
 }

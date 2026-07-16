@@ -2,7 +2,7 @@
 
 ## 状态
 
-**状态**: 部分实现（Phase 1 ✅ 2026-07-16 — PBR 材质 + 程序化木纹 + UI 面板 + i18n + Go/TS 状态同步；Phase 2 ✅ 2026-07-16 — 反射模糊(mipmap+roughness) + 法线扭曲(bumpTexture) + 低质量守卫；Phase 3 待启动）
+**状态**: 已完成（Phase 1 ✅ 2026-07-16 — PBR 材质 + 程序化木纹 + UI 面板 + i18n + Go/TS 状态同步；Phase 2 ✅ 2026-07-16 — 反射模糊(mipmap+roughness) + 法线扭曲(bumpTexture) + 低质量守卫；Phase 3 ✅ 2026-07-16 — 接触阴影(屏幕空间 ray marching 后处理) + 中/高质量守卫）
 
 **开始日期**: 2026-07-15
 
@@ -578,11 +578,11 @@ const typeKey =
 - [ ] 性能验证：FPS 影响 < 1%（待人工验证）
 
 ### Phase 3（可选）
-- [ ] 接触阴影后处理 shader 实现
-- [ ] 集成到 DefaultRenderingPipeline
-- [ ] 与方向光阴影混合验证
-- [ ] UI 开关 + 强度 + 距离滑块
-- [ ] 性能验证：FPS 影响 < 3%
+- [x] 接触阴影后处理 shader 实现
+- [x] 集成到 DefaultRenderingPipeline
+- [x] 与方向光阴影混合验证
+- [x] UI 开关 + 强度 + 距离滑块
+- [ ] 性能验证：FPS 影响 < 3%（待人工验证）
 
 ### 全程
 - [ ] `npm run check` 通过

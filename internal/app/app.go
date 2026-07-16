@@ -455,6 +455,10 @@ type EnvState struct {
 	// ADR-114 Phase 2: 反射模糊 + 法线扭曲
 	GroundReflectionBlur     float64 `json:"groundReflectionBlur"`
 	GroundReflectionDistort  float64 `json:"groundReflectionDistort"`
+	// ADR-114 Phase 3: 接触阴影
+	GroundContactShadowEnabled    bool    `json:"groundContactShadowEnabled"`
+	GroundContactShadowIntensity  float64 `json:"groundContactShadowIntensity"`
+	GroundContactShadowDistance   float64 `json:"groundContactShadowDistance"`
 	GroundLevel           float64    `json:"groundLevel"`
 	GroundSize            float64    `json:"groundSize"`
 	GroundEdgeFade        float64    `json:"groundEdgeFade"`

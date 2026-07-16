@@ -428,6 +428,10 @@ export interface EnvState {
     // ADR-114 Phase 2: 反射模糊 + 法线扭曲
     groundReflectionBlur: number; // 反射模糊强度 0–1（mipmap LOD 偏移），默认 0.0
     groundReflectionDistort: number; // 法线扭曲强度 0–1（bumpTexture 扰动反射方向），默认 0.3
+    // ADR-114 Phase 3: 接触阴影（屏幕空间 ray marching 后处理）
+    groundContactShadowEnabled: boolean; // 接触阴影开关，默认 false
+    groundContactShadowIntensity: number; // 接触阴影强度 0–1，默认 0.5
+    groundContactShadowDistance: number; // 光线步进最大距离（视图空间单位），默认 0.5
 
     windEnabled: boolean;
     windDirection: [number, number, number];

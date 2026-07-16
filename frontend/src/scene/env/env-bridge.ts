@@ -33,6 +33,7 @@ import {
 } from '../render/lighting';
 import type { LightState } from '../render/lighting';
 import { applyLightingPresetFromEnv } from '../render/lighting';
+import { setContactShadow } from '../render/renderer';
 import { scene } from '../scene';
 import { setKey } from '@/core/utils';
 
@@ -92,6 +93,11 @@ const _CLOUD_KEYS = [
     'cloudsEnabled', 'cloudCover', 'cloudScale', 'cloudHeight',
     'cloudThickness', 'cloudVisibility', 'cloudGap',
 ];
+// ADR-114 Phase 3: 接触阴影后处理（转发到 renderer.setContactShadow）
+const _CONTACT_SHADOW_KEYS = [
+    'groundContactShadowEnabled', 'groundContactShadowIntensity',
+    'groundContactShadowDistance', 'groundReflectionQuality',
+];
 
 /** 等同于 scene-env.ts 的 applyEnvState，但避免循环依赖。 */
 function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): void {
@@ -130,6 +136,11 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
     _applyIfChanged(changed, _CLOUD_KEYS, 'cloud', () => {
         if (state.cloudsEnabled) impl.createClouds(state);
         else impl.disposeClouds();
+    });
+
+    // ADR-114 Phase 3: 接触阴影后处理（转发到 renderer）
+    _applyIfChanged(changed, _CONTACT_SHADOW_KEYS, 'contactShadow', () => {
+        setContactShadow(state);
     });
 
     _applyIfChanged(changed, ['debugMirrorEnabled'], 'debugMirror', () => {

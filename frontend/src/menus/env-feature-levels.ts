@@ -694,6 +694,49 @@ export function buildGroundLevel(): PopupLevel {
                                 icon: 'lucide:waves',
                                 visibleWhen: () => envState.groundPbrEnabled,
                             },
+                            // ADR-114 Phase 3: 接触阴影（屏幕空间 ray marching 后处理）
+                            {
+                                id: 'env:ground:contactShadow',
+                                kind: 'toggle',
+                                label: 'env.contactShadow',
+                                control: { bind: 'env.groundContactShadowEnabled' },
+                                icon: 'lucide:contact',
+                                visibleWhen: () =>
+                                    envState.groundReflectionQuality === 'medium' ||
+                                    envState.groundReflectionQuality === 'high',
+                            },
+                            {
+                                id: 'env:ground:contactShadowIntensity',
+                                kind: 'slider',
+                                label: 'env.contactShadowIntensity',
+                                control: {
+                                    bind: 'env.groundContactShadowIntensity',
+                                    min: 0,
+                                    max: 1,
+                                    step: 0.05,
+                                },
+                                icon: 'lucide:contrast',
+                                visibleWhen: () =>
+                                    envState.groundContactShadowEnabled &&
+                                    (envState.groundReflectionQuality === 'medium' ||
+                                        envState.groundReflectionQuality === 'high'),
+                            },
+                            {
+                                id: 'env:ground:contactShadowDistance',
+                                kind: 'slider',
+                                label: 'env.contactShadowDistance',
+                                control: {
+                                    bind: 'env.groundContactShadowDistance',
+                                    min: 0.1,
+                                    max: 2,
+                                    step: 0.05,
+                                },
+                                icon: 'lucide:ruler',
+                                visibleWhen: () =>
+                                    envState.groundContactShadowEnabled &&
+                                    (envState.groundReflectionQuality === 'medium' ||
+                                        envState.groundReflectionQuality === 'high'),
+                            },
                             {
                                 id: 'env:ground:elevationColoring',
                                 kind: 'toggle',

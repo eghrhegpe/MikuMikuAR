@@ -336,6 +336,10 @@ export const envState: EnvState = reactive<EnvState>({
     // ADR-114 Phase 2: 反射模糊 + 法线扭曲
     groundReflectionBlur: 0.0,
     groundReflectionDistort: 0.3,
+    // ADR-114 Phase 3: 接触阴影
+    groundContactShadowEnabled: false,
+    groundContactShadowIntensity: 0.5,
+    groundContactShadowDistance: 0.5,
 
     windEnabled: true,
     windDirection: [0, 0, 1],
