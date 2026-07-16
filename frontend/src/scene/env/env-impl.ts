@@ -194,6 +194,8 @@ export function disposeEnvUpdateObserver(): void {
         scene.onBeforeRenderObservable.remove(_envUpdateObserver);
         _envUpdateObserver = null;
     }
+    // 清理所有场景 tick 回调（如 time-of-day），避免 HMR 重入时泄漏
+    _sceneTickCallbacks.clear();
     disposeTextureCache();
     _disposeGround();
     clearGroundTexCache();
