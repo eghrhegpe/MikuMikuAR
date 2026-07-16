@@ -1071,6 +1071,7 @@ export const zhCN: Record<string, string> = {
     'env.characterShadowHint': 'MMD 模型自动接收阴影',
     'env.stageLightShadow': '舞台灯光阴影',
     'env.sceneMenu': '场景菜单',
+    'env.persistFailed': '✗ 保存设置失败，重启后将丢失',
 
     // env-menu — 环境菜单导航/粒子专属 key
     'env.env': '环境',
