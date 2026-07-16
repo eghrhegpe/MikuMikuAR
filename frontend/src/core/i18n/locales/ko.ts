@@ -946,6 +946,8 @@ export const ko: Record<string, string> = {
     'env.marble': '대리석',
     'env.concrete': '콘크리트',
     'env.proceduralTexture': '절차적 텍스처',
+    'env.reflectionBlur': '반사 블러',
+    'env.reflectionDistort': '노멀 왜곡',
     'env.qualityOff': '끔',
     'env.qualityLow': '낮음',
     'env.qualityMedium': '중간',

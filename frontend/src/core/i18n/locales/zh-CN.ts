@@ -1010,6 +1010,8 @@ export const zhCN: Record<string, string> = {
     'env.marble': '大理石',
     'env.concrete': '混凝土',
     'env.proceduralTexture': '程序化纹理',
+    'env.reflectionBlur': '反射模糊',
+    'env.reflectionDistort': '法线扭曲',
     'env.qualityOff': '关闭',
     'env.qualityLow': '低',
     'env.qualityMedium': '中',

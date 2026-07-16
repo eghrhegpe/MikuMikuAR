@@ -939,6 +939,8 @@ export const zhTW: Record<string, string> = {
     'env.marble': '大理石',
     'env.concrete': '混凝土',
     'env.proceduralTexture': '程序化紋理',
+    'env.reflectionBlur': '反射模糊',
+    'env.reflectionDistort': '法線扭曲',
     'env.qualityOff': '關閉',
     'env.qualityLow': '低',
     'env.qualityMedium': '中',

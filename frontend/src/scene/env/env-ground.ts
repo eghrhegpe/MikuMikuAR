@@ -51,13 +51,31 @@ function _setAlbedoColor(mat: GroundMat, color: Color3): void {
 
 // ======== ADR-114: PBR 材质工厂 ========
 
+/** ADR-114 Phase 2: 反射模糊映射到 roughness 偏移（blur=1 最多增加 0.4）；低质量模式自动关闭 */
+function _effectiveRoughness(state: EnvState): number {
+    // 低质量模式自动关闭反射模糊（退化为锐利反射）
+    if (state.groundReflectionQuality === 'low' || state.groundReflectionQuality === 'off') {
+        return state.groundRoughness;
+    }
+    return Math.max(0, Math.min(1, state.groundRoughness + state.groundReflectionBlur * 0.4));
+}
+
+/** ADR-114 Phase 2: 法线扭曲映射到 bumpTexture.level 增强（distort=1 时额外 +2.0）；低质量模式自动关闭 */
+function _effectiveBumpLevel(state: EnvState): number {
+    // 低质量模式自动关闭法线扭曲
+    if (state.groundReflectionQuality === 'low' || state.groundReflectionQuality === 'off') {
+        return state.groundNormalStrength;
+    }
+    return state.groundNormalStrength + state.groundReflectionDistort * 2.0;
+}
+
 function createGroundMaterial(state: EnvState, scene: Scene): GroundMat {
     if (!state.groundPbrEnabled) {
         return new StandardMaterial('envGroundMat', scene);
     }
     const mat = new PBRMaterial('envGroundPBR', scene);
     mat.metallic = state.groundMetallic;
-    mat.roughness = state.groundRoughness;
+    mat.roughness = _effectiveRoughness(state);
     // PBR 自动使用 scene.environmentTexture 作为 IBL，无需手动赋值
     mat.useSpecularOverAlpha = false;
     mat.useRadianceOverAlpha = false;
@@ -211,6 +229,8 @@ const groundReflection = new PlanarReflection({
     name: 'ground',
     mode: 'mirrorTexture',
     resolutionMap: { high: 1024, medium: 512, low: 256, off: 0 },
+    // ADR-114 Phase 2: 开启 mipmap 供 PBR roughness 驱动反射模糊
+    generateMipMaps: true,
     getQuality: (s) => s.groundReflectionQuality,
     getBlend: (s) => s.groundReflectionBlend,
     getSurfaceLevel: (s) => s.groundLevel,
@@ -545,7 +565,10 @@ function _syncGroundNormalTexture(mat: GroundMat, state: EnvState): void {
         if (!mat.bumpTexture || (mat.bumpTexture as Texture).name !== state.groundNormalTexture) {
             mat.bumpTexture = new Texture(state.groundNormalTexture, scene);
         }
-        mat.bumpTexture.level = state.groundNormalStrength;
+        // ADR-114 Phase 2: PBR 模式下法线扭曲增强 bumpTexture.level
+        mat.bumpTexture.level = state.groundPbrEnabled
+            ? _effectiveBumpLevel(state)
+            : state.groundNormalStrength;
     } else {
         if (mat.bumpTexture) {
             mat.bumpTexture.dispose();
@@ -556,8 +579,13 @@ function _syncGroundNormalTexture(mat: GroundMat, state: EnvState): void {
 
 /** PBR 增量更新：roughness / metallic / 程序化纹理无需重建材质的属性 */
 function _syncPbrProperties(mat: PBRMaterial, state: EnvState): void {
-    mat.roughness = state.groundRoughness;
+    // ADR-114 Phase 2: roughness 含反射模糊偏移
+    mat.roughness = _effectiveRoughness(state);
     mat.metallic = state.groundMetallic;
+    // ADR-114 Phase 2: 法线扭曲增强 bumpTexture.level
+    if (mat.bumpTexture) {
+        mat.bumpTexture.level = _effectiveBumpLevel(state);
+    }
 }
 
 // ======== applyGround (public) ========
@@ -566,8 +594,8 @@ export function applyGround(state: EnvState): void {
     const scene = getScene();
     ensureEnvUpdateObserver();
 
-    // ADR-114: typeKey 加入 PBR / 程序化字段
-    const pbrKey = `:pbr:${state.groundPbrEnabled}:rough:${state.groundRoughness}:metal:${state.groundMetallic}`;
+    // ADR-114: typeKey 加入 PBR / 程序化字段；Phase 2: blur/distort 影响反射视觉需重建
+    const pbrKey = `:pbr:${state.groundPbrEnabled}:rough:${state.groundRoughness}:metal:${state.groundMetallic}:blur:${state.groundReflectionBlur}:distort:${state.groundReflectionDistort}`;
     const proceduralKey = state.groundProceduralTexture !== 'none' && !state.groundTextureEnabled
         ? `:proc:${state.groundProceduralTexture}:${state.groundProceduralSeed}:${state.groundProceduralScale}`
         : '';
@@ -669,7 +697,8 @@ export function applyGround(state: EnvState): void {
         _setAlbedoColor(mat, new Color3(1, 1, 1));
         if (mat instanceof PBRMaterial) {
             mat.bumpTexture = texs.normal;
-            mat.bumpTexture.level = state.groundNormalStrength;
+            // ADR-114 Phase 2: 法线扭曲增强 bumpTexture.level
+            mat.bumpTexture.level = _effectiveBumpLevel(state);
         }
     } else if (state.groundStyle !== 'texture') {
         // canvas 程序化图案（grid/checker/dots 等）

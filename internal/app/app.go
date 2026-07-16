@@ -452,6 +452,9 @@ type EnvState struct {
 	GroundProceduralScale    float64 `json:"groundProceduralScale"`
 	GroundRoughness          float64 `json:"groundRoughness"`
 	GroundMetallic           float64 `json:"groundMetallic"`
+	// ADR-114 Phase 2: 反射模糊 + 法线扭曲
+	GroundReflectionBlur     float64 `json:"groundReflectionBlur"`
+	GroundReflectionDistort  float64 `json:"groundReflectionDistort"`
 	GroundLevel           float64    `json:"groundLevel"`
 	GroundSize            float64    `json:"groundSize"`
 	GroundEdgeFade        float64    `json:"groundEdgeFade"`
