@@ -146,6 +146,8 @@ export function disposeRenderer(): void {
         _scene.onBeforeRenderObservable.remove(_probeRefreshObserver);
         _probeRefreshObserver = null;
     }
+    // HMR 重入时清零时间戳，避免旧值导致下一次 probe refresh 提前触发
+    _lastProbeRefresh = 0;
     if (_glowLayer) {
         _glowLayer.dispose();
         _glowLayer = null;

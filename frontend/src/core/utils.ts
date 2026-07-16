@@ -480,26 +480,17 @@ export function clearAllMenuWrappers(): void {
 }
 
 // ======== Auto-save Trigger ========
+// 注：防抖下沉到 scene-serialize.ts 的 _autoSaveDebounced（500ms）统一处理，
+// 此处只做函数指针注册，不再叠加 setTimeout，避免 1500ms + 500ms = 2000ms 双层延迟。
 
 let _triggerAutoSaveImpl: (() => void) | null = null;
-let _autoSaveTimeout: ReturnType<typeof setTimeout> | null = null;
-const AUTO_SAVE_DEBOUNCE_MS = 1500;
 
 export function setTriggerAutoSave(fn: () => void): void {
     _triggerAutoSaveImpl = fn;
 }
 
 export function triggerAutoSave(): void {
-    if (!_triggerAutoSaveImpl) {
-        return;
-    }
-    if (_autoSaveTimeout) {
-        clearTimeout(_autoSaveTimeout);
-    }
-    _autoSaveTimeout = setTimeout(() => {
-        _autoSaveTimeout = null;
-        _triggerAutoSaveImpl!();
-    }, AUTO_SAVE_DEBOUNCE_MS);
+    _triggerAutoSaveImpl?.();
 }
 
 // ======== Generic try/catch + status helper ========
