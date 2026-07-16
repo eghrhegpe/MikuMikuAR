@@ -11,6 +11,8 @@ export { _envSys } from './env-impl';
 export { registerSceneTickCallback } from './env-impl';
 // Re-export observer init for bridge module
 export { ensureEnvUpdateObserver } from './env-impl';
+// Re-export observer dispose for scene cleanup
+export { disposeEnvUpdateObserver } from './env-impl';
 
 // Time-of-Day 使用 bridge.ts 的实现（统一的 scene observer）
 import {

@@ -50,6 +50,7 @@ import {
     _envSys,
     refreshWaterRenderList,
     addRipple,
+    disposeEnvUpdateObserver,
 } from './env/env';
 import { initCameraSystem, autoFrame } from './camera/camera';
 import {
@@ -76,6 +77,7 @@ import {
     rebuildOutlineState,
     pipeline,
     bindReflectionProbeToModel,
+    disposeRenderer,
 } from './render/renderer';
 import { initLoader, setOnMeshesReady, setOnModelLoaded } from './manager/model-loader';
 
@@ -177,6 +179,10 @@ export async function initScene(): Promise<void> {
     (await import('./motion/feet-adjustment')).stopFeetAdjustment();
     (await import('../core/reactivity')).unsubscribeAll();
     (await import('./env/env-bridge')).cancelEnvPersistTimer();
+    (await import('./env/env-impl')).disposeEnvUpdateObserver();
+    (await import('./render/renderer')).disposeRenderer();
+    (await import('./env/env')).stopTimeOfDay();
+    disposeWindPhysics();
 
     // 1. MMD 运行时初始化
     RegisterMmdModelLoaders();
@@ -225,7 +231,11 @@ export async function initScene(): Promise<void> {
         const mmdWasmPhysics = new MmdWasmPhysics(scene);
         runtime = new MmdWasmRuntime(wasmInstance, scene, mmdWasmPhysics);
         initWindPhysics(runtime);
-        scene.onDisposeObservable.add(() => disposeWindPhysics());
+        scene.onDisposeObservable.add(() => {
+            disposeWindPhysics();
+            disposeEnvUpdateObserver();
+            disposeRenderer();
+        });
     }
     runtime.loggingEnabled = true;
     runtime.register(scene);
