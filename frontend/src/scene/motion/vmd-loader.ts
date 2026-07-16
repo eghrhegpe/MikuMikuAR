@@ -101,9 +101,8 @@ export async function loadVMDMotion(
         // Load VMD from buffer using VmdLoader
         const vmdLoader = new VmdLoader(scene);
         const mmdAnimation = await vmdLoader.loadFromBufferAsync(name, data);
-        // 释放解析器内部 ArrayBuffer 引用，避免大 VMD 文件内存驻留
-        // 类型由 core/types.ts 的 module augmentation 补齐
-        vmdLoader.dispose();
+        // babylon-mmd fork 的 VmdLoader 无实例状态需释放（解析结果已转移到 mmdAnimation），
+        // 不存在 dispose() API；loader 为局部引用，GC 自动回收，无需手动释放。
 
         // 检查是否在 await 期间有新的 loadVMDMotion 调用（同模型），过期则丢弃
         if (_vmdLoadGenMap.get(targetId) !== capturedGen) {

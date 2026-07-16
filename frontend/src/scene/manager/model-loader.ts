@@ -128,20 +128,20 @@ export async function captureThumbnail(
     // renderInstanceThumbnail 内部的 freeze 变为 no-op（已是全 0），
     // 由本函数 finally 统一恢复原始状态。
     let savedPhysStates: Uint8Array | null = null;
-    let physStates: Uint8Array | null = null;
+    let targetInst: ModelInstance | null = null;
     try {
         if (!_scene || !_modelManager) {
             return;
         }
 
-        const targetInst = inst ?? _modelManager.focused();
+        targetInst = inst ?? _modelManager.focused();
         if (!targetInst || !targetInst.rootMesh) {
             return;
         }
 
         // 立即冻结物理（render 前的任何异步间隙都无法推进）
         const mmdModel = targetInst.mmdModel;
-        physStates = mmdModel?.rigidBodyStates ?? null;
+        const physStates = mmdModel?.rigidBodyStates ?? null;
         if (physStates) {
             savedPhysStates = new Uint8Array(physStates);
             physStates.fill(0);
@@ -178,9 +178,14 @@ export async function captureThumbnail(
     } catch (err) {
         logWarn('model-loader', 'captureThumbnail:', err);
     } finally {
-        // 恢复物理到冻结前的状态
-        if (physStates && savedPhysStates) {
-            physStates.set(savedPhysStates);
+        // 恢复物理到冻结前的状态。
+        // 注意：physStates 是 WASM 内存视图；await 期间若新模型加载触发
+        // memory.grow()，旧视图会 detach → 必须用当前 model 重新取视图再写回。
+        if (savedPhysStates && targetInst) {
+            const fresh = targetInst.mmdModel?.rigidBodyStates ?? null;
+            if (fresh && fresh.byteLength === savedPhysStates.byteLength) {
+                fresh.set(savedPhysStates);
+            }
         }
     }
 }
