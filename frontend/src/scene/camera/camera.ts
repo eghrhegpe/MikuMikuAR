@@ -555,6 +555,7 @@ function createSurroundCamera(scene: Scene): ArcRotateCamera {
         new Vector3(0, p.height, 0),
         scene
     );
+    cam.minZ = 0.1;
     cam.lowerRadiusLimit = 2;
     cam.upperRadiusLimit = 50;
     cam.panningSensibility = 50;
@@ -575,6 +576,7 @@ function createConcertCamera(scene: Scene): ArcRotateCamera {
         new Vector3(0, p.height, 0),
         scene
     );
+    cam.minZ = 0.1;
     cam.lowerRadiusLimit = 2;
     cam.upperRadiusLimit = 50;
     cam.panningSensibility = 50;
@@ -594,6 +596,7 @@ function createOneshotCamera(scene: Scene, canvas: HTMLCanvasElement): ArcRotate
         new Vector3(0, 8, 0),
         scene
     );
+    cam.minZ = 0.1;
     cam.lowerRadiusLimit = 2;
     cam.upperRadiusLimit = 50;
     installInvertablePointers(cam);

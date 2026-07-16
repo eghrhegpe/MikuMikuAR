@@ -314,6 +314,9 @@ function createGridCard(
 
     // 缩略图或 fallback 图标
     const tKey = item.thumbKey ?? item.filePath;
+    if (import.meta.env.DEV) {
+        console.log('[thumb-debug][READ-GRID]', { tKey, itemThumbKey: item.thumbKey, itemFilePath: item.filePath });
+    }
     if (cache.has(tKey)) {
         thumb.style.backgroundImage = `url(${thumbDataUrl(cache.get(tKey)!)})`;
     } else {
