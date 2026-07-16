@@ -671,10 +671,11 @@ export function applyGround(state: EnvState): void {
         const hg = createHeightmapGround(state, scene, (gm) => {
             applyTerrainMaterial(gm, state, scene);
             applyGroundEdgeFade(gm.material as GroundMat, state.groundEdgeFade, scene);
-            buildGroundReflection(state);
             _onTerrainReady?.();
         });
         _envSys.ground.mesh = hg;
+        // [adr-114] 时序修复：mesh 赋值后再 buildGroundReflection，确保 mount 能拿到 material
+        buildGroundReflection(state);
         return;
     }
 
@@ -725,9 +726,11 @@ export function applyGround(state: EnvState): void {
     ground.rotation.x = (state.groundPitch * Math.PI) / 180;
     ground.rotation.z = (state.groundRoll * Math.PI) / 180;
 
-    // 先挂反射再设底色，避免 _setAlbedoColor 覆盖 mount 设置的黑色
-    buildGroundReflection(state);
+    // [adr-114] 时序修复：必须先赋值 mesh，再 buildGroundReflection。
+    // groundReflection.mount 依赖 _envSys.ground.mesh.material，若 mesh 为 null 则 mount 静默跳过，
+    // reflectionTexture 永远挂不上去（旧 bug：曾把 buildGroundReflection 放在赋值前）。
     _envSys.ground.mesh = ground;
+    buildGroundReflection(state);
 }
 
 // ======== Per-frame ground updates (called by observer) ========
