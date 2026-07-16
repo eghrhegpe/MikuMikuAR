@@ -512,6 +512,8 @@ export interface EnvState {
     cloudThickness: number;
     cloudVisibility: number;
     cloudGap: number;
+    cloudErosion: number;
+    cloudWeatherStrength: number;
 
     debugMirrorEnabled: boolean;
 

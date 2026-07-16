@@ -2,7 +2,7 @@
 
 ## 状态
 
-**状态**: 规划
+**状态**: 实施中（前置渲染分层已落地；Phase A 自适应步长 + 延展地平线 + 地面交界 + 距离雾 已落地；Phase B Weather Map + Erosion 已落地；Phase C 双瓣散射 + Powder + 日落着色 已落地；Phase D1 Blue-noise dither 已落地）
 
 **开始日期**: 2026-07-15
 

@@ -1133,6 +1133,37 @@ export function buildCloudLevel(): PopupLevel {
                 icon: 'lucide:columns',
             },
             {
+                id: 'env:cloud:sectionDetail',
+                kind: 'sectionTitle',
+                label: 'env.cloudDetail',
+            },
+            {
+                id: 'env:cloud:erosion',
+                kind: 'slider',
+                label: 'env.cloudErosion',
+                control: {
+                    bind: 'env.cloudErosion',
+                    min: 0,
+                    max: 1,
+                    step: 0.01,
+                    get: (v) => (v as number) ?? 0.4,
+                },
+                icon: 'lucide:wind',
+            },
+            {
+                id: 'env:cloud:weather',
+                kind: 'slider',
+                label: 'env.cloudWeatherStrength',
+                control: {
+                    bind: 'env.cloudWeatherStrength',
+                    min: 0,
+                    max: 1,
+                    step: 0.01,
+                    get: (v) => (v as number) ?? 0.6,
+                },
+                icon: 'lucide:cloud-sun',
+            },
+            {
                 id: 'env:cloud:height',
                 kind: 'slider',
                 label: 'env.height',

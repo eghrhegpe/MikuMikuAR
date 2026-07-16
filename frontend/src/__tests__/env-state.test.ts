@@ -105,6 +105,8 @@ const defaultEnv: EnvState = {
     cloudThickness: 40,
     cloudGap: 0.1,
     cloudVisibility: 2000,
+    cloudErosion: 0.4,
+    cloudWeatherStrength: 0.6,
     fogEnabled: false,
     fogColor: [0.5, 0.5, 0.6],
     fogDensity: 0.01,

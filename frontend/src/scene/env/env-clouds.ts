@@ -10,6 +10,7 @@ import {
     Engine,
     DirectionalLight,
     RawTexture3D,
+    RawTexture,
     Constants,
 } from '@babylonjs/core';
 import { EnvState } from '@/core/config';
@@ -86,6 +87,90 @@ function _ensureNoiseTexture(scene: Scene): RawTexture3D {
     _noiseTex3D.wrapR = Texture.WRAP_ADDRESSMODE;
     console.info('[VolCloud] 3D noise texture created (256³)');
     return _noiseTex3D;
+}
+
+// ======== 2D Blue-Noise Texture (64x64 R8) ========
+let _blueNoiseTex: Texture | null = null;
+
+/** Generate a 64x64 blue-noise texture using relaxed white-noise (Lloyd-style relaxation).
+ *  Fast approximation: start with white noise, then iteratively push pixels toward
+ *  local averages to flatten the frequency spectrum → blue-ish noise characteristics.
+ *  64×64 at 20 iterations is <1ms and visually sufficient for raymarch dithering. */
+function _generateBlueNoise(size: number, iterations: number): Uint8Array {
+    const n = size * size;
+    const data = new Uint8Array(n);
+
+    // Step 1: initialize with white noise
+    for (let i = 0; i < n; i++) {
+        data[i] = Math.floor(Math.random() * 256);
+    }
+
+    // Step 2: iterative relaxation — blur and remix to push spectrum toward blue
+    // Each iteration: compute 3x3 box-blurred version, then mix original + blurred
+    // with a strength that decreases over iterations. This approximates blue noise
+    // by reducing low-frequency correlation while preserving high-frequency detail.
+    const tmp = new Uint8ClampedArray(n);
+    let strength = 0.5;
+    for (let iter = 0; iter < iterations; iter++) {
+        // 3x3 box blur with wrap (toroidal boundary)
+        for (let y = 0; y < size; y++) {
+            for (let x = 0; x < size; x++) {
+                let sum = 0;
+                for (let dy = -1; dy <= 1; dy++) {
+                    const yy = (y + dy + size) % size;
+                    for (let dx = -1; dx <= 1; dx++) {
+                        const xx = (x + dx + size) % size;
+                        sum += data[yy * size + xx];
+                    }
+                }
+                const blur = sum / 9;
+                const orig = data[y * size + x];
+                // Mix: move toward blurred value (reduces low-freq, preserves high-freq)
+                tmp[y * size + x] = Math.round(orig * (1 - strength) + blur * strength);
+            }
+        }
+        // Copy back and decrease strength
+        for (let i = 0; i < n; i++) data[i] = tmp[i];
+        strength *= 0.85;
+    }
+
+    // Step 3: histogram equalization — ensure full 0-255 range (blue noise should have flat histogram)
+    const histogram = new Uint32Array(256);
+    for (let i = 0; i < n; i++) histogram[data[i]]++;
+    const cdf = new Float32Array(256);
+    let cum = 0;
+    for (let v = 0; v < 256; v++) {
+        cum += histogram[v];
+        cdf[v] = cum / n;
+    }
+    const out = new Uint8Array(n);
+    for (let i = 0; i < n; i++) {
+        out[i] = Math.floor(cdf[data[i]] * 255);
+    }
+
+    return out;
+}
+
+function _ensureBlueNoiseTexture(scene: Scene): Texture {
+    if (_blueNoiseTex) {
+        return _blueNoiseTex;
+    }
+    const size = 64;
+    const data = _generateBlueNoise(size, 20);
+    _blueNoiseTex = new RawTexture(
+        data,
+        size,
+        size,
+        Engine.TEXTUREFORMAT_R,
+        scene,
+        false,
+        false,
+        Texture.BILINEAR_SAMPLINGMODE
+    );
+    _blueNoiseTex.wrapU = Texture.WRAP_ADDRESSMODE;
+    _blueNoiseTex.wrapV = Texture.WRAP_ADDRESSMODE;
+    console.info(`[VolCloud] Blue-noise texture created (${size}x${size})`);
+    return _blueNoiseTex;
 }
 
 // ======== Wind velocity helper ========
@@ -222,7 +307,14 @@ uniform float cloudGap;
 uniform float brightness;
 uniform vec3 sceneLightDir;
 uniform vec3 sceneLightColor;
+uniform float groundLevel;
+uniform vec3 sceneFogColor;
+uniform float cloudErosion;
+uniform float cloudWeatherStrength;
+uniform vec3 sunDir;
+uniform vec3 sunColor;
 uniform sampler3D noiseTex;
+uniform sampler2D blueNoiseTex;
 out vec4 fragColor;
 
 // ===== Volumetric raymarch constants (from TS) =====
@@ -233,7 +325,8 @@ out vec4 fragColor;
 #define CLOUD_DENSITY_THRESHOLD ${SHADER_DENSITY_THRESHOLD}
 #define CLOUD_LIGHT_STEPS 2
 #define CLOUD_MAX_STEPS 200
-#define CLOUD_FIXED_STEP 8.0
+#define CLOUD_STEP_MIN 8.0
+#define CLOUD_STEP_GROWTH 0.030
 #define CLOUD_FBM_OCTAVES 3
 #define NOISE_PERIOD 256.0
 
@@ -241,6 +334,30 @@ out vec4 fragColor;
 float hash13(vec3 p) {
     float h = dot(p, vec3(127.1, 311.7, 74.7));
     return fract(sin(h) * 43758.5453);
+}
+
+// Dual-lobe Henyey-Greenstein phase function (front + back scatter)
+float henyeyGreenstein(float cosTheta, float g) {
+    return (1.0 - g*g) / (4.0 * 3.14159 * pow(1.0 + g*g - 2.0*g*cosTheta, 1.5));
+}
+float dualPhase(float cosTheta) {
+    // Forward lobe (g=0.8) + back lobe (g=-0.2) for realistic cloud scattering
+    return mix(henyeyGreenstein(cosTheta, 0.8), henyeyGreenstein(cosTheta, -0.2), 0.4);
+}
+
+// Powder effect: darkens dense regions viewed against light direction
+float powder(float od) {
+    return 1.0 - exp(-od * 2.0);
+}
+
+// Sunset tint: blend warm orange near horizon, cool blue high up
+vec3 applySunsetTint(vec3 col, vec3 lightDir) {
+    // sunHeight: 1=overhead, 0=horizon, -1=below
+    float sunHeight = lightDir.y;
+    // Warm tint strength peaks at horizon (sunHeight ~ 0)
+    float warmFactor = 1.0 - smoothstep(0.0, 0.3, abs(sunHeight));
+    vec3 warmCol = vec3(1.0, 0.55, 0.25);
+    return mix(col, col * warmCol, warmFactor * 0.6);
 }
 
 float noise3D(vec3 p) {
@@ -262,10 +379,20 @@ float getDensity(vec3 pos, float dScale, vec3 wind) {
     float hf = smoothstep(cloudBaseY, cloudBaseY + fadeZone, h) *
                (1.0 - smoothstep(cloudTopY - fadeZone, cloudTopY, h));
     vec3 p = pos + wind * time;
+
+    // Weather map: low-frequency FBM on xz plane, controls large-scale coverage
+    // Sampled at 1/50 of base frequency for broad cloud patterns
+    vec3 wp = vec3(p.xz * 0.001 * cloudScale, 0.0) + 100.0;
+    float weather = fbm(wp);
+    float coverage = mix(1.0, smoothstep(0.3, 0.7, weather), cloudWeatherStrength);
+
     float n1 = fbm(p * 0.005 * cloudScale);
     float n2 = fbm(p * 0.015 * cloudScale + 33.0);
     float n3 = fbm(p * 0.05 * cloudScale + 66.0);
-    float n = n1 * 0.65 + n2 * 0.25 + n3 * 0.08;
+    // Erosion: subtract high-frequency noise from edges for wispy, curled details
+    float base = n1 * 0.65 + n2 * 0.35;
+    float eroded = base - (1.0 - base) * n3 * cloudErosion;
+    float n = clamp(eroded, 0.0, 1.0);
     // Contrast stretch: cloudGap > 0 pushes n toward 0 and 1,
     // increasing gaps without changing spatial frequency (cloud size unchanged).
     float contrast = 1.0 + cloudGap * 3.0;
@@ -276,6 +403,7 @@ float getDensity(vec3 pos, float dScale, vec3 wind) {
     float density = smoothstep(threshold, threshold + 0.35, n);
     density = pow(density, 0.9);
     density *= hf;
+    density *= coverage;
     density = clamp(density, 0.0, 1.0);
     return density;
 }
@@ -283,57 +411,76 @@ void main(){
     vec3 ro = cameraPosition;
     vec3 rd = normalize(vWorldPos - cameraPosition);
     float maxT = cloudVisibility;
-    float dt = CLOUD_FIXED_STEP;
 
-    // Early exit: 相机在云层外且射线远离云层 → 永远碰不到云，直接跳过
-    if ((ro.y < cloudBaseY && rd.y <= 0.0) || (ro.y > cloudTopY && rd.y >= 0.0)) {
-        discard;
-        return;
-    }
-    // Early exit: 相机在云层下方但仰角太小，200 步内到不了云层
-    if (ro.y < cloudBaseY && rd.y > 0.0) {
-        float stepsNeeded = (cloudBaseY - ro.y) / (rd.y * dt);
-        if (stepsNeeded > float(CLOUD_MAX_STEPS)) {
-            discard;
-            return;
-        }
+    // ===== Analytic slab intersection (horizon-safe) =====
+    float tEnter, tExit;
+    if (abs(rd.y) < 1e-4) {
+        // Horizontal ray: only sample if camera is already within cloud layer
+        if (ro.y < cloudBaseY || ro.y > cloudTopY) { discard; return; }
+        tEnter = 0.0;
+        tExit = maxT;
+    } else {
+        float tA = (cloudBaseY - ro.y) / rd.y;
+        float tB = (cloudTopY  - ro.y) / rd.y;
+        tEnter = max(0.0, min(tA, tB));
+        tExit  = min(maxT, max(tA, tB));
+        if (tEnter >= tExit) { discard; return; }
     }
 
     float T = 1.0;
     vec3 L = vec3(0.0);
     vec3 cloudCol = vec3(0.78, 0.82, 0.92);
+    // Apply sunset tint to base cloud color and light color
+    vec3 sunDirN = normalize(sunDir);
+    cloudCol = applySunsetTint(cloudCol, sunDirN);
+    vec3 lightCol = applySunsetTint(sceneLightColor * brightness, sunDirN);
     vec3 Ldir = normalize(-sceneLightDir);
 
-    // Screen-space jitter with fixed seed (no temporal flicker).
-    float jitter = hash13(vec3(gl_FragCoord.xy, 1.0));
-    float startT = jitter * dt;
+    // Adaptive jitter with blue-noise for smoother dithering and less banding
+    // Blue noise has better spatial distribution than white noise at equal sample count.
+    float jitter = texture(blueNoiseTex, gl_FragCoord.xy / 64.0).r;
+    float firstDt = CLOUD_STEP_MIN + tEnter * CLOUD_STEP_GROWTH;
+    float t = tEnter + jitter * firstDt;
 
     for (int i = 0; i < CLOUD_MAX_STEPS; i++) {
-        float t = startT + dt * float(i);
-        if (t > maxT) break;
+        float dt = CLOUD_STEP_MIN + t * CLOUD_STEP_GROWTH;
+        t += dt;
+        if (t > tExit) break;
         vec3 p = ro + rd * t;
 
-        // 射线已穿过云层范围 → 后续不会再遇到云，提前跳出
-        if ((rd.y > 0.0 && p.y > cloudTopY) || (rd.y < 0.0 && p.y < cloudBaseY)) {
-            break;
-        }
+        // Ground clipping: stop marching after ray passes below ground
+        if (rd.y < 0.0 && p.y < groundLevel) break;
+        // Ground fade: smooth density falloff near ground (10 units above)
+        float groundFade = 1.0 - smoothstep(groundLevel, groundLevel + 10.0, p.y);
+        float groundMask = (rd.y < 0.0) ? (1.0 - groundFade) : 1.0;
 
-        float d = getDensity(p, cloudDensity, windDirection);
+        float d = getDensity(p, cloudDensity, windDirection) * groundMask;
         if (d > CLOUD_DENSITY_THRESHOLD) {
             float ct = max(dot(Ldir, rd), 0.0);
-            float g = CLOUD_PHASE_G;
-            float phase = (1.0 - g*g) / (4.0 * 3.14159 * pow(1.0 + g*g - 2.0*g*ct, 1.5));
+            // Dual-lobe phase for forward + back scatter (silver lining)
+            float phase = dualPhase(ct);
             float od = d * dt;
-            vec3 S = cloudCol * sceneLightColor * brightness * d * phase * dt * CLOUD_SCATTER_INTENSITY;
-            L += T * S;
+            // Powder effect: darken dense clouds viewed against light
+            float powderFactor = powder(od);
+            vec3 S = cloudCol * lightCol * d * phase * dt * CLOUD_SCATTER_INTENSITY;
+            L += T * S * powderFactor;
             T *= max(0.0, 1.0 - od * CLOUD_LIGHT_ATTEN);
             if (T < 0.02) break;
         }
     }
+
     vec3 ambient = cloudCol * 0.25 * (1.0 - T);
     vec3 color = L + ambient;
     float alpha = 1.0 - T;
     if (alpha < 0.008) discard;
+
+    // Distance fog: fade distant clouds toward fog/sky color for horizon blending
+    float dist = length(vWorldPos - cameraPosition);
+    float fogStart = cloudVisibility * 0.6;
+    float fogFactor = smoothstep(fogStart, cloudVisibility, dist);
+    color = mix(color, sceneFogColor, fogFactor);
+    alpha *= (1.0 - fogFactor * 0.85);
+
     fragColor = vec4(color, alpha);
 }`;
 
@@ -346,10 +493,10 @@ export function createClouds(state: EnvState): void {
         return;
     }
     const scene = getScene();
-    // 球体直径 = min(20000, camera.maxZ * 1.8)，确保顶点不被远平面裁剪
+    // 球体直径 = min(40000, camera.maxZ * 1.8)，确保地平线附近顶点不被远平面裁剪
     const cam = scene.activeCamera;
     const farZ = cam?.maxZ ?? 10000;
-    const SPHERE_DIAMETER = Math.min(20000, farZ * 1.8);
+    const SPHERE_DIAMETER = Math.min(40000, farZ * 1.8);
 
     // Compute wind velocity once
     const windVel = _computeWindVelocity(state);
@@ -364,6 +511,9 @@ export function createClouds(state: EnvState): void {
         _volCloudMat.setFloat('cloudScale', state.cloudScale);
         _volCloudMat.setFloat('cloudVisibility', state.cloudVisibility ?? 2000);
         _volCloudMat.setFloat('cloudGap', state.cloudGap ?? 0.5);
+        _volCloudMat.setFloat('cloudErosion', state.cloudErosion ?? 0.4);
+        _volCloudMat.setFloat('cloudWeatherStrength', state.cloudWeatherStrength ?? 0.6);
+        _volCloudMat.setFloat('groundLevel', state.groundLevel);
 
         // Sync debug visualization
         _createDebugVisuals(state, scene);
@@ -377,7 +527,7 @@ export function createClouds(state: EnvState): void {
 
     const mesh = MeshBuilder.CreateSphere(
         'volCloud',
-        { diameter: SPHERE_DIAMETER * 0.98, segments: 24, sideOrientation: Mesh.BACKSIDE },
+        { diameter: SPHERE_DIAMETER * 0.98, segments: 48, sideOrientation: Mesh.BACKSIDE },
         scene
     );
     // 在 group -1 最先渲染并写入深度，让 group 0 的角色/地面/水面自然覆盖它
@@ -413,11 +563,17 @@ export function createClouds(state: EnvState): void {
                 'cloudScale',
                 'cloudVisibility',
                 'cloudGap',
+                'cloudErosion',
+                'cloudWeatherStrength',
+                'sunDir',
+                'sunColor',
                 'brightness',
                 'sceneLightDir',
                 'sceneLightColor',
+                'groundLevel',
+                'sceneFogColor',
             ],
-            samplers: ['noiseTex'],
+            samplers: ['noiseTex', 'blueNoiseTex'],
         }
     );
 
@@ -426,6 +582,8 @@ export function createClouds(state: EnvState): void {
     // Bind 3D noise texture (must be after mat is created)
     const noiseTex = _ensureNoiseTexture(scene);
     mat.setTexture('noiseTex', noiseTex);
+    const blueNoise = _ensureBlueNoiseTexture(scene);
+    mat.setTexture('blueNoiseTex', blueNoise);
 
     const halfThick = (state.cloudThickness ?? 40) / 2;
     mat.setFloat('cloudDensity', state.cloudCover * CLOUD_DENSITY_SCALE);
@@ -434,10 +592,16 @@ export function createClouds(state: EnvState): void {
     mat.setFloat('cloudScale', state.cloudScale);
     mat.setFloat('cloudVisibility', state.cloudVisibility ?? 2000);
     mat.setFloat('cloudGap', state.cloudGap ?? 0.5);
+    mat.setFloat('cloudErosion', state.cloudErosion ?? 0.4);
+    mat.setFloat('cloudWeatherStrength', state.cloudWeatherStrength ?? 0.6);
+    mat.setFloat('groundLevel', state.groundLevel);
     mat.setVector3('sceneLightDir', new Vector3(-0.4, -1.0, -0.3));
     mat.setColor3('sceneLightColor', new Color3(1, 0.98, 0.92));
+    mat.setVector3('sunDir', new Vector3(-0.4, -1.0, -0.3));
+    mat.setColor3('sunColor', new Color3(1, 0.98, 0.92));
     mat.setFloat('brightness', 1.0);
     mat.setVector3('windDirection', new Vector3(windVel[0], windVel[1], windVel[2]));
+    mat.setColor3('sceneFogColor', new Color3(0.53, 0.7, 0.92));
 
     const startTime = performance.now();
     const obs = scene.onBeforeRenderObservable.add(() => {
@@ -451,14 +615,19 @@ export function createClouds(state: EnvState): void {
         if (dl instanceof DirectionalLight) {
             mat.setVector3('sceneLightDir', dl.direction);
             mat.setColor3('sceneLightColor', dl.diffuse);
+            mat.setVector3('sunDir', dl.direction);
+            mat.setColor3('sunColor', dl.diffuse);
             const lightIntensity = dl.intensity * 2.0;
             const brightness = Math.max(0.1, Math.min(1.5, lightIntensity));
             mat.setFloat('brightness', brightness);
         } else {
             mat.setVector3('sceneLightDir', new Vector3(-0.4, -1.0, -0.3));
             mat.setColor3('sceneLightColor', new Color3(1, 0.98, 0.92));
+            mat.setVector3('sunDir', new Vector3(-0.4, -1.0, -0.3));
+            mat.setColor3('sunColor', new Color3(1, 0.98, 0.92));
             mat.setFloat('brightness', 1.0);
         }
+        mat.setColor3('sceneFogColor', scene.fogEnabled ? scene.fogColor : new Color3(0.53, 0.7, 0.92));
     });
     mesh.metadata = { obs, followObs };
 
@@ -518,5 +687,9 @@ export function disposeClouds(): void {
     if (_noiseTex3D) {
         _noiseTex3D.dispose();
         _noiseTex3D = null;
+    }
+    if (_blueNoiseTex) {
+        _blueNoiseTex.dispose();
+        _blueNoiseTex = null;
     }
 }
