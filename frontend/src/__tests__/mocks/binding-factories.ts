@@ -8,7 +8,6 @@ import type {
     CacheStats,
     Config,
     EnvPresetEntry,
-    EnvState,
     ExtractResult,
     ModelEntry,
     ModelMeta,
@@ -18,6 +17,7 @@ import type {
     SoftwareEntry,
     UIState,
 } from '../../../bindings/mikumikuar/internal/app/models';
+import type { EnvState } from '../../core/types';
 
 export function createMockBuildInfo(overrides?: Partial<BuildInfo>): BuildInfo {
     return {
@@ -100,7 +100,7 @@ export function createMockEnvPresetEntry(overrides?: Partial<EnvPresetEntry>): E
 
 export function createMockEnvState(overrides?: Partial<EnvState>): EnvState {
     return {
-        skyMode: 'gradient',
+        skyMode: 'color',
         skyColorTop: [0, 0, 1],
         skyColorMid: [0, 0.5, 1],
         skyColorBot: [0.8, 0.9, 1],
@@ -109,6 +109,7 @@ export function createMockEnvState(overrides?: Partial<EnvState>): EnvState {
         skyRotationSpeed: 0,
         skyBrightness: 1,
         starsEnabled: false,
+        starsTexture: '',
         envIntensity: 1,
         groundVisible: true,
         groundType: 'flat',
@@ -169,6 +170,7 @@ export function createMockEnvState(overrides?: Partial<EnvState>): EnvState {
         waterWaveHeight: 0.02,
         waterSize: 100,
         waterAnimSpeed: 1,
+        planarReflectBlend: 0,
         reflectionQuality: 'off',
         foamThreshold: 0.2,
         foamIntensity: 0.4,
@@ -200,6 +202,7 @@ export function createMockEnvState(overrides?: Partial<EnvState>): EnvState {
         cloudThickness: 15,
         cloudVisibility: 3000,
         cloudGap: 0.5,
+        debugMirrorEnabled: false,
         debugClouds: false,
         fogEnabled: false,
         fogMode: 'linear',

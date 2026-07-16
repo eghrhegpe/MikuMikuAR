@@ -164,6 +164,29 @@ export function clearBoneOverride(boneName: string, modelId?: string): void {
     _getOverrideMap(mid).delete(boneName);
 }
 
+/** [doc:adr-116] 读取单条骨骼的覆盖条目（用于 UI 回填）。不存在返回 undefined。 */
+export function getOverride(boneName: string, modelId?: string): BoneOverrideEntry | undefined {
+    const mid = _resolveModelId(modelId);
+    if (!mid) {
+        return undefined;
+    }
+    const slot = _overrideMaps.get(mid)?.get(boneName);
+    if (!slot) {
+        return undefined;
+    }
+    const euler = slot.quat.toEulerAngles();
+    return {
+        boneName,
+        euler: [
+            (euler.x * 180) / Math.PI,
+            (euler.y * 180) / Math.PI,
+            (euler.z * 180) / Math.PI,
+        ],
+        weight: slot.weight,
+        enabled: slot.enabled,
+    };
+}
+
 /** 清除所有骨骼覆盖。 */
 export function clearAllOverrides(modelId?: string): void {
     const mid = _resolveModelId(modelId);

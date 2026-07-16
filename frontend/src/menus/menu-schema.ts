@@ -5,7 +5,7 @@
 import { envState } from '@/core/config';
 import { setEnvState, getRenderState, setRenderState } from '@/scene/scene';
 import { getLightState, setLightState } from '@/scene/render/lighting';
-import { uiState, setUIState } from '@/core/state';
+import { uiState, setUIState, focusedModelId, modelRegistry } from '@/core/state';
 import { getPerceptionState, setPerceptionState } from '@/scene/motion/perception';
 
 // 状态路径：类型化字符串，由解析器按前缀映射到 reactive state 对象
@@ -14,7 +14,8 @@ export type StatePath =
     | `render.${string}`
     | `light.${string}`
     | `ui.${string}`
-    | `perception.${string}`;
+    | `perception.${string}`
+    | `motionModule.${string}`;
 
 export type MenuKind =
     | 'folder'
@@ -79,6 +80,18 @@ export function getStateValue(path: StatePath): unknown {
             return (uiState as unknown as Record<string, unknown>)[key];
         case 'perception':
             return (getPerceptionState() as unknown as Record<string, unknown>)[key];
+        case 'motionModule': {
+            // 格式: motionModule.${moduleId}.${paramKey}
+            const dotIdx = key.indexOf('.');
+            if (dotIdx === -1) return undefined;
+            const moduleId = key.substring(0, dotIdx);
+            const paramKey = key.substring(dotIdx + 1);
+            const mid = focusedModelId;
+            if (!mid) return undefined;
+            const inst = modelRegistry.get(mid);
+            const modState = inst?.motionOverrideModules?.find((m) => m.id === moduleId);
+            return modState?.params[paramKey];
+        }
         default:
             return undefined;
     }
@@ -103,6 +116,27 @@ export function setStateValue(path: StatePath, value: unknown): void {
         case 'perception':
             setPerceptionState({ [key]: value });
             break;
+        case 'motionModule': {
+            // 格式: motionModule.${moduleId}.${paramKey}
+            const dotIdx = key.indexOf('.');
+            if (dotIdx === -1) return;
+            const moduleId = key.substring(0, dotIdx);
+            const paramKey = key.substring(dotIdx + 1);
+            const mid = focusedModelId;
+            if (!mid) return;
+            const inst = modelRegistry.get(mid);
+            if (!inst) return;
+            if (!inst.motionOverrideModules) {
+                inst.motionOverrideModules = [];
+            }
+            let modState = inst.motionOverrideModules.find((m) => m.id === moduleId);
+            if (!modState) {
+                modState = { id: moduleId, enabled: false, params: {} };
+                inst.motionOverrideModules.push(modState);
+            }
+            modState.params[paramKey] = value as number | boolean;
+            break;
+        }
     }
 }
 

@@ -22,7 +22,7 @@ import { GetConfig, Events, CheckForUpdate } from './wails-bindings';
 import { isAndroidPlatform } from './platform';
 import { generateTextColors } from '../menus/settings';
 import { SETTINGS_FONT_RESTORE } from '../menus/settings-shared';
-import { initScene, tryRestoreLastScene, setEnvState, applyEnvState, setSuppressAutoSave } from '../scene/scene';
+import { initScene, tryRestoreLastScene, setEnvState, applyEnvState, setSuppressAutoSave, cancelEnvPersistTimer } from '../scene/scene';
 import { initRuntimeBadge } from './runtime-mode';
 import { applyHudVisibility, disposeStatusBar } from './status-bar';
 import { hexToRgb, rgbToString } from './color-helpers';
@@ -229,6 +229,11 @@ async function restoreEnvState(): Promise<void> {
         // 4. 抑制 auto-save，防止恢复过程中触发级联保存
         setSuppressAutoSave(true);
         setEnvState(loaded, true);
+        // 丢弃恢复阶段触发的 env 防抖写入（setEnvState 的 skipAutoSave 只跳过
+        // triggerAutoSave，不跳过 _envPersistTimer）。若不取消，500ms 后会把
+        // 刚恢复的值写回 config.json，在 LoadLastScene 延迟超过 500ms 的极端
+        // 时序下会写入默认值，污染下次启动的恢复源。见 buglog 2026-07-16 教训3。
+        cancelEnvPersistTimer();
         setSuppressAutoSave(false);
         console.info('[env-restore] 环境状态恢复完成');
     } else {

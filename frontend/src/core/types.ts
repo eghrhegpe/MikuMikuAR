@@ -24,6 +24,18 @@ export type BoneOverrideEntry = {
     enabled: boolean;
 };
 
+// ======== Motion Override Module Types (ADR-116) ========
+
+/** [doc:adr-116] 动作覆盖模块语义参数值 */
+export type ParamValue = number | boolean;
+
+/** [doc:adr-116] 模块语义状态（per-model，序列化用） */
+export type MotionModuleState = {
+    id: string;
+    enabled: boolean;
+    params: Record<string, ParamValue>;
+};
+
 // ======== Feet Adjustment (ADR-085) Types ========
 
 /** [doc:adr-085] 脚部地面跟随（按模型）状态 */
@@ -135,6 +147,8 @@ export type ModelInstance = {
     _origMaterialVisibility?: Map<number, boolean>;
     /** [doc:adr-061] Motion Override — 逐骨骼覆盖条目 */
     boneOverrides: BoneOverrideEntry[];
+    /** [doc:adr-116] 动作覆盖模块语义状态（per-model） */
+    motionOverrideModules?: MotionModuleState[];
     /** [doc:adr-085] 脚部地面跟随状态（按模型） */
     feet: FeetState;
     /** [doc:adr-049] 球面坐标轨道控制：坐标模式，默认 'cartesian' */
