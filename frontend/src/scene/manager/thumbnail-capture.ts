@@ -125,11 +125,15 @@ export async function renderInstanceThumbnail(
         focusWidth = extent.x * 0.55;
     }
 
-    const fov = scene.activeCamera ? scene.activeCamera.fov : 0.6;
-    // 舞台使用固定距离近景（以身入局），非舞台沿用包围盒推算的全身/半身距离
+    // 缩略图相机 FOV 独立常量（0.8 = 中等广角，与主相机默认值一致但解耦）。
+    // 不读 activeCamera.fov：避免「调 0.8 无效 → AI 跨界改主相机」死循环，
+    // 也避免用户调主相机 FOV 时缩略图意外畸变。缩略图应稳定可预测。
+    const THUMB_FOV = 0.8;
+    // 距离系数 0.75 与主相机 autoFrame（extent * 0.75 + 2）同源，行为可预测。
+    // 舞台用固定近景（以身入局），非舞台沿用半身包围盒推算。
     const dist = inst.kind === 'stage'
         ? 20
-        : Math.max(focusHeight, focusWidth / THUMB_ASPECT) * 0.88 / (2 * Math.tan(fov / 2));
+        : Math.max(focusHeight, focusWidth / THUMB_ASPECT) * 0.75 / (2 * Math.tan(THUMB_FOV / 2));
 
     // 相机朝向：复用主相机方向，或默认 -Z（MMD 正面）
     let dirX = 0, dirY = 0, dirZ = -1;
@@ -141,7 +145,7 @@ export async function renderInstanceThumbnail(
     const thumbCam = new FreeCamera('thumbCam', Vector3.Zero(), scene);
     thumbCam.minZ = 0.1;
     thumbCam.maxZ = 5000;
-    thumbCam.fov = fov;
+    thumbCam.fov = THUMB_FOV;
     // 沿朝向反方向放置相机（dir 是相机看向目标的方向，相机在 target - dir*dist）
     thumbCam.position.set(
         centerX - dirX * dist,

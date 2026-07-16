@@ -1164,6 +1164,9 @@ export interface CameraState {
     positionX?: number;
     positionY?: number;
     positionZ?: number;
+    /** 保存时的聚焦模型中心 Y。用于 setCameraState 正确反算 targetHeight，
+     *  防止因模型加载顺序导致 _focusCenterY 与实际聚焦模型不匹配。 */
+    focusCenterY?: number;
 }
 
 export function getCameraState(): CameraState {
@@ -1191,6 +1194,8 @@ export function getCameraState(): CameraState {
         positionX: cam ? cam.position.x : 0,
         positionY: cam ? cam.position.y : 0,
         positionZ: cam ? cam.position.z : 0,
+        // 记录当前聚焦模型中心 Y，供 setCameraState 正确反算 targetHeight
+        focusCenterY: _focusCenterY,
     };
 }
 
@@ -1299,10 +1304,12 @@ export function setCameraState(s: CameraState): void {
         }
         cam.setTarget(new Vector3(s.targetX, s.targetY, s.targetZ));
     }
-    // 反算用户偏移偏好：恢复的绝对 targetY - 聚焦中心（focus 已在 switchCameraMode 内更新 _focusCenterY）。
-    // 使存档恢复后滑块仍反映「相对当前模型的偏移」，换模型时自动保持相对位置。
+    // 反算用户偏移偏好：优先使用存档中的 focusCenterY（保存时的聚焦模型中心 Y），
+    // 避免因模型加载顺序导致当前 _focusCenterY 与实际聚焦模型不匹配。
+    // 旧存档缺 focusCenterY 时回退到当前 _focusCenterY（可能不准确）。
     if (cam instanceof ArcRotateCamera) {
-        _currentPreset.orbit.targetHeight = (s.targetY ?? 8) - _focusCenterY;
+        const refCenterY = s.focusCenterY ?? _focusCenterY;
+        _currentPreset.orbit.targetHeight = (s.targetY ?? 8) - refCenterY;
     }
     // ADR-100 P3：订阅 beat（beatcut 行为需要）；restoreAutoCameraState 内部幂等，重复调用安全。
     if (_autoCameraEnabled) {

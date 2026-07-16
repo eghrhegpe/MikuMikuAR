@@ -20,7 +20,7 @@ import {
 } from './resource-detail-helpers';
 import { buildMatRootLevel } from './model-material';
 import { createIconifyIcon, softwareKindIcon } from '../core/icons';
-import { slideRow, addFieldRow, addDangerRow } from '../core/ui-helpers';
+import { slideRow, addFieldRow } from '../core/ui-helpers';
 import { buildOutfitLevel } from './outfit-ui';
 import { savePresetToLibDialog, buildPresetListLevel } from './model-preset';
 import {
@@ -36,7 +36,6 @@ import { tryCatchStatus, logWarn } from '../core/utils';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
-import { showConfirm } from '../core/dialog';
 
 // ======== Open With (software tools submenu) ========
 
@@ -253,16 +252,15 @@ export function buildModelToolsLevel(id: string): PopupLevel {
                 slideRow(c, 'lucide:external-link', t('model-detail.openWith'), true, () => {
                     stackRegistry.modelStack?.push(buildOpenWithLevel(id));
                 });
-                slideRow(c, 'lucide:rotate-ccw', t('settings.transformReset'), false, () => {
+                slideRow(c, 'lucide:rotate-ccw', t('settings.transformReset', { kind: t('common.model') }), false, () => {
                     resetModelTransform(id);
                     setStatus(
                         t('settings.transformReset', { kind: t('common.model') }),
                         true
                     );
                 });
-                addDangerRow(c, 'lucide:trash-2', t('model-detail.unloadModel'), async () => {
-                    const ok = await showConfirm(t('model-detail.unloadConfirm', { name: inst.name }));
-                    if (!ok) return;
+                // 卸载不丢数据——模型可随时从库重新加载，无需二次确认
+                slideRow(c, 'lucide:trash-2', t('model-detail.unloadModel'), false, () => {
                     removeModel(id);
                     setStatus(t('settings.unloaded', { name: inst.name }), true);
                     if (stackRegistry.modelStack) {
