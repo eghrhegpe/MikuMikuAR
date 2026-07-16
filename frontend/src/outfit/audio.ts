@@ -78,7 +78,14 @@ function _ensureFadeGain(): void {
 
 /** 读取当前重复模式（持久化在 uiState）。 */
 function getRepeatMode(): 'none' | 'one' | 'all' | 'shuffle' {
-    return uiState.audioRepeatMode ?? 'none';
+    const mode = uiState.audioRepeatMode;
+    if (mode === 'none' || mode === 'one' || mode === 'all' || mode === 'shuffle') {
+        return mode;
+    }
+    if (mode !== undefined) {
+        logWarn('audio', 'getRepeatMode: unexpected value', mode);
+    }
+    return 'none';
 }
 
 /** 下一曲索引（按 repeatMode 计算）。 */
@@ -321,7 +328,77 @@ export function getRepeatModeStr(): 'none' | 'one' | 'all' | 'shuffle' {
     return getRepeatMode();
 }
 
-// ======== 状态查询 ========
+/** 从 StreamAudioPlayer 内部取出 HTMLAudioElement，供 BeatDetector 附着。 */
+function _tryAttachBeatDetector(player: StreamAudioPlayer): void {
+    if (beatDetectorAttached || !beatDetector) {
+        return;
+    }
+    const el = (player as unknown as { _audio?: HTMLAudioElement })._audio;
+    if (el) {
+        beatDetectorAttached = beatDetector.attach(el);
+    }
+}
+
+// ======== 播放控制 ========
+
+export function getAudioPath(): string {
+    return audioPath;
+}
+
+export function pauseAudio(): void {
+    streamPlayer?.pause();
+}
+
+export function resumeAudio(): void {
+    if (!streamPlayer) {
+        return;
+    }
+    streamPlayer.play().catch((err) => logWarn('audio', 'resumeAudio', err));
+}
+
+export function stopAudio(): void {
+    if (!streamPlayer) {
+        return;
+    }
+    streamPlayer.pause();
+    streamPlayer.currentTime = 0;
+}
+
+export function clearAudio(): void {
+    if (!streamPlayer) {
+        return;
+    }
+    streamPlayer.pause();
+    streamPlayer.source = '';
+    audioName = '';
+    audioPath = '';
+    triggerAutoSave();
+}
+
+export function disposeAudio(): void {
+    if (streamPlayer) {
+        streamPlayer.pause();
+        streamPlayer.source = '';
+        streamPlayer.dispose();
+        streamPlayer = null;
+    }
+    audioName = '';
+    audioPath = '';
+    _playlist = [];
+    _playlistIndex = -1;
+    if (_fadeGain) {
+        try { _fadeGain.disconnect(); } catch { /* noop */ }
+        _fadeGain = null;
+    }
+
+    if (beatDetector) {
+        beatDetector.dispose();
+        beatDetector = null;
+        beatDetectorAttached = false;
+    }
+}
+
+// ======== 音量 / 偏移 ========
 
 export function setVolume(v: number): void {
     const val = clamp01(v);

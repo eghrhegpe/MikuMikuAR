@@ -39,9 +39,8 @@ import {
     createResourcePanel,
     openFullscreen,
     closeFullscreen,
-    setCurrentState,
 } from '../core/ui-helpers';
-import type { ResourceItem, SlideRowExtra } from '../core/ui-helpers';
+import type { ResourceItem, SlideRowExtra, ResourcePanelHandle } from '../core/ui-helpers';
 import { isUnderRoot, isStageLike } from '../core/utils';
 import { t } from '../core/i18n/t';
 import { getLang } from '../core/i18n/locale';
@@ -311,21 +310,12 @@ function addListViewToolbar(
     expandBtn.title = t('library.expandPanel');
     expandBtn.style.marginLeft = 'auto';
     expandBtn.addEventListener('click', () => {
-        const currentTitle = items[0]?.label || '资源库';
-        openFullscreen({
-            title: currentTitle, onBack: () => setCurrentState('EMBEDDED_GRID'),
-            renderContent: (container, navigate) => {
-                createResourcePanel(container, {
-                    items: allResourceItems, thumbnailCache,
-                    onSelect: (item) => { if (item.data) { closeFullscreen(); onModelRowClick(item.data as LibraryModel); } },
-                    onEnterFolder: (path) => {
-                        const folderLabel = allResourceItems.find((i) => i.id === path)?.label || getBaseName(path) || path;
-                        navigate(folderLabel, (c) => { renderFullscreenFolder(c, path, filter, navigate); });
-                    },
-                    layout: 'grid',
-                });
-            },
-        });
+        openResourceFullscreen(
+            items[0]?.label || '资源库',
+            allResourceItems,
+            filter,
+            (m) => onModelRowClick(m)
+        );
     });
     toolbar.appendChild(expandBtn);
     card.appendChild(toolbar);
@@ -397,41 +387,44 @@ function renderItemsWithRAF(
     renderBatch();
 }
 
-function renderFullscreenFolder(
-    container: HTMLElement, path: string,
+// [修复] 全屏资源浏览器统一导航：无论 list / grid 内嵌模式，
+// 全屏一律以「grid 面板 + overlay 自有 navigate 栈」渲染，文件夹进入走 overlay.navigate（重渲染当前面板），
+// 不再触碰被冻结的 SlideMenu 栈，退出后位置不丢失。
+// 每个层级的面板在创建前先 dispose 上一层，避免观察器 / _activePanels 泄漏。
+function openResourceFullscreen(
+    title: string,
+    rootItems: ResourceItem[],
     filter: ((m: LibraryModel) => boolean) | undefined,
-    navigate: (title: string, render: (c: HTMLElement) => void) => void
+    onSelectModel: (m: LibraryModel) => void
 ): void {
-    container.classList.remove('render-card');
-    const items = buildResourceItemsForDir(path, filter);
-    const searchInput = document.createElement('input');
-    searchInput.type = 'text';
-    searchInput.className = 'plaza-preset-input';
-    searchInput.placeholder = t('library.filterPlaceholder');
-    searchInput.style.margin = '0 0 8px';
-    container.appendChild(searchInput);
-    const listContainer = document.createElement('div');
-    container.appendChild(listContainer);
-    function renderFiltered(query: string): void {
-        listContainer.innerHTML = '';
-        const filtered = query ? items.filter((i) => i.label.toLowerCase().includes(query.toLowerCase())) : items;
-        const card = document.createElement('div');
-        card.className = 'lcard';
-        for (const item of filtered) {
-            if (item.isFolder) {
-                slideRow(card, 'folder', item.label, true, () => {
-                    navigate(item.label, (c) => renderFullscreenFolder(c, item.filePath, filter, navigate));
-                });
-            } else {
-                slideRow(card, item.icon, item.label, false, () => {
-                    if (item.data) onModelRowClick(item.data as LibraryModel);
-                });
-            }
-        }
-        listContainer.appendChild(card);
-    }
-    searchInput.addEventListener('input', () => renderFiltered(searchInput.value));
-    renderFiltered('');
+    let currentPanel: ResourcePanelHandle | null = null;
+    const renderPanelAt = (
+        path: string | null,
+        container: HTMLElement,
+        navigate: (t: string, r: (c: HTMLElement) => void) => void
+    ): void => {
+        const itemsForPath = path === null ? rootItems : buildResourceItemsForDir(path, filter);
+        currentPanel?.dispose();
+        currentPanel = createResourcePanel(container, {
+            items: itemsForPath,
+            thumbnailCache,
+            onSelect: (item) => {
+                const m = item.data as LibraryModel | undefined;
+                if (!m) return;
+                closeFullscreen();
+                onSelectModel(m);
+            },
+            onEnterFolder: (p) => {
+                navigate(getBaseName(p) || p, (c) => renderPanelAt(p, c, navigate));
+            },
+            layout: 'grid',
+        });
+    };
+    openFullscreen({
+        title,
+        onBack: () => { currentPanel?.dispose(); currentPanel = null; },
+        renderContent: (container, navigate) => renderPanelAt(null, container, navigate),
+    });
 }
 
 // ======== Grid 模式渲染 ========
@@ -440,7 +433,6 @@ function renderGridMode(
     container: HTMLElement, dir: string, items: PopupRow[],
     filter?: (m: LibraryModel) => boolean, targetStack?: SlideMenu
 ): void {
-    setCurrentState('EMBEDDED_GRID');
     const allResourceItems = buildResourceItemsForDir(dir, filter);
     const thumbKeys2 = allResourceItems.filter((item) => !item.isFolder && item.thumbKey).map((item) => item.thumbKey!);
     if (thumbKeys2.length > 0) {
@@ -462,30 +454,12 @@ function renderGridMode(
         expandBtn.title = t('library.expandPanel');
         expandBtn.style.marginLeft = 'auto';
         expandBtn.addEventListener('click', () => {
-            const currentTitle = items[0]?.label || '资源库';
-            openFullscreen({
-                title: currentTitle, onBack: () => setCurrentState('EMBEDDED_GRID'),
-                renderContent: (container, navigate) => {
-                    createResourcePanel(container, {
-                        items: allResourceItems, thumbnailCache,
-                        onSelect: (item) => {
-                            const m = item.data as LibraryModel | undefined;
-                            if (!m) return;
-                            closeFullscreen();
-                            if (m.format === 'vmd') replaceMotion(m);
-                            else replaceModel(m);
-                        },
-                        onEnterFolder: (path) => {
-                            const stack = targetStack || stackRegistry.modelStack;
-                            if (stack) {
-                                const folderLabel = allResourceItems.find((fi) => fi.id === path)?.label || getBaseName(path) || path;
-                                stack.push(buildLevel(path, folderLabel, filter, targetStack));
-                            }
-                        },
-                        layout: 'grid',
-                    });
-                },
-            });
+            openResourceFullscreen(
+                items[0]?.label || '资源库',
+                allResourceItems,
+                filter,
+                (m) => { if (m.format === 'vmd') replaceMotion(m); else replaceModel(m); }
+            );
         });
         toolbar.appendChild(expandBtn);
         card.appendChild(toolbar);

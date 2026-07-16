@@ -326,6 +326,14 @@ export const envState: EnvState = reactive<EnvState>({
     groundElevationColoring: false,
     groundFollowCamera: false,
 
+    // ADR-114: PBR 材质 + 程序化纹理
+    groundPbrEnabled: false,
+    groundProceduralTexture: 'none',
+    groundProceduralSeed: 42,
+    groundProceduralScale: 1.0,
+    groundRoughness: 0.6,
+    groundMetallic: 0.0,
+
     windEnabled: true,
     windDirection: [0, 0, 1],
     windSpeed: 5,

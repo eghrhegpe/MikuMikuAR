@@ -418,6 +418,14 @@ export interface EnvState {
     groundElevationColoring: boolean; // 高度图按高程着色开关，默认 false
     groundFollowCamera: boolean; // 网格模式跟随相机，默认 false
 
+    // ADR-114: PBR 材质 + 程序化纹理
+    groundPbrEnabled: boolean; // PBR 材质开关，默认 false（回退 StandardMaterial）
+    groundProceduralTexture: 'none' | 'wood' | 'marble' | 'concrete'; // 程序化纹理类型，默认 'none'
+    groundProceduralSeed: number; // 程序化纹理随机种子，默认 42
+    groundProceduralScale: number; // 程序化纹理平铺缩放，默认 1.0
+    groundRoughness: number; // 基础粗糙度（PBR 生效时），默认 0.6
+    groundMetallic: number; // 金属度（PBR 生效时），默认 0.0
+
     windEnabled: boolean;
     windDirection: [number, number, number];
     windSpeed: number;

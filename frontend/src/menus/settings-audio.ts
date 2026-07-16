@@ -5,7 +5,7 @@
 import { setStatus, cardContainer } from '../core/config';
 import { t } from '../core/i18n/t';
 import { addSectionTitle } from '../core/ui-helpers';
-import { setVolume, setAudioOffset } from '../outfit/audio';
+import { setVolume, setAudioOffset, setRepeatMode, getRepeatModeStr } from '../outfit/audio';
 import {
     setSfxEnabled,
     setSfxVolume,
@@ -112,6 +112,43 @@ function buildAudioCoreSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
                     refresh();
                     setStatus(v ? t('settings.companionOn') : t('settings.companionOff'), true);
                 },
+            },
+        },
+        {
+            id: 'audio:repeatMode',
+            kind: 'custom',
+            renderCustom: (c) => {
+                const row = document.createElement('div');
+                row.className = 'slide-item';
+                row.innerHTML = `
+                    <span class="slide-icon"><span class="iconify" data-icon="lucide:repeat"></span></span>
+                    <span class="slide-label">${t('settings.audio.repeatMode')}</span>
+                    <span class="slide-value" style="margin-left:auto;margin-right:8px;font-size:0.85em;opacity:0.8"></span>
+                `;
+                const valueSpan = row.querySelector('.slide-value') as HTMLSpanElement;
+                const modeLabels: Record<string, string> = {
+                    none: t('settings.audio.repeatNone'),
+                    one: t('settings.audio.repeatOne'),
+                    all: t('settings.audio.repeatAll'),
+                    shuffle: t('settings.audio.repeatShuffle'),
+                };
+                const modes = ['none', 'one', 'all', 'shuffle'] as const;
+                const updateLabel = () => {
+                    const m = getRepeatModeStr();
+                    valueSpan.textContent = modeLabels[m] ?? m;
+                };
+                updateLabel();
+                row.addEventListener('click', () => {
+                    const cur = getRepeatModeStr();
+                    const idx = modes.indexOf(cur);
+                    const next = modes[(idx + 1) % modes.length];
+                    setRepeatMode(next);
+                    updateLabel();
+                    setStatus(`✓ ${modeLabels[next]}`, true);
+                    refresh();
+                });
+                row.style.cursor = 'pointer';
+                c.appendChild(row);
             },
         },
     ];
