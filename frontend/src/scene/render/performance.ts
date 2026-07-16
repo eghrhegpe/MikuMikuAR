@@ -276,19 +276,31 @@ function applyDegrade(level: DegradeLevel, force = false): void {
 
 // ======== Thresholds with Hysteresis ========
 
-// 降级阈值（帧率低于此值则降级）
+// 刷新率感知：将阈值按 refRate/60 缩放，使高刷设备获得正确校准。
+// 60Hz 下 RSCALE=1，行为与历史完全一致（零回归）。
+function detectRefreshRate(): number {
+    const r = (window.screen as unknown as { refreshRate?: number }).refreshRate;
+    return typeof r === 'number' && r > 0 ? r : 60;
+}
+function clampRate(v: number, lo: number, hi: number): number {
+    return Math.min(hi, Math.max(lo, v));
+}
+const REF_RATE = clampRate(detectRefreshRate(), 30, 240);
+const RSCALE = REF_RATE / 60;
+
+// 降级阈值（帧率低于此值则降级），按刷新率缩放
 const DEGRADE_THRESHOLDS: Record<DegradeLevel, number> = {
     0: Infinity, // 不降级
-    1: 28, // FPS < 28 → level 1（原 25，收紧提前干预）
-    2: 20, // FPS < 20 → level 2（原 18，收紧）
-    3: 14, // FPS < 14 → level 3（原 12，收紧）
+    1: 28 * RSCALE, // 60Hz→28；120Hz→56（原 25/28，收紧提前干预）
+    2: 20 * RSCALE, // 60Hz→20；120Hz→40
+    3: 14 * RSCALE, // 60Hz→14；120Hz→28
 };
-// 恢复阈值（帧率高于此值才允许恢复）
+// 恢复阈值（帧率高于此值才允许恢复），按刷新率缩放
 const RECOVERY_THRESHOLDS: Record<DegradeLevel, number> = {
     0: Infinity,
-    1: 32, // FPS > 32 才从 level 1 恢复（gap 4，原 7）
-    2: 24, // FPS > 24 才从 level 2 恢复（gap 4，原 8）
-    3: 18, // FPS > 18 才从 level 3 恢复（gap 4，原 8）
+    1: 32 * RSCALE, // 60Hz→32；120Hz→64（gap 4，原 7）
+    2: 24 * RSCALE, // 60Hz→24；120Hz→48
+    3: 18 * RSCALE, // 60Hz→18；120Hz→36
 };
 
 // ======== Public API ========
