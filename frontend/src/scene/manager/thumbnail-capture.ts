@@ -141,7 +141,19 @@ export async function renderInstanceThumbnail(
     }
     rt.renderList = renderList;
 
+    // 渲染前临时冻结物理：WASM Bullet 物理在 onBeforeRenderObservable 中推进，
+    // 若在物理已更新帧截取缩略图，刚体位置变化导致骨骼跟随 → 裙子/头发等物理刚体
+    // 处于「飞行中」姿态（ADR-XXX 缩略图物理干扰）。
+    // 做法与 model-manager.ts:setPhysics 相同：保存 → 填 0（禁用）→ 渲染 → 恢复。
+    const mmdModel = inst.mmdModel;
+    const states = mmdModel?.rigidBodyStates;
+    const savedStates = states ? new Uint8Array(states) : null;
+
     try {
+        if (states) {
+            states.fill(0);
+        }
+
         rt.render();
 
         // readPixels 读取的是「当前绑定的 framebuffer」。
@@ -188,6 +200,10 @@ export async function renderInstanceThumbnail(
             engine.unBindFramebuffer(rt.renderTarget!);
         }
     } finally {
+        // 恢复物理状态
+        if (states && savedStates) {
+            states.set(savedStates);
+        }
         rt.dispose();
         thumbCam.dispose();
     }
