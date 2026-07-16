@@ -17,51 +17,6 @@ import { thumbnailCache, setThumbnailCache, type ModelInstance } from '@/core/co
 import { uiState } from '@/core/state';
 import { logWarn } from '@/core/utils';
 
-/**
- * 计算舞台模型的地面级包围盒，排除天空盒/穹顶等远高于舞台的网格。
- *
- * 策略：收集所有可见子网格的包围盒，取 max.y 的中位数作为舞台高度参考，
- * 排除 max.y 超过 舞台参考 × 3 的网格（天空盒 max.y 通常 > 舞台高度 × 3）。
- * 用 max.y 而非 min.y 判断：穹顶型天空盒底部贴地（min.y≈0），但顶部远高于舞台。
- * 退化：若无满足条件的网格，兜底到最低的网格或全层级包围盒。
- */
-function computeStageGroundBoundingBox(root: Mesh): { min: Vector3; max: Vector3 } {
-    const meshes = root.getChildMeshes(true) as Mesh[];
-    const entries: { maxY: number; bb: { min: Vector3; max: Vector3 } }[] = [];
-    for (const m of meshes) {
-        if (!m.isVisible) continue;
-        const bb = m.getHierarchyBoundingVectors(true);
-        if (!bb) continue;
-        entries.push({ maxY: bb.max.y, bb });
-    }
-    // 退化：无可见子网格 → 返回全层级包围盒
-    if (entries.length === 0) {
-        return root.getHierarchyBoundingVectors(true);
-    }
-    // 按 max.y 排序，取中位数作为舞台高度参考
-    entries.sort((a, b) => a.maxY - b.maxY);
-    const stageRef = entries[Math.floor(entries.length * 0.5)].maxY;
-    // 排除 max.y 远高于舞台参考的网格（天空盒等）
-    const stageEntries = entries.filter(e => e.maxY <= stageRef * 3);
-    // 退化：全被排除 → 至少保留最低的网格
-    if (stageEntries.length === 0) {
-        return entries[0].bb;
-    }
-    // 合并保留网格的包围盒
-    let minX = Infinity, maxX = -Infinity;
-    let minY = Infinity, maxY = -Infinity;
-    let minZ = Infinity, maxZ = -Infinity;
-    for (const { bb } of stageEntries) {
-        if (bb.min.x < minX) minX = bb.min.x;
-        if (bb.max.x > maxX) maxX = bb.max.x;
-        if (bb.min.y < minY) minY = bb.min.y;
-        if (bb.max.y > maxY) maxY = bb.max.y;
-        if (bb.min.z < minZ) minZ = bb.min.z;
-        if (bb.max.z > maxZ) maxZ = bb.max.z;
-    }
-    return { min: new Vector3(minX, minY, minZ), max: new Vector3(maxX, maxY, maxZ) };
-}
-
 /** base64 缩略图数据的 MIME 嗅探：PNG/JPEG/WebP 头部字节不同 */
 export function thumbDataUrl(base64: string): string {
     if (base64.startsWith('iVBOR')) return `data:image/png;base64,${base64}`;
@@ -97,59 +52,57 @@ export async function renderInstanceThumbnail(
     const rt = new RenderTargetTexture('thumbRT', { width: rtW, height: rtH }, scene, false);
     rt.clearColor = new Color4(0, 0, 0, 0);
 
-    // 始终创建独立缩略图相机，不复用主相机（主相机为全身远景，缩略图需拉近聚焦上半身）。
-    // 方向：有主相机则复用其朝向（保证正面不背身），无主相机默认从 -Z 看（MMD 正面朝 -Z）。
-    // 舞台模型排除天空盒等高远网格，避免包围盒中心偏移到空中。
-    const bb = inst.kind === 'stage'
-        ? computeStageGroundBoundingBox(inst.rootMesh as Mesh)
-        : inst.rootMesh.getHierarchyBoundingVectors(true);
-    const fullHeight = bb.max.y - bb.min.y;
-    const centerX = (bb.max.x + bb.min.x) * 0.5;
-    const centerZ = (bb.max.z + bb.min.z) * 0.5;
-    const extent = bb.max.subtract(bb.min);
-
-    // 根据模型类型选择聚焦策略
-    let focusCenterY: number;
-    let focusHeight: number;
-    let focusWidth: number;
-    if (inst.kind === 'stage') {
-        // 舞台：全身取景，聚焦舞台几何中心。与 actor 同款公式，仅不上移焦点。
-        focusCenterY = bb.min.y + fullHeight * 0.5;
-        focusHeight = fullHeight;
-        focusWidth = extent.x;
-    } else {
-        // 角色：聚焦上半身（面部+服饰），凸显特征
-        focusCenterY = bb.min.y + fullHeight * 0.6;
-        focusHeight = fullHeight * 0.46;
-        focusWidth = extent.x * 0.55;
-    }
-
     // 缩略图相机 FOV 独立常量（0.8 = 中等广角，与主相机默认值一致但解耦）。
     // 不读 activeCamera.fov：避免「调 0.8 无效 → AI 跨界改主相机」死循环，
     // 也避免用户调主相机 FOV 时缩略图意外畸变。缩略图应稳定可预测。
     const THUMB_FOV = 0.8;
-    // 距离系数 0.75 与主相机 autoFrame（extent * 0.75 + 2）同源，行为可预测。
-    // stage 与 actor 共用同一公式，仅 focusHeight/Width 不同。
-    const dist = Math.max(focusHeight, focusWidth / THUMB_ASPECT) * 0.75 / (2 * Math.tan(THUMB_FOV / 2));
-
-    // 相机朝向：复用主相机方向，或默认 -Z（MMD 正面）
-    let dirX = 0, dirY = 0, dirZ = -1;
-    if (scene.activeCamera) {
-        const fwd = scene.activeCamera.getDirection(Vector3.Forward());
-        dirX = fwd.x; dirY = fwd.y; dirZ = fwd.z;
-    }
 
     const thumbCam = new FreeCamera('thumbCam', Vector3.Zero(), scene);
     thumbCam.minZ = 0.1;
     thumbCam.maxZ = 5000;
     thumbCam.fov = THUMB_FOV;
-    // 沿朝向反方向放置相机（dir 是相机看向目标的方向，相机在 target - dir*dist）
-    thumbCam.position.set(
-        centerX - dirX * dist,
-        focusCenterY - dirY * dist,
-        centerZ - dirZ * dist
-    );
-    thumbCam.setTarget(new Vector3(centerX, focusCenterY, centerZ));
+
+    if (inst.kind === 'stage' && scene.activeCamera) {
+        // 舞台：直接沿用主相机的 position + target。
+        // 舞台场景常含天空盒/远景背景板（千米级 bb），按包围盒推算距离必然失效。
+        // 场景在 (0,0,0) 加载，主相机聚焦设计已针对核心区域，缩略图直接复用即可。
+        thumbCam.position.copyFrom(scene.activeCamera.position);
+        // activeCamera 类型是 Camera 基类，getTarget 只在 TargetCamera 上。
+        // 用 position + forward 方向 × 10 推算 target，兼容所有相机类型。
+        const fwd = scene.activeCamera.getDirection(Vector3.Forward());
+        thumbCam.setTarget(
+            thumbCam.position.add(fwd.scale(10))
+        );
+    } else {
+        // 角色（或无主相机的退化场景）：基于包围盒聚焦上半身，凸显服饰特征。
+        const bb = inst.rootMesh.getHierarchyBoundingVectors(true);
+        const fullHeight = bb.max.y - bb.min.y;
+        const centerX = (bb.max.x + bb.min.x) * 0.5;
+        const centerZ = (bb.max.z + bb.min.z) * 0.5;
+        const extent = bb.max.subtract(bb.min);
+
+        // 焦点：全身 60% 高度（胸部），能看到面部+上半身服饰
+        const focusCenterY = bb.min.y + fullHeight * 0.6;
+        const focusHeight = fullHeight * 0.46;
+        const focusWidth = extent.x * 0.55;
+
+        // 距离系数 0.75 与主相机 autoFrame（extent * 0.75 + 2）同源，行为可预测。
+        const dist = Math.max(focusHeight, focusWidth / THUMB_ASPECT) * 0.75 / (2 * Math.tan(THUMB_FOV / 2));
+
+        // 相机朝向：复用主相机方向，或默认 -Z（MMD 正面）
+        let dirX = 0, dirY = 0, dirZ = -1;
+        if (scene.activeCamera) {
+            const fwd = scene.activeCamera.getDirection(Vector3.Forward());
+            dirX = fwd.x; dirY = fwd.y; dirZ = fwd.z;
+        }
+        // 沿朝向反方向放置相机（dir 是相机看向目标的方向，相机在 target - dir*dist）
+        thumbCam.position.set(
+            centerX - dirX * dist,
+            focusCenterY - dirY * dist,
+            centerZ - dirZ * dist
+        );
+        thumbCam.setTarget(new Vector3(centerX, focusCenterY, centerZ));
+    }
     rt.activeCamera = thumbCam;
 
     const renderList: Mesh[] = [];
