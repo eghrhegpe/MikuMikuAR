@@ -25,6 +25,7 @@ import { applyUIAppearanceDom, type SettingsMenuHandle } from './settings-shared
 import { getAllShortcuts, formatKeyBinding } from '../core/shortcut-registry';
 import { setPerformanceMode } from '../scene/render/performance';
 import { engine, applyFrameControl } from '../scene/scene';
+import { calcHardwareScaling } from '../core/render-loop';
 import { refreshCameraUserSettings } from '../scene/camera/camera';
 import { setVolume, getVolume, setAudioOffset, getAudioOffset } from '../outfit/audio';
 import { swallowError, logWarn, jsonStringify } from '../core/utils';
@@ -47,7 +48,7 @@ function exportSettings(): void {
 
 function reapplyImportedSettings(): void {
     applyFrameControl();
-    engine.setHardwareScalingLevel(1 / (uiState.renderScale ?? 1));
+    engine.setHardwareScalingLevel(calcHardwareScaling(window.devicePixelRatio || 1, uiState.renderScale ?? 1));
     refreshCameraUserSettings();
     setVolume(getVolume());
     setAudioOffset(getAudioOffset());
