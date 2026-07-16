@@ -92,11 +92,14 @@ export interface PlaySfxOptions {
     rate?: number;
     /** 音分偏移（随机化用），默认 0 */
     detune?: number;
+    /** 左右声像 -1（左）~ 1（右），undefined = 中置（单声道直连 master） */
+    pan?: number;
 }
 
 /**
  * 播放一次短音效。每次 new BufferSource（一次性、可叠加），播完自动断开释放。
  * 总线关闭（sfxEnabled=false 或 sfxVolume=0）时静默跳过。
+ * 支持可选 StereoPannerNode 声像定位（opts.pan）。
  */
 export function playSfx(buffer: AudioBuffer, opts: PlaySfxOptions = {}): void {
     if (!buffer) {
@@ -128,14 +131,28 @@ export function playSfx(buffer: AudioBuffer, opts: PlaySfxOptions = {}): void {
     const g = ctx.createGain();
     g.gain.value = clamp01(opts.volume ?? 1);
     src.connect(g);
-    g.connect(master);
+
+    // 串联链: src → gain → [panner?] → master
+    const nodesToDispose: AudioNode[] = [src, g];
+    let tail: AudioNode = g;
+
+    if (opts.pan !== undefined) {
+        const panner = ctx.createStereoPanner();
+        panner.pan.value = Math.max(-1, Math.min(1, opts.pan));
+        g.connect(panner);
+        tail = panner;
+        nodesToDispose.push(panner);
+    }
+
+    tail.connect(master);
     src.start();
     src.onended = () => {
-        try {
-            src.disconnect();
-            g.disconnect();
-        } catch {
-            /* noop */
+        for (const n of nodesToDispose) {
+            try {
+                n.disconnect();
+            } catch {
+                /* noop */
+            }
         }
     };
 }

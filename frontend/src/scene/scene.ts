@@ -191,6 +191,8 @@ export async function initScene(): Promise<void> {
     _disposePlaybackObservables?.();
     (await import('./motion/bone-override')).stopBoneOverride();
     (await import('./motion/feet-adjustment')).stopFeetAdjustment();
+    (await import('./motion/footstep')).stopFootstep();
+    (await import('../core/audio-bus')).disposeAudioBus();
     (await import('../core/reactivity')).unsubscribeAll();
     (await import('./env/env-bridge')).cancelEnvPersistTimer();
     (await import('./env/env-impl')).disposeEnvUpdateObserver();

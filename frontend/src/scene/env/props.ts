@@ -16,6 +16,7 @@ import { _envSys } from './env';
 import { registerMaterialTarget, unregisterMaterialTarget } from '../manager/material';
 import { t } from '@/core/i18n/t';
 import { getBaseName, logWarn } from '@/core/utils';
+import { renderPropThumbnail } from '../manager/thumbnail-capture';
 import {
     attachGizmo,
     detachGizmo,
@@ -148,6 +149,15 @@ export async function loadProp(filePath: string, signal?: AbortSignal): Promise<
         setStatus(t('env.propAdded', { name: displayName }), true);
         triggerAutoSave();
         console.info('[props] load complete:', id, displayName);
+
+        // [fix:prop-thumbnail] 加载成功后离屏渲染道具缩略图并缓存。
+        // key = inst.filePath（与 library-core 读侧 thumbnailKeyForModel 的 file_path 基底一致），
+        // kind='prop' → isStageLike 命中 16/9，闭环此前写/读宽高比谓词不一致问题。
+        // 与模型路径一致：fire-and-forget + catch，不阻塞加载主流程；共享 _thumbMutex 串行化。
+        void renderPropThumbnail(scene, inst, inst.filePath).catch((thumbErr) => {
+            logWarn('props', 'renderPropThumbnail:', thumbErr);
+        });
+
         return id;
     } catch (err) {
         // [adr-105] AbortError 不算错误：取消是正常流程，不打 console.error

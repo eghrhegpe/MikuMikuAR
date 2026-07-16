@@ -7,6 +7,7 @@
 // 本模块内部仅动态 import '../scene' 取 Scene 实例，不反向引入 model-loader / vmd-loader。
 
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
+import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import { RenderTargetTexture } from '@babylonjs/core/Materials/Textures/renderTargetTexture';
 import { FreeCamera } from '@babylonjs/core/Cameras/freeCamera';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
@@ -17,6 +18,17 @@ import { SaveThumbnail } from '@/core/wails-bindings';
 import { thumbnailCache, setThumbnailCache, type ModelInstance } from '@/core/config';
 import { uiState } from '@/core/state';
 import { logWarn, isStageLike } from '@/core/utils';
+import { type PropInstance, type RuntimeModel } from '@/core/types';
+
+// 缩略图渲染所需的最小实例形状：ModelInstance 与 PropInstance 均可适配。
+// 仅消费三个字段：rootMesh（渲染根节点）、kind（宽高比判定）、mmdModel?（物理冻结，可选）。
+// 用 TransformNode 而非 Mesh：道具的渲染根是其父级容器（TransformNode），
+// 以便多网格道具的全部子网格入镜；模型 rootMesh 为 Mesh（TransformNode 子类）同样兼容。
+export interface ThumbnailSource {
+    rootMesh: TransformNode;
+    kind: string;
+    mmdModel?: RuntimeModel;
+}
 
 // ======== 并发互斥：promise 链确保同一时刻只有一个缩略图渲染 ========
 // renderInstanceThumbnail 共享 RT + framebuffer + 物理冻结状态，
@@ -55,9 +67,35 @@ export async function renderInstanceThumbnail(
     }
 }
 
+/**
+ * 道具缩略图捕获（补闭环）：复用同一离屏 RT 渲染逻辑。
+ * 道具 kind 视为 'prop' → isStageLike 命中 16:9，与 library-core 读侧 key 对齐。
+ * 渲染根节点优先用 container（多网格父级容器），确保全部子网格入镜；单网格道具退化为 rootMesh。
+ * 道具无 MMD 物理刚体，mmdModel 缺省 → 物理冻结分支自动跳过。
+ */
+export async function renderPropThumbnail(
+    scene: Scene,
+    prop: PropInstance,
+    key: string
+): Promise<void> {
+    const prev = _thumbMutex;
+    let release!: () => void;
+    _thumbMutex = new Promise<void>((r) => { release = r; });
+    await prev;
+    try {
+        const src: ThumbnailSource = {
+            rootMesh: prop.container ?? prop.rootMesh,
+            kind: 'prop',
+        };
+        await _renderThumbnailImpl(scene, src, key);
+    } finally {
+        release();
+    }
+}
+
 async function _renderThumbnailImpl(
     scene: Scene,
-    inst: ModelInstance,
+    inst: ThumbnailSource,
     key: string
 ): Promise<void> {
     if (!inst || !inst.rootMesh) {
@@ -158,7 +196,7 @@ async function _renderThumbnailImpl(
             renderList.push(m as Mesh);
         }
     });
-    if (inst.rootMesh.isVisible) {
+    if (inst.rootMesh instanceof Mesh && inst.rootMesh.isVisible) {
         renderList.push(inst.rootMesh);
     }
     rt.renderList = renderList;

@@ -127,7 +127,9 @@ function createOverlayElement(options: FullscreenOverlayOptions): HTMLElement {
         position: fixed;
         inset: 0;
         z-index: 1000;
-        background: var(--bg-app, #1e1e28);
+        background: rgba(18, 18, 26, 0.55);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
         display: flex;
         flex-direction: column;
         animation: fadeIn 0.2s ease-out;
