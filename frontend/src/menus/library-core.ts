@@ -61,7 +61,8 @@ export function getResourceViewMode(): ResourceViewMode { return resourceViewMod
 export function setResourceViewMode(mode: ResourceViewMode): void {
     resourceViewMode = mode;
     import('../core/wails-bindings').then(({ SetUIState }) =>
-        SetUIState({ resourceViewMode: mode } as import('../core/wails-bindings').UIState).catch(() => {})
+        SetUIState({ resourceViewMode: mode } as import('../core/wails-bindings').UIState)
+            .catch((err) => logWarn('library-core', 'SetUIState failed:', err))
     );
 }
 

@@ -1087,6 +1087,7 @@ export const en: Record<string, string> = {
     'env.characterShadowHint': 'MMD models automatically receive shadows',
     'env.stageLightShadow': 'Stage light shadow',
     'env.sceneMenu': 'Scene menu',
+    'env.persistFailed': '✗ Failed to save settings — changes will be lost on restart',
 
     // env-menu — env menu nav / particle keys
     'env.env': 'Environment',

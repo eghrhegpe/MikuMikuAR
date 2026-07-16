@@ -318,6 +318,7 @@ type UIState struct {
 	ScreenshotFormat         string  `json:"screenshotFormat"`
 	ScreenshotQuality        float64 `json:"screenshotQuality"`
 	ScreenshotDir            string  `json:"screenshotDir,omitempty"`
+	ThumbnailResolution      int     `json:"thumbnailResolution,omitempty"` // 缩略图分辨率（最长边 px），0=默认 512
 	AutoCameraEnabled        bool    `json:"autoCameraEnabled"`
 	AutoCameraBeatsPerSwitch int     `json:"autoCameraBeatsPerSwitch"`
 	AutoUpdateEnabled        bool    `json:"autoUpdateEnabled"`

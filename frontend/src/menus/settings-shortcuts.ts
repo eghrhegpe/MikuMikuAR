@@ -18,6 +18,7 @@ import type { PopupLevel } from '../core/config';
 import type { MenuNode } from './menu-schema';
 import type { SettingsMenuHandle } from './settings-shared';
 import { addDisposableListener, type Disposable } from '../core/dom';
+import { logWarn } from '../core/utils';
 
 function _isModifierOnly(code: string): boolean {
     return (
@@ -152,7 +153,7 @@ function buildShortcutsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
                                                         });
                                                     }
                                                 })
-                                                .catch(() => {});
+                                                .catch((err) => logWarn('settings-shortcuts', 'setUIState failed:', err));
                                         }
                                     };
                                     keyDisp = addDisposableListener(document, 'keydown', handler, {

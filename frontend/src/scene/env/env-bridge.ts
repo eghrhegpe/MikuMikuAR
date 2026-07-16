@@ -11,11 +11,12 @@ import type { Scene } from '@babylonjs/core/scene';
 
 import { envState, EnvState, triggerAutoSave, mmdRuntime } from '@/core/config';
 import { uiState, setUIPersistCallback } from '@/core/state';
+import { setStatus } from '@/core/status-bar';
+import { t as t_i18n } from '@/core/i18n/t';
 import {
     lerp as lerpUtil,
     lerpArray,
     formatTimestamp,
-    swallowError,
     logWarn,
     DebouncedTimer,
 } from '@/core/utils';
@@ -307,7 +308,10 @@ export function stopTimeOfDay(): void {
         _unregisterTimeOfDay = null;
     }
     // 持久化当前 sunAngle 到后端
-    swallowError(SetEnvState(envState));
+    SetEnvState(envState).catch((err) => {
+        logWarn('_applyTimeOfDayPreset', 'persist failed', err);
+        setStatus(t_i18n('env.persistFailed'), false);
+    });
 }
 
 export function isTimeOfDayActive(): boolean {
@@ -423,7 +427,10 @@ function _presetAnimLoop(ctx: PresetAnimCtx, observer: Observer<Scene>): void {
             _lastAutoLinkSunAngle = envSunAngle;
         }
         _timeOfDayBeforePreset = null;
-        swallowError(SetEnvState(envState));
+        SetEnvState(envState).catch((err) => {
+            logWarn('applyLightingPresetFromEnv', 'persist failed', err);
+            setStatus(t_i18n('env.persistFailed'), false);
+        });
         triggerAutoSave();
     }
 }
@@ -534,7 +541,12 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
         applyLightingPresetFromEnv(partial.lightingPresetName);
     }
 
-    _envPersistTimer.schedule(() => swallowError(SetEnvState(envState)), 500);
+    _envPersistTimer.schedule(() => {
+        SetEnvState(envState).catch((err) => {
+            logWarn('setEnvState', 'persist failed', err);
+            setStatus(t_i18n('env.persistFailed'), false);
+        });
+    }, 500);
 
     if (!skipAutoSave) {
         triggerAutoSave();
@@ -544,7 +556,10 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
 /** 立即刷写 env state 到后端（无防抖）。关闭/隐藏页面时调用。 */
 export function flushEnvState(): void {
     _envPersistTimer.cancel();
-    swallowError(SetEnvState(envState));
+    SetEnvState(envState).catch((err) => {
+        logWarn('flushEnvState', 'persist failed', err);
+        setStatus(t_i18n('env.persistFailed'), false);
+    });
 }
 
 /** 取消挂起的 env state 防抖持久化定时器（HMR 重入清理用，见 ADR-106 D3）。 */
@@ -583,7 +598,10 @@ export function flushUIState(): void {
     } // nothing to persist
     // Go 端 SetUIState 语义是 json.Unmarshal 合并（缺省字段保留原值），
     // 但类型声明是完整 UIState。此处强转后传入部分字段是安全的。
-    swallowError(SetUIState(payload as unknown as import('../../core/wails-bindings').UIState));
+    SetUIState(payload as unknown as import('../../core/wails-bindings').UIState).catch((err) => {
+        logWarn('flushUIState', 'persist failed', err);
+        setStatus(t_i18n('env.persistFailed'), false);
+    });
 }
 
 // 注册持久化回调（state.ts → 本模块，避免循环依赖）
