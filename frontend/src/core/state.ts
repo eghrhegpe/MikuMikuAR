@@ -158,6 +158,8 @@ export function setThumbnailCache(m: Map<string, string>): void {
     for (const [k, v] of m) {
         thumbnailCache.set(k, v);
     }
+    // 通知所有活跃面板刷新缩略图 DOM（解决冷缓存首次加载不显示缩略图的问题）
+    import('./ui-resource-panel').then((mod) => mod.notifyThumbnailUpdate());
 }
 
 // ======== Recent Models ========

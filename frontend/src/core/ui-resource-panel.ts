@@ -7,6 +7,10 @@ import { createVirtualGrid, type VirtualGridHandle } from './ui-virtual-grid';
 import { thumbnailCache as liveThumbnailCache } from './state';
 import { thumbDataUrl } from '@/scene/manager/thumbnail-capture';
 
+// ======== 活跃面板追踪（缩略图冷缓存回填） ========
+// setThumbnailCache 更新缓存后调用 notifyThumbnailUpdate()，自动刷新所有活跃面板的缩略图 DOM。
+const _activePanels = new Set<ResourcePanelHandle>();
+
 // ======== Types ========
 
 export interface ResourcePanelOptions {
@@ -52,6 +56,8 @@ export interface ResourcePanelHandle {
     updateItems: (items: ResourceItem[]) => void;
     /** 切换布局 */
     setLayout: (layout: 'grid' | 'list') => void;
+    /** 刷新缩略图——缓存更新后调用，重新应用已命中的缩略图到 DOM */
+    refreshThumbs: () => void;
     /** 销毁 */
     dispose: () => void;
 }
@@ -177,7 +183,7 @@ export function createResourcePanel(
     render();
 
     // 返回句柄
-    return {
+    const handle: ResourcePanelHandle = {
         updateItems: (newItems: ResourceItem[]) => {
             currentItems = [...newItems];
             render();
@@ -188,7 +194,12 @@ export function createResourcePanel(
                 render();
             }
         },
+        refreshThumbs: () => {
+            panel.querySelectorAll<HTMLElement>('.resource-thumb, .resource-thumb-sm')
+                .forEach((el) => applyThumbIfCached(el));
+        },
         dispose: () => {
+            _activePanels.delete(handle);
             if (mutationObs) {
                 mutationObs.disconnect();
                 mutationObs = null;
@@ -201,6 +212,8 @@ export function createResourcePanel(
             panel.remove();
         },
     };
+    _activePanels.add(handle);
+    return handle;
 }
 
 // ======== Virtual Grid Rendering [doc:adr-066] ========
@@ -213,7 +226,6 @@ function createVirtualGridFromItems(
     onEnterFolder?: (path: string) => void,
     itemHeight: number = 160
 ): VirtualGridHandle<ResourceItem> {
-    // 计算列数：基于容器宽度
     const thumbSize = 100; // --resource-thumb-size
     const gap = 8; // --resource-gap
     const cols = Math.max(1, Math.floor((container.clientWidth || 280) / (thumbSize + gap)));
@@ -222,7 +234,14 @@ function createVirtualGridFromItems(
         items,
         itemHeight,
         columns: cols,
-        renderItem: (item) => createGridCard(item, cache, onSelect, onEnterFolder, itemHeight),
+        renderItem: (item) => {
+            const card = createGridCard(item, cache, onSelect, onEnterFolder, itemHeight);
+            const aspect = item.thumbAspect || '2/3';
+            if (aspect === '16/9') {
+                card.style.gridColumn = 'span 2';
+            }
+            return card;
+        },
         bufferRows: 2,
     });
 }
@@ -248,6 +267,10 @@ function renderGrid(
 
     for (const item of items) {
         const card = createGridCard(item, cache, onSelect, onEnterFolder, itemHeight);
+        const aspect = item.thumbAspect || '2/3';
+        if (aspect === '16/9') {
+            card.style.gridColumn = 'span 2';
+        }
         grid.appendChild(card);
     }
 
@@ -476,4 +499,13 @@ function createListRow(
     row.addEventListener('blur', clearRowHover);
 
     return row;
+}
+
+// ======== 缩略图缓存更新通知 ========
+// setThumbnailCache 更新后调用此函数，自动刷新所有活跃面板的缩略图 DOM。
+// 比 IntersectionObserver 更及时——缓存命中时直接贴图，未命中时重新挂观察器等懒加载。
+export function notifyThumbnailUpdate(): void {
+    for (const panel of _activePanels) {
+        panel.refreshThumbs();
+    }
 }
