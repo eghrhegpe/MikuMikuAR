@@ -145,6 +145,43 @@ describe('PlanarReflection — 互斥协调', () => {
         expect(refA.isEnabled).toBe(true);
     });
 
+    it('setBlend 被 update 调用时传递正确的 blend 值', () => {
+        const setBlendSpy = vi.fn();
+        const ref = new PlanarReflection(makeConfig('blendTest', { setBlend: setBlendSpy }));
+        ref.update(makeState({ reflectionQuality: 'high', planarReflectBlend: 0.7 }), scene);
+        expect(setBlendSpy).toHaveBeenCalledWith(0.7);
+    });
+
+    it('blend 变化时 setBlend 收到新值', () => {
+        const setBlendSpy = vi.fn();
+        const ref = new PlanarReflection(makeConfig('blendChange', { setBlend: setBlendSpy }));
+        ref.update(makeState({ reflectionQuality: 'high', planarReflectBlend: 1 }), scene);
+        expect(setBlendSpy).toHaveBeenCalledWith(1);
+        // 模拟滑块拖到 0.3
+        ref.update(makeState({ reflectionQuality: 'high', planarReflectBlend: 0.3 }), scene);
+        expect(setBlendSpy).toHaveBeenCalledWith(0.3);
+    });
+
+    it('setBlend 写入 reflectionTexture.level', () => {
+        const mockLevel = { value: 0 };
+        const mockReflectionTex = { level: 0 };
+        const mockMat = {
+            reflectionTexture: mockReflectionTex,
+            specularColor: { r: 0, g: 0, b: 0 },
+            reflectionFresnelParameters: { isEnabled: true },
+        };
+        const setBlendSpy = vi.fn((b: number) => { mockLevel.value = b; mockReflectionTex.level = b; });
+        const ref = new PlanarReflection(makeConfig('levelTest', {
+            setBlend: setBlendSpy,
+            getMaterial: () => mockMat as any,
+            mount: (rt: any) => { (mockMat as any).reflectionTexture = rt ? mockReflectionTex : null; },
+        }));
+        // quality=high + blend=0.6 → 应该调用 setBlend(0.6)
+        ref.update(makeState({ reflectionQuality: 'high', planarReflectBlend: 0.6 }), scene);
+        expect(setBlendSpy).toHaveBeenCalledWith(0.6);
+        expect(mockReflectionTex.level).toBe(0.6);
+    });
+
     it('dispose 后 isEnabled 为 false', () => {
         const ref = new PlanarReflection(makeConfig('disposeTest'));
         ref.update(makeState({ reflectionQuality: 'high', planarReflectBlend: 1 }), scene);

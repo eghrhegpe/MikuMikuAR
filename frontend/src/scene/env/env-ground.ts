@@ -261,6 +261,8 @@ const groundReflection = new PlanarReflection({
         if (!mat) return;
         if (rt) {
             mat.reflectionTexture = rt as MirrorTexture | null;
+            // 用当前 blend 值初始化 level，避免默认 1.00 闪烁
+            (rt as MirrorTexture).level = envState.groundReflectionBlend;
             if (mat instanceof StandardMaterial) {
                 mat.reflectionFresnelParameters = new FresnelParameters();
                 mat.reflectionFresnelParameters.isEnabled = false;
@@ -281,7 +283,6 @@ const groundReflection = new PlanarReflection({
     setBlend: (b) => {
         const mat = _envSys.ground.mesh?.material as GroundMat | null;
         if (!mat || !mat.reflectionTexture) return;
-        // 仅控制反射纹理强度，不修改 diffuseColor（由 mount 统一管理底色）
         mat.reflectionTexture.level = b;
     },
 });

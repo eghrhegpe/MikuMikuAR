@@ -91,7 +91,15 @@ void main() {
         // P2: 波浪 UV 偏移 — 用世界坐标 XZ + 波浪实时偏移，让反射随波浪晃动
         vec2 reflUV = vec2(vScreenCoord.x, 1.0 - vScreenCoord.y);
         reflUV += vWorldPos.xz * 0.003 + vWaveOffset;
-        vec3 planarRefl = texture2D(reflectionTexture, reflUV).rgb;
+        // 轻微模糊：手动 RT 无 mipmap 自动重建，5-tap 采样降低镜面锯齿（ADR-114 修复）
+        vec2 blurOff = vec2(0.004, 0.0);
+        vec3 planarRefl = (
+            texture2D(reflectionTexture, reflUV).rgb +
+            texture2D(reflectionTexture, reflUV + blurOff).rgb +
+            texture2D(reflectionTexture, reflUV - blurOff).rgb +
+            texture2D(reflectionTexture, reflUV + blurOff.yx).rgb +
+            texture2D(reflectionTexture, reflUV - blurOff.yx).rgb
+        ) * 0.2;
         #ifdef ENV_TEXTURE
             reflection = mix(cubemapRefl, planarRefl, planarReflectBlend);
         #else
