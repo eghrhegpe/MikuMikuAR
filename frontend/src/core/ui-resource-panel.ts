@@ -214,7 +214,7 @@ function createVirtualGridFromItems(
     itemHeight: number = 160
 ): VirtualGridHandle<ResourceItem> {
     // 计算列数：基于容器宽度
-    const thumbSize = 80; // --resource-thumb-size
+    const thumbSize = 100; // --resource-thumb-size
     const gap = 8; // --resource-gap
     const cols = Math.max(1, Math.floor((container.clientWidth || 280) / (thumbSize + gap)));
 

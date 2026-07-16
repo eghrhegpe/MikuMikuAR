@@ -120,8 +120,8 @@
     --cs-top-gap: calc(10px * var(--ui-scale));
 
     /* Resource Panel（缩略图网格） */
-    --resource-thumb-size: calc(80px * var(--ui-scale));
-    --resource-thumb-height: calc(80px * var(--ui-scale));
+    --resource-thumb-size: calc(100px * var(--ui-scale));
+    --resource-thumb-height: calc(100px * var(--ui-scale));
     --resource-gap: calc(8px * var(--ui-scale));
     --resource-radius: calc(8px * var(--ui-scale));
     --resource-label-height: calc(20px * var(--ui-scale));
