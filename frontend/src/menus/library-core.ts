@@ -42,14 +42,14 @@ import {
     setCurrentState,
 } from '../core/ui-helpers';
 import type { ResourceItem, SlideRowExtra } from '../core/ui-helpers';
-import { isUnderRoot } from '../core/utils';
+import { isUnderRoot, isStageLike } from '../core/utils';
 import { t } from '../core/i18n/t';
 import { getLang } from '../core/i18n/locale';
 import { GetThumbnailBatch, GetModelMetaBatch } from '../core/wails-bindings';
 import { loadManager } from '../core/load-manager';
 import { focusModel } from '../scene/scene';
 import { buildModelToolsLevel } from './model-detail';
-import { onModelRowClick, replaceModel, prepareModelRestore, importFile } from './library-actions';
+import { onModelRowClick, replaceModel, replaceMotion, prepareModelRestore, importFile } from './library-actions';
 
 // ======== Resource View Mode ========
 
@@ -167,7 +167,7 @@ export function thumbnailKeyForModel(m: LibraryModel, resolution?: number): stri
         key = `${fp}::${m.zip_inner}`;
     }
     const res = resolution ?? uiState.thumbnailResolution ?? 512;
-    const isStage = m.type === 'stage' || m.type === 'scene' || m.type === 'prop';
+    const isStage = isStageLike(m.type);
     const aspect = isStage ? '16/9' : '2/3';
     return `${key}::${res}::${aspect}`;
 }
@@ -226,7 +226,7 @@ export function modelToRow(m: LibraryModel): PopupRow {
 export function modelToResourceItem(m: LibraryModel): ResourceItem {
     const fp = m.file_path || '';
     const cached = modelMetaCache.get(fp);
-    const isStage = m.type === 'stage' || m.type === 'scene' || m.type === 'prop';
+    const isStage = isStageLike(m.type);
     return {
         id: fp, label: resolveModelLabel(m, ''), filePath: fp, thumbKey: thumbnailKeyForModel(m),
         thumbAspect: isStage ? '16/9' : '2/3',
@@ -468,7 +468,13 @@ function renderGridMode(
                 renderContent: (container, navigate) => {
                     createResourcePanel(container, {
                         items: allResourceItems, thumbnailCache,
-                        onSelect: (item) => { if (item.data) { closeFullscreen(); onModelRowClick(item.data as LibraryModel); } },
+                        onSelect: (item) => {
+                            const m = item.data as LibraryModel | undefined;
+                            if (!m) return;
+                            closeFullscreen();
+                            if (m.format === 'vmd') replaceMotion(m);
+                            else replaceModel(m);
+                        },
                         onEnterFolder: (path) => {
                             const stack = targetStack || stackRegistry.modelStack;
                             if (stack) {
@@ -485,7 +491,12 @@ function renderGridMode(
         card.appendChild(toolbar);
         createResourcePanel(card, {
             items: allResourceItems, thumbnailCache,
-            onSelect: (item) => { if (item.data) onModelRowClick(item.data as LibraryModel); },
+            onSelect: (item) => {
+                const m = item.data as LibraryModel | undefined;
+                if (!m) return;
+                if (m.format === 'vmd') replaceMotion(m);
+                else replaceModel(m);
+            },
             onEnterFolder: (path) => {
                 const stack = targetStack || stackRegistry.modelStack;
                 if (stack) {

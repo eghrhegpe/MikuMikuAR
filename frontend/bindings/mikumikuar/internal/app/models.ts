@@ -565,6 +565,11 @@ export interface UIState {
     "screenshotFormat": string;
     "screenshotQuality": number;
     "screenshotDir"?: string;
+
+    /**
+     * 缩略图分辨率（最长边 px），0=默认 512
+     */
+    "thumbnailResolution"?: number;
     "autoCameraEnabled": boolean;
     "autoCameraBeatsPerSwitch": number;
     "autoUpdateEnabled": boolean;

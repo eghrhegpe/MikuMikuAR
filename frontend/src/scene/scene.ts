@@ -5,6 +5,7 @@
 
 import { Engine } from '@babylonjs/core/Engines/engine';
 import { Scene } from '@babylonjs/core/scene';
+import type { Observer } from '@babylonjs/core/Misc/observable';
 import { Color4 } from '@babylonjs/core/Maths/math.color';
 import '@babylonjs/core/Physics/v2/physicsEngineComponent';
 import { PointerEventTypes } from '@babylonjs/core/Events/pointerEvents';
@@ -123,6 +124,13 @@ import { triggerAutoSaveImpl } from './scene-serialize';
 // alpha:true 让 WebGL drawing buffer 携带 alpha 通道，使 AR 模式下 scene.clearColor
 // 的 a=0 生效（透明 canvas），从而透出底层 <video> 相机画面。非 AR 场景 clearColor
 // 的 a=1.0 完全不透明，不受影响。
+// [doc:test-isolation] 测试态隔离（审计项 scene.ts:126-131）：vitest 无 WebGL，
+// 模块顶层 new Scene(engine) + 相机系统初始化会强制拉起真实 Babylon 场景图与 DOM 依赖，
+// 迫使每个 transitively 导入 scene.ts 的测试铺设 engine-mock/babylon-classes。
+// 测试态改用引擎无关 Scene（Babylon 官方 offline 模式：new Scene() 不绑定 engine），
+// 并跳过相机初始化，使 scene.ts 可零成本导入。生产路径（MODE !== 'test'）完全不变。
+const _isTestEnv = import.meta.env.MODE === 'test';
+
 export const engine = new Engine(dom.canvas, true, {
     preserveDrawingBuffer: true,
     stencil: true,
@@ -152,6 +160,9 @@ export let modelManager: ModelManager;
 /** 播放观察者 dispose 函数，场景销毁时调用以清理 observable。 */
 let _disposePlaybackObservables: (() => void) | null = null;
 
+/** scene.onDisposeObservable 订阅句柄，HMR 重入时需先移除旧订阅避免累积。 */
+let _sceneDisposeObserver: Observer<Scene> | null = null;
+
 // Dev debug helper — module-level export for Console inspection (no window pollution)
 export const __envDebug = import.meta.env.DEV
     ? () => ({
@@ -162,7 +173,10 @@ export const __envDebug = import.meta.env.DEV
     : undefined;
 
 // 相机系统不依赖 MMD runtime，模块顶层初始化（确保渲染循环启动时有 activeCamera）
-initCameraSystem(scene, dom.canvas);
+// 测试态跳过：无 canvas / 无渲染循环，且降低导入期 DOM 依赖（见 _isTestEnv 注释）
+if (!_isTestEnv) {
+    initCameraSystem(scene, dom.canvas);
+}
 
 // scene-lighting.ts 提供 getLightState / setLightState
 // scene-renderer.ts 提供 getRenderState / setRenderState / reattachPipeline
@@ -231,7 +245,10 @@ export async function initScene(): Promise<void> {
         const mmdWasmPhysics = new MmdWasmPhysics(scene);
         runtime = new MmdWasmRuntime(wasmInstance, scene, mmdWasmPhysics);
         initWindPhysics(runtime);
-        scene.onDisposeObservable.add(() => {
+        if (_sceneDisposeObserver) {
+            _sceneDisposeObserver.remove();
+        }
+        _sceneDisposeObserver = scene.onDisposeObservable.add(() => {
             disposeWindPhysics();
             disposeEnvUpdateObserver();
             disposeRenderer();

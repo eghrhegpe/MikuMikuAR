@@ -353,6 +353,9 @@ func mergeUIState(dst *UIState, src UIState) {
 	if src.FootstepVolume != 0 {
 		dst.FootstepVolume = src.FootstepVolume
 	}
+	if src.ThumbnailResolution != 0 {
+		dst.ThumbnailResolution = src.ThumbnailResolution
+	}
 	if src.KeyBindings != nil {
 		dst.KeyBindings = src.KeyBindings
 	}
