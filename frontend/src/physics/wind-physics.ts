@@ -63,9 +63,7 @@ export function _getBundles(
             'wind-physics: _rigidBodyBundleMap 不存在（可能已被 babylon-mmd 重命名）。检查 babylon-mmd 版本兼容性'
         );
     }
-    throw new Error(
-        'wind-physics: _rigidBodyBundleMap 类型异常。检查 babylon-mmd 版本兼容性'
-    );
+    throw new Error('wind-physics: _rigidBodyBundleMap 类型异常。检查 babylon-mmd 版本兼容性');
 }
 
 /**

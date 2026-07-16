@@ -97,7 +97,10 @@ export function findBestEmotionMorphs(morphNames: readonly string[]): Map<Emotio
     // 过滤 Shift-JIS 不可编码的 morph
     for (const [k, n] of emotionMorphs) {
         if (!canEncodeName(n)) {
-            logWarn('proc-motion-autodance-emotion', `表情 morph "${k}=${n}" 无法编码为 Shift-JIS，跳过`);
+            logWarn(
+                'proc-motion-autodance-emotion',
+                `表情 morph "${k}=${n}" 无法编码为 Shift-JIS，跳过`
+            );
             emotionMorphs.delete(k);
         }
     }
@@ -141,7 +144,10 @@ export function genEmotionCycles(
         return;
     }
 
-    logWarn('proc-motion-autodance-emotion', `表情 morph 匹配: [${foundEmotions.map(([k, n]) => `${k}=${n}`).join(', ')}]`);
+    logWarn(
+        'proc-motion-autodance-emotion',
+        `表情 morph 匹配: [${foundEmotions.map(([k, n]) => `${k}=${n}`).join(', ')}]`
+    );
 
     const cycleBeats = 4;
     const cycleFrames = beatFrames * cycleBeats;

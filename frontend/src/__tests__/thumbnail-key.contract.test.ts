@@ -105,32 +105,49 @@ describe('道具写侧经 thumbnailBaseKey 收口（与 model-loader 同源自�
     it('道具无 innerPath：写侧与读侧均不含 zip_inner 段', () => {
         const writeBase = thumbnailBaseKey({ filePath: '/lib/p.pmx' });
         expect(writeBase).toBe('/lib/p.pmx');
-        const m = libModel({ file_path: '/lib/p.pmx', type: 'prop', container: 'file', zip_inner: '' });
+        const m = libModel({
+            file_path: '/lib/p.pmx',
+            type: 'prop',
+            container: 'file',
+            zip_inner: '',
+        });
         expect(libraryModelBaseKey(m)).toBe('/lib/p.pmx');
     });
 });
 
 describe('thumbnailBaseKey 规则', () => {
     it('普通模型：libraryPath 优先且回退 filePath', () => {
-        expect(thumbnailBaseKey({ libraryPath: '/lib/a.pmx', filePath: '/tmp/a.pmx' })).toBe('/lib/a.pmx');
+        expect(thumbnailBaseKey({ libraryPath: '/lib/a.pmx', filePath: '/tmp/a.pmx' })).toBe(
+            '/lib/a.pmx'
+        );
         expect(thumbnailBaseKey({ filePath: '/tmp/a.pmx' })).toBe('/tmp/a.pmx');
     });
 
     it('zip 模型：追加 innerPath', () => {
         expect(
-            thumbnailBaseKey({ libraryPath: '/lib/m.zip', filePath: '/tmp/m.zip', innerPath: 'models/a.pmx' })
+            thumbnailBaseKey({
+                libraryPath: '/lib/m.zip',
+                filePath: '/tmp/m.zip',
+                innerPath: 'models/a.pmx',
+            })
         ).toBe('/lib/m.zip::models/a.pmx');
     });
 
     it('libraryPath 与 filePath 相等时仍用 filePath（无冗余）', () => {
-        expect(thumbnailBaseKey({ libraryPath: '/lib/a.pmx', filePath: '/lib/a.pmx' })).toBe('/lib/a.pmx');
+        expect(thumbnailBaseKey({ libraryPath: '/lib/a.pmx', filePath: '/lib/a.pmx' })).toBe(
+            '/lib/a.pmx'
+        );
     });
 });
 
 describe('buildThumbnailKey 规则', () => {
     it('aspect 由 isStage 决定：横屏 16/9 / 竖屏 2/3', () => {
-        expect(buildThumbnailKey({ baseKey: 'k', isStage: true, resolution: 512 })).toBe('k::512::16/9');
-        expect(buildThumbnailKey({ baseKey: 'k', isStage: false, resolution: 512 })).toBe('k::512::2/3');
+        expect(buildThumbnailKey({ baseKey: 'k', isStage: true, resolution: 512 })).toBe(
+            'k::512::16/9'
+        );
+        expect(buildThumbnailKey({ baseKey: 'k', isStage: false, resolution: 512 })).toBe(
+            'k::512::2/3'
+        );
     });
 
     it('resolution 缺省回退 512', () => {
@@ -138,6 +155,8 @@ describe('buildThumbnailKey 规则', () => {
     });
 
     it('不同分辨率视为独立条目', () => {
-        expect(buildThumbnailKey({ baseKey: 'k', isStage: false, resolution: 1024 })).toBe('k::1024::2/3');
+        expect(buildThumbnailKey({ baseKey: 'k', isStage: false, resolution: 1024 })).toBe(
+            'k::1024::2/3'
+        );
     });
 });

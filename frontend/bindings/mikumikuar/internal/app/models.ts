@@ -133,6 +133,11 @@ export interface Config {
 export interface EnvPresetEntry {
     "name": string;
     "label": string;
+
+    /**
+     * sky/ground/water/atmosphere；旧文件无此字段默认 "sky"
+     */
+    "category": string;
     "createdAt": number;
 }
 

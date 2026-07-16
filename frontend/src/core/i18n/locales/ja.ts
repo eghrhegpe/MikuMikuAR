@@ -294,7 +294,8 @@ export const ja: Record<string, string> = {
     'motion.off': 'オフ',
     'motion.recent': '最近使用',
     'motion.noRecent': '最近使用したモーションはありません',
-    'motion.addLayer': 'アクション追加',    'motion.addLayerTo': 'アクション追加 → {name}',
+    'motion.addLayer': 'アクション追加',
+    'motion.addLayerTo': 'アクション追加 → {name}',
     'motion.baseAction': 'ベース',
     'motion.replaceBase': 'ベース動作を交換 → {name}',
     'motion.deleteLayer': 'レイヤー削除',
@@ -850,6 +851,12 @@ export const ja: Record<string, string> = {
     'env-preset.saveErrorToast': '環境プリセットの保存に失敗しました',
     'env-preset.saved': '✓ プリセットを保存しました: {name}',
     'env-preset.title': '環境プリセット',
+    'env-preset.sceneMood': 'シーンムード',
+    'env-preset.category.sky': '天空',
+    'env-preset.category.ground': '地面',
+    'env-preset.category.water': '水面',
+    'env-preset.category.atmosphere': '大気',
+    'env-preset.saveCurrentCategory': '＋ 現在の{category}をプリセットに保存',
 
     // —— Sky ——
     'env.sky': '空',

@@ -39,7 +39,9 @@
 
     /* 字体 — 功能性 token（按用途命名） */
     /* 使用契约：--font-ui=主体, --font-ui-sm=辅助, --font-title=标题, --font-time=时间数字 */
-    --font: 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', 'Noto Sans CJK SC', 'Yu Gothic', 'Meiryo', system-ui, sans-serif;
+    --font:
+        'Segoe UI', 'Microsoft YaHei', 'PingFang SC', 'Noto Sans CJK SC', 'Yu Gothic', 'Meiryo',
+        system-ui, sans-serif;
     --font-ui: calc(13px * var(--ui-scale));
     --font-ui-sm: calc(11px * var(--ui-scale));
     --font-ui-xs: calc(10px * var(--ui-scale));
@@ -145,7 +147,8 @@
     --preset-chip-pad-x: calc(12px * var(--ui-scale));
     --preset-chip-radius: calc(6px * var(--ui-scale));
     --preset-chip-gap: calc(6px * var(--ui-scale));
-    --preset-chip-group-pad: calc(6px * var(--ui-scale)) calc(14px * var(--ui-scale)) calc(10px * var(--ui-scale));
+    --preset-chip-group-pad: calc(6px * var(--ui-scale)) calc(14px * var(--ui-scale))
+        calc(10px * var(--ui-scale));
     --preset-chip-icon-size: calc(14px * var(--ui-scale));
 
     /* Collapsible（折叠面板） */
@@ -226,7 +229,9 @@ body {
     user-select: none;
 }
 /* 输入框/文本区域恢复文字选中能力 */
-input, textarea, [contenteditable] {
+input,
+textarea,
+[contenteditable] {
     -webkit-user-select: text;
     user-select: text;
 }
@@ -282,7 +287,6 @@ input, textarea, [contenteditable] {
     display: flex;
     align-items: center;
     justify-content: center;
-
 }
 .nav-btn {
     width: calc(48px * var(--ui-scale));
@@ -413,7 +417,8 @@ input, textarea, [contenteditable] {
     -webkit-backdrop-filter: blur(8px);
     border: calc(1px * var(--ui-scale)) solid var(--divider);
     border-radius: calc(20px * var(--ui-scale)) calc(20px * var(--ui-scale)) 0 0;
-    padding: calc(4px * var(--ui-scale)) calc(16px * var(--ui-scale)) calc(4px * var(--ui-scale)) calc(8px * var(--ui-scale));
+    padding: calc(4px * var(--ui-scale)) calc(16px * var(--ui-scale)) calc(4px * var(--ui-scale))
+        calc(8px * var(--ui-scale));
     padding-bottom: calc(4px * var(--ui-scale));
 }
 .playback-btn {
@@ -449,7 +454,7 @@ input, textarea, [contenteditable] {
 /* 触屏设备 seek bar 扩大触控区域 */
 @media (pointer: coarse) {
     #seekBar {
-        height: calc(10px * var(--ui-scale));    /* 视觉高度 10px，触屏可见但不夸张 */
+        height: calc(10px * var(--ui-scale)); /* 视觉高度 10px，触屏可见但不夸张 */
         margin-top: 0;
         background: rgba(255, 255, 255, 0.1);
         border-radius: calc(5px * var(--ui-scale));
@@ -469,7 +474,7 @@ input, textarea, [contenteditable] {
         /* 透明叠加层，仅扩大触控热区 */
     }
     #seekProgress {
-        height: 100%;    /* 恢复默认，填满 #seekBar 的 10px */
+        height: 100%; /* 恢复默认，填满 #seekBar 的 10px */
         top: auto;
         transform: none;
         bottom: auto;
@@ -536,9 +541,15 @@ input, textarea, [contenteditable] {
 }
 /* 移动端：Modifier 类也缩小 */
 @media (max-width: 480px) {
-    .sceneOverlay-model { width: calc(200px * var(--ui-scale)); }
-    .sceneOverlay-motion { width: calc(220px * var(--ui-scale)); }
-    .sceneOverlay-settings { width: calc(240px * var(--ui-scale)); }
+    .sceneOverlay-model {
+        width: calc(200px * var(--ui-scale));
+    }
+    .sceneOverlay-motion {
+        width: calc(220px * var(--ui-scale));
+    }
+    .sceneOverlay-settings {
+        width: calc(240px * var(--ui-scale));
+    }
 }
 
 /* ===== 模型广场：独立全屏视图层（#webviewLayer，非 SlideMenu 弹窗，见 ADR-075） ===== */
@@ -567,7 +578,7 @@ input, textarea, [contenteditable] {
     justify-content: space-between;
     gap: 12px;
     padding: 12px 16px;
-    background: rgba(57, 197, 187, 0.10);
+    background: rgba(57, 197, 187, 0.1);
     border-bottom: 1px solid rgba(57, 197, 187, 0.22);
 }
 .plaza-toolbar-left,
@@ -612,7 +623,9 @@ input, textarea, [contenteditable] {
     cursor: pointer;
     background: transparent;
     color: rgba(232, 246, 244, 0.6);
-    transition: background 0.15s, color 0.15s;
+    transition:
+        background 0.15s,
+        color 0.15s;
 }
 .plaza-mode-opt:hover {
     color: var(--text, #e8f6f4);
@@ -838,7 +851,9 @@ input, textarea, [contenteditable] {
     background: transparent;
     color: var(--text-muted, rgba(232, 246, 244, 0.6));
     cursor: pointer;
-    transition: color var(--tr-fast), border-color var(--tr-fast);
+    transition:
+        color var(--tr-fast),
+        border-color var(--tr-fast);
     white-space: nowrap;
     font-family: inherit;
     margin-bottom: -1px;
@@ -1019,7 +1034,10 @@ input, textarea, [contenteditable] {
     color: var(--text-muted, rgba(232, 246, 244, 0.6));
     cursor: pointer;
     font-family: inherit;
-    transition: border-color var(--tr-fast), color var(--tr-fast), background var(--tr-fast);
+    transition:
+        border-color var(--tr-fast),
+        color var(--tr-fast),
+        background var(--tr-fast);
     white-space: nowrap;
 }
 
@@ -1096,8 +1114,12 @@ input, textarea, [contenteditable] {
 }
 
 @keyframes plaza-spin-anim {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .plaza-tag-filter-row {
@@ -1116,7 +1138,10 @@ input, textarea, [contenteditable] {
     color: var(--text-muted, rgba(232, 246, 244, 0.5));
     cursor: pointer;
     font-family: inherit;
-    transition: border-color 0.15s, color 0.15s, background 0.15s;
+    transition:
+        border-color 0.15s,
+        color 0.15s,
+        background 0.15s;
 }
 
 .plaza-tag-btn:hover {
@@ -1168,7 +1193,10 @@ input, textarea, [contenteditable] {
     border-radius: var(--radius-md, 6px);
     padding: 10px;
     cursor: pointer;
-    transition: background var(--tr-fast), border-color var(--tr-fast), transform var(--tr-fast);
+    transition:
+        background var(--tr-fast),
+        border-color var(--tr-fast),
+        transform var(--tr-fast);
     overflow: hidden;
 }
 
@@ -1191,12 +1219,12 @@ input, textarea, [contenteditable] {
     background: linear-gradient(90deg, transparent, var(--tier-color, var(--accent)), transparent);
 }
 
-.plaza-cr-card[data-tier="gold"] {
+.plaza-cr-card[data-tier='gold'] {
     --tier-color: #ffd700;
     border-color: rgba(255, 215, 0, 0.2);
 }
 
-.plaza-cr-card[data-tier="silver"] {
+.plaza-cr-card[data-tier='silver'] {
     --tier-color: #c0c0c0;
     border-color: rgba(192, 192, 192, 0.18);
 }
@@ -1232,8 +1260,12 @@ input, textarea, [contenteditable] {
 }
 
 @keyframes plaza-cr-ring-spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .plaza-cr-avatar {
@@ -1276,7 +1308,9 @@ input, textarea, [contenteditable] {
     font-size: 13px;
     color: var(--text-muted, rgba(232, 246, 244, 0.3));
     cursor: pointer;
-    transition: color var(--tr-fast), transform var(--tr-fast);
+    transition:
+        color var(--tr-fast),
+        transform var(--tr-fast);
     user-select: none;
 }
 
@@ -1290,9 +1324,16 @@ input, textarea, [contenteditable] {
 }
 
 @keyframes plaza-cr-star-pop {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.4); color: #ffd700; }
-    100% { transform: scale(1); }
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.4);
+        color: #ffd700;
+    }
+    100% {
+        transform: scale(1);
+    }
 }
 
 .plaza-cr-desc {
@@ -2125,7 +2166,6 @@ input, textarea, [contenteditable] {
     letter-spacing: var(--section-title-letter-spacing);
 }
 
-
 /* ===== Collapsible 通用折叠组件 ===== */
 .collapsible-wrapper {
     margin-bottom: calc(2px * var(--ui-scale));
@@ -2345,11 +2385,7 @@ input, textarea, [contenteditable] {
 }
 .cs-fill {
     height: 100%;
-    background: linear-gradient(
-        90deg,
-        rgba(var(--accent-rgb), 0.8),
-        var(--accent)
-    );
+    background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.8), var(--accent));
     border-radius: var(--cs-bar-radius);
     transition: width 0.06s linear;
     pointer-events: none;
@@ -2373,17 +2409,16 @@ input, textarea, [contenteditable] {
     left: -100%;
     right: 0;
     bottom: 0;
-    background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(255, 255, 255, 0.4),
-        transparent
-    );
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
     animation: csShimmer 2s infinite;
 }
 @keyframes csShimmer {
-    0% { left: -100%; }
-    100% { left: 100%; }
+    0% {
+        left: -100%;
+    }
+    100% {
+        left: 100%;
+    }
 }
 .cs-thumb {
     position: absolute;

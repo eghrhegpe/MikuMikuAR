@@ -29,9 +29,22 @@ import { SetLastBrowseDir } from '../core/wails-bindings';
 import { buildModelLevel, buildModelToolsLevel } from './model-detail';
 import { buildStageTransformLevel } from './scene-menu';
 import { buildLevel, modelToRow, buildModelRootItems, isModelDirTarget } from './library-core';
-import { onModelRowClick, replaceModel, buildTagsOverviewLevel, buildTagDetailLevel, highlightRow, prepareModelRestore, importFile } from './library-actions';
+import {
+    onModelRowClick,
+    replaceModel,
+    buildTagsOverviewLevel,
+    buildTagDetailLevel,
+    highlightRow,
+    prepareModelRestore,
+    importFile,
+} from './library-actions';
 import { refreshLibrary } from './library-setup';
-import { getPendingAutoExpand, setPendingAutoExpand, getPendingFocusModel, setPendingFocusModel } from './library-core';
+import {
+    getPendingAutoExpand,
+    setPendingAutoExpand,
+    getPendingFocusModel,
+    setPendingFocusModel,
+} from './library-core';
 
 // [修复] 数据未就绪时撤销本次 autoExpand，轮询等待 allModels 扫描/解压完成后
 // 再补做 push，避免解压未完成时进入空层（用户感知的"分类1为空/未刷新就进菜单"）。
@@ -45,11 +58,16 @@ function _isDirDataReady(targetDir: string): boolean {
 }
 
 function deferRestore(menu: SlideMenu, dir: string, seg: string): void {
-    if (_restoreTimer) clearTimeout(_restoreTimer);
+    if (_restoreTimer) {
+        clearTimeout(_restoreTimer);
+    }
     let tries = 0;
     const tick = () => {
         tries++;
-        if (tries > 40) { _restoreTimer = null; return; } // ~6s 上限，避免永久挂起
+        if (tries > 40) {
+            _restoreTimer = null;
+            return;
+        } // ~6s 上限，避免永久挂起
         const nextDir = normPath(dir + '/' + seg);
         if (!_isDirDataReady(nextDir)) {
             _restoreTimer = setTimeout(tick, 150);
@@ -58,11 +76,17 @@ function deferRestore(menu: SlideMenu, dir: string, seg: string): void {
         _restoreTimer = null;
         // 校验：菜单仍停留在该层且恢复态未被改写才补做 push，避免与 restoreBrowsePath 重复或误推
         const cur = menu.currentLevel;
-        if (!cur || normPath(cur.dir) !== normPath(dir)) return;
+        if (!cur || normPath(cur.dir) !== normPath(dir)) {
+            return;
+        }
         const pa = getPendingAutoExpand();
-        if (!pa || pa[0] !== seg) return;
+        if (!pa || pa[0] !== seg) {
+            return;
+        }
         setPendingAutoExpand(pa.length > 1 ? pa.slice(1) : null);
-        menu.push(buildLevel(nextDir, seg, (m) => m.format === 'pmx', stackRegistry.modelStack!, []));
+        menu.push(
+            buildLevel(nextDir, seg, (m) => m.format === 'pmx', stackRegistry.modelStack!, [])
+        );
     };
     _restoreTimer = setTimeout(tick, 150);
 }
@@ -90,31 +114,56 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                 return {
                     label: t('library.recent'),
                     dir: '',
-                    items: recentModelsList.length > 0
-                        ? recentModelsList.map((m) => modelToRow(m))
-                        : [{ kind: 'action' as const, label: t('library.noRecent'), icon: 'clock', target: '', sublabel: t('library.noRecentHint') }],
+                    items:
+                        recentModelsList.length > 0
+                            ? recentModelsList.map((m) => modelToRow(m))
+                            : [
+                                  {
+                                      kind: 'action' as const,
+                                      label: t('library.noRecent'),
+                                      icon: 'clock',
+                                      target: '',
+                                      sublabel: t('library.noRecentHint'),
+                                  },
+                              ],
                 };
             }
-            if (row.target === '__tags__') return buildTagsOverviewLevel();
+            if (row.target === '__tags__') {
+                return buildTagsOverviewLevel();
+            }
             if (row.target && row.target.startsWith('__tag:')) {
                 return buildTagDetailLevel(row.target.replace('__tag:', ''));
             }
             if (row.target === 'models:browse') {
                 if (!libraryRoot) {
                     return {
-                        label: t('library.title'), dir: '', items: [],
+                        label: t('library.title'),
+                        dir: '',
+                        items: [],
                         renderCustom: (container) => {
-                            container.style.cssText = 'padding:24px;text-align:center;color:var(--text-muted);font-size:13px;';
+                            container.style.cssText =
+                                'padding:24px;text-align:center;color:var(--text-muted);font-size:13px;';
                             container.innerHTML = `<div>${t('library.noRootDir')}</div><div style="font-size:11px;margin-top:8px;color:var(--text-dark);">${t('library.noRootDirHint')}</div>`;
                         },
                     };
                 }
                 const browseDir = getBrowseDir('pmx');
                 await prepareModelRestore(browseDir, 'pmx');
-                return buildLevel(browseDir, t('library.title'), (m) => m.format === 'pmx', stackRegistry.modelStack!, []);
+                return buildLevel(
+                    browseDir,
+                    t('library.title'),
+                    (m) => m.format === 'pmx',
+                    stackRegistry.modelStack!,
+                    []
+                );
             }
             if (isModelDirTarget(row.target)) {
-                return buildLevel(row.target, row.label, (m) => m.format === 'pmx', stackRegistry.modelStack!);
+                return buildLevel(
+                    row.target,
+                    row.label,
+                    (m) => m.format === 'pmx',
+                    stackRegistry.modelStack!
+                );
             }
             return null;
         },
@@ -122,7 +171,9 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
             if (row.target && row.target.startsWith('scene:')) {
                 const id = row.target.replace('scene:', '');
                 const inst = modelRegistry.get(id);
-                if (!inst) return;
+                if (!inst) {
+                    return;
+                }
                 if (inst.kind === 'stage') {
                     stackRegistry.modelStack?.push(buildStageTransformLevel(id));
                     return;
@@ -147,23 +198,38 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                 replaceModel(row.model);
                 return;
             }
-            if (row.target === 'models:rescan') { refreshLibrary(); return; }
-            if (row.target === 'models:import-file') { importFile(); return; }
+            if (row.target === 'models:rescan') {
+                refreshLibrary();
+                return;
+            }
+            if (row.target === 'models:import-file') {
+                importFile();
+                return;
+            }
         },
         onHover: (row, entering) => {
-            if (!entering) { setStatus('', false); return; }
+            if (!entering) {
+                setStatus('', false);
+                return;
+            }
             const hints: Record<string, string> = {
                 'models:browse': t('library.browseHint'),
                 'models:import-file': t('library.importHint'),
             };
             const hint = hints[row.target || ''];
-            if (hint) setStatus(hint, false);
+            if (hint) {
+                setStatus(hint, false);
+            }
         },
         onLevelEnter: (level, menu) => {
             const dir = normPath(level.dir);
-            if (!dir || dir === '.' || dir === '/') return;
+            if (!dir || dir === '.' || dir === '/') {
+                return;
+            }
             const browseRoot = getBrowseDir('pmx');
-            if (!browseRoot) return;
+            if (!browseRoot) {
+                return;
+            }
             const pendingFocus = getPendingFocusModel();
             const pendingAuto = getPendingAutoExpand();
             if (pendingFocus && normPath(level.dir) === pendingFocus.dir) {
@@ -176,16 +242,33 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                 // [修复] 数据守卫：仅当 allModels 已扫描到该目录的 pmx 才进入，
                 // 否则解压/扫描未完成时 push 会得到空层（"分类1为空"）。
                 if (!_isDirDataReady(nextDir)) {
-                    logWarn('library-browse', '[restore] defer autoExpand, data not ready', { nextDir });
+                    logWarn('library-browse', '[restore] defer autoExpand, data not ready', {
+                        nextDir,
+                    });
                     deferRestore(menu, dir, seg);
                     return;
                 }
                 setPendingAutoExpand(pendingAuto.length > 1 ? pendingAuto.slice(1) : null);
-                logWarn('library-browse', '[restore] autoExpand push', { from: dir, seg, nextDir, transitioning: menu.isTransitioning });
-                menu.push(buildLevel(nextDir, seg, (m) => m.format === 'pmx', stackRegistry.modelStack!, []));
+                logWarn('library-browse', '[restore] autoExpand push', {
+                    from: dir,
+                    seg,
+                    nextDir,
+                    transitioning: menu.isTransitioning,
+                });
+                menu.push(
+                    buildLevel(
+                        nextDir,
+                        seg,
+                        (m) => m.format === 'pmx',
+                        stackRegistry.modelStack!,
+                        []
+                    )
+                );
                 return;
             }
-            if (dir === browseRoot) return;
+            if (dir === browseRoot) {
+                return;
+            }
             if (isUnderRoot(browseRoot, dir)) {
                 void SetLastBrowseDir('pmx', dir);
             }
@@ -204,14 +287,20 @@ export function showModelPopup(): void {
     if (stackRegistry.modelStack) {
         stackRegistry.modelStack.resetToRoot();
         stackRegistry.modelStack.setLevel(0, {
-            label: t('library.model'), dir: '', items: buildModelRootItems(), itemBuilder: buildModelRootItems,
+            label: t('library.model'),
+            dir: '',
+            items: buildModelRootItems(),
+            itemBuilder: buildModelRootItems,
         });
         stackRegistry.modelStack.reRender();
         return;
     }
     stackRegistry.modelStack = makeModelMenu(wrapper);
     stackRegistry.modelStack.reset({
-        label: t('library.model'), dir: '', items: buildModelRootItems(), itemBuilder: buildModelRootItems,
+        label: t('library.model'),
+        dir: '',
+        items: buildModelRootItems(),
+        itemBuilder: buildModelRootItems,
     });
 }
 

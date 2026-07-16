@@ -4,12 +4,7 @@
 
 import { libraryRoot, setStatus, setLibraryRoot } from '../core/config';
 import { t } from '../core/i18n/t';
-import {
-    computeLibraryRef,
-    getBaseName,
-    normPath,
-    deepClone,
-} from '../core/utils';
+import { computeLibraryRef, getBaseName, normPath, deepClone } from '../core/utils';
 import {
     serializeScene,
     deserializeScene,

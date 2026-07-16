@@ -2,10 +2,7 @@
 // 从 scene-menu.ts 引用，独立管理全局物理参数（WASM Bullet）
 
 import type { PopupLevel } from '../core/config';
-import {
-    focusedModelId,
-    cardContainer,
-} from '../core/config';
+import { focusedModelId, cardContainer } from '../core/config';
 import { getGravityStrength, setGravityStrength } from '../scene/env/env-bridge';
 import {
     modelManager,

@@ -21,6 +21,7 @@ func (a *App) envPresetsDir() (string, error) {
 type EnvPresetEntry struct {
 	Name      string `json:"name"`
 	Label     string `json:"label"`
+	Category  string `json:"category"` // sky/ground/water/atmosphere；旧文件无此字段默认 "sky"
 	CreatedAt int64  `json:"createdAt"`
 }
 
@@ -96,6 +97,7 @@ func (a *App) ListEnvPresets() ([]EnvPresetEntry, error) {
 			}
 			nm := strings.TrimSuffix(e.Name(), ".env")
 			label := nm
+			category := "sky" // 旧文件（version 2）无 category，默认归天空类
 			path := filepath.Join(dir, e.Name())
 			if f, err := os.Open(path); err == nil {
 				buf := make([]byte, 1024)
@@ -103,16 +105,23 @@ func (a *App) ListEnvPresets() ([]EnvPresetEntry, error) {
 				f.Close()
 				if n > 0 {
 					var hdr struct {
-						Label string `json:"label"`
+						Label    string `json:"label"`
+						Category string `json:"category"`
 					}
-					if err := json.Unmarshal(buf[:n], &hdr); err == nil && hdr.Label != "" {
-						label = hdr.Label
+					if err := json.Unmarshal(buf[:n], &hdr); err == nil {
+						if hdr.Label != "" {
+							label = hdr.Label
+						}
+						if hdr.Category != "" {
+							category = hdr.Category
+						}
 					}
 				}
 			}
 			result = append(result, EnvPresetEntry{
 				Name:      nm,
 				Label:     label,
+				Category:  category,
 				CreatedAt: info.ModTime().Unix(),
 			})
 		}

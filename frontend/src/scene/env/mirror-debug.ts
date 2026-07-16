@@ -34,9 +34,14 @@ let _mirrorRotationY = 0; // 水平旋转（弧度）
 
 /** 从当前 mesh 世界矩阵更新 mirrorPlane，使反射平面与 mesh 实际位置/朝向一致。 */
 function _updateMirrorPlane(): void {
-    if (!_mirrorMesh || !_mirrorRT) return;
+    if (!_mirrorMesh || !_mirrorRT) {
+        return;
+    }
     // CreatePlane 局部法线为 (0,0,1)，经世界矩阵变换得到世界法线
-    const normal = Vector3.TransformNormal(new Vector3(0, 0, 1), _mirrorMesh.getWorldMatrix()).normalize();
+    const normal = Vector3.TransformNormal(
+        new Vector3(0, 0, 1),
+        _mirrorMesh.getWorldMatrix()
+    ).normalize();
     const position = _mirrorMesh.getAbsolutePosition();
     _mirrorRT.mirrorPlane = Plane.FromPositionAndNormal(position, normal);
 }
@@ -45,7 +50,9 @@ function _updateMirrorPlane(): void {
  *  - color 模式：用 scene.clearColor（天空色），使纯净的天空色在镜子中可见
  *  - 其他模式：透明黑，由反射内容自然叠加 */
 export function updateDebugMirrorClearColor(): void {
-    if (!_mirrorRT) return;
+    if (!_mirrorRT) {
+        return;
+    }
     const scene = getScene();
     if (envState.skyMode === 'color') {
         _mirrorRT.clearColor = scene.clearColor.clone();

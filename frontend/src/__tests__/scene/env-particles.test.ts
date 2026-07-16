@@ -43,10 +43,13 @@ beforeEach(() => {
     (globalThis as any).__particlesTestScene = scene;
 
     const fakeCanvas = {
-        width: 0, height: 0,
+        width: 0,
+        height: 0,
         getContext: () => ({
             createImageData: (w: number, h: number) => ({
-                data: new Uint8ClampedArray(w * h * 4), width: w, height: h,
+                data: new Uint8ClampedArray(w * h * 4),
+                width: w,
+                height: h,
             }),
             putImageData: () => {},
             clearRect: () => {},
@@ -207,7 +210,10 @@ describe('env-particles', () => {
 
     describe('applyWindToParticles', () => {
         it('无初始方向时不抛错', () => {
-            const ps = { direction1: { clone: () => ({ add: () => ({}) }) }, direction2: { clone: () => ({ add: () => ({}) }) } } as any;
+            const ps = {
+                direction1: { clone: () => ({ add: () => ({}) }) },
+                direction2: { clone: () => ({ add: () => ({}) }) },
+            } as any;
             expect(() => applyWindToParticles(ps)).not.toThrow();
         });
     });

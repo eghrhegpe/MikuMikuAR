@@ -214,8 +214,8 @@ export function showErrorAction(title: string, message: string): void {
     };
 
     // Clone to remove old listeners
-            _replaceButtonListeners(confirmBtn, cancelBtn, onCopy, onClose);
-            document.addEventListener(
+    _replaceButtonListeners(confirmBtn, cancelBtn, onCopy, onClose);
+    document.addEventListener(
         'keydown',
         (e: KeyboardEvent) => {
             if (e.key === 'Escape') {

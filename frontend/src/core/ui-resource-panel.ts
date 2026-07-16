@@ -195,7 +195,8 @@ export function createResourcePanel(
             }
         },
         refreshThumbs: () => {
-            panel.querySelectorAll<HTMLElement>('.resource-thumb, .resource-thumb-sm')
+            panel
+                .querySelectorAll<HTMLElement>('.resource-thumb, .resource-thumb-sm')
                 .forEach((el) => applyThumbIfCached(el));
         },
         dispose: () => {

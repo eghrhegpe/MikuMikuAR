@@ -130,8 +130,7 @@ function buildLibrarySchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode
                                     onClick: () => {
                                         delete uiState.materialCategoryMap![pattern];
                                         if (
-                                            Object.keys(uiState.materialCategoryMap!).length ===
-                                            0
+                                            Object.keys(uiState.materialCategoryMap!).length === 0
                                         ) {
                                             delete uiState.materialCategoryMap;
                                         }
@@ -181,9 +180,7 @@ function buildLibrarySchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode
     ];
 }
 
-export function buildSettingsLibraryLevel(
-    getSettingsMenu: () => SettingsMenuHandle
-): PopupLevel {
+export function buildSettingsLibraryLevel(getSettingsMenu: () => SettingsMenuHandle): PopupLevel {
     return {
         label: t('settings.library'),
         dir: '',

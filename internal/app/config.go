@@ -118,8 +118,10 @@ func (a *App) updateConfig(mutate func(*Config), rescan bool) error {
 	}
 	mutate(cfg)
 	if rescan {
+		a.safeLogInfo("[config-persist] updateConfig: rescan=true")
 		return a.writeConfigAndRescan(cfg)
 	}
+	a.safeLogInfo("[config-persist] updateConfig: rescan=false")
 	return a.writeConfig(cfg)
 }
 
@@ -271,6 +273,8 @@ func (a *App) SetPerformanceMode(mode string) error {
 
 // SetEnvState persists the environment state (sky, ground, particles, fog, etc.).
 func (a *App) SetEnvState(env EnvState) error {
+	a.safeLogInfo("[env-persist] SetEnvState: skyMode=%s groundVisible=%v waterEnabled=%v",
+		env.SkyMode, env.GroundVisible, env.WaterEnabled)
 	return a.updateConfig(func(cfg *Config) { cfg.Env = &env }, false)
 }
 
@@ -279,6 +283,8 @@ func (a *App) SetEnvState(env EnvState) error {
 // (e.g. setResourceViewMode sending just {resourceViewMode}) do not wipe the
 // other persisted UI state fields.
 func (a *App) SetUIState(ui UIState) error {
+	a.safeLogInfo("[ui-persist] SetUIState: scale=%.1f popupWidth=%d perfMode=%s",
+		ui.Scale, ui.PopupWidth, ui.PerformanceMode)
 	return a.updateConfig(func(cfg *Config) { mergeUIState(&cfg.UIState, ui) }, false)
 }
 

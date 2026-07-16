@@ -51,7 +51,10 @@ export async function initLibrary(): Promise<void> {
         if (cfg.display_name_priority) {
             setDisplayNamePriority(cfg.display_name_priority as DisplayNamePriority);
         }
-        if (cfg.ui_state?.resourceViewMode === 'grid' || cfg.ui_state?.resourceViewMode === 'list') {
+        if (
+            cfg.ui_state?.resourceViewMode === 'grid' ||
+            cfg.ui_state?.resourceViewMode === 'list'
+        ) {
             setResourceViewMode(cfg.ui_state.resourceViewMode);
         }
         try {
@@ -69,7 +72,9 @@ export async function initLibrary(): Promise<void> {
             if (validCached.length > 0) {
                 setAllModels(validCached);
             }
-        } catch { /* no cache */ }
+        } catch {
+            /* no cache */
+        }
         try {
             await rescanAndSync();
         } catch (err) {
@@ -79,7 +84,10 @@ export async function initLibrary(): Promise<void> {
         setStatus(t('library.browseHint2'), false);
     } catch (err) {
         logWarn('library-setup', 'initLibrary:', err);
-        setStatus(t('library.loadLibraryFailed') + (err instanceof Error ? err.message : String(err)), false);
+        setStatus(
+            t('library.loadLibraryFailed') + (err instanceof Error ? err.message : String(err)),
+            false
+        );
     }
 }
 
@@ -91,12 +99,16 @@ export async function selectResourceRoot(): Promise<void> {
         return;
     }
     const ok = await showConfirm(t('library.confirmRescan'), t('library.confirmRescanTitle'));
-    if (!ok) return;
+    if (!ok) {
+        return;
+    }
     const dir = await tryCatchStatus(async () => {
         const d = await SelectDir();
         return d ? d : undefined;
     }, t('library.dirSetFailed'));
-    if (!dir) return;
+    if (!dir) {
+        return;
+    }
     await tryCatchStatus(async () => {
         await SetResourceRoot(dir);
         await reloadConfig();
@@ -113,7 +125,9 @@ export async function selectOverridePath(category: string): Promise<void> {
         const d = await SelectDir();
         return d ? d : undefined;
     }, t('library.dirSetFailed'));
-    if (!dir) return;
+    if (!dir) {
+        return;
+    }
     await tryCatchStatus(async () => {
         await SetOverridePath(category, dir);
         await reloadConfig();
@@ -122,18 +136,25 @@ export async function selectOverridePath(category: string): Promise<void> {
 }
 
 export async function switchStorageMode(mode: 'private' | 'shared'): Promise<void> {
-    if (!isAndroidPlatform()) return;
+    if (!isAndroidPlatform()) {
+        return;
+    }
     const ok = await showConfirm(
         mode === 'shared' ? t('library.confirmSwitchShared') : t('library.confirmSwitchPrivate'),
         t('library.confirmSwitchTitle')
     );
-    if (!ok) return;
+    if (!ok) {
+        return;
+    }
     try {
         await SetStorageMode(mode);
         await reloadConfig();
         await refreshLibrary();
     } catch (err) {
-        setStatus(`${t('library.dirSetFailed')}: ${err instanceof Error ? err.message : '未知错误'}`, true);
+        setStatus(
+            `${t('library.dirSetFailed')}: ${err instanceof Error ? err.message : '未知错误'}`,
+            true
+        );
         throw err;
     }
 }
@@ -158,40 +179,62 @@ export async function reloadConfig(): Promise<void> {
 
 function getCurrentBrowsePath(): string[] {
     const stack = stackRegistry.modelStack;
-    if (!stack || stack.levelCount === 0) return [];
+    if (!stack || stack.levelCount === 0) {
+        return [];
+    }
     const dirs: string[] = [];
     for (let i = 0; i < stack.levelCount; i++) {
         const level = stack.getLevel(i);
-        if (level && level.dir && level.dir !== '') dirs.push(level.dir);
+        if (level && level.dir && level.dir !== '') {
+            dirs.push(level.dir);
+        }
     }
     return dirs;
 }
 
-function hasSubdir(parentDir: string, childName: string, filter?: (m: LibraryModel) => boolean): boolean {
+function hasSubdir(
+    parentDir: string,
+    childName: string,
+    filter?: (m: LibraryModel) => boolean
+): boolean {
     const parent = normPath(parentDir);
     for (const m of allModels) {
-        if (filter && !filter(m)) continue;
+        if (filter && !filter(m)) {
+            continue;
+        }
         const mdir = normPath(m.dir);
-        if (!isUnderRoot(parent, mdir)) continue;
+        if (!isUnderRoot(parent, mdir)) {
+            continue;
+        }
         const rel = mdir.substring(parent.length + 1);
         const parts = rel.split('/').filter(Boolean);
-        if (parts.length > 0 && parts[0] === childName) return true;
+        if (parts.length > 0 && parts[0] === childName) {
+            return true;
+        }
     }
     return false;
 }
 
 function restoreBrowsePath(pathDirs: string[]): void {
     const stack = stackRegistry.modelStack;
-    if (!stack || pathDirs.length <= 1 || !libraryRoot) return;
+    if (!stack || pathDirs.length <= 1 || !libraryRoot) {
+        return;
+    }
     const rootDir = normPath(libraryRoot);
-    if (pathDirs[0] !== rootDir) return;
+    if (pathDirs[0] !== rootDir) {
+        return;
+    }
     const filter = (m: LibraryModel) => m.format === 'pmx';
     let currentDir = rootDir;
     for (let i = 1; i < pathDirs.length; i++) {
         const targetDir = normPath(pathDirs[i]);
-        if (!isUnderRoot(currentDir, targetDir)) break;
+        if (!isUnderRoot(currentDir, targetDir)) {
+            break;
+        }
         const childName = targetDir.substring(currentDir.length + 1).split('/')[0];
-        if (!childName || !hasSubdir(currentDir, childName, filter)) break;
+        if (!childName || !hasSubdir(currentDir, childName, filter)) {
+            break;
+        }
         const nextDir = currentDir + '/' + childName;
         const nextLevel = buildLevel(nextDir, childName, filter, stack);
         stack.push(nextLevel);
@@ -207,14 +250,27 @@ export async function refreshLibrary(): Promise<void> {
     const models = await tryCatchStatus(async () => {
         return await rescanAndSync();
     }, t('library.scanFailed'));
-    if (models === undefined) return;
+    if (models === undefined) {
+        return;
+    }
     setStatus(t('library.entriesCount', { n: (models || []).length }), true);
-    CleanOrphanCache().catch((err) => logWarn('library-setup', 'CleanOrphanCache (background):', err));
-    if (dom.sceneOverlay.classList.contains('visible') && dom.sceneOverlay.dataset.popupType === 'model') {
+    CleanOrphanCache().catch((err) =>
+        logWarn('library-setup', 'CleanOrphanCache (background):', err)
+    );
+    if (
+        dom.sceneOverlay.classList.contains('visible') &&
+        dom.sceneOverlay.dataset.popupType === 'model'
+    ) {
         showModelPopup();
         if (prevPath.length > 0 && libraryRoot) {
             const rootDir = normPath(libraryRoot);
-            const rootLevel = buildLevel(rootDir, t('library.title'), (m) => m.format === 'pmx', stackRegistry.modelStack!, []);
+            const rootLevel = buildLevel(
+                rootDir,
+                t('library.title'),
+                (m) => m.format === 'pmx',
+                stackRegistry.modelStack!,
+                []
+            );
             stackRegistry.modelStack!.push(rootLevel);
             restoreBrowsePath(prevPath);
         }

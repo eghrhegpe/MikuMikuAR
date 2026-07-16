@@ -38,9 +38,15 @@ let _thumbMutex: Promise<unknown> = Promise.resolve();
 
 /** base64 缩略图数据的 MIME 嗅探：PNG/JPEG/WebP 头部字节不同 */
 export function thumbDataUrl(base64: string): string {
-    if (base64.startsWith('iVBOR')) return `data:image/png;base64,${base64}`;
-    if (base64.startsWith('/9j/')) return `data:image/jpeg;base64,${base64}`;
-    if (base64.startsWith('UklGR')) return `data:image/webp;base64,${base64}`;
+    if (base64.startsWith('iVBOR')) {
+        return `data:image/png;base64,${base64}`;
+    }
+    if (base64.startsWith('/9j/')) {
+        return `data:image/jpeg;base64,${base64}`;
+    }
+    if (base64.startsWith('UklGR')) {
+        return `data:image/webp;base64,${base64}`;
+    }
     // 兜底：默认 PNG
     return `data:image/png;base64,${base64}`;
 }
@@ -59,7 +65,9 @@ export async function renderInstanceThumbnail(
     // 串行化：排队等待上一个缩略图渲染完成，避免并发操作 RT/framebuffer/物理状态
     const prev = _thumbMutex;
     let release!: () => void;
-    _thumbMutex = new Promise<void>((r) => { release = r; });
+    _thumbMutex = new Promise<void>((r) => {
+        release = r;
+    });
     await prev;
     try {
         await _renderThumbnailImpl(scene, inst, key);
@@ -81,7 +89,9 @@ export async function renderPropThumbnail(
 ): Promise<void> {
     const prev = _thumbMutex;
     let release!: () => void;
-    _thumbMutex = new Promise<void>((r) => { release = r; });
+    _thumbMutex = new Promise<void>((r) => {
+        release = r;
+    });
     await prev;
     try {
         const src: ThumbnailSource = {
@@ -112,12 +122,8 @@ async function _renderThumbnailImpl(
     // 格式：原 key::resolution::aspect（如 filePath::512::2/3）
     const cacheKey = buildThumbnailKey({ baseKey: key, isStage, resolution: thumbMax });
 
-    const rtW = isStage
-        ? thumbMax
-        : Math.max(1, Math.round(thumbMax * THUMB_ASPECT));
-    const rtH = isStage
-        ? Math.max(1, Math.round(thumbMax / THUMB_ASPECT))
-        : thumbMax;
+    const rtW = isStage ? thumbMax : Math.max(1, Math.round(thumbMax * THUMB_ASPECT));
+    const rtH = isStage ? Math.max(1, Math.round(thumbMax / THUMB_ASPECT)) : thumbMax;
 
     const rt = new RenderTargetTexture('thumbRT', { width: rtW, height: rtH }, scene, false);
     rt.clearColor = new Color4(0, 0, 0, 0);
@@ -144,7 +150,7 @@ async function _renderThumbnailImpl(
         thumbCam.minZ,
         thumbCam.maxZ,
         projMatrix,
-        true,  // isVerticalFovFixed = true（fov 是垂直视野）
+        true // isVerticalFovFixed = true（fov 是垂直视野）
     );
     thumbCam.freezeProjectionMatrix(projMatrix);
 
@@ -156,9 +162,7 @@ async function _renderThumbnailImpl(
         // activeCamera 类型是 Camera 基类，getTarget 只在 TargetCamera 上。
         // 用 position + forward 方向 × 10 推算 target，兼容所有相机类型。
         const fwd = scene.activeCamera.getDirection(Vector3.Forward());
-        thumbCam.setTarget(
-            thumbCam.position.add(fwd.scale(10))
-        );
+        thumbCam.setTarget(thumbCam.position.add(fwd.scale(10)));
     } else {
         // 角色（或无主相机的退化场景）：基于包围盒聚焦上半身，凸显服饰特征。
         const bb = inst.rootMesh.getHierarchyBoundingVectors(true);
@@ -168,18 +172,24 @@ async function _renderThumbnailImpl(
         const extent = bb.max.subtract(bb.min);
 
         // 焦点：全身 60% 高度（胸部），能看到面部+上半身服饰
-        const focusCenterY = bb.min.y + fullHeight * 0.6;
-        const focusHeight = fullHeight * 0.46;
+        const focusCenterY = bb.min.y + fullHeight * 0.55;
+        const focusHeight = fullHeight * 0.65;
         const focusWidth = extent.x * 0.55;
 
         // 距离系数 0.75 与主相机 autoFrame（extent * 0.75 + 2）同源，行为可预测。
-        const dist = Math.max(focusHeight, focusWidth / THUMB_ASPECT) * 0.75 / (2 * Math.tan(THUMB_FOV / 2));
+        const dist =
+            (Math.max(focusHeight, focusWidth / THUMB_ASPECT) * 0.75) /
+            (2 * Math.tan(THUMB_FOV / 2));
 
         // 相机朝向：复用主相机方向，或默认 -Z（MMD 正面）
-        let dirX = 0, dirY = 0, dirZ = -1;
+        let dirX = 0,
+            dirY = 0,
+            dirZ = -1;
         if (scene.activeCamera) {
             const fwd = scene.activeCamera.getDirection(Vector3.Forward());
-            dirX = fwd.x; dirY = fwd.y; dirZ = fwd.z;
+            dirX = fwd.x;
+            dirY = fwd.y;
+            dirZ = fwd.z;
         }
         // 沿朝向反方向放置相机（dir 是相机看向目标的方向，相机在 target - dir*dist）
         thumbCam.position.set(
@@ -239,7 +249,10 @@ async function _renderThumbnailImpl(
             const rowBytes = rtW * 4;
             const flipped = new Uint8Array(arr.length);
             for (let y = 0; y < rtH; y++) {
-                flipped.set(arr.subarray(y * rowBytes, y * rowBytes + rowBytes), (rtH - 1 - y) * rowBytes);
+                flipped.set(
+                    arr.subarray(y * rowBytes, y * rowBytes + rowBytes),
+                    (rtH - 1 - y) * rowBytes
+                );
             }
             imageData.data.set(flipped);
             ctx.putImageData(imageData, 0, 0);

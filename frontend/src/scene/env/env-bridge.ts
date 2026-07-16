@@ -22,7 +22,7 @@ import {
 } from '@/core/utils';
 import { col3FromTriple } from '@/core/color-helpers';
 import { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
-import { deriveLighting, TIME_OF_DAY_PRESETS } from './env-lighting';
+import { deriveLighting, TIME_OF_DAY_PRESETS, type CategorizedEnvPreset } from './env-lighting';
 import * as impl from './env-impl';
 import {
     setLightState,
@@ -61,44 +61,105 @@ function _applyIfChanged(
 
 // 子系统 key 表 — 集中定义，便于维护
 const _SKY_KEYS = [
-    'skyMode', 'skyColorTop', 'skyColorMid', 'skyColorBot',
-    'skyTexture', 'skyRotationY', 'skyRotationSpeed', 'skyBrightness',
-    'starsEnabled', 'starsTexture', 'envIntensity', 'sunAngle', 'azimuth',
+    'skyMode',
+    'skyColorTop',
+    'skyColorMid',
+    'skyColorBot',
+    'skyTexture',
+    'skyRotationY',
+    'skyRotationSpeed',
+    'skyBrightness',
+    'starsEnabled',
+    'starsTexture',
+    'envIntensity',
+    'sunAngle',
+    'azimuth',
 ];
 const _GROUND_KEYS = [
-    'groundVisible', 'groundType', 'groundStyle', 'groundDecoStyle',
-    'groundColor', 'groundAlpha', 'groundTexture', 'groundTextureEnabled',
-    'groundTextureScale', 'groundTextureRotation', 'groundTerrainHeight',
-    'groundTerrainScale', 'groundTerrainSeed', 'groundTerrainOctaves',
-    'groundSize', 'groundGridSize', 'groundLineColor', 'groundEdgeFade',
-    'groundPitch', 'groundRoll', 'groundScrollSpeedX', 'groundScrollSpeedZ',
-    'groundPattern', 'groundReflectionBlend', 'groundReflectionQuality',
-    'groundNormalTexture', 'groundNormalStrength', 'groundElevationColoring',
-    'groundFollowCamera', 'groundLevel',
+    'groundVisible',
+    'groundType',
+    'groundStyle',
+    'groundDecoStyle',
+    'groundColor',
+    'groundAlpha',
+    'groundTexture',
+    'groundTextureEnabled',
+    'groundTextureScale',
+    'groundTextureRotation',
+    'groundTerrainHeight',
+    'groundTerrainScale',
+    'groundTerrainSeed',
+    'groundTerrainOctaves',
+    'groundSize',
+    'groundGridSize',
+    'groundLineColor',
+    'groundEdgeFade',
+    'groundPitch',
+    'groundRoll',
+    'groundScrollSpeedX',
+    'groundScrollSpeedZ',
+    'groundPattern',
+    'groundReflectionBlend',
+    'groundReflectionQuality',
+    'groundNormalTexture',
+    'groundNormalStrength',
+    'groundElevationColoring',
+    'groundFollowCamera',
+    'groundLevel',
 ];
 const _FOG_KEYS = ['fogEnabled', 'fogColor', 'fogDensity', 'fogMode', 'fogStart', 'fogEnd'];
 const _WATER_KEYS = [
-    'waterEnabled', 'waterLevel', 'waterColor', 'waterTransparency',
-    'waterWaveHeight', 'waterSize', 'waterAnimSpeed', 'fresnelBias',
-    'fresnelPower', 'diffuseStrength', 'ambientStrength', 'foamTransitionRange',
-    'rippleNormalStrength', 'rippleGlintStrength', 'causticColor1', 'causticColor2',
-    'causticScrollX', 'causticScrollY', 'fresnelAlphaInfluence',
-    'foamThreshold', 'foamIntensity', 'foamOpacity',
-    'waterFogColor', 'waterFogDensity', 'waterFogOpacityInfluence',
+    'waterEnabled',
+    'waterLevel',
+    'waterColor',
+    'waterTransparency',
+    'waterWaveHeight',
+    'waterSize',
+    'waterAnimSpeed',
+    'fresnelBias',
+    'fresnelPower',
+    'diffuseStrength',
+    'ambientStrength',
+    'foamTransitionRange',
+    'rippleNormalStrength',
+    'rippleGlintStrength',
+    'causticColor1',
+    'causticColor2',
+    'causticScrollX',
+    'causticScrollY',
+    'fresnelAlphaInfluence',
+    'foamThreshold',
+    'foamIntensity',
+    'foamOpacity',
+    'waterFogColor',
+    'waterFogDensity',
+    'waterFogOpacityInfluence',
     'reflectionQuality', // ADR-114 修复：反射质量开关需触发材质重建（PLANAR_REFLECTION define 切换）
 ];
 const _PARTICLE_KEYS = [
-    'particleEnabled', 'particleType', 'particleEmitRate',
-    'particleSize', 'particleSpeed', 'particleSplash', 'particleCustomTexture',
+    'particleEnabled',
+    'particleType',
+    'particleEmitRate',
+    'particleSize',
+    'particleSpeed',
+    'particleSplash',
+    'particleCustomTexture',
 ];
 const _CLOUD_KEYS = [
-    'cloudsEnabled', 'cloudCover', 'cloudScale', 'cloudHeight',
-    'cloudThickness', 'cloudVisibility', 'cloudGap',
+    'cloudsEnabled',
+    'cloudCover',
+    'cloudScale',
+    'cloudHeight',
+    'cloudThickness',
+    'cloudVisibility',
+    'cloudGap',
 ];
 // ADR-114 Phase 3: 接触阴影后处理（转发到 renderer.setContactShadow）
 const _CONTACT_SHADOW_KEYS = [
-    'groundContactShadowEnabled', 'groundContactShadowIntensity',
-    'groundContactShadowDistance', 'groundReflectionQuality',
+    'groundContactShadowEnabled',
+    'groundContactShadowIntensity',
+    'groundContactShadowDistance',
+    'groundReflectionQuality',
 ];
 
 /** 等同于 scene-env.ts 的 applyEnvState，但避免循环依赖。 */
@@ -123,8 +184,11 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
     _applyIfChanged(changed, _FOG_KEYS, 'fog', () => impl.applyFog(state));
 
     _applyIfChanged(changed, _WATER_KEYS, 'water', () => {
-        if (state.waterEnabled) impl.createWater(state);
-        else impl.disposeWater();
+        if (state.waterEnabled) {
+            impl.createWater(state);
+        } else {
+            impl.disposeWater();
+        }
     });
 
     _applyIfChanged(changed, _PARTICLE_KEYS, 'particle', () => {
@@ -136,8 +200,11 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
     });
 
     _applyIfChanged(changed, _CLOUD_KEYS, 'cloud', () => {
-        if (state.cloudsEnabled) impl.createClouds(state);
-        else impl.disposeClouds();
+        if (state.cloudsEnabled) {
+            impl.createClouds(state);
+        } else {
+            impl.disposeClouds();
+        }
     });
 
     // ADR-114 Phase 3: 接触阴影后处理（转发到 renderer）
@@ -146,8 +213,11 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
     });
 
     _applyIfChanged(changed, ['debugMirrorEnabled'], 'debugMirror', () => {
-        if (state.debugMirrorEnabled && !impl.isDebugMirrorActive()) impl.createDebugMirror();
-        else if (!state.debugMirrorEnabled && impl.isDebugMirrorActive()) impl.disposeDebugMirror();
+        if (state.debugMirrorEnabled && !impl.isDebugMirrorActive()) {
+            impl.createDebugMirror();
+        } else if (!state.debugMirrorEnabled && impl.isDebugMirrorActive()) {
+            impl.disposeDebugMirror();
+        }
     });
 
     // 半球光 — 强度跟随当前灯光状态，颜色随天空色（灯光未初始化时跳过）
@@ -321,7 +391,7 @@ export function stopTimeOfDay(): void {
         _unregisterTimeOfDay = null;
     }
     // 持久化当前 sunAngle 到后端
-    SetEnvState(envState).catch((err) => {
+    SetEnvState({ ...envState }).catch((err) => {
         logWarn('_applyTimeOfDayPreset', 'persist failed', err);
         setStatus(t_i18n('env.persistFailed'), false);
     });
@@ -440,7 +510,7 @@ function _presetAnimLoop(ctx: PresetAnimCtx, observer: Observer<Scene>): void {
             _lastAutoLinkSunAngle = envSunAngle;
         }
         _timeOfDayBeforePreset = null;
-        SetEnvState(envState).catch((err) => {
+        SetEnvState({ ...envState }).catch((err) => {
             logWarn('applyLightingPresetFromEnv', 'persist failed', err);
             setStatus(t_i18n('env.persistFailed'), false);
         });
@@ -506,13 +576,35 @@ export function applyEnvPresetObject(preset: {
     setSkipLightAutoSave(true);
 
     const ctx: PresetAnimCtx = {
-        myId, preset, startSkyTop, startSkyBot, startSkyMid,
-        mid, startLight, targetLight,
-        startTime: performance.now(), lastSkyUpdate: 0,
+        myId,
+        preset,
+        startSkyTop,
+        startSkyBot,
+        startSkyMid,
+        mid,
+        startLight,
+        targetLight,
+        startTime: performance.now(),
+        lastSkyUpdate: 0,
     };
-    const observer = scene.onBeforeRenderObservable.add(
-        () => _presetAnimLoop(ctx, observer)
-    );
+    const observer = scene.onBeforeRenderObservable.add(() => _presetAnimLoop(ctx, observer));
+    return true;
+}
+
+/**
+ * [adr-120] 按类别应用用户自定义预设。
+ * 与 applyEnvPresetObject（内置天空预设，带动画过渡）不同，本函数直接 setEnvState 该类别字段，
+ * 不做动画过渡（用户分类预设追求精确还原，无需过渡）。天空类预设会额外触发光照联动。
+ */
+export function applyEnvPresetByCategory(preset: CategorizedEnvPreset): boolean {
+    if (!preset.fields || Object.keys(preset.fields).length === 0) {
+        return false;
+    }
+    // sky 类预设含 sunAngle 时，需先更新模块级 envSunAngle（与 applyEnvPresetObject 一致的前置约束）
+    if (preset.category === 'sky' && typeof preset.fields.sunAngle === 'number') {
+        setEnvSunAngle(preset.fields.sunAngle);
+    }
+    setEnvState(preset.fields);
     return true;
 }
 
@@ -544,6 +636,8 @@ function migrateEnvState(input: Partial<EnvState>): Partial<EnvState> {
 }
 
 export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): void {
+    const keys = Object.keys(partial).join(', ');
+    console.info(`[env-persist] setEnvState() called: ${keys} ${skipAutoSave ? '(skipAutoSave)' : ''}`);
     const migrated = migrateEnvState(partial);
     Object.assign(envState, migrated);
 
@@ -555,7 +649,9 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
     }
 
     _envPersistTimer.schedule(() => {
-        SetEnvState(envState).catch((err) => {
+        // 传普通对象副本（非 reactive Proxy），避免 JSON.stringify 对 Proxy 枚举不完整
+        console.info('[env-persist] debounce fired → SetEnvState()');
+        SetEnvState({ ...envState }).catch((err) => {
             logWarn('setEnvState', 'persist failed', err);
             setStatus(t_i18n('env.persistFailed'), false);
         });
@@ -568,8 +664,10 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
 
 /** 立即刷写 env state 到后端（无防抖）。关闭/隐藏页面时调用。 */
 export function flushEnvState(): void {
+    console.info('[env-persist] flushEnvState() — immediate flush');
     _envPersistTimer.cancel();
-    SetEnvState(envState).catch((err) => {
+    // 传普通对象副本（非 reactive Proxy）
+    SetEnvState({ ...envState }).catch((err) => {
         logWarn('flushEnvState', 'persist failed', err);
         setStatus(t_i18n('env.persistFailed'), false);
     });
@@ -604,6 +702,7 @@ export function schedulePersistUI(): void {
 
 /** 立即刷写 UI state 到后端（无防抖）。关闭/隐藏页面时调用。 */
 export function flushUIState(): void {
+    console.info('[ui-persist] flushUIState() — immediate flush');
     _uiPersistTimer.cancel();
     const payload = _buildUIStatePayload();
     if (Object.keys(payload).length === 0) {

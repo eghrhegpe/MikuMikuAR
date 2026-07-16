@@ -13,6 +13,7 @@ import {
     EnvState,
     formatError,
     uiState,
+    envState,
 } from './config';
 import { t } from './i18n/t';
 import { registerIconBundle } from './icons-bundle';
@@ -21,7 +22,7 @@ import { GetConfig, Events, CheckForUpdate } from './wails-bindings';
 import { isAndroidPlatform } from './platform';
 import { generateTextColors } from '../menus/settings';
 import { SETTINGS_FONT_RESTORE } from '../menus/settings-shared';
-import { initScene, tryRestoreLastScene, setEnvState } from '../scene/scene';
+import { initScene, tryRestoreLastScene, setEnvState, applyEnvState, setSuppressAutoSave } from '../scene/scene';
 import { initRuntimeBadge } from './runtime-mode';
 import { applyHudVisibility, disposeStatusBar } from './status-bar';
 import { hexToRgb, rgbToString } from './color-helpers';
@@ -181,7 +182,9 @@ async function init(): Promise<void> {
 async function restoreEnvState(): Promise<void> {
     const cfg = await GetConfig();
     if (cfg.env) {
+        console.info('[env-restore] restoreEnvState: cfg.env 存在，开始恢复环境状态');
         const loaded = cfg.env as Partial<EnvState>;
+        console.info('[env-restore]', 'skyMode:', loaded.skyMode, 'groundVisible:', loaded.groundVisible, 'waterEnabled:', loaded.waterEnabled, 'sunAngle:', loaded.sunAngle);
         // 向后兼容：旧配置缺少高级水面参数时补上默认值
         if (loaded.fresnelBias === undefined || loaded.fresnelBias === 0) {
             loaded.fresnelBias = 0.02;
@@ -209,7 +212,27 @@ async function restoreEnvState(): Promise<void> {
         if (loaded.reflectionQuality === undefined) {
             loaded.reflectionQuality = 'off';
         }
-        setEnvState(loaded as Partial<EnvState>);
+        // 向后兼容：旧配置缺少粒子字段时补默认值
+        if (loaded.particleEnabled === undefined) {
+            loaded.particleEnabled = false;
+            loaded.particleType = 'none';
+            loaded.particleEmitRate = 1;
+            loaded.particleSize = 1;
+            loaded.particleSpeed = 1;
+            loaded.particleSplash = false;
+            loaded.particleCustomTexture = '';
+        }
+        // 用 setEnvState 替代 Object.assign + applyEnvState，确保：
+        // 1. migrateEnvState 处理旧字段转换（如 groundMode → groundType+groundStyle）
+        // 2. reactive 状态通过 Proxy 正确通知 UI 刷新
+        // 3. _applyEnvStateFacade 精确控制各子系统应用（避免 applyEnvState 的全量无条件重建）
+        // 4. 抑制 auto-save，防止恢复过程中触发级联保存
+        setSuppressAutoSave(true);
+        setEnvState(loaded, true);
+        setSuppressAutoSave(false);
+        console.info('[env-restore] 环境状态恢复完成');
+    } else {
+        console.info('[env-restore] restoreEnvState: cfg.env 为 null/undefined，跳过环境恢复');
     }
 }
 

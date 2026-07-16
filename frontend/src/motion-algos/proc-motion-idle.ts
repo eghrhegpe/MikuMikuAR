@@ -15,10 +15,7 @@ import {
     type ProcMotionState,
 } from './proc-motion-shared';
 
-export function generateIdleVmd(
-    state: ProcMotionState,
-    boneNames: string[] = []
-): ArrayBuffer {
+export function generateIdleVmd(state: ProcMotionState, boneNames: string[] = []): ArrayBuffer {
     const safeSpeed = Math.max(0.1, Math.min(10, state.speed));
     const loopFrames = Math.min(MAX_FRAMES, Math.round(120 / safeSpeed));
     const intensity = state.intensity;
@@ -57,8 +54,12 @@ export function generateIdleVmd(
                 });
             }
         }
-        if (larmBone) bones.push(closingFrame(larmBone, loopFrames));
-        if (rarmBone) bones.push(closingFrame(rarmBone, loopFrames));
+        if (larmBone) {
+            bones.push(closingFrame(larmBone, loopFrames));
+        }
+        if (rarmBone) {
+            bones.push(closingFrame(rarmBone, loopFrames));
+        }
     }
 
     if (shoulderLBone || shoulderRBone) {
@@ -90,8 +91,12 @@ export function generateIdleVmd(
                 });
             }
         }
-        if (shoulderLBone) bones.push(closingFrame(shoulderLBone, loopFrames));
-        if (shoulderRBone) bones.push(closingFrame(shoulderRBone, loopFrames));
+        if (shoulderLBone) {
+            bones.push(closingFrame(shoulderLBone, loopFrames));
+        }
+        if (shoulderRBone) {
+            bones.push(closingFrame(shoulderRBone, loopFrames));
+        }
     }
 
     if (wristLBone || wristRBone) {
@@ -119,8 +124,12 @@ export function generateIdleVmd(
                 });
             }
         }
-        if (wristLBone) bones.push(closingFrame(wristLBone, loopFrames));
-        if (wristRBone) bones.push(closingFrame(wristRBone, loopFrames));
+        if (wristLBone) {
+            bones.push(closingFrame(wristLBone, loopFrames));
+        }
+        if (wristRBone) {
+            bones.push(closingFrame(wristRBone, loopFrames));
+        }
     }
 
     for (const b of bones) {

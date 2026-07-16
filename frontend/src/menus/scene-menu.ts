@@ -25,10 +25,7 @@ import { exportSceneBundle, importSceneBundle } from '../scene/scene-bundle';
 import { t } from '../core/i18n/t';
 
 // ======== 从子文件导入 ========
-import {
-    buildRenderLevel,
-    buildPresetScenesLevel,
-} from './scene-render-levels';
+import { buildRenderLevel, buildPresetScenesLevel } from './scene-render-levels';
 import { buildStageLevel } from './scene-stage-levels';
 import { buildStageLightLevel } from './scene-stage-lights';
 import { buildPropLevel } from './scene-prop-levels';
@@ -41,10 +38,7 @@ import {
 
 // ======== Barrel Re-Exports ========
 // 保持向后兼容——外部文件引用路径不变
-export {
-    buildRenderLevel,
-    buildPresetScenesLevel,
-} from './scene-render-levels';
+export { buildRenderLevel, buildPresetScenesLevel } from './scene-render-levels';
 export { buildStageLevel, buildStageTransformLevel } from './scene-stage-levels';
 export { buildPropLevel, buildPropDetailLevel } from './scene-prop-levels';
 

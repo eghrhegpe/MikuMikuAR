@@ -60,7 +60,9 @@ export function t(key: string, params?: Record<string, string | number>): string
                 if (hasBase) {
                     console.warn(`[i18n] missing key "${key}" for "${lang}" — fell back to zh-CN`);
                 } else {
-                    console.warn(`[i18n] missing key "${key}" for "${lang}" — key not in any bundle (typo?)`);
+                    console.warn(
+                        `[i18n] missing key "${key}" for "${lang}" — key not in any bundle (typo?)`
+                    );
                 }
             }
         } else if (!hasBase && lang === 'zh-CN') {

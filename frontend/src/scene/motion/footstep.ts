@@ -11,7 +11,10 @@
 import { getAudioContext, getSfxEnabled, playSfx } from '@/core/audio-bus';
 import { uiState, envState } from '@/core/state';
 import { setOnFootLand, isFeetAdjustmentRunning, type FootLandEvent } from './feet-adjustment';
-import { startFallbackDetection, stopFallbackDetection } from '@/motion-algos/footstep-detect-fallback';
+import {
+    startFallbackDetection,
+    stopFallbackDetection,
+} from '@/motion-algos/footstep-detect-fallback';
 
 type GroundSfxKind = 'concrete' | 'grass' | 'wood' | 'water' | 'default';
 
@@ -89,7 +92,8 @@ function _synthVariant(kind: GroundSfxKind, seed: number): AudioBuffer {
         const noise = (rng() * 2 - 1) * cfg.noiseAmt;
         // 种子偏移 thump 相位，避免每个变体同一时刻峰值
         const phaseOffset = (seed * 0.37) % 1;
-        const thump = Math.sin(2 * Math.PI * 70 * (tNorm + phaseOffset)) * cfg.thump * Math.exp(-tNorm * 18);
+        const thump =
+            Math.sin(2 * Math.PI * 70 * (tNorm + phaseOffset)) * cfg.thump * Math.exp(-tNorm * 18);
         data[i] = (noise * 0.6 + thump) * env;
     }
     // 2) 一阶低通（指数滑动平均）近似

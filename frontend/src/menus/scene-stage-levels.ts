@@ -23,11 +23,7 @@ import { renderMenu } from './render-menu';
 import { isUnderRoot } from '../core/utils';
 import type { MenuNode } from './menu-schema';
 import { buildGroundLevel, buildWaterLevel } from './env-feature-levels';
-import {
-    setDebugMirrorSize,
-    setDebugMirrorResolution,
-    getDebugMirrorInfo,
-} from '../scene/env/env';
+import { setDebugMirrorSize, setDebugMirrorResolution, getDebugMirrorInfo } from '../scene/env/env';
 import { addModeSlider } from '../core/ui-helpers';
 import { envState } from '../core/state';
 import { setEnvState } from '../scene/env/env-bridge';
@@ -90,7 +86,9 @@ function buildStageSchema(): MenuNode[] {
                                     );
                                     const span = document.createElement('span');
                                     span.className = 'slide-icon';
-                                    if (iconEl) span.appendChild(iconEl);
+                                    if (iconEl) {
+                                        span.appendChild(iconEl);
+                                    }
                                     return span;
                                 },
                                 leading: {
@@ -243,7 +241,9 @@ function buildStageSchema(): MenuNode[] {
                     const gIcon = document.createElement('span');
                     gIcon.className = 'slide-icon';
                     const gIconEl = createIconifyIcon('lucide:square');
-                    if (gIconEl) gIcon.appendChild(gIconEl);
+                    if (gIconEl) {
+                        gIcon.appendChild(gIconEl);
+                    }
                     groundRow.appendChild(gIcon);
                     const gLabel = document.createElement('span');
                     gLabel.className = 'slide-label';
@@ -254,7 +254,9 @@ function buildStageSchema(): MenuNode[] {
                     gToggle.innerHTML = '<input type="checkbox"><span class="slider"></span>';
                     const gCheckbox = gToggle.querySelector('input')!;
                     gCheckbox.checked = envState.groundVisible;
-                    gCheckbox.addEventListener('change', () => setEnvState({ groundVisible: gCheckbox.checked }));
+                    gCheckbox.addEventListener('change', () =>
+                        setEnvState({ groundVisible: gCheckbox.checked })
+                    );
                     gToggle.style.marginLeft = 'auto';
                     gToggle.style.marginRight = '4px';
                     groundRow.appendChild(gToggle);
@@ -263,7 +265,9 @@ function buildStageSchema(): MenuNode[] {
                     gArrow.textContent = '>';
                     groundRow.appendChild(gArrow);
                     groundRow.addEventListener('click', (e) => {
-                        if ((e.target as HTMLElement).closest('.toggle')) return;
+                        if ((e.target as HTMLElement).closest('.toggle')) {
+                            return;
+                        }
                         sm?.push(buildGroundLevel());
                     });
                     inner.appendChild(groundRow);
@@ -275,7 +279,9 @@ function buildStageSchema(): MenuNode[] {
                     const wIcon = document.createElement('span');
                     wIcon.className = 'slide-icon';
                     const wIconEl = createIconifyIcon('lucide:waves');
-                    if (wIconEl) wIcon.appendChild(wIconEl);
+                    if (wIconEl) {
+                        wIcon.appendChild(wIconEl);
+                    }
                     waterRow.appendChild(wIcon);
                     const wLabel = document.createElement('span');
                     wLabel.className = 'slide-label';
@@ -286,7 +292,9 @@ function buildStageSchema(): MenuNode[] {
                     wToggle.innerHTML = '<input type="checkbox"><span class="slider"></span>';
                     const wCheckbox = wToggle.querySelector('input')!;
                     wCheckbox.checked = envState.waterEnabled;
-                    wCheckbox.addEventListener('change', () => setEnvState({ waterEnabled: wCheckbox.checked }));
+                    wCheckbox.addEventListener('change', () =>
+                        setEnvState({ waterEnabled: wCheckbox.checked })
+                    );
                     wToggle.style.marginLeft = 'auto';
                     wToggle.style.marginRight = '4px';
                     waterRow.appendChild(wToggle);
@@ -295,7 +303,9 @@ function buildStageSchema(): MenuNode[] {
                     wArrow.textContent = '>';
                     waterRow.appendChild(wArrow);
                     waterRow.addEventListener('click', (e) => {
-                        if ((e.target as HTMLElement).closest('.toggle')) return;
+                        if ((e.target as HTMLElement).closest('.toggle')) {
+                            return;
+                        }
                         sm?.push(buildWaterLevel());
                     });
                     inner.appendChild(waterRow);
@@ -308,77 +318,82 @@ function buildStageSchema(): MenuNode[] {
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    renderMenu([{
-                        id: 'debugMirror',
-                        kind: 'folder',
-                        label: 'scene.debugMirror',
-                        icon: 'lucide:scan',
-                        defaultOpen: false,
-                        headerToggle: { bind: 'env.debugMirrorEnabled' },
-                        children: [
+                    renderMenu(
+                        [
                             {
-                                id: 'debugMirror:controls',
-                                kind: 'custom',
-                                renderCustom: (cc) => {
-                                    const info = getDebugMirrorInfo();
-                                    addModeSlider(
-                                        cc,
-                                        t('scene.debugMirrorWidth'),
-                                        Array.from({ length: 15 }, (_, i) => ({
-                                            value: String(2 + i * 2),
-                                            label: `${2 + i * 2}m`,
-                                        })),
-                                        String(info.width),
-                                        (v) => {
-                                            const w = parseFloat(v);
-                                            const cur = getDebugMirrorInfo();
-                                            setDebugMirrorSize(w, cur.height);
+                                id: 'debugMirror',
+                                kind: 'folder',
+                                label: 'scene.debugMirror',
+                                icon: 'lucide:scan',
+                                defaultOpen: false,
+                                headerToggle: { bind: 'env.debugMirrorEnabled' },
+                                children: [
+                                    {
+                                        id: 'debugMirror:controls',
+                                        kind: 'custom',
+                                        renderCustom: (cc) => {
+                                            const info = getDebugMirrorInfo();
+                                            addModeSlider(
+                                                cc,
+                                                t('scene.debugMirrorWidth'),
+                                                Array.from({ length: 15 }, (_, i) => ({
+                                                    value: String(2 + i * 2),
+                                                    label: `${2 + i * 2}m`,
+                                                })),
+                                                String(info.width),
+                                                (v) => {
+                                                    const w = parseFloat(v);
+                                                    const cur = getDebugMirrorInfo();
+                                                    setDebugMirrorSize(w, cur.height);
+                                                },
+                                                'lucide:move-horizontal'
+                                            );
+                                            addModeSlider(
+                                                cc,
+                                                t('scene.debugMirrorHeight'),
+                                                Array.from({ length: 10 }, (_, i) => ({
+                                                    value: String(1 + i * 2),
+                                                    label: `${1 + i * 2}m`,
+                                                })),
+                                                String(info.height),
+                                                (v) => {
+                                                    const h = parseFloat(v);
+                                                    const cur = getDebugMirrorInfo();
+                                                    setDebugMirrorSize(cur.width, h);
+                                                },
+                                                'lucide:move-vertical'
+                                            );
+                                            addModeSlider(
+                                                cc,
+                                                t('scene.debugMirrorResolution'),
+                                                [
+                                                    { value: '128', label: '128' },
+                                                    { value: '256', label: '256' },
+                                                    { value: '512', label: '512' },
+                                                    { value: '1024', label: '1024' },
+                                                ],
+                                                String(info.resolution),
+                                                (v) => setDebugMirrorResolution(parseInt(v)),
+                                                'lucide:grid-3x3'
+                                            );
+                                            const p = info.position;
+                                            const infoDiv = document.createElement('div');
+                                            infoDiv.style.cssText =
+                                                'padding:4px 12px;font-size:11px;color:var(--text-dim);';
+                                            infoDiv.textContent = info.active
+                                                ? `mesh: ${info.meshCount} | pos: (${p[0].toFixed(1)}, ${p[1].toFixed(1)}, ${p[2].toFixed(1)}) | ${info.width}×${info.height}m @ ${info.resolution}px`
+                                                : t('scene.debugMirrorHint');
+                                            cc.appendChild(infoDiv);
                                         },
-                                        'lucide:move-horizontal'
-                                    );
-                                    addModeSlider(
-                                        cc,
-                                        t('scene.debugMirrorHeight'),
-                                        Array.from({ length: 10 }, (_, i) => ({
-                                            value: String(1 + i * 2),
-                                            label: `${1 + i * 2}m`,
-                                        })),
-                                        String(info.height),
-                                        (v) => {
-                                            const h = parseFloat(v);
-                                            const cur = getDebugMirrorInfo();
-                                            setDebugMirrorSize(cur.width, h);
-                                        },
-                                        'lucide:move-vertical'
-                                    );
-                                    addModeSlider(
-                                        cc,
-                                        t('scene.debugMirrorResolution'),
-                                        [
-                                            { value: '128', label: '128' },
-                                            { value: '256', label: '256' },
-                                            { value: '512', label: '512' },
-                                            { value: '1024', label: '1024' },
-                                        ],
-                                        String(info.resolution),
-                                        (v) => setDebugMirrorResolution(parseInt(v)),
-                                        'lucide:grid-3x3'
-                                    );
-                                    const p = info.position;
-                                    const infoDiv = document.createElement('div');
-                                    infoDiv.style.cssText =
-                                        'padding:4px 12px;font-size:11px;color:var(--text-dim);';
-                                    infoDiv.textContent = info.active
-                                        ? `mesh: ${info.meshCount} | pos: (${p[0].toFixed(1)}, ${p[1].toFixed(1)}, ${p[2].toFixed(1)}) | ${info.width}×${info.height}m @ ${info.resolution}px`
-                                        : t('scene.debugMirrorHint');
-                                    cc.appendChild(infoDiv);
-                                },
+                                    },
+                                ],
                             },
                         ],
-                    }], inner);
+                        inner
+                    );
                 });
             },
-        },
+        }
     );
 
     return nodes;

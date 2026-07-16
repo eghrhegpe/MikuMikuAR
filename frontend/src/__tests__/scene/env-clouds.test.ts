@@ -5,9 +5,18 @@ import { Scene } from '@babylonjs/core/scene';
 // Mock env-impl
 vi.mock('../../scene/env/env-impl', () => {
     const _envSys = {
-        clouds: { postProcess: null as any, postProcess2: null as any, material: null as any, texture: null as any },
+        clouds: {
+            postProcess: null as any,
+            postProcess2: null as any,
+            material: null as any,
+            texture: null as any,
+        },
     };
-    return { _envSys, getScene: () => (globalThis as any).__cloudsTestScene as Scene, ensureEnvUpdateObserver: () => {} };
+    return {
+        _envSys,
+        getScene: () => (globalThis as any).__cloudsTestScene as Scene,
+        ensureEnvUpdateObserver: () => {},
+    };
 });
 
 // Mock env-clouds 以绕过 RawTexture3D（NullEngine 不支持）
@@ -40,14 +49,34 @@ beforeEach(() => {
             _envSys.clouds.material = null;
             return;
         }
-        _envSys.clouds.material = { setFloat: vi.fn(), setVector3: vi.fn(), dispose: vi.fn() } as any;
-        _envSys.clouds.postProcess = { position: { x: 0, z: 0 }, material: _envSys.clouds.material, dispose: vi.fn() } as any;
+        _envSys.clouds.material = {
+            setFloat: vi.fn(),
+            setVector3: vi.fn(),
+            dispose: vi.fn(),
+        } as any;
+        _envSys.clouds.postProcess = {
+            position: { x: 0, z: 0 },
+            material: _envSys.clouds.material,
+            dispose: vi.fn(),
+        } as any;
     });
     mockDisposeClouds.mockImplementation(() => {
-        if (_envSys.clouds.postProcess) { _envSys.clouds.postProcess.dispose(); _envSys.clouds.postProcess = null; }
-        if (_envSys.clouds.material) { _envSys.clouds.material.dispose(); _envSys.clouds.material = null; }
-        if (_envSys.clouds.postProcess2) { _envSys.clouds.postProcess2.dispose(); _envSys.clouds.postProcess2 = null; }
-        if (_envSys.clouds.texture) { _envSys.clouds.texture.dispose(); _envSys.clouds.texture = null; }
+        if (_envSys.clouds.postProcess) {
+            _envSys.clouds.postProcess.dispose();
+            _envSys.clouds.postProcess = null;
+        }
+        if (_envSys.clouds.material) {
+            _envSys.clouds.material.dispose();
+            _envSys.clouds.material = null;
+        }
+        if (_envSys.clouds.postProcess2) {
+            _envSys.clouds.postProcess2.dispose();
+            _envSys.clouds.postProcess2 = null;
+        }
+        if (_envSys.clouds.texture) {
+            _envSys.clouds.texture.dispose();
+            _envSys.clouds.texture = null;
+        }
     });
 });
 
@@ -59,9 +88,16 @@ afterEach(() => {
 
 function makeState(overrides: Record<string, any> = {}) {
     return {
-        cloudsEnabled: true, cloudCover: 0.5, cloudScale: 1.0,
-        cloudHeight: 100, cloudThickness: 40, cloudVisibility: 2000, cloudGap: 0.5,
-        windEnabled: false, windDirection: [0, 0, 0], windSpeed: 0,
+        cloudsEnabled: true,
+        cloudCover: 0.5,
+        cloudScale: 1.0,
+        cloudHeight: 100,
+        cloudThickness: 40,
+        cloudVisibility: 2000,
+        cloudGap: 0.5,
+        windEnabled: false,
+        windDirection: [0, 0, 0],
+        windSpeed: 0,
         ...overrides,
     };
 }

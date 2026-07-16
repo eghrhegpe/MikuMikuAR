@@ -45,7 +45,7 @@ interface _ModelState {
 }
 
 let _observerHandle: (() => void) | null = null;
-let _modelStates = new Map<string, _ModelState>();
+const _modelStates = new Map<string, _ModelState>();
 let _callback: ((e: FootLandEvent) => void) | null = null;
 let _lastTickTime = 0;
 
@@ -53,10 +53,7 @@ let _lastTickTime = 0;
  * 启动独立落地检测（fallback 模式）。
  * 注册 onBeforeRenderObservable，每帧遍历模型 IK 骨骼检测落地上升沿。
  */
-export function startFallbackDetection(
-    scene: Scene,
-    onFootLand: (e: FootLandEvent) => void
-): void {
+export function startFallbackDetection(scene: Scene, onFootLand: (e: FootLandEvent) => void): void {
     if (_observerHandle) {
         return; // 已启动
     }
@@ -120,7 +117,10 @@ export function stopFallbackDetection(): void {
 
 /** 对单只脚做落地检测。 */
 function _checkFoot(
-    bones: readonly { name: string; getWorldTranslationToRef?(v: { x: number; y: number; z: number }): void }[],
+    bones: readonly {
+        name: string;
+        getWorldTranslationToRef?(v: { x: number; y: number; z: number }): void;
+    }[],
     footState: _FootState,
     side: 'L' | 'R',
     modelId: string,
@@ -138,7 +138,7 @@ function _checkFoot(
     const pos = { x: 0, y: 0, z: 0 };
     ik.getWorldTranslationToRef(pos);
     const groundY = getGroundHeightAt(pos.x, pos.z);
-    const grounded = (pos.y - groundY) < SOLE_THRESHOLD;
+    const grounded = pos.y - groundY < SOLE_THRESHOLD;
 
     const det = detectFootLanding({
         prevGrounded: footState.prevGrounded,

@@ -294,7 +294,8 @@ export const ko: Record<string, string> = {
     'motion.off': '꺼짐',
     'motion.recent': '최근',
     'motion.noRecent': '최근 모션 없음',
-    'motion.addLayer': '액션 추가',    'motion.addLayerTo': '액션 추가 → {name}',
+    'motion.addLayer': '액션 추가',
+    'motion.addLayerTo': '액션 추가 → {name}',
     'motion.baseAction': '기본',
     'motion.replaceBase': '기본 동작 교체 → {name}',
     'motion.deleteLayer': '레이어 삭제',
@@ -838,6 +839,12 @@ export const ko: Record<string, string> = {
     'env-preset.saveErrorToast': '환경 프리셋 저장 실패',
     'env-preset.saved': '✓ 프리셋 저장됨: {name}',
     'env-preset.title': '환경 프리셋',
+    'env-preset.sceneMood': '씬 무드',
+    'env-preset.category.sky': '하늘',
+    'env-preset.category.ground': '지면',
+    'env-preset.category.water': '수면',
+    'env-preset.category.atmosphere': '대기',
+    'env-preset.saveCurrentCategory': '＋ 현재 {category}를 프리셋으로 저장',
 
     // —— Props ——
     'props.loading': '프롭 로드 중...',

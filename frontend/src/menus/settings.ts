@@ -6,11 +6,7 @@
 import { registerPopupMenu } from './menu-factory';
 import { t } from '../core/i18n/t';
 import { PopupRow, PopupLevel } from '../core/config';
-import {
-    SETTINGS,
-    SOFTWARE_DETAIL_PREFIX,
-    type SettingsFolderTarget,
-} from './settings-targets';
+import { SETTINGS, SOFTWARE_DETAIL_PREFIX, type SettingsFolderTarget } from './settings-targets';
 
 // ======== Re-exports for backward compatibility ========
 export { refreshLibrary } from './library';

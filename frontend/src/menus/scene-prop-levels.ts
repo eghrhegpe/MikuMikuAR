@@ -57,24 +57,23 @@ function buildPropSchema(): MenuNode[] {
 
     // 卡片 2：加载入口
     nodes.push({
-            id: 'prop:add',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    slideRow(inner, 'lucide:plus', t('scene.addPropFile'), false, () => {
-                        SelectPMXFile().then((path) => {
-                            if (path) {
-                                loadManager
-                                    .load({ kind: 'prop', path })
-                                    .then(() => getSceneMenu()?.reRender())
-                                    .catch((err) => logWarn('scene-prop-levels', '', err));
-                            }
-                        });
+        id: 'prop:add',
+        kind: 'custom',
+        renderCustom: (c) => {
+            cardContainer(c, (inner) => {
+                slideRow(inner, 'lucide:plus', t('scene.addPropFile'), false, () => {
+                    SelectPMXFile().then((path) => {
+                        if (path) {
+                            loadManager
+                                .load({ kind: 'prop', path })
+                                .then(() => getSceneMenu()?.reRender())
+                                .catch((err) => logWarn('scene-prop-levels', '', err));
+                        }
                     });
                 });
-            },
+            });
         },
-    );
+    });
 
     return nodes;
 }

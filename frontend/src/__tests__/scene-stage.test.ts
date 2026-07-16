@@ -5,11 +5,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mockEnvState = vi.hoisted(() => ({ groundVisible: true, waterEnabled: false }));
 const mockSetEnvState = vi.hoisted(() => vi.fn());
 const mockPush = vi.hoisted(() => vi.fn());
-const mockCreateIconifyIcon = vi.hoisted(() => vi.fn(() => {
-    const el = document.createElement('span');
-    el.className = 'mock-icon';
-    return el;
-}));
+const mockCreateIconifyIcon = vi.hoisted(() =>
+    vi.fn(() => {
+        const el = document.createElement('span');
+        el.className = 'mock-icon';
+        return el;
+    })
+);
 
 vi.mock('../core/config', async (importOriginal) => {
     const actual = await importOriginal();
@@ -92,7 +94,10 @@ function renderLevel(level: ReturnType<typeof buildStageLevel>): HTMLElement {
     return container;
 }
 
-function findToggleRow(container: HTMLElement, label: string): {
+function findToggleRow(
+    container: HTMLElement,
+    label: string
+): {
     row: HTMLElement | null;
     checkbox: HTMLInputElement | null;
     arrow: HTMLElement | null;
@@ -103,7 +108,9 @@ function findToggleRow(container: HTMLElement, label: string): {
         if (labelEl?.textContent === label) {
             return {
                 row: item as HTMLElement,
-                checkbox: item.querySelector('.toggle input[type="checkbox"]') as HTMLInputElement | null,
+                checkbox: item.querySelector(
+                    '.toggle input[type="checkbox"]'
+                ) as HTMLInputElement | null,
                 arrow: item.querySelector('.slide-arrow') as HTMLElement | null,
             };
         }
@@ -131,9 +138,14 @@ describe('Stage - ground/water toggles', () => {
         console.log('container children:', container.children.length);
         for (let i = 0; i < container.children.length; i++) {
             const child = container.children[i];
-            console.log(`  child[${i}]:`, child.tagName, child.className, child.innerHTML.substring(0, 150));
+            console.log(
+                `  child[${i}]:`,
+                child.tagName,
+                child.className,
+                child.innerHTML.substring(0, 150)
+            );
             const items = child.querySelectorAll('.slide-item');
-            console.log(`  .slide-item count:`, items.length);
+            console.log('  .slide-item count:', items.length);
             items.forEach((item, j) => {
                 const label = item.querySelector('.slide-label');
                 console.log(`    item[${j}]: label="${label?.textContent}"`);

@@ -14,10 +14,7 @@ import {
 import { modelManager } from '../scene/scene';
 import { getModelMorphs, setModelMorphWeight, resetModelMorphs } from '../scene/manager/model-ops';
 import { resetModelTransform, removeModel } from '../scene/manager/model-ops';
-import {
-    buildTransformCard,
-    type ResourceHandle,
-} from './resource-detail-helpers';
+import { buildTransformCard, type ResourceHandle } from './resource-detail-helpers';
 import { buildMatRootLevel } from './model-material';
 import { createIconifyIcon, softwareKindIcon } from '../core/icons';
 import { slideRow, addFieldRow } from '../core/ui-helpers';
@@ -252,13 +249,16 @@ export function buildModelToolsLevel(id: string): PopupLevel {
                 slideRow(c, 'lucide:external-link', t('model-detail.openWith'), true, () => {
                     stackRegistry.modelStack?.push(buildOpenWithLevel(id));
                 });
-                slideRow(c, 'lucide:rotate-ccw', t('settings.transformReset', { kind: t('common.model') }), false, () => {
-                    resetModelTransform(id);
-                    setStatus(
-                        t('settings.transformReset', { kind: t('common.model') }),
-                        true
-                    );
-                });
+                slideRow(
+                    c,
+                    'lucide:rotate-ccw',
+                    t('settings.transformReset', { kind: t('common.model') }),
+                    false,
+                    () => {
+                        resetModelTransform(id);
+                        setStatus(t('settings.transformReset', { kind: t('common.model') }), true);
+                    }
+                );
                 // 卸载不丢数据——模型可随时从库重新加载，无需二次确认
                 slideRow(c, 'lucide:trash-2', t('model-detail.unloadModel'), false, () => {
                     removeModel(id);

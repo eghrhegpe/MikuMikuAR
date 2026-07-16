@@ -289,7 +289,8 @@ export const zhTW: Record<string, string> = {
     'motion.off': '關',
     'motion.recent': '最近使用',
     'motion.noRecent': '暫無最近使用動作',
-    'motion.addLayer': '新增動作',    'motion.addLayerTo': '新增動作 → {name}',
+    'motion.addLayer': '新增動作',
+    'motion.addLayerTo': '新增動作 → {name}',
     'motion.baseAction': '基礎動作',
     'motion.replaceBase': '更換基礎動作 → {name}',
     'motion.deleteLayer': '刪除圖層',
@@ -836,6 +837,12 @@ export const zhTW: Record<string, string> = {
     'env-preset.saveErrorToast': '儲存環境預設失敗',
     'env-preset.saved': '✓ 已儲存預設：{name}',
     'env-preset.title': '環境預設',
+    'env-preset.sceneMood': '場景氛圍',
+    'env-preset.category.sky': '天空',
+    'env-preset.category.ground': '地面',
+    'env-preset.category.water': '水面',
+    'env-preset.category.atmosphere': '大氣',
+    'env-preset.saveCurrentCategory': '＋ 儲存目前{category}為預設',
 
     // —— Sky ——
     'env.sky': '天空',

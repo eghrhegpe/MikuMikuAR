@@ -112,9 +112,10 @@ function buildActionBindingSchema(id: string): MenuNode[] {
                         layerId?: string,
                         onClick?: () => void
                     ) => {
-                        const isFocused = layerId === undefined
-                            ? _focusedLayerId === null
-                            : _focusedLayerId === layerId;
+                        const isFocused =
+                            layerId === undefined
+                                ? _focusedLayerId === null
+                                : _focusedLayerId === layerId;
                         slideRow(
                             inner,
                             '',
@@ -156,7 +157,11 @@ function buildActionBindingSchema(id: string): MenuNode[] {
                     if (inst.vmdData && inst.vmdName) {
                         const baseName = inst.vmdName.split(' + ')[0];
                         const hasLayers = getVmdLayers(id).length > 0;
-                        renderActionRow(hasLayers ? `${baseName} (基础)` : baseName, undefined, undefined);
+                        renderActionRow(
+                            hasLayers ? `${baseName} (基础)` : baseName,
+                            undefined,
+                            undefined
+                        );
                     }
                     const curLayers = getVmdLayers(id);
                     for (let i = 0; i < curLayers.length; i++) {
@@ -332,7 +337,8 @@ function buildLayerLevel(layerId: string, id: string): PopupLevel {
                                 'lucide:eye',
                                 {
                                     bind: () =>
-                                        getVmdLayers(id).find((l) => l.id === layerId)?.enabled ?? false,
+                                        getVmdLayers(id).find((l) => l.id === layerId)?.enabled ??
+                                        false,
                                 }
                             );
                         });
@@ -477,10 +483,7 @@ function motionOnItemClick(row: PopupRow): void {
                 return;
             }
             // 有动作：优先替换焦点层（若仍存在），否则替换基础（保留其余图层）
-            if (
-                focusedLayerId &&
-                getVmdLayers(targetId).some((l) => l.id === focusedLayerId)
-            ) {
+            if (focusedLayerId && getVmdLayers(targetId).some((l) => l.id === focusedLayerId)) {
                 replaceVmdLayerVmd(focusedLayerId, row.model.file_path, targetId)
                     .then(after)
                     .catch((err) => fail('motion-popup replace layer VMD:', err));
@@ -567,7 +570,8 @@ function motionOnItemClick(row: PopupRow): void {
                         setAutoLoop(false);
                     } else {
                         setAutoLoop(true);
-                        mmdRuntime.playAnimation()
+                        mmdRuntime
+                            .playAnimation()
                             .then(() => setIsPlaying(true))
                             .catch((err) => {
                                 setIsPlaying(false);

@@ -155,9 +155,11 @@ export async function loadProp(filePath: string, signal?: AbortSignal): Promise<
         // 经统一 thumbnailBaseKey 收口（与模型写侧 / library-core 读侧同源），杜绝双源拼接反弹。
         // 道具无 innerPath（不支持 zip 内），故仅 filePath 入参；kind='prop' → isStageLike 命中 16/9。
         // fire-and-forget + catch，不阻塞加载主流程；共享 _thumbMutex 串行化。
-        void renderPropThumbnail(scene, inst, thumbnailBaseKey({ filePath: inst.filePath })).catch((thumbErr) => {
-            logWarn('props', 'renderPropThumbnail:', thumbErr);
-        });
+        void renderPropThumbnail(scene, inst, thumbnailBaseKey({ filePath: inst.filePath })).catch(
+            (thumbErr) => {
+                logWarn('props', 'renderPropThumbnail:', thumbErr);
+            }
+        );
 
         return id;
     } catch (err) {

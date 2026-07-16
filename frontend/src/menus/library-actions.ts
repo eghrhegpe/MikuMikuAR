@@ -53,7 +53,22 @@ import {
 import { showConfirm } from '../core/dialog';
 import { t } from '../core/i18n/t';
 import { createIconifyIcon } from '../core/icons';
-import { buildLevel, modelToRow, modelToResourceItem, thumbnailKeyForModel, buildResourceItemsForDir, buildModelRootItems, splitSubdirSegments, computeRestoreSegments, getPendingAutoExpand, setPendingAutoExpand, getPendingFocusModel, setPendingFocusModel, getPendingMetaGuard, resolveDisplayBrowseDir } from './library-core';
+import {
+    buildLevel,
+    modelToRow,
+    modelToResourceItem,
+    thumbnailKeyForModel,
+    buildResourceItemsForDir,
+    buildModelRootItems,
+    splitSubdirSegments,
+    computeRestoreSegments,
+    getPendingAutoExpand,
+    setPendingAutoExpand,
+    getPendingFocusModel,
+    setPendingFocusModel,
+    getPendingMetaGuard,
+    resolveDisplayBrowseDir,
+} from './library-core';
 
 // ======== 模块级状态 ========
 
@@ -65,14 +80,24 @@ let _isReplaceLoading = false;
 // 用命名函数 + 模块级引用，支持 HMR 幂等清理
 let _mmkuHandler: (() => void) | null = null;
 function _onModelLoaded(): void {
-    if (_isReplaceLoading) return;
+    if (_isReplaceLoading) {
+        return;
+    }
     // 懒加载避免循环依赖
     import('../core/config').then(({ dom, stackRegistry }) => {
-        if (dom.sceneOverlay.classList.contains('visible') && dom.sceneOverlay.dataset.popupType === 'model') {
+        if (
+            dom.sceneOverlay.classList.contains('visible') &&
+            dom.sceneOverlay.dataset.popupType === 'model'
+        ) {
             const stack = stackRegistry.modelStack;
             if (stack) {
                 import('./library-core').then(({ buildModelRootItems }) => {
-                    stack.setLevel(0, { label: t('library.model'), dir: '', items: buildModelRootItems(), itemBuilder: buildModelRootItems });
+                    stack.setLevel(0, {
+                        label: t('library.model'),
+                        dir: '',
+                        items: buildModelRootItems(),
+                        itemBuilder: buildModelRootItems,
+                    });
                     stack.reRender();
                 });
             }
@@ -91,11 +116,15 @@ document.addEventListener('mmku:modelLoaded', _mmkuHandler);
 export async function loadThumbnailsForLevel(level: PopupLevel): Promise<void> {
     const items = level.items.filter((r) => r.kind === 'model' && r.model);
     const keys = items.map((r) => thumbnailKeyForModel(r.model!));
-    if (keys.length === 0) return;
+    if (keys.length === 0) {
+        return;
+    }
     try {
         const batch = await GetThumbnailBatch(keys);
         const merged = new Map(thumbnailCache);
-        for (const [k, v] of Object.entries(batch)) merged.set(k, v);
+        for (const [k, v] of Object.entries(batch)) {
+            merged.set(k, v);
+        }
         setThumbnailCache(merged);
     } catch (err) {
         logWarn('library-actions', 'loadThumbnailsForLevel:', err);
@@ -105,19 +134,27 @@ export async function loadThumbnailsForLevel(level: PopupLevel): Promise<void> {
 export async function ensureModelMeta(pmxPaths: string[]): Promise<void> {
     const guard = getPendingMetaGuard();
     const uncached = pmxPaths.filter((p) => !modelMetaCache.has(p) && !guard.isLoading(p));
-    if (uncached.length === 0) return;
-    for (const p of uncached) guard.tryEnter(p);
+    if (uncached.length === 0) {
+        return;
+    }
+    for (const p of uncached) {
+        guard.tryEnter(p);
+    }
     try {
         const batch = await GetModelMetaBatch(uncached);
         if (batch) {
             const merged = new Map(modelMetaCache);
-            for (const [path, meta] of Object.entries(batch)) merged.set(path, meta);
+            for (const [path, meta] of Object.entries(batch)) {
+                merged.set(path, meta);
+            }
             setModelMetaCache(merged);
         }
     } catch (err) {
         logWarn('library-actions', 'ensureModelMeta:', err);
     } finally {
-        for (const p of uncached) guard.leave(p);
+        for (const p of uncached) {
+            guard.leave(p);
+        }
     }
 }
 
@@ -157,12 +194,19 @@ export async function prepareModelRestore(
     }
     if (!restoreTarget) {
         const lastDir = await GetLastBrowseDir(category);
-        if (lastDir) restoreTarget = normPath(lastDir);
+        if (lastDir) {
+            restoreTarget = normPath(lastDir);
+        }
     }
     if (restoreTarget) {
         const fullSegs = splitSubdirSegments(browseDir, restoreTarget);
         if (fromRecentModel) {
-            const result = computeRestoreSegments(browseDir, restoreTarget, allModels, categoryFilter);
+            const result = computeRestoreSegments(
+                browseDir,
+                restoreTarget,
+                allModels,
+                categoryFilter
+            );
             setPendingAutoExpand(result && result.length > 0 ? result : null);
         } else {
             setPendingAutoExpand(fullSegs && fullSegs.length > 0 ? fullSegs : null);
@@ -170,9 +214,11 @@ export async function prepareModelRestore(
     } else {
         setPendingAutoExpand(null);
     }
-    setPendingFocusModel(focusModel
-        ? { dir: normPath(focusModel.dir), rowKey: 'model:' + focusModel.file_path }
-        : null);
+    setPendingFocusModel(
+        focusModel
+            ? { dir: normPath(focusModel.dir), rowKey: 'model:' + focusModel.file_path }
+            : null
+    );
 }
 
 // ======== 模型行点击 ========
@@ -203,7 +249,7 @@ function onModelRowClick(m: LibraryModel): void {
     // 使下次打开资源库能回到用户点击时所处位置（单 pmx 叶子目录被展平时回退到根目录）。
     if (m.format === 'pmx') {
         const memCat: 'pmx' | 'stage' | 'prop' =
-            m.type === 'prop' ? 'prop' : (m.type === 'stage' || m.type === 'scene') ? 'stage' : 'pmx';
+            m.type === 'prop' ? 'prop' : m.type === 'stage' || m.type === 'scene' ? 'stage' : 'pmx';
         void SetLastBrowseDir(memCat, resolveDisplayBrowseDir(m, memCat)).catch((e) =>
             logWarn('library-actions', 'SetLastBrowseDir failed:', e)
         );
@@ -270,7 +316,9 @@ function onModelRowClick(m: LibraryModel): void {
                     setStatus(t('library.modelLoadFailed') + formatError(err), false);
                     stackRegistry.modelStack?.reRender();
                 })
-                .finally(() => { _isReplaceLoading = false; });
+                .finally(() => {
+                    _isReplaceLoading = false;
+                });
         };
 
         if (m.container === 'zip') {
@@ -286,7 +334,9 @@ function onModelRowClick(m: LibraryModel): void {
                     setModelReplaceTargetId(replaceId);
                     setStatus(t('library.extractFailed') + formatError(err), false);
                 })
-                .finally(() => { _isExtracting = false; });
+                .finally(() => {
+                    _isExtracting = false;
+                });
         } else {
             doReplace(m.file_path);
         }
@@ -315,7 +365,9 @@ function onModelRowClick(m: LibraryModel): void {
             .catch((err) => {
                 setStatus(t('library.extractFailed') + formatError(err), false);
             })
-            .finally(() => { _isExtracting = false; });
+            .finally(() => {
+                _isExtracting = false;
+            });
         return;
     }
     closeAllOverlays();
@@ -331,7 +383,8 @@ function onModelRowClick(m: LibraryModel): void {
 }
 
 function replaceModel(m: LibraryModel): void {
-    const isActor = m.format === 'pmx' && m.type !== 'stage' && m.type !== 'scene' && m.type !== 'prop';
+    const isActor =
+        m.format === 'pmx' && m.type !== 'stage' && m.type !== 'scene' && m.type !== 'prop';
     if (!modelReplaceTargetId && focusedModelId && isActor) {
         setModelReplaceTargetId(focusedModelId);
     }
@@ -371,7 +424,9 @@ function replaceMotion(m: LibraryModel): void {
                 doLoad(result.file_path);
             })
             .catch((err) => setStatus(t('library.extractFailed') + formatError(err), false))
-            .finally(() => { _isExtracting = false; });
+            .finally(() => {
+                _isExtracting = false;
+            });
         return;
     }
     doLoad(m.file_path);
@@ -397,7 +452,10 @@ function buildTagsOverviewLevel(): PopupLevel {
                     const fi = document.createElement('span');
                     fi.className = 'slide-icon';
                     const fe = createIconifyIcon('lucide:star');
-                    if (fe) { fe.style.color = 'var(--accent)'; fi.appendChild(fe); }
+                    if (fe) {
+                        fe.style.color = 'var(--accent)';
+                        fi.appendChild(fe);
+                    }
                     favRow.appendChild(fi);
                     const fl = document.createElement('span');
                     fl.className = 'slide-label';
@@ -466,8 +524,18 @@ function buildTagDetailLevel(tagName: string): PopupLevel {
                 cardContainer(container, (c) => {
                     for (const m of matched) {
                         const row = modelToRow(m);
-                        slideRow(c, row.icon, row.label, false, () => onModelRowClick(m),
-                            undefined, undefined, undefined, undefined, { wrapLabel: true });
+                        slideRow(
+                            c,
+                            row.icon,
+                            row.label,
+                            false,
+                            () => onModelRowClick(m),
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            { wrapLabel: true }
+                        );
                     }
                 });
             } catch (err) {
@@ -485,14 +553,21 @@ export async function importFile(): Promise<void> {
     try {
         path = await SelectImportFile();
     } catch (err) {
-        const msg = err instanceof Error ? err.message
-            : err && typeof err === 'object' && 'message' in err
-                ? String((err as { message: unknown }).message) : String(err);
-        if (/cancelled by user/i.test(msg)) return;
+        const msg =
+            err instanceof Error
+                ? err.message
+                : err && typeof err === 'object' && 'message' in err
+                  ? String((err as { message: unknown }).message)
+                  : String(err);
+        if (/cancelled by user/i.test(msg)) {
+            return;
+        }
         setStatus(t('library.selectFileFailed') + formatError(err), false);
         return;
     }
-    if (!path) return;
+    if (!path) {
+        return;
+    }
     const lower = path.toLowerCase();
     if (lower.endsWith('.zip')) {
         setStatus(t('library.importingZip'), false);
@@ -500,18 +575,26 @@ export async function importFile(): Promise<void> {
             await ImportZip(path);
             setStatus(t('library.zipImported'), true);
             const { refreshLibrary } = await import('./library-setup');
-            await refreshLibrary().catch((err) => logWarn('library-actions', 'refresh after zip import:', err));
+            await refreshLibrary().catch((err) =>
+                logWarn('library-actions', 'refresh after zip import:', err)
+            );
         } catch (err) {
             setStatus(t('library.importFailed') + formatError(err), false);
         }
     } else if (lower.endsWith('.pmx')) {
         setStatus(t('library.loadingModel'), false);
-        try { await loadManager.load({ kind: 'actor', path }); }
-        catch (err) { setStatus(t('library.modelLoadFailed') + formatError(err), false); }
+        try {
+            await loadManager.load({ kind: 'actor', path });
+        } catch (err) {
+            setStatus(t('library.modelLoadFailed') + formatError(err), false);
+        }
     } else if (lower.endsWith('.vmd')) {
         setStatus(t('library.loadingMotion'), false);
-        try { await loadManager.load({ kind: 'vmd', path }); }
-        catch (err) { setStatus(t('library.vmdLoadFailed') + formatError(err), false); }
+        try {
+            await loadManager.load({ kind: 'vmd', path });
+        } catch (err) {
+            setStatus(t('library.vmdLoadFailed') + formatError(err), false);
+        }
     } else {
         setStatus(t('library.unsupportedFormat'), false);
     }
@@ -519,4 +602,11 @@ export async function importFile(): Promise<void> {
 
 // ======== 供 library-browse 使用的内部函数 ========
 
-export { onModelRowClick, replaceModel, replaceMotion, buildTagsOverviewLevel, buildTagDetailLevel, highlightRow };
+export {
+    onModelRowClick,
+    replaceModel,
+    replaceMotion,
+    buildTagsOverviewLevel,
+    buildTagDetailLevel,
+    highlightRow,
+};

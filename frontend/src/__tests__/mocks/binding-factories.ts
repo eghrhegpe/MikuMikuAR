@@ -88,12 +88,11 @@ export function createMockSoftwareEntry(overrides?: Partial<SoftwareEntry>): Sof
     };
 }
 
-
-
 export function createMockEnvPresetEntry(overrides?: Partial<EnvPresetEntry>): EnvPresetEntry {
     return {
         name: '',
         label: '',
+        category: 'sky',
         createdAt: 0,
         ...overrides,
     };
