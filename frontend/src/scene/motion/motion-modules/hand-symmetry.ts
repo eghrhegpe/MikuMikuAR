@@ -12,10 +12,10 @@ const MODULE_ID = 'hand-symmetry';
 
 /** 默认参数 */
 const DEFAULTS: Record<string, ParamValue> = {
-    wristYaw: 0,       // 左腕 yaw: -90~90
-    wristRoll: 0,      // 左腕 roll: -90~90
-    elbowBend: 0,      // 左ひじ pitch: -135~0
-    mirrorOffset: 0,   // 右腕额外 yaw 偏移: -45~45
+    wristYaw: 0, // 左腕 yaw: -90~90
+    wristRoll: 0, // 左腕 roll: -90~90
+    elbowBend: 0, // 左ひじ pitch: -135~0
+    mirrorOffset: 0, // 右腕额外 yaw 偏移: -45~45
 };
 
 /** 管理的骨骼（左+右） */
@@ -61,7 +61,10 @@ export function createHandSymmetryModule(modelId: string): MotionOverrideModule 
                         min: -90,
                         max: 90,
                         step: 1,
-                        onChange: (v) => setModuleParam(modelId, MODULE_ID, 'wristYaw', v),
+                        onChange: (v) => {
+                            setModuleParam(modelId, MODULE_ID, 'wristYaw', v as number);
+                            bake(modelId);
+                        },
                     },
                 },
                 {
@@ -74,7 +77,10 @@ export function createHandSymmetryModule(modelId: string): MotionOverrideModule 
                         min: -90,
                         max: 90,
                         step: 1,
-                        onChange: (v) => setModuleParam(modelId, MODULE_ID, 'wristRoll', v),
+                        onChange: (v) => {
+                            setModuleParam(modelId, MODULE_ID, 'wristRoll', v as number);
+                            bake(modelId);
+                        },
                     },
                 },
                 {
@@ -87,7 +93,10 @@ export function createHandSymmetryModule(modelId: string): MotionOverrideModule 
                         min: -135,
                         max: 0,
                         step: 1,
-                        onChange: (v) => setModuleParam(modelId, MODULE_ID, 'elbowBend', v),
+                        onChange: (v) => {
+                            setModuleParam(modelId, MODULE_ID, 'elbowBend', v as number);
+                            bake(modelId);
+                        },
                     },
                 },
                 {
@@ -100,7 +109,10 @@ export function createHandSymmetryModule(modelId: string): MotionOverrideModule 
                         min: -45,
                         max: 45,
                         step: 1,
-                        onChange: (v) => setModuleParam(modelId, MODULE_ID, 'mirrorOffset', v),
+                        onChange: (v) => {
+                            setModuleParam(modelId, MODULE_ID, 'mirrorOffset', v as number);
+                            bake(modelId);
+                        },
                     },
                 },
             ];

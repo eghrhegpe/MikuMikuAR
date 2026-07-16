@@ -82,12 +82,18 @@ export function getStateValue(path: StatePath): unknown {
             return (getPerceptionState() as unknown as Record<string, unknown>)[key];
         case 'motionModule': {
             // 格式: motionModule.${moduleId}.${paramKey}
-            const dotIdx = key.indexOf('.');
-            if (dotIdx === -1) return undefined;
-            const moduleId = key.substring(0, dotIdx);
-            const paramKey = key.substring(dotIdx + 1);
+            // 注: 解构只取前两段，需从 path 重新解析剩余部分以支持 moduleId.paramKey 结构
+            const rest = path.slice('motionModule.'.length);
+            const dotIdx = rest.indexOf('.');
+            if (dotIdx === -1) {
+                return undefined;
+            }
+            const moduleId = rest.substring(0, dotIdx);
+            const paramKey = rest.substring(dotIdx + 1);
             const mid = focusedModelId;
-            if (!mid) return undefined;
+            if (!mid) {
+                return undefined;
+            }
             const inst = modelRegistry.get(mid);
             const modState = inst?.motionOverrideModules?.find((m) => m.id === moduleId);
             return modState?.params[paramKey];
@@ -118,14 +124,22 @@ export function setStateValue(path: StatePath, value: unknown): void {
             break;
         case 'motionModule': {
             // 格式: motionModule.${moduleId}.${paramKey}
-            const dotIdx = key.indexOf('.');
-            if (dotIdx === -1) return;
-            const moduleId = key.substring(0, dotIdx);
-            const paramKey = key.substring(dotIdx + 1);
+            // 注: 解构只取前两段，需从 path 重新解析剩余部分
+            const rest = path.slice('motionModule.'.length);
+            const dotIdx = rest.indexOf('.');
+            if (dotIdx === -1) {
+                return;
+            }
+            const moduleId = rest.substring(0, dotIdx);
+            const paramKey = rest.substring(dotIdx + 1);
             const mid = focusedModelId;
-            if (!mid) return;
+            if (!mid) {
+                return;
+            }
             const inst = modelRegistry.get(mid);
-            if (!inst) return;
+            if (!inst) {
+                return;
+            }
             if (!inst.motionOverrideModules) {
                 inst.motionOverrideModules = [];
             }

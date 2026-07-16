@@ -5,6 +5,7 @@
 
 import { Engine } from '@babylonjs/core/Engines/engine';
 import { Scene } from '@babylonjs/core/scene';
+import { RenderingManager } from '@babylonjs/core/Rendering/renderingManager';
 import type { Observer } from '@babylonjs/core/Misc/observable';
 import { Color4 } from '@babylonjs/core/Maths/math.color';
 import '@babylonjs/core/Physics/v2/physicsEngineComponent';
@@ -136,6 +137,9 @@ export const engine = new Engine(dom.canvas, true, {
     stencil: true,
     alpha: true,
 });
+// 扩展渲染组下限至 -2：天空盒(Group -2)先于体积云(Group -1)先于 Group 0（地面/角色）。
+// Babylon 默认 MIN_RENDERINGGROUPS=0 会跳过负数 group，导致负组 mesh 不渲染。
+RenderingManager.MIN_RENDERINGGROUPS = -2;
 export const scene = new Scene(engine);
 scene.clearColor = new Color4(0.12, 0.12, 0.16, 1.0);
 

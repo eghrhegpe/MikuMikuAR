@@ -43,8 +43,8 @@ uniform float uCausticIntensity;
 uniform float uCausticSpeed;
 uniform float uCausticScale;
 
-uniform vec4 uRipplePosRad[8];
-uniform vec4 uRippleStrSpdLife[8];
+uniform vec4 uRipplePosRad[256];
+uniform vec4 uRippleStrSpdLife[256];
 uniform int uRippleCount;
 
 float calcRipple(vec3 worldPos, vec3 center, float radius, float strength, float speed, float life, float maxLife) {
@@ -131,7 +131,7 @@ void main() {
     color = mix(color, foamColor, foam * foamIntensity);
 
     float rippleSum = 0.0;
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < 256; i++) {
         if (i >= uRippleCount) break;
         vec4 pr = uRipplePosRad[i];
         vec4 ssl = uRippleStrSpdLife[i];

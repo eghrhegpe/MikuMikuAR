@@ -219,14 +219,27 @@ function createProceduralSky(state: EnvState): void {
         scene
     );
     sphere.isPickable = false;
+    // 先于体积云（Group -1）渲染，填背景但不写深度，避免挡住云的 alpha 合成
+    sphere.renderingGroupId = -2;
 
     const mat = new StandardMaterial('envSkyMat', scene);
     mat.emissiveTexture = updateSkyDynamicTexture(state);
     mat.disableLighting = true;
     mat.backFaceCulling = false;
+    mat.disableDepthWrite = true;
 
     sphere.material = mat;
     _envSys.sky.skyMesh = sphere;
+
+    // 跟随相机，与云层同心（同 center），确保深度测试正确
+    const followObs = scene.onBeforeRenderObservable.add(() => {
+        const cam = scene.activeCamera;
+        if (!cam) return;
+        sphere.position.x = cam.position.x;
+        sphere.position.z = cam.position.z;
+    });
+    sphere.metadata = { skyFollowObs: followObs };
+
     scene.clearColor = new Color4(0, 0, 0, 1);
     const starsPhase = state.starsEnabled ? (state.sunAngle > 10 ? 'h' : 'l') : '';
     _lastProceduralSkyKey = `${state.skyColorTop}|${state.skyColorMid}|${state.skyColorBot}|${state.skyBrightness}|${state.starsEnabled}|${state.starsTexture}|${starsPhase}`;
@@ -273,14 +286,26 @@ function loadSkyCube(path: string, rotationY: number, intensity: number): void {
         scene
     );
     sphere.isPickable = false;
+    // 先于体积云（Group -1）渲染，填背景但不写深度，避免挡住云的 alpha 合成
+    sphere.renderingGroupId = -2;
     const mat = new StandardMaterial('envSkyDomeMat', scene);
     mat.reflectionTexture = cubeTex;
     mat.reflectionTexture.coordinatesMode = Texture.SKYBOX_MODE;
     mat.diffuseColor = new Color3(0, 0, 0);
     mat.specularColor = new Color3(0, 0, 0);
     mat.disableLighting = true;
+    mat.disableDepthWrite = true;
     sphere.material = mat;
     _envSys.sky.skyMesh = sphere;
+
+    // 跟随相机，与云层同心（同 center），确保深度测试正确
+    const followObs = scene.onBeforeRenderObservable.add(() => {
+        const cam = scene.activeCamera;
+        if (!cam) return;
+        sphere.position.x = cam.position.x;
+        sphere.position.z = cam.position.z;
+    });
+    sphere.metadata = { skyFollowObs: followObs };
 }
 
 // ======== Public API ========
@@ -288,6 +313,10 @@ function loadSkyCube(path: string, rotationY: number, intensity: number): void {
 export function disposeSky(): void {
     const scene = getScene();
     if (_envSys.sky.skyMesh) {
+        // 移除相机跟随观察者，避免泄漏
+        if (_envSys.sky.skyMesh.metadata?.skyFollowObs) {
+            scene.onBeforeRenderObservable.remove(_envSys.sky.skyMesh.metadata.skyFollowObs);
+        }
         _envSys.sky.skyMesh.material?.dispose();
         _envSys.sky.skyMesh.dispose();
         _envSys.sky.skyMesh = null;

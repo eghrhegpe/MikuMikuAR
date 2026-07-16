@@ -1,5 +1,5 @@
-// [doc:architecture] Motion Override Levels — 逐骨骼覆盖 UI
-// 职责: 骨骼选择器 + 欧拉角编辑 + 权重滑块 + 已设覆盖管理
+// [doc:adr-116] Motion Override Levels — 模块化动作覆盖 UI
+// 职责: 模块列表（开关+▸）+ 模块参数子页 + 高级骨骼覆盖子页
 // 路由: motion-popup.ts → motionOnFolderEnter → 'motion:boneOverride'
 
 import {
@@ -9,7 +9,7 @@ import {
     modelRegistry,
     focusedModelId,
 } from '../core/config';
-import { addEmptyRow } from '../core/ui-helpers';
+import { addEmptyRow, slideRow, addSectionTitle } from '../core/ui-helpers';
 import { createTrailingBtn } from '../core/ui-slide-row';
 import { getMotionMenu } from './motion-popup';
 import type { BoneOverrideEntry } from '../core/types';
@@ -19,9 +19,139 @@ import {
     clearAllOverrides,
     getAllOverrides,
 } from '../scene/motion/bone-override';
+import {
+    initMotionModules,
+    getRegisteredModules,
+    createModule,
+    getModuleState,
+    setModuleEnabled,
+} from '../scene/motion/motion-modules/registry';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
+
+// ======== 模块列表层（ADR-116 主入口） ========
+
+let _modulesInitialized = false;
+function ensureModulesInit(): void {
+    if (!_modulesInitialized) {
+        initMotionModules();
+        _modulesInitialized = true;
+    }
+}
+
+/** 构建动作覆盖主面板：模块列表 + 高级骨骼覆盖入口 */
+export function buildMotionOverrideLevel(): PopupLevel {
+    ensureModulesInit();
+    return {
+        label: t('motion.override.title'),
+        dir: '',
+        items: [],
+        renderCustom: (container) => {
+            renderMenu(buildMotionOverrideSchema(), container);
+        },
+    };
+}
+
+function buildMotionOverrideSchema(): MenuNode[] {
+    const modelId = focusedModelId;
+    if (!modelId) {
+        return [
+            {
+                id: 'override:empty',
+                kind: 'custom',
+                renderCustom: (c) => {
+                    addEmptyRow(c, t('motion.boneOverride.noModel'));
+                },
+            },
+        ];
+    }
+
+    const modules = getRegisteredModules();
+    return [
+        // 卡片 1：模块列表
+        {
+            id: 'override:modules',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    addSectionTitle(inner, t('motion.override.title'));
+                    for (const mod of modules) {
+                        const state = getModuleState(modelId, mod.id);
+                        slideRow(
+                            inner,
+                            mod.meta.icon ?? '',
+                            t(mod.meta.labelKey),
+                            true, // hasArrow → 子页
+                            () => {
+                                const menu = getMotionMenu();
+                                if (menu) {
+                                    menu.push(buildModuleParamLevel(mod.id));
+                                }
+                            },
+                            undefined,
+                            undefined,
+                            undefined,
+                            {
+                                value: state.enabled,
+                                onChange: (v: boolean) => {
+                                    const inst = createModule(mod.id, modelId);
+                                    if (v) {
+                                        inst?.enable();
+                                    } else {
+                                        inst?.disable();
+                                    }
+                                    setModuleEnabled(modelId, mod.id, v);
+                                    setStatus(
+                                        v ? t('motion.override.enabled') : t('motion.disable'),
+                                        true
+                                    );
+                                    getMotionMenu()?.reRender();
+                                },
+                                bind: () => getModuleState(modelId, mod.id).enabled,
+                            }
+                        );
+                    }
+                });
+            },
+        },
+        // 卡片 2：高级骨骼覆盖入口
+        {
+            id: 'override:advanced',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    slideRow(inner, 'tabler:bone', t('motion.override.advancedBone'), true, () => {
+                        const menu = getMotionMenu();
+                        if (menu) {
+                            menu.push(buildAdvancedBoneOverrideLevel());
+                        }
+                    });
+                });
+            },
+        },
+    ];
+}
+
+/** 模块参数子页：渲染模块的 buildSchema() */
+export function buildModuleParamLevel(moduleId: string): PopupLevel {
+    const modelId = focusedModelId;
+    const mod = modelId ? createModule(moduleId, modelId) : null;
+    return {
+        label: mod ? t(mod.meta.labelKey) : moduleId,
+        dir: '',
+        items: [],
+        renderCustom: (container) => {
+            if (!mod) {
+                addEmptyRow(container, t('motion.boneOverride.noModel'));
+                return;
+            }
+            renderMenu(mod.buildSchema(), container);
+        },
+    };
+}
+
+// ======== 高级骨骼覆盖子页（原 ADR-061 UI，下沉为 power user 通道） ========
 
 function buildBoneOverrideSchema(): MenuNode[] {
     const modelId = focusedModelId;
@@ -245,7 +375,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
     ];
 }
 
-export function buildBoneOverrideLevel(): PopupLevel {
+export function buildAdvancedBoneOverrideLevel(): PopupLevel {
     return {
         label: t('motion.boneOverride.title'),
         dir: '',

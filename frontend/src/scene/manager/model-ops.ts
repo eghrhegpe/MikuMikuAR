@@ -16,6 +16,7 @@ import { getCameraMode, switchCameraMode } from '../camera/camera';
 import { updatePlaybackUI } from '../motion/playback';
 import { disposeAudio } from '@/outfit/audio';
 import { modelManager } from '../scene';
+import { setTargetModel } from '../motion/motion-modules/registry'; // [doc:adr-116]
 import type { FormationType } from './model-manager';
 import { getFormationLabels } from './model-manager';
 import {
@@ -55,6 +56,9 @@ export function removeFocusedModel(): void {
 
 export function focusModel(id: string): void {
     modelManager?.focus(id);
+    // [doc:adr-116] 切换目标模型时同步 motion module 作用域
+    // （禁用旧模型模块覆盖、启用新模型已保存的模块状态）
+    setTargetModel(id);
     if (!mmdRuntime) {
         return;
     }

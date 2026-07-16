@@ -418,13 +418,11 @@ export function createClouds(state: EnvState): void {
                 'sceneLightColor',
             ],
             samplers: ['noiseTex'],
-            needAlphaBlending: true,
         }
     );
 
     mat.backFaceCulling = false;
     mat.alpha = 1.0;
-    mat.transparencyMode = 2;
     // Bind 3D noise texture (must be after mat is created)
     const noiseTex = _ensureNoiseTexture(scene);
     mat.setTexture('noiseTex', noiseTex);
