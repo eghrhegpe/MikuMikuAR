@@ -75,6 +75,41 @@ describe('thumbnail key 双源对齐契约', () => {
     }
 });
 
+describe('道具写侧经 thumbnailBaseKey 收口（与 model-loader 同源自洽）', () => {
+    // props.ts:157 实际调用：renderPropThumbnail(scene, inst, thumbnailBaseKey({ filePath: inst.filePath }))
+    // 读侧 library-core 经 libraryModelBaseKey(m)（m.type='prop' → 16/9）。
+    // 道具无 innerPath（不支持 zip 内）；库加载时 req.path === m.file_path（load-manager.ts:97/103）。
+    const propPaths = ['/lib/p.pmx', '/models/desk.glb', '/r/chair.obj'];
+
+    for (const p of propPaths) {
+        it(`prop write key === read key（${p}）`, () => {
+            // 写侧：props.ts 实际代码（无 libraryPath，仅 filePath）
+            const writeKey = buildThumbnailKey({
+                baseKey: thumbnailBaseKey({ filePath: p }),
+                isStage: isStageLike('prop'),
+                resolution: 512,
+            });
+
+            // 读侧：LibraryModel（type='prop'，container 通常为 'file'）
+            const m = libModel({ file_path: p, type: 'prop', container: 'file', zip_inner: '' });
+            const readKey = buildThumbnailKey({
+                baseKey: libraryModelBaseKey(m),
+                isStage: isStageLike(m.type),
+                resolution: 512,
+            });
+
+            expect(writeKey).toBe(readKey);
+        });
+    }
+
+    it('道具无 innerPath：写侧与读侧均不含 zip_inner 段', () => {
+        const writeBase = thumbnailBaseKey({ filePath: '/lib/p.pmx' });
+        expect(writeBase).toBe('/lib/p.pmx');
+        const m = libModel({ file_path: '/lib/p.pmx', type: 'prop', container: 'file', zip_inner: '' });
+        expect(libraryModelBaseKey(m)).toBe('/lib/p.pmx');
+    });
+});
+
 describe('thumbnailBaseKey 规则', () => {
     it('普通模型：libraryPath 优先且回退 filePath', () => {
         expect(thumbnailBaseKey({ libraryPath: '/lib/a.pmx', filePath: '/tmp/a.pmx' })).toBe('/lib/a.pmx');

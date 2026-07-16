@@ -17,6 +17,7 @@ import { registerMaterialTarget, unregisterMaterialTarget } from '../manager/mat
 import { t } from '@/core/i18n/t';
 import { getBaseName, logWarn } from '@/core/utils';
 import { renderPropThumbnail } from '../manager/thumbnail-capture';
+import { thumbnailBaseKey } from '../manager/thumbnail-key';
 import {
     attachGizmo,
     detachGizmo,
@@ -151,10 +152,10 @@ export async function loadProp(filePath: string, signal?: AbortSignal): Promise<
         console.info('[props] load complete:', id, displayName);
 
         // [fix:prop-thumbnail] 加载成功后离屏渲染道具缩略图并缓存。
-        // key = inst.filePath（与 library-core 读侧 thumbnailKeyForModel 的 file_path 基底一致），
-        // kind='prop' → isStageLike 命中 16/9，闭环此前写/读宽高比谓词不一致问题。
-        // 与模型路径一致：fire-and-forget + catch，不阻塞加载主流程；共享 _thumbMutex 串行化。
-        void renderPropThumbnail(scene, inst, inst.filePath).catch((thumbErr) => {
+        // 经统一 thumbnailBaseKey 收口（与模型写侧 / library-core 读侧同源），杜绝双源拼接反弹。
+        // 道具无 innerPath（不支持 zip 内），故仅 filePath 入参；kind='prop' → isStageLike 命中 16/9。
+        // fire-and-forget + catch，不阻塞加载主流程；共享 _thumbMutex 串行化。
+        void renderPropThumbnail(scene, inst, thumbnailBaseKey({ filePath: inst.filePath })).catch((thumbErr) => {
             logWarn('props', 'renderPropThumbnail:', thumbErr);
         });
 
