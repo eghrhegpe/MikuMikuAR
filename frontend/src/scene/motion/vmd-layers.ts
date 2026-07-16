@@ -607,7 +607,7 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
                 composite.addSpan(span);
             }
         } finally {
-            (vmdLoader as unknown as { dispose?: () => void }).dispose?.();
+            (vmdLoader as any).dispose?.();
         }
 
         // WASM 运行时：使用 JS 帧流合并的 blender 方案

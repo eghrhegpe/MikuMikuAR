@@ -339,7 +339,9 @@ function _catOfUncached(name: string): MaterialCategory {
                 if (new RegExp(pattern, 'i').test(name)) {
                     return category as MaterialCategory;
                 }
-            } catch {}
+            } catch {
+                logWarn('material', 'invalid category pattern:', pattern);
+            }
         }
     }
 

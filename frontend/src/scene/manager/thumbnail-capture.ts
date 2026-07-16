@@ -18,6 +18,11 @@ import { thumbnailCache, setThumbnailCache, type ModelInstance } from '@/core/co
 import { uiState } from '@/core/state';
 import { logWarn } from '@/core/utils';
 
+// ======== 并发互斥：promise 链确保同一时刻只有一个缩略图渲染 ========
+// renderInstanceThumbnail 共享 RT + framebuffer + 物理冻结状态，
+// 并发调用会导致 WebGL 状态冲突或截图内容错乱。
+let _thumbMutex: Promise<unknown> = Promise.resolve();
+
 /** base64 缩略图数据的 MIME 嗅探：PNG/JPEG/WebP 头部字节不同 */
 export function thumbDataUrl(base64: string): string {
     if (base64.startsWith('iVBOR')) return `data:image/png;base64,${base64}`;
@@ -34,6 +39,23 @@ export function thumbDataUrl(base64: string): string {
  * 不推进动画时间轴。始终创建独立缩略图相机，基于包围盒聚焦上半身（凸显服饰特征）。
  */
 export async function renderInstanceThumbnail(
+    scene: Scene,
+    inst: ModelInstance,
+    key: string
+): Promise<void> {
+    // 串行化：排队等待上一个缩略图渲染完成，避免并发操作 RT/framebuffer/物理状态
+    const prev = _thumbMutex;
+    let release!: () => void;
+    _thumbMutex = new Promise<void>((r) => { release = r; });
+    await prev;
+    try {
+        await _renderThumbnailImpl(scene, inst, key);
+    } finally {
+        release();
+    }
+}
+
+async function _renderThumbnailImpl(
     scene: Scene,
     inst: ModelInstance,
     key: string

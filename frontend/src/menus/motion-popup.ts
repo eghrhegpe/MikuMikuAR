@@ -567,7 +567,12 @@ function motionOnItemClick(row: PopupRow): void {
                         setAutoLoop(false);
                     } else {
                         setAutoLoop(true);
-                        mmdRuntime.playAnimation().then(() => setIsPlaying(true));
+                        mmdRuntime.playAnimation()
+                            .then(() => setIsPlaying(true))
+                            .catch((err) => {
+                                setIsPlaying(false);
+                                logWarn('motion-popup', 'playAnimation failed:', err);
+                            });
                     }
                     updatePlaybackUI();
                     getMotionMenu()?.reRender();

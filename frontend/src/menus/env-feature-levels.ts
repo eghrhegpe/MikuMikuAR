@@ -321,8 +321,8 @@ export function buildGroundLevel(): PopupLevel {
                                     envState.groundTexture === tp.value,
                                     () => {
                                         const hasTex = !!tp.value;
-                                        const patch: Record<string, unknown> = {
-                                            groundTexture: tp.value,
+                                        const patch: Record<string, string | boolean | null> = {
+                                            groundTexture: tp.value ?? null,
                                             groundTextureEnabled: hasTex,
                                             groundStyle: hasTex ? 'texture' : 'solid',
                                         };
@@ -330,7 +330,7 @@ export function buildGroundLevel(): PopupLevel {
                                         if (hasTex && envState.groundDecoStyle === 'none') {
                                             patch.groundDecoStyle = 'grid';
                                         }
-                                        setEnvState(patch as any);
+                                        setEnvState(patch as Parameters<typeof setEnvState>[0]);
                                     },
                                     {
                                         onUpdate: (btn) => {
