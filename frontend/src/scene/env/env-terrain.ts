@@ -3,6 +3,7 @@ import {
     MeshBuilder,
     GroundMesh,
     StandardMaterial,
+    PBRMaterial,
     Texture,
     Color3,
     VertexBuffer,
@@ -139,8 +140,14 @@ export function applyTerrainMaterial(ground: GroundMesh, state: EnvState, scene:
     // 释放旧材质及其纹理，防止 GPU 显存泄漏
     const oldMat = ground.material;
     if (oldMat) {
+        if (oldMat instanceof PBRMaterial) {
+            oldMat.albedoTexture?.dispose();
+            oldMat.metallicTexture?.dispose();
+        }
         if (oldMat instanceof StandardMaterial) {
             oldMat.diffuseTexture?.dispose();
+        }
+        if (oldMat instanceof PBRMaterial || oldMat instanceof StandardMaterial) {
             oldMat.bumpTexture?.dispose();
             oldMat.opacityTexture?.dispose();
             oldMat.reflectionTexture?.dispose();
@@ -162,30 +169,45 @@ export function applyTerrainMaterial(ground: GroundMesh, state: EnvState, scene:
         return;
     }
 
+    // ADR-114: PBR 材质升级
+    const mat = state.groundPbrEnabled
+        ? new PBRMaterial('envGroundPBR', scene)
+        : new StandardMaterial('envGroundMat', scene);
+
+    if (mat instanceof PBRMaterial) {
+        mat.metallic = state.groundMetallic;
+        mat.roughness = state.groundRoughness;
+        // PBR 自动使用 scene.environmentTexture 作为 IBL，无需手动赋值
+        mat.useSpecularOverAlpha = false;
+        mat.useRadianceOverAlpha = false;
+    }
+    mat.alpha = state.groundAlpha;
+    mat.backFaceCulling = false;
+    ground.material = mat;
+
     if (state.groundTextureEnabled && state.groundTexture) {
         const tex = new Texture(resolve(state.groundTexture), scene);
         tex.uScale = tex.vScale = 1 / Math.max(0.1, state.groundTextureScale);
-        const mat = new StandardMaterial('envGroundMat', scene);
-        mat.diffuseTexture = tex;
-        mat.diffuseColor = new Color3(1, 1, 1);
-        mat.alpha = state.groundAlpha;
-        mat.backFaceCulling = false;
-        ground.material = mat;
-        // Phase B: 法线贴图
-        if (state.groundNormalTexture) {
-            mat.bumpTexture = new Texture(resolve(state.groundNormalTexture), scene);
-            mat.bumpTexture.level = state.groundNormalStrength;
+        if (mat instanceof PBRMaterial) {
+            mat.albedoTexture = tex;
+            mat.albedoColor = new Color3(1, 1, 1);
+        } else {
+            mat.diffuseTexture = tex;
+            mat.diffuseColor = new Color3(1, 1, 1);
         }
     } else {
-        const mat = new StandardMaterial('envGroundMat', scene);
-        mat.diffuseColor = new Color3(
-            state.groundColor[0],
-            state.groundColor[1],
-            state.groundColor[2]
-        );
-        mat.alpha = state.groundAlpha;
-        mat.backFaceCulling = false;
-        ground.material = mat;
+        const c = new Color3(state.groundColor[0], state.groundColor[1], state.groundColor[2]);
+        if (mat instanceof PBRMaterial) {
+            mat.albedoColor = c;
+        } else {
+            mat.diffuseColor = c;
+        }
+    }
+
+    // Phase B: 法线贴图（PBR 和 Standard 都用 bumpTexture）
+    if (state.groundNormalTexture) {
+        mat.bumpTexture = new Texture(resolve(state.groundNormalTexture), scene);
+        mat.bumpTexture.level = state.groundNormalStrength;
     }
 }
 

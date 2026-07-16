@@ -679,6 +679,79 @@ export function buildGroundLevel(): PopupLevel {
                     },
                 ];
                 renderMenu(reflectionSchema, c);
+
+                // ===== PBR 材质（ADR-114）=====
+                const pbrSchema: MenuNode[] = [
+                    {
+                        id: 'env:ground:pbr',
+                        kind: 'folder',
+                        label: 'env.pbr',
+                        icon: 'lucide:sparkles',
+                        defaultOpen: false,
+                        headerToggle: { bind: 'env.groundPbrEnabled' },
+                        children: [
+                            {
+                                id: 'env:ground:metallic',
+                                kind: 'slider',
+                                label: 'env.metallic',
+                                control: { bind: 'env.groundMetallic', min: 0, max: 1, step: 0.05 },
+                                icon: 'lucide:circle-dot',
+                            },
+                            {
+                                id: 'env:ground:roughness',
+                                kind: 'slider',
+                                label: 'env.roughness',
+                                control: { bind: 'env.groundRoughness', min: 0, max: 1, step: 0.05 },
+                                icon: 'lucide:grid-2x2',
+                            },
+                        ],
+                    },
+                ];
+                renderMenu(pbrSchema, c);
+
+                // ===== 程序化纹理（ADR-114，PBR 专属）=====
+                const proceduralSchema: MenuNode[] = [
+                    {
+                        id: 'env:ground:procedural',
+                        kind: 'folder',
+                        label: 'env.proceduralTexture',
+                        icon: 'lucide:paintbrush',
+                        defaultOpen: false,
+                        visibleWhen: () => envState.groundPbrEnabled && !envState.groundTextureEnabled,
+                        children: [
+                            {
+                                id: 'env:ground:procType',
+                                kind: 'modeSlider',
+                                label: 'env.proceduralType',
+                                control: {
+                                    bind: 'env.groundProceduralTexture',
+                                    options: [
+                                        { value: 'none', label: 'env.off' },
+                                        { value: 'wood', label: 'env.wood' },
+                                        { value: 'marble', label: 'env.marble' },
+                                        { value: 'concrete', label: 'env.concrete' },
+                                    ],
+                                },
+                                icon: 'lucide:palette',
+                            },
+                            {
+                                id: 'env:ground:procSeed',
+                                kind: 'slider',
+                                label: 'env.proceduralSeed',
+                                control: { bind: 'env.groundProceduralSeed', min: 0, max: 999, step: 1 },
+                                icon: 'lucide:dices',
+                            },
+                            {
+                                id: 'env:ground:procScale',
+                                kind: 'slider',
+                                label: 'env.proceduralScale',
+                                control: { bind: 'env.groundProceduralScale', min: 0.1, max: 5, step: 0.1 },
+                                icon: 'lucide:scaling',
+                            },
+                        ],
+                    },
+                ];
+                renderMenu(proceduralSchema, c);
     });
 }
 

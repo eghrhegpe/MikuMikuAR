@@ -31,7 +31,7 @@ export interface FullscreenOverlayHandle {
 
 // ======== State Machine ========
 
-export type OverlayState = 'CLOSED' | 'EMBEDDED_GRID' | 'FULLSCREEN';
+export type OverlayState = 'CLOSED' | 'FULLSCREEN';
 
 let currentState: OverlayState = 'CLOSED';
 let currentOverlay: FullscreenOverlayHandle | null = null;
@@ -41,7 +41,7 @@ let frozenSlideMenuElement: HTMLElement | null = null;
 // ======== State Transitions ========
 
 export function openFullscreen(options: FullscreenOverlayOptions): FullscreenOverlayHandle {
-    if (currentState !== 'EMBEDDED_GRID') {
+    if (currentState !== 'CLOSED') {
         logWarn('FullscreenOverlay', `Cannot open: current state is ${currentState}`);
         return { close: () => {}, getElement: () => document.createElement('div') };
     }
@@ -82,7 +82,7 @@ export function closeFullscreen(): void {
     // 恢复 SlideMenu
     unfreezeSlideMenu();
 
-    currentState = 'EMBEDDED_GRID';
+    currentState = 'CLOSED';
 }
 
 export function getCurrentState(): OverlayState {
@@ -135,8 +135,9 @@ function createOverlayElement(options: FullscreenOverlayOptions): HTMLElement {
         animation: fadeIn 0.2s ease-out;
     `;
 
-    // 内部导航栈
+    // 内部导航栈（存父级 render 闭包，返回时重新渲染父级而非子级）
     const navStack: { title: string; render: (c: HTMLElement) => void }[] = [];
+    let currentRender: (c: HTMLElement) => void = () => {};
 
     // 顶部栏
     const header = document.createElement('div');
@@ -160,6 +161,7 @@ function createOverlayElement(options: FullscreenOverlayOptions): HTMLElement {
             const prev = navStack.pop()!;
             titleEl.textContent = prev.title;
             content.innerHTML = '';
+            currentRender = prev.render;
             prev.render(content);
         } else {
             closeFullscreen();
@@ -199,15 +201,17 @@ function createOverlayElement(options: FullscreenOverlayOptions): HTMLElement {
         padding: 16px;
     `;
 
-    // navigate 回调 — 在全屏内跳转到新内容
+    // navigate 回调 — 在全屏内跳转到新内容（将当前 render 压栈，返回时恢复）
     const navigate = (newTitle: string, newRender: (c: HTMLElement) => void) => {
-        navStack.push({ title: titleEl.textContent || '', render: newRender });
+        navStack.push({ title: titleEl.textContent || '', render: currentRender });
         titleEl.textContent = newTitle;
         content.innerHTML = '';
+        currentRender = newRender;
         newRender(content);
     };
 
-    options.renderContent(content, navigate);
+    currentRender = (c) => options.renderContent(c, navigate);
+    currentRender(content);
 
     overlay.appendChild(header);
     overlay.appendChild(content);

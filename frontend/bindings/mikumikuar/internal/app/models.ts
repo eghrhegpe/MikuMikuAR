@@ -221,6 +221,12 @@ export interface EnvState {
     "groundNormalStrength": number;
     "groundElevationColoring": boolean;
     "groundFollowCamera": boolean;
+    "groundPbrEnabled": boolean;
+    "groundProceduralTexture": string;
+    "groundProceduralSeed": number;
+    "groundProceduralScale": number;
+    "groundRoughness": number;
+    "groundMetallic": number;
     "groundLevel": number;
     "groundSize": number;
     "groundEdgeFade": number;

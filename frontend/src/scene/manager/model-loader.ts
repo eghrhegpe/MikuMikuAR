@@ -122,9 +122,28 @@ export async function captureThumbnail(
     inst?: ModelInstance
 ): Promise<void> {
     const gen = ++_thumbCaptureGen;
+    // [fix:thumbnail-physics] 提前解析目标实例并冻结物理，防止 whenReadyAsync / rAF
+    // 等待期间 WASM Bullet 推进物理，导致缩略图捕捉到裙子/头发飞行中的过渡态。
+    // renderInstanceThumbnail 内部的 freeze 变为 no-op（已是全 0），
+    // 由本函数 finally 统一恢复原始状态。
+    let savedPhysStates: Uint8Array | null = null;
+    let physStates: Uint8Array | null = null;
     try {
         if (!_scene || !_modelManager) {
             return;
+        }
+
+        const targetInst = inst ?? _modelManager.focused();
+        if (!targetInst || !targetInst.rootMesh) {
+            return;
+        }
+
+        // 立即冻结物理（render 前的任何异步间隙都无法推进）
+        const mmdModel = targetInst.mmdModel;
+        physStates = mmdModel?.rigidBodyStates ?? null;
+        if (physStates) {
+            savedPhysStates = new Uint8Array(physStates);
+            physStates.fill(0);
         }
 
         let ready = false;
@@ -150,11 +169,6 @@ export async function captureThumbnail(
             return;
         }
 
-        const targetInst = inst ?? _modelManager.focused();
-        if (!targetInst || !targetInst.rootMesh) {
-            return;
-        }
-
         let thumbKey = libraryPath && libraryPath !== filePath ? libraryPath : filePath;
         if (innerPath) {
             thumbKey = `${thumbKey}::${innerPath}`;
@@ -165,6 +179,11 @@ export async function captureThumbnail(
         await renderInstanceThumbnail(_scene, targetInst, thumbKey);
     } catch (err) {
         logWarn('model-loader', 'captureThumbnail:', err);
+    } finally {
+        // 恢复物理到冻结前的状态
+        if (physStates && savedPhysStates) {
+            physStates.set(savedPhysStates);
+        }
     }
 }
 

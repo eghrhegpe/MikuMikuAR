@@ -366,7 +366,9 @@ export function computeLibraryRef(filePath: string): string | null {
     const normalized = normPath(filePath);
     if (libraryRoot) {
         const root = normPath(libraryRoot);
-        if (normalized.startsWith(root + '/')) {
+        // 大小写不敏感比较（Windows 文件系统语义），与 isUnderRoot 保持一致。
+        // 返回的 ref 保留 filePath 的原始大小写，确保标签匹配不受影响。
+        if (normalized.toLowerCase().startsWith((root + '/').toLowerCase())) {
             return normalized.substring(root.length + 1);
         }
     }
