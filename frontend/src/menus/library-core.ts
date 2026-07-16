@@ -13,6 +13,7 @@ import {
     modelMetaCache,
     setModelMetaCache,
     displayNamePriority,
+    uiState,
     modelRegistry,
     focusedModelId,
     cardContainer,
@@ -155,15 +156,19 @@ export function computeRestoreSegments(
 
 // ======== 缩略图 & 元数据 ========
 
-export function thumbnailKeyForModel(m: LibraryModel): string {
+export function thumbnailKeyForModel(m: LibraryModel, resolution?: number): string {
+    // 缓存 key 包含分辨率，确保不同分辨率的缩略图被视为独立条目。
     // 与 model-loader.ts captureThumbnail() 的 key 格式保持一致：
-    // ZIP 内模型用 `filePath::zipInner`，普通模型用 `filePath`。
-    // 否则 GetThumbnailBatch 查询的 key 与截图保存的 key 不匹配 → ZIP 模型缩略图永远不命中。
+    // ZIP 内模型用 `filePath::zipInner::res::aspect`，普通模型用 `filePath::res::aspect`。
     const fp = m.file_path || '';
+    let key = fp;
     if (m.container === 'zip' && m.zip_inner) {
-        return `${fp}::${m.zip_inner}`;
+        key = `${fp}::${m.zip_inner}`;
     }
-    return fp;
+    const res = resolution ?? uiState.thumbnailResolution ?? 512;
+    const isStage = m.type === 'stage' || m.type === 'scene' || m.type === 'prop';
+    const aspect = isStage ? '16/9' : '2/3';
+    return `${key}::${res}::${aspect}`;
 }
 
 async function ensureModelMeta(pmxPaths: string[]): Promise<void> {
