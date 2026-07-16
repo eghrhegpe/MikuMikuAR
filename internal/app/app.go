@@ -472,6 +472,8 @@ type EnvState struct {
 	WaterWaveHeight   float64    `json:"waterWaveHeight"`
 	WaterSize         float64    `json:"waterSize"`
 	WaterAnimSpeed    float64    `json:"waterAnimSpeed"`
+	// 水面平面反射质量：'high' | 'medium' | 'low' | 'off'
+	ReflectionQuality string     `json:"reflectionQuality"`
 	FoamThreshold     float64    `json:"foamThreshold"`
 	FoamIntensity     float64    `json:"foamIntensity"`
 	FoamOpacity       float64    `json:"foamOpacity"`

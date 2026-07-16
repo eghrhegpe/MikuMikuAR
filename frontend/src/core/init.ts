@@ -205,6 +205,10 @@ async function restoreEnvState(): Promise<void> {
         if (loaded.groundEdgeFade === undefined) {
             loaded.groundEdgeFade = 0;
         }
+        // 向后兼容：旧配置缺少 reflectionQuality 时补默认值 'off'
+        if (loaded.reflectionQuality === undefined) {
+            loaded.reflectionQuality = 'off';
+        }
         setEnvState(loaded as Partial<EnvState>);
     }
 }
