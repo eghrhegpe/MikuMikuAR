@@ -8,6 +8,7 @@ import { swallowError } from '../core/utils';
 import { getCurrentRenderingMenu } from './menu';
 import { setPerformanceMode, getPerformanceMode } from '../scene/render/performance';
 import { engine, applyFrameControl, modelManager, setModelPhysics } from '../scene/scene';
+import { calcHardwareScaling } from '../core/render-loop';
 import { refreshCameraUserSettings } from '../scene/camera/camera';
 import type { PopupLevel } from '../core/config';
 import type { SettingsMenuHandle } from './settings-shared';
@@ -263,7 +264,7 @@ function buildPerfSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] 
                 get: (v) => (v as number) ?? 1,
                 set: (v) => Math.round((v as number) * 100) / 100,
                 onChange: (v) => {
-                    engine.setHardwareScalingLevel(1 / (v as number));
+                    engine.setHardwareScalingLevel(calcHardwareScaling(window.devicePixelRatio || 1, v as number));
                     setStatus(
                         t('settings.renderScale', { pct: Math.round((v as number) * 100) }),
                         true

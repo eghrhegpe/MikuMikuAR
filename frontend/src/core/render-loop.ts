@@ -12,15 +12,43 @@ let _frameCounter = 0;
 let _resizeHandler: (() => void) | null = null;
 let _beforeObs: ReturnType<typeof scene.onBeforeRenderObservable.add> | null = null;
 let _afterObs: ReturnType<typeof scene.onAfterRenderObservable.add> | null = null;
+let _lastDpr = 1; // 上次检测到的 DPR，用于 resize 时判断是否变化
 
 const PERF_SAMPLE_INTERVAL = 60; // 每 60 帧评估一次性能日志（采样降频，P4）
+
+/**
+ * 根据 DPR + renderScale 计算安全的 hardwareScalingLevel，
+ * 钳位帧缓冲不超过 GL_MAX_TEXTURE_SIZE（防 DPR×renderScale 越界 OOM）。
+ */
+export function calcHardwareScaling(dpr: number, renderScale: number): number {
+    const base = 1 / (dpr * renderScale);
+    const caps = engine.getCaps();
+    if (!caps.maxTextureSize) return base;
+    // 反推 CSS 宽高：renderWidth = cssW / scalingLevel ⇒ cssW = renderWidth × scalingLevel
+    const cssW = engine.getRenderWidth() * engine.getHardwareScalingLevel();
+    const cssH = engine.getRenderHeight() * engine.getHardwareScalingLevel();
+    const bufW = Math.round(cssW * dpr * renderScale);
+    const bufH = Math.round(cssH * dpr * renderScale);
+    if (bufW > caps.maxTextureSize || bufH > caps.maxTextureSize) {
+        const s = Math.min(caps.maxTextureSize / bufW, caps.maxTextureSize / bufH);
+        return base * s;
+    }
+    return base;
+}
+
+/** 应用 hardwareScalingLevel（含 DPR + GL 钳位） */
+function applyScaling(): void {
+    const dpr = window.devicePixelRatio || 1;
+    engine.setHardwareScalingLevel(calcHardwareScaling(dpr, uiState.renderScale ?? 1));
+}
 
 export function startRenderLoop(): void {
     // 幂等：HMR 或重复调用前先清理旧实例，避免 setInterval / render-loop 泄漏
     stopRenderLoop();
 
     applyFrameControl();
-    engine.setHardwareScalingLevel(1 / (uiState.renderScale ?? 1));
+    _lastDpr = window.devicePixelRatio || 1;
+    applyScaling();
     let _renderBeforeTime = 0;
     _beforeObs = scene.onBeforeRenderObservable.add(() => {
         _renderBeforeTime = performance.now();
@@ -62,7 +90,14 @@ export function startRenderLoop(): void {
         }
         updatePerformance();
     });
-    _resizeHandler = () => engine.resize();
+    _resizeHandler = () => {
+        engine.resize();
+        const newDpr = window.devicePixelRatio || 1;
+        if (newDpr !== _lastDpr) {
+            _lastDpr = newDpr;
+            applyScaling();
+        }
+    };
     window.addEventListener('resize', _resizeHandler);
 
     // ======== FPS + Clock ========
