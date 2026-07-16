@@ -153,6 +153,7 @@ export interface EnvState {
     "groundVisible": boolean;
     "groundType": string;
     "groundStyle": string;
+    "groundDecoStyle": string;
     "groundColor": number[];
     "groundAlpha": number;
     "groundTexture": string;

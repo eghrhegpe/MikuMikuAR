@@ -532,15 +532,6 @@ export interface MmdRuntimeBoneExtended extends IMmdRuntimeBone {
     ikSolver: IkSolver | null;
 }
 
-// babylon-mmd 的 VmdLoader 类型声明未导出 dispose()，但运行时实现了该 API，
-// 用于释放解析器内部 ArrayBuffer 引用，避免大 VMD 文件内存驻留。
-// 通过 module augmentation 补齐类型，调用方不再需要 `as unknown as { dispose?: ... }`。
-declare module 'babylon-mmd/esm/Loader/vmdLoader' {
-    interface VmdLoader {
-        dispose(): void;
-    }
-}
-
 export type PendingVmd = { data: ArrayBuffer; name: string };
 
 export interface OverridePaths {
