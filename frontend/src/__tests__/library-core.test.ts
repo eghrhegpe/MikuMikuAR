@@ -101,6 +101,11 @@ vi.mock('../core/config', () => ({
     },
 
     normPath: (p: string) => p.replace(/\\/g, '/').replace(/\/+$/, ''),
+    getBrowseDir: (category: string) => {
+        if (category === 'prop') return '/test/root/props';
+        if (category === 'stage') return '/test/root/stages';
+        return '/test/root/models';
+    },
     cardContainer: (container: HTMLElement, fn: (c: HTMLElement) => void) => {
         const card = document.createElement('div');
         fn(card);
@@ -156,6 +161,7 @@ import {
     isLeafFlattenDir,
     computeRestoreSegments,
     modelToResourceItem,
+    resolveDisplayBrowseDir,
 } from '../menus/library-core';
 import { isUnderRoot } from '../core/utils';
 import { normPath } from '../core/fileservice';
@@ -913,6 +919,36 @@ describe('isLeafFlattenDir', () => {
         ];
         expect(isLeafFlattenDir('/test/models/sub', models, (m) => m.format === 'pmx')).toBe(true);
         expect(isLeafFlattenDir('/test/models/sub', models, (m) => m.format === 'vmd')).toBe(true);
+    });
+});
+
+// resolveDisplayBrowseDir [记忆地址回退]
+// ===================================================================
+
+describe('resolveDisplayBrowseDir', () => {
+    it('resolves a single-pmx leaf subdir to the browse root (模型在根层被展平显示)', () => {
+        mockState.allModels = [
+            makeModel({ file_path: '/test/root/models/X/a.pmx', dir: '/test/root/models/X' }),
+        ];
+        const m = makeModel({ file_path: '/test/root/models/X/a.pmx', dir: '/test/root/models/X' });
+        expect(resolveDisplayBrowseDir(m, 'pmx')).toBe('/test/root/models');
+    });
+
+    it('returns the model dir unchanged for a normal (non-flatten) subfolder', () => {
+        mockState.allModels = [
+            makeModel({ file_path: '/test/root/models/sub/a.pmx', dir: '/test/root/models/sub' }),
+            makeModel({ file_path: '/test/root/models/sub/deep/b.pmx', dir: '/test/root/models/sub/deep' }),
+        ];
+        const m = makeModel({ file_path: '/test/root/models/sub/a.pmx', dir: '/test/root/models/sub' });
+        expect(resolveDisplayBrowseDir(m, 'pmx')).toBe('/test/root/models/sub');
+    });
+
+    it('returns browse root for a model placed directly at root', () => {
+        mockState.allModels = [
+            makeModel({ file_path: '/test/root/models/a.pmx', dir: '/test/root/models' }),
+        ];
+        const m = makeModel({ file_path: '/test/root/models/a.pmx', dir: '/test/root/models' });
+        expect(resolveDisplayBrowseDir(m, 'pmx')).toBe('/test/root/models');
     });
 });
 

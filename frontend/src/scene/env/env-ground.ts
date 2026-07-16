@@ -79,7 +79,16 @@ function createGroundMaterial(state: EnvState, scene: Scene): GroundMat {
     // PBR 自动使用 scene.environmentTexture 作为 IBL，无需手动赋值
     mat.useSpecularOverAlpha = false;
     mat.useRadianceOverAlpha = false;
+    // ADR-114: 透明模式下显式设置 transparencyMode，PBRMaterial 依赖显式队列
+    mat.transparencyMode = _needAlphaBlend(state)
+        ? Material.MATERIAL_ALPHABLEND
+        : Material.MATERIAL_OPAQUE;
     return mat;
+}
+
+/** 判断地面是否需要 alpha blend 渲染（alpha < 1 或边缘淡出）。 */
+function _needAlphaBlend(state: EnvState): boolean {
+    return state.groundAlpha < 1 || state.groundEdgeFade > 0;
 }
 
 // ======== ADR-114: 程序化纹理生成（木纹）========
@@ -255,8 +264,9 @@ const groundReflection = new PlanarReflection({
             if (mat instanceof StandardMaterial) {
                 mat.reflectionFresnelParameters = new FresnelParameters();
                 mat.reflectionFresnelParameters.isEnabled = false;
-                mat.specularColor = new Color3(1, 1, 1);
-                mat.diffuseColor = new Color3(0, 0, 0);
+                // specularColor 控制灯光高光强度（太阳等），不是镜面反射叠加强度
+                // 过高会导致太阳高光刺眼，与 reflectionTexture.level 混淆
+                mat.specularColor = new Color3(0.3, 0.3, 0.3);
             }
             // PBR: 反射由 roughness + environmentTexture 驱动，无需 Fresnel
         } else {
@@ -271,13 +281,8 @@ const groundReflection = new PlanarReflection({
     setBlend: (b) => {
         const mat = _envSys.ground.mesh?.material as GroundMat | null;
         if (!mat || !mat.reflectionTexture) return;
+        // 仅控制反射纹理强度，不修改 diffuseColor（由 mount 统一管理底色）
         mat.reflectionTexture.level = b;
-        // 反射开启时压暗底色让镜面可见，关闭时由 applyGround 恢复原色
-        if (mat instanceof StandardMaterial) {
-            mat.diffuseColor = b > 0
-                ? new Color3(0, 0, 0)
-                : new Color3(0.2, 0.2, 0.2);
-        }
     },
 });
 registerReflectionSurface('ground', groundReflection, () =>
@@ -621,6 +626,13 @@ export function applyGround(state: EnvState): void {
                 _updateGroundTexture(mat, state);
             }
             mat.alpha = state.groundAlpha;
+            // ADR-114: 透明模式同步（PBRMaterial 需显式，StandardMaterial 自动处理）
+            if (mat instanceof PBRMaterial) {
+                const needAlpha = _needAlphaBlend(state);
+                mat.transparencyMode = needAlpha
+                    ? Material.MATERIAL_ALPHABLEND
+                    : Material.MATERIAL_OPAQUE;
+            }
             const albedoTex = _getAlbedoTex(mat);
             if (albedoTex && albedoTex instanceof Texture) {
                 albedoTex.uScale = albedoTex.vScale =

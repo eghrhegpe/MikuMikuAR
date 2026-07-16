@@ -39,6 +39,7 @@ import {
     SelectImportFile,
     ImportZip,
     GetLastBrowseDir,
+    SetLastBrowseDir,
 } from '../core/wails-bindings';
 import {
     tryCatchStatus,
@@ -52,7 +53,7 @@ import {
 import { showConfirm } from '../core/dialog';
 import { t } from '../core/i18n/t';
 import { createIconifyIcon } from '../core/icons';
-import { buildLevel, modelToRow, modelToResourceItem, thumbnailKeyForModel, buildResourceItemsForDir, buildModelRootItems, splitSubdirSegments, computeRestoreSegments, getPendingAutoExpand, setPendingAutoExpand, getPendingFocusModel, setPendingFocusModel, getPendingMetaGuard } from './library-core';
+import { buildLevel, modelToRow, modelToResourceItem, thumbnailKeyForModel, buildResourceItemsForDir, buildModelRootItems, splitSubdirSegments, computeRestoreSegments, getPendingAutoExpand, setPendingAutoExpand, getPendingFocusModel, setPendingFocusModel, getPendingMetaGuard, resolveDisplayBrowseDir } from './library-core';
 
 // ======== 模块级状态 ========
 
@@ -196,6 +197,16 @@ function onModelRowClick(m: LibraryModel): void {
             );
             setRecentModels([ref, ...recentModels.filter((r) => r !== ref)].slice(0, 20));
         }
+    }
+
+    // [修复] 记忆"显示目录"为上次浏览目录：点击模型即记录其可见层级，
+    // 使下次打开资源库能回到用户点击时所处位置（单 pmx 叶子目录被展平时回退到根目录）。
+    if (m.format === 'pmx') {
+        const memCat: 'pmx' | 'stage' | 'prop' =
+            m.type === 'prop' ? 'prop' : (m.type === 'stage' || m.type === 'scene') ? 'stage' : 'pmx';
+        void SetLastBrowseDir(memCat, resolveDisplayBrowseDir(m, memCat)).catch((e) =>
+            logWarn('library-actions', 'SetLastBrowseDir failed:', e)
+        );
     }
 
     // ===== Replace mode =====

@@ -111,6 +111,9 @@ async function _renderThumbnailImpl(
     // 缓存 key 追加分辨率和比例，确保不同分辨率的缩略图被视为独立条目。
     // 格式：原 key::resolution::aspect（如 filePath::512::2/3）
     const cacheKey = buildThumbnailKey({ baseKey: key, isStage, resolution: thumbMax });
+    if (import.meta.env.DEV) {
+        console.log('[thumb-debug][WRITE-KEY]', { cacheKey, instKind: inst.kind, resolution: thumbMax });
+    }
 
     const rtW = isStage
         ? thumbMax

@@ -41,7 +41,7 @@ import {
     closeFullscreen,
 } from '../core/ui-helpers';
 import type { ResourceItem, SlideRowExtra, ResourcePanelHandle } from '../core/ui-helpers';
-import { isUnderRoot, isStageLike } from '../core/utils';
+import { isUnderRoot, isStageLike, getDirPath } from '../core/utils';
 import { libraryModelBaseKey, buildThumbnailKey } from '@/scene/manager/thumbnail-key';
 import { t } from '../core/i18n/t';
 import { getLang } from '../core/i18n/locale';
@@ -126,6 +126,30 @@ export function isLeafFlattenDir(
     // Multiple zip-only models → keep as folder
     if (directModelCount > 1 && zipModelCount === directModelCount) return false;
     return true;
+}
+
+/**
+ * [修复] 解析模型在资源库中的"显示目录"——即用户点击该模型时实际看到的层级。
+ *
+ * 单 pmx 叶子目录会被展平（isLeafFlattenDir）显示在其上层目录中，
+ * 因此该模型物理位于 /X（根的子目录），但 UI 在根目录层级直接展示它。
+ * 若将"记忆地址"记为 /X，下次打开会因 onLevelEnter 早退而无法回到用户所见位置；
+ * 故向上回退到第一个非叶子展平目录（通常为根目录），使其与用户视线一致。
+ */
+export function resolveDisplayBrowseDir(
+    m: LibraryModel, category: 'pmx' | 'stage' | 'prop'
+): string {
+    const root = normPath(getBrowseDir(category));
+    let cur = normPath(m.dir);
+    if (!root || cur === root) return cur;
+    const list = allModels || [];
+    while (isLeafFlattenDir(cur, list, undefined)) {
+        const parent = getDirPath(cur);
+        if (!parent || parent === cur) break;
+        if (parent === root) { cur = root; break; }
+        cur = parent;
+    }
+    return cur;
 }
 
 export function computeRestoreSegments(

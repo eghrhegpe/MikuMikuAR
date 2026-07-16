@@ -171,6 +171,9 @@ export async function captureThumbnail(
         }
 
         const thumbKey = thumbnailBaseKey({ libraryPath, filePath, innerPath });
+        if (import.meta.env.DEV) {
+            console.log('[thumb-debug][WRITE-BASE]', { thumbKey, libraryPath, filePath, innerPath });
+        }
 
         // 复用共享的离屏 RT 渲染（pmx 与动作缩略图共用，见 thumbnail-capture.ts）。
         // 截的是模型加载瞬间的当前姿态（静止/T-pose），动画不推进。
@@ -480,7 +483,9 @@ export async function loadPMXFile(
         rebuildShadowCasters();
 
         // Auto-capture thumbnail for future popup display
-        swallowError(captureThumbnail(filePath, libraryPath, innerPath));
+        // 与 stage 分支(330 行)对称:显式传 inst,避免依赖 _modelManager.focused() 的竞态兜底
+        // (focused() 在加载时序波动时返回 null/错位实例 → 早退 → 缩略图间歇 miss = 历史反弹根因)。
+        swallowError(captureThumbnail(filePath, libraryPath, innerPath, inst));
         if (!skipAutoApply) {
             _tryAutoApplyPreset(id).catch((err: unknown) =>
                 logWarn('model-loader', 'auto-apply preset:', err)
