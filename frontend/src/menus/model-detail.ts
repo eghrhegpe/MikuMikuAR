@@ -308,7 +308,10 @@ function buildModelInfoSchema(id: string): MenuNode[] {
             kind: 'custom',
             renderCustom: (container) => {
                 container.classList.remove('render-card');
-                const meta = modelMetaCache.get(inst.filePath) ?? null;
+                // [fix:meta-key] zip 内模型 inst.filePath 为解压临时路径 ≠ 库 file_path，
+                // 而 modelMetaCache 以库绝对路径为 key（library-actions.ts 写入）。
+                // 改用 inst.libraryPath（库引用路径）优先，缺失时回退 filePath，对齐写侧 key。
+                const meta = modelMetaCache.get(inst.libraryPath ?? inst.filePath) ?? null;
                 let vertCount = 0,
                     faceCount = 0;
                 for (const m of inst.meshes ?? []) {
