@@ -19,6 +19,7 @@ import { thumbnailCache, setThumbnailCache, type ModelInstance } from '@/core/co
 import { uiState } from '@/core/state';
 import { logWarn, isStageLike } from '@/core/utils';
 import { type PropInstance, type RuntimeModel } from '@/core/types';
+import { buildThumbnailKey } from './thumbnail-key';
 
 // 缩略图渲染所需的最小实例形状：ModelInstance 与 PropInstance 均可适配。
 // 仅消费三个字段：rootMesh（渲染根节点）、kind（宽高比判定）、mmdModel?（物理冻结，可选）。
@@ -109,7 +110,7 @@ async function _renderThumbnailImpl(
     const THUMB_ASPECT = isStage ? 16 / 9 : 2 / 3;
     // 缓存 key 追加分辨率和比例，确保不同分辨率的缩略图被视为独立条目。
     // 格式：原 key::resolution::aspect（如 filePath::512::2/3）
-    const cacheKey = `${key}::${thumbMax}::${isStage ? '16/9' : '2/3'}`;
+    const cacheKey = buildThumbnailKey({ baseKey: key, isStage, resolution: thumbMax });
 
     const rtW = isStage
         ? thumbMax

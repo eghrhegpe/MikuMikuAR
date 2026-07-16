@@ -6,6 +6,7 @@ import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { ImportMeshAsync } from '@babylonjs/core/Loading/sceneLoader';
 import { MmdStandardMaterialProxy } from 'babylon-mmd/esm/Runtime/mmdStandardMaterialProxy';
 import { renderInstanceThumbnail } from './thumbnail-capture';
+import { thumbnailBaseKey } from './thumbnail-key';
 import {
     dom,
     setStatus,
@@ -169,10 +170,7 @@ export async function captureThumbnail(
             return;
         }
 
-        let thumbKey = libraryPath && libraryPath !== filePath ? libraryPath : filePath;
-        if (innerPath) {
-            thumbKey = `${thumbKey}::${innerPath}`;
-        }
+        const thumbKey = thumbnailBaseKey({ libraryPath, filePath, innerPath });
 
         // 复用共享的离屏 RT 渲染（pmx 与动作缩略图共用，见 thumbnail-capture.ts）。
         // 截的是模型加载瞬间的当前姿态（静止/T-pose），动画不推进。
