@@ -10,6 +10,7 @@ import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { RenderTargetTexture } from '@babylonjs/core/Materials/Textures/renderTargetTexture';
 import { FreeCamera } from '@babylonjs/core/Cameras/freeCamera';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { Matrix } from '@babylonjs/core/Maths/math.vector';
 import { Color4 } from '@babylonjs/core/Maths/math.color';
 import type { Scene } from '@babylonjs/core/scene';
 import { SaveThumbnail } from '@/core/wails-bindings';
@@ -69,6 +70,22 @@ export async function renderInstanceThumbnail(
     thumbCam.minZ = 0.1;
     thumbCam.maxZ = 5000;
     thumbCam.fov = THUMB_FOV;
+
+    // [fix:thumbnail-aspect] 手动构建投影矩阵并冻结，绕过引擎 aspect 计算。
+    // 问题：RTT 渲染时，相机投影矩阵可能在 framebuffer 绑定前计算，导致 aspect 用主画布尺寸
+    // 而非 RT 尺寸（主画布 16:9，RT 2:3）→ 水平视野过宽 → 角色被水平压扁。
+    // 修复：用 RT 的 aspect (rtW/rtH) 手动构建 PerspectiveFovLH 投影矩阵并冻结，
+    //       确保渲染时使用正确的宽高比。
+    const projMatrix = new Matrix();
+    Matrix.PerspectiveFovLHToRef(
+        THUMB_FOV,
+        rtW / rtH,
+        thumbCam.minZ,
+        thumbCam.maxZ,
+        projMatrix,
+        true,  // isVerticalFovFixed = true（fov 是垂直视野）
+    );
+    thumbCam.freezeProjectionMatrix(projMatrix);
 
     if (inst.kind === 'stage' && scene.activeCamera) {
         // 舞台：直接沿用主相机的 position + target。
