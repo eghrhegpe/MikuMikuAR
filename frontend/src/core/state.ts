@@ -4,6 +4,7 @@
  */
 
 import { reactive } from './reactivity';
+import { logWarn } from './utils';
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import type {
     ModelInstance,
@@ -159,7 +160,8 @@ export function setThumbnailCache(m: Map<string, string>): void {
         thumbnailCache.set(k, v);
     }
     // 通知所有活跃面板刷新缩略图 DOM（解决冷缓存首次加载不显示缩略图的问题）
-    import('./ui-resource-panel').then((mod) => mod.notifyThumbnailUpdate());
+    import('./ui-resource-panel').then((mod) => mod.notifyThumbnailUpdate())
+        .catch((err) => logWarn('state', 'notifyThumbnailUpdate failed:', err));
 }
 
 // ======== Recent Models ========

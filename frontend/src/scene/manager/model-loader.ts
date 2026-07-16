@@ -231,7 +231,9 @@ export async function loadPMXFile(
             loadedMeshes.forEach((m) => {
                 try {
                     m.dispose();
-                } catch {}
+                } catch {
+                    logWarn('model-loader', 'dispose after abort failed');
+                }
             });
             return null;
         }
@@ -503,7 +505,9 @@ export async function loadPMXFile(
             loadedMeshes.forEach((m) => {
                 try {
                     m.dispose();
-                } catch {}
+                } catch {
+                    logWarn('model-loader', 'dispose after error failed');
+                }
             });
         }
         dom.loadingEl.style.display = 'none';

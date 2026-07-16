@@ -1,4 +1,5 @@
 import { dom } from './dom';
+import { addDisposableListener } from './dom';
 import { uiState } from './state';
 import { t } from './i18n/t';
 
@@ -6,6 +7,7 @@ let hintActive = false;
 let savedStatusText = '';
 let savedStatusColor = '';
 let _statusTimer: ReturnType<typeof setTimeout> | null = null;
+const _hintDisposables: { dispose(): void }[] = [];
 
 /**
  * 按 statusText 是否有内容切换 #statusBar 显隐。
@@ -101,13 +103,21 @@ export function disposeStatusBar(): void {
         clearTimeout(_statusTimer);
         _statusTimer = null;
     }
+    for (const d of _hintDisposables) {
+        d.dispose();
+    }
+    _hintDisposables.length = 0;
 }
 
 export function initHints(): void {
     document.querySelectorAll('[data-hint]').forEach((el) => {
-        el.addEventListener('mouseenter', () => {
-            showHint(el.getAttribute('data-hint') || t('menu.noHint'));
-        });
-        el.addEventListener('mouseleave', () => hideHint());
+        _hintDisposables.push(
+            addDisposableListener(el, 'mouseenter', () => {
+                showHint(el.getAttribute('data-hint') || t('menu.noHint'));
+            })
+        );
+        _hintDisposables.push(
+            addDisposableListener(el, 'mouseleave', () => hideHint())
+        );
     });
 }

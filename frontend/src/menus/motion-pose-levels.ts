@@ -62,7 +62,7 @@ function buildPoseStudioSchema(): MenuNode[] {
                     title.textContent = t('motion.poseStudio.composition');
                     inner.appendChild(title);
 
-                    const modes: Array<{ key: string; label: string }> = [
+                    const modes: Array<{ key: 'off' | 'ruleOfThirds' | 'goldenRatio' | 'diagonal'; label: string }> = [
                         { key: 'off', label: t('motion.poseStudio.off') },
                         { key: 'ruleOfThirds', label: t('motion.poseStudio.ruleOfThirds') },
                         { key: 'goldenRatio', label: t('motion.poseStudio.goldenRatio') },
@@ -82,7 +82,7 @@ function buildPoseStudioSchema(): MenuNode[] {
                                 ? 'background:var(--accent);color:var(--text);'
                                 : '';
                         btn.addEventListener('click', () => {
-                            setGuideMode(m.key as any);
+                            setGuideMode(m.key);
                             menu?.reRender();
                         });
                         btnGroup.appendChild(btn);

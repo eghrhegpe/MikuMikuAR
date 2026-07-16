@@ -119,8 +119,8 @@ let _propRegistry: Map<string, PropInstance> | null = null;
 let _envSysShadow: { generator: ShadowGenerator | null } | null = null;
 let triggerAutoSave: (() => void) | null = null;
 
-export let hemiLight: HemisphericLight;
-export let dirLight: DirectionalLight;
+export let hemiLight: HemisphericLight | null = null;
+export let dirLight: DirectionalLight | null = null;
 
 interface StageLightEntry {
     state: StageLightState;
@@ -789,11 +789,11 @@ export function disposeLighting(): void {
     // 清理主灯光
     if (hemiLight) {
         hemiLight.dispose();
-        (hemiLight as any) = null as any;
+        hemiLight = null;
     }
     if (dirLight) {
         dirLight.dispose();
-        (dirLight as any) = null as any;
+        dirLight = null;
     }
     // 清理太阳盘
     if (_sunDisc) {

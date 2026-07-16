@@ -5,6 +5,9 @@
 import { logWarn } from './utils';
 import { addDisposableListener } from './dom';
 
+// 用 WeakMap 存储 overlay 清理函数，避免 DOM 属性污染
+const _cleanupMap = new WeakMap<HTMLElement, () => void>();
+
 // ======== Types ========
 
 export interface FullscreenOverlayOptions {
@@ -67,9 +70,10 @@ export function closeFullscreen(): void {
     // 移除 Overlay 并清理事件监听
     if (currentOverlay) {
         const element = currentOverlay.getElement();
-        const cleanup = (element as any).__cleanup;
+        const cleanup = _cleanupMap.get(element);
         if (cleanup) {
             cleanup();
+            _cleanupMap.delete(element);
         }
         element.remove();
         currentOverlay = null;
@@ -259,8 +263,8 @@ function createOverlayElement(options: FullscreenOverlayOptions): HTMLElement {
         keydownDisp.dispose();
     };
 
-    // 将 cleanup 挂载到 overlay 元素上，供外部调用
-    (overlay as any).__cleanup = cleanup;
+    // 将 cleanup 存入 WeakMap，供外部调用
+    _cleanupMap.set(overlay, cleanup);
 
     return overlay;
 }
