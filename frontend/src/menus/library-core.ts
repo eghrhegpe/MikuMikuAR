@@ -220,8 +220,10 @@ export function modelToRow(m: LibraryModel): PopupRow {
 export function modelToResourceItem(m: LibraryModel): ResourceItem {
     const fp = m.file_path || '';
     const cached = modelMetaCache.get(fp);
+    const isStage = m.type === 'stage' || m.type === 'scene' || m.type === 'prop';
     return {
         id: fp, label: resolveModelLabel(m, ''), filePath: fp, thumbKey: thumbnailKeyForModel(m),
+        thumbAspect: isStage ? '16/9' : '2/3',
         icon: resolveModelIcon(m), isFolder: false,
         sublabel: cached?.comment || m.comment || undefined, data: m,
     };
