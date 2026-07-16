@@ -64,7 +64,7 @@ import {
 } from './motion-procmotion-levels';
 import { buildGazeTrackingLevel } from './motion-gaze-levels';
 import { buildCameraLevel } from './motion-camera-levels';
-import { buildBoneOverrideLevel } from './motion-override-levels';
+import { buildMotionOverrideLevel } from './motion-override-levels';
 import { buildFeetLevel } from './motion-feet-levels'; // [doc:adr-085]
 import { buildPoseStudioLevel } from './motion-pose-levels';
 import { buildVirtualSkirtLevel } from './motion-cloth-levels'; // [doc:adr-084]
@@ -428,7 +428,7 @@ const MOTION_FOLDER_ROUTES: Record<string, () => PopupLevel> = {
     'motion:playbackSpeed': buildPlaybackSpeedLevel,
     'motion:procmotion': buildProcMotionLevel,
     'motion:gaze': buildGazeTrackingLevel,
-    'motion:boneOverride': buildBoneOverrideLevel,
+    'motion:boneOverride': buildMotionOverrideLevel,
     'motion:feet': buildFeetLevel,
     'motion:poseStudio': buildPoseStudioLevel,
     'motion:virtualSkirt': buildVirtualSkirtLevel,

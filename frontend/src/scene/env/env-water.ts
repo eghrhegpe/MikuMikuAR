@@ -35,6 +35,8 @@ const WAVE_DIR_OFFSETS: [number, number, number, number] = [0, 0.3, -0.2, 0.1];
 const RIPPLE_MIN_RADIUS = 0.1;
 const RIPPLE_MIN_SPEED = 0.1;
 const RIPPLE_INFINITY_LIFE = 9999;
+// 每秒新增涟漪上限（暴雨时碰撞频率极高，限制每秒最多 4 个，保证 256 slot 不被瞬间占满）
+const RIPPLE_MAX_PER_SECOND = 4;
 // 焦散着色系数（暗部底色 / 亮部增量）
 const CAUSTIC_DARK_FACTOR = 0.3;
 const CAUSTIC_BRIGHT_FACTOR = 0.9;
@@ -133,7 +135,7 @@ registerReflectionSurface('water', waterReflection, () =>
 );
 
 // ======== 涟漪系统（Interaction Ripples）========
-const MAX_RIPPLES = 8;
+const MAX_RIPPLES = 256;
 interface RippleSource {
     position: Vector3;
     radius: number;
@@ -141,8 +143,11 @@ interface RippleSource {
     speed: number;
     life: number;
     maxLife: number;
+    cooldown: number; // 冷却倒计时（秒），>0 时该 slot 不可被复用
 }
 let _ripples: RippleSource[] = [];
+// 每秒新增涟漪时间累加器（_waterUpdateCallback 每帧累加 dt，满 1/RIPPLE_MAX_PER_SECOND 秒允许一次）
+let _rippleAccumulator = 0;
 
 // ======== 水下 Tint 后处理（自定义 PostProcess，替代不存在的 tintColor/tintAmount）========
 Effect.ShadersStore['underwaterTintFragmentShader'] = [
@@ -185,15 +190,25 @@ function disposeTintPostProcess(): void {
 }
 
 export function addRipple(pos: Vector3, radius = 5, strength = 0.5, speed = 2, maxLife = 3): void {
+    // 每秒新增上限：暴雨时碰撞频率极高，限制每秒最多 4 个，保证 256 slot 不被瞬间占满
+    const interval = 1 / RIPPLE_MAX_PER_SECOND;
+    if (_rippleAccumulator < interval) {
+        return;
+    }
+    _rippleAccumulator -= interval;
+
     let idx = -1;
     let oldestLife = Infinity;
     for (let i = 0; i < _ripples.length; i++) {
-        if (_ripples[i].life <= 0) {
+        const r = _ripples[i];
+        // 优先复用已死亡且冷却完毕的 slot
+        if (r.life <= 0 && r.cooldown <= 0) {
             idx = i;
             break;
         }
-        if (_ripples[i].life < oldestLife) {
-            oldestLife = _ripples[i].life;
+        // 次选：找生命最短的（但需冷却完毕）
+        if (r.cooldown <= 0 && r.life < oldestLife) {
+            oldestLife = r.life;
             idx = i;
         }
     }
@@ -206,10 +221,11 @@ export function addRipple(pos: Vector3, radius = 5, strength = 0.5, speed = 2, m
             speed: 0,
             life: 0,
             maxLife: 0,
+            cooldown: 0,
         });
     }
     if (idx === -1) {
-        return;
+        return; // 所有 slot 都在冷却中，丢弃本次涟漪
     }
     const r = _ripples[idx];
     r.position.copyFrom(pos);
@@ -218,10 +234,13 @@ export function addRipple(pos: Vector3, radius = 5, strength = 0.5, speed = 2, m
     r.speed = Math.max(RIPPLE_MIN_SPEED, speed);
     r.life = maxLife > 0 ? maxLife : RIPPLE_INFINITY_LIFE;
     r.maxLife = maxLife;
+    // 冷却期 = 涟漪寿命：确保 slot 在涟漪完整播放期间不被复用，保证动画连续性
+    r.cooldown = r.maxLife;
 }
 
 export function clearRipples(): void {
     _ripples = [];
+    _rippleAccumulator = 0;
 }
 
 // ======== 焦散系统（静态纹理 + UV 滚动）========
@@ -551,6 +570,10 @@ function _waterUpdateCallback(scene: Scene): void {
     }
     const m = _envSys.water.material as ShaderMaterial;
     const dt = Math.min(scene.deltaTime / 1000, DT_CLAMP_MAX);
+    // 每秒新增涟漪时间累加器：每帧累加 dt，满 1/RIPPLE_MAX_PER_SECOND 秒允许一次
+    if (dt > 0) {
+        _rippleAccumulator += dt;
+    }
     const now = performance.now() / 1000;
 
     _waterPhase += dt * _waterWaveSpeed;
@@ -567,7 +590,7 @@ function _waterUpdateCallback(scene: Scene): void {
         m.setColor3('lightColor', dl.diffuse);
     }
 
-    // 涟漪衰减
+    // 涟漪衰减 + 冷却递减
     if (dt > 0) {
         let anyAlive = false;
         for (const r of _ripples) {
@@ -577,9 +600,17 @@ function _waterUpdateCallback(scene: Scene): void {
                     anyAlive = true;
                 }
             }
+            // 冷却倒计时（即使 life 已耗尽，冷却仍在继续）
+            if (r.cooldown > 0) {
+                r.cooldown = Math.max(0, r.cooldown - dt);
+            }
         }
         if (!anyAlive && _ripples.length > 0) {
-            _ripples = [];
+            // 全部死亡且冷却完毕才清空，避免残留冷却 slot
+            const allCooldownDone = _ripples.every((r) => r.cooldown <= 0);
+            if (allCooldownDone) {
+                _ripples = [];
+            }
         }
     }
 

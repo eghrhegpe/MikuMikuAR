@@ -12,9 +12,9 @@ const MODULE_ID = 'body-posture';
 
 /** 默认参数 */
 const DEFAULTS: Record<string, ParamValue> = {
-    tilt: 0,    // 上半身 pitch: -15~15
-    bend: 0,    // 腰 pitch: -30~30
-    twist: 0,   // 上半身2 yaw: -30~30
+    tilt: 0, // 上半身 pitch: -15~15
+    bend: 0, // 腰 pitch: -30~30
+    twist: 0, // 上半身2 yaw: -30~30
 };
 
 /** 管理的骨骼 */
@@ -56,7 +56,7 @@ export function createBodyPostureModule(modelId: string): MotionOverrideModule {
                         max: 15,
                         step: 0.5,
                         onChange: (v) => {
-                            setModuleParam(modelId, MODULE_ID, 'tilt', v);
+                            setModuleParam(modelId, MODULE_ID, 'tilt', v as number);
                             bake(modelId);
                         },
                     },
@@ -72,7 +72,7 @@ export function createBodyPostureModule(modelId: string): MotionOverrideModule {
                         max: 30,
                         step: 0.5,
                         onChange: (v) => {
-                            setModuleParam(modelId, MODULE_ID, 'bend', v);
+                            setModuleParam(modelId, MODULE_ID, 'bend', v as number);
                             bake(modelId);
                         },
                     },
@@ -88,7 +88,7 @@ export function createBodyPostureModule(modelId: string): MotionOverrideModule {
                         max: 30,
                         step: 0.5,
                         onChange: (v) => {
-                            setModuleParam(modelId, MODULE_ID, 'twist', v);
+                            setModuleParam(modelId, MODULE_ID, 'twist', v as number);
                             bake(modelId);
                         },
                     },

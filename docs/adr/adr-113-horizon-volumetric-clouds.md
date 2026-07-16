@@ -118,6 +118,61 @@ ADR-032 已列明且至今未改：
 
 保留 ShaderMaterial-on-Sphere 架构（ADR-032 结论仍成立：Babylon 9.14.0 无内置体积云，第三方均不兼容），**在现有 shader 上做增量升级**，不重写、不引依赖。按价值/成本排序分 4 阶段。
 
+### 前置：天空盒与体积云的渲染分层（🚨 阻塞 Phase A，已落地）
+
+> **问题**：原架构天空盒与体积云都默认在 `renderingGroupId = 0`，两者都写深度 + LESS 测试。云虽在 Group -1 先渲染，但 framebuffer 此时是 `clearColor` 黑色，云的 `needAlphaBlending=true` 实际是与**黑色背景**合成——云发暗发透，主观"看不见云"。天空盒虽随后渲染但深度 ≈ 10000 > 云的 9800，LESS 测试失败被丢弃 → **天空也看不见**。
+
+**根因**：Babylon 渲染组按 ID 升序执行，但深度写入与 alpha 合成的时序耦合要求**背景必须先于半透明物写入 framebuffer**，否则半透明物只能和无干背景混合。
+
+**🚨 关键坑：Babylon 默认 `MIN_RENDERINGGROUPS = 0`，负数 group 根本不渲染**
+
+源码 `renderingManager.js`：
+```javascript
+RenderingManager.MIN_RENDERINGGROUPS = 0;  // 默认下限
+RenderingManager.MAX_RENDERINGGROUPS = 4;  // 上限（不包含）
+// 渲染循环：for (let index = MIN_RENDERINGGROUPS; index < MAX_RENDERINGGROUPS; index++)
+// → 只遍历 [0, 4)，负数 group 的 mesh 被 getRenderingGroup 创建但渲染循环跳过
+```
+
+因此代码里 `env-clouds.ts` 的 `mesh.renderingGroupId = -1` **从来都没真正渲染过**——云一直在被 Babylon 静默跳过。最初改 `env-sky.ts` 加 `renderingGroupId = -2` 后天空变黑，也是同一根因：天空盒也被跳过，framebuffer 保持 `clearColor` 黑色。
+
+**决策：两层修复**
+
+1. **扩展渲染组下限**（`scene.ts`，在 `new Scene(engine)` 前设置，确保构造时 `_autoClearDepthStencil` 数组也初始化负数索引）：
+   ```typescript
+   import { RenderingManager } from '@babylonjs/core/Rendering/renderingManager';
+   RenderingManager.MIN_RENDERINGGROUPS = -2;  // 支持 [-2, 4) 共 6 个 group
+   ```
+
+2. **三层渲染分组，天空盒作为纯背景填底**：
+
+| Group | 内容 | 球壳 | disableDepthWrite | 职责 |
+|-------|------|------|-------------------|------|
+| -2 | 天空盒（程序化/CubeTexture） | 1.0×（直径 20000） | **true** | 先画背景，只填 framebuffer，不挡任何人 |
+| -1 | 体积云 | 0.98×（直径 19600） | false（写深度） | 与天空色正确 alpha 合成；写深度让 Group 0 自然覆盖 |
+| 0 | 地面 / 角色 / 水面 | — | 各自默认 | 深度测试盖住云（角色在前、云在后） |
+
+**代码落地**：
+- `scene.ts`：`RenderingManager.MIN_RENDERINGGROUPS = -2`（全局，在 `new Scene` 前）
+- `env-sky.ts` 的 `createProceduralSky` + `loadSkyCube` 两处对称改动：
+  ```typescript
+  sphere.renderingGroupId = -2;        // 先于体积云（Group -1）
+  const mat = new StandardMaterial('envSkyMat', scene);
+  // ... 其他材质参数 ...
+  mat.disableDepthWrite = true;        // 关键：不写深度，不挡云的 alpha 合成
+  ```
+- `env-clouds.ts` 现有 `mesh.renderingGroupId = -1` 保持不变（此前因下限未扩展而失效，现在生效）
+
+**为什么不用 `depthFunction = ALWAYS`**：天空盒作为最远背景，`disableDepthWrite=true` 已足够——它先渲染填满 framebuffer，后续物体（云、地面）的深度测试正常进行，无需强制通过。`ALWAYS` 会破坏 Group 0 透明物（如水面 `disableDepthWrite=true`）与天空盒的合成顺序。
+
+**为什么不用「云 `disableDepthWrite=true` + 天空盒写深度」**：会让云无法被地面/角色通过深度测试覆盖，需另起排序逻辑，破坏现有 Group 0 的深度管线一致性。
+
+**为什么不用正数 group 重映射（天空盒=0, 云=1, 地面=2）**：Babylon `RenderingGroup` 默认 opaque 排序用 `PainterSortCompare`（按 `material.uniqueId`），无法保证 Group 0 内天空盒先于地面渲染；地面若先渲染写深度，天空盒 LESS 测试失败被挡 → 黑屏。自定义 `opaqueSortCompareFn` 成本高于直接扩展 `MIN_RENDERINGGROUPS`。
+
+**验证**：云应与天空色正确混合（非黑色），天空盒应可见，地面/角色应自然遮挡远处云。
+
+---
+
 ### Phase A — 自适应步长 + 延展地平线（🔴 核心，解决"宽"）
 
 将固定步长改为随射线深度线性增长（近密远疏），覆盖到 `cloudVisibility`；同时用**解析式平板相交测试**取代原基于固定步长的 `stepsNeeded` early-exit，使仰角 0° 等极端角度稳健、不崩溃。
