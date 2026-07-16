@@ -35,6 +35,8 @@ export interface ResourceItem {
     filePath: string;
     /** 缩略图缓存 key（ZIP 模型为 file_path::zip_inner，普通模型同 filePath） */
     thumbKey?: string;
+    /** 缩略图宽高比，如 '2/3'（竖屏角色）、'16/9'（横屏场景），默认 '2/3' */
+    thumbAspect?: string;
     /** 图标名称（fallback） */
     icon: string;
     /** 是否为文件夹 */
@@ -271,13 +273,14 @@ function createGridCard(
         transition: background 0.15s, border-color 0.15s;
     `;
 
-    // 缩略图区域：竖屏 2:3 比例（宽:高），aspect-ratio 让高度自适应实际卡片宽度
+    // 缩略图区域：默认竖屏 2:3（角色），stage 场景用横屏 16:9
     const thumb = document.createElement('div');
     thumb.className = 'resource-thumb';
     thumb.dataset.resourcePath = item.thumbKey ?? item.filePath;
+    const aspect = item.thumbAspect || '2/3';
     thumb.style.cssText = `
         width: 100%;
-        aspect-ratio: 2 / 3;
+        aspect-ratio: ${aspect};
         background-color: var(--bg-overlay-alt);
         background-size: cover;
         background-position: center;

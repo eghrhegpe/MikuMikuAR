@@ -43,11 +43,15 @@ export async function renderInstanceThumbnail(
     const engine = scene.getEngine();
     // 缩略图分辨率复用用户设置（默认 512，可选 1024/2048/4096）
     const thumbMax = uiState.thumbnailResolution ?? 512;
-    // 固定竖屏宽高比 2:3（宽:高），不跟随主相机宽高比，保证竖屏/横屏截图画面一致。
-    // 角色上半身（头+胸）天然高>宽，竖屏比例让角色更饱满，两侧不再空荡荡。
-    const THUMB_ASPECT = 2 / 3;
-    const rtW = Math.max(1, Math.round(thumbMax * THUMB_ASPECT));
-    const rtH = thumbMax;
+    // 角色竖屏 2:3，舞台横屏 16:9，thumbMax 为长边像素数
+    const isStage = inst.kind === 'stage';
+    const THUMB_ASPECT = isStage ? 16 / 9 : 2 / 3;
+    const rtW = isStage
+        ? thumbMax
+        : Math.max(1, Math.round(thumbMax * THUMB_ASPECT));
+    const rtH = isStage
+        ? Math.max(1, Math.round(thumbMax / THUMB_ASPECT))
+        : thumbMax;
 
     const rt = new RenderTargetTexture('thumbRT', { width: rtW, height: rtH }, scene, false);
     rt.clearColor = new Color4(0, 0, 0, 0);
