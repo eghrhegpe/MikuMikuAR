@@ -11,7 +11,9 @@ export const zhTW: Record<string, string> = {
     'settings.bgBlur': '背景模糊',
     'settings.resetAppearance': '恢復預設外觀',
     'settings.filename': '檔案名稱',
+    'settings.library': '庫設定',
     'settings.performance': '效能',
+    'settings.rendering': '渲染',
     'settings.paths': '路徑',
     'settings.software': '軟體',
     'settings.screenshot': '螢幕截圖',
@@ -98,6 +100,8 @@ export const zhTW: Record<string, string> = {
 
     // ===== 模型詳細 model-detail =====
     'model-detail.openWith': '用…開啟',
+    'model-detail.unloadModel': '卸載此模型',
+    'model-detail.unloadConfirm': '確定卸載 {name}？',
     'model-detail.noSoftware': '暫無可用軟體<br>請先在設定中新增',
     'model-detail.noFilePath': '✗ 模型無檔案路徑',
     'model-detail.launchFailed': '✗ 啟動失敗',

@@ -12,15 +12,15 @@
 
 | 竞品参数 | 技术含义 | 我方对应项 |
 |----------|----------|------------|
-| 类型：河流 | 预设模板（河流/海洋/池塘），一键切换法线贴图 + 波长集 | `WATER_PRESETS`（平静/涟漪/海浪/风暴/热带，`env-water.ts:1049`） |
-| 高度 0.400 | 水面 Y 高度 | `waterLevel`（`types.ts:424`） |
+| 类型：河流 | 预设模板（河流/海洋/池塘），一键切换法线贴图 + 波长集 | `WATER_PRESETS`（平静/涟漪/海浪/风暴/热带，`env-water.ts:794`） |
+| 高度 0.400 | 水面 Y 高度 | `waterLevel`（`types.ts:436`） |
 | 波纹 3.000 | 小尺度高频法线扰动强度（制造细碎反光） | **无直接对应**；我方用 `waterWaveHeight` 统一控制 Gerstner 波高 |
-| 大波 30.00 | 大尺度低频波浪/位移强度 | `waterWaveHeight`（`types.ts:428`），但对方量程更大、偏美术夸张 |
+| 大波 30.00 | 大尺度低频波浪/位移强度 | `waterWaveHeight`（`types.ts:440`），但对方量程更大、偏美术夸张 |
 | 折射最大距离 0.350 | 折射/透射有效距离（水面下景物扭曲范围） | **无直接对应** |
 | 吸收距离 5.000 | 水体颜色按 Beer-Lambert 吸收的距离 | 接近 `waterFogDensity` / `waterTransparency` |
-| 焦散 0.500 | 水下焦散强度 | 我方程序化焦散，强度固定 `uCausticIntensity=0.15`（`env-water.ts:547`），未暴露 |
+| 焦散 0.500 | 水下焦散强度 | 我方程序化焦散，强度固定 `uCausticIntensity=0.15`（`env-water.ts:347`），未暴露 |
 | 吸收倍数 2.000 | 颜色吸收系数（越深越偏水色） | **无直接对应** |
-| 有效范围 0.100 | 波浪/效果影响范围或地平线衰减范围 | 接近 `waterSize`（`types.ts:429`） |
+| 有效范围 0.100 | 波浪/效果影响范围或地平线衰减范围 | 接近 `waterSize`（`types.ts:441`） |
 
 **关键观察**：
 - 竞品把"波纹/大波"拆成**两层独立尺度**（高频法线 + 低频波形），而非我方单一 `waterWaveHeight`。
@@ -192,7 +192,7 @@ normal = normalize(
 
 #### 4.1.4 涟漪系统兼容性（莫尔纹防护）
 
-当前 `env-water.ts:479-482` 涟漪法线在 Gerstner 之后、焦散之前写入 `normal`，新增法线层插入**涟漪之前**，顺序为：
+当前 `shaders/water.frag.glsl:125-137` 涟漪法线在 Gerstner 之后、焦散之前写入 `normal`，新增法线层插入**涟漪之前**，顺序为：
 
 ```
 Gerstner 法线 → 高频细节法线（新增） → 涟漪法线 → 计算反射/折射
@@ -225,7 +225,7 @@ float hash12(vec2 p) {
     return fract((p3.x + p3.y) * p3.z);
 }
 
-// —— 插入位置：diffuse 之后、泡沫混合之前（env-water.ts 第 464 行之后）——
+// —— 插入位置：diffuse 之后、泡沫混合之前（shaders/water.frag.glsl 第 123 行之后）——
 uniform float uGlintStrength;    // 整体强度，默认 0.4
 uniform float uGlintPower;       // 高光锐利度，默认 96
 uniform float uGlintScale;       // 噪声尺度，默认 80.0
@@ -269,11 +269,11 @@ color += lightColor * glitter;
 >
 > 本 ADR 暂保留 glitter 项作为 P1 备选，实测后决定是否启用。
 
-> ✅ **光照数据可用性（已核实）**：`WATER_FRAG_SRC` 中 `uniform vec3 lightDir;`（`env-water.ts:364`）已存在，并由 `mat.setVector3('lightDir', dirLight.direction)`（`:536`，无方向光时 fallback `(-0.5,-1,-0.5)` 见 `:539`）传入。Sun Glitter 可直接复用 `lightDir`，**无需新增光照数据通路**——原「可能未传入方向光方向」担忧已化解。
+> ✅ **光照数据可用性（已核实）**：`shaders/water.frag.glsl:19` 中 `uniform vec3 lightDir;` 已存在，并由 `mat.setVector3('lightDir', dirLight.direction)`（`env-water.ts:336`，无方向光时 fallback `(-0.5,-1,-0.5)` 见 `:339`）传入。Sun Glitter 可直接复用 `lightDir`，**无需新增光照数据通路**——原「可能未传入方向光方向」担忧已化解。
 
 ### 4.3 焦散强度暴露给用户（P2，优先排期）
 
-将 `env-water.ts:547` 的 `mat.setFloat('uCausticIntensity', 0.15)` 改为读 `state.causticIntensity`，并在 `EnvState`（`types.ts`）与水面 UI（`env-feature-levels.ts` 的 `buildWaterLevel`）增加滑块。
+将 `env-water.ts:347` 的 `mat.setFloat('uCausticIntensity', 0.15)` 改为读 `state.causticIntensity`，并在 `EnvState`（`types.ts`）与水面 UI（`env-feature-levels.ts` 的 `buildWaterLevel`）增加滑块。
 
 #### 4.3.1 参数规范
 
@@ -298,7 +298,7 @@ color += lightColor * glitter;
 | 风暴 storm | 0.25 | 高反差，强焦散增强戏剧感 |
 | 热带 tropical | 0.2 | 热带水透亮，焦散鲜明 |
 
-同时更新 `buildWaterPresetEnvState` 和 `applyWaterPresetToCurrent` 同步写入该字段，确保预设切换后值持久化到 `envState`（参考现有 `rippleNormalStrength` 的预设同步模式，`env-water.ts:1183-1187`）。
+同时更新 `buildWaterPresetEnvState` 和 `applyWaterPresetToCurrent` 同步写入该字段，确保预设切换后值持久化到 `envState`（参考现有 `rippleNormalStrength` 的预设同步模式，`env-water.ts:928-932`）。
 
 #### 4.3.3 状态链路变更清单（P2 焦散部分）
 
@@ -402,7 +402,7 @@ color += lightColor * glitter;
 #### 4.5.2 方案 A 具体实现
 
 **几何扩展**：
-- 把现有 3 级 LOD（`meshHigh`/`meshMid`/`meshLow`，`env-water.ts:697-699`）的 `meshLow` 范围扩大，或新增第 4 级远景平面 `meshFar`（低细分、大尺寸）
+- 把现有 3 级 LOD（`meshHigh`/`meshMid`/`meshLow`，`env-water.ts:580-584`）的 `meshLow` 范围扩大，或新增第 4 级远景平面 `meshFar`（低细分、大尺寸）
 - 远景平面仅作颜色填充，不计算精细波形（顶点 shader 中降低波高贡献）
 
 **Shader 实现**：
@@ -494,7 +494,7 @@ vec3 finalFogColor = mix(waterFogColor, uSkyBlendColor * 0.8, uSkyColorBlend);
 **P1 解锁前置条件（必须先解决）**：
 1. **法线资源来源**：程序化生成（`createCanvasTexture` 噪声法线）or 引入贴图。优先程序化，避免新增 bundled 资源依赖。
 2. **Gerstner 去重**：法线扰动与现有 Gerstner 法线叠加存在 double-count 风险（见 §六）。须明确分工——Gerstner 负责大尺度波向、法线贴图仅接管高频细节（或降低 Gerstner 高频段波高贡献），实测校准后方可合入。
-3. **涟漪系统兼容性**：确认新法线层与现有 `addRipple` 涟漪法线（`env-water.ts:374/479-482`）是叠加还是替换；两者均在高频段改 `normal`，直接相加产生莫尔纹，须做加权融合或条件启用（见 §六）。
+3. **涟漪系统兼容性**：确认新法线层与现有 `addRipple` 涟漪法线（`env-water.ts:184` 函数 + `shaders/water.frag.glsl:125-137` 着色器代码）是叠加还是替换；两者均在高频段改 `normal`，直接相加产生莫尔纹，须做加权融合或条件启用（见 §六）。
 
 ### 5.1 P2 完整状态链路变更清单
 
@@ -577,8 +577,8 @@ P2（焦散强度 + UI 预设化）涉及的所有变更点，实施时逐项打
 | 等级 | 风险 | 说明 | 缓解 / 决策 |
 |------|------|------|------------|
 | 🔴 P1 阻塞 | 法线与 Gerstner 叠加 double-count | 我方水面法线已含 Gerstner 波形贡献；再叠一层法线贴图扰动，高频段会与 Gerstner 法线重复累积，导致"波浪过密/高光发糊"而非干净波光 | **P1 实施前置条件**：分层——Gerstner 掌大尺度波向，法线贴图仅接高频细节；或降 Gerstner 高频段贡献，实测校准后合入 |
-| 🟡 P1 | 法线扰动与涟漪系统冲突（莫尔纹） | `env-water.ts:374/479-482` 已有 `rippleNormalStrength`/`rippleGlintStrength` 涟漪法线（由 `addRipple` 注入），与新增高频法线层均在高频段改 `normal`，直接相加产生莫尔纹 | **P1 实施前置**：确认新法线层与涟漪是叠加还是替换；建议按 `rippleSum` 加权融合或仅 `abs(rippleSum)<eps` 时启用新层（见 §4.1 / §五） |
-| 🟢 已化解 | Sun Glitter 光照方向依赖 | 原担忧 glitter 需 `lightDir` 而 shader 可能未传入方向光方向 | **已核实**：`WATER_FRAG_SRC` 中 `uniform vec3 lightDir;`（`env-water.ts:364`）已存在并由 `:536/:539` 传入方向光方向（含 fallback），可直接复用，无需新增通路 |
+| 🟡 P1 | 法线扰动与涟漪系统冲突（莫尔纹） | `env-water.ts:184` + `shaders/water.frag.glsl:125-137` 已有 `rippleNormalStrength`/`rippleGlintStrength` 涟漪法线（由 `addRipple` 注入），与新增高频法线层均在高频段改 `normal`，直接相加产生莫尔纹 | **P1 实施前置**：确认新法线层与涟漪是叠加还是替换；建议按 `rippleSum` 加权融合或仅 `abs(rippleSum)<eps` 时启用新层（见 §4.1 / §五） |
+| 🟢 已化解 | Sun Glitter 光照方向依赖 | 原担忧 glitter 需 `lightDir` 而 shader 可能未传入方向光方向 | **已核实**：`shaders/water.frag.glsl:19` 中 `uniform vec3 lightDir;` 已存在并由 `env-water.ts:336/:339` 传入方向光方向（含 fallback），可直接复用，无需新增通路 |
 | 🟢 P2 | 焦散强度 UI 暴露后用户误调 | 焦散强度过高导致水下光斑过亮、失真 | 设合理上限（建议 `max ≤ 0.5`）；滑块 `max` 封顶，默认值取原硬编码 0.15 |
 | 🟡 P3 | 天空-水面颜色联动破坏自定义水色 | `waterSkyColorBlend` 若默认 >0，用户手动调好的水色会被天空覆盖 | **默认值定为 0（不联动）**，用户须主动上调才生效（见 §4.6） |
 | 🟡 中 | 性能 | 额外法线贴图采样 + glitter 噪声增加 fragment 开销 | **性能降级策略**：引入 `waterQuality` 三档（跟随全局画质设置）：<br>• **高（High）**：法线细节 + glitter + 双通道法线采样，全开<br>• **中（Medium）**：法线细节减半（单通道采样） + glitter 降频（scale × 0.5）<br>• **低（Low）**：关闭法线细节层与 glitter，仅保留 Gerstner + 焦散（与当前版本一致）<br>默认跟随全局 `renderQuality` 设置，用户可在高级参数中单独覆盖 |

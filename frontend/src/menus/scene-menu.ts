@@ -82,6 +82,12 @@ export function reRenderSceneMenu(): void {
     getSceneMenu()?.reRender();
 }
 
+// 当库扫描完成时，如果场景菜单已打开则 reRender，
+// 使道具面板等依赖 allModels 的 renderCustom 回调拿到最新数据。
+window.addEventListener('mmar:library-scanned', () => {
+    reRenderSceneMenu();
+});
+
 function buildFormationLevel(): PopupLevel {
     const formations: string[] = ['line', 'v-shape', 'circle', 'grid', 'diagonal', 'arc'];
     const icons: Record<string, string> = {

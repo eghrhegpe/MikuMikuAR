@@ -4,15 +4,15 @@
 /** 设置菜单文件夹导航 target */
 export const SETTINGS = {
     APPEARANCE: 'settings:appearance',
-    FILENAME: 'settings:filename',
+    LIBRARY: 'settings:library',
     PERFORMANCE: 'settings:performance',
+    RENDERING: 'settings:rendering',
     PATHS: 'settings:paths',
     SOFTWARE: 'settings:software',
     SCREENSHOT: 'settings:screenshot',
     AUDIO: 'settings:audio',
     SHORTCUTS: 'settings:shortcuts',
     ABOUT: 'settings:about',
-    LANGUAGE: 'settings:language', // [doc:adr-059] 语言切换入口
 } as const;
 
 /** 设置菜单动作 target（点击后执行操作，不导航） */

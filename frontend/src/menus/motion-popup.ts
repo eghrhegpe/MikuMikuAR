@@ -408,6 +408,12 @@ const {
 
 export { getMotionMenu, refreshMotionRoot, showMotionPopup };
 
+// 当库扫描完成时，如果动作菜单已打开则 reRender，
+// 使音乐库等依赖 allModels 的 renderCustom 回调拿到最新数据。
+window.addEventListener('mmar:library-scanned', () => {
+    getMotionMenu()?.reRender();
+});
+
 /** motion-popup 的 onFolderEnter 路由（从 makeMotionMenu 提取） */
 // [doc:adr-065] 子层路由表：target → 纯 items 构建器；自动挂 itemBuilder 实现语言热刷新
 const MOTION_FOLDER_ROUTES: Record<string, () => PopupLevel> = {

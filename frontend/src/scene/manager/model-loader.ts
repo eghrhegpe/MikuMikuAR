@@ -113,11 +113,13 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
  *  @param filePath 解压后的临时路径或文件路径
  *  @param libraryPath 库引用路径（zip包路径或文件路径）
  *  @param innerPath zip内部相对路径（用于区分同一zip内的不同模型）
+ *  @param inst 可选：指定模型实例截图，不传则截当前聚焦模型
  */
 export async function captureThumbnail(
     filePath: string,
     libraryPath?: string,
-    innerPath?: string
+    innerPath?: string,
+    inst?: ModelInstance
 ): Promise<void> {
     const gen = ++_thumbCaptureGen;
     try {
@@ -148,8 +150,8 @@ export async function captureThumbnail(
             return;
         }
 
-        const focusedInst = _modelManager.focused();
-        if (!focusedInst || !focusedInst.rootMesh) {
+        const targetInst = inst ?? _modelManager.focused();
+        if (!targetInst || !targetInst.rootMesh) {
             return;
         }
 
@@ -160,7 +162,7 @@ export async function captureThumbnail(
 
         // 复用共享的离屏 RT 渲染（pmx 与动作缩略图共用，见 thumbnail-capture.ts）。
         // 截的是模型加载瞬间的当前姿态（静止/T-pose），动画不推进。
-        await renderInstanceThumbnail(_scene, focusedInst, thumbKey);
+        await renderInstanceThumbnail(_scene, targetInst, thumbKey);
     } catch (err) {
         logWarn('model-loader', 'captureThumbnail:', err);
     }
@@ -302,7 +304,7 @@ export async function loadPMXFile(
                 // Intentionally empty — 自定义事件派发失败不影响模型加载主流程
             }
             // [fix:thumbnail] stage 同样需要缩略图（库网格含 stage 模型）；用库引用路径作 key
-            swallowError(captureThumbnail(filePath, libraryPath, innerPath));
+            swallowError(captureThumbnail(filePath, libraryPath, innerPath, inst));
             return id;
         }
 

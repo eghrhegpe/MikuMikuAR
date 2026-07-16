@@ -1,4 +1,4 @@
-// settings-filename.ts — 文件名设置子菜单
+// settings-library.ts — 库设置子菜单（排序/显示名优先级/材质分类映射）
 
 import {
     setStatus,
@@ -32,11 +32,11 @@ function applyDisplayNamePriority(priority: DisplayNamePriority): void {
         .catch(() => setStatus(t('settings.saveFailed'), false));
 }
 
-function buildFilenameSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
+function buildLibrarySchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
     return [
         // 卡片 1：排序模式
         {
-            id: 'filename:sort',
+            id: 'library:sort',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
@@ -68,7 +68,7 @@ function buildFilenameSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
         },
         // 卡片 2：显示名称优先级
         {
-            id: 'filename:priority',
+            id: 'library:priority',
             kind: 'custom',
             renderCustom: (c) => {
                 const priorityIndex = PRIORITY_TO_INDEX[displayNamePriority] ?? 0;
@@ -102,7 +102,7 @@ function buildFilenameSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
         },
         // 卡片 3：材质分类映射
         {
-            id: 'filename:material-map',
+            id: 'library:material-map',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
@@ -181,13 +181,15 @@ function buildFilenameSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
     ];
 }
 
-export function buildSettingsFilenameLevel(getSettingsMenu: () => SettingsMenuHandle): PopupLevel {
+export function buildSettingsLibraryLevel(
+    getSettingsMenu: () => SettingsMenuHandle
+): PopupLevel {
     return {
-        label: '文件名',
+        label: t('settings.library'),
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildFilenameSchema(getSettingsMenu), container);
+            renderMenu(buildLibrarySchema(getSettingsMenu), container);
         },
     };
 }

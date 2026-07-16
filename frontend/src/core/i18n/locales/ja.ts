@@ -11,7 +11,9 @@ export const ja: Record<string, string> = {
     'settings.bgBlur': '背景ぼかし',
     'settings.resetAppearance': '外観をリセット',
     'settings.filename': 'ファイル名',
+    'settings.library': 'ライブラリ',
     'settings.performance': 'パフォーマンス',
+    'settings.rendering': 'レンダリング',
     'settings.paths': 'パス',
     'settings.software': 'ソフトウェア',
     'settings.screenshot': 'スクリーンショット',
@@ -99,6 +101,8 @@ export const ja: Record<string, string> = {
 
     // ===== モデル詳細 model-detail =====
     'model-detail.openWith': '連携アプリで開く…',
+    'model-detail.unloadModel': 'モデルをアンロード',
+    'model-detail.unloadConfirm': '{name} をアンロードしますか？',
     'model-detail.noSoftware': '利用可能なソフトがありません<br>設定で先に追加してください',
     'model-detail.noFilePath': '✗ モデルにファイルパスがありません',
     'model-detail.launchFailed': '✗ 起動に失敗しました',

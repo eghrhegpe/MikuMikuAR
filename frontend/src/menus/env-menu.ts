@@ -76,6 +76,12 @@ const {
 
 export { getEnvMenu, refreshEnvRoot, showEnvMenu };
 
+// 当库扫描完成时，如果环境菜单已打开则 reRender，
+// 使自定义纹理库等依赖 allModels 的 renderCustom 回调拿到最新数据。
+window.addEventListener('mmar:library-scanned', () => {
+    getEnvMenu()?.reRender();
+});
+
 /**
  * 渲染环境氛围预设芯片组（紧凑 preset-chip 布局，替代旧 slideRow 全宽行）。
  */

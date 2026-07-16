@@ -99,6 +99,10 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
     _applyIfChanged(changed, _SKY_KEYS, 'sky', () => {
         const t0 = performance.now();
         impl.applySky(state);
+        // color 模式下无天空 mesh，需单独同步调试镜面 clearColor
+        if (impl.isDebugMirrorActive() && impl.updateDebugMirrorClearColor) {
+            impl.updateDebugMirrorClearColor();
+        }
         const elapsed = performance.now() - t0;
         if (elapsed > 2) {
             logWarn('perf:env', `[${formatTimestamp()}] applySky took ${elapsed.toFixed(1)}ms`);

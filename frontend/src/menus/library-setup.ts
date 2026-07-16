@@ -141,6 +141,7 @@ export async function switchStorageMode(mode: 'private' | 'shared'): Promise<voi
 export async function rescanAndSync(): Promise<LibraryModel[]> {
     const models = (await ScanModelDir()) || [];
     setAllModels(models);
+    window.dispatchEvent(new CustomEvent('mmar:library-scanned'));
     return models;
 }
 

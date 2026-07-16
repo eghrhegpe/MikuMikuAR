@@ -811,6 +811,9 @@ export class SlideMenu {
         this._swipeTouchEndHandler = null;
         this.levels = [];
         this._cachedExtraBtns = null;
+        // 清理 initControl 注册的闭包引用 + panel DOM（ADR-106 补全）
+        this._controls = [];
+        this.panel.innerHTML = '';
     }
 
     private updateHeader(level: PopupLevel): void {
