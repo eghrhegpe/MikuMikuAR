@@ -66,7 +66,7 @@ import {
     setModelFormation,
 } from './scene';
 import { removeProp, loadProp, setPropTransform, setPropOrbit } from './env/props';
-import { setEnvState, setEnvSunAngle, flushEnvState, flushUIState } from './env/env-bridge';
+import { setEnvState, setEnvSunAngle, flushEnvState, flushUIState, cancelEnvPersistTimer } from './env/env-bridge';
 import { setGravityStrength, getGravityStrength } from './env/env-bridge';
 import {
     regenerateProcMotion,
@@ -1026,6 +1026,9 @@ export async function tryRestoreLastScene(): Promise<void> {
             console.info('[auto-load] 场景文件中包含 env 状态，覆盖 config.json 的 env 状态');
             setSuppressAutoSave(true);
             setEnvState(envFromScene as Partial<EnvState>, true);
+            // 同 restoreEnvState：取消恢复触发的 env 防抖写入，避免 500ms 后
+            // 把刚覆盖的值写回 config.json（见 buglog 2026-07-16 教训3）。
+            cancelEnvPersistTimer();
             setSuppressAutoSave(false);
         }
 

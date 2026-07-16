@@ -377,11 +377,12 @@ export function createClouds(state: EnvState): void {
 
     const mesh = MeshBuilder.CreateSphere(
         'volCloud',
-        { diameter: SPHERE_DIAMETER, segments: 24, sideOrientation: Mesh.BACKSIDE },
+        { diameter: SPHERE_DIAMETER * 0.98, segments: 24, sideOrientation: Mesh.BACKSIDE },
         scene
     );
-    // 强制在透明队列最后渲染（避免被天空盒覆盖）
-    mesh.renderingGroupId = 1;
+    // 在 group -1 最先渲染并写入深度，让 group 0 的角色/地面/水面自然覆盖它
+    // 球体 0.98x 略小于天空盒，避免天空盒（同尺寸）在深度测试中覆盖云层
+    mesh.renderingGroupId = -1;
     mesh.isPickable = false;
     mesh.position.y = 0;
 
@@ -422,8 +423,6 @@ export function createClouds(state: EnvState): void {
     );
 
     mat.backFaceCulling = false;
-    mat.disableDepthWrite = true;
-    mat.depthFunction = Constants.ALWAYS;
     mat.alpha = 1.0;
     mat.transparencyMode = 2;
     // Bind 3D noise texture (must be after mat is created)
