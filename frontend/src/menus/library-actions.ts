@@ -46,6 +46,7 @@ import {
     isUnderRoot,
     getBaseName,
     logWarn,
+    isStageLike,
     LoadingGuard,
 } from '../core/utils';
 import { showConfirm } from '../core/dialog';
@@ -185,7 +186,7 @@ function onModelRowClick(m: LibraryModel): void {
         return;
     }
     const replaceId = modelReplaceTargetId;
-    const isStage = m.type === 'stage' || m.type === 'scene' || m.type === 'prop';
+    const isStage = isStageLike(m.type);
     const isActor = m.format === 'pmx' && !isStage;
     if (m.format === 'pmx') {
         const ref = computeLibraryRef(m.file_path);
@@ -324,6 +325,45 @@ function replaceModel(m: LibraryModel): void {
         setModelReplaceTargetId(focusedModelId);
     }
     onModelRowClick(m);
+}
+
+// 网格模式点击动作（VMD）时触发：替换聚焦模型的当前基础动作。
+// 与 replaceModel 对称——模型点击替换模型，动作点击替换动作。
+function replaceMotion(m: LibraryModel): void {
+    if (m.format !== 'vmd') {
+        replaceModel(m);
+        return;
+    }
+    if (!focusedModelId) {
+        // 无聚焦模型：退化为普通加载（缓存待应用）
+        onModelRowClick(m);
+        return;
+    }
+    if (_isReplaceLoading) {
+        setStatus(t('library.loadingModel'), false);
+        return;
+    }
+    closeAllOverlays();
+    const targetId = focusedModelId;
+    const doLoad = (path: string): void => {
+        loadManager
+            .load({ kind: 'vmd', path, modelId: targetId })
+            .then(() => setStatus(t('status.done'), true))
+            .catch((err) => setStatus(t('library.vmdLoadFailed') + formatError(err), false));
+    };
+    if (m.container === 'zip') {
+        setStatus(t('library.extractingZip'), false);
+        _isExtracting = true;
+        ExtractZip(m.file_path, m.zip_inner)
+            .then((result) => {
+                setStatus(result.cached ? t('library.cacheHit') : t('library.extracted'), true);
+                doLoad(result.file_path);
+            })
+            .catch((err) => setStatus(t('library.extractFailed') + formatError(err), false))
+            .finally(() => { _isExtracting = false; });
+        return;
+    }
+    doLoad(m.file_path);
 }
 
 // ======== 标签 ========
@@ -468,4 +508,4 @@ export async function importFile(): Promise<void> {
 
 // ======== 供 library-browse 使用的内部函数 ========
 
-export { onModelRowClick, replaceModel, buildTagsOverviewLevel, buildTagDetailLevel, highlightRow };
+export { onModelRowClick, replaceModel, replaceMotion, buildTagsOverviewLevel, buildTagDetailLevel, highlightRow };

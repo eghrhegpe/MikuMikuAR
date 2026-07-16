@@ -188,6 +188,9 @@ import { disposeGround as _disposeGround, clearGroundTexCache } from './env-grou
 import { clearStarsTexCache } from './env-sky';
 
 export function disposeEnvUpdateObserver(): void {
+    // 首启 / HMR 重入幂等：initScene() step0 清理在 initEnvImpl 之前调用，
+    // 此时 _scene 仍为 null，无 observer / 资源可释放，直接 no-op 返回避免抛错（ADR-106 Phase 3）。
+    if (!_scene) return;
     const scene = getScene();
     const pipeline = getPipeline();
     if (_envUpdateObserver) {

@@ -16,7 +16,7 @@ import type { Scene } from '@babylonjs/core/scene';
 import { SaveThumbnail } from '@/core/wails-bindings';
 import { thumbnailCache, setThumbnailCache, type ModelInstance } from '@/core/config';
 import { uiState } from '@/core/state';
-import { logWarn } from '@/core/utils';
+import { logWarn, isStageLike } from '@/core/utils';
 
 // ======== 并发互斥：promise 链确保同一时刻只有一个缩略图渲染 ========
 // renderInstanceThumbnail 共享 RT + framebuffer + 物理冻结状态，
@@ -67,7 +67,7 @@ async function _renderThumbnailImpl(
     // 缩略图分辨率复用用户设置（默认 512，可选 1024/2048/4096）
     const thumbMax = uiState.thumbnailResolution ?? 512;
     // 角色竖屏 2:3，舞台横屏 16:9，thumbMax 为长边像素数
-    const isStage = inst.kind === 'stage';
+    const isStage = isStageLike(inst.kind);
     const THUMB_ASPECT = isStage ? 16 / 9 : 2 / 3;
     // 缓存 key 追加分辨率和比例，确保不同分辨率的缩略图被视为独立条目。
     // 格式：原 key::resolution::aspect（如 filePath::512::2/3）

@@ -230,7 +230,7 @@ export async function loadPMXFile(
             loadedMeshes = result.meshes.filter((m) => m instanceof Mesh) as Mesh[];
             loadedMeshes.forEach((m) => {
                 try {
-                    m.dispose();
+                    m.dispose(false, true);
                 } catch {
                     logWarn('model-loader', 'dispose after abort failed');
                 }
@@ -504,7 +504,7 @@ export async function loadPMXFile(
             }
             loadedMeshes.forEach((m) => {
                 try {
-                    m.dispose();
+                    m.dispose(false, true);
                 } catch {
                     logWarn('model-loader', 'dispose after error failed');
                 }

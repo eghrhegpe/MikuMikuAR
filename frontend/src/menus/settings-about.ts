@@ -137,10 +137,18 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                     addSectionTitle(inner, '版本信息');
                     const title = document.createElement('div');
                     title.style.cssText = 'text-align:center;padding:16px 14px 8px;';
-                    title.innerHTML = `
-                        <div style="font-size:15px;font-weight:600;color:var(--text);">MikuMikuAR</div>
-                        <div data-app-version style="font-size:11px;color:var(--text-dim);margin-top:2px;">v…</div>
-                    `;
+
+                    const appName = document.createElement('div');
+                    appName.style.cssText = 'font-size:15px;font-weight:600;color:var(--text);';
+                    appName.textContent = 'MikuMikuAR';
+                    title.appendChild(appName);
+
+                    const appVersion = document.createElement('div');
+                    appVersion.dataset.appVersion = '';
+                    appVersion.style.cssText = 'font-size:11px;color:var(--text-dim);margin-top:2px;';
+                    appVersion.textContent = 'v…';
+                    title.appendChild(appVersion);
+
                     inner.appendChild(title);
                     GetBuildInfo()
                         .then((info) => {
@@ -150,7 +158,19 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                             }
                             const detail = document.createElement('div');
                             detail.className = 'about-version-info';
-                            detail.innerHTML = `<div>build: ${info.buildTime}</div><div>commit: ${info.commitHash}</div><div>go: ${info.goVersion}</div>`;
+
+                            const buildRow = document.createElement('div');
+                            buildRow.textContent = `build: ${info.buildTime}`;
+                            detail.appendChild(buildRow);
+
+                            const commitRow = document.createElement('div');
+                            commitRow.textContent = `commit: ${info.commitHash}`;
+                            detail.appendChild(commitRow);
+
+                            const goRow = document.createElement('div');
+                            goRow.textContent = `go: ${info.goVersion}`;
+                            detail.appendChild(goRow);
+
                             inner.appendChild(detail);
                         })
                         .catch((err) => logWarn('settings-about', '', err));

@@ -391,6 +391,16 @@ export function isUnderRoot(base: string, child: string): boolean {
     return c === b || c.startsWith(b + '/');
 }
 
+/**
+ * 判断给定 kind/type 是否为「舞台类」（缩略图使用横屏 16:9 宽高比）。
+ * 写侧（thumbnail-capture.ts，基于 inst.kind）与读侧（library-core.ts / library-actions.ts，
+ * 基于 m.type）共用此谓词，消除宽高比缓存键的双重定义导致的潜在不一致。
+ * 涵盖：stage（舞台）、scene（场景）、prop（道具）。
+ */
+export function isStageLike(kind: string): boolean {
+    return kind === 'stage' || kind === 'scene' || kind === 'prop';
+}
+
 export function resolveLibraryRef(libraryRef: string): string | null {
     if (!libraryRef) {
         return null;

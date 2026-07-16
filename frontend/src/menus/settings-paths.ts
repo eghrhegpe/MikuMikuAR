@@ -189,11 +189,27 @@ function buildPathsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                         const diag = document.createElement('div');
                         diag.style.cssText =
                             'margin:6px 12px 8px;padding:8px 10px;background:rgba(0,0,0,0.12);border-radius:6px;font-size:11px;color:var(--text-secondary);line-height:1.7;word-break:break-all';
-                        diag.innerHTML = `
-                        <div><b>存储模式：</b>${currentMode === 'shared' ? t('settings.paths.storageModeShared') : t('settings.paths.storageModePrivate')}</div>
-                        <div><b>资源目录：</b>${resourceRoot || '<span style="color:var(--danger)">' + t('settings.paths.notSet') + '</span>'}</div>
-                        <div><b>模型数量：</b>${allModels.length}</div>
-                    `;
+
+                        const modeRow = document.createElement('div');
+                        modeRow.textContent = t('settings.storageMode') + '：' + (currentMode === 'shared' ? t('settings.paths.storageModeShared') : t('settings.paths.storageModePrivate'));
+                        diag.appendChild(modeRow);
+
+                        const rootRow = document.createElement('div');
+                        rootRow.textContent = t('settings.paths.resourceRoot') + '：';
+                        if (resourceRoot) {
+                            rootRow.textContent += resourceRoot;
+                        } else {
+                            const notSet = document.createElement('span');
+                            notSet.style.color = 'var(--danger)';
+                            notSet.textContent = t('settings.paths.notSet');
+                            rootRow.appendChild(notSet);
+                        }
+                        diag.appendChild(rootRow);
+
+                        const countRow = document.createElement('div');
+                        countRow.textContent = t('settings.paths.modelCount') || '模型数量：' + allModels.length;
+                        diag.appendChild(countRow);
+
                         inner.appendChild(diag);
                     });
                 } else {
@@ -409,7 +425,16 @@ function buildPathsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                                     total.textContent = `${t('settings.about.cache.total')} ${formatBytes(s.totalBytes)}`;
                                 }
                                 if (detail) {
-                                    detail.innerHTML = `<div>${t('settings.about.cache.resource')}: ${formatBytes(s.resourceBytes)}</div><div>${t('settings.about.cache.extracted')}: ${formatBytes(s.extractedBytes)} (${s.extractedCount} 项)</div><div>${t('settings.about.cache.thumbnails')}: ${formatBytes(s.thumbnailBytes)} (${s.thumbnailCount} 项)</div>`;
+                                    detail.innerHTML = '';
+                                    const resourceRow = document.createElement('div');
+                                    resourceRow.textContent = `${t('settings.about.cache.resource')}: ${formatBytes(s.resourceBytes)}`;
+                                    detail.appendChild(resourceRow);
+                                    const extractedRow = document.createElement('div');
+                                    extractedRow.textContent = `${t('settings.about.cache.extracted')}: ${formatBytes(s.extractedBytes)} (${s.extractedCount} ${t('common.items') || 'items'})`;
+                                    detail.appendChild(extractedRow);
+                                    const thumbRow = document.createElement('div');
+                                    thumbRow.textContent = `${t('settings.about.cache.thumbnails')}: ${formatBytes(s.thumbnailBytes)} (${s.thumbnailCount} ${t('common.items') || 'items'})`;
+                                    detail.appendChild(thumbRow);
                                 }
                             })
                             .catch((err) => logWarn('paths', '', err));
