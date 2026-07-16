@@ -69,7 +69,6 @@ config.json（settingDir 或 configDir）
 | 渲染预设 | Go RenderPresets | 用户自定义渲染预设 |
 | 环境预设 | Go EnvPresets | 用户自定义环境预设 |
 | 模型预设 | Go ModelPresets | 材质/变换预设 |
-| 舞蹈套装 | Go DanceSets | VMD + 音频组合 |
 | 标签系统 | config.json.Tags | 模型标签 |
 | 外部库 | config.json.ExternalPaths | 外部资源库挂载 |
 | 下载监听 | config.json.DownloadWatchDir/AutoImport | 自动导入 |

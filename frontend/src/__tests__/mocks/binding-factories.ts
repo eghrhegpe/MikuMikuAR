@@ -1,5 +1,5 @@
 // [doc:mock-strategy] Binding contract mock 工厂
-// 为 bindings/mikumikuar/internal/app/models.ts 中的 16 个 interface
+// 为 bindings/mikumikuar/internal/app/models.ts 中的 15 个 interface
 // 各导出一个工厂函数，返回最小合法 fixture。
 // 字段默认值与 Go 端零值语义对齐（空串 / 0 / false / null）。
 
@@ -7,7 +7,6 @@ import type {
     BuildInfo,
     CacheStats,
     Config,
-    DanceSet,
     EnvPresetEntry,
     EnvState,
     ExtractResult,
@@ -89,18 +88,7 @@ export function createMockSoftwareEntry(overrides?: Partial<SoftwareEntry>): Sof
     };
 }
 
-export function createMockDanceSet(overrides?: Partial<DanceSet>): DanceSet {
-    return {
-        name: '',
-        vmd_path: '',
-        audio_path: '',
-        audio_offset: 0,
-        description: '',
-        thumbnail: '',
-        source: '',
-        ...overrides,
-    };
-}
+
 
 export function createMockEnvPresetEntry(overrides?: Partial<EnvPresetEntry>): EnvPresetEntry {
     return {
@@ -304,7 +292,6 @@ export function createMockConfig(overrides?: Partial<Config>): Config {
         mmd_path: '',
         custom_software: null,
         tags: null,
-        dance_sets: null,
         recent_models: null,
         env: null,
         ...overrides,

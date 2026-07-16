@@ -70,10 +70,10 @@
 |----|----------|------|
 | ✅ VMD 缩略图死路径（`vmd-loader.ts:180-199`） | **已删除（2026-07-16）**：无任何 UI 读取，纯浪费 | 已执行，零功能损失 |
 | ❌ `thumbnailCache` 内存 Map「死代码」 | **误判纠正**：`ui-resource-panel.ts:102,117` 用 `liveThumbnailCache.has/get` 渲染缩略图 + 冷缓存回填，`renderGrid/renderList/createVirtualGrid` 消费它 → 是活跃 UI 数据源，**不可删** | 撤销 deferred |
-| ❌ `GetModelMeta.thumbnail` 冗余字段 | **前提错误**：`ModelMeta`（app.go:292-296）仅含 `NameJp/NameEn/Comment`，**无 `thumbnail` 字段**；先前误将 `DanceSet.Thumbnail`（app.go:305，dance set 功能预留扩展点，构造赋空串、无消费）归错。前端 `ModelMeta` 类型本就不含该字段，两端一致 | 撤销 deferred |
+| ❌ `GetModelMeta.thumbnail` 冗余字段 | **前提错误**：`ModelMeta`（app.go:292-296）仅含 `NameJp/NameEn/Comment`，**无 `thumbnail` 字段**；先前误将 `DanceSet.Thumbnail`（app.go:305，dance set 功能预留扩展点，构造赋空串、无消费）归错；该 DanceSet 特性已于 2026-07-16 整体删除。前端 `ModelMeta` 类型本就不含该字段，两端一致 | 撤销 deferred |
 | ✅ meta 缓存错位（`model-detail.ts:311`） | **已修复（2026-07-16）**：`ModelInstance.libraryPath` 携带库引用路径，读侧 `inst.libraryPath ?? inst.filePath` 对齐写侧 `m.file_path` | 独立 metadata 子系统，已一并修复 |
 
-> 附注：`DanceSet.Thumbnail`（app.go:305）为 dance set 功能的**预留字段**（恒空串、当前无消费），属规划扩展点而非死代码，本轮未删除，留待 dance set UI 接入时启用。
+> 附注：`DanceSet.Thumbnail`（app.go:305）原为 dance set 功能的预留字段（恒空串、无消费），当时判定为规划扩展点而非死代码、未删除；该 DanceSet 特性已于 2026-07-16 整体删除，此预留字段随特性一并移除。
 
 ---
 

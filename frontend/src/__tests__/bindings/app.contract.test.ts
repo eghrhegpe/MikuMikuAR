@@ -1,5 +1,5 @@
 // [doc:test-strategy] Binding 契约测试
-// 锁住 16 个项目自有 interface 的形状 + 126 个函数导出存在性 + 126 个 FNV-1a method ID。
+// 锁住 15 个项目自有 interface 的形状 + 122 个函数导出存在性 + 122 个 FNV-1a method ID。
 // Go 端改 struct 时此处 test 会 fail，防止静默破坏 Go↔TS 边界。
 // 新增 Go 方法后：在 expectedFunctions 加条目，手写绑定后用此测试验证 method ID。
 
@@ -8,7 +8,6 @@ import type {
     BuildInfo,
     CacheStats,
     Config,
-    DanceSet,
     EnvPresetEntry,
     EnvState,
     ExtractResult,
@@ -25,7 +24,6 @@ import {
     createMockBuildInfo,
     createMockCacheStats,
     createMockConfig,
-    createMockDanceSet,
     createMockEnvPresetEntry,
     createMockEnvState,
     createMockExtractResult,
@@ -106,20 +104,6 @@ describe('binding contract: interface shapes', () => {
             icon: expect.any(String),
         });
         expectTypeOf(f).toMatchTypeOf<SoftwareEntry>();
-    });
-
-    it('DanceSet', () => {
-        const f = createMockDanceSet();
-        expect(f).toMatchObject({
-            name: expect.any(String),
-            vmd_path: expect.any(String),
-            audio_path: expect.any(String),
-            audio_offset: expect.any(Number),
-            description: expect.any(String),
-            thumbnail: expect.any(String),
-            source: expect.any(String),
-        });
-        expectTypeOf(f).toMatchTypeOf<DanceSet>();
     });
 
     it('EnvPresetEntry', () => {
@@ -311,7 +295,6 @@ describe('binding contract: function exports', () => {
         'ClearExtractCache',
         'ClearThumbnailCache',
         'ClosePlazaWindow',
-        'DeleteDanceSet',
         'DeleteEnvPreset',
         'DeleteModelPreset',
         'DeletePresetScene',
@@ -325,7 +308,6 @@ describe('binding contract: function exports', () => {
         'GetCachedPlazaConfig',
         'GetCacheStats',
         'GetConfig',
-        'GetDanceSets',
         'GetDownloadAutoImport',
         'GetDownloadWatchStatus',
         'GetDownloadWatchEnabled',
@@ -344,7 +326,6 @@ describe('binding contract: function exports', () => {
         'GetThumbnailBatch',
         'GetStorageMode',
         'GetLastBrowseDir',
-        'ImportDanceSet',
         'ImportLocalFile',
         'ImportZip',
         'IsolateModelDir',
@@ -372,7 +353,6 @@ describe('binding contract: function exports', () => {
         'RemoveCustomSoftware',
         'RemoveTag',
         'RenameModelPreset',
-        'SaveDanceSet',
         'SaveEnvPreset',
         'SaveEnvPresetAuto',
         'SaveLastScene',
@@ -460,7 +440,6 @@ describe('binding contract: method IDs', () => {
         'ClearExtractCache',
         'ClearThumbnailCache',
         'ClosePlazaWindow',
-        'DeleteDanceSet',
         'DeleteEnvPreset',
         'DeleteModelPreset',
         'DeletePresetScene',
@@ -474,7 +453,6 @@ describe('binding contract: method IDs', () => {
         'GetCachedPlazaConfig',
         'GetCacheStats',
         'GetConfig',
-        'GetDanceSets',
         'GetDownloadAutoImport',
         'GetDownloadWatchStatus',
         'GetDownloadWatchEnabled',
@@ -493,7 +471,6 @@ describe('binding contract: method IDs', () => {
         'GetThumbnailBatch',
         'GetStorageMode',
         'GetLastBrowseDir',
-        'ImportDanceSet',
         'ImportLocalFile',
         'ImportZip',
         'IsolateModelDir',
@@ -521,7 +498,6 @@ describe('binding contract: method IDs', () => {
         'RemoveCustomSoftware',
         'RemoveTag',
         'RenameModelPreset',
-        'SaveDanceSet',
         'SaveEnvPreset',
         'SaveEnvPresetAuto',
         'SaveLastScene',

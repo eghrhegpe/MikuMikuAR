@@ -300,35 +300,6 @@ VMD 文件 → VmdLoader → MmdAnimation → createRuntimeAnimation → MmdCame
 #### 场景序列化
 相机 VMD 写入 `SceneFile.cameraVmd`（path / name / active），支持 libraryRef。
 
-### 11. 舞蹈套装（`menus/library.ts` + `internal/app/dancesets.go`）
-
-套装 = VMD 动作 + 音频 + 偏移 + 描述，一键加载。
-
-#### 数据结构（Go）
-```go
-type DanceSet struct {
-    Name        string  // 套装名称
-    VmdPath     string  // VMD 文件路径
-    AudioPath   string  // 音频文件路径
-    AudioOffset float64 // 音频偏移（秒）
-    Description string  // 描述
-    Thumbnail   string  // 缩略图 base64
-    Source      string  // 来源库名
-}
-```
-存储在 `Config.DanceSets`（map[string]DanceSet）。
-
-#### Go Binding
-- `GetDanceSets() []DanceSet`
-- `SaveDanceSet(id, ds) error`
-- `DeleteDanceSet(id) error`
-- `ImportDanceSet(vmdPath, audioPath, name) (string, error)`
-
-#### 前端
-- 模型库根菜单 → 「舞蹈套装」入口
-- 列表页 → 详情页 → 一键加载
-- 一键加载：VMD → 当前聚焦模型 + 音频自动播放 + 偏移应用
-
 ### 12. 生态聚合（Week 7+）
 - **DanceXR 共用**：扫描器已原生支持 DanceXR 8 种分类目录约定。外部库挂载已实现：通过 `Config.ExternalPaths` 配置多源联合扫描，弹窗根层显示 🔌 虚拟入口，下钻复用 `buildLevel` 导航链路。条目带 `Source` 标签区分来源。
 - **下载目录监听**：fsnotify 监听下载目录新文件（.zip）→ 通知用户确认导入。原生 HTTP 下载拦截（早期计划中的方案 C）因 WebView2 限制未实现，不列入路线图。
@@ -344,7 +315,6 @@ MikuMikuAR/
 ├── internal/
 │   ├── app/
 │   │   ├── app.go             # ★ Go 后端入口（Wails Binding 核心）
-│   │   ├── dancesets.go       # 舞蹈套装 Go binding
 │   │   ├── library.go         # 库扫描 + 配置持久化
 │   │   ├── zipextract.go      # zip 解压 + 缓存 + 文件服务器
 │   │   ├── watch.go           # 下载目录监听 + 自动导入
@@ -650,7 +620,7 @@ menus/library.ts
  ├── scene/scene.ts        loadPMXFile / loadVMDFromPath / focusModel / removeModel
  ├── outfit/audio.ts       loadAudioFile / setAudioOffset
  ├── menus/menu.ts          MenuStack
- └── Wails Binding          GetConfig / ScanModelDir / ExtractZip / GetDanceSets / ...
+ └── Wails Binding          GetConfig / ScanModelDir / ExtractZip / ...
 
 menus/settings.ts
  ├── core/state.ts        状态
