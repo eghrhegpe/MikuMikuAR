@@ -46,6 +46,10 @@ export async function renderInstanceThumbnail(
     // 角色竖屏 2:3，舞台横屏 16:9，thumbMax 为长边像素数
     const isStage = inst.kind === 'stage';
     const THUMB_ASPECT = isStage ? 16 / 9 : 2 / 3;
+    // 缓存 key 追加分辨率和比例，确保不同分辨率的缩略图被视为独立条目。
+    // 格式：原 key::resolution::aspect（如 filePath::512::2/3）
+    const cacheKey = `${key}::${thumbMax}::${isStage ? '16/9' : '2/3'}`;
+
     const rtW = isStage
         ? thumbMax
         : Math.max(1, Math.round(thumbMax * THUMB_ASPECT));
@@ -156,9 +160,9 @@ export async function renderInstanceThumbnail(
             const base64 = canvas.toDataURL(fmt, q).replace(/^data:image\/\w+;base64,/, '');
 
             try {
-                await SaveThumbnail(key, base64);
+                await SaveThumbnail(cacheKey, base64);
                 const updated = new Map(thumbnailCache);
-                updated.set(key, base64);
+                updated.set(cacheKey, base64);
                 setThumbnailCache(updated);
             } catch (saveErr) {
                 logWarn('thumbnail-capture', 'SaveThumbnail failed:', saveErr);
