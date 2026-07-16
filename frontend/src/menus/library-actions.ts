@@ -214,7 +214,7 @@ function onModelRowClick(m: LibraryModel): void {
         setPendingVmd(null);
         _isReplaceLoading = true;
 
-        const doReplace = (path: string, libraryPath?: string): void => {
+        const doReplace = (path: string, libraryPath?: string, innerPath?: string): void => {
             setStatus(t('library.loadingModel'), false);
             let browseCategory: 'pmx' | 'stage' | 'prop' = 'pmx';
             let loadKind: 'actor' | 'stage' | 'prop' = 'actor';
@@ -230,7 +230,7 @@ function onModelRowClick(m: LibraryModel): void {
             }
 
             loadManager
-                .load({ kind: loadKind, path, libraryPath })
+                .load({ kind: loadKind, path, libraryPath, innerPath })
                 .then(async (handle) => {
                     if (!handle?.id) {
                         setModelReplaceTargetId(replaceId);
@@ -279,7 +279,7 @@ function onModelRowClick(m: LibraryModel): void {
             ExtractZip(m.file_path, m.zip_inner)
                 .then((result) => {
                     setStatus(result.cached ? t('library.cacheHit') : t('library.extracted'), true);
-                    doReplace(result.file_path, m.file_path);
+                    doReplace(result.file_path, m.file_path, m.zip_inner);
                 })
                 .catch((err) => {
                     _isReplaceLoading = false;
