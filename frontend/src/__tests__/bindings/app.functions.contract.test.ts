@@ -216,19 +216,6 @@ describe('SaveSceneFile signature', () => {
     });
 });
 
-describe('ImportDanceSet signature', () => {
-    it('returns $CancellablePromise<string>', () => {
-        expectTypeOf<ReturnType<typeof App.ImportDanceSet>>().toEqualTypeOf<
-            $CancellablePromise<string>
-        >();
-    });
-    it('takes parameters [string, string, string]', () => {
-        expectTypeOf<typeof App.ImportDanceSet>().parameters.toEqualTypeOf<
-            [string, string, string]
-        >();
-    });
-});
-
 describe('LoadLastScene signature', () => {
     it('returns $CancellablePromise<string>', () => {
         expectTypeOf<ReturnType<typeof App.LoadLastScene>>().toEqualTypeOf<
@@ -307,7 +294,6 @@ describe('app.ts binding surface — no unexpected top-level keys drift', () => 
         expect(App).toHaveProperty('SetUIScale');
         expect(App).toHaveProperty('OpenInBlender');
         expect(App).toHaveProperty('SaveSceneFile');
-        expect(App).toHaveProperty('ImportDanceSet');
         expect(App).toHaveProperty('LoadLastScene');
         expect(App).toHaveProperty('BundleScene');
         expect(App).toHaveProperty('SaveModelPreset');
