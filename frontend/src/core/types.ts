@@ -425,6 +425,9 @@ export interface EnvState {
     groundProceduralScale: number; // 程序化纹理平铺缩放，默认 1.0
     groundRoughness: number; // 基础粗糙度（PBR 生效时），默认 0.6
     groundMetallic: number; // 金属度（PBR 生效时），默认 0.0
+    // ADR-114 Phase 2: 反射模糊 + 法线扭曲
+    groundReflectionBlur: number; // 反射模糊强度 0–1（mipmap LOD 偏移），默认 0.0
+    groundReflectionDistort: number; // 法线扭曲强度 0–1（bumpTexture 扰动反射方向），默认 0.3
 
     windEnabled: boolean;
     windDirection: [number, number, number];

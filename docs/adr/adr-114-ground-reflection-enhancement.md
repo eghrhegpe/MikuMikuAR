@@ -2,7 +2,7 @@
 
 ## 状态
 
-**状态**: 部分实现（Phase 1 ✅ 2026-07-16 — PBR 材质 + 程序化木纹 + UI 面板 + i18n + Go/TS 状态同步；Phase 2/3 待实施）
+**状态**: 部分实现（Phase 1 ✅ 2026-07-16 — PBR 材质 + 程序化木纹 + UI 面板 + i18n + Go/TS 状态同步；Phase 2 ✅ 2026-07-16 — 反射模糊(mipmap+roughness) + 法线扭曲(bumpTexture) + 低质量守卫；Phase 3 待启动）
 
 **开始日期**: 2026-07-15
 
@@ -570,12 +570,12 @@ const typeKey =
 - [ ] 低端设备降级：`groundPbrEnabled` 默认 false，或 feature-level 自动关闭
 
 ### Phase 2
-- [ ] 反射纹理开启 mipmap + 三线性采样（PlanarReflection 引擎端配置）
-- [ ] PBR 材质 roughness 驱动反射模糊程度（验证 mip LOD 正确性）
-- [ ] 法线扭曲：bumpTexture 影响反射方向（PBR 原生支持，验证强度）
-- [ ] UI 滑块：反射模糊 / 法线扭曲
-- [ ] 低质量模式自动关闭模糊与扭曲
-- [ ] 性能验证：FPS 影响 < 1%
+- [x] 反射纹理开启 mipmap + 三线性采样（PlanarReflection 引擎端配置）
+- [x] PBR 材质 roughness 驱动反射模糊程度（验证 mip LOD 正确性）
+- [x] 法线扭曲：bumpTexture 影响反射方向（PBR 原生支持，验证强度）
+- [x] UI 滑块：反射模糊 / 法线扭曲
+- [x] 低质量模式自动关闭模糊与扭曲
+- [ ] 性能验证：FPS 影响 < 1%（待人工验证）
 
 ### Phase 3（可选）
 - [ ] 接触阴影后处理 shader 实现

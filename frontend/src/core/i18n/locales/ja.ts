@@ -951,6 +951,8 @@ export const ja: Record<string, string> = {
     'env.marble': '大理石',
     'env.concrete': 'コンクリート',
     'env.proceduralTexture': 'プロシージャルテクスチャ',
+    'env.reflectionBlur': '反射ブラー',
+    'env.reflectionDistort': '法線歪み',
     'env.qualityOff': 'オフ',
     'env.qualityLow': '低',
     'env.qualityMedium': '中',

@@ -1024,6 +1024,8 @@ export const en: Record<string, string> = {
     'env.marble': 'Marble',
     'env.concrete': 'Concrete',
     'env.proceduralTexture': 'Procedural Texture',
+    'env.reflectionBlur': 'Reflection Blur',
+    'env.reflectionDistort': 'Normal Distortion',
     'env.qualityOff': 'Off',
     'env.qualityLow': 'Low',
     'env.qualityMedium': 'Medium',

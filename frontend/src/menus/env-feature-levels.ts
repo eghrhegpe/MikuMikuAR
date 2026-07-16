@@ -667,6 +667,33 @@ export function buildGroundLevel(): PopupLevel {
                                 },
                                 icon: 'lucide:layers',
                             },
+                            // ADR-114 Phase 2: 反射模糊 + 法线扭曲（PBR 专属）
+                            {
+                                id: 'env:ground:reflectionBlur',
+                                kind: 'slider',
+                                label: 'env.reflectionBlur',
+                                control: {
+                                    bind: 'env.groundReflectionBlur',
+                                    min: 0,
+                                    max: 1,
+                                    step: 0.05,
+                                },
+                                icon: 'lucide:droplets',
+                                visibleWhen: () => envState.groundPbrEnabled,
+                            },
+                            {
+                                id: 'env:ground:reflectionDistort',
+                                kind: 'slider',
+                                label: 'env.reflectionDistort',
+                                control: {
+                                    bind: 'env.groundReflectionDistort',
+                                    min: 0,
+                                    max: 1,
+                                    step: 0.05,
+                                },
+                                icon: 'lucide:waves',
+                                visibleWhen: () => envState.groundPbrEnabled,
+                            },
                             {
                                 id: 'env:ground:elevationColoring',
                                 kind: 'toggle',

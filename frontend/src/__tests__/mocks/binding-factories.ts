@@ -155,6 +155,8 @@ export function createMockEnvState(overrides?: Partial<EnvState>): EnvState {
         groundProceduralScale: 1.0,
         groundRoughness: 0.6,
         groundMetallic: 0.0,
+        groundReflectionBlur: 0.0,
+        groundReflectionDistort: 0.3,
         groundLevel: 0,
         groundSize: 60,
         groundEdgeFade: 0,

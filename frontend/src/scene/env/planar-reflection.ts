@@ -14,6 +14,7 @@ import {
     BaseTexture,
     RenderTargetTexture,
     MirrorTexture,
+    Texture,
     FreeCamera,
     Plane,
     Matrix,
@@ -61,6 +62,8 @@ export interface PlanarReflectionConfig {
     skipWhenUnderwater?: boolean;
     /** 停用时的额外清理（如水面清零 planarReflectBlend uniform） */
     onDisable?: () => void;
+    /** ADR-114 Phase 2: 是否生成 mipmap（地面 PBR 反射模糊用，水面保持 false） */
+    generateMipMaps?: boolean;
 }
 
 // ======== 互斥协调器（模块级单例）========
@@ -246,10 +249,15 @@ export class PlanarReflection {
         };
 
         if (this.cfg.mode === 'mirrorTexture') {
-            const rt = new MirrorTexture(`${this.cfg.name}RT`, resolution, scene, false);
+            const genMips = this.cfg.generateMipMaps ?? false;
+            const rt = new MirrorTexture(`${this.cfg.name}RT`, resolution, scene, genMips);
             rt.clearColor = new Color4(0, 0, 0, 0);
             rt.refreshRate = skip + 1; // high=1(每帧), medium=2, low=4 — Babylon 按此频率自动重渲染
             rt.mirrorPlane = this.cfg.getMirrorPlane(state, scene);
+            // ADR-114 Phase 2: mipmap + 三线性采样驱动反射模糊（PBR roughness 自动选 mip LOD）
+            if (genMips) {
+                rt.updateSamplingMode(Texture.TRILINEAR_SAMPLINGMODE);
+            }
             rt.onBeforeRenderObservable.add(() => bfcSave(rt));
             rt.onAfterRenderObservable.add(() => bfcRestore(rt));
             this.rt = rt;

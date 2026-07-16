@@ -227,6 +227,12 @@ export interface EnvState {
     "groundProceduralScale": number;
     "groundRoughness": number;
     "groundMetallic": number;
+
+    /**
+     * ADR-114 Phase 2: 反射模糊 + 法线扭曲
+     */
+    "groundReflectionBlur": number;
+    "groundReflectionDistort": number;
     "groundLevel": number;
     "groundSize": number;
     "groundEdgeFade": number;
