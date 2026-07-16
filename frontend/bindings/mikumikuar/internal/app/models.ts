@@ -217,6 +217,11 @@ export interface EnvState {
     "waterWaveHeight": number;
     "waterSize": number;
     "waterAnimSpeed": number;
+
+    /**
+     * 水面平面反射质量：'high' | 'medium' | 'low' | 'off'
+     */
+    "reflectionQuality": string;
     "foamThreshold": number;
     "foamIntensity": number;
     "foamOpacity": number;
