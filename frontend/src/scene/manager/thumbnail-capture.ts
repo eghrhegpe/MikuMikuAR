@@ -17,6 +17,50 @@ import { thumbnailCache, setThumbnailCache, type ModelInstance } from '@/core/co
 import { uiState } from '@/core/state';
 import { logWarn } from '@/core/utils';
 
+/**
+ * 计算舞台模型的地面级包围盒，排除天空盒/穹顶等远高于舞台的网格。
+ *
+ * 策略：收集所有可见子网格的包围盒，取 min.y 的中位数作为地面参考，
+ * 排除 min.y 超出 地面参考 + 30 的网格（天空盒起始 y 通常 > 50）。
+ * 退化：若无满足条件的网格，兜底到最低的网格或全层级包围盒。
+ */
+function computeStageGroundBoundingBox(root: Mesh): { min: Vector3; max: Vector3 } {
+    const meshes = root.getChildMeshes(true) as Mesh[];
+    const entries: { minY: number; bb: { min: Vector3; max: Vector3 } }[] = [];
+    for (const m of meshes) {
+        if (!m.isVisible) continue;
+        const bb = m.getHierarchyBoundingVectors(true);
+        if (!bb) continue;
+        entries.push({ minY: bb.min.y, bb });
+    }
+    // 退化：无可见子网格 → 返回全层级包围盒
+    if (entries.length === 0) {
+        return root.getHierarchyBoundingVectors(true);
+    }
+    // 按 min.y 排序，取中位数作为地面参考
+    entries.sort((a, b) => a.minY - b.minY);
+    const groundRef = entries[Math.floor(entries.length * 0.5)].minY;
+    // 排除 min.y 远高于地面参考的网格（天空盒等）
+    const groundEntries = entries.filter(e => e.minY <= groundRef + 30);
+    // 退化：全被排除 → 至少保留最低的网格
+    if (groundEntries.length === 0) {
+        return entries[0].bb;
+    }
+    // 合并保留网格的包围盒
+    let minX = Infinity, maxX = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
+    let minZ = Infinity, maxZ = -Infinity;
+    for (const { bb } of groundEntries) {
+        if (bb.min.x < minX) minX = bb.min.x;
+        if (bb.max.x > maxX) maxX = bb.max.x;
+        if (bb.min.y < minY) minY = bb.min.y;
+        if (bb.max.y > maxY) maxY = bb.max.y;
+        if (bb.min.z < minZ) minZ = bb.min.z;
+        if (bb.max.z > maxZ) maxZ = bb.max.z;
+    }
+    return { min: new Vector3(minX, minY, minZ), max: new Vector3(maxX, maxY, maxZ) };
+}
+
 /** base64 缩略图数据的 MIME 嗅探：PNG/JPEG/WebP 头部字节不同 */
 export function thumbDataUrl(base64: string): string {
     if (base64.startsWith('iVBOR')) return `data:image/png;base64,${base64}`;
@@ -41,46 +85,56 @@ export async function renderInstanceThumbnail(
         return;
     }
     const engine = scene.getEngine();
-    const activeCam = scene.activeCamera;
     // 缩略图分辨率复用用户设置（默认 512，可选 1024/2048/4096）
     const thumbMax = uiState.thumbnailResolution ?? 512;
-    // RTT 尺寸跟随主相机宽高比，使投影宽高比与缓冲一致，否则 16:9 塞进正方缓冲会横向压缩。
-    // 卡片用 object-fit:cover 再裁切，比例始终正确、绝不拉伸。
-    const camAspect = activeCam ? engine.getAspectRatio(activeCam) : 1;
-    let rtW = thumbMax;
-    let rtH = thumbMax;
-    if (camAspect >= 1) {
-        rtH = Math.max(1, Math.round(thumbMax / camAspect));
-    } else {
-        rtW = Math.max(1, Math.round(thumbMax * camAspect));
-    }
+    // 固定竖屏宽高比 2:3（宽:高），不跟随主相机宽高比，保证竖屏/横屏截图画面一致。
+    // 角色上半身（头+胸）天然高>宽，竖屏比例让角色更饱满，两侧不再空荡荡。
+    const THUMB_ASPECT = 2 / 3;
+    const rtW = Math.max(1, Math.round(thumbMax * THUMB_ASPECT));
+    const rtH = thumbMax;
 
     const rt = new RenderTargetTexture('thumbRT', { width: rtW, height: rtH }, scene, false);
     rt.clearColor = new Color4(0, 0, 0, 0);
 
     // 始终创建独立缩略图相机，不复用主相机（主相机为全身远景，缩略图需拉近聚焦上半身）。
     // 方向：有主相机则复用其朝向（保证正面不背身），无主相机默认从 -Z 看（MMD 正面朝 -Z）。
-    const bb = inst.rootMesh.getHierarchyBoundingVectors(true);
+    // 舞台模型排除天空盒等高远网格，避免包围盒中心偏移到空中。
+    const bb = inst.kind === 'stage'
+        ? computeStageGroundBoundingBox(inst.rootMesh as Mesh)
+        : inst.rootMesh.getHierarchyBoundingVectors(true);
     const fullHeight = bb.max.y - bb.min.y;
     const centerX = (bb.max.x + bb.min.x) * 0.5;
     const centerZ = (bb.max.z + bb.min.z) * 0.5;
     const extent = bb.max.subtract(bb.min);
 
-    // 焦点：全身 60% 高度（胸部），能看到面部+上半身服饰
-    const focusCenterY = bb.min.y + fullHeight * 0.6;
-    // 聚焦区域：头顶到胸部以下（全身上 48%），只拍头胸
-    const focusHeight = fullHeight * 0.44;
-    const focusWidth = extent.x * 0.55; // 横向取 70% 宽度，收紧画面
+    // 根据模型类型选择聚焦策略
+    let focusCenterY: number;
+    let focusHeight: number;
+    let focusWidth: number;
+    if (inst.kind === 'stage') {
+        // 舞台：以身入局视角——相机靠近舞台中央，固定距离拍摄。
+        // 大舞台若按包围盒推算距离会导致相机过远（缩略图变成小点）。
+        focusCenterY = bb.min.y + 2;  // 略高于地面，模拟站姿视点
+        // focusHeight/focusWidth 仅用于非舞台的 targetSize 推算，舞台用固定距离，赋 0 防误用
+        focusHeight = 0;
+        focusWidth = 0;
+    } else {
+        // 角色：聚焦上半身（面部+服饰），凸显特征
+        focusCenterY = bb.min.y + fullHeight * 0.6;
+        focusHeight = fullHeight * 0.46;
+        focusWidth = extent.x * 0.55;
+    }
 
-    const fov = activeCam ? activeCam.fov : 0.8;
-    // 边距系数 0.88：略微裁切边缘，让角色尽量填满画面
-    const targetSize = Math.max(focusHeight, focusWidth) * 0.88;
-    const dist = targetSize / (2 * Math.tan(fov / 2));
+    const fov = scene.activeCamera ? scene.activeCamera.fov : 0.6;
+    // 舞台使用固定距离近景（以身入局），非舞台沿用包围盒推算的全身/半身距离
+    const dist = inst.kind === 'stage'
+        ? 20
+        : Math.max(focusHeight, focusWidth / THUMB_ASPECT) * 0.88 / (2 * Math.tan(fov / 2));
 
     // 相机朝向：复用主相机方向，或默认 -Z（MMD 正面）
     let dirX = 0, dirY = 0, dirZ = -1;
-    if (activeCam) {
-        const fwd = activeCam.getDirection(Vector3.Forward());
+    if (scene.activeCamera) {
+        const fwd = scene.activeCamera.getDirection(Vector3.Forward());
         dirX = fwd.x; dirY = fwd.y; dirZ = fwd.z;
     }
 

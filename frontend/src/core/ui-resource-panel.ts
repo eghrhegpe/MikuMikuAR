@@ -22,7 +22,7 @@ export interface ResourcePanelOptions {
     layout?: 'grid' | 'list';
     /** 网格列数（自适应，0=自动） */
     columns?: number;
-    /** 单项高度（网格模式，px） */
+    /** 单项高度（网格模式，px）；缩略图为竖屏 2:3，卡片宽度 80px → 缩略图 120px + 标签 40px = 160px */
     itemHeight?: number;
 }
 
@@ -69,7 +69,7 @@ export function createResourcePanel(
         onSelect,
         onEnterFolder,
         layout = 'grid',
-        itemHeight = 120,
+        itemHeight = 160,
     } = options;
 
     // 状态
@@ -209,7 +209,7 @@ function createVirtualGridFromItems(
     cache: Map<string, string>,
     onSelect: (item: ResourceItem) => void,
     onEnterFolder?: (path: string) => void,
-    itemHeight: number = 120
+    itemHeight: number = 160
 ): VirtualGridHandle<ResourceItem> {
     // 计算列数：基于容器宽度
     const thumbSize = 80; // --resource-thumb-size
@@ -233,7 +233,7 @@ function renderGrid(
     cache: Map<string, string>,
     onSelect: (item: ResourceItem) => void,
     onEnterFolder?: (path: string) => void,
-    itemHeight: number = 120
+    itemHeight: number = 160
 ): void {
     const grid = document.createElement('div');
     grid.className = 'resource-grid';
@@ -271,14 +271,14 @@ function createGridCard(
         transition: background 0.15s, border-color 0.15s;
     `;
 
-    // 缩略图区域
+    // 缩略图区域：竖屏 2:3 比例（宽:高），aspect-ratio 让高度自适应实际卡片宽度
     const thumb = document.createElement('div');
     thumb.className = 'resource-thumb';
     thumb.dataset.resourcePath = item.thumbKey ?? item.filePath;
     thumb.style.cssText = `
         width: 100%;
-        height: ${itemHeight - 40}px;
-        background: var(--bg-overlay-alt);
+        aspect-ratio: 2 / 3;
+        background-color: var(--bg-overlay-alt);
         background-size: cover;
         background-position: center;
         display: flex;
@@ -396,7 +396,7 @@ function createListRow(
         width: 40px;
         height: 40px;
         border-radius: 4px;
-        background: var(--bg-overlay-alt);
+        background-color: var(--bg-overlay-alt);
         background-size: cover;
         background-position: center;
         flex-shrink: 0;

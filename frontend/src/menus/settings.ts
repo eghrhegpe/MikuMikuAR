@@ -25,14 +25,14 @@ export { getSettingsMenu, refreshSettingsRoot, showSettings };
 
 // ======== Sub-module imports ========
 import { buildSettingsAppearanceLevel } from './settings-appearance';
-import { buildSettingsFilenameLevel } from './settings-filename';
+import { buildSettingsLibraryLevel } from './settings-library';
 import { buildSettingsPathsLevel, handleSettingsAction } from './settings-paths';
 import { buildSettingsPerformanceLevel } from './settings-performance';
+import { buildSettingsRenderingLevel } from './settings-rendering';
 import { buildSettingsScreenshotLevel } from './settings-screenshot';
 import { buildSettingsAudioLevel } from './settings-audio';
 import { buildSettingsAboutLevel } from './settings-about';
 import { buildSettingsShortcutsLevel } from './settings-shortcuts';
-import { buildSettingsLanguageLevel } from './settings-language';
 import { buildSettingsSoftwareLevel, buildSoftwareDetailLevel } from './settings-software';
 
 // ======== Menu registration ========
@@ -65,9 +65,9 @@ function buildSettingsRootItems(): PopupRow[] {
     });
     items.push({
         kind: 'folder',
-        label: t('settings.filename'),
+        label: t('settings.library'),
         icon: 'lucide:file-text',
-        target: SETTINGS.FILENAME,
+        target: SETTINGS.LIBRARY,
     });
     items.push({
         kind: 'folder',
@@ -77,15 +77,15 @@ function buildSettingsRootItems(): PopupRow[] {
     });
     items.push({
         kind: 'folder',
-        label: t('settings.paths'),
-        icon: 'lucide:folder-tree',
-        target: SETTINGS.PATHS,
+        label: t('settings.rendering'),
+        icon: 'lucide:monitor',
+        target: SETTINGS.RENDERING,
     });
     items.push({
         kind: 'folder',
-        label: t('settings.software'),
-        icon: 'lucide:package',
-        target: SETTINGS.SOFTWARE,
+        label: t('settings.paths'),
+        icon: 'lucide:folder-tree',
+        target: SETTINGS.PATHS,
     });
     items.push({
         kind: 'folder',
@@ -107,9 +107,9 @@ function buildSettingsRootItems(): PopupRow[] {
     });
     items.push({
         kind: 'folder',
-        label: t('settings.language'),
-        icon: 'lucide:languages',
-        target: SETTINGS.LANGUAGE,
+        label: t('settings.software'),
+        icon: 'lucide:package',
+        target: SETTINGS.SOFTWARE,
     });
     items.push({
         kind: 'folder',
@@ -152,13 +152,13 @@ function settingsOnFolderEnter(row: PopupRow) {
 
 const SETTINGS_FOLDER_ROUTES: Record<SettingsFolderTarget, () => PopupLevel> = {
     [SETTINGS.APPEARANCE]: () => buildSettingsAppearanceLevel(getSettingsMenu),
-    [SETTINGS.FILENAME]: () => buildSettingsFilenameLevel(getSettingsMenu),
+    [SETTINGS.LIBRARY]: () => buildSettingsLibraryLevel(getSettingsMenu),
     [SETTINGS.PERFORMANCE]: () => buildSettingsPerformanceLevel(getSettingsMenu),
+    [SETTINGS.RENDERING]: () => buildSettingsRenderingLevel(getSettingsMenu),
     [SETTINGS.PATHS]: () => buildSettingsPathsLevel(getSettingsMenu),
     [SETTINGS.SOFTWARE]: () => buildSettingsSoftwareLevel(),
     [SETTINGS.SCREENSHOT]: () => buildSettingsScreenshotLevel(getSettingsMenu),
     [SETTINGS.AUDIO]: () => buildSettingsAudioLevel(getSettingsMenu),
     [SETTINGS.SHORTCUTS]: () => buildSettingsShortcutsLevel(getSettingsMenu),
     [SETTINGS.ABOUT]: () => buildSettingsAboutLevel(getSettingsMenu),
-    [SETTINGS.LANGUAGE]: () => buildSettingsLanguageLevel(),
 };

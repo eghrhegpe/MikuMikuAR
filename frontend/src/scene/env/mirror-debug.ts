@@ -16,6 +16,7 @@ import {
 } from '@babylonjs/core';
 import type { Observer } from '@babylonjs/core';
 import { getScene } from './env-impl';
+import { envState } from '@/core/config';
 
 let _mirrorMesh: Mesh | null = null;
 let _mirrorRT: MirrorTexture | null = null;
@@ -25,11 +26,33 @@ let _meshAddedObserver: Observer<AbstractMesh> | null = null;
 let _meshRemovedObserver: Observer<AbstractMesh> | null = null;
 
 // 可调参数（通过 API 修改，下次 create 时生效）
-let _mirrorWidth = 6;
-let _mirrorHeight = 4;
+let _mirrorWidth = 22;
+let _mirrorHeight = 19;
 let _mirrorResolution = 512;
 let _mirrorPosition: [number, number, number] = [0, 1.5, 4];
 let _mirrorRotationY = 0; // 水平旋转（弧度）
+
+/** 从当前 mesh 世界矩阵更新 mirrorPlane，使反射平面与 mesh 实际位置/朝向一致。 */
+function _updateMirrorPlane(): void {
+    if (!_mirrorMesh || !_mirrorRT) return;
+    // CreatePlane 局部法线为 (0,0,1)，经世界矩阵变换得到世界法线
+    const normal = Vector3.TransformNormal(new Vector3(0, 0, 1), _mirrorMesh.getWorldMatrix()).normalize();
+    const position = _mirrorMesh.getAbsolutePosition();
+    _mirrorRT.mirrorPlane = Plane.FromPositionAndNormal(position, normal);
+}
+
+/** 同步 RT clearColor 与当前天空模式一致：
+ *  - color 模式：用 scene.clearColor（天空色），使纯净的天空色在镜子中可见
+ *  - 其他模式：透明黑，由反射内容自然叠加 */
+export function updateDebugMirrorClearColor(): void {
+    if (!_mirrorRT) return;
+    const scene = getScene();
+    if (envState.skyMode === 'color') {
+        _mirrorRT.clearColor = scene.clearColor.clone();
+    } else {
+        _mirrorRT.clearColor = new Color4(0, 0, 0, 0);
+    }
+}
 
 /**
  * 创建调试镜面：竖直平面 + MirrorTexture 反射。
@@ -55,13 +78,12 @@ export function createDebugMirror(): void {
 
     // MirrorTexture：反射全部 mesh
     _mirrorRT = new MirrorTexture('debugMirrorRT', _mirrorResolution, scene, false);
-    _mirrorRT.clearColor = new Color4(0, 0, 0, 0);
     _mirrorRT.level = 1; // 完全反射
     _mirrorRT.adaptiveBlurKernel = 0; // 关闭模糊，锐利反射便于排查
+    updateDebugMirrorClearColor(); // 根据当前天空模式设置 clearColor
 
-    // 镜面法线随 mesh 旋转：mesh 默认朝 Z-，镜面法线为 (0,0,-1) → Plane(0,0,1,0)
-    // 旋转后由世界矩阵自动变换，无需手动重算
-    _mirrorRT.mirrorPlane = new Plane(0, 0, 1, 0);
+    // 镜面法线随 mesh 位置/旋转联动，从世界矩阵实时计算
+    _updateMirrorPlane();
 
     // 渲染列表：全部 mesh 排除自身
     _mirrorRT.renderList = scene.meshes.filter((m) => m !== _mirrorMesh);
@@ -143,6 +165,7 @@ export function setDebugMirrorPosition(x: number, y: number, z: number): void {
     _mirrorPosition = [x, y, z];
     if (_mirrorMesh) {
         _mirrorMesh.position.set(x, y, z);
+        _updateMirrorPlane();
     }
 }
 
@@ -150,6 +173,7 @@ export function setDebugMirrorRotationY(rad: number): void {
     _mirrorRotationY = rad;
     if (_mirrorMesh) {
         _mirrorMesh.rotation.y = rad;
+        _updateMirrorPlane();
     }
 }
 

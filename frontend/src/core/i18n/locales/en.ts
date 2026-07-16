@@ -11,7 +11,9 @@ export const en: Record<string, string> = {
     'settings.bgBlur': 'Background Blur',
     'settings.resetAppearance': 'Reset Appearance',
     'settings.filename': 'Filename',
+    'settings.library': 'Library',
     'settings.performance': 'Performance',
+    'settings.rendering': 'Rendering',
     'settings.paths': 'Paths',
     'settings.software': 'Software',
     'settings.screenshot': 'Screenshot',
@@ -29,6 +31,8 @@ export const en: Record<string, string> = {
 
     // ===== Model detail =====
     'model-detail.openWith': 'Open With…',
+    'model-detail.unloadModel': 'Unload Model',
+    'model-detail.unloadConfirm': 'Unload {name}?',
     'model-detail.noSoftware': 'No software available<br>Add one in Settings first',
     'model-detail.noFilePath': '✗ Model has no file path',
     'model-detail.launchFailed': '✗ Launch failed',

@@ -46,7 +46,7 @@
 1. **定版本号**：按 semver 决定 `X.Y.Z`（当前见 `package.json`）。
 2. **改 `package.json` 的 `version`**：这是唯一事实源。
 3. **提交版本号变更**：`git add package.json && git commit -m "chore: bump version to X.Y.Z"`。
-4. **写发布说明**：新建 `docs/Releases/vX.Y.Z.md`（手写 notes；缺则 CI 自动生成，质量不可控）。格式参考同目录既有 `v1.3.5.md`。
+4. **写发布说明**：新建 `docs/releases/vX.Y.Z.md`（手写 notes；缺则 CI 自动生成，质量不可控）。格式参考同目录既有 `v1.3.5.md`。
 5. **推 `main` 并等缓存预热**（若本版动了依赖）：`git push origin main` → 等 `cache-warm` 绿。
 6. **打 tag 触发**：`git tag vX.Y.Z && git push origin vX.Y.Z`。
 7. **核对 Release**：到 GitHub Releases 页确认三平台产物齐全、`vX.Y.Z.md` 已作为 body 渲染、应用内「关于 / 检查更新」显示真实版本（非 `dev`）。
@@ -89,7 +89,7 @@ if PKG_VER != TAG_VER → ::error::Version mismatch → 中断
 
 ## 6. 发布说明约定
 
-- 路径：`docs/Releases/vX.Y.Z.md`（与版本号严格对应）。
+- 路径：`docs/releases/vX.Y.Z.md`（与版本号严格对应）。
 - `release` 步优先用该文件作 Release body；**缺失则 `generate_release_notes: true` 自动生成**（基于 PR/commit，质量不可控，不建议依赖）。
 - 文件名带 `v` 前缀，与 tag 一致。
 
@@ -126,7 +126,7 @@ npm run build:android:release  # = scripts/build-android.ps1 -Arch arm64 -Produc
 
 - [ ] `package.json.version` 已更新且等于目标 tag（去 `v`）。
 - [ ] 已提交版本号变更。
-- [ ] `docs/Releases/vX.Y.Z.md` 已写好（手写 notes）。
+- [ ] `docs/releases/vX.Y.Z.md` 已写好（手写 notes）。
 - [ ] 若动了依赖：已先推 `main` 并等 `cache-warm` 落盘。
 - [ ] `git tag vX.Y.Z && git push origin vX.Y.Z` 已执行。
 - [ ] CI 三平台 job 全绿，无 `Version mismatch`。

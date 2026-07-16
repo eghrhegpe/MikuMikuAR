@@ -21,7 +21,9 @@ test.describe("Settings — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, ()
         await expect(page.locator('.slide-title').filter({ hasText: '设置' })).toBeVisible();
         // Settings folders
         await expect(page.getByText("外观", { exact: true })).toBeVisible();
+        await expect(page.getByText("库设置", { exact: true })).toBeVisible();
         await expect(page.getByText("性能", { exact: true })).toBeVisible();
+        await expect(page.getByText("渲染", { exact: true })).toBeVisible();
         await expect(page.getByText("路径", { exact: true })).toBeVisible();
         await expect(page.getByText("音频", { exact: true })).toBeVisible();
     });

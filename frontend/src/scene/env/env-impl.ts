@@ -25,7 +25,7 @@ export {
 } from './env-water';
 import { updateUnderwaterTransition, resetUnderwaterState } from './env-water';
 export { createClouds, disposeClouds } from './env-clouds';
-export { createDebugMirror, disposeDebugMirror, isDebugMirrorActive } from './mirror-debug';
+export { createDebugMirror, disposeDebugMirror, isDebugMirrorActive, updateDebugMirrorClearColor } from './mirror-debug';
 
 // ======== Re-exports: Sky ========
 export { applySky, disposeSky } from './env-sky';

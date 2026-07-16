@@ -11,7 +11,9 @@ export const zhCN: Record<string, string> = {
     'settings.bgBlur': '背景模糊',
     'settings.resetAppearance': '恢复默认外观',
     'settings.filename': '文件名',
+    'settings.library': '库设置',
     'settings.performance': '性能',
+    'settings.rendering': '渲染',
     'settings.paths': '路径',
     'settings.software': '软件',
     'settings.screenshot': '截图',
@@ -29,6 +31,8 @@ export const zhCN: Record<string, string> = {
 
     // ===== 模型详情 model-detail =====
     'model-detail.openWith': '用…打开',
+    'model-detail.unloadModel': '卸载此模型',
+    'model-detail.unloadConfirm': '确定卸载 {name}？',
     'model-detail.noSoftware': '暂无可用软件<br>请先在设置中添加',
     'model-detail.noFilePath': '✗ 模型无文件路径',
     'model-detail.launchFailed': '✗ 启动失败',

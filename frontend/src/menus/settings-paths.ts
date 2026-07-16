@@ -10,6 +10,7 @@ import {
     SetDownloadWatchDir,
     SetDownloadAutoImport,
     SelectDir,
+    GetCacheStats,
 } from '../core/wails-bindings';
 import {
     setStatus,
@@ -21,6 +22,7 @@ import {
 } from '../core/config';
 import { slideRow, addModeRow, addToggleRow, addWatchDirRow, addSectionTitle } from '../core/ui-helpers';
 import { showConfirm } from '../core/dialog';
+import { addDisposableListener } from '../core/dom';
 import {
     selectResourceRoot,
     selectOverridePath,
@@ -44,6 +46,7 @@ import {
     setDownloadWatchEnabledCached,
     getAutoImportCached,
     setAutoImportCached,
+    formatBytes,
 } from './settings-shared';
 
 /** 设置动作映射表——替代原 handleSettingsAction 的 switch 链 */
@@ -375,6 +378,98 @@ function buildPathsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                         },
                         'lucide:download',
                         { bind: () => getAutoImportCached() }
+                    );
+                });
+            },
+        },
+        // Card 5: 缓存管理
+        {
+            id: 'paths:cache',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    addSectionTitle(inner, t('settings.about.cache'));
+                    // 缓存统计
+                    const statRow = document.createElement('div');
+                    statRow.className = 'slide-item';
+                    statRow.style.cssText =
+                        'padding:8px 14px;flex-direction:column;align-items:stretch;gap:4px;';
+                    statRow.innerHTML =
+                        '<div data-cache-total style="font-size:13px;color:var(--text);font-weight:500;">统计中…</div><div data-cache-detail style="font-size:10px;color:var(--text-dim);line-height:1.6;font-family:monospace;"></div>';
+                    inner.appendChild(statRow);
+
+                    const refreshCacheStats = () => {
+                        GetCacheStats()
+                            .then((s) => {
+                                const total =
+                                    statRow.querySelector<HTMLElement>('[data-cache-total]');
+                                const detail =
+                                    statRow.querySelector<HTMLElement>('[data-cache-detail]');
+                                if (total) {
+                                    total.textContent = `${t('settings.about.cache.total')} ${formatBytes(s.totalBytes)}`;
+                                }
+                                if (detail) {
+                                    detail.innerHTML = `<div>${t('settings.about.cache.resource')}: ${formatBytes(s.resourceBytes)}</div><div>${t('settings.about.cache.extracted')}: ${formatBytes(s.extractedBytes)} (${s.extractedCount} 项)</div><div>${t('settings.about.cache.thumbnails')}: ${formatBytes(s.thumbnailBytes)} (${s.thumbnailCount} 项)</div>`;
+                                }
+                            })
+                            .catch((err) => logWarn('paths', '', err));
+                    };
+                    refreshCacheStats();
+                    const refreshDisp = addDisposableListener(
+                        window,
+                        'mmar:cache-cleared',
+                        refreshCacheStats
+                    );
+                    const cleanupObserver = new MutationObserver(() => {
+                        if (!c.isConnected) {
+                            refreshDisp.dispose();
+                            cleanupObserver.disconnect();
+                        }
+                    });
+                    cleanupObserver.observe(document.documentElement, {
+                        childList: true,
+                        subtree: true,
+                    });
+
+                    // 缓存清理按钮
+                    slideRow(
+                        inner,
+                        'lucide:trash-2',
+                        t('settings.about.maintenance.clearExtract'),
+                        false,
+                        () =>
+                            handleSettingsAction({
+                                kind: 'action',
+                                label: '',
+                                icon: '',
+                                target: SETTINGS_ACTION.CLEAR_EXTRACT_CACHE,
+                            })
+                    );
+                    slideRow(
+                        inner,
+                        'lucide:image',
+                        t('settings.about.maintenance.clearThumbnail'),
+                        false,
+                        () =>
+                            handleSettingsAction({
+                                kind: 'action',
+                                label: '',
+                                icon: '',
+                                target: SETTINGS_ACTION.CLEAR_THUMBNAIL,
+                            })
+                    );
+                    slideRow(
+                        inner,
+                        'lucide:trash',
+                        t('settings.about.maintenance.clearAll'),
+                        false,
+                        () =>
+                            handleSettingsAction({
+                                kind: 'action',
+                                label: '',
+                                icon: '',
+                                target: SETTINGS_ACTION.CLEAR_ALL_CACHE,
+                            })
                     );
                 });
             },

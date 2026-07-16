@@ -29,7 +29,7 @@
 | `beat-detector.ts` | 音乐节拍检测（Web Audio API 能量峰值法） | `motion/beat-detector.ts` |
 | `lipsync.ts` | 振幅→morph 权重映射 + morph 名查找 | `motion/lipsync.ts` |
 | `vpd-parser.ts` | VPD 姿势文本解析→VMD 转换 | `motion/vpd-parser.ts` |
-| `scene-proc-motion.ts` | 视线追踪 observer（linkedBone + updateWorldMatrix） | `scene/scene-proc-motion.ts` |
+| `proc-motion-bridge.ts` | 视线追踪 observer（linkedBone + updateWorldMatrix） | `motion/proc-motion-bridge.ts` |
 
 ### 关键设计决策
 

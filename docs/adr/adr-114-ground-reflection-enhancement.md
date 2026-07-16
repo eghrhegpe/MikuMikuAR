@@ -225,10 +225,10 @@ export function generateProceduralGroundTextures(
 
 | 函数 | 位置 | 适配方案 |
 |------|------|----------|
-| `applyGroundEdgeFade` | `env-impl.ts:947` | 参数改为 `PBRMaterial \| StandardMaterial`；两者都有 `opacityTexture`，直接赋值 |
-| `_updateGroundTexture` | `env-impl.ts:984` | PBR 下更新 `albedoTexture`（而非 `diffuseTexture`）；用类型守卫分支 |
-| `_syncGroundNormalTexture` | `env-impl.ts:1001` | 两者都有 `bumpTexture`，PBR 下额外设置 `bumpTexture.level = groundNormalStrength`，行为一致 |
-| `_syncGroundTextureOffset` | `env-impl.ts:956` | 两者都有 `diffuseTexture?` / `albedoTexture?`；改为先取「当前 albedo 纹理」辅助函数 |
+| `applyGroundEdgeFade` | `env-ground.ts:348` | 参数改为 `PBRMaterial \| StandardMaterial`；两者都有 `opacityTexture`，直接赋值 |
+| `_updateGroundTexture` | `env-ground.ts:368` | PBR 下更新 `albedoTexture`（而非 `diffuseTexture`）；用类型守卫分支 |
+| `_syncGroundNormalTexture` | `env-ground.ts:379` | 两者都有 `bumpTexture`，PBR 下额外设置 `bumpTexture.level = groundNormalStrength`，行为一致 |
+| `_syncGroundTextureOffset` | `env-ground.ts:352` | 两者都有 `diffuseTexture?` / `albedoTexture?`；改为先取「当前 albedo 纹理」辅助函数 |
 
 **统一材质适配层**（新增内部工具函数，集中处理差异）：
 
@@ -256,7 +256,7 @@ function _setAlbedoColor(mat: PBRMaterial | StandardMaterial, color: Color3): vo
 #### 1.4 地形模式的 PBR 覆盖范围
 
 `groundType === 'terrain'` 时，地形材质同样走 PBR 升级路径：
-- `applyTerrainMaterial`（`env-impl.ts` 内部函数）创建材质时调用 `createGroundMaterial`
+- `applyTerrainMaterial`（`env-ground.ts` 内部函数）创建材质时调用 `createGroundMaterial`
 - 地形高度图的纹理（`material.diffuseTexture`）在 PBR 下改为 `albedoTexture`
 - 地形的「草地/泥土」未来可通过多层纹理混合扩展（Phase 后续）
 
@@ -466,7 +466,7 @@ const typeKey =
 
 ### 面板层级
 
-在 [env-feature-levels.ts:256 `buildGroundLevel()`](file:///C:/Users/zhujieling11/MikuMikuAR/frontend/src/menus/env-feature-levels.ts#L256) 内新增/调整以下 folder：
+在 [env-feature-levels.ts:250 `buildGroundLevel()`](file:///C:/Users/zhujieling11/MikuMikuAR/frontend/src/menus/env-feature-levels.ts#L250) 内新增/调整以下 folder：
 
 | Folder | 位置 | 内容 |
 |--------|------|------|

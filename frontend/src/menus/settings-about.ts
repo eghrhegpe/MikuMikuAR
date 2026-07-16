@@ -9,7 +9,6 @@ import {
     SetUIBlurBg,
     SetPerformanceMode,
     GetBuildInfo,
-    GetCacheStats,
     CheckForUpdate,
     SetUIAutoUpdate,
 } from '../core/wails-bindings';
@@ -22,16 +21,13 @@ import { openExternalURL } from '../core/platform';
 import { renderMenu } from './render-menu';
 import type { PopupLevel } from '../core/config';
 import type { MenuNode } from './menu-schema';
-import { SETTINGS_ACTION } from './settings-targets';
-import { applyUIAppearanceDom, formatBytes, type SettingsMenuHandle } from './settings-shared';
+import { applyUIAppearanceDom, type SettingsMenuHandle } from './settings-shared';
 import { getAllShortcuts, formatKeyBinding } from '../core/shortcut-registry';
 import { setPerformanceMode } from '../scene/render/performance';
 import { engine, applyFrameControl } from '../scene/scene';
 import { refreshCameraUserSettings } from '../scene/camera/camera';
 import { setVolume, getVolume, setAudioOffset, getAudioOffset } from '../outfit/audio';
-import { handleSettingsAction } from './settings-paths';
 import { swallowError, logWarn, jsonStringify } from '../core/utils';
-import { addDisposableListener } from '../core/dom';
 import { showConfirm } from '../core/dialog';
 
 function exportSettings(): void {
@@ -160,7 +156,53 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                 });
             },
         },
-        // 卡片 2：快捷键列表
+        // 卡片 2：设置管理（导入/导出/重置）
+        {
+            id: 'about:settings-mgmt',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    addSectionTitle(inner, t('settings.about.settingsMgmt'));
+                    slideRow(
+                        inner,
+                        'lucide:download',
+                        t('settings.about.settingsMgmt.export'),
+                        false,
+                        () => exportSettings()
+                    );
+                    slideRow(
+                        inner,
+                        'lucide:upload',
+                        t('settings.about.settingsMgmt.import'),
+                        false,
+                        () => {
+                            importSettings();
+                            getSettingsMenu()?.reRender();
+                        }
+                    );
+                    slideRow(
+                        inner,
+                        'lucide:rotate-ccw',
+                        t('settings.about.settingsMgmt.reset'),
+                        false,
+                        () => {
+                            showConfirm(t('settings.about.settingsMgmt.resetConfirm')).then(
+                                (ok) => {
+                                    if (ok) {
+                                        resetAllSettings(getSettingsMenu);
+                                    }
+                                }
+                            );
+                        }
+                    );
+                    const hint = document.createElement('div');
+                    hint.className = 'setting-hint';
+                    hint.textContent = t('settings.about.settingsMgmt.hint');
+                    inner.appendChild(hint);
+                });
+            },
+        },
+        // 卡片 3：快捷键列表
         {
             id: 'about:shortcuts',
             kind: 'custom',
@@ -177,7 +219,7 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                 });
             },
         },
-        // 卡片 3：链接
+        // 卡片 4：链接
         {
             id: 'about:links',
             kind: 'custom',
@@ -204,56 +246,6 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                         if (!openExternalURL('https://github.com/eghrhegpe/MikuMikuAR/issues')) {
                             Browser.OpenURL('https://github.com/eghrhegpe/MikuMikuAR/issues');
                         }
-                    });
-                });
-            },
-        },
-        // 卡片 4：缓存统计
-        {
-            id: 'about:cache',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    addSectionTitle(inner, t('settings.about.cache'));
-                    const statRow = document.createElement('div');
-                    statRow.className = 'slide-item';
-                    statRow.style.cssText =
-                        'padding:8px 14px;flex-direction:column;align-items:stretch;gap:4px;';
-                    statRow.innerHTML =
-                        '<div data-cache-total style="font-size:13px;color:var(--text);font-weight:500;">统计中…</div><div data-cache-detail style="font-size:10px;color:var(--text-dim);line-height:1.6;font-family:monospace;"></div>';
-                    inner.appendChild(statRow);
-
-                    const refreshCacheStats = () => {
-                        GetCacheStats()
-                            .then((s) => {
-                                const total =
-                                    statRow.querySelector<HTMLElement>('[data-cache-total]');
-                                const detail =
-                                    statRow.querySelector<HTMLElement>('[data-cache-detail]');
-                                if (total) {
-                                    total.textContent = `${t('settings.about.cache.total')} ${formatBytes(s.totalBytes)}`;
-                                }
-                                if (detail) {
-                                    detail.innerHTML = `<div>${t('settings.about.cache.resource')}: ${formatBytes(s.resourceBytes)}</div><div>${t('settings.about.cache.extracted')}: ${formatBytes(s.extractedBytes)} (${s.extractedCount} 项)</div><div>${t('settings.about.cache.thumbnails')}: ${formatBytes(s.thumbnailBytes)} (${s.thumbnailCount} 项)</div>`;
-                                }
-                            })
-                            .catch((err) => logWarn('settings-about', '', err));
-                    };
-                    refreshCacheStats();
-                    const refreshDisp = addDisposableListener(
-                        window,
-                        'mmar:cache-cleared',
-                        refreshCacheStats
-                    );
-                    const cleanupObserver = new MutationObserver(() => {
-                        if (!c.isConnected) {
-                            refreshDisp.dispose();
-                            cleanupObserver.disconnect();
-                        }
-                    });
-                    cleanupObserver.observe(document.documentElement, {
-                        childList: true,
-                        subtree: true,
                     });
                 });
             },
@@ -343,101 +335,6 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                             }
                         }
                     );
-                });
-            },
-        },
-        // 卡片 6：维护（缓存清理）
-        {
-            id: 'about:maintenance',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    addSectionTitle(inner, t('settings.about.maintenance'));
-                    slideRow(
-                        inner,
-                        'lucide:trash-2',
-                        t('settings.about.maintenance.clearExtract'),
-                        false,
-                        () =>
-                            handleSettingsAction({
-                                kind: 'action',
-                                label: '',
-                                icon: '',
-                                target: SETTINGS_ACTION.CLEAR_EXTRACT_CACHE,
-                            })
-                    );
-                    slideRow(
-                        inner,
-                        'lucide:image',
-                        t('settings.about.maintenance.clearThumbnail'),
-                        false,
-                        () =>
-                            handleSettingsAction({
-                                kind: 'action',
-                                label: '',
-                                icon: '',
-                                target: SETTINGS_ACTION.CLEAR_THUMBNAIL,
-                            })
-                    );
-                    slideRow(
-                        inner,
-                        'lucide:trash',
-                        t('settings.about.maintenance.clearAll'),
-                        false,
-                        () =>
-                            handleSettingsAction({
-                                kind: 'action',
-                                label: '',
-                                icon: '',
-                                target: SETTINGS_ACTION.CLEAR_ALL_CACHE,
-                            })
-                    );
-                });
-            },
-        },
-        // 卡片 7：设置管理（导入/导出/重置）
-        {
-            id: 'about:settings-mgmt',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    addSectionTitle(inner, t('settings.about.settingsMgmt'));
-                    slideRow(
-                        inner,
-                        'lucide:download',
-                        t('settings.about.settingsMgmt.export'),
-                        false,
-                        () => exportSettings()
-                    );
-                    slideRow(
-                        inner,
-                        'lucide:upload',
-                        t('settings.about.settingsMgmt.import'),
-                        false,
-                        () => {
-                            importSettings();
-                            getSettingsMenu()?.reRender();
-                        }
-                    );
-                    slideRow(
-                        inner,
-                        'lucide:rotate-ccw',
-                        t('settings.about.settingsMgmt.reset'),
-                        false,
-                        () => {
-                            showConfirm(t('settings.about.settingsMgmt.resetConfirm')).then(
-                                (ok) => {
-                                    if (ok) {
-                                        resetAllSettings(getSettingsMenu);
-                                    }
-                                }
-                            );
-                        }
-                    );
-                    const hint = document.createElement('div');
-                    hint.className = 'setting-hint';
-                    hint.textContent = t('settings.about.settingsMgmt.hint');
-                    inner.appendChild(hint);
                 });
             },
         },

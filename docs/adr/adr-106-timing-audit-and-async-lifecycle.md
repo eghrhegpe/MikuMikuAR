@@ -32,6 +32,7 @@
 2. **异步链路无取消点** — 起始 `await` 前不检查"是否还有意义"，导致焦点切换后 CPU 浪费
 3. **过渡动画安全网不足** — 依赖 CSS transitionend 的 Promise 没有足够余量
 4. **fire-and-forget 的回调链** — `onRemoveModel` 中异步清理与同步销毁的时序未显式声明
+5. **UI 控件生命周期断裂** — `initControl` 通过 `registerControl` 注册闭包到 `SlideMenu._controls`，但 `dispose()` 路径未清空该数组，闭包引用延迟释放
 
 ---
 
@@ -154,6 +155,37 @@ await loadPMXFile(resolvedPath, m.kind === 'stage', true);
 const inst = focusedModel();  // 隐含假设
 ```
 
+### D6: SlideMenu.dispose() 必须清理 initControl 注册的闭包
+
+**`SlideMenu.dispose()` 必须显式清空 `_controls` 数组并清除 panel DOM，避免 `initControl` 注册的闭包引用（捕获 `HTMLElement` + `bind` 函数）在菜单销毁后残留。**
+
+```typescript
+// ✅ 正确 — menu.ts:SlideMenu.dispose()
+dispose(): void {
+    // ... 现有清理 ...
+    this._controls = [];       // 释放 initControl 闭包引用
+    this.panel.innerHTML = '';  // 显式清除 DOM，配合 GC
+}
+```
+
+**背景**：`initControl`（`ui-rows.ts:105`）通过 `getCurrentRenderingMenu()?.registerControl(update)` 将更新回调注册到 `SlideMenu._controls`。菜单销毁时若不清空，闭包捕获的 DOM 元素和 `bind` 函数会延迟释放。`buildPanel()` 虽会在重建时清空 `_controls`，但 `dispose()` 路径缺失此清理。
+
+#### 调用链路
+
+```
+addToggleRow / addSliderRow / addColorSliderRow
+  → initControl(el, opts, initial, apply)
+    → getCurrentRenderingMenu()?.registerControl(update)  // 注册到 _controls
+    → update()                                           // 立即初始化
+
+SlideMenu.dispose()
+  → _cancelAnim()
+  → _unsubscribe()
+  → _keydownDisp?.dispose()
+  → _controls = []         // D6: 清理
+  → panel.innerHTML = ''   // D6: 清理
+```
+
 ---
 
 ## 受影响文件
@@ -181,6 +213,7 @@ const inst = focusedModel();  // 隐含假设
 |------|------|------|------|
 | `scene/env/env-bridge.ts` | 650 | `_envPersistTimer` HMR 时悬挂（已修复：新增 `cancelEnvPersistTimer` 导出，2026-07-14） | D3 |
 | `scene/manager/model-loader.ts` | 102 | `withTimeout` 超时后原始 Promise 不取消（已评估 N/A：Promise 不可取消 + captureThumbnail 有 generation counter 防护，2026-07-14） | D4（可选） |
+| `menus/menu.ts` | 797 | `SlideMenu.dispose()` 未清空 `_controls` 数组，`initControl` 注册的闭包残留（已修复：L814-816 补全清理，2026-07-16） | D6 |
 
 ---
 
@@ -203,6 +236,7 @@ const inst = focusedModel();  // 隐含假设
 
 1. ✅ 在 `initScene` 开头调用所有已注册的 `stop*` 函数（`_disposePlaybackObservables?.()` + `stopBoneOverride()` + `stopFeetAdjustment()` + `unsubscribeAll()` + `cancelEnvPersistTimer()`）
 2. ✅ 在 `initScene` 开头调用 `unsubscribeAll()`（同上清理块，D3 要求）
+3. ✅ `SlideMenu.dispose()` 补全 `_controls = []` + `panel.innerHTML = ''`（D6，2026-07-16）
 
 ---
 
@@ -211,8 +245,9 @@ const inst = focusedModel();  // 隐含假设
 1. **P1 修复**：`waitForTransition` 安全网 ≥ 500ms，`enqueue` 的 `.then` 显式分离
 2. **P2 修复**：所有 5 个修复点通过代码审查
 3. **HMR 清理**：`initScene` 重入时不会残留 observer 或定时器
-4. **构建通过**：`npm run build` 无错误
-5. **E2E 测试通过**：`npm run test:e2e` 无回归
+4. **SlideMenu 清理**：`dispose()` 后 `_controls` 为空、panel DOM 已清除（D6）
+5. **构建通过**：`npm run build` 无错误
+6. **E2E 测试通过**：`npm run test:e2e` 无回归
 
 ---
 

@@ -156,7 +156,14 @@ export function computeRestoreSegments(
 // ======== 缩略图 & 元数据 ========
 
 export function thumbnailKeyForModel(m: LibraryModel): string {
-    return m.file_path || m.file_path || '';
+    // 与 model-loader.ts captureThumbnail() 的 key 格式保持一致：
+    // ZIP 内模型用 `filePath::zipInner`，普通模型用 `filePath`。
+    // 否则 GetThumbnailBatch 查询的 key 与截图保存的 key 不匹配 → ZIP 模型缩略图永远不命中。
+    const fp = m.file_path || '';
+    if (m.container === 'zip' && m.zip_inner) {
+        return `${fp}::${m.zip_inner}`;
+    }
+    return fp;
 }
 
 async function ensureModelMeta(pmxPaths: string[]): Promise<void> {

@@ -13,14 +13,14 @@ import {
 } from '../core/config';
 import { modelManager } from '../scene/scene';
 import { getModelMorphs, setModelMorphWeight, resetModelMorphs } from '../scene/manager/model-ops';
+import { resetModelTransform, removeModel } from '../scene/manager/model-ops';
 import {
     buildTransformCard,
-    buildDangerCard,
     type ResourceHandle,
 } from './resource-detail-helpers';
 import { buildMatRootLevel } from './model-material';
 import { createIconifyIcon, softwareKindIcon } from '../core/icons';
-import { slideRow, addFieldRow } from '../core/ui-helpers';
+import { slideRow, addFieldRow, addDangerRow } from '../core/ui-helpers';
 import { buildOutfitLevel } from './outfit-ui';
 import { savePresetToLibDialog, buildPresetListLevel } from './model-preset';
 import {
@@ -36,6 +36,7 @@ import { tryCatchStatus, logWarn } from '../core/utils';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
+import { showConfirm } from '../core/dialog';
 
 // ======== Open With (software tools submenu) ========
 
@@ -220,26 +221,6 @@ function buildModelSchema(id: string): MenuNode[] {
                 });
             },
         },
-        // 卡片 2：危险区块
-        {
-            id: 'model:danger',
-            kind: 'custom',
-            renderCustom: (container) => {
-                buildDangerCard(container, handle, () => {
-                    if (stackRegistry.modelStack) {
-                        stackRegistry.modelStack.popTo(0);
-                        import('./library-core').then((m) => {
-                            stackRegistry.modelStack?.setLevel(0, {
-                                label: t('model-detail.model'),
-                                dir: '',
-                                items: m.buildModelRootItems(),
-                            });
-                            stackRegistry.modelStack?.reRender();
-                        });
-                    }
-                });
-            },
-        },
     ];
 }
 
@@ -271,6 +252,30 @@ export function buildModelToolsLevel(id: string): PopupLevel {
                 });
                 slideRow(c, 'lucide:external-link', t('model-detail.openWith'), true, () => {
                     stackRegistry.modelStack?.push(buildOpenWithLevel(id));
+                });
+                slideRow(c, 'lucide:rotate-ccw', t('settings.transformReset'), false, () => {
+                    resetModelTransform(id);
+                    setStatus(
+                        t('settings.transformReset', { kind: t('common.model') }),
+                        true
+                    );
+                });
+                addDangerRow(c, 'lucide:trash-2', t('model-detail.unloadModel'), async () => {
+                    const ok = await showConfirm(t('model-detail.unloadConfirm', { name: inst.name }));
+                    if (!ok) return;
+                    removeModel(id);
+                    setStatus(t('settings.unloaded', { name: inst.name }), true);
+                    if (stackRegistry.modelStack) {
+                        stackRegistry.modelStack.popTo(0);
+                        import('./library-core').then((m) => {
+                            stackRegistry.modelStack?.setLevel(0, {
+                                label: t('model-detail.model'),
+                                dir: '',
+                                items: m.buildModelRootItems(),
+                            });
+                            stackRegistry.modelStack?.reRender();
+                        });
+                    }
                 });
             });
         },

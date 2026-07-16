@@ -11,7 +11,9 @@ export const ko: Record<string, string> = {
     'settings.bgBlur': '배경 흐림',
     'settings.resetAppearance': '외관 초기화',
     'settings.filename': '파일명',
+    'settings.library': '라이브러리',
     'settings.performance': '성능',
+    'settings.rendering': '렌더링',
     'settings.paths': '경로',
     'settings.software': '소프트웨어',
     'settings.screenshot': '스크린샷',
@@ -100,6 +102,8 @@ export const ko: Record<string, string> = {
 
     // ===== 모델 상세 model-detail =====
     'model-detail.openWith': '다음으로 열기…',
+    'model-detail.unloadModel': '모델 언로드',
+    'model-detail.unloadConfirm': '{name}을(를) 언로드하시겠습니까?',
     'model-detail.noSoftware': '사용 가능한 소프트웨어가 없습니다<br>먼저 설정에서 추가해 주세요',
     'model-detail.noFilePath': '✗ 모델에 파일 경로가 없습니다',
     'model-detail.launchFailed': '✗ 실행 실패',

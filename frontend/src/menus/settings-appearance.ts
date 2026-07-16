@@ -24,6 +24,8 @@ import {
 import type { PopupLevel } from '../core/config';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
+import { getLang, setLang, SUPPORTED_LANGS } from '../core/i18n/locale';
+import { AVAILABLE_LANGS } from '../core/i18n/t';
 
 // ======== UI 尺寸控件（缩放 + 弹窗宽度） ========
 function _renderUISizeControls(
@@ -340,7 +342,55 @@ function buildAppearanceSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
                 });
             },
         },
-        // 卡片 6：恢复默认
+        // 卡片 6：语言
+        {
+            id: 'appearance:language',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    addSectionTitle(inner, t('settings.language'));
+                    const cur = getLang();
+                    const langRows: HTMLElement[] = [];
+                    for (const l of SUPPORTED_LANGS) {
+                        if (!AVAILABLE_LANGS.includes(l.code)) continue;
+                        const isActive = l.code === cur;
+                        const row = slideRow(
+                            inner,
+                            `lucide:${isActive ? 'check' : 'circle'}`,
+                            t(l.key),
+                            false,
+                            () => {
+                                setLang(l.code);
+                                getSettingsMenu()?.reRender();
+                            },
+                            undefined,
+                            undefined,
+                            isActive
+                        );
+                        row.dataset.langCode = l.code;
+                        langRows.push(row);
+                    }
+                    getCurrentRenderingMenu()?.registerControl(() => {
+                        const current = getLang();
+                        for (const row of langRows) {
+                            const code = row.dataset.langCode!;
+                            const isActive = current === code;
+                            row.className = 'slide-item' + (isActive ? ' slide-focused' : '');
+                            const icon = row.querySelector(
+                                '.slide-icon iconify-icon'
+                            ) as HTMLElement | null;
+                            if (icon) {
+                                icon.setAttribute(
+                                    'icon',
+                                    `lucide:${isActive ? 'check' : 'circle'}`
+                                );
+                            }
+                        }
+                    });
+                });
+            },
+        },
+        // 卡片 7：恢复默认
         {
             id: 'appearance:reset',
             kind: 'custom',
