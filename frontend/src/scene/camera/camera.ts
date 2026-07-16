@@ -510,6 +510,7 @@ function createOrbitCamera(scene: Scene, canvas: HTMLCanvasElement): ArcRotateCa
         new Vector3(0, _focusCenterY + p.targetHeight, 0),
         scene
     );
+    cam.minZ = 0.1;
     cam.lowerRadiusLimit = 2;
     cam.upperRadiusLimit = 50;
     installInvertablePointers(cam);
@@ -530,6 +531,7 @@ function createOrbitCamera(scene: Scene, canvas: HTMLCanvasElement): ArcRotateCa
 function createFreeflyCamera(scene: Scene, canvas: HTMLCanvasElement): UniversalCamera {
     const p = _currentPreset.freefly;
     const cam = new UniversalCamera('freeflyCam', new Vector3(0, 8, 16), scene);
+    cam.minZ = 0.1;
     cam.speed = p.speed;
     cam.angularSensibility = p.angularSensibility;
     cam.attachControl(canvas, true);

@@ -112,11 +112,6 @@ export interface Config {
     "tags": { [_ in string]?: string[] | null } | null;
 
     /**
-     * 舞蹈套装，key = 套装 ID
-     */
-    "dance_sets": { [_ in string]?: DanceSet } | null;
-
-    /**
      * libraryRef 数组，最近打开的模型（最多20条）
      */
     "recent_models": string[] | null;
@@ -130,46 +125,6 @@ export interface Config {
      * 对话框最后目录记忆，优先相对路径（./前缀），详见 ADR-090
      */
     "last_dirs"?: { [_ in string]?: string } | null;
-}
-
-/**
- * DanceSet represents a dance set combining VMD motion, audio, and metadata.
- */
-export interface DanceSet {
-    /**
-     * 套装名称
-     */
-    "name": string;
-
-    /**
-     * VMD 文件路径
-     */
-    "vmd_path": string;
-
-    /**
-     * 音频文件路径
-     */
-    "audio_path": string;
-
-    /**
-     * 音频偏移（秒）
-     */
-    "audio_offset": number;
-
-    /**
-     * 描述（可选）
-     */
-    "description": string;
-
-    /**
-     * 缩略图 base64（可选）
-     */
-    "thumbnail": string;
-
-    /**
-     * 来源库名
-     */
-    "source": string;
 }
 
 /**

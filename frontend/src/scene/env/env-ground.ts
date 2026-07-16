@@ -255,7 +255,8 @@ const groundReflection = new PlanarReflection({
             if (mat instanceof StandardMaterial) {
                 mat.reflectionFresnelParameters = new FresnelParameters();
                 mat.reflectionFresnelParameters.isEnabled = false;
-                mat.specularColor = new Color3(0.5, 0.5, 0.5);
+                mat.specularColor = new Color3(1, 1, 1);
+                mat.diffuseColor = new Color3(0, 0, 0);
             }
             // PBR: 反射由 roughness + environmentTexture 驱动，无需 Fresnel
         } else {
@@ -269,8 +270,13 @@ const groundReflection = new PlanarReflection({
     },
     setBlend: (b) => {
         const mat = _envSys.ground.mesh?.material as GroundMat | null;
-        if (mat && mat.reflectionTexture) {
-            mat.reflectionTexture.level = b;
+        if (!mat || !mat.reflectionTexture) return;
+        mat.reflectionTexture.level = b;
+        // 反射开启时压暗底色让镜面可见，关闭时由 applyGround 恢复原色
+        if (mat instanceof StandardMaterial) {
+            mat.diffuseColor = b > 0
+                ? new Color3(0, 0, 0)
+                : new Color3(0.2, 0.2, 0.2);
         }
     },
 });
@@ -719,6 +725,7 @@ export function applyGround(state: EnvState): void {
     ground.rotation.x = (state.groundPitch * Math.PI) / 180;
     ground.rotation.z = (state.groundRoll * Math.PI) / 180;
 
+    // 先挂反射再设底色，避免 _setAlbedoColor 覆盖 mount 设置的黑色
     buildGroundReflection(state);
     _envSys.ground.mesh = ground;
 }

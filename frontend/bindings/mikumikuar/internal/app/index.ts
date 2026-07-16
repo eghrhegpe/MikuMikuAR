@@ -10,7 +10,6 @@ export type {
     BuildInfo,
     CacheStats,
     Config,
-    DanceSet,
     EnvPresetEntry,
     EnvState,
     ExtractResult,
