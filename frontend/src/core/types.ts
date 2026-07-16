@@ -77,6 +77,9 @@ export type ModelInstance = {
     id: string;
     name: string;
     filePath: string;
+    /** 库引用绝对路径（=LibraryModel.file_path）。zip 内模型为 zip 包路径，与解压临时 filePath 不同；
+     * 详情面板元数据缓存以该路径为 key 命中。非库模型（拖拽/导入）为 undefined，回退 filePath。 */
+    libraryPath?: string;
     port: number;
     modelDir: string;
     meshes: Mesh[];

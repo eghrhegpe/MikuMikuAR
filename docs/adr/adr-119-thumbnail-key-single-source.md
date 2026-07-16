@@ -1,6 +1,6 @@
 # ADR-119: 缩略图缓存键单一源治理
 
-> **状态**: Phase 1 已完成（模型 + 道具写侧已收口至 `thumbnail-key.ts`；VMD 死路径与 meta 缓存错位列为 deferred，待批）；契约测试 `thumbnail-key.contract.test.ts` 已作防反弹熔断丝（16 例全过）
+> **状态**: Phase 1 + Phase 2 已完成（模型 + 道具写侧收口至 `thumbnail-key.ts`；VMD 缩略图死路径已删除；meta 缓存错位已修复；`thumbnailCache` 内存死代码与 `GetModelMeta.thumbnail` 冗余字段仍 deferred）；契约测试 `thumbnail-key.contract.test.ts` 已作防反弹熔断丝（16 例全过）
 > **背景**: 「截角色图」经 12 轮修改反复反弹。根因不是渲染逻辑（`thumbnail-capture.ts` 的并发互斥 / 物理冻结 / 投影冻结 / 翻转均正确），而是**缓存键（cache key）被两套独立代码、从两套不同数据模型各推导一次**——写侧（`ModelInstance`/运行时 `filePath` + `kind`）与读侧（`LibraryModel`/库元数据 `file_path` + `type`）各自用字符串拼接构造 `<baseKey>::<resolution>::<aspect>`，任何一侧微调即导致缓存 miss → 缩略图"消失/重生"。这是典型的"状态来源不唯一"，修一处裂另一处。
 > **关联**: [ADR-100](adr-100-camera-control-behavior-dual-axis.md)（渲染收尾）、thumbnail 物理冻结修复、[ADR-105](adr-105-abort-signal-and-async-error-handling.md)（加载流程 AbortSignal）
 
@@ -15,7 +15,7 @@
 | key 格式 | `<baseKey>::<resolution>::<aspect>` | `thumbnail-capture.ts:113` `buildThumbnailKey` |
 | 写侧-模型 | `thumbnailBaseKey({ libraryPath, filePath, innerPath })` | `model-loader.ts:173`（P0 已收口） |
 | 写侧-道具 | `thumbnailBaseKey({ filePath: inst.filePath })` | `props.ts:157`（本轮收口） |
-| 写侧-VMD | `renderInstanceThumbnail(scene, inst, vmdPath \|\| name)` | `vmd-loader.ts:192/195` |
+| 写侧-VMD | `renderInstanceThumbnail(scene, inst, vmdPath \|\| name)`（**已删除，2026-07-16**） | 原 `vmd-loader.ts:192/195` |
 | 读侧 | `libraryModelBaseKey(m)` + `buildThumbnailKey` | `library-core.ts:159 thumbnailKeyForModel` |
 | 读侧宽高比 | `isStageLike(m.type)` | `library-core.ts:222` |
 | 内存缓存 `thumbnailCache` | 仅 `set`（写），**全仓无 `get`/`has`** | `state.ts:160`、`thumbnail-capture.ts:254` |
@@ -33,7 +33,7 @@
 
 - **反弹难治本**：双源拼接，任一侧（含注释误导的 "漏拼 zip_inner" 误判）微调即 miss。
 - **死路径噪音**：`thumbnailCache` 内存 Map 只写不读；VMD 缩略图写盘后无任何 UI 消费。二者持续产生无谓渲染 / 磁盘缓存条目，强化"存储不可靠"的体感。
-- **元数据缓存错位（独立子系统）**：`modelMetaCache.get(inst.filePath)`（`model-detail.ts:311`）按 `m.file_path` 写入，但 zip 模型 `inst.filePath` 为解压临时路径 ≠ `m.file_path` → 详情面板元数据 miss。属 metadata 子系统，非缩略图键问题，本 ADR 不覆盖。
+- **元数据缓存错位（已修复，2026-07-16）**：`modelMetaCache.get(inst.filePath)`（`model-detail.ts:311`）按 `m.file_path` 写入，但 zip 模型 `inst.filePath` 为解压临时路径 ≠ `m.file_path` → 详情面板元数据 miss。现已让 `ModelInstance` 携带 `libraryPath`（库引用绝对路径，==`m.file_path`），读侧改 `inst.libraryPath ?? inst.filePath` 对齐写侧 key。属 metadata 子系统，非缩略图键问题，本 ADR 不覆盖但一并修复。
 
 ---
 
@@ -59,14 +59,19 @@
 - **道具写侧（本轮）**：`props.ts:157` 改调 `thumbnailBaseKey({ filePath: inst.filePath })`，经统一源收口（道具无 `innerPath`，输出与裸 `inst.filePath` 等价，零行为变化）。
 - **契约测试**：`thumbnail-key.contract.test.ts`（模型 actor/stage/prop × 普通/zip + 道具 3 路径 = 16 例），断言写侧/读侧 key 逐字节相等。
 
+### Phase 2 — 已落地（commit 本轮，2026-07-16）
+
+- **VMD 缩略图死路径删除**：`vmd-loader.ts:180-199` 的 `renderInstanceThumbnail` 调用块已移除。确认 `thumbnailCache` 内存 Map 全仓只写不读、`GetThumbnailBatch` 仅模型调用，VMD 缩略图写盘后无任何 UI 消费 → 纯浪费，删除零功能损失。`seekAnimation(0)`（纠正切换动作时钟滞留致 onPause）保留，与缩略图截帧无关。删除后 `scene` 仍被 `new VmdLoader(scene)` 等使用，无悬挂引用；`vmdPath` 参数因 `noUnusedParameters:false` 不报错。
+- **meta 缓存错位修复**：`core/types.ts` 的 `ModelInstance` 新增可选 `libraryPath` 字段（= 库引用绝对路径 `m.file_path`）；`model-loader.ts` stage/actor 两处 inst 构造赋值 `libraryPath`（捕获 `loadPMXFile` 的 `libraryPath` 参数，普通模型为 `undefined`、zip 模型为 `m.file_path`）；`model-detail.ts:311` 读侧改 `modelMetaCache.get(inst.libraryPath ?? inst.filePath)`。zip 模型详情面板元数据现可命中，普通模型回退 `inst.filePath` 零行为变化。
+
 ### Deferred — 待批
 
 | 项 | 建议 | 风险 |
 |----|------|------|
-| 🟡 VMD 缩略图死路径（`vmd-loader.ts:180-199`） | 无任何 UI 读取。建议：删除该死写路径（省一次 RT 渲染 + 磁盘缓存写入）；或若 motion 缩略图为规划特性，则在 motion 列表侧补 `thumbnailKeyForKind` 读侧并接线。需用户拍板 | 删除属行为变更，应先确认无隐藏消费 |
+| ✅ VMD 缩略图死路径（`vmd-loader.ts:180-199`） | **已删除（2026-07-16）**：无任何 UI 读取，纯浪费。若将来 motion 缩略图为规划特性，需重接 `thumbnailKeyForKind` 读侧 + motion 列表接线 | 已执行，零功能损失 |
 | 🟡 `thumbnailCache` 内存 Map 死代码（`state.ts` / `thumbnail-capture.ts`） | 全仓只写不读，建议随 VMD 清理一并移除或改为真正的内存读取层 | 纯死代码，移除零风险 |
 | 🟢 `GetModelMeta.thumbnail` 冗余 base64 字段 | 从未消费，删除以消灭第二数据源 | 删 DTO 字段需同步 Go 侧 `app.go` |
-| 🟢 meta 缓存错位（`model-detail.ts:311`） | 独立子系统（metadata 非 thumbnail）。zip 模型 `inst.filePath`≠`m.file_path` 致详情面板元数据 miss。建议 meta 缓存也改走 `thumbnailBaseKey` 同源 key，或在详情面板改用 `computeLibraryRef(inst.filePath)` 归一 | 独立 ADR/P 处理，不在本 ADR 范围 |
+| ✅ meta 缓存错位（`model-detail.ts:311`） | **已修复（2026-07-16）**：`ModelInstance.libraryPath` 携带库引用路径，读侧 `inst.libraryPath ?? inst.filePath` 对齐写侧 `m.file_path` | 独立 metadata 子系统，已一并修复 |
 
 ---
 
@@ -79,4 +84,4 @@
 
 ## 五、结论
 
-反弹的结构性根因（双源拼接）已消除，模型 + 道具写/读两侧均经由 `thumbnail-key.ts` 单一源，契约测试作为防反弹熔断丝。剩余 VMD 死路径与 meta 缓存错位是**独立且不在键双源范围内**的问题，列为 deferred 待用户拍板，避免无确认大改动。
+反弹的结构性根因（双源拼接）已消除，模型 + 道具写/读两侧均经由 `thumbnail-key.ts` 单一源，契约测试作为防反弹熔断丝。VMD 缩略图死路径已删除、meta 缓存错位已修复（独立 metadata 子系统，顺带归一）。剩余 `thumbnailCache` 内存死代码与 `GetModelMeta.thumbnail` 冗余字段仍 deferred，属纯清理项，不影响存储可靠性。

@@ -173,31 +173,6 @@ export async function loadVMDMotion(
             // 归零失败不影响动作绑定，下一帧主循环会纠正
         }
 
-        // 为动作生成缩略图：仅把「本模型」摆到动作初始帧（第 0 帧）后离屏截图，
-        // 不触碰全局 mmdRuntime 时钟，因此不会打断主窗口其他模型的播放（ADR-106 生命周期隔离）。
-        // 独立 try：失败不影响动作加载主流程。
-        try {
-            const { renderInstanceThumbnail } = await import('../manager/thumbnail-capture');
-            const mm = inst.mmdModel;
-            const anim = mm
-                ? (mm as { currentAnimation?: { animate?: (f: number) => void } | null })
-                      .currentAnimation
-                : null;
-            if (anim && typeof anim.animate === 'function') {
-                // 仅给本模型按指定帧摆姿（animate 为局部操作，不触发运行时可观察量、不改全局时钟）。
-                // 必须先摆姿、再调用 renderInstanceThumbnail（其内部 rt.render 同步截帧），两者之间不得 await，
-                // 否则主循环会在截帧前把模型重新摆回当前帧，截到错误姿态。
-                const savedFrame = mmdRuntime.currentTime * 30; // currentTime 单位为秒，animate 接收 30fps 帧
-                anim.animate(0);
-                await renderInstanceThumbnail(scene, inst, vmdPath || name);
-                anim.animate(savedFrame); // 立即恢复本模型到当前帧；主循环下一帧也会再次校正
-            } else {
-                await renderInstanceThumbnail(scene, inst, vmdPath || name);
-            }
-        } catch {
-            // 缩略图生成失败不阻断动作加载
-        }
-
         inst.vmdData = data;
         // 停止程序化动作（延迟到 vmdData 赋值后，确保 stopProcMotion 内 userVmdPresent=true，
         // 不会清空刚绑定的动画——否则缩略图截帧时动画已被清空，截到空姿态）
