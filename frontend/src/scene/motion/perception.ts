@@ -8,7 +8,10 @@
 import type { Observer } from '@babylonjs/core/Misc/observable';
 import type { Scene } from '@babylonjs/core/scene';
 
-import { modelManager, focusedModelId, scene, triggerAutoSave } from '../scene';
+import { modelManager, focusedModelId, triggerAutoSave } from '../scene';
+// scene 实例走 env-impl 的 getScene() 延迟获取，避免与 scene.ts 形成静态循环依赖
+// (scene.ts → proc-motion-bridge.ts → perception.ts → scene.ts)
+import { getScene } from '../env/env-impl';
 
 import {
     type Emotion,
@@ -86,7 +89,7 @@ export function activatePerception(modelId?: string): void {
     // gaze 必须最后（读 balance/breath 写入后的骨骼状态）；
     // lipsync 在 micro 之后（避免 smile morph 覆写冲突）。
     // 单帧异常不中断下游（try/catch 包裹每步）。
-    perceptionObserver = scene.onBeforeRenderObservable.add(() => {
+    perceptionObserver = getScene().onBeforeRenderObservable.add(() => {
         const time = performance.now() / 1000;
 
         // 1. 呼吸
@@ -141,7 +144,7 @@ export function activatePerception(modelId?: string): void {
 
         // 6. 头部跟随 + 眼部跟随（gaze）
         if (perceptionState.headTrackingEnabled || perceptionState.eyeTrackingEnabled) {
-            const cam = scene.activeCamera;
+            const cam = getScene().activeCamera;
             if (cam) {
                 try {
                     _applyGaze(mmdModel, cam, {
@@ -164,7 +167,7 @@ export function activatePerception(modelId?: string): void {
 /** 注销感知层 */
 export function deactivatePerception(): void {
     if (perceptionObserver) {
-        scene.onBeforeRenderObservable.remove(perceptionObserver);
+        getScene().onBeforeRenderObservable.remove(perceptionObserver);
         perceptionObserver = null;
     }
     _resetLastEmotionMorphName(); // 模型切换时清空，避免旧 morph 名残留

@@ -63,6 +63,11 @@ vi.mock('../outfit/audio', () => ({
 vi.mock('../outfit/outfit', () => ({}));
 vi.mock('../scene/env/props', () => ({}));
 vi.mock('../scene/env/env-bridge', () => ({}));
+// perception.ts 通过 getScene() 延迟获取 scene 实例（避免与 scene.ts 形成静态循环依赖），
+// 测试侧用 mockState.scene 复用同一份 mock，与 vi.mock('../scene/scene') 行为一致
+vi.mock('../scene/env/env-impl', () => ({
+    getScene: () => mockState.scene,
+}));
 vi.mock('../scene/motion/proc-motion-bridge', () => ({
     getProcBeatDetector: mockState.getProcBeatDetector,
 }));
