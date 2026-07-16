@@ -20,37 +20,38 @@ import { logWarn } from '@/core/utils';
 /**
  * 计算舞台模型的地面级包围盒，排除天空盒/穹顶等远高于舞台的网格。
  *
- * 策略：收集所有可见子网格的包围盒，取 min.y 的中位数作为地面参考，
- * 排除 min.y 超出 地面参考 + 30 的网格（天空盒起始 y 通常 > 50）。
+ * 策略：收集所有可见子网格的包围盒，取 max.y 的中位数作为舞台高度参考，
+ * 排除 max.y 超过 舞台参考 × 3 的网格（天空盒 max.y 通常 > 舞台高度 × 3）。
+ * 用 max.y 而非 min.y 判断：穹顶型天空盒底部贴地（min.y≈0），但顶部远高于舞台。
  * 退化：若无满足条件的网格，兜底到最低的网格或全层级包围盒。
  */
 function computeStageGroundBoundingBox(root: Mesh): { min: Vector3; max: Vector3 } {
     const meshes = root.getChildMeshes(true) as Mesh[];
-    const entries: { minY: number; bb: { min: Vector3; max: Vector3 } }[] = [];
+    const entries: { maxY: number; bb: { min: Vector3; max: Vector3 } }[] = [];
     for (const m of meshes) {
         if (!m.isVisible) continue;
         const bb = m.getHierarchyBoundingVectors(true);
         if (!bb) continue;
-        entries.push({ minY: bb.min.y, bb });
+        entries.push({ maxY: bb.max.y, bb });
     }
     // 退化：无可见子网格 → 返回全层级包围盒
     if (entries.length === 0) {
         return root.getHierarchyBoundingVectors(true);
     }
-    // 按 min.y 排序，取中位数作为地面参考
-    entries.sort((a, b) => a.minY - b.minY);
-    const groundRef = entries[Math.floor(entries.length * 0.5)].minY;
-    // 排除 min.y 远高于地面参考的网格（天空盒等）
-    const groundEntries = entries.filter(e => e.minY <= groundRef + 30);
+    // 按 max.y 排序，取中位数作为舞台高度参考
+    entries.sort((a, b) => a.maxY - b.maxY);
+    const stageRef = entries[Math.floor(entries.length * 0.5)].maxY;
+    // 排除 max.y 远高于舞台参考的网格（天空盒等）
+    const stageEntries = entries.filter(e => e.maxY <= stageRef * 3);
     // 退化：全被排除 → 至少保留最低的网格
-    if (groundEntries.length === 0) {
+    if (stageEntries.length === 0) {
         return entries[0].bb;
     }
     // 合并保留网格的包围盒
     let minX = Infinity, maxX = -Infinity;
     let minY = Infinity, maxY = -Infinity;
     let minZ = Infinity, maxZ = -Infinity;
-    for (const { bb } of groundEntries) {
+    for (const { bb } of stageEntries) {
         if (bb.min.x < minX) minX = bb.min.x;
         if (bb.max.x > maxX) maxX = bb.max.x;
         if (bb.min.y < minY) minY = bb.min.y;
@@ -112,12 +113,10 @@ export async function renderInstanceThumbnail(
     let focusHeight: number;
     let focusWidth: number;
     if (inst.kind === 'stage') {
-        // 舞台：以身入局视角——相机靠近舞台中央，固定距离拍摄。
-        // 大舞台若按包围盒推算距离会导致相机过远（缩略图变成小点）。
-        focusCenterY = bb.min.y + 2;  // 略高于地面，模拟站姿视点
-        // focusHeight/focusWidth 仅用于非舞台的 targetSize 推算，舞台用固定距离，赋 0 防误用
-        focusHeight = 0;
-        focusWidth = 0;
+        // 舞台：全身取景，聚焦舞台几何中心。与 actor 同款公式，仅不上移焦点。
+        focusCenterY = bb.min.y + fullHeight * 0.5;
+        focusHeight = fullHeight;
+        focusWidth = extent.x;
     } else {
         // 角色：聚焦上半身（面部+服饰），凸显特征
         focusCenterY = bb.min.y + fullHeight * 0.6;
@@ -130,10 +129,8 @@ export async function renderInstanceThumbnail(
     // 也避免用户调主相机 FOV 时缩略图意外畸变。缩略图应稳定可预测。
     const THUMB_FOV = 0.8;
     // 距离系数 0.75 与主相机 autoFrame（extent * 0.75 + 2）同源，行为可预测。
-    // 舞台用固定近景（以身入局），非舞台沿用半身包围盒推算。
-    const dist = inst.kind === 'stage'
-        ? 20
-        : Math.max(focusHeight, focusWidth / THUMB_ASPECT) * 0.75 / (2 * Math.tan(THUMB_FOV / 2));
+    // stage 与 actor 共用同一公式，仅 focusHeight/Width 不同。
+    const dist = Math.max(focusHeight, focusWidth / THUMB_ASPECT) * 0.75 / (2 * Math.tan(THUMB_FOV / 2));
 
     // 相机朝向：复用主相机方向，或默认 -Z（MMD 正面）
     let dirX = 0, dirY = 0, dirZ = -1;
