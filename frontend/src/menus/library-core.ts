@@ -42,6 +42,7 @@ import {
 } from '../core/ui-helpers';
 import type { ResourceItem, SlideRowExtra, ResourcePanelHandle } from '../core/ui-helpers';
 import { isUnderRoot, isStageLike } from '../core/utils';
+import { libraryModelBaseKey, buildThumbnailKey } from '@/scene/manager/thumbnail-key';
 import { t } from '../core/i18n/t';
 import { getLang } from '../core/i18n/locale';
 import { GetThumbnailBatch, GetModelMetaBatch } from '../core/wails-bindings';
@@ -157,18 +158,11 @@ export function computeRestoreSegments(
 // ======== 缩略图 & 元数据 ========
 
 export function thumbnailKeyForModel(m: LibraryModel, resolution?: number): string {
-    // 缓存 key 包含分辨率，确保不同分辨率的缩略图被视为独立条目。
-    // 与 model-loader.ts captureThumbnail() 的 key 格式保持一致：
-    // ZIP 内模型用 `filePath::zipInner::res::aspect`，普通模型用 `filePath::res::aspect`。
-    const fp = m.file_path || '';
-    let key = fp;
-    if (m.container === 'zip' && m.zip_inner) {
-        key = `${fp}::${m.zip_inner}`;
-    }
+    // 统一经 thumbnail-key 模块构造，与写侧（model-loader / props）同源，杜绝双源拼接反弹。
+    // 格式：`<baseKey>::<resolution>::<aspect>`，ZIP 内模型 baseKey 为 `file_path::zip_inner`。
+    const baseKey = libraryModelBaseKey(m);
     const res = resolution ?? uiState.thumbnailResolution ?? 512;
-    const isStage = isStageLike(m.type);
-    const aspect = isStage ? '16/9' : '2/3';
-    return `${key}::${res}::${aspect}`;
+    return buildThumbnailKey({ baseKey, isStage: isStageLike(m.type), resolution: res });
 }
 
 async function ensureModelMeta(pmxPaths: string[]): Promise<void> {
