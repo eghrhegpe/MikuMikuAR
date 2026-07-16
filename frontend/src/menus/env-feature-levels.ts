@@ -326,10 +326,6 @@ export function buildGroundLevel(): PopupLevel {
                                             groundTextureEnabled: hasTex,
                                             groundStyle: hasTex ? 'texture' : 'solid',
                                         };
-                                        // 选贴图时若装饰未开启，自动启用 grid overlay
-                                        if (hasTex && envState.groundDecoStyle === 'none') {
-                                            patch.groundDecoStyle = 'grid';
-                                        }
                                         setEnvState(patch as Parameters<typeof setEnvState>[0]);
                                     },
                                     {

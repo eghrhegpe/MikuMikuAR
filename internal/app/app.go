@@ -295,17 +295,6 @@ type ModelMeta struct {
 	Comment string `json:"comment"` // PMX header: local comment (truncated)
 }
 
-// DanceSet represents a dance set combining VMD motion, audio, and metadata.
-type DanceSet struct {
-	Name        string  `json:"name"`         // 套装名称
-	VmdPath     string  `json:"vmd_path"`     // VMD 文件路径
-	AudioPath   string  `json:"audio_path"`   // 音频文件路径
-	AudioOffset float64 `json:"audio_offset"` // 音频偏移（秒）
-	Description string  `json:"description"`  // 描述（可选）
-	Thumbnail   string  `json:"thumbnail"`    // 缩略图 base64（可选）
-	Source      string  `json:"source"`       // 来源库名
-}
-
 // UIState stores user-customizable UI preferences.
 type UIState struct {
 	Scale                    float64 `json:"scale"`           // 0.8~1.3, default 1.0
@@ -401,7 +390,6 @@ type Config struct {
 	MMDPath                  string              `json:"mmd_path"`                             // MikuMikuDance 可执行文件路径，空则自动检测
 	CustomSoftware           []SoftwareEntry     `json:"custom_software"`                      // 用户手动添加的软件（Managed=true）
 	Tags                     map[string][]string `json:"tags"`                                 // libraryRef → []tag 列表
-	DanceSets                map[string]DanceSet `json:"dance_sets"`                           // 舞蹈套装，key = 套装 ID
 	RecentModels             []string            `json:"recent_models"`                        // libraryRef 数组，最近打开的模型（最多20条）
 	Env                      *EnvState           `json:"env,omitempty"`                        // 环境状态（天空/地面/粒子等），nil=使用前端默认
 	LastDirs                 map[string]string   `json:"last_dirs,omitempty"`                  // 对话框最后目录记忆，优先相对路径（./前缀），详见 ADR-090

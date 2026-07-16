@@ -319,8 +319,8 @@ export const envState: EnvState = reactive<EnvState>({
     groundScrollSpeedZ: 0,
     groundPattern: 'checker',
 
-    groundReflectionBlend: 0,
-    groundReflectionQuality: 'off',
+    groundReflectionBlend: 0.3,
+    groundReflectionQuality: 'medium',
     groundNormalTexture: '',
     groundNormalStrength: 1,
     groundElevationColoring: false,

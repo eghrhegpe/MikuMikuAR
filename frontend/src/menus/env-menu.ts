@@ -362,7 +362,6 @@ function envOnItemClick(row: PopupRow): void {
                 groundTexture: row.model.file_path,
                 groundTextureEnabled: !!row.model.file_path,
                 groundStyle: 'texture',
-                ...(envState.groundDecoStyle === 'none' ? { groundDecoStyle: 'grid' } : {}),
             });
             break;
         case 'particle':
