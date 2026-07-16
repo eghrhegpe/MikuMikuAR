@@ -435,3 +435,32 @@ describe('reflection quality tier', () => {
         expect(4 % (frameSkipMap['low'] + 1)).toBe(0);
     });
 });
+
+describe('reflection quality toggle — P1 修复（ADR-114）', () => {
+    it('reflectionQuality off→on：惰性路径重建材质并启用 PLANAR_REFLECTION', () => {
+        // 1. 以 off 创建水面：材质不应含 PLANAR_REFLECTION define
+        createWater(makeWaterState({ reflectionQuality: 'off', planarReflectBlend: 0.5 }));
+        const matOff = _envSys.water.material as any;
+        expect(matOff).toBeTruthy();
+        expect(matOff.options.defines ?? []).not.toContain('PLANAR_REFLECTION');
+
+        // 2. 切换到 high：惰性路径应检测到 define 不一致并重建材质
+        createWater(makeWaterState({ reflectionQuality: 'high', planarReflectBlend: 0.5 }));
+        const matOn = _envSys.water.material as any;
+        expect(matOn).toBeTruthy();
+        expect(matOn.options.defines ?? []).toContain('PLANAR_REFLECTION');
+        // 材质引用已替换为新实例（旧材质已 dispose）
+        expect(matOn).not.toBe(matOff);
+    });
+
+    it('reflectionQuality on→off：惰性路径重建材质并移除 PLANAR_REFLECTION', () => {
+        createWater(makeWaterState({ reflectionQuality: 'high', planarReflectBlend: 0.5 }));
+        const matOn = _envSys.water.material as any;
+        expect(matOn.options.defines ?? []).toContain('PLANAR_REFLECTION');
+
+        createWater(makeWaterState({ reflectionQuality: 'off', planarReflectBlend: 0.5 }));
+        const matOff = _envSys.water.material as any;
+        expect(matOff.options.defines ?? []).not.toContain('PLANAR_REFLECTION');
+        expect(matOff).not.toBe(matOn);
+    });
+});

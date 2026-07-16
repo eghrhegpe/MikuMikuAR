@@ -19,7 +19,7 @@ import { _envSys, getScene, ensureEnvUpdateObserver } from './env-impl';
 import { PlanarReflection, registerReflectionSurface } from './planar-reflection';
 import { createCanvasTexture } from './env-texture';
 import { clamp01, logWarn } from '@/core/utils';
-import { isWorldMatrixFrozen, setPostProcessEnabled } from './env-type-helpers';
+import { setPostProcessEnabled } from './env-type-helpers';
 import WATER_VERT_SRC from './shaders/water.vert.glsl?raw';
 import WATER_FRAG_SRC from './shaders/water.frag.glsl?raw';
 
@@ -108,7 +108,6 @@ const waterReflection = new PlanarReflection({
     predicate: (mesh, level) =>
         !mesh.name.startsWith('envWater') &&
         mesh.isEnabled() &&
-        !isWorldMatrixFrozen(mesh) &&
         mesh.getBoundingInfo().boundingBox.maximumWorld.y >= level,
     getMaterial: () => _envSys.water.material as ShaderMaterial | null,
     mount: (rt) => {
@@ -488,6 +487,20 @@ function _createWaterMaterial(scene: Scene, state: EnvState): ShaderMaterial {
     return mat;
 }
 
+/** 重建水面材质（切换 PLANAR_REFLECTION define 时必须），保持网格与 LOD 引用一致。 */
+function _rebuildWaterMaterial(scene: Scene, state: EnvState): void {
+    const oldMat = _envSys.water.material;
+    const newMat = _createWaterMaterial(scene, state);
+    if (_envSys.water.mesh) {
+        _envSys.water.mesh.material = newMat;
+    }
+    for (const lod of _waterLODs) {
+        lod.material = newMat;
+    }
+    _envSys.water.material = newMat;
+    oldMat?.dispose();
+}
+
 function _waterUpdateCallback(scene: Scene): void {
     if (!_envSys.water.material) return;
     const m = _envSys.water.material as ShaderMaterial;
@@ -545,6 +558,12 @@ export function createWater(state: EnvState): void {
     // 惰性路径：已初始化 → 只同步参数
     if (state.waterEnabled && _envSys.water.material && _envSys.water.mesh) {
         const scene = getScene();
+        // P1 修复：reflectionQuality 跨 off↔非 off 时材质 define 需切换，强制重建
+        const needReflect = state.reflectionQuality !== 'off';
+        const hasReflect = !!_envSys.water.material.options.defines?.includes('PLANAR_REFLECTION');
+        if (needReflect !== hasReflect) {
+            _rebuildWaterMaterial(scene, state);
+        }
         _syncWaterUniforms(state, scene);
         _updateWaterMesh(state);
         _setupMirrorRT(scene, state);
