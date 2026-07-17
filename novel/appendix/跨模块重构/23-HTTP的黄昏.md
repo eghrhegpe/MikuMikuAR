@@ -1,7 +1,7 @@
 # HTTP 的黄昏
 
 > **背景**：联邦长期通过本地 HTTP 中转加载文件，PMX/VMD/音频均经 `resolveFileUrl → StartFileServer → fetch` 管线。ADR-124 要将主路径迁移到 ArrayBuffer 直传，消除 HTTP roundtrip 和 Android 安全风险。
-> **过程**：迁移过程中发现 Wails v3 的 `[]byte` 序列化陷阱、`ListDir` 不递归、outfit 探测读全文件、`resource_root` 配置污染四个坑。
+> **过程**：迁移过程中发现 Wails v3 的 `[]byte` 序列化陷阱、`ListDir` 不递归、outfit 探测读全文件、`resource_root` 配置污染四个坑。最终在 binding 层封装了 base64 解码，消费者完全无感。
 
 ---
 
@@ -51,21 +51,22 @@ PMX 加载失败了。错误信息是一串乱码——二进制数据被 `.toSt
 
 "这不对。" 桌面壳说，"它应该返回 `Uint8Array`。"
 
-外交官检查了 Wails 的运行时代码。`calls.js` 里有一行：
+外交官去翻了 Wails v3 的源码。在 `internal/generator/render/type.go` 第 56 行，找到了一行铁证：
 
-```javascript
-if (response.headers.get("Content-Type")?.indexOf("application/json") !== -1) {
-    return response.json();
-} else {
-    return response.text();
+```go
+if types.Identical(typ, typeByteSlice) {
+    // encoding/json marshals byte slices as base64 strings
+    return "string" + null, null != ""
 }
 ```
 
-Go 返回的 `[]byte` 被序列化成了 JSON 中的 base64 字符串。`response.json()` 返回的是 `string`，不是 `Uint8Array`。
+不是遗漏。不是 bug。是**显式写死的设计决策**。生成器看到 `[]byte`，直接返回 `string`。注释解释了原因——`encoding/json` 把 `[]byte` 序列化为 base64 字符串，Wails 选择顺从 JSON 协议，不做额外的 base64→Uint8Array 变换。
 
 "注释在说谎。" 外交官说。
 
-桌面壳沉默了三秒钟。然后它写了一个函数：
+"不，" 桌面壳说，"注释写的是 Go 侧的行为。问题是 Go 侧把 `[]byte` 交给了 `encoding/json`，而 JSON 协议会把它变成 base64 字符串。Wails 只是忠实地传递了这个结果。"
+
+它沉默了三秒钟。然后它写了一个函数：
 
 ```typescript
 function decodeBase64(b64: string): Uint8Array {
@@ -78,7 +79,7 @@ function decodeBase64(b64: string): Uint8Array {
 
 六个文件，九处调用，逐一补上解码。PMX 终于加载成功了。
 
-**第一个坑：** Wails v3 的 Go `[]byte` 不是 `Uint8Array`，是 base64 字符串。注释和行为不一致时，信行为。
+**第一个坑：** Wails v3 的 Go `[]byte` 不是 `Uint8Array`，是 base64 字符串。这是 `encoding/json` 的行为 + Wails 生成器的显式设计。注释描述的是 Go 侧，不是前端侧。
 
 ---
 
@@ -163,32 +164,20 @@ const newTex = new Texture(url, scene);
 
 全部改成 ArrayBuffer？改造面太大。纹理文件小，HTTP 开销可忽略。ADR-124 的决策是：保留 HTTP 作为 fallback，只改主路径。
 
-但 `outfit-overlay.ts` 也要改——FBX 叠加层的加载。桌面壳把 `ImportMeshAsync(url, scene)` 换成了：
-
-```typescript
-const b64 = await ReadFileBytes(fullPath);
-const fbxBytes = decodeBase64(b64);
-const result = await (ImportMeshAsync as any)(fbxBytes, scene);
-```
-
-然后它发现 outfit 的 HEAD 探测用 `ReadFileBytes` 太慢了——每探一个纹理都读整个文件，大纹理直接卡死。
+但 outfit 的 HEAD 探测用 `ReadFileBytes` 太慢了——每探一个纹理都读整个文件，大纹理直接卡死。
 
 于是有了 `FileExists`——一个只做 `os.Stat` 的轻量级检查：
 
 ```go
 func (a *App) FileExists(path string) (bool, error) {
     _, err := os.Stat(path)
-    if err == nil {
-        return true, nil
-    }
-    if os.IsNotExist(err) {
-        return false, nil
-    }
+    if err == nil { return true, nil }
+    if os.IsNotExist(err) { return false, nil }
     return false, err
 }
 ```
 
-探测用 `FileExists`，加载用 `ReadFileBytes`。两件事，两个函数。
+探测用 `FileExists`，加载用 `readFileBytes`。两件事，两个函数。
 
 **第三个坑：** 存在性检查和读取是两件事。用读全文件的方式检查文件是否存在，就像用消防水龙头浇花。
 
@@ -231,7 +220,49 @@ UI 显示的是 `libraryRoot`——另一个字段。而扫描用的是 `resourc
 
 ---
 
-## 五、HTTP 的遗产
+## 五、最后一层封装
+
+base64 解码的问题解决了，但桌面壳看着代码皱起了眉。
+
+六个文件里散落着同样的 `decodeBase64` 函数——三行 `atob`，三行循环。语义完全相同，位置各不相同。十八行重复代码，散布在六个文件里。
+
+"这是重复。" 外交官说。
+
+"我知道。"
+
+桌面壳先把函数提到了 `fileservice.ts`——文件读取的统一入口。六个文件改为 `import { decodeBase64 } from '@/core/fileservice'`。
+
+但它还是不满意。base64 解码是 Wails v3 的实现细节——是 `encoding/json` 序列化 `[]byte` 的副产品。消费者不应该知道这件事。
+
+于是它在 `wails-bindings.ts` 里加了一层封装：
+
+```typescript
+import { ReadFileBytes as _ReadFileBytes } from '@bindings/mikumikuar/internal/app/app';
+
+function _decodeBase64(b64: string): Uint8Array {
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
+}
+
+export async function readFileBytes(path: string): Promise<Uint8Array | null> {
+    const b64 = await _ReadFileBytes(path);
+    return b64 ? _decodeBase64(b64) : null;
+}
+```
+
+消费者只看到 `readFileBytes(path) → Uint8Array`。base64？不存在。`atob`？不存在。所有的解码逻辑被封装在 binding 层内部，像一条暗河——水在地下流，地面上只有干净的管道。
+
+六个文件的 `ReadFileBytes` + `decodeBase64` 全部替换为 `readFileBytes`。测试 mock 也同步更新。
+
+"这才是它应该有的样子。" 外交官说。
+
+**第五个坑：** base64 是 Wails v3 的实现细节，不是消费者的契约。封装在 binding 层，消费者无感。
+
+---
+
+## 六、HTTP 的遗产
 
 清理完所有诊断日志，跑完全部测试。
 
@@ -246,7 +277,7 @@ export async function resolveModelDir(filePath: string): Promise<string> {
 }
 ```
 
-从 HTTP 中转到 ArrayBuffer 直传，这条路走了三个 Phase，踩了四个坑，改了十二个文件。
+从 HTTP 中转到 ArrayBuffer 直传，这条路走了三个 Phase，踩了五个坑，改了十二个文件。
 
 桌面壳在新地图上画了一条从 HTTP 服务器通往 ArrayBuffer 的桥。桥的入口处写着 ADR-124 的标题。桥的另一端连着直读文件系统的平原。
 
@@ -258,14 +289,16 @@ export async function resolveModelDir(filePath: string): Promise<string> {
 
 "是的。所以桥没有拆掉旧路——`resolveFileUrl` 还在，`StartFileServer` 还在。它们是 fallback，是安全网。新路不通的时候，旧路还能走。"
 
-桌面壳看着干净的 `model-loader.ts`——PMX 用 ArrayBuffer 直传，纹理通过 `referenceFiles` 从内存加载。没有 HTTP 请求，没有端口管理，没有 URL 编码。
+桌面壳看着干净的 `model-loader.ts`——PMX 用 ArrayBuffer 直传，纹理通过 `referenceFiles` 从内存加载。没有 HTTP 请求，没有端口管理，没有 URL 编码。消费者调用 `readFileBytes`，拿到 `Uint8Array`，不知道也不需要知道背后有一个 base64 的故事。
 
-"有时候，" 外交官在离开前说，"最短的路不是最安全的路。但最安全的路，一定是最短的那条——因为你没有多余的东西可以出错。"
+"有时候，" 外交官在离开前说，"最安全的路不是最短的路。是那条把复杂性藏在地下的路——地面上只有干净的接口，地下埋着所有的补丁。"
 
 ---
 
-> 联邦的文件管道终于从 HTTP 中转迁移到了 ArrayBuffer 直传。代价是四个坑、十二个文件、一整天的排查。但管道变短了——从磁盘到内存，一步到位。
+> 联邦的文件管道终于从 HTTP 中转迁移到了 ArrayBuffer 直传。代价是五个坑、十二个文件、一整天的排查。但管道变短了——从磁盘到内存，一步到位。
 >
 > 而 HTTP 服务器还在那里，作为 fallback，作为安全网，作为联邦曾经的基础设施。它没有被拆除，只是被绕过了。就像旧城墙没有被拆掉——新的道路从它旁边经过，城墙上长满了青苔，但门还开着。
+>
+> base64 的故事也结束了。它曾经散布在六个文件里，像六个相同的补丁。现在它藏在 `wails-bindings.ts` 的暗河里，地面上只有 `readFileBytes` 一个干净的接口。消费者打开水龙头，水就来了——不需要知道水从哪来，经过了什么过滤。
 
-*教训：绕过问题不等于解决问题。移除中间层后，所有路径必须精确——因为中间层曾经替你兜了底。*
+*教训：绕过问题不等于解决问题。移除中间层后，所有路径必须精确——因为中间层曾经替你兜了底。而实现细节应该封装在边界层，消费者不应感知协议的副产品。*
