@@ -27,6 +27,7 @@
 | 查竞品参考 | `docs/competitive-analysis.md` |
 | 翻译代码命名/图标/状态栏规范 | `docs/terminology.md` |
 | 写大语言模型小说 | `根目录/adr/` |
+| 完整发版、更新流程 | `docs/releases/release-process.md` |
 
 ## 技术栈
 

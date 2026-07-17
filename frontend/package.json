@@ -56,6 +56,7 @@
     "@wailsio/runtime": "^3.0.0-alpha.95",
     "babylon-mmd": "^1.2.0",
     "encoding-japanese": "^2.2.0",
-    "iconify-icon": "^3.0.2"
+    "iconify-icon": "^3.0.2",
+    "jszip": "^3.10.1"
   }
 }

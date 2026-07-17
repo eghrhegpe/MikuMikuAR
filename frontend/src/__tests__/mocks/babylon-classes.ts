@@ -375,6 +375,9 @@ export class MockVector3 {
     static Forward() {
         return new MockVector3(0, 0, 1);
     }
+    static One() {
+        return new MockVector3(1, 1, 1);
+    }
 }
 
 export class MockQuaternion {

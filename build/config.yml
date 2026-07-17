@@ -7,7 +7,7 @@ info:
   description: "PMX Player with physics simulation"
   copyright: "(c) 2025, MikuMikuAR"
   comments: "MikuMikuAR �?PMX Player"
-  version: "1.3.5"
+  version: "1.4.1"
 
 dev_mode:
   root_path: .

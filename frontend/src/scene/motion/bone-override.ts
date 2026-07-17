@@ -76,8 +76,8 @@ function _vReset(): void {
     _vIdx = 0;
 }
 
-/** 复用常量，避免 Matrix.ComposeToRef 每次 new Vector3.One() */
-const _ONE = Vector3.One();
+/** 复用常量，避免 Matrix.ComposeToRef 每次 new Vector3(1,1,1) */
+const _ONE = new Vector3(1, 1, 1);
 
 /** 懒加载获取指定模型的 override map */
 function _getOverrideMap(modelId: string): Map<string, _OverrideSlot> {
@@ -411,35 +411,40 @@ function _applyWasmOverride(slot: _OverrideSlot, rb: IMmdRuntimeBone): void {
 
 /** JS 单骨覆盖：写 linkedBone rotationQuaternion / position */
 function _applyJsOverride(slot: _OverrideSlot, rb: IMmdRuntimeBone): void {
-    const linked = (
-        rb as unknown as { linkedBone?: import('@babylonjs/core/Bones/bone').Bone }
-    ).linkedBone;
-    if (!linked) {
-        return;
-    }
+    // IMmdRuntimeBone.linkedBone 已声明为 IMmdRuntimeLinkedBone (duck-typed abstraction)，
+    // 但运行时 babylon-mmd MmdRuntimeBone 的 linkedBone 是完整的 Babylon.js Bone 实例。
+    // 此处保留一小步类型断言以获取 getSkeleton() 等原生 Bone API。
+    // [doc:adr-116 P1] 旋转覆盖使用 linked (IMmdRuntimeLinkedBone) 的 rotationQuaternion,
+    //         位置覆盖 / skeleton dirty 用 bone (Babylon Bone) 的 getPosition/setPosition/getSkeleton。
+    const linked = rb.linkedBone;
+    // 运行时守卫：极边缘情况下 linkedBone 可能为 null（如骨架未完全初始化）
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (!linked) return;
+    const bone = linked as unknown as import('@babylonjs/core/Bones/bone').Bone;
 
-    // [doc:adr-116 P1] 旋转覆盖：仅当 overrideRotation 为 true 才覆盖动画旋转
+    // [doc:adr-116 P1] 旋转覆盖：复合当前旋转 × 覆盖旋转，不丢失父骨传播变换（与 WASM 路径 _computeOverride 一致）
     if (slot.overrideRotation) {
+        const cur = linked.rotationQuaternion ?? Quaternion.Identity();
         if (slot.weight >= 1) {
-            linked.rotationQuaternion = slot.quat.clone();
+            linked.rotationQuaternion = cur.multiply(slot.quat);
         } else {
-            const cur = linked.rotationQuaternion ?? Quaternion.Identity();
-            linked.rotationQuaternion = Quaternion.Slerp(cur, slot.quat, slot.weight);
+            const target = cur.multiply(slot.quat);
+            linked.rotationQuaternion = Quaternion.Slerp(cur, target, slot.weight);
         }
     }
 
-    // 位置覆盖：叠加偏移（加法语义），避免 add() 新建 Vector3
+    // 位置覆盖：叠加偏移（加法语义）
     if (slot.pos) {
-        const curPos = linked.getPosition();
+        const curPos = bone.getPosition();
         curPos.addInPlace(slot.pos);
-        linked.setPosition(curPos);
+        bone.setPosition(curPos);
     }
 
     // 更新骨骼世界矩阵
     (rb as MmdRuntimeBoneExtended).updateWorldMatrix?.(false, false);
 
     // 标记脏标记
-    const skeleton = linked.getSkeleton();
+    const skeleton = bone.getSkeleton();
     skeleton?._markAsDirty?.();
 }
 

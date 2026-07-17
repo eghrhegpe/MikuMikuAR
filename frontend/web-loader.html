@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>MikuMikuAR — Web Loader 原型</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="/src/web-loader/web-loader.css">
+</head>
+<body>
+    <div id="app">
+        <!-- 拖拽区 -->
+        <div id="dropZone">
+            <div id="dropInner">
+                <div id="dropIcon">📦</div>
+                <div id="dropText">拖拽 .pmx 或 .zip 到此处</div>
+                <div id="dropHint">或点击选择文件</div>
+                <input type="file" id="fileInput" accept=".pmx,.zip" hidden>
+            </div>
+            <div id="statusBar">就绪</div>
+        </div>
+
+        <!-- 3D Canvas -->
+        <canvas id="renderCanvas"></canvas>
+
+        <!-- 信息面板 -->
+        <div id="infoPanel">
+            <div id="modelName">—</div>
+            <div id="modelStats">等待加载…</div>
+        </div>
+
+        <!-- 操作提示 -->
+        <div id="tips">
+            <span>🖱 拖拽旋转 · 滚轮缩放</span>
+        </div>
+    </div>
+
+    <script type="module" src="/src/web-loader/main.ts"></script>
+</body>
+</html>
