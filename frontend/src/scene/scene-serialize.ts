@@ -680,9 +680,9 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
     }
 
     // --- Environment ---
-    // IMPORTANT: setEnvSunAngle must be called BEFORE setEnvState because
-    // setEnvState's auto-link logic uses the module-level envSunAngle variable.
-    // If we set env state first, auto-link would use the OLD sun angle.
+    // [fix:ghost-state] setEnvState 现在会反向同步 envSunAngle 模块缓存，
+    // 显式 setEnvSunAngle 调用保留为前置 clamp（确保 sunAngle 在 [-15, 90] 范围内），
+    // 顺序不再敏感（两者都会写入双源）。
     if (data.env && !skipEnv) {
         if (data.env.sunAngle !== undefined) {
             setEnvSunAngle(data.env.sunAngle);
