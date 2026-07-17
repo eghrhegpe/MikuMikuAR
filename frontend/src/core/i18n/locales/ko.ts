@@ -266,6 +266,7 @@ export const ko: Record<string, string> = {
     'cloth.radius': '충돌 반경',
     'cloth.applied': '{n}개 모델에 가상 스커트 적용됨',
     'cloth.skippedAll': '모든 모델에 이미 스커트 본이 있습니다',
+    'cloth.buildFailed': '가상 스커트 빌드 실패: {err}',
     'cloth.noRuntime': '물리 런타임이 준비되지 않음',
     'cloth.status': '적용 중: {n}개',
     'cloth.hint':
@@ -1437,6 +1438,7 @@ export const ko: Record<string, string> = {
     'motion.poseStudio.watermarkOpacity': '워터마크 불투명도',
     'motion.poseStudio.watermarkToggle': '워터마크 활성화',
     'plaza.downloadFail': '다운로드 실패: {err}',
+    'plaza.proxyError': '프록시 시작 실패: {err}',
     'plaza.downloaded': '✓ 다운로드 완료: {name} ({size} KB)',
     'plaza.downloading': '다운로드 중: {name}',
     'plaza.openFail': '윈도우 열기 실패: {err}',
