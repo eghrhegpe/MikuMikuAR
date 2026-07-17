@@ -316,8 +316,8 @@ describe('ownedBones 冲突仲裁', () => {
         claimBones(testModel, 'test-low-priority', ['センター']);
         expect(getOwnedBones(testModel, 'test-low-priority').has('センター')).toBe(true);
 
-        // 高优先级（body-posture, priority=1）抢占
-        const claimed = claimBones(testModel, 'body-posture', ['センター']);
+        // 高优先级（position-offset, priority=1）抢占
+        const claimed = claimBones(testModel, 'position-offset', ['センター']);
         expect(claimed).toEqual(['センター']);
 
         // 验证：低优先级的 owned 被清除，引擎 slot 被清除
@@ -368,13 +368,12 @@ describe('disable 精确清除（P2-1）', () => {
         // 这里验证 disable 调用 clearBoneOverride 的骨骼集合 = ownedBones
         mod.disable();
 
-        // disable 应调用 clearBoneOverride 4 次（上半身/腰/上半身2/センター — P2-4 新增位置骨）
-        expect(clearBoneOverrideSpy).toHaveBeenCalledTimes(4);
+        // disable 应调用 clearBoneOverride 3 次（上半身/腰/上半身2 — センター已拆分归 position-offset）
+        expect(clearBoneOverrideSpy).toHaveBeenCalledTimes(3);
         const clearedBones = clearBoneOverrideSpy.mock.calls.map((c) => c[0]);
         expect(clearedBones).toContain('上半身');
         expect(clearedBones).toContain('腰');
         expect(clearedBones).toContain('上半身2');
-        expect(clearedBones).toContain('センター');
     });
 });
 
