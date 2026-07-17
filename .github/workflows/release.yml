@@ -336,7 +336,7 @@ jobs:
         id: notes
         run: |
           VER="${{ needs.prepare.outputs.version }}"
-          NOTES_FILE="docs/Releases/v${VER}.md"
+          NOTES_FILE="docs/releases/v${VER}.md"
           if [ -f "$NOTES_FILE" ]; then
             echo "found=true" >> $GITHUB_OUTPUT
             echo "path=$NOTES_FILE" >> $GITHUB_OUTPUT
