@@ -1,6 +1,6 @@
 # ADR-117: Go 端用户可见错误的 i18n 化
 
-> **状态**: 实施中（Phase 1 + Phase 2 完成；剩余 Phase 3 防回归未启动；信封方案见 §2.6）
+> **状态**: ✅ 已完成（Phase 1 + 2 + 3 全部完成；信封方案见 §2.6）
 > **背景**: ADR-059 已完成前端 i18n 框架（`core/i18n/` + 五语言 bundle + 热切换 + CI 奇偶校验），但 Go 后端返回给前端的**用户可见错误**仍是硬编码中文（如 `fmt.Errorf("未找到 Blender，请在设置中配置路径")`）。当用户切到英文/日文后，前端 UI 已本地化，但弹窗里的 Go 错误仍是中文，造成体验断裂。本 ADR 锁定 Go 错误的 i18n 契约，使前端能用 `t()` 翻译 Go 错误。
 > **关联**: [ADR-059](adr-059-i18n-framework.md)（前端 i18n 框架）、[terminology.md](../terminology.md) §三（Go 错误消息规范）
 
@@ -235,8 +235,12 @@ export function translateGoError(e: unknown): string {
 
 ### Phase 3: 防回归（~0.5 天）
 
-- [ ] Go 侧加 lint：`internal/app/` 内禁止 `fmt.Errorf` 直接返回中文字符串（须用 `i18nerr.New`）
-- [ ] 前端加 lint：`catch` 块内禁止直接读 `e.message` 展示给用户（须过 `translateGoError`）
+- [x] 新增 `scripts/goerr-lint.mjs`：双模式静态检查（warning / `--strict`），路径以仓库根为基准，与 cwd 无关。
+  - Go 侧：`internal/app/**/*.go` 内禁止 `fmt.Errorf("…汉字…")` 直接返回中文（纯英文 `fmt.Errorf` 与 `util.WrapErrorf` 中文格式串豁免）。
+  - 前端侧：`frontend/src/**/*.{ts,tsx}` 内禁止 `X instanceof Error ? X.message : String(X)` 直显反模式（排除 `core/i18n/goerr.ts` 与 `*.test.ts`）。
+- [x] CI：`.github/workflows/ci.yml` 前端 job 在 `i18n-check --strict` 后追加 `node ../scripts/goerr-lint.mjs --strict` 阻塞门。
+- [x] 本地入口：`Taskfile.yml` 新增 `task check:goerr`（= `node scripts/goerr-lint.mjs --strict`）。
+- [x] 负向验证：临时注入 CJK `fmt.Errorf` 触发 `--strict` exit 1、warning exit 0；当前代码零违例，双模式均 exit 0。
 
 ---
 

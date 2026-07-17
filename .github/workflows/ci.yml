@@ -53,6 +53,13 @@ jobs:
         # 新增 key 必须同步翻译到所有 bundle，否则 CI 失败。
         run: node ../scripts/i18n-check.mjs --strict
 
+      - name: ADR-117 Go error i18n lint (strict)
+        # [doc:adr-117] Phase 3 防回归：internal/app 禁止 CJK fmt.Errorf、
+        # frontend/src 禁止 `instanceof Error ? .message : String(` 直显反模式。
+        # 任何违例即 exit 1 阻塞 CI，防止 Go 端错误 i18n 迁移成果回退。
+        # 路径以仓库根为基准，与 cwd 无关。
+        run: node ../scripts/goerr-lint.mjs --strict
+
       - name: Build
         run: npx vite build
 

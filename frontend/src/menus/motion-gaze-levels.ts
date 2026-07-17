@@ -5,7 +5,7 @@
 
 import { cardContainer } from '../core/config';
 import type { PopupLevel } from '../core/config';
-import { getPerceptionState, activatePerception } from '../scene/motion/perception';
+import { getPerceptionState, setPerceptionState, activatePerception } from '../scene/motion/perception';
 import { triggerAutoSave } from '../core/utils';
 import { getMotionMenu } from './motion-popup';
 import { t } from '../core/i18n/t';
@@ -186,18 +186,31 @@ const gazeSchema: MenuNode[] = [
         children: [
             {
                 id: 'perception:emotion',
-                kind: 'modeRow',
-                label: 'motion.emotion',
-                control: {
-                    bind: 'perception.emotion',
-                    onChange: withActivate,
-                    options: [
+                kind: 'custom',
+                renderCustom: (c) => {
+                    const group = document.createElement('div');
+                    group.className = 'preset-group';
+                    const emotions = [
                         { value: 'neutral', label: 'motion.emotionNeutral' },
                         { value: 'happy', label: 'motion.emotionHappy' },
                         { value: 'sad', label: 'motion.emotionSad' },
                         { value: 'surprised', label: 'motion.emotionSurprised' },
                         { value: 'angry', label: 'motion.emotionAngry' },
-                    ],
+                    ];
+                    const current = getPerceptionState().emotion;
+                    for (const e of emotions) {
+                        const btn = document.createElement('button');
+                        btn.className = 'preset-chip' + (current === e.value ? ' active' : '');
+                        btn.textContent = t(e.label);
+                        btn.addEventListener('click', () => {
+                            activatePerception();
+                            setPerceptionState({ emotion: e.value as 'neutral' | 'happy' | 'sad' | 'surprised' | 'angry' });
+                            triggerAutoSave();
+                            refreshMotionMenu();
+                        });
+                        group.appendChild(btn);
+                    }
+                    c.appendChild(group);
                 },
             },
         ],

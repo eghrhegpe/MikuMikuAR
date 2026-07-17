@@ -39,6 +39,12 @@ tasks:
     cmds:
       - wails3 dev -config ./build/config.yml -port {{.VITE_PORT}}
 
+  check:goerr:
+    summary: ADR-117 防回归 — Go/前端错误 i18n 静态检查（strict）
+    cmds:
+      - cmd: node scripts/goerr-lint.mjs --strict
+        silent: true
+
   setup:docker:
     summary: Builds Docker image for cross-compilation (~800MB download)
     cmds:
