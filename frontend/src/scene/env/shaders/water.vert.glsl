@@ -5,7 +5,9 @@ attribute vec3 normal;
 uniform mat4 world;
 uniform mat4 viewProjection;
 uniform float time;
-uniform float waveHeight;
+uniform float waveHeight;       // 全局振幅乘子（旧 uniform，保留，向后兼容）
+uniform float bigWaveHeight;    // ADR-115 P4: 大波振幅缩放（Gerstner 层 0,1），默认 1.0
+uniform float smallWaveHeight;  // ADR-115 P4: 小波振幅缩放（Gerstner 层 2,3），默认 1.0
 uniform float wavePhase;
 uniform int uWaterFlip;
 
@@ -34,7 +36,9 @@ void main() {
     for (int i = 0; i < WAVE_COUNT; i++) {
         vec2 dir = uWindDir[i];
         float f = WAVE_FREQ[i];
-        float a = WAVE_AMP[i] * waveHeight;
+        // ADR-115 P4: 双层尺度拆分 — 层 0,1 大波组 / 层 2,3 小波组，再乘全局 waveHeight
+        float h = (i < 2) ? bigWaveHeight : smallWaveHeight;
+        float a = WAVE_AMP[i] * h * waveHeight;
         float th = f * dot(dir, p.xz) + WAVE_SPEED[i] * wavePhase;
         float c = cos(th), s = sin(th);
         p.x += a * dir.x * c; p.z += a * dir.y * c; p.y += a * s;

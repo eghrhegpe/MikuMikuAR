@@ -92,7 +92,6 @@ export type ModelInstance = {
     /** 库引用绝对路径（=LibraryModel.file_path）。zip 内模型为 zip 包路径，与解压临时 filePath 不同；
      * 详情面板元数据缓存以该路径为 key 命中。非库模型（拖拽/导入）为 undefined，回退 filePath。 */
     libraryPath?: string;
-    port: number;
     modelDir: string;
     meshes: Mesh[];
     rootMesh: Mesh;
@@ -166,8 +165,6 @@ export type PropInstance = {
     id: string;
     name: string;
     filePath: string;
-    port: number;
-    modelDir: string;
     meshes: Mesh[];
     rootMesh: Mesh;
     container?: import('@babylonjs/core/Meshes/transformNode').TransformNode;
@@ -471,7 +468,9 @@ export interface EnvState {
     waterFlip: boolean;
     waterColor: [number, number, number];
     waterTransparency: number;
-    waterWaveHeight: number;
+    waterWaveHeight: number; // 全局振幅乘子（P4 升级语义：旧字段保留，向后兼容）
+    bigWaveHeight: number; // ADR-115 P4: 大波高度（Gerstner 低频 2 层振幅缩放），默认 1.0
+    smallWaveHeight: number; // ADR-115 P4: 小波纹高度（Gerstner 高频 2 层振幅缩放），默认 1.0
     waterSize: number;
     waterAnimSpeed: number;
 
