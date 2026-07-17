@@ -18,12 +18,21 @@ import {
     addRecentMotion,
 } from '@/core/config';
 import { getBaseName, withLoadingIndicator, logWarn } from '@/core/utils';
-import { encodeFileRef, fetchArrayBuffer } from '@/core/fileservice';
+import { encodeFileRef } from '@/core/fileservice';
+import { ReadFileBytes } from '@/core/wails-bindings';
 import { t } from '@/core/i18n/t';
 import { loadCameraVmd } from '../camera/camera';
 import { loadAudioFile } from '@/outfit/audio';
 import { PROC_VMD_NAME_IDLE, PROC_VMD_NAME_AUTODANCE } from '@/motion-algos/procedural-motion';
 import { isAutoLoadCompanionAudioEnabled } from '@/menus/settings';
+
+/** Wails v3 serializes Go []byte as base64 JSON; decode to real Uint8Array. */
+function decodeBase64(b64: string): Uint8Array {
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
+}
 
 // Dynamic re-import of scene.ts to access its module-level state
 // (scene, focusedMmdModel, focusedModel, isProcVmdActive, stopProcMotion)
@@ -204,7 +213,9 @@ export async function loadVMDFromPath(
     const { focusedMmdModel, focusedModel } = await getScene();
     await withLoadingIndicator('scene.loader.vmdLoading', async () => {
         try {
-            const { url, data: vmdData } = await fetchArrayBuffer(path, signal);
+            const vmdB64 = await ReadFileBytes(path);
+            if (!vmdB64) return;
+            const vmdData = decodeBase64(vmdB64).buffer as ArrayBuffer;
             const vmdName = getBaseName(path) || '';
             const vmdDisplayName = vmdName.replace(/\.vmd$/i, '');
 
@@ -230,7 +241,7 @@ export async function loadVMDFromPath(
 
             // 尝试加载同目录下的同名音频文件
             const audioTargetId = targetModelId || focusedModelId;
-            await _tryLoadCompanionAudio(path, url, audioTargetId);
+            await _tryLoadCompanionAudio(path, path, audioTargetId);
         } catch (err) {
             // 中止（AbortError）不算失败：loadVMDMotion 在 signal 中止时抛此错，
             // 此时 vmdPath/addRecentMotion/音频等副作用已被 throw 跳过，无需报错 UI
@@ -303,7 +314,9 @@ export async function loadCameraVmdFromPath(path: string, signal?: AbortSignal):
     const { scene } = await getScene();
     await withLoadingIndicator('scene.loader.cameraVmdLoading', async () => {
         try {
-            const { data: vmdData } = await fetchArrayBuffer(path, signal);
+            const vmdB64 = await ReadFileBytes(path);
+            if (!vmdB64) return;
+            const vmdData = decodeBase64(vmdB64).buffer as ArrayBuffer;
             const vmdName = getBaseName(path) || '';
 
             const vmdLoader = new VmdLoader(scene);
@@ -327,7 +340,9 @@ export async function loadVPDPose(
     const { focusedModel, stopProcMotion, isProcVmdActive } = await getScene();
     await withLoadingIndicator('scene.loader.vpdLoading', async () => {
         try {
-            const { data: rawData } = await fetchArrayBuffer(path, signal);
+            const rawB64 = await ReadFileBytes(path);
+            if (!rawB64) return;
+            const rawData = decodeBase64(rawB64).buffer as ArrayBuffer;
             const poseName = getBaseName(path) || '';
 
             // 停掉程序化动作（VPD 姿势不被动画干扰）

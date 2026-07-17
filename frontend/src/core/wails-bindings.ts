@@ -5,6 +5,7 @@ export type {
     EnvPresetEntry,
     EnvState,
     ExtractResult,
+    FileInfo,
     ModelEntry,
     ModelMeta,
     ModelPresetEntry,

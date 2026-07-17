@@ -241,6 +241,11 @@ export interface EnvState {
     "foamTransitionRange": number;
     "rippleNormalStrength": number;
     "rippleGlintStrength": number;
+    "waterNormalStrength": number;
+    "waterGlintStrength": number;
+    "waterHorizonFade": number;
+    "waterSkyColorBlend": number;
+    "causticIntensity": number;
     "causticColor1": number[];
     "causticColor2": number[];
     "causticScrollX": number;
@@ -309,6 +314,14 @@ export interface ExtractResult {
      * Whether cache was hit (no re-extract)
      */
     "cached": boolean;
+}
+
+/**
+ * FileInfo represents a file entry with its relative path from the root.
+ */
+export interface FileInfo {
+    "name": string;
+    "relativePath": string;
 }
 
 /**
