@@ -1,10 +1,10 @@
 // [doc:adr-116] Body Posture Module — 身体姿态模块
-// 职责: 将语义参数（倾斜/弯曲/扭曲/高度/前后）烘焙为上半身骨骼旋转覆盖 + センター位置覆盖
-// P2 引擎扩展：激活 height/fwdBack 位置覆盖（走 setBoneOverridePosition）
+// 职责: 将语义参数（倾斜/弯曲/扭曲）烘焙为上半身骨骼旋转覆盖
+// P2 位置覆盖已拆分为独立 position-offset 模块
 
 import type { MenuNode } from '@/menus/menu-schema';
 import type { MotionModuleState, ParamValue } from '@/core/types';
-import { setBoneOverride, setBoneOverridePosition, clearBoneOverride } from '../bone-override';
+import { setBoneOverride, clearBoneOverride } from '../bone-override';
 import {
     registerModule,
     getModuleState,
@@ -21,8 +21,6 @@ const DEFAULTS: Record<string, ParamValue> = {
     tilt: 0, // 上半身 pitch: -15~15
     bend: 0, // 腰 pitch: -30~30
     twist: 0, // 上半身2 yaw: -30~30
-    height: 0, // センター position.y: -50~50（P2 引擎扩展）
-    fwdBack: 0, // センター position.z: -50~50（P2 引擎扩展）
 };
 
 /** 模块元信息（注册用，与实例 meta 同源） */
@@ -32,8 +30,8 @@ const META: ModuleMeta = {
     defaults: DEFAULTS,
 };
 
-/** 管理的骨骼（旋转骨 + 位置骨） */
-const MANAGED_BONES = ['上半身', '腰', '上半身2', 'センター'];
+/** 管理的骨骼（旋转骨） */
+const MANAGED_BONES = ['上半身', '腰', '上半身2'];
 
 /** 烘焙：将语义参数写入引擎（仅 enabled 时生效，通过 claimBones 仲裁冲突） */
 function bake(modelId: string): void {
@@ -44,8 +42,6 @@ function bake(modelId: string): void {
     const tilt = (state.params.tilt as number) ?? 0;
     const bend = (state.params.bend as number) ?? 0;
     const twist = (state.params.twist as number) ?? 0;
-    const height = (state.params.height as number) ?? 0;
-    const fwdBack = (state.params.fwdBack as number) ?? 0;
 
     // 声明骨骼所有权（已被其他模块占用的骨骼会被跳过并 warn）
     const claimed = claimBones(modelId, MODULE_ID, MANAGED_BONES);
@@ -58,11 +54,7 @@ function bake(modelId: string): void {
     if (claimed.includes('上半身2')) {
         setBoneOverride('上半身2', [0, twist, 0], 1, true, modelId);
     }
-    // [doc:adr-116] P2 引擎扩展：センター 位置覆盖（height=y, fwdBack=z）
-    // x 保持 0（左右位移不属本模块职责），y/z 由语义参数驱动
-    if (claimed.includes('センター')) {
-        setBoneOverridePosition('センター', [0, height, fwdBack], 1, true, modelId);
-    }
+    // 注：センター位置偏移已拆分到独立 position-offset 模块
 }
 
 /** 创建身体姿态模块实例 */

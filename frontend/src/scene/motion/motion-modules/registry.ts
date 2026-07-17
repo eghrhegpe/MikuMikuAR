@@ -12,6 +12,7 @@ import { registerHeadTracking } from './head-tracking';
 import { registerSwayMotion } from './sway-motion';
 import { registerFingerPose } from './finger-pose';
 import { registerRidingModel } from './riding-model';
+import { registerPositionOffset } from './position-offset';
 
 // ── 注册表 ──
 
@@ -261,5 +262,6 @@ export function initMotionModules(): void {
     registerSwayMotion();
     registerFingerPose();
     registerRidingModel();
+    registerPositionOffset();
     _initialized = true;
 }
