@@ -36,13 +36,22 @@ import { closeAllOverlays } from '../core/utils';
 // ======== 公共辅助函数 ========
 
 /** 通用的环境功能层级构建器：包裹 cardContainer + renderMenu 模板 */
-export function _buildLevel(label: string, buildSchema: (c: HTMLElement) => void): PopupLevel {
+export function _buildLevel(
+    label: string,
+    buildSchema: (c: HTMLElement) => void,
+    buildExtraSegments?: Array<(c: HTMLElement) => void>
+): PopupLevel {
+    const segments: Array<(c: HTMLElement) => void> = buildExtraSegments
+        ? [buildSchema, ...buildExtraSegments]
+        : [buildSchema];
     return {
         label,
         dir: '',
         items: [],
         renderCustom: (container) => {
-            cardContainer(container, buildSchema);
+            for (const seg of segments) {
+                cardContainer(container, seg);
+            }
         },
     };
 }
@@ -794,13 +803,10 @@ export function buildGroundLevel(): PopupLevel {
 }
 
 export function buildWaterLevel(): PopupLevel {
-    return {
-        label: t('env.water'),
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            cardContainer(container, (c) => {
-                const waterSchema: MenuNode[] = [
+    return _buildLevel(
+        t('env.water'),
+        (c) => {
+            const waterSchema: MenuNode[] = [
                     {
                         id: 'env:water:presets',
                         kind: 'custom',
@@ -1156,9 +1162,10 @@ export function buildWaterLevel(): PopupLevel {
                     },
                 ];
                 renderMenu(waterSchema, c);
-            });
-            // —— 反射（ADR-062 P1）——
-            cardContainer(container, (rc) => {
+            },
+            [
+                // —— 反射（ADR-062 P1）——
+                (rc) => {
                 const reflectionSchema: MenuNode[] = [
                     {
                         id: 'env:water:reflection',
@@ -1202,9 +1209,9 @@ export function buildWaterLevel(): PopupLevel {
                     },
                 ];
                 renderMenu(reflectionSchema, rc);
-            });
-        },
-    };
+            },
+        ]
+    );
 }
 
 export function buildWindLevel(): PopupLevel {

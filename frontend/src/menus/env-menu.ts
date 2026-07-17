@@ -3,7 +3,7 @@
 // 子文件: env-feature-levels.ts, env-preset-levels.ts
 // 道具已迁移到 scene-prop-levels.ts（舞台域）
 
-import { envState, PopupLevel, PopupRow, cardContainer } from '../core/config';
+import { envState, PopupLevel, PopupRow } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
 import { slideRow, addSliderRow, addPresetChip, addClearRow } from '../core/ui-helpers';
 import { setEnvState, getEnvSunAngle, setEnvSunAngle, applyEnvPreset } from '../scene/scene';
@@ -115,19 +115,16 @@ function buildEnvLightingSchema(): MenuNode[] {
             id: 'env:lighting:presets',
             kind: 'custom',
             renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    renderPresetChips(inner);
-                });
+                renderPresetChips(c);
             },
         },
         {
             id: 'env:lighting:sunAngle',
             kind: 'custom',
             renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    addSliderRow(
-                        inner,
-                        t('env.sunAngle'),
+                addSliderRow(
+                    c,
+                    t('env.sunAngle'),
                         getEnvSunAngle(),
                         -15,
                         90,
@@ -140,21 +137,13 @@ function buildEnvLightingSchema(): MenuNode[] {
                         undefined,
                         { bind: () => getEnvSunAngle() }
                     );
-                });
             },
         },
     ];
 }
 
 export function buildEnvLightingLevel(): PopupLevel {
-    return {
-        label: t('env.lighting'),
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            renderMenu(buildEnvLightingSchema(), container);
-        },
-    };
+    return _buildLevel(t('env.lighting'), (c) => renderMenu(buildEnvLightingSchema(), c));
 }
 
 /** 环境弹窗根级 items 构建器——动态反映 envState 各 toggle 状态。 */
