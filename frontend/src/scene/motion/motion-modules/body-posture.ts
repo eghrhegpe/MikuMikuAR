@@ -3,23 +3,22 @@
 // P2 位置覆盖已拆分为独立 position-offset 模块
 
 import type { MenuNode } from '@/menus/menu-schema';
-import type { MotionModuleState, ParamValue } from '@/core/types';
-import { setBoneOverride, clearBoneOverride } from '../bone-override';
+import type { ParamValue } from '@/core/types';
+import { setBoneOverride } from '../bone-override';
 import {
     registerModule,
     getModuleState,
-    setModuleParam,
     claimBones,
-    releaseOwnedBones,
 } from './registry';
 import type { MotionOverrideModule, ModuleMeta } from './types';
+import { createModuleBase } from './module-base';
 
 const MODULE_ID = 'body-posture';
 
 /** 默认参数 */
 const DEFAULTS: Record<string, ParamValue> = {
     tilt: 0, // 上半身 pitch: -15~15
-    bend: 0, // 腰 pitch: -30~30
+    bend: 0, // 上半身 pitch（与 tilt 累加）: -30~30
     twist: 0, // 上半身2 yaw: -30~30
 };
 
@@ -30,8 +29,8 @@ const META: ModuleMeta = {
     defaults: DEFAULTS,
 };
 
-/** 管理的骨骼（旋转骨） */
-const MANAGED_BONES = ['上半身', '腰', '上半身2'];
+/** 管理的骨骼（旋转骨。不加 腰，避免 WASM 传播带动腿骨旋转） */
+const MANAGED_BONES = ['上半身', '上半身2'];
 
 /** 烘焙：将语义参数写入引擎（仅 enabled 时生效，通过 claimBones 仲裁冲突） */
 function bake(modelId: string): void {
@@ -46,10 +45,8 @@ function bake(modelId: string): void {
     // 声明骨骼所有权（已被其他模块占用的骨骼会被跳过并 warn）
     const claimed = claimBones(modelId, MODULE_ID, MANAGED_BONES);
     if (claimed.includes('上半身')) {
-        setBoneOverride('上半身', [tilt, 0, 0], 1, true, modelId);
-    }
-    if (claimed.includes('腰')) {
-        setBoneOverride('腰', [bend, 0, 0], 1, true, modelId);
+        // tilt + bend 合并为上半身总俯仰角（避免操作 腰 带动腿骨旋转）
+        setBoneOverride('上半身', [tilt + bend, 0, 0], 1, true, modelId);
     }
     if (claimed.includes('上半身2')) {
         setBoneOverride('上半身2', [0, twist, 0], 1, true, modelId);
@@ -59,6 +56,7 @@ function bake(modelId: string): void {
 
 /** 创建身体姿态模块实例 */
 export function createBodyPostureModule(modelId: string): MotionOverrideModule {
+    const base = createModuleBase(modelId, MODULE_ID, DEFAULTS, bake);
     return {
         id: MODULE_ID,
         meta: META,
@@ -78,8 +76,7 @@ export function createBodyPostureModule(modelId: string): MotionOverrideModule {
                         max: 15,
                         step: 0.5,
                         onChange: (v) => {
-                            // 走 setParam：enabled 门控 + 拖滑块自动 enable（VRChat 行为）
-                            createBodyPostureModule(modelId).setParam('tilt', v as number);
+                            base.setParam('tilt', v as number);
                         },
                     },
                 },
@@ -94,7 +91,7 @@ export function createBodyPostureModule(modelId: string): MotionOverrideModule {
                         max: 30,
                         step: 0.5,
                         onChange: (v) => {
-                            createBodyPostureModule(modelId).setParam('bend', v as number);
+                            base.setParam('bend', v as number);
                         },
                     },
                 },
@@ -109,83 +106,18 @@ export function createBodyPostureModule(modelId: string): MotionOverrideModule {
                         max: 30,
                         step: 0.5,
                         onChange: (v) => {
-                            createBodyPostureModule(modelId).setParam('twist', v as number);
-                        },
-                    },
-                },
-                // [doc:adr-116] P2 激活：height/fwdBack 位置覆盖（原 P1 灰色禁用状态移除）
-                {
-                    id: 'body-posture:height',
-                    kind: 'slider',
-                    label: 'param.height',
-                    icon: 'lucide:arrow-up',
-                    control: {
-                        bind: `motionModule.${MODULE_ID}.height`,
-                        min: -50,
-                        max: 50,
-                        step: 1,
-                        onChange: (v) => {
-                            createBodyPostureModule(modelId).setParam('height', v as number);
-                        },
-                    },
-                },
-                {
-                    id: 'body-posture:fwdBack',
-                    kind: 'slider',
-                    label: 'param.fwdBack',
-                    icon: 'lucide:arrow-right',
-                    control: {
-                        bind: `motionModule.${MODULE_ID}.fwdBack`,
-                        min: -50,
-                        max: 50,
-                        step: 1,
-                        onChange: (v) => {
-                            createBodyPostureModule(modelId).setParam('fwdBack', v as number);
+                            base.setParam('twist', v as number);
                         },
                     },
                 },
             ];
         },
 
-        getState(): MotionModuleState {
-            const state = getModuleState(modelId, MODULE_ID);
-            return {
-                id: MODULE_ID,
-                enabled: state.enabled,
-                params: { ...DEFAULTS, ...state.params },
-            };
-        },
-
-        setState(s: MotionModuleState): void {
-            const state = getModuleState(modelId, MODULE_ID);
-            state.enabled = s.enabled;
-            state.params = { ...s.params };
-        },
-
-        setParam(name: string, value: ParamValue): void {
-            setModuleParam(modelId, MODULE_ID, name, value);
-            const st = getModuleState(modelId, MODULE_ID);
-            if (!st.enabled) {
-                st.enabled = true; // 拖滑块即视为启用意图（VRChat 行为，P1-2 修复）
-            }
-            bake(modelId);
-        },
-
-        enable(): void {
-            const state = getModuleState(modelId, MODULE_ID);
-            state.enabled = true;
-            bake(modelId);
-        },
-
-        disable(): void {
-            const state = getModuleState(modelId, MODULE_ID);
-            state.enabled = false;
-            // 仅清自有 ownedBones，不误伤用户手动覆盖（P2-1 修复）
-            const bones = releaseOwnedBones(modelId, MODULE_ID);
-            for (const bone of bones) {
-                clearBoneOverride(bone, modelId);
-            }
-        },
+        getState: base.getState,
+        setState: base.setState,
+        setParam: base.setParam,
+        enable: base.enable,
+        disable: base.disable,
     };
 }
 

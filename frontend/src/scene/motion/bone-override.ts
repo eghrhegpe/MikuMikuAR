@@ -42,6 +42,8 @@ interface _OverrideSlot {
 
 let _observerHandle: (() => void) | null = null; // unregister function
 const _overrideMaps = new Map<string, Map<string, _OverrideSlot>>();
+/** [doc:adr-116 P3] 每帧钩子集合：由时间驱动模块（sway/riding）注册，渲染回调每帧调用 */
+const _frameHooks = new Set<(timeSec: number, modelId: string) => void>();
 const _qPool = [new Quaternion(), new Quaternion(), new Quaternion(), new Quaternion()];
 let _qIdx = 0;
 function _q(): Quaternion {
@@ -256,16 +258,8 @@ export function clearBoneOverride(boneName: string, modelId?: string): void {
     _getOverrideMap(mid).delete(boneName);
 }
 
-/** [doc:adr-116] 读取单条骨骼的覆盖条目（用于 UI 回填）。不存在返回 undefined。 */
-export function getOverride(boneName: string, modelId?: string): BoneOverrideEntry | undefined {
-    const mid = _resolveModelId(modelId);
-    if (!mid) {
-        return undefined;
-    }
-    const slot = _overrideMaps.get(mid)?.get(boneName);
-    if (!slot) {
-        return undefined;
-    }
+/** [doc:adr-116] 将运行时 slot 转为持久化条目（getOverride / getAllOverrides 共用，避免重复反推欧拉角） */
+function _slotToEntry(boneName: string, slot: _OverrideSlot): BoneOverrideEntry {
     const euler = slot.quat.toEulerAngles();
     return {
         boneName,
@@ -276,6 +270,19 @@ export function getOverride(boneName: string, modelId?: string): BoneOverrideEnt
     };
 }
 
+/** [doc:adr-116] 读取单条骨骼的覆盖条目（用于 UI 回填）。不存在返回 undefined。 */
+export function getOverride(boneName: string, modelId?: string): BoneOverrideEntry | undefined {
+    const mid = _resolveModelId(modelId);
+    if (!mid) {
+        return undefined;
+    }
+    const slot = _overrideMaps.get(mid)?.get(boneName);
+    if (!slot) {
+        return undefined;
+    }
+    return _slotToEntry(boneName, slot);
+}
+
 /** 清除所有骨骼覆盖。 */
 export function clearAllOverrides(modelId?: string): void {
     const mid = _resolveModelId(modelId);
@@ -283,6 +290,21 @@ export function clearAllOverrides(modelId?: string): void {
         return;
     }
     _getOverrideMap(mid).clear();
+}
+
+/**
+ * [doc:adr-116 P3] 注册每帧渲染钩子。
+ * 时间驱动模块（sway/riding）用以逐帧更新自身骨骼覆盖（如正弦摇摆、踏板循环）。
+ * 钩子签名 (timeSec, modelId)：timeSec 为 performance.now()/1000（秒）。
+ * 返回注销函数，模块 disable/卸载时必须调用以避免泄漏。
+ */
+export function registerBoneOverrideFrameHook(
+    hook: (timeSec: number, modelId: string) => void
+): () => void {
+    _frameHooks.add(hook);
+    return () => {
+        _frameHooks.delete(hook);
+    };
 }
 
 /** 获取当前所有覆盖的条目列表（用于持久化/UI 展示）。 */
@@ -300,19 +322,7 @@ export function getAllOverrides(modelId?: string): BoneOverrideEntry[] {
         if (!slot.enabled) {
             continue;
         }
-        // 需要从四元数反推欧拉角
-        const euler = slot.quat.toEulerAngles();
-        result.push({
-            boneName,
-            euler: [
-                (euler.x * 180) / Math.PI,
-                (euler.y * 180) / Math.PI,
-                (euler.z * 180) / Math.PI,
-            ],
-            weight: slot.weight,
-            enabled: slot.enabled,
-            position: slot.pos ? [slot.pos.x, slot.pos.y, slot.pos.z] : undefined,
-        });
+        result.push(_slotToEntry(boneName, slot));
     }
     return result;
 }
@@ -360,6 +370,13 @@ export function startBoneOverride(
         if (!focusedId) {
             return;
         }
+
+        // [doc:adr-116 P3] 先执行每帧钩子（时间驱动模块在此更新自身 slot），再应用覆盖
+        const t = performance.now() / 1000;
+        for (const h of _frameHooks) {
+            h(t, focusedId);
+        }
+
         const overrideMap = _overrideMaps.get(focusedId);
         if (!overrideMap || overrideMap.size === 0) {
             return;
@@ -450,5 +467,6 @@ export function stopBoneOverride(): void {
         _observerHandle();
         _observerHandle = null;
     }
+    _frameHooks.clear();
     clearAllOverrides();
 }

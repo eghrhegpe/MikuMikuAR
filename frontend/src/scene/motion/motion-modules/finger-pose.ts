@@ -14,16 +14,15 @@
 //   bake() 内 candidate 列表按优先级匹配，缺失则跳过
 
 import type { MenuNode } from '@/menus/menu-schema';
-import type { MotionModuleState, ParamValue } from '@/core/types';
-import { setBoneOverride, clearBoneOverride } from '../bone-override';
+import type { ParamValue } from '@/core/types';
+import { setBoneOverride } from '../bone-override';
 import {
     registerModule,
     getModuleState,
-    setModuleParam,
     claimBones,
-    releaseOwnedBones,
 } from './registry';
 import type { MotionOverrideModule, ModuleMeta } from './types';
+import { createModuleBase } from './module-base';
 
 const MODULE_ID = 'finger-pose';
 
@@ -47,7 +46,7 @@ const DEFAULTS: Record<string, ParamValue> = {
 
 const META: ModuleMeta = {
     labelKey: 'motion.override.module.fingerPose',
-    icon: 'lucide:hand',
+    icon: 'lucide:hand-finger',
     defaults: DEFAULTS,
 };
 
@@ -90,27 +89,36 @@ function bake(modelId: string): void {
         return;
     }
 
-    // 对每根手指的每节指骨写入弯曲角度
-    // 弯曲角度 = preset[fingerIndex] * intensity * 90 度（pitch）
+    // 对每根手指：按指节（近→远）分配弯曲权重，避免单指总弯曲超 90° 过度反曲。
+    // PHALANX_SUFFIXES 顺序为 ０/１/２/第一/第二/第三，模型只用其一族，
+    // 故 claimedPhalanges 天然按 近→远 排列；基节分配最多，尖节最少（解剖合理）。
+    const PHALANX_WEIGHTS = [0.5, 0.3, 0.2]; // 基节→尖节 弯曲占比（合计 = 1）
     for (let sideIdx = 0; sideIdx < 2; sideIdx++) {
         const side = sideIdx === 0 ? '左' : '右';
         for (let fingerIdx = 0; fingerIdx < FINGER_BASES.length; fingerIdx++) {
             const base = FINGER_BASES[fingerIdx];
-            const curl = preset[fingerIdx] * intensity;
-            const pitchDeg = curl * 90; // 0=伸直, 90=完全弯曲
-            // 对该手指的所有节指骨写入相同 pitch（简化模型）
+            const curl = preset[fingerIdx] * intensity; // 0=伸直, 1=完全弯曲
+            // 收集该指实际存在的指节（按 PHALANX_SUFFIXES 顺序 = 近→远）
+            const phalanges: string[] = [];
             for (const suffix of PHALANX_SUFFIXES) {
                 const boneName = `${side}${base}${suffix}`;
                 if (claimed.includes(boneName)) {
-                    setBoneOverride(boneName, [pitchDeg, 0, 0], 1, true, modelId);
+                    phalanges.push(boneName);
                 }
             }
+            // 单指总弯曲 = curl * 90，按节分配：基节 50% / 中节 30% / 尖节 20%
+            phalanges.forEach((boneName, rank) => {
+                const w = PHALANX_WEIGHTS[Math.min(rank, PHALANX_WEIGHTS.length - 1)];
+                const pitchDeg = curl * 90 * w;
+                setBoneOverride(boneName, [pitchDeg, 0, 0], 1, true, modelId);
+            });
         }
     }
 }
 
 /** 创建手指姿势模块实例 */
 export function createFingerPoseModule(modelId: string): MotionOverrideModule {
+    const base = createModuleBase(modelId, MODULE_ID, DEFAULTS, bake);
     return {
         id: MODULE_ID,
         meta: META,
@@ -134,7 +142,7 @@ export function createFingerPoseModule(modelId: string): MotionOverrideModule {
                             { value: 'rock', label: 'motion.fingerPreset.rock' },
                         ],
                         onChange: (v) => {
-                            createFingerPoseModule(modelId).setParam('preset', v as string);
+                            base.setParam('preset', v as string);
                         },
                     },
                 },
@@ -149,51 +157,18 @@ export function createFingerPoseModule(modelId: string): MotionOverrideModule {
                         max: 1,
                         step: 0.05,
                         onChange: (v) => {
-                            createFingerPoseModule(modelId).setParam('intensity', v as number);
+                            base.setParam('intensity', v as number);
                         },
                     },
                 },
             ];
         },
 
-        getState(): MotionModuleState {
-            const state = getModuleState(modelId, MODULE_ID);
-            return {
-                id: MODULE_ID,
-                enabled: state.enabled,
-                params: { ...DEFAULTS, ...state.params },
-            };
-        },
-
-        setState(s: MotionModuleState): void {
-            const state = getModuleState(modelId, MODULE_ID);
-            state.enabled = s.enabled;
-            state.params = { ...s.params };
-        },
-
-        setParam(name: string, value: ParamValue): void {
-            setModuleParam(modelId, MODULE_ID, name, value);
-            const st = getModuleState(modelId, MODULE_ID);
-            if (!st.enabled) {
-                st.enabled = true;
-            }
-            bake(modelId);
-        },
-
-        enable(): void {
-            const state = getModuleState(modelId, MODULE_ID);
-            state.enabled = true;
-            bake(modelId);
-        },
-
-        disable(): void {
-            const state = getModuleState(modelId, MODULE_ID);
-            state.enabled = false;
-            const bones = releaseOwnedBones(modelId, MODULE_ID);
-            for (const bone of bones) {
-                clearBoneOverride(bone, modelId);
-            }
-        },
+        getState: base.getState,
+        setState: base.setState,
+        setParam: base.setParam,
+        enable: base.enable,
+        disable: base.disable,
     };
 }
 

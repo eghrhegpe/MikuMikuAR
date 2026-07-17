@@ -886,7 +886,7 @@ function buildMotionRootItems(): PopupRow[] {
     if (modelManager.size > 0) {
         items.push({
             kind: 'folder',
-            label: '外部动作导入',
+            label: t('motion.externalImport'),
             icon: 'lucide:upload',
             target: 'motion:retarget',
         });
