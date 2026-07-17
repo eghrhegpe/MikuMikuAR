@@ -25,8 +25,6 @@ import {
     getGizmoTargetId,
 } from '../render/transform-gizmo';
 
-import { readFileBytes } from '@/core/wails-bindings';
-
 // ======== 类型守卫 ========
 
 function isValidPosition(pos: number[]): pos is [number, number, number] {

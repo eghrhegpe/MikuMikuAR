@@ -117,11 +117,11 @@ vi.mock('babylon-mmd/esm/Runtime/Audio/streamAudioPlayer', () => ({
 
 // ======== Other mocks ========
 
-// Minimal valid base64 (empty MP3 frame header) so ReadFileBytes returns truthy
-const MOCK_B64_AUDIO = btoa('\xff\xfb\x90\x00'); // MPEG1 Layer3 frame header
+// Minimal valid Uint8Array (MPEG1 Layer3 frame header) for readFileBytes
+const MOCK_AUDIO_BYTES = new Uint8Array([0xff, 0xfb, 0x90, 0x00]);
 
 vi.mock('../core/wails-bindings', () => ({
-    ReadFileBytes: vi.fn(() => Promise.resolve(MOCK_B64_AUDIO)),
+    readFileBytes: vi.fn(() => Promise.resolve(MOCK_AUDIO_BYTES)),
 }));
 
 // Mock uiState and config

@@ -18,8 +18,6 @@ import { _catOf } from '../scene/manager/material';
 import { triggerAutoSave } from '../core/config';
 import { loadOverlay, hideMaterials, restoreMaterials, disposeOverlay } from './outfit-overlay';
 
-import { readFileBytes } from '../core/fileservice';
-
 // [adr-104] Scene 引用注入：由 scene.ts 初始化后调用 setSceneRef() 注入，
 // 破除 outfit → scene → scene-serialize → outfit 的循环依赖（原靠动态 import 解耦，
 // 有运行时开销且难测试）。保留动态 import 作为未注入时的兜底兼容路径。
@@ -278,7 +276,9 @@ async function _applySlot(
             logWarn('outfit', '_applySlot: failed to read texture', newPath);
             return;
         }
-        const blob = new Blob([bytes], { type: mimeMap[ext] || 'application/octet-stream' });
+        const ext = newPath.split('.').pop()?.toLowerCase() || 'png';
+        const mimeMap: Record<string, string> = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', bmp: 'image/bmp', tga: 'image/x-tga', dds: 'image/vnd-ms.dds', spa: 'image/png', sph: 'image/png' };
+        const blob = new Blob([bytes.buffer as ArrayBuffer], { type: mimeMap[ext] || 'application/octet-stream' });
         const url = URL.createObjectURL(blob);
         const newTex = new Texture(url, scene);
         let loaded = false;
