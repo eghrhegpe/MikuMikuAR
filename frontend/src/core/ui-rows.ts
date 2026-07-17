@@ -21,10 +21,14 @@ export function addToggleRow(
     value: boolean,
     onChange: (v: boolean) => void,
     icon?: string,
-    opts?: ControlOptions<boolean>
+    opts?: ControlOptions<boolean>,
+    testId?: string
 ): void {
     const row = document.createElement('div');
     row.className = 'toggle-row';
+    if (testId) {
+        row.setAttribute('data-testid', testId);
+    }
 
     const left = document.createElement('div');
     left.className = 'toggle-left';
@@ -143,7 +147,8 @@ export function addSliderRow(
     onChange: (v: number) => void,
     icon?: string,
     onDragEndCb?: (v: number) => void,
-    opts?: ControlOptions<number>
+    opts?: ControlOptions<number>,
+    testId?: string
 ): void {
     // 防御: 非有限数值（undefined/NaN）回落到 min ?? 0，避免 .toFixed() 崩溃导致整个面板渲染失败
     let currentValue = typeof value === 'number' && Number.isFinite(value) ? value : (min ?? 0);
@@ -151,6 +156,9 @@ export function addSliderRow(
 
     const row = document.createElement('div');
     row.className = 'cs-row';
+    if (testId) {
+        row.setAttribute('data-testid', testId);
+    }
 
     const top = document.createElement('div');
     top.className = 'cs-top';
@@ -343,10 +351,14 @@ export function addModeRow<T extends string | number>(
     label: string,
     options: Array<{ value: T; label: string }>,
     currentValue: T,
-    onChange: (v: T) => void
+    onChange: (v: T) => void,
+    testId?: string
 ): void {
     const row = document.createElement('div');
     row.className = 'type-row';
+    if (testId) {
+        row.setAttribute('data-testid', testId);
+    }
     const lbl = document.createElement('span');
     lbl.className = 'type-label';
     lbl.textContent = label;
@@ -387,7 +399,8 @@ export function addDangerRow(
     container: HTMLElement,
     icon: string,
     label: string,
-    onClick: () => void
+    onClick: () => void,
+    testId?: string
 ): HTMLElement {
     return slideRow(
         container,
@@ -401,6 +414,7 @@ export function addDangerRow(
         undefined,
         {
             variant: 'danger',
+            ...(testId ? { testId } : {}),
         }
     );
 }
@@ -413,7 +427,7 @@ export function addDangerRow(
  * 创建字段行（左 label + 右 value），替代手动拼接的
  * `div.slide-item > span.slide-label.field-label + span.field-value`
  */
-export function addFieldRow(container: HTMLElement, label: string, value: string): HTMLElement {
+export function addFieldRow(container: HTMLElement, label: string, value: string, testId?: string): HTMLElement {
     return slideRow(
         container,
         '',
@@ -426,6 +440,7 @@ export function addFieldRow(container: HTMLElement, label: string, value: string
         undefined,
         {
             rightLabel: value,
+            ...(testId ? { testId } : {}),
         }
     );
 }

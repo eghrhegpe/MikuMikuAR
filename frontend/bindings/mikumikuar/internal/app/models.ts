@@ -220,6 +220,8 @@ export interface EnvState {
     "waterColor": number[];
     "waterTransparency": number;
     "waterWaveHeight": number;
+    "bigWaveHeight": number;
+    "smallWaveHeight": number;
     "waterSize": number;
     "waterAnimSpeed": number;
 

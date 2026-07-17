@@ -35,12 +35,13 @@ import {
 import { SlideMenu } from './menu';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow, createResourcePanel, openFullscreen, closeFullscreen } from '../core/ui-helpers';
+import { notifyThumbnailUpdate } from '../core/ui-resource-panel';
 import type { ResourceItem, SlideRowExtra, ResourcePanelHandle } from '../core/ui-helpers';
 import { isUnderRoot, isStageLike, getDirPath } from '../core/utils';
 import { libraryModelBaseKey, buildThumbnailKey } from '@/scene/manager/thumbnail-key';
 import { t } from '../core/i18n/t';
 import { getLang } from '../core/i18n/locale';
-import { GetThumbnailBatch, GetModelMetaBatch } from '../core/wails-bindings';
+import { GetThumbnail, GetThumbnailBatch, GetModelMetaBatch } from '../core/wails-bindings';
 import { loadManager } from '../core/load-manager';
 import { focusModel } from '../scene/scene';
 import { buildModelToolsLevel } from './model-detail';
@@ -254,6 +255,39 @@ async function ensureModelMeta(pmxPaths: string[]): Promise<void> {
             guard.leave(p);
         }
     }
+}
+
+/**
+ * 流式加载缩略图：并发控制，每加载一张立即更新缓存并通知面板刷新，
+ * 替代一次性 GetThumbnailBatch 的"全等"模式，实现缩略图逐张出现。
+ * 同 key 已在缓存中时跳过（不改动现有缓存）。
+ */
+const THUMB_STREAM_CONCURRENCY = 4;
+
+export async function loadThumbnailsStreaming(keys: string[]): Promise<void> {
+    if (keys.length === 0) {
+        return;
+    }
+    let index = 0;
+    const workers = Array.from({ length: Math.min(THUMB_STREAM_CONCURRENCY, keys.length) }, async () => {
+        while (index < keys.length) {
+            const key = keys[index++];
+            if (thumbnailCache.has(key)) {
+                continue;
+            }
+            try {
+                const data = await GetThumbnail(key);
+                if (data) {
+                    thumbnailCache.set(key, data);
+                    // 通知所有活跃面板，使当前可见的缩略图立即显示
+                    notifyThumbnailUpdate();
+                }
+            } catch (err) {
+                logWarn('library-core', `GetThumbnail failed for ${key}:`, err);
+            }
+        }
+    });
+    await Promise.all(workers);
 }
 
 // ======== 模型显示名/图标 公共解析 ========
@@ -595,15 +629,10 @@ function renderGridMode(
         .filter((item) => !item.isFolder && item.thumbKey)
         .map((item) => item.thumbKey!);
     if (thumbKeys2.length > 0) {
-        GetThumbnailBatch(thumbKeys2)
-            .then((batch) => {
-                const merged = new Map(thumbnailCache);
-                for (const [path, data] of Object.entries(batch)) {
-                    merged.set(path, data);
-                }
-                setThumbnailCache(merged);
-            })
-            .catch((err) => logWarn('library-core', 'GetThumbnailBatch failed:', err));
+        // 流式加载：逐张出现，不阻塞面板渲染
+        loadThumbnailsStreaming(thumbKeys2).catch((err) =>
+            logWarn('library-core', 'loadThumbnailsStreaming failed:', err)
+        );
     }
     cardContainer(container, (card) => {
         const toolbar = document.createElement('div');

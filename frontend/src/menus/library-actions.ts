@@ -68,6 +68,7 @@ import {
     setPendingFocusModel,
     getPendingMetaGuard,
     resolveDisplayBrowseDir,
+    loadThumbnailsStreaming,
 } from './library-core';
 
 // ======== 模块级状态 ========
@@ -120,12 +121,8 @@ export async function loadThumbnailsForLevel(level: PopupLevel): Promise<void> {
         return;
     }
     try {
-        const batch = await GetThumbnailBatch(keys);
-        const merged = new Map(thumbnailCache);
-        for (const [k, v] of Object.entries(batch)) {
-            merged.set(k, v);
-        }
-        setThumbnailCache(merged);
+        // 流式加载：逐张出现，不阻塞 UI
+        await loadThumbnailsStreaming(keys);
     } catch (err) {
         logWarn('library-actions', 'loadThumbnailsForLevel:', err);
     }

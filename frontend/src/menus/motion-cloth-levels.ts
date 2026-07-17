@@ -98,6 +98,7 @@ async function rebuildAll(): Promise<void> {
                 injected++;
             }
         } catch (e) {
+            console.warn(`虚拟裙骨构建失败 [${id}]:`, e);
             logWarn('virtual-skirt', `build failed for ${id}`, e);
         }
     }

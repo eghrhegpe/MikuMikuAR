@@ -26,17 +26,8 @@ import { loadAudioFile } from '@/outfit/audio';
 import { PROC_VMD_NAME_IDLE, PROC_VMD_NAME_AUTODANCE } from '@/motion-algos/procedural-motion';
 import { isAutoLoadCompanionAudioEnabled } from '@/menus/settings';
 
-/** Wails v3 serializes Go []byte as base64 JSON; decode to real Uint8Array. */
-function decodeBase64(b64: string): Uint8Array {
-    const bin = atob(b64);
-    const bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    return bytes;
-}
+import { decodeBase64 } from '@/core/fileservice';
 
-// Dynamic re-import of scene.ts to access its module-level state
-// (scene, focusedMmdModel, focusedModel, isProcVmdActive, stopProcMotion)
-// without creating a static circular dependency.
 function getScene() {
     return import('../scene') as Promise<typeof import('../scene')>;
 }

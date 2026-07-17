@@ -17,10 +17,14 @@ export function addColorSliderRow(
     label: string,
     color: [number, number, number],
     onChange: (v: [number, number, number]) => void,
-    opts?: ControlOptions<[number, number, number]>
+    opts?: ControlOptions<[number, number, number]>,
+    testId?: string
 ): void {
     const block = document.createElement('div');
     block.className = 'clr-block';
+    if (testId) {
+        block.setAttribute('data-testid', testId);
+    }
     const header = document.createElement('div');
     header.className = 'clr-header';
     const title = document.createElement('span');
@@ -218,7 +222,8 @@ export function addModeSlider<T extends string | number>(
     onChange: (v: T) => void,
     icon?: string,
     onDragEndCb?: (v: T) => void,
-    opts?: ControlOptions<T>
+    opts?: ControlOptions<T>,
+    testId?: string
 ): void {
     const total = options.length;
     if (total === 0) {
@@ -232,6 +237,9 @@ export function addModeSlider<T extends string | number>(
 
     const row = document.createElement('div');
     row.className = 'cs-row';
+    if (testId) {
+        row.setAttribute('data-testid', testId);
+    }
 
     const top = document.createElement('div');
     top.className = 'cs-top';

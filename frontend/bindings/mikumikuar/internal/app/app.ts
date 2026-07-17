@@ -166,6 +166,15 @@ export function FetchPlazaConfig(): $CancellablePromise<[string, string]> {
 }
 
 /**
+ * FileExists reports whether the named file exists and is accessible.
+ * Used by outfit texture probing — much cheaper than ReadFileBytes for
+ * existence checks on potentially large texture files.
+ */
+export function FileExists(path: string): $CancellablePromise<boolean> {
+    return $Call.ByID(2127331393, path);
+}
+
+/**
  * GetAllTags returns a deduplicated list of all tags across all models.
  */
 export function GetAllTags(): $CancellablePromise<string[] | null> {
@@ -357,10 +366,17 @@ export function ImportZip(zipPath: string): $CancellablePromise<$models.ExtractR
 
 /**
  * IsolateModelDir ensures the model file is served from a safe directory.
- * [doc:architecture] IsolateModelDir — 安全隔离：信任目录返回原目录，外部文件复制到 temp
+ * [doc:architecture] IsolateModelDir — 安全隔离
  * 规范文档: docs/architecture.md §数据通道（HTTP 文件服务）
- * For files inside trusted roots, returns the original directory unchanged.
- * For external files, copies PMX + all siblings to a temp directory.
+ * 
+ * Previously this function copied external files to a temp cache directory.
+ * Now it simply returns the original directory — the HTTP file server binds
+ * to 127.0.0.1 (localhost only) and uses http.Dir which prevents path
+ * traversal, making the copy unnecessary. This eliminates 600MB+ of
+ * redundant cached copies (see ADR-005).
+ * 
+ * On Android, file:// is disabled and all model assets are served via the
+ * same 127.0.0.1 HTTP server, so the same simplification applies.
  */
 export function IsolateModelDir(filePath: string): $CancellablePromise<string> {
     return $Call.ByID(2863350796, filePath);
@@ -461,6 +477,13 @@ export function LoadSceneFile(path: string): $CancellablePromise<string> {
  */
 export function NavigatePlazaWindow(targetURL: string): $CancellablePromise<void> {
     return $Call.ByID(2118540546, targetURL);
+}
+
+/**
+ * OpenCacheDir opens a cache subdirectory (extracted / thumbnails / serve) in the system file manager.
+ */
+export function OpenCacheDir(subDir: string): $CancellablePromise<void> {
+    return $Call.ByID(2106710590, subDir);
 }
 
 /**

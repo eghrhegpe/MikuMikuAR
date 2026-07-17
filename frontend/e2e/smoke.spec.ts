@@ -25,9 +25,9 @@ test.describe("Smoke — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, () =>
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 8000 });
 
         // Env menu top-level folders render inside the overlay.
-        await expect(page.getByText("天空", { exact: true })).toBeVisible();
-        await expect(page.getByText("地面", { exact: true })).toBeVisible();
-        await expect(page.getByText("粒子", { exact: true })).toBeVisible();
+        await expect(page.getByTestId("folder:env:sky")).toBeVisible();
+        // 地面 已随重构迁至「场景 → 舞台」，env 根级不再含此行；其断言见 scene-panel 测试
+        await expect(page.getByTestId("folder:env:particle")).toBeVisible();
     });
 
     test("Ctrl+1~5 toggle each nav menu (overlay show/hide)", async ({ vitePage: page }) => {

@@ -23,6 +23,7 @@ export function addCollapsible(
         icon?: string;
         variant?: 'default' | 'mat';
         defaultOpen?: boolean;
+        testId?: string;
         headerToggle?: {
             value: boolean;
             onChange: (v: boolean) => void;
@@ -35,6 +36,9 @@ export function addCollapsible(
     const variant = config.variant ?? 'default';
     const wrapper = document.createElement('div');
     wrapper.className = 'collapsible-wrapper';
+    if (config.testId) {
+        wrapper.setAttribute('data-testid', config.testId);
+    }
 
     // Header
     const header = document.createElement('div');
@@ -143,10 +147,13 @@ export function addCollapsible(
  * 区块标题（section-title），用于 cardContainer 内的视觉分组。
  * 11px 白色文字，底部 border，和设计规范一致。
  */
-export function addSectionTitle(container: HTMLElement, text: string): void {
+export function addSectionTitle(container: HTMLElement, text: string, testId?: string): void {
     const title = document.createElement('div');
     title.className = 'section-title';
     title.textContent = text;
+    if (testId) {
+        title.setAttribute('data-testid', testId);
+    }
     container.appendChild(title);
 }
 

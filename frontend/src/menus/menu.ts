@@ -898,6 +898,7 @@ export class SlideMenu {
         ) {
             const wrapper = document.createElement('div');
             wrapper.dataset.rowKey = this.rowKey(row);
+            wrapper.dataset.testid = this.rowKey(row);
             if (row.kind === 'slider') {
                 addSliderRow(
                     wrapper,
@@ -964,6 +965,7 @@ export class SlideMenu {
             const el = wrapper.firstChild as HTMLElement | null;
             if (el) {
                 el.dataset.rowKey = this.rowKey(row);
+                el.dataset.testid = this.rowKey(row);
                 const hint = row.sublabel || t('menu.noHint');
                 el.setAttribute('data-hint', hint);
                 el.addEventListener('mouseenter', () => {
@@ -985,6 +987,7 @@ export class SlideMenu {
         const el = document.createElement('div');
         el.className = 'slide-item' + (row.focused ? ' slide-focused' : '');
         el.dataset.rowKey = this.rowKey(row);
+        el.dataset.testid = this.rowKey(row);
         const hint = row.sublabel || (row.model ? t('menu.noDesc') : t('menu.noHint'));
         el.setAttribute('data-hint', hint);
 

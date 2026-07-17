@@ -350,3 +350,37 @@ func (a *App) OpenScreenshotDir() error {
 	}
 	return cmd.Start()
 }
+
+// OpenCacheDir opens a cache subdirectory (extracted / thumbnails / serve) in the system file manager.
+func (a *App) OpenCacheDir(subDir string) error {
+	var dir string
+	var err error
+	switch subDir {
+	case "extracted":
+		dir, err = extractedDir()
+	case "thumbnails":
+		dir, err = thumbnailDir()
+	case "serve":
+		dir, err = serveRootDir()
+	default:
+		return i18nerr.New("cache.invalidDir", "无效的缓存目录: "+subDir)
+	}
+	if err != nil {
+		return i18nerr.New("cache.dirResolveFailed", "无法获取缓存目录")
+	}
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return i18nerr.New("cache.dirCreateFailed", "创建缓存目录失败")
+	}
+	var cmd *exec.Cmd
+	switch stdruntime.GOOS {
+	case "windows":
+		cmd = exec.Command("explorer", dir)
+	case "darwin":
+		cmd = exec.Command("open", dir)
+	case "android":
+		return i18nerr.New("cache.androidNotSupported", "Android 不支持打开缓存目录")
+	default:
+		cmd = exec.Command("xdg-open", dir)
+	}
+	return cmd.Start()
+}

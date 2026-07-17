@@ -79,6 +79,7 @@ function renderFolder(node: MenuNode, container: HTMLElement): (() => void) | un
         title: node.label ? t(node.label) : '',
         icon: node.icon,
         defaultOpen: node.defaultOpen ?? false,
+        testId: node.id,
         headerToggle: node.headerToggle
             ? {
                   value: node.headerToggle.get
@@ -145,7 +146,8 @@ function renderSlider(node: MenuNode, container: HTMLElement): void {
                 ctrl.get
                     ? (ctrl.get(getBindFn(ctrl.bind)()) as number)
                     : (getBindFn(ctrl.bind)() as number),
-        }
+        },
+        node.id
     );
 }
 
@@ -162,7 +164,7 @@ function renderColorSlider(node: MenuNode, container: HTMLElement): void {
 
     addColorSliderRow(container, node.label ? t(node.label) : '', value, onChange, {
         bind: () => getBindFn(ctrl.bind)() as [number, number, number],
-    });
+    }, node.id);
 }
 
 // ======== Toggle ========
@@ -191,7 +193,8 @@ function renderToggle(node: MenuNode, container: HTMLElement): void {
                 const r = getBindFn(ctrl.bind)();
                 return ctrl.get ? (ctrl.get(r) as boolean) : (r as boolean);
             },
-        }
+        },
+        node.id
     );
 }
 
@@ -218,7 +221,8 @@ function renderModeSlider(node: MenuNode, container: HTMLElement): void {
         onChange,
         node.icon ?? ctrl.icon,
         undefined,
-        { bind: () => getBindFn(ctrl.bind)() as string }
+        { bind: () => getBindFn(ctrl.bind)() as string },
+        node.id
     );
 }
 
@@ -237,7 +241,7 @@ function renderModeRow(node: MenuNode, container: HTMLElement): void {
     };
     const opts = ctrl.options.map((o) => ({ value: o.value, label: t(o.label) }));
 
-    addModeRow(container, node.label ? t(node.label) : '', opts, value, onChange);
+    addModeRow(container, node.label ? t(node.label) : '', opts, value, onChange, node.id);
 }
 
 // ======== Section Title ========
@@ -246,5 +250,5 @@ function renderSectionTitle(node: MenuNode, container: HTMLElement): void {
     if (!node.label) {
         return;
     }
-    addSectionTitle(container, t(node.label));
+    addSectionTitle(container, t(node.label), node.id);
 }

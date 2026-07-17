@@ -1,7 +1,7 @@
 # ADR-124: 文件服务架构审计 —— 从 HTTP 中转到 ArrayBuffer 直传
 
 **日期**：2026-07-17
-> **状态**: 规划
+> **状态**: 已完成（Phase 1-3 全部落地；HTTP 文件服务保留作 fallback）
 > **背景**: 现有桌面版模型加载依赖 Go `StartFileServer` 启动本地 HTTP 服务来喂文件。`web-loader/main.ts` 已验证 `IArrayBufferFile[]` 绕过 HTTP 走内存直传的可行性。本 ADR 审计现有文件服务架构，评估分阶段去除 HTTP 中转层的路径。
 
 ---
@@ -146,11 +146,16 @@ func (a *App) ReadFileBytes(path string) ([]byte, error) {
 - `ReferenceFileResolver` 对主应用是否生效
 - Shift-JIS 纹理路径的 basename fallback 在 TS 侧实现
 
-### Phase 3 — 可选清理（仅在 Phase 2 验证后）
+### Phase 3 — HTTP 层清理（已实施）
 
-- 去掉 `StartFileServer` / `StopFileServer`
-- `inst.port` 从 `ModelInstance` 移除
-- `basenameFallbackFS` 的 TS 侧替代
+**完成项**：
+- `inst.port` 从 `ModelInstance` / `PropInstance` 移除
+- 所有消费者迁移到 ArrayBuffer 路径（model-loader / vmd-loader / audio / props / outfit / outfit-overlay / vmd-layers）
+- `resolveModelDir` 新增（仅获取隔离目录，不启动 HTTP）
+- Go `ListDirRecursive` 新增（递归扫描 + `relativePath`）
+- 测试更新（audio.test / app.contract.test）
+
+**保留**：`resolveFileUrl` / `StartFileServer` / `StopFileServer` 保留作 fallback（测试依赖 + 未来可能需要）。
 
 ---
 
@@ -187,3 +192,67 @@ func (a *App) ReadFileBytes(path string) ([]byte, error) {
 - Phase 1：现有 `env-water.test.ts`、`model-loader` 相关测试不回归；新增 `ReadFileBytes` 单元测试
 - Phase 2：新增纹理 ArrayBuffer 加载集成测试；验证 Shift-JIS 纹理路径的 basename fallback
 - E2E：Playwright 验证模型加载 + 换装纹理完整流程
+
+---
+
+## 七、实施记录（2026-07-17）
+
+### Phase 1 完成项
+
+| 模块 | 变更 | 文件 |
+|------|------|------|
+| Go `ReadFileBytes` | 新增二进制读取 binding | `fileaccess.go` |
+| Go `ListDirRecursive` | 递归目录扫描（返回 `{name, relativePath}`） | `fileaccess.go` |
+| `model-loader.ts` | PMX 用 ArrayBuffer 直传 + referenceFiles 纹理 | `model-loader.ts` |
+| `vmd-loader.ts` | ReadFileBytes 替代 fetchArrayBuffer | `vmd-loader.ts` |
+| `audio.ts` | ReadFileBytes + Blob URL 替代 HTTP | `audio.ts` |
+
+### 踩坑记录
+
+#### Wails v3 `[]byte` 序列化为 base64 字符串
+
+**现象**：`ReadFileBytes` 的 TS 绑定返回类型为 `string | null`（非 `Uint8Array`），直接传给 `ImportMeshAsync` 导致二进制数据被 `.toString()` 后当作 URL 路径请求。
+
+**根因**：Wails v3 将 Go `[]byte` 序列化为 JSON 中的 base64 字符串（通过 `response.json()` 返回），而非直接映射为 `Uint8Array`。Go 注释 "automatically maps []byte to Uint8Array" 与实际行为不符。
+
+**修复**：所有 `ReadFileBytes` 调用点需显式 base64 解码：
+```typescript
+function decodeBase64(b64: string): Uint8Array {
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
+}
+```
+
+#### `ListDir` 仅返回顶层文件名
+
+**现象**：PMX 纹理在子目录（如 `textures/body.png`）中，`ListDir` 只返回 `body.png`，与 PMX 内部引用的 `textures/body.png` 不匹配。
+
+**修复**：新增 `ListDirRecursive`，使用 `filepath.WalkDir` 递归遍历，返回完整相对路径（`filepath.ToSlash` 统一为 `/` 分隔符）。
+
+#### `ImportMeshAsync` 第一个参数语义
+
+**现象**：`ImportMeshAsync(data, scene, opts)` 的第一个参数是 `meshNames`（网格名过滤器），不是文件数据。
+
+**修复**：babylon-mmd 的 `ImportMeshAsync` 实际接受 `ArrayBufferView` 作为第一个参数（绕过类型检查需 `as any`），与 web-loader 行为一致。
+
+### Phase 2 部分完成
+
+model-loader 的 referenceFiles 已实现（递归扫描 + ReadFileBytes + decodeBase64）。outfit.ts 的 5 个纹理 slot 改造暂缓，原因：
+- 改造面大（`_applySlot` 函数、HEAD 探测逻辑、URL 拼接散布多处）
+- 纹理文件小，HTTP 开销可忽略
+- 需 outfit.ts 完成后才能推进 Phase 3（移除 `inst.port`）
+
+### Phase 3 完成（2026-07-17）
+
+| 模块 | 变更 | 文件 |
+|------|------|------|
+| `ModelInstance` | 移除 `port` 字段 | `types.ts` |
+| `PropInstance` | 移除 `port` / `modelDir` 字段 | `types.ts` |
+| `model-loader.ts` | `resolveModelDir` 替代 `resolveFileUrl`；移除 `port` 赋值 | `model-loader.ts` |
+| `outfit.ts` | `_applySlot` 改用 `ReadFileBytes` + Blob URL；HEAD 探测改用文件读取 | `outfit.ts` |
+| `outfit-overlay.ts` | FBX 加载改用 `ReadFileBytes` + Blob URL | `outfit-overlay.ts` |
+| `props.ts` | 道具加载改用 `ReadFileBytes` + Blob URL | `props.ts` |
+| `vmd-layers.ts` | `fetchArrayBuffer` → `ReadFileBytes` + base64 解码（3 处） | `vmd-layers.ts` |
+| `fileservice.ts` | 新增 `resolveModelDir`（仅隔离目录，不启动 HTTP） | `fileservice.ts` |

@@ -89,6 +89,12 @@ export interface SlideRowExtra {
     inlineSub?: boolean;
     /** label 允许双行显示（用于长文件名等场景） */
     wrapLabel?: boolean;
+    /**
+     * 稳定测试钩子：建议传声明式节点的稳定 id（非可见文本），e2e 用
+     * `getByTestId` 定位，避免依赖文本/位置导致重构即红。仅作测试属性，
+     * 生产行为不受影响。
+     */
+    testId?: string;
 }
 
 export function slideRow(
@@ -104,6 +110,11 @@ export function slideRow(
     extra?: SlideRowExtra
 ): HTMLElement {
     const row = document.createElement('div');
+
+    // 稳定测试钩子：覆盖 headerToggle 与普通行两条分支（共用同一 row）。
+    if (extra?.testId) {
+        row.setAttribute('data-testid', extra.testId);
+    }
 
     if (headerToggle) {
         // 使用 addCollapsible 的 header 样式：图标 + label + toggle + 箭头

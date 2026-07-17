@@ -2,7 +2,7 @@
 
 import { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
-import { LoadOutfitFile, ListSubDirs } from '../core/wails-bindings';
+import { LoadOutfitFile, ListSubDirs, readFileBytes, FileExists } from '../core/wails-bindings';
 import {
     modelRegistry,
     setStatus,
@@ -16,8 +16,9 @@ import { getBaseName, normPath, getDirPath, delay, logWarn, LoadingGuard } from 
 import { col3FromTriple } from '@/core/color-helpers';
 import { _catOf } from '../scene/manager/material';
 import { triggerAutoSave } from '../core/config';
-import { encodeFileRef } from '../core/fileservice';
 import { loadOverlay, hideMaterials, restoreMaterials, disposeOverlay } from './outfit-overlay';
+
+import { readFileBytes } from '../core/fileservice';
 
 // [adr-104] Scene 引用注入：由 scene.ts 初始化后调用 setSceneRef() 注入，
 // 破除 outfit → scene → scene-serialize → outfit 的循环依赖（原靠动态 import 解耦，
@@ -170,19 +171,19 @@ export async function loadOutfits(id: string, signal?: AbortSignal): Promise<Out
                 matName: string;
                 slot: string;
                 relPath: string;
-                url: string;
+                fullPath: string;
             }
-            const seenUrl = new Set<string>();
+            const seenPath = new Set<string>();
             const probes: _Probe[] = [];
             for (const subdir of subdirs) {
                 for (const m of mappings) {
                     const relPath = subdir + '/' + m.basename;
-                    const url = `http://127.0.0.1:${inst.port}/?f=${encodeFileRef(normPath(relPath))}`;
-                    if (seenUrl.has(url)) {
+                    const fullPath = modelDir + '/' + normPath(relPath);
+                    if (seenPath.has(fullPath)) {
                         continue;
                     }
-                    seenUrl.add(url);
-                    probes.push({ subdir, matName: m.matName, slot: m.slot, relPath, url });
+                    seenPath.add(fullPath);
+                    probes.push({ subdir, matName: m.matName, slot: m.slot, relPath, fullPath });
                 }
             }
             const headCache = new Map<string, boolean>();
@@ -217,22 +218,17 @@ export async function loadOutfits(id: string, signal?: AbortSignal): Promise<Out
                                 return;
                             }
                             let ok: boolean;
-                            if (headCache.has(p.url)) {
-                                ok = headCache.get(p.url)!;
+                            if (headCache.has(p.fullPath)) {
+                                ok = headCache.get(p.fullPath)!;
                             } else {
                                 ok = await withLimit(async () => {
                                     try {
-                                        // [adr-105] HEAD 请求支持 AbortSignal 取消
-                                        const resp = await fetch(p.url, {
-                                            method: 'HEAD',
-                                            signal: effectiveSignal,
-                                        });
-                                        return resp.ok;
+                                        return await FileExists(p.fullPath);
                                     } catch {
                                         return false;
                                     }
                                 });
-                                headCache.set(p.url, ok);
+                                headCache.set(p.fullPath, ok);
                             }
                             if (!ok) {
                                 return;
@@ -270,13 +266,20 @@ async function _applySlot(
     slot: TextureSlotKey,
     newPath: string | null,
     origTex: Texture | null,
-    port: number
+    modelDir: string
 ): Promise<void> {
     const mmdSm = sm as MmdStandardMaterial & Record<TextureSlotKey, Texture | null>;
     const cur = mmdSm[slot];
     if (newPath) {
         const scene = await _getScene();
-        const url = `http://127.0.0.1:${port}/?f=${encodeFileRef(normPath(newPath))}`;
+        // ReadFileBytes → base64 → Blob URL（替换 HTTP 中转）
+        const bytes = await readFileBytes(modelDir + '/' + normPath(newPath));
+        if (!bytes) {
+            logWarn('outfit', '_applySlot: failed to read texture', newPath);
+            return;
+        }
+        const blob = new Blob([bytes], { type: mimeMap[ext] || 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
         const newTex = new Texture(url, scene);
         let loaded = false;
         await new Promise<void>((resolve) => {
@@ -585,7 +588,7 @@ async function _applyOutfitVariantCore(id: string, variantName: string): Promise
                 'diffuseTexture',
                 _getSlotFor(variant, sm.name, cat, 'diffuse'),
                 origTex.diffuse,
-                inst.port
+                inst.modelDir
             )
         );
         promises.push(
@@ -594,7 +597,7 @@ async function _applyOutfitVariantCore(id: string, variantName: string): Promise
                 'toonTexture',
                 _getSlotFor(variant, sm.name, cat, 'toon'),
                 origTex.toon,
-                inst.port
+                inst.modelDir
             )
         );
         promises.push(
@@ -603,7 +606,7 @@ async function _applyOutfitVariantCore(id: string, variantName: string): Promise
                 'sphereTexture',
                 _getSlotFor(variant, sm.name, cat, 'spa'),
                 origTex.spa,
-                inst.port
+                inst.modelDir
             )
         );
         promises.push(
@@ -612,7 +615,7 @@ async function _applyOutfitVariantCore(id: string, variantName: string): Promise
                 'bumpTexture',
                 _getSlotFor(variant, sm.name, cat, 'normal'),
                 origTex.normal,
-                inst.port
+                inst.modelDir
             )
         );
         promises.push(
@@ -621,7 +624,7 @@ async function _applyOutfitVariantCore(id: string, variantName: string): Promise
                 'emissiveTexture',
                 _getSlotFor(variant, sm.name, cat, 'emissive'),
                 origTex.emissive,
-                inst.port
+                inst.modelDir
             )
         );
 
@@ -659,11 +662,11 @@ export async function resetOutfit(id: string): Promise<void> {
             if (!orig) {
                 continue;
             }
-            promises.push(_applySlot(sm, 'diffuseTexture', null, orig.diffuse, inst.port));
-            promises.push(_applySlot(sm, 'toonTexture', null, orig.toon, inst.port));
-            promises.push(_applySlot(sm, 'sphereTexture', null, orig.spa, inst.port));
-            promises.push(_applySlot(sm, 'bumpTexture', null, orig.normal, inst.port));
-            promises.push(_applySlot(sm, 'emissiveTexture', null, orig.emissive, inst.port));
+            promises.push(_applySlot(sm, 'diffuseTexture', null, orig.diffuse, inst.modelDir));
+            promises.push(_applySlot(sm, 'toonTexture', null, orig.toon, inst.modelDir));
+            promises.push(_applySlot(sm, 'sphereTexture', null, orig.spa, inst.modelDir));
+            promises.push(_applySlot(sm, 'bumpTexture', null, orig.normal, inst.modelDir));
+            promises.push(_applySlot(sm, 'emissiveTexture', null, orig.emissive, inst.modelDir));
         }
     }
     await Promise.all(promises);

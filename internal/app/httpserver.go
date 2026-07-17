@@ -10,205 +10,16 @@ import (
 	"mikumikuar/internal/util"
 )
 
-const (
-	// maxIsolateFileSize is the maximum size (500 MB) for any single file copied
-	// during model isolation, preventing OOM from unexpectedly large files.
-	maxIsolateFileSize int64 = 500 * 1024 * 1024
-	// maxIsolateTotalSize is the maximum total size (2 GB) for all files copied
-	// during a single isolation operation.
-	maxIsolateTotalSize int64 = 2 * 1024 * 1024 * 1024
-)
-
 // ======== Safe Serving (Privacy Isolation) ========
 
-// serveDir returns the root directory for isolated model directories.
-// Uses platformPathMgr.CacheRoot() so Android gets a writable private cache dir
-// instead of os.TempDir() which may not exist on all Android devices.
+// serveRootDir returns the root directory for isolated model directories (legacy).
+// Kept for cleanup of existing data; no new copies are created.
 func serveRootDir() (string, error) {
 	cacheRoot, err := platformPathMgr.CacheRoot()
 	if err != nil {
 		return "", fmt.Errorf("serveRootDir: cache root unavailable: %w", err)
 	}
 	return filepath.Join(cacheRoot, "MikuMikuAR", "serve"), nil
-}
-
-// isolateDir copies the PMX file and ALL its sibling files/subdirectories
-// to a cache directory. Uses a hash of the source path to prevent collisions.
-// logFn is optional; when non-nil, failures during sibling copy are logged.
-func isolateDir(filePath string, logFn func(string, ...interface{})) (string, error) {
-	srcDir := filepath.Dir(filePath)
-	baseName := filepath.Base(filePath)
-
-	// Resolve symlink chain on the source directory to prevent directory
-	// traversal: if srcDir is a symlink to a sensitive or oversized
-	// directory, EvalSymlinks reveals the real target before we list it.
-	realDir, err := filepath.EvalSymlinks(srcDir)
-	if err != nil {
-		if logFn != nil {
-			logFn("isolateDir: EvalSymlinks(%s) failed: %v, falling back to source dir", srcDir, err)
-		}
-		realDir = srcDir
-	}
-	if realDir != srcDir && logFn != nil {
-		logFn("isolateDir: symlink resolved %s → %s", srcDir, realDir)
-	}
-
-	// Use the resolved path for all file operations
-	resolvedPath := filepath.Join(realDir, baseName)
-
-	hash := util.SHA256Hex(realDir)[:12]
-	serveRoot, err := serveRootDir()
-	if err != nil {
-		if logFn != nil {
-			logFn("isolateDir: serve root unavailable (%v), falling back to source dir", err)
-		}
-		return srcDir, err
-	}
-	dstDir := filepath.Join(serveRoot, hash)
-
-	// Remove previous stale copy
-	os.RemoveAll(dstDir)
-
-	// Track total bytes copied across all siblings; abort if limit exceeded.
-	var totalCopied int64
-
-	// Copy the PMX/VMD file itself
-	if err := copyFile(resolvedPath, filepath.Join(dstDir, baseName)); err != nil {
-		if logFn != nil {
-			if isAndroid {
-				// On Android, copy failures are usually permission issues;
-				// probe the source path to aid diagnosis.
-				srcInfo, statErr := os.Stat(resolvedPath)
-				srcDirInfo, dirStatErr := os.Stat(realDir)
-				logFn("isolateDir: copyFile(%s) failed: %v [android: srcStat=%v srcDirStat=%v srcIsDir=%v srcSize=%d dirIsDir=%v dirSize=%d], falling back to original dir",
-					resolvedPath, err, statErr, dirStatErr,
-					srcInfo != nil && srcInfo.IsDir(),
-					func() int64 {
-						if srcInfo != nil {
-							return srcInfo.Size()
-						}
-						return 0
-					}(),
-					srcDirInfo != nil && srcDirInfo.IsDir(),
-					func() int64 {
-						if srcDirInfo != nil {
-							return srcDirInfo.Size()
-						}
-						return 0
-					}(),
-				)
-			} else {
-				logFn("isolateDir: copyFile(%s) failed: %v, falling back to original dir", resolvedPath, err)
-			}
-		}
-		return srcDir, err // fall back to original if copy fails
-	}
-	// Track primary file size
-	if fi, fiErr := fileAccessor.Stat(resolvedPath); fiErr == nil {
-		totalCopied += fi.Size()
-	}
-
-	// Copy ALL sibling files and subdirectories (not just dirs — many models
-	// have textures like face.bmp sitting next to the .pmx file)
-	entries, err := fileAccessor.ReadDir(realDir)
-	if err != nil {
-		if logFn != nil && isAndroid {
-			logFn("isolateDir: ReadDir(%s) failed: %v [android: sibling scan skipped, only main file served]", realDir, err)
-		}
-		return dstDir, nil
-	}
-	for _, e := range entries {
-		src := filepath.Join(realDir, e.Name())
-		dst := filepath.Join(dstDir, e.Name())
-		if e.IsDir() {
-			copyDir(src, dst, logFn, &totalCopied)
-		} else if e.Name() != baseName {
-			if err := copyFile(src, dst); err != nil {
-				if logFn != nil {
-					logFn("isolateDir: copyFile sibling %s failed: %v", src, err)
-				}
-			} else {
-				if fi, fiErr := fileAccessor.Stat(src); fiErr == nil {
-					totalCopied += fi.Size()
-				}
-				if totalCopied > maxIsolateTotalSize && logFn != nil {
-					logFn("isolateDir: total copy size %d exceeds limit %d, stopping sibling copy", totalCopied, maxIsolateTotalSize)
-				}
-			}
-		}
-	}
-	return dstDir, nil
-}
-
-// checkFileSize verifies src does not exceed maxIsolateFileSize.
-// Returns nil on success, or a descriptive error if the file is too large.
-func checkFileSize(src string) error {
-	fi, err := fileAccessor.Stat(src)
-	if err != nil {
-		return err
-	}
-	if fi.Size() > maxIsolateFileSize {
-		return fmt.Errorf("file %s: size %d exceeds max %d", src, fi.Size(), maxIsolateFileSize)
-	}
-	return nil
-}
-
-func copyFile(src, dst string) error {
-	// Reject files exceeding the per-file size limit before copying
-	if err := checkFileSize(src); err != nil {
-		return err
-	}
-	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
-		return err
-	}
-	in, err := fileAccessor.Open(src)
-	if err != nil {
-		return err
-	}
-	defer in.Close()
-	out, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-	_, err = io.Copy(out, in)
-	return err
-}
-
-func copyDir(src, dst string, logFn func(string, ...interface{}), totalCopied *int64) error {
-	return fileAccessor.WalkDir(src, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			if logFn != nil {
-				logFn("copyDir: walk error at %s: %v", path, err)
-			}
-			return nil
-		}
-		// Skip symlinks to prevent traversal and unintended file leaks
-		if d.Type()&os.ModeSymlink != 0 {
-			if logFn != nil {
-				logFn("copyDir: skipping symlink %s", path)
-			}
-			return nil
-		}
-		rel, _ := filepath.Rel(src, path)
-		target := filepath.Join(dst, rel)
-		if d.IsDir() {
-			return os.MkdirAll(target, 0755)
-		}
-		if err := copyFile(path, target); err != nil {
-			if logFn != nil {
-				logFn("copyDir: copy error %s -> %s: %v", path, target, err)
-			}
-		} else if totalCopied != nil {
-			if fi, fiErr := fileAccessor.Stat(path); fiErr == nil {
-				*totalCopied += fi.Size()
-				if *totalCopied > maxIsolateTotalSize {
-					return fmt.Errorf("copyDir: total copy size %d exceeds limit %d", *totalCopied, maxIsolateTotalSize)
-				}
-			}
-		}
-		return nil
-	})
 }
 
 // isSafePath checks whether a file path is inside any of the trusted directories
@@ -243,32 +54,39 @@ func (a *App) trustedRoots() []string {
 }
 
 // IsolateModelDir ensures the model file is served from a safe directory.
-// [doc:architecture] IsolateModelDir — 安全隔离：信任目录返回原目录，外部文件复制到 temp
+// [doc:architecture] IsolateModelDir — 安全隔离
 // 规范文档: docs/architecture.md §数据通道（HTTP 文件服务）
-// For files inside trusted roots, returns the original directory unchanged.
-// For external files, copies PMX + all siblings to a temp directory.
+//
+// Previously this function copied external files to a temp cache directory.
+// Now it simply returns the original directory — the HTTP file server binds
+// to 127.0.0.1 (localhost only) and uses http.Dir which prevents path
+// traversal, making the copy unnecessary. This eliminates 600MB+ of
+// redundant cached copies (see ADR-005).
+//
+// On Android, file:// is disabled and all model assets are served via the
+// same 127.0.0.1 HTTP server, so the same simplification applies.
 func (a *App) IsolateModelDir(filePath string) (string, error) {
 	return util.SafeCall(func() (string, error) {
-		return a.isolateModelDirUnsafe(filePath)
+		return filepath.Dir(filePath), nil
 	})
 }
 
-func (a *App) isolateModelDirUnsafe(filePath string) (string, error) {
-	if a.isSafePath(filePath) || isUnderExtractedCache(filePath) {
-		return filepath.Dir(filePath), nil
+// copyFile copies a single file from src to dst, creating parent directories as needed.
+// Used by watch.go for ImportLocalFile.
+func copyFile(src, dst string) error {
+	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+		return err
 	}
-	return isolateDir(filePath, a.safeLogError)
-}
-
-// isUnderExtractedCache reports whether filePath is inside the extracted zip cache
-// directory (%LOCALAPPDATA%/MikuMikuAR/extracted). Files under this path are already
-// in an app-private cache created by ExtractZip and do not need isolateDir copy.
-func isUnderExtractedCache(filePath string) bool {
-	extracted, err := extractedDir()
+	in, err := os.Open(src)
 	if err != nil {
-		return false
+		return err
 	}
-	slash := filepath.ToSlash(filePath)
-	extractedSlash := strings.TrimRight(filepath.ToSlash(extracted), "/") + "/"
-	return strings.HasPrefix(slash, extractedSlash)
+	defer in.Close()
+	out, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	_, err = io.Copy(out, in)
+	return err
 }
