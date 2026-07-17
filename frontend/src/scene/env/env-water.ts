@@ -191,6 +191,8 @@ function disposeTintPostProcess(): void {
 
 export function addRipple(pos: Vector3, radius = 5, strength = 0.5, speed = 2, maxLife = 3): void {
     // 每秒新增上限：暴雨时碰撞频率极高，限制每秒最多 4 个，保证 256 slot 不被瞬间占满
+    // 累加器在 _waterUpdateCallback 每帧累加 dt；此处减去 interval 消费一个配额。
+    // 高频调用时累加器可能暂时为负，guard 会持续拒绝直到自然回升——此行为预期。
     const interval = 1 / RIPPLE_MAX_PER_SECOND;
     if (_rippleAccumulator < interval) {
         return;

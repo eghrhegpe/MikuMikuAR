@@ -514,6 +514,9 @@ export interface EnvState {
     cloudGap: number;
     cloudErosion: number;
     cloudWeatherStrength: number;
+    cloudBacklight: number; // Phase C: 双瓣 HG 后向瓣混合比 (0=纯前向, 1=纯后向)
+    cloudPowder: number;     // Phase C: powder 糖粉效应强度 (0=关闭, 2=强)
+    cloudQuality: 'standard' | 'high'; // Phase D: blue-noise dither 开关
 
     debugMirrorEnabled: boolean;
 

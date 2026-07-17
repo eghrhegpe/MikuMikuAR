@@ -145,7 +145,8 @@ export function addSliderRow(
     onDragEndCb?: (v: number) => void,
     opts?: ControlOptions<number>
 ): void {
-    let currentValue = value;
+    // 防御: 非有限数值（undefined/NaN）回落到 min ?? 0，避免 .toFixed() 崩溃导致整个面板渲染失败
+    let currentValue = typeof value === 'number' && Number.isFinite(value) ? value : (min ?? 0);
     const range = max - min;
 
     const row = document.createElement('div');

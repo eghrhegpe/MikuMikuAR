@@ -1000,6 +1000,9 @@ export const zhTW: Record<string, string> = {
     'env.cloudDetail': '雲細節',
     'env.cloudErosion': '邊緣侵蝕',
     'env.cloudWeatherStrength': '天氣圖強度',
+    'env.cloudLighting': '雲光照',
+    'env.cloudBacklight': '後向散射',
+    'env.cloudPowder': '糖粉效應',
     'env.scale': '縮放',
     'env.thickness': '厚度',
     'env.visibility': '可見距離',
@@ -1294,6 +1297,8 @@ export const zhTW: Record<string, string> = {
     'motion.boneOverride.title': '骨骼覆蓋',
     'motion.boneOverride.activeOverrides': '當前覆蓋',
     'motion.boneOverride.addOverride': '新增覆蓋',
+    'motion.boneOverride.edit': '編輯',
+    'motion.boneOverride.editLoaded': '✓ 已載入 {bone} 覆蓋到表單',
     'motion.boneOverride.allCleared': '✓ 已清除所有骨骼覆蓋',
     // [doc:adr-116] 動作覆蓋模組化 UI
     'motion.override.title': '動作覆蓋',

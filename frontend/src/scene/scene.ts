@@ -447,6 +447,11 @@ export async function initScene(): Promise<void> {
         return inst?.mmdModel?.runtimeBones ?? [];
     }, scene);
 
+    // [doc:adr-116] 9. Motion Override Modules 注册（主初始化路径）
+    // 必须在 focusModel 可能被调用之前完成；registry 内 setTargetModel/createModule 也有幂等兜底
+    const { initMotionModules } = await import('./motion/motion-modules/registry');
+    initMotionModules();
+
     setTriggerAutoSave(triggerAutoSaveImpl);
 }
 

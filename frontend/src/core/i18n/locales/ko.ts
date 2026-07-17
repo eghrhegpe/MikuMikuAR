@@ -1007,6 +1007,9 @@ export const ko: Record<string, string> = {
     'env.cloudDetail': '구름 디테일',
     'env.cloudErosion': '가장자리 침식',
     'env.cloudWeatherStrength': '날씨맵 강도',
+    'env.cloudLighting': '구름 라이팅',
+    'env.cloudBacklight': '후방 산란',
+    'env.cloudPowder': '파우더 효과',
     'env.scale': '크기',
     'env.thickness': '두께',
     'env.visibility': '가시 거리',
@@ -1307,6 +1310,8 @@ export const ko: Record<string, string> = {
     'motion.boneOverride.title': '본 오버라이드',
     'motion.boneOverride.activeOverrides': '활성 오버라이드',
     'motion.boneOverride.addOverride': '오버라이드 추가',
+    'motion.boneOverride.edit': '편집',
+    'motion.boneOverride.editLoaded': '✓ {bone} 오버라이드를 폼에 로드했습니다',
     'motion.boneOverride.allCleared': '✓ 모든 본 오버라이드를 지웠습니다',
     // [doc:adr-116] 모션 오버라이드 모듈 UI
     'motion.override.title': '모션 오버라이드',

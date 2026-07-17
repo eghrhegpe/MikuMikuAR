@@ -2,7 +2,7 @@
 
 ## 状态
 
-**状态**: 实施中（前置渲染分层已落地；Phase A 自适应步长 + 延展地平线 + 地面交界 + 距离雾 已落地；Phase B Weather Map + Erosion 已落地；Phase C 双瓣散射 + Powder + 日落着色 已落地；Phase D1 Blue-noise dither 已落地）
+**状态**: 完成（前置渲染分层 + Phase A 自适应步长/地平线延展/地面交界/距离雾 + Phase B Weather Map/Erosion + Phase C 双瓣散射/Powder/日落着色 + Phase D1 Blue-noise dither 全部落地）
 
 **开始日期**: 2026-07-15
 
@@ -79,8 +79,8 @@ ADR-032 已列明且至今未改：
 | `cloudsEnabled` | boolean | `false` | toggle | 体积云开关 |
 | `cloudCover` | number | `0.5` | 0–1, step 0.01 | 云覆盖量 |
 | `cloudScale` | number | `0.55` | 0.1–1, step 0.05 | 噪声缩放 |
-| `cloudHeight` | number | `80` | 50–800, step 5 | 云层中心高度 |
-| `cloudThickness` | number | `15` | 10–50, step 1 | 云层厚度 |
+| `cloudHeight` | number | `300` | 50–3000, step 5 | 云层中心高度（1 单位 ≈ 0.1m，默认 30m） |
+| `cloudThickness` | number | `60` | 10–200, step 1 | 云层厚度（默认 6m） |
 | `cloudVisibility` | number | `3000` | 500–8000, step 100 | 云渲染距离 |
 | `cloudGap` | number | `0.1` | 0–1, step 0.01 | 云间隙 |
 

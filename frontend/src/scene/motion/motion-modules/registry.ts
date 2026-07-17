@@ -1,10 +1,13 @@
 // [doc:adr-116] Motion Override Module Registry — 模块注册表 + per-model 状态管理
-// 职责: 注册模块工厂、创建模块实例、管理 per-model 模块状态
+// 职责: 注册模块工厂、创建模块实例、管理 per-model 模块状态、ownedBones 冲突仲裁
+// 冲突仲裁: 每条骨骼同一时刻只能被一个模块 owned；bake 时若骨骼已被其他模块占用，console.warn 跳过
 
 import type { MotionModuleState, ParamValue } from '@/core/types';
-import { modelRegistry, focusedModelId } from '@/core/state';
+import { modelRegistry } from '@/core/state';
 import type { MotionOverrideModule, ModuleFactory, ModuleMeta } from './types';
 import { clearBoneOverride } from '../bone-override';
+import { registerBodyPosture } from './body-posture';
+import { registerHandSymmetry } from './hand-symmetry';
 
 // ── 注册表 ──
 
@@ -40,6 +43,7 @@ export function getRegisteredModules(): Array<{ id: string; meta: ModuleMeta; pr
 
 /** 为指定模型创建模块实例 */
 export function createModule(id: string, modelId: string): MotionOverrideModule | null {
+    initMotionModules(); // 幂等兜底：确保注册表已就绪（P1-1 修复）
     const entry = _registry.get(id);
     if (!entry) {
         return null;
@@ -49,8 +53,9 @@ export function createModule(id: string, modelId: string): MotionOverrideModule 
 
 // ── per-model 状态管理 ──
 
-/** 获取指定模型的模块状态（不存在则创建默认状态） */
+/** 获取指定模型的模块状态（不存在则创建默认状态，种入 defaults） */
 export function getModuleState(modelId: string, moduleId: string): MotionModuleState {
+    initMotionModules(); // 幂等兜底
     const inst = modelRegistry.get(modelId);
     if (!inst) {
         return { id: moduleId, enabled: false, params: {} };
@@ -60,7 +65,14 @@ export function getModuleState(modelId: string, moduleId: string): MotionModuleS
     }
     let state = inst.motionOverrideModules.find((m) => m.id === moduleId);
     if (!state) {
-        state = { id: moduleId, enabled: false, params: {} };
+        // 将模块注册的默认值种入 params，避免 schema 首次渲染读到 undefined
+        const entry = _registry.get(moduleId);
+        const defs = entry?.meta.defaults;
+        state = {
+            id: moduleId,
+            enabled: false,
+            params: defs ? { ...defs } : {},
+        };
         inst.motionOverrideModules.push(state);
     }
     return state;
@@ -83,6 +95,74 @@ export function setModuleEnabled(modelId: string, moduleId: string, enabled: boo
     state.enabled = enabled;
 }
 
+// ── ownedBones 运行时追踪（P2 冲突仲裁 + 精确清除） ──
+// 结构: modelId -> moduleId -> Set<boneName>
+// 语义: 每条骨骼同一时刻只能被一个模块 owned；bake 时检测冲突，disable 时仅清自有骨
+const _ownedBones = new Map<string, Map<string, Set<string>>>();
+
+function _ownedMap(modelId: string): Map<string, Set<string>> {
+    let m = _ownedBones.get(modelId);
+    if (!m) {
+        m = new Map();
+        _ownedBones.set(modelId, m);
+    }
+    return m;
+}
+
+/**
+ * 为模块声明对一组骨骼的所有权（bake 前调用）。
+ * 返回实际成功 claim 的骨骼列表（已被其他模块占用的骨骼会被跳过并 console.warn）。
+ * 若骨骼此前由本模块 owned，保持不变（幂等）。
+ */
+export function claimBones(modelId: string, moduleId: string, bones: readonly string[]): string[] {
+    const owned = _ownedMap(modelId);
+    let mySet = owned.get(moduleId);
+    if (!mySet) {
+        mySet = new Set();
+        owned.set(moduleId, mySet);
+    }
+    const claimed: string[] = [];
+    for (const bone of bones) {
+        if (mySet.has(bone)) {
+            claimed.push(bone);
+            continue;
+        }
+        // 检查是否被其他模块占用
+        let conflictOwner: string | null = null;
+        for (const [otherId, otherSet] of owned) {
+            if (otherId !== moduleId && otherSet.has(bone)) {
+                conflictOwner = otherId;
+                break;
+            }
+        }
+        if (conflictOwner) {
+            console.warn(
+                `[adr-116] bone "${bone}" 已被模块 "${conflictOwner}" 占用，模块 "${moduleId}" 跳过该骨骼`
+            );
+            continue;
+        }
+        mySet.add(bone);
+        claimed.push(bone);
+    }
+    return claimed;
+}
+
+/** 获取模块当前 owned 的骨骼（disable 时用于精确清除） */
+export function getOwnedBones(modelId: string, moduleId: string): Set<string> {
+    return _ownedMap(modelId).get(moduleId) ?? new Set();
+}
+
+/** 释放模块的 ownedBones 记录（不清除骨骼覆盖本身，由调用方负责） */
+export function releaseOwnedBones(modelId: string, moduleId: string): Set<string> {
+    const owned = _ownedMap(modelId);
+    const set = owned.get(moduleId);
+    if (!set) {
+        return new Set();
+    }
+    owned.delete(moduleId);
+    return set;
+}
+
 // ── 模型切换管理 ──
 
 let _currentModelId: string | null = null;
@@ -92,17 +172,17 @@ let _currentModelId: string | null = null;
  * 应在 focusModel 时调用。
  */
 export function setTargetModel(modelId: string | null): void {
+    initMotionModules(); // 幂等兜底：确保注册表已就绪（P1-1 修复）
     if (_currentModelId === modelId) {
         return;
     }
 
-    // 禁用当前模型的所有模块
+    // 禁用当前模型的所有模块（精确清除 ownedBones，不误伤手动覆盖）
     if (_currentModelId) {
         for (const moduleId of _registry.keys()) {
             const state = getModuleState(_currentModelId, moduleId);
             if (state.enabled) {
-                const mod = createModule(moduleId, _currentModelId);
-                mod?.disable();
+                createModule(moduleId, _currentModelId)?.disable();
             }
         }
     }
@@ -114,27 +194,23 @@ export function setTargetModel(modelId: string | null): void {
         for (const moduleId of _registry.keys()) {
             const state = getModuleState(modelId, moduleId);
             if (state.enabled) {
-                const mod = createModule(moduleId, modelId);
-                mod?.enable();
+                createModule(moduleId, modelId)?.enable();
             }
         }
     }
 }
 
-/** 获取当前目标模型 ID */
-export function getCurrentModelId(): string | null {
-    return _currentModelId ?? focusedModelId;
-}
-
 /** 清除指定模型的所有模块覆盖（删除模型时调用） */
 export function clearAllModulesForModel(modelId: string): void {
-    for (const moduleId of _registry.keys()) {
-        const entry = _registry.get(moduleId)!;
-        // 使用工厂创建实例获取 managedBones，然后清除
-        const mod = entry.factory(modelId);
-        for (const bone of mod.managedBones) {
-            clearBoneOverride(bone, modelId);
+    // 释放并清除所有 ownedBones（精确清除，不误伤手动覆盖）
+    const owned = _ownedBones.get(modelId);
+    if (owned) {
+        for (const [, boneSet] of owned) {
+            for (const bone of boneSet) {
+                clearBoneOverride(bone, modelId);
+            }
         }
+        owned.clear();
     }
     const inst = modelRegistry.get(modelId);
     if (inst) {
@@ -143,9 +219,6 @@ export function clearAllModulesForModel(modelId: string): void {
 }
 
 // ── 内置模块自动注册 ──
-
-import { registerBodyPosture } from './body-posture';
-import { registerHandSymmetry } from './hand-symmetry';
 
 let _initialized = false;
 

@@ -18,13 +18,13 @@ import {
     clearBoneOverride,
     clearAllOverrides,
     getAllOverrides,
+    getOverride,
 } from '../scene/motion/bone-override';
 import {
     initMotionModules,
     getRegisteredModules,
     createModule,
     getModuleState,
-    setModuleEnabled,
 } from '../scene/motion/motion-modules/registry';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
@@ -95,13 +95,13 @@ function buildMotionOverrideSchema(): MenuNode[] {
                             {
                                 value: state.enabled,
                                 onChange: (v: boolean) => {
+                                    // enable()/disable() 内部已写 state.enabled，无需重复 setModuleEnabled（P4 清理）
                                     const inst = createModule(mod.id, modelId);
                                     if (v) {
                                         inst?.enable();
                                     } else {
                                         inst?.disable();
                                     }
-                                    setModuleEnabled(modelId, mod.id, v);
                                     setStatus(
                                         v ? t('motion.override.enabled') : t('motion.disable'),
                                         true
@@ -196,6 +196,15 @@ function buildBoneOverrideSchema(): MenuNode[] {
     const menu = getMotionMenu();
     const allEntries = inst.boneOverrides;
 
+    // [doc:adr-116 P3-3] 表单 DOM 引用：供列表项「编辑」按钮回填（getOverride 接线）
+    const formRefs: {
+        select: HTMLSelectElement | null;
+        pitch: HTMLInputElement | null;
+        yaw: HTMLInputElement | null;
+        roll: HTMLInputElement | null;
+        weight: HTMLInputElement | null;
+    } = { select: null, pitch: null, yaw: null, roll: null, weight: null };
+
     return [
         // 卡片 1：添加新覆盖
         {
@@ -228,6 +237,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
                         boneSelect.appendChild(optGroup);
                     }
                     inner.appendChild(boneSelect);
+                    formRefs.select = boneSelect;
 
                     const pitchSlider = _createSlider('Pitch (X)', -180, 180, 0, 1);
                     const yawSlider = _createSlider('Yaw (Y)', -180, 180, 0, 1);
@@ -235,9 +245,13 @@ function buildBoneOverrideSchema(): MenuNode[] {
                     inner.appendChild(pitchSlider);
                     inner.appendChild(yawSlider);
                     inner.appendChild(rollSlider);
+                    formRefs.pitch = pitchSlider.querySelector('input[type="range"]');
+                    formRefs.yaw = yawSlider.querySelector('input[type="range"]');
+                    formRefs.roll = rollSlider.querySelector('input[type="range"]');
 
                     const weightSlider = _createSlider('Weight', 0, 1, 1, 0.05);
                     inner.appendChild(weightSlider);
+                    formRefs.weight = weightSlider.querySelector('input[type="range"]');
 
                     const applyBtn = document.createElement('button');
                     applyBtn.className = 'preset-chip';
@@ -328,6 +342,39 @@ function buildBoneOverrideSchema(): MenuNode[] {
                         info.textContent = `${ov.boneName}  P:${ov.euler[0].toFixed(0)} Y:${ov.euler[1].toFixed(0)} R:${ov.euler[2].toFixed(0)}  W:${ov.weight.toFixed(2)}`;
 
                         row.appendChild(info);
+                        // [doc:adr-116 P3-3] 编辑按钮：调用 getOverride 回填表单（引擎最新值）
+                        row.appendChild(
+                            createTrailingBtn({
+                                icon: 'lucide:pencil',
+                                title: t('motion.boneOverride.edit'),
+                                onClick: () => {
+                                    const live = getOverride(ov.boneName, modelId) ?? ov;
+                                    if (formRefs.select) {
+                                        formRefs.select.value = live.boneName;
+                                    }
+                                    const setSlider = (
+                                        el: HTMLInputElement | null,
+                                        val: number
+                                    ): void => {
+                                        if (!el) {
+                                            return;
+                                        }
+                                        el.value = String(val);
+                                        el.dispatchEvent(new Event('input'));
+                                    };
+                                    setSlider(formRefs.pitch, live.euler[0]);
+                                    setSlider(formRefs.yaw, live.euler[1]);
+                                    setSlider(formRefs.roll, live.euler[2]);
+                                    setSlider(formRefs.weight, live.weight);
+                                    setStatus(
+                                        t('motion.boneOverride.editLoaded', {
+                                            bone: ov.boneName,
+                                        }),
+                                        true
+                                    );
+                                },
+                            })
+                        );
                         row.appendChild(
                             createTrailingBtn({
                                 icon: 'lucide:trash-2',

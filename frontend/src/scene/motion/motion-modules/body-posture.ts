@@ -5,8 +5,14 @@
 import type { MenuNode } from '@/menus/menu-schema';
 import type { MotionModuleState, ParamValue } from '@/core/types';
 import { setBoneOverride, clearBoneOverride } from '../bone-override';
-import { registerModule, getModuleState, setModuleParam } from './registry';
-import type { MotionOverrideModule } from './types';
+import {
+    registerModule,
+    getModuleState,
+    setModuleParam,
+    claimBones,
+    releaseOwnedBones,
+} from './registry';
+import type { MotionOverrideModule, ModuleMeta } from './types';
 
 const MODULE_ID = 'body-posture';
 
@@ -17,29 +23,44 @@ const DEFAULTS: Record<string, ParamValue> = {
     twist: 0, // 上半身2 yaw: -30~30
 };
 
+/** 模块元信息（注册用，与实例 meta 同源） */
+const META: ModuleMeta = {
+    labelKey: 'motion.override.module.bodyPosture',
+    icon: 'lucide:user',
+    defaults: DEFAULTS,
+};
+
 /** 管理的骨骼 */
 const MANAGED_BONES = ['上半身', '腰', '上半身2'];
 
-/** 烘焙：将语义参数写入引擎 */
+/** 烘焙：将语义参数写入引擎（仅 enabled 时生效，通过 claimBones 仲裁冲突） */
 function bake(modelId: string): void {
     const state = getModuleState(modelId, MODULE_ID);
+    if (!state.enabled) {
+        return; // 门控：未启用时不烘焙（P1-2 修复）
+    }
     const tilt = (state.params.tilt as number) ?? 0;
     const bend = (state.params.bend as number) ?? 0;
     const twist = (state.params.twist as number) ?? 0;
 
-    setBoneOverride('上半身', [tilt, 0, 0], 1, true, modelId);
-    setBoneOverride('腰', [bend, 0, 0], 1, true, modelId);
-    setBoneOverride('上半身2', [0, twist, 0], 1, true, modelId);
+    // 声明骨骼所有权（已被其他模块占用的骨骼会被跳过并 warn）
+    const claimed = claimBones(modelId, MODULE_ID, MANAGED_BONES);
+    if (claimed.includes('上半身')) {
+        setBoneOverride('上半身', [tilt, 0, 0], 1, true, modelId);
+    }
+    if (claimed.includes('腰')) {
+        setBoneOverride('腰', [bend, 0, 0], 1, true, modelId);
+    }
+    if (claimed.includes('上半身2')) {
+        setBoneOverride('上半身2', [0, twist, 0], 1, true, modelId);
+    }
 }
 
 /** 创建身体姿态模块实例 */
 export function createBodyPostureModule(modelId: string): MotionOverrideModule {
     return {
         id: MODULE_ID,
-        meta: {
-            labelKey: 'motion.override.module.bodyPosture',
-            icon: 'lucide:user',
-        },
+        meta: META,
         priority: 1,
         managedBones: MANAGED_BONES,
 
@@ -56,8 +77,8 @@ export function createBodyPostureModule(modelId: string): MotionOverrideModule {
                         max: 15,
                         step: 0.5,
                         onChange: (v) => {
-                            setModuleParam(modelId, MODULE_ID, 'tilt', v as number);
-                            bake(modelId);
+                            // 走 setParam：enabled 门控 + 拖滑块自动 enable（VRChat 行为）
+                            createBodyPostureModule(modelId).setParam('tilt', v as number);
                         },
                     },
                 },
@@ -72,8 +93,7 @@ export function createBodyPostureModule(modelId: string): MotionOverrideModule {
                         max: 30,
                         step: 0.5,
                         onChange: (v) => {
-                            setModuleParam(modelId, MODULE_ID, 'bend', v as number);
-                            bake(modelId);
+                            createBodyPostureModule(modelId).setParam('bend', v as number);
                         },
                     },
                 },
@@ -88,8 +108,7 @@ export function createBodyPostureModule(modelId: string): MotionOverrideModule {
                         max: 30,
                         step: 0.5,
                         onChange: (v) => {
-                            setModuleParam(modelId, MODULE_ID, 'twist', v as number);
-                            bake(modelId);
+                            createBodyPostureModule(modelId).setParam('twist', v as number);
                         },
                     },
                 },
@@ -98,7 +117,6 @@ export function createBodyPostureModule(modelId: string): MotionOverrideModule {
 
         getState(): MotionModuleState {
             const state = getModuleState(modelId, MODULE_ID);
-            // 合并默认值
             return {
                 id: MODULE_ID,
                 enabled: state.enabled,
@@ -114,7 +132,10 @@ export function createBodyPostureModule(modelId: string): MotionOverrideModule {
 
         setParam(name: string, value: ParamValue): void {
             setModuleParam(modelId, MODULE_ID, name, value);
-            // 重新烘焙（仅烘焙变更的分量即可，但全量烘焙更安全且性能足够）
+            const st = getModuleState(modelId, MODULE_ID);
+            if (!st.enabled) {
+                st.enabled = true; // 拖滑块即视为启用意图（VRChat 行为，P1-2 修复）
+            }
             bake(modelId);
         },
 
@@ -127,7 +148,9 @@ export function createBodyPostureModule(modelId: string): MotionOverrideModule {
         disable(): void {
             const state = getModuleState(modelId, MODULE_ID);
             state.enabled = false;
-            for (const bone of MANAGED_BONES) {
+            // 仅清自有 ownedBones，不误伤用户手动覆盖（P2-1 修复）
+            const bones = releaseOwnedBones(modelId, MODULE_ID);
+            for (const bone of bones) {
                 clearBoneOverride(bone, modelId);
             }
         },
@@ -136,10 +159,5 @@ export function createBodyPostureModule(modelId: string): MotionOverrideModule {
 
 /** 注册身体姿态模块 */
 export function registerBodyPosture(): void {
-    registerModule(
-        MODULE_ID,
-        { labelKey: 'motion.override.module.bodyPosture', icon: 'lucide:user' },
-        1,
-        createBodyPostureModule
-    );
+    registerModule(MODULE_ID, META, 1, createBodyPostureModule);
 }

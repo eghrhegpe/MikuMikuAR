@@ -396,12 +396,15 @@ export const envState: EnvState = reactive<EnvState>({
     debugClouds: false,
     cloudCover: 0.5,
     cloudScale: 0.55,
-    cloudHeight: 80,
-    cloudThickness: 15,
+    cloudHeight: 300,
+    cloudThickness: 60,
     cloudVisibility: 8000,
     cloudGap: 0.1,
     cloudErosion: 0.4,
     cloudWeatherStrength: 0.6,
+    cloudBacklight: 0.5,
+    cloudPowder: 0.8,
+    cloudQuality: 'high',
 
     debugMirrorEnabled: false,
 
