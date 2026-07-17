@@ -54,7 +54,53 @@ export const test = base.extend<WailsFixtures>({
     vitePage: async ({}, use) => {
         const browser = await chromium.launch({ headless: true });
         const page = await browser.newPage();
-        await page.goto(VITE_URL, { waitUntil: "domcontentloaded", timeout: 10000 });
+        // waitUntil:"commit" 早返回（DOM 一开始解析就放行），避免多 worker 并发打 Vite 时
+        // babylon-mmd 等重模块阻塞 HTML parser 触发 10s goto 超时。
+        await page.goto(VITE_URL, { waitUntil: "commit", timeout: 30000 });
+        // 守卫 1: nav 按钮静态渲染（index.html 写死，不证明 init() 跑完）
+        await page.waitForSelector("#btnMainAction", { timeout: 20000 });
+        // 守卫 2: 等 init() 完成。init() 成功 → dom.showApp() 把 #loading display:none；
+        // 失败 → dom.showError() 给 #loading 加 background。任一信号出现即表示 init 跑完，
+        // click handler 已注册。纯 Vite 模式下 Wails binding 不可用通常走失败路径，
+        // 但 click handler 仍已在 `await initScene()` 之前注册，可正常触发 toggleOverlay。
+        await page.evaluate(() => {
+            return new Promise<void>((resolve) => {
+                const loading = document.getElementById("loading");
+                if (!loading) return resolve();
+                const done = () => resolve();
+                if (loading.style.display === "none" || loading.style.background) {
+                    return done();
+                }
+                const obs = new MutationObserver(() => {
+                    if (loading.style.display === "none" || loading.style.background) {
+                        obs.disconnect();
+                        done();
+                    }
+                });
+                obs.observe(loading, { attributes: true, attributeFilter: ["style"] });
+                setTimeout(() => {
+                    obs.disconnect();
+                    done();
+                }, 20000);
+            });
+        });
+        // [doc:e2e] 纯 Vite 模式下 init() catch 会调 dom.showError() 设 #loading 的
+        // pointer-events:'auto'，全屏 z-index:10000 的 #loading 会拦截所有 nav click。
+        // 强制保持 pointer-events:none 让 click 穿透；MutationObserver 兜后续变更。
+        await page.evaluate(() => {
+            const loading = document.getElementById("loading");
+            if (!loading) return;
+            const forcePassthrough = () => {
+                if (loading.style.pointerEvents !== "none") {
+                    loading.style.pointerEvents = "none";
+                }
+            };
+            forcePassthrough();
+            new MutationObserver(forcePassthrough).observe(loading, {
+                attributes: true,
+                attributeFilter: ["style"],
+            });
+        });
         await use(page);
         await browser.close();
     },

@@ -353,7 +353,7 @@ function makeMockMorphManager(names: string[]) {
 
 function makeMockModelWithMorphManager(morphManager: ReturnType<typeof makeMockMorphManager>) {
     return {
-        mesh: { morphTargetManager: morphManager },
+        mesh: { morphTargetManager: morphManager, isDisposed: () => false },
         runtimeBones: [],
     };
 }
