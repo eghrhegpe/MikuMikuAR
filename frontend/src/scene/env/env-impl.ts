@@ -156,38 +156,9 @@ export function ensureEnvUpdateObserver(): void {
     _envUpdateObserver = scene.onBeforeRenderObservable.add(() => {
         const dt = scene.deltaTime / 1000;
 
-        // Cloud drift
-        if (envState.cloudsEnabled && _envSys.clouds.postProcess) {
-            const cam = scene.activeCamera;
-            const dx = envState.windEnabled
-                ? envState.windDirection[0] * envState.windSpeed * 0.3 * dt
-                : 0;
-            const dz = envState.windEnabled
-                ? envState.windDirection[2] * envState.windSpeed * 0.3 * dt
-                : 0;
-            for (const key of ['postProcess', 'postProcess2'] as const) {
-                const m = _envSys.clouds[key];
-                if (m) {
-                    const speedMul = key === 'postProcess2' ? 0.7 : 1.0;
-                    if (cam) {
-                        m.position.x = cam.position.x;
-                        m.position.z = cam.position.z;
-                    }
-                    const mat = m.material as StandardMaterial | null;
-                    if (mat.diffuseTexture) {
-                        const tex = mat.diffuseTexture as Texture;
-                        tex.uOffset = (tex.uOffset + dx * speedMul) % 1;
-                        if (tex.uOffset < 0) {
-                            tex.uOffset += 1;
-                        }
-                        tex.vOffset = (tex.vOffset + dz * speedMul) % 1;
-                        if (tex.vOffset < 0) {
-                            tex.vOffset += 1;
-                        }
-                    }
-                }
-            }
-        }
+        // P2 修复：旧版平面纹理云的漂移逻辑（_envSys.clouds.postProcess/postProcess2）
+        // 已被 ShaderMaterial-on-Sphere 取代，残留代码每帧执行但不生效，删除。
+        // 新版云层在 env-clouds.ts 内部 onBeforeRender 通过 windDirection uniform + time 自管理。
 
         // Particles
         updateParticleWind();

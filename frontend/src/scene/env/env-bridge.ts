@@ -157,8 +157,10 @@ const _CLOUD_KEYS = [
     'cloudWeatherStrength',
     'cloudBacklight',
     'cloudPowder',
-    'cloudQuality',
     'groundLevel', // 云层地面裁剪依赖此值，groundLevel 变化时需重新同步云 shader uniform
+    // P4 修复：cloudQuality 字段在 state 中保留（默认 'high'），但目前未在 shader 中
+    // 使用（blue-noise dither 始终启用）。先从 _CLOUD_KEYS 移除以避免无效的 mesh
+    // 重建，等真正在 shader 中根据 quality 切换 dither 模式后再加回。
 ];
 // ADR-114 Phase 3: 接触阴影后处理（转发到 renderer.setContactShadow）
 const _CONTACT_SHADOW_KEYS = [

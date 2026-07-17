@@ -67,9 +67,13 @@ function _generateNoise3D(): Uint8Array {
 }
 
 function _ensureNoiseTexture(scene: Scene): RawTexture3D {
-    // Cache: only generate once, reuse across create/dispose cycles
-    if (_noiseTex3D) {
+    // P1 修复：场景重建时（旧 mesh/material 仍属旧 scene），缓存的纹理不能复用
+    if (_noiseTex3D && _noiseTex3D.getScene() === scene) {
         return _noiseTex3D;
+    }
+    if (_noiseTex3D) {
+        _noiseTex3D.dispose();
+        _noiseTex3D = null;
     }
     const S = 256;
     const data = _generateNoise3D();
@@ -188,6 +192,8 @@ function _computeWindVelocity(state: EnvState): [number, number, number] {
     const dx = state.windDirection[0];
     const dz = state.windDirection[2];
     const dirLen = Math.sqrt(dx * dx + dz * dz) || 1;
+    // 风速放大系数 2.0：将 UI 风速（用户感知强度）映射到 shader 噪声位移速度。
+    // UI 风速 1.0 对应 shader 中 2.0 单位/秒的云团漂移速度，是噪声 FBM 频率下的肉眼可辨速度。
     const speed = state.windSpeed * 2.0;
     return [(dx / dirLen) * speed, 0, (dz / dirLen) * speed];
 }
@@ -498,6 +504,13 @@ export function createClouds(state: EnvState): void {
         return;
     }
     const scene = getScene();
+
+    // P1 修复：场景重建时（如 HMR、场景切换），模块级单例的 mesh/material
+    // 仍附着在旧 scene 上。若直接复用会导致 uniform 写入废弃对象 + observer
+    // 仍向旧 scene 推送事件。检测到不一致时强制 dispose 重建。
+    if (_volCloudMesh && _volCloudMesh.getScene() !== scene) {
+        disposeClouds();
+    }
     // 球体直径 = min(40000, camera.maxZ * 1.8)，确保地平线附近顶点不被远平面裁剪
     const cam = scene.activeCamera;
     const farZ = cam?.maxZ ?? 10000;
@@ -508,23 +521,31 @@ export function createClouds(state: EnvState): void {
 
     // Update existing material uniforms without rebuilding mesh
     if (_volCloudMesh && _volCloudMat) {
-        const halfThick = (state.cloudThickness ?? 40) / 2;
-        _volCloudMat.setFloat('cloudDensity', state.cloudCover * CLOUD_DENSITY_SCALE);
-        _volCloudMat.setVector3('windDirection', new Vector3(windVel[0], windVel[1], windVel[2]));
-        _volCloudMat.setFloat('cloudBaseY', state.cloudHeight - halfThick);
-        _volCloudMat.setFloat('cloudTopY', state.cloudHeight + halfThick);
-        _volCloudMat.setFloat('cloudScale', state.cloudScale);
-        _volCloudMat.setFloat('cloudVisibility', state.cloudVisibility ?? 2000);
-        _volCloudMat.setFloat('cloudGap', state.cloudGap ?? 0.5);
-        _volCloudMat.setFloat('cloudErosion', state.cloudErosion ?? 0.4);
-        _volCloudMat.setFloat('cloudWeatherStrength', state.cloudWeatherStrength ?? 0.6);
-        _volCloudMat.setFloat('cloudBacklight', state.cloudBacklight ?? 0.5);
-        _volCloudMat.setFloat('cloudPowder', state.cloudPowder ?? 0.8);
-        _volCloudMat.setFloat('groundLevel', state.groundLevel);
+        // P3 修复：球壳直径取决于 camera.maxZ，farZ 显著变化时需重建 mesh
+        // （segments 是创建时定下的 48，不能仅靠 scaling 调整）
+        const prevFarZ = (_volCloudMesh.metadata?.farZ as number | undefined) ?? 0;
+        if (Math.abs(farZ - prevFarZ) > 500) {
+            disposeClouds();
+            // 走完整重建路径
+        } else {
+            const halfThick = (state.cloudThickness ?? 40) / 2;
+            _volCloudMat.setFloat('cloudDensity', state.cloudCover * CLOUD_DENSITY_SCALE);
+            _volCloudMat.setVector3('windDirection', new Vector3(windVel[0], windVel[1], windVel[2]));
+            _volCloudMat.setFloat('cloudBaseY', state.cloudHeight - halfThick);
+            _volCloudMat.setFloat('cloudTopY', state.cloudHeight + halfThick);
+            _volCloudMat.setFloat('cloudScale', state.cloudScale);
+            _volCloudMat.setFloat('cloudVisibility', state.cloudVisibility ?? 2000);
+            _volCloudMat.setFloat('cloudGap', state.cloudGap ?? 0.5);
+            _volCloudMat.setFloat('cloudErosion', state.cloudErosion ?? 0.4);
+            _volCloudMat.setFloat('cloudWeatherStrength', state.cloudWeatherStrength ?? 0.6);
+            _volCloudMat.setFloat('cloudBacklight', state.cloudBacklight ?? 0.5);
+            _volCloudMat.setFloat('cloudPowder', state.cloudPowder ?? 0.8);
+            _volCloudMat.setFloat('groundLevel', state.groundLevel);
 
-        // Sync debug visualization
-        _createDebugVisuals(state, scene);
-        return;
+            // Sync debug visualization
+            _createDebugVisuals(state, scene);
+            return;
+        }
     }
 
     disposeClouds();
@@ -642,7 +663,7 @@ export function createClouds(state: EnvState): void {
         }
         mat.setColor3('sceneFogColor', scene.fogEnabled ? scene.fogColor : new Color3(0.53, 0.7, 0.92));
     });
-    mesh.metadata = { obs, followObs };
+    mesh.metadata = { obs, followObs, farZ };
 
     mesh.material = mat;
     _volCloudMesh = mesh;
