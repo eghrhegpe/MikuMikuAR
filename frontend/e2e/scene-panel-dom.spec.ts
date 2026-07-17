@@ -21,16 +21,18 @@ test.describe("Scene — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, () =>
         // Core scene menu root sections (post refactor).
         // 道具 / 舞台灯光 / 队形 live inside the 舞台 sub-level, not at root.
         await expect(page.getByTestId("folder:scene:render:stage")).toBeVisible();
-        // 后处理 位于 渲染 子层级（非根级），保留稳定 id 契约，待人工确认导航路径
-        await expect(page.getByTestId("folder:scene:render:postprocess")).toBeVisible();
-        // 预设场景 位于 渲染 子层级（非根级），保留稳定 id 契约，待人工确认
-        await expect(page.getByTestId("folder:scene:render:presets")).toBeVisible();
+        // 后处理 / 渲染预设 已随 ADR-111 迁至环境菜单（env:postprocess）与场景→高级子层（scene:presets）
+        // 场景根级不再直接挂 scene:render:postprocess / scene:render:presets，相关断言见 env-panel 测试
         await expect(page.getByTestId("folder:scene:physics")).toBeVisible();
     });
 
-    test("场景面板: 后处理区段含抗锯齿等选项", async ({ vitePage: page }) => {
-        // 后处理 is a top-level section in the refactored scene menu.
-        await page.getByTestId("folder:scene:render:postprocess").click();
+    test("场景面板: 后处理区段含抗锯齿等选项（迁至环境菜单）", async ({ vitePage: page }) => {
+        // [adr-111] 后处理（Bloom/DOF/色调映射）从场景菜单迁入环境菜单，故从 env 入口验证
+        await page.keyboard.press("Escape");
+        await page.waitForSelector("#sceneOverlay:not(.visible)", { timeout: 5000 });
+        await page.click("#btnEnv");
+        await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
+        await page.getByTestId("folder:env:postprocess").click();
         await expect(page.getByTestId("postprocess:optical:aa")).toBeVisible();
         await expect(page.getByTestId("postprocess:vignette")).toBeVisible();
     });
