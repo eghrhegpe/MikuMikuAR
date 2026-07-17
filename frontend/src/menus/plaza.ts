@@ -1319,7 +1319,7 @@ function renderEmbed(site: PlazaSite): void {
             spinner.classList.add('is-hidden');
             const err = document.createElement('div');
             err.className = 'plaza-error';
-            err.textContent = L.proxyError + (e instanceof Error ? e.message : String(e));
+            err.textContent = t('plaza.proxyError', { err: translateGoError(e) });
             body.appendChild(err);
         });
 }
