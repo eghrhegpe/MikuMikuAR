@@ -1,4 +1,4 @@
-// [doc:architecture] Scene ProcMotion Levels — 程序化动作/LipSync 弹窗层级
+// [doc:architecture] Scene ProcMotion Levels — 程序化动作弹窗层级
 // 从 scene-menu.ts 拆分
 
 import { cardContainer } from '../core/config';
@@ -11,10 +11,6 @@ import {
     setProcMotionAutoSwitch,
     getProcMotionState,
     regenerateProcMotion,
-    getLipSyncState,
-    setLipSyncEnabled,
-    setLipSyncSensitivity,
-    setLipSyncIntensity,
     setProcMotionInterpOverride,
 } from '../scene/scene';
 import { setProcMotionBoneToggle } from '../scene/motion/proc-motion-bridge';
@@ -81,19 +77,6 @@ function buildProcMotionSchema(): MenuNode[] {
                         'lucide:repeat',
                         {
                             bind: () => getProcMotionState().autoSwitch,
-                        }
-                    );
-                    addToggleRow(
-                        inner,
-                        t('motion.lipSync'),
-                        getLipSyncState().enabled,
-                        (v) => {
-                            setLipSyncEnabled(v);
-                            getMotionMenu()?.updateControls();
-                        },
-                        'lucide:mic',
-                        {
-                            bind: () => getLipSyncState().enabled,
                         }
                     );
                 });
@@ -315,58 +298,5 @@ export function buildProcMotionModeLevel(): PopupLevel {
             icon: m.icon,
             target: `procmotion:set-mode:${m.mode}`,
         })),
-    };
-}
-
-export function buildLipSyncLevel(): PopupLevel {
-    const st = getLipSyncState();
-    return {
-        label: t('motion.lipSync'),
-        dir: '',
-        items: [
-            {
-                kind: 'action',
-                label: t('motion.enable'),
-                icon: st.enabled ? 'check' : 'circle',
-                target: 'lipsync:toggle',
-                sublabel: st.enabled ? t('motion.on') : t('motion.off'),
-            },
-        ],
-        renderCustom: (container) => {
-            cardContainer(container, (c) => {
-                addSliderRow(
-                    c,
-                    t('motion.sensitivity'),
-                    1 - st.sensitivity,
-                    0,
-                    1,
-                    0.05,
-                    (v) => {
-                        setLipSyncSensitivity(1 - v);
-                    },
-                    'lucide:volume-2',
-                    undefined,
-                    {
-                        bind: () => 1 - getLipSyncState().sensitivity,
-                    }
-                );
-                addSliderRow(
-                    c,
-                    t('motion.intensity'),
-                    st.intensity,
-                    0,
-                    1,
-                    0.05,
-                    (v) => {
-                        setLipSyncIntensity(v);
-                    },
-                    'lucide:activity',
-                    undefined,
-                    {
-                        bind: () => getLipSyncState().intensity,
-                    }
-                );
-            });
-        },
     };
 }

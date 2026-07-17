@@ -60,7 +60,6 @@ import type { ProcMotionMode } from '../motion-algos/procedural-motion';
 import {
     buildProcMotionLevel,
     buildProcMotionModeLevel,
-    buildLipSyncLevel,
 } from './motion-procmotion-levels';
 import { buildGazeTrackingLevel } from './motion-gaze-levels';
 import { buildCameraLevel } from './motion-camera-levels';
@@ -435,7 +434,6 @@ const MOTION_FOLDER_ROUTES: Record<string, () => PopupLevel> = {
     'motion:advanced': buildAdvancedLevel,
     'motion:retarget': buildRetargetLevel,
     'procmotion:mode': buildProcMotionModeLevel,
-    'lipsync:menu': buildLipSyncLevel,
 };
 
 function motionOnFolderEnter(row: PopupRow): PopupLevel | null {
