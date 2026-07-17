@@ -3,7 +3,7 @@
 
 import { setStatus, cardContainer, stackRegistry, setMotionBindingTargetId } from '../core/config';
 import type { PopupLevel } from '../core/config';
-import { slideRow, addSliderRow, addToggleRow, addModeSlider } from '../core/ui-helpers';
+import { slideRow, addSliderRow, addToggleRow, addModeSlider, addModeRow } from '../core/ui-helpers';
 import { getBrowseDir } from '../core/utils';
 import {
     hasCameraVmd,
@@ -354,38 +354,18 @@ function renderOrbitParams(container: HTMLElement): void {
 
     // 骨骼选择器（仅锁定启用且有骨骼时显示）
     if (boneLock.enabled && boneNames.length > 0) {
-        const selectContainer = document.createElement('div');
-        selectContainer.style.cssText = 'display:flex;align-items:center;gap:8px;padding:4px 0;';
-
-        const label = document.createElement('label');
-        label.className = 'cs-label';
-        label.style.cssText = 'flex-shrink:0;font-size:11px;opacity:0.7;min-width:60px;';
-        label.textContent = t('motion.boneLockSelect');
-
-        const select = document.createElement('select');
-        select.className = 'cs-select setting-select';
-
-        for (const bn of boneNames) {
-            const opt = document.createElement('option');
-            opt.value = bn;
-            opt.textContent = bn;
-            if (bn === boneLock.boneName) {
-                opt.selected = true;
-            }
-            select.appendChild(opt);
-        }
-
-        select.addEventListener('change', () => {
-            const bn = select.value;
-            if (bn) {
+        const boneOptions = boneNames.map((bn) => ({ value: bn, label: bn }));
+        addModeRow(
+            container,
+            t('motion.boneLockSelect'),
+            boneOptions,
+            boneLock.boneName,
+            (bn) => {
                 setOrbitBoneLock(true, bn);
                 setStatus(t('motion.boneLockApplied', { bone: bn }), true);
+                refreshCameraLevel();
             }
-        });
-
-        selectContainer.appendChild(label);
-        selectContainer.appendChild(select);
-        container.appendChild(selectContainer);
+        );
     } else if (boneLock.enabled && boneNames.length === 0) {
         // 有锁定但无骨骼（例如模型未加载）——显示提示
         const hint = document.createElement('div');

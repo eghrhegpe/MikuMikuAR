@@ -19,7 +19,7 @@ function buildPropSchema(): MenuNode[] {
     const props = getPropList();
     const nodes: MenuNode[] = [];
 
-    // 卡片 1：已加载道具列表（空时隐藏）
+    // 卡片 1：已加载道具列表（空时显示引导）
     if (props.length > 0) {
         nodes.push({
             id: 'prop:list',
@@ -50,6 +50,20 @@ function buildPropSchema(): MenuNode[] {
                             }
                         );
                     }
+                });
+            },
+        });
+    } else {
+        nodes.push({
+            id: 'prop:empty',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    const emptyDiv = document.createElement('div');
+                    emptyDiv.style.cssText =
+                        'padding:12px 14px;text-align:center;font-size:var(--font-ui);color:var(--text-dim);';
+                    emptyDiv.textContent = t('scene.noProps');
+                    inner.appendChild(emptyDiv);
                 });
             },
         });
