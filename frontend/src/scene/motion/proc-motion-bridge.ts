@@ -23,6 +23,9 @@ import { modelManager, focusedMmdModel, focusedModel, loadVMDMotion } from '../s
 import { setGazeConfig, onPerceptionModelRemoved, activatePerception } from './perception';
 import { clamp01, logWarn } from '@/core/utils';
 
+// [fix:ghost-state] 模块私有状态：所有外部修改必须通过 setProcMotion* setter，
+// 读取必须通过 getProcMotionState()（返回浅拷贝，防止外部 mutate 内部引用）。
+// 不可变更新模式（{ ...procState, ...patch }）保证每次变更生成新引用，便于追踪。
 let procState: ProcMotionState = { ...DEFAULT_PROC_STATE };
 let procBeatDetector: BeatDetector | null = null;
 let _procVmdActive = false;

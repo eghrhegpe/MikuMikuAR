@@ -1,6 +1,13 @@
 /**
  * [doc:architecture] Shared mutable state for MikuMikuAR.
  * Extracted from config.ts — global variables, setters, runtime state.
+ *
+ * @remarks 状态访问规约（[fix:ghost-state] P3 防御）
+ * - 本文件中所有 `export let` 变量**仅供读取**，外部模块禁止直接赋值。
+ * - 修改必须通过对应的 `setXxx()` setter，以保证状态变更点可追踪（单一写入点原则）。
+ * - 引用类型变量（Map/Set/数组）的**内容**可被 mutate（如 `modelRegistry.set(...)`），
+ *   但**引用本身**的替换必须通过 setter（如 `setModelRegistry(newMap)`）。
+ * - 已 grep 验证：生产代码无绕过 setter 的直接赋值，风险为理论性。
  */
 
 import { reactive } from './reactivity';
