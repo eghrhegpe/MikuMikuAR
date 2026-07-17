@@ -266,6 +266,7 @@ export const ja: Record<string, string> = {
     'cloth.radius': '衝突半径',
     'cloth.applied': '{n} 個のモデルにバーチャルスカートを適用',
     'cloth.skippedAll': 'すべてのモデルに既にスカートボーンがあります',
+    'cloth.buildFailed': 'バーチャルスカートの構築に失敗: {err}',
     'cloth.noRuntime': '物理ランタイムが準備できていません',
     'cloth.status': '適用中：{n} 個',
     'cloth.hint':
@@ -1444,6 +1445,7 @@ export const ja: Record<string, string> = {
     'motion.poseStudio.watermarkOpacity': '透かしの不透明度',
     'motion.poseStudio.watermarkToggle': '透かしを有効にする',
     'plaza.downloadFail': 'ダウンロード失敗: {err}',
+    'plaza.proxyError': 'プロキシ起動に失敗: {err}',
     'plaza.downloaded': '✓ ダウンロード完了: {name} ({size} KB)',
     'plaza.downloading': 'ダウンロード中: {name}',
     'plaza.openFail': 'ウィンドウのオープンに失敗: {err}',
