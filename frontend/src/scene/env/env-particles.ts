@@ -587,6 +587,17 @@ function spawnSplashAt(x: number, y: number, z: number): void {
     }, 800);
 }
 
+/** 碰撞检测地面高度空间网格缓存 — 每帧清空，按需填充，避免重复调用 getGroundHeightAt */
+const _gridCellSize = 10;
+const _groundHeightCache = new Map<number, number>();
+
+function _gridCellKey(x: number, z: number): number {
+    const cx = Math.floor(x / _gridCellSize);
+    const cz = Math.floor(z / _gridCellSize);
+    // 用 16 位交错编码（Morton-like）合成单 key，避免字符串 GC
+    return (cx << 16) | (cz & 0xffff);
+}
+
 /** 启动碰撞检测 — 每帧遍历 CPU 粒子数组，检测地面碰撞 */
 function startCollisionDetection(ps: ParticleSystem, type: EnvState['particleType']): void {
     const scene = getScene();
@@ -605,6 +616,9 @@ function startCollisionDetection(ps: ParticleSystem, type: EnvState['particleTyp
             return;
         }
 
+        // 每帧清空缓存，避免旧帧数据残留
+        _groundHeightCache.clear();
+
         const startIdx = frameIdx;
         for (let i = startIdx; i < particles.length; i += frameSkip) {
             const p = particles[i];
@@ -612,7 +626,14 @@ function startCollisionDetection(ps: ParticleSystem, type: EnvState['particleTyp
                 continue;
             }
 
-            const gh = getGroundHeightAt(p.position.x, p.position.z);
+            // 空间网格缓存：同网格内粒子共享 ground height 查询结果
+            const key = _gridCellKey(p.position.x, p.position.z);
+            let gh = _groundHeightCache.get(key);
+            if (gh === undefined) {
+                gh = getGroundHeightAt(p.position.x, p.position.z);
+                _groundHeightCache.set(key, gh);
+            }
+
             const deathY = envState.waterEnabled ? Math.max(gh, envState.waterLevel) : gh;
             if (p.position.y <= deathY) {
                 p.age = p.lifeTime;
