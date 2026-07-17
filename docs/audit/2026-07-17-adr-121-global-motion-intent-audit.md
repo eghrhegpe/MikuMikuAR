@@ -80,3 +80,21 @@
 ## 通过判定
 
 满足「不变量边界正确 + 复用与兼容论证有力 + 风险分级清晰」三项优点，**但 P1 事实性过度承诺与 P2 i18n 缺口须在 P0 动工前闭合**。建议状态保持「规划」，修订后可直接进入 P0；当前不直接批准实施。
+
+---
+
+## 首席架构师修订确认（Riku，2026-07-17）
+
+已据 7 项修订清单逐条闭合 ADR-121（`docs/adr/adr-121-global-motion-intent.md`），事实性断言均经独立核验：
+
+| 项 | 处置 | 核验 |
+|----|------|------|
+| 【P1】🔴 `resolve()` 复用 ADR-108 + `matchBone` 过度承诺 | §背景关联资产表、§数据流「兼容性解析」、§边界表、§不变表四处改写：`resolve()` 明确为**待新建函数**；骨骼名匹配复用 `motion-algos/proc-motion-shared.ts:146` 的 `matchBone`；ADR-108 `AnimationRetargeter` 降级为「外部动画源可选重映射手段」，非广播引擎 | `grep` 确认 `matchBone` 确在 `proc-motion-shared.ts:146`、`animation-retargeter.ts` 仅含 `getBoneMapPresets`/`playRetargetedAnimation`、无 `matchBone`/`左足` |
+| 【P2】i18n 仅列 3 列 | §i18n 表格补齐 `ko` / `zh-TW` 两列，并注明 5 语言对应 `core/i18n/locales/` 下 `en/ja/ko/zh-CN/zh-TW.ts` | `find` 真实验证 locales 目录 5 文件齐全 |
+| 【P2】`MotionSource` 语义模糊 | 类型块加注释：定义为「用户选择的原始动作来源性质」（`vmd` / `retargeted`），明确为可选元信息、非运行时类型分派 | — |
+| 【P3】`pendingVmd` 下游引用未列 | P1 实施清单扩展为「迁移 `scene.ts:489` / `core/state.ts:108` / `__tests__/model-ops.test.ts:568` 等全部引用点」，否则移除会破测试与场景入口 | `grep` 确认三处引用真实存在 |
+| 【P3】并发竞态 | 风险表新增 🟡 P3：引入 generation counter / 加载锁，使 `broadcastMotion` 与 `model-loader` 两条 `inst.vmd*` 写入路径互斥 | — |
+| 【P3】store 无 Observable | 风险表新增 🟡 P3：store 暴露 `onMotionChange(cb)` 薄订阅，使 `incompatible` 提示可实时刷新 | — |
+| 【P4】路径前缀 / `pinned` 共享引用 | 顶部新增「路径约定」注明省略 `frontend/src/` 前缀（与 ADR-120/116 一致）；`pinned` 注明须 `structuredClone(activeMotion)` 冻结快照 | — |
+
+**结论**：7 项全部闭合，ADR-121 状态维持「规划」，现已具备进入 P0 的条件。

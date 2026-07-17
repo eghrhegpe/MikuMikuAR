@@ -311,6 +311,8 @@ uniform float groundLevel;
 uniform vec3 sceneFogColor;
 uniform float cloudErosion;
 uniform float cloudWeatherStrength;
+uniform float cloudBacklight; // Phase C: 双瓣 HG 后向瓣混合比 (0=纯前向, 1=纯后向)
+uniform float cloudPowder;     // Phase C: powder 糖粉效应强度 (0=关闭, 2=强)
 uniform vec3 sunDir;
 uniform vec3 sunColor;
 uniform sampler3D noiseTex;
@@ -342,12 +344,12 @@ float henyeyGreenstein(float cosTheta, float g) {
 }
 float dualPhase(float cosTheta) {
     // Forward lobe (g=0.8) + back lobe (g=-0.2) for realistic cloud scattering
-    return mix(henyeyGreenstein(cosTheta, 0.8), henyeyGreenstein(cosTheta, -0.2), 0.4);
+    return mix(henyeyGreenstein(cosTheta, 0.8), henyeyGreenstein(cosTheta, -0.2), cloudBacklight);
 }
 
 // Powder effect: darkens dense regions viewed against light direction
 float powder(float od) {
-    return 1.0 - exp(-od * 2.0);
+    return 1.0 - exp(-od * 2.0 * cloudPowder);
 }
 
 // Sunset tint: blend warm orange near horizon, cool blue high up
@@ -438,6 +440,7 @@ void main(){
 
     // Adaptive jitter with blue-noise for smoother dithering and less banding
     // Blue noise has better spatial distribution than white noise at equal sample count.
+    // NOTE: 除数 64 必须与 _ensureBlueNoiseTexture() 的 size 参数一致
     float jitter = texture(blueNoiseTex, gl_FragCoord.xy / 64.0).r;
     float firstDt = CLOUD_STEP_MIN + tEnter * CLOUD_STEP_GROWTH;
     float t = tEnter + jitter * firstDt;
@@ -565,6 +568,8 @@ export function createClouds(state: EnvState): void {
                 'cloudGap',
                 'cloudErosion',
                 'cloudWeatherStrength',
+                'cloudBacklight',
+                'cloudPowder',
                 'sunDir',
                 'sunColor',
                 'brightness',
@@ -579,6 +584,7 @@ export function createClouds(state: EnvState): void {
 
     mat.backFaceCulling = false;
     mat.alpha = 1.0;
+    mat.needAlphaBlending = true; // fragment shader 用 discard + alpha 合成，需告知管线走透明路径
     // Bind 3D noise texture (must be after mat is created)
     const noiseTex = _ensureNoiseTexture(scene);
     mat.setTexture('noiseTex', noiseTex);
