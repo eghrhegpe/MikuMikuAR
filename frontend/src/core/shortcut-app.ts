@@ -65,6 +65,18 @@ export function registerAppShortcuts(): void {
             group: 'shortcuts.group.popupNav',
         },
         {
+            id: 'toggle:settings',
+            label: 'shortcuts.label.settings',
+            defaultKey: 'Digit5',
+            defaultCtrl: true,
+            prevent: true,
+            handler: () => {
+                navActions[5]();
+                setStatus(navLabels[5] || '', false);
+            },
+            group: 'shortcuts.group.popupNav',
+        },
+        {
             id: 'camera:ar',
             label: 'shortcuts.label.arCamera',
             defaultKey: 'Digit6',
