@@ -8,7 +8,6 @@ import type { MotionOverrideModule, ModuleFactory, ModuleMeta } from './types';
 import { clearBoneOverride } from '../bone-override';
 import { registerBodyPosture } from './body-posture';
 import { registerHandSymmetry } from './hand-symmetry';
-import { registerHeadTracking } from './head-tracking';
 import { registerSwayMotion } from './sway-motion';
 import { registerFingerPose } from './finger-pose';
 import { registerRidingModel } from './riding-model';
@@ -181,6 +180,22 @@ export function getOwnedBones(modelId: string, moduleId: string): Set<string> {
     return _ownedMap(modelId).get(moduleId) ?? new Set();
 }
 
+/**
+ * [doc:adr-116 P3] 判定指定骨骼是否被「其他模块」占用（无副作用、不 warn）。
+ * 用于时间驱动模块（sway/riding）的帧钩子做让位判定：
+ * 若被高优先级模块（如 position-offset 占用 センター）占用则让位，
+ * 否则可安全重新认领。区别于 claimBones（会触发 warn / 抢占副作用）。
+ */
+export function isBoneOwnedByOther(modelId: string, moduleId: string, bone: string): boolean {
+    const owned = _ownedMap(modelId);
+    for (const [otherId, otherSet] of owned) {
+        if (otherId !== moduleId && otherSet.has(bone)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 /** 释放模块的 ownedBones 记录（不清除骨骼覆盖本身，由调用方负责） */
 export function releaseOwnedBones(modelId: string, moduleId: string): Set<string> {
     const owned = _ownedMap(modelId);
@@ -258,7 +273,6 @@ export function initMotionModules(): void {
     }
     registerBodyPosture();
     registerHandSymmetry();
-    registerHeadTracking();
     registerSwayMotion();
     registerFingerPose();
     registerRidingModel();

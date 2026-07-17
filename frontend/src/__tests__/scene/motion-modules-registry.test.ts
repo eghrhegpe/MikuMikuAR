@@ -24,8 +24,8 @@ vi.mock('@/scene/motion/bone-override', () => ({
     setBoneOverridePosition: vi.fn(),
 }));
 
-// head-tracking 引入 perception，perception 引入 scene.ts (顶层 new Scene)
-// 单测环境无 engine，需 mock perception 避免触发 scene 初始化
+// 单测环境无 engine，mock perception 避免触发 scene 初始化
+// （保留 mock 以防后续模块引入 perception 依赖）
 vi.mock('@/scene/motion/perception', () => ({
     setHeadTrackingEnabled: vi.fn(),
 }));
@@ -251,11 +251,11 @@ describe('getState / setState 对称', () => {
         const bp = createModule('body-posture', 'm1')!;
         const hs = createModule('hand-symmetry', 'm1')!;
 
-        setModuleParam('m1', 'hand-symmetry', 'wristYaw', 30);
+        setModuleParam('m1', 'hand-symmetry', 'pitch', 30);
         bp.setState({ id: 'body-posture', enabled: true, params: { tilt: 1, bend: 2, twist: 3 } });
 
         const hsState = hs.getState();
-        expect(hsState.params.wristYaw).toBe(30); // 未被影响
+        expect(hsState.params.pitch).toBe(30); // 未被影响
     });
 });
 
@@ -264,8 +264,8 @@ describe('ownedBones 冲突仲裁', () => {
 
     it('claimBones 首次声明返回全部骨骼', () => {
         initMotionModules();
-        const claimed = claimBones('m1', 'body-posture', ['上半身', '腰']);
-        expect(claimed).toEqual(['上半身', '腰']);
+        const claimed = claimBones('m1', 'body-posture', ['上半身']);
+        expect(claimed).toEqual(['上半身']);
     });
 
     it('claimBones 幂等：重复声明同一模块的同一骨骼仍返回', () => {
@@ -279,8 +279,8 @@ describe('ownedBones 冲突仲裁', () => {
         initMotionModules();
         const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
         claimBones('m1', 'body-posture', ['上半身']);
-        const claimed = claimBones('m1', 'hand-symmetry', ['上半身', '左腕']);
-        expect(claimed).toEqual(['左腕']); // 上半身 被跳过
+        const claimed = claimBones('m1', 'hand-symmetry', ['上半身', '左手首']);
+        expect(claimed).toEqual(['左手首']); // 上半身 被跳过
         expect(warnSpy).toHaveBeenCalled();
         warnSpy.mockRestore();
     });
@@ -331,19 +331,17 @@ describe('ownedBones 冲突仲裁', () => {
 
     it('getOwnedBones 返回当前 owned 集合', () => {
         initMotionModules();
-        claimBones('m1', 'body-posture', ['上半身', '腰']);
+        claimBones('m1', 'body-posture', ['上半身']);
         const owned = getOwnedBones('m1', 'body-posture');
         expect(owned.has('上半身')).toBe(true);
-        expect(owned.has('腰')).toBe(true);
-        expect(owned.size).toBe(2);
+        expect(owned.size).toBe(1);
     });
 
     it('releaseOwnedBones 返回并释放骨骼集合', () => {
         initMotionModules();
-        claimBones('m1', 'body-posture', ['上半身', '腰']);
+        claimBones('m1', 'body-posture', ['上半身']);
         const released = releaseOwnedBones('m1', 'body-posture');
         expect(released.has('上半身')).toBe(true);
-        expect(released.has('腰')).toBe(true);
         // 释放后 getOwnedBones 为空
         expect(getOwnedBones('m1', 'body-posture').size).toBe(0);
     });
@@ -368,11 +366,10 @@ describe('disable 精确清除（P2-1）', () => {
         // 这里验证 disable 调用 clearBoneOverride 的骨骼集合 = ownedBones
         mod.disable();
 
-        // disable 应调用 clearBoneOverride 3 次（上半身/腰/上半身2 — センター已拆分归 position-offset）
-        expect(clearBoneOverrideSpy).toHaveBeenCalledTimes(3);
+        // disable 应调用 clearBoneOverride 2 次（上半身/上半身2 — 腰已移除，センター已拆分归 position-offset）
+        expect(clearBoneOverrideSpy).toHaveBeenCalledTimes(2);
         const clearedBones = clearBoneOverrideSpy.mock.calls.map((c) => c[0]);
         expect(clearedBones).toContain('上半身');
-        expect(clearedBones).toContain('腰');
         expect(clearedBones).toContain('上半身2');
     });
 });

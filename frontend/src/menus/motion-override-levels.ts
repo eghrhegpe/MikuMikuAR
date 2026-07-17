@@ -103,7 +103,7 @@ function buildMotionOverrideSchema(): MenuNode[] {
                                         inst?.disable();
                                     }
                                     setStatus(
-                                        v ? t('motion.override.enabled') : t('motion.disable'),
+                                        v ? t('motion.override.enabled') : t('motion.override.disabled'),
                                         true
                                     );
                                     getMotionMenu()?.reRender();

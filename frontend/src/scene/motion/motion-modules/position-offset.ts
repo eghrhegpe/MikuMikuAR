@@ -3,16 +3,15 @@
 // 从 body-posture 拆分而来，使「姿态」与「位置偏移」职责分离
 
 import type { MenuNode } from '@/menus/menu-schema';
-import type { MotionModuleState, ParamValue } from '@/core/types';
-import { setBoneOverridePosition, clearBoneOverride } from '../bone-override';
+import type { ParamValue } from '@/core/types';
+import { setBoneOverridePosition } from '../bone-override';
 import {
     registerModule,
     getModuleState,
-    setModuleParam,
     claimBones,
-    releaseOwnedBones,
 } from './registry';
 import type { MotionOverrideModule, ModuleMeta } from './types';
+import { createModuleBase } from './module-base';
 
 const MODULE_ID = 'position-offset';
 
@@ -51,6 +50,7 @@ function bake(modelId: string): void {
 
 /** 创建位置偏移模块实例 */
 export function createPositionOffsetModule(modelId: string): MotionOverrideModule {
+    const base = createModuleBase(modelId, MODULE_ID, DEFAULTS, bake);
     return {
         id: MODULE_ID,
         meta: META,
@@ -70,7 +70,7 @@ export function createPositionOffsetModule(modelId: string): MotionOverrideModul
                         max: 50,
                         step: 1,
                         onChange: (v) => {
-                            createPositionOffsetModule(modelId).setParam('sideShift', v as number);
+                            base.setParam('sideShift', v as number);
                         },
                     },
                 },
@@ -85,7 +85,7 @@ export function createPositionOffsetModule(modelId: string): MotionOverrideModul
                         max: 50,
                         step: 1,
                         onChange: (v) => {
-                            createPositionOffsetModule(modelId).setParam('vertShift', v as number);
+                            base.setParam('vertShift', v as number);
                         },
                     },
                 },
@@ -100,51 +100,18 @@ export function createPositionOffsetModule(modelId: string): MotionOverrideModul
                         max: 50,
                         step: 1,
                         onChange: (v) => {
-                            createPositionOffsetModule(modelId).setParam('depthShift', v as number);
+                            base.setParam('depthShift', v as number);
                         },
                     },
                 },
             ];
         },
 
-        getState(): MotionModuleState {
-            const state = getModuleState(modelId, MODULE_ID);
-            return {
-                id: MODULE_ID,
-                enabled: state.enabled,
-                params: { ...DEFAULTS, ...state.params },
-            };
-        },
-
-        setState(s: MotionModuleState): void {
-            const state = getModuleState(modelId, MODULE_ID);
-            state.enabled = s.enabled;
-            state.params = { ...s.params };
-        },
-
-        setParam(name: string, value: ParamValue): void {
-            setModuleParam(modelId, MODULE_ID, name, value);
-            const st = getModuleState(modelId, MODULE_ID);
-            if (!st.enabled) {
-                st.enabled = true;
-            }
-            bake(modelId);
-        },
-
-        enable(): void {
-            const state = getModuleState(modelId, MODULE_ID);
-            state.enabled = true;
-            bake(modelId);
-        },
-
-        disable(): void {
-            const state = getModuleState(modelId, MODULE_ID);
-            state.enabled = false;
-            const bones = releaseOwnedBones(modelId, MODULE_ID);
-            for (const bone of bones) {
-                clearBoneOverride(bone, modelId);
-            }
-        },
+        getState: base.getState,
+        setState: base.setState,
+        setParam: base.setParam,
+        enable: base.enable,
+        disable: base.disable,
     };
 }
 
