@@ -123,6 +123,9 @@ const _WATER_KEYS = [
     'foamTransitionRange',
     'rippleNormalStrength',
     'rippleGlintStrength',
+    'waterNormalStrength',
+    'waterGlintStrength',
+    'causticIntensity',
     'causticColor1',
     'causticColor2',
     'causticScrollX',
@@ -135,6 +138,7 @@ const _WATER_KEYS = [
     'waterFogDensity',
     'waterFogOpacityInfluence',
     'reflectionQuality', // ADR-114 修复：反射质量开关需触发材质重建（PLANAR_REFLECTION define 切换）
+    'planarReflectBlend',
 ];
 const _PARTICLE_KEYS = [
     'particleEnabled',

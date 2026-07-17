@@ -486,6 +486,9 @@ type EnvState struct {
 	FoamTransitionRange   float64    `json:"foamTransitionRange"`
 	RippleNormalStrength  float64    `json:"rippleNormalStrength"`
 	RippleGlintStrength   float64    `json:"rippleGlintStrength"`
+	WaterNormalStrength   float64    `json:"waterNormalStrength"`
+	WaterGlintStrength    float64    `json:"waterGlintStrength"`
+	CausticIntensity      float64    `json:"causticIntensity"`
 	CausticColor1         [3]float64 `json:"causticColor1"`
 	CausticColor2         [3]float64 `json:"causticColor2"`
 	CausticScrollX        float64    `json:"causticScrollX"`

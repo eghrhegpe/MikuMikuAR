@@ -251,6 +251,11 @@ let _causticScene: Scene | null = null;
 let _lastCausticColor: [number, number, number] | null = null;
 const CAUSTIC_TEX_SIZE = 128;
 
+// ADR-115 P1: 高频法线细节纹理（程序化生成，单例，不随水色变化）
+let _detailNormalTexture: Texture | null = null;
+let _detailNormalScene: Scene | null = null;
+const DETAIL_NORMAL_TEX_SIZE = 512;
+
 function regenerateCausticTexture(scene: Scene, waterColor: [number, number, number]): void {
     const S = CAUSTIC_TEX_SIZE;
     // 经统一工厂创建（优先 DynamicTexture，回退 toDataURL→Texture）。
@@ -330,6 +335,92 @@ function ensureCausticTexture(scene: Scene, waterColor: [number, number, number]
     return _causticTexture!;
 }
 
+// ======== ADR-115 P1: 程序化法线细节纹理 ========
+// 生成 512×512 双通道噪声法线图：多层 Value noise 叠加 → 中心差分求法线
+// 纹理编码：R=世界X梯度, G=世界Z梯度, B=世界Y(上, ~1.0)
+function _hash2d(x: number, y: number): number {
+    let h = (x * 374761393 + y * 668265263) | 0;
+    h = (h ^ (h >> 13)) * 1274126177;
+    return ((h ^ (h >> 16)) >>> 0) / 4294967295;
+}
+
+function _valueNoise(x: number, y: number): number {
+    const ix = Math.floor(x);
+    const iy = Math.floor(y);
+    const fx = x - ix;
+    const fy = y - iy;
+    const a = _hash2d(ix, iy);
+    const b = _hash2d(ix + 1, iy);
+    const c = _hash2d(ix, iy + 1);
+    const d = _hash2d(ix + 1, iy + 1);
+    const ux = fx * fx * (3 - 2 * fx);
+    const uy = fy * fy * (3 - 2 * fy);
+    return a * (1 - ux) * (1 - uy) + b * ux * (1 - uy) + c * (1 - ux) * uy + d * ux * uy;
+}
+
+function regenerateDetailNormalTexture(scene: Scene): void {
+    const S = DETAIL_NORMAL_TEX_SIZE;
+    const draw = (ctx: CanvasRenderingContext2D, s: number) => {
+        const imgData = ctx.createImageData(s, s);
+        const data = imgData.data;
+        const heights = new Float32Array(s * s);
+
+        // 4 层 octave 叠加生成高度图
+        for (let y = 0; y < s; y++) {
+            for (let x = 0; x < s; x++) {
+                let h = 0, amp = 1, freq = 1;
+                for (let oct = 0; oct < 4; oct++) {
+                    h += _valueNoise((x * freq) / s, (y * freq) / s) * amp;
+                    amp *= 0.5;
+                    freq *= 2;
+                }
+                heights[y * s + x] = h;
+            }
+        }
+
+        // 中心差分求法线，编码到 RGB
+        for (let y = 0; y < s; y++) {
+            for (let x = 0; x < s; x++) {
+                const xl = heights[y * s + ((x - 1 + s) % s)];
+                const xr = heights[y * s + ((x + 1) % s)];
+                const yl = heights[((y - 1 + s) % s) * s + x];
+                const yr = heights[((y + 1) % s) * s + x];
+                const nx = (xl - xr) * 0.5;
+                const ny = (yl - yr) * 0.5;
+                const nz = 1.0;
+                const len = Math.sqrt(nx * nx + ny * ny + nz * nz);
+                const i = (y * s + x) * 4;
+                data[i] = Math.floor(((nx / len) * 0.5 + 0.5) * 255);
+                data[i + 1] = Math.floor(((ny / len) * 0.5 + 0.5) * 255);
+                data[i + 2] = Math.floor(((nz / len) * 0.5 + 0.5) * 255);
+                data[i + 3] = 255;
+            }
+        }
+        ctx.putImageData(imgData, 0, 0);
+    };
+
+    if (_detailNormalTexture) {
+        _detailNormalTexture.dispose();
+        _detailNormalTexture = null;
+    }
+    _detailNormalTexture = createCanvasTexture({
+        size: S,
+        draw,
+        scene,
+        name: 'waterDetailNormal',
+        wrap: 'wrap',
+    });
+    _detailNormalScene = scene;
+}
+
+function ensureDetailNormalTexture(scene: Scene): Texture {
+    if (_detailNormalTexture && _detailNormalScene === scene) {
+        return _detailNormalTexture;
+    }
+    regenerateDetailNormalTexture(scene);
+    return _detailNormalTexture!;
+}
+
 // ======== Water System ========
 
 /**
@@ -377,9 +468,23 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     // ——— 焦散（随 waterColor 重新生成）——
     const causticTex = ensureCausticTexture(scene, state.waterColor);
     mat.setTexture('uCausticTex', causticTex);
-    mat.setFloat('uCausticIntensity', 0.15);
+    mat.setFloat('uCausticIntensity', state.causticIntensity);
     mat.setFloat('uCausticSpeed', 0.5);
     mat.setFloat('uCausticScale', 0.04);
+
+    // ——— ADR-115 P1: 高频法线扰动层 + Sun Glitter ——
+
+    const detailNormalTex = ensureDetailNormalTexture(scene);
+    mat.setTexture('uDetailNormalTex', detailNormalTex);
+    mat.setFloat('uDetailNormalStrength', state.waterNormalStrength);
+    mat.setFloat('uDetailNormalTiling1', 0.1);
+    mat.setFloat('uDetailNormalTiling2', 0.3);
+    mat.setFloat('uDetailNormalSpeed1', 0.05);
+    mat.setFloat('uDetailNormalSpeed2', -0.08);
+    mat.setFloat('uGlintStrength', state.waterGlintStrength);
+    mat.setFloat('uGlintPower', 96);
+    mat.setFloat('uGlintScale', 80.0);
+    mat.setFloat('uGlintSpeed', 2.0);
 
     // ——— 高级参数（从 EnvState 读取，持久化）———
     mat.setFloat('fresnelBias', state.fresnelBias);
@@ -525,6 +630,16 @@ const WATER_UNIFORMS = [
     'waterFogOpacityInfluence',
     'uWindDir',
     'planarReflectBlend',
+    // ADR-115 P1: 高频法线扰动 + Sun Glitter
+    'uDetailNormalStrength',
+    'uDetailNormalTiling1',
+    'uDetailNormalTiling2',
+    'uDetailNormalSpeed1',
+    'uDetailNormalSpeed2',
+    'uGlintStrength',
+    'uGlintPower',
+    'uGlintScale',
+    'uGlintSpeed',
 ];
 
 function _createWaterMaterial(scene: Scene, state: EnvState): ShaderMaterial {
@@ -538,7 +653,7 @@ function _createWaterMaterial(scene: Scene, state: EnvState): ShaderMaterial {
             attributes: ['position', 'uv', 'normal'],
             uniforms: WATER_UNIFORMS,
             uniformBuffers: [],
-            samplers: ['uCausticTex']
+            samplers: ['uCausticTex', 'uDetailNormalTex']
                 .concat(hasEnv ? ['envTexture'] : [])
                 .concat(hasReflection ? ['reflectionTexture'] : []),
             defines: (hasEnv ? ['ENV_TEXTURE'] : []).concat(
@@ -740,6 +855,12 @@ export function disposeWater(): void {
     }
     _causticScene = null;
     _lastCausticColor = null;
+    // ADR-115 P1: 释放法线细节纹理
+    if (_detailNormalTexture) {
+        _detailNormalTexture.dispose();
+        _detailNormalTexture = null;
+    }
+    _detailNormalScene = null;
     const scene = getScene();
     if (_waterUpdateObserver) {
         if (scene) {
@@ -897,12 +1018,16 @@ export interface WaterPreset {
     foamTransitionRange?: number;
     rippleNormalStrength?: number;
     rippleGlintStrength?: number;
+    causticIntensity?: number;
     causticColor1?: [number, number, number];
     causticColor2?: [number, number, number];
     causticScrollX?: number;
     causticScrollY?: number;
     fresnelAlphaInfluence?: number;
     foamOpacity?: number;
+    // ADR-115 P1: 高频法线扰动 + Sun Glitter
+    waterNormalStrength?: number;
+    waterGlintStrength?: number;
 }
 
 export const WATER_PRESETS: Record<string, WaterPreset> = {
@@ -919,6 +1044,9 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         waterFogOpacityInfluence: 0,
         fresnelAlphaInfluence: 0.35,
         foamOpacity: 0.5,
+        causticIntensity: 0.1,
+        waterNormalStrength: 0.15,
+        waterGlintStrength: 0,
     },
     ripple: {
         label: '涟漪',
@@ -933,6 +1061,9 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         waterFogOpacityInfluence: 0,
         fresnelAlphaInfluence: 0.4,
         foamOpacity: 0.55,
+        causticIntensity: 0.15,
+        waterNormalStrength: 0.3,
+        waterGlintStrength: 0.1,
     },
     ocean: {
         label: '海浪',
@@ -947,6 +1078,9 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         waterFogOpacityInfluence: 0,
         fresnelAlphaInfluence: 0.5,
         foamOpacity: 0.65,
+        causticIntensity: 0.2,
+        waterNormalStrength: 0.4,
+        waterGlintStrength: 0.2,
     },
     storm: {
         label: '风暴',
@@ -961,6 +1095,9 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         waterFogOpacityInfluence: 0,
         fresnelAlphaInfluence: 0.6,
         foamOpacity: 0.7,
+        causticIntensity: 0.25,
+        waterNormalStrength: 0.5,
+        waterGlintStrength: 0.05,
     },
     tropical: {
         label: '热带',
@@ -975,6 +1112,9 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         waterFogOpacityInfluence: 0,
         fresnelAlphaInfluence: 0.42,
         foamOpacity: 0.55,
+        causticIntensity: 0.2,
+        waterNormalStrength: 0.35,
+        waterGlintStrength: 0.3,
     },
 };
 
@@ -1009,10 +1149,14 @@ export function buildWaterPresetEnvState(preset: WaterPreset): Partial<EnvState>
         waterFogColor: preset.waterFogColor,
         waterFogDensity: preset.waterFogDensity,
         waterFogOpacityInfluence: preset.waterFogOpacityInfluence,
+        causticIntensity: preset.causticIntensity,
         // 扩展参数一并写入：setEnvState 同步触发的 _syncWaterUniforms 据此应用并持久化，
         // 避免被后续任意 envState 变化还原
         fresnelAlphaInfluence: preset.fresnelAlphaInfluence,
         foamOpacity: preset.foamOpacity,
+        // ADR-115 P1: 法线扰动 + Sun Glitter
+        waterNormalStrength: preset.waterNormalStrength,
+        waterGlintStrength: preset.waterGlintStrength,
     };
 }
 
@@ -1044,6 +1188,9 @@ export function applyWaterPresetToCurrent(preset: Partial<WaterPreset>): void {
     }
     if (preset.rippleGlintStrength !== undefined) {
         mat.setFloat('rippleGlintStrength', preset.rippleGlintStrength);
+    }
+    if (preset.causticIntensity !== undefined) {
+        mat.setFloat('uCausticIntensity', preset.causticIntensity);
     }
     if (preset.causticColor1 !== undefined) {
         mat.setVector3(
@@ -1077,5 +1224,12 @@ export function applyWaterPresetToCurrent(preset: Partial<WaterPreset>): void {
     }
     if (preset.waterFogOpacityInfluence !== undefined) {
         mat.setFloat('waterFogOpacityInfluence', preset.waterFogOpacityInfluence);
+    }
+    // ADR-115 P1: 法线扰动 + Sun Glitter
+    if (preset.waterNormalStrength !== undefined) {
+        mat.setFloat('uDetailNormalStrength', preset.waterNormalStrength);
+    }
+    if (preset.waterGlintStrength !== undefined) {
+        mat.setFloat('uGlintStrength', preset.waterGlintStrength);
     }
 }

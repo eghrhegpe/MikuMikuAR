@@ -492,6 +492,9 @@ export interface EnvState {
     foamTransitionRange: number;
     rippleNormalStrength: number;
     rippleGlintStrength: number;
+    waterNormalStrength: number; // ADR-115 P1: 高频法线扰动层强度，默认 0.3
+    waterGlintStrength: number; // ADR-115 P1: Sun Glitter 闪烁强度，默认 0
+    causticIntensity: number;
     causticColor1: [number, number, number];
     causticColor2: [number, number, number];
     causticScrollX: number;
