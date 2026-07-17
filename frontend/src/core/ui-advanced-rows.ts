@@ -211,6 +211,253 @@ export function addColorSliderRow(
 }
 
 // ===================================================================
+// addVector3SliderRow — 三维向量滑块（X/Y/Z 三通道）
+// ===================================================================
+
+export function addVector3SliderRow(
+    container: HTMLElement,
+    label: string,
+    value: [number, number, number],
+    min: number,
+    max: number,
+    step: number,
+    onChange: (v: [number, number, number]) => void,
+    axisLabels?: [string, string, string],
+    icon?: string,
+    onDragEndCb?: (v: [number, number, number]) => void,
+    opts?: ControlOptions<[number, number, number]>,
+    testId?: string
+): void {
+    const axes: [string, string, string] = axisLabels ?? ['X', 'Y', 'Z'];
+    const range = max - min;
+
+    const block = document.createElement('div');
+    block.className = 'vec3-block';
+    if (testId) {
+        block.setAttribute('data-testid', testId);
+    }
+
+    const header = document.createElement('div');
+    header.className = 'vec3-header';
+    if (icon) {
+        const iconBox = document.createElement('span');
+        iconBox.className = 'cs-icon';
+        const iconEl = createIconifyIcon(icon);
+        if (iconEl) {
+            iconBox.appendChild(iconEl);
+        } else {
+            const fb = document.createElement('span');
+            fb.className = 'cs-icon-fallback';
+            fb.textContent = label.charAt(0) || '?';
+            iconBox.appendChild(fb);
+        }
+        header.appendChild(iconBox);
+    }
+    const title = document.createElement('span');
+    title.className = 'vec3-title';
+    title.textContent = label;
+    title.id = `vec3-${Math.random().toString(36).slice(2, 11)}`;
+    header.appendChild(title);
+    block.appendChild(header);
+
+    const current: [number, number, number] = [value[0], value[1], value[2]];
+    const axisColors = ['var(--accent)', 'var(--success)', 'var(--warning)'];
+
+    function snapToStep(v: number): number {
+        if (!step || !Number.isFinite(step)) {
+            return v;
+        }
+        const precision = 1 / step;
+        return Math.round(v * precision) / precision;
+    }
+
+    const valEls: HTMLElement[] = [];
+    const fillEls: HTMLElement[] = [];
+    const thumbEls: HTMLElement[] = [];
+    const barEls: HTMLElement[] = [];
+
+    for (let ai = 0; ai < 3; ai++) {
+        const sub = document.createElement('div');
+        sub.className = 'vec3-row';
+        const ch = document.createElement('span');
+        ch.className = 'vec3-axis';
+        ch.style.color = axisColors[ai];
+        ch.textContent = axes[ai];
+        ch.id = `${title.id}-ax${ai}`;
+        sub.appendChild(ch);
+
+        const val = document.createElement('span');
+        val.className = 'vec3-value';
+        val.textContent = step < 1 ? current[ai].toFixed(2) : String(Math.round(current[ai]));
+        valEls[ai] = val;
+
+        const bar = document.createElement('div');
+        bar.className = 'cs-bar';
+        bar.tabIndex = 0;
+        bar.setAttribute('role', 'slider');
+        bar.setAttribute('aria-label', `${label} ${axes[ai]}`);
+        bar.setAttribute('aria-valuenow', String(current[ai]));
+        bar.setAttribute('aria-valuemin', String(min));
+        bar.setAttribute('aria-valuemax', String(max));
+        bar.setAttribute('aria-labelledby', ch.id);
+        barEls[ai] = bar;
+
+        const pct = ((current[ai] - min) / range) * 100;
+
+        const fill = document.createElement('div');
+        fill.className = 'cs-fill';
+        fill.style.background = axisColors[ai];
+        fill.style.width = clampPct(pct) + '%';
+        fillEls[ai] = fill;
+
+        const thumb = document.createElement('div');
+        thumb.className = 'cs-thumb';
+        thumb.style.left = clampPct(pct) + '%';
+        thumbEls[ai] = thumb;
+
+        bar.appendChild(fill);
+        bar.appendChild(thumb);
+
+        function updateDisplay(v: number): void {
+            current[ai] = v;
+            val.textContent = step < 1 ? v.toFixed(2) : String(Math.round(v));
+            const newPct = ((v - min) / range) * 100;
+            const clamped = clampPct(newPct);
+            fill.style.width = clamped + '%';
+            thumb.style.left = clamped + '%';
+            bar.setAttribute('aria-valuenow', String(v));
+            onChange([current[0], current[1], current[2]]);
+        }
+
+        function setValueFromClientX(clientX: number, rect: DOMRect): void {
+            const x = (clientX - rect.left) / rect.width;
+            const raw = min + clamp01(x) * range;
+            const snapped = snapToStep(raw);
+            const clamped = Math.max(min, Math.min(max, snapped));
+            if (clamped !== current[ai]) {
+                updateDisplay(clamped);
+            }
+        }
+
+        function handleKeyDown(e: KeyboardEvent): void {
+            const shiftMult = e.shiftKey ? 10 : 1;
+            let delta: number;
+            if (step >= 1) {
+                delta = e.shiftKey ? step * 10 : step;
+            } else {
+                delta = step * shiftMult;
+            }
+            switch (e.key) {
+                case 'ArrowLeft':
+                case 'ArrowDown': {
+                    e.preventDefault();
+                    const lower = Math.max(min, snapToStep(current[ai] - delta));
+                    if (lower !== current[ai]) {
+                        updateDisplay(lower);
+                        onDragEndCb?.([current[0], current[1], current[2]]);
+                    }
+                    break;
+                }
+                case 'ArrowRight':
+                case 'ArrowUp': {
+                    e.preventDefault();
+                    const upper = Math.min(max, snapToStep(current[ai] + delta));
+                    if (upper !== current[ai]) {
+                        updateDisplay(upper);
+                        onDragEndCb?.([current[0], current[1], current[2]]);
+                    }
+                    break;
+                }
+                case 'Home':
+                    e.preventDefault();
+                    if (min !== current[ai]) {
+                        updateDisplay(min);
+                        onDragEndCb?.([current[0], current[1], current[2]]);
+                    }
+                    break;
+                case 'End':
+                    e.preventDefault();
+                    if (max !== current[ai]) {
+                        updateDisplay(max);
+                        onDragEndCb?.([current[0], current[1], current[2]]);
+                    }
+                    break;
+            }
+        }
+
+        let didDrag = false;
+        let dragRect: DOMRect | null = null;
+        let moveDisp: Disposable | null = null;
+        let endDisp: Disposable | null = null;
+
+        function onDragMove(e: MouseEvent): void {
+            if (!didDrag) {
+                didDrag = true;
+            }
+            e.preventDefault();
+            if (dragRect) {
+                setValueFromClientX(e.clientX, dragRect);
+            }
+        }
+
+        function onDragEnd(e: MouseEvent): void {
+            moveDisp?.dispose();
+            endDisp?.dispose();
+            moveDisp = null;
+            endDisp = null;
+            if (!didDrag && dragRect) {
+                setValueFromClientX(e.clientX, dragRect);
+            }
+            if (didDrag) {
+                onDragEndCb?.([current[0], current[1], current[2]]);
+            }
+            dragRect = null;
+            didDrag = false;
+        }
+
+        bar.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            bar.focus();
+            dragRect = bar.getBoundingClientRect();
+            didDrag = false;
+            moveDisp = addDisposableListener(document, 'mousemove', onDragMove);
+            endDisp = addDisposableListener(document, 'mouseup', onDragEnd);
+        });
+
+        bar.addEventListener('keydown', handleKeyDown);
+
+        sub.appendChild(bar);
+        sub.appendChild(val);
+        block.appendChild(sub);
+    }
+
+    container.appendChild(block);
+
+    // === 自更新支持 ===
+    if (opts) {
+        initControl(block, opts, [value[0], value[1], value[2]], (v, cached) => {
+            if (!Array.isArray(v) || v.length < 3) {
+                return false;
+            }
+            let changed = false;
+            for (let i = 0; i < 3; i++) {
+                if (v[i] !== cached[i]) {
+                    changed = true;
+                    current[i] = v[i];
+                    valEls[i].textContent = step < 1 ? v[i].toFixed(2) : String(Math.round(v[i]));
+                    const newPct = ((v[i] - min) / range) * 100;
+                    const clamped = clampPct(newPct);
+                    fillEls[i].style.width = clamped + '%';
+                    thumbEls[i].style.left = clamped + '%';
+                    barEls[i].setAttribute('aria-valuenow', String(v[i]));
+                }
+            }
+            return changed;
+        });
+    }
+}
+
+// ===================================================================
 // addModeSlider
 // ===================================================================
 
