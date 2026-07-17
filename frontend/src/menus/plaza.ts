@@ -27,6 +27,7 @@ import { PLAZA_CREATORS, type PlazaCreator } from './plaza-creators';
 import { FetchPlazaConfig, GetCachedPlazaConfig, ReadTextFile } from '../core/wails-bindings';
 import { setStatus } from '../core/status-bar';
 import { t } from '../core/i18n/t';
+import { translateGoError } from '../core/i18n/goerr';
 import { showErrorToast } from '../core/toast';
 import { refreshLibrary } from './library';
 import { registerShortcuts } from '../core/shortcut-registry';
@@ -600,7 +601,7 @@ function renderSiteContent(site: PlazaSite): HTMLElement {
             }
             renderHome();
         } catch (e) {
-            showErrorToast(`更新失败: ${e instanceof Error ? e.message : String(e)}`);
+            showErrorToast(`更新失败: ${translateGoError(e)}`);
         } finally {
             updateBtn.disabled = false;
             updateBtn.innerHTML =
@@ -965,7 +966,7 @@ async function handlePlazaDownload(
     } catch (e) {
         // 动态 import 失败或 binding 未生成：仅报状态，不串到系统浏览器下载，便于单独定位内嵌下载问题。
         setStatus(
-            t('plaza.downloadFail', { err: e instanceof Error ? e.message : String(e) }),
+            t('plaza.downloadFail', { err: translateGoError(e) }),
             true
         );
     } finally {
@@ -1001,7 +1002,7 @@ function openInWindow(site: PlazaSite): void {
         .catch((e) => {
             // 不再自动降级到系统浏览器：wails 窗口失败即失败，便于单独测试该模式。
             setStatus(
-                t('plaza.openFail', { err: e instanceof Error ? e.message : String(e) }),
+                t('plaza.openFail', { err: translateGoError(e) }),
                 true
             );
         });
@@ -1318,7 +1319,7 @@ function renderEmbed(site: PlazaSite): void {
             spinner.classList.add('is-hidden');
             const err = document.createElement('div');
             err.className = 'plaza-error';
-            err.textContent = L.proxyError + (e instanceof Error ? e.message : String(e));
+            err.textContent = L.proxyError + translateGoError(e);
             body.appendChild(err);
         });
 }

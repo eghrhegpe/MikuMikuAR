@@ -16,6 +16,7 @@ import {
     envState,
 } from './config';
 import { t } from './i18n/t';
+import { translateGoError } from './i18n/goerr';
 import { registerIconBundle } from './icons-bundle';
 import { initI18n } from './i18n/locale';
 import { GetConfig, Events, CheckForUpdate } from './wails-bindings';
@@ -173,7 +174,7 @@ async function init(): Promise<void> {
         tryRestoreLastScene().catch((err) => logWarn('init', 'Auto-restore', err));
     } catch (err) {
         console.error('Init failed:', err);
-        const msg = err instanceof Error ? err.message : String(err);
+        const msg = translateGoError(err);
         dom.showError(msg);
         setStatus(t('main.initFailed'), false);
     }

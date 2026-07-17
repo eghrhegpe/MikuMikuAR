@@ -1442,4 +1442,11 @@ export const zhCN: Record<string, string> = {
     'goerr.screenshot.dirNotSet': '尚未设置截图保存目录，请先截图一次',
     'goerr.screenshot.dirCreateFailed': '创建截图目录失败',
     'goerr.screenshot.androidNotSupported': 'Android 不支持打开截图目录',
+    'goerr.watch.unsupportedFormat': '不支持的文件格式: {ext}',
+    'goerr.watch.androidNotSupported': 'Android 不支持文件系统监听，请手动导入文件',
+    'goerr.watch.dirInaccessible': '监听目录不可访问',
+    'goerr.watch.notADirectory': '路径不是目录: {dir}',
+    'goerr.watch.createWatcherFailed': '创建文件监听器失败',
+    'goerr.watch.addWatchFailed': '添加监听目录失败',
+    'goerr.zip.tooManyEntries': '{op}: 压缩包内文件数 {count} 超过上限 {max}',
 };

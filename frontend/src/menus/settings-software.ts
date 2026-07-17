@@ -16,6 +16,7 @@ import { showPrompt } from '../core/dialog';
 import { tryCatchStatus } from '../core/utils';
 import { getSettingsMenu } from './settings';
 import { t } from '../core/i18n/t';
+import { translateGoError } from '../core/i18n/goerr';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 
@@ -248,7 +249,7 @@ function buildSoftwareDetailManagedSchema(
                             .catch((err: unknown) =>
                                 setStatus(
                                     t('status.error', {
-                                        message: err instanceof Error ? err.message : String(err),
+                                        message: translateGoError(err),
                                     }),
                                     false
                                 )
@@ -322,7 +323,7 @@ function buildSoftwareDetailAutoSchema(
                             .catch((err: unknown) =>
                                 setStatus(
                                     t('status.error', {
-                                        message: err instanceof Error ? err.message : String(err),
+                                        message: translateGoError(err),
                                     }),
                                     false
                                 )

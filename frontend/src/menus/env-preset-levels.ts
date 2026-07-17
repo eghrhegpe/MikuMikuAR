@@ -7,6 +7,7 @@ import type { PopupLevel } from '../core/config';
 import { addSectionTitle, addPresetChip } from '../core/ui-helpers';
 import { tryCatchStatus, showErrorToast, logWarn } from '../core/utils';
 import { t } from '../core/i18n/t';
+import { translateGoError } from '../core/i18n/goerr';
 import {
     setEnvState,
     applyEnvPresetByCategory,
@@ -148,7 +149,7 @@ function renderCategorizedPresets(
             (err) =>
                 showErrorToast(
                     t('env-preset.saveErrorToast'),
-                    err instanceof Error ? err.message : String(err)
+                    translateGoError(err)
                 )
         );
         if (r) {

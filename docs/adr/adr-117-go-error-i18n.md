@@ -1,6 +1,6 @@
 # ADR-117: Go 端用户可见错误的 i18n 化
 
-> **状态**: 实施中（Phase 1 完成；契约验证发现 Wails v3 把 Go error stringify 成纯文本，原方案 A 的 `MarshalJSON` 对跨桥无效，已转向"信封方案"，见 §2.6）
+> **状态**: 实施中（Phase 1 + Phase 2 完成；剩余 Phase 3 防回归未启动；信封方案见 §2.6）
 > **背景**: ADR-059 已完成前端 i18n 框架（`core/i18n/` + 五语言 bundle + 热切换 + CI 奇偶校验），但 Go 后端返回给前端的**用户可见错误**仍是硬编码中文（如 `fmt.Errorf("未找到 Blender，请在设置中配置路径")`）。当用户切到英文/日文后，前端 UI 已本地化，但弹窗里的 Go 错误仍是中文，造成体验断裂。本 ADR 锁定 Go 错误的 i18n 契约，使前端能用 `t()` 翻译 Go 错误。
 > **关联**: [ADR-059](adr-059-i18n-framework.md)（前端 i18n 框架）、[terminology.md](../terminology.md) §三（Go 错误消息规范）
 
@@ -180,7 +180,7 @@ export function translateGoError(e: unknown): string {
 - `internal/i18nerr/errors.go`：`UserError` + `EnvelopeMarker` + `Error()` 信封 + `ParseEnvelope()`（供测试/对齐）。
 - `frontend/src/core/i18n/goerr.ts`：`translateGoError` 信封解析版。
 - `internal/app/integration.go`：12 处用户可见错误已迁移为 `i18nerr.New(...)`（code 集合见 §五）。
-- `locales/zh-CN.ts` + `locales/en.ts`：试点 `goerr.*` key 已加（ja/ko/zh-TW 按 ADR-059 回退 zh-CN，Phase 2 补全）。
+- `locales/zh-CN.ts`/`en.ts`/`ja.ts`/`ko.ts`/`zh-TW.ts`：全部 `goerr.*` key 已补全（Phase 2 完成，五语言对齐）。
 - 测试：`internal/i18nerr/errors_test.go`（Go 往返）、`frontend/src/__tests__/goerr.test.ts`（6 用例：zh-CN/en/未知 code 回退/旧式字符串/原始字符串），全绿。
 
 ---
@@ -227,11 +227,11 @@ export function translateGoError(e: unknown): string {
 
 ### Phase 2: 全量迁移（~2 天）
 
-- [ ] 迁移 `internal/app/*.go` 所有用户可见错误为 `i18nerr.New()`
-- [ ] `locales/*.ts` 五语言同步新增 `goerr.*` key（约 20 条）
-- [ ] 前端所有 `catch(e) { ... e.message ... }` 改为 `translateGoError(e)`
-- [ ] `npm run check:i18n` 确认 key 对齐
-- [ ] 验证：`npm run check && npm run test && npm run build` 全绿
+- [x] 迁移 `internal/app/*.go` 所有用户可见错误为 `i18nerr.New()`（21 处：`integration.go` 14 + `watch.go` 6 + `zipextract.go` 1）
+- [x] `locales/*.ts` 五语言同步新增 `goerr.*` key（共 16 条；`i18n-check.mjs` 确认 goerr.* 全对齐，仅遗留既有 `motion.*` 缺口与本 ADR 无关）
+- [x] 前端所有 `catch(e) { ... e.message ... }` 改为 `translateGoError(e)`：集中边界 `tryCatchStatus`（`core/utils.ts`）+ 13 个显式展示点（env-preset-levels / library-setup / model-preset / init / plaza / scene-menu / scene-render-presets / settings-about / settings-software / settings-screenshot / scene-serialize）
+- [x] `node scripts/i18n-check.mjs` 确认 goerr.* key 对齐（剩余 4 个 `motion.*` 缺口为 Phase 2 前既有，不在本 ADR 范围）
+- [x] 验证：`go build ./...` + `go test ./internal/i18nerr` + `tsc --noEmit` + `vitest goerr.test.ts` 全绿
 
 ### Phase 3: 防回归（~0.5 天）
 

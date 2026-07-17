@@ -17,6 +17,7 @@ import { schedulePersistUI } from '../scene/env/env-bridge';
 import { slideRow, addToggleRow, addSectionTitle } from '../core/ui-helpers';
 import { Browser } from '@wailsio/runtime';
 import { t } from '../core/i18n/t';
+import { translateGoError } from '../core/i18n/goerr';
 import { openExternalURL } from '../core/platform';
 import { renderMenu } from './render-menu';
 import type { PopupLevel } from '../core/config';
@@ -95,7 +96,7 @@ function importSettings(): void {
                 setStatus(t('settings.imported'), true);
             } catch (e) {
                 setStatus(
-                    t('settings.importFailed') + (e instanceof Error ? e.message : String(e)),
+                    t('settings.importFailed') + translateGoError(e),
                     true
                 );
             }

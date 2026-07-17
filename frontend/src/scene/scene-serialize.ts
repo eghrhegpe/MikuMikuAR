@@ -5,6 +5,7 @@
 
 import { SaveLastScene, LoadLastScene } from '../core/wails-bindings';
 import { t } from '../core/i18n/t';
+import { translateGoError } from '../core/i18n/goerr';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 
 import {
@@ -942,7 +943,7 @@ export async function saveSceneImmediate(suppressToast = false): Promise<void> {
         if (!suppressToast) {
             showErrorToast(
                 t('scene.serialize.autosaveFailed'),
-                _err instanceof Error ? _err.message : String(_err ?? 'unknown error')
+                translateGoError(_err)
             );
         }
     }

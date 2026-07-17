@@ -52,10 +52,15 @@ function _q(): Quaternion {
 
 // ── Matrix / Vector3 复用池（WASM 路径，消除每帧 Matrix.FromArray / new Matrix 分配） ──
 // 所有 _m() / _v() 调用必须在同一帧的 callback 内完成，帧首 _mReset() / _vReset() 重置计数器。
-// 池大小 2048 = 5 根覆盖骨×(3 主路径 + 4×~100 子骨传播)，远超 MMD 模型实际需求。
-const _mPool = Array.from({ length: 2048 }, () => new Matrix());
+// 池大小 8192 = 5 根覆盖骨 × (3 主路径 + 4 × ~400 子骨传播)，安全覆盖任何 MMD 模型。
+// 若 _mIdx 溢出则回绕并 warn（安全兜底，不应发生）。
+const _mPool = Array.from({ length: 8192 }, () => new Matrix());
 let _mIdx = 0;
 function _m(): Matrix {
+    if (_mIdx >= _mPool.length) {
+        console.warn('[bone-override] _mPool 溢出，回绕。请增大池大小。');
+        _mIdx = 0;
+    }
     return _mPool[_mIdx++];
 }
 function _mReset(): void {
@@ -104,7 +109,6 @@ function _isWasmRuntime(bone: IMmdRuntimeBone): boolean {
 /**
  * 递归传播子骨骼变换（WASM 模式）。
  * 覆盖父骨骼后需更正子骨骼的 worldMatrix 以维持相对变换。
- * 子骨若也有自有覆盖，则由主循环的 _applyWasmOverride 在传播后的矩阵上叠加，互不冲突。
  */
 function _propagateChildrenWasm(
     parent: IMmdRuntimeBone,
@@ -157,7 +161,7 @@ export function _computeOverride(
     const translation = slot.pos ? oldTranslation.add(slot.pos) : oldTranslation;
     const rotation = slot.overrideRotation
         ? slot.weight >= 1
-            ? slot.quat
+            ? oldRotation.multiply(slot.quat) // 复合：父骨传播旋转 × 本骨覆盖，不丢失父骨变换
             : Quaternion.Slerp(oldRotation, slot.quat, slot.weight)
         : oldRotation;
     return { translation, rotation };
@@ -489,7 +493,7 @@ export function startBoneOverride(
                 continue;
             }
             if (isWasm) {
-                _applyWasmOverride(slot, rb, overrideMap);
+                _applyWasmOverride(slot, rb);
             } else {
                 _applyJsOverride(slot, rb);
             }

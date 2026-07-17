@@ -2,6 +2,7 @@
 
 import { setStatus, uiState, setUIState, cardContainer } from '../core/config';
 import { t } from '../core/i18n/t';
+import { translateGoError } from '../core/i18n/goerr';
 import { slideRow, addSectionTitle } from '../core/ui-helpers';
 import { getCurrentRenderingMenu } from './menu';
 import { SelectDir, OpenScreenshotDir } from '../core/wails-bindings';
@@ -180,7 +181,7 @@ function buildScreenshotSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
 
                     slideRow(inner, 'lucide:folder-open', '打开目录', false, () => {
                         OpenScreenshotDir().catch((err: unknown) => {
-                            const msg = err instanceof Error ? err.message : String(err);
+                            const msg = translateGoError(err);
                             setStatus(`✗ ${msg}`, false);
                         });
                     });

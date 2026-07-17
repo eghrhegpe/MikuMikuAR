@@ -16,6 +16,7 @@ import {
 import { normPath } from './fileservice';
 import { setStatus } from './status-bar';
 import { t } from './i18n/t';
+import { translateGoError } from './i18n/goerr';
 export { showErrorToast } from './toast';
 export type { ToastAction } from './toast';
 import type { SlideMenu } from '../menus/menu';
@@ -524,7 +525,7 @@ export async function tryCatchStatus<T>(
     try {
         return await fn();
     } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err ?? 'unknown error');
+        const msg = translateGoError(err);
         // 用户取消文件选择 — Wails 抛 "cancelled by user"，静默忽略
         if (/cancelled by user/i.test(msg)) {
             return undefined;
