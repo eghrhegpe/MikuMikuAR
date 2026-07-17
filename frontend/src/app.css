@@ -2828,6 +2828,41 @@ textarea,
     font-variant-numeric: tabular-nums;
 }
 
+/* ===== Vector3 Slider ===== */
+.vec3-block {
+    padding: 0 calc(14px * var(--ui-scale)) calc(10px * var(--ui-scale));
+}
+.vec3-header {
+    display: flex;
+    align-items: center;
+    gap: calc(8px * var(--ui-scale));
+    margin-bottom: calc(4px * var(--ui-scale));
+}
+.vec3-title {
+    font-size: var(--font-title);
+    color: var(--text);
+}
+.vec3-row {
+    display: flex;
+    align-items: center;
+    gap: calc(6px * var(--ui-scale));
+    margin-bottom: calc(2px * var(--ui-scale));
+}
+.vec3-axis {
+    font-size: var(--font-ui-sm);
+    font-weight: 600;
+    width: calc(14px * var(--ui-scale));
+    text-align: center;
+    flex-shrink: 0;
+}
+.vec3-value {
+    font-size: var(--font-ui-sm);
+    color: var(--text-bright);
+    width: calc(36px * var(--ui-scale));
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
 /* Shadow toggle row */
 .ctrl-row {
     display: flex;
@@ -2892,6 +2927,41 @@ textarea,
     font-size: var(--font-ui-sm);
     color: var(--text-bright);
     width: 28px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ===== Vector3 Slider ===== */
+.vec3-block {
+    padding: 0 14px 10px;
+}
+.vec3-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+.vec3-title {
+    font-size: var(--font-title);
+    color: var(--text);
+}
+.vec3-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 2px;
+}
+.vec3-axis {
+    font-size: var(--font-ui-sm);
+    font-weight: 600;
+    width: 14px;
+    text-align: center;
+    flex-shrink: 0;
+}
+.vec3-value {
+    font-size: var(--font-ui-sm);
+    color: var(--text-bright);
+    width: 36px;
     text-align: right;
     font-variant-numeric: tabular-nums;
 }

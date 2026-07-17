@@ -5,7 +5,8 @@
 
 import { cardContainer, setStatus, modelRegistry, propRegistry } from '../core/config';
 import { t } from '../core/i18n/t';
-import { slideRow, addSliderRow, addDangerRow } from '../core/ui-helpers';
+import { slideRow, addSliderRow, addDangerRow, addVector3SliderRow } from '../core/ui-helpers';
+import { Quaternion } from '@babylonjs/core/Maths/math.vector';
 import {
     setModelScaling,
     setModelVisibility,
@@ -25,6 +26,7 @@ import {
     isPropGizmoActive,
     getPropGizmoTargetId,
 } from '../scene/scene';
+import { attachPropToBone, detachPropFromBone } from '../scene/env/accessory';
 import {
     attachLightGizmo,
     detachLightGizmo,
@@ -303,4 +305,182 @@ export function getResourceHandle(id: string, kind: ResourceKind): ResourceHandl
         return { id, kind, name: st?.name ?? id };
     }
     return null;
+}
+
+/** 骨骼挂载卡片：将道具挂载到指定模型骨骼上，支持偏移/旋转微调
+ *  仅 prop 类型有效；actor/stage/light 返回空。
+ *  [doc:adr-049] 位置/旋转由 Gizmo 承担粗调，骨骼偏移用于锚定后的精细对位。 */
+export function buildBoneAttachCard(
+    container: HTMLElement,
+    handle: ResourceHandle,
+    onStateChange?: () => void
+): void {
+    const { id, kind } = handle;
+    if (kind !== 'prop') {
+        return;
+    }
+
+    const p = propRegistry.get(id);
+    if (!p) {
+        return;
+    }
+
+    cardContainer(container, (c) => {
+        const title = document.createElement('div');
+        title.className = 'card-title';
+        title.textContent = t('scene.accessory.attachToBone');
+        c.appendChild(title);
+
+        const render = (): void => {
+            c.innerHTML = '';
+            const titleEl = document.createElement('div');
+            titleEl.className = 'card-title';
+            titleEl.textContent = t('scene.accessory.attachToBone');
+            c.appendChild(titleEl);
+
+            if (p.boneName && p.targetModelId) {
+                // —— 已挂载状态 ——
+                const info = document.createElement('div');
+                info.style.cssText = 'font-size:11px;padding:4px 0 8px;color:var(--text-dim);';
+                info.textContent = `${p.boneName} @ ${p.targetModelId.slice(0, 12)}...`;
+                c.appendChild(info);
+
+                // 骨骼偏移
+                addVector3SliderRow(
+                    c,
+                    t('scene.accessory.boneOffset'),
+                    p.boneOffset ?? [0, 0, 0],
+                    -5,
+                    5,
+                    0.05,
+                    (v) => {
+                        const target = p.container ?? p.rootMesh;
+                        if (target) {
+                            target.position.set(v[0], v[1], v[2]);
+                        }
+                    },
+                    undefined,
+                    'lucide:move-horizontal',
+                    (v) => {
+                        p.boneOffset = v;
+                        attachPropToBone(
+                            id,
+                            p.boneName!,
+                            p.targetModelId!,
+                            v,
+                            p.boneRotation ?? [0, 0, 0]
+                        );
+                        onStateChange?.();
+                    }
+                );
+
+                // 骨骼旋转
+                addVector3SliderRow(
+                    c,
+                    t('scene.accessory.boneRotation'),
+                    p.boneRotation ?? [0, 0, 0],
+                    -180,
+                    180,
+                    1,
+                    (v) => {
+                        const target = p.container ?? p.rootMesh;
+                        if (target) {
+                            target.rotationQuaternion = Quaternion.FromEulerAngles(
+                                (v[0] * Math.PI) / 180,
+                                (v[1] * Math.PI) / 180,
+                                (v[2] * Math.PI) / 180
+                            );
+                        }
+                    },
+                    ['Rx', 'Ry', 'Rz'],
+                    'lucide:rotate-3d',
+                    (v) => {
+                        p.boneRotation = v;
+                        attachPropToBone(
+                            id,
+                            p.boneName!,
+                            p.targetModelId!,
+                            p.boneOffset ?? [0, 0, 0],
+                            v
+                        );
+                        onStateChange?.();
+                    }
+                );
+
+                // 解除按钮
+                const detachBtn = document.createElement('button');
+                detachBtn.className = 'preset-chip';
+                detachBtn.textContent = t('scene.accessory.detachFromBone');
+                detachBtn.style.marginTop = '4px';
+                detachBtn.addEventListener('click', () => {
+                    detachPropFromBone(id);
+                    onStateChange?.();
+                    render();
+                });
+                c.appendChild(detachBtn);
+            } else {
+                // —— 未挂载状态：选择模型 + 骨骼 ——
+                const modelSelect = document.createElement('select');
+                modelSelect.style.cssText =
+                    'width:100%;padding:6px 8px;margin:4px 0;border-radius:6px;' +
+                    'background:var(--surface2);color:var(--text);border:1px solid var(--border);font-size:12px;';
+                modelSelect.innerHTML =
+                    '<option value="">-- ' + t('scene.accessory.selectModel') + ' --</option>';
+                for (const [mid, inst] of modelRegistry) {
+                    if (inst.kind === 'actor') {
+                        const opt = document.createElement('option');
+                        opt.value = mid;
+                        opt.textContent = inst.name;
+                        modelSelect.appendChild(opt);
+                    }
+                }
+                c.appendChild(modelSelect);
+
+                const boneSelect = document.createElement('select');
+                boneSelect.style.cssText =
+                    'width:100%;padding:6px 8px;margin:4px 0;border-radius:6px;' +
+                    'background:var(--surface2);color:var(--text);border:1px solid var(--border);font-size:12px;';
+                boneSelect.innerHTML =
+                    '<option value="">-- ' + t('scene.accessory.selectBone') + ' --</option>';
+                modelSelect.addEventListener('change', () => {
+                    const mid = modelSelect.value;
+                    boneSelect.innerHTML =
+                        '<option value="">-- ' + t('scene.accessory.selectBone') + ' --</option>';
+                    if (!mid) {
+                        return;
+                    }
+                    const inst = modelRegistry.get(mid);
+                    if (inst?.mmdModel) {
+                        for (const b of inst.mmdModel.runtimeBones) {
+                            const opt = document.createElement('option');
+                            opt.value = b.name;
+                            opt.textContent = b.name;
+                            boneSelect.appendChild(opt);
+                        }
+                    }
+                });
+                c.appendChild(boneSelect);
+
+                const attachBtn = document.createElement('button');
+                attachBtn.className = 'preset-chip';
+                attachBtn.textContent = t('scene.accessory.attachToBone');
+                attachBtn.style.marginTop = '4px';
+                attachBtn.addEventListener('click', () => {
+                    const targetModelId = modelSelect.value;
+                    const boneName = boneSelect.value;
+                    if (!targetModelId || !boneName) {
+                        return;
+                    }
+                    const ok = attachPropToBone(id, boneName, targetModelId, [0, 0, 0], [0, 0, 0]);
+                    if (ok) {
+                        onStateChange?.();
+                        render();
+                    }
+                });
+                c.appendChild(attachBtn);
+            }
+        };
+
+        render();
+    });
 }
