@@ -166,26 +166,11 @@ export function migratePerceptionFromProcMotion(
         // 旧 boneToggles.emotion 语义是「启用微表情」（boolean），不映射具体情绪
         microExpressionEnabled: t?.emotion ?? true,
         emotion: 'neutral',
-        // 躯干微晃：四个 toggle 任一为 true 则开启；无 boneToggles（旧旧存档）默认开启
-        balanceSwayEnabled: t ? !!(t.center || t.upper2 || t.waist || t.allParent) : true,
         // Lip-sync 字段（从旧 lipSync state 迁移）
         lipSyncEnabled: lipSync.lipSyncEnabled,
         lipSyncSensitivity: lipSync.lipSyncSensitivity,
         lipSyncIntensity: lipSync.lipSyncIntensity,
         lipSyncMultiMorphEnabled: lipSync.lipSyncMultiMorphEnabled,
-    };
-}
-
-/** 从旧 procMotion 的躯干 toggle 迁移为 balanceSwayEnabled（任一为 true 则 true；无 boneToggles 默认开启） */
-export function migrateBalanceSwayFromProcMotion(old: {
-    boneToggles?: { center?: boolean; upper2?: boolean; waist?: boolean; allParent?: boolean };
-}): { balanceSwayEnabled: boolean } {
-    const t = old.boneToggles;
-    if (!t) {
-        return { balanceSwayEnabled: true };
-    } // 无旧数据时默认开启
-    return {
-        balanceSwayEnabled: !!(t.center || t.upper2 || t.waist || t.allParent),
     };
 }
 

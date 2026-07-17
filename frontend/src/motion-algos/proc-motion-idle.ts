@@ -6,6 +6,10 @@ import {
     BONE_RARM_CANDIDATES,
     BONE_WRIST_L_CANDIDATES,
     BONE_WRIST_R_CANDIDATES,
+    BONE_CENTER_CANDIDATES,
+    BONE_UPPER2_CANDIDATES,
+    BONE_WAIST_CANDIDATES,
+    BONE_ALLPARENT_CANDIDATES,
     MAX_FRAMES,
     matchBone,
     clamp1,
@@ -29,7 +33,86 @@ export function generateIdleVmd(state: ProcMotionState, boneNames: string[] = []
     const wristLBone = matchBone(boneNames, BONE_WRIST_L_CANDIDATES);
     const wristRBone = matchBone(boneNames, BONE_WRIST_R_CANDIDATES);
 
-    // 躯干微晃（center/upper2/waist/allParent）已迁入感知层 _applyBalanceSway，此处不再生成 VMD 关键帧
+    // ── 躯干微晃（center/upper2/waist/allParent）─ 从感知层迁回程序化 idle ──
+    const centerBone = matchBone(boneNames, BONE_CENTER_CANDIDATES);
+    const upper2Bone = matchBone(boneNames, BONE_UPPER2_CANDIDATES);
+    const waistBone = matchBone(boneNames, BONE_WAIST_CANDIDATES);
+    const allParentBone = matchBone(boneNames, BONE_ALLPARENT_CANDIDATES);
+
+    // 重心微动振幅（从感知层原值缩减 50%，避免过晃）
+    const swayAmp = {
+        centerRz: 0.025, // center 左右摆（原 0.05）
+        centerRx: 0.01, // center 前后倾（原 0.02）
+        centerBobY: 0.015, // center 上下浮动（原 0.03）
+        upper2Rx: 0.008, // 上半身2 前后倾（原 0.015）
+        waistRz: 0.008, // 腰 左右摆（原 0.015）
+        allParentRx: 0.003, // 全ての親 微倾（原 0.005）
+        allParentRz: 0.003, // 全ての親 微摆（原 0.005）
+    };
+
+    if (centerBone) {
+        for (let f = 0; f < loopFrames; f += 4) {
+            const phase = (f / loopFrames) * Math.PI * 2;
+            const slowPhase = phase * 0.5;
+            const bobY = Math.sin(phase) * swayAmp.centerBobY * intensity;
+            const rz = Math.sin(slowPhase) * swayAmp.centerRz * intensity;
+            const rx = Math.sin(phase * 0.37 + 0.5) * swayAmp.centerRx * intensity;
+            const w = quatW(rx, 0, rz);
+            bones.push({
+                name: centerBone,
+                frame: f,
+                position: [0, bobY, 0],
+                rotation: [rx, 0, rz, w],
+            });
+        }
+        bones.push(closingFrame(centerBone, loopFrames));
+    }
+
+    if (upper2Bone) {
+        for (let f = 0; f < loopFrames; f += 4) {
+            const phase = (f / loopFrames) * Math.PI * 2;
+            const rx = Math.sin(phase * 0.7 + 0.3) * swayAmp.upper2Rx * intensity;
+            const w = quatW(rx, 0, 0);
+            bones.push({
+                name: upper2Bone,
+                frame: f,
+                position: [0, 0, 0],
+                rotation: [rx, 0, 0, w],
+            });
+        }
+        bones.push(closingFrame(upper2Bone, loopFrames));
+    }
+
+    if (waistBone) {
+        for (let f = 0; f < loopFrames; f += 4) {
+            const phase = (f / loopFrames) * Math.PI * 2;
+            const rz = Math.sin(phase + 0.5) * swayAmp.waistRz * intensity;
+            const w = quatW(0, 0, rz);
+            bones.push({
+                name: waistBone,
+                frame: f,
+                position: [0, 0, 0],
+                rotation: [0, 0, rz, w],
+            });
+        }
+        bones.push(closingFrame(waistBone, loopFrames));
+    }
+
+    if (allParentBone) {
+        for (let f = 0; f < loopFrames; f += 4) {
+            const phase = (f / loopFrames) * Math.PI * 2;
+            const rx = Math.sin(phase * 0.2 + 1.1) * swayAmp.allParentRx * intensity;
+            const rz = Math.sin(phase * 0.3 + 2.3) * swayAmp.allParentRz * intensity;
+            const w = quatW(rx, 0, rz);
+            bones.push({
+                name: allParentBone,
+                frame: f,
+                position: [0, 0, 0],
+                rotation: [rx, 0, rz, w],
+            });
+        }
+        bones.push(closingFrame(allParentBone, loopFrames));
+    }
 
     if (larmBone || rarmBone) {
         const armAmp = 0.04 * intensity;

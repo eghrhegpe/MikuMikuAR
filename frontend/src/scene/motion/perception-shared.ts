@@ -18,8 +18,6 @@ export interface PerceptionState {
     eyeTrackingEnabled: boolean;
     microExpressionEnabled: boolean;
     emotion: Emotion;
-    /** 重心微动开关（躯干骨骼平衡微晃） */
-    balanceSwayEnabled: boolean;
     // Lip-sync（从 lipsync-bridge.ts 迁入）
     lipSyncEnabled: boolean;
     lipSyncSensitivity: number; // 0..1，振幅阈值
@@ -47,7 +45,6 @@ export const DEFAULT_PERCEPTION_STATE: PerceptionState = {
     eyeTrackingEnabled: true,
     microExpressionEnabled: true,
     emotion: 'neutral',
-    balanceSwayEnabled: true,
     lipSyncEnabled: false,
     lipSyncSensitivity: 0.2,
     lipSyncIntensity: 0.8,

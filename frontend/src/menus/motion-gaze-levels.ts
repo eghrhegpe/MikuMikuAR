@@ -78,13 +78,6 @@ const gazeSchema: MenuNode[] = [
             ],
         },
     },
-    {
-        id: 'perception:balanceSway',
-        kind: 'toggle',
-        label: 'motion.balanceSway',
-        control: { bind: 'perception.balanceSwayEnabled', onChange: withActivate },
-        icon: 'lucide:activity',
-    },
     // ── 感知层可调参数（[doc:adr-116] 感知层滑块功能） ──
     {
         id: 'perception:headFollowParams',

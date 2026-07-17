@@ -17,7 +17,6 @@ const mocks = vi.hoisted(() => {
         eyeTrackingEnabled: true,
         microExpressionEnabled: true,
         emotion: 'neutral',
-        balanceSwayEnabled: true,
         lipSyncEnabled: false,
         lipSyncSensitivity: 0.2,
         lipSyncIntensity: 0.8,
