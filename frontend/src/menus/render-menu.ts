@@ -84,11 +84,13 @@ function renderFolder(node: MenuNode, container: HTMLElement): (() => void) | un
                   value: node.headerToggle.get
                       ? node.headerToggle.get(getStateValue(node.headerToggle.bind))
                       : !!getStateValue(node.headerToggle.bind),
-                  onChange: (v: boolean) =>
+                  onChange: (v: boolean) => {
                       setStateValue(
                           node.headerToggle!.bind,
                           node.headerToggle!.set ? node.headerToggle!.set(v) : v
-                      ),
+                      );
+                      node.headerToggle!.onChange?.(v);
+                  },
                   bind: () => {
                       const raw = getBindFn(node.headerToggle!.bind)();
                       return node.headerToggle!.get ? node.headerToggle!.get(raw) : !!raw;

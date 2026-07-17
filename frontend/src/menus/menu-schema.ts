@@ -55,6 +55,8 @@ export interface MenuNode {
         get?: (v: unknown) => boolean;
         /** 将 toggle boolean 转为状态值（如 true→'terrain'） */
         set?: (v: boolean) => unknown;
+        /** 切换后的额外回调（如 activatePerception + triggerAutoSave） */
+        onChange?: (v: unknown) => void;
     };
     children?: MenuNode[]; // 仅 folder
     control?: ControlSpec; // slider/colorSlider/toggle

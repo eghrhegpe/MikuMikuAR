@@ -1,13 +1,14 @@
 // [doc:architecture] Motion Perception Levels — 感知表现独立弹窗层级（ADR-093 schema 驱动）
 // [doc:adr-071] 感知层统一入口：眼部跟随 / 头部跟随 / 呼吸 / 眨眼
 // 与程序化动作解耦，独立文件责任分明
+// 开关合并至 folder headerToggle（参考 env-menu 模式）
 
 import { cardContainer } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { getPerceptionState, activatePerception } from '../scene/motion/perception';
 import { triggerAutoSave } from '../core/utils';
 import { getMotionMenu } from './motion-popup';
-import { t } from '../core/i18n/t'; // [doc:adr-059]
+import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 
@@ -27,63 +28,13 @@ function withSaveOnly(_v: unknown): void {
 }
 
 const gazeSchema: MenuNode[] = [
-    {
-        id: 'perception:eyeFollow',
-        kind: 'toggle',
-        label: 'motion.eyeFollow',
-        control: { bind: 'perception.eyeTrackingEnabled', onChange: withActivate },
-        icon: 'lucide:eye',
-    },
+    // ── 头部跟随：开关在 header，参数在 folder 内 ──
     {
         id: 'perception:headFollow',
-        kind: 'toggle',
-        label: 'motion.headFollow',
-        control: { bind: 'perception.headTrackingEnabled', onChange: withActivate },
-        icon: 'lucide:mouse-pointer-2',
-    },
-    {
-        id: 'perception:breath',
-        kind: 'toggle',
-        label: 'motion.perceptionBreath',
-        control: { bind: 'perception.breathEnabled', onChange: withSaveOnly },
-        icon: 'lucide:wind',
-    },
-    {
-        id: 'perception:blink',
-        kind: 'toggle',
-        label: 'motion.perceptionBlink',
-        control: { bind: 'perception.blinkEnabled', onChange: withSaveOnly },
-        icon: 'lucide:eye',
-    },
-    {
-        id: 'perception:microExpr',
-        kind: 'toggle',
-        label: 'motion.microExpression',
-        control: { bind: 'perception.microExpressionEnabled', onChange: withActivate },
-        icon: 'lucide:smile',
-    },
-    {
-        id: 'perception:emotion',
-        kind: 'modeRow',
-        label: 'motion.emotion',
-        control: {
-            bind: 'perception.emotion',
-            onChange: withActivate,
-            options: [
-                { value: 'neutral', label: 'motion.emotionNeutral' },
-                { value: 'happy', label: 'motion.emotionHappy' },
-                { value: 'sad', label: 'motion.emotionSad' },
-                { value: 'surprised', label: 'motion.emotionSurprised' },
-                { value: 'angry', label: 'motion.emotionAngry' },
-            ],
-        },
-    },
-    // ── 感知层可调参数（[doc:adr-116] 感知层滑块功能） ──
-    {
-        id: 'perception:headFollowParams',
         kind: 'folder',
-        label: 'perception.headFollowParams',
-        icon: 'lucide:sliders-horizontal',
+        label: 'motion.headFollow',
+        icon: 'lucide:mouse-pointer-2',
+        headerToggle: { bind: 'perception.headTrackingEnabled', onChange: withActivate },
         children: [
             {
                 id: 'perception:headYawRange',
@@ -110,13 +61,14 @@ const gazeSchema: MenuNode[] = [
                 },
             },
         ],
-        visibleWhen: () => getPerceptionState().headTrackingEnabled,
     },
+    // ── 眼部跟随 ──
     {
-        id: 'perception:eyeFollowParams',
+        id: 'perception:eyeFollow',
         kind: 'folder',
-        label: 'perception.eyeFollowParams',
-        icon: 'lucide:sliders-horizontal',
+        label: 'motion.eyeFollow',
+        icon: 'lucide:eye',
+        headerToggle: { bind: 'perception.eyeTrackingEnabled', onChange: withActivate },
         children: [
             {
                 id: 'perception:eyeYawRange',
@@ -155,13 +107,14 @@ const gazeSchema: MenuNode[] = [
                 },
             },
         ],
-        visibleWhen: () => getPerceptionState().eyeTrackingEnabled,
     },
+    // ── 呼吸 ──
     {
-        id: 'perception:breathParams',
+        id: 'perception:breath',
         kind: 'folder',
-        label: 'perception.breathParams',
-        icon: 'lucide:sliders-horizontal',
+        label: 'motion.perceptionBreath',
+        icon: 'lucide:wind',
+        headerToggle: { bind: 'perception.breathEnabled', onChange: withSaveOnly },
         children: [
             {
                 id: 'perception:breathFreq',
@@ -188,13 +141,14 @@ const gazeSchema: MenuNode[] = [
                 },
             },
         ],
-        visibleWhen: () => getPerceptionState().breathEnabled,
     },
+    // ── 眨眼 ──
     {
-        id: 'perception:blinkParams',
+        id: 'perception:blink',
         kind: 'folder',
-        label: 'perception.blinkParams',
-        icon: 'lucide:sliders-horizontal',
+        label: 'motion.perceptionBlink',
+        icon: 'lucide:eye',
+        headerToggle: { bind: 'perception.blinkEnabled', onChange: withSaveOnly },
         children: [
             {
                 id: 'perception:blinkFreq',
@@ -221,22 +175,40 @@ const gazeSchema: MenuNode[] = [
                 },
             },
         ],
-        visibleWhen: () => getPerceptionState().blinkEnabled,
     },
+    // ── 微表情（无参数，独立 toggle） ──
+    {
+        id: 'perception:microExpr',
+        kind: 'toggle',
+        label: 'motion.microExpression',
+        control: { bind: 'perception.microExpressionEnabled', onChange: withActivate },
+        icon: 'lucide:smile',
+    },
+    // ── 情绪选择 ──
+    {
+        id: 'perception:emotion',
+        kind: 'modeRow',
+        label: 'motion.emotion',
+        control: {
+            bind: 'perception.emotion',
+            onChange: withActivate,
+            options: [
+                { value: 'neutral', label: 'motion.emotionNeutral' },
+                { value: 'happy', label: 'motion.emotionHappy' },
+                { value: 'sad', label: 'motion.emotionSad' },
+                { value: 'surprised', label: 'motion.emotionSurprised' },
+                { value: 'angry', label: 'motion.emotionAngry' },
+            ],
+        },
+    },
+    // ── Lip-sync（已有 headerToggle 模式） ──
     {
         id: 'perception:lipsync',
         kind: 'folder',
         label: 'motion.lipSync',
         icon: 'lucide:mic',
-        defaultOpen: true,
+        headerToggle: { bind: 'perception.lipSyncEnabled', onChange: withActivate },
         children: [
-            {
-                id: 'perception:lipSyncToggle',
-                kind: 'toggle',
-                label: 'motion.lipSync',
-                control: { bind: 'perception.lipSyncEnabled', onChange: withActivate },
-                icon: 'lucide:mic',
-            },
             {
                 id: 'perception:lipSyncSens',
                 kind: 'slider',
@@ -248,7 +220,6 @@ const gazeSchema: MenuNode[] = [
                     step: 0.01,
                     onChange: withSaveOnly,
                 },
-                visibleWhen: () => getPerceptionState().lipSyncEnabled,
             },
             {
                 id: 'perception:lipSyncInt',
@@ -261,14 +232,12 @@ const gazeSchema: MenuNode[] = [
                     step: 0.01,
                     onChange: withSaveOnly,
                 },
-                visibleWhen: () => getPerceptionState().lipSyncEnabled,
             },
             {
                 id: 'perception:lipSyncMulti',
                 kind: 'toggle',
                 label: 'motion.lipSyncMultiMorph',
                 control: { bind: 'perception.lipSyncMultiMorphEnabled', onChange: withSaveOnly },
-                visibleWhen: () => getPerceptionState().lipSyncEnabled,
             },
         ],
     },
