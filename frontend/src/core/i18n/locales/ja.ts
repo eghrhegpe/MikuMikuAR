@@ -1003,6 +1003,8 @@ export const ja: Record<string, string> = {
     'env.causticIntensity': 'コースティクス強度',
     'env.waterNormalStrength': '波紋ディテール',
     'env.waterGlintStrength': '太陽きらめき',
+    'env.waterHorizonFade': '地平線フェード',
+    'env.waterSkyColorBlend': '空色連動',
     'env.causticScrollX': 'コースティクス横スクロール',
     'env.causticScrollY': 'コースティクス縦スクロール',
     'env.fresnelAlpha': 'フレネル透明度影響',

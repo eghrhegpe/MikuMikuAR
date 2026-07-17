@@ -486,6 +486,19 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     mat.setFloat('uGlintScale', 80.0);
     mat.setFloat('uGlintSpeed', 2.0);
 
+    // ——— ADR-115 P3: 地平线淡出 + 天空-水面颜色联动 ———
+    // 天空基准色：优先 skyColorBot，fallback waterFogColor
+    const skyBot = state.skyColorBot ?? state.waterFogColor;
+    mat.setVector3('uSkyBlendColor', new Vector3(skyBot[0], skyBot[1], skyBot[2]));
+    mat.setFloat('uSkyColorBlend', state.waterSkyColorBlend);
+    // 地平线淡出距离按 waterSize 自动计算
+    const ws = state.waterSize;
+    mat.setFloat('uHorizonFade', state.waterHorizonFade);
+    mat.setFloat('uHorizonStart', ws * 0.7);
+    mat.setFloat('uHorizonEnd', ws * 0.95);
+    // 地平线融合色：优先 skyColorBot，fallback waterFogColor
+    mat.setVector3('uHorizonColor', new Vector3(skyBot[0], skyBot[1], skyBot[2]));
+
     // ——— 高级参数（从 EnvState 读取，持久化）———
     mat.setFloat('fresnelBias', state.fresnelBias);
     mat.setFloat('fresnelPower', state.fresnelPower);
@@ -640,6 +653,13 @@ const WATER_UNIFORMS = [
     'uGlintPower',
     'uGlintScale',
     'uGlintSpeed',
+    // ADR-115 P3: 地平线淡出 + 天空联动
+    'uHorizonFade',
+    'uHorizonStart',
+    'uHorizonEnd',
+    'uHorizonColor',
+    'uSkyBlendColor',
+    'uSkyColorBlend',
 ];
 
 function _createWaterMaterial(scene: Scene, state: EnvState): ShaderMaterial {
@@ -1028,6 +1048,9 @@ export interface WaterPreset {
     // ADR-115 P1: 高频法线扰动 + Sun Glitter
     waterNormalStrength?: number;
     waterGlintStrength?: number;
+    // ADR-115 P3: 地平线淡出 + 天空联动
+    waterHorizonFade?: number;
+    waterSkyColorBlend?: number;
 }
 
 export const WATER_PRESETS: Record<string, WaterPreset> = {
@@ -1157,6 +1180,9 @@ export function buildWaterPresetEnvState(preset: WaterPreset): Partial<EnvState>
         // ADR-115 P1: 法线扰动 + Sun Glitter
         waterNormalStrength: preset.waterNormalStrength,
         waterGlintStrength: preset.waterGlintStrength,
+        // ADR-115 P3: 地平线淡出 + 天空联动
+        waterHorizonFade: preset.waterHorizonFade,
+        waterSkyColorBlend: preset.waterSkyColorBlend,
     };
 }
 
@@ -1231,5 +1257,12 @@ export function applyWaterPresetToCurrent(preset: Partial<WaterPreset>): void {
     }
     if (preset.waterGlintStrength !== undefined) {
         mat.setFloat('uGlintStrength', preset.waterGlintStrength);
+    }
+    // ADR-115 P3: 地平线淡出 + 天空联动
+    if (preset.waterHorizonFade !== undefined) {
+        mat.setFloat('uHorizonFade', preset.waterHorizonFade);
+    }
+    if (preset.waterSkyColorBlend !== undefined) {
+        mat.setFloat('uSkyColorBlend', preset.waterSkyColorBlend);
     }
 }

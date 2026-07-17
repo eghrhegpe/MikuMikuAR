@@ -184,6 +184,8 @@ export function createMockEnvState(overrides?: Partial<EnvState>): EnvState {
         rippleGlintStrength: 0,
         waterNormalStrength: 0.3,
         waterGlintStrength: 0,
+        waterHorizonFade: 0,
+        waterSkyColorBlend: 0,
         causticIntensity: 0.2,
         causticColor1: [1, 1, 1],
         causticColor2: [0.5, 0.8, 1],

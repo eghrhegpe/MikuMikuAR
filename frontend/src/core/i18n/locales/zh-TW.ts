@@ -991,6 +991,8 @@ export const zhTW: Record<string, string> = {
     'env.causticIntensity': '焦散強度',
     'env.waterNormalStrength': '波紋細節',
     'env.waterGlintStrength': '波光閃爍',
+    'env.waterHorizonFade': '地平線淡出',
+    'env.waterSkyColorBlend': '天空色連動',
     'env.causticScrollX': '焦散橫向滾動',
     'env.causticScrollY': '焦散縱向滾動',
     'env.fresnelAlpha': '菲涅耳透明度影響',

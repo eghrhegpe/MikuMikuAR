@@ -50,6 +50,14 @@ uniform float uGlintPower;            // 高光锐利度（默认 96）
 uniform float uGlintScale;            // 噪声颗粒大小（默认 80.0）
 uniform float uGlintSpeed;            // 闪烁动画速度（默认 2.0）
 
+// ======== ADR-115 P3: 地平线淡出 + 天空-水面颜色联动 ========
+uniform float uHorizonFade;           // 地平线淡出强度（0=关闭，1=完全淡出）
+uniform float uHorizonStart;          // 淡出起始距离（TS端按 waterSize*0.7 计算）
+uniform float uHorizonEnd;            // 淡出结束距离（TS端按 waterSize*0.95 计算）
+uniform vec3 uHorizonColor;           // 地平线融合色（取自天空底部或雾色）
+uniform vec3 uSkyBlendColor;          // 天空基准色（TS端从 skyColorBot 计算）
+uniform float uSkyColorBlend;         // 天空-水色混合比例（0=自定义，1=跟随天空）
+
 uniform sampler2D uCausticTex;
 uniform float uCausticIntensity;
 uniform float uCausticSpeed;
@@ -156,13 +164,18 @@ void main() {
 
     float fresnel = fresnelBias + (1.0 - fresnelBias) * pow(1.0 - max(dot(viewDir, normal), 0.0), fresnelPower);
 
-    vec3 base = waterColor;
+    // ======== ADR-115 P3: 天空-水面颜色联动 ========
+    // uSkyColorBlend=0 时 finalWaterColor=waterColor（零回归）
+    vec3 finalWaterColor = mix(waterColor, uSkyBlendColor, uSkyColorBlend);
+    vec3 finalFogColor = mix(waterFogColor, uSkyBlendColor * 0.8, uSkyColorBlend);
+
+    vec3 base = finalWaterColor;
     // 反射受泡沫衰减：泡沫区反射减弱
     vec3 color = mix(base, reflection * foamDamp, fresnel);
 
     float diff = max(dot(normal, normalize(lightDir)), 0.0);
     color += diff * lightColor * diffuseStrength;
-    color += ambientIntensity * waterColor * ambientStrength;
+    color += ambientIntensity * finalWaterColor * ambientStrength;
 
     // ======== ADR-115 P1: Sun Glitter（镜面闪烁高光）========
     // hash 噪声调制，制造"跳动"感；仅 uGlintStrength > 0 时生效（零回归）
@@ -202,10 +215,19 @@ void main() {
 
     float depth = length(vWorldPos - cameraPosition);
     float waterFog = 1.0 - exp(-waterFogDensity * depth);
-    color = mix(color, waterFogColor, waterFog);
+    color = mix(color, finalFogColor, waterFog);
+
+    // ======== ADR-115 P3: 地平线淡出 ========
+    // uHorizonFade=0 时 horizonFade=1，完全不混合（零回归）
+    float radialDist = length(vWorldPos.xz - cameraPosition.xz);
+    float horizonFactor = 1.0 - smoothstep(uHorizonStart, uHorizonEnd, radialDist);
+    float horizonMix = (1.0 - horizonFactor) * uHorizonFade;
+    color = mix(color, uHorizonColor, horizonMix);
 
     float alpha = mix(waterTransparency, 1.0, fresnel * fresnelAlphaInfluence + foam * foamIntensity * foamOpacity);
     alpha = mix(alpha, 1.0, waterFog * waterFogOpacityInfluence);
+    // 地平线淡出时 alpha 渐增到 1（远处不透明，融入天空）
+    alpha = mix(alpha, 1.0, horizonMix);
     alpha = clamp(alpha, 0.0, 1.0);
 
     gl_FragColor = vec4(color, alpha);

@@ -998,6 +998,8 @@ export const ko: Record<string, string> = {
     'env.causticIntensity': '카우스틱 강도',
     'env.waterNormalStrength': '파문 디테일',
     'env.waterGlintStrength': '햇빛 반짝임',
+    'env.waterHorizonFade': '수평선 페이드',
+    'env.waterSkyColorBlend': '하늘색 연동',
     'env.causticScrollX': '카우스틱 가로 스크롤',
     'env.causticScrollY': '카우스틱 세로 스크롤',
     'env.fresnelAlpha': '프레넬 투명도 영향',

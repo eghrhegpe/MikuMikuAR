@@ -484,6 +484,9 @@ export interface EnvState {
     waterFogColor: [number, number, number];
     waterFogDensity: number;
     waterFogOpacityInfluence: number;
+    // ADR-115 P3: 地平线淡出 + 天空-水面颜色联动
+    waterHorizonFade: number; // 地平线淡出强度，0=关闭（硬边），1=完全淡出，默认 0
+    waterSkyColorBlend: number; // 天空-水色联动，0=不联动，1=完全跟随天空，默认 0
 
     fresnelBias: number;
     fresnelPower: number;
