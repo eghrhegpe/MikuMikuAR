@@ -672,7 +672,9 @@ function buildMorphPreviewSchema(id: string): MenuNode[] {
                     if (morphs.length === 0) {
                         const empty = document.createElement('div');
                         empty.className = 'morph-empty';
-                        empty.textContent = t('model-detail.noMorph');
+                        empty.innerHTML =
+                            `<div>${t('model-detail.noMorph')}</div>` +
+                            `<div style="font-size:11px;opacity:0.7;margin-top:4px;">${t('model-detail.noMorphHint')}</div>`;
                         list.appendChild(empty);
                     }
 

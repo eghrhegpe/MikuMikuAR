@@ -11,7 +11,7 @@ import {
 } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
-import { slideRow, addSectionTitle, addCollapsible } from '../core/ui-helpers';
+import { slideRow, addSectionTitle, addCollapsible, addToggleRow } from '../core/ui-helpers';
 import { removeModel, setModelVisibility } from '../scene/manager/model-ops';
 import { getPropList, removeProp, modelManager } from '../scene/scene';
 import { reRenderSceneMenu, getSceneMenu } from './scene-menu';
@@ -55,7 +55,7 @@ function buildStageSchema(): MenuNode[] {
 
     const nodes: MenuNode[] = [];
 
-    // 卡片 1：已加载舞台列表（空时隐藏）
+    // 卡片 1：已加载舞台列表（空时显示引导）
     if (stageModels.length > 0) {
         nodes.push({
             id: 'stage:loaded',
@@ -118,6 +118,22 @@ function buildStageSchema(): MenuNode[] {
                             }
                         );
                     }
+                });
+            },
+        });
+    } else {
+        nodes.push({
+            id: 'stage:empty',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    const emptyDiv = document.createElement('div');
+                    emptyDiv.style.cssText =
+                        'padding:12px 14px;text-align:center;font-size:var(--font-ui);color:var(--text-dim);';
+                    emptyDiv.innerHTML =
+                        `<div style="margin-bottom:4px;">${t('scene.noLoadedStages')}</div>` +
+                        `<div style="font-size:11px;opacity:0.7;">${t('scene.noLoadedStagesHint')}</div>`;
+                    inner.appendChild(emptyDiv);
                 });
             },
         });
@@ -271,21 +287,6 @@ function buildStageSchema(): MenuNode[] {
                     gLabel.className = 'slide-label';
                     gLabel.textContent = '地面';
                     groundRow.appendChild(gLabel);
-                    const gToggle = document.createElement('label');
-                    gToggle.className = 'toggle';
-                    gToggle.innerHTML = '<input type="checkbox"><span class="slider"></span>';
-                    const gCheckbox = gToggle.querySelector('input')!;
-                    gCheckbox.checked = envState.groundVisible;
-                    gCheckbox.addEventListener('change', () =>
-                        setEnvState({ groundVisible: gCheckbox.checked })
-                    );
-                    gToggle.style.marginLeft = 'auto';
-                    gToggle.style.marginRight = '4px';
-                    groundRow.appendChild(gToggle);
-                    const gArrow = document.createElement('span');
-                    gArrow.className = 'slide-arrow';
-                    gArrow.textContent = '>';
-                    groundRow.appendChild(gArrow);
                     groundRow.addEventListener('click', (e) => {
                         if ((e.target as HTMLElement).closest('.toggle')) {
                             return;
@@ -294,43 +295,25 @@ function buildStageSchema(): MenuNode[] {
                     });
                     inner.appendChild(groundRow);
 
-                    // 水面行：开关 + 导航
-                    const waterRow = document.createElement('div');
-                    waterRow.className = 'slide-item';
-                    waterRow.style.cursor = 'pointer';
-                    const wIcon = document.createElement('span');
-                    wIcon.className = 'slide-icon';
-                    const wIconEl = createIconifyIcon('lucide:waves');
-                    if (wIconEl) {
-                        wIcon.appendChild(wIconEl);
-                    }
-                    waterRow.appendChild(wIcon);
-                    const wLabel = document.createElement('span');
-                    wLabel.className = 'slide-label';
-                    wLabel.textContent = '水面';
-                    waterRow.appendChild(wLabel);
-                    const wToggle = document.createElement('label');
-                    wToggle.className = 'toggle';
-                    wToggle.innerHTML = '<input type="checkbox"><span class="slider"></span>';
-                    const wCheckbox = wToggle.querySelector('input')!;
-                    wCheckbox.checked = envState.waterEnabled;
-                    wCheckbox.addEventListener('change', () =>
-                        setEnvState({ waterEnabled: wCheckbox.checked })
+                    // 地面开关（使用 addToggleRow 替代手动 checkbox）
+                    addToggleRow(
+                        inner,
+                        '地面',
+                        envState.groundVisible,
+                        (v) => setEnvState({ groundVisible: v }),
+                        'lucide:square',
+                        { bind: () => envState.groundVisible }
                     );
-                    wToggle.style.marginLeft = 'auto';
-                    wToggle.style.marginRight = '4px';
-                    waterRow.appendChild(wToggle);
-                    const wArrow = document.createElement('span');
-                    wArrow.className = 'slide-arrow';
-                    wArrow.textContent = '>';
-                    waterRow.appendChild(wArrow);
-                    waterRow.addEventListener('click', (e) => {
-                        if ((e.target as HTMLElement).closest('.toggle')) {
-                            return;
-                        }
-                        sm?.push(buildWaterLevel());
-                    });
-                    inner.appendChild(waterRow);
+
+                    // 水面开关（使用 addToggleRow 替代手动 checkbox）
+                    addToggleRow(
+                        inner,
+                        '水面',
+                        envState.waterEnabled,
+                        (v) => setEnvState({ waterEnabled: v }),
+                        'lucide:waves',
+                        { bind: () => envState.waterEnabled }
+                    );
                 });
             },
         },
