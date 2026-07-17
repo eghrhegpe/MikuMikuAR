@@ -340,14 +340,19 @@ export function getEnvSunAngle(): number {
 
 const _AUTO_LINK_THRESHOLD_DEG = 0.5;
 
-let _timeOfDayActive = false;
+// [fix:ghost-state] 拆分双源：
+//   - envState.timeOfDayActive = 用户意图（是否启用），持久化，由 start/stop 写入
+//   - _timeOfDayPaused = 预设动画期间的临时暂停标志，不持久化
+//   原 _timeOfDayActive 同时承担「用户意图」和「运行时状态」双重职责，预设动画期间
+//   只写模块变量、漏写 envState，导致双源漂移。现拆为「单一持久源 + 独立暂停标志」。
+let _timeOfDayPaused = false;
 let _timeOfDaySpeed = 3;
 let _lastSkySunAngle = 90;
 let _lastAutoLinkSunAngle = 90;
 let _unregisterTimeOfDay: (() => void) | null = null; // 回调注销函数
 
 function _timeOfDayTick(): void {
-    if (!_timeOfDayActive) {
+    if (!envState.timeOfDayActive || _timeOfDayPaused) {
         return;
     }
     const dt = scene.getAnimationRatio() * (1 / 60);
@@ -387,11 +392,11 @@ export function startTimeOfDay(speed?: number): void {
         _timeOfDaySpeed = speed;
         envState.timeOfDaySpeed = speed;
     }
-    if (_timeOfDayActive) {
+    if (envState.timeOfDayActive && !_timeOfDayPaused) {
         return;
     }
-    _timeOfDayActive = true;
     envState.timeOfDayActive = true;
+    _timeOfDayPaused = false;
     _lastSkySunAngle = envSunAngle;
     _lastAutoLinkSunAngle = envSunAngle;
     // 使用 impl 的统一 observer 注册表，避免多个独立的 scene observer
@@ -400,8 +405,8 @@ export function startTimeOfDay(speed?: number): void {
 }
 
 export function stopTimeOfDay(): void {
-    _timeOfDayActive = false;
     envState.timeOfDayActive = false;
+    _timeOfDayPaused = false;
     if (_unregisterTimeOfDay) {
         _unregisterTimeOfDay();
         _unregisterTimeOfDay = null;
@@ -414,7 +419,7 @@ export function stopTimeOfDay(): void {
 }
 
 export function isTimeOfDayActive(): boolean {
-    return _timeOfDayActive;
+    return envState.timeOfDayActive && !_timeOfDayPaused;
 }
 
 export function getTimeOfDaySpeed(): number {
@@ -428,7 +433,9 @@ export function setTimeOfDaySpeed(s: number): void {
 
 /** 从持久化的 envState 恢复 time-of-day 模块变量（启动时调用） */
 export function syncTimeOfDayFromEnv(): void {
-    _timeOfDayActive = envState.timeOfDayActive;
+    // [fix:ghost-state] timeOfDayActive 已统一到 envState.timeOfDayActive（持久源），
+    // 启动时重置暂停标志，仅恢复 _timeOfDaySpeed 模块内缓存。
+    _timeOfDayPaused = false;
     _timeOfDaySpeed = envState.timeOfDaySpeed;
 }
 
@@ -521,7 +528,8 @@ function _presetAnimLoop(ctx: PresetAnimCtx, observer: Observer<Scene>): void {
         scene.onBeforeRenderObservable.remove(observer);
         setSkipLightAutoSave(false);
         if (_timeOfDayBeforePreset) {
-            _timeOfDayActive = true;
+            // [fix:ghost-state] 预设动画结束，恢复 time-of-day 运行（清除暂停标志）
+            _timeOfDayPaused = false;
             _lastSkySunAngle = envSunAngle;
             _lastAutoLinkSunAngle = envSunAngle;
         }
@@ -551,10 +559,12 @@ export function applyEnvPresetObject(preset: {
     envSunAngle = preset.sunAngle;
 
     if (_timeOfDayBeforePreset === null) {
-        _timeOfDayBeforePreset = _timeOfDayActive;
+        _timeOfDayBeforePreset = envState.timeOfDayActive && !_timeOfDayPaused;
     }
-    if (_timeOfDayActive) {
-        _timeOfDayActive = false;
+    if (envState.timeOfDayActive && !_timeOfDayPaused) {
+        // [fix:ghost-state] 预设动画期间临时暂停 time-of-day tick，不修改 envState.timeOfDayActive
+        // （保持用户意图的持久化值不变），仅翻转 _timeOfDayPaused 运行时标志。
+        _timeOfDayPaused = true;
     }
 
     const mid: [number, number, number] = [
