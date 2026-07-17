@@ -3,6 +3,7 @@
 > **状态**: 规划（调研 → 方案已优化）— P2 排期就绪、P1 待资源解锁；尚未进入实施 PR。本 ADR 为技术对比与方向评估，不锁定具体实现。
 > **背景**: 评审了某竞品（风格化水体）的水系统截图，其设计思路与我方自研 Gerstner 物理水面（ADR-062 / `frontend/src/scene/env/env-water.ts`）完全不同：对方以「少参数、强预设、重法线」的美术水体路线实现"波光粼粼"，而我方以「多参数、强物理、重波形」的可控路线实现。本文档记录参数映射、技术拆解、差异对比与可借鉴方向，供后续增强水面视觉效果时拍板。
 > **范围**: 仅水面视觉风格与交互复杂度对比；不涉及反射 RT 重构（ADR-062）、地面反射（ADR-114）等已立项工作。
+> **外部依赖状态审核（2026-07-17）**: 已对体积云（ADR-113 / `env-clouds.ts`）与地面增强（ADR-114 / `env-ground.ts`）近期更新做集成兼容性评估。结论：两项更新均不实质影响本 ADR 实施前提；发现 1 项🟡P3 云-反射间隙（见§九），非回归，记录供 P1 实施前参考。
 
 ---
 
@@ -586,6 +587,7 @@ P2（焦散强度 + UI 预设化）涉及的所有变更点，实施时逐项打
 | 🟢 低 | 过度仿制 | 竞品走"美术夸张"，我方用户群更重视"物理可控" | 仅借鉴波光手段，不削弱现有参数体系；所有新参数默认值保证零视觉回归 |
 | 🟢 低 | 预设兼容 | P4 的"波纹/大波"拆分可能破坏 `WATER_PRESETS` | P4 需回归 5 个预设；P1/P2/P3 均向后兼容，旧预设缺失字段取默认值 |
 | 🟢 低 | UI 折叠后功能不可达 | 参数收进折叠组后，用户可能找不到高级选项 | 折叠组标题明确（如"高级参数"），且首次进入时高亮提示；搜索功能可命中折叠组内参数 |
+| 🟡 P3 | 云壳 camera-follow 与反射 RT 相机切换交互（2026-07-17 评估发现） | 体积云球壳（renderingGroupId=-1）每帧通过 `onBeforeRenderObservable` 将壳心对齐到 `scene.activeCamera` 位置（`env-clouds.ts:568-575`）。水面反射 RT（screenSpace 模式）渲染时 Babylon 将 `activeCamera` 切到镜像 FreeCamera → 云壳移位到反射相机位置，光线路步进 `cameraPosition` 也使用反射相机 → 云在水面反射中的位置和密度采样偏移 | 1. 非本次更新引入的回归（架构从开始如此）；2. 在 ADR-115 P1（法线扰动/glitter）实施前评估是否需要修复或接受该 gap；3. 若决定修复：在反射 RT render 期间临时解绑云壳的 `followObs`，或加反射相机专用的位置守卫 |
 
 ---
 
@@ -594,6 +596,7 @@ P2（焦散强度 + UI 预设化）涉及的所有变更点，实施时逐项打
 - [ADR-062](adr-062-water-reflection-render-target.md) — 水面反射 RT（本 ADR 不改动其架构）
 - [ADR-114](adr-114-ground-reflection-enhancement.md) — 地面反射增强（平面反射引擎共用）
 - [ADR-026](adr-026-environment-system-enhancement.md) — 环境系统增强（水面子系统所属）
+- [ADR-113](adr-113-volumetric-clouds.md) — 体积云系统（云壳渲染对水面反射的影响见§九）
 
 ---
 
@@ -607,3 +610,47 @@ P2（焦散强度 + UI 预设化）涉及的所有变更点，实施时逐项打
 - **P3/P4 留待后续**：P3 解决方块硬边与氛围联动，P4 重测预设后评估。
 
 是否进入实施 PR，待架构评审确认。
+
+---
+
+## 九、体积云/地面增强集成兼容性评估（2026-07-17）
+
+> 背景：在体积云（ADR-113）和地面增强（ADR-114 Phase 2/3）完成更新后，评估对水面反射系统和 ADR-115 实施路径的影响。评估方式：全链路代码审计与架构推理。
+
+### 9.1 地面增强 → 水面反射：🟢 无需调整
+
+| 检查项 | 结果 |
+|--------|------|
+| 反射引擎互斥 | ✅ 共用 `PlanarReflection` 统一引擎：地面 `mirrorTexture` 模式、水面 `screenSpace` 模式，互斥协调器 `requestExclusive/releaseExclusive` 正常工作 |
+| 反射特性隔离 | ✅ 地面独有的反射模糊（PBR roughness → mipmap）、法线扭曲（bumpTexture）、接触阴影（SS ray marching）均为 ground 子系统内部特性，不涉及水面 shader |
+| 资源冲突 | ✅ 无共享纹理/RT 冲突 |
+
+**结论**：地面增强与水面反射系统在架构层面正交，无需同步调整。
+
+### 9.2 体积云 → 水面反射：🟡 P3 已知间隙
+
+**现象**：云壳（`env-clouds.ts`）`renderingGroupId = -1`，每帧通过 `onBeforeRenderObservable` 将球壳中心对齐到 `scene.activeCamera` 位置（第 568–575 行）。水面反射 RT（screenSpace 模式）渲染时：
+
+1. Babylon 将 `scene.activeCamera` 切到镜像 FreeCamera
+2. `onBeforeRenderObservable` 再次触发 → 云壳移到反射相机位置（非主相机位置）
+3. 云 shader 的光线步进使用 `cameraPosition`（现为反射相机位置）
+4. **结果**：云在水面反射中的空间位置和密度采样均偏移
+
+| 维度 | 评估 |
+|------|------|
+| 严重性 | 🟡 P3 — 仅当 `reflectionQuality ≠ off` 且 `planarReflectBlend > 0` 时可见 |
+| 回归性 | ❌ 非本次更新引入 — 云壳架构从设计之初即如此，水面反射也从未对云层做特殊处理 |
+| 修复难度 | 中 — 在反射 RT render 期间临时移除云壳的 `followObs`，或加反射相机专用位置守卫 |
+| 修复时机 | 建议在 ADR-115 P1（法线扰动层 + Sun Glitter）实施前评估是否需修复，P2 不受影响 |
+
+### 9.3 ADR-115 实施路径影响评估
+
+| ADR-115 优先级 | 受影响？ | 说明 |
+|---------------|---------|------|
+| P2（焦散强度 UI + 面板预设化） | 🟢 否 | 纯水面状态链路 + UI 布局，与云/地面系统无依赖 |
+| P1（法线扰动层 + Sun Glitter） | 🟢 否 | 新增 uniform 在 `water.frag.glsl` 内部，不依赖云/地面系统；仅在实施前注意 9.2 间隙 |
+| P3（无限水面 + 地平线淡出 + 天空联动） | 🟢 否 | 天空联动逻辑虽关联 sky 系统，但 sky 已完成更新且无需额外同步 |
+
+### 9.4 已闭环的同步项
+
+Commit `8f70ee7` 已在本次评估前修复了最关键的环境同步 gap：Go `app.go` EnvState struct 补充了 `ReflectionQuality` 字段，fix 跨重启反射质量丢失问题。水面状态链路（types → bridge → Go → persistence）已完整。
