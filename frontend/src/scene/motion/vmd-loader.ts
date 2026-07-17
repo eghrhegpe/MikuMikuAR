@@ -19,14 +19,12 @@ import {
 } from '@/core/config';
 import { getBaseName, withLoadingIndicator, logWarn } from '@/core/utils';
 import { encodeFileRef } from '@/core/fileservice';
-import { ReadFileBytes } from '@/core/wails-bindings';
+import { readFileBytes } from '@/core/wails-bindings';
 import { t } from '@/core/i18n/t';
 import { loadCameraVmd } from '../camera/camera';
 import { loadAudioFile } from '@/outfit/audio';
 import { PROC_VMD_NAME_IDLE, PROC_VMD_NAME_AUTODANCE } from '@/motion-algos/procedural-motion';
 import { isAutoLoadCompanionAudioEnabled } from '@/menus/settings';
-
-import { decodeBase64 } from '@/core/fileservice';
 
 function getScene() {
     return import('../scene') as Promise<typeof import('../scene')>;
@@ -204,9 +202,9 @@ export async function loadVMDFromPath(
     const { focusedMmdModel, focusedModel } = await getScene();
     await withLoadingIndicator('scene.loader.vmdLoading', async () => {
         try {
-            const vmdB64 = await ReadFileBytes(path);
-            if (!vmdB64) return;
-            const vmdData = decodeBase64(vmdB64).buffer as ArrayBuffer;
+            const vmdBytes = await readFileBytes(path);
+            if (!vmdBytes) return;
+            const vmdData = vmdBytes.buffer as ArrayBuffer;
             const vmdName = getBaseName(path) || '';
             const vmdDisplayName = vmdName.replace(/\.vmd$/i, '');
 
@@ -305,9 +303,9 @@ export async function loadCameraVmdFromPath(path: string, signal?: AbortSignal):
     const { scene } = await getScene();
     await withLoadingIndicator('scene.loader.cameraVmdLoading', async () => {
         try {
-            const vmdB64 = await ReadFileBytes(path);
-            if (!vmdB64) return;
-            const vmdData = decodeBase64(vmdB64).buffer as ArrayBuffer;
+            const vmdBytes = await readFileBytes(path);
+            if (!vmdBytes) return;
+            const vmdData = vmdBytes.buffer as ArrayBuffer;
             const vmdName = getBaseName(path) || '';
 
             const vmdLoader = new VmdLoader(scene);
@@ -331,9 +329,9 @@ export async function loadVPDPose(
     const { focusedModel, stopProcMotion, isProcVmdActive } = await getScene();
     await withLoadingIndicator('scene.loader.vpdLoading', async () => {
         try {
-            const rawB64 = await ReadFileBytes(path);
-            if (!rawB64) return;
-            const rawData = decodeBase64(rawB64).buffer as ArrayBuffer;
+            const rawBytes = await readFileBytes(path);
+            if (!rawBytes) return;
+            const rawData = rawBytes.buffer as ArrayBuffer;
             const poseName = getBaseName(path) || '';
 
             // 停掉程序化动作（VPD 姿势不被动画干扰）
