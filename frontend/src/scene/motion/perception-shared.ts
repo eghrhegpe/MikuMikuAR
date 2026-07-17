@@ -29,6 +29,7 @@ export interface PerceptionState {
     breathFrequency: number; // 0.1–1.0 Hz，默认 0.3
     breathAmplitude: number; // 0–0.05 rad，默认 0.02
     blinkFrequency: number; // 0.05–0.5 Hz，默认 0.15
+    blinkAmplitude: number; // 0–1，默认 1.0（眨眼力度系数）
     headGazeMaxYaw: number; // 0–90°，默认 75
     headGazeMaxPitch: number; // 0–90°，默认 35
     eyeGazeMaxYaw: number; // 0–15°，默认 9
@@ -55,6 +56,7 @@ export const DEFAULT_PERCEPTION_STATE: PerceptionState = {
     breathFrequency: 0.3,
     breathAmplitude: 0.02,
     blinkFrequency: 0.15,
+    blinkAmplitude: 1.0,
     headGazeMaxYaw: 75,
     headGazeMaxPitch: 35,
     eyeGazeMaxYaw: 9,

@@ -421,6 +421,7 @@ export const zhTW: Record<string, string> = {
     'perception.breathAmp': '幅度',
     'perception.blinkParams': '眨眼設定',
     'perception.blinkFreq': '頻率',
+    'perception.blinkAmp': '幅度',
     'scene.runtime': '執行時',
     'scene.runtimeWasm': 'WASM 物理',
     'scene.runtimeJs': 'JS 調試',

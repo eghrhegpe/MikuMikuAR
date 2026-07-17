@@ -293,6 +293,7 @@ export const zhCN: Record<string, string> = {
     'perception.breathAmp': '幅度',
     'perception.blinkParams': '眨眼参数',
     'perception.blinkFreq': '频率',
+    'perception.blinkAmp': '幅度',
     'scene.runtime': '运行时',
     'scene.runtimeWasm': 'WASM 物理',
     'scene.runtimeJs': 'JS 调试',
