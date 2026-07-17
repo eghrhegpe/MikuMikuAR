@@ -27,7 +27,7 @@ import { closeAllOverlays } from '../core/utils';
 // ======== 公共辅助函数 ========
 
 /** 通用的环境功能层级构建器：包裹 cardContainer + renderMenu 模板 */
-function _buildLevel(label: string, buildSchema: (c: HTMLElement) => void): PopupLevel {
+export function _buildLevel(label: string, buildSchema: (c: HTMLElement) => void): PopupLevel {
     return {
         label,
         dir: '',
@@ -39,7 +39,7 @@ function _buildLevel(label: string, buildSchema: (c: HTMLElement) => void): Popu
 }
 
 /** 打开纹理选择浏览器（环境纹理选择器公共逻辑） */
-function _openTexturePicker(
+export function _openTexturePicker(
     target: EnvTextureBindingTarget,
     label: string,
     browseDir?: string,
