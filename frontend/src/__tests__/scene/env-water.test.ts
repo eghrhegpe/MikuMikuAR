@@ -150,7 +150,7 @@ describe('Water LOD — 仅一层可见', () => {
 // ──────────────────── 波相位连续（修复 HIGH-2）────────────────────
 describe('Water 波相位 — 调节波速不跳变', () => {
     it('相位逐帧累加，且改波速后绝对值连续（无跳帧）', () => {
-        createWater(makeWaterState({ waterLevel: 0 }));
+        createWater(makeWaterState({ waterLevel: 0, waterAnimSpeed: 1 }));
         scene.deltaTime = 16.67; // ~60fps
 
         const phases: number[] = [getWaterPhase()];
