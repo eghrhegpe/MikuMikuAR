@@ -29,6 +29,13 @@ interface _OverrideSlot {
     enabled: boolean;
     /** [doc:adr-116] 可选位置覆盖（P2 引擎扩展）。undefined=不动位置，沿用动画值 */
     pos?: Vector3;
+    /**
+     * [doc:adr-116 P1] 是否覆盖动画旋转。
+     * - true：按 weight 混合/硬覆盖旋转（setBoneOverride / setBoneOverrideQuat 设置）
+     * - false：沿用动画旋转，仅叠加位置偏移（setBoneOverridePosition 设置）
+     * undefined 视为 false（安全默认：绝不静默抹除动画旋转）
+     */
+    overrideRotation?: boolean;
 }
 
 // ── 管理器（per-model） ──
@@ -100,6 +107,36 @@ function _propagateChildrenWasm(
     }
 }
 
+// ── 纯函数：单槽覆盖合成（P1 抽离，便于单元测试） ──
+
+/** 覆盖槽的最小形态，供 _computeOverride 接收（与内部 _OverrideSlot 结构兼容） */
+export interface OverrideSlotLike {
+    quat: Quaternion;
+    weight: number;
+    pos?: Vector3;
+    overrideRotation?: boolean;
+}
+
+/**
+ * [doc:adr-116 P1] 计算单槽覆盖后的平移与旋转。
+ * - 平移：slot.pos 存在时 = 动画平移 + 偏移（加法语义）；否则沿用动画平移。
+ * - 旋转：仅当 overrideRotation 为 true 才覆盖；否则沿用动画旋转。
+ * 抽离为纯函数，无需真实骨骼运行时即可单测。
+ */
+export function _computeOverride(
+    oldTranslation: Vector3,
+    oldRotation: Quaternion,
+    slot: OverrideSlotLike
+): { translation: Vector3; rotation: Quaternion } {
+    const translation = slot.pos ? oldTranslation.add(slot.pos) : oldTranslation;
+    const rotation = slot.overrideRotation
+        ? slot.weight >= 1
+            ? slot.quat
+            : Quaternion.Slerp(oldRotation, slot.quat, slot.weight)
+        : oldRotation;
+    return { translation, rotation };
+}
+
 // ── 核心 API ──
 // 所有 API 均支持可选 modelId 参数，不传则作用于当前聚焦模型。
 // 内部使用 per-model Map 存储，避免多模型场景下互相串扰。
@@ -131,10 +168,15 @@ export function setBoneOverride(
     if (!mid) {
         return;
     }
-    _getOverrideMap(mid).set(boneName, {
+    const map = _getOverrideMap(mid);
+    const existing = map.get(boneName);
+    map.set(boneName, {
         quat: _eulerToQuat(euler[0], euler[1], euler[2]),
         weight: clamp01(weight),
         enabled,
+        // [doc:adr-116 P1] 保留既有位置覆盖，避免旋转覆盖静默清除位置
+        pos: existing?.pos,
+        overrideRotation: true,
     });
 }
 
@@ -152,10 +194,15 @@ export function setBoneOverrideQuat(
     if (!mid) {
         return;
     }
-    _getOverrideMap(mid).set(boneName, {
+    const map = _getOverrideMap(mid);
+    const existing = map.get(boneName);
+    map.set(boneName, {
         quat: quat.clone(),
         weight: clamp01(weight),
         enabled,
+        // [doc:adr-116 P1] 保留既有位置覆盖，避免旋转覆盖静默清除位置
+        pos: existing?.pos,
+        overrideRotation: true,
     });
 }
 
@@ -184,17 +231,20 @@ export function setBoneOverridePosition(
     const map = _getOverrideMap(mid);
     let slot = map.get(boneName);
     if (!slot) {
-        // 新建 slot：旋转用 Identity（不影响动画旋转），仅覆盖位置
+        // 新建 slot：旋转用 Identity 且 overrideRotation=false（不覆盖动画旋转），仅叠加位置偏移
         slot = {
             quat: Quaternion.Identity(),
             weight: clamp01(weight),
             enabled,
+            overrideRotation: false,
         };
         map.set(boneName, slot);
     }
     slot.pos = new Vector3(position[0], position[1], position[2]);
     slot.weight = clamp01(weight);
     slot.enabled = enabled;
+    // overrideRotation 保持原值：若既有 slot 由 setBoneOverride 创建（旋转覆盖）则保留 true；
+    // 若本就为位置覆盖则保持 false。勿在此处强制赋值，以免破坏「旋转+位置」组合覆盖。
 }
 
 /** 清除指定骨骼的覆盖。 */
@@ -283,6 +333,9 @@ export function restoreOverrides(entries: BoneOverrideEntry[], modelId?: string)
             weight: clamp01(e.weight),
             enabled: e.enabled,
             pos: e.position ? new Vector3(e.position[0], e.position[1], e.position[2]) : undefined,
+            // [doc:adr-116 P1] 含位置字段的条目必为位置覆盖（来自 setBoneOverridePosition），
+            // 不应覆盖动画旋转；纯旋转条目（手动覆盖）overrideRotation=true。
+            overrideRotation: !e.position,
         });
     }
 }
@@ -334,14 +387,13 @@ export function startBoneOverride(
                     continue;
                 }
                 const oldMat = Matrix.FromArray(buf);
-                // [doc:adr-116] P2 引擎扩展：slot.pos 存在时覆盖位置，否则沿用动画位置
-                const pos = slot.pos ? slot.pos : oldMat.getTranslation();
+                // [doc:adr-116 P1] 用纯函数合成：位置加法偏移 + 条件旋转覆盖
+                const oldT = oldMat.getTranslation();
                 const oldQ = _q().copyFrom(
                     Quaternion.FromRotationMatrix(oldMat.getRotationMatrix())
                 );
-                const blended =
-                    slot.weight >= 1 ? slot.quat : Quaternion.Slerp(oldQ, slot.quat, slot.weight);
-                const newMat = Matrix.Compose(Vector3.One(), blended, pos);
+                const { translation, rotation } = _computeOverride(oldT, oldQ, slot);
+                const newMat = Matrix.Compose(Vector3.One(), rotation, translation);
                 const arr = newMat.asArray();
                 for (let i = 0; i < 16; i++) {
                     buf[i] = arr[i];
@@ -357,18 +409,23 @@ export function startBoneOverride(
                     continue;
                 }
 
-                if (slot.weight >= 1) {
-                    linked.rotationQuaternion = slot.quat.clone();
-                } else {
-                    const cur = linked.rotationQuaternion ?? Quaternion.Identity();
-                    linked.rotationQuaternion = Quaternion.Slerp(cur, slot.quat, slot.weight);
+                // [doc:adr-116 P1] 旋转覆盖：仅当 overrideRotation 为 true 才覆盖动画旋转
+                if (slot.overrideRotation) {
+                    if (slot.weight >= 1) {
+                        linked.rotationQuaternion = slot.quat.clone();
+                    } else {
+                        const cur = linked.rotationQuaternion ?? Quaternion.Identity();
+                        linked.rotationQuaternion = Quaternion.Slerp(cur, slot.quat, slot.weight);
+                    }
                 }
 
-                // [doc:adr-116] P2 引擎扩展：slot.pos 存在时覆盖位置（局部坐标）
+                // [doc:adr-116 P1] 位置覆盖：在动画局部位置之上叠加偏移量（加法语义），
+                // 而非以绝对坐标硬覆盖，保留根骨骼的位移/弹跳等动画。
                 // 注意：JS 模式 setPosition 设的是相对父骨骼的局部位置，
-                // 对根骨骼（如 センター，parent=null）等价于世界位置
+                // 对根骨骼（如 センター，parent=null）等价于世界位置，与 WASM 世界平移加法一致。
                 if (slot.pos) {
-                    linked.setPosition(slot.pos);
+                    const curPos = linked.getPosition();
+                    linked.setPosition(curPos.add(slot.pos));
                 }
 
                 // 更新骨骼世界矩阵
