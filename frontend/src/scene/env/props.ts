@@ -15,7 +15,7 @@ import { scene } from '../scene';
 import { _envSys } from './env';
 import { registerMaterialTarget, unregisterMaterialTarget } from '../manager/material';
 import { t } from '@/core/i18n/t';
-import { getBaseName, logWarn } from '@/core/utils';
+import { getBaseName, logWarn, logError } from '@/core/utils';
 import { renderPropThumbnail } from '../manager/thumbnail-capture';
 import { thumbnailBaseKey } from '../manager/thumbnail-key';
 import {
@@ -167,7 +167,7 @@ export async function loadProp(filePath: string, signal?: AbortSignal): Promise<
         if (err instanceof DOMException && err.name === 'AbortError') {
             console.info('[props] loadProp aborted:', filePath);
         } else {
-            console.error('[props] loadProp:', err);
+            logError('props', 'loadProp:', err);
         }
         // 清理已加载但未注册的资源
         loadedMeshes.forEach((m) => {
