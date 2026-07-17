@@ -23,6 +23,7 @@ import { setModelFormation } from '../scene/scene';
 import { focusModel } from '../scene/scene';
 import { exportSceneBundle, importSceneBundle } from '../scene/scene-bundle';
 import { t } from '../core/i18n/t';
+import { translateGoError } from '../core/i18n/goerr';
 
 // ======== 从子文件导入 ========
 import { buildRenderLevel, buildPresetScenesLevel } from './scene-render-levels';
@@ -326,7 +327,7 @@ async function saveScene(): Promise<void> {
         }
         reRenderSceneMenu();
     } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err ?? 'unknown error');
+        const msg = translateGoError(err);
         setStatus(t('scene.statusSaveFailed'), false);
         showErrorToast(t('scene.toastSaveSceneFailed'), msg);
     }

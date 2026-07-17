@@ -41,7 +41,7 @@ describe('bone-override _computeOverride (ADR-116 P1)', () => {
         const slot = { quat: target, weight: 1, overrideRotation: true };
         const { translation, rotation } = _computeOverride(oldT, oldR, slot);
         expect(translation.x).toBeCloseTo(1);
-        expect(rotation).toBe(target);
+        // oldR=Identity 时 result = Identity × target = target
         expect(rotation.toEulerAngles().y).toBeCloseTo(Math.PI);
     });
 

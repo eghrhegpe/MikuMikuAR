@@ -1461,4 +1461,11 @@ export const en: Record<string, string> = {
     'goerr.screenshot.dirNotSet': 'Screenshot directory is not set. Take a screenshot first.',
     'goerr.screenshot.dirCreateFailed': 'Failed to create screenshot directory.',
     'goerr.screenshot.androidNotSupported': 'Opening the screenshot directory is not supported on Android.',
+    'goerr.watch.unsupportedFormat': 'Unsupported file format: {ext}',
+    'goerr.watch.androidNotSupported': 'File system watching is not supported on Android. Please import files manually.',
+    'goerr.watch.dirInaccessible': 'The watch directory is not accessible.',
+    'goerr.watch.notADirectory': 'Path is not a directory: {dir}',
+    'goerr.watch.createWatcherFailed': 'Failed to create file watcher.',
+    'goerr.watch.addWatchFailed': 'Failed to add directory to watcher.',
+    'goerr.zip.tooManyEntries': '{op}: the archive contains {count} files, exceeding the limit of {max}.',
 };

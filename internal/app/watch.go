@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/nwaples/rardecode/v2"
+	"mikumikuar/internal/i18nerr"
 	"mikumikuar/internal/util"
 )
 
@@ -84,7 +84,7 @@ func (a *App) ImportLocalFile(path string) (*ExtractResult, error) {
 		case ".vpd":
 			catKey = "pose"
 		default:
-			return nil, fmt.Errorf("不支持的文件格式: %s", ext)
+			return nil, i18nerr.New("watch.unsupportedFormat", "不支持的文件格式: "+ext, map[string]string{"ext": ext})
 		}
 
 		cfg, err := a.GetConfig()
@@ -224,7 +224,7 @@ func (a *App) importRarToLibrary(rarPath string) (*ExtractResult, error) {
 // On Android, file system watching is not supported — returns an error.
 func (a *App) StartWatchDir(dir string) error {
 	if isAndroid {
-		return fmt.Errorf("Android 不支持文件系统监听，请手动导入文件")
+		return i18nerr.New("watch.androidNotSupported", "Android 不支持文件系统监听，请手动导入文件")
 	}
 	a.watchMu.Lock()
 	defer a.watchMu.Unlock()
@@ -243,20 +243,20 @@ func (a *App) StartWatchDir(dir string) error {
 	// Verify directory exists
 	info, err := os.Stat(dir)
 	if err != nil {
-		return fmt.Errorf("监听目录不可访问")
+		return i18nerr.New("watch.dirInaccessible", "监听目录不可访问")
 	}
 	if !info.IsDir() {
-		return fmt.Errorf("路径不是目录: %s", dir)
+		return i18nerr.New("watch.notADirectory", "路径不是目录: "+dir, map[string]string{"dir": dir})
 	}
 
 	// Create new watcher
 	w, err := fsnotify.NewWatcher()
 	if err != nil {
-		return fmt.Errorf("创建文件监听器失败")
+		return i18nerr.New("watch.createWatcherFailed", "创建文件监听器失败")
 	}
 	if err := w.Add(dir); err != nil {
 		w.Close()
-		return fmt.Errorf("添加监听目录失败")
+		return i18nerr.New("watch.addWatchFailed", "添加监听目录失败")
 	}
 
 	a.watcher = w

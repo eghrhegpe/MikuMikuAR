@@ -32,6 +32,7 @@ import {
 import { tryCatchStatus, logWarn, isUnderRoot } from '../core/utils';
 import { showConfirm } from '../core/dialog';
 import { t } from '../core/i18n/t';
+import { translateGoError } from '../core/i18n/goerr';
 import { buildLevel, buildModelRootItems, setResourceViewMode } from './library-core';
 import { showModelPopup } from './library-browse';
 
@@ -85,7 +86,7 @@ export async function initLibrary(): Promise<void> {
     } catch (err) {
         logWarn('library-setup', 'initLibrary:', err);
         setStatus(
-            t('library.loadLibraryFailed') + (err instanceof Error ? err.message : String(err)),
+            t('library.loadLibraryFailed') + translateGoError(err),
             false
         );
     }

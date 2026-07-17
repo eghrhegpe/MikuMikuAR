@@ -50,6 +50,7 @@ import {
     jsonStringify,
 } from '../core/utils';
 import { t } from '../core/i18n/t';
+import { translateGoError } from '../core/i18n/goerr';
 import { buildPresetListLevel as buildGenericPresetLevel } from './preset-list-viewer';
 
 export interface ModelPresetEntry {
@@ -236,7 +237,7 @@ export async function selectAndSavePreset(id: string): Promise<void> {
         (err) =>
             showErrorToast(
                 t('model-preset.saveErrorToast'),
-                err instanceof Error ? err.message : String(err)
+                translateGoError(err)
             )
     );
     if (_r0 !== undefined) {
@@ -363,7 +364,7 @@ export async function savePresetToLibDialog(id: string): Promise<void> {
         (err) =>
             showErrorToast(
                 t('model-preset.saveErrorToast'),
-                err instanceof Error ? err.message : String(err)
+                translateGoError(err)
             )
     );
     if (filename !== undefined) {

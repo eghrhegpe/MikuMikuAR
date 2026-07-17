@@ -23,6 +23,7 @@ import (
 	"golang.org/x/text/encoding/traditionalchinese"
 	"golang.org/x/text/transform"
 
+	"mikumikuar/internal/i18nerr"
 	"mikumikuar/internal/util"
 )
 
@@ -154,7 +155,7 @@ func (a *App) extractZipUnsafe(zipPath, innerPath string) (*ExtractResult, error
 		// since MMD model zips legitimately contain many texture files.
 		extractedCount++
 		if extractedCount > maxZipEntries {
-			return nil, fmt.Errorf("%s: 压缩包内文件数 %d 超过上限 %d", op, extractedCount, maxZipEntries)
+			return nil, i18nerr.New("zip.tooManyEntries", fmt.Sprintf("%s: 压缩包内文件数 %d 超过上限 %d", op, extractedCount, maxZipEntries), map[string]string{"op": op, "count": fmt.Sprintf("%d", extractedCount), "max": fmt.Sprintf("%d", maxZipEntries)})
 		}
 
 		// Create parent directories

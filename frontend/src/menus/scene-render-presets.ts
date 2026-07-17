@@ -16,6 +16,7 @@ import {
 import { GetRenderPresets, SaveRenderPreset } from '../core/wails-bindings';
 import { reRenderSceneMenu, getSceneMenu } from './scene-menu';
 import { t } from '../core/i18n/t';
+import { translateGoError } from '../core/i18n/goerr';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 
@@ -279,7 +280,7 @@ export async function showPresetSaveDialog(): Promise<void> {
         (err) =>
             showErrorToast(
                 t('scene.toastSavePresetFailed'),
-                err instanceof Error ? err.message : String(err)
+                translateGoError(err)
             )
     );
     if (r) {
