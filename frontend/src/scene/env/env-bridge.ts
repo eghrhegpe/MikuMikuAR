@@ -325,11 +325,17 @@ export function getGroundCollisionEnabled(): boolean {
 
 // ======== Environment Sun Angle ========
 
+// [fix:ghost-state] envSunAngle 与 envState.sunAngle 双源同步：
+// envSunAngle 是模块内缓存（供 _timeOfDayTick 高频递增 + 滑块 bind 读取），
+// envState.sunAngle 是持久化源。setEnvState 现在会反向同步 envSunAngle（见 setEnvState），
+// 消除原「setEnvState({ sunAngle }) 只写 envState、漏写 envSunAngle」的漂移陷阱。
+// 调用方仍可通过 setEnvSunAngle 显式设置（带 clamp），但无需再手动双写。
 let envSunAngle = 45;
 const _envPersistTimer = new DebouncedTimer();
 
 export function setEnvSunAngle(deg: number): void {
     envSunAngle = Math.max(-15, Math.min(90, deg));
+    envState.sunAngle = envSunAngle;
 }
 
 export function getEnvSunAngle(): number {
@@ -666,6 +672,13 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
     console.info(`[env-persist] setEnvState() called: ${keys} ${skipAutoSave ? '(skipAutoSave)' : ''}`);
     const migrated = migrateEnvState(partial);
     Object.assign(envState, migrated);
+
+    // [fix:ghost-state] 反向同步 envSunAngle 模块缓存，消除双源漂移：
+    // 原代码只写 envState.sunAngle，漏写 envSunAngle，导致 _timeOfDayTick
+    // 从旧 envSunAngle 递增覆盖用户设置，且滑块 getEnvSunAngle() 显示旧值。
+    if (migrated.sunAngle !== undefined) {
+        envSunAngle = migrated.sunAngle;
+    }
 
     _applyEnvStateFacade(envState, migrated);
 

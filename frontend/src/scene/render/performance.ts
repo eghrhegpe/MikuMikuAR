@@ -6,6 +6,8 @@ import { engine } from '../scene';
 import { setLightState, setRenderState, getLightState, getRenderState } from '../scene';
 import type { LightState, RenderState } from '../scene';
 import { formatTimestamp } from '@/core/utils';
+import { uiState, setUIState } from '@/core/state';
+import type { UIState } from '@/core/types';
 
 // ======== Types ========
 
@@ -374,6 +376,13 @@ export function updatePerformance(): void {
  */
 export function setPerformanceMode(mode: PerformanceMode): void {
     _mode = mode;
+
+    // [fix:ghost-state] 同步 uiState.performanceMode 并触发持久化，
+    // 修复原「用户切换模式只写 _mode、uiState 不变」导致重启后设置丢失的漂移。
+    // setUIState 内部 Object.assign 合并字段 + 调用 _uiPersistCb 持久化。
+    if (uiState.performanceMode !== mode) {
+        setUIState({ performanceMode: mode } as UIState);
+    }
 
     // Issue #2: 强制模式调用时绕过冷却
     if (mode === 'quality') {
