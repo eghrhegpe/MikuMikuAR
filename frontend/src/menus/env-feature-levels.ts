@@ -810,8 +810,16 @@ export function buildWaterLevel(): PopupLevel {
                                 Object.entries(WATER_PRESETS).map(([key, wp]) => ({
                                     label: t(WATER_PRESET_I18N[key] ?? wp.label),
                                     onClick: () => {
-                                        setEnvState(buildWaterPresetEnvState(wp));
+                                        // 水面预设必须同时开启水面：buildWaterPresetEnvState 只映射
+                                        // 水色/透明度等参数，不含 waterEnabled。若漏开启，点预设时
+                                        // 水面保持关闭（表现为“材质没了”），且持久化把关闭态固化，
+                                        // 后续拨开关也因从未建立水面而“没用”。
+                                        setEnvState({
+                                            ...buildWaterPresetEnvState(wp),
+                                            waterEnabled: true,
+                                        });
                                         applyWaterPresetToCurrent(wp);
+                                        getEnvMenu()?.reRender();
                                     },
                                 }))
                             );
@@ -839,10 +847,17 @@ export function buildWaterLevel(): PopupLevel {
                                 icon: 'lucide:maximize',
                             },
                             {
-                                id: 'env:water:waveHeight',
+                                id: 'env:water:bigWaveHeight',
                                 kind: 'slider',
-                                label: 'env.waveHeight',
-                                control: { bind: 'env.waterWaveHeight', min: 0, max: 3, step: 0.1 },
+                                label: 'env.bigWaveHeight',
+                                control: { bind: 'env.bigWaveHeight', min: 0, max: 3, step: 0.1 },
+                                icon: 'lucide:mountain',
+                            },
+                            {
+                                id: 'env:water:smallWaveHeight',
+                                kind: 'slider',
+                                label: 'env.smallWaveHeight',
+                                control: { bind: 'env.smallWaveHeight', min: 0, max: 3, step: 0.1 },
                                 icon: 'lucide:waves',
                             },
                             {
@@ -869,30 +884,6 @@ export function buildWaterLevel(): PopupLevel {
                                     step: 0.01,
                                 },
                                 icon: 'lucide:sun',
-                            },
-                            {
-                                id: 'env:water:normalStrength',
-                                kind: 'slider',
-                                label: 'env.waterNormalStrength',
-                                control: {
-                                    bind: 'env.waterNormalStrength',
-                                    min: 0,
-                                    max: 1.5,
-                                    step: 0.05,
-                                },
-                                icon: 'lucide:wind',
-                            },
-                            {
-                                id: 'env:water:glintStrength',
-                                kind: 'slider',
-                                label: 'env.waterGlintStrength',
-                                control: {
-                                    bind: 'env.waterGlintStrength',
-                                    min: 0,
-                                    max: 2,
-                                    step: 0.05,
-                                },
-                                icon: 'lucide:sparkles',
                             },
                             {
                                 id: 'env:water:color',
@@ -1040,6 +1031,39 @@ export function buildWaterLevel(): PopupLevel {
                                 kind: 'slider',
                                 label: 'env.rippleGlint',
                                 control: { bind: 'env.rippleGlintStrength', min: 0, max: 2, step: 0.05 },
+                            },
+                            {
+                                id: 'env:water:normalStrength',
+                                kind: 'slider',
+                                label: 'env.waterNormalStrength',
+                                control: {
+                                    bind: 'env.waterNormalStrength',
+                                    min: 0,
+                                    max: 1.5,
+                                    step: 0.05,
+                                },
+                            },
+                            {
+                                id: 'env:water:glintStrength',
+                                kind: 'slider',
+                                label: 'env.waterGlintStrength',
+                                control: {
+                                    bind: 'env.waterGlintStrength',
+                                    min: 0,
+                                    max: 2,
+                                    step: 0.05,
+                                },
+                            },
+                            {
+                                id: 'env:water:horizonFade',
+                                kind: 'slider',
+                                label: 'env.waterHorizonFade',
+                                control: {
+                                    bind: 'env.waterHorizonFade',
+                                    min: 0,
+                                    max: 1,
+                                    step: 0.05,
+                                },
                             },
                             {
                                 id: 'env:water:causticColor1',

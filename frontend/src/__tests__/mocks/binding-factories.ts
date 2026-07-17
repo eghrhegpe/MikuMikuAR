@@ -168,6 +168,8 @@ export function createMockEnvState(overrides?: Partial<EnvState>): EnvState {
         waterColor: [0, 0.3, 0.6],
         waterTransparency: 0.8,
         waterWaveHeight: 0.02,
+        bigWaveHeight: 1.0,
+        smallWaveHeight: 1.0,
         waterSize: 100,
         waterAnimSpeed: 1,
         planarReflectBlend: 0,

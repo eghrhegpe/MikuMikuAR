@@ -122,6 +122,22 @@ func (a *App) ServiceStartup(ctx context.Context, options application.ServiceOpt
 			a.safeLogInfo("ServiceStartup: auto-cleaned %d orphan cache dirs", cleaned)
 		}
 	}()
+	// Clean up legacy serve isolation directory — no longer used (see ADR-005).
+	// Previously isolateDir copied model files here; now IsolateModelDir returns
+	// the original directory directly. Remove accumulated data to free disk space.
+	go func() {
+		dir, err := serveRootDir()
+		if err != nil {
+			return
+		}
+		entries, err := os.ReadDir(dir)
+		if err != nil || len(entries) == 0 {
+			return
+		}
+		if err := os.RemoveAll(dir); err == nil {
+			a.safeLogInfo("ServiceStartup: removed legacy serve directory (%s)", dir)
+		}
+	}()
 	return nil
 }
 
@@ -470,6 +486,8 @@ type EnvState struct {
 	WaterColor        [3]float64 `json:"waterColor"`
 	WaterTransparency float64    `json:"waterTransparency"`
 	WaterWaveHeight   float64    `json:"waterWaveHeight"`
+	BigWaveHeight     float64    `json:"bigWaveHeight"`
+	SmallWaveHeight   float64    `json:"smallWaveHeight"`
 	WaterSize         float64    `json:"waterSize"`
 	WaterAnimSpeed    float64    `json:"waterAnimSpeed"`
 	// 水面平面反射质量：'high' | 'medium' | 'low' | 'off'

@@ -114,6 +114,8 @@ const _WATER_KEYS = [
     'waterColor',
     'waterTransparency',
     'waterWaveHeight',
+    'bigWaveHeight',
+    'smallWaveHeight',
     'waterSize',
     'waterAnimSpeed',
     'fresnelBias',

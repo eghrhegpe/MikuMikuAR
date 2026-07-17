@@ -436,6 +436,9 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
 
     // ——— 基础参数 ———
     mat.setFloat('waveHeight', state.waterWaveHeight);
+    // ADR-115 P4: 双层尺度 — 大波/小波独立振幅缩放，?? 1.0 兜底防 NaN
+    mat.setFloat('bigWaveHeight', state.bigWaveHeight ?? 1.0);
+    mat.setFloat('smallWaveHeight', state.smallWaveHeight ?? 1.0);
     _waterWaveSpeed = (state.waterAnimSpeed ?? 1) * 1.0;
     mat.setFloat('wavePhase', _waterPhase);
     mat.setColor3('waterColor', col3FromTriple(state.waterColor));
@@ -490,10 +493,10 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     // 天空基准色：优先 skyColorBot，fallback waterFogColor
     const skyBot = state.skyColorBot ?? state.waterFogColor;
     mat.setVector3('uSkyBlendColor', new Vector3(skyBot[0], skyBot[1], skyBot[2]));
-    mat.setFloat('uSkyColorBlend', state.waterSkyColorBlend);
+    mat.setFloat('uSkyColorBlend', state.waterSkyColorBlend ?? 0);
     // 地平线淡出距离按 waterSize 自动计算
     const ws = state.waterSize;
-    mat.setFloat('uHorizonFade', state.waterHorizonFade);
+    mat.setFloat('uHorizonFade', state.waterHorizonFade ?? 0);
     mat.setFloat('uHorizonStart', ws * 0.7);
     mat.setFloat('uHorizonEnd', ws * 0.95);
     // 地平线融合色：优先 skyColorBot，fallback waterFogColor
@@ -606,6 +609,8 @@ const WATER_UNIFORMS = [
     'viewProjection',
     'time',
     'waveHeight',
+    'bigWaveHeight',
+    'smallWaveHeight',
     'wavePhase',
     'cameraPosition',
     'waterColor',
@@ -1024,6 +1029,9 @@ export interface WaterPreset {
     waterColor: [number, number, number];
     waterTransparency: number;
     waterWaveHeight: number;
+    // ADR-115 P4: 双层尺度拆分
+    bigWaveHeight: number;
+    smallWaveHeight: number;
     waterAnimSpeed: number;
     foamThreshold: number;
     foamIntensity: number;
@@ -1059,6 +1067,8 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         waterColor: [0.15, 0.4, 0.6],
         waterTransparency: 0.88,
         waterWaveHeight: 0.15,
+        bigWaveHeight: 0.3,
+        smallWaveHeight: 0.5,
         waterAnimSpeed: 0.2,
         foamThreshold: 0.35,
         foamIntensity: 0.12,
@@ -1076,6 +1086,8 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         waterColor: [0.2, 0.42, 0.62],
         waterTransparency: 0.8,
         waterWaveHeight: 0.6,
+        bigWaveHeight: 0.6,
+        smallWaveHeight: 1.0,
         waterAnimSpeed: 1.0,
         foamThreshold: 0.25,
         foamIntensity: 0.3,
@@ -1093,6 +1105,8 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         waterColor: [0.08, 0.25, 0.5],
         waterTransparency: 0.65,
         waterWaveHeight: 1.8,
+        bigWaveHeight: 1.5,
+        smallWaveHeight: 0.8,
         waterAnimSpeed: 2.5,
         foamThreshold: 0.12,
         foamIntensity: 0.55,
@@ -1110,6 +1124,8 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         waterColor: [0.04, 0.14, 0.35],
         waterTransparency: 0.5,
         waterWaveHeight: 3.0,
+        bigWaveHeight: 2.0,
+        smallWaveHeight: 0.5,
         waterAnimSpeed: 5.0,
         foamThreshold: 0.08,
         foamIntensity: 0.7,
@@ -1127,6 +1143,8 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         waterColor: [0.1, 0.55, 0.7],
         waterTransparency: 0.78,
         waterWaveHeight: 0.8,
+        bigWaveHeight: 0.8,
+        smallWaveHeight: 1.2,
         waterAnimSpeed: 1.2,
         foamThreshold: 0.25,
         foamIntensity: 0.25,
@@ -1166,6 +1184,9 @@ export function buildWaterPresetEnvState(preset: WaterPreset): Partial<EnvState>
         waterColor: preset.waterColor,
         waterTransparency: preset.waterTransparency,
         waterWaveHeight: preset.waterWaveHeight,
+        // ADR-115 P4: 双尺度波高（大/小波独立振幅）
+        bigWaveHeight: preset.bigWaveHeight ?? 1.0,
+        smallWaveHeight: preset.smallWaveHeight ?? 1.0,
         waterAnimSpeed: preset.waterAnimSpeed,
         foamThreshold: preset.foamThreshold,
         foamIntensity: preset.foamIntensity,
@@ -1181,8 +1202,10 @@ export function buildWaterPresetEnvState(preset: WaterPreset): Partial<EnvState>
         waterNormalStrength: preset.waterNormalStrength,
         waterGlintStrength: preset.waterGlintStrength,
         // ADR-115 P3: 地平线淡出 + 天空联动
-        waterHorizonFade: preset.waterHorizonFade,
-        waterSkyColorBlend: preset.waterSkyColorBlend,
+        // 兜底 0：WATER_PRESETS 当前未定义这两个字段，直接传 undefined 会让
+        // _syncWaterUniforms 的 setFloat 写入 NaN，导致真实引擎下水面渲染消失且不可逆。
+        waterHorizonFade: preset.waterHorizonFade ?? 0,
+        waterSkyColorBlend: preset.waterSkyColorBlend ?? 0,
     };
 }
 
