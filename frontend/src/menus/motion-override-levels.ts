@@ -13,7 +13,7 @@ import { addEmptyRow, slideRow, addSectionTitle } from '../core/ui-helpers';
 import { addSliderRow } from '../core/ui-rows';
 import { createTrailingBtn } from '../core/ui-slide-row';
 import { getMotionMenu } from './motion-popup';
-import { triggerAutoSave } from '../scene/scene';
+import { triggerAutoSave, pushUndoSnapshot, offerSceneUndo } from '../scene/scene';
 import type { BoneOverrideEntry } from '../core/types';
 import {
     setBoneOverride,
@@ -405,6 +405,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
                                 title: t('motion.boneOverride.remove'),
                                 danger: true,
                                 onClick: () => {
+                                    const snap = pushUndoSnapshot();
                                     clearBoneOverride(ov.boneName);
                                     inst.boneOverrides = inst.boneOverrides.filter(
                                         (b) => b.boneName !== ov.boneName
@@ -415,6 +416,14 @@ function buildBoneOverrideSchema(): MenuNode[] {
                                         true
                                     );
                                     menu?.reRender();
+                                    offerSceneUndo(
+                                        t('motion.boneOverride.removed', { bone: ov.boneName }),
+                                        snap,
+                                        () => {
+                                            menu?.reRender();
+                                            setStatus(t('motion.undoApplied'), true);
+                                        }
+                                    );
                                 },
                             })
                         );
@@ -435,11 +444,16 @@ function buildBoneOverrideSchema(): MenuNode[] {
                     clearBtn.textContent = t('motion.boneOverride.clearAll');
                     clearBtn.style.backgroundColor = 'var(--danger)';
                     clearBtn.addEventListener('click', () => {
+                        const snap = pushUndoSnapshot();
                         clearAllOverrides();
                         inst.boneOverrides = [];
                         triggerAutoSave();
                         setStatus(t('motion.boneOverride.allCleared'), true);
                         menu?.reRender();
+                        offerSceneUndo(t('motion.boneOverride.allCleared'), snap, () => {
+                            menu?.reRender();
+                            setStatus(t('motion.undoApplied'), true);
+                        });
                     });
                     inner.appendChild(clearBtn);
                 });

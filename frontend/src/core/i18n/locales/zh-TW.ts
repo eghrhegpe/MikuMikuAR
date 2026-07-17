@@ -277,6 +277,7 @@ export const zhTW: Record<string, string> = {
     'motion.focusModel': '🎯 聚焦到模型',
     'motion.clearVmd': '🗑 清除 VMD',
     'motion.motionCleared': '✓ 動作已清除',
+    'motion.undoApplied': '✓ 已撤銷',
     'motion.music': '音樂',
     'motion.browseMusic': '瀏覽音樂庫',
     'motion.musicLibrary': '音樂庫',

@@ -37,7 +37,7 @@ import {
     type CameraControl,
     type CameraBehavior,
 } from '../scene/camera/camera';
-import { triggerAutoSave } from '../scene/scene';
+import { triggerAutoSave, pushUndoSnapshot, offerSceneUndo } from '../scene/scene';
 import { getMotionMenu } from './motion-popup';
 import {
     switchARCameraFacing,
@@ -214,10 +214,15 @@ function buildCameraSchema(): MenuNode[] {
                 cardContainer(c, (inner) => {
                     if (vmdLoaded) {
                         slideRow(inner, 'lucide:trash-2', t('motion.clearCamVmd'), false,                         () => {
+                            const snap = pushUndoSnapshot();
                             clearCameraVmd();
                             triggerAutoSave();
                             refreshCameraLevel();
                             setStatus(t('motion.camVmdCleared'), true);
+                            offerSceneUndo(t('motion.camVmdCleared'), snap, () => {
+                                refreshCameraLevel();
+                                setStatus(t('motion.undoApplied'), true);
+                            });
                         });
                     }
                     slideRow(

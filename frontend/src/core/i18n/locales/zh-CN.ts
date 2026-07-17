@@ -149,6 +149,7 @@ export const zhCN: Record<string, string> = {
     'motion.focusModel': '🎯 聚焦到模型',
     'motion.clearVmd': '🗑 清除 VMD',
     'motion.motionCleared': '✓ 动作已清除',
+    'motion.undoApplied': '✓ 已撤销',
     'motion.music': '音乐',
     'motion.browseMusic': '浏览音乐库',
     'motion.musicLibrary': '音乐库',

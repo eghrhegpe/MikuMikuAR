@@ -282,6 +282,7 @@ export const ja: Record<string, string> = {
     'motion.focusModel': '🎯 モデルにフォーカス',
     'motion.clearVmd': '🗑 VMD クリア',
     'motion.motionCleared': '✓ モーションをクリアしました',
+    'motion.undoApplied': '✓ 元に戻しました',
     'motion.music': '音楽',
     'motion.browseMusic': '音楽を選択',
     'motion.musicLibrary': '音楽ライブラリ',
