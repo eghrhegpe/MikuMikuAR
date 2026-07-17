@@ -271,31 +271,7 @@ function buildStageSchema(): MenuNode[] {
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    const sm = getSceneMenu();
-                    // 地面行：开关 + 导航
-                    const groundRow = document.createElement('div');
-                    groundRow.className = 'slide-item';
-                    groundRow.style.cursor = 'pointer';
-                    const gIcon = document.createElement('span');
-                    gIcon.className = 'slide-icon';
-                    const gIconEl = createIconifyIcon('lucide:square');
-                    if (gIconEl) {
-                        gIcon.appendChild(gIconEl);
-                    }
-                    groundRow.appendChild(gIcon);
-                    const gLabel = document.createElement('span');
-                    gLabel.className = 'slide-label';
-                    gLabel.textContent = '地面';
-                    groundRow.appendChild(gLabel);
-                    groundRow.addEventListener('click', (e) => {
-                        if ((e.target as HTMLElement).closest('.toggle')) {
-                            return;
-                        }
-                        sm?.push(buildGroundLevel());
-                    });
-                    inner.appendChild(groundRow);
-
-                    // 地面开关（使用 addToggleRow 替代手动 checkbox）
+                    // 地面开关
                     addToggleRow(
                         inner,
                         '地面',
@@ -305,7 +281,7 @@ function buildStageSchema(): MenuNode[] {
                         { bind: () => envState.groundVisible }
                     );
 
-                    // 水面开关（使用 addToggleRow 替代手动 checkbox）
+                    // 水面开关
                     addToggleRow(
                         inner,
                         '水面',
