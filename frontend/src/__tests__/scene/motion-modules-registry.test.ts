@@ -15,11 +15,19 @@ const { mockModelRegistry, setBoneOverrideSpy, clearBoneOverrideSpy } = vi.hoist
 
 vi.mock('@/core/state', () => ({
     modelRegistry: mockModelRegistry,
+    setUIPersistCallback: vi.fn(),
 }));
 
 vi.mock('@/scene/motion/bone-override', () => ({
     setBoneOverride: setBoneOverrideSpy,
     clearBoneOverride: clearBoneOverrideSpy,
+    setBoneOverridePosition: vi.fn(),
+}));
+
+// head-tracking 引入 perception，perception 引入 scene.ts (顶层 new Scene)
+// 单测环境无 engine，需 mock perception 避免触发 scene 初始化
+vi.mock('@/scene/motion/perception', () => ({
+    setHeadTrackingEnabled: vi.fn(),
 }));
 
 // ── 被测模块 ──
@@ -316,12 +324,13 @@ describe('disable 精确清除（P2-1）', () => {
         // 这里验证 disable 调用 clearBoneOverride 的骨骼集合 = ownedBones
         mod.disable();
 
-        // disable 应调用 clearBoneOverride 3 次（上半身/腰/上半身2）
-        expect(clearBoneOverrideSpy).toHaveBeenCalledTimes(3);
+        // disable 应调用 clearBoneOverride 4 次（上半身/腰/上半身2/センター — P2-4 新增位置骨）
+        expect(clearBoneOverrideSpy).toHaveBeenCalledTimes(4);
         const clearedBones = clearBoneOverrideSpy.mock.calls.map((c) => c[0]);
         expect(clearedBones).toContain('上半身');
         expect(clearedBones).toContain('腰');
         expect(clearedBones).toContain('上半身2');
+        expect(clearedBones).toContain('センター');
     });
 });
 
