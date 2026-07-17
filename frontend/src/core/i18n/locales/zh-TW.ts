@@ -171,6 +171,7 @@ export const zhTW: Record<string, string> = {
     'model-detail.morphTypeMaterial': '材質',
     'model-detail.morphTypeUnknown': '類型{type}',
     'model-detail.noMorph': '此模型無表情資料',
+    'model-detail.noMorphHint': '此模型不支援形態變形',
     'model-detail.boneCount': '共 {n} 個骨骼',
     'model-detail.hasPhysics': '有物理剛體',
 
@@ -597,6 +598,7 @@ export const zhTW: Record<string, string> = {
     'scene.confirmUnloadStage': '確定卸載舞台「{name}」？',
     'scene.unloaded': '✓ 已卸載: {name}',
     'scene.noLoadedStages': '暫無已載入舞台',
+    'scene.noLoadedStagesHint': '點擊下方按鈕載入舞台',
     'scene.loadStage': '載入舞台',
     'scene.statusNoModelLib': '✗ 請先在設定中配置模型庫目錄',
     'scene.statusOpenStageLibFailed': '✗ 開啟舞台庫失敗',
