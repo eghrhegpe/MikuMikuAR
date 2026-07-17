@@ -216,14 +216,6 @@ function getMimeType(name: string): string {
     return map[ext ?? ''] ?? 'application/octet-stream';
 }
 
-/** Wails v3 serializes Go []byte as base64 JSON; decode to real Uint8Array. */
-function decodeBase64(b64: string): Uint8Array {
-    const bin = atob(b64);
-    const bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    return bytes;
-}
-
 /** Collect texture files from model directory (recursive) for referenceFiles. */
 async function collectTextureFiles(modelDir: string): Promise<TextureFile[]> {
     const files: TextureFile[] = [];
