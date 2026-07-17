@@ -27,7 +27,7 @@ export type BoneOverrideEntry = {
 // ======== Motion Override Module Types (ADR-116) ========
 
 /** [doc:adr-116] 动作覆盖模块语义参数值 */
-export type ParamValue = number | boolean;
+export type ParamValue = number | boolean | string;
 
 /** [doc:adr-116] 模块语义状态（per-model，序列化用） */
 export type MotionModuleState = {

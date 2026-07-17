@@ -91,7 +91,7 @@ beforeEach(async () => {
     mockState.loadVMDMotion.mockResolvedValue(undefined);
     mockState.scene.onBeforeRenderObservable.add.mockReset();
     mockState.scene.onBeforeRenderObservable.remove.mockReset();
-});
+}, 30000); // 全量并行时 transform 与并行套件争抢资源，放宽 hook 超时
 
 // =====================================================================
 // isProcVmdActive

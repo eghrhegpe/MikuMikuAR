@@ -66,7 +66,13 @@ import {
     setModelFormation,
 } from './scene';
 import { removeProp, loadProp, setPropTransform, setPropOrbit } from './env/props';
-import { setEnvState, setEnvSunAngle, flushEnvState, flushUIState, cancelEnvPersistTimer } from './env/env-bridge';
+import {
+    setEnvState,
+    setEnvSunAngle,
+    flushEnvState,
+    flushUIState,
+    cancelEnvPersistTimer,
+} from './env/env-bridge';
 import { setGravityStrength, getGravityStrength } from './env/env-bridge';
 import {
     regenerateProcMotion,
@@ -79,7 +85,7 @@ import { DEFAULT_PROC_STATE } from '../motion-algos/procedural-motion';
 import { DEFAULT_LIPSYNC_STATE } from '../motion-algos/lipsync';
 import type { ProcMotionState } from '../motion-algos/procedural-motion';
 import type { LipSyncState as LipSyncStateType } from '../motion-algos/lipsync';
-import type { BoneOverrideEntry, FeetState } from '../core/types';
+import type { BoneOverrideEntry, FeetState, MotionModuleState } from '../core/types';
 import {
     getPerceptionState,
     setPerceptionState,
@@ -225,6 +231,8 @@ export interface SceneFile {
         orbitDistance?: number;
         /** [doc:adr-061] Motion Override — 逐骨骼覆盖条目 */
         boneOverrides?: BoneOverrideEntry[];
+        /** [doc:adr-116] 动作覆盖模块语义状态（per-model，序列化语义参数而非骨骼级覆盖） */
+        motionOverrideModules?: MotionModuleState[];
         /** [doc:adr-085] 脚部地面跟随状态（按模型） */
         feet?: FeetState;
     }>;
@@ -345,6 +353,11 @@ export function serializeScene(): SceneFile {
             orbitElevation: inst.orbitElevation,
             orbitDistance: inst.orbitDistance,
             boneOverrides: inst.boneOverrides.length > 0 ? inst.boneOverrides : undefined,
+            // [doc:adr-116] 序列化模块语义状态（仅存 enabled + params 差异值，默认值不落盘）
+            motionOverrideModules:
+                inst.motionOverrideModules && inst.motionOverrideModules.length > 0
+                    ? inst.motionOverrideModules
+                    : undefined,
             feet: inst.feet,
         };
     });
@@ -525,6 +538,10 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                     enabled: b.enabled ?? true,
                 }));
             }
+            // [doc:adr-116] 恢复模块语义状态（仅写入 ModelInstance，运行时烘焙在下方 restoreOverrides 之后）
+            if (m.motionOverrideModules) {
+                inst.motionOverrideModules = m.motionOverrideModules;
+            }
             // 恢复脚部调整状态（合并默认值，向前兼容缺字段的旧存档）
             if (m.feet) {
                 Object.assign(inst.feet, m.feet);
@@ -623,6 +640,30 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                 restoreOverrides(m.boneOverrides);
             } catch (err) {
                 logWarn('scene-serialize', `场景恢复: 模型 ${m.name} 骨骼覆盖恢复失败:`, err);
+            }
+        }
+        // [doc:adr-116] 恢复模块语义状态：setState 写入 + enabled 模块重烘焙
+        // 与 boneOverrides 独立：模块层走 setBoneOverride/setBoneOverridePosition，
+        // boneOverrides 是用户手动骨骼覆盖（高级子页），两者共享 _overrideMap 但来源不同
+        if (m.motionOverrideModules && m.motionOverrideModules.length > 0) {
+            try {
+                const { createModule } = await import('./motion/motion-modules/registry');
+                for (const ms of m.motionOverrideModules) {
+                    const mod = createModule(ms.id, id);
+                    if (!mod) {
+                        logWarn(
+                            'scene-serialize',
+                            `场景恢复: 模型 ${m.name} 未知动作覆盖模块 "${ms.id}"，跳过`
+                        );
+                        continue;
+                    }
+                    mod.setState(ms);
+                    if (ms.enabled) {
+                        mod.enable(); // 重烘焙到引擎 _overrideMap
+                    }
+                }
+            } catch (err) {
+                logWarn('scene-serialize', `场景恢复: 模型 ${m.name} 动作覆盖模块恢复失败:`, err);
             }
         }
     }
@@ -876,16 +917,16 @@ export function setSuppressAutoSave(v: boolean): void {
 }
 
 const _autoSaveDebounced = debounce((): void => {
-    console.info(`[auto-save] debounce fired → saveSceneImmediate()`);
+    console.info('[auto-save] debounce fired → saveSceneImmediate()');
     swallowError(saveSceneImmediate());
 }, 500);
 
 export function triggerAutoSaveImpl(): void {
     if (_suppressAutoSave) {
-        console.info(`[auto-save] triggerAutoSaveImpl() suppressed (deserializeScene in progress)`);
+        console.info('[auto-save] triggerAutoSaveImpl() suppressed (deserializeScene in progress)');
         return;
     }
-    console.info(`[auto-save] triggerAutoSaveImpl() called — debounce scheduled (500ms)`);
+    console.info('[auto-save] triggerAutoSaveImpl() called — debounce scheduled (500ms)');
     _autoSaveDebounced();
 }
 
@@ -997,7 +1038,9 @@ export async function tryRestoreLastScene(): Promise<void> {
 
         const data = migrateScene(raw);
         const version = data.version as number;
-        console.info(`[auto-load] Scene file version: v${version}, models: ${Array.isArray(data.models) ? data.models.length : 'N/A'}`);
+        console.info(
+            `[auto-load] Scene file version: v${version}, models: ${Array.isArray(data.models) ? data.models.length : 'N/A'}`
+        );
 
         // 版本校验 + 基础字段完整性校验
         if (!SUPPORTED_VERSIONS.includes(version)) {

@@ -18,13 +18,17 @@ export type BoneOverrideEntry = {
     weight: number;
     /** 启用/禁用 */
     enabled: boolean;
+    /** [doc:adr-116] 可选位置覆盖 [x, y, z]（P2 引擎扩展，支持 height/fwdBack 等语义参数） */
+    position?: [number, number, number];
 };
 
-/** 运行时缓存：四元数 + 混合参数 */
+/** 运行时缓存：四元数 + 混合参数 + 可选位置 */
 interface _OverrideSlot {
     quat: Quaternion;
     weight: number;
     enabled: boolean;
+    /** [doc:adr-116] 可选位置覆盖（P2 引擎扩展）。undefined=不动位置，沿用动画值 */
+    pos?: Vector3;
 }
 
 // ── 管理器（per-model） ──
@@ -155,6 +159,44 @@ export function setBoneOverrideQuat(
     });
 }
 
+/**
+ * [doc:adr-116] 设置单条骨骼的位置覆盖（P2 引擎扩展）。
+ * 保留现有旋转覆盖（若已有 slot），仅更新 pos 字段。
+ * 用于 body-posture 的 height/fwdBack 等需要位置偏移的语义参数。
+ *
+ * @param boneName 目标骨骼名
+ * @param position 位置 [x, y, z]
+ * @param weight 混合权重 0–1（当前实现为硬覆盖，权重保留用于未来插值扩展）
+ * @param enabled 是否启用
+ * @param modelId 目标模型 ID（可选，默认聚焦模型）
+ */
+export function setBoneOverridePosition(
+    boneName: string,
+    position: [number, number, number],
+    weight: number,
+    enabled = true,
+    modelId?: string
+): void {
+    const mid = _resolveModelId(modelId);
+    if (!mid) {
+        return;
+    }
+    const map = _getOverrideMap(mid);
+    let slot = map.get(boneName);
+    if (!slot) {
+        // 新建 slot：旋转用 Identity（不影响动画旋转），仅覆盖位置
+        slot = {
+            quat: Quaternion.Identity(),
+            weight: clamp01(weight),
+            enabled,
+        };
+        map.set(boneName, slot);
+    }
+    slot.pos = new Vector3(position[0], position[1], position[2]);
+    slot.weight = clamp01(weight);
+    slot.enabled = enabled;
+}
+
 /** 清除指定骨骼的覆盖。 */
 export function clearBoneOverride(boneName: string, modelId?: string): void {
     const mid = _resolveModelId(modelId);
@@ -177,13 +219,10 @@ export function getOverride(boneName: string, modelId?: string): BoneOverrideEnt
     const euler = slot.quat.toEulerAngles();
     return {
         boneName,
-        euler: [
-            (euler.x * 180) / Math.PI,
-            (euler.y * 180) / Math.PI,
-            (euler.z * 180) / Math.PI,
-        ],
+        euler: [(euler.x * 180) / Math.PI, (euler.y * 180) / Math.PI, (euler.z * 180) / Math.PI],
         weight: slot.weight,
         enabled: slot.enabled,
+        position: slot.pos ? [slot.pos.x, slot.pos.y, slot.pos.z] : undefined,
     };
 }
 
@@ -222,6 +261,7 @@ export function getAllOverrides(modelId?: string): BoneOverrideEntry[] {
             ],
             weight: slot.weight,
             enabled: slot.enabled,
+            position: slot.pos ? [slot.pos.x, slot.pos.y, slot.pos.z] : undefined,
         });
     }
     return result;
@@ -242,6 +282,7 @@ export function restoreOverrides(entries: BoneOverrideEntry[], modelId?: string)
             quat: _eulerToQuat(e.euler[0], e.euler[1], e.euler[2]),
             weight: clamp01(e.weight),
             enabled: e.enabled,
+            pos: e.position ? new Vector3(e.position[0], e.position[1], e.position[2]) : undefined,
         });
     }
 }
@@ -293,7 +334,8 @@ export function startBoneOverride(
                     continue;
                 }
                 const oldMat = Matrix.FromArray(buf);
-                const pos = oldMat.getTranslation();
+                // [doc:adr-116] P2 引擎扩展：slot.pos 存在时覆盖位置，否则沿用动画位置
+                const pos = slot.pos ? slot.pos : oldMat.getTranslation();
                 const oldQ = _q().copyFrom(
                     Quaternion.FromRotationMatrix(oldMat.getRotationMatrix())
                 );
@@ -320,6 +362,13 @@ export function startBoneOverride(
                 } else {
                     const cur = linked.rotationQuaternion ?? Quaternion.Identity();
                     linked.rotationQuaternion = Quaternion.Slerp(cur, slot.quat, slot.weight);
+                }
+
+                // [doc:adr-116] P2 引擎扩展：slot.pos 存在时覆盖位置（局部坐标）
+                // 注意：JS 模式 setPosition 设的是相对父骨骼的局部位置，
+                // 对根骨骼（如 センター，parent=null）等价于世界位置
+                if (slot.pos) {
+                    linked.setPosition(slot.pos);
                 }
 
                 // 更新骨骼世界矩阵

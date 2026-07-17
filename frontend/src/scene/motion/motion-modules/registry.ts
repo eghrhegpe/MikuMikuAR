@@ -8,6 +8,10 @@ import type { MotionOverrideModule, ModuleFactory, ModuleMeta } from './types';
 import { clearBoneOverride } from '../bone-override';
 import { registerBodyPosture } from './body-posture';
 import { registerHandSymmetry } from './hand-symmetry';
+import { registerHeadTracking } from './head-tracking';
+import { registerSwayMotion } from './sway-motion';
+import { registerFingerPose } from './finger-pose';
+import { registerRidingModel } from './riding-model';
 
 // ── 注册表 ──
 
@@ -229,5 +233,9 @@ export function initMotionModules(): void {
     }
     registerBodyPosture();
     registerHandSymmetry();
+    registerHeadTracking();
+    registerSwayMotion();
+    registerFingerPose();
+    registerRidingModel();
     _initialized = true;
 }
