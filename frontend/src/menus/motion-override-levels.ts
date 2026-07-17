@@ -10,8 +10,10 @@ import {
     focusedModelId,
 } from '../core/config';
 import { addEmptyRow, slideRow, addSectionTitle } from '../core/ui-helpers';
+import { addSliderRow } from '../core/ui-rows';
 import { createTrailingBtn } from '../core/ui-slide-row';
 import { getMotionMenu } from './motion-popup';
+import { triggerAutoSave } from '../scene/scene';
 import type { BoneOverrideEntry } from '../core/types';
 import {
     setBoneOverride,
@@ -198,14 +200,15 @@ function buildBoneOverrideSchema(): MenuNode[] {
     const menu = getMotionMenu();
     const allEntries = inst.boneOverrides;
 
-    // [doc:adr-116 P3-3] 表单 DOM 引用：供列表项「编辑」按钮回填（getOverride 接线）
-    const formRefs: {
-        select: HTMLSelectElement | null;
-        pitch: HTMLInputElement | null;
-        yaw: HTMLInputElement | null;
-        roll: HTMLInputElement | null;
-        weight: HTMLInputElement | null;
-    } = { select: null, pitch: null, yaw: null, roll: null, weight: null };
+    // [doc:adr-116 P3-3] 表单状态：供列表项「编辑」按钮回填（getOverride 接线）
+    // 使用声明式状态 + addSliderRow opts.bind 实现双向同步，替代手动 DOM 引用
+    const formState: {
+        boneName: string;
+        pitch: number;
+        yaw: number;
+        roll: number;
+        weight: number;
+    } = { boneName: bones[0]?.name ?? '', pitch: 0, yaw: 0, roll: 0, weight: 1 };
 
     return [
         // 卡片 1：添加新覆盖
@@ -221,10 +224,9 @@ function buildBoneOverrideSchema(): MenuNode[] {
                     inner.appendChild(title);
 
                     const boneSelect = document.createElement('select');
-                    boneSelect.style.cssText =
-                        'width:100%;padding:6px 8px;margin:6px 0;border-radius:6px;' +
-                        'background:var(--surface2);color:var(--text);border:1px solid var(--border);' +
-                        'font-size:12px;';
+                    boneSelect.className = 'setting-select';
+                    boneSelect.style.width = '100%';
+                    boneSelect.style.margin = '6px 0';
 
                     const optGroups = _buildBoneOptions(bones);
                     for (const [groupLabel, boneNames] of optGroups) {
@@ -238,33 +240,67 @@ function buildBoneOverrideSchema(): MenuNode[] {
                         }
                         boneSelect.appendChild(optGroup);
                     }
+                    boneSelect.value = formState.boneName;
+                    boneSelect.addEventListener('change', () => {
+                        formState.boneName = boneSelect.value;
+                    });
                     inner.appendChild(boneSelect);
-                    formRefs.select = boneSelect;
 
-                    // [audit-fix P3] pitch/yaw/roll/weight 四行同构,抽取 _buildRangeRow 消除重复
-                    formRefs.pitch = _buildRangeRow(
+                    addSliderRow(
                         inner,
                         'Pitch (X)',
-                        '-180',
-                        '180',
-                        '1',
-                        '0',
-                        (v) => String(v)
+                        formState.pitch,
+                        -180,
+                        180,
+                        1,
+                        (v) => {
+                            formState.pitch = v;
+                        },
+                        undefined,
+                        undefined,
+                        { bind: () => formState.pitch }
                     );
-                    formRefs.yaw = _buildRangeRow(inner, 'Yaw (Y)', '-180', '180', '1', '0', (v) =>
-                        String(v)
+                    addSliderRow(
+                        inner,
+                        'Yaw (Y)',
+                        formState.yaw,
+                        -180,
+                        180,
+                        1,
+                        (v) => {
+                            formState.yaw = v;
+                        },
+                        undefined,
+                        undefined,
+                        { bind: () => formState.yaw }
                     );
-                    formRefs.roll = _buildRangeRow(
+                    addSliderRow(
                         inner,
                         'Roll (Z)',
-                        '-180',
-                        '180',
-                        '1',
-                        '0',
-                        (v) => String(v)
+                        formState.roll,
+                        -180,
+                        180,
+                        1,
+                        (v) => {
+                            formState.roll = v;
+                        },
+                        undefined,
+                        undefined,
+                        { bind: () => formState.roll }
                     );
-                    formRefs.weight = _buildRangeRow(inner, 'Weight', '0', '1', '0.05', '1', (v) =>
-                        v.toFixed(2)
+                    addSliderRow(
+                        inner,
+                        'Weight',
+                        formState.weight,
+                        0,
+                        1,
+                        0.05,
+                        (v) => {
+                            formState.weight = v;
+                        },
+                        undefined,
+                        undefined,
+                        { bind: () => formState.weight }
                     );
 
                     const applyBtn = document.createElement('button');
@@ -272,15 +308,12 @@ function buildBoneOverrideSchema(): MenuNode[] {
                     applyBtn.style.marginTop = '8px';
                     applyBtn.textContent = t('motion.boneOverride.apply');
                     applyBtn.addEventListener('click', () => {
-                        const boneName = boneSelect.value;
+                        const boneName = formState.boneName;
                         if (!boneName) {
                             return;
                         }
 
-                        const pitch = parseFloat(formRefs.pitch?.value ?? '0');
-                        const yaw = parseFloat(formRefs.yaw?.value ?? '0');
-                        const roll = parseFloat(formRefs.roll?.value ?? '0');
-                        const weight = parseFloat(formRefs.weight?.value ?? '1');
+                        const { pitch, yaw, roll, weight } = formState;
 
                         setBoneOverride(boneName, [pitch, yaw, roll], weight, true);
                         _syncOverrideToInstance(modelId);
@@ -351,29 +384,18 @@ function buildBoneOverrideSchema(): MenuNode[] {
                                 title: t('motion.boneOverride.edit'),
                                 onClick: () => {
                                     const live = getOverride(ov.boneName, modelId) ?? ov;
-                                    if (formRefs.select) {
-                                        formRefs.select.value = live.boneName;
-                                    }
-                                    const setSlider = (
-                                        el: HTMLInputElement | null,
-                                        val: number
-                                    ): void => {
-                                        if (!el) {
-                                            return;
-                                        }
-                                        el.value = String(val);
-                                        el.dispatchEvent(new Event('input'));
-                                    };
-                                    setSlider(formRefs.pitch, live.euler[0]);
-                                    setSlider(formRefs.yaw, live.euler[1]);
-                                    setSlider(formRefs.roll, live.euler[2]);
-                                    setSlider(formRefs.weight, live.weight);
+                                    formState.boneName = live.boneName;
+                                    formState.pitch = live.euler[0];
+                                    formState.yaw = live.euler[1];
+                                    formState.roll = live.euler[2];
+                                    formState.weight = live.weight;
                                     setStatus(
                                         t('motion.boneOverride.editLoaded', {
                                             bone: ov.boneName,
                                         }),
                                         true
                                     );
+                                    menu?.reRender();
                                 },
                             })
                         );
@@ -436,50 +458,6 @@ export function buildAdvancedBoneOverrideLevel(): PopupLevel {
 }
 
 // ======== 内部工具 ========
-
-/**
- * 构建范围滑块行(label + input[type=range] + 实时数值显示)。
- *
- * 不复用 ui-rows.addSliderRow 的原因:本表单的「编辑」按钮需要通过
- * `el.value = val; el.dispatchEvent(new Event('input'))` 精确回填,
- * 而 addSliderRow 内部用 `div.cs-bar`(非原生 input),不暴露 setValue 句柄。
- * 本 helper 返回 HTMLInputElement 供 formRefs 持有,保留回填链路。
- */
-function _buildRangeRow(
-    parent: HTMLElement,
-    label: string,
-    min: string,
-    max: string,
-    step: string,
-    initial: string,
-    format: (v: number) => string
-): HTMLInputElement {
-    const row = document.createElement('div');
-    row.className = 'flex-row';
-    row.style.padding = '3px 0';
-    const lbl = document.createElement('label');
-    lbl.textContent = label;
-    lbl.className = 'slider-label';
-    lbl.style.minWidth = '60px';
-    const input = document.createElement('input');
-    input.type = 'range';
-    input.min = min;
-    input.max = max;
-    input.step = step;
-    input.value = initial;
-    input.className = 'slider-track';
-    const val = document.createElement('span');
-    val.textContent = format(parseFloat(initial));
-    val.className = 'slider-value';
-    input.addEventListener('input', () => {
-        val.textContent = format(parseFloat(input.value));
-    });
-    row.appendChild(lbl);
-    row.appendChild(input);
-    row.appendChild(val);
-    parent.appendChild(row);
-    return input;
-}
 
 /** 按类别分组骨骼选项 */
 function _buildBoneOptions(
