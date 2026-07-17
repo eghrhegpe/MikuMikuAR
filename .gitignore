@@ -39,6 +39,7 @@ coverage/
 
 # Binary / executable artifacts
 *.exe
+*.bak
 *.test
 *.out
 
