@@ -239,19 +239,113 @@ function buildBoneOverrideSchema(): MenuNode[] {
                     inner.appendChild(boneSelect);
                     formRefs.select = boneSelect;
 
-                    const pitchSlider = _createSlider('Pitch (X)', -180, 180, 0, 1);
-                    const yawSlider = _createSlider('Yaw (Y)', -180, 180, 0, 1);
-                    const rollSlider = _createSlider('Roll (Z)', -180, 180, 0, 1);
-                    inner.appendChild(pitchSlider);
-                    inner.appendChild(yawSlider);
-                    inner.appendChild(rollSlider);
-                    formRefs.pitch = pitchSlider.querySelector('input[type="range"]');
-                    formRefs.yaw = yawSlider.querySelector('input[type="range"]');
-                    formRefs.roll = rollSlider.querySelector('input[type="range"]');
+                    // Pitch (X)
+                    const pitchRow = document.createElement('div');
+                    pitchRow.className = 'flex-row';
+                    pitchRow.style.padding = '3px 0';
+                    const pitchLbl = document.createElement('label');
+                    pitchLbl.textContent = 'Pitch (X)';
+                    pitchLbl.className = 'slider-label';
+                    pitchLbl.style.minWidth = '60px';
+                    const pitchInput = document.createElement('input');
+                    pitchInput.type = 'range';
+                    pitchInput.min = '-180';
+                    pitchInput.max = '180';
+                    pitchInput.step = '1';
+                    pitchInput.value = '0';
+                    pitchInput.className = 'slider-track';
+                    const pitchVal = document.createElement('span');
+                    pitchVal.textContent = '0';
+                    pitchVal.className = 'slider-value';
+                    pitchInput.addEventListener('input', () => {
+                        pitchVal.textContent = pitchInput.value;
+                    });
+                    formRefs.pitch = pitchInput;
+                    pitchRow.appendChild(pitchLbl);
+                    pitchRow.appendChild(pitchInput);
+                    pitchRow.appendChild(pitchVal);
+                    inner.appendChild(pitchRow);
 
-                    const weightSlider = _createSlider('Weight', 0, 1, 1, 0.05);
-                    inner.appendChild(weightSlider);
-                    formRefs.weight = weightSlider.querySelector('input[type="range"]');
+                    // Yaw (Y)
+                    const yawRow = document.createElement('div');
+                    yawRow.className = 'flex-row';
+                    yawRow.style.padding = '3px 0';
+                    const yawLbl = document.createElement('label');
+                    yawLbl.textContent = 'Yaw (Y)';
+                    yawLbl.className = 'slider-label';
+                    yawLbl.style.minWidth = '60px';
+                    const yawInput = document.createElement('input');
+                    yawInput.type = 'range';
+                    yawInput.min = '-180';
+                    yawInput.max = '180';
+                    yawInput.step = '1';
+                    yawInput.value = '0';
+                    yawInput.className = 'slider-track';
+                    const yawVal = document.createElement('span');
+                    yawVal.textContent = '0';
+                    yawVal.className = 'slider-value';
+                    yawInput.addEventListener('input', () => {
+                        yawVal.textContent = yawInput.value;
+                    });
+                    formRefs.yaw = yawInput;
+                    yawRow.appendChild(yawLbl);
+                    yawRow.appendChild(yawInput);
+                    yawRow.appendChild(yawVal);
+                    inner.appendChild(yawRow);
+
+                    // Roll (Z)
+                    const rollRow = document.createElement('div');
+                    rollRow.className = 'flex-row';
+                    rollRow.style.padding = '3px 0';
+                    const rollLbl = document.createElement('label');
+                    rollLbl.textContent = 'Roll (Z)';
+                    rollLbl.className = 'slider-label';
+                    rollLbl.style.minWidth = '60px';
+                    const rollInput = document.createElement('input');
+                    rollInput.type = 'range';
+                    rollInput.min = '-180';
+                    rollInput.max = '180';
+                    rollInput.step = '1';
+                    rollInput.value = '0';
+                    rollInput.className = 'slider-track';
+                    const rollVal = document.createElement('span');
+                    rollVal.textContent = '0';
+                    rollVal.className = 'slider-value';
+                    rollInput.addEventListener('input', () => {
+                        rollVal.textContent = rollInput.value;
+                    });
+                    formRefs.roll = rollInput;
+                    rollRow.appendChild(rollLbl);
+                    rollRow.appendChild(rollInput);
+                    rollRow.appendChild(rollVal);
+                    inner.appendChild(rollRow);
+
+                    // Weight
+                    const weightRow = document.createElement('div');
+                    weightRow.className = 'flex-row';
+                    weightRow.style.padding = '3px 0';
+                    const weightLbl = document.createElement('label');
+                    weightLbl.textContent = 'Weight';
+                    weightLbl.className = 'slider-label';
+                    weightLbl.style.minWidth = '60px';
+                    const weightInput = document.createElement('input');
+                    weightInput.type = 'range';
+                    weightInput.min = '0';
+                    weightInput.max = '1';
+                    weightInput.step = '0.05';
+                    weightInput.value = '1';
+                    weightInput.className = 'slider-track';
+                    const weightVal = document.createElement('span');
+                    weightVal.textContent = '1';
+                    weightVal.className = 'slider-value';
+                    weightInput.addEventListener('input', () => {
+                        weightVal.textContent = parseFloat(weightInput.value).toFixed(2);
+                    });
+                    formRefs.weight = weightInput;
+                    weightRow.appendChild(weightLbl);
+                    weightRow.appendChild(weightInput);
+                    weightRow.appendChild(weightVal);
+                    inner.appendChild(weightRow);
 
                     const applyBtn = document.createElement('button');
                     applyBtn.className = 'preset-chip';
@@ -263,22 +357,10 @@ function buildBoneOverrideSchema(): MenuNode[] {
                             return;
                         }
 
-                        const pitch = parseFloat(
-                            (pitchSlider.querySelector('input[type="range"]') as HTMLInputElement)
-                                .value
-                        );
-                        const yaw = parseFloat(
-                            (yawSlider.querySelector('input[type="range"]') as HTMLInputElement)
-                                .value
-                        );
-                        const roll = parseFloat(
-                            (rollSlider.querySelector('input[type="range"]') as HTMLInputElement)
-                                .value
-                        );
-                        const weight = parseFloat(
-                            (weightSlider.querySelector('input[type="range"]') as HTMLInputElement)
-                                .value
-                        );
+                        const pitch = parseFloat(formRefs.pitch?.value ?? '0');
+                        const yaw = parseFloat(formRefs.yaw?.value ?? '0');
+                        const roll = parseFloat(formRefs.roll?.value ?? '0');
+                        const weight = parseFloat(formRefs.weight?.value ?? '1');
 
                         setBoneOverride(boneName, [pitch, yaw, roll], weight, true);
                         _syncOverrideToInstance(modelId);
@@ -493,44 +575,6 @@ function _buildBoneOptions(
         }
     }
     return result;
-}
-
-function _createSlider(
-    label: string,
-    min: number,
-    max: number,
-    defaultValue: number,
-    step = 1
-): HTMLElement {
-    const container = document.createElement('div');
-    container.className = 'flex-row';
-    container.style.padding = '3px 0';
-
-    const lbl = document.createElement('label');
-    lbl.textContent = label;
-    lbl.className = 'slider-label';
-    lbl.style.minWidth = '60px';
-
-    const slider = document.createElement('input');
-    slider.type = 'range';
-    slider.min = String(min);
-    slider.max = String(max);
-    slider.step = String(step);
-    slider.value = String(defaultValue);
-    slider.className = 'slider-track';
-
-    const valueLabel = document.createElement('span');
-    valueLabel.textContent = String(defaultValue);
-    valueLabel.className = 'slider-value';
-
-    slider.addEventListener('input', () => {
-        valueLabel.textContent = parseFloat(slider.value).toFixed(step < 1 ? 2 : 0);
-    });
-
-    container.appendChild(lbl);
-    container.appendChild(slider);
-    container.appendChild(valueLabel);
-    return container;
 }
 
 /** 将 bone-override.ts 的运行时状态同步回 ModelInstance.boneOverrides 用于持久化 */
