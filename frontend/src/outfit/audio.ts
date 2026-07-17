@@ -250,7 +250,7 @@ export async function loadAudioFile(filePath: string): Promise<void> {
         logWarn('audio', 'loadAudioFile: failed to read', filePath);
         return;
     }
-    const blob = new Blob([bytes], { type: 'audio/mpeg' });
+    const blob = new Blob([bytes.buffer as ArrayBuffer], { type: 'audio/mpeg' });
     const url = URL.createObjectURL(blob);
 
     const fileName = filePath.split(/[\\/]/).pop() || '';
