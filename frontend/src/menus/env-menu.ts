@@ -10,7 +10,6 @@ import { setEnvState, getEnvSunAngle, setEnvSunAngle, applyEnvPreset } from '../
 import { getLightState, setLightState as setLightingState } from '../scene/render/lighting';
 import { TIME_OF_DAY_PRESETS } from '../scene/env/env-lighting';
 import { closeAllOverlays } from '../core/utils';
-import { stackRegistry, getBrowseDir } from '../core/config';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
@@ -26,6 +25,8 @@ import {
     buildExperimentalLevel,
     buildFogLevel,
     buildShadowLevel,
+    _buildLevel,
+    _openTexturePicker,
 } from './env-feature-levels';
 import { buildPresetLevel } from './env-preset-levels';
 import { buildPostProcessLevel } from './scene-render-levels';
@@ -297,16 +298,7 @@ function buildParticleSchema(): MenuNode[] {
                     'lucide:image',
                     t('env.customTexture'),
                     false,
-                    () => {
-                        setEnvTextureBindingTarget('particle');
-                        const level = stackRegistry.buildLevel!(
-                            getBrowseDir('environment'),
-                            t('env.customTexture'),
-                            (m) => ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format),
-                            getEnvMenu()!
-                        );
-                        getEnvMenu()!.push(level);
-                    },
+                    () => _openTexturePicker('particle', t('env.customTexture')),
                     fileName
                 );
                 addClearRow(
@@ -321,16 +313,7 @@ function buildParticleSchema(): MenuNode[] {
 }
 
 export function buildParticleLevel(): PopupLevel {
-    return {
-        label: t('env.particle'),
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            cardContainer(container, (inner) => {
-                renderMenu(buildParticleSchema(), inner);
-            });
-        },
-    };
+    return _buildLevel(t('env.particle'), (c) => renderMenu(buildParticleSchema(), c));
 }
 
 // ======== Env Stack onFolderEnter ========
