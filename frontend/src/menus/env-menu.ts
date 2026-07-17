@@ -5,7 +5,7 @@
 
 import { envState, PopupLevel, PopupRow, cardContainer } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
-import { slideRow, addSliderRow, addPresetChip } from '../core/ui-helpers';
+import { slideRow, addSliderRow, addPresetChip, addClearRow } from '../core/ui-helpers';
 import { setEnvState, getEnvSunAngle, setEnvSunAngle, applyEnvPreset } from '../scene/scene';
 import { getLightState, setLightState as setLightingState } from '../scene/render/lighting';
 import { TIME_OF_DAY_PRESETS } from '../scene/env/env-lighting';
@@ -309,19 +309,12 @@ function buildParticleSchema(): MenuNode[] {
                     },
                     fileName
                 );
-                if (envState.particleCustomTexture) {
-                    const clearRow = document.createElement('div');
-                    clearRow.style.cssText =
-                        'display:flex;justify-content:flex-end;padding:0 14px 4px;';
-                    const clearBtn = document.createElement('button');
-                    clearBtn.className = 'cs-btn cs-btn-sm';
-                    clearBtn.textContent = t('env.clear');
-                    clearBtn.onclick = () => {
-                        setEnvState({ particleCustomTexture: '' });
-                    };
-                    clearRow.appendChild(clearBtn);
-                    c.appendChild(clearRow);
-                }
+                addClearRow(
+                    c,
+                    !!envState.particleCustomTexture,
+                    () => setEnvState({ particleCustomTexture: '' }),
+                    t('env.clear')
+                );
             },
         },
     ];
