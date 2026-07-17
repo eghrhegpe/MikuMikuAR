@@ -426,6 +426,7 @@ export const ja: Record<string, string> = {
     'perception.breathAmp': '振幅',
     'perception.blinkParams': '瞬き設定',
     'perception.blinkFreq': '周波数',
+    'perception.blinkAmp': '振幅',
     'scene.runtime': 'ランタイム',
     'scene.runtimeWasm': 'WASM 物理',
     'scene.runtimeJs': 'JS デバッグ',

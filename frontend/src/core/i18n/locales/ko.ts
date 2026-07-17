@@ -426,6 +426,7 @@ export const ko: Record<string, string> = {
     'perception.breathAmp': '진폭',
     'perception.blinkParams': '눈 깜빡임 설정',
     'perception.blinkFreq': '주파수',
+    'perception.blinkAmp': '진폭',
     'scene.runtime': '런타임',
     'scene.runtimeWasm': 'WASM 물리',
     'scene.runtimeJs': 'JS 디버그',

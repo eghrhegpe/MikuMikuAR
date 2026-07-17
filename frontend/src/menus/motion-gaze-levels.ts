@@ -215,6 +215,18 @@ const gazeSchema: MenuNode[] = [
                     onChange: withActivate,
                 },
             },
+            {
+                id: 'perception:blinkAmp',
+                kind: 'slider',
+                label: 'perception.blinkAmp',
+                control: {
+                    bind: 'perception.blinkAmplitude',
+                    min: 0,
+                    max: 1,
+                    step: 0.05,
+                    onChange: withActivate,
+                },
+            },
         ],
         visibleWhen: () => getPerceptionState().blinkEnabled,
     },

@@ -283,6 +283,12 @@ export function setBlinkFrequency(v: number): void {
     triggerAutoSave();
 }
 
+/** 设置眨眼幅度（0–1，钳制） */
+export function setBlinkAmplitude(v: number): void {
+    perceptionState = { ...perceptionState, blinkAmplitude: Math.max(0, Math.min(1, v)) };
+    triggerAutoSave();
+}
+
 /** 设置头部跟随最大偏航角（度，钳制 0–90） */
 export function setHeadGazeMaxYaw(v: number): void {
     perceptionState = { ...perceptionState, headGazeMaxYaw: Math.max(0, Math.min(90, v)) };

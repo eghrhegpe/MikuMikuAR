@@ -6,12 +6,14 @@ import { getPerceptionState } from './perception';
 
 // ── 眨眼参数（默认值，实际从 perceptionState 读取） ──
 const DEFAULT_BLINK_FREQ = 0.15; // Hz
+const DEFAULT_BLINK_AMP = 1.0; // 眨眼力度系数
 
 export function _applyBlinking(mmdModel: MmdModelLike, time: number): void {
     const s = getPerceptionState();
     const freq = s.blinkFrequency ?? DEFAULT_BLINK_FREQ;
+    const amp = s.blinkAmplitude ?? DEFAULT_BLINK_AMP;
     const phase = time * freq * 2 * Math.PI;
-    const blinkIntensity = Math.max(0, Math.sin(phase) - 0.8) * 5;
+    const blinkIntensity = Math.max(0, Math.sin(phase) - 0.8) * 5 * amp;
 
     const morphManager = mmdModel.mesh?.morphTargetManager;
     if (!morphManager) {

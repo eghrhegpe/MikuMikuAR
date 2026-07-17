@@ -26,6 +26,7 @@ const mocks = vi.hoisted(() => {
         breathFrequency: 0.3,
         breathAmplitude: 0.02,
         blinkFrequency: 0.15,
+        blinkAmplitude: 1.0,
         headGazeMaxYaw: 75,
         headGazeMaxPitch: 35,
         eyeGazeMaxYaw: 9,

@@ -293,6 +293,7 @@ export const en: Record<string, string> = {
     'perception.breathAmp': 'Amplitude',
     'perception.blinkParams': 'Blink Settings',
     'perception.blinkFreq': 'Frequency',
+    'perception.blinkAmp': 'Amplitude',
     'scene.runtime': 'Runtime',
     'scene.runtimeWasm': 'WASM Physics',
     'scene.runtimeJs': 'JS Debug',
