@@ -4,6 +4,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"path/filepath"
 )
 
 // FileAccessor abstracts read-only file system operations across platforms.
@@ -56,4 +57,62 @@ func (a *App) ReadTextFile(path string) (string, error) {
 		return "", err
 	}
 	return string(data), nil
+}
+
+// ReadFileBytes reads the entire contents of the file at path and returns it
+// as a byte slice. Wails v3 automatically maps []byte to Uint8Array on the
+// frontend side. This is the binary counterpart of ReadTextFile, used by the
+// Phase 1 ArrayBuffer migration (ADR-124) to replace HTTP file server reads
+// for PMX/VMD/audio files.
+func (a *App) ReadFileBytes(path string) ([]byte, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+// ListDir returns the list of file names (not directories) in the given
+// directory. Used by Phase 2 (ADR-124) to enumerate texture files alongside
+// a PMX model for building IArrayBufferFile[] referenceFiles.
+func (a *App) ListDir(dirPath string) ([]string, error) {
+	entries, err := os.ReadDir(dirPath)
+	if err != nil {
+		return nil, err
+	}
+	var names []string
+	for _, e := range entries {
+		if !e.IsDir() {
+			names = append(names, e.Name())
+		}
+	}
+	return names, nil
+}
+
+// FileInfo represents a file entry with its relative path from the root.
+type FileInfo struct {
+	Name         string `json:"name"`
+	RelativePath string `json:"relativePath"`
+}
+
+// ListDirRecursive recursively walks dirPath and returns all non-directory
+// entries with their relative paths from dirPath. Used by Phase 2 (ADR-124)
+// to collect texture files in subdirectories for babylon-mmd referenceFiles.
+func (a *App) ListDirRecursive(dirPath string) ([]FileInfo, error) {
+	var files []FileInfo
+	err := filepath.WalkDir(dirPath, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return nil // skip inaccessible entries
+		}
+		if d.IsDir() {
+			return nil
+		}
+		rel, _ := filepath.Rel(dirPath, path)
+		files = append(files, FileInfo{
+			Name:         d.Name(),
+			RelativePath: filepath.ToSlash(rel), // normalize to forward slash for web
+		})
+		return nil
+	})
+	return files, err
 }

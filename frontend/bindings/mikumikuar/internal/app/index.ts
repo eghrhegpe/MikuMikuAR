@@ -13,6 +13,7 @@ export type {
     EnvPresetEntry,
     EnvState,
     ExtractResult,
+    FileInfo,
     KeyBindingOverride,
     ModelEntry,
     ModelMeta,

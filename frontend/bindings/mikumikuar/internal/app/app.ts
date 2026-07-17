@@ -375,6 +375,24 @@ export function LaunchSoftware(path: string, args: string): $CancellablePromise<
 }
 
 /**
+ * ListDir returns the list of file names (not directories) in the given
+ * directory. Used by Phase 2 (ADR-124) to enumerate texture files alongside
+ * a PMX model for building IArrayBufferFile[] referenceFiles.
+ */
+export function ListDir(dirPath: string): $CancellablePromise<string[] | null> {
+    return $Call.ByID(4011228206, dirPath);
+}
+
+/**
+ * ListDirRecursive recursively walks dirPath and returns all non-directory
+ * entries with their relative paths from dirPath. Used by Phase 2 (ADR-124)
+ * to collect texture files in subdirectories for babylon-mmd referenceFiles.
+ */
+export function ListDirRecursive(dirPath: string): $CancellablePromise<$models.FileInfo[] | null> {
+    return $Call.ByID(1276961498, dirPath);
+}
+
+/**
  * ListEnvPresets returns all user-saved env presets in the presets directory.
  */
 export function ListEnvPresets(): $CancellablePromise<$models.EnvPresetEntry[] | null> {
@@ -511,6 +529,17 @@ export function PlazaZoomOut(): $CancellablePromise<void> {
 
 export function PlazaZoomReset(): $CancellablePromise<void> {
     return $Call.ByID(686159255);
+}
+
+/**
+ * ReadFileBytes reads the entire contents of the file at path and returns it
+ * as a byte slice. Wails v3 automatically maps []byte to Uint8Array on the
+ * frontend side. This is the binary counterpart of ReadTextFile, used by the
+ * Phase 1 ArrayBuffer migration (ADR-124) to replace HTTP file server reads
+ * for PMX/VMD/audio files.
+ */
+export function ReadFileBytes(path: string): $CancellablePromise<string | null> {
+    return $Call.ByID(3606612836, path);
 }
 
 /**

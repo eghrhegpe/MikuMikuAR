@@ -25,6 +25,8 @@ import {
 import { getBaseName, swallowError, logWarn, isUnderRoot } from '@/core/utils';
 import { createDefaultFeetState } from '@/core/state';
 import { resolveFileUrl } from '@/core/fileservice';
+import { ReadFileBytes, ListDirRecursive } from '@/core/wails-bindings';
+import type { FileInfo } from '@/core/wails-bindings';
 import { t } from '@/core/i18n/t';
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
@@ -195,6 +197,55 @@ export async function captureThumbnail(
 
 // ======== PMX Loading ========
 
+/** @internal — matches babylon-mmd's IArrayBufferFile for referenceFiles */
+interface TextureFile {
+    readonly relativePath: string;
+    readonly mimeType: string | undefined;
+    readonly data: ArrayBuffer;
+}
+
+const TEXTURE_EXTS = /\.(png|jpg|jpeg|bmp|tga|dds|tif|tiff)$/i;
+
+function getMimeType(name: string): string {
+    const ext = name.split('.').pop()?.toLowerCase();
+    const map: Record<string, string | undefined> = {
+        png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
+        bmp: 'image/bmp', tga: 'image/x-tga', dds: 'image/vnd-ms.dds',
+        tif: 'image/tiff', tiff: 'image/tiff',
+    };
+    return map[ext ?? ''] ?? 'application/octet-stream';
+}
+
+/** Wails v3 serializes Go []byte as base64 JSON; decode to real Uint8Array. */
+function decodeBase64(b64: string): Uint8Array {
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
+}
+
+/** Collect texture files from model directory (recursive) for referenceFiles. */
+async function collectTextureFiles(modelDir: string): Promise<TextureFile[]> {
+    const files: TextureFile[] = [];
+    try {
+        const entries = await ListDirRecursive(modelDir);
+        if (!entries) return files;
+        for (const entry of entries) {
+            if (!TEXTURE_EXTS.test(entry.name)) continue;
+            const b64 = await ReadFileBytes(modelDir + '/' + entry.relativePath);
+            if (!b64) continue;
+            files.push({
+                relativePath: entry.relativePath,
+                mimeType: getMimeType(entry.name),
+                data: decodeBase64(b64).buffer as ArrayBuffer,
+            });
+        }
+    } catch (err) {
+        logWarn('model-loader', 'texture scan failed, falling back to HTTP:', err);
+    }
+    return files;
+}
+
 export async function loadPMXFile(
     filePath: string,
     asStage?: boolean,
@@ -236,11 +287,21 @@ export async function loadPMXFile(
         dom.loadingEl.style.display = 'block';
         dom.loadingText.textContent = t('scene.loader.loadingZero');
 
-        // Keep a reference so we can clean up meshes on failure
-        // [doc:adr-057] URL 使用 ?f=base64url 形式无扩展名，需显式指定 pluginExtension
-        // 否则 SceneLoader 无法识别文件类型，回退到 JSON 解析导致 importMesh has failed JSON parse
-        const result = await ImportMeshAsync(url, _scene, {
+        // [doc:adr-124] Phase 2: 递归收集模型目录下纹理 → referenceFiles 直传 babylon-mmd
+        const textureFiles = await collectTextureFiles(modelDir);
+
+        const pmxB64 = await ReadFileBytes(filePath);
+        if (!pmxB64 || effectiveSignal.aborted) {
+            return null;
+        }
+        const pmxBytes = decodeBase64(pmxB64);
+        const result = await (ImportMeshAsync as any)(pmxBytes, _scene, {
             pluginExtension: '.pmx',
+            pluginOptions: {
+                mmdmodel: {
+                    referenceFiles: textureFiles as unknown as File[],
+                },
+            },
             onProgress: (evt) => {
                 if (effectiveSignal.aborted) {
                     return;
@@ -332,7 +393,10 @@ export async function loadPMXFile(
                 // Intentionally empty — 自定义事件派发失败不影响模型加载主流程
             }
             // [fix:thumbnail] stage 同样需要缩略图（库网格含 stage 模型）；用库引用路径作 key
-            swallowError(captureThumbnail(filePath, libraryPath, innerPath, inst));
+            // [fix:thumbnail-defer] setTimeout 0 推迟到下一事件循环，避免阻塞主线程
+            setTimeout(() => {
+                swallowError(captureThumbnail(filePath, libraryPath, innerPath, inst));
+            }, 0);
             return id;
         }
 
@@ -490,7 +554,11 @@ export async function loadPMXFile(
         // Auto-capture thumbnail for future popup display
         // 与 stage 分支(330 行)对称:显式传 inst,避免依赖 _modelManager.focused() 的竞态兜底
         // (focused() 在加载时序波动时返回 null/错位实例 → 早退 → 缩略图间歇 miss = 历史反弹根因)。
-        swallowError(captureThumbnail(filePath, libraryPath, innerPath, inst));
+        // [fix:thumbnail-defer] setTimeout 0 推迟到下一事件循环，避免 canvas.toDataURL()
+        // 同步 PNG 编码阻塞主线程 0.5–2s（用户看到模型渲染后仍卡顿）。
+        setTimeout(() => {
+            swallowError(captureThumbnail(filePath, libraryPath, innerPath, inst));
+        }, 0);
         if (!skipAutoApply) {
             _tryAutoApplyPreset(id).catch((err: unknown) =>
                 logWarn('model-loader', 'auto-apply preset:', err)
