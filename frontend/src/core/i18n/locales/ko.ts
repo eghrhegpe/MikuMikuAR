@@ -1345,9 +1345,9 @@ export const ko: Record<string, string> = {
     'param.sideShift': '좌우 이동',
     'param.vertShift': '상하 이동',
     'param.depthShift': '전후 이동',
-    'param.detectRange': '감지 범위',
-    'param.minDist': '최소 거리',
-    'param.maxDist': '최대 거리',
+    
+    
+    
     'param.mirrorOffset': '미러 오프셋',
     'param.symmetry': '동기 미러',
     'param.pitch': '손목 굽힘',

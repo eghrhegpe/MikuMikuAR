@@ -50,6 +50,30 @@ function _q(): Quaternion {
     return _qPool[_qIdx++ % _qPool.length];
 }
 
+// ── Matrix / Vector3 复用池（WASM 路径，消除每帧 Matrix.FromArray / new Matrix 分配） ──
+// 所有 _m() / _v() 调用必须在同一帧的 callback 内完成，帧首 _mReset() / _vReset() 重置计数器。
+// 池大小 2048 = 5 根覆盖骨×(3 主路径 + 4×~100 子骨传播)，远超 MMD 模型实际需求。
+const _mPool = Array.from({ length: 2048 }, () => new Matrix());
+let _mIdx = 0;
+function _m(): Matrix {
+    return _mPool[_mIdx++];
+}
+function _mReset(): void {
+    _mIdx = 0;
+}
+
+const _vPool = Array.from({ length: 8 }, () => new Vector3());
+let _vIdx = 0;
+function _v(): Vector3 {
+    return _vPool[_vIdx++ % _vPool.length];
+}
+function _vReset(): void {
+    _vIdx = 0;
+}
+
+/** 复用常量，避免 Matrix.ComposeToRef 每次 new Vector3.One() */
+const _ONE = Vector3.One();
+
 /** 懒加载获取指定模型的 override map */
 function _getOverrideMap(modelId: string): Map<string, _OverrideSlot> {
     let map = _overrideMaps.get(modelId);
@@ -80,6 +104,7 @@ function _isWasmRuntime(bone: IMmdRuntimeBone): boolean {
 /**
  * 递归传播子骨骼变换（WASM 模式）。
  * 覆盖父骨骼后需更正子骨骼的 worldMatrix 以维持相对变换。
+ * 子骨若也有自有覆盖，则由主循环的 _applyWasmOverride 在传播后的矩阵上叠加，互不冲突。
  */
 function _propagateChildrenWasm(
     parent: IMmdRuntimeBone,
@@ -88,23 +113,22 @@ function _propagateChildrenWasm(
 ): void {
     // 用 Matrix.invert 太贵，改为：localMat = childOldMat × parentOld⁻¹
     // 使用 Matrix 运算
-    const invMat = new Matrix().copyFrom(parentOldMat);
+    const invMat = _m();
+    invMat.copyFrom(parentOldMat);
     invMat.invert();
     for (const child of parent.childBones) {
         const childBuf = (child as MmdRuntimeBoneExtended).worldMatrix;
         if (!childBuf) {
             continue;
         }
-        const childOldMat = Matrix.FromArray(childBuf);
-        const localMat = new Matrix();
+        const childOldMat = _m();
+        Matrix.FromArrayToRef(childBuf, 0, childOldMat);
+        const localMat = _m();
         childOldMat.multiplyToRef(invMat, localMat);
-        const childNewMat = new Matrix();
+        const childNewMat = _m();
         localMat.multiplyToRef(parentNewMat, childNewMat);
-        // 写回 worldMatrix buffer
-        const arr = childNewMat.asArray();
-        for (let i = 0; i < 16; i++) {
-            childBuf[i] = arr[i];
-        }
+        // 写回 worldMatrix buffer（copyToArray 避免 new Float32Array 分配）
+        childNewMat.copyToArray(childBuf, 0);
         _propagateChildrenWasm(child, childOldMat, childNewMat);
     }
 }
@@ -352,6 +376,69 @@ export function restoreOverrides(entries: BoneOverrideEntry[], modelId?: string)
 
 // ── 渲染循环钩子 ──
 
+/** [doc:adr-116 P3] 执行每帧钩子（时间驱动模块在此更新自身 slot） */
+function _runFrameHooks(focusedId: string): void {
+    const t = performance.now() / 1000;
+    for (const h of _frameHooks) {
+        h(t, focusedId);
+    }
+}
+
+/** WASM 单骨覆盖：直写 worldMatrix（使用池复用，零分配） */
+function _applyWasmOverride(slot: _OverrideSlot, rb: IMmdRuntimeBone): void {
+    const buf = (rb as MmdRuntimeBoneExtended).worldMatrix;
+    if (!buf) {
+        return;
+    }
+    const oldMat = _m();
+    Matrix.FromArrayToRef(buf, 0, oldMat);
+    const oldT = _v();
+    oldMat.getTranslationToRef(oldT);
+    const rotMat = _m();
+    oldMat.getRotationMatrixToRef(rotMat);
+    const oldQ = _q();
+    Quaternion.FromRotationMatrixToRef(rotMat, oldQ);
+    const { translation, rotation } = _computeOverride(oldT, oldQ, slot);
+    const newMat = _m();
+    Matrix.ComposeToRef(_ONE, rotation, translation, newMat);
+    newMat.copyToArray(buf, 0);
+    _propagateChildrenWasm(rb, oldMat, newMat);
+}
+
+/** JS 单骨覆盖：写 linkedBone rotationQuaternion / position */
+function _applyJsOverride(slot: _OverrideSlot, rb: IMmdRuntimeBone): void {
+    const linked = (
+        rb as unknown as { linkedBone?: import('@babylonjs/core/Bones/bone').Bone }
+    ).linkedBone;
+    if (!linked) {
+        return;
+    }
+
+    // [doc:adr-116 P1] 旋转覆盖：仅当 overrideRotation 为 true 才覆盖动画旋转
+    if (slot.overrideRotation) {
+        if (slot.weight >= 1) {
+            linked.rotationQuaternion = slot.quat.clone();
+        } else {
+            const cur = linked.rotationQuaternion ?? Quaternion.Identity();
+            linked.rotationQuaternion = Quaternion.Slerp(cur, slot.quat, slot.weight);
+        }
+    }
+
+    // 位置覆盖：叠加偏移（加法语义），避免 add() 新建 Vector3
+    if (slot.pos) {
+        const curPos = linked.getPosition();
+        curPos.addInPlace(slot.pos);
+        linked.setPosition(curPos);
+    }
+
+    // 更新骨骼世界矩阵
+    (rb as MmdRuntimeBoneExtended).updateWorldMatrix?.(false, false);
+
+    // 标记脏标记
+    const skeleton = linked.getSkeleton();
+    skeleton?._markAsDirty?.();
+}
+
 /**
  * 启动覆盖系统：注册 onBeforeRenderObservable 回调。
  * 必须在动画写入之后执行，因此注册在 gaze tracking 之后。
@@ -365,17 +452,17 @@ export function startBoneOverride(
     } // 已启动
 
     const callback = () => {
+        // 帧首重置 Matrix/Vector3 池（WASM 路径复用，避免每帧分配）
+        _mReset();
+        _vReset();
+
         // 只对当前聚焦模型生效（per-model 存储，单模型应用）
         const focusedId = _resolveModelId();
         if (!focusedId) {
             return;
         }
 
-        // [doc:adr-116 P3] 先执行每帧钩子（时间驱动模块在此更新自身 slot），再应用覆盖
-        const t = performance.now() / 1000;
-        for (const h of _frameHooks) {
-            h(t, focusedId);
-        }
+        _runFrameHooks(focusedId);
 
         const overrideMap = _overrideMaps.get(focusedId);
         if (!overrideMap || overrideMap.size === 0) {
@@ -386,71 +473,25 @@ export function startBoneOverride(
             return;
         }
 
+        // 构建 boneName → bone 索引（O(1) 查找，替代 O(n²) bones.find）
+        const boneMap = new Map<string, IMmdRuntimeBone>();
+        for (const b of bones) {
+            boneMap.set(b.name, b);
+        }
         const isWasm = _isWasmRuntime(bones[0]);
 
         for (const [boneName, slot] of overrideMap) {
             if (!slot.enabled) {
                 continue;
             }
-            const rb = bones.find((b) => b.name === boneName);
+            const rb = boneMap.get(boneName);
             if (!rb) {
                 continue;
             }
-
             if (isWasm) {
-                // WASM 模式：直写 worldMatrix
-                const buf = (rb as MmdRuntimeBoneExtended).worldMatrix;
-                if (!buf) {
-                    continue;
-                }
-                const oldMat = Matrix.FromArray(buf);
-                // [doc:adr-116 P1] 用纯函数合成：位置加法偏移 + 条件旋转覆盖
-                const oldT = oldMat.getTranslation();
-                const oldQ = _q().copyFrom(
-                    Quaternion.FromRotationMatrix(oldMat.getRotationMatrix())
-                );
-                const { translation, rotation } = _computeOverride(oldT, oldQ, slot);
-                const newMat = Matrix.Compose(Vector3.One(), rotation, translation);
-                const arr = newMat.asArray();
-                for (let i = 0; i < 16; i++) {
-                    buf[i] = arr[i];
-                }
-                _propagateChildrenWasm(rb, oldMat, newMat);
+                _applyWasmOverride(slot, rb, overrideMap);
             } else {
-                // JS 模式：linkedBone 是 MmdRuntimeBone 的伪私有属性，
-                // 类型声明未暴露，运行时 JS 模式下一定存在
-                const linked = (
-                    rb as unknown as { linkedBone?: import('@babylonjs/core/Bones/bone').Bone }
-                ).linkedBone;
-                if (!linked) {
-                    continue;
-                }
-
-                // [doc:adr-116 P1] 旋转覆盖：仅当 overrideRotation 为 true 才覆盖动画旋转
-                if (slot.overrideRotation) {
-                    if (slot.weight >= 1) {
-                        linked.rotationQuaternion = slot.quat.clone();
-                    } else {
-                        const cur = linked.rotationQuaternion ?? Quaternion.Identity();
-                        linked.rotationQuaternion = Quaternion.Slerp(cur, slot.quat, slot.weight);
-                    }
-                }
-
-                // [doc:adr-116 P1] 位置覆盖：在动画局部位置之上叠加偏移量（加法语义），
-                // 而非以绝对坐标硬覆盖，保留根骨骼的位移/弹跳等动画。
-                // 注意：JS 模式 setPosition 设的是相对父骨骼的局部位置，
-                // 对根骨骼（如 センター，parent=null）等价于世界位置，与 WASM 世界平移加法一致。
-                if (slot.pos) {
-                    const curPos = linked.getPosition();
-                    linked.setPosition(curPos.add(slot.pos));
-                }
-
-                // 更新骨骼世界矩阵
-                (rb as MmdRuntimeBoneExtended).updateWorldMatrix?.(false, false);
-
-                // 标记脏标记
-                const skeleton = linked.getSkeleton();
-                skeleton?._markAsDirty?.();
+                _applyJsOverride(slot, rb);
             }
         }
     };

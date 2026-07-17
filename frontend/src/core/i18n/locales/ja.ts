@@ -1352,9 +1352,9 @@ export const ja: Record<string, string> = {
     'param.sideShift': '左右移動',
     'param.vertShift': '上下移動',
     'param.depthShift': '前後移動',
-    'param.detectRange': '検出範囲',
-    'param.minDist': '最小距離',
-    'param.maxDist': '最大距離',
+    
+    
+    
     'param.mirrorOffset': 'ミラーオフセット',
     'param.symmetry': '同期ミラー',
     'param.pitch': '手首曲げ',

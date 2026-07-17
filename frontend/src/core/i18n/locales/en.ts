@@ -342,9 +342,9 @@ export const en: Record<string, string> = {
     'param.sideShift': 'Left-Right',
     'param.vertShift': 'Up-Down',
     'param.depthShift': 'Forward-Back',
-    'param.detectRange': 'Detect Range',
-    'param.minDist': 'Min Distance',
-    'param.maxDist': 'Max Distance',
+    
+    
+    
     'param.mirrorOffset': 'Mirror Offset',
     'param.symmetry': 'Symmetry',
     'param.pitch': 'Wrist Bend',
@@ -1452,4 +1452,13 @@ export const en: Record<string, string> = {
     'settings.audio.offsetHint':
         'Positive = audio leads, negative = audio lags (applies globally to all music)',
     'props.loadingProgress': 'Loading prop {pct}%',
+
+    // ===== [doc:adr-117] Go-side user-visible errors (i18n) =====
+    'goerr.software.notFound': 'Could not find {name}. Please set its path in Settings.',
+    'goerr.software.launchFailed': 'Failed to launch {name}.',
+    'goerr.software.androidNotSupported': '{name} cannot be launched on Android.',
+    'goerr.config.readFailed': 'Failed to read config.',
+    'goerr.screenshot.dirNotSet': 'Screenshot directory is not set. Take a screenshot first.',
+    'goerr.screenshot.dirCreateFailed': 'Failed to create screenshot directory.',
+    'goerr.screenshot.androidNotSupported': 'Opening the screenshot directory is not supported on Android.',
 };

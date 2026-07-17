@@ -1333,9 +1333,9 @@ export const zhTW: Record<string, string> = {
     'param.sideShift': '左右偏移',
     'param.vertShift': '上下偏移',
     'param.depthShift': '前後偏移',
-    'param.detectRange': '偵測範圍',
-    'param.minDist': '最小距離',
-    'param.maxDist': '最大距離',
+    
+    
+    
     'param.mirrorOffset': '鏡像偏移',
     'param.symmetry': '同步鏡像',
     'param.pitch': '屈腕',
