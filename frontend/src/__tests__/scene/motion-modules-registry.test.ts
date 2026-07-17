@@ -285,6 +285,50 @@ describe('ownedBones 冲突仲裁', () => {
         warnSpy.mockRestore();
     });
 
+    it('claimBones priority 抢占：高优先级模块可抢占低优先级模块的骨骼', () => {
+        initMotionModules();
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+        // 注册一个 priority=3 的低优先级模块用于测试
+        registerModule(
+            'test-low-priority',
+            { labelKey: 'test', icon: 'test', defaults: {} },
+            3,
+            () =>
+                ({
+                    id: 'test-low-priority',
+                    meta: { labelKey: 'test', icon: 'test', defaults: {} },
+                    priority: 3,
+                    managedBones: ['センター'],
+                    buildSchema: () => [],
+                    getState: () => ({ id: 'test-low-priority', enabled: false, params: {} }),
+                    setState: () => {},
+                    setParam: () => {},
+                    enable: () => {},
+                    disable: () => {},
+                }) as any
+        );
+
+        // 使用独立 modelId 避免污染其他测试的 _ownedBones
+        const testModel = 'm-priority-test';
+
+        // 低优先级先 claim
+        claimBones(testModel, 'test-low-priority', ['センター']);
+        expect(getOwnedBones(testModel, 'test-low-priority').has('センター')).toBe(true);
+
+        // 高优先级（body-posture, priority=1）抢占
+        const claimed = claimBones(testModel, 'body-posture', ['センター']);
+        expect(claimed).toEqual(['センター']);
+
+        // 验证：低优先级的 owned 被清除，引擎 slot 被清除
+        expect(getOwnedBones(testModel, 'test-low-priority').has('センター')).toBe(false);
+        expect(clearBoneOverrideSpy).toHaveBeenCalledWith('センター', testModel);
+        expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('抢占'));
+
+        warnSpy.mockRestore();
+        unregisterModule('test-low-priority'); // 清理测试模块
+    });
+
     it('getOwnedBones 返回当前 owned 集合', () => {
         initMotionModules();
         claimBones('m1', 'body-posture', ['上半身', '腰']);

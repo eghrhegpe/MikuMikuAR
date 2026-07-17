@@ -115,8 +115,10 @@ function _ownedMap(modelId: string): Map<string, Set<string>> {
 
 /**
  * 为模块声明对一组骨骼的所有权（bake 前调用）。
- * 返回实际成功 claim 的骨骼列表（已被其他模块占用的骨骼会被跳过并 console.warn）。
- * 若骨骼此前由本模块 owned，保持不变（幂等）。
+ * 冲突仲裁: 按 priority 抢占（数值越小优先级越高）。
+ * - 若新模块 priority < 冲突方，则抢占（清落败方 ownedBones + 引擎 slot）
+ * - 否则跳过并 console.warn
+ * 返回实际成功 claim 的骨骼列表。
  */
 export function claimBones(modelId: string, moduleId: string, bones: readonly string[]): string[] {
     const owned = _ownedMap(modelId);
@@ -125,6 +127,11 @@ export function claimBones(modelId: string, moduleId: string, bones: readonly st
         mySet = new Set();
         owned.set(moduleId, mySet);
     }
+
+    // 查询新模块的 priority
+    const myEntry = _registry.get(moduleId);
+    const myPriority = myEntry?.priority ?? 999;
+
     const claimed: string[] = [];
     for (const bone of bones) {
         if (mySet.has(bone)) {
@@ -140,10 +147,27 @@ export function claimBones(modelId: string, moduleId: string, bones: readonly st
             }
         }
         if (conflictOwner) {
-            console.warn(
-                `[adr-116] bone "${bone}" 已被模块 "${conflictOwner}" 占用，模块 "${moduleId}" 跳过该骨骼`
-            );
-            continue;
+            // 比较 priority：数值越小优先级越高
+            const otherEntry = _registry.get(conflictOwner);
+            const otherPriority = otherEntry?.priority ?? 999;
+            if (myPriority < otherPriority) {
+                // 抢占：清落败方的 ownedBones + 引擎 slot
+                const otherSet = owned.get(conflictOwner);
+                if (otherSet?.has(bone)) {
+                    otherSet.delete(bone);
+                    clearBoneOverride(bone, modelId);
+                    console.warn(
+                        `[adr-116] bone "${bone}" 被模块 "${moduleId}"(priority=${myPriority}) 从 "${conflictOwner}"(priority=${otherPriority}) 抢占`
+                    );
+                }
+                // 继续执行 claim 逻辑
+            } else {
+                // 落败：跳过并 console.warn
+                console.warn(
+                    `[adr-116] bone "${bone}" 已被模块 "${conflictOwner}"(priority=${otherPriority}) 占用，模块 "${moduleId}"(priority=${myPriority}) 跳过该骨骼`
+                );
+                continue;
+            }
         }
         mySet.add(bone);
         claimed.push(bone);
