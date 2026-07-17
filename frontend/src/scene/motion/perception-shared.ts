@@ -25,6 +25,15 @@ export interface PerceptionState {
     lipSyncSensitivity: number; // 0..1，振幅阈值
     lipSyncIntensity: number; // 0..1，最大张嘴幅度
     lipSyncMultiMorphEnabled: boolean; // 驱动多口型 morph
+    // ── 可调参数（原硬编码常量，[doc:adr-116] 暴露给用户） ──
+    breathFrequency: number; // 0.1–1.0 Hz，默认 0.3
+    breathAmplitude: number; // 0–0.05 rad，默认 0.02
+    blinkFrequency: number; // 0.05–0.5 Hz，默认 0.15
+    headGazeMaxYaw: number; // 0–90°，默认 75
+    headGazeMaxPitch: number; // 0–90°，默认 35
+    eyeGazeMaxYaw: number; // 0–15°，默认 9
+    eyeGazeMaxPitch: number; // 0–15°，默认 8
+    eyeGazeSmooth: number; // 0–1，默认 0.35
 }
 
 /** Gaze 配置类型 */
@@ -42,6 +51,15 @@ export const DEFAULT_PERCEPTION_STATE: PerceptionState = {
     lipSyncSensitivity: 0.2,
     lipSyncIntensity: 0.8,
     lipSyncMultiMorphEnabled: false,
+    // 可调参数默认值（与原硬编码常量一致）
+    breathFrequency: 0.3,
+    breathAmplitude: 0.02,
+    blinkFrequency: 0.15,
+    headGazeMaxYaw: 75,
+    headGazeMaxPitch: 35,
+    eyeGazeMaxYaw: 9,
+    eyeGazeMaxPitch: 8,
+    eyeGazeSmooth: 0.35,
 };
 
 export interface MeshMetadata {
@@ -121,4 +139,50 @@ export function _propagateChildrenWasm(
 
 export function _isWasmRuntime(bone: IMmdRuntimeBone): boolean {
     return !('updateWorldMatrix' in bone);
+}
+
+// ── 感知层可调角度状态（[doc:adr-116] 感知层滑块功能） ──
+// 独立于 PerceptionState（避免 perception-gaze.ts 与 perception.ts 循环依赖）
+// 由 perception.ts 的 setter 更新，由 perception-gaze.ts 的 clamp 函数读取
+
+let _headGazeMaxYaw = (75 * Math.PI) / 180;
+let _headGazeMaxPitch = (35 * Math.PI) / 180;
+let _eyeGazeMaxYaw = (9 * Math.PI) / 180;
+let _eyeGazeMaxPitch = (8 * Math.PI) / 180;
+let _eyeGazeSmooth = 0.35;
+
+/** 获取头部跟随最大偏航角（弧度） */
+export function getHeadGazeMaxYaw(): number {
+    return _headGazeMaxYaw;
+}
+/** 获取头部跟随最大俯仰角（弧度） */
+export function getHeadGazeMaxPitch(): number {
+    return _headGazeMaxPitch;
+}
+/** 获取眼部跟随最大偏航角（弧度） */
+export function getEyeGazeMaxYaw(): number {
+    return _eyeGazeMaxYaw;
+}
+/** 获取眼部跟随最大俯仰角（弧度） */
+export function getEyeGazeMaxPitch(): number {
+    return _eyeGazeMaxPitch;
+}
+/** 获取眼部跟随平滑度 */
+export function getEyeGazeSmooth(): number {
+    return _eyeGazeSmooth;
+}
+
+/** 更新头部跟随角度限位（度→弧度，由 perception.ts setter 调用） */
+export function setGazeAngles(
+    headYawDeg: number,
+    headPitchDeg: number,
+    eyeYawDeg: number,
+    eyePitchDeg: number,
+    eyeSmooth: number
+): void {
+    _headGazeMaxYaw = (headYawDeg * Math.PI) / 180;
+    _headGazeMaxPitch = (headPitchDeg * Math.PI) / 180;
+    _eyeGazeMaxYaw = (eyeYawDeg * Math.PI) / 180;
+    _eyeGazeMaxPitch = (eyePitchDeg * Math.PI) / 180;
+    _eyeGazeSmooth = eyeSmooth;
 }

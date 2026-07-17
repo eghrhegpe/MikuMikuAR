@@ -9,11 +9,10 @@ import { _updateBoneChain } from './perception-breathing';
 import {
     _clampHeadGazeTarget,
     _clampGazeTargetInParentFrame,
-    EYE_GAZE_MAX_YAW,
-    EYE_GAZE_MAX_PITCH,
+    getEyeGazeMaxYaw,
+    getEyeGazeMaxPitch,
+    getEyeGazeSmooth,
 } from './perception-gaze';
-
-const EYE_SMOOTH = 0.35;
 
 /** JS 模式：头部跟随 */
 export function _applyHeadGazeJS(headRuntime: IMmdRuntimeBone, gazeTarget: Vector3): void {
@@ -91,10 +90,10 @@ export function _applyEyeGazeJS(eyeRuntimes: IMmdRuntimeBone[], gazeTarget: Vect
             curWorldQ,
             targetWorldQ,
             parentWorldQ,
-            EYE_GAZE_MAX_YAW,
-            EYE_GAZE_MAX_PITCH
+            getEyeGazeMaxYaw(),
+            getEyeGazeMaxPitch()
         );
-        const newWorldQ = _q().copyFrom(Quaternion.Slerp(curWorldQ, clampedTargetQ, EYE_SMOOTH));
+        const newWorldQ = _q().copyFrom(Quaternion.Slerp(curWorldQ, clampedTargetQ, getEyeGazeSmooth()));
 
         const localQ = _q();
         parentInvQ.multiplyToRef(newWorldQ, localQ);

@@ -2,12 +2,15 @@
 
 import { MORPH_BLINK_CANDIDATES, matchBone } from '../../motion-algos/proc-motion-shared';
 import type { MmdModelLike } from './perception-shared';
+import { getPerceptionState } from './perception';
 
-// ── 眨眼参数 ──
-const BLINK_FREQ = 0.15; // Hz
+// ── 眨眼参数（默认值，实际从 perceptionState 读取） ──
+const DEFAULT_BLINK_FREQ = 0.15; // Hz
 
 export function _applyBlinking(mmdModel: MmdModelLike, time: number): void {
-    const phase = time * BLINK_FREQ * 2 * Math.PI;
+    const s = getPerceptionState();
+    const freq = s.blinkFrequency ?? DEFAULT_BLINK_FREQ;
+    const phase = time * freq * 2 * Math.PI;
     const blinkIntensity = Math.max(0, Math.sin(phase) - 0.8) * 5;
 
     const morphManager = mmdModel.mesh?.morphTargetManager;

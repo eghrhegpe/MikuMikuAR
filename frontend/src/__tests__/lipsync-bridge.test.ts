@@ -22,6 +22,15 @@ const mocks = vi.hoisted(() => {
         lipSyncSensitivity: 0.2,
         lipSyncIntensity: 0.8,
         lipSyncMultiMorphEnabled: false,
+        // 感知层可调参数默认值
+        breathFrequency: 0.3,
+        breathAmplitude: 0.02,
+        blinkFrequency: 0.15,
+        headGazeMaxYaw: 75,
+        headGazeMaxPitch: 35,
+        eyeGazeMaxYaw: 9,
+        eyeGazeMaxPitch: 8,
+        eyeGazeSmooth: 0.35,
     };
     return {
         defaultPerception,
