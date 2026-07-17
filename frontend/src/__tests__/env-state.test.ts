@@ -84,6 +84,8 @@ const defaultEnv: EnvState = {
     rippleGlintStrength: 0.25,
     waterNormalStrength: 0.3,
     waterGlintStrength: 0,
+    waterHorizonFade: 0,
+    waterSkyColorBlend: 0,
     causticIntensity: 0.15,
     causticColor1: [1.0, 0.9, 0.6],
     causticColor2: [1.0, 1.0, 0.8],

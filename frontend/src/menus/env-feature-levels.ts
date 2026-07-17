@@ -939,6 +939,18 @@ export function buildWaterLevel(): PopupLevel {
                                 },
                                 icon: 'lucide:cloud-fog',
                             },
+                            {
+                                id: 'env:water:skyColorBlend',
+                                kind: 'slider',
+                                label: 'env.waterSkyColorBlend',
+                                control: {
+                                    bind: 'env.waterSkyColorBlend',
+                                    min: 0,
+                                    max: 1,
+                                    step: 0.05,
+                                },
+                                icon: 'lucide:cloud',
+                            },
                         ],
                     },
                     {
@@ -1058,6 +1070,13 @@ export function buildWaterLevel(): PopupLevel {
                                 kind: 'slider',
                                 label: 'env.waterFogOpacityInfluence',
                                 control: { bind: 'env.waterFogOpacityInfluence', min: 0, max: 1, step: 0.05 },
+                            },
+                            {
+                                id: 'env:water:horizonFade',
+                                kind: 'slider',
+                                label: 'env.waterHorizonFade',
+                                control: { bind: 'env.waterHorizonFade', min: 0, max: 1, step: 0.05 },
+                                icon: 'lucide:mountain',
                             },
                             {
                                 id: 'env:water:flip',

@@ -125,6 +125,8 @@ const _WATER_KEYS = [
     'rippleGlintStrength',
     'waterNormalStrength',
     'waterGlintStrength',
+    'waterHorizonFade',
+    'waterSkyColorBlend',
     'causticIntensity',
     'causticColor1',
     'causticColor2',

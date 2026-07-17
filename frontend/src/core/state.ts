@@ -373,6 +373,8 @@ export const envState: EnvState = reactive<EnvState>({
     waterFogColor: [0.45, 0.48, 0.58],
     waterFogDensity: 0.012,
     waterFogOpacityInfluence: 0,
+    waterHorizonFade: 0,
+    waterSkyColorBlend: 0,
 
     fresnelBias: 0.02,
     fresnelPower: 3.0,
