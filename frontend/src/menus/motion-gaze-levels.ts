@@ -12,7 +12,7 @@ import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 
 function refreshMotionMenu(): void {
-    getMotionMenu()?.updateControls();
+    getMotionMenu()?.reRender();
 }
 
 function withActivate(_v: unknown): void {
