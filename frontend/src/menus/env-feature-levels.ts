@@ -4,7 +4,7 @@
 import { envState, cardContainer, setStatus, getBrowseDir } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
-import { slideRow, addSliderRow, addPresetChip } from '../core/ui-helpers';
+import { slideRow, addSliderRow, buildPresetChipGroup, addClearRow } from '../core/ui-helpers';
 import { setEnvState, engine } from '../scene/scene';
 import { t } from '../core/i18n/t';
 import { getLightState, setLightState as setLightingState } from '../scene/render/lighting';
@@ -66,26 +66,18 @@ export function buildSkyLevel(): PopupLevel {
                 id: 'env:sky:presets',
                 kind: 'custom',
                 renderCustom: (cc) => {
-                    const chipGroup = document.createElement('div');
-                    chipGroup.className = 'preset-group';
-                    chipGroup.style.paddingBottom = '6px';
-                    for (const [key, p] of Object.entries(TIME_OF_DAY_PRESETS)) {
-                        addPresetChip(
-                            chipGroup,
-                            p.label,
-                            false,
-                            () => {
+                    buildPresetChipGroup(
+                        cc,
+                        Object.entries(TIME_OF_DAY_PRESETS).map(([key, p]) => ({
+                            label: p.label,
+                            isActive: () => activeTimeOfDayPreset === key,
+                            onClick: () => {
                                 setActiveTimeOfDayPreset(key);
                                 applyEnvPreset(key);
                             },
-                            {
-                                onUpdate: (btn) => {
-                                    btn.classList.toggle('active', activeTimeOfDayPreset === key);
-                                },
-                            }
-                        );
-                    }
-                    cc.appendChild(chipGroup);
+                        })),
+                        { paddingBottom: 6 }
+                    );
                 },
             },
             {
@@ -231,19 +223,12 @@ export function buildSkyLevel(): PopupLevel {
                                 () => _openTexturePicker('stars', t('env.starsTexture')),
                                 fileName
                             );
-                            if (envState.starsTexture) {
-                                const clearRow = document.createElement('div');
-                                clearRow.style.cssText =
-                                    'display:flex;justify-content:flex-end;padding:0 14px 4px;';
-                                const clearBtn = document.createElement('button');
-                                clearBtn.className = 'cs-btn cs-btn-sm';
-                                clearBtn.textContent = t('env.clear');
-                                clearBtn.onclick = () => {
-                                    setEnvState({ starsTexture: '' });
-                                };
-                                clearRow.appendChild(clearBtn);
-                                cc.appendChild(clearRow);
-                            }
+                            addClearRow(
+                                cc,
+                                !!envState.starsTexture,
+                                () => setEnvState({ starsTexture: '' }),
+                                t('env.clear')
+                            );
                         },
                     },
                 ],
@@ -318,14 +303,12 @@ export function buildGroundLevel(): PopupLevel {
                         { value: 'textures/stone.png', label: t('env.stone') },
                         { value: 'textures/sand.png', label: t('env.sand') },
                     ];
-                    const chipRow = document.createElement('div');
-                    chipRow.className = 'preset-group';
-                    for (const tp of texturePresets) {
-                        addPresetChip(
-                            chipRow,
-                            tp.label,
-                            envState.groundTexture === tp.value,
-                            () => {
+                    buildPresetChipGroup(
+                        cc,
+                        texturePresets.map((tp) => ({
+                            label: tp.label,
+                            isActive: () => envState.groundTexture === tp.value,
+                            onClick: () => {
                                 const hasTex = !!tp.value;
                                 const patch: Record<string, string | boolean | null> = {
                                     groundTexture: tp.value ?? null,
@@ -334,17 +317,8 @@ export function buildGroundLevel(): PopupLevel {
                                 };
                                 setEnvState(patch as Parameters<typeof setEnvState>[0]);
                             },
-                            {
-                                onUpdate: (btn) => {
-                                    btn.classList.toggle(
-                                        'active',
-                                        envState.groundTexture === tp.value
-                                    );
-                                },
-                            }
-                        );
-                    }
-                    cc.appendChild(chipRow);
+                        }))
+                    );
                     const groundFileName =
                         envState.groundTexture && !envState.groundTexture.startsWith('textures/')
                             ? (envState.groundTexture.split(/[/\\]/).pop() ?? t('env.notSelected'))
@@ -363,24 +337,19 @@ export function buildGroundLevel(): PopupLevel {
                             ),
                         groundFileName
                     );
-                    if (envState.groundTexture && !envState.groundTexture.startsWith('textures/')) {
-                        const clearRow = document.createElement('div');
-                        clearRow.style.cssText =
-                            'display:flex;justify-content:flex-end;padding:0 14px 4px;';
-                        const clearBtn = document.createElement('button');
-                        clearBtn.className = 'cs-btn cs-btn-sm';
-                        clearBtn.textContent = t('env.clear');
-                        clearBtn.onclick = () => {
+                    addClearRow(
+                        cc,
+                        !!envState.groundTexture &&
+                            !envState.groundTexture.startsWith('textures/'),
+                        () =>
                             setEnvState({
                                 groundTexture: '',
                                 groundTextureEnabled: false,
                                 groundStyle: 'solid',
                                 groundDecoStyle: 'none',
-                            });
-                        };
-                        clearRow.appendChild(clearBtn);
-                        cc.appendChild(clearRow);
-                    }
+                            }),
+                        t('env.clear')
+                    );
                     addSliderRow(
                         cc,
                         t('env.textureScale'),
@@ -424,31 +393,18 @@ export function buildGroundLevel(): PopupLevel {
                         id: 'env:ground:decoStyle',
                         kind: 'custom',
                         renderCustom: (cc) => {
-                            const chipRow = document.createElement('div');
-                            chipRow.className = 'preset-group';
                             const decoPresets = [
                                 { value: 'grid', label: t('env.grid') },
                                 { value: 'checker', label: t('env.checker') },
                             ] as const;
-                            for (const dp of decoPresets) {
-                                addPresetChip(
-                                    chipRow,
-                                    dp.label,
-                                    envState.groundDecoStyle === dp.value,
-                                    () => {
-                                        setEnvState({ groundDecoStyle: dp.value });
-                                    },
-                                    {
-                                        onUpdate: (btn) => {
-                                            btn.classList.toggle(
-                                                'active',
-                                                envState.groundDecoStyle === dp.value
-                                            );
-                                        },
-                                    }
-                                );
-                            }
-                            cc.appendChild(chipRow);
+                            buildPresetChipGroup(
+                                cc,
+                                decoPresets.map((dp) => ({
+                                    label: dp.label,
+                                    isActive: () => envState.groundDecoStyle === dp.value,
+                                    onClick: () => setEnvState({ groundDecoStyle: dp.value }),
+                                }))
+                            );
                         },
                     },
                     {
@@ -840,15 +796,16 @@ export function buildWaterLevel(): PopupLevel {
                         id: 'env:water:presets',
                         kind: 'custom',
                         renderCustom: (cc) => {
-                            const row = document.createElement('div');
-                            row.className = 'preset-group';
-                            for (const [_key, wp] of Object.entries(WATER_PRESETS)) {
-                                addPresetChip(row, wp.label, false, () => {
-                                    setEnvState(buildWaterPresetEnvState(wp));
-                                    applyWaterPresetToCurrent(wp);
-                                });
-                            }
-                            cc.appendChild(row);
+                            buildPresetChipGroup(
+                                cc,
+                                Object.entries(WATER_PRESETS).map(([_key, wp]) => ({
+                                    label: wp.label,
+                                    onClick: () => {
+                                        setEnvState(buildWaterPresetEnvState(wp));
+                                        applyWaterPresetToCurrent(wp);
+                                    },
+                                }))
+                            );
                         },
                     },
                     {
@@ -1387,32 +1344,19 @@ export function buildShadowLevel(): PopupLevel {
                         id: 'env:shadow:quality',
                         kind: 'custom',
                         renderCustom: (cc) => {
-                            const row = document.createElement('div');
-                            row.className = 'preset-group';
-                            for (const sq of [
-                                { label: t('env.low'), value: 512 },
-                                { label: t('env.medium'), value: 1024 },
-                                { label: t('env.high'), value: 2048 },
-                                { label: t('env.ultra'), value: 4096 },
-                            ]) {
-                                addPresetChip(
-                                    row,
-                                    sq.label,
-                                    getLightState().shadowResolution === sq.value,
-                                    () => {
-                                        setLightingState({ shadowResolution: sq.value });
-                                    },
-                                    {
-                                        onUpdate: (btn) => {
-                                            btn.classList.toggle(
-                                                'active',
-                                                getLightState().shadowResolution === sq.value
-                                            );
-                                        },
-                                    }
-                                );
-                            }
-                            cc.appendChild(row);
+                            buildPresetChipGroup(
+                                cc,
+                                [
+                                    { label: t('env.low'), value: 512 },
+                                    { label: t('env.medium'), value: 1024 },
+                                    { label: t('env.high'), value: 2048 },
+                                    { label: t('env.ultra'), value: 4096 },
+                                ].map((sq) => ({
+                                    label: sq.label,
+                                    isActive: () => getLightState().shadowResolution === sq.value,
+                                    onClick: () => setLightingState({ shadowResolution: sq.value }),
+                                }))
+                            );
                         },
                     },
                     {

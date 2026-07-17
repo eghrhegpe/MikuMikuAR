@@ -18,6 +18,8 @@ export {
 } from './ui-rows';
 export { addColorSliderRow, addModeSlider } from './ui-advanced-rows';
 export { addCollapsible, addSectionTitle, addPresetChip } from './ui-collapsible';
+export { buildPresetChipGroup, addClearRow } from './ui-preset';
+export type { PresetChipItem } from './ui-preset';
 export { createResourcePanel } from './ui-resource-panel';
 export type { ResourcePanelOptions, ResourcePanelHandle, ResourceItem } from './ui-resource-panel';
 export { createVirtualGrid } from './ui-virtual-grid';
