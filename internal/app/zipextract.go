@@ -332,9 +332,6 @@ func (a *App) GetCacheStats() (*CacheStats, error) {
 	if dir, err := thumbnailDir(); err == nil {
 		stats.ThumbnailBytes, stats.ThumbnailCount = dirSize(dir)
 	}
-	if dir, err := serveRootDir(); err == nil {
-		stats.ServeBytes, stats.ServeCount = dirSize(dir)
-	}
 	// Resource root: sum sizes of all category directories (respecting overrides)
 	// plus custom subdirectories. Use a seen-set to avoid double-counting when
 	// an override points to a nested directory.

@@ -19,7 +19,8 @@ import {
     autoLoop,
     setIsPlaying,
 } from '@/core/config';
-import { fetchArrayBuffer } from '@/core/fileservice';
+import { decodeBase64 } from '@/core/fileservice';
+import { ReadFileBytes } from '@/core/wails-bindings';
 import { getBaseName, clamp01, logWarn } from '@/core/utils';
 import { t } from '@/core/i18n/t';
 import Encoding from 'encoding-japanese';
@@ -175,7 +176,12 @@ export async function addVmdLayerFromPath(
         return null;
     }
     try {
-        const { data } = await fetchArrayBuffer(path);
+        const b64 = await ReadFileBytes(path);
+        if (!b64) {
+            logWarn('vmd-layers', 'Failed to read VMD file:', path);
+            return null;
+        }
+        const data = decodeBase64(b64).buffer as ArrayBuffer;
         const vmdName = getBaseName(path) || '';
         const layer = await addVmdLayer(
             data,
@@ -226,7 +232,12 @@ export async function addVmdLayersFromPaths(
             continue;
         } // 跳过重复
         try {
-            const { data } = await fetchArrayBuffer(layer.path);
+            const b64 = await ReadFileBytes(layer.path);
+            if (!b64) {
+                logWarn('vmd-layers', 'Failed to read VMD file:', layer.path);
+                continue;
+            }
+            const data = decodeBase64(b64).buffer as ArrayBuffer;
             const vmdName = getBaseName(layer.path) || '';
             newLayers.push({
                 data,
@@ -429,7 +440,12 @@ export async function replaceVmdLayerVmd(
         return null;
     }
     try {
-        const { data } = await fetchArrayBuffer(path);
+        const b64 = await ReadFileBytes(path);
+        if (!b64) {
+            logWarn('vmd-layers', 'Failed to read VMD file:', path);
+            return null;
+        }
+        const data = decodeBase64(b64).buffer as ArrayBuffer;
         const vmdName = getBaseName(path) || '';
         layer.data = data;
         layer.path = path;

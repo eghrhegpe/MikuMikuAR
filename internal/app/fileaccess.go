@@ -116,3 +116,17 @@ func (a *App) ListDirRecursive(dirPath string) ([]FileInfo, error) {
 	})
 	return files, err
 }
+
+// FileExists reports whether the named file exists and is accessible.
+// Used by outfit texture probing — much cheaper than ReadFileBytes for
+// existence checks on potentially large texture files.
+func (a *App) FileExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
+}

@@ -505,6 +505,7 @@ function motionOnItemClick(row: PopupRow): void {
                 })
                 .catch((err) => {
                     console.error('Load camera VMD failed:', err);
+                    setStatus(t('motion.loadFailed'), false);
                 });
             return;
         }

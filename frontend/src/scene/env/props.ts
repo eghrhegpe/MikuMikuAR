@@ -9,7 +9,7 @@ import { ImportMeshAsync } from '@babylonjs/core/Loading/sceneLoader';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 
 import { propRegistry, setStatus, triggerAutoSave, dom, PropInstance } from '@/core/config';
-import { resolveFileUrl } from '@/core/fileservice';
+import { readFileBytes } from '@/core/wails-bindings';
 import { orbitToCartesian, cartesianToOrbit, normalizeOrbit } from '@/core/orbit';
 import { scene } from '../scene';
 import { _envSys } from './env';
@@ -24,6 +24,8 @@ import {
     isGizmoActive,
     getGizmoTargetId,
 } from '../render/transform-gizmo';
+
+import { readFileBytes } from '@/core/wails-bindings';
 
 // ======== 类型守卫 ========
 
@@ -70,16 +72,14 @@ export async function loadProp(filePath: string, signal?: AbortSignal): Promise<
             }
         }
 
-        const { url, port, dir: modelDir } = await resolveFileUrl(filePath);
-        if (effectiveSignal.aborted) {
+        const pmxBytes = await readFileBytes(filePath);
+        if (!pmxBytes || effectiveSignal.aborted) {
             return null;
         }
         const fileName = getBaseName(filePath) || '';
         setStatus(t('props.loading'), false);
 
-        // [doc:adr-057] URL 使用 ?f=base64url 形式无扩展名，需显式指定 pluginExtension
-        // 否则 SceneLoader 无法识别文件类型，回退到 JSON 解析导致 importMesh has failed JSON parse
-        const result = await ImportMeshAsync(url, scene, {
+        const result = await (ImportMeshAsync as any)(pmxBytes, scene, {
             pluginExtension: '.pmx',
             onProgress: (evt) => {
                 if (effectiveSignal.aborted) {
@@ -124,8 +124,6 @@ export async function loadProp(filePath: string, signal?: AbortSignal): Promise<
             id,
             name: displayName,
             filePath,
-            port,
-            modelDir,
             meshes: loadedMeshes,
             rootMesh: loadedMeshes[0],
             container,

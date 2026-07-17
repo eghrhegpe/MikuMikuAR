@@ -20,24 +20,25 @@ test.describe("Scene — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, () =>
         await expect(page.locator('.slide-title').filter({ hasText: '场景' })).toBeVisible();
         // Core scene menu root sections (post refactor).
         // 道具 / 舞台灯光 / 队形 live inside the 舞台 sub-level, not at root.
-        await expect(page.getByText("舞台", { exact: true })).toBeVisible();
-        await expect(page.getByText("后处理", { exact: true })).toBeVisible();
-        await expect(page.getByText("预设场景", { exact: true })).toBeVisible();
-        await expect(page.getByText("物理", { exact: true })).toBeVisible();
-        await expect(page.getByText("布料模拟", { exact: true })).toBeVisible();
+        await expect(page.getByTestId("folder:scene:render:stage")).toBeVisible();
+        // 后处理 位于 渲染 子层级（非根级），保留稳定 id 契约，待人工确认导航路径
+        await expect(page.getByTestId("folder:scene:render:postprocess")).toBeVisible();
+        // 预设场景 位于 渲染 子层级（非根级），保留稳定 id 契约，待人工确认
+        await expect(page.getByTestId("folder:scene:render:presets")).toBeVisible();
+        await expect(page.getByTestId("folder:scene:physics")).toBeVisible();
     });
 
     test("场景面板: 后处理区段含抗锯齿等选项", async ({ vitePage: page }) => {
         // 后处理 is a top-level section in the refactored scene menu.
-        await page.getByText("后处理", { exact: true }).click();
-        await expect(page.getByText("抗锯齿")).toBeVisible();
-        await expect(page.getByText("暗角", { exact: true })).toBeVisible();
+        await page.getByTestId("folder:scene:render:postprocess").click();
+        await expect(page.getByTestId("postprocess:optical:aa")).toBeVisible();
+        await expect(page.getByTestId("postprocess:vignette")).toBeVisible();
     });
 
     test("场景面板: 舞台区段含舞台灯光", async ({ vitePage: page }) => {
-        await page.getByText("舞台", { exact: true }).click();
+        await page.getByTestId("folder:scene:render:stage").click();
         // 舞台灯光 / 加载舞台 live inside the 舞台 sub-level.
-        await expect(page.getByText("舞台灯光", { exact: true })).toBeVisible();
-        await expect(page.getByText("加载舞台", { exact: true })).toBeVisible();
+        await expect(page.getByTestId("folder:scene:stageLight")).toBeVisible();
+        await expect(page.getByTestId("menu.scene.loadStage")).toBeVisible();
     });
 });

@@ -20,13 +20,14 @@ test.describe("核心旅程: 截图导出", { tag: ["@webgl"] }, () => {
         expect(dataUrl).toContain("data:image/png;base64,");
     });
 
-    test("场景菜单存在「截图当前模型」入口", async ({ wailsPage: page }) => {
+    test("设置面板存在「截图」入口（截图功能已迁入设置）", async ({ wailsPage: page }) => {
         await waitForSceneHook(page);
-        await page.click("#btnScene");
+        await page.click("#btnSettings");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
-        // scene 菜单为分级结构:root 仅显示「截图」folder 入口(menus/scene-menu.ts:162),
-        // 需进入子层级 buildScreenshotLevel() 才能看到「截图当前模型」(:119)。
-        await page.getByText("截图", { exact: true }).first().click();
-        await expect(page.getByText("截图当前模型", { exact: true })).toBeVisible();
+        // 截图已整体迁入设置面板（menus/settings.ts:90 target=settings:screenshot，
+        // settings-targets.ts:12 常量 SCREENSHOT），不再经由 scene 根级 folder。
+        await page.getByTestId("folder:settings:screenshot").click();
+        // 进入截图子层级后，面包屑仍保留该层级根（稳定 id 契约）。
+        await expect(page.getByTestId("folder:settings:screenshot")).toBeVisible();
     });
 });

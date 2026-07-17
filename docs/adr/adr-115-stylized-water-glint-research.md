@@ -1,6 +1,6 @@
 # ADR-115: 风格化水体竞品调研与波光粼粼增强方向
 
-> **状态**: 规划（调研 → 方案已优化）— P2 排期就绪、P1 待资源解锁；尚未进入实施 PR。本 ADR 为技术对比与方向评估，不锁定具体实现。
+> **状态**: P1+P2+P3 已完成（2026-07-17）；P4 技术方案已补充，待评审后实施。
 > **背景**: 评审了某竞品（风格化水体）的水系统截图，其设计思路与我方自研 Gerstner 物理水面（ADR-062 / `frontend/src/scene/env/env-water.ts`）完全不同：对方以「少参数、强预设、重法线」的美术水体路线实现"波光粼粼"，而我方以「多参数、强物理、重波形」的可控路线实现。本文档记录参数映射、技术拆解、差异对比与可借鉴方向，供后续增强水面视觉效果时拍板。
 > **范围**: 仅水面视觉风格与交互复杂度对比；不涉及反射 RT 重构（ADR-062）、地面反射（ADR-114）等已立项工作。
 > **外部依赖状态审核（2026-07-17）**: 已对体积云（ADR-113 / `env-clouds.ts`）与地面增强（ADR-114 / `env-ground.ts`）近期更新做集成兼容性评估。结论：两项更新均不实质影响本 ADR 实施前提；发现 1 项🟡P3 云-反射间隙（见§九），非回归，记录供 P1 实施前参考。
@@ -479,6 +479,149 @@ vec3 finalFogColor = mix(waterFogColor, uSkyBlendColor * 0.8, uSkyColorBlend);
 - 默认值 0：确保不破坏用户已调好的水色，用户须主动开启
 - 图标：`lucide:sunrise`
 
+### 4.7 "波纹/大波"双层尺度拆分（P4，贴近竞品手感）
+
+将单一 `waterWaveHeight` 拆为两个独立参数，让用户分别控制大尺度波浪与小尺度波纹，贴近竞品"波纹/大波"的双层操控手感。
+
+#### 4.7.1 现有 Gerstner 4 层结构分析
+
+当前 vertex shader（`water.vert.glsl:16-18`）硬编码 4 层 Gerstner 波：
+
+| 层 | 频率 | 振幅 | 速度 | 语义 |
+|----|------|------|------|------|
+| 0 | 0.15 | 0.30 | 0.7 | 大波（低频、高振幅） |
+| 1 | 0.20 | 0.25 | 0.9 | 大波（中低频） |
+| 2 | 0.25 | 0.20 | 0.5 | 小波（中高频） |
+| 3 | 0.30 | 0.15 | 1.2 | 小波（高频、低振幅） |
+
+所有 4 层共享单一 `waveHeight` uniform 缩放振幅：`a = WAVE_AMP[i] * waveHeight`
+
+#### 4.7.2 拆分方案
+
+**核心思路**：将 4 层按频率分为两组，各有独立的振幅缩放参数：
+
+| 参数 | 控制范围 | 语义 |
+|------|---------|------|
+| `bigWaveHeight` | Gerstner 层 0,1（低频） | 大尺度波浪——涌浪、海浪主形态 |
+| `smallWaveHeight` | Gerstner 层 2,3（高频） | 小尺度波纹——表面细碎起伏 |
+| `waterNormalStrength` | P1 法线细节层（fragment shader）**（P1 已实现，此处仅示意尺度层级，P4 不改动此字段）** | 微观波光——最细粒度的法线扰动 |
+
+> ⚠️ **范围界定**：`waterNormalStrength` 是 ADR-115 P1 已落地的字段（`env-water.ts:479` `uDetailNormalStrength`），列于此仅为呈现「大→中→微」三级尺度体系的完整性。**P4 新增的仅为 `bigWaveHeight` 与 `smallWaveHeight` 两个字段**，不触碰 `waterNormalStrength`。
+
+三者形成**大→中→微**三级波浪尺度体系：
+
+```
+大波 (bigWaveHeight)     → Gerstner 低频 2 层 → 顶点位移 + 法线
+小波 (smallWaveHeight)   → Gerstner 高频 2 层 → 顶点位移 + 法线
+波光 (waterNormalStrength) → 程序化法线贴图     → 仅法线扰动（无位移）
+```
+
+#### 4.7.3 Vertex Shader 改动
+
+当前（`water.vert.glsl:34-44`）：
+```glsl
+for (int i = 0; i < WAVE_COUNT; i++) {
+    float a = WAVE_AMP[i] * waveHeight;  // 单一缩放
+    ...
+}
+```
+
+改为（**保留 `waveHeight` uniform 作为全局乘子，不删除，避免 `_syncWaterUniforms:438` 的旧 `setFloat('waveHeight')` 悬空写入不存在的 uniform**）：
+```glsl
+uniform float waveHeight;       // 保留：全局振幅乘子（旧 uniform，向后兼容）
+uniform float bigWaveHeight;    // 大波振幅缩放（默认 1.0）
+uniform float smallWaveHeight;  // 小波振幅缩放（默认 1.0）
+
+for (int i = 0; i < WAVE_COUNT; i++) {
+    // 层 0,1 用 bigWaveHeight，层 2,3 用 smallWaveHeight，再乘全局 waveHeight
+    float h = (i < 2) ? bigWaveHeight : smallWaveHeight;
+    float a = WAVE_AMP[i] * h * waveHeight;
+    ...
+}
+```
+
+> **`waveHeight` 保留决策**：审核采纳「保留」方案而非「删除」。理由：① 旧 uniform 不悬空，`_syncWaterUniforms:438` 现有 `mat.setFloat('waveHeight', ...)` 语义仍有效（作为全局乘子）；② 三者语义正交清晰——`waveHeight` 全局缩放、`bigWaveHeight`/`smallWaveHeight` 分频段缩放；③ 旧场景 `waterWaveHeight` 可直接继续驱动 `waveHeight`，new 两字段默认 1.0，效果零回归。
+>
+> **零回归保障**：当 `bigWaveHeight == smallWaveHeight == 1.0` 时，`a = WAVE_AMP[i] * 1.0 * waveHeight`，与当前 `a = WAVE_AMP[i] * waveHeight` **完全等价**。旧场景仅存储 `waterWaveHeight` 时，两新字段取默认 1.0，视觉不变。
+
+#### 4.7.4 状态链路
+
+| 变更点 | 文件 | 说明 |
+|--------|------|------|
+| # | 变更点 | 文件 | 说明 |
+|---|--------|------|------|
+| 1 | 新增字段（**必填**） | `core/types.ts` `EnvState` | `bigWaveHeight: number`、`smallWaveHeight: number`（**必填非可选**，默认值由 `state.ts` 种入，反序列化侧兜底，见 §4.7.5） |
+| 2 | 默认值种入 | `core/state.ts` | `bigWaveHeight: 1.0`、`smallWaveHeight: 1.0`（保证每帧 `_syncWaterUniforms` 读到有效 number，杜绝 NaN 源头） |
+| 3 | 🔴 **Uniform 每帧同步（关键写入点）** | `env-water.ts` `_syncWaterUniforms`（当前第 438 行 `setFloat('waveHeight')` 旁） | **保留** `mat.setFloat('waveHeight', state.waterWaveHeight)`（全局乘子），**新增** `mat.setFloat('bigWaveHeight', state.bigWaveHeight ?? 1.0)` + `mat.setFloat('smallWaveHeight', state.smallWaveHeight ?? 1.0)`。**`?? 1.0` 兜底不可省**——该处裸 `setFloat` 无任何 fallback，一旦 state 字段为 `undefined` 即写入 NaN，真实引擎水面渲染消失且不可逆（与 §六 P3 教训、`env-water.ts:1184-1185` 注释同型）。 |
+| 4 | 绑定列表 | `env-bridge.ts` | `WATER_BINDINGS` 补充 2 个新字段 |
+| 5 | Go 后端 | `internal/app/app.go` | `EnvState` struct 补充 2 字段（否则 `SetEnvState` 静默丢弃，见工程铁律） |
+| 6 | 🔴 **重新生成 wails 绑定** | — | `npm run generate:bindings`（= `wails3 generate bindings -ts -i -d frontend/bindings ./...`）。EnvState 新字段不同步 Go struct + 重生成绑定 → 前端写入被静默丢弃。 |
+| 7 | `WaterPreset` 类型扩展 | `env-water.ts` | 新增字段 `bigWaveHeight: number` + `smallWaveHeight: number`（预设必须全部定义，见第 8 项理由） |
+| 8 | 🔴 **预设定义（防 NaN）** | `env-water.ts` `WATER_PRESETS` | 5 预设**必须全部**配 `bigWaveHeight` + `smallWaveHeight`（按 §4.7.6 取值）。若任一预设漏配 → `buildWaterPresetEnvState` 输出 `undefined` → 切到该预设时 `_syncWaterUniforms` 写入 NaN → 水面消失。 |
+| 9 | 🔴 **预设映射（带兜底）** | `env-water.ts` `buildWaterPresetEnvState` | 输出 `bigWaveHeight: preset.bigWaveHeight ?? preset.waterWaveHeight ?? 1.0`、`smallWaveHeight: preset.smallWaveHeight ?? preset.waterWaveHeight ?? 1.0`（**双重兜底**，即使预设漏配也退回旧波高而非 NaN，参照第 1186-1187 行 `waterHorizonFade ?? 0` 现成范式）。 |
+| 10 | 预设应用 | `env-water.ts` `applyWaterPresetToCurrent` | 若预设含新字段则 `mat.setFloat` 写入（沿用现有 `if (preset.x !== undefined)` 守卫模式） |
+
+> **NaN 兜底三道防线小结**：`state.ts` 种默认值（源头）→ `buildWaterPresetEnvState` 双重 `??` 兜底（预设漏配）→ `_syncWaterUniforms` 写入前 `?? 1.0`（终极守卫）。三道任缺一，都可能在特定路径下让水面消失。
+
+#### 4.7.5 旧字段兼容
+
+`waterWaveHeight` 保留，语义**升级为「全局振幅乘子」**（对应 vert shader 中保留的 `waveHeight` uniform，见 §4.7.3），不再是"被忽略"：
+
+- **新场景**：`bigWaveHeight`/`smallWaveHeight` 控分频段振幅，`waterWaveHeight` 继续作为全局乘子（`a = WAVE_AMP[i] * h * waveHeight`）。三者叠乘，语义正交。
+- **旧场景**：仅有 `waterWaveHeight` 时，反序列化兜底：
+  ```typescript
+  // 反序列化侧（场景加载）兜底，确保 EnvState 必填字段有值
+  state.bigWaveHeight   = raw.bigWaveHeight   ?? 1.0;
+  state.smallWaveHeight = raw.smallWaveHeight ?? 1.0;
+  // waterWaveHeight 缺失时另有既有默认，此处不涉
+  ```
+  两新字段默认 1.0 → `a = WAVE_AMP[i] * 1.0 * waterWaveHeight`，与旧版逐字等价，**零回归**。
+- **序列化**：新场景直接独立写入 `bigWaveHeight` + `smallWaveHeight` + `waterWaveHeight` 三字段，**不再回写 `(big+small)/2`**（原方案有损：如海浪预设 `big=1.5,small=0.8` 回读 `1.15`，与设计偏差明显）。旧版本打开新场景时仅读 `waterWaveHeight`（全局乘子），波形为「全局缩放后的旧四层」，属已知可接受降级——见 §5.2.5 验收补充。
+
+#### 4.7.6 预设差异化取值
+
+| 预设 | bigWaveHeight | smallWaveHeight | 理由 |
+|------|--------------|----------------|------|
+| 平静 calm | 0.3 | 0.5 | 大波弱、小波中等——平静水面有细碎涟漪但无涌浪 |
+| 涟漪 ripple | 0.6 | 1.0 | 中等大波、强小波——活跃的波纹表面 |
+| 海浪 ocean | 1.5 | 0.8 | 强大波、中小波——大浪翻涌，细碎波纹被大浪掩盖 |
+| 风暴 storm | 2.0 | 0.5 | 极强大波、弱小波——巨浪主导，高频细节被风压平 |
+| 热带 tropical | 0.8 | 1.2 | 中大波、强小波——温暖海域的活泼波光 |
+
+#### 4.7.7 UI 变更
+
+基础参数 folder 中，将原来的"波高"滑块拆为两行。为遵守 §4.4.2「核心参数 ≤8 项」原则（解决原方案 9 项与该原则的冲突），**将 P1 的 `waterNormalStrength`/`waterGlintStrength` 两项下沉至"高级参数"折叠组**，基础区维持 8 项：
+
+```
+├── 基础参数「展开」（8 项，符合 §4.4.2 ≤8 上限）
+│   ├── 水面高度（waterLevel）
+│   ├── 水面范围（waterSize）
+│   ├── 大波高度（bigWaveHeight）    ← 原"波高"拆分
+│   ├── 小波纹（smallWaveHeight）    ← 原"波高"拆分
+│   ├── 动画速度（waterAnimSpeed）
+│   ├── 焦散强度（causticIntensity）
+│   ├── 水色（waterColor）
+│   └── （P1 参数下沉，见下方"高级参数"）
+│
+├── 高级参数「折叠」
+│   ├── 波纹细节（waterNormalStrength）  ← P4 从基础区下沉
+│   ├── 波光闪烁（waterGlintStrength）   ← P4 从基础区下沉
+│   └── …（原有高级散项）
+```
+
+**冲突消解**：原 §4.7.7 草案基础区达 9 项，与 §4.4.2「核心参数 ≤8 项」自相矛盾。审核决策采「方案②：P1 参数下沉高级组」而非放宽上限——理由：`bigWaveHeight`/`smallWaveHeight` 是高频调节项应置核心区，而 `waterNormalStrength`/`waterGlintStrength` 属"微调波光"低频操作，下沉高级组更符合"核心区精简"初衷。基础区最终 **8 项**，一屏可见，与 §4.4.2 一致。
+
+> 📌 需同步修订 §4.4.1 面板结构图：将 `waterNormalStrength`/`waterGlintStrength` 从基础参数区移入高级参数区，保持两处文档一致（P4 实施 PR 内一并调整）。
+
+#### 4.7.8 i18n
+
+5 语种各新增 2 个 key：
+
+| Key | zh-CN | en | ja | ko | zh-TW |
+|-----|-------|----|----|----| ------|
+| `env.bigWaveHeight` | 大波高度 | Big Wave | 大波の高さ | 큰 파 높이 | 大波高度 |
+| `env.smallWaveHeight` | 小波纹 | Small Wave | 小波の揺らぎ | 작은 파도 | 小波紋 |
+
 ---
 
 ## 五、实施路径与排序（优化版）
@@ -487,15 +630,22 @@ vec3 finalFogColor = mix(waterFogColor, uSkyBlendColor * 0.8, uSkyColorBlend);
 
 | 优先级 | 阶段 | 内容 | 可行性 | 成本 | 收益 | 状态 |
 |--------|------|------|--------|------|------|------|
-| ① 立即 | P2 | 焦散强度 UI 暴露 + 水面 UI 预设化折叠 | 高（仅状态链路 + 滑块） | 低 | 中（可调性 + 降低面板复杂度） | 可立即实施 |
-| ② 待解锁 | P1 | shader 高频法线扰动层 + Sun Glitter 项 | 中（需法线资源：程序化 or 外部） | 中 | 高（直接出波光粼粼） | 阻塞于资源与去重 |
-| ③ 后续 | P3 | 无限水面 + 地平线雾融合 + 天空-水面颜色联动 | 中 | 中 | 高（解决方块硬边、强化氛围） | 待 P2 完成后评估 |
-| ④ 后续 | P4 | "波纹/大波"双层尺度拆分 | 中 | 中 | 中（贴近竞品手感，需重测预设） | 待定 |
+| ① | P2 | 焦散强度 UI 暴露 + 水面 UI 预设化折叠 | 高 | 低 | 中 | ✅ 已完成 (e54d67e) |
+| ② | P1 | shader 高频法线扰动层 + Sun Glitter 项 | 高 | 中 | 高 | ✅ 已完成 (e54d67e) |
+| ③ | P3 | 无限水面 + 地平线雾融合 + 天空-水面颜色联动 | 高 | 中 | 高 | ✅ 已完成 (df7db01) |
+| ④ | P4 | "波纹/大波"双层尺度拆分 | 高 | 中 | 中 | 方案已补充，待评审实施 |
 
-**P1 解锁前置条件（必须先解决）**：
-1. **法线资源来源**：程序化生成（`createCanvasTexture` 噪声法线）or 引入贴图。优先程序化，避免新增 bundled 资源依赖。
-2. **Gerstner 去重**：法线扰动与现有 Gerstner 法线叠加存在 double-count 风险（见 §六）。须明确分工——Gerstner 负责大尺度波向、法线贴图仅接管高频细节（或降低 Gerstner 高频段波高贡献），实测校准后方可合入。
-3. **涟漪系统兼容性**：确认新法线层与现有 `addRipple` 涟漪法线（`env-water.ts:184` 函数 + `shaders/water.frag.glsl:125-137` 着色器代码）是叠加还是替换；两者均在高频段改 `normal`，直接相加产生莫尔纹，须做加权融合或条件启用（见 §六）。
+**P1 解锁前置条件（已全部解决，2026-07-17）**：
+1. ✅ **法线资源来源**：程序化 512×512 Value noise 法线贴图（`env-water.ts:regenerateDetailNormalTexture`）
+2. ✅ **Gerstner 去重**：`gerstnerScale = uDetailNormalStrength > 0 ? 0.7 : 1.0`，分层清晰
+3. ✅ **涟漪系统兼容性**：法线细节层在涟漪之前叠加，实测无莫尔纹
+
+**P4 实施前置条件**：
+1. **Vertex shader 改动**：`water.vert.glsl` 新增 `bigWaveHeight` / `smallWaveHeight` uniform，**保留** `waveHeight` 作全局乘子，改为 `a = WAVE_AMP[i] * h * waveHeight`（见 §4.7.3）
+2. **NaN 三道防线**：`state.ts` 种默认 1.0 + `buildWaterPresetEnvState` 双重 `??` 兜底 + `_syncWaterUniforms` 写入前 `?? 1.0`（见 §4.7.4，缺任一都可能致水面消失）
+3. **旧字段兼容**：两新字段默认 1.0，旧场景 `a = WAVE_AMP[i] * 1.0 * waterWaveHeight` 与旧版逐字等价，零回归
+4. **wails 绑定重生成**：EnvState 新增 2 字段须同步 Go struct 并 `npm run generate:bindings`
+3. **预设重测**：5 个预设的大波/小波差异化取值需视觉校准
 
 ### 5.1 P2 完整状态链路变更清单
 
@@ -563,13 +713,25 @@ P2（焦散强度 + UI 预设化）涉及的所有变更点，实施时逐项打
 - [ ] 切换预设时，法线强度与 glitter 强度同步变化
 - [ ] FPS 下降 ≤ 5%（1080p 中端 GPU 下，从 60fps 降至 ≥ 57fps）
 
-#### 5.2.4 P3 地平线淡出 + 天空联动（待实施时验证）
+#### 5.2.4 P3 地平线淡出 + 天空联动（已实施，2026-07-17 验证通过）
 
-- [ ] `waterHorizonFade = 0` 时，水面边缘为硬边（与当前一致）
-- [ ] `waterHorizonFade > 0` 时，水面边缘平滑过渡到天空色，无明显断层
-- [ ] 相机移动时，淡出区域跟随平滑移动，无闪烁
-- [ ] `waterSkyColorBlend = 0` 时，水色与当前一致（零回归）
-- [ ] `waterSkyColorBlend = 1` 时，水色与天空底部色一致
+- [x] `waterHorizonFade = 0` 时，水面边缘为硬边（与当前一致）
+- [x] `waterHorizonFade > 0` 时，水面边缘平滑过渡到天空色，无明显断层
+- [x] 相机移动时，淡出区域跟随平滑移动，无闪烁
+- [x] `waterSkyColorBlend = 0` 时，水色与当前一致（零回归）
+- [x] `waterSkyColorBlend = 1` 时，水色与天空底部色一致
+
+#### 5.2.5 P4 波纹/大波双层拆分（待实施时验证）
+
+- [ ] `bigWaveHeight == smallWaveHeight == 1.0` 时，水面效果与当前 `waveHeight` 完全一致（零回归）
+- [ ] `bigWaveHeight = 0, smallWaveHeight = 1.0` 时，仅高频小波纹可见，无大浪起伏
+- [ ] `bigWaveHeight = 1.5, smallWaveHeight = 0` 时，仅大浪翻涌，表面光滑无细碎波纹
+- [ ] 切换 5 个预设时，大波/小波高度同步变化为预设值
+- [ ] 旧场景加载后，`bigWaveHeight` / `smallWaveHeight` 自动兜底为 1.0，波形 = 全局 `waterWaveHeight` 缩放的旧四层（零回归）
+- [ ] 基础参数区 **8 项**一屏可见（1080p）；P1 的 `waterNormalStrength`/`waterGlintStrength` 已下沉至高级参数组
+- [ ] **【NaN 防护回归】任一预设漏配 `bigWaveHeight`/`smallWaveHeight` 时，切到该预设水面仍正常渲染（退回 1.0 全局缩放），不出现水面消失**
+- [ ] **【旧版本兼容】新场景（含 big/small 字段）用旧版本客户端打开，水面正常渲染（旧版仅读 `waterWaveHeight` 全局乘子），波形为已知可接受降级——非崩溃、非黑面**
+- [ ] 修改 `waterWaveHeight` 全局乘子时，大波与小波振幅同步等比缩放（验证三者叠乘语义）
 
 ---
 
@@ -577,17 +739,21 @@ P2（焦散强度 + UI 预设化）涉及的所有变更点，实施时逐项打
 
 | 等级 | 风险 | 说明 | 缓解 / 决策 |
 |------|------|------|------------|
-| 🔴 P1 阻塞 | 法线与 Gerstner 叠加 double-count | 我方水面法线已含 Gerstner 波形贡献；再叠一层法线贴图扰动，高频段会与 Gerstner 法线重复累积，导致"波浪过密/高光发糊"而非干净波光 | **P1 实施前置条件**：分层——Gerstner 掌大尺度波向，法线贴图仅接高频细节；或降 Gerstner 高频段贡献，实测校准后合入 |
-| 🟡 P1 | 法线扰动与涟漪系统冲突（莫尔纹） | `env-water.ts:184` + `shaders/water.frag.glsl:125-137` 已有 `rippleNormalStrength`/`rippleGlintStrength` 涟漪法线（由 `addRipple` 注入），与新增高频法线层均在高频段改 `normal`，直接相加产生莫尔纹 | **P1 实施前置**：确认新法线层与涟漪是叠加还是替换；建议按 `rippleSum` 加权融合或仅 `abs(rippleSum)<eps` 时启用新层（见 §4.1 / §五） |
-| 🟢 已化解 | Sun Glitter 光照方向依赖 | 原担忧 glitter 需 `lightDir` 而 shader 可能未传入方向光方向 | **已核实**：`shaders/water.frag.glsl:19` 中 `uniform vec3 lightDir;` 已存在并由 `env-water.ts:336/:339` 传入方向光方向（含 fallback），可直接复用，无需新增通路 |
-| 🟢 P2 | 焦散强度 UI 暴露后用户误调 | 焦散强度过高导致水下光斑过亮、失真 | 设合理上限（建议 `max ≤ 0.5`）；滑块 `max` 封顶，默认值取原硬编码 0.15 |
-| 🟡 P3 | 天空-水面颜色联动破坏自定义水色 | `waterSkyColorBlend` 若默认 >0，用户手动调好的水色会被天空覆盖 | **默认值定为 0（不联动）**，用户须主动上调才生效（见 §4.6） |
-| 🟡 中 | 性能 | 额外法线贴图采样 + glitter 噪声增加 fragment 开销 | **性能降级策略**：引入 `waterQuality` 三档（跟随全局画质设置）：<br>• **高（High）**：法线细节 + glitter + 双通道法线采样，全开<br>• **中（Medium）**：法线细节减半（单通道采样） + glitter 降频（scale × 0.5）<br>• **低（Low）**：关闭法线细节层与 glitter，仅保留 Gerstner + 焦散（与当前版本一致）<br>默认跟随全局 `renderQuality` 设置，用户可在高级参数中单独覆盖 |
-| 🟡 中 | 资源依赖 | 法线贴图引入外部资产 | 优先程序化生成（§4.1.1），避免新增 bundled 资源；若程序化质量不足再考虑外部贴图 |
-| 🟢 低 | 过度仿制 | 竞品走"美术夸张"，我方用户群更重视"物理可控" | 仅借鉴波光手段，不削弱现有参数体系；所有新参数默认值保证零视觉回归 |
-| 🟢 低 | 预设兼容 | P4 的"波纹/大波"拆分可能破坏 `WATER_PRESETS` | P4 需回归 5 个预设；P1/P2/P3 均向后兼容，旧预设缺失字段取默认值 |
-| 🟢 低 | UI 折叠后功能不可达 | 参数收进折叠组后，用户可能找不到高级选项 | 折叠组标题明确（如"高级参数"），且首次进入时高亮提示；搜索功能可命中折叠组内参数 |
-| 🟡 P3 | 云壳 camera-follow 与反射 RT 相机切换交互（2026-07-17 评估发现） | 体积云球壳（renderingGroupId=-1）每帧通过 `onBeforeRenderObservable` 将壳心对齐到 `scene.activeCamera` 位置（`env-clouds.ts:568-575`）。水面反射 RT（screenSpace 模式）渲染时 Babylon 将 `activeCamera` 切到镜像 FreeCamera → 云壳移位到反射相机位置，光线路步进 `cameraPosition` 也使用反射相机 → 云在水面反射中的位置和密度采样偏移 | 1. 非本次更新引入的回归（架构从开始如此）；2. 在 ADR-115 P1（法线扰动/glitter）实施前评估是否需要修复或接受该 gap；3. 若决定修复：在反射 RT render 期间临时解绑云壳的 `followObs`，或加反射相机专用的位置守卫 |
+| 🟢 已化解 | 法线与 Gerstner 叠加 double-count | P1 实施时已解决：`gerstnerScale = 0.7` 衰减 Gerstner 高频贡献，法线贴图接管高频细节 |
+| 🟢 已化解 | 法线扰动与涟漪系统冲突（莫尔纹） | P1 实施后实测无莫尔纹，法线细节层在涟漪之前叠加，涟漪激活时自然衰减 |
+| 🟢 已化解 | Sun Glitter 光照方向依赖 | `lightDir` uniform 已存在并传入，可直接复用 |
+| 🟢 P2 | 焦散强度 UI 暴露后用户误调 | 已设上限 `max = 0.5`，默认值 0.15 |
+| 🟡 P3 | 天空-水面颜色联动破坏自定义水色 | 默认值 0（不联动），用户须主动上调 |
+| 🟡 中 | 性能 | 额外法线贴图采样 + glitter 噪声增加 fragment 开销 | **性能降级策略**：引入 `waterQuality` 三档（高/中/低），低端关闭法线细节层+glitter |
+| 🟡 中 | 资源依赖 | 法线贴图引入外部资产 | 已用程序化生成（`regenerateDetailNormalTexture`），零 bundled 资源 |
+| 🟢 低 | 过度仿制 | 竞品走"美术夸张"，我方用户群更重视"物理可控" | 仅借鉴波光手段，不削弱现有参数体系 |
+| 🔴 P4 | **预设漏配致 NaN → 水面消失（不可逆）** | `_syncWaterUniforms` 裸 `setFloat` 无 fallback（`env-water.ts:438,479`），若 `WATER_PRESETS` 任一预设漏配新字段 → `buildWaterPresetEnvState` 输出 `undefined` → 写入 NaN → 真实引擎水面渲染消失且不可逆（与 P3 `env-water.ts:1184-1185` 教训同型） | **三道防线（§4.7.4）**：① `state.ts` 种默认 1.0；② `buildWaterPresetEnvState` 双重 `?? preset.waterWaveHeight ?? 1.0`；③ `_syncWaterUniforms` 写入前 `?? 1.0`。验收 §5.2.5 含 NaN 防护回归项 |
+| 🟢 低 | 预设兼容 | P4 的"波纹/大波"拆分可能破坏 `WATER_PRESETS` | 5 预设全部显式定义两字段（§4.7.6）；映射函数双重兜底，即使漏配也退回旧波高，零回归 |
+| 🟡 P4 | 旧场景兼容 | 旧场景仅存 `waterWaveHeight`，无 `bigWaveHeight`/`smallWaveHeight` | 反序列化兜底两新字段为 1.0 → `a = WAVE_AMP[i] * 1.0 * waterWaveHeight`，与旧版逐字等价 |
+| 🟡 P4 | **新场景被旧版本客户端打开** | 新场景写入 big/small，旧版本仅识别 `waterWaveHeight` | `waterWaveHeight` 保留为全局乘子（§4.7.5），旧版读取后波形为全局缩放的旧四层——非崩溃/黑面，属已知可接受降级；不再回写有损的 `(big+small)/2` |
+| 🟢 低 | wails 绑定漏生成 | EnvState 新字段未同步 Go struct + 重生成绑定 → `SetEnvState` 静默丢弃 | §4.7.4 第 5/6 项强制 `app.go` 补字段 + `npm run generate:bindings` |
+| 🟢 低 | UI 折叠后功能不可达 | 参数收进折叠组后，用户可能找不到高级选项 | 折叠组标题明确，搜索功能可命中折叠组内参数 |
+| 🟡 P3 | 云壳 camera-follow 与反射 RT 相机切换交互 | 体积云球壳在反射 RT 渲染时移位到反射相机位置 | 非本次更新引入；建议后续评估是否修复或接受 gap |
 
 ---
 
@@ -604,12 +770,13 @@ P2（焦散强度 + UI 预设化）涉及的所有变更点，实施时逐项打
 
 竞品是「少参数、强预设、重法线」的美术水体；我方是「多参数、强物理、重波形」的可控水体。波光粼粼本质是**高频法线 + specular glitter + 反射/焦散**组合；地平线/星空感则来自**无限水体 + 环境 cubemap 反射 + 天空-水面统一颜色分级**。
 
-**优化后优先级（已拍板方案）**：
-- **P2 立即排期**：焦散强度暴露 + 水面 UI 预设化，成本最低、收益明确、零资源依赖。
-- **P1 待解锁**：法线扰动 + glitter 视觉收益高，但被「法线资源来源」与「Gerstner 法线 double-count」双重卡住，须先解决资源（程序化优先）与分层去重方可实施。
-- **P3/P4 留待后续**：P3 解决方块硬边与氛围联动，P4 重测预设后评估。
+**实施进度（2026-07-17）**：
+- **P2 已完成** (e54d67e)：焦散强度 UI 暴露 + 水面 UI 预设化折叠
+- **P1 已完成** (e54d67e)：shader 高频法线扰动层 + Sun Glitter 项
+- **P3 已完成** (df7db01)：地平线淡出 + 天空-水面颜色联动
+- **P4 待实施**：波纹/大波双层尺度拆分，技术方案已补充（§4.7），待评审后落地
 
-是否进入实施 PR，待架构评审确认。
+是否进入 P4 实施 PR，待架构评审确认。
 
 ---
 

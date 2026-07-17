@@ -8,7 +8,7 @@
 // Phase C: 播放列表 + 淡入淡出 + 循环模式（none/one/all/shuffle）
 
 import { StreamAudioPlayer } from 'babylon-mmd/esm/Runtime/Audio/streamAudioPlayer';
-import { resolveFileUrl } from '../core/fileservice';
+import { readFileBytes } from '../core/wails-bindings';
 import { triggerAutoSave, setUIState } from '../core/config';
 import { clamp01, logWarn } from '@/core/utils';
 import type { BeatDetector } from '../motion-algos/beat-detector';
@@ -245,7 +245,14 @@ export async function playAudio(url: string, name: string): Promise<void> {
 }
 
 export async function loadAudioFile(filePath: string): Promise<void> {
-    const { url } = await resolveFileUrl(filePath);
+    const bytes = await readFileBytes(filePath);
+    if (!bytes) {
+        logWarn('audio', 'loadAudioFile: failed to read', filePath);
+        return;
+    }
+    const blob = new Blob([bytes], { type: 'audio/mpeg' });
+    const url = URL.createObjectURL(blob);
+
     const fileName = filePath.split(/[\\/]/).pop() || '';
     // 添加到播放列表
     const existingIdx = _playlist.indexOf(url);

@@ -14,10 +14,9 @@ test.describe("核心旅程: 动作播放与换装", { tag: ["@webgl"] }, () => 
         await loadFirstModel(page);
         await openMotionPopup(page);
 
-        await page.waitForSelector("#sceneOverlay .slide-item", { timeout: 5000 });
-        // 首个 .slide-item 可能是文件夹行；若模型动作列表首项为文件夹，请改用
-        // page.locator('#sceneOverlay .slide-item', { hasText: '动作名' }) 精确定位。
-        await page.locator("#sceneOverlay .slide-item").first().click();
+        await page.waitForSelector('[data-testid^="action:"]', { timeout: 5000 });
+        // 首个 action: 行（动作绑定行）首位定位，避免依赖文本/位置。
+        await page.locator('[data-testid^="action:"]').first().click();
 
         await page.waitForFunction(
             () => {

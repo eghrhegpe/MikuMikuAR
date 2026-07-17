@@ -170,11 +170,16 @@ function buildStageSchema(): MenuNode[] {
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    slideRow(inner, 'lucide:upload', t('scene.loadStage'), true, () => {
-                        (async () => {
-                            try {
-                                const { getBrowseDir } = await import('../core/utils');
-                                const browseDir = getBrowseDir('stage');
+                    slideRow(
+                        inner,
+                        'lucide:upload',
+                        t('scene.loadStage'),
+                        true,
+                        () => {
+                            (async () => {
+                                try {
+                                    const { getBrowseDir } = await import('../core/utils');
+                                    const browseDir = getBrowseDir('stage');
                                 if (!browseDir) {
                                     setStatus(t('scene.statusNoModelLib'), false);
                                     return;
@@ -196,34 +201,51 @@ function buildStageSchema(): MenuNode[] {
                                 console.error('Stage library error:', err);
                             }
                         })();
-                    });
-                    slideRow(inner, 'lucide:box', t('scene.loadProp'), true, () => {
-                        (async () => {
-                            try {
-                                const { getBrowseDir } = await import('../core/utils');
-                                const browseDir = getBrowseDir('prop');
-                                if (!browseDir) {
-                                    setStatus(t('scene.statusNoPropLib'), false);
-                                    return;
+                        },
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        { testId: 'menu.scene.loadStage' }
+                    );
+                    slideRow(
+                        inner,
+                        'lucide:box',
+                        t('scene.loadProp'),
+                        true,
+                        () => {
+                            (async () => {
+                                try {
+                                    const { getBrowseDir } = await import('../core/utils');
+                                    const browseDir = getBrowseDir('prop');
+                                    if (!browseDir) {
+                                        setStatus(t('scene.statusNoPropLib'), false);
+                                        return;
+                                    }
+                                    const { buildLevel } = await import('./library-core');
+                                    const sm = getSceneMenu();
+                                    if (!sm) {
+                                        return;
+                                    }
+                                    const level = buildLevel(
+                                        browseDir,
+                                        t('scene.propLibrary'),
+                                        (m) => m.format === 'pmx',
+                                        sm
+                                    );
+                                    sm.push(level);
+                                } catch (err) {
+                                    setStatus(t('scene.statusOpenPropLibFailed'), false);
+                                    console.error('Prop library error:', err);
                                 }
-                                const { buildLevel } = await import('./library-core');
-                                const sm = getSceneMenu();
-                                if (!sm) {
-                                    return;
-                                }
-                                const level = buildLevel(
-                                    browseDir,
-                                    t('scene.propLibrary'),
-                                    (m) => m.format === 'pmx',
-                                    sm
-                                );
-                                sm.push(level);
-                            } catch (err) {
-                                setStatus(t('scene.statusOpenPropLibFailed'), false);
-                                console.error('Prop library error:', err);
-                            }
-                        })();
-                    });
+                            })();
+                        },
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        { testId: 'menu.scene.loadProp' }
+                    );
                 });
             },
         },

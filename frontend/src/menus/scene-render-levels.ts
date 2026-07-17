@@ -225,7 +225,8 @@ function _renderAntiAliasingControl(container: HTMLElement): void {
                 const s = getRenderState();
                 return s.msaaSamples > 1 ? `${s.msaaSamples}x` : s.fxaaEnabled ? 'fxaa' : 'off';
             },
-        }
+        },
+        'postprocess:optical:aa'
     );
 }
 

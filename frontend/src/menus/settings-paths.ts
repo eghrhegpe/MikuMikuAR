@@ -11,6 +11,7 @@ import {
     SetDownloadAutoImport,
     SelectDir,
     GetCacheStats,
+    OpenCacheDir,
 } from '../core/wails-bindings';
 import {
     setStatus,
@@ -471,6 +472,18 @@ function buildPathsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                     // 缓存清理按钮
                     slideRow(
                         inner,
+                        'lucide:folder-open',
+                        t('settings.about.maintenance.openExtract'),
+                        false,
+                        () => {
+                            OpenCacheDir('extracted').catch((err: unknown) => {
+                                const msg = typeof err === 'object' && err !== null && 'message' in err ? String((err as { message: unknown }).message) : String(err);
+                                setStatus(`✗ ${msg}`, false);
+                            });
+                        }
+                    );
+                    slideRow(
+                        inner,
                         'lucide:trash-2',
                         t('settings.about.maintenance.clearExtract'),
                         false,
@@ -481,6 +494,18 @@ function buildPathsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                                 icon: '',
                                 target: SETTINGS_ACTION.CLEAR_EXTRACT_CACHE,
                             })
+                    );
+                    slideRow(
+                        inner,
+                        'lucide:folder-open',
+                        t('settings.about.maintenance.openThumbnail'),
+                        false,
+                        () => {
+                            OpenCacheDir('thumbnails').catch((err: unknown) => {
+                                const msg = typeof err === 'object' && err !== null && 'message' in err ? String((err as { message: unknown }).message) : String(err);
+                                setStatus(`✗ ${msg}`, false);
+                            });
+                        }
                     );
                     slideRow(
                         inner,

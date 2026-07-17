@@ -102,7 +102,9 @@ function buildCameraSchema(): MenuNode[] {
                         (v) => {
                             setFov(v);
                             triggerAutoSave();
-                        }
+                        },
+                        undefined,
+                        'camera:main:fov'
                     );
                 });
             },
@@ -217,18 +219,29 @@ function buildCameraSchema(): MenuNode[] {
                             setStatus(t('motion.camVmdCleared'), true);
                         });
                     }
-                    slideRow(inner, 'lucide:upload', t('motion.loadCamVmd'), false, () => {
-                        setMotionBindingTargetId(null);
-                        const level = stackRegistry.buildLevel!(
-                            getBrowseDir('vmd'),
-                            t('motion.camVmdLabel'),
-                            (m) => m.format === 'vmd'
-                        );
-                        const menu = getMotionMenu();
-                        if (menu) {
-                            menu.push(level);
-                        }
-                    });
+                    slideRow(
+                        inner,
+                        'lucide:upload',
+                        t('motion.loadCamVmd'),
+                        false,
+                        () => {
+                            setMotionBindingTargetId(null);
+                            const level = stackRegistry.buildLevel!(
+                                getBrowseDir('vmd'),
+                                t('motion.camVmdLabel'),
+                                (m) => m.format === 'vmd'
+                            );
+                            const menu = getMotionMenu();
+                            if (menu) {
+                                menu.push(level);
+                            }
+                        },
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        { testId: 'menu.motion.loadCamVmd' }
+                    );
                 });
             },
         },

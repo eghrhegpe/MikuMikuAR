@@ -20,27 +20,27 @@ test.describe("Settings — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, ()
         // 使用 slide-title 类定位弹窗标题，避免匹配导航按钮的 nav-label
         await expect(page.locator('.slide-title').filter({ hasText: '设置' })).toBeVisible();
         // Settings folders
-        await expect(page.getByText("外观", { exact: true })).toBeVisible();
-        await expect(page.getByText("库设置", { exact: true })).toBeVisible();
-        await expect(page.getByText("性能", { exact: true })).toBeVisible();
-        await expect(page.getByText("渲染", { exact: true })).toBeVisible();
-        await expect(page.getByText("路径", { exact: true })).toBeVisible();
-        await expect(page.getByText("音频", { exact: true })).toBeVisible();
+        await expect(page.getByTestId("folder:settings:appearance")).toBeVisible();
+        await expect(page.getByTestId("folder:settings:library")).toBeVisible();
+        await expect(page.getByTestId("folder:settings:performance")).toBeVisible();
+        await expect(page.getByTestId("folder:settings:rendering")).toBeVisible();
+        await expect(page.getByTestId("folder:settings:paths")).toBeVisible();
+        await expect(page.getByTestId("folder:settings:audio")).toBeVisible();
     });
 
     test("设置面板: 快捷键区段可导航", async ({ vitePage: page }) => {
-        await expect(page.getByText("快捷键", { exact: true })).toBeVisible();
-        await page.getByText("快捷键", { exact: true }).click();
+        await expect(page.getByTestId("folder:settings:shortcuts")).toBeVisible();
+        await page.getByTestId("folder:settings:shortcuts").click();
         // Shortcuts list renders — at least one shortcut key should be visible
         // We just assert the breadcrumb or title changed
-        await expect(page.getByText("快捷键", { exact: true })).toBeVisible();
+        await expect(page.getByTestId("folder:settings:shortcuts")).toBeVisible();
     });
 
     test("设置面板: 外观区段显示渲染相关选项", async ({ vitePage: page }) => {
-        await page.getByText("外观", { exact: true }).click();
+        await page.getByTestId("folder:settings:appearance").click();
         // Appearance has color/theme options. Use exact match — the level also
         // renders a "恢复默认外观" button.
-        await expect(page.getByText("外观", { exact: true })).toBeVisible();
+        await expect(page.getByTestId("folder:settings:appearance")).toBeVisible();
     });
 
     test("设置面板: 关闭后重新打开", async ({ vitePage: page }) => {

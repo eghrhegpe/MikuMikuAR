@@ -17,12 +17,12 @@ test.describe("Shortcuts — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, (
     test("快捷键面板: 通过设置 → 快捷键导航可见", async ({ vitePage: page }) => {
         await page.click("#btnSettings");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
-        await page.getByText("快捷键", { exact: true }).click();
+        await page.getByTestId("folder:settings:shortcuts").click();
 
         // The shortcut list should display registered shortcuts
         // (at minimum the Ctrl+N nav shortcuts). Use exact match — the
         // shortcuts level also renders a "恢复默认快捷键" button.
-        await expect(page.getByText("快捷键", { exact: true })).toBeVisible();
+        await expect(page.getByTestId("folder:settings:shortcuts")).toBeVisible();
     });
 
     test("Ctrl+1 ~ 5 切换各导航菜单（已在 smoke 覆盖，这里验证无冲突）", async ({ vitePage: page }) => {

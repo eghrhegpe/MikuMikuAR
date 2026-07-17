@@ -18,11 +18,11 @@ test.describe("Library — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, () 
 
     test("模型库: 根级核心按钮渲染", async ({ vitePage: page }) => {
         // Root-level actions in the model library
-        await expect(page.getByText("加载模型")).toBeVisible();
-        await expect(page.getByText("导入文件")).toBeVisible();
-        await expect(page.getByText("重新扫描")).toBeVisible();
-        await expect(page.getByText("最近打开")).toBeVisible();
-        await expect(page.getByText("标签")).toBeVisible();
+        await expect(page.getByTestId("folder:models:browse")).toBeVisible();
+        await expect(page.getByTestId("action:models:import-file")).toBeVisible();
+        await expect(page.getByTestId("action:models:rescan")).toBeVisible();
+        await expect(page.getByTestId("folder:__recent__")).toBeVisible();
+        await expect(page.getByTestId("folder:__tags__")).toBeVisible();
     });
 
     test("模型库: 无配置时显示首次使用提示", async ({ vitePage: page }) => {
@@ -42,6 +42,6 @@ test.describe("Library — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, () 
         // Re-open
         await page.click("#btnMainAction");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
-        await expect(page.getByText("加载模型")).toBeVisible();
+        await expect(page.getByTestId("folder:models:browse")).toBeVisible();
     });
 });

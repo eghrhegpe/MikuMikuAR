@@ -65,7 +65,7 @@ class LoadManager {
         });
         this.queue = result.then(
             () => {},
-            () => {}
+            (err) => console.warn('[loadManager] 队列清理失败:', err)
         );
         return result;
     }

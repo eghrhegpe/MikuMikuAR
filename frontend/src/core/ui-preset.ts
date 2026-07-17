@@ -73,13 +73,17 @@ export function addClearRow(
     container: HTMLElement,
     hasValue: boolean,
     onClear: () => void,
-    label: string = 'Clear'
+    label: string = 'Clear',
+    testId?: string
 ): void {
     if (!hasValue) {
         return;
     }
     const clearRow = document.createElement('div');
     clearRow.style.cssText = 'display:flex;justify-content:flex-end;padding:0 14px 4px;';
+    if (testId) {
+        clearRow.setAttribute('data-testid', testId);
+    }
     const clearBtn = document.createElement('button');
     clearBtn.className = 'cs-btn cs-btn-sm';
     clearBtn.textContent = label;

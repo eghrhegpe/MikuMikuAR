@@ -8,10 +8,9 @@ import { ImportMeshAsync } from '@babylonjs/core/Loading/sceneLoader';
 import type { Scene } from '@babylonjs/core/scene';
 
 import { type ModelInstance } from '../core/config';
-import { encodeFileRef } from '../core/fileservice';
+import { readFileBytes } from '../core/wails-bindings';
 import { normPath, logWarn } from '../core/utils';
 
-// ============================================================
 // Skeleton retargeting
 // ============================================================
 
@@ -220,14 +219,18 @@ export async function loadOverlay(
         return { meshes: [], retargetOk: false };
     }
     // [doc:adr-057] meshFile 是相对模型目录的路径（可能含子目录）
-    // 先 normalize 反斜杠→正斜杠，再 base64url 编码为查询参数
     const normalizedMeshFile = normPath(meshFile);
-    const url = `http://127.0.0.1:${inst.port}/?f=${encodeFileRef(normalizedMeshFile)}`;
+    const fullPath = inst.modelDir + '/' + normalizedMeshFile;
     console.info(`[outfit-overlay] Loading FBX overlay: ${meshFile}`);
 
     let meshes: Mesh[] = [];
     try {
-        const result = await ImportMeshAsync(url, scene);
+        const fbxBytes = await readFileBytes(fullPath);
+        if (!fbxBytes) {
+            logWarn('outfit-overlay', 'Failed to read FBX file:', fullPath);
+            return { meshes: [], retargetOk: false };
+        }
+        const result = await (ImportMeshAsync as any)(fbxBytes, scene);
         meshes = result.meshes.filter((m): m is Mesh => m instanceof Mesh);
 
         if (meshes.length === 0) {

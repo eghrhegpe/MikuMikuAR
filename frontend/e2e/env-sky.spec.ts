@@ -19,16 +19,14 @@ test.describe("Environment — Sky Panel (vitePage, DOM-only)", { tag: ["@dom"] 
     });
 
     test("天空统一层级：模式控件 + 预设 + 折叠区段均渲染", async ({ vitePage: page }) => {
-        await expect(page.getByText("天空模式")).toBeVisible();
-        // Current sky mode (segmented control shows only the active value).
-        await expect(page.getByText("纯色", { exact: true })).toBeVisible();
-        // Environment presets (always visible).
-        await expect(page.getByText("黎明")).toBeVisible();
-        await expect(page.getByText("正午")).toBeVisible();
-        await expect(page.getByText("夜景")).toBeVisible();
-        // Collapsible sections (titles always visible, content hidden by default).
-        await expect(page.getByText("天空外观")).toBeVisible();
-        await expect(page.getByText("高级天空设置")).toBeVisible();
+        // 模式选择 modeSlider 行（稳定 id，env-feature-levels.ts:93）
+        await expect(page.getByTestId("env:sky:mode")).toBeVisible();
+        // 时光预设芯片（黎明/正午/夜景…）由 buildPresetChipGroup 渲染为纯文本标签，
+        // 非行级元素，无稳定 testId 源 → 回退 getByText（env-lighting.ts:101 TIME_OF_DAY_PRESETS）。
+        await expect(page.getByText("黎明", { exact: true })).toBeVisible();
+        await expect(page.getByText("夜景", { exact: true })).toBeVisible();
+        // 光照控制折叠区段（稳定 id，env-feature-levels.ts:175）
+        await expect(page.getByTestId("env:sky:light")).toBeVisible();
     });
 });
 
@@ -40,6 +38,7 @@ test.describe("Environment — Sky Panel (wailsPage, screenshot)", { tag: ["@web
         // (@webgl) handles it fine, so this assertion lives here.
         await openEnvPanel(page);
         await clickEnvSubLevel(page, "天空");
+        // 夜景预设芯片为纯文本标签（env-lighting.ts:127 label='夜景'），无 testId → getByText。
         await page.getByText("夜景", { exact: true }).click();
         await expect(page.locator("#sceneOverlay")).toHaveClass(/visible/);
     });

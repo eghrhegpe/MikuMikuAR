@@ -24,8 +24,8 @@ import {
 } from '@/core/config';
 import { getBaseName, swallowError, logWarn, isUnderRoot } from '@/core/utils';
 import { createDefaultFeetState } from '@/core/state';
-import { resolveFileUrl } from '@/core/fileservice';
-import { ReadFileBytes, ListDirRecursive } from '@/core/wails-bindings';
+import { resolveModelDir } from '@/core/fileservice';
+import { readFileBytes, ListDirRecursive } from '@/core/wails-bindings';
 import type { FileInfo } from '@/core/wails-bindings';
 import { t } from '@/core/i18n/t';
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
@@ -216,102 +216,16 @@ function getMimeType(name: string): string {
     return map[ext ?? ''] ?? 'application/octet-stream';
 }
 
-/** Wails v3 serializes Go []byte as base64 JSON; decode to real Uint8Array. */
-function decodeBase64(b64: string): Uint8Array {
-    const bin = atob(b64);
-    const bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    return bytes;
-}
-
 /** Collect texture files from model directory (recursive) for referenceFiles. */
 async function collectTextureFiles(modelDir: string): Promise<TextureFile[]> {
-    const files: TextureFile[] = [];
     try {
         const entries = await ListDirRecursive(modelDir);
-        if (!entries) return files;
-        for (const entry of entries) {
-            if (!TEXTURE_EXTS.test(entry.name)) continue;
-            const b64 = await ReadFileBytes(modelDir + '/' + entry.relativePath);
-            if (!b64) continue;
-            files.push({
-                relativePath: entry.relativePath,
-                mimeType: getMimeType(entry.name),
-                data: decodeBase64(b64).buffer as ArrayBuffer,
-            });
-        }
-    } catch (err) {
-        logWarn('model-loader', 'texture scan failed, falling back to HTTP:', err);
-    }
-    return files;
-}
-
-export async function loadPMXFile(
-    filePath: string,
-    asStage?: boolean,
-    skipAutoApply?: boolean,
-    libraryPath?: string,
-    innerPath?: string,
-    signal?: AbortSignal
-): Promise<string | null> {
-    if (!_scene || !_mmdRuntime) {
-        return null;
-    }
-    // 取消之前的加载，避免竞态覆盖
-    if (_loadAbortController) {
-        _loadAbortController.abort();
-    }
-    const abortCtrl = new AbortController();
-    _loadAbortController = abortCtrl;
-    // 合并外部 signal（调用方取消）与内部 abortCtrl.signal（自动取消前一个加载，ADR-096）
-    // 两者任一 abort 即生效；用 ?? 回退会忽略内部 abortCtrl，导致 ADR-096 机制失效
-    const effectiveSignal = signal ? AbortSignal.any([signal, abortCtrl.signal]) : abortCtrl.signal;
-
-    let loadedMeshes: Mesh[] = [];
-    let wasmModel: IMmdModel | null = null;
-    let registeredId: string | null = null;
-    try {
-        // Check if already loaded — switch focus via ModelManager
-        const existing = _modelManager?.findByFilePath(filePath);
-        if (existing) {
-            setFocusedModelId(existing.id);
-            _modelManager?.focus(existing.id, uiState.autoCenterModel);
-            setStatus(t('scene.loader.switched', { name: existing.name }), true);
-            return existing.id;
-        }
-
-        const { url, port, dir: modelDir } = await resolveFileUrl(filePath);
-        const fileName = getBaseName(filePath) || '';
-
-        setStatus(t('scene.loader.loading'), false);
-        dom.loadingEl.style.display = 'block';
-        dom.loadingText.textContent = t('scene.loader.loadingZero');
-
-        // [doc:adr-124] Phase 2: 递归收集模型目录下纹理 → referenceFiles 直传 babylon-mmd
-        const textureFiles = await collectTextureFiles(modelDir);
-
-        const pmxB64 = await ReadFileBytes(filePath);
-        if (!pmxB64 || effectiveSignal.aborted) {
-            return null;
-        }
-        const pmxBytes = decodeBase64(pmxB64);
-        const result = await (ImportMeshAsync as any)(pmxBytes, _scene, {
-            pluginExtension: '.pmx',
-            pluginOptions: {
-                mmdmodel: {
-                    referenceFiles: textureFiles as unknown as File[],
-                },
-            },
-            onProgress: (evt) => {
-                if (effectiveSignal.aborted) {
-                    return;
-                }
-                if (evt.lengthComputable) {
-                    const pct = Math.round((evt.loaded / evt.total) * 100);
-                    dom.loadingText.textContent = t('scene.loader.loadingProgress', { pct });
-                }
-            },
-        });
+        if (!entries) return [];
+        const textureEntries = entries.filter((e) => TEXTURE_EXTS.test(e.name));
+        // 并行读取所有纹理文件（I/O 密集，无竞态依赖）
+        const results = await Promise.all(
+            textureEntries.map(async (entry) => {
+                    const data = await readFileBytes(modelDir + '/' + entry.relativePath);
         if (effectiveSignal.aborted) {
             loadedMeshes = result.meshes.filter((m) => m instanceof Mesh) as Mesh[];
             loadedMeshes.forEach((m) => {
@@ -343,7 +257,6 @@ export async function loadPMXFile(
                 name: displayName,
                 filePath,
                 libraryPath,
-                port,
                 modelDir,
                 meshes,
                 rootMesh: meshes[0],
@@ -415,7 +328,6 @@ export async function loadPMXFile(
             name: displayName,
             filePath,
             libraryPath,
-            port,
             modelDir,
             meshes,
             rootMesh,
@@ -504,8 +416,6 @@ export async function loadPMXFile(
                 id,
                 name: displayName,
                 filePath,
-                port,
-                modelDir,
                 meshes: inst.meshes,
                 rootMesh,
                 position: [0, 0, 0],

@@ -50,8 +50,25 @@ export async function openEnvPanel(page: Page): Promise<void> {
 
 /** Navigate into a sub-level of the environment menu by clicking its folder row. */
 export async function clickEnvSubLevel(page: Page, label: string): Promise<void> {
-    // Environment sub-menus (天空, 照明, 地面, etc.) use text content in menu-item divs
-    await page.getByText(label, { exact: true }).click();
+    // Environment sub-menus (天空, 照明, 地面, etc.) emit a stable data-testid
+    // (= `folder:env:<slug>`) via the PopupRow rowKey contract.
+    const ENV_SUB_TESTID: Record<string, string> = {
+        天空: "folder:env:sky",
+        粒子: "folder:env:particle",
+        风: "folder:env:wind",
+        雾: "folder:env:fog",
+        阴影: "folder:env:shadow",
+        实验: "folder:env:experimental",
+        后处理: "folder:env:postprocess",
+        预设: "folder:env:presets",
+    };
+    const testId = ENV_SUB_TESTID[label];
+    if (testId) {
+        await page.getByTestId(testId).click();
+    } else {
+        // 未知标签回退到文本（保持稳定契约前兼容）
+        await page.getByText(label, { exact: true }).click();
+    }
 }
 
 /** Wait until the E2E scene hook is mounted (DEV only). */
@@ -66,8 +83,8 @@ export async function waitForSceneHook(page: Page): Promise<void> {
 export async function loadFirstModel(page: Page): Promise<void> {
     await page.click("#btnMainAction");
     await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
-    await page.waitForSelector("#sceneOverlay .slide-item", { timeout: 5000 });
-    await page.locator("#sceneOverlay .slide-item").first().click();
+    await page.waitForSelector('[data-testid^="model:"]', { timeout: 5000 });
+    await page.locator('[data-testid^="model:"]').first().click();
     await page.waitForFunction(() => (window as any).__scene?.meshCount > 10, { timeout: 20000 });
 }
 
@@ -75,7 +92,7 @@ export async function loadFirstModel(page: Page): Promise<void> {
 export async function loadModelByName(page: Page, name: string): Promise<void> {
     await page.click("#btnMainAction");
     await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
-    await page.locator("#sceneOverlay .slide-item", { hasText: name }).first().click();
+    await page.locator('[data-testid^="model:"]', { hasText: name }).first().click();
     await page.waitForFunction(() => (window as any).__scene?.meshCount > 10, { timeout: 20000 });
 }
 
