@@ -132,16 +132,22 @@ import { triggerAutoSaveImpl } from './scene-serialize';
 // 并跳过相机初始化，使 scene.ts 可零成本导入。生产路径（MODE !== 'test'）完全不变。
 const _isTestEnv = import.meta.env.MODE === 'test';
 
-export const engine = new Engine(dom.canvas, true, {
-    preserveDrawingBuffer: true,
-    stencil: true,
-    alpha: true,
-});
-// 扩展渲染组下限至 -2：天空盒(Group -2)先于体积云(Group -1)先于 Group 0（地面/角色）。
-// Babylon 默认 MIN_RENDERINGGROUPS=0 会跳过负数 group，导致负组 mesh 不渲染。
-RenderingManager.MIN_RENDERINGGROUPS = -2;
-export const scene = new Scene(engine);
-scene.clearColor = new Color4(0.12, 0.12, 0.16, 1.0);
+export let engine = new Engine(dom.canvas, true, {
+     preserveDrawingBuffer: true,
+     stencil: true,
+     alpha: true,
+ });
+ // 扩展渲染组下限至 -2：天空盒(Group -2)先于体积云(Group -1)先于 Group 0（地面/角色）。
+ // Babylon 默认 MIN_RENDERINGGROUPS=0 会跳过负数 group，导致负组 mesh 不渲染。
+ RenderingManager.MIN_RENDERINGGROUPS = -2;
+ export let scene = new Scene(engine);
+ scene.clearColor = new Color4(0.12, 0.12, 0.16, 1.0);
+
+ /** disposeScene() 已调用标志，防止重复释放。 */
+ let _sceneDisposed = false;
+
+ /** initScene() 是否已至少执行过一次。首次调用时跳过 scene/engine 重建。 */
+ let _sceneInitialized = false;
 
 /**
  * 统一应用帧率控制：垂直同步 + 帧率上限。
@@ -157,6 +163,36 @@ export function applyFrameControl(): void {
     }
     const limit = uiState.fpsLimit ?? 0;
     engine.maxFPS = limit > 0 ? limit : undefined;
+}
+
+/**
+ * 级联释放 Scene → Engine 及其所有子资源。
+ * - 同步操作，适合在 beforeunload / visibilitychange 中调用以释放 WebGL context。
+ * - 幂等：_sceneDisposed 标志防止重复释放。
+ * - 释放顺序：子系统 observer → Scene → Engine（WebGL context 最后释放）。
+ */
+export function disposeScene(): void {
+    if (_sceneDisposed) return;
+    _sceneDisposed = true;
+
+    // 1. 移除 scene.onDisposeObservable 订阅，避免 scene.dispose() 触发冗余回调
+    if (_sceneDisposeObserver) {
+        _sceneDisposeObserver.remove();
+        _sceneDisposeObserver = null;
+    }
+
+    // 2. 清理播放相关 observer
+    _disposePlaybackObservables?.();
+    _disposePlaybackObservables = null;
+
+    // 3. 释放渲染管线、环境更新、物理风系统
+    disposeRenderer();
+    disposeEnvUpdateObserver();
+    disposeWindPhysics();
+
+    // 4. Scene → Engine 级联释放（WebGL 上下文最终释放）
+    scene.dispose();
+    engine.dispose();
 }
 
 export let modelManager: ModelManager;
@@ -190,19 +226,32 @@ export { focusedMmdModel, focusedModel } from './manager/model-ops';
 
 // ======== Init Scene ========
 export async function initScene(): Promise<void> {
-    // 0. HMR 重入清理：拆除上一轮注册的 observer / 定时器 / 订阅，避免累积（ADR-106 D3 / Phase 3）
-    //    首次调用时各 stop* 内部有守卫（_observerHandle 为 null 即 no-op），安全。
-    _disposePlaybackObservables?.();
-    (await import('./motion/bone-override')).stopBoneOverride();
-    (await import('./motion/feet-adjustment')).stopFeetAdjustment();
-    (await import('./motion/footstep')).stopFootstep();
-    (await import('../core/audio-bus')).disposeAudioBus();
-    (await import('../core/reactivity')).unsubscribeAll();
-    (await import('./env/env-bridge')).cancelEnvPersistTimer();
-    (await import('./env/env-impl')).disposeEnvUpdateObserver();
-    (await import('./render/renderer')).disposeRenderer();
-    (await import('./env/env')).stopTimeOfDay();
-    disposeWindPhysics();
+    // 0. HMR 重入清理：释放上一轮 Scene/Engine 及其子资源，避免 WebGL context 泄漏（ADR-106 D3 / Phase 3）
+    //    disposeScene() 幂等处理；首次调用时 _sceneInitialized=false 跳过。
+    if (_sceneInitialized) {
+        disposeScene();
+        _sceneDisposed = false; // 重置标志，允许本轮重建
+
+        // 重建 Engine + Scene（HMR 重入时旧实例已被 disposeScene() 释放）
+        engine = new Engine(dom.canvas, true, {
+            preserveDrawingBuffer: true,
+            stencil: true,
+            alpha: true,
+        });
+        scene = new Scene(engine);
+        scene.clearColor = new Color4(0.12, 0.12, 0.16, 1.0);
+        // 重新初始化相机系统（新 scene 实例，需重新绑定 canvas）
+        initCameraSystem(scene, dom.canvas);
+
+        // 0b. 额外子模块清理（disposeScene() 未覆盖的 observer / 定时器 / 订阅）
+        (await import('./motion/bone-override')).stopBoneOverride();
+        (await import('./motion/feet-adjustment')).stopFeetAdjustment();
+        (await import('./motion/footstep')).stopFootstep();
+        (await import('../core/audio-bus')).disposeAudioBus();
+        (await import('../core/reactivity')).unsubscribeAll();
+        (await import('./env/env-bridge')).cancelEnvPersistTimer();
+        (await import('./env/env')).stopTimeOfDay();
+    }
 
     // 1. MMD 运行时初始化
     RegisterMmdModelLoaders();
@@ -319,25 +368,34 @@ export async function initScene(): Promise<void> {
         // 若未来修改任一实现、新增对模型的访问，必须先加 modelRegistry.get(id) 守卫。
         // WASM 图层混合器 teardown（observer + evaluator 清理）
         swallowError(
-            import('./motion/wasm-layers-blender').then(({ teardownWasmLayersBlender }) =>
-                teardownWasmLayersBlender(id)
-            )
+            import('./motion/wasm-layers-blender').then(({ teardownWasmLayersBlender }) => {
+                if (scene.isDisposed) {
+                    return;
+                }
+                teardownWasmLayersBlender(id);
+            })
         );
 
         // 解除此模型上的所有骨骼锚定道具
         swallowError(
-            import('./env/accessory').then(({ detachModelAccessories }) =>
-                detachModelAccessories(id)
-            )
+            import('./env/accessory').then(({ detachModelAccessories }) => {
+                if (scene.isDisposed) {
+                    return;
+                }
+                detachModelAccessories(id);
+            })
         );
 
         // ADR-084 P3b: 模型卸载时释放该模型的虚拟裙骨控制器，避免 dispose 泄漏。
         // 经动态 import（motion-cloth-levels 内部仍以 await import 加载 virtual-skirt），
         // 不破坏 ADR-081/084 的 virtual-skirt 非 eager 导入约束。
         swallowError(
-            import('../menus/motion-cloth-levels').then(({ disposeVirtualSkirtForModel }) =>
-                disposeVirtualSkirtForModel(id)
-            )
+            import('../menus/motion-cloth-levels').then(({ disposeVirtualSkirtForModel }) => {
+                if (scene.isDisposed) {
+                    return;
+                }
+                disposeVirtualSkirtForModel(id);
+            })
         );
     };
     setModelRegistry(modelManager.modelRegistry);
@@ -451,6 +509,9 @@ export async function initScene(): Promise<void> {
     // 必须在 focusModel 可能被调用之前完成；registry 内 setTargetModel/createModule 也有幂等兜底
     const { initMotionModules } = await import('./motion/motion-modules/registry');
     initMotionModules();
+
+    // 标记首次初始化完成，HMR 重入时触发 disposeScene() + 重建路径
+    _sceneInitialized = true;
 
     setTriggerAutoSave(triggerAutoSaveImpl);
 }

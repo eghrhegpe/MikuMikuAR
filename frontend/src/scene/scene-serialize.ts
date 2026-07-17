@@ -65,6 +65,7 @@ import {
     getActiveFormation,
     getActiveFormationSpacing,
     setModelFormation,
+    disposeScene,
 } from './scene';
 import { removeProp, loadProp, setPropTransform, setPropOrbit } from './env/props';
 import {
@@ -952,6 +953,8 @@ export async function saveSceneImmediate(suppressToast = false): Promise<void> {
 /** Clean up pending timers and save state. Must be called before window unload. */
 function cleanupAndFlushSave(): void {
     console.info('[auto-save] cleanupAndFlushSave() — visibilitychange/beforeunload triggered');
+    // Dispose Scene/Engine to release WebGL context (GPU memory / context leak prevention)
+    disposeScene();
     // Clear any pending debounced save — we're about to flush immediately
     _autoSaveDebounced.cancel();
     flushEnvState();

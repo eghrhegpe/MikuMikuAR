@@ -88,6 +88,7 @@ let _waterWaveSpeed = 1; // 当前波速，供每帧相位累加使用
 
 // === 每帧更新水面的 observer ===
 let _waterUpdateObserver: Observer<Scene> | null = null;
+let _waterScene: Scene | null = null;
 
 // === 平面反射（统一平面反射引擎，ADR-092）===
 // 水面用 screenSpace 模式：RenderTargetTexture + 镜像相机（_worldMatrix 镜像矩阵）+ ShaderMaterial 屏空采样。
@@ -707,6 +708,10 @@ function _rebuildWaterMaterial(scene: Scene, state: EnvState): void {
 }
 
 function _waterUpdateCallback(scene: Scene): void {
+    // 防御：disposeWater 后 observer 仍可能触发一帧（如 scene 已 dispose 但 observer 未摘除）
+    if (scene.isDisposed) {
+        return;
+    }
     if (!_envSys.water.material) {
         return;
     }
@@ -849,6 +854,7 @@ export function createWater(state: EnvState): void {
     _applyWaterLOD(scene);
 
     if (!_waterUpdateObserver) {
+        _waterScene = scene;
         _waterUpdateObserver = scene.onBeforeRenderObservable.add(() =>
             _waterUpdateCallback(scene)
         );
@@ -886,12 +892,13 @@ export function disposeWater(): void {
         _detailNormalTexture = null;
     }
     _detailNormalScene = null;
-    const scene = getScene();
     if (_waterUpdateObserver) {
-        if (scene) {
-            scene.onBeforeRenderObservable.remove(_waterUpdateObserver);
+        // 使用注册时捕获的 scene 引用摘除，避免 getScene() 在 scene 已 dispose 时返回 null 导致漏删
+        if (_waterScene) {
+            _waterScene.onBeforeRenderObservable.remove(_waterUpdateObserver);
         }
         _waterUpdateObserver = null;
+        _waterScene = null;
     }
     _underwaterActive = false;
     _underwaterSavedFog = null;
