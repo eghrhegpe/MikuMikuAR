@@ -213,8 +213,9 @@ function buildCameraSchema(): MenuNode[] {
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
                     if (vmdLoaded) {
-                        slideRow(inner, 'lucide:trash-2', t('motion.clearCamVmd'), false, () => {
+                        slideRow(inner, 'lucide:trash-2', t('motion.clearCamVmd'), false,                         () => {
                             clearCameraVmd();
+                            triggerAutoSave();
                             refreshCameraLevel();
                             setStatus(t('motion.camVmdCleared'), true);
                         });

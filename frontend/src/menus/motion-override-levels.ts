@@ -409,6 +409,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
                                     inst.boneOverrides = inst.boneOverrides.filter(
                                         (b) => b.boneName !== ov.boneName
                                     );
+                                    triggerAutoSave();
                                     setStatus(
                                         t('motion.boneOverride.removed', { bone: ov.boneName }),
                                         true
@@ -436,6 +437,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
                     clearBtn.addEventListener('click', () => {
                         clearAllOverrides();
                         inst.boneOverrides = [];
+                        triggerAutoSave();
                         setStatus(t('motion.boneOverride.allCleared'), true);
                         menu?.reRender();
                     });

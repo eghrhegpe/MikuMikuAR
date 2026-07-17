@@ -47,6 +47,7 @@ import {
     loadAndRetargetAnimation,
     playRetargetedAnimation,
 } from '../scene/motion/animation-retargeter';
+import { triggerAutoSave } from '../scene/scene';
 import { SelectImportFile } from '../core/wails-bindings';
 import {
     setProcMotionMode,
@@ -232,6 +233,7 @@ function buildActionBindingSchema(id: string): MenuNode[] {
                             }
                             updatePlaybackUI();
                             getMotionMenu()?.reRender();
+                            triggerAutoSave();
                             setStatus(t('motion.motionCleared'), true);
                         }
                     });
@@ -375,6 +377,7 @@ function buildLayerLevel(layerId: string, id: string): PopupLevel {
                                 false,
                                 () => {
                                     removeVmdLayer(layerId, id);
+                                    triggerAutoSave();
                                     getMotionMenu()?.pop();
                                     getMotionMenu()?.reRender();
                                 },
