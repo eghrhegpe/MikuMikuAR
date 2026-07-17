@@ -308,7 +308,7 @@ VMD 文件 → VmdLoader → MmdAnimation → createRuntimeAnimation → MmdCame
 
 ### 13. 目录结构
 
-> 更新于 2026-07-16（v1.3.1 发布线 + ADR-093 全量落地）
+> 更新于 2026-07-17（ADR-113~121 新增模块）
 
 ```
 MikuMikuAR/
@@ -394,13 +394,14 @@ MikuMikuAR/
         │   │   ├── perception-shared.ts     # 共享工具
         │   │   ├── feet-adjustment.ts       # 脚部地面跟随（ADR-085）
         │   │   ├── footstep.ts              # 脚步声触发（ADR-088）
-        │   │   ├── bone-override.ts         # 骨骼覆盖
+        │   │   ├── bone-override.ts         # 骨骼覆盖 → Motion Override（ADR-116）
         │   │   ├── vmd-layers.ts            # VMD 图层管理
         │   │   ├── wasm-layers-blender.ts   # WASM 图层混合器
         │   │   ├── wasm-layers-config.ts    # WASM 图层配置
         │   │   ├── vmd-loader.ts            # VMD 加载器
         │   │   ├── proc-motion-bridge.ts    # 程序化动作桥接
         │   │   ├── lipsync-bridge.ts        # LipSync 桥接
+        │   │   ├── animation-retargeter.ts  # 骨骼映射 + 动作重定向（ADR-108）
         │   │   └── playback.ts              # 播放控制
         │   ├── physics/              # 物理（WASM Bullet）
         │   │   ├── skirt-analyzer.ts  # 裙装分析器（ADR-084）
@@ -412,7 +413,8 @@ MikuMikuAR/
         │   │   ├── env-terrain.ts     # 地形（ADR-089 模式拆分）
         │   │   ├── env-texture.ts     # 纹理工厂（ADR-091）
         │   │   ├── env-water.ts       # 水面 + 平面反射（ADR-092）
-        │   │   ├── env-clouds.ts      # 云层
+        │   │   ├── env-clouds.ts      # 体积云（ADR-113 地平线延展 + 自适应步长 + 双瓣散射）
+        │   │   ├── env-ground.ts      # 地面 PBR 材质 + 程序化木纹 + 反射模糊 + 接触阴影（ADR-114）
         │   │   ├── env-particles.ts   # 粒子
         │   │   ├── env-lighting.ts    # 环境灯光
         │   │   ├── accessory.ts       # 配件
@@ -437,9 +439,9 @@ MikuMikuAR/
         │   │── model-material.ts     # 材质编辑器
         │   │── model-preset.ts       # 预设管理
         │   │
-        │   │── env-menu.ts           # 环境菜单总入口
+        │   ├── env-menu.ts           # 环境菜单总入口
         │   │── env-feature-levels.ts # 环境功能层级
-        │   │── env-preset-levels.ts  # 环境预设层级
+        │   │── env-preset-levels.ts  # 环境预设层级（ADR-120 分类化：天空/地面/水面/大气）
         │   │
         │   │── motion-popup.ts       # 动作菜单总入口
         │   │── motion-camera-levels.ts    # 相机控制
