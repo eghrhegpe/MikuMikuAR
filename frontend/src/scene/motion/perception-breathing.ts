@@ -7,14 +7,18 @@ import { BONE_UPPER_CANDIDATES, matchBone } from '../../motion-algos/proc-motion
 import type { MmdRuntimeBoneExtended } from '@/core/types';
 import { _q } from './perception-shared';
 import type { MmdModelLike } from './perception-shared';
+import { getPerceptionState } from './perception';
 
-// ── 呼吸参数 ──
-const BREATH_FREQ = 0.3; // Hz
-const BREATH_AMP = 0.02; // radians
+// ── 呼吸参数（默认值，实际从 perceptionState 读取） ──
+const DEFAULT_BREATH_FREQ = 0.3; // Hz
+const DEFAULT_BREATH_AMP = 0.02; // radians
 
 export function _applyBreathing(mmdModel: MmdModelLike, time: number): void {
-    const phase = time * BREATH_FREQ * 2 * Math.PI;
-    const breathOffset = BREATH_AMP * Math.sin(phase);
+    const s = getPerceptionState();
+    const freq = s.breathFrequency ?? DEFAULT_BREATH_FREQ;
+    const amp = s.breathAmplitude ?? DEFAULT_BREATH_AMP;
+    const phase = time * freq * 2 * Math.PI;
+    const breathOffset = amp * Math.sin(phase);
 
     const boneNames = mmdModel.runtimeBones.map((b: IMmdRuntimeBone) => b.name);
     const spineName = matchBone(boneNames, BONE_UPPER_CANDIDATES);

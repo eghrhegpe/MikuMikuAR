@@ -21,19 +21,20 @@ import {
     _writeMatToBuffer,
     _propagateChildrenWasm,
     _isWasmRuntime,
+    setGazeAngles,
 } from './perception-shared';
-import { _applyBreathing } from './perception-breathing';
-import { _applyBlinking } from './perception-blinking';
-import { _applyMicroExpression, _resetLastEmotionMorphName } from './perception-expression';
-import { _applyBalanceSway, _resetBalanceSwayState } from './perception-balance';
-import { clamp01, logWarn } from '@/core/utils';
-import { _applyLipSync } from './perception-lipsync';
 import {
     _applyGaze,
     _clampHeadGazeTarget,
     _clampEyeGazeTarget,
     applyGazeWasm,
 } from './perception-gaze';
+import { _applyBreathing } from './perception-breathing';
+import { _applyBlinking } from './perception-blinking';
+import { _applyMicroExpression, _resetLastEmotionMorphName } from './perception-expression';
+import { _applyBalanceSway, _resetBalanceSwayState } from './perception-balance';
+import { clamp01, logWarn } from '@/core/utils';
+import { _applyLipSync } from './perception-lipsync';
 
 // ── re-export（保持外部导入路径不变） ──
 export type { Emotion, PerceptionState, GazeConfig };
@@ -183,6 +184,17 @@ export function getPerceptionState(): PerceptionState {
 /** 设置感知状态（从存储恢复时使用） */
 export function setPerceptionState(s: Partial<PerceptionState>): void {
     perceptionState = { ...perceptionState, ...s };
+    // 检测角度参数变化，同步到 perception-shared（避免循环依赖）
+    if (
+        'headGazeMaxYaw' in s ||
+        'headGazeMaxPitch' in s ||
+        'eyeGazeMaxYaw' in s ||
+        'eyeGazeMaxPitch' in s ||
+        'eyeGazeSmooth' in s
+    ) {
+        _syncGazeAngles();
+    }
+    triggerAutoSave();
 }
 
 /** 设置呼吸开关 */
@@ -249,6 +261,72 @@ export function setLipSyncIntensity(v: number): void {
 export function setLipSyncMultiMorphEnabled(v: boolean): void {
     perceptionState = { ...perceptionState, lipSyncMultiMorphEnabled: v };
     triggerAutoSave();
+}
+
+// ── 可调参数 setter（[doc:adr-116] 感知层滑块功能） ──
+
+/** 设置呼吸频率（Hz，钳制 0.1–1.0） */
+export function setBreathFrequency(v: number): void {
+    perceptionState = { ...perceptionState, breathFrequency: Math.max(0.1, Math.min(1.0, v)) };
+    triggerAutoSave();
+}
+
+/** 设置呼吸幅度（弧度，钳制 0–0.05） */
+export function setBreathAmplitude(v: number): void {
+    perceptionState = { ...perceptionState, breathAmplitude: Math.max(0, Math.min(0.05, v)) };
+    triggerAutoSave();
+}
+
+/** 设置眨眼频率（Hz，钳制 0.05–0.5） */
+export function setBlinkFrequency(v: number): void {
+    perceptionState = { ...perceptionState, blinkFrequency: Math.max(0.05, Math.min(0.5, v)) };
+    triggerAutoSave();
+}
+
+/** 设置头部跟随最大偏航角（度，钳制 0–90） */
+export function setHeadGazeMaxYaw(v: number): void {
+    perceptionState = { ...perceptionState, headGazeMaxYaw: Math.max(0, Math.min(90, v)) };
+    _syncGazeAngles();
+    triggerAutoSave();
+}
+
+/** 设置头部跟随最大俯仰角（度，钳制 0–90） */
+export function setHeadGazeMaxPitch(v: number): void {
+    perceptionState = { ...perceptionState, headGazeMaxPitch: Math.max(0, Math.min(90, v)) };
+    _syncGazeAngles();
+    triggerAutoSave();
+}
+
+/** 设置眼部跟随最大偏航角（度，钳制 0–15） */
+export function setEyeGazeMaxYaw(v: number): void {
+    perceptionState = { ...perceptionState, eyeGazeMaxYaw: Math.max(0, Math.min(15, v)) };
+    _syncGazeAngles();
+    triggerAutoSave();
+}
+
+/** 设置眼部跟随最大俯仰角（度，钳制 0–15） */
+export function setEyeGazeMaxPitch(v: number): void {
+    perceptionState = { ...perceptionState, eyeGazeMaxPitch: Math.max(0, Math.min(15, v)) };
+    _syncGazeAngles();
+    triggerAutoSave();
+}
+
+/** 设置眼部跟随平滑度（0–1） */
+export function setEyeGazeSmooth(v: number): void {
+    perceptionState = { ...perceptionState, eyeGazeSmooth: Math.max(0, Math.min(1, v)) };
+    _syncGazeAngles();
+    triggerAutoSave();
+}
+
+/** 同步角度到 perception-shared 模块（避免循环依赖） */
+function _syncGazeAngles(): void {
+    setGazeAngles(
+        perceptionState.headGazeMaxYaw,
+        perceptionState.headGazeMaxPitch,
+        perceptionState.eyeGazeMaxYaw,
+        perceptionState.eyeGazeMaxPitch,
+        perceptionState.eyeGazeSmooth
+    );
 }
 
 // ══════════════════════════════════════════════════════════════

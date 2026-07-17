@@ -8,11 +8,10 @@ import { _v3, _m, _q, _writeMatToBuffer, _propagateChildrenWasm } from './percep
 import {
     _clampHeadGazeTarget,
     _clampGazeTargetInParentFrame,
-    EYE_GAZE_MAX_YAW,
-    EYE_GAZE_MAX_PITCH,
+    getEyeGazeMaxYaw,
+    getEyeGazeMaxPitch,
+    getEyeGazeSmooth,
 } from './perception-gaze';
-
-const EYE_SMOOTH = 0.35;
 
 /** WASM 模式：头部跟随 */
 export function _applyHeadGazeWasm(headRuntime: IMmdRuntimeBone, gazeTarget: Vector3): void {
@@ -91,10 +90,10 @@ export function _applyEyeGazeWasm(eyeRuntimes: IMmdRuntimeBone[], gazeTarget: Ve
             curEyeQ,
             targetWorldQ,
             parentWorldQ,
-            EYE_GAZE_MAX_YAW,
-            EYE_GAZE_MAX_PITCH
+            getEyeGazeMaxYaw(),
+            getEyeGazeMaxPitch()
         );
-        const newEyeQ = _q().copyFrom(Quaternion.Slerp(curEyeQ, clampedTargetQ, EYE_SMOOTH));
+        const newEyeQ = _q().copyFrom(Quaternion.Slerp(curEyeQ, clampedTargetQ, getEyeGazeSmooth()));
         const newEyeMat = _m().copyFrom(Matrix.Compose(Vector3.One(), newEyeQ, eyePos));
 
         _writeMatToBuffer(eyeBuf, newEyeMat);

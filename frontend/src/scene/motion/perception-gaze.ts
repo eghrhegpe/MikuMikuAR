@@ -8,21 +8,33 @@ import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 
 import { isARActive } from '../ar/ar-camera';
 import type { MeshMetadata, GazeConfig, MmdModelLike } from './perception-shared';
-import { _v3, _q, _isWasmRuntime } from './perception-shared';
+import {
+    _v3,
+    _q,
+    _isWasmRuntime,
+    getHeadGazeMaxYaw,
+    getHeadGazeMaxPitch,
+    getEyeGazeMaxYaw,
+    getEyeGazeMaxPitch,
+    getEyeGazeSmooth,
+} from './perception-shared';
+
+// Re-export getter functions for JS/WASM sub-modules (avoid circular dependency)
+export { getEyeGazeMaxYaw, getEyeGazeMaxPitch, getEyeGazeSmooth };
 import { _applyHeadGazeWasm, _applyEyeGazeWasm } from './perception-gaze-wasm';
 import { _applyHeadGazeJS, _applyEyeGazeJS } from './perception-gaze-js';
 
-// ── 眼球追踪平滑系数（0=完全平滑，1=无平滑） ──
-export const EYE_SMOOTH = 0.35;
+// ── 眼球追踪平滑系数（默认值，实际从 perception-shared 动态读取） ──
+const DEFAULT_EYE_SMOOTH = 0.35;
 
 // ── AR 模式视线距离（米） ──
 const AR_GAZE_DISTANCE = 1.5;
 
-// ── 头部/眼球跟随角度限位 ──
-const HEAD_GAZE_MAX_YAW = (75 * Math.PI) / 180;
-const HEAD_GAZE_MAX_PITCH = (35 * Math.PI) / 180;
-export const EYE_GAZE_MAX_YAW = (9 * Math.PI) / 180;
-export const EYE_GAZE_MAX_PITCH = (8 * Math.PI) / 180;
+// ── 头部/眼球跟随角度限位（默认值，实际从 perception-shared 动态读取） ──
+const DEFAULT_HEAD_GAZE_MAX_YAW = (75 * Math.PI) / 180;
+const DEFAULT_HEAD_GAZE_MAX_PITCH = (35 * Math.PI) / 180;
+const DEFAULT_EYE_GAZE_MAX_YAW = (9 * Math.PI) / 180;
+const DEFAULT_EYE_GAZE_MAX_PITCH = (8 * Math.PI) / 180;
 
 /**
  * 将"转向相机的目标世界旋转"钳制在相对父骨骼坐标系的 yaw/pitch 锥形内。
@@ -75,8 +87,8 @@ export function _clampHeadGazeTarget(
         oldHeadRotQ,
         targetWorldQ,
         parentWorldQ,
-        HEAD_GAZE_MAX_YAW,
-        HEAD_GAZE_MAX_PITCH
+        getHeadGazeMaxYaw(),
+        getHeadGazeMaxPitch()
     );
 }
 
@@ -86,7 +98,7 @@ export function _clampEyeGazeTarget(
     targetWorldQ: Quaternion,
     parentWorldQ: Quaternion
 ): Quaternion {
-    return _clampImpl(oldEyeRotQ, targetWorldQ, parentWorldQ, EYE_GAZE_MAX_YAW, EYE_GAZE_MAX_PITCH);
+    return _clampImpl(oldEyeRotQ, targetWorldQ, parentWorldQ, getEyeGazeMaxYaw(), getEyeGazeMaxPitch());
 }
 
 /** 统一调度入口（perception.ts observer 调用） */
