@@ -87,6 +87,8 @@ async function rebuildAll(): Promise<void> {
     const { VirtualSkirtController } = await import('../scene/physics/virtual-skirt');
 
     let injected = 0;
+    let failed = 0;
+    let firstError: unknown = null;
     for (const [id, inst] of modelManager.modelRegistry) {
         if (inst.kind !== 'actor' || !inst.mmdModel) {
             continue;
@@ -98,13 +100,27 @@ async function rebuildAll(): Promise<void> {
                 injected++;
             }
         } catch (e) {
+            failed++;
+            if (!firstError) firstError = e;
             console.warn(`虚拟裙骨构建失败 [${id}]:`, e);
             logWarn('virtual-skirt', `build failed for ${id}`, e);
         }
     }
 
-    if (injected > 0) {
+    if (injected > 0 && failed === 0) {
         setStatus(t('cloth.applied', { n: injected }), true);
+    } else if (injected > 0 && failed > 0) {
+        setStatus(
+            t('cloth.applied', { n: injected }) +
+                ' · ' +
+                t('cloth.buildFailed', { err: firstError instanceof Error ? firstError.message : String(firstError) }),
+            false
+        );
+    } else if (failed > 0) {
+        setStatus(
+            t('cloth.buildFailed', { err: firstError instanceof Error ? firstError.message : String(firstError) }),
+            false
+        );
     } else if (skirtConfig.enabled) {
         setStatus(t('cloth.skippedAll'), false);
     }
