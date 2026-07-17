@@ -32,7 +32,6 @@ import {
 import { _applyBreathing } from './perception-breathing';
 import { _applyBlinking } from './perception-blinking';
 import { _applyMicroExpression, _resetLastEmotionMorphName } from './perception-expression';
-import { _applyBalanceSway, _resetBalanceSwayState } from './perception-balance';
 import { clamp01, logWarn } from '@/core/utils';
 import { _applyLipSync } from './perception-lipsync';
 
@@ -79,9 +78,6 @@ export function activatePerception(modelId?: string): void {
     // 注销旧 observer
     deactivatePerception();
 
-    // 重置重心微动增量状态（避免跨模型/重激活残留导致塌地）
-    _resetBalanceSwayState();
-
     perceptionModelId = targetId;
     const mmdModel = inst.mmdModel;
 
@@ -123,14 +119,7 @@ export function activatePerception(modelId?: string): void {
             logWarn('perception', 'micro-expression 异常:', (e as Error)?.message);
         }
 
-        // 4. 重心微动（无条件调用，内部处理关闭复位）
-        try {
-            _applyBalanceSway(mmdModel, time, perceptionState.balanceSwayEnabled);
-        } catch (e) {
-            logWarn('perception', 'balance 异常:', (e as Error)?.message);
-        }
-
-        // 5. Lip-sync（无条件调用，内部处理关闭复位）
+        // 4. Lip-sync（无条件调用，内部处理关闭复位）
         try {
             _applyLipSync(
                 mmdModel,
@@ -230,12 +219,6 @@ export function setMicroExpressionEnabled(v: boolean): void {
 /** 设置情绪类型 */
 export function setEmotion(v: Emotion): void {
     perceptionState = { ...perceptionState, emotion: v };
-    triggerAutoSave();
-}
-
-/** 设置重心微动开关 */
-export function setBalanceSwayEnabled(v: boolean): void {
-    perceptionState = { ...perceptionState, balanceSwayEnabled: v };
     triggerAutoSave();
 }
 
