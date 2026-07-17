@@ -47,7 +47,7 @@ import {
     loadAndRetargetAnimation,
     playRetargetedAnimation,
 } from '../scene/motion/animation-retargeter';
-import { triggerAutoSave } from '../scene/scene';
+import { triggerAutoSave, pushUndoSnapshot, offerSceneUndo } from '../scene/scene';
 import { SelectImportFile } from '../core/wails-bindings';
 import {
     setProcMotionMode,
@@ -221,6 +221,7 @@ function buildActionBindingSchema(id: string): MenuNode[] {
                     clearBtn.textContent = t('motion.clearVmd');
                     clearBtn.addEventListener('click', async () => {
                         if (inst && inst.mmdModel && mmdRuntime) {
+                            const snap = pushUndoSnapshot();
                             inst.mmdModel.setRuntimeAnimation(null);
                             inst.vmdData = null;
                             inst.vmdName = '';
@@ -235,6 +236,10 @@ function buildActionBindingSchema(id: string): MenuNode[] {
                             getMotionMenu()?.reRender();
                             triggerAutoSave();
                             setStatus(t('motion.motionCleared'), true);
+                            offerSceneUndo(t('motion.motionCleared'), snap, () => {
+                                getMotionMenu()?.reRender();
+                                setStatus(t('motion.undoApplied'), true);
+                            });
                         }
                     });
                     inner.appendChild(clearBtn);
@@ -376,10 +381,15 @@ function buildLayerLevel(layerId: string, id: string): PopupLevel {
                                 t('motion.deleteLayer'),
                                 false,
                                 () => {
+                                    const snap = pushUndoSnapshot();
                                     removeVmdLayer(layerId, id);
                                     triggerAutoSave();
                                     getMotionMenu()?.pop();
                                     getMotionMenu()?.reRender();
+                                    offerSceneUndo(t('motion.deleteLayer'), snap, () => {
+                                        getMotionMenu()?.reRender();
+                                        setStatus(t('motion.undoApplied'), true);
+                                    });
                                 },
                                 undefined,
                                 undefined,

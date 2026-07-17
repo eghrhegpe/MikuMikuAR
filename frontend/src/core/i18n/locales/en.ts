@@ -149,6 +149,7 @@ export const en: Record<string, string> = {
     'motion.focusModel': '🎯 Focus Model',
     'motion.clearVmd': '🗑 Clear VMD',
     'motion.motionCleared': '✓ Motion cleared',
+    'motion.undoApplied': '✓ Undone',
     'motion.music': 'Music',
     'motion.browseMusic': 'Browse Music',
     'motion.musicLibrary': 'Music Library',

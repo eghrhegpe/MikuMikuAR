@@ -282,6 +282,7 @@ export const ko: Record<string, string> = {
     'motion.focusModel': '🎯 모델 포커스',
     'motion.clearVmd': '🗑 VMD 지우기',
     'motion.motionCleared': '✓ 모션 지워짐',
+    'motion.undoApplied': '✓ 실행 취소됨',
     'motion.music': '음악',
     'motion.browseMusic': '음악 찾아보기',
     'motion.musicLibrary': '음악 라이브러리',
