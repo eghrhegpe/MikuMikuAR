@@ -2,6 +2,7 @@
 
 > **状态**: 规划
 > **日期**: 2026-07-17
+> **路径约定**: 本文档源码路径均省略 `frontend/src/` 前缀（与 ADR-120 / ADR-116 一致），例如 `core/types.ts` = `frontend/src/core/types.ts`，`core/i18n/locales/` = `frontend/src/core/i18n/locales/`。
 
 ## 背景与问题
 
@@ -22,7 +23,8 @@
 |------|----------------|
 | `ModelInstance` + Map 注册表（`core/types.ts`） | 天然支持「场景意图 → 遍历实例套用」 |
 | 共享 WASM 物理时间轴 | 全局播放时间一致，多角色天然同步无漂移 |
-| ADR-108 AnimationRetargeter（已落地） | 兼容性解析引擎：`activeMotion` → 按骨骼名候选表（全角+半角+英文变体，见工程铁律）重定向到各模型 |
+| ADR-108 AnimationRetargeter（已落地） | **可选重映射手段**：提供 `babylon-mmd` 的 `AnimationRetargeter` 工具类，用于 Mixamo/VRM 等**外部动画源**导入时做骨骼名重映射。`animation-retargeter.ts` 本身是 **UI 驱动的单次导入流程**（`getBoneMapPresets`→`playRetargetedAnimation`），**非**广播期「逐模型取兼容 VMD 子集」的引擎 |
+| `motion-algos/proc-motion-shared.ts:146` `matchBone` | **兼容性骨骼名匹配的真正来源**：`matchBone(actualBones, candidates)` 实现全角/半角/英文变体候选表匹配（工程铁律「MMD 骨骼 IK 全角」），`resolve()` 应复用之 |
 | ADR-116 动作覆盖模块（`ModelInstance.motionOverrideModules`，per-model） | 覆盖模块是**基础 VMD 之上的独立层**（管线第⑤层），全局意图只改「基础 VMD 来源」，与覆盖层正交，无冲突 |
 | `model-loader.ts:457` `pendingVmd` | 加载时套用 VMD 的现有钩子，本 ADR 复用其调用点 |
 
@@ -49,7 +51,14 @@
 
 ```ts
 // core/types.ts 或 scene/motion/motion-intent.ts
-export type MotionSource = 'vmd' | 'retargeted';
+/**
+ * 用户选择的「原始动作来源类型」——仅描述意图来源性质，不描述广播后的运行时产物。
+ * - 'vmd'      ：MMD 库动作（标准 VMD，直接按骨骼名匹配，走 matchBone）
+ * - 'retargeted'：外部动画经 ADR-108 AnimationRetargeter 重映射后的来源（Mixamo/VRM 等）
+ * 注：每模型 resolve 后得到的仍是 VMD / 基于 VMD 的 AnimationGroup，
+ *      故本字段是「来源性质」的可选元信息，非运行时类型分派。
+ */
+export type MotionSource = 'vmd' | 'retargeted'; // 可选：仅描述 activeMotion 来源性质
 
 /** 场景级动作意图（「场上在跳什么」） */
 export interface SceneMotionIntent {
@@ -63,7 +72,7 @@ export interface SceneMotionIntent {
 /** 每实例动作分配策略 */
 export interface ModelMotionAssignment {
   mode: 'inherit' | 'pinned';
-  pinned?: SceneMotionIntent;             // mode==='pinned' 时有效
+  pinned?: SceneMotionIntent;             // mode==='pinned' 时有效；须 structuredClone(activeMotion) 冻结快照，避免改全局污染已 pin 实例
   status: 'compatible' | 'incompatible' | 'idle' | 'overridden';
 }
 
@@ -112,7 +121,10 @@ export function broadcastMotion(): void; // 遍历 modelMap，按 assignment 解
        └─ resolve(activeMotion, inst.skeleton) → 回归全局
 ```
 
-**兼容性解析**复用 ADR-108：`resolve()` 内部走 `AnimationRetargeter` + `matchBone` 候选表（全角 `左足ＩＫ`/半角/英文变体），返回可套用的 `AnimationGroup` / VMD 子集。
+**兼容性解析（`resolve()` 为待新建函数，非复用既有引擎）**：
+- 骨骼名匹配复用 `motion-algos/proc-motion-shared.ts:146` 的 `matchBone(actualBones, candidates)`，其内部候选表覆盖全角 `左足ＩＫ`/半角/英文变体（工程铁律「MMD 骨骼 IK 全角」）。
+- ADR-108 的 `AnimationRetargeter`（`babylon-mmd` 工具类）仅作**可选重映射手段**：当 `activeMotion.source==='retargeted'`（外部 Mixamo/VRM 动画）时，对单目标模型做一次性骨骼重映射；常规库 VMD 广播**不依赖** retargeter。
+- `resolve()` 返回「该模型可套用的 VMD 子集 / 重定向后 AnimationGroup + 兼容骨骼清单」，并据此置 `status`。
 
 ---
 
@@ -122,7 +134,7 @@ export function broadcastMotion(): void; // 遍历 modelMap，按 assignment 解
 |------|------|------|
 | playback.ts / vmd-loader.ts / vmd-layers.ts | 仍读 `inst.vmd*` 缓存 | **不变**（仅写入方改变） |
 | ADR-116 动作覆盖模块（per-model） | 基础 VMD 之上的独立层 | **不变**；全局意图只改基础来源，覆盖模块照常叠加 |
-| ADR-108 retargeter | 兼容性解析引擎 | **复用**，不重复建设 |
+| ADR-108 retargeter | **可选重映射手段**（外部动画源），非广播期兼容性引擎 | **复用** `AnimationRetargeter` 工具类作可选重映射；常规库 VMD 广播走 `proc-motion-shared.matchBone`，不重复建设 |
 | `model-loader.ts:457` `pendingVmd` | 加载时套用钩子 | **吸收**为 `inherit` 解析逻辑，移除零散 pending 变量 |
 | scene-serialize.ts | 场景持久化 | **扩展**（见下） |
 | ADR-119 缩略图 cache key | 场景恢复传参一致性 | scene-restore 分支须一并传入 `motionAssignment`，对齐 `buildThumbnailKey` 契约 |
@@ -148,7 +160,7 @@ export function broadcastMotion(): void; // 遍历 modelMap，按 assignment 解
 | **P0** | `scene/motion/motion-intent.ts`（新增） | 定义 `SceneMotionIntent`/`ModelMotionAssignment` + 场景级 store `get/setActiveMotion`/`broadcastMotion`/`resolve` 骨架 | tsc 通过；`setActiveMotion` 触发 `broadcastMotion` 遍历 modelMap |
 | **P0** | `core/types.ts` | `ModelInstance` 增 `motionAssignment?` | 现有测试不破 |
 | **P1** | `menus/motion-popup.ts` | 菜单操作改为 `setActiveMotion`（场景级），不再写聚焦模型 `inst.vmdData` | 选动作后所有 `inherit` 兼容模型同步起舞 |
-| **P1** | `scene/manager/model-loader.ts:457` | `pendingVmd` 调用点改为 `inst.motionAssignment={mode:'inherit'}` + `resolve(activeMotion)` | 新模型加载即继承全局动作 |
+| **P1** | `scene/manager/model-loader.ts:456-458` + `core/state.ts:108`（`pendingVmd` 定义） | 将 `pendingVmd` 钩子改为 `inst.motionAssignment={mode:'inherit'}` + `resolve(activeMotion)`；**迁移所有下游引用点**：`scene.ts:489`（场景入口传参）、`__tests__/model-ops.test.ts:568`（`clears pendingVmd` 断言）等，否则移除会破测试与场景入口 | 新模型加载即继承全局动作；全仓无残留 `pendingVmd` 引用 |
 | **P1** | UI（动作菜单 + 模型右键） | 菜单标题语义改为「场上在跳什么」；模型右键 `pin/unpin`；`incompatible` 状态显式提示（「此角色不兼容当前动作」） | 不兼容模型不被静默无视；静态场景 `none` 正确保持 |
 | **P2** | `scene/scene-serialize.ts` | 写 `motion.activeMotion` + 每实例 `motionAssignment`；加载还原 + 重解析（回退旧缓存） | 保存→重载后全局动作与 per-model 覆盖一致还原 |
 | **P2** | i18n（5 语言） | 新增 `motion.intent.*` key（见 §i18n） | 日/英/韩/繁体/简体齐全 |
@@ -160,6 +172,9 @@ export function broadcastMotion(): void; // 遍历 modelMap，按 assignment 解
 | 级别 | 风险 | 缓解 |
 |------|------|------|
 | 🔴 P1 | 不兼容模型被全局动作「静默无视」→ 用户以为坏了 | `status='incompatible'` 显式标记 + UI 提示；**绝不覆盖**模型已有 `vmd*`（保留 idle 或原动作） |
+| 🟡 P3 | `broadcastMotion` 与 `model-loader` 加载是两条 `inst.vmd*` 写入路径，用户快速换/删模型时可能竞态 | 引入 generation counter / 加载锁（参考 AGENTS「审核思维准则·并发与边界」）：`resolve` 写入与加载写入互斥，过期广播（generation 不匹配）丢弃 |
+| 🟡 P3 | 场景级 store 为 `singleton let + 函数`，无 Observable；`motionAssignment.status` 变化时 UI 无法实时订阅刷新 `incompatible` 提示 | store 暴露轻量订阅（如 `onMotionChange(cb)` 薄 Observable / 事件）；`bind()` 驱动的 UI 据此刷新 `incompatible` 状态 |
+| 🟢 P4 | `pinned?: SceneMotionIntent` 与场景级 `activeMotion` 同型，未说明是快照还是共享引用 | 注明 `pinned` 须 `structuredClone(activeMotion)` 冻结，避免后续改 `activeMotion` 污染已 pin 实例 |
 | 🟠 P2 | 合奏/对舞场景被迫同舞 | `pinned` 覆盖层（必需项，非可选项）；右键 `pin` 独立于全局 |
 | 🟡 P3 | 持久化引入场景级 `activeMotion` 字段 | 仅扩展 `scene-serialize.ts`，**不入 `EnvState`**，规避 Go struct 同步 + wails 绑定重生成本 |
 | 🟢 P4 | scene-restore 各分支（normal/replace/scene-restore/prop）传参不一致导致回放错乱 | scene-restore 一并传入 `motionAssignment`，对齐 ADR-119 `buildThumbnailKey` 契约 |
@@ -173,20 +188,20 @@ export function broadcastMotion(): void; // 遍历 modelMap，按 assignment 解
 |------|---------|
 | `scene/motion/playback.ts` / `vmd-loader.ts` / `vmd-layers.ts` 内部 | 仍读 `inst.vmdData/vmdName/vmdPath/vmdLayers`，本 ADR 不改播放链路，只改写入方 |
 | ADR-116 动作覆盖模块 + `motion-modules/registry.ts` | 独立 per-model 层，全局意图只换基础 VMD 来源，覆盖模块照常叠加 |
-| `scene/motion/animation-retargeter.ts` | 兼容性解析引擎，直接复用 |
+| `scene/motion/animation-retargeter.ts` | **可选重映射手段**（外部动画源），非广播期兼容引擎；常规库 VMD 广播走 `proc-motion-shared.matchBone` |
 | `core/types.ts` 现有 `vmd*` 字段 | 作为已解析缓存保留，避免大范围重构 |
 
 ---
 
-## i18n 新增 key
+## i18n 新增 key（5 语言：en / ja / ko / zh-CN / zh-TW，对应 `core/i18n/locales/` 下 `en.ts`/`ja.ts`/`ko.ts`/`zh-CN.ts`/`zh-TW.ts`）
 
-| Key | zh | ja | en |
-|-----|----|----|----|
-| `motion.intent.title` | 场上动作 | 場上の動作 | Active Motion |
-| `motion.intent.none` | 静态（无动作） | 静止（動作なし） | Static (no motion) |
-| `motion.intent.incompatible` | 此角色不兼容当前动作 | このキャラは現在の動作非対応 | This model is incompatible with the active motion |
-| `motion.context.pinMotion` | 固定此动作 | この動作を固定 | Pin this motion |
-| `motion.context.unpin` | 跟随全局动作 | 全体動作に追従 | Follow global motion |
+| Key | zh-CN | ja | en | ko | zh-TW |
+|-----|--------|----|----|----|-------|
+| `motion.intent.title` | 场上动作 | 場上の動作 | Active Motion | 현재 동작 | 場上動作 |
+| `motion.intent.none` | 静态（无动作） | 静止（動作なし） | Static (no motion) | 정적 (동작 없음) | 靜態（無動作） |
+| `motion.intent.incompatible` | 此角色不兼容当前动作 | このキャラは現在の動作非対応 | This model is incompatible with the active motion | 이 모델은 현재 동작과 호환되지 않음 | 此角色不相容目前動作 |
+| `motion.context.pinMotion` | 固定此动作 | この動作を固定 | Pin this motion | 이 동작 고정 | 固定此動作 |
+| `motion.context.unpin` | 跟随全局动作 | 全体動作に追従 | Follow global motion | 전역 동작 따르기 | 跟隨全域動作 |
 
 ---
 
