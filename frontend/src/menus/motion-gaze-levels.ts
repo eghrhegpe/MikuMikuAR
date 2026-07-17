@@ -176,30 +176,31 @@ const gazeSchema: MenuNode[] = [
             },
         ],
     },
-    // ── 微表情（无参数，独立 toggle） ──
+    // ── 微表情 + 情绪（合并为一个 folder） ──
     {
         id: 'perception:microExpr',
-        kind: 'toggle',
+        kind: 'folder',
         label: 'motion.microExpression',
-        control: { bind: 'perception.microExpressionEnabled', onChange: withActivate },
         icon: 'lucide:smile',
-    },
-    // ── 情绪选择 ──
-    {
-        id: 'perception:emotion',
-        kind: 'modeRow',
-        label: 'motion.emotion',
-        control: {
-            bind: 'perception.emotion',
-            onChange: withActivate,
-            options: [
-                { value: 'neutral', label: 'motion.emotionNeutral' },
-                { value: 'happy', label: 'motion.emotionHappy' },
-                { value: 'sad', label: 'motion.emotionSad' },
-                { value: 'surprised', label: 'motion.emotionSurprised' },
-                { value: 'angry', label: 'motion.emotionAngry' },
-            ],
-        },
+        headerToggle: { bind: 'perception.microExpressionEnabled', onChange: withActivate },
+        children: [
+            {
+                id: 'perception:emotion',
+                kind: 'modeRow',
+                label: 'motion.emotion',
+                control: {
+                    bind: 'perception.emotion',
+                    onChange: withActivate,
+                    options: [
+                        { value: 'neutral', label: 'motion.emotionNeutral' },
+                        { value: 'happy', label: 'motion.emotionHappy' },
+                        { value: 'sad', label: 'motion.emotionSad' },
+                        { value: 'surprised', label: 'motion.emotionSurprised' },
+                        { value: 'angry', label: 'motion.emotionAngry' },
+                    ],
+                },
+            },
+        ],
     },
     // ── Lip-sync（已有 headerToggle 模式） ──
     {
