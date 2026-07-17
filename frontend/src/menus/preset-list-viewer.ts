@@ -42,6 +42,11 @@ export interface PresetListViewerConfig<T> {
     emptyText?: string;
     /** 特化操作插槽（如 autoApply toggle），注入到 label 后、删除按钮前 */
     extraActions?: (item: T) => HTMLElement | null;
+    /**
+     * 跳过 cardContainer 包裹（true 时直接渲染到 container 内）。
+     * 用于已在 card 内的嵌套场景（如分类预设列表）。
+     */
+    noCard?: boolean;
 }
 
 /** 渲染预设列表内容到现有 container 中。用于混合内容的 PopupLevel（场景预设） */
@@ -65,7 +70,7 @@ export async function presetListContent<T>(
         return;
     }
 
-    cardContainer(container, (c) => {
+    const renderItems = (c: HTMLElement) => {
         for (const item of items) {
             const iconName = config.getIcon?.(item) ?? 'lucide:bookmark';
 
@@ -136,7 +141,13 @@ export async function presetListContent<T>(
 
             c.appendChild(row);
         }
-    });
+    };
+
+    if (config.noCard) {
+        renderItems(container);
+    } else {
+        cardContainer(container, renderItems);
+    }
 }
 
 /** 构建完整 PopupLevel（适用于纯预设列表场景，如模型预设） */
