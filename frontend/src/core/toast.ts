@@ -5,6 +5,8 @@ export interface ToastAction {
     onClick: () => void;
 }
 
+export type ToastVariant = 'error' | 'info';
+
 const MAX_VISIBLE_TOASTS = 5;
 let _toastIdCounter = 0;
 const _activeToasts: Array<{
@@ -70,13 +72,15 @@ function buildToastElement(
     title: string,
     detail?: string,
     actions?: ToastAction[],
-    toastId?: number
+    toastId?: number,
+    variant: ToastVariant = 'error'
 ): HTMLElement {
     const toast = document.createElement('div');
+    const borderColor = variant === 'info' ? 'rgba(80,160,255,0.35)' : 'rgba(255,80,80,0.3)';
     toast.style.cssText = [
         'pointer-events:auto',
         'background:var(--bg-scene)',
-        'border:1px solid rgba(255,80,80,0.3);border-radius:8px',
+        `border:1px solid ${borderColor};border-radius:8px`,
         'padding:8px 14px;display:flex;align-items:flex-start;gap:10px',
         'font-size:var(--font-ui);box-shadow:0 2px 16px rgba(0,0,0,0.4)',
         'width:100%;backdrop-filter:blur(8px)',
@@ -157,11 +161,12 @@ function buildToastElement(
     return toast;
 }
 
-export function showErrorToast(
+export function showToast(
     title: string,
     detail?: string,
     actions?: ToastAction[],
-    duration = 8000
+    duration = 8000,
+    variant: ToastVariant = 'error'
 ): void {
     while (_activeToasts.length >= MAX_VISIBLE_TOASTS) {
         const oldest = _activeToasts[0];
@@ -173,7 +178,7 @@ export function showErrorToast(
     }
 
     const id = ++_toastIdCounter;
-    const el = buildToastElement(title, detail, actions, id);
+    const el = buildToastElement(title, detail, actions, id, variant);
     const container = getToastContainer();
     container.appendChild(el);
 
@@ -182,4 +187,22 @@ export function showErrorToast(
     }, duration);
 
     _activeToasts.push({ id, el, timer, fadeTimer: null });
+}
+
+export function showErrorToast(
+    title: string,
+    detail?: string,
+    actions?: ToastAction[],
+    duration = 8000
+): void {
+    showToast(title, detail, actions, duration, 'error');
+}
+
+export function showInfoToast(
+    title: string,
+    detail?: string,
+    actions?: ToastAction[],
+    duration = 8000
+): void {
+    showToast(title, detail, actions, duration, 'info');
 }

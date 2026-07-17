@@ -17,6 +17,7 @@ import {
     propRegistry,
     showErrorToast,
 } from '../core/config';
+import { showInfoToast } from '../core/toast';
 import { debounce, swallowError, logWarn } from '../core/utils';
 import {
     getCameraState,
@@ -915,6 +916,94 @@ export function triggerAutoSaveImpl(): void {
     }
     console.info('[auto-save] triggerAutoSaveImpl() called — debounce scheduled (500ms)');
     _autoSaveDebounced();
+}
+
+// ======== Undo Snapshot Stack (Memento) ========
+// 内存快照栈：破坏性操作前抓整场景序列化 JSON，撤销时 deserializeScene 回去。
+// 与 SaveLastScene 单文件覆盖解耦——自动保存逻辑无需改动。
+// 设计：每个撤销 toast 捕获自己压栈时的快照字符串（闭包持有），点击撤销恢复该特定快照，
+// 因此多个 toast 并存时各自恢复正确的历史态（非全局 LIFO 误恢复）。
+const UNDO_LIMIT = 5;
+const _undoStack: string[] = [];
+
+/** 破坏性操作前调用：抓当前整场景快照压栈（环形，上限 UNDO_LIMIT），返回快照字符串供撤销绑定。 */
+export function pushUndoSnapshot(): string | null {
+    try {
+        const snap = JSON.stringify(serializeScene());
+        _undoStack.push(snap);
+        while (_undoStack.length > UNDO_LIMIT) {
+            _undoStack.shift();
+        }
+        return snap;
+    } catch (e) {
+        console.warn('[undo] pushUndoSnapshot failed:', e);
+        return null;
+    }
+}
+
+export function canUndo(): boolean {
+    return _undoStack.length > 0;
+}
+
+/** 取消待执行的防抖自动保存（撤销前调用，避免覆盖刚恢复的状态）。 */
+function cancelPendingAutoSave(): void {
+    _autoSaveDebounced.cancel();
+}
+
+/**
+ * 恢复特定快照到整场景。返回是否成功恢复。
+ * 恢复期间抑制 auto-save，防止 deserializeScene 级联触发保存覆盖刚恢复的状态（与 tryRestoreLastScene 同款防御）。
+ */
+export async function restoreUndoSnapshot(snap: string): Promise<boolean> {
+    try {
+        cancelPendingAutoSave();
+        setSuppressAutoSave(true);
+        const raw = JSON.parse(snap);
+        const data = migrateScene(raw);
+        if (
+            !SUPPORTED_VERSIONS.includes(data.version as number) ||
+            !Array.isArray(data.models)
+        ) {
+            console.warn('[undo] snapshot unsupported/malformed — abort undo');
+            return false;
+        }
+        await deserializeScene(data as unknown as SceneFile, true);
+        setSuppressAutoSave(false);
+        await saveSceneImmediate(true);
+        return true;
+    } catch (e) {
+        console.warn('[undo] restoreUndoSnapshot failed:', e);
+        setSuppressAutoSave(false);
+        return false;
+    }
+}
+
+/** 破坏性操作后调用：弹出中性撤销 toast（复用 action-button toast，info 变体）。 */
+export function offerSceneUndo(
+    message: string,
+    snap: string | null,
+    onRestored: () => void
+): void {
+    if (!snap) {
+        return;
+    }
+    showInfoToast(
+        message,
+        undefined,
+        [
+            {
+                label: t('toast.undo'),
+                onClick: () => {
+                    void restoreUndoSnapshot(snap).then((ok) => {
+                        if (ok) {
+                            onRestored();
+                        }
+                    });
+                },
+            },
+        ],
+        8000
+    );
 }
 
 /** Save scene immediately (no debounce). Used in visibilitychange / beforeunload.

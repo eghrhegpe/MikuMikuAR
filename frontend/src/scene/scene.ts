@@ -557,6 +557,12 @@ export {
 } from '../core/config';
 export type { EnvState, ModelInstance, PropInstance } from '../core/config';
 export { resolveFileUrl, normPath } from '../core/fileservice';
+export {
+    pushUndoSnapshot,
+    restoreUndoSnapshot,
+    offerSceneUndo,
+    canUndo,
+} from './scene-serialize';
 export { applyEnvState } from './env/env';
 export * from './motion/proc-motion-bridge';
 export * from './motion/lipsync-bridge';
