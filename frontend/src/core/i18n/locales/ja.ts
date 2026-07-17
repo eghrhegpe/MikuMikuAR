@@ -172,6 +172,7 @@ export const ja: Record<string, string> = {
     'model-detail.morphTypeMaterial': 'マテリアル',
     'model-detail.morphTypeUnknown': 'タイプ {type}',
     'model-detail.noMorph': 'このモデルにはモーフデータがありません',
+    'model-detail.noMorphHint': 'このモデルはモーフ変形に対応していません',
     'model-detail.boneCount': '合計 {n} ボーン',
     'model-detail.hasPhysics': '物理剛体あり',
 
@@ -600,6 +601,7 @@ export const ja: Record<string, string> = {
     'scene.confirmUnloadStage': 'ステージ "{name}" をアンロードしますか？',
     'scene.unloaded': '✓ アンロードしました: {name}',
     'scene.noLoadedStages': '読み込んだステージはありません',
+    'scene.noLoadedStagesHint': '下のボタンをクリックしてステージを読み込む',
     'scene.loadStage': 'ステージを読み込み',
     'scene.statusNoModelLib': '✗ 設定でモデルライブラリのディレクトリを先に設定してください',
     'scene.statusOpenStageLibFailed': '✗ ステージライブラリを開けませんでした',

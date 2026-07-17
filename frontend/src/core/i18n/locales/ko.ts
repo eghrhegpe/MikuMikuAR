@@ -173,6 +173,7 @@ export const ko: Record<string, string> = {
     'model-detail.morphTypeMaterial': '재질',
     'model-detail.morphTypeUnknown': '유형 {type}',
     'model-detail.noMorph': '이 모델에는 모프 데이터가 없습니다',
+    'model-detail.noMorphHint': '이 모델은 모프 변형을 지원하지 않습니다',
     'model-detail.boneCount': '총 {n}개 뼈대',
     'model-detail.hasPhysics': '물리 강체 있음',
 
@@ -599,6 +600,7 @@ export const ko: Record<string, string> = {
     'scene.confirmUnloadStage': '무대 "{name}"을(를) 언로드하시겠습니까?',
     'scene.unloaded': '✓ 언로드됨: {name}',
     'scene.noLoadedStages': '로드된 무대 없음',
+    'scene.noLoadedStagesHint': '아래 버튼을 클릭하여 무대 로드',
     'scene.loadStage': '무대 로드',
     'scene.statusNoModelLib': '✗ 먼저 설정에서 모델 라이브러리 디렉터리를 구성하세요',
     'scene.statusOpenStageLibFailed': '✗ 무대 라이브러리를 열지 못했습니다',

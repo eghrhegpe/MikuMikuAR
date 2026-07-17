@@ -102,6 +102,7 @@ export const zhCN: Record<string, string> = {
     'model-detail.morphTypeMaterial': '材质',
     'model-detail.morphTypeUnknown': '类型{type}',
     'model-detail.noMorph': '此模型无表情数据',
+    'model-detail.noMorphHint': '此模型不支持形态变形',
     'model-detail.boneCount': '共 {n} 个骨骼',
     'model-detail.hasPhysics': '有物理刚体',
 
@@ -578,6 +579,7 @@ export const zhCN: Record<string, string> = {
     'scene.confirmUnloadStage': '确定卸载舞台「{name}」？',
     'scene.unloaded': '✓ 已卸载: {name}',
     'scene.noLoadedStages': '暂无已加载舞台',
+    'scene.noLoadedStagesHint': '点击下方按钮加载舞台',
     'scene.loadStage': '加载舞台',
     'scene.statusNoModelLib': '✗ 请先在设置中配置模型库目录',
     'scene.statusOpenStageLibFailed': '✗ 打开舞台库失败',

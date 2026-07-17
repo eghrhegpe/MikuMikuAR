@@ -102,6 +102,7 @@ export const en: Record<string, string> = {
     'model-detail.morphTypeMaterial': 'Material',
     'model-detail.morphTypeUnknown': 'Type {type}',
     'model-detail.noMorph': 'This model has no morph data',
+    'model-detail.noMorphHint': 'This model does not support morph deformation',
     'model-detail.boneCount': '{n} bones total',
     'model-detail.hasPhysics': 'Has physics rigidbody',
 
@@ -579,6 +580,7 @@ export const en: Record<string, string> = {
     'scene.confirmUnloadStage': 'Unload stage "{name}"?',
     'scene.unloaded': '✓ Unloaded: {name}',
     'scene.noLoadedStages': 'No stages loaded',
+    'scene.noLoadedStagesHint': 'Click the button below to load a stage',
     'scene.loadStage': 'Load Stage',
     'scene.statusNoModelLib': '✗ Configure the model library directory in Settings first',
     'scene.statusOpenStageLibFailed': '✗ Failed to open stage library',
