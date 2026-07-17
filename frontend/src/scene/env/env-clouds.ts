@@ -31,6 +31,8 @@ const CLOUD_DENSITY_THRESHOLD = 0.005;
 const CLOUD_DEBUG_Y_RANGE = 30;
 /** Debug visualization Y-step */
 const CLOUD_DEBUG_Y_STEP = 15;
+/** Blue-noise texture size (square). TS and shader share this constant via template injection. */
+const BLUE_NOISE_SIZE = 64;
 
 // ======== 3D Noise Texture (256³) ========
 let _noiseTex3D: RawTexture3D | null = null;
@@ -155,7 +157,7 @@ function _ensureBlueNoiseTexture(scene: Scene): Texture {
     if (_blueNoiseTex) {
         return _blueNoiseTex;
     }
-    const size = 64;
+    const size = BLUE_NOISE_SIZE;
     const data = _generateBlueNoise(size, 20);
     _blueNoiseTex = new RawTexture(
         data,
@@ -440,8 +442,8 @@ void main(){
 
     // Adaptive jitter with blue-noise for smoother dithering and less banding
     // Blue noise has better spatial distribution than white noise at equal sample count.
-    // NOTE: 除数 64 必须与 _ensureBlueNoiseTexture() 的 size 参数一致
-    float jitter = texture(blueNoiseTex, gl_FragCoord.xy / 64.0).r;
+    // NOTE: 除数 ${BLUE_NOISE_SIZE} 必须与 _ensureBlueNoiseTexture() 的 size 参数一致
+    float jitter = texture(blueNoiseTex, gl_FragCoord.xy / ${BLUE_NOISE_SIZE}.0).r;
     float firstDt = CLOUD_STEP_MIN + tEnter * CLOUD_STEP_GROWTH;
     float t = tEnter + jitter * firstDt;
 
@@ -516,6 +518,8 @@ export function createClouds(state: EnvState): void {
         _volCloudMat.setFloat('cloudGap', state.cloudGap ?? 0.5);
         _volCloudMat.setFloat('cloudErosion', state.cloudErosion ?? 0.4);
         _volCloudMat.setFloat('cloudWeatherStrength', state.cloudWeatherStrength ?? 0.6);
+        _volCloudMat.setFloat('cloudBacklight', state.cloudBacklight ?? 0.5);
+        _volCloudMat.setFloat('cloudPowder', state.cloudPowder ?? 0.8);
         _volCloudMat.setFloat('groundLevel', state.groundLevel);
 
         // Sync debug visualization
@@ -534,7 +538,8 @@ export function createClouds(state: EnvState): void {
         scene
     );
     // 在 group -1 最先渲染并写入深度，让 group 0 的角色/地面/水面自然覆盖它
-    // 球体 0.98x 略小于天空盒，避免天空盒（同尺寸）在深度测试中覆盖云层
+    // 球壳 0.98× 略小于天空盒球壳直径，确保 Group -2 天空盒（先渲染、不写深度）
+    // 已填入 framebuffer 的背景色，云层在 Group -1 正确 alpha 合成
     mesh.renderingGroupId = -1;
     mesh.isPickable = false;
     mesh.position.y = 0;
@@ -579,12 +584,12 @@ export function createClouds(state: EnvState): void {
                 'sceneFogColor',
             ],
             samplers: ['noiseTex', 'blueNoiseTex'],
+            needAlphaBlending: true,
         }
     );
 
     mat.backFaceCulling = false;
     mat.alpha = 1.0;
-    mat.needAlphaBlending = true; // fragment shader 用 discard + alpha 合成，需告知管线走透明路径
     // Bind 3D noise texture (must be after mat is created)
     const noiseTex = _ensureNoiseTexture(scene);
     mat.setTexture('noiseTex', noiseTex);
@@ -600,6 +605,8 @@ export function createClouds(state: EnvState): void {
     mat.setFloat('cloudGap', state.cloudGap ?? 0.5);
     mat.setFloat('cloudErosion', state.cloudErosion ?? 0.4);
     mat.setFloat('cloudWeatherStrength', state.cloudWeatherStrength ?? 0.6);
+    mat.setFloat('cloudBacklight', state.cloudBacklight ?? 0.5);
+    mat.setFloat('cloudPowder', state.cloudPowder ?? 0.8);
     mat.setFloat('groundLevel', state.groundLevel);
     mat.setVector3('sceneLightDir', new Vector3(-0.4, -1.0, -0.3));
     mat.setColor3('sceneLightColor', new Color3(1, 0.98, 0.92));

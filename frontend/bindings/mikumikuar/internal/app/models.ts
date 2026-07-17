@@ -269,6 +269,11 @@ export interface EnvState {
     "cloudThickness": number;
     "cloudVisibility": number;
     "cloudGap": number;
+    "cloudErosion": number;
+    "cloudWeatherStrength": number;
+    "cloudBacklight": number;
+    "cloudPowder": number;
+    "cloudQuality": string;
     "debugClouds": boolean;
     "fogEnabled": boolean;
     "fogMode": string;

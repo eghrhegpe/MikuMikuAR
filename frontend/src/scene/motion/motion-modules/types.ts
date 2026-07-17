@@ -10,6 +10,9 @@ export interface ModuleMeta {
     labelKey: string;
     icon?: string;
     advanced?: boolean;
+    /** 模块参数的默认值，注册时传入。getModuleState 新建状态时会种入 params，
+     *  确保 schema 渲染首次读取即有确定值（避免 undefined 流入 addSliderRow 崩溃）。 */
+    defaults?: Record<string, ParamValue>;
 }
 
 /**

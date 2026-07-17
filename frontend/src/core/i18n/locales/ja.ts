@@ -1012,6 +1012,9 @@ export const ja: Record<string, string> = {
     'env.cloudDetail': '雲のディテール',
     'env.cloudErosion': 'エッジ侵食',
     'env.cloudWeatherStrength': '天気マップ強さ',
+    'env.cloudLighting': '雲ライティング',
+    'env.cloudBacklight': '後方散乱',
+    'env.cloudPowder': 'パウダー効果',
     'env.scale': 'スケール',
     'env.thickness': '厚み',
     'env.visibility': '視程',
@@ -1314,6 +1317,8 @@ export const ja: Record<string, string> = {
     'motion.boneOverride.title': 'ボーンオーバーライド',
     'motion.boneOverride.activeOverrides': 'アクティブなオーバーライド',
     'motion.boneOverride.addOverride': 'オーバーライドを追加',
+    'motion.boneOverride.edit': '編集',
+    'motion.boneOverride.editLoaded': '✓ {bone} オーバーライドをフォームに読み込みました',
     'motion.boneOverride.allCleared': '✓ すべてのボーンオーバーライドをクリアしました',
     // [doc:adr-116] モーションオーバーライド モジュールUI
     'motion.override.title': 'モーションオーバーライド',

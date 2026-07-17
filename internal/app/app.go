@@ -511,6 +511,11 @@ type EnvState struct {
 	CloudThickness  float64 `json:"cloudThickness"`
 	CloudVisibility float64 `json:"cloudVisibility"`
 	CloudGap        float64 `json:"cloudGap"`
+	CloudErosion    float64 `json:"cloudErosion"`
+	CloudWeatherStrength float64 `json:"cloudWeatherStrength"`
+	CloudBacklight  float64 `json:"cloudBacklight"`
+	CloudPowder     float64 `json:"cloudPowder"`
+	CloudQuality    string  `json:"cloudQuality"`
 	DebugClouds     bool    `json:"debugClouds"`
 
 	FogEnabled bool       `json:"fogEnabled"`
