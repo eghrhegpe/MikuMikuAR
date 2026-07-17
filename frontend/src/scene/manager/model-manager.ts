@@ -928,7 +928,13 @@ export class ModelManager {
             const toDelete: string[] = [];
             for (const [id, entry] of this._boneOverlayMap) {
                 const inst = this.modelRegistry.get(id);
-                if (!inst || (!inst.showBoneLines && !inst.showBoneJoints) || !inst.mmdModel) {
+                // 模型已 dispose（mmdModel 非 null 但 mesh 已释放）时跳过更新并延迟清理，避免访问已销毁骨骼
+                if (
+                    !inst ||
+                    !inst.mmdModel ||
+                    inst.mmdModel.mesh?.isDisposed() ||
+                    (!inst.showBoneLines && !inst.showBoneJoints)
+                ) {
                     entry.lineSystem.dispose();
                     entry.overlay.dispose();
                     for (const j of entry.joints) {

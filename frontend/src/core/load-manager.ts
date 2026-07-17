@@ -146,7 +146,11 @@ class LoadManager {
     /** 模型加载成功后刷新依赖模型列表的菜单。 */
     private _refreshMenus(): void {
         import('../menus/motion-popup')
-            .then(({ refreshMotionRoot }) => {
+            .then(({ refreshMotionRoot, getMotionMenu }) => {
+                // 菜单已 dispose 则跳过，避免对销毁的 popup 执行刷新（refreshRoot 内部亦有 !menu 守卫，此处为显式生命周期守卫）
+                if (!getMotionMenu()) {
+                    return;
+                }
                 refreshMotionRoot();
             })
             .catch(() => {

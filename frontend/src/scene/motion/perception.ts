@@ -87,6 +87,15 @@ export function activatePerception(modelId?: string): void {
     // lipsync 在 micro 之后（避免 smile morph 覆写冲突）。
     // 单帧异常不中断下游（try/catch 包裹每步）。
     perceptionObserver = getScene().onBeforeRenderObservable.add(() => {
+        const scene = getScene();
+        if (!scene || scene.isDisposed) {
+            return;
+        }
+        // 模型 dispose 后 observer 仍可能触发一帧：mmdModel 已销毁则注销自身，避免访问已释放骨骼
+        if (!mmdModel || mmdModel.mesh?.isDisposed()) {
+            deactivatePerception();
+            return;
+        }
         const time = performance.now() / 1000;
 
         // 1. 呼吸
