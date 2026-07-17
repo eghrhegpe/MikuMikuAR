@@ -341,9 +341,9 @@ export const zhCN: Record<string, string> = {
     'param.sideShift': '左右偏移',
     'param.vertShift': '上下偏移',
     'param.depthShift': '前后偏移',
-    'param.detectRange': '检测范围',
-    'param.minDist': '最小距离',
-    'param.maxDist': '最大距离',
+    
+    
+    
     'param.mirrorOffset': '镜像偏移',
     'param.symmetry': '同步镜像',
     'param.pitch': '屈腕',
@@ -1433,4 +1433,13 @@ export const zhCN: Record<string, string> = {
     'common.apply': '应用',
     'settings.audio.offsetHint': '正=音频先播，负=音频后播（对所有音乐全局生效）',
     'props.loadingProgress': '加载道具 {pct}%',
+
+    // ===== [doc:adr-117] Go 端用户可见错误（i18n 化） =====
+    'goerr.software.notFound': '未找到 {name}，请在设置中配置路径',
+    'goerr.software.launchFailed': '启动 {name} 失败',
+    'goerr.software.androidNotSupported': '{name} 不可在 Android 上启动',
+    'goerr.config.readFailed': '读取配置失败',
+    'goerr.screenshot.dirNotSet': '尚未设置截图保存目录，请先截图一次',
+    'goerr.screenshot.dirCreateFailed': '创建截图目录失败',
+    'goerr.screenshot.androidNotSupported': 'Android 不支持打开截图目录',
 };

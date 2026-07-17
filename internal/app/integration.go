@@ -1,12 +1,13 @@
 package app
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	stdruntime "runtime"
 	"strings"
+
+	"mikumikuar/internal/i18nerr"
 )
 
 // ======== Blender Integration ========
@@ -42,7 +43,7 @@ func detectBlenderAt(lookPath func(name string) (string, error), candidates []st
 // OpenInBlender launches Blender and opens the specified model file.
 func (a *App) OpenInBlender(modelPath string) error {
 	if isAndroid {
-		return fmt.Errorf("Blender 不可在 Android 上启动")
+		return i18nerr.New("software.androidNotSupported", "Blender 不可在 Android 上启动", map[string]string{"name": "Blender"})
 	}
 	cfg, err := a.GetConfig()
 	if err != nil {
@@ -53,14 +54,14 @@ func (a *App) OpenInBlender(modelPath string) error {
 		blenderPath = detectBlender()
 	}
 	if blenderPath == "" {
-		return fmt.Errorf("未找到 Blender，请在设置中配置路径")
+		return i18nerr.New("software.notFound", "未找到 Blender，请在设置中配置路径", map[string]string{"name": "Blender"})
 	}
 
 	cmd := exec.Command(blenderPath, modelPath)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("启动 Blender 失败")
+		return i18nerr.New("software.launchFailed", "启动 Blender 失败", map[string]string{"name": "Blender"})
 	}
 
 	a.safeLogInfo("Blender started for %s", modelPath)
@@ -104,7 +105,7 @@ func (a *App) SetMMDPath(path string) error {
 // OpenInMMD launches MikuMikuDance and opens the specified model file.
 func (a *App) OpenInMMD(modelPath string) error {
 	if isAndroid {
-		return fmt.Errorf("MikuMikuDance 不可在 Android 上启动")
+		return i18nerr.New("software.androidNotSupported", "MikuMikuDance 不可在 Android 上启动", map[string]string{"name": "MikuMikuDance"})
 	}
 	cfg, err := a.GetConfig()
 	if err != nil {
@@ -115,14 +116,14 @@ func (a *App) OpenInMMD(modelPath string) error {
 		mmdPath = detectMMD()
 	}
 	if mmdPath == "" {
-		return fmt.Errorf("未找到 MikuMikuDance，请在设置中配置路径")
+		return i18nerr.New("software.notFound", "未找到 MikuMikuDance，请在设置中配置路径", map[string]string{"name": "MikuMikuDance"})
 	}
 
 	cmd := exec.Command(mmdPath, modelPath)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("启动 MMD 失败")
+		return i18nerr.New("software.launchFailed", "启动 MMD 失败", map[string]string{"name": "MikuMikuDance"})
 	}
 
 	a.safeLogInfo("MMD started for %s", modelPath)
@@ -227,7 +228,7 @@ func (a *App) ScanSoftwareDir() ([]SoftwareEntry, error) {
 // The args string is split into arguments and passed to the executable.
 func (a *App) LaunchSoftware(path string, args string) error {
 	if isAndroid {
-		return fmt.Errorf("Android 不支持直接启动外部可执行文件")
+		return i18nerr.New("software.androidNotSupported", "Android 不支持直接启动外部可执行文件")
 	}
 	var cmd *exec.Cmd
 	if args == "" {
@@ -239,7 +240,7 @@ func (a *App) LaunchSoftware(path string, args string) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("启动软件失败")
+		return i18nerr.New("software.launchFailed", "启动软件失败")
 	}
 	a.safeLogInfo("Launched software: %s", path)
 	return nil
@@ -250,7 +251,7 @@ func (a *App) LaunchSoftware(path string, args string) error {
 // Each {model} token is replaced individually so paths with spaces stay as a single argv.
 func (a *App) OpenWithSoftware(modelPath string, softwarePath string, args string) error {
 	if isAndroid {
-		return fmt.Errorf("Android 不支持直接启动外部可执行文件")
+		return i18nerr.New("software.androidNotSupported", "Android 不支持直接启动外部可执行文件")
 	}
 	var cmd *exec.Cmd
 	if args == "" {
@@ -265,7 +266,7 @@ func (a *App) OpenWithSoftware(modelPath string, softwarePath string, args strin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("启动软件失败")
+		return i18nerr.New("software.launchFailed", "启动软件失败")
 	}
 	a.safeLogInfo("Opened %s with %s", modelPath, softwarePath)
 	return nil
@@ -327,14 +328,14 @@ func (a *App) UpdateCustomSoftware(path string, name string, args string) error 
 func (a *App) OpenScreenshotDir() error {
 	cfg, err := a.GetConfig()
 	if err != nil {
-		return fmt.Errorf("读取配置失败")
+		return i18nerr.New("config.readFailed", "读取配置失败")
 	}
 	dir := cfg.UIState.ScreenshotDir
 	if dir == "" {
-		return fmt.Errorf("尚未设置截图保存目录，请先截图一次")
+		return i18nerr.New("screenshot.dirNotSet", "尚未设置截图保存目录，请先截图一次")
 	}
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("创建截图目录失败")
+		return i18nerr.New("screenshot.dirCreateFailed", "创建截图目录失败")
 	}
 	var cmd *exec.Cmd
 	switch stdruntime.GOOS {
@@ -343,7 +344,7 @@ func (a *App) OpenScreenshotDir() error {
 	case "darwin":
 		cmd = exec.Command("open", dir)
 	case "android":
-		return fmt.Errorf("截图目录: %s", dir)
+		return i18nerr.New("screenshot.androidNotSupported", "Android 不支持打开截图目录")
 	default:
 		cmd = exec.Command("xdg-open", dir)
 	}
