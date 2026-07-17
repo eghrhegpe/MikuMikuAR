@@ -19,6 +19,7 @@ import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
+import { presetListContent } from './preset-list-viewer';
 
 // ======== Render Presets ========
 
@@ -227,26 +228,33 @@ function buildPresetsSchema(): MenuNode[] {
                 );
             },
         },
-        // 用户预设芯片组
+        // 用户预设列表（slide-item 行，与 preset-list-viewer 视觉一致）
         {
             id: 'presets:user',
             kind: 'custom',
             visibleWhen: () => Object.keys(USER_FILTER_PRESETS).length > 0,
             renderCustom: (c) => {
-                const userChipGroup = document.createElement('div');
-                userChipGroup.className = 'preset-group';
-                userChipGroup.style.paddingBottom = '6px';
-                for (const [name] of Object.entries(USER_FILTER_PRESETS)) {
-                    const btn = document.createElement('button');
-                    btn.className = 'preset-chip';
-                    btn.textContent = name;
-                    btn.addEventListener('click', () => {
-                        setRenderState(USER_FILTER_PRESETS[name]);
-                        setStatus(t('scene.statusPresetApplied', { name }), true);
-                    });
-                    userChipGroup.appendChild(btn);
-                }
-                c.appendChild(userChipGroup);
+                const listHost = document.createElement('div');
+                listHost.style.paddingBottom = '6px';
+                c.appendChild(listHost);
+                const reRender = async () => {
+                    listHost.innerHTML = '';
+                    await presetListContent(
+                        listHost,
+                        {
+                            getLabel: ([name]) => name,
+                            getIcon: () => 'lucide:bookmark',
+                            loadItems: async () => Object.entries(USER_FILTER_PRESETS),
+                            onApply: async ([name, state]) => {
+                                setRenderState(state);
+                                setStatus(t('scene.statusPresetApplied', { name }), true);
+                            },
+                            emptyText: t('scene.noPresets'),
+                        },
+                        reRender
+                    );
+                };
+                reRender();
             },
         },
     ];

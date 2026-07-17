@@ -30,6 +30,7 @@ import {
 } from '../core/wails-bindings';
 
 import { getEnvMenu } from './env-menu';
+import { presetListContent } from './preset-list-viewer';
 
 // ======== 分类元数据 ========
 
@@ -54,71 +55,46 @@ function renderCategorizedPresets(
     listHost.style.paddingBottom = '6px';
     wrapper.appendChild(listHost);
 
-    const renderList = async () => {
+    const reRender = async () => {
         listHost.innerHTML = '';
-        let entries: { name: string; label: string; category: string; createdAt: number }[] = [];
-        try {
-            entries = await ListEnvPresets();
-        } catch (err) {
-            logWarn('env-preset', 'ListEnvPresets failed:', err);
-        }
-        if (!listHost.isConnected) {
-            return;
-        } // 菜单已重渲染/卸载，放弃本次异步结果
-        // 仅显示当前分类的预设
-        const filtered = entries
-            .filter((e) => (e.category || 'sky') === category)
-            .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
-        if (filtered.length === 0) {
-            const empty = document.createElement('div');
-            empty.textContent = t('env-preset.noCustom');
-            empty.className = 'weak-text';
-            listHost.appendChild(empty);
-        } else {
-            for (const e of filtered) {
-                const row = document.createElement('div');
-                row.className = 'cs-row';
-                const labelEl = document.createElement('button');
-                labelEl.className = 'preset-chip';
-                labelEl.textContent = e.label || e.name;
-                labelEl.style.flex = '1';
-                labelEl.addEventListener('click', async () => {
-                    const r = await tryCatchStatus(async () => {
-                        const json = await LoadEnvPreset(e.name);
-                        const preset = importCategorizedEnvPreset(json);
-                        if (!preset) {
-                            setStatus(t('env-preset.formatError'), false);
-                            return null;
-                        }
-                        applyEnvPresetByCategory(preset);
-                        getEnvMenu()?.reRender();
-                        return preset;
-                    }, t('env-preset.loadFailed'));
-                    if (r) {
-                        setStatus(t('env-preset.applied', { label: r.label }), true);
+        await presetListContent(
+            listHost,
+            {
+                getLabel: (e) => e.label || e.name,
+                getKey: (e) => e.name,
+                loadItems: async () => {
+                    let entries: { name: string; label: string; category: string; createdAt: number }[] = [];
+                    try {
+                        entries = await ListEnvPresets();
+                    } catch (err) {
+                        logWarn('env-preset', 'ListEnvPresets failed:', err);
                     }
-                });
-                row.appendChild(labelEl);
-
-                const delBtn = document.createElement('button');
-                delBtn.className = 'preset-chip';
-                delBtn.style.cssText = 'flex:0 0 auto;padding:0 8px;color:var(--text-dim);';
-                delBtn.textContent = '✕';
-                delBtn.title = t('env-preset.deletePreset');
-                delBtn.addEventListener('click', async () => {
-                    const r = await tryCatchStatus(async () => {
-                        await DeleteEnvPreset(e.name);
-                        return true;
-                    }, t('env-preset.deleteFailed'));
-                    if (r) {
-                        setStatus(t('env-preset.deleted', { label: e.label }), true);
-                        renderList();
+                    return entries
+                        .filter((e) => (e.category || 'sky') === category)
+                        .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+                },
+                onApply: async (e) => {
+                    const json = await LoadEnvPreset(e.name);
+                    const preset = importCategorizedEnvPreset(json);
+                    if (!preset) {
+                        setStatus(t('env-preset.formatError'), false);
+                        return;
                     }
-                });
-                row.appendChild(delBtn);
-                listHost.appendChild(row);
-            }
-        }
+                    applyEnvPresetByCategory(preset);
+                    getEnvMenu()?.reRender();
+                    setStatus(t('env-preset.applied', { label: preset.label }), true);
+                },
+                onDelete: async (e) => {
+                    await DeleteEnvPreset(e.name);
+                    setStatus(t('env-preset.deleted', { label: e.label }), true);
+                    reRender();
+                },
+                deleteConfirmText: (e) => `确定删除「${e.label || e.name}」？`,
+                emptyText: t('env-preset.noCustom'),
+                noCard: true,
+            },
+            reRender
+        );
     };
 
     const saveRow = document.createElement('div');
@@ -154,14 +130,14 @@ function renderCategorizedPresets(
         );
         if (r) {
             setStatus(t('env-preset.saved', { name: r }), true);
-            renderList();
+            reRender();
         }
     });
     saveRow.appendChild(saveBtn);
     wrapper.appendChild(saveRow);
 
     container.appendChild(wrapper);
-    renderList();
+    reRender();
 }
 
 // ======== Env Preset Config（场景氛围快速预设，跨类别） ========
