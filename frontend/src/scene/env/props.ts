@@ -18,12 +18,7 @@ import { t } from '@/core/i18n/t';
 import { getBaseName, logWarn, logError } from '@/core/utils';
 import { renderPropThumbnail } from '../manager/thumbnail-capture';
 import { thumbnailBaseKey } from '../manager/thumbnail-key';
-import {
-    attachGizmo,
-    detachGizmo,
-    isGizmoActive,
-    getGizmoTargetId,
-} from '../render/transform-gizmo';
+import { registerTransformAdapter } from '../transform/transform-adapter';
 
 // ======== 类型守卫 ========
 
@@ -356,39 +351,25 @@ export function getPropPositionMode(id: string): 'cartesian' | 'orbit' {
     return inst?.positionMode ?? 'cartesian';
 }
 
-// ======== Prop Gizmo (→ transform-gizmo.ts) ========
+// ======== Transform Adapter (ADR-126) ========
 
-/**
- * 为道具激活 3D 拖拽 Gizmo（PositionGizmo）。
- * 拖拽结束后自动通过 setPropTransform 持久化。
- */
-export function attachPropGizmo(id: string): boolean {
-    const inst = propRegistry.get(id);
-    if (!inst) {
-        return false;
-    }
-    const node = inst.container ?? inst.rootMesh;
-    if (!node) {
-        return false;
-    }
-
-    return attachGizmo({
-        id,
-        node,
-        types: ['position'],
-        onPositionDragEnd: () => {
-            // node 已在上方验证为 TransformNode，直接读取更新后的位置
-            const v = node.position;
-            setPropTransform(id, { position: [v.x, v.y, v.z] });
-        },
-    });
-}
-
-export {
-    detachGizmo as detachPropGizmo,
-    isGizmoActive as isPropGizmoActive,
-    getGizmoTargetId as getPropGizmoTargetId,
-};
+registerTransformAdapter({
+    kinds: ['prop'],
+    getNode: (id) => {
+        const p = propRegistry.get(id);
+        return p ? (p.container ?? p.rootMesh) : null;
+    },
+    gizmoTypes: () => ['position'],
+    onPositionDragEnd: (id, n) => {
+        const v = (n as unknown as { position: Vector3 }).position;
+        setPropTransform(id, { position: [v.x, v.y, v.z] });
+    },
+    capabilities: ['slider-scale', 'slider-opacity'],
+    getScale: (id) => propRegistry.get(id)?.scaling ?? 1,
+    setScale: (id, v) => setPropTransform(id, { scaling: v }),
+    getOpacity: (id) => (propRegistry.get(id)?.visible ? 1 : 0),
+    setOpacity: (id, v) => setPropTransform(id, { visible: v > 0 }),
+});
 
 // ======== 查询 ========
 

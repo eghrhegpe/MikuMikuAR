@@ -8,33 +8,17 @@ import { t } from '../core/i18n/t';
 import { slideRow, addSliderRow, addDangerRow, addVector3SliderRow } from '../core/ui-helpers';
 import { Quaternion } from '@babylonjs/core/Maths/math.vector';
 import {
-    setModelScaling,
-    setModelVisibility,
-    setModelOpacity,
     resetModelTransform,
     removeModel,
-    attachModelGizmo,
-    detachModelGizmo,
-    isModelGizmoActive,
-    getModelGizmoTargetId,
 } from '../scene/manager/model-ops';
 import {
-    setPropTransform,
     removeProp,
-    attachPropGizmo,
-    detachPropGizmo,
-    isPropGizmoActive,
-    getPropGizmoTargetId,
 } from '../scene/scene';
 import { attachPropToBone, detachPropFromBone } from '../scene/env/accessory';
 import {
-    attachLightGizmo,
-    detachLightGizmo,
-    isGizmoActive as isLightGizmoActive,
-    getGizmoTargetId as getLightGizmoTargetId,
-    setStageLightState,
     getStageLightState,
 } from '../scene/render/lighting';
+import { attachGizmoForKind, getTransformAdapter, detachGizmo, isGizmoActive, getGizmoTargetId } from '../scene/transform/transform-adapter';
 import { buildMatRootLevel } from './model-material';
 import type { SlideMenu } from './menu';
 import type { ResourceKind } from '../core/load-manager';
@@ -49,178 +33,63 @@ export interface ResourceHandle {
  *  [doc:adr-049] 位置/旋转由 3D Gizmo 实时拖拽取代，不再显示滑块。
  *  按 kind 派发到 model-ops（actor/stage）、prop-ops（prop）或 lighting（light）。 */
 export function buildTransformCard(container: HTMLElement, handle: ResourceHandle): void {
-    const { id, kind } = handle;
+	const { id, kind } = handle;
+	const adapter = getTransformAdapter(kind);
 
-    const render = (): void => {
-        container.innerHTML = '';
+	const render = (): void => {
+		container.innerHTML = '';
+		if (!adapter) return;
+		cardContainer(container, (c) => {
+			const gizmoActive = isGizmoActive() && getGizmoTargetId() === id;
+			slideRow(
+				c,
+				gizmoActive ? 'lucide:x' : 'lucide:move-3d',
+				t(gizmoActive ? 'scene.exitDrag' : 'scene.dragPosition'),
+				false,
+				() => {
+					if (gizmoActive) {
+						detachGizmo();
+						setStatus(t('scene.statusExitDrag'), true);
+					} else {
+						attachGizmoForKind(kind, id);
+						setStatus(t('scene.statusDragHint'), false);
+					}
+					render();
+				}
+			);
 
-        if (kind === 'actor' || kind === 'stage' || kind === 'prop' || kind === 'light') {
-            cardContainer(container, (c) => {
-                // — Gizmo 3D 拖拽（按 kind 派发） —
-                if (kind === 'actor' || kind === 'stage') {
-                    const gizmoActive = isModelGizmoActive() && getModelGizmoTargetId() === id;
-                    slideRow(
-                        c,
-                        gizmoActive ? 'lucide:x' : 'lucide:move-3d',
-                        t(gizmoActive ? 'scene.exitDrag' : 'scene.dragPosition'),
-                        false,
-                        () => {
-                            if (gizmoActive) {
-                                detachModelGizmo();
-                                setStatus(t('scene.statusExitDrag'), true);
-                            } else {
-                                attachModelGizmo(id);
-                                setStatus(t('scene.statusDragHint'), false);
-                            }
-                            render();
-                        }
-                    );
-                } else if (kind === 'prop') {
-                    const gizmoActive = isPropGizmoActive() && getPropGizmoTargetId() === id;
-                    slideRow(
-                        c,
-                        gizmoActive ? 'lucide:x' : 'lucide:move-3d',
-                        t(gizmoActive ? 'scene.exitDrag' : 'scene.dragPosition'),
-                        false,
-                        () => {
-                            if (gizmoActive) {
-                                detachPropGizmo();
-                                setStatus(t('scene.statusExitDrag'), true);
-                            } else {
-                                attachPropGizmo(id);
-                                setStatus(t('scene.statusDragHint'), false);
-                            }
-                            render();
-                        }
-                    );
-                } else if (kind === 'light') {
-                    const gizmoActive = isLightGizmoActive() && getLightGizmoTargetId() === id;
-                    slideRow(
-                        c,
-                        gizmoActive ? 'lucide:x' : 'lucide:move-3d',
-                        t(gizmoActive ? 'scene.exitDrag' : 'scene.dragPosition'),
-                        false,
-                        () => {
-                            if (gizmoActive) {
-                                detachLightGizmo();
-                                setStatus(t('scene.statusExitDrag'), true);
-                            } else {
-                                attachLightGizmo(id);
-                                setStatus(t('scene.statusDragHint'), false);
-                            }
-                            render();
-                        }
-                    );
-                }
+			if (adapter.capabilities.includes('slider-scale')) {
+				addSliderRow(
+					c,
+					'缩放倍率',
+					adapter.getScale?.(id) ?? 1,
+					0.1,
+					10,
+					0.1,
+					() => {},
+					'lucide:maximize',
+					(v) => adapter.setScale?.(id, v)
+				);
+			}
+			if (adapter.capabilities.includes('slider-opacity')) {
+				addSliderRow(
+					c,
+					'透明度',
+					Math.round((adapter.getOpacity?.(id) ?? 1) * 100),
+					0,
+					100,
+					1,
+					() => {},
+					'lucide:eye',
+					(v) => adapter.setOpacity?.(id, v / 100)
+				);
+			}
+		});
+	};
 
-                // — 缩放倍率（按 kind 派发） —
-                if (kind === 'actor' || kind === 'stage') {
-                    const inst = modelRegistry.get(id);
-                    if (inst) {
-                        addSliderRow(
-                            c,
-                            '缩放倍率',
-                            inst.scaling ?? 1,
-                            0.1,
-                            10,
-                            0.1,
-                            () => {},
-                            'lucide:maximize',
-                            (v) => setModelScaling(id, v)
-                        );
-                    }
-                } else if (kind === 'prop') {
-                    const p = propRegistry.get(id);
-                    if (p) {
-                        addSliderRow(
-                            c,
-                            '缩放倍率',
-                            p.scaling,
-                            0.1,
-                            10,
-                            0.1,
-                            () => {},
-                            'lucide:maximize',
-                            (v) => {
-                                p.scaling = v;
-                                setPropTransform(id, { scaling: v });
-                            }
-                        );
-                    }
-                } else if (kind === 'light') {
-                    const st = getStageLightState(id);
-                    addSliderRow(
-                        c,
-                        '缩放倍率',
-                        st.indicatorScale,
-                        0.1,
-                        10,
-                        0.1,
-                        () => {},
-                        'lucide:maximize',
-                        (v) => setStageLightState({ indicatorScale: v }, id)
-                    );
-                }
-
-                // — 透明度（按 kind 派发） —
-                if (kind === 'actor' || kind === 'stage') {
-                    const inst = modelRegistry.get(id);
-                    if (inst) {
-                        addSliderRow(
-                            c,
-                            '透明度',
-                            Math.round((inst.opacity ?? 1) * 100),
-                            0,
-                            100,
-                            1,
-                            () => {},
-                            'lucide:eye',
-                            (v) => {
-                                setModelOpacity(id, v / 100);
-                                if (v > 0) {
-                                    setModelVisibility(id, true);
-                                }
-                            }
-                        );
-                    }
-                } else if (kind === 'prop') {
-                    const p = propRegistry.get(id);
-                    if (p) {
-                        addSliderRow(
-                            c,
-                            '透明度',
-                            p.visible ? 100 : 0,
-                            0,
-                            100,
-                            100,
-                            () => {},
-                            'lucide:eye',
-                            (v) => {
-                                p.visible = v > 0;
-                                setPropTransform(id, { visible: v > 0 });
-                            }
-                        );
-                    }
-                } else if (kind === 'light') {
-                    const st = getStageLightState(id);
-                    addSliderRow(
-                        c,
-                        '透明度',
-                        Math.round(st.indicatorOpacity * 100),
-                        0,
-                        100,
-                        1,
-                        () => {},
-                        'lucide:eye',
-                        (v) => setStageLightState({ indicatorOpacity: v / 100 }, id)
-                    );
-                }
-            });
-        }
-    };
-
-    render();
+	render();
 }
+
 
 /** 材质区块：进入材质调节子层级 */
 export function buildMaterialCard(
