@@ -219,7 +219,7 @@ export async function prepareModelRestore(
 
 // ======== 模型行点击 ========
 
-function onModelRowClick(m: LibraryModel): void {
+function onModelRowClick(m: LibraryModel, jumpToDirModelId?: string): void {
     if (_isExtracting) {
         setStatus(t('library.extracting'), false);
         return;
@@ -228,7 +228,8 @@ function onModelRowClick(m: LibraryModel): void {
         setStatus(t('library.loadingModel'), false);
         return;
     }
-    const replaceId = modelReplaceTargetId;
+    // [doc:adr-131] 由 replaceModel 传参取代 mutation of currentLevel.outcome
+    const replaceId = jumpToDirModelId ?? modelReplaceTargetId;
     const isStage = isStageLike(m.type);
     const isActor = m.format === 'pmx' && !isStage;
     if (m.format === 'pmx') {
@@ -383,7 +384,8 @@ function replaceModel(m: LibraryModel): void {
     if (!modelReplaceTargetId && focusedModelId && isActor) {
         setModelReplaceTargetId(focusedModelId);
     }
-    onModelRowClick(m);
+    // [doc:adr-131] 传参取代 mutation of currentLevel.outcome
+    onModelRowClick(m, modelReplaceTargetId ?? focusedModelId ?? undefined);
 }
 
 // 网格模式点击动作（VMD）时触发：替换聚焦模型的当前基础动作。

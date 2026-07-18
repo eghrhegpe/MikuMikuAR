@@ -354,7 +354,8 @@ export const stackRegistry: {
               label: string,
               filter?: (m: import('./types').LibraryModel) => boolean,
               targetStack?: SlideMenu,
-              extraFolders?: { label: string; path: string }[]
+              extraFolders?: { label: string; path: string }[],
+              outcome?: import('./types').BrowseOutcome
           ) => import('./types').PopupLevel)
         | null;
 } = {
