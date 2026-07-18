@@ -115,10 +115,25 @@ export const en: Record<string, string> = {
     'motion.intent.title': 'Active Motion',
     'motion.intent.none': 'Static (no motion)',
     'motion.intent.incompatible': 'This model is incompatible with the active motion',
-    'motion.intent.noGlobalHint': 'Without a global motion, each model plays its own VMD independently',
+    'motion.intent.noGlobalHint':
+        'Without a global motion, each model plays its own VMD independently',
     'motion.context.pinMotion': 'Pin this motion',
     'motion.context.unpin': 'Follow global motion',
     'motion.changeMotion': 'Change Motion',
+    // [doc:adr-129] Scene-level motion menu: Card 1 current motion + playback status row
+    'motion.currentMotion': 'Current Motion',
+    'motion.browseMotionLibrary': 'Browse Motion Library',
+    'motion.playbackStatus': 'Playback Status',
+    'motion.statusPlaying': 'Playing',
+    'motion.statusPaused': 'Paused',
+    'motion.statusStatic': 'Static',
+    'motion.statusLoop': 'Loop: {state}',
+    'motion.followGlobal': 'Following global',
+    'motion.pinnedFmt': 'Pinned: {name}',
+    // [doc:adr-129] Card 3 scene tools grouped into 3 semantic groups
+    'motion.sceneTools.playbackSync': 'Playback & Sync',
+    'motion.sceneTools.characterEnv': 'Character & Environment',
+    'motion.sceneTools.systemImport': 'System & Import',
     'motion.motionLibrary': 'Motion Library',
     'motion.bindMotionTo': 'Bind Motion → {name}',
     'motion.none': 'None',
@@ -348,7 +363,7 @@ export const en: Record<string, string> = {
     'motion.override.history': 'History',
     'motion.override.module.bodyPosture': 'Body Posture',
     'motion.override.module.handSymmetry': 'Hand Symmetry',
-    
+
     'motion.override.module.swayMotion': 'Sway Motion',
     'motion.override.module.fingerPose': 'Finger Pose',
     'motion.override.module.ridingModel': 'Riding Model',
@@ -359,9 +374,7 @@ export const en: Record<string, string> = {
     'param.sideShift': 'Left-Right',
     'param.vertShift': 'Up-Down',
     'param.depthShift': 'Forward-Back',
-    
-    
-    
+
     'param.mirrorOffset': 'Mirror Offset',
     'param.symmetry': 'Symmetry',
     'param.pitch': 'Wrist Bend',
@@ -1505,12 +1518,15 @@ export const en: Record<string, string> = {
     'goerr.config.readFailed': 'Failed to read config.',
     'goerr.screenshot.dirNotSet': 'Screenshot directory is not set. Take a screenshot first.',
     'goerr.screenshot.dirCreateFailed': 'Failed to create screenshot directory.',
-    'goerr.screenshot.androidNotSupported': 'Opening the screenshot directory is not supported on Android.',
+    'goerr.screenshot.androidNotSupported':
+        'Opening the screenshot directory is not supported on Android.',
     'goerr.watch.unsupportedFormat': 'Unsupported file format: {ext}',
-    'goerr.watch.androidNotSupported': 'File system watching is not supported on Android. Please import files manually.',
+    'goerr.watch.androidNotSupported':
+        'File system watching is not supported on Android. Please import files manually.',
     'goerr.watch.dirInaccessible': 'The watch directory is not accessible.',
     'goerr.watch.notADirectory': 'Path is not a directory: {dir}',
     'goerr.watch.createWatcherFailed': 'Failed to create file watcher.',
     'goerr.watch.addWatchFailed': 'Failed to add directory to watcher.',
-    'goerr.zip.tooManyEntries': '{op}: the archive contains {count} files, exceeding the limit of {max}.',
+    'goerr.zip.tooManyEntries':
+        '{op}: the archive contains {count} files, exceeding the limit of {max}.',
 };

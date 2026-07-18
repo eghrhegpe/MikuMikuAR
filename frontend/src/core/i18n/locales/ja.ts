@@ -251,6 +251,20 @@ export const ja: Record<string, string> = {
     'motion.context.pinMotion': 'この動作を固定',
     'motion.context.unpin': '全体動作に追従',
     'motion.changeMotion': 'モーション変更',
+    // [doc:adr-129] シーンレベル動作メニュー：Card 1 現在動作 + 再生状態行
+    'motion.currentMotion': '現在の動作',
+    'motion.browseMotionLibrary': 'モーションライブラリを参照',
+    'motion.playbackStatus': '再生状態',
+    'motion.statusPlaying': '再生中',
+    'motion.statusPaused': '一時停止',
+    'motion.statusStatic': '静止',
+    'motion.statusLoop': 'ループ: {state}',
+    'motion.followGlobal': '全体追従',
+    'motion.pinnedFmt': '固定: {name}',
+    // [doc:adr-129] Card 3 シーンツールを意味別に 3 グループ化
+    'motion.sceneTools.playbackSync': '再生と同期',
+    'motion.sceneTools.characterEnv': 'キャラと環境',
+    'motion.sceneTools.systemImport': 'システムとインポート',
     'motion.motionLibrary': 'モーションライブラリ',
     'motion.bindMotionTo': 'モーション→ {name}',
     'motion.none': 'なし',
@@ -1384,7 +1398,7 @@ export const ja: Record<string, string> = {
     'motion.override.history': '履歴',
     'motion.override.module.bodyPosture': 'ボディポスチャー',
     'motion.override.module.handSymmetry': 'ハンドシンメトリー',
-    
+
     'motion.override.module.swayMotion': 'スウェイモーション',
     'motion.override.module.fingerPose': 'フィンガーポーズ',
     'motion.override.module.ridingModel': 'ライディングモデル',
@@ -1395,9 +1409,7 @@ export const ja: Record<string, string> = {
     'param.sideShift': '左右移動',
     'param.vertShift': '上下移動',
     'param.depthShift': '前後移動',
-    
-    
-    
+
     'param.mirrorOffset': 'ミラーオフセット',
     'param.symmetry': '同期ミラー',
     'param.pitch': '手首曲げ',
@@ -1513,14 +1525,17 @@ export const ja: Record<string, string> = {
     'goerr.software.launchFailed': '{name} の起動に失敗しました。',
     'goerr.software.androidNotSupported': '{name} は Android では起動できません。',
     'goerr.config.readFailed': '設定の読み込みに失敗しました。',
-    'goerr.screenshot.dirNotSet': 'スクリーンショット保存先が未設定です。まずスクリーンショットを撮影してください。',
+    'goerr.screenshot.dirNotSet':
+        'スクリーンショット保存先が未設定です。まずスクリーンショットを撮影してください。',
     'goerr.screenshot.dirCreateFailed': 'スクリーンショット保存先の作成に失敗しました。',
     'goerr.screenshot.androidNotSupported': 'Android ではスクリーンショット保存先を開けません。',
     'goerr.watch.unsupportedFormat': '未対応のファイル形式です: {ext}',
-    'goerr.watch.androidNotSupported': 'Android ではファイルシステム監視に対応していません。手動でファイルをインポートしてください。',
+    'goerr.watch.androidNotSupported':
+        'Android ではファイルシステム監視に対応していません。手動でファイルをインポートしてください。',
     'goerr.watch.dirInaccessible': '監視ディレクトリにアクセスできません。',
     'goerr.watch.notADirectory': 'パスがディレクトリではありません: {dir}',
     'goerr.watch.createWatcherFailed': 'ファイル監視の作成に失敗しました。',
     'goerr.watch.addWatchFailed': '監視ディレクトリの追加に失敗しました。',
-    'goerr.zip.tooManyEntries': '{op}: アーカイブ内のファイル数が {count} 件で、上限の {max} 件を超えています。',
+    'goerr.zip.tooManyEntries':
+        '{op}: アーカイブ内のファイル数が {count} 件で、上限の {max} 件を超えています。',
 };

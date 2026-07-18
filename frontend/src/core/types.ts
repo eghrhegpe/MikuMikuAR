@@ -110,8 +110,14 @@ export interface ModelMotionAssignment {
  * 待 ADR-110 上游 PR 合并后移除此本地 augmentation。
  */
 export type RuntimeModel = IMmdModel & {
-    setRuntimeAnimation(handle: Nullable<MmdRuntimeAnimationHandle>, updateMorphTarget?: boolean): void;
-    createRuntimeAnimation(animation: IMmdBindableModelAnimation, retargetingMap?: { [key: string]: string }): MmdRuntimeAnimationHandle;
+    setRuntimeAnimation(
+        handle: Nullable<MmdRuntimeAnimationHandle>,
+        updateMorphTarget?: boolean
+    ): void;
+    createRuntimeAnimation(
+        animation: IMmdBindableModelAnimation,
+        retargetingMap?: { [key: string]: string }
+    ): MmdRuntimeAnimationHandle;
     currentAnimation?: Nullable<IMmdRuntimeModelAnimation>;
 };
 
@@ -270,7 +276,16 @@ export type LibraryModel = {
 // ======== Popup/Menu Types ========
 
 export type PopupRow = {
-    kind: 'folder' | 'model' | 'action' | 'divider' | 'slider' | 'toggle' | 'modeSlider' | 'chips';
+    kind:
+        | 'folder'
+        | 'model'
+        | 'action'
+        | 'divider'
+        | 'slider'
+        | 'toggle'
+        | 'modeSlider'
+        | 'chips'
+        | 'sectionTitle';
     label: string;
     icon: string;
     target: string;
@@ -552,7 +567,7 @@ export interface EnvState {
     cloudErosion: number;
     cloudWeatherStrength: number;
     cloudBacklight: number; // Phase C: 双瓣 HG 后向瓣混合比 (0=纯前向, 1=纯后向)
-    cloudPowder: number;     // Phase C: powder 糖粉效应强度 (0=关闭, 2=强)
+    cloudPowder: number; // Phase C: powder 糖粉效应强度 (0=关闭, 2=强)
     cloudQuality: 'standard' | 'high'; // Phase D: blue-noise dither 开关
 
     mirrorEnabled: boolean;
