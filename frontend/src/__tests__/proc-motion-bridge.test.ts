@@ -588,7 +588,7 @@ describe('regenerateProcMotion — guard returns early', () => {
 
         const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
         sut.regenerateProcMotion();
-        expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('无焦点'));
+        expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('无目标'));
         expect(mockState.loadVMDMotion).not.toHaveBeenCalled();
         warnSpy.mockRestore();
     });

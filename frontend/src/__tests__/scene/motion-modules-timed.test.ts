@@ -44,6 +44,13 @@ vi.mock('@/scene/motion/perception', () => ({
     setHeadTrackingEnabled: vi.fn(),
 }));
 
+// [doc:adr-129] mock motion-intent（场景级配置）
+const mockActiveMotion = { value: null as any };
+vi.mock('@/scene/motion/motion-intent', () => ({
+    getActiveMotion: () => mockActiveMotion.value,
+    setActiveMotion: vi.fn((intent: any) => { mockActiveMotion.value = intent; }),
+}));
+
 import { createSwayMotionModule } from '@/scene/motion/motion-modules/sway-motion';
 import { createRidingModelModule } from '@/scene/motion/motion-modules/riding-model';
 import { createPositionOffsetModule } from '@/scene/motion/motion-modules/position-offset';
@@ -58,8 +65,14 @@ function resetAll(): void {
     data.frameHooks.length = 0;
     data.setBoneOverrideSpy.mockClear();
     data.clearBoneOverrideSpy.mockClear();
-    data.setBoneOverridePositionSpy.mockClear();
     data.registerFrameHookSpy.mockClear();
+    mockActiveMotion.value = {
+        vmdPath: 'test.vmd',
+        vmdName: 'test',
+        vmdLayers: [],
+        source: 'vmd',
+        motionModules: [],
+    };
     setTargetModel(null);
 }
 
