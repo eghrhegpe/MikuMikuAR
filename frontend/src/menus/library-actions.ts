@@ -22,7 +22,6 @@ import {
     setModelReplaceTargetId,
     cardContainer,
     formatError,
-    setPendingVmd,
     stackRegistry,
 } from '../core/config';
 import { loadManager } from '../core/load-manager';
@@ -254,7 +253,6 @@ function onModelRowClick(m: LibraryModel): void {
 
     // ===== Replace mode =====
     if (replaceId && isActor) {
-        setPendingVmd(null);
         _isReplaceLoading = true;
 
         const doReplace = (path: string, libraryPath?: string, innerPath?: string): void => {

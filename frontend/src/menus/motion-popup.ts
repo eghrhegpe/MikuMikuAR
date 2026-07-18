@@ -69,6 +69,7 @@ import { buildFeetLevel } from './motion-feet-levels'; // [doc:adr-085]
 import { buildPoseStudioLevel } from './motion-pose-levels';
 import { buildVirtualSkirtLevel } from './motion-cloth-levels'; // [doc:adr-084]
 import { t } from '../core/i18n/t'; // [doc:adr-059]
+import { setActiveMotion, setBroadcastCallback } from '../scene/motion/motion-intent';
 import { renderMenu } from './render-menu';
 import { isUnderRoot, logWarn } from '../core/utils';
 import type { MenuNode } from './menu-schema';
@@ -80,6 +81,36 @@ import type { MenuNode } from './menu-schema';
 //                         「添加动作」语义：无动作→新增基础；焦点层→替换该层；焦点基础→替换基础。
 //                         进入动作绑定面板（motionOnItemClick）重置为 null（基础）。
 let _focusedLayerId: string | null = null;
+
+// [doc:adr-121] 注册广播回调：setActiveMotion 时按 per-model assignment 策略应用动作
+setBroadcastCallback((intent) => {
+    for (const [id, inst] of modelManager.modelRegistry) {
+        const assignment = inst.motionAssignment ?? { mode: 'inherit' as const, status: 'idle' as const };
+        if (assignment.mode === 'pinned') continue; // pinned 模型不受全局影响
+        if (!intent) {
+            // 清除：仅当模型当前 action 来源于全局意图时才清除
+            if (inst.mmdModel && mmdRuntime) {
+                inst.mmdModel.setRuntimeAnimation(null);
+                inst.vmdData = null;
+                inst.vmdName = '';
+                inst.vmdPath = null;
+                inst.animationDuration = 0;
+            }
+        } else {
+            // 加载 VMD 到模型（异步，loadManager 处理队列）
+            // [fix:adr-127-p3] 显式更新 inst.vmdName，避免依赖 loadManager 侧隐式副作用
+            loadManager.load({ kind: 'vmd', path: intent.vmdPath!, modelId: id })
+                .then((handle) => {
+                    if (handle) {
+                        inst.vmdName = handle.name;
+                    }
+                })
+                .catch(() => {
+                    // 兼容性失败静默处理（incompatible 状态由 UI 提示）
+                });
+        }
+    }
+});
 
 // ======== 从子文件导入 ========
 // ======== Barrel Re-Exports ========
@@ -222,12 +253,7 @@ function buildActionBindingSchema(id: string): MenuNode[] {
                     clearBtn.addEventListener('click', async () => {
                         if (inst && inst.mmdModel && mmdRuntime) {
                             const snap = pushUndoSnapshot();
-                            inst.mmdModel.setRuntimeAnimation(null);
-                            inst.vmdData = null;
-                            inst.vmdName = '';
-                            inst.vmdPath = null;
-                            inst.animationDuration = 0;
-                            await clearVmdLayers(id);
+                            setActiveMotion(null);
                             if (isPlaying) {
                                 mmdRuntime.pauseAnimation();
                                 setIsPlaying(false);
@@ -252,7 +278,7 @@ function buildActionBindingSchema(id: string): MenuNode[] {
 function buildActionBindingLevel(id: string): PopupLevel {
     const inst = modelManager.get(id);
     if (!inst) {
-        return { label: t('motion.bindingTitle'), dir: '', items: [] };
+        return { label: t('motion.intent.title'), dir: '', items: [] };
     }
     return {
         label: inst.name,
@@ -486,7 +512,13 @@ function motionOnItemClick(row: PopupRow): void {
             const inst = modelManager.get(targetId);
             const hasActions = !!inst?.vmdData || getVmdLayers(targetId).length > 0;
             if (!hasActions) {
-                // 无动作 → 新增为第一个基础动作
+                // 无动作 → 新增为第一个基础动作，设场景级意图
+                setActiveMotion({
+                    vmdPath: row.model.file_path,
+                    vmdName: row.model.name_jp || row.model.name_en || '',
+                    vmdLayers: [],
+                    source: 'vmd',
+                });
                 loadManager
                     .load({ kind: 'vmd', path: row.model.file_path, modelId: targetId })
                     .then(after)
@@ -500,8 +532,15 @@ function motionOnItemClick(row: PopupRow): void {
                     .catch((err) => fail('motion-popup replace layer VMD:', err));
                 return;
             }
-            loadManager
-                .load({ kind: 'vmd', path: row.model.file_path, modelId: targetId })
+            // 替换基础动作，同时设场景级意图（广播到所有 inherit 模型）
+            setActiveMotion({
+                                vmdPath: row.model.file_path,
+                                vmdName: row.model.name_jp || row.model.name_en || '',
+                                vmdLayers: [],
+                                source: 'vmd',
+                            });
+                        loadManager
+                            .load({ kind: 'vmd', path: row.model.file_path, modelId: targetId })
                 .then(after)
                 .catch((err) => fail('motion-popup replace base VMD:', err));
             return;
@@ -596,11 +635,7 @@ function motionOnItemClick(row: PopupRow): void {
                 break;
             case 'reset':
                 if (inst.mmdModel && mmdRuntime) {
-                    inst.mmdModel.setRuntimeAnimation(null);
-                    inst.vmdData = null;
-                    inst.vmdName = '';
-                    inst.vmdPath = null;
-                    inst.animationDuration = 0;
+                    setActiveMotion(null);
                     if (isPlaying) {
                         mmdRuntime.pauseAnimation();
                         setIsPlaying(false);

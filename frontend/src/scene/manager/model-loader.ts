@@ -11,8 +11,6 @@ import {
     dom,
     setStatus,
     setFocusedModelId,
-    pendingVmd,
-    setPendingVmd,
     ModelInstance,
     propRegistry,
     overridePaths,
@@ -23,6 +21,7 @@ import {
     type RuntimeModel,
 } from '@/core/config';
 import { getBaseName, swallowError, logWarn, isUnderRoot } from '@/core/utils';
+import { getActiveMotion } from '../motion/motion-intent';
 import { createDefaultFeetState } from '@/core/state';
 import { resolveModelDir } from '@/core/fileservice';
 import { readFileBytes, ListDirRecursive } from '@/core/wails-bindings';
@@ -31,7 +30,6 @@ import { t } from '@/core/i18n/t';
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
 import { MmdWasmModel } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmModel';
-import { loadVMDMotion } from '../motion/vmd-loader';
 import { retryWindPhysicsSubscription } from '../../physics/wind-physics';
 import { _capture } from './material';
 import { rebuildShadowCasters } from '../render/lighting';
@@ -502,18 +500,23 @@ export async function loadPMXFile(
             });
         }
 
-        // Apply pending VMD if any — failure is isolated, won't roll back model
+        // [doc:adr-121] 应用场景级 activeMotion（继承），替代旧 pendingVmd
         let appliedVmd = '';
-        if (pendingVmd && _mmdRuntime) {
-            const vmdData = pendingVmd.data;
-            appliedVmd = pendingVmd.name;
-            setPendingVmd(null);
-            try {
-                await loadVMDMotion(vmdData, appliedVmd, id);
-            } catch (vmdErr) {
-                logWarn('model-loader', 'VMD 加载失败，模型已保留:', vmdErr);
-                appliedVmd = '';
-                setStatus(t('scene.loader.vmdFailedModelLoaded', { name: displayName }), false);
+        const activeMotion = getActiveMotion();
+        if (activeMotion && activeMotion.vmdPath && _mmdRuntime) {
+            const assignment = inst.motionAssignment ?? { mode: 'inherit' as const, status: 'idle' as const };
+            if (assignment.mode === 'inherit') {
+                appliedVmd = activeMotion.vmdName;
+                try {
+                    // 读取 VMD 文件数据，然后加载到模型
+                    const vmdData = await readFileBytes(activeMotion.vmdPath);
+                    const { loadVMDMotion } = await import('../motion/vmd-loader');
+                    await loadVMDMotion(vmdData.buffer as ArrayBuffer, activeMotion.vmdName, id);
+                } catch (vmdErr) {
+                    logWarn('model-loader', 'VMD 加载失败，模型已保留:', vmdErr);
+                    appliedVmd = '';
+                    setStatus(t('scene.loader.vmdFailedModelLoaded', { name: displayName }), false);
+                }
             }
         }
         if (effectiveSignal.aborted) {

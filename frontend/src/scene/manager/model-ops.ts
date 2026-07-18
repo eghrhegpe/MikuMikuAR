@@ -8,7 +8,6 @@ import {
     setAutoLoop,
     setSeekDragging,
     dom,
-    setPendingVmd,
     mmdRuntime,
 } from '@/core/config';
 import { refreshWaterRenderList } from '../env/env';
@@ -46,7 +45,6 @@ export function removeFocusedModel(): void {
         return;
     }
     removeModel(focusedModelId);
-    setPendingVmd(null);
 }
 
 export function focusModel(id: string): void {
