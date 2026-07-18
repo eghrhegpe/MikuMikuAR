@@ -566,9 +566,6 @@ export interface EnvState {
     planarReflectBlend: number;
     reflectionQuality: 'high' | 'medium' | 'low' | 'off';
 
-    foamThreshold: number;
-    foamIntensity: number;
-    foamOpacity: number;
     waterFogColor: [number, number, number];
     waterFogDensity: number;
     waterFogOpacityInfluence: number;
@@ -580,7 +577,6 @@ export interface EnvState {
     fresnelPower: number;
     diffuseStrength: number;
     ambientStrength: number;
-    foamTransitionRange: number;
     rippleNormalStrength: number;
     rippleGlintStrength: number;
     waterNormalStrength: number; // ADR-115 P1: 高频法线扰动层强度，默认 0.3

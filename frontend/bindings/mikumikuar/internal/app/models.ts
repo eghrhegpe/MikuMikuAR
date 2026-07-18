@@ -229,9 +229,6 @@ export interface EnvState {
      * 水面平面反射质量：'high' | 'medium' | 'low' | 'off'
      */
     "reflectionQuality": string;
-    "foamThreshold": number;
-    "foamIntensity": number;
-    "foamOpacity": number;
 
     /**
      * 水面高级着色器参数（持久化，避免材质重建时重置）
@@ -240,7 +237,6 @@ export interface EnvState {
     "fresnelPower": number;
     "diffuseStrength": number;
     "ambientStrength": number;
-    "foamTransitionRange": number;
     "rippleNormalStrength": number;
     "rippleGlintStrength": number;
     "waterNormalStrength": number;

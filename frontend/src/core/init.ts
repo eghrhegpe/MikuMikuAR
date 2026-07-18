@@ -209,7 +209,6 @@ async function restoreEnvState(): Promise<void> {
             loaded.fresnelPower = 3.0;
             loaded.diffuseStrength = 0.15;
             loaded.ambientStrength = 0.15;
-            loaded.foamTransitionRange = 0.15;
             loaded.rippleNormalStrength = 0.15;
             loaded.rippleGlintStrength = 0.25;
             loaded.causticColor1 = [1.0, 0.9, 0.6];

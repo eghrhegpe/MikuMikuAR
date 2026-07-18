@@ -961,34 +961,6 @@ export function buildWaterLevel(): PopupLevel {
                     ],
                 },
                 {
-                    id: 'env:water:foam',
-                    kind: 'folder',
-                    label: 'env.foam',
-                    icon: 'lucide:bubbles',
-                    defaultOpen: false,
-                    children: [
-                        {
-                            id: 'env:water:foamThreshold',
-                            kind: 'slider',
-                            label: 'env.foamThreshold',
-                            control: { bind: 'env.foamThreshold', min: 0, max: 1, step: 0.01 },
-                        },
-                        {
-                            id: 'env:water:foamIntensity',
-                            kind: 'slider',
-                            label: 'env.foamIntensity',
-                            control: { bind: 'env.foamIntensity', min: 0, max: 1, step: 0.05 },
-                            icon: 'lucide:sparkles',
-                        },
-                        {
-                            id: 'env:water:foamOpacity',
-                            kind: 'slider',
-                            label: 'env.foamOpacity',
-                            control: { bind: 'env.foamOpacity', min: 0, max: 1, step: 0.05 },
-                        },
-                    ],
-                },
-                {
                     id: 'env:water:advanced',
                     kind: 'folder',
                     label: 'env.waterAdvanced',
@@ -1029,17 +1001,6 @@ export function buildWaterLevel(): PopupLevel {
                             kind: 'slider',
                             label: 'env.ambientStrength',
                             control: { bind: 'env.ambientStrength', min: 0, max: 2, step: 0.05 },
-                        },
-                        {
-                            id: 'env:water:foamTransition',
-                            kind: 'slider',
-                            label: 'env.foamTransition',
-                            control: {
-                                bind: 'env.foamTransitionRange',
-                                min: 0,
-                                max: 1,
-                                step: 0.05,
-                            },
                         },
                         {
                             id: 'env:water:rippleNormal',
