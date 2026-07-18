@@ -50,14 +50,21 @@ function _getOrCreateLayer(): UtilityLayerRenderer {
 
 // ======== Attach / Detach ========
 
-/** 计算某轴类型的吸附步长（场景单位）。snapDistance=0 表示禁用（Babylon 语义）。 */
-function _snapFor(type: GizmoType): number {
-    if (!_snapEnabled) return 0;
+/** 纯函数：给定轴类型与吸附配置，计算吸附步长（场景单位）。
+ *  snapDistance=0 表示禁用（Babylon 语义）。抽离为导出纯函数以便单测覆盖三轴派生逻辑
+ *  （ADR-126 Phase 3 审计 P4：原 _snapFor 私有不可测）。 */
+export function computeSnapDistance(type: GizmoType, enabled: boolean, step: number): number {
+    if (!enabled) return 0;
     switch (type) {
-        case 'position': return _snapStep;                  // 场景单位，如 1.0
-        case 'rotation': return _snapStep * (Math.PI / 12); // step=1 → 15°（π/12 rad）
-        case 'scale': return _snapStep * 0.1;               // step=1 → 0.1 缩放增量
+        case 'position': return step;                  // 场景单位，如 1.0
+        case 'rotation': return step * (Math.PI / 12); // step=1 → 15°（π/12 rad）
+        case 'scale': return step * 0.1;               // step=1 → 0.1 缩放增量
     }
+}
+
+/** 基于当前模块级吸附状态计算某轴类型的吸附步长。 */
+function _snapFor(type: GizmoType): number {
+    return computeSnapDistance(type, _snapEnabled, _snapStep);
 }
 
 export interface GizmoAttachOptions {
