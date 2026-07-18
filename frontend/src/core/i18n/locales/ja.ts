@@ -640,6 +640,8 @@ export const ja: Record<string, string> = {
     'scene.elevationAngle': '仰角',
     'scene.exitDrag': 'ドラッグを終了',
     'scene.dragPosition': 'ドラッグで位置調整',
+    'scene.snapEnable': 'グリッド吸着',
+    'scene.snapStep': '吸着ステップ',
     'scene.statusExitDrag': '✓ ドラッグモードを終了しました',
     'scene.statusDragHint': '軸をドラッグして移動、リングをドラッグして方向を調整',
     'scene.deleteLight': '"{name}" を削除',

@@ -24,6 +24,11 @@ let _scaleGizmo: ScaleGizmo | null = null;
 let _gizmoTargetId: string | null = null;
 let _gizmoNode: Node | null = null;
 
+// 网格吸附（ADR-126 Phase 3）：position 以场景单位步进，rotation/scale 派生。
+// Babylon 语义：snapDistance=0 即禁用吸附，故默认关闭即零副作用。
+let _snapEnabled = false;
+let _snapStep = 1.0; // 场景单位（position）；rotation/scale 按轴派生
+
 /** 拖拽进行中（连续）可观察量：任一 Gizmo 轴被拖动时每帧触发，
  *  供数值滑杆实时同步显示（ADR-126 Phase 2 双模态）。
  *  注意：仅作显示同步，不含持久化回写——连续 setScaling 会触发 triggerAutoSave 风暴。 */
@@ -44,6 +49,16 @@ function _getOrCreateLayer(): UtilityLayerRenderer {
 }
 
 // ======== Attach / Detach ========
+
+/** 计算某轴类型的吸附步长（场景单位）。snapDistance=0 表示禁用（Babylon 语义）。 */
+function _snapFor(type: GizmoType): number {
+    if (!_snapEnabled) return 0;
+    switch (type) {
+        case 'position': return _snapStep;                  // 场景单位，如 1.0
+        case 'rotation': return _snapStep * (Math.PI / 12); // step=1 → 15°（π/12 rad）
+        case 'scale': return _snapStep * 0.1;               // step=1 → 0.1 缩放增量
+    }
+}
 
 export interface GizmoAttachOptions {
     /** 实体唯一标识（灯光/模型/道具 ID），用于 getGizmoTargetId() 查询 */
@@ -86,6 +101,7 @@ export function attachGizmo(options: GizmoAttachOptions): boolean {
             case 'position': {
                 const g = new PositionGizmo(layer);
                 g.attachedNode = node;
+                g.snapDistance = _snapFor('position');
                 if (options.onPositionDragEnd) {
                     g.onDragEndObservable.add(() => options.onPositionDragEnd!(options.node));
                 }
@@ -96,6 +112,7 @@ export function attachGizmo(options: GizmoAttachOptions): boolean {
             case 'rotation': {
                 const g = new RotationGizmo(layer);
                 g.attachedNode = node;
+                g.snapDistance = _snapFor('rotation');
                 if (options.onRotationDragEnd) {
                     g.onDragEndObservable.add(() => options.onRotationDragEnd!(options.node));
                 }
@@ -108,6 +125,7 @@ export function attachGizmo(options: GizmoAttachOptions): boolean {
                 g.attachedNode = node;
                 // ScaleGizmo 默认有等比缩放 corner handle（uniformScaleGizmo）
                 // 无需额外启用
+                g.snapDistance = _snapFor('scale');
                 if (options.onScaleDragEnd) {
                     g.onDragEndObservable.add(() => options.onScaleDragEnd!(options.node));
                 }
@@ -170,4 +188,22 @@ export function getActiveGizmoTypes(): GizmoType[] {
     if (_rotGizmo) types.push('rotation');
     if (_scaleGizmo) types.push('scale');
     return types;
+}
+
+// ======== Grid Snap (ADR-126 Phase 3) ========
+
+/** 设置网格吸附配置。
+ *  enabled=false 时 snapDistance=0（Babylon 禁用吸附），对当前与后续 Gizmo 均生效。
+ *  实时作用于当前激活的 Gizmo，无需重新 attach。 */
+export function setGizmoSnapDistance(enabled: boolean, step?: number): void {
+    _snapEnabled = enabled;
+    if (step !== undefined) _snapStep = step;
+    if (_posGizmo) _posGizmo.snapDistance = _snapFor('position');
+    if (_rotGizmo) _rotGizmo.snapDistance = _snapFor('rotation');
+    if (_scaleGizmo) _scaleGizmo.snapDistance = _snapFor('scale');
+}
+
+/** 读取当前网格吸附配置（enabled 默认 false，step 默认 1.0）。 */
+export function getGizmoSnapConfig(): { enabled: boolean; step: number } {
+    return { enabled: _snapEnabled, step: _snapStep };
 }

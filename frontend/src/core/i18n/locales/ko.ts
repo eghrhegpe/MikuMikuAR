@@ -639,6 +639,8 @@ export const ko: Record<string, string> = {
     'scene.elevationAngle': '고도 각도',
     'scene.exitDrag': '드래그 종료',
     'scene.dragPosition': '드래그하여 위치 지정',
+    'scene.snapEnable': '그리드 스냅',
+    'scene.snapStep': '스냅 간격',
     'scene.statusExitDrag': '✓ 드래그 모드 종료됨',
     'scene.statusDragHint': '축을 드래그하여 이동, 링을 드래그하여 방향 조정',
     'scene.deleteLight': '"{name}" 삭제',

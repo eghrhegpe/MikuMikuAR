@@ -633,6 +633,8 @@ export const en: Record<string, string> = {
     'scene.elevationAngle': 'Elevation Angle',
     'scene.exitDrag': 'Exit Drag',
     'scene.dragPosition': 'Drag to Position',
+    'scene.snapEnable': 'Grid Snap',
+    'scene.snapStep': 'Snap Step',
     'scene.statusExitDrag': '✓ Exited drag mode',
     'scene.statusDragHint': 'Drag the axis to move, drag the ring to adjust direction',
     'scene.deleteLight': 'Delete "{name}"',
