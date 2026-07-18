@@ -1,10 +1,14 @@
 // [doc:adr-102] App-level shortcut definitions — split from events.ts (P3).
 // 纯定义层：注册快捷键绑定到 ShortcutRegistry，不涉及 DOM 事件绑定。
 import { dom, mmdRuntime, closeAllOverlays, setStatus } from './config';
+import { t } from './i18n/t';
+import { focusedModelId } from './state';
 import { focusedModel, updatePlaybackUI, focusedMmdModel } from '../scene/scene';
 import { getCameraMode, switchCameraMode } from '../scene/camera/camera';
 import { registerShortcuts } from './shortcut-registry';
 import { screenshotCurrent } from '../menus/scene-menu';
+import { undo, redo, canUndo, canRedo } from '../scene/motion/motion-modules/motion-history';
+import { applyModuleSnapshot } from '../scene/motion/motion-modules/module-base';
 
 /**
  * navActions 与 navLabels 由 events.ts 管理，本模块只消费。
@@ -172,6 +176,36 @@ export function registerAppShortcuts(): void {
             prevent: true,
             handler: () => void screenshotCurrent(),
             group: 'shortcuts.group.screenshot',
+        },
+        // [doc:adr-125 P2] 模块层撤销/重做
+        {
+            id: 'motion:undo',
+            label: 'shortcuts.label.motionUndo',
+            defaultKey: 'KeyZ',
+            defaultCtrl: true,
+            prevent: true,
+            handler: () => {
+                const modelId = focusedModelId;
+                if (!modelId || !canUndo(modelId)) return;
+                undo(modelId, (snap) => applyModuleSnapshot(modelId, snap));
+                setStatus(t('motion.undoApplied'), true);
+            },
+            group: 'shortcuts.group.motionUndoRedo',
+        },
+        {
+            id: 'motion:redo',
+            label: 'shortcuts.label.motionRedo',
+            defaultKey: 'KeyZ',
+            defaultCtrl: true,
+            defaultShift: true,
+            prevent: true,
+            handler: () => {
+                const modelId = focusedModelId;
+                if (!modelId || !canRedo(modelId)) return;
+                redo(modelId, (snap) => applyModuleSnapshot(modelId, snap));
+                setStatus(t('motion.override.redoApplied'), true);
+            },
+            group: 'shortcuts.group.motionUndoRedo',
         },
     ]);
 }
