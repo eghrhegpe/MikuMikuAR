@@ -400,3 +400,49 @@ describe('VMD 骨骼诊断', () => {
         expect(Object.keys(bones).length).toBeGreaterThanOrEqual(6);
     });
 });
+
+describe('AutoDance 重构回归（节拍栅格 + 肘部 + 无缝循环）', () => {
+    it('无同骨骼同帧号重复关键帧（含端点循环）', () => {
+        for (const speed of [0.5, 1, 1.5, 2, 3]) {
+            const buf = generateAutoDanceVmd(
+                { ...state, speed },
+                120,
+                MORPHS_STANDARD,
+                BONES_108_STANDARD
+            );
+            const dups = [..._parseBoneFrameKeys(buf).entries()].filter(([, c]) => c > 1);
+            expect(dups, `speed=${speed} 存在重复帧`).toEqual([]);
+        }
+    });
+
+    it('存在肘部骨骼帧（左ひじ/右ひじ），手臂可自然弯曲', () => {
+        const buf = generateAutoDanceVmd(state, 120, MORPHS_STANDARD, BONES_108_STANDARD);
+        const bones = _parseVmdBones(buf);
+        expect(bones['左ひじ']).toBeDefined();
+        expect(bones['右ひじ']).toBeDefined();
+    });
+
+    it('Center 含 X 重心转移（position[0] 非零），消灭原地漂浮感', () => {
+        const buf = generateAutoDanceVmd(state, 120, MORPHS_STANDARD, BONES_108_STANDARD);
+        const view = new DataView(buf);
+        const boneCount = view.getUint32(50, true);
+        let foundCenterX = false;
+        for (let i = 0; i < boneCount; i++) {
+            const off = 54 + i * 111;
+            const raw = new Uint8Array(buf, off, 15);
+            const name = (
+                Encoding.convert(raw, { to: 'UNICODE', from: 'SJIS', type: 'string' }) as string
+            )
+                .replace(/\0/g, '')
+                .trim();
+            if (name === 'センター') {
+                const x = view.getFloat32(off + 19, true); // position.x
+                if (Math.abs(x) > 1e-3) {
+                    foundCenterX = true;
+                    break;
+                }
+            }
+        }
+        expect(foundCenterX).toBe(true);
+    });
+});

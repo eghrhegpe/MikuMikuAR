@@ -100,6 +100,10 @@ export const BONE_RARM_CANDIDATES = [
 export const BONE_WRIST_L_CANDIDATES = ['左手首', '左リスト', 'left wrist', 'LeftWrist'];
 export const BONE_WRIST_R_CANDIDATES = ['右手首', '右リスト', 'right wrist', 'RightWrist'];
 
+// 肘部（下腕）候选：手臂弯曲的关键骨，缺它手臂只能是"两节棍"直摆（ADR-021 程序化跳舞怪异感主因）
+export const BONE_ELBOW_L_CANDIDATES = ['左ひじ', '左肘', 'left elbow', 'LeftElbow', '左ひじ捩'];
+export const BONE_ELBOW_R_CANDIDATES = ['右ひじ', '右肘', 'right elbow', 'RightElbow', '右ひじ捩'];
+
 export const BONE_SHOULDER_L_CANDIDATES = [
     '左肩',
     '左肩P',
