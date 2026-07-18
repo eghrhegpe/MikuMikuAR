@@ -955,9 +955,9 @@ function cancelPendingAutoSave(): void {
  * 恢复期间抑制 auto-save，防止 deserializeScene 级联触发保存覆盖刚恢复的状态（与 tryRestoreLastScene 同款防御）。
  */
 export async function restoreUndoSnapshot(snap: string): Promise<boolean> {
+    cancelPendingAutoSave();
+    setSuppressAutoSave(true);
     try {
-        cancelPendingAutoSave();
-        setSuppressAutoSave(true);
         const raw = JSON.parse(snap);
         const data = migrateScene(raw);
         if (
@@ -968,13 +968,14 @@ export async function restoreUndoSnapshot(snap: string): Promise<boolean> {
             return false;
         }
         await deserializeScene(data as unknown as SceneFile, true);
-        setSuppressAutoSave(false);
         await saveSceneImmediate(true);
         return true;
     } catch (e) {
         console.warn('[undo] restoreUndoSnapshot failed:', e);
-        setSuppressAutoSave(false);
         return false;
+    } finally {
+        // 三条出口路径（malformed return / success / catch）统一复位，杜绝 suppress 泄漏。
+        setSuppressAutoSave(false);
     }
 }
 
