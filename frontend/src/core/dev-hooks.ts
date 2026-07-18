@@ -7,7 +7,9 @@ import { scene, engine, focusedModel } from '../scene/scene';
 import { loadOutfits, applyOutfitVariant } from '../outfit/outfit';
 
 export function setupE2ECapture(): void {
-    if (!import.meta.env.DEV) {
+    // [doc:e2e] 生产构建下默认不注入 E2E 钩子（DEV 为 false），
+    // 但设 VITE_E2E_MODE=true 后仍可编入，供本地 @webgl 测试使用。
+    if (!import.meta.env.DEV && !import.meta.env.VITE_E2E_MODE) {
         return;
     }
 
