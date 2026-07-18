@@ -718,3 +718,9 @@ export function getVmdLayers(modelId: string): VmdLayer[] {
     const inst = modelRegistry.get(modelId);
     return inst?.vmdLayers ?? [];
 }
+
+/** 触发复合动画重建（程序化/外部修改 vmdData/vmdLayers 后调用）。
+ *  内部有 generation 去重，连续调用不会重复执行。 */
+export function rebuildCompositeAnimation(modelId: string): void {
+    void _rebuildCompositeAnimation(modelId);
+}

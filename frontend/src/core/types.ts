@@ -33,12 +33,21 @@ export type BoneOverrideEntry = {
 /** [doc:adr-116] 动作覆盖模块语义参数值 */
 export type ParamValue = number | boolean | string;
 
-/** [doc:adr-116] 模块语义状态（per-model，序列化用） */
+/** [doc:adr-116] 模块语义状态（per-motion，随动作走） */
 export type MotionModuleState = {
     id: string;
     enabled: boolean;
     params: Record<string, ParamValue>;
 };
+
+// ======== Procedural Motion Config (ADR-XX per-motion) ========
+
+import type { ProcMotionState } from '@/motion-algos/procedural-motion';
+
+/** [doc:adr-XX] 程序化动作配置（per-motion，随动作走）
+ *  参数存 SceneMotionIntent.procMotion（多角色共享），
+ *  启用/分配权在每角色 ModelInstance.motionSlots。*/
+export type ProcMotionConfig = ProcMotionState;
 
 // ======== Feet Adjustment (ADR-085) Types ========
 
@@ -90,16 +99,31 @@ export interface SceneMotionIntent {
     vmdName: string;
     vmdLayers: VmdLayer[];
     source: MotionSource;
+    /** [doc:adr-129] 动作覆盖模块配置（随动作走） */
+    motionModules?: MotionModuleState[];
+    /** [doc:adr-XX] 程序化动作参数（随动作走，多角色共享参数；启用权在角色层） */
+    procMotion?: ProcMotionConfig;
     // vmdData 为运行时缓存，不持久化
 }
 
-/** 每实例动作分配策略 */
-export interface ModelMotionAssignment {
-    mode: 'inherit' | 'pinned';
-    /** mode==='pinned' 时有效；须 structuredClone(activeMotion) 冻结快照 */
+/** 槽位来源 */
+export type SlotSource = 'inherit' | 'pinned' | 'procedural';
+
+/** 单个槽位的配置 */
+export interface MotionSlotConfig {
+    source: SlotSource;
+    /** source==='pinned' 时有效；须 structuredClone(activeMotion) 冻结快照 */
     pinned?: SceneMotionIntent;
+    /** source==='procedural' 时选预设角色 */
+    procRole?: 'idle' | 'autodance' | 'gesture' | 'expression';
     /** 运行时派生状态，不持久化 */
     status: 'compatible' | 'incompatible' | 'idle' | 'overridden';
+}
+
+/** 双槽位：槽位1 基础 + 槽位2 叠加 */
+export interface ModelMotionSlots {
+    primary: MotionSlotConfig;
+    overlay: MotionSlotConfig;
 }
 
 /**
@@ -138,8 +162,8 @@ export type ModelInstance = {
     animationDuration: number;
     /** 多 VMD 图层（Motion Layers），空数组=单 VMD 模式 */
     vmdLayers: VmdLayer[];
-    /** [doc:adr-121] 动作分配策略：inherit 继承全局 / pinned 固定独立 */
-    motionAssignment?: ModelMotionAssignment;
+    /** [doc:adr-121] 双槽位动作分配：primary=基础, overlay=叠加 */
+    motionSlots?: ModelMotionSlots;
     kind: ModelKind;
     visible: boolean;
     opacity: number;
@@ -149,6 +173,8 @@ export type ModelInstance = {
     physicsEnabled: boolean;
     scaling: number;
     rotationY: number;
+    /** [doc:adr-126] 全自由度旋转（欧拉角，弧度）：[x, y, z]；与 rotationY 同步（rotation[1] = rotationY） */
+    rotation: [number, number, number];
     outfitFile?: OutfitFile;
     activeVariant?: string;
     _origTextures?: Map<
@@ -329,6 +355,17 @@ export type PopupRow = {
     wrapLabel?: boolean;
 };
 
+// ======== Resource Browse Selection Outcome (ADR-131) ========
+// 资源浏览「选中后行为」统一契约：取代散落的全局绑定标志位（layerBindingTargetId /
+// motionBindingTargetId / modelReplaceTargetId）与硬编码 closeAllOverlays，使所有资源
+// 类型（模型 / 动作 / 音频 / 相机 VMD）具备一致的「选中后该干嘛」能力。
+export type BrowseOutcome =
+    | { mode: 'close' } // 默认：加载即完成，关闭浏览器（一次性绑定 / 加载即完成）
+    | { mode: 'stay'; modelId?: string } // 连续预览：加载后保持浏览器打开
+    | { mode: 'jumpToDir'; modelId?: string; dir?: string } // 加载后回到指定目录（模型替换，旧 ADR-094 自动跳转）
+    | { mode: 'bindLayer'; modelId: string } // 绑定到图层（一次性，关闭）
+    | { mode: 'bindMotion'; modelId: string }; // 绑定到动作槽（一次性，关闭）
+
 export type PopupLevel = {
     label: string;
     dir: string;
@@ -353,6 +390,11 @@ export type PopupLevel = {
         /** 自更新回调，updateControls() 时自动同步 toggle 状态 */
         bind?: () => boolean;
     };
+    /**
+     * [doc:adr-131] 资源浏览选中结果契约。由浏览入口（buildLevel 第 6 参）声明，
+     * activateItem / onModelRowClick 据此派发选中后行为，取代全局绑定标志位反推。
+     */
+    outcome?: BrowseOutcome;
 };
 
 // ======== UI State ========

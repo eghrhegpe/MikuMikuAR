@@ -3,7 +3,7 @@
 // 设计: 轻量 singleton（非 EnvState），规避 Go struct 同步 + wails 绑定重生成本
 // 依赖方向: 不 import 任何 UI 模块；由 broadcastMotion 遍历 modelRegistry 写入 inst.vmd*
 
-import type { SceneMotionIntent, ModelMotionAssignment } from '@/core/types';
+import type { SceneMotionIntent } from '@/core/types';
 import { matchBone } from '@/motion-algos/proc-motion-shared';
 
 // ── 场景级 store（轻量 singleton，非 EnvState）──

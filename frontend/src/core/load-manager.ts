@@ -105,6 +105,9 @@ class LoadManager {
                 case 'vmd': {
                     const { loadVMDFromPath } = await import('../scene/motion/vmd-loader');
                     await loadVMDFromPath(req.path, req.modelId);
+                    // [fix] 对齐 actor/stage：VMD 加载成功后刷新 motion-popup，
+                    // 使常驻打开的菜单在加载完成后立即反映当前动作（getActiveMotion 已由 loadVMDFromPath 内 setActiveMotion 更新）。
+                    this._refreshMenus();
                     const fileName = req.path.split(/[\\/]/).pop() || '';
                     return {
                         id: '',
@@ -116,6 +119,7 @@ class LoadManager {
                 case 'camera-vmd': {
                     const { loadCameraVmdFromPath } = await import('../scene/motion/vmd-loader');
                     await loadCameraVmdFromPath(req.path);
+                    this._refreshMenus();
                     const fileName = req.path.split(/[\\/]/).pop() || '';
                     return {
                         id: '',
@@ -127,6 +131,7 @@ class LoadManager {
                 case 'audio': {
                     const { loadAudioFile } = await import('../outfit/audio');
                     await loadAudioFile(req.path);
+                    this._refreshMenus();
                     const fileName = req.path.split(/[\\/]/).pop() || '';
                     return {
                         id: '',

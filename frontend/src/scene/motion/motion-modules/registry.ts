@@ -1,9 +1,11 @@
-// [doc:adr-116] Motion Override Module Registry — 模块注册表 + per-model 状态管理
-// 职责: 注册模块工厂、创建模块实例、管理 per-model 模块状态、ownedBones 冲突仲裁
+// [doc:adr-129] Motion Override Module Registry — 模块注册表 + 场景级配置管理
+// 职责: 注册模块工厂、创建模块实例、管理场景级模块配置、ownedBones 冲突仲裁
+// 架构变更: 配置存储从 per-model 改为 per-motion（随动作走）
 // 冲突仲裁: 每条骨骼同一时刻只能被一个模块 owned；bake 时若骨骼已被其他模块占用，console.warn 跳过
 
-import type { MotionModuleState, ParamValue } from '@/core/types';
+import type { MotionModuleState, ParamValue, SceneMotionIntent } from '@/core/types';
 import { modelRegistry } from '@/core/state';
+import { triggerAutoSave } from '@/core/utils';
 import type { MotionOverrideModule, ModuleFactory, ModuleMeta } from './types';
 import { clearBoneOverride } from '../bone-override';
 import { registerBodyPosture } from './body-posture';
@@ -47,7 +49,7 @@ export function getRegisteredModules(): Array<{ id: string; meta: ModuleMeta; pr
 
 /** 为指定模型创建模块实例 */
 export function createModule(id: string, modelId: string): MotionOverrideModule | null {
-    initMotionModules(); // 幂等兜底：确保注册表已就绪（P1-1 修复）
+    initMotionModules(); // 幂等兜底：确保注册表已就绪
     const entry = _registry.get(id);
     if (!entry) {
         return null;
@@ -55,19 +57,26 @@ export function createModule(id: string, modelId: string): MotionOverrideModule 
     return entry.factory(modelId);
 }
 
-// ── per-model 状态管理 ──
+// ── 场景级配置管理（per-motion，随动作走）──
 
-/** 获取指定模型的模块状态（不存在则创建默认状态，种入 defaults） */
-export function getModuleState(modelId: string, moduleId: string): MotionModuleState {
+import { getActiveMotion } from '../motion-intent';
+
+/** 获取当前动作的模块配置（不存在则创建默认状态，种入 defaults） */
+export function getModuleState(_modelId: string, moduleId: string): MotionModuleState {
     initMotionModules(); // 幂等兜底
-    const inst = modelRegistry.get(modelId);
-    if (!inst) {
+    const intent = getActiveMotion();
+
+    // 无动作时返回默认状态
+    if (!intent) {
         return { id: moduleId, enabled: false, params: {} };
     }
-    if (!inst.motionOverrideModules) {
-        inst.motionOverrideModules = [];
+
+    // 确保配置数组存在
+    if (!intent.motionModules) {
+        intent.motionModules = [];
     }
-    let state = inst.motionOverrideModules.find((m) => m.id === moduleId);
+
+    let state = intent.motionModules.find((m) => m.id === moduleId);
     if (!state) {
         // 将模块注册的默认值种入 params，避免 schema 首次渲染读到 undefined
         const entry = _registry.get(moduleId);
@@ -77,29 +86,35 @@ export function getModuleState(modelId: string, moduleId: string): MotionModuleS
             enabled: false,
             params: defs ? { ...defs } : {},
         };
-        inst.motionOverrideModules.push(state);
+        intent.motionModules.push(state);
     }
     return state;
 }
 
-/** 写入模块参数到 ModelInstance */
+/** 写入模块参数到场景动作意图 */
 export function setModuleParam(
-    modelId: string,
+    _modelId: string,
     moduleId: string,
     param: string,
     value: ParamValue
 ): void {
-    const state = getModuleState(modelId, moduleId);
+    const state = getModuleState(_modelId, moduleId);
     state.params[param] = value;
+    // 仅持久化：配置已写入 intent.motionModules（随动作走）。
+    // 注意：不再调用 setActiveMotion 重新广播——否则会触发 VMD 重载 + seekAnimation(0)，
+    // 每次调参都把动画重启到帧 0，表现为角色持续抖动 + 进度重置（ADR-129 回归）。
+    triggerAutoSave();
 }
 
-/** 设置模块启用/禁用状态到 ModelInstance */
-export function setModuleEnabled(modelId: string, moduleId: string, enabled: boolean): void {
-    const state = getModuleState(modelId, moduleId);
+/** 设置模块启用/禁用状态到场景动作意图 */
+export function setModuleEnabled(_modelId: string, moduleId: string, enabled: boolean): void {
+    const state = getModuleState(_modelId, moduleId);
     state.enabled = enabled;
+    // 仅持久化（原因同 setModuleParam：避免重新广播导致 VMD 重载抖动）
+    triggerAutoSave();
 }
 
-// ── ownedBones 运行时追踪（P2 冲突仲裁 + 精确清除） ──
+// ── ownedBones 运行时追踪（per-model，用于骨骼冲突仲裁）──
 // 结构: modelId -> moduleId -> Set<boneName>
 // 语义: 每条骨骼同一时刻只能被一个模块 owned；bake 时检测冲突，disable 时仅清自有骨
 const _ownedBones = new Map<string, Map<string, Set<string>>>();
@@ -157,14 +172,14 @@ export function claimBones(modelId: string, moduleId: string, bones: readonly st
                     otherSet.delete(bone);
                     clearBoneOverride(bone, modelId);
                     console.warn(
-                        `[adr-116] bone "${bone}" 被模块 "${moduleId}"(priority=${myPriority}) 从 "${conflictOwner}"(priority=${otherPriority}) 抢占`
+                        `[adr-129] bone "${bone}" 被模块 "${moduleId}"(priority=${myPriority}) 从 "${conflictOwner}"(priority=${otherPriority}) 抢占`
                     );
                 }
                 // 继续执行 claim 逻辑
             } else {
                 // 落败：跳过并 console.warn
                 console.warn(
-                    `[adr-116] bone "${bone}" 已被模块 "${conflictOwner}"(priority=${otherPriority}) 占用，模块 "${moduleId}"(priority=${myPriority}) 跳过该骨骼`
+                    `[adr-129] bone "${bone}" 已被模块 "${conflictOwner}"(priority=${otherPriority}) 占用，模块 "${moduleId}"(priority=${myPriority}) 跳过该骨骼`
                 );
                 continue;
             }
@@ -213,32 +228,42 @@ let _currentModelId: string | null = null;
 
 /**
  * 切换目标模型：禁用当前模型的所有模块覆盖，启用新模型已保存的模块状态。
- * 应在 focusModel 时调用。
+ * [doc:adr-129] 现在模块配置随动作走，此函数主要用于清理 ownedBones
  */
 export function setTargetModel(modelId: string | null): void {
-    initMotionModules(); // 幂等兜底：确保注册表已就绪（P1-1 修复）
+    initMotionModules(); // 幂等兜底：确保注册表已就绪
     if (_currentModelId === modelId) {
         return;
     }
 
-    // 禁用当前模型的所有模块（精确清除 ownedBones，不误伤手动覆盖）
+    // 清理旧模型的 ownedBones（配置已随动作，不需要同步）
     if (_currentModelId) {
         for (const moduleId of _registry.keys()) {
-            const state = getModuleState(_currentModelId, moduleId);
-            if (state.enabled) {
-                createModule(moduleId, _currentModelId)?.disable();
+            const mod = createModule(moduleId, _currentModelId);
+            if (mod) {
+                // 禁用模块，释放 ownedBones
+                mod.disable();
             }
         }
     }
 
     _currentModelId = modelId;
 
-    // 启用新模型已保存的模块
+    // 启用新模型的模块（从场景级配置读取状态）
     if (modelId) {
-        for (const moduleId of _registry.keys()) {
-            const state = getModuleState(modelId, moduleId);
-            if (state.enabled) {
-                createModule(moduleId, modelId)?.enable();
+        const intent = getActiveMotion();
+        if (intent?.motionModules) {
+            for (const state of intent.motionModules) {
+                if (state.enabled) {
+                    const mod = createModule(state.id, modelId);
+                    if (mod) {
+                        mod.enable();
+                        // 应用参数
+                        for (const [key, value] of Object.entries(state.params)) {
+                            mod.setParam?.(key, value);
+                        }
+                    }
+                }
             }
         }
     }
@@ -256,9 +281,33 @@ export function clearAllModulesForModel(modelId: string): void {
         }
         owned.clear();
     }
-    const inst = modelRegistry.get(modelId);
-    if (inst) {
-        inst.motionOverrideModules = [];
+}
+
+/**
+ * [doc:adr-129] 将场景级模块配置应用到指定模型
+ * 用于动作广播时应用配置到所有 inherit 模型
+ */
+export function applyMotionModulesToModel(modelId: string): void {
+    const intent = getActiveMotion();
+    if (!intent?.motionModules) {
+        return;
+    }
+
+    for (const state of intent.motionModules) {
+        const mod = createModule(state.id, modelId);
+        if (!mod) {
+            continue;
+        }
+
+        if (state.enabled) {
+            mod.enable();
+            // 应用参数
+            for (const [key, value] of Object.entries(state.params)) {
+                mod.setParam?.(key, value);
+            }
+        } else {
+            mod.disable();
+        }
     }
 }
 

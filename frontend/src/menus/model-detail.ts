@@ -17,9 +17,12 @@ import { removeModel } from '../scene/manager/model-ops';
 import { buildTransformCard, type ResourceHandle } from './resource-detail-helpers';
 import { buildMatRootLevel } from './model-material';
 import { createIconifyIcon, softwareKindIcon } from '../core/icons';
-import { slideRow, addFieldRow } from '../core/ui-helpers';
+import { slideRow, addFieldRow, addSectionTitle } from '../core/ui-helpers';
 import { buildOutfitLevel } from './outfit-ui';
 import { savePresetToLibDialog, buildPresetListLevel } from './model-preset';
+import { buildFeetLevel } from './motion-feet-levels';
+import { buildVirtualSkirtLevel } from './motion-cloth-levels';
+import { buildPhysicsDebugLevel } from './scene-physics-levels';
 import {
     GetTagsByModel,
     AddTag,
@@ -34,6 +37,29 @@ import { pushUndoSnapshot, offerSceneUndo } from '../scene/scene';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
+import { getActiveMotion, getMotionGen } from '../scene/motion/motion-intent';
+import { applyIntentToModel } from './motion-popup';
+import { setProcMotionMode, regenerateProcMotion } from '../scene/motion/proc-motion-bridge';
+import { buildProcMotionLevel } from './motion-procmotion-levels';
+import { getBrowseDir } from '../core/config';
+import type { ModelInstance, ModelMotionSlots } from '@/core/types';
+
+/** 确保 inst.motionSlots 存在并返回（懒初始化，保留已有 overlay） */
+function _ensureMotionSlots(inst: ModelInstance): ModelMotionSlots {
+    if (!inst.motionSlots) {
+        inst.motionSlots = {
+            primary: { source: 'inherit', status: 'idle' },
+            overlay: { source: 'inherit', status: 'idle' },
+        };
+    }
+    return inst.motionSlots;
+}
+
+/** [P5 per-slot] 激活程序化动作到指定模型（显式传 modelId，不依赖焦点） */
+function _activateProcForModel(modelId: string, role: 'idle' | 'autodance'): void {
+    setProcMotionMode(role);
+    regenerateProcMotion(modelId);
+}
 
 // ======== Open With (software tools submenu) ========
 
@@ -131,6 +157,68 @@ function buildModelSchema(id: string): MenuNode[] {
     }
     const handle: ResourceHandle = { id, kind: 'actor', name: inst.name };
 
+    // 动作折叠组子节点
+    const motionChildren: MenuNode[] = [
+        // ── 动作1（基础）→ 跳转次级菜单 ──
+        {
+            id: 'model:motion:primary',
+            kind: 'custom',
+            renderCustom: (inner) => {
+                const slots = inst.motionSlots ?? {
+                    primary: { source: 'inherit' as const, status: 'idle' as const },
+                    overlay: { source: 'inherit' as const, status: 'idle' as const },
+                };
+                const active = getActiveMotion();
+                // 子标签：当前槽位1 状态摘要
+                let subText: string;
+                if (slots.primary.source === 'pinned') {
+                    subText = slots.primary.pinned?.vmdName || t('model-detail.pinnedMotion');
+                } else if (slots.primary.source === 'procedural') {
+                    subText =
+                        slots.primary.procRole === 'autodance'
+                            ? t('motion.modeAutodance')
+                            : t('motion.modeIdle');
+                } else if (active?.vmdPath) {
+                    subText = active.vmdName;
+                } else {
+                    subText = t('model-detail.noMotion');
+                }
+
+                const row = slideRow(
+                    inner,
+                    'lucide:music-2',
+                    t('model-detail.motionPrimary'),
+                    true,
+                    () => {
+                        stackRegistry.modelStack?.push(buildMotionSlotLevel(id, inst));
+                    }
+                );
+                const subLabel = document.createElement('span');
+                subLabel.className = 'slide-sublabel';
+                subLabel.textContent = subText;
+                const labelEl = row.querySelector('.slide-label');
+                if (labelEl) {
+                    labelEl.appendChild(subLabel);
+                }
+            },
+        },
+        {
+            id: 'model:motion:pose',
+            kind: 'custom',
+            renderCustom: (inner) => {
+                slideRow(inner, 'lucide:user', t('motion.poseLibrary'), true, () => {
+                    const level = stackRegistry.buildLevel!(
+                        getBrowseDir('vpd'),
+                        t('motion.poseTo', { name: inst.name }),
+                        (m) => m.format === 'vpd',
+                        stackRegistry.modelStack ?? undefined
+                    );
+                    stackRegistry.modelStack?.push(level);
+                });
+            },
+        },
+    ];
+
     // 外观折叠组子节点（仅材质/表情/换装）
     const appearanceChildren: MenuNode[] = [
         {
@@ -189,8 +277,47 @@ function buildModelSchema(id: string): MenuNode[] {
         },
     ];
 
+    // 故障排除折叠组子节点（脚步贴地 / 虚拟裙骨 / 物理调试 — 99% 模型无需调整，排障场景下使用）
+    const troubleshootingChildren: MenuNode[] = [
+        {
+            id: 'model:troubleshoot:feet',
+            kind: 'custom',
+            renderCustom: (inner) => {
+                slideRow(inner, 'lucide:footprints', t('motion.feet.title'), true, () => {
+                    stackRegistry.modelStack?.push(buildFeetLevel());
+                });
+            },
+        },
+        {
+            id: 'model:troubleshoot:skirt',
+            kind: 'custom',
+            renderCustom: (inner) => {
+                slideRow(inner, 'lucide:shirt', t('cloth.title'), true, () => {
+                    stackRegistry.modelStack?.push(buildVirtualSkirtLevel());
+                });
+            },
+        },
+        {
+            id: 'model:troubleshoot:physics-debug',
+            kind: 'custom',
+            renderCustom: (inner) => {
+                slideRow(inner, 'lucide:bug', t('scene.debug'), true, () => {
+                    stackRegistry.modelStack?.push(buildPhysicsDebugLevel());
+                });
+            },
+        },
+    ];
+
     // 卡片 1 内的折叠组 schema
     const foldersSchema: MenuNode[] = [
+        {
+            id: 'model:motion',
+            kind: 'folder',
+            label: 'model-detail.motion',
+            icon: 'lucide:music-2',
+            defaultOpen: false,
+            children: motionChildren,
+        },
         {
             id: 'model:appearance',
             kind: 'folder',
@@ -217,6 +344,14 @@ function buildModelSchema(id: string): MenuNode[] {
                 buildTransformCard(inner, handle);
             },
         },
+        {
+            id: 'model:troubleshoot',
+            kind: 'folder',
+            label: 'model-detail.troubleshoot',
+            icon: 'lucide:wrench',
+            defaultOpen: false,
+            children: troubleshootingChildren,
+        },
     ];
 
     return [
@@ -239,6 +374,137 @@ function buildModelSchema(id: string): MenuNode[] {
  * 采用整体 renderCustom + cardContainer 包裹（与详情面板卡片同 lcard 范式）+ 每行 slideRow 自带 onClick，
  * 不依赖 SlideMenu 级 onItemClick。
  */
+/** 构建动作1（基础）次级菜单：已加载动作 + 程序化动作 */
+export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLevel {
+    return {
+        dir: '',
+        label: t('model-detail.motionPrimary'),
+        items: [],
+        renderCustom: (container) => {
+            cardContainer(container, (c) => {
+                // ── 已加载动作 ──
+                addSectionTitle(c, t('model-detail.loadedMotion'));
+                const slots0 = inst.motionSlots ?? {
+                    primary: { source: 'inherit' as const, status: 'idle' as const },
+                    overlay: { source: 'inherit' as const, status: 'idle' as const },
+                };
+                const active = getActiveMotion();
+                const isPinned = slots0.primary.source === 'pinned';
+                const isProc = slots0.primary.source === 'procedural';
+                const motionLabel = isPinned
+                    ? slots0.primary.pinned?.vmdName || t('model-detail.pinnedMotion')
+                    : isProc
+                      ? slots0.primary.procRole === 'autodance'
+                          ? t('motion.modeAutodance')
+                          : t('motion.modeIdle')
+                      : active?.vmdName || t('model-detail.noMotion');
+                const motionIcon = isProc ? 'lucide:wand-sparkles' : 'lucide:music-2';
+
+                slideRow(c, motionIcon, motionLabel, false, () => {});
+
+                // 固定动作时显示取消固定行
+                if (isPinned) {
+                    slideRow(c, 'lucide:pin-off', t('motion.context.unpin'), false, () => {
+                        _ensureMotionSlots(inst).primary = { source: 'inherit', status: 'idle' };
+                        if (active) {
+                            applyIntentToModel(id, active, getMotionGen());
+                        }
+                        setStatus(t('motion.override.redoApplied'), true);
+                        stackRegistry.modelStack?.reRender();
+                    });
+                }
+
+                // 程序化时显示取消程序化行
+                if (isProc) {
+                    slideRow(c, 'lucide:x', t('model-detail.clearProc'), false, () => {
+                        _ensureMotionSlots(inst).primary = { source: 'inherit', status: 'idle' };
+                        setProcMotionMode('off');
+                        stackRegistry.modelStack?.reRender();
+                    });
+                }
+
+                // ── 程序化动作 ──
+                addSectionTitle(c, t('model-detail.procActions'));
+
+                // 待机呼吸
+                const isIdleActive =
+                    slots0.primary.source === 'procedural' && slots0.primary.procRole === 'idle';
+                const idleRow = slideRow(
+                    c,
+                    'lucide:wand-sparkles',
+                    t('motion.modeIdle'),
+                    true,
+                    () => {
+                        _ensureMotionSlots(inst).primary = {
+                            source: 'procedural',
+                            procRole: 'idle',
+                            status: 'idle',
+                        };
+                        _activateProcForModel(id, 'idle');
+                        stackRegistry.modelStack?.reRender();
+                    },
+                    isIdleActive ? t('model-detail.procActive') : undefined
+                );
+                if (!isIdleActive) {
+                    const editBtn = document.createElement('button');
+                    editBtn.className = 'preset-chip';
+                    editBtn.textContent = t('model-detail.procEdit');
+                    editBtn.style.cssText = 'margin-left:auto;';
+                    editBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        _ensureMotionSlots(inst).primary = {
+                            source: 'procedural',
+                            procRole: 'idle',
+                            status: 'idle',
+                        };
+                        _activateProcForModel(id, 'idle');
+                        stackRegistry.modelStack?.push(buildProcMotionLevel());
+                    });
+                    idleRow.appendChild(editBtn);
+                }
+
+                // 自动舞蹈
+                const isAutodanceActive =
+                    slots0.primary.source === 'procedural' &&
+                    slots0.primary.procRole === 'autodance';
+                const autodanceRow = slideRow(
+                    c,
+                    'lucide:wand-sparkles',
+                    t('motion.modeAutodance'),
+                    true,
+                    () => {
+                        _ensureMotionSlots(inst).primary = {
+                            source: 'procedural',
+                            procRole: 'autodance',
+                            status: 'idle',
+                        };
+                        _activateProcForModel(id, 'autodance');
+                        stackRegistry.modelStack?.reRender();
+                    },
+                    isAutodanceActive ? t('model-detail.procActive') : undefined
+                );
+                if (!isAutodanceActive) {
+                    const editBtn = document.createElement('button');
+                    editBtn.className = 'preset-chip';
+                    editBtn.textContent = t('model-detail.procEdit');
+                    editBtn.style.cssText = 'margin-left:auto;';
+                    editBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        _ensureMotionSlots(inst).primary = {
+                            source: 'procedural',
+                            procRole: 'autodance',
+                            status: 'idle',
+                        };
+                        _activateProcForModel(id, 'autodance');
+                        stackRegistry.modelStack?.push(buildProcMotionLevel());
+                    });
+                    autodanceRow.appendChild(editBtn);
+                }
+            });
+        },
+    };
+}
+
 export function buildModelToolsLevel(id: string): PopupLevel {
     const inst = modelManager.get(id);
     if (!inst) {
