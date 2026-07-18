@@ -24,13 +24,10 @@ import {
     logWarn,
     LoadingGuard,
     closeAllOverlays,
-    layerBindingTargetId,
-    setLayerBindingTargetId,
-    motionBindingTargetId,
-    setMotionBindingTargetId,
     modelReplaceTargetId,
     setModelReplaceTargetId,
     libraryRoot,
+    BrowseOutcome,
 } from '../core/config';
 import { SlideMenu } from './menu';
 import { createIconifyIcon } from '../core/icons';
@@ -477,24 +474,19 @@ function renderItemsWithRAF(
     const RAF_BATCH_THRESHOLD = 100;
     const RAF_BATCH_SIZE = 50;
     const activateItem = (item: PopupRow): void => {
+        const stack = targetStack || stackRegistry.modelStack;
+        const outcome = stack?.currentLevel?.outcome ?? { mode: 'close' as const };
         if (item.kind === 'folder') {
-            const next = buildLevel(item.target, item.label, filter, targetStack);
-            const stack = targetStack || stackRegistry.modelStack;
-            stack.push(next);
+            const next = buildLevel(item.target, item.label, filter, targetStack, undefined, outcome);
+            stack?.push(next);
         } else if (item.model) {
-            if (item.model.format === 'vmd' && layerBindingTargetId) {
-                const id = layerBindingTargetId;
-                setLayerBindingTargetId(null);
-                closeAllOverlays();
-                loadManager.load({ kind: 'vmd', path: item.model.file_path, modelId: id });
-            } else if (item.model.format === 'vmd' && motionBindingTargetId) {
-                const id = motionBindingTargetId;
-                setMotionBindingTargetId(null);
-                closeAllOverlays();
-                loadManager.load({ kind: 'vmd', path: item.model.file_path, modelId: id });
-            } else {
-                onModelRowClick(item.model);
+            // [doc:adr-131] 连续预览：加载后保持浏览器打开，不收起 overlay
+            if (item.model.format === 'vmd' && outcome.mode === 'stay') {
+                loadManager.load({ kind: 'vmd', path: item.model.file_path, modelId: outcome.modelId });
+                return;
             }
+            // [doc:adr-131] 非 stay 模式（默认为 close）：走标准加载路径（关闭浏览器）
+            onModelRowClick(item.model);
         }
     };
     const onRowClick = (item: PopupRow): void => {
@@ -665,7 +657,13 @@ function renderGridMode(
                 if (!m) {
                     return;
                 }
+                // [doc:adr-131] 网格模式也读取 outcome，stay 时不关闭 browser
                 if (m.format === 'vmd') {
+                    const outcome = (targetStack || stackRegistry.modelStack)?.currentLevel?.outcome;
+                    if (outcome?.mode === 'stay') {
+                        loadManager.load({ kind: 'vmd', path: m.file_path, modelId: outcome.modelId });
+                        return;
+                    }
                     replaceMotion(m);
                 } else {
                     replaceModel(m);
@@ -765,7 +763,8 @@ export function buildLevel(
     label: string,
     filter?: (m: LibraryModel) => boolean,
     targetStack?: SlideMenu,
-    extraFolders?: { label: string; path: string }[]
+    extraFolders?: { label: string; path: string }[],
+    outcome?: BrowseOutcome
 ): PopupLevel {
     dir = normPath(dir);
     return {
@@ -773,6 +772,7 @@ export function buildLevel(
         dir,
         items: [],
         filter,
+        outcome,
         renderCustom: (container) => {
             // [修复] 每次重渲染实时重算 items：列表模式不再依赖 buildLevel 时刻的闭包快照，
             // 解压/扫描未完成时进入空层，待数据就绪后任意一次 reRender（含导航 push/pop、视图切换）即自愈填充。
