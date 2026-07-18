@@ -34,7 +34,7 @@ ADR-111 Phase 1 用 `_snapshotGroundWaterFields` 快照-恢复来防止预设覆
 | 天空+光照 | `sky` | sky*/stars*/envIntensity/sunAngle/azimuth/lightingPresetName/timeOfDay* | 16 |
 | 地面 | `ground` | 所有 ground* 前缀 | 38 |
 | 水面+水下 | `water` | water*/planarReflect*/reflectionQuality/foam*/fresnel*/diffuseStrength/ambientStrength/ripple*/caustic*/underwater* | 32 |
-| 大气 | `atmosphere` | wind*/particle*/clouds*/debugClouds/cloud*/fog*/debugMirrorEnabled | 22 |
+| 大气 | `atmosphere` | wind*/particle*/clouds*/debugClouds/cloud*/fog*/mirrorEnabled | 22 |
 
 排除字段（不参与任何预设）：`collisionEnabled / bodyCollisionEnabled / groundCollisionEnabled`（物理碰撞，非环境视觉）。
 

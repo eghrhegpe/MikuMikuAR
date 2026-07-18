@@ -13,7 +13,7 @@ import {
 } from '../core/config';
 import { modelManager } from '../scene/scene';
 import { getModelMorphs, setModelMorphWeight, resetModelMorphs } from '../scene/manager/model-ops';
-import { resetModelTransform, removeModel } from '../scene/manager/model-ops';
+import { removeModel } from '../scene/manager/model-ops';
 import { buildTransformCard, type ResourceHandle } from './resource-detail-helpers';
 import { buildMatRootLevel } from './model-material';
 import { createIconifyIcon, softwareKindIcon } from '../core/icons';
@@ -30,6 +30,7 @@ import {
 } from '../core/wails-bindings';
 import type { SoftwareEntry } from '../core/wails-bindings';
 import { tryCatchStatus, logWarn } from '../core/utils';
+import { pushUndoSnapshot, offerSceneUndo } from '../scene/scene';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
@@ -130,7 +131,7 @@ function buildModelSchema(id: string): MenuNode[] {
     }
     const handle: ResourceHandle = { id, kind: 'actor', name: inst.name };
 
-    // 外观折叠组子节点
+    // 外观折叠组子节点（仅材质/表情/换装）
     const appearanceChildren: MenuNode[] = [
         {
             id: 'model:appearance:material',
@@ -162,8 +163,12 @@ function buildModelSchema(id: string): MenuNode[] {
                 });
             },
         },
+    ];
+
+    // 模型信息折叠组（基本信息 + 骨骼层级）
+    const modelInfoChildren: MenuNode[] = [
         {
-            id: 'model:appearance:info',
+            id: 'model:info:basic',
             kind: 'custom',
             renderCustom: (inner) => {
                 slideRow(inner, 'lucide:info', t('model-detail.basicInfo'), true, () => {
@@ -173,7 +178,7 @@ function buildModelSchema(id: string): MenuNode[] {
             },
         },
         {
-            id: 'model:appearance:bone',
+            id: 'model:info:bone',
             kind: 'custom',
             renderCustom: (inner) => {
                 slideRow(inner, 'lucide:git-branch', t('model-detail.boneHierarchy'), true, () => {
@@ -195,9 +200,17 @@ function buildModelSchema(id: string): MenuNode[] {
             children: appearanceChildren,
         },
         {
+            id: 'model:model-info',
+            kind: 'folder',
+            label: 'model-detail.modelInfo',
+            icon: 'lucide:info',
+            defaultOpen: false,
+            children: modelInfoChildren,
+        },
+        {
             id: 'model:transform',
             kind: 'folder',
-            label: '拖拽操控',
+            label: 'model-detail.dragControl',
             icon: 'lucide:move-3d',
             defaultOpen: false,
             renderCustom: (inner) => {
@@ -249,20 +262,23 @@ export function buildModelToolsLevel(id: string): PopupLevel {
                 slideRow(c, 'lucide:external-link', t('model-detail.openWith'), true, () => {
                     stackRegistry.modelStack?.push(buildOpenWithLevel(id));
                 });
-                slideRow(
-                    c,
-                    'lucide:rotate-ccw',
-                    t('settings.transformReset', { kind: t('common.model') }),
-                    false,
-                    () => {
-                        resetModelTransform(id);
-                        setStatus(t('settings.transformReset', { kind: t('common.model') }), true);
-                    }
-                );
-                // 卸载不丢数据——模型可随时从库重新加载，无需二次确认
-                slideRow(c, 'lucide:trash-2', t('model-detail.unloadModel'), false, () => {
+                // 卸载模型：场景级撤销保护（pushUndoSnapshot + offerSceneUndo），
+                // 材质/morph/换装等未保存调整可通过撤销恢复，无需额外确认弹窗。
+                slideRow(c, 'lucide:trash-2', t('model-detail.unloadModel'), false, async () => {
+                    const snap = pushUndoSnapshot();
                     removeModel(id);
-                    setStatus(t('settings.unloaded', { name: inst.name }), true);
+                    offerSceneUndo(t('settings.unloaded', { name: inst.name }), snap, () => {
+                        // 撤销恢复后刷新模型列表，使已恢复的模型可见
+                        import('./library-core').then((m) => {
+                            stackRegistry.modelStack?.setLevel(0, {
+                                label: t('model-detail.model'),
+                                dir: '',
+                                items: m.buildModelRootItems(),
+                            });
+                            stackRegistry.modelStack?.reRender();
+                        });
+                        setStatus(t('motion.undoApplied'), true);
+                    });
                     if (stackRegistry.modelStack) {
                         stackRegistry.modelStack.popTo(0);
                         import('./library-core').then((m) => {

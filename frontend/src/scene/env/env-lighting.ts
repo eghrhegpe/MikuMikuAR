@@ -321,7 +321,7 @@ export const ENV_PRESET_FIELDS: Record<EnvPresetCategory, (keyof EnvState)[]> = 
         'fogDensity',
         'fogStart',
         'fogEnd',
-        'debugMirrorEnabled',
+        'mirrorEnabled',
     ],
 };
 

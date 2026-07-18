@@ -23,7 +23,7 @@ import { renderMenu } from './render-menu';
 import { isUnderRoot } from '../core/utils';
 import type { MenuNode } from './menu-schema';
 import { buildGroundLevel, buildWaterLevel } from './env-feature-levels';
-import { setDebugMirrorSize, setDebugMirrorResolution, getDebugMirrorInfo } from '../scene/env/env';
+import { setMirrorSize, setMirrorResolution, getMirrorInfo } from '../scene/env/env';
 import { addModeSlider } from '../core/ui-helpers';
 import { envState } from '../core/state';
 
@@ -54,7 +54,95 @@ function buildStageSchema(): MenuNode[] {
 
     const nodes: MenuNode[] = [];
 
-    // 卡片 1：已加载舞台列表（空时显示引导）
+    // 卡片 1：功能入口（加载舞台/加载道具）— CTA 上提，确保首次空状态也能直接看到操作入口
+    nodes.push(
+        {
+            id: 'stage:actions',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    slideRow(
+                        inner,
+                        'lucide:upload',
+                        t('scene.loadStage'),
+                        true,
+                        () => {
+                            (async () => {
+                                try {
+                                    const { getBrowseDir } = await import('../core/utils');
+                                    const browseDir = getBrowseDir('stage');
+                                if (!browseDir) {
+                                    setStatus(t('scene.statusNoModelLib'), false);
+                                    return;
+                                }
+                                const { buildLevel } = await import('./library-core');
+                                const sm = getSceneMenu();
+                                if (!sm) {
+                                    return;
+                                }
+                                const level = buildLevel(
+                                    browseDir,
+                                    t('scene.loadStage'),
+                                    (m) => m.type === 'stage' || m.type === 'scene',
+                                    sm
+                                );
+                                sm.push(level);
+                            } catch (err) {
+                                setStatus(t('scene.statusOpenStageLibFailed'), false);
+                                console.error('Stage library error:', err);
+                            }
+                        })();
+                        },
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        { testId: 'menu.scene.loadStage' }
+                    );
+                    slideRow(
+                        inner,
+                        'lucide:box',
+                        t('scene.loadProp'),
+                        true,
+                        () => {
+                            (async () => {
+                                try {
+                                    const { getBrowseDir } = await import('../core/utils');
+                                    const browseDir = getBrowseDir('prop');
+                                    if (!browseDir) {
+                                        setStatus(t('scene.statusNoPropLib'), false);
+                                        return;
+                                    }
+                                    const { buildLevel } = await import('./library-core');
+                                    const sm = getSceneMenu();
+                                    if (!sm) {
+                                        return;
+                                    }
+                                    const level = buildLevel(
+                                        browseDir,
+                                        t('scene.propLibrary'),
+                                        (m) => m.format === 'pmx',
+                                        sm
+                                    );
+                                    sm.push(level);
+                                } catch (err) {
+                                    setStatus(t('scene.statusOpenPropLibFailed'), false);
+                                    console.error('Prop library error:', err);
+                                }
+                            })();
+                        },
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        { testId: 'menu.scene.loadProp' }
+                    );
+                });
+            },
+        },
+    );
+
+    // 卡片 2：已加载舞台列表（空时显示引导）
     if (stageModels.length > 0) {
         nodes.push({
             id: 'stage:loaded',
@@ -179,91 +267,6 @@ function buildStageSchema(): MenuNode[] {
     }
 
     nodes.push(
-        // 卡片 3：功能入口
-        {
-            id: 'stage:actions',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    slideRow(
-                        inner,
-                        'lucide:upload',
-                        t('scene.loadStage'),
-                        true,
-                        () => {
-                            (async () => {
-                                try {
-                                    const { getBrowseDir } = await import('../core/utils');
-                                    const browseDir = getBrowseDir('stage');
-                                if (!browseDir) {
-                                    setStatus(t('scene.statusNoModelLib'), false);
-                                    return;
-                                }
-                                const { buildLevel } = await import('./library-core');
-                                const sm = getSceneMenu();
-                                if (!sm) {
-                                    return;
-                                }
-                                const level = buildLevel(
-                                    browseDir,
-                                    t('scene.loadStage'),
-                                    (m) => m.type === 'stage' || m.type === 'scene',
-                                    sm
-                                );
-                                sm.push(level);
-                            } catch (err) {
-                                setStatus(t('scene.statusOpenStageLibFailed'), false);
-                                console.error('Stage library error:', err);
-                            }
-                        })();
-                        },
-                        undefined,
-                        undefined,
-                        undefined,
-                        undefined,
-                        { testId: 'menu.scene.loadStage' }
-                    );
-                    slideRow(
-                        inner,
-                        'lucide:box',
-                        t('scene.loadProp'),
-                        true,
-                        () => {
-                            (async () => {
-                                try {
-                                    const { getBrowseDir } = await import('../core/utils');
-                                    const browseDir = getBrowseDir('prop');
-                                    if (!browseDir) {
-                                        setStatus(t('scene.statusNoPropLib'), false);
-                                        return;
-                                    }
-                                    const { buildLevel } = await import('./library-core');
-                                    const sm = getSceneMenu();
-                                    if (!sm) {
-                                        return;
-                                    }
-                                    const level = buildLevel(
-                                        browseDir,
-                                        t('scene.propLibrary'),
-                                        (m) => m.format === 'pmx',
-                                        sm
-                                    );
-                                    sm.push(level);
-                                } catch (err) {
-                                    setStatus(t('scene.statusOpenPropLibFailed'), false);
-                                    console.error('Prop library error:', err);
-                                }
-                            })();
-                        },
-                        undefined,
-                        undefined,
-                        undefined,
-                        undefined,
-                        { testId: 'menu.scene.loadProp' }
-                    );
-                });
-            },
-        },
         // [adr-111] 地面：完整参数面板入口（从环境菜单迁入）
         {
             id: 'stage:ground',
@@ -307,30 +310,30 @@ function buildStageSchema(): MenuNode[] {
                 });
             },
         },
-        // 调试镜面：舞台反射调试工具
+        // 镜面：场景反射道具（ADR-128，原 debugMirror 升级为常态化道具）
         {
-            id: 'stage:debugMirror',
+            id: 'stage:mirror',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
                     renderMenu(
                         [
                             {
-                                id: 'debugMirror',
+                                id: 'mirror',
                                 kind: 'folder',
-                                label: 'scene.debugMirror',
+                                label: 'scene.mirror',
                                 icon: 'lucide:scan',
                                 defaultOpen: false,
-                                headerToggle: { bind: 'env.debugMirrorEnabled' },
+                                headerToggle: { bind: 'env.mirrorEnabled' },
                                 children: [
                                     {
-                                        id: 'debugMirror:controls',
+                                        id: 'mirror:controls',
                                         kind: 'custom',
                                         renderCustom: (cc) => {
-                                            const info = getDebugMirrorInfo();
+                                            const info = getMirrorInfo();
                                             addModeSlider(
                                                 cc,
-                                                t('scene.debugMirrorWidth'),
+                                                t('scene.mirrorWidth'),
                                                 Array.from({ length: 15 }, (_, i) => ({
                                                     value: String(2 + i * 2),
                                                     label: `${2 + i * 2}m`,
@@ -338,14 +341,14 @@ function buildStageSchema(): MenuNode[] {
                                                 String(info.width),
                                                 (v) => {
                                                     const w = parseFloat(v);
-                                                    const cur = getDebugMirrorInfo();
-                                                    setDebugMirrorSize(w, cur.height);
+                                                    const cur = getMirrorInfo();
+                                                    setMirrorSize(w, cur.height);
                                                 },
                                                 'lucide:move-horizontal'
                                             );
                                             addModeSlider(
                                                 cc,
-                                                t('scene.debugMirrorHeight'),
+                                                t('scene.mirrorHeight'),
                                                 Array.from({ length: 10 }, (_, i) => ({
                                                     value: String(1 + i * 2),
                                                     label: `${1 + i * 2}m`,
@@ -353,14 +356,14 @@ function buildStageSchema(): MenuNode[] {
                                                 String(info.height),
                                                 (v) => {
                                                     const h = parseFloat(v);
-                                                    const cur = getDebugMirrorInfo();
-                                                    setDebugMirrorSize(cur.width, h);
+                                                    const cur = getMirrorInfo();
+                                                    setMirrorSize(cur.width, h);
                                                 },
                                                 'lucide:move-vertical'
                                             );
                                             addModeSlider(
                                                 cc,
-                                                t('scene.debugMirrorResolution'),
+                                                t('scene.mirrorResolution'),
                                                 [
                                                     { value: '128', label: '128' },
                                                     { value: '256', label: '256' },
@@ -368,7 +371,7 @@ function buildStageSchema(): MenuNode[] {
                                                     { value: '1024', label: '1024' },
                                                 ],
                                                 String(info.resolution),
-                                                (v) => setDebugMirrorResolution(parseInt(v)),
+                                                (v) => setMirrorResolution(parseInt(v)),
                                                 'lucide:grid-3x3'
                                             );
                                             const p = info.position;
@@ -377,7 +380,7 @@ function buildStageSchema(): MenuNode[] {
                                                 'padding:4px 12px;font-size:11px;color:var(--text-dim);';
                                             infoDiv.textContent = info.active
                                                 ? `mesh: ${info.meshCount} | pos: (${p[0].toFixed(1)}, ${p[1].toFixed(1)}, ${p[2].toFixed(1)}) | ${info.width}×${info.height}m @ ${info.resolution}px`
-                                                : t('scene.debugMirrorHint');
+                                                : t('scene.mirrorHint');
                                             cc.appendChild(infoDiv);
                                         },
                                     },
@@ -422,7 +425,7 @@ export function buildStageTransformLevel(id: string): PopupLevel {
 
             // —— 拖拽操控 ——
             addCollapsible(container, {
-                title: '拖拽操控',
+                title: t('model-detail.dragControl'),
                 icon: 'lucide:move-3d',
                 defaultOpen: false,
                 renderContent: (inner) => {

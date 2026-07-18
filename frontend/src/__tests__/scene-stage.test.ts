@@ -49,10 +49,10 @@ vi.mock('../scene/env/env-bridge', () => ({
 }));
 
 vi.mock('../scene/env/env', () => ({
-    isDebugMirrorActive: vi.fn(() => false),
-    setDebugMirrorSize: vi.fn(),
-    setDebugMirrorResolution: vi.fn(),
-    getDebugMirrorInfo: vi.fn(() => ({
+    isMirrorActive: vi.fn(() => false),
+    setMirrorSize: vi.fn(),
+    setMirrorResolution: vi.fn(),
+    getMirrorInfo: vi.fn(() => ({
         active: false,
         width: 6,
         height: 1,

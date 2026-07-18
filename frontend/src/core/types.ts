@@ -555,7 +555,7 @@ export interface EnvState {
     cloudPowder: number;     // Phase C: powder 糖粉效应强度 (0=关闭, 2=强)
     cloudQuality: 'standard' | 'high'; // Phase D: blue-noise dither 开关
 
-    debugMirrorEnabled: boolean;
+    mirrorEnabled: boolean;
 
     fogEnabled: boolean;
     fogMode: 'exp' | 'exp2' | 'linear';

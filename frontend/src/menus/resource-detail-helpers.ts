@@ -86,6 +86,16 @@ export function buildTransformCard(container: HTMLElement, handle: ResourceHandl
 					render();
 				}
 			);
+			slideRow(
+				c,
+				'lucide:rotate-ccw',
+				t('settings.transformReset', { kind: t('common.model') }),
+				false,
+				() => {
+					resetModelTransform(id);
+					setStatus(t('settings.transformReset', { kind: t('common.model') }), true);
+				}
+			);
 
 			// 网格吸附（ADR-126 Phase 3）：全局拖拽偏好，下次/当前 Gizmo 生效
 			const snap = getGizmoSnapConfig();
@@ -120,7 +130,7 @@ export function buildTransformCard(container: HTMLElement, handle: ResourceHandl
 			if (adapter.capabilities.includes('slider-scale')) {
 				addSliderRow(
 					c,
-					'缩放倍率',
+					t('scene.scaleRatio'),
 					adapter.getScale?.(id) ?? 1,
 					0.1,
 					10,
@@ -134,7 +144,7 @@ export function buildTransformCard(container: HTMLElement, handle: ResourceHandl
 			if (adapter.capabilities.includes('slider-opacity')) {
 				addSliderRow(
 					c,
-					'透明度',
+					t('scene.opacity'),
 					Math.round((adapter.getOpacity?.(id) ?? 1) * 100),
 					0,
 					100,
@@ -221,7 +231,9 @@ export function buildDangerCard(
         addDangerRow(
             c,
             'lucide:trash-2',
-            `卸载此${kind === 'prop' ? '道具' : kind === 'stage' ? '舞台' : '模型'}`,
+            t('model-detail.unloadThis', {
+                kind: t(kind === 'prop' ? 'common.prop' : kind === 'stage' ? 'common.stage' : 'common.model'),
+            }),
             () => {
                 if (kind === 'prop') {
                     removeProp(id);

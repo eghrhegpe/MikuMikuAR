@@ -16,32 +16,31 @@ import {
     setUIState,
 } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
-import { serializeScene, isARModeActive, takeARScreenshot } from '../scene/scene';
+import { serializeScene, isARModeActive, takeARScreenshot, setEnvState } from '../scene/scene';
 import { SelectDir, SaveScreenshot, SaveScenePreset } from '../core/wails-bindings';
-import { waitForFrame, tryCatchStatus, showErrorToast } from '../core/utils';
+import { waitForFrame, tryCatchStatus, showErrorToast, closeAllOverlays } from '../core/utils';
 import { setModelFormation } from '../scene/scene';
 import { focusModel } from '../scene/scene';
-import { exportSceneBundle, importSceneBundle } from '../scene/scene-bundle';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
 
-// ======== 从子文件导入 ========
+// ======== 导入 ========
 import { buildPresetScenesLevel } from './scene-render-levels';
 import { buildStageLevel } from './scene-stage-levels';
 import { buildStageLightLevel } from './scene-stage-lights';
-import { buildPropLevel } from './scene-prop-levels';
 import {
     buildPhysicsLevel,
     buildWasmPhysicsLevel,
     buildCollisionLevel,
     buildPhysicsDebugLevel,
 } from './scene-physics-levels';
+import { getEnvTextureBindingTarget, clearEnvTextureBindingTarget } from './env-menu';
 
 // ======== Barrel Re-Exports ========
 // 保持向后兼容——外部文件引用路径不变
 export { buildPresetScenesLevel } from './scene-render-levels';
 export { buildStageLevel, buildStageTransformLevel } from './scene-stage-levels';
-export { buildPropLevel, buildPropDetailLevel } from './scene-prop-levels';
+export { buildPropDetailLevel } from './scene-prop-levels';
 
 // ======== Formation key map（热切换安全：仅存 i18n key，不含中文）========
 const FORMATION_KEYS: Record<string, string> = {
@@ -187,7 +186,6 @@ const SCENE_FOLDER_ROUTES: Record<string, () => PopupLevel> = {
     'scene:presets': buildPresetScenesLevel,
     'scene:render:stage': buildStageLevel,
     'scene:stageLight': buildStageLightLevel,
-    'scene:render:props': buildPropLevel,
     'scene:physics': buildPhysicsLevel,
     'scene:formation': buildFormationLevel,
     'cloth:collision': buildCollisionLevel,
@@ -343,12 +341,6 @@ const SCENE_ACTIONS: Record<string, () => void> = {
     'scene:save': () => {
         void saveScene();
     },
-    'scene:export-bundle': () => {
-        void exportSceneBundle();
-    },
-    'scene:import-bundle': () => {
-        void importSceneBundle();
-    },
     'formation:set:line': () => {
         setModelFormation('line');
         setStatus(t('scene.formationStatus.line'), true);
@@ -376,6 +368,24 @@ const SCENE_ACTIONS: Record<string, () => void> = {
 };
 
 function handleSceneAction(row: PopupRow): void {
+    // 处理文件浏览器选择（环境纹理绑定）
+    if (row.model) {
+        const IMAGE_FORMATS = ['png', 'jpg', 'jpeg', 'hdr', 'dds'];
+        if (IMAGE_FORMATS.includes(row.model.format)) {
+            const target = getEnvTextureBindingTarget();
+            clearEnvTextureBindingTarget();
+            closeAllOverlays();
+            if (target === 'ground') {
+                setEnvState({
+                    groundTexture: row.model.file_path,
+                    groundTextureEnabled: !!row.model.file_path,
+                    groundStyle: 'texture',
+                });
+                getSceneMenu()?.reRender();
+                return;
+            }
+        }
+    }
     if (row.target) {
         SCENE_ACTIONS[row.target]?.();
     }

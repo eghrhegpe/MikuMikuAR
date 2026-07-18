@@ -31,6 +31,7 @@ import {
 
 import { getEnvMenu } from './env-menu';
 import { presetListContent } from './preset-list-viewer';
+import { getLang } from '../core/i18n/locale';
 
 // ======== 分类元数据 ========
 
@@ -89,7 +90,7 @@ function renderCategorizedPresets(
                     setStatus(t('env-preset.deleted', { label: e.label }), true);
                     reRender();
                 },
-                deleteConfirmText: (e) => `确定删除「${e.label || e.name}」？`,
+                deleteConfirmText: (e) => t('env-preset.confirmDelete', { label: e.label || e.name }),
                 emptyText: t('env-preset.noCustom'),
                 noCard: true,
             },
@@ -107,7 +108,7 @@ function renderCategorizedPresets(
         const autoLabel =
             t(labelKey) +
             ' ' +
-            new Date().toLocaleString('zh-CN', {
+            new Date().toLocaleString(getLang(), {
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit',
@@ -155,9 +156,6 @@ export const SCENE_PRESETS: Record<string, EnvPresetConfig> = {
             skyColorTop: [0.05, 0.05, 0.15],
             skyColorBot: [0.1, 0.05, 0.15],
             envIntensity: 0.5,
-            groundType: 'flat',
-            groundStyle: 'solid',
-            groundColor: [0.05, 0.05, 0.08],
             particleEnabled: false,
         },
         lights: {
@@ -176,9 +174,6 @@ export const SCENE_PRESETS: Record<string, EnvPresetConfig> = {
             skyColorBot: [0.6, 0.8, 1],
             skyBrightness: 2,
             envIntensity: 1.5,
-            groundType: 'flat',
-            groundStyle: 'grid',
-            groundColor: [0.3, 0.35, 0.3],
         },
         lights: {
             hemiIntensity: 1,
@@ -196,9 +191,6 @@ export const SCENE_PRESETS: Record<string, EnvPresetConfig> = {
             skyColorMid: [0.2, 0.05, 0.4],
             skyColorBot: [0.1, 0.02, 0.2],
             envIntensity: 0.3,
-            groundType: 'flat',
-            groundStyle: 'solid',
-            groundColor: [0.05, 0.02, 0.1],
             particleEnabled: true,
             particleType: 'fireworks',
         },
@@ -217,9 +209,6 @@ export const SCENE_PRESETS: Record<string, EnvPresetConfig> = {
             skyColorTop: [0.4, 0.4, 0.45],
             skyColorBot: [0.25, 0.25, 0.3],
             envIntensity: 0.8,
-            groundType: 'flat',
-            groundStyle: 'solid',
-            groundColor: [0.1, 0.1, 0.12],
             particleEnabled: false,
         },
         lights: {
@@ -238,9 +227,6 @@ export const SCENE_PRESETS: Record<string, EnvPresetConfig> = {
             skyColorBot: [0.6, 0.2, 0.1],
             skyBrightness: 1.2,
             envIntensity: 0.7,
-            groundType: 'flat',
-            groundStyle: 'solid',
-            groundColor: [0.3, 0.15, 0.08],
             particleEnabled: false,
         },
         lights: {
@@ -259,9 +245,6 @@ export const SCENE_PRESETS: Record<string, EnvPresetConfig> = {
             skyColorBot: [0.15, 0.18, 0.22],
             skyBrightness: 0.5,
             envIntensity: 0.4,
-            groundType: 'flat',
-            groundStyle: 'solid',
-            groundColor: [0.12, 0.14, 0.16],
             particleEnabled: true,
             particleType: 'rain',
         },
@@ -280,9 +263,6 @@ export const SCENE_PRESETS: Record<string, EnvPresetConfig> = {
             skyColorBot: [0.7, 0.6, 0.75],
             skyBrightness: 1.5,
             envIntensity: 1.2,
-            groundType: 'flat',
-            groundStyle: 'solid',
-            groundColor: [0.5, 0.4, 0.45],
             particleEnabled: true,
             particleType: 'sakura',
         },
@@ -302,9 +282,6 @@ export const SCENE_PRESETS: Record<string, EnvPresetConfig> = {
             skyColorBot: [0.15, 0.02, 0.2],
             skyBrightness: 0.8,
             envIntensity: 0.3,
-            groundType: 'flat',
-            groundStyle: 'solid',
-            groundColor: [0.08, 0.02, 0.12],
             particleEnabled: true,
             particleType: 'fireflies',
         },
@@ -347,7 +324,7 @@ export function buildPresetLevel(): PopupLevel {
                                 (envUpdate.skyColorTop[2] + envUpdate.skyColorBot[2]) / 2,
                             ] as [number, number, number];
                         }
-                        // [adr-120] 场景氛围预设为跨类别整体切换，直接 apply（不再快照恢复 ground/water）
+                        // [adr-111][adr-120] 跨类别整体切换，仅包含 sky+lights+render 字段，不覆盖 ground/water（已移除）
                         setEnvState(envUpdate);
                         if (preset.lights) {
                             transitionLighting(preset.lights, 2000);

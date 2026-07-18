@@ -214,7 +214,7 @@ export function createMockEnvState(overrides?: Partial<EnvState>): EnvState {
         cloudBacklight: 0.5,
         cloudPowder: 0.8,
         cloudQuality: 'high',
-        debugMirrorEnabled: false,
+        mirrorEnabled: false,
         debugClouds: false,
         fogEnabled: false,
         fogMode: 'linear',

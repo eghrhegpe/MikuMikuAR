@@ -103,7 +103,7 @@ function buildCameraSchema(): MenuNode[] {
                             setFov(v);
                             triggerAutoSave();
                         },
-                        undefined,
+                        { bind: () => getFov() },
                         'camera:main:fov'
                     );
                 });
@@ -583,7 +583,11 @@ function renderARParams(container: HTMLElement): void {
         getARFacing() === 'user' ? t('motion.toBack') : t('motion.toFront'),
         false,
         async () => {
-            await switchARCameraFacing();
+            try {
+                await switchARCameraFacing();
+            } catch {
+                setStatus(t('motion.arSwitchFailed'), false);
+            }
             refreshCameraLevel();
         }
     );

@@ -179,15 +179,15 @@ export function applyEnvState(state: EnvState): void {
     }
 }
 
-// ======== Debug Mirror (反射调试工具) ========
+// ======== Mirror (场景反射道具, ADR-128) ========
 
 export {
-    toggleDebugMirror,
-    isDebugMirrorActive,
-    refreshDebugMirrorRenderList,
-    setDebugMirrorSize,
-    setDebugMirrorPosition,
-    setDebugMirrorRotationY,
-    setDebugMirrorResolution,
-    getDebugMirrorInfo,
+    toggleMirror,
+    isMirrorActive,
+    refreshMirrorRenderList,
+    setMirrorSize,
+    setMirrorPosition,
+    setMirrorRotationY,
+    setMirrorResolution,
+    getMirrorInfo,
 } from './mirror-debug';

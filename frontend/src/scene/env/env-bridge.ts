@@ -185,9 +185,9 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
     _applyIfChanged(changed, _SKY_KEYS, 'sky', () => {
         const t0 = performance.now();
         impl.applySky(state);
-        // color 模式下无天空 mesh，需单独同步调试镜面 clearColor
-        if (impl.isDebugMirrorActive() && impl.updateDebugMirrorClearColor) {
-            impl.updateDebugMirrorClearColor();
+        // color 模式下无天空 mesh，需单独同步镜面 clearColor
+        if (impl.isMirrorActive() && impl.updateMirrorClearColor) {
+            impl.updateMirrorClearColor();
         }
         const elapsed = performance.now() - t0;
         if (elapsed > 2) {
@@ -228,11 +228,11 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
         setContactShadow(state);
     });
 
-    _applyIfChanged(changed, ['debugMirrorEnabled'], 'debugMirror', () => {
-        if (state.debugMirrorEnabled && !impl.isDebugMirrorActive()) {
-            impl.createDebugMirror();
-        } else if (!state.debugMirrorEnabled && impl.isDebugMirrorActive()) {
-            impl.disposeDebugMirror();
+    _applyIfChanged(changed, ['mirrorEnabled'], 'mirror', () => {
+        if (state.mirrorEnabled && !impl.isMirrorActive()) {
+            impl.createMirror();
+        } else if (!state.mirrorEnabled && impl.isMirrorActive()) {
+            impl.disposeMirror();
         }
     });
 
@@ -652,18 +652,25 @@ function migrateEnvState(input: Partial<EnvState>): Partial<EnvState> {
     const raw = input as Record<string, unknown>;
     // 仅当入参含旧字段 groundMode 时才迁移；新版本 partial 原样返回，
     // 避免向 changed 集合注入 groundType/groundStyle 导致无关节点更新误触发 applyGround。
-    if (typeof raw.groundMode !== 'string') {
+    if (typeof raw.groundMode !== 'string' && typeof raw.debugMirrorEnabled === 'undefined') {
         return input;
     }
     const out = { ...raw } as Record<string, unknown>;
-    const m = raw.groundMode;
-    if (m === 'heightmap') {
-        out.groundType = 'terrain';
-    } else {
-        out.groundType = 'flat';
-        out.groundStyle = m; // 'solid' | 'grid' | 'checker' | 'texture'
+    if (typeof raw.groundMode === 'string') {
+        const m = raw.groundMode;
+        if (m === 'heightmap') {
+            out.groundType = 'terrain';
+        } else {
+            out.groundType = 'flat';
+            out.groundStyle = m; // 'solid' | 'grid' | 'checker' | 'texture'
+        }
+        delete out.groundMode;
     }
-    delete out.groundMode;
+    // ADR-128: debugMirrorEnabled → mirrorEnabled（旧 scene preset / config.json 兼容）
+    if (typeof raw.debugMirrorEnabled === 'boolean') {
+        out.mirrorEnabled = raw.debugMirrorEnabled;
+        delete out.debugMirrorEnabled;
+    }
     return out as Partial<EnvState>;
 }
 

@@ -32,6 +32,8 @@ import type { MenuNode } from './menu-schema';
 
 // ======== 根级入口 ========
 
+let _batchRunning = false; // [doc:audit] 并发锁，防止多次点击触发批量截图竞态
+
 function buildPoseStudioSchema(): MenuNode[] {
     const modelId = focusedModelId;
     if (!modelId || !modelRegistry.get(modelId)?.mmdModel) {
@@ -84,6 +86,7 @@ function buildPoseStudioSchema(): MenuNode[] {
                             m.key === currentMode
                                 ? 'background:var(--accent);color:var(--text);'
                                 : '';
+                        btn.classList.toggle('active', m.key === currentMode);
                         btn.addEventListener('click', () => {
                             setGuideMode(m.key);
                             menu?.reRender();
@@ -171,7 +174,10 @@ function buildPoseStudioSchema(): MenuNode[] {
                         0.05,
                         (v) => {
                             setRenderState({ dofEnabled: v > 0, dofAperture: v });
-                        }
+                        },
+                        undefined,
+                        undefined,
+                        { bind: () => getRenderState().dofAperture }
                     );
                 });
             },
@@ -292,79 +298,84 @@ export function buildPoseStudioLevel(): PopupLevel {
 
 /** 批量截图：遍历所有预设角度，截图后保存 */
 async function _batchScreenshot(presets: CameraAnglePreset[], modelId: string): Promise<void> {
+    if (_batchRunning) return; // 并发锁
+    _batchRunning = true;
     const progressEl = document.getElementById('pose-batch-progress');
-    if (progressEl) {
-        progressEl.style.display = 'block';
-    }
-
-    // 获取原相机状态
-    const { getOrbitParams, setOrbitParams } = await import('../scene/camera/camera');
-    const origParams = getOrbitParams();
-    const { scene } = await import('../scene/scene');
-    const cam = scene.activeCamera;
-    const origAlpha = cam instanceof ArcRotateCamera ? cam.alpha : 0;
-    let saved = 0;
-
-    const inst = modelRegistry.get(modelId);
-    const baseName = inst?.name ?? 'model';
-
-    for (let i = 0; i < presets.length; i++) {
-        const preset = presets[i];
+    try {
         if (progressEl) {
-            progressEl.textContent = `${t('motion.poseStudio.batchProgress')} ${i + 1}/${presets.length}: ${preset.name}`;
+            progressEl.style.display = 'block';
         }
 
-        // 切换相机角度
-        const beta = Math.PI / 2 - (preset.elevation * Math.PI) / 180;
-        setOrbitParams({ beta, distance: preset.distance });
-        if (cam instanceof ArcRotateCamera) {
-            cam.alpha = (preset.azimuth * Math.PI) / 180;
-        }
+        // 获取原相机状态
+        const { getOrbitParams, setOrbitParams } = await import('../scene/camera/camera');
+        const origParams = getOrbitParams();
+        const { scene } = await import('../scene/scene');
+        const cam = scene.activeCamera;
+        const origAlpha = cam instanceof ArcRotateCamera ? cam.alpha : 0;
+        let saved = 0;
 
-        // 等待渲染完成
-        await waitForFrame();
-        await waitForFrame();
-        await waitForFrame();
+        const inst = modelRegistry.get(modelId);
+        const baseName = inst?.name ?? 'model';
 
-        // 截图
-        const fmt = uiState.screenshotFormat ?? 'image/png';
-        const q = uiState.screenshotQuality ?? 0.9;
-        let base64 = dom.canvas.toDataURL(fmt, q).replace(/^data:image\/\w+;base64,/, '');
-
-        // 水印
-        base64 = await applyWatermark(base64, fmt, q);
-
-        // 保存
-        const { SaveScreenshot, SelectDir } = await import('../core/wails-bindings');
-        let dir = uiState.screenshotDir;
-        if (!dir) {
-            dir = await SelectDir();
-            if (!dir) {
-                break;
+        for (let i = 0; i < presets.length; i++) {
+            const preset = presets[i];
+            if (progressEl) {
+                progressEl.textContent = `${t('motion.poseStudio.batchProgress')} ${i + 1}/${presets.length}: ${preset.name}`;
             }
-            uiState.screenshotDir = dir;
-            setUIState({ screenshotDir: dir });
+
+            // 切换相机角度
+            const beta = Math.PI / 2 - (preset.elevation * Math.PI) / 180;
+            setOrbitParams({ beta, distance: preset.distance });
+            if (cam instanceof ArcRotateCamera) {
+                cam.alpha = (preset.azimuth * Math.PI) / 180;
+            }
+
+            // 等待渲染完成
+            await waitForFrame();
+            await waitForFrame();
+            await waitForFrame();
+
+            // 截图
+            const fmt = uiState.screenshotFormat ?? 'image/png';
+            const q = uiState.screenshotQuality ?? 0.9;
+            let base64 = dom.canvas.toDataURL(fmt, q).replace(/^data:image\/\w+;base64,/, '');
+
+            // 水印
+            base64 = await applyWatermark(base64, fmt, q);
+
+            // 保存
+            const { SaveScreenshot, SelectDir } = await import('../core/wails-bindings');
+            let dir = uiState.screenshotDir;
+            if (!dir) {
+                dir = await SelectDir();
+                if (!dir) {
+                    break;
+                }
+                uiState.screenshotDir = dir;
+                setUIState({ screenshotDir: dir });
+            }
+
+            const ts = Date.now();
+            const ext = fmt === 'image/jpeg' ? 'jpg' : fmt === 'image/webp' ? 'webp' : 'png';
+            const filename = `${baseName}_${preset.name}_${ts}.${ext}`;
+            try {
+                await SaveScreenshot(dir, filename, base64);
+                saved++;
+            } catch (err) {
+                logWarn('pose', `batch save failed: ${filename}`, err);
+            }
         }
 
-        const ts = Date.now();
-        const ext = fmt === 'image/jpeg' ? 'jpg' : fmt === 'image/webp' ? 'webp' : 'png';
-        const filename = `${baseName}_${preset.name}_${ts}.${ext}`;
-        try {
-            await SaveScreenshot(dir, filename, base64);
-            saved++;
-        } catch (err) {
-            logWarn('pose', `batch save failed: ${filename}`, err);
+        // 恢复原相机角度
+        setOrbitParams(origParams);
+        if (cam instanceof ArcRotateCamera) {
+            cam.alpha = origAlpha;
         }
+        setStatus(t('motion.poseStudio.batchDone', { saved }), true);
+    } finally {
+        if (progressEl) {
+            progressEl.style.display = 'none';
+        }
+        _batchRunning = false;
     }
-
-    // 恢复原相机角度
-    setOrbitParams(origParams);
-    if (cam instanceof ArcRotateCamera) {
-        cam.alpha = origAlpha;
-    }
-
-    if (progressEl) {
-        progressEl.style.display = 'none';
-    }
-    setStatus(t('motion.poseStudio.batchDone', { saved }), true);
 }
