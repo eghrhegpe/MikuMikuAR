@@ -119,6 +119,20 @@ export const zhCN: Record<string, string> = {
     'motion.context.pinMotion': '固定此动作',
     'motion.context.unpin': '跟随全局动作',
     'motion.changeMotion': '更换动作',
+    // [doc:adr-129] 场景级动作菜单：Card 1 当前动作 + 播放状态行
+    'motion.currentMotion': '当前动作',
+    'motion.browseMotionLibrary': '浏览动作库',
+    'motion.playbackStatus': '播放状态',
+    'motion.statusPlaying': '播放中',
+    'motion.statusPaused': '已暂停',
+    'motion.statusStatic': '静态',
+    'motion.statusLoop': '循环: {state}',
+    'motion.followGlobal': '跟随全局',
+    'motion.pinnedFmt': '固定: {name}',
+    // [doc:adr-129] Card 3 场景工具按语义分 3 组
+    'motion.sceneTools.playbackSync': '播放与同步',
+    'motion.sceneTools.characterEnv': '角色与环境',
+    'motion.sceneTools.systemImport': '系统与导入',
     'motion.motionLibrary': '动作库',
     'motion.bindMotionTo': '绑定动作 → {name}',
     'motion.none': '无',
@@ -346,7 +360,7 @@ export const zhCN: Record<string, string> = {
     'motion.override.history': '历史记录',
     'motion.override.module.bodyPosture': '身体姿态',
     'motion.override.module.handSymmetry': '手腕对称',
-    
+
     'motion.override.module.swayMotion': '摇摆运动',
     'motion.override.module.fingerPose': '手指姿势',
     'motion.override.module.ridingModel': '骑行模型',
@@ -358,9 +372,7 @@ export const zhCN: Record<string, string> = {
     'param.sideShift': '左右偏移',
     'param.vertShift': '上下偏移',
     'param.depthShift': '前后偏移',
-    
-    
-    
+
     'param.mirrorOffset': '镜像偏移',
     'param.symmetry': '同步镜像',
     'param.pitch': '屈腕',

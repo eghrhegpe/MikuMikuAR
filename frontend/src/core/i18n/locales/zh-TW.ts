@@ -247,6 +247,20 @@ export const zhTW: Record<string, string> = {
     'motion.context.pinMotion': '固定此動作',
     'motion.context.unpin': '跟隨全域動作',
     'motion.changeMotion': '更換動作',
+    // [doc:adr-129] 場景級動作選單：Card 1 當前動作 + 播放狀態行
+    'motion.currentMotion': '當前動作',
+    'motion.browseMotionLibrary': '瀏覽動作庫',
+    'motion.playbackStatus': '播放狀態',
+    'motion.statusPlaying': '播放中',
+    'motion.statusPaused': '已暫停',
+    'motion.statusStatic': '靜態',
+    'motion.statusLoop': '循環: {state}',
+    'motion.followGlobal': '跟隨全域',
+    'motion.pinnedFmt': '固定: {name}',
+    // [doc:adr-129] Card 3 場景工具按語義分 3 組
+    'motion.sceneTools.playbackSync': '播放與同步',
+    'motion.sceneTools.characterEnv': '角色與環境',
+    'motion.sceneTools.systemImport': '系統與匯入',
     'motion.motionLibrary': '動作庫',
     'motion.bindMotionTo': '綁定動作 → {name}',
     'motion.none': '無',
@@ -1365,7 +1379,7 @@ export const zhTW: Record<string, string> = {
     'motion.override.history': '歷史記錄',
     'motion.override.module.bodyPosture': '身體姿態',
     'motion.override.module.handSymmetry': '手腕對稱',
-    
+
     'motion.override.module.swayMotion': '搖擺運動',
     'motion.override.module.fingerPose': '手指姿勢',
     'motion.override.module.ridingModel': '騎行模型',
@@ -1376,9 +1390,7 @@ export const zhTW: Record<string, string> = {
     'param.sideShift': '左右偏移',
     'param.vertShift': '上下偏移',
     'param.depthShift': '前後偏移',
-    
-    
-    
+
     'param.mirrorOffset': '鏡像偏移',
     'param.symmetry': '同步鏡像',
     'param.pitch': '屈腕',

@@ -596,6 +596,10 @@ export class SlideMenu {
         if (row.kind === 'divider') {
             return '__divider__';
         }
+        // [doc:adr-129] sectionTitle 用 label 区分（target 通常为空），避免多个标题行 key 撞车
+        if (row.kind === 'sectionTitle') {
+            return `sectionTitle:${row.label}`;
+        }
         return `${row.kind}:${row.target}`;
     }
 
@@ -731,6 +735,11 @@ export class SlideMenu {
             row.kind === 'modeSlider' ||
             row.kind === 'chips'
         ) {
+            return;
+        }
+        // [doc:adr-129] sectionTitle：直接更新 textContent（无 .slide-label 子元素）
+        if (row.kind === 'sectionTitle') {
+            el.textContent = row.label ?? '';
             return;
         }
         const labelEl = el.querySelector('.slide-label') as HTMLElement | null;
@@ -884,6 +893,15 @@ export class SlideMenu {
         if (row.kind === 'divider') {
             const el = document.createElement('div');
             el.className = 'slide-divider';
+            return el;
+        }
+
+        // [doc:adr-129] sectionTitle：lcard 内视觉分组的标题行（非交互，仅渲染 .section-title）
+        if (row.kind === 'sectionTitle') {
+            const el = document.createElement('div');
+            el.className = 'section-title';
+            el.textContent = row.label;
+            el.dataset.rowKey = this.rowKey(row);
             return el;
         }
 

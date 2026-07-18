@@ -251,6 +251,20 @@ export const ko: Record<string, string> = {
     'motion.context.pinMotion': '이 동작 고정',
     'motion.context.unpin': '전역 동작 따르기',
     'motion.changeMotion': '모션 변경',
+    // [doc:adr-129] 장면 수준 동작 메뉴: Card 1 현재 동작 + 재생 상태 행
+    'motion.currentMotion': '현재 동작',
+    'motion.browseMotionLibrary': '동작 라이브러리 탐색',
+    'motion.playbackStatus': '재생 상태',
+    'motion.statusPlaying': '재생 중',
+    'motion.statusPaused': '일시정지',
+    'motion.statusStatic': '정적',
+    'motion.statusLoop': '루프: {state}',
+    'motion.followGlobal': '전역 따름',
+    'motion.pinnedFmt': '고정: {name}',
+    // [doc:adr-129] Card 3 장면 도구를 의미별로 3그룹화
+    'motion.sceneTools.playbackSync': '재생 및 동기화',
+    'motion.sceneTools.characterEnv': '캐릭터 및 환경',
+    'motion.sceneTools.systemImport': '시스템 및 가져오기',
     'motion.motionLibrary': '모션 라이브러리',
     'motion.bindMotionTo': '모션 바인딩 → {name}',
     'motion.none': '없음',
@@ -1377,7 +1391,7 @@ export const ko: Record<string, string> = {
     'motion.override.history': '기록',
     'motion.override.module.bodyPosture': '바디 포스처',
     'motion.override.module.handSymmetry': '핀드 대칭',
-    
+
     'motion.override.module.swayMotion': '스웨이 모션',
     'motion.override.module.fingerPose': '핑거 포즈',
     'motion.override.module.ridingModel': '라이딩 모델',
@@ -1388,9 +1402,7 @@ export const ko: Record<string, string> = {
     'param.sideShift': '좌우 이동',
     'param.vertShift': '상하 이동',
     'param.depthShift': '전후 이동',
-    
-    
-    
+
     'param.mirrorOffset': '미러 오프셋',
     'param.symmetry': '동기 미러',
     'param.pitch': '손목 굽힘',
@@ -1506,14 +1518,17 @@ export const ko: Record<string, string> = {
     'goerr.software.launchFailed': '{name} 실행에 실패했습니다.',
     'goerr.software.androidNotSupported': '{name}은(는) Android에서 실행할 수 없습니다.',
     'goerr.config.readFailed': '설정 읽기에 실패했습니다.',
-    'goerr.screenshot.dirNotSet': '스크린샷 저장 폴더가 설정되지 않았습니다. 먼저 스크린샷을 찍어 주세요.',
+    'goerr.screenshot.dirNotSet':
+        '스크린샷 저장 폴더가 설정되지 않았습니다. 먼저 스크린샷을 찍어 주세요.',
     'goerr.screenshot.dirCreateFailed': '스크린샷 저장 폴더 생성에 실패했습니다.',
     'goerr.screenshot.androidNotSupported': 'Android에서는 스크린샷 폴더를 열 수 없습니다.',
     'goerr.watch.unsupportedFormat': '지원하지 않는 파일 형식입니다: {ext}',
-    'goerr.watch.androidNotSupported': 'Android에서는 파일 시스템 감시를 지원하지 않습니다. 파일을 수동으로 가져와 주세요.',
+    'goerr.watch.androidNotSupported':
+        'Android에서는 파일 시스템 감시를 지원하지 않습니다. 파일을 수동으로 가져와 주세요.',
     'goerr.watch.dirInaccessible': '감시 폴더에 접근할 수 없습니다.',
     'goerr.watch.notADirectory': '경로가 폴더가 아닙니다: {dir}',
     'goerr.watch.createWatcherFailed': '파일 감시 생성에 실패했습니다.',
     'goerr.watch.addWatchFailed': '감시 폴더 추가에 실패했습니다.',
-    'goerr.zip.tooManyEntries': '{op}: 압축 파일 내 파일 수가 {count}개로, 상한 {max}개를 초과했습니다.',
+    'goerr.zip.tooManyEntries':
+        '{op}: 압축 파일 내 파일 수가 {count}개로, 상한 {max}개를 초과했습니다.',
 };
