@@ -234,7 +234,9 @@ function createProceduralSky(state: EnvState): void {
     // 跟随相机，与云层同心（同 center），确保深度测试正确
     const followObs = scene.onBeforeRenderObservable.add(() => {
         const cam = scene.activeCamera;
-        if (!cam) return;
+        if (!cam) {
+            return;
+        }
         sphere.position.x = cam.position.x;
         sphere.position.z = cam.position.z;
     });
@@ -301,7 +303,9 @@ function loadSkyCube(path: string, rotationY: number, intensity: number): void {
     // 跟随相机，与云层同心（同 center），确保深度测试正确
     const followObs = scene.onBeforeRenderObservable.add(() => {
         const cam = scene.activeCamera;
-        if (!cam) return;
+        if (!cam) {
+            return;
+        }
         sphere.position.x = cam.position.x;
         sphere.position.z = cam.position.z;
     });

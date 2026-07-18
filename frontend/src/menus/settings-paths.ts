@@ -477,7 +477,10 @@ function buildPathsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                         false,
                         () => {
                             OpenCacheDir('extracted').catch((err: unknown) => {
-                                const msg = typeof err === 'object' && err !== null && 'message' in err ? String((err as { message: unknown }).message) : String(err);
+                                const msg =
+                                    typeof err === 'object' && err !== null && 'message' in err
+                                        ? String((err as { message: unknown }).message)
+                                        : String(err);
                                 setStatus(`✗ ${msg}`, false);
                             });
                         }
@@ -502,7 +505,10 @@ function buildPathsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                         false,
                         () => {
                             OpenCacheDir('thumbnails').catch((err: unknown) => {
-                                const msg = typeof err === 'object' && err !== null && 'message' in err ? String((err as { message: unknown }).message) : String(err);
+                                const msg =
+                                    typeof err === 'object' && err !== null && 'message' in err
+                                        ? String((err as { message: unknown }).message)
+                                        : String(err);
                                 setStatus(`✗ ${msg}`, false);
                             });
                         }

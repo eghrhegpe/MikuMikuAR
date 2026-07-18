@@ -965,10 +965,7 @@ async function handlePlazaDownload(
         );
     } catch (e) {
         // 动态 import 失败或 binding 未生成：仅报状态，不串到系统浏览器下载，便于单独定位内嵌下载问题。
-        setStatus(
-            t('plaza.downloadFail', { err: translateGoError(e) }),
-            true
-        );
+        setStatus(t('plaza.downloadFail', { err: translateGoError(e) }), true);
     } finally {
         abortCtrl?.abort(); // 清理内部 AbortController
     }
@@ -1001,10 +998,7 @@ function openInWindow(site: PlazaSite): void {
         })
         .catch((e) => {
             // 不再自动降级到系统浏览器：wails 窗口失败即失败，便于单独测试该模式。
-            setStatus(
-                t('plaza.openFail', { err: translateGoError(e) }),
-                true
-            );
+            setStatus(t('plaza.openFail', { err: translateGoError(e) }), true);
         });
 }
 

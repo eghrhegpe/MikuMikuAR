@@ -285,11 +285,7 @@ export async function showPresetSaveDialog(): Promise<void> {
             return true;
         },
         t('scene.statusSavePresetFailed'),
-        (err) =>
-            showErrorToast(
-                t('scene.toastSavePresetFailed'),
-                translateGoError(err)
-            )
+        (err) => showErrorToast(t('scene.toastSavePresetFailed'), translateGoError(err))
     );
     if (r) {
         USER_FILTER_PRESETS[trimmed] = state;

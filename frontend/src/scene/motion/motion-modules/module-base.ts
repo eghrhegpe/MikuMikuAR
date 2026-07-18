@@ -60,7 +60,10 @@ export function createModuleBase(
 
     /** 构建当前全量快照（所有模块的 enabled + params） */
     function buildSnapshot() {
-        const snap: Record<string, { enabled: boolean; params: Record<string, import('@/core/types').ParamValue> }> = {};
+        const snap: Record<
+            string,
+            { enabled: boolean; params: Record<string, import('@/core/types').ParamValue> }
+        > = {};
         for (const mod of getRegisteredModules()) {
             const ms = getModuleState(modelId, mod.id);
             snap[mod.id] = { enabled: ms.enabled, params: { ...ms.params } };
@@ -130,7 +133,9 @@ export function applyModuleSnapshot(
 ): void {
     for (const [moduleId, state] of Object.entries(snapshot)) {
         const mod = createModule(moduleId, modelId);
-        if (!mod) continue;
+        if (!mod) {
+            continue;
+        }
         mod.setState({ id: moduleId, ...state });
         if (state.enabled) {
             mod.enable();

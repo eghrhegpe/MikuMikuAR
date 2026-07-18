@@ -12,7 +12,9 @@ const data = vi.hoisted(() => {
         frameHooks.push(hook);
         return () => {
             const i = frameHooks.indexOf(hook);
-            if (i >= 0) frameHooks.splice(i, 1);
+            if (i >= 0) {
+                frameHooks.splice(i, 1);
+            }
         };
     });
     const setBoneOverridePositionSpy = vi.fn();
@@ -81,7 +83,13 @@ describe('sway-motion 每帧钩子', () => {
         hook(t, 'sway-q');
 
         // yaw = 5*(1-0.3)*1 = 3.5
-        expect(data.setBoneOverrideSpy).toHaveBeenCalledWith('センター', [0, 3.5, 0], 1, true, 'sway-q');
+        expect(data.setBoneOverrideSpy).toHaveBeenCalledWith(
+            'センター',
+            [0, 3.5, 0],
+            1,
+            true,
+            'sway-q'
+        );
     });
 
     it('frequency/decay 改变由钩子实时反映（t=0 → yaw=0）', () => {
@@ -92,7 +100,13 @@ describe('sway-motion 每帧钩子', () => {
         data.setBoneOverrideSpy.mockClear();
 
         data.frameHooks[0](0, 'sway-t0');
-        expect(data.setBoneOverrideSpy).toHaveBeenCalledWith('センター', [0, 0, 0], 1, true, 'sway-t0');
+        expect(data.setBoneOverrideSpy).toHaveBeenCalledWith(
+            'センター',
+            [0, 0, 0],
+            1,
+            true,
+            'sway-t0'
+        );
     });
 
     it('position-offset 占用 センター 时 sway 让位（钩子不写入，不争抢）', () => {
@@ -133,8 +147,20 @@ describe('riding-model 自动踏板', () => {
         const t = 0.5; // phase = 0.5*0.5*360 = 90°
         data.frameHooks[0](t, 'ride-auto');
 
-        expect(data.setBoneOverrideSpy).toHaveBeenCalledWith('左足', [20, 0, 0], 1, true, 'ride-auto');
-        expect(data.setBoneOverrideSpy).toHaveBeenCalledWith('右足', [-20, 0, 0], 1, true, 'ride-auto');
+        expect(data.setBoneOverrideSpy).toHaveBeenCalledWith(
+            '左足',
+            [20, 0, 0],
+            1,
+            true,
+            'ride-auto'
+        );
+        expect(data.setBoneOverrideSpy).toHaveBeenCalledWith(
+            '右足',
+            [-20, 0, 0],
+            1,
+            true,
+            'ride-auto'
+        );
     });
 
     it('autoPedal=false（默认）时不注册钩子，足部走静态 pedalAngle', () => {
@@ -145,7 +171,19 @@ describe('riding-model 自动踏板', () => {
 
         expect(data.registerFrameHookSpy).not.toHaveBeenCalled();
         // bake 直接写静态足骨：左足 sin(90)*20=20，右足 sin(270)*20=-20
-        expect(data.setBoneOverrideSpy).toHaveBeenCalledWith('左足', [20, 0, 0], 1, true, 'ride-static');
-        expect(data.setBoneOverrideSpy).toHaveBeenCalledWith('右足', [-20, 0, 0], 1, true, 'ride-static');
+        expect(data.setBoneOverrideSpy).toHaveBeenCalledWith(
+            '左足',
+            [20, 0, 0],
+            1,
+            true,
+            'ride-static'
+        );
+        expect(data.setBoneOverrideSpy).toHaveBeenCalledWith(
+            '右足',
+            [-20, 0, 0],
+            1,
+            true,
+            'ride-static'
+        );
     });
 });

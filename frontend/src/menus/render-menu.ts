@@ -162,9 +162,16 @@ function renderColorSlider(node: MenuNode, container: HTMLElement): void {
     const value = getStateValue(ctrl.bind) as [number, number, number];
     const onChange = (v: [number, number, number]) => setStateValue(ctrl.bind, v);
 
-    addColorSliderRow(container, node.label ? t(node.label) : '', value, onChange, {
-        bind: () => getBindFn(ctrl.bind)() as [number, number, number],
-    }, node.id);
+    addColorSliderRow(
+        container,
+        node.label ? t(node.label) : '',
+        value,
+        onChange,
+        {
+            bind: () => getBindFn(ctrl.bind)() as [number, number, number],
+        },
+        node.id
+    );
 }
 
 // ======== Toggle ========

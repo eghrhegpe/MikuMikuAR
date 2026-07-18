@@ -295,7 +295,9 @@ export function buildPoseStudioLevel(): PopupLevel {
 
 /** 批量截图：遍历所有预设角度，截图后保存 */
 async function _batchScreenshot(presets: CameraAnglePreset[], modelId: string): Promise<void> {
-    if (_batchRunning) return; // 并发锁
+    if (_batchRunning) {
+        return;
+    } // 并发锁
     _batchRunning = true;
     const progressEl = document.getElementById('pose-batch-progress');
     try {

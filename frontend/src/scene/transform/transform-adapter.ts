@@ -52,7 +52,9 @@ const adapters = new Map<ResourceKind, TransformAdapter>();
 
 /** 注册变换适配器；同一适配器可声明多个 kind（如 actor + stage） */
 export function registerTransformAdapter(a: TransformAdapter): void {
-    for (const k of a.kinds) adapters.set(k, a);
+    for (const k of a.kinds) {
+        adapters.set(k, a);
+    }
 }
 
 export function getTransformAdapter(kind: ResourceKind): TransformAdapter | null {
@@ -66,7 +68,9 @@ export function getTransformAdapter(kind: ResourceKind): TransformAdapter | null
 export function attachGizmoForKind(kind: ResourceKind, id: string): boolean {
     const a = adapters.get(kind);
     const node = a?.getNode(id);
-    if (!a || !node) return false;
+    if (!a || !node) {
+        return false;
+    }
     return attachGizmo({
         id,
         node,

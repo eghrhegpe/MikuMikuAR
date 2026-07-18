@@ -59,7 +59,14 @@ function initScene(): void {
     scene.clearColor = new Color4(0.08, 0.08, 0.12, 1.0);
 
     // 摄像机
-    const camera = new ArcRotateCamera('camera', -Math.PI / 2, Math.PI / 3, 8, Vector3.Zero(), scene);
+    const camera = new ArcRotateCamera(
+        'camera',
+        -Math.PI / 2,
+        Math.PI / 3,
+        8,
+        Vector3.Zero(),
+        scene
+    );
     camera.lowerRadiusLimit = 1.5;
     camera.upperRadiusLimit = 50;
     camera.attachControl(canvas, true);
@@ -100,8 +107,14 @@ function clearScene(): void {
 }
 
 // ======== 加载 PMX ========
-async function loadModel(pmxBuffer: ArrayBuffer, textures: IArrayBufferFile[], modelName: string): Promise<void> {
-    if (!scene) return;
+async function loadModel(
+    pmxBuffer: ArrayBuffer,
+    textures: IArrayBufferFile[],
+    modelName: string
+): Promise<void> {
+    if (!scene) {
+        return;
+    }
 
     setStatus('正在加载模型…');
     clearScene();
@@ -175,15 +188,11 @@ async function readDirRecursive(entry: FileSystemDirectoryEntry, pathPrefix = ''
     // readEntries 需多次调用直到返回空数组
     let entries: FileSystemEntry[];
     do {
-        entries = await new Promise((resolve, reject) =>
-            reader.readEntries(resolve, reject)
-        );
+        entries = await new Promise((resolve, reject) => reader.readEntries(resolve, reject));
         for (const e of entries) {
             if (e.isFile) {
                 const fe = e as FileSystemFileEntry;
-                const file = await new Promise<File>((resolve, reject) =>
-                    fe.file(resolve, reject)
-                );
+                const file = await new Promise<File>((resolve, reject) => fe.file(resolve, reject));
                 // 用相对路径重写文件名，供 ReferenceFileResolver 匹配
                 const relativeName = pathPrefix + e.name;
                 // 注：File 构造器不支持改 webkitRelativePath，我们用 IArrayBufferFile 传递路径
@@ -250,13 +259,18 @@ async function handleFile(file: File): Promise<void> {
         let pmxName = '';
         const textures: IArrayBufferFile[] = [];
 
-        const files = zip.files as Record<string, { dir: boolean; async: (t: 'arraybuffer') => Promise<ArrayBuffer> }>;
+        const files = zip.files as Record<
+            string,
+            { dir: boolean; async: (t: 'arraybuffer') => Promise<ArrayBuffer> }
+        >;
         const allNames = Object.keys(files);
 
         // 优先找 .pmx
         for (const name of allNames) {
             const entry = files[name];
-            if (entry.dir) continue;
+            if (entry.dir) {
+                continue;
+            }
             if (/\.pmx$/i.test(name)) {
                 pmxBuffer = await entry.async('arraybuffer');
                 pmxName = name;
@@ -271,7 +285,9 @@ async function handleFile(file: File): Promise<void> {
         // 收集纹理
         for (const name of allNames) {
             const entry = files[name];
-            if (entry.dir) continue;
+            if (entry.dir) {
+                continue;
+            }
             if (/\.(png|jpg|jpeg|bmp|tga|dds|tif|tiff)$/i.test(name)) {
                 textures.push({
                     relativePath: name,

@@ -29,7 +29,15 @@ import {
     createModule,
     getModuleState,
 } from '../scene/motion/motion-modules/registry';
-import { undo, redo, canUndo, canRedo, getHistoryEntries, getHistoryCursor, jumpToHistory } from '../scene/motion/motion-modules/motion-history';
+import {
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    getHistoryEntries,
+    getHistoryCursor,
+    jumpToHistory,
+} from '../scene/motion/motion-modules/motion-history';
 import { applyModuleSnapshot } from '../scene/motion/motion-modules/module-base';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
@@ -106,11 +114,23 @@ function buildMotionOverrideSchema(): MenuNode[] {
                     const undoBtn = document.createElement('button');
                     undoBtn.className = 'slide-action';
                     const undoIcon = createIconifyIcon('lucide:undo-2');
-                    if (undoIcon) undoBtn.appendChild(undoIcon);
+                    if (undoIcon) {
+                        undoBtn.appendChild(undoIcon);
+                    }
                     undoBtn.title = 'Ctrl+Z';
                     undoBtn.addEventListener('click', () => {
-                        if (!modelId || !canUndo(modelId)) return;
-                        const applier = (snap: Record<string, { enabled: boolean; params: Record<string, import('@/core/types').ParamValue> }>) => {
+                        if (!modelId || !canUndo(modelId)) {
+                            return;
+                        }
+                        const applier = (
+                            snap: Record<
+                                string,
+                                {
+                                    enabled: boolean;
+                                    params: Record<string, import('@/core/types').ParamValue>;
+                                }
+                            >
+                        ) => {
                             applyModuleSnapshot(modelId, snap);
                         };
                         undo(modelId, applier);
@@ -126,11 +146,23 @@ function buildMotionOverrideSchema(): MenuNode[] {
                     const redoBtn = document.createElement('button');
                     redoBtn.className = 'slide-action';
                     const redoIcon = createIconifyIcon('lucide:redo-2');
-                    if (redoIcon) redoBtn.appendChild(redoIcon);
+                    if (redoIcon) {
+                        redoBtn.appendChild(redoIcon);
+                    }
                     redoBtn.title = 'Ctrl+Shift+Z';
                     redoBtn.addEventListener('click', () => {
-                        if (!modelId || !canRedo(modelId)) return;
-                        const applier = (snap: Record<string, { enabled: boolean; params: Record<string, import('@/core/types').ParamValue> }>) => {
+                        if (!modelId || !canRedo(modelId)) {
+                            return;
+                        }
+                        const applier = (
+                            snap: Record<
+                                string,
+                                {
+                                    enabled: boolean;
+                                    params: Record<string, import('@/core/types').ParamValue>;
+                                }
+                            >
+                        ) => {
                             applyModuleSnapshot(modelId, snap);
                         };
                         redo(modelId, applier);
@@ -150,7 +182,9 @@ function buildMotionOverrideSchema(): MenuNode[] {
                     const historyBtn = document.createElement('button');
                     historyBtn.className = 'slide-action';
                     const historyIcon = createIconifyIcon('lucide:more-vertical');
-                    if (historyIcon) historyBtn.appendChild(historyIcon);
+                    if (historyIcon) {
+                        historyBtn.appendChild(historyIcon);
+                    }
                     historyBtn.title = t('motion.override.history');
                     historyBtn.style.fontSize = '14px';
                     let historyDropdown: HTMLElement | null = null;
@@ -171,9 +205,13 @@ function buildMotionOverrideSchema(): MenuNode[] {
                             closeHistoryDropdown();
                             return;
                         }
-                        if (!modelId) return;
+                        if (!modelId) {
+                            return;
+                        }
                         const entries = getHistoryEntries(modelId);
-                        if (entries.length === 0) return;
+                        if (entries.length === 0) {
+                            return;
+                        }
                         const cursor = getHistoryCursor(modelId);
 
                         historyDropdown = document.createElement('div');
@@ -197,8 +235,21 @@ function buildMotionOverrideSchema(): MenuNode[] {
                             }
                             item.textContent = entry.description;
                             item.addEventListener('click', () => {
-                                if (!modelId) return;
-                                const applier = (snap: Record<string, { enabled: boolean; params: Record<string, import('@/core/types').ParamValue> }>) => {
+                                if (!modelId) {
+                                    return;
+                                }
+                                const applier = (
+                                    snap: Record<
+                                        string,
+                                        {
+                                            enabled: boolean;
+                                            params: Record<
+                                                string,
+                                                import('@/core/types').ParamValue
+                                            >;
+                                        }
+                                    >
+                                ) => {
                                     applyModuleSnapshot(modelId, snap);
                                 };
                                 jumpToHistory(modelId, realIndex, applier);
@@ -501,9 +552,13 @@ function buildBoneOverrideSchema(): MenuNode[] {
 
                         const toggleBtn = document.createElement('button');
                         toggleBtn.className = 'slide-action';
-                        const toggleIcon = createIconifyIcon(ov.enabled ? 'lucide:circle-dot' : 'lucide:circle');
+                        const toggleIcon = createIconifyIcon(
+                            ov.enabled ? 'lucide:circle-dot' : 'lucide:circle'
+                        );
                         if (toggleIcon) {
-                            if (toggleBtn.firstChild) toggleBtn.removeChild(toggleBtn.firstChild);
+                            if (toggleBtn.firstChild) {
+                                toggleBtn.removeChild(toggleBtn.firstChild);
+                            }
                             toggleBtn.appendChild(toggleIcon);
                         }
                         toggleBtn.title = ov.enabled ? t('motion.disable') : t('motion.enable');

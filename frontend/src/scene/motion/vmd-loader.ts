@@ -203,7 +203,9 @@ export async function loadVMDFromPath(
     await withLoadingIndicator('scene.loader.vmdLoading', async () => {
         try {
             const vmdBytes = await readFileBytes(path);
-            if (!vmdBytes) return;
+            if (!vmdBytes) {
+                return;
+            }
             const vmdData = vmdBytes.buffer as ArrayBuffer;
             const vmdName = getBaseName(path) || '';
             const vmdDisplayName = vmdName.replace(/\.vmd$/i, '');
@@ -221,7 +223,12 @@ export async function loadVMDFromPath(
                     foc.vmdPath = path;
                 }
             } else {
-                setActiveMotion({ vmdPath: path, vmdName: vmdName.replace(/\.vmd$/i, ''), vmdLayers: [], source: 'vmd' });
+                setActiveMotion({
+                    vmdPath: path,
+                    vmdName: vmdName.replace(/\.vmd$/i, ''),
+                    vmdLayers: [],
+                    source: 'vmd',
+                });
                 setStatus(t('scene.vmd.cachedAutoApply'), false);
             }
 
@@ -304,7 +311,9 @@ export async function loadCameraVmdFromPath(path: string, signal?: AbortSignal):
     await withLoadingIndicator('scene.loader.cameraVmdLoading', async () => {
         try {
             const vmdBytes = await readFileBytes(path);
-            if (!vmdBytes) return;
+            if (!vmdBytes) {
+                return;
+            }
             const vmdData = vmdBytes.buffer as ArrayBuffer;
             const vmdName = getBaseName(path) || '';
 
@@ -330,7 +339,9 @@ export async function loadVPDPose(
     await withLoadingIndicator('scene.loader.vpdLoading', async () => {
         try {
             const rawBytes = await readFileBytes(path);
-            if (!rawBytes) return;
+            if (!rawBytes) {
+                return;
+            }
             const rawData = rawBytes.buffer as ArrayBuffer;
             const poseName = getBaseName(path) || '';
 

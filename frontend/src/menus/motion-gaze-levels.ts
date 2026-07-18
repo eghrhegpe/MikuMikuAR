@@ -5,7 +5,11 @@
 
 import { cardContainer } from '../core/config';
 import type { PopupLevel } from '../core/config';
-import { getPerceptionState, setPerceptionState, activatePerception } from '../scene/motion/perception';
+import {
+    getPerceptionState,
+    setPerceptionState,
+    activatePerception,
+} from '../scene/motion/perception';
 import { triggerAutoSave } from '../core/utils';
 import { getMotionMenu } from './motion-popup';
 import { t } from '../core/i18n/t';
@@ -204,7 +208,10 @@ const gazeSchema: MenuNode[] = [
                         btn.textContent = t(e.label);
                         btn.addEventListener('click', () => {
                             activatePerception();
-                            setPerceptionState({ emotion: e.value as 'neutral' | 'happy' | 'sad' | 'surprised' | 'angry' });
+                            setPerceptionState({
+                                emotion: e.value as
+                                    'neutral' | 'happy' | 'sad' | 'surprised' | 'angry',
+                            });
                             triggerAutoSave();
                             refreshMotionMenu();
                         });

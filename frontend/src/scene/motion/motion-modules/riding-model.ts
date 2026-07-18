@@ -18,12 +18,7 @@
 import type { MenuNode } from '@/menus/menu-schema';
 import type { ParamValue } from '@/core/types';
 import { setBoneOverride, registerBoneOverrideFrameHook } from '../bone-override';
-import {
-    registerModule,
-    getModuleState,
-    claimBones,
-    getOwnedBones,
-} from './registry';
+import { registerModule, getModuleState, claimBones, getOwnedBones } from './registry';
 import type { MotionOverrideModule, ModuleMeta } from './types';
 import { computePedalPhase, computeFootPitch } from './motion-math';
 import { createModuleBase, createFrameHookManager } from './module-base';
@@ -103,8 +98,12 @@ function bake(modelId: string): void {
 
     // 足部：记录已认领的足骨（供帧钩子驱动）；autoPedal 关闭时写静态 pedalAngle
     const feet: string[] = [];
-    if (claimed.includes('左足')) feet.push('左足');
-    if (claimed.includes('右足')) feet.push('右足');
+    if (claimed.includes('左足')) {
+        feet.push('左足');
+    }
+    if (claimed.includes('右足')) {
+        feet.push('右足');
+    }
     _ridingFeet.set(modelId, feet);
 
     if (!autoPedal) {

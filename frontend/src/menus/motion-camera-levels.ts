@@ -3,7 +3,13 @@
 
 import { setStatus, cardContainer, stackRegistry, setMotionBindingTargetId } from '../core/config';
 import type { PopupLevel } from '../core/config';
-import { slideRow, addSliderRow, addToggleRow, addModeSlider, addModeRow } from '../core/ui-helpers';
+import {
+    slideRow,
+    addSliderRow,
+    addToggleRow,
+    addModeSlider,
+    addModeRow,
+} from '../core/ui-helpers';
 import { getBrowseDir } from '../core/utils';
 import {
     hasCameraVmd,
@@ -213,7 +219,7 @@ function buildCameraSchema(): MenuNode[] {
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
                     if (vmdLoaded) {
-                        slideRow(inner, 'lucide:trash-2', t('motion.clearCamVmd'), false,                         () => {
+                        slideRow(inner, 'lucide:trash-2', t('motion.clearCamVmd'), false, () => {
                             const snap = pushUndoSnapshot();
                             clearCameraVmd();
                             triggerAutoSave();
@@ -361,17 +367,11 @@ function renderOrbitParams(container: HTMLElement): void {
     // 骨骼选择器（仅锁定启用且有骨骼时显示）
     if (boneLock.enabled && boneNames.length > 0) {
         const boneOptions = boneNames.map((bn) => ({ value: bn, label: bn }));
-        addModeRow(
-            container,
-            t('motion.boneLockSelect'),
-            boneOptions,
-            boneLock.boneName,
-            (bn) => {
-                setOrbitBoneLock(true, bn);
-                setStatus(t('motion.boneLockApplied', { bone: bn }), true);
-                refreshCameraLevel();
-            }
-        );
+        addModeRow(container, t('motion.boneLockSelect'), boneOptions, boneLock.boneName, (bn) => {
+            setOrbitBoneLock(true, bn);
+            setStatus(t('motion.boneLockApplied', { bone: bn }), true);
+            refreshCameraLevel();
+        });
     } else if (boneLock.enabled && boneNames.length === 0) {
         // 有锁定但无骨骼（例如模型未加载）——显示提示
         const hint = document.createElement('div');

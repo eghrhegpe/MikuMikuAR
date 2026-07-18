@@ -136,13 +136,17 @@ function _generateBlueNoise(size: number, iterations: number): Uint8Array {
             }
         }
         // Copy back and decrease strength
-        for (let i = 0; i < n; i++) data[i] = tmp[i];
+        for (let i = 0; i < n; i++) {
+            data[i] = tmp[i];
+        }
         strength *= 0.85;
     }
 
     // Step 3: histogram equalization — ensure full 0-255 range (blue noise should have flat histogram)
     const histogram = new Uint32Array(256);
-    for (let i = 0; i < n; i++) histogram[data[i]]++;
+    for (let i = 0; i < n; i++) {
+        histogram[data[i]]++;
+    }
     const cdf = new Float32Array(256);
     let cum = 0;
     for (let v = 0; v < 256; v++) {
@@ -530,7 +534,10 @@ export function createClouds(state: EnvState): void {
         } else {
             const halfThick = (state.cloudThickness ?? 40) / 2;
             _volCloudMat.setFloat('cloudDensity', state.cloudCover * CLOUD_DENSITY_SCALE);
-            _volCloudMat.setVector3('windDirection', new Vector3(windVel[0], windVel[1], windVel[2]));
+            _volCloudMat.setVector3(
+                'windDirection',
+                new Vector3(windVel[0], windVel[1], windVel[2])
+            );
             _volCloudMat.setFloat('cloudBaseY', state.cloudHeight - halfThick);
             _volCloudMat.setFloat('cloudTopY', state.cloudHeight + halfThick);
             _volCloudMat.setFloat('cloudScale', state.cloudScale);
@@ -661,7 +668,10 @@ export function createClouds(state: EnvState): void {
             mat.setColor3('sunColor', new Color3(1, 0.98, 0.92));
             mat.setFloat('brightness', 1.0);
         }
-        mat.setColor3('sceneFogColor', scene.fogEnabled ? scene.fogColor : new Color3(0.53, 0.7, 0.92));
+        mat.setColor3(
+            'sceneFogColor',
+            scene.fogEnabled ? scene.fogColor : new Color3(0.53, 0.7, 0.92)
+        );
     });
     mesh.metadata = { obs, followObs, farZ };
 

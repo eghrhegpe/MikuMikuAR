@@ -78,30 +78,30 @@ function ensureActive(modelId: string): void {
     }
     bake(modelId); // 仅在首次建立所有权 + 初始静态姿态
     const unregister = registerBoneOverrideFrameHook((t, mid) => {
-            if (mid !== modelId) {
+        if (mid !== modelId) {
+            return;
+        }
+        const st = getModuleState(modelId, MODULE_ID);
+        if (!st.enabled) {
+            return;
+        }
+        // 让位判定：未拥有 センター 时，若被其他模块占用则让出；否则重新认领
+        if (!getOwnedBones(modelId, MODULE_ID).has('センター')) {
+            if (isBoneOwnedByOther(modelId, MODULE_ID, 'センター')) {
                 return;
             }
-            const st = getModuleState(modelId, MODULE_ID);
-            if (!st.enabled) {
-                return;
-            }
-            // 让位判定：未拥有 センター 时，若被其他模块占用则让出；否则重新认领
+            claimBones(modelId, MODULE_ID, MANAGED_BONES);
             if (!getOwnedBones(modelId, MODULE_ID).has('センター')) {
-                if (isBoneOwnedByOther(modelId, MODULE_ID, 'センター')) {
-                    return;
-                }
-                claimBones(modelId, MODULE_ID, MANAGED_BONES);
-                if (!getOwnedBones(modelId, MODULE_ID).has('センター')) {
-                    return;
-                }
+                return;
             }
-            const amp = (st.params.amplitude as number) ?? 5;
-            const freq = (st.params.frequency as number) ?? 0.5;
-            const decay = (st.params.decay as number) ?? 0.3;
-            // yaw(t) = amplitude * (1 - decay) * sin(2π·frequency·t)
-            const yaw = computeSwayYaw(amp, decay, freq, t);
-            setBoneOverride('センター', [0, yaw, 0], 1, true, modelId);
-        });
+        }
+        const amp = (st.params.amplitude as number) ?? 5;
+        const freq = (st.params.frequency as number) ?? 0.5;
+        const decay = (st.params.decay as number) ?? 0.3;
+        // yaw(t) = amplitude * (1 - decay) * sin(2π·frequency·t)
+        const yaw = computeSwayYaw(amp, decay, freq, t);
+        setBoneOverride('センター', [0, yaw, 0], 1, true, modelId);
+    });
     _swayFrameHooks.set(modelId, unregister);
 }
 

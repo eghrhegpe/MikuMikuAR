@@ -95,10 +95,7 @@ function importSettings(): void {
                 // getSettingsMenu will be called via reRender from the caller
                 setStatus(t('settings.imported'), true);
             } catch (e) {
-                setStatus(
-                    t('settings.importFailed') + translateGoError(e),
-                    true
-                );
+                setStatus(t('settings.importFailed') + translateGoError(e), true);
             }
         };
         reader.onerror = () => setStatus(t('settings.readFailed'), true);
