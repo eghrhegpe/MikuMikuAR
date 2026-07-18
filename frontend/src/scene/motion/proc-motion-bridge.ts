@@ -140,9 +140,8 @@ async function startProcMotion(
 
     // 【已移除 debug 下载代码】
 
-    _procVmdActive = true;
-    procModelId = modelIdAtStart;
     // [P5 per-slot] 显式指定目标时跳过焦点校验：调用方已决定目标，焦点切换不应取消该模型的程序化
+    // [fix] _procVmdActive/procModelId 移至成功分支内赋值（P1: 防止 early return 后状态泄漏）
     const isExplicitTarget = modelIdOverride !== undefined;
     try {
         // D4: 仅在未显式指定目标时检查焦点切换，避免无意义的 VMD 生成
@@ -185,14 +184,16 @@ async function startProcMotion(
             procModelId = null;
             procActiveKind = 'idle';
         } else {
-            // 成功：重新断言 _procVmdActive=true
+            // 成功：写入模型 ID + 标记 VMD 激活
             _procVmdActive = true;
+            procModelId = modelIdAtStart;
             // 感知层独立激活，不依赖程序化动作生命周期
         }
     } catch (err) {
         logWarn('proc-motion', '程序化动作生成失败:', err);
         _procVmdActive = false;
-        _clearVmdData(focusedModel());
+        // [fix P3] 使用 modelIdAtStart 锁定目标，避免焦点切换后误清其他模型
+        _clearVmdData(modelManager.get(modelIdAtStart));
     } finally {
         procStarting = false;
     }
@@ -301,16 +302,22 @@ export function setProcMotionMode(mode: ProcMotionMode): void {
         stopProcMotion();
     }
     triggerAutoSave();
+    // [fix P2] 模式变更需重生成 VMD（UI 层已包含此调用）
+    regenerateProcMotion();
 }
 
 export function setProcMotionIntensity(v: number): void {
     _writeProcState({ intensity: clamp01(v) });
     triggerAutoSave();
+    // [fix P2] 强度变更需重生成 VMD
+    regenerateProcMotion();
 }
 
 export function setProcMotionSpeed(v: number): void {
     _writeProcState({ speed: Math.max(0.5, Math.min(2, v)) });
     triggerAutoSave();
+    // [fix P2] 速度变更需重生成 VMD
+    regenerateProcMotion();
 }
 
 export function setProcMotionAutoSwitch(on: boolean): void {
@@ -382,6 +389,8 @@ export function setProcMotionVpdApplyEnabled(v: boolean): void {
     }
     _writeProcState({ vpdApplyEnabled: v });
     triggerAutoSave();
+    // [fix P2] VPD 应用开关影响 VMD 生成结果
+    regenerateProcMotion();
 }
 
 export function setProcMotionInterpOverride(v: ProcMotionState['interpOverride']): void {
@@ -392,6 +401,8 @@ export function setProcMotionInterpOverride(v: ProcMotionState['interpOverride']
     }
     _writeProcState({ interpOverride: v });
     triggerAutoSave();
+    // [fix P2] 插值模式变更需重生成 VMD（UI 层已包含此调用）
+    regenerateProcMotion();
 }
 
 /** 设置 BPM 量化开关 */
@@ -449,6 +460,19 @@ export function setGazeLayerActive(active: boolean, intensity: number): void {
     const shouldEnable = active && intensity > 0;
     setProcMotionEyeTrackingEnabled(shouldEnable);
     setProcMotionHeadTrackingEnabled(shouldEnable && intensity >= 0.5);
+}
+
+/** 释放程序化动作模块全部资源。应用关闭 / 模块卸载时调用。 */
+export function disposeProcMotion(): void {
+    stopProcMotion();
+    procBeatDetector?.dispose();
+    procBeatDetector = null;
+    _fallbackProcState = { ...DEFAULT_PROC_STATE };
+    _regeneratePending = false;
+    _stopRequested = false;
+    procStarting = false;
+    procActiveKind = 'idle';
+    lastBeatBpm = 120;
 }
 
 export function regenerateProcMotion(

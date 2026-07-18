@@ -6,6 +6,8 @@ import {
     BONE_RARM_CANDIDATES,
     BONE_WRIST_L_CANDIDATES,
     BONE_WRIST_R_CANDIDATES,
+    BONE_LEG_IK_L_CANDIDATES,
+    BONE_LEG_IK_R_CANDIDATES,
     BONE_CENTER_CANDIDATES,
     BONE_UPPER2_CANDIDATES,
     BONE_WAIST_CANDIDATES,
@@ -32,6 +34,10 @@ export function generateIdleVmd(state: ProcMotionState, boneNames: string[] = []
     const rarmBone = matchBone(boneNames, BONE_RARM_CANDIDATES);
     const wristLBone = matchBone(boneNames, BONE_WRIST_L_CANDIDATES);
     const wristRBone = matchBone(boneNames, BONE_WRIST_R_CANDIDATES);
+
+    // ── 足 IK ──
+    const legIkLBone = matchBone(boneNames, BONE_LEG_IK_L_CANDIDATES);
+    const legIkRBone = matchBone(boneNames, BONE_LEG_IK_R_CANDIDATES);
 
     // ── 躯干微晃（center/upper2/waist/allParent）─ 从感知层迁回程序化 idle ──
     const centerBone = matchBone(boneNames, BONE_CENTER_CANDIDATES);
@@ -212,6 +218,34 @@ export function generateIdleVmd(state: ProcMotionState, boneNames: string[] = []
         }
         if (wristRBone) {
             bones.push(closingFrame(wristRBone, loopFrames));
+        }
+    }
+
+    // ── 足 IK 微动（呼吸起伏 + 重心微摆）──
+    if (legIkLBone || legIkRBone) {
+        const legIkAmp = 0.012 * intensity;    // Y 轴起伏振幅
+        const legSwayAmp = 0.005 * intensity;  // Z 轴微摆
+        for (let f = 0; f < loopFrames; f += 4) {
+            const phase = (f / loopFrames) * Math.PI * 2;
+            // 用较慢的呼吸相位，与 center 的上下浮动错位制造自然感
+            const breathPhase = phase * 0.5;
+            const ly = Math.sin(breathPhase + 0.5) * legIkAmp;
+            const ry = Math.sin(breathPhase + 0.8) * legIkAmp;
+            // 微小 Z 轴摆幅，模拟重心交换
+            const lz = Math.sin(breathPhase) * legSwayAmp;
+            const rz = Math.sin(breathPhase + Math.PI) * legSwayAmp;
+            if (legIkLBone) {
+                bones.push({ name: legIkLBone, frame: f, position: [0, ly, lz], rotation: [0, 0, 0, 1] });
+            }
+            if (legIkRBone) {
+                bones.push({ name: legIkRBone, frame: f, position: [0, ry, rz], rotation: [0, 0, 0, 1] });
+            }
+        }
+        if (legIkLBone) {
+            bones.push(closingFrame(legIkLBone, loopFrames));
+        }
+        if (legIkRBone) {
+            bones.push(closingFrame(legIkRBone, loopFrames));
         }
     }
 
