@@ -16,12 +16,12 @@ import { ShadowGenerator } from '@babylonjs/core/Lights/Shadows/shadowGenerator'
 import { CascadedShadowGenerator } from '@babylonjs/core/Lights/Shadows/cascadedShadowGenerator';
 import type { ModelInstance, PropInstance } from '@/core/config';
 import {
-    attachGizmo,
-    detachGizmo,
+    registerTransformAdapter,
+    attachGizmoForKind,
     isGizmoActive as _isGizmoActive,
     getGizmoTargetId as _getGizmoTargetId,
-    initTransformGizmo,
-} from './transform-gizmo';
+} from '../transform/transform-adapter';
+import { initTransformGizmo } from './transform-gizmo';
 import { scheduleRefresh } from '@/core/reactivity';
 import { resetPerformanceSnapshot, isSnapshotResetSuppressed } from './performance';
 import { col3FromTriple } from '@/core/color-helpers';
@@ -651,39 +651,9 @@ export function setStageLightState(s: Partial<StageLightState>, id?: string): vo
         entry.light = _createStageLight(s.type, entry.state);
         _ensureStageShadow(targetId);
         _updateIndicator(entry);
-        // 类型切换后 gizmo 仍指向旧灯（已 dispose），重新附着到新灯
+        // 类型切换后 gizmo 仍指向旧灯（已 dispose），通过适配器重新附着到新灯
         if (_isGizmoActive() && _getGizmoTargetId() === targetId) {
-            attachGizmo({
-                id: targetId,
-                node: entry.light,
-                types: entry.state.type === 'point' ? ['position'] : ['position', 'rotation'],
-                onPositionDragEnd: (n) => {
-                    const v = (n as unknown as { position: Vector3 }).position;
-                    setStageLightState({ posX: v.x, posY: v.y, posZ: v.z }, targetId);
-                },
-                onRotationDragEnd: () => {
-                    const pos = entry.light.position;
-                    if (entry.state.type === 'spot' && entry.light instanceof SpotLight) {
-                        const curDir = entry.light.direction;
-                        const target = pos.add(curDir.scale(10));
-                        setStageLightState(
-                            { targetX: target.x, targetY: target.y, targetZ: target.z },
-                            targetId
-                        );
-                    }
-                    if (
-                        entry.state.type === 'directional' &&
-                        entry.light instanceof DirectionalLight
-                    ) {
-                        const dir = entry.light.direction;
-                        const target = pos.add(dir.scale(10));
-                        setStageLightState(
-                            { targetX: target.x, targetY: target.y, targetZ: target.z },
-                            targetId
-                        );
-                    }
-                },
-            });
+            attachGizmoForKind('light', targetId);
         }
         triggerAutoSave();
         return;
@@ -1020,28 +990,20 @@ function _disposeStageShadow(id: string): void {
     }
 }
 
-// ======== 3D Gizmo (thin wrapper → transform-gizmo.ts) ========
+// ======== Transform Adapter (ADR-126) ========
 
-/**
- * 为指定灯光激活 3D 拖拽 Gizmo。
- * - PositionGizmo：拖拽坐标轴移动灯光位置
- * - RotationGizmo：拖拽圆环调整聚光灯方向（仅 spot/directional）
- * 内部代理到 transform-gizmo.ts 的统一 attachGizmo。
- */
-export function attachLightGizmo(id: string): boolean {
-    const entry = _stageLights.get(id);
-    if (!entry) {
-        return false;
-    }
-
-    // Position drag: 实时更新指示器 + 拖拽结束持久化
-    const posDragEnd = () => {
-        const pos = entry.light.position;
-        setStageLightState({ posX: pos.x, posY: pos.y, posZ: pos.z }, id);
-    };
-
-    // Rotation drag end（仅 spot/directional，point 无方向）
-    const rotDragEnd = () => {
+registerTransformAdapter({
+    kinds: ['light'],
+    getNode: (id) => _stageLights.get(id)?.light ?? null,
+    gizmoTypes: (id) =>
+        _stageLights.get(id)?.state.type !== 'point' ? ['position', 'rotation'] : ['position'],
+    onPositionDragEnd: (id, n) => {
+        const v = (n as unknown as { position: Vector3 }).position;
+        setStageLightState({ posX: v.x, posY: v.y, posZ: v.z }, id);
+    },
+    onRotationDragEnd: (id) => {
+        const entry = _stageLights.get(id);
+        if (!entry) return;
         const pos = entry.light.position;
         if (entry.state.type === 'spot' && entry.light instanceof SpotLight) {
             const curDir = entry.light.direction;
@@ -1053,31 +1015,13 @@ export function attachLightGizmo(id: string): boolean {
             const target = pos.add(dir.scale(10));
             setStageLightState({ targetX: target.x, targetY: target.y, targetZ: target.z }, id);
         }
-    };
-
-    return attachGizmo({
-        id,
-        node: entry.light,
-        types: entry.state.type !== 'point' ? ['position', 'rotation'] : ['position'],
-        onPositionDragEnd: posDragEnd,
-        onRotationDragEnd: rotDragEnd,
-    });
-}
-
-/** 移除当前灯光的 3D Gizmo。代理到 transform-gizmo.ts。 */
-export function detachLightGizmo(): void {
-    detachGizmo();
-}
-
-/** 当前是否有 gizmo 激活。代理到 transform-gizmo.ts。 */
-export function isGizmoActive(): boolean {
-    return _isGizmoActive();
-}
-
-/** 获取当前 gizmo 绑定的灯光 ID。代理到 transform-gizmo.ts。 */
-export function getGizmoTargetId(): string | null {
-    return _getGizmoTargetId();
-}
+    },
+    capabilities: ['slider-scale', 'slider-opacity'],
+    getScale: (id) => getStageLightState(id).indicatorScale,
+    setScale: (id, v) => setStageLightState({ indicatorScale: v }, id),
+    getOpacity: (id) => getStageLightState(id).indicatorOpacity,
+    setOpacity: (id, v) => setStageLightState({ indicatorOpacity: v }, id),
+});
 
 // ======== Lighting TWEEN (with cancel support) ========
 

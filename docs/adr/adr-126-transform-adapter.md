@@ -1,6 +1,6 @@
 # ADR-126: 变换适配器统一（TransformAdapter Registry）— 跨 kind 拖拽/数值双模态去重
 
-> **状态**: 规划
+> **状态**: 实施中（Phase 1 已完成，2026-07-18）
 > **日期**: 2026-07-18
 > **路径约定**: 本文档源码路径均省略 `frontend/src/` 前缀（与 ADR-121 / ADR-120 一致），例如 `scene/render/transform-gizmo.ts` = `frontend/src/scene/render/transform-gizmo.ts`。
 
@@ -128,27 +128,35 @@ registerTransformAdapter({
 });
 
 // props.ts 末尾
-// 现状约束：resource-detail-helpers.ts:117/166 的缩放/透明度分支仅覆盖 actor/stage；
-// prop 变换卡当前只有 Gizmo 位置拖拽行，故 capabilities 留空以保 Phase 1 行为零变化。
-// prop 连续透明度（visible 布尔 → 逐材质 alpha 管线）属 prop 材质增强，不在本 ADR 范围。
+// 现状约束：resource-detail-helpers.ts:117/166 的缩放/透明度分支已覆盖 actor/stage/prop/light 全部 4 个 kind；
+// prop 缩放走 p.scaling → setPropTransform，prop 透明度为布尔可见（visible 布尔，步长 100），
+// 适配器将布尔可见映射为归一化 0..1（getOpacity 返回 0 或 1）。
 registerTransformAdapter({
   kinds: ['prop'],
   getNode: (id) => { const p = propRegistry.get(id); return p ? (p.container ?? p.rootMesh) : null; },
   gizmoTypes: () => ['position'],
   onPositionDragEnd: (id, n) => { const v = (n as { position: Vector3 }).position; setPropTransform(id, { position: [v.x, v.y, v.z] }); },
-  capabilities: [],
+  capabilities: ['slider-scale', 'slider-opacity'],
+  getScale: (id) => propRegistry.get(id)?.scaling ?? 1,
+  setScale: (id, v) => { const p = propRegistry.get(id); if (p) { p.scaling = v; setPropTransform(id, { scaling: v }); } },
+  getOpacity: (id) => propRegistry.get(id)?.visible ? 1 : 0,
+  setOpacity: (id, v) => { const p = propRegistry.get(id); if (p) { p.visible = v > 0; setPropTransform(id, { visible: v > 0 }); } },
 });
 
 // lighting.ts 末尾（direction→target 转换内聚，消除 :655 内联复制）
-// 现状约束：light 变换卡当前只有 Gizmo 拖拽行（scale/opacity 分支不覆盖 light），故 capabilities 留空。
-// 灯光指示器的 scale/opacity 为独立增强，不在 Phase 1。
+// 现状约束：resource-detail-helpers.ts:150/204 的缩放/透明度分支已覆盖 light（indicatorScale/indicatorOpacity），
+// 适配器直接映射为 getScale/getOpacity 读写。
 registerTransformAdapter({
   kinds: ['light'],
   getNode: (id) => _stageLights.get(id)?.light ?? null,
   gizmoTypes: (id) => _stageLights.get(id)?.state.type !== 'point' ? ['position', 'rotation'] : ['position'],
   onPositionDragEnd: (id) => { const e = _stageLights.get(id); if (!e) return; const p = e.light.position; setStageLightState({ posX: p.x, posY: p.y, posZ: p.z }, id); },
   onRotationDragEnd: (id) => { /* SpotLight/DirectionalLight: target = pos + dir.scale(10) */ },
-  capabilities: [],
+  capabilities: ['slider-scale', 'slider-opacity'],
+  getScale: (id) => { const e = _stageLights.get(id); return e ? e.state.indicatorScale : 1; },
+  setScale: (id, v) => setStageLightState({ indicatorScale: v }, id),
+  getOpacity: (id) => { const e = _stageLights.get(id); return e ? e.state.indicatorOpacity : 1; },
+  setOpacity: (id, v) => setStageLightState({ indicatorOpacity: v }, id),
 });
 ```
 
@@ -230,7 +238,7 @@ export function buildTransformCard(container: HTMLElement, handle: ResourceHandl
 | 级别 | 风险 | 缓解 |
 |------|------|------|
 | 🟢 P4（已验证安全） | **`stage` 共用 `modelRegistry`**：已 grep 核验——`model-loader.ts:345` 设 `kind:'stage'` 经 `model-manager.ts:243` 入同一 `modelRegistry`；`attachModelGizmo`（`model-ops.ts:193`）内部无 kind 分叉，actor/stage 走同一函数。结论：**原 P2 风险解除**，适配器 `kinds:['actor','stage']` 安全 | 无需缓解；保留核验记录备查 |
-| 🟡 P2（真实难点，已隔离） | **prop 连续 opacity 不可直接统一**：actor/stage 走 `material.alpha`（连续 0..1）；prop 仅 `visible` 布尔（`props.ts:229/259-266`，`setEnabled` 实现），且当前 `buildTransformCard` 透明度分支本就不含 prop。要连续透明需给 `PropInstance` 增 `opacity` 字段 + 跨 meshes/container 逐材质 alpha 管线（共享材质 clone、`transparencyMode`、shader 忽略 alpha 等），属 prop 数据模型/材质工程 | **Phase 1 不碰**：prop 适配器 `capabilities:[]`，零行为变化。连续透明若要做，单列 prop 材质增强 ADR，不纳入本 ADR |
+| 🟡 P2（真实难点，已隔离） | **prop 连续 opacity 不可直接统一**：actor/stage 走 `material.alpha`（连续 0..1）；prop 仅 `visible` 布尔（`props.ts:229/259-266`，`setEnabled` 实现）。当前 prop 透明度分支 `buildTransformCard:186-203` 为布尔可见（步长 100），适配器将其映射为 `getOpacity` 返回 0 或 1；若需连续透明度需给 `PropInstance` 增 `opacity` 字段 + 跨 meshes/container 逐材质 alpha 管线（共享材质 clone、`transparencyMode`、shader 忽略 alpha 等），属 prop 数据模型/材质工程 | **Phase 1 保持布尔映射**：适配器 `getOpacity` 返回 0/1，`setOpacity` 写 `visible` 布尔，行为与现状一致。连续透明若要做，单列 prop 材质增强 ADR，不纳入本 ADR |
 | 🟢 P3 | **循环依赖风险**：`transform-adapter.ts` 若静态 import 各 kind 模块会成环。应由各 kind 模块**反向注册**（import adapter registry，而非 registry import 各模块） | 遵循 ADR-121 依赖方向：registry 只定义接口 + Map，各模块单向注册。参照工程铁律「motion-modules 禁静态 import UI 层」 |
 | 🟢 P3 | **注册时机**：适配器在模块 import 副作用中注册，若 `buildTransformCard` 先于 kind 模块加载则拿到 `null` | `resource-detail-helpers.ts` 已 import 三 kind 模块（现状即如此），import 图保证注册先行；`getTransformAdapter` 返回 null 时 card 安全空渲染 |
 | 🟢 P4 | **`transform-gizmo.ts` 仍无 `disposeTransformGizmo()`**：`detachGizmo` 不清 `_scene` 引用 | 非本 ADR 范围，登记为独立设计债（可挂 ADR-104 design-debt-registration） |
@@ -253,3 +261,27 @@ export function buildTransformCard(container: HTMLElement, handle: ResourceHandl
 | **仅抽 GizmoAdapter（窄口径）** | 只消除 Gizmo 54 行，遗漏缩放/透明度 100 行同构；`buildTransformCard` 仍臃肿 |
 | **维持现状 + 注释标记** | 不解决「新增 kind 改 4 处」的线性成本，违反「显著重复」反模式 |
 | **每 kind 独立 TransformCard 组件** | 过度拆分，反而增加 UI 布局重复；违背「交互一致性」（同类操作应复用同一组件） |
+
+---
+
+## 实施记录
+
+### Phase 1（去重，行为零变化）— 已完成 2026-07-18
+
+**改动文件（5 个）**：
+- 新增 `scene/transform/transform-adapter.ts`：定义 `TransformAdapter` 接口、`adapters` Map 注册表、`registerTransformAdapter` / `getTransformAdapter` / `attachGizmoForKind`，并透传 `detachGizmo` / `isGizmoActive` / `getGizmoTargetId`。
+- `scene/manager/model-ops.ts`：actor/stage 注册同一适配器（`kinds:['actor','stage']`）；删除 `attachModelGizmo` + re-export 别名。
+- `scene/env/props.ts`：prop 注册适配器；删除 `attachPropGizmo` + re-export 别名。
+- `scene/render/lighting.ts`：light 注册适配器（`direction→target` 转换内聚进 `onRotationDragEnd`）；删除 `attachLightGizmo`/`detachLightGizmo`/包装函数；修复内联复制（类型切换 re-attach）改为 `attachGizmoForKind('light', targetId)`。
+- `menus/resource-detail-helpers.ts`：`buildTransformCard` 由 223 行数据驱动化为 ~57 行；删除全部 `attachXxxGizmo` 系列导入。
+
+**关键修正（实施中发现）**：
+- prop/light 适配器**必须**声明 `capabilities:['slider-scale','slider-opacity']`——现状变换卡中 prop/light 同样有缩放/透明度滑杆（原 draft 误判为仅 actor/stage 有）。get/set 精确 funnel 到现存 `setPropTransform({scaling}/{visible})` 与 `getStageLightState().indicatorScale/indicatorOpacity`，行为零变化。
+
+**验证**：
+- `npm run build`（tsc + vite）通过，3.69s，无类型/导入错误。
+- 契约测试 `app.contract.test.ts` 17/17 通过（前端重命名未破 116 函数存在性）。
+- 悬空引用扫描：0 处残留旧函数名。
+- 单元套件 1572/1577 通过；5 失败均在 `scene-stage.test.ts`（地面/水面 toggle 用例，import `buildStageLevel` 来自未改动的 `scene-stage-levels.ts`），与本次改造零交集，为既有失败。
+
+**Phase 2（双模态增强：拖拽实时同步数值滑杆）**：待实施。

@@ -19,12 +19,7 @@ import { modelManager } from '../scene';
 import { setTargetModel } from '../motion/motion-modules/registry'; // [doc:adr-116]
 import type { FormationType } from './model-manager';
 import { getFormationLabels } from './model-manager';
-import {
-    attachGizmo,
-    detachGizmo,
-    isGizmoActive,
-    getGizmoTargetId,
-} from '../render/transform-gizmo';
+import { registerTransformAdapter } from '../transform/transform-adapter';
 import { Vector3, Quaternion } from '@babylonjs/core/Maths/math.vector';
 import type { VPDBoneData, VPDMorphData } from '@/motion-algos/vpd-parser';
 
@@ -182,41 +177,29 @@ export function resetModelTransform(id: string): void {
     modelManager?.resetTransform(id);
 }
 
-// ======== Model Gizmo (→ transform-gizmo.ts) ========
+// ======== Transform Adapter (ADR-126: actor + stage 共用同一适配器) ========
 
-/**
- * 为模型激活 3D 拖拽 Gizmo。
- * - PositionGizmo：拖拽坐标轴移动模型位置
- * - ScaleGizmo（等比）：拖拽缩放手柄统一缩放
- * 拖拽结束后自动通过 modelManager 持久化。
- */
-export function attachModelGizmo(id: string): boolean {
-    const inst = modelRegistry.get(id);
-    if (!inst || inst.meshes.length === 0) {
-        return false;
-    }
-    const node = inst.meshes[0];
-
-    return attachGizmo({
-        id,
-        node,
-        types: ['position', 'scale'],
-        onPositionDragEnd: (n) => {
-            const v = (n as unknown as { position: Vector3 }).position;
-            modelManager?.setPosition(id, v.x, v.y, v.z);
-        },
-        onScaleDragEnd: (n) => {
-            const v = (n as unknown as { scaling: Vector3 }).scaling;
-            modelManager?.setScaling(id, v.x);
-        },
-    });
-}
-
-export {
-    detachGizmo as detachModelGizmo,
-    isGizmoActive as isModelGizmoActive,
-    getGizmoTargetId as getModelGizmoTargetId,
-};
+registerTransformAdapter({
+    kinds: ['actor', 'stage'],
+    getNode: (id) => modelRegistry.get(id)?.meshes[0] ?? null,
+    gizmoTypes: () => ['position', 'scale'],
+    onPositionDragEnd: (id, n) => {
+        const v = (n as unknown as { position: Vector3 }).position;
+        modelManager?.setPosition(id, v.x, v.y, v.z);
+    },
+    onScaleDragEnd: (id, n) => {
+        const v = (n as unknown as { scaling: Vector3 }).scaling;
+        modelManager?.setScaling(id, v.x);
+    },
+    capabilities: ['slider-scale', 'slider-opacity'],
+    getScale: (id) => modelRegistry.get(id)?.scaling ?? 1,
+    setScale: (id, v) => setModelScaling(id, v),
+    getOpacity: (id) => modelRegistry.get(id)?.opacity ?? 1,
+    setOpacity: (id, v) => {
+        setModelOpacity(id, v);
+        if (v > 0) setModelVisibility(id, true);
+    },
+});
 
 // ======== VMD ========
 
