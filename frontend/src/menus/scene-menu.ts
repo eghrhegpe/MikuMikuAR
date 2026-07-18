@@ -35,7 +35,7 @@ import {
 import { buildGroundLevel, buildWaterLevel } from './env-feature-levels';
 import { envState } from '../core/state';
 import { getEnvTextureBindingTarget, clearEnvTextureBindingTarget } from './env-menu';
-import { setMirrorSize, setMirrorResolution, getMirrorInfo } from '../scene/env/env';
+import { setMirrorSize, setMirrorResolution, getMirrorInfo, toggleMirror } from '../scene/env/env';
 import { addModeSlider } from '../core/ui-helpers';
 
 // ======== Barrel Re-Exports ========
@@ -161,7 +161,6 @@ function buildMirrorLevel(): PopupLevel {
             toggle.type = 'checkbox';
             toggle.checked = info.active;
             toggle.addEventListener('change', () => {
-                const { toggleMirror } = require('../scene/env/env');
                 toggleMirror();
                 // 重新渲染刷新状态
                 const menu = getSceneMenu();
@@ -313,8 +312,11 @@ const SCENE_FOLDER_ROUTES: Record<string, () => PopupLevel> = {
     'scene:presets': buildPresetScenesLevel,
     'scene:render:stage': buildStageLevel,
     'scene:stageLight': buildStageLightLevel,
+    'scene:ground': buildGroundLevel,
+    'scene:water': buildWaterLevel,
     'scene:physics': buildPhysicsLevel,
     'scene:formation': buildFormationLevel,
+    'scene:mirror': buildMirrorLevel,
     'physics:wasm': buildWasmPhysicsLevel,
 };
 
