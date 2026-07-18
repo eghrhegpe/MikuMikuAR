@@ -56,24 +56,29 @@ DanceXR 的动作菜单首屏：
 ```
 新根层结构：
   Card 1: 当前动作（场景级）
-    ├─ [当前动作名] / 静态（无动作）    → 进入动作详情（图层管理 + 微调）
-    ├─ 浏览动作库                      → VMD 文件浏览器
-    └─ 程序化动作                      → 进入 Procmotion 子页
-  Card 2: 模型管理（per-model 差异化）
+    ├─ [当前动作名] / 静态（无动作）    → 进入动作详情（图层管理 + 微调 + 播放状态）
+    ├─ 浏览动作库                      → VMD 文件浏览器（库内选择）
+    ├─ 程序化动作                      → 进入 Procmotion 子页（与浏览库并列，同为动作来源）
+    └─ [播放状态行]                    → 播放/暂停 · 当前帧/总帧 · 循环（Phase 1 基础显示，Phase 2 完整控制）
+  Card 2: 角色动作状态（per-model 差异化，原「模型管理」更名）
     ├─ 初音未来  [跟随全局] ↗          → 点击行进入模型动作面板（pin/unpin/图层）
     ├─ 雷电芽衣  [固定: xxx.vmd] 🔒   → trailing 显示 pin 状态
     └─ ...
-  Card 3: 场景工具
-    ├─ 相机
-    ├─ 音乐库
-    ├─ 姿势工作室
-    ├─ 播放速度
-    ├─ 注视追踪
-    ├─ 骨骼覆盖
-    ├─ 脚部调整
-    ├─ 虚拟裙骨
-    ├─ 高级设置
-    └─ 外部动作导入
+  Card 3: 场景工具（按语义分 3 组，避免单卡过长）
+    组 A · 播放与同步
+      ├─ 音乐库
+      ├─ 播放速度
+      └─ 唇形同步（若已实现）
+    组 B · 角色与环境
+      ├─ 相机
+      ├─ 姿势工作室
+      ├─ 注视追踪
+      ├─ 骨骼覆盖
+      ├─ 脚部调整
+      └─ 虚拟裙骨
+    组 C · 系统与导入
+      ├─ 高级设置
+      └─ 外部动作导入（文件系统导入，与「浏览动作库」的库内选择互补）
 ```
 
 ### 关键交互变更
@@ -99,13 +104,18 @@ DanceXR 的动作菜单首屏：
 
 | 文件 | 操作 | 说明 |
 |------|------|------|
-| `menus/motion-popup.ts` | 修改 `buildMotionRootItems()` | 重排卡片顺序：当前动作 → 模型管理 → 场景工具 |
-| `menus/motion-popup.ts` | 新增 `buildCurrentMotionCard()` | 「当前动作」卡片：显示 activeMotion 名称/状态，点击进入动作详情 |
+| `menus/motion-popup.ts` | 修改 `buildMotionRootItems()` | 重排卡片顺序：当前动作 → 角色动作状态 → 场景工具（含 3 组分组的 Card 3） |
+| `menus/motion-popup.ts` | 新增 `buildCurrentMotionCard()` | 「当前动作」卡片：显示 activeMotion 名称/状态 + 播放状态行（播放/暂停·帧进度·循环，基础显示），点击进入动作详情 |
 | `menus/motion-popup.ts` | 新增 `buildMotionDetailLevel()` | 动作详情页：图层管理 + 清除 + 播放控制（从现有 `buildActionBindingSchema` 提取） |
 | `menus/motion-popup.ts` | 修改模型行 trailing | trailing 齿轮 → 进入模型动作面板（pin/unpin + incompatible 提示） |
+| `menus/motion-popup.ts` | 新增 `buildSceneToolsCard()` | 场景工具卡按语义分 3 组（播放与同步 / 角色与环境 / 系统与导入），避免单卡 11 项过长 |
+| `menus/motion-popup.ts` | 调整 Card 1 入口 | 「程序化动作」与「浏览动作库」并列（同为动作来源），不嵌套于当前动作详情内 |
 
 **验收**：
 - 根层首屏显示「当前动作」卡片，用户一眼可见场上在跳什么
+- 「浏览动作库」与「程序化动作」并列于 Card 1，均为独立动作来源入口
+- 「当前动作」卡片含播放状态行（播放/暂停·帧进度·循环），复用 `playback.ts` 事件订阅
+- Card 3 场景工具按 3 组折叠/分区呈现，用户可在组内快速定位（音乐库不在虚拟裙骨下方）
 - 点击「浏览动作库」选 VMD 后，所有 inherit 模型同步起舞（复用 ADR-121 广播）
 - 模型行 trailing 显示 pin/incompatible 状态
 - 现有功能（图层、清除、pin/unpin）均可通过新入口到达
@@ -118,11 +128,12 @@ DanceXR 的动作菜单首屏：
 
 | 文件 | 操作 | 说明 |
 |------|------|------|
-| `menus/motion-popup.ts` | 重构 `buildMotionDetailLevel()` | 统一动作详情：当前图层列表 + 添加图层 + 清除 + 播放控制 |
+| `menus/motion-popup.ts` | 重构 `buildMotionDetailLevel()` | 统一动作详情：当前图层列表 + 添加图层 + 清除 + **完整播放控制**（进度条拖拽 + 播放/暂停 + 循环 + 速度，从 `playback.ts` 提取 UI） |
 | `menus/motion-popup.ts` | 精简 `buildActionBindingSchema()` | 仅保留 per-model pin/unpin + incompatible 提示，图层管理移至动作详情 |
 
 **验收**：
 - 动作详情页包含所有图层操作（添加/删除/权重/启用）
+- 动作详情页含完整播放控制（与 Card 1 播放状态行联动，单一数据源来自 `playback.ts`）
 - 清除动作在动作详情页内，不在模型面板
 - 模型面板仅含 pin/unpin + 状态提示
 
@@ -160,6 +171,8 @@ DanceXR 的动作菜单首屏：
 |------|------|------|
 | 🟡 P3 | 根层重排涉及 `buildMotionRootItems` 重构，可能影响 `onFolderEnter` / `onItemClick` 路由 | Phase 1 仅重排 items 顺序 + 新增卡片构建函数，不改路由表 `MOTION_FOLDER_ROUTES` |
 | 🟡 P3 | 「当前动作」卡片需订阅 `activeMotion` 变化以实时更新显示 | 复用 `getMotionMenu()?.reRender()` 模式（与现有 `updateControls` 一致） |
+| 🟡 P3 | Card 3 分组后组内项仍走原 folder route，分组容器不能拦截路由 | 分组仅作视觉分区（section title / collapsible），项本身仍是 root item，路由表不变 |
+| 🟡 P3 | 播放状态行需订阅 `playback.ts` 的 progress/playstate 事件，避免与详情页播放控制双源冲突 | Card 1 状态行与详情页共用 `playback.ts` 单一数据源；Phase 1 仅显示，Phase 2 接控制 |
 | 🟢 P4 | 现有测试 `motion-popup` 相关用例可能因 DOM 结构变化失败 | Phase 1 不改 `buildActionBindingSchema`，测试仅需更新 `buildMotionRootItems` 断言 |
 
 ---
