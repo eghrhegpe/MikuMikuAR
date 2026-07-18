@@ -11,9 +11,9 @@ import {
 } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
-import { slideRow, addSectionTitle, addCollapsible, addToggleRow } from '../core/ui-helpers';
+import { slideRow, addSectionTitle, addCollapsible } from '../core/ui-helpers';
 import { removeModel, setModelVisibility } from '../scene/manager/model-ops';
-import { getPropList, removeProp, modelManager } from '../scene/scene';
+import { getPropList, removeProp, modelManager, setEnvState } from '../scene/scene';
 import { reRenderSceneMenu, getSceneMenu } from './scene-menu';
 import { buildTransformCard, buildMaterialCard, buildDangerCard } from './resource-detail-helpers';
 
@@ -26,7 +26,6 @@ import { buildGroundLevel, buildWaterLevel } from './env-feature-levels';
 import { setDebugMirrorSize, setDebugMirrorResolution, getDebugMirrorInfo } from '../scene/env/env';
 import { addModeSlider } from '../core/ui-helpers';
 import { envState } from '../core/state';
-import { setEnvState } from '../scene/env/env-bridge';
 
 // ======== 舞台根面板：舞台加载、灯光、道具 ========
 
@@ -265,30 +264,45 @@ function buildStageSchema(): MenuNode[] {
                 });
             },
         },
-        // [adr-111] 地面/水面：从环境菜单迁入，恢复 headerToggle 快速开关
+        // [adr-111] 地面：完整参数面板入口（从环境菜单迁入）
         {
             id: 'stage:ground',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    // 地面开关
-                    addToggleRow(
+                    slideRow(
                         inner,
-                        '地面',
-                        envState.groundVisible,
-                        (v) => setEnvState({ groundVisible: v }),
                         'lucide:square',
-                        { bind: () => envState.groundVisible }
+                        t('env.ground'),
+                        true,
+                        () => {
+                            getSceneMenu()?.push(buildGroundLevel());
+                        },
+                        undefined,
+                        undefined,
+                        undefined,
+                        {
+                            value: envState.groundVisible,
+                            onChange: (v: boolean) => setEnvState({ groundVisible: v }),
+                            bind: () => envState.groundVisible,
+                        }
                     );
-
-                    // 水面开关
-                    addToggleRow(
+                    slideRow(
                         inner,
-                        '水面',
-                        envState.waterEnabled,
-                        (v) => setEnvState({ waterEnabled: v }),
                         'lucide:waves',
-                        { bind: () => envState.waterEnabled }
+                        t('env.water'),
+                        true,
+                        () => {
+                            getSceneMenu()?.push(buildWaterLevel());
+                        },
+                        undefined,
+                        undefined,
+                        undefined,
+                        {
+                            value: envState.waterEnabled,
+                            onChange: (v: boolean) => setEnvState({ waterEnabled: v }),
+                            bind: () => envState.waterEnabled,
+                        }
                     );
                 });
             },
