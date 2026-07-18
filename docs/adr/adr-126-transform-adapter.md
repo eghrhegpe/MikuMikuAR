@@ -1,6 +1,6 @@
 # ADR-126: 变换适配器统一（TransformAdapter Registry）— 跨 kind 拖拽/数值双模态去重
 
-> **状态**: 实施中（Phase 1 + Phase 2 已完成，2026-07-18）
+> **状态**: 实施中（Phase 1 + Phase 2 + Phase 3 已完成，2026-07-18）
 > **日期**: 2026-07-18
 > **路径约定**: 本文档源码路径均省略 `frontend/src/` 前缀（与 ADR-121 / ADR-120 一致），例如 `scene/render/transform-gizmo.ts` = `frontend/src/scene/render/transform-gizmo.ts`。
 
@@ -230,6 +230,7 @@ export function buildTransformCard(container: HTMLElement, handle: ResourceHandl
 |------|------|---------|------|
 | **Phase 1（去重，行为零变化）** | 新建 `scene/transform/transform-adapter.ts`；三 kind 各注册适配器；`buildTransformCard` 数据驱动化；删除三 `attachXxxGizmo` + re-export；修 `lighting.ts` 内联复制 | `transform-adapter.ts`（新）、`model-ops.ts`、`props.ts`、`lighting.ts`、`resource-detail-helpers.ts` | 契约测试 + build + 手动逐 kind 回归 |
 | **Phase 2（双模态增强）** | `transform-gizmo.ts` 补 `onDragObservable` 连续回调；拖拽实时同步数值滑杆（局部 DOM 更新，非整卡重渲染） | `transform-gizmo.ts`、`transform-adapter.ts`、`resource-detail-helpers.ts` | ✅ 拖拽中数值实时刷新，无跳变 |
+| **Phase 3（网格吸附）** | `transform-gizmo.ts` 三 Gizmo 接线 `snapDistance`（position 场景单位 / rotation 派生 15° / scale 派生 0.1）；新增 `setGizmoSnapDistance`/`getGizmoSnapConfig` 运行时配置；变换卡接入「网格吸附」开关 + 「吸附步长」滑杆 | `transform-gizmo.ts`、`transform-adapter.ts`、`resource-detail-helpers.ts`、`i18n` ×5 | ✅ 开关/步长实时生效，默认关闭零副作用 |
 
 ---
 
@@ -306,4 +307,26 @@ export function buildTransformCard(container: HTMLElement, handle: ResourceHandl
 - 完整单元套件 1576/1581 通过；5 失败仍仅在 `scene-stage.test.ts`（地面/水面 toggle，import 未改动的 `scene-stage-levels.ts`），与 Phase 2 零交集，属既有失败。
 - 悬空引用：旧 `attachXxxGizmo` 系列 0 残留。
 
-**剩余（可选，未做）**：ADR 原提及「可选网格吸附」未实施（不在本 Phase 验收硬性要求，且吸附属 Gizmo 自身 `snapDistance` 配置，可单列增强）。
+**Phase 3（网格吸附）**：✅ 已完成 2026-07-18
+
+**改动文件（7 个，含 1 新单测）**：
+- `scene/render/transform-gizmo.ts`：
+  - 模块级 `_snapEnabled` / `_snapStep`（默认关闭、步长 1.0）。
+  - 私有 `_snapFor(type)`：将单一 `step`（场景单位）派生到三轴——position=`step`、rotation=`step·π/12`（step=1→15°）、scale=`step·0.1`（step=1→0.1）。`snapDistance=0` 即 Babylon 禁用吸附，故默认关闭零副作用。
+  - 三 Gizmo 创建后各自 `g.snapDistance = _snapFor(type)`（与 `attachedNode` 并列）。
+  - 新增 `setGizmoSnapDistance(enabled, step?)`（实时作用于当前激活 Gizmo，无需 re-attach）+ `getGizmoSnapConfig()`。
+- `scene/transform/transform-adapter.ts`：透传上述两 API（调用方从本模块统一 import）。
+- `menus/resource-detail-helpers.ts`：变换卡接入吸附 UI——「网格吸附」`addToggleRow`（testId `transform:snap-toggle`）+ 启用时「吸附步长」`addSliderRow`（testId `transform:snap-step`，范围 0.1–5）；两者均 funnel 到 `setGizmoSnapDistance`。开关切换触发 `render()` 以增减步长滑杆；步长滑杆实时写入不重渲染。
+- `core/i18n/locales/*.ts`（zh-CN/zh-TW/en/ja/ko ×5）：新增 `scene.snapEnable` / `scene.snapStep` 两 key（满足国际化完整性）。
+- `scene/render/transform-gizmo.test.ts`（新增）：吸附配置隔离单测 4 项（默认/启用保留步长/更新步长/关闭保留步长）。
+
+**设计要点**：
+- 吸附是**全局拖拽偏好**（非 per-kind），常驻变换卡，下次/当前 Gizmo 均生效；所有 4 个 kind 均含 position 轴，故开关对全部资源有意义。
+- 单一 `step` 派生三轴步长，避免多滑杆歧义；语义对齐用户直觉（position 网格对齐为主，rotation/scale 按比例派生）。
+- 默认关闭 → 既有拖拽手感逐像素不变（行为零变化不变量在默认态成立）。
+
+**验证**：
+- `npm run build`（tsc + vite）3.87s exit0。
+- 契约测试 `app.contract.test.ts` 17/17。
+- 吸附单测 `transform-gizmo.test.ts` 4/4。
+- 跨测试污染甄别：完整套件报告 13 失败（scene-stage 5 基线 + motion-history 8），后者源文件 `motion-history.ts`/`motion-history.test.ts` 均为**未跟踪并发改动**（adr-125 motion-undo-redo 半完成状态），隔离运行 `motion-history.test.ts` 14/14 通过，与 Phase 3 零交集；Phase 3 改动文件（transform-gizmo/adapter/resource-detail-helpers/i18n）未触碰 motion，判定非本特性回归。

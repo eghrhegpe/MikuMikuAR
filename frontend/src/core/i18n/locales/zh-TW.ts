@@ -637,6 +637,8 @@ export const zhTW: Record<string, string> = {
     'scene.elevationAngle': '仰角',
     'scene.exitDrag': '退出拖拽',
     'scene.dragPosition': '拖拽定位',
+    'scene.snapEnable': '網格吸附',
+    'scene.snapStep': '吸附步長',
     'scene.statusExitDrag': '✓ 已退出拖拽模式',
     'scene.statusDragHint': '拖拽坐標軸移動位置，拖拽圓環調整方向',
     'scene.deleteLight': '刪除「{name}」',

@@ -5,7 +5,7 @@
 
 import { cardContainer, setStatus, modelRegistry, propRegistry } from '../core/config';
 import { t } from '../core/i18n/t';
-import { slideRow, addSliderRow, addDangerRow, addVector3SliderRow } from '../core/ui-helpers';
+import { slideRow, addSliderRow, addToggleRow, addDangerRow, addVector3SliderRow } from '../core/ui-helpers';
 import { Quaternion } from '@babylonjs/core/Maths/math.vector';
 import {
     resetModelTransform,
@@ -18,7 +18,7 @@ import { attachPropToBone, detachPropFromBone } from '../scene/env/accessory';
 import {
     getStageLightState,
 } from '../scene/render/lighting';
-import { attachGizmoForKind, getTransformAdapter, detachGizmo, isGizmoActive, getGizmoTargetId, onGizmoDragObservable, getGizmoNode, getActiveGizmoTypes } from '../scene/transform/transform-adapter';
+import { attachGizmoForKind, getTransformAdapter, detachGizmo, isGizmoActive, getGizmoTargetId, onGizmoDragObservable, getGizmoNode, getActiveGizmoTypes, setGizmoSnapDistance, getGizmoSnapConfig } from '../scene/transform/transform-adapter';
 import { buildMatRootLevel } from './model-material';
 import type { SlideMenu } from './menu';
 import type { ResourceKind } from '../core/load-manager';
@@ -86,6 +86,36 @@ export function buildTransformCard(container: HTMLElement, handle: ResourceHandl
 					render();
 				}
 			);
+
+			// 网格吸附（ADR-126 Phase 3）：全局拖拽偏好，下次/当前 Gizmo 生效
+			const snap = getGizmoSnapConfig();
+			addToggleRow(
+				c,
+				t('scene.snapEnable'),
+				snap.enabled,
+				(v) => {
+					setGizmoSnapDistance(v, snap.step);
+					render();
+				},
+				'lucide:grid-3x3',
+				undefined,
+				'transform:snap-toggle'
+			);
+			if (snap.enabled) {
+				addSliderRow(
+					c,
+					t('scene.snapStep'),
+					snap.step,
+					0.1,
+					5,
+					0.1,
+					() => {},
+					'lucide:ruler',
+					undefined,
+					undefined,
+					'transform:snap-step'
+				);
+			}
 
 			if (adapter.capabilities.includes('slider-scale')) {
 				addSliderRow(

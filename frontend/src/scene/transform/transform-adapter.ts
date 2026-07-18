@@ -16,6 +16,8 @@ import {
     onGizmoDragObservable,
     getGizmoNode,
     getActiveGizmoTypes,
+    setGizmoSnapDistance,
+    getGizmoSnapConfig,
     type GizmoType,
 } from '../render/transform-gizmo';
 import type { ResourceKind } from '../../core/load-manager';
@@ -83,4 +85,6 @@ export {
     onGizmoDragObservable,
     getGizmoNode,
     getActiveGizmoTypes,
+    setGizmoSnapDistance,
+    getGizmoSnapConfig,
 };

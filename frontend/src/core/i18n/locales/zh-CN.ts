@@ -632,6 +632,8 @@ export const zhCN: Record<string, string> = {
     'scene.elevationAngle': '仰角',
     'scene.exitDrag': '退出拖拽',
     'scene.dragPosition': '拖拽定位',
+    'scene.snapEnable': '网格吸附',
+    'scene.snapStep': '吸附步长',
     'scene.statusExitDrag': '✓ 已退出拖拽模式',
     'scene.statusDragHint': '拖拽坐标轴移动位置，拖拽圆环调整方向',
     'scene.deleteLight': '删除「{name}」',
