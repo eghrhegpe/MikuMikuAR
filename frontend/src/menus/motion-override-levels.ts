@@ -28,6 +28,8 @@ import {
     createModule,
     getModuleState,
 } from '../scene/motion/motion-modules/registry';
+import { undo, redo, canUndo, canRedo, getHistoryEntries, getHistoryCursor, jumpToHistory } from '../scene/motion/motion-modules/motion-history';
+import { applyModuleSnapshot } from '../scene/motion/motion-modules/module-base';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
@@ -77,7 +79,143 @@ function buildMotionOverrideSchema(): MenuNode[] {
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    addSectionTitle(inner, t('motion.override.title'));
+                    // [doc:adr-125 P2] 标题栏 + 撤销/重做按钮
+                    const titleBar = document.createElement('div');
+                    titleBar.style.cssText =
+                        'display:flex;align-items:center;justify-content:space-between;padding:8px 14px 4px;';
+                    const titleText = document.createElement('span');
+                    titleText.style.cssText = 'font-size:12px;color:var(--text);font-weight:600;';
+                    titleText.textContent = t('motion.override.title');
+                    titleBar.appendChild(titleText);
+
+                    const btnGroup = document.createElement('div');
+                    btnGroup.style.cssText = 'display:flex;gap:4px;';
+
+                    const undoBtn = document.createElement('button');
+                    undoBtn.className = 'slide-action';
+                    undoBtn.textContent = '↩';
+                    undoBtn.title = 'Ctrl+Z';
+                    undoBtn.addEventListener('click', () => {
+                        if (!modelId || !canUndo(modelId)) return;
+                        const applier = (snap: Record<string, { enabled: boolean; params: Record<string, import('@/core/types').ParamValue> }>) => {
+                            applyModuleSnapshot(modelId, snap);
+                        };
+                        undo(modelId, applier);
+                        setStatus(t('motion.undoApplied'), true);
+                        getMotionMenu()?.reRender();
+                    });
+                    const updateUndoState = () => {
+                        undoBtn.style.opacity = modelId && canUndo(modelId) ? '1' : '0.3';
+                        undoBtn.style.pointerEvents = modelId && canUndo(modelId) ? 'auto' : 'none';
+                    };
+                    updateUndoState();
+
+                    const redoBtn = document.createElement('button');
+                    redoBtn.className = 'slide-action';
+                    redoBtn.textContent = '↪';
+                    redoBtn.title = 'Ctrl+Shift+Z';
+                    redoBtn.addEventListener('click', () => {
+                        if (!modelId || !canRedo(modelId)) return;
+                        const applier = (snap: Record<string, { enabled: boolean; params: Record<string, import('@/core/types').ParamValue> }>) => {
+                            applyModuleSnapshot(modelId, snap);
+                        };
+                        redo(modelId, applier);
+                        setStatus(t('motion.override.redoApplied'), true);
+                        getMotionMenu()?.reRender();
+                    });
+                    const updateRedoState = () => {
+                        redoBtn.style.opacity = modelId && canRedo(modelId) ? '1' : '0.3';
+                        redoBtn.style.pointerEvents = modelId && canRedo(modelId) ? 'auto' : 'none';
+                    };
+                    updateRedoState();
+
+                    btnGroup.appendChild(undoBtn);
+                    btnGroup.appendChild(redoBtn);
+
+                    // [doc:adr-125 P3] 历史列表下拉按钮
+                    const historyBtn = document.createElement('button');
+                    historyBtn.className = 'slide-action';
+                    historyBtn.textContent = '⋮';
+                    historyBtn.title = t('motion.override.history');
+                    historyBtn.style.fontSize = '14px';
+                    let historyDropdown: HTMLElement | null = null;
+
+                    function closeHistoryDropdown(): void {
+                        if (historyDropdown) {
+                            historyDropdown.remove();
+                            historyDropdown = null;
+                        }
+                    }
+
+                    historyBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (historyDropdown) {
+                            closeHistoryDropdown();
+                            return;
+                        }
+                        if (!modelId) return;
+                        const entries = getHistoryEntries(modelId);
+                        if (entries.length === 0) return;
+                        const cursor = getHistoryCursor(modelId);
+
+                        historyDropdown = document.createElement('div');
+                        historyDropdown.style.cssText =
+                            'position:absolute;right:8px;top:100%;z-index:100;' +
+                            'background:var(--bg);border:1px solid var(--border);border-radius:6px;' +
+                            'box-shadow:0 4px 12px rgba(0,0,0,0.3);max-height:240px;overflow-y:auto;' +
+                            'min-width:200px;padding:4px 0;';
+
+                        // 显示最近 10 条，最新在上
+                        const visible = entries.slice(-10).reverse();
+                        for (const entry of visible) {
+                            const realIndex = entries.indexOf(entry);
+                            const item = document.createElement('div');
+                            item.style.cssText =
+                                'padding:6px 12px;font-size:11px;cursor:pointer;' +
+                                'color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+                            if (realIndex === cursor) {
+                                item.style.background = 'var(--hover)';
+                                item.style.fontWeight = '600';
+                            }
+                            item.textContent = entry.description;
+                            item.addEventListener('click', () => {
+                                if (!modelId) return;
+                                const applier = (snap: Record<string, { enabled: boolean; params: Record<string, import('@/core/types').ParamValue> }>) => {
+                                    applyModuleSnapshot(modelId, snap);
+                                };
+                                jumpToHistory(modelId, realIndex, applier);
+                                closeHistoryDropdown();
+                                getMotionMenu()?.reRender();
+                            });
+                            item.addEventListener('mouseenter', () => {
+                                item.style.background = 'var(--hover)';
+                            });
+                            item.addEventListener('mouseleave', () => {
+                                if (realIndex !== cursor) {
+                                    item.style.background = '';
+                                }
+                            });
+                            historyDropdown.appendChild(item);
+                        }
+
+                        // 点击外部关闭
+                        const onOutsideClick = (ev: MouseEvent) => {
+                            if (historyDropdown && !historyDropdown.contains(ev.target as Node)) {
+                                closeHistoryDropdown();
+                                document.removeEventListener('click', onOutsideClick);
+                            }
+                        };
+                        setTimeout(() => document.addEventListener('click', onOutsideClick), 0);
+
+                        // 定位到按钮下方
+                        historyBtn.style.position = 'relative';
+                        historyBtn.appendChild(historyDropdown);
+                    });
+
+                    btnGroup.appendChild(historyBtn);
+                    titleBar.appendChild(btnGroup);
+                    inner.appendChild(titleBar);
+
                     for (const mod of modules) {
                         const state = getModuleState(modelId, mod.id);
                         slideRow(
