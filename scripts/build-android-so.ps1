@@ -64,9 +64,9 @@ $env:CC = $CC
 $env:CXX = $CXX
 
 $buildFlags = if ($Production) {
-    @("-tags", "production,android", "-trimpath", "-buildvcs=false")
+    @("-tags", "production,android,mpr", "-trimpath", "-buildvcs=false")
 } else {
-    @("-tags", "android,debug", "-buildvcs=false", "-gcflags=all=-l")
+    @("-tags", "android,debug,mpr", "-buildvcs=false", "-gcflags=all=-l")
 }
 
 # 注入版本信息（与 Windows/Linux 一致，避免 About / 检查更新 显示 dev）

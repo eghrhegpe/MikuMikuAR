@@ -20,7 +20,7 @@ import {
     PlazaZoomOut,
     PlazaZoomReset,
 } from '../core/wails-bindings';
-import { openExternalURL } from '../core/platform';
+import { isAndroidPlatform, openExternalURL } from '../core/platform';
 import { closeAllOverlays, swallowError, logWarn } from '../core/utils';
 import { PLAZA_SITES, type PlazaSite } from './plaza-sites';
 import { PLAZA_CREATORS, type PlazaCreator } from './plaza-creators';
@@ -384,6 +384,14 @@ function getCurrentSite(): PlazaSite | undefined {
 }
 
 function openSiteByMode(site: PlazaSite, url?: string): void {
+    // [ADR-xxx] Android: 强制 external 模式，跳过 embed/window。
+    // Android WebView 只有单 WebView 实例，无 WebView2 窗口 API，
+    // iframe 内嵌模式不支持返回/缩放/手势导航，体验极差。
+    // 统一走系统浏览器以获得完整浏览能力。
+    if (isAndroidPlatform()) {
+        openExternal(url ? { ...site, url } : site);
+        return;
+    }
     const mode = effectiveMode(site);
     const target = url ? { ...site, url } : site;
     if (mode === 'external') {
@@ -926,6 +934,16 @@ function installEventListeners(): void {
             8000
         );
     });
+
+    // [Android] 返回键关闭广场：当 plaza #webviewLayer 可见时，
+    // android:back 事件被 bridge.emitSystemEvent 发送到 JS 侧，
+    // 此处配合 init.ts 的全局 closeAllOverlays 提供 plaza 专用清理路径
+    // （stopProxy + 资源释放），确保返回键退出广场后有完整清理。
+    Events.On('android:back', () => {
+        if (getLayer().classList.contains('visible')) {
+            closePlaza();
+        }
+    });
 }
 
 async function handlePlazaDownload(
@@ -1117,9 +1135,14 @@ function showActionsMenu(site: PlazaSite, anchor: HTMLElement): void {
     modes.className = 'plaza-actions-menu-modes';
     const opts: { key: OpenMode | 'auto'; label: string }[] = [
         { key: 'auto', label: '自动' },
-        { key: 'embed', label: 'iframe' },
-        { key: 'external', label: 'chrome' },
-        { key: 'window', label: 'wails' },
+        // [Android] 仅 external 可用：单 WebView 无 iframe 多窗口/Window API
+        ...(isAndroidPlatform()
+            ? [{ key: 'external' as const, label: 'chrome' }]
+            : [
+                  { key: 'embed' as const, label: 'iframe' },
+                  { key: 'external' as const, label: 'chrome' },
+                  { key: 'window' as const, label: 'wails' },
+              ]),
     ];
     const current = loadGlobalMode() ?? 'auto';
     for (const o of opts) {
@@ -1242,6 +1265,14 @@ async function renderHome(): Promise<void> {
     el.innerHTML = '';
     const root = document.createElement('div');
     root.className = 'plaza-root';
+
+    // 首页 toolbar：仅含关闭按钮（返回/刷新/系统浏览器打开均不适用首页）
+    root.appendChild(
+        buildToolbar({
+            title: L.title,
+            onClose: closePlaza,
+        })
+    );
 
     root.appendChild(buildSiteTabs());
 

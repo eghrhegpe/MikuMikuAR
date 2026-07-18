@@ -74,6 +74,7 @@ if (-not (Test-Path "node_modules\vite\index.js")) {
 } else {
     Write-Output "[build-android] node_modules 已就绪，跳过 npm ci"
 }
+$env:VITE_MMD_WASM_MT = "1"
 npx vite build
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 Set-Location $projectDir
