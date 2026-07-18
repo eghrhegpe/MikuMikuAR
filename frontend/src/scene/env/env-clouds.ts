@@ -316,6 +316,7 @@ uniform float cloudScale;
 uniform float cloudVisibility;
 uniform float cloudGap;
 uniform float brightness;
+uniform float skyBrightness;
 uniform vec3 sceneLightDir;
 uniform vec3 sceneLightColor;
 uniform float groundLevel;
@@ -494,8 +495,10 @@ void main(){
             // Dual-lobe phase for forward + back scatter (silver lining)
             float phase = dualPhase(ct);
             float od = d * dt;
-            // Powder effect: darken dense clouds viewed against light
-            float powderFactor = powder(od);
+            // Powder (silver-lining): the dark-edge effect is only physical when
+            // looking toward the sun (ct high). When back-lit (ct low) it must NOT
+            // zero out thin clouds, so blend toward 1.0 by ct.
+            float powderFactor = mix(1.0, powder(od), ct);
             vec3 S = cloudCol * lightCol * d * phase * dt * CLOUD_SCATTER_INTENSITY;
             S *= lightT;  // self-shadow: occluding cloud in front dims in-scatter
             L += T * S * powderFactor;
@@ -504,7 +507,13 @@ void main(){
         }
     }
 
-    vec3 ambient = cloudCol * 0.25 * (1.0 - T) * min(brightness * 2.0, 1.0);
+    // Ambient fill follows sun brightness linearly (no hard cap) so the
+    // shadowed side of clouds brightens/darkens across the whole sun-intensity
+    // range instead of capping at brightness≈0.5 (UI sun≈0.25).
+    // Ambient fill follows BOTH sun brightness and sky brightness so clouds
+    // respond to the sky-brightness knob (previously only the sun drove cloud
+    // luminance, leaving clouds disconnected from the sky tint/intensity).
+    vec3 ambient = cloudCol * 0.15 * (1.0 - T) * brightness * skyBrightness;
     vec3 color = L + ambient;
     float alpha = 1.0 - T;
     if (alpha < 0.008) discard;
@@ -626,6 +635,7 @@ export function createClouds(state: EnvState): void {
                 'sunDir',
                 'sunColor',
                 'brightness',
+                'skyBrightness',
                 'sceneLightDir',
                 'sceneLightColor',
                 'groundLevel',
@@ -661,6 +671,7 @@ export function createClouds(state: EnvState): void {
     mat.setVector3('sunDir', new Vector3(-0.4, -1.0, -0.3));
     mat.setColor3('sunColor', new Color3(1, 0.98, 0.92));
     mat.setFloat('brightness', 1.0);
+    mat.setFloat('skyBrightness', state.skyBrightness ?? 1);
     mat.setVector3('windDirection', new Vector3(windVel[0], windVel[1], windVel[2]));
     mat.setColor3('sceneFogColor', new Color3(0.53, 0.7, 0.92));
 
@@ -678,15 +689,20 @@ export function createClouds(state: EnvState): void {
             mat.setColor3('sceneLightColor', dl.diffuse);
             mat.setVector3('sunDir', dl.direction);
             mat.setColor3('sunColor', dl.diffuse);
-            const lightIntensity = dl.intensity * 2.0;
-            const brightness = Math.max(0.02, Math.min(1.5, lightIntensity));
+            // Map UI sun intensity (0..1) across the FULL shader range so the
+            // slider stays effective end-to-end. The old `*2` mapping saturated
+            // brightness at dl.intensity≈0.75, wasting the upper half of the
+            // slider and making clouds stop responding to sun past ~0.2.
+            const brightness = Math.max(0.02, Math.min(1.5, dl.intensity * 1.5));
             mat.setFloat('brightness', brightness);
+            mat.setFloat('skyBrightness', state.skyBrightness ?? 1);
         } else {
             mat.setVector3('sceneLightDir', new Vector3(-0.4, -1.0, -0.3));
             mat.setColor3('sceneLightColor', new Color3(1, 0.98, 0.92));
             mat.setVector3('sunDir', new Vector3(-0.4, -1.0, -0.3));
             mat.setColor3('sunColor', new Color3(1, 0.98, 0.92));
             mat.setFloat('brightness', 1.0);
+            mat.setFloat('skyBrightness', state.skyBrightness ?? 1);
         }
         mat.setColor3(
             'sceneFogColor',
