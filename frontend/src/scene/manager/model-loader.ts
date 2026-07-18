@@ -508,7 +508,10 @@ export async function loadPMXFile(
             const assignment = inst.motionAssignment ?? { mode: 'inherit' as const, status: 'idle' as const };
             if (assignment.mode === 'inherit') {
                 // 兼容性检查
-                const bones = inst.mmdModel?.runtimeBones?.map((b) => b.name) ?? [];
+                const bones =
+                    inst.mmdModel?.runtimeBones?.map((b) => b.name) ??
+                    inst.meshes[0]?.skeleton?.bones?.map((b) => b.name) ??
+                    [];
                 const compat = resolveCompatibility(bones, activeMotion);
                 if (!compat.compatible) {
                     inst.motionAssignment = { ...assignment, status: 'incompatible' };

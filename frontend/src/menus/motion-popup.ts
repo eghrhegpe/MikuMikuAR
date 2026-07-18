@@ -68,7 +68,8 @@ import { buildFeetLevel } from './motion-feet-levels'; // [doc:adr-085]
 import { buildPoseStudioLevel } from './motion-pose-levels';
 import { buildVirtualSkirtLevel } from './motion-cloth-levels'; // [doc:adr-084]
 import { t } from '../core/i18n/t'; // [doc:adr-059]
-import { setActiveMotion, setBroadcastCallback, getActiveMotion, getMotionGen, resolveCompatibility, initMotionIntent } from '../scene/motion/motion-intent';
+import { setActiveMotion, getActiveMotion, getMotionGen, resolveCompatibility, initMotionIntent } from '../scene/motion/motion-intent';
+import type { SceneMotionIntent } from '@/core/types';
 import { renderMenu } from './render-menu';
 import { isUnderRoot, logWarn } from '../core/utils';
 import type { MenuNode } from './menu-schema';
@@ -81,50 +82,60 @@ import type { MenuNode } from './menu-schema';
 //                         进入动作绑定面板（motionOnItemClick）重置为 null（基础）。
 let _focusedLayerId: string | null = null;
 
+// [doc:adr-121] 向单个模型应用动作意图（复用广播与 unpin 场景）
+function _applyIntentToModel(
+    id: string,
+    intent: SceneMotionIntent,
+    gen: number
+): void {
+    const inst = modelManager.get(id);
+    if (!inst) return;
+    const assignment = inst.motionAssignment ?? { mode: 'inherit' as const, status: 'idle' as const };
+    const bones =
+        inst.mmdModel?.runtimeBones?.map((b) => b.name) ??
+        inst.meshes[0]?.skeleton?.bones?.map((b) => b.name) ??
+        [];
+    const compat = resolveCompatibility(bones, intent);
+    if (!compat.compatible) {
+        inst.motionAssignment = { ...assignment, status: 'incompatible' };
+        return;
+    }
+    loadManager.load({ kind: 'vmd', path: intent.vmdPath!, modelId: id })
+        .then((handle) => {
+            if (getMotionGen() !== gen) return;
+            if (handle) {
+                inst.vmdName = handle.name;
+                inst.vmdPath = intent.vmdPath;
+                inst.motionAssignment = { mode: 'inherit', status: 'compatible' };
+            }
+        })
+        .catch(() => {
+            if (getMotionGen() !== gen) return;
+            inst.motionAssignment = { mode: 'inherit', status: 'incompatible' };
+        });
+}
+
 // [doc:adr-121] 注册广播回调：setActiveMotion 时按 per-model assignment 策略应用动作
 // 不再在模块顶层注册，改由 scene.ts initScene 通过 initMotionBroadcast() 显式调用
 // 以避免 import 时即注册的副作用（HMR/测试场景下回调被覆盖）
 export function initMotionBroadcast(): void {
     initMotionIntent((intent, gen, prev) => {
-    for (const [id, inst] of modelManager.modelRegistry) {
-        const assignment = inst.motionAssignment ?? { mode: 'inherit' as const, status: 'idle' as const };
-        if (assignment.mode === 'pinned') continue; // pinned 模型不受全局影响
-        if (!intent) {
-            // 清除：仅当模型当前 vmdPath 来自前一个全局意图时才清除
-            // prev 由 setActiveMotion 在更新 _activeMotion 之前捕获，确保不为 null
-            if (inst.mmdModel && mmdRuntime && inst.vmdPath && prev?.vmdPath && inst.vmdPath === prev.vmdPath) {
-                inst.mmdModel.setRuntimeAnimation(null);
-                inst.vmdData = null;
-                inst.vmdName = '';
-                inst.vmdPath = null;
-                inst.animationDuration = 0;
+        for (const [id, inst] of modelManager.modelRegistry) {
+            const assignment = inst.motionAssignment ?? { mode: 'inherit' as const, status: 'idle' as const };
+            if (assignment.mode === 'pinned') continue;
+            if (!intent) {
+                if (inst.mmdModel && mmdRuntime && inst.vmdPath && prev?.vmdPath && inst.vmdPath === prev.vmdPath) {
+                    inst.mmdModel.setRuntimeAnimation(null);
+                    inst.vmdData = null;
+                    inst.vmdName = '';
+                    inst.vmdPath = null;
+                    inst.animationDuration = 0;
+                }
+            } else {
+                _applyIntentToModel(id, intent, gen);
             }
-        } else {
-            // 兼容性检查：模型骨骼是否支持该 VMD
-            const bones = inst.mmdModel?.runtimeBones?.map((b) => b.name) ?? [];
-            const compat = resolveCompatibility(bones, intent);
-            if (!compat.compatible) {
-                inst.motionAssignment = { ...assignment, status: 'incompatible' };
-                continue; // 跳过加载，UI 显示 incompatible 提示
-            }
-            // 加载 VMD 到模型（异步，loadManager 处理队列）
-            // gen 捕获当前 generation，.then 时检查是否仍是最新广播
-            loadManager.load({ kind: 'vmd', path: intent.vmdPath!, modelId: id })
-                .then((handle) => {
-                    if (getMotionGen() !== gen) return; // 已过期，丢弃
-                    if (handle) {
-                        inst.vmdName = handle.name;
-                        inst.vmdPath = intent.vmdPath;
-                        inst.motionAssignment = { mode: 'inherit', status: 'compatible' };
-                    }
-                })
-                .catch(() => {
-                    if (getMotionGen() !== gen) return; // 已过期，丢弃
-                    inst.motionAssignment = { mode: 'inherit', status: 'incompatible' };
-                });
         }
-    }
-});
+    });
 }
 
 // ======== 从子文件导入 ========
@@ -320,9 +331,8 @@ function buildActionBindingSchema(id: string): MenuNode[] {
                             unpinBtn.textContent = t('motion.context.unpin');
                             unpinBtn.addEventListener('click', () => {
                                 inst.motionAssignment = { mode: 'inherit', status: 'idle' };
-                                // 重新应用全局动作
                                 if (active) {
-                                    setActiveMotion(active);
+                                    _applyIntentToModel(id, active, getMotionGen());
                                 }
                                 getMotionMenu()?.reRender();
                                 setStatus(t('motion.override.redoApplied'), true);
@@ -346,6 +356,11 @@ function buildActionBindingSchema(id: string): MenuNode[] {
                             });
                             inner.appendChild(pinBtn);
                         }
+                    } else {
+                        const hint = document.createElement('div');
+                        hint.className = 'cs-hint';
+                        hint.textContent = t('motion.intent.noGlobalHint');
+                        inner.appendChild(hint);
                     }
                 });
             },
