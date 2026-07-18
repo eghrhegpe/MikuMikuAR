@@ -101,7 +101,24 @@ function findToggleRow(
     row: HTMLElement | null;
     checkbox: HTMLInputElement | null;
     arrow: HTMLElement | null;
+    toggleLabel: HTMLElement | null;
 } {
+    // 新 UI 使用 slideRow + headerToggle → .collapsible-header 结构
+    const headers = Array.from(container.querySelectorAll('.collapsible-header'));
+    for (const item of headers) {
+        const labelEl = item.querySelector('.collapsible-label');
+        if (labelEl?.textContent === label) {
+            return {
+                row: item as HTMLElement,
+                checkbox: item.querySelector(
+                    '.toggle input[type="checkbox"]'
+                ) as HTMLInputElement | null,
+                arrow: item.querySelector('.collapsible-arrow') as HTMLElement | null,
+                toggleLabel: item.querySelector('.toggle.header-toggle') as HTMLElement | null,
+            };
+        }
+    }
+    // 兜底：旧版 .toggle-row 结构
     const items = Array.from(container.querySelectorAll('.toggle-row'));
     for (const item of items) {
         const labelEl = item.querySelector('.toggle-label');
@@ -112,10 +129,11 @@ function findToggleRow(
                     '.toggle input[type="checkbox"]'
                 ) as HTMLInputElement | null,
                 arrow: null,
+                toggleLabel: null,
             };
         }
     }
-    return { row: null, checkbox: null, arrow: null };
+    return { row: null, checkbox: null, arrow: null, toggleLabel: null };
 }
 
 // ── tests ──
@@ -174,11 +192,11 @@ describe('Stage - ground/water toggles', () => {
     it('clicking ground toggle calls setEnvState with groundVisible=false', () => {
         const level = buildStageLevel();
         const container = renderLevel(level);
-        const { checkbox } = findToggleRow(container, '地面');
-        expect(checkbox).not.toBeNull();
+        const { toggleLabel } = findToggleRow(container, '地面');
+        expect(toggleLabel).not.toBeNull();
 
-        checkbox!.checked = false;
-        checkbox!.dispatchEvent(new Event('change', { bubbles: true }));
+        // 点击 toggle label 触发 onChange（headerToggle 的 click handler）
+        toggleLabel!.click();
 
         expect(mockSetEnvState).toHaveBeenCalledWith({ groundVisible: false });
     });
@@ -186,11 +204,10 @@ describe('Stage - ground/water toggles', () => {
     it('clicking water toggle calls setEnvState with waterEnabled=true', () => {
         const level = buildStageLevel();
         const container = renderLevel(level);
-        const { checkbox } = findToggleRow(container, '水面');
-        expect(checkbox).not.toBeNull();
+        const { toggleLabel } = findToggleRow(container, '水面');
+        expect(toggleLabel).not.toBeNull();
 
-        checkbox!.checked = true;
-        checkbox!.dispatchEvent(new Event('change', { bubbles: true }));
+        toggleLabel!.click();
 
         expect(mockSetEnvState).toHaveBeenCalledWith({ waterEnabled: true });
     });
@@ -198,16 +215,30 @@ describe('Stage - ground/water toggles', () => {
     it('clicking toggle does not navigate (stopPropagation via closest .toggle)', () => {
         const level = buildStageLevel();
         const container = renderLevel(level);
-        const { row, checkbox } = findToggleRow(container, '地面');
+        const { row, toggleLabel } = findToggleRow(container, '地面');
         expect(row).not.toBeNull();
-        expect(checkbox).not.toBeNull();
-
-        // Click the toggle label (not the checkbox directly)
-        const toggleLabel = row!.querySelector('.toggle');
         expect(toggleLabel).not.toBeNull();
-        (toggleLabel as HTMLElement)!.click();
 
-        // Should NOT navigate
+        // Click the toggle label — should toggle but NOT navigate
+        toggleLabel!.click();
+
+        // Should NOT navigate (toggle click is stopPropagation'd)
         expect(mockPush).not.toHaveBeenCalled();
+    });
+
+    it('ground row has arrow for navigation to full parameters', () => {
+        const level = buildStageLevel();
+        const container = renderLevel(level);
+        const { row, arrow } = findToggleRow(container, '地面');
+        expect(row).not.toBeNull();
+        expect(arrow).not.toBeNull();
+        expect(arrow!.textContent).toBe('▾');
+    });
+
+    it('water row has arrow for navigation', () => {
+        const level = buildStageLevel();
+        const container = renderLevel(level);
+        const { arrow } = findToggleRow(container, '水面');
+        expect(arrow).not.toBeNull();
     });
 });
