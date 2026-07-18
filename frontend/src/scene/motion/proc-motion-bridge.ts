@@ -348,6 +348,8 @@ export function setProcMotionBoneToggle(cat: ProcMotionBoneCategory, v: boolean)
     bt[cat] = v;
     _writeProcState({ boneToggles: bt });
     triggerAutoSave();
+    // [fix] 程序化调用必须触发 VMD 重生成，否则 toggle 新值不生效（UI 层已包含此调用）
+    regenerateProcMotion();
 }
 
 /** 批量设置微动效果开关 */
@@ -366,6 +368,8 @@ export function setProcMotionBoneToggles(
     const cur = _refProcState();
     _writeProcState({ boneToggles: { ...cur.boneToggles, ...bt } });
     triggerAutoSave();
+    // [fix] 批量设置同样需要重生成 VMD
+    regenerateProcMotion();
 }
 
 export function setProcMotionVpdApplyEnabled(v: boolean): void {
