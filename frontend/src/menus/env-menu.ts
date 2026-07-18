@@ -275,13 +275,6 @@ function envOnItemClick(row: PopupRow): void {
     closeAllOverlays();
 
     switch (target) {
-        case 'ground':
-            setEnvState({
-                groundTexture: row.model.file_path,
-                groundTextureEnabled: !!row.model.file_path,
-                groundStyle: 'texture',
-            });
-            break;
         case 'particle':
             setEnvState({ particleCustomTexture: row.model.file_path });
             break;
