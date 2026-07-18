@@ -308,7 +308,7 @@ VMD 文件 → VmdLoader → MmdAnimation → createRuntimeAnimation → MmdCame
 
 ### 13. 目录结构
 
-> 更新于 2026-07-17（ADR-113~121 新增模块）
+> 更新于 2026-07-19（ADR-127~132 新增模块）
 
 ```
 MikuMikuAR/
@@ -366,15 +366,15 @@ MikuMikuAR/
         │   └── i18n/                 # 国际化（5 语言：zh-CN/zh-TW/ja/en/ko）
         │
         ├── scene/                    # 3D 场景（Babylon.js）
-        │   ├── scene.ts              # ★ 场景编排入口
+        │   ├── scene.ts              # ★ 场景编排入口（ADR-127 破坏性操作撤销）
         │   ├── scene-bundle.ts       # 场景模块聚合导出
-        │   ├── scene-serialize.ts    # 场景序列化
+        │   ├── scene-serialize.ts    # 场景序列化（ADR-054 队形序列化）
         │   ├── camera/               # 相机模式
         │   ├── render/               # 渲染管线
         │   │   ├── renderer.ts       # 渲染器
         │   │   ├── lighting.ts       # 灯光管理
         │   │   ├── lighting-presets.ts # 灯光预设
-        │   │   ├── performance.ts    # 性能监控
+        │   │   ├── performance.ts    # 性能监控（ADR-132 亮度统一标量）
         │   │   └── transform-gizmo.ts # 变换控制器
         │   ├── manager/              # 模型管理
         │   │   ├── model-manager.ts  # 模型管理器
@@ -402,20 +402,25 @@ MikuMikuAR/
         │   │   ├── proc-motion-bridge.ts    # 程序化动作桥接
         │   │   ├── lipsync-bridge.ts        # LipSync 桥接
         │   │   ├── animation-retargeter.ts  # 骨骼映射 + 动作重定向（ADR-108）
+        │   │   ├── motion-intent.ts         # 全局动作意图（ADR-121）
+        │   │   ├── motion-slot.ts           # 双槽位动作系统（ADR-129）
+        │   │   ├── motion-preset-list.ts    # 预设列表组件化（ADR-129）
+        │   │   ├── motion-per-motion.ts     # per-motion 程序化动作（ADR-129）
         │   │   └── playback.ts              # 播放控制
         │   ├── physics/              # 物理（WASM Bullet）
         │   │   ├── skirt-analyzer.ts  # 裙装分析器（ADR-084）
-        │   │   └── virtual-skirt.ts   # 虚拟裙骨（ADR-084）
+        │   │   ├── virtual-skirt.ts   # 虚拟裙骨（ADR-084）
+        │   │   └── ground-collision.ts # 地面碰撞特性（ADR-086）
         │   ├── env/                  # ★ 环境系统（ADR-091/092 贴图与反射统一）
         │   │   ├── env.ts             # 环境状态总入口
         │   │   ├── env-impl.ts        # 环境实现
         │   │   ├── env-bridge.ts      # 环境桥接
         │   │   ├── env-terrain.ts     # 地形（ADR-089 模式拆分）
         │   │   ├── env-texture.ts     # 纹理工厂（ADR-091）
-        │   │   ├── env-water.ts       # 水面 + 平面反射（ADR-092）
+        │   │   ├── env-water.ts       # 水面 + 平面反射（ADR-092/115 风格化波光粼粼）
         │   │   ├── env-clouds.ts      # 体积云（ADR-113 地平线延展 + 自适应步长 + 双瓣散射）
         │   │   ├── env-ground.ts      # 地面 PBR 材质 + 程序化木纹 + 反射模糊 + 接触阴影（ADR-114）
-        │   │   ├── env-particles.ts   # 粒子
+        │   │   ├── env-particles.ts   # 粒子（ADR-132 地面网格缓存）
         │   │   ├── env-lighting.ts    # 环境灯光
         │   │   ├── accessory.ts       # 配件
         │   │   ├── props.ts           # 道具
@@ -442,23 +447,26 @@ MikuMikuAR/
         │   ├── env-menu.ts           # 环境菜单总入口
         │   │── env-feature-levels.ts # 环境功能层级
         │   │── env-preset-levels.ts  # 环境预设层级（ADR-120 分类化：天空/地面/水面/大气）
+        │   │── env-brightness-levels.ts  # 环境亮度统一标量（ADR-132）
         │   │
-        │   │── motion-popup.ts       # 动作菜单总入口
+        │   │── motion-popup.ts       # 动作菜单总入口（ADR-129 场景级重设计）
         │   │── motion-camera-levels.ts    # 相机控制
         │   │── motion-cloth-levels.ts     # 布料质量（ADR-084）
         │   │── motion-feet-levels.ts      # 脚部调整（ADR-085）
         │   │── motion-gaze-levels.ts      # 注视控制
-        │   │── motion-override-levels.ts  # 骨骼覆盖
+        │   │── motion-override-levels.ts  # 骨骼覆盖 → Motion Override（ADR-116/125）
         │   │── motion-pose-levels.ts      # 姿势控制
         │   │── motion-procmotion-levels.ts # 程序化动作
+        │   │── motion-slot-levels.ts      # 双槽位动作系统（ADR-129）
         │   │
-        │   │── scene-menu.ts         # 场景菜单总入口
+        │   │── scene-menu.ts         # 场景菜单总入口（ADR-111 重组 + ADR-129 场景级动作）
         │   │── scene-physics-levels.ts    # 物理设置
         │   │── scene-prop-levels.ts       # 道具管理
         │   │── scene-render-levels.ts     # 渲染设置
         │   │── scene-render-presets.ts    # 渲染预设
         │   │── scene-stage-levels.ts      # 舞台设置
         │   │── scene-stage-lights.ts      # 舞台灯光
+        │   │── scene-browse-outcome.ts    # 资源浏览选中结果契约（ADR-131）
         │   │
         │   │── settings.ts           # 设置页总入口
         │   │── settings-appearance.ts     # 外观主题
@@ -477,7 +485,7 @@ MikuMikuAR/
         │   │── outfit-ui.ts              # 换装 UI
         │   │── plaza.ts                  # 模型广场
         │   │── plaza-sites.ts            # 广场站点列表
-        │   │── preset-list-viewer.ts     # 预设列表查看器
+        │   │── preset-list-viewer.ts     # 预设列表查看器（ADR-129 组件化）
         │   │── resource-detail-helpers.ts # 资源详情辅助
         │   │── render-menu.ts            # 渲染菜单（遗留，待 ADR-093 迁移）
         │   │
