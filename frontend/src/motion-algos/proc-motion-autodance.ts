@@ -28,6 +28,7 @@ import {
     genAllParentBone,
     genWristBones,
     genFootIkBones,
+    genElbowBones,
     applyInterp,
     applyInterpOverride,
 } from './proc-motion-autodance-bones';
@@ -85,6 +86,9 @@ export function generateAutoDanceVmd(
             : []),
         ...(resolution.larmBone && resolution.rarmBone && state.boneToggles.arm
             ? genArmBones(resolution.larmBone, resolution.rarmBone, state, cache, intensity)
+            : []),
+        ...(state.boneToggles.arm
+            ? genElbowBones(resolution.elbowLBone, resolution.elbowRBone, state, cache, intensity)
             : []),
         ...(resolution.grooveBone && state.boneToggles.groove
             ? genGrooveBone(resolution.grooveBone, state, cache, intensity)
