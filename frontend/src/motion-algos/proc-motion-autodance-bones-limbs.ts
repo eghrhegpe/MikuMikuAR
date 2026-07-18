@@ -15,14 +15,11 @@ import { beatInfo, beatBounce, downbeatWeight, swayAt } from './proc-motion-auto
 
 const STEP = 3;
 
-/** 计算右臂相对左臂的半拍错位相位（按拍交替，保证循环无缝） */
-function rightShift(beatInLoop: number): number {
-    return (beatInLoop % 2) * 0.5; // 0 或 0.5 拍，f=0 与 f=loopFrames 时均为 0
-}
-
 /**
  * 生成手臂骨骼帧（左右）
- * 肩抬（外展 Z + 前举 X）随踩点包络，左右半拍错位，配合肘部弯曲形成挥舞而非开合。
+ * 关键修复：改回平滑连续摆动（2 拍周期正弦），而非逐拍脉冲包络（beatBounce）。
+ * 逐拍脉冲是"机器人感"的根因——每拍猛抬猛落、EASE_OUT 每帧急停急起。
+ * 平滑连续正弦 + 4 拍"呼吸"幅度调制，接近旧版自然观感，同时保留肘部与联动。
  */
 export function genArmBones(
     larmBone: string | null,
@@ -36,23 +33,24 @@ export function genArmBones(
         return frames;
     }
 
-    const raiseZ = 0.5 * intensity; // 外展（抬向两侧）
-    const raiseX = 0.25 * intensity; // 前举（抬向前方）
+    const ampZ = 0.5 * intensity; // 外展（抬向两侧）
+    const ampX = 0.28 * intensity; // 前举（抬向前方）
+    const slowPeriod = 4 * cache.beatFrames; // 4 拍呼吸，打破机械重复
 
     for (let f = 0; f <= cache.loopFrames; f += STEP) {
-        const { beatInLoop, beatPhase } = beatInfo(cache, f);
-        const bounce = beatBounce(beatPhase) * downbeatWeight(beatInLoop);
-        const rShift = rightShift(beatInLoop);
-        const rBounce = beatBounce((beatPhase + rShift) % 1) * downbeatWeight(beatInLoop);
+        // 平滑连续摆动（2 拍周期），f=0 与 f=loopFrames 处 value=0 → 无缝循环
+        const base = Math.sin((Math.PI * f) / cache.beatFrames);
+        const fwd = Math.cos((Math.PI * f) / cache.beatFrames + Math.PI / 4);
+        const slow = 0.7 + 0.3 * Math.sin((2 * Math.PI * f) / slowPeriod);
         if (larmBone) {
-            const lz = clamp1(bounce * raiseZ);
-            const lx = clamp1(bounce * raiseX);
+            const lz = clamp1(base * ampZ * slow);
+            const lx = clamp1(fwd * ampX * slow);
             const w = quatW(lx, 0, lz);
             frames.push({ name: larmBone, frame: f, position: [0, 0, 0], rotation: [lx, 0, lz, w] });
         }
         if (rarmBone) {
-            const rz = clamp1(-rBounce * raiseZ);
-            const rx = clamp1(rBounce * raiseX);
+            const rz = clamp1(-base * ampZ * slow);
+            const rx = clamp1(fwd * ampX * slow);
             const w = quatW(rx, 0, rz);
             frames.push({ name: rarmBone, frame: f, position: [0, 0, 0], rotation: [rx, 0, rz, w] });
         }
@@ -62,7 +60,8 @@ export function genArmBones(
 
 /**
  * 生成肘部骨骼帧（新增）
- * 手臂上抬时肘部屈曲（X 轴），与肩抬形成复合弧线——这是"手臂看起来自然"的关键。
+ * 肘部随同侧手臂上抬而屈曲（X 轴），并滞后于肩形成 follow-through。
+ * 与手臂共用平滑连续波，故不再"逐拍猛屈"——自然的关键。
  */
 export function genElbowBones(
     lelbowBone: string | null,
@@ -76,20 +75,21 @@ export function genElbowBones(
         return frames;
     }
 
-    const bendAmp = 0.6 * intensity; // 肘屈幅度（随手臂上抬同步）
+    const bendAmp = 0.5 * intensity; // 肘屈幅度（随手臂上抬同步）
+    const lag = Math.round(cache.beatFrames * 0.12); // 滞后于肩 → follow-through
+    const slowPeriod = 4 * cache.beatFrames;
 
     for (let f = 0; f <= cache.loopFrames; f += STEP) {
-        const { beatInLoop, beatPhase } = beatInfo(cache, f);
-        const bounce = beatBounce(beatPhase) * downbeatWeight(beatInLoop);
-        const rShift = rightShift(beatInLoop);
-        const rBounce = beatBounce((beatPhase + rShift) % 1) * downbeatWeight(beatInLoop);
+        const baseL = Math.sin((Math.PI * (f - lag)) / cache.beatFrames); // 滞后样本
+        const slow = 0.7 + 0.3 * Math.sin((2 * Math.PI * f) / slowPeriod);
         if (lelbowBone) {
-            const lx = clamp1(bounce * bendAmp);
+            // 左臂在 base>0（外摆）半周期屈曲
+            const lx = clamp1(Math.max(0, baseL) * bendAmp * slow);
             const w = quatW(lx, 0, 0);
             frames.push({ name: lelbowBone, frame: f, position: [0, 0, 0], rotation: [lx, 0, 0, w] });
         }
         if (relbowBone) {
-            const rx = clamp1(rBounce * bendAmp);
+            const rx = clamp1(Math.max(0, -baseL) * bendAmp * slow);
             const w = quatW(rx, 0, 0);
             frames.push({ name: relbowBone, frame: f, position: [0, 0, 0], rotation: [rx, 0, 0, w] });
         }
@@ -99,7 +99,7 @@ export function genElbowBones(
 
 /**
  * 生成腕部骨骼帧
- * 随同侧手臂踩点包络做翻转，保持末端联动。
+ * 随同侧手臂平滑摆动（共用连续波），保持末端联动，不再逐拍脉冲。
  */
 export function genWristBones(
     lBone: string | null,
@@ -113,25 +113,22 @@ export function genWristBones(
         return frames;
     }
 
-    const wristAmpX = 0.25 * intensity;
+    const wristAmpX = 0.22 * intensity;
     const wristAmpZ = 0.12 * intensity;
+    const slowPeriod = 4 * cache.beatFrames;
 
     for (let f = 0; f <= cache.loopFrames; f += STEP) {
-        const { beatInLoop, beatPhase } = beatInfo(cache, f);
-        const bounce = beatBounce(beatPhase) * downbeatWeight(beatInLoop);
-        const rShift = rightShift(beatInLoop);
-        const rBounce = beatBounce((beatPhase + rShift) % 1) * downbeatWeight(beatInLoop);
+        const base = Math.sin((Math.PI * f) / cache.beatFrames);
+        const slow = 0.7 + 0.3 * Math.sin((2 * Math.PI * f) / slowPeriod);
+        const rx = clamp1(Math.abs(base) * wristAmpX * slow);
+        const rz = clamp1(Math.cos((Math.PI * f) / cache.beatFrames) * wristAmpZ * slow);
         if (lBone) {
-            const rx = clamp1(bounce * wristAmpX);
-            const rz = clamp1(bounce * wristAmpZ);
             const w = quatW(rx, 0, rz);
             frames.push({ name: lBone, frame: f, position: [0, 0, 0], rotation: [rx, 0, rz, w] });
         }
         if (rBone) {
-            const rx = clamp1(rBounce * wristAmpX);
-            const rz = clamp1(-rBounce * wristAmpZ);
-            const w = quatW(rx, 0, rz);
-            frames.push({ name: rBone, frame: f, position: [0, 0, 0], rotation: [rx, 0, rz, w] });
+            const w = quatW(rx, 0, -rz);
+            frames.push({ name: rBone, frame: f, position: [0, 0, 0], rotation: [rx, 0, -rz, w] });
         }
     }
     return frames;
@@ -139,7 +136,7 @@ export function genWristBones(
 
 /**
  * 生成肩部骨骼帧
- * 随同侧手臂上抬做耸肩（Y 位移）+ 微旋（Z），形成肩→臂动力链。
+ * 随同侧手臂平滑摆动做耸肩（Y 位移）+ 微旋（Z），形成肩→臂动力链。
  */
 export function genShoulderBones(
     lBone: string | null,
@@ -153,23 +150,22 @@ export function genShoulderBones(
         return frames;
     }
 
-    const upAmp = 0.06 * intensity;
-    const rotAmp = 0.1 * intensity;
+    const upAmp = 0.05 * intensity;
+    const rotAmp = 0.08 * intensity;
+    const slowPeriod = 4 * cache.beatFrames;
 
     for (let f = 0; f <= cache.loopFrames; f += STEP) {
-        const { beatInLoop, beatPhase } = beatInfo(cache, f);
-        const bounce = beatBounce(beatPhase) * downbeatWeight(beatInLoop);
-        const rShift = rightShift(beatInLoop);
-        const rBounce = beatBounce((beatPhase + rShift) % 1) * downbeatWeight(beatInLoop);
+        const base = Math.sin((Math.PI * f) / cache.beatFrames);
+        const slow = 0.7 + 0.3 * Math.sin((2 * Math.PI * f) / slowPeriod);
         if (lBone) {
-            const up = Math.abs(bounce) * upAmp;
-            const rot = clamp1(bounce * rotAmp);
+            const up = Math.abs(base) * upAmp * slow;
+            const rot = clamp1(base * rotAmp * slow);
             const w = quatW(0, 0, rot);
             frames.push({ name: lBone, frame: f, position: [0, up, 0], rotation: [0, 0, rot, w] });
         }
         if (rBone) {
-            const up = Math.abs(rBounce) * upAmp;
-            const rot = clamp1(rBounce * rotAmp);
+            const up = Math.abs(base) * upAmp * slow;
+            const rot = clamp1(-base * rotAmp * slow); // 右肩反向，对称耸肩
             const w = quatW(0, 0, rot);
             frames.push({ name: rBone, frame: f, position: [0, up, 0], rotation: [0, 0, rot, w] });
         }
@@ -193,9 +189,9 @@ export function genFootIkBones(
         return frames;
     }
 
-    const stepAmp = 0.06 * intensity;
-    const liftAmp = 0.04 * intensity;
-    const bounceLift = 0.02 * intensity;
+    const stepAmp = 2.0 * intensity;
+    const liftAmp = 1.0 * intensity;
+    const bounceLift = 0.5 * intensity;
 
     for (let f = 0; f <= cache.loopFrames; f += STEP) {
         const { beatInLoop, beatPhase } = beatInfo(cache, f);

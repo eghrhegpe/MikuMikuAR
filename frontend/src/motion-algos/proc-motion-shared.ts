@@ -147,6 +147,27 @@ export const BONE_LEG_IK_R_CANDIDATES = [
     'RightFootIK',
 ];
 
+// 手臂 IK 候选（与腿部同构）：左腕IK/右腕IK 是手臂 IK 目标骨。
+// 移动它并 solve 可让整条手臂（上腕→ひじ→手首）跟随，符合 IK 直觉
+// （ADR-116 手部位置偏移：直接偏移手腕骨只浮起手，偏移 IK 目标骨才带动整臂）。
+// 候选覆盖半角/全角 IK 与常见英文变体（MMD 标准名为全角「左腕ＩＫ」）。
+export const BONE_ARM_IK_L_CANDIDATES = [
+    '左腕IK',
+    '左腕ＩＫ',
+    'left arm ik',
+    'left wrist ik',
+    'LeftArmIK',
+    'LeftWristIK',
+];
+export const BONE_ARM_IK_R_CANDIDATES = [
+    '右腕IK',
+    '右腕ＩＫ',
+    'right arm ik',
+    'right wrist ik',
+    'RightArmIK',
+    'RightWristIK',
+];
+
 export function matchBone(actualBones: string[], candidates: string[]): string | null {
     for (const c of candidates) {
         if (actualBones.includes(c)) {

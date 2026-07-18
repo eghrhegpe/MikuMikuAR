@@ -442,10 +442,11 @@ export async function initScene(): Promise<void> {
     applyEnvState(envState);
     _updateSunDisc();
 
-    // 无 VMD 时也能驱动程序化动作和口型同步
-    scene.onBeforeRenderObservable.add(() => {
-        swallowError(updateProcMotion());
-    });
+    // 无 VMD 时也能驱动程序化动作和口型同步 — 已由 onAnimationTickObservable 驱动（playback.ts），
+	// 此处不再重复注册，避免每帧两次 updateProcMotion 导致竞态（startProcMotion 反复重载）。
+	// scene.onBeforeRenderObservable.add(() => {
+	//     swallowError(updateProcMotion());
+	// });
 
     // 点击水面 → 生成涟漪
     scene.onPointerObservable.add((info) => {

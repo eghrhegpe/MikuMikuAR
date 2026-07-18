@@ -11,13 +11,16 @@
 import type { BoneKeyFrame } from './vmd-writer';
 import { type ProcMotionState, clamp1, quatW } from './proc-motion-shared';
 import type { TrigCache } from './proc-motion-autodance-bones';
-import { beatInfo, beatBounce, downbeatWeight, swayAt } from './proc-motion-autodance-bones';
+import { swayAt } from './proc-motion-autodance-bones';
 
 const STEP = 3;
 
 /**
  * 生成中心/下半身骨骼帧（Root / Center）
- * 关键改进：加入 X 重心转移（左右换重心）+ 踩点弹跳，消灭"原地漂浮感"。
+ * groove 原则：单一相干源（swayAt）驱动重心转移。
+ * 垂直弹跳（Y）已移除——Center 是根骨骼，Y 位移会让整具身体上下蹦、且
+ * 与 groove 的骨盆微起伏叠加显跳；垂直生命完全交由 groove 负责。
+ * Center 仅保留：X 左右重心转移 + Ry 根扭转 + Rz 根侧倾（跳舞的重心流动）。
  */
 export function genCenterBone(
     bone: string,
@@ -29,25 +32,22 @@ export function genCenterBone(
     const shiftAmp = 0.1 * intensity; // 左右重心转移幅度
     const leanAmp = 0.12 * intensity; // 侧倾（roll）
     const twistAmp = 0.14 * intensity; // 扭转（yaw）
-    const bobAmp = 0.08 * intensity; // 踩点上下弹跳
 
     for (let f = 0; f <= cache.loopFrames; f += STEP) {
-        const { beatInLoop, beatPhase } = beatInfo(cache, f);
         const sway = swayAt(cache, f);
-        const bounce = beatBounce(beatPhase) * downbeatWeight(beatInLoop);
         const x = clamp1(sway * shiftAmp);
         const ry = clamp1(sway * twistAmp);
         const rz = clamp1(sway * leanAmp);
-        const y = bounce * bobAmp;
         const w = quatW(0, ry, rz);
-        frames.push({ name: bone, frame: f, position: [x, y, 0], rotation: [0, ry, rz, w] });
+        frames.push({ name: bone, frame: f, position: [x, 0, 0], rotation: [0, ry, rz, w] });
     }
     return frames;
 }
 
 /**
  * 生成上半身骨骼帧
- * 随重心摆动做俯仰 + 踩点微起伏（动力链：中心→上半身）。
+ * 随同一重心摆动做俯仰 + 侧倾（单一 swayAt 源，动力链：中心→上半身）。
+ * 去掉 beatBounce 脉冲耦合，使脊柱与重心同节奏运动（消 incoherent 变味）。
  */
 export function genUpperBone(
     bone: string,
@@ -56,15 +56,12 @@ export function genUpperBone(
     intensity: number
 ): BoneKeyFrame[] {
     const frames: BoneKeyFrame[] = [];
-    const pitchAmp = 0.1 * intensity;
+    const pitchAmp = 0.09 * intensity;
     const rollAmp = 0.06 * intensity;
-    const couplingAmp = 0.04 * intensity;
 
     for (let f = 0; f <= cache.loopFrames; f += STEP) {
-        const { beatInLoop, beatPhase } = beatInfo(cache, f);
         const sway = swayAt(cache, f);
-        const bounce = beatBounce(beatPhase) * downbeatWeight(beatInLoop);
-        const rx = clamp1(bounce * pitchAmp + sway * couplingAmp);
+        const rx = clamp1(sway * pitchAmp);
         const rz = clamp1(sway * rollAmp);
         const w = quatW(rx, 0, rz);
         frames.push({ name: bone, frame: f, position: [0, 0, 0], rotation: [rx, 0, rz, w] });
@@ -74,7 +71,7 @@ export function genUpperBone(
 
 /**
  * 生成上半身2骨骼帧
- * 跟随上半身做更小幅度联动。
+ * 跟随上半身做更小幅度同向联动（单一 swayAt 源，无脉冲）。
  */
 export function genUpper2Bone(
     bone: string,
@@ -86,10 +83,8 @@ export function genUpper2Bone(
     const amp = 0.05 * intensity;
 
     for (let f = 0; f <= cache.loopFrames; f += STEP) {
-        const { beatInLoop, beatPhase } = beatInfo(cache, f);
         const sway = swayAt(cache, f);
-        const bounce = beatBounce(beatPhase) * downbeatWeight(beatInLoop);
-        const rx = clamp1(bounce * amp * 0.5);
+        const rx = clamp1(sway * amp * 0.5);
         const ry = clamp1(sway * amp * 0.6);
         const w = quatW(rx, ry, 0);
         frames.push({ name: bone, frame: f, position: [0, 0, 0], rotation: [rx, ry, 0, w] });
