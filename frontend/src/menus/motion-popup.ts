@@ -528,7 +528,7 @@ function buildMotionDetailSchema(): MenuNode[] {
                     slideRow(
                         inner,
                         'tabler:bone',
-                        t('motion.boneOverride.title'),
+                        t('motion.override.title'),
                         true,
                         () => {
                             getMotionMenu()?.push(buildMotionOverrideLevel());

@@ -4,6 +4,7 @@
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
 import { setOrbitParams } from '../camera/camera';
 import { scene } from '../scene';
+import { modelRegistry, focusedModelId } from '../../core/config';
 
 /** 预设角度定义 */
 export interface CameraAnglePreset {
@@ -29,20 +30,35 @@ export const CAMERA_PRESETS: CameraAnglePreset[] = [
 ];
 
 /**
+ * 聚焦模型绕 Y 轴的当前偏航（弧度）。
+ * 预设方位角叠加到该偏航之上，使「正面/左45°/右45°」等以角色朝向为参考，而非世界轴。
+ */
+function getFocusedModelYaw(): number {
+    const id = focusedModelId;
+    if (!id) {
+        return 0;
+    }
+    const inst = modelRegistry.get(id);
+    return inst?.rotationY ?? 0;
+}
+
+/**
  * 切换到指定预设角度。
  * 使用 ArcRotateCamera 的 alpha(方位角), beta(仰角), radius(距离)。
  * OrbitParams 不含 alpha，需直接操作 Babylon ArcRotateCamera。
+ * 方位角叠加聚焦模型的偏航，使角度以角色朝向为参考（角色旋转后预设随之旋转）。
  */
 export function applyCameraPreset(preset: CameraAnglePreset): void {
+    const yaw = getFocusedModelYaw();
     const beta = Math.PI / 2 - (preset.elevation * Math.PI) / 180;
     setOrbitParams({
         beta,
         distance: preset.distance,
     });
-    // alpha 不在 OrbitParams 中，直接设置相机
+    // alpha 不在 OrbitParams 中，直接设置相机；叠加模型偏航使其相对角色朝向
     const cam = scene.activeCamera;
     if (cam instanceof ArcRotateCamera) {
-        cam.alpha = (preset.azimuth * Math.PI) / 180;
+        cam.alpha = (preset.azimuth * Math.PI) / 180 - yaw;
     }
 }
 
