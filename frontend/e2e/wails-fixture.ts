@@ -112,9 +112,68 @@ export const test = base.extend<WailsFixtures>({
         await ensureCDPReady(CDP_ENDPOINT, 30000);
         const browser = await chromium.connectOverCDP(CDP_ENDPOINT, { timeout: 10000 });
         const context = browser.contexts()[0] || await browser.newContext();
-        const page = context.pages()[0] || await context.newPage();
+        // [doc:e2e] 主应用窗口和隐藏预热 plaza 窗口都在同一个 browser context 中。
+        // pages()[0] 可能是 plaza 窗口（about:blank），所以遍历找含 #btnMainAction 的页面。
+        let page: Page | undefined;
+        const allPages = context.pages();
+        for (const p of allPages) {
+            try {
+                await p.waitForSelector("#btnMainAction", { timeout: 2000 });
+                page = p;
+                break;
+            } catch { /* 不是主应用窗口，继续 */ }
+        }
+        if (!page) {
+            page = allPages[0] || await context.newPage();
+        }
+
+        // [doc:e2e] Same guards as vitePage: wait for init() to complete and
+        // force pointer-events:none on the #loading overlay so nav clicks
+        // are not intercepted.
+        await page.waitForSelector("#btnMainAction", { timeout: 20000 });
+        await page.evaluate(() => {
+            return new Promise<void>((resolve) => {
+                const loading = document.getElementById("loading");
+                if (!loading) return resolve();
+                const done = () => resolve();
+                if (loading.style.display === "none" || loading.style.background) {
+                    return done();
+                }
+                const obs = new MutationObserver(() => {
+                    if (loading.style.display === "none" || loading.style.background) {
+                        obs.disconnect();
+                        done();
+                    }
+                });
+                obs.observe(loading, { attributes: true, attributeFilter: ["style"] });
+                setTimeout(() => {
+                    obs.disconnect();
+                    done();
+                }, 20000);
+            });
+        });
+        await page.evaluate(() => {
+            const loading = document.getElementById("loading");
+            if (!loading) return;
+            const forcePassthrough = () => {
+                if (loading.style.pointerEvents !== "none") {
+                    loading.style.pointerEvents = "none";
+                }
+            };
+            forcePassthrough();
+            new MutationObserver(forcePassthrough).observe(loading, {
+                attributes: true,
+                attributeFilter: ["style"],
+            });
+        });
+        // Dismiss any leftover overlay from a previous test run
+        // via Escape so the app's own state machine properly resets.
+        await page.keyboard.press("Escape");
+
         await use(page);
-        await browser.disconnect();
+        // [doc:e2e] connectOverCDP 返回的 Browser 在 Playwright 1.61 无 disconnect()，
+        // 改用 close() 安全释放 CDP 连接，不干扰 WebView2 进程。
+        try { await browser.close(); } catch { /* fixture teardown 异常不吞断言 */ }
     },
 });
 

@@ -81,18 +81,37 @@ export async function waitForSceneHook(page: Page): Promise<void> {
  *  NOTE: the first .slide-item may be a folder row; callers should seed a known model or
  *  use loadModelByName() for deterministic selection. */
 export async function loadFirstModel(page: Page): Promise<void> {
+    // Only Escape if an overlay is actually visible — an extra Escape when no
+    // overlay exists can confuse the app's state machine (it might toggle or
+    // intercept the subsequent nav click). The fixture already Escapes on setup,
+    // so this is purely a guard for leftover overlays from a prior test.
+    const overlayOpen = await page.evaluate(() =>
+        document.getElementById("sceneOverlay")?.classList.contains("visible") ?? false
+    );
+    if (overlayOpen) {
+        await page.keyboard.press("Escape");
+        // Small wait for close animation to settle
+        await page.waitForTimeout(200);
+    }
     await page.click("#btnMainAction");
     await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
-    await page.waitForSelector('[data-testid^="model:"]', { timeout: 5000 });
-    await page.locator('[data-testid^="model:"]').first().click();
+    await page.waitForSelector('[data-testid^="actor:model"]', { timeout: 5000 });
+    await page.locator('[data-testid^="actor:model"]').first().click();
     await page.waitForFunction(() => (window as any).__scene?.meshCount > 10, { timeout: 20000 });
 }
 
 /** Open the model library popup and load a model by its visible label. */
 export async function loadModelByName(page: Page, name: string): Promise<void> {
+    const overlayOpen = await page.evaluate(() =>
+        document.getElementById("sceneOverlay")?.classList.contains("visible") ?? false
+    );
+    if (overlayOpen) {
+        await page.keyboard.press("Escape");
+        await page.waitForTimeout(200);
+    }
     await page.click("#btnMainAction");
     await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
-    await page.locator('[data-testid^="model:"]', { hasText: name }).first().click();
+    await page.locator('[data-testid^="actor:model"]', { hasText: name }).first().click();
     await page.waitForFunction(() => (window as any).__scene?.meshCount > 10, { timeout: 20000 });
 }
 

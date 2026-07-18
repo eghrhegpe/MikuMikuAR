@@ -27,10 +27,10 @@ test.describe("核心旅程: 模型加载", { tag: ["@webgl"] }, () => {
         // 从模型库首个真实条目动态取名,保证本地/CI 均可确定性加载。
         await page.click("#btnMainAction");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
-        await page.waitForSelector('[data-testid^="model:"]', { timeout: 5000 });
-        const name = (await page.locator('[data-testid^="model:"]').first().innerText()).trim();
+        await page.waitForSelector('[data-testid^="actor:model"]', { timeout: 5000 });
+        const name = (await page.locator('[data-testid^="actor:model"]').first().innerText()).trim();
         // 重新定位并点击该名称项完成加载(若首项是文件夹则此处进入子层级,非预期但可接受)。
-        await page.locator('[data-testid^="model:"]', { hasText: name }).first().click();
+        await page.locator('[data-testid^="actor:model"]', { hasText: name }).first().click();
         await page.waitForFunction(() => (window as any).__scene?.meshCount > 10, { timeout: 20000 });
         const meshCount = await page.evaluate(() => (window as any).__scene.meshCount);
         expect(meshCount).toBeGreaterThan(10);
