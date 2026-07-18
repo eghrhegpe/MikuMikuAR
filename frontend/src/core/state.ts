@@ -112,10 +112,7 @@ export function setAutoLoop(v: boolean): void {
 // 注：isLoadingModel / isLoadingVmd / isLoadingProp 已在 ADR-046 (Phase 2B) 移除。
 // 加载串行化现由 LoadManager 队列统一保障，各加载器内部锁已删除，此处不再保留冗余状态。
 
-export let pendingVmd: PendingVmd | null = null;
-export function setPendingVmd(v: PendingVmd | null): void {
-    pendingVmd = v;
-}
+// Note: pendingVmd/setPendingVmd removed in ADR-121 P1 — replaced by SceneMotionIntent + motionAssignment
 
 // ======== Seek ========
 

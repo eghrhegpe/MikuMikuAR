@@ -11,7 +11,6 @@ import {
     focusedModelId,
     isPlaying,
     autoLoop,
-    setPendingVmd,
     setIsPlaying,
     setStatus,
     triggerAutoSave,
@@ -21,6 +20,7 @@ import { getBaseName, withLoadingIndicator, logWarn } from '@/core/utils';
 import { encodeFileRef } from '@/core/fileservice';
 import { readFileBytes } from '@/core/wails-bindings';
 import { t } from '@/core/i18n/t';
+import { setActiveMotion } from './motion-intent';
 import { loadCameraVmd } from '../camera/camera';
 import { loadAudioFile } from '@/outfit/audio';
 import { PROC_VMD_NAME_IDLE, PROC_VMD_NAME_AUTODANCE } from '@/motion-algos/procedural-motion';
@@ -78,7 +78,7 @@ export async function loadVMDMotion(
         throw new DOMException('Aborted', 'AbortError');
     }
     if (!mmdRuntime) {
-        setPendingVmd({ data, name });
+        setActiveMotion({ vmdPath: null, vmdName: name, vmdLayers: [], source: 'vmd' });
         setStatus(t('scene.vmd.cachedWaiting'), false);
         return;
     }
@@ -221,7 +221,7 @@ export async function loadVMDFromPath(
                     foc.vmdPath = path;
                 }
             } else {
-                setPendingVmd({ data: vmdData, name: vmdName.replace(/\.vmd$/i, '') });
+                setActiveMotion({ vmdPath: path, vmdName: vmdName.replace(/\.vmd$/i, ''), vmdLayers: [], source: 'vmd' });
                 setStatus(t('scene.vmd.cachedAutoApply'), false);
             }
 
@@ -310,7 +310,7 @@ export async function loadCameraVmdFromPath(path: string, signal?: AbortSignal):
 
             const vmdLoader = new VmdLoader(scene);
             const mmdAnimation = await vmdLoader.loadFromBufferAsync(vmdName, vmdData);
-            (vmdLoader as unknown as { dispose?: () => void }).dispose?.();
+            // VmdLoader 无实例状态需释放（解析结果已转移到 mmdAnimation），GC 自动回收
             loadCameraVmd(mmdAnimation, path, vmdName.replace(/\.vmd$/i, ''));
             setStatus(t('scene.vmd.cameraLoaded', { name: vmdName }), true);
             triggerAutoSave();

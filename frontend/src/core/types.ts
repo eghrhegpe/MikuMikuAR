@@ -4,6 +4,10 @@
 import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 import type { IkSolver } from 'babylon-mmd/esm/Runtime/ikSolver';
+import type { IMmdBindableModelAnimation } from 'babylon-mmd/esm/Runtime/Animation/IMmdBindableAnimation';
+import type { IMmdRuntimeModelAnimation } from 'babylon-mmd/esm/Runtime/Animation/IMmdRuntimeAnimation';
+import type { MmdRuntimeAnimationHandle } from 'babylon-mmd/esm/Runtime/mmdRuntimeAnimationHandle';
+import type { Nullable } from '@babylonjs/core/types';
 import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 import type { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import type { UIState as GoUIState } from './wails-bindings';
@@ -75,14 +79,40 @@ export type VmdLayer = {
     boneFilter: string[];
 };
 
+// [doc:adr-121] 全局动作意图类型
+
+/** 用户选择的「原始动作来源类型」——仅描述意图来源性质，不描述广播后的运行时产物。 */
+export type MotionSource = 'vmd' | 'retargeted';
+
+/** 场景级动作意图（「场上在跳什么」） */
+export interface SceneMotionIntent {
+    vmdPath: string | null;
+    vmdName: string;
+    vmdLayers: VmdLayer[];
+    source: MotionSource;
+    // vmdData 为运行时缓存，不持久化
+}
+
+/** 每实例动作分配策略 */
+export interface ModelMotionAssignment {
+    mode: 'inherit' | 'pinned';
+    /** mode==='pinned' 时有效；须 structuredClone(activeMotion) 冻结快照 */
+    pinned?: SceneMotionIntent;
+    /** 运行时派生状态，不持久化 */
+    status: 'compatible' | 'incompatible' | 'idle' | 'overridden';
+}
+
 /**
  * IMmdModel 接口不含 setRuntimeAnimation / createRuntimeAnimation
  * （这两个方法在 MmdModel 和 MmdWasmModel 具体类上）。
  * 此扩展类型补上运行时动画相关方法，供 ModelInstance.mmdModel 使用。
+ * 类型签名与 MmdModel / MmdWasmModel 实际实现一致。
+ * 待 ADR-110 上游 PR 合并后移除此本地 augmentation。
  */
 export type RuntimeModel = IMmdModel & {
-    setRuntimeAnimation(animation: unknown): void;
-    createRuntimeAnimation(animation: unknown): unknown;
+    setRuntimeAnimation(handle: Nullable<MmdRuntimeAnimationHandle>, updateMorphTarget?: boolean): void;
+    createRuntimeAnimation(animation: IMmdBindableModelAnimation, retargetingMap?: { [key: string]: string }): MmdRuntimeAnimationHandle;
+    currentAnimation?: Nullable<IMmdRuntimeModelAnimation>;
 };
 
 export type ModelInstance = {
@@ -102,6 +132,8 @@ export type ModelInstance = {
     animationDuration: number;
     /** 多 VMD 图层（Motion Layers），空数组=单 VMD 模式 */
     vmdLayers: VmdLayer[];
+    /** [doc:adr-121] 动作分配策略：inherit 继承全局 / pinned 固定独立 */
+    motionAssignment?: ModelMotionAssignment;
     kind: ModelKind;
     visible: boolean;
     opacity: number;

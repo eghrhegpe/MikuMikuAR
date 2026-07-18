@@ -552,8 +552,6 @@ export {
     envState,
     triggerAutoSave,
     setTriggerAutoSave,
-    pendingVmd,
-    setPendingVmd,
 } from '../core/config';
 export type { EnvState, ModelInstance, PropInstance } from '../core/config';
 export { resolveFileUrl, normPath } from '../core/fileservice';
