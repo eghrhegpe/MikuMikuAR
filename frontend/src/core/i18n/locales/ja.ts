@@ -247,6 +247,7 @@ export const ja: Record<string, string> = {
     'motion.intent.title': '場上の動作',
     'motion.intent.none': '静止（動作なし）',
     'motion.intent.incompatible': 'このキャラは現在の動作非対応',
+    'motion.intent.noGlobalHint': '全体動作がない場合、各キャラは個別に VMD を再生します',
     'motion.context.pinMotion': 'この動作を固定',
     'motion.context.unpin': '全体動作に追従',
     'motion.changeMotion': 'モーション変更',

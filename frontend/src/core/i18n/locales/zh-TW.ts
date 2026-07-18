@@ -243,6 +243,7 @@ export const zhTW: Record<string, string> = {
     'motion.intent.title': '場上動作',
     'motion.intent.none': '靜態（無動作）',
     'motion.intent.incompatible': '此角色不相容目前動作',
+    'motion.intent.noGlobalHint': '無全域動作時，各角色獨立播放各自 VMD',
     'motion.context.pinMotion': '固定此動作',
     'motion.context.unpin': '跟隨全域動作',
     'motion.changeMotion': '更換動作',

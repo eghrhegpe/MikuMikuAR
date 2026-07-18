@@ -247,6 +247,7 @@ export const ko: Record<string, string> = {
     'motion.intent.title': '현재 동작',
     'motion.intent.none': '정적 (동작 없음)',
     'motion.intent.incompatible': '이 모델은 현재 동작과 호환되지 않음',
+    'motion.intent.noGlobalHint': '전역 동작이 없을 때 각 모델은 개별 VMD를 재생합니다',
     'motion.context.pinMotion': '이 동작 고정',
     'motion.context.unpin': '전역 동작 따르기',
     'motion.changeMotion': '모션 변경',
