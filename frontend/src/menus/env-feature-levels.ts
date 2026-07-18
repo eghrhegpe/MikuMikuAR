@@ -245,7 +245,8 @@ export function buildSkyLevel(): PopupLevel {
                                 cc,
                                 !!envState.starsTexture,
                                 () => setEnvState({ starsTexture: '' }),
-                                t('env.clear')
+                                t('env.clear'),
+                                'env:sky:stars-clear'
                             );
                         },
                     },
@@ -366,7 +367,8 @@ export function buildGroundLevel(): PopupLevel {
                                 groundStyle: 'solid',
                                 groundDecoStyle: 'none',
                             }),
-                        t('env.clear')
+                        t('env.clear'),
+                        'env:ground:custom-texture-clear'
                     );
                     addSliderRow(
                         cc,
