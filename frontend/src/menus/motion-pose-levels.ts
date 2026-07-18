@@ -82,10 +82,7 @@ function buildPoseStudioSchema(): MenuNode[] {
                         const btn = document.createElement('button');
                         btn.className = 'preset-chip';
                         btn.textContent = m.label;
-                        btn.style.cssText =
-                            m.key === currentMode
-                                ? 'background:var(--accent);color:var(--text);'
-                                : '';
+                        // 选中态走 .active class（与灯光列表等场景统一，样式由 app.css .preset-chip.active 控制）
                         btn.classList.toggle('active', m.key === currentMode);
                         btn.addEventListener('click', () => {
                             setGuideMode(m.key);
