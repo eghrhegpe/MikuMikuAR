@@ -473,6 +473,23 @@ void main(){
 
         float d = getDensity(p, cloudDensity, windDirection) * groundMask;
         if (d > CLOUD_DENSITY_THRESHOLD) {
+            // ---- Light march: integrate transmittance toward the sun ----
+            // Produces volumetric self-shadowing: dense cloud in front of this
+            // sample point attenuates the in-scattered light, giving the cloud
+            // real depth instead of a uniform glow. CLOUD_LIGHT_STEPS (was a
+            // dead #define) now drives this secondary march.
+            float lightStepSize = (cloudTopY - cloudBaseY) / float(CLOUD_LIGHT_STEPS);
+            vec3 toSun = Ldir;  // Ldir = normalize(-sceneLightDir) points at the sun
+            vec3 lp = p;
+            float lightT = 1.0;
+            for (int j = 0; j < CLOUD_LIGHT_STEPS; j++) {
+                lp += toSun * lightStepSize;
+                float ld = getDensity(lp, cloudDensity, windDirection);
+                if (ld > CLOUD_DENSITY_THRESHOLD) {
+                    lightT *= max(0.0, 1.0 - ld * lightStepSize * CLOUD_LIGHT_ATTEN);
+                }
+            }
+
             float ct = max(dot(Ldir, rd), 0.0);
             // Dual-lobe phase for forward + back scatter (silver lining)
             float phase = dualPhase(ct);
@@ -480,6 +497,7 @@ void main(){
             // Powder effect: darken dense clouds viewed against light
             float powderFactor = powder(od);
             vec3 S = cloudCol * lightCol * d * phase * dt * CLOUD_SCATTER_INTENSITY;
+            S *= lightT;  // self-shadow: occluding cloud in front dims in-scatter
             L += T * S * powderFactor;
             T *= max(0.0, 1.0 - od * CLOUD_LIGHT_ATTEN);
             if (T < 0.02) break;
