@@ -5,7 +5,7 @@ import { envState, cardContainer, setStatus, getBrowseDir } from '../core/config
 import type { PopupLevel } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow, addSliderRow, buildPresetChipGroup, addClearRow } from '../core/ui-helpers';
-import { setEnvState, engine } from '../scene/scene';
+import { setEnvState } from '../scene/scene';
 import { t } from '../core/i18n/t';
 import { getLightState, setLightState as setLightingState } from '../scene/render/lighting';
 import {
@@ -25,6 +25,7 @@ const WATER_PRESET_I18N: Record<string, string> = {
     tropical: 'env.presetTropical',
 };
 import { getEnvMenu, setEnvTextureBindingTarget, type EnvTextureBindingTarget } from './env-menu';
+import { getSceneMenu } from './scene-menu';
 import { TIME_OF_DAY_PRESETS } from '../scene/env/env-lighting';
 import { applyEnvPreset } from '../scene/env/env-bridge';
 import { activeTimeOfDayPreset, setActiveTimeOfDayPreset } from '../core/state';
@@ -61,19 +62,24 @@ export function _openTexturePicker(
     target: EnvTextureBindingTarget,
     label: string,
     browseDir?: string,
-    noCloseOverlay?: boolean
+    noCloseOverlay?: boolean,
+    pushMenu?: import('./menu').SlideMenu | null
 ): void {
     setEnvTextureBindingTarget(target);
     if (!noCloseOverlay) {
         closeAllOverlays();
     }
+    const menu = pushMenu ?? getEnvMenu();
+    if (!menu) {
+        return;
+    }
     const level = stackRegistry.buildLevel!(
         browseDir ?? getBrowseDir('environment'),
         label,
         (m) => ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format),
-        getEnvMenu()!
+        menu
     );
-    getEnvMenu()!.push(level);
+    menu.push(level);
 }
 
 export function buildSkyLevel(): PopupLevel {
@@ -352,7 +358,8 @@ export function buildGroundLevel(): PopupLevel {
                                 'ground',
                                 t('env.customTexture'),
                                 'environment',
-                                true
+                                true,
+                                getSceneMenu()
                             ),
                         groundFileName
                     );
@@ -1066,6 +1073,7 @@ export function buildWaterLevel(): PopupLevel {
                                 id: 'env:water:horizonFade',
                                 kind: 'slider',
                                 label: 'env.waterHorizonFade',
+                                icon: 'lucide:mountain',
                                 control: {
                                     bind: 'env.waterHorizonFade',
                                     min: 0,
@@ -1102,13 +1110,6 @@ export function buildWaterLevel(): PopupLevel {
                                 kind: 'slider',
                                 label: 'env.waterFogOpacityInfluence',
                                 control: { bind: 'env.waterFogOpacityInfluence', min: 0, max: 1, step: 0.05 },
-                            },
-                            {
-                                id: 'env:water:horizonFade',
-                                kind: 'slider',
-                                label: 'env.waterHorizonFade',
-                                control: { bind: 'env.waterHorizonFade', min: 0, max: 1, step: 0.05 },
-                                icon: 'lucide:mountain',
                             },
                             {
                                 id: 'env:water:flip',
@@ -1397,44 +1398,7 @@ export function buildExperimentalLevel(): PopupLevel {
                     cc.appendChild(warning);
                 },
             },
-            {
-                id: 'env:exp:volCloud',
-                kind: 'custom',
-                renderCustom: (cc) => {
-                    const isWebGL2 = engine.webGLVersion >= 2;
-                    slideRow(
-                        cc,
-                        'lucide:cloud',
-                        t('env.volumetricCloud'),
-                        true,
-                        () => getEnvMenu()?.push(buildCloudLevel()),
-                        undefined,
-                        undefined,
-                        undefined,
-                        {
-                            value: envState.cloudsEnabled,
-                            onChange: (v) => setEnvState({ cloudsEnabled: v }),
-                            disabled: !isWebGL2,
-                            disabledHint: t('env.volumetricCloudNeedWebGL'),
-                            onDisabledClick: () => {
-                                setStatus(
-                                    t('env.volumetricCloudNeedWebGL') +
-                                        '，当前引擎版本：' +
-                                        engine.webGLVersion.toFixed(1),
-                                    false
-                                );
-                            },
-                        }
-                    );
-                    if (!isWebGL2) {
-                        const hint = document.createElement('div');
-                        hint.className = 'experimental-hint';
-                        hint.textContent = t('env.volumetricCloudUnsupported');
-                        cc.appendChild(hint);
-                    }
-                },
-            },
-        ];
+            ];
         renderMenu(expSchema, c);
     });
 }
