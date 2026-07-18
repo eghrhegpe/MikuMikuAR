@@ -122,7 +122,9 @@ export function attachGizmo(options: GizmoAttachOptions): boolean {
                 break;
             }
             case 'rotation': {
-                const g = new RotationGizmo(layer);
+                // [doc:adr-126] 全自由度旋转：useEulerRotation=true 使 Gizmo 编辑 root.rotation 欧拉角，
+                // 与 ModelInstance.rotation 持久化（setRotation）保持一致，避免 quaternion 冲突
+                const g = new RotationGizmo(layer, 32, true);
                 g.attachedNode = node;
                 g.snapDistance = _snapFor('rotation');
                 if (options.onRotationDragEnd) {

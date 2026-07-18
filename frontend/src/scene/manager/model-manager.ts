@@ -105,7 +105,7 @@ function syncModelTransform(inst: ModelInstance): void {
     if (inst.meshes.length > 0) {
         const root = inst.meshes[0];
         root.scaling.setAll(inst.scaling);
-        root.rotation.y = inst.rotationY;
+        root.rotation.set(inst.rotation[0], inst.rotation[1], inst.rotation[2]);
     }
 }
 
@@ -531,8 +531,32 @@ export class ModelManager {
             return;
         }
         inst.rotationY = rotationY;
+        inst.rotation[1] = rotationY;
         syncModelTransform(inst);
         this.triggerAutoSave();
+    }
+
+    /** [doc:adr-126] 全自由度旋转：以欧拉角（弧度）设置模型 root 三轴旋转。 */
+    setRotation(id: string, rotation: Vector3): void {
+        const inst = this.modelRegistry.get(id);
+        if (!inst) {
+            return;
+        }
+        inst.rotation[0] = rotation.x;
+        inst.rotation[1] = rotation.y;
+        inst.rotation[2] = rotation.z;
+        inst.rotationY = rotation.y;
+        syncModelTransform(inst);
+        this.triggerAutoSave();
+    }
+
+    /** [doc:adr-126] 读取模型 root 当前三轴旋转（欧拉角，弧度）。 */
+    getRotation(id: string): Vector3 | null {
+        const inst = this.modelRegistry.get(id);
+        if (!inst) {
+            return null;
+        }
+        return new Vector3(inst.rotation[0], inst.rotation[1], inst.rotation[2]);
     }
 
     setPosition(id: string, x: number, y: number, z: number): void {
@@ -654,6 +678,7 @@ export class ModelManager {
         inst.wireframe = false;
         inst.scaling = 1.0;
         inst.rotationY = 0;
+        inst.rotation = [0, 0, 0];
         if (inst.meshes.length > 0) {
             inst.meshes[0].position.set(0, 0, 0);
         }

@@ -138,6 +138,10 @@ export function setModelRotationY(id: string, rotationY: number): void {
     modelManager?.setRotationY(id, rotationY);
 }
 
+export function setModelRotation(id: string, rotation: Vector3): void {
+    modelManager?.setRotation(id, rotation);
+}
+
 export function setModelPosition(id: string, x: number, y: number, z: number): void {
     modelManager?.setPosition(id, x, y, z);
 }
@@ -180,7 +184,7 @@ export function resetModelTransform(id: string): void {
 registerTransformAdapter({
     kinds: ['actor', 'stage'],
     getNode: (id) => modelRegistry.get(id)?.meshes[0] ?? null,
-    gizmoTypes: () => ['position', 'scale'],
+    gizmoTypes: () => ['position', 'scale', 'rotation'],
     onPositionDragEnd: (id, n) => {
         const v = (n as unknown as { position: Vector3 }).position;
         modelManager?.setPosition(id, v.x, v.y, v.z);
@@ -188,6 +192,10 @@ registerTransformAdapter({
     onScaleDragEnd: (id, n) => {
         const v = (n as unknown as { scaling: Vector3 }).scaling;
         modelManager?.setScaling(id, v.x);
+    },
+    onRotationDragEnd: (id, n) => {
+        const v = (n as unknown as { rotation: Vector3 }).rotation;
+        modelManager?.setRotation(id, v);
     },
     capabilities: ['slider-scale', 'slider-opacity'],
     getScale: (id) => modelRegistry.get(id)?.scaling ?? 1,

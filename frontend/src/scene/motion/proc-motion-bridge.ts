@@ -22,11 +22,19 @@ import { isAudioPlaying } from '@/outfit/audio';
 import { modelManager, focusedMmdModel, focusedModel, loadVMDMotion } from '../scene';
 import { setGazeConfig, onPerceptionModelRemoved, activatePerception } from './perception';
 import { clamp01, logWarn } from '@/core/utils';
+import { getActiveMotion } from './motion-intent';
+import { rebuildCompositeAnimation } from './vmd-layers';
+import type { ProcMotionConfig } from '@/core/types';
 
 // [fix:ghost-state] 模块私有状态：所有外部修改必须通过 setProcMotion* setter，
 // 读取必须通过 getProcMotionState()（返回浅拷贝，防止外部 mutate 内部引用）。
 // 不可变更新模式（{ ...procState, ...patch }）保证每次变更生成新引用，便于追踪。
-let procState: ProcMotionState = { ...DEFAULT_PROC_STATE };
+//
+// [adr-XX per-motion] 参数存储优先级：
+//   1. activeMotion.procMotion（随动作走，多角色共享参数）
+//   2. _fallbackProcState（无动作时的本地默认值，向后兼容）
+// 读取时取优先值，写入时写入 activeMotion（若存在）并同步 fallback。
+let _fallbackProcState: ProcMotionState = { ...DEFAULT_PROC_STATE };
 let procBeatDetector: BeatDetector | null = null;
 let _procVmdActive = false;
 let lastBeatBpm = 120;
@@ -35,6 +43,29 @@ let _stopRequested = false; // await 期间被 stop 时置位，防止 start 完
 let _regeneratePending = false;
 let procActiveKind: ProcMotionMode = 'idle';
 let procModelId: string | null = null;
+
+/** [adr-XX per-motion] 获取当前生效的程序化配置引用（读优先：activeMotion > fallback）。
+ *  返回的是可变引用，内部使用；外部读取用 getProcMotionState()（深拷贝）。 */
+function _refProcState(): ProcMotionState {
+    const intent = getActiveMotion();
+    if (intent?.procMotion) {
+        return intent.procMotion as ProcMotionState;
+    }
+    return _fallbackProcState;
+}
+
+/** [adr-XX per-motion] 写入程序化配置：同步写入 activeMotion（若存在）+ fallback。
+ *  保证无动作时的本地状态也与最新设置一致，切换动作后参数不丢失。 */
+function _writeProcState(patch: Partial<ProcMotionState>): void {
+    const intent = getActiveMotion();
+    if (intent) {
+        if (!intent.procMotion) {
+            intent.procMotion = { ...DEFAULT_PROC_STATE } as ProcMotionConfig;
+        }
+        intent.procMotion = { ...intent.procMotion, ...patch } as ProcMotionConfig;
+    }
+    _fallbackProcState = { ..._fallbackProcState, ...patch };
+}
 
 /** 只读访问器，外部不可直接修改程序化动作激活状态。 */
 export function isProcVmdActive(): boolean {
@@ -58,7 +89,12 @@ function _clearVmdData(inst: import('../../core/config').ModelInstance | null | 
     }
 }
 
-async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promise<void> {
+async function startProcMotion(
+    targetMode: ProcMotionMode,
+    bpm?: number,
+    /** [P5 per-slot] 显式指定目标模型；不传时回退到焦点模型（向后兼容）。 */
+    modelIdOverride?: string
+): Promise<void> {
     if (procStarting) {
         return;
     }
@@ -66,8 +102,12 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
     _stopRequested = false;
 
     // 保存加载前的模型 ID，防止 await 后焦点切换导致操作错配（Issue #3）
-    const modelAtStart = focusedMmdModel();
-    const modelIdAtStart = focusedModelId ?? null;
+    // [P5 per-slot] 优先使用显式传入的 modelIdOverride，使非焦点模型也能驱动程序化
+    const modelAtStart =
+        modelIdOverride !== undefined
+            ? (modelManager.get(modelIdOverride)?.mmdModel ?? null)
+            : focusedMmdModel();
+    const modelIdAtStart = modelIdOverride ?? focusedModelId ?? null;
     if (!modelAtStart) {
         procStarting = false;
         return;
@@ -90,11 +130,11 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
         throw new Error('proc-motion: autodance 模式需要有效 BPM，当前 BPM 无效');
     }
     if (targetMode === 'autodance' && bpmValid) {
-        buf = generateAutoDanceVmd(procState, bpm!, morphNames, boneNames);
+        buf = generateAutoDanceVmd(_refProcState(), bpm!, morphNames, boneNames);
         lastBeatBpm = bpm!;
         procActiveKind = 'autodance';
     } else {
-        buf = generateIdleVmd(procState, boneNames);
+        buf = generateIdleVmd(_refProcState(), boneNames);
         procActiveKind = targetMode;
     }
 
@@ -102,58 +142,55 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
 
     _procVmdActive = true;
     procModelId = modelIdAtStart;
+    // [P5 per-slot] 显式指定目标时跳过焦点校验：调用方已决定目标，焦点切换不应取消该模型的程序化
+    const isExplicitTarget = modelIdOverride !== undefined;
     try {
-        // D4: await 前检查焦点是否已切换，避免无意义的 VMD 加载（CPU 浪费）
-        if (focusedModelId !== modelIdAtStart) {
+        // D4: 仅在未显式指定目标时检查焦点切换，避免无意义的 VMD 生成
+        if (!isExplicitTarget && focusedModelId !== modelIdAtStart) {
             logWarn('proc-motion', '焦点已在生成期间切换，取消本次程序化动作');
             procStarting = false;
             return;
         }
-        await loadVMDMotion(
-            buf,
-            targetMode === 'autodance' && bpmValid ? PROC_VMD_NAME_AUTODANCE : PROC_VMD_NAME_IDLE
-        );
+        const inst = modelManager.get(modelIdAtStart);
+        if (!inst) {
+            procStarting = false;
+            return;
+        }
+        // [adr-XX per-motion] 程序化 base 走 vmdLayers 管线：写入 vmdData + rebuild
+        // 替代旧的直写 loadVMDMotion/setRuntimeAnimation，避免与图层叠加冲突
+        const procVmdName = targetMode === 'autodance' && bpmValid ? PROC_VMD_NAME_AUTODANCE : PROC_VMD_NAME_IDLE;
+        inst.vmdData = buf;
+        inst.vmdName = procVmdName;
+        inst.vmdPath = null; // 程序化无文件路径
+        rebuildCompositeAnimation(modelIdAtStart);
 
-        // Issue #3: 验证焦点模型是否在异步期间被切换
+        // 同步写入后校验：仅在未显式指定目标时检查焦点是否仍在该模型上
         const currentId = focusedModelId ?? null;
-        // Issue #4: 验证异步期间用户是否加载了真实 VMD（竞态时序保护）
-        // 对比 vmdData 与当前生成的 buf：若不同且非空，说明用户加载了其他 VMD
-        const curInst = modelManager.get(modelIdAtStart);
-        const vmdDataAfter = curInst?.vmdData;
-        const userVmdDuringAsync =
-            vmdDataAfter !== buf && vmdDataAfter !== null && vmdDataAfter !== undefined;
-        if (currentId !== modelIdAtStart) {
-            logWarn('proc-motion', '异步期间模型焦点已切换，丢弃本次程序化动作结果');
-            // 卸载刚加载的程序化动画
-            const inst = modelManager.get(currentId);
-            if (inst && inst.mmdModel && mmdRuntime) {
-                inst.mmdModel.setRuntimeAnimation(null);
-            }
-            _procVmdActive = false;
-            procModelId = null;
-            procActiveKind = 'idle';
-        } else if (userVmdDuringAsync) {
-            // 异步期间用户加载了真实 VMD，不覆盖 vmdData
-            logWarn('proc-motion', '异步期间用户加载了 VMD，跳过本次程序化动作');
+        if (!isExplicitTarget && currentId !== modelIdAtStart) {
+            logWarn('proc-motion', '生成后焦点已切换，丢弃本次程序化动作结果');
+            // 清除刚写入的程序化数据
+            inst.vmdData = null;
+            inst.vmdName = '';
+            rebuildCompositeAnimation(modelIdAtStart);
             _procVmdActive = false;
             procModelId = null;
             procActiveKind = 'idle';
         } else if (_stopRequested) {
-            // await 期间用户调用了 stopProcMotion，丢弃本次结果
-            logWarn('proc-motion', '加载完成但已被 stop，丢弃结果');
+            // 生成期间用户调用了 stopProcMotion，丢弃结果
+            logWarn('proc-motion', '生成完成但已被 stop，丢弃结果');
+            inst.vmdData = null;
+            inst.vmdName = '';
+            rebuildCompositeAnimation(modelIdAtStart);
             _procVmdActive = false;
             procModelId = null;
             procActiveKind = 'idle';
         } else {
-            // await 成功且无竞态：重新断言 _procVmdActive=true
-            // （await 期间 stopProcMotion 可能将其置 false，此处校正）
+            // 成功：重新断言 _procVmdActive=true
             _procVmdActive = true;
-            _clearVmdData(focusedModel());
             // 感知层独立激活，不依赖程序化动作生命周期
-            // gaze 由 perception.ts 管理，在模型加载后自动激活
         }
     } catch (err) {
-        logWarn('proc-motion', 'loadVMDMotion 失败:', err);
+        logWarn('proc-motion', '程序化动作生成失败:', err);
         _procVmdActive = false;
         _clearVmdData(focusedModel());
     } finally {
@@ -163,17 +200,19 @@ async function startProcMotion(targetMode: ProcMotionMode, bpm?: number): Promis
     // Re-trigger check after finally (cannot use return inside finally — no-unsafe-finally)
     if (_regeneratePending) {
         _regeneratePending = false;
-        if (procModelId && focusedModelId === procModelId) {
-            const mode = procState.mode === 'autodance' ? 'autodance' : 'idle';
+        // [P5 per-slot] 不再要求 focusedModelId === procModelId，
+        // 因为程序化目标已由调用方显式指定；只要 procModelId 仍存在就重触发。
+        if (procModelId) {
+            const mode = _refProcState().mode === 'autodance' ? 'autodance' : 'idle';
             const bpm = procBeatDetector?.getBPM() ?? 120;
             // fire-and-forget 需 catch 防止 unhandled rejection
-            void startProcMotion(mode, mode === 'autodance' ? bpm : undefined).catch((e) => {
+            void startProcMotion(mode, mode === 'autodance' ? bpm : undefined, procModelId).catch((e) => {
                 logWarn('proc-motion', 'Re-trigger startProcMotion 失败:', e);
             });
         } else {
             logWarn(
                 'proc-motion',
-                'Re-trigger skipped: focusedModelId changed or procModelId cleared'
+                'Re-trigger skipped: procModelId cleared'
             );
         }
     }
@@ -186,14 +225,16 @@ export function stopProcMotion(): void {
     // gaze 由 perception.ts 管理，always-on
     if (procModelId) {
         const inst = modelManager.get(procModelId);
-        if (inst && inst.mmdModel && mmdRuntime) {
-            // [fix] 若用户已在程序化动作 active 期间加载了真实 VMD（vmdData 非 null），
-            // 不可盲目 setRuntimeAnimation(null) —— 否则会覆盖用户刚点击的动作，
-            // 表现为「点击动作 0.01s（下一帧）后被重置为无动作」。
-            // 仅在模型未持有用户真实 VMD 时才将其复位到静止姿（程序化动作正常退场）。
-            const userVmdPresent = inst.vmdData !== null && inst.vmdData !== undefined;
+        if (inst) {
+            // [fix] 若用户已在程序化动作 active 期间加载了真实 VMD（vmdPath 非空），
+            // 不可盲目清除 vmdData —— 否则会覆盖用户刚点击的动作。
+            // 仅在模型未持有用户真实 VMD 时才清除程序化数据并 rebuild 到静止姿。
+            const userVmdPresent = inst.vmdPath !== null && inst.vmdPath !== undefined && inst.vmdPath !== '';
             if (!userVmdPresent) {
-                inst.mmdModel.setRuntimeAnimation(null);
+                inst.vmdData = null;
+                inst.vmdName = '';
+                inst.vmdPath = null;
+                rebuildCompositeAnimation(procModelId);
             }
         }
         procModelId = null;
@@ -210,7 +251,8 @@ export function onModelRemoved(id: string): void {
 }
 
 export async function updateProcMotion(): Promise<void> {
-    if (procState.mode === 'off' && !procState.autoSwitch) {
+    const st = _refProcState();
+    if (st.mode === 'off' && !st.autoSwitch) {
         if (_procVmdActive) {
             stopProcMotion();
         }
@@ -221,8 +263,8 @@ export async function updateProcMotion(): Promise<void> {
     const model = focusedModel();
     const audioOn = isAudioPlaying();
     const hasUserVmd = model?.vmdData !== null && model?.vmdData !== undefined;
-    const mode = procState.mode;
-    const autoOk = mode !== 'off' || procState.autoSwitch;
+    const mode = st.mode;
+    const autoOk = mode !== 'off' || st.autoSwitch;
     const wantAutoDance = shouldAutoDance(audioOn, mode) && autoOk;
     const wantIdle = shouldIdle(audioOn, hasUserVmd, mode) && autoOk;
 
@@ -248,7 +290,7 @@ export async function updateProcMotion(): Promise<void> {
 }
 
 export function setProcMotionMode(mode: ProcMotionMode): void {
-    procState = { ...procState, mode };
+    _writeProcState({ mode });
     if (mode === 'off') {
         stopProcMotion();
     }
@@ -256,28 +298,32 @@ export function setProcMotionMode(mode: ProcMotionMode): void {
 }
 
 export function setProcMotionIntensity(v: number): void {
-    procState = { ...procState, intensity: clamp01(v) };
+    _writeProcState({ intensity: clamp01(v) });
     triggerAutoSave();
 }
 
 export function setProcMotionSpeed(v: number): void {
-    procState = { ...procState, speed: Math.max(0.5, Math.min(2, v)) };
+    _writeProcState({ speed: Math.max(0.5, Math.min(2, v)) });
     triggerAutoSave();
 }
 
 export function setProcMotionAutoSwitch(on: boolean): void {
-    procState = { ...procState, autoSwitch: on };
+    _writeProcState({ autoSwitch: on });
     triggerAutoSave();
 }
 
 export function getProcMotionState(): ProcMotionState {
-    return { ...procState };
+    return { ..._refProcState() };
 }
 
 /** 设置程序化动作状态（从存储恢复时使用，不触发自动保存以免干扰反序列化）。
  *  外部直接调用此函数时，请确保调用者在合适时机手动触发保存。 */
 export function setProcMotionState(s: ProcMotionState): void {
-    procState = { ...s };
+    const intent = getActiveMotion();
+    if (intent) {
+        intent.procMotion = { ...s } as ProcMotionConfig;
+    }
+    _fallbackProcState = { ...s };
 }
 
 // ======== 新增开关 Getter/Setter（P0/P1） ========
@@ -292,9 +338,9 @@ export function setProcMotionBoneToggle(cat: ProcMotionBoneCategory, v: boolean)
         logWarn('proc-motion', 'setProcMotionBoneToggle: invalid value type, expected boolean');
         return;
     }
-    const bt = { ...procState.boneToggles };
+    const bt = { ..._refProcState().boneToggles };
     bt[cat] = v;
-    procState = { ...procState, boneToggles: bt };
+    _writeProcState({ boneToggles: bt });
     triggerAutoSave();
 }
 
@@ -311,7 +357,8 @@ export function setProcMotionBoneToggles(
             return;
         }
     }
-    procState = { ...procState, boneToggles: { ...procState.boneToggles, ...bt } };
+    const cur = _refProcState();
+    _writeProcState({ boneToggles: { ...cur.boneToggles, ...bt } });
     triggerAutoSave();
 }
 
@@ -323,7 +370,7 @@ export function setProcMotionVpdApplyEnabled(v: boolean): void {
         );
         return;
     }
-    procState = { ...procState, vpdApplyEnabled: v };
+    _writeProcState({ vpdApplyEnabled: v });
     triggerAutoSave();
 }
 
@@ -333,7 +380,7 @@ export function setProcMotionInterpOverride(v: ProcMotionState['interpOverride']
         logWarn('proc-motion', `setProcMotionInterpOverride: invalid value "${v}"`);
         return;
     }
-    procState = { ...procState, interpOverride: v };
+    _writeProcState({ interpOverride: v });
     triggerAutoSave();
 }
 
@@ -358,9 +405,10 @@ function _setGazeTrackingSetting(
     field: 'eyeTrackingEnabled' | 'headTrackingEnabled',
     value: boolean
 ): void {
-    procState = { ...procState, [field]: value };
+    _writeProcState({ [field]: value } as Partial<ProcMotionState>);
     // 同步到 perception.ts（内部已调用 triggerAutoSave）
-    setGazeConfig(procState.headTrackingEnabled, procState.eyeTrackingEnabled);
+    const st = _refProcState();
+    setGazeConfig(st.headTrackingEnabled, st.eyeTrackingEnabled);
     // 重新激活感知层（应用新配置）
     activatePerception();
 }
@@ -393,13 +441,19 @@ export function setGazeLayerActive(active: boolean, intensity: number): void {
     setProcMotionHeadTrackingEnabled(shouldEnable && intensity >= 0.5);
 }
 
-export function regenerateProcMotion(): void {
-    if (!_procVmdActive && procState.mode === 'off') {
+export function regenerateProcMotion(
+    /** [P5 per-slot] 显式指定目标模型；不传时回退到焦点模型（向后兼容）。 */
+    modelId?: string
+): void {
+    if (!_procVmdActive && _refProcState().mode === 'off') {
         return;
     }
-    // 无焦点模型时静默返回，添加警告辅助调试
-    if (!focusedMmdModel()) {
-        logWarn('proc-motion', 'regenerateProcMotion: 无焦点 MMD 模型，跳过');
+    // [P5 per-slot] 优先使用传入的 modelId；否则回退到焦点
+    const targetModel = modelId
+        ? (modelManager.get(modelId)?.mmdModel ?? null)
+        : focusedMmdModel();
+    if (!targetModel) {
+        logWarn('proc-motion', 'regenerateProcMotion: 无目标 MMD 模型，跳过');
         return;
     }
     // Issue #4: 如果 regenerate 调用时正在生成，标记 deferred 重跑
@@ -407,8 +461,8 @@ export function regenerateProcMotion(): void {
         _regeneratePending = true;
         return;
     }
-    const mode = procState.mode === 'autodance' ? ('autodance' as const) : ('idle' as const);
+    const mode = _refProcState().mode === 'autodance' ? ('autodance' as const) : ('idle' as const);
     // Issue #5: procBeatDetector 可能为 null
     const bpm = procBeatDetector?.getBPM() ?? 120;
-    startProcMotion(mode, mode === 'autodance' ? bpm : undefined);
+    startProcMotion(mode, mode === 'autodance' ? bpm : undefined, modelId);
 }

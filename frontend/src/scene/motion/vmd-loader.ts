@@ -20,7 +20,7 @@ import { getBaseName, withLoadingIndicator, logWarn } from '@/core/utils';
 import { encodeFileRef } from '@/core/fileservice';
 import { readFileBytes } from '@/core/wails-bindings';
 import { t } from '@/core/i18n/t';
-import { setActiveMotion } from './motion-intent';
+import { setActiveMotion, getActiveMotion } from './motion-intent';
 import { loadCameraVmd } from '../camera/camera';
 import { loadAudioFile } from '@/outfit/audio';
 import { PROC_VMD_NAME_IDLE, PROC_VMD_NAME_AUTODANCE } from '@/motion-algos/procedural-motion';
@@ -221,6 +221,16 @@ export async function loadVMDFromPath(
                 const foc = targetModelId ? modelRegistry.get(targetModelId) : focusedModel();
                 if (foc) {
                     foc.vmdPath = path;
+                }
+                // 设置场景级 activeMotion（守卫：避免广播回调重复触发）
+                const cur = getActiveMotion();
+                if (!cur || cur.vmdPath !== path) {
+                    setActiveMotion({
+                        vmdPath: path,
+                        vmdName: vmdName.replace(/\.vmd$/i, ''),
+                        vmdLayers: [],
+                        source: 'vmd',
+                    });
                 }
             } else {
                 setActiveMotion({

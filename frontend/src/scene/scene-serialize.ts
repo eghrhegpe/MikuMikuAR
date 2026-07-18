@@ -7,6 +7,7 @@ import { SaveLastScene, LoadLastScene } from '../core/wails-bindings';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
+import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 
 import {
     computeLibraryRef,
@@ -78,6 +79,7 @@ import {
     cancelEnvPersistTimer,
 } from './env/env-bridge';
 import { setGravityStrength, getGravityStrength } from './env/env-bridge';
+import { applyGroundCollision } from './physics/ground-collision';
 import {
     regenerateProcMotion,
     getProcMotionState,
@@ -89,7 +91,7 @@ import { DEFAULT_PROC_STATE } from '../motion-algos/procedural-motion';
 import { DEFAULT_LIPSYNC_STATE } from '../motion-algos/lipsync';
 import type { ProcMotionState } from '../motion-algos/procedural-motion';
 import type { LipSyncState as LipSyncStateType } from '../motion-algos/lipsync';
-import type { BoneOverrideEntry, FeetState, MotionModuleState } from '../core/types';
+import type { BoneOverrideEntry, FeetState, MotionModuleState, ProcMotionConfig } from '../core/types';
 import {
     getPerceptionState,
     setPerceptionState,
@@ -206,6 +208,8 @@ export interface SceneFile {
         positionZ?: number;
         scaling?: number;
         rotationY?: number;
+        /** [doc:adr-126] 全自由度旋转（欧拉角弧度）：[x, y, z]；缺省回退 rotationY */
+        rotation?: [number, number, number];
         visible?: boolean;
         opacity?: number;
         wireframe?: boolean;
@@ -224,7 +228,26 @@ export interface SceneFile {
         motionOverrideModules?: MotionModuleState[];
         /** [doc:adr-085] 脚部地面跟随状态（按模型） */
         feet?: FeetState;
-        /** [doc:adr-121] 动作分配策略（pinned 模式时记录，inherit 不落盘） */
+        /** [doc:adr-121] 双槽位动作分配（仅 primary.source==='pinned' 落盘，inherit 不落盘） */
+        motionSlots?: {
+            primary: {
+                source: 'pinned';
+                pinned: {
+                    vmdPath: string | null;
+                    vmdName: string;
+                    vmdLayers: Array<{
+                        name: string;
+                        path: string | null;
+                        weight: number;
+                        boneFilter: string[];
+                        kind?: 'vmd' | 'gaze';
+                        enabled?: boolean;
+                    }>;
+                    source: 'vmd' | 'retargeted';
+                };
+            };
+        };
+        /** @deprecated 旧格式 motionAssignment，反序列化时迁移到 motionSlots */
         motionAssignment?: {
             mode: 'pinned';
             pinned: {
@@ -308,6 +331,9 @@ export interface SceneFile {
             enabled?: boolean;
         }>;
         source: 'vmd' | 'retargeted';
+        motionModules?: MotionModuleState[];
+        /** [adr-XX per-motion] 程序化动作参数（随动作走） */
+        procMotion?: Partial<ProcMotionState>;
     } | null;
 }
 
@@ -361,6 +387,7 @@ export function serializeScene(): SceneFile {
             positionZ: inst.meshes[0]?.position.z ?? 0,
             scaling: inst.scaling,
             rotationY: inst.rotationY,
+            rotation: inst.rotation,
             visible: inst.visible,
             opacity: inst.opacity,
             wireframe: inst.wireframe,
@@ -379,24 +406,26 @@ export function serializeScene(): SceneFile {
                     ? inst.motionOverrideModules
                     : undefined,
             feet: inst.feet,
-            // [doc:adr-121] 序列化动作分配策略（仅 pinned 模式落盘）
-            motionAssignment:
-                inst.motionAssignment?.mode === 'pinned'
+            // [doc:adr-121] 序列化双槽位（仅 primary.source==='pinned' 落盘）
+            motionSlots:
+                inst.motionSlots?.primary.source === 'pinned'
                     ? {
-                          mode: 'pinned' as const,
-                          pinned: {
-                              vmdPath: inst.motionAssignment.pinned?.vmdPath ?? null,
-                              vmdName: inst.motionAssignment.pinned?.vmdName ?? '',
-                              vmdLayers:
-                                  inst.motionAssignment.pinned?.vmdLayers.map((l) => ({
-                                      kind: l.kind,
-                                      name: l.name,
-                                      path: l.path,
-                                      weight: l.weight,
-                                      boneFilter: l.boneFilter,
-                                      enabled: l.enabled,
-                                  })) ?? [],
-                              source: inst.motionAssignment.pinned?.source ?? 'vmd',
+                          primary: {
+                              source: 'pinned' as const,
+                              pinned: {
+                                  vmdPath: inst.motionSlots.primary.pinned?.vmdPath ?? null,
+                                  vmdName: inst.motionSlots.primary.pinned?.vmdName ?? '',
+                                  vmdLayers:
+                                      inst.motionSlots.primary.pinned?.vmdLayers.map((l) => ({
+                                          kind: l.kind,
+                                          name: l.name,
+                                          path: l.path,
+                                          weight: l.weight,
+                                          boneFilter: l.boneFilter,
+                                          enabled: l.enabled,
+                                      })) ?? [],
+                                  source: inst.motionSlots.primary.pinned?.source ?? 'vmd',
+                              },
                           },
                       }
                     : undefined,
@@ -482,6 +511,9 @@ export function serializeScene(): SceneFile {
                           enabled: l.enabled,
                       })),
                       source: a.source,
+                      motionModules: a.motionModules,
+                      // [adr-XX per-motion] 程序化动作参数（随动作走）
+                      procMotion: a.procMotion,
                   }
                 : null;
         })(),
@@ -573,7 +605,14 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                 modelManager.setScaling(inst.id, m.scaling);
             }
             if (m.rotationY !== undefined) {
-                modelManager.setRotationY(inst.id, m.rotationY);
+                if (m.rotation) {
+                    modelManager.setRotation(
+                        inst.id,
+                        new Vector3(m.rotation[0], m.rotation[1], m.rotation[2])
+                    );
+                } else if (m.rotationY !== undefined) {
+                    modelManager.setRotationY(inst.id, m.rotationY);
+                }
             }
             inst.visible = m.visible ?? true;
             inst.opacity = m.opacity ?? 1.0;
@@ -606,30 +645,41 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
             if (m.feet) {
                 Object.assign(inst.feet, m.feet);
             }
-            // [doc:adr-121] 恢复每实例动作分配策略（pinned 模式）
-            if (m.motionAssignment?.mode === 'pinned') {
-                inst.motionAssignment = {
-                    mode: 'pinned',
-                    pinned: {
-                        vmdPath: m.motionAssignment.pinned.vmdPath,
-                        vmdName: m.motionAssignment.pinned.vmdName,
-                        vmdLayers: m.motionAssignment.pinned.vmdLayers.map((l) => ({
-                            id: '',
-                            kind: l.kind ?? 'vmd',
-                            name: l.name,
-                            data: new ArrayBuffer(0),
-                            path: l.path,
-                            weight: l.weight,
-                            boneFilter: l.boneFilter,
-                            enabled: l.enabled ?? true,
-                        })),
-                        source: m.motionAssignment.pinned.source,
+            // [doc:adr-121] 恢复双槽位动作分配（兼容旧 motionAssignment 格式）
+            const pinnedData = m.motionSlots?.primary?.source === 'pinned'
+                ? m.motionSlots.primary.pinned
+                : m.motionAssignment?.mode === 'pinned'
+                  ? m.motionAssignment.pinned
+                  : null;
+            if (pinnedData) {
+                inst.motionSlots = {
+                    primary: {
+                        source: 'pinned',
+                        pinned: {
+                            vmdPath: pinnedData.vmdPath,
+                            vmdName: pinnedData.vmdName,
+                            vmdLayers: pinnedData.vmdLayers.map((l) => ({
+                                id: '',
+                                kind: l.kind ?? 'vmd',
+                                name: l.name,
+                                data: new ArrayBuffer(0),
+                                path: l.path,
+                                weight: l.weight,
+                                boneFilter: l.boneFilter,
+                                enabled: l.enabled ?? true,
+                            })),
+                            source: pinnedData.source,
+                        },
+                        status: 'idle',
                     },
-                    status: 'idle',
+                    overlay: { source: 'inherit', status: 'idle' },
                 };
             } else {
                 // inherit 模式不落盘，加载时自动继承全局 activeMotion
-                inst.motionAssignment = { mode: 'inherit', status: 'idle' };
+                inst.motionSlots = {
+                    primary: { source: 'inherit', status: 'idle' },
+                    overlay: { source: 'inherit', status: 'idle' },
+                };
             }
             if (inst.visible === false) {
                 for (const mesh of inst.meshes) {
@@ -790,6 +840,8 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
     if (data.gravityStrength !== undefined) {
         setGravityStrength(data.gravityStrength);
     }
+    // [adr:ground] envState 已恢复（含 groundCollisionEnabled），注入/移除地面刚体
+    applyGroundCollision();
     // 舞台灯光：优先新格式 stageLights，兼容旧格式 stageLight
     if (data.stageLights && data.stageLights.length > 0) {
         loadStageLights(data.stageLights);
@@ -988,6 +1040,11 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                 enabled: l.enabled ?? true,
             })),
             source: data.motion.source,
+            motionModules: data.motion.motionModules,
+            // [adr-XX per-motion] 程序化动作参数（随动作走）
+            procMotion: data.motion.procMotion
+                ? ({ ...DEFAULT_PROC_STATE, ...(data.motion.procMotion as Partial<ProcMotionState>) } as ProcMotionConfig)
+                : undefined,
         });
     } else {
         // 旧场景文件无 motion 块 → 保持已有 vmdPath 缓存（与当前行为一致）

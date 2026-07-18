@@ -360,6 +360,7 @@ export async function loadPMXFile(
                 physicsEnabled: false,
                 scaling: 1.0,
                 rotationY: 0,
+                rotation: [0, 0, 0],
                 boneOverrides: [],
                 feet: createDefaultFeetState(),
             };
@@ -432,6 +433,7 @@ export async function loadPMXFile(
             physicsEnabled: uiState.defaultPhysicsEnabled !== false,
             scaling: 1.0,
             rotationY: 0,
+            rotation: [0, 0, 0],
             boneOverrides: [],
             feet: createDefaultFeetState(),
         };
@@ -445,8 +447,29 @@ export async function loadPMXFile(
         }
         // Register via ModelManager only — it owns the registry
         // Must register BEFORE VMD load because loadVMDMotion queries modelRegistry
+        // [adr-XX per-motion] 加载继承：注册前记录"上一个角色"，注册后继承槽位1 策略
+        const prevInst = _modelManager && _modelManager.getAll().length > 0
+            ? _modelManager.getAll()[_modelManager.getAll().length - 1]
+            : null;
         _modelManager.register(inst);
         registeredId = id;
+        // [adr-XX per-motion] 继承上一个角色的槽位1 source/procRole（不继承 pinned 快照、overlay）
+        if (prevInst && prevInst.motionSlots) {
+            const prevPrimary = prevInst.motionSlots.primary;
+            if (!inst.motionSlots) {
+                inst.motionSlots = {
+                    primary: { source: 'inherit', status: 'idle' },
+                    overlay: { source: 'inherit', status: 'idle' },
+                };
+            }
+            // 只继承 inherit/procedural（pinned 不继承：快照是 per-model 的，新模型不一定有该动作）
+            if (prevPrimary.source === 'inherit' || prevPrimary.source === 'procedural') {
+                inst.motionSlots.primary.source = prevPrimary.source;
+                if (prevPrimary.procRole) {
+                    inst.motionSlots.primary.procRole = prevPrimary.procRole;
+                }
+            }
+        }
         if (effectiveSignal.aborted) {
             // 清理已注册的模型和 wasm 资源，避免泄漏
             try {
@@ -516,11 +539,11 @@ export async function loadPMXFile(
         const activeMotion = getActiveMotion();
         const loadGen = getMotionGen(); // 捕获当前 generation，防止异步加载过期
         if (activeMotion && activeMotion.vmdPath && _mmdRuntime) {
-            const assignment = inst.motionAssignment ?? {
-                mode: 'inherit' as const,
-                status: 'idle' as const,
+            const slots = inst.motionSlots ?? {
+                primary: { source: 'inherit' as const, status: 'idle' as const },
+                overlay: { source: 'inherit' as const, status: 'idle' as const },
             };
-            if (assignment.mode === 'inherit') {
+            if (slots.primary.source === 'inherit') {
                 // 兼容性检查
                 const bones =
                     inst.mmdModel?.runtimeBones?.map((b) => b.name) ??
@@ -528,7 +551,10 @@ export async function loadPMXFile(
                     [];
                 const compat = resolveCompatibility(bones, activeMotion);
                 if (!compat.compatible) {
-                    inst.motionAssignment = { ...assignment, status: 'incompatible' };
+                    inst.motionSlots = {
+                        primary: { ...slots.primary, status: 'incompatible' },
+                        overlay: slots.overlay,
+                    };
                 } else {
                     appliedVmd = activeMotion.vmdName;
                     try {
@@ -544,7 +570,10 @@ export async function loadPMXFile(
                                 activeMotion.vmdName,
                                 id
                             );
-                            inst.motionAssignment = { mode: 'inherit', status: 'compatible' };
+                            inst.motionSlots = {
+                                primary: { source: 'inherit', status: 'compatible' },
+                                overlay: slots.overlay,
+                            };
                         }
                     } catch (vmdErr) {
                         if (getMotionGen() !== loadGen) {
@@ -556,7 +585,10 @@ export async function loadPMXFile(
                                 t('scene.loader.vmdFailedModelLoaded', { name: displayName }),
                                 false
                             );
-                            inst.motionAssignment = { mode: 'inherit', status: 'incompatible' };
+                            inst.motionSlots = {
+                                primary: { source: 'inherit', status: 'incompatible' },
+                                overlay: slots.overlay,
+                            };
                         }
                     }
                 }
