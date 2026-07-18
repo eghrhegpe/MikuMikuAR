@@ -1,6 +1,6 @@
 # ADR-126: 变换适配器统一（TransformAdapter Registry）— 跨 kind 拖拽/数值双模态去重
 
-> **状态**: 实施中（Phase 1 + Phase 2 + Phase 3 已完成，2026-07-18）
+> **状态**: 实施中（Phase 1 + Phase 2 + Phase 3 已完成；Phase 3 已通过代码审核：P1 修复 + P4 派生单测补齐，2026-07-18）
 > **日期**: 2026-07-18
 > **路径约定**: 本文档源码路径均省略 `frontend/src/` 前缀（与 ADR-121 / ADR-120 一致），例如 `scene/render/transform-gizmo.ts` = `frontend/src/scene/render/transform-gizmo.ts`。
 
@@ -330,3 +330,16 @@ export function buildTransformCard(container: HTMLElement, handle: ResourceHandl
 - 契约测试 `app.contract.test.ts` 17/17。
 - 吸附单测 `transform-gizmo.test.ts` 4/4。
 - 跨测试污染甄别：完整套件报告 13 失败（scene-stage 5 基线 + motion-history 8），后者源文件 `motion-history.ts`/`motion-history.test.ts` 均为**未跟踪并发改动**（adr-125 motion-undo-redo 半完成状态），隔离运行 `motion-history.test.ts` 14/14 通过，与 Phase 3 零交集；Phase 3 改动文件（transform-gizmo/adapter/resource-detail-helpers/i18n）未触碰 motion，判定非本特性回归。
+
+**Phase 3 代码审核（2026-07-18，结论：修复 P1 后「有条件通过」）**
+
+审核识别 1 处 🔴P1 功能性 Bug + 2 处 🟢P4（低风险建议），设计质量其余项良好。
+
+- 🔴 **P1 — 吸附步长滑杆死回调**（`menus/resource-detail-helpers.ts`）：`addSliderRow` 第 7 形参为**必填 `onChange`**，原代码把 `() => {}` 置于 `onChange`、第 9 形参 `onDragEndCb` 为 `undefined` → 两回调均未接真逻辑，用户拖拽步长滑块**不产生任何效果**（不更新模块状态、不入持久化），滑杆沦为装饰品。
+  - 修复（遵循审核精确 diff）：`onChange` 改为 `(v) => setGizmoSnapDistance(true, v)`。语义上此时 `snap.enabled` 必为 `true`（步长滑杆仅在 `if (snap.enabled)` 内渲染），`(true, v)` 保持启用并实时更新步长，下次 Gizmo 拖拽即以新步长吸附。
+- 🟢 **P4 #1 — `_snapFor` 派生逻辑无单测覆盖**：原 `_snapFor` 为私有函数不可测。修复：抽离纯函数 `computeSnapDistance(type, enabled, step)` 并令 `_snapFor` 委托，新增 4 条派生单测（position→step / rotation→step·π/12 / scale→step·0.1 / enabled=false→0），`transform-gizmo.test.ts` 由 4 项扩至 8 项全过。
+- 🟢 **P4 #2 — snap 透传职责漂移**：`setGizmoSnapDistance`/`getGizmoSnapConfig` 经 `transform-adapter.ts` 透传，严格属纯 Gizmo 层功能、非 kind 适配职责。采纳审核建议「无需修复」，仅备注：若 `transform-adapter.ts` 后续变厚，可独立为 `scene/transform/gizmo-snap.ts` 避免职责漂移。
+
+**顺带审计（`buildTransformCard` 全卡回调排查）**：除 P1 吸附步长外，其余回调均正确——吸附开关 `onChange→setGizmoSnapDistance(v,snap.step)+render()`；缩放/透明度滑杆的 `onChange=()=>{}` 为**预期**模式（live 无副作用，commit 放 `onDragEndCb`，与 Phase 2 已论证的 `triggerAutoSave` 风暴规避一致），无第二处死回调。
+
+**审核后验证**：`npm run build` 3.93s exit0；吸附+派生单测 8/8；契约 17/17。

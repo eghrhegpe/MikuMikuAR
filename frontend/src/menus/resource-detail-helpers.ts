@@ -108,9 +108,9 @@ export function buildTransformCard(container: HTMLElement, handle: ResourceHandl
 					snap.step,
 					0.1,
 					5,
-					0.1,
-					() => {},
-					'lucide:ruler',
+				0.1,
+				(v) => setGizmoSnapDistance(true, v),
+				'lucide:ruler',
 					undefined,
 					undefined,
 					'transform:snap-step'
