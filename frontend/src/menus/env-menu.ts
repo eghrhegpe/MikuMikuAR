@@ -294,7 +294,8 @@ function buildParticleSchema(): MenuNode[] {
                     c,
                     !!envState.particleCustomTexture,
                     () => setEnvState({ particleCustomTexture: '' }),
-                    t('env.clear')
+                    t('env.clear'),
+                    'env:particle:custom-texture-clear'
                 );
             },
         },
