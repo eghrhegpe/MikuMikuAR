@@ -31,10 +31,12 @@ import { buildStageLightLevel } from './scene-stage-lights';
 import {
     buildPhysicsLevel,
     buildWasmPhysicsLevel,
-    buildCollisionLevel,
-    buildPhysicsDebugLevel,
 } from './scene-physics-levels';
+import { buildGroundLevel, buildWaterLevel } from './env-feature-levels';
+import { envState } from '../core/state';
 import { getEnvTextureBindingTarget, clearEnvTextureBindingTarget } from './env-menu';
+import { setMirrorSize, setMirrorResolution, getMirrorInfo } from '../scene/env/env';
+import { addModeSlider } from '../core/ui-helpers';
 
 // ======== Barrel Re-Exports ========
 // 保持向后兼容——外部文件引用路径不变
@@ -123,7 +125,110 @@ function buildSceneAdvancedLevel(): PopupLevel {
                 icon: 'lucide:save',
                 target: 'scene:save',
             },
+            {
+                kind: 'folder',
+                label: t('scene.mirror'),
+                icon: 'lucide:scan',
+                target: 'scene:mirror',
+            },
         ],
+    };
+}
+
+// ======== Mirror Level ========
+
+function buildMirrorLevel(): PopupLevel {
+    return {
+        label: t('scene.mirror'),
+        dir: '',
+        items: [],
+        renderCustom: (container) => {
+            const info = getMirrorInfo();
+            const wrapper = document.createElement('div');
+            wrapper.style.padding = '8px';
+
+            const toggleRow = document.createElement('label');
+            toggleRow.className = 'slide-row';
+            const toggleIcon = document.createElement('span');
+            toggleIcon.className = 'slide-icon';
+            toggleIcon.textContent = '🔍';
+            toggleRow.appendChild(toggleIcon);
+            const toggleLabel = document.createElement('span');
+            toggleLabel.className = 'slide-label';
+            toggleLabel.textContent = t('scene.mirror');
+            toggleRow.appendChild(toggleLabel);
+            const toggle = document.createElement('input');
+            toggle.type = 'checkbox';
+            toggle.checked = info.active;
+            toggle.addEventListener('change', () => {
+                const { toggleMirror } = require('../scene/env/env');
+                toggleMirror();
+                // 重新渲染刷新状态
+                const menu = getSceneMenu();
+                if (menu) menu.reRender();
+            });
+            const toggleSpan = document.createElement('span');
+            toggleSpan.className = 'toggle';
+            toggleSpan.appendChild(toggle);
+            toggleRow.appendChild(toggleSpan);
+            wrapper.appendChild(toggleRow);
+
+            if (info.active) {
+                addModeSlider(
+                    wrapper,
+                    t('scene.mirrorWidth'),
+                    Array.from({ length: 15 }, (_, i) => ({
+                        value: String(2 + i * 2),
+                        label: `${2 + i * 2}m`,
+                    })),
+                    String(info.width),
+                    (v) => {
+                        const w = parseFloat(v);
+                        const cur = getMirrorInfo();
+                        setMirrorSize(w, cur.height);
+                    },
+                    'lucide:move-horizontal'
+                );
+                addModeSlider(
+                    wrapper,
+                    t('scene.mirrorHeight'),
+                    Array.from({ length: 10 }, (_, i) => ({
+                        value: String(1 + i * 2),
+                        label: `${1 + i * 2}m`,
+                    })),
+                    String(info.height),
+                    (v) => {
+                        const h = parseFloat(v);
+                        const cur = getMirrorInfo();
+                        setMirrorSize(cur.width, h);
+                    },
+                    'lucide:move-vertical'
+                );
+                addModeSlider(
+                    wrapper,
+                    t('scene.mirrorResolution'),
+                    [
+                        { value: '128', label: '128' },
+                        { value: '256', label: '256' },
+                        { value: '512', label: '512' },
+                        { value: '1024', label: '1024' },
+                    ],
+                    String(info.resolution),
+                    (v) => setMirrorResolution(parseInt(v)),
+                    'lucide:grid-3x3'
+                );
+                const p = info.position;
+                const infoDiv = document.createElement('div');
+                infoDiv.style.cssText =
+                    'padding:4px 12px;font-size:11px;color:var(--text-dim);';
+                infoDiv.textContent = info.active
+                    ? `mesh: ${info.meshCount} | pos: (${p[0].toFixed(1)}, ${p[1].toFixed(1)}, ${p[2].toFixed(1)}) | ${info.width}×${info.height}m @ ${info.resolution}px`
+                    : t('scene.mirrorHint');
+                wrapper.appendChild(infoDiv);
+            }
+
+            container.appendChild(wrapper);
+        },
     };
 }
 
@@ -132,18 +237,40 @@ function buildSceneAdvancedLevel(): PopupLevel {
 /** 场景弹窗根级 items 构建器——items-based，支持增量 patch */
 function buildSceneRootItems(): PopupRow[] {
     const items: PopupRow[] = [];
-    // 高频功能前置：舞台加载 > 灯光 > 物理 > 阵型
-    items.push({
-        kind: 'folder',
-        label: t('scene.stage'),
-        icon: 'lucide:monitor',
-        target: 'scene:render:stage',
-    });
+    // 高频功能前置：灯光 > 地面/水面（带开关）> 舞台 > 物理 > 阵型 > 高级
     items.push({
         kind: 'folder',
         label: t('scene.stageLight'),
         icon: 'lucide:lightbulb',
         target: 'scene:stageLight',
+    });
+    items.push({
+        kind: 'folder',
+        label: t('env.ground'),
+        icon: 'lucide:square',
+        target: 'scene:ground',
+        headerToggle: {
+            value: envState.groundVisible,
+            onChange: (v: boolean) => setEnvState({ groundVisible: v }),
+            bind: () => envState.groundVisible,
+        },
+    });
+    items.push({
+        kind: 'folder',
+        label: t('env.water'),
+        icon: 'lucide:waves',
+        target: 'scene:water',
+        headerToggle: {
+            value: envState.waterEnabled,
+            onChange: (v: boolean) => setEnvState({ waterEnabled: v }),
+            bind: () => envState.waterEnabled,
+        },
+    });
+    items.push({
+        kind: 'folder',
+        label: t('scene.stage'),
+        icon: 'lucide:monitor',
+        target: 'scene:render:stage',
     });
     items.push({
         kind: 'folder',
@@ -188,9 +315,7 @@ const SCENE_FOLDER_ROUTES: Record<string, () => PopupLevel> = {
     'scene:stageLight': buildStageLightLevel,
     'scene:physics': buildPhysicsLevel,
     'scene:formation': buildFormationLevel,
-    'cloth:collision': buildCollisionLevel,
     'physics:wasm': buildWasmPhysicsLevel,
-    'wasm:debug': buildPhysicsDebugLevel,
 };
 
 function sceneOnFolderEnter(row: PopupRow): PopupLevel | null {

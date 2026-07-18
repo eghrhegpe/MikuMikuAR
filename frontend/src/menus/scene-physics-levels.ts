@@ -3,30 +3,23 @@
 
 import type { PopupLevel } from '../core/config';
 import { focusedModelId, cardContainer } from '../core/config';
-import { getGravityStrength, setGravityStrength } from '../scene/env/env-bridge';
+import {
+    getGravityStrength,
+    setGravityStrength,
+    getGroundCollisionEnabled,
+    setGroundCollisionEnabled,
+} from '../scene/env/env-bridge';
 import {
     modelManager,
     setModelWireframe,
     setModelBoneLinesVis,
     setModelBoneJointsVis,
 } from '../scene/scene';
-import {
-    getBodyCollisionEnabled,
-    setBodyCollisionEnabled,
-    getGroundCollisionEnabled,
-    setGroundCollisionEnabled,
-} from '../scene/env/env-bridge';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
-import { getSceneMenu, refreshSceneRoot } from './scene-menu';
-import {
-    slideRow,
-    addSliderRow,
-    addToggleRow,
-    addEmptyRow,
-    addModeSlider,
-} from '../core/ui-helpers';
+import { refreshSceneRoot } from './scene-menu';
+import { addSliderRow, addToggleRow } from '../core/ui-helpers';
 
 /**
  * 增量更新 toggle 行的 DOM 状态（不触发 reRender）。
@@ -49,10 +42,31 @@ export function buildPhysicsLevel(): PopupLevel {
     return buildWasmPhysicsLevel();
 }
 
-function buildCollisionSchema(): MenuNode[] {
+function buildWasmPhysicsSchema(): MenuNode[] {
+    // 场景级全局参数（重力强度 + 地面碰撞）。
+    // 模型级调试（线框/骨骼线/骨骼关节）已迁移至模型详情页「故障排除」折叠组。
     return [
         {
-            id: 'collision:ground',
+            id: 'wasm:global',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    addSliderRow(
+                        inner,
+                        t('scene.gravityStrength'),
+                        getGravityStrength(),
+                        0,
+                        2,
+                        0.05,
+                        () => {},
+                        'lucide:arrow-down',
+                        (v) => setGravityStrength(v)
+                    );
+                });
+            },
+        },
+        {
+            id: 'wasm:ground',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
@@ -63,22 +77,10 @@ function buildCollisionSchema(): MenuNode[] {
                         (v) => {
                             setGroundCollisionEnabled(v);
                             refreshSceneRoot();
-                            _patchToggle('collision:ground', v);
+                            _patchToggle('wasm:ground', v);
                         },
                         'lucide:square',
                         { bind: () => getGroundCollisionEnabled() }
-                    );
-                    addToggleRow(
-                        inner,
-                        t('scene.bodyCollision'),
-                        getBodyCollisionEnabled(),
-                        (v) => {
-                            setBodyCollisionEnabled(v);
-                            refreshSceneRoot();
-                            _patchToggle('collision:body', v);
-                        },
-                        'lucide:accessibility',
-                        { bind: () => getBodyCollisionEnabled() }
                     );
                 });
             },
@@ -86,14 +88,14 @@ function buildCollisionSchema(): MenuNode[] {
     ];
 }
 
-/** 构建碰撞子页（地面碰撞 + 身体碰撞） */
-export function buildCollisionLevel(): PopupLevel {
+/** 构建 WASM 物理子页（Bullet 骨髁物理信息 + 全局开关） */
+export function buildWasmPhysicsLevel(): PopupLevel {
     return {
-        label: t('scene.collision'),
+        label: t('scene.wasmPhysics'),
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildCollisionSchema(), container);
+            renderMenu(buildWasmPhysicsSchema(), container);
         },
     };
 }
@@ -153,7 +155,7 @@ function buildPhysicsDebugSchema(): MenuNode[] {
     ];
 }
 
-/** 构建物理调试子页（材质线框/骨骼 — WASM 相关） */
+/** 构建物理调试子页（材质线框/骨骼 — WASM 相关，由模型详情页调用） */
 export function buildPhysicsDebugLevel(): PopupLevel {
     return {
         label: t('scene.debug'),
@@ -161,72 +163,6 @@ export function buildPhysicsDebugLevel(): PopupLevel {
         items: [],
         renderCustom: (container) => {
             renderMenu(buildPhysicsDebugSchema(), container);
-        },
-    };
-}
-
-function buildWasmPhysicsSchema(): MenuNode[] {
-    const id = focusedModelId;
-    const inst = id ? modelManager.get(id) : null;
-
-    const nodes: MenuNode[] = [
-        // 运行时切换 + 重力强度
-        {
-            id: 'wasm:global',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    addSliderRow(
-                        inner,
-                        t('scene.gravityStrength'),
-                        getGravityStrength(),
-                        0,
-                        2,
-                        0.05,
-                        () => {},
-                        'lucide:arrow-down',
-                        (v) => setGravityStrength(v)
-                    );
-                });
-            },
-        },
-    ];
-
-    if (!id || !inst) {
-        nodes.push({
-            id: 'wasm:empty',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    addEmptyRow(inner, t('scene.loadModelFirst'));
-                });
-            },
-        });
-        return nodes;
-    }
-
-    // 调试入口
-    nodes.push({
-        id: 'wasm:debug',
-        kind: 'custom',
-        renderCustom: (c) => {
-            slideRow(c, 'lucide:bug', t('scene.debug'), true, () => {
-                getSceneMenu()?.push(buildPhysicsDebugLevel());
-            });
-        },
-    });
-
-    return nodes;
-}
-
-/** 构建 WASM 物理子页（Bullet 骨髁物理信息 + 总开关） */
-export function buildWasmPhysicsLevel(): PopupLevel {
-    return {
-        label: t('scene.wasmPhysics'),
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            renderMenu(buildWasmPhysicsSchema(), container);
         },
     };
 }

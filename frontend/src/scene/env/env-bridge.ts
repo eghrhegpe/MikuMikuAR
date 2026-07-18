@@ -22,6 +22,7 @@ import {
 } from '@/core/utils';
 import { col3FromTriple } from '@/core/color-helpers';
 import { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
+import { applyGroundCollision } from '../physics/ground-collision';
 import { deriveLighting, TIME_OF_DAY_PRESETS, type CategorizedEnvPreset } from './env-lighting';
 import * as impl from './env-impl';
 import {
@@ -315,7 +316,11 @@ export function getBodyCollisionEnabled(): boolean {
 }
 
 export function setGroundCollisionEnabled(value: boolean): void {
+    if (envState.groundCollisionEnabled === value) {
+        return;
+    }
     envState.groundCollisionEnabled = value;
+    applyGroundCollision();
     triggerAutoSave();
 }
 

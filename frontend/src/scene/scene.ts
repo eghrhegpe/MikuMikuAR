@@ -31,6 +31,7 @@ import { MmdWasmPhysics } from 'babylon-mmd/esm/Runtime/Optimized/Physics/mmdWas
 import 'babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmRuntimeModelAnimation';
 import { MmdStandardMaterialProxy } from 'babylon-mmd/esm/Runtime/mmdStandardMaterialProxy';
 import { initWindPhysics, disposeWindPhysics } from '../physics/wind-physics';
+import { applyGroundCollision } from './physics/ground-collision';
 import { swallowError, logWarn } from '../core/utils';
 import { MmdRuntimeShared } from 'babylon-mmd/esm/Runtime/mmdRuntimeShared';
 // JS 版 runtime（无 WASM 双缓冲，worldMatrix 覆写可生效）
@@ -314,6 +315,8 @@ export async function initScene(): Promise<void> {
     runtime.loggingEnabled = true;
     runtime.register(scene);
     setMmdRuntime(runtime);
+    // [adr:ground] 运行时就绪后还原持久化/默认的地面碰撞状态
+    applyGroundCollision();
     // 将 StreamAudioPlayer 接入 MMD Runtime，实现原生音画同步
     // （play/pause/seek 由 Runtime 自动管理，无需手动 syncAudioPlayback）
     swallowError(
