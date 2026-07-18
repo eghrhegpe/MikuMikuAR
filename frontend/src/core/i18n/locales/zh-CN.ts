@@ -115,6 +115,7 @@ export const zhCN: Record<string, string> = {
     'motion.intent.title': '场上动作',
     'motion.intent.none': '静态（无动作）',
     'motion.intent.incompatible': '此角色不兼容当前动作',
+    'motion.intent.noGlobalHint': '无全局动作时，各角色独立播放各自 VMD',
     'motion.context.pinMotion': '固定此动作',
     'motion.context.unpin': '跟随全局动作',
     'motion.changeMotion': '更换动作',
