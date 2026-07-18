@@ -12,6 +12,7 @@ import {
 import { addEmptyRow, slideRow, addSectionTitle } from '../core/ui-helpers';
 import { addSliderRow } from '../core/ui-rows';
 import { createTrailingBtn } from '../core/ui-slide-row';
+import { createIconifyIcon } from '../core/icons';
 import { getMotionMenu } from './motion-popup';
 import { triggerAutoSave, pushUndoSnapshot, offerSceneUndo } from '../scene/scene';
 import type { BoneOverrideEntry } from '../core/types';
@@ -104,7 +105,8 @@ function buildMotionOverrideSchema(): MenuNode[] {
 
                     const undoBtn = document.createElement('button');
                     undoBtn.className = 'slide-action';
-                    undoBtn.textContent = '↩';
+                    const undoIcon = createIconifyIcon('lucide:undo-2');
+                    if (undoIcon) undoBtn.appendChild(undoIcon);
                     undoBtn.title = 'Ctrl+Z';
                     undoBtn.addEventListener('click', () => {
                         if (!modelId || !canUndo(modelId)) return;
@@ -123,7 +125,8 @@ function buildMotionOverrideSchema(): MenuNode[] {
 
                     const redoBtn = document.createElement('button');
                     redoBtn.className = 'slide-action';
-                    redoBtn.textContent = '↪';
+                    const redoIcon = createIconifyIcon('lucide:redo-2');
+                    if (redoIcon) redoBtn.appendChild(redoIcon);
                     redoBtn.title = 'Ctrl+Shift+Z';
                     redoBtn.addEventListener('click', () => {
                         if (!modelId || !canRedo(modelId)) return;
@@ -146,7 +149,8 @@ function buildMotionOverrideSchema(): MenuNode[] {
                     // [doc:adr-125 P3] 历史列表下拉按钮
                     const historyBtn = document.createElement('button');
                     historyBtn.className = 'slide-action';
-                    historyBtn.textContent = '⋮';
+                    const historyIcon = createIconifyIcon('lucide:more-vertical');
+                    if (historyIcon) historyBtn.appendChild(historyIcon);
                     historyBtn.title = t('motion.override.history');
                     historyBtn.style.fontSize = '14px';
                     let historyDropdown: HTMLElement | null = null;
@@ -156,7 +160,10 @@ function buildMotionOverrideSchema(): MenuNode[] {
                             historyDropdown.remove();
                             historyDropdown = null;
                         }
+                        document.removeEventListener('click', _onOutsideClick);
                     }
+
+                    let _onOutsideClick: ((ev: MouseEvent) => void) | null = null;
 
                     historyBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
@@ -209,14 +216,13 @@ function buildMotionOverrideSchema(): MenuNode[] {
                             historyDropdown.appendChild(item);
                         }
 
-                        // 点击外部关闭
-                        const onOutsideClick = (ev: MouseEvent) => {
+                        // 点击外部关闭（同步注册，避免 setTimeout 时序问题）
+                        _onOutsideClick = (ev: MouseEvent) => {
                             if (historyDropdown && !historyDropdown.contains(ev.target as Node)) {
                                 closeHistoryDropdown();
-                                document.removeEventListener('click', onOutsideClick);
                             }
                         };
-                        setTimeout(() => document.addEventListener('click', onOutsideClick), 0);
+                        document.addEventListener('click', _onOutsideClick);
 
                         // 定位到按钮下方
                         historyBtn.style.position = 'relative';
@@ -495,7 +501,11 @@ function buildBoneOverrideSchema(): MenuNode[] {
 
                         const toggleBtn = document.createElement('button');
                         toggleBtn.className = 'slide-action';
-                        toggleBtn.textContent = ov.enabled ? '●' : '○';
+                        const toggleIcon = createIconifyIcon(ov.enabled ? 'lucide:circle-dot' : 'lucide:circle');
+                        if (toggleIcon) {
+                            if (toggleBtn.firstChild) toggleBtn.removeChild(toggleBtn.firstChild);
+                            toggleBtn.appendChild(toggleIcon);
+                        }
                         toggleBtn.title = ov.enabled ? t('motion.disable') : t('motion.enable');
                         toggleBtn.style.opacity = ov.enabled ? '1' : '0.4';
                         toggleBtn.addEventListener('click', () => {
