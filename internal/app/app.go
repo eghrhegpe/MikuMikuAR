@@ -422,6 +422,7 @@ type EnvState struct {
 	SkyRotationSpeed float64    `json:"skyRotationSpeed"`
 	SkyBrightness    float64    `json:"skyBrightness"`
 	StarsEnabled     bool       `json:"starsEnabled"`
+	StarsTexture     string     `json:"starsTexture"`
 	EnvIntensity     float64    `json:"envIntensity"`
 
 	GroundVisible         bool       `json:"groundVisible"`
@@ -491,17 +492,15 @@ type EnvState struct {
 	WaterSize         float64    `json:"waterSize"`
 	WaterAnimSpeed    float64    `json:"waterAnimSpeed"`
 	// 水面平面反射质量：'high' | 'medium' | 'low' | 'off'
-	ReflectionQuality string     `json:"reflectionQuality"`
-	FoamThreshold     float64    `json:"foamThreshold"`
-	FoamIntensity     float64    `json:"foamIntensity"`
-	FoamOpacity       float64    `json:"foamOpacity"`
+	ReflectionQuality string  `json:"reflectionQuality"`
+	// ADR-115: 平面反射混合度，对应 TS planarReflectBlend
+	PlanarReflectBlend float64 `json:"planarReflectBlend"`
 
 	// 水面高级着色器参数（持久化，避免材质重建时重置）
 	FresnelBias           float64    `json:"fresnelBias"`
 	FresnelPower          float64    `json:"fresnelPower"`
 	DiffuseStrength       float64    `json:"diffuseStrength"`
 	AmbientStrength       float64    `json:"ambientStrength"`
-	FoamTransitionRange   float64    `json:"foamTransitionRange"`
 	RippleNormalStrength  float64    `json:"rippleNormalStrength"`
 	RippleGlintStrength   float64    `json:"rippleGlintStrength"`
 	WaterNormalStrength   float64    `json:"waterNormalStrength"`
@@ -540,6 +539,8 @@ type EnvState struct {
 	CloudPowder     float64 `json:"cloudPowder"`
 	CloudQuality    string  `json:"cloudQuality"`
 	DebugClouds     bool    `json:"debugClouds"`
+	// ADR-128/129: 镜面道具开关，对应 TS mirrorEnabled
+	MirrorEnabled   bool    `json:"mirrorEnabled"`
 
 	FogEnabled bool       `json:"fogEnabled"`
 	FogMode    string     `json:"fogMode"`

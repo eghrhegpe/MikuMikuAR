@@ -154,6 +154,7 @@ export interface EnvState {
     "skyRotationSpeed": number;
     "skyBrightness": number;
     "starsEnabled": boolean;
+    "starsTexture": string;
     "envIntensity": number;
     "groundVisible": boolean;
     "groundType": string;
@@ -229,6 +230,7 @@ export interface EnvState {
      * 水面平面反射质量：'high' | 'medium' | 'low' | 'off'
      */
     "reflectionQuality": string;
+    "planarReflectBlend": number;
 
     /**
      * 水面高级着色器参数（持久化，避免材质重建时重置）
@@ -278,6 +280,7 @@ export interface EnvState {
     "cloudPowder": number;
     "cloudQuality": string;
     "debugClouds": boolean;
+    "mirrorEnabled": boolean;
     "fogEnabled": boolean;
     "fogMode": string;
     "fogColor": number[];
