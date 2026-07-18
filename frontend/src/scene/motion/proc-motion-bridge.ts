@@ -262,7 +262,13 @@ export async function updateProcMotion(): Promise<void> {
     // Issue #1: focusedModel() 可能为 null/undefined
     const model = focusedModel();
     const audioOn = isAudioPlaying();
-    const hasUserVmd = model?.vmdData !== null && model?.vmdData !== undefined;
+    // [fix:adr-129/proc-slot] 程序化动作现已写入 inst.vmdData（替代旧直写 setRuntimeAnimation，
+    // 见 startProcMotion 内注），故不能再用 vmdData 判定"用户/场景 VMD 是否存在"——
+    // 否则每帧 onBeforeRender 调用的 updateProcMotion 会把程序化数据误判为"用户 VMD"，
+    // 触发 stopProcMotion() 清空 vmdData，导致动作1（基础槽位）程序化瞬间失效。
+    // 正确判别依据：inst.vmdPath。程序化动作 vmdPath 恒为 null（startProcMotion 显式置空），
+    // 用户/场景 VMD 则必有非空 vmdPath（applyIntentToModel / loadVMDFromPath 写入）。
+    const hasUserVmd = !!model?.vmdPath;
     const mode = st.mode;
     const autoOk = mode !== 'off' || st.autoSwitch;
     const wantAutoDance = shouldAutoDance(audioOn, mode) && autoOk;
