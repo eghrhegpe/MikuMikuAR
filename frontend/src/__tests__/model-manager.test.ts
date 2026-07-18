@@ -110,6 +110,7 @@ function makeModelInstance(id: string, overrides?: any): ModelInstance {
             physicsEnabled: true,
             scaling: 1,
             rotationY: 0,
+            rotation: [0, 0, 0] as [number, number, number],
             vmdData: null,
             vmdName: '',
             vmdPath: null,
@@ -148,7 +149,16 @@ function createTestMesh(name, mat) {
             this.x = this.y = this.z = v;
         },
     } as any;
-    mesh.rotation = { x: 0, y: 0, z: 0 } as any;
+    mesh.rotation = {
+        x: 0,
+        y: 0,
+        z: 0,
+        set: function (x, y, z) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        },
+    } as any;
     mesh.dispose = vi.fn();
     mesh.setEnabled = vi.fn();
     mesh.computeWorldMatrix = vi.fn();

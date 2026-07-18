@@ -181,6 +181,7 @@ function createBaseInstance(overrides: Record<string, any> = {}) {
         rootMesh: null,
         scaling: 1,
         rotationY: 0,
+        rotation: [0, 0, 0] as [number, number, number],
         visible: true,
         opacity: 1,
         wireframe: false,

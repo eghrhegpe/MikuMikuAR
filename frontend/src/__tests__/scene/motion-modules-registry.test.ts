@@ -1,5 +1,5 @@
-// [doc:adr-116] registry 单测 — createModule/getState/setState 对称、per-model 隔离、ownedBones 仲裁
-// ADR P0 验收要求：createModule 返回实例 getState()/setState() 对称，不影响其他模块状态
+// [doc:adr-129] registry 单测 — 场景级动作模块配置（随动作走）
+// ADR P0 验收要求：createModule 返回实例 getState()/setState() 对称，配置存储在 SceneMotionIntent
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
@@ -7,10 +7,12 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 // vi.mock 工厂在文件顶部执行，此时顶层 const 尚未初始化，
 // 因此必须用 vi.hoisted 把变量提升到与 vi.mock 同一阶段。
 
-const { mockModelRegistry, setBoneOverrideSpy, clearBoneOverrideSpy } = vi.hoisted(() => ({
+const { mockModelRegistry, setBoneOverrideSpy, clearBoneOverrideSpy, mockActiveMotion, mockSetActiveMotion } = vi.hoisted(() => ({
     mockModelRegistry: new Map<string, any>(),
     setBoneOverrideSpy: vi.fn(),
     clearBoneOverrideSpy: vi.fn(),
+    mockActiveMotion: { value: null as any },
+    mockSetActiveMotion: vi.fn((intent: any) => { mockActiveMotion.value = intent; }),
 }));
 
 vi.mock('@/core/state', () => ({
@@ -26,6 +28,11 @@ vi.mock('@/scene/motion/bone-override', () => ({
 
 vi.mock('@/scene/motion/perception', () => ({
     setHeadTrackingEnabled: vi.fn(),
+}));
+
+vi.mock('@/scene/motion/motion-intent', () => ({
+    getActiveMotion: () => mockActiveMotion.value,
+    setActiveMotion: mockSetActiveMotion,
 }));
 
 // [doc:adr-125] mock pushHistory 以验证 setParam 集成
@@ -71,8 +78,21 @@ function resetAll(): void {
     mockModelRegistry.clear();
     setBoneOverrideSpy.mockClear();
     clearBoneOverrideSpy.mockClear();
+    mockActiveMotion.value = null;
+    mockSetActiveMotion.mockClear();
     // 重置 setTargetModel 内部 _currentModelId：通过切换到 null 再到目标
     setTargetModel(null);
+}
+
+// 创建一个带有 motionModules 的 activeMotion
+function setActiveMotionWithModules(vmdPath: string = 'test.vmd'): void {
+    mockActiveMotion.value = {
+        vmdPath,
+        vmdName: 'test',
+        vmdLayers: [],
+        source: 'vmd',
+        motionModules: [],
+    };
 }
 
 // ═════════════════════════════════════════════════════════════════════
@@ -163,6 +183,7 @@ describe('getModuleState — 默认值种入', () => {
     it('首次获取自动创建状态并种入 defaults', () => {
         mockModelRegistry.set('m1', makeModel('m1'));
         initMotionModules();
+        setActiveMotionWithModules(); // 需要先有 activeMotion
         const state = getModuleState('m1', 'body-posture');
         expect(state.id).toBe('body-posture');
         expect(state.enabled).toBe(false);
@@ -185,6 +206,7 @@ describe('setModuleParam / setModuleEnabled', () => {
     it('setModuleParam 写入参数', () => {
         mockModelRegistry.set('m1', makeModel('m1'));
         initMotionModules();
+        setActiveMotionWithModules(); // 需要先有 activeMotion
         setModuleParam('m1', 'body-posture', 'tilt', 10);
         const state = getModuleState('m1', 'body-posture');
         expect(state.params.tilt).toBe(10);
@@ -193,30 +215,33 @@ describe('setModuleParam / setModuleEnabled', () => {
     it('setModuleEnabled 写入启用状态', () => {
         mockModelRegistry.set('m1', makeModel('m1'));
         initMotionModules();
+        setActiveMotionWithModules(); // 需要先有 activeMotion
         setModuleEnabled('m1', 'body-posture', true);
         const state = getModuleState('m1', 'body-posture');
         expect(state.enabled).toBe(true);
     });
 });
 
-describe('per-model 隔离', () => {
+describe('per-motion 配置（随动作走）', () => {
     beforeEach(resetAll);
 
-    it('两个模型的模块状态互不串扰', () => {
+    it('所有模型共享同一套模块配置（随动作走）', () => {
         mockModelRegistry.set('m1', makeModel('m1'));
         mockModelRegistry.set('m2', makeModel('m2'));
         initMotionModules();
+        setActiveMotionWithModules();
 
+        // 对 m1 设置参数，m2 应该看到相同值（因为配置随动作）
         setModuleParam('m1', 'body-posture', 'tilt', 15);
-        setModuleParam('m2', 'body-posture', 'tilt', -5);
-        setModuleEnabled('m2', 'body-posture', true);
+        setModuleEnabled('m1', 'body-posture', true);
 
         const s1 = getModuleState('m1', 'body-posture');
         const s2 = getModuleState('m2', 'body-posture');
 
+        // 配置随动作，所以两个模型看到相同的配置
         expect(s1.params.tilt).toBe(15);
-        expect(s1.enabled).toBe(false);
-        expect(s2.params.tilt).toBe(-5);
+        expect(s1.enabled).toBe(true);
+        expect(s2.params.tilt).toBe(15);
         expect(s2.enabled).toBe(true);
     });
 });
@@ -227,6 +252,7 @@ describe('getState / setState 对称', () => {
     it('getState 返回合并默认值的快照', () => {
         mockModelRegistry.set('m1', makeModel('m1'));
         initMotionModules();
+        setActiveMotionWithModules();
         const mod = createModule('body-posture', 'm1')!;
         setModuleParam('m1', 'body-posture', 'tilt', 8);
         const snap = mod.getState();
@@ -237,6 +263,7 @@ describe('getState / setState 对称', () => {
     it('setState 恢复后 getState 一致', () => {
         mockModelRegistry.set('m1', makeModel('m1'));
         initMotionModules();
+        setActiveMotionWithModules();
         const mod = createModule('body-posture', 'm1')!;
 
         const snapshot = {
@@ -256,6 +283,7 @@ describe('getState / setState 对称', () => {
     it('一个模块的 setState 不影响其他模块状态', () => {
         mockModelRegistry.set('m1', makeModel('m1'));
         initMotionModules();
+        setActiveMotionWithModules();
         const bp = createModule('body-posture', 'm1')!;
         const hs = createModule('hand-symmetry', 'm1')!;
 
@@ -361,6 +389,7 @@ describe('disable 精确清除（P2-1）', () => {
     it('disable 仅清 ownedBones，不误伤手动覆盖', () => {
         mockModelRegistry.set('m1', makeModel('m1'));
         initMotionModules();
+        setActiveMotionWithModules();
         const mod = createModule('body-posture', 'm1')!;
 
         // 模拟用户在高级子页手动覆盖 上半身（不经过模块，不被 owned）
@@ -389,6 +418,7 @@ describe('setTargetModel 作用域切换', () => {
         mockModelRegistry.set('m1', makeModel('m1'));
         mockModelRegistry.set('m2', makeModel('m2'));
         initMotionModules();
+        setActiveMotionWithModules();
 
         // m1 启用 body-posture
         setModuleEnabled('m1', 'body-posture', true);
@@ -402,36 +432,34 @@ describe('setTargetModel 作用域切换', () => {
         expect(clearBoneOverrideSpy).toHaveBeenCalled();
     });
 
-    it('切换到新模型时启用新模型已保存的 enabled 模块', () => {
+    it('场景级配置在模型切换时保持不变', () => {
         mockModelRegistry.set('m1', makeModel('m1'));
         mockModelRegistry.set('m2', makeModel('m2'));
         initMotionModules();
+        setActiveMotionWithModules();
 
-        // m2 已保存 enabled 的 body-posture
-        setModuleEnabled('m2', 'body-posture', true);
-        setTargetModel('m1');
-        setBoneOverrideSpy.mockClear();
+        // 设置 body-posture 的 enabled 状态（存储在场景级配置）
+        setModuleEnabled('m1', 'body-posture', true);
 
-        // 切换到 m2（body-posture 应被 enable → bake → setBoneOverride）
-        setTargetModel('m2');
-
-        expect(setBoneOverrideSpy).toHaveBeenCalled();
+        // 验证状态已存储（所有模型共享配置）
+        expect(getModuleState('m1', 'body-posture').enabled).toBe(true);
+        expect(getModuleState('m2', 'body-posture').enabled).toBe(true);
     });
 });
 
 describe('clearAllModulesForModel', () => {
     beforeEach(resetAll);
 
-    it('清除所有 ownedBones 并清空 motionOverrideModules', () => {
+    it('清除所有 ownedBones', () => {
         mockModelRegistry.set('m1', makeModel('m1'));
         initMotionModules();
+        setActiveMotionWithModules();
         const mod = createModule('body-posture', 'm1')!;
         mod.enable();
 
         clearAllModulesForModel('m1');
 
-        const inst = mockModelRegistry.get('m1');
-        expect(inst.motionOverrideModules).toEqual([]);
+        // [doc:adr-129] motionModules 已移至场景级，不再在 ModelInstance 上
         expect(clearBoneOverrideSpy).toHaveBeenCalled();
     });
 });
@@ -446,6 +474,7 @@ describe('applyModuleSnapshot', () => {
     it('非空快照：启用模块并写入 params', () => {
         mockModelRegistry.set('m1', makeModel('m1'));
         initMotionModules();
+        setActiveMotionWithModules();
 
         applyModuleSnapshot('m1', {
             'body-posture': { enabled: true, params: { tilt: 10, bend: 5, twist: 3 } },
@@ -461,6 +490,7 @@ describe('applyModuleSnapshot', () => {
     it('空快照：禁用所有已启用模块', () => {
         mockModelRegistry.set('m1', makeModel('m1'));
         initMotionModules();
+        setActiveMotionWithModules();
 
         // 先启用 body-posture
         const mod = createModule('body-posture', 'm1')!;
@@ -471,25 +501,27 @@ describe('applyModuleSnapshot', () => {
         applyModuleSnapshot('m1', {});
 
         expect(getModuleState('m1', 'body-posture').enabled).toBe(false);
+        // disable 应触发 clearBoneOverride
+        expect(clearBoneOverrideSpy).toHaveBeenCalled();
     });
 
-    it('快照中不存在的模块保持不变', () => {
+    it('快照中不存在的模块会被禁用（严格模式）', () => {
         mockModelRegistry.set('m1', makeModel('m1'));
         initMotionModules();
+        setActiveMotionWithModules();
 
-        // 启用 body-posture
-        const mod = createModule('body-posture', 'm1')!;
-        mod.enable();
+        // 先启用 hand-symmetry
+        setModuleEnabled('m1', 'hand-symmetry', true);
 
-        // 只应用 hand-symmetry 的快照
+        // 应用只含 body-posture 的快照
         applyModuleSnapshot('m1', {
-            'hand-symmetry': { enabled: true, params: { pitch: 5 } },
+            'body-posture': { enabled: false, params: { tilt: 0, bend: 0, twist: 0 } },
         });
 
-        // body-posture 应被禁用（不在快照中）
+        // body-posture 应被禁用
         expect(getModuleState('m1', 'body-posture').enabled).toBe(false);
-        // hand-symmetry 应被启用
-        expect(getModuleState('m1', 'hand-symmetry').enabled).toBe(true);
+        // hand-symmetry 应被禁用（不在快照中）
+        expect(getModuleState('m1', 'hand-symmetry').enabled).toBe(false);
     });
 });
 
@@ -502,6 +534,7 @@ describe('setParam → pushHistory 集成', () => {
     it('setParam 调用 pushHistory 记录变更', () => {
         mockModelRegistry.set('m1', makeModel('m1'));
         initMotionModules();
+        setActiveMotionWithModules();
 
         const mod = createModule('body-posture', 'm1')!;
         mod.setParam('tilt', 10);
@@ -520,10 +553,10 @@ describe('setParam → pushHistory 集成', () => {
     it('setParam 值未变化时不记录', () => {
         mockModelRegistry.set('m1', makeModel('m1'));
         initMotionModules();
+        setActiveMotionWithModules();
 
         const mod = createModule('body-posture', 'm1')!;
-        // 默认值是 0，设为 0 不应触发记录
-        mod.setParam('tilt', 0);
+        mod.setParam('tilt', 0); // 默认值
 
         expect(pushHistorySpy).not.toHaveBeenCalled();
     });
