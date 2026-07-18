@@ -43,7 +43,7 @@ import {
     clearVmdLayers,
     replaceVmdLayerVmd,
 } from '../scene/motion/vmd-layers';
-import { clearAudio, getAudioName } from '../outfit/audio';
+import { clearAudio, getAudioName, syncAudioPlayback } from '../outfit/audio';
 import {
     loadAndRetargetAnimation,
     playRetargetedAnimation,
@@ -178,102 +178,10 @@ function buildActionBindingSchema(id: string): MenuNode[] {
         return [];
     }
 
+    // [doc:adr-129] Phase 2 精简：图层管理 + 清除动作迁移至动作详情子页（buildMotionDetailSchema）
+    // 模型面板仅保留 per-model 专属能力：姿势库 + pin/unpin + 状态提示
     return [
-        // 卡片 1：动作图层（核心功能前置——已加载动作 + 添加动作）
-        {
-            id: 'binding:layers',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    // 统一动作行渲染器：复用模型栏 actor 行三栏结构
-                    const renderActionRow = (
-                        name: string,
-                        layerId?: string,
-                        onClick?: () => void
-                    ) => {
-                        const isFocused =
-                            layerId === undefined
-                                ? _focusedLayerId === null
-                                : _focusedLayerId === layerId;
-                        slideRow(
-                            inner,
-                            '',
-                            name,
-                            false,
-                            onClick ?? (() => {}),
-                            undefined,
-                            undefined,
-                            undefined,
-                            undefined,
-                            {
-                                leading: {
-                                    icon: isFocused ? 'lucide:check-circle' : 'lucide:circle',
-                                    title: t('library.focusModel'),
-                                    onClick: () => {
-                                        _focusedLayerId = layerId ?? null;
-                                        focusModel(id);
-                                        getMotionMenu()?.reRender();
-                                    },
-                                },
-                                wrapLabel: true,
-                                ...(layerId !== undefined
-                                    ? {
-                                          trailing: {
-                                              icon: 'lucide:settings-2',
-                                              title: t('library.modelTools'),
-                                              onClick: () => {
-                                                  const lvl = buildLayerLevel(layerId, id);
-                                                  if (getMotionMenu()) {
-                                                      getMotionMenu()?.push(lvl);
-                                                  }
-                                              },
-                                          },
-                                      }
-                                    : {}),
-                            }
-                        );
-                    };
-                    if (inst.vmdData && inst.vmdName) {
-                        const baseName = inst.vmdName.split(' + ')[0];
-                        const hasLayers = getVmdLayers(id).length > 0;
-                        renderActionRow(
-                            hasLayers ? `${baseName} (基础)` : baseName,
-                            undefined,
-                            undefined
-                        );
-                    } else {
-                        const hint = document.createElement('div');
-                        hint.className = 'cs-hint';
-                        hint.textContent = t('motion.noActionHint');
-                        inner.appendChild(hint);
-                    }
-                    const curLayers = getVmdLayers(id);
-                    for (let i = 0; i < curLayers.length; i++) {
-                        const layer = curLayers[i];
-                        renderActionRow(layer.name, layer.id, () => {
-                            const lvl = buildLayerLevel(layer.id, id);
-                            if (getMotionMenu()) {
-                                getMotionMenu()?.push(lvl);
-                            }
-                        });
-                    }
-                    slideRow(inner, 'lucide:folder', t('motion.addLayer'), true, () => {
-                        setLayerBindingTargetId(id);
-                        const level = stackRegistry.buildLevel!(
-                            getBrowseDir('vmd'),
-                            t('motion.motionLibrary'),
-                            (m) => m.format === 'vmd',
-                            getMotionMenu() ?? undefined
-                        );
-                        level.label = t('motion.addLayerTo', { name: inst?.name ?? '?' });
-                        if (getMotionMenu()) {
-                            getMotionMenu()?.push(level);
-                        }
-                    });
-                });
-            },
-        },
-        // 卡片 2：姿势库
+        // 卡片 1：姿势库
         {
             id: 'binding:pose',
             kind: 'custom',
@@ -294,38 +202,7 @@ function buildActionBindingSchema(id: string): MenuNode[] {
                 });
             },
         },
-        // 卡片 3：清除 VMD
-        {
-            id: 'binding:actions',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    const clearBtn = document.createElement('button');
-                    clearBtn.className = 'preset-chip';
-                    clearBtn.textContent = t('motion.clearVmd');
-                    clearBtn.addEventListener('click', async () => {
-                        if (inst && inst.mmdModel && mmdRuntime) {
-                            const snap = pushUndoSnapshot();
-                            setActiveMotion(null);
-                            if (isPlaying) {
-                                mmdRuntime.pauseAnimation();
-                                setIsPlaying(false);
-                            }
-                            updatePlaybackUI();
-                            getMotionMenu()?.reRender();
-                            triggerAutoSave();
-                            setStatus(t('motion.motionCleared'), true);
-                            offerSceneUndo(t('motion.motionCleared'), snap, () => {
-                                getMotionMenu()?.reRender();
-                                setStatus(t('motion.undoApplied'), true);
-                            });
-                        }
-                    });
-                    inner.appendChild(clearBtn);
-                });
-            },
-        },
-        // 卡片 4：动作分配策略（pin/unpin）
+        // 卡片 2：动作分配策略（pin/unpin）
         {
             id: 'binding:assignment',
             kind: 'custom',
@@ -547,6 +424,268 @@ function buildLayerLevel(layerId: string, id: string): PopupLevel {
                 },
             ];
             renderMenu(schema, container);
+        },
+    };
+}
+
+// ======== Motion Detail (ADR-129 Phase 2) ========
+
+/**
+ * 动作详情子页 schema——场景级当前动作的统一管理入口（ADR-129 Phase 2）。
+ * 整合：当前动作 + 清除 / 图层管理 / 完整播放控制（播放·循环·进度·速度）。
+ * 图层以「聚焦模型 / 首个 actor」为目标，与根层 Card 1 状态行共用 playback.ts 单一数据源。
+ */
+function buildMotionDetailSchema(): MenuNode[] {
+    const schema: MenuNode[] = [];
+    const active = getActiveMotion();
+    const foc = modelManager.focused();
+    const target =
+        foc ?? [...modelManager.modelRegistry.values()].find((m) => m.kind === 'actor') ?? null;
+
+    // 卡片 1：当前动作名 + 清除按钮
+    schema.push({
+        id: 'detail:current',
+        kind: 'custom',
+        renderCustom: (c) => {
+            cardContainer(c, (inner) => {
+                slideRow(
+                    inner,
+                    active ? 'lucide:music-2' : 'lucide:circle-slash',
+                    active?.vmdName || t('motion.intent.none'),
+                    false,
+                    () => {},
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    { wrapLabel: true }
+                );
+                if (active && target?.mmdModel && mmdRuntime) {
+                    const clearBtn = document.createElement('button');
+                    clearBtn.className = 'preset-chip';
+                    clearBtn.textContent = t('motion.clearVmd');
+                    clearBtn.addEventListener('click', () => {
+                        const snap = pushUndoSnapshot();
+                        setActiveMotion(null);
+                        if (isPlaying) {
+                            mmdRuntime.pauseAnimation();
+                            setIsPlaying(false);
+                        }
+                        updatePlaybackUI();
+                        getMotionMenu()?.reRender();
+                        triggerAutoSave();
+                        setStatus(t('motion.motionCleared'), true);
+                        offerSceneUndo(t('motion.motionCleared'), snap, () => {
+                            getMotionMenu()?.reRender();
+                            setStatus(t('motion.undoApplied'), true);
+                        });
+                    });
+                    inner.appendChild(clearBtn);
+                }
+            });
+        },
+    });
+
+    // 卡片 2：图层管理（从原 buildActionBindingSchema 卡片 1 迁移；无 target 时显示空状态）
+    if (target) {
+        schema.push({
+            id: 'detail:layers',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    const id = target.id;
+                    const inst = target;
+                    const renderActionRow = (
+                        name: string,
+                        layerId?: string,
+                        onClick?: () => void
+                    ) => {
+                        const isFocused =
+                            layerId === undefined
+                                ? _focusedLayerId === null
+                                : _focusedLayerId === layerId;
+                        slideRow(
+                            inner,
+                            '',
+                            name,
+                            false,
+                            onClick ?? (() => {}),
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            {
+                                leading: {
+                                    icon: isFocused ? 'lucide:check-circle' : 'lucide:circle',
+                                    title: t('library.focusModel'),
+                                    onClick: () => {
+                                        _focusedLayerId = layerId ?? null;
+                                        focusModel(id);
+                                        getMotionMenu()?.reRender();
+                                    },
+                                },
+                                wrapLabel: true,
+                                ...(layerId !== undefined
+                                    ? {
+                                          trailing: {
+                                              icon: 'lucide:settings-2',
+                                              title: t('library.modelTools'),
+                                              onClick: () => {
+                                                  const lvl = buildLayerLevel(layerId, id);
+                                                  getMotionMenu()?.push(lvl);
+                                              },
+                                          },
+                                      }
+                                    : {}),
+                            }
+                        );
+                    };
+                    if (inst.vmdData && inst.vmdName) {
+                        const baseName = inst.vmdName.split(' + ')[0];
+                        const hasLayers = getVmdLayers(id).length > 0;
+                        renderActionRow(
+                            hasLayers ? `${baseName} (基础)` : baseName,
+                            undefined,
+                            undefined
+                        );
+                    } else {
+                        const hint = document.createElement('div');
+                        hint.className = 'cs-hint';
+                        hint.textContent = t('motion.noActionHint');
+                        inner.appendChild(hint);
+                    }
+                    const curLayers = getVmdLayers(id);
+                    for (const layer of curLayers) {
+                        renderActionRow(layer.name, layer.id, () => {
+                            const lvl = buildLayerLevel(layer.id, id);
+                            getMotionMenu()?.push(lvl);
+                        });
+                    }
+                    slideRow(inner, 'lucide:folder', t('motion.addLayer'), true, () => {
+                        setLayerBindingTargetId(id);
+                        const level = stackRegistry.buildLevel!(
+                            getBrowseDir('vmd'),
+                            t('motion.motionLibrary'),
+                            (m) => m.format === 'vmd',
+                            getMotionMenu() ?? undefined
+                        );
+                        level.label = t('motion.addLayerTo', { name: inst?.name ?? '?' });
+                        getMotionMenu()?.push(level);
+                    });
+                });
+            },
+        });
+    } else {
+        schema.push({
+            id: 'detail:no-target',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    addEmptyRow(inner, t('motion.retarget.noModel'));
+                });
+            },
+        });
+    }
+
+    // 卡片 3：完整播放控制（播放/暂停 + 循环 + 进度条 + 速度；与 Card 1 状态行共用 playback.ts 单一数据源）
+    schema.push({
+        id: 'detail:playback',
+        kind: 'custom',
+        renderCustom: (c) => {
+            cardContainer(c, (inner) => {
+                const playBtn = document.createElement('button');
+                playBtn.className = 'preset-chip';
+                playBtn.textContent = isPlaying
+                    ? t('motion.statusPaused')
+                    : t('motion.statusPlaying');
+                playBtn.addEventListener('click', () => {
+                    if (!mmdRuntime) {
+                        return;
+                    }
+                    if (isPlaying) {
+                        mmdRuntime.pauseAnimation();
+                        setIsPlaying(false);
+                        setAutoLoop(false);
+                    } else {
+                        setAutoLoop(true);
+                        mmdRuntime
+                            .playAnimation()
+                            .then(() => setIsPlaying(true))
+                            .catch((err) => {
+                                setIsPlaying(false);
+                                logWarn('motion-popup', 'playAnimation failed:', err);
+                            });
+                    }
+                    updatePlaybackUI();
+                    getMotionMenu()?.reRender();
+                });
+                inner.appendChild(playBtn);
+
+                const loopBtn = document.createElement('button');
+                loopBtn.className = 'preset-chip' + (autoLoop ? ' active' : '');
+                loopBtn.textContent = t('motion.statusLoop', {
+                    state: autoLoop ? t('motion.on') : t('motion.off'),
+                });
+                loopBtn.addEventListener('click', () => {
+                    setAutoLoop(!autoLoop);
+                    getMotionMenu()?.reRender();
+                    setStatus(
+                        t('motion.loopState', {
+                            state: autoLoop ? t('motion.on') : t('motion.off'),
+                        }),
+                        true
+                    );
+                });
+                inner.appendChild(loopBtn);
+
+                if (mmdRuntime && mmdRuntime.animationDuration > 0) {
+                    const duration = mmdRuntime.animationDuration;
+                    addSliderRow(
+                        inner,
+                        t('motion.playbackStatus'),
+                        mmdRuntime.currentTime,
+                        0,
+                        duration,
+                        0.05,
+                        (v) => {
+                            if (mmdRuntime) {
+                                mmdRuntime.seekAnimation(v, true);
+                                syncAudioPlayback(v, isPlaying, duration);
+                            }
+                        },
+                        'lucide:play'
+                    );
+                }
+
+                addSliderRow(
+                    inner,
+                    t('motion.playbackSpeed'),
+                    _playbackSpeed,
+                    0.1,
+                    2.0,
+                    0.05,
+                    (v) => {
+                        _playbackSpeed = v;
+                        if (mmdRuntime) {
+                            mmdRuntime.timeScale = v;
+                        }
+                    },
+                    'lucide:gauge'
+                );
+            });
+        },
+    });
+
+    return schema;
+}
+
+function buildMotionDetailLevel(): PopupLevel {
+    return {
+        label: t('motion.detail.title'),
+        dir: '',
+        items: [],
+        renderCustom: (container) => {
+            renderMenu(buildMotionDetailSchema(), container);
         },
     };
 }
@@ -826,11 +965,11 @@ function motionOnItemClick(row: PopupRow): void {
         }
         return;
     }
-    // [doc:adr-129] 动作详情入口（Phase 2 完整实现，Phase 1 暂为占位）
+    // [doc:adr-129] 动作详情入口（Phase 2 完整实现：图层 + 清除 + 播放控制）
     if (row.target === '__motion_detail__') {
-        // Phase 2: 进入动作详情子页（图层管理 + 清除 + 完整播放控制）
-        // Phase 1: 仅触发 reRender 刷新播放状态
-        getMotionMenu()?.reRender();
+        const lvl = buildMotionDetailLevel();
+        lvl.itemBuilder = () => [];
+        getMotionMenu()?.push(lvl);
         return;
     }
     if (row.target === '__music_clear__') {
