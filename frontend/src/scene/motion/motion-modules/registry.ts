@@ -91,6 +91,19 @@ export function getModuleState(_modelId: string, moduleId: string): MotionModule
     return state;
 }
 
+/**
+ * [doc:adr-116] 读取模块注册的默认参数值。
+ * 供菜单滑块在未 seed（inst.motionOverrideModules 为空）时回退，
+ * 避免 getStateValue 返回 undefined 导致滑块显示成负值 min（Q2 修复）。
+ */
+export function getModuleDefaultParam(
+    moduleId: string,
+    paramKey: string
+): ParamValue | undefined {
+    const entry = _registry.get(moduleId);
+    return entry?.meta.defaults?.[paramKey];
+}
+
 /** 写入模块参数到场景动作意图 */
 export function setModuleParam(
     _modelId: string,
