@@ -86,7 +86,12 @@ type EnvPresetEntry struct {
 |------|------|
 | `env-lighting.ts` | 新增 `EnvPresetCategory` 类型 + `ENV_PRESET_FIELDS` 白名单 + `snapshotEnvPresetByCategory` / `exportEnvPreset` / `importEnvPreset` 重写（支持 v2/v3） |
 | `env-bridge.ts` | 新增 `applyEnvPresetByCategory`（按类别 setEnvState，无动画过渡） |
-| `env-preset-levels.ts` | UI 重写：4 个分类区域，每区有保存按钮+预设列表；保留 SCENE_PRESETS 作为跨类别「场景氛围」快速预设 |
+| `env-preset-levels.ts` | UI 重写：4 个分类区域，每区有保存按钮+预设列表；保留 SCENE_PRESETS 作为跨类别「场景氛围」快速预设
+
+> **SCENE_PRESETS 字段约束（ADR-120 补充裁定）**  
+> `SCENE_PRESETS` 仅限 `sky+lights+render+particle` 等氛围字段，**禁止含任何 `ground*` / `water*` 字段**。  
+> ground/water 参数由用户分类预设独立管理——这是 ADR-111 Phase 1「切换预设不覆盖用户手动调整的地面/水面参数」的实现保障。  
+> 未来扩展 SCENE_PRESETS 时，新增字段必须先确认是否属于上述白名单，否则一律放入对应的分类预设体系。 |
 
 ### UI 结构
 
