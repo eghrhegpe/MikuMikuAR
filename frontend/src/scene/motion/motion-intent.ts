@@ -23,7 +23,9 @@ export function getMotionGen(): number {
 
 // ── 广播回调（调用方注册，避免循环依赖）──
 
-let _broadcastCallback: ((intent: SceneMotionIntent | null, gen: number, prev: SceneMotionIntent | null) => void) | null = null;
+let _broadcastCallback:
+    | ((intent: SceneMotionIntent | null, gen: number, prev: SceneMotionIntent | null) => void)
+    | null = null;
 let _callbackInitialized = false;
 
 /**
@@ -32,8 +34,12 @@ let _callbackInitialized = false;
  * 回调模式避免 motion-intent 直接依赖 scene 模块。
  * 幂等守卫：多次调用不重复注册。
  */
-export function initMotionIntent(cb: (intent: SceneMotionIntent | null, gen: number, prev: SceneMotionIntent | null) => void): void {
-    if (_callbackInitialized) return;
+export function initMotionIntent(
+    cb: (intent: SceneMotionIntent | null, gen: number, prev: SceneMotionIntent | null) => void
+): void {
+    if (_callbackInitialized) {
+        return;
+    }
     _broadcastCallback = cb;
     _callbackInitialized = true;
 }
@@ -41,7 +47,11 @@ export function initMotionIntent(cb: (intent: SceneMotionIntent | null, gen: num
 /**
  * @deprecated 请使用 initMotionIntent() 替代。此函数仅保留供测试覆写。
  */
-export function setBroadcastCallback(cb: ((intent: SceneMotionIntent | null, gen: number, prev: SceneMotionIntent | null) => void) | null): void {
+export function setBroadcastCallback(
+    cb:
+        | ((intent: SceneMotionIntent | null, gen: number, prev: SceneMotionIntent | null) => void)
+        | null
+): void {
     _broadcastCallback = cb;
 }
 
@@ -62,14 +72,33 @@ const MIN_STANDARD_BONE_MATCH = 3;
 const MIN_VMD_BONE_MATCH_RATIO = 0.5;
 
 const STANDARD_MMD_BONES = [
-    '全ての親', 'センター', 'グルーブ', '腰',
-    '上半身', '下半身', '頭',
-    '右肩', '右腕', '右ひじ', '右手首',
-    '左肩', '左腕', '左ひじ', '左手首',
-    '右足', '右ひざ', '右足首',
-    '左足', '左ひざ', '左足首',
-    '首', '両目', 'まぶた',
-    '左目', '右目', '下あご',
+    '全ての親',
+    'センター',
+    'グルーブ',
+    '腰',
+    '上半身',
+    '下半身',
+    '頭',
+    '右肩',
+    '右腕',
+    '右ひじ',
+    '右手首',
+    '左肩',
+    '左腕',
+    '左ひじ',
+    '左手首',
+    '右足',
+    '右ひざ',
+    '右足首',
+    '左足',
+    '左ひざ',
+    '左足首',
+    '首',
+    '両目',
+    'まぶた',
+    '左目',
+    '右目',
+    '下あご',
 ];
 
 function countBoneMatches(actualBones: string[], candidates: string[]): number {

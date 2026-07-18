@@ -32,7 +32,9 @@ export function translateGoError(e: unknown): string {
                 const key = `goerr.${env.code}`;
                 const translated = t(key, env.params ?? {});
                 // [doc:adr-059] t() 缺失 key 时返回 key 本身 → 视为未翻译，回退到信封内中文 msg
-                if (translated !== key) return translated;
+                if (translated !== key) {
+                    return translated;
+                }
                 return env.msg ?? raw;
             }
         } catch {
@@ -43,8 +45,12 @@ export function translateGoError(e: unknown): string {
 }
 
 function toText(e: unknown): string {
-    if (e instanceof Error) return e.message;
-    if (typeof e === 'string') return e;
+    if (e instanceof Error) {
+        return e.message;
+    }
+    if (typeof e === 'string') {
+        return e;
+    }
     if (e && typeof (e as { message?: unknown }).message === 'string') {
         return (e as { message: string }).message;
     }

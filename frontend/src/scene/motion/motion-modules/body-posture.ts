@@ -5,11 +5,7 @@
 import type { MenuNode } from '@/menus/menu-schema';
 import type { ParamValue } from '@/core/types';
 import { setBoneOverride } from '../bone-override';
-import {
-    registerModule,
-    getModuleState,
-    claimBones,
-} from './registry';
+import { registerModule, getModuleState, claimBones } from './registry';
 import type { MotionOverrideModule, ModuleMeta } from './types';
 import { createModuleBase } from './module-base';
 

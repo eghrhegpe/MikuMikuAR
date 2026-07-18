@@ -93,7 +93,9 @@ export function _applyEyeGazeJS(eyeRuntimes: IMmdRuntimeBone[], gazeTarget: Vect
             getEyeGazeMaxYaw(),
             getEyeGazeMaxPitch()
         );
-        const newWorldQ = _q().copyFrom(Quaternion.Slerp(curWorldQ, clampedTargetQ, getEyeGazeSmooth()));
+        const newWorldQ = _q().copyFrom(
+            Quaternion.Slerp(curWorldQ, clampedTargetQ, getEyeGazeSmooth())
+        );
 
         const localQ = _q();
         parentInvQ.multiplyToRef(newWorldQ, localQ);

@@ -5,20 +5,30 @@
 
 import { cardContainer, setStatus, modelRegistry, propRegistry } from '../core/config';
 import { t } from '../core/i18n/t';
-import { slideRow, addSliderRow, addToggleRow, addDangerRow, addVector3SliderRow } from '../core/ui-helpers';
+import {
+    slideRow,
+    addSliderRow,
+    addToggleRow,
+    addDangerRow,
+    addVector3SliderRow,
+} from '../core/ui-helpers';
 import { Quaternion } from '@babylonjs/core/Maths/math.vector';
-import {
-    resetModelTransform,
-    removeModel,
-} from '../scene/manager/model-ops';
-import {
-    removeProp,
-} from '../scene/scene';
+import { resetModelTransform, removeModel } from '../scene/manager/model-ops';
+import { removeProp } from '../scene/scene';
 import { attachPropToBone, detachPropFromBone } from '../scene/env/accessory';
+import { getStageLightState } from '../scene/render/lighting';
 import {
-    getStageLightState,
-} from '../scene/render/lighting';
-import { attachGizmoForKind, getTransformAdapter, detachGizmo, isGizmoActive, getGizmoTargetId, onGizmoDragObservable, getGizmoNode, getActiveGizmoTypes, setGizmoSnapDistance, getGizmoSnapConfig } from '../scene/transform/transform-adapter';
+    attachGizmoForKind,
+    getTransformAdapter,
+    detachGizmo,
+    isGizmoActive,
+    getGizmoTargetId,
+    onGizmoDragObservable,
+    getGizmoNode,
+    getActiveGizmoTypes,
+    setGizmoSnapDistance,
+    getGizmoSnapConfig,
+} from '../scene/transform/transform-adapter';
 import { buildMatRootLevel } from './model-material';
 import type { SlideMenu } from './menu';
 import type { ResourceKind } from '../core/load-manager';
@@ -34,155 +44,177 @@ let _activeDragObs: ReturnType<typeof onGizmoDragObservable.add> | null = null;
 
 /** 局部更新滑杆显示（不触发 onChange），用于 Gizmo 拖拽中实时同步数值（ADR-126 Phase 2）。
  *  显示格式与 ui-rows.ts addSliderRow 内部 updateDisplay 保持一致。 */
-function updateSliderDisplay(row: HTMLElement, v: number, min: number, max: number, step: number): void {
+function updateSliderDisplay(
+    row: HTMLElement,
+    v: number,
+    min: number,
+    max: number,
+    step: number
+): void {
     const range = max - min;
     const pct = range > 0 ? Math.max(0, Math.min(100, ((v - min) / range) * 100)) : 0;
     const val = row.querySelector('.cs-value');
     const fill = row.querySelector('.cs-fill');
     const thumb = row.querySelector('.cs-thumb');
     const slider = row.querySelector('[role="slider"]');
-    if (val) val.textContent = step < 1 ? v.toFixed(2) : String(Math.round(v));
-    if (fill) (fill as HTMLElement).style.width = pct + '%';
-    if (thumb) (thumb as HTMLElement).style.left = pct + '%';
-    if (slider) slider.setAttribute('aria-valuenow', String(v));
+    if (val) {
+        val.textContent = step < 1 ? v.toFixed(2) : String(Math.round(v));
+    }
+    if (fill) {
+        (fill as HTMLElement).style.width = pct + '%';
+    }
+    if (thumb) {
+        (thumb as HTMLElement).style.left = pct + '%';
+    }
+    if (slider) {
+        slider.setAttribute('aria-valuenow', String(v));
+    }
 }
 
 /** 拖拽操控卡片：Gizmo 拖拽 + 缩放倍率 + 透明度
  *  [doc:adr-049] 位置/旋转由 3D Gizmo 实时拖拽取代，不再显示滑块。
  *  按 kind 派发到 model-ops（actor/stage）、prop-ops（prop）或 lighting（light）。 */
 export function buildTransformCard(container: HTMLElement, handle: ResourceHandle): void {
-	const { id, kind } = handle;
-	const adapter = getTransformAdapter(kind);
+    const { id, kind } = handle;
+    const adapter = getTransformAdapter(kind);
 
-	// 双模态（ADR-126 Phase 2）：拖拽进行中实时同步数值滑杆显示。
-	// 清理上一卡片遗留的订阅，保证全局唯一，避免泄漏/叠加。
-	if (_activeDragObs) {
-		_activeDragObs.remove();
-		_activeDragObs = null;
-	}
-	let scaleRowEl: HTMLElement | null = null;
-	let opacityRowEl: HTMLElement | null = null;
+    // 双模态（ADR-126 Phase 2）：拖拽进行中实时同步数值滑杆显示。
+    // 清理上一卡片遗留的订阅，保证全局唯一，避免泄漏/叠加。
+    if (_activeDragObs) {
+        _activeDragObs.remove();
+        _activeDragObs = null;
+    }
+    let scaleRowEl: HTMLElement | null = null;
+    let opacityRowEl: HTMLElement | null = null;
 
-	const render = (): void => {
-		container.innerHTML = '';
-		if (!adapter) return;
-		cardContainer(container, (c) => {
-			const gizmoActive = isGizmoActive() && getGizmoTargetId() === id;
-			slideRow(
-				c,
-				gizmoActive ? 'lucide:x' : 'lucide:move-3d',
-				t(gizmoActive ? 'scene.exitDrag' : 'scene.dragPosition'),
-				false,
-				() => {
-					if (gizmoActive) {
-						detachGizmo();
-						_activeDragObs?.remove();
-						_activeDragObs = null;
-						setStatus(t('scene.statusExitDrag'), true);
-					} else {
-						attachGizmoForKind(kind, id);
-						setStatus(t('scene.statusDragHint'), false);
-					}
-					render();
-				}
-			);
-			slideRow(
-				c,
-				'lucide:rotate-ccw',
-				t('settings.transformReset', { kind: t('common.model') }),
-				false,
-				() => {
-					resetModelTransform(id);
-					setStatus(t('settings.transformReset', { kind: t('common.model') }), true);
-				}
-			);
+    const render = (): void => {
+        container.innerHTML = '';
+        if (!adapter) {
+            return;
+        }
+        cardContainer(container, (c) => {
+            const gizmoActive = isGizmoActive() && getGizmoTargetId() === id;
+            slideRow(
+                c,
+                gizmoActive ? 'lucide:x' : 'lucide:move-3d',
+                t(gizmoActive ? 'scene.exitDrag' : 'scene.dragPosition'),
+                false,
+                () => {
+                    if (gizmoActive) {
+                        detachGizmo();
+                        _activeDragObs?.remove();
+                        _activeDragObs = null;
+                        setStatus(t('scene.statusExitDrag'), true);
+                    } else {
+                        attachGizmoForKind(kind, id);
+                        setStatus(t('scene.statusDragHint'), false);
+                    }
+                    render();
+                }
+            );
+            slideRow(
+                c,
+                'lucide:rotate-ccw',
+                t('settings.transformReset', { kind: t('common.model') }),
+                false,
+                () => {
+                    resetModelTransform(id);
+                    setStatus(t('settings.transformReset', { kind: t('common.model') }), true);
+                }
+            );
 
-			// 网格吸附（ADR-126 Phase 3）：全局拖拽偏好，下次/当前 Gizmo 生效
-			const snap = getGizmoSnapConfig();
-			addToggleRow(
-				c,
-				t('scene.snapEnable'),
-				snap.enabled,
-				(v) => {
-					setGizmoSnapDistance(v, snap.step);
-					render();
-				},
-				'lucide:grid-3x3',
-				undefined,
-				'transform:snap-toggle'
-			);
-			if (snap.enabled) {
-				addSliderRow(
-					c,
-					t('scene.snapStep'),
-					snap.step,
-					0.1,
-					5,
-				0.1,
-				(v) => setGizmoSnapDistance(true, v),
-				'lucide:ruler',
-					undefined,
-					undefined,
-					'transform:snap-step'
-				);
-			}
+            // 网格吸附（ADR-126 Phase 3）：全局拖拽偏好，下次/当前 Gizmo 生效
+            const snap = getGizmoSnapConfig();
+            addToggleRow(
+                c,
+                t('scene.snapEnable'),
+                snap.enabled,
+                (v) => {
+                    setGizmoSnapDistance(v, snap.step);
+                    render();
+                },
+                'lucide:grid-3x3',
+                undefined,
+                'transform:snap-toggle'
+            );
+            if (snap.enabled) {
+                addSliderRow(
+                    c,
+                    t('scene.snapStep'),
+                    snap.step,
+                    0.1,
+                    5,
+                    0.1,
+                    (v) => setGizmoSnapDistance(true, v),
+                    'lucide:ruler',
+                    undefined,
+                    undefined,
+                    'transform:snap-step'
+                );
+            }
 
-			if (adapter.capabilities.includes('slider-scale')) {
-				addSliderRow(
-					c,
-					t('scene.scaleRatio'),
-					adapter.getScale?.(id) ?? 1,
-					0.1,
-					10,
-					0.1,
-					() => {},
-					'lucide:maximize',
-					(v) => adapter.setScale?.(id, v)
-				);
-				scaleRowEl = c.lastElementChild as HTMLElement;
-			}
-			if (adapter.capabilities.includes('slider-opacity')) {
-				addSliderRow(
-					c,
-					t('scene.opacity'),
-					Math.round((adapter.getOpacity?.(id) ?? 1) * 100),
-					0,
-					100,
-					1,
-					() => {},
-					'lucide:eye',
-					(v) => adapter.setOpacity?.(id, v / 100)
-				);
-				opacityRowEl = c.lastElementChild as HTMLElement;
-			}
-		});
-	};
+            if (adapter.capabilities.includes('slider-scale')) {
+                addSliderRow(
+                    c,
+                    t('scene.scaleRatio'),
+                    adapter.getScale?.(id) ?? 1,
+                    0.1,
+                    10,
+                    0.1,
+                    () => {},
+                    'lucide:maximize',
+                    (v) => adapter.setScale?.(id, v)
+                );
+                scaleRowEl = c.lastElementChild as HTMLElement;
+            }
+            if (adapter.capabilities.includes('slider-opacity')) {
+                addSliderRow(
+                    c,
+                    t('scene.opacity'),
+                    Math.round((adapter.getOpacity?.(id) ?? 1) * 100),
+                    0,
+                    100,
+                    1,
+                    () => {},
+                    'lucide:eye',
+                    (v) => adapter.setOpacity?.(id, v / 100)
+                );
+                opacityRowEl = c.lastElementChild as HTMLElement;
+            }
+        });
+    };
 
-	const syncLive = (): void => {
-		if (getGizmoTargetId() !== id || !isGizmoActive()) {
-			_activeDragObs?.remove();
-			_activeDragObs = null;
-			return;
-		}
-		if (adapter?.capabilities.includes('slider-scale') && scaleRowEl) {
-			// 缩放 Gizmo 激活时读取 Babylon 实时改写的 node.scaling（actor/stage 节点缩放即模型缩放）
-			const types = getActiveGizmoTypes();
-			const node = getGizmoNode();
-			const live = types.includes('scale') && node
-				? (node as unknown as { scaling: { x: number } }).scaling.x
-				: null;
-			const v = live != null ? live : (adapter.getScale?.(id) ?? 1);
-			updateSliderDisplay(scaleRowEl, v, 0.1, 10, 0.1);
-		}
-		if (adapter?.capabilities.includes('slider-opacity') && opacityRowEl) {
-			updateSliderDisplay(opacityRowEl, Math.round((adapter.getOpacity?.(id) ?? 1) * 100), 0, 100, 1);
-		}
-	};
+    const syncLive = (): void => {
+        if (getGizmoTargetId() !== id || !isGizmoActive()) {
+            _activeDragObs?.remove();
+            _activeDragObs = null;
+            return;
+        }
+        if (adapter?.capabilities.includes('slider-scale') && scaleRowEl) {
+            // 缩放 Gizmo 激活时读取 Babylon 实时改写的 node.scaling（actor/stage 节点缩放即模型缩放）
+            const types = getActiveGizmoTypes();
+            const node = getGizmoNode();
+            const live =
+                types.includes('scale') && node
+                    ? (node as unknown as { scaling: { x: number } }).scaling.x
+                    : null;
+            const v = live != null ? live : (adapter.getScale?.(id) ?? 1);
+            updateSliderDisplay(scaleRowEl, v, 0.1, 10, 0.1);
+        }
+        if (adapter?.capabilities.includes('slider-opacity') && opacityRowEl) {
+            updateSliderDisplay(
+                opacityRowEl,
+                Math.round((adapter.getOpacity?.(id) ?? 1) * 100),
+                0,
+                100,
+                1
+            );
+        }
+    };
 
-	_activeDragObs = onGizmoDragObservable.add(syncLive);
-	render();
+    _activeDragObs = onGizmoDragObservable.add(syncLive);
+    render();
 }
-
 
 /** 材质区块：进入材质调节子层级 */
 export function buildMaterialCard(
@@ -232,7 +264,13 @@ export function buildDangerCard(
             c,
             'lucide:trash-2',
             t('model-detail.unloadThis', {
-                kind: t(kind === 'prop' ? 'common.prop' : kind === 'stage' ? 'common.stage' : 'common.model'),
+                kind: t(
+                    kind === 'prop'
+                        ? 'common.prop'
+                        : kind === 'stage'
+                          ? 'common.stage'
+                          : 'common.model'
+                ),
             }),
             () => {
                 if (kind === 'prop') {

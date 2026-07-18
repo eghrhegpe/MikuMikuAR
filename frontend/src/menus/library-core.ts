@@ -269,24 +269,27 @@ export async function loadThumbnailsStreaming(keys: string[]): Promise<void> {
         return;
     }
     let index = 0;
-    const workers = Array.from({ length: Math.min(THUMB_STREAM_CONCURRENCY, keys.length) }, async () => {
-        while (index < keys.length) {
-            const key = keys[index++];
-            if (thumbnailCache.has(key)) {
-                continue;
-            }
-            try {
-                const data = await GetThumbnail(key);
-                if (data) {
-                    thumbnailCache.set(key, data);
-                    // 通知所有活跃面板，使当前可见的缩略图立即显示
-                    notifyThumbnailUpdate();
+    const workers = Array.from(
+        { length: Math.min(THUMB_STREAM_CONCURRENCY, keys.length) },
+        async () => {
+            while (index < keys.length) {
+                const key = keys[index++];
+                if (thumbnailCache.has(key)) {
+                    continue;
                 }
-            } catch (err) {
-                logWarn('library-core', `GetThumbnail failed for ${key}:`, err);
+                try {
+                    const data = await GetThumbnail(key);
+                    if (data) {
+                        thumbnailCache.set(key, data);
+                        // 通知所有活跃面板，使当前可见的缩略图立即显示
+                        notifyThumbnailUpdate();
+                    }
+                } catch (err) {
+                    logWarn('library-core', `GetThumbnail failed for ${key}:`, err);
+                }
             }
         }
-    });
+    );
     await Promise.all(workers);
 }
 

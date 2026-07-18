@@ -380,24 +380,26 @@ export function serializeScene(): SceneFile {
                     : undefined,
             feet: inst.feet,
             // [doc:adr-121] 序列化动作分配策略（仅 pinned 模式落盘）
-            motionAssignment: inst.motionAssignment?.mode === 'pinned'
-                ? {
-                      mode: 'pinned' as const,
-                      pinned: {
-                          vmdPath: inst.motionAssignment.pinned?.vmdPath ?? null,
-                          vmdName: inst.motionAssignment.pinned?.vmdName ?? '',
-                          vmdLayers: inst.motionAssignment.pinned?.vmdLayers.map((l) => ({
-                              kind: l.kind,
-                              name: l.name,
-                              path: l.path,
-                              weight: l.weight,
-                              boneFilter: l.boneFilter,
-                              enabled: l.enabled,
-                          })) ?? [],
-                          source: inst.motionAssignment.pinned?.source ?? 'vmd',
-                      },
-                  }
-                : undefined,
+            motionAssignment:
+                inst.motionAssignment?.mode === 'pinned'
+                    ? {
+                          mode: 'pinned' as const,
+                          pinned: {
+                              vmdPath: inst.motionAssignment.pinned?.vmdPath ?? null,
+                              vmdName: inst.motionAssignment.pinned?.vmdName ?? '',
+                              vmdLayers:
+                                  inst.motionAssignment.pinned?.vmdLayers.map((l) => ({
+                                      kind: l.kind,
+                                      name: l.name,
+                                      path: l.path,
+                                      weight: l.weight,
+                                      boneFilter: l.boneFilter,
+                                      enabled: l.enabled,
+                                  })) ?? [],
+                              source: inst.motionAssignment.pinned?.source ?? 'vmd',
+                          },
+                      }
+                    : undefined,
         };
     });
     return {
@@ -467,19 +469,21 @@ export function serializeScene(): SceneFile {
         // [doc:adr-121] 场景级动作意图
         motion: (() => {
             const a = getActiveMotion();
-            return a ? {
-                vmdPath: a.vmdPath,
-                vmdName: a.vmdName,
-                vmdLayers: a.vmdLayers.map((l) => ({
-                    kind: l.kind,
-                    name: l.name,
-                    path: l.path,
-                    weight: l.weight,
-                    boneFilter: l.boneFilter,
-                    enabled: l.enabled,
-                })),
-                source: a.source,
-            } : null;
+            return a
+                ? {
+                      vmdPath: a.vmdPath,
+                      vmdName: a.vmdName,
+                      vmdLayers: a.vmdLayers.map((l) => ({
+                          kind: l.kind,
+                          name: l.name,
+                          path: l.path,
+                          weight: l.weight,
+                          boneFilter: l.boneFilter,
+                          enabled: l.enabled,
+                      })),
+                      source: a.source,
+                  }
+                : null;
         })(),
     };
 }
@@ -1080,10 +1084,7 @@ export async function restoreUndoSnapshot(snap: string): Promise<boolean> {
     try {
         const raw = JSON.parse(snap);
         const data = migrateScene(raw);
-        if (
-            !SUPPORTED_VERSIONS.includes(data.version as number) ||
-            !Array.isArray(data.models)
-        ) {
+        if (!SUPPORTED_VERSIONS.includes(data.version as number) || !Array.isArray(data.models)) {
             console.warn('[undo] snapshot unsupported/malformed — abort undo');
             return false;
         }
@@ -1100,11 +1101,7 @@ export async function restoreUndoSnapshot(snap: string): Promise<boolean> {
 }
 
 /** 破坏性操作后调用：弹出中性撤销 toast（复用 action-button toast，info 变体）。 */
-export function offerSceneUndo(
-    message: string,
-    snap: string | null,
-    onRestored: () => void
-): void {
+export function offerSceneUndo(message: string, snap: string | null, onRestored: () => void): void {
     if (!snap) {
         return;
     }
@@ -1152,10 +1149,7 @@ export async function saveSceneImmediate(suppressToast = false): Promise<void> {
     } catch (_err) {
         console.warn('[auto-save] SaveLastScene FAILED:', _err);
         if (!suppressToast) {
-            showErrorToast(
-                t('scene.serialize.autosaveFailed'),
-                translateGoError(_err)
-            );
+            showErrorToast(t('scene.serialize.autosaveFailed'), translateGoError(_err));
         }
     }
 }

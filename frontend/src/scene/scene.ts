@@ -133,21 +133,21 @@ import { triggerAutoSaveImpl } from './scene-serialize';
 const _isTestEnv = import.meta.env.MODE === 'test';
 
 export let engine = new Engine(dom.canvas, true, {
-     preserveDrawingBuffer: true,
-     stencil: true,
-     alpha: true,
- });
- // 扩展渲染组下限至 -2：天空盒(Group -2)先于体积云(Group -1)先于 Group 0（地面/角色）。
- // Babylon 默认 MIN_RENDERINGGROUPS=0 会跳过负数 group，导致负组 mesh 不渲染。
- RenderingManager.MIN_RENDERINGGROUPS = -2;
- export let scene = new Scene(engine);
- scene.clearColor = new Color4(0.12, 0.12, 0.16, 1.0);
+    preserveDrawingBuffer: true,
+    stencil: true,
+    alpha: true,
+});
+// 扩展渲染组下限至 -2：天空盒(Group -2)先于体积云(Group -1)先于 Group 0（地面/角色）。
+// Babylon 默认 MIN_RENDERINGGROUPS=0 会跳过负数 group，导致负组 mesh 不渲染。
+RenderingManager.MIN_RENDERINGGROUPS = -2;
+export let scene = new Scene(engine);
+scene.clearColor = new Color4(0.12, 0.12, 0.16, 1.0);
 
- /** disposeScene() 已调用标志，防止重复释放。 */
- let _sceneDisposed = false;
+/** disposeScene() 已调用标志，防止重复释放。 */
+let _sceneDisposed = false;
 
- /** initScene() 是否已至少执行过一次。首次调用时跳过 scene/engine 重建。 */
- let _sceneInitialized = false;
+/** initScene() 是否已至少执行过一次。首次调用时跳过 scene/engine 重建。 */
+let _sceneInitialized = false;
 
 /**
  * 统一应用帧率控制：垂直同步 + 帧率上限。
@@ -172,7 +172,9 @@ export function applyFrameControl(): void {
  * - 释放顺序：子系统 observer → Scene → Engine（WebGL context 最后释放）。
  */
 export function disposeScene(): void {
-    if (_sceneDisposed) return;
+    if (_sceneDisposed) {
+        return;
+    }
     _sceneDisposed = true;
 
     // 1. 移除 scene.onDisposeObservable 订阅，避免 scene.dispose() 触发冗余回调
@@ -332,9 +334,7 @@ export async function initScene(): Promise<void> {
     );
     // [doc:adr-121] 初始化场景级动作意图广播（显式调用，避免模块顶层副作用）
     swallowError(
-        import('../menus/motion-popup').then(({ initMotionBroadcast }) =>
-            initMotionBroadcast()
-        )
+        import('../menus/motion-popup').then(({ initMotionBroadcast }) => initMotionBroadcast())
     );
 
     // 2. 各子系统初始化（相机系统已在模块顶层初始化）
@@ -561,12 +561,7 @@ export {
 } from '../core/config';
 export type { EnvState, ModelInstance, PropInstance } from '../core/config';
 export { resolveFileUrl, normPath } from '../core/fileservice';
-export {
-    pushUndoSnapshot,
-    restoreUndoSnapshot,
-    offerSceneUndo,
-    canUndo,
-} from './scene-serialize';
+export { pushUndoSnapshot, restoreUndoSnapshot, offerSceneUndo, canUndo } from './scene-serialize';
 export { applyEnvState } from './env/env';
 export * from './motion/proc-motion-bridge';
 export * from './motion/lipsync-bridge';

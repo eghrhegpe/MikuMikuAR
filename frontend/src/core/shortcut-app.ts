@@ -186,7 +186,9 @@ export function registerAppShortcuts(): void {
             prevent: true,
             handler: () => {
                 const modelId = focusedModelId;
-                if (!modelId || !canUndo(modelId)) return;
+                if (!modelId || !canUndo(modelId)) {
+                    return;
+                }
                 undo(modelId, (snap) => applyModuleSnapshot(modelId, snap));
                 setStatus(t('motion.undoApplied'), true);
             },
@@ -201,7 +203,9 @@ export function registerAppShortcuts(): void {
             prevent: true,
             handler: () => {
                 const modelId = focusedModelId;
-                if (!modelId || !canRedo(modelId)) return;
+                if (!modelId || !canRedo(modelId)) {
+                    return;
+                }
                 redo(modelId, (snap) => applyModuleSnapshot(modelId, snap));
                 setStatus(t('motion.override.redoApplied'), true);
             },

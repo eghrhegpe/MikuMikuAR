@@ -1,6 +1,10 @@
 // [doc:adr-116 P3] 时间驱动纯数学单测 — 验证 frequency/decay/pedalSpeed 真正参与计算
 import { describe, it, expect } from 'vitest';
-import { computeSwayYaw, computePedalPhase, computeFootPitch } from '@/scene/motion/motion-modules/motion-math';
+import {
+    computeSwayYaw,
+    computePedalPhase,
+    computeFootPitch,
+} from '@/scene/motion/motion-modules/motion-math';
 
 describe('computeSwayYaw', () => {
     it('t=0 → 0（正弦起点）', () => {

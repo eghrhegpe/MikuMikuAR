@@ -234,11 +234,7 @@ export async function selectAndSavePreset(id: string): Promise<void> {
     const _r0 = await tryCatchStatus(
         () => SaveModelPreset(json, path),
         t('model-preset.saveFailed'),
-        (err) =>
-            showErrorToast(
-                t('model-preset.saveErrorToast'),
-                translateGoError(err)
-            )
+        (err) => showErrorToast(t('model-preset.saveErrorToast'), translateGoError(err))
     );
     if (_r0 !== undefined) {
         setStatus(t('model-preset.saved'), true);
@@ -361,11 +357,7 @@ export async function savePresetToLibDialog(id: string): Promise<void> {
     const filename = await tryCatchStatus(
         () => SaveModelPresetToLibAuto(json),
         t('model-preset.saveFailed'),
-        (err) =>
-            showErrorToast(
-                t('model-preset.saveErrorToast'),
-                translateGoError(err)
-            )
+        (err) => showErrorToast(t('model-preset.saveErrorToast'), translateGoError(err))
     );
     if (filename !== undefined) {
         setStatus(t('model-preset.savedToLib'), true);

@@ -8,8 +8,7 @@ import { setLang } from '../core/i18n/locale';
 // localStorage/document 在 locale.ts 中已有 try/catch 守卫，无需补齐。
 if (typeof globalThis.requestAnimationFrame !== 'function') {
     globalThis.requestAnimationFrame = ((cb: (t: number) => void) =>
-        setTimeout(() => cb(0), 0)
-    ) as unknown as typeof globalThis.requestAnimationFrame;
+        setTimeout(() => cb(0), 0)) as unknown as typeof globalThis.requestAnimationFrame;
 }
 
 // 模拟 Wails 跨桥后交付给前端的 Error：

@@ -369,7 +369,9 @@ function regenerateDetailNormalTexture(scene: Scene): void {
         // 4 层 octave 叠加生成高度图
         for (let y = 0; y < s; y++) {
             for (let x = 0; x < s; x++) {
-                let h = 0, amp = 1, freq = 1;
+                let h = 0,
+                    amp = 1,
+                    freq = 1;
                 for (let oct = 0; oct < 4; oct++) {
                     h += _valueNoise((x * freq) / s, (y * freq) / s) * amp;
                     amp *= 0.5;

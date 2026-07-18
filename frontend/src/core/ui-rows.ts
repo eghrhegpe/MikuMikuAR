@@ -427,7 +427,12 @@ export function addDangerRow(
  * 创建字段行（左 label + 右 value），替代手动拼接的
  * `div.slide-item > span.slide-label.field-label + span.field-value`
  */
-export function addFieldRow(container: HTMLElement, label: string, value: string, testId?: string): HTMLElement {
+export function addFieldRow(
+    container: HTMLElement,
+    label: string,
+    value: string,
+    testId?: string
+): HTMLElement {
     return slideRow(
         container,
         '',

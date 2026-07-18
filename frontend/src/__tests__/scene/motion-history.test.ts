@@ -261,8 +261,8 @@ describe('jumpToHistory', () => {
 
         // cursor=2（最新），跳转到 0
         jumpToHistory('model-1', 0, applier);
-        expect(canUndo('model-1')).toBe(true);  // cursor=0，可 undo 到 -1
-        expect(canRedo('model-1')).toBe(true);  // cursor=0 < entries.length-1=2
+        expect(canUndo('model-1')).toBe(true); // cursor=0，可 undo 到 -1
+        expect(canRedo('model-1')).toBe(true); // cursor=0 < entries.length-1=2
 
         // 跳转到 -1（初始态）
         jumpToHistory('model-1', -1, applier);

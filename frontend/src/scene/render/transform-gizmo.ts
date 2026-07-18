@@ -54,11 +54,16 @@ function _getOrCreateLayer(): UtilityLayerRenderer {
  *  snapDistance=0 表示禁用（Babylon 语义）。抽离为导出纯函数以便单测覆盖三轴派生逻辑
  *  （ADR-126 Phase 3 审计 P4：原 _snapFor 私有不可测）。 */
 export function computeSnapDistance(type: GizmoType, enabled: boolean, step: number): number {
-    if (!enabled) return 0;
+    if (!enabled) {
+        return 0;
+    }
     switch (type) {
-        case 'position': return step;                  // 场景单位，如 1.0
-        case 'rotation': return step * (Math.PI / 12); // step=1 → 15°（π/12 rad）
-        case 'scale': return step * 0.1;               // step=1 → 0.1 缩放增量
+        case 'position':
+            return step; // 场景单位，如 1.0
+        case 'rotation':
+            return step * (Math.PI / 12); // step=1 → 15°（π/12 rad）
+        case 'scale':
+            return step * 0.1; // step=1 → 0.1 缩放增量
     }
 }
 
@@ -191,9 +196,15 @@ export function getGizmoNode(): Node | null {
 /** 获取当前激活的 Gizmo 轴类型组合（用于判断拖拽中是否在改缩放）。 */
 export function getActiveGizmoTypes(): GizmoType[] {
     const types: GizmoType[] = [];
-    if (_posGizmo) types.push('position');
-    if (_rotGizmo) types.push('rotation');
-    if (_scaleGizmo) types.push('scale');
+    if (_posGizmo) {
+        types.push('position');
+    }
+    if (_rotGizmo) {
+        types.push('rotation');
+    }
+    if (_scaleGizmo) {
+        types.push('scale');
+    }
     return types;
 }
 
@@ -204,10 +215,18 @@ export function getActiveGizmoTypes(): GizmoType[] {
  *  实时作用于当前激活的 Gizmo，无需重新 attach。 */
 export function setGizmoSnapDistance(enabled: boolean, step?: number): void {
     _snapEnabled = enabled;
-    if (step !== undefined) _snapStep = step;
-    if (_posGizmo) _posGizmo.snapDistance = _snapFor('position');
-    if (_rotGizmo) _rotGizmo.snapDistance = _snapFor('rotation');
-    if (_scaleGizmo) _scaleGizmo.snapDistance = _snapFor('scale');
+    if (step !== undefined) {
+        _snapStep = step;
+    }
+    if (_posGizmo) {
+        _posGizmo.snapDistance = _snapFor('position');
+    }
+    if (_rotGizmo) {
+        _rotGizmo.snapDistance = _snapFor('rotation');
+    }
+    if (_scaleGizmo) {
+        _scaleGizmo.snapDistance = _snapFor('scale');
+    }
 }
 
 /** 读取当前网格吸附配置（enabled 默认 false，step 默认 1.0）。 */

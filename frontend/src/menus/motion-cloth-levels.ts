@@ -112,7 +112,9 @@ async function rebuildAll(): Promise<void> {
             }
         } catch (e) {
             failed++;
-            if (!firstError) firstError = e;
+            if (!firstError) {
+                firstError = e;
+            }
             console.warn(`虚拟裙骨构建失败 [${id}]:`, e);
             logWarn('virtual-skirt', `build failed for ${id}`, e);
         }
@@ -124,12 +126,16 @@ async function rebuildAll(): Promise<void> {
         setStatus(
             t('cloth.applied', { n: injected }) +
                 ' · ' +
-                t('cloth.buildFailed', { err: firstError instanceof Error ? firstError.message : String(firstError) }),
+                t('cloth.buildFailed', {
+                    err: firstError instanceof Error ? firstError.message : String(firstError),
+                }),
             false
         );
     } else if (failed > 0) {
         setStatus(
-            t('cloth.buildFailed', { err: firstError instanceof Error ? firstError.message : String(firstError) }),
+            t('cloth.buildFailed', {
+                err: firstError instanceof Error ? firstError.message : String(firstError),
+            }),
             false
         );
     } else {
@@ -141,7 +147,9 @@ async function rebuildAll(): Promise<void> {
 /** 参数变更后的防抖重建（仅启用时调度） */
 function scheduleRebuild(): void {
     const modelId = focusedModelId;
-    if (!modelId) return;
+    if (!modelId) {
+        return;
+    }
     const cfg = _getSkirtConfig(modelId);
     if (!cfg.enabled) {
         return;

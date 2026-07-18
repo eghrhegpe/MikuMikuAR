@@ -676,7 +676,9 @@ function migrateEnvState(input: Partial<EnvState>): Partial<EnvState> {
 
 export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): void {
     const keys = Object.keys(partial).join(', ');
-    console.info(`[env-persist] setEnvState() called: ${keys} ${skipAutoSave ? '(skipAutoSave)' : ''}`);
+    console.info(
+        `[env-persist] setEnvState() called: ${keys} ${skipAutoSave ? '(skipAutoSave)' : ''}`
+    );
     const migrated = migrateEnvState(partial);
     Object.assign(envState, migrated);
 

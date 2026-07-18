@@ -131,7 +131,9 @@ function _writeEntry(modelId: string, entry: MotionHistoryEntry): void {
 /** 撤销一步（恢复到上一条快照），返回是否成功 */
 export function undo(modelId: string, applySnapshot: SnapshotApplier): boolean {
     const state = _getState(modelId);
-    if (state.cursor < 0) return false;
+    if (state.cursor < 0) {
+        return false;
+    }
     const nextCursor = state.cursor - 1;
     if (nextCursor < 0) {
         // 退回到初始状态：恢复所有模块到默认（禁用 + 空 params）
@@ -146,7 +148,9 @@ export function undo(modelId: string, applySnapshot: SnapshotApplier): boolean {
 /** 重做一步（恢复到下一条快照），返回是否成功 */
 export function redo(modelId: string, applySnapshot: SnapshotApplier): boolean {
     const state = _getState(modelId);
-    if (state.cursor >= state.entries.length - 1) return false;
+    if (state.cursor >= state.entries.length - 1) {
+        return false;
+    }
     const nextCursor = state.cursor + 1;
     applySnapshot(state.entries[nextCursor].snapshot);
     state.cursor = nextCursor;
@@ -185,8 +189,12 @@ export function jumpToHistory(
     applySnapshot: SnapshotApplier
 ): boolean {
     const state = _getState(modelId);
-    if (targetIndex < -1 || targetIndex >= state.entries.length) return false;
-    if (targetIndex === state.cursor) return false; // 已在目标位置
+    if (targetIndex < -1 || targetIndex >= state.entries.length) {
+        return false;
+    }
+    if (targetIndex === state.cursor) {
+        return false;
+    } // 已在目标位置
     if (targetIndex === -1) {
         applySnapshot({});
     } else {

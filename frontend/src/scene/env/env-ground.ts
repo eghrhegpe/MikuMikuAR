@@ -278,9 +278,7 @@ const groundReflection = new PlanarReflection({
         }
         return new Plane(0, -1, 0, 0);
     },
-    predicate: (mesh, _level) =>
-        !mesh.name.startsWith('envGround') &&
-        mesh.isEnabled(),
+    predicate: (mesh, _level) => !mesh.name.startsWith('envGround') && mesh.isEnabled(),
     getMaterial: () => _envSys.ground.mesh?.material ?? null,
     mount: (rt) => {
         const mat = _envSys.ground.mesh?.material as GroundMat | null;

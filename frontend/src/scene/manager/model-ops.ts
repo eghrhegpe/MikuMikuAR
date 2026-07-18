@@ -195,7 +195,9 @@ registerTransformAdapter({
     getOpacity: (id) => modelRegistry.get(id)?.opacity ?? 1,
     setOpacity: (id, v) => {
         setModelOpacity(id, v);
-        if (v > 0) setModelVisibility(id, true);
+        if (v > 0) {
+            setModelVisibility(id, true);
+        }
     },
 });
 

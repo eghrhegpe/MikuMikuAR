@@ -93,7 +93,9 @@ export function _applyEyeGazeWasm(eyeRuntimes: IMmdRuntimeBone[], gazeTarget: Ve
             getEyeGazeMaxYaw(),
             getEyeGazeMaxPitch()
         );
-        const newEyeQ = _q().copyFrom(Quaternion.Slerp(curEyeQ, clampedTargetQ, getEyeGazeSmooth()));
+        const newEyeQ = _q().copyFrom(
+            Quaternion.Slerp(curEyeQ, clampedTargetQ, getEyeGazeSmooth())
+        );
         const newEyeMat = _m().copyFrom(Matrix.Compose(Vector3.One(), newEyeQ, eyePos));
 
         _writeMatToBuffer(eyeBuf, newEyeMat);

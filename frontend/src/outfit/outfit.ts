@@ -277,8 +277,19 @@ async function _applySlot(
             return;
         }
         const ext = newPath.split('.').pop()?.toLowerCase() || 'png';
-        const mimeMap: Record<string, string> = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', bmp: 'image/bmp', tga: 'image/x-tga', dds: 'image/vnd-ms.dds', spa: 'image/png', sph: 'image/png' };
-        const blob = new Blob([bytes.buffer as ArrayBuffer], { type: mimeMap[ext] || 'application/octet-stream' });
+        const mimeMap: Record<string, string> = {
+            png: 'image/png',
+            jpg: 'image/jpeg',
+            jpeg: 'image/jpeg',
+            bmp: 'image/bmp',
+            tga: 'image/x-tga',
+            dds: 'image/vnd-ms.dds',
+            spa: 'image/png',
+            sph: 'image/png',
+        };
+        const blob = new Blob([bytes.buffer as ArrayBuffer], {
+            type: mimeMap[ext] || 'application/octet-stream',
+        });
         const url = URL.createObjectURL(blob);
         const newTex = new Texture(url, scene);
         let loaded = false;

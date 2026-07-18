@@ -1003,7 +1003,9 @@ registerTransformAdapter({
     },
     onRotationDragEnd: (id) => {
         const entry = _stageLights.get(id);
-        if (!entry) return;
+        if (!entry) {
+            return;
+        }
         const pos = entry.light.position;
         if (entry.state.type === 'spot' && entry.light instanceof SpotLight) {
             const curDir = entry.light.direction;

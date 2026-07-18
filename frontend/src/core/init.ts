@@ -23,7 +23,14 @@ import { GetConfig, Events, CheckForUpdate } from './wails-bindings';
 import { isAndroidPlatform } from './platform';
 import { generateTextColors } from '../menus/settings';
 import { SETTINGS_FONT_RESTORE } from '../menus/settings-shared';
-import { initScene, tryRestoreLastScene, setEnvState, applyEnvState, setSuppressAutoSave, cancelEnvPersistTimer } from '../scene/scene';
+import {
+    initScene,
+    tryRestoreLastScene,
+    setEnvState,
+    applyEnvState,
+    setSuppressAutoSave,
+    cancelEnvPersistTimer,
+} from '../scene/scene';
 import { initRuntimeBadge } from './runtime-mode';
 import { applyHudVisibility, disposeStatusBar } from './status-bar';
 import { hexToRgb, rgbToString } from './color-helpers';
@@ -185,7 +192,17 @@ async function restoreEnvState(): Promise<void> {
     if (cfg.env) {
         console.info('[env-restore] restoreEnvState: cfg.env 存在，开始恢复环境状态');
         const loaded = cfg.env as Partial<EnvState>;
-        console.info('[env-restore]', 'skyMode:', loaded.skyMode, 'groundVisible:', loaded.groundVisible, 'waterEnabled:', loaded.waterEnabled, 'sunAngle:', loaded.sunAngle);
+        console.info(
+            '[env-restore]',
+            'skyMode:',
+            loaded.skyMode,
+            'groundVisible:',
+            loaded.groundVisible,
+            'waterEnabled:',
+            loaded.waterEnabled,
+            'sunAngle:',
+            loaded.sunAngle
+        );
         // 向后兼容：旧配置缺少高级水面参数时补上默认值
         if (loaded.fresnelBias === undefined || loaded.fresnelBias === 0) {
             loaded.fresnelBias = 0.02;

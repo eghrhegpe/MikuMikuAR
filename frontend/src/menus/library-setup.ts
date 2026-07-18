@@ -85,10 +85,7 @@ export async function initLibrary(): Promise<void> {
         setStatus(t('library.browseHint2'), false);
     } catch (err) {
         logWarn('library-setup', 'initLibrary:', err);
-        setStatus(
-            t('library.loadLibraryFailed') + translateGoError(err),
-            false
-        );
+        setStatus(t('library.loadLibraryFailed') + translateGoError(err), false);
     }
 }
 

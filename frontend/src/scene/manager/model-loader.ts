@@ -207,9 +207,14 @@ const TEXTURE_EXTS = /\.(png|jpg|jpeg|bmp|tga|dds|tif|tiff)$/i;
 function getMimeType(name: string): string {
     const ext = name.split('.').pop()?.toLowerCase();
     const map: Record<string, string | undefined> = {
-        png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
-        bmp: 'image/bmp', tga: 'image/x-tga', dds: 'image/vnd-ms.dds',
-        tif: 'image/tiff', tiff: 'image/tiff',
+        png: 'image/png',
+        jpg: 'image/jpeg',
+        jpeg: 'image/jpeg',
+        bmp: 'image/bmp',
+        tga: 'image/x-tga',
+        dds: 'image/vnd-ms.dds',
+        tif: 'image/tiff',
+        tiff: 'image/tiff',
     };
     return map[ext ?? ''] ?? 'application/octet-stream';
 }
@@ -219,11 +224,17 @@ async function collectTextureFiles(modelDir: string): Promise<TextureFile[]> {
     const files: TextureFile[] = [];
     try {
         const entries = await ListDirRecursive(modelDir);
-        if (!entries) return files;
+        if (!entries) {
+            return files;
+        }
         for (const entry of entries) {
-            if (!TEXTURE_EXTS.test(entry.name)) continue;
+            if (!TEXTURE_EXTS.test(entry.name)) {
+                continue;
+            }
             const data = await readFileBytes(modelDir + '/' + entry.relativePath);
-            if (!data) continue;
+            if (!data) {
+                continue;
+            }
             files.push({
                 relativePath: entry.relativePath,
                 mimeType: getMimeType(entry.name),
@@ -505,7 +516,10 @@ export async function loadPMXFile(
         const activeMotion = getActiveMotion();
         const loadGen = getMotionGen(); // 捕获当前 generation，防止异步加载过期
         if (activeMotion && activeMotion.vmdPath && _mmdRuntime) {
-            const assignment = inst.motionAssignment ?? { mode: 'inherit' as const, status: 'idle' as const };
+            const assignment = inst.motionAssignment ?? {
+                mode: 'inherit' as const,
+                status: 'idle' as const,
+            };
             if (assignment.mode === 'inherit') {
                 // 兼容性检查
                 const bones =
@@ -525,7 +539,11 @@ export async function loadPMXFile(
                             appliedVmd = '';
                         } else {
                             const { loadVMDMotion } = await import('../motion/vmd-loader');
-                            await loadVMDMotion(vmdData.buffer as ArrayBuffer, activeMotion.vmdName, id);
+                            await loadVMDMotion(
+                                vmdData.buffer as ArrayBuffer,
+                                activeMotion.vmdName,
+                                id
+                            );
                             inst.motionAssignment = { mode: 'inherit', status: 'compatible' };
                         }
                     } catch (vmdErr) {
@@ -534,7 +552,10 @@ export async function loadPMXFile(
                         } else {
                             logWarn('model-loader', 'VMD 加载失败，模型已保留:', vmdErr);
                             appliedVmd = '';
-                            setStatus(t('scene.loader.vmdFailedModelLoaded', { name: displayName }), false);
+                            setStatus(
+                                t('scene.loader.vmdFailedModelLoaded', { name: displayName }),
+                                false
+                            );
                             inst.motionAssignment = { mode: 'inherit', status: 'incompatible' };
                         }
                     }

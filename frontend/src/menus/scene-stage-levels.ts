@@ -55,22 +55,21 @@ function buildStageSchema(): MenuNode[] {
     const nodes: MenuNode[] = [];
 
     // 卡片 1：功能入口（加载舞台/加载道具）— CTA 上提，确保首次空状态也能直接看到操作入口
-    nodes.push(
-        {
-            id: 'stage:actions',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    slideRow(
-                        inner,
-                        'lucide:upload',
-                        t('scene.loadStage'),
-                        true,
-                        () => {
-                            (async () => {
-                                try {
-                                    const { getBrowseDir } = await import('../core/utils');
-                                    const browseDir = getBrowseDir('stage');
+    nodes.push({
+        id: 'stage:actions',
+        kind: 'custom',
+        renderCustom: (c) => {
+            cardContainer(c, (inner) => {
+                slideRow(
+                    inner,
+                    'lucide:upload',
+                    t('scene.loadStage'),
+                    true,
+                    () => {
+                        (async () => {
+                            try {
+                                const { getBrowseDir } = await import('../core/utils');
+                                const browseDir = getBrowseDir('stage');
                                 if (!browseDir) {
                                     setStatus(t('scene.statusNoModelLib'), false);
                                     return;
@@ -92,55 +91,54 @@ function buildStageSchema(): MenuNode[] {
                                 console.error('Stage library error:', err);
                             }
                         })();
-                        },
-                        undefined,
-                        undefined,
-                        undefined,
-                        undefined,
-                        { testId: 'menu.scene.loadStage' }
-                    );
-                    slideRow(
-                        inner,
-                        'lucide:box',
-                        t('scene.loadProp'),
-                        true,
-                        () => {
-                            (async () => {
-                                try {
-                                    const { getBrowseDir } = await import('../core/utils');
-                                    const browseDir = getBrowseDir('prop');
-                                    if (!browseDir) {
-                                        setStatus(t('scene.statusNoPropLib'), false);
-                                        return;
-                                    }
-                                    const { buildLevel } = await import('./library-core');
-                                    const sm = getSceneMenu();
-                                    if (!sm) {
-                                        return;
-                                    }
-                                    const level = buildLevel(
-                                        browseDir,
-                                        t('scene.propLibrary'),
-                                        (m) => m.format === 'pmx',
-                                        sm
-                                    );
-                                    sm.push(level);
-                                } catch (err) {
-                                    setStatus(t('scene.statusOpenPropLibFailed'), false);
-                                    console.error('Prop library error:', err);
+                    },
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    { testId: 'menu.scene.loadStage' }
+                );
+                slideRow(
+                    inner,
+                    'lucide:box',
+                    t('scene.loadProp'),
+                    true,
+                    () => {
+                        (async () => {
+                            try {
+                                const { getBrowseDir } = await import('../core/utils');
+                                const browseDir = getBrowseDir('prop');
+                                if (!browseDir) {
+                                    setStatus(t('scene.statusNoPropLib'), false);
+                                    return;
                                 }
-                            })();
-                        },
-                        undefined,
-                        undefined,
-                        undefined,
-                        undefined,
-                        { testId: 'menu.scene.loadProp' }
-                    );
-                });
-            },
+                                const { buildLevel } = await import('./library-core');
+                                const sm = getSceneMenu();
+                                if (!sm) {
+                                    return;
+                                }
+                                const level = buildLevel(
+                                    browseDir,
+                                    t('scene.propLibrary'),
+                                    (m) => m.format === 'pmx',
+                                    sm
+                                );
+                                sm.push(level);
+                            } catch (err) {
+                                setStatus(t('scene.statusOpenPropLibFailed'), false);
+                                console.error('Prop library error:', err);
+                            }
+                        })();
+                    },
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    { testId: 'menu.scene.loadProp' }
+                );
+            });
         },
-    );
+    });
 
     // 卡片 2：已加载舞台列表（空时显示引导）
     if (stageModels.length > 0) {

@@ -64,7 +64,12 @@ function renderCategorizedPresets(
                 getLabel: (e) => e.label || e.name,
                 getKey: (e) => e.name,
                 loadItems: async () => {
-                    let entries: { name: string; label: string; category: string; createdAt: number }[] = [];
+                    let entries: {
+                        name: string;
+                        label: string;
+                        category: string;
+                        createdAt: number;
+                    }[] = [];
                     try {
                         entries = await ListEnvPresets();
                     } catch (err) {
@@ -90,7 +95,8 @@ function renderCategorizedPresets(
                     setStatus(t('env-preset.deleted', { label: e.label }), true);
                     reRender();
                 },
-                deleteConfirmText: (e) => t('env-preset.confirmDelete', { label: e.label || e.name }),
+                deleteConfirmText: (e) =>
+                    t('env-preset.confirmDelete', { label: e.label || e.name }),
                 emptyText: t('env-preset.noCustom'),
                 noCard: true,
             },
@@ -123,11 +129,7 @@ function renderCategorizedPresets(
                 return filename;
             },
             t('env-preset.saveFailed'),
-            (err) =>
-                showErrorToast(
-                    t('env-preset.saveErrorToast'),
-                    translateGoError(err)
-                )
+            (err) => showErrorToast(t('env-preset.saveErrorToast'), translateGoError(err))
         );
         if (r) {
             setStatus(t('env-preset.saved', { name: r }), true);

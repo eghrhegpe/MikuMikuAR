@@ -418,8 +418,10 @@ function _applyJsOverride(slot: _OverrideSlot, rb: IMmdRuntimeBone): void {
     //         位置覆盖 / skeleton dirty 用 bone (Babylon Bone) 的 getPosition/setPosition/getSkeleton。
     const linked = rb.linkedBone;
     // 运行时守卫：极边缘情况下 linkedBone 可能为 null（如骨架未完全初始化）
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (!linked) return;
+
+    if (!linked) {
+        return;
+    }
     const bone = linked as unknown as import('@babylonjs/core/Bones/bone').Bone;
 
     // [doc:adr-116 P1] 旋转覆盖：复合当前旋转 × 覆盖旋转，不丢失父骨传播变换（与 WASM 路径 _computeOverride 一致）
