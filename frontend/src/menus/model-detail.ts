@@ -157,211 +157,103 @@ function buildModelSchema(id: string): MenuNode[] {
     }
     const handle: ResourceHandle = { id, kind: 'actor', name: inst.name };
 
-    // 动作折叠组子节点
-    const motionChildren: MenuNode[] = [
-        // ── 动作1（基础）→ 跳转次级菜单 ──
-        {
-            id: 'model:motion:primary',
-            kind: 'custom',
-            renderCustom: (inner) => {
-                const slots = inst.motionSlots ?? {
-                    primary: { source: 'inherit' as const, status: 'idle' as const },
-                    overlay: { source: 'inherit' as const, status: 'idle' as const },
-                };
-                const active = getActiveMotion();
-                // 子标签：当前槽位1 状态摘要
-                let subText: string;
-                if (slots.primary.source === 'pinned') {
-                    subText = slots.primary.pinned?.vmdName || t('model-detail.pinnedMotion');
-                } else if (slots.primary.source === 'procedural') {
-                    subText =
-                        slots.primary.procRole === 'autodance'
-                            ? t('motion.modeAutodance')
-                            : t('motion.modeIdle');
-                } else if (active?.vmdPath) {
-                    subText = active.vmdName;
-                } else {
-                    subText = t('model-detail.noMotion');
-                }
-
-                const row = slideRow(
-                    inner,
-                    'lucide:music-2',
-                    t('model-detail.motionPrimary'),
-                    true,
-                    () => {
-                        stackRegistry.modelStack?.push(buildMotionSlotLevel(id, inst));
-                    }
-                );
-                const subLabel = document.createElement('span');
-                subLabel.className = 'slide-sublabel';
-                subLabel.textContent = subText;
-                const labelEl = row.querySelector('.slide-label');
-                if (labelEl) {
-                    labelEl.appendChild(subLabel);
-                }
-            },
-        },
-        {
-            id: 'model:motion:pose',
-            kind: 'custom',
-            renderCustom: (inner) => {
-                slideRow(inner, 'lucide:user', t('motion.poseLibrary'), true, () => {
-                    const level = stackRegistry.buildLevel!(
-                        getBrowseDir('vpd'),
-                        t('motion.poseTo', { name: inst.name }),
-                        (m) => m.format === 'vpd',
-                        stackRegistry.modelStack ?? undefined
-                    );
-                    stackRegistry.modelStack?.push(level);
-                });
-            },
-        },
-    ];
-
-    // 外观折叠组子节点（仅材质/表情/换装）
-    const appearanceChildren: MenuNode[] = [
-        {
-            id: 'model:appearance:material',
-            kind: 'custom',
-            renderCustom: (inner) => {
-                slideRow(inner, 'lucide:box', t('model-detail.materialAdjust'), true, () => {
-                    const level = buildMatRootLevel(id, inst.name);
-                    stackRegistry.modelStack.push(level);
-                });
-            },
-        },
-        {
-            id: 'model:appearance:morph',
-            kind: 'custom',
-            renderCustom: (inner) => {
-                slideRow(inner, 'lucide:smile', t('model-detail.morphPreview'), true, () => {
-                    const level = buildMorphPreviewLevel(id);
-                    stackRegistry.modelStack.push(level);
-                });
-            },
-        },
-        {
-            id: 'model:appearance:outfit',
-            kind: 'custom',
-            renderCustom: (inner) => {
-                slideRow(inner, 'lucide:shirt', t('model-detail.outfitVariant'), true, () => {
-                    const level = buildOutfitLevel(id);
-                    stackRegistry.modelStack.push(level);
-                });
-            },
-        },
-    ];
-
-    // 模型信息折叠组（基本信息 + 骨骼层级）
-    const modelInfoChildren: MenuNode[] = [
-        {
-            id: 'model:info:basic',
-            kind: 'custom',
-            renderCustom: (inner) => {
-                slideRow(inner, 'lucide:info', t('model-detail.basicInfo'), true, () => {
-                    const level = buildModelInfoLevel(id);
-                    stackRegistry.modelStack.push(level);
-                });
-            },
-        },
-        {
-            id: 'model:info:bone',
-            kind: 'custom',
-            renderCustom: (inner) => {
-                slideRow(inner, 'lucide:git-branch', t('model-detail.boneHierarchy'), true, () => {
-                    const level = buildBoneHierarchyLevel(id);
-                    stackRegistry.modelStack.push(level);
-                });
-            },
-        },
-    ];
-
-    // 故障排除折叠组子节点（脚步贴地 / 虚拟裙骨 / 物理调试 — 99% 模型无需调整，排障场景下使用）
-    const troubleshootingChildren: MenuNode[] = [
-        {
-            id: 'model:troubleshoot:feet',
-            kind: 'custom',
-            renderCustom: (inner) => {
-                slideRow(inner, 'lucide:footprints', t('motion.feet.title'), true, () => {
-                    stackRegistry.modelStack?.push(buildFeetLevel());
-                });
-            },
-        },
-        {
-            id: 'model:troubleshoot:skirt',
-            kind: 'custom',
-            renderCustom: (inner) => {
-                slideRow(inner, 'lucide:shirt', t('cloth.title'), true, () => {
-                    stackRegistry.modelStack?.push(buildVirtualSkirtLevel());
-                });
-            },
-        },
-        {
-            id: 'model:troubleshoot:physics-debug',
-            kind: 'custom',
-            renderCustom: (inner) => {
-                slideRow(inner, 'lucide:bug', t('scene.debug'), true, () => {
-                    stackRegistry.modelStack?.push(buildPhysicsDebugLevel());
-                });
-            },
-        },
-    ];
-
-    // 卡片 1 内的折叠组 schema
-    const foldersSchema: MenuNode[] = [
-        {
-            id: 'model:motion',
-            kind: 'folder',
-            label: 'model-detail.motion',
-            icon: 'lucide:music-2',
-            defaultOpen: false,
-            children: motionChildren,
-        },
-        {
-            id: 'model:appearance',
-            kind: 'folder',
-            label: 'model-detail.appearance',
-            icon: 'lucide:palette',
-            defaultOpen: true,
-            children: appearanceChildren,
-        },
-        {
-            id: 'model:model-info',
-            kind: 'folder',
-            label: 'model-detail.modelInfo',
-            icon: 'lucide:info',
-            defaultOpen: false,
-            children: modelInfoChildren,
-        },
-        {
-            id: 'model:transform',
-            kind: 'folder',
-            label: 'model-detail.dragControl',
-            icon: 'lucide:move-3d',
-            defaultOpen: false,
-            renderCustom: (inner) => {
-                buildTransformCard(inner, handle);
-            },
-        },
-        {
-            id: 'model:troubleshoot',
-            kind: 'folder',
-            label: 'model-detail.troubleshoot',
-            icon: 'lucide:wrench',
-            defaultOpen: false,
-            children: troubleshootingChildren,
-        },
-    ];
-
     return [
-        // 卡片 1：折叠组集合
         {
             id: 'model:main',
             kind: 'custom',
             renderCustom: (container) => {
                 cardContainer(container, (c) => {
-                    renderMenu(foldersSchema, c);
+                    // ── 动作 ──
+                    addSectionTitle(c, t('model-detail.motion'));
+                    {
+                        const slots = inst.motionSlots ?? {
+                            primary: { source: 'inherit' as const, status: 'idle' as const },
+                            overlay: { source: 'inherit' as const, status: 'idle' as const },
+                        };
+                        const active = getActiveMotion();
+                        let subText: string;
+                        if (slots.primary.source === 'pinned') {
+                            subText = slots.primary.pinned?.vmdName || t('model-detail.pinnedMotion');
+                        } else if (slots.primary.source === 'procedural') {
+                            subText =
+                                slots.primary.procRole === 'autodance'
+                                    ? t('motion.modeAutodance')
+                                    : t('motion.modeIdle');
+                        } else if (active?.vmdPath) {
+                            subText = active.vmdName;
+                        } else {
+                            subText = t('model-detail.noMotion');
+                        }
+                        const row = slideRow(
+                            c,
+                            'lucide:music-2',
+                            t('model-detail.motionPrimary'),
+                            true,
+                            () => {
+                                stackRegistry.modelStack?.push(buildMotionSlotLevel(id, inst));
+                            }
+                        );
+                        const subLabel = document.createElement('span');
+                        subLabel.className = 'slide-sublabel';
+                        subLabel.textContent = subText;
+                        const labelEl = row.querySelector('.slide-label');
+                        if (labelEl) {
+                            labelEl.appendChild(subLabel);
+                        }
+                    }
+                    slideRow(c, 'lucide:user', t('motion.poseLibrary'), true, () => {
+                        const level = stackRegistry.buildLevel!(
+                            getBrowseDir('vpd'),
+                            t('motion.poseTo', { name: inst.name }),
+                            (m) => m.format === 'vpd',
+                            stackRegistry.modelStack ?? undefined
+                        );
+                        stackRegistry.modelStack?.push(level);
+                    });
+
+                    // ── 外观 ──
+                    addSectionTitle(c, t('model-detail.appearance'));
+                    slideRow(c, 'lucide:box', t('model-detail.materialAdjust'), true, () => {
+                        const level = buildMatRootLevel(id, inst.name);
+                        stackRegistry.modelStack.push(level);
+                    });
+                    slideRow(c, 'lucide:smile', t('model-detail.morphPreview'), true, () => {
+                        const level = buildMorphPreviewLevel(id);
+                        stackRegistry.modelStack.push(level);
+                    });
+                    slideRow(c, 'lucide:shirt', t('model-detail.outfitVariant'), true, () => {
+                        const level = buildOutfitLevel(id);
+                        stackRegistry.modelStack.push(level);
+                    });
+
+                    // ── 模型信息 ──
+                    addSectionTitle(c, t('model-detail.modelInfo'));
+                    slideRow(c, 'lucide:info', t('model-detail.basicInfo'), true, () => {
+                        const level = buildModelInfoLevel(id);
+                        stackRegistry.modelStack.push(level);
+                    });
+                    slideRow(c, 'lucide:git-branch', t('model-detail.boneHierarchy'), true, () => {
+                        const level = buildBoneHierarchyLevel(id);
+                        stackRegistry.modelStack.push(level);
+                    });
+
+                    // ── 变换控制 ──
+                    addSectionTitle(c, t('model-detail.dragControl'));
+                    const transformDiv = document.createElement('div');
+                    c.appendChild(transformDiv);
+                    buildTransformCard(transformDiv, handle);
+
+                    // ── 故障排除 ──
+                    addSectionTitle(c, t('model-detail.troubleshoot'));
+                    slideRow(c, 'lucide:footprints', t('motion.feet.title'), true, () => {
+                        stackRegistry.modelStack?.push(buildFeetLevel());
+                    });
+                    slideRow(c, 'lucide:shirt', t('cloth.title'), true, () => {
+                        stackRegistry.modelStack?.push(buildVirtualSkirtLevel());
+                    });
+                    slideRow(c, 'lucide:bug', t('scene.debug'), true, () => {
+                        stackRegistry.modelStack?.push(buildPhysicsDebugLevel());
+                    });
                 });
             },
         },

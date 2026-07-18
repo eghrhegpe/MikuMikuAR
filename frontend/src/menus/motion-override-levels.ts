@@ -331,7 +331,7 @@ function buildMotionOverrideSchema(): MenuNode[] {
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    slideRow(inner, 'tabler:bone', t('motion.override.advancedBone'), true, () => {
+                    slideRow(inner, 'tabler:bone', t('motion.boneOverride.title'), true, () => {
                         const menu = getMotionMenu();
                         if (menu) {
                             menu.push(buildAdvancedBoneOverrideLevel());
