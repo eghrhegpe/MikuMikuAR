@@ -178,8 +178,8 @@ function buildActionBindingSchema(id: string): MenuNode[] {
         return [];
     }
 
-    // [doc:adr-129] Phase 2 精简：图层管理 + 清除动作迁移至动作详情子页（buildMotionDetailSchema）
-    // 模型面板仅保留 per-model 专属能力：姿势库 + pin/unpin + 状态提示
+    // [doc:adr-129] Phase 2 + Phase 3：图层管理+清除迁移至动作详情，模型面板保留 per-model 专属能力
+    // Phase 3：工具设置入口从根层 trailing 移至此，避免双按钮系统
     return [
         // 卡片 1：姿势库
         {
@@ -202,7 +202,7 @@ function buildActionBindingSchema(id: string): MenuNode[] {
                 });
             },
         },
-        // 卡片 2：动作分配策略（pin/unpin）
+        // 卡片 2：动作分配策略（pin/unpin，根层 trailing 已提供快捷切换）
         {
             id: 'binding:assignment',
             kind: 'custom',
@@ -228,7 +228,6 @@ function buildActionBindingSchema(id: string): MenuNode[] {
 
                     if (hasGlobalMotion || isPinned) {
                         if (isPinned) {
-                            // 已 pin → 显示「跟随全局」按钮
                             const unpinBtn = document.createElement('button');
                             unpinBtn.className = 'preset-chip';
                             unpinBtn.textContent = t('motion.context.unpin');
@@ -242,7 +241,6 @@ function buildActionBindingSchema(id: string): MenuNode[] {
                             });
                             inner.appendChild(unpinBtn);
                         } else {
-                            // 未 pin → 显示「固定此动作」按钮
                             const pinBtn = document.createElement('button');
                             pinBtn.className = 'preset-chip';
                             pinBtn.textContent = t('motion.context.pinMotion');
@@ -268,6 +266,43 @@ function buildActionBindingSchema(id: string): MenuNode[] {
                 });
             },
         },
+        // [doc:adr-129] Phase 3：工具设置入口从根层 trailing 移至此（物理开关等）
+        {
+            id: 'binding:tools',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    const cats = getPhysicsCategories(id);
+                    if (cats.length === 0) {
+                        addEmptyRow(inner, t('motion.noPhysics'));
+                        return;
+                    }
+                    for (const cat of cats) {
+                        const enabled = isPhysicsCategoryEnabled(id, cat);
+                        addToggleRow(
+                            inner,
+                            t(CAT_KEYS[cat] || cat),
+                            enabled,
+                            (v) => {
+                                setPhysicsCategory(id, cat, v);
+                                getMotionMenu()?.updateControls();
+                                const catLabel = t(CAT_KEYS[cat] || cat);
+                                setStatus(
+                                    v
+                                        ? t('motion.catEnabled', { cat: catLabel })
+                                        : t('motion.catDisabled', { cat: catLabel }),
+                                    true
+                                );
+                            },
+                            'lucide:settings',
+                            {
+                                bind: () => isPhysicsCategoryEnabled(id, cat),
+                            }
+                        );
+                    }
+                });
+            },
+        },
     ];
 }
 
@@ -282,54 +317,6 @@ function buildActionBindingLevel(id: string): PopupLevel {
         items: [],
         renderCustom: (container) => {
             renderMenu(buildActionBindingSchema(id), container);
-        },
-    };
-}
-
-/**
- * 动作工具菜单——动作弹窗根层行右齿轮 trailing 的【唯一】入口（对齐模型库 buildModelToolsLevel 范式）。
- * 承载该模型物理类别开关；无物理类别时显示空状态。
- */
-function buildActionToolsLevel(id: string): PopupLevel {
-    const inst = modelManager.get(id);
-    if (!inst) {
-        return { label: t('motion.tools'), dir: '', items: [], renderCustom: () => {} };
-    }
-    return {
-        label: t('motion.tools'),
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            cardContainer(container, (inner) => {
-                const cats = getPhysicsCategories(id);
-                if (cats.length === 0) {
-                    addEmptyRow(inner, t('motion.noPhysics'));
-                    return;
-                }
-                for (const cat of cats) {
-                    const enabled = isPhysicsCategoryEnabled(id, cat);
-                    addToggleRow(
-                        inner,
-                        t(CAT_KEYS[cat] || cat),
-                        enabled,
-                        (v) => {
-                            setPhysicsCategory(id, cat, v);
-                            getMotionMenu()?.updateControls();
-                            const catLabel = t(CAT_KEYS[cat] || cat);
-                            setStatus(
-                                v
-                                    ? t('motion.catEnabled', { cat: catLabel })
-                                    : t('motion.catDisabled', { cat: catLabel }),
-                                true
-                            );
-                        },
-                        'lucide:settings',
-                        {
-                            bind: () => isPhysicsCategoryEnabled(id, cat),
-                        }
-                    );
-                }
-            });
         },
     };
 }
@@ -1212,6 +1199,11 @@ function buildMotionRootItems(): PopupRow[] {
             }
             const isFocused = focusedModelId === id;
             const radioIcon = isFocused ? 'lucide:check-circle' : 'lucide:circle';
+            const assignment = inst.motionAssignment ?? {
+                mode: 'inherit' as const,
+                status: 'idle' as const,
+            };
+            const isPinned = assignment.mode === 'pinned';
             actorRows.push({
                 kind: 'action',
                 label: inst.name,
@@ -1231,15 +1223,29 @@ function buildMotionRootItems(): PopupRow[] {
                         getMotionMenu()?.reRender();
                     },
                 },
-                // 右齿轮 = 工具设置（物理开关等）
+                // [doc:adr-129] Phase 3: trailing 显示 pin 状态图标，点击直接切换（避免双按钮系统）
                 trailing: {
-                    icon: 'lucide:settings-2',
-                    title: t('motion.modelTools'),
+                    icon: isPinned ? 'lucide:lock' : 'lucide:unlock',
+                    title: isPinned ? t('motion.context.unpin') : t('motion.context.pinMotion'),
                     onClick: () => {
-                        const lvl = buildActionToolsLevel(id);
-                        if (getMotionMenu()) {
-                            getMotionMenu()?.push(lvl);
+                        const active = getActiveMotion();
+                        if (isPinned) {
+                            inst.motionAssignment = { mode: 'inherit', status: 'idle' };
+                            if (active) {
+                                _applyIntentToModel(id, active, getMotionGen());
+                            }
+                            setStatus(t('motion.override.redoApplied'), true);
+                        } else {
+                            if (active) {
+                                inst.motionAssignment = {
+                                    mode: 'pinned',
+                                    pinned: structuredClone(active),
+                                    status: 'overridden',
+                                };
+                                setStatus(t('motion.override.redoApplied'), true);
+                            }
                         }
+                        getMotionMenu()?.reRender();
                     },
                 },
             });
