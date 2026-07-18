@@ -3,6 +3,7 @@
 **日期**: 2026-07-17
 > **状态**: 规划中
 > **背景**: 模块层 `setParam` 每次调用直接烘焙到引擎，无撤销能力。用户调错参数或想回退到之前的状态时，只能手动恢复，体验差。
+> **边界说明**: 本 ADR 是**参数级** `setParam` 历史栈（双向 undo/redo、per-model、上限 50）。另有 ADR-127 已落地**场景级**破坏性操作撤销（Memento 快照 + 单向撤销 toast、上限 5），二者互补、切勿混淆——本 ADR 管"调参回退"，ADR-127 管"破坏性操作兜底"。
 
 ---
 
@@ -41,9 +42,24 @@ interface MotionHistoryEntry {
     description: string;
 }
 
-const _history: MotionHistoryEntry[] = [];
-let _historyIndex = -1; // -1 = 初始状态
+/** per-model 历史状态：history + cursor（cursor 指向当前已应用的条目） */
+interface ModelHistoryState {
+    entries: MotionHistoryEntry[];
+    /** 当前游标，指向已应用的条目。-1 表示处于初始快照（尚无操作） */
+    cursor: number;
+}
+
+const _historyMap = new Map<string, ModelHistoryState>();
 const MAX_HISTORY = 50;
+
+function _getState(modelId: string): ModelHistoryState {
+    let s = _historyMap.get(modelId);
+    if (!s) {
+        s = { entries: [], cursor: -1 };
+        _historyMap.set(modelId, s);
+    }
+    return s;
+}
 ```
 
 ### 拦截点
@@ -53,8 +69,8 @@ const MAX_HISTORY = 50;
 ```ts
 // module-base.ts 中
 setParam(name: string, value: ParamValue): void {
-    // 记录当前快照到历史栈（仅在值变化时）
-    const prev = getModuleState(modelId, moduleId).params[name];
+    const st = getModuleState(modelId, moduleId);
+    const prev = st.params[name] ?? defaults[name];
     if (prev !== value) {
         _pushHistory(modelId, `${moduleId}.${name}: ${prev} → ${value}`);
     }
@@ -67,24 +83,32 @@ setParam(name: string, value: ParamValue): void {
 
 ```ts
 function undo(modelId: string): void {
-    if (_historyIndex < 0) return;
-    const entry = _history[_historyIndex];
-    _historyIndex--;
-    _applySnapshot(modelId, entry.snapshot);
+    const { entries, cursor } = _getState(modelId);
+    if (cursor < 0) return;               // 已在初始状态，无可撤销
+    const entry = entries[cursor];
+    const nextCursor = cursor - 1;
+    // 如果退回到初始状态，应用默认值快照（entry[0].snapshot 的反向）
+    if (nextCursor < 0) {
+        _applyDefaultSnapshot(modelId);
+    } else {
+        _applySnapshot(modelId, entries[nextCursor].snapshot);
+    }
+    _getState(modelId).cursor = nextCursor;
 }
 
 function redo(modelId: string): void {
-    if (_historyIndex >= _history.length - 1) return;
-    _historyIndex++;
-    const entry = _history[_historyIndex];
-    _applySnapshot(modelId, entry.snapshot);
+    const { entries, cursor } = _getState(modelId);
+    if (cursor >= entries.length - 1) return;  // 已在最新，无可重做
+    const nextCursor = cursor + 1;
+    _applySnapshot(modelId, entries[nextCursor].snapshot);
+    _getState(modelId).cursor = nextCursor;
 }
 ```
 
 ### 快照应用
 
 ```ts
-function _applySnapshot(modelId: string, snapshot: Record<string, {...}>): void {
+function _applySnapshot(modelId: string, snapshot: Record<string, { enabled: boolean; params: Record<string, ParamValue> }>): void {
     for (const [moduleId, state] of Object.entries(snapshot)) {
         const mod = createModule(moduleId, modelId);
         if (!mod) continue;
@@ -95,6 +119,38 @@ function _applySnapshot(modelId: string, snapshot: Record<string, {...}>): void 
             mod.disable();
         }
     }
+}
+
+/** 恢复到所有模块的默认值（初始状态） */
+function _applyDefaultSnapshot(modelId: string): void {
+    for (const mod of getRegisteredModules()) {
+        const inst = createModule(mod.id, modelId);
+        if (!inst) continue;
+        inst.setState({ id: mod.id, enabled: false, params: {} });
+        inst.disable();
+    }
+}
+```
+
+### 历史写入
+
+```ts
+function _pushHistory(modelId: string, description: string): void {
+    const state = _getState(modelId);
+    // 构建当前全量快照
+    const snapshot: MotionHistoryEntry['snapshot'] = {};
+    for (const mod of getRegisteredModules()) {
+        const ms = getModuleState(modelId, mod.id);
+        snapshot[mod.id] = { enabled: ms.enabled, params: { ...ms.params } };
+    }
+    // 截断 redo 分支：cursor 之后的条目作废
+    state.entries = state.entries.slice(0, state.cursor + 1);
+    state.entries.push({ timestamp: Date.now(), snapshot, description });
+    // 上限裁剪
+    if (state.entries.length > MAX_HISTORY) {
+        state.entries.splice(0, state.entries.length - MAX_HISTORY);
+    }
+    state.cursor = state.entries.length - 1;
 }
 ```
 
@@ -159,7 +215,7 @@ function _applySnapshot(modelId: string, snapshot: Record<string, {...}>): void 
 
 | 阶段 | 内容 | 验收 |
 |------|------|------|
-| **P1** | 定义 `MotionHistoryEntry` + `_history` 栈 + `_pushHistory` | tsc 通过 |
+| **P1** | 定义 `MotionHistoryEntry` + `ModelHistoryState` + `_historyMap` + `_pushHistory` | tsc 通过 + 单元测试覆盖 push→undo→redo 循环 |
 | **P1** | `module-base.ts` `setParam` 中接入历史记录 | 滑块拖动产生历史条目 |
 | **P1** | `undo()`/`redo()` 函数 + `_applySnapshot` | 撤销/重做正确恢复模块状态 |
 | **P2** | UI 撤销/重做按钮 + 禁用状态 | 交互可用 |
@@ -175,4 +231,4 @@ function _applySnapshot(modelId: string, snapshot: Record<string, {...}>): void 
 | 历史栈内存爆炸（快速拖动滑块） | 时间窗口合并 + 上限 50 条 |
 | 撤销后手动调参导致历史分叉 | 新操作清除 redo 栈（标准做法） |
 | 快照中模块状态与引擎状态不一致 | 应用快照时全量烘焙，不尝试增量同步 |
-| 多模型切换时历史栈混乱 | 历史栈按 `modelId` 隔离（`Map<modelId, MotionHistoryEntry[]>`） |
+| 多模型切换时历史栈混乱 | 历史栈按 `modelId` 隔离（`Map<modelId, ModelHistoryState>`） |
