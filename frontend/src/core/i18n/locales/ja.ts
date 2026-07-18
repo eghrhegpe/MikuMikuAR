@@ -1409,7 +1409,6 @@ export const ja: Record<string, string> = {
     'motion.boneOverride.allCleared': '✓ すべてのボーンオーバーライドをクリアしました',
     // [doc:adr-116] モーションオーバーライド モジュールUI
     'motion.override.title': 'モーションオーバーライド',
-    'motion.override.advancedBone': '詳細ボーンオーバーライド',
     'motion.override.enabled': '✓ モジュール有効',
     'motion.override.redoApplied': '✓ 元に戻しました（やり直し）',
     'motion.override.history': '履歴',
@@ -1436,6 +1435,10 @@ export const ja: Record<string, string> = {
     'param.rightYaw': '右手首振り',
     'param.rightRoll': '右手首回し',
     'section.handRightIndependent': '右手（独立）',
+    'section.handPosition': '手首位置オフセット',
+    'param.handPosX': '手首Xオフセット',
+    'param.handPosY': '手首Yオフセット',
+    'param.handPosZ': '手首Zオフセット',
     'motion.amplitude': '振幅',
     'motion.frequency': '周波数',
     'motion.decay': '減衰',

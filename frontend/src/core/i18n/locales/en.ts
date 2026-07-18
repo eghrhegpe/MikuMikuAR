@@ -373,7 +373,6 @@ export const en: Record<string, string> = {
     'motion.boneOverride.allCleared': '✓ All bone overrides cleared',
     // [doc:adr-116] Motion override modular UI
     'motion.override.title': 'Motion Override',
-    'motion.override.advancedBone': 'Advanced Bone Override',
     'motion.override.enabled': '✓ Module enabled',
     'motion.override.disabled': '✕ Module disabled',
     'motion.override.redoApplied': '✓ Redone',
@@ -401,6 +400,10 @@ export const en: Record<string, string> = {
     'param.rightYaw': 'Right Swing',
     'param.rightRoll': 'Right Twist',
     'section.handRightIndependent': 'Right Hand (Independent)',
+    'section.handPosition': 'Wrist Position Offset',
+    'param.handPosX': 'Wrist X Offset',
+    'param.handPosY': 'Wrist Y Offset',
+    'param.handPosZ': 'Wrist Z Offset',
     'motion.amplitude': 'Amplitude',
     'motion.frequency': 'Frequency',
     'motion.decay': 'Decay',

@@ -1402,7 +1402,6 @@ export const ko: Record<string, string> = {
     'motion.boneOverride.allCleared': '✓ 모든 본 오버라이드를 지웠습니다',
     // [doc:adr-116] 모션 오버라이드 모듈 UI
     'motion.override.title': '모션 오버라이드',
-    'motion.override.advancedBone': '고급 본 오버라이드',
     'motion.override.enabled': '✓ 모듈 활성화됨',
     'motion.override.redoApplied': '✓ 다시 실행됨',
     'motion.override.history': '기록',
@@ -1429,6 +1428,10 @@ export const ko: Record<string, string> = {
     'param.rightYaw': '오른손목 흔듦',
     'param.rightRoll': '오른손목 돌림',
     'section.handRightIndependent': '오른손(독립)',
+    'section.handPosition': '손목 위치 오프셋',
+    'param.handPosX': '손목 X 오프셋',
+    'param.handPosY': '손목 Y 오프셋',
+    'param.handPosZ': '손목 Z 오프셋',
     'motion.amplitude': '진폭',
     'motion.frequency': '주파수',
     'motion.decay': '감쇠',
