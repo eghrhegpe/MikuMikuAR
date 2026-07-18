@@ -1,6 +1,6 @@
 # ADR-126: 变换适配器统一（TransformAdapter Registry）— 跨 kind 拖拽/数值双模态去重
 
-> **状态**: 实施中（Phase 1 已完成，2026-07-18）
+> **状态**: 实施中（Phase 1 + Phase 2 已完成，2026-07-18）
 > **日期**: 2026-07-18
 > **路径约定**: 本文档源码路径均省略 `frontend/src/` 前缀（与 ADR-121 / ADR-120 一致），例如 `scene/render/transform-gizmo.ts` = `frontend/src/scene/render/transform-gizmo.ts`。
 
@@ -229,7 +229,7 @@ export function buildTransformCard(container: HTMLElement, handle: ResourceHandl
 | 阶段 | 内容 | 涉及文件 | 验收 |
 |------|------|---------|------|
 | **Phase 1（去重，行为零变化）** | 新建 `scene/transform/transform-adapter.ts`；三 kind 各注册适配器；`buildTransformCard` 数据驱动化；删除三 `attachXxxGizmo` + re-export；修 `lighting.ts` 内联复制 | `transform-adapter.ts`（新）、`model-ops.ts`、`props.ts`、`lighting.ts`、`resource-detail-helpers.ts` | 契约测试 + build + 手动逐 kind 回归 |
-| **Phase 2（双模态增强）** | `transform-gizmo.ts` 补 `onDragObservable` 连续回调；拖拽实时同步数值滑杆；可选网格吸附 | `transform-gizmo.ts`、`transform-adapter.ts`、`resource-detail-helpers.ts` | 拖拽中数值实时刷新，无跳变 |
+| **Phase 2（双模态增强）** | `transform-gizmo.ts` 补 `onDragObservable` 连续回调；拖拽实时同步数值滑杆（局部 DOM 更新，非整卡重渲染） | `transform-gizmo.ts`、`transform-adapter.ts`、`resource-detail-helpers.ts` | ✅ 拖拽中数值实时刷新，无跳变 |
 
 ---
 
@@ -284,4 +284,26 @@ export function buildTransformCard(container: HTMLElement, handle: ResourceHandl
 - 悬空引用扫描：0 处残留旧函数名。
 - 单元套件 1572/1577 通过；5 失败均在 `scene-stage.test.ts`（地面/水面 toggle 用例，import `buildStageLevel` 来自未改动的 `scene-stage-levels.ts`），与本次改造零交集，为既有失败。
 
-**Phase 2（双模态增强：拖拽实时同步数值滑杆）**：待实施。
+**Phase 2（双模态增强：拖拽实时同步数值滑杆）**：✅ 已完成 2026-07-18
+
+**改动文件（4 个，含 1 新单测）**：
+- `scene/render/transform-gizmo.ts`：
+  - 新增模块级 `onGizmoDragObservable = new Observable<void>()`（连续拖拽信号）。
+  - 三个 Gizmo 案例各自额外接线 `g.onDragObservable.add(() => onGizmoDragObservable.notifyObservers());`（与既有 `onDragEndObservable` 并列）。
+  - 新增查询函数 `getGizmoNode(): Node | null`（返回实时节点，拖拽中其 transform 已被 Babylon 改写）与 `getActiveGizmoTypes(): GizmoType[]`（当前激活轴，用于判断是否在改缩放）。
+- `scene/transform/transform-adapter.ts`：透传 `onGizmoDragObservable / getGizmoNode / getActiveGizmoTypes`（调用方从本模块统一 import）。
+- `menus/resource-detail-helpers.ts`：`buildTransformCard` 接入双模态——订阅 `onGizmoDragObservable`，拖拽中经 `syncLive` 调用局部 `updateSliderDisplay(row, v, min, max, step)` 实时刷新缩放/透明度滑杆显示（与 `ui-rows.ts addSliderRow` 的 `updateDisplay` 显示格式一致，避免整卡 60Hz 重渲染导致的跳变）；模块级 `_activeDragObs` 保证订阅全局唯一，退出拖拽/切换实体时自清理。
+- `scene/transform/transform-adapter.test.ts`（新增）：注册表隔离单测 4 项（未注册返回 null / actor+stage 共享同一适配器 / getScale·getOpacity funnel / 重注册覆盖）。
+
+**关键设计纠偏（实施中发现，重要）**：
+- ⚠️ **不可连续持久化**：初版计划是拖拽中连续调用 `adapter.onScaleDrag → setScaling` 实时持久化。但核查 `model-manager.ts:514 setScaling` 每次调用末尾执行 `this.triggerAutoSave()` → 60Hz 拖拽将触发场景序列化落盘风暴（灾难性回归）。故**改为只读实时节点、不连续持久化**：拖拽中读取 `getGizmoNode().scaling`（Babylon 已实时改写），仅同步滑杆*显示*；持久化仍在拖拽结束（`onScaleDragEnd`）一次性发生。这仍满足「实时刷新数值 + 两条路径共享唯一状态来源（结束点一致 funnel 到 setScaling）」，且彻底规避自动保存风暴。
+- 局部 `updateSliderDisplay` 仅在「缩放 Gizmo 激活（`getActiveGizmoTypes` 含 `scale`）」时读实时 `node.scaling.x`；position/rotation 拖拽及 prop/light（无 scale 轴）回落到 `adapter.getScale`（registry 值，稳定），故不会改变非缩放数值的显示。
+
+**验证**：
+- `npm run build`（tsc + vite）3.78s exit0。
+- 契约测试 `app.contract.test.ts` 17/17。
+- 适配器单测 `transform-adapter.test.ts` 4/4。
+- 完整单元套件 1576/1581 通过；5 失败仍仅在 `scene-stage.test.ts`（地面/水面 toggle，import 未改动的 `scene-stage-levels.ts`），与 Phase 2 零交集，属既有失败。
+- 悬空引用：旧 `attachXxxGizmo` 系列 0 残留。
+
+**剩余（可选，未做）**：ADR 原提及「可选网格吸附」未实施（不在本 Phase 验收硬性要求，且吸附属 Gizmo 自身 `snapDistance` 配置，可单列增强）。

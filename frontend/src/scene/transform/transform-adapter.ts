@@ -13,6 +13,9 @@ import {
     detachGizmo,
     isGizmoActive,
     getGizmoTargetId,
+    onGizmoDragObservable,
+    getGizmoNode,
+    getActiveGizmoTypes,
     type GizmoType,
 } from '../render/transform-gizmo';
 import type { ResourceKind } from '../../core/load-manager';
@@ -73,4 +76,11 @@ export function attachGizmoForKind(kind: ResourceKind, id: string): boolean {
 }
 
 // 统一透传底层 Gizmo 控制 API，调用方从本模块统一 import
-export { detachGizmo, isGizmoActive, getGizmoTargetId };
+export {
+    detachGizmo,
+    isGizmoActive,
+    getGizmoTargetId,
+    onGizmoDragObservable,
+    getGizmoNode,
+    getActiveGizmoTypes,
+};

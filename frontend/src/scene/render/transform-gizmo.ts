@@ -10,6 +10,7 @@ import { UtilityLayerRenderer } from '@babylonjs/core/Rendering/utilityLayerRend
 import type { Scene } from '@babylonjs/core/scene';
 import type { Node } from '@babylonjs/core/node';
 import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
+import { Observable } from '@babylonjs/core/Misc/observable';
 
 export type GizmoType = 'position' | 'rotation' | 'scale';
 
@@ -22,6 +23,11 @@ let _rotGizmo: RotationGizmo | null = null;
 let _scaleGizmo: ScaleGizmo | null = null;
 let _gizmoTargetId: string | null = null;
 let _gizmoNode: Node | null = null;
+
+/** 拖拽进行中（连续）可观察量：任一 Gizmo 轴被拖动时每帧触发，
+ *  供数值滑杆实时同步显示（ADR-126 Phase 2 双模态）。
+ *  注意：仅作显示同步，不含持久化回写——连续 setScaling 会触发 triggerAutoSave 风暴。 */
+export const onGizmoDragObservable = new Observable<void>();
 
 // ======== Initialization ========
 
@@ -83,6 +89,7 @@ export function attachGizmo(options: GizmoAttachOptions): boolean {
                 if (options.onPositionDragEnd) {
                     g.onDragEndObservable.add(() => options.onPositionDragEnd!(options.node));
                 }
+                g.onDragObservable.add(() => onGizmoDragObservable.notifyObservers());
                 _posGizmo = g;
                 break;
             }
@@ -92,6 +99,7 @@ export function attachGizmo(options: GizmoAttachOptions): boolean {
                 if (options.onRotationDragEnd) {
                     g.onDragEndObservable.add(() => options.onRotationDragEnd!(options.node));
                 }
+                g.onDragObservable.add(() => onGizmoDragObservable.notifyObservers());
                 _rotGizmo = g;
                 break;
             }
@@ -103,6 +111,7 @@ export function attachGizmo(options: GizmoAttachOptions): boolean {
                 if (options.onScaleDragEnd) {
                     g.onDragEndObservable.add(() => options.onScaleDragEnd!(options.node));
                 }
+                g.onDragObservable.add(() => onGizmoDragObservable.notifyObservers());
                 _scaleGizmo = g;
                 break;
             }
@@ -147,4 +156,18 @@ export function isGizmoActive(): boolean {
 /** 获取当前 Gizmo 绑定的实体 ID。 */
 export function getGizmoTargetId(): string | null {
     return _gizmoTargetId;
+}
+
+/** 获取当前 Gizmo 绑定的实时 Node（拖拽中其 transform 已被 Babylon 实时改写，供数值滑杆读取）。 */
+export function getGizmoNode(): Node | null {
+    return _gizmoNode;
+}
+
+/** 获取当前激活的 Gizmo 轴类型组合（用于判断拖拽中是否在改缩放）。 */
+export function getActiveGizmoTypes(): GizmoType[] {
+    const types: GizmoType[] = [];
+    if (_posGizmo) types.push('position');
+    if (_rotGizmo) types.push('rotation');
+    if (_scaleGizmo) types.push('scale');
+    return types;
 }
