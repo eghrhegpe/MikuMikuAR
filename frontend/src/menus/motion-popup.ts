@@ -208,6 +208,11 @@ function buildActionBindingSchema(id: string): MenuNode[] {
                             undefined,
                             undefined
                         );
+                    } else {
+                        const hint = document.createElement('div');
+                        hint.className = 'cs-hint';
+                        hint.textContent = t('motion.noActionHint');
+                        inner.appendChild(hint);
                     }
                     const curLayers = getVmdLayers(id);
                     for (let i = 0; i < curLayers.length; i++) {
