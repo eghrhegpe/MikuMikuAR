@@ -16,7 +16,6 @@ import type { MenuNode } from './menu-schema';
 import {
     buildSkyLevel,
     buildWindLevel,
-    buildCloudLevel,
     buildExperimentalLevel,
     buildFogLevel,
     buildShadowLevel,
@@ -30,7 +29,6 @@ import { buildPostProcessLevel } from './scene-render-levels';
 export {
     buildSkyLevel,
     buildWindLevel,
-    buildCloudLevel,
     buildExperimentalLevel,
     buildFogLevel,
     buildShadowLevel,
@@ -281,7 +279,6 @@ const ENV_FOLDER_ROUTES: Record<string, () => PopupLevel> = {
     'env:sky': buildSkyLevel,
     'env:particle': buildParticleLevel,
     'env:wind': buildWindLevel,
-    'env:cloud': buildCloudLevel,
     'env:fog': buildFogLevel,
     'env:shadow': buildShadowLevel,
     'env:experimental': buildExperimentalLevel,
