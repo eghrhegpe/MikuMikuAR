@@ -1,7 +1,7 @@
 # ADR-125: 动作覆盖撤销/重做 — 模块层 `setParam` 历史栈
 
 **日期**: 2026-07-17
-> **状态**: 规划中
+> **状态**: 已实施（P1+P2+P3 完成）
 > **背景**: 模块层 `setParam` 每次调用直接烘焙到引擎，无撤销能力。用户调错参数或想回退到之前的状态时，只能手动恢复，体验差。
 > **边界说明**: 本 ADR 是**参数级** `setParam` 历史栈（双向 undo/redo、per-model、上限 50）。另有 ADR-127 已落地**场景级**破坏性操作撤销（Memento 快照 + 单向撤销 toast、上限 5），二者互补、切勿混淆——本 ADR 管"调参回退"，ADR-127 管"破坏性操作兜底"。
 
@@ -232,3 +232,43 @@ function _pushHistory(modelId: string, description: string): void {
 | 撤销后手动调参导致历史分叉 | 新操作清除 redo 栈（标准做法） |
 | 快照中模块状态与引擎状态不一致 | 应用快照时全量烘焙，不尝试增量同步 |
 | 多模型切换时历史栈混乱 | 历史栈按 `modelId` 隔离（`Map<modelId, ModelHistoryState>`） |
+
+---
+
+## 六、实施记录
+
+### P1 实施（2026-07-18）
+
+| 文件 | 改动 |
+|------|------|
+| `motion-modules/motion-history.ts` | **新建** — 核心模块：`ModelHistoryState` + `_historyMap` per-model 隔离 + `pushHistory`/`undo`/`redo`/`canUndo`/`canRedo`/`getHistoryEntries`/`getHistoryCursor`/`clearHistory` + 500ms 时间窗口合并（per-model `MergeState`） |
+| `motion-modules/module-base.ts` | `setParam` 接入 `pushHistory`（记录 prev→next，值未变化时跳过）+ 新增 `applyModuleSnapshot` 导出（供 undo/redo UI 调用） |
+| `__tests__/scene/motion-history.test.ts` | **新建** — 14 项：push/undo/redo 循环、越界守卫、redo 截断、多模型隔离、合并策略、不同参数不合并、窗口断裂 |
+| `__tests__/scene/motion-modules-registry.test.ts` | +5 项：`applyModuleSnapshot` 非空/空/部分快照 + `setParam→pushHistory` 集成（调用验证 + 值未变化跳过） |
+
+**验收**: tsc 零错误，1599 项测试通过（含 19 项新增），现有测试无回归。
+
+**审核修正**:
+- P2: 合并状态从全局变量改为 `Map<modelId, MergeState>` per-model 隔离，`clearHistory` 只删对应 model 条目
+- P3: 补充 `applyModuleSnapshot` 单测 3 项 + `setParam→pushHistory` 集成测试 2 项
+
+### P2 实施（2026-07-18）
+
+| 文件 | 改动 |
+|------|------|
+| `menus/motion-override-levels.ts` | 标题栏添加 ↩/↪ 撤销/重做按钮（`canUndo`/`canRedo` 驱动禁用态） |
+| `core/shortcut-app.ts` | 注册 Ctrl+Z（`motion:undo`）+ Ctrl+Shift+Z（`motion:redo`）快捷键 |
+| `core/i18n/locales/*`（5 语种） | 新增 `motion.override.redoApplied`、`shortcuts.label.motionUndo/Redo`、`shortcuts.group.motionUndoRedo` |
+
+**验收**: tsc 零错误，现有测试无回归。
+
+### P3 实施（2026-07-18）
+
+| 文件 | 改动 |
+|------|------|
+| `motion-modules/motion-history.ts` | 新增 `jumpToHistory(modelId, targetIndex, applySnapshot)` — 跳转到指定历史位置（-1=初始态） |
+| `menus/motion-override-levels.ts` | 标题栏添加 ⋮ 历史列表按钮，点击展开下拉（最近 10 条，当前游标高亮），点击条目调用 `jumpToHistory` 跳转 |
+| `__tests__/scene/motion-history.test.ts` | +5 项：`jumpToHistory` 跳转到指定条目/初始态/已在目标/越界/canUndo-canRedo 状态 |
+| `core/i18n/locales/*`（5 语种） | 新增 `motion.override.history` |
+
+**验收**: tsc 零错误，1613 项测试通过（含 24 项 ADR-125 新增），现有测试无回归。
