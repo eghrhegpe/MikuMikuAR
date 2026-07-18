@@ -44,6 +44,17 @@ function ensureModulesInit(): void {
     }
 }
 
+// [doc:adr-116 P3-3] 表单状态（per-model）：供列表项「编辑」按钮回填
+// 提升到模块级 Map 避免 reRender 时丢失
+interface OverrideFormState {
+    boneName: string;
+    pitch: number;
+    yaw: number;
+    roll: number;
+    weight: number;
+}
+const _overrideFormStates = new Map<string, OverrideFormState>();
+
 /** 构建动作覆盖主面板：模块列表 + 高级骨骼覆盖入口 */
 export function buildMotionOverrideLevel(): PopupLevel {
     ensureModulesInit();
@@ -340,13 +351,12 @@ function buildBoneOverrideSchema(): MenuNode[] {
 
     // [doc:adr-116 P3-3] 表单状态：供列表项「编辑」按钮回填（getOverride 接线）
     // 使用声明式状态 + addSliderRow opts.bind 实现双向同步，替代手动 DOM 引用
-    const formState: {
-        boneName: string;
-        pitch: number;
-        yaw: number;
-        roll: number;
-        weight: number;
-    } = { boneName: bones[0]?.name ?? '', pitch: 0, yaw: 0, roll: 0, weight: 1 };
+    // 提升到模块级 _overrideFormStates Map，避免 reRender 时丢失
+    let formState = _overrideFormStates.get(modelId);
+    if (!formState) {
+        formState = { boneName: bones[0]?.name ?? '', pitch: 0, yaw: 0, roll: 0, weight: 1 };
+        _overrideFormStates.set(modelId, formState);
+    }
 
     return [
         // 卡片 1：添加新覆盖

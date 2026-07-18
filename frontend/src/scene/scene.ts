@@ -330,6 +330,12 @@ export async function initScene(): Promise<void> {
             syncPlaybackSpeedToRuntime(runtime)
         )
     );
+    // [doc:adr-121] 初始化场景级动作意图广播（显式调用，避免模块顶层副作用）
+    swallowError(
+        import('../menus/motion-popup').then(({ initMotionBroadcast }) =>
+            initMotionBroadcast()
+        )
+    );
 
     // 2. 各子系统初始化（相机系统已在模块顶层初始化）
     initLighting(scene, modelRegistry, propRegistry, _envSys.shadow, triggerAutoSave);

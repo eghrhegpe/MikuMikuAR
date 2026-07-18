@@ -417,7 +417,7 @@ export const envState: EnvState = reactive<EnvState>({
     cloudPowder: 0.8,
     cloudQuality: 'high',
 
-    debugMirrorEnabled: false,
+    mirrorEnabled: false,
 
     fogEnabled: false,
     fogMode: 'exp2',

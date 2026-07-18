@@ -28,6 +28,7 @@ import { reRenderSceneMenu, getSceneMenu } from './scene-menu';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
+import { createIconifyIcon } from '../core/icons';
 
 // 灯光预设 key 映射（热切换安全：仅存 i18n key，不含中文）
 const LIGHTING_PRESET_KEYS: Record<string, string> = {
@@ -103,24 +104,27 @@ function buildStageLightSchema(): MenuNode[] {
                     chipGroup.className = 'preset-group';
                     chipGroup.style.paddingBottom = '4px';
                     for (const light of lights) {
-                        const btn = document.createElement('button');
-                        btn.className = 'preset-chip';
-                        btn.textContent = light.name;
-                        if (light.id === activeId) {
-                            btn.style.background = 'var(--accent)';
-                            btn.style.color = 'var(--white-85)';
-                        }
+                        const btn = addPresetChip(
+                            chipGroup,
+                            light.name,
+                            light.id === activeId,
+                            () => {
+                                setActiveStageLightId(light.id);
+                                reRenderSceneMenu();
+                            }
+                        );
+                        // 禁用态半透明（active 类管选中态，opacity 管启用态）
                         btn.style.opacity = light.enabled ? '1' : '0.5';
-                        btn.addEventListener('click', () => {
-                            setActiveStageLightId(light.id);
-                            reRenderSceneMenu();
-                        });
-                        chipGroup.appendChild(btn);
                     }
                     const addBtn = document.createElement('button');
                     addBtn.className = 'preset-chip';
-                    addBtn.textContent = '＋';
                     addBtn.title = t('scene.addLight');
+                    const addIcon = createIconifyIcon('lucide:plus');
+                    if (addIcon) {
+                        addBtn.appendChild(addIcon);
+                    } else {
+                        addBtn.textContent = '+';
+                    }
                     addBtn.addEventListener('click', () => {
                         addStageLight('spot');
                         reRenderSceneMenu();
@@ -590,7 +594,7 @@ function buildStageLightSchema(): MenuNode[] {
                     return;
                 }
                 addCollapsible(c, {
-                    title: '拖拽操控',
+                    title: t('model-detail.dragControl'),
                     icon: 'lucide:move-3d',
                     defaultOpen: false,
                     renderContent: (inner) => {

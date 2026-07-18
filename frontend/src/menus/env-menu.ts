@@ -19,6 +19,7 @@ import {
     buildExperimentalLevel,
     buildFogLevel,
     buildShadowLevel,
+    buildCloudLevel,
     _buildLevel,
     _openTexturePicker,
 } from './env-feature-levels';
@@ -32,6 +33,7 @@ export {
     buildExperimentalLevel,
     buildFogLevel,
     buildShadowLevel,
+    buildCloudLevel,
 } from './env-feature-levels';
 export { buildPresetLevel, SCENE_PRESETS } from './env-preset-levels';
 
@@ -47,6 +49,10 @@ export function setEnvTextureBindingTarget(target: EnvTextureBindingTarget): voi
 
 export function clearEnvTextureBindingTarget(): void {
     _envTextureBindingTarget = null;
+}
+
+export function getEnvTextureBindingTarget(): EnvTextureBindingTarget {
+    return _envTextureBindingTarget;
 }
 
 // ======== Env Menu State ========
@@ -70,9 +76,15 @@ export { getEnvMenu, refreshEnvRoot, showEnvMenu };
 
 // 当库扫描完成时，如果环境菜单已打开则 reRender，
 // 使自定义纹理库等依赖 allModels 的 renderCustom 回调拿到最新数据。
-window.addEventListener('mmar:library-scanned', () => {
+const _onLibraryScanned = (): void => {
     getEnvMenu()?.reRender();
-});
+};
+window.addEventListener('mmar:library-scanned', _onLibraryScanned);
+
+/** 清理环境菜单的全局事件监听（测试/HMR 时调用，配对 removeEventListener） */
+export function disposeEnvMenuListeners(): void {
+    window.removeEventListener('mmar:library-scanned', _onLibraryScanned);
+}
 
 /** 环境弹窗根级 items 构建器——动态反映 envState 各 toggle 状态。 */
 function buildEnvRootItems(): PopupRow[] {
@@ -123,7 +135,7 @@ function buildEnvRootItems(): PopupRow[] {
     items.push({
         kind: 'folder',
         label: t('env.shadow'),
-        icon: 'lucide:cloud',
+        icon: 'lucide:umbrella',
         target: 'env:shadow',
         headerToggle: {
             value: getLightState().shadowEnabled,
@@ -141,8 +153,20 @@ function buildEnvRootItems(): PopupRow[] {
     items.push({
         kind: 'folder',
         label: t('scene.postProcess'),
-        icon: 'lucide:sparkles',
+        icon: 'lucide:wand-2',
         target: 'env:postprocess',
+    });
+    // 体积云（正式功能，非实验特性，WebGL2 自动检测）
+    items.push({
+        kind: 'folder',
+        label: t('env.cloud'),
+        icon: 'lucide:cloud',
+        target: 'env:cloud',
+        headerToggle: {
+            value: envState.cloudsEnabled,
+            onChange: (v) => setEnvState({ cloudsEnabled: v }),
+            bind: () => envState.cloudsEnabled,
+        },
     });
     return items;
 }
@@ -281,6 +305,7 @@ const ENV_FOLDER_ROUTES: Record<string, () => PopupLevel> = {
     'env:wind': buildWindLevel,
     'env:fog': buildFogLevel,
     'env:shadow': buildShadowLevel,
+    'env:cloud': buildCloudLevel,
     'env:experimental': buildExperimentalLevel,
     'env:presets': buildPresetLevel,
     'env:postprocess': buildPostProcessLevel,

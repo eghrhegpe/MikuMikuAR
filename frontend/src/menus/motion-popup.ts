@@ -68,7 +68,7 @@ import { buildFeetLevel } from './motion-feet-levels'; // [doc:adr-085]
 import { buildPoseStudioLevel } from './motion-pose-levels';
 import { buildVirtualSkirtLevel } from './motion-cloth-levels'; // [doc:adr-084]
 import { t } from '../core/i18n/t'; // [doc:adr-059]
-import { setActiveMotion, setBroadcastCallback } from '../scene/motion/motion-intent';
+import { setActiveMotion, setBroadcastCallback, getActiveMotion, getMotionGen, resolveCompatibility, initMotionIntent } from '../scene/motion/motion-intent';
 import { renderMenu } from './render-menu';
 import { isUnderRoot, logWarn } from '../core/utils';
 import type { MenuNode } from './menu-schema';
@@ -82,13 +82,17 @@ import type { MenuNode } from './menu-schema';
 let _focusedLayerId: string | null = null;
 
 // [doc:adr-121] 注册广播回调：setActiveMotion 时按 per-model assignment 策略应用动作
-setBroadcastCallback((intent) => {
+// 不再在模块顶层注册，改由 scene.ts initScene 通过 initMotionBroadcast() 显式调用
+// 以避免 import 时即注册的副作用（HMR/测试场景下回调被覆盖）
+export function initMotionBroadcast(): void {
+    initMotionIntent((intent, gen, prev) => {
     for (const [id, inst] of modelManager.modelRegistry) {
         const assignment = inst.motionAssignment ?? { mode: 'inherit' as const, status: 'idle' as const };
         if (assignment.mode === 'pinned') continue; // pinned 模型不受全局影响
         if (!intent) {
-            // 清除：仅当模型当前 action 来源于全局意图时才清除
-            if (inst.mmdModel && mmdRuntime) {
+            // 清除：仅当模型当前 vmdPath 来自前一个全局意图时才清除
+            // prev 由 setActiveMotion 在更新 _activeMotion 之前捕获，确保不为 null
+            if (inst.mmdModel && mmdRuntime && inst.vmdPath && prev?.vmdPath && inst.vmdPath === prev.vmdPath) {
                 inst.mmdModel.setRuntimeAnimation(null);
                 inst.vmdData = null;
                 inst.vmdName = '';
@@ -96,20 +100,32 @@ setBroadcastCallback((intent) => {
                 inst.animationDuration = 0;
             }
         } else {
+            // 兼容性检查：模型骨骼是否支持该 VMD
+            const bones = inst.mmdModel?.runtimeBones?.map((b) => b.name) ?? [];
+            const compat = resolveCompatibility(bones, intent);
+            if (!compat.compatible) {
+                inst.motionAssignment = { ...assignment, status: 'incompatible' };
+                continue; // 跳过加载，UI 显示 incompatible 提示
+            }
             // 加载 VMD 到模型（异步，loadManager 处理队列）
-            // [fix:adr-127-p3] 显式更新 inst.vmdName，避免依赖 loadManager 侧隐式副作用
+            // gen 捕获当前 generation，.then 时检查是否仍是最新广播
             loadManager.load({ kind: 'vmd', path: intent.vmdPath!, modelId: id })
                 .then((handle) => {
+                    if (getMotionGen() !== gen) return; // 已过期，丢弃
                     if (handle) {
                         inst.vmdName = handle.name;
+                        inst.vmdPath = intent.vmdPath;
+                        inst.motionAssignment = { mode: 'inherit', status: 'compatible' };
                     }
                 })
                 .catch(() => {
-                    // 兼容性失败静默处理（incompatible 状态由 UI 提示）
+                    if (getMotionGen() !== gen) return; // 已过期，丢弃
+                    inst.motionAssignment = { mode: 'inherit', status: 'incompatible' };
                 });
         }
     }
 });
+}
 
 // ======== 从子文件导入 ========
 // ======== Barrel Re-Exports ========
@@ -268,6 +284,64 @@ function buildActionBindingSchema(id: string): MenuNode[] {
                         }
                     });
                     inner.appendChild(clearBtn);
+                });
+            },
+        },
+        // 卡片 4：动作分配策略（pin/unpin）
+        {
+            id: 'binding:assignment',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    const assignment = inst.motionAssignment ?? { mode: 'inherit' as const, status: 'idle' as const };
+                    const active = getActiveMotion();
+                    const isPinned = assignment.mode === 'pinned';
+                    const isIncompatible = assignment.status === 'incompatible';
+                    const hasGlobalMotion = !!active && !!active.vmdPath;
+
+                    // 不兼容提示
+                    if (isIncompatible) {
+                        const warn = document.createElement('div');
+                        warn.style.cssText = 'color:var(--color-warn);padding:4px 0;font-size:12px;';
+                        warn.textContent = t('motion.intent.incompatible');
+                        inner.appendChild(warn);
+                    }
+
+                    if (hasGlobalMotion || isPinned) {
+                        if (isPinned) {
+                            // 已 pin → 显示「跟随全局」按钮
+                            const unpinBtn = document.createElement('button');
+                            unpinBtn.className = 'preset-chip';
+                            unpinBtn.textContent = t('motion.context.unpin');
+                            unpinBtn.addEventListener('click', () => {
+                                inst.motionAssignment = { mode: 'inherit', status: 'idle' };
+                                // 重新应用全局动作
+                                if (active) {
+                                    setActiveMotion(active);
+                                }
+                                getMotionMenu()?.reRender();
+                                setStatus(t('motion.override.redoApplied'), true);
+                            });
+                            inner.appendChild(unpinBtn);
+                        } else {
+                            // 未 pin → 显示「固定此动作」按钮
+                            const pinBtn = document.createElement('button');
+                            pinBtn.className = 'preset-chip';
+                            pinBtn.textContent = t('motion.context.pinMotion');
+                            pinBtn.addEventListener('click', () => {
+                                if (active) {
+                                    inst.motionAssignment = {
+                                        mode: 'pinned',
+                                        pinned: structuredClone(active),
+                                        status: 'overridden',
+                                    };
+                                    getMotionMenu()?.reRender();
+                                    setStatus(t('motion.override.redoApplied'), true);
+                                }
+                            });
+                            inner.appendChild(pinBtn);
+                        }
+                    }
                 });
             },
         },
@@ -453,9 +527,16 @@ export { getMotionMenu, refreshMotionRoot, showMotionPopup };
 
 // 当库扫描完成时，如果动作菜单已打开则 reRender，
 // 使音乐库等依赖 allModels 的 renderCustom 回调拿到最新数据。
-window.addEventListener('mmar:library-scanned', () => {
+// 提取为命名函数以便 removeEventListener 配对
+const _onLibraryScanned = (): void => {
     getMotionMenu()?.reRender();
-});
+};
+window.addEventListener('mmar:library-scanned', _onLibraryScanned);
+
+/** 释放 motion-popup 模块资源（HMR/清理时调用） */
+export function disposeMotionPopup(): void {
+    window.removeEventListener('mmar:library-scanned', _onLibraryScanned);
+}
 
 /** motion-popup 的 onFolderEnter 路由（从 makeMotionMenu 提取） */
 // [doc:adr-065] 子层路由表：target → 纯 items 构建器；自动挂 itemBuilder 实现语言热刷新
@@ -510,17 +591,14 @@ function motionOnItemClick(row: PopupRow): void {
             const inst = modelManager.get(targetId);
             const hasActions = !!inst?.vmdData || getVmdLayers(targetId).length > 0;
             if (!hasActions) {
-                // 无动作 → 新增为第一个基础动作，设场景级意图
+                // 无动作 → 新增为第一个基础动作，设场景级意图（广播已加载所有 inherit 模型）
                 setActiveMotion({
                     vmdPath: row.model.file_path,
                     vmdName: row.model.name_jp || row.model.name_en || '',
                     vmdLayers: [],
                     source: 'vmd',
                 });
-                loadManager
-                    .load({ kind: 'vmd', path: row.model.file_path, modelId: targetId })
-                    .then(after)
-                    .catch((err) => fail('motion-popup add base VMD:', err));
+                after();
                 return;
             }
             // 有动作：优先替换焦点层（若仍存在），否则替换基础（保留其余图层）
@@ -530,17 +608,14 @@ function motionOnItemClick(row: PopupRow): void {
                     .catch((err) => fail('motion-popup replace layer VMD:', err));
                 return;
             }
-            // 替换基础动作，同时设场景级意图（广播到所有 inherit 模型）
+            // 替换基础动作，同时设场景级意图（广播已加载所有 inherit 模型）
             setActiveMotion({
                                 vmdPath: row.model.file_path,
                                 vmdName: row.model.name_jp || row.model.name_en || '',
                                 vmdLayers: [],
                                 source: 'vmd',
                             });
-                        loadManager
-                            .load({ kind: 'vmd', path: row.model.file_path, modelId: targetId })
-                .then(after)
-                .catch((err) => fail('motion-popup replace base VMD:', err));
+                        after();
             return;
         }
         hideMotionPopup();
@@ -971,14 +1046,14 @@ async function _importExternalAnimation(
     // 2. 找聚焦模型
     const foc = modelManager.focused();
     if (!foc || !foc.mmdModel) {
-        setStatus('请先选择一个模型', false);
+        setStatus(t('motion.retarget.noModel'), false);
         return;
     }
 
     // 3. 获取模型骨骼
     const mesh = foc.mmdModel.mesh;
     if (!mesh || !mesh.skeleton) {
-        setStatus('模型无骨骼数据', false);
+        setStatus(t('motion.retarget.noBones'), false);
         return;
     }
 
@@ -993,5 +1068,5 @@ async function _importExternalAnimation(
     // 5. 播放
     hideMotionPopup();
     playRetargetedAnimation(scene, result);
-    setStatus('外部动作已加载（' + preset + '）', true);
+    setStatus(t('motion.retarget.loaded', { preset }), true);
 }
