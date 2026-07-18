@@ -130,6 +130,7 @@ export const zhCN: Record<string, string> = {
     'motion.modelTools': '动作工具',
     'motion.tools': '工具设置',
     'motion.noPhysics': '该模型无可用物理类别',
+    'motion.noActionHint': '暂无动作，点击"添加动作"开始',
     'cloth.title': '虚拟裙骨',
     'cloth.enable': '启用虚拟裙骨',
     'cloth.chains': '裙摆链数',

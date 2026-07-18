@@ -130,6 +130,7 @@ export const en: Record<string, string> = {
     'motion.modelTools': 'Action tools',
     'motion.tools': 'Tool settings',
     'motion.noPhysics': 'No physics categories for this model',
+    'motion.noActionHint': 'No actions loaded. Click "Add Motion" to get started',
     'cloth.title': 'Virtual Skirt',
     'cloth.enable': 'Enable Virtual Skirt',
     'cloth.chains': 'Skirt Chains',
