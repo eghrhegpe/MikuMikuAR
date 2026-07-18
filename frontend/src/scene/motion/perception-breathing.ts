@@ -33,7 +33,7 @@ export function _applyBreathing(mmdModel: MmdModelLike, time: number): void {
     if (!curQ) {
         return;
     }
-    const targetQ = _q().copyFrom(Quaternion.RotationAxis(Vector3.Up(), breathOffset));
+    const targetQ = _q().copyFrom(Quaternion.RotationAxis(Vector3.Right(), breathOffset));
     const localQ = _q().copyFrom(curQ);
     Quaternion.SlerpToRef(localQ, targetQ, 0.5, localQ);
 
