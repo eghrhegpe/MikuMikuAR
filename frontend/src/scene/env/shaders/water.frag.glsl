@@ -18,6 +18,7 @@ uniform float foamThreshold;
 uniform float foamIntensity;
 uniform vec3 lightDir;
 uniform vec3 lightColor;
+uniform float lightIntensity;   // 太阳平行光强度（dirLight.intensity），驱动水面随日照明暗
 uniform float ambientIntensity;
 
 // ======== 可调节的视觉参数（从硬编码提取）========
@@ -57,6 +58,10 @@ uniform float uHorizonEnd;            // 淡出结束距离（TS端按 waterSize
 uniform vec3 uHorizonColor;           // 地平线融合色（取自天空底部或雾色）
 uniform vec3 uSkyBlendColor;          // 天空基准色（TS端从 skyColorBot 计算）
 uniform float uSkyColorBlend;         // 天空-水色混合比例（0=自定义，1=跟随天空）
+
+// 细节法线波浪联动：让法线纹理跟随 Gerstner 波浪方向+相位运动（不再静态平移）
+uniform float wavePhase;              // 与 vert shader 共享的波浪相位
+uniform vec2 uDetailWindDir;          // 主风向（归一化），驱动法线纹理滚动方向
 
 uniform sampler2D uCausticTex;
 uniform float uCausticIntensity;
@@ -107,14 +112,17 @@ void main() {
         normal = -normal;
     }
 
-    // ======== ADR-115 P1: 高频法线扰动层 ========
+    // ======== ADR-115 P1: 高频法线扰动层（波浪联动版）=====
     // Gerstner 去重：detail 启用时衰减 Gerstner 法线至 70%，让细节法线接管高频
     // uDetailNormalStrength == 0 时 gerstnerScale = 1.0，完全恢复 Gerstner 原貌（零回归）
     float gerstnerScale = uDetailNormalStrength > 0.0 ? 0.7 : 1.0;
 
-    // 双层法线采样（不同尺度 + 不同速度 → 视差流动感）
-    vec2 nUV1 = vWorldPos.xz * uDetailNormalTiling1 + time * uDetailNormalSpeed1;
-    vec2 nUV2 = vWorldPos.xz * uDetailNormalTiling2 + time * uDetailNormalSpeed2;
+    // 双层法线采样：UV 沿风向滚动，相位与 Gerstner 波浪同步
+    // 滚动速度对齐大浪波峰速度（WAVE_SPEED/WAVE_FREQ ≈ 4~4.7 单位/秒），之前 1.5/0.8 慢了约 3 倍
+    // 大尺度层（tiling 小）滚动更快，细尺度层（tiling 大）稍慢，符合真实水面
+    vec2 wind = uDetailWindDir;
+    vec2 nUV1 = vWorldPos.xz * uDetailNormalTiling1 + wind * wavePhase * 4.5;
+    vec2 nUV2 = vWorldPos.xz * uDetailNormalTiling2 - wind * wavePhase * 2.5; // 反向产生交错感
     // 纹理编码：R=世界X, G=世界Z, B=世界Y(上)
     vec3 n1 = texture2D(uDetailNormalTex, nUV1).rgb * 2.0 - 1.0;
     vec3 n2 = texture2D(uDetailNormalTex, nUV2).rgb * 2.0 - 1.0;
@@ -170,11 +178,21 @@ void main() {
     vec3 finalFogColor = mix(waterFogColor, uSkyBlendColor * 0.8, uSkyColorBlend);
 
     vec3 base = finalWaterColor;
-    // 反射受泡沫衰减：泡沫区反射减弱
-    vec3 color = mix(base, reflection * foamDamp, fresnel);
+
+    // ======== 光照联动：水面整体随太阳/环境明暗 ========
+    // 反射（占主导）与环境光都应按日照变暗；sun=0 时水面显著变暗而非不变
+    float lightExposure = clamp(lightIntensity * 1.3 + ambientIntensity * 0.5 + 0.06, 0.04, 1.8);
+
+    // 天空-水面颜色联动：reflection 也朝天空色偏移，让"天空色联动"真正可见
+    vec3 reflected = reflection * foamDamp;
+    reflected = mix(reflected, uSkyBlendColor * (0.5 + lightIntensity), uSkyColorBlend);
+
+    // 反射受泡沫衰减：泡沫区反射减弱；整体乘曝光因子联动日照明暗
+    vec3 color = mix(base, reflected, fresnel) * lightExposure;
 
     float diff = max(dot(normal, normalize(lightDir)), 0.0);
-    color += diff * lightColor * diffuseStrength;
+    // 太阳直接光照项 × 强度：让迎光面随太阳亮度变化（已含强度，不再额外乘曝光，避免重复放大）
+    color += diff * lightColor * diffuseStrength * max(lightIntensity * 1.2, 0.05);
     color += ambientIntensity * finalWaterColor * ambientStrength;
 
     // ======== ADR-115 P1: Sun Glitter（镜面闪烁高光）========
@@ -186,8 +204,8 @@ void main() {
         float glitterNoise = mix(noiseVal, noiseVal2, 0.3);
         // 窄域 specular：reflectDir 已含细节法线扰动，自然产生波光
         float spec = pow(max(dot(reflectDir, normalize(lightDir)), 0.0), uGlintPower);
-        // 乘以 diffuse 作为 mask：仅在迎光面闪烁
-        float glitter = diff * spec * (0.6 + 0.8 * glitterNoise) * uGlintStrength;
+        // 乘以 diffuse 作为 mask：仅在迎光面闪烁；乘强度避免暗光下仍强闪
+        float glitter = diff * spec * (0.6 + 0.8 * glitterNoise) * uGlintStrength * lightIntensity;
         color += lightColor * glitter;
     }
 
@@ -229,6 +247,9 @@ void main() {
     // 地平线淡出时 alpha 渐增到 1（远处不透明，融入天空）
     alpha = mix(alpha, 1.0, horizonMix);
     alpha = clamp(alpha, 0.0, 1.0);
+
+    // 柔和色调映射：防止高光过曝发白（Reinhard 变体，仅压缩 >1.0 区域）
+    color = color / (1.0 + color);
 
     gl_FragColor = vec4(color, alpha);
 }

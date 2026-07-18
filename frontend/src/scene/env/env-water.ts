@@ -455,19 +455,16 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
         mat.setTexture('envTexture', scene.environmentTexture);
     }
 
-    // ——— 泡沫 ———
-    mat.setColor3('foamColor', new Color3(1, 1, 1));
-    mat.setFloat('foamThreshold', state.foamThreshold);
-    mat.setFloat('foamIntensity', state.foamIntensity);
-
     // ——— 灯光 ———
     const dirLight = scene.getLightByName('dir') as DirectionalLight | null;
     if (dirLight) {
         mat.setVector3('lightDir', dirLight.direction);
         mat.setColor3('lightColor', dirLight.diffuse);
+        mat.setFloat('lightIntensity', dirLight.intensity);
     } else {
         mat.setVector3('lightDir', new Vector3(-0.5, -1, -0.5));
         mat.setColor3('lightColor', new Color3(1, 1, 1));
+        mat.setFloat('lightIntensity', 0.5);
     }
     mat.setFloat('ambientIntensity', 0.3);
 
@@ -478,13 +475,21 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     mat.setFloat('uCausticSpeed', 0.5);
     mat.setFloat('uCausticScale', 0.04);
 
-    // ——— ADR-115 P1: 高频法线扰动层 + Sun Glitter ——
+    // ——— ADR-115 P1: 高频法线扰动层 + Sun Glitter（波浪联动）——
 
     const detailNormalTex = ensureDetailNormalTexture(scene);
     mat.setTexture('uDetailNormalTex', detailNormalTex);
     mat.setFloat('uDetailNormalStrength', state.waterNormalStrength);
-    mat.setFloat('uDetailNormalTiling1', 0.1);
-    mat.setFloat('uDetailNormalTiling2', 0.3);
+    // 波纹方格尺度：tile 周期 = 1/tiling 世界单位
+    // tiling1=0.5 → 大尺度波纹单元 ≈2 单位（原 0.2 → 5 单位，偏大似角色身高）
+    // tiling2=1.5 → 细尺度 ≈0.67 单位；两层保持 3:1 比例，层次不丢
+    mat.setFloat('uDetailNormalTiling1', 0.5);
+    mat.setFloat('uDetailNormalTiling2', 1.5);
+    // 波浪联动：法线纹理 UV 沿风向以 wavePhase 滚动（替代旧版 time*constSpeed 静态平移）
+    // windDirs / uWindDir 在下方 :534-535 统一计算，此处先占位 wavePhase
+    mat.setFloat('wavePhase', _waterPhase);
+    // uDetailWindDir 在下方紧接 uWindDir 设置后赋值（:536 后）
+    // 旧速度 uniform 保留（frag 不再读取，零回归安全）
     mat.setFloat('uDetailNormalSpeed1', 0.05);
     mat.setFloat('uDetailNormalSpeed2', -0.08);
     mat.setFloat('uGlintStrength', state.waterGlintStrength);
@@ -510,7 +515,6 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     mat.setFloat('fresnelPower', state.fresnelPower);
     mat.setFloat('diffuseStrength', state.diffuseStrength);
     mat.setFloat('ambientStrength', state.ambientStrength);
-    mat.setFloat('foamTransitionRange', state.foamTransitionRange);
     mat.setFloat('rippleNormalStrength', state.rippleNormalStrength);
     mat.setFloat('rippleGlintStrength', state.rippleGlintStrength);
     mat.setVector3(
@@ -524,7 +528,6 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     mat.setFloat('causticScrollX', state.causticScrollX);
     mat.setFloat('causticScrollY', state.causticScrollY);
     mat.setFloat('fresnelAlphaInfluence', state.fresnelAlphaInfluence);
-    mat.setFloat('foamOpacity', state.foamOpacity);
     mat.setColor3('waterFogColor', col3FromTriple(state.waterFogColor));
     mat.setFloat('waterFogDensity', state.waterFogDensity);
     mat.setFloat('waterFogOpacityInfluence', state.waterFogOpacityInfluence);
@@ -532,6 +535,8 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     // ——— 波方向（风向联动）———
     const windDirs = computeWaveDirs(state.windDirection);
     mat.setArray2('uWindDir', windDirs);
+    // 细节法线滚动方向：取 Gerstner 主波（第一波）风向
+    mat.setVector3('uDetailWindDir', new Vector3(windDirs[0], windDirs[1], 0));
 
     // ——— 涟漪数组（初始化为空）———
     mat.setArray4('uRipplePosRad', new Array(MAX_RIPPLES * 4).fill(0));
@@ -737,6 +742,7 @@ function _waterUpdateCallback(scene: Scene): void {
     if (dl) {
         m.setVector3('lightDir', dl.direction);
         m.setColor3('lightColor', dl.diffuse);
+        m.setFloat('lightIntensity', dl.intensity);
     }
 
     // 涟漪衰减 + 冷却递减
@@ -1042,8 +1048,6 @@ export interface WaterPreset {
     bigWaveHeight: number;
     smallWaveHeight: number;
     waterAnimSpeed: number;
-    foamThreshold: number;
-    foamIntensity: number;
     waterFogColor: [number, number, number];
     waterFogDensity: number;
     waterFogOpacityInfluence: number;
@@ -1052,7 +1056,6 @@ export interface WaterPreset {
     fresnelPower?: number;
     diffuseStrength?: number;
     ambientStrength?: number;
-    foamTransitionRange?: number;
     rippleNormalStrength?: number;
     rippleGlintStrength?: number;
     causticIntensity?: number;
@@ -1061,7 +1064,6 @@ export interface WaterPreset {
     causticScrollX?: number;
     causticScrollY?: number;
     fresnelAlphaInfluence?: number;
-    foamOpacity?: number;
     // ADR-115 P1: 高频法线扰动 + Sun Glitter
     waterNormalStrength?: number;
     waterGlintStrength?: number;
@@ -1079,16 +1081,16 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         bigWaveHeight: 0.3,
         smallWaveHeight: 0.5,
         waterAnimSpeed: 0.2,
-        foamThreshold: 0.35,
-        foamIntensity: 0.12,
         waterFogColor: [0.5, 0.52, 0.62],
         waterFogDensity: 0.006,
         waterFogOpacityInfluence: 0,
         fresnelAlphaInfluence: 0.35,
-        foamOpacity: 0.5,
         causticIntensity: 0.1,
-        waterNormalStrength: 0.15,
-        waterGlintStrength: 0,
+        waterNormalStrength: 0.35,
+        waterGlintStrength: 0.05,
+        // ADR-115 P3: 地平线淡出 + 天空联动（原缺失，补全）
+        waterHorizonFade: 0.8,
+        waterSkyColorBlend: 0.15,
     },
     ripple: {
         label: '涟漪',
@@ -1098,16 +1100,15 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         bigWaveHeight: 0.6,
         smallWaveHeight: 1.0,
         waterAnimSpeed: 1.0,
-        foamThreshold: 0.25,
-        foamIntensity: 0.3,
         waterFogColor: [0.48, 0.5, 0.6],
         waterFogDensity: 0.009,
         waterFogOpacityInfluence: 0,
         fresnelAlphaInfluence: 0.4,
-        foamOpacity: 0.55,
         causticIntensity: 0.15,
-        waterNormalStrength: 0.3,
-        waterGlintStrength: 0.1,
+        waterNormalStrength: 0.5,
+        waterGlintStrength: 0.2,
+        waterHorizonFade: 0.85,
+        waterSkyColorBlend: 0.2,
     },
     ocean: {
         label: '海浪',
@@ -1117,16 +1118,15 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         bigWaveHeight: 1.5,
         smallWaveHeight: 0.8,
         waterAnimSpeed: 2.5,
-        foamThreshold: 0.12,
-        foamIntensity: 0.55,
         waterFogColor: [0.4, 0.42, 0.55],
         waterFogDensity: 0.014,
         waterFogOpacityInfluence: 0,
         fresnelAlphaInfluence: 0.5,
-        foamOpacity: 0.65,
         causticIntensity: 0.2,
-        waterNormalStrength: 0.4,
-        waterGlintStrength: 0.2,
+        waterNormalStrength: 0.6,
+        waterGlintStrength: 0.3,
+        waterHorizonFade: 0.9,
+        waterSkyColorBlend: 0.25,
     },
     storm: {
         label: '风暴',
@@ -1136,16 +1136,15 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         bigWaveHeight: 2.0,
         smallWaveHeight: 0.5,
         waterAnimSpeed: 5.0,
-        foamThreshold: 0.08,
-        foamIntensity: 0.7,
         waterFogColor: [0.35, 0.36, 0.48],
         waterFogDensity: 0.022,
         waterFogOpacityInfluence: 0,
         fresnelAlphaInfluence: 0.6,
-        foamOpacity: 0.7,
         causticIntensity: 0.25,
-        waterNormalStrength: 0.5,
-        waterGlintStrength: 0.05,
+        waterNormalStrength: 0.65,
+        waterGlintStrength: 0.1,
+        waterHorizonFade: 0.9,
+        waterSkyColorBlend: 0.15,
     },
     tropical: {
         label: '热带',
@@ -1155,16 +1154,15 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         bigWaveHeight: 0.8,
         smallWaveHeight: 1.2,
         waterAnimSpeed: 1.2,
-        foamThreshold: 0.25,
-        foamIntensity: 0.25,
         waterFogColor: [0.45, 0.58, 0.62],
         waterFogDensity: 0.008,
         waterFogOpacityInfluence: 0,
         fresnelAlphaInfluence: 0.42,
-        foamOpacity: 0.55,
         causticIntensity: 0.2,
-        waterNormalStrength: 0.35,
-        waterGlintStrength: 0.3,
+        waterNormalStrength: 0.55,
+        waterGlintStrength: 0.35,
+        waterHorizonFade: 0.85,
+        waterSkyColorBlend: 0.3,
     },
 };
 
@@ -1197,8 +1195,6 @@ export function buildWaterPresetEnvState(preset: WaterPreset): Partial<EnvState>
         bigWaveHeight: preset.bigWaveHeight ?? 1.0,
         smallWaveHeight: preset.smallWaveHeight ?? 1.0,
         waterAnimSpeed: preset.waterAnimSpeed,
-        foamThreshold: preset.foamThreshold,
-        foamIntensity: preset.foamIntensity,
         waterFogColor: preset.waterFogColor,
         waterFogDensity: preset.waterFogDensity,
         waterFogOpacityInfluence: preset.waterFogOpacityInfluence,
@@ -1206,7 +1202,6 @@ export function buildWaterPresetEnvState(preset: WaterPreset): Partial<EnvState>
         // 扩展参数一并写入：setEnvState 同步触发的 _syncWaterUniforms 据此应用并持久化，
         // 避免被后续任意 envState 变化还原
         fresnelAlphaInfluence: preset.fresnelAlphaInfluence,
-        foamOpacity: preset.foamOpacity,
         // ADR-115 P1: 法线扰动 + Sun Glitter
         waterNormalStrength: preset.waterNormalStrength,
         waterGlintStrength: preset.waterGlintStrength,
@@ -1238,9 +1233,6 @@ export function applyWaterPresetToCurrent(preset: Partial<WaterPreset>): void {
     if (preset.ambientStrength !== undefined) {
         mat.setFloat('ambientStrength', preset.ambientStrength);
     }
-    if (preset.foamTransitionRange !== undefined) {
-        mat.setFloat('foamTransitionRange', preset.foamTransitionRange);
-    }
     if (preset.rippleNormalStrength !== undefined) {
         mat.setFloat('rippleNormalStrength', preset.rippleNormalStrength);
     }
@@ -1270,9 +1262,6 @@ export function applyWaterPresetToCurrent(preset: Partial<WaterPreset>): void {
     }
     if (preset.fresnelAlphaInfluence !== undefined) {
         mat.setFloat('fresnelAlphaInfluence', preset.fresnelAlphaInfluence);
-    }
-    if (preset.foamOpacity !== undefined) {
-        mat.setFloat('foamOpacity', preset.foamOpacity);
     }
     if (preset.waterFogColor !== undefined) {
         mat.setColor3('waterFogColor', col3FromTriple(preset.waterFogColor));

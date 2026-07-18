@@ -201,9 +201,8 @@ describe('Water 预设 — 扩展参数进入 envState', () => {
             expect(s.smallWaveHeight).toBe(wp.smallWaveHeight);
             // 回归核心：扩展参数必须写入 envState，否则被后续 envState 变化还原
             expect(s.fresnelAlphaInfluence).toBe(wp.fresnelAlphaInfluence);
-            expect(s.foamOpacity).toBe(wp.foamOpacity);
+            // foam 已移除
             expect(s).toHaveProperty('fresnelAlphaInfluence');
-            expect(s).toHaveProperty('foamOpacity');
         }
     });
 });
