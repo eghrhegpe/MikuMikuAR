@@ -370,7 +370,6 @@ export const zhCN: Record<string, string> = {
     'motion.boneOverride.allCleared': '✓ 已清除所有骨骼覆盖',
     // [doc:adr-116] 动作覆盖模块化 UI
     'motion.override.title': '动作覆盖',
-    'motion.override.advancedBone': '高级骨骼覆盖',
     'motion.override.enabled': '✓ 已启用模块',
     'motion.override.disabled': '✕ 已禁用模块',
     'motion.override.redoApplied': '✓ 已重做',
@@ -399,6 +398,10 @@ export const zhCN: Record<string, string> = {
     'param.rightYaw': '右摆腕',
     'param.rightRoll': '右转腕',
     'section.handRightIndependent': '右手（独立）',
+    'section.handPosition': '手腕位置偏移',
+    'param.handPosX': '手腕 X 偏移',
+    'param.handPosY': '手腕 Y 偏移',
+    'param.handPosZ': '手腕 Z 偏移',
     'motion.amplitude': '幅度',
     'motion.frequency': '频率',
     'motion.decay': '衰减',

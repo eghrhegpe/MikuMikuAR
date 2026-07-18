@@ -1389,7 +1389,6 @@ export const zhTW: Record<string, string> = {
     'motion.boneOverride.allCleared': '✓ 已清除所有骨骼覆蓋',
     // [doc:adr-116] 動作覆蓋模組化 UI
     'motion.override.title': '動作覆蓋',
-    'motion.override.advancedBone': '進階骨骼覆蓋',
     'motion.override.enabled': '✓ 已啟用模組',
     'motion.override.disabled': '✕ 已停用模組',
     'motion.override.redoApplied': '✓ 已重做',
@@ -1417,6 +1416,10 @@ export const zhTW: Record<string, string> = {
     'param.rightYaw': '右擺腕',
     'param.rightRoll': '右轉腕',
     'section.handRightIndependent': '右手（獨立）',
+    'section.handPosition': '手腕位置偏移',
+    'param.handPosX': '手腕 X 偏移',
+    'param.handPosY': '手腕 Y 偏移',
+    'param.handPosZ': '手腕 Z 偏移',
     'motion.amplitude': '幅度',
     'motion.frequency': '頻率',
     'motion.decay': '衰減',
