@@ -130,6 +130,8 @@ export function buildSkyLevel(): PopupLevel {
                 kind: 'colorSlider',
                 label: 'env.zenithColor',
                 control: { bind: 'env.skyColorTop' },
+                // 与 env:sky:colorTop 共享 skyColorTop 字段（故意的颜色继承：color↔procedural 切换时颜色不中断）
+                // 勿拆分为两独立字段——两个控件通过 visibleWhen 互斥（color vs procedural 模式），UI 不会同时出现
                 visibleWhen: () => envState.skyMode === 'procedural',
             },
             {
