@@ -1,6 +1,6 @@
 # ADR-121: 全局动作意图（Scene-level Motion Intent）— 场景级意图 + 每实例继承/覆盖
 
-> **状态**: 准备实施（P0 已完成，2026-07-18）
+> **状态**: 已实施（P0+P1+P2 已完成，2026-07-18）
 > **日期**: 2026-07-17
 > **路径约定**: 本文档源码路径均省略 `frontend/src/` 前缀（与 ADR-120 / ADR-116 一致），例如 `core/types.ts` = `frontend/src/core/types.ts`，`core/i18n/locales/` = `frontend/src/core/i18n/locales/`。
 

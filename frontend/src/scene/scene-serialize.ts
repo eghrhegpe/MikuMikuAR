@@ -19,6 +19,7 @@ import {
 } from '../core/config';
 import { showInfoToast } from '../core/toast';
 import { debounce, swallowError, logWarn } from '../core/utils';
+import { getActiveMotion, setActiveMotion } from './motion/motion-intent';
 import {
     getCameraState,
     setCameraState,
@@ -223,6 +224,23 @@ export interface SceneFile {
         motionOverrideModules?: MotionModuleState[];
         /** [doc:adr-085] 脚部地面跟随状态（按模型） */
         feet?: FeetState;
+        /** [doc:adr-121] 动作分配策略（pinned 模式时记录，inherit 不落盘） */
+        motionAssignment?: {
+            mode: 'pinned';
+            pinned: {
+                vmdPath: string | null;
+                vmdName: string;
+                vmdLayers: Array<{
+                    name: string;
+                    path: string | null;
+                    weight: number;
+                    boneFilter: string[];
+                    kind?: 'vmd' | 'gaze';
+                    enabled?: boolean;
+                }>;
+                source: 'vmd' | 'retargeted';
+            };
+        };
     }>;
     camera: CameraState;
     lights: LightState;
@@ -277,6 +295,20 @@ export interface SceneFile {
     };
     stageLight?: StageLightState;
     stageLights?: StageLightState[];
+    /** [doc:adr-121] 场景级动作意图（持久化，加载时还原） */
+    motion?: {
+        vmdPath: string | null;
+        vmdName: string;
+        vmdLayers: Array<{
+            name: string;
+            path: string | null;
+            weight: number;
+            boneFilter: string[];
+            kind?: 'vmd' | 'gaze';
+            enabled?: boolean;
+        }>;
+        source: 'vmd' | 'retargeted';
+    } | null;
 }
 
 // ======== Serialization ========
@@ -347,6 +379,25 @@ export function serializeScene(): SceneFile {
                     ? inst.motionOverrideModules
                     : undefined,
             feet: inst.feet,
+            // [doc:adr-121] 序列化动作分配策略（仅 pinned 模式落盘）
+            motionAssignment: inst.motionAssignment?.mode === 'pinned'
+                ? {
+                      mode: 'pinned' as const,
+                      pinned: {
+                          vmdPath: inst.motionAssignment.pinned?.vmdPath ?? null,
+                          vmdName: inst.motionAssignment.pinned?.vmdName ?? '',
+                          vmdLayers: inst.motionAssignment.pinned?.vmdLayers.map((l) => ({
+                              kind: l.kind,
+                              name: l.name,
+                              path: l.path,
+                              weight: l.weight,
+                              boneFilter: l.boneFilter,
+                              enabled: l.enabled,
+                          })) ?? [],
+                          source: inst.motionAssignment.pinned?.source ?? 'vmd',
+                      },
+                  }
+                : undefined,
         };
     });
     return {
@@ -413,6 +464,23 @@ export function serializeScene(): SceneFile {
             ? { type: getActiveFormation()!, spacing: getActiveFormationSpacing() }
             : undefined,
         stageLights: getStageLights(),
+        // [doc:adr-121] 场景级动作意图
+        motion: (() => {
+            const a = getActiveMotion();
+            return a ? {
+                vmdPath: a.vmdPath,
+                vmdName: a.vmdName,
+                vmdLayers: a.vmdLayers.map((l) => ({
+                    kind: l.kind,
+                    name: l.name,
+                    path: l.path,
+                    weight: l.weight,
+                    boneFilter: l.boneFilter,
+                    enabled: l.enabled,
+                })),
+                source: a.source,
+            } : null;
+        })(),
     };
 }
 
@@ -533,6 +601,31 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
             // 恢复脚部调整状态（合并默认值，向前兼容缺字段的旧存档）
             if (m.feet) {
                 Object.assign(inst.feet, m.feet);
+            }
+            // [doc:adr-121] 恢复每实例动作分配策略（pinned 模式）
+            if (m.motionAssignment?.mode === 'pinned') {
+                inst.motionAssignment = {
+                    mode: 'pinned',
+                    pinned: {
+                        vmdPath: m.motionAssignment.pinned.vmdPath,
+                        vmdName: m.motionAssignment.pinned.vmdName,
+                        vmdLayers: m.motionAssignment.pinned.vmdLayers.map((l) => ({
+                            id: '',
+                            kind: l.kind ?? 'vmd',
+                            name: l.name,
+                            data: new ArrayBuffer(0),
+                            path: l.path,
+                            weight: l.weight,
+                            boneFilter: l.boneFilter,
+                            enabled: l.enabled ?? true,
+                        })),
+                        source: m.motionAssignment.pinned.source,
+                    },
+                    status: 'idle',
+                };
+            } else {
+                // inherit 模式不落盘，加载时自动继承全局 activeMotion
+                inst.motionAssignment = { mode: 'inherit', status: 'idle' };
             }
             if (inst.visible === false) {
                 for (const mesh of inst.meshes) {
@@ -870,6 +963,33 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                 logWarn('scene-serialize', `场景恢复: 道具 ${p.name} 骨骼锚定失败:`, err);
             }
         }
+    }
+
+    // [doc:adr-121] 恢复场景级动作意图（旧存档无此字段时回退到每模型 vmdPath 缓存）
+    // 注意：motion 恢复在模型加载完成后执行，此时各模型 vmdPath 已由旧序列化恢复
+    // 如果 data.motion 存在，用场景级意图覆盖（setActiveMotion 触发广播）
+    // 如果 data.motion 不存在且模型有 vmdPath，保持旧行为（每模型独立 VMD）
+    if (data.motion) {
+        setActiveMotion({
+            vmdPath: data.motion.vmdPath,
+            vmdName: data.motion.vmdName,
+            vmdLayers: data.motion.vmdLayers.map((l) => ({
+                id: '',
+                kind: l.kind ?? 'vmd',
+                name: l.name,
+                data: new ArrayBuffer(0),
+                path: l.path,
+                weight: l.weight,
+                boneFilter: l.boneFilter,
+                enabled: l.enabled ?? true,
+            })),
+            source: data.motion.source,
+        });
+    } else {
+        // 旧场景文件无 motion 块 → 保持已有 vmdPath 缓存（与当前行为一致）
+        // 但需将 activeMotion 设为 null 以避免广播覆盖每模型独立 VMD
+        // 注意：setActiveMotion(null) 会清空所有模型 VMD，所以不调用它
+        // activeMotion 保持 null，各模型继续使用自己的 vmdData
     }
 
     // --- Report loading errors ---
