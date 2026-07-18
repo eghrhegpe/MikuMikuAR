@@ -565,7 +565,7 @@ describe('removeFocusedModel', () => {
         expect(mockModelManager.remove).not.toHaveBeenCalled();
     });
 
-    it('calls removeModel and clears pendingVmd when a model is focused', () => {
+    it('calls removeModel when a model is focused', () => {
         modelRegistry.set('m1', makeInst({ id: 'm1' }));
         setFocusedModelId('m1');
         removeFocusedModel();
