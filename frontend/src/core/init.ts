@@ -191,7 +191,7 @@ async function restoreEnvState(): Promise<void> {
     const cfg = await GetConfig();
     if (cfg.env) {
         console.info('[env-restore] restoreEnvState: cfg.env 存在，开始恢复环境状态');
-        const loaded = cfg.env as Partial<EnvState>;
+        const loaded = cfg.env as unknown as Partial<EnvState>;
         console.info(
             '[env-restore]',
             'skyMode:',
