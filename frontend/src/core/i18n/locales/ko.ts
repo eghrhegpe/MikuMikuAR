@@ -253,6 +253,8 @@ export const ko: Record<string, string> = {
     'motion.changeMotion': '모션 변경',
     // [doc:adr-129] 장면 수준 동작 메뉴: Card 1 현재 동작 + 재생 상태 행
     'motion.currentMotion': '현재 동작',
+    // [doc:adr-129] Phase 2 동작 상세 서브페이지 제목
+    'motion.detail.title': '동작 상세',
     'motion.browseMotionLibrary': '동작 라이브러리 탐색',
     'motion.playbackStatus': '재생 상태',
     'motion.statusPlaying': '재생 중',

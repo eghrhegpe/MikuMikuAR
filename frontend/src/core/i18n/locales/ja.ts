@@ -253,6 +253,8 @@ export const ja: Record<string, string> = {
     'motion.changeMotion': 'モーション変更',
     // [doc:adr-129] シーンレベル動作メニュー：Card 1 現在動作 + 再生状態行
     'motion.currentMotion': '現在の動作',
+    // [doc:adr-129] Phase 2 動作詳細サブページのタイトル
+    'motion.detail.title': '動作の詳細',
     'motion.browseMotionLibrary': 'モーションライブラリを参照',
     'motion.playbackStatus': '再生状態',
     'motion.statusPlaying': '再生中',

@@ -121,6 +121,8 @@ export const zhCN: Record<string, string> = {
     'motion.changeMotion': '更换动作',
     // [doc:adr-129] 场景级动作菜单：Card 1 当前动作 + 播放状态行
     'motion.currentMotion': '当前动作',
+    // [doc:adr-129] Phase 2 动作详情子页标题
+    'motion.detail.title': '动作详情',
     'motion.browseMotionLibrary': '浏览动作库',
     'motion.playbackStatus': '播放状态',
     'motion.statusPlaying': '播放中',

@@ -247,8 +247,10 @@ export const zhTW: Record<string, string> = {
     'motion.context.pinMotion': '固定此動作',
     'motion.context.unpin': '跟隨全域動作',
     'motion.changeMotion': '更換動作',
-    // [doc:adr-129] 場景級動作選單：Card 1 當前動作 + 播放狀態行
+    // [doc:adr-129] 場景級動作菜單：Card 1 當前動作 + 播放狀態行
     'motion.currentMotion': '當前動作',
+    // [doc:adr-129] Phase 2 動作詳情子頁標題
+    'motion.detail.title': '動作詳情',
     'motion.browseMotionLibrary': '瀏覽動作庫',
     'motion.playbackStatus': '播放狀態',
     'motion.statusPlaying': '播放中',

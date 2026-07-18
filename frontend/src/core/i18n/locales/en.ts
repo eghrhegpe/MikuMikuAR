@@ -122,6 +122,8 @@ export const en: Record<string, string> = {
     'motion.changeMotion': 'Change Motion',
     // [doc:adr-129] Scene-level motion menu: Card 1 current motion + playback status row
     'motion.currentMotion': 'Current Motion',
+    // [doc:adr-129] Phase 2 motion detail subpage title
+    'motion.detail.title': 'Motion Detail',
     'motion.browseMotionLibrary': 'Browse Motion Library',
     'motion.playbackStatus': 'Playback Status',
     'motion.statusPlaying': 'Playing',
