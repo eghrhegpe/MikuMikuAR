@@ -1,6 +1,6 @@
 # ADR-129: 动作菜单场景级重设计（Scene-level Motion UI）
 
-> **状态**: 实施中（Phase 1 + Phase 2 已落地）
+> **状态**: 实施中（Phase 1 + Phase 2 + Phase 3 已落地）
 > **日期**: 2026-07-18
 > **依赖**: ADR-121（全局动作意图，已实施 P0+P1+P2）
 
