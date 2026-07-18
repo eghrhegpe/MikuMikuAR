@@ -7,6 +7,7 @@ import { setEnvState, getRenderState, setRenderState } from '@/scene/scene';
 import { getLightState, setLightState } from '@/scene/render/lighting';
 import { uiState, setUIState, focusedModelId, modelRegistry } from '@/core/state';
 import { getPerceptionState, setPerceptionState } from '@/scene/motion/perception';
+import { getModuleDefaultParam } from '@/scene/motion/motion-modules/registry';
 
 // 状态路径：类型化字符串，由解析器按前缀映射到 reactive state 对象
 export type StatePath =
@@ -98,7 +99,12 @@ export function getStateValue(path: StatePath): unknown {
             }
             const inst = modelRegistry.get(mid);
             const modState = inst?.motionOverrideModules?.find((m) => m.id === moduleId);
-            return modState?.params[paramKey];
+            const v = modState?.params[paramKey];
+            // [doc:adr-116] 未 seed 时回退到模块注册默认值，避免滑块显示成负值 min（Q2 修复）
+            if (v === undefined) {
+                return getModuleDefaultParam(moduleId, paramKey);
+            }
+            return v;
         }
         default:
             return undefined;
