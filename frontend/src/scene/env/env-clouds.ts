@@ -19,12 +19,12 @@ import { _envSys, getScene, ensureEnvUpdateObserver } from './env-impl';
 // ======== Cloud System Constants ========
 /** Density scale factor applied to cloudCover (1.2 = 20% boost) */
 const CLOUD_DENSITY_SCALE = 1.2;
-/** Light attenuation factor for volumetric scattering */
-const CLOUD_LIGHT_ATTEN = 0.15;
+/** Light attenuation factor for volumetric scattering.
+ *  0.15 = 之前锁定值，导致厚云内部透射过高、整体灰白缺乏体积感；
+ *  提升到 0.4 让厚云中心更快衰减到不透明，拉开明暗对比（ADR-115 暂停后首次视觉调优）。 */
+const CLOUD_LIGHT_ATTEN = 0.4;
 /** Scattering intensity multiplier */
 const CLOUD_SCATTER_INTENSITY = 0.5;
-/** Maximum optical depth before early termination (5.0 = thick cloud) */
-const CLOUD_MAX_OPTICAL_DEPTH = 5.0;
 /** Minimum density threshold for volumetric sampling */
 const CLOUD_DENSITY_THRESHOLD = 0.005;
 /** Debug visualization Y-offset range (±30 units from cloudHeight) */
@@ -206,7 +206,6 @@ function _computeWindVelocity(state: EnvState): [number, number, number] {
 
 const SHADER_CLOUD_LIGHT_ATTEN = CLOUD_LIGHT_ATTEN.toFixed(2);
 const SHADER_SCATTER_INTENSITY = CLOUD_SCATTER_INTENSITY.toFixed(2);
-const SHADER_MAX_OPTICAL_DEPTH = CLOUD_MAX_OPTICAL_DEPTH.toFixed(1);
 const SHADER_DENSITY_THRESHOLD = CLOUD_DENSITY_THRESHOLD.toFixed(3);
 
 // ======== Volumetric Cloud (ShaderMaterial-on-Sphere) ========
@@ -335,12 +334,10 @@ out vec4 fragColor;
 #define CLOUD_LIGHT_ATTEN ${SHADER_CLOUD_LIGHT_ATTEN}
 #define CLOUD_PHASE_G 0.8
 #define CLOUD_SCATTER_INTENSITY ${SHADER_SCATTER_INTENSITY}
-#define CLOUD_MAX_OPTICAL_DEPTH ${SHADER_MAX_OPTICAL_DEPTH}
 #define CLOUD_DENSITY_THRESHOLD ${SHADER_DENSITY_THRESHOLD}
 #define CLOUD_LIGHT_STEPS 2
 #define CLOUD_MAX_STEPS 200
 #define CLOUD_STEP_MIN 8.0
-#define CLOUD_STEP_GROWTH 0.030
 #define CLOUD_FBM_OCTAVES 3
 #define NOISE_PERIOD 256.0
 
@@ -443,7 +440,7 @@ void main(){
 
     float T = 1.0;
     vec3 L = vec3(0.0);
-    vec3 cloudCol = vec3(0.78, 0.82, 0.92);
+    vec3 cloudCol = vec3(1.0, 1.0, 1.0);
     // Apply sunset tint to base cloud color and light color
     vec3 sunDirN = normalize(sunDir);
     cloudCol = applySunsetTint(cloudCol, sunDirN);
@@ -453,12 +450,17 @@ void main(){
     // Adaptive jitter with blue-noise for smoother dithering and less banding
     // Blue noise has better spatial distribution than white noise at equal sample count.
     // NOTE: 除数 ${BLUE_NOISE_SIZE} 必须与 _ensureBlueNoiseTexture() 的 size 参数一致
+    // Slab-uniform dense sampling: step derived from the analytic cloud slab
+    // length (tExit - tEnter) so volumetric detail is distance-independent.
+    // Fixes high-altitude clouds rendering flat/distorted — the old growing
+    // step (8 + t*0.03) sampled a 40-unit-thick slab with only 1-2 hits at t~325.
     float jitter = texture(blueNoiseTex, gl_FragCoord.xy / ${BLUE_NOISE_SIZE}.0).r;
-    float firstDt = CLOUD_STEP_MIN + tEnter * CLOUD_STEP_GROWTH;
-    float t = tEnter + jitter * firstDt;
+    float slabLen = tExit - tEnter;
+    float slabDt = clamp(slabLen / 24.0, CLOUD_STEP_MIN * 0.25, CLOUD_STEP_MIN * 1.5);
+    float t = tEnter + jitter * slabDt;
 
     for (int i = 0; i < CLOUD_MAX_STEPS; i++) {
-        float dt = CLOUD_STEP_MIN + t * CLOUD_STEP_GROWTH;
+        float dt = slabDt;
         t += dt;
         if (t > tExit) break;
         vec3 p = ro + rd * t;
@@ -484,16 +486,16 @@ void main(){
         }
     }
 
-    vec3 ambient = cloudCol * 0.25 * (1.0 - T);
+    vec3 ambient = cloudCol * 0.25 * (1.0 - T) * min(brightness * 2.0, 1.0);
     vec3 color = L + ambient;
     float alpha = 1.0 - T;
     if (alpha < 0.008) discard;
 
-    // Distance fog: fade distant clouds toward fog/sky color for horizon blending
+    // Distance fog: fade out distant clouds gradually without color shift
     float dist = length(vWorldPos - cameraPosition);
     float fogStart = cloudVisibility * 0.6;
     float fogFactor = smoothstep(fogStart, cloudVisibility, dist);
-    color = mix(color, sceneFogColor, fogFactor);
+    color = mix(color, vec3(1.0, 1.0, 1.0), fogFactor * 0.3);
     alpha *= (1.0 - fogFactor * 0.85);
 
     fragColor = vec4(color, alpha);
@@ -659,7 +661,7 @@ export function createClouds(state: EnvState): void {
             mat.setVector3('sunDir', dl.direction);
             mat.setColor3('sunColor', dl.diffuse);
             const lightIntensity = dl.intensity * 2.0;
-            const brightness = Math.max(0.1, Math.min(1.5, lightIntensity));
+            const brightness = Math.max(0.02, Math.min(1.5, lightIntensity));
             mat.setFloat('brightness', brightness);
         } else {
             mat.setVector3('sceneLightDir', new Vector3(-0.4, -1.0, -0.3));
