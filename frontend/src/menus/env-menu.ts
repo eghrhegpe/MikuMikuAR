@@ -5,21 +5,16 @@
 
 import { envState, PopupLevel, PopupRow } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
-import { slideRow, addSliderRow, addPresetChip, addClearRow } from '../core/ui-helpers';
-import { setEnvState, getEnvSunAngle, setEnvSunAngle, applyEnvPreset } from '../scene/scene';
+import { slideRow, addClearRow } from '../core/ui-helpers';
+import { setEnvState } from '../scene/scene';
 import { getLightState, setLightState as setLightingState } from '../scene/render/lighting';
-import { TIME_OF_DAY_PRESETS } from '../scene/env/env-lighting';
 import { closeAllOverlays } from '../core/utils';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
-import { activeTimeOfDayPreset, setActiveTimeOfDayPreset } from '../core/state';
-
 // ======== 从子文件导入 ========
 import {
     buildSkyLevel,
-    buildGroundLevel,
-    buildWaterLevel,
     buildWindLevel,
     buildCloudLevel,
     buildExperimentalLevel,
@@ -34,8 +29,6 @@ import { buildPostProcessLevel } from './scene-render-levels';
 // ======== Barrel Re-Exports ========
 export {
     buildSkyLevel,
-    buildGroundLevel,
-    buildWaterLevel,
     buildWindLevel,
     buildCloudLevel,
     buildExperimentalLevel,
@@ -82,69 +75,6 @@ export { getEnvMenu, refreshEnvRoot, showEnvMenu };
 window.addEventListener('mmar:library-scanned', () => {
     getEnvMenu()?.reRender();
 });
-
-/**
- * 渲染环境氛围预设芯片组（紧凑 preset-chip 布局，替代旧 slideRow 全宽行）。
- */
-function renderPresetChips(container: HTMLElement): void {
-    const chipGroup = document.createElement('div');
-    chipGroup.className = 'preset-group';
-    chipGroup.style.paddingBottom = '6px';
-    for (const [key, p] of Object.entries(TIME_OF_DAY_PRESETS)) {
-        addPresetChip(
-            chipGroup,
-            p.label,
-            false,
-            () => {
-                setActiveTimeOfDayPreset(key);
-                applyEnvPreset(key);
-            },
-            {
-                onUpdate: (btn) => {
-                    btn.classList.toggle('active', activeTimeOfDayPreset === key);
-                },
-            }
-        );
-    }
-    container.appendChild(chipGroup);
-}
-
-function buildEnvLightingSchema(): MenuNode[] {
-    return [
-        {
-            id: 'env:lighting:presets',
-            kind: 'custom',
-            renderCustom: (c) => {
-                renderPresetChips(c);
-            },
-        },
-        {
-            id: 'env:lighting:sunAngle',
-            kind: 'custom',
-            renderCustom: (c) => {
-                addSliderRow(
-                    c,
-                    t('env.sunAngle'),
-                        getEnvSunAngle(),
-                        -15,
-                        90,
-                        1,
-                        (v) => {
-                            setEnvSunAngle(v);
-                            setEnvState({ sunAngle: v });
-                        },
-                        'lucide:sun',
-                        undefined,
-                        { bind: () => getEnvSunAngle() }
-                    );
-            },
-        },
-    ];
-}
-
-export function buildEnvLightingLevel(): PopupLevel {
-    return _buildLevel(t('env.lighting'), (c) => renderMenu(buildEnvLightingSchema(), c));
-}
 
 /** 环境弹窗根级 items 构建器——动态反映 envState 各 toggle 状态。 */
 function buildEnvRootItems(): PopupRow[] {
@@ -349,9 +279,6 @@ function envOnItemClick(row: PopupRow): void {
 // [doc:adr-065] 子层路由表：target → 纯 items 构建器；自动挂 itemBuilder 实现语言热刷新
 const ENV_FOLDER_ROUTES: Record<string, () => PopupLevel> = {
     'env:sky': buildSkyLevel,
-    'env:lighting': buildEnvLightingLevel,
-    'env:ground': buildGroundLevel,
-    'env:water': buildWaterLevel,
     'env:particle': buildParticleLevel,
     'env:wind': buildWindLevel,
     'env:cloud': buildCloudLevel,

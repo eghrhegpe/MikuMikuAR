@@ -155,35 +155,6 @@ export function buildPresetScenesLevel(): PopupLevel {
     };
 }
 
-// ======== Render Menu Levels ========
-
-export function buildRenderLevel(): PopupLevel {
-    return {
-        label: t('scene.render'),
-        dir: '',
-        items: [
-            {
-                kind: 'folder',
-                label: t('scene.postProcess'),
-                icon: 'sparkles',
-                target: 'scene:render:postprocess',
-            },
-            {
-                kind: 'folder',
-                label: t('scene.stage'),
-                icon: 'monitor',
-                target: 'scene:render:stage',
-            },
-            {
-                kind: 'folder',
-                label: t('scene.renderPresets'),
-                icon: 'palette',
-                target: 'scene:render:presets',
-            },
-        ],
-    };
-}
-
 // ======== Post Process Schema (ADR-093) ========
 // 后处理面板迁移为 schema 驱动：Bloom/DoF/Vignette/Sharpen/光学/环境/色调映射
 // 复合状态（dofAperture+dofEnabled 等）由 bind 写主字段、onChange 写附加字段；
