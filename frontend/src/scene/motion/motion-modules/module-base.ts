@@ -9,7 +9,10 @@ import {
     getModuleState,
     setModuleParam,
     releaseOwnedBones,
+    getRegisteredModules,
+    createModule,
 } from './registry';
+import { pushHistory } from './motion-history';
 import type { MotionOverrideModule } from './types';
 
 /** createModuleBase 返回的方法子集（与 MotionOverrideModule 对应方法签名一致） */
@@ -55,6 +58,16 @@ export function createModuleBase(
     const doAction = overrides?.action ?? bake;
     const autoEnable = overrides?.autoEnableOnParam ?? true;
 
+    /** 构建当前全量快照（所有模块的 enabled + params） */
+    function buildSnapshot() {
+        const snap: Record<string, { enabled: boolean; params: Record<string, import('@/core/types').ParamValue> }> = {};
+        for (const mod of getRegisteredModules()) {
+            const ms = getModuleState(modelId, mod.id);
+            snap[mod.id] = { enabled: ms.enabled, params: { ...ms.params } };
+        }
+        return snap;
+    }
+
     return {
         getState(): MotionModuleState {
             const state = getModuleState(modelId, moduleId);
@@ -72,11 +85,16 @@ export function createModuleBase(
         },
 
         setParam(name: string, value: ParamValue): void {
+            const st = getModuleState(modelId, moduleId);
+            const prev = st.params[name] ?? defaults[name];
+            if (prev !== value) {
+                pushHistory(modelId, moduleId, name, prev, value, buildSnapshot);
+            }
             setModuleParam(modelId, moduleId, name, value);
             if (autoEnable) {
-                const st = getModuleState(modelId, moduleId);
-                if (!st.enabled) {
-                    st.enabled = true;
+                const cur = getModuleState(modelId, moduleId);
+                if (!cur.enabled) {
+                    cur.enabled = true;
                 }
             }
             doAction(modelId);
@@ -100,6 +118,35 @@ export function createModuleBase(
             }
         },
     };
+}
+
+/**
+ * [doc:adr-125] 将快照应用到指定模型的所有模块。
+ * 空对象 {} 表示恢复到初始状态（所有模块禁用 + 空 params）。
+ */
+export function applyModuleSnapshot(
+    modelId: string,
+    snapshot: Record<string, { enabled: boolean; params: Record<string, ParamValue> }>
+): void {
+    for (const [moduleId, state] of Object.entries(snapshot)) {
+        const mod = createModule(moduleId, modelId);
+        if (!mod) continue;
+        mod.setState({ id: moduleId, ...state });
+        if (state.enabled) {
+            mod.enable();
+        } else {
+            mod.disable();
+        }
+    }
+    for (const mod of getRegisteredModules()) {
+        if (!(mod.id in snapshot)) {
+            const inst = createModule(mod.id, modelId);
+            const cur = getModuleState(modelId, mod.id);
+            if (cur.enabled) {
+                inst?.disable();
+            }
+        }
+    }
 }
 
 /**
