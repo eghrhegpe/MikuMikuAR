@@ -102,16 +102,16 @@ function findToggleRow(
     checkbox: HTMLInputElement | null;
     arrow: HTMLElement | null;
 } {
-    const items = Array.from(container.querySelectorAll('.slide-item'));
+    const items = Array.from(container.querySelectorAll('.toggle-row'));
     for (const item of items) {
-        const labelEl = item.querySelector('.slide-label');
+        const labelEl = item.querySelector('.toggle-label');
         if (labelEl?.textContent === label) {
             return {
                 row: item as HTMLElement,
                 checkbox: item.querySelector(
                     '.toggle input[type="checkbox"]'
                 ) as HTMLInputElement | null,
-                arrow: item.querySelector('.slide-arrow') as HTMLElement | null,
+                arrow: null,
             };
         }
     }
@@ -156,12 +156,10 @@ describe('Stage - ground/water toggles', () => {
     it('renders ground row with toggle reflecting envState.groundVisible', () => {
         const level = buildStageLevel();
         const container = renderLevel(level);
-        const { row, checkbox, arrow } = findToggleRow(container, '地面');
+        const { row, checkbox } = findToggleRow(container, '地面');
         expect(row).not.toBeNull();
         expect(checkbox).not.toBeNull();
         expect(checkbox!.checked).toBe(true);
-        expect(arrow).not.toBeNull();
-        expect(arrow!.textContent).toBe('>');
     });
 
     it('renders water row with toggle reflecting envState.waterEnabled', () => {

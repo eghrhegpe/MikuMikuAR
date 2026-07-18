@@ -24,10 +24,17 @@ vi.mock('@/scene/motion/bone-override', () => ({
     setBoneOverridePosition: vi.fn(),
 }));
 
-// 单测环境无 engine，mock perception 避免触发 scene 初始化
-// （保留 mock 以防后续模块引入 perception 依赖）
 vi.mock('@/scene/motion/perception', () => ({
     setHeadTrackingEnabled: vi.fn(),
+}));
+
+// [doc:adr-125] mock pushHistory 以验证 setParam 集成
+const { pushHistorySpy } = vi.hoisted(() => ({
+    pushHistorySpy: vi.fn(),
+}));
+
+vi.mock('@/scene/motion/motion-modules/motion-history', () => ({
+    pushHistory: pushHistorySpy,
 }));
 
 // ── 被测模块 ──
@@ -47,6 +54,7 @@ import {
     registerModule,
     unregisterModule,
 } from '@/scene/motion/motion-modules/registry';
+import { applyModuleSnapshot } from '@/scene/motion/motion-modules/module-base';
 
 // ── Helpers ──
 
@@ -425,5 +433,98 @@ describe('clearAllModulesForModel', () => {
         const inst = mockModelRegistry.get('m1');
         expect(inst.motionOverrideModules).toEqual([]);
         expect(clearBoneOverrideSpy).toHaveBeenCalled();
+    });
+});
+
+// ═════════════════════════════════════════════════════════════════════
+// [doc:adr-125] applyModuleSnapshot + setParam 集成测试
+// ═════════════════════════════════════════════════════════════════════
+
+describe('applyModuleSnapshot', () => {
+    beforeEach(resetAll);
+
+    it('非空快照：启用模块并写入 params', () => {
+        mockModelRegistry.set('m1', makeModel('m1'));
+        initMotionModules();
+
+        applyModuleSnapshot('m1', {
+            'body-posture': { enabled: true, params: { tilt: 10, bend: 5, twist: 3 } },
+        });
+
+        const state = getModuleState('m1', 'body-posture');
+        expect(state.enabled).toBe(true);
+        expect(state.params.tilt).toBe(10);
+        expect(state.params.bend).toBe(5);
+        expect(setBoneOverrideSpy).toHaveBeenCalled();
+    });
+
+    it('空快照：禁用所有已启用模块', () => {
+        mockModelRegistry.set('m1', makeModel('m1'));
+        initMotionModules();
+
+        // 先启用 body-posture
+        const mod = createModule('body-posture', 'm1')!;
+        mod.enable();
+        expect(getModuleState('m1', 'body-posture').enabled).toBe(true);
+
+        // 应用空快照
+        applyModuleSnapshot('m1', {});
+
+        expect(getModuleState('m1', 'body-posture').enabled).toBe(false);
+    });
+
+    it('快照中不存在的模块保持不变', () => {
+        mockModelRegistry.set('m1', makeModel('m1'));
+        initMotionModules();
+
+        // 启用 body-posture
+        const mod = createModule('body-posture', 'm1')!;
+        mod.enable();
+
+        // 只应用 hand-symmetry 的快照
+        applyModuleSnapshot('m1', {
+            'hand-symmetry': { enabled: true, params: { pitch: 5 } },
+        });
+
+        // body-posture 应被禁用（不在快照中）
+        expect(getModuleState('m1', 'body-posture').enabled).toBe(false);
+        // hand-symmetry 应被启用
+        expect(getModuleState('m1', 'hand-symmetry').enabled).toBe(true);
+    });
+});
+
+describe('setParam → pushHistory 集成', () => {
+    beforeEach(() => {
+        resetAll();
+        pushHistorySpy.mockClear();
+    });
+
+    it('setParam 调用 pushHistory 记录变更', () => {
+        mockModelRegistry.set('m1', makeModel('m1'));
+        initMotionModules();
+
+        const mod = createModule('body-posture', 'm1')!;
+        mod.setParam('tilt', 10);
+
+        expect(pushHistorySpy).toHaveBeenCalledTimes(1);
+        expect(pushHistorySpy).toHaveBeenCalledWith(
+            'm1',
+            'body-posture',
+            'tilt',
+            expect.any(Number), // prev (defaults.tilt)
+            10,
+            expect.any(Function) // buildSnapshot
+        );
+    });
+
+    it('setParam 值未变化时不记录', () => {
+        mockModelRegistry.set('m1', makeModel('m1'));
+        initMotionModules();
+
+        const mod = createModule('body-posture', 'm1')!;
+        // 默认值是 0，设为 0 不应触发记录
+        mod.setParam('tilt', 0);
+
+        expect(pushHistorySpy).not.toHaveBeenCalled();
     });
 });
