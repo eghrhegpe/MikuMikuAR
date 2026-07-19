@@ -866,3 +866,39 @@ JS 运行时（`VITE_MMD_RUNTIME=js`）完整支持。
 
 ---
 
+## 19. Observer 生命周期管理
+
+### 19.1 问题
+
+Babylon.js Observer 的 `add`/`remove` 调用分散在 34 处，存在三种存储模式：
+
+1. **metadata 存储**：`env-clouds.ts` 将 observer 句柄塞入 `mesh.metadata`，`env-sky.ts` 同理
+2. **模块级变量**：`render-loop.ts`、`env-impl.ts` 等用模块级变量存储 `Observer<Scene> | null`
+3. **removeCallback 模式**：`bone-override.ts`、`feet-adjustment.ts` 等用 `observable.removeCallback(callback)` 移除
+
+### 19.2 统一方案
+
+新建 `core/observer-handle.ts` 提供三层封装（详见 [ADR-139](adr/adr-139-observer-registry.md)）：
+
+```
+ObserverHandle  ── 单个句柄，dispose() 移除此 observer
+observe()        ── 替代 observable.add()，返回 ObserverHandle
+observeOnce()    ── 替代 observable.addOnce()，返回 ObserverHandle
+ObserverRegistry ── 批量管理器，disposeAll() 一次性清理
+```
+
+### 19.3 迁移结果
+
+- 18 个文件从原始模式迁移到 `ObserverHandle`
+- 所有 `mesh.metadata` 中的 observer 句柄已消除
+- 所有 `removeCallback()` 调用已消除
+- 所有 `._scene.onBeforeRenderObservable.remove(xxx)` 改为 `xxx.dispose()`
+
+### 19.4 编码规范
+
+- **禁止**直接调用 `observable.add(callback)`，必须使用 `observe(observable, callback)`
+- **禁止**将 observer 句柄存储在 `mesh.metadata` 中
+- **禁止**使用 `removeCallback()`，必须使用 `handle.dispose()`
+- 模块级变量的类型统一为 `ObserverHandle | null`，而非 `Observer<Scene> | null`
+- 依赖父对象 dispose 自动清理的 observer（如 gizmo、render target）可豁免
+
