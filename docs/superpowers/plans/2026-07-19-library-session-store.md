@@ -103,7 +103,7 @@ git commit -m "feat: ADR-135 P0.1 LibrarySessionStore 状态收敛"
 | 阶段 | 内容 | 状态 | ADR |
 |------|------|------|-----|
 | P0.2 | loadId trace 链路 | ✅ 已完成（见第 6 节） | 扩展 ADR-135 |
-| P0.3 | deferRestore 可见化 LoadingState | 待启动 | 新 ADR |
+| P0.3 | deferRestore 可见化 LoadingState | ✅ 已完成（见第 7 节） | 扩展 ADR-135 |
 | P1.1 | load-manager 错误处理 + onRejected 不再吞错 | 待启动 | 扩展 ADR-105 |
 | P1.2 | `_isExtracting` per-model Set 升级 | 待启动 | 扩展 ADR-135 |
 | P1.3 | ADR-131 后续清理 3 个绑定标志位 | 待启动 | ADR-131 后续 |
@@ -253,3 +253,142 @@ export function formatError(err: unknown, maxLen = 120): string {
 | 模型加载失败 | 状态栏：「模型加载失败：[cause message]」 | 状态栏：「模型加载失败：[l_xxx/parse] [cause message]」 |
 | 排查时间 | 用户/AI 拿不到 trace ID，只能复现 | 状态栏直接显示 `l_xxx` ID，AI grep 日志即可定位 |
 | 多次失败 | 错误互相覆盖，无法区分 | 每次错误带独立 loadId，可对比 |
+
+---
+
+## 7. P0.3 deferRestore 可见化 LoadingState（已实施 2026-07-20）
+
+### 7.1 目标
+
+消灭 `deferRestore` 6 秒静默放弃的用户感知地狱：
+
+1. 启动轮询时显示「⏳ 正在扫描 X…」
+2. 等待超过 2 秒后每秒更新「⏳ 正在扫描 X…（已等待 Ys）」
+3. 数据就绪时短暂提示「✓ 已展开 X」
+4. 超时不再静默，告知用户「⚠ 扫描超时（X），请手动点击文件夹展开」
+
+### 7.2 设计
+
+#### Store 新增字段（library-session-store.ts）
+
+```ts
+export type LibraryRestoreStatus = 'idle' | 'polling' | 'ready' | 'timeout';
+
+export interface LibraryRestoreState {
+    // ... 原 pendingAutoExpand / pendingFocusModel / timer
+    status: LibraryRestoreStatus;     // P0.3 新增
+    targetSeg: string | null;         // P0.3 新增（当前轮询的段名）
+    startedAt: number | null;         // P0.3 新增（开始时间戳）
+}
+```
+
+#### Store 新增 accessors
+
+| 方法 | 用途 |
+|------|------|
+| `getRestoreStatus()` | UI 据此决定是否显示提示 |
+| `getRestoreTargetSeg()` | 当前轮询的段名 |
+| `getRestoreStartedAt()` | 计算已等待秒数 |
+| `markRestorePolling(seg)` | 进入 polling 状态 |
+| `markRestoreReady()` | 数据就绪（瞬态，下一 tick 回 idle） |
+| `markRestoreTimeout()` | 超时不再静默 |
+| `clearRestoreStatus()` | 回到 idle（校验失败也要清状态） |
+
+#### deferRestore 接入（library-browse.ts）
+
+```ts
+function deferRestore(menu, dir, seg) {
+    librarySessionStore.clearRestoreTimer();
+    librarySessionStore.markRestorePolling(seg);                    // 新增
+    setStatus(t('library.scanningDir', { dir: seg }), false, true);  // 新增：hold=true 持续显示
+
+    let tries = 0;
+    let lastShownSec = -1;                                            // 新增：避免 150ms 闪烁
+    const tick = () => {
+        tries++;
+        if (tries > 40) {
+            librarySessionStore.setRestoreTimer(null);
+            librarySessionStore.markRestoreTimeout();               // 新增
+            setStatus(t('library.scanTimeout', { dir: seg }), false, true);  // 新增
+            return;
+        }
+        if (!_isDirDataReady(nextDir)) {
+            // 新增：每 1s 更新一次「已等待 Xs」
+            const startedAt = librarySessionStore.getRestoreStartedAt();
+            if (startedAt !== null) {
+                const elapsedSec = Math.floor((Date.now() - startedAt) / 1000);
+                if (elapsedSec >= 2 && elapsedSec !== lastShownSec) {
+                    lastShownSec = elapsedSec;
+                    setStatus(t('library.scanningDirWithWait', { dir: seg, sec: elapsedSec }), false, true);
+                }
+            }
+            librarySessionStore.setRestoreTimer(setTimeout(tick, 150));
+            return;
+        }
+        librarySessionStore.setRestoreTimer(null);
+        // 校验失败也要清状态（原 bug：失败不清，status 卡在 polling）
+        if (!cur || normPath(cur.dir) !== normPath(dir)) {
+            librarySessionStore.clearRestoreStatus();               // 新增
+            return;
+        }
+        if (!pa || pa[0] !== seg) {
+            librarySessionStore.clearRestoreStatus();               // 新增
+            return;
+        }
+        // ... push + markRestoreReady + setStatus 已展开
+        librarySessionStore.markRestoreReady();                     // 新增
+        setStatus(t('library.expanded', { dir: seg }), true);       // 新增
+    };
+    librarySessionStore.setRestoreTimer(setTimeout(tick, 150));
+}
+```
+
+#### i18n 5 语种 key
+
+| key | zh-CN | en | ja | ko | zh-TW |
+|-----|-------|----|----|----|-------|
+| `library.scanningDir` | ⏳ 正在扫描 {dir}… | ⏳ Scanning {dir}… | ⏳ {dir} をスキャン中… | ⏳ {dir} 검색 중… | ⏳ 正在掃描 {dir}… |
+| `library.scanningDirWithWait` | ⏳ 正在扫描 {dir}…（已等待 {sec}s） | ⏳ Scanning {dir}… (waited {sec}s) | ⏳ {dir} をスキャン中…（{sec}秒待機） | ⏳ {dir} 검색 중… ({sec}초 대기) | ⏳ 正在掃描 {dir}…（已等待 {sec}秒） |
+| `library.scanTimeout` | ⚠ 扫描超时（{dir}），数据可能未就绪，请手动点击文件夹展开 | ⚠ Scan timeout ({dir})... | ⚠ スキャンタイムアウト（{dir}）... | ⚠ 검색 시간 초과 ({dir})... | ⚠ 掃描逾時（{dir}）... |
+| `library.expanded` | ✓ 已展开 {dir} | ✓ Expanded {dir} | ✓ {dir} を展開しました | ✓ {dir} 펼침 | ✓ 已展開 {dir} |
+
+### 7.3 不改的部分
+
+| 项 | 原因 |
+|----|------|
+| `deferRestore` 函数签名 / 调用点 | 仅内部增加 UI 反馈，外部行为不变 |
+| 轮询间隔（150ms） / 上限（40 次） | 不改轮询机制本身，只改反馈 |
+| 单测 | 不新增；既有 `library-core.test.ts` 106 用例覆盖作为回归保护 |
+| `showModelPopup` 的 `reset()` | P0.1 已接入，P0.3 的 `clearRestoreStatus()` 由 `reset()` 内部调用 |
+
+### 7.4 验收清单
+
+- [x] `LibraryRestoreStatus` 类型导出
+- [x] store `restore.status / targetSeg / startedAt` 字段 + 4 个 mark* / clear accessors
+- [x] `deferRestore` 启动 setStatus hold=true
+- [x] tick 内每 1s 更新「已等待 Xs」（避免 150ms 闪烁）
+- [x] 超时不再静默，显示 scanTimeout
+- [x] 校验失败也清状态（修原 bug：status 卡在 polling）
+- [x] 数据就绪显示「已展开 X」
+- [x] i18n 5 语种 4 个 key 添加
+- [x] `npm run check` 零新增 tsc 错误
+- [x] `npm run test -- library-core` 106/106 全绿
+- [x] `npm run build` 通过
+
+### 7.5 用户感知收益
+
+| 场景 | P0.3 前 | P0.3 后 |
+|------|---------|---------|
+| 扫描中（< 2s） | 状态栏无变化，用户以为程序卡死 | 「⏳ 正在扫描 X…」持续显示 |
+| 扫描中（> 2s） | 状态栏无变化，用户开始乱点 | 「⏳ 正在扫描 X…（已等待 3s）」每秒更新 |
+| 扫描成功 | 状态栏无变化 | 「✓ 已展开 X」短暂 2 秒提示 |
+| 扫描超时（6s） | **静默放弃，用户完全无感知** | 「⚠ 扫描超时（X），请手动点击文件夹展开」持续显示 |
+| 校验失败 | status 卡在 polling（bug） | status 正确回 idle |
+
+### 7.6 风险与缓解
+
+| 风险 | 缓解 |
+|------|------|
+| hold=true 状态被其他 setStatus 覆盖 | 设计预期：用户点击其他操作时，扫描提示让位是合理行为；store.status 仍正确 |
+| 多次 deferRestore 并发触发 | 第二次 `clearRestoreTimer` 取消第一次的 timer，但第一次的 setStatus 已被第二次覆盖；store.status 反映最后一次 |
+| tsc 通过但 vitest esbuild 报 ko.ts transform 错误 | 历史遗留（其他 AI 改动 ko.ts 引入）；重跑 vitest cache 即可通过，不影响 build |
