@@ -436,7 +436,7 @@ export const en: Record<string, string> = {
     'motion.externalImport': 'External Motion Import',
 
     // ===== Pose Studio =====
-    'motion.poseStudio.title': 'Pose Studio',
+    'motion.poseStudio.title': 'Photo Mode',
     'motion.poseStudio.noModel': '⚠ Load a model first',
     'motion.poseStudio.composition': 'Composition Guides',
     'motion.poseStudio.off': 'Off',
@@ -1142,7 +1142,6 @@ export const en: Record<string, string> = {
     'env.groundReflectBlend': 'Reflection Blend',
     'env.groundNormalStrength': 'Normal Strength',
     'env.groundElevationColoring': 'Elevation Coloring',
-    'env.groundFollowCamera': 'Follow Camera',
     'env.pbr': 'PBR Material',
     'env.pbrEnabled': 'Enable PBR',
     'env.metallic': 'Metallic',

@@ -105,7 +105,6 @@ const _GROUND_KEYS = [
     'groundNormalTexture',
     'groundNormalStrength',
     'groundElevationColoring',
-    'groundFollowCamera',
     'groundLevel',
 ];
 const _FOG_KEYS = ['fogEnabled', 'fogColor', 'fogDensity', 'fogMode', 'fogStart', 'fogEnd'];
@@ -651,12 +650,15 @@ export function applyEnvPresetByCategory(preset: CategorizedEnvPreset): boolean 
  */
 function migrateEnvState(input: Partial<EnvState>): Partial<EnvState> {
     const raw = input as Record<string, unknown>;
-    // 仅当入参含旧字段 groundMode 时才迁移；新版本 partial 原样返回，
-    // 避免向 changed 集合注入 groundType/groundStyle 导致无关节点更新误触发 applyGround。
+    let out = { ...raw } as Record<string, unknown>;
+    let migrated = false;
+
+    // 仅当入参含旧字段 groundMode / debugMirrorEnabled 时才迁移旧版枚举；
+    // 新版本 partial 跳过，避免向 changed 集合注入 groundType/groundStyle
+    // 导致无关节点更新误触发 applyGround。
     if (typeof raw.groundMode !== 'string' && typeof raw.debugMirrorEnabled === 'undefined') {
-        return input;
+        return migrated ? (out as Partial<EnvState>) : input;
     }
-    const out = { ...raw } as Record<string, unknown>;
     if (typeof raw.groundMode === 'string') {
         const m = raw.groundMode;
         if (m === 'heightmap') {

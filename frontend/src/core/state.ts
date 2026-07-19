@@ -329,7 +329,6 @@ export const envState: EnvState = reactive<EnvState>({
     groundNormalTexture: '',
     groundNormalStrength: 1,
     groundElevationColoring: false,
-    groundFollowCamera: false,
 
     // ADR-114: PBR 材质 + 程序化纹理
     groundPbrEnabled: false,
@@ -359,7 +358,7 @@ export const envState: EnvState = reactive<EnvState>({
     particleCustomTexture: '',
 
     groundLevel: 0,
-    groundSize: 60,
+    groundSize: 500,
     groundEdgeFade: 0,
 
     waterEnabled: false,

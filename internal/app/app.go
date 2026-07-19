@@ -451,7 +451,6 @@ type EnvState struct {
 	GroundNormalTexture     string  `json:"groundNormalTexture"`
 	GroundNormalStrength    float64 `json:"groundNormalStrength"`
 	GroundElevationColoring  bool    `json:"groundElevationColoring"`
-	GroundFollowCamera      bool    `json:"groundFollowCamera"`
 	GroundPbrEnabled         bool    `json:"groundPbrEnabled"`
 	GroundProceduralTexture  string  `json:"groundProceduralTexture"`
 	GroundProceduralSeed     float64 `json:"groundProceduralSeed"`
