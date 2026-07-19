@@ -226,7 +226,8 @@ export async function prepareModelRestore(
 // ======== 模型行点击 ========
 
 function onModelRowClick(m: LibraryModel, jumpToDirModelId?: string): void {
-    if (librarySessionStore.isExtracting()) {
+    // [doc:adr-135] P1.2: per-model 守卫。zip A 解压时 pmx B 直接放行，不再被一刀切阻塞。
+    if (librarySessionStore.isExtracting(m.file_path)) {
         setStatus(t('library.extracting'), false);
         return;
     }
@@ -329,7 +330,7 @@ function onModelRowClick(m: LibraryModel, jumpToDirModelId?: string): void {
 
         if (m.container === 'zip') {
             setStatus(t('library.extractingZip'), false);
-            librarySessionStore.setExtracting(true);
+            librarySessionStore.setExtracting(m.file_path);
             ExtractZip(m.file_path, m.zip_inner)
                 .then((result) => {
                     setStatus(result.cached ? t('library.cacheHit') : t('library.extracted'), true);
@@ -341,7 +342,7 @@ function onModelRowClick(m: LibraryModel, jumpToDirModelId?: string): void {
                     setStatus(t('library.extractFailed') + formatError(err), false);
                 })
                 .finally(() => {
-                    librarySessionStore.setExtracting(false);
+                    librarySessionStore.clearExtracting(m.file_path);
                 });
         } else {
             doReplace(m.file_path);
@@ -353,7 +354,7 @@ function onModelRowClick(m: LibraryModel, jumpToDirModelId?: string): void {
     if (m.container === 'zip') {
         closeAllOverlays();
         setStatus(t('library.extractingZip'), false);
-        librarySessionStore.setExtracting(true);
+        librarySessionStore.setExtracting(m.file_path);
         ExtractZip(m.file_path, m.zip_inner)
             .then((result) => {
                 setStatus(result.cached ? t('library.cacheHit') : t('library.extracted'), true);
@@ -372,7 +373,7 @@ function onModelRowClick(m: LibraryModel, jumpToDirModelId?: string): void {
                 setStatus(t('library.extractFailed') + formatError(err), false);
             })
             .finally(() => {
-                librarySessionStore.setExtracting(false);
+                librarySessionStore.clearExtracting(m.file_path);
             });
         return;
     }
@@ -424,7 +425,7 @@ function replaceMotion(m: LibraryModel): void {
     };
     if (m.container === 'zip') {
         setStatus(t('library.extractingZip'), false);
-        librarySessionStore.setExtracting(true);
+        librarySessionStore.setExtracting(m.file_path);
         ExtractZip(m.file_path, m.zip_inner)
             .then((result) => {
                 setStatus(result.cached ? t('library.cacheHit') : t('library.extracted'), true);
@@ -432,7 +433,7 @@ function replaceMotion(m: LibraryModel): void {
             })
             .catch((err) => setStatus(t('library.extractFailed') + formatError(err), false))
             .finally(() => {
-                librarySessionStore.setExtracting(false);
+                librarySessionStore.clearExtracting(m.file_path);
             });
         return;
     }

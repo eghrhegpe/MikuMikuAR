@@ -42,11 +42,14 @@ export interface LibraryRestoreState {
  * 资源库会话状态：加载守卫。
  *
  * 原散落位置：
- * - `extraction`（原 `_isExtracting`）：library-actions.ts:75（一刀切布尔，per-model 守卫归 P1.2）
+ * - `extraction`（原 `_isExtracting`）：library-actions.ts:75
+ *   - P0.1: 一刀切布尔
+ *   - P1.2: 升级为 `Set<string>` per-model 守卫，按模型 file_path 标记
+ *           非解压模型直接放行，解决"zip A 解压时 pmx B 静默 return"的 UX 灾难
  * - `replaceLoading`（原 `_isReplaceLoading`）：library-actions.ts:77
  */
 export interface LibraryLoadingState {
-    extraction: boolean;
+    extraction: Set<string>;
     replaceLoading: boolean;
 }
 
@@ -71,9 +74,16 @@ class LibrarySessionStore {
 
     /** 加载守卫状态：解压 / 替换进行中标记。 */
     readonly loading: LibraryLoadingState = {
-        extraction: false,
+        extraction: new Set<string>(),
         replaceLoading: false,
     };
+
+    /**
+     * P0.3：ready 瞬态自回转 timer 句柄。
+     * 与 `restore.timer`（deferRestore 轮询计时器）分离管理，避免互相干扰。
+     * store 仍不持有任何 DOM / Babylon 引用，此处仅为纯调度句柄。
+     */
+    private statusTimer: ReturnType<typeof setTimeout> | null = null;
 
     // ===== Restore Accessors =====
 
@@ -133,16 +143,10 @@ class LibrarySessionStore {
      * @param seg 当前轮询的文件夹段名，用于 UI 显示
      */
     markRestorePolling(seg: string): void {
+        this.clearStatusTimer();
         this.restore.status = 'polling';
         this.restore.targetSeg = seg;
         this.restore.startedAt = Date.now();
-    }
-
-    /** 标记数据就绪（瞬态，下一 tick 回 idle）。 */
-    markRestoreReady(): void {
-        this.restore.status = 'ready';
-        this.restore.targetSeg = null;
-        this.restore.startedAt = null;
     }
 
     /**
@@ -150,25 +154,74 @@ class LibrarySessionStore {
      * UI 应显示「扫描超时，请手动点击文件夹展开」。
      */
     markRestoreTimeout(): void {
+        this.clearStatusTimer();
         this.restore.status = 'timeout';
         this.restore.targetSeg = null;
         this.restore.startedAt = null;
     }
 
-    /** 回到 idle 状态（清空 targetSeg / startedAt，不影响 timer）。 */
+    /**
+     * 标记数据就绪（瞬态）。
+     * 调度 2s 后自动回 idle，兑现 ADR-135「ready 瞬态、下一 tick 回 idle」契约，
+     * 避免 P0.3 UI 读取 status 时卡在 ready。
+     */
+    markRestoreReady(): void {
+        this.clearStatusTimer();
+        this.restore.status = 'ready';
+        this.restore.targetSeg = null;
+        this.restore.startedAt = null;
+        this.statusTimer = setTimeout(() => this.clearRestoreStatus(), 2000);
+    }
+
+    /** 回到 idle 状态（清空 targetSeg / startedAt，并取消 ready 瞬态 timer）。 */
     clearRestoreStatus(): void {
+        this.clearStatusTimer();
         this.restore.status = 'idle';
         this.restore.targetSeg = null;
         this.restore.startedAt = null;
     }
 
+    /** 清理 ready 瞬态自回转 timer（private helper）。 */
+    private clearStatusTimer(): void {
+        if (this.statusTimer) {
+            clearTimeout(this.statusTimer);
+            this.statusTimer = null;
+        }
+    }
+
     // ===== Loading Accessors =====
 
-    isExtracting(): boolean {
-        return this.loading.extraction;
+    /**
+     * [doc:adr-135] P1.2: 是否有任意模型正在解压。
+     * 不传参时，等价于「任意模型在解压」（兼容 P0.1 守卫语义）。
+     * 传 modelKey 时，精确查询该模型是否在解压。
+     * @param modelKey 模型唯一标识（用 file_path）
+     */
+    isExtracting(modelKey?: string): boolean {
+        if (modelKey === undefined) {
+            return this.loading.extraction.size > 0;
+        }
+        return this.loading.extraction.has(modelKey);
     }
-    setExtracting(v: boolean): void {
-        this.loading.extraction = v;
+
+    /**
+     * [doc:adr-135] P1.2: 标记某模型进入解压。
+     * @param modelKey 模型唯一标识（用 file_path）
+     */
+    setExtracting(modelKey: string): void {
+        this.loading.extraction.add(modelKey);
+    }
+
+    /**
+     * [doc:adr-135] P1.2: 清除某模型的解压标记。
+     * @param modelKey 模型唯一标识（用 file_path）。若不传，清空所有标记（仅供 reset / 调试用）
+     */
+    clearExtracting(modelKey?: string): void {
+        if (modelKey === undefined) {
+            this.loading.extraction.clear();
+        } else {
+            this.loading.extraction.delete(modelKey);
+        }
     }
 
     isReplaceLoading(): boolean {
@@ -185,9 +238,11 @@ class LibrarySessionStore {
      *
      * 不重置 loading：解压/替换可能在弹窗重置期间进行，跨弹窗重置是合理场景。
      * 修复原 bug：原代码不清理 restore 残留态，重开弹窗时会误触发上次的 autoExpand。
+     * P1.2 修复：原代码未清理 statusTimer，导致 reset 后 ready 瞬态 timer 仍可能 fire。
      */
     reset(): void {
         this.clearRestoreTimer();
+        this.clearStatusTimer();
         this.clearRestoreStatus();
         this.restore.pendingAutoExpand = null;
         this.restore.pendingFocusModel = null;

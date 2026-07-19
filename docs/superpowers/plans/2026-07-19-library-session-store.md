@@ -105,7 +105,7 @@ git commit -m "feat: ADR-135 P0.1 LibrarySessionStore 状态收敛"
 | P0.2 | loadId trace 链路 | ✅ 已完成（见第 6 节） | 扩展 ADR-135 |
 | P0.3 | deferRestore 可见化 LoadingState | ✅ 已完成（见第 7 节） | 扩展 ADR-135 |
 | P1.1 | load-manager 错误处理 + onRejected 不再吞错 | ✅ 已完成（见第 8 节） | 扩展 ADR-135 |
-| P1.2 | `_isExtracting` per-model Set 升级 | 待启动 | 扩展 ADR-135 |
+| P1.2 | `_isExtracting` per-model Set 升级 | ✅ 已完成（见第 9 节） | 扩展 ADR-135 |
 | P1.3 | ADR-131 后续清理 3 个绑定标志位 | 待启动 | ADR-131 后续 |
 | P2 | onModelRowClick 拆分 + 缩略图 AbortSignal + 移除兼容门面 | 待启动 | 新 ADR |
 | P3 | PopupRow discriminated union | 待启动 | 新 ADR |
@@ -457,3 +457,84 @@ private enqueue<T>(task: () => Promise<T>): Promise<T> {
 | 瞬时错误不再自动恢复 | 设计预期：loadManager 不做重试策略，由用户或调用方决定是否重试 |
 | 调用方未处理 rejected promise | library-actions 的 6 处调用点均有 `.catch`，已验证覆盖 |
 | 队列状态错乱 | `this.queue` reset 逻辑保留，错误不影响后续任务入队 |
+
+---
+
+## 9. P1.2 _isExtracting per-model Set 升级（已实施 2026-07-20）
+
+### 9.1 目标
+
+消灭 `_isExtracting` 一刀切布尔的 UX 灾难：
+
+- 旧：zip A 解压期间，pmx B 点击被静默 return（甚至 UI 闪一下但什么都没做）
+- 新：按模型 file_path 精确守卫，zip A 解压时 pmx B 直接放行
+
+### 9.2 设计
+
+#### Store 字段升级
+
+```ts
+export interface LibraryLoadingState {
+    extraction: Set<string>;    // P1.2: 从 boolean 升级为 Set<string>
+    replaceLoading: boolean;
+}
+```
+
+#### Store API 变更
+
+| 旧签名 | 新签名 | 行为 |
+|--------|--------|------|
+| `isExtracting(): boolean` | `isExtracting(modelKey?: string): boolean` | 不传参：`size > 0`（兼容 P0.1 语义）；传参：`has(modelKey)` |
+| `setExtracting(true)` | `setExtracting(modelKey: string)` | `add(modelKey)` |
+| `setExtracting(false)` | `clearExtracting(modelKey?: string)` | 不传参：`clear()`；传参：`delete(modelKey)` |
+
+#### library-actions 6 处守卫点
+
+| 位置 | 旧 | 新 |
+|------|----|----|
+| `onModelRowClick:229` | `isExtracting()` | `isExtracting(m.file_path)` |
+| `replaceMotion:333` | `setExtracting(true)` | `setExtracting(m.file_path)` |
+| `replaceMotion:345` (finally) | `setExtracting(false)` | `clearExtracting(m.file_path)` |
+| `onModelRowClick:357` (normal zip) | `setExtracting(true)` | `setExtracting(m.file_path)` |
+| `onModelRowClick:376` (finally) | `setExtracting(false)` | `clearExtracting(m.file_path)` |
+| `replaceMotion:428` (vmd zip) | `setExtracting(true)` | `setExtracting(m.file_path)` |
+| `replaceMotion:436` (finally) | `setExtracting(false)` | `clearExtracting(m.file_path)` |
+
+### 9.3 顺手修的 bug
+
+`reset()` 现在调用 `clearStatusTimer()`（原代码未清理 statusTimer，导致 reset 后 ready 瞬态 timer 仍可能 fire）。
+
+### 9.4 测试同步
+
+`library-session-store.test.ts`（其他 AI 写的 12 个用例）同步迁移：
+- `setExtracting(false)` → `clearExtracting()`
+- `setExtracting(true)` → `setExtracting('foo.pmx')`
+- `isExtracting()` → `isExtracting('foo.pmx')`（精确查询）
+
+### 9.5 验收清单
+
+- [x] `LibraryLoadingState.extraction` 类型从 `boolean` 改为 `Set<string>`
+- [x] `isExtracting(modelKey?)` / `setExtracting(modelKey)` / `clearExtracting(modelKey?)` 三重载
+- [x] `reset()` 调用 `clearStatusTimer()`（顺手修 bug）
+- [x] library-actions 6 处守卫点全部适配新 API
+- [x] `onModelRowClick` 守卫改为 `isExtracting(m.file_path)` per-model 精确查询
+- [x] `library-session-store.test.ts` 同步迁移
+- [x] `npm run check` 零新增 tsc 错误
+- [x] `npm run test -- library-core library-session-store` 118/118 全绿
+
+### 9.6 用户感知收益
+
+| 场景 | P1.2 前 | P1.2 后 |
+|------|---------|---------|
+| zip A 解压中，点击 pmx B | **静默 return，UI 闪一下但什么都没做** | pmx B 正常加载，与 zip A 并行 |
+| zip A 解压中，再次点击 zip A | 一刀切阻塞（合理） | per-model 阻塞（合理，行为不变） |
+| 多个 zip 并行解压 | 一刀切：只能串行 | per-model：每个 zip 独立标记，但 ExtractZip 底层串行（由 loadManager 保障） |
+
+### 9.7 风险与缓解
+
+| 风险 | 缓解 |
+|------|------|
+| 旧调用方传 `true` / `false` | 已 grep 全部调用点（仅 library-actions.ts + test 文件），全部迁移 |
+| Set 跨 HMR 不重置 | 与原 boolean 行为一致；Vite HMR 默认保留 ES 模块状态 |
+| `file_path` 重复（同一路径加载两次） | Set 天然去重；第二次 `setExtracting` 是 no-op，`clearExtracting` 在 finally 仍正确 |
+| 测试文件迁移破坏其他 AI 改动 | 测试期望与新 API 对齐，行为不变；12 个用例全绿 |
