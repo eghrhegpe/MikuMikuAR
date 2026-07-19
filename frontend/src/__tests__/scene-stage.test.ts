@@ -42,6 +42,7 @@ vi.mock('../core/icons', () => ({
 
 vi.mock('../core/state', () => ({
     envState: mockEnvState,
+    setThumbnailUpdateCallback: vi.fn(),
 }));
 
 vi.mock('../scene/env/env-bridge', () => ({
