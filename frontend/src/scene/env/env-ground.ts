@@ -709,6 +709,8 @@ function _syncPbrProperties(mat: PBRMaterial, state: EnvState): void {
 export function applyGround(state: EnvState): void {
     const scene = getScene();
     ensureEnvUpdateObserver();
+    // ADR-134: 加入 groundInfinite 标记
+    const infKey = `:inf:${state.groundInfinite}`;
 
     // ADR-114: typeKey 加入 PBR / 程序化字段；Phase 2: blur/distort 影响反射视觉需重建
     const pbrKey = `:pbr:${state.groundPbrEnabled}:rough:${state.groundRoughness}:metal:${state.groundMetallic}:blur:${state.groundReflectionBlur}:distort:${state.groundReflectionDistort}`;
@@ -718,10 +720,10 @@ export function applyGround(state: EnvState): void {
             : '';
     const typeKey =
         state.groundType === 'terrain'
-            ? `heightmap:${state.groundTerrainHeight}:${state.groundTerrainScale}:${state.groundTerrainSeed}:${state.groundTerrainOctaves}:${state.groundLevel}:${state.groundSize}:${state.groundColor.join(',')}:${state.groundAlpha}:${state.groundTextureEnabled}:${state.groundTexture}:${state.groundTextureScale}:${state.groundTextureRotation}${pbrKey}`
+            ? `heightmap:${state.groundTerrainHeight}:${state.groundTerrainScale}:${state.groundTerrainSeed}:${state.groundTerrainOctaves}:${state.groundLevel}:${state.groundSize}:${state.groundColor.join(',')}:${state.groundAlpha}:${state.groundTextureEnabled}:${state.groundTexture}:${state.groundTextureScale}:${state.groundTextureRotation}${pbrKey}${infKey}`
             : state.groundTextureEnabled && state.groundTexture
-              ? `texture:${state.groundTexture}:${state.groundSize}:${state.groundReflectionQuality}${pbrKey}`
-              : `canvas:${state.groundStyle}:${state.groundGridSize}:${state.groundColor.join(',')}:${state.groundLineColor.join(',')}:${state.groundSize}:${state.groundReflectionQuality}${pbrKey}${proceduralKey}`;
+              ? `texture:${state.groundTexture}:${state.groundSize}:${state.groundReflectionQuality}${pbrKey}${infKey}`
+              : `canvas:${state.groundStyle}:${state.groundGridSize}:${state.groundColor.join(',')}:${state.groundLineColor.join(',')}:${state.groundSize}:${state.groundReflectionQuality}${pbrKey}${proceduralKey}${infKey}`;
     const keyChanged = typeKey !== _currentGroundKey;
 
     // 原地更新路径
