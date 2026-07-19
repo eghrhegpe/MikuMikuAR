@@ -1,4 +1,4 @@
-# ADR-136: Per-model Overlay Motion（动作2 叠加层）
+# ADR-144: Per-model Overlay Motion（动作2 叠加层）
 
 > **状态**: 实施中
 > **日期**: 2026-07-19
