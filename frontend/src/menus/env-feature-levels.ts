@@ -594,6 +594,13 @@ export function buildGroundLevel(): PopupLevel {
                             envState.groundDecoStyle === 'checker' ||
                             (envState.groundTextureEnabled && !!envState.groundTexture),
                     },
+                    {
+                        id: 'env:ground:infinite',
+                        kind: 'toggle',
+                        label: 'env.groundInfinite',
+                        control: { bind: 'env.groundInfinite' },
+                        icon: 'lucide:infinity',
+                    },
                 ],
             },
         ];
