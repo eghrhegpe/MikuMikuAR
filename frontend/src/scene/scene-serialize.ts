@@ -558,7 +558,7 @@ export function serializeScene(): SceneFile {
  *   Used during initial app startup because env state is restored separately
  *   from Go Config.Env to avoid double-application.
  */
-export async function deserializeScene(data: SceneFile, skipEnv = false): Promise<void> {
+export async function deserializeScene(data: SceneFile, skipEnv = false): Promise<number> {
     // 抑制恢复过程中的 auto-save，防止 setCameraState/setLightState/setRenderState
     // 等函数触发级联保存覆盖 last_scene.json。
     _suppressAutoSave = true;
@@ -1113,6 +1113,7 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
 
     // 恢复完成，允许 auto-save 再次触发
     _suppressAutoSave = false;
+    return errors.length;
 }
 
 // ======== Auto-save Debounce ========
@@ -1288,26 +1289,42 @@ if (typeof document !== 'undefined') {
 /** Currently supported scene file versions. */
 const SUPPORTED_VERSIONS = [1];
 
+// ======== Scene Migration Registry ========
+// 新增迁移在此追加函数 + 注册到 _sceneMigrators。
+// 每个 migrator 返回 true 表示发生了变更。
+type SceneMigrator = (data: Record<string, unknown>) => boolean;
+
+/** v0 → v1: no-op（v1 为初始版本，仅设置版本号）。 */
+function migrateToV1(data: Record<string, unknown>): boolean {
+    const v = (data.version as number) ?? 0;
+    if (v < 1) {
+        data.version = 1;
+        return true;
+    }
+    return false;
+}
+
+// 未来迁移示例：
+// function migrateToV2(data: Record<string, unknown>): boolean {
+//     if ((data.version as number) >= 2) return false;
+//     // ... 变更逻辑 ...
+//     data.version = 2;
+//     return true;
+// }
+
+/** 迁移注册表：新增迁移在此追加。 */
+const _sceneMigrators: SceneMigrator[] = [
+    migrateToV1,
+];
+
 /**
  * Migrate a scene file from an older version to the latest format.
- * Each migration function transforms the data in-place.
- * Add new migration steps here when the SceneFile format changes.
+ * Iterates the registry sequentially; each migrator bumps version on success.
  */
 function migrateScene(data: Record<string, unknown>): Record<string, unknown> {
-    let version: number = (data.version as number) ?? 0;
-
-    // v0 → v1: no-op (v1 is the initial version)
-    if (version < 1) {
-        data.version = 1;
-        version = 1;
+    for (const m of _sceneMigrators) {
+        m(data);
     }
-
-    // Future migrations:
-    // if (version < 2) {
-    //     data = migrateV1ToV2(data);
-    //     version = 2;
-    // }
-
     return data;
 }
 
@@ -1354,8 +1371,27 @@ export async function tryRestoreLastScene(): Promise<void> {
             return;
         }
 
-        await deserializeScene(data as unknown as SceneFile, true);
+        // Pre-snapshot: 快照当前场景（启动时为空），加载失败可回滚
+        const preSnap = JSON.stringify(serializeScene());
+        const errorCount = await deserializeScene(data as unknown as SceneFile, true);
         logCameraAlpha(); // 记录当前 alpha 诊断
+
+        // 全部模型加载失败时回滚到快照状态（空场景）
+        const modelCount = data.models.length;
+        if (modelCount > 0 && errorCount >= modelCount) {
+            logWarn(
+                'scene-serialize',
+                `场景恢复失败: ${errorCount}/${modelCount} 个模型均无法加载，回滚到空场景`
+            );
+            showErrorToast(t('scene.serialize.restoreFailed'));
+            try {
+                const raw = JSON.parse(preSnap);
+                await deserializeScene(raw as unknown as SceneFile, true);
+            } catch {
+                // 回滚也失败则静默——此时已是空场景
+            }
+            return;
+        }
 
         // 场景文件中有 env 状态时，覆盖 config.json 中的 env 状态
         // 因为 config.json 的 env 可能在页面关闭时未及时写入（SetEnvState binding 异步未完成），
