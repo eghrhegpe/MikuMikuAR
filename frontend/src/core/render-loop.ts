@@ -5,13 +5,14 @@ import { engine, scene, applyFrameControl } from '../scene/scene';
 import { updatePerformance } from '../scene/render/performance';
 import { uiState, dom } from './config';
 import { formatTimestamp, logWarn } from './utils';
+import { observe, type ObserverHandle } from './observer-handle';
 
 // 模块级句柄：使渲染循环可被幂等销毁（Vite HMR 重跑 bootstrap 但无真实页面卸载）
 let _fpsClockId: ReturnType<typeof setInterval> | null = null;
 let _frameCounter = 0;
 let _resizeHandler: (() => void) | null = null;
-let _beforeObs: ReturnType<typeof scene.onBeforeRenderObservable.add> | null = null;
-let _afterObs: ReturnType<typeof scene.onAfterRenderObservable.add> | null = null;
+let _beforeObs: ObserverHandle | null = null;
+let _afterObs: ObserverHandle | null = null;
 let _lastDpr = 1; // 上次检测到的 DPR，用于 resize 时判断是否变化
 
 const PERF_SAMPLE_INTERVAL = 60; // 每 60 帧评估一次性能日志（采样降频，P4）
@@ -52,10 +53,10 @@ export function startRenderLoop(): void {
     _lastDpr = window.devicePixelRatio || 1;
     applyScaling();
     let _renderBeforeTime = 0;
-    _beforeObs = scene.onBeforeRenderObservable.add(() => {
+    _beforeObs = observe(scene.onBeforeRenderObservable, () => {
         _renderBeforeTime = performance.now();
     });
-    _afterObs = scene.onAfterRenderObservable.add(() => {
+    _afterObs = observe(scene.onAfterRenderObservable, () => {
         const _gpuElapsed = performance.now() - _renderBeforeTime;
         if (_gpuElapsed > 30) {
             const _obsCount = scene.onBeforeRenderObservable.observers
@@ -127,11 +128,11 @@ export function stopRenderLoop(): void {
         _resizeHandler = null;
     }
     if (_beforeObs) {
-        scene.onBeforeRenderObservable.remove(_beforeObs);
+        _beforeObs.dispose();
         _beforeObs = null;
     }
     if (_afterObs) {
-        scene.onAfterRenderObservable.remove(_afterObs);
+        _afterObs.dispose();
         _afterObs = null;
     }
     engine.stopRenderLoop();

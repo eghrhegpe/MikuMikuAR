@@ -22,6 +22,7 @@ import {
 import { detectFootLanding } from './footstep-detect';
 import type { FootLandEvent } from '@/scene/motion/feet-adjustment';
 import { modelRegistry } from '@/core/config';
+import { observe, type ObserverHandle } from '@/core/observer-handle';
 
 /** 脚底贴地判定阈值（世界单位）：脚 IK Y 低于 groundY + 此值即视为贴地 */
 const SOLE_THRESHOLD = 0.05;
@@ -44,7 +45,7 @@ interface _ModelState {
     resolved: boolean;
 }
 
-let _observerHandle: (() => void) | null = null;
+let _observerHandle: ObserverHandle | null = null;
 const _modelStates = new Map<string, _ModelState>();
 let _callback: ((e: FootLandEvent) => void) | null = null;
 let _lastTickTime = 0;
@@ -98,16 +99,13 @@ export function startFallbackDetection(scene: Scene, onFootLand: (e: FootLandEve
         }
     };
 
-    _observerHandle = () => {
-        scene.onBeforeRenderObservable.removeCallback(tick);
-    };
-    scene.onBeforeRenderObservable.add(tick);
+    _observerHandle = observe(scene.onBeforeRenderObservable, tick);
 }
 
 /** 停止独立落地检测。 */
 export function stopFallbackDetection(): void {
     if (_observerHandle) {
-        _observerHandle();
+        _observerHandle.dispose();
         _observerHandle = null;
     }
     _modelStates.clear();

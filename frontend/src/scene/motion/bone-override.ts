@@ -7,6 +7,7 @@ import { Quaternion, Matrix, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 import type { MmdRuntimeBoneExtended } from '@/core/types';
 import { clamp01 } from '@/core/utils';
+import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { focusedModelId } from '@/core/state';
 
 /** 持久化的单条骨骼覆盖配置 */
@@ -40,7 +41,7 @@ interface _OverrideSlot {
 
 // ── 管理器（per-model） ──
 
-let _observerHandle: (() => void) | null = null; // unregister function
+let _observerHandle: ObserverHandle | null = null; // ObserverHandle 实例
 const _overrideMaps = new Map<string, Map<string, _OverrideSlot>>();
 /** [doc:adr-116 P3] 每帧钩子集合：由时间驱动模块（sway/riding）注册，渲染回调每帧调用 */
 const _frameHooks = new Set<(timeSec: number, modelId: string) => void>();
@@ -507,16 +508,13 @@ export function startBoneOverride(
         }
     };
 
-    _observerHandle = () => {
-        scene.onBeforeRenderObservable.removeCallback(callback);
-    };
-    scene.onBeforeRenderObservable.add(callback);
+    _observerHandle = observe(scene.onBeforeRenderObservable, callback);
 }
 
 /** 停止覆盖系统。 */
 export function stopBoneOverride(): void {
     if (_observerHandle) {
-        _observerHandle();
+        _observerHandle.dispose();
         _observerHandle = null;
     }
     _frameHooks.clear();

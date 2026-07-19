@@ -5,8 +5,8 @@
 // 本文件为感知层主入口（barrel + 状态管理 + observer 调度）。
 // 各功能实现见 perception-*.ts 子模块。
 
-import type { Observer } from '@babylonjs/core/Misc/observable';
 import type { Scene } from '@babylonjs/core/scene';
+import { observe, type ObserverHandle } from '@/core/observer-handle';
 
 import { modelManager, focusedModelId, triggerAutoSave } from '../scene';
 // scene 实例走 env-impl 的 getScene() 延迟获取，避免与 scene.ts 形成静态循环依赖
@@ -50,7 +50,7 @@ export {
 
 let perceptionState: PerceptionState = { ...DEFAULT_PERCEPTION_STATE };
 let perceptionModelId: string | null = null;
-let perceptionObserver: Observer<Scene> | null = null;
+let perceptionObserver: ObserverHandle | null = null;
 
 // ══════════════════════════════════════════════════════════════
 // 公共 API
@@ -86,7 +86,7 @@ export function activatePerception(modelId?: string): void {
     // gaze 必须最后（读 balance/breath 写入后的骨骼状态）；
     // lipsync 在 micro 之后（避免 smile morph 覆写冲突）。
     // 单帧异常不中断下游（try/catch 包裹每步）。
-    perceptionObserver = getScene().onBeforeRenderObservable.add(() => {
+    perceptionObserver = observe(getScene().onBeforeRenderObservable, () => {
         const scene = getScene();
         if (!scene || scene.isDisposed) {
             return;
@@ -166,7 +166,7 @@ export function activatePerception(modelId?: string): void {
 /** 注销感知层 */
 export function deactivatePerception(): void {
     if (perceptionObserver) {
-        getScene().onBeforeRenderObservable.remove(perceptionObserver);
+        perceptionObserver.dispose();
         perceptionObserver = null;
     }
     _resetLastEmotionMorphName(); // 模型切换时清空，避免旧 morph 名残留

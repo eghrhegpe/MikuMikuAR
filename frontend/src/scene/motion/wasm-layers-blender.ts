@@ -16,8 +16,7 @@ import { createVmdEvaluator, type VmdEvaluator } from '@/motion-algos/vmd-evalua
 import { DEFAULT_LAYER_BONE_FILTER } from './wasm-layers-config';
 import { scene, modelManager, loadVMDMotion } from '../scene';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
-import type { Observer } from '@babylonjs/core/Misc/observable';
-import type { Scene } from '@babylonjs/core/scene';
+import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { clamp01 } from '@/core/utils';
 
 export { DEFAULT_LAYER_BONE_FILTER } from './wasm-layers-config';
@@ -40,7 +39,7 @@ interface WasmLayerEntry {
 interface BlenderState {
     modelId: string;
     layers: Map<string, WasmLayerEntry>;
-    observer: Observer<Scene>;
+    observer: ObserverHandle;
     enabled: boolean;
     baseAnimationName: string;
     gazeConfig: { headEnabled: boolean; eyeEnabled: boolean };
@@ -63,7 +62,7 @@ export async function setupWasmLayersBlender(
         throw new Error(`Model ${modelId} not found`);
     }
 
-    const observer = scene.onBeforeRenderObservable.add(() => {
+    const observer = observe(scene.onBeforeRenderObservable, () => {
         const state = _blenderStates.get(modelId);
         if (!state || !state.enabled) {
             return;
@@ -95,7 +94,7 @@ export function teardownWasmLayersBlender(modelId: string): void {
         return;
     }
 
-    scene.onBeforeRenderObservable.remove(state.observer);
+    state.observer.dispose();
 
     for (const [, layer] of state.layers) {
         layer.evaluator.dispose();

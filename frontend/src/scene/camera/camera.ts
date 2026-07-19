@@ -19,6 +19,7 @@ import { t } from '@/core/i18n/t';
 import { focusModel, reattachPipeline, setARMode, getProcBeatDetector } from '../scene';
 import { InvertableArcRotateCameraPointersInput } from './invertablePointersInput';
 import { addDisposableListener, type Disposable } from '@/core/dom';
+import { observe, type ObserverHandle } from '@/core/observer-handle';
 
 // ======== Types ========
 /**
@@ -272,9 +273,9 @@ export function isTouchDevice(): boolean {
 function clampFov(v: number): number {
     return clamp(v, 0.1, 3);
 }
-let _concertUpdateFn: (() => void) | null = null;
+let _concertUpdateHandle: ObserverHandle | null = null;
 let _concertT = 0;
-let _surroundUpdateFn: (() => void) | null = null;
+let _surroundUpdateHandle: ObserverHandle | null = null;
 let _surroundAngle = 0;
 let _concertPaused = false;
 // Cached target vector for concert/surround modes (avoids per-frame Vector3 allocation)
@@ -364,7 +365,8 @@ function createVmdCamera(): MmdCamera {
 }
 
 // Stored observer callback references so we can remove them later
-let _freeflyUpdateFn: (() => void) | null = null;
+let _freeflyUpdateHandle: ObserverHandle | null = null;
+let _boneLockUpdateHandle: ObserverHandle | null = null;
 
 // ======== Public Getters ========
 export function getCurrentCamera(): Camera | null {
@@ -819,12 +821,12 @@ export function autoFrame(center: Vector3, extent: number): void {
 // ======== Freefly ========
 
 function initFreeflyUpdate(scene: Scene): void {
-    // Remove any previous freefly observer
-    if (_freeflyUpdateFn) {
-        scene.onBeforeRenderObservable.removeCallback(_freeflyUpdateFn);
+    // 释放之前的 observer
+    if (_freeflyUpdateHandle) {
+        _freeflyUpdateHandle.dispose();
     }
 
-    _freeflyUpdateFn = () => {
+    _freeflyUpdateHandle = observe(scene.onBeforeRenderObservable, () => {
         const cam = _currentCamera;
         if (!cam || !(cam instanceof UniversalCamera)) {
             return;
@@ -855,10 +857,8 @@ function initFreeflyUpdate(scene: Scene): void {
         if (freeflyInput.down) {
             cam.position.y -= speed;
         }
-    };
-
-    scene.onBeforeRenderObservable.add(_freeflyUpdateFn);
 }
+
 
 // ======== Freefly Touch Controls ========
 // 双指滑动：上下 = 前后移动，左右 = 平移
@@ -954,9 +954,9 @@ function stopFreefly(): void {
 
     stopFreeflyTouch();
 
-    if (_freeflyUpdateFn && _scene) {
-        _scene.onBeforeRenderObservable.removeCallback(_freeflyUpdateFn);
-        _freeflyUpdateFn = null;
+    if (_freeflyUpdateHandle) {
+        _freeflyUpdateHandle.dispose();
+        _freeflyUpdateHandle = null;
     }
 }
 
@@ -964,10 +964,10 @@ function stopFreefly(): void {
 
 function startSurround(scene: Scene): void {
     _surroundAngle = 0;
-    if (_surroundUpdateFn) {
-        scene.onBeforeRenderObservable.removeCallback(_surroundUpdateFn);
+    if (_surroundUpdateHandle) {
+        _surroundUpdateHandle.dispose();
     }
-    _surroundUpdateFn = () => {
+    _surroundUpdateHandle = observe(scene.onBeforeRenderObservable, () => {
         const cam = _currentCamera;
         if (!cam || !(cam instanceof ArcRotateCamera)) {
             return;
@@ -993,14 +993,13 @@ function startSurround(scene: Scene): void {
             _concertTarget.set(0, p.height, 0);
         }
         cam.setTarget(_concertTarget);
-    };
-    scene.onBeforeRenderObservable.add(_surroundUpdateFn);
+    });
 }
 
 function stopSurround(): void {
-    if (_surroundUpdateFn && _scene) {
-        _scene.onBeforeRenderObservable.removeCallback(_surroundUpdateFn);
-        _surroundUpdateFn = null;
+    if (_surroundUpdateHandle) {
+        _surroundUpdateHandle.dispose();
+        _surroundUpdateHandle = null;
     }
 }
 
@@ -1058,7 +1057,7 @@ function stopConcert(): void {
 let _boneLockEnabled = false;
 let _boneLockBoneName: string | null = null;
 let _boneLockModelId: string | null = null;
-let _boneLockUpdateFn: (() => void) | null = null;
+let _boneLockUpdateHandle: ObserverHandle | null = null;
 // 可复用临时向量，避免每帧 new Vector3
 const _boneLockTempVec = new Vector3(0, 0, 0);
 // 锁定前保存原始平移灵敏度用于恢复
