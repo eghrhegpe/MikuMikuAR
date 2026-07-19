@@ -39,8 +39,10 @@ import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 import { getActiveMotion, getMotionGen } from '../scene/motion/motion-intent';
 import { applyIntentToModel } from './motion-popup';
-import { setProcMotionMode, regenerateProcMotion } from '../scene/motion/proc-motion-bridge';
+import { setProcMotionMode, regenerateProcMotion, isProcVmdActive, stopProcMotion } from '../scene/motion/proc-motion-bridge';
+import { DEFAULT_PROC_STATE } from '../motion-algos/procedural-motion';
 import { buildProcMotionLevel } from './motion-procmotion-levels';
+import { loadManager } from '../core/load-manager';
 import { getBrowseDir } from '../core/config';
 import type { ModelInstance, ModelMotionSlots } from '@/core/types';
 
@@ -57,8 +59,97 @@ function _ensureMotionSlots(inst: ModelInstance): ModelMotionSlots {
 
 /** [P5 per-slot] 激活程序化动作到指定模型（显式传 modelId，不依赖焦点） */
 function _activateProcForModel(modelId: string, role: 'idle' | 'autodance'): void {
-    setProcMotionMode(role);
+    // [fix:P2] 不调用全局 setProcMotionMode，仅写入 per-model 状态
+    const inst = modelManager.get(modelId);
+    if (inst) {
+        inst.procMotion = { ...(inst.procMotion ?? DEFAULT_PROC_STATE), mode: role };
+    }
     regenerateProcMotion(modelId);
+}
+
+/**
+ * [fix] 切换到程序化动作时保留已加载动作引用（pinned）。
+ * 否则 source 被整体替换为 'procedural' 会丢掉 pinned，导致程序化激活后
+ * 「已加载动作」不可还原（必须重新从库里挑选）。保留引用后，
+ * 点击「已加载动作」即可随时从程序化切回原动作（见 _applyLoadedMotion）。
+ */
+function _setProcForModel(id: string, inst: ModelInstance, role: 'idle' | 'autodance'): void {
+    const prev = _ensureMotionSlots(inst).primary;
+    // 自动保存当前动作引用：如果尚未 pinned，从 active / inst 提取并冻结
+    let pinned = prev.pinned;
+    if (!pinned) {
+        const active = getActiveMotion();
+        if (active?.vmdPath) {
+            pinned = structuredClone(active);
+        } else if (inst.vmdPath) {
+            // 无场景级意图但模型有独立 VMD → 构造最小 pinned 快照
+            pinned = {
+                vmdPath: inst.vmdPath,
+                vmdName: inst.vmdName,
+                vmdLayers: [],
+                source: 'vmd',
+            };
+        }
+    }
+    _ensureMotionSlots(inst).primary = {
+        source: 'procedural',
+        procRole: role,
+        status: 'idle',
+        pinned,
+    };
+    _activateProcForModel(id, role);
+}
+
+/**
+ * [fix] 从程序化切回已加载动作：直接重新应用，无需单独的「取消程序化」步骤。
+ * 时序保证：先同步 stopProcMotion(modelId) 停止该模型的程序化，再异步重载 pinned VMD。
+ * [fix:P2] 使用 _applyingMotionId 防止 updateProcMotion 在异步间隙重启 proc。
+ */
+let _applyingMotionId: string | null = null;
+
+function _applyLoadedMotion(id: string, inst: ModelInstance): void {
+    const slots = _ensureMotionSlots(inst);
+    const pinned = slots.primary.pinned;
+    // 1) 同步停止该模型的程序化（不清全局 mode，避免污染其他模型）
+    _applyingMotionId = id;
+    // 清除 per-model proc 状态
+    if (inst.procMotion) {
+        inst.procMotion = { ...inst.procMotion, mode: 'off' };
+    }
+    // 如果该模型在活跃 proc 集合中，停止它
+    if (isProcVmdActive()) {
+        stopProcMotion();
+    }
+    if (pinned) {
+        const gen = getMotionGen();
+        loadManager
+            .load({ kind: 'vmd', path: pinned.vmdPath, modelId: id })
+            .then((handle) => {
+                _applyingMotionId = null;
+                if (getMotionGen() !== gen) {
+                    return;
+                }
+                if (handle) {
+                    inst.vmdName = handle.name;
+                    inst.vmdPath = pinned.vmdPath;
+                    // 保留 pin 标记，使模型继续独立于场景广播
+                    slots.primary = { source: 'pinned', pinned, status: 'overridden' };
+                }
+            })
+            .catch(() => {
+                _applyingMotionId = null;
+                // 重载失败：回退静态，避免卡在已失效的程序化状态
+                slots.primary = { source: 'inherit', status: 'idle' };
+            });
+    } else {
+        _applyingMotionId = null;
+        const active = getActiveMotion();
+        if (active) {
+            applyIntentToModel(id, active, getMotionGen());
+        } else {
+            slots.primary = { source: 'inherit', status: 'idle' };
+        }
+    }
 }
 
 // ======== Open With (software tools submenu) ========
@@ -274,7 +365,7 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
         items: [],
         renderCustom: (container) => {
             cardContainer(container, (c) => {
-                // ── 已加载动作 ──
+                // ── 已加载动作（始终可见，点击即从程序化切回并重新应用）──
                 addSectionTitle(c, t('model-detail.loadedMotion'));
                 const slots0 = inst.motionSlots ?? {
                     primary: { source: 'inherit' as const, status: 'idle' as const },
@@ -283,18 +374,38 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
                 const active = getActiveMotion();
                 const isPinned = slots0.primary.source === 'pinned';
                 const isProc = slots0.primary.source === 'procedural';
-                const motionLabel = isPinned
-                    ? slots0.primary.pinned?.vmdName || t('model-detail.pinnedMotion')
-                    : isProc
-                      ? slots0.primary.procRole === 'autodance'
-                          ? t('motion.modeAutodance')
-                          : t('motion.modeIdle')
-                      : active?.vmdName || t('model-detail.noMotion');
-                const motionIcon = isProc ? 'lucide:wand-sparkles' : 'lucide:music-2';
+                // 程序化激活时仍显示「已加载动作」本名，而非程序化模式名——
+                // 这样用户随时能点它切回原动作，无需先「取消程序化」。
+                const loadedName =
+                    slots0.primary.pinned?.vmdName ||
+                    active?.vmdName ||
+                    inst.vmdName ||
+                    t('model-detail.noMotion');
 
-                slideRow(c, motionIcon, motionLabel, false, () => {});
+                const loadedRow = slideRow(
+                    c,
+                    'lucide:clapperboard',
+                    loadedName,
+                    true,
+                    () => {
+                        _applyLoadedMotion(id, inst);
+                        stackRegistry.modelStack?.reRender();
+                    }
+                );
+                // 程序化激活时右侧显示状态徽标（仅指示，点击整行即切回已加载动作）
+                if (isProc) {
+                    const badge = document.createElement('span');
+                    badge.className = 'preset-chip';
+                    badge.style.cssText = 'margin-left:auto;cursor:default;';
+                    badge.textContent =
+                        slots0.primary.procRole === 'autodance'
+                            ? t('motion.modeAutodance')
+                            : t('motion.modeIdle');
+                    badge.title = t('model-detail.procActive');
+                    loadedRow.appendChild(badge);
+                }
 
-                // 固定动作时显示取消固定行
+                // 固定动作时显示取消固定行（与程序化切换解耦）
                 if (isPinned) {
                     slideRow(c, 'lucide:pin-off', t('motion.context.unpin'), false, () => {
                         _ensureMotionSlots(inst).primary = { source: 'inherit', status: 'idle' };
@@ -302,15 +413,6 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
                             applyIntentToModel(id, active, getMotionGen());
                         }
                         setStatus(t('motion.override.redoApplied'), true);
-                        stackRegistry.modelStack?.reRender();
-                    });
-                }
-
-                // 程序化时显示取消程序化行
-                if (isProc) {
-                    slideRow(c, 'lucide:x', t('model-detail.clearProc'), false, () => {
-                        _ensureMotionSlots(inst).primary = { source: 'inherit', status: 'idle' };
-                        setProcMotionMode('off');
                         stackRegistry.modelStack?.reRender();
                     });
                 }
@@ -327,12 +429,7 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
                     t('motion.modeIdle'),
                     true,
                     () => {
-                        _ensureMotionSlots(inst).primary = {
-                            source: 'procedural',
-                            procRole: 'idle',
-                            status: 'idle',
-                        };
-                        _activateProcForModel(id, 'idle');
+                        _setProcForModel(id, inst, 'idle');
                         stackRegistry.modelStack?.reRender();
                     },
                     isIdleActive ? t('model-detail.procActive') : undefined
@@ -344,13 +441,8 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
                     editBtn.style.cssText = 'margin-left:auto;';
                     editBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        _ensureMotionSlots(inst).primary = {
-                            source: 'procedural',
-                            procRole: 'idle',
-                            status: 'idle',
-                        };
-                        _activateProcForModel(id, 'idle');
-                        stackRegistry.modelStack?.push(buildProcMotionLevel());
+                        _setProcForModel(id, inst, 'idle');
+                        stackRegistry.modelStack?.push(buildProcMotionLevel(id));
                     });
                     idleRow.appendChild(editBtn);
                 }
@@ -365,12 +457,7 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
                     t('motion.modeAutodance'),
                     true,
                     () => {
-                        _ensureMotionSlots(inst).primary = {
-                            source: 'procedural',
-                            procRole: 'autodance',
-                            status: 'idle',
-                        };
-                        _activateProcForModel(id, 'autodance');
+                        _setProcForModel(id, inst, 'autodance');
                         stackRegistry.modelStack?.reRender();
                     },
                     isAutodanceActive ? t('model-detail.procActive') : undefined
@@ -382,13 +469,8 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
                     editBtn.style.cssText = 'margin-left:auto;';
                     editBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        _ensureMotionSlots(inst).primary = {
-                            source: 'procedural',
-                            procRole: 'autodance',
-                            status: 'idle',
-                        };
-                        _activateProcForModel(id, 'autodance');
-                        stackRegistry.modelStack?.push(buildProcMotionLevel());
+                        _setProcForModel(id, inst, 'autodance');
+                        stackRegistry.modelStack?.push(buildProcMotionLevel(id));
                     });
                     autodanceRow.appendChild(editBtn);
                 }
