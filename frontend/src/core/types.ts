@@ -477,162 +477,24 @@ const _uiStateCoversGo: _UIStateCoversGo = true;
 
 // ======== Environment State ========
 
-export interface EnvState {
-    skyMode: 'color' | 'texture' | 'procedural';
-    skyColorTop: [number, number, number];
-    skyColorMid: [number, number, number];
-    skyColorBot: [number, number, number];
-    skyTexture: string;
-    skyRotationY: number;
-    skyRotationSpeed: number;
-    skyBrightness: number;
-    starsEnabled: boolean;
-    starsTexture: string;
-    envIntensity: number;
+// [doc:adr-137] EnvState 从 env-state-schema.ts 派生，不再手写 interface。
+import type { EnvStateSchema } from './env-state-schema';
 
-    groundVisible: boolean;
-    groundType: 'flat' | 'terrain'; // 几何类型：平面 / 程序化地形（原 heightmap）
-    groundStyle: 'solid' | 'grid' | 'checker' | 'texture'; // 仅 flat 时有效（外观样式）
-    groundDecoStyle: 'none' | 'grid' | 'checker'; // 装饰叠加层，独立于基础色/贴图
-    groundColor: [number, number, number];
-    groundAlpha: number;
-    groundTexture: string;
-    groundTextureEnabled: boolean;
-    groundTextureScale: number;
-    groundTextureRotation: number; // 纹理旋转角度 (0-360)
-    groundGridSize: number; // 网格/棋盘格大小 (0.5-5)
-    groundLineColor: [number, number, number]; // 网格线颜色 / 棋盘格第二色
+/** 核心类型映射：Schema 字段定义 → TS 类型。 */
+type SchemaToTSType<T> =
+    T extends { type: 'enum'; values: infer V }
+        ? V extends readonly string[] ? V[number] : never
+        : T extends { type: 'tuple3' }       ? [number, number, number]
+        : T extends { type: 'number' }       ? number
+        : T extends { type: 'boolean' }      ? boolean
+        : T extends { type: 'string' }       ? string
+        : T extends { type: 'optional-string' } ? string | undefined
+        : never;
 
-    // 地形（heightmap 模式）参数
-    groundTerrainHeight: number; // 地形总起伏高度（峰谷差 = 世界单位；网格绕 groundLevel 上下各 ±height/2）
-    groundTerrainScale: number; // 噪声频率（越大特征越小越密）
-    groundTerrainSeed: number; // 随机种子（同一种子同地形）
-    groundTerrainOctaves: number; // FBM 倍频层数（1-8）
-
-    // Phase A: 地面增强
-    groundPitch: number; // X 轴旋转（度），默认 0，范围 -45..45（所有模式均支持，地形模式采用坐标变换补偿高度查询）
-    groundRoll: number; // Z 轴旋转（度），默认 0，范围 -45..45（所有模式均支持，地形模式采用坐标变换补偿高度查询）
-    groundScrollSpeedX: number; // 纹理 X 方向滚动速度，默认 0，范围 -2..2
-    groundScrollSpeedZ: number; // 纹理 Z 方向滚动速度，默认 0，范围 -2..2
-    groundPattern: 'checker' | 'dots' | 'stripes' | 'radial'; // 程序化图案类型，默认 'checker'
-
-    // Phase B: 地面增强（反射/法线/高程/跟随）
-    groundReflectionBlend: number; // 镜面反射混合度，0=无，1=全反射，默认 0
-    groundReflectionQuality: 'high' | 'medium' | 'low' | 'off'; // 反射质量，默认 'off'
-    groundNormalTexture: string; // 法线贴图路径，默认 ''
-    groundNormalStrength: number; // 法线强度，默认 1
-    groundElevationColoring: boolean; // 高度图按高程着色开关，默认 false
-    groundInfinite: boolean; // 无限地面模式（平滑追踪 + 世界空间纹理），默认 false
-    // ADR-114: PBR 材质 + 程序化纹理
-    groundPbrEnabled: boolean; // PBR 材质开关，默认 false（回退 StandardMaterial）
-    groundProceduralTexture: 'none' | 'wood' | 'marble' | 'concrete'; // 程序化纹理类型，默认 'none'
-    groundProceduralSeed: number; // 程序化纹理随机种子，默认 42
-    groundProceduralScale: number; // 程序化纹理平铺缩放，默认 1.0
-    groundRoughness: number; // 基础粗糙度（PBR 生效时），默认 0.6
-    groundMetallic: number; // 金属度（PBR 生效时），默认 0.0
-    // ADR-114 Phase 2: 反射模糊 + 法线扭曲
-    groundReflectionBlur: number; // 反射模糊强度 0–1（mipmap LOD 偏移），默认 0.0
-    groundReflectionDistort: number; // 法线扭曲强度 0–1（bumpTexture 扰动反射方向），默认 0.3
-    // ADR-114 Phase 3: 接触阴影（屏幕空间 ray marching 后处理）
-    groundContactShadowEnabled: boolean; // 接触阴影开关，默认 false
-    groundContactShadowIntensity: number; // 接触阴影强度 0–1，默认 0.5
-    groundContactShadowDistance: number; // 光线步进最大距离（视图空间单位），默认 0.5
-
-    windEnabled: boolean;
-    windDirection: [number, number, number];
-    windSpeed: number;
-
-    particleEnabled: boolean;
-    particleType: 'none' | 'sakura' | 'rain' | 'snow' | 'fireworks' | 'fireflies' | 'leaves';
-    particleEmitRate: number;
-    particleSize: number;
-    particleSpeed: number;
-    particleSplash: boolean;
-    particleCustomTexture: string; // 自定义粒子纹理 data URL，空=默认
-
-    groundLevel: number;
-    groundSize: number; // 地面范围（边长，世界单位），所有模式通用
-    groundEdgeFade: number; // 边缘淡出：0=硬边（默认），1=最大径向淡出，消除方块硬边
-
-    waterEnabled: boolean;
-    waterLevel: number;
-    waterFlip: boolean;
-    waterColor: [number, number, number];
-    waterTransparency: number;
-    waterWaveHeight: number; // 全局振幅乘子（P4 升级语义：旧字段保留，向后兼容）
-    bigWaveHeight: number; // ADR-115 P4: 大波高度（Gerstner 低频 2 层振幅缩放），默认 1.0
-    smallWaveHeight: number; // ADR-115 P4: 小波纹高度（Gerstner 高频 2 层振幅缩放），默认 1.0
-    waterSize: number;
-    waterAnimSpeed: number;
-
-    planarReflectBlend: number;
-    reflectionQuality: 'high' | 'medium' | 'low' | 'off';
-    /** ADR-130 Phase 2.3: 统一质量档位，作为所有可伸缩质量的聚合源 */
-    qualityProfile: 'high' | 'medium' | 'low';
-
-    waterFogColor: [number, number, number];
-    waterFogDensity: number;
-    waterFogOpacityInfluence: number;
-    // ADR-115 P3: 地平线淡出 + 天空-水面颜色联动
-    waterHorizonFade: number; // 地平线淡出强度，0=关闭（硬边），1=完全淡出，默认 0
-    waterSkyColorBlend: number; // 天空-水色联动，0=不联动，1=完全跟随天空，默认 0
-
-    fresnelBias: number;
-    fresnelPower: number;
-    diffuseStrength: number;
-    ambientStrength: number;
-    rippleNormalStrength: number;
-    rippleGlintStrength: number;
-    waterNormalStrength: number; // ADR-115 P1: 高频法线扰动层强度，默认 0.3
-    waterGlintStrength: number; // ADR-115 P1: Sun Glitter 闪烁强度，默认 0
-    causticIntensity: number;
-    causticColor1: [number, number, number];
-    causticColor2: [number, number, number];
-    causticScrollX: number;
-    causticScrollY: number;
-    fresnelAlphaInfluence: number;
-
-    underwaterFogDensity: number;
-    underwaterChromaticAmount: number;
-    underwaterToneIntensity: number;
-    underwaterFogMultiplier: number;
-    underwaterTintStrength: number;
-
-    cloudsEnabled: boolean;
-    debugClouds: boolean;
-    cloudCover: number;
-    cloudScale: number;
-    cloudHeight: number;
-    cloudThickness: number;
-    cloudVisibility: number;
-    cloudGap: number;
-    cloudErosion: number;
-    cloudWeatherStrength: number;
-    cloudBacklight: number; // Phase C: 双瓣 HG 后向瓣混合比 (0=纯前向, 1=纯后向)
-    cloudPowder: number; // Phase C: powder 糖粉效应强度 (0=关闭, 2=强)
-    cloudQuality: 'standard' | 'high'; // Phase D: blue-noise dither 开关
-
-    mirrorEnabled: boolean;
-
-    fogEnabled: boolean;
-    fogMode: 'exp' | 'exp2' | 'linear';
-    fogColor: [number, number, number];
-    fogDensity: number;
-    fogStart: number;
-    fogEnd: number;
-
-    collisionEnabled: boolean;
-    bodyCollisionEnabled: boolean;
-    groundCollisionEnabled: boolean;
-
-    sunAngle: number;
-    azimuth: number;
-
-    lightingPresetName?: string;
-
-    timeOfDayActive: boolean;
-    timeOfDaySpeed: number;
-}
+/** 从 schema 派生 EnvState interface（-readonly 保证可写）。[doc:adr-137] */
+export type EnvState = {
+    -readonly [K in keyof EnvStateSchema]: SchemaToTSType<EnvStateSchema[K]>;
+};
 
 // ======== Miscellaneous Types ========
 
