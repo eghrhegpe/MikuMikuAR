@@ -10,11 +10,8 @@ import { EnvState, envState } from '@/core/config';
 import { getWindVector } from '@/core/wind-utils';
 import { logWarn } from '@/core/logger';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
-import {
-    ensureEnvUpdateObserver,
-    addRipple,
-    getGroundHeightAt,
-} from './env-impl';
+import { registerEnvCallback } from './env-dispatcher';
+import { ensureEnvUpdateObserver, addRipple, getGroundHeightAt } from './env-impl';
 import { _envSys, getScene } from './env-context';
 import { createCanvasTexture } from './env-texture';
 
@@ -839,3 +836,28 @@ export function updateParticleTexture(): void {
     ps.particleTexture = makeParticleTexture(_currentParticleType, url);
     _prevCustomTexKey = newKey;
 }
+
+// ======== [ADR-138] env-dispatcher 回调注册 ========
+const _PARTICLE_KEYS = [
+    'particleEnabled',
+    'particleType',
+    'particleDensity',
+    'particleSize',
+    'particleSpeed',
+    'particleEmitRate',
+    'particleSplash',
+    'particleCustomTexture',
+    'windEnabled',
+    'windStrength',
+    'windDirection',
+];
+
+registerEnvCallback((changed, state) => {
+    if (!changed || [...changed].some((k) => _PARTICLE_KEYS.includes(k))) {
+        if (state.particleEnabled && state.particleType && state.particleType !== 'none') {
+            createParticleEmitter(state.particleType, state.windEnabled);
+        } else {
+            disposeParticles();
+        }
+    }
+});

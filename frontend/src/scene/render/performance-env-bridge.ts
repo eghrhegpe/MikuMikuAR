@@ -23,12 +23,17 @@ export function isAutoDegradingReflection(): boolean {
 let _setEnvState: ((partial: Partial<EnvState>, skipAutoSave?: boolean) => void) | null = null;
 
 /** env-bridge.ts 初始化时注册 setEnvState 函数 */
-export function registerSetEnvState(fn: (partial: Partial<EnvState>, skipAutoSave?: boolean) => void): void {
+export function registerSetEnvState(
+    fn: (partial: Partial<EnvState>, skipAutoSave?: boolean) => void
+): void {
     _setEnvState = fn;
 }
 
 /** performance.ts 调用此函数设置 envState（延迟绑定，避免循环导入） */
-export function setEnvStateForPerformance(partial: Partial<EnvState>, skipAutoSave?: boolean): void {
+export function setEnvStateForPerformance(
+    partial: Partial<EnvState>,
+    skipAutoSave?: boolean
+): void {
     if (_setEnvState) {
         _setEnvState(partial, skipAutoSave);
     }

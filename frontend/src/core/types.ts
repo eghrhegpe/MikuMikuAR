@@ -481,15 +481,21 @@ const _uiStateCoversGo: _UIStateCoversGo = true;
 import type { EnvStateSchema } from './env-state-schema';
 
 /** 核心类型映射：Schema 字段定义 → TS 类型。 */
-type SchemaToTSType<T> =
-    T extends { type: 'enum'; values: infer V }
-        ? V extends readonly string[] ? V[number] : never
-        : T extends { type: 'tuple3' }       ? [number, number, number]
-        : T extends { type: 'number' }       ? number
-        : T extends { type: 'boolean' }      ? boolean
-        : T extends { type: 'string' }       ? string
-        : T extends { type: 'optional-string' } ? string | undefined
-        : never;
+type SchemaToTSType<T> = T extends { type: 'enum'; values: infer V }
+    ? V extends readonly string[]
+        ? V[number]
+        : never
+    : T extends { type: 'tuple3' }
+      ? [number, number, number]
+      : T extends { type: 'number' }
+        ? number
+        : T extends { type: 'boolean' }
+          ? boolean
+          : T extends { type: 'string' }
+            ? string
+            : T extends { type: 'optional-string' }
+              ? string | undefined
+              : never;
 
 /** 从 schema 派生 EnvState interface（-readonly 保证可写）。[doc:adr-137] */
 export type EnvState = {

@@ -27,9 +27,11 @@ let _meshRemovedObserver: ObserverHandle | null = null;
 // 可调参数（通过 API 修改，下次 create 时生效）
 let _mirrorWidth = 22;
 let _mirrorHeight = 19;
-let _mirrorResolution = 512;
 let _mirrorPosition: [number, number, number] = [0, 1.5, 4];
 let _mirrorRotationY = 0; // 水平旋转（弧度）
+
+/** 统一反射分辨率映射：envState.reflectionQuality → 实际像素 */
+const RESOLUTION_MAP: Record<string, number> = { high: 2048, medium: 1024, low: 512, off: 0 };
 
 /** 从当前 mesh 世界矩阵更新 mirrorPlane，使反射平面与 mesh 实际位置/朝向一致。 */
 function _updateMirrorPlane(): void {
@@ -83,7 +85,7 @@ export function createMirror(): void {
     _mirrorMesh.isPickable = false;
 
     // MirrorTexture：反射全部 mesh
-    _mirrorRT = new MirrorTexture('mirrorRT', _mirrorResolution, scene, false);
+    _mirrorRT = new MirrorTexture('mirrorRT', RESOLUTION_MAP[envState.reflectionQuality] ?? 512, scene, false);
     _mirrorRT.level = 1; // 完全反射
     _mirrorRT.adaptiveBlurKernel = 0; // 关闭模糊，锐利反射便于排查
     updateMirrorClearColor(); // 根据当前天空模式设置 clearColor
@@ -184,10 +186,13 @@ export function setMirrorRotationY(rad: number): void {
 }
 
 export function setMirrorResolution(res: number): void {
-    _mirrorResolution = Math.max(64, Math.min(2048, res));
-    // 需要重建才生效，标记即可
+    // 统一反射分辨率：将像素值反向映射到 quality 枚举
+    if (res >= 2048) envState.reflectionQuality = 'high';
+    else if (res >= 1024) envState.reflectionQuality = 'medium';
+    else if (res >= 512) envState.reflectionQuality = 'low';
+    else envState.reflectionQuality = 'off';
+    // 需要重建才生效
     if (_mirrorRT) {
-        // 简单方案：dispose 重建
         const wasActive = isMirrorActive();
         disposeMirror();
         if (wasActive) {
@@ -209,7 +214,7 @@ export function getMirrorInfo(): {
         position: _mirrorPosition,
         width: _mirrorWidth,
         height: _mirrorHeight,
-        resolution: _mirrorResolution,
+        resolution: RESOLUTION_MAP[envState.reflectionQuality] ?? 512,
         meshCount: _mirrorRT?.renderList?.length ?? 0,
     };
 }

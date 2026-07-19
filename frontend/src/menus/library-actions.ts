@@ -40,6 +40,7 @@ import {
 } from '../core/wails-bindings';
 import {
     tryCatchStatus,
+    withLoadingStatus,
     getBrowseDir,
     isUnderRoot,
     getBaseName,
@@ -208,7 +209,9 @@ export async function prepareModelRestore(
             );
             librarySessionStore.setPendingAutoExpand(result && result.length > 0 ? result : null);
         } else {
-            librarySessionStore.setPendingAutoExpand(fullSegs && fullSegs.length > 0 ? fullSegs : null);
+            librarySessionStore.setPendingAutoExpand(
+                fullSegs && fullSegs.length > 0 ? fullSegs : null
+            );
         }
     } else {
         librarySessionStore.setPendingAutoExpand(null);
@@ -328,7 +331,7 @@ function startReplaceModel(m: LibraryModel, replaceId: string): void {
 }
 
 /** [adr-143] 模块级 AbortController：用户快速连点新模型时，取消上一个 loadManager.load()。
-     * 与 model-loader 内部的 _loadAbortController 互补：此处取消队列级请求，后者取消底层解析。 */
+ * 与 model-loader 内部的 _loadAbortController 互补：此处取消队列级请求，后者取消底层解析。 */
 let _loadManagerAbortCtrl: AbortController | null = null;
 
 /** 正常加载模式：zip 提取后加载，或按格式直接加载。 */
@@ -351,12 +354,15 @@ function loadModelNormal(m: LibraryModel, isStage: boolean): void {
                 if (m.format === 'vmd') {
                     loadManager.load({ kind: 'vmd', path: result.file_path }, signal);
                 } else {
-                    loadManager.load({
-                        kind: isStage ? 'stage' : 'actor',
-                        path: result.file_path,
-                        libraryPath: m.file_path,
-                        innerPath: m.zip_inner,
-                    }, signal);
+                    loadManager.load(
+                        {
+                            kind: isStage ? 'stage' : 'actor',
+                            path: result.file_path,
+                            libraryPath: m.file_path,
+                            innerPath: m.zip_inner,
+                        },
+                        signal
+                    );
                 }
             })
             .catch((err) => {
@@ -441,27 +447,31 @@ function replaceMotion(m: LibraryModel): void {
     }
     closeAllOverlays();
     const targetId = focusedModelId;
-    const doLoad = (path: string): void => {
-        loadManager
-            .load({ kind: 'vmd', path, modelId: targetId })
-            .then(() => setStatus(t('status.done'), true))
-            .catch((err) => setStatus(t('library.vmdLoadFailed') + formatError(err), false));
+    const doLoad = async (path: string): Promise<void> => {
+        await withLoadingStatus('library.loadingMotion', 'status.done', () =>
+            loadManager.load({ kind: 'vmd', path, modelId: targetId })
+        );
     };
     if (m.container === 'zip') {
-        setStatus(t('library.extractingZip'), false);
         librarySessionStore.setExtracting(m.file_path);
-        ExtractZip(m.file_path, m.zip_inner)
-            .then((result) => {
-                setStatus(result.cached ? t('library.cacheHit') : t('library.extracted'), true);
-                doLoad(result.file_path);
+        withLoadingStatus('library.extractingZip', 'library.extracted', () =>
+            ExtractZip(m.file_path, m.zip_inner)
+        )
+            .then(async (result) => {
+                if (!result) {
+                    return;
+                }
+                await doLoad(result.file_path);
             })
-            .catch((err) => setStatus(t('library.extractFailed') + formatError(err), false))
+            .catch((err) => {
+                setStatus(t('library.extractFailed') + formatError(err), false);
+            })
             .finally(() => {
                 librarySessionStore.clearExtracting(m.file_path);
             });
         return;
     }
-    doLoad(m.file_path);
+    void doLoad(m.file_path);
 }
 
 // ======== 标签 ========
@@ -602,31 +612,26 @@ export async function importFile(): Promise<void> {
     }
     const lower = path.toLowerCase();
     if (lower.endsWith('.zip')) {
-        setStatus(t('library.importingZip'), false);
-        try {
-            await ImportZip(path);
-            setStatus(t('library.zipImported'), true);
-            const { refreshLibrary } = await import('./library-setup');
-            await refreshLibrary().catch((err) =>
-                logWarn('library-actions', 'refresh after zip import:', err)
-            );
-        } catch (err) {
-            setStatus(t('library.importFailed') + formatError(err), false);
+        const imported = await withLoadingStatus(
+            'library.importingZip',
+            'library.zipImported',
+            () => ImportZip(path)
+        );
+        if (!imported) {
+            return;
         }
+        const { refreshLibrary } = await import('./library-setup');
+        await refreshLibrary().catch((err) =>
+            logWarn('library-actions', 'refresh after zip import:', err)
+        );
     } else if (lower.endsWith('.pmx')) {
-        setStatus(t('library.loadingModel'), false);
-        try {
-            await loadManager.load({ kind: 'actor', path });
-        } catch (err) {
-            setStatus(t('library.modelLoadFailed') + formatError(err), false);
-        }
+        await withLoadingStatus('library.loadingModel', 'status.done', () =>
+            loadManager.load({ kind: 'actor', path })
+        );
     } else if (lower.endsWith('.vmd')) {
-        setStatus(t('library.loadingMotion'), false);
-        try {
-            await loadManager.load({ kind: 'vmd', path });
-        } catch (err) {
-            setStatus(t('library.vmdLoadFailed') + formatError(err), false);
-        }
+        await withLoadingStatus('library.loadingMotion', 'status.done', () =>
+            loadManager.load({ kind: 'vmd', path })
+        );
     } else {
         setStatus(t('library.unsupportedFormat'), false);
     }

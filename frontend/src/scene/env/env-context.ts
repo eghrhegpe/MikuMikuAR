@@ -2,7 +2,14 @@
 // 从 env-impl.ts 拆分而来：提供 _envSys、getScene、getPipeline 等共享依赖，
 // 供所有 env-* 子模块使用，避免 env-impl ↔ env-water 循环依赖。
 
-import { Scene, ParticleSystem, DefaultRenderingPipeline, StandardMaterial, Texture, Mesh } from '@babylonjs/core';
+import {
+    Scene,
+    ParticleSystem,
+    DefaultRenderingPipeline,
+    StandardMaterial,
+    Texture,
+    Mesh,
+} from '@babylonjs/core';
 import { type ObserverHandle } from '@/core/observer-handle';
 
 // ======== Injected dependencies ========

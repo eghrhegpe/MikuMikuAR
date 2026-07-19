@@ -188,6 +188,7 @@ export interface EnvState {
     "groundProceduralScale": number;
     "groundRoughness": number;
     "groundMetallic": number;
+    "groundInfinite": boolean;
 
     /**
      * ADR-114 Phase 2: 反射模糊 + 法线扭曲
@@ -234,6 +235,11 @@ export interface EnvState {
      * ADR-115: 平面反射混合度，对应 TS planarReflectBlend
      */
     "planarReflectBlend": number;
+
+    /**
+     * ADR-130 Phase 2.3: 统一质量档位
+     */
+    "qualityProfile": string;
 
     /**
      * 水面高级着色器参数（持久化，避免材质重建时重置）

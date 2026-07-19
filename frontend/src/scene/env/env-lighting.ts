@@ -241,7 +241,6 @@ export const ENV_PRESET_FIELDS: Record<EnvPresetCategory, (keyof EnvState)[]> = 
         'groundScrollSpeedZ',
         'groundPattern',
         'groundReflectionBlend',
-        'groundReflectionQuality',
         'groundNormalTexture',
         'groundNormalStrength',
         'groundElevationColoring',

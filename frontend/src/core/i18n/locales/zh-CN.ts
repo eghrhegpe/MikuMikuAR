@@ -917,7 +917,8 @@ export const zhCN: Record<string, string> = {
     'model-material.resetAll': '重置全部材质参数',
     'model-material.unlitFallback': '光照兜底（不受光）',
     'model-material.unlitFallbackTitle': '应用光照兜底？',
-    'model-material.unlitFallbackConfirm': '此操作会让模型呈现"伪 unlit"状态：完全靠环境光与自发光呈现，不依赖方向光。\\n\\n效果：失去立体感但保证可见，适用于少数光照异常的模型。\\n\\n可随时通过"重置全部"恢复。',
+    'model-material.unlitFallbackConfirm':
+        '此操作会让模型呈现"伪 unlit"状态：完全靠环境光与自发光呈现，不依赖方向光。\\n\\n效果：失去立体感但保证可见，适用于少数光照异常的模型。\\n\\n可随时通过"重置全部"恢复。',
     'model-material.unlitFallbackDone': '✓ 已应用光照兜底',
     'model-material.resetAllDone': '✓ 全部材质参数已重置',
     'model-material.selectMaterialHint': '请从上方材质列表中选择一个材质进行微调',

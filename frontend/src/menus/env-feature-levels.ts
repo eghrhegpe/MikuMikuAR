@@ -15,10 +15,7 @@ import {
     disposeWater,
     createWater,
 } from '../scene/env/env-water';
-import {
-    GROUND_PRESETS,
-    buildGroundPresetEnvState,
-} from '../scene/env/env-ground';
+import { GROUND_PRESETS, buildGroundPresetEnvState } from '../scene/env/env-ground';
 
 /** 预设 key → i18n key 映射 */
 const WATER_PRESET_I18N: Record<string, string> = {
@@ -653,21 +650,6 @@ export function buildGroundLevel(): PopupLevel {
                 defaultOpen: false,
                 children: [
                     {
-                        id: 'env:ground:reflectQuality',
-                        kind: 'modeSlider',
-                        label: 'env.groundReflectQuality',
-                        control: {
-                            bind: 'env.groundReflectionQuality',
-                            options: [
-                                { value: 'off', label: 'env.off' },
-                                { value: 'low', label: 'env.low' },
-                                { value: 'medium', label: 'env.medium' },
-                                { value: 'high', label: 'env.high' },
-                            ],
-                        },
-                        icon: 'lucide:monitor',
-                    },
-                    {
                         id: 'env:ground:reflectBlend',
                         kind: 'slider',
                         label: 'env.groundReflectBlend',
@@ -726,8 +708,8 @@ export function buildGroundLevel(): PopupLevel {
                         control: { bind: 'env.groundContactShadowEnabled' },
                         icon: 'lucide:contact',
                         visibleWhen: () =>
-                            envState.groundReflectionQuality === 'medium' ||
-                            envState.groundReflectionQuality === 'high',
+                            envState.reflectionQuality === 'medium' ||
+                            envState.reflectionQuality === 'high',
                     },
                     {
                         id: 'env:ground:contactShadowIntensity',
@@ -742,8 +724,8 @@ export function buildGroundLevel(): PopupLevel {
                         icon: 'lucide:contrast',
                         visibleWhen: () =>
                             envState.groundContactShadowEnabled &&
-                            (envState.groundReflectionQuality === 'medium' ||
-                                envState.groundReflectionQuality === 'high'),
+                            (envState.reflectionQuality === 'medium' ||
+                                envState.reflectionQuality === 'high'),
                     },
                     {
                         id: 'env:ground:contactShadowDistance',
@@ -758,8 +740,8 @@ export function buildGroundLevel(): PopupLevel {
                         icon: 'lucide:ruler',
                         visibleWhen: () =>
                             envState.groundContactShadowEnabled &&
-                            (envState.groundReflectionQuality === 'medium' ||
-                                envState.groundReflectionQuality === 'high'),
+                            (envState.reflectionQuality === 'medium' ||
+                                envState.reflectionQuality === 'high'),
                     },
                     {
                         id: 'env:ground:elevationColoring',

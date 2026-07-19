@@ -18,7 +18,13 @@ import {
     cardContainer,
 } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
-import { slideRow, addToggleRow, addSliderRow, addEmptyRow, addSectionTitle } from '../core/ui-helpers';
+import {
+    slideRow,
+    addToggleRow,
+    addSliderRow,
+    addEmptyRow,
+    addSectionTitle,
+} from '../core/ui-helpers';
 import { loadManager } from '../core/load-manager';
 
 import {
@@ -82,12 +88,7 @@ import { logWarn } from '../core/logger';
 import type { MenuNode } from './menu-schema';
 import { focusedModelId } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
-import {
-    undo,
-    redo,
-    canUndo,
-    canRedo,
-} from '../scene/motion/motion-modules/motion-history';
+import { undo, redo, canUndo, canRedo } from '../scene/motion/motion-modules/motion-history';
 import { applyModuleSnapshot } from '../scene/motion/motion-modules/module-base';
 
 // 模块级状态（动作绑定面板）：
@@ -264,7 +265,10 @@ function buildActionBindingSchema(id: string): MenuNode[] {
                             unpinBtn.className = 'preset-chip';
                             unpinBtn.textContent = t('motion.context.unpin');
                             unpinBtn.addEventListener('click', () => {
-                                _ensureMotionSlots(inst).primary = { source: 'inherit', status: 'idle' };
+                                _ensureMotionSlots(inst).primary = {
+                                    source: 'inherit',
+                                    status: 'idle',
+                                };
                                 if (active) {
                                     applyIntentToModel(id, active, getMotionGen());
                                 }
@@ -507,20 +511,31 @@ function buildMotionDetailSchema(): MenuNode[] {
                     if (active && active.vmdLayers.length > 0) {
                         addSectionTitle(inner, t('motion.layerSettings'));
                         for (const layer of active.vmdLayers) {
-                            slideRow(inner, '', layer.name, false, () => {
-                                const lvl = buildLayerLevel(layer.id, target?.id ?? '');
-                                getMotionMenu()?.push(lvl);
-                            }, undefined, undefined, undefined, undefined, {
-                                wrapLabel: true,
-                                trailing: {
-                                    icon: 'lucide:settings-2',
-                                    title: t('library.modelTools'),
-                                    onClick: () => {
-                                        const lvl = buildLayerLevel(layer.id, target?.id ?? '');
-                                        getMotionMenu()?.push(lvl);
-                                    },
+                            slideRow(
+                                inner,
+                                '',
+                                layer.name,
+                                false,
+                                () => {
+                                    const lvl = buildLayerLevel(layer.id, target?.id ?? '');
+                                    getMotionMenu()?.push(lvl);
                                 },
-                            });
+                                undefined,
+                                undefined,
+                                undefined,
+                                undefined,
+                                {
+                                    wrapLabel: true,
+                                    trailing: {
+                                        icon: 'lucide:settings-2',
+                                        title: t('library.modelTools'),
+                                        onClick: () => {
+                                            const lvl = buildLayerLevel(layer.id, target?.id ?? '');
+                                            getMotionMenu()?.push(lvl);
+                                        },
+                                    },
+                                }
+                            );
                         }
                     }
 
@@ -537,13 +552,28 @@ function buildMotionDetailSchema(): MenuNode[] {
                             const undoBtn = document.createElement('button');
                             undoBtn.className = 'slide-action';
                             const undoIcon = createIconifyIcon('lucide:undo-2');
-                            if (undoIcon) undoBtn.appendChild(undoIcon);
+                            if (undoIcon) {
+                                undoBtn.appendChild(undoIcon);
+                            }
                             undoBtn.title = 'Ctrl+Z';
                             undoBtn.style.opacity = canUndo(modelId) ? '1' : '0.3';
                             undoBtn.style.pointerEvents = canUndo(modelId) ? 'auto' : 'none';
                             undoBtn.addEventListener('click', () => {
-                                if (!canUndo(modelId)) return;
-                                const applier = (snap: Record<string, { enabled: boolean; params: Record<string, import('@/core/types').ParamValue> }>) => {
+                                if (!canUndo(modelId)) {
+                                    return;
+                                }
+                                const applier = (
+                                    snap: Record<
+                                        string,
+                                        {
+                                            enabled: boolean;
+                                            params: Record<
+                                                string,
+                                                import('@/core/types').ParamValue
+                                            >;
+                                        }
+                                    >
+                                ) => {
                                     applyModuleSnapshot(modelId, snap);
                                 };
                                 undo(modelId, applier);
@@ -555,13 +585,28 @@ function buildMotionDetailSchema(): MenuNode[] {
                             const redoBtn = document.createElement('button');
                             redoBtn.className = 'slide-action';
                             const redoIcon = createIconifyIcon('lucide:redo-2');
-                            if (redoIcon) redoBtn.appendChild(redoIcon);
+                            if (redoIcon) {
+                                redoBtn.appendChild(redoIcon);
+                            }
                             redoBtn.title = 'Ctrl+Shift+Z';
                             redoBtn.style.opacity = canRedo(modelId) ? '1' : '0.3';
                             redoBtn.style.pointerEvents = canRedo(modelId) ? 'auto' : 'none';
                             redoBtn.addEventListener('click', () => {
-                                if (!canRedo(modelId)) return;
-                                const applier = (snap: Record<string, { enabled: boolean; params: Record<string, import('@/core/types').ParamValue> }>) => {
+                                if (!canRedo(modelId)) {
+                                    return;
+                                }
+                                const applier = (
+                                    snap: Record<
+                                        string,
+                                        {
+                                            enabled: boolean;
+                                            params: Record<
+                                                string,
+                                                import('@/core/types').ParamValue
+                                            >;
+                                        }
+                                    >
+                                ) => {
                                     applyModuleSnapshot(modelId, snap);
                                 };
                                 redo(modelId, applier);
@@ -592,8 +637,17 @@ function buildMotionDetailSchema(): MenuNode[] {
                                         value: state.enabled,
                                         onChange: (v: boolean) => {
                                             const inst = createModule(mod.id, modelId);
-                                            if (v) inst?.enable(); else inst?.disable();
-                                            setStatus(v ? t('motion.override.enabled') : t('motion.override.disabled'), true);
+                                            if (v) {
+                                                inst?.enable();
+                                            } else {
+                                                inst?.disable();
+                                            }
+                                            setStatus(
+                                                v
+                                                    ? t('motion.override.enabled')
+                                                    : t('motion.override.disabled'),
+                                                true
+                                            );
                                             getMotionMenu()?.reRender();
                                         },
                                         bind: () => getModuleState(modelId, mod.id).enabled,
@@ -602,9 +656,15 @@ function buildMotionDetailSchema(): MenuNode[] {
                             }
 
                             // 高级骨骼覆盖入口
-                            slideRow(inner, 'tabler:bone', t('motion.boneOverride.title'), true, () => {
-                                getMotionMenu()?.push(buildAdvancedBoneOverrideLevel());
-                            });
+                            slideRow(
+                                inner,
+                                'tabler:bone',
+                                t('motion.boneOverride.title'),
+                                true,
+                                () => {
+                                    getMotionMenu()?.push(buildAdvancedBoneOverrideLevel());
+                                }
+                            );
                         }
                     }
 
@@ -738,7 +798,10 @@ function motionOnItemClick(row: PopupRow): void {
                 });
             } else {
                 // 已有动作 → 添加为叠加层
-                const layerName = (row.model.name_jp || row.model.name_en || '').replace(/\.vmd$/i, '');
+                const layerName = (row.model.name_jp || row.model.name_en || '').replace(
+                    /\.vmd$/i,
+                    ''
+                );
                 const newLayer: VmdLayer = {
                     id: `layer_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
                     name: layerName,
@@ -883,7 +946,8 @@ function motionOnItemClick(row: PopupRow): void {
     if (row.target === '__scene_motion_browse__') {
         _focusedLayerId = null;
         const foc = modelManager.focused();
-        const target = foc ?? [...modelManager.modelRegistry.values()].find((m) => m.kind === 'actor') ?? null;
+        const target =
+            foc ?? [...modelManager.modelRegistry.values()].find((m) => m.kind === 'actor') ?? null;
         if (!target) {
             setStatus(t('motion.retarget.noModel'), false);
             return;
@@ -1036,7 +1100,8 @@ function _buildCurrentMotionLabel(): { label: string; icon: string } {
     }
     const procState = getProcMotionState();
     if (procState.mode !== 'off') {
-        const modeLabel = procState.mode === 'idle' ? t('motion.modeIdle') : t('motion.modeAutodance');
+        const modeLabel =
+            procState.mode === 'idle' ? t('motion.modeIdle') : t('motion.modeAutodance');
         return { label: modeLabel, icon: 'lucide:wind' };
     }
     return { label: t('motion.noMotionHint'), icon: 'lucide:circle-slash' };
@@ -1095,7 +1160,11 @@ function buildMotionRootItems(): PopupRow[] {
                     title: t('library.modelTools'),
                     onClick: () => {
                         const foc = modelManager.focused();
-                        const targetId = foc?.id ?? [...modelManager.modelRegistry.values()].find((m) => m.kind === 'actor')?.id ?? '';
+                        const targetId =
+                            foc?.id ??
+                            [...modelManager.modelRegistry.values()].find((m) => m.kind === 'actor')
+                                ?.id ??
+                            '';
                         const lvl = buildLayerLevel(layer.id, targetId);
                         getMotionMenu()?.push(lvl);
                     },
@@ -1180,7 +1249,10 @@ function buildMotionRootItems(): PopupRow[] {
 }
 
 /** 构建 per-model 角色状态子标签 */
-function _buildActorSublabel(inst: { vmdName?: string; motionSlots?: ModelMotionSlots }): string | undefined {
+function _buildActorSublabel(inst: {
+    vmdName?: string;
+    motionSlots?: ModelMotionSlots;
+}): string | undefined {
     const slots = inst.motionSlots ?? DEFAULT_MOTION_SLOTS;
     if (slots.primary.status === 'incompatible') {
         return t('motion.intent.incompatible');

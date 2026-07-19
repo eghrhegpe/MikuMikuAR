@@ -76,7 +76,12 @@ vi.mock('@babylonjs/core', () => ({
     PBRMaterial: MockMaterial,
     AbstractMesh: MockAbstractMesh,
     Mesh: MockMesh,
-    MeshBuilder: { CreateGround: vi.fn(), CreateBox: vi.fn(), CreateSphere: vi.fn(), CreateCylinder: vi.fn() },
+    MeshBuilder: {
+        CreateGround: vi.fn(),
+        CreateBox: vi.fn(),
+        CreateSphere: vi.fn(),
+        CreateCylinder: vi.fn(),
+    },
     BaseTexture: MockBaseTexture,
     Texture: MockTexture,
     CubeTexture: MockCubeTexture,
@@ -88,25 +93,41 @@ vi.mock('@babylonjs/core', () => ({
     GPUParticleSystem: MockGPUParticleSystem,
     ParticleSystem: MockParticleSystem,
     GridMaterial: MockGridMaterial,
-    Plane: class { normalize() {} },
-    Viewport: class { toJSON() { return {} } },
-    Surface: class { },
-    Animation: class { },
-    Animatable: class { },
+    Plane: class {
+        normalize() {}
+    },
+    Viewport: class {
+        toJSON() {
+            return {};
+        }
+    },
+    Surface: class {},
+    Animation: class {},
+    Animatable: class {},
     Logger: { Log: vi.fn(), Warn: vi.fn(), Error: vi.fn() },
     Observable: class {
-        add() { return vi.fn() }
+        add() {
+            return vi.fn();
+        }
         remove() {}
         clear() {}
         notifyObservers() {}
     },
-    SceneOptimizer: class { static OptimizeAsync = vi.fn() },
-    SceneOptimizerOptions: class { static ModerateDegradationAllowed = vi.fn() },
-    PerformanceConfigurator: class { static SetCollections = vi.fn() },
-    Color3Gradient: class { },
-    ColorGradient: class { },
-    FactorGradient: class { },
-    Tools: class { static RandomId = vi.fn() },
+    SceneOptimizer: class {
+        static OptimizeAsync = vi.fn();
+    },
+    SceneOptimizerOptions: class {
+        static ModerateDegradationAllowed = vi.fn();
+    },
+    PerformanceConfigurator: class {
+        static SetCollections = vi.fn();
+    },
+    Color3Gradient: class {},
+    ColorGradient: class {},
+    FactorGradient: class {},
+    Tools: class {
+        static RandomId = vi.fn();
+    },
     // 默认导出 — 部分模块通过 export default 导出
     default: { Scene: MockScene, Engine: MockEngine },
 }));
@@ -121,7 +142,9 @@ vi.mock('@babylonjs/core/Engines/engine', () => ({ Engine: MockEngine }));
 
 // Cameras
 vi.mock('@babylonjs/core/Cameras/camera', () => ({ Camera: MockCamera }));
-vi.mock('@babylonjs/core/Cameras/arcRotateCamera', () => ({ ArcRotateCamera: MockArcRotateCamera }));
+vi.mock('@babylonjs/core/Cameras/arcRotateCamera', () => ({
+    ArcRotateCamera: MockArcRotateCamera,
+}));
 vi.mock('@babylonjs/core/Cameras/freeCamera', () => ({ FreeCamera: MockCamera }));
 vi.mock('@babylonjs/core/Cameras/universalCamera', () => ({ UniversalCamera: MockCamera }));
 
@@ -135,18 +158,31 @@ vi.mock('@babylonjs/core/Maths/math.color', () => ({ Color3: MockColor3, Color4:
 
 // Lights
 vi.mock('@babylonjs/core/Lights/light', () => ({ Light: MockLight }));
-vi.mock('@babylonjs/core/Lights/hemisphericLight', () => ({ HemisphericLight: MockHemisphericLight }));
-vi.mock('@babylonjs/core/Lights/directionalLight', () => ({ DirectionalLight: MockDirectionalLight }));
+vi.mock('@babylonjs/core/Lights/hemisphericLight', () => ({
+    HemisphericLight: MockHemisphericLight,
+}));
+vi.mock('@babylonjs/core/Lights/directionalLight', () => ({
+    DirectionalLight: MockDirectionalLight,
+}));
 vi.mock('@babylonjs/core/Lights/shadowLight', () => ({ ShadowLight: MockLight }));
 
 // Meshes
 vi.mock('@babylonjs/core/Meshes/abstractMesh', () => ({ AbstractMesh: MockAbstractMesh }));
 vi.mock('@babylonjs/core/Meshes/mesh', () => ({ Mesh: MockMesh }));
-vi.mock('@babylonjs/core/Meshes/meshBuilder', () => ({ MeshBuilder: { CreateGround: vi.fn(), CreateBox: vi.fn(), CreateSphere: vi.fn(), CreateCylinder: vi.fn() } }));
+vi.mock('@babylonjs/core/Meshes/meshBuilder', () => ({
+    MeshBuilder: {
+        CreateGround: vi.fn(),
+        CreateBox: vi.fn(),
+        CreateSphere: vi.fn(),
+        CreateCylinder: vi.fn(),
+    },
+}));
 
 // Materials
 vi.mock('@babylonjs/core/Materials/material', () => ({ Material: MockMaterial }));
-vi.mock('@babylonjs/core/Materials/standardMaterial', () => ({ StandardMaterial: MockStandardMaterial }));
+vi.mock('@babylonjs/core/Materials/standardMaterial', () => ({
+    StandardMaterial: MockStandardMaterial,
+}));
 vi.mock('@babylonjs/core/Materials/PBR/pbrMaterial', () => ({ PBRMaterial: MockMaterial }));
 
 // Textures
@@ -154,20 +190,28 @@ vi.mock('@babylonjs/core/Materials/Textures/baseTexture', () => ({ BaseTexture: 
 vi.mock('@babylonjs/core/Materials/Textures/texture', () => ({ Texture: MockTexture }));
 vi.mock('@babylonjs/core/Materials/Textures/cubeTexture', () => ({ CubeTexture: MockCubeTexture }));
 vi.mock('@babylonjs/core/Materials/Textures/mirrorTexture', () => ({ MirrorTexture: MockTexture }));
-vi.mock('@babylonjs/core/Materials/Textures/renderTargetTexture', () => ({ RenderTargetTexture: MockTexture }));
+vi.mock('@babylonjs/core/Materials/Textures/renderTargetTexture', () => ({
+    RenderTargetTexture: MockTexture,
+}));
 
 // Post-processes
 vi.mock('@babylonjs/core/PostProcesses/postProcess', () => ({ PostProcess: MockPostProcess }));
-vi.mock('@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline', () => ({ DefaultRenderingPipeline: MockDefaultRenderingPipeline }));
+vi.mock('@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline', () => ({
+    DefaultRenderingPipeline: MockDefaultRenderingPipeline,
+}));
 
 // Particles
-vi.mock('@babylonjs/core/Particles/gpuParticleSystem', () => ({ GPUParticleSystem: MockGPUParticleSystem }));
+vi.mock('@babylonjs/core/Particles/gpuParticleSystem', () => ({
+    GPUParticleSystem: MockGPUParticleSystem,
+}));
 vi.mock('@babylonjs/core/Particles/particleSystem', () => ({ ParticleSystem: MockParticleSystem }));
 
 // Misc
 vi.mock('@babylonjs/core/Misc/observable', () => ({
     Observable: class {
-        add() { return vi.fn() }
+        add() {
+            return vi.fn();
+        }
         remove() {}
         clear() {}
         notifyObservers() {}

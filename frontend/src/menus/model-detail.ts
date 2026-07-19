@@ -40,7 +40,12 @@ import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 import { getActiveMotion, getMotionGen } from '../scene/motion/motion-intent';
 import { applyIntentToModel } from './motion-popup';
-import { setProcMotionMode, regenerateProcMotion, isProcVmdActive, stopProcMotion } from '../scene/motion/proc-motion-bridge';
+import {
+    setProcMotionMode,
+    regenerateProcMotion,
+    isProcVmdActive,
+    stopProcMotion,
+} from '../scene/motion/proc-motion-bridge';
 import { DEFAULT_PROC_STATE } from '../motion-algos/procedural-motion';
 import { buildProcMotionLevel } from './motion-procmotion-levels';
 import { loadManager } from '../core/load-manager';
@@ -265,7 +270,8 @@ function buildModelSchema(id: string): MenuNode[] {
                         const active = getActiveMotion();
                         let subText: string;
                         if (slots.primary.source === 'pinned') {
-                            subText = slots.primary.pinned?.vmdName || t('model-detail.pinnedMotion');
+                            subText =
+                                slots.primary.pinned?.vmdName || t('model-detail.pinnedMotion');
                         } else if (slots.primary.source === 'procedural') {
                             subText =
                                 slots.primary.procRole === 'autodance'
@@ -383,16 +389,10 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
                     inst.vmdName ||
                     t('model-detail.noMotion');
 
-                const loadedRow = slideRow(
-                    c,
-                    'lucide:clapperboard',
-                    loadedName,
-                    true,
-                    () => {
-                        _applyLoadedMotion(id, inst);
-                        stackRegistry.modelStack?.reRender();
-                    }
-                );
+                const loadedRow = slideRow(c, 'lucide:clapperboard', loadedName, true, () => {
+                    _applyLoadedMotion(id, inst);
+                    stackRegistry.modelStack?.reRender();
+                });
                 // 程序化激活时右侧显示状态徽标（仅指示，点击整行即切回已加载动作）
                 if (isProc) {
                     const badge = document.createElement('span');

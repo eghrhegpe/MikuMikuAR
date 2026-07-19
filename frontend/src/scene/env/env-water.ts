@@ -18,6 +18,7 @@ import { col3FromTriple } from '@/core/color-helpers';
 import { _envSys, getScene } from './env-context';
 import { PlanarReflection, registerReflectionSurface } from './planar-reflection';
 import { createCanvasTexture } from './env-texture';
+import { registerEnvCallback } from './env-dispatcher';
 import { clamp01 } from '@/core/utils';
 import { logWarn } from '@/core/logger';
 import { setPostProcessEnabled } from './env-type-helpers';
@@ -97,10 +98,11 @@ let _waterScene: Scene | null = null;
 const waterReflection = new PlanarReflection({
     name: 'water',
     mode: 'screenSpace',
-    resolutionMap: { high: 1024, medium: 512, low: 256, off: 0 },
+    resolutionMap: { high: 2048, medium: 1024, low: 512, off: 0 },
     getQuality: (s) => {
-        // 独立字段为非 'off' 时作为显式覆盖；否则从 qualityProfile 派生
-        if (s.reflectionQuality !== 'off') return s.reflectionQuality;
+        if (s.reflectionQuality !== 'off') {
+            return s.reflectionQuality;
+        }
         const map: Record<string, string> = { high: 'high', medium: 'medium', low: 'low' };
         return map[s.qualityProfile] ?? 'off';
     },
@@ -803,7 +805,6 @@ function _waterUpdateCallback(scene: Scene): void {
 }
 
 export function createWater(state: EnvState): void {
-
     // 惰性路径：已初始化 → 只同步参数
     if (state.waterEnabled && _envSys.water.material && _envSys.water.mesh) {
         const scene = getScene();
@@ -1292,3 +1293,36 @@ export function applyWaterPresetToCurrent(preset: Partial<WaterPreset>): void {
         mat.setFloat('uSkyColorBlend', preset.waterSkyColorBlend);
     }
 }
+
+// ======== [ADR-138] env-dispatcher 回调注册 ========
+const _WATER_KEYS = [
+    'waterEnabled',
+    'waterColor',
+    'waterOpacity',
+    'waterLevel',
+    'waterWaveSpeed',
+    'waterWaveHeight',
+    'waterWaveLength',
+    'waterReflectionEnabled',
+    'waterReflectionQuality',
+    'waterRefraction',
+    'waterRefractionIndex',
+    'waterFoamEnabled',
+    'waterFoamIntensity',
+    'waterCausticsEnabled',
+    'waterCausticsIntensity',
+    'underwaterStrength',
+    'waterPresetName',
+    'waterAnimSpeed',
+    'environmentPreset',
+];
+
+registerEnvCallback((changed, state) => {
+    if (!changed || [...changed].some((k) => _WATER_KEYS.includes(k))) {
+        if (state.waterEnabled) {
+            createWater(state);
+        } else {
+            disposeWater();
+        }
+    }
+});

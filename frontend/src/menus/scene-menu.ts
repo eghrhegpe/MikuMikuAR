@@ -16,7 +16,15 @@ import {
     setUIState,
 } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
-import { serializeScene, isARModeActive, takeARScreenshot, setEnvState, popUndoSnapshot, canUndo, restoreUndoSnapshot } from '../scene/scene';
+import {
+    serializeScene,
+    isARModeActive,
+    takeARScreenshot,
+    setEnvState,
+    popUndoSnapshot,
+    canUndo,
+    restoreUndoSnapshot,
+} from '../scene/scene';
 import { SelectDir, SaveScreenshot, SaveScenePreset } from '../core/wails-bindings';
 import { waitForFrame, tryCatchStatus, showErrorToast, closeAllOverlays } from '../core/utils';
 import { setModelFormation } from '../scene/scene';
@@ -28,15 +36,17 @@ import { translateGoError } from '../core/i18n/goerr';
 import { buildPresetScenesLevel } from './scene-render-levels';
 import { buildStageLevel } from './scene-stage-levels';
 import { buildStageLightLevel } from './scene-stage-lights';
-import {
-    buildPhysicsLevel,
-    buildWasmPhysicsLevel,
-} from './scene-physics-levels';
+import { buildPhysicsLevel, buildWasmPhysicsLevel } from './scene-physics-levels';
 import { buildGroundLevel, buildWaterLevel } from './env-feature-levels';
 import { envState } from '../core/state';
 import { getEnvTextureBindingTarget, clearEnvTextureBindingTarget } from './env-menu';
-import { setMirrorSize, setMirrorResolution, getMirrorInfo, toggleMirror } from '../scene/env/env';
-import { addModeSlider } from '../core/ui-helpers';
+import {
+    setMirrorSize,
+    getMirrorInfo,
+    toggleMirror,
+    isMirrorActive,
+} from '../scene/env/env';
+import { addModeSlider, addToggleRow } from '../core/ui-helpers';
 import { SCENE_EVENTS } from '../core/ui-constants';
 
 // ======== Barrel Re-Exports ========
@@ -119,30 +129,19 @@ function buildMirrorLevel(): PopupLevel {
             const wrapper = document.createElement('div');
             wrapper.style.padding = '8px';
 
-            const toggleRow = document.createElement('label');
-            toggleRow.className = 'slide-row';
-            const toggleIcon = document.createElement('span');
-            toggleIcon.className = 'slide-icon';
-            toggleIcon.textContent = '🔍';
-            toggleRow.appendChild(toggleIcon);
-            const toggleLabel = document.createElement('span');
-            toggleLabel.className = 'slide-label';
-            toggleLabel.textContent = t('scene.mirror');
-            toggleRow.appendChild(toggleLabel);
-            const toggle = document.createElement('input');
-            toggle.type = 'checkbox';
-            toggle.checked = info.active;
-            toggle.addEventListener('change', () => {
-                toggleMirror();
-                // 重新渲染刷新状态
-                const menu = getSceneMenu();
-                if (menu) menu.reRender();
-            });
-            const toggleSpan = document.createElement('span');
-            toggleSpan.className = 'toggle';
-            toggleSpan.appendChild(toggle);
-            toggleRow.appendChild(toggleSpan);
-            wrapper.appendChild(toggleRow);
+            addToggleRow(
+                wrapper,
+                t('scene.mirror'),
+                info.active,
+                () => {
+                    toggleMirror();
+                    const menu = getSceneMenu();
+                    if (menu) {
+                        menu.reRender();
+                    }
+                },
+                'lucide:sparkles'
+            );
 
             if (info.active) {
                 addModeSlider(
@@ -177,21 +176,24 @@ function buildMirrorLevel(): PopupLevel {
                 );
                 addModeSlider(
                     wrapper,
-                    t('scene.mirrorResolution'),
+                    t('env.reflectionQuality'),
                     [
-                        { value: '128', label: '128' },
-                        { value: '256', label: '256' },
-                        { value: '512', label: '512' },
-                        { value: '1024', label: '1024' },
+                        { value: 'high', label: t('env.reflectionQualityHigh') },
+                        { value: 'medium', label: t('env.reflectionQualityMedium') },
+                        { value: 'low', label: t('env.reflectionQualityLow') },
+                        { value: 'off', label: t('env.reflectionQualityOff') },
                     ],
-                    String(info.resolution),
-                    (v) => setMirrorResolution(parseInt(v)),
-                    'lucide:grid-3x3'
+                    envState.reflectionQuality,
+                    (v) => {
+                        setEnvState({ reflectionQuality: v as 'high' | 'medium' | 'low' | 'off' });
+                        const menu = getSceneMenu();
+                        if (menu) menu.reRender();
+                    },
+                    'lucide:monitor'
                 );
                 const p = info.position;
                 const infoDiv = document.createElement('div');
-                infoDiv.style.cssText =
-                    'padding:4px 12px;font-size:11px;color:var(--text-dim);';
+                infoDiv.style.cssText = 'padding:4px 12px;font-size:11px;color:var(--text-dim);';
                 infoDiv.textContent = info.active
                     ? `mesh: ${info.meshCount} | pos: (${p[0].toFixed(1)}, ${p[1].toFixed(1)}, ${p[2].toFixed(1)}) | ${info.width}×${info.height}m @ ${info.resolution}px`
                     : t('scene.mirrorHint');
@@ -269,6 +271,11 @@ function buildSceneRootItems(): PopupRow[] {
         label: t('scene.mirror'),
         icon: 'lucide:scan',
         target: 'scene:mirror',
+        headerToggle: {
+            value: isMirrorActive(),
+            onChange: () => toggleMirror(),
+            bind: () => isMirrorActive(),
+        },
     });
     items.push({
         kind: 'action',

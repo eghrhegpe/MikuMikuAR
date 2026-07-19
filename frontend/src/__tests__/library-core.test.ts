@@ -72,6 +72,15 @@ vi.mock('../core/ui-helpers', () => ({
     ),
 }));
 
+// [ADR-142] utils.ts 的 withLoadingStatus 直接 import status-bar.setStatus。
+// 把 status-bar mock 转发到 config mock，使测试统一检查 config.setStatus。
+vi.mock('../core/status-bar', async () => {
+    const config = await import('../core/config');
+    return {
+        setStatus: (...args: [string, boolean, boolean?]) => (config as any).setStatus(...args),
+    };
+});
+
 vi.mock('../core/config', () => ({
     getBaseName: vi.fn((p: string) => p.split('/').pop() || p),
     get allModels() {
@@ -693,7 +702,9 @@ describe('importFile', () => {
         mockLoad.mockRejectedValue(new Error('corrupt file'));
         await importFile(); // should not throw
         const { setStatus } = await import('../core/config');
-        expect(setStatus).toHaveBeenCalledWith(expect.stringContaining('模型加载失败'), false);
+        // [ADR-142] withLoadingStatus 错误时显示 loadingKey + 错误信息
+        expect(setStatus).toHaveBeenCalledWith(expect.stringContaining('加载模型'), false);
+        expect(setStatus).toHaveBeenCalledWith(expect.stringContaining('corrupt file'), false);
     });
 
     it('catches ImportZip error', async () => {
@@ -702,7 +713,9 @@ describe('importFile', () => {
         (mockB.ImportZip as any).mockRejectedValue(new Error('extraction failed'));
         await importFile(); // should not throw
         const { setStatus } = await import('../core/config');
-        expect(setStatus).toHaveBeenCalledWith(expect.stringContaining('导入失败'), false);
+        // [ADR-142] withLoadingStatus 错误时显示 loadingKey + 错误信息
+        expect(setStatus).toHaveBeenCalledWith(expect.stringContaining('导入压缩包'), false);
+        expect(setStatus).toHaveBeenCalledWith(expect.stringContaining('extraction failed'), false);
     });
 });
 

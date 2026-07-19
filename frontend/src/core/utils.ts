@@ -5,11 +5,7 @@
 // UI builders → ui-helpers.ts
 
 import { dom } from './dom';
-import {
-    libraryRoot,
-    overridePaths,
-    setPopupOpen,
-} from './state';
+import { libraryRoot, overridePaths, setPopupOpen } from './state';
 import { normPath } from './fileservice';
 import { setStatus } from './status-bar';
 import { t } from './i18n/t';
@@ -521,6 +517,38 @@ export async function tryCatchStatus<T>(
         setStatus(`${context}: ${msg}`, false);
         logWarn(context, '', err);
         onError?.(err);
+        return undefined;
+    }
+}
+
+/**
+ * 包装一个异步操作，自动管理 loading → success → error 三态状态栏。
+ *
+ * - 开始时：setStatus(t(loadingKey), false)
+ * - 成功时：setStatus(t(successKey), true)，并返回结果
+ * - 错误时：setStatus(t(loadingKey) + 错误信息, false)，静默忽略用户取消
+ *
+ * 不集成 LoadingGuard / AbortSignal —— 调用方按需自行处理。
+ * [ADR-142]
+ */
+export async function withLoadingStatus<T>(
+    loadingKey: string,
+    successKey: string,
+    fn: () => T | Promise<T>
+): Promise<T | undefined> {
+    setStatus(t(loadingKey), false);
+    try {
+        const result = await fn();
+        setStatus(t(successKey), true);
+        return result;
+    } catch (err) {
+        const msg = translateGoError(err);
+        // 用户取消文件选择 — Wails 抛 "cancelled by user"，静默忽略
+        if (/cancelled by user/i.test(msg)) {
+            return undefined;
+        }
+        setStatus(`${t(loadingKey)}: ${msg}`, false);
+        logWarn(loadingKey, '', err);
         return undefined;
     }
 }

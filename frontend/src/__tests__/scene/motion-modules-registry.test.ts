@@ -7,12 +7,20 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 // vi.mock 工厂在文件顶部执行，此时顶层 const 尚未初始化，
 // 因此必须用 vi.hoisted 把变量提升到与 vi.mock 同一阶段。
 
-const { mockModelRegistry, setBoneOverrideSpy, clearBoneOverrideSpy, mockActiveMotion, mockSetActiveMotion } = vi.hoisted(() => ({
+const {
+    mockModelRegistry,
+    setBoneOverrideSpy,
+    clearBoneOverrideSpy,
+    mockActiveMotion,
+    mockSetActiveMotion,
+} = vi.hoisted(() => ({
     mockModelRegistry: new Map<string, any>(),
     setBoneOverrideSpy: vi.fn(),
     clearBoneOverrideSpy: vi.fn(),
     mockActiveMotion: { value: null as any },
-    mockSetActiveMotion: vi.fn((intent: any) => { mockActiveMotion.value = intent; }),
+    mockSetActiveMotion: vi.fn((intent: any) => {
+        mockActiveMotion.value = intent;
+    }),
 }));
 
 vi.mock('@/core/state', () => ({

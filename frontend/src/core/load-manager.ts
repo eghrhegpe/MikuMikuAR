@@ -130,7 +130,11 @@ class LoadManager {
         return result;
     }
 
-    private async dispatch(req: LoadRequest, loadId: string, signal?: AbortSignal): Promise<ResourceHandle | null> {
+    private async dispatch(
+        req: LoadRequest,
+        loadId: string,
+        signal?: AbortSignal
+    ): Promise<ResourceHandle | null> {
         this._current = req;
         this._loadId = loadId;
         try {
@@ -198,7 +202,7 @@ class LoadManager {
                 }
                 case 'audio': {
                     const { loadAudioFile } = await import('../outfit/audio');
-                    await loadAudioFile(req.path);
+                    await loadAudioFile(req.path, signal);
                     this._phase = 'refresh';
                     this._refreshMenus();
                     const fileName = req.path.split(/[\\/]/).pop() || '';
