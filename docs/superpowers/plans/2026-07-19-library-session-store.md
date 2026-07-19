@@ -98,14 +98,158 @@ git commit -m "feat: ADR-135 P0.1 LibrarySessionStore 状态收敛"
 
 ---
 
-## 5. 后续阶段（不在本次提交范围）
+## 5. 后续阶段
 
-| 阶段 | 内容 | ADR |
-|------|------|-----|
-| P0.2 | loadId trace 链路 | 新 ADR |
-| P0.3 | deferRestore 可见化 LoadingState | 新 ADR |
-| P1.1 | load-manager 错误处理 + onRejected 不再吞错 | 扩展 ADR-105 |
-| P1.2 | `_isExtracting` per-model Set 升级 | 扩展 ADR-135 |
-| P1.3 | ADR-131 后续清理 3 个绑定标志位 | ADR-131 后续 |
-| P2 | onModelRowClick 拆分 + 缩略图 AbortSignal + 移除兼容门面 | 新 ADR |
-| P3 | PopupRow discriminated union | 新 ADR |
+| 阶段 | 内容 | 状态 | ADR |
+|------|------|------|-----|
+| P0.2 | loadId trace 链路 | ✅ 已完成（见第 6 节） | 扩展 ADR-135 |
+| P0.3 | deferRestore 可见化 LoadingState | 待启动 | 新 ADR |
+| P1.1 | load-manager 错误处理 + onRejected 不再吞错 | 待启动 | 扩展 ADR-105 |
+| P1.2 | `_isExtracting` per-model Set 升级 | 待启动 | 扩展 ADR-135 |
+| P1.3 | ADR-131 后续清理 3 个绑定标志位 | 待启动 | ADR-131 后续 |
+| P2 | onModelRowClick 拆分 + 缩略图 AbortSignal + 移除兼容门面 | 待启动 | 新 ADR |
+| P3 | PopupRow discriminated union | 待启动 | 新 ADR |
+
+---
+
+## 6. P0.2 loadId trace 链路（已实施 2026-07-20）
+
+### 6.1 目标
+
+为每次 `loadManager.load()` 请求分配 `loadId`，在 `dispatch` 内部追踪 `phase`，错误发生时包装为 `LibraryLoadError` 结构化对象，让：
+
+1. `formatError(err)` 自动识别并返回 `[loadId/phase] cause` 字符串
+2. `library-actions.ts` 的 6 处 `.catch` 不需改一行代码，用户看到的错误信息自动带 trace ID
+3. `getCurrentLoad()` 暴露当前加载的 `{ loadId, phase, req }`，为 P0.3 可见化 LoadingState 铺路
+
+### 6.2 设计
+
+#### 类型（load-manager.ts）
+
+```ts
+export type LoadPhase = 'parse' | 'register' | 'apply' | 'refresh' | 'unknown';
+
+export interface LibraryLoadError {
+    readonly name: 'LibraryLoadError';
+    readonly loadId: string;
+    readonly phase: LoadPhase;
+    readonly cause: unknown;
+    readonly req: LoadRequest;
+    readonly message: string;
+}
+```
+
+> **phase 列表精简为 4 个**：`'parse'`（解析文件 / 调底层加载器）/ `'register'`（写 registry）/ `'apply'`（应用到场景，预留给未来）/ `'refresh'`（刷新菜单）/ `'unknown'`（兜底）。
+>
+> **不包含 `'extract'`**：zip 解压走 `ExtractZip` 不经过 loadManager，归 P1.2 处理。
+
+#### LoadManager 字段扩展
+
+```ts
+class LoadManager {
+    private queue: Promise<void> = Promise.resolve();
+    private _current: LoadRequest | null = null;
+    private _loadId: string | null = null;     // [adr-135] P0.2
+    private _phase: LoadPhase | null = null;    // [adr-135] P0.2
+
+    load(req: LoadRequest): Promise<ResourceHandle | null> {
+        const loadId = this._generateLoadId();
+        return this.enqueue(() => this.dispatch(req, loadId));
+    }
+
+    /** 当前正在执行的加载（含 loadId + phase，供 UI 显示状态）。 */
+    getCurrentLoad(): { loadId: string; phase: LoadPhase; req: LoadRequest } | null {
+        if (!this._current || !this._loadId) return null;
+        return { loadId: this._loadId, phase: this._phase ?? 'unknown', req: this._current };
+    }
+
+    private _generateLoadId(): string {
+        return 'l_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
+    }
+}
+```
+
+#### dispatch 包装错误
+
+```ts
+private async dispatch(req: LoadRequest, loadId: string): Promise<ResourceHandle | null> {
+    this._current = req;
+    this._loadId = loadId;
+    try {
+        this._phase = 'parse';
+        switch (req.kind) {
+            case 'actor':
+            case 'stage': {
+                const { loadPMXFile } = await import('../scene/manager/model-loader');
+                const id = await loadPMXFile(...);   // parse phase
+                if (!id) return null;
+                this._phase = 'register';
+                const { modelRegistry } = await import('./config');
+                const inst = modelRegistry.get(id);
+                this._phase = 'refresh';
+                this._refreshMenus();
+                return { id, kind: req.kind, name: inst?.name ?? '', filePath: req.path };
+            }
+            // ... 其他分支同理
+        }
+    } catch (err) {
+        throw {
+            name: 'LibraryLoadError',
+            loadId,
+            phase: this._phase ?? 'unknown',
+            cause: err,
+            req,
+            message: err instanceof Error ? err.message : String(err),
+        } as LibraryLoadError;
+    } finally {
+        this._current = null;
+        this._loadId = null;
+        this._phase = null;
+    }
+}
+```
+
+#### formatError 识别
+
+```ts
+export function formatError(err: unknown, maxLen = 120): string {
+    // [adr-135] P0.2: 识别 LibraryLoadError，加 [loadId/phase] 前缀
+    if (err && typeof err === 'object' && (err as { name?: string }).name === 'LibraryLoadError') {
+        const e = err as LibraryLoadError;
+        const cause = formatError(e.cause, maxLen);
+        const prefix = `[${e.loadId}/${e.phase}] `;
+        const full = prefix + cause;
+        return full.length > maxLen ? full.slice(0, maxLen - 3) + '...' : full;
+    }
+    // ... 原逻辑保持不变
+}
+```
+
+> **避免循环依赖**：`formatError` 在 `utils.ts`，`LibraryLoadError` 在 `load-manager.ts`。若 utils 导入 load-manager 类型，会引入 utils → load-manager 依赖。改用 structural type 判断（`name === 'LibraryLoadError'`），不导入类型，零依赖。
+
+### 6.3 不改的部分
+
+| 项 | 原因 |
+|----|------|
+| `library-actions.ts` 的 6 处 `.catch` | `formatError` 自动识别并加前缀，零侵入 |
+| `enqueue` 的 onRejected 立即重试 | 归 P1.1 处理；P0.2 重试复用同一 loadId（合理：重试同一加载） |
+| `LoadRequest` 接口 | 不加 `loadId` 字段，避免外部可变 |
+| 单测 | 不新增；loadId 是 trace 标签，无新业务逻辑分支。既有 `library-core.test.ts` 22 用例 + `app.contract.test.ts` 17 用例覆盖作为回归保护 |
+
+### 6.4 验收清单
+
+- [ ] `load-manager.ts` 新增 `LoadPhase` / `LibraryLoadError` 类型导出
+- [ ] `LoadManager._loadId` / `_phase` 字段 + `getCurrentLoad()` 方法
+- [ ] `dispatch(req, loadId)` 内 try/catch 包装 LibraryLoadError
+- [ ] `utils.ts formatError` 识别 LibraryLoadError
+- [ ] `npm run check` 零新增 tsc 错误
+- [ ] `npm run test -- library-core` 106/106 全绿
+- [ ] `npm run build` 通过
+
+### 6.5 用户感知收益
+
+| 场景 | P0.2 前 | P0.2 后 |
+|------|---------|---------|
+| 模型加载失败 | 状态栏：「模型加载失败：[cause message]」 | 状态栏：「模型加载失败：[l_xxx/parse] [cause message]」 |
+| 排查时间 | 用户/AI 拿不到 trace ID，只能复现 | 状态栏直接显示 `l_xxx` ID，AI grep 日志即可定位 |
+| 多次失败 | 错误互相覆盖，无法区分 | 每次错误带独立 loadId，可对比 |

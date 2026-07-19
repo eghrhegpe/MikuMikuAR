@@ -94,6 +94,21 @@ export function formatError(err: unknown, maxLen = 120): string {
     if (err === null || err === undefined) {
         return 'unknown error';
     }
+    // [doc:adr-135] P0.2: 识别 LibraryLoadError 结构化对象，加 [loadId/phase] 前缀。
+    // 用 structural type 判断（不 import 类型），避免 utils → load-manager 依赖。
+    // 调用方（library-actions 的 6 处 catch）零侵入获得 trace 能力。
+    if (typeof err === 'object' && (err as { name?: string }).name === 'LibraryLoadError') {
+        const e = err as {
+            loadId: string;
+            phase: string;
+            cause: unknown;
+        };
+        // 递归 formatError 取内层 cause 文本，给前缀留 30 字符空间
+        const causeStr = formatError(e.cause, Math.max(20, maxLen - 30));
+        const prefix = `[${e.loadId}/${e.phase}] `;
+        const full = prefix + causeStr;
+        return full.length > maxLen ? full.slice(0, maxLen - 3) + '...' : full;
+    }
     if (err instanceof Error) {
         const msg = err.message;
         return msg.length > maxLen ? msg.slice(0, maxLen - 3) + '...' : msg;
