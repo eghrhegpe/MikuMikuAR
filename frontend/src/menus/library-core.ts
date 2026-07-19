@@ -485,7 +485,12 @@ function renderItemsWithRAF(
                 loadManager.load({ kind: 'vmd', path: item.model.file_path, modelId: outcome.modelId });
                 return;
             }
-            // [doc:adr-131] 非 stay 模式（默认为 close）：走标准加载路径（关闭浏览器）
+            // [doc:adr-131] 替换模式：显式传 jumpToDir modelId，取代 modelReplaceTargetId 全局反推
+            if (outcome.mode === 'jumpToDir' && outcome.modelId) {
+                onModelRowClick(item.model, outcome.modelId);
+                return;
+            }
+            // [doc:adr-131] 默认 close：走标准加载路径（关闭浏览器）
             onModelRowClick(item.model);
         }
     };
