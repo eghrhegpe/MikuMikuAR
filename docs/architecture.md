@@ -300,13 +300,13 @@ VMD 文件 → VmdLoader → MmdAnimation → createRuntimeAnimation → MmdCame
 #### 场景序列化
 相机 VMD 写入 `SceneFile.cameraVmd`（path / name / active），支持 libraryRef。
 
-### 12. 生态聚合（Week 7+）
+### 11. 生态聚合（Week 7+）
 - **DanceXR 共用**：扫描器已原生支持 DanceXR 8 种分类目录约定。外部库挂载已实现：通过 `Config.ExternalPaths` 配置多源联合扫描，弹窗根层显示 🔌 虚拟入口，下钻复用 `buildLevel` 导航链路。条目带 `Source` 标签区分来源。
 - **下载目录监听**：fsnotify 监听下载目录新文件（.zip）→ 通知用户确认导入。原生 HTTP 下载拦截（早期计划中的方案 C）因 WebView2 限制未实现，不列入路线图。
 - **Blender 唤起**：Wails `exec.Command` 启动本地 Blender + 传模型路径参数
 - **Android**：发版测试中，全链路需兼容安卓端（Wails mobile 桥接 + 文件系统沙盒适配 + 触摸交互优化）
 
-### 13. 目录结构
+### 12. 目录结构
 
 > 更新于 2026-07-19（ADR-127~132 新增模块）
 

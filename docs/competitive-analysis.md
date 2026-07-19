@@ -36,7 +36,7 @@
 | PMX 加载 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | VMD 播放 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | WASM Bullet 物理 | ✅ | ✅ | ✅ Bullet | ✅ Bullet | ✅ | ✅ Ammo.js |
-| XPBD 布料 | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| ~~XPBD 布料~~ | ⚠️ 已移除（ADR-081） | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Bloom/DOF/色调映射 | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ 基础 |
 | PBR 材质 | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ |
 | Toon 着色 | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
@@ -105,7 +105,6 @@
 |------|------|---------|
 | **聚合管理器** | 扫描 + zip 容器 + 标签 + 搜索 + 多库挂载 | DanceXR 管理能力弱，其他工具无 |
 | **多模型同场** | 多个 PMX 同时加载 + 自动排列 + 焦点切换 | 大多数查看器仅单模型 |
-| **XPBD 布料** | 纯 TS 实现 XPBD 求解器 + SDF 碰撞 | DanceXR 用 Bullet，其他无布料 |
 | **环境系统** | 天空/水面/云/粒子/风/道具 | 仅 DanceXR 有基础环境 |
 | **程序化动作** | Idle + Auto Dance + 节拍驱动 | DanceXR 有但不公开算法 |
 | **模型预设** | 角色设置快照 + 跨模型复用 | 竞品无 |
@@ -183,7 +182,7 @@
 |------|-----------|---------|------|----------|
 | 语言 | TypeScript + Go | C++ | C++ | C# |
 | 渲染 | Babylon.js (WebGL) | 自研 OpenGL | OpenGL/DX11/Vulkan | DX12/DXR |
-| 物理 | XPBD (TS) + WASM Bullet | Bullet | Bullet | Bullet |
+| 物理 | WASM Bullet（XPBD 已移除，ADR-081） | Bullet | Bullet | Bullet |
 | 平台 | Win/Mac/Linux/Android | Win | Win | Win |
 | 扩展性 | Wails IPC + 前端模块 | 插件系统 | Lua 脚本 | 自定义 HLSL |
 | 格式 | PMX/VMD/VPD/zip | PMX/XPS/BVH | PMX/PMD/OBJ | PMX/glTF |
