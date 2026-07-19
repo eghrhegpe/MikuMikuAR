@@ -16,7 +16,7 @@ import {
     setUIState,
 } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
-import { serializeScene, isARModeActive, takeARScreenshot, setEnvState } from '../scene/scene';
+import { serializeScene, isARModeActive, takeARScreenshot, setEnvState, popUndoSnapshot, canUndo, restoreUndoSnapshot } from '../scene/scene';
 import { SelectDir, SaveScreenshot, SaveScenePreset } from '../core/wails-bindings';
 import { waitForFrame, tryCatchStatus, showErrorToast, closeAllOverlays } from '../core/utils';
 import { setModelFormation } from '../scene/scene';
@@ -113,6 +113,12 @@ function buildSceneAdvancedLevel(): PopupLevel {
         label: t('scene.advanced'),
         dir: '',
         items: [
+            {
+                kind: 'action',
+                label: t('scene.undo'),
+                icon: 'lucide:undo-2',
+                target: 'scene:undo',
+            },
             {
                 kind: 'folder',
                 label: t('scene.presetScenes'),
@@ -467,6 +473,18 @@ const SCENE_ACTIONS: Record<string, () => void> = {
     },
     'scene:save': () => {
         void saveScene();
+    },
+    'scene:undo': () => {
+        const snap = popUndoSnapshot();
+        if (!snap) {
+            setStatus(t('scene.statusNoUndo'), false);
+            return;
+        }
+        void restoreUndoSnapshot(snap).then((ok) => {
+            if (ok) {
+                setStatus(t('scene.undoApplied'), true);
+            }
+        });
     },
     'formation:set:line': () => {
         setModelFormation('line');

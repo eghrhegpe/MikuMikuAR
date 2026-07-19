@@ -1165,6 +1165,14 @@ export function canUndo(): boolean {
     return _undoStack.length > 0;
 }
 
+/** 弹出最近一次撤销快照（LIFO），供全局撤销按钮 / Ctrl+Z 使用。返回快照字符串，无快照时返回 null。 */
+export function popUndoSnapshot(): string | null {
+    if (_undoStack.length === 0) {
+        return null;
+    }
+    return _undoStack.pop() ?? null;
+}
+
 /** 取消待执行的防抖自动保存（撤销前调用，避免覆盖刚恢复的状态）。 */
 function cancelPendingAutoSave(): void {
     _autoSaveDebounced.cancel();
