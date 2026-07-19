@@ -594,7 +594,7 @@ function buildPostProcessColorSchema(): MenuNode[] {
                     id: 'postprocess:tonemapping:cel',
                     kind: 'toggle',
                     label: 'scene.celShading',
-                    icon: 'lucide:sparkles',
+                    icon: 'lucide:droplet',
                     control: {
                         bind: 'render.celShadingMode',
                         onChange: () => triggerAutoSave(),

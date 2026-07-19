@@ -81,7 +81,7 @@ Babylon.js 的 `DefaultRenderingPipeline` 不内置 posterize 后处理。自行
 
 1. **非真正色阶量化** — 本方案是后处理参数组合，不是真正的 cel-shading shader。对比度提升模拟色块感，但渐变仍是线性的
 2. **参数固定** — 6 个卡通参数硬编码在 `_applyRenderState` 中，用户无法微调（如果需要可后续暴露滑块）
-3. **与手动调参冲突** — 卡通化开启期间手动调 exposure 等会被记录为"卡通值"，关闭时恢复的是开启前的旧值而非手动调过的新值
+3. ~~**与手动调参冲突** — 卡通化开启期间手动调 exposure 等会被记录为"卡通值"，关闭时恢复的是开启前的旧值而非手动调过的新值~~ **已修复（2026-07-19 修订，见下）**
 4. **游戏模型专属** — 对原生 MMD 模型（已有 toon 贴图）效果不明显，主要面向游戏提取模型
 
 ---
@@ -91,3 +91,69 @@ Babylon.js 的 `DefaultRenderingPipeline` 不内置 posterize 后处理。自行
 - ADR-024 渲染增强 Phase 2 — `reflectionTexture` 后挂路径 + PBR 延期决策（morph 致命风险），本 ADR 延续"不换材质类型"边界
 - ADR-069 材质面板纹理支持审计 — toon/sphere 贴图槽位审计，本 ADR 针对游戏模型缺失 toon 的兜底方案
 - ADR-046 渲染自定义模式 — `DefaultRenderingPipeline` 的既有参数管理体系
+
+---
+
+## 修订记录
+
+### 2026-07-19 Rev 1：动态快照 + 递归栈溢出修复
+
+**修掉的限制**：原限制 #3「与手动调参冲突」。
+
+**修订机制**：在 `_applyRenderState` 入口新增动态快照同步逻辑——卡通化开启期间（`_celShadingMode === true`），凡用户手动调用 `setRenderState` 修改 6 个卡通管控字段（`s.celShadingMode === undefined` 表示非开关自身预设应用调用），实时同步到 `_originalRenderState`。关闭时恢复的就是用户调过的最新意图，而非开启前的旧快照。
+
+```ts
+if (_celShadingMode && s.celShadingMode === undefined && _originalRenderState) {
+    if (s.exposure !== undefined) _originalRenderState.exposure = s.exposure;
+    if (s.contrast !== undefined) _originalRenderState.contrast = s.contrast;
+    if (s.toneMapping !== undefined) _originalRenderState.toneMapping = s.toneMapping;
+    if (s.bloomEnabled !== undefined) _originalRenderState.bloomEnabled = s.bloomEnabled;
+    if (s.bloomWeight !== undefined) _originalRenderState.bloomWeight = s.bloomWeight;
+    if (s.fxaaEnabled !== undefined) _originalRenderState.fxaaEnabled = s.fxaaEnabled;
+}
+```
+
+**附带修复**：关闭卡通化时的无限递归栈溢出 bug。原代码 `_applyRenderState(_originalRenderState)` 中，快照里的 `celShadingMode: false` 会再次进入 else 分支（`s.celShadingMode !== undefined`），而 `_originalRenderState` 仍非空 → 无限递归 → 栈溢出 → `setRenderState` 抛 `RangeError`，`_triggerAutoSave` / `scheduleRefresh` 不执行，UI 显示与 pipeline 实际值脱节，表现为「色调映射之类的菜单被重置为默认值」。
+
+修复方式：递归前清空 `_originalRenderState`，并从快照中剥离 `celShadingMode` 字段后再递归：
+
+```ts
+const snapshot = _originalRenderState;
+_originalRenderState = null;
+const { celShadingMode: _ignored, ...rest } = snapshot;
+_applyRenderState(rest);
+```
+
+**不影响**：
+- 快照/恢复核心机制不变
+- 序列化行为不变（`celShadingMode` 仍持久化，`_originalRenderState` 仍为内存态）
+- UI 不变
+- `transitionRenderState` 中间帧逻辑不变（中间帧调 `_applyRenderState` 时 `s.celShadingMode === undefined`，但中间帧只改数值字段，6 个卡通管控字段中有 5 个是数值/布尔，会同步进快照——这是期望行为，过渡目标值即用户最终意图）
+
+**仍待决（限制 #1 升级）**：用户反馈现行 6 个参数组合（exposure/contrast/toneMapping ACES/bloom/bloomWeight/fxaa）实际上做不出真正的卡通化效果，仅是"调色倾向"。后续可选方向：
+1. **诚实重命名**：i18n key 从 `scene.celShading` 改为 `scene.softToning`（柔和调色），UI 文案与实际效果对齐
+2. **升级为真正 cel-shading**：自定义 `PostProcess` shader 实现 posterize（色阶量化 `floor(color * levels) / levels`）+ Sobel 边缘描边，挂到 `DefaultRenderingPipeline` 末尾。30~80 行 shader，无材质改动，仍符合本 ADR "不触碰材质类型" 边界
+3. **保留现状**：作为游戏提取模型「光难调」的快速兜底预设，承认非真正卡通化
+
+### 2026-07-19 Rev 2：诚实重命名（方向 1 已实施）
+
+**问题**：用户反馈「这几个选项不可能制作出卡通化的效果」，与限制 #1 自述的"非真正色阶量化"一致，但 UI 文案「卡通化渲染 / Cel-shading」误导用户期望真正的卡通着色。
+
+**修订**：采纳方向 1（诚实重命名）。UI 文案改为「柔和调色」，与实际效果（exposure↓ + contrast↑ + ACES + 轻微 bloom + fxaa 的调色组合）对齐。
+
+| 语言 | 原文案 | 新文案 |
+|------|--------|--------|
+| zh-CN | 卡通化渲染 | 柔和调色 |
+| zh-TW | 卡通化渲染 | 柔和調色 |
+| en | Cel-shading | Soft toning |
+| ja | セルシェーディング | ソフト調色 |
+| ko | 셀 쉐이딩 | 소프트 토닝 |
+
+**图标**：`lucide:sparkles`（暗示卡通魔法）→ `lucide:droplet`（调色/液态感，与「色调映射」折叠组上下文一致）。
+
+**不改**：
+- i18n key 仍为 `scene.celShading`（避免 5 个 locale 文件 key 重命名 + 全局搜索替换的连锁改动；key 是稳定标识符，文案才是用户可见层）
+- 代码字段名 `celShadingMode` / `_celShadingMode` / `_originalRenderState` 仍保持，避免状态序列化兼容性破坏（已保存的场景文件中 `celShadingMode: true/false` 仍可正确反序列化）
+- ADR 标题仍为「卡通化渲染后处理模式」（历史命名，保留可追溯性；实际效果以本修订记录为准）
+
+**遗留**：限制 #1（非真正色阶量化）仍存在。如未来需要真正的卡通着色效果，走方向 2（自定义 posterize + Sobel shader），届时可考虑新建 ADR-076B 而非修订本 ADR。
