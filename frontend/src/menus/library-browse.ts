@@ -60,16 +60,37 @@ function _isDirDataReady(targetDir: string): boolean {
 
 function deferRestore(menu: SlideMenu, dir: string, seg: string): void {
     librarySessionStore.clearRestoreTimer();
+    // [doc:adr-135] P0.3: 进入 polling 状态，UI 显示「正在扫描 X…（已等待 Ys）」
+    librarySessionStore.markRestorePolling(seg);
+    setStatus(t('library.scanningDir', { dir: seg }), false, true);
+
     let tries = 0;
+    let lastShownSec = -1;
     const tick = () => {
         tries++;
         if (tries > 40) {
-            // ~6s 上限，避免永久挂起。timer 已 fire，清空引用即可。
+            // ~6s 上限，避免永久挂起。timer 已 fire，清空引用。
             librarySessionStore.setRestoreTimer(null);
+            // [doc:adr-135] P0.3: 超时不再静默。告知用户数据未就绪，需手动点击文件夹展开。
+            librarySessionStore.markRestoreTimeout();
+            setStatus(t('library.scanTimeout', { dir: seg }), false, true);
             return;
         }
         const nextDir = normPath(dir + '/' + seg);
         if (!_isDirDataReady(nextDir)) {
+            // [doc:adr-135] P0.3: 每 1s 更新一次「已等待 Xs」，避免 150ms 闪烁。
+            const startedAt = librarySessionStore.getRestoreStartedAt();
+            if (startedAt !== null) {
+                const elapsedSec = Math.floor((Date.now() - startedAt) / 1000);
+                if (elapsedSec >= 2 && elapsedSec !== lastShownSec) {
+                    lastShownSec = elapsedSec;
+                    setStatus(
+                        t('library.scanningDirWithWait', { dir: seg, sec: elapsedSec }),
+                        false,
+                        true
+                    );
+                }
+            }
             librarySessionStore.setRestoreTimer(setTimeout(tick, 150));
             return;
         }
@@ -78,16 +99,23 @@ function deferRestore(menu: SlideMenu, dir: string, seg: string): void {
         // 校验：菜单仍停留在该层且恢复态未被改写才补做 push，避免与 restoreBrowsePath 重复或误推
         const cur = menu.currentLevel;
         if (!cur || normPath(cur.dir) !== normPath(dir)) {
+            // [doc:adr-135] P0.3: 校验失败也要清状态，否则 status 卡在 polling
+            librarySessionStore.clearRestoreStatus();
             return;
         }
         const pa = getPendingAutoExpand();
         if (!pa || pa[0] !== seg) {
+            // [doc:adr-135] P0.3: 校验失败也要清状态
+            librarySessionStore.clearRestoreStatus();
             return;
         }
         setPendingAutoExpand(pa.length > 1 ? pa.slice(1) : null);
         menu.push(
             buildLevel(nextDir, seg, (m) => m.format === 'pmx', stackRegistry.modelStack!, [])
         );
+        // [doc:adr-135] P0.3: 标记 ready，UI 显示「已展开 X」（短暂提示，2 秒自动消失）
+        librarySessionStore.markRestoreReady();
+        setStatus(t('library.expanded', { dir: seg }), true);
     };
     librarySessionStore.setRestoreTimer(setTimeout(tick, 150));
 }
