@@ -9,6 +9,7 @@ import { registerShortcuts } from './shortcut-registry';
 import { screenshotCurrent } from '../menus/scene-menu';
 import { undo, redo, canUndo, canRedo } from '../scene/motion/motion-modules/motion-history';
 import { applyModuleSnapshot } from '../scene/motion/motion-modules/module-base';
+import { popUndoSnapshot, restoreUndoSnapshot, canUndo as canSceneUndo } from '../scene/scene';
 
 /**
  * navActions 与 navLabels 由 events.ts 管理，本模块只消费。
@@ -186,11 +187,20 @@ export function registerAppShortcuts(): void {
             prevent: true,
             handler: () => {
                 const modelId = focusedModelId;
-                if (!modelId || !canUndo(modelId)) {
+                if (modelId && canUndo(modelId)) {
+                    undo(modelId, (snap) => applyModuleSnapshot(modelId, snap));
+                    setStatus(t('motion.undoApplied'), true);
                     return;
                 }
-                undo(modelId, (snap) => applyModuleSnapshot(modelId, snap));
-                setStatus(t('motion.undoApplied'), true);
+                // 无 motion 撤销时，尝试场景级撤销（Ctrl+Z 兼顾全局）
+                const snap = popUndoSnapshot();
+                if (snap) {
+                    void restoreUndoSnapshot(snap).then((ok) => {
+                        if (ok) {
+                            setStatus(t('scene.undoApplied'), true);
+                        }
+                    });
+                }
             },
             group: 'shortcuts.group.motionUndoRedo',
         },
