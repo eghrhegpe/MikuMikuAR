@@ -23,7 +23,7 @@
 ### 关键前置决策
 
 - **风险 1（babylon-mmd 骨骼兼容性）升为 POC 闸门** ✅ **POC 已通过 (2026-07-08)**：标准 PMX 下 `runtimeBone.linkedBone` 即 `instanceof Bone === true`（实测 774 根骨骼），`linkedBone.getFinalMatrix()` 在 babylon-mmd 复写的 `_computeTransformMatrices` 下保持新鲜（30 根骨骼 worldMatrix 平移偏差 = `0.000000`），`mesh.attachToBone(bone, rootMesh)` 正确跟随骨骼+根变换（根节点 +5 探针增量 = 5.000）。**结论：无需桥接层，Accessory(2.4)/Motion Override(2.1) 可直接用 `linkedBone`**。POC 脚本留存 `frontend/scripts/poc-mmd-bone-attachment.mjs`。⚠️ 保留意见：HumanoidMmd（proxy skeleton）路径未测，其骨骼树可能虚拟化，该路径若有需求须另测。
-- **Ragdoll 单独立项**：不与原四项捆绑，按需发起（建议沿用 ADR-061.R 编号），不在本 ADR 主分期占用排期。✅ **已实现 (2026-07-10)**：`xpbd-ragdoll.ts` + `ragdoll-manager.ts` 落地，接入 scene/model-manager/physics-levels/menu。
+- **Ragdoll 单独立项**：不与原四项捆绑，按需发起（建议沿用 ADR-061.1 编号），不在本 ADR 主分期占用排期。✅ **已实现 (2026-07-10)**：`xpbd-ragdoll.ts` + `ragdoll-manager.ts` 落地，接入 scene/model-manager/physics-levels/menu。见 [adr-061.1-ragdoll-fidelity.md](adr-061.1-ragdoll-fidelity.md) 与 [adr-061.1-plan.md](adr-061.1-plan.md)。
 - **T-pose / A-pose 并入 Pose Studio**：作为 Pose Studio 的子开关，不单独作为 P1 宣传点。
 - **Pose Studio 优先级待定**：需先核实目标用户是否有截图/分享/二创习惯，再定 P1 / P2。
 

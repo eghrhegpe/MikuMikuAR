@@ -51,8 +51,8 @@ XPBD(TS) 物理（`xpbd-solver` / `xpbd-cloth` / `xpbd-ragdoll` / `xpbd-collider
 | `adr-029` | 物理 UI 重构（布料/WASM 分治） | ⚠️ 部分失效（XPBD 子页移除，WASM 入口保留） |
 | `adr-054` | 后续开发路线图 | 📌 路线图修订（Mesh-to-Cloth / Ragdoll 项失效） |
 | `adr-061-advanced-bone-systems` | 高级骨骼系统 | 📌 Ragdoll 章节失效，其余四项有效 |
-| `adr-061-r-ragdoll-fidelity` | Ragdoll 保真度提升 | ⚠️ 整篇废弃 |
-| `adr-061-r-plan` | Ragdoll 实施计划 | ⚠️ 整篇废弃（源码已删） |
+| `adr-061.1-ragdoll-fidelity` | Ragdoll 保真度提升 | ⚠️ 整篇废弃 |
+| `adr-061.1-plan` | Ragdoll 实施计划 | ⚠️ 整篇废弃（源码已删） |
 | `adr-056` | WASM 运行时 Motion Layers | 📌 能力矩阵 XPBD 行失效，本体有效 |
 
 ### 次要提及（6，校正引用，不影响架构）
