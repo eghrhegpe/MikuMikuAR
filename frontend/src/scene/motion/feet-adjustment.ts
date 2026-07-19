@@ -24,6 +24,7 @@ import { solveFootTarget } from '@/motion-algos/feet-adjustment-math';
 // 落地判定（无 Babylon 依赖，便于单测）见 motion-algos/footstep-detect.ts
 import { detectFootLanding } from '@/motion-algos/footstep-detect';
 import { logWarn } from '../../core/utils';
+import { observe, type ObserverHandle } from '@/core/observer-handle';
 export { solveFootTarget };
 export type { SolveFootInput, SolveFootOutput } from '@/motion-algos/feet-adjustment-math';
 
@@ -51,7 +52,7 @@ interface _ModelCache {
 }
 
 const _cache = new Map<string, _ModelCache>();
-let _observerHandle: (() => void) | null = null;
+let _observerHandle: ObserverHandle | null = null;
 // ADR-088 落地事件回调（setOnFootLand 注入）；脚步声消费此事件
 let _onFootLand: ((e: FootLandEvent) => void) | null = null;
 // 帧间隔计时（供落地垂直速度估算）
@@ -311,16 +312,13 @@ export function startFeetAdjustment(
         }
     };
 
-    _observerHandle = () => {
-        scene.onBeforeRenderObservable.removeCallback(callback);
-    };
-    scene.onBeforeRenderObservable.add(callback);
+    _observerHandle = observe(scene.onBeforeRenderObservable, callback);
 }
 
 /** 停止脚部调整系统并清空缓存。 */
 export function stopFeetAdjustment(): void {
     if (_observerHandle) {
-        _observerHandle();
+        _observerHandle.dispose();
         _observerHandle = null;
     }
     _cache.clear();

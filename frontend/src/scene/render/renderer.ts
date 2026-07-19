@@ -11,7 +11,7 @@ import { Color4 } from '@babylonjs/core/Maths/math.color';
 import type { Camera } from '@babylonjs/core/Cameras/camera';
 import { GlowLayer } from '@babylonjs/core/Layers/glowLayer';
 import { ReflectionProbe } from '@babylonjs/core/Probes/reflectionProbe';
-import type { Observer } from '@babylonjs/core/Misc/observable';
+import { observe, observeOnce, type ObserverHandle } from '@/core/observer-handle';
 import { scheduleRefresh } from '@/core/reactivity';
 import { resetPerformanceSnapshot, isSnapshotResetSuppressed } from './performance';
 import { clamp, clamp01, lerp, lerpArray, setKey, logWarn } from '@/core/utils';
@@ -88,17 +88,17 @@ let _glowLayer: GlowLayer | null = null;
 let _ssrPipeline: SSRRenderingPipeline | null = null;
 let _ssaoPipeline: SSAO2RenderingPipeline | null = null;
 let _reflectionProbe: ReflectionProbe | null = null;
-let _probeRefreshObserver: Observer<import('@babylonjs/core/scene').Scene> | null = null;
+let _probeRefreshObserver: ObserverHandle | null = null;
 let _lastProbeRefresh = 0;
 // ADR-114 Phase 3: 接触阴影后处理（屏幕空间 ray marching）
 let _contactShadowPP: PostProcess | null = null;
-/** ADR-114 Phase 3: 接触阴影 onApply handler 引用，用于 update 路径精确移除而非 clear() */
-let _contactShadowHandler: ((effect: Effect) => void) | null = null;
+/** ADR-114 Phase 3: 接触阴影 onApply handler 句柄，用于 update 路径精确移除而非 clear() */
+let _contactShadowHandle: ObserverHandle | null = null;
 // 卡通化渲染预设状态
 let _celShadingMode = false;
 let _originalRenderState: RenderState | null = null;
 /** 当前渲染过渡动画 observer（用于去重） */
-let _renderTransitionObserver: Observer<import('@babylonjs/core/scene').Scene> | null = null;
+let _renderTransitionObserver: ObserverHandle | null = null;
 
 // ======== 初始化与释放 ========
 
@@ -118,7 +118,7 @@ export function initRenderer(
     pipeline.imageProcessingEnabled = true;
 
     // Reflection Probe 自动刷新 — 每 10 秒检查一次环境变化
-    _probeRefreshObserver = scene.onBeforeRenderObservable.add(() => {
+    _probeRefreshObserver = observe(scene.onBeforeRenderObservable, () => {
         if (!_reflectionProbe || !scene) {
             return;
         }
@@ -151,7 +151,7 @@ export function isRendererReady(): boolean {
 /** 释放渲染管线及相关资源。在场景销毁时调用。 */
 export function disposeRenderer(): void {
     if (_probeRefreshObserver && _scene) {
-        _scene.onBeforeRenderObservable.remove(_probeRefreshObserver);
+        _probeRefreshObserver.dispose();
         _probeRefreshObserver = null;
     }
     // HMR 重入时清零时间戳，避免旧值导致下一次 probe refresh 提前触发
@@ -171,7 +171,7 @@ export function disposeRenderer(): void {
     if (_contactShadowPP) {
         _contactShadowPP.dispose();
         _contactShadowPP = null;
-        _contactShadowHandler = null;
+        _contactShadowHandle = null;
     }
     if (_reflectionProbe) {
         _reflectionProbe.dispose();
@@ -790,21 +790,19 @@ export function setContactShadow(state: EnvState): void {
                     0, // texture type
                     _scene.getEngine()
                 );
-                _contactShadowHandler = handler;
-                _contactShadowPP.onApplyObservable.add(handler);
+                _contactShadowHandle = observe(_contactShadowPP.onApplyObservable, handler);
                 camera.attachPostProcess(_contactShadowPP);
             } catch (err) {
                 logWarn('renderer', 'ContactShadow PostProcess 创建失败:', err);
                 _contactShadowPP = null;
-                _contactShadowHandler = null;
+                _contactShadowHandle = null;
             }
         } else {
             // 更新参数：精确替换 handler，不误清其他 observable
-            if (_contactShadowHandler) {
-                _contactShadowPP.onApplyObservable.removeCallback(_contactShadowHandler);
+            if (_contactShadowHandle) {
+                _contactShadowHandle.dispose();
             }
-            _contactShadowHandler = handler;
-            _contactShadowPP.onApplyObservable.add(handler);
+            _contactShadowHandle = observe(_contactShadowPP.onApplyObservable, handler);
         }
     } else {
         // 销毁
@@ -815,7 +813,7 @@ export function setContactShadow(state: EnvState): void {
             }
             _contactShadowPP.dispose();
             _contactShadowPP = null;
-            _contactShadowHandler = null;
+            _contactShadowHandle = null;
         }
     }
 }
@@ -844,7 +842,7 @@ export function setRenderState(s: Partial<RenderState>): void {
 /** 取消当前渲染过渡动画（若有）。 */
 function _cancelRenderTransition(): void {
     if (_renderTransitionObserver && _scene) {
-        _scene.onBeforeRenderObservable.remove(_renderTransitionObserver);
+        _renderTransitionObserver.dispose();
         _renderTransitionObserver = null;
     }
 }
@@ -1006,7 +1004,7 @@ export function transitionRenderState(
         }
     };
 
-    _renderTransitionObserver = _scene.onBeforeRenderObservable.addOnce(animLoop);
+    _renderTransitionObserver = observeOnce(_scene.onBeforeRenderObservable, animLoop);
 }
 
 // ======== 相机重挂接 ========

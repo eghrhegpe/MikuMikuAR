@@ -20,6 +20,7 @@ import {
     activatePerception,
 } from '../motion/perception';
 import { focusedModelId, modelRegistry } from '@/core/config';
+import { observe, type ObserverHandle } from '@/core/observer-handle';
 
 // ======== Internal State ========
 
@@ -29,8 +30,8 @@ let _prevGazeState: { eye: boolean; head: boolean } | null = null;
 let _contactShadow: Mesh | null = null;
 /** 阴影创建时的基准半径，用于每帧按当前 AABB 等比缩放，避免重建 mesh。 */
 let _contactShadowBaseRadius = 1;
-/** 每帧更新阴影的 onBeforeRender 回调引用，便于在退出 AR 时精确注销。 */
-let _contactShadowUpdateFn: (() => void) | null = null;
+/** 每帧更新阴影的 onBeforeRender 回调句柄。 */
+let _contactShadowHandle: ObserverHandle | null = null;
 
 // ======== Internal Helpers: AR contact shadow ========
 // AR passthrough 无平面检测，模型悬浮在视频上会显「飘」。
@@ -133,9 +134,9 @@ function _updateContactShadow(): void {
 }
 
 function _disposeContactShadow(): void {
-    if (_contactShadowUpdateFn) {
-        scene.onBeforeRenderObservable.removeCallback(_contactShadowUpdateFn);
-        _contactShadowUpdateFn = null;
+    if (_contactShadowHandle) {
+        _contactShadowHandle.dispose();
+        _contactShadowHandle = null;
     }
     if (_contactShadow) {
         const mat = _contactShadow.material;
@@ -182,9 +183,8 @@ export async function setARMode(enabled: boolean): Promise<boolean> {
         activatePerception();
         _createContactShadow();
         // 注册每帧更新：使接触阴影跟随聚焦模型的移动/换焦点。
-        if (!_contactShadowUpdateFn) {
-            _contactShadowUpdateFn = _updateContactShadow;
-            scene.onBeforeRenderObservable.add(_contactShadowUpdateFn);
+        if (!_contactShadowHandle) {
+            _contactShadowHandle = observe(scene.onBeforeRenderObservable, _updateContactShadow);
         }
         return true;
     } else {

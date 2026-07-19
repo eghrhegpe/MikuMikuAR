@@ -26,6 +26,7 @@ import { scheduleRefresh } from '@/core/reactivity';
 import { resetPerformanceSnapshot, isSnapshotResetSuppressed } from './performance';
 import { col3FromTriple } from '@/core/color-helpers';
 import { setKey } from '@/core/utils';
+import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { LIGHTING_PRESETS } from './lighting-presets';
 
 // ======== Light State ========
@@ -487,7 +488,7 @@ export function transitionLighting(
         setLightState(interpState);
         if (t >= 1) {
             // 动画结束，移除自身 observer
-            _scene?.onBeforeRenderObservable.remove(animLoopObs);
+            animLoopObs.dispose();
             if (onComplete) {
                 onComplete();
             }
@@ -495,7 +496,7 @@ export function transitionLighting(
     };
 
     // 注册到渲染循环，每帧驱动插值
-    const animLoopObs = _scene.onBeforeRenderObservable.add(animLoop);
+    const animLoopObs = observe(_scene.onBeforeRenderObservable, animLoop);
 }
 
 // ======== Sun Disc ========

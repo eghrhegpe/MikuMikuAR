@@ -17,6 +17,7 @@ import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import { MmdWasmRuntime as MmdWasmRuntimeClass } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
 import type { MmdWasmPhysicsRuntimeImpl } from 'babylon-mmd/esm/Runtime/Optimized/Physics/mmdWasmPhysicsRuntimeImpl';
 import { getWindVector, isWindActive } from '../core/wind-utils';
+import { observe, type ObserverHandle } from '@/core/observer-handle';
 
 /** 风力系数 — Bullet 刚体质量惯性大，需要比 XPBD 布料更大的系数 */
 const WIND_FORCE_SCALE = 0.15;
@@ -27,7 +28,7 @@ const _tmpWind = new Vector3();
 /** 每运行时订阅状态：支持多 MmdWasmRuntime 场景（多场景/多窗口） */
 interface _WindSub {
     /** 已订阅的 observer，用于精确移除（不误伤其他订阅者） */
-    observer: { remove(): void } | null;
+    observer: ObserverHandle | null;
 }
 const _subs = new Map<IMmdRuntime, _WindSub>();
 
@@ -138,7 +139,7 @@ function _trySubscribe(runtime: IMmdRuntime): void {
         return;
     }
 
-    sub.observer = impl.onSyncObservable.add(() => _onPhysicsSync(impl));
+    sub.observer = observe(impl.onSyncObservable, () => _onPhysicsSync(impl));
 }
 
 /**
@@ -148,7 +149,7 @@ function _trySubscribe(runtime: IMmdRuntime): void {
 export function disposeWindPhysics(): void {
     for (const [, sub] of _subs) {
         if (sub.observer) {
-            sub.observer.remove();
+            sub.observer.dispose();
         }
     }
     _subs.clear();

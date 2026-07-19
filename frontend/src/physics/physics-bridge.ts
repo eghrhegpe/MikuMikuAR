@@ -14,8 +14,8 @@
  */
 
 import type { Scene } from '@babylonjs/core/scene';
-import type { Observer } from '@babylonjs/core/Misc/observable';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { observe, type ObserverHandle } from '@/core/observer-handle';
 import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 import { clamp, clampInt, logWarn } from '@/core/utils';
@@ -117,7 +117,7 @@ export type FrameUpdateFn = (dtSeconds: number) => void;
  * 此处统一为可复用的注册表。dt 做了非有限值/后台恢复钳制。
  */
 export class PerFrameUpdateRegistry {
-    private observer: Observer<Scene> | null = null;
+    private observer: ObserverHandle | null = null;
     private readonly fns = new Map<string, FrameUpdateFn>();
 
     constructor(private readonly scene: Scene) {}
@@ -140,7 +140,7 @@ export class PerFrameUpdateRegistry {
         if (this.observer) {
             return;
         }
-        this.observer = this.scene.onBeforeRenderObservable.add(() => {
+        this.observer = observe(this.scene.onBeforeRenderObservable, () => {
             const rawDt = this.scene.deltaTime / 1000; // ms -> s
             if (!isFinite(rawDt) || rawDt <= 0) {
                 return; // 非有限值 / 非正数：跳过
@@ -159,7 +159,7 @@ export class PerFrameUpdateRegistry {
 
     dispose(): void {
         if (this.observer) {
-            this.scene.onBeforeRenderObservable.remove(this.observer);
+            this.observer.dispose();
             this.observer = null;
         }
         this.fns.clear();

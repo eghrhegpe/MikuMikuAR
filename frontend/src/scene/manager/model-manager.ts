@@ -14,9 +14,7 @@ import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
-import type { Observer } from '@babylonjs/core/Misc/observable';
-import { Nullable } from '@babylonjs/core/types';
-
+import { observe, type ObserverHandle } from '@/core/observer-handle';
 import {
     ModelInstance,
     setFocusedModelId,
@@ -203,7 +201,7 @@ export class ModelManager {
             markDirty: () => void;
         }
     >();
-    private _boneUpdateObserver: Nullable<Observer<Scene>> = null;
+    private _boneUpdateObserver: ObserverHandle | null = null;
 
     /** Currently active formation type, or null if custom/manual arrangement. */
     private _activeFormation: FormationType | null = null;
@@ -949,7 +947,7 @@ export class ModelManager {
         if (this._boneUpdateObserver) {
             return;
         }
-        this._boneUpdateObserver = this.scene.onBeforeRenderObservable.add(() => {
+        this._boneUpdateObserver = observe(this.scene.onBeforeRenderObservable, () => {
             const toDelete: string[] = [];
             for (const [id, entry] of this._boneOverlayMap) {
                 const inst = this.modelRegistry.get(id);
@@ -981,7 +979,7 @@ export class ModelManager {
     /** Clean up all observers. Called on shutdown. */
     dispose(): void {
         if (this._boneUpdateObserver) {
-            this.scene.onBeforeRenderObservable.remove(this._boneUpdateObserver);
+            this._boneUpdateObserver.dispose();
             this._boneUpdateObserver = null;
         }
         // Dispose all bone overlay resources (lineSystem + overlay + joints)

@@ -19,6 +19,7 @@ import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import type { ModelManager } from '../manager/model-manager';
 import type { BeatDetector } from '@/motion-algos/beat-detector';
 import { clamp01 } from '@/core/utils';
+import { observe, type ObserverHandle } from '@/core/observer-handle';
 
 // ======== 辅助函数 ========
 
@@ -37,15 +38,6 @@ let _manager: ModelManager | null = null;
 /** Dispose guard: prevents double-cleanup if dispose() called more than once. */
 let _disposed = false;
 
-/** 安全清理 observable 回调，静默吞异常。 */
-function _safeRemoveCallback<T>(obs: { removeCallback: (cb: T) => void } | undefined, cb: T): void {
-    try {
-        obs?.removeCallback(cb);
-    } catch {
-        // Intentionally empty
-    }
-}
-
 // ======== Playback Callbacks Initialization ========
 
 export interface PlaybackObservablesDispose {
@@ -61,7 +53,8 @@ export function initPlaybackObservables(
 ): PlaybackObservablesDispose {
     _manager = manager;
     _disposed = false; // 重置 dispose guard，支持多轮 init/dispose
-    const tickHandler = () => {
+
+    const tickHandle = observe(runtime.onAnimationTickObservable, () => {
         // 每帧统一刷新节拍检测器（供 LipSync + Auto Dance 共享）
         const beatDetector = getProcBeatDetector();
         if (isAudioPlaying() && beatDetector) {
@@ -74,16 +67,14 @@ export function initPlaybackObservables(
         updateProcMotion().catch((err: unknown) =>
             console.error('[playback] updateProcMotion:', err)
         );
-    };
-    runtime.onAnimationTickObservable.add(tickHandler);
+    });
 
-    const playHandler = () => {
+    const playHandle = observe(runtime.onPlayAnimationObservable, () => {
         setIsPlaying(true);
         updatePlaybackUI();
-    };
-    runtime.onPlayAnimationObservable.add(playHandler);
+    });
 
-    const pauseHandler = () => {
+    const pauseHandle = observe(runtime.onPauseAnimationObservable, () => {
         // NOTE: babylon-mmd fires onPause when animation reaches the end (no
         // separate onFinish event), so the auto-loop logic lives here.
 
@@ -137,8 +128,7 @@ export function initPlaybackObservables(
             return;
         }
         updatePlaybackUI();
-    };
-    runtime.onPauseAnimationObservable.add(pauseHandler);
+    });
 
     // 返回 dispose 函数，供场景销毁时清理观察者，防止内存泄漏
     return () => {
@@ -146,9 +136,9 @@ export function initPlaybackObservables(
             return;
         }
         _disposed = true;
-        _safeRemoveCallback(runtime.onAnimationTickObservable, tickHandler);
-        _safeRemoveCallback(runtime.onPlayAnimationObservable, playHandler);
-        _safeRemoveCallback(runtime.onPauseAnimationObservable, pauseHandler);
+        tickHandle.dispose();
+        playHandle.dispose();
+        pauseHandle.dispose();
     };
 }
 
