@@ -2,7 +2,8 @@
 // 从 env-impl.ts 拆分而来：提供 _envSys、getScene、getPipeline 等共享依赖，
 // 供所有 env-* 子模块使用，避免 env-impl ↔ env-water 循环依赖。
 
-import { Scene, ParticleSystem, Observer, DefaultRenderingPipeline, StandardMaterial, Texture, Mesh } from '@babylonjs/core';
+import { Scene, ParticleSystem, DefaultRenderingPipeline, StandardMaterial, Texture, Mesh } from '@babylonjs/core';
+import { type ObserverHandle } from '@/core/observer-handle';
 
 // ======== Injected dependencies ========
 let _scene: Scene | null = null;
@@ -67,8 +68,8 @@ interface EnvSkyResources {
 export const _envSys: {
     sky: EnvSkyResources;
     ground: { mesh: Mesh | null };
-    particles: { system: ParticleSystem | null; followObserver: Observer<Scene> | null };
-    splash: { observer: Observer<Scene> | null };
+    particles: { system: ParticleSystem | null; followObserver: ObserverHandle | null };
+    splash: { observer: ObserverHandle | null };
     clouds: {
         postProcess: Mesh | null;
         postProcess2: Mesh | null;

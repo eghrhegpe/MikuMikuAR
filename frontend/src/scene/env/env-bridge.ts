@@ -25,6 +25,7 @@ import { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime
 import { applyGroundCollision } from '../physics/ground-collision';
 import { deriveLighting, TIME_OF_DAY_PRESETS, type CategorizedEnvPreset } from './env-lighting';
 import * as impl from './env-impl';
+import { dispatchEnvChange } from './env-dispatcher';
 import {
     setLightState,
     getLightState,
@@ -47,12 +48,12 @@ import { setPerformanceMode, getPerformanceMode } from '../render/performance';
  * 统一 try/catch + logWarn，消除子系统分支的重复模式。
  */
 function _applyIfChanged(
-    changed: string[] | null,
+    changed: Set<string> | null,
     keys: string[],
     label: string,
     fn: () => void
 ): void {
-    if (changed && !changed.some((k) => keys.includes(k))) {
+    if (changed && !keys.some((k) => changed.has(k))) {
         return;
     }
     try {
@@ -62,112 +63,6 @@ function _applyIfChanged(
     }
 }
 
-// 子系统 key 表 — 集中定义，便于维护
-const _SKY_KEYS = [
-    'skyMode',
-    'skyColorTop',
-    'skyColorMid',
-    'skyColorBot',
-    'skyTexture',
-    'skyRotationY',
-    'skyRotationSpeed',
-    'skyBrightness',
-    'starsEnabled',
-    'starsTexture',
-    'envIntensity',
-    'sunAngle',
-    'azimuth',
-];
-const _GROUND_KEYS = [
-    'groundVisible',
-    'groundType',
-    'groundStyle',
-    'groundDecoStyle',
-    'groundColor',
-    'groundAlpha',
-    'groundTexture',
-    'groundTextureEnabled',
-    'groundTextureScale',
-    'groundTextureRotation',
-    'groundTerrainHeight',
-    'groundTerrainScale',
-    'groundTerrainSeed',
-    'groundTerrainOctaves',
-    'groundSize',
-    'groundGridSize',
-    'groundLineColor',
-    'groundEdgeFade',
-    'groundPitch',
-    'groundRoll',
-    'groundScrollSpeedX',
-    'groundScrollSpeedZ',
-    'groundPattern',
-    'groundReflectionBlend',
-    'groundReflectionQuality',
-    'groundNormalTexture',
-    'groundNormalStrength',
-    'groundElevationColoring',
-    'groundLevel',
-];
-const _FOG_KEYS = ['fogEnabled', 'fogColor', 'fogDensity', 'fogMode', 'fogStart', 'fogEnd'];
-const _WATER_KEYS = [
-    'waterEnabled',
-    'waterLevel',
-    'waterColor',
-    'waterTransparency',
-    'waterWaveHeight',
-    'bigWaveHeight',
-    'smallWaveHeight',
-    'waterSize',
-    'waterAnimSpeed',
-    'fresnelBias',
-    'fresnelPower',
-    'diffuseStrength',
-    'ambientStrength',
-    'rippleNormalStrength',
-    'rippleGlintStrength',
-    'waterNormalStrength',
-    'waterGlintStrength',
-    'waterHorizonFade',
-    'waterSkyColorBlend',
-    'causticIntensity',
-    'causticColor1',
-    'causticColor2',
-    'causticScrollX',
-    'causticScrollY',
-    'fresnelAlphaInfluence',
-    'waterFogColor',
-    'waterFogDensity',
-    'waterFogOpacityInfluence',
-    'reflectionQuality', // ADR-114 修复：反射质量开关需触发材质重建（PLANAR_REFLECTION define 切换）
-    'planarReflectBlend',
-];
-const _PARTICLE_KEYS = [
-    'particleEnabled',
-    'particleType',
-    'particleEmitRate',
-    'particleSize',
-    'particleSpeed',
-    'particleSplash',
-    'particleCustomTexture',
-];
-const _CLOUD_KEYS = [
-    'cloudsEnabled',
-    'cloudCover',
-    'cloudScale',
-    'cloudHeight',
-    'cloudThickness',
-    'cloudVisibility',
-    'cloudGap',
-    'cloudErosion',
-    'cloudWeatherStrength',
-    'cloudBacklight',
-    'cloudPowder',
-    'groundLevel', // 云层地面裁剪依赖此值，groundLevel 变化时需重新同步云 shader uniform
-    // P4 修复：cloudQuality 字段在 state 中保留（默认 'high'），但目前未在 shader 中
-    // 使用（blue-noise dither 始终启用）。先从 _CLOUD_KEYS 移除以避免无效的 mesh
-    // 重建，等真正在 shader 中根据 quality 切换 dither 模式后再加回。
-];
 // ADR-114 Phase 3: 接触阴影后处理（转发到 renderer.setContactShadow）
 const _CONTACT_SHADOW_KEYS = [
     'groundContactShadowEnabled',
@@ -178,60 +73,15 @@ const _CONTACT_SHADOW_KEYS = [
 
 /** 等同于 scene-env.ts 的 applyEnvState，但避免循环依赖。 */
 function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): void {
-    const changed = partial ? Object.keys(partial) : null;
+    const changed = partial ? new Set(Object.keys(partial)) : null;
 
-    _applyIfChanged(changed, _SKY_KEYS, 'sky', () => {
-        const t0 = performance.now();
-        impl.applySky(state);
-        // color 模式下无天空 mesh，需单独同步镜面 clearColor
-        if (impl.isMirrorActive() && impl.updateMirrorClearColor) {
-            impl.updateMirrorClearColor();
-        }
-        const elapsed = performance.now() - t0;
-        if (elapsed > 2) {
-            logWarn('perf:env', `[${formatTimestamp()}] applySky took ${elapsed.toFixed(1)}ms`);
-        }
-    });
-
-    _applyIfChanged(changed, _GROUND_KEYS, 'ground', () => impl.applyGround(state));
-
-    _applyIfChanged(changed, _FOG_KEYS, 'fog', () => impl.applyFog(state));
-
-    _applyIfChanged(changed, _WATER_KEYS, 'water', () => {
-        if (state.waterEnabled) {
-            impl.createWater(state);
-        } else {
-            impl.disposeWater();
-        }
-    });
-
-    _applyIfChanged(changed, _PARTICLE_KEYS, 'particle', () => {
-        if (state.particleEnabled && state.particleType && state.particleType !== 'none') {
-            impl.createParticleEmitter(state.particleType, state.windEnabled);
-        } else {
-            impl.disposeParticles();
-        }
-    });
-
-    _applyIfChanged(changed, _CLOUD_KEYS, 'cloud', () => {
-        if (state.cloudsEnabled) {
-            impl.createClouds(state);
-        } else {
-            impl.disposeClouds();
-        }
-    });
+    // [ADR-138] 通过 env-dispatcher 分发变化给各子系统，破除 env-bridge → env-impl 循环依赖
+    dispatchEnvChange(changed, state);
 
     // ADR-114 Phase 3: 接触阴影后处理（转发到 renderer）
+    // 保留在 env-bridge 中，不属于子系统逻辑
     _applyIfChanged(changed, _CONTACT_SHADOW_KEYS, 'contactShadow', () => {
         setContactShadow(state);
-    });
-
-    _applyIfChanged(changed, ['mirrorEnabled'], 'mirror', () => {
-        if (state.mirrorEnabled && !impl.isMirrorActive()) {
-            impl.createMirror();
-        } else if (!state.mirrorEnabled && impl.isMirrorActive()) {
-            impl.disposeMirror();
-        }
     });
 
     // 半球光 — 强度跟随当前灯光状态，颜色随天空色（灯光未初始化时跳过）
@@ -258,7 +108,7 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
     if (
         _timeOfDayBeforePreset === null &&
         changed &&
-        changed.some((k) => _LIGHT_SYNC_KEYS.includes(k))
+        [...changed].some((k) => _LIGHT_SYNC_KEYS.includes(k))
     ) {
         const derived = deriveLighting(state.skyColorTop, state.sunAngle, state.azimuth ?? -45);
         setLightState({
@@ -390,7 +240,7 @@ function _timeOfDayTick(): void {
     } else if (Math.abs(envSunAngle - _lastSkySunAngle) >= 0.4) {
         _lastSkySunAngle = envSunAngle;
         if (envState.skyMode === 'procedural') {
-            impl.applySky(envState);
+            dispatchEnvChange(new Set(['sunAngle']), envState);
         }
     }
 }
