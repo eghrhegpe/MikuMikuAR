@@ -291,6 +291,19 @@ function _applyRenderState(s: Partial<RenderState>): void {
         return;
     }
 
+    // [doc:adr-076-rev1] 动态快照同步：卡通化开启期间，用户手动调 6 个卡通管控字段时
+    // (s.celShadingMode === undefined 排除开关自身的预设应用调用)，
+    // 实时同步到 _originalRenderState，关闭时恢复的就是用户调过的最新意图，
+    // 而非开启前的旧快照。修掉原限制 #3「手动调参被丢弃」。
+    if (_celShadingMode && s.celShadingMode === undefined && _originalRenderState) {
+        if (s.exposure !== undefined) _originalRenderState.exposure = s.exposure;
+        if (s.contrast !== undefined) _originalRenderState.contrast = s.contrast;
+        if (s.toneMapping !== undefined) _originalRenderState.toneMapping = s.toneMapping;
+        if (s.bloomEnabled !== undefined) _originalRenderState.bloomEnabled = s.bloomEnabled;
+        if (s.bloomWeight !== undefined) _originalRenderState.bloomWeight = s.bloomWeight;
+        if (s.fxaaEnabled !== undefined) _originalRenderState.fxaaEnabled = s.fxaaEnabled;
+    }
+
     // 数值钳制（全部 0-1 归一化范围）
     const w = s.bloomWeight !== undefined ? clamp(s.bloomWeight, 0, 1) : undefined;
     const th = s.bloomThreshold !== undefined ? clamp(s.bloomThreshold, 0, 1) : undefined;
@@ -606,7 +619,15 @@ function _applyRenderState(s: Partial<RenderState>): void {
             // 恢复到快照状态
             _celShadingMode = false;
             if (_originalRenderState) {
-                _applyRenderState(_originalRenderState);
+                // 先清空快照引用，并从快照中剥离 celShadingMode 字段后再递归：
+                // 快照里的 celShadingMode===false 会再次进入本分支 (s.celShadingMode !== undefined)，
+                // 而 _originalRenderState 仍非空 → 无限递归 → 栈溢出 → setRenderState 抛错、
+                // _triggerAutoSave/scheduleRefresh 不执行，UI 显示与 pipeline 实际值脱节，
+                // 表现为「色调映射之类的菜单被重置为默认值」。
+                const snapshot = _originalRenderState;
+                _originalRenderState = null;
+                const { celShadingMode: _ignored, ...rest } = snapshot;
+                _applyRenderState(rest);
             }
         }
     }
