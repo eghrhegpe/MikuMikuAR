@@ -14,10 +14,12 @@ import {
     getPipeline,
     isInitialized,
     resolveStaticAsset,
+} from './env-context';
+import {
     registerSceneTickCallback as _registerSceneTickCallback,
     clearSceneTickCallbacks,
     runSceneTickCallbacks,
-} from './env-context';
+} from './env-dispatcher';
 
 // Re-export shared context for backward compatibility
 export { _envSys, getScene, getPipeline, resolveStaticAsset, isInitialized } from './env-context';
@@ -106,23 +108,6 @@ const _GROUND_KEYS = [
     'groundMode',
 ];
 const _FOG_KEYS = ['fogEnabled', 'fogColor', 'fogDensity', 'fogMode', 'fogStart', 'fogEnd'];
-const _WATER_KEYS = [
-    'waterEnabled', 'waterColor', 'waterOpacity', 'waterLevel',
-    'waterWaveSpeed', 'waterWaveHeight', 'waterWaveLength',
-    'waterReflectionEnabled', 'waterReflectionQuality',
-    'waterRefraction', 'waterRefractionIndex',
-    'waterFoamEnabled', 'waterFoamIntensity',
-    'waterCausticsEnabled', 'waterCausticsIntensity',
-    'underwaterStrength', 'waterPresetName', 'waterAnimSpeed',
-    'environmentPreset',
-];
-const _PARTICLE_KEYS = [
-    'particleEnabled', 'particleType', 'particleDensity',
-    'particleSize', 'particleSpeed', 'particleEmitRate',
-    'particleSplash', 'particleCustomTexture',
-    'windEnabled', 'windStrength', 'windDirection',
-];
-const _CLOUD_KEYS = ['cloudsEnabled', 'cloudCover', 'cloudSpeed', 'cloudHeight', 'cloudDensity', 'cloudLightAttenuation'];
 
 registerEnvCallback((changed, state) => {
     // Sky
@@ -139,30 +124,6 @@ registerEnvCallback((changed, state) => {
     // Fog
     if (!changed || [...changed].some((k) => _FOG_KEYS.includes(k))) {
         applyFog(state);
-    }
-    // Water
-    if (!changed || [...changed].some((k) => _WATER_KEYS.includes(k))) {
-        if (state.waterEnabled) {
-            createWater(state);
-        } else {
-            disposeWater();
-        }
-    }
-    // Particles
-    if (!changed || [...changed].some((k) => _PARTICLE_KEYS.includes(k))) {
-        if (state.particleEnabled && state.particleType && state.particleType !== 'none') {
-            createParticleEmitter(state.particleType, state.windEnabled);
-        } else {
-            disposeParticles();
-        }
-    }
-    // Clouds
-    if (!changed || [...changed].some((k) => _CLOUD_KEYS.includes(k))) {
-        if (state.cloudsEnabled) {
-            createClouds(state);
-        } else {
-            disposeClouds();
-        }
     }
     // Mirror
     if (!changed || changed.has('mirrorEnabled')) {

@@ -40,23 +40,13 @@ export function resolveStaticAsset(path: string): string {
     return new URL(path, window.location.origin).href;
 }
 
-// ======== Scene Tick Callback Registry ========
-const _sceneTickCallbacks = new Set<() => void>();
-
-export function registerSceneTickCallback(cb: () => void): () => void {
-    _sceneTickCallbacks.add(cb);
-    return () => _sceneTickCallbacks.delete(cb);
-}
-
-export function clearSceneTickCallbacks(): void {
-    _sceneTickCallbacks.clear();
-}
-
-export function runSceneTickCallbacks(): void {
-    for (const cb of _sceneTickCallbacks) {
-        cb();
-    }
-}
+// ======== Scene Tick Callback Registry (re-export from env-dispatcher) ========
+// 迁入 env-dispatcher 使 env-bridge 无需 import env-impl。
+export {
+    registerSceneTickCallback,
+    clearSceneTickCallbacks,
+    runSceneTickCallbacks,
+} from './env-dispatcher';
 
 // ======== _envSys ========
 interface EnvSkyResources {
