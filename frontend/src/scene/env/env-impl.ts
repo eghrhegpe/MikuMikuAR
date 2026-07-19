@@ -2,10 +2,11 @@
 // 从 env-impl.ts 拆分而来：天空→env-sky.ts，地面→env-ground.ts，共享上下文→env-context.ts
 // 本文件保留：observer、fog、barrel re-export
 
-import { Observer, Scene } from '@babylonjs/core';
+import { Scene } from '@babylonjs/core';
 import { EnvState, envState } from '@/core/config';
 import { col3FromTriple } from '@/core/color-helpers';
 import { logWarn } from '@/core/utils';
+import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { disposeTextureCache } from './env-texture';
 import {
     _envSys,
@@ -34,17 +35,20 @@ export {
     _underwaterTransitionProgress,
     _underwaterTarget,
 } from './env-water';
-import { updateUnderwaterTransition, resetUnderwaterState } from './env-water';
+import { createWater, disposeWater, updateUnderwaterTransition, resetUnderwaterState } from './env-water';
 export { createClouds, disposeClouds } from './env-clouds';
+import { createClouds, disposeClouds } from './env-clouds';
 export {
     createMirror,
     disposeMirror,
     isMirrorActive,
     updateMirrorClearColor,
 } from './mirror-debug';
+import { createMirror, disposeMirror, isMirrorActive, updateMirrorClearColor } from './mirror-debug';
 
 // ======== Re-exports: Sky ========
 export { applySky, disposeSky } from './env-sky';
+import { applySky } from './env-sky';
 
 // ======== Re-exports: Ground ========
 export {
@@ -54,7 +58,7 @@ export {
     setOnGroundChanged,
     disposeGround,
 } from './env-ground';
-import { tickGround } from './env-ground';
+import { applyGround, tickGround } from './env-ground';
 
 // ======== Re-exports: Particles ========
 import {
@@ -82,8 +86,96 @@ export function registerSceneTickCallback(cb: () => void): () => void {
 // ======== initEnvImpl (re-export from env-context) ========
 export { initEnvImpl } from './env-context';
 
+// [ADR-138] 注册 env-dispatcher 回调，响应 setEnvState 变化，破除 env-bridge → env-impl 循环依赖
+import { registerEnvCallback } from './env-dispatcher';
+
+const _SKY_KEYS = [
+    'skyMode', 'skyColorTop', 'skyColorMid', 'skyColorBot',
+    'skyTexture', 'skyRotationY', 'skyRotationSpeed', 'skyBrightness',
+    'starsEnabled', 'starsTexture', 'envIntensity', 'sunAngle', 'azimuth',
+];
+const _GROUND_KEYS = [
+    'groundType', 'groundStyle', 'groundColor', 'groundColor2',
+    'groundTexture', 'groundLevel', 'groundPitch', 'groundRoll',
+    'groundScrollSpeedX', 'groundScrollSpeedZ', 'groundTileScale',
+    'groundReflectionEnabled', 'groundReflectionQuality',
+    'groundEdgeFadeStart', 'groundEdgeFadeEnd',
+    'groundContactShadowEnabled', 'groundContactShadowIntensity', 'groundContactShadowDistance',
+    'terrainHeight', 'terrainScale', 'terrainSeed', 'terrainOctaves',
+    'groundGradient', 'groundFade', 'groundCheckerColor1', 'groundCheckerColor2',
+    'groundMode',
+];
+const _FOG_KEYS = ['fogEnabled', 'fogColor', 'fogDensity', 'fogMode', 'fogStart', 'fogEnd'];
+const _WATER_KEYS = [
+    'waterEnabled', 'waterColor', 'waterOpacity', 'waterLevel',
+    'waterWaveSpeed', 'waterWaveHeight', 'waterWaveLength',
+    'waterReflectionEnabled', 'waterReflectionQuality',
+    'waterRefraction', 'waterRefractionIndex',
+    'waterFoamEnabled', 'waterFoamIntensity',
+    'waterCausticsEnabled', 'waterCausticsIntensity',
+    'underwaterStrength', 'waterPresetName', 'waterAnimSpeed',
+    'environmentPreset',
+];
+const _PARTICLE_KEYS = [
+    'particleEnabled', 'particleType', 'particleDensity',
+    'particleSize', 'particleSpeed', 'particleEmitRate',
+    'particleSplash', 'particleCustomTexture',
+    'windEnabled', 'windStrength', 'windDirection',
+];
+const _CLOUD_KEYS = ['cloudsEnabled', 'cloudCover', 'cloudSpeed', 'cloudHeight', 'cloudDensity', 'cloudLightAttenuation'];
+
+registerEnvCallback((changed, state) => {
+    // Sky
+    if (!changed || [...changed].some((k) => _SKY_KEYS.includes(k))) {
+        applySky(state);
+        if (isMirrorActive() && updateMirrorClearColor) {
+            updateMirrorClearColor();
+        }
+    }
+    // Ground
+    if (!changed || [...changed].some((k) => _GROUND_KEYS.includes(k))) {
+        applyGround(state);
+    }
+    // Fog
+    if (!changed || [...changed].some((k) => _FOG_KEYS.includes(k))) {
+        applyFog(state);
+    }
+    // Water
+    if (!changed || [...changed].some((k) => _WATER_KEYS.includes(k))) {
+        if (state.waterEnabled) {
+            createWater(state);
+        } else {
+            disposeWater();
+        }
+    }
+    // Particles
+    if (!changed || [...changed].some((k) => _PARTICLE_KEYS.includes(k))) {
+        if (state.particleEnabled && state.particleType && state.particleType !== 'none') {
+            createParticleEmitter(state.particleType, state.windEnabled);
+        } else {
+            disposeParticles();
+        }
+    }
+    // Clouds
+    if (!changed || [...changed].some((k) => _CLOUD_KEYS.includes(k))) {
+        if (state.cloudsEnabled) {
+            createClouds(state);
+        } else {
+            disposeClouds();
+        }
+    }
+    // Mirror
+    if (!changed || changed.has('mirrorEnabled')) {
+        if (state.mirrorEnabled && !isMirrorActive()) {
+            createMirror();
+        } else if (!state.mirrorEnabled && isMirrorActive()) {
+            disposeMirror();
+        }
+    }
+});
+
 // ======== Env Update Observer ========
-let _envUpdateObserver: Observer<Scene> | null = null;
+let _envUpdateObserver: ObserverHandle | null = null;
 let _prevParticleEnabled = true;
 let _prevSplash = false;
 let _prevCustomTexture = '';
@@ -95,7 +187,7 @@ export function ensureEnvUpdateObserver(): void {
         return;
     }
 
-    _envUpdateObserver = scene.onBeforeRenderObservable.add(() => {
+    _envUpdateObserver = observe(scene.onBeforeRenderObservable, () => {
         const dt = scene.deltaTime / 1000;
 
         // P2 修复：旧版平面纹理云的漂移逻辑（_envSys.clouds.postProcess/postProcess2）
@@ -163,7 +255,7 @@ export function disposeEnvUpdateObserver(): void {
     const scene = getScene();
     const pipeline = getPipeline();
     if (_envUpdateObserver) {
-        scene.onBeforeRenderObservable.remove(_envUpdateObserver);
+        _envUpdateObserver.dispose();
         _envUpdateObserver = null;
     }
     // 清理所有场景 tick 回调（如 time-of-day），避免 HMR 重入时泄漏
