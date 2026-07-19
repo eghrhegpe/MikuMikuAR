@@ -97,7 +97,12 @@ const waterReflection = new PlanarReflection({
     name: 'water',
     mode: 'screenSpace',
     resolutionMap: { high: 1024, medium: 512, low: 256, off: 0 },
-    getQuality: (s) => s.reflectionQuality,
+    getQuality: (s) => {
+        // 独立字段为非 'off' 时作为显式覆盖；否则从 qualityProfile 派生
+        if (s.reflectionQuality !== 'off') return s.reflectionQuality;
+        const map: Record<string, string> = { high: 'high', medium: 'medium', low: 'low' };
+        return map[s.qualityProfile] ?? 'off';
+    },
     getBlend: (s) => s.planarReflectBlend ?? 0.5,
     getSurfaceLevel: (s) => s.waterLevel,
     getMirrorCameraMatrix: (s, scene) => {
