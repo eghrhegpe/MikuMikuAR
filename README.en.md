@@ -141,14 +141,24 @@
 
 ### Prerequisites
 
-| Dependency | Version | Notes |
-|------------|---------|-------|
-| **Go** | 1.25+ | Go backend + Wails compilation |
-| **Node.js** | 24+ | Frontend build |
-| **npm** | 10+ | Frontend package management |
-| **Git** | Any | Code clone |
-| **Wails v3 CLI** | Latest | Hot-reload dev required: `go install github.com/wailsapp/wails/v3/cmd/wails3@latest` |
-| **Playwright** | — | E2E testing: `cd frontend && npx playwright install --with-deps` |
+| Dependency | Version | Notes | Check |
+|------------|---------|-------|-------|
+| **Go** | 1.25+ | Backend compilation | `go version` |
+| **Node.js** | 24+ | Frontend build | `node --version` |
+| **npm** | 11+ | Package management | `npm --version` |
+| **Wails v3 CLI** | Latest | Hot-reload dev required | `wails3 version` → `go install github.com/wailsapp/wails/v3/cmd/wails3@latest` |
+| **PowerShell 7** | — | Windows build scripts (optional) | `pwsh --version` |
+| **GitHub CLI** | — | Release workflow (optional) | `gh --version` |
+
+> **E2E testing:** Install Playwright browser
+> ```bash
+> cd frontend && npx playwright install chromium
+> ```
+>
+> **WASM Bullet physics (optional):** Install [Rust](https://rustup.rs/) for local compilation
+> ```bash
+> rustc --version   # check if installed
+> ```
 
 **Additional Linux dependencies** (building desktop app):
 ```bash

@@ -141,14 +141,24 @@
 
 ### 사전 요구사항
 
-| 의존성 | 버전 | 설명 |
-|--------|------|------|
-| **Go** | 1.25+ | Go 백엔드 + Wails 컴파일 |
-| **Node.js** | 24+ | 프론트엔드 빌드 |
-| **npm** | 10+ | 프론트엔드 패키지 관리 |
-| **Git** | 상관없음 | 코드 클론 |
-| **Wails v3 CLI** | 최신 | 핫 리로드 개발 필수: `go install github.com/wailsapp/wails/v3/cmd/wails3@latest` |
-| **Playwright** | — | E2E 테스트용: `cd frontend && npx playwright install --with-deps` |
+| 의존성 | 버전 | 설명 | 확인 방법 |
+|--------|------|------|---------|
+| **Go** | 1.25+ | 백엔드 컴파일 | `go version` |
+| **Node.js** | 24+ | 프론트엔드 빌드 | `node --version` |
+| **npm** | 11+ | 패키지 관리 | `npm --version` |
+| **Wails v3 CLI** | 최신 | 핫 리로드 개발 필수 | `wails3 version` → `go install github.com/wailsapp/wails/v3/cmd/wails3@latest` |
+| **PowerShell 7** | — | Windows 빌드 스크립트 (선택) | `pwsh --version` |
+| **GitHub CLI** | — | 릴리스 워크플로 (선택) | `gh --version` |
+
+> **E2E 테스트:** Playwright 브라우저 설치
+> ```bash
+> cd frontend && npx playwright install chromium
+> ```
+>
+> **WASM Bullet 물리 (선택):** 로컬 컴파일을 위해 [Rust](https://rustup.rs/) 설치
+> ```bash
+> rustc --version   # 설치 확인
+> ```
 
 **Linux 추가 의존성** (데스크톱 앱 빌드):
 ```bash
