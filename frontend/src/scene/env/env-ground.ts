@@ -238,11 +238,11 @@ function disposeGroundMaterial(mat: Material | null): void {
     mat.dispose();
 }
 
-// ======== ADR-134: Infinite ground constants & state ========
+// ======== ADR-134: Infinite ground constants ========
+// 相机追踪 lerp 跟随方案已废弃（_groundInfinitePrevX/Z 从未被使用），
+// 无限地面改为固定大 mesh + 纹理世界空间平铺，不再跟随相机移动。
 const INFINITE_GROUND_SIZE = 2000; // 无限地面 mesh 固定尺寸（匹配碰撞体范围）
 let _groundActualSize = 60; // 当前 mesh 实际尺寸（用于 UV 补偿计算）
-let _groundInfinitePrevX = 0; // 上一帧 mesh X 位置（UV 补偿用）
-let _groundInfinitePrevZ = 0; // 上一帧 mesh Z 位置
 
 // ======== Module state ========
 let _currentGroundKey: string = '';
@@ -582,17 +582,20 @@ function _syncTextureGroundTexture(mat: GroundMat, state: EnvState, scene: Scene
 
     let dt = _getAlbedoTex(mat) as DynamicTexture | null;
     const needCreate = !dt || !(dt instanceof DynamicTexture) || dt.name !== 'envGroundTex';
+    // [fix:ADR-134] 无限地面 UV 补偿：网格变大时按比例缩小纹理密度
+    const uvCompensation = state.groundSize / Math.max(1, _groundActualSize);
+    const baseScale = (1 / Math.max(0.1, state.groundTextureScale)) * uvCompensation;
     if (needCreate) {
         if (dt) {
             dt.dispose();
         }
         dt = new DynamicTexture('envGroundTex', _TEX_GROUND_SIZE, scene, false);
         dt.wrapU = dt.wrapV = Texture.WRAP_ADDRESSMODE;
-        dt.uScale = dt.vScale = 1 / Math.max(0.1, state.groundTextureScale);
+        dt.uScale = dt.vScale = baseScale;
         _setAlbedoTex(mat, dt);
         _setAlbedoColor(mat, new Color3(1, 1, 1));
     } else {
-        dt.uScale = dt.vScale = 1 / Math.max(0.1, state.groundTextureScale);
+        dt.uScale = dt.vScale = baseScale;
     }
     _syncGroundTextureOffset(mat, state);
 
@@ -743,7 +746,9 @@ export function applyGround(state: EnvState): void {
             }
             const albedoTex = _getAlbedoTex(mat);
             if (albedoTex && albedoTex instanceof Texture) {
-                albedoTex.uScale = albedoTex.vScale = 1 / Math.max(0.1, state.groundTextureScale);
+                // [fix:ADR-134] 无限地面 UV 补偿：网格变大时按比例缩小纹理密度
+                const uvCompensation = state.groundSize / Math.max(1, _groundActualSize);
+                albedoTex.uScale = albedoTex.vScale = (1 / Math.max(0.1, state.groundTextureScale)) * uvCompensation;
                 _syncGroundTextureOffset(mat, state);
             }
             _syncGroundNormalTexture(mat, state);
@@ -809,8 +814,6 @@ export function applyGround(state: EnvState): void {
         scene
     );
     _groundActualSize = meshSize;
-    _groundInfinitePrevX = 0;
-    _groundInfinitePrevZ = 0;
     ground.isPickable = false;
     ground.position.y = state.groundLevel;
 
@@ -846,6 +849,9 @@ export function applyGround(state: EnvState): void {
         const tex = _generateGroundTexture(state, scene);
         _setAlbedoTex(mat, tex);
         _setAlbedoColor(mat, new Color3(1, 1, 1));
+        // [fix:ADR-134] 无限地面 UV 补偿：网格变大时按比例缩小纹理密度，保持视觉一致
+        const uvScale = state.groundSize / Math.max(1, _groundActualSize);
+        tex.uScale = tex.vScale = uvScale;
     } else if (state.groundTextureEnabled && state.groundTexture) {
         // 外部贴图模式
         _setAlbedoColor(mat, new Color3(1, 1, 1));
