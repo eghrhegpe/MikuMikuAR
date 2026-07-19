@@ -1,20 +1,25 @@
 // env-impl.ts — Environment System barrel + observer + fog
-// 从 env-impl.ts 拆分而来：天空→env-sky.ts，地面→env-ground.ts
-// 本文件保留：共享依赖注入、_envSys、observer、fog、barrel re-export
+// 从 env-impl.ts 拆分而来：天空→env-sky.ts，地面→env-ground.ts，共享上下文→env-context.ts
+// 本文件保留：observer、fog、barrel re-export
 
-import {
-    Scene,
-    ParticleSystem,
-    Observer,
-    DefaultRenderingPipeline,
-    StandardMaterial,
-    Texture,
-    Mesh,
-} from '@babylonjs/core';
+import { Observer, Scene } from '@babylonjs/core';
 import { EnvState, envState } from '@/core/config';
 import { col3FromTriple } from '@/core/color-helpers';
 import { logWarn } from '@/core/utils';
 import { disposeTextureCache } from './env-texture';
+import {
+    _envSys,
+    getScene,
+    getPipeline,
+    isInitialized,
+    resolveStaticAsset,
+    registerSceneTickCallback as _registerSceneTickCallback,
+    clearSceneTickCallbacks,
+    runSceneTickCallbacks,
+} from './env-context';
+
+// Re-export shared context for backward compatibility
+export { _envSys, getScene, getPipeline, resolveStaticAsset, isInitialized } from './env-context';
 
 // ======== Re-exports: Water / Clouds / MirrorDebug ========
 export {
@@ -55,7 +60,6 @@ import { tickGround } from './env-ground';
 import {
     createParticleEmitter,
     disposeParticles,
-    applyWindToParticles,
     updateParticleWind,
     updateParticleParams,
     updateParticleTexture,
@@ -66,79 +70,17 @@ import {
 export {
     createParticleEmitter,
     disposeParticles,
-    applyWindToParticles,
     updateParticleWind,
     updateParticleTexture,
 };
 
-// ======== Static Asset URL Resolver (Android 安全) ========
-export function resolveStaticAsset(path: string): string {
-    if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) {
-        return path;
-    }
-    return new URL(path, window.location.origin).href;
-}
-
-// ======== Scene Tick Callback Registry ========
-const _sceneTickCallbacks = new Set<() => void>();
-
+// ======== Scene Tick Callback Registry (re-export from env-context) ========
 export function registerSceneTickCallback(cb: () => void): () => void {
-    _sceneTickCallbacks.add(cb);
-    return () => _sceneTickCallbacks.delete(cb);
+    return _registerSceneTickCallback(cb);
 }
 
-// ======== Injected dependencies ========
-let _scene: Scene | null = null;
-let _pipeline: DefaultRenderingPipeline | null = null;
-
-export function initEnvImpl(scene: Scene, pipeline: DefaultRenderingPipeline): void {
-    _scene = scene;
-    _pipeline = pipeline;
-}
-
-export function getScene(): Scene {
-    if (!_scene) {
-        throw new Error('[scene-env-impl] Scene not initialized');
-    }
-    return _scene;
-}
-
-export function getPipeline(): DefaultRenderingPipeline {
-    if (!_pipeline) {
-        throw new Error('[scene-env-impl] Pipeline not initialized');
-    }
-    return _pipeline;
-}
-
-// ======== _envSys ========
-interface EnvSkyResources {
-    skyMesh: Mesh | null;
-    skyCubeTexture: import('@babylonjs/core').BaseTexture | null;
-    skyDynamicTex: import('@babylonjs/core').DynamicTexture | null;
-}
-
-export const _envSys: {
-    sky: EnvSkyResources;
-    ground: { mesh: Mesh | null };
-    particles: { system: ParticleSystem | null; followObserver: Observer<Scene> | null };
-    splash: { observer: Observer<Scene> | null };
-    clouds: {
-        postProcess: Mesh | null;
-        postProcess2: Mesh | null;
-        material: StandardMaterial | null;
-        texture: Texture | null;
-    };
-    water: { mesh: Mesh | null; material: import('@babylonjs/core').ShaderMaterial | null };
-    shadow: { generator: import('@babylonjs/core').ShadowGenerator | null };
-} = {
-    sky: { skyMesh: null, skyCubeTexture: null, skyDynamicTex: null },
-    ground: { mesh: null },
-    particles: { system: null, followObserver: null },
-    splash: { observer: null },
-    clouds: { postProcess: null, postProcess2: null, material: null, texture: null },
-    water: { mesh: null, material: null },
-    shadow: { generator: null },
-};
+// ======== initEnvImpl (re-export from env-context) ========
+export { initEnvImpl } from './env-context';
 
 // ======== Env Update Observer ========
 let _envUpdateObserver: Observer<Scene> | null = null;
@@ -205,9 +147,7 @@ export function ensureEnvUpdateObserver(): void {
         updateUnderwaterTransition(scene, pipeline);
 
         // Scene tick callbacks
-        for (const cb of _sceneTickCallbacks) {
-            cb();
-        }
+        runSceneTickCallbacks();
     });
 }
 
@@ -216,8 +156,8 @@ import { clearStarsTexCache } from './env-sky';
 
 export function disposeEnvUpdateObserver(): void {
     // 首启 / HMR 重入幂等：initScene() step0 清理在 initEnvImpl 之前调用，
-    // 此时 _scene 仍为 null，无 observer / 资源可释放，直接 no-op 返回避免抛错（ADR-106 Phase 3）。
-    if (!_scene) {
+    // 此时 scene 未初始化，无 observer / 资源可释放，直接 no-op 返回避免抛错（ADR-106 Phase 3）。
+    if (!isInitialized()) {
         return;
     }
     const scene = getScene();
@@ -227,7 +167,7 @@ export function disposeEnvUpdateObserver(): void {
         _envUpdateObserver = null;
     }
     // 清理所有场景 tick 回调（如 time-of-day），避免 HMR 重入时泄漏
-    _sceneTickCallbacks.clear();
+    clearSceneTickCallbacks();
     disposeTextureCache();
     _disposeGround();
     clearGroundTexCache();

@@ -11,12 +11,11 @@ import { EnvState, envState } from '@/core/config';
 import { getWindVector } from '@/core/wind-utils';
 import { logWarn } from '@/core/utils';
 import {
-    _envSys,
-    getScene,
     ensureEnvUpdateObserver,
     addRipple,
     getGroundHeightAt,
 } from './env-impl';
+import { _envSys, getScene } from './env-context';
 import { createCanvasTexture } from './env-texture';
 
 // ======== Particle System ========

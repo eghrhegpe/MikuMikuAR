@@ -14,7 +14,8 @@ import {
     Constants,
 } from '@babylonjs/core';
 import { EnvState } from '@/core/config';
-import { _envSys, getScene, ensureEnvUpdateObserver } from './env-impl';
+import { _envSys, getScene } from './env-context';
+import { ensureEnvUpdateObserver } from './env-impl';
 
 // ======== Cloud System Constants ========
 /** Density scale factor applied to cloudCover (1.2 = 20% boost) */

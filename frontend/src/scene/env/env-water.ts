@@ -15,7 +15,7 @@ import { PostProcess } from '@babylonjs/core/PostProcesses/postProcess';
 import { Plane } from '@babylonjs/core/Maths/math.plane';
 import { EnvState, envState } from '@/core/config';
 import { col3FromTriple } from '@/core/color-helpers';
-import { _envSys, getScene, ensureEnvUpdateObserver } from './env-impl';
+import { _envSys, getScene } from './env-context';
 import { PlanarReflection, registerReflectionSurface } from './planar-reflection';
 import { createCanvasTexture } from './env-texture';
 import { clamp01, logWarn } from '@/core/utils';
@@ -797,7 +797,6 @@ function _waterUpdateCallback(scene: Scene): void {
 }
 
 export function createWater(state: EnvState): void {
-    ensureEnvUpdateObserver();
 
     // 惰性路径：已初始化 → 只同步参数
     if (state.waterEnabled && _envSys.water.material && _envSys.water.mesh) {
