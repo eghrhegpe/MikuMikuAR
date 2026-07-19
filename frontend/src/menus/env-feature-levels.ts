@@ -15,6 +15,10 @@ import {
     disposeWater,
     createWater,
 } from '../scene/env/env-water';
+import {
+    GROUND_PRESETS,
+    buildGroundPresetEnvState,
+} from '../scene/env/env-ground';
 
 /** 预设 key → i18n key 映射 */
 const WATER_PRESET_I18N: Record<string, string> = {
@@ -23,6 +27,15 @@ const WATER_PRESET_I18N: Record<string, string> = {
     ocean: 'env.presetOcean',
     storm: 'env.presetStorm',
     tropical: 'env.presetTropical',
+};
+
+const GROUND_PRESET_I18N: Record<string, string> = {
+    cleanGray: 'env.groundPresetCleanGray',
+    mirrorStage: 'env.groundPresetMirrorStage',
+    grass: 'env.groundPresetGrass',
+    stoneTile: 'env.groundPresetStoneTile',
+    woodStage: 'env.groundPresetWoodStage',
+    cyberGrid: 'env.groundPresetCyberGrid',
 };
 import { getEnvMenu, setEnvTextureBindingTarget, type EnvTextureBindingTarget } from './env-menu';
 import { getSceneMenu } from './scene-menu';
@@ -267,6 +280,30 @@ export function buildSkyLevel(): PopupLevel {
 
 export function buildGroundLevel(): PopupLevel {
     return _buildLevel(t('env.ground'), (c) => {
+        // ===== 地面预设（顶部 chips，一键应用）=====
+        const presetsSchema: MenuNode[] = [
+            {
+                id: 'env:ground:presets',
+                kind: 'custom',
+                renderCustom: (cc) => {
+                    buildPresetChipGroup(
+                        cc,
+                        Object.entries(GROUND_PRESETS).map(([key, gp]) => ({
+                            label: t(GROUND_PRESET_I18N[key] ?? gp.label),
+                            onClick: () => {
+                                setEnvState({
+                                    ...buildGroundPresetEnvState(gp),
+                                    groundVisible: true,
+                                });
+                                getEnvMenu()?.reRender();
+                            },
+                        }))
+                    );
+                },
+            },
+        ];
+        renderMenu(presetsSchema, c);
+
         // ===== 基础设置（schema 驱动，ADR-093 PoC）=====
         const baseSchema: MenuNode[] = [
             {
@@ -816,6 +853,7 @@ export function buildWaterLevel(): PopupLevel {
     return _buildLevel(
         t('env.water'),
         (c) => {
+            // ===== 水面预设（顶部 chips，一键应用）=====
             const waterSchema: MenuNode[] = [
                 {
                     id: 'env:water:presets',
@@ -889,24 +927,6 @@ export function buildWaterLevel(): PopupLevel {
                             },
                             icon: 'lucide:fast-forward',
                         },
-                        {
-                            id: 'env:water:causticIntensity',
-                            kind: 'slider',
-                            label: 'env.causticIntensity',
-                            control: {
-                                bind: 'env.causticIntensity',
-                                min: 0,
-                                max: 0.5,
-                                step: 0.01,
-                            },
-                            icon: 'lucide:sun',
-                        },
-                        {
-                            id: 'env:water:color',
-                            kind: 'colorSlider',
-                            label: 'env.waterColor',
-                            control: { bind: 'env.waterColor' },
-                        },
                     ],
                 },
                 {
@@ -916,6 +936,12 @@ export function buildWaterLevel(): PopupLevel {
                     icon: 'lucide:palette',
                     defaultOpen: false,
                     children: [
+                        {
+                            id: 'env:water:color',
+                            kind: 'colorSlider',
+                            label: 'env.waterColor',
+                            control: { bind: 'env.waterColor' },
+                        },
                         {
                             id: 'env:water:transparency',
                             kind: 'slider',
@@ -960,11 +986,12 @@ export function buildWaterLevel(): PopupLevel {
                         },
                     ],
                 },
+                // —— 波浪与菲涅尔（从原"高级参数"拆出）——
                 {
-                    id: 'env:water:advanced',
+                    id: 'env:water:waveFresnel',
                     kind: 'folder',
-                    label: 'env.waterAdvanced',
-                    icon: 'lucide:settings-2',
+                    label: 'env.waveFresnel',
+                    icon: 'lucide:waves',
                     defaultOpen: false,
                     children: [
                         {
@@ -1057,6 +1084,28 @@ export function buildWaterLevel(): PopupLevel {
                                 max: 1,
                                 step: 0.05,
                             },
+                        },
+                    ],
+                },
+                // —— 焦散（密度 + 颜色 + 滚动 + 翻转）——
+                {
+                    id: 'env:water:caustics',
+                    kind: 'folder',
+                    label: 'env.caustics',
+                    icon: 'lucide:sun',
+                    defaultOpen: false,
+                    children: [
+                        {
+                            id: 'env:water:causticIntensity',
+                            kind: 'slider',
+                            label: 'env.causticIntensity',
+                            control: {
+                                bind: 'env.causticIntensity',
+                                min: 0,
+                                max: 0.5,
+                                step: 0.01,
+                            },
+                            icon: 'lucide:sun',
                         },
                         {
                             id: 'env:water:causticColor1',
