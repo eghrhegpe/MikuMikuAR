@@ -15,7 +15,7 @@ import {
     AbstractMesh,
 } from '@babylonjs/core';
 import type { Observer } from '@babylonjs/core';
-import { getScene } from './env-impl';
+import { getScene } from './env-context';
 import { envState } from '@/core/config';
 
 let _mirrorMesh: Mesh | null = null;
