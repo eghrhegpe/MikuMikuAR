@@ -23,7 +23,7 @@ import { setRenderState, getRenderState } from '../scene/render/renderer';
 import { getGuideMode, setGuideMode } from '../scene/pose/composition-guide';
 import { generatePoseVmd } from '../motion-algos/pose-preset';
 import { loadVMDMotion, stopVMD } from '../scene/scene';
-import { getAllPresets, applyCameraPreset, CameraAnglePreset } from '../scene/pose/camera-angle';
+import { getAllPresets, applyCameraPreset, presetCameraAlpha, CameraAnglePreset } from '../scene/pose/camera-angle';
 import { getWatermarkConfig, setWatermarkConfig, applyWatermark } from '../scene/pose/watermark';
 import { screenshotCurrent } from './scene-menu';
 import { t } from '../core/i18n/t';
@@ -324,11 +324,11 @@ async function _batchScreenshot(presets: CameraAnglePreset[], modelId: string): 
                 progressEl.textContent = `${t('motion.poseStudio.batchProgress')} ${i + 1}/${presets.length}: ${preset.name}`;
             }
 
-            // 切换相机角度（叠加模型偏航，以角色朝向为参考）
+            // 切换相机角度（以角色朝向为参考：基准正面角 + 预设相对方位 − 模型偏航）
             const beta = Math.PI / 2 - (preset.elevation * Math.PI) / 180;
             setOrbitParams({ beta, distance: preset.distance });
             if (cam instanceof ArcRotateCamera) {
-                cam.alpha = (preset.azimuth * Math.PI) / 180 - yaw;
+                cam.alpha = presetCameraAlpha(preset, yaw);
             }
 
             // 等待渲染完成
