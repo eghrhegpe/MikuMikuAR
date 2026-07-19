@@ -643,38 +643,57 @@ export function applyEnvPresetByCategory(preset: CategorizedEnvPreset): boolean 
 // ======== setEnvState (central entry point) ========
 
 /**
- * 配置迁移：旧版本以单一 groundMode 枚举同时表达「几何类型」与「外观样式」两轴
+ * 迁移函数签名：检测 raw 中是否含旧版字段，若有则写入 out 并返回 true。
+ * 返回 false 表示该迁移器不适用（无旧字段）。
+ */
+type Migrator = (raw: Record<string, unknown>, out: Record<string, unknown>) => boolean;
+
+/**
+ * groundMode → groundType + groundStyle 迁移（旧版 v1）
+ * 旧版本以单一 groundMode 枚举同时表达「几何类型」与「外观样式」两轴
  * （solid/grid/checker/texture = 平面样式；heightmap = 程序化地形）。
  * 现拆分为 groundType(flat|terrain) + groundStyle(solid|grid|checker|texture)。
- * 在 setEnvState 中央入口统一转换，覆盖所有 hydrate 路径（main.ts / scene-serialize / 预设等）。
  */
+function migrateGroundMode(raw: Record<string, unknown>, out: Record<string, unknown>): boolean {
+    if (typeof raw.groundMode !== 'string') return false;
+    const m = raw.groundMode;
+    if (m === 'heightmap') {
+        out.groundType = 'terrain';
+    } else {
+        out.groundType = 'flat';
+        out.groundStyle = m;
+    }
+    delete out.groundMode;
+    return true;
+}
+
+/**
+ * debugMirrorEnabled → mirrorEnabled 迁移（ADR-128）
+ * 旧 scene preset / config.json 含 debugMirrorEnabled 字段兼容。
+ */
+function migrateDebugMirror(raw: Record<string, unknown>, out: Record<string, unknown>): boolean {
+    if (typeof raw.debugMirrorEnabled !== 'boolean') return false;
+    out.mirrorEnabled = raw.debugMirrorEnabled;
+    delete out.debugMirrorEnabled;
+    return true;
+}
+
+/** 迁移注册表：新增迁移在此追加。 */
+const _migrators: Migrator[] = [
+    migrateGroundMode,
+    migrateDebugMirror,
+];
+
 function migrateEnvState(input: Partial<EnvState>): Partial<EnvState> {
     const raw = input as Record<string, unknown>;
     let out = { ...raw } as Record<string, unknown>;
     let migrated = false;
-
-    // 仅当入参含旧字段 groundMode / debugMirrorEnabled 时才迁移旧版枚举；
-    // 新版本 partial 跳过，避免向 changed 集合注入 groundType/groundStyle
-    // 导致无关节点更新误触发 applyGround。
-    if (typeof raw.groundMode !== 'string' && typeof raw.debugMirrorEnabled === 'undefined') {
-        return migrated ? (out as Partial<EnvState>) : input;
-    }
-    if (typeof raw.groundMode === 'string') {
-        const m = raw.groundMode;
-        if (m === 'heightmap') {
-            out.groundType = 'terrain';
-        } else {
-            out.groundType = 'flat';
-            out.groundStyle = m; // 'solid' | 'grid' | 'checker' | 'texture'
+    for (const m of _migrators) {
+        if (m(raw, out)) {
+            migrated = true;
         }
-        delete out.groundMode;
     }
-    // ADR-128: debugMirrorEnabled → mirrorEnabled（旧 scene preset / config.json 兼容）
-    if (typeof raw.debugMirrorEnabled === 'boolean') {
-        out.mirrorEnabled = raw.debugMirrorEnabled;
-        delete out.debugMirrorEnabled;
-    }
-    return out as Partial<EnvState>;
+    return migrated ? (out as Partial<EnvState>) : input;
 }
 
 export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): void {
