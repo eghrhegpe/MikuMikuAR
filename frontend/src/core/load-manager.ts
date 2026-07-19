@@ -116,16 +116,14 @@ class LoadManager {
     }
 
     private enqueue<T>(task: () => Promise<T>): Promise<T> {
-        const result = this.queue.then(task, (err) => {
-            // D2: onRejected 必须显式处理，不得隐式依赖 task 忽略参数
-            // [doc:adr-135] P0.2 注意：onRejected 重试复用同一 loadId（在 load() 入口生成）
-            // P1.1 将改造此处：不再吞错，直接上抛并标记 queue failed
-            console.warn('[loadManager] 上一任务失败，继续:', err);
-            return task(); // 显式重跑，不传 err
-        });
+        // [doc:adr-135] P1.1: onRejected 不再吞错重试，直接上抛让调用方处理。
+        // - 上一个任务失败时，新任务仍正常执行（不被前错阻塞）
+        // - 但失败任务的错误直接透传给其调用方（library-actions 的 .catch 会处理）
+        // - this.queue 始终 reset 为 resolved，保证后续 enqueue 不被污染
+        const result = this.queue.then(task);
         this.queue = result.then(
             () => {},
-            (err) => console.warn('[loadManager] 队列清理失败:', err)
+            (err) => console.warn('[loadManager] queue cleanup (error swallowed for chain):', err)
         );
         return result;
     }

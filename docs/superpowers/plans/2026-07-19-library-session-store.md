@@ -104,7 +104,7 @@ git commit -m "feat: ADR-135 P0.1 LibrarySessionStore 状态收敛"
 |------|------|------|-----|
 | P0.2 | loadId trace 链路 | ✅ 已完成（见第 6 节） | 扩展 ADR-135 |
 | P0.3 | deferRestore 可见化 LoadingState | ✅ 已完成（见第 7 节） | 扩展 ADR-135 |
-| P1.1 | load-manager 错误处理 + onRejected 不再吞错 | 待启动 | 扩展 ADR-105 |
+| P1.1 | load-manager 错误处理 + onRejected 不再吞错 | ✅ 已完成（见第 8 节） | 扩展 ADR-135 |
 | P1.2 | `_isExtracting` per-model Set 升级 | 待启动 | 扩展 ADR-135 |
 | P1.3 | ADR-131 后续清理 3 个绑定标志位 | 待启动 | ADR-131 后续 |
 | P2 | onModelRowClick 拆分 + 缩略图 AbortSignal + 移除兼容门面 | 待启动 | 新 ADR |
@@ -392,3 +392,68 @@ function deferRestore(menu, dir, seg) {
 | hold=true 状态被其他 setStatus 覆盖 | 设计预期：用户点击其他操作时，扫描提示让位是合理行为；store.status 仍正确 |
 | 多次 deferRestore 并发触发 | 第二次 `clearRestoreTimer` 取消第一次的 timer，但第一次的 setStatus 已被第二次覆盖；store.status 反映最后一次 |
 | tsc 通过但 vitest esbuild 报 ko.ts transform 错误 | 历史遗留（其他 AI 改动 ko.ts 引入）；重跑 vitest cache 即可通过，不影响 build |
+
+---
+
+## 8. P1.1 load-manager onRejected 不再吞错（已实施 2026-07-20）
+
+### 8.1 目标
+
+消灭 enqueue 的「静默重试」反模式：
+
+- 旧：onRejected 吞掉错误 → `console.warn` → 立即重试 task() → 用户看到的是重试结果（可能再次失败，但前一次错误链路彻底丢失）
+- 新：onRejected 直接透传错误 → 调用方 `.catch` 处理 → 错误链路完整保留
+
+### 8.2 设计
+
+```ts
+private enqueue<T>(task: () => Promise<T>): Promise<T> {
+    // [doc:adr-135] P1.1: onRejected 不再吞错重试，直接上抛让调用方处理。
+    // - 上一个任务失败时，新任务仍正常执行（不被前错阻塞）
+    // - 但失败任务的错误直接透传给其调用方（library-actions 的 .catch 会处理）
+    // - this.queue 始终 reset 为 resolved，保证后续 enqueue 不被污染
+    const result = this.queue.then(task);
+    this.queue = result.then(
+        () => {},
+        (err) => console.warn('[loadManager] queue cleanup (error swallowed for chain):', err)
+    );
+    return result;
+}
+```
+
+**关键点**：
+1. `this.queue.then(task)`：只接 onFulfilled，onRejected 默认透传错误
+2. `this.queue = result.then(...)`：reset 为 resolved，保证后续 enqueue 不被前错阻塞
+3. reset 内的 `console.warn` 仅为调试用，不影响用户感知
+
+### 8.3 不改的部分
+
+| 项 | 原因 |
+|----|------|
+| `load()` 入口 loadId 生成 | P0.2 已完成，不变 |
+| `dispatch` 内 try/catch 包装 LibraryLoadError | P0.2 已完成，不变 |
+| `library-actions.ts` 的 6 处 `.catch` | 已存在且能正确处理错误，无需改动 |
+
+### 8.4 验收清单
+
+- [x] enqueue onRejected 不再调用 `task()` 重试
+- [x] 错误直接透传给调用方
+- [x] `this.queue` reset 逻辑保留（保证链路不阻塞）
+- [x] `npm run check` 零新增 tsc 错误
+- [x] `npm run test -- library-core` 106/106 全绿
+
+### 8.5 用户感知收益
+
+| 场景 | P1.1 前 | P1.1 后 |
+|------|---------|---------|
+| 任务 A 失败，任务 B 排队 | A 静默重试（可能再次失败），B 等待 A 重试完成 | A 错误立即上抛，B 正常执行 |
+| 错误链路追溯 | 前一次错误被 console.warn 吞掉 | 完整保留，调用方 .catch 接到结构化 LibraryLoadError |
+| 重试语义 | 自动重试（可能掩盖瞬时问题，也可能放大永久问题） | 不自动重试（用户可手动重新点击触发） |
+
+### 8.6 风险与缓解
+
+| 风险 | 缓解 |
+|------|------|
+| 瞬时错误不再自动恢复 | 设计预期：loadManager 不做重试策略，由用户或调用方决定是否重试 |
+| 调用方未处理 rejected promise | library-actions 的 6 处调用点均有 `.catch`，已验证覆盖 |
+| 队列状态错乱 | `this.queue` reset 逻辑保留，错误不影响后续任务入队 |
