@@ -19,7 +19,7 @@ import { observe, type ObserverHandle } from '@/core/observer-handle';
 import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 import { clamp, clampInt } from '@/core/utils';
-import { logWarn } from '@/core/logger';
+import { safeCallVoid } from '@/core/safe-call';
 
 // ============================================================================
 // 骨骼 READ 桥（锚点跟随）
@@ -149,11 +149,7 @@ export class PerFrameUpdateRegistry {
             // 钳制最大步长（50ms），避免后台标签页恢复后极大 dt 导致物理/动画失稳或脱节
             const dt = Math.min(rawDt, 0.05);
             for (const fn of this.fns.values()) {
-                try {
-                    fn(dt);
-                } catch (e) {
-                    logWarn('PerFrameUpdateRegistry', 'update error', e);
-                }
+                safeCallVoid('PerFrameUpdateRegistry', 'update error', () => fn(dt));
             }
         });
     }

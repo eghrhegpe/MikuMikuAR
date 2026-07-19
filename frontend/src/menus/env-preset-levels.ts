@@ -7,7 +7,7 @@ import type { PopupLevel } from '../core/config';
 import { addSectionTitle, addPresetChip } from '../core/ui-helpers';
 import { addActionRow } from '../core/ui-rows';
 import { tryCatchStatus, showErrorToast } from '../core/utils';
-import { logWarn } from '../core/logger';
+import { safeCallAsync } from '../core/safe-call';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
 import {
@@ -72,11 +72,7 @@ function renderCategorizedPresets(
                         category: string;
                         createdAt: number;
                     }[] = [];
-                    try {
-                        entries = await ListEnvPresets();
-                    } catch (err) {
-                        logWarn('env-preset', 'ListEnvPresets failed:', err);
-                    }
+                    entries = (await safeCallAsync('env-preset', 'ListEnvPresets failed:', () => ListEnvPresets())) ?? [];
                     return entries
                         .filter((e) => (e.category || 'sky') === category)
                         .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
