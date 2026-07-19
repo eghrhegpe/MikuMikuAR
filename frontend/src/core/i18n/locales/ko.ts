@@ -821,6 +821,7 @@ export const ko: Record<string, string> = {
     'scene.serialize.modelNoMesh': '모델 {name}: 로드됨 but 메시 데이터 없음',
     'scene.serialize.modelError': '모델 {name}: {error}',
     'scene.serialize.autosaveFailed': '자동 저장 실패',
+    'scene.serialize.restoreFailed': '장면 복원에 실패했습니다. 빈 장면으로 롤백되었습니다',
 
     // —— Library ——
     'library.recent': '최근',
@@ -1087,6 +1088,11 @@ export const ko: Record<string, string> = {
     'env.reflectionQualityMedium': '중간 (256)',
     'env.reflectionQualityLow': '낮음 (128)',
     'env.reflectionQualityOff': '끔',
+    'env.qualityProfile': '품질 프로필',
+    'env.qualityProfileHigh': '높음',
+    'env.qualityProfileMedium': '중간',
+    'env.qualityProfileLow': '낮음',
+    'env.qualityProfileHint': '반사, 구름, 입자 품질 통합 제어',
     'env.presetCalm': '잔잔',
     'env.presetRipple': '잔물결',
     'env.presetOcean': '파도',

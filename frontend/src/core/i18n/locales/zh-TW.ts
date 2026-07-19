@@ -818,6 +818,7 @@ export const zhTW: Record<string, string> = {
     'scene.serialize.modelNoMesh': '模型 {name}：已載入但無網格資料',
     'scene.serialize.modelError': '模型 {name}：{error}',
     'scene.serialize.autosaveFailed': '自動儲存失敗',
+    'scene.serialize.restoreFailed': '場景恢復失敗，已回滾到空場景',
 
     // —— Library ——
     'library.recent': '最近開啟',
@@ -1080,6 +1081,11 @@ export const zhTW: Record<string, string> = {
     'env.reflectionQualityMedium': '中 (256)',
     'env.reflectionQualityLow': '低 (128)',
     'env.reflectionQualityOff': '關閉',
+    'env.qualityProfile': '品質檔位',
+    'env.qualityProfileHigh': '高',
+    'env.qualityProfileMedium': '中',
+    'env.qualityProfileLow': '低',
+    'env.qualityProfileHint': '統一控制反射、雲、粒子等品質',
     'env.presetCalm': '平靜',
     'env.presetRipple': '漣漪',
     'env.presetOcean': '海浪',

@@ -106,41 +106,6 @@ function buildFormationLevel(): PopupLevel {
     };
 }
 
-// ======== Scene Advanced Level ========
-
-function buildSceneAdvancedLevel(): PopupLevel {
-    return {
-        label: t('scene.advanced'),
-        dir: '',
-        items: [
-            {
-                kind: 'action',
-                label: t('scene.undo'),
-                icon: 'lucide:undo-2',
-                target: 'scene:undo',
-            },
-            {
-                kind: 'folder',
-                label: t('scene.presetScenes'),
-                icon: 'lucide:bookmark',
-                target: 'scene:presets',
-            },
-            {
-                kind: 'action',
-                label: t('scene.saveScene'),
-                icon: 'lucide:save',
-                target: 'scene:save',
-            },
-            {
-                kind: 'folder',
-                label: t('scene.mirror'),
-                icon: 'lucide:scan',
-                target: 'scene:mirror',
-            },
-        ],
-    };
-}
-
 // ======== Mirror Level ========
 
 function buildMirrorLevel(): PopupLevel {
@@ -242,7 +207,7 @@ function buildMirrorLevel(): PopupLevel {
 /** 场景弹窗根级 items 构建器——items-based，支持增量 patch */
 function buildSceneRootItems(): PopupRow[] {
     const items: PopupRow[] = [];
-    // 高频功能前置：灯光 > 地面/水面（带开关）> 舞台 > 物理 > 阵型 > 高级
+    // 高频功能前置：灯光 > 地面/水面（带开关）> 舞台 > 物理 > 阵型 > 预设场景/镜像/撤销/保存
     items.push({
         kind: 'folder',
         label: t('scene.stageLight'),
@@ -291,13 +256,30 @@ function buildSceneRootItems(): PopupRow[] {
             target: 'scene:formation',
         });
     }
-    // 低频功能收入高级菜单
-    items.push({ kind: 'divider', label: '', icon: '', target: '' });
+    // 场景操作：预设场景 > 镜像 > 撤销 > 保存场景（从原"高级"folder 拆出）
     items.push({
         kind: 'folder',
-        label: t('scene.advanced'),
-        icon: 'lucide:settings-2',
-        target: 'scene:advanced',
+        label: t('scene.presetScenes'),
+        icon: 'lucide:bookmark',
+        target: 'scene:presets',
+    });
+    items.push({
+        kind: 'folder',
+        label: t('scene.mirror'),
+        icon: 'lucide:scan',
+        target: 'scene:mirror',
+    });
+    items.push({
+        kind: 'action',
+        label: t('scene.undo'),
+        icon: 'lucide:undo-2',
+        target: 'scene:undo',
+    });
+    items.push({
+        kind: 'action',
+        label: t('scene.saveScene'),
+        icon: 'lucide:save',
+        target: 'scene:save',
     });
     return items;
 }
@@ -314,7 +296,6 @@ function buildSceneRoot(): PopupLevel {
 
 // [doc:adr-065] 子层路由表：target → 纯 items 构建器（零参）；自动挂 itemBuilder 实现语言热刷新
 const SCENE_FOLDER_ROUTES: Record<string, () => PopupLevel> = {
-    'scene:advanced': buildSceneAdvancedLevel,
     'scene:presets': buildPresetScenesLevel,
     'scene:render:stage': buildStageLevel,
     'scene:stageLight': buildStageLightLevel,
