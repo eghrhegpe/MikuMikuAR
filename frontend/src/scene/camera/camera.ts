@@ -1007,10 +1007,10 @@ function stopSurround(): void {
 
 function startConcert(scene: Scene): void {
     _concertT = 0;
-    if (_concertUpdateFn) {
-        scene.onBeforeRenderObservable.removeCallback(_concertUpdateFn);
+    if (_concertUpdateHandle) {
+        _concertUpdateHandle.dispose();
     }
-    _concertUpdateFn = () => {
+    _concertUpdateHandle = observe(scene.onBeforeRenderObservable, () => {
         const cam = _currentCamera;
         if (!cam || !(cam instanceof ArcRotateCamera)) {
             return;
@@ -1039,14 +1039,13 @@ function startConcert(scene: Scene): void {
             _concertTarget.set(0, p.height, 0);
         }
         cam.setTarget(_concertTarget);
-    };
-    scene.onBeforeRenderObservable.add(_concertUpdateFn);
+    });
 }
 
 function stopConcert(): void {
-    if (_concertUpdateFn && _scene) {
-        _scene.onBeforeRenderObservable.removeCallback(_concertUpdateFn);
-        _concertUpdateFn = null;
+    if (_concertUpdateHandle) {
+        _concertUpdateHandle.dispose();
+        _concertUpdateHandle = null;
     }
 }
 
