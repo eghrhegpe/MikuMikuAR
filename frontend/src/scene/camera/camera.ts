@@ -1104,7 +1104,7 @@ function _startBoneLock(): void {
         _currentCamera.panningSensibility = 0; // 0 = 完全禁用平移
     }
 
-    _boneLockUpdateFn = () => {
+    _boneLockUpdateHandle = observe(_scene.onBeforeRenderObservable, () => {
         if (!_boneLockEnabled || !_boneLockBoneName || !_boneLockModelId) {
             return;
         }
@@ -1134,15 +1134,13 @@ function _startBoneLock(): void {
             _boneLockTempVec.set(bone.worldMatrix[12], bone.worldMatrix[13], bone.worldMatrix[14]);
             cam.setTarget(_boneLockTempVec);
         }
-    };
-
-    _scene.onBeforeRenderObservable.add(_boneLockUpdateFn);
+    });
 }
 
 function _stopBoneLock(): void {
-    if (_boneLockUpdateFn && _scene) {
-        _scene.onBeforeRenderObservable.removeCallback(_boneLockUpdateFn);
-        _boneLockUpdateFn = null;
+    if (_boneLockUpdateHandle) {
+        _boneLockUpdateHandle.dispose();
+        _boneLockUpdateHandle = null;
     }
     // 恢复平移灵敏度
     if (_currentCamera instanceof ArcRotateCamera) {
