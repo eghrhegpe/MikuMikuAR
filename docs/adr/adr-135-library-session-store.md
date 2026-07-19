@@ -1,6 +1,6 @@
 # ADR-135 LibrarySessionStore — 资源库状态收敛基座
 
-- **状态**：实施中（Phase P0.1）
+- **状态**：实施中（P0.1 ✅ / P0.3 ✅ 已完成；P0.2 loadId trace 独立于本 store；P2 兼容门面移除待办）
 - **日期**：2026-07-19
 - **相关**：ADR-097（资源库恢复汇总）、ADR-131（BrowseOutcome 契约）、ADR-106（时序审计与异步生命周期）、ADR-105（AbortSignal 与异步错误处理）
 
@@ -167,7 +167,7 @@ export function setPendingAutoExpand(v: string[] | null): void {
 | 兼容门面 | `library-core.ts` 4 个 getter/setter 导出函数保留，内部代理 store | 后续 P0.2/P0.3 直接用 store 实例，门面在 P2 阶段移除 |
 | `reset()` 行为变化 | `showModelPopup` 现在会清理 restore 状态，原代码不清理 | 这是修 bug 不是破行为：原残留态会导致重开弹窗时误触发 autoExpand |
 | 循环依赖 | store 文件不 import 任何 library-* 模块，纯数据类 | store 只导出单例 + 类型，零依赖 |
-| 测试覆盖 | 不新增测试 | 既有 `library-core.test.ts` 22 个用例覆盖 buildLevel / restore 路径；store 是纯搬迁，无新逻辑分支 |
+| 测试覆盖 | 新增 `library-session-store.test.ts` | 既有 `library-core.test.ts` 107 个用例仅覆盖 `modelToRow`/`buildLevel`/`computeRestoreSegments` 等纯函数，**状态化 restore 链路（deferRestore / pendingAutoExpand / showModelPopup.reset()）此前零覆盖**；新增 store 单测守护 `reset()` 清理 + P0.3 状态机流转 + `setRestoreTimer` 并发清理 |
 
 ## 验收标准
 
@@ -175,7 +175,8 @@ export function setPendingAutoExpand(v: string[] | null): void {
 - [ ] `library-core.ts` / `library-actions.ts` / `library-browse.ts` 中 5 个原变量删除，全部改为 store 访问
 - [ ] `library-core.ts` 的 4 个 getter/setter 导出函数保留，内部代理 store
 - [ ] `showModelPopup` 调用 `librarySessionStore.reset()`
-- [ ] `npm run test -- library-core` 22 个用例全绿
+- [ ] `npm run test -- library-core` 既有用例全绿
+- [ ] `npm run test -- library-session-store` 新增 14 个用例全绿（reset 清理 / P0.3 状态机 / 并发 timer 清理）
 - [ ] `npm run check` 零新增 tsc 错误
 - [ ] `npm run build` 通过
 
