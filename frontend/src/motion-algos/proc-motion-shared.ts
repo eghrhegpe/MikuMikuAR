@@ -32,7 +32,6 @@ export interface ProcMotionState {
     mode: ProcMotionMode;
     intensity: number;
     speed: number;
-    autoSwitch: boolean;
     boneToggles: Record<ProcMotionBoneCategory, boolean>;
     bpmQuantizeEnabled: boolean;
     vpdApplyEnabled: boolean;
@@ -62,7 +61,6 @@ export const DEFAULT_PROC_STATE: ProcMotionState = {
     mode: 'off',
     intensity: 0.5,
     speed: 1.0,
-    autoSwitch: true,
     boneToggles: { ..._defaultBoneToggles },
     bpmQuantizeEnabled: true,
     vpdApplyEnabled: false,

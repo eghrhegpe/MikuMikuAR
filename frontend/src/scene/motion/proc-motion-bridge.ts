@@ -36,17 +36,30 @@ import type { ProcMotionConfig } from '@/core/types';
 // 读取时取优先值，写入时写入 activeMotion（若存在）并同步 fallback。
 let _fallbackProcState: ProcMotionState = { ...DEFAULT_PROC_STATE };
 let procBeatDetector: BeatDetector | null = null;
-let _procVmdActive = false;
 let lastBeatBpm = 120;
 let procStarting = false;
 let _stopRequested = false; // await 期间被 stop 时置位，防止 start 完成后重新激活
 let _regeneratePending = false;
 let procActiveKind: ProcMotionMode = 'idle';
-let procModelId: string | null = null;
+/** [fix:P1] 改为 Set 支持多模型并发程序化，替代原 procModelId 单值 */
+const _procActiveModels = new Set<string>();
+function _procVmdActive(): boolean {
+    return _procActiveModels.size > 0;
+}
 
-/** [adr-XX per-motion] 获取当前生效的程序化配置引用（读优先：activeMotion > fallback）。
+/** [adr-XX per-motion] 获取当前生效的程序化配置引用。
+ *  读取优先级：显式 modelId 的 per-model 状态 > activeMotion > fallback。
+ *  [P5 per-slot] 显式 modelId 时优先读 modelManager 中的 per-model 状态，
+ *  使 regenerateProcMotion(modelId) 正确读取该模型独有参数（如 boneToggles）。
  *  返回的是可变引用，内部使用；外部读取用 getProcMotionState()（深拷贝）。 */
-function _refProcState(): ProcMotionState {
+function _refProcState(modelId?: string): ProcMotionState {
+    // [P5 per-slot] 显式 modelId → 读 per-model 状态（UI 写入 modelRegistry 的源）
+    if (modelId) {
+        const inst = modelManager.get(modelId);
+        if (inst?.procMotion) {
+            return inst.procMotion as ProcMotionState;
+        }
+    }
     const intent = getActiveMotion();
     if (intent?.procMotion) {
         return intent.procMotion as ProcMotionState;
@@ -69,7 +82,7 @@ function _writeProcState(patch: Partial<ProcMotionState>): void {
 
 /** 只读访问器，外部不可直接修改程序化动作激活状态。 */
 export function isProcVmdActive(): boolean {
-    return _procVmdActive;
+    return _procVmdActive();
 }
 
 export function getProcBeatDetector(): BeatDetector | null {
@@ -130,11 +143,11 @@ async function startProcMotion(
         throw new Error('proc-motion: autodance 模式需要有效 BPM，当前 BPM 无效');
     }
     if (targetMode === 'autodance' && bpmValid) {
-        buf = generateAutoDanceVmd(_refProcState(), bpm!, morphNames, boneNames);
+        buf = generateAutoDanceVmd(_refProcState(modelIdOverride), bpm!, morphNames, boneNames);
         lastBeatBpm = bpm!;
         procActiveKind = 'autodance';
     } else {
-        buf = generateIdleVmd(_refProcState(), boneNames);
+        buf = generateIdleVmd(_refProcState(modelIdOverride), boneNames);
         procActiveKind = targetMode;
     }
 
@@ -167,32 +180,26 @@ async function startProcMotion(
         const currentId = focusedModelId ?? null;
         if (!isExplicitTarget && currentId !== modelIdAtStart) {
             logWarn('proc-motion', '生成后焦点已切换，丢弃本次程序化动作结果');
-            // 清除刚写入的程序化数据
             inst.vmdData = null;
             inst.vmdName = '';
             rebuildCompositeAnimation(modelIdAtStart);
-            _procVmdActive = false;
-            procModelId = null;
+            _procActiveModels.delete(modelIdAtStart);
             procActiveKind = 'idle';
         } else if (_stopRequested) {
-            // 生成期间用户调用了 stopProcMotion，丢弃结果
             logWarn('proc-motion', '生成完成但已被 stop，丢弃结果');
             inst.vmdData = null;
             inst.vmdName = '';
             rebuildCompositeAnimation(modelIdAtStart);
-            _procVmdActive = false;
-            procModelId = null;
+            _procActiveModels.delete(modelIdAtStart);
             procActiveKind = 'idle';
         } else {
-            // 成功：写入模型 ID + 标记 VMD 激活
-            _procVmdActive = true;
-            procModelId = modelIdAtStart;
+            // 成功：加入活跃集合
+            _procActiveModels.add(modelIdAtStart);
             // 感知层独立激活，不依赖程序化动作生命周期
         }
     } catch (err) {
         logWarn('proc-motion', '程序化动作生成失败:', err);
-        _procVmdActive = false;
-        // [fix P3] 使用 modelIdAtStart 锁定目标，避免焦点切换后误清其他模型
+        _procActiveModels.delete(modelIdAtStart);
         _clearVmdData(modelManager.get(modelIdAtStart));
     } finally {
         procStarting = false;
@@ -201,31 +208,27 @@ async function startProcMotion(
     // Re-trigger check after finally (cannot use return inside finally — no-unsafe-finally)
     if (_regeneratePending) {
         _regeneratePending = false;
-        // [P5 per-slot] 不再要求 focusedModelId === procModelId，
-        // 因为程序化目标已由调用方显式指定；只要 procModelId 仍存在就重触发。
-        if (procModelId) {
-            const mode = _refProcState().mode === 'autodance' ? 'autodance' : 'idle';
+        // 取最后一个活跃模型重触发
+        const lastModel = [..._procActiveModels].pop();
+        if (lastModel) {
+            const mode = _refProcState(lastModel).mode === 'autodance' ? 'autodance' : 'idle';
             const bpm = procBeatDetector?.getBPM() ?? 120;
-            // fire-and-forget 需 catch 防止 unhandled rejection
-            void startProcMotion(mode, mode === 'autodance' ? bpm : undefined, procModelId).catch((e) => {
+            void startProcMotion(mode, mode === 'autodance' ? bpm : undefined, lastModel).catch((e) => {
                 logWarn('proc-motion', 'Re-trigger startProcMotion 失败:', e);
             });
         } else {
-            logWarn(
-                'proc-motion',
-                'Re-trigger skipped: procModelId cleared'
-            );
+            logWarn('proc-motion', 'Re-trigger skipped: no active models');
         }
     }
 }
 
 export function stopProcMotion(): void {
-    _procVmdActive = false;
     _stopRequested = true;
     // 感知层独立于程序化动作，不再随 stopProcMotion 注销
     // gaze 由 perception.ts 管理，always-on
-    if (procModelId) {
-        const inst = modelManager.get(procModelId);
+    // [fix:P1] 遍历所有活跃模型，逐一清理
+    for (const modelId of _procActiveModels) {
+        const inst = modelManager.get(modelId);
         if (inst) {
             // [fix] 若用户已在程序化动作 active 期间加载了真实 VMD（vmdPath 非空），
             // 不可盲目清除 vmdData —— 否则会覆盖用户刚点击的动作。
@@ -235,26 +238,23 @@ export function stopProcMotion(): void {
                 inst.vmdData = null;
                 inst.vmdName = '';
                 inst.vmdPath = null;
-                rebuildCompositeAnimation(procModelId);
+                rebuildCompositeAnimation(modelId);
             }
         }
-        procModelId = null;
     }
+    _procActiveModels.clear();
 }
 
 export function onModelRemoved(id: string): void {
-    if (procModelId === id) {
-        _procVmdActive = false;
-        procModelId = null;
-    }
+    _procActiveModels.delete(id);
     // 感知层清理
     onPerceptionModelRemoved(id);
 }
 
 export async function updateProcMotion(): Promise<void> {
-    const st = _refProcState();
-    if (st.mode === 'off' && !st.autoSwitch) {
-        if (_procVmdActive) {
+    const st = _refProcState(focusedModelId ?? undefined);
+    if (st.mode === 'off') {
+        if (_procVmdActive()) {
             stopProcMotion();
         }
         return;
@@ -271,25 +271,24 @@ export async function updateProcMotion(): Promise<void> {
     // 用户/场景 VMD 则必有非空 vmdPath（applyIntentToModel / loadVMDFromPath 写入）。
     const hasUserVmd = !!model?.vmdPath;
     const mode = st.mode;
-    const autoOk = mode !== 'off' || st.autoSwitch;
-    const wantAutoDance = shouldAutoDance(audioOn, mode) && autoOk;
-    const wantIdle = shouldIdle(audioOn, hasUserVmd, mode) && autoOk;
+    const wantAutoDance = shouldAutoDance(audioOn, mode);
+    const wantIdle = shouldIdle(audioOn, hasUserVmd, mode);
 
-    if (hasUserVmd && _procVmdActive) {
+    if (hasUserVmd && _procVmdActive()) {
         stopProcMotion();
         return;
     }
 
     if (wantAutoDance && !hasUserVmd && procBeatDetector) {
         const bpm = procBeatDetector.getBPM() ?? 120;
-        if (!_procVmdActive || procActiveKind !== 'autodance' || Math.abs(bpm - lastBeatBpm) > 10) {
+        if (!_procVmdActive() || procActiveKind !== 'autodance' || Math.abs(bpm - lastBeatBpm) > 10) {
             await startProcMotion('autodance', bpm);
         }
         return;
     }
 
     if (wantIdle && !hasUserVmd) {
-        if (!_procVmdActive || procActiveKind !== 'idle') {
+        if (!_procVmdActive() || procActiveKind !== 'idle') {
             await startProcMotion('idle');
         }
         return;
@@ -302,8 +301,9 @@ export function setProcMotionMode(mode: ProcMotionMode): void {
         stopProcMotion();
     }
     triggerAutoSave();
-    // [fix P2] 模式变更需重生成 VMD（UI 层已包含此调用）
-    regenerateProcMotion();
+    // [fix P2] 模式变更需重生成 VMD — 由调用方在外部调用 regenerateProcMotion
+    // （移除内部无参数 regenerateProcMotion 以消除双重重生成竞态，model-detail.ts/
+    //  motion-popup.ts/motion-procmotion-levels.ts 均已持有显式 regenerate 调用）
 }
 
 export function setProcMotionIntensity(v: number): void {
@@ -318,11 +318,6 @@ export function setProcMotionSpeed(v: number): void {
     triggerAutoSave();
     // [fix P2] 速度变更需重生成 VMD
     regenerateProcMotion();
-}
-
-export function setProcMotionAutoSwitch(on: boolean): void {
-    _writeProcState({ autoSwitch: on });
-    triggerAutoSave();
 }
 
 export function getProcMotionState(): ProcMotionState {
@@ -479,9 +474,15 @@ export function regenerateProcMotion(
     /** [P5 per-slot] 显式指定目标模型；不传时回退到焦点模型（向后兼容）。 */
     modelId?: string
 ): void {
-    if (!_procVmdActive && _refProcState().mode === 'off') {
+    const st = _refProcState(modelId);
+    // [fix] mode === 'off' 时立刻停掉程序化，不继续往下走到 idle 重启动
+    if (st.mode === 'off') {
+        if (_procVmdActive()) {
+            stopProcMotion();
+        }
         return;
     }
+    // 以下执行 regenerate（冷启动或热更新均走此路径）
     // [P5 per-slot] 优先使用传入的 modelId；否则回退到焦点
     const targetModel = modelId
         ? (modelManager.get(modelId)?.mmdModel ?? null)
@@ -495,7 +496,7 @@ export function regenerateProcMotion(
         _regeneratePending = true;
         return;
     }
-    const mode = _refProcState().mode === 'autodance' ? ('autodance' as const) : ('idle' as const);
+    const mode = _refProcState(modelId).mode === 'autodance' ? ('autodance' as const) : ('idle' as const);
     // Issue #5: procBeatDetector 可能为 null
     const bpm = procBeatDetector?.getBPM() ?? 120;
     startProcMotion(mode, mode === 'autodance' ? bpm : undefined, modelId);

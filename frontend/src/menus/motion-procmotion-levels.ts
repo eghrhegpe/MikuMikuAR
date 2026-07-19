@@ -1,21 +1,21 @@
 // [doc:architecture] Scene ProcMotion Levels — 程序化动作弹窗层级
 // 从 scene-menu.ts 拆分
 
-import { cardContainer } from '../core/config';
+import { cardContainer, modelRegistry } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { addSliderRow, addToggleRow, addModeSlider, addSectionTitle } from '../core/ui-helpers';
 import {
     setProcMotionMode,
     setProcMotionIntensity,
     setProcMotionSpeed,
-    setProcMotionAutoSwitch,
     getProcMotionState,
     regenerateProcMotion,
     setProcMotionInterpOverride,
 } from '../scene/scene';
 import { setProcMotionBoneToggle } from '../scene/motion/proc-motion-bridge';
 import { getProcMotionBoneCategories } from '../motion-algos/procedural-motion';
-import type { ProcMotionMode } from '../motion-algos/procedural-motion';
+import type { ProcMotionMode, ProcMotionState } from '../motion-algos/procedural-motion';
+import { DEFAULT_PROC_STATE } from '../motion-algos/procedural-motion';
 import { getMotionMenu } from './motion-popup';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
 import { renderMenu } from './render-menu';
@@ -38,8 +38,28 @@ const BONE_LABEL_KEYS: Record<string, string> = {
     emotion: 'motion.boneEmotion',
 };
 
-function buildProcMotionSchema(): MenuNode[] {
-    const st = getProcMotionState();
+/** 获取 per-model 程序化状态（有则用，无则回退全局）。
+ *  [fix:state-ref] 返回拷贝而非引用，防止 UI 意外 mutate modelRegistry 内状态。 */
+function _getProcState(modelId?: string): ProcMotionState {
+    if (modelId) {
+        const inst = modelRegistry.get(modelId);
+        if (inst?.procMotion) {
+            return { ...inst.procMotion }; // 拷贝，防引用泄漏
+        }
+    }
+    return getProcMotionState();
+}
+
+/** 写入 per-model 程序化状态 */
+function _setProcState(modelId: string, patch: Partial<ProcMotionState>): void {
+    const inst = modelRegistry.get(modelId);
+    if (inst) {
+        inst.procMotion = { ...(inst.procMotion ?? DEFAULT_PROC_STATE), ...patch };
+    }
+}
+
+function buildProcMotionSchema(modelId?: string): MenuNode[] {
+    const st = _getProcState(modelId);
 
     return [
         // 卡片 1：主开关
@@ -58,25 +78,18 @@ function buildProcMotionSchema(): MenuNode[] {
                         ],
                         st.mode,
                         (v) => {
-                            setProcMotionMode(v);
-                            regenerateProcMotion();
+                            if (modelId) {
+                                _setProcState(modelId, { mode: v });
+                                regenerateProcMotion(modelId);
+                            } else {
+                                setProcMotionMode(v);
+                                regenerateProcMotion();
+                            }
                         },
                         'lucide:wind',
                         undefined,
                         {
-                            bind: () => getProcMotionState().mode,
-                        }
-                    );
-                    addToggleRow(
-                        inner,
-                        t('motion.autoSwitch'),
-                        st.autoSwitch,
-                        (v) => {
-                            setProcMotionAutoSwitch(v);
-                        },
-                        'lucide:repeat',
-                        {
-                            bind: () => getProcMotionState().autoSwitch,
+                            bind: () => _getProcState(modelId).mode,
                         }
                     );
                 });
@@ -96,13 +109,18 @@ function buildProcMotionSchema(): MenuNode[] {
                         1,
                         0.05,
                         (v) => {
-                            setProcMotionIntensity(v);
-                            regenerateProcMotion();
+                            if (modelId) {
+                                _setProcState(modelId, { intensity: v });
+                                regenerateProcMotion(modelId);
+                            } else {
+                                setProcMotionIntensity(v);
+                                regenerateProcMotion();
+                            }
                         },
                         'lucide:activity',
                         undefined,
                         {
-                            bind: () => getProcMotionState().intensity,
+                            bind: () => _getProcState(modelId).intensity,
                         }
                     );
                     addSliderRow(
@@ -113,13 +131,18 @@ function buildProcMotionSchema(): MenuNode[] {
                         2,
                         0.05,
                         (v) => {
-                            setProcMotionSpeed(v);
-                            regenerateProcMotion();
+                            if (modelId) {
+                                _setProcState(modelId, { speed: v });
+                                regenerateProcMotion(modelId);
+                            } else {
+                                setProcMotionSpeed(v);
+                                regenerateProcMotion();
+                            }
                         },
                         'lucide:fast-forward',
                         undefined,
                         {
-                            bind: () => getProcMotionState().speed,
+                            bind: () => _getProcState(modelId).speed,
                         }
                     );
                 });
@@ -154,6 +177,18 @@ function buildProcMotionSchema(): MenuNode[] {
                                 blink: 'lucide:eye',
                                 emotion: 'lucide:smile',
                             };
+                            const toggleBone = (cat: typeof cats[number], v: boolean) => {
+                                if (modelId) {
+                                    const cur = _getProcState(modelId);
+                                    _setProcState(modelId, {
+                                        boneToggles: { ...cur.boneToggles, [cat]: v },
+                                    });
+                                    regenerateProcMotion(modelId);
+                                } else {
+                                    setProcMotionBoneToggle(cat, v);
+                                    regenerateProcMotion();
+                                }
+                            };
                             addSectionTitle(inner, t('motion.secTorso'));
                             for (const cat of ['center', 'allParent', 'waist', 'groove'] as const) {
                                 if (cats.includes(cat)) {
@@ -161,13 +196,10 @@ function buildProcMotionSchema(): MenuNode[] {
                                         inner,
                                         t(BONE_LABEL_KEYS[cat] || cat),
                                         st.boneToggles[cat],
-                                        (v) => {
-                                            setProcMotionBoneToggle(cat, v);
-                                            regenerateProcMotion();
-                                        },
+                                        (v) => toggleBone(cat, v),
                                         icons[cat] ?? 'lucide:circle',
                                         {
-                                            bind: () => getProcMotionState().boneToggles[cat],
+                                            bind: () => _getProcState(modelId).boneToggles[cat],
                                         }
                                     );
                                 }
@@ -179,13 +211,10 @@ function buildProcMotionSchema(): MenuNode[] {
                                         inner,
                                         t(BONE_LABEL_KEYS[cat] || cat),
                                         st.boneToggles[cat],
-                                        (v) => {
-                                            setProcMotionBoneToggle(cat, v);
-                                            regenerateProcMotion();
-                                        },
+                                        (v) => toggleBone(cat, v),
                                         icons[cat] ?? 'lucide:circle',
                                         {
-                                            bind: () => getProcMotionState().boneToggles[cat],
+                                            bind: () => _getProcState(modelId).boneToggles[cat],
                                         }
                                     );
                                 }
@@ -197,13 +226,10 @@ function buildProcMotionSchema(): MenuNode[] {
                                         inner,
                                         t(BONE_LABEL_KEYS[cat] || cat),
                                         st.boneToggles[cat],
-                                        (v) => {
-                                            setProcMotionBoneToggle(cat, v);
-                                            regenerateProcMotion();
-                                        },
+                                        (v) => toggleBone(cat, v),
                                         icons[cat] ?? 'lucide:circle',
                                         {
-                                            bind: () => getProcMotionState().boneToggles[cat],
+                                            bind: () => _getProcState(modelId).boneToggles[cat],
                                         }
                                     );
                                 }
@@ -215,13 +241,10 @@ function buildProcMotionSchema(): MenuNode[] {
                                         inner,
                                         t(BONE_LABEL_KEYS[cat] || cat),
                                         st.boneToggles[cat],
-                                        (v) => {
-                                            setProcMotionBoneToggle(cat, v);
-                                            regenerateProcMotion();
-                                        },
+                                        (v) => toggleBone(cat, v),
                                         icons[cat] ?? 'lucide:circle',
                                         {
-                                            bind: () => getProcMotionState().boneToggles[cat],
+                                            bind: () => _getProcState(modelId).boneToggles[cat],
                                         }
                                     );
                                 }
@@ -248,13 +271,18 @@ function buildProcMotionSchema(): MenuNode[] {
                         ],
                         st.interpOverride,
                         (v) => {
-                            setProcMotionInterpOverride(v);
-                            regenerateProcMotion();
+                            if (modelId) {
+                                _setProcState(modelId, { interpOverride: v });
+                                regenerateProcMotion(modelId);
+                            } else {
+                                setProcMotionInterpOverride(v);
+                                regenerateProcMotion();
+                            }
                         },
                         'lucide:sliders',
                         undefined,
                         {
-                            bind: () => getProcMotionState().interpOverride,
+                            bind: () => _getProcState(modelId).interpOverride,
                         }
                     );
                 });
@@ -263,13 +291,13 @@ function buildProcMotionSchema(): MenuNode[] {
     ];
 }
 
-export function buildProcMotionLevel(): PopupLevel {
+export function buildProcMotionLevel(modelId?: string): PopupLevel {
     return {
         label: t('motion.procMotion'),
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildProcMotionSchema(), container);
+            renderMenu(buildProcMotionSchema(modelId), container);
         },
     };
 }
