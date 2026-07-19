@@ -188,12 +188,17 @@ export function disposeScene(): void {
     _disposePlaybackObservables?.();
     _disposePlaybackObservables = null;
 
-    // 3. 释放渲染管线、环境更新、物理风系统
+    // 3. [fix:P3] 释放程序化动作模块（BeatDetector + perception observer）
+    import('./motion/proc-motion-bridge')
+        .then(({ disposeProcMotion }) => disposeProcMotion())
+        .catch(() => {});
+
+    // 4. 释放渲染管线、环境更新、物理风系统
     disposeRenderer();
     disposeEnvUpdateObserver();
     disposeWindPhysics();
 
-    // 4. Scene → Engine 级联释放（WebGL 上下文最终释放）
+    // 5. Scene → Engine 级联释放（WebGL 上下文最终释放）
     scene.dispose();
     engine.dispose();
 }

@@ -64,8 +64,8 @@ describe('ADR-093 Menu Schema PoC', () => {
                 {
                     id: 't:toggle',
                     kind: 'toggle',
-                    label: 'env.groundInfinite',
-                    control: { bind: 'env.groundInfinite' },
+                    label: 'env.groundVisible',
+                    control: { bind: 'env.groundVisible' },
                     icon: 'lucide:infinity',
                 },
             ];
@@ -166,7 +166,7 @@ describe('ADR-093 Menu Schema PoC', () => {
                     kind: 'folder',
                     label: 'env.ground',
                     defaultOpen: true,
-                    headerToggle: { bind: 'env.groundInfinite' },
+                    headerToggle: { bind: 'env.groundVisible' },
                     children: [
                         {
                             id: 't:htoggle:child',
@@ -630,7 +630,7 @@ describe('ADR-093 Menu Schema PoC', () => {
                 {
                     id: 't:light',
                     kind: 'toggle',
-                    label: 'env.groundInfinite',
+                    label: 'env.groundVisible',
                     control: { bind: 'light.shadowEnabled' },
                 },
             ];
@@ -648,7 +648,7 @@ describe('ADR-093 Menu Schema PoC', () => {
                 {
                     id: 't:perception',
                     kind: 'toggle',
-                    label: 'env.groundInfinite',
+                    label: 'env.groundVisible',
                     control: { bind: 'perception.eyeTrackingEnabled' },
                 },
             ];
