@@ -5,9 +5,13 @@
 import { engine } from '../scene';
 import { setLightState, setRenderState, getLightState, getRenderState } from '../scene';
 import type { LightState, RenderState } from '../scene';
+import type { EnvState } from '@/core/config';
+import { envState } from '@/core/config';
 import { formatTimestamp } from '@/core/utils';
 import { uiState, setUIState } from '@/core/state';
 import type { UIState } from '@/core/types';
+import { setAutoDegradingReflection, setEnvStateForPerformance } from './performance-env-bridge';
+import { resolveQualityProfile } from './quality-profile';
 
 // ======== Types ========
 
@@ -32,7 +36,11 @@ let _lastFpsLog = 0;
 let _fpsReady = false; // 累积足够样本后设为 true
 
 // Snapshot of settings before degradation (to restore to user's original state)
-let _snapshot: { light: Partial<LightState>; render: Partial<RenderState> } | null = null;
+let _snapshot: {
+    light: Partial<LightState>;
+    render: Partial<RenderState>;
+    env?: Partial<EnvState>;
+} | null = null;
 
 // 抑制标志：applyDegrade 调 setLightState/setRenderState 时置 true，防止
 // setLightState/setRenderState 内部的 resetPerformanceSnapshot() 反向恢复快照，
@@ -62,6 +70,8 @@ interface LevelConfig {
     ssrEnabled: boolean;
     reflectionProbeEnabled: boolean;
     ssaoEnabled: boolean;
+    /** ADR-130 Phase 2.3: 统一质量档位，反射/云/粒子等从此派生 */
+    qualityProfile?: 'high' | 'medium' | 'low';
     label: string;
 }
 
@@ -80,6 +90,7 @@ const LEVEL_CONFIGS: Record<DegradeLevel, LevelConfig> = {
         ssrEnabled: true,
         reflectionProbeEnabled: true,
         ssaoEnabled: true,
+        qualityProfile: 'high',
         label: '正常',
     },
     1: {
@@ -96,6 +107,7 @@ const LEVEL_CONFIGS: Record<DegradeLevel, LevelConfig> = {
         ssrEnabled: false,
         reflectionProbeEnabled: true,
         ssaoEnabled: true,
+        qualityProfile: 'medium',
         label: '轻度降级',
     },
     2: {
@@ -112,6 +124,7 @@ const LEVEL_CONFIGS: Record<DegradeLevel, LevelConfig> = {
         ssrEnabled: false,
         reflectionProbeEnabled: false,
         ssaoEnabled: false,
+        qualityProfile: 'low',
         label: '中度降级',
     },
     3: {
@@ -128,6 +141,7 @@ const LEVEL_CONFIGS: Record<DegradeLevel, LevelConfig> = {
         ssrEnabled: false,
         reflectionProbeEnabled: false,
         ssaoEnabled: false,
+        qualityProfile: 'low',
         label: '重度降级',
     },
 };
@@ -136,9 +150,10 @@ const LEVEL_CONFIGS: Record<DegradeLevel, LevelConfig> = {
 function levelDiff(
     prev: LevelConfig,
     next: LevelConfig
-): { light: Partial<LightState>; render: Partial<RenderState> } {
+): { light: Partial<LightState>; render: Partial<RenderState>; env?: Partial<EnvState> } {
     const light: Partial<LightState> = {};
     const render: Partial<RenderState> = {};
+    const env: Partial<EnvState> = {};
     if (prev.shadowResolution !== next.shadowResolution) {
         light.shadowResolution = next.shadowResolution;
     }
@@ -178,7 +193,11 @@ function levelDiff(
     if (prev.ssaoEnabled !== next.ssaoEnabled) {
         render.ssaoEnabled = next.ssaoEnabled;
     }
-    return { light, render };
+    // ADR-130 Phase 2.3: 统一质量档位
+    if (prev.qualityProfile !== next.qualityProfile && next.qualityProfile) {
+        env.qualityProfile = next.qualityProfile;
+    }
+    return { light, render, env };
 }
 
 // ======== Apply Degradation ========
@@ -215,6 +234,9 @@ function applyDegrade(level: DegradeLevel, force = false): void {
         _snapshot = {
             light: getLightState(),
             render: getRenderState(),
+            env: {
+                qualityProfile: envState.qualityProfile,
+            },
         };
     }
 
@@ -222,11 +244,20 @@ function applyDegrade(level: DegradeLevel, force = false): void {
     if (level === 0 && _snapshot) {
         const light = _snapshot.light;
         const render = _snapshot.render;
+        const snapEnv = _snapshot.env;
         _snapshot = null;
         _suppressSnapshotReset = true;
         try {
             setLightState(light);
             setRenderState(render);
+            if (snapEnv && Object.keys(snapEnv).length > 0) {
+                setAutoDegradingReflection(true);
+                try {
+                    setEnvStateForPerformance(snapEnv, true);
+                } finally {
+                    setAutoDegradingReflection(false);
+                }
+            }
         } finally {
             _suppressSnapshotReset = false;
         }
@@ -258,6 +289,16 @@ function applyDegrade(level: DegradeLevel, force = false): void {
             }
         } finally {
             _suppressSnapshotReset = false;
+        }
+    }
+
+    // ADR-130 Phase 2.3: 反射质量联动（水面/地面）
+    if (changes.env && Object.keys(changes.env).length > 0) {
+        setAutoDegradingReflection(true);
+        try {
+            setEnvStateForPerformance(changes.env, true);
+        } finally {
+            setAutoDegradingReflection(false);
         }
     }
 
@@ -417,12 +458,21 @@ export function resetPerformanceSnapshot(): void {
         // 先提取 + 清空快照，再恢复，避免 setLightState → resetPerformanceSnapshot 死循环
         const light = _snapshot.light;
         const render = _snapshot.render;
+        const snapEnv = _snapshot.env;
         _snapshot = null;
         // 恢复快照时抑制 setLightState/setRenderState 内部的 resetPerformanceSnapshot 调用
         _suppressSnapshotReset = true;
         try {
             setLightState(light);
             setRenderState(render);
+            if (snapEnv && Object.keys(snapEnv).length > 0) {
+                setAutoDegradingReflection(true);
+                try {
+                    setEnvStateForPerformance(snapEnv, true);
+                } finally {
+                    setAutoDegradingReflection(false);
+                }
+            }
         } finally {
             _suppressSnapshotReset = false;
         }
