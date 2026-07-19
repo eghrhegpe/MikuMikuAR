@@ -857,6 +857,7 @@ function initFreeflyUpdate(scene: Scene): void {
         if (freeflyInput.down) {
             cam.position.y -= speed;
         }
+    });
 }
 
 
@@ -1056,7 +1057,6 @@ function stopConcert(): void {
 let _boneLockEnabled = false;
 let _boneLockBoneName: string | null = null;
 let _boneLockModelId: string | null = null;
-let _boneLockUpdateHandle: ObserverHandle | null = null;
 // 可复用临时向量，避免每帧 new Vector3
 const _boneLockTempVec = new Vector3(0, 0, 0);
 // 锁定前保存原始平移灵敏度用于恢复
@@ -1454,7 +1454,7 @@ function _onAutoCameraBeat(): void {
     const duration = 500;
     const startTime = performance.now();
 
-    const cleanup = _scene.onBeforeRenderObservable.add(() => {
+    const handle = observe(_scene.onBeforeRenderObservable, () => {
         const elapsed = performance.now() - startTime;
         t = Math.min(1, elapsed / duration);
         const ease = t * t * (3 - 2 * t); // smoothstep
@@ -1462,7 +1462,7 @@ function _onAutoCameraBeat(): void {
         cam.beta = startBeta + (preset.beta - startBeta) * ease;
         cam.radius = startRadius + (preset.radius - startRadius) * ease;
         if (t >= 1) {
-            _scene.onBeforeRenderObservable.remove(cleanup);
+            handle.dispose();
         }
     });
     if (!_scene) {

@@ -136,9 +136,10 @@ export function initPlaybackObservables(
             return;
         }
         _disposed = true;
-        tickHandle.dispose();
-        playHandle.dispose();
-        pauseHandle.dispose();
+        // 逐一清理，catch 异常确保后续 handle 仍能释放（等价旧 _safeRemoveCallback 语义）
+        try { tickHandle.dispose(); } catch { /* 单个清理失败不中断整体 */ }
+        try { playHandle.dispose(); } catch { /* 单个清理失败不中断整体 */ }
+        try { pauseHandle.dispose(); } catch { /* 单个清理失败不中断整体 */ }
     };
 }
 
