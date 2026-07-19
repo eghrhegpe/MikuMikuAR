@@ -61,10 +61,6 @@ import {
     buildModelRootItems,
     splitSubdirSegments,
     computeRestoreSegments,
-    getPendingAutoExpand,
-    setPendingAutoExpand,
-    getPendingFocusModel,
-    setPendingFocusModel,
     getPendingMetaGuard,
     resolveDisplayBrowseDir,
     loadThumbnailsStreaming,
@@ -175,8 +171,8 @@ export async function prepareModelRestore(
 ): Promise<void> {
     // [fix] allModels 为空时跳过恢复：扫描未完成或扫描失败，restore 必然失败
     if (!allModels || allModels.length === 0) {
-        setPendingAutoExpand(null);
-        setPendingFocusModel(null);
+        librarySessionStore.setPendingAutoExpand(null);
+        librarySessionStore.setPendingFocusModel(null);
         return;
     }
     let restoreTarget: string | null = null;
@@ -209,14 +205,14 @@ export async function prepareModelRestore(
                 allModels,
                 categoryFilter
             );
-            setPendingAutoExpand(result && result.length > 0 ? result : null);
+            librarySessionStore.setPendingAutoExpand(result && result.length > 0 ? result : null);
         } else {
-            setPendingAutoExpand(fullSegs && fullSegs.length > 0 ? fullSegs : null);
+            librarySessionStore.setPendingAutoExpand(fullSegs && fullSegs.length > 0 ? fullSegs : null);
         }
     } else {
-        setPendingAutoExpand(null);
+        librarySessionStore.setPendingAutoExpand(null);
     }
-    setPendingFocusModel(
+    librarySessionStore.setPendingFocusModel(
         focusModel
             ? { dir: normPath(focusModel.dir), rowKey: 'model:' + focusModel.file_path }
             : null

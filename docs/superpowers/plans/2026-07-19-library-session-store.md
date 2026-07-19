@@ -108,7 +108,10 @@ git commit -m "feat: ADR-135 P0.1 LibrarySessionStore 状态收敛"
 | P1.2 | `_isExtracting` per-model Set 升级 | ✅ 已完成（见第 9 节） | 扩展 ADR-135 |
 | P1.3 | ADR-131 后续清理 3 个绑定标志位 | ✅ 已完成（见第 10 节） | ADR-131 后续 |
 | P1.4 | layerBindingTargetId 清理 + 相机 VMD 加载死代码修复 | ✅ 已完成（见第 11 节） | ADR-131 后续 |
-| P2 | onModelRowClick 拆分 + 缩略图 AbortSignal + 移除兼容门面 | 待启动 | 新 ADR |
+| P2.3 | 移除兼容门面（getPendingAutoExpand 等 4 函数） | ✅ 已完成（见第 12 节） | 扩展 ADR-135 |
+| P2.1 | onModelRowClick 拆分 | 待启动 | 新 ADR |
+| P2.2 | 缩略图 AbortSignal | 待启动 | 新 ADR |
+| P2.4 | modelReplaceTargetId 迁移到 outcome 契约 | 待启动 | 新 ADR |
 | P3 | PopupRow discriminated union | 待启动 | 新 ADR |
 
 ---
@@ -778,3 +781,53 @@ function motionOnItemClick(row: PopupRow): void {
 | 相机 VMD 加载入口 outcome 被其他 motion menu 操作误读 | outcome 仅在 `motionOnItemClick` 顶部检查一次，且必须 `row.model.format === 'vmd'` 才生效 |
 | `bindCameraVmd` mode 与 `bindMotion` 语义混淆 | 注释明确区分：`bindMotion` 绑定到模型动作槽（需 modelId），`bindCameraVmd` 绑定到相机 VMD 槽（无 modelId） |
 | outcome 检查位置错误导致死代码复活 | outcome 检查必须在 `if (row.model.format === 'vmd')` 场景级分支之前，否则会被拦截 |
+
+---
+
+## 12. P2.3 移除兼容门面（已实施 2026-07-20）
+
+### 12.1 目标
+
+P0.1 在 `library-core.ts` 留下 4 个兼容门面函数（`getPendingAutoExpand` / `setPendingAutoExpand` / `getPendingFocusModel` / `setPendingFocusModel`），内部代理 `librarySessionStore`。注释明确「P2 阶段移除门面，直接用 store 实例」。
+
+P2.3 执行此清理：删除门面函数，调用方直接使用 `librarySessionStore.xxx()`，统一访问路径。
+
+### 12.2 修改清单
+
+| # | 文件 | 改动 |
+|---|------|------|
+| 1 | `frontend/src/menus/library-actions.ts:64-67` | 从 import 移除 4 个门面函数（保留 `getPendingMetaGuard`，非门面） |
+| 2 | `frontend/src/menus/library-actions.ts:174-175, 208-215` | 6 处调用改为 `librarySessionStore.xxx()` |
+| 3 | `frontend/src/menus/library-browse.ts:40-45` | 删除整块门面 import（4 个函数从 `./library-core` 导入） |
+| 4 | `frontend/src/menus/library-browse.ts:98, 104, 259-277` | 6 处调用改为 `librarySessionStore.xxx()` |
+| 5 | `frontend/src/menus/library-core.ts:78-93` | 删除 4 个门面函数定义 + 注释更新为「直接使用 store 实例」 |
+| 6 | `frontend/src/menus/library-core.ts:52` | 删除无人使用的 `librarySessionStore` import |
+
+### 12.3 不改的部分
+
+| 项 | 原因 |
+|----|------|
+| `getPendingMetaGuard`（library-core.ts:81-84） | 不是门面，是 LoadingGuard 实例的 getter，保留 |
+| `librarySessionStore` 单例本身 | P0.1 设计核心，不变 |
+| store 内部实现 | 行为不变，仅外部访问路径统一 |
+
+### 12.4 验收清单
+
+- [x] `library-actions.ts` 删除 4 个门面 import；6 处调用改为 `librarySessionStore.xxx()`
+- [x] `library-browse.ts` 删除整块门面 import；6 处调用改为 `librarySessionStore.xxx()`
+- [x] `library-core.ts` 删除 4 个门面函数定义 + 注释；删除无人使用的 `librarySessionStore` import
+- [x] `grep getPendingAutoExpand frontend/src` 仅命中 `librarySessionStore.getPendingAutoExpand()` 形式
+- [x] `npm run check` 零新增 tsc 错误
+- [x] `npm run test -- library-core library-session-store` 118/118 全绿
+
+### 12.5 用户感知收益
+
+无。纯代码组织清理，不改变任何运行时行为。
+
+### 12.6 风险与缓解
+
+| 风险 | 缓解 |
+|------|------|
+| 漏改某个调用点导致 ReferenceError | tsc 静态检查 + grep 全代码库验证调用形式统一 |
+| `library-core.ts` 删除 import 后仍有遗留引用 | tsc 报错；已 grep 验证 `librarySessionStore` 仅在 import 行出现一次 |
+| 其他模块通过 re-export 访问门面 | 已 grep 验证：4 个门面函数仅在 library-actions / library-browse / library-core 三处使用 |
