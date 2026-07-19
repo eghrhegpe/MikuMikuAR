@@ -17,6 +17,11 @@ import {
     sliderRow as sliderRowFn,
     toggleRow as toggleRowFn,
 } from '../core/ui-helpers';
+import {
+    addColorSliderRow,
+    addVector3SliderRow,
+    addModeSlider,
+} from '../core/ui-advanced-rows';
 
 const mockIconify = vi.mocked(createIconifyIcon);
 
@@ -188,7 +193,7 @@ describe('addSliderRow', () => {
         expect(bar.getAttribute('aria-valuemax')).toBe('1');
     });
 
-    it('click on bar fires onChange with computed value', () => {
+    it('click (mousedown + mouseup) on bar fires onChange with computed value', () => {
         const container = document.createElement('div');
         const onChange = vi.fn();
         addSliderRow(container, 'Test', 0, 0, 100, 1, onChange);
@@ -208,7 +213,9 @@ describe('addSliderRow', () => {
                 toJSON: () => ({}),
             }) as DOMRect;
 
-        bar.dispatchEvent(new MouseEvent('click', { clientX: 50 }));
+        // 真实交互序列：mousedown 在 bar 上初始化 dragRect，mouseup 在 document 上触发跳转
+        bar.dispatchEvent(new MouseEvent('mousedown', { clientX: 50 }));
+        document.dispatchEvent(new MouseEvent('mouseup', { clientX: 50 }));
         // clientX=50 on width=200 → x=0.25 → 0 + 0.25*100 = 25
         expect(onChange).toHaveBeenCalledWith(25);
     });
@@ -408,7 +415,9 @@ describe('sliderRow', () => {
                 y: 0,
                 toJSON: () => ({}),
             }) as DOMRect;
-        bar.dispatchEvent(new MouseEvent('click', { clientX: 80 }));
+        // 真实交互序列：mousedown(bar) 初始化 dragRect，mouseup(document) 触发 onDragEnd
+        bar.dispatchEvent(new MouseEvent('mousedown', { clientX: 80 }));
+        document.dispatchEvent(new MouseEvent('mouseup', { clientX: 80 }));
 
         expect(onDragEnd).toHaveBeenCalled();
     });
@@ -429,5 +438,158 @@ describe('toggleRow', () => {
 
         expect(onChange).toHaveBeenCalledWith(true);
         expect(onSave).toHaveBeenCalled();
+    });
+});
+
+// ─── addColorSliderRow (ADR-140: 由 DragSliderController 驱动) ──
+
+describe('addColorSliderRow', () => {
+    it('creates one clr-row per channel with a cs-bar', () => {
+        const container = document.createElement('div');
+        addColorSliderRow(container, 'Color', [0.2, 0.5, 0.8], vi.fn());
+
+        const block = container.querySelector('.clr-block')!;
+        expect(block).not.toBeNull();
+        expect(block.querySelectorAll('.clr-row').length).toBe(3);
+        expect(block.querySelectorAll('.cs-bar').length).toBe(3);
+    });
+
+    it('drag on R channel updates red value via onChange', () => {
+        const container = document.createElement('div');
+        const onChange = vi.fn();
+        addColorSliderRow(container, 'Color', [0.2, 0.5, 0.8], onChange);
+
+        const bar = container.querySelectorAll('.clr-row .cs-bar')[0] as HTMLDivElement;
+        bar.getBoundingClientRect = () =>
+            ({
+                left: 0,
+                width: 200,
+                top: 0,
+                height: 20,
+                right: 200,
+                bottom: 20,
+                x: 0,
+                y: 0,
+                toJSON: () => ({}),
+            }) as DOMRect;
+
+        // clientX=0 → x=0 → 0；拖拽序列 mousedown(bar) + mouseup(document)
+        bar.dispatchEvent(new MouseEvent('mousedown', { clientX: 0 }));
+        document.dispatchEvent(new MouseEvent('mouseup', { clientX: 0 }));
+
+        expect(onChange).toHaveBeenCalled();
+        const last = onChange.mock.calls[onChange.mock.calls.length - 1][0];
+        expect(last.length).toBe(3);
+        expect(last[0]).toBeCloseTo(0);
+    });
+});
+
+// ─── addVector3SliderRow (ADR-140: 由 DragSliderController 驱动) ─
+
+describe('addVector3SliderRow', () => {
+    it('creates 3 vec3-rows with cs-bar', () => {
+        const container = document.createElement('div');
+        addVector3SliderRow(container, 'Pos', [0, 0, 0], -100, 100, 1, vi.fn());
+
+        const block = container.querySelector('.vec3-block')!;
+        expect(block.querySelectorAll('.vec3-row').length).toBe(3);
+        expect(block.querySelectorAll('.cs-bar').length).toBe(3);
+    });
+
+    it('drag on X axis jumps to max via onChange', () => {
+        const container = document.createElement('div');
+        const onChange = vi.fn();
+        addVector3SliderRow(container, 'Pos', [0, 0, 0], -100, 100, 1, onChange);
+
+        const bar = container.querySelectorAll('.vec3-row .cs-bar')[0] as HTMLDivElement;
+        bar.getBoundingClientRect = () =>
+            ({
+                left: 0,
+                width: 200,
+                top: 0,
+                height: 20,
+                right: 200,
+                bottom: 20,
+                x: 0,
+                y: 0,
+                toJSON: () => ({}),
+            }) as DOMRect;
+
+        // clientX=200 → x=1 → -100 + 1*200 = 100
+        bar.dispatchEvent(new MouseEvent('mousedown', { clientX: 200 }));
+        document.dispatchEvent(new MouseEvent('mouseup', { clientX: 200 }));
+
+        expect(onChange).toHaveBeenCalled();
+        const last = onChange.mock.calls[onChange.mock.calls.length - 1][0];
+        expect(last[0]).toBe(100);
+    });
+
+    it('keyboard ArrowRight increases X by step', () => {
+        const container = document.createElement('div');
+        const onChange = vi.fn();
+        addVector3SliderRow(container, 'Pos', [10, 0, 0], 0, 100, 1, onChange);
+
+        const bar = container.querySelectorAll('.vec3-row .cs-bar')[0]!;
+        bar.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
+
+        const last = onChange.mock.calls[onChange.mock.calls.length - 1][0];
+        expect(last[0]).toBe(11);
+    });
+});
+
+// ─── addModeSlider (ADR-140: 索引映射到 DragSliderController) ──
+
+describe('addModeSlider', () => {
+    const opts = [
+        { value: 'low', label: 'Low' },
+        { value: 'mid', label: 'Mid' },
+        { value: 'high', label: 'High' },
+    ];
+
+    it('creates cs-row with cs-bar and shows current label', () => {
+        const container = document.createElement('div');
+        addModeSlider(container, 'Mode', opts, 'mid', vi.fn());
+
+        const row = container.querySelector('.cs-row')!;
+        expect(row).not.toBeNull();
+        expect(row.querySelector('.cs-bar')).not.toBeNull();
+        expect(row.querySelector('.cs-value')!.textContent).toBe('Mid');
+    });
+
+    it('drag on top jumps to clicked index via onChange', () => {
+        const container = document.createElement('div');
+        const onChange = vi.fn();
+        addModeSlider(container, 'Mode', opts, 'low', onChange);
+
+        const top = container.querySelector('.cs-top')! as HTMLDivElement;
+        top.getBoundingClientRect = () =>
+            ({
+                left: 0,
+                width: 200,
+                top: 0,
+                height: 20,
+                right: 200,
+                bottom: 20,
+                x: 0,
+                y: 0,
+                toJSON: () => ({}),
+            }) as DOMRect;
+
+        // clientX=200 → x=1 → index round(1*2)=2 → 'high'
+        top.dispatchEvent(new MouseEvent('mousedown', { clientX: 200 }));
+        document.dispatchEvent(new MouseEvent('mouseup', { clientX: 200 }));
+
+        expect(onChange).toHaveBeenCalledWith('high');
+    });
+
+    it('keyboard ArrowRight moves to next option', () => {
+        const container = document.createElement('div');
+        const onChange = vi.fn();
+        addModeSlider(container, 'Mode', opts, 'low', onChange);
+
+        const top = container.querySelector('.cs-top')!;
+        top.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
+
+        expect(onChange).toHaveBeenCalledWith('mid');
     });
 });

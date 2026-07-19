@@ -1,6 +1,6 @@
 # ADR-140: DragSliderController 统一滑块输入
 
-- **状态**: 立项
+- **状态**: 完成（已实施）
 - **日期**: 2026-07-19
 - **相关**: ADR-093（菜单声明式 Schema）、ADR-096（通用 Helper 收敛）
 
@@ -113,14 +113,30 @@ export class DragSliderController {
 
 ## 分阶段实施
 
-- **阶段 0（本 ADR）**: 立项
-- **阶段 1**: 新建 `core/ui-slider-controller.ts`，完成基础功能 + 基础单元测试
-- **阶段 2**: 迁移 `addSliderRow` + `addColorSliderRow`，旧函数标记 `@deprecated`（保留兼容，输出 console.warn 引导迁移）
-- **阶段 3**: 迁移 `addVector3SliderRow` + `addModeSlider`，旧函数标记 `@deprecated`
-- **阶段 4**: 删除旧实现代码，全量回归测试（`npm run test` + 人工目检）
+- **阶段 0（本 ADR）**: 立项 ✅
+- **阶段 1**: 新建 `core/ui-slider-controller.ts`，完成基础功能 + 基础单元测试 ✅
+- **阶段 2**: 迁移 `addSliderRow` + `addColorSliderRow` 到 DragSliderController ✅（builders 保留为稳定公共 API，未标记 `@deprecated`；详见「决策修正」）
+- **阶段 3**: 迁移 `addVector3SliderRow` + `addModeSlider` 到 DragSliderController ✅
+- **阶段 4**: 全量回归测试（`npm run test` 全绿 + `tsc --noEmit` 通过）+ 行为变更目检 ✅
 
 ## 验收标准
 
 - 4 个 builder 行为一致（拖拽/键盘/步进）
 - 单测覆盖 4 个 builder
 - `npm run test` 全绿
+
+## 行为变更记录（实施于 2026-07-19）
+
+> 4 个 builder 现均为 `DragSliderController` 的薄封装，拖拽 / 键盘 / 游标点击逻辑完全统一。
+> 以下为与原实现的可见行为差异，属风险表「🟡 中」项，需人工目检确认。
+
+| Builder | 变更 | 影响 |
+|---------|------|------|
+| `addSliderRow` | 移除独有的 `row` 四分位 click 步进（点击 label / 空白区不再微调）；现由控制器驱动，获得 bar 拖拽能力 | 点击行非 bar 区域不再生效（其他 builder 本无此行为，故属归一） |
+| `addModeSlider` | 键盘 `shift` 由「四分位跳 `floor(total/4)`」改为「`step*10` = 跳 10 个索引」；纯点击（mousedown→mouseup 无移动）由「循环微移」改为「绝对跳转到点击位置」；内部以 `value=currentIndex, min=0, max=total-1, step=1` 映射 | 多选项模式下 shift / 点击语义更规整，但与旧版不同，需目检 |
+| `addColorSliderRow` / `addVector3SliderRow` | 行为基本一致（step 派生、拖拽 / 键盘 / 点击统一）；控制器新增 `ctrl` 步进（×100）作为增强 | 无破坏，仅新增能力 |
+| 全部 builder | 初始化不再触发用户 `onChange`（与原实现一致，避免误触发） | 无 |
+
+## 决策修正（关于「标记 @deprecated」）
+
+原阶段 2 / 3 写「旧函数标记 `@deprecated`」。实施中修正为：**4 个 builder 是稳定公共 UI API（被约 20 个菜单文件调用），应保留并作为 `DragSliderController` 的薄封装，而非废弃**。真正消除的是各 builder 内部重复的拖拽 / 键盘 / 吸附逻辑——已通过迁移到统一控制器完成。因此不对 builder 标记 `@deprecated`，只在其 doc 注释中标注「由 DragSliderController 驱动」。
