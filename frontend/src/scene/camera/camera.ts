@@ -277,6 +277,7 @@ function clampFov(v: number): number {
 let _concertUpdateHandle: ObserverHandle | null = null;
 let _concertT = 0;
 let _surroundUpdateHandle: ObserverHandle | null = null;
+let _viewMatrixHandle: ObserverHandle | null = null;
 let _surroundAngle = 0;
 let _concertPaused = false;
 // Cached target vector for concert/surround modes (avoids per-frame Vector3 allocation)
@@ -528,7 +529,7 @@ function createOrbitCamera(scene: Scene, canvas: HTMLCanvasElement): ArcRotateCa
         cam.panningSensibility = 50;
     }
     // 相机视角变化时延迟触发保存（拖拽/缩放结束后）
-    cam.onViewMatrixChangedObservable.add(scheduleCameraPersist);
+    _viewMatrixHandle = observe(cam.onViewMatrixChangedObservable, scheduleCameraPersist);
     return cam;
 }
 
@@ -545,7 +546,7 @@ function createFreeflyCamera(scene: Scene, canvas: HTMLCanvasElement): Universal
     cam.keysLeft = [];
     cam.keysRight = [];
     // 相机移动时延迟触发保存
-    cam.onViewMatrixChangedObservable.add(scheduleCameraPersist);
+    _viewMatrixHandle = observe(cam.onViewMatrixChangedObservable, scheduleCameraPersist);
     return cam;
 }
 
@@ -565,7 +566,7 @@ function createSurroundCamera(scene: Scene): ArcRotateCamera {
     cam.panningSensibility = 50;
     // No attachControl — we animate programmatically; mouse would interfere
     // 相机视角变化时延迟触发保存
-    cam.onViewMatrixChangedObservable.add(scheduleCameraPersist);
+    _viewMatrixHandle = observe(cam.onViewMatrixChangedObservable, scheduleCameraPersist);
     return cam;
 }
 
@@ -586,7 +587,7 @@ function createConcertCamera(scene: Scene): ArcRotateCamera {
     cam.panningSensibility = 50;
     // No attachControl — we animate programmatically; mouse would interfere
     // 相机视角变化时延迟触发保存
-    cam.onViewMatrixChangedObservable.add(scheduleCameraPersist);
+    _viewMatrixHandle = observe(cam.onViewMatrixChangedObservable, scheduleCameraPersist);
     return cam;
 }
 
@@ -614,7 +615,7 @@ function createOneshotCamera(scene: Scene, canvas: HTMLCanvasElement): ArcRotate
         cam.panningSensibility = 50;
     }
     // 相机视角变化时延迟触发保存
-    cam.onViewMatrixChangedObservable.add(scheduleCameraPersist);
+    _viewMatrixHandle = observe(cam.onViewMatrixChangedObservable, scheduleCameraPersist);
     return cam;
 }
 
@@ -710,6 +711,9 @@ export function switchCameraMode(mode: CameraMode): void {
         }
         oldCam.detachControl();
         scene.removeCamera(oldCam);
+        // 旧相机的视角变化 observer 显式解绑（统一走 ObserverHandle；cam.dispose 亦会清理，双保险）
+        _viewMatrixHandle?.dispose();
+        _viewMatrixHandle = null;
         oldCam.dispose();
     }
 
