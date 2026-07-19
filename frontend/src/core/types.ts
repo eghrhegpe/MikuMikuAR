@@ -366,7 +366,8 @@ export type BrowseOutcome =
     | { mode: 'stay'; modelId?: string } // 连续预览：加载后保持浏览器打开
     | { mode: 'jumpToDir'; modelId?: string; dir?: string } // 加载后回到指定目录（模型替换，旧 ADR-094 自动跳转）
     | { mode: 'bindLayer'; modelId: string } // 绑定到图层（一次性，关闭）
-    | { mode: 'bindMotion'; modelId: string }; // 绑定到动作槽（一次性，关闭）
+    | { mode: 'bindMotion'; modelId: string } // 绑定到动作槽（一次性，关闭）
+    | { mode: 'bindCameraVmd' }; // 绑定到相机 VMD 槽（一次性，关闭；motion-camera-levels 入口）
 
 export type PopupLevel = {
     label: string;

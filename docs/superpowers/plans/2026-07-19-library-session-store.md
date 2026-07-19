@@ -107,6 +107,7 @@ git commit -m "feat: ADR-135 P0.1 LibrarySessionStore 状态收敛"
 | P1.1 | load-manager 错误处理 + onRejected 不再吞错 | ✅ 已完成（见第 8 节） | 扩展 ADR-135 |
 | P1.2 | `_isExtracting` per-model Set 升级 | ✅ 已完成（见第 9 节） | 扩展 ADR-135 |
 | P1.3 | ADR-131 后续清理 3 个绑定标志位 | ✅ 已完成（见第 10 节） | ADR-131 后续 |
+| P1.4 | layerBindingTargetId 清理 + 相机 VMD 加载死代码修复 | ✅ 已完成（见第 11 节） | ADR-131 后续 |
 | P2 | onModelRowClick 拆分 + 缩略图 AbortSignal + 移除兼容门面 | 待启动 | 新 ADR |
 | P3 | PopupRow discriminated union | 待启动 | 新 ADR |
 
@@ -610,3 +611,170 @@ P1.3 启动前调研发现 `motionBindingTargetId` 是**死代码**：
 | `layerBindingTargetId` 仍保留导致「清理不彻底」误解 | 在 10.2 / 10.4 明确说明保留原因，归 P2 进一步迁移到 outcome 契约 |
 | `closeAllOverlays` 注释从「图层/动作/模型替换」改为「图层/模型替换」 | 行为正确（动作绑定从未生效），注释与代码一致 |
 | 测试 mock 减少一个字段 | 测试用例本身不依赖该字段（mock 值始终为 null），全绿 |
+
+---
+
+## 11. P1.4 layerBindingTargetId 清理 + 相机 VMD 加载死代码修复（已实施 2026-07-20）
+
+### 11.1 目标
+
+P1.3 仅清理了死代码 `motionBindingTargetId`，保留了 `layerBindingTargetId`（理由：`motion-popup.ts:710-741` 仍在反推派发中使用）。P1.4 启动后深入调研发现 `layerBindingTargetId` 同样是死代码：
+
+- 全代码库 `grep setLayerBindingTargetId\([^n]` 只命中 `setLayerBindingTargetId(null)` 清除调用
+- 从未被 `setLayerBindingTargetId(<someId>)` 设置为非 null 值
+- `motion-popup.ts:710-741` 的 `if (!layerBindingTargetId) { ...场景级... return; }` 包装中 `!layerBindingTargetId` 永远为真，per-model 路径不可达
+- `library-browse.ts:213-220` 的派发分支 `if (row.model.format === 'vmd' && layerBindingTargetId)` 永不触发
+
+### 11.2 关键发现：相机 VMD 加载死代码
+
+清理 `layerBindingTargetId` 后暴露出 `motion-popup.ts:743-758` 的相机 VMD 加载分支是历史遗留死代码：
+
+```ts
+// 原结构（P1.4 之前）
+if (row.model.format === 'vmd') {
+    if (!layerBindingTargetId) {  // 永远为真
+        // 场景级动作 VMD 加载
+        return;  // ← 所有 VMD 都从这里 return
+    }
+    // per-model 路径（layerBindingTargetId 非 null 时进入，死代码）
+}
+hideMotionPopup();
+if (row.model.format === 'vmd') {  // ← 死代码！前面 vmd 分支已 return
+    loadManager.load({ kind: 'camera-vmd', ... });
+}
+```
+
+**根因**：相机 VMD 加载入口（motion-camera-levels.ts:240）push 一个 VMD 浏览 level 到 motion menu，用户选中后走 `motionOnItemClick`。但由于第一个 `if (row.model.format === 'vmd')` 分支会拦截所有 VMD 走场景级动作加载，相机 VMD 永远到不了 744 行的 camera-vmd 加载。
+
+**实际影响**：相机 VMD 加载按钮点击后，选中的 VMD 会被错误地走场景级动作加载（`setActiveMotion`），而不是 camera-vmd 加载。相机 VMD 加载功能长期失效。
+
+### 11.3 设计：扩展 BrowseOutcome + outcome 派发
+
+#### BrowseOutcome 扩展（types.ts）
+
+新增 `bindCameraVmd` mode：
+
+```ts
+export type BrowseOutcome =
+    | { mode: 'close' }
+    | { mode: 'stay'; modelId?: string }
+    | { mode: 'jumpToDir'; modelId?: string; dir?: string }
+    | { mode: 'bindLayer'; modelId: string }
+    | { mode: 'bindMotion'; modelId: string }
+    | { mode: 'bindCameraVmd' };  // P1.4 新增：绑定到相机 VMD 槽（一次性，关闭）
+```
+
+#### 相机 VMD 加载入口传入 outcome（motion-camera-levels.ts:240）
+
+```ts
+() => {
+    const level = stackRegistry.buildLevel!(
+        getBrowseDir('vmd'),
+        t('motion.camVmdLabel'),
+        (m) => m.format === 'vmd',
+        undefined,
+        undefined,
+        { mode: 'bindCameraVmd' }  // P1.4 新增
+    );
+    const menu = getMotionMenu();
+    if (menu) menu.push(level);
+}
+```
+
+#### motionOnItemClick 开头检查 outcome（motion-popup.ts:702-722）
+
+```ts
+function motionOnItemClick(row: PopupRow): void {
+    if (row.model) {
+        // [doc:adr-131] 相机 VMD 加载入口：通过 outcome.mode='bindCameraVmd' 标识
+        // 必须在动作 VMD 分支之前检查，否则会被场景级动作加载拦截。
+        const outcome = getMotionMenu()?.currentLevel?.outcome;
+        if (row.model.format === 'vmd' && outcome?.mode === 'bindCameraVmd') {
+            loadManager
+                .load({ kind: 'camera-vmd', path: row.model.file_path })
+                .then(() => {
+                    const menu = getMotionMenu();
+                    if (menu) {
+                        menu.pop();
+                        menu.reRender();
+                    }
+                })
+                .catch((err) => {
+                    logWarn('motion-popup', 'Load camera VMD failed:', err);
+                    setStatus(t('motion.loadFailed'), false);
+                });
+            return;
+        }
+        // ... 原有 vmd 场景级动作加载分支
+    }
+}
+```
+
+#### 删除死代码
+
+`motion-popup.ts:743-758` 的 `hideMotionPopup + 第二个 if (row.model.format === 'vmd') { camera-vmd 加载 }` 死代码分支删除。743 行的 `hideMotionPopup()` 保留（给 audio/vpd 路径用）。
+
+### 11.4 layerBindingTargetId 清理清单（P1.4 第一部分）
+
+| # | 文件 | 改动 |
+|---|------|------|
+| 1 | `frontend/src/core/state.ts` | 删除 `layerBindingTargetId` 变量 + `setLayerBindingTargetId` 函数 |
+| 2 | `frontend/src/core/utils.ts:8-14` | 从 `import` 移除 `setLayerBindingTargetId` |
+| 3 | `frontend/src/core/utils.ts:470-474` | `closeAllOverlays` 内删除 `setLayerBindingTargetId(null)`；注释更新为「模型替换绑定目标」 |
+| 4 | `frontend/src/menus/library-browse.ts:16` | 从 `import` 移除 `layerBindingTargetId` |
+| 5 | `frontend/src/menus/library-browse.ts:212-220` | 删除派发分支 `if (row.model.format === 'vmd' && layerBindingTargetId)`；注释更新为「图层绑定 outcome 契约派发」 |
+| 6 | `frontend/src/menus/motion-popup.ts:16-17` | 从 `import` 移除 `layerBindingTargetId / setLayerBindingTargetId` |
+| 7 | `frontend/src/menus/motion-popup.ts:94` | 移除注释中的 `layerBindingTargetId` 引用 |
+| 8 | `frontend/src/menus/motion-popup.ts:710-741` | 移除 `if (!layerBindingTargetId)` 包装，直接走场景级路径 |
+
+### 11.5 相机 VMD 加载修复清单（P1.4 第二部分）
+
+| # | 文件 | 改动 |
+|---|------|------|
+| 9 | `frontend/src/core/types.ts:364-370` | `BrowseOutcome` 新增 `\| { mode: 'bindCameraVmd' }` |
+| 10 | `frontend/src/menus/motion-camera-levels.ts:240-249` | buildLevel 传入 `{ mode: 'bindCameraVmd' }` |
+| 11 | `frontend/src/menus/motion-popup.ts:702-722` | motionOnItemClick 开头检查 outcome.mode==='bindCameraVmd'，走 camera-vmd 加载 |
+| 12 | `frontend/src/menus/motion-popup.ts:743-758` | 删除死代码（hideMotionPopup 保留 + 第二个 vmd 分支删除） |
+
+### 11.6 不改的部分
+
+| 项 | 原因 |
+|----|------|
+| `modelReplaceTargetId` | ADR-131 明确「暂保留为兼容层」，归 P2 进一步迁移 |
+| ADR-131 / ADR-135 文档中提及 `layerBindingTargetId` 的段落 | 历史叙述（契约设计目的），保留 |
+| `types.ts:360-363` 的 BrowseOutcome 注释 | 描述契约设计目的，历史叙述保留 |
+| `MikuMikuAR/MikuMikuAR/frontend/src/config.ts` 孤儿副本 | 历史快照，不被引用，不动 |
+| `novel/02-UI交互/09-弹窗之战.md` | 小说，不动 |
+| `build/android/.../index-*.js` | 构建产物，不动 |
+
+### 11.7 验收清单
+
+- [x] `state.ts` 删除 `layerBindingTargetId` 和 `setLayerBindingTargetId`
+- [x] `utils.ts` import + closeAllOverlays 调用清理
+- [x] `library-browse.ts` import + 派发分支删除
+- [x] `motion-popup.ts` import + 注释 + `if (!layerBindingTargetId)` 包装清理
+- [x] `BrowseOutcome` 扩展 `bindCameraVmd` mode
+- [x] `motion-camera-levels.ts` buildLevel 传入 outcome
+- [x] `motionOnItemClick` 开头 outcome 分流 camera-vmd 加载
+- [x] 删除 motion-popup.ts:743-758 死代码（hideMotionPopup 保留给 audio/vpd）
+- [x] `grep layerBindingTargetId frontend/src` 零生产代码命中（仅注释 / 文档保留）
+- [x] `npm run check` 零新增 tsc 错误
+- [x] `npm run test -- library-core library-session-store` 118/118 全绿
+
+### 11.8 用户感知收益
+
+| 场景 | P1.4 前 | P1.4 后 |
+|------|---------|---------|
+| 相机 VMD 加载按钮 | 点击后选中的 VMD 走场景级动作加载（错误地被当作动作 VMD），相机 VMD 加载完全失效 | 点击后选中的 VMD 正确走 `loadManager.load({ kind: 'camera-vmd' })`，相机 VMD 加载恢复 |
+| 浏览器关闭 | 加载后浏览器保持打开（场景级动作加载语义） | 加载后浏览器 pop 关闭（相机 VMD 一次性绑定语义） |
+| 死代码清理 | motion-popup.ts:743-758 死代码长期存在 | 已删除，代码路径清晰 |
+
+### 11.9 风险与缓解
+
+| 风险 | 缓解 |
+|------|------|
+| `modelReplaceTargetId` 仍保留导致「清理不彻底」误解 | 在 11.6 明确说明保留原因，归 P2 进一步迁移到 outcome 契约 |
+| `BrowseOutcome` 扩展新 mode 影响 library-browse.ts 派发 | library-browse.ts 的 outcome 派发只识别 `stay` / `jumpToDir`，新 mode 走 default `close` 路径，无影响 |
+| 相机 VMD 加载入口 outcome 被其他 motion menu 操作误读 | outcome 仅在 `motionOnItemClick` 顶部检查一次，且必须 `row.model.format === 'vmd'` 才生效 |
+| `bindCameraVmd` mode 与 `bindMotion` 语义混淆 | 注释明确区分：`bindMotion` 绑定到模型动作槽（需 modelId），`bindCameraVmd` 绑定到相机 VMD 槽（无 modelId） |
+| outcome 检查位置错误导致死代码复活 | outcome 检查必须在 `if (row.model.format === 'vmd')` 场景级分支之前，否则会被拦截 |

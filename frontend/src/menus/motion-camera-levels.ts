@@ -237,10 +237,15 @@ function buildCameraSchema(): MenuNode[] {
                         t('motion.loadCamVmd'),
                         false,
                         () => {
+                            // [doc:adr-131] 通过 outcome.mode='bindCameraVmd' 标识相机 VMD 加载入口，
+                            // motionOnItemClick 据此分流到 camera-vmd 加载，避免与场景级动作 VMD 加载混淆。
                             const level = stackRegistry.buildLevel!(
                                 getBrowseDir('vmd'),
                                 t('motion.camVmdLabel'),
-                                (m) => m.format === 'vmd'
+                                (m) => m.format === 'vmd',
+                                undefined,
+                                undefined,
+                                { mode: 'bindCameraVmd' }
                             );
                             const menu = getMotionMenu();
                             if (menu) {
