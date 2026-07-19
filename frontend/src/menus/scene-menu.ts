@@ -46,7 +46,7 @@ import {
     toggleMirror,
     isMirrorActive,
 } from '../scene/env/env';
-import { addModeSlider, addToggleRow } from '../core/ui-helpers';
+import { addModeSlider, addToggleRow, slideRow } from '../core/ui-helpers';
 import { SCENE_EVENTS } from '../core/ui-constants';
 
 // ======== Barrel Re-Exports ========
@@ -192,12 +192,10 @@ function buildMirrorLevel(): PopupLevel {
                     'lucide:monitor'
                 );
                 const p = info.position;
-                const infoDiv = document.createElement('div');
-                infoDiv.style.cssText = 'padding:4px 12px;font-size:11px;color:var(--text-dim);';
-                infoDiv.textContent = info.active
+                const infoText = info.active
                     ? `mesh: ${info.meshCount} | pos: (${p[0].toFixed(1)}, ${p[1].toFixed(1)}, ${p[2].toFixed(1)}) | ${info.width}×${info.height}m @ ${info.resolution}px`
                     : t('scene.mirrorHint');
-                wrapper.appendChild(infoDiv);
+                slideRow(wrapper, 'lucide:info', infoText, false, () => {}, undefined, undefined, false, undefined, { testId: 'menu.scene.mirrorInfo' });
             }
 
             container.appendChild(wrapper);
