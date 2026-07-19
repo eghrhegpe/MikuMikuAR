@@ -1,7 +1,7 @@
 # ADR-130: 场景 UI 整体设计与前后端发展方向路线图
 
 **日期**: 2026-07-18
-> **状态**: 规划中
+> **状态**: 规划（Phase 2.2/2.3 已完成，Phase 2.1 部分完成）中
 
 ## 背景
 
@@ -173,19 +173,19 @@ const migrators: Migrator[] = [
 
 ## 优先级总览
 
-| Phase | 优先级 | 工作量 | 依赖 |
-|-------|--------|--------|------|
-| Phase 1.1 env-impl 拆分 + 单测 | P1 | 中 | 无 |
-| Phase 1.2 ADR-127 死代码处理 | P1 | 小 | 决策岔路 1 |
-| Phase 1.3 ADR-128 验证 | P1 | 小 | ADR-128 已完成 |
-| Phase 2.1 EnvState 单一源 | P2 | 大 | 无 |
-| Phase 2.2 迁移注册表化 | P2 | 中 | 无 |
-| Phase 2.3 性能降级统一 | P2 | 中 | ADR-118 |
-| Phase 2.4 SetEnvState partial | P2 | 中 | Phase 2.1 |
-| Phase 2.5 菜单扁平化 | P2 | 小 | 决策岔路 3 |
-| Phase 2.6 交互模式统一 | P2 | 中 | 无 |
-| Phase 2.7 预设系统统一 | P2 | 大 | 决策岔路 2 |
-| Phase 3.1-3.5 能力扩展 | P3 | 大 | Phase 2 完成 |
+| Phase | 优先级 | 工作量 | 依赖 | 状态 |
+|-------|--------|--------|------|------|
+| Phase 1.1 env-impl 拆分 + 单测 | P1 | 中 | 无 | 待推进 |
+| Phase 1.2 ADR-127 死代码处理 | P1 | 小 | 决策岔路 1 | 待推进 |
+| Phase 1.3 ADR-128 验证 | P1 | 小 | ADR-128 已完成 | 待推进 |
+| Phase 2.1 EnvState 单一源 | P2 | 大 | 无 | 🔶 部分完成（ADR-137，Go 字段已补齐，schema 派生待实施） |
+| Phase 2.2 迁移注册表化 | P2 | 中 | 无 | ✅ 完成（scene-serialize.ts 注册表化） |
+| Phase 2.3 性能降级统一 | P2 | 中 | ADR-118 | ✅ 完成（qualityProfile 全链路 + Go 已补齐） |
+| Phase 2.4 SetEnvState partial | P2 | 中 | Phase 2.1 | 待推进 |
+| Phase 2.5 菜单扁平化 | P2 | 小 | 决策岔路 3 | 待推进 |
+| Phase 2.6 交互模式统一 | P2 | 中 | 无 | 待推进 |
+| Phase 2.7 预设系统统一 | P2 | 大 | 决策岔路 2 | 待推进 |
+| Phase 3.1-3.5 能力扩展 | P3 | 大 | Phase 2 完成 | 待推进 |
 
 ## 需决策的岔路
 
@@ -214,6 +214,7 @@ const migrators: Migrator[] = [
 - ADR-120 — 环境预设分类化（Phase 1 完成，导入/导出待定）
 - ADR-127 — 场景破坏性撤销（死代码待处理）
 - ADR-128 — 镜面道具化重命名（刚完成）
+- ADR-137 — EnvState 单一源 Schema（Phase 2.1 子 ADR）
 - docs/audit/round-3-facade-terrain.md — env-impl 审计报告
 - docs/audit/water-reflection-boundary-audit.md — 水面反射边界审计
 - docs/competitive-analysis.md — 竞品参考
