@@ -292,13 +292,17 @@ function onModelRowClick(m: LibraryModel, jumpToDirModelId?: string): void {
                             newName = modelRegistry.get(handle.id)?.name ?? handle.name;
                         }
                         await prepareModelRestore(getBrowseDir(browseCategory), browseCategory);
+                        // [doc:adr-131] 替换模式自动跳转收敛为契约实例：声明 jumpToDir outcome，
+                        // 后续在该浏览层选中模型时由 activateItem/onItemClick 按 outcome 派发，
+                        // 取代依赖 modelReplaceTargetId 全局标志位反推（全局标志位保留为兼容回退）。
                         stackRegistry.modelStack?.push(
                             buildLevel(
                                 getBrowseDir(browseCategory),
                                 t('model-detail.replaceModelTo', { name: newName }),
                                 filter,
                                 stackRegistry.modelStack!,
-                                []
+                                [],
+                                { mode: 'jumpToDir', modelId: handle.id }
                             )
                         );
                         setStatus(t('status.done'), true);
