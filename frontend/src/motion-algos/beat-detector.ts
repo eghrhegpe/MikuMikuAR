@@ -2,7 +2,8 @@
 // [doc:architecture] 程序化动作子系统 — 节拍检测
 // 能量峰值法：低频能量 > 1.3× 滑动均值 且 距上次 beat > 250ms → 触发
 
-import { clamp01, swallowError, logWarn } from '@/core/utils';
+import { clamp01, swallowError } from '@/core/utils';
+import { logWarn } from '@/core/logger';
 
 const BASS_BIN_COUNT = 10; // 前 10 个频段 (~0-430Hz @ 44100/256 fft)
 const ENERGY_HISTORY_SIZE = 43; // ~1s @ 43fps update

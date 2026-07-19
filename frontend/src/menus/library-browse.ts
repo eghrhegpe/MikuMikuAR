@@ -22,7 +22,7 @@ import {
 import { loadManager } from '../core/load-manager';
 import { SlideMenu } from './menu';
 import { t } from '../core/i18n/t';
-import { logWarn } from '../core/utils';
+import { logWarn } from '../core/logger';
 import { SetLastBrowseDir } from '../core/wails-bindings';
 import { buildModelLevel, buildModelToolsLevel } from './model-detail';
 import { buildStageTransformLevel } from './scene-menu';

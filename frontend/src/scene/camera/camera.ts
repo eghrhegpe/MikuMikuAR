@@ -14,7 +14,8 @@ import type { MmdAnimation } from 'babylon-mmd/esm/Loader/Animation/mmdAnimation
 import { focusedModelId, modelRegistry, triggerAutoSave, uiState, setStatus } from '@/core/config';
 import { schedulePersistUI } from '../env/env-bridge';
 import { freeflyInput } from '@/core/freefly-state';
-import { clamp, debounce, deepClone, logWarn } from '@/core/utils';
+import { clamp, debounce, deepClone } from '@/core/utils';
+import { logWarn } from '@/core/logger';
 import { t } from '@/core/i18n/t';
 import { focusModel, reattachPipeline, setARMode, getProcBeatDetector } from '../scene';
 import { InvertableArcRotateCameraPointersInput } from './invertablePointersInput';

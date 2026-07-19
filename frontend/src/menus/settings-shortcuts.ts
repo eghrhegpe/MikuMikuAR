@@ -18,7 +18,7 @@ import type { PopupLevel } from '../core/config';
 import type { MenuNode } from './menu-schema';
 import type { SettingsMenuHandle } from './settings-shared';
 import { addDisposableListener, type Disposable } from '../core/dom';
-import { logWarn } from '../core/utils';
+import { logWarn } from '../core/logger';
 
 function _isModifierOnly(code: string): boolean {
     return (

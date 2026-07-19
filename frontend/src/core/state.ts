@@ -11,7 +11,7 @@
  */
 
 import { reactive } from './reactivity';
-import { logWarn } from './utils';
+import { logWarn } from './logger';
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import type {
     ModelInstance,

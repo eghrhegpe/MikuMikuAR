@@ -17,7 +17,8 @@ import type { Scene } from '@babylonjs/core/scene';
 import { SaveThumbnail } from '@/core/wails-bindings';
 import { thumbnailCache, setThumbnailCache, type ModelInstance } from '@/core/config';
 import { uiState } from '@/core/state';
-import { logWarn, isStageLike } from '@/core/utils';
+import { isStageLike } from '@/core/utils';
+import { logWarn } from '@/core/logger';
 import { type PropInstance, type RuntimeModel } from '@/core/types';
 import { buildThumbnailKey } from './thumbnail-key';
 

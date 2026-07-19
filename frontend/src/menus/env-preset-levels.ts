@@ -5,7 +5,8 @@
 import { envState, cardContainer, setStatus } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { addSectionTitle, addPresetChip } from '../core/ui-helpers';
-import { tryCatchStatus, showErrorToast, logWarn } from '../core/utils';
+import { tryCatchStatus, showErrorToast } from '../core/utils';
+import { logWarn } from '../core/logger';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
 import {

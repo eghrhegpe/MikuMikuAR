@@ -6,7 +6,7 @@ import { Quaternion } from '@babylonjs/core/Maths/math.vector';
 import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import { propRegistry, modelRegistry, setStatus, triggerAutoSave } from '../../core/config';
 import { t } from '../../core/i18n/t';
-import { logWarn } from '../../core/utils';
+import { logWarn } from '../../core/logger';
 
 /**
  * 将道具挂载到指定模型的骨骼上。

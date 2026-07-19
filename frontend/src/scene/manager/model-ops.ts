@@ -1,5 +1,5 @@
 import type { PhysicsCategory } from '@/core/types';
-import { logWarn } from '../../core/utils';
+import { logWarn } from '../../core/logger';
 import {
     modelRegistry,
     focusedModelId,

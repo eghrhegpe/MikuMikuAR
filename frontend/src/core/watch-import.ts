@@ -5,7 +5,8 @@ import { t } from './i18n/t';
 import { ImportLocalFile, Events } from './wails-bindings';
 import { refreshLibrary } from '../menus/library';
 import { getAutoImportCached } from '../menus/settings-shared';
-import { logWarn, DebouncedTimer } from './utils';
+import { DebouncedTimer } from './utils';
+import { logWarn } from './logger';
 
 // ======== Download Watch Notification ========
 const importToastTimer = new DebouncedTimer();

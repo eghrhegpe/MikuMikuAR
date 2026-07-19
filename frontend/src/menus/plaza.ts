@@ -21,7 +21,8 @@ import {
     PlazaZoomReset,
 } from '../core/wails-bindings';
 import { isAndroidPlatform, openExternalURL } from '../core/platform';
-import { closeAllOverlays, swallowError, logWarn } from '../core/utils';
+import { closeAllOverlays, swallowError } from '../core/utils';
+import { logWarn } from '../core/logger';
 import { PLAZA_SITES, type PlazaSite } from './plaza-sites';
 import { PLAZA_CREATORS, type PlazaCreator } from './plaza-creators';
 import { FetchPlazaConfig, GetCachedPlazaConfig, ReadTextFile } from '../core/wails-bindings';

@@ -78,7 +78,7 @@ import {
 import { applyMotionModulesToModel } from '../scene/motion/motion-modules/registry';
 import type { SceneMotionIntent, VmdLayer, ModelMotionSlots, ModelInstance } from '@/core/types';
 import { renderMenu } from './render-menu';
-import { logWarn } from '../core/utils';
+import { logWarn } from '../core/logger';
 import type { MenuNode } from './menu-schema';
 import { focusedModelId } from '../core/config';
 import { createIconifyIcon } from '../core/icons';

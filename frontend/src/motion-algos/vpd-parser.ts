@@ -6,7 +6,7 @@
 
 import Encoding from 'encoding-japanese';
 import { buildVmd, type BoneKeyFrame, type MorphKeyFrame } from './vmd-writer';
-import { logWarn } from '../core/utils';
+import { logWarn } from '../core/logger';
 
 const MAX_VPD_SIZE = 1024 * 1024;
 

@@ -4,7 +4,7 @@
  * 从 proc-motion-autodance.ts 拆分（第372-513行）
  */
 import { canEncodeName, type MorphKeyFrame } from './vmd-writer';
-import { logWarn } from '../core/utils';
+import { logWarn } from '../core/logger';
 
 // ============================================================================
 // 黑名单模式（眨眼/口型等非情绪 morph）

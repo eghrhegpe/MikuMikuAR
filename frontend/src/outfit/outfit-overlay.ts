@@ -9,7 +9,8 @@ import type { Scene } from '@babylonjs/core/scene';
 
 import { type ModelInstance } from '../core/config';
 import { readFileBytes } from '../core/wails-bindings';
-import { normPath, logWarn } from '../core/utils';
+import { normPath } from '../core/utils';
+import { logWarn } from '../core/logger';
 
 // Skeleton retargeting
 // ============================================================

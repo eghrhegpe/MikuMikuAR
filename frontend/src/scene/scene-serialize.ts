@@ -19,7 +19,8 @@ import {
     showErrorToast,
 } from '../core/config';
 import { showInfoToast } from '../core/toast';
-import { debounce, swallowError, logWarn } from '../core/utils';
+import { debounce, swallowError } from '../core/utils';
+import { logWarn } from '../core/logger';
 import { getActiveMotion, setActiveMotion } from './motion/motion-intent';
 import {
     getCameraState,

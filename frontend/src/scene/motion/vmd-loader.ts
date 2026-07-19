@@ -16,7 +16,8 @@ import {
     triggerAutoSave,
     addRecentMotion,
 } from '@/core/config';
-import { getBaseName, withLoadingIndicator, logWarn } from '@/core/utils';
+import { getBaseName, withLoadingIndicator } from '@/core/utils';
+import { logWarn } from '@/core/logger';
 import { encodeFileRef } from '@/core/fileservice';
 import { readFileBytes } from '@/core/wails-bindings';
 import { t } from '@/core/i18n/t';

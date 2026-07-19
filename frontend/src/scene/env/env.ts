@@ -3,7 +3,7 @@
 // External modules should ONLY import from this file.
 import * as impl from './env-impl';
 import { EnvState, envState } from '@/core/config';
-import { logWarn } from '@/core/utils';
+import { logWarn } from '@/core/logger';
 
 // Re-export _envSys for backward compatibility (used by scene.ts)
 export { _envSys } from './env-impl';

@@ -14,7 +14,8 @@ import { getMotionMenu } from './motion-popup';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
-import { logWarn, DebouncedTimer } from '../core/utils';
+import { DebouncedTimer } from '../core/utils';
+import { logWarn } from '../core/logger';
 
 // 与 virtual-skirt.ts 的 defaultVirtualSkirtConfig 保持同源契约；
 // 字段稳定，UI 默认值在此声明，引擎默认值在 virtual-skirt.ts。

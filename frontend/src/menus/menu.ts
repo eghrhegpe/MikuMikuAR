@@ -4,7 +4,7 @@ import { slideRow, addSliderRow, addToggleRow, addModeSlider } from '../core/ui-
 import { createTrailingBtn, createLeadingBtn } from '../core/ui-slide-row';
 import { subscribe } from '../core/reactivity';
 import { t } from '../core/i18n/t';
-import { logWarn } from '../core/utils';
+import { logWarn } from '../core/logger';
 import { addDisposableListener, type Disposable } from '../core/dom';
 
 /** 菜单过渡时间常量（与 app.css :root --menu-transition-duration 同步） */

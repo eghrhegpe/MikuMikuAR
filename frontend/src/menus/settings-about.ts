@@ -29,7 +29,8 @@ import { engine, applyFrameControl } from '../scene/scene';
 import { calcHardwareScaling } from '../core/render-loop';
 import { refreshCameraUserSettings } from '../scene/camera/camera';
 import { setVolume, getVolume, setAudioOffset, getAudioOffset } from '../outfit/audio';
-import { swallowError, logWarn, jsonStringify } from '../core/utils';
+import { swallowError, jsonStringify } from '../core/utils';
+import { logWarn } from '../core/logger';
 import { showConfirm } from '../core/dialog';
 
 function exportSettings(): void {

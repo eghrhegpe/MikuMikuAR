@@ -24,7 +24,8 @@ import {
 } from '@/core/config';
 import { orbitToCartesian, cartesianToOrbit, normalizeOrbit } from '@/core/orbit';
 import { disposeOverlay, restoreMaterials } from '@/outfit/outfit-overlay';
-import { clamp01, logWarn, swallowError } from '@/core/utils';
+import { clamp01, swallowError } from '@/core/utils';
+import { logWarn } from '@/core/logger';
 import { disposeModelMaterialState } from './material';
 
 // ======== Per-model state maps ========

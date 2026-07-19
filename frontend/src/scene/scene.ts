@@ -32,7 +32,8 @@ import 'babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmRuntimeModelAnimation
 import { MmdStandardMaterialProxy } from 'babylon-mmd/esm/Runtime/mmdStandardMaterialProxy';
 import { initWindPhysics, disposeWindPhysics } from '../physics/wind-physics';
 import { applyGroundCollision } from './physics/ground-collision';
-import { swallowError, logWarn } from '../core/utils';
+import { swallowError } from '../core/utils';
+import { logWarn } from '../core/logger';
 import { MmdRuntimeShared } from 'babylon-mmd/esm/Runtime/mmdRuntimeShared';
 // JS 版 runtime（无 WASM 双缓冲，worldMatrix 覆写可生效）
 import { MmdRuntime } from 'babylon-mmd/esm/Runtime/mmdRuntime';

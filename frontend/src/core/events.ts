@@ -57,7 +57,7 @@ import { showPlaza, closePlaza } from '../menus/plaza';
 import { loadManager } from './load-manager';
 import { ImportZip, Events } from './wails-bindings';
 import { focusModel } from '../scene/manager/model-ops';
-import { logWarn } from './utils';
+import { logWarn } from './logger';
 
 // ======== Module-level state ========
 const _lastOverlayFn = new Map<string, () => void>();

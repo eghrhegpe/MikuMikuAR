@@ -20,7 +20,8 @@ import {
     uiState,
     type RuntimeModel,
 } from '@/core/config';
-import { getBaseName, swallowError, logWarn, isUnderRoot } from '@/core/utils';
+import { getBaseName, swallowError, isUnderRoot } from '@/core/utils';
+import { logWarn } from '@/core/logger';
 import { getActiveMotion, getMotionGen, resolveCompatibility } from '../motion/motion-intent';
 import { createDefaultFeetState } from '@/core/state';
 import { resolveModelDir } from '@/core/fileservice';

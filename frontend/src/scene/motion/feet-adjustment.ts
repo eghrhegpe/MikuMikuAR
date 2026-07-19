@@ -23,7 +23,7 @@ import {
 import { solveFootTarget } from '@/motion-algos/feet-adjustment-math';
 // 落地判定（无 Babylon 依赖，便于单测）见 motion-algos/footstep-detect.ts
 import { detectFootLanding } from '@/motion-algos/footstep-detect';
-import { logWarn } from '../../core/utils';
+import { logWarn } from '../../core/logger';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 export { solveFootTarget };
 export type { SolveFootInput, SolveFootOutput } from '@/motion-algos/feet-adjustment-math';

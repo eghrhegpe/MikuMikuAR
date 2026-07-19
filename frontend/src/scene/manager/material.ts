@@ -9,7 +9,7 @@ import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 
 import { modelRegistry, uiState } from '@/core/config';
 import { triggerAutoSave } from '@/core/config';
-import { logWarn } from '../../core/utils';
+import { logWarn } from '../../core/logger';
 
 interface MmdStandardMaterial extends StandardMaterial {
     toonTexture: Texture | null;

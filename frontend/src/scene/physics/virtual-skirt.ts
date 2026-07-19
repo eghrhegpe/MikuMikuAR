@@ -30,7 +30,7 @@ import { MotionType } from 'babylon-mmd/esm/Runtime/Optimized/Physics/Bind/motio
 import { analyzeSkirt } from './skirt-analyzer';
 import { PerFrameUpdateRegistry, getBoneWorldPosition } from '../../physics/physics-bridge';
 import { isAndroidPlatform } from '../../core/platform';
-import { logWarn } from '../../core/utils';
+import { logWarn } from '../../core/logger';
 
 // ============================================================================
 // 配置

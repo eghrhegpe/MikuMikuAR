@@ -5,7 +5,8 @@ import { setStatus } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import type { RenderState } from '../scene/scene';
 import { showPrompt } from '../core/dialog';
-import { tryCatchStatus, showErrorToast, logWarn } from '../core/utils';
+import { tryCatchStatus, showErrorToast } from '../core/utils';
+import { logWarn } from '../core/logger';
 import { slideRow } from '../core/ui-helpers';
 import {
     getRenderState,
