@@ -165,8 +165,12 @@ function _generateBlueNoise(size: number, iterations: number): Uint8Array {
 }
 
 function _ensureBlueNoiseTexture(scene: Scene): Texture {
-    if (_blueNoiseTex) {
+    if (_blueNoiseTex && _blueNoiseTex.getScene() === scene) {
         return _blueNoiseTex;
+    }
+    if (_blueNoiseTex) {
+        _blueNoiseTex.dispose();
+        _blueNoiseTex = null;
     }
     const size = BLUE_NOISE_SIZE;
     const data = _generateBlueNoise(size, 20);

@@ -860,6 +860,7 @@ export class SlideMenu {
             toggle.appendChild(input);
             toggle.appendChild(slider);
             toggle.addEventListener('click', (e) => {
+                e.preventDefault();
                 e.stopPropagation();
                 input.checked = !input.checked;
                 ht.onChange(input.checked);
