@@ -59,7 +59,7 @@ export class ObserverHandle {
  */
 export function observe<T>(
     observable: Observable<T>,
-    callback: (eventData: T, eventState: any) => void,
+    callback: (eventData: T, eventState: any) => void
 ): ObserverHandle {
     const observer = observable.add(callback);
     if (!observer) {
@@ -73,7 +73,7 @@ export function observe<T>(
  */
 export function observeOnce<T>(
     observable: Observable<T>,
-    callback: (eventData: T, eventState: any) => void,
+    callback: (eventData: T, eventState: any) => void
 ): ObserverHandle {
     const observer = observable.addOnce(callback);
     if (!observer) {
@@ -94,7 +94,7 @@ export class ObserverRegistry {
     /** 订阅并注册，返回句柄。 */
     add<T>(
         observable: Observable<T>,
-        callback: (eventData: T, eventState: any) => void,
+        callback: (eventData: T, eventState: any) => void
     ): ObserverHandle {
         const handle = observe(observable, callback);
         this._handles.push(handle);
@@ -104,6 +104,17 @@ export class ObserverRegistry {
     /** 注册一个已有的句柄。 */
     register(handle: ObserverHandle): void {
         this._handles.push(handle);
+    }
+
+    /** 从注册表中移除指定句柄并 dispose。返回 true 表示找到并移除。 */
+    remove(handle: ObserverHandle): boolean {
+        const idx = this._handles.indexOf(handle);
+        if (idx === -1) {
+            return false;
+        }
+        this._handles.splice(idx, 1);
+        handle.dispose();
+        return true;
     }
 
     /** 一次性清理所有注册的 observer。幂等。 */

@@ -46,13 +46,23 @@ export function genArmBones(
             const lz = clamp1(base * ampZ * slow);
             const lx = clamp1(fwd * ampX * slow);
             const w = quatW(lx, 0, lz);
-            frames.push({ name: larmBone, frame: f, position: [0, 0, 0], rotation: [lx, 0, lz, w] });
+            frames.push({
+                name: larmBone,
+                frame: f,
+                position: [0, 0, 0],
+                rotation: [lx, 0, lz, w],
+            });
         }
         if (rarmBone) {
             const rz = clamp1(-base * ampZ * slow);
             const rx = clamp1(fwd * ampX * slow);
             const w = quatW(rx, 0, rz);
-            frames.push({ name: rarmBone, frame: f, position: [0, 0, 0], rotation: [rx, 0, rz, w] });
+            frames.push({
+                name: rarmBone,
+                frame: f,
+                position: [0, 0, 0],
+                rotation: [rx, 0, rz, w],
+            });
         }
     }
     return frames;
@@ -86,12 +96,22 @@ export function genElbowBones(
             // 左臂在 base>0（外摆）半周期屈曲
             const lx = clamp1(Math.max(0, baseL) * bendAmp * slow);
             const w = quatW(lx, 0, 0);
-            frames.push({ name: lelbowBone, frame: f, position: [0, 0, 0], rotation: [lx, 0, 0, w] });
+            frames.push({
+                name: lelbowBone,
+                frame: f,
+                position: [0, 0, 0],
+                rotation: [lx, 0, 0, w],
+            });
         }
         if (relbowBone) {
             const rx = clamp1(Math.max(0, -baseL) * bendAmp * slow);
             const w = quatW(rx, 0, 0);
-            frames.push({ name: relbowBone, frame: f, position: [0, 0, 0], rotation: [rx, 0, 0, w] });
+            frames.push({
+                name: relbowBone,
+                frame: f,
+                position: [0, 0, 0],
+                rotation: [rx, 0, 0, w],
+            });
         }
     }
     return frames;

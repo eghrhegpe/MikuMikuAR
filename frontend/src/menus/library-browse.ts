@@ -26,7 +26,13 @@ import { logWarn } from '../core/logger';
 import { SetLastBrowseDir } from '../core/wails-bindings';
 import { buildModelLevel, buildModelToolsLevel } from './model-detail';
 import { buildStageTransformLevel } from './scene-menu';
-import { buildLevel, modelToRow, buildModelRootItems, isModelDirTarget, abortThumbnailStreaming } from './library-core';
+import {
+    buildLevel,
+    modelToRow,
+    buildModelRootItems,
+    isModelDirTarget,
+    abortThumbnailStreaming,
+} from './library-core';
 import {
     onModelRowClick,
     replaceModel,
@@ -274,7 +280,9 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                     deferRestore(menu, dir, seg);
                     return;
                 }
-                librarySessionStore.setPendingAutoExpand(pendingAuto.length > 1 ? pendingAuto.slice(1) : null);
+                librarySessionStore.setPendingAutoExpand(
+                    pendingAuto.length > 1 ? pendingAuto.slice(1) : null
+                );
                 logWarn('library-browse', '[restore] autoExpand push', {
                     from: dir,
                     seg,

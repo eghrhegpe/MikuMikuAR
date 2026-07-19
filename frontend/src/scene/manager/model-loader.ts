@@ -449,9 +449,10 @@ export async function loadPMXFile(
         // Register via ModelManager only — it owns the registry
         // Must register BEFORE VMD load because loadVMDMotion queries modelRegistry
         // [adr-XX per-motion] 加载继承：注册前记录"上一个角色"，注册后继承槽位1 策略
-        const prevInst = _modelManager && _modelManager.getAll().length > 0
-            ? _modelManager.getAll()[_modelManager.getAll().length - 1]
-            : null;
+        const prevInst =
+            _modelManager && _modelManager.getAll().length > 0
+                ? _modelManager.getAll()[_modelManager.getAll().length - 1]
+                : null;
         _modelManager.register(inst);
         registeredId = id;
         // [adr-XX per-motion] 继承上一个角色的槽位1 source/procRole（不继承 pinned 快照、overlay）

@@ -95,7 +95,12 @@ import { DEFAULT_PROC_STATE } from '../motion-algos/procedural-motion';
 import { DEFAULT_LIPSYNC_STATE } from '../motion-algos/lipsync';
 import type { ProcMotionState } from '../motion-algos/procedural-motion';
 import type { LipSyncState as LipSyncStateType } from '../motion-algos/lipsync';
-import type { BoneOverrideEntry, FeetState, MotionModuleState, ProcMotionConfig } from '../core/types';
+import type {
+    BoneOverrideEntry,
+    FeetState,
+    MotionModuleState,
+    ProcMotionConfig,
+} from '../core/types';
 import {
     getPerceptionState,
     setPerceptionState,
@@ -669,11 +674,12 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                 Object.assign(inst.feet, m.feet);
             }
             // [doc:adr-121] 恢复双槽位动作分配（兼容旧 motionAssignment 格式）
-            const pinnedData = m.motionSlots?.primary?.source === 'pinned'
-                ? m.motionSlots.primary.pinned
-                : m.motionAssignment?.mode === 'pinned'
-                  ? m.motionAssignment.pinned
-                  : null;
+            const pinnedData =
+                m.motionSlots?.primary?.source === 'pinned'
+                    ? m.motionSlots.primary.pinned
+                    : m.motionAssignment?.mode === 'pinned'
+                      ? m.motionAssignment.pinned
+                      : null;
             if (pinnedData) {
                 inst.motionSlots = {
                     primary: {
@@ -826,11 +832,7 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
         }
         // [fix:material-persist] 恢复材质状态（categories + overrides + enabled）
         // _capture 已在 model-loader.ts 加载时调用，_origValues 就绪，可安全 apply
-        if (
-            m.materialCategories ||
-            m.materialOverrides ||
-            m.materialEnabled
-        ) {
+        if (m.materialCategories || m.materialOverrides || m.materialEnabled) {
             try {
                 applyMatState(id, {
                     categories: m.materialCategories,
@@ -1083,7 +1085,10 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
             motionModules: data.motion.motionModules,
             // [adr-XX per-motion] 程序化动作参数（随动作走）
             procMotion: data.motion.procMotion
-                ? ({ ...DEFAULT_PROC_STATE, ...(data.motion.procMotion as Partial<ProcMotionState>) } as ProcMotionConfig)
+                ? ({
+                      ...DEFAULT_PROC_STATE,
+                      ...(data.motion.procMotion as Partial<ProcMotionState>),
+                  } as ProcMotionConfig)
                 : undefined,
         });
     } else {
@@ -1314,9 +1319,7 @@ function migrateToV1(data: Record<string, unknown>): boolean {
 // }
 
 /** 迁移注册表：新增迁移在此追加。 */
-const _sceneMigrators: SceneMigrator[] = [
-    migrateToV1,
-];
+const _sceneMigrators: SceneMigrator[] = [migrateToV1];
 
 /**
  * Migrate a scene file from an older version to the latest format.

@@ -8,18 +8,8 @@ import { col3FromTriple } from '@/core/color-helpers';
 import { logWarn } from '@/core/logger';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { disposeTextureCache } from './env-texture';
-import {
-    _envSys,
-    getScene,
-    getPipeline,
-    isInitialized,
-    resolveStaticAsset,
-} from './env-context';
-import {
-    registerSceneTickCallback as _registerSceneTickCallback,
-    clearSceneTickCallbacks,
-    runSceneTickCallbacks,
-} from './env-dispatcher';
+import { _envSys, getScene, getPipeline, isInitialized, resolveStaticAsset } from './env-context';
+import { clearSceneTickCallbacks, runSceneTickCallbacks } from './env-dispatcher';
 
 // Re-export shared context for backward compatibility
 export { _envSys, getScene, getPipeline, resolveStaticAsset, isInitialized } from './env-context';
@@ -37,7 +27,12 @@ export {
     _underwaterTransitionProgress,
     _underwaterTarget,
 } from './env-water';
-import { createWater, disposeWater, updateUnderwaterTransition, resetUnderwaterState } from './env-water';
+import {
+    createWater,
+    disposeWater,
+    updateUnderwaterTransition,
+    resetUnderwaterState,
+} from './env-water';
 export { createClouds, disposeClouds } from './env-clouds';
 import { createClouds, disposeClouds } from './env-clouds';
 export {
@@ -46,7 +41,12 @@ export {
     isMirrorActive,
     updateMirrorClearColor,
 } from './mirror-debug';
-import { createMirror, disposeMirror, isMirrorActive, updateMirrorClearColor } from './mirror-debug';
+import {
+    createMirror,
+    disposeMirror,
+    isMirrorActive,
+    updateMirrorClearColor,
+} from './mirror-debug';
 
 // ======== Re-exports: Sky ========
 export { applySky, disposeSky } from './env-sky';
@@ -73,17 +73,14 @@ import {
     disposeSplash,
     getCurrentParticleType,
 } from './env-particles';
-export {
-    createParticleEmitter,
-    disposeParticles,
-    updateParticleWind,
-    updateParticleTexture,
-};
+export { createParticleEmitter, disposeParticles, updateParticleWind, updateParticleTexture };
 
-// ======== Scene Tick Callback Registry (re-export from env-context) ========
-export function registerSceneTickCallback(cb: () => void): () => void {
-    return _registerSceneTickCallback(cb);
-}
+// ======== Scene Tick Callback Registry (re-export from env-dispatcher) ========
+export {
+    registerSceneTickCallback,
+    clearSceneTickCallbacks,
+    runSceneTickCallbacks,
+} from './env-dispatcher';
 
 // ======== initEnvImpl (re-export from env-context) ========
 export { initEnvImpl } from './env-context';
@@ -92,19 +89,47 @@ export { initEnvImpl } from './env-context';
 import { registerEnvCallback } from './env-dispatcher';
 
 const _SKY_KEYS = [
-    'skyMode', 'skyColorTop', 'skyColorMid', 'skyColorBot',
-    'skyTexture', 'skyRotationY', 'skyRotationSpeed', 'skyBrightness',
-    'starsEnabled', 'starsTexture', 'envIntensity', 'sunAngle', 'azimuth',
+    'skyMode',
+    'skyColorTop',
+    'skyColorMid',
+    'skyColorBot',
+    'skyTexture',
+    'skyRotationY',
+    'skyRotationSpeed',
+    'skyBrightness',
+    'starsEnabled',
+    'starsTexture',
+    'envIntensity',
+    'sunAngle',
+    'azimuth',
 ];
 const _GROUND_KEYS = [
-    'groundType', 'groundStyle', 'groundColor', 'groundColor2',
-    'groundTexture', 'groundLevel', 'groundPitch', 'groundRoll',
-    'groundScrollSpeedX', 'groundScrollSpeedZ', 'groundTileScale',
-    'groundReflectionEnabled', 'groundReflectionQuality',
-    'groundEdgeFadeStart', 'groundEdgeFadeEnd',
-    'groundContactShadowEnabled', 'groundContactShadowIntensity', 'groundContactShadowDistance',
-    'terrainHeight', 'terrainScale', 'terrainSeed', 'terrainOctaves',
-    'groundGradient', 'groundFade', 'groundCheckerColor1', 'groundCheckerColor2',
+    'groundType',
+    'groundStyle',
+    'groundColor',
+    'groundColor2',
+    'groundTexture',
+    'groundLevel',
+    'groundPitch',
+    'groundRoll',
+    'groundScrollSpeedX',
+    'groundScrollSpeedZ',
+    'groundTileScale',
+    'groundReflectionEnabled',
+    'reflectionQuality',
+    'groundEdgeFadeStart',
+    'groundEdgeFadeEnd',
+    'groundContactShadowEnabled',
+    'groundContactShadowIntensity',
+    'groundContactShadowDistance',
+    'terrainHeight',
+    'terrainScale',
+    'terrainSeed',
+    'terrainOctaves',
+    'groundGradient',
+    'groundFade',
+    'groundCheckerColor1',
+    'groundCheckerColor2',
     'groundMode',
 ];
 const _FOG_KEYS = ['fogEnabled', 'fogColor', 'fogDensity', 'fogMode', 'fogStart', 'fogEnd'];

@@ -16,6 +16,7 @@ import {
 import { EnvState } from '@/core/config';
 import { _envSys, getScene } from './env-context';
 import { ensureEnvUpdateObserver } from './env-impl';
+import { registerEnvCallback } from './env-dispatcher';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 
 // ======== Cloud System Constants ========
@@ -776,3 +777,23 @@ export function disposeClouds(): void {
         _blueNoiseTex = null;
     }
 }
+
+// ======== [ADR-138] env-dispatcher 回调注册 ========
+const _CLOUD_KEYS = [
+    'cloudsEnabled',
+    'cloudCover',
+    'cloudSpeed',
+    'cloudHeight',
+    'cloudDensity',
+    'cloudLightAttenuation',
+];
+
+registerEnvCallback((changed, state) => {
+    if (!changed || [...changed].some((k) => _CLOUD_KEYS.includes(k))) {
+        if (state.cloudsEnabled) {
+            createClouds(state);
+        } else {
+            disposeClouds();
+        }
+    }
+});

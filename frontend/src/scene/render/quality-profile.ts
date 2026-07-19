@@ -20,7 +20,6 @@ const CLOUD_QUALITY: Record<QualityProfile, 'standard' | 'high'> = {
 
 export interface QualityProfileSettings {
     reflectionQuality: 'high' | 'medium' | 'low' | 'off';
-    groundReflectionQuality: 'high' | 'medium' | 'low' | 'off';
     cloudQuality: 'standard' | 'high';
 }
 
@@ -31,7 +30,6 @@ export interface QualityProfileSettings {
 export function resolveQualityProfile(profile: QualityProfile): QualityProfileSettings {
     return {
         reflectionQuality: REFLECTION_QUALITY[profile],
-        groundReflectionQuality: REFLECTION_QUALITY[profile],
         cloudQuality: CLOUD_QUALITY[profile],
     };
 }
@@ -43,7 +41,7 @@ export function resolveQualityProfile(profile: QualityProfile): QualityProfileSe
  */
 export function inferQualityProfile(
     reflectionQuality: string,
-    groundReflectionQuality: string,
+    _groundReflectionQuality: string,
     cloudQuality: string
 ): QualityProfile {
     // 逐档检查：从低到高，全匹配才返回
@@ -51,7 +49,6 @@ export function inferQualityProfile(
     for (const p of profiles) {
         if (
             REFLECTION_QUALITY[p] === reflectionQuality &&
-            REFLECTION_QUALITY[p] === groundReflectionQuality &&
             CLOUD_QUALITY[p] === cloudQuality
         ) {
             return p;

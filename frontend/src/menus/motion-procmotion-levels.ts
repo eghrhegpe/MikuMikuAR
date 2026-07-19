@@ -177,7 +177,7 @@ function buildProcMotionSchema(modelId?: string): MenuNode[] {
                                 blink: 'lucide:eye',
                                 emotion: 'lucide:smile',
                             };
-                            const toggleBone = (cat: typeof cats[number], v: boolean) => {
+                            const toggleBone = (cat: (typeof cats)[number], v: boolean) => {
                                 if (modelId) {
                                     const cur = _getProcState(modelId);
                                     _setProcState(modelId, {

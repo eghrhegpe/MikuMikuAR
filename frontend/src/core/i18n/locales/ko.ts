@@ -219,7 +219,8 @@ export const ko: Record<string, string> = {
     'model-material.resetAll': '모든 재질 매개변수 재설정',
     'model-material.unlitFallback': '라이팅 폴백 (Unlit)',
     'model-material.unlitFallbackTitle': '라이팅 폴백을 적용하시겠습니까?',
-    'model-material.unlitFallbackConfirm': '모델을 "유사 Unlit" 상태로 만듭니다: 환경광과 발광으로만 렌더링하고 방향광에 의존하지 않습니다.\\n\\n효과: 입체감을 잃지만 항상 보입니다. 조명이 비정상인 소수 모델용.\\n\\n"모두 재설정"으로 언제든 되돌릴 수 있습니다.',
+    'model-material.unlitFallbackConfirm':
+        '모델을 "유사 Unlit" 상태로 만듭니다: 환경광과 발광으로만 렌더링하고 방향광에 의존하지 않습니다.\\n\\n효과: 입체감을 잃지만 항상 보입니다. 조명이 비정상인 소수 모델용.\\n\\n"모두 재설정"으로 언제든 되돌릴 수 있습니다.',
     'model-material.unlitFallbackDone': '✓ 라이팅 폴백 적용됨',
     'model-material.resetAllDone': '✓ 모든 재질 매개변수가 재설정됨',
     'model-material.selectMaterialHint': '위 목록에서 재질을 선택하여 세부 조정하세요',
@@ -876,7 +877,8 @@ export const ko: Record<string, string> = {
     'library.scanning': '검색 중...',
     'library.scanningDir': '⏳ {dir} 검색 중…',
     'library.scanningDirWithWait': '⏳ {dir} 검색 중… ({sec}초 대기)',
-    'library.scanTimeout': '⚠ 검색 시간 초과 ({dir}). 데이터가 준비되지 않았을 수 있습니다. 폴더를 수동으로 클릭하여 펼치세요',
+    'library.scanTimeout':
+        '⚠ 검색 시간 초과 ({dir}). 데이터가 준비되지 않았을 수 있습니다. 폴더를 수동으로 클릭하여 펼치세요',
     'library.expanded': '✓ {dir} 펼침',
     'library.scanFailed': '✗ 검색 실패',
     'library.entriesCount': '✓ {n}개 항목',

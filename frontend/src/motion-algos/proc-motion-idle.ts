@@ -223,8 +223,8 @@ export function generateIdleVmd(state: ProcMotionState, boneNames: string[] = []
 
     // ── 足 IK 微动（呼吸起伏 + 重心微摆）──
     if (legIkLBone || legIkRBone) {
-        const legIkAmp = 0.012 * intensity;    // Y 轴起伏振幅
-        const legSwayAmp = 0.005 * intensity;  // Z 轴微摆
+        const legIkAmp = 0.012 * intensity; // Y 轴起伏振幅
+        const legSwayAmp = 0.005 * intensity; // Z 轴微摆
         for (let f = 0; f < loopFrames; f += 4) {
             const phase = (f / loopFrames) * Math.PI * 2;
             // 用较慢的呼吸相位，与 center 的上下浮动错位制造自然感
@@ -235,10 +235,20 @@ export function generateIdleVmd(state: ProcMotionState, boneNames: string[] = []
             const lz = Math.sin(breathPhase) * legSwayAmp;
             const rz = Math.sin(breathPhase + Math.PI) * legSwayAmp;
             if (legIkLBone) {
-                bones.push({ name: legIkLBone, frame: f, position: [0, ly, lz], rotation: [0, 0, 0, 1] });
+                bones.push({
+                    name: legIkLBone,
+                    frame: f,
+                    position: [0, ly, lz],
+                    rotation: [0, 0, 0, 1],
+                });
             }
             if (legIkRBone) {
-                bones.push({ name: legIkRBone, frame: f, position: [0, ry, rz], rotation: [0, 0, 0, 1] });
+                bones.push({
+                    name: legIkRBone,
+                    frame: f,
+                    position: [0, ry, rz],
+                    rotation: [0, 0, 0, 1],
+                });
             }
         }
         if (legIkLBone) {

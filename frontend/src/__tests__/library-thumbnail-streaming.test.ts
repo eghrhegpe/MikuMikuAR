@@ -209,9 +209,8 @@ describe('loadThumbnailsStreaming — AbortSignal (adr-136)', () => {
     it('abortThumbnailStreaming：取消在飞批次，结果被丢弃且 promise 不挂起', async () => {
         const keys = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
         // 慢 binding：setTimeout(0) 后才 resolve，给 abort 留出同步窗口
-        getThumb.mockImplementation(
-            (k: string) =>
-                cancellable(new Promise<string>((r) => setTimeout(() => r(`data-${k}`), 0)))
+        getThumb.mockImplementation((k: string) =>
+            cancellable(new Promise<string>((r) => setTimeout(() => r(`data-${k}`), 0)))
         );
         const promise = loadThumbnailsStreaming(keys);
         abortThumbnailStreaming(); // 同步取消当前批次

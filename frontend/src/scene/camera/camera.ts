@@ -861,7 +861,6 @@ function initFreeflyUpdate(scene: Scene): void {
     });
 }
 
-
 // ======== Freefly Touch Controls ========
 // 双指滑动：上下 = 前后移动，左右 = 平移
 // 双指捏合：前进/后退

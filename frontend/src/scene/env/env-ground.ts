@@ -65,7 +65,7 @@ function _setAlbedoColor(mat: GroundMat, color: Color3): void {
 /** ADR-114 Phase 2: 反射模糊映射到 roughness 偏移（blur=1 最多增加 0.4）；低质量模式自动关闭 */
 function _effectiveRoughness(state: EnvState): number {
     // 低质量模式自动关闭反射模糊（退化为锐利反射）
-    if (state.groundReflectionQuality === 'low' || state.groundReflectionQuality === 'off') {
+    if (state.reflectionQuality === 'low' || state.reflectionQuality === 'off') {
         return state.groundRoughness;
     }
     return Math.max(0, Math.min(1, state.groundRoughness + state.groundReflectionBlur * 0.4));
@@ -74,7 +74,7 @@ function _effectiveRoughness(state: EnvState): number {
 /** ADR-114 Phase 2: 法线扭曲映射到 bumpTexture.level 增强（distort=1 时额外 +2.0）；低质量模式自动关闭 */
 function _effectiveBumpLevel(state: EnvState): number {
     // 低质量模式自动关闭法线扭曲
-    if (state.groundReflectionQuality === 'low' || state.groundReflectionQuality === 'off') {
+    if (state.reflectionQuality === 'low' || state.reflectionQuality === 'off') {
         return state.groundNormalStrength;
     }
     return state.groundNormalStrength + state.groundReflectionDistort * 2.0;
@@ -271,12 +271,11 @@ export function clearGroundTexCache() {
 const groundReflection = new PlanarReflection({
     name: 'ground',
     mode: 'mirrorTexture',
-    resolutionMap: { high: 1024, medium: 512, low: 256, off: 0 },
+    resolutionMap: { high: 2048, medium: 1024, low: 512, off: 0 },
     // ADR-114 Phase 2: 开启 mipmap 供 PBR roughness 驱动反射模糊
     generateMipMaps: true,
     getQuality: (s) => {
-        // 独立字段为非 'off' 时作为显式覆盖；否则从 qualityProfile 派生
-        if (s.groundReflectionQuality !== 'off') return s.groundReflectionQuality;
+        if (s.reflectionQuality !== 'off') return s.reflectionQuality;
         const map: Record<string, string> = { high: 'high', medium: 'medium', low: 'low' };
         return map[s.qualityProfile] ?? 'off';
     },
@@ -731,8 +730,8 @@ export function applyGround(state: EnvState): void {
         state.groundType === 'terrain'
             ? `heightmap:${state.groundTerrainHeight}:${state.groundTerrainScale}:${state.groundTerrainSeed}:${state.groundTerrainOctaves}:${state.groundLevel}:${state.groundSize}:${state.groundColor.join(',')}:${state.groundAlpha}:${state.groundTextureEnabled}:${state.groundTexture}:${state.groundTextureScale}:${state.groundTextureRotation}${pbrKey}${infKey}`
             : state.groundTextureEnabled && state.groundTexture
-              ? `texture:${state.groundTexture}:${state.groundSize}:${state.groundReflectionQuality}${pbrKey}${infKey}`
-              : `canvas:${state.groundStyle}:${state.groundGridSize}:${state.groundColor.join(',')}:${state.groundLineColor.join(',')}:${state.groundSize}:${state.groundReflectionQuality}${pbrKey}${proceduralKey}${infKey}`;
+              ? `texture:${state.groundTexture}:${state.groundSize}:${state.reflectionQuality}${pbrKey}${infKey}`
+              : `canvas:${state.groundStyle}:${state.groundGridSize}:${state.groundColor.join(',')}:${state.groundLineColor.join(',')}:${state.groundSize}:${state.reflectionQuality}${pbrKey}${proceduralKey}${infKey}`;
     const keyChanged = typeKey !== _currentGroundKey;
 
     // 原地更新路径
@@ -754,7 +753,8 @@ export function applyGround(state: EnvState): void {
             if (albedoTex && albedoTex instanceof Texture) {
                 // [fix:ADR-134] 无限地面 UV 补偿：网格变大时按比例缩小纹理密度
                 const uvCompensation = state.groundSize / Math.max(1, _groundActualSize);
-                albedoTex.uScale = albedoTex.vScale = (1 / Math.max(0.1, state.groundTextureScale)) * uvCompensation;
+                albedoTex.uScale = albedoTex.vScale =
+                    (1 / Math.max(0.1, state.groundTextureScale)) * uvCompensation;
                 _syncGroundTextureOffset(mat, state);
             }
             _syncGroundNormalTexture(mat, state);
@@ -944,7 +944,7 @@ export interface GroundPreset {
     groundProceduralSeed: number;
     groundProceduralScale: number;
     // Reflection
-    groundReflectionQuality: 'off' | 'low' | 'medium' | 'high';
+    reflectionQuality: 'off' | 'low' | 'medium' | 'high';
     groundReflectionBlend: number;
     groundNormalStrength: number;
     groundReflectionBlur: number;
@@ -980,7 +980,7 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
         groundProceduralTexture: 'none',
         groundProceduralSeed: 42,
         groundProceduralScale: 1,
-        groundReflectionQuality: 'low',
+        reflectionQuality: 'low',
         groundReflectionBlend: 0.3,
         groundNormalStrength: 1,
         groundReflectionBlur: 0,
@@ -1012,7 +1012,7 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
         groundProceduralTexture: 'none',
         groundProceduralSeed: 42,
         groundProceduralScale: 1,
-        groundReflectionQuality: 'high',
+        reflectionQuality: 'high',
         groundReflectionBlend: 0.8,
         groundNormalStrength: 1.2,
         groundReflectionBlur: 0,
@@ -1044,7 +1044,7 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
         groundProceduralTexture: 'none',
         groundProceduralSeed: 42,
         groundProceduralScale: 1,
-        groundReflectionQuality: 'low',
+        reflectionQuality: 'low',
         groundReflectionBlend: 0.2,
         groundNormalStrength: 0.8,
         groundReflectionBlur: 0,
@@ -1076,7 +1076,7 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
         groundProceduralTexture: 'none',
         groundProceduralSeed: 42,
         groundProceduralScale: 1,
-        groundReflectionQuality: 'medium',
+        reflectionQuality: 'medium',
         groundReflectionBlend: 0.4,
         groundNormalStrength: 0.6,
         groundReflectionBlur: 0.1,
@@ -1108,7 +1108,7 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
         groundProceduralTexture: 'none',
         groundProceduralSeed: 42,
         groundProceduralScale: 1,
-        groundReflectionQuality: 'medium',
+        reflectionQuality: 'medium',
         groundReflectionBlend: 0.35,
         groundNormalStrength: 0.7,
         groundReflectionBlur: 0.1,
@@ -1140,7 +1140,7 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
         groundProceduralTexture: 'none',
         groundProceduralSeed: 42,
         groundProceduralScale: 1,
-        groundReflectionQuality: 'off',
+        reflectionQuality: 'off',
         groundReflectionBlend: 0,
         groundNormalStrength: 1,
         groundReflectionBlur: 0,
@@ -1175,7 +1175,7 @@ export function buildGroundPresetEnvState(preset: GroundPreset): Partial<EnvStat
         groundProceduralTexture: preset.groundProceduralTexture,
         groundProceduralSeed: preset.groundProceduralSeed,
         groundProceduralScale: preset.groundProceduralScale,
-        groundReflectionQuality: preset.groundReflectionQuality,
+        reflectionQuality: preset.reflectionQuality,
         groundReflectionBlend: preset.groundReflectionBlend,
         groundNormalStrength: preset.groundNormalStrength,
         groundReflectionBlur: preset.groundReflectionBlur,

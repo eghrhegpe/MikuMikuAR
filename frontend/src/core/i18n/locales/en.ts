@@ -805,7 +805,8 @@ export const en: Record<string, string> = {
     'library.scanning': 'Scanning...',
     'library.scanningDir': '⏳ Scanning {dir}…',
     'library.scanningDirWithWait': '⏳ Scanning {dir}… (waited {sec}s)',
-    'library.scanTimeout': '⚠ Scan timeout ({dir}), data may not be ready. Please click the folder manually to expand.',
+    'library.scanTimeout':
+        '⚠ Scan timeout ({dir}), data may not be ready. Please click the folder manually to expand.',
     'library.expanded': '✓ Expanded {dir}',
     'library.scanFailed': '✗ Scan failed',
     'library.entriesCount': '✓ {n} entries',
@@ -928,7 +929,8 @@ export const en: Record<string, string> = {
     'model-material.resetAll': 'Reset All Material Params',
     'model-material.unlitFallback': 'Lighting Fallback (Unlit)',
     'model-material.unlitFallbackTitle': 'Apply lighting fallback?',
-    'model-material.unlitFallbackConfirm': 'This will make the model appear "pseudo-unlit": rendered entirely via ambient and emissive, ignoring directional lights.\\n\\nEffect: Loses 3D shading but stays visible. For models with broken lighting.\\n\\nYou can revert anytime via "Reset All".',
+    'model-material.unlitFallbackConfirm':
+        'This will make the model appear "pseudo-unlit": rendered entirely via ambient and emissive, ignoring directional lights.\\n\\nEffect: Loses 3D shading but stays visible. For models with broken lighting.\\n\\nYou can revert anytime via "Reset All".',
     'model-material.unlitFallbackDone': '✓ Lighting fallback applied',
     'model-material.resetAllDone': '✓ All material params reset',
     'model-material.selectMaterialHint': 'Select a material from the list above to fine-tune',

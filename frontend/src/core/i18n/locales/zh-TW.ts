@@ -215,7 +215,8 @@ export const zhTW: Record<string, string> = {
     'model-material.resetAll': '重設全部材質參數',
     'model-material.unlitFallback': '光照兜底（不受光）',
     'model-material.unlitFallbackTitle': '套用光照兜底？',
-    'model-material.unlitFallbackConfirm': '此操作會讓模型呈現「偽 unlit」狀態：完全靠環境光與自發光呈現，不依賴方向光。\\n\\n效果：失去立體感但保證可見，適用於少數光照異常的模型。\\n\\n可隨時透過「重設全部」恢復。',
+    'model-material.unlitFallbackConfirm':
+        '此操作會讓模型呈現「偽 unlit」狀態：完全靠環境光與自發光呈現，不依賴方向光。\\n\\n效果：失去立體感但保證可見，適用於少數光照異常的模型。\\n\\n可隨時透過「重設全部」恢復。',
     'model-material.unlitFallbackDone': '✓ 已套用光照兜底',
     'model-material.resetAllDone': '✓ 全部材質參數已重設',
     'model-material.selectMaterialHint': '請從上方材質清單中選擇一個材質進行微調',

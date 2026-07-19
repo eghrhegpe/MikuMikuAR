@@ -17,21 +17,18 @@ describe('ADR-130 Phase 2.3: 性能降级 ↔ 反射质量联动', () => {
         const qp = await import('../../scene/render/quality-profile');
         expect(typeof qp.resolveQualityProfile).toBe('function');
         expect(typeof qp.inferQualityProfile).toBe('function');
-        
+
         // 验证 qualityProfile 映射正确
         const high = qp.resolveQualityProfile('high');
         expect(high.reflectionQuality).toBe('high');
-        expect(high.groundReflectionQuality).toBe('high');
         expect(high.cloudQuality).toBe('high');
-        
+
         const medium = qp.resolveQualityProfile('medium');
         expect(medium.reflectionQuality).toBe('medium');
-        expect(medium.groundReflectionQuality).toBe('medium');
         expect(medium.cloudQuality).toBe('high');
-        
+
         const low = qp.resolveQualityProfile('low');
         expect(low.reflectionQuality).toBe('low');
-        expect(low.groundReflectionQuality).toBe('low');
         expect(low.cloudQuality).toBe('standard');
     });
 

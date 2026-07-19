@@ -200,16 +200,28 @@ function ensureActive(modelId: string): void {
 
         const cache = _getArmIkCache(modelId);
         if (cache.l === undefined) {
-            cache.l = matchBone(bones.map((b) => b.name), BONE_ARM_IK_L_CANDIDATES);
+            cache.l = matchBone(
+                bones.map((b) => b.name),
+                BONE_ARM_IK_L_CANDIDATES
+            );
         }
         if (cache.r === undefined) {
-            cache.r = matchBone(bones.map((b) => b.name), BONE_ARM_IK_R_CANDIDATES);
+            cache.r = matchBone(
+                bones.map((b) => b.name),
+                BONE_ARM_IK_R_CANDIDATES
+            );
         }
         if (cache.lRoot === undefined) {
-            cache.lRoot = matchBone(bones.map((b) => b.name), BONE_SHOULDER_L_CANDIDATES);
+            cache.lRoot = matchBone(
+                bones.map((b) => b.name),
+                BONE_SHOULDER_L_CANDIDATES
+            );
         }
         if (cache.rRoot === undefined) {
-            cache.rRoot = matchBone(bones.map((b) => b.name), BONE_SHOULDER_R_CANDIDATES);
+            cache.rRoot = matchBone(
+                bones.map((b) => b.name),
+                BONE_SHOULDER_R_CANDIDATES
+            );
         }
 
         const lRoot = cache.lRoot ?? '左肩';

@@ -171,7 +171,8 @@ async function startProcMotion(
         }
         // [adr-XX per-motion] 程序化 base 走 vmdLayers 管线：写入 vmdData + rebuild
         // 替代旧的直写 loadVMDMotion/setRuntimeAnimation，避免与图层叠加冲突
-        const procVmdName = targetMode === 'autodance' && bpmValid ? PROC_VMD_NAME_AUTODANCE : PROC_VMD_NAME_IDLE;
+        const procVmdName =
+            targetMode === 'autodance' && bpmValid ? PROC_VMD_NAME_AUTODANCE : PROC_VMD_NAME_IDLE;
         inst.vmdData = buf;
         inst.vmdName = procVmdName;
         inst.vmdPath = null; // 程序化无文件路径
@@ -214,9 +215,11 @@ async function startProcMotion(
         if (lastModel) {
             const mode = _refProcState(lastModel).mode === 'autodance' ? 'autodance' : 'idle';
             const bpm = procBeatDetector?.getBPM() ?? 120;
-            void startProcMotion(mode, mode === 'autodance' ? bpm : undefined, lastModel).catch((e) => {
-                logWarn('proc-motion', 'Re-trigger startProcMotion 失败:', e);
-            });
+            void startProcMotion(mode, mode === 'autodance' ? bpm : undefined, lastModel).catch(
+                (e) => {
+                    logWarn('proc-motion', 'Re-trigger startProcMotion 失败:', e);
+                }
+            );
         } else {
             logWarn('proc-motion', 'Re-trigger skipped: no active models');
         }
@@ -234,7 +237,8 @@ export function stopProcMotion(): void {
             // [fix] 若用户已在程序化动作 active 期间加载了真实 VMD（vmdPath 非空），
             // 不可盲目清除 vmdData —— 否则会覆盖用户刚点击的动作。
             // 仅在模型未持有用户真实 VMD 时才清除程序化数据并 rebuild 到静止姿。
-            const userVmdPresent = inst.vmdPath !== null && inst.vmdPath !== undefined && inst.vmdPath !== '';
+            const userVmdPresent =
+                inst.vmdPath !== null && inst.vmdPath !== undefined && inst.vmdPath !== '';
             if (!userVmdPresent) {
                 inst.vmdData = null;
                 inst.vmdName = '';
@@ -282,7 +286,11 @@ export async function updateProcMotion(): Promise<void> {
 
     if (wantAutoDance && !hasUserVmd && procBeatDetector) {
         const bpm = procBeatDetector.getBPM() ?? 120;
-        if (!_procVmdActive() || procActiveKind !== 'autodance' || Math.abs(bpm - lastBeatBpm) > 10) {
+        if (
+            !_procVmdActive() ||
+            procActiveKind !== 'autodance' ||
+            Math.abs(bpm - lastBeatBpm) > 10
+        ) {
             await startProcMotion('autodance', bpm);
         }
         return;
@@ -485,9 +493,7 @@ export function regenerateProcMotion(
     }
     // 以下执行 regenerate（冷启动或热更新均走此路径）
     // [P5 per-slot] 优先使用传入的 modelId；否则回退到焦点
-    const targetModel = modelId
-        ? (modelManager.get(modelId)?.mmdModel ?? null)
-        : focusedMmdModel();
+    const targetModel = modelId ? (modelManager.get(modelId)?.mmdModel ?? null) : focusedMmdModel();
     if (!targetModel) {
         logWarn('proc-motion', 'regenerateProcMotion: 无目标 MMD 模型，跳过');
         return;
@@ -497,7 +503,8 @@ export function regenerateProcMotion(
         _regeneratePending = true;
         return;
     }
-    const mode = _refProcState(modelId).mode === 'autodance' ? ('autodance' as const) : ('idle' as const);
+    const mode =
+        _refProcState(modelId).mode === 'autodance' ? ('autodance' as const) : ('idle' as const);
     // Issue #5: procBeatDetector 可能为 null
     const bpm = procBeatDetector?.getBPM() ?? 120;
     startProcMotion(mode, mode === 'autodance' ? bpm : undefined, modelId);

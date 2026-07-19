@@ -34,7 +34,8 @@ function _getImpl(): MmdWasmPhysicsRuntimeImpl | null {
     if (!(mmdRuntime instanceof MmdWasmRuntime)) {
         return null;
     }
-    const physics = (mmdRuntime as unknown as { physics?: { impl?: MmdWasmPhysicsRuntimeImpl } }).physics;
+    const physics = (mmdRuntime as unknown as { physics?: { impl?: MmdWasmPhysicsRuntimeImpl } })
+        .physics;
     return physics?.impl ?? null;
 }
 

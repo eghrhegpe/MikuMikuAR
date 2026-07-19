@@ -9,7 +9,9 @@ import { FreeCamera } from '@babylonjs/core/Cameras/freeCamera';
 // _envSys 通过 globalThis 共享同对象，与 env-context mock 一致。
 vi.mock('../../scene/env/env-impl', () => {
     if (!(globalThis as any).__waterTestEnvSys) {
-        (globalThis as any).__waterTestEnvSys = { water: { mesh: null as any, material: null as any } };
+        (globalThis as any).__waterTestEnvSys = {
+            water: { mesh: null as any, material: null as any },
+        };
     }
     return {
         _envSys: (globalThis as any).__waterTestEnvSys,
@@ -21,7 +23,9 @@ vi.mock('../../scene/env/env-impl', () => {
 // _envSys 通过 globalThis 共享，确保 test/env-water.ts/env-impl 三方同对象
 vi.mock('../../scene/env/env-context', () => {
     if (!(globalThis as any).__waterTestEnvSys) {
-        (globalThis as any).__waterTestEnvSys = { water: { mesh: null as any, material: null as any } };
+        (globalThis as any).__waterTestEnvSys = {
+            water: { mesh: null as any, material: null as any },
+        };
     }
     return {
         _envSys: (globalThis as any).__waterTestEnvSys,

@@ -218,7 +218,8 @@ export const ja: Record<string, string> = {
     'model-material.resetAll': 'すべてのマテリアルパラメータをリセット',
     'model-material.unlitFallback': 'ライティングフォールバック（Unlit）',
     'model-material.unlitFallbackTitle': 'ライティングフォールバックを適用しますか？',
-    'model-material.unlitFallbackConfirm': 'モデルを「疑似 Unlit」状態にします：環境光とエミッシブのみで描画し、方向光に依存しません。\\n\\n効果：立体感を失いますが常に表示されます。照明が壊れた少数モデル用。\\n\\n「すべてリセット」でいつでも戻せます。',
+    'model-material.unlitFallbackConfirm':
+        'モデルを「疑似 Unlit」状態にします：環境光とエミッシブのみで描画し、方向光に依存しません。\\n\\n効果：立体感を失いますが常に表示されます。照明が壊れた少数モデル用。\\n\\n「すべてリセット」でいつでも戻せます。',
     'model-material.unlitFallbackDone': '✓ ライティングフォールバックを適用しました',
     'model-material.resetAllDone': '✓ すべてのマテリアルパラメータをリセットしました',
     'model-material.selectMaterialHint': '上部のリストからマテリアルを選択して微調整',
@@ -880,7 +881,8 @@ export const ja: Record<string, string> = {
     'library.scanning': 'スキャン中...',
     'library.scanningDir': '⏳ {dir} をスキャン中…',
     'library.scanningDirWithWait': '⏳ {dir} をスキャン中…（{sec}秒待機）',
-    'library.scanTimeout': '⚠ スキャンタイムアウト（{dir}）。データ未準備の可能性。フォルダを手動クリックして展開してください',
+    'library.scanTimeout':
+        '⚠ スキャンタイムアウト（{dir}）。データ未準備の可能性。フォルダを手動クリックして展開してください',
     'library.expanded': '✓ {dir} を展開しました',
     'library.scanFailed': '✗ スキャンに失敗しました',
     'library.entriesCount': '✓ {n} 件のエントリ',

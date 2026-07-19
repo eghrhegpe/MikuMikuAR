@@ -323,39 +323,163 @@ vi.mock('../scene/env/env-impl', () => ({
 }));
 
 // [ADR-138] mock env-dispatcher: dispatchEnvChange delegates to impl mocks
-const _SKY_KEYS_M = ['skyMode', 'skyColorTop', 'skyColorMid', 'skyColorBot', 'skyTexture', 'skyRotationY', 'skyRotationSpeed', 'skyBrightness', 'starsEnabled', 'starsTexture', 'envIntensity', 'sunAngle', 'azimuth'];
-const _GROUND_KEYS_M = ['groundType', 'groundStyle', 'groundColor', 'groundColor2', 'groundTexture', 'groundLevel', 'groundPitch', 'groundRoll', 'groundScrollSpeedX', 'groundScrollSpeedZ', 'groundTileScale', 'groundReflectionEnabled', 'groundReflectionQuality', 'groundEdgeFadeStart', 'groundEdgeFadeEnd', 'groundContactShadowEnabled', 'groundContactShadowIntensity', 'groundContactShadowDistance', 'terrainHeight', 'terrainScale', 'terrainSeed', 'terrainOctaves', 'groundGradient', 'groundFade', 'groundCheckerColor1', 'groundCheckerColor2', 'groundMode', 'groundVisible', 'groundAlpha', 'groundTextureEnabled', 'groundTextureScale', 'groundTextureRotation', 'groundTerrainHeight', 'groundTerrainScale', 'groundTerrainSeed', 'groundTerrainOctaves', 'groundSize', 'groundGridSize', 'groundLineColor', 'groundEdgeFade', 'groundPattern', 'groundReflectionBlend', 'groundNormalTexture', 'groundNormalStrength', 'groundElevationColoring'];
+const _SKY_KEYS_M = [
+    'skyMode',
+    'skyColorTop',
+    'skyColorMid',
+    'skyColorBot',
+    'skyTexture',
+    'skyRotationY',
+    'skyRotationSpeed',
+    'skyBrightness',
+    'starsEnabled',
+    'starsTexture',
+    'envIntensity',
+    'sunAngle',
+    'azimuth',
+];
+const _GROUND_KEYS_M = [
+    'groundType',
+    'groundStyle',
+    'groundColor',
+    'groundColor2',
+    'groundTexture',
+    'groundLevel',
+    'groundPitch',
+    'groundRoll',
+    'groundScrollSpeedX',
+    'groundScrollSpeedZ',
+    'groundTileScale',
+    'groundReflectionEnabled',
+    'groundReflectionQuality',
+    'groundEdgeFadeStart',
+    'groundEdgeFadeEnd',
+    'groundContactShadowEnabled',
+    'groundContactShadowIntensity',
+    'groundContactShadowDistance',
+    'terrainHeight',
+    'terrainScale',
+    'terrainSeed',
+    'terrainOctaves',
+    'groundGradient',
+    'groundFade',
+    'groundCheckerColor1',
+    'groundCheckerColor2',
+    'groundMode',
+    'groundVisible',
+    'groundAlpha',
+    'groundTextureEnabled',
+    'groundTextureScale',
+    'groundTextureRotation',
+    'groundTerrainHeight',
+    'groundTerrainScale',
+    'groundTerrainSeed',
+    'groundTerrainOctaves',
+    'groundSize',
+    'groundGridSize',
+    'groundLineColor',
+    'groundEdgeFade',
+    'groundPattern',
+    'groundReflectionBlend',
+    'groundNormalTexture',
+    'groundNormalStrength',
+    'groundElevationColoring',
+];
 const _FOG_KEYS_M = ['fogEnabled', 'fogColor', 'fogDensity', 'fogMode', 'fogStart', 'fogEnd'];
-const _WATER_KEYS_M = ['waterEnabled', 'waterColor', 'waterOpacity', 'waterLevel', 'waterWaveSpeed', 'waterWaveHeight', 'waterWaveLength', 'waterReflectionEnabled', 'waterReflectionQuality', 'waterRefraction', 'waterRefractionIndex', 'waterFoamEnabled', 'waterFoamIntensity', 'waterCausticsEnabled', 'waterCausticsIntensity', 'underwaterStrength', 'waterPresetName', 'waterAnimSpeed', 'environmentPreset'];
-const _PARTICLE_KEYS_M = ['particleEnabled', 'particleType', 'particleDensity', 'particleSize', 'particleSpeed', 'particleEmitRate', 'particleSplash', 'particleCustomTexture', 'windEnabled', 'windStrength', 'windDirection'];
-const _CLOUD_KEYS_M = ['cloudsEnabled', 'cloudCover', 'cloudSpeed', 'cloudHeight', 'cloudDensity', 'cloudLightAttenuation'];
+const _WATER_KEYS_M = [
+    'waterEnabled',
+    'waterColor',
+    'waterOpacity',
+    'waterLevel',
+    'waterWaveSpeed',
+    'waterWaveHeight',
+    'waterWaveLength',
+    'waterReflectionEnabled',
+    'waterReflectionQuality',
+    'waterRefraction',
+    'waterRefractionIndex',
+    'waterFoamEnabled',
+    'waterFoamIntensity',
+    'waterCausticsEnabled',
+    'waterCausticsIntensity',
+    'underwaterStrength',
+    'waterPresetName',
+    'waterAnimSpeed',
+    'environmentPreset',
+];
+const _PARTICLE_KEYS_M = [
+    'particleEnabled',
+    'particleType',
+    'particleDensity',
+    'particleSize',
+    'particleSpeed',
+    'particleEmitRate',
+    'particleSplash',
+    'particleCustomTexture',
+    'windEnabled',
+    'windStrength',
+    'windDirection',
+];
+const _CLOUD_KEYS_M = [
+    'cloudsEnabled',
+    'cloudCover',
+    'cloudSpeed',
+    'cloudHeight',
+    'cloudDensity',
+    'cloudLightAttenuation',
+];
 
 vi.mock('../scene/env/env-dispatcher', () => ({
     dispatchEnvChange: vi.fn((changed, state) => {
         const c = changed ? [...changed] : null;
-        try { if (!c || _SKY_KEYS_M.some(k => c.includes(k))) mockImplApplySky(state); } catch (_) {}
-        try { if (!c || _GROUND_KEYS_M.some(k => c.includes(k))) mockImplApplyGround(state); } catch (_) {}
-        try { if (!c || _FOG_KEYS_M.some(k => c.includes(k))) mockImplApplyFog(state); } catch (_) {}
         try {
-            if (!c || _WATER_KEYS_M.some(k => c.includes(k))) {
-                if (state.waterEnabled) mockImplCreateWater(state);
-                else mockImplDisposeWater();
+            if (!c || _SKY_KEYS_M.some((k) => c.includes(k))) {
+                mockImplApplySky(state);
             }
         } catch (_) {}
         try {
-            if (!c || _PARTICLE_KEYS_M.some(k => c.includes(k))) {
-                if (state.particleEnabled && state.particleType && state.particleType !== 'none') mockImplCreateParticleEmitter(state.particleType, state.windEnabled);
-                else mockImplDisposeParticles();
+            if (!c || _GROUND_KEYS_M.some((k) => c.includes(k))) {
+                mockImplApplyGround(state);
             }
         } catch (_) {}
         try {
-            if (!c || _CLOUD_KEYS_M.some(k => c.includes(k))) {
-                if (state.cloudsEnabled) mockImplCreateClouds(state);
-                else mockImplDisposeClouds();
+            if (!c || _FOG_KEYS_M.some((k) => c.includes(k))) {
+                mockImplApplyFog(state);
+            }
+        } catch (_) {}
+        try {
+            if (!c || _WATER_KEYS_M.some((k) => c.includes(k))) {
+                if (state.waterEnabled) {
+                    mockImplCreateWater(state);
+                } else {
+                    mockImplDisposeWater();
+                }
+            }
+        } catch (_) {}
+        try {
+            if (!c || _PARTICLE_KEYS_M.some((k) => c.includes(k))) {
+                if (state.particleEnabled && state.particleType && state.particleType !== 'none') {
+                    mockImplCreateParticleEmitter(state.particleType, state.windEnabled);
+                } else {
+                    mockImplDisposeParticles();
+                }
+            }
+        } catch (_) {}
+        try {
+            if (!c || _CLOUD_KEYS_M.some((k) => c.includes(k))) {
+                if (state.cloudsEnabled) {
+                    mockImplCreateClouds(state);
+                } else {
+                    mockImplDisposeClouds();
+                }
             }
         } catch (_) {}
     }),
     registerEnvCallback: vi.fn(() => vi.fn()),
+    registerSceneTickCallback: mockRegisterSceneTickCallback,
+    clearSceneTickCallbacks: vi.fn(),
+    runSceneTickCallbacks: vi.fn(),
+    clearAllEnvCallbacks: vi.fn(),
 }));
 
 vi.mock('../scene/render/lighting', () => {

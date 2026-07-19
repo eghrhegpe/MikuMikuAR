@@ -259,10 +259,7 @@ let _thumbAbortController: AbortController | null = null;
  * @param signal 外部取消信号。传入后，abort 时协作式停止：不再处理剩余 key、
  *               且丢弃已拉取但未写入的过期结果。与内部「当前批次」控制器合并，两者任一 abort 即生效。
  */
-export async function loadThumbnailsStreaming(
-    keys: string[],
-    signal?: AbortSignal
-): Promise<void> {
+export async function loadThumbnailsStreaming(keys: string[], signal?: AbortSignal): Promise<void> {
     if (keys.length === 0) {
         return;
     }
@@ -511,12 +508,23 @@ function renderItemsWithRAF(
         const stack = targetStack || stackRegistry.modelStack;
         const outcome = stack?.currentLevel?.outcome ?? { mode: 'close' as const };
         if (item.kind === 'folder') {
-            const next = buildLevel(item.target, item.label, filter, targetStack, undefined, outcome);
+            const next = buildLevel(
+                item.target,
+                item.label,
+                filter,
+                targetStack,
+                undefined,
+                outcome
+            );
             stack?.push(next);
         } else if (item.model) {
             // [doc:adr-131] 连续预览：加载后保持浏览器打开，不收起 overlay
             if (item.model.format === 'vmd' && outcome.mode === 'stay') {
-                loadManager.load({ kind: 'vmd', path: item.model.file_path, modelId: outcome.modelId });
+                loadManager.load({
+                    kind: 'vmd',
+                    path: item.model.file_path,
+                    modelId: outcome.modelId,
+                });
                 return;
             }
             // [doc:adr-131] 替换模式：显式传 jumpToDir modelId，取代 modelReplaceTargetId 全局反推
@@ -558,7 +566,8 @@ function renderItemsWithRAF(
     if (items.length === 0) {
         const empty = document.createElement('div');
         empty.className = 'slide-empty';
-        empty.style.cssText = 'padding:24px;text-align:center;color:var(--text-muted);font-size:13px;';
+        empty.style.cssText =
+            'padding:24px;text-align:center;color:var(--text-muted);font-size:13px;';
         empty.textContent = t('library.noModels');
         card.appendChild(empty);
         return;
@@ -705,9 +714,14 @@ function renderGridMode(
                 }
                 // [doc:adr-131] 网格模式也读取 outcome，stay 时不关闭 browser
                 if (m.format === 'vmd') {
-                    const outcome = (targetStack || stackRegistry.modelStack)?.currentLevel?.outcome;
+                    const outcome = (targetStack || stackRegistry.modelStack)?.currentLevel
+                        ?.outcome;
                     if (outcome?.mode === 'stay') {
-                        loadManager.load({ kind: 'vmd', path: m.file_path, modelId: outcome.modelId });
+                        loadManager.load({
+                            kind: 'vmd',
+                            path: m.file_path,
+                            modelId: outcome.modelId,
+                        });
                         return;
                     }
                     replaceMotion(m);

@@ -3,7 +3,7 @@
 // 职责: envAutoLink、太阳角、时间流转、环境预设、setEnvState、重力控制
 // 注意: 从 scene.ts 静态导入但仅在函数体内访问，ES module live binding 保证安全。
 
-import { SetEnvState, SetUIState } from '@/core/wails-bindings';
+import { SetEnvState, SetUIState, type UIState } from '@/core/wails-bindings';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
@@ -20,17 +20,13 @@ import {
     logWarn,
     DebouncedTimer,
 } from '@/core/utils';
-import {
-    DEFAULT_GRAVITY,
-    ENV_LIGHT_MAX,
-    AUTO_LINK_THRESHOLD_DEG,
-} from '@/core/ui-constants';
+import { DEFAULT_GRAVITY, ENV_LIGHT_MAX, AUTO_LINK_THRESHOLD_DEG } from '@/core/ui-constants';
 import { col3FromTriple } from '@/core/color-helpers';
 import { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
 import { applyGroundCollision } from '../physics/ground-collision';
 import { deriveLighting, TIME_OF_DAY_PRESETS, type CategorizedEnvPreset } from './env-lighting';
-import * as impl from './env-impl';
-import { dispatchEnvChange } from './env-dispatcher';
+import { ensureEnvUpdateObserver } from './env-impl';
+import { dispatchEnvChange, registerSceneTickCallback } from './env-dispatcher';
 import {
     setLightState,
     getLightState,
@@ -73,12 +69,16 @@ const _CONTACT_SHADOW_KEYS = [
     'groundContactShadowEnabled',
     'groundContactShadowIntensity',
     'groundContactShadowDistance',
-    'groundReflectionQuality',
 ];
 
 /** 等同于 scene-env.ts 的 applyEnvState，但避免循环依赖。 */
 function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): void {
     const changed = partial ? new Set(Object.keys(partial)) : null;
+
+    // 统一反射质量：reflectionQuality 变化时同步 groundReflectionQuality（Go binding 兼容）
+    if (partial?.reflectionQuality !== undefined) {
+        state.groundReflectionQuality = partial.reflectionQuality;
+    }
 
     // [ADR-138] 通过 env-dispatcher 分发变化给各子系统，破除 env-bridge → env-impl 循环依赖
     dispatchEnvChange(changed, state);
@@ -269,9 +269,9 @@ export function startTimeOfDay(speed?: number): void {
     _timeOfDayPaused = false;
     _lastSkySunAngle = envSunAngle;
     _lastAutoLinkSunAngle = envSunAngle;
-    // 使用 impl 的统一 observer 注册表，避免多个独立的 scene observer
-    impl.ensureEnvUpdateObserver(); // 确保 impl 的 observer 已初始化
-    _unregisterTimeOfDay = impl.registerSceneTickCallback(_timeOfDayTick);
+    // 使用 env-dispatcher 的统一 observer 注册表，避免多个独立的 scene observer
+    ensureEnvUpdateObserver(); // 确保 impl 的 observer 已初始化
+    _unregisterTimeOfDay = registerSceneTickCallback(_timeOfDayTick);
 }
 
 export function stopTimeOfDay(): void {
@@ -513,7 +513,9 @@ type Migrator = (raw: Record<string, unknown>, out: Record<string, unknown>) => 
  * 现拆分为 groundType(flat|terrain) + groundStyle(solid|grid|checker|texture)。
  */
 function migrateGroundMode(raw: Record<string, unknown>, out: Record<string, unknown>): boolean {
-    if (typeof raw.groundMode !== 'string') return false;
+    if (typeof raw.groundMode !== 'string') {
+        return false;
+    }
     const m = raw.groundMode;
     if (m === 'heightmap') {
         out.groundType = 'terrain';
@@ -530,21 +532,20 @@ function migrateGroundMode(raw: Record<string, unknown>, out: Record<string, unk
  * 旧 scene preset / config.json 含 debugMirrorEnabled 字段兼容。
  */
 function migrateDebugMirror(raw: Record<string, unknown>, out: Record<string, unknown>): boolean {
-    if (typeof raw.debugMirrorEnabled !== 'boolean') return false;
+    if (typeof raw.debugMirrorEnabled !== 'boolean') {
+        return false;
+    }
     out.mirrorEnabled = raw.debugMirrorEnabled;
     delete out.debugMirrorEnabled;
     return true;
 }
 
 /** 迁移注册表：新增迁移在此追加。 */
-const _migrators: Migrator[] = [
-    migrateGroundMode,
-    migrateDebugMirror,
-];
+const _migrators: Migrator[] = [migrateGroundMode, migrateDebugMirror];
 
 function migrateEnvState(input: Partial<EnvState>): Partial<EnvState> {
     const raw = input as Record<string, unknown>;
-    let out = { ...raw } as Record<string, unknown>;
+    const out = { ...raw } as Record<string, unknown>;
     let migrated = false;
     for (const m of _migrators) {
         if (m(raw, out)) {
@@ -575,8 +576,7 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
     // 仅当变更来自用户（非自动降级）且当前为 auto 模式时，切换到 custom 模式
     if (!isAutoDegradingReflection() && getPerformanceMode() === 'auto') {
         const hasReflectionChange =
-            migrated.reflectionQuality !== undefined ||
-            migrated.groundReflectionQuality !== undefined;
+            migrated.reflectionQuality !== undefined;
         if (hasReflectionChange) {
             setPerformanceMode('custom');
         }
@@ -638,6 +638,19 @@ export function schedulePersistUI(): void {
     _uiPersistTimer.schedule(() => flushUIState(), 500);
 }
 
+/** 与 persistEnvState 对称：持久化 UI state，统一错误上报。收敛 flushUIState 内裸 .catch。
+ *
+ * Go 端 SetUIState 语义是 json.Unmarshal 合并（缺省字段保留原值），
+ * 但类型声明是完整 UIState。payload 用 Partial<UIState> 表达部分字段，
+ * 强转后传入是安全的。
+ */
+function persistUIState(payload: Partial<UIState>): void {
+    SetUIState(payload as unknown as UIState).catch((err) => {
+        logWarn('persistUIState', 'persist failed', err);
+        setStatus(t_i18n('env.persistFailed'), false);
+    });
+}
+
 /** 立即刷写 UI state 到后端（无防抖）。关闭/隐藏页面时调用。 */
 export function flushUIState(): void {
     console.info('[ui-persist] flushUIState() — immediate flush');
@@ -646,12 +659,7 @@ export function flushUIState(): void {
     if (Object.keys(payload).length === 0) {
         return;
     } // nothing to persist
-    // Go 端 SetUIState 语义是 json.Unmarshal 合并（缺省字段保留原值），
-    // 但类型声明是完整 UIState。此处强转后传入部分字段是安全的。
-    SetUIState(payload as unknown as import('../../core/wails-bindings').UIState).catch((err) => {
-        logWarn('flushUIState', 'persist failed', err);
-        setStatus(t_i18n('env.persistFailed'), false);
-    });
+    persistUIState(payload);
 }
 
 // 注册持久化回调（state.ts → 本模块，避免循环依赖）

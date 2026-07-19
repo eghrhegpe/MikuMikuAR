@@ -17,11 +17,7 @@ import {
     sliderRow as sliderRowFn,
     toggleRow as toggleRowFn,
 } from '../core/ui-helpers';
-import {
-    addColorSliderRow,
-    addVector3SliderRow,
-    addModeSlider,
-} from '../core/ui-advanced-rows';
+import { addColorSliderRow, addVector3SliderRow, addModeSlider } from '../core/ui-advanced-rows';
 
 const mockIconify = vi.mocked(createIconifyIcon);
 

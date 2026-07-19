@@ -297,12 +297,24 @@ function _applyRenderState(s: Partial<RenderState>): void {
     // 实时同步到 _originalRenderState，关闭时恢复的就是用户调过的最新意图，
     // 而非开启前的旧快照。修掉原限制 #3「手动调参被丢弃」。
     if (_celShadingMode && s.celShadingMode === undefined && _originalRenderState) {
-        if (s.exposure !== undefined) _originalRenderState.exposure = s.exposure;
-        if (s.contrast !== undefined) _originalRenderState.contrast = s.contrast;
-        if (s.toneMapping !== undefined) _originalRenderState.toneMapping = s.toneMapping;
-        if (s.bloomEnabled !== undefined) _originalRenderState.bloomEnabled = s.bloomEnabled;
-        if (s.bloomWeight !== undefined) _originalRenderState.bloomWeight = s.bloomWeight;
-        if (s.fxaaEnabled !== undefined) _originalRenderState.fxaaEnabled = s.fxaaEnabled;
+        if (s.exposure !== undefined) {
+            _originalRenderState.exposure = s.exposure;
+        }
+        if (s.contrast !== undefined) {
+            _originalRenderState.contrast = s.contrast;
+        }
+        if (s.toneMapping !== undefined) {
+            _originalRenderState.toneMapping = s.toneMapping;
+        }
+        if (s.bloomEnabled !== undefined) {
+            _originalRenderState.bloomEnabled = s.bloomEnabled;
+        }
+        if (s.bloomWeight !== undefined) {
+            _originalRenderState.bloomWeight = s.bloomWeight;
+        }
+        if (s.fxaaEnabled !== undefined) {
+            _originalRenderState.fxaaEnabled = s.fxaaEnabled;
+        }
     }
 
     // 数值钳制（全部 0-1 归一化范围）
@@ -731,7 +743,7 @@ export function setContactShadow(state: EnvState): void {
 
     // 中/高质量守卫：low/off 时自动关闭
     const qualityOk =
-        state.groundReflectionQuality === 'medium' || state.groundReflectionQuality === 'high';
+        state.reflectionQuality === 'medium' || state.reflectionQuality === 'high';
     const shouldEnable = state.groundContactShadowEnabled && qualityOk;
 
     if (shouldEnable) {

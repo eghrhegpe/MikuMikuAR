@@ -108,8 +108,12 @@ export function beatBounce(beatPhase: number): number {
  * 制造节奏层次，打破「每拍都一样」的机械重复。
  */
 export function downbeatWeight(beatInLoop: number): number {
-    if (beatInLoop % 4 === 0) return 1.0;
-    if (beatInLoop % 2 === 0) return 0.8;
+    if (beatInLoop % 4 === 0) {
+        return 1.0;
+    }
+    if (beatInLoop % 2 === 0) {
+        return 0.8;
+    }
     return 0.55;
 }
 
