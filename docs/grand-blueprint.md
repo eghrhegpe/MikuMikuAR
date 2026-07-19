@@ -48,6 +48,8 @@
 
 ---
 
+## 二、大统一作战方案
+
 ### 阶段 0：破循环（前置条件，无依赖）
 
 > ⚠️ 必须先于其他阶段执行。循环依赖不解除，后续拆分都会遇到编译障碍。
@@ -116,9 +118,7 @@
 
 ---
 
-## 二、大统一作战方案
-
-### 阶段 A：状态基座重构（core/state.ts 拆分）
+### 阶段 3：状态基座重构（core/state.ts 拆分）
 
 **目标**: 438 行 → 4 个独立 store，每个 ≤120 行
 
@@ -135,8 +135,8 @@ core/state.ts (438 行)
 **迁移策略**:
 1. 新建 4 文件，逐变量搬迁（保留 setter 签名不变）
 2. `config.ts` barrel re-export 保持兼容
-2. 外部 import 路径零变化（`from '@/core/config'` → 仍指向 barrel）
-3. 后续 ADR 直接操作对应 store，不再膨胀 state.ts
+3. 外部 import 路径零变化（`from '@/core/config'` → 仍指向 barrel）
+4. 后续 ADR 直接操作对应 store，不再膨胀 state.ts
 
 **预期收益**:
 - 状态归属清晰：scene 模块只 import scene-state
@@ -145,7 +145,7 @@ core/state.ts (438 行)
 
 ---
 
-### 阶段 B：消灭 WASM/JS 双模式
+### 阶段 4：消灭 WASM/JS 双模式
 
 **目标**: 删除 `perception-gaze-js.ts` + `perception-gaze-wasm.ts` → 单一 `perception-gaze.ts`
 
@@ -167,7 +167,7 @@ core/state.ts (438 行)
 
 ---
 
-### 阶段 C：env-bridge.ts 瘦身
+### 阶段 5：env-bridge.ts 瘦身
 
 **目标**: 771 行 → 拆分为 3 个 ≤250 行的专注模块
 
@@ -186,7 +186,7 @@ env-bridge.ts (771 行)
 
 ---
 
-### 阶段 D：亮度统一标量（ADR-132 落地）
+### 阶段 6：亮度统一标量（ADR-132 落地）
 
 **目标**: 5 旋钮 → 1 主标量 + 4 风格化乘子
 
@@ -210,18 +210,7 @@ const effectiveHemi  = hemiIntensity  * EB;    // 半球补光
 
 ---
 
-### 阶段 E：文档与工具链治理
-
-| 动作 | 目标 |
-|------|------|
-| 更新 `function-map.md` | 移除 XPBD 条目，修正 main.ts 拆分后入口，标注各文件 ADR 来源 |
-| 新建 `docs/state-map.md` | 状态变量 → store 文件 → 写入点 → 订阅者 四列映射 |
-| 补充 `create/dispose` 配对清单 | 纳入 CI 检查（防止新增 Babylon 对象无释放） |
-| 缩略图缓存 LRU | `thumbnailCache` 上限 200 条，超出淘汰最久未使用 |
-
----
-
-### 阶段 5：加载状态机统一
+### 阶段 7：加载状态机统一
 
 **目标**: 31 处 `setStatus→await→setStatus` → 1 个包装器
 
@@ -242,7 +231,7 @@ const effectiveHemi  = hemiIntensity  * EB;    // 半球补光
 
 ---
 
-### 阶段 6：文档治理 + 收尾
+### 阶段 8：文档治理 + 收尾
 
 **目标**: AI 导航图对齐；收尾低优先级项
 
@@ -272,15 +261,15 @@ Week 1 (2026-07-19 ~ 2026-07-25) — 破循环 + 立基础设施
 
 Week 2 (2026-07-26 ~ 2026-08-01) — 统一输入 + 状态拆分
 ├── [P1] 阶段 2: DragSliderController 统一滑块
-├── [P1] 阶段 A: state.ts 拆分 4 store
-├── [P1] 阶段 B: 消灭 WASM/JS 双模式
+├── [P1] 阶段 3: state.ts 拆分 4 store
+├── [P1] 阶段 4: 消灭 WASM/JS 双模式
 └── 提交: refactor: 滑块统一 + state 基座拆分 + 消灭双模式
 
 Week 3 (2026-08-02 ~ 2026-08-08) — 环境系统 + 加载 + 收尾
-├── [P1] 阶段 C: env-bridge 拆分（time-of-day / persist / lighting-link）
-├── [P2] 阶段 D: 亮度统一标量（ADR-132）
-├── [P2] 阶段 5: withStatus 加载状态机
-├── [P3] 阶段 6: 文档治理 + 低优先级收尾
+├── [P1] 阶段 5: env-bridge 拆分（time-of-day / persist / lighting-link）
+├── [P2] 阶段 6: 亮度统一标量（ADR-132）
+├── [P2] 阶段 7: withStatus 加载状态机
+├── [P3] 阶段 8: 文档治理 + 低优先级收尾
 └── 提交: feat: env-bridge 拆分 + 亮度统一 + 加载状态机 + 文档治理
 ```
 
@@ -293,12 +282,12 @@ Week 3 (2026-08-02 ~ 2026-08-08) — 环境系统 + 加载 + 收尾
 | 0 | 破循环 | `dpdm` 0 循环；测试全绿 |
 | 1 | Observer | add/remove 100% 配对；metadata 0 observer |
 | 2 | 滑块 | 4 builder 行为一致；单测覆盖 |
-| A | state.ts 拆分 | `core/state.ts` ≤ 80 行；4 个新 store 文件各 ≤ 120 行 |
-| B | 消灭双模式 | `perception-gaze-js.ts` 不存在；`VITE_MMD_RUNTIME=js` 分支全删；gaze 单测全绿 |
-| C | env-bridge 瘦身 | `env-bridge.ts` ≤ 250 行；3 个新文件各 ≤ 250 行；循环依赖解除 |
-| D | 亮度统一 | 5 个消费点统一乘 `EB`；UI 主滑块生效；默认观感零变化 |
-| 5 | 加载 | withStatus 单一入口；错误文案统一 |
-| 6 | 文档 | function-map 无过时；state-map 100% 覆盖 |
+| 3 | state.ts 拆分 | `core/state.ts` ≤ 80 行；4 个新 store 文件各 ≤ 120 行 |
+| 4 | 消灭双模式 | `perception-gaze-js.ts` 不存在；`VITE_MMD_RUNTIME=js` 分支全删；gaze 单测全绿 |
+| 5 | env-bridge 瘦身 | `env-bridge.ts` ≤ 250 行；3 个新文件各 ≤ 250 行；循环依赖解除 |
+| 6 | 亮度统一 | 5 个消费点统一乘 `EB`；UI 主滑块生效；默认观感零变化 |
+| 7 | 加载 | withStatus 单一入口；错误文案统一 |
+| 8 | 文档 | function-map 无过时；state-map 100% 覆盖 |
 
 ---
 
@@ -323,11 +312,11 @@ Week 3 (2026-08-02 ~ 2026-08-08) — 环境系统 + 加载 + 收尾
 | 0 | ADR-138 | env-dispatcher 破循环 |
 | 1 | ADR-139 | ObserverRegistry 生命周期 |
 | 2 | ADR-140 | DragSliderController 统一 |
-| A | ADR-141 | state.ts 拆分 |
-| B | （无需新增） | gaze 双模式收敛 |
-| C | ADR-143 | env-bridge 拆分 |
-| D | ADR-132 | 亮度统一标量 |
-| 5 | ADR-142 | withStatus 加载状态机 |
+| 3 | ADR-141 | state.ts 拆分 |
+| 4 | （无需新增） | gaze 双模式收敛 |
+| 5 | ADR-143 | env-bridge 拆分 |
+| 6 | ADR-132 | 亮度统一标量 |
+| 7 | ADR-142 | withStatus 加载状态机 |
 
 ---
 
