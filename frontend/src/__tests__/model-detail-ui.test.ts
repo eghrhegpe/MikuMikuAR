@@ -202,7 +202,7 @@ vi.mock('../motion/lipsync', () => ({
 vi.mock('../motion/procedural-motion', () => ({
     ProcMotionState: {},
     ProcMotionMode: {},
-    DEFAULT_PROC_STATE: { mode: 'off', intensity: 0.5, speed: 1, autoSwitch: false },
+    DEFAULT_PROC_STATE: { mode: 'off', intensity: 0.5, speed: 1 },
     generateIdleVmd: () => new ArrayBuffer(100),
     generateAutoDanceVmd: () => new ArrayBuffer(100),
     shouldAutoDance: () => false,
