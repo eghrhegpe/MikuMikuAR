@@ -414,4 +414,5 @@ export const envState: EnvState = reactive<EnvState>({
     // [adr-074] 平面反射孤儿字段（当前无消费方，仅满足 EnvState 类型约束）
     planarReflectBlend: 0.5,
     reflectionQuality: 'off',
+    qualityProfile: 'high',
 });

@@ -567,6 +567,8 @@ export interface EnvState {
 
     planarReflectBlend: number;
     reflectionQuality: 'high' | 'medium' | 'low' | 'off';
+    /** ADR-130 Phase 2.3: 统一质量档位，作为所有可伸缩质量的聚合源 */
+    qualityProfile: 'high' | 'medium' | 'low';
 
     waterFogColor: [number, number, number];
     waterFogDensity: number;

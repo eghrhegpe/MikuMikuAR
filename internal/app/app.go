@@ -457,6 +457,7 @@ type EnvState struct {
 	GroundProceduralScale    float64 `json:"groundProceduralScale"`
 	GroundRoughness          float64 `json:"groundRoughness"`
 	GroundMetallic           float64 `json:"groundMetallic"`
+	GroundInfinite           bool    `json:"groundInfinite"`
 	// ADR-114 Phase 2: 反射模糊 + 法线扭曲
 	GroundReflectionBlur     float64 `json:"groundReflectionBlur"`
 	GroundReflectionDistort  float64 `json:"groundReflectionDistort"`
@@ -494,6 +495,8 @@ type EnvState struct {
 	ReflectionQuality string  `json:"reflectionQuality"`
 	// ADR-115: 平面反射混合度，对应 TS planarReflectBlend
 	PlanarReflectBlend float64 `json:"planarReflectBlend"`
+	// ADR-130 Phase 2.3: 统一质量档位
+	QualityProfile string `json:"qualityProfile"`
 
 	// 水面高级着色器参数（持久化，避免材质重建时重置）
 	FresnelBias           float64    `json:"fresnelBias"`
