@@ -61,6 +61,8 @@ import {
     setModelBoneJointsVis,
     setModelPhysics,
     loadVMDFromPath,
+    getMatState,
+    applyMatState,
     LightState,
     StageLightState,
     RenderState,
@@ -70,6 +72,7 @@ import {
     setModelFormation,
     disposeScene,
 } from './scene';
+import type { MaterialCategoryParams } from './manager/material';
 import { removeProp, loadProp, setPropTransform, setPropOrbit } from './env/props';
 import {
     setEnvState,
@@ -264,6 +267,13 @@ export interface SceneFile {
                 source: 'vmd' | 'retargeted';
             };
         };
+        /** [fix:material-persist] 材质状态（分类调整 + 逐材质覆盖 + 启用标记）。
+         *  - categories: 6 类（皮肤/头发/眼睛/服装/配件/道具）的标量乘率
+         *  - overrides: 按 matIndex 索引的逐材质覆盖（同模型才有效，跨模型靠 categories 兜底）
+         *  - enabled: 按 matIndex 索引的可见性开关 */
+        materialCategories?: Record<string, MaterialCategoryParams>;
+        materialOverrides?: Record<number, MaterialCategoryParams>;
+        materialEnabled?: Record<number, boolean>;
     }>;
     camera: CameraState;
     lights: LightState;
@@ -429,6 +439,18 @@ export function serializeScene(): SceneFile {
                           },
                       }
                     : undefined,
+            // [fix:material-persist] 落盘材质状态（仅非 null 才写，避免默认值噪声）
+            ...(() => {
+                const ms = getMatState(inst.id);
+                if (!ms) {
+                    return {};
+                }
+                return {
+                    materialCategories: ms.categories,
+                    materialOverrides: ms.overrides,
+                    materialEnabled: ms.enabled,
+                };
+            })(),
         };
     });
     return {
@@ -799,6 +821,23 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                 }
             } catch (err) {
                 logWarn('scene-serialize', `场景恢复: 模型 ${m.name} 动作覆盖模块恢复失败:`, err);
+            }
+        }
+        // [fix:material-persist] 恢复材质状态（categories + overrides + enabled）
+        // _capture 已在 model-loader.ts 加载时调用，_origValues 就绪，可安全 apply
+        if (
+            m.materialCategories ||
+            m.materialOverrides ||
+            m.materialEnabled
+        ) {
+            try {
+                applyMatState(id, {
+                    categories: m.materialCategories,
+                    overrides: m.materialOverrides,
+                    enabled: m.materialEnabled,
+                });
+            } catch (err) {
+                logWarn('scene-serialize', `场景恢复: 模型 ${m.name} 材质状态恢复失败:`, err);
             }
         }
     }

@@ -619,7 +619,7 @@ export const en: Record<string, string> = {
     'scene.toneMapping': 'Tone Mapping',
     'scene.exposure': 'Exposure',
     'scene.contrast': 'Contrast',
-    'scene.celShading': 'Cel-shading',
+    'scene.celShading': 'Soft toning',
 
     // —— Stage levels ——
     'scene.loadedStages': 'Loaded Stages',
@@ -907,6 +907,10 @@ export const en: Record<string, string> = {
     'model-material.shown': '✓ Shown: {name}',
     'model-material.hidden': '✕ Hidden: {name}',
     'model-material.resetAll': 'Reset All Material Params',
+    'model-material.unlitFallback': 'Lighting Fallback (Unlit)',
+    'model-material.unlitFallbackTitle': 'Apply lighting fallback?',
+    'model-material.unlitFallbackConfirm': 'This will make the model appear "pseudo-unlit": rendered entirely via ambient and emissive, ignoring directional lights.\\n\\nEffect: Loses 3D shading but stays visible. For models with broken lighting.\\n\\nYou can revert anytime via "Reset All".',
+    'model-material.unlitFallbackDone': '✓ Lighting fallback applied',
     'model-material.resetAllDone': '✓ All material params reset',
     'model-material.selectMaterialHint': 'Select a material from the list above to fine-tune',
     'model-material.unknownMaterial': 'Unknown material',
@@ -919,6 +923,7 @@ export const en: Record<string, string> = {
     'model-preset.formatError': '✗ Preset file format error',
     'model-preset.unsupportedVersion': '✗ Unsupported preset version',
     'model-preset.vmdLoadFailed': '⚠ VMD load failed, rest of preset applied',
+    'model-preset.corruptedPreset': '✗ Preset file is corrupted, please re-save',
     'model-preset.applied': '✓ Preset applied',
     'model-preset.serializeFailed': '✗ Failed to serialize model state',
     'model-preset.saveFailed': '✗ Save failed',

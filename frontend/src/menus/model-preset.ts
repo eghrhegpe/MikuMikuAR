@@ -33,15 +33,6 @@ import {
     DeleteModelPreset,
 } from '../core/wails-bindings';
 import {
-    clearAudio,
-    getAudioPath,
-    getAudioName,
-    getVolume,
-    getAudioOffset,
-    setVolume,
-    setAudioOffset,
-} from '../outfit/audio';
-import {
     tryCatchStatus,
     showErrorToast,
     getBaseName,
@@ -90,12 +81,6 @@ export interface ModelPresetFile {
         name: string;
         playing?: boolean;
     };
-    audio?: {
-        path: string;
-        name: string;
-        volume: number;
-        offset: number;
-    };
     materialCategories?: Record<string, MaterialCategoryParams>;
     materialOverrides?: Record<number, MaterialCategoryParams>;
     materialEnabled?: Record<number, boolean>;
@@ -136,14 +121,8 @@ export function serializeModelPreset(id: string, presetName?: string): string {
             name: inst.vmdName,
             playing: inst.vmdPath ? isPlaying : undefined,
         },
-        audio: getAudioPath()
-            ? {
-                  path: getAudioPath(),
-                  name: getAudioName(),
-                  volume: getVolume(),
-                  offset: getAudioOffset(),
-              }
-            : undefined,
+        // audio 已移除：audio 是场景级单一全局音轨，与角色级 preset 语义不符。
+        // 跨场景应用 preset 会误替换场景 audio，造成用户困惑。
         materialCategories: matState?.categories ?? {},
         materialOverrides: matState?.overrides ?? {},
         materialEnabled: matState?.enabled ?? {},
@@ -155,13 +134,12 @@ export async function applyModelPreset(id: string, jsonStr: string): Promise<voi
     let preset: ModelPresetFile;
     try {
         preset = JSON.parse(jsonStr);
-    } catch {
-        setStatus(t('model-preset.formatError'), false);
-        return;
+    } catch (e) {
+        logWarn('model-preset', 'applyModelPreset: JSON parse failed', e);
+        throw new Error(t('model-preset.formatError'));
     }
     if (preset.version !== 1) {
-        setStatus(t('model-preset.unsupportedVersion'), false);
-        return;
+        throw new Error(t('model-preset.unsupportedVersion'));
     }
     if (preset.transform) {
         const t = preset.transform;
@@ -201,22 +179,23 @@ export async function applyModelPreset(id: string, jsonStr: string): Promise<voi
         }
     }
     if (preset.materialCategories || preset.materialOverrides || preset.materialEnabled) {
+        // 跨模型保护：overrides/enabled 按 matIndex 索引，不同模型 matIndex 不通用，
+        // 跨模型应用会导致头发参数覆盖到眼睛等错位。仅 categories 走名称匹配兜底。
+        const inst = modelRegistry.get(id);
+        const isSameModel =
+            inst && preset.model.filePath && inst.filePath === preset.model.filePath;
         applyMatState(id, {
             categories: preset.materialCategories,
-            overrides: preset.materialOverrides,
-            enabled: preset.materialEnabled,
+            overrides: isSameModel ? preset.materialOverrides : undefined,
+            enabled: isSameModel ? preset.materialEnabled : undefined,
         });
-    }
-    if (preset.audio && preset.audio.path) {
-        try {
-            await loadManager.load({ kind: 'audio', path: preset.audio.path });
-            setVolume(preset.audio.volume);
-            setAudioOffset(preset.audio.offset);
-        } catch (_) {
-            /* audio load failed, non-fatal */
+        if (!isSameModel && (preset.materialOverrides || preset.materialEnabled)) {
+            logWarn(
+                'model-preset',
+                'applyModelPreset: 跨模型应用，已跳过 materialOverrides/materialEnabled（matIndex 不通用）',
+                { presetModel: preset.model.filePath, currentModel: inst?.filePath }
+            );
         }
-    } else if (getAudioPath()) {
-        clearAudio();
     }
     setStatus(t('model-preset.applied'), true);
 }
@@ -242,12 +221,31 @@ export async function selectAndSavePreset(id: string): Promise<void> {
 }
 
 const _presetUndoStack = new Map<string, string>();
+// 防止 tryAutoApplyPreset 重入：同一 id 正在自动应用时跳过后续触发
+const _autoApplying = new Set<string>();
 
 function showUndoToast(message: string, undoFn: () => void): void {
     showErrorToast(message, undefined, [{ label: t('toast.undo'), onClick: undoFn }], 8000);
 }
 
 export async function tryAutoApplyPreset(id: string): Promise<void> {
+    const inst = modelRegistry.get(id);
+    if (!inst) {
+        return;
+    }
+    // 重入守卫：防止模型加载过程中重复触发（如快速连点）
+    if (_autoApplying.has(id)) {
+        return;
+    }
+    _autoApplying.add(id);
+    try {
+        await tryAutoApplyPresetImpl(id);
+    } finally {
+        _autoApplying.delete(id);
+    }
+}
+
+async function tryAutoApplyPresetImpl(id: string): Promise<void> {
     const inst = modelRegistry.get(id);
     if (!inst) {
         return;
@@ -274,12 +272,26 @@ export async function tryAutoApplyPreset(id: string): Promise<void> {
         return;
     }
     const json = await LoadModelPresetFromLib(match.name);
-    const preset: ModelPresetFile = JSON.parse(json);
+    let preset: ModelPresetFile;
+    try {
+        preset = JSON.parse(json);
+    } catch (e) {
+        logWarn('model-preset', `tryAutoApplyPreset: 预设文件 JSON 损坏 "${match.name}"`, e);
+        showErrorToast(t('model-preset.corruptedPreset'), undefined, undefined, 8000);
+        return;
+    }
     if (preset.autoApply !== true) {
         return;
     }
+    // 应用前抓快照供撤销使用；try/finally 保证 applyModelPreset 失败时清理脏快照
     _presetUndoStack.set(id, serializeModelPreset(id));
-    await applyModelPreset(id, json);
+    try {
+        await applyModelPreset(id, json);
+    } catch (e) {
+        // applyModelPreset 抛错时清理快照，避免撤销栈残留无效状态
+        _presetUndoStack.delete(id);
+        throw e;
+    }
     showUndoToast(
         t('model-preset.autoApplied', { name: escapeHtml(preset.presetName || match.name) }),
         async () => {

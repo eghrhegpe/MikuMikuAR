@@ -429,7 +429,8 @@ describe('serializeModelPreset', () => {
         expect(parsed.visibility.wireframe).toBe(false);
         expect(parsed.vmd.name).toBe('ダンス');
         expect(parsed.vmd.path).toBe('D:/motions/dance.vmd');
-        expect(parsed.audio).toBeUndefined();
+        // audio 已从 preset 移除：audio 是场景级单一音轨，不属于角色级 preset
+        expect('audio' in parsed).toBe(false);
     });
 
     it('returns empty string for non-existent model', () => {
@@ -582,7 +583,8 @@ describe('applyModelPreset', () => {
         createModel('m1');
         const preset: ModelPresetFile = {
             version: 1,
-            model: { filePath: 'D:/miku.pmx', name: 'miku', kind: 'actor' },
+            // filePath 与 createModel 默认值一致，触发同模型路径（保留 materialOverrides）
+            model: { filePath: 'D:/models/test.pmx', name: 'miku', kind: 'actor' },
             transform: {},
             visibility: {},
             vmd: { path: null, name: '' },
@@ -622,6 +624,54 @@ describe('applyModelPreset', () => {
         expect(state).not.toBeNull();
         expect(state!.categories['皮肤'].shininess).toBe(100);
         expect(state!.overrides[0].diffuseMul).toBe(1.5);
+    });
+
+    it('skips materialOverrides when applying across different models', async () => {
+        // 跨模型保护：matIndex 不通用，overrides 应被跳过，仅 categories 生效
+        createModel('m1');
+        const preset: ModelPresetFile = {
+            version: 1,
+            model: { filePath: 'D:/different/model.pmx', name: 'other', kind: 'actor' },
+            transform: {},
+            visibility: {},
+            vmd: { path: null, name: '' },
+            materialCategories: {
+                皮肤: {
+                    diffuseMul: 0.8,
+                    specularMul: 1.2,
+                    shininess: 100,
+                    ambientMul: 0.9,
+                    emissiveMul: 1,
+                    diffuseTexLevel: 1,
+                    bumpTexLevel: 1,
+                    toonTexLevel: 1,
+                    sphereTexLevel: 1,
+                    emissiveTexLevel: 1,
+                },
+            },
+            materialOverrides: {
+                0: {
+                    diffuseMul: 1.5,
+                    specularMul: 0.5,
+                    shininess: 10,
+                    ambientMul: 1.2,
+                    emissiveMul: 1,
+                    diffuseTexLevel: 1,
+                    bumpTexLevel: 1,
+                    toonTexLevel: 1,
+                    sphereTexLevel: 1,
+                    emissiveTexLevel: 1,
+                },
+            },
+        };
+
+        await applyModelPreset('m1', JSON.stringify(preset));
+
+        const state = getMatState('m1');
+        expect(state).not.toBeNull();
+        expect(state!.categories['皮肤'].shininess).toBe(100);
+        // 跨模型时 overrides 应被跳过，不写入状态
+        expect(state!.overrides[0]).toBeUndefined();
     });
 
     it('handles model not in registry without throwing', async () => {

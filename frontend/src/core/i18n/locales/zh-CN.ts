@@ -617,7 +617,7 @@ export const zhCN: Record<string, string> = {
     'scene.toneMapping': '色调映射',
     'scene.exposure': '曝光',
     'scene.contrast': '对比度',
-    'scene.celShading': '卡通化渲染',
+    'scene.celShading': '柔和调色',
 
     // —— 舞台层级 scene-stage-levels ——
     'scene.loadedStages': '已加载舞台',
@@ -896,6 +896,10 @@ export const zhCN: Record<string, string> = {
     'model-material.shown': '✓ 已显示: {name}',
     'model-material.hidden': '✕ 已隐藏: {name}',
     'model-material.resetAll': '重置全部材质参数',
+    'model-material.unlitFallback': '光照兜底（不受光）',
+    'model-material.unlitFallbackTitle': '应用光照兜底？',
+    'model-material.unlitFallbackConfirm': '此操作会让模型呈现"伪 unlit"状态：完全靠环境光与自发光呈现，不依赖方向光。\\n\\n效果：失去立体感但保证可见，适用于少数光照异常的模型。\\n\\n可随时通过"重置全部"恢复。',
+    'model-material.unlitFallbackDone': '✓ 已应用光照兜底',
     'model-material.resetAllDone': '✓ 全部材质参数已重置',
     'model-material.selectMaterialHint': '请从上方材质列表中选择一个材质进行微调',
     'model-material.unknownMaterial': '未知材质',
@@ -908,6 +912,7 @@ export const zhCN: Record<string, string> = {
     'model-preset.formatError': '✗ 预设文件格式错误',
     'model-preset.unsupportedVersion': '✗ 不支持的预设版本',
     'model-preset.vmdLoadFailed': '⚠ VMD 加载失败，其余预设已应用',
+    'model-preset.corruptedPreset': '✗ 预设文件已损坏，请重新保存',
     'model-preset.applied': '✓ 预设已应用',
     'model-preset.serializeFailed': '✗ 无法序列化模型状态',
     'model-preset.saveFailed': '✗ 保存失败',
