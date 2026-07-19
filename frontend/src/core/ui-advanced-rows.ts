@@ -4,9 +4,9 @@
 import { createIconifyIcon } from './icons';
 import { ControlOptions } from './ui-types';
 import { initControl } from './ui-rows';
-import { clamp01, clampPct } from '@/core/utils';
-import { addDisposableListener, type Disposable } from './dom';
+import { clampPct } from '@/core/utils';
 import { col3FromTriple, rgbString } from './color-helpers';
+import { DragSliderController } from './ui-slider-controller';
 
 // ===================================================================
 // addColorSliderRow
@@ -39,6 +39,8 @@ export function addColorSliderRow(
     block.appendChild(header);
     const channelColors = ['#f66', '#6f6', '#66f'];
     const current: [number, number, number] = [color[0], color[1], color[2]];
+    const controllers: DragSliderController[] = [];
+
     for (let ci = 0; ci < 3; ci++) {
         const sub = document.createElement('div');
         sub.className = 'clr-row';
@@ -58,9 +60,9 @@ export function addColorSliderRow(
         bar.tabIndex = 0;
         bar.setAttribute('role', 'slider');
         bar.setAttribute('aria-label', `${label} ${['Red', 'Green', 'Blue'][ci]} channel`);
-        bar.setAttribute('aria-valuenow', String(color[ci]));
         bar.setAttribute('aria-valuemin', '0');
         bar.setAttribute('aria-valuemax', '1');
+        bar.setAttribute('aria-valuenow', String(color[ci]));
         bar.setAttribute('aria-labelledby', ch.id);
 
         const fill = document.createElement('div');
@@ -85,88 +87,15 @@ export function addColorSliderRow(
             onChange([current[0], current[1], current[2]]);
         }
 
-        function setValueFromClientX(clientX: number, rect: DOMRect): void {
-            const x = (clientX - rect.left) / rect.width;
-            const raw = clamp01(x);
-            const snapped = Math.round(raw * 100) / 100;
-            if (snapped !== current[ci]) {
-                updateDisplay(snapped);
-            }
-        }
-
-        function handleKeyDown(e: KeyboardEvent): void {
-            const delta = e.shiftKey ? 0.1 : 0.01;
-            switch (e.key) {
-                case 'ArrowLeft':
-                case 'ArrowDown': {
-                    e.preventDefault();
-                    const lower = Math.max(0, Math.round((current[ci] - delta) * 100) / 100);
-                    if (lower !== current[ci]) {
-                        updateDisplay(lower);
-                    }
-                    break;
-                }
-                case 'ArrowRight':
-                case 'ArrowUp': {
-                    e.preventDefault();
-                    const upper = Math.min(1, Math.round((current[ci] + delta) * 100) / 100);
-                    if (upper !== current[ci]) {
-                        updateDisplay(upper);
-                    }
-                    break;
-                }
-                case 'Home':
-                    e.preventDefault();
-                    if (0 !== current[ci]) {
-                        updateDisplay(0);
-                    }
-                    break;
-                case 'End':
-                    e.preventDefault();
-                    if (1 !== current[ci]) {
-                        updateDisplay(1);
-                    }
-                    break;
-            }
-        }
-
-        let didDrag = false;
-        let dragRect: DOMRect | null = null;
-        let moveDisp: Disposable | null = null;
-        let endDisp: Disposable | null = null;
-
-        function onDragMove(e: MouseEvent): void {
-            if (!didDrag) {
-                didDrag = true;
-            }
-            e.preventDefault();
-            if (dragRect) {
-                setValueFromClientX(e.clientX, dragRect);
-            }
-        }
-
-        function onDragEnd(e: MouseEvent): void {
-            moveDisp?.dispose();
-            endDisp?.dispose();
-            moveDisp = null;
-            endDisp = null;
-            if (!didDrag && dragRect) {
-                setValueFromClientX(e.clientX, dragRect);
-            }
-            dragRect = null;
-            didDrag = false;
-        }
-
-        bar.addEventListener('mousedown', (e) => {
-            e.preventDefault();
-            bar.focus();
-            dragRect = bar.getBoundingClientRect();
-            didDrag = false;
-            moveDisp = addDisposableListener(document, 'mousemove', onDragMove);
-            endDisp = addDisposableListener(document, 'mouseup', onDragEnd);
+        const controller = new DragSliderController({
+            value: color[ci],
+            min: 0,
+            max: 1,
+            step: 0.01,
+            onChange: (v) => updateDisplay(v),
         });
-
-        bar.addEventListener('keydown', handleKeyDown);
+        controller.bind(bar);
+        controllers[ci] = controller;
 
         sub.appendChild(bar);
         sub.appendChild(val);
@@ -200,6 +129,7 @@ export function addColorSliderRow(
                     fills[i].style.width = v[i] * 100 + '%';
                     thumbs[i].style.left = v[i] * 100 + '%';
                     bars[i].setAttribute('aria-valuenow', String(v[i]));
+                    controllers[i].setValue(v[i]);
                 }
             }
             if (changed) {
@@ -263,14 +193,7 @@ export function addVector3SliderRow(
     const current: [number, number, number] = [value[0], value[1], value[2]];
     const axisColors = ['var(--accent)', 'var(--success)', 'var(--warning)'];
 
-    function snapToStep(v: number): number {
-        if (!step || !Number.isFinite(step)) {
-            return v;
-        }
-        const precision = 1 / step;
-        return Math.round(v * precision) / precision;
-    }
-
+    const controllers: DragSliderController[] = [];
     const valEls: HTMLElement[] = [];
     const fillEls: HTMLElement[] = [];
     const thumbEls: HTMLElement[] = [];
@@ -299,6 +222,7 @@ export function addVector3SliderRow(
         bar.setAttribute('aria-valuenow', String(current[ai]));
         bar.setAttribute('aria-valuemin', String(min));
         bar.setAttribute('aria-valuemax', String(max));
+        bar.setAttribute('aria-valuenow', String(current[ai]));
         bar.setAttribute('aria-labelledby', ch.id);
         barEls[ai] = bar;
 
@@ -329,102 +253,16 @@ export function addVector3SliderRow(
             onChange([current[0], current[1], current[2]]);
         }
 
-        function setValueFromClientX(clientX: number, rect: DOMRect): void {
-            const x = (clientX - rect.left) / rect.width;
-            const raw = min + clamp01(x) * range;
-            const snapped = snapToStep(raw);
-            const clamped = Math.max(min, Math.min(max, snapped));
-            if (clamped !== current[ai]) {
-                updateDisplay(clamped);
-            }
-        }
-
-        function handleKeyDown(e: KeyboardEvent): void {
-            const shiftMult = e.shiftKey ? 10 : 1;
-            let delta: number;
-            if (step >= 1) {
-                delta = e.shiftKey ? step * 10 : step;
-            } else {
-                delta = step * shiftMult;
-            }
-            switch (e.key) {
-                case 'ArrowLeft':
-                case 'ArrowDown': {
-                    e.preventDefault();
-                    const lower = Math.max(min, snapToStep(current[ai] - delta));
-                    if (lower !== current[ai]) {
-                        updateDisplay(lower);
-                        onDragEndCb?.([current[0], current[1], current[2]]);
-                    }
-                    break;
-                }
-                case 'ArrowRight':
-                case 'ArrowUp': {
-                    e.preventDefault();
-                    const upper = Math.min(max, snapToStep(current[ai] + delta));
-                    if (upper !== current[ai]) {
-                        updateDisplay(upper);
-                        onDragEndCb?.([current[0], current[1], current[2]]);
-                    }
-                    break;
-                }
-                case 'Home':
-                    e.preventDefault();
-                    if (min !== current[ai]) {
-                        updateDisplay(min);
-                        onDragEndCb?.([current[0], current[1], current[2]]);
-                    }
-                    break;
-                case 'End':
-                    e.preventDefault();
-                    if (max !== current[ai]) {
-                        updateDisplay(max);
-                        onDragEndCb?.([current[0], current[1], current[2]]);
-                    }
-                    break;
-            }
-        }
-
-        let didDrag = false;
-        let dragRect: DOMRect | null = null;
-        let moveDisp: Disposable | null = null;
-        let endDisp: Disposable | null = null;
-
-        function onDragMove(e: MouseEvent): void {
-            if (!didDrag) {
-                didDrag = true;
-            }
-            e.preventDefault();
-            if (dragRect) {
-                setValueFromClientX(e.clientX, dragRect);
-            }
-        }
-
-        function onDragEnd(e: MouseEvent): void {
-            moveDisp?.dispose();
-            endDisp?.dispose();
-            moveDisp = null;
-            endDisp = null;
-            if (!didDrag && dragRect) {
-                setValueFromClientX(e.clientX, dragRect);
-            }
-            if (didDrag) {
-                onDragEndCb?.([current[0], current[1], current[2]]);
-            }
-            dragRect = null;
-            didDrag = false;
-        }
-
-        bar.addEventListener('mousedown', (e) => {
-            e.preventDefault();
-            bar.focus();
-            dragRect = bar.getBoundingClientRect();
-            didDrag = false;
-            moveDisp = addDisposableListener(document, 'mousemove', onDragMove);
-            endDisp = addDisposableListener(document, 'mouseup', onDragEnd);
+        const controller = new DragSliderController({
+            value: current[ai],
+            min,
+            max,
+            step,
+            onChange: (v) => updateDisplay(v),
+            onDragEnd: (v) => onDragEndCb?.([current[0], current[1], current[2]]),
         });
-
-        bar.addEventListener('keydown', handleKeyDown);
+        controller.bind(bar);
+        controllers[ai] = controller;
 
         sub.appendChild(bar);
         sub.appendChild(val);
@@ -450,6 +288,7 @@ export function addVector3SliderRow(
                     fillEls[i].style.width = clamped + '%';
                     thumbEls[i].style.left = clamped + '%';
                     barEls[i].setAttribute('aria-valuenow', String(v[i]));
+                    controllers[i].setValue(v[i]);
                 }
             }
             return changed;
@@ -548,115 +387,22 @@ export function addModeSlider<T extends string | number>(
         top.setAttribute('aria-valuenow', String(idx));
     }
 
-    function setIndexFromClientX(clientX: number, rect: DOMRect): void {
-        const x = clamp01((clientX - rect.left) / rect.width);
-        const newIdx = total > 1 ? Math.round(x * (total - 1)) : 0;
-        if (newIdx !== currentIndex) {
-            updateDisplay(newIdx);
-            onChange(options[newIdx].value);
-        }
-    }
-
-    function handleKeyDown(e: KeyboardEvent): void {
-        const shiftMult = e.shiftKey ? Math.max(1, Math.floor(total / 4)) : 1;
-        switch (e.key) {
-            case 'ArrowLeft':
-            case 'ArrowDown': {
-                e.preventDefault();
-                const lower = Math.max(0, currentIndex - shiftMult);
-                if (lower !== currentIndex) {
-                    updateDisplay(lower);
-                    onChange(options[lower].value);
-                    onDragEndCb?.(options[lower].value);
-                }
-                break;
-            }
-            case 'ArrowRight':
-            case 'ArrowUp': {
-                e.preventDefault();
-                const upper = Math.min(total - 1, currentIndex + shiftMult);
-                if (upper !== currentIndex) {
-                    updateDisplay(upper);
-                    onChange(options[upper].value);
-                    onDragEndCb?.(options[upper].value);
-                }
-                break;
-            }
-            case 'Home':
-                e.preventDefault();
-                if (0 !== currentIndex) {
-                    updateDisplay(0);
-                    onChange(options[0].value);
-                    onDragEndCb?.(options[0].value);
-                }
-                break;
-            case 'End':
-                e.preventDefault();
-                if (total - 1 !== currentIndex) {
-                    updateDisplay(total - 1);
-                    onChange(options[total - 1].value);
-                    onDragEndCb?.(options[total - 1].value);
-                }
-                break;
-        }
-    }
-
-    let didDrag = false;
-    let topDragRect: DOMRect | null = null;
-    let topMoveDisp: Disposable | null = null;
-    let topEndDisp: Disposable | null = null;
-
-    function onTopDragMove(e: MouseEvent): void {
-        if (!didDrag) {
-            didDrag = true;
-        }
-        e.preventDefault();
-        if (topDragRect) {
-            setIndexFromClientX(e.clientX, topDragRect);
-        }
-    }
-
-    function onTopDragEnd(e: MouseEvent): void {
-        topMoveDisp?.dispose();
-        topEndDisp?.dispose();
-        topMoveDisp = null;
-        topEndDisp = null;
-
-        if (!didDrag) {
-            const rect = top.getBoundingClientRect();
-            const x = (e.clientX - rect.left) / rect.width;
-            const quarter = Math.max(1, Math.floor(total / 4));
-            let step: number;
-            if (x < 0.25) {
-                step = -quarter;
-            } else if (x < 0.5) {
-                step = -1;
-            } else if (x < 0.75) {
-                step = 1;
-            } else {
-                step = quarter;
-            }
-            const nextIdx = (currentIndex + step + total) % total;
-            updateDisplay(nextIdx);
-            onChange(options[nextIdx].value);
-            onDragEndCb?.(options[nextIdx].value);
-        } else {
-            onDragEndCb?.(options[currentIndex].value);
-        }
-        topDragRect = null;
-        didDrag = false;
-    }
-
-    top.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-        top.focus();
-        topDragRect = top.getBoundingClientRect();
-        didDrag = false;
-        topMoveDisp = addDisposableListener(document, 'mousemove', onTopDragMove);
-        topEndDisp = addDisposableListener(document, 'mouseup', onTopDragEnd);
+    const controller = new DragSliderController({
+        value: currentIndex,
+        min: 0,
+        max: Math.max(0, total - 1),
+        step: 1,
+        onChange: (v) => {
+            const idx = Math.round(v);
+            updateDisplay(idx);
+            onChange(options[idx].value);
+        },
+        onDragEnd: (v) => {
+            const idx = Math.round(v);
+            onDragEndCb?.(options[idx].value);
+        },
     });
-
-    top.addEventListener('keydown', handleKeyDown);
+    controller.bind(top);
 
     row.appendChild(top);
     row.appendChild(bar);
@@ -670,6 +416,7 @@ export function addModeSlider<T extends string | number>(
         const idx = options.findIndex((o) => o.value === v);
         if (idx >= 0) {
             updateDisplay(idx);
+            controller.setValue(idx);
         }
         return true;
     });

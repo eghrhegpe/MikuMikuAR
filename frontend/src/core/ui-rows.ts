@@ -6,7 +6,8 @@ import { getCurrentRenderingMenu } from '../menus/menu';
 import { ControlOptions } from './ui-types';
 import { slideRow } from './ui-slide-row';
 import { t } from './i18n/t';
-import { clamp01, clampPct, swallowError } from '@/core/utils';
+import { clampPct, swallowError } from '@/core/utils';
+import { DragSliderController } from './ui-slider-controller';
 
 // ===================================================================
 // addToggleRow
@@ -137,6 +138,10 @@ export function initControl<T>(
 // addSliderRow
 // ===================================================================
 
+/**
+ * 数字滑块行。ADR-140：内部统一由 {@link DragSliderController} 驱动
+ * （拖拽 + 键盘 + 游标点击），行为与其他滑块 builder 保持一致。
+ */
 export function addSliderRow(
     container: HTMLElement,
     label: string,
@@ -184,7 +189,6 @@ export function addSliderRow(
 
     const val = document.createElement('span');
     val.className = 'cs-value';
-    val.textContent = step < 1 ? currentValue.toFixed(2) : String(Math.round(currentValue));
 
     top.appendChild(lbl);
     top.appendChild(val);
@@ -194,29 +198,17 @@ export function addSliderRow(
     bar.tabIndex = 0;
     bar.setAttribute('role', 'slider');
     bar.setAttribute('aria-label', label);
-    bar.setAttribute('aria-valuenow', String(currentValue));
     bar.setAttribute('aria-valuemin', String(min));
     bar.setAttribute('aria-valuemax', String(max));
 
     const fill = document.createElement('div');
     fill.className = 'cs-fill';
-    const pct = ((currentValue - min) / range) * 100;
-    fill.style.width = clampPct(pct) + '%';
 
     const thumb = document.createElement('div');
     thumb.className = 'cs-thumb';
-    thumb.style.left = clampPct(pct) + '%';
 
     bar.appendChild(fill);
     bar.appendChild(thumb);
-
-    function snapToStep(v: number): number {
-        if (!step || !Number.isFinite(step)) {
-            return v;
-        }
-        const precision = 1 / step;
-        return Math.round(v * precision) / precision;
-    }
 
     function updateDisplay(v: number): void {
         currentValue = v;
@@ -228,105 +220,22 @@ export function addSliderRow(
         bar.setAttribute('aria-valuenow', String(v));
     }
 
-    function setValueFromClientX(clientX: number, rect: DOMRect): void {
-        const x = (clientX - rect.left) / rect.width;
-        const raw = min + clamp01(x) * range;
-        const snapped = snapToStep(raw);
-        const clamped = Math.max(min, Math.min(max, snapped));
-        if (clamped !== currentValue) {
-            updateDisplay(clamped);
-            onChange(clamped);
-        }
-    }
+    updateDisplay(currentValue);
 
-    function handleKeyDown(e: KeyboardEvent): void {
-        const shiftMult = e.shiftKey ? 10 : 1;
-        let delta: number;
-        if (step >= 1) {
-            delta = e.shiftKey ? step * 10 : step;
-        } else {
-            delta = step * shiftMult;
-        }
-
-        switch (e.key) {
-            case 'ArrowLeft':
-            case 'ArrowDown': {
-                e.preventDefault();
-                const lower = Math.max(min, snapToStep(currentValue - delta));
-                if (lower !== currentValue) {
-                    updateDisplay(lower);
-                    onChange(lower);
-                    onDragEndCb?.(lower);
-                }
-                break;
-            }
-            case 'ArrowRight':
-            case 'ArrowUp': {
-                e.preventDefault();
-                const upper = Math.min(max, snapToStep(currentValue + delta));
-                if (upper !== currentValue) {
-                    updateDisplay(upper);
-                    onChange(upper);
-                    onDragEndCb?.(upper);
-                }
-                break;
-            }
-            case 'Home':
-                e.preventDefault();
-                if (min !== currentValue) {
-                    updateDisplay(min);
-                    onChange(min);
-                    onDragEndCb?.(min);
-                }
-                break;
-            case 'End':
-                e.preventDefault();
-                if (max !== currentValue) {
-                    updateDisplay(max);
-                    onChange(max);
-                    onDragEndCb?.(max);
-                }
-                break;
-        }
-    }
-
-    bar.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        bar.focus();
-        const rect = bar.getBoundingClientRect();
-        setValueFromClientX(e.clientX, rect);
-        onDragEndCb?.(currentValue);
+    const controller = new DragSliderController({
+        value: currentValue,
+        min,
+        max,
+        step,
+        onChange: (v) => {
+            updateDisplay(v);
+            onChange(v);
+        },
+        onDragEnd: (v) => {
+            onDragEndCb?.(v);
+        },
     });
-
-    bar.addEventListener('keydown', handleKeyDown);
-
-    row.addEventListener('click', (e) => {
-        const rect = row.getBoundingClientRect();
-        const x = (e.clientX - rect.left) / rect.width;
-        let delta: number;
-        // 四分位分区增量：左区大幅减(-15%)→中左微调(-5%)→中右微增(+5%)→右区大幅增(+15%)
-        if (x < 0.25) {
-            delta = -(range * 0.15);
-        } else if (x < 0.5) {
-            delta = -(range * 0.05);
-        } else if (x < 0.75) {
-            delta = range * 0.05;
-        } else {
-            delta = range * 0.15;
-        }
-        // 确保 delta 至少为 step，避免小 range + integer step 下 snap 回原值
-        if (Math.abs(delta) < step) {
-            delta = Math.sign(delta || step) * step;
-        }
-        let newVal = snapToStep(currentValue + delta);
-        newVal = Math.max(min, Math.min(max, newVal));
-        if (newVal !== currentValue) {
-            updateDisplay(newVal);
-            onChange(newVal);
-            onDragEndCb?.(newVal);
-        }
-    });
+    controller.bind(bar);
 
     row.appendChild(top);
     row.appendChild(bar);
@@ -338,6 +247,7 @@ export function addSliderRow(
             return false;
         }
         updateDisplay(v);
+        controller.setValue(v);
         return true;
     });
 }
