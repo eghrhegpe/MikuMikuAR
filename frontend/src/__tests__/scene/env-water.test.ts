@@ -6,20 +6,29 @@ import { FreeCamera } from '@babylonjs/core/Cameras/freeCamera';
 
 // 隔离 env-impl，避免其重型依赖（clouds/particles/sky 等）干扰；
 // getScene 通过 globalThis 懒返回测试场景，规避 vi.mock 工厂的 TDZ 问题。
+// _envSys 通过 globalThis 共享同对象，与 env-context mock 一致。
 vi.mock('../../scene/env/env-impl', () => {
-    const _envSys = { water: { mesh: null as any, material: null as any } };
+    if (!(globalThis as any).__waterTestEnvSys) {
+        (globalThis as any).__waterTestEnvSys = { water: { mesh: null as any, material: null as any } };
+    }
     return {
-        _envSys,
+        _envSys: (globalThis as any).__waterTestEnvSys,
         getScene: () => (globalThis as any).__waterTestScene as Scene,
         ensureEnvUpdateObserver: () => {},
     };
 });
 // env-water.ts 从 env-context 而非 env-impl 获取 getScene，故需额外 mock
-vi.mock('../../scene/env/env-context', async (importOriginal) => {
-    const actual = await importOriginal();
+// _envSys 通过 globalThis 共享，确保 test/env-water.ts/env-impl 三方同对象
+vi.mock('../../scene/env/env-context', () => {
+    if (!(globalThis as any).__waterTestEnvSys) {
+        (globalThis as any).__waterTestEnvSys = { water: { mesh: null as any, material: null as any } };
+    }
     return {
-        ...actual,
+        _envSys: (globalThis as any).__waterTestEnvSys,
         getScene: () => (globalThis as any).__waterTestScene as Scene,
+        initEnvImpl: () => {},
+        isInitialized: () => true,
+        getPipeline: () => null,
     };
 });
 

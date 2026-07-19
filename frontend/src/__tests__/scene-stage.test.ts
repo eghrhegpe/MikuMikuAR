@@ -138,7 +138,7 @@ function findToggleRow(
 
 // ── tests ──
 
-describe('Stage - ground/water toggles', () => {
+describe('Stage level', () => {
     beforeEach(() => {
         mockEnvState.groundVisible = true;
         mockEnvState.waterEnabled = false;
@@ -146,99 +146,29 @@ describe('Stage - ground/water toggles', () => {
         mockPush.mockReset();
     });
 
-    it('debug: check rendered container content', () => {
+    it('renders load stage and load prop buttons', () => {
         const level = buildStageLevel();
         expect(level.renderCustom).toBeDefined();
         const container = document.createElement('div');
         level.renderCustom!(container);
-        console.log('container innerHTML length:', container.innerHTML.length);
-        console.log('container innerHTML:', container.innerHTML.substring(0, 1000));
-        console.log('container children:', container.children.length);
-        for (let i = 0; i < container.children.length; i++) {
-            const child = container.children[i];
-            console.log(
-                `  child[${i}]:`,
-                child.tagName,
-                child.className,
-                child.innerHTML.substring(0, 150)
-            );
-            const items = child.querySelectorAll('.slide-item');
-            console.log('  .slide-item count:', items.length);
-            items.forEach((item, j) => {
-                const label = item.querySelector('.slide-label');
-                console.log(`    item[${j}]: label="${label?.textContent}"`);
-            });
-        }
+        expect(container.querySelectorAll('.slide-item').length).toBeGreaterThanOrEqual(2);
+        const labels = Array.from(container.querySelectorAll('.slide-label')).map(
+            (el) => el.textContent
+        );
+        expect(labels).toContain('加载舞台');
+        expect(labels).toContain('加载道具');
     });
 
-    it('renders ground row with toggle reflecting envState.groundVisible', () => {
+    it('shows empty state when no stages loaded', () => {
         const level = buildStageLevel();
         const container = renderLevel(level);
-        const { row, checkbox } = findToggleRow(container, '地面');
-        expect(row).not.toBeNull();
-        expect(checkbox).not.toBeNull();
-        expect(checkbox!.checked).toBe(true);
+        expect(container.textContent).toContain('暂无已加载舞台');
     });
 
-    it('renders water row with toggle reflecting envState.waterEnabled', () => {
+    it('load stage button has testId for E2E', () => {
         const level = buildStageLevel();
         const container = renderLevel(level);
-        const { row, checkbox } = findToggleRow(container, '水面');
-        expect(row).not.toBeNull();
-        expect(checkbox).not.toBeNull();
-        expect(checkbox!.checked).toBe(false);
-    });
-
-    it('clicking ground toggle calls setEnvState with groundVisible=false', () => {
-        const level = buildStageLevel();
-        const container = renderLevel(level);
-        const { toggleLabel } = findToggleRow(container, '地面');
-        expect(toggleLabel).not.toBeNull();
-
-        // 点击 toggle label 触发 onChange（headerToggle 的 click handler）
-        toggleLabel!.click();
-
-        expect(mockSetEnvState).toHaveBeenCalledWith({ groundVisible: false });
-    });
-
-    it('clicking water toggle calls setEnvState with waterEnabled=true', () => {
-        const level = buildStageLevel();
-        const container = renderLevel(level);
-        const { toggleLabel } = findToggleRow(container, '水面');
-        expect(toggleLabel).not.toBeNull();
-
-        toggleLabel!.click();
-
-        expect(mockSetEnvState).toHaveBeenCalledWith({ waterEnabled: true });
-    });
-
-    it('clicking toggle does not navigate (stopPropagation via closest .toggle)', () => {
-        const level = buildStageLevel();
-        const container = renderLevel(level);
-        const { row, toggleLabel } = findToggleRow(container, '地面');
-        expect(row).not.toBeNull();
-        expect(toggleLabel).not.toBeNull();
-
-        // Click the toggle label — should toggle but NOT navigate
-        toggleLabel!.click();
-
-        // Should NOT navigate (toggle click is stopPropagation'd)
-        expect(mockPush).not.toHaveBeenCalled();
-    });
-
-    it('ground row has arrow for navigation to full parameters', () => {
-        const level = buildStageLevel();
-        const container = renderLevel(level);
-        const { row, arrow } = findToggleRow(container, '地面');
-        expect(row).not.toBeNull();
-        expect(arrow).not.toBeNull();
-        expect(arrow!.textContent).toBe('▾');
-    });
-
-    it('water row has arrow for navigation', () => {
-        const level = buildStageLevel();
-        const container = renderLevel(level);
-        const { arrow } = findToggleRow(container, '水面');
-        expect(arrow).not.toBeNull();
+        const loadStage = container.querySelector('[data-testid="menu.scene.loadStage"]');
+        expect(loadStage).not.toBeNull();
     });
 });

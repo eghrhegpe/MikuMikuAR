@@ -4,12 +4,14 @@ import { Scene } from '@babylonjs/core/scene';
 
 // 隔离 env-impl 重型依赖
 vi.mock('../../scene/env/env-impl', () => {
-    const _envSys = {
-        particles: { system: null as any, followObserver: null as any },
-        splash: { observer: null as any },
-    };
+    if (!(globalThis as any).__particlesTestEnvSys) {
+        (globalThis as any).__particlesTestEnvSys = {
+            particles: { system: null as any, followObserver: null as any },
+            splash: { observer: null as any },
+        };
+    }
     return {
-        _envSys,
+        _envSys: (globalThis as any).__particlesTestEnvSys,
         getScene: () => (globalThis as any).__particlesTestScene as Scene,
         ensureEnvUpdateObserver: () => {},
         addRipple: () => {},
@@ -17,11 +19,18 @@ vi.mock('../../scene/env/env-impl', () => {
     };
 });
 // env-particles.ts 从 env-context 而非 env-impl 获取 getScene，故需额外 mock
-vi.mock('../../scene/env/env-context', async (importOriginal) => {
-    const actual = await importOriginal();
+vi.mock('../../scene/env/env-context', () => {
+    if (!(globalThis as any).__particlesTestEnvSys) {
+        (globalThis as any).__particlesTestEnvSys = {
+            particles: { system: null as any, followObserver: null as any },
+            splash: { observer: null as any },
+        };
+    }
     return {
-        ...actual,
+        _envSys: (globalThis as any).__particlesTestEnvSys,
         getScene: () => (globalThis as any).__particlesTestScene as Scene,
+        initEnvImpl: () => {},
+        isInitialized: () => true,
         getPipeline: () => null,
     };
 });
