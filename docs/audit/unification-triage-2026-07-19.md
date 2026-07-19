@@ -24,6 +24,31 @@
 
 ---
 
+## 冲突核对（2026-07-19 更新）
+
+经 `docs/adr/` 全量核对，本巡查发现 **3 个 P1 主题已于同日被立项覆盖**，再建即冲突；另发现 **ADR 编号碰撞**两处。
+
+### P1 已被覆盖（勿重复立项）
+
+| 本巡查 P1 主题 | 已覆盖 ADR | 状态 |
+|------------------|-------------|------|
+| 主题 4 Observer 生命周期 | `adr-139-observer-registry.md` | 立项 |
+| 主题 1 滑块拖拽/键盘 | `adr-140-drag-slider-controller.md` | 立项 |
+| 主题 2 `setStatus` 状态机 | `adr-142-with-status.md` | 立项 |
+
+→ 剩余可统一项（P2 主题 3/5、P3 主题 6/7、过载文件）已收口为 **`adr-143-unification-remaining.md`**（状态：立项）。
+
+### ADR 编号碰撞（已修复 2026-07-19）
+
+| 原编号 | 保留主题（不动） | 改名主题 | 新号 | 冲击 |
+|------|------------|------------|------|------|
+| `adr-124` | `filesystem-architecture`（被 `model-loader.ts:291` `[doc:adr-124]` 引用，指纹理 referenceFiles 直传） | `motion-presets` → | **`adr-145-motion-presets`** | 零源码：文件重命名 + H1 改号 |
+| `adr-136` | `thumbnail-abortsignal`（被 `library-core.ts`/`library-browse.ts`/`library-actions.ts`/`model-loader.ts` + 测试引用） | `per-model-overlay-motion` → | **`adr-144-per-model-overlay-motion`** | 零源码：文件重命名 + H1 改号 |
+
+> 修复策略：两个碰撞号各**保留被源码引用的主题**、只 `git mv` 改名**零外部引用的主题**到空闲号（144/145）。两个改名文件内部均无 `[adr-124]`/`[adr-136]` 自引用，全程未触碰任何 `.ts`。源码/测试中的 `[adr-124]`/`[adr-136]` 均仍指向保留主题，无需变更。
+
+---
+
 ## 可统一主题清单（按优先级）
 
 ### 🔴 P1 — 主题 1：滑块「游标拖拽 + 键盘 + mousedown 拖拽」逻辑三处重写

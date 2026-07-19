@@ -105,6 +105,17 @@
 | `setStatus()`, `showHint()`, `hideHint()` | `core/utils.ts` | 底部状态栏 |
 | `createIconifyIcon()` | `core/icons.ts` | Iconify 图标元素创建 |
 
+## Observer 生命周期管理
+
+| 函数/符号 | 文件 | 说明 |
+|-----------|------|------|
+| `ObserverHandle` | `core/observer-handle.ts` | 可释放的 Observer 句柄，`dispose()` 从 Observable 移除 observer，幂等 |
+| `observe(observable, callback)` | `core/observer-handle.ts` | 替代 `observable.add(callback)`，返回 `ObserverHandle` |
+| `observeOnce(observable, callback)` | `core/observer-handle.ts` | 替代 `observable.addOnce(callback)`，返回 `ObserverHandle` |
+| `ObserverRegistry` | `core/observer-handle.ts` | 批量管理器，`add()` 注册、`disposeAll()` 一次性清理所有 observer |
+
+**用法**：所有新代码禁止直接调用 `Observable.add()`，必须使用 `observe()` 获取 `ObserverHandle`，在 cleanup 时调用 `handle.dispose()`。详见 [ADR-139](adr/adr-139-observer-registry.md)。
+
 ## XPBD 物理
 
 | 函数/符号 | 文件 | 说明 |
