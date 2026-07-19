@@ -261,7 +261,7 @@
 - [x] `grep -rn "className.*preset-chip" src/menus` 归零（除 `env-preset-levels.ts:142` 豁免）
 - [ ] `grep -rn "catch(err => logWarn" src` 归零
 - [ ] `grep -rn "if (\_.*\) { \_.*\.dispose(); \_.* = null; }" src/scene/env` 按文件归零
-- [ ] `grep -n "onViewMatrixChangedObservable.add" src/scene/camera/camera.ts` 0 处
+- [x] `grep -n "onViewMatrixChangedObservable.add" src/scene/camera/camera.ts` 0 处
 - [x] `menus/menu.ts:853-867` 双触发 bug 修复（含 `preventDefault`）
 
 ### P2
@@ -336,3 +336,16 @@
 验证：`cd frontend && npm run build`（tsc + vite build）通过，0 错误。
 
 提交范围：`app.css`、`menus/motion-pose-levels.ts`、`menus/scene-stage-lights.ts`、`menus/model-detail.ts`、`menus/resource-detail-helpers.ts`、`menus/motion-popup.ts`、`menus/motion-override-levels.ts`、`docs/adr/adr-146-function-duplication-triage.md`。
+
+### 2026-07-20 — P1 主题 4：camera.ts 5 处裸 `Observable.add` → `observe()` 收敛
+
+用户批准「继续」后，推进 P1 主题 4（最小改动修泄漏）。`onViewMatrixChangedObservable.add` 虽在相机切换时随 `oldCam.dispose()` 清理（当前无实际泄漏），但违反 ADR-139「显式走 `observe()` 统一追踪生命周期」规范，且对未走 dispose 的路径缺少防御。
+
+- **新增模块级句柄** `camera.ts:279` `let _viewMatrixHandle: ObserverHandle | null = null;`（与同文件 `_concertUpdateHandle` 等声明同组）。
+- **5 处 create 函数**（`createOrbitCamera`/`createFreeflyCamera`/`createSurroundCamera`/`createConcertCamera`/`createOneshotCamera`）的 `cam.onViewMatrixChangedObservable.add(scheduleCameraPersist)` 改为 `_viewMatrixHandle = observe(cam.onViewMatrixChangedObservable, scheduleCameraPersist);`（`scheduleCameraPersist` 为 `()=>void`，可安全作为 `(eventData, eventState)=>void` 回调；`observe`/`ObserverHandle` 已在 `camera.ts:23` import）。
+- **切换解绑** `switchCameraMode` 在 `oldCam.dispose()` 前补 `_viewMatrixHandle?.dispose(); _viewMatrixHandle = null;`（仅非 AR 分支；AR 模式不重建 Babylon 相机，不在此解绑）。`observe` 返回的 `ObserverHandle.dispose` 幂等，与 `cam.dispose` 双保险无重复释放风险；VMD 模式 `createVmdCamera` 不注册该 observer，切换归零后保持 `null`，行为与原先一致。
+- **豁免**：`createVmdCamera` 本就不注册视角保存 observer，未改动。
+
+验证：`cd frontend && npm run build`（tsc + vite build）通过，0 错误；`grep -n "onViewMatrixChangedObservable.add" src/scene/camera/camera.ts` 归零。行为零变化（仅 observer 生命周期从「依赖 cam.dispose 隐式清理」提升为「显式句柄追踪」）。
+
+提交范围：仅 `frontend/src/scene/camera/camera.ts`、`docs/adr/adr-146-function-duplication-triage.md`。工作树其余 `docs/*` 改动非本次任务，未纳入。
