@@ -158,7 +158,12 @@ export async function switchStorageMode(mode: 'private' | 'shared'): Promise<voi
 }
 
 export async function rescanAndSync(): Promise<LibraryModel[]> {
+    console.log('[debug] rescanAndSync called');
     const models = (await ScanModelDir()) || [];
+    console.log('[debug] rescanAndSync: ScanModelDir returned', models?.length, 'models');
+    if (models && models.length > 0) {
+        console.log('[debug] first model:', models[0].file_path, 'dir:', models[0].dir);
+    }
     setAllModels(models);
     window.dispatchEvent(new CustomEvent('mmar:library-scanned'));
     return models;
