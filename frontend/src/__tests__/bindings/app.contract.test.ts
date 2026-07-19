@@ -157,7 +157,6 @@ describe('binding contract: interface shapes', () => {
             fresnelPower: expect.any(Number),
             diffuseStrength: expect.any(Number),
             ambientStrength: expect.any(Number),
-            foamTransitionRange: expect.any(Number),
             rippleNormalStrength: expect.any(Number),
             rippleGlintStrength: expect.any(Number),
             causticColor1: expect.any(Array),

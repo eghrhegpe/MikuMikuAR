@@ -1,12 +1,28 @@
 // [doc:mock-strategy] 集中式 Babylon.js mock — 覆盖常用子模块路径
 //
-// 注册到 vitest.config.ts setupFiles 后，所有测试自动获得 Babylon 子模块 mock，
-// 无需每个测试文件手动 vi.mock() 常用类。
+// ⚠️ 重要：这是 opt-in 辅助模块，不得加入 vitest.config.ts 的 setupFiles。
+// 历史尝试全局注册导致 111 个测试失败，已回退（详见 project memory）。
+//
+// 失败根因（5 类破坏）：
+//   1. NullEngine 集成测试被 MockScene 吞没（~10 个文件，60-80 it 失败）
+//      scene/env-*.test.ts 系列依赖真实 NullEngine + Scene 做渲染管线集成测试，
+//      全局 mock 用 MockScene 替换后，fogMode/environmentIntensity/FOGMODE_EXP2 等缺失。
+//   2. 静态方法缺失（~6 个文件，50-70 it 失败）
+//      MockQuaternion 缺 Slerp/FromEulerAngles，MockVector3 缺 TransformCoordinates/Distance 等。
+//   3. 静态常量缺失（~3 个文件，8-12 it 失败）
+//      MockTexture 缺 CLAMP_ADDRESSMODE，MockScene 缺 FOGMODE_EXP2 等。
+//   4. 本地 vi.mock 与全局 mock 行为不一致（~6 个文件，20-40 it 失败）
+//      如 model-manager.test.ts 在 MockVector3.prototype 上扩展了 minimizeInPlace 等方法。
+//   5. 模块路径覆盖不全（~5 个文件，10-20 it 失败）
+//      @babylonjs/core/Engines/nullEngine、@babylonjs/materials/sky/skyMaterial 等未覆盖。
+//
+// 使用方式：在需要大量 Babylon mock 的测试文件顶部添加：
+//   import './mocks/babylon';
+// 即可一键注册所有常见子模块 mock。测试文件仍可针对特定子模块自行 vi.mock() 覆盖，
+// 本地 mock 优先级高于此文件。
 //
 // 注意：vi.mock 按模块路径匹配，子模块路径（如 @babylonjs/core/Maths/math.vector）
 // 与 barrel（@babylonjs/core）是独立入口，需各自 mock。
-//
-// 测试文件仍可针对特定子模块自行 vi.mock() 覆盖，本地 mock 优先级高于 setup。
 
 import { vi } from 'vitest';
 import {
