@@ -28,7 +28,7 @@ superpowers/         📋 ADR 实施计划（plans/）
 | `tech-stack-comparison.md` | 技术栈对比分析 |
 | `dancexr-structure.md` | DanceXR 项目结构分析 |
 | `dancexr-directory.md` | DanceXR 目录布局参考 |
-| `dancexr-zh/` | DanceXR 中文文档转储（197 文件，竞品参考） |
+| `dancexr-zh/` | DanceXR 中文文档转储（23 文件，竞品参考） |
 | `pmx-header-layout.md` | PMX 文件头二进制布局 |
 | `blender-integration.md` | Blender 集成方案调研 |
 | `babylon-mmd-api-analysis.md` | babylon-mmd API 分析 |
