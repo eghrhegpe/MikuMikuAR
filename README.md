@@ -88,11 +88,24 @@
 
 ### 前置依赖
 
-| 依赖 | 版本 | 说明 |
-|------|------|------|
-| **Go** | 1.25+ | `go install github.com/wailsapp/wails/v3/cmd/wails3@latest` |
-| **Node.js** | 24+ | 前端构建 |
-| **Wails v3 CLI** | 最新 | 热重载开发必需 |
+| 依赖 | 版本 | 说明 | 安装检查 |
+|------|------|------|---------|
+| **Go** | 1.25+ | 后端编译 | `go version` |
+| **Node.js** | 24+ | 前端构建 | `node --version` |
+| **npm** | 11+ | 包管理 | `npm --version` |
+| **Wails v3 CLI** | 最新 | 热重载开发必需 | `wails3 version` → `go install github.com/wailsapp/wails/v3/cmd/wails3@latest` |
+| **PowerShell 7** | — | Windows 构建脚本（可选） | `pwsh --version` |
+| **GitHub CLI** | — | 发版流程（可选） | `gh --version` |
+
+> **E2E 测试额外依赖：** Playwright 浏览器
+> ```bash
+> cd frontend && npx playwright install chromium
+> ```
+>
+> **WASM Bullet 物理引擎（可选）：** 如需本地编译，安装 [Rust](https://rustup.rs/)
+> ```bash
+> rustc --version   # 查看是否已安装
+> ```
 
 ### 开发运行
 

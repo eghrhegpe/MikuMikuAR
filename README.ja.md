@@ -141,14 +141,24 @@
 
 ### 前提条件
 
-| 依存 | バージョン | 説明 |
-|------|-----------|------|
-| **Go** | 1.25+ | Go バックエンド + Wails コンパイル |
-| **Node.js** | 24+ | フロントエンドビルド |
-| **npm** | 10+ | フロントエンドパッケージ管理 |
-| **Git** | 任意 | コードクローン |
-| **Wails v3 CLI** | 最新 | ホットリロード開発必須：`go install github.com/wailsapp/wails/v3/cmd/wails3@latest` |
-| **Playwright** | — | E2E テスト用：`cd frontend && npx playwright install --with-deps` |
+| 依存 | バージョン | 説明 | 確認方法 |
+|------|-----------|------|---------|
+| **Go** | 1.25+ | バックエンドコンパイル | `go version` |
+| **Node.js** | 24+ | フロントエンドビルド | `node --version` |
+| **npm** | 11+ | パッケージ管理 | `npm --version` |
+| **Wails v3 CLI** | 最新 | ホットリロード開発必須 | `wails3 version` → `go install github.com/wailsapp/wails/v3/cmd/wails3@latest` |
+| **PowerShell 7** | — | Windows ビルドスクリプト（オプション） | `pwsh --version` |
+| **GitHub CLI** | — | リリースワークフロー（オプション） | `gh --version` |
+
+> **E2E テスト：** Playwright ブラウザをインストール
+> ```bash
+> cd frontend && npx playwright install chromium
+> ```
+>
+> **WASM Bullet 物理（オプション）：** ローカルコンパイルには [Rust](https://rustup.rs/) が必要
+> ```bash
+> rustc --version   # インストール確認
+> ```
 
 **Linux 追加依存**（デスクトップアプリビルド）：
 ```bash

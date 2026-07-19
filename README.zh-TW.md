@@ -141,14 +141,24 @@
 
 ### 前置依賴
 
-| 依賴 | 版本 | 說明 |
-|------|------|------|
-| **Go** | 1.25+ | Go 後端 + Wails 編譯 |
-| **Node.js** | 24+ | 前端建構 |
-| **npm** | 10+ | 前端套件管理 |
-| **Git** | 任意 | 程式碼克隆 |
-| **Wails v3 CLI** | 最新 | 熱重載開發必需：`go install github.com/wailsapp/wails/v3/cmd/wails3@latest` |
-| **Playwright** | — | E2E 測試用：`cd frontend && npx playwright install --with-deps` |
+| 依賴 | 版本 | 說明 | 安裝檢查 |
+|------|------|------|---------|
+| **Go** | 1.25+ | 後端編譯 | `go version` |
+| **Node.js** | 24+ | 前端建構 | `node --version` |
+| **npm** | 11+ | 套件管理 | `npm --version` |
+| **Wails v3 CLI** | 最新 | 熱重載開發必需 | `wails3 version` → `go install github.com/wailsapp/wails/v3/cmd/wails3@latest` |
+| **PowerShell 7** | — | Windows 建構腳本（可選） | `pwsh --version` |
+| **GitHub CLI** | — | 發版流程（可選） | `gh --version` |
+
+> **E2E 測試：** 安裝 Playwright 瀏覽器
+> ```bash
+> cd frontend && npx playwright install chromium
+> ```
+>
+> **WASM Bullet 物理引擎（可選）：** 如需本地編譯，安裝 [Rust](https://rustup.rs/)
+> ```bash
+> rustc --version   # 查看是否已安裝
+> ```
 
 **Linux 額外依賴**（建構桌面應用）：
 ```bash
