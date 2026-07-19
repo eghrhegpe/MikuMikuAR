@@ -49,6 +49,7 @@ import {
     prepareModelRestore,
     importFile,
 } from './library-actions';
+import { librarySessionStore } from './library-session-store';
 
 // ======== Resource View Mode ========
 
@@ -75,20 +76,20 @@ export function isModelDirTarget(target: string | undefined): boolean {
 }
 
 // ======== 恢复状态（library-actions ↔ library-browse 共享）========
+// [doc:adr-135] 状态已迁入 LibrarySessionStore 单例。下列导出函数为兼容门面，
+// 内部代理 store，调用方无需改动 import 路径。P2 阶段移除门面，直接用 store 实例。
 
-let pendingAutoExpand: string[] | null = null;
-let pendingFocusModel: { dir: string; rowKey: string } | null = null;
 export function getPendingAutoExpand(): string[] | null {
-    return pendingAutoExpand;
+    return librarySessionStore.getPendingAutoExpand();
 }
 export function setPendingAutoExpand(v: string[] | null): void {
-    pendingAutoExpand = v;
+    librarySessionStore.setPendingAutoExpand(v);
 }
 export function getPendingFocusModel(): { dir: string; rowKey: string } | null {
-    return pendingFocusModel;
+    return librarySessionStore.getPendingFocusModel();
 }
 export function setPendingFocusModel(v: { dir: string; rowKey: string } | null): void {
-    pendingFocusModel = v;
+    librarySessionStore.setPendingFocusModel(v);
 }
 
 const _pendingMetaGuard = new LoadingGuard();

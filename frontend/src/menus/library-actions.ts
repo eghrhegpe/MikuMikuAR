@@ -69,18 +69,18 @@ import {
     resolveDisplayBrowseDir,
     loadThumbnailsStreaming,
 } from './library-core';
+import { librarySessionStore } from './library-session-store';
 
 // ======== 模块级状态 ========
-
-let _isExtracting = false;
-/** 链式替换加载中标记：阻止mmku:modelLoaded事件自动重置菜单 */
-let _isReplaceLoading = false;
+// [doc:adr-135] 加载守卫状态已迁入 LibrarySessionStore 单例。
+// - extraction：原 _isExtracting，解压进行中标记（per-model 升级归 P1.2）
+// - replaceLoading：原 _isReplaceLoading，链式替换加载中标记
 
 // mmku:modelLoaded 事件：模型加载完成后刷新模型库弹窗根级列表
 // 用命名函数 + 模块级引用，支持 HMR 幂等清理
 let _mmkuHandler: (() => void) | null = null;
 function _onModelLoaded(): void {
-    if (_isReplaceLoading) {
+    if (librarySessionStore.isReplaceLoading()) {
         return;
     }
     // 懒加载避免循环依赖
@@ -226,11 +226,11 @@ export async function prepareModelRestore(
 // ======== 模型行点击 ========
 
 function onModelRowClick(m: LibraryModel, jumpToDirModelId?: string): void {
-    if (_isExtracting) {
+    if (librarySessionStore.isExtracting()) {
         setStatus(t('library.extracting'), false);
         return;
     }
-    if (_isReplaceLoading) {
+    if (librarySessionStore.isReplaceLoading()) {
         setStatus(t('library.loadingModel'), false);
         return;
     }
@@ -260,7 +260,7 @@ function onModelRowClick(m: LibraryModel, jumpToDirModelId?: string): void {
 
     // ===== Replace mode =====
     if (replaceId && isActor) {
-        _isReplaceLoading = true;
+        librarySessionStore.setReplaceLoading(true);
 
         const doReplace = (path: string, libraryPath?: string, innerPath?: string): void => {
             setStatus(t('library.loadingModel'), false);
@@ -323,25 +323,25 @@ function onModelRowClick(m: LibraryModel, jumpToDirModelId?: string): void {
                     stackRegistry.modelStack?.reRender();
                 })
                 .finally(() => {
-                    _isReplaceLoading = false;
+                    librarySessionStore.setReplaceLoading(false);
                 });
         };
 
         if (m.container === 'zip') {
             setStatus(t('library.extractingZip'), false);
-            _isExtracting = true;
+            librarySessionStore.setExtracting(true);
             ExtractZip(m.file_path, m.zip_inner)
                 .then((result) => {
                     setStatus(result.cached ? t('library.cacheHit') : t('library.extracted'), true);
                     doReplace(result.file_path, m.file_path, m.zip_inner);
                 })
                 .catch((err) => {
-                    _isReplaceLoading = false;
+                    librarySessionStore.setReplaceLoading(false);
                     setModelReplaceTargetId(replaceId);
                     setStatus(t('library.extractFailed') + formatError(err), false);
                 })
                 .finally(() => {
-                    _isExtracting = false;
+                    librarySessionStore.setExtracting(false);
                 });
         } else {
             doReplace(m.file_path);
@@ -353,7 +353,7 @@ function onModelRowClick(m: LibraryModel, jumpToDirModelId?: string): void {
     if (m.container === 'zip') {
         closeAllOverlays();
         setStatus(t('library.extractingZip'), false);
-        _isExtracting = true;
+        librarySessionStore.setExtracting(true);
         ExtractZip(m.file_path, m.zip_inner)
             .then((result) => {
                 setStatus(result.cached ? t('library.cacheHit') : t('library.extracted'), true);
@@ -372,7 +372,7 @@ function onModelRowClick(m: LibraryModel, jumpToDirModelId?: string): void {
                 setStatus(t('library.extractFailed') + formatError(err), false);
             })
             .finally(() => {
-                _isExtracting = false;
+                librarySessionStore.setExtracting(false);
             });
         return;
     }
@@ -410,7 +410,7 @@ function replaceMotion(m: LibraryModel): void {
         onModelRowClick(m);
         return;
     }
-    if (_isReplaceLoading) {
+    if (librarySessionStore.isReplaceLoading()) {
         setStatus(t('library.loadingModel'), false);
         return;
     }
@@ -424,7 +424,7 @@ function replaceMotion(m: LibraryModel): void {
     };
     if (m.container === 'zip') {
         setStatus(t('library.extractingZip'), false);
-        _isExtracting = true;
+        librarySessionStore.setExtracting(true);
         ExtractZip(m.file_path, m.zip_inner)
             .then((result) => {
                 setStatus(result.cached ? t('library.cacheHit') : t('library.extracted'), true);
@@ -432,7 +432,7 @@ function replaceMotion(m: LibraryModel): void {
             })
             .catch((err) => setStatus(t('library.extractFailed') + formatError(err), false))
             .finally(() => {
-                _isExtracting = false;
+                librarySessionStore.setExtracting(false);
             });
         return;
     }

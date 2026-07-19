@@ -45,10 +45,11 @@ import {
     getPendingFocusModel,
     setPendingFocusModel,
 } from './library-core';
+import { librarySessionStore } from './library-session-store';
 
 // [修复] 数据未就绪时撤销本次 autoExpand，轮询等待 allModels 扫描/解压完成后
 // 再补做 push，避免解压未完成时进入空层（用户感知的"分类1为空/未刷新就进菜单"）。
-let _restoreTimer: ReturnType<typeof setTimeout> | null = null;
+// [doc:adr-135] 计时器引用已迁入 LibrarySessionStore.restore.timer，由 store 统一管理。
 
 function _isDirDataReady(targetDir: string): boolean {
     const t = normPath(targetDir);
@@ -58,22 +59,22 @@ function _isDirDataReady(targetDir: string): boolean {
 }
 
 function deferRestore(menu: SlideMenu, dir: string, seg: string): void {
-    if (_restoreTimer) {
-        clearTimeout(_restoreTimer);
-    }
+    librarySessionStore.clearRestoreTimer();
     let tries = 0;
     const tick = () => {
         tries++;
         if (tries > 40) {
-            _restoreTimer = null;
-            return;
-        } // ~6s 上限，避免永久挂起
-        const nextDir = normPath(dir + '/' + seg);
-        if (!_isDirDataReady(nextDir)) {
-            _restoreTimer = setTimeout(tick, 150);
+            // ~6s 上限，避免永久挂起。timer 已 fire，清空引用即可。
+            librarySessionStore.setRestoreTimer(null);
             return;
         }
-        _restoreTimer = null;
+        const nextDir = normPath(dir + '/' + seg);
+        if (!_isDirDataReady(nextDir)) {
+            librarySessionStore.setRestoreTimer(setTimeout(tick, 150));
+            return;
+        }
+        // 数据就绪，timer 已 fire，清空引用。
+        librarySessionStore.setRestoreTimer(null);
         // 校验：菜单仍停留在该层且恢复态未被改写才补做 push，避免与 restoreBrowsePath 重复或误推
         const cur = menu.currentLevel;
         if (!cur || normPath(cur.dir) !== normPath(dir)) {
@@ -88,7 +89,7 @@ function deferRestore(menu: SlideMenu, dir: string, seg: string): void {
             buildLevel(nextDir, seg, (m) => m.format === 'pmx', stackRegistry.modelStack!, [])
         );
     };
-    _restoreTimer = setTimeout(tick, 150);
+    librarySessionStore.setRestoreTimer(setTimeout(tick, 150));
 }
 
 // ======== 模型菜单创建 ========
@@ -301,6 +302,9 @@ export function showModelPopup(): void {
     dom.sceneOverlay.classList.remove('sceneOverlay-motion', 'sceneOverlay-settings');
     dom.sceneOverlay.classList.add('sceneOverlay-model');
     dom.sceneOverlay.dataset.popupType = 'model';
+    // [doc:adr-135] 重置菜单前清理上一次会话残留的 restore 态（pendingAutoExpand / pendingFocusModel / timer），
+    // 防止重开弹窗时误触发上次的 autoExpand。loading 不重置（解压/替换可能跨弹窗重置进行）。
+    librarySessionStore.reset();
 
     const wrapper = getMenuWrapper('model-popup');
     if (stackRegistry.modelStack) {
