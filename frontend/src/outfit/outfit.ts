@@ -1,5 +1,7 @@
 // [doc:architecture] Outfit — 换装系统核心逻辑（load/apply/reset + 自动发现）
 
+import { observe, type ObserverHandle } from '@/core/observer-handle';
+
 import { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { LoadOutfitFile, ListSubDirs, readFileBytes, FileExists } from '../core/wails-bindings';
@@ -299,13 +301,13 @@ async function _applySlot(
                 resolve();
                 return;
             }
-            const obs = newTex.onLoadObservable.add(() => {
-                newTex.onLoadObservable.remove(obs);
+            const handle = observe(newTex.onLoadObservable, () => {
+                handle.dispose();
                 loaded = true;
                 resolve();
             });
             setTimeout(() => {
-                newTex.onLoadObservable.remove(obs);
+                handle.dispose();
                 resolve(); // 超时：loaded 保持 false
             }, 5000);
         });
@@ -336,8 +338,8 @@ async function _applySlot(
             if (newTex.isReady()) {
                 trySwap();
             } else {
-                const obs = newTex.onLoadObservable.add(() => {
-                    newTex.onLoadObservable.remove(obs);
+                const handle = observe(newTex.onLoadObservable, () => {
+                    handle.dispose();
                     trySwap();
                 });
             }

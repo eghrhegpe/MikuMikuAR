@@ -6,7 +6,7 @@
 import { Engine } from '@babylonjs/core/Engines/engine';
 import { Scene } from '@babylonjs/core/scene';
 import { RenderingManager } from '@babylonjs/core/Rendering/renderingManager';
-import type { Observer } from '@babylonjs/core/Misc/observable';
+import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { Color4 } from '@babylonjs/core/Maths/math.color';
 import '@babylonjs/core/Physics/v2/physicsEngineComponent';
 import { PointerEventTypes } from '@babylonjs/core/Events/pointerEvents';
@@ -180,9 +180,9 @@ export function disposeScene(): void {
     _sceneDisposed = true;
 
     // 1. 移除 scene.onDisposeObservable 订阅，避免 scene.dispose() 触发冗余回调
-    if (_sceneDisposeObserver) {
-        _sceneDisposeObserver.remove();
-        _sceneDisposeObserver = null;
+    if (_sceneDisposeObserverHandle) {
+        _sceneDisposeObserverHandle.dispose();
+        _sceneDisposeObserverHandle = null;
     }
 
     // 2. 清理播放相关 observer
@@ -210,7 +210,7 @@ export let modelManager: ModelManager;
 let _disposePlaybackObservables: (() => void) | null = null;
 
 /** scene.onDisposeObservable 订阅句柄，HMR 重入时需先移除旧订阅避免累积。 */
-let _sceneDisposeObserver: Observer<Scene> | null = null;
+let _sceneDisposeObserverHandle: ObserverHandle | null = null;
 
 // Dev debug helper — module-level export for Console inspection (no window pollution)
 export const __envDebug = import.meta.env.DEV
@@ -309,10 +309,10 @@ export async function initScene(): Promise<void> {
         const mmdWasmPhysics = new MmdWasmPhysics(scene);
         runtime = new MmdWasmRuntime(wasmInstance, scene, mmdWasmPhysics);
         initWindPhysics(runtime);
-        if (_sceneDisposeObserver) {
-            _sceneDisposeObserver.remove();
+        if (_sceneDisposeObserverHandle) {
+            _sceneDisposeObserverHandle.dispose();
         }
-        _sceneDisposeObserver = scene.onDisposeObservable.add(() => {
+        _sceneDisposeObserverHandle = observe(scene.onDisposeObservable, () => {
             disposeWindPhysics();
             disposeEnvUpdateObserver();
             disposeRenderer();

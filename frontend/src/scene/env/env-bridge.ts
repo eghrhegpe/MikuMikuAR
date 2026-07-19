@@ -6,7 +6,7 @@
 import { SetEnvState, SetUIState } from '@/core/wails-bindings';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
-import type { Observer } from '@babylonjs/core/Misc/observable';
+import { observe, type ObserverHandle } from '@/core/observer-handle';
 import type { Scene } from '@babylonjs/core/scene';
 
 import { envState, EnvState, triggerAutoSave, mmdRuntime } from '@/core/config';
@@ -326,9 +326,9 @@ interface PresetAnimCtx {
 const PRESET_ANIM_DURATION = 2000;
 const SKY_UPDATE_INTERVAL = 50; // ms — 显示器刷新率无关，始终 ~20fps
 
-function _presetAnimLoop(ctx: PresetAnimCtx, observer: Observer<Scene>): void {
+function _presetAnimLoop(ctx: PresetAnimCtx, handle: ObserverHandle): void {
     if (_presetAnimId !== ctx.myId) {
-        scene.onBeforeRenderObservable.remove(observer);
+        handle.dispose();
         return;
     }
     const elapsed = performance.now() - ctx.startTime;
@@ -383,7 +383,7 @@ function _presetAnimLoop(ctx: PresetAnimCtx, observer: Observer<Scene>): void {
     setLightState(interpLight);
 
     if (t >= 1) {
-        scene.onBeforeRenderObservable.remove(observer);
+        handle.dispose();
         setSkipLightAutoSave(false);
         if (_timeOfDayBeforePreset) {
             // [fix:ghost-state] 预设动画结束，恢复 time-of-day 运行（清除暂停标志）
@@ -471,7 +471,7 @@ export function applyEnvPresetObject(preset: {
         startTime: performance.now(),
         lastSkyUpdate: 0,
     };
-    const observer = scene.onBeforeRenderObservable.add(() => _presetAnimLoop(ctx, observer));
+    const handle = observe(scene.onBeforeRenderObservable, () => _presetAnimLoop(ctx, handle));
     return true;
 }
 
