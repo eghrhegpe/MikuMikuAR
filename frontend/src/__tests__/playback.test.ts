@@ -76,14 +76,26 @@ import { updatePlaybackUI, seekFromEvent, initPlaybackObservables } from '../sce
 
 function makeObsMock() {
     const handlers: Array<() => void> = [];
+    const observers: Array<object> = [];
     return {
         add: vi.fn((h: () => void) => {
             handlers.push(h);
+            const obs = {};
+            observers.push(obs);
+            return obs;
+        }),
+        remove: vi.fn((obs: object) => {
+            const idx = observers.indexOf(obs);
+            if (idx >= 0) {
+                handlers.splice(idx, 1);
+                observers.splice(idx, 1);
+            }
         }),
         removeCallback: vi.fn((h: () => void) => {
             const idx = handlers.indexOf(h);
             if (idx >= 0) {
                 handlers.splice(idx, 1);
+                observers.splice(idx, 1);
             }
         }),
         _fire: () => {
@@ -284,6 +296,9 @@ describe('initPlaybackObservables', () => {
         tickObs.add.mockClear();
         playObs.add.mockClear();
         pauseObs.add.mockClear();
+        tickObs.remove.mockClear();
+        playObs.remove.mockClear();
+        pauseObs.remove.mockClear();
         tickObs.removeCallback.mockClear();
         playObs.removeCallback.mockClear();
         pauseObs.removeCallback.mockClear();
@@ -456,19 +471,19 @@ describe('initPlaybackObservables', () => {
     // ---- dispose ----
 
     it('dispose removes all registered callbacks', () => {
-        expect(tickObs.removeCallback).toHaveBeenCalledTimes(0);
-        expect(playObs.removeCallback).toHaveBeenCalledTimes(0);
-        expect(pauseObs.removeCallback).toHaveBeenCalledTimes(0);
+        expect(tickObs.remove).toHaveBeenCalledTimes(0);
+        expect(playObs.remove).toHaveBeenCalledTimes(0);
+        expect(pauseObs.remove).toHaveBeenCalledTimes(0);
 
         dispose();
 
-        expect(tickObs.removeCallback).toHaveBeenCalledTimes(1);
-        expect(playObs.removeCallback).toHaveBeenCalledTimes(1);
-        expect(pauseObs.removeCallback).toHaveBeenCalledTimes(1);
+        expect(tickObs.remove).toHaveBeenCalledTimes(1);
+        expect(playObs.remove).toHaveBeenCalledTimes(1);
+        expect(pauseObs.remove).toHaveBeenCalledTimes(1);
     });
 
-    it('dispose does not throw when removeCallback fails', () => {
-        tickObs.removeCallback.mockImplementationOnce(() => {
+    it('dispose does not throw when remove fails', () => {
+        tickObs.remove.mockImplementationOnce(() => {
             throw new Error('cleanup fail');
         });
         expect(() => dispose()).not.toThrow();
