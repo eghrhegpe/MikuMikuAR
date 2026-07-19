@@ -891,6 +891,7 @@ export const zhCN: Record<string, string> = {
     'scene.serialize.modelNoMesh': '模型 {name}: 加载成功但无网格数据',
     'scene.serialize.modelError': '模型 {name}: {error}',
     'scene.serialize.autosaveFailed': '自动保存失败',
+    'scene.serialize.restoreFailed': '场景恢复失败，已回滚到空场景',
 
     // model-material — 材质调节 UI
     'model-material.batchByPart': '按部位批量 — {name}',
@@ -1209,6 +1210,11 @@ export const zhCN: Record<string, string> = {
     'env.reflectionQualityMedium': '中 (256)',
     'env.reflectionQualityLow': '低 (128)',
     'env.reflectionQualityOff': '关闭',
+    'env.qualityProfile': '质量档位',
+    'env.qualityProfileHigh': '高',
+    'env.qualityProfileMedium': '中',
+    'env.qualityProfileLow': '低',
+    'env.qualityProfileHint': '统一控制反射、云、粒子等质量',
     'env.presetCalm': '平静',
     'env.presetRipple': '涟漪',
     'env.presetOcean': '海浪',

@@ -825,6 +825,7 @@ export const ja: Record<string, string> = {
         'モデル {name}: 読み込み成功しましたがメッシュデータがありません',
     'scene.serialize.modelError': 'モデル {name}: {error}',
     'scene.serialize.autosaveFailed': '自動保存に失敗しました',
+    'scene.serialize.restoreFailed': 'シーン復元に失敗しました。空のシーンにロールバックしました',
 
     // —— Library ——
     'library.recent': '最近',
@@ -1092,6 +1093,11 @@ export const ja: Record<string, string> = {
     'env.reflectionQualityMedium': '中 (256)',
     'env.reflectionQualityLow': '低 (128)',
     'env.reflectionQualityOff': 'オフ',
+    'env.qualityProfile': '品質プロファイル',
+    'env.qualityProfileHigh': '高',
+    'env.qualityProfileMedium': '中',
+    'env.qualityProfileLow': '低',
+    'env.qualityProfileHint': '反射、雲、粒子の品質を統一制御',
     'env.presetCalm': '穏やか',
     'env.presetRipple': 'さざ波',
     'env.presetOcean': '海の波',

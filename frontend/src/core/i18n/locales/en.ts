@@ -900,6 +900,7 @@ export const en: Record<string, string> = {
     'scene.serialize.modelNoMesh': 'Model {name}: loaded but no mesh data',
     'scene.serialize.modelError': 'Model {name}: {error}',
     'scene.serialize.autosaveFailed': 'Auto-save failed',
+    'scene.serialize.restoreFailed': 'Scene restore failed, rolled back to empty scene',
 
     // model-material — material adjust UI
     'model-material.batchByPart': 'Batch by part — {name}',
@@ -1223,6 +1224,11 @@ export const en: Record<string, string> = {
     'env.reflectionQualityMedium': 'Medium (256)',
     'env.reflectionQualityLow': 'Low (128)',
     'env.reflectionQualityOff': 'Off',
+    'env.qualityProfile': 'Quality Profile',
+    'env.qualityProfileHigh': 'High',
+    'env.qualityProfileMedium': 'Medium',
+    'env.qualityProfileLow': 'Low',
+    'env.qualityProfileHint': 'Unified quality for reflection, clouds, particles',
     'env.presetCalm': 'Calm',
     'env.presetRipple': 'Ripple',
     'env.presetOcean': 'Ocean',

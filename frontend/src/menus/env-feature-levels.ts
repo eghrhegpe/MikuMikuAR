@@ -1198,6 +1198,30 @@ export function buildWaterLevel(): PopupLevel {
             renderMenu(waterSchema, c);
         },
         [
+            // —— 质量档位（ADR-130 Phase 2.3）——
+            (rc) => {
+                const profileSchema: MenuNode[] = [
+                    {
+                        id: 'env:water:qualityProfile',
+                        kind: 'modeSlider',
+                        label: 'env.qualityProfile',
+                        control: {
+                            bind: 'env.qualityProfile',
+                            options: [
+                                { value: 'high', label: 'env.qualityProfileHigh' },
+                                { value: 'medium', label: 'env.qualityProfileMedium' },
+                                { value: 'low', label: 'env.qualityProfileLow' },
+                            ],
+                            onChange: () => {
+                                disposeWater();
+                                createWater(envState);
+                            },
+                        },
+                        icon: 'lucide:gauge',
+                    },
+                ];
+                renderMenu(profileSchema, rc);
+            },
             // —— 反射（ADR-062 P1）——
             (rc) => {
                 const reflectionSchema: MenuNode[] = [
