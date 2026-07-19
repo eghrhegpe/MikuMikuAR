@@ -1,6 +1,6 @@
 # ADR-074: 动态 Cubemap RT 球面反射
 
-> **状态**: ✅ 已实施（2026-07-09，Step 1-4 完成；Step 5 测试待补）
+> **状态**: 🗑️ 已放弃（2026-07-19，stash 内容已清理。Stash 中的 cubemap 代码与当前 HEAD 架构冲突——水反射已改用统一 `PlanarReflection` 引擎（ADR-092），model-loader 传参方式也不同（二进制 vs URL）。材料诊断工具等附属代码一并移除。后续若重新评估此方案，需基于当前 HEAD 重写。）
 > **关联**: ADR-062（水面反射 RT 系统·P3 路线）、ADR-024（ReflectionProbe 环境反射）、ADR-026（环境系统增强）
 > **前置**: ADR-062 P1（planar RT）已实施（2026-07-10），P2（波浪 UV 偏移 + 泡沫衰减）待实施
 
