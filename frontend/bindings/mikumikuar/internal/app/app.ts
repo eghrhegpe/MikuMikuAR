@@ -101,13 +101,6 @@ export function ClosePlazaWindow(): $CancellablePromise<void> {
 }
 
 /**
- * DeleteDanceSet deletes a dance set by id.
- */
-export function DeleteDanceSet(id: string): $CancellablePromise<void> {
-    return $Call.ByID(2514613065, id);
-}
-
-/**
  * DeleteEnvPreset removes a .env file by name.
  */
 export function DeleteEnvPreset(name: string): $CancellablePromise<void> {
@@ -219,13 +212,6 @@ export function GetCachedPlazaConfig(): $CancellablePromise<[string, string]> {
  */
 export function GetConfig(): $CancellablePromise<$models.Config | null> {
     return $Call.ByID(445048723);
-}
-
-/**
- * GetDanceSets returns all dance sets.
- */
-export function GetDanceSets(): $CancellablePromise<any[] | null> {
-    return $Call.ByID(3501710593);
 }
 
 /**
@@ -357,14 +343,6 @@ export function GetThumbnail(modelPath: string): $CancellablePromise<string> {
  */
 export function GetThumbnailBatch(paths: string[] | null): $CancellablePromise<{ [_ in string]?: string } | null> {
     return $Call.ByID(3092149765, paths);
-}
-
-/**
- * ImportDanceSet creates a dance set from a VMD file and audio file.
- * Returns the generated dance set id.
- */
-export function ImportDanceSet(vmdPath: string, audioPath: string, name: string): $CancellablePromise<string> {
-    return $Call.ByID(3125599775, vmdPath, audioPath, name);
 }
 
 /**
@@ -618,13 +596,6 @@ export function RemoveTag(libraryRef: string, tag: string): $CancellablePromise<
  */
 export function RenameModelPreset(oldName: string, newName: string): $CancellablePromise<void> {
     return $Call.ByID(268780553, oldName, newName);
-}
-
-/**
- * SaveDanceSet saves or updates a dance set with the given id.
- */
-export function SaveDanceSet(id: string, ds: any): $CancellablePromise<void> {
-    return $Call.ByID(1409373315, id, ds);
 }
 
 /**
