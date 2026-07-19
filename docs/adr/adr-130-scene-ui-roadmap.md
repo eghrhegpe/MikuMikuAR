@@ -1,7 +1,7 @@
 # ADR-130: 场景 UI 整体设计与前后端发展方向路线图
 
 **日期**: 2026-07-18
-> **状态**: 规划（Phase 2.2/2.3 已完成，Phase 2.1 部分完成）中
+> **状态**: 规划（Phase 2.1/2.2/2.3 已完成）中
 
 ## 背景
 
@@ -178,7 +178,7 @@ const migrators: Migrator[] = [
 | Phase 1.1 env-impl 拆分 + 单测 | P1 | 中 | 无 | 待推进 |
 | Phase 1.2 ADR-127 死代码处理 | P1 | 小 | 决策岔路 1 | 待推进 |
 | Phase 1.3 ADR-128 验证 | P1 | 小 | ADR-128 已完成 | 待推进 |
-| Phase 2.1 EnvState 单一源 | P2 | 大 | 无 | 🔶 部分完成（ADR-137，Go 字段已补齐，schema 派生待实施） |
+| Phase 2.1 EnvState 单一源 | P2 | 大 | 无 | ✅ 完成（ADR-137，schema 派生 + Go 字段补齐） |
 | Phase 2.2 迁移注册表化 | P2 | 中 | 无 | ✅ 完成（scene-serialize.ts 注册表化） |
 | Phase 2.3 性能降级统一 | P2 | 中 | ADR-118 | ✅ 完成（qualityProfile 全链路 + Go 已补齐） |
 | Phase 2.4 SetEnvState partial | P2 | 中 | Phase 2.1 | 待推进 |

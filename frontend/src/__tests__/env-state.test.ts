@@ -124,6 +124,7 @@ const defaultEnv: EnvState = {
     groundCollisionEnabled: true,
     sunAngle: 45,
     azimuth: -45,
+    lightingPresetName: undefined,
     timeOfDayActive: false,
     timeOfDaySpeed: 3,
 
