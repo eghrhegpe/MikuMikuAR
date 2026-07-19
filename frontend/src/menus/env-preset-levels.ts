@@ -5,6 +5,7 @@
 import { envState, cardContainer, setStatus } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { addSectionTitle, addPresetChip } from '../core/ui-helpers';
+import { addActionRow } from '../core/ui-rows';
 import { tryCatchStatus, showErrorToast } from '../core/utils';
 import { logWarn } from '../core/logger';
 import { t } from '../core/i18n/t';
@@ -105,40 +106,41 @@ function renderCategorizedPresets(
         );
     };
 
-    const saveRow = document.createElement('div');
-    saveRow.className = 'cs-row';
-    const saveBtn = document.createElement('button');
-    saveBtn.className = 'preset-chip';
-    saveBtn.style.flex = '1';
-    saveBtn.textContent = t('env-preset.saveCurrentCategory', { category: t(labelKey) });
-    saveBtn.addEventListener('click', async () => {
-        const autoLabel =
-            t(labelKey) +
-            ' ' +
-            new Date().toLocaleString(getLang(), {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-            });
-        const r = await tryCatchStatus(
-            async () => {
-                const preset = snapshotEnvPresetByCategory(autoLabel, category, envState);
-                const json = exportCategorizedEnvPreset(preset);
-                const filename = await SaveEnvPresetAuto(json);
-                return filename;
-            },
-            t('env-preset.saveFailed'),
-            (err) => showErrorToast(t('env-preset.saveErrorToast'), translateGoError(err))
-        );
-        if (r) {
-            setStatus(t('env-preset.saved', { name: r }), true);
-            reRender();
+    addActionRow(
+        wrapper,
+        t('env-preset.saveCurrentCategory', { category: t(labelKey) }),
+        async () => {
+            const autoLabel =
+                t(labelKey) +
+                ' ' +
+                new Date().toLocaleString(getLang(), {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                });
+            const r = await tryCatchStatus(
+                async () => {
+                    const preset = snapshotEnvPresetByCategory(autoLabel, category, envState);
+                    const json = exportCategorizedEnvPreset(preset);
+                    const filename = await SaveEnvPresetAuto(json);
+                    return filename;
+                },
+                t('env-preset.saveFailed'),
+                (err) => showErrorToast(t('env-preset.saveErrorToast'), translateGoError(err))
+            );
+            if (r) {
+                setStatus(t('env-preset.saved', { name: r }), true);
+                reRender();
+            }
         }
-    });
-    saveRow.appendChild(saveBtn);
-    wrapper.appendChild(saveRow);
+    );
+    // [adr-143] 覆写按钮 class 为 preset-chip，保持视觉与既有预设芯片一致
+    const saveBtn = wrapper.querySelector('button') as HTMLButtonElement;
+    if (saveBtn) {
+        saveBtn.className = 'preset-chip';
+    }
 
     container.appendChild(wrapper);
     reRender();

@@ -460,3 +460,106 @@ export function addWatchDirRow(
     dirRow.appendChild(selectBtn);
     container.appendChild(dirRow);
 }
+
+// ===================================================================
+// ADR-143 主题 6：收敛三个内联 DOM 孤岛
+// ===================================================================
+
+/** 创建一个可点击的操作按钮行（替代手写 cs-row + button）。
+ * 复用 addModeRow 的 mode-btn 样式，确保 UI 一致性。 */
+export function addActionRow(
+    container: HTMLElement,
+    label: string,
+    onClick: () => void,
+    opts?: { icon?: string; disabled?: boolean; testId?: string }
+): HTMLElement {
+    const { icon, disabled, testId } = opts ?? {};
+    const row = document.createElement('div');
+    row.className = 'type-row';
+    if (testId) {
+        row.setAttribute('data-testid', testId);
+    }
+
+    const btn = document.createElement('button');
+    if (disabled) {
+        btn.className = 'mode-btn';
+        btn.disabled = true;
+        btn.textContent = label;
+    } else {
+        btn.className = 'mode-btn';
+        btn.style.flex = '1';
+        btn.textContent = label;
+        if (icon) {
+            const iconEl = createIconifyIcon(icon);
+            if (iconEl) {
+                btn.prepend(iconEl);
+            }
+        }
+        btn.addEventListener('click', onClick);
+    }
+    row.appendChild(btn);
+    container.appendChild(row);
+    return row;
+}
+
+/** 创建一个不可交互的提示行（替代手写 cs-row + opacity 0.4 + pointer-events none）。
+ * 复用 cs-row / cs-label / cs-value 样式，视觉与既有行一致。 */
+export function addDisabledRow(
+    container: HTMLElement,
+    label: string,
+    value?: string,
+    opts?: { testId?: string }
+): HTMLElement {
+    const { testId } = opts ?? {};
+    const row = document.createElement('div');
+    row.className = 'cs-row';
+    row.style.opacity = '0.4';
+    row.style.pointerEvents = 'none';
+    if (testId) {
+        row.setAttribute('data-testid', testId);
+    }
+    const lbl = document.createElement('span');
+    lbl.className = 'cs-label';
+    lbl.textContent = label;
+    row.appendChild(lbl);
+    if (value !== undefined) {
+        const val = document.createElement('span');
+        val.className = 'cs-value';
+        val.textContent = value;
+        row.appendChild(val);
+    }
+    container.appendChild(row);
+    return row;
+}
+
+/** 创建一个内联 toggle 行（替代手写 toggle-row + toggle-label + toggle-switch）。
+ * 视觉上与 addToggleRow 保持一致，但用 span 模拟而非 input checkbox，
+ * 适用于不需要 aria/accessibility 完整性的菜单内联场景。 */
+export function addInlineToggleRow(
+    container: HTMLElement,
+    label: string,
+    value: boolean,
+    onChange: (v: boolean) => void,
+    opts?: { testId?: string }
+): HTMLElement {
+    const { testId } = opts ?? {};
+    const row = document.createElement('div');
+    row.className = 'toggle-row';
+    if (testId) {
+        row.setAttribute('data-testid', testId);
+    }
+    const lbl = document.createElement('span');
+    lbl.className = 'toggle-label';
+    lbl.textContent = label;
+    const sw = document.createElement('span');
+    sw.className = 'toggle-switch' + (value ? ' active' : '');
+    sw.addEventListener('click', () => {
+        const v = !sw.classList.contains('active');
+        sw.classList.toggle('active', v);
+        onChange(v);
+    });
+    row.appendChild(lbl);
+    row.appendChild(sw);
+    container.appendChild(row);
+    return row;
+}

@@ -82,11 +82,13 @@ class LoadManager {
     private _loadId: string | null = null;
     private _phase: LoadPhase | null = null;
 
-    /** 入队一个加载请求，返回 ResourceHandle（所有 kind 均返回 handle，失败返回 null）。 */
-    load(req: LoadRequest): Promise<ResourceHandle | null> {
+    /** 入队一个加载请求，返回 ResourceHandle（所有 kind 均返回 handle，失败返回 null）。
+     * [adr-143] signal：允许外部取消，透传至各底层 loader。
+     */
+    load(req: LoadRequest, signal?: AbortSignal): Promise<ResourceHandle | null> {
         // [doc:adr-135] P0.2: 每次 load 生成 loadId，贯穿 dispatch 全链路；enqueue onRejected 重试复用同一 loadId（合理：重试同一加载）
         const loadId = this._generateLoadId();
-        return this.enqueue(() => this.dispatch(req, loadId));
+        return this.enqueue(() => this.dispatch(req, loadId, signal));
     }
 
     /** 当前正在执行的加载请求（保留向后兼容，仅返回 req）。 */
@@ -128,7 +130,7 @@ class LoadManager {
         return result;
     }
 
-    private async dispatch(req: LoadRequest, loadId: string): Promise<ResourceHandle | null> {
+    private async dispatch(req: LoadRequest, loadId: string, signal?: AbortSignal): Promise<ResourceHandle | null> {
         this._current = req;
         this._loadId = loadId;
         try {
@@ -142,7 +144,8 @@ class LoadManager {
                         req.kind === 'stage',
                         req.skipAutoApply,
                         req.libraryPath,
-                        req.innerPath
+                        req.innerPath,
+                        signal
                     );
                     if (!id) {
                         return null;
@@ -156,7 +159,7 @@ class LoadManager {
                 }
                 case 'prop': {
                     const { loadProp } = await import('../scene/env/props');
-                    const id = await loadProp(req.path);
+                    const id = await loadProp(req.path, signal);
                     if (!id) {
                         return null;
                     }
@@ -167,7 +170,7 @@ class LoadManager {
                 }
                 case 'vmd': {
                     const { loadVMDFromPath } = await import('../scene/motion/vmd-loader');
-                    await loadVMDFromPath(req.path, req.modelId);
+                    await loadVMDFromPath(req.path, req.modelId, signal);
                     // [fix] 对齐 actor/stage：VMD 加载成功后刷新 motion-popup，
                     // 使常驻打开的菜单在加载完成后立即反映当前动作（getActiveMotion 已由 loadVMDFromPath 内 setActiveMotion 更新）。
                     this._phase = 'refresh';
@@ -182,7 +185,7 @@ class LoadManager {
                 }
                 case 'camera-vmd': {
                     const { loadCameraVmdFromPath } = await import('../scene/motion/vmd-loader');
-                    await loadCameraVmdFromPath(req.path);
+                    await loadCameraVmdFromPath(req.path, signal);
                     this._phase = 'refresh';
                     this._refreshMenus();
                     const fileName = req.path.split(/[\\/]/).pop() || '';

@@ -37,6 +37,7 @@ import { envState } from '../core/state';
 import { getEnvTextureBindingTarget, clearEnvTextureBindingTarget } from './env-menu';
 import { setMirrorSize, setMirrorResolution, getMirrorInfo, toggleMirror } from '../scene/env/env';
 import { addModeSlider } from '../core/ui-helpers';
+import { SCENE_EVENTS } from '../core/ui-constants';
 
 // ======== Barrel Re-Exports ========
 // 保持向后兼容——外部文件引用路径不变
@@ -279,7 +280,7 @@ function buildSceneRootItems(): PopupRow[] {
         kind: 'action',
         label: t('scene.saveScene'),
         icon: 'lucide:save',
-        target: 'scene:save',
+        target: SCENE_EVENTS.SAVE,
     });
     return items;
 }
@@ -452,7 +453,7 @@ const SCENE_ACTIONS: Record<string, () => void> = {
     'screenshot:batch': () => {
         void screenshotBatch();
     },
-    'scene:save': () => {
+    [SCENE_EVENTS.SAVE]: () => {
         void saveScene();
     },
     'scene:undo': () => {
