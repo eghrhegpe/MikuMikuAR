@@ -523,6 +523,14 @@ function renderItemsWithRAF(
         }
         return e.wrapLabel || e.trailing ? e : undefined;
     };
+    if (items.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'slide-empty';
+        empty.style.cssText = 'padding:24px;text-align:center;color:var(--text-muted);font-size:13px;';
+        empty.textContent = t('library.noModels');
+        card.appendChild(empty);
+        return;
+    }
     if (items.length <= RAF_BATCH_THRESHOLD) {
         for (const item of items) {
             if (item.kind === 'divider') {

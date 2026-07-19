@@ -283,6 +283,12 @@ export const en: Record<string, string> = {
     'motion.retarget.noModel': 'Please select a model first',
     'motion.retarget.noBones': 'No bone data',
     'motion.retarget.loaded': 'External animation loaded ({preset})',
+    'motion.retarget.title': 'External Animation Import',
+    'motion.retarget.mixamo': 'Mixamo → MMD',
+    'motion.retarget.mixamoHint': 'mixamorig:XXX bones',
+    'motion.retarget.vrm': 'VRM → MMD',
+    'motion.retarget.vrmHint': 'VRM standard bones',
+    'motion.retarget.customHint': 'Manual bone mapping',
 
     // ===== Procedural Motion =====
     'motion.procMotionMode': 'Procedural Motion Mode',
@@ -371,6 +377,10 @@ export const en: Record<string, string> = {
     'motion.boneOverride.applied': '✓ {bone} override applied',
     'motion.boneOverride.removed': '✕ {bone} override removed',
     'motion.boneOverride.allCleared': '✓ All bone overrides cleared',
+    'motion.boneOverride.pitch': 'Pitch (X)',
+    'motion.boneOverride.yaw': 'Yaw (Y)',
+    'motion.boneOverride.roll': 'Roll (Z)',
+    'motion.boneOverride.weight': 'Weight',
     // [doc:adr-116] Motion override modular UI
     'motion.override.title': 'Motion Override',
     'motion.override.enabled': '✓ Module enabled',
@@ -518,6 +528,9 @@ export const en: Record<string, string> = {
     'scene.screenshot': 'Screenshot',
     'scene.presetScenes': 'Preset Scenes',
     'scene.saveScene': 'Save Scene',
+    'scene.undo': 'Undo',
+    'scene.statusNoUndo': '✗ Nothing to undo',
+    'scene.undoApplied': '✓ Undo applied',
     'scene.postProcess': 'Post-processing',
     'scene.stage': 'Stage',
     'scene.physics': 'Physics',

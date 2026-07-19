@@ -282,6 +282,12 @@ export const zhCN: Record<string, string> = {
     'motion.retarget.noModel': '请先选择一个模型',
     'motion.retarget.noBones': '模型无骨骼数据',
     'motion.retarget.loaded': '外部动作已加载（{preset}）',
+    'motion.retarget.title': '外部动作导入',
+    'motion.retarget.mixamo': 'Mixamo → MMD',
+    'motion.retarget.mixamoHint': 'mixamorig:XXX 骨骼',
+    'motion.retarget.vrm': 'VRM → MMD',
+    'motion.retarget.vrmHint': 'VRM 标准骨骼',
+    'motion.retarget.customHint': '手动配置骨骼对应',
 
     // ===== 程序化动作 procmotion =====
     'motion.procMotionMode': '程序化动作模式',
@@ -368,6 +374,10 @@ export const zhCN: Record<string, string> = {
     'motion.boneOverride.applied': '✓ 已应用 {bone} 覆盖',
     'motion.boneOverride.removed': '✕ 已移除 {bone} 覆盖',
     'motion.boneOverride.allCleared': '✓ 已清除所有骨骼覆盖',
+    'motion.boneOverride.pitch': '俯仰 (X)',
+    'motion.boneOverride.yaw': '偏航 (Y)',
+    'motion.boneOverride.roll': '翻滚 (Z)',
+    'motion.boneOverride.weight': '权重',
     // [doc:adr-116] 动作覆盖模块化 UI
     'motion.override.title': '动作覆盖',
     'motion.override.enabled': '✓ 已启用模块',
@@ -516,6 +526,9 @@ export const zhCN: Record<string, string> = {
     'scene.screenshot': '截图',
     'scene.presetScenes': '预设场景',
     'scene.saveScene': '保存场景',
+    'scene.undo': '撤销',
+    'scene.statusNoUndo': '✗ 没有可撤销的操作',
+    'scene.undoApplied': '✓ 已撤销',
     'scene.postProcess': '后处理',
     'scene.stage': '舞台',
     'scene.physics': '物理',

@@ -419,6 +419,12 @@ export const ko: Record<string, string> = {
     'motion.retarget.noModel': '먼저 모델을 선택하세요',
     'motion.retarget.noBones': '뼈대 데이터가 없습니다',
     'motion.retarget.loaded': '외부 애니메이션 로드됨 ({preset})',
+    'motion.retarget.title': '외부 애니메이션 가져오기',
+    'motion.retarget.mixamo': 'Mixamo → MMD',
+    'motion.retarget.mixamoHint': 'mixamorig:XXX 뼈대',
+    'motion.retarget.vrm': 'VRM → MMD',
+    'motion.retarget.vrmHint': 'VRM 표준 뼈대',
+    'motion.retarget.customHint': '수동 뼈대 매핑',
 
     // ===== 절차적 procedural =====
     'motion.procMotionMode': '프로그래매틱 모션 모드',
@@ -549,6 +555,9 @@ export const ko: Record<string, string> = {
     'scene.screenshot': '스크린샷',
     'scene.presetScenes': '프리셋 장면',
     'scene.saveScene': '장면 저장',
+    'scene.undo': '실행 취소',
+    'scene.statusNoUndo': '✗ 실행 취소할 항목 없음',
+    'scene.undoApplied': '✓ 실행 취소됨',
     'scene.postProcess': '후처리',
     'scene.stage': '무대',
     'scene.physics': '물리',
@@ -1416,6 +1425,10 @@ export const ko: Record<string, string> = {
     'motion.boneOverride.edit': '편집',
     'motion.boneOverride.editLoaded': '✓ {bone} 오버라이드를 폼에 로드했습니다',
     'motion.boneOverride.allCleared': '✓ 모든 본 오버라이드를 지웠습니다',
+    'motion.boneOverride.pitch': '피치 (X)',
+    'motion.boneOverride.yaw': '요 (Y)',
+    'motion.boneOverride.roll': '롤 (Z)',
+    'motion.boneOverride.weight': '가중치',
     // [doc:adr-116] 모션 오버라이드 모듈 UI
     'motion.override.title': '모션 오버라이드',
     'motion.override.enabled': '✓ 모듈 활성화됨',
