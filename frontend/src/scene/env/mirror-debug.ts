@@ -12,18 +12,17 @@ import {
     Vector3,
     Plane,
     Matrix,
-    AbstractMesh,
 } from '@babylonjs/core';
-import type { Observer } from '@babylonjs/core';
 import { getScene } from './env-context';
 import { envState } from '@/core/config';
+import { observe, type ObserverHandle } from '@/core/observer-handle';
 
 let _mirrorMesh: Mesh | null = null;
 let _mirrorRT: MirrorTexture | null = null;
 let _mirrorMat: StandardMaterial | null = null;
 // 场景网格增删观察者：镜面激活期间自动刷新反射列表（新加载的 MMD 角色等）
-let _meshAddedObserver: Observer<AbstractMesh> | null = null;
-let _meshRemovedObserver: Observer<AbstractMesh> | null = null;
+let _meshAddedObserver: ObserverHandle | null = null;
+let _meshRemovedObserver: ObserverHandle | null = null;
 
 // 可调参数（通过 API 修改，下次 create 时生效）
 let _mirrorWidth = 22;
@@ -96,8 +95,8 @@ export function createMirror(): void {
     _mirrorRT.renderList = scene.meshes.filter((m) => m !== _mirrorMesh);
 
     // 场景网格增删时自动刷新反射列表（如先建镜子后加载 MMD 角色，角色需进入反射）
-    _meshAddedObserver = scene.onNewMeshAddedObservable.add(() => refreshMirrorRenderList());
-    _meshRemovedObserver = scene.onMeshRemovedObservable.add(() => refreshMirrorRenderList());
+    _meshAddedObserver = observe(scene.onNewMeshAddedObservable, () => refreshMirrorRenderList());
+    _meshRemovedObserver = observe(scene.onMeshRemovedObservable, () => refreshMirrorRenderList());
 
     // 材质：低反照率底色 + 强反射，便于区分反射内容
     _mirrorMat = new StandardMaterial('mirrorMat', scene);
@@ -114,11 +113,11 @@ export function createMirror(): void {
 export function disposeMirror(): void {
     const scene = getScene();
     if (_meshAddedObserver) {
-        scene.onNewMeshAddedObservable.remove(_meshAddedObserver);
+        _meshAddedObserver.dispose();
         _meshAddedObserver = null;
     }
     if (_meshRemovedObserver) {
-        scene.onMeshRemovedObservable.remove(_meshRemovedObserver);
+        _meshRemovedObserver.dispose();
         _meshRemovedObserver = null;
     }
     if (_mirrorRT) {

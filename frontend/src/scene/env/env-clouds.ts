@@ -16,6 +16,7 @@ import {
 import { EnvState } from '@/core/config';
 import { _envSys, getScene } from './env-context';
 import { ensureEnvUpdateObserver } from './env-impl';
+import { observe, type ObserverHandle } from '@/core/observer-handle';
 
 // ======== Cloud System Constants ========
 /** Density scale factor applied to cloudCover (1.2 = 20% boost) */
@@ -216,6 +217,10 @@ let _debugCloudRing: Mesh | null = null;
 let _debugCloudMarkers: Mesh[] = [];
 /** 云层位置可视化的半透明平面（调试用） */
 let _debugCloudDeck: Mesh | null = null;
+
+// ======== Observer 句柄（替代 metadata 存储） ========
+let _cloudFollowHandle: ObserverHandle | null = null;
+let _cloudUpdateHandle: ObserverHandle | null = null;
 
 /** 清理所有调试可视化对象。 */
 function _clearDebugVisuals(): void {
@@ -602,7 +607,7 @@ export function createClouds(state: EnvState): void {
     mesh.isPickable = false;
     mesh.position.y = 0;
 
-    const followObs = scene.onBeforeRenderObservable.add(() => {
+    _cloudFollowHandle = observe(scene.onBeforeRenderObservable, () => {
         const cam = scene.activeCamera;
         if (!cam) {
             return;
@@ -677,7 +682,7 @@ export function createClouds(state: EnvState): void {
     mat.setColor3('sceneFogColor', new Color3(0.53, 0.7, 0.92));
 
     const startTime = performance.now();
-    const obs = scene.onBeforeRenderObservable.add(() => {
+    _cloudUpdateHandle = observe(scene.onBeforeRenderObservable, () => {
         const cam = scene.activeCamera;
         if (!cam) {
             return;
@@ -710,7 +715,6 @@ export function createClouds(state: EnvState): void {
             scene.fogEnabled ? scene.fogColor : new Color3(0.53, 0.7, 0.92)
         );
     });
-    mesh.metadata = { obs, followObs, farZ };
 
     mesh.material = mat;
     _volCloudMesh = mesh;
@@ -725,16 +729,14 @@ export function disposeClouds(): void {
     // Clean up debug visualization objects
     _clearDebugVisuals();
 
-    const scene = getScene();
-
     // Remove observers first (before disposing mesh/material)
-    if (_volCloudMesh?.metadata?.obs) {
-        scene.onBeforeRenderObservable.remove(_volCloudMesh.metadata.obs);
-        _volCloudMesh.metadata.obs = null;
+    if (_cloudFollowHandle) {
+        _cloudFollowHandle.dispose();
+        _cloudFollowHandle = null;
     }
-    if (_volCloudMesh?.metadata?.followObs) {
-        scene.onBeforeRenderObservable.remove(_volCloudMesh.metadata.followObs);
-        _volCloudMesh.metadata.followObs = null;
+    if (_cloudUpdateHandle) {
+        _cloudUpdateHandle.dispose();
+        _cloudUpdateHandle = null;
     }
 
     // Dispose material before mesh (material may reference mesh)

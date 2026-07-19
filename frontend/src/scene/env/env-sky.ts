@@ -20,9 +20,11 @@ import { logWarn } from '@/core/utils';
 import { _envSys, getScene, resolveStaticAsset } from './env-context';
 import { ensureEnvUpdateObserver } from './env-impl';
 import { _disposeSunDisc } from '../render/lighting';
+import { observe, type ObserverHandle } from '@/core/observer-handle';
 
 // ======== Module state ========
 let _lastProceduralSkyKey = '';
+let _skyFollowHandle: ObserverHandle | null = null;
 
 /** 天空渐变 canvas 尺寸 */
 const SKY_TEX_SIZE = 256;
@@ -233,7 +235,7 @@ function createProceduralSky(state: EnvState): void {
     _envSys.sky.skyMesh = sphere;
 
     // 跟随相机，与云层同心（同 center），确保深度测试正确
-    const followObs = scene.onBeforeRenderObservable.add(() => {
+    _skyFollowHandle = observe(scene.onBeforeRenderObservable, () => {
         const cam = scene.activeCamera;
         if (!cam) {
             return;
@@ -241,7 +243,6 @@ function createProceduralSky(state: EnvState): void {
         sphere.position.x = cam.position.x;
         sphere.position.z = cam.position.z;
     });
-    sphere.metadata = { skyFollowObs: followObs };
 
     scene.clearColor = new Color4(0, 0, 0, 1);
     const starsPhase = state.starsEnabled ? (state.sunAngle > 10 ? 'h' : 'l') : '';
@@ -302,7 +303,7 @@ function loadSkyCube(path: string, rotationY: number, intensity: number): void {
     _envSys.sky.skyMesh = sphere;
 
     // 跟随相机，与云层同心（同 center），确保深度测试正确
-    const followObs = scene.onBeforeRenderObservable.add(() => {
+    _skyFollowHandle = observe(scene.onBeforeRenderObservable, () => {
         const cam = scene.activeCamera;
         if (!cam) {
             return;
@@ -310,18 +311,18 @@ function loadSkyCube(path: string, rotationY: number, intensity: number): void {
         sphere.position.x = cam.position.x;
         sphere.position.z = cam.position.z;
     });
-    sphere.metadata = { skyFollowObs: followObs };
 }
 
 // ======== Public API ========
 
 export function disposeSky(): void {
     const scene = getScene();
+    // 移除相机跟随观察者，避免泄漏
+    if (_skyFollowHandle) {
+        _skyFollowHandle.dispose();
+        _skyFollowHandle = null;
+    }
     if (_envSys.sky.skyMesh) {
-        // 移除相机跟随观察者，避免泄漏
-        if (_envSys.sky.skyMesh.metadata?.skyFollowObs) {
-            scene.onBeforeRenderObservable.remove(_envSys.sky.skyMesh.metadata.skyFollowObs);
-        }
         _envSys.sky.skyMesh.material?.dispose();
         _envSys.sky.skyMesh.dispose();
         _envSys.sky.skyMesh = null;

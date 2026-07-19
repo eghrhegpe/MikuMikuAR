@@ -4,12 +4,12 @@ import {
     Texture,
     GPUParticleSystem,
     ParticleSystem,
-    Observer,
     Scene,
 } from '@babylonjs/core';
 import { EnvState, envState } from '@/core/config';
 import { getWindVector } from '@/core/wind-utils';
 import { logWarn } from '@/core/utils';
+import { observe, type ObserverHandle } from '@/core/observer-handle';
 import {
     ensureEnvUpdateObserver,
     addRipple,
@@ -34,7 +34,7 @@ let _splashBurstPool: SplashBurst[] = [];
 let _splashPoolReady = false;
 
 // 碰撞检测 observer — 每帧遍历 CPU 粒子，检测地面碰撞
-let _collisionObserver: Observer<Scene> | null = null;
+let _collisionObserver: ObserverHandle | null = null;
 
 // 保存粒子系统创建时的初始发射方向，风力基于此计算，避免叠加
 let _initialDir1: Vector3 | null = null;
@@ -449,7 +449,7 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
     }
 
     // 每帧跟随相机（XZ 跟随，Y 按类型策略定位）
-    _envSys.particles.followObserver = scene.onBeforeRenderObservable.add(() => {
+    _envSys.particles.followObserver = observe(scene.onBeforeRenderObservable, () => {
         const cam = scene.activeCamera;
         if (!cam) {
             return;
@@ -479,11 +479,11 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
 export function disposeParticles(): void {
     const scene = getScene();
     if (_collisionObserver) {
-        scene.onBeforeRenderObservable.remove(_collisionObserver);
+        _collisionObserver.dispose();
         _collisionObserver = null;
     }
     if (_envSys.particles.followObserver) {
-        scene.onBeforeRenderObservable.remove(_envSys.particles.followObserver);
+        _envSys.particles.followObserver.dispose();
         _envSys.particles.followObserver = null;
     }
     if (_envSys.particles.system) {
@@ -601,7 +601,7 @@ function _gridCellKey(x: number, z: number): number {
 function startCollisionDetection(ps: ParticleSystem, type: EnvState['particleType']): void {
     const scene = getScene();
     if (_collisionObserver) {
-        scene.onBeforeRenderObservable.remove(_collisionObserver);
+        _collisionObserver.dispose();
         _collisionObserver = null;
     }
 
@@ -609,7 +609,7 @@ function startCollisionDetection(ps: ParticleSystem, type: EnvState['particleTyp
     const frameSkip = type === 'rain' ? 4 : 2;
     let frameIdx = 0;
 
-    _collisionObserver = scene.onBeforeRenderObservable.add(() => {
+    _collisionObserver = observe(scene.onBeforeRenderObservable, () => {
         const particles = ps.particles;
         if (!particles || particles.length === 0) {
             return;
@@ -666,8 +666,7 @@ export function disposeSplash(): void {
     _splashPoolReady = false;
     // 清理旧 observer（兼容遗留 _envSys.splash.observer）
     if (_envSys.splash.observer) {
-        const scene = getScene();
-        scene.onBeforeRenderObservable.remove(_envSys.splash.observer);
+        _envSys.splash.observer.dispose();
         _envSys.splash.observer = null;
     }
 }

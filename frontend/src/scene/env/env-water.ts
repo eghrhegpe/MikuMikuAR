@@ -3,11 +3,11 @@ import { Camera } from '@babylonjs/core/Cameras/camera';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { Vector3, Matrix } from '@babylonjs/core/Maths/math.vector';
 import { Texture } from '@babylonjs/core/Materials/Textures/texture';
+import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { Constants } from '@babylonjs/core/Engines/constants';
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
 import { ShaderMaterial } from '@babylonjs/core/Materials/shaderMaterial';
-import type { Observer } from '@babylonjs/core/Misc/observable';
 import { DirectionalLight } from '@babylonjs/core/Lights/directionalLight';
 import { DefaultRenderingPipeline } from '@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline';
 import { Effect } from '@babylonjs/core/Materials/effect';
@@ -87,7 +87,7 @@ let _waterPhase = 0; // 累计波相位，避免调节波速时相位跳变
 let _waterWaveSpeed = 1; // 当前波速，供每帧相位累加使用
 
 // === 每帧更新水面的 observer ===
-let _waterUpdateObserver: Observer<Scene> | null = null;
+let _waterUpdateObserver: ObserverHandle | null = null;
 let _waterScene: Scene | null = null;
 
 // === 平面反射（统一平面反射引擎，ADR-092）===
@@ -867,7 +867,7 @@ export function createWater(state: EnvState): void {
 
     if (!_waterUpdateObserver) {
         _waterScene = scene;
-        _waterUpdateObserver = scene.onBeforeRenderObservable.add(() =>
+        _waterUpdateObserver = observe(scene.onBeforeRenderObservable, () =>
             _waterUpdateCallback(scene)
         );
     }
@@ -907,7 +907,7 @@ export function disposeWater(): void {
     if (_waterUpdateObserver) {
         // 使用注册时捕获的 scene 引用摘除，避免 getScene() 在 scene 已 dispose 时返回 null 导致漏删
         if (_waterScene) {
-            _waterScene.onBeforeRenderObservable.remove(_waterUpdateObserver);
+            _waterUpdateObserver.dispose();
         }
         _waterUpdateObserver = null;
         _waterScene = null;
