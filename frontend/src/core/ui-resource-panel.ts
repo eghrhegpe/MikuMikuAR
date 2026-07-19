@@ -4,7 +4,7 @@
 
 import { createIconifyIcon } from './icons';
 import { createVirtualGrid, type VirtualGridHandle } from './ui-virtual-grid';
-import { thumbnailCache as liveThumbnailCache } from './state';
+import { thumbnailCache as liveThumbnailCache, setThumbnailUpdateCallback } from './state';
 import { thumbDataUrl } from '@/scene/manager/thumbnail-capture';
 
 // ======== 活跃面板追踪（缩略图冷缓存回填） ========
@@ -510,3 +510,6 @@ export function notifyThumbnailUpdate(): void {
         panel.refreshThumbs();
     }
 }
+
+// 注册缩略图更新回调，替代旧版动态 import 模式（ADR-141）。
+setThumbnailUpdateCallback(notifyThumbnailUpdate);

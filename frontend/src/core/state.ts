@@ -11,7 +11,6 @@
  */
 
 import { reactive } from './reactivity';
-import { logWarn } from './logger';
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import type {
     ModelInstance,
@@ -23,7 +22,6 @@ import type {
     PendingVmd,
     RecentMotion,
     DisplayNamePriority,
-    CameraMode,
     LibrarySortMode,
     FeetState,
 } from './types';
@@ -89,13 +87,6 @@ export function setFocusedModelId(id: string | null): void {
     focusedModelId = id;
 }
 
-// ======== Port ========
-
-export let currentPort = 0;
-export function setCurrentPort(p: number): void {
-    currentPort = p;
-}
-
 // ======== Playback State ========
 
 export let isPlaying = false;
@@ -156,6 +147,13 @@ export function setPopupOpen(v: boolean): void {
 // ======== Thumbnail Cache ========
 
 export const thumbnailCache = new Map<string, string>();
+
+/** 缩略图更新回调（由 ui-resource-panel.ts 注册，避免模块间动态 import 耦合）。 */
+let _thumbnailUpdateCb: (() => void) | null = null;
+export function setThumbnailUpdateCallback(cb: () => void): void {
+    _thumbnailUpdateCb = cb;
+}
+
 export function setThumbnailCache(m: Map<string, string>): void {
     // [fix:thumbnail] 原地 mutate 而非替换 Map 对象，保证所有持有 live 引用的
     // 面板（createResourcePanel / IntersectionObserver）能感知缓存更新。
@@ -164,9 +162,7 @@ export function setThumbnailCache(m: Map<string, string>): void {
         thumbnailCache.set(k, v);
     }
     // 通知所有活跃面板刷新缩略图 DOM（解决冷缓存首次加载不显示缩略图的问题）
-    import('./ui-resource-panel')
-        .then((mod) => mod.notifyThumbnailUpdate())
-        .catch((err) => logWarn('state', 'notifyThumbnailUpdate failed:', err));
+    _thumbnailUpdateCb?.();
 }
 
 // ======== Recent Models ========
@@ -174,13 +170,6 @@ export function setThumbnailCache(m: Map<string, string>): void {
 export let recentModels: string[] = [];
 export function setRecentModels(r: string[]): void {
     recentModels = r;
-}
-
-// ======== Camera Mode ========
-
-export let cameraMode: CameraMode = 'orbit';
-export function setCameraMode(m: CameraMode): void {
-    cameraMode = m;
 }
 
 // ======== Display Name Priority ========
@@ -229,9 +218,6 @@ export function setModelMetaCache(
 // ======== Tree Expand State ========
 
 export let expandedFolders = new Set<string>();
-export function setExpandedFolders(s: Set<string>): void {
-    expandedFolders = s;
-}
 
 export function toggleExpandedFolder(path: string): void {
     if (expandedFolders.has(path)) {
