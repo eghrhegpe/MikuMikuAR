@@ -10,7 +10,6 @@ const mockState = vi.hoisted(() => ({
     modelMetaCache: new Map<string, any>(),
     recentModels: [] as string[],
     focusedModelId: null as string | null,
-    motionBindingTargetId: null as string | null,
 }));
 
 // Capture calls to slideRow for buildLevel tests
@@ -96,9 +95,6 @@ vi.mock('../core/config', () => ({
     get focusedModelId() {
         return mockState.focusedModelId;
     },
-    get motionBindingTargetId() {
-        return mockState.motionBindingTargetId;
-    },
 
     normPath: (p: string) => p.replace(/\\/g, '/').replace(/\/+$/, ''),
     getBrowseDir: (category: string) => {
@@ -138,7 +134,6 @@ vi.mock('../core/config', () => ({
     setModelMetaCache: vi.fn(),
     setRecentModels: vi.fn(),
     setFocusedModelId: vi.fn(),
-    setMotionBindingTargetId: vi.fn(),
     closeAllOverlays: vi.fn(),
     modelRegistry: new Map(),
     // [修复] library-core.ts 模块加载时 new LoadingGuard()（来自 config 的 re-export），

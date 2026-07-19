@@ -1,7 +1,7 @@
 // [doc:architecture] Camera Levels — 相机参数弹窗层级
 // 从 scene-menu.ts 迁移到 motion-popup.ts
 
-import { setStatus, cardContainer, stackRegistry, setMotionBindingTargetId } from '../core/config';
+import { setStatus, cardContainer, stackRegistry } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import {
     slideRow,
@@ -237,7 +237,6 @@ function buildCameraSchema(): MenuNode[] {
                         t('motion.loadCamVmd'),
                         false,
                         () => {
-                            setMotionBindingTargetId(null);
                             const level = stackRegistry.buildLevel!(
                                 getBrowseDir('vmd'),
                                 t('motion.camVmdLabel'),

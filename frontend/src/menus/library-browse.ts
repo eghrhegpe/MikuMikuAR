@@ -14,7 +14,6 @@ import {
     recentModels,
     computeLibraryRef,
     layerBindingTargetId,
-    motionBindingTargetId,
     stackRegistry,
     getMenuWrapper,
     getBrowseDir,
@@ -211,16 +210,10 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                 return;
             }
             if (row.model) {
-                // [doc:adr-131] 兼容回退：图层/动作绑定仍走全局标志位
-                // （后续 ADR 迁移到 bindLayer / bindMotion 契约后移除）
+                // [doc:adr-131] 兼容回退：图层绑定仍走全局标志位
+                // （后续 ADR 迁移到 bindLayer 契约后移除）
                 if (row.model.format === 'vmd' && layerBindingTargetId) {
                     const targetId = layerBindingTargetId;
-                    closeAllOverlays();
-                    loadManager.load({ kind: 'vmd', path: row.model.file_path, modelId: targetId });
-                    return;
-                }
-                if (row.model.format === 'vmd' && motionBindingTargetId) {
-                    const targetId = motionBindingTargetId;
                     closeAllOverlays();
                     loadManager.load({ kind: 'vmd', path: row.model.file_path, modelId: targetId });
                     return;

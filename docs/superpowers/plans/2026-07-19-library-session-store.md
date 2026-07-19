@@ -106,7 +106,7 @@ git commit -m "feat: ADR-135 P0.1 LibrarySessionStore 状态收敛"
 | P0.3 | deferRestore 可见化 LoadingState | ✅ 已完成（见第 7 节） | 扩展 ADR-135 |
 | P1.1 | load-manager 错误处理 + onRejected 不再吞错 | ✅ 已完成（见第 8 节） | 扩展 ADR-135 |
 | P1.2 | `_isExtracting` per-model Set 升级 | ✅ 已完成（见第 9 节） | 扩展 ADR-135 |
-| P1.3 | ADR-131 后续清理 3 个绑定标志位 | 待启动 | ADR-131 后续 |
+| P1.3 | ADR-131 后续清理 3 个绑定标志位 | ✅ 已完成（见第 10 节） | ADR-131 后续 |
 | P2 | onModelRowClick 拆分 + 缩略图 AbortSignal + 移除兼容门面 | 待启动 | 新 ADR |
 | P3 | PopupRow discriminated union | 待启动 | 新 ADR |
 
@@ -538,3 +538,75 @@ export interface LibraryLoadingState {
 | Set 跨 HMR 不重置 | 与原 boolean 行为一致；Vite HMR 默认保留 ES 模块状态 |
 | `file_path` 重复（同一路径加载两次） | Set 天然去重；第二次 `setExtracting` 是 no-op，`clearExtracting` 在 finally 仍正确 |
 | 测试文件迁移破坏其他 AI 改动 | 测试期望与新 API 对齐，行为不变；12 个用例全绿 |
+
+---
+
+## 10. P1.3 ADR-131 后续清理：删除死代码 motionBindingTargetId（已实施 2026-07-20）
+
+### 10.1 目标
+
+ADR-131「后续」明确：「在绑定手势全部迁移到 `bindLayer` / `bindMotion` 契约后，移除 `layerBindingTargetId` / `motionBindingTargetId` / `modelReplaceTargetId` 三个全局标志位及 `closeAllOverlays` 中的对应清理」。
+
+P1.3 启动前调研发现 `motionBindingTargetId` 是**死代码**：
+
+- 全代码库 `grep setMotionBindingTargetId\([^n]` 仅命中 `state.ts:220` 的函数定义本身
+- 从未被 `setMotionBindingTargetId(<someId>)` 设置为非 null 值
+- `library-browse.ts:222-227` 的派发分支 `if (row.model.format === 'vmd' && motionBindingTargetId)` 因此永不触发
+- `motion-camera-levels.ts:240` 的 `setMotionBindingTargetId(null)` 是冗余清空
+
+### 10.2 设计：最小可行收敛
+
+| 标志位 | P1.3 决策 | 原因 |
+|--------|----------|------|
+| `motionBindingTargetId` | **删除** | 死代码：从未被 set 非 null 值，派发分支永不触发 |
+| `layerBindingTargetId` | **保留** | `motion-popup.ts:713/748` 仍在反推派发中使用，未迁移到 outcome 契约 |
+| `modelReplaceTargetId` | **保留** | ADR-131 明确「暂保留为兼容层」 |
+
+### 10.3 修改清单
+
+| # | 文件 | 改动 |
+|---|------|------|
+| 1 | `frontend/src/core/state.ts:217-222` | 删除 `motionBindingTargetId` 变量 + `setMotionBindingTargetId` 函数 |
+| 2 | `frontend/src/core/utils.ts:8-14` | 从 `import` 移除 `setMotionBindingTargetId` |
+| 3 | `frontend/src/core/utils.ts:471-474` | `closeAllOverlays` 内删除 `setMotionBindingTargetId(null)`；注释更新为「图层/模型替换绑定目标」 |
+| 4 | `frontend/src/menus/library-browse.ts:17` | 从 `import` 移除 `motionBindingTargetId` |
+| 5 | `frontend/src/menus/library-browse.ts:212-220` | 删除死代码派发分支 `if (row.model.format === 'vmd' && motionBindingTargetId)`；注释更新为「图层绑定仍走全局标志位」 |
+| 6 | `frontend/src/menus/motion-camera-levels.ts:4` | 从 `import` 移除 `setMotionBindingTargetId` |
+| 7 | `frontend/src/menus/motion-camera-levels.ts:240` | 删除 `setMotionBindingTargetId(null);` 一行 |
+| 8 | `frontend/src/__tests__/library-core.test.ts:13` | 从 `mockState` 删除 `motionBindingTargetId: null` 字段 |
+| 9 | `frontend/src/__tests__/library-core.test.ts:99-101` | 删除 mock getter `get motionBindingTargetId()` |
+| 10 | `frontend/src/__tests__/library-core.test.ts:141` | 删除 mock setter `setMotionBindingTargetId: vi.fn()` |
+
+### 10.4 不改的部分
+
+| 项 | 原因 |
+|----|------|
+| `layerBindingTargetId` / `modelReplaceTargetId` | 见 10.2 — 仍在使用 |
+| ADR-131 / ADR-135 文档中提及 `motionBindingTargetId` 的段落 | 历史叙述（契约设计目的），保留 |
+| `types.ts:360-362` 的 BrowseOutcome 注释 | 描述契约设计目的（"取代散落的全局绑定标志位"），历史叙述保留 |
+| `MikuMikuAR/MikuMikuAR/frontend/src/config.ts` 孤儿副本 | 历史快照，不被引用，不动 |
+| `novel/02-UI交互/09-弹窗之战.md` | 小说，不动 |
+| `build/android/.../index-*.js` | 构建产物，不动 |
+
+### 10.5 验收清单
+
+- [x] `state.ts` 删除 `motionBindingTargetId` 和 `setMotionBindingTargetId`
+- [x] `utils.ts` import + closeAllOverlays 调用清理
+- [x] `library-browse.ts` import + 死代码派发分支删除
+- [x] `motion-camera-levels.ts` import + 240 行清空调用删除
+- [x] `library-core.test.ts` mock 字段 + getter + setter 删除
+- [x] `grep motionBindingTargetId frontend/src` 零生产代码命中（仅注释 / 文档保留）
+- [x] `npm run check` 零新增 tsc 错误
+- [x] `npm run test -- library-core library-session-store` 全绿
+
+### 10.6 用户感知收益
+
+无。纯死代码清理，不改变任何运行时行为。
+
+### 10.7 风险与缓解
+
+| 风险 | 缓解 |
+|------|------|
+| `layerBindingTargetId` 仍保留导致「清理不彻底」误解 | 在 10.2 / 10.4 明确说明保留原因，归 P2 进一步迁移到 outcome 契约 |
+| `closeAllOverlays` 注释从「图层/动作/模型替换」改为「图层/模型替换」 | 行为正确（动作绑定从未生效），注释与代码一致 |
+| 测试 mock 减少一个字段 | 测试用例本身不依赖该字段（mock 值始终为 null），全绿 |

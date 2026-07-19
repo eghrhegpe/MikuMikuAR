@@ -10,7 +10,6 @@ import {
     overridePaths,
     setPopupOpen,
     setLayerBindingTargetId,
-    setMotionBindingTargetId,
     setModelReplaceTargetId,
 } from './state';
 import { normPath } from './fileservice';
@@ -469,9 +468,8 @@ export function closeAllOverlays(): void {
         dialogOverlay.style.pointerEvents = '';
     }
     _onCloseAllOverlays?.();
-    // 清除图层/动作/模型替换绑定目标，防止残留下次误触发
+    // 清除图层/模型替换绑定目标，防止残留下次误触发
     setLayerBindingTargetId(null);
-    setMotionBindingTargetId(null);
     setModelReplaceTargetId(null);
 }
 

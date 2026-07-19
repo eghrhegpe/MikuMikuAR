@@ -214,13 +214,6 @@ export function getRecentMotions(): RecentMotion[] {
     return _recentMotions;
 }
 
-// ======== Motion Binding Target ========
-
-export let motionBindingTargetId: string | null = null;
-export function setMotionBindingTargetId(v: string | null): void {
-    motionBindingTargetId = v;
-}
-
 // ======== Layer Binding Target (Motion Layers) ========
 
 export let layerBindingTargetId: string | null = null;
