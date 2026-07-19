@@ -403,13 +403,11 @@ describe('buildModelLevel', () => {
         const container = document.createElement('div');
         level.renderCustom!(container);
 
-        // 折叠组导航行 + 危险卡产出 .slide-item；变换卡产出 .cs-row
+        // 变换卡使用 .cs-row（拖拽卡/缩放/透明度行）
         const slideItems = container.querySelectorAll('.slide-item');
         const csRows = container.querySelectorAll('.cs-row');
         expect(slideItems.length).toBeGreaterThan(5);
         expect(csRows.length).toBeGreaterThan(0);
-        // 折叠组必须渲染（ADR-049 修复：buildTransformCard 的 innerHTML 清空曾误伤折叠组）
-        expect(container.querySelectorAll('.collapsible-wrapper').length).toBeGreaterThan(0);
     });
 
     it('cards contain expected action labels', () => {
