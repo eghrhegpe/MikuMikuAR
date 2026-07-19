@@ -15,6 +15,7 @@ import { getMotionMenu } from './motion-popup';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
+import { addPresetChip } from '../core/ui-helpers';
 
 function refreshMotionMenu(): void {
     getMotionMenu()?.reRender();
@@ -203,10 +204,7 @@ const gazeSchema: MenuNode[] = [
                     ];
                     const current = getPerceptionState().emotion;
                     for (const e of emotions) {
-                        const btn = document.createElement('button');
-                        btn.className = 'preset-chip' + (current === e.value ? ' active' : '');
-                        btn.textContent = t(e.label);
-                        btn.addEventListener('click', () => {
+                        addPresetChip(group, t(e.label), current === e.value, () => {
                             activatePerception();
                             setPerceptionState({
                                 emotion: e.value as
@@ -215,7 +213,6 @@ const gazeSchema: MenuNode[] = [
                             triggerAutoSave();
                             refreshMotionMenu();
                         });
-                        group.appendChild(btn);
                     }
                     c.appendChild(group);
                 },

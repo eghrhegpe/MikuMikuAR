@@ -177,12 +177,51 @@ export function addPresetChip(
     label: string,
     active: boolean,
     onClick: () => void,
-    opts?: { onUpdate?: (btn: HTMLButtonElement) => void; wrap?: boolean }
+    opts?: {
+        onUpdate?: (btn: HTMLButtonElement) => void;
+        wrap?: boolean;
+        /** Iconify 图标名，前置到文本前（无则忽略） */
+        icon?: string;
+        /** 'danger' = 红底动作按钮；'badge' = 只读标签（不可点击）；默认 'default' */
+        variant?: 'default' | 'danger' | 'badge';
+        /** tooltip 文本 */
+        title?: string;
+        /** 上外边距（px） */
+        marginTop?: number;
+        /** 左外边距（px 或 'auto'） */
+        marginLeft?: number | 'auto';
+        /** 点击时阻止冒泡到父行（行内嵌按钮防误触） */
+        stopPropagation?: boolean;
+    }
 ): HTMLButtonElement {
     const btn = document.createElement('button');
-    btn.className = 'preset-chip' + (active ? ' active' : '') + (opts?.wrap ? ' wrap-2' : '');
-    btn.textContent = label;
-    btn.addEventListener('click', onClick);
+    const variant = opts?.variant ?? 'default';
+    const classes = ['preset-chip'];
+    if (active) classes.push('active');
+    if (variant === 'danger') classes.push('danger');
+    if (variant === 'badge') classes.push('badge');
+    if (opts?.wrap) classes.push('wrap-2');
+    btn.className = classes.join(' ');
+
+    if (opts?.icon) {
+        const iconEl = createIconifyIcon(opts.icon);
+        if (iconEl) btn.appendChild(iconEl);
+    }
+    btn.appendChild(document.createTextNode(label));
+
+    if (opts?.title) btn.title = opts.title;
+    if (opts?.marginTop != null) btn.style.marginTop = `${opts.marginTop}px`;
+    if (opts?.marginLeft != null) {
+        btn.style.marginLeft = opts.marginLeft === 'auto' ? 'auto' : `${opts.marginLeft}px`;
+    }
+
+    if (variant !== 'badge') {
+        btn.addEventListener('click', (e) => {
+            if (opts?.stopPropagation) e.stopPropagation();
+            onClick();
+        });
+    }
+
     container.appendChild(btn);
 
     // === 自更新支持 ===

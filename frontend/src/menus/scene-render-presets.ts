@@ -7,7 +7,7 @@ import type { RenderState } from '../scene/scene';
 import { showPrompt } from '../core/dialog';
 import { tryCatchStatus, showErrorToast } from '../core/utils';
 import { logWarn } from '../core/logger';
-import { slideRow } from '../core/ui-helpers';
+import { slideRow, addPresetChip } from '../core/ui-helpers';
 import {
     getRenderState,
     setRenderState,
@@ -189,10 +189,7 @@ function buildPresetsSchema(): MenuNode[] {
                     wrapper.style.cssText =
                         'display:flex;flex-direction:column;align-items:center;gap:2px;';
 
-                    const btn = document.createElement('button');
-                    btn.className = 'preset-chip';
-                    btn.textContent = t(FILTER_PRESET_LABELS[key] || key);
-                    btn.addEventListener('click', () => {
+                    addPresetChip(wrapper, t(FILTER_PRESET_LABELS[key] || key), false, () => {
                         const preset = getFilterPreset(key);
                         if (preset) {
                             transitionRenderState({ ...defaultRenderState(), ...preset }, 2000);
@@ -202,7 +199,6 @@ function buildPresetsSchema(): MenuNode[] {
                             true
                         );
                     });
-                    wrapper.appendChild(btn);
 
                     const desc = document.createElement('span');
                     desc.textContent = t(FILTER_PRESET_DESCS[key] || '');
