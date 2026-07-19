@@ -20,7 +20,7 @@ import {
     cardContainer,
 } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
-import { slideRow, addToggleRow, addSliderRow, addEmptyRow } from '../core/ui-helpers';
+import { slideRow, addToggleRow, addSliderRow, addEmptyRow, addSectionTitle } from '../core/ui-helpers';
 import { loadManager } from '../core/load-manager';
 
 import {
@@ -48,7 +48,6 @@ import { triggerAutoSave, pushUndoSnapshot, offerSceneUndo } from '../scene/scen
 import { SelectImportFile } from '../core/wails-bindings';
 import {
     setProcMotionMode,
-    setProcMotionAutoSwitch,
     getProcMotionState,
     regenerateProcMotion,
     getLipSyncState,
@@ -58,7 +57,17 @@ import type { ProcMotionMode } from '../motion-algos/procedural-motion';
 import { buildProcMotionLevel } from './motion-procmotion-levels';
 import { buildGazeTrackingLevel } from './motion-gaze-levels';
 import { buildCameraLevel } from './motion-camera-levels';
-import { buildMotionOverrideLevel } from './motion-override-levels';
+import {
+    buildMotionOverrideLevel,
+    buildModuleParamLevel,
+    buildAdvancedBoneOverrideLevel,
+} from './motion-override-levels';
+import {
+    initMotionModules,
+    getRegisteredModules,
+    createModule,
+    getModuleState,
+} from '../scene/motion/motion-modules/registry';
 import { buildPoseStudioLevel } from './motion-pose-levels';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
 import {
@@ -73,6 +82,15 @@ import type { SceneMotionIntent, VmdLayer, ModelMotionSlots, ModelInstance } fro
 import { renderMenu } from './render-menu';
 import { logWarn } from '../core/utils';
 import type { MenuNode } from './menu-schema';
+import { focusedModelId } from '../core/config';
+import { createIconifyIcon } from '../core/icons';
+import {
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+} from '../scene/motion/motion-modules/motion-history';
+import { applyModuleSnapshot } from '../scene/motion/motion-modules/module-base';
 
 // 模块级状态（动作绑定面板）：
 //   layerBindingTargetId = 顶层「添加动作」浏览入口的目标模型 id（承接 VMD 选择）
@@ -440,131 +458,180 @@ function buildLayerLevel(layerId: string, id: string): PopupLevel {
  * 图层以「聚焦模型 / 首个 actor」为目标，与根层 Card 1 状态行共用 playback.ts 单一数据源。
  */
 function buildMotionDetailSchema(): MenuNode[] {
-    const schema: MenuNode[] = [];
     const active = getActiveMotion();
     const foc = modelManager.focused();
     const target =
         foc ?? [...modelManager.modelRegistry.values()].find((m) => m.kind === 'actor') ?? null;
 
-    // 卡片 1：当前动作名 + 清除按钮
-    schema.push({
-        id: 'detail:current',
-        kind: 'custom',
-        renderCustom: (c) => {
-            cardContainer(c, (inner) => {
-                slideRow(
-                    inner,
-                    active ? 'lucide:music-2' : 'lucide:circle-slash',
-                    active?.vmdName || t('motion.intent.none'),
-                    false,
-                    () => {},
-                    undefined,
-                    undefined,
-                    undefined,
-                    undefined,
-                    { wrapLabel: true }
-                );
-                if (active && target?.mmdModel && mmdRuntime) {
-                    const clearBtn = document.createElement('button');
-                    clearBtn.className = 'preset-chip';
-                    clearBtn.textContent = t('motion.clearVmd');
-                    clearBtn.addEventListener('click', () => {
-                        const snap = pushUndoSnapshot();
-                        setActiveMotion(null);
-                        if (isPlaying) {
-                            mmdRuntime.pauseAnimation();
-                            setIsPlaying(false);
-                        }
-                        updatePlaybackUI();
-                        getMotionMenu()?.reRender();
-                        triggerAutoSave();
-                        setStatus(t('motion.motionCleared'), true);
-                        offerSceneUndo(t('motion.motionCleared'), snap, () => {
-                            getMotionMenu()?.reRender();
-                            setStatus(t('motion.undoApplied'), true);
-                        });
-                    });
-                    inner.appendChild(clearBtn);
-                }
-            });
-        },
-    });
-
-    // 卡片 2：场景级图层管理（仅在有叠加层时显示）
-    if (active && active.vmdLayers.length > 0) {
-        schema.push({
-            id: 'detail:layers',
+    return [
+        {
+            id: 'detail:main',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    for (const layer of active.vmdLayers) {
-                        slideRow(inner, '', layer.name, false, () => {
-                            const lvl = buildLayerLevel(layer.id, target?.id ?? '');
-                            getMotionMenu()?.push(lvl);
-                        }, undefined, undefined, undefined, undefined, {
-                            wrapLabel: true,
-                            trailing: {
-                                icon: 'lucide:settings-2',
-                                title: t('library.modelTools'),
-                                onClick: () => {
-                                    const lvl = buildLayerLevel(layer.id, target?.id ?? '');
-                                    getMotionMenu()?.push(lvl);
-                                },
-                            },
-                        });
-                    }
-                });
-            },
-        });
-    }
-
-    // 卡片 3：骨骼覆盖（跳转入口，避免二级界面挤占空间）
-    if (active) {
-        schema.push({
-            id: 'detail:boneOverride',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
+                    // ── 当前动作 ──
+                    addSectionTitle(inner, t('motion.currentMotion'));
                     slideRow(
                         inner,
-                        'tabler:bone',
-                        t('motion.override.title'),
-                        true,
-                        () => {
-                            getMotionMenu()?.push(buildMotionOverrideLevel());
+                        active ? 'lucide:clapperboard' : 'lucide:circle-slash',
+                        active?.vmdName || t('motion.intent.none'),
+                        false,
+                        () => {},
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        { wrapLabel: true }
+                    );
+                    if (active && target?.mmdModel && mmdRuntime) {
+                        const clearBtn = document.createElement('button');
+                        clearBtn.className = 'preset-chip';
+                        clearBtn.textContent = t('motion.clearVmd');
+                        clearBtn.addEventListener('click', () => {
+                            const snap = pushUndoSnapshot();
+                            setActiveMotion(null);
+                            if (isPlaying) {
+                                mmdRuntime.pauseAnimation();
+                                setIsPlaying(false);
+                            }
+                            updatePlaybackUI();
+                            getMotionMenu()?.reRender();
+                            triggerAutoSave();
+                            setStatus(t('motion.motionCleared'), true);
+                            offerSceneUndo(t('motion.motionCleared'), snap, () => {
+                                getMotionMenu()?.reRender();
+                                setStatus(t('motion.undoApplied'), true);
+                            });
+                        });
+                        inner.appendChild(clearBtn);
+                    }
+
+                    // ── 图层（有叠加层时显示） ──
+                    if (active && active.vmdLayers.length > 0) {
+                        addSectionTitle(inner, t('motion.layerSettings'));
+                        for (const layer of active.vmdLayers) {
+                            slideRow(inner, '', layer.name, false, () => {
+                                const lvl = buildLayerLevel(layer.id, target?.id ?? '');
+                                getMotionMenu()?.push(lvl);
+                            }, undefined, undefined, undefined, undefined, {
+                                wrapLabel: true,
+                                trailing: {
+                                    icon: 'lucide:settings-2',
+                                    title: t('library.modelTools'),
+                                    onClick: () => {
+                                        const lvl = buildLayerLevel(layer.id, target?.id ?? '');
+                                        getMotionMenu()?.push(lvl);
+                                    },
+                                },
+                            });
                         }
+                    }
+
+                    // ── 动作覆盖（模块列表） ──
+                    if (active) {
+                        const modelId = focusedModelId;
+                        if (modelId) {
+                            addSectionTitle(inner, t('motion.override.title'));
+
+                            // 撤销/重做
+                            const btnGroup = document.createElement('div');
+                            btnGroup.style.cssText = 'display:flex;gap:4px;padding:0 0 4px;';
+
+                            const undoBtn = document.createElement('button');
+                            undoBtn.className = 'slide-action';
+                            const undoIcon = createIconifyIcon('lucide:undo-2');
+                            if (undoIcon) undoBtn.appendChild(undoIcon);
+                            undoBtn.title = 'Ctrl+Z';
+                            undoBtn.style.opacity = canUndo(modelId) ? '1' : '0.3';
+                            undoBtn.style.pointerEvents = canUndo(modelId) ? 'auto' : 'none';
+                            undoBtn.addEventListener('click', () => {
+                                if (!canUndo(modelId)) return;
+                                const applier = (snap: Record<string, { enabled: boolean; params: Record<string, import('@/core/types').ParamValue> }>) => {
+                                    applyModuleSnapshot(modelId, snap);
+                                };
+                                undo(modelId, applier);
+                                setStatus(t('motion.undoApplied'), true);
+                                getMotionMenu()?.reRender();
+                            });
+                            btnGroup.appendChild(undoBtn);
+
+                            const redoBtn = document.createElement('button');
+                            redoBtn.className = 'slide-action';
+                            const redoIcon = createIconifyIcon('lucide:redo-2');
+                            if (redoIcon) redoBtn.appendChild(redoIcon);
+                            redoBtn.title = 'Ctrl+Shift+Z';
+                            redoBtn.style.opacity = canRedo(modelId) ? '1' : '0.3';
+                            redoBtn.style.pointerEvents = canRedo(modelId) ? 'auto' : 'none';
+                            redoBtn.addEventListener('click', () => {
+                                if (!canRedo(modelId)) return;
+                                const applier = (snap: Record<string, { enabled: boolean; params: Record<string, import('@/core/types').ParamValue> }>) => {
+                                    applyModuleSnapshot(modelId, snap);
+                                };
+                                redo(modelId, applier);
+                                setStatus(t('motion.override.redoApplied'), true);
+                                getMotionMenu()?.reRender();
+                            });
+                            btnGroup.appendChild(redoBtn);
+
+                            inner.appendChild(btnGroup);
+
+                            // 模块列表
+                            initMotionModules();
+                            const modules = getRegisteredModules();
+                            for (const mod of modules) {
+                                const state = getModuleState(modelId, mod.id);
+                                slideRow(
+                                    inner,
+                                    mod.meta.icon ?? '',
+                                    t(mod.meta.labelKey),
+                                    true,
+                                    () => {
+                                        getMotionMenu()?.push(buildModuleParamLevel(mod.id));
+                                    },
+                                    undefined,
+                                    undefined,
+                                    undefined,
+                                    {
+                                        value: state.enabled,
+                                        onChange: (v: boolean) => {
+                                            const inst = createModule(mod.id, modelId);
+                                            if (v) inst?.enable(); else inst?.disable();
+                                            setStatus(v ? t('motion.override.enabled') : t('motion.override.disabled'), true);
+                                            getMotionMenu()?.reRender();
+                                        },
+                                        bind: () => getModuleState(modelId, mod.id).enabled,
+                                    }
+                                );
+                            }
+
+                            // 高级骨骼覆盖入口
+                            slideRow(inner, 'tabler:bone', t('motion.boneOverride.title'), true, () => {
+                                getMotionMenu()?.push(buildAdvancedBoneOverrideLevel());
+                            });
+                        }
+                    }
+
+                    // ── 播放速度 ──
+                    addSectionTitle(inner, t('motion.playbackSpeed'));
+                    addSliderRow(
+                        inner,
+                        t('motion.playbackSpeed'),
+                        _playbackSpeed,
+                        0.1,
+                        2.0,
+                        0.05,
+                        (v) => {
+                            _playbackSpeed = v;
+                            if (mmdRuntime) {
+                                mmdRuntime.timeScale = v;
+                            }
+                        },
+                        'lucide:gauge'
                     );
                 });
             },
-        });
-    }
-
-    // 播放速度（底部播放栏无此功能，保留）
-    schema.push({
-        id: 'detail:speed',
-        kind: 'custom',
-        renderCustom: (c) => {
-            cardContainer(c, (inner) => {
-                addSliderRow(
-                    inner,
-                    t('motion.playbackSpeed'),
-                    _playbackSpeed,
-                    0.1,
-                    2.0,
-                    0.05,
-                    (v) => {
-                        _playbackSpeed = v;
-                        if (mmdRuntime) {
-                            mmdRuntime.timeScale = v;
-                        }
-                    },
-                    'lucide:gauge'
-                );
-            });
         },
-    });
-
-    return schema;
+    ];
 }
 
 function buildMotionDetailLevel(): PopupLevel {
@@ -769,11 +836,6 @@ function motionOnItemClick(row: PopupRow): void {
         regenerateProcMotion();
         return;
     }
-    if (row.target === 'procmotion:autoswitch') {
-        setProcMotionAutoSwitch(!getProcMotionState().autoSwitch);
-        getMotionMenu()?.reRender();
-        return;
-    }
     if (row.target === 'lipsync:toggle') {
         setLipSyncEnabled(!getLipSyncState().enabled);
         getMotionMenu()?.reRender();
@@ -910,14 +972,6 @@ function motionOnItemClick(row: PopupRow): void {
         });
         return;
     }
-    if (row.target === '__music_clear__') {
-        clearAudio();
-        setStatus(t('motion.musicRemoved'), true);
-        if (getMotionMenu()) {
-            getMotionMenu()?.reRender();
-        }
-        return;
-    }
     if (row.target === '__retarget_mixamo__') {
         _importExternalAnimation('mixamo');
         return;
@@ -1023,7 +1077,7 @@ function buildRetargetLevel(): PopupLevel {
 function _buildCurrentMotionLabel(): { label: string; icon: string } {
     const active = getActiveMotion();
     if (active?.vmdName) {
-        return { label: active.vmdName, icon: 'lucide:music-2' };
+        return { label: active.vmdName, icon: 'lucide:clapperboard' };
     }
     const procState = getProcMotionState();
     if (procState.mode !== 'off') {
@@ -1104,6 +1158,9 @@ function buildMotionRootItems(): PopupRow[] {
             wrapLabel: true,
         });
     }
+
+    // ===== Card 2: 库 =====
+    items.push({ kind: 'divider', label: '', icon: '', target: '' });
     items.push({
         kind: 'action',
         label: t('motion.browseMotionLibrary'),
@@ -1111,13 +1168,32 @@ function buildMotionRootItems(): PopupRow[] {
         target: '__scene_motion_browse__',
     });
     items.push({
-        kind: 'folder',
-        label: t('motion.procMotion'),
-        icon: 'lucide:wind',
-        target: 'motion:procmotion',
+        kind: 'action',
+        label: getAudioName() || t('motion.browseMusic'),
+        icon: 'lucide:music',
+        target: '__music_browse__',
+        sublabel: getAudioName() ? t('motion.musicLibrary') : undefined,
+        wrapLabel: true,
+        trailing: getAudioName()
+            ? {
+                  icon: 'lucide:trash-2',
+                  title: t('motion.removeMusic'),
+                  danger: true,
+                  onClick: () => {
+                      const snap = pushUndoSnapshot();
+                      clearAudio();
+                      getMotionMenu()?.reRender();
+                      setStatus(t('motion.musicRemoved'), true);
+                      offerSceneUndo(t('motion.musicRemoved'), snap, () => {
+                          getMotionMenu()?.reRender();
+                          setStatus(t('motion.undoApplied'), true);
+                      });
+                  },
+              }
+            : undefined,
     });
 
-    // ===== Card 2: 场景工具 =====
+    // ===== Card 3: 场景工具 =====
     items.push({ kind: 'divider', label: '', icon: '', target: '' });
     items.push({
         kind: 'folder',
@@ -1125,21 +1201,6 @@ function buildMotionRootItems(): PopupRow[] {
         icon: 'lucide:video',
         target: 'motion:camera',
     });
-    items.push({
-        kind: 'action',
-        label: getAudioName() ? t('motion.musicLibrary') : t('motion.browseMusic'),
-        icon: 'lucide:music',
-        target: '__music_browse__',
-        sublabel: getAudioName() || undefined,
-    });
-    if (getAudioName()) {
-        items.push({
-            kind: 'action',
-            label: t('motion.removeMusic'),
-            icon: 'lucide:trash-2',
-            target: '__music_clear__',
-        });
-    }
     items.push({
         kind: 'folder',
         label: t('motion.poseStudio.title'),
