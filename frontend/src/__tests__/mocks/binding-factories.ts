@@ -137,7 +137,6 @@ export function createMockEnvState(overrides?: Partial<EnvState>): EnvState {
         groundNormalTexture: '',
         groundNormalStrength: 1,
         groundElevationColoring: false,
-        groundFollowCamera: false,
         groundPbrEnabled: false,
         groundProceduralTexture: 'none',
         groundProceduralSeed: 42,

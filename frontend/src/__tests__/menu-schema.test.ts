@@ -64,9 +64,9 @@ describe('ADR-093 Menu Schema PoC', () => {
                 {
                     id: 't:toggle',
                     kind: 'toggle',
-                    label: 'env.groundFollowCamera',
-                    control: { bind: 'env.groundFollowCamera' },
-                    icon: 'lucide:map-pin',
+                    label: 'env.groundInfinite',
+                    control: { bind: 'env.groundInfinite' },
+                    icon: 'lucide:infinity',
                 },
             ];
             renderMenu(schema, container);
@@ -166,7 +166,7 @@ describe('ADR-093 Menu Schema PoC', () => {
                     kind: 'folder',
                     label: 'env.ground',
                     defaultOpen: true,
-                    headerToggle: { bind: 'env.groundFollowCamera' },
+                    headerToggle: { bind: 'env.groundInfinite' },
                     children: [
                         {
                             id: 't:htoggle:child',
@@ -630,7 +630,7 @@ describe('ADR-093 Menu Schema PoC', () => {
                 {
                     id: 't:light',
                     kind: 'toggle',
-                    label: 'env.groundFollowCamera',
+                    label: 'env.groundInfinite',
                     control: { bind: 'light.shadowEnabled' },
                 },
             ];
@@ -648,7 +648,7 @@ describe('ADR-093 Menu Schema PoC', () => {
                 {
                     id: 't:perception',
                     kind: 'toggle',
-                    label: 'env.groundFollowCamera',
+                    label: 'env.groundInfinite',
                     control: { bind: 'perception.eyeTrackingEnabled' },
                 },
             ];
