@@ -30,8 +30,16 @@ export const CAMERA_PRESETS: CameraAnglePreset[] = [
 ];
 
 /**
+ * 角色正面在世界中的基准相机 alpha（经验标定值）。
+ * 模型默认朝向使正面落在世界 -Z，对应 Babylon ArcRotateCamera 的 alpha = -π/2；
+ * 原代码把「正面」锚在 alpha=0（+X），导致实际拍到的是侧面。
+ * 预设方位角相对此基准叠加，再减去模型当前偏航，使全部预设以角色朝向为参考。
+ */
+const FRONT_BASE_RAD = -Math.PI / 2;
+
+/**
  * 聚焦模型绕 Y 轴的当前偏航（弧度）。
- * 预设方位角叠加到该偏航之上，使「正面/左45°/右45°」等以角色朝向为参考，而非世界轴。
+ * 用于让预设方位角随角色朝向旋转。
  */
 function getFocusedModelYaw(): number {
     const id = focusedModelId;
@@ -43,10 +51,19 @@ function getFocusedModelYaw(): number {
 }
 
 /**
+ * 计算某预设对应的相机 alpha（弧度），以聚焦模型朝向为参考。
+ * 公式：基准正面角 + 预设相对方位角(度→弧度) − 模型偏航。
+ * 角色旋转 yaw 后，所有预设整体绕角色朝向旋转，保持「正面=正脸」不变。
+ */
+export function presetCameraAlpha(preset: CameraAnglePreset, yaw: number): number {
+    return FRONT_BASE_RAD + (preset.azimuth * Math.PI) / 180 - yaw;
+}
+
+/**
  * 切换到指定预设角度。
  * 使用 ArcRotateCamera 的 alpha(方位角), beta(仰角), radius(距离)。
  * OrbitParams 不含 alpha，需直接操作 Babylon ArcRotateCamera。
- * 方位角叠加聚焦模型的偏航，使角度以角色朝向为参考（角色旋转后预设随之旋转）。
+ * 方位角以角色朝向为参考（基准正面角 + 预设相对方位 − 模型偏航）。
  */
 export function applyCameraPreset(preset: CameraAnglePreset): void {
     const yaw = getFocusedModelYaw();
@@ -55,10 +72,10 @@ export function applyCameraPreset(preset: CameraAnglePreset): void {
         beta,
         distance: preset.distance,
     });
-    // alpha 不在 OrbitParams 中，直接设置相机；叠加模型偏航使其相对角色朝向
+    // alpha 不在 OrbitParams 中，直接设置相机；以角色朝向为参考
     const cam = scene.activeCamera;
     if (cam instanceof ArcRotateCamera) {
-        cam.alpha = (preset.azimuth * Math.PI) / 180 - yaw;
+        cam.alpha = presetCameraAlpha(preset, yaw);
     }
 }
 
