@@ -1,6 +1,6 @@
 # ADR-138: env-dispatcher 破循环依赖
 
-- **状态**: 部分实施（2026-07-19 Phase 1-3 完成：env-dispatcher.ts 新建 + env-bridge.ts 改造 + env-impl.ts 回调注册）
+- **状态**: 已完成（2026-07-19 Phase 3 完成：env-water/clouds/particles 各自注册回调 + env-bridge → env-impl 依赖消除）
 - **日期**: 2026-07-19
 - **相关**: ADR-130（场景 UI 路线图）、ADR-137（EnvState 单一源 schema）
 

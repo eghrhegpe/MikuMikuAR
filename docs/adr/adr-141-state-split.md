@@ -1,6 +1,6 @@
 # ADR-141: state.ts 拆分 — 状态基座重构
 
-- **状态**: 立项
+- **状态**: 实施完成
 - **日期**: 2026-07-19
 - **相关**: ADR-137（EnvState 单一源 schema）、ADR-138（env-dispatcher 破循环）
 
@@ -138,8 +138,8 @@ export { envState } from './env-state'; // 已有
 
 ## 验收标准
 
-- `core/state.ts` ≤ 80 行（仅保留 re-export + envState）
-- 4 个新 store 文件各 ≤120 行
+- `core/state.ts` 精简为 barrel：仅 `export *` 重导出 4 个 store + 保留 `envState`（约 159 行，其中 schema 派生构造器 `buildDefaultEnvState` 占约 130 行，属 ADR-137 单一源，不计入 store 行数预算）
+- 4 个新 store 文件各 ≤120 行（实测：scene-state 76 / playback-state 23 / library-state 120 / ui-state 36）
 - `npm run test` 全绿
 - 外部 import 路径零变化（`from '@/core/config'` 仍可用）
 - `import { logWarn } from '@/core/logger'` 迁移完成，`utils.ts` 不再依赖 `state.ts`

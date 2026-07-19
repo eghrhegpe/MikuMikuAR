@@ -1,6 +1,19 @@
 # ADR-088：音效系统 — 脚步声与 SFX 总线
 
-> **状态**: 部分实现（Phase A 已完成，Phase B/C 待开发）
+> **状态**: Phase A + Phase B 已完成；Phase C（音乐增强）搁置（2026-07-19）
+>
+> **状态核对说明（2026-07-19）**：原状态行写「Phase B 待开发」，但代码核查发现 Phase B 实际早已落地——`footstep.ts:1` 文件头注释直接写「Phase A + B」，且以下 Phase B 子项均已实现：
+> - ✅ **B1 地面材质 → 音色映射**：`resolveGroundSfxKind()` + `SYNTH_CFG` 5 类（concrete/grass/wood/water/default），见 `footstep.ts:34-75`。
+> - ✅ **B2 左右声像**：`audio-bus.ts:135-144` 实现 `StereoPannerNode` 串联链，`footstep.ts:145-148` 按落点相对相机 X 偏移计算 pan。
+> - ✅ **B3 音高随机化 + 多采样变体**：`VARIANT_COUNT=3` 不同种子合成 + `detune = ±80 音分`，见 `footstep.ts:22, 142`。
+> - ✅ **B4 独立降级检测**：`footstep-detect-fallback.ts` 已落地，`footstep.ts:154-156` 在脚部跟随未开时启动 fallback。
+>
+> 长期挂黄灯属状态行未同步，并非真有未做工作。本次正式关闭 Phase A/B。
+>
+> **Phase C（音乐增强：播放列表 / crossfade / 循环模式）搁置理由**：
+> - 既有单曲目播放器 + VMD 同步（`outfit/audio.ts`）已满足舞蹈演绎核心需求。
+> - 播放列表与曲库管理偏「资产运营」而非「音频引擎」，无核心技术挑战，价值密度低。
+> - 触发条件：用户明确反馈单曲不够用、需要 crossfade 转场时再启。
 > **日期**: 2026-07-11
 > **关联**: ADR-085（脚部地面跟随，提供落地事件数据源）
 

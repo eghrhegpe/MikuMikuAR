@@ -245,7 +245,8 @@ export async function playAudio(url: string, name: string): Promise<void> {
     }
 }
 
-export async function loadAudioFile(filePath: string): Promise<void> {
+export async function loadAudioFile(filePath: string, signal?: AbortSignal): Promise<void> {
+    if (signal?.aborted) return;
     const bytes = await readFileBytes(filePath);
     if (!bytes) {
         logWarn('audio', 'loadAudioFile: failed to read', filePath);
