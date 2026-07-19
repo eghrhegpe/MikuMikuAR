@@ -9,7 +9,6 @@ import {
     libraryRoot,
     overridePaths,
     setPopupOpen,
-    setModelReplaceTargetId,
 } from './state';
 import { normPath } from './fileservice';
 import { setStatus } from './status-bar';
@@ -467,8 +466,6 @@ export function closeAllOverlays(): void {
         dialogOverlay.style.pointerEvents = '';
     }
     _onCloseAllOverlays?.();
-    // 清除模型替换绑定目标，防止残留下次误触发
-    setModelReplaceTargetId(null);
 }
 
 // ======== Menu Wrapper Management ========
