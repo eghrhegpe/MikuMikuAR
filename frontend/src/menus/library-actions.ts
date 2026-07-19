@@ -173,6 +173,12 @@ export async function prepareModelRestore(
     browseDir: string,
     category: 'pmx' | 'stage' | 'prop'
 ): Promise<void> {
+    // [fix] allModels 为空时跳过恢复：扫描未完成或扫描失败，restore 必然失败
+    if (!allModels || allModels.length === 0) {
+        setPendingAutoExpand(null);
+        setPendingFocusModel(null);
+        return;
+    }
     let restoreTarget: string | null = null;
     let focusModel: LibraryModel | null = null;
     let fromRecentModel = false;
