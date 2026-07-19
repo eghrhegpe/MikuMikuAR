@@ -301,3 +301,19 @@
 验证：`cd frontend && npm run build`（tsc + vite build）通过，0 错误。
 
 提交范围：仅 `frontend/src/menus/menu.ts`、`frontend/src/scene/env/env-clouds.ts`、`docs/adr/adr-146-function-duplication-triage.md`。工作树其余 `docs/*` 改动与删除项非本次任务，未纳入。
+
+### 2026-07-20 — P1 主题 1 第一步：扩展 addPresetChip + 迁移 3 处最简手写 chip
+
+用户批准「继续」后，按 ADR 风险缓解策略（先迁移 3 处最简单，验证后再批量）推进 P1 主题 1：
+
+- **扩展** `core/ui-collapsible.ts:175` `addPresetChip` 的 opts：`icon` / `variant('default'|'danger'|'badge')` / `title` / `marginTop` / `marginLeft('auto'|number)` / `stopPropagation`；`badge` 变体为只读标签（不绑 click）；向后兼容既有 `onUpdate`/`wrap` 调用方。
+- **迁移 3 处手写 chip 到 `addPresetChip`**（消除 `className='preset-chip'` 手写拼接）：
+  - `frontend/src/menus/scene-render-presets.ts:192-205`（滤镜预设，纯文本）
+  - `frontend/src/menus/motion-gaze-levels.ts:205-218`（情绪选项，选中态 active）
+  - `frontend/src/menus/menu.ts:950-958`（声明式 `row.kind==='chips'` 分支，直接用 `addPresetChip` 替代手写循环）
+
+剩余 17 处手写 chip（含 icon/danger/badge/margin/stopPropagation 差异）待下一批迁移，届时直接用已扩展的 opts 覆盖。
+
+验证：`cd frontend && npm run build`（tsc + vite build）通过，0 错误。
+
+提交范围：仅 `core/ui-collapsible.ts`、`menus/scene-render-presets.ts`、`menus/motion-gaze-levels.ts`、`menus/menu.ts`、`docs/adr/adr-146-function-duplication-triage.md`。

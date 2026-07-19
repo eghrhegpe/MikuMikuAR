@@ -1,6 +1,6 @@
 import { PopupLevel, PopupRow, showHint, hideHint } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
-import { slideRow, addSliderRow, addToggleRow, addModeSlider } from '../core/ui-helpers';
+import { slideRow, addSliderRow, addToggleRow, addModeSlider, addPresetChip } from '../core/ui-helpers';
 import { createTrailingBtn, createLeadingBtn } from '../core/ui-slide-row';
 import { subscribe } from '../core/reactivity';
 import { t } from '../core/i18n/t';
@@ -950,11 +950,7 @@ export class SlideMenu {
             } else if (row.kind === 'chips') {
                 wrapper.className = 'preset-group';
                 for (const chip of row.chips ?? []) {
-                    const btn = document.createElement('button');
-                    btn.textContent = chip.label;
-                    btn.className = 'preset-chip' + (chip.active ? ' active' : '');
-                    btn.addEventListener('click', chip.onClick);
-                    wrapper.appendChild(btn);
+                    addPresetChip(wrapper, chip.label, !!chip.active, chip.onClick);
                 }
             }
             return wrapper;
