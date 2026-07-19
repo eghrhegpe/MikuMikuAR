@@ -16,6 +16,15 @@ vi.mock('../../scene/env/env-impl', () => {
         getGroundHeightAt: () => 0,
     };
 });
+// env-particles.ts 从 env-context 而非 env-impl 获取 getScene，故需额外 mock
+vi.mock('../../scene/env/env-context', async (importOriginal) => {
+    const actual = await importOriginal();
+    return {
+        ...actual,
+        getScene: () => (globalThis as any).__particlesTestScene as Scene,
+        getPipeline: () => null,
+    };
+});
 
 // mock wind-utils
 vi.mock('../../core/wind-utils', () => ({

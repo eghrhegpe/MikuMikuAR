@@ -14,6 +14,14 @@ vi.mock('../../scene/env/env-impl', () => {
         ensureEnvUpdateObserver: () => {},
     };
 });
+// env-water.ts 从 env-context 而非 env-impl 获取 getScene，故需额外 mock
+vi.mock('../../scene/env/env-context', async (importOriginal) => {
+    const actual = await importOriginal();
+    return {
+        ...actual,
+        getScene: () => (globalThis as any).__waterTestScene as Scene,
+    };
+});
 
 import { _envSys } from '../../scene/env/env-impl';
 import { envState } from '../../core/config';
