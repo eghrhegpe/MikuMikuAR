@@ -29,7 +29,7 @@
 | XPBD 布料模拟 | `xpbd-solver/collider/cloth/renderer` + 20 tests | ADR-019（已实施；ADR-081 移除 TS XPBD，转 WASM Bullet） |
 | Cel-Shading 后处理 | `scene/render/renderer.ts` celShadingMode 模式（非独立 PostProcess 文件） | ADR-076 (2026-07-10) |
 | 水面反射 RT | `scene/env/env-water.ts` _updateMirrorCamera + RT（非独立文件） | ADR-062 (2026-07-10) |
-| 球面反射 RT | `scene/env/env-water.ts` 内联 cubemap GLSL（非独立文件） | ADR-074 (2026-07-09) |
+| ~~球面反射 RT~~ | ~~`scene/env/env-water.ts` 内联 cubemap GLSL（非独立文件）~~ | ~~ADR-074~~ 🗑️ 已放弃（2026-07-19，架构冲突）|
 | 地面增强（坡度/纹理滚动/程序化图案/镜面反射/法线贴图/高程着色/跟随网格） | `scene/env/env-terrain.ts` + `scene/env/env-impl.ts` Phase A+B | ADR-083 (2026-07-11) |
 | AR 相机模式（Phase 1 桌面 MVP，摄像头视频透传/模型叠加/截图合成/Ctrl+6） | `scene/ar/ar-camera.ts` + `ar-scene.ts` + camera.ts 'ar' 模式 + motion-camera-levels UI | ADR-055 (2026-07-11) |
 | 全屏资源库 | Phase 1-4 全落地 | ADR-066 (2026-07-09) |
