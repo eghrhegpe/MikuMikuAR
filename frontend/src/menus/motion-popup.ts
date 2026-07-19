@@ -801,7 +801,7 @@ function motionOnItemClick(row: PopupRow): void {
                     }
                 })
                 .catch((err) => {
-                    console.error('Load camera VMD failed:', err);
+                    logWarn('motion-popup', 'Load camera VMD failed:', err);
                     setStatus(t('motion.loadFailed'), false);
                 });
             return;
@@ -1043,29 +1043,29 @@ function buildPlaybackSpeedLevel(): PopupLevel {
 
 function buildRetargetLevel(): PopupLevel {
     return {
-        label: '外部动作导入',
+        label: t('motion.retarget.title'),
         dir: '',
         items: [
             {
                 kind: 'action',
-                label: 'Mixamo → MMD',
+                label: t('motion.retarget.mixamo'),
                 icon: 'lucide:user',
                 target: '__retarget_mixamo__',
-                sublabel: 'mixamorig:XXX 骨骼',
+                sublabel: t('motion.retarget.mixamoHint'),
             },
             {
                 kind: 'action',
-                label: 'VRM → MMD',
+                label: t('motion.retarget.vrm'),
                 icon: 'lucide:user',
                 target: '__retarget_vrm__',
-                sublabel: 'VRM 标准骨骼',
+                sublabel: t('motion.retarget.vrmHint'),
             },
             {
                 kind: 'action',
-                label: '自定义映射',
+                label: t('motion.retarget.customMap'),
                 icon: 'lucide:edit',
                 target: '__retarget_custom__',
-                sublabel: '手动配置骨骼对应',
+                sublabel: t('motion.retarget.customHint'),
             },
         ],
     };

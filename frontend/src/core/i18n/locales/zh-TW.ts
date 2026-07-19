@@ -414,6 +414,12 @@ export const zhTW: Record<string, string> = {
     'motion.retarget.noModel': '請先選擇一個模型',
     'motion.retarget.noBones': '模型無骨骼數據',
     'motion.retarget.loaded': '外部動作已載入（{preset}）',
+    'motion.retarget.title': '外部動作匯入',
+    'motion.retarget.mixamo': 'Mixamo → MMD',
+    'motion.retarget.mixamoHint': 'mixamorig:XXX 骨骼',
+    'motion.retarget.vrm': 'VRM → MMD',
+    'motion.retarget.vrmHint': 'VRM 標準骨骼',
+    'motion.retarget.customHint': '手動配置骨骼對應',
 
     // ===== 程式化 procedural =====
     'motion.procMotionMode': '程式化動作模式',
@@ -542,6 +548,9 @@ export const zhTW: Record<string, string> = {
     'scene.screenshot': '螢幕截圖',
     'scene.presetScenes': '預設場景',
     'scene.saveScene': '儲存場景',
+    'scene.undo': '復原',
+    'scene.statusNoUndo': '✗ 沒有可復原的操作',
+    'scene.undoApplied': '✓ 已復原',
     'scene.postProcess': '後處理',
     'scene.stage': '舞台',
     'scene.physics': '物理',
@@ -1403,6 +1412,10 @@ export const zhTW: Record<string, string> = {
     'motion.boneOverride.edit': '編輯',
     'motion.boneOverride.editLoaded': '✓ 已載入 {bone} 覆蓋到表單',
     'motion.boneOverride.allCleared': '✓ 已清除所有骨骼覆蓋',
+    'motion.boneOverride.pitch': '俯仰 (X)',
+    'motion.boneOverride.yaw': '偏航 (Y)',
+    'motion.boneOverride.roll': '翻滾 (Z)',
+    'motion.boneOverride.weight': '權重',
     // [doc:adr-116] 動作覆蓋模組化 UI
     'motion.override.title': '動作覆蓋',
     'motion.override.enabled': '✓ 已啟用模組',

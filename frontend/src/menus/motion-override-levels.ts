@@ -453,7 +453,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
 
                     addSliderRow(
                         inner,
-                        'Pitch (X)',
+                        t('motion.boneOverride.pitch'),
                         formState.pitch,
                         -180,
                         180,
@@ -467,7 +467,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
                     );
                     addSliderRow(
                         inner,
-                        'Yaw (Y)',
+                        t('motion.boneOverride.yaw'),
                         formState.yaw,
                         -180,
                         180,
@@ -481,7 +481,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
                     );
                     addSliderRow(
                         inner,
-                        'Roll (Z)',
+                        t('motion.boneOverride.roll'),
                         formState.roll,
                         -180,
                         180,
@@ -495,7 +495,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
                     );
                     addSliderRow(
                         inner,
-                        'Weight',
+                        t('motion.boneOverride.weight'),
                         formState.weight,
                         0,
                         1,

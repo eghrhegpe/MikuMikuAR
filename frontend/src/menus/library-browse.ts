@@ -70,7 +70,7 @@ function deferRestore(menu: SlideMenu, dir: string, seg: string): void {
         tries++;
         if (tries > 40) {
             // ~6s 上限，避免永久挂起。timer 已 fire，清空引用。
-            librarySessionStore.setRestoreTimer(null);
+            librarySessionStore.clearRestoreTimer();
             // [doc:adr-135] P0.3: 超时不再静默。告知用户数据未就绪，需手动点击文件夹展开。
             librarySessionStore.markRestoreTimeout();
             setStatus(t('library.scanTimeout', { dir: seg }), false, true);
@@ -95,7 +95,7 @@ function deferRestore(menu: SlideMenu, dir: string, seg: string): void {
             return;
         }
         // 数据就绪，timer 已 fire，清空引用。
-        librarySessionStore.setRestoreTimer(null);
+        librarySessionStore.clearRestoreTimer();
         // 校验：菜单仍停留在该层且恢复态未被改写才补做 push，避免与 restoreBrowsePath 重复或误推
         const cur = menu.currentLevel;
         if (!cur || normPath(cur.dir) !== normPath(dir)) {

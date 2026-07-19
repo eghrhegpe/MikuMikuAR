@@ -419,6 +419,12 @@ export const ja: Record<string, string> = {
     'motion.retarget.noModel': '先にモデルを選択してください',
     'motion.retarget.noBones': 'ボーンデータがありません',
     'motion.retarget.loaded': '外部アニメーションを読み込みました（{preset}）',
+    'motion.retarget.title': '外部アニメーションインポート',
+    'motion.retarget.mixamo': 'Mixamo → MMD',
+    'motion.retarget.mixamoHint': 'mixamorig:XXX ボーン',
+    'motion.retarget.vrm': 'VRM → MMD',
+    'motion.retarget.vrmHint': 'VRM 標準ボーン',
+    'motion.retarget.customHint': '手動ボーンマッピング',
 
     // ===== プロシージャル procedural =====
     'motion.procMotionMode': 'プロシージャルモーションモード',
@@ -549,6 +555,9 @@ export const ja: Record<string, string> = {
     'scene.screenshot': 'スクリーンショット',
     'scene.presetScenes': 'プリセットシーン',
     'scene.saveScene': 'シーンを保存',
+    'scene.undo': '元に戻す',
+    'scene.statusNoUndo': '✗ 元に戻すものがありません',
+    'scene.undoApplied': '✓ 元に戻しました',
     'scene.postProcess': 'ポストプロセス',
     'scene.stage': 'ステージ',
     'scene.physics': '物理',
@@ -1423,6 +1432,10 @@ export const ja: Record<string, string> = {
     'motion.boneOverride.edit': '編集',
     'motion.boneOverride.editLoaded': '✓ {bone} オーバーライドをフォームに読み込みました',
     'motion.boneOverride.allCleared': '✓ すべてのボーンオーバーライドをクリアしました',
+    'motion.boneOverride.pitch': 'ピッチ (X)',
+    'motion.boneOverride.yaw': 'ヨー (Y)',
+    'motion.boneOverride.roll': 'ロール (Z)',
+    'motion.boneOverride.weight': 'ウェイト',
     // [doc:adr-116] モーションオーバーライド モジュールUI
     'motion.override.title': 'モーションオーバーライド',
     'motion.override.enabled': '✓ モジュール有効',
