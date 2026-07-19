@@ -300,7 +300,7 @@ export function buildGroundLevel(): PopupLevel {
                         id: 'env:ground:size',
                         kind: 'slider',
                         label: 'env.range',
-                        control: { bind: 'env.groundSize', min: 10, max: 200, step: 5 },
+                        control: { bind: 'env.groundSize', min: 10, max: 1000, step: 10 },
                         icon: 'lucide:maximize',
                     },
                     {
@@ -593,13 +593,6 @@ export function buildGroundLevel(): PopupLevel {
                         visibleWhen: () =>
                             envState.groundDecoStyle === 'checker' ||
                             (envState.groundTextureEnabled && !!envState.groundTexture),
-                    },
-                    {
-                        id: 'env:ground:followCam',
-                        kind: 'toggle',
-                        label: 'env.groundFollowCamera',
-                        control: { bind: 'env.groundFollowCamera' },
-                        icon: 'lucide:map-pin',
                     },
                 ],
             },

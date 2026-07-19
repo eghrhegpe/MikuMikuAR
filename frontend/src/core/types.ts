@@ -519,8 +519,7 @@ export interface EnvState {
     groundNormalTexture: string; // 法线贴图路径，默认 ''
     groundNormalStrength: number; // 法线强度，默认 1
     groundElevationColoring: boolean; // 高度图按高程着色开关，默认 false
-    groundFollowCamera: boolean; // 网格模式跟随相机，默认 false
-
+    groundInfinite: boolean; // 无限地面模式（平滑追踪 + 世界空间纹理），默认 false
     // ADR-114: PBR 材质 + 程序化纹理
     groundPbrEnabled: boolean; // PBR 材质开关，默认 false（回退 StandardMaterial）
     groundProceduralTexture: 'none' | 'wood' | 'marble' | 'concrete'; // 程序化纹理类型，默认 'none'

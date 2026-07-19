@@ -182,7 +182,6 @@ export interface EnvState {
     "groundNormalTexture": string;
     "groundNormalStrength": number;
     "groundElevationColoring": boolean;
-    "groundFollowCamera": boolean;
     "groundPbrEnabled": boolean;
     "groundProceduralTexture": string;
     "groundProceduralSeed": number;
@@ -230,6 +229,10 @@ export interface EnvState {
      * 水面平面反射质量：'high' | 'medium' | 'low' | 'off'
      */
     "reflectionQuality": string;
+
+    /**
+     * ADR-115: 平面反射混合度，对应 TS planarReflectBlend
+     */
     "planarReflectBlend": number;
 
     /**
@@ -280,6 +283,10 @@ export interface EnvState {
     "cloudPowder": number;
     "cloudQuality": string;
     "debugClouds": boolean;
+
+    /**
+     * ADR-128/129: 镜面道具开关，对应 TS mirrorEnabled
+     */
     "mirrorEnabled": boolean;
     "fogEnabled": boolean;
     "fogMode": string;

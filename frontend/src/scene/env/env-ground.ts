@@ -705,6 +705,8 @@ export function applyGround(state: EnvState): void {
     ensureEnvUpdateObserver();
 
     // ADR-114: typeKey 加入 PBR / 程序化字段；Phase 2: blur/distort 影响反射视觉需重建
+    // ADR-134: 加入 groundInfinite 标记
+    const infKey = `:inf:${state.groundInfinite}`;
     const pbrKey = `:pbr:${state.groundPbrEnabled}:rough:${state.groundRoughness}:metal:${state.groundMetallic}:blur:${state.groundReflectionBlur}:distort:${state.groundReflectionDistort}`;
     const proceduralKey =
         state.groundProceduralTexture !== 'none' && !state.groundTextureEnabled
@@ -712,10 +714,10 @@ export function applyGround(state: EnvState): void {
             : '';
     const typeKey =
         state.groundType === 'terrain'
-            ? `heightmap:${state.groundTerrainHeight}:${state.groundTerrainScale}:${state.groundTerrainSeed}:${state.groundTerrainOctaves}:${state.groundLevel}:${state.groundSize}:${state.groundColor.join(',')}:${state.groundAlpha}:${state.groundTextureEnabled}:${state.groundTexture}:${state.groundTextureScale}:${state.groundTextureRotation}${pbrKey}`
+            ? `heightmap:${state.groundTerrainHeight}:${state.groundTerrainScale}:${state.groundTerrainSeed}:${state.groundTerrainOctaves}:${state.groundLevel}:${state.groundSize}:${state.groundColor.join(',')}:${state.groundAlpha}:${state.groundTextureEnabled}:${state.groundTexture}:${state.groundTextureScale}:${state.groundTextureRotation}${pbrKey}${infKey}`
             : state.groundTextureEnabled && state.groundTexture
-              ? `texture:${state.groundTexture}:${state.groundSize}:${state.groundReflectionQuality}${pbrKey}`
-              : `canvas:${state.groundStyle}:${state.groundGridSize}:${state.groundColor.join(',')}:${state.groundLineColor.join(',')}:${state.groundSize}:${state.groundReflectionQuality}${pbrKey}${proceduralKey}`;
+              ? `texture:${state.groundTexture}:${state.groundSize}:${state.groundReflectionQuality}${pbrKey}${infKey}`
+              : `canvas:${state.groundStyle}:${state.groundGridSize}:${state.groundColor.join(',')}:${state.groundLineColor.join(',')}:${state.groundSize}:${state.groundReflectionQuality}${pbrKey}${proceduralKey}${infKey}`;
     const keyChanged = typeKey !== _currentGroundKey;
 
     // 原地更新路径
@@ -891,13 +893,54 @@ export function tickGround(dt: number): void {
     // Ground reflection
     groundReflection.update(envState, getScene());
 
-    // Follow camera
-    if (_envSys.ground.mesh && envState.groundFollowCamera) {
+    // ======== ADR-134: Infinite ground / Follow camera ========
+    if (_envSys.ground.mesh && envState.groundInfinite) {
         const cam = getScene().activeCamera;
         if (cam) {
-            _envSys.ground.mesh.position.x = cam.position.x;
+            const prevX = _envSys.ground.mesh.position.x;
+            const prevZ = _envSys.ground.mesh.position.z;
+
+            // Smooth lerp: ~0.1s half-life, eliminates hard-snap jitter
+            const speed = 1 - Math.pow(0.01, dt);
+            _envSys.ground.mesh.position.x += (cam.position.x - prevX) * speed;
+            _envSys.ground.mesh.position.z += (cam.position.z - prevZ) * speed;
             _envSys.ground.mesh.position.y = envState.groundLevel;
-            _envSys.ground.mesh.position.z = cam.position.z;
+            _envSys.ground.mesh.rotation.x = (envState.groundPitch * Math.PI) / 180;
+            _envSys.ground.mesh.rotation.z = (envState.groundRoll * Math.PI) / 180;
+
+            // World-space UV compensation: cancel texture sliding when mesh moves
+            const dx = _envSys.ground.mesh.position.x - prevX;
+            const dz = _envSys.ground.mesh.position.z - prevZ;
+            if (dx !== 0 || dz !== 0) {
+                const mat = _envSys.ground.mesh.material;
+                if (mat && (mat instanceof StandardMaterial || mat instanceof PBRMaterial)) {
+                    const tex = _getAlbedoTex(mat as GroundMat);
+                    if (tex) {
+                        const scale = tex.uScale || 1;
+                        tex.uOffset -= (dx / _groundActualSize) * scale;
+                        tex.vOffset -= (dz / _groundActualSize) * scale;
+                        // Keep offsets in [0, 1) to avoid wrap/clamp artifacts
+                        tex.uOffset = tex.uOffset - Math.floor(tex.uOffset);
+                        tex.vOffset = tex.vOffset - Math.floor(tex.vOffset);
+                        if (tex.uOffset < 0) tex.uOffset += 1;
+                        if (tex.vOffset < 0) tex.vOffset += 1;
+                    }
+                }
+            }
+
+            // Camera-locked edge fade: center the radial gradient on camera
+            if (envState.groundEdgeFade > 0) {
+                const mat = _envSys.ground.mesh.material;
+                if (mat && (mat instanceof StandardMaterial || mat instanceof PBRMaterial)) {
+                    const opacityTex = mat.opacityTexture as (Texture | null);
+                    if (opacityTex) {
+                        const camU = (cam.position.x - _envSys.ground.mesh.position.x) / _groundActualSize + 0.5;
+                        const camV = (cam.position.z - _envSys.ground.mesh.position.z) / _groundActualSize + 0.5;
+                        opacityTex.uOffset = 0.5 - camU;
+                        opacityTex.vOffset = 0.5 - camV;
+                    }
+                }
+            }
         }
     }
 }

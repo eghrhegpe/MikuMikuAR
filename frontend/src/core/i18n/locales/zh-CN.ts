@@ -434,7 +434,7 @@ export const zhCN: Record<string, string> = {
     'motion.externalImport': '外部动作导入',
 
     // ===== 姿态工作室 poseStudio =====
-    'motion.poseStudio.title': '姿态工作室',
+    'motion.poseStudio.title': '拍照模式',
     'motion.poseStudio.noModel': '⚠ 请先加载模型',
     'motion.poseStudio.composition': '构图辅助',
     'motion.poseStudio.off': '关闭',
@@ -1128,7 +1128,6 @@ export const zhCN: Record<string, string> = {
     'env.groundReflectBlend': '反射混合度',
     'env.groundNormalStrength': '法线强度',
     'env.groundElevationColoring': '高程着色',
-    'env.groundFollowCamera': '跟随相机',
     'env.pbr': 'PBR 材质',
     'env.pbrEnabled': '启用 PBR',
     'env.metallic': '金属度',
