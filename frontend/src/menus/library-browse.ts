@@ -37,12 +37,6 @@ import {
     importFile,
 } from './library-actions';
 import { refreshLibrary } from './library-setup';
-import {
-    getPendingAutoExpand,
-    setPendingAutoExpand,
-    getPendingFocusModel,
-    setPendingFocusModel,
-} from './library-core';
 import { librarySessionStore } from './library-session-store';
 
 // [修复] 数据未就绪时撤销本次 autoExpand，轮询等待 allModels 扫描/解压完成后
@@ -101,13 +95,13 @@ function deferRestore(menu: SlideMenu, dir: string, seg: string): void {
             librarySessionStore.clearRestoreStatus();
             return;
         }
-        const pa = getPendingAutoExpand();
+        const pa = librarySessionStore.getPendingAutoExpand();
         if (!pa || pa[0] !== seg) {
             // [doc:adr-135] P0.3: 校验失败也要清状态
             librarySessionStore.clearRestoreStatus();
             return;
         }
-        setPendingAutoExpand(pa.length > 1 ? pa.slice(1) : null);
+        librarySessionStore.setPendingAutoExpand(pa.length > 1 ? pa.slice(1) : null);
         menu.push(
             buildLevel(nextDir, seg, (m) => m.format === 'pmx', stackRegistry.modelStack!, [])
         );
@@ -262,11 +256,11 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
             if (!browseRoot) {
                 return;
             }
-            const pendingFocus = getPendingFocusModel();
-            const pendingAuto = getPendingAutoExpand();
+            const pendingFocus = librarySessionStore.getPendingFocusModel();
+            const pendingAuto = librarySessionStore.getPendingAutoExpand();
             if (pendingFocus && normPath(level.dir) === pendingFocus.dir) {
                 highlightRow(container, pendingFocus.rowKey);
-                setPendingFocusModel(null);
+                librarySessionStore.setPendingFocusModel(null);
             }
             if (pendingAuto && pendingAuto.length > 0) {
                 const seg = pendingAuto[0];
@@ -280,7 +274,7 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                     deferRestore(menu, dir, seg);
                     return;
                 }
-                setPendingAutoExpand(pendingAuto.length > 1 ? pendingAuto.slice(1) : null);
+                librarySessionStore.setPendingAutoExpand(pendingAuto.length > 1 ? pendingAuto.slice(1) : null);
                 logWarn('library-browse', '[restore] autoExpand push', {
                     from: dir,
                     seg,
