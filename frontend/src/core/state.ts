@@ -214,13 +214,6 @@ export function getRecentMotions(): RecentMotion[] {
     return _recentMotions;
 }
 
-// ======== Layer Binding Target (Motion Layers) ========
-
-export let layerBindingTargetId: string | null = null;
-export function setLayerBindingTargetId(v: string | null): void {
-    layerBindingTargetId = v;
-}
-
 // ======== Model Replace Target (Model Detail → Replace) ========
 
 export let modelReplaceTargetId: string | null = null;

@@ -13,8 +13,6 @@ import {
     mmdRuntime,
     autoLoop,
     setAutoLoop,
-    layerBindingTargetId,
-    setLayerBindingTargetId,
     stackRegistry,
     closeAllOverlays,
     cardContainer,
@@ -93,7 +91,6 @@ import {
 import { applyModuleSnapshot } from '../scene/motion/motion-modules/module-base';
 
 // 模块级状态（动作绑定面板）：
-//   layerBindingTargetId = 顶层「添加动作」浏览入口的目标模型 id（承接 VMD 选择）
 //   _focusedLayerId      = 当前「焦点动作」：null=基础动作，string=具体叠加层 id。
 //                         行 leading check-circle 写入；顶层 browse 读取，按需替换该动作。
 //                         「添加动作」语义：无动作→新增基础；焦点层→替换该层；焦点基础→替换基础。
@@ -703,100 +700,17 @@ function motionOnFolderEnter(row: PopupRow): PopupLevel | null {
 /** motion-popup 的 onItemClick（从 makeMotionMenu 提取） */
 function motionOnItemClick(row: PopupRow): void {
     if (row.model) {
-        // 顶层「添加动作」上下文敏感语义（对齐模型库「加载首个/替换已选」能力，移除叠加入口）：
-        //   · 无动作            → 新增为第一个基础动作（loadManager.load 写 vmdData）
-        //   · 焦点在具体叠加层  → 仅替换该层 VMD（replaceVmdLayerVmd，保留层 id/权重/启用，不清旧）
-        //   · 焦点在基础动作    → 替换基础动作（loadManager.load 覆盖 vmdData，保留其余图层）
-        // 基础/图层选中由行 leading check-circle 写入 _focusedLayerId；进入面板默认 null=基础。
-        if (row.model.format === 'vmd') {
-            // 场景级路径：layerBindingTargetId 为 null 时
-            if (!layerBindingTargetId) {
-                const cur = getActiveMotion();
-                if (!cur) {
-                    // 无动作 → 设为当前动作
-                    setActiveMotion({
-                        vmdPath: row.model.file_path,
-                        vmdName: row.model.name_jp || row.model.name_en || '',
-                        vmdLayers: [],
-                        source: 'vmd',
-                    });
-                } else {
-                    // 已有动作 → 添加为叠加层
-                    const layerName = (row.model.name_jp || row.model.name_en || '').replace(/\.vmd$/i, '');
-                    const newLayer: VmdLayer = {
-                        id: `layer_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-                        name: layerName,
-                        kind: 'vmd',
-                        data: new ArrayBuffer(0), // 运行时由广播加载
-                        path: row.model.file_path,
-                        weight: 1.0,
-                        enabled: true,
-                        boneFilter: [],
-                    };
-                    setActiveMotion({
-                        ...cur,
-                        vmdLayers: [...cur.vmdLayers, newLayer],
-                    });
-                }
-                if (getMotionMenu()) {
-                    getMotionMenu()?.pop();
-                    getMotionMenu()?.reRender();
-                }
-                return;
-            }
-            // per-model 路径：从动作绑定面板进入
-            const targetId = layerBindingTargetId;
-            const focusedLayerId = _focusedLayerId; // 捕获当前焦点动作（null=基础）
-            setLayerBindingTargetId(null);
-            // 返回动作管理页（pop VMD 浏览器层）
-            if (getMotionMenu()) {
-                getMotionMenu()?.pop();
-            }
-            const after = (): void => {
-                getMotionMenu()?.reRender();
-            };
-            const fail = (label: string, err: unknown): void => {
-                setStatus(t('motion.motionLoadFailed'), false);
-                logWarn('motion-popup', label, err);
-                after();
-            };
-            const inst = modelManager.get(targetId);
-            const hasActions = !!inst?.vmdData || getVmdLayers(targetId).length > 0;
-            if (!hasActions) {
-                // 无动作 → 新增为第一个基础动作，设场景级意图（广播已加载所有 inherit 模型）
-                setActiveMotion({
-                    vmdPath: row.model.file_path,
-                    vmdName: row.model.name_jp || row.model.name_en || '',
-                    vmdLayers: [],
-                    source: 'vmd',
-                });
-                after();
-                return;
-            }
-            // 有动作：优先替换焦点层（若仍存在），否则替换基础（保留其余图层）
-            if (focusedLayerId && getVmdLayers(targetId).some((l) => l.id === focusedLayerId)) {
-                replaceVmdLayerVmd(focusedLayerId, row.model.file_path, targetId)
-                    .then(after)
-                    .catch((err) => fail('motion-popup replace layer VMD:', err));
-                return;
-            }
-            // 替换基础动作，同时设场景级意图（广播已加载所有 inherit 模型）
-            setActiveMotion({
-                vmdPath: row.model.file_path,
-                vmdName: row.model.name_jp || row.model.name_en || '',
-                vmdLayers: [],
-                source: 'vmd',
-            });
-            after();
-            return;
-        }
-        hideMotionPopup();
-        if (row.model.format === 'vmd') {
+        // [doc:adr-131] 相机 VMD 加载入口：通过 outcome.mode='bindCameraVmd' 标识
+        // （由 motion-camera-levels.ts 的「加载相机 VMD」按钮在 buildLevel 时设置）。
+        // 必须在动作 VMD 分支之前检查，否则会被场景级动作加载拦截。
+        const outcome = getMotionMenu()?.currentLevel?.outcome;
+        if (row.model.format === 'vmd' && outcome?.mode === 'bindCameraVmd') {
             loadManager
                 .load({ kind: 'camera-vmd', path: row.model.file_path })
                 .then(() => {
                     const menu = getMotionMenu();
                     if (menu) {
+                        menu.pop();
                         menu.reRender();
                     }
                 })
@@ -806,6 +720,47 @@ function motionOnItemClick(row: PopupRow): void {
                 });
             return;
         }
+        // 顶层「添加动作」上下文敏感语义（对齐模型库「加载首个/替换已选」能力，移除叠加入口）：
+        //   · 无动作            → 新增为第一个基础动作（loadManager.load 写 vmdData）
+        //   · 焦点在具体叠加层  → 仅替换该层 VMD（replaceVmdLayerVmd，保留层 id/权重/启用，不清旧）
+        //   · 焦点在基础动作    → 替换基础动作（loadManager.load 覆盖 vmdData，保留其余图层）
+        // 基础/图层选中由行 leading check-circle 写入 _focusedLayerId；进入面板默认 null=基础。
+        if (row.model.format === 'vmd') {
+            // 场景级路径：VMD 选中后直接加载（无 per-model 绑定，统一走 outcome 契约）
+            const cur = getActiveMotion();
+            if (!cur) {
+                // 无动作 → 设为当前动作
+                setActiveMotion({
+                    vmdPath: row.model.file_path,
+                    vmdName: row.model.name_jp || row.model.name_en || '',
+                    vmdLayers: [],
+                    source: 'vmd',
+                });
+            } else {
+                // 已有动作 → 添加为叠加层
+                const layerName = (row.model.name_jp || row.model.name_en || '').replace(/\.vmd$/i, '');
+                const newLayer: VmdLayer = {
+                    id: `layer_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+                    name: layerName,
+                    kind: 'vmd',
+                    data: new ArrayBuffer(0), // 运行时由广播加载
+                    path: row.model.file_path,
+                    weight: 1.0,
+                    enabled: true,
+                    boneFilter: [],
+                };
+                setActiveMotion({
+                    ...cur,
+                    vmdLayers: [...cur.vmdLayers, newLayer],
+                });
+            }
+            if (getMotionMenu()) {
+                getMotionMenu()?.pop();
+                getMotionMenu()?.reRender();
+            }
+            return;
+        }
+        hideMotionPopup();
         if (row.model.format === 'audio') {
             loadManager.load({ kind: 'audio', path: row.model.file_path });
             setStatus(t('motion.musicLoaded', { name: getAudioName() }), true);

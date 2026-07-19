@@ -13,7 +13,6 @@ import {
     modelRegistry,
     recentModels,
     computeLibraryRef,
-    layerBindingTargetId,
     stackRegistry,
     getMenuWrapper,
     getBrowseDir,
@@ -210,14 +209,6 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                 return;
             }
             if (row.model) {
-                // [doc:adr-131] 兼容回退：图层绑定仍走全局标志位
-                // （后续 ADR 迁移到 bindLayer 契约后移除）
-                if (row.model.format === 'vmd' && layerBindingTargetId) {
-                    const targetId = layerBindingTargetId;
-                    closeAllOverlays();
-                    loadManager.load({ kind: 'vmd', path: row.model.file_path, modelId: targetId });
-                    return;
-                }
                 // [doc:adr-131] 契约派发：读 currentLevel.outcome，按 mode 派发选中后行为
                 const outcome = stackRegistry.modelStack?.currentLevel?.outcome ?? {
                     mode: 'close' as const,
