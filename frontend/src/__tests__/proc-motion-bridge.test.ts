@@ -218,31 +218,6 @@ describe('setProcMotionSpeed', () => {
 });
 
 // =====================================================================
-// setProcMotionAutoSwitch
-// =====================================================================
-
-describe('setProcMotionAutoSwitch', () => {
-    it('sets autoSwitch to true', () => {
-        sut.setProcMotionAutoSwitch(true);
-        expect(sut.getProcMotionState().autoSwitch).toBe(true);
-    });
-
-    it('sets autoSwitch to false', () => {
-        sut.setProcMotionAutoSwitch(false);
-        expect(sut.getProcMotionState().autoSwitch).toBe(false);
-    });
-
-    it('defaults to DEFAULT_PROC_STATE.autoSwitch', () => {
-        expect(sut.getProcMotionState().autoSwitch).toBe(DEFAULT_PROC_STATE.autoSwitch);
-    });
-
-    it('calls triggerAutoSave', () => {
-        sut.setProcMotionAutoSwitch(true);
-        expect(mockState.triggerAutoSave).toHaveBeenCalledOnce();
-    });
-});
-
-// =====================================================================
 // getProcMotionState returns a COPY
 // =====================================================================
 
@@ -275,7 +250,6 @@ describe('getProcMotionState', () => {
         expect(s.mode).toBe(DEFAULT_PROC_STATE.mode);
         expect(s.intensity).toBe(DEFAULT_PROC_STATE.intensity);
         expect(s.speed).toBe(DEFAULT_PROC_STATE.speed);
-        expect(s.autoSwitch).toBe(DEFAULT_PROC_STATE.autoSwitch);
         expect(s.boneToggles).toEqual(DEFAULT_PROC_STATE.boneToggles);
         expect(s.bpmQuantizeEnabled).toBe(DEFAULT_PROC_STATE.bpmQuantizeEnabled);
         expect(s.vpdApplyEnabled).toBe(DEFAULT_PROC_STATE.vpdApplyEnabled);
@@ -617,11 +591,6 @@ describe('triggerAutoSave interaction', () => {
 
     it('setProcMotionSpeed triggers auto-save', () => {
         sut.setProcMotionSpeed(1.0);
-        expect(mockState.triggerAutoSave).toHaveBeenCalled();
-    });
-
-    it('setProcMotionAutoSwitch triggers auto-save', () => {
-        sut.setProcMotionAutoSwitch(true);
         expect(mockState.triggerAutoSave).toHaveBeenCalled();
     });
 
