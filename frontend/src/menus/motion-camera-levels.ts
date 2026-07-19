@@ -54,6 +54,7 @@ import {
 } from '../scene/ar/ar-camera';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
 import { renderMenu } from './render-menu';
+import { addDisabledRow } from '../core/ui-rows';
 import type { MenuNode } from './menu-schema';
 
 function refreshCameraLevel(): void {
@@ -152,19 +153,7 @@ function buildCameraSchema(): MenuNode[] {
             visibleWhen: () => getCameraControl() !== 'orbit',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    const row = document.createElement('div');
-                    row.className = 'cs-row';
-                    row.style.opacity = '0.4';
-                    row.style.pointerEvents = 'none';
-                    const lbl = document.createElement('span');
-                    lbl.className = 'cs-label';
-                    lbl.textContent = t('motion.cameraBehavior');
-                    const val = document.createElement('span');
-                    val.className = 'cs-value';
-                    val.textContent = t('motion.behaviorNA');
-                    row.appendChild(lbl);
-                    row.appendChild(val);
-                    inner.appendChild(row);
+                    addDisabledRow(inner, t('motion.cameraBehavior'), t('motion.behaviorNA'));
                 });
             },
         },

@@ -327,8 +327,20 @@ function startReplaceModel(m: LibraryModel, replaceId: string): void {
     }
 }
 
+/** [adr-143] 模块级 AbortController：用户快速连点新模型时，取消上一个 loadManager.load()。
+     * 与 model-loader 内部的 _loadAbortController 互补：此处取消队列级请求，后者取消底层解析。 */
+let _loadManagerAbortCtrl: AbortController | null = null;
+
 /** 正常加载模式：zip 提取后加载，或按格式直接加载。 */
 function loadModelNormal(m: LibraryModel, isStage: boolean): void {
+    // 取消上一次 loadManager 请求，避免快速连点竞态
+    if (_loadManagerAbortCtrl) {
+        _loadManagerAbortCtrl.abort();
+    }
+    const ctrl = new AbortController();
+    _loadManagerAbortCtrl = ctrl;
+    const signal = ctrl.signal;
+
     if (m.container === 'zip') {
         closeAllOverlays();
         setStatus(t('library.extractingZip'), false);
@@ -337,14 +349,14 @@ function loadModelNormal(m: LibraryModel, isStage: boolean): void {
             .then((result) => {
                 setStatus(result.cached ? t('library.cacheHit') : t('library.extracted'), true);
                 if (m.format === 'vmd') {
-                    loadManager.load({ kind: 'vmd', path: result.file_path });
+                    loadManager.load({ kind: 'vmd', path: result.file_path }, signal);
                 } else {
                     loadManager.load({
                         kind: isStage ? 'stage' : 'actor',
                         path: result.file_path,
                         libraryPath: m.file_path,
                         innerPath: m.zip_inner,
-                    });
+                    }, signal);
                 }
             })
             .catch((err) => {
@@ -352,16 +364,20 @@ function loadModelNormal(m: LibraryModel, isStage: boolean): void {
             })
             .finally(() => {
                 librarySessionStore.clearExtracting(m.file_path);
+                // 清理模块级 ctrl（当前请求已走完，允许下次新建）
+                if (_loadManagerAbortCtrl === ctrl) {
+                    _loadManagerAbortCtrl = null;
+                }
             });
         return;
     }
     closeAllOverlays();
     if (m.format === 'pmx') {
-        loadManager.load({ kind: isStage ? 'stage' : 'actor', path: m.file_path });
+        loadManager.load({ kind: isStage ? 'stage' : 'actor', path: m.file_path }, signal);
     } else if (m.format === 'vmd') {
-        loadManager.load({ kind: 'vmd', path: m.file_path });
+        loadManager.load({ kind: 'vmd', path: m.file_path }, signal);
     } else if (m.format === 'audio') {
-        loadManager.load({ kind: 'audio', path: m.file_path });
+        loadManager.load({ kind: 'audio', path: m.file_path }, signal);
     } else if (m.format === 'vpd') {
         loadVPDPose(m.file_path);
     }

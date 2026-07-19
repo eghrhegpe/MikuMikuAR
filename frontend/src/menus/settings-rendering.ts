@@ -11,6 +11,7 @@ import { resetPerformanceSnapshot } from '../scene/render/performance';
 import type { PopupLevel } from '../core/config';
 import type { SettingsMenuHandle } from './settings-shared';
 import { renderMenu } from './render-menu';
+import { addInlineToggleRow } from '../core/ui-rows';
 import type { MenuNode } from './menu-schema';
 
 function buildRenderingSchema(): MenuNode[] {
@@ -89,16 +90,7 @@ function buildRenderingSchema(): MenuNode[] {
                     },
                 ];
                 for (const toggle of renderToggles) {
-                    const row = document.createElement('div');
-                    row.className = 'toggle-row';
-                    const lbl = document.createElement('span');
-                    lbl.className = 'toggle-label';
-                    lbl.textContent = toggle.label;
-                    const sw = document.createElement('span');
-                    sw.className = 'toggle-switch' + (toggle.value ? ' active' : '');
-                    sw.addEventListener('click', () => {
-                        const v = !sw.classList.contains('active');
-                        sw.classList.toggle('active', v);
+                    addInlineToggleRow(c, toggle.label, toggle.value, (v) => {
                         toggle.apply(v);
                         setStatus(
                             t('settings.toggleState', {
@@ -108,9 +100,6 @@ function buildRenderingSchema(): MenuNode[] {
                             true
                         );
                     });
-                    row.appendChild(lbl);
-                    row.appendChild(sw);
-                    c.appendChild(row);
                 }
                 const hint = document.createElement('div');
                 hint.className = 'setting-hint';

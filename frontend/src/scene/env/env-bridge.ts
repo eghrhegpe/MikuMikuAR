@@ -20,6 +20,11 @@ import {
     logWarn,
     DebouncedTimer,
 } from '@/core/utils';
+import {
+    DEFAULT_GRAVITY,
+    ENV_LIGHT_MAX,
+    AUTO_LINK_THRESHOLD_DEG,
+} from '@/core/ui-constants';
 import { col3FromTriple } from '@/core/color-helpers';
 import { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
 import { applyGroundCollision } from '../physics/ground-collision';
@@ -96,7 +101,7 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
         hemiLight.groundColor = new Color3(0.3, 0.3, 0.4);
     }
     // 场景环境色 — envIntensity 控制渗透力度，最大不超过 0.5 以免冲淡方向光
-    const ambientStrength = Math.min(state.envIntensity * 0.15, 0.5);
+    const ambientStrength = Math.min(state.envIntensity * 0.15, ENV_LIGHT_MAX);
     scene.ambientColor = new Color3(
         skyMid[0] * ambientStrength,
         skyMid[1] * ambientStrength,
@@ -124,7 +129,6 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
 
 // ======== Gravity ========
 
-const DEFAULT_GRAVITY = -98;
 let _gravityStrength = 1.0;
 const _gravityVec = new Vector3(0, DEFAULT_GRAVITY, 0);
 
@@ -175,6 +179,16 @@ export function getGroundCollisionEnabled(): boolean {
     return envState.groundCollisionEnabled;
 }
 
+// ======== Helpers (ADR-143 主题 3) ========
+
+/** 持久化 envState 到后端，统一错误上报。收敛 env-bridge.ts 内 4 处重复 .catch。 */
+function persistEnvState(payload: EnvState): void {
+    SetEnvState(payload).catch((err) => {
+        logWarn('persistEnvState', 'persist failed', err);
+        setStatus(t_i18n('env.persistFailed'), false);
+    });
+}
+
 // ======== Environment Sun Angle ========
 
 // [fix:ghost-state] envSunAngle 与 envState.sunAngle 双源同步：
@@ -195,8 +209,6 @@ export function getEnvSunAngle(): number {
 }
 
 // ======== Time-of-Day ========
-
-const _AUTO_LINK_THRESHOLD_DEG = 0.5;
 
 // [fix:ghost-state] 拆分双源：
 //   - envState.timeOfDayActive = 用户意图（是否启用），持久化，由 start/stop 写入
@@ -224,7 +236,7 @@ function _timeOfDayTick(): void {
 
     _updateSunDisc();
 
-    if (Math.abs(envSunAngle - _lastAutoLinkSunAngle) >= _AUTO_LINK_THRESHOLD_DEG) {
+    if (Math.abs(envSunAngle - _lastAutoLinkSunAngle) >= AUTO_LINK_THRESHOLD_DEG) {
         _lastAutoLinkSunAngle = envSunAngle;
         _lastSkySunAngle = envSunAngle; // sync so 0.4 check won't double-fire (Fix C)
         envState.sunAngle = envSunAngle;
@@ -270,10 +282,7 @@ export function stopTimeOfDay(): void {
         _unregisterTimeOfDay = null;
     }
     // 持久化当前 sunAngle 到后端
-    SetEnvState({ ...envState }).catch((err) => {
-        logWarn('_applyTimeOfDayPreset', 'persist failed', err);
-        setStatus(t_i18n('env.persistFailed'), false);
-    });
+    persistEnvState({ ...envState });
 }
 
 export function isTimeOfDayActive(): boolean {
@@ -392,10 +401,7 @@ function _presetAnimLoop(ctx: PresetAnimCtx, handle: ObserverHandle): void {
             _lastAutoLinkSunAngle = envSunAngle;
         }
         _timeOfDayBeforePreset = null;
-        SetEnvState({ ...envState }).catch((err) => {
-            logWarn('applyLightingPresetFromEnv', 'persist failed', err);
-            setStatus(t_i18n('env.persistFailed'), false);
-        });
+        persistEnvState({ ...envState });
         triggerAutoSave();
     }
 }
@@ -584,10 +590,7 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
     _envPersistTimer.schedule(() => {
         // 传普通对象副本（非 reactive Proxy），避免 JSON.stringify 对 Proxy 枚举不完整
         console.info('[env-persist] debounce fired → SetEnvState()');
-        SetEnvState({ ...envState }).catch((err) => {
-            logWarn('setEnvState', 'persist failed', err);
-            setStatus(t_i18n('env.persistFailed'), false);
-        });
+        persistEnvState({ ...envState });
     }, 500);
 
     if (!skipAutoSave) {
@@ -603,10 +606,7 @@ export function flushEnvState(): void {
     console.info('[env-persist] flushEnvState() — immediate flush');
     _envPersistTimer.cancel();
     // 传普通对象副本（非 reactive Proxy）
-    SetEnvState({ ...envState }).catch((err) => {
-        logWarn('flushEnvState', 'persist failed', err);
-        setStatus(t_i18n('env.persistFailed'), false);
-    });
+    persistEnvState({ ...envState });
 }
 
 /** 取消挂起的 env state 防抖持久化定时器（HMR 重入清理用，见 ADR-106 D3）。 */
