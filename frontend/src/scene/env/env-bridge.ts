@@ -37,6 +37,8 @@ import { applyLightingPresetFromEnv } from '../render/lighting';
 import { setContactShadow } from '../render/renderer';
 import { scene } from '../scene';
 import { setKey } from '@/core/utils';
+import { isAutoDegradingReflection, registerSetEnvState } from '../render/performance-env-bridge';
+import { setPerformanceMode, getPerformanceMode } from '../render/performance';
 
 // 时间戳格式化已收敛至 utils.formatTimestamp
 
@@ -713,6 +715,17 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
 
     _applyEnvStateFacade(envState, migrated);
 
+    // ADR-130 Phase 2.3: 用户手动修改反射质量 → 冻结自动降级
+    // 仅当变更来自用户（非自动降级）且当前为 auto 模式时，切换到 custom 模式
+    if (!isAutoDegradingReflection() && getPerformanceMode() === 'auto') {
+        const hasReflectionChange =
+            migrated.reflectionQuality !== undefined ||
+            migrated.groundReflectionQuality !== undefined;
+        if (hasReflectionChange) {
+            setPerformanceMode('custom');
+        }
+    }
+
     // 灯光预设变化 → 平滑过渡
     if (partial.lightingPresetName !== undefined) {
         applyLightingPresetFromEnv(partial.lightingPresetName);
@@ -732,6 +745,9 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
     }
 }
 
+// ADR-130 Phase 2.3: 注册 setEnvState 到 performance 桥接模块
+registerSetEnvState(setEnvState);
+
 /** 立即刷写 env state 到后端（无防抖）。关闭/隐藏页面时调用。 */
 export function flushEnvState(): void {
     console.info('[env-persist] flushEnvState() — immediate flush');
@@ -747,6 +763,8 @@ export function flushEnvState(): void {
 export function cancelEnvPersistTimer(): void {
     _envPersistTimer.cancel();
 }
+
+// ======== ADR-130 Phase 2.3: 反射质量手动设置 → 冻结自动降级 ========
 
 // ======== UIState Persistence ========
 
