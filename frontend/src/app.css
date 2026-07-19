@@ -2144,6 +2144,31 @@ textarea,
     background: var(--accent-dim);
     color: var(--accent);
 }
+/* 危险动作按钮（清除全部等破坏性操作）— 红底强调 */
+.preset-chip.danger {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: #fff;
+}
+.preset-chip.danger:hover {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: #fff;
+    filter: brightness(1.1);
+}
+/* 只读标签（程序化激活徽标等）— 不可点击 */
+.preset-chip.badge {
+    cursor: default;
+    background: var(--white-08);
+    opacity: 0.85;
+}
+.preset-chip.badge:hover,
+.preset-chip.badge:active {
+    background: var(--white-08);
+    border-color: var(--white-08);
+    color: var(--text);
+    transform: none;
+}
 .preset-chip.wrap-2 {
     white-space: normal;
     height: auto;

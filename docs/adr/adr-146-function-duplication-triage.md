@@ -258,7 +258,7 @@
 
 ### P1
 
-- [ ] `grep -rn "className.*preset-chip" src/menus` 归零（除 `env-preset-levels.ts:142` 豁免）
+- [x] `grep -rn "className.*preset-chip" src/menus` 归零（除 `env-preset-levels.ts:142` 豁免）
 - [ ] `grep -rn "catch(err => logWarn" src` 归零
 - [ ] `grep -rn "if (\_.*\) { \_.*\.dispose(); \_.* = null; }" src/scene/env` 按文件归零
 - [ ] `grep -n "onViewMatrixChangedObservable.add" src/scene/camera/camera.ts` 0 处
@@ -317,3 +317,22 @@
 验证：`cd frontend && npm run build`（tsc + vite build）通过，0 错误。
 
 提交范围：仅 `core/ui-collapsible.ts`、`menus/scene-render-presets.ts`、`menus/motion-gaze-levels.ts`、`menus/menu.ts`、`docs/adr/adr-146-function-duplication-triage.md`。
+
+### 2026-07-20 — P1 主题 1 第二步：批量迁移剩余 16 处手写 chip
+
+用户批准「继续」后，按既定风险缓解策略进入批量阶段，将剩余 16 处手写 `preset-chip`（含 icon/danger/badge/margin/stopPropagation 差异）全部收敛到 `addPresetChip`，沿用第一步已扩展的 opts。
+
+- **补充 CSS**（`app.css` `.preset-chip.active` 之后）：新增 `.preset-chip.danger`（红底 `var(--danger)`，破坏性操作强调）、`.preset-chip.badge`（只读 `cursor:default` + neutral hover，覆盖原 `span` 徽标语义）。
+- **迁移 16 处手写 chip**：
+  - `motion-pose-levels.ts`：guide mode 选中组（active）、pose 类型（async handler）、相机预设（title）、截图/批量导出（emoji 前缀）共 4 处
+  - `scene-stage-lights.ts`：`+` 添加灯光按钮（icon `lucide:plus` + 文本 fallback），并移除仅此处使用的 `createIconifyIcon` import
+  - `model-detail.ts`：程序化徽标（badge 变体，原 `span` → `addPresetChip` variant badge）、待机/自动舞蹈两处编辑按钮（margin-left:auto + stopPropagation）共 3 处
+  - `resource-detail-helpers.ts`：解除/挂载骨骼按钮（marginTop:4）共 2 处
+  - `motion-popup.ts`：unpin / pin / clearVmd 共 3 处
+  - `motion-override-levels.ts`：apply（marginTop:8）、clearAll（danger 变体，替代内联 `backgroundColor:'var(--danger)'`）共 2 处
+- **豁免保留**：`env-preset-levels.ts:142` 覆写外部库返回按钮的 className（特殊场景，不适用公共函数）。
+- **可接受差异**：`scene-stage-lights.ts` 的 `+` 按钮在 iconify 可用时由「仅图标」变为「图标 + '+' 文本」，保留文本作 fallback；视觉差异极小。
+
+验证：`cd frontend && npm run build`（tsc + vite build）通过，0 错误。
+
+提交范围：`app.css`、`menus/motion-pose-levels.ts`、`menus/scene-stage-lights.ts`、`menus/model-detail.ts`、`menus/resource-detail-helpers.ts`、`menus/motion-popup.ts`、`menus/motion-override-levels.ts`、`docs/adr/adr-146-function-duplication-triage.md`。

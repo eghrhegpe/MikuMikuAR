@@ -9,7 +9,7 @@ import {
     modelRegistry,
     focusedModelId,
 } from '../core/config';
-import { addEmptyRow, slideRow, addSectionTitle } from '../core/ui-helpers';
+import { addEmptyRow, slideRow, addSectionTitle, addPresetChip } from '../core/ui-helpers';
 import { addSliderRow } from '../core/ui-rows';
 import { createTrailingBtn } from '../core/ui-slide-row';
 import { createIconifyIcon } from '../core/icons';
@@ -508,11 +508,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
                         { bind: () => formState.weight }
                     );
 
-                    const applyBtn = document.createElement('button');
-                    applyBtn.className = 'preset-chip';
-                    applyBtn.style.marginTop = '8px';
-                    applyBtn.textContent = t('motion.boneOverride.apply');
-                    applyBtn.addEventListener('click', () => {
+                    addPresetChip(inner, t('motion.boneOverride.apply'), false, () => {
                         const boneName = formState.boneName;
                         if (!boneName) {
                             return;
@@ -525,8 +521,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
 
                         setStatus(t('motion.boneOverride.applied', { bone: boneName }), true);
                         menu?.reRender();
-                    });
-                    inner.appendChild(applyBtn);
+                    }, { marginTop: 8 });
                 });
             },
         },
@@ -652,11 +647,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
             visibleWhen: () => allEntries.length > 0,
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    const clearBtn = document.createElement('button');
-                    clearBtn.className = 'preset-chip';
-                    clearBtn.textContent = t('motion.boneOverride.clearAll');
-                    clearBtn.style.backgroundColor = 'var(--danger)';
-                    clearBtn.addEventListener('click', () => {
+                    addPresetChip(inner, t('motion.boneOverride.clearAll'), false, () => {
                         const snap = pushUndoSnapshot();
                         clearAllOverrides();
                         inst.boneOverrides = [];
@@ -667,8 +658,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
                             menu?.reRender();
                             setStatus(t('motion.undoApplied'), true);
                         });
-                    });
-                    inner.appendChild(clearBtn);
+                    }, { variant: 'danger' });
                 });
             },
         },

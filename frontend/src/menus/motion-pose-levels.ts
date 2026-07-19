@@ -15,7 +15,7 @@ import {
     isPlaying,
     setIsPlaying,
 } from '../core/config';
-import { addToggleRow, addSliderRow, addEmptyRow } from '../core/ui-helpers';
+import { addToggleRow, addSliderRow, addEmptyRow, addPresetChip } from '../core/ui-helpers';
 import { waitForFrame } from '../core/utils';
 import { logWarn } from '../core/logger';
 import { getMotionMenu } from './motion-popup';
@@ -85,16 +85,10 @@ function buildPoseStudioSchema(): MenuNode[] {
                     btnGroup.style.cssText =
                         'display:flex;flex-wrap:wrap;gap:4px;padding:4px 14px 8px;';
                     for (const m of modes) {
-                        const btn = document.createElement('button');
-                        btn.className = 'preset-chip';
-                        btn.textContent = m.label;
-                        // 选中态走 .active class（与灯光列表等场景统一，样式由 app.css .preset-chip.active 控制）
-                        btn.classList.toggle('active', m.key === currentMode);
-                        btn.addEventListener('click', () => {
+                        addPresetChip(btnGroup, m.label, m.key === currentMode, () => {
                             setGuideMode(m.key);
                             menu?.reRender();
                         });
-                        btnGroup.appendChild(btn);
                     }
                     inner.appendChild(btnGroup);
                 });
@@ -121,10 +115,7 @@ function buildPoseStudioSchema(): MenuNode[] {
                     ];
 
                     for (const pt of poseTypes) {
-                        const btn = document.createElement('button');
-                        btn.className = 'preset-chip';
-                        btn.textContent = pt.label;
-                        btn.addEventListener('click', async () => {
+                        addPresetChip(btnGroup, pt.label, false, async () => {
                             if (pt.key === 'rest') {
                                 stopVMD(modelId);
                                 setStatus(t('motion.poseStudio.restApplied'), true);
@@ -151,7 +142,6 @@ function buildPoseStudioSchema(): MenuNode[] {
                                 setStatus(t('motion.poseStudio.poseFailed'), false);
                             }
                         });
-                        btnGroup.appendChild(btn);
                     }
                     inner.appendChild(btnGroup);
                 });
@@ -201,40 +191,33 @@ function buildPoseStudioSchema(): MenuNode[] {
                     btnGroup.style.cssText =
                         'display:flex;flex-wrap:wrap;gap:4px;padding:4px 14px;';
                     for (const preset of presets) {
-                        const btn = document.createElement('button');
-                        btn.className = 'preset-chip';
-                        btn.textContent = preset.name;
-                        btn.title = preset.description;
-                        btn.addEventListener('click', () => {
-                            applyCameraPreset(preset);
-                            setStatus(
-                                t('motion.poseStudio.cameraApplied', { name: preset.name }),
-                                true
-                            );
-                            menu?.reRender();
-                        });
-                        btnGroup.appendChild(btn);
+                        addPresetChip(
+                            btnGroup,
+                            preset.name,
+                            false,
+                            () => {
+                                applyCameraPreset(preset);
+                                setStatus(
+                                    t('motion.poseStudio.cameraApplied', { name: preset.name }),
+                                    true
+                                );
+                                menu?.reRender();
+                            },
+                            { title: preset.description }
+                        );
                     }
                     inner.appendChild(btnGroup);
 
                     const batchRow = document.createElement('div');
                     batchRow.style.cssText = 'display:flex;gap:6px;padding:8px 14px;';
 
-                    const singleBtn = document.createElement('button');
-                    singleBtn.className = 'preset-chip';
-                    singleBtn.textContent = '📷 ' + t('motion.poseStudio.screenshot');
-                    singleBtn.addEventListener('click', () => {
+                    addPresetChip(batchRow, '📷 ' + t('motion.poseStudio.screenshot'), false, () => {
                         screenshotCurrent();
                     });
-                    batchRow.appendChild(singleBtn);
 
-                    const batchBtn = document.createElement('button');
-                    batchBtn.className = 'preset-chip';
-                    batchBtn.textContent = '📸 ' + t('motion.poseStudio.batchExport');
-                    batchBtn.addEventListener('click', async () => {
-                        await _batchScreenshot(presets, modelId);
+                    addPresetChip(batchRow, '📸 ' + t('motion.poseStudio.batchExport'), false, () => {
+                        _batchScreenshot(presets, modelId);
                     });
-                    batchRow.appendChild(batchBtn);
 
                     inner.appendChild(batchRow);
 

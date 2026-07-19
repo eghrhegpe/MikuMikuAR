@@ -24,6 +24,7 @@ import {
     addSliderRow,
     addEmptyRow,
     addSectionTitle,
+    addPresetChip,
 } from '../core/ui-helpers';
 import { loadManager } from '../core/load-manager';
 
@@ -261,10 +262,7 @@ function buildActionBindingSchema(id: string): MenuNode[] {
 
                     if (hasGlobalMotion || isPinned) {
                         if (isPinned) {
-                            const unpinBtn = document.createElement('button');
-                            unpinBtn.className = 'preset-chip';
-                            unpinBtn.textContent = t('motion.context.unpin');
-                            unpinBtn.addEventListener('click', () => {
+                            addPresetChip(inner, t('motion.context.unpin'), false, () => {
                                 _ensureMotionSlots(inst).primary = {
                                     source: 'inherit',
                                     status: 'idle',
@@ -275,12 +273,8 @@ function buildActionBindingSchema(id: string): MenuNode[] {
                                 getMotionMenu()?.reRender();
                                 setStatus(t('motion.override.redoApplied'), true);
                             });
-                            inner.appendChild(unpinBtn);
                         } else {
-                            const pinBtn = document.createElement('button');
-                            pinBtn.className = 'preset-chip';
-                            pinBtn.textContent = t('motion.context.pinMotion');
-                            pinBtn.addEventListener('click', () => {
+                            addPresetChip(inner, t('motion.context.pinMotion'), false, () => {
                                 if (active) {
                                     _ensureMotionSlots(inst).primary = {
                                         source: 'pinned',
@@ -291,7 +285,6 @@ function buildActionBindingSchema(id: string): MenuNode[] {
                                     setStatus(t('motion.override.redoApplied'), true);
                                 }
                             });
-                            inner.appendChild(pinBtn);
                         }
                     } else {
                         const hint = document.createElement('div');
@@ -485,10 +478,7 @@ function buildMotionDetailSchema(): MenuNode[] {
                         { wrapLabel: true }
                     );
                     if (active && target?.mmdModel && mmdRuntime) {
-                        const clearBtn = document.createElement('button');
-                        clearBtn.className = 'preset-chip';
-                        clearBtn.textContent = t('motion.clearVmd');
-                        clearBtn.addEventListener('click', () => {
+                        addPresetChip(inner, t('motion.clearVmd'), false, () => {
                             const snap = pushUndoSnapshot();
                             setActiveMotion(null);
                             if (isPlaying) {
@@ -504,7 +494,6 @@ function buildMotionDetailSchema(): MenuNode[] {
                                 setStatus(t('motion.undoApplied'), true);
                             });
                         });
-                        inner.appendChild(clearBtn);
                     }
 
                     // ── 图层（有叠加层时显示） ──

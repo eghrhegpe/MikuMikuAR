@@ -11,6 +11,7 @@ import {
     addToggleRow,
     addDangerRow,
     addVector3SliderRow,
+    addPresetChip,
 } from '../core/ui-helpers';
 import { Quaternion } from '@babylonjs/core/Maths/math.vector';
 import { resetModelTransform, removeModel } from '../scene/manager/model-ops';
@@ -410,16 +411,11 @@ export function buildBoneAttachCard(
                 );
 
                 // 解除按钮
-                const detachBtn = document.createElement('button');
-                detachBtn.className = 'preset-chip';
-                detachBtn.textContent = t('scene.accessory.detachFromBone');
-                detachBtn.style.marginTop = '4px';
-                detachBtn.addEventListener('click', () => {
+                addPresetChip(c, t('scene.accessory.detachFromBone'), false, () => {
                     detachPropFromBone(id);
                     onStateChange?.();
                     render();
-                });
-                c.appendChild(detachBtn);
+                }, { marginTop: 4 });
             } else {
                 // —— 未挂载状态：选择模型 + 骨骼 ——
                 const modelSelect = document.createElement('select');
@@ -463,11 +459,7 @@ export function buildBoneAttachCard(
                 });
                 c.appendChild(boneSelect);
 
-                const attachBtn = document.createElement('button');
-                attachBtn.className = 'preset-chip';
-                attachBtn.textContent = t('scene.accessory.attachToBone');
-                attachBtn.style.marginTop = '4px';
-                attachBtn.addEventListener('click', () => {
+                addPresetChip(c, t('scene.accessory.attachToBone'), false, () => {
                     const targetModelId = modelSelect.value;
                     const boneName = boneSelect.value;
                     if (!targetModelId || !boneName) {
@@ -478,8 +470,7 @@ export function buildBoneAttachCard(
                         onStateChange?.();
                         render();
                     }
-                });
-                c.appendChild(attachBtn);
+                }, { marginTop: 4 });
             }
         };
 

@@ -17,7 +17,7 @@ import { removeModel } from '../scene/manager/model-ops';
 import { buildTransformCard, type ResourceHandle } from './resource-detail-helpers';
 import { buildMatRootLevel } from './model-material';
 import { createIconifyIcon, softwareKindIcon } from '../core/icons';
-import { slideRow, addFieldRow, addSectionTitle } from '../core/ui-helpers';
+import { slideRow, addFieldRow, addSectionTitle, addPresetChip } from '../core/ui-helpers';
 import { buildOutfitLevel } from './outfit-ui';
 import { savePresetToLibDialog, buildPresetListLevel } from './model-preset';
 import { buildFeetLevel } from './motion-feet-levels';
@@ -395,15 +395,15 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
                 });
                 // 程序化激活时右侧显示状态徽标（仅指示，点击整行即切回已加载动作）
                 if (isProc) {
-                    const badge = document.createElement('span');
-                    badge.className = 'preset-chip';
-                    badge.style.cssText = 'margin-left:auto;cursor:default;';
-                    badge.textContent =
+                    addPresetChip(
+                        loadedRow,
                         slots0.primary.procRole === 'autodance'
                             ? t('motion.modeAutodance')
-                            : t('motion.modeIdle');
-                    badge.title = t('model-detail.procActive');
-                    loadedRow.appendChild(badge);
+                            : t('motion.modeIdle'),
+                        false,
+                        () => {},
+                        { variant: 'badge', marginLeft: 'auto', title: t('model-detail.procActive') }
+                    );
                 }
 
                 // 固定动作时显示取消固定行（与程序化切换解耦）
@@ -436,16 +436,10 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
                     isIdleActive ? t('model-detail.procActive') : undefined
                 );
                 if (!isIdleActive) {
-                    const editBtn = document.createElement('button');
-                    editBtn.className = 'preset-chip';
-                    editBtn.textContent = t('model-detail.procEdit');
-                    editBtn.style.cssText = 'margin-left:auto;';
-                    editBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
+                    addPresetChip(idleRow, t('model-detail.procEdit'), false, () => {
                         _setProcForModel(id, inst, 'idle');
                         stackRegistry.modelStack?.push(buildProcMotionLevel(id));
-                    });
-                    idleRow.appendChild(editBtn);
+                    }, { marginLeft: 'auto', stopPropagation: true });
                 }
 
                 // 自动舞蹈
@@ -464,16 +458,10 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
                     isAutodanceActive ? t('model-detail.procActive') : undefined
                 );
                 if (!isAutodanceActive) {
-                    const editBtn = document.createElement('button');
-                    editBtn.className = 'preset-chip';
-                    editBtn.textContent = t('model-detail.procEdit');
-                    editBtn.style.cssText = 'margin-left:auto;';
-                    editBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
+                    addPresetChip(autodanceRow, t('model-detail.procEdit'), false, () => {
                         _setProcForModel(id, inst, 'autodance');
                         stackRegistry.modelStack?.push(buildProcMotionLevel(id));
-                    });
-                    autodanceRow.appendChild(editBtn);
+                    }, { marginLeft: 'auto', stopPropagation: true });
                 }
             });
         },
