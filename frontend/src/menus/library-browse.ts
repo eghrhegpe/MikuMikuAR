@@ -26,7 +26,7 @@ import { logWarn } from '../core/utils';
 import { SetLastBrowseDir } from '../core/wails-bindings';
 import { buildModelLevel, buildModelToolsLevel } from './model-detail';
 import { buildStageTransformLevel } from './scene-menu';
-import { buildLevel, modelToRow, buildModelRootItems, isModelDirTarget } from './library-core';
+import { buildLevel, modelToRow, buildModelRootItems, isModelDirTarget, abortThumbnailStreaming } from './library-core';
 import {
     onModelRowClick,
     replaceModel,
@@ -311,6 +311,8 @@ export function showModelPopup(): void {
     // [doc:adr-135] 重置菜单前清理上一次会话残留的 restore 态（pendingAutoExpand / pendingFocusModel / timer），
     // 防止重开弹窗时误触发上次的 autoExpand。loading 不重置（解压/替换可能跨弹窗重置进行）。
     librarySessionStore.reset();
+    // [adr-136] 取消上一次会话残留的缩略图流式加载批次（快速切弹窗不再堆积 GetThumbnail）
+    abortThumbnailStreaming();
 
     const wrapper = getMenuWrapper('model-popup');
     if (stackRegistry.modelStack) {

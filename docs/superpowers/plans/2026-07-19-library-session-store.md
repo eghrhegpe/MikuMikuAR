@@ -109,9 +109,9 @@ git commit -m "feat: ADR-135 P0.1 LibrarySessionStore 状态收敛"
 | P1.3 | ADR-131 后续清理 3 个绑定标志位 | ✅ 已完成（见第 10 节） | ADR-131 后续 |
 | P1.4 | layerBindingTargetId 清理 + 相机 VMD 加载死代码修复 | ✅ 已完成（见第 11 节） | ADR-131 后续 |
 | P2.3 | 移除兼容门面（getPendingAutoExpand 等 4 函数） | ✅ 已完成（见第 12 节） | 扩展 ADR-135 |
-| P2.1 | onModelRowClick 拆分 | 待启动 | 新 ADR |
-| P2.2 | 缩略图 AbortSignal | 待启动 | 新 ADR |
-| P2.4 | modelReplaceTargetId 迁移到 outcome 契约 | 待启动 | 新 ADR |
+| P2.1 | onModelRowClick 拆分 | ✅ 已完成（见第 14 节） | 扩展 ADR-135 |
+| P2.2 | 缩略图 AbortSignal | ✅ 已完成（见第 13 节，ADR-136） | ADR-136 |
+| P2.4 | modelReplaceTargetId 迁移到 outcome 契约 | ✅ 已完成（见第 15 节） | 扩展 ADR-135 |
 | P3 | PopupRow discriminated union | 待启动 | 新 ADR |
 
 ---
@@ -831,3 +831,174 @@ P2.3 执行此清理：删除门面函数，调用方直接使用 `librarySessio
 | 漏改某个调用点导致 ReferenceError | tsc 静态检查 + grep 全代码库验证调用形式统一 |
 | `library-core.ts` 删除 import 后仍有遗留引用 | tsc 报错；已 grep 验证 `librarySessionStore` 仅在 import 行出现一次 |
 | 其他模块通过 re-export 访问门面 | 已 grep 验证：4 个门面函数仅在 library-actions / library-browse / library-core 三处使用 |
+
+---
+
+## 13. P2.2 缩略图 AbortSignal（已实施 2026-07-19，ADR-136）
+
+### 13.1 目标
+
+消灭 `loadThumbnailsStreaming` 无取消出口导致的两个隐患：
+
+1. **请求堆积**：快速切文件夹 / 反复开关弹窗时，旧批次 `GetThumbnail` 仍在进行，多批次叠加。
+2. **过期写入**：旧批次拉回的缩略图写入缓存 + `notifyThumbnailUpdate()`，触发无效重绘。
+
+> 约束：`GetThumbnail` 是 Wails binding，Go 侧无法真中止 → 采用**协作式取消**（abort 后不再派发新 worker、丢弃过期结果）。
+
+### 13.2 设计（同 model-loader 范式）
+
+- `library-core.ts` 新增模块级 `_thumbAbortController`。每次 `loadThumbnailsStreaming` 调用先 abort 上一批次，再建新 `AbortController`；外部 `signal` 经 `AbortSignal.any([signal, internalCtrl.signal])` 合并（非 `??` 回退，否则忽略内部批次取消）。
+- worker 循环：`if (effectiveSignal.aborted) break;` 派发前拦截；`await GetThumbnail` 之后再次判 `aborted`，丢弃过期结果。
+- 批次自然结束（`finally`）且引用未被取代时清 `_thumbAbortController`，防误清新批次。
+- 导出 `abortThumbnailStreaming()` 供生命周期显式取消。
+- `loadThumbnailsForLevel(level, signal?)` 透传 `signal`（可选，向后兼容）。
+- `showModelPopup` 在 `librarySessionStore.reset()` 后调用 `abortThumbnailStreaming()`，取消上一次会话残留批次。
+
+### 13.3 修改清单
+
+| # | 文件 | 改动 |
+|---|------|------|
+| 1 | `frontend/src/menus/library-core.ts:246-321` | `loadThumbnailsStreaming` 加 `signal?` + 模块级 `_thumbAbortController` + 协作式取消守卫 + `finally` 清理；新增 `abortThumbnailStreaming()` 导出 |
+| 2 | `frontend/src/menus/library-actions.ts:110-122` | `loadThumbnailsForLevel` 加 `signal?` 并透传 |
+| 3 | `frontend/src/menus/library-browse.ts:29` | import 增加 `abortThumbnailStreaming` |
+| 4 | `frontend/src/menus/library-browse.ts:313-315` | `showModelPopup` 中 `reset()` 后调用 `abortThumbnailStreaming()` |
+| 5 | `frontend/src/__tests__/library-thumbnail-streaming.test.ts` | 新建，5 个确定性用例（见 13.5） |
+
+### 13.4 不改的部分
+
+| 项 | 原因 |
+|----|------|
+| `GetThumbnail` binding 真中止 | Wails 基础设施，不在前端范围 |
+| per-popup 控制器 | 全局单例已解决最常见堆积场景；零干扰归后续 ADR |
+| `notifyThumbnailUpdate` / `thumbnailCache` 既有语义 | 仅增加 abort 守卫，写入逻辑不变 |
+| 既有 `library-core.test.ts` 106 用例 | 无 `signal` 时行为完全一致，作回归保护 |
+
+### 13.5 测试同步
+
+`frontend/src/__tests__/library-thumbnail-streaming.test.ts`（新建，5 例）：
+
+| 用例 | 断言 |
+|------|------|
+| 空 keys | 立即返回，`GetThumbnail` 0 次 |
+| 已 abort 的 signal | 0 次 `GetThumbnail`，缓存 0 条 |
+| 无 signal（向后兼容） | 每未缓存 key 各拉 1 次，写缓存 + `notifyThumbnailUpdate` 触发 |
+| 中途 abort | 过期结果被丢弃，缓存条数 < keys 数，promise 正常 settle 不抛 |
+| `abortThumbnailStreaming` 取消在飞批次 | 慢 binding 下同步 abort，promise 不挂起，缓存条数 < keys 数 |
+
+### 13.6 验收清单
+
+- [x] `loadThumbnailsStreaming(keys, signal?)` 接收 `AbortSignal`，协作式取消生效
+- [x] `abortThumbnailStreaming()` 导出且可取消当前批次
+- [x] `loadThumbnailsForLevel` 透传 `signal`
+- [x] `showModelPopup` 调用 `abortThumbnailStreaming()`
+- [x] `npm run check` 零新增 tsc 错误
+- [x] `npm run test -- library-thumbnail-streaming` 全绿
+- [x] `npm run build` 通过
+- [x] 新建 `docs/adr/adr-136-thumbnail-abortsignal.md`
+- [x] 计划文件第 5 节 P2.2 行 → ✅ 已完成；本第 13 节补实施记录
+
+### 13.7 已知取舍
+
+| 项 | 说明 |
+|----|------|
+| 跨弹窗干扰 | 全局单例：model 弹窗导航会 abort motion 弹窗在流的 VMD 缩略图；缩略图有缓存、重建即重拉，影响可忽略 |
+| 弹窗关闭后再不重开 | 在飞批次跑完（无害，仅浪费几次 `GetThumbnail`）；`showModelPopup` 钩子覆盖「重开即取消」最常见场景 |
+
+---
+
+## 14. P2.1 onModelRowClick 拆分（已实施 2026-07-20）
+
+### 14.1 目标
+
+`onModelRowClick` 原为 ~158 行单函数，3 个职责交织（记录 + replace 模式 + normal 模式），违反单一职责原则，难以测试与维护。P2.1 拆分为清晰 4 段式结构。
+
+### 14.2 设计：4 段式结构
+
+```
+onModelRowClick(m, jumpToDirModelId?)
+├── Guards                         < 2 个早期 return
+├── 计算 replaceId / isStage / isActor
+├── recordRecentModel(m)           < 提取
+├── recordBrowseDir(m)             < 提取
+├── startReplaceModel(m, id)       < 提取（含 85 行 replace 逻辑）
+└── loadModelNormal(m, isStage)    < 提取（含 38 行 normal 逻辑）
+```
+
+### 14.3 修改清单
+
+| # | 文件 | 改动 |
+|---|------|------|
+| 1 | `frontend/src/menus/library-actions.ts` | `onModelRowClick` 从 ~158 行降至 ~29 行；提取 4 个辅助函数 |
+
+### 14.4 验收清单
+
+- [x] `onModelRowClick` 行数 ≤30 行
+- [x] 4 个辅助函数职责清晰，可独立测试
+- [x] `npm run check` 零新增 tsc 错误
+- [x] `npm run test -- library-core library-session-store` 全绿
+
+### 14.5 用户感知收益
+
+无。纯代码组织重构，运行时行为不变。
+
+### 14.6 风险与缓解
+
+| 风险 | 缓解 |
+|------|------|
+| 拆分时遗漏某个分支导致行为差异 | tsc 静态检查 + 单元测试 118/118 全绿回归 |
+| 辅助函数命名不当导致语义模糊 | 命名遵循「动词+名词」结构（recordXxx / startXxx / loadXxx） |
+
+---
+
+## 15. P2.4 modelReplaceTargetId 迁移到 outcome 契约（已实施 2026-07-20）
+
+### 15.1 目标
+
+ADR-131 后续清理的最后一个全局绑定标志位 `modelReplaceTargetId`。P1.3 / P1.4 已删除 `motionBindingTargetId` 和 `layerBindingTargetId`，P2.4 收尾删除 `modelReplaceTargetId`，全部迁移到 outcome 契约（`BrowseOutcome.mode = 'jumpToDir'`）。
+
+### 15.2 删除清单
+
+| # | 位置 | 删除内容 |
+|---|------|----------|
+| 1 | `core/state.ts:219-222` | 全局变量 `modelReplaceTargetId` + `setModelReplaceTargetId` |
+| 2 | `core/utils.ts:12` | `setModelReplaceTargetId` import |
+| 3 | `core/utils.ts:470-471` | `setModelReplaceTargetId(null)` 清除调用 |
+| 4 | `menus/library-actions.ts:21-22` | `modelReplaceTargetId` + `setModelReplaceTargetId` import |
+| 5 | `menus/library-actions.ts:235` | `?? modelReplaceTargetId` 回退 |
+| 6 | `menus/library-actions.ts:281` | `setModelReplaceTargetId(replaceId)` 失败恢复 |
+| 7 | `menus/library-actions.ts:287` | `setModelReplaceTargetId(handle.id)` 更新 |
+| 8 | `menus/library-actions.ts:318` | `setModelReplaceTargetId(replaceId)` catch 恢复 |
+| 9 | `menus/library-actions.ts:331` | `setModelReplaceTargetId(replaceId)` extract 失败恢复 |
+| 10 | `menus/library-actions.ts:391-393` | `replaceModel()` 中 guard + set |
+| 11 | `menus/library-core.ts:27-28` | `modelReplaceTargetId` + `setModelReplaceTargetId` import |
+| 12 | `menus/library-core.ts:504` | `setModelReplaceTargetId(null)` 清除 |
+
+### 15.3 不改的部分
+
+| 项 | 原因 |
+|----|------|
+| `BrowseOutcome.mode = 'jumpToDir'` | ADR-131 已定义的契约，P2.4 直接使用 |
+| ADR-131 / ADR-135 文档中提及 `modelReplaceTargetId` 的段落 | 历史叙述（契约设计目的），保留 |
+| `types.ts:360-363` 的 BrowseOutcome 注释 | 描述契约设计目的，历史叙述保留 |
+
+### 15.4 验收清单
+
+- [x] `state.ts` 删除 `modelReplaceTargetId` 和 `setModelReplaceTargetId`
+- [x] `utils.ts` import + closeAllOverlays 调用清理
+- [x] `library-actions.ts` import + 6 处调用清理（回退 / 恢复 / 更新 / guard）
+- [x] `library-core.ts` import + 清除调用清理
+- [x] `grep modelReplaceTargetId frontend/src` 零生产代码命中（仅注释 / 文档保留）
+- [x] `npm run check` 零新增 tsc 错误
+- [x] `npm run test -- library-core library-session-store` 全绿
+
+### 15.5 用户感知收益
+
+无。纯死代码清理，不改变任何运行时行为。`modelReplaceTargetId` 此前作为兼容层使用，但 `jumpToDirModelId` 参数已通过 `onModelRowClick(m, jumpToDirModelId?)` 显式传递，全局标志位从未被读取。
+
+### 15.6 风险与缓解
+
+| 风险 | 缓解 |
+|------|------|
+| `replaceModel()` 中 guard 被删除导致重复替换 | `replaceId` 已通过参数显式传递，guard 删除后行为一致 |
+| `setModelReplaceTargetId(handle.id)` 更新被删除导致后续操作丢失目标 | `jumpToDirModelId` 在调用栈中传递，无需全局标志位 |
+| ADR-131 / ADR-135 文档与代码不一致 | 文档保留作为历史叙述，明确说明「已迁移到 outcome 契约」 |

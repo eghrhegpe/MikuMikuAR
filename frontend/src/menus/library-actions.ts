@@ -18,8 +18,6 @@ import {
     recentModels,
     setRecentModels,
     computeLibraryRef,
-    modelReplaceTargetId,
-    setModelReplaceTargetId,
     cardContainer,
     formatError,
     stackRegistry,
@@ -109,15 +107,18 @@ document.addEventListener('mmku:modelLoaded', _mmkuHandler);
 
 // ======== 缩略图 ========
 
-export async function loadThumbnailsForLevel(level: PopupLevel): Promise<void> {
+export async function loadThumbnailsForLevel(
+    level: PopupLevel,
+    signal?: AbortSignal
+): Promise<void> {
     const items = level.items.filter((r) => r.kind === 'model' && r.model);
     const keys = items.map((r) => thumbnailKeyForModel(r.model!));
     if (keys.length === 0) {
         return;
     }
     try {
-        // 流式加载：逐张出现，不阻塞 UI
-        await loadThumbnailsStreaming(keys);
+        // 流式加载：逐张出现，不阻塞 UI。[adr-136] 透传外部取消信号
+        await loadThumbnailsStreaming(keys, signal);
     } catch (err) {
         logWarn('library-actions', 'loadThumbnailsForLevel:', err);
     }
@@ -221,132 +222,113 @@ export async function prepareModelRestore(
 
 // ======== 模型行点击 ========
 
-function onModelRowClick(m: LibraryModel, jumpToDirModelId?: string): void {
-    // [doc:adr-135] P1.2: per-model 守卫。zip A 解压时 pmx B 直接放行，不再被一刀切阻塞。
-    if (librarySessionStore.isExtracting(m.file_path)) {
-        setStatus(t('library.extracting'), false);
-        return;
-    }
-    if (librarySessionStore.isReplaceLoading()) {
-        setStatus(t('library.loadingModel'), false);
-        return;
-    }
-    // [doc:adr-131] 由 replaceModel 传参取代 mutation of currentLevel.outcome
-    const replaceId = jumpToDirModelId ?? modelReplaceTargetId;
-    const isStage = isStageLike(m.type);
-    const isActor = m.format === 'pmx' && !isStage;
-    if (m.format === 'pmx') {
-        const ref = computeLibraryRef(m.file_path);
-        if (ref) {
-            AddRecentModel(ref).catch((err) =>
-                logWarn('library-actions', 'AddRecentModel failed:', err)
-            );
-            setRecentModels([ref, ...recentModels.filter((r) => r !== ref)].slice(0, 20));
-        }
-    }
-
-    // [修复] 记忆"显示目录"为上次浏览目录：点击模型即记录其可见层级，
-    // 使下次打开资源库能回到用户点击时所处位置（单 pmx 叶子目录被展平时回退到根目录）。
-    if (m.format === 'pmx') {
-        const memCat: 'pmx' | 'stage' | 'prop' =
-            m.type === 'prop' ? 'prop' : m.type === 'stage' || m.type === 'scene' ? 'stage' : 'pmx';
-        void SetLastBrowseDir(memCat, resolveDisplayBrowseDir(m, memCat)).catch((e) =>
-            logWarn('library-actions', 'SetLastBrowseDir failed:', e)
+/** 记录最近使用的模型（用于历史列表）。 */
+function recordRecentModel(m: LibraryModel): void {
+    const ref = computeLibraryRef(m.file_path);
+    if (ref) {
+        AddRecentModel(ref).catch((err) =>
+            logWarn('library-actions', 'AddRecentModel failed:', err)
         );
+        setRecentModels([ref, ...recentModels.filter((r) => r !== ref)].slice(0, 20));
     }
+}
 
-    // ===== Replace mode =====
-    if (replaceId && isActor) {
-        librarySessionStore.setReplaceLoading(true);
+/** 记忆浏览目录：使用户下次打开资源库能回到当前位置。 */
+function recordBrowseDir(m: LibraryModel): void {
+    const memCat: 'pmx' | 'stage' | 'prop' =
+        m.type === 'prop' ? 'prop' : m.type === 'stage' || m.type === 'scene' ? 'stage' : 'pmx';
+    void SetLastBrowseDir(memCat, resolveDisplayBrowseDir(m, memCat)).catch((e) =>
+        logWarn('library-actions', 'SetLastBrowseDir failed:', e)
+    );
+}
 
-        const doReplace = (path: string, libraryPath?: string, innerPath?: string): void => {
-            setStatus(t('library.loadingModel'), false);
-            let browseCategory: 'pmx' | 'stage' | 'prop' = 'pmx';
-            let loadKind: 'actor' | 'stage' | 'prop' = 'actor';
-            let filter: (model: LibraryModel) => boolean = (model) => model.format === 'pmx';
-            if (m.type === 'prop') {
-                browseCategory = 'prop';
-                loadKind = 'prop';
-                filter = (model) => model.type === 'prop';
-            } else if (m.type === 'stage' || m.type === 'scene') {
-                browseCategory = 'stage';
-                loadKind = 'stage';
-                filter = (model) => model.type === 'stage' || model.type === 'scene';
-            }
+/** 替换模式入口：加载新模型 → 移除旧模型 → 导航到浏览层。 */
+function startReplaceModel(m: LibraryModel, replaceId: string): void {
+    librarySessionStore.setReplaceLoading(true);
 
-            loadManager
-                .load({ kind: loadKind, path, libraryPath, innerPath })
-                .then(async (handle) => {
-                    if (!handle?.id) {
-                        setModelReplaceTargetId(replaceId);
-                        stackRegistry.modelStack?.reRender();
-                        setStatus(t('library.modelLoadFailed'), false);
-                        return;
-                    }
-                    removeModel(replaceId);
-                    setModelReplaceTargetId(handle.id);
-                    try {
-                        stackRegistry.modelStack?.resetToRoot();
-                        let newName = handle.name;
-                        if (loadKind === 'prop') {
-                            const { propRegistry } = await import('../core/config');
-                            newName = propRegistry.get(handle.id)?.name ?? handle.name;
-                        } else {
-                            newName = modelRegistry.get(handle.id)?.name ?? handle.name;
-                        }
-                        await prepareModelRestore(getBrowseDir(browseCategory), browseCategory);
-                        // [doc:adr-131] 替换模式自动跳转收敛为契约实例：声明 jumpToDir outcome，
-                        // 后续在该浏览层选中模型时由 activateItem/onItemClick 按 outcome 派发，
-                        // 取代依赖 modelReplaceTargetId 全局标志位反推（全局标志位保留为兼容回退）。
-                        stackRegistry.modelStack?.push(
-                            buildLevel(
-                                getBrowseDir(browseCategory),
-                                t('model-detail.replaceModelTo', { name: newName }),
-                                filter,
-                                stackRegistry.modelStack!,
-                                [],
-                                { mode: 'jumpToDir', modelId: handle.id }
-                            )
-                        );
-                        setStatus(t('status.done'), true);
-                    } catch (uiErr) {
-                        logWarn('library-actions', 'replace UI navigation failed', uiErr);
-                        setStatus(t('status.done'), true);
-                    }
-                })
-                .catch((err) => {
-                    setModelReplaceTargetId(replaceId);
-                    setStatus(t('library.modelLoadFailed') + formatError(err), false);
-                    stackRegistry.modelStack?.reRender();
-                })
-                .finally(() => {
-                    librarySessionStore.setReplaceLoading(false);
-                });
-        };
-
-        if (m.container === 'zip') {
-            setStatus(t('library.extractingZip'), false);
-            librarySessionStore.setExtracting(m.file_path);
-            ExtractZip(m.file_path, m.zip_inner)
-                .then((result) => {
-                    setStatus(result.cached ? t('library.cacheHit') : t('library.extracted'), true);
-                    doReplace(result.file_path, m.file_path, m.zip_inner);
-                })
-                .catch((err) => {
-                    librarySessionStore.setReplaceLoading(false);
-                    setModelReplaceTargetId(replaceId);
-                    setStatus(t('library.extractFailed') + formatError(err), false);
-                })
-                .finally(() => {
-                    librarySessionStore.clearExtracting(m.file_path);
-                });
-        } else {
-            doReplace(m.file_path);
+    const doReplace = (path: string, libraryPath?: string, innerPath?: string): void => {
+        setStatus(t('library.loadingModel'), false);
+        let browseCategory: 'pmx' | 'stage' | 'prop' = 'pmx';
+        let loadKind: 'actor' | 'stage' | 'prop' = 'actor';
+        let filter: (model: LibraryModel) => boolean = (model) => model.format === 'pmx';
+        if (m.type === 'prop') {
+            browseCategory = 'prop';
+            loadKind = 'prop';
+            filter = (model) => model.type === 'prop';
+        } else if (m.type === 'stage' || m.type === 'scene') {
+            browseCategory = 'stage';
+            loadKind = 'stage';
+            filter = (model) => model.type === 'stage' || model.type === 'scene';
         }
-        return;
-    }
 
-    // ===== Normal mode =====
+        loadManager
+            .load({ kind: loadKind, path, libraryPath, innerPath })
+            .then(async (handle) => {
+                if (!handle?.id) {
+                    stackRegistry.modelStack?.reRender();
+                    setStatus(t('library.modelLoadFailed'), false);
+                    return;
+                }
+                removeModel(replaceId);
+                try {
+                    stackRegistry.modelStack?.resetToRoot();
+                    let newName = handle.name;
+                    if (loadKind === 'prop') {
+                        const { propRegistry } = await import('../core/config');
+                        newName = propRegistry.get(handle.id)?.name ?? handle.name;
+                    } else {
+                        newName = modelRegistry.get(handle.id)?.name ?? handle.name;
+                    }
+                    await prepareModelRestore(getBrowseDir(browseCategory), browseCategory);
+                    // [doc:adr-131] 替换模式自动跳转收敛为契约实例：声明 jumpToDir outcome，
+                    // 后续在该浏览层选中模型时由 activateItem/onItemClick 按 outcome 派发。
+                    stackRegistry.modelStack?.push(
+                        buildLevel(
+                            getBrowseDir(browseCategory),
+                            t('model-detail.replaceModelTo', { name: newName }),
+                            filter,
+                            stackRegistry.modelStack!,
+                            [],
+                            { mode: 'jumpToDir', modelId: handle.id }
+                        )
+                    );
+                    setStatus(t('status.done'), true);
+                } catch (uiErr) {
+                    logWarn('library-actions', 'replace UI navigation failed', uiErr);
+                    setStatus(t('status.done'), true);
+                }
+            })
+            .catch((err) => {
+                setStatus(t('library.modelLoadFailed') + formatError(err), false);
+                stackRegistry.modelStack?.reRender();
+            })
+            .finally(() => {
+                librarySessionStore.setReplaceLoading(false);
+            });
+    };
+
+    if (m.container === 'zip') {
+        setStatus(t('library.extractingZip'), false);
+        librarySessionStore.setExtracting(m.file_path);
+        ExtractZip(m.file_path, m.zip_inner)
+            .then((result) => {
+                setStatus(result.cached ? t('library.cacheHit') : t('library.extracted'), true);
+                doReplace(result.file_path, m.file_path, m.zip_inner);
+            })
+            .catch((err) => {
+                librarySessionStore.setReplaceLoading(false);
+                setStatus(t('library.extractFailed') + formatError(err), false);
+            })
+            .finally(() => {
+                librarySessionStore.clearExtracting(m.file_path);
+            });
+    } else {
+        doReplace(m.file_path);
+    }
+}
+
+/** 正常加载模式：zip 提取后加载，或按格式直接加载。 */
+function loadModelNormal(m: LibraryModel, isStage: boolean): void {
     if (m.container === 'zip') {
         closeAllOverlays();
         setStatus(t('library.extractingZip'), false);
@@ -385,14 +367,44 @@ function onModelRowClick(m: LibraryModel, jumpToDirModelId?: string): void {
     }
 }
 
+function onModelRowClick(m: LibraryModel, jumpToDirModelId?: string): void {
+    // [doc:adr-135] P1.2: per-model 守卫。zip A 解压时 pmx B 直接放行，不再被一刀切阻塞。
+    if (librarySessionStore.isExtracting(m.file_path)) {
+        setStatus(t('library.extracting'), false);
+        return;
+    }
+    if (librarySessionStore.isReplaceLoading()) {
+        setStatus(t('library.loadingModel'), false);
+        return;
+    }
+    // [doc:adr-131] 由 replaceModel 传参取代 mutation of currentLevel.outcome
+    const replaceId = jumpToDirModelId;
+    const isStage = isStageLike(m.type);
+    const isActor = m.format === 'pmx' && !isStage;
+    if (m.format === 'pmx') {
+        recordRecentModel(m);
+    }
+
+    // [修复] 记忆"显示目录"为上次浏览目录
+    if (m.format === 'pmx') {
+        recordBrowseDir(m);
+    }
+
+    // ===== Replace mode =====
+    if (replaceId && isActor) {
+        startReplaceModel(m, replaceId);
+        return;
+    }
+
+    // ===== Normal mode =====
+    loadModelNormal(m, isStage);
+}
+
 function replaceModel(m: LibraryModel): void {
     const isActor =
         m.format === 'pmx' && m.type !== 'stage' && m.type !== 'scene' && m.type !== 'prop';
-    if (!modelReplaceTargetId && focusedModelId && isActor) {
-        setModelReplaceTargetId(focusedModelId);
-    }
     // [doc:adr-131] 传参取代 mutation of currentLevel.outcome
-    onModelRowClick(m, modelReplaceTargetId ?? focusedModelId ?? undefined);
+    onModelRowClick(m, focusedModelId ?? undefined);
 }
 
 // 网格模式点击动作（VMD）时触发：替换聚焦模型的当前基础动作。

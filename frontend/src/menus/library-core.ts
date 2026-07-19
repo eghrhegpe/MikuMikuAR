@@ -24,8 +24,6 @@ import {
     logWarn,
     LoadingGuard,
     closeAllOverlays,
-    modelReplaceTargetId,
-    setModelReplaceTargetId,
     libraryRoot,
     BrowseOutcome,
 } from '../core/config';
@@ -247,21 +245,56 @@ async function ensureModelMeta(pmxPaths: string[]): Promise<void> {
  */
 const THUMB_STREAM_CONCURRENCY = 4;
 
-export async function loadThumbnailsStreaming(keys: string[]): Promise<void> {
+// [adr-136] 缩略图流式加载「当前批次」控制器：每次新调用都会 abort 上一批次，
+// 避免快速切换文件夹时旧的 GetThumbnail 请求堆积。
+// 注：GetThumbnail 是 Wails binding，Go 侧无法真正中止；此处为「协作式取消」——
+// abort 后不再派发新 worker、丢弃已拉取但未写入的过期结果，避免向已不可见的面板写缓存/通知。
+let _thumbAbortController: AbortController | null = null;
+
+/**
+ * 流式加载缩略图：并发控制，每加载一张立即更新缓存并通知面板刷新，
+ * 替代一次性 GetThumbnailBatch 的"全等"模式，实现缩略图逐张出现。
+ * 同 key 已在缓存中时跳过（不改动现有缓存）。
+ *
+ * @param signal 外部取消信号。传入后，abort 时协作式停止：不再处理剩余 key、
+ *               且丢弃已拉取但未写入的过期结果。与内部「当前批次」控制器合并，两者任一 abort 即生效。
+ */
+export async function loadThumbnailsStreaming(
+    keys: string[],
+    signal?: AbortSignal
+): Promise<void> {
     if (keys.length === 0) {
         return;
     }
+    // [adr-136] 取消上一批次（快速切换文件夹时避免请求堆积）
+    if (_thumbAbortController) {
+        _thumbAbortController.abort();
+    }
+    const internalCtrl = new AbortController();
+    _thumbAbortController = internalCtrl;
+    // 合并外部 signal 与内部控制器：任一 abort 即生效。
+    // 用 AbortSignal.any 而非 ?? 回退，否则会忽略内部批次取消（与 model-loader 同款考量，ADR-096/105）。
+    const effectiveSignal = signal
+        ? AbortSignal.any([signal, internalCtrl.signal])
+        : internalCtrl.signal;
     let index = 0;
     const workers = Array.from(
         { length: Math.min(THUMB_STREAM_CONCURRENCY, keys.length) },
         async () => {
             while (index < keys.length) {
+                if (effectiveSignal.aborted) {
+                    break; // 协作式停止派发
+                }
                 const key = keys[index++];
                 if (thumbnailCache.has(key)) {
                     continue;
                 }
                 try {
                     const data = await GetThumbnail(key);
+                    // 拉取完成后再判一次 abort：丢弃已不可见的过期结果
+                    if (effectiveSignal.aborted) {
+                        continue;
+                    }
                     if (data) {
                         thumbnailCache.set(key, data);
                         // 通知所有活跃面板，使当前可见的缩略图立即显示
@@ -273,7 +306,22 @@ export async function loadThumbnailsStreaming(keys: string[]): Promise<void> {
             }
         }
     );
-    await Promise.all(workers);
+    try {
+        await Promise.all(workers);
+    } finally {
+        // 批次自然结束时清引用；若已被外部/新批次取代则不动（防误清新批次）
+        if (_thumbAbortController === internalCtrl) {
+            _thumbAbortController = null;
+        }
+    }
+}
+
+/** [adr-136] 取消当前正在进行的缩略图流式加载批次（如弹窗关闭/重开时调用）。 */
+export function abortThumbnailStreaming(): void {
+    if (_thumbAbortController) {
+        _thumbAbortController.abort();
+        _thumbAbortController = null;
+    }
 }
 
 // ======== 模型显示名/图标 公共解析 ========
@@ -501,7 +549,6 @@ function renderItemsWithRAF(
                 icon: 'lucide:plus',
                 title: t('library.loadModel'),
                 onClick: () => {
-                    setModelReplaceTargetId(null);
                     activateItem(item);
                 },
             };
