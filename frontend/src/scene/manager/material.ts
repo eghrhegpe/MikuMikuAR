@@ -61,6 +61,8 @@ export type MaterialCategoryParams = {
 
 const CATEGORIES = ['皮肤', '头发', '眼睛', '服装', '配件', '道具'] as const;
 export type MaterialCategory = (typeof CATEGORIES)[number];
+/** 导出 CATEGORIES 供 UI 层遍历分类（如 applyUnlitFallback 全分类批量应用） */
+export const MATERIAL_CATEGORIES: readonly MaterialCategory[] = CATEGORIES;
 const CATEGORY_SET = new Set<string>(CATEGORIES);
 
 interface _OrigMat {
@@ -609,6 +611,40 @@ export function resetMatCatParams(id: string): void {
     triggerAutoSave();
 }
 
+/**
+ * 光照兜底预设：让模型呈现"伪 unlit"状态，不依赖方向光即可正常显示。
+ *
+ * 适用于 PMX 材质异常（PBR fallback / disableLighting / 漫反射不响应光照）的少数模型。
+ * 应用后效果：模型完全靠 ambient + emissive 呈现，看起来像贴纸——失去立体感但保证可见。
+ *
+ * 实现细节：
+ * - diffuseMul→0：去掉对方向光的依赖（避免与异常光照叠加）
+ * - ambientMul→2：环境光提到最大，让模型整体可见
+ * - emissiveMul→2：自发光提到最大，让贴图颜色充分显示
+ * - emissiveTexLevel→2：自发光贴图强度提到最大，配合 emissiveMul
+ * - specularMul→0、toonTexLevel→0、sphereTexLevel→0：关闭所有可能引起光照异常的项
+ *
+ * 该函数仅设置状态值，不持久化到独立字段（与现有 preset/scene-save 复用 materialCategories）。
+ * 用户满意后可手动「保存到 preset 库」固化，跨模型 categories 会自动复用。
+ */
+export function applyUnlitFallback(id: string): void {
+    const fallback = {
+        diffuseMul: 0,
+        specularMul: 0,
+        ambientMul: 2,
+        emissiveMul: 2,
+        toonTexLevel: 0,
+        sphereTexLevel: 0,
+        emissiveTexLevel: 2,
+        // shininess / bumpTexLevel / diffuseTexLevel 保留默认，不影响"伪 unlit"效果
+    };
+    // 清理逐材质覆盖，避免局部参数干扰全局兜底
+    _matState.delete(id);
+    for (const cat of CATEGORIES) {
+        setMatCatParams(id, cat, fallback);
+    }
+}
+
 function _ensureMatState(id: string): Map<number, MaterialCategoryParams> {
     let m = _matState.get(id);
     if (m) {
@@ -791,9 +827,15 @@ export function getMatState(id: string): {
     if (!catState && !matState && !enabledState) {
         return null;
     }
+    // 过滤默认值噪声：_ensureState 会种入 6 类默认值供 UI 读取，
+    // 但序列化时无需落盘默认值（apply 时会兜底）。避免预设文件膨胀。
+    const defaultJson = JSON.stringify(DEFAULT_MAT_PARAMS);
     const categories: Record<string, MaterialCategoryParams> = {};
     if (catState) {
         for (const [cat, params] of catState) {
+            if (JSON.stringify(params) === defaultJson) {
+                continue;
+            }
             categories[cat] = { ...params };
         }
     }
@@ -808,6 +850,14 @@ export function getMatState(id: string): {
         for (const [idx, val] of enabledState) {
             enabled[idx] = val;
         }
+    }
+    // 全部为默认值时返回 null（与「无调整」语义一致）
+    if (
+        Object.keys(categories).length === 0 &&
+        Object.keys(overrides).length === 0 &&
+        Object.keys(enabled).length === 0
+    ) {
+        return null;
     }
     return { categories, overrides, enabled };
 }

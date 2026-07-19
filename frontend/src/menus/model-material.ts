@@ -19,6 +19,7 @@ import {
     setMatCategoryEnabled,
     getMaterialMeshes,
     DEFAULT_MAT_PARAMS,
+    applyUnlitFallback,
 } from '../scene/scene';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow, addSliderRow, addCollapsible, addSectionTitle } from '../core/ui-helpers';
@@ -26,6 +27,7 @@ import type { SlideMenu } from './menu';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
+import { showConfirm } from '../core/dialog';
 
 let _selectedMat: { cat: string; index: number } | null = null;
 /** 参数卡片容器引用（增量更新用，避免 reRender） */
@@ -484,7 +486,35 @@ function buildMatRootSchema(
                 });
             },
         },
-        // 卡片 3：重置全部
+        // 卡片 3：光照兜底（伪 unlit，少数异常模型用）
+        {
+            id: 'matRoot:unlitFallback',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    slideRow(
+                        inner,
+                        'lucide:sun-medium',
+                        t('model-material.unlitFallback'),
+                        false,
+                        async () => {
+                            const ok = await showConfirm(
+                                t('model-material.unlitFallbackConfirm'),
+                                t('model-material.unlitFallbackTitle')
+                            );
+                            if (!ok) {
+                                return;
+                            }
+                            applyUnlitFallback(id);
+                            _selectedMat = null;
+                            (targetStack ?? stackRegistry.modelStack)?.reRender();
+                            setStatus(t('model-material.unlitFallbackDone'), true);
+                        }
+                    );
+                });
+            },
+        },
+        // 卡片 4：重置全部
         {
             id: 'matRoot:reset',
             kind: 'custom',
