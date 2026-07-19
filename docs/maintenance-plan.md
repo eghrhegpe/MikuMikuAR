@@ -254,12 +254,12 @@ Week 3 (2026-08-02 ~ 2026-08-08) — 亮度 + 加载 + 收尾
 
 | 阶段 | 拟立项 ADR | 范围 |
 |------|-----------|------|
-| 0 | ADR-138（待定） | env-dispatcher 破循环 |
-| 1 | ADR-139（待定） | ObserverRegistry 生命周期 |
-| 2 | ADR-140（待定） | DragSliderController 统一 |
-| 3 | ADR-141（待定） | state.ts 拆分 |
+| 0 | ADR-138（已立项） | env-dispatcher 破循环 |
+| 1 | ADR-139（已立项） | ObserverRegistry 生命周期 |
+| 2 | ADR-140（已立项） | DragSliderController 统一 |
+| 3 | ADR-141（已立项） | state.ts 拆分 |
 | 4 | ADR-132（已有） | 亮度统一标量 |
-| 5 | ADR-142（待定） | withStatus 加载状态机 |
+| 5 | ADR-142（已立项） | withStatus 加载状态机 |
 
 ---
 
