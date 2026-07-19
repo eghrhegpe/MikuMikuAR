@@ -10,10 +10,10 @@ function-map.md      🗺️ 函数映射表（部分过时，见 frontend/AGENT
 competitive-analysis.md 🔍 竞品分析
 outfits-spec.md      👗 换装系统规格
 security-audit-CVE.md 🔒 安全审计 CVE 记录
-adr/                 📜 架构决策记录（113 项，权威状态源）
+adr/                 📜 架构决策记录（146 项含 ADR-061.1 子项，权威状态源）
 audit/               🔍 代码审计报告（round-1~9 + 专项审计）
 buglog/              🐛 Bug 修复记录
-releases/            📦 发版记录（v1.1.4 ~ v1.4.1 + release-process）
+releases/            📦 发版记录（v1.1.4 ~ v1.5.3 + release-process）
 research/            🧊 调研归档（含 dancexr-zh/ 竞品文档转储）
 superpowers/         📋 ADR 实施计划（plans/）
 ```

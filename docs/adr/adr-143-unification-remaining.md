@@ -1,7 +1,8 @@
 # ADR-143: 可统一代码收敛（P1 之外剩余项）
 
-- **状态**: 立项
+- **状态**: 已完成
 - **日期**: 2026-07-19
+- **完成日期**: 2026-07-19
 - **相关**: ADR-139（ObserverRegistry）、ADR-140（DragSliderController）、ADR-142（withLoadingStatus）、ADR-096（通用 Helper 收敛）、ADR-101（通用逻辑第二波收敛）、ADR-105（AbortSignal 传递规范）
 
 ## 背景与问题
@@ -98,6 +99,30 @@
 - **阶段 3**: 主题 5 `loadManager.load` 加 `signal` + `library-actions.ts` 主路径透传
 - **阶段 4**: 主题 6 `addActionRow`/`addDisabledRow` + 主题 7 `ui-constants.ts`/`SCENE_EVENTS`
 - **阶段 5**: 全量回归（`npm run test`）
+
+## 修订记录
+
+### 2026-07-19 残差清零（`docs/audit/adr-143-residual-workorders.md`）
+
+主体 4 个主题早前已落地。本次按"信任但验证"标准对 3 个**经核实仍残留的小项**做最终收敛：
+
+| 工单 | 位置 | 整改 | 状态 |
+|------|------|------|------|
+| ① persistUIState | `env-bridge.ts:646`（`flushUIState` 内裸 `SetUIState(...).catch`） | 抽 `persistUIState(payload: Partial<UIState>)` 助手，与 `persistEnvState` 对称 | ✅ 已完成 |
+| ② audio signal | `load-manager.ts:205`（audio 分支漏传）+ `audio.ts:248`（签名无 signal） | load-manager 调用点 `loadAudioFile(req.path, signal)`；audio.ts 形参加 `signal?: AbortSignal` + 入口 `if (signal?.aborted) return;` | ✅ 已完成 |
+| ③ SLIDER_QUARTER_* 接线 | `ui-constants.ts` 已定义无消费者 | 用户裁定：前瞻指引，不做存量改造；`env-state-schema` 的 0.15/0.05 语义不同不改 | ⏸ Deferred（未来 slider 用常量替字面量） |
+
+**验证**：
+- `npm run check`（tsc --noEmit）0 错误
+- `npm run test -- --run src/__tests__/audio.test.ts src/__tests__/env-bridge.test.ts`：120/120 通过
+- `npm run test -- --run src/__tests__/library-thumbnail-streaming.test.ts src/__tests__/library-core.test.ts src/__tests__/thumbnail-key.contract.test.ts`：127/127 通过
+- grep 校验：
+  - `SetUIState(payload` 唯一命中在 `persistUIState` 助手内
+  - `SetEnvState(payload` 唯一命中在 `persistEnvState` 助手内
+  - `loadAudioFile(req.path, signal)` 命中 1 处
+  - `loadAudioFile(filePath: string, signal` 命中 1 处
+
+> 主题 6（`addActionRow`/`addDisabledRow`）+ 主题 7 的 `SCENE_EVENTS` 枚举消费早前已在 `scene-menu.ts` 落地，本 ADR 验收全部通过。
 
 ## 验收标准
 
