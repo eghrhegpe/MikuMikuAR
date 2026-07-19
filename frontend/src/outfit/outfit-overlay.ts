@@ -11,6 +11,7 @@ import { type ModelInstance } from '../core/config';
 import { readFileBytes } from '../core/wails-bindings';
 import { normPath } from '../core/utils';
 import { logWarn } from '../core/logger';
+import { safeCallVoid } from '../core/safe-call';
 
 // Skeleton retargeting
 // ============================================================
@@ -356,7 +357,7 @@ export function disposeOverlay(inst: ModelInstance): void {
 
     const disposedSkeletons = new Set<Skeleton>();
     for (const mesh of inst._overlayMeshes) {
-        try {
+        safeCallVoid('outfit-overlay', 'mesh dispose failed', () => {
             // 如果 mesh 有独立 skeleton（未重定向成功），先释放
             const meshSkeleton = mesh.skeleton;
             mesh.skeleton = null; // 清空引用，避免 mesh.dispose() 内部访问已释放的 skeleton
@@ -369,10 +370,7 @@ export function disposeOverlay(inst: ModelInstance): void {
                 meshSkeleton.dispose();
             }
             mesh.dispose();
-        } catch (err) {
-            // 记录但继续释放其余 mesh，避免单个失败中断整循环
-            logWarn('outfit-overlay', 'mesh dispose failed', err);
-        }
+        });
     }
     inst._overlayMeshes = undefined;
 }

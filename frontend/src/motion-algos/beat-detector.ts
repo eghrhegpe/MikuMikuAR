@@ -4,6 +4,7 @@
 
 import { clamp01, swallowError } from '@/core/utils';
 import { logWarn } from '@/core/logger';
+import { safeCallVoid } from '@/core/safe-call';
 
 const BASS_BIN_COUNT = 10; // 前 10 个频段 (~0-430Hz @ 44100/256 fft)
 const ENERGY_HISTORY_SIZE = 43; // ~1s @ 43fps update
@@ -175,11 +176,7 @@ export class BeatDetector {
             this.phaseStartTime = now;
             // 触发 beat 回调
             for (const cb of this._onBeatCallbacks) {
-                try {
-                    cb();
-                } catch (e) {
-                    logWarn('BeatDetector', 'onBeat callback error:', e);
-                }
+                safeCallVoid('BeatDetector', 'onBeat callback error:', () => cb());
             }
             if (this.beatTimes.length >= 2) {
                 const intervals: number[] = [];

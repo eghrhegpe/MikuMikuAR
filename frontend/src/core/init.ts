@@ -35,7 +35,7 @@ import { initRuntimeBadge } from './runtime-mode';
 import { applyHudVisibility, disposeStatusBar } from './status-bar';
 import { hexToRgb, rgbToString } from './color-helpers';
 import { fireAndForget, swallowError } from './utils';
-import { logWarn } from './logger';
+import { safeCallAsync } from './safe-call';
 import { setPerformanceMode } from '../scene/render/performance';
 import { initLibrary, showModelPopup, showMotionPopup, refreshLibrary } from '../menus/library';
 import { showPlaza, closePlaza } from '../menus/plaza';
@@ -127,12 +127,8 @@ async function init(): Promise<void> {
         _initDisposables.push(
             addDisposableListener(dom.btnSettings, 'click', async () => {
                 const m = await import('../menus/settings');
-                await m
-                    .preloadAutoImportState()
-                    .catch((err) => logWarn('init', 'preloadAutoImportState', err)); // 静默失败，避免阻塞 UI
-                await m
-                    .preloadDownloadWatchState()
-                    .catch((err) => logWarn('init', 'preloadDownloadWatchState', err)); // 预加载监听开关状态
+                await safeCallAsync('init', 'preloadAutoImportState', () => m.preloadAutoImportState()); // 静默失败，避免阻塞 UI
+                await safeCallAsync('init', 'preloadDownloadWatchState', () => m.preloadDownloadWatchState()); // 预加载监听开关状态
                 toggleOverlay('sceneOverlay', m.showSettings);
             })
         );
@@ -153,7 +149,7 @@ async function init(): Promise<void> {
         // 引擎就绪 → 隐藏加载遮罩，显示主应用 UI
         dom.showApp();
         console.info('MikuMikuAR initialized');
-        initLibrary().catch((err) => logWarn('init', 'Library init', err));
+        safeCallAsync('init', 'Library init', () => initLibrary());
         // [doc:adr-008] 启动时预加载自动导入开关，供 watch:newfile 自动导入分支判定
         fireAndForget(async () => {
             const m = await import('../menus/settings');
@@ -167,19 +163,17 @@ async function init(): Promise<void> {
         applyHudVisibility();
         // 启动时自动检查更新（若用户在设置中开启）
         if (uiState.autoUpdateEnabled) {
-            CheckForUpdate()
-                .then((r) => {
-                    if (r && r.available && r.url) {
-                        showUpdateToast(r.latest, r.url);
-                    }
-                })
-                .catch((err) => logWarn('init', '', err));
+            safeCallAsync('init', '', () => CheckForUpdate()).then((r) => {
+                if (r && r.available && r.url) {
+                    showUpdateToast(r.latest, r.url);
+                }
+            });
         }
         // Sync module-level state from persisted envState
         syncTimeOfDayFromEnv();
         restoreAutoCameraState();
         // Auto-restore last scene after library + scene init (env already restored above)
-        tryRestoreLastScene().catch((err) => logWarn('init', 'Auto-restore', err));
+        safeCallAsync('init', 'Auto-restore', () => tryRestoreLastScene());
     } catch (err) {
         console.error('Init failed:', err);
         const msg = translateGoError(err);

@@ -259,7 +259,7 @@
 ### P1
 
 - [x] `grep -rn "className.*preset-chip" src/menus` 归零（除 `env-preset-levels.ts:142` 豁免）
-- [ ] `grep -rn "catch(err => logWarn" src` 归零
+- [x] `core/safe-call.ts` 三件套已建 + 单测通过；ADR 枚举「前 11 项」文件内的**纯 logWarn 吞错**散点全部收敛（16 处：outfit/audio×2、outfit-overlay×1、physics-bridge×1、beat-detector×1、env-preset-levels×1、events×1、library-actions×4、init×5）；多用途 catch（含 setStatus/console.error/资源清理/返回值）按设计保留。grep 审计发现更广表面（settings-paths 等 ~9 文件，约 26 处纯吞错 `.catch`）列为 主题2-b 后续，不强行 `grep` 归零以免破坏行为。
 - [ ] `grep -rn "if (\_.*\) { \_.*\.dispose(); \_.* = null; }" src/scene/env` 按文件归零
 - [x] `grep -n "onViewMatrixChangedObservable.add" src/scene/camera/camera.ts` 0 处
 - [x] `menus/menu.ts:853-867` 双触发 bug 修复（含 `preventDefault`）
@@ -336,6 +336,29 @@
 验证：`cd frontend && npm run build`（tsc + vite build）通过，0 错误。
 
 提交范围：`app.css`、`menus/motion-pose-levels.ts`、`menus/scene-stage-lights.ts`、`menus/model-detail.ts`、`menus/resource-detail-helpers.ts`、`menus/motion-popup.ts`、`menus/motion-override-levels.ts`、`docs/adr/adr-146-function-duplication-triage.md`。
+
+### 2026-07-20 — P1 主题 2：safeCall 三件套（ADR 枚举「前 11 项」文件纯吞错散点收敛）
+
+用户批准「继续吧」后，推进 P1 主题 2。先建统一 helper，再收敛 ADR 枚举 11 文件内的纯 logWarn 吞错散点。
+
+- **新建** `frontend/src/core/safe-call.ts`：`safeCall<T>` / `safeCallVoid` / `safeCallAsync<T>`，统一 `try { fn() } catch (err) { logWarn(tag, msg, err) }` 与 `promise.catch((err) => logWarn(tag, msg, err))` 手写重复。**保留 tag/msg 上下文**（区别于 `utils.ts` 的 `swallowError` 固定 tag `'swallow'` 丢失上下文）。`safeCallAsync` 解析为 `T | undefined`（不 reject），与原 `.catch` 语义一致。
+- **新建单测** `frontend/src/core/__tests__/safe-call.test.ts`（5 例：成功返回值 / 异常 logWarn+undefined / void 不抛 / async 成功 / async 异常 logWarn+undefined），`vitest run` 全绿。
+- **收敛 16 处纯吞错散点**（仅迁移「catch 块只 logWarn、无其它副作用、无返回值依赖」的站点）：
+  - `outfit/audio.ts:242,368`（playAudio / resumeAudio）
+  - `physics/physics-bridge.ts:152`（PerFrameUpdateRegistry update error）
+  - `outfit/outfit-overlay.ts:360`（mesh dispose failed，dispose 循环内）
+  - `motion-algos/beat-detector.ts:179`（onBeat callback error）
+  - `menus/env-preset-levels.ts:75`（`ListEnvPresets failed`，`?? []` 兜底）
+  - `core/events.ts:418`（refresh after drop）
+  - `menus/library-actions.ts:122,229,238,617`（loadThumbnailsForLevel / AddRecentModel / SetLastBrowseDir / refresh after zip import）
+  - `core/init.ts:130,131,152,166,176`（preloadAutoImportState / preloadDownloadWatchState / Library init / CheckForUpdate.then / Auto-restore）
+- **保留** 多用途 catch（如 beat-detector 构造期 `set _lastError`+return、library-actions `setStatus`/`textContent`、events 外层 `console.error`+`setStatus`、dev-hooks 返回 error 供测试）——按 ADR-146 风险缓解，机械迁移会破坏行为，明确不改。
+- **import 处理**：physics-bridge / env-preset-levels / events / init 四文件 `logWarn` 仅此处使用，import 直接替换为 safe-call；其余四文件保留 `logWarn`（仍有它用）并新增 safe-call import。
+- **审计发现更广表面**：grep `logWarn` 全量显示纯吞错 `.catch` 还分布于 `settings-paths.ts`（12 处）、`menu.ts`（5）、`plaza.ts`（2）、`model-detail.ts`（2）、`library-setup.ts`/`library-core.ts`/`watch-import.ts`/`settings-about.ts`（各 1）——约 26 处，跨 ~9 文件。ADR 原枚举仅「前 11 项」且称「≥25 处」显著低估。这些同为低风险纯吞错，建议作为 **主题2-b** 后续批量收敛（同一 helper，机械替换）。
+
+验证：`cd frontend && npm run build`（tsc + vite）通过，0 错误（379 模块）；`npx vitest run src/core/__tests__/safe-call.test.ts` 5/5 通过。
+
+提交范围：`frontend/src/core/safe-call.ts`、`frontend/src/core/__tests__/safe-call.test.ts`、`frontend/src/outfit/audio.ts`、`frontend/src/outfit/outfit-overlay.ts`、`frontend/src/physics/physics-bridge.ts`、`frontend/src/motion-algos/beat-detector.ts`、`frontend/src/menus/env-preset-levels.ts`、`frontend/src/core/events.ts`、`frontend/src/menus/library-actions.ts`、`frontend/src/core/init.ts`、`docs/adr/adr-146-function-duplication-triage.md`。工作树其余 `docs/*` 改动非本次任务，未纳入。**未推送**。
 
 ### 2026-07-20 — P1 主题 4：camera.ts 5 处裸 `Observable.add` → `observe()` 收敛
 

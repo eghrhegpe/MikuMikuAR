@@ -57,7 +57,7 @@ import { showPlaza, closePlaza } from '../menus/plaza';
 import { loadManager } from './load-manager';
 import { ImportZip, Events } from './wails-bindings';
 import { focusModel } from '../scene/manager/model-ops';
-import { logWarn } from './logger';
+import { safeCallAsync } from './safe-call';
 
 // ======== Module-level state ========
 const _lastOverlayFn = new Map<string, () => void>();
@@ -415,7 +415,7 @@ async function handleDropFile(path: string): Promise<void> {
         try {
             await ImportZip(path);
             setStatus(t('main.zipImported'), true);
-            await refreshLibrary().catch((err) => logWarn('events', 'refresh after drop', err));
+            await safeCallAsync('events', 'refresh after drop', () => refreshLibrary());
         } catch (err) {
             setStatus(t('main.importFailedDetail') + formatError(err), false);
             console.error('ImportZip failed:', err);

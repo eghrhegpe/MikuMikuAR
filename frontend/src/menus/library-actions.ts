@@ -48,6 +48,7 @@ import {
     isStageLike,
     LoadingGuard,
 } from '../core/utils';
+import { safeCallAsync } from '@/core/safe-call';
 import { showConfirm } from '../core/dialog';
 import { t } from '../core/i18n/t';
 import { createIconifyIcon } from '../core/icons';
@@ -117,12 +118,8 @@ export async function loadThumbnailsForLevel(
     if (keys.length === 0) {
         return;
     }
-    try {
-        // 流式加载：逐张出现，不阻塞 UI。[adr-136] 透传外部取消信号
-        await loadThumbnailsStreaming(keys, signal);
-    } catch (err) {
-        logWarn('library-actions', 'loadThumbnailsForLevel:', err);
-    }
+    // 流式加载：逐张出现，不阻塞 UI。[adr-136] 透传外部取消信号
+    await safeCallAsync('library-actions', 'loadThumbnailsForLevel:', () => loadThumbnailsStreaming(keys, signal));
 }
 
 export async function ensureModelMeta(pmxPaths: string[]): Promise<void> {
@@ -229,9 +226,7 @@ export async function prepareModelRestore(
 function recordRecentModel(m: LibraryModel): void {
     const ref = computeLibraryRef(m.file_path);
     if (ref) {
-        AddRecentModel(ref).catch((err) =>
-            logWarn('library-actions', 'AddRecentModel failed:', err)
-        );
+        safeCallAsync('library-actions', 'AddRecentModel failed:', () => AddRecentModel(ref));
         setRecentModels([ref, ...recentModels.filter((r) => r !== ref)].slice(0, 20));
     }
 }
@@ -240,9 +235,7 @@ function recordRecentModel(m: LibraryModel): void {
 function recordBrowseDir(m: LibraryModel): void {
     const memCat: 'pmx' | 'stage' | 'prop' =
         m.type === 'prop' ? 'prop' : m.type === 'stage' || m.type === 'scene' ? 'stage' : 'pmx';
-    void SetLastBrowseDir(memCat, resolveDisplayBrowseDir(m, memCat)).catch((e) =>
-        logWarn('library-actions', 'SetLastBrowseDir failed:', e)
-    );
+        void safeCallAsync('library-actions', 'SetLastBrowseDir failed:', () => SetLastBrowseDir(memCat, resolveDisplayBrowseDir(m, memCat)));
 }
 
 /** 替换模式入口：加载新模型 → 移除旧模型 → 导航到浏览层。 */
@@ -621,9 +614,7 @@ export async function importFile(): Promise<void> {
             return;
         }
         const { refreshLibrary } = await import('./library-setup');
-        await refreshLibrary().catch((err) =>
-            logWarn('library-actions', 'refresh after zip import:', err)
-        );
+        await safeCallAsync('library-actions', 'refresh after zip import:', () => refreshLibrary());
     } else if (lower.endsWith('.pmx')) {
         await withLoadingStatus('library.loadingModel', 'status.done', () =>
             loadManager.load({ kind: 'actor', path })

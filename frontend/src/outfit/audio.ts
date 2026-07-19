@@ -12,6 +12,7 @@ import { readFileBytes } from '../core/wails-bindings';
 import { triggerAutoSave, setUIState } from '../core/config';
 import { clamp01 } from '@/core/utils';
 import { logWarn } from '@/core/logger';
+import { safeCallAsync } from '@/core/safe-call';
 import type { BeatDetector } from '../motion-algos/beat-detector';
 import { uiState } from '../core/state';
 
@@ -238,11 +239,7 @@ export async function playAudio(url: string, name: string): Promise<void> {
         _tryAttachBeatDetector(player);
     }
     _attachEndedListener();
-    try {
-        await player.play();
-    } catch (err) {
-        logWarn('audio', 'playAudio', err);
-    }
+    await safeCallAsync('audio', 'playAudio', () => player.play());
 }
 
 export async function loadAudioFile(filePath: string, signal?: AbortSignal): Promise<void> {
@@ -368,7 +365,7 @@ export function resumeAudio(): void {
     if (!streamPlayer) {
         return;
     }
-    streamPlayer.play().catch((err) => logWarn('audio', 'resumeAudio', err));
+    safeCallAsync('audio', 'resumeAudio', () => streamPlayer.play());
 }
 
 export function stopAudio(): void {
