@@ -2,7 +2,7 @@
 // 状态机：CLOSED → EMBEDDED_GRID → FULLSCREEN → EMBEDDED_GRID
 // 所有关闭入口统一调用 closeFullscreen()
 
-import { logWarn } from './utils';
+import { logWarn } from './logger';
 import { addDisposableListener } from './dom';
 
 // 用 WeakMap 存储 overlay 清理函数，避免 DOM 属性污染

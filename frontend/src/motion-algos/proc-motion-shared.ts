@@ -1,5 +1,6 @@
 import { canEncodeName, type BoneKeyFrame } from './vmd-writer';
-import { clamp, logWarn } from '@/core/utils';
+import { clamp } from '@/core/utils';
+import { logWarn } from '@/core/logger';
 
 export type ProcMotionMode = 'off' | 'idle' | 'autodance';
 

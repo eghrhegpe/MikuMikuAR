@@ -10,7 +10,7 @@ import type { PopupLevel } from '../core/config';
 import { cardContainer } from '../core/config';
 import { showConfirm } from '../core/dialog';
 import { t } from '../core/i18n/t';
-import { logWarn } from '../core/utils';
+import { logWarn } from '../core/logger';
 
 export interface PresetListViewerConfig<T> {
     /** 子菜单标题（仅 buildPresetListLevel 用） */

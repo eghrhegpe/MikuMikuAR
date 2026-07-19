@@ -32,7 +32,8 @@ import {
     ScanSoftwareDir,
 } from '../core/wails-bindings';
 import type { SoftwareEntry } from '../core/wails-bindings';
-import { tryCatchStatus, logWarn } from '../core/utils';
+import { tryCatchStatus } from '../core/utils';
+import { logWarn } from '../core/logger';
 import { pushUndoSnapshot, offerSceneUndo } from '../scene/scene';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
 import { renderMenu } from './render-menu';

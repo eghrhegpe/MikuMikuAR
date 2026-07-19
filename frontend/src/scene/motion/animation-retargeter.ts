@@ -17,7 +17,8 @@ import type { AnimationGroup } from '@babylonjs/core/Animations/animationGroup';
 import { Scene } from '@babylonjs/core/scene';
 import { ImportMeshAsync } from '@babylonjs/core/Loading/sceneLoader';
 import { Skeleton } from '@babylonjs/core/Bones/skeleton';
-import { logWarn, setStatus } from '@/core/config';
+import { setStatus } from '@/core/config';
+import { logWarn } from '@/core/logger';
 import { t } from '@/core/i18n/t';
 
 // ======== 类型导出 ========

@@ -4,7 +4,8 @@
 import { engine, scene, applyFrameControl } from '../scene/scene';
 import { updatePerformance } from '../scene/render/performance';
 import { uiState, dom } from './config';
-import { formatTimestamp, logWarn } from './utils';
+import { formatTimestamp } from './utils';
+import { logWarn } from './logger';
 import { observe, type ObserverHandle } from './observer-handle';
 
 // 模块级句柄：使渲染循环可被幂等销毁（Vite HMR 重跑 bootstrap 但无真实页面卸载）

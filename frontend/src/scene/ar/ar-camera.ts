@@ -6,7 +6,7 @@
 import { dom, setStatus } from '@/core/config';
 import { t } from '@/core/i18n/t';
 import { isAndroidPlatform } from '@/core/platform';
-import { logWarn } from '@/core/utils';
+import { logWarn } from '@/core/logger';
 
 // ======== Types ========
 export type CameraFacing = 'user' | 'environment';

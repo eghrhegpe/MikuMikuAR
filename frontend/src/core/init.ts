@@ -34,7 +34,8 @@ import {
 import { initRuntimeBadge } from './runtime-mode';
 import { applyHudVisibility, disposeStatusBar } from './status-bar';
 import { hexToRgb, rgbToString } from './color-helpers';
-import { logWarn, fireAndForget, swallowError } from './utils';
+import { fireAndForget, swallowError } from './utils';
+import { logWarn } from './logger';
 import { setPerformanceMode } from '../scene/render/performance';
 import { initLibrary, showModelPopup, showMotionPopup, refreshLibrary } from '../menus/library';
 import { showPlaza, closePlaza } from '../menus/plaza';

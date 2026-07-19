@@ -32,7 +32,8 @@ import {
 import { _applyBreathing } from './perception-breathing';
 import { _applyBlinking } from './perception-blinking';
 import { _applyMicroExpression, _resetLastEmotionMorphName } from './perception-expression';
-import { clamp01, logWarn } from '@/core/utils';
+import { clamp01 } from '@/core/utils';
+import { logWarn } from '@/core/logger';
 import { _applyLipSync } from './perception-lipsync';
 
 // ── re-export（保持外部导入路径不变） ──

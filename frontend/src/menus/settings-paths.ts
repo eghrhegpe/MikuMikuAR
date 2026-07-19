@@ -38,7 +38,8 @@ import {
 } from './library-core';
 import { t } from '../core/i18n/t';
 import { setLang, type LangCode } from '../core/i18n/locale';
-import { CATEGORY_DIR, logWarn } from '../core/utils';
+import { CATEGORY_DIR } from '../core/utils';
+import { logWarn } from '../core/logger';
 import { SETTINGS_ACTION } from './settings-targets';
 import { isAndroidPlatform } from '../core/platform';
 import { buildSettingsLanguageLevel } from './settings-language';

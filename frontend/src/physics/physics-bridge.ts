@@ -18,7 +18,8 @@ import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
-import { clamp, clampInt, logWarn } from '@/core/utils';
+import { clamp, clampInt } from '@/core/utils';
+import { logWarn } from '@/core/logger';
 
 // ============================================================================
 // 骨骼 READ 桥（锚点跟随）

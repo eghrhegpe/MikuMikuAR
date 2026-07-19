@@ -20,7 +20,8 @@ import {
     setIsPlaying,
 } from '@/core/config';
 import { readFileBytes } from '@/core/wails-bindings';
-import { getBaseName, clamp01, logWarn } from '@/core/utils';
+import { getBaseName, clamp01 } from '@/core/utils';
+import { logWarn } from '@/core/logger';
 import { t } from '@/core/i18n/t';
 import Encoding from 'encoding-japanese';
 

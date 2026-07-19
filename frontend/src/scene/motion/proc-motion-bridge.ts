@@ -21,7 +21,8 @@ import { mmdRuntime, triggerAutoSave, focusedModelId, setUIState } from '@/core/
 import { isAudioPlaying } from '@/outfit/audio';
 import { modelManager, focusedMmdModel, focusedModel, loadVMDMotion } from '../scene';
 import { setGazeConfig, onPerceptionModelRemoved, activatePerception } from './perception';
-import { clamp01, logWarn } from '@/core/utils';
+import { clamp01 } from '@/core/utils';
+import { logWarn } from '@/core/logger';
 import { getActiveMotion } from './motion-intent';
 import { rebuildCompositeAnimation } from './vmd-layers';
 import type { ProcMotionConfig } from '@/core/types';

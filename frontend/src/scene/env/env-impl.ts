@@ -5,7 +5,7 @@
 import { Scene } from '@babylonjs/core';
 import { EnvState, envState } from '@/core/config';
 import { col3FromTriple } from '@/core/color-helpers';
-import { logWarn } from '@/core/utils';
+import { logWarn } from '@/core/logger';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { disposeTextureCache } from './env-texture';
 import {

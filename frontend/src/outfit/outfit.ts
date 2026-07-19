@@ -14,7 +14,8 @@ import {
     ModelInstance,
 } from '../core/config';
 import type { Scene } from '@babylonjs/core/scene';
-import { getBaseName, normPath, getDirPath, delay, logWarn, LoadingGuard } from '@/core/utils';
+import { getBaseName, normPath, getDirPath, delay, LoadingGuard } from '@/core/utils';
+import { logWarn } from '@/core/logger';
 import { col3FromTriple } from '@/core/color-helpers';
 import { _catOf } from '../scene/manager/material';
 import { triggerAutoSave } from '../core/config';

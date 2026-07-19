@@ -2,7 +2,7 @@
 // No framework dependency, pure TypeScript module-level state.
 // KeyboardEvent.code is used for key matching (e.g. 'Digit1', 'Space', 'Escape', 'KeyA').
 
-import { logWarn } from './utils';
+import { logWarn } from './logger';
 import { addDisposableListener, type Disposable } from './dom';
 
 export interface ShortcutDef {

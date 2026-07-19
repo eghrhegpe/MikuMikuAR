@@ -14,7 +14,8 @@ import { ReflectionProbe } from '@babylonjs/core/Probes/reflectionProbe';
 import { observe, observeOnce, type ObserverHandle } from '@/core/observer-handle';
 import { scheduleRefresh } from '@/core/reactivity';
 import { resetPerformanceSnapshot, isSnapshotResetSuppressed } from './performance';
-import { clamp, clamp01, lerp, lerpArray, setKey, logWarn } from '@/core/utils';
+import { clamp, clamp01, lerp, lerpArray, setKey } from '@/core/utils';
+import { logWarn } from '@/core/logger';
 import type { EnvState } from '@/core/config';
 import { dirLight } from './lighting';
 

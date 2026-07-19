@@ -16,7 +16,7 @@ import {
 } from '@babylonjs/core';
 import { EnvState, envState } from '@/core/config';
 import { col3FromTriple } from '@/core/color-helpers';
-import { logWarn } from '@/core/utils';
+import { logWarn } from '@/core/logger';
 import { _envSys, getScene, resolveStaticAsset } from './env-context';
 import { ensureEnvUpdateObserver } from './env-impl';
 import { _disposeSunDisc } from '../render/lighting';

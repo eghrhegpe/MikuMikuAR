@@ -29,7 +29,8 @@ import {
     DisplayNamePriority,
     stackRegistry,
 } from '../core/config';
-import { tryCatchStatus, logWarn, isUnderRoot } from '../core/utils';
+import { tryCatchStatus, isUnderRoot } from '../core/utils';
+import { logWarn } from '../core/logger';
 import { showConfirm } from '../core/dialog';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';

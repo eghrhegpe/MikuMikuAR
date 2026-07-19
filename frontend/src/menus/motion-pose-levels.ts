@@ -16,7 +16,8 @@ import {
     setIsPlaying,
 } from '../core/config';
 import { addToggleRow, addSliderRow, addEmptyRow } from '../core/ui-helpers';
-import { waitForFrame, logWarn } from '../core/utils';
+import { waitForFrame } from '../core/utils';
+import { logWarn } from '../core/logger';
 import { getMotionMenu } from './motion-popup';
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
 import { setRenderState, getRenderState } from '../scene/render/renderer';

@@ -10,7 +10,8 @@
 import { StreamAudioPlayer } from 'babylon-mmd/esm/Runtime/Audio/streamAudioPlayer';
 import { readFileBytes } from '../core/wails-bindings';
 import { triggerAutoSave, setUIState } from '../core/config';
-import { clamp01, logWarn } from '@/core/utils';
+import { clamp01 } from '@/core/utils';
+import { logWarn } from '@/core/logger';
 import type { BeatDetector } from '../motion-algos/beat-detector';
 import { uiState } from '../core/state';
 
