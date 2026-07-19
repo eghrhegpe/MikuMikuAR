@@ -5,11 +5,13 @@
 
 ## 入口 & 事件
 
+> **⚠️ ADR-102 已拆分 `core/main.ts`**：键盘快捷键、seek 事件已迁移至 `core/main/events.ts`，启动初始化在 `core/main/init.ts`，键盘快捷键注册在 `core/main/shortcut-app.ts`。详见 `frontend/AGENTS.md` §二 2.2。
+
 | 函数/符号 | 文件 | 说明 |
 |-----------|------|------|
-| `init()` | `core/main.ts` | 应用启动入口 |
-| keyboard shortcuts | `core/main.ts` | Ctrl+1/2/3/4, Space, Escape, ←/→, WASD |
-| seek bar events | `core/main.ts` | pointerdown/move/up |
+| `init()` | `core/main.ts` | 应用启动入口（薄层） |
+| keyboard shortcuts | `core/main/shortcut-app.ts` / `core/main/events.ts` | Ctrl+1/2/3/4, Space, Escape, ←/→, WASD |
+| seek bar events | `core/main/events.ts` | pointerdown/move/up |
 | `closeAllOverlays()` | `core/utils.ts` | 关闭所有弹窗 |
 
 ## 3D 场景 & 模型
@@ -116,16 +118,14 @@
 
 **用法**：所有新代码禁止直接调用 `Observable.add()`，必须使用 `observe()` 获取 `ObserverHandle`，在 cleanup 时调用 `handle.dispose()`。详见 [ADR-139](adr/adr-139-observer-registry.md)。
 
-## XPBD 物理
+> **⚠️ XPBD 物理已移除**：`physics/xpbd-solver.ts`、`xpbd-cloth.ts`、`xpbd-collider.ts`、`xpbd-renderer.ts`、`cloth-manager.ts` 等文件已在 ADR-081 中删除。当前物理系统仅保留 `physics/physics-bridge.ts`（WASM Bullet 代理）和 `physics/wind-physics.ts`（风力模拟）。
+
+## 物理系统（WASM Bullet）
 
 | 函数/符号 | 文件 | 说明 |
 |-----------|------|------|
-| `XpbdSolver` | `physics/xpbd-solver.ts` | Verlet 积分 + 约束求解 + 地面碰撞 |
-| `createCloth()` | `physics/xpbd-cloth.ts` | 布料实例（粒子网格 + 约束 + Mesh）|
-| `buildClothUpdateFn()` | `physics/xpbd-cloth.ts` | 每帧更新闭包 |
-| `SdfCollider` | `physics/xpbd-collider.ts` | SDF 胶囊碰撞器（13个身体胶囊）|
-| `XpbdRenderer` | `physics/xpbd-renderer.ts` | 调试可视化 |
-| `toggleCloth()` / `recreateCloth()` | `physics/cloth-manager.ts` | 布料开关/重建 |
+| `PhysicsBridge` | `physics/physics-bridge.ts` | WASM Bullet 物理引擎代理 |
+| `WindPhysics` | `physics/wind-physics.ts` | 风力模拟（影响衣物/头发） |
 
 ## 程序化动作 & VMD
 

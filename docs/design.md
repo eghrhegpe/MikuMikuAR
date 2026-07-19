@@ -26,7 +26,7 @@
 定义于 `frontend/src/menus/menu-schema.ts`。
 
 ```ts
-type StatePath = `env.${string}` | `render.${string}` | `light.${string}` | `ui.${string}` | `perception.${string}`;
+type StatePath = `env.${string}` | `render.${string}` | `light.${string}` | `ui.${string}` | `perception.${string}` | `motionModule.${string}`;
 
 type MenuKind = 'folder' | 'slider' | 'colorSlider' | 'toggle'
               | 'modeSlider' | 'modeRow' | 'sectionTitle' | 'divider' | 'custom';
@@ -60,6 +60,7 @@ interface MenuNode {
 | `light.` | `getLightState()` | `setLightState()` |
 | `ui.` | `uiState` | `setUIState()` |
 | `perception.` | `getPerceptionState()` | `setPerceptionState()` |
+| `motionModule.` | `modelRegistry.get(focusedModelId)?.motionOverrideModules` | 自动创建/更新 `motionOverrideModules` |
 
 ### ControlSpec 控件规格
 
