@@ -28,7 +28,6 @@ import { reRenderSceneMenu, getSceneMenu } from './scene-menu';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
-import { createIconifyIcon } from '../core/icons';
 
 // 灯光预设 key 映射（热切换安全：仅存 i18n key，不含中文）
 const LIGHTING_PRESET_KEYS: Record<string, string> = {
@@ -116,20 +115,16 @@ function buildStageLightSchema(): MenuNode[] {
                         // 禁用态半透明（active 类管选中态，opacity 管启用态）
                         btn.style.opacity = light.enabled ? '1' : '0.5';
                     }
-                    const addBtn = document.createElement('button');
-                    addBtn.className = 'preset-chip';
-                    addBtn.title = t('scene.addLight');
-                    const addIcon = createIconifyIcon('lucide:plus');
-                    if (addIcon) {
-                        addBtn.appendChild(addIcon);
-                    } else {
-                        addBtn.textContent = '+';
-                    }
-                    addBtn.addEventListener('click', () => {
-                        addStageLight('spot');
-                        reRenderSceneMenu();
-                    });
-                    chipGroup.appendChild(addBtn);
+                    addPresetChip(
+                        chipGroup,
+                        '+',
+                        false,
+                        () => {
+                            addStageLight('spot');
+                            reRenderSceneMenu();
+                        },
+                        { icon: 'lucide:plus', title: t('scene.addLight') }
+                    );
                     inner.appendChild(chipGroup);
                 });
             },
