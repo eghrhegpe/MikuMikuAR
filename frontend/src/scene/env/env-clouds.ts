@@ -326,7 +326,7 @@ uniform float cloudWeatherStrength;
 uniform float cloudBacklight; // Phase C: 双瓣 HG 后向瓣混合比 (0=纯前向, 1=纯后向)
 uniform float cloudPowder;     // Phase C: powder 糖粉效应强度 (0=关闭, 2=强)
 uniform vec3 sunDir;
-uniform vec3 sunColor;
+uniform vec3 cloudColor;
 uniform sampler3D noiseTex;
 uniform sampler2D blueNoiseTex;
 out vec4 fragColor;
@@ -633,7 +633,7 @@ export function createClouds(state: EnvState): void {
                 'cloudBacklight',
                 'cloudPowder',
                 'sunDir',
-                'sunColor',
+                'cloudColor',
                 'brightness',
                 'skyBrightness',
                 'sceneLightDir',
@@ -669,7 +669,7 @@ export function createClouds(state: EnvState): void {
     mat.setVector3('sceneLightDir', new Vector3(-0.4, -1.0, -0.3));
     mat.setColor3('sceneLightColor', new Color3(1, 0.98, 0.92));
     mat.setVector3('sunDir', new Vector3(-0.4, -1.0, -0.3));
-    mat.setColor3('sunColor', new Color3(1, 0.98, 0.92));
+    mat.setColor3('cloudColor', new Color3(1, 0.98, 0.92));
     mat.setFloat('brightness', 1.0);
     mat.setFloat('skyBrightness', state.skyBrightness ?? 1);
     mat.setVector3('windDirection', new Vector3(windVel[0], windVel[1], windVel[2]));
@@ -688,7 +688,7 @@ export function createClouds(state: EnvState): void {
             mat.setVector3('sceneLightDir', dl.direction);
             mat.setColor3('sceneLightColor', dl.diffuse);
             mat.setVector3('sunDir', dl.direction);
-            mat.setColor3('sunColor', dl.diffuse);
+            mat.setColor3('cloudColor', dl.diffuse);
             // Map UI sun intensity (0..1) across the FULL shader range so the
             // slider stays effective end-to-end. The old `*2` mapping saturated
             // brightness at dl.intensity≈0.75, wasting the upper half of the
@@ -700,7 +700,7 @@ export function createClouds(state: EnvState): void {
             mat.setVector3('sceneLightDir', new Vector3(-0.4, -1.0, -0.3));
             mat.setColor3('sceneLightColor', new Color3(1, 0.98, 0.92));
             mat.setVector3('sunDir', new Vector3(-0.4, -1.0, -0.3));
-            mat.setColor3('sunColor', new Color3(1, 0.98, 0.92));
+            mat.setColor3('cloudColor', new Color3(1, 0.98, 0.92));
             mat.setFloat('brightness', 1.0);
             mat.setFloat('skyBrightness', state.skyBrightness ?? 1);
         }
