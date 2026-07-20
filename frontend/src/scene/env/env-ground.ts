@@ -593,9 +593,8 @@ function _syncTextureGroundTexture(mat: GroundMat, state: EnvState, scene: Scene
 
     let dt = _getAlbedoTex(mat) as DynamicTexture | null;
     const needCreate = !dt || !(dt instanceof DynamicTexture) || dt.name !== 'envGroundTex';
-    // [fix:ADR-134] 无限地面 UV 补偿：网格变大时按比例缩小纹理密度
-    const uvCompensation = state.groundSize / Math.max(1, _groundActualSize);
-    const baseScale = (1 / Math.max(0.1, state.groundTextureScale)) * uvCompensation;
+    // [fix] 纹理密度与 mesh 尺寸成正比：mesh 变大时自动增加平铺次数，避免拉伸模糊
+    const baseScale = (_groundActualSize / 10) / Math.max(0.1, state.groundTextureScale);
     if (needCreate) {
         if (dt) {
             dt.dispose();
@@ -757,10 +756,9 @@ export function applyGround(state: EnvState): void {
             }
             const albedoTex = _getAlbedoTex(mat);
             if (albedoTex && albedoTex instanceof Texture) {
-                // [fix:ADR-134] 无限地面 UV 补偿：网格变大时按比例缩小纹理密度
-                const uvCompensation = state.groundSize / Math.max(1, _groundActualSize);
+                // [fix] 纹理密度与 mesh 尺寸成正比，避免拉伸模糊
                 albedoTex.uScale = albedoTex.vScale =
-                    (1 / Math.max(0.1, state.groundTextureScale)) * uvCompensation;
+                    (_groundActualSize / 10) / Math.max(0.1, state.groundTextureScale);
                 _syncGroundTextureOffset(mat, state);
             }
             _syncGroundNormalTexture(mat, state);
@@ -844,7 +842,8 @@ export function applyGround(state: EnvState): void {
             state.groundProceduralSeed,
             scene
         );
-        const scale = 1 / Math.max(0.1, state.groundProceduralScale);
+        // [fix] 纹理密度与 mesh 尺寸成正比，避免拉伸模糊
+        const scale = (_groundActualSize / 10) / Math.max(0.1, state.groundProceduralScale);
         texs.albedo.uScale = texs.albedo.vScale = scale;
         texs.roughness.uScale = texs.roughness.vScale = scale;
         texs.normal.uScale = texs.normal.vScale = scale;
@@ -860,9 +859,8 @@ export function applyGround(state: EnvState): void {
         const tex = _generateGroundTexture(state, scene);
         _setAlbedoTex(mat, tex);
         _setAlbedoColor(mat, new Color3(1, 1, 1));
-        // [fix:ADR-134] 无限地面 UV 补偿：网格变大时按比例缩小纹理密度，保持视觉一致
-        const uvScale = state.groundSize / Math.max(1, _groundActualSize);
-        tex.uScale = tex.vScale = uvScale;
+        // [fix] 纹理密度与 mesh 尺寸成正比，避免拉伸模糊
+        tex.uScale = tex.vScale = _groundActualSize / 10;
     } else if (state.groundTextureEnabled && state.groundTexture) {
         // 外部贴图模式
         _setAlbedoColor(mat, new Color3(1, 1, 1));
