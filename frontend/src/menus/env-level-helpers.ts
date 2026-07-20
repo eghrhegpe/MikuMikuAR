@@ -46,7 +46,13 @@ export function _openTexturePicker(
     if (!menu) {
         return;
     }
-    const level = stackRegistry.buildLevel!(
+    if (!stackRegistry.buildLevel) {
+        if (import.meta.env.DEV) {
+            console.warn('[env-level-helpers] buildLevel not yet registered, ignoring texture picker call');
+        }
+        return;
+    }
+    const level = stackRegistry.buildLevel(
         browseDir ?? getBrowseDir('environment'),
         label,
         (m) => ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format),

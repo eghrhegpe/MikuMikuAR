@@ -35,6 +35,13 @@ const mockState = vi.hoisted(() => ({
     amplitudeToWeight: vi.fn(() => 0),
 }));
 
+// ADR-147 管线 mock：perception 通过 getMotionPipeline().register() 注册帧回调
+const mockPipeline = vi.hoisted(() => ({
+    register: vi.fn(),
+    unregister: vi.fn(),
+    lastRunCallback: null as null | ((ctx?: any) => void),
+}));
+
 vi.mock('../scene/scene', () => ({
     get focusedModelId() {
         return mockState.focusedModelId;
@@ -67,6 +74,9 @@ vi.mock('../scene/env/env-bridge', () => ({}));
 vi.mock('../scene/env/env-impl', () => ({
     getScene: () => mockState.scene,
 }));
+vi.mock('../scene/motion/motion-pipeline', () => ({
+    getMotionPipeline: () => mockPipeline,
+}));
 vi.mock('../scene/motion/proc-motion-bridge', () => ({
     getProcBeatDetector: mockState.getProcBeatDetector,
 }));
@@ -92,14 +102,15 @@ beforeEach(async () => {
     mockState.focusedModelId = null;
     mockState.triggerAutoSave.mockReset();
     mockState.modelManager.get.mockReset();
-    mockState.scene.onBeforeRenderObservable.add.mockReset();
-    // 记录 observer 回调，返回空对象作为 Observer 句柄
-    mockState.scene.onBeforeRenderObservable.add.mockImplementation((cb: () => void) => {
-        mockState.scene.lastObserverCallback = cb;
-        return {};
+    mockState.scene.isDisposed = false;
+    // ADR-147 管线 mock 重置：register 返回 unregister 函数，记录 run 回调供 triggerLastObserver 触发
+    mockPipeline.register.mockReset();
+    mockPipeline.unregister.mockReset();
+    mockPipeline.lastRunCallback = null;
+    mockPipeline.register.mockImplementation((layer: any) => {
+        mockPipeline.lastRunCallback = layer.run;
+        return () => mockPipeline.unregister(layer.id);
     });
-    mockState.scene.lastObserverCallback = null;
-    mockState.scene.onBeforeRenderObservable.remove.mockReset();
     // Lip-sync mock 默认值：无音频、无 morph（各测试按需覆盖）
     mockState.isAudioPlaying.mockReset();
     mockState.isAudioPlaying.mockReturnValue(false);
@@ -240,36 +251,36 @@ describe('activatePerception', () => {
 
     it('模型已加载时注册 observer', () => {
         mockState.focusedModelId = 'm1';
-        mockState.modelManager.get.mockReturnValue({ mmdModel: {} });
+        mockState.modelManager.get.mockReturnValue({ mmdModel: { mesh: { isDisposed: () => false } } });
         sut.activatePerception();
-        expect(mockState.scene.onBeforeRenderObservable.add).toHaveBeenCalledOnce();
+        expect(mockPipeline.register).toHaveBeenCalledOnce();
     });
 
     it('重复激活同一模型不重复注册', () => {
         mockState.focusedModelId = 'm1';
-        mockState.modelManager.get.mockReturnValue({ mmdModel: {} });
+        mockState.modelManager.get.mockReturnValue({ mmdModel: { mesh: { isDisposed: () => false } } });
         sut.activatePerception();
         sut.activatePerception();
-        expect(mockState.scene.onBeforeRenderObservable.add).toHaveBeenCalledOnce();
+        expect(mockPipeline.register).toHaveBeenCalledOnce();
     });
 
     it('切换模型时先注销旧 observer 再注册新 observer', () => {
         mockState.focusedModelId = 'm1';
-        mockState.modelManager.get.mockReturnValue({ mmdModel: {} });
+        mockState.modelManager.get.mockReturnValue({ mmdModel: { mesh: { isDisposed: () => false } } });
         sut.activatePerception();
         sut.activatePerception('m2');
-        expect(mockState.scene.onBeforeRenderObservable.remove).toHaveBeenCalled();
-        expect(mockState.scene.onBeforeRenderObservable.add).toHaveBeenCalledTimes(2);
+        expect(mockPipeline.unregister).toHaveBeenCalled();
+        expect(mockPipeline.register).toHaveBeenCalledTimes(2);
     });
 });
 
 describe('deactivatePerception', () => {
     it('注销 observer', () => {
         mockState.focusedModelId = 'm1';
-        mockState.modelManager.get.mockReturnValue({ mmdModel: {} });
+        mockState.modelManager.get.mockReturnValue({ mmdModel: { mesh: { isDisposed: () => false } } });
         sut.activatePerception();
         sut.deactivatePerception();
-        expect(mockState.scene.onBeforeRenderObservable.remove).toHaveBeenCalledOnce();
+        expect(mockPipeline.unregister).toHaveBeenCalledOnce();
     });
 
     it('未激活时调用不抛错', () => {
@@ -284,18 +295,18 @@ describe('deactivatePerception', () => {
 describe('onPerceptionModelRemoved', () => {
     it('移除当前感知模型时注销 observer', () => {
         mockState.focusedModelId = 'm1';
-        mockState.modelManager.get.mockReturnValue({ mmdModel: {} });
+        mockState.modelManager.get.mockReturnValue({ mmdModel: { mesh: { isDisposed: () => false } } });
         sut.activatePerception();
         sut.onPerceptionModelRemoved('m1');
-        expect(mockState.scene.onBeforeRenderObservable.remove).toHaveBeenCalledOnce();
+        expect(mockPipeline.unregister).toHaveBeenCalledOnce();
     });
 
     it('移除其他模型时不影响当前 observer', () => {
         mockState.focusedModelId = 'm1';
-        mockState.modelManager.get.mockReturnValue({ mmdModel: {} });
+        mockState.modelManager.get.mockReturnValue({ mmdModel: { mesh: { isDisposed: () => false } } });
         sut.activatePerception();
         sut.onPerceptionModelRemoved('other');
-        expect(mockState.scene.onBeforeRenderObservable.remove).not.toHaveBeenCalled();
+        expect(mockPipeline.unregister).not.toHaveBeenCalled();
     });
 });
 
@@ -358,9 +369,9 @@ function makeMockModelWithMorphManager(morphManager: ReturnType<typeof makeMockM
     };
 }
 
-// 触发 perception observer 回调
+// 触发 perception 管线层回调（ADR-147 管线架构）
 function triggerLastObserver(): void {
-    mockState.scene.lastObserverCallback?.();
+    mockPipeline.lastRunCallback?.();
 }
 
 describe('_applyMicroExpression', () => {
