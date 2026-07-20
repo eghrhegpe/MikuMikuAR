@@ -98,4 +98,19 @@ describe('env-dispatcher: registerSceneTickCallback / runSceneTickCallbacks', ()
         runSceneTickCallbacks();
         expect(cb).not.toHaveBeenCalled();
     });
+
+    it('tick callback error does not block other callbacks (per-frame resilience)', () => {
+        const cb1 = vi.fn(() => {
+            throw new Error('tick boom');
+        });
+        const cb2 = vi.fn();
+        registerSceneTickCallback(cb1);
+        registerSceneTickCallback(cb2);
+
+        const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        expect(() => runSceneTickCallbacks()).not.toThrow();
+        expect(cb2).toHaveBeenCalledTimes(1);
+        expect(spy).toHaveBeenCalledWith('[env-dispatcher] tick callback error:', expect.any(Error));
+        spy.mockRestore();
+    });
 });
