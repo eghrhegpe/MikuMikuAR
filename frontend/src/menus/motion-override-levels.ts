@@ -28,6 +28,7 @@ import {
     initMotionModules,
     getRegisteredModules,
     createModule,
+    getAllConflicts,
 } from '../scene/motion/motion-modules/registry';
 import {
     undo,
@@ -76,6 +77,39 @@ export function buildMotionOverrideLevel(): PopupLevel {
             renderMenu(buildMotionOverrideSchema(), container);
         },
     };
+}
+
+// [doc:adr-116 conflict-visibility] 渲染骨骼冲突 banner（实时快照）
+// 列出被其他（更高优先级）模块抢占的骨骼，格式：⚠ 模块名: 骨A←抢占者、骨B←抢占者
+function updateConflictBanner(el: HTMLElement, modelId: string | null): void {
+    if (!modelId) {
+        el.textContent = '';
+        el.style.display = 'none';
+        return;
+    }
+    const all = getAllConflicts(modelId).filter((a) => a.conflicts.length > 0);
+    if (all.length === 0) {
+        el.textContent = '';
+        el.style.display = 'none';
+        return;
+    }
+    const total = all.reduce((s, a) => s + a.conflicts.length, 0);
+    const lines = all.map((a) => {
+        const meta = getRegisteredModules().find((m) => m.id === a.moduleId)?.meta;
+        const name = meta ? t(meta.labelKey) : a.moduleId;
+        const detail = a.conflicts
+            .map((c) => {
+                const byMeta = getRegisteredModules().find((m) => m.id === c.byModule)?.meta;
+                const byName = byMeta ? t(byMeta.labelKey) : c.byModule;
+                return `${c.bone}←${byName}`;
+            })
+            .join('、');
+        return `⚠ ${name}: ${detail}`;
+    });
+    el.style.display = '';
+    el.style.color = 'var(--warn, #e0a030)';
+    el.style.whiteSpace = 'pre-line';
+    el.textContent = `骨骼冲突 (${total})\n` + lines.join('\n');
 }
 
 function buildMotionOverrideSchema(): MenuNode[] {
@@ -286,6 +320,13 @@ function buildMotionOverrideSchema(): MenuNode[] {
                     btnGroup.appendChild(historyBtn);
                     titleBar.appendChild(btnGroup);
                     inner.appendChild(titleBar);
+
+                    // [doc:adr-116 conflict-visibility] 骨骼冲突可视化 banner
+                    // 靠面板 reRender 刷新快照（模块开关 onChange 已触发 reRender）
+                    const conflictBanner = document.createElement('div');
+                    conflictBanner.style.cssText = 'padding:2px 14px 8px;font-size:11px;line-height:1.5;';
+                    updateConflictBanner(conflictBanner, modelId);
+                    inner.appendChild(conflictBanner);
 
                     renderModuleToggleList(inner, modelId, {
                         onEnter: (modId) => {

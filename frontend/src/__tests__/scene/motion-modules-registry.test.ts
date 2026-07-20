@@ -64,6 +64,9 @@ import {
     claimBones,
     getOwnedBones,
     releaseOwnedBones,
+    getModuleConflicts,
+    getAllConflicts,
+    getConflictCount,
     setTargetModel,
     clearAllModulesForModel,
     registerModule,
@@ -388,6 +391,64 @@ describe('ownedBones 冲突仲裁', () => {
         expect(released.has('上半身')).toBe(true);
         // 释放后 getOwnedBones 为空
         expect(getOwnedBones('m1', 'body-posture').size).toBe(0);
+    });
+
+    it('[conflict-visibility] 落败模块记录被抢占骨骼', () => {
+        initMotionModules();
+        vi.spyOn(console, 'warn').mockImplementation(() => {});
+        // body-posture 先占 上半身；hand-symmetry 落败（上半身被跳过）
+        claimBones('m1', 'body-posture', ['上半身']);
+        claimBones('m1', 'hand-symmetry', ['上半身', '左手首']);
+
+        const conflicts = getModuleConflicts('m1', 'hand-symmetry');
+        expect(conflicts).toEqual([{ bone: '上半身', byModule: 'body-posture' }]);
+        expect(getConflictCount('m1')).toBe(1);
+        // 全部模型冲突快照
+        expect(getAllConflicts('m1')).toEqual([
+            { moduleId: 'hand-symmetry', conflicts: [{ bone: '上半身', byModule: 'body-posture' }] },
+        ]);
+
+        releaseOwnedBones('m1', 'body-posture');
+        releaseOwnedBones('m1', 'hand-symmetry');
+        vi.restoreAllMocks();
+    });
+
+    it('[conflict-visibility] 抢占方无冲突记录，落败方记录被谁抢占', () => {
+        initMotionModules();
+        vi.spyOn(console, 'warn').mockImplementation(() => {});
+        registerModule(
+            'test-low-priority',
+            { labelKey: 'test', icon: 'test', defaults: {} },
+            3,
+            () =>
+                ({
+                    id: 'test-low-priority',
+                    meta: { labelKey: 'test', icon: 'test', defaults: {} },
+                    priority: 3,
+                    managedBones: ['センター'],
+                    buildSchema: () => [],
+                    getState: () => ({ id: 'test-low-priority', enabled: false, params: {} }),
+                    setState: () => {},
+                    setParam: () => {},
+                    enable: () => {},
+                    disable: () => {},
+                }) as any
+        );
+        const testModel = 'm-conflict-test';
+        claimBones(testModel, 'test-low-priority', ['センター']);
+        claimBones(testModel, 'position-offset', ['センター']);
+
+        // 落败方 test-low-priority 记录被 position-offset 抢占
+        expect(getModuleConflicts(testModel, 'test-low-priority')).toEqual([
+            { bone: 'センター', byModule: 'position-offset' },
+        ]);
+        // 抢占方 position-offset 自身无冲突记录
+        expect(getModuleConflicts(testModel, 'position-offset')).toEqual([]);
+
+        unregisterModule('test-low-priority');
+        releaseOwnedBones(testModel, 'position-offset');
+        releaseOwnedBones(testModel, 'test-low-priority');
+        vi.restoreAllMocks();
     });
 });
 

@@ -77,4 +77,48 @@ describe('bone-override _computeOverride (ADR-116 P1)', () => {
         const { rotation } = _computeOverride(oldT, oldR, slot);
         expect(rotation.toEulerAngles().y).toBeCloseTo(Math.PI / 3);
     });
+
+    // ── 父骨传播回归护栏（ADR-116 §十一 2026-07-17 复合语义）──
+    // 原 6 例 oldRotation 恒为 Identity，复合分支（weight≥1 → oldRotation × slot.quat）从未被真实父骨旋转触发，
+    // 是 2026-07-17 复合语义回归的盲区。以下用例锁死该分支。
+
+    it('父骨传播 + weight≥1：复合 = 父骨旋转 × 本骨目标', () => {
+        // 父骨 yaw 90°，本骨目标 yaw 90°（复合后 180°）。
+        const parentRot = Quaternion.FromEulerAngles(0, HALF_PI, 0);
+        const slotQuat = Quaternion.FromEulerAngles(0, HALF_PI, 0);
+        const slot = { quat: slotQuat, weight: 1, overrideRotation: true };
+        const { rotation } = _computeOverride(new Vector3(0, 0, 0), parentRot, slot);
+        expect(rotation.toEulerAngles().y).toBeCloseTo(Math.PI); // 180°
+    });
+
+    it('父骨传播 + weight≥1：拒绝退化为「绝对覆盖」', () => {
+        // 若有人把 bone-override.ts:166 退化成 rotation = slot.quat（绝对覆盖），
+        // 本例会得 90° 而非 180°；此处显式断言「不是 90°」以拦截回归。
+        const parentRot = Quaternion.FromEulerAngles(0, HALF_PI, 0);
+        const slotQuat = Quaternion.FromEulerAngles(0, HALF_PI, 0);
+        const slot = { quat: slotQuat, weight: 1, overrideRotation: true };
+        const { rotation } = _computeOverride(new Vector3(0, 0, 0), parentRot, slot);
+        expect(rotation.toEulerAngles().y).not.toBeCloseTo(HALF_PI);
+        expect(rotation.toEulerAngles().y).toBeCloseTo(Math.PI);
+    });
+
+    it('父骨传播 + 0<weight<1：Slerp 从「父骨旋转」插到「绝对目标」（非复合）', () => {
+        // 父骨 yaw 90°，本骨目标 yaw 0°。weight=0.5 时 Slerp(90°, 0°, 0.5) = 45°。
+        const parentRot = Quaternion.FromEulerAngles(0, HALF_PI, 0);
+        const slotQuat = Quaternion.FromEulerAngles(0, 0, 0);
+        const slot = { quat: slotQuat, weight: 0.5, overrideRotation: true };
+        const { rotation } = _computeOverride(new Vector3(0, 0, 0), parentRot, slot);
+        expect(rotation.toEulerAngles().y).toBeCloseTo(HALF_PI / 2); // 45°
+    });
+
+    it('父骨传播 + 位置覆盖：平移加法与旋转复合互不干扰', () => {
+        const parentRot = Quaternion.FromEulerAngles(0, HALF_PI, 0);
+        const slotQuat = Quaternion.FromEulerAngles(0, HALF_PI, 0);
+        const slot = { quat: slotQuat, weight: 1, pos: new Vector3(1, 2, 3), overrideRotation: true };
+        const { translation, rotation } = _computeOverride(new Vector3(0, 0, 0), parentRot, slot);
+        expect(rotation.toEulerAngles().y).toBeCloseTo(Math.PI); // 旋转复合 180°
+        expect(translation.x).toBeCloseTo(1); // 平移走纯加法，不受旋转复合影响
+        expect(translation.y).toBeCloseTo(2);
+        expect(translation.z).toBeCloseTo(3);
+    });
 });
