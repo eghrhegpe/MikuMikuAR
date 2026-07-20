@@ -320,7 +320,7 @@ function createGridCard(
     } else {
         const iconEl = createIconifyIcon(item.isFolder ? 'folder' : item.icon);
         if (iconEl) {
-            iconEl.style.cssText = 'width: 32px; height: 32px; opacity: 0.5;';
+            iconEl.style.cssText = 'width:var(--resource-icon-size);height:var(--resource-icon-size);opacity:0.5';
             thumb.appendChild(iconEl);
         }
     }
@@ -420,9 +420,9 @@ function createListRow(
     thumb.className = 'resource-thumb-sm';
     thumb.dataset.resourcePath = item.thumbKey ?? item.filePath;
     thumb.style.cssText = `
-        width: 40px;
-        height: 40px;
-        border-radius: 4px;
+        width: var(--resource-thumb-sm-size);
+        height: var(--resource-thumb-sm-size);
+        border-radius: var(--resource-thumb-sm-radius);
         background-color: var(--bg-overlay-alt);
         background-size: cover;
         background-position: center;
@@ -438,7 +438,7 @@ function createListRow(
     } else {
         const iconEl = createIconifyIcon(item.isFolder ? 'folder' : item.icon);
         if (iconEl) {
-            iconEl.style.cssText = 'width: 20px; height: 20px; opacity: 0.5;';
+            iconEl.style.cssText = 'width:var(--resource-icon-sm-size);height:var(--resource-icon-sm-size);opacity:0.5';
             thumb.appendChild(iconEl);
         }
     }
