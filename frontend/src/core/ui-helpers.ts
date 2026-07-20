@@ -15,6 +15,9 @@ export {
     addFieldRow,
     addEmptyRow,
     addWatchDirRow,
+    addActionRow,
+    addDisabledRow,
+    addInlineToggleRow,
 } from './ui-rows';
 export { addColorSliderRow, addModeSlider, addVector3SliderRow } from './ui-advanced-rows';
 export { addCollapsible, addSectionTitle, addPresetChip } from './ui-collapsible';

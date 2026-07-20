@@ -11,7 +11,7 @@ import { resetPerformanceSnapshot } from '../scene/render/performance';
 import type { PopupLevel } from '../core/config';
 import type { SettingsMenuHandle } from './settings-shared';
 import { renderMenu } from './render-menu';
-import { addInlineToggleRow } from '../core/ui-rows';
+import { addInlineToggleRow } from '../core/ui-helpers';
 import type { MenuNode } from './menu-schema';
 
 function buildRenderingSchema(): MenuNode[] {
