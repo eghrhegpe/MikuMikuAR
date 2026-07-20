@@ -146,6 +146,31 @@ function _ownedMap(modelId: string): Map<string, Set<string>> {
  * - 否则跳过并 console.warn
  * 返回实际成功 claim 的骨骼列表。
  */
+// ── 骨骼冲突记录（供 UI 冲突可视化；[doc:adr-116 conflict-visibility]）──
+// 每条记录 = 某模块在 claimBones 时被其他（更高优先级）模块抢占的骨骼明细。
+// 结构: Map<modelId, Map<moduleId, Array<{bone, byModule}>>>
+const _boneConflicts = new Map<string, Map<string, Array<{ bone: string; byModule: string }>>>();
+
+function _recordConflict(modelId: string, moduleId: string, bone: string, byModule: string): void {
+    let byMod = _boneConflicts.get(modelId);
+    if (!byMod) {
+        byMod = new Map();
+        _boneConflicts.set(modelId, byMod);
+    }
+    let list = byMod.get(moduleId);
+    if (!list) {
+        list = [];
+        byMod.set(moduleId, list);
+    }
+    if (!list.some((c) => c.bone === bone && c.byModule === byModule)) {
+        list.push({ bone, byModule });
+    }
+}
+
+function _clearConflict(modelId: string, moduleId: string): void {
+    _boneConflicts.get(modelId)?.delete(moduleId);
+}
+
 export function claimBones(modelId: string, moduleId: string, bones: readonly string[]): string[] {
     const owned = _ownedMap(modelId);
     let mySet = owned.get(moduleId);
@@ -182,6 +207,8 @@ export function claimBones(modelId: string, moduleId: string, bones: readonly st
                 if (otherSet?.has(bone)) {
                     otherSet.delete(bone);
                     clearBoneOverride(bone, modelId);
+                    // 落败方视角：它现在被 moduleId 抢占了这根骨（供 UI 可视化）
+                    _recordConflict(modelId, conflictOwner, bone, moduleId);
                     console.warn(
                         `[adr-129] bone "${bone}" 被模块 "${moduleId}"(priority=${myPriority}) 从 "${conflictOwner}"(priority=${otherPriority}) 抢占`
                     );
@@ -189,6 +216,8 @@ export function claimBones(modelId: string, moduleId: string, bones: readonly st
                 // 继续执行 claim 逻辑
             } else {
                 // 落败：跳过并 console.warn
+                // 记录：本模块想要这根骨但被 conflictOwner 抢占（供 UI 可视化）
+                _recordConflict(modelId, moduleId, bone, conflictOwner);
                 console.warn(
                     `[adr-129] bone "${bone}" 已被模块 "${conflictOwner}"(priority=${otherPriority}) 占用，模块 "${moduleId}"(priority=${myPriority}) 跳过该骨骼`
                 );
@@ -204,6 +233,40 @@ export function claimBones(modelId: string, moduleId: string, bones: readonly st
 /** 获取模块当前 owned 的骨骼（disable 时用于精确清除） */
 export function getOwnedBones(modelId: string, moduleId: string): Set<string> {
     return _ownedMap(modelId).get(moduleId) ?? new Set();
+}
+
+// ── 骨骼冲突查询（供 UI 冲突可视化；[doc:adr-116 conflict-visibility]）──
+
+export interface BoneConflict {
+    /** 被抢占的骨骼名 */
+    bone: string;
+    /** 抢占方模块 id */
+    byModule: string;
+}
+
+/** 获取某模块被其他模块抢占的骨骼明细 */
+export function getModuleConflicts(modelId: string, moduleId: string): BoneConflict[] {
+    return _boneConflicts.get(modelId)?.get(moduleId) ?? [];
+}
+
+/** 获取某模型全部模块的冲突明细 */
+export function getAllConflicts(
+    modelId: string
+): Array<{ moduleId: string; conflicts: BoneConflict[] }> {
+    const byMod = _boneConflicts.get(modelId);
+    if (!byMod) {
+        return [];
+    }
+    return Array.from(byMod.entries()).map(([mid, conflicts]) => ({ moduleId: mid, conflicts }));
+}
+
+/** 获取某模型冲突总数（骨骼数） */
+export function getConflictCount(modelId: string): number {
+    let n = 0;
+    _boneConflicts.get(modelId)?.forEach((list) => {
+        n += list.length;
+    });
+    return n;
 }
 
 /**
@@ -230,6 +293,7 @@ export function releaseOwnedBones(modelId: string, moduleId: string): Set<string
         return new Set();
     }
     owned.delete(moduleId);
+    _clearConflict(modelId, moduleId);
     return set;
 }
 
