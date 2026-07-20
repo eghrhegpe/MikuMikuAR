@@ -260,7 +260,7 @@
 
 - [x] `grep -rn "className.*preset-chip" src/menus` 归零（除 `env-preset-levels.ts:142` 豁免）
 - [x] `core/safe-call.ts` 三件套已建 + 单测通过；ADR 枚举「前 11 项」文件内的**纯 logWarn 吞错**散点全部收敛（16 处：outfit/audio×2、outfit-overlay×1、physics-bridge×1、beat-detector×1、env-preset-levels×1、events×1、library-actions×4、init×5）；多用途 catch（含 setStatus/console.error/资源清理/返回值）按设计保留。主题2-b（箭头形式纯吞错 22 处）已收敛：library-setup×1、menu×5、plaza×2、settings-paths×12（68/78/90 + 9 个 `SETTINGS_ACTION` 方法）、watch-import×1、camera×1；剩余箭头形式属嵌套 promise 链末端（model-detail:813/815、settings-about:178、settings-paths:449），留 主题2-c 逐处定位，不强行机械替换以免破坏链结构。
-- [ ] `grep -rn "if (\_.*\) { \_.*\.dispose(); \_.* = null; }" src/scene/env` 按文件归零
+- [x] 纯 `if(x){x.dispose();x=null;}` 模板在 `src/scene/env` + `src/scene/render` 归零（~45 处收敛到 `safeDispose`）；`mirror-debug.ts` 5 处属 P3 主题14 留待该轮；11 个非枚举文件（bone-override/scene/feet-adjustment/ar-scene/vmd-evaluator/footstep-detect-fallback/camera/perception/render-loop/ui-resource-panel）属更大范围扫尾，留 **主题3-b** 后续单独一轮（与 主题2-b 策略一致，避免单轮 blast radius 过大）。
 - [x] `grep -n "onViewMatrixChangedObservable.add" src/scene/camera/camera.ts` 0 处
 - [x] `menus/menu.ts:853-867` 双触发 bug 修复（含 `preventDefault`）
 
@@ -389,3 +389,24 @@
 - **主题2-c 预留**（嵌套链末端，需读完整链起点再改，本次不动）：`model-detail.ts:813,815`、`settings-about.ts:178`、`settings-paths.ts:449`。
 
 验证：`cd frontend && npm run build`（tsc + vite）预期 0 错误；`grep -rn "\.catch(.*) => logWarn" src` 在 6 文件归零，全量仅剩 主题2-c 4 处嵌套 + `safe-call.ts`/`utils.ts` 注释。
+
+### 2026-07-20 — P1 主题 3：safeDispose helper + env/render 子系统 ~45 处 if-dispose-null 收敛
+
+用户授权「按你的想法继续」后，推进 P1 主题 3（最后一个未做的 P1 项）。先回读 ADR 确认提案 helper 签名，再枚举 7 个枚举文件的 dispose 块真实形态——发现并非统一 3 行模板，而是有变体（`dispose()` / `dispose(true)` / `dispose(false,true)` 参数透传、含额外语句、含循环、含 `= undefined` 而非 `= null`），故逐文件整体重写 dispose 函数（每文件 1 个 Edit，保留非模板行、折叠模板对），并扩展至同文件内 create/ensure 函数的同模式散点。
+
+- **新建** `frontend/src/core/dispose-helpers.ts`：`safeDispose<T extends {dispose(...args:any[]):void}>(obj: T | null, ...args: any[]): null`，语义严格等价于 `if (obj) { obj.dispose(...args); obj = null; }`（`obj?.dispose(...args)` + 返回 `null`）；返回类型固定 `null`，故目标变量须为 `T | null`。
+- **新建单测** `frontend/src/core/__tests__/dispose-helpers.test.ts`（5 例：dispose+返回 null / null 时 no-op / 透传单参 / 透传多参 / 重赋值置空），`vitest run` 全绿。
+- **收敛 ~45 处**（纯模板，行为严格等价）：
+  - `scene/env/env-water.ts`：disposeWater（mesh `dispose(true)`、material、causticTexture、detailNormalTexture、waterUpdateObserver 保留 `_waterScene` 守卫）+ 同文件 `_ensureNoiseTexture`/`_ensureBlueNoiseTexture`/`disposeTintPostProcess` 及 create 函数内 caustic/detailNormal 重置（共 8 处）
+  - `scene/env/env-clouds.ts`：disposeClouds（cloudFollow/cloudUpdate/volCloudMat/volCloudMesh、clouds.material `dispose(false,true)`、clouds.texture、clouds[key] 循环、noiseTex3D、blueNoiseTex）+ `_ensureNoiseTexture`/`_ensureBlueNoiseTexture`/`_clearDebugVisuals`（共 13 处）
+  - `scene/env/env-sky.ts`：disposeSky（skyFollowHandle、skyMesh 保留 `material?.dispose()`、skyCubeTexture 保留 `scene.environmentTexture=null`、skyDynamicTex）（4 处）
+  - `scene/env/env-particles.ts`：disposeParticles（collisionObserver、followObserver、system）+ `startCollisionDetection`（共 4 处）
+  - `scene/env/env-impl.ts`：主 dispose 函数内 `_envUpdateObserver`（1 处，为保持 env 作用域一致顺带收敛）
+  - `scene/render/renderer.ts`：disposeRenderer（probeRefreshObserver 保留 `_scene` 守卫、glowLayer、ssrPipeline、ssaoPipeline、contactShadowPP 保留 `_contactShadowHandle=null`、reflectionProbe）；**保留 `pipeline`**（`pipeline = undefined`，类型 `| undefined` 与 `safeDispose` 返回 `null` 不兼容）
+  - `scene/render/lighting.ts`：disposeLighting（hemiLight、dirLight、sunDisc、envSysShadow.generator 保留 `?.` 守卫）（4 处）
+  - `scene/render/transform-gizmo.ts`：detachGizmo（pos/rot/scale gizmo×3；`_gizmoLayer` 保留 `shouldRender=false` 额外语句）—— 不在 ADR 枚举 7 文件内，但同属 render 子系统、同模式，一并收敛
+- **不折叠（按设计保留）**：`env-ground.ts` `disposeGroundMaterial(mat)`（参数是 `mat` 且内部 `?.dispose()` 子纹理而非 `= null` 重赋值，不匹配模板，0 处）；各 dispose 块内的循环 `lod.dispose()`/`tex.dispose()`（无 `= null`）、`waterReflection.dispose()`/`disposeTintPostProcess()`（无守卫无 null）、renderer `pipeline = undefined`（`| undefined` 类型）；`mirror-debug.ts` 5 处（P3 主题14，保留其 setter→setEnvState 迁移语境）。
+- **类型安全前置**：先查 `env-context.ts` 确认 `_envSys.*` 字段均为 `T | null`，`safeDispose` 返回 `null` 赋值安全；确认仅 `pipeline` 为 `| undefined` 后保留原写法。
+- **扩展扫尾（主题3-b 预留）**：全量 grep 显示 11 个非枚举文件（bone-override/scene/feet-adjustment/ar-scene/vmd-evaluator/footstep-detect-fallback/camera/perception/render-loop/ui-resource-panel）仍有同模板，属更大 blast radius，留单独一轮（与 主题2-b 同理），不强行并入本轮以免风险集中。
+
+验证：`cd frontend && npm run build`（tsc + vite）0 错误（380 模块）；`vitest run dispose-helpers.test.ts` 5/5；env 子系统单测 `env-water(28)+env-sky+env-clouds+env-particles` 50/50 通过；multiline grep `src/scene/env` + `src/scene/render` 纯模板归零（仅剩 `mirror-debug.ts`）。**未推送**。

@@ -21,6 +21,7 @@ import { _envSys, getScene, resolveStaticAsset } from './env-context';
 import { ensureEnvUpdateObserver } from './env-impl';
 import { _disposeSunDisc } from '../render/lighting';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
+import { safeDispose } from '@/core/dispose-helpers';
 
 // ======== Module state ========
 let _lastProceduralSkyKey = '';
@@ -318,23 +319,17 @@ function loadSkyCube(path: string, rotationY: number, intensity: number): void {
 export function disposeSky(): void {
     const scene = getScene();
     // 移除相机跟随观察者，避免泄漏
-    if (_skyFollowHandle) {
-        _skyFollowHandle.dispose();
-        _skyFollowHandle = null;
-    }
+    _skyFollowHandle = safeDispose(_skyFollowHandle);
     if (_envSys.sky.skyMesh) {
         _envSys.sky.skyMesh.material?.dispose();
-        _envSys.sky.skyMesh.dispose();
-        _envSys.sky.skyMesh = null;
+        _envSys.sky.skyMesh = safeDispose(_envSys.sky.skyMesh);
     }
     if (_envSys.sky.skyCubeTexture) {
         scene.environmentTexture = null;
-        _envSys.sky.skyCubeTexture.dispose();
-        _envSys.sky.skyCubeTexture = null;
+        _envSys.sky.skyCubeTexture = safeDispose(_envSys.sky.skyCubeTexture);
     }
     if (_envSys.sky.skyDynamicTex) {
-        _envSys.sky.skyDynamicTex.dispose();
-        _envSys.sky.skyDynamicTex = null;
+        _envSys.sky.skyDynamicTex = safeDispose(_envSys.sky.skyDynamicTex);
     }
     _lastProceduralSkyKey = '';
     _disposeSunDisc();

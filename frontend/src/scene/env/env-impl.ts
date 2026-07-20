@@ -7,6 +7,7 @@ import { EnvState, envState } from '@/core/config';
 import { col3FromTriple } from '@/core/color-helpers';
 import { logWarn } from '@/core/logger';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
+import { safeDispose } from '@/core/dispose-helpers';
 import { disposeTextureCache } from './env-texture';
 import { _envSys, getScene, getPipeline, isInitialized, resolveStaticAsset } from './env-context';
 import { clearSceneTickCallbacks, runSceneTickCallbacks } from './env-dispatcher';
@@ -240,10 +241,7 @@ export function disposeEnvUpdateObserver(): void {
     }
     const scene = getScene();
     const pipeline = getPipeline();
-    if (_envUpdateObserver) {
-        _envUpdateObserver.dispose();
-        _envUpdateObserver = null;
-    }
+    _envUpdateObserver = safeDispose(_envUpdateObserver);
     // 清理所有场景 tick 回调（如 time-of-day），避免 HMR 重入时泄漏
     clearSceneTickCallbacks();
     disposeTextureCache();

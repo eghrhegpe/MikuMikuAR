@@ -11,6 +11,7 @@ import type { Scene } from '@babylonjs/core/scene';
 import type { Node } from '@babylonjs/core/node';
 import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import { Observable } from '@babylonjs/core/Misc/observable';
+import { safeDispose } from '@/core/dispose-helpers';
 
 export type GizmoType = 'position' | 'rotation' | 'scale';
 
@@ -157,18 +158,9 @@ export function attachGizmo(options: GizmoAttachOptions): boolean {
 
 /** 移除当前 Gizmo。 */
 export function detachGizmo(): void {
-    if (_posGizmo) {
-        _posGizmo.dispose();
-        _posGizmo = null;
-    }
-    if (_rotGizmo) {
-        _rotGizmo.dispose();
-        _rotGizmo = null;
-    }
-    if (_scaleGizmo) {
-        _scaleGizmo.dispose();
-        _scaleGizmo = null;
-    }
+    _posGizmo = safeDispose(_posGizmo);
+    _rotGizmo = safeDispose(_rotGizmo);
+    _scaleGizmo = safeDispose(_scaleGizmo);
     if (_gizmoLayer) {
         _gizmoLayer.shouldRender = false;
         _gizmoLayer.dispose();

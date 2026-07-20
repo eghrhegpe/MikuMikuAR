@@ -27,6 +27,7 @@ import { resetPerformanceSnapshot, isSnapshotResetSuppressed } from './performan
 import { col3FromTriple } from '@/core/color-helpers';
 import { setKey } from '@/core/utils';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
+import { safeDispose } from '@/core/dispose-helpers';
 import { LIGHTING_PRESETS } from './lighting-presets';
 
 // ======== Light State ========
@@ -756,23 +757,13 @@ export function disposeLighting(): void {
     _stageLightCounter = 0;
     _activeStageLightId = null;
     // 清理主灯光
-    if (hemiLight) {
-        hemiLight.dispose();
-        hemiLight = null;
-    }
-    if (dirLight) {
-        dirLight.dispose();
-        dirLight = null;
-    }
+    hemiLight = safeDispose(hemiLight);
+    dirLight = safeDispose(dirLight);
     // 清理太阳盘
-    if (_sunDisc) {
-        _sunDisc.dispose();
-        _sunDisc = null;
-    }
+    _sunDisc = safeDispose(_sunDisc);
     // 清理场景灯光的阴影生成器
     if (_envSysShadow?.generator) {
-        _envSysShadow.generator.dispose();
-        _envSysShadow.generator = null;
+        _envSysShadow.generator = safeDispose(_envSysShadow.generator);
     }
     _scene = null;
     triggerAutoSave = null;
