@@ -57,11 +57,15 @@ dispose 只清了 3 个变量，遗漏 7 个：`_onTerrainReady` / `_onGroundCha
 
 `import('./motion/proc-motion-bridge').then(...).catch(() => {})` 改为 `.catch((e) => logWarn('scene', 'disposeProcMotion failed:', e))`。
 
+### P2-3: lighting.ts 状态收口
+
+- `export let hemiLight` / `export let dirLight` 导出可变绑定 → 私有 `_hemiLight` / `_dirLight` + `getHemiLight()` / `getDirLight()` getter。调用方 env-bridge.ts / renderer.ts / env-bridge.test.ts 同步更新（共 3 处，均为函数体内只读访问）。
+- `disposeLighting()` 补全 6 个遗漏重置：`_shadowEnabled` / `_shadowType` / `_shadowCascades` / `_shadowResolution` / `_shadowBias` / `_skipLightAutoSave`。
+
 ### 审核发现待办（未修）
 
 | 优先级 | 问题 | 文件 |
 |--------|------|------|
-| P2 | lighting.ts 1310 行 + 15 个模块级 let + dispose 遗漏阴影参数 | `scene/render/lighting.ts` |
 | P2 | env-water.ts 4 个 `export let` 水下状态 + 12 个模块级 let | `scene/env/env-water.ts` |
 | P3 | 撤销模式 5 文件 ×9 处重复 | menus/* |
 | P3 | scene-serialize.ts 1293 行零测试 | `scene/scene-serialize.ts` |

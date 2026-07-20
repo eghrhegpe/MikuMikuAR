@@ -31,7 +31,7 @@ import {
     setLightState,
     getLightState,
     setSkipLightAutoSave,
-    hemiLight,
+    getHemiLight,
     _updateSunDisc,
 } from '../render/lighting';
 import type { LightState } from '../render/lighting';
@@ -95,11 +95,12 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
         (state.skyColorTop[1] + state.skyColorBot[1]) / 2,
         (state.skyColorTop[2] + state.skyColorBot[2]) / 2,
     ];
-    if (hemiLight) {
-        hemiLight.intensity = getLightState().hemiIntensity;
-        hemiLight.diffuse = col3FromTriple(skyMid);
+    const hemi = getHemiLight();
+    if (hemi) {
+        hemi.intensity = getLightState().hemiIntensity;
+        hemi.diffuse = col3FromTriple(skyMid);
         // groundColor 从 skyColorBot 派生，保持三色统一
-        hemiLight.groundColor = col3FromTriple(state.skyColorBot);
+        hemi.groundColor = col3FromTriple(state.skyColorBot);
     }
     // 场景环境色 — envIntensity 控制渗透力度，最大不超过 0.5 以免冲淡方向光
     const ambientStrength = Math.min(state.envIntensity * 0.15, ENV_LIGHT_MAX);
