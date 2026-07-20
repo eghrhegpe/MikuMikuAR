@@ -4,6 +4,7 @@
 
 import { logWarn } from './logger';
 import { addDisposableListener, type Disposable } from './dom';
+import { safeDispose } from './dispose-helpers';
 
 export interface ShortcutDef {
     id: string; // unique, e.g. 'toggle:models'
@@ -297,7 +298,6 @@ export function _resetShortcutRegistry(): void {
     for (const key of Object.keys(_overrides)) {
         delete _overrides[key];
     }
-    _keydownDisposable?.dispose();
-    _keydownDisposable = null;
+    _keydownDisposable = safeDispose(_keydownDisposable);
     _initialized = false;
 }

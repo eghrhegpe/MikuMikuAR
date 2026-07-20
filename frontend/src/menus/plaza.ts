@@ -33,6 +33,7 @@ import { showErrorToast } from '../core/toast';
 import { refreshLibrary } from './library';
 import { registerShortcuts } from '../core/shortcut-registry';
 import { addDisposableListener, type Disposable } from '../core/dom';
+import { safeDispose } from '../core/dispose-helpers';
 
 const CUSTOM_SITES_PATH = 'workshop_sites.json';
 
@@ -1202,8 +1203,7 @@ function showActionsMenu(site: PlazaSite, anchor: HTMLElement): void {
     const onDown = (e: MouseEvent): void => {
         if (!menu.contains(e.target as Node)) {
             menu.remove();
-            onDownDisp?.dispose();
-            onDownDisp = null;
+            onDownDisp = safeDispose(onDownDisp);
         }
     };
     setTimeout(() => {

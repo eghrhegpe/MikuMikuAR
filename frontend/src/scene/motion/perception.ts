@@ -7,6 +7,7 @@
 
 import type { Scene } from '@babylonjs/core/scene';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
+import { safeDispose } from '@/core/dispose-helpers';
 
 import { modelManager, focusedModelId, triggerAutoSave } from '../scene';
 // scene 实例走 env-impl 的 getScene() 延迟获取，避免与 scene.ts 形成静态循环依赖
@@ -166,10 +167,7 @@ export function activatePerception(modelId?: string): void {
 
 /** 注销感知层 */
 export function deactivatePerception(): void {
-    if (perceptionObserver) {
-        perceptionObserver.dispose();
-        perceptionObserver = null;
-    }
+    perceptionObserver = safeDispose(perceptionObserver);
     _resetLastEmotionMorphName(); // 模型切换时清空，避免旧 morph 名残留
     perceptionModelId = null;
     logWarn('perception', '已注销');

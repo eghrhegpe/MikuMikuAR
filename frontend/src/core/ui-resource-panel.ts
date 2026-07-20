@@ -6,6 +6,7 @@ import { createIconifyIcon } from './icons';
 import { createVirtualGrid, type VirtualGridHandle } from './ui-virtual-grid';
 import { thumbnailCache as liveThumbnailCache, setThumbnailUpdateCallback } from './state';
 import { thumbDataUrl } from '@/scene/manager/thumbnail-capture';
+import { safeDispose } from './dispose-helpers';
 
 // ======== 活跃面板追踪（缩略图冷缓存回填） ========
 // setThumbnailCache 更新缓存后调用 notifyThumbnailUpdate()，自动刷新所有活跃面板的缩略图 DOM。
@@ -153,8 +154,7 @@ export function createResourcePanel(
     // 清理虚拟滚动（observer 和 mutationObs 持久存在，跨 render 复用）
     function cleanup(): void {
         if (virtualGrid) {
-            virtualGrid.dispose();
-            virtualGrid = null;
+            virtualGrid = safeDispose(virtualGrid);
         }
     }
 

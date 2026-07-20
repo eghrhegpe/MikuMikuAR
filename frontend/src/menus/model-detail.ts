@@ -34,6 +34,7 @@ import {
 import type { SoftwareEntry } from '../core/wails-bindings';
 import { tryCatchStatus } from '../core/utils';
 import { logWarn } from '../core/logger';
+import { safeCallAsync } from '../core/safe-call';
 import { pushUndoSnapshot, offerSceneUndo } from '../scene/scene';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
 import { renderMenu } from './render-menu';
@@ -740,79 +741,81 @@ function buildModelTagsSchema(id: string): MenuNode[] {
 
                     const picker = document.createElement('div');
                     picker.className = 'tag-container';
-                    GetAllTags()
-                        .then((allTags) => {
-                            if (!container.isConnected) {
-                                return;
-                            }
-                            const assigned = new Set<string>();
-                            GetTagsByModel(libRef!)
-                                .then((modelTags) => {
-                                    if (!container.isConnected) {
-                                        return;
-                                    }
-                                    (modelTags || []).forEach((tm) => assigned.add(tm));
-                                    (allTags || []).forEach((tag) => {
-                                        if (tag === '收藏') {
-                                            return;
-                                        }
-                                        const chip = document.createElement('span');
-                                        chip.className =
-                                            'tag-chip' + (assigned.has(tag) ? ' active' : '');
-                                        chip.style.cssText = assigned.has(tag)
-                                            ? 'border:1px solid var(--accent);color:var(--accent);background:var(--accent-dim);'
-                                            : 'border:1px solid var(--white-08);color:var(--text-dim);background:transparent;cursor:pointer;';
-                                        chip.textContent = assigned.has(tag)
-                                            ? `✓ ${tag}`
-                                            : `+ ${tag}`;
-                                        chip.title = assigned.has(tag)
-                                            ? t('model-detail.tagAddedRemove')
-                                            : t('model-detail.tagAdd');
-                                        chip.addEventListener('click', () => {
-                                            if (!libRef || !container.isConnected) {
+                    safeCallAsync('model-detail', 'tag load failed:', () =>
+                        GetAllTags()
+                            .then((allTags) => {
+                                if (!container.isConnected) {
+                                    return;
+                                }
+                                const assigned = new Set<string>();
+                                safeCallAsync('model-detail', 'tag load failed:', () =>
+                                    GetTagsByModel(libRef!)
+                                        .then((modelTags) => {
+                                            if (!container.isConnected) {
                                                 return;
                                             }
-                                            if (assigned.has(tag)) {
-                                                RemoveTag(libRef, tag)
-                                                    .then(() => {
-                                                        refreshTags();
-                                                    })
-                                                    .catch((e) =>
-                                                        logWarn(
-                                                            'model-detail',
-                                                            'remove tag failed:',
-                                                            e
-                                                        )
-                                                    );
-                                            } else {
-                                                AddTag(libRef, tag)
-                                                    .then(() => {
-                                                        refreshTags();
-                                                    })
-                                                    .catch((e) =>
-                                                        logWarn(
-                                                            'model-detail',
-                                                            'add tag failed:',
-                                                            e
-                                                        )
-                                                    );
-                                            }
-                                        });
-                                        picker.appendChild(chip);
-                                    });
-                                    if (
-                                        !allTags ||
-                                        allTags.filter((tg) => tg !== '收藏').length === 0
-                                    ) {
-                                        picker.innerHTML =
-                                            '<span style="color:var(--text-muted);font-size:11px;">' +
-                                            t('model-detail.noGlobalTags') +
-                                            '</span>';
-                                    }
-                                })
-                                .catch((e) => logWarn('model-detail', 'tag load failed:', e));
-                        })
-                        .catch((e) => logWarn('model-detail', 'tag load failed:', e));
+                                            (modelTags || []).forEach((tm) => assigned.add(tm));
+                                            (allTags || []).forEach((tag) => {
+                                                if (tag === '收藏') {
+                                                    return;
+                                                }
+                                                const chip = document.createElement('span');
+                                                chip.className =
+                                                    'tag-chip' + (assigned.has(tag) ? ' active' : '');
+                                                chip.style.cssText = assigned.has(tag)
+                                                    ? 'border:1px solid var(--accent);color:var(--accent);background:var(--accent-dim);'
+                                                    : 'border:1px solid var(--white-08);color:var(--text-dim);background:transparent;cursor:pointer;';
+                                                chip.textContent = assigned.has(tag)
+                                                    ? `✓ ${tag}`
+                                                    : `+ ${tag}`;
+                                                chip.title = assigned.has(tag)
+                                                    ? t('model-detail.tagAddedRemove')
+                                                    : t('model-detail.tagAdd');
+                                                chip.addEventListener('click', () => {
+                                                    if (!libRef || !container.isConnected) {
+                                                        return;
+                                                    }
+                                                    if (assigned.has(tag)) {
+                                                        RemoveTag(libRef, tag)
+                                                            .then(() => {
+                                                                refreshTags();
+                                                            })
+                                                            .catch((e) =>
+                                                                logWarn(
+                                                                    'model-detail',
+                                                                    'remove tag failed:',
+                                                                    e
+                                                                )
+                                                            );
+                                                    } else {
+                                                        AddTag(libRef, tag)
+                                                            .then(() => {
+                                                                refreshTags();
+                                                            })
+                                                            .catch((e) =>
+                                                                logWarn(
+                                                                    'model-detail',
+                                                                    'add tag failed:',
+                                                                    e
+                                                                )
+                                                            );
+                                                    }
+                                                });
+                                                picker.appendChild(chip);
+                                            });
+                                        if (
+                                            !allTags ||
+                                            allTags.filter((tg) => tg !== '收藏').length === 0
+                                        ) {
+                                            picker.innerHTML =
+                                                '<span style="color:var(--text-muted);font-size:11px;">' +
+                                                t('model-detail.noGlobalTags') +
+                                                '</span>';
+                                        }
+                                    })
+                                );
+                            })
+                    );
                     c.appendChild(picker);
                 });
             },

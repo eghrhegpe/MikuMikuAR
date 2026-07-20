@@ -30,7 +30,7 @@ import { calcHardwareScaling } from '../core/render-loop';
 import { refreshCameraUserSettings } from '../scene/camera/camera';
 import { setVolume, getVolume, setAudioOffset, getAudioOffset } from '../outfit/audio';
 import { swallowError, jsonStringify } from '../core/utils';
-import { logWarn } from '../core/logger';
+import { safeCallAsync } from '../core/safe-call';
 import { showConfirm } from '../core/dialog';
 
 function exportSettings(): void {
@@ -152,8 +152,9 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                     title.appendChild(appVersion);
 
                     inner.appendChild(title);
-                    GetBuildInfo()
-                        .then((info) => {
+                    safeCallAsync('settings-about', '', () =>
+                        GetBuildInfo()
+                            .then((info) => {
                             const el = title.querySelector<HTMLElement>('[data-app-version]');
                             if (el) {
                                 el.textContent = `v${info.version}`;
@@ -175,7 +176,7 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
 
                             inner.appendChild(detail);
                         })
-                        .catch((err) => logWarn('settings-about', '', err));
+                    );
                 });
             },
         },

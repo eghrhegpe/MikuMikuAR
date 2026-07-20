@@ -4,6 +4,7 @@
 
 import { dom, closeAllOverlays, getMenuWrapper, PopupLevel, PopupRow } from '../core/config';
 import { SlideMenu } from './menu';
+import { safeDispose } from '../core/dispose-helpers';
 
 /** 不含 container/onClose 的菜单回调（由工厂统一注入） */
 export interface PopupMenuHandlers {
@@ -108,8 +109,7 @@ export function registerPopupMenu(config: RegisteredPopupMenuConfig): PopupMenuH
             container: wrapper,
             onClose: () => {
                 config.onClose?.();
-                newMenu.dispose();
-                menu = null;
+                menu = safeDispose(newMenu);
                 closeAllOverlays();
             },
             onItemClick: config.handlers.onItemClick,

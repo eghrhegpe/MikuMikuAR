@@ -424,8 +424,9 @@ function buildPathsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                     inner.appendChild(statRow);
 
                     const refreshCacheStats = () => {
-                        GetCacheStats()
-                            .then((s) => {
+                        safeCallAsync('paths', '', () =>
+                            GetCacheStats()
+                                .then((s) => {
                                 const total =
                                     statRow.querySelector<HTMLElement>('[data-cache-total]');
                                 const detail =
@@ -446,7 +447,7 @@ function buildPathsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                                     detail.appendChild(thumbRow);
                                 }
                             })
-                            .catch((err) => logWarn('paths', '', err));
+                        );
                     };
                     refreshCacheStats();
                     const refreshDisp = addDisposableListener(

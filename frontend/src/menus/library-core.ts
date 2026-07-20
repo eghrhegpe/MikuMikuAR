@@ -28,6 +28,7 @@ import {
     BrowseOutcome,
 } from '../core/config';
 import { SlideMenu } from './menu';
+import { safeDispose } from '../core/dispose-helpers';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow, createResourcePanel, openFullscreen, closeFullscreen } from '../core/ui-helpers';
 import { notifyThumbnailUpdate } from '../core/ui-resource-panel';
@@ -658,8 +659,7 @@ function openResourceFullscreen(
     openFullscreen({
         title,
         onBack: () => {
-            currentPanel?.dispose();
-            currentPanel = null;
+            currentPanel = safeDispose(currentPanel);
         },
         renderContent: (container, navigate) => renderPanelAt(null, container, navigate),
     });

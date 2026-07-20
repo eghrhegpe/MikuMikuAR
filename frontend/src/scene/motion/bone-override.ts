@@ -8,6 +8,7 @@ import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 import type { MmdRuntimeBoneExtended } from '@/core/types';
 import { clamp01 } from '@/core/utils';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
+import { safeDispose } from '@/core/dispose-helpers';
 import { focusedModelId } from '@/core/state';
 
 /** 持久化的单条骨骼覆盖配置 */
@@ -513,10 +514,7 @@ export function startBoneOverride(
 
 /** 停止覆盖系统。 */
 export function stopBoneOverride(): void {
-    if (_observerHandle) {
-        _observerHandle.dispose();
-        _observerHandle = null;
-    }
+    _observerHandle = safeDispose(_observerHandle);
     _frameHooks.clear();
     clearAllOverrides();
 }

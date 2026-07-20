@@ -541,8 +541,7 @@ export function _updateSunDisc(): void {
 export function _disposeSunDisc(): void {
     if (_sunDisc) {
         _sunDisc.material?.dispose();
-        _sunDisc.dispose();
-        _sunDisc = null;
+        _sunDisc = safeDispose(_sunDisc);
     }
 }
 

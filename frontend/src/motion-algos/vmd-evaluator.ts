@@ -12,6 +12,7 @@ import type {
     MmdMovableBoneAnimationTrack,
 } from 'babylon-mmd/esm/Loader/Animation/mmdAnimationTrack';
 import type { MmdAnimation } from 'babylon-mmd/esm/Loader/Animation/mmdAnimation';
+import { safeDispose } from '@/core/dispose-helpers';
 
 export interface VmdBoneFrame {
     position: Vector3 | null;
@@ -292,8 +293,5 @@ export async function createVmdEvaluator(data: ArrayBuffer): Promise<VmdEvaluato
  * 应用关闭时调用，防止 NullEngine 泄漏。
  */
 export function shutdownVmdEvaluator(): void {
-    if (_sharedScene) {
-        _sharedScene.dispose();
-        _sharedScene = null;
-    }
+    _sharedScene = safeDispose(_sharedScene);
 }

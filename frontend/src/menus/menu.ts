@@ -6,6 +6,7 @@ import { subscribe } from '../core/reactivity';
 import { t } from '../core/i18n/t';
 import { logWarn } from '../core/logger';
 import { safeCallAsync } from '../core/safe-call';
+import { safeDispose } from '../core/dispose-helpers';
 import { addDisposableListener, type Disposable } from '../core/dom';
 
 /** 菜单过渡时间常量（与 app.css :root --menu-transition-duration 同步） */
@@ -218,8 +219,7 @@ export class SlideMenu {
 
         let fadeOutDisp: Disposable | null = null;
         const onFadeOut = async () => {
-            fadeOutDisp?.dispose();
-            fadeOutDisp = null;
+            fadeOutDisp = safeDispose(fadeOutDisp);
             await this.buildPanel(level);
             this.updateHeader(level);
             // 新内容从下方淡入
@@ -233,8 +233,7 @@ export class SlideMenu {
 
             let fadeInDisp: Disposable | null = null;
             const onFadeIn = () => {
-                fadeInDisp?.dispose();
-                fadeInDisp = null;
+                fadeInDisp = safeDispose(fadeInDisp);
                 this._cancelTimeout();
                 this.transitioning = false;
                 this.setupFocus();
@@ -282,8 +281,7 @@ export class SlideMenu {
 
         let fadeOutDisp: Disposable | null = null;
         const onFadeOut = async () => {
-            fadeOutDisp?.dispose();
-            fadeOutDisp = null;
+            fadeOutDisp = safeDispose(fadeOutDisp);
             await this.buildPanel(prevLevel);
             this.updateHeader(prevLevel);
             this.panel.style.transition = 'none';
@@ -296,8 +294,7 @@ export class SlideMenu {
 
             let fadeInDisp: Disposable | null = null;
             const onFadeIn = () => {
-                fadeInDisp?.dispose();
-                fadeInDisp = null;
+                fadeInDisp = safeDispose(fadeInDisp);
                 this._cancelTimeout();
                 this.transitioning = false;
                 this.setupFocus();

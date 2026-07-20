@@ -424,8 +424,7 @@ function _applyRenderState(s: Partial<RenderState>): void {
                 _glowLayer = new GlowLayer('glow', _scene, { blurKernelSize: 32 });
                 _glowLayer.intensity = adjustedGlow;
             } else if (!s.glowEnabled && _glowLayer) {
-                _glowLayer.dispose();
-                _glowLayer = null;
+                _glowLayer = safeDispose(_glowLayer);
             }
         }
         if (_glowLayer && gl !== undefined) {
@@ -458,8 +457,7 @@ function _applyRenderState(s: Partial<RenderState>): void {
                     _ssrPipeline = null;
                 }
             } else if (!s.ssrEnabled && _ssrPipeline) {
-                _ssrPipeline.dispose();
-                _ssrPipeline = null;
+                _ssrPipeline = safeDispose(_ssrPipeline);
             }
         }
         if (_ssrPipeline) {
@@ -514,8 +512,7 @@ function _applyRenderState(s: Partial<RenderState>): void {
                         }
                     }
                 }
-                _reflectionProbe.dispose();
-                _reflectionProbe = null;
+                _reflectionProbe = safeDispose(_reflectionProbe);
             }
         }
         // 绑定反射探针到模型材质
@@ -571,8 +568,7 @@ function _applyRenderState(s: Partial<RenderState>): void {
                     _ssaoPipeline = null;
                 }
             } else if (!s.ssaoEnabled && _ssaoPipeline) {
-                _ssaoPipeline.dispose();
-                _ssaoPipeline = null;
+                _ssaoPipeline = safeDispose(_ssaoPipeline);
             }
         }
         if (_ssaoPipeline) {
@@ -811,8 +807,7 @@ export function setContactShadow(state: EnvState): void {
             if (cam) {
                 cam.detachPostProcess(_contactShadowPP);
             }
-            _contactShadowPP.dispose();
-            _contactShadowPP = null;
+            _contactShadowPP = safeDispose(_contactShadowPP);
             _contactShadowHandle = null;
         }
     }
@@ -842,8 +837,7 @@ export function setRenderState(s: Partial<RenderState>): void {
 /** 取消当前渲染过渡动画（若有）。 */
 function _cancelRenderTransition(): void {
     if (_renderTransitionObserver && _scene) {
-        _renderTransitionObserver.dispose();
-        _renderTransitionObserver = null;
+        _renderTransitionObserver = safeDispose(_renderTransitionObserver);
     }
 }
 
@@ -1031,8 +1025,7 @@ export function reattachPipeline(): void {
         // SSR pipeline 也需要重新挂接相机
         if (_ssrPipeline) {
             try {
-                _ssrPipeline.dispose();
-                _ssrPipeline = null;
+                _ssrPipeline = safeDispose(_ssrPipeline);
                 // 下次 _applyRenderState 时会重建
             } catch {
                 // Intentionally empty — SSR pipeline dispose 失败不影响主流程
@@ -1041,8 +1034,7 @@ export function reattachPipeline(): void {
         // SSAO pipeline 也需要重新挂接相机
         if (_ssaoPipeline) {
             try {
-                _ssaoPipeline.dispose();
-                _ssaoPipeline = null;
+                _ssaoPipeline = safeDispose(_ssaoPipeline);
                 // 下次 _applyRenderState 时会重建
             } catch {
                 // Intentionally empty — SSAO pipeline dispose 失败不影响主流程

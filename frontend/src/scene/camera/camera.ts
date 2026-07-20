@@ -22,6 +22,7 @@ import { focusModel, reattachPipeline, setARMode, getProcBeatDetector } from '..
 import { InvertableArcRotateCameraPointersInput } from './invertablePointersInput';
 import { addDisposableListener, type Disposable } from '@/core/dom';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
+import { safeDispose } from '@/core/dispose-helpers';
 
 // ======== Types ========
 /**
@@ -343,8 +344,7 @@ export function clearCameraVmd(): void {
             switchCameraMode('orbit');
         }
         _scene.removeCamera(_mmdCamera);
-        _mmdCamera.dispose();
-        _mmdCamera = null;
+        _mmdCamera = safeDispose(_mmdCamera);
         _cameraAnimationHandle = null;
         _cameraVmdName = '';
         _cameraVmdPath = '';
@@ -713,8 +713,7 @@ export function switchCameraMode(mode: CameraMode): void {
         oldCam.detachControl();
         scene.removeCamera(oldCam);
         // 旧相机的视角变化 observer 显式解绑（统一走 ObserverHandle；cam.dispose 亦会清理，双保险）
-        _viewMatrixHandle?.dispose();
-        _viewMatrixHandle = null;
+        _viewMatrixHandle = safeDispose(_viewMatrixHandle);
         oldCam.dispose();
     }
 
@@ -961,8 +960,7 @@ function stopFreefly(): void {
     stopFreeflyTouch();
 
     if (_freeflyUpdateHandle) {
-        _freeflyUpdateHandle.dispose();
-        _freeflyUpdateHandle = null;
+        _freeflyUpdateHandle = safeDispose(_freeflyUpdateHandle);
     }
 }
 
@@ -1004,8 +1002,7 @@ function startSurround(scene: Scene): void {
 
 function stopSurround(): void {
     if (_surroundUpdateHandle) {
-        _surroundUpdateHandle.dispose();
-        _surroundUpdateHandle = null;
+        _surroundUpdateHandle = safeDispose(_surroundUpdateHandle);
     }
 }
 
@@ -1050,8 +1047,7 @@ function startConcert(scene: Scene): void {
 
 function stopConcert(): void {
     if (_concertUpdateHandle) {
-        _concertUpdateHandle.dispose();
-        _concertUpdateHandle = null;
+        _concertUpdateHandle = safeDispose(_concertUpdateHandle);
     }
 }
 
@@ -1144,8 +1140,7 @@ function _startBoneLock(): void {
 
 function _stopBoneLock(): void {
     if (_boneLockUpdateHandle) {
-        _boneLockUpdateHandle.dispose();
-        _boneLockUpdateHandle = null;
+        _boneLockUpdateHandle = safeDispose(_boneLockUpdateHandle);
     }
     // 恢复平移灵敏度
     if (_currentCamera instanceof ArcRotateCamera) {
