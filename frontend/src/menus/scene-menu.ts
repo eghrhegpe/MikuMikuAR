@@ -41,7 +41,7 @@ import { buildGroundLevel } from './env-ground-levels';
 import { buildWaterLevel } from './env-water-levels';
 import { envState } from '../core/state';
 import { getEnvTextureBindingTarget, clearEnvTextureBindingTarget } from './env-menu';
-import { setSceneMenu, setRefreshSceneRoot, reRenderSceneMenu, getSceneMenu } from './scene-menu-state';
+import { setSceneMenu, setRefreshSceneRoot, reRenderSceneMenu } from './scene-menu-state';
 import {
     setMirrorSize,
     getMirrorInfo,
