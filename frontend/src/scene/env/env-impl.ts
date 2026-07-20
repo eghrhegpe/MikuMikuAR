@@ -4,6 +4,7 @@
 
 import { Scene } from '@babylonjs/core';
 import { EnvState, envState } from '@/core/config';
+import { getEnvKeys } from '@/core/env-state-schema';
 import { col3FromTriple } from '@/core/color-helpers';
 import { logWarn } from '@/core/logger';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
@@ -89,75 +90,10 @@ export { initEnvImpl } from './env-context';
 // [ADR-138] 注册 env-dispatcher 回调，响应 setEnvState 变化，破除 env-bridge → env-impl 循环依赖
 import { registerEnvCallback } from './env-dispatcher';
 
-const _SKY_KEYS = [
-    'skyMode',
-    'skyColorTop',
-    'skyColorMid',
-    'skyColorBot',
-    'skyTexture',
-    'skyRotationY',
-    'skyRotationSpeed',
-    'skyBrightness',
-    'starsEnabled',
-    'starsTexture',
-    'envIntensity',
-    'sunAngle',
-    'azimuth',
-];
-const _GROUND_KEYS = [
-    'groundType',
-    'groundStyle',
-    'groundColor',
-    'groundColor2',
-    'groundTexture',
-    'groundTextureEnabled',
-    'groundTextureScale',
-    'groundTextureRotation',
-    'groundProceduralTexture',
-    'groundProceduralSeed',
-    'groundProceduralScale',
-    'groundPbrEnabled',
-    'groundMetallic',
-    'groundRoughness',
-    'groundLevel',
-    'groundPitch',
-    'groundRoll',
-    'groundScrollSpeedX',
-    'groundScrollSpeedZ',
-    'groundTileScale',
-    'groundReflectionEnabled',
-    'reflectionQuality',
-    'reflectionMode',
-    'groundReflectionBlend',
-    'groundReflectionBlur',
-    'groundReflectionDistort',
-    'groundNormalStrength',
-    'groundEdgeFadeStart',
-    'groundEdgeFadeEnd',
-    'groundContactShadowEnabled',
-    'groundContactShadowIntensity',
-    'groundContactShadowDistance',
-    'terrainHeight',
-    'terrainScale',
-    'terrainSeed',
-    'terrainOctaves',
-    'groundGradient',
-    'groundFade',
-    'groundCheckerColor1',
-    'groundCheckerColor2',
-    'groundMode',
-    'groundDecoStyle',
-    'groundGridSize',
-    'groundLineColor',
-    'groundPattern',
-    'groundSize',
-    'groundEdgeFade',
-    'groundInfinite',
-    'groundAlpha',
-    'groundNormalTexture',
-    'groundElevationColoring',
-];
-const _FOG_KEYS = ['fogEnabled', 'fogColor', 'fogDensity', 'fogMode', 'fogStart', 'fogEnd'];
+// 从 Schema 自动派生 dispatch key 列表，新增字段无需手工维护
+const _SKY_KEYS = getEnvKeys('sky');
+const _GROUND_KEYS = getEnvKeys('ground');
+const _FOG_KEYS = getEnvKeys('fog');
 
 registerEnvCallback((changed, state) => {
     // Sky

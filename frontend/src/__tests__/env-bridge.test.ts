@@ -502,6 +502,7 @@ vi.mock('../scene/scene', () => {
     const scene = {
         ambientColor: { r: 0, g: 0, b: 0 },
         getAnimationRatio: () => 60,
+        deltaTime: 1000, // 1s/tick，与旧版 getAnimationRatio()=60 的 dt=1s 保持一致
         onBeforeRenderObservable: {
             _callbacks: new Map<
                 number,
@@ -1152,7 +1153,7 @@ describe('Time of Day', () => {
         it('increments envSunAngle by speed * dt when active', () => {
             startTimeOfDay(3);
             const prevAngle = getEnvSunAngle();
-            const dt = mockSceneInstance.getAnimationRatio() * (1 / 60);
+            const dt = mockSceneInstance.deltaTime / 1000;
 
             if (registeredTickCallback) {
                 registeredTickCallback();
