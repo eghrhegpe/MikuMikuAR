@@ -81,9 +81,9 @@ import {
     initRenderer,
     rebuildOutlineState,
     pipeline,
-    bindReflectionProbeToModel,
     disposeRenderer,
 } from './render/renderer';
+import { onModelMeshesReady, disposeReflection } from './env/env-reflection';
 import { initLoader, setOnMeshesReady, setOnModelLoaded } from './manager/model-loader';
 
 // Re-export material system (extracted to material.ts for file size)
@@ -195,7 +195,8 @@ export function disposeScene(): void {
         .then(({ disposeProcMotion }) => disposeProcMotion())
         .catch(() => {});
 
-    // 4. 释放渲染管线、环境更新、物理风系统
+    // 4. 释放反射系统、渲染管线、环境更新、物理风系统
+    disposeReflection();
     disposeRenderer();
     disposeEnvUpdateObserver();
     disposeWindPhysics();
@@ -315,6 +316,7 @@ export async function initScene(): Promise<void> {
         }
         _sceneDisposeObserverHandle = observe(scene.onDisposeObservable, () => {
             disposeWindPhysics();
+            disposeReflection();
             disposeEnvUpdateObserver();
             disposeRenderer();
         });
@@ -418,7 +420,7 @@ export async function initScene(): Promise<void> {
     setTriggerAutoSave(triggerAutoSaveImpl);
 
     // 5. 注入回调解耦：model-loader / model-manager 不再直接动态导入 renderer / proc-motion-bridge
-    setOnMeshesReady((meshes) => bindReflectionProbeToModel(meshes));
+    setOnMeshesReady((meshes) => onModelMeshesReady(meshes));
     const procMotionMod = await import('./motion/proc-motion-bridge');
     modelManager.onModelFocused = () => procMotionMod.activateGazeTracking();
     setOnModelLoaded(() => procMotionMod.activateGazeTracking());
