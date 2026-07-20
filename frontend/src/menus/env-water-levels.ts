@@ -204,6 +204,12 @@ export function buildWaterLevel(): PopupLevel {
                             control: { bind: 'env.ambientStrength', min: 0, max: 2, step: 0.05 },
                         },
                         {
+                            id: 'env:water:rippleSlots',
+                            kind: 'slider',
+                            label: 'env.waterRippleSlots',
+                            control: { bind: 'env.waterRippleSlots', min: 16, max: 1024, step: 16 },
+                        },
+                        {
                             id: 'env:water:rippleNormal',
                             kind: 'slider',
                             label: 'env.rippleNormal',

@@ -39,8 +39,6 @@ const WAVE_DIR_OFFSETS: [number, number, number, number] = [0, 0.3, -0.2, 0.1];
 const RIPPLE_MIN_RADIUS = 0.1;
 const RIPPLE_MIN_SPEED = 0.1;
 const RIPPLE_INFINITY_LIFE = 9999;
-// 每秒新增涟漪上限：与粒子碰撞频率匹配，256 slot × ~2s 寿命 / 60 ≈ 85% 占用
-const RIPPLE_MAX_PER_SECOND = 60;
 // 焦散着色系数（暗部底色 / 亮部增量）
 const CAUSTIC_DARK_FACTOR = 0.3;
 const CAUSTIC_BRIGHT_FACTOR = 0.9;
@@ -201,7 +199,8 @@ registerReflectionSurface('water', waterReflection, () =>
 );
 
 // ======== 涟漪系统（Interaction Ripples）========
-const MAX_RIPPLES = 256;
+// 最大 slot 数（与 shader 循环上限 1024 对齐）；有效使用数由 envState.waterRippleSlots 控制
+const MAX_RIPPLES = 1024;
 interface RippleSource {
     position: Vector3;
     radius: number;
@@ -209,56 +208,46 @@ interface RippleSource {
     speed: number;
     life: number;
     maxLife: number;
-    cooldown: number; // 冷却倒计时（秒），>0 时该 slot 不可被复用
 }
 let _ripples: RippleSource[] = [];
-// 每秒新增涟漪时间累加器（_waterUpdateCallback 每帧累加 dt，满 1/RIPPLE_MAX_PER_SECOND 秒允许一次）
-let _rippleAccumulator = 0;
 
 // ======== 水下灯光衰减（入水后降低灯光强度，避免暖光+蓝雾产生脏色）========
 const UNDERWATER_DIR_INTENSITY_SCALE = 0.3;
 const UNDERWATER_HEMI_INTENSITY_SCALE = 0.4;
 
-export function addRipple(pos: Vector3, radius = 5, strength = 0.5, speed = 2, maxLife = 3): void {
-    // 每秒新增上限：60/s 时每 ~16ms 一次，256 slot × ~2s 寿命 ≈ 85% 占用
-    // 累加器在 _waterUpdateCallback 每帧累加 dt；此处减去 interval 消费一个配额。
-    // 高频调用时累加器可能暂时为负，guard 会持续拒绝直到自然回升——此行为预期。
-    const interval = 1 / RIPPLE_MAX_PER_SECOND;
-    if (_rippleAccumulator < interval) {
-        return;
-    }
-    _rippleAccumulator -= interval;
+/** slot 数由水效面板控制，确保每秒碰撞率 × rippleLife 可填满启用 slot */
+function _maxSlots(): number {
+    return Math.min(MAX_RIPPLES, Math.max(16, Math.round(envState.waterRippleSlots ?? 256)));
+}
 
-    let idx = -1;
-    let oldestLife = Infinity;
+export function addRipple(pos: Vector3, radius = 5, strength = 0.5, speed = 2, maxLife = 3): void {
+    const maxSlots = _maxSlots();
+    // 1. 找已死亡的 slot（直接复用）
     for (let i = 0; i < _ripples.length; i++) {
-        const r = _ripples[i];
-        // 优先复用已死亡且冷却完毕的 slot
-        if (r.life <= 0 && r.cooldown <= 0) {
-            idx = i;
-            break;
-        }
-        // 次选：找生命最短的（但需冷却完毕）
-        if (r.cooldown <= 0 && r.life < oldestLife) {
-            oldestLife = r.life;
-            idx = i;
+        if (_ripples[i].life <= 0) {
+            _fillSlot(i, pos, radius, strength, speed, maxLife);
+            return;
         }
     }
-    if (idx === -1 && _ripples.length < MAX_RIPPLES) {
-        idx = _ripples.length;
+    // 2. 未满 → push 新 slot
+    if (_ripples.length < maxSlots) {
+        const idx = _ripples.length;
         _ripples.push({
             position: new Vector3(0, 0, 0),
-            radius: 0,
-            strength: 0,
-            speed: 0,
-            life: 0,
-            maxLife: 0,
-            cooldown: 0,
+            radius: 0, strength: 0, speed: 0, life: 0, maxLife: 0,
         });
+        _fillSlot(idx, pos, radius, strength, speed, maxLife);
+        return;
     }
-    if (idx === -1) {
-        return; // 所有 slot 都在冷却中，丢弃本次涟漪
+    // 3. 全活 → 替换寿命最短的（等效缩短其动画，适应高密度场景）
+    let oldest = 0;
+    for (let i = 1; i < _ripples.length; i++) {
+        if (_ripples[i].life < _ripples[oldest].life) oldest = i;
     }
+    _fillSlot(oldest, pos, radius, strength, speed, maxLife);
+}
+
+function _fillSlot(idx: number, pos: Vector3, radius: number, strength: number, speed: number, maxLife: number): void {
     const r = _ripples[idx];
     r.position.copyFrom(pos);
     r.radius = Math.max(RIPPLE_MIN_RADIUS, radius);
@@ -266,13 +255,10 @@ export function addRipple(pos: Vector3, radius = 5, strength = 0.5, speed = 2, m
     r.speed = Math.max(RIPPLE_MIN_SPEED, speed);
     r.life = maxLife > 0 ? maxLife : RIPPLE_INFINITY_LIFE;
     r.maxLife = maxLife;
-    // 冷却期 = 涟漪寿命：确保 slot 在涟漪完整播放期间不被复用，保证动画连续性
-    r.cooldown = r.maxLife;
 }
 
 export function clearRipples(): void {
     _ripples = [];
-    _rippleAccumulator = 0;
 }
 
 // ======== 焦散系统（静态纹理 + UV 滚动）========
@@ -726,10 +712,6 @@ function _waterUpdateCallback(scene: Scene): void {
     }
     const m = _envSys.water.material as ShaderMaterial;
     const dt = Math.min(scene.deltaTime / 1000, DT_CLAMP_MAX);
-    // 每秒新增涟漪时间累加器：每帧累加 dt，满 1/RIPPLE_MAX_PER_SECOND 秒允许一次
-    if (dt > 0) {
-        _rippleAccumulator += dt;
-    }
     const now = performance.now() / 1000;
 
     _waterPhase += dt * _waterWaveSpeed;
@@ -751,39 +733,29 @@ function _waterUpdateCallback(scene: Scene): void {
         m.setFloat('lightIntensity', dl.intensity);
     }
 
-    // 涟漪衰减 + 冷却递减
+    // 涟漪衰减 + 清理死亡 slot
     if (dt > 0) {
-        let anyAlive = false;
         for (const r of _ripples) {
             if (r.life > 0) {
                 r.life = Math.max(0, r.life - dt);
-                if (r.life > 0) {
-                    anyAlive = true;
-                }
-            }
-            // 冷却倒计时（即使 life 已耗尽，冷却仍在继续）
-            if (r.cooldown > 0) {
-                r.cooldown = Math.max(0, r.cooldown - dt);
             }
         }
-        if (!anyAlive && _ripples.length > 0) {
-            // 全部死亡且冷却完毕才清空，避免残留冷却 slot
-            const allCooldownDone = _ripples.every((r) => r.cooldown <= 0);
-            if (allCooldownDone) {
-                _ripples = [];
-            }
+        // 全部死亡则清空（避免残留数组）
+        if (_ripples.length > 0 && _ripples.every((r) => r.life <= 0)) {
+            _ripples = [];
         }
     }
 
     waterReflection.update(envState, scene);
     _applyWaterLOD(scene);
 
-    // 上传涟漪数据到 shader
+    // 上传涟漪数据到 shader（按 MAX_RIPPLES 分配，未用 slot 为 0）
+    const maxSlots = _maxSlots();
     const posRad = new Array<number>(MAX_RIPPLES * 4).fill(0);
     const strSpdLife = new Array<number>(MAX_RIPPLES * 4).fill(0);
     let aliveCount = 0;
     for (const r of _ripples) {
-        if (r.life <= 0 || aliveCount >= MAX_RIPPLES) {
+        if (r.life <= 0 || aliveCount >= maxSlots) {
             continue;
         }
         const i = aliveCount * 4;

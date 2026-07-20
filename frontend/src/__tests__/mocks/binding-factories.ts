@@ -180,6 +180,7 @@ export function createMockEnvState(overrides?: Partial<EnvState>): EnvState {
         fresnelPower: 5,
         diffuseStrength: 1,
         ambientStrength: 0.3,
+        waterRippleSlots: 256,
         rippleNormalStrength: 0.5,
         rippleGlintStrength: 0,
         waterNormalStrength: 0.3,

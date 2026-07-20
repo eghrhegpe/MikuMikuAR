@@ -150,6 +150,8 @@ export const ENV_STATE_SCHEMA = {
     fresnelPower: { type: 'number', default: 3.0 },
     diffuseStrength: { type: 'number', default: 0.15 },
     ambientStrength: { type: 'number', default: 0.06 },
+    // --- Ripple ---
+    waterRippleSlots: { type: 'number', default: 256 },
     rippleNormalStrength: { type: 'number', default: 0.35 },
     rippleGlintStrength: { type: 'number', default: 0.5 },
     waterNormalStrength: { type: 'number', default: 0.35 },

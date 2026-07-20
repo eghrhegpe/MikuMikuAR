@@ -1214,6 +1214,7 @@ export const en: Record<string, string> = {
     'env.foamTransition': 'Foam transition',
     'env.rippleNormal': 'Ripple normal strength',
     'env.rippleGlint': 'Ripple glint strength',
+    'env.waterRippleSlots': 'Ripple slots',
     'env.causticColor1': 'Caustic bright color',
     'env.causticColor2': 'Caustic dark color',
     'env.causticIntensity': 'Caustic intensity',

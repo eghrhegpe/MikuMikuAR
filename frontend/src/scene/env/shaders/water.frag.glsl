@@ -219,7 +219,7 @@ void main() {
     color = mix(color, foamColor, foam * foamIntensity);
 
     float rippleSum = 0.0;
-    for (int i = 0; i < 256; i++) {
+    for (int i = 0; i < 1024; i++) {
         if (i >= uRippleCount) break;
         vec4 pr = uRipplePosRad[i];
         vec4 ssl = uRippleStrSpdLife[i];
