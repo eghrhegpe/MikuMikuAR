@@ -14,8 +14,16 @@ import type { LinesMesh } from '@babylonjs/core/Meshes/linesMesh';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { ShadowGenerator } from '@babylonjs/core/Lights/Shadows/shadowGenerator';
 import { CascadedShadowGenerator } from '@babylonjs/core/Lights/Shadows/cascadedShadowGenerator';
-// ADR-152: 体积光散射后处理
-import { VolumetricLightScatteringPostProcess } from '@babylonjs/core/PostProcesses/volumetricLightScatteringPostProcess';
+// 真实光锥（替代 ADR-152 的屏幕后处理假体积光）
+import {
+    createLightCone,
+    updateLightConeTransform,
+    updateLightConeUniforms,
+    rebuildLightConeGeometry,
+    setLightConeEnabled,
+    disposeLightCone,
+    type LightConeEntry,
+} from './light-cone';
 import type { ModelInstance, PropInstance } from '@/core/config';
 import {
     registerTransformAdapter,
@@ -85,11 +93,11 @@ export interface StageLightState {
     // 指示球体缩放/透明度（UI 大统一 — 与模型/道具共享 buildTransformCard）
     indicatorScale: number;
     indicatorOpacity: number;
-    // ADR-152: 体积光散射（VolumetricLightScatteringPostProcess）
-    volumetricEnabled: boolean;
-    volumetricExposure: number; // 0-1, default 0.3
-    volumetricDecay: number; // 0-1, default 0.9
-    volumetricDensity: number; // 0-1, default 0.5
+    // 真实光锥（锥形光柱可视化）
+    coneEnabled: boolean;
+    coneIntensity: number; // 0-2, default 0.5
+    coneLength: number; // 1-50, default 20
+    coneSoftness: number; // 0-1, default 0.5
 }
 
 function _defaultStageLightState(id: string, name: string): StageLightState {
@@ -118,11 +126,11 @@ function _defaultStageLightState(id: string, name: string): StageLightState {
         orbitDistance: 25,
         indicatorScale: 1,
         indicatorOpacity: 1,
-        // ADR-152: 体积光默认关闭
-        volumetricEnabled: false,
-        volumetricExposure: 0.3,
-        volumetricDecay: 0.9,
-        volumetricDensity: 0.5,
+        // 光锥默认关闭
+        coneEnabled: false,
+        coneIntensity: 0.5,
+        coneLength: 20,
+        coneSoftness: 0.5,
     };
 }
 
@@ -194,6 +202,17 @@ export function initLighting(
     _activeStageLightId = def.id;
     _stageLightCounter = 1;
     _updateIndicator(_stageLights.get(def.id)!);
+
+    // 每帧更新光锥的相机位置 uniform（fresnel 计算需要）
+    _coneUpdateHandle = observe(_scene.onBeforeRenderObservable, () => {
+        const cam = _scene?.activeCamera;
+        if (!cam) {
+            return;
+        }
+        for (const [, cone] of _stageCones) {
+            cone.material.setVector3('u_cameraPos', cam.position);
+        }
+    });
 }
 
 // _createStageLight / _createIndicator / _createDirLine 均仅在 addStageLight
@@ -293,8 +312,6 @@ function _updateIndicator(entry: StageLightEntry): void {
         }
         const indMat = entry.indicator.material as StandardMaterial;
         indMat.alpha = state.indicatorOpacity;
-        // ADR-152 P2: 同步 diffuseColor 给体积光 PostProcess（useDiffuseColor=true 读取此通道）
-        indMat.diffuseColor = light.diffuse.clone();
         entry.indicator.setEnabled(true);
 
         // 聚光灯：显示方向线
@@ -339,9 +356,6 @@ function _disposeIndicator(entry: StageLightEntry): void {
         entry.indicator.material?.dispose();
         entry.indicator.dispose();
         entry.indicator = null;
-        // ADR-152 P1: indicator 被 PostProcess.attachedNode 引用，重建前必须先 dispose 体积光，
-        // _updateIndicator 重建 indicator 后由调用方触发 _ensureStageVolumetric 重新绑定
-        _disposeStageVolumetric(entry.state.id);
     }
     if (entry.dirLine) {
         entry.dirLine.dispose();
@@ -635,12 +649,10 @@ export function rebuildShadowCasters(): void {
 
 const _stageShadows = new Map<string, ShadowGenerator>();
 
-// ADR-152: 体积光 PostProcess 实例映射（light id → PostProcess）
-const _stageVolumetrics = new Map<string, VolumetricLightScatteringPostProcess>();
-/** 同时启用体积光的灯光数上限（性能保护） */
-const MAX_VOLUMETRIC_LIGHTS = 2;
-/** PostProcess 默认 weight（Babylon 文档默认 0.2，经验值） */
-const VOLUMETRIC_DEFAULT_WEIGHT = 0.2;
+// 光锥实例映射（light id → 光锥）
+const _stageCones = new Map<string, LightConeEntry>();
+/** 每帧更新光锥相机位置 uniform 的 observer */
+let _coneUpdateHandle: import('@/core/observer-handle').ObserverHandle | null = null;
 
 export function getStageLights(): StageLightState[] {
     const result: StageLightState[] = [];
@@ -678,15 +690,15 @@ export function setStageLightState(s: Partial<StageLightState>, id?: string): vo
         return;
     }
 
-    // 类型切换：dispose 旧灯 + 旧阴影 + 旧体积光 + 创建新灯
+    // 类型切换：dispose 旧灯 + 旧阴影 + 旧光锥 + 创建新灯
     if (s.type !== undefined && s.type !== entry.state.type) {
         Object.assign(entry.state, s);
         entry.light.dispose();
         _disposeStageShadow(targetId);
-        _disposeStageVolumetric(targetId);
+        _disposeStageCone(targetId);
         entry.light = _createStageLight(s.type, entry.state);
         _ensureStageShadow(targetId);
-        _ensureStageVolumetric(targetId);
+        _ensureStageCone(targetId);
         _updateIndicator(entry);
         // 类型切换后 gizmo 仍指向旧灯（已 dispose），通过适配器重新附着到新灯
         if (_isGizmoActive() && _getGizmoTargetId() === targetId) {
@@ -718,31 +730,34 @@ export function setStageLightState(s: Partial<StageLightState>, id?: string): vo
         _ensureStageShadow(targetId);
     }
 
-    // ADR-152: 体积光重建/更新条件
-    const volumetricKeys = new Set([
+    // 光锥重建/更新条件
+    const coneKeys = new Set([
         'enabled',
-        'volumetricEnabled',
-        'volumetricExposure',
-        'volumetricDecay',
-        'volumetricDensity',
+        'coneEnabled',
+        'coneIntensity',
+        'coneLength',
+        'coneSoftness',
+        'angle',
+        'posX',
+        'posY',
+        'posZ',
+        'targetX',
+        'targetY',
+        'targetZ',
+        'orbitAzimuth',
+        'orbitElevation',
+        'orbitDistance',
+        'color',
     ]);
-    let needVolumetricUpdate = false;
-    for (const key of volumetricKeys) {
+    let needConeUpdate = false;
+    for (const key of coneKeys) {
         if ((s as Record<string, unknown>)[key] !== undefined) {
-            needVolumetricUpdate = true;
+            needConeUpdate = true;
             break;
         }
     }
-    if (needVolumetricUpdate) {
-        const ok = _ensureStageVolumetric(targetId);
-        // P2: 超限拒绝创建时回滚 state，避免 UI 显示 ON 但无效果
-        if (!ok && s.volumetricEnabled === true && entry.state.volumetricEnabled) {
-            entry.state.volumetricEnabled = false;
-            logWarn(
-                'stage-volumetric',
-                `volumetric light limit reached (${MAX_VOLUMETRIC_LIGHTS}), rollback enabled=false for light ${targetId}`
-            );
-        }
+    if (needConeUpdate) {
+        _ensureStageCone(targetId);
     }
 
     // 更新指示器
@@ -773,7 +788,7 @@ export function addStageLight(
     _stageLights.set(id, entry);
     _activeStageLightId = id;
     _ensureStageShadow(id);
-    _ensureStageVolumetric(id);
+    _ensureStageCone(id);
     _updateIndicator(entry);
     if (triggerAutoSave && !_skipLightAutoSave) {
         triggerAutoSave();
@@ -792,7 +807,7 @@ export function removeStageLight(id: string): boolean {
     _disposeIndicator(entry);
     entry.light.dispose();
     _disposeStageShadow(id);
-    _disposeStageVolumetric(id);
+    _disposeStageCone(id);
     _stageLights.delete(id);
     if (_activeStageLightId === id) {
         _activeStageLightId = _stageLights.keys().next().value ?? null;
@@ -815,12 +830,16 @@ export function disposeLighting(): void {
         if (sg) {
             sg.dispose();
         }
-        // ADR-152: 清理体积光
-        _disposeStageVolumetric(entry.state.id);
+        // 清理光锥
+        _disposeStageCone(entry.state.id);
     }
     _stageLights.clear();
     _stageShadows.clear();
-    _stageVolumetrics.clear();
+    _stageCones.clear(); // _disposeStageCone 已在上方循环中逐个释放
+    if (_coneUpdateHandle) {
+        _coneUpdateHandle.dispose();
+        _coneUpdateHandle = null;
+    }
     _stageLightCounter = 0;
     _activeStageLightId = null;
     // 清理主灯光
@@ -850,11 +869,11 @@ export function loadStageLights(states: StageLightState[]): void {
         _disposeStageShadow(sid);
     }
     _stageShadows.clear();
-    // ADR-152: 清空体积光
-    for (const [vid] of _stageVolumetrics) {
-        _disposeStageVolumetric(vid);
+    // 清空光锥
+    for (const [cid, cone] of _stageCones) {
+        disposeLightCone(cone);
     }
-    _stageVolumetrics.clear();
+    _stageCones.clear();
 
     if (states.length === 0) {
         const def = _defaultStageLightState('light-1', '主光');
@@ -864,7 +883,7 @@ export function loadStageLights(states: StageLightState[]): void {
         _activeStageLightId = def.id;
         _stageLightCounter = 1;
         _ensureStageShadow(def.id);
-        _ensureStageVolumetric(def.id);
+        _ensureStageCone(def.id);
         _updateIndicator(entry);
         return;
     }
@@ -875,7 +894,7 @@ export function loadStageLights(states: StageLightState[]): void {
         const entry: StageLightEntry = { state: { ...s }, light, indicator: null, dirLine: null };
         _stageLights.set(s.id, entry);
         _ensureStageShadow(s.id);
-        _ensureStageVolumetric(s.id);
+        _ensureStageCone(s.id);
         _updateIndicator(entry);
         const m = s.id.match(/light-(\d+)/);
         if (m) {
@@ -909,11 +928,11 @@ function _readStageLightState(entry: StageLightEntry): StageLightState {
         ...state,
         indicatorScale: state.indicatorScale ?? 1,
         indicatorOpacity: state.indicatorOpacity ?? 1,
-        // ADR-152: 旧存档兼容（undefined → 默认值）
-        volumetricEnabled: state.volumetricEnabled ?? false,
-        volumetricExposure: state.volumetricExposure ?? 0.3,
-        volumetricDecay: state.volumetricDecay ?? 0.9,
-        volumetricDensity: state.volumetricDensity ?? 0.5,
+        // 光锥字段（兼容旧存档 volumetric* → cone*）
+        coneEnabled: state.coneEnabled ?? (state as unknown as Record<string, unknown>).volumetricEnabled as boolean ?? false,
+        coneIntensity: state.coneIntensity ?? (state as unknown as Record<string, unknown>).volumetricExposure as number ?? 0.5,
+        coneLength: state.coneLength ?? 20,
+        coneSoftness: state.coneSoftness ?? (state as unknown as Record<string, unknown>).volumetricDensity as number ?? 0.5,
         intensity: light.intensity,
         color: [light.diffuse.r, light.diffuse.g, light.diffuse.b],
         posX: light.position.x,
@@ -1061,113 +1080,71 @@ function _disposeStageShadow(id: string): void {
     }
 }
 
-// ======== ADR-152: 体积光散射（Volumetric Light Scattering） ========
+// ======== 真实光锥（替代 ADR-152 的屏幕后处理假体积光） ========
 
 /**
- * 确保指定舞台灯的体积光 PostProcess 与 state 同步（按需创建/销毁/更新参数）。
- * @returns true 表示已激活（或已存在），false 表示因关闭/超限/无 indicator 等原因未激活
+ * 确保指定舞台灯的光锥与 state 同步（按需创建/销毁/更新）。
+ * 仅 SpotLight 支持光锥；PointLight / DirectionalLight 自动跳过。
  */
-function _ensureStageVolumetric(id: string): boolean {
-    if (!_scene) {
-        return false;
-    }
-    const entry = _stageLights.get(id);
-    if (!entry) {
-        _disposeStageVolumetric(id);
-        return false;
-    }
-    const state = entry.state;
-
-    // 关闭或不满足条件 → 释放后返回
-    if (!state.enabled || !state.volumetricEnabled) {
-        _disposeStageVolumetric(id);
-        return false;
-    }
-
-    // P3 防御：indicator 必须存在（PostProcess.attachedNode 需要有效引用）
-    if (!entry.indicator) {
-        // 强制先创建 indicator（_updateIndicator 内部会按需创建）
-        _updateIndicator(entry);
-        if (!entry.indicator) {
-            return false;
-        }
-    }
-
-    // 性能保护：超过上限拒绝创建（已存在的保留）
-    const existing = _stageVolumetrics.get(id);
-    if (!existing && _stageVolumetrics.size >= MAX_VOLUMETRIC_LIGHTS) {
-        return false;
-    }
-
-    const camera = _scene.activeCamera;
-    if (!camera) {
-        return false;
-    }
-
-    // 参数变更时更新（exposure/decay/density 支持热更新）
-    if (existing) {
-        existing.exposure = state.volumetricExposure;
-        existing.decay = state.volumetricDecay;
-        existing.density = state.volumetricDensity;
-        return true;
-    }
-
-    try {
-        const pp = new VolumetricLightScatteringPostProcess(
-            `stage-volumetric-${id}`,
-            1.0, // 全屏分辨率
-            camera,
-            entry.indicator, // 复用位置指示球作为光源 mesh（P1：indicator 重建时同步重建 PP，见 _disposeIndicator）
-            100 // samples
-        );
-        pp.exposure = state.volumetricExposure;
-        pp.decay = state.volumetricDecay;
-        pp.density = state.volumetricDensity;
-        pp.weight = VOLUMETRIC_DEFAULT_WEIGHT;
-        pp.useDiffuseColor = true; // 用 indicator 的 diffuse color 作为光色（P2：由 _updateIndicator 同步）
-        _stageVolumetrics.set(id, pp);
-        return true;
-    } catch (e) {
-        console.warn('[stage-volumetric] create failed:', e);
-        return false;
-    }
-}
-
-/** 释放指定舞台灯的体积光 PostProcess */
-function _disposeStageVolumetric(id: string): void {
-    const pp = _stageVolumetrics.get(id);
-    if (pp) {
-        try {
-            // PostProcess.dispose(camera) 签名要求 camera 必传
-            const cam = _scene?.activeCamera ?? null;
-            if (cam) {
-                pp.dispose(cam);
-            } else {
-                // 相机已销毁，直接从 map 移除（PostProcess 会随 scene 自动 GC）
-            }
-        } catch (e) {
-            console.warn('[stage-volumetric] dispose failed:', e);
-        }
-        _stageVolumetrics.delete(id);
-    }
-}
-
-/**
- * 相机切换后重建所有活跃的体积光（由 renderer.reattachPipeline 调用）。
- * PostProcess 构造时绑定的相机失效后必须重建。
- */
-export function reattachStageVolumetrics(): void {
+function _ensureStageCone(id: string): void {
     if (!_scene) {
         return;
     }
-    // 收集所有需要保留的 id（先 dispose，再用新相机重建）
-    const ids: string[] = [];
-    for (const [id] of _stageVolumetrics) {
-        ids.push(id);
-        _disposeStageVolumetric(id);
+    const entry = _stageLights.get(id);
+    if (!entry) {
+        _disposeStageCone(id);
+        return;
     }
-    for (const id of ids) {
-        _ensureStageVolumetric(id);
+    const state = entry.state;
+
+    // 关闭或非 SpotLight → 释放
+    if (!state.enabled || !state.coneEnabled || state.type !== 'spot') {
+        _disposeStageCone(id);
+        return;
+    }
+
+    const light = entry.light;
+    if (!(light instanceof SpotLight)) {
+        _disposeStageCone(id);
+        return;
+    }
+
+    const existing = _stageCones.get(id);
+    const color = col3FromTriple(state.color);
+
+    if (existing) {
+        // 锥长/锥角变化 → 重建几何
+        rebuildLightConeGeometry(existing, _scene, light, state.coneLength);
+        // 更新 transform（位置/朝向）
+        updateLightConeTransform(existing, light, state.coneLength);
+        // 更新 uniforms
+        updateLightConeUniforms(existing, color, state.coneIntensity, state.coneSoftness, state.coneLength);
+        setLightConeEnabled(existing, true);
+        return;
+    }
+
+    // 创建新光锥
+    try {
+        const cone = createLightCone(
+            _scene,
+            light,
+            color,
+            state.coneIntensity,
+            state.coneLength,
+            state.coneSoftness
+        );
+        _stageCones.set(id, cone);
+    } catch (e) {
+        logWarn('light-cone', `create light cone failed for ${id}: ${e}`);
+    }
+}
+
+/** 释放指定舞台灯的光锥 */
+function _disposeStageCone(id: string): void {
+    const cone = _stageCones.get(id);
+    if (cone) {
+        disposeLightCone(cone);
+        _stageCones.delete(id);
     }
 }
 

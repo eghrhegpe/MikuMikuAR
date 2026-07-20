@@ -18,7 +18,7 @@ import { resetPerformanceSnapshot, isSnapshotResetSuppressed } from './performan
 import { clamp, clamp01, lerp, lerpArray, setKey } from '@/core/utils';
 import { logWarn } from '@/core/logger';
 import type { EnvState } from '@/core/config';
-import { dirLight, reattachStageVolumetrics } from './lighting';
+import { dirLight } from './lighting';
 
 // ======== Tone Mapping Modes ========
 
@@ -956,12 +956,7 @@ export function reattachPipeline(): void {
                 // Intentionally empty — SSAO pipeline dispose 失败不影响主流程
             }
         }
-        // ADR-152: 舞台灯体积光 PostProcess 同样需要重建（绑定的是旧相机）
-        try {
-            reattachStageVolumetrics();
-        } catch {
-            // Intentionally empty — 体积光重建失败不影响主渲染流程
-        }
+        // 光锥是普通 Mesh，无需相机切换重建（替代 ADR-152 的 PostProcess 方案）
     }
 }
 
