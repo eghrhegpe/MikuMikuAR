@@ -1059,7 +1059,7 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
     stoneTile: {
         label: '石板',
         groundStyle: 'texture',
-        groundDecoStyle: 'grid',
+        groundDecoStyle: 'none',
         groundColor: [0.35, 0.33, 0.3],
         groundAlpha: 1,
         groundPattern: 'checker',
