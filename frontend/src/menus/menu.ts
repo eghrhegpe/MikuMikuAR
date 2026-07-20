@@ -4,6 +4,7 @@ import { slideRow, addSliderRow, addToggleRow, addModeSlider, addPresetChip } fr
 import { createTrailingBtn, createLeadingBtn } from '../core/ui-slide-row';
 import { subscribe } from '../core/reactivity';
 import { t } from '../core/i18n/t';
+import { getLang } from '../core/i18n/locale';
 import { logWarn } from '../core/logger';
 import { safeCallAsync } from '../core/safe-call';
 import { safeDispose } from '../core/dispose-helpers';
@@ -49,6 +50,8 @@ export class SlideMenu {
     private _controls: Array<{ update: () => void }> = [];
     /** 响应式订阅取消函数 — dispose 时调用 */
     private _unsubscribe: (() => void) | null = null;
+    /** 记录上一次语言码，供 updateControls 检测 i18n 热切换（ADR-065） */
+    private _lastLang: string = getLang();
 
     onItemClick?: (row: PopupRow, menu: SlideMenu) => void;
     onFolderEnter?: (
@@ -377,9 +380,18 @@ export class SlideMenu {
         for (const c of this._controls) {
             c.update();
         }
+        const level = this.currentLevel;
+        // [doc:adr-065] i18n 热切换：语言变化时，renderCustom 层级的 schema 标签与自定义 DOM
+        // 均在渲染期经 t() 求值，须全量重建当前层才能刷新（纯 items 层由下方 itemBuilder patch 覆盖）。
+        const lang = getLang();
+        if (lang !== this._lastLang) {
+            this._lastLang = lang;
+            if (level?.renderCustom && this.panel.querySelector('.slide-list')) {
+                this.reRender({ preserveFocus: true });
+            }
+        }
         // [doc:adr-065] 纯 items 层级语言热刷新：当前层持有 itemBuilder 时，
         // 重建 items 并增量 patch（仅当面板已渲染——避免对未打开/已 dispose 的菜单误触发全量 buildPanel）。
-        const level = this.currentLevel;
         if (level?.itemBuilder && this.panel.querySelector('.slide-list')) {
             level.items = level.itemBuilder();
             this.patchPanel(level.items);

@@ -1468,4 +1468,28 @@ describe('SlideMenu — ADR-065 纯 items 层级语言热刷新', () => {
         await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
         expect(container.querySelector('.slide-label')?.textContent).toBe('Appearance');
     });
+
+    it('setLang → renderCustom 层级标签热切换（ADR-065 全量重建路径）', async () => {
+        // renderCustom 内的文本在渲染期经 t() 求值（等价于 renderMenu 的 schema 标签），
+        // 语言切换后须由 updateControls 触发全量重建才能刷新。
+        const level: PopupLevel = {
+            label: '根',
+            dir: '',
+            items: [],
+            renderCustom: (c) => {
+                const title = document.createElement('div');
+                title.className = 'section-title';
+                title.textContent = t('settings.appearance');
+                c.appendChild(title);
+            },
+        };
+        menu.reset(level);
+        await new Promise((r) => requestAnimationFrame(r));
+        expect(container.querySelector('.section-title')?.textContent).toBe('外观');
+
+        setLang('en');
+        // scheduleRefresh → RAF → updateControls 检测语言变化 → reRender → RAF → buildPanel 全量重建
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+        expect(container.querySelector('.section-title')?.textContent).toBe('Appearance');
+    });
 });
