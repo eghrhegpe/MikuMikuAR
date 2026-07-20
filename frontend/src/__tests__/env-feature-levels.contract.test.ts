@@ -3,7 +3,7 @@
 // 拆分前锁住 8 个 build*Level 函数的签名与返回值形状。
 // 拆分后该测试必须仍绿，确保搬迁不破坏接口契约。
 //
-// 注意：env-feature-levels.ts 在模块加载时触发 new Scene(engine)，
+// 注意：env-*-levels.ts 在模块加载时触发 new Scene(engine)，
 // 必须 mock 掉 Babylon.js 引擎和 scene 模块。
 
 import { describe, it, expect, vi, beforeAll } from 'vitest';
@@ -11,19 +11,19 @@ import { describe, it, expect, vi, beforeAll } from 'vitest';
 // ── Mock 重依赖链 ────────────────────────────────────────────────
 // 用 importOriginal 模式保留原始模块的大部分导出，仅覆盖特定字段
 
-// env-feature-levels.ts → scene/scene.ts → new Scene(engine)
+// env-sky/cloud/ground/water/wind-levels.ts → scene/scene.ts → new Scene(engine)
 vi.mock('../scene/scene', () => ({
     setEnvState: vi.fn(),
     scene: { onBeforeRenderObservable: { add: vi.fn(), remove: vi.fn() } },
 }));
 
-// env-feature-levels.ts → scene/render/lighting
+// env-sky/shadow-levels.ts → scene/render/lighting
 vi.mock('../scene/render/lighting', () => ({
     getLightState: vi.fn(() => ({ shadowResolution: 1024 })),
     setLightState: vi.fn(),
 }));
 
-// env-feature-levels.ts → scene/env/env-water
+// env-water-levels.ts → scene/env/env-water
 vi.mock('../scene/env/env-water', () => ({
     WATER_PRESETS: {},
     applyWaterPresetToCurrent: vi.fn(),
@@ -32,40 +32,40 @@ vi.mock('../scene/env/env-water', () => ({
     createWater: vi.fn(),
 }));
 
-// env-feature-levels.ts → scene/env/env-ground
+// env-ground-levels.ts → scene/env/env-ground
 vi.mock('../scene/env/env-ground', () => ({
     GROUND_PRESETS: {},
     buildGroundPresetEnvState: vi.fn(() => ({})),
 }));
 
-// env-feature-levels.ts → scene/env/env-lighting
+// env-sky-levels.ts → scene/env/env-lighting
 vi.mock('../scene/env/env-lighting', () => ({
     TIME_OF_DAY_PRESETS: {},
 }));
 
-// env-feature-levels.ts → scene/env/env-bridge
+// env-sky-levels.ts → scene/env/env-bridge
 vi.mock('../scene/env/env-bridge', () => ({
     applyEnvPreset: vi.fn(),
 }));
 
-// env-feature-levels.ts → ./env-menu
+// env-level-helpers/ground/water-levels.ts → ./env-menu-state（env-menu.ts barrel re-export）
 vi.mock('../menus/env-menu', () => ({
     getEnvMenu: vi.fn(() => ({ reRender: vi.fn() })),
     setEnvTextureBindingTarget: vi.fn(),
     EnvTextureBindingTarget: {},
 }));
 
-// env-feature-levels.ts → ./scene-menu
+// env-ground-levels.ts → ./scene-menu
 vi.mock('../menus/scene-menu', () => ({
     getSceneMenu: vi.fn(() => null),
 }));
 
-// env-feature-levels.ts → ./render-menu
+// 全部 env-*-levels.ts → ./render-menu
 vi.mock('../menus/render-menu', () => ({
     renderMenu: vi.fn(),
 }));
 
-// env-feature-levels.ts → ../core/state — 保留原始导出，只覆盖 activeTimeOfDayPreset/setActiveTimeOfDayPreset
+// env-sky-levels.ts → ../core/state — 保留原始导出，只覆盖 activeTimeOfDayPreset/setActiveTimeOfDayPreset
 vi.mock('../core/state', async (importOriginal) => {
     const actual = await importOriginal();
     return {
@@ -75,7 +75,7 @@ vi.mock('../core/state', async (importOriginal) => {
     };
 });
 
-// env-feature-levels.ts → ../core/utils
+// env-level-helpers.ts → ../core/utils
 vi.mock('../core/utils', async (importOriginal) => {
     const actual = await importOriginal();
     return {
@@ -84,7 +84,7 @@ vi.mock('../core/utils', async (importOriginal) => {
     };
 });
 
-// env-feature-levels.ts → ../core/config — 覆盖 envState 和 cardContainer 等
+// 全部 env-*-levels.ts + env-level-helpers.ts → ../core/config — 覆盖 envState 和 cardContainer 等
 vi.mock('../core/config', async (importOriginal) => {
     const actual = await importOriginal();
     return {
