@@ -38,7 +38,6 @@ export function _openTexturePicker(
     noCloseOverlay?: boolean,
     pushMenu?: import('./menu').SlideMenu | null
 ): void {
-    setEnvTextureBindingTarget(target);
     if (!noCloseOverlay) {
         closeAllOverlays();
     }
@@ -52,6 +51,7 @@ export function _openTexturePicker(
         }
         return;
     }
+    setEnvTextureBindingTarget(target);
     const level = stackRegistry.buildLevel(
         browseDir ?? getBrowseDir('environment'),
         label,

@@ -55,7 +55,8 @@ vi.mock('../menus/env-menu', () => ({
     EnvTextureBindingTarget: {},
 }));
 
-// env-ground-levels.ts → ./scene-menu
+// env-ground-levels.ts → ./scene-menu-state（scene-menu-state.ts 默认返回 null，无需显式 mock）
+// 保留 scene-menu mock 防止 importActual 链意外加载真实 scene-menu 模块触发 side-effect
 vi.mock('../menus/scene-menu', () => ({
     getSceneMenu: vi.fn(() => null),
 }));

@@ -63,6 +63,8 @@ vi.mock('../scene/env/env', () => ({
     })),
 }));
 
+// scene-stage-levels.ts → ./scene-menu-state（scene-menu-state.ts 默认返回 null，无需显式 mock）
+// 保留 scene-menu mock 防止 importActual 链意外加载真实 scene-menu 模块触发 side-effect
 vi.mock('./scene-menu', () => ({
     reRenderSceneMenu: vi.fn(),
     getSceneMenu: vi.fn(() => ({ push: mockPush })),
