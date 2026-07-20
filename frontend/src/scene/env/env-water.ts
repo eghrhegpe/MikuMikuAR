@@ -89,7 +89,25 @@ let _activeWaterLOD = -1; // 手动 LOD 当前层级：-1=未初始化, 0=high, 
 let _waterPhase = 0; // 累计波相位，避免调节波速时相位跳变
 let _waterWaveSpeed = 1; // 当前波速，供每帧相位累加使用
 
-// === 每帧更新水面的 observer ===
+// Gerstner 波参数（与 water.vert.glsl 中 WAVE_SPEED/WAVE_FREQ 保持一致）
+const _GERSTNER_WAVE_FREQ = [0.15, 0.2, 0.25, 0.3] as const;
+const _GERSTNER_WAVE_SPEED = [0.7, 0.9, 0.5, 1.2] as const;
+
+/**
+ * ADR-115 P2: 动态计算细节法线滚动速度倍率。
+ * 基于 Gerstner 波相位的瞬时速度（WAVE_SPEED/WAVE_FREQ）同步法线纹理 UV 滚动，
+ * 保证大波高时法线滚动快、小波高时滚动慢，与顶点波形运动一致。
+ * @param waveSpeedMultiplier 当前波速倍率（来自 state.waterAnimSpeed，默认 1.0）
+ * @returns [speed1, speed2] 大/小尺度法线层的滚动倍率（正值沿风向）
+ */
+function computeDetailNormalSpeeds(waveSpeedMultiplier = 1): [number, number] {
+    // 第 0 层（大波组代表层）：speed/freq，决定大尺度法线滚动基准
+    const baseSpeed = _GERSTNER_WAVE_SPEED[0] / _GERSTNER_WAVE_FREQ[0]; // ≈ 4.67
+    // 大尺度层：与主波同速；小尺度层：稍慢（反向交错感）
+    const speed1 = baseSpeed * waveSpeedMultiplier; // 沿风向滚动
+    const speed2 = baseSpeed * waveSpeedMultiplier * 0.55; // 反向，0.55:1 比例（两层不重复）
+    return [speed1, speed2];
+}
 let _waterUpdateObserver: ObserverHandle | null = null;
 let _waterScene: Scene | null = null;
 
@@ -259,9 +277,10 @@ let _lastCausticColor: [number, number, number] | null = null;
 const CAUSTIC_TEX_SIZE = 128;
 
 // ADR-115 P1: 高频法线细节纹理（程序化生成，单例，不随水色变化）
+// P1 增强：1024×1024 + 6 层 octave + 波峰锐化 → 高光密度 + 锐度提升
 let _detailNormalTexture: Texture | null = null;
 let _detailNormalScene: Scene | null = null;
-const DETAIL_NORMAL_TEX_SIZE = 512;
+const DETAIL_NORMAL_TEX_SIZE = 1024;
 
 function regenerateCausticTexture(scene: Scene, waterColor: [number, number, number]): void {
     const S = CAUSTIC_TEX_SIZE;
@@ -369,17 +388,19 @@ function regenerateDetailNormalTexture(scene: Scene): void {
         const data = imgData.data;
         const heights = new Float32Array(s * s);
 
-        // 4 层 octave 叠加生成高度图
+        // P1 增强：6 层 octave（原来 4 层）→ 高频细节更密集，波光更多
         for (let y = 0; y < s; y++) {
             for (let x = 0; x < s; x++) {
                 let h = 0,
                     amp = 1,
                     freq = 1;
-                for (let oct = 0; oct < 4; oct++) {
+                for (let oct = 0; oct < 6; oct++) {
                     h += _valueNoise((x * freq) / s, (y * freq) / s) * amp;
                     amp *= 0.5;
                     freq *= 2;
                 }
+                // P1 增强：幂函数锐化（原来线性），波峰更尖，高光更亮
+                h = Math.pow(h, 0.8);
                 heights[y * s + x] = h;
             }
         }
@@ -485,13 +506,11 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     // tiling2=1.5 → 细尺度 ≈0.67 单位；两层保持 3:1 比例，层次不丢
     mat.setFloat('uDetailNormalTiling1', 0.5);
     mat.setFloat('uDetailNormalTiling2', 1.5);
-    // 波浪联动：法线纹理 UV 沿风向以 wavePhase 滚动（替代旧版 time*constSpeed 静态平移）
-    // windDirs / uWindDir 在下方 :534-535 统一计算，此处先占位 wavePhase
-    mat.setFloat('wavePhase', _waterPhase);
-    // uDetailWindDir 在下方紧接 uWindDir 设置后赋值（:536 后）
-    // 旧速度 uniform 保留（frag 不再读取，零回归安全）
-    mat.setFloat('uDetailNormalSpeed1', 0.05);
-    mat.setFloat('uDetailNormalSpeed2', -0.08);
+    // P2 修复：删除 dead code，改为动态计算速度（与 Gerstner 波相位同步）
+    const waveAnimSpeed = state.waterAnimSpeed ?? 1;
+    const [speed1, speed2] = computeDetailNormalSpeeds(waveAnimSpeed);
+    mat.setFloat('uDetailNormalSpeed1', speed1);
+    mat.setFloat('uDetailNormalSpeed2', speed2);
     mat.setFloat('uGlintStrength', state.waterGlintStrength);
     mat.setFloat('uGlintPower', 96);
     mat.setFloat('uGlintScale', 80.0);
@@ -733,6 +752,10 @@ function _waterUpdateCallback(scene: Scene): void {
     _waterPhase += dt * _waterWaveSpeed;
     m.setFloat('time', now);
     m.setFloat('wavePhase', _waterPhase);
+    // P2: 每帧同步法线滚动速度（用户调整波速时实时响应）
+    const [speed1, speed2] = computeDetailNormalSpeeds(envState.waterAnimSpeed ?? 1);
+    m.setFloat('uDetailNormalSpeed1', speed1);
+    m.setFloat('uDetailNormalSpeed2', speed2);
     const cam = scene.activeCamera;
     if (cam) {
         m.setVector3('cameraPosition', cam.position);

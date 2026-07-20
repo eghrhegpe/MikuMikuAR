@@ -44,8 +44,9 @@ uniform sampler2D uDetailNormalTex;   // 程序化生成的法线细节纹理
 uniform float uDetailNormalStrength;  // 细节法线整体强度（默认 0.3，0=关闭零回归）
 uniform float uDetailNormalTiling1;   // 第一层平铺（默认 0.1）
 uniform float uDetailNormalTiling2;   // 第二层平铺（默认 0.3）
-uniform float uDetailNormalSpeed1;    // 第一层滚动速度（默认 0.05）
-uniform float uDetailNormalSpeed2;    // 第二层滚动速度（默认 -0.08）
+// ADR-115 P2: 法线滚动速度倍率（由 TS 端基于 WAVE_SPEED/WAVE_FREQ 动态计算，驱动 wavePhase→UV 滚动）
+uniform float uDetailNormalSpeed1;
+uniform float uDetailNormalSpeed2;
 uniform float uGlintStrength;         // Sun Glitter 闪烁强度（默认 0，0=关闭）
 uniform float uGlintPower;            // 高光锐利度（默认 96）
 uniform float uGlintScale;            // 噪声颗粒大小（默认 80.0）
@@ -117,12 +118,11 @@ void main() {
     // uDetailNormalStrength == 0 时 gerstnerScale = 1.0，完全恢复 Gerstner 原貌（零回归）
     float gerstnerScale = uDetailNormalStrength > 0.0 ? 0.7 : 1.0;
 
-    // 双层法线采样：UV 沿风向滚动，相位与 Gerstner 波浪同步
-    // 滚动速度对齐大浪波峰速度（WAVE_SPEED/WAVE_FREQ ≈ 4~4.7 单位/秒），之前 1.5/0.8 慢了约 3 倍
+    // 双层法线采样：UV 沿风向滚动，速度由 TS 端基于 WAVE_SPEED/WAVE_FREQ 动态计算
     // 大尺度层（tiling 小）滚动更快，细尺度层（tiling 大）稍慢，符合真实水面
     vec2 wind = uDetailWindDir;
-    vec2 nUV1 = vWorldPos.xz * uDetailNormalTiling1 + wind * wavePhase * 4.5;
-    vec2 nUV2 = vWorldPos.xz * uDetailNormalTiling2 - wind * wavePhase * 2.5; // 反向产生交错感
+    vec2 nUV1 = vWorldPos.xz * uDetailNormalTiling1 + wind * wavePhase * uDetailNormalSpeed1;
+    vec2 nUV2 = vWorldPos.xz * uDetailNormalTiling2 - wind * wavePhase * uDetailNormalSpeed2; // 反向产生交错感
     // 纹理编码：R=世界X, G=世界Z, B=世界Y(上)
     vec3 n1 = texture2D(uDetailNormalTex, nUV1).rgb * 2.0 - 1.0;
     vec3 n2 = texture2D(uDetailNormalTex, nUV2).rgb * 2.0 - 1.0;
@@ -195,17 +195,21 @@ void main() {
     color += diff * lightColor * diffuseStrength * max(lightIntensity * 1.2, 0.05);
     color += ambientIntensity * finalWaterColor * ambientStrength;
 
-    // ======== ADR-115 P1: Sun Glitter（镜面闪烁高光）========
-    // hash 噪声调制，制造"跳动"感；仅 uGlintStrength > 0 时生效（零回归）
+    // ======== ADR-115 P3: Sun Glitter（法线微扰驱动高光跳跃）========
+    // 旧版：hash 调制固定高光的亮度 → 高光位置不动，亮度闪烁，视觉假
+    // 新版：用细节法线微扰反射方向 → 高光位置随波跳动，真正"粼粼"感
+    // 仅 uGlintStrength > 0 时生效（零回归）
     if (uGlintStrength > 0.0) {
+        // n1 已在上面计算，是第一层法线纹理采样结果
+        // 用法线微扰反射向量：局部倾斜导致高光位置偏移
+        vec3 glintReflect = reflect(-viewDir, normalize(normal + n1 * uDetailNormalStrength * 0.8));
+        // hash 噪声决定每个 fragment 的闪烁时刻（不是亮度，而是"是否闪烁"的概率）
         vec2 glitterUV = vWorldPos.xz * uGlintScale + time * uGlintSpeed;
-        float noiseVal = hash12(floor(glitterUV));
-        float noiseVal2 = hash12(floor(glitterUV * 3.7 + 13.0));
-        float glitterNoise = mix(noiseVal, noiseVal2, 0.3);
-        // 窄域 specular：reflectDir 已含细节法线扰动，自然产生波光
-        float spec = pow(max(dot(reflectDir, normalize(lightDir)), 0.0), uGlintPower);
-        // 乘以 diffuse 作为 mask：仅在迎光面闪烁；乘强度避免暗光下仍强闪
-        float glitter = diff * spec * (0.6 + 0.8 * glitterNoise) * uGlintStrength * lightIntensity;
+        float spark = hash12(floor(glitterUV));
+        // 窄域 specular：微扰后 reflectDir 产生随机偏移的高光
+        float spec = pow(max(dot(glintReflect, normalize(lightDir)), 0.0), uGlintPower);
+        // 阈值化：只保留超过概率阈值的高光，其余丢弃（制造"星点"感而非整体泛光）
+        float glitter = step(0.7, spark) * spec * uGlintStrength * lightIntensity;
         color += lightColor * glitter;
     }
 
