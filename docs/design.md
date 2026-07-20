@@ -95,7 +95,7 @@ function renderMenu(schema: MenuNode[], container: HTMLElement): () => void
 
 ### visibleWhen 条件守卫
 
-返回 `false` 时该节点不渲染。用于按状态条件显示子参数（如 SSR 开启时才显示 SSR 子参数、多灯时才显示删除按钮）。
+返回 `false` 时该节点不渲染。用于按状态条件显示子参数（如地面 PBR 开启时才显示金属度/粗糙度子参数、多灯时才显示删除按钮）。
 
 ### renderCustom 逃生舱与 dispose 契约
 
