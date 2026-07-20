@@ -18,7 +18,7 @@ import {
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
-import { refreshSceneRoot } from './scene-menu';
+import { refreshSceneRoot } from './scene-menu-state';
 import { addSliderRow, addToggleRow } from '../core/ui-helpers';
 
 /**

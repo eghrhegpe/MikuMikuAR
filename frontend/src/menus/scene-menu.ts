@@ -42,7 +42,7 @@ import { buildGroundLevel } from './env-ground-levels';
 import { buildWaterLevel } from './env-water-levels';
 import { envState } from '../core/state';
 import { getEnvTextureBindingTarget, clearEnvTextureBindingTarget } from './env-menu';
-import { setSceneMenu } from './scene-menu-state';
+import { setSceneMenu, setRefreshSceneRoot, reRenderSceneMenu } from './scene-menu-state';
 import {
     setMirrorSize,
     getMirrorInfo,
@@ -85,15 +85,14 @@ const {
     },
 });
 
-export { getSceneMenu, refreshSceneRoot, showSceneMenu };
+export { getSceneMenu, showSceneMenu };
 
-// 注册到 scene-menu-state.ts，供 scene-*-levels.ts / env-ground-levels.ts 通过 getSceneMenu() 获取菜单实例
+// 注册到 scene-menu-state.ts，供 scene-*-levels.ts / env-ground-levels.ts 获权访问
 setSceneMenu(getSceneMenu());
+setRefreshSceneRoot(refreshSceneRoot);
 
-/** 安全 reRender：菜单可能正在 async 重建中（showSceneMenu 的 await 期间），此时 sceneMenu 为 null。 */
-export function reRenderSceneMenu(): void {
-    getSceneMenu()?.reRender();
-}
+// 从 scene-menu-state.ts 再导出，切断子文件与 scene-menu 的直接 import 路径
+export { reRenderSceneMenu, refreshSceneRoot } from './scene-menu-state';
 
 // 当库扫描完成时，如果场景菜单已打开则 reRender，
 // 使道具面板等依赖 allModels 的 renderCustom 回调拿到最新数据。

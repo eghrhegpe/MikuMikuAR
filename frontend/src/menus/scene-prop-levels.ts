@@ -4,7 +4,7 @@
 import { cardContainer, propRegistry } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { addCollapsible } from '../core/ui-helpers';
-import { getSceneMenu } from './scene-menu';
+import { getSceneMenu } from './scene-menu-state';
 import {
     buildTransformCard,
     buildMaterialCard,
