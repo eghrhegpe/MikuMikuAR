@@ -142,7 +142,8 @@ const waterReflection = new PlanarReflection({
     mode: 'screenSpace',
     resolutionMap: { high: 2048, medium: 1024, low: 512, off: 0 },
     getQuality: (s) => {
-        if (s.reflectionQuality !== 'off') {
+        // reflectionQuality 显式指定（含 'off'）直接返回；仅当值不在合法列表时 fallback
+        if (['high', 'medium', 'low', 'off'].includes(s.reflectionQuality)) {
             return s.reflectionQuality;
         }
         const map: Record<string, string> = { high: 'high', medium: 'medium', low: 'low' };
