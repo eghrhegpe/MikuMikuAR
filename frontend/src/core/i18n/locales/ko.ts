@@ -695,6 +695,7 @@ export const ko: Record<string, string> = {
     'scene.volumetric': '볼륨 라이트',
     'scene.decay': '감쇠',
     'scene.density': '밀도',
+    'scene.volumetricLimitReached': '볼륨 라이트 한도에 도달했습니다. 다른 라이트를 먼저 꺼주세요',
     'scene.positionOrbit': '위치 (궤도)',
     'scene.horizontalAngle': '수평 각도',
     'scene.elevationAngle': '고도 각도',

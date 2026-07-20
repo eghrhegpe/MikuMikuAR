@@ -247,6 +247,11 @@ function buildStageLightSchema(): MenuNode[] {
                         onChange: (v) => {
                             setStageLightState({ volumetricEnabled: v }, state.id);
                             getSceneMenu()?.updateControls();
+                            // ADR-152 P2: 超限时 state 被回滚，提示用户
+                            const updated = getStageLights().find((l) => l.id === state.id);
+                            if (v && !updated?.volumetricEnabled) {
+                                setStatus(t('scene.volumetricLimitReached'), true);
+                            }
                         },
                         bind: () => {
                             const lights = getStageLights();

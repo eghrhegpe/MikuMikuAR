@@ -4,6 +4,7 @@
 
 import { logWarn } from './logger';
 import { addDisposableListener } from './dom';
+import { createFocusTrap } from './ui-focus-trap';
 
 // 用 WeakMap 存储 overlay 清理函数，避免 DOM 属性污染
 const _cleanupMap = new WeakMap<HTMLElement, () => void>();
@@ -37,6 +38,7 @@ let currentState: OverlayState = 'CLOSED';
 let currentOverlay: FullscreenOverlayHandle | null = null;
 let _slideMenuFrozen = false;
 let frozenSlideMenuElement: HTMLElement | null = null;
+let _trapRestore: (() => void) | null = null;
 
 // ======== State Transitions ========
 
@@ -58,6 +60,7 @@ export function openFullscreen(options: FullscreenOverlayOptions): FullscreenOve
         getElement: () => overlay,
     };
     currentState = 'FULLSCREEN';
+    _trapRestore = createFocusTrap({ container: overlay, onEscape: closeFullscreen });
 
     return currentOverlay;
 }
@@ -68,6 +71,8 @@ export function closeFullscreen(): void {
     }
 
     // 移除 Overlay 并清理事件监听
+    _trapRestore?.();
+    _trapRestore = null;
     if (currentOverlay) {
         const element = currentOverlay.getElement();
         const cleanup = _cleanupMap.get(element);

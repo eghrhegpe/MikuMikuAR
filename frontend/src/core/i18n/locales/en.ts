@@ -692,6 +692,7 @@ export const en: Record<string, string> = {
     'scene.volumetric': 'Volumetric Light',
     'scene.decay': 'Decay',
     'scene.density': 'Density',
+    'scene.volumetricLimitReached': 'Volumetric light limit reached, please turn off others first',
     'scene.positionOrbit': 'Position (Orbit)',
     'scene.horizontalAngle': 'Horizontal Angle',
     'scene.elevationAngle': 'Elevation Angle',

@@ -696,6 +696,7 @@ export const ja: Record<string, string> = {
     'scene.volumetric': 'ボリュームライト',
     'scene.decay': '減衰',
     'scene.density': '密度',
+    'scene.volumetricLimitReached': 'ボリュームライト数が上限に達しました。他のライトを先にオフにしてください',
     'scene.positionOrbit': '位置（オービット）',
     'scene.horizontalAngle': '水平角度',
     'scene.elevationAngle': '仰角',

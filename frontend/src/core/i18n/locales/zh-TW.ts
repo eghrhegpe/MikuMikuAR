@@ -693,6 +693,7 @@ export const zhTW: Record<string, string> = {
     'scene.volumetric': '體積光',
     'scene.decay': '衰減',
     'scene.density': '密度',
+    'scene.volumetricLimitReached': '體積光數量已達上限，請先關閉其他燈光',
     'scene.positionOrbit': '位置（軌道）',
     'scene.horizontalAngle': '水平角度',
     'scene.elevationAngle': '仰角',
