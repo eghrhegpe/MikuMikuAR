@@ -830,15 +830,15 @@ export function updateParticleTexture(): void {
 const _PARTICLE_KEYS = [
     'particleEnabled',
     'particleType',
-    'particleDensity',
+    'particleEmitRate',
     'particleSize',
     'particleSpeed',
-    'particleEmitRate',
     'particleSplash',
     'particleCustomTexture',
+    // Wind affects particle movement
     'windEnabled',
-    'windStrength',
     'windDirection',
+    'windSpeed',
 ];
 
 registerEnvCallback((changed, state) => {
