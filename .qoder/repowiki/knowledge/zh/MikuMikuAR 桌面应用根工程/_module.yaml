@@ -1,0 +1,34 @@
+schema_version: 1
+module_path: ""
+title: MikuMikuAR 桌面应用根工程
+scope:
+    - README.md
+    - README.en.md
+    - README.ja.md
+    - README.ko.md
+    - README.zh-TW.md
+    - .gitignore
+    - Taskfile.yml
+    - go.mod
+    - go.sum
+    - package.json
+    - main.go
+    - main_android.gen.go
+    - creators.json
+    - workshop_sites.json
+    - .impeccable.md
+    - AGENTS.md
+    - .env.example
+    - .gitattributes
+    - LICENSE
+    - ai-news-2026-07-18.md
+    - ai-news-2026-07-20.md
+    - build-win.log
+    - opencode.json
+    - package-lock.json
+    - script_gen_readme.py
+    - start-e2e.ps1
+    - tmp_write_readme.py
+source_files: []
+depends_on: []
+related_to: []

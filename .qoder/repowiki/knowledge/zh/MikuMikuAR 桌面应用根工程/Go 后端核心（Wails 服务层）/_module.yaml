@@ -1,0 +1,10 @@
+schema_version: 1
+module_path: go_backend
+title: Go 后端核心（Wails 服务层）
+scope:
+    - internal/
+source_files: []
+depends_on: []
+related_to:
+    - path: frontend_app
+    - path: scripts_build

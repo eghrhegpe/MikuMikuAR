@@ -1,0 +1,9 @@
+schema_version: 1
+module_path: docs_and_research
+title: 项目文档与编码奇谭（ADR/审计/调研/小说）
+scope:
+    - docs/
+    - novel/
+source_files: []
+depends_on: []
+related_to: []

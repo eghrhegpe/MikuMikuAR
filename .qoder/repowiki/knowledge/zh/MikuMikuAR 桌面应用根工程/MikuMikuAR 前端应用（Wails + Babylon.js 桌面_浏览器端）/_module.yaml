@@ -1,0 +1,10 @@
+schema_version: 1
+module_path: frontend_app
+title: MikuMikuAR 前端应用（Wails + Babylon.js 桌面/浏览器端）
+scope:
+    - frontend/
+source_files: []
+depends_on: []
+related_to:
+    - path: go_backend
+    - path: scripts_build

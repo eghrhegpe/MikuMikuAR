@@ -1,0 +1,11 @@
+schema_version: 1
+module_path: scripts_build
+title: 跨平台构建与资源生成脚本集
+scope:
+    - scripts/
+    - tests/
+source_files: []
+depends_on: []
+related_to:
+    - path: frontend_app
+    - path: go_backend

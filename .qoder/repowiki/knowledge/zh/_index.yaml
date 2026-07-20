@@ -1,0 +1,90 @@
+# 知识卡导出索引文件
+schema_version: 1
+locale: zh-CN
+branch: main
+nodes_managed: true
+exported_at: "2026-07-20T04:21:14Z"
+modules:
+    "":
+        dir_name: MikuMikuAR 桌面应用根工程
+        title: MikuMikuAR 桌面应用根工程
+        scope:
+            - README.md
+            - README.en.md
+            - README.ja.md
+            - README.ko.md
+            - README.zh-TW.md
+            - .gitignore
+            - Taskfile.yml
+            - go.mod
+            - go.sum
+            - package.json
+            - main.go
+            - main_android.gen.go
+            - creators.json
+            - workshop_sites.json
+            - .impeccable.md
+            - AGENTS.md
+            - .env.example
+            - .gitattributes
+            - LICENSE
+            - ai-news-2026-07-18.md
+            - ai-news-2026-07-20.md
+            - build-win.log
+            - opencode.json
+            - package-lock.json
+            - script_gen_readme.py
+            - start-e2e.ps1
+            - tmp_write_readme.py
+        source_files: []
+        children:
+            - docs_and_research
+            - frontend_app
+            - go_backend
+            - scripts_build
+        depends_on: []
+        related_to: []
+    docs_and_research:
+        dir_name: 项目文档与编码奇谭（ADR_审计_调研_小说）
+        title: 项目文档与编码奇谭（ADR/审计/调研/小说）
+        scope:
+            - docs/
+            - novel/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    frontend_app:
+        dir_name: MikuMikuAR 前端应用（Wails + Babylon.js 桌面_浏览器端）
+        title: MikuMikuAR 前端应用（Wails + Babylon.js 桌面/浏览器端）
+        scope:
+            - frontend/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: go_backend
+            - path: scripts_build
+    go_backend:
+        dir_name: Go 后端核心（Wails 服务层）
+        title: Go 后端核心（Wails 服务层）
+        scope:
+            - internal/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: frontend_app
+            - path: scripts_build
+    scripts_build:
+        dir_name: 跨平台构建与资源生成脚本集
+        title: 跨平台构建与资源生成脚本集
+        scope:
+            - scripts/
+            - tests/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: frontend_app
+            - path: go_backend

@@ -1,0 +1,100 @@
+version: 1
+scope:
+  include: []
+  exclude:
+    - "node_modules/**"
+    - "dist/**"
+    - "build/**"
+    - "bin/**"
+    - "text-model/**"
+    - "mmd_tools_repo/**"
+    - "*.exe"
+    - "*.log"
+    - "*.py"
+    - "*.json"
+repowiki:
+  template: architecture
+  notes:
+    - text: "项目使用 Wails v3 (Go 1.25 + WebView2)，前端 Vite + TypeScript + Babylon.js 9.x + babylon-mmd fork。物理层 XPBD(TS) + WASM Bullet 双引擎。"
+    - text: "前端 strict:false 是历史遗留，新代码禁止新增 as any / @ts-ignore。路径别名 @/ → src/、@bindings/ → bindings/。"
+    - text: "bindings/ 由 wails3 generate bindings 自动生成，禁止手写。src/core/wails-bindings.ts 是手维护的 re-export 聚合。"
+    - text: "声明式菜单 Schema（ADR-093）是最高优先级架构约束：新增菜单面板必须定义 Schema，禁止直接调用 builder API。StatePath 前缀：env/render/light/ui/perception。"
+    - text: "i18n 五语言（zh-CN/zh-TW/ja/en/ko），所有菜单 label 用 i18n key，禁止硬编码文字。错误信封机制见知识卡「跨语言错误处理与 i18n 信封机制」。"
+    - text: "动作系统分两层：motion-algos/ 是纯 TS 算法层（无 Babylon 依赖），scene/motion/ 是 Babylon 桥接层。感知层（ADR-079）是动作系统新入口。"
+    - text: "环境系统核心文件：env-bridge.ts（状态桥接）、env-impl.ts（实现）、env-texture.ts（纹理工厂 ADR-091）、env-water.ts（水面+平面反射 ADR-092）。"
+    - text: "多 AI 协作规范：禁止 git stash，用 git commit + git reset --soft 做本地缓存。commit 格式 conventional commits。"
+    - text: "已有知识卡必须在新文档中引用衔接：「配置系统」→ Go 后端 + 前端核心基础设施文档；「跨语言错误处理与 i18n 信封」→ Go 后端 + 前后端通信文档；「前后端轻量日志子系统」→ 前端核心基础设施文档；「跨平台构建与制品管理」→ 构建与测试文档；「多语言依赖与锁定文件策略」→ 项目总览 + 构建文档；「前端样式系统」→ 前端核心基础设施文档。"
+    - text: "wiki 构建时必须保留并引用以下 6 张已有知识卡（不要重新生成重复内容）：配置系统、多语言依赖与锁定文件策略、前后端轻量日志子系统、跨语言错误处理与 i18n 信封机制、跨平台构建与制品管理、前端样式系统。"
+    - text: "知识模块树 4 个节点与文档页面对应：根工程→项目总览；Go 后端核心→Go 后端服务层架构；前端应用→前端核心基础设施 + 3D 场景与渲染管线；构建脚本集→跨平台构建与测试体系；项目文档与编码奇谭→项目文档与决策记录。"
+  documents:
+    - title: "项目总览与技术栈"
+      goal: "介绍 MikuMikuAR 的定位、技术选型、构建流程和目录结构全景；引用知识卡「多语言依赖与锁定文件策略」"
+      parent: ""
+      hints: "README.md, go.mod, package.json, Taskfile.yml, architecture.md, 知识卡:多语言依赖与锁定文件策略"
+
+    - title: "Go 后端服务层架构"
+      goal: "描述 internal/app 的 Wails 服务绑定、配置持久化、文件访问、模型库管理、代理层设计；引用知识卡「配置系统」「跨语言错误处理与 i18n 信封机制」"
+      parent: ""
+      hints: "internal/app/*.go, internal/i18nerr/, internal/dialogs/, internal/util/, 知识卡:配置系统, 知识卡:跨语言错误处理与i18n信封机制"
+
+    - title: "前端核心基础设施"
+      goal: "描述 core/ 模块：状态管理、i18n 体系、UI 组件层次、快捷键注册、资源加载管理；引用知识卡「配置系统」「前后端轻量日志子系统」「前端样式系统」"
+      parent: ""
+      hints: "frontend/src/core/, frontend/src/app.css, 知识卡:配置系统, 知识卡:前后端轻量日志子系统, 知识卡:前端样式系统"
+
+    - title: "3D 场景与渲染管线"
+      goal: "描述 scene/ 模块：场景编排(scene.ts)、渲染器(renderer.ts)、灯光系统、性能监控、变换控制器"
+      parent: ""
+      hints: "frontend/src/scene/scene.ts, scene/render/, scene/scene-bundle.ts, scene/scene-serialize.ts"
+
+    - title: "环境渲染系统"
+      goal: "描述 env/ 子系统：天空/水面/地面/云层/粒子/灯光/纹理工厂/平面反射的模块边界与数据流"
+      parent: "3D 场景与渲染管线"
+      hints: "frontend/src/scene/env/, ADR-089/091/092"
+
+    - title: "动作与感知系统"
+      goal: "描述 motion/ 子系统：VMD 图层、感知层(呼吸/眨眼/注视/表情/平衡/LipSync)、程序化动作桥接、WASM 混合"
+      parent: "3D 场景与渲染管线"
+      hints: "frontend/src/scene/motion/, frontend/src/motion-algos/, ADR-079/085/086/088"
+
+    - title: "模型管理与材质编辑"
+      goal: "描述 manager/ 子系统：模型加载/操作/材质编辑/缩略图捕获的生命周期与资源管理"
+      parent: "3D 场景与渲染管线"
+      hints: "frontend/src/scene/manager/, ADR-014/015"
+
+    - title: "声明式菜单系统"
+      goal: "描述 menus/ 模块：Schema 定义(menu-schema.ts)、渲染器(menu-factory.ts)、各功能菜单的 StatePath 绑定模式"
+      parent: ""
+      hints: "frontend/src/menus/, docs/menu-how-to.md, ADR-093/027/034"
+
+    - title: "换装与音频系统"
+      goal: "描述 outfit/ 换装加载/应用/自动发现，audio.ts 音频播放与 VMD 同步，physics/ 物理桥接与风场"
+      parent: ""
+      hints: "frontend/src/outfit/, frontend/src/physics/, ADR-020/084/088"
+
+    - title: "前后端数据通信机制"
+      goal: "描述 Wails v3 绑定生成、FNV-1a method ID、Go↔TS 类型映射、contract 测试护栏；引用知识卡「跨语言错误处理与 i18n 信封机制」"
+      parent: ""
+      hints: "frontend/bindings/, frontend/src/core/wails-bindings.ts, frontend/src/__tests__/bindings/, 知识卡:跨语言错误处理与i18n信封机制"
+
+    - title: "跨平台构建与测试体系"
+      goal: "描述 Taskfile 构建流程、Vitest 单元测试、Playwright E2E、CI 检查脚本；引用知识卡「跨平台构建与制品管理」"
+      parent: ""
+      hints: "Taskfile.yml, scripts/, frontend/e2e/, frontend/vitest.config.ts, frontend/playwright.config.ts, 知识卡:跨平台构建与制品管理"
+
+    - title: "项目文档与决策记录"
+      goal: "描述 docs/ 目录结构：ADR 决策记录、代码审计、Bug 日志、发版说明、竞品调研，以及 novel/ 编码奇谭技术小说的组织方式"
+      parent: ""
+      hints: "docs/adr/, docs/audit/, docs/buglog/, docs/releases/, docs/research/, novel/, docs/architecture.md, docs/status.md"
+
+knowledgecard:
+  notes:
+    - text: "前端模块边界：core/(基础设施) → scene/(3D渲染) → menus/(UI菜单) → motion-algos/(纯算法) → outfit/(换装) → physics/(物理辅助)。依赖方向单向，禁止反向引用。"
+    - text: "状态管理唯一源：envState 是环境状态唯一来源，通过 reactivity.ts 的 signal/effect 驱动 UI 更新。禁止在模块级变量隐式修改状态。详见知识卡「配置系统：Go 后端 JSON 持久化 + 前端 Reactivity 状态管理」。"
+    - text: "资源释放规范：每个 new Babylon 对象必须有对应 dispose()，observer 在 dispose 时移除。dispose 应级联释放子资源（参考 env-water.ts 的 RT+camera+observer 释放链）。"
+    - text: "菜单开发规范：新增菜单必须使用声明式 Schema（menu-schema.ts 定义 ControlSpec），通过 menu-factory.ts 渲染。StatePath 格式：env.xxx/render.xxx/light.xxx/ui.xxx/perception.xxx。"
+    - text: "测试策略：核心逻辑用 Vitest 单元测试（frontend/src/__tests__/），E2E 用 Playwright（frontend/e2e/），binding 一致性用 contract 测试校验。UI builder 允许无测试。"
+    - text: "日志子系统：统一从 @/core/logger 导入 logInfo/logWarn/logError，禁止裸 console.*。异常处理用 safeCall 三件套（safeCall/safeCallVoid/safeCallAsync）。详见知识卡「前后端轻量日志子系统」。"
+    - text: "跨语言错误处理：Go 端用 i18nerr.New() 构造 UserError，通过 @@GOERR@@ 哨兵传递 JSON 信封到前端，前端 goerr.ts 解析并翻译。详见知识卡「跨语言错误处理与 i18n 信封机制」。"
+    - text: "样式系统：纯 CSS + CSS Variables，全部样式集中在 app.css 单文件。禁止硬编码颜色/字号，尺寸乘以 var(--ui-scale)。详见知识卡「前端样式系统：CSS 变量 + 单文件全局样式」。"
+    - text: "依赖管理：Go 用 go.mod+go.sum，前端用 package.json+package-lock.json（npm 为默认）。修改 Go 导出后先 task generate:bindings 再开发。详见知识卡「多语言依赖与锁定文件策略」。"
