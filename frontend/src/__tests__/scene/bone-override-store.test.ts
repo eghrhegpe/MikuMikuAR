@@ -26,8 +26,8 @@ describe('BoneOverrideStore (ADR-147 Phase 2)', () => {
     it('claimBones 高优先级抢占低优先级：清落败方 slot + 记录冲突', () => {
         const s = slot({ sourceModuleId: 'A' });
         store.setSlot('m1', '上半身', s);
-        store.claimBones('m1', 'A', 1, ['上半身']);
-        store.claimBones('m1', 'B', 2, ['上半身']); // B 优先级更高
+        store.claimBones('m1', 'A', 2, ['上半身']); // A 优先级较低（数值大）
+        store.claimBones('m1', 'B', 1, ['上半身']); // B 优先级更高（数值小，smaller=higher）
 
         // A 的 slot 应被清掉（无孤儿 slot）
         expect(store.getSlot('m1', '上半身')).toBeUndefined();
@@ -41,14 +41,14 @@ describe('BoneOverrideStore (ADR-147 Phase 2)', () => {
             bone: '上半身',
             loserModuleId: 'A',
             winnerModuleId: 'B',
-            loserPriority: 1,
-            winnerPriority: 2,
+            loserPriority: 2,
+            winnerPriority: 1,
         });
     });
 
     it('claimBones 低优先级落败：跳过且不抢占', () => {
-        store.claimBones('m1', 'A', 2, ['上半身']);
-        const preempted = store.claimBones('m1', 'B', 1, ['上半身']); // B 优先级更低
+        store.claimBones('m1', 'A', 1, ['上半身']); // A 优先级较高（数值小）
+        const preempted = store.claimBones('m1', 'B', 2, ['上半身']); // B 优先级更低（数值大）
 
         expect(preempted).toHaveLength(0);
         expect(store.getOwnedBones('m1', 'A').has('上半身')).toBe(true);

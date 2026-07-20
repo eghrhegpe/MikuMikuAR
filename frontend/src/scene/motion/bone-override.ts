@@ -563,6 +563,9 @@ export function stopBoneOverride(): void {
         _observerHandle();
         _observerHandle = null;
     }
+    // 释放单一驱动 observer，避免 stop 后每帧仍触发 runFrame（残留旧场景 observer 泄漏；ADR-147 审核 P2）
+    _driverHandle = safeDispose(_driverHandle);
+    _driverScene = null;
     _frameHooks.length = 0;
     _frameHooksSorted = false;
     clearAllOverrides();
