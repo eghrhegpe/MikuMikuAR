@@ -58,18 +58,17 @@
     <!-- TEMP: 注释掉验证闪退是否 babylon 加载导致 -->
     <script src="/lib/babylon.js"></script>
     <script src="/lib/babylonjs.materials.min.js"></script>
-  <script type="module" crossorigin src="/assets/index-jOPBVZhL.js"></script>
+  <script type="module" crossorigin src="/assets/index-BboQ0mnb.js"></script>
 </head>
 <body>
     <div id="app">
-        <canvas id="renderCanvas"></canvas>
+        <canvas id="renderCanvas" role="img" aria-label="3D 场景" tabindex="0"></canvas>
 
 <!-- Loading overlay: 内联样式确保 HTML 解析完就是全屏遮罩，不依赖 app.css -->
-<div id="loading" style="position:fixed;inset:0;background:linear-gradient(135deg,#16213e 0%,#1a1a2e 100%);color:#fff;z-index:10000;display:flex;align-items:center;justify-content:center;flex-direction:column;pointer-events:none;">
-<div class="spinner" style="width:40px;height:40px;border:3px solid #ffffff33;border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;"></div>
-<span id="loadingText">🏗️ 引擎加载中 ...</span>
+<div id="loading" style="position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;flex-direction:column;pointer-events:none;">
+<div class="spinner"></div>
+<span id="loadingText">正在加载 babymmd ...</span>
 </div>
-<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <!-- Bottom Navigation Bar - 静态页时禁用点击 -->
 <div id="bottomNav">
@@ -93,57 +92,69 @@
 <iconify-icon icon="lucide:settings"></iconify-icon><span class="nav-label">设置</span>
 <span class="shortcut-badge">5</span>
 </button>
+<button class="nav-tab" id="btnPlaza" title="模型广场" aria-label="模型广场" aria-controls="sceneOverlay" data-popup-type="plaza" data-hint="浏览模型资源站 · Ctrl+7" data-shortcut="7">
+<iconify-icon icon="lucide:store"></iconify-icon><span class="nav-label">广场</span>
+<span class="shortcut-badge">7</span>
+</button>
 </div>
 
-<!-- Playback Controls - 静态页时禁用点击 -->
+<!-- Playback Controls — DOM 锚点，TS 初始化后填充 -->
 <div id="playbackBar">
-<button class="playback-btn" id="btnPlayPause">⏸</button>
+<button class="playback-btn" id="btnPlayPause"></button>
 <button class="playback-btn" id="btnLoopToggle" title="循环播放"><iconify-icon icon="lucide:repeat"></iconify-icon></button>
 <div id="seekBar"><div id="seekProgress"></div></div>
-<span class="time-display" id="timeDisplay">00:00.00 / 00:00.00</span>
+<span class="time-display" id="timeDisplay"></span>
 </div>
 
 <!-- Scene Overlay (SlideMenu) -->
 <div id="sceneOverlay" data-overlay></div>
 
-<!-- 状态栏：弱化操作引导，改为静态加载提示 -->
-<div id="statusBar">
-<span id="statusText">⏳ MikuMikuAR 0.9.0 启动器 ... Babylon.js 引擎准备中</span>
-<span id="fpsClock">60 FPS | 00:00</span>
+<!-- 模型广场：独立全屏视图层（非 SlideMenu 弹窗，见 ADR-075） -->
+<div id="webviewLayer" data-overlay></div>
+
+<!-- FPS 时钟 — 右上角 HUD，pointer-events: none（点击穿透） -->
+<span id="fpsClock"></span>
+
+<!-- 运行时模式徽标 — 右上角 HUD（fpsClock 下方），常驻显示 MPR/COI/SAB 状态，刷新不丢 -->
+<span id="runtimeBadge"></span>
+
+<!-- 状态栏 — 居中提示文字 -->
+<div id="statusBar" role="status" aria-live="polite">
+<span id="statusText"></span>
 </div>
 
-        <!-- Import Toast -->
+        <!-- Import Toast — DOM 锚点，TS 初始化后填充 i18n 文本 -->
         <div id="importToast" class="toast hidden">
-            <div class="toast-icon">📦</div>
+            <div class="toast-icon"></div>
             <div class="toast-body">
-                <div class="toast-title">检测到新文件</div>
+                <div class="toast-title"></div>
                 <div class="toast-file"></div>
             </div>
             <div class="toast-actions">
-                <button class="toast-import-btn">导入</button>
-                <button class="toast-ignore-btn">忽略</button>
+                <button class="toast-import-btn"></button>
+                <button class="toast-ignore-btn"></button>
             </div>
         </div>
 
-        <!-- Update Toast -->
+        <!-- Update Toast — DOM 锚点，TS 初始化后填充 i18n 文本 -->
         <div id="updateToast" class="toast hidden">
-            <div class="toast-icon">🔔</div>
+            <div class="toast-icon"></div>
             <div class="toast-body">
-                <div class="toast-title">发现新版本</div>
+                <div class="toast-title"></div>
                 <div class="toast-file"></div>
             </div>
             <div class="toast-actions">
-                <button class="toast-import-btn">前往下载</button>
-                <button class="toast-ignore-btn">忽略</button>
+                <button class="toast-import-btn"></button>
+                <button class="toast-ignore-btn"></button>
             </div>
         </div>
 
-        <!-- Drop Overlay -->
+        <!-- Drop Overlay — DOM 锚点，TS 初始化后填充 i18n 文本 -->
         <div id="dropOverlay">
             <div class="drop-indicator">
-                <span class="drop-icon">📦</span>
-                <span class="drop-text">释放文件以导入</span>
-                <span class="drop-hint">支持 .zip · .pmx · .vmd</span>
+                <span class="drop-icon"></span>
+                <span class="drop-text"></span>
+                <span class="drop-hint"></span>
             </div>
         </div>
     </div>

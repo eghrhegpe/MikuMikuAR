@@ -492,8 +492,8 @@ export function showActionsMenu(site: PlazaSite, anchor: HTMLElement): void {
     const opts: { key: OpenMode | 'auto'; label: string }[] = [
         { key: 'auto', label: '自动' },
         ...(isAndroidPlatform()
-            ? [{ key: 'external' as const, label: 'chrome' }]
-            : [{ key: 'embed' as const, label: 'iframe' }, { key: 'external' as const, label: 'chrome' }, { key: 'window' as const, label: 'wails' }]),
+            ? [{ key: 'external' as const, label: '系统浏览器' }]
+            : [{ key: 'embed' as const, label: '内嵌页' }, { key: 'external' as const, label: '系统浏览器' }, { key: 'window' as const, label: '独立窗口' }]),
     ];
     const current = loadGlobalMode() ?? 'auto';
     for (const o of opts) {
