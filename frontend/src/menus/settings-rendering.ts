@@ -74,16 +74,6 @@ function buildRenderingSchema(): MenuNode[] {
                         apply: (v) => setRenderState({ grainEnabled: v }),
                     },
                     {
-                        label: t('settings.perf.ssr'),
-                        value: rs.ssrEnabled,
-                        apply: (v) => setRenderState({ ssrEnabled: v }),
-                    },
-                    {
-                        label: t('settings.perf.reflectionProbe'),
-                        value: rs.reflectionProbeEnabled,
-                        apply: (v) => setRenderState({ reflectionProbeEnabled: v }),
-                    },
-                    {
                         label: t('settings.perf.ssao'),
                         value: rs.ssaoEnabled,
                         apply: (v) => setRenderState({ ssaoEnabled: v }),
