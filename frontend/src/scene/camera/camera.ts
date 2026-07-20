@@ -25,6 +25,7 @@ import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { safeDispose } from '@/core/dispose-helpers';
 // 从 camera-state.ts 导入纯状态函数（仅导入本地未定义的函数）
 import {
+    defaultCameraPreset, getCameraPreset, setCameraPreset,
     getOrbitParams, getFreeflyParams, getConcertParams, getSurroundParams,
     getCameraMode, setCameraMode,
     getCameraControl, setCameraControl as _setCameraControlState,
@@ -46,10 +47,8 @@ import {
     getFov as getFovState,
     setFov as setFovState,
 } from './camera-state';
-// 注：defaultCameraPreset/getCameraPreset/setCameraPreset/logCameraAlpha/setFov/cameraState 保留本地定义
+// 注：setFov/setCameraControl/setCameraBehavior/isAutoCameraEnabled 保留本地定义（含 scene 依赖逻辑）
 // setOrbitParams/setFreeflyParams/setConcertParams/setSurroundParams 保留本地定义（需同步 live camera）
-// setCameraControl/setCameraBehavior 保留本地定义（含 switchCameraMode 场景依赖）
-// isAutoCameraEnabled 保留本地定义（含 scene 依赖逻辑）
 
 // ======== Types ========
 /**
@@ -158,27 +157,7 @@ export interface CameraPreset {
     concert: ConcertParams;
 }
 
-export function defaultCameraPreset(): CameraPreset {
-    return {
-        mode: 'orbit',
-        orbit: { targetHeight: 0, distance: 16, beta: Math.PI / 3 },
-        freefly: { speed: 0.5, angularSensibility: 2000 },
-        surround: { radius: 12, height: 8, speed: 0.3 },
-        concert: {
-            radius: 12,
-            height: 8,
-            sweepAngle: 120,
-            sweepSpeed: 0.6,
-            baseBeta: Math.PI / 3,
-            bobAmplitude: 12,
-            bobSpeed: 0.7,
-        },
-    };
-}
-
 // ======== Runtime Preset State ========
-// 模块级状态已迁移至 camera-state.ts，此处保留引用
-import { getCameraPreset, setCameraPreset } from './camera-state';
 
 // ======== Camera Persist (拖拽结束后自动保存) ========
 const _scheduleCameraPersist = debounce((): void => {
@@ -268,11 +247,6 @@ function _syncAxesFromMode(mode: CameraMode): void {
         setScriptedSubMode(m.scripted);
     }
 }
-let _currentCamera: Camera | null = null;
-let _fov = 0.8; // default FOV, migrated from RenderState in Phase 9
-// 当前聚焦模型包围盒中心的 Y。targetHeight 现表现为「相对此中心的垂直偏移」，
-// 0 = 正中。无模型时的初始值 8 保持与旧默认绝对高度一致，避免首屏镜头压脚底。
-let _focusCenterY = 8;
 // 注：_currentCamera/_fov/_focusCenterY 已迁移至 camera-state.ts 的
 // getCurrentCamera/setCurrentCamera/getFov/setFov/getFocusCenterY/setFocusCenterY
 
@@ -449,17 +423,18 @@ export function applyCameraUserSettings(cam: Camera): void {
 
 /** 设置变更后重新应用到当前活动相机 */
 export function refreshCameraUserSettings(): void {
-    if (!_currentCamera) {
+    const cam = getCurrentCamera();
+    if (!cam) {
         return;
     }
-    applyCameraUserSettings(_currentCamera);
+    applyCameraUserSettings(cam);
     // 触屏设备的参数覆写（applyCameraUserSettings 可能重置了它们）
-    if (isTouchDevice() && _currentCamera instanceof ArcRotateCamera) {
-        _currentCamera.pinchPrecision = 8;
-        _currentCamera.useNaturalPinchZoom = true;
-        _currentCamera.panningSensibility = 20;
+    if (isTouchDevice() && cam instanceof ArcRotateCamera) {
+        cam.pinchPrecision = 8;
+        cam.useNaturalPinchZoom = true;
+        cam.panningSensibility = 20;
     }
-    const inv = _invertableInputs.get(_currentCamera);
+    const inv = _invertableInputs.get(cam);
     if (inv) {
         inv.invertY = uiState.invertYAxis === true;
     }
@@ -472,7 +447,7 @@ function createOrbitCamera(scene: Scene, canvas: HTMLCanvasElement): ArcRotateCa
         -Math.PI / 2,
         p.beta,
         p.distance,
-        new Vector3(0, _focusCenterY + p.targetHeight, 0),
+        new Vector3(0, getFocusCenterY() + p.targetHeight, 0),
         scene
     );
     cam.minZ = 0.1;
@@ -656,7 +631,7 @@ export function switchCameraMode(mode: CameraMode): void {
     }
 
     // Save old camera state
-    const oldCam = _currentCamera;
+    const oldCam = getCurrentCamera();
     let oldPos: Vector3 | null = null;
     let oldTarget: Vector3 | null = null;
 
@@ -754,14 +729,14 @@ export function switchCameraMode(mode: CameraMode): void {
     // Re-attach post-processing pipeline to the new camera
     reattachPipeline();
     // Apply FOV to the new camera
-    newCam.fov = clampFov(_fov);
+    newCam.fov = clampFov(getFovState());
 }
 
 // ======== Auto Frame ========
 
 /** Auto-frame the camera to centre on a bounding box. */
 export function autoFrame(center: Vector3, extent: number): void {
-    const cam = _currentCamera;
+    const cam = getCurrentCamera();
     if (!cam) {
         return;
     }
@@ -791,7 +766,7 @@ function initFreeflyUpdate(scene: Scene): void {
     }
 
     _freeflyUpdateHandle = observe(scene.onBeforeRenderObservable, () => {
-        const cam = _currentCamera;
+        const cam = getCurrentCamera();
         if (!cam || !(cam instanceof UniversalCamera)) {
             return;
         }
@@ -931,7 +906,7 @@ function startSurround(scene: Scene): void {
         _surroundUpdateHandle.dispose();
     }
     _surroundUpdateHandle = observe(scene.onBeforeRenderObservable, () => {
-        const cam = _currentCamera;
+        const cam = getCurrentCamera();
         if (!cam || !(cam instanceof ArcRotateCamera)) {
             return;
         }
@@ -973,7 +948,7 @@ function startConcert(scene: Scene): void {
         _concertUpdateHandle.dispose();
     }
     _concertUpdateHandle = observe(scene.onBeforeRenderObservable, () => {
-        const cam = _currentCamera;
+        const cam = getCurrentCamera();
         if (!cam || !(cam instanceof ArcRotateCamera)) {
             return;
         }
@@ -1059,9 +1034,10 @@ function _startBoneLock(): void {
     _stopBoneLock();
 
     // 保存并禁用平移
-    if (_currentCamera instanceof ArcRotateCamera) {
-        _savedPanningSensibility = _currentCamera.panningSensibility;
-        _currentCamera.panningSensibility = 0; // 0 = 完全禁用平移
+    const boneLockCam = getCurrentCamera();
+    if (boneLockCam instanceof ArcRotateCamera) {
+        _savedPanningSensibility = boneLockCam.panningSensibility;
+        boneLockCam.panningSensibility = 0; // 0 = 完全禁用平移
     }
 
     _boneLockUpdateHandle = observe(_scene.onBeforeRenderObservable, () => {
@@ -1072,7 +1048,7 @@ function _startBoneLock(): void {
         if (getCameraMode() !== 'orbit') {
             return;
         }
-        const cam = _currentCamera;
+        const cam = getCurrentCamera();
         if (!(cam instanceof ArcRotateCamera)) {
             return;
         }
@@ -1102,8 +1078,9 @@ function _stopBoneLock(): void {
         _boneLockUpdateHandle = safeDispose(_boneLockUpdateHandle);
     }
     // 恢复平移灵敏度
-    if (_currentCamera instanceof ArcRotateCamera) {
-        _currentCamera.panningSensibility = _savedPanningSensibility;
+    const boneLockCam = getCurrentCamera();
+    if (boneLockCam instanceof ArcRotateCamera) {
+        boneLockCam.panningSensibility = _savedPanningSensibility;
     }
 }
 
@@ -1131,7 +1108,7 @@ export interface CameraState {
 }
 
 export function getCameraState(): CameraState {
-    const cam = _currentCamera;
+    const cam = getCurrentCamera();
     const isArc = cam instanceof ArcRotateCamera;
     const alpha = isArc ? cam.alpha : 0;
     const beta = isArc ? cam.beta : 0;
@@ -1144,7 +1121,7 @@ export function getCameraState(): CameraState {
         behavior: getCameraBehavior(),
         scriptedSubMode: getScriptedSubMode(),
         preset: deepClone(getCameraPreset()),
-        fov: _fov,
+        fov: getFovState(),
         alpha,
         beta,
         radius,
@@ -1156,7 +1133,7 @@ export function getCameraState(): CameraState {
         positionY: cam ? cam.position.y : 0,
         positionZ: cam ? cam.position.z : 0,
         // 记录当前聚焦模型中心 Y，供 setCameraState 正确反算 targetHeight
-        focusCenterY: _focusCenterY,
+        focusCenterY: getFocusCenterY(),
     };
 }
 
@@ -1246,7 +1223,7 @@ export function setCameraState(s: CameraState): void {
     if (s.fov !== undefined) {
         setFov(s.fov);
     }
-    const cam = _currentCamera;
+    const cam = getCurrentCamera();
     if (!cam) {
         // 无实时相机时仍恢复自动运镜订阅（beatcut 行为需要），随后返回。
         if (isAutoCameraEnabled()) {
@@ -1389,7 +1366,7 @@ function _onAutoCameraBeat(): void {
     }
     _setAutoCameraBeatCount(0);
 
-    const cam = _currentCamera;
+    const cam = getCurrentCamera();
     if (!cam || !(cam instanceof ArcRotateCamera)) {
         return;
     }
@@ -1434,6 +1411,7 @@ function _onAutoCameraBeat(): void {
 
 // ======== Re-exports from camera-state.ts (backward compat) ========
 export {
+    defaultCameraPreset,
     getCameraMode, getCameraControl, getCameraBehavior, getScriptedSubMode,
     getOrbitParams, getFreeflyParams, getConcertParams, getSurroundParams,
     getConcertPaused, setConcertPaused, getSurroundPaused, setSurroundPaused,

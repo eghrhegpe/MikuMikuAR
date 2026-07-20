@@ -42,6 +42,7 @@ import { buildGroundLevel } from './env-ground-levels';
 import { buildWaterLevel } from './env-water-levels';
 import { envState } from '../core/state';
 import { getEnvTextureBindingTarget, clearEnvTextureBindingTarget } from './env-menu';
+import { setSceneMenu } from './scene-menu-state';
 import {
     setMirrorSize,
     getMirrorInfo,
@@ -85,6 +86,9 @@ const {
 });
 
 export { getSceneMenu, refreshSceneRoot, showSceneMenu };
+
+// 注册到 scene-menu-state.ts，供 scene-*-levels.ts / env-ground-levels.ts 通过 getSceneMenu() 获取菜单实例
+setSceneMenu(getSceneMenu());
 
 /** 安全 reRender：菜单可能正在 async 重建中（showSceneMenu 的 await 期间），此时 sceneMenu 为 null。 */
 export function reRenderSceneMenu(): void {
