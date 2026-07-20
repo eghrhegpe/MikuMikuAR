@@ -1015,6 +1015,7 @@ export const en: Record<string, string> = {
     'env-preset.saveCurrentCategory': '＋ Save current {category} as preset',
 
     // menu — menu fallback text
+    'menu.canvasLabel': '3D Scene',
     'menu.noHint': 'No hint',
     'menu.noDesc': 'No description',
 

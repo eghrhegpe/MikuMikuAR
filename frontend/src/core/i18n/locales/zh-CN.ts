@@ -1002,6 +1002,7 @@ export const zhCN: Record<string, string> = {
     'env-preset.saveCurrentCategory': '＋ 保存当前{category}为预设',
 
     // menu — 菜单兜底文案
+    'menu.canvasLabel': '3D 场景',
     'menu.noHint': '暂无提示',
     'menu.noDesc': '暂无描述',
 
