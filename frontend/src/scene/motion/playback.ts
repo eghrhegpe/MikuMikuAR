@@ -160,15 +160,12 @@ export function updatePlaybackUI(): void {
         return;
     }
 
-    // Fail-Fast: 无 mmdRuntime 或 seekBar 时直接抛错
+    // 安全守卫：scene 重建期间 observer 可能尚未清完，此时 mmdRuntime / seekBar 为 null。
+    // 本函数被 onAnimationTickObservable 每帧调用，throw 会炸掉整帧渲染，因此降级为 warn + 跳过。
     if (!mmdRuntime || !dom.seekBar) {
-        throw new Error('playback: mmdRuntime 或 dom.seekBar 未初始化，请检查场景初始化顺序');
+        console.warn('[playback] updatePlaybackUI: mmdRuntime 或 seekBar 未就绪，跳过本帧');
+        return;
     }
-
-    // 到达此处的 guard 保证了 mmdRuntime 和 dom.seekBar 均可用
-    // 它被 observable 回调调用，此时 mmdRuntime 一定可用（已被 initScene 初始化）。
-    // 但此函数也可能被外部直接调用（如 seekFromEvent），此时 mmdRuntime 可能为 null，
-    // 因此保持顶部的 guard 不变。
     dom.playbackBar.style.display = 'flex';
     dom.btnPlayPause.textContent = isPlaying ? '⏸' : '▶';
     dom.btnLoopToggle.style.opacity = autoLoop ? '1' : '0.35';
