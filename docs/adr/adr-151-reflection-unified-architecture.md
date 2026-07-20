@@ -214,6 +214,6 @@ Probe 强度减半 + SSR 独立渲染，通过 `_enableHybrid` 分支实现。
 | 风险 | 等级 | 缓解 |
 |------|------|------|
 | ReflectionProbe 迁出 `renderer.ts` 后 SSR 与 Probe 间同步时序被打乱 | P2 | 统一入口 `applyReflection` 保证两者状态在同一函数调用中完成同步 |
-| 性能降级系统仍通过 `setRenderState({ reflectionProbeEnabled })` 发送指令 | P3 | `renderer.ts` 保留空分支（no-op），后续迭代将性能系统改为调用 `applyReflection` |
-| 现有 UI 面板直接操作 `ssrEnabled` / `reflectionProbeEnabled` | P3 | `setRenderState` 的 SSR 分支仍然有效（用户手动控制优先），`applyReflection` 仅在 env 状态变化时触发 |
+| 性能降级系统仍通过 `setRenderState({ reflectionProbeEnabled })` 发送指令 | ✅ 已解决 | **收口完成（2026-07-20）**：降级系统改写为写入 `env.reflectionQuality`（经 `resolveQualityProfile` → `applyReflection` 统一驱动），`renderer.ts` 的 no-op 空分支已移除，并新增「降级不高于用户原始反射质量」上限守卫 |
+| 现有 UI 面板直接操作 `ssrEnabled` / `reflectionProbeEnabled` | ✅ 已解决 | **收口完成（2026-07-20）**：旧 SSR 开关/4 滑杆与探针开关已从渲染菜单、设置面板、渲染预设中移除，`RenderState` 反射字段删除，反射控制单源化到 `reflectionMode` / `reflectionQuality` |
 | 模式切换时资源重建可能导致 1-2 帧卡顿 | P4 | 水面材质始终包含 `PLANAR_REFLECTION` define，通过 blend=0 控制可见性，避免 shader 重编译 |
