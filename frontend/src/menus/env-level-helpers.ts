@@ -1,0 +1,56 @@
+// [doc:architecture] Env Level Helpers — 环境功能层级公共辅助函数
+// 从 env-feature-levels.ts 拆分，被 env-menu.ts 和各种 env-*-levels.ts 共享
+// 循环依赖策略：依赖 env-menu-state.ts（纯状态模块）而非 env-menu.ts
+
+import { cardContainer, setStatus, getBrowseDir } from '../core/config';
+import type { PopupLevel } from '../core/config';
+import { t } from '../core/i18n/t';
+import { closeAllOverlays, stackRegistry } from '../core/utils';
+import { setEnvTextureBindingTarget } from './env-menu-state';
+import { getEnvMenu } from './env-menu-state';
+
+/** 通用的环境功能层级构建器：包裹 cardContainer + renderMenu 模板 */
+export function _buildLevel(
+    label: string,
+    buildSchema: (c: HTMLElement) => void,
+    buildExtraSegments?: Array<(c: HTMLElement) => void>
+): PopupLevel {
+    const segments: Array<(c: HTMLElement) => void> = buildExtraSegments
+        ? [buildSchema, ...buildExtraSegments]
+        : [buildSchema];
+    return {
+        label,
+        dir: '',
+        items: [],
+        renderCustom: (container) => {
+            for (const seg of segments) {
+                cardContainer(container, seg);
+            }
+        },
+    };
+}
+
+/** 打开环境贴图选择器 */
+export function _openTexturePicker(
+    target: import('./env-menu-state').EnvTextureBindingTarget,
+    label: string,
+    browseDir?: string,
+    noCloseOverlay?: boolean,
+    pushMenu?: import('./menu').SlideMenu | null
+): void {
+    setEnvTextureBindingTarget(target);
+    if (!noCloseOverlay) {
+        closeAllOverlays();
+    }
+    const menu = pushMenu ?? getEnvMenu();
+    if (!menu) {
+        return;
+    }
+    const level = stackRegistry.buildLevel!(
+        browseDir ?? getBrowseDir('environment'),
+        label,
+        (m) => ['png', 'jpg', 'jpeg', 'hdr', 'dds'].includes(m.format),
+        menu
+    );
+    menu.push(level);
+}

@@ -1,6 +1,8 @@
 // [doc:architecture] Env Menu — 环境弹窗（核心 + barrel export）
 // 拆分后保留: 导航/统一面板/环境光照/粒子/入口 + barrel re-export
-// 子文件: env-feature-levels.ts, env-preset-levels.ts
+// 子文件: env-sky-levels.ts, env-ground-levels.ts, env-water-levels.ts, env-wind-levels.ts,
+//         env-cloud-levels.ts, env-fog-levels.ts, env-shadow-levels.ts, env-experimental-levels.ts,
+//         env-preset-levels.ts
 // 道具已迁移到 scene-prop-levels.ts（舞台域）
 
 import { envState, PopupLevel, PopupRow } from '../core/config';
@@ -14,47 +16,32 @@ import { renderMenu } from './render-menu';
 import { addDisposableListener } from '../core/dom';
 import type { MenuNode } from './menu-schema';
 // ======== 从子文件导入 ========
-import {
-    buildSkyLevel,
-    buildWindLevel,
-    buildExperimentalLevel,
-    buildFogLevel,
-    buildShadowLevel,
-    buildCloudLevel,
-    _buildLevel,
-    _openTexturePicker,
-} from './env-feature-levels';
+import { buildSkyLevel } from './env-sky-levels';
+import { buildWindLevel } from './env-wind-levels';
+import { buildExperimentalLevel } from './env-experimental-levels';
+import { buildFogLevel } from './env-fog-levels';
+import { buildShadowLevel } from './env-shadow-levels';
+import { buildCloudLevel } from './env-cloud-levels';
+import { _buildLevel } from './env-level-helpers';
+import { _openTexturePicker } from './env-level-helpers';
 import { buildPresetLevel } from './env-preset-levels';
 import { buildPostProcessLevel } from './scene-render-levels';
+import type { EnvTextureBindingTarget } from './env-menu-state';
+import { setEnvTextureBindingTarget, clearEnvTextureBindingTarget, getEnvTextureBindingTarget, setEnvMenu } from './env-menu-state';
 
 // ======== Barrel Re-Exports ========
-export {
-    buildSkyLevel,
-    buildWindLevel,
-    buildExperimentalLevel,
-    buildFogLevel,
-    buildShadowLevel,
-    buildCloudLevel,
-} from './env-feature-levels';
+export { buildSkyLevel } from './env-sky-levels';
+export { buildWindLevel } from './env-wind-levels';
+export { buildExperimentalLevel } from './env-experimental-levels';
+export { buildFogLevel } from './env-fog-levels';
+export { buildShadowLevel } from './env-shadow-levels';
+export { buildCloudLevel } from './env-cloud-levels';
 export { buildPresetLevel, SCENE_PRESETS } from './env-preset-levels';
 
 // ======== Env Texture Binding Target ========
-
-export type EnvTextureBindingTarget = 'ground' | 'particle' | 'sky' | 'stars' | null;
-
-let _envTextureBindingTarget: EnvTextureBindingTarget = null;
-
-export function setEnvTextureBindingTarget(target: EnvTextureBindingTarget): void {
-    _envTextureBindingTarget = target;
-}
-
-export function clearEnvTextureBindingTarget(): void {
-    _envTextureBindingTarget = null;
-}
-
-export function getEnvTextureBindingTarget(): EnvTextureBindingTarget {
-    return _envTextureBindingTarget;
-}
+// 已迁移到 env-menu-state.ts，此处保留 re-export 保持向后兼容
+export type { EnvTextureBindingTarget } from './env-menu-state';
+export { setEnvTextureBindingTarget, clearEnvTextureBindingTarget, getEnvTextureBindingTarget } from './env-menu-state';
 
 // ======== Env Menu State ========
 
@@ -72,6 +59,9 @@ const {
         onItemClick: envOnItemClick,
     },
 });
+
+// 注册到 env-menu-state.ts，供 env-*-levels.ts 通过 getEnvMenu() 获取菜单实例
+setEnvMenu(getEnvMenu());
 
 export { getEnvMenu, refreshEnvRoot, showEnvMenu };
 
@@ -271,7 +261,7 @@ function envOnItemClick(row: PopupRow): void {
         return;
     }
 
-    const target = _envTextureBindingTarget;
+    const target = getEnvTextureBindingTarget();
     clearEnvTextureBindingTarget();
     closeAllOverlays();
 

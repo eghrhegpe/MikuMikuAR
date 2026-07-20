@@ -68,10 +68,8 @@ vi.mock('./scene-menu', () => ({
     getSceneMenu: vi.fn(() => ({ push: mockPush })),
 }));
 
-vi.mock('./env-feature-levels', () => ({
-    buildGroundLevel: vi.fn(() => ({ label: 'ground' })),
-    buildWaterLevel: vi.fn(() => ({ label: 'water' })),
-}));
+vi.mock('./env-ground-levels', () => ({ buildGroundLevel: vi.fn(() => ({ label: 'ground' })) }));
+vi.mock('./env-water-levels', () => ({ buildWaterLevel: vi.fn(() => ({ label: 'water' })) }));
 
 // 阻断 Babylon.js Scene 初始化（scene/scene.ts 模块级 new Scene()）
 vi.mock('../scene/scene', () => ({

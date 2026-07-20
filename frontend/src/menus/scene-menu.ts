@@ -38,7 +38,8 @@ import { buildPresetScenesLevel } from './scene-render-levels';
 import { buildStageLevel } from './scene-stage-levels';
 import { buildStageLightLevel } from './scene-stage-lights';
 import { buildPhysicsLevel, buildWasmPhysicsLevel } from './scene-physics-levels';
-import { buildGroundLevel, buildWaterLevel } from './env-feature-levels';
+import { buildGroundLevel } from './env-ground-levels';
+import { buildWaterLevel } from './env-water-levels';
 import { envState } from '../core/state';
 import { getEnvTextureBindingTarget, clearEnvTextureBindingTarget } from './env-menu';
 import {
