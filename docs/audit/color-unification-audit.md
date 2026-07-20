@@ -2,6 +2,7 @@
 
 > 审核日期: 2026-07-20
 > 审核范围: 天空与太阳主导环境色，地面、水面与云的跟进情况
+> P1修正日期: 2026-07-20
 
 ---
 
@@ -29,19 +30,19 @@
 
 ### 2. 地面
 
-**状态: ⚠️ 独立颜色，未跟随天空**
+**状态: ⚠️ 独立颜色，未跟随天空（P1 已修正半球光地面颜色）**
 
 - 使用 `groundColor` 独立定义，不从天空颜色派生
 - 地面颜色固定，不随天空颜色变化
-- 半球光 groundColor 固定为 `(0.3, 0.3, 0.4)`
+- ~~半球光 groundColor 固定为 `(0.3, 0.3, 0.4)`~~ → P1 已修正为从 `skyColorBot` 派生
 
 **代码位置:**
 - `env-state-schema.ts:45` — `groundColor` 默认值 `[0.15, 0.15, 0.18]`
-- `env-bridge.ts:101` — `hemiLight.groundColor = new Color3(0.3, 0.3, 0.4)` 硬编码
+- ~~`env-bridge.ts:101`~~ — P1 已修正为 `hemiLight.groundColor = col3FromTriple(state.skyColorBot)`
 
 **问题:**
 1. 地面颜色完全独立，不跟随天空颜色变化
-2. 半球光地面颜色硬编码，不随天空颜色变化
+2. ~~半球光地面颜色硬编码，不随天空颜色变化~~ → P1 已修正
 
 ### 3. 水面
 
@@ -61,19 +62,19 @@
 
 ### 4. 云
 
-**状态: ⚠️ 从场景灯光获取，但场景灯光颜色硬编码**
+**状态: ✅ 已修正（P1）**
 
-- 云的颜色从场景方向光获取：`sunColor = dl.diffuse`
-- 场景方向光颜色在 `env-bridge.ts:120` 中硬编码为 `[1, 0.95, 0.9]`
-- 云没有直接从天空颜色派生
+- 云的颜色从场景方向光获取：`cloudColor = dl.diffuse`（P1 已将 `sunColor` 改为 `cloudColor`）
+- ~~场景方向光颜色在 `env-bridge.ts:120` 中硬编码为 `[1, 0.95, 0.9]`~~ → P1 已修正为从 `deriveLighting().dirDiffuse` 派生
+- 云现在间接跟随天空（通过场景灯光，场景灯光已联动天空）
 
 **代码位置:**
-- `env-clouds.ts:689-691` — 从场景灯光获取颜色
-- `env-bridge.ts:120` — `dirColor: [1, 0.95, 0.9]` 硬编码
+- `env-clouds.ts:689-691` — 从场景灯光获取颜色（uniform 名已改为 `cloudColor`）
+- ~~`env-bridge.ts:120`~~ — P1 已修正为 `dirColor: derived.dirDiffuse`
 
 **问题:**
-1. 场景方向光颜色硬编码为白色，没有从天空颜色派生
-2. 云的颜色间接跟随天空（通过场景灯光），但场景灯光颜色不随天空变化
+1. ~~场景方向光颜色硬编码为白色，没有从天空颜色派生~~ → P1 已修正
+2. ~~云的颜色间接跟随天空（通过场景灯光），但场景灯光颜色不随天空变化~~ → P1 已修正
 
 ---
 
@@ -86,19 +87,20 @@
 | 天空 | `skyColorTop/Mid/Bot` | ✅ |
 | 地面 | `groundColor` | ✅ |
 | 水面 | `waterColor` | ✅ |
-| 云 | `sunColor` (shader uniform) | ⚠️ 应为 `cloudColor` |
+| 云 | `cloudColor` (shader uniform) | ✅ P1 已修正 |
 
 **问题:**
-1. 云的 shader uniform 命名为 `sunColor`，应改为 `cloudColor` 以保持一致性
+1. ~~云的 shader uniform 命名为 `sunColor`，应改为 `cloudColor` 以保持一致性~~ → P1 已修正
 
 ### 颜色派生命名
 
 | 派生目标 | 派生源 | 命名是否清晰 |
 |----------|--------|--------------|
 | 半球光 diffuse | `skyColorMid` | ✅ |
+| 半球光 groundColor | `skyColorBot` | ✅ P1 已修正 |
 | 环境色 | `skyMid` | ✅ |
 | 水面地平线色 | `skyColorBot` | ✅ |
-| 场景方向光 | 硬编码 `[1, 0.95, 0.9]` | ❌ 应从天空颜色派生 |
+| 场景方向光 | `deriveLighting().dirDiffuse` | ✅ P1 已修正 |
 
 ---
 
@@ -134,25 +136,50 @@
 
 ## 代码位置汇总
 
-| 文件 | 行号 | 问题描述 |
-|------|------|----------|
-| `env-bridge.ts` | 101 | `hemiLight.groundColor` 硬编码 |
-| `env-bridge.ts` | 120 | `dirColor: [1, 0.95, 0.9]` 硬编码 |
-| `env-clouds.ts` | 672, 703 | `sunColor` uniform 命名不一致 |
-| `env-state-schema.ts` | 45 | `groundColor` 默认值独立 |
-| `env-water.ts` | 469 | `waterColor` 独立定义 |
+| 文件 | 行号 | 问题描述 | 状态 |
+|------|------|----------|------|
+| `env-bridge.ts` | 101 | `hemiLight.groundColor` 硬编码 | ✅ P1 已修正 |
+| `env-bridge.ts` | 120 | `dirColor: [1, 0.95, 0.9]` 硬编码 | ✅ P1 已修正 |
+| `env-clouds.ts` | 329,636,672,691,703 | `sunColor` uniform 命名不一致 | ✅ P1 已修正为 `cloudColor` |
+| `env-state-schema.ts` | 45 | `groundColor` 默认值独立 | ⚠️ P3 待优化 |
+| `env-water.ts` | 469 | `waterColor` 独立定义 | ⚠️ P3 待优化 |
 
 ---
 
 ## 结论
 
-**总体结论: 有条件通过**
+**总体结论: 通过（P1 已修正）**
 
-天空与太阳主导环境色的设计已完整实现，但地面、水面与云的颜色未完全跟随。主要问题：
+天空与太阳主导环境色的设计已完整实现。P1 修正后：
 
-1. **地面颜色完全独立**，不跟随天空颜色变化
-2. **水面颜色部分联动**，但整体仍独立
-3. **云颜色间接跟随**，但场景灯光颜色硬编码
-4. **半球光地面颜色硬编码**，不随天空颜色变化
+1. **半球光地面颜色** — 从 `skyColorBot` 派生，保持三色统一
+2. **场景方向光颜色** — 从 `deriveLighting().dirDiffuse` 派生，保持三色统一
+3. **云 shader uniform** — 命名统一为 `cloudColor`，颜色从场景灯光获取（场景灯光已联动天空）
 
-建议按 P1 优先级进行修正，以实现真正的三色统一。
+剩余 P3 优化项：
+- `groundColor` 仍独立定义，不从天空颜色派生
+- `waterColor` 仍独立定义，不从天空颜色派生
+
+---
+
+## P1 修正记录（2026-07-20）
+
+### 已完成修正
+
+| 文件 | 修正内容 | 影响 |
+|------|----------|------|
+| `env-bridge.ts:101` | `hemiLight.groundColor = new Color3(0.3, 0.3, 0.4)` → `hemiLight.groundColor = col3FromTriple(state.skyColorBot)` | 半球光地面颜色从 skyColorBot 派生 |
+| `env-bridge.ts:120` | `dirColor: [1, 0.95, 0.9]` → `dirColor: derived.dirDiffuse` | 场景方向光颜色从 deriveLighting().dirDiffuse 派生 |
+| `env-clouds.ts:329,636,672,691,703` | `sunColor` → `cloudColor` | 云 shader uniform 命名统一 |
+| `env-bridge.test.ts:768-773` | 测试断言更新为从 skyColorBot 派生 | 测试适配新行为 |
+
+### 修正后状态
+
+| 组件 | 状态 | 说明 |
+|------|------|------|
+| **天空与太阳** | ✅ 完整实现 | 主导层无变化 |
+| **半球光地面颜色** | ✅ 已修正 | 从 `skyColorBot` 派生，保持三色统一 |
+| **场景方向光颜色** | ✅ 已修正 | 从 `deriveLighting().dirDiffuse` 派生，保持三色统一 |
+| **云** | ✅ 已修正 | shader uniform 命名为 `cloudColor`，颜色从场景灯光获取（场景灯光已联动天空） |
+| **地面** | ⚠️ 独立颜色 | `groundColor` 仍独立定义，需 P3 优化 |
+| **水面** | ⚠️ 部分联动 | `waterColor` 仍独立定义，需 P3 优化 |
