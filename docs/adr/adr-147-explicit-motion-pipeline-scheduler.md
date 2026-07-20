@@ -201,7 +201,7 @@ Phase 2 step 2 把 `registry.claimBones` / `_boneConflicts` / `releaseOwnedBones
 | Phase 2 切片 1：`BoneOverrideStore` 内核 + 不变量单测 | `b594a03f` | ✅ 已落地 | 新文件 `bone-override-store.ts`，合并三副本为单一内部存储；6 例单测锁死「disable/release 级联清 slot、抢占记冲突、model 隔离」。未接入运行时（step 2 待协调） |
 | Phase 1 step 2：接入运行时（bone-override/perception 改为管线层 + 单驱动 observer） | `02c1269e` | ✅ 已落地 | `bone-override.ts` 注册 `'bone-override'` 层 + 单一驱动 observer（每帧 `pipeline.runFrame`）；`perception.ts` 注册 `'perception'` 层（模型聚焦时动态 register）。R1 根治：覆写序由 stage 决定，与注册时序解耦。`scene.ts` 零改动 |
 | R2 帧钩子显式 order 排序 | （本提交） | ✅ 已落地 | `bone-override.ts`：`_frameHooks` 由 `Set` 改为带 `order` 数组，按 `order` 升序 + 快照遍历；导出 `FRAME_HOOK_ORDER`；三模块（sway/riding/hand-symmetry）传入显式权重。R2 根治：同骨获胜者由声明顺序决定，不再依赖注册次序。`motion-frame-hooks.test.ts` 4 例锁死 |
-| Phase 2 step 2：运行时接入 | — | ⏸ 阻塞 | 需迁移 `registry.ts`/`module-base.ts`/`motion-intent.ts` 三处读写，待与 `motion-modules/*` 写者协调 |
+| Phase 2 step 2：运行时接入 | （本提交） | ✅ 已落地 | `registry.ts` 改薄 facade 委托 `BoneOverrideStore` 单例（保留旧公开签名 + `{bone,byModule}` 冲突形状，`getModuleConflicts`/`getAllConflicts` 重映射 loser/winner 视角）；`module-base.ts` `disable()` 移除冗余 `clearBoneOverride` 循环（store.releaseBones 已级联清引擎槽，避免双清破断言）；`bone-override-store.ts` 修正单例 `onClearEngineSlot` 实参序 `(modelId,bone)→(bone,modelId)`。经 grep `motion-intent.ts` 零命中（ADR 列项实际不存在，已排除）。31 例 registry 单测 + 209 例 motion/bone 单测全绿 |
 | 语义迁移映射表（六·补） | （本提交） | ✅ 已立 + store 内部改动落地 | M1 已锁（P1 修）；M2/M7 决策明确；**M3/M4/M5/M6/M8/M9 的 store 内部改动已全部落地**（含单测同步，store 单测 12/12 全绿），Phase 2 step 2 可安全推进 runtime 接入（表 4 调用点） |
 
 > **审核修复记录（2026-07-20）**：据 ADR-147 进度风险审核，已落地 3 项修复（均仅内核/单测，未接入运行时）：
