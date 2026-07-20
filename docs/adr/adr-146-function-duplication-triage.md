@@ -266,12 +266,13 @@
 
 ### P2
 
-- [ ] `grep -rn "addEventListener.*removeEventListener" src/menus` 归零（除豁免）
+- [x] `grep -rn "from '\.\./core/ui-rows'" src/menus` 归零（补充 barrel 导出 `addActionRow`/`addDisabledRow`/`addInlineToggleRow` 到 `core/ui-helpers.ts`）
+- [x] `grep -rn "from '\.\./core/ui-collapsible'" src/menus` 归零
 - [x] `_ensureBlueNoiseTexture` 含 scene 校验
-- [ ] `applyWaterPresetToMaterial` 不再含 4 行 setFloat
-- [ ] `model-material.ts` 行内 toggle 0 处，i18n 硬编码归零
-- [ ] `grep -rn "from '\.\./core/ui-rows'" src/menus` 归零
-- [ ] `motion-popup.ts:621-656` 与 `motion-override-levels.ts:287-324` 共用公共函数
+- [x] `applyWaterPresetToCurrent` 不再含 4 行 setFloat（提取 `applyWaterPresetCoreUniforms`，保留 `!== undefined` 守卫；不可机械改调 `_syncWaterUniforms(state)`——preset 为 Partial 预览应用，会从完整 state 无条件写入并触发 facade 副作用）
+- [ ] `model-material.ts` 行内 toggle 0 处，i18n 硬编码归零（主题9，待续）
+- [x] `motion-popup.ts`（模块列表段）与 `motion-override-levels.ts`（模块列表段）共用 `renderModuleToggleList(container, modelId, { onEnter, initModules? })`（抽至 `motion-popup.ts`，`motion-override-levels` 从之导入）
+- [x] `src/menus` 内 window/document 全局监听改走 `addDisposableListener` + 持有 `Disposable`：`env-menu.ts`/`motion-popup.ts`（`mmar:library-scanned`）、`library-actions.ts`（`mmku:modelLoaded` HMR 重绑）、`motion-override-levels.ts`（outsideClick）、`scene-menu.ts`（`mmar:library-scanned`，ADR 枚举遗漏，本轮补入）。`core/dialog.ts` 因 `{ once: true }` 自清理 + clone-to-detach 模式本就无泄漏，排除。
 
 ### P3
 
@@ -410,3 +411,29 @@
 - **扩展扫尾（主题3-b 预留）**：全量 grep 显示 11 个非枚举文件（bone-override/scene/feet-adjustment/ar-scene/vmd-evaluator/footstep-detect-fallback/camera/perception/render-loop/ui-resource-panel）仍有同模板，属更大 blast radius，留单独一轮（与 主题2-b 同理），不强行并入本轮以免风险集中。
 
 验证：`cd frontend && npm run build`（tsc + vite）0 错误（380 模块）；`vitest run dispose-helpers.test.ts` 5/5；env 子系统单测 `env-water(28)+env-sky+env-clouds+env-particles` 50/50 通过；multiline grep `src/scene/env` + `src/scene/render` 纯模板归零（仅剩 `mirror-debug.ts`）。**未推送**。
+
+### 2026-07-20 — P2 主题 10 / 8 / 11 / 6 中收益项批量收敛
+
+用户授权「继续」后推进 P2（主题7 已于阶段 2 先行落地）。本轮完成 4 项，均为零/低行为变化：
+
+#### 主题 10：import 路径统一（ui-helpers barrel）
+- **补充 barrel 导出** `core/ui-helpers.ts`：`addActionRow`/`addDisabledRow`/`addInlineToggleRow`（原仅 `ui-rows` 导出，barrel 漏导——构建一度 `TS2305`，补导出后归零）。
+- **改路径** 4 文件 `from '../core/ui-rows'` → `from '../core/ui-helpers'`：`env-preset-levels.ts:8`、`motion-camera-levels.ts:57`、`motion-override-levels.ts:13`、`settings-rendering.ts:14`。
+- 验收：`grep -rn "from '\.\./core/ui-rows'\|from '\.\./core/ui-collapsible'" src/menus` 归零。
+
+#### 主题 8：env-water preset 4 行 setFloat 收敛
+- **提取** `applyWaterPresetCoreUniforms(mat, preset)` 私有 helper（env-water.ts），承载 `fresnelBias`/`fresnelPower`/`diffuseStrength`/`ambientStrength` 4 行 `setFloat`，`applyWaterPresetToCurrent` 调用之。
+- **工程判断**：不可机械改调 `_syncWaterUniforms(state, scene)`——`applyWaterPresetToCurrent` 是 Partial preset 的**实时预览应用**（仅覆盖 `!== undefined` 字段），`_syncWaterUniforms` 从完整 envState 无条件写入且会触发 sky/light facade 副作用；机械替换会破坏预览语义。故仅提取同源 helper，行为严格等价。
+- 验证：env-water 单测 28/28、water-preset-repro 9/9 通过。
+
+#### 主题 11：模块列表渲染段抽取（renderModuleToggleList）
+- **抽** `renderModuleToggleList(container, modelId, { onEnter, initModules? })`（motion-popup.ts），统一两处同构模块开关列表渲染（slideRow + bind `getModuleState(...).enabled` + onChange 调 `enable/disable` + `reRender`）。
+- **收敛** `motion-popup.ts`（模块列表段，`initModules: true`）+ `motion-override-levels.ts`（模块列表段，保留 menu null 守卫的 onEnter）；`motion-override-levels` 移除死 import `getModuleState`（仅用于该循环）。
+- 既有循环依赖（motion-popup ↔ motion-override-levels）运行时安全，helper 落 motion-popup、override 从之导入，无新循环。
+
+#### 主题 6：菜单层全局监听 → addDisposableListener
+- **改走** `addDisposableListener` + 持有 `Disposable`：`env-menu.ts`/`motion-popup.ts`（`mmar:library-scanned`，原 `add/removeEventListener` 配对 → `const _xDisp` + `.dispose()`）、`library-actions.ts`（`mmku:modelLoaded` HMR 重绑：`_mmkuHandler` → `_mmkuDisp?.dispose()` + 重绑）、`motion-override-levels.ts`（outsideClick：`_onOutsideClickDisp` 持有，open 前 dispose 旧+重绑、close 时 dispose）、`scene-menu.ts`（`mmar:library-scanned`，ADR 枚举遗漏，本轮补入；原内联箭头无配对 remove，正是泄漏点）。
+- **排除** `core/dialog.ts`：监听器均 `{ once: true }` 自清理或 clone-to-detach，本就无泄漏，强行改 `addDisposableListener` 属无效 churn。
+- 验证：`grep "window.addEventListener('mmar:library-scanned'" src/menus` 仅剩 scene-menu（已在本轮改）+ 其余全部归零；`_mmkuHandler` 全量归零。
+
+验证：`cd frontend && npm run build`（tsc + vite）0 错误（380 模块）；env-water + water-preset-repro + dom 单测 37/37 通过。**未推送**。P2 剩余：主题9（model-material 行内 toggle）。
