@@ -1348,7 +1348,7 @@ export function setAutoCameraEnabled(
         _unsubscribeAutoCameraBeat();
     }
     // 重新派生行为轴：beatcut 叠加/移除（互斥由 _resolveBehavior 保证）。
-    _syncAxesFromMode(_cameraMode);
+    _syncAxesFromMode(getCameraMode());
 }
 
 export function isAutoCameraEnabled(): boolean {
@@ -1370,7 +1370,7 @@ function _onAutoCameraBeat(): void {
     // ADR-100 P2：门控改判行为轴。beatcut 与 concert/turntable/scripted 互斥，
     // 后者激活时 _resolveBehavior 不会派生 beatcut，这里直接早退（互斥的运行时体现）。
     // 抑制期不消耗 beat 计数，恢复 orbit 后从当前计数继续。
-    if (_cameraBehavior !== 'beatcut') {
+    if (getCameraBehavior() !== 'beatcut') {
         return;
     }
     _autoCameraBeatCount++;
