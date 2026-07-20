@@ -34,26 +34,6 @@ import { installDownloadListener, installEventListeners, installShortcuts, ensur
 import { PLAZA_SITES } from './plaza-sites';
 import { PLAZA_CREATORS } from './plaza-creators';
 
-// ======== 本地化文本 ========
-
-const L: Record<string, string> = {
-    title: '模型广场',
-    back: '‹ 后退',
-    openInBrowser: '浏览器',
-    refresh: '刷新',
-    close: '关闭',
-    goBack: '‹ 后退',
-    goForward: '前进 ›',
-    zoomIn: '放大',
-    zoomOut: '缩小',
-    zoomReset: '重置',
-    closeWindow: '关闭窗口',
-    remoteHint: '广场窗口已打开，点击下载链接会自动入库',
-    loading: '加载中...',
-    downloading: '下载中',
-    downloadComplete: '下载完成',
-};
-
 // ======== 站点数据管理 ========
 
 export function normalizeSite(raw: any): PlazaSite | null {
@@ -474,7 +454,7 @@ export function buildToolbar(opts: { title: string; onBack?: () => void; onOpen?
     bar.className = 'plaza-toolbar';
     const left = document.createElement('div');
     left.className = 'plaza-toolbar-left';
-    if (opts.onBack) left.appendChild(_plazaBtn('‹ ' + L.back, opts.onBack));
+    if (opts.onBack) left.appendChild(_plazaBtn(t('plaza.back'), opts.onBack));
     const title = document.createElement('div');
     title.className = 'plaza-title';
     title.textContent = opts.title;
@@ -489,10 +469,10 @@ export function buildToolbar(opts: { title: string; onBack?: () => void; onOpen?
         label.textContent = '全局';
         right.appendChild(label);
     }
-    if (opts.onOpen) right.appendChild(_plazaBtn(L.openInBrowser, opts.onOpen, 'plaza-btn plaza-btn-accent'));
-    if (opts.onRefresh) right.appendChild(_plazaBtn(L.refresh, opts.onRefresh));
-    const close = _plazaBtn(L.close, opts.onClose);
-    close.title = L.close;
+    if (opts.onOpen) right.appendChild(_plazaBtn(t('plaza.openInBrowser'), opts.onOpen, 'plaza-btn plaza-btn-accent'));
+    if (opts.onRefresh) right.appendChild(_plazaBtn(t('plaza.refresh'), opts.onRefresh));
+    const close = _plazaBtn(t('plaza.close'), opts.onClose);
+    close.title = t('plaza.close');
     right.appendChild(close);
     bar.appendChild(right);
     return bar;
@@ -556,7 +536,7 @@ export async function renderHome(): Promise<void> {
     el.innerHTML = '';
     const root = document.createElement('div');
     root.className = 'plaza-root';
-    root.appendChild(buildToolbar({ title: L.title, onClose: closePlaza }));
+    root.appendChild(buildToolbar({ title: t('plaza.title'), onClose: closePlaza }));
     root.appendChild(buildSiteTabs());
     const site = getCurrentSite();
     if (site) root.appendChild(renderSiteContent(site));
@@ -609,11 +589,11 @@ export function renderRemote(site: PlazaSite): void {
     body.className = 'plaza-remote-body';
     const hint = document.createElement('div');
     hint.className = 'plaza-remote-hint';
-    hint.textContent = L.remoteHint;
+    hint.textContent = t('plaza.remoteHint');
     body.appendChild(hint);
     const urlDisplay = document.createElement('div');
     urlDisplay.className = 'plaza-remote-url';
-    urlDisplay.textContent = L.loading;
+    urlDisplay.textContent = t('plaza.loading');
     setRemoteURLDisplay(urlDisplay);
     body.appendChild(urlDisplay);
     const progress = document.createElement('div');
@@ -629,12 +609,12 @@ export function renderRemote(site: PlazaSite): void {
         b.onclick = () => { swallowError(fn()); };
         controls.appendChild(b);
     };
-    addBtn(L.goBack, () => PlazaGoBack());
-    addBtn(L.goForward, () => PlazaGoForward());
-    addBtn(L.refresh, () => PlazaReload());
-    addBtn(L.zoomIn, () => PlazaZoomIn());
-    addBtn(L.zoomOut, () => PlazaZoomOut());
-    addBtn(L.zoomReset, () => PlazaZoomReset());
+    addBtn(t('plaza.goBack'), () => PlazaGoBack());
+    addBtn(t('plaza.goForward'), () => PlazaGoForward());
+    addBtn(t('plaza.refresh'), () => PlazaReload());
+    addBtn(t('plaza.zoomIn'), () => PlazaZoomIn());
+    addBtn(t('plaza.zoomOut'), () => PlazaZoomOut());
+    addBtn(t('plaza.zoomReset'), () => PlazaZoomReset());
     body.appendChild(controls);
     root.appendChild(body);
     el.appendChild(root);
