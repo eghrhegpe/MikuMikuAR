@@ -142,8 +142,18 @@ let _propRegistry: Map<string, PropInstance> | null = null;
 let _envSysShadow: { generator: ShadowGenerator | null } | null = null;
 let triggerAutoSave: (() => void) | null = null;
 
-export let hemiLight: HemisphericLight | null = null;
-export let dirLight: DirectionalLight | null = null;
+let _hemiLight: HemisphericLight | null = null;
+let _dirLight: DirectionalLight | null = null;
+
+/** 主半球光（未初始化时为 null）。导出 getter 替代原 `export let`，消除导出可变绑定。 */
+export function getHemiLight(): HemisphericLight | null {
+    return _hemiLight;
+}
+
+/** 主方向光（未初始化时为 null）。 */
+export function getDirLight(): DirectionalLight | null {
+    return _dirLight;
+}
 
 interface StageLightEntry {
     state: StageLightState;
@@ -218,14 +228,14 @@ export function initLighting(
     _envSysShadow = envSysShadow;
     triggerAutoSave = saveCb;
 
-    hemiLight = new HemisphericLight('hemi', new Vector3(0.5, 1, 0.5), scene);
-    hemiLight.intensity = 0.8;
-    hemiLight.diffuse = new Color3(1, 1, 1);
-    hemiLight.groundColor = new Color3(0.3, 0.3, 0.4);
+    _hemiLight = new HemisphericLight('hemi', new Vector3(0.5, 1, 0.5), scene);
+    _hemiLight.intensity = 0.8;
+    _hemiLight.diffuse = new Color3(1, 1, 1);
+    _hemiLight.groundColor = new Color3(0.3, 0.3, 0.4);
 
-    dirLight = new DirectionalLight('dir', new Vector3(0, -1, 0), scene);
-    dirLight.intensity = 0.4;
-    dirLight.position = new Vector3(0, 40, 0);
+    _dirLight = new DirectionalLight('dir', new Vector3(0, -1, 0), scene);
+    _dirLight.intensity = 0.4;
+    _dirLight.position = new Vector3(0, 40, 0);
 
     const def = _defaultStageLightState('light-1', '主光');
     const light = _createStageLight(def.type, def);
@@ -419,7 +429,7 @@ function _defaultLightState(): LightState {
 }
 
 export function getLightState(): LightState {
-    if (!hemiLight || !dirLight || !_envSysShadow) {
+    if (!_hemiLight || !_dirLight || !_envSysShadow) {
         const base = _defaultLightState();
         return {
             ...base,
@@ -431,14 +441,14 @@ export function getLightState(): LightState {
         };
     }
     return {
-        hemiIntensity: hemiLight.intensity,
-        dirIntensity: dirLight.intensity,
-        dirX: -dirLight.direction.x,
-        dirY: -dirLight.direction.y,
-        dirZ: -dirLight.direction.z,
-        dirColor: [dirLight.diffuse.r, dirLight.diffuse.g, dirLight.diffuse.b],
-        hemiColor: [hemiLight.diffuse.r, hemiLight.diffuse.g, hemiLight.diffuse.b],
-        groundColor: [hemiLight.groundColor.r, hemiLight.groundColor.g, hemiLight.groundColor.b],
+        hemiIntensity: _hemiLight.intensity,
+        dirIntensity: _dirLight.intensity,
+        dirX: -_dirLight.direction.x,
+        dirY: -_dirLight.direction.y,
+        dirZ: -_dirLight.direction.z,
+        dirColor: [_dirLight.diffuse.r, _dirLight.diffuse.g, _dirLight.diffuse.b],
+        hemiColor: [_hemiLight.diffuse.r, _hemiLight.diffuse.g, _hemiLight.diffuse.b],
+        groundColor: [_hemiLight.groundColor.r, _hemiLight.groundColor.g, _hemiLight.groundColor.b],
         shadowEnabled: _envSysShadow.generator !== null,
         shadowType: _shadowType,
         shadowCascades: _shadowCascades,
@@ -448,33 +458,33 @@ export function getLightState(): LightState {
 }
 
 export function setLightState(s: Partial<LightState>): void {
-    if (!hemiLight || !dirLight || !triggerAutoSave) {
+    if (!_hemiLight || !_dirLight || !triggerAutoSave) {
         return;
     }
 
     if (s.hemiIntensity !== undefined) {
-        hemiLight.intensity = s.hemiIntensity;
+        _hemiLight.intensity = s.hemiIntensity;
     }
     if (s.dirIntensity !== undefined) {
-        dirLight.intensity = s.dirIntensity;
+        _dirLight.intensity = s.dirIntensity;
     }
     if (s.dirX !== undefined || s.dirY !== undefined || s.dirZ !== undefined) {
         const dir = new Vector3(
-            -(s.dirX ?? -dirLight.direction.x),
-            -(s.dirY ?? -dirLight.direction.y),
-            -(s.dirZ ?? -dirLight.direction.z)
+            -(s.dirX ?? -_dirLight.direction.x),
+            -(s.dirY ?? -_dirLight.direction.y),
+            -(s.dirZ ?? -_dirLight.direction.z)
         );
         dir.normalize();
-        dirLight.direction = dir;
+        _dirLight.direction = dir;
     }
     if (s.dirColor !== undefined) {
-        dirLight.diffuse = col3FromTriple(s.dirColor);
+        _dirLight.diffuse = col3FromTriple(s.dirColor);
     }
     if (s.hemiColor !== undefined) {
-        hemiLight.diffuse = col3FromTriple(s.hemiColor);
+        _hemiLight.diffuse = col3FromTriple(s.hemiColor);
     }
     if (s.groundColor !== undefined) {
-        hemiLight.groundColor = col3FromTriple(s.groundColor);
+        _hemiLight.groundColor = col3FromTriple(s.groundColor);
     }
     if (s.shadowEnabled !== undefined) {
         _shadowEnabled = s.shadowEnabled;
@@ -521,7 +531,7 @@ export function transitionLighting(
     duration: number = 2000,
     onComplete?: () => void
 ): void {
-    if (!hemiLight || !dirLight || !triggerAutoSave || !_scene) {
+    if (!_hemiLight || !_dirLight || !triggerAutoSave || !_scene) {
         return;
     }
     const source = getLightState(); // 当前完整状态
@@ -596,13 +606,13 @@ function _ensureSunDisc(): Mesh {
 /** 更新方向光参考圆盘位置和颜色。圆盘始终在光线来源方向（视线反方向）。
  *  仅作为调光参照，不参与光照计算。 */
 export function _updateSunDisc(): void {
-    if (!dirLight) {
+    if (!_dirLight) {
         return;
     }
     const disc = _ensureSunDisc();
-    const d = dirLight.direction;
+    const d = _dirLight.direction;
     const aboveHorizon = d.y < 0;
-    const hasIntensity = dirLight.intensity > SUN_DISC_MIN_INTENSITY;
+    const hasIntensity = _dirLight.intensity > SUN_DISC_MIN_INTENSITY;
     disc.setEnabled(aboveHorizon && hasIntensity);
     if (aboveHorizon && hasIntensity) {
         disc.position.set(
@@ -610,7 +620,7 @@ export function _updateSunDisc(): void {
             -d.y * SUN_DISC_DISTANCE,
             -d.z * SUN_DISC_DISTANCE
         );
-        const b = Math.max(0.05, dirLight.intensity);
+        const b = Math.max(0.05, _dirLight.intensity);
         const mat = disc.material as StandardMaterial;
         mat.emissiveColor.set(b, b * 0.9, b * 0.7);
     }
@@ -661,7 +671,7 @@ function _ensureShadow(): void {
         return;
     }
 
-    const gen = new CascadedShadowGenerator(_shadowResolution, dirLight);
+    const gen = new CascadedShadowGenerator(_shadowResolution, _dirLight);
     gen.numCascades = _shadowCascades;
     // CSM 仅支持 FILTER_NONE / FILTER_PCF / FILTER_PCSS
     if (_shadowType === 'pcf') {
@@ -833,6 +843,9 @@ export function removeStageLight(id: string): boolean {
 /** 整体清理光照模块（场景销毁时调用） */
 export function disposeLighting(): void {
     _cancelAllLightingTweens();
+    // P1-fix: 预设动画中途销毁场景时，被取消的 tween 不会触发 onTweenDone，
+    // 必须显式重置标志，否则重新初始化后自动保存永久失效。
+    _skipLightAutoSave = false;
     // 清理舞台灯
     for (const [_lid, entry] of _stageLights) {
         _disposeIndicator(entry);
@@ -855,10 +868,10 @@ export function disposeLighting(): void {
     _stageLightCounter = 0;
     _activeStageLightId = null;
     // 清理主灯光
-    hemiLight = safeDispose(hemiLight);
-    dirLight = safeDispose(dirLight);
-    // 清理太阳盘
-    _sunDisc = safeDispose(_sunDisc);
+    _hemiLight = safeDispose(_hemiLight);
+    _dirLight = safeDispose(_dirLight);
+    // 清理太阳盘（含材质释放，避免 StandardMaterial 泄漏）
+    _disposeSunDisc();
     // 清理场景灯光的阴影生成器
     if (_envSysShadow?.generator) {
         _envSysShadow.generator = safeDispose(_envSysShadow.generator);
@@ -867,6 +880,13 @@ export function disposeLighting(): void {
     triggerAutoSave = null;
     _modelRegistry = null;
     _propRegistry = null;
+    // 补全阴影参数重置：避免场景重建后携带上一场景的脏值
+    _shadowEnabled = false;
+    _shadowType = 'soft';
+    _shadowCascades = 2;
+    _shadowResolution = 1024;
+    _shadowBias = 0.0001;
+    _skipLightAutoSave = false;
 }
 
 /** 批量加载舞台灯（反序列化用），会清空现有灯 */

@@ -192,7 +192,11 @@ export function updateLightConeTransform(
     coneLength: number
 ): void {
     _applyTransform(entry.mesh, light);
-    entry.material.setVector3('u_apexPos', light.position.clone());
+    // 复用模块级对象，避免每帧 clone 产生 GC 压力
+    _tmpApex.x = light.position.x;
+    _tmpApex.y = light.position.y;
+    _tmpApex.z = light.position.z;
+    entry.material.setVector3('u_apexPos', _tmpApex);
 }
 
 /** 更新光锥的 shader uniforms（颜色/亮度/柔和度） */
@@ -245,6 +249,9 @@ export function disposeLightCone(entry: LightConeEntry): void {
 }
 
 // ======== Internal ========
+
+/** 模块级临时向量（避免 updateLightConeTransform 每帧 clone 产生 GC 压力） */
+const _tmpApex = { x: 0, y: 0, z: 0 };
 
 function _applyTransform(mesh: Mesh, light: SpotLight): void {
     mesh.position.copyFrom(light.position);
