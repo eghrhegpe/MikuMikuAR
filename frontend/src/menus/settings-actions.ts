@@ -18,7 +18,7 @@ import { buildSettingsLanguageLevel } from './settings-language';
 import type { SlideMenu } from './menu';
 
 /** 设置动作映射表——替代原 handleSettingsAction 的 switch 链 */
-export const SETTINGS_ACTIONS: Record<string, (row: PopupRow) => void> = {
+export const SETTINGS_ACTIONS: Record<string, (row?: PopupRow) => void> = {
     [SETTINGS_ACTION.CLEAR_EXTRACT_CACHE]: () => {
         safeCallAsync('paths', '', () =>
             ClearExtractCache().then(() => {

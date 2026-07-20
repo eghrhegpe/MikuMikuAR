@@ -28,6 +28,55 @@ export const en: Record<string, string> = {
     'settings.about': 'About',
     'settings.language': 'Language',
 
+    // ===== Settings IA root labels (ADR-157) =====
+    'settings.graphics': 'Graphics',
+    'settings.controls': 'Controls',
+    'settings.resources': 'Resources',
+    'settings.media': 'Media',
+    'settings.system': 'System',
+
+    // ===== Settings: Graphics (ADR-157) =====
+    'settings.graphics.preset': 'Performance Preset',
+    'settings.graphics.frameQuality': 'Frame Rate & Quality',
+    'settings.graphics.effects': 'Rendering Effects',
+    'settings.graphics.physicsHud': 'Physics & HUD',
+
+    // ===== Settings: Controls (ADR-157) =====
+    'settings.controls.camera': 'Camera',
+
+    // ===== Settings: Resources / Library (ADR-157) =====
+    'settings.library.sortMode': 'Sort Mode',
+    'settings.library.sortByName': 'Sort by Name',
+    'settings.library.sortByDefault': 'Default Order',
+    'settings.library.namePriority': 'Display Name Priority',
+    'settings.library.materialMap': 'Material Category Map',
+    'settings.library.addMaterialMap': 'Add Mapping',
+    'settings.library.patternLabel': 'Pattern',
+    'settings.library.patternPlaceholder': 'Regex, e.g. skirt',
+    'settings.library.categoryLabel': 'Category',
+    'settings.library.categoryPlaceholder': 'Skin/Hair/Eyes/Clothing/Accessory/Prop',
+    'settings.paths.modelCount': 'Models: ',
+    'settings.saveFailed': 'Save failed',
+
+    // ===== Settings: Media / Screenshot (ADR-157) =====
+    'settings.screenshot.format': 'Format',
+    'settings.screenshot.quality': 'Quality',
+    'settings.screenshot.thumbRes': 'Thumbnail Resolution',
+    'settings.screenshot.thumbResSet': 'Thumbnail resolution set to {label}',
+    'settings.screenshot.saveDir': 'Save Directory',
+    'settings.screenshot.dirNotSet': 'Not set (using default)',
+    'settings.screenshot.selectDir': 'Select Directory',
+    'settings.screenshot.openDir': 'Open Directory',
+
+    // ===== Settings: System / Software / About extras (ADR-157) =====
+    'settings.software.actions': 'Actions',
+    'settings.software.info': 'Info',
+    'settings.importBadFormat': 'Invalid settings file format',
+    'settings.about.versionInfo': 'Version Info',
+    'settings.about.cache.counting': 'Counting…',
+    'settings.about.update.checkHint': 'Click "Check for updates" to see if a new version is available',
+    'settings.about.update.goDownload': 'Go to download →',
+
     // ===== Language list =====
     'lang.zh-CN': 'Simplified Chinese',
     'lang.en': 'English',
@@ -1365,8 +1414,12 @@ export const en: Record<string, string> = {
     'common.stage': 'stage',
     'common.model': 'model',
     'common.prop': 'prop',
+    'common.delete': 'Delete',
+    'common.items': 'items',
+    'common.unknown': 'Unknown',
     'model-detail.unloadThis': 'Unload this {kind}',
     'status.loop': 'Loop: {state}',
+    'status.error': 'Error: {message}',
     'env.propExists': 'Prop already exists: {name}',
     'env.propAdded': '✓ Prop: {name}',
     'env.propRemoved': '✓ Prop removed: {name}',

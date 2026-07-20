@@ -103,7 +103,7 @@ export async function setTheme(
     hex: string,
     getSettingsMenu: () => { updateControls: () => void } | null
 ): Promise<void> {
-    const _r = await tryCatchStatus(() => SetUIAccent(hex), t('status.error'));
+    const _r = await tryCatchStatus(() => SetUIAccent(hex), t('settings.themeColor'));
     if (_r === undefined) {
         getSettingsMenu()?.updateControls();
         return;

@@ -45,7 +45,8 @@ import { refreshCameraUserSettings } from '../scene/camera/camera';
 import { setVolume, getVolume, setAudioOffset, getAudioOffset } from '../outfit/audio';
 import { SETTINGS_ACTION } from './settings-targets';
 import { SETTINGS_ACTIONS } from './settings-actions';
-import { applyUIAppearanceDom, formatBytes, type SettingsMenuHandle } from './settings-shared';
+import { applyUIAppearanceDom, formatBytes } from './settings-shared';
+import type { SlideMenu } from './menu';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 
@@ -199,7 +200,7 @@ function importSettings(): void {
     input.click();
 }
 
-function resetAllSettings(getSettingsMenu: () => SettingsMenuHandle): void {
+function resetAllSettings(getSettingsMenu: () => SlideMenu | null): void {
     for (const k of Object.keys(uiState)) {
         delete (uiState as Record<string, unknown>)[k];
     }
@@ -209,7 +210,7 @@ function resetAllSettings(getSettingsMenu: () => SettingsMenuHandle): void {
     setStatus(t('settings.resetToDefault'), true);
 }
 
-function buildSettingsMgmtSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
+function buildSettingsMgmtSchema(getSettingsMenu: () => SlideMenu | null): MenuNode[] {
     return [
         {
             id: 'system:settings-mgmt',
@@ -437,7 +438,7 @@ export async function scanSoftwareDir(): Promise<void> {
     }
 }
 
-function buildSoftwareListSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
+function buildSoftwareListSchema(getSettingsMenu: () => SlideMenu | null): MenuNode[] {
     return [
         {
             id: 'system:software-list',
@@ -530,7 +531,7 @@ function buildSoftwareListSchema(getSettingsMenu: () => SettingsMenuHandle): Men
 
 function buildSoftwareDetailManagedSchema(
     entry: import('../core/wails-bindings').SoftwareEntry,
-    getSettingsMenu: () => SettingsMenuHandle
+    getSettingsMenu: () => SlideMenu | null
 ): MenuNode[] {
     return [
         {
@@ -633,7 +634,7 @@ function buildSoftwareDetailManagedSchema(
 
 function buildSoftwareDetailAutoSchema(
     entry: import('../core/wails-bindings').SoftwareEntry,
-    getSettingsMenu: () => SettingsMenuHandle
+    getSettingsMenu: () => SlideMenu | null
 ): MenuNode[] {
     return [
         {
@@ -708,7 +709,7 @@ function buildSoftwareDetailAutoSchema(
 
 export function buildSoftwareDetailLevel(
     path: string,
-    getSettingsMenu: () => SettingsMenuHandle
+    getSettingsMenu: () => SlideMenu | null
 ): PopupLevel {
     const entries = cachedSoftwareEntries || [];
     const entry = entries.find((e) => e.path === path);
@@ -743,7 +744,7 @@ export function buildSoftwareDetailLevel(
 
 // ======== 系统页组装 ========
 
-function buildSystemSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
+function buildSystemSchema(getSettingsMenu: () => SlideMenu | null): MenuNode[] {
     return [
         ...buildCacheSchema(),
         ...buildSoftwareListSchema(getSettingsMenu),
@@ -751,7 +752,7 @@ function buildSystemSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[
     ];
 }
 
-export function buildSettingsSystemLevel(getSettingsMenu: () => SettingsMenuHandle): PopupLevel {
+export function buildSettingsSystemLevel(getSettingsMenu: () => SlideMenu | null): PopupLevel {
     return {
         label: t('settings.system'),
         dir: '',

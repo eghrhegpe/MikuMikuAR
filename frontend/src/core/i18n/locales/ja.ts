@@ -28,6 +28,55 @@ export const ja: Record<string, string> = {
     'settings.about': 'について',
     'settings.language': '言語',
 
+    // ===== 設定·新IA根ラベル（ADR-157） =====
+    'settings.graphics': 'グラフィック',
+    'settings.controls': '操作',
+    'settings.resources': 'リソース',
+    'settings.media': 'メディア',
+    'settings.system': 'システム',
+
+    // ===== 設定·グラフィック（ADR-157） =====
+    'settings.graphics.preset': 'パフォーマンスプリセット',
+    'settings.graphics.frameQuality': 'フレームレートと画質',
+    'settings.graphics.effects': 'レンダリング効果',
+    'settings.graphics.physicsHud': '物理と HUD',
+
+    // ===== 設定·操作（ADR-157） =====
+    'settings.controls.camera': 'カメラ',
+
+    // ===== 設定·リソース / ライブラリ（ADR-157） =====
+    'settings.library.sortMode': '並べ替え',
+    'settings.library.sortByName': '名前順',
+    'settings.library.sortByDefault': 'デフォルト順',
+    'settings.library.namePriority': '表示名の優先度',
+    'settings.library.materialMap': 'マテリアル分類マップ',
+    'settings.library.addMaterialMap': 'マッピングを追加',
+    'settings.library.patternLabel': 'パターン',
+    'settings.library.patternPlaceholder': '正規表現、例: スカート',
+    'settings.library.categoryLabel': 'カテゴリ',
+    'settings.library.categoryPlaceholder': '肌/髪/目/衣装/アクセサリー/小道具',
+    'settings.paths.modelCount': 'モデル数: ',
+    'settings.saveFailed': '保存に失敗しました',
+
+    // ===== 設定·メディア / スクリーンショット（ADR-157） =====
+    'settings.screenshot.format': '形式',
+    'settings.screenshot.quality': '品質',
+    'settings.screenshot.thumbRes': 'サムネイル解像度',
+    'settings.screenshot.thumbResSet': 'サムネイル解像度を {label} に設定しました',
+    'settings.screenshot.saveDir': '保存先',
+    'settings.screenshot.dirNotSet': '未設定（デフォルトを使用）',
+    'settings.screenshot.selectDir': 'フォルダを選択',
+    'settings.screenshot.openDir': 'フォルダを開く',
+
+    // ===== 設定·システム / ソフトウェア / 情報追加（ADR-157） =====
+    'settings.software.actions': '操作',
+    'settings.software.info': '情報',
+    'settings.importBadFormat': '設定ファイルの形式が正しくありません',
+    'settings.about.versionInfo': 'バージョン情報',
+    'settings.about.cache.counting': '集計中…',
+    'settings.about.update.checkHint': '「アップデートを確認」をクリックして新バージョンを確認',
+    'settings.about.update.goDownload': 'ダウンロードへ →',
+
     // ===== 言語リスト =====
     'lang.zh-CN': '簡体字中国語',
     'lang.en': '英語',
@@ -1465,6 +1514,9 @@ export const ja: Record<string, string> = {
     // ===== i18n Phase 4 — missing keys =====
     'common.model': 'モデル',
     'common.prop': '小道具',
+    'common.delete': '削除',
+    'common.items': '件',
+    'common.unknown': '不明',
     'model-detail.unloadThis': 'この{kind}をアンロード',
     'common.off': 'オフ',
     'common.on': 'オン',
@@ -1621,6 +1673,7 @@ export const ja: Record<string, string> = {
     'settings.themeColorSet': '✓ テーマカラー: {hex}',
     'settings.unloaded': '✓ アンロードしました: {name}',
     'status.loop': 'ループ: {state}',
+    'status.error': 'エラー: {message}',
     'toast.undo': '元に戻す',
     // ===== i18n audit fixes 2026-07-13 =====
     'boot.engineReady': '✅ エンジン準備完了',

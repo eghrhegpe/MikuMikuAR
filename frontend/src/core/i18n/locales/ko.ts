@@ -28,6 +28,55 @@ export const ko: Record<string, string> = {
     'settings.about': '정보',
     'settings.language': '언어',
 
+    // ===== 설정·신 IA 루트 라벨（ADR-157） =====
+    'settings.graphics': '그래픽',
+    'settings.controls': '조작',
+    'settings.resources': '리소스',
+    'settings.media': '미디어',
+    'settings.system': '시스템',
+
+    // ===== 설정·그래픽（ADR-157） =====
+    'settings.graphics.preset': '성능 프리셋',
+    'settings.graphics.frameQuality': '프레임 속도 및 화질',
+    'settings.graphics.effects': '렌더링 효과',
+    'settings.graphics.physicsHud': '물리 및 HUD',
+
+    // ===== 설정·조작（ADR-157） =====
+    'settings.controls.camera': '카메라',
+
+    // ===== 설정·리소스 / 라이브러리（ADR-157） =====
+    'settings.library.sortMode': '정렬 방식',
+    'settings.library.sortByName': '이름순 정렬',
+    'settings.library.sortByDefault': '기본 순서',
+    'settings.library.namePriority': '표시 이름 우선순위',
+    'settings.library.materialMap': '재질 분류 매핑',
+    'settings.library.addMaterialMap': '매핑 추가',
+    'settings.library.patternLabel': '패턴',
+    'settings.library.patternPlaceholder': '정규식, 예: 스커트',
+    'settings.library.categoryLabel': '분류',
+    'settings.library.categoryPlaceholder': '피부/머리/눈/의상/액세서리/소품',
+    'settings.paths.modelCount': '모델 수: ',
+    'settings.saveFailed': '저장 실패',
+
+    // ===== 설정·미디어 / 스크린샷（ADR-157） =====
+    'settings.screenshot.format': '형식',
+    'settings.screenshot.quality': '품질',
+    'settings.screenshot.thumbRes': '섬네일 해상도',
+    'settings.screenshot.thumbResSet': '섬네일 해상도를 {label}(으)로 설정',
+    'settings.screenshot.saveDir': '저장 폴더',
+    'settings.screenshot.dirNotSet': '미설정(기본값 사용)',
+    'settings.screenshot.selectDir': '폴더 선택',
+    'settings.screenshot.openDir': '폴더 열기',
+
+    // ===== 설정·시스템 / 소프트웨어 / 정보 추가（ADR-157） =====
+    'settings.software.actions': '작업',
+    'settings.software.info': '정보',
+    'settings.importBadFormat': '설정 파일 형식이 올바르지 않습니다',
+    'settings.about.versionInfo': '버전 정보',
+    'settings.about.cache.counting': '집계 중…',
+    'settings.about.update.checkHint': '"업데이트 확인"을 클릭하여 새 버전 확인',
+    'settings.about.update.goDownload': '다운로드 →',
+
     // ===== 언어 목록 =====
     'lang.zh-CN': '중국어(간체)',
     'lang.en': '영어',
@@ -1458,6 +1507,9 @@ export const ko: Record<string, string> = {
     // ===== i18n Phase 4 — missing keys =====
     'common.model': '모델',
     'common.prop': '소품',
+    'common.delete': '삭제',
+    'common.items': '개',
+    'common.unknown': '알 수 없음',
     'model-detail.unloadThis': '이 {kind} 언로드',
     'common.off': '꺼짐',
     'common.on': '켜짐',
@@ -1614,6 +1666,7 @@ export const ko: Record<string, string> = {
     'settings.themeColorSet': '✓ 테마 색상: {hex}',
     'settings.unloaded': '✓ 언로드됨: {name}',
     'status.loop': '반복: {state}',
+    'status.error': '오류: {message}',
     'toast.undo': '실행 취소',
     // ===== i18n audit fixes 2026-07-13 =====
     'boot.engineReady': '✅ 엔진 준비 완료',

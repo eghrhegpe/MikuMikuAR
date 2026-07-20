@@ -1,7 +1,7 @@
 # ADR-157: 设置界面信息架构重组 — 10 分类 → 7 分类
 
 **日期**: 2026-07-21
-> **状态**: 实施中 — Phase 1（IA 重组 + 缺陷修复）落地，搜索/color picker 留待 Phase 3
+> **状态**: 已实施 — Phase 1（IA 重组 + 缺陷修复 + 5 语言 i18n）完成并通过构建/单测；搜索/color picker 留待 Phase 3
 
 ---
 
@@ -67,6 +67,9 @@
 | 设置导入零校验 | 白名单 `pick(parsed, KNOWN_UI_KEYS)` + 数值 clamp |
 | `handleSettingsAction` 假 PopupRow 套娃 | 资源页内直接调用动作函数 |
 | 裸中文（'UI 尺寸'/'动效'/FONT_MAP/截图标题等） | 全部过 `t()`，补齐 5 语言 i18n key |
+| 模型数量行 `t(key) \|\| '模型数量：' + n` 计数永不显示 | `t()` 永不返回假值，改为 `t(key) + n` 拼接 |
+| `setTheme` 误用 `t('status.error')` 作 tryCatchStatus 上下文（残留 `{message}` 字面量） | 改传操作标签 `t('settings.themeColor')` |
+| Android 存储卡 `renderCustom: async` 返回 `Promise<void>` 不合 `MenuNode` 契约 | 抽出同步 `renderAndroidStorage`，内部 Promise + disposed 守卫，返回 dispose |
 
 ## 后果
 
@@ -86,6 +89,7 @@
 
 ## 验证
 
-- `cd frontend && npm run build` 通过
-- `cd frontend && npm run test` 单测通过
+- `cd frontend && npm run build` 通过（tsc + vite）
+- `cd frontend && npx vitest run` ：1767 过 / 1 败——败例为 `ui-helpers.test.ts` addModeSlider 拖拽用例，系预存问题（ui-helpers 本次未改动），与本重构无关
+- i18n 校验：新 settings 模块引用的 221 个 key 于 zh-CN 基准包零缺失，en/ja/ko/zh-TW 同步补齐
 - 手动核对 7 个分类控件渲染与交互无回归

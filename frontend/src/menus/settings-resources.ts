@@ -64,6 +64,84 @@ function applyDisplayNamePriority(priority: DisplayNamePriority): void {
 }
 
 // ======== 卡片 1：存储位置（桌面=资源根目录；Android=私有/共享存储） ========
+function renderAndroidStorage(
+    c: HTMLElement,
+    currentMode: string,
+    getSettingsMenu: () => SettingsMenuHandle
+): void {
+    cardContainer(c, (inner) => {
+        addSectionTitle(inner, t('settings.paths.storage'));
+        addModeRow<string>(
+            inner,
+            t('settings.storageMode'),
+            [
+                { value: 'private', label: t('settings.storagePrivate') },
+                { value: 'shared', label: t('settings.storageShared') },
+            ],
+            currentMode,
+            (mode) => {
+                switchStorageMode(mode as 'private' | 'shared')
+                    .then(() => {
+                        getSettingsMenu()?.reRender();
+                        refreshLibrary()
+                            .then(() => {
+                                const msg =
+                                    allModels.length > 0
+                                        ? t('settings.paths.modelsLoaded', {
+                                              count: allModels.length,
+                                          })
+                                        : t('settings.paths.noModels');
+                                setStatus(msg, allModels.length === 0);
+                            })
+                            .catch((err) => {
+                                logWarn('resources', 'refreshLibrary failed:', err);
+                            });
+                    })
+                    .catch((err) => {
+                        console.error('[resources] switchStorageMode failed:', err);
+                        setStatus(t('settings.storageModeFail', { err }), true);
+                    });
+            }
+        );
+        const desc = document.createElement('div');
+        desc.className = 'storage-mode-desc';
+        desc.style.cssText =
+            'font-size:11px;color:var(--text-secondary);padding:2px 12px 8px;line-height:1.4';
+        desc.textContent = t('settings.storageModeDesc');
+        inner.appendChild(desc);
+        const diag = document.createElement('div');
+        diag.style.cssText =
+            'margin:6px 12px 8px;padding:8px 10px;background:rgba(0,0,0,0.12);border-radius:6px;font-size:11px;color:var(--text-secondary);line-height:1.7;word-break:break-all';
+
+        const modeRow = document.createElement('div');
+        modeRow.textContent =
+            t('settings.storageMode') +
+            '：' +
+            (currentMode === 'shared'
+                ? t('settings.paths.storageModeShared')
+                : t('settings.paths.storageModePrivate'));
+        diag.appendChild(modeRow);
+
+        const rootRow = document.createElement('div');
+        rootRow.textContent = t('settings.paths.resourceRoot') + '：';
+        if (resourceRoot) {
+            rootRow.textContent += resourceRoot;
+        } else {
+            const notSet = document.createElement('span');
+            notSet.style.color = 'var(--danger)';
+            notSet.textContent = t('settings.paths.notSet');
+            rootRow.appendChild(notSet);
+        }
+        diag.appendChild(rootRow);
+
+        const countRow = document.createElement('div');
+        countRow.textContent = t('settings.paths.modelCount') + allModels.length;
+        diag.appendChild(countRow);
+
+        inner.appendChild(diag);
+    });
+}
+
 function buildStorageSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
     const root = resourceRoot;
     const rootSub = root ? truncatePath(root) : t('settings.paths.notSet');
@@ -73,87 +151,8 @@ function buildStorageSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode
         {
             id: 'resources:storage',
             kind: 'custom',
-            renderCustom: async (c) => {
-                if (isAndroid) {
-                    let currentMode = 'private';
-                    try {
-                        currentMode = (await GetStorageMode()) || 'private';
-                    } catch {
-                        // ignore
-                    }
-                    cardContainer(c, (inner) => {
-                        addSectionTitle(inner, t('settings.paths.storage'));
-                        addModeRow<string>(
-                            inner,
-                            t('settings.storageMode'),
-                            [
-                                { value: 'private', label: t('settings.storagePrivate') },
-                                { value: 'shared', label: t('settings.storageShared') },
-                            ],
-                            currentMode,
-                            (mode) => {
-                                switchStorageMode(mode as 'private' | 'shared')
-                                    .then(() => {
-                                        getSettingsMenu()?.reRender();
-                                        refreshLibrary()
-                                            .then(() => {
-                                                const msg =
-                                                    allModels.length > 0
-                                                        ? t('settings.paths.modelsLoaded', {
-                                                              count: allModels.length,
-                                                          })
-                                                        : t('settings.paths.noModels');
-                                                setStatus(msg, allModels.length === 0);
-                                            })
-                                            .catch((err) => {
-                                                logWarn('resources', 'refreshLibrary failed:', err);
-                                            });
-                                    })
-                                    .catch((err) => {
-                                        console.error('[resources] switchStorageMode failed:', err);
-                                        setStatus(t('settings.storageModeFail', { err }), true);
-                                    });
-                            }
-                        );
-                        const desc = document.createElement('div');
-                        desc.className = 'storage-mode-desc';
-                        desc.style.cssText =
-                            'font-size:11px;color:var(--text-secondary);padding:2px 12px 8px;line-height:1.4';
-                        desc.textContent = t('settings.storageModeDesc');
-                        inner.appendChild(desc);
-                        const diag = document.createElement('div');
-                        diag.style.cssText =
-                            'margin:6px 12px 8px;padding:8px 10px;background:rgba(0,0,0,0.12);border-radius:6px;font-size:11px;color:var(--text-secondary);line-height:1.7;word-break:break-all';
-
-                        const modeRow = document.createElement('div');
-                        modeRow.textContent =
-                            t('settings.storageMode') +
-                            '：' +
-                            (currentMode === 'shared'
-                                ? t('settings.paths.storageModeShared')
-                                : t('settings.paths.storageModePrivate'));
-                        diag.appendChild(modeRow);
-
-                        const rootRow = document.createElement('div');
-                        rootRow.textContent = t('settings.paths.resourceRoot') + '：';
-                        if (resourceRoot) {
-                            rootRow.textContent += resourceRoot;
-                        } else {
-                            const notSet = document.createElement('span');
-                            notSet.style.color = 'var(--danger)';
-                            notSet.textContent = t('settings.paths.notSet');
-                            rootRow.appendChild(notSet);
-                        }
-                        diag.appendChild(rootRow);
-
-                        const countRow = document.createElement('div');
-                        countRow.textContent =
-                            t('settings.paths.modelCount') || '模型数量：' + allModels.length;
-                        diag.appendChild(countRow);
-
-                        inner.appendChild(diag);
-                    });
-                } else {
+            renderCustom: (c) => {
+                if (!isAndroid) {
                     cardContainer(c, (inner) => {
                         addSectionTitle(inner, t('settings.paths.storage'));
                         slideRow(
@@ -165,7 +164,24 @@ function buildStorageSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode
                             rootSub
                         );
                     });
+                    return;
                 }
+                // Android：异步取存储模式后再渲染；disposed 守卫防止卸载后写 DOM
+                let disposed = false;
+                GetStorageMode()
+                    .then((mode) => {
+                        if (!disposed) {
+                            renderAndroidStorage(c, mode || 'private', getSettingsMenu);
+                        }
+                    })
+                    .catch(() => {
+                        if (!disposed) {
+                            renderAndroidStorage(c, 'private', getSettingsMenu);
+                        }
+                    });
+                return () => {
+                    disposed = true;
+                };
             },
         },
     ];

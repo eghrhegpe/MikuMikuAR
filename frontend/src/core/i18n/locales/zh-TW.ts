@@ -28,6 +28,55 @@ export const zhTW: Record<string, string> = {
     'settings.about': '關於',
     'settings.language': '語言',
 
+    // ===== 設定·新資訊架構根級（ADR-157） =====
+    'settings.graphics': '畫面',
+    'settings.controls': '操控',
+    'settings.resources': '資源',
+    'settings.media': '媒體',
+    'settings.system': '系統',
+
+    // ===== 設定·畫面 graphics（ADR-157） =====
+    'settings.graphics.preset': '效能預設',
+    'settings.graphics.frameQuality': '幀率與畫質',
+    'settings.graphics.effects': '渲染效果',
+    'settings.graphics.physicsHud': '物理與 HUD',
+
+    // ===== 設定·操控 controls（ADR-157） =====
+    'settings.controls.camera': '相機',
+
+    // ===== 設定·資源 resources / 模型庫（ADR-157） =====
+    'settings.library.sortMode': '排序方式',
+    'settings.library.sortByName': '依名稱排序',
+    'settings.library.sortByDefault': '預設順序',
+    'settings.library.namePriority': '顯示名稱優先級',
+    'settings.library.materialMap': '材質分類對應',
+    'settings.library.addMaterialMap': '新增對應',
+    'settings.library.patternLabel': '比對規則',
+    'settings.library.patternPlaceholder': '正規表示式，如 裙',
+    'settings.library.categoryLabel': '分類',
+    'settings.library.categoryPlaceholder': '皮膚/頭髮/眼睛/服裝/配件/道具',
+    'settings.paths.modelCount': '模型數量：',
+    'settings.saveFailed': '儲存失敗',
+
+    // ===== 設定·媒體 media / 截圖（ADR-157） =====
+    'settings.screenshot.format': '格式',
+    'settings.screenshot.quality': '品質',
+    'settings.screenshot.thumbRes': '縮圖解析度',
+    'settings.screenshot.thumbResSet': '縮圖解析度已設為 {label}',
+    'settings.screenshot.saveDir': '儲存目錄',
+    'settings.screenshot.dirNotSet': '未設定（使用預設）',
+    'settings.screenshot.selectDir': '選擇目錄',
+    'settings.screenshot.openDir': '開啟目錄',
+
+    // ===== 設定·系統 system / 軟體 / 關於補充（ADR-157） =====
+    'settings.software.actions': '操作',
+    'settings.software.info': '資訊',
+    'settings.importBadFormat': '設定檔案格式不正確',
+    'settings.about.versionInfo': '版本資訊',
+    'settings.about.cache.counting': '統計中…',
+    'settings.about.update.checkHint': '點擊「檢查更新」查看是否有新版本',
+    'settings.about.update.goDownload': '前往下載 →',
+
     // ===== 語言清單 =====
     'lang.zh-CN': '簡體中文',
     'lang.en': 'English',
@@ -1444,6 +1493,9 @@ export const zhTW: Record<string, string> = {
     // ===== i18n Phase 4 — missing keys =====
     'common.model': '模型',
     'common.prop': '道具',
+    'common.delete': '刪除',
+    'common.items': '項',
+    'common.unknown': '未知',
     'model-detail.unloadThis': '卸載此{kind}',
     'common.off': '關',
     'common.on': '開',
@@ -1597,6 +1649,7 @@ export const zhTW: Record<string, string> = {
     'settings.themeColorSet': '✓ 主題色已設為 {hex}',
     'settings.unloaded': '✓ 已卸載: {name}',
     'status.loop': '循環: {state}',
+    'status.error': '錯誤：{message}',
     'toast.undo': '撤銷',
     // ===== i18n 審計修復 2026-07-13 =====
     'boot.engineReady': '✅ 引擎就緒',
