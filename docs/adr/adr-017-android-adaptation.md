@@ -132,14 +132,14 @@ type FileAccessor interface {
 
 ### P2 — 偶发级
 
-| ID | 问题 | 影响 |
-|----|------|------|
-| A2-01 | localStorage 5MB 配额超限后静默截断 | 场景配置写入半截 → 重启后 `JSON.parse` 失败 → 配置归零 |
-| A2-02 | Android 返回键与 MenuStack 导航冲突 | 关闭面板时直接退出 App |
-| A2-03 | 键盘弹出触发 Canvas 重绘风暴（`adjustResize`） | 低端机帧率抖动 |
-| A2-04 | 截图 `toDataURL` 低端机 OOM | 截图功能闪退 |
-| A2-05 | 部分国产 ROM `AudioContext` 自动播放限制 | 音乐/节拍检测静音 |
-| A2-06 | `clipboard.writeText` 需用户手势触发 | 复制功能静默失败 |
+| ID | 问题 | 影响 | 状态 |
+|----|------|------|------|
+| A2-01 | localStorage 5MB 配额超限后静默截断 | 场景配置写入半截 → 重启后 `JSON.parse` 失败 → 配置归零 | 待实施 |
+| A2-02 | Android 返回键被 `bridge.emitSystemEvent` 吞掉，退不出 App（原描述“关闭面板时直接退出”与事实相反） | 面板全关后按返回无响应，用户只能 Home 键/杀进程退出 | ✅ 已修复（2026-07-20）：前端双击退出——无浮层时 2s 内再按返回调 `WailsJSBridge.exitApp()` 退出；plaza 清理收口至 `init.ts` 单一处理器 |
+| A2-03 | 键盘弹出触发 Canvas 重绘风暴（`adjustResize`） | 低端机帧率抖动 | 待实施 |
+| A2-04 | 截图 `toDataURL` 低端机 OOM | 截图功能闪退 | 待实施 |
+| A2-05 | 部分国产 ROM `AudioContext` 自动播放限制 | 音乐/节拍检测静音 | 待实施 |
+| A2-06 | `clipboard.writeText` 需用户手势触发 | 复制功能静默失败 | 待实施 |
 
 ### P3 — 架构建议
 

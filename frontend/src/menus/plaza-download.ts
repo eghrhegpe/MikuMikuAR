@@ -20,7 +20,7 @@ import {
     shortcutsRegistered, setShortcutsRegistered,
     plazaIframe, remoteURLDisplay, remoteProgress,
     observer, setObserver,
-    getLayer, stopProxy, closePlaza,
+    getLayer, stopProxy,
 } from './plaza-state';
 
 // ======== 下载监听 ========
@@ -134,12 +134,6 @@ export function installEventListeners(): void {
             [{ label: t('plaza.viewLibrary'), onClick: () => safeCallAsync('plaza', 'refresh after plaza download', () => refreshLibrary()) }],
             8000
         );
-    });
-    Events.On('android:back', () => {
-        const l = getLayer();
-        if (l && l.classList.contains('visible')) {
-            closePlaza();
-        }
     });
 }
 

@@ -91,6 +91,7 @@ export const ja: Record<string, string> = {
     'main.needFileAccess':
         '⚠️ /sdcard/MMD を読むにはファイルアクセス権限が必要です。ダイアログで許可してください。',
     'main.permissionGranted': '✅ ファイル権限を許可しました、モデルライブラリを再スキャン中...',
+    'main.pressAgainToExit': 'もう一度押すとアプリを終了します',
     'main.libraryRefreshed': '✅ モデルライブラリを更新しました',
     'main.libraryRefreshFailed': '⚠️ モデルライブラリの更新に失敗: ',
     'main.newFileDetected': '新しいファイルを検出',
@@ -775,6 +776,11 @@ export const ja: Record<string, string> = {
     'scene.ar.webxrVerdictFull': '🟢 WebXR ルート実現可能',
     'scene.ar.webxrVerdictPartial': '🟡 一部サポート、フォールバック共存が必要',
     'scene.ar.webxrVerdictNone': '🔴 実現不可、ネイティブ ARCore ルートへ',
+    'scene.ar.arcoreProbe': 'ARCore 共存プローブ',
+    'scene.ar.arcoreLaunch': 'ARCore × WebView 共存プローブを起動',
+    'scene.ar.arcoreLaunching': 'ARCore プローブ起動中、フルスクリーンページを確認…',
+    'scene.ar.arcoreSuccess': '🟢 ARCore × WebView 共存検証成功！',
+    'scene.ar.arcoreFailed': '🔴 ARCore プローブ失敗',
 
     // —— Scene Bundle ——
     'scene.bundle.collecting': 'シーンアセットを収集中…',

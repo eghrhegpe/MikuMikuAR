@@ -840,6 +840,11 @@ export const zhCN: Record<string, string> = {
     'scene.ar.webxrVerdictFull': '🟢 WebXR 路线可行',
     'scene.ar.webxrVerdictPartial': '🟡 部分支持，需降级共存',
     'scene.ar.webxrVerdictNone': '🔴 不可行，转原生 ARCore 路线',
+    'scene.ar.arcoreProbe': 'ARCore 共存探针',
+    'scene.ar.arcoreLaunch': '启动 ARCore × WebView 共存探针',
+    'scene.ar.arcoreLaunching': 'ARCore 探针已启动，请查看全屏探针页面…',
+    'scene.ar.arcoreSuccess': '🟢 ARCore × WebView 共存验证通过！',
+    'scene.ar.arcoreFailed': '🔴 ARCore 探针失败',
 
     // scene.bundle — 场景打包/解包状态
     'scene.bundle.collecting': '正在收集场景资源…',
@@ -1059,6 +1064,7 @@ export const zhCN: Record<string, string> = {
     'main.vmdLoadFailed': '✗ VMD 加载失败: ',
     'main.needFileAccess': '⚠️ 需要文件访问权限才能读取 /sdcard/MMD，请在弹窗中授权',
     'main.permissionGranted': '✅ 文件权限已授予，正在重新扫描模型库...',
+    'main.pressAgainToExit': '再按一次返回键退出应用',
     'main.libraryRefreshed': '✅ 模型库已刷新',
     'main.libraryRefreshFailed': '⚠️ 模型库刷新失败：',
     'main.newFileDetected': '检测到新文件',

@@ -92,6 +92,7 @@ export const ko: Record<string, string> = {
         '⚠️ /sdcard/MMD를 읽으려면 파일 액세스 권한이 필요합니다. 대화상자에서 허용해 주세요.',
     'main.permissionGranted':
         '✅ 파일 권한이 허용되었습니다. 모델 라이브러리를 다시 스캔하는 중...',
+    'main.pressAgainToExit': '한 번 더 누르면 앱이 종료됩니다',
     'main.libraryRefreshed': '✅ 모델 라이브러리 새로고침 완료',
     'main.libraryRefreshFailed': '⚠️ 모델 라이브러리 새로고침 실패: ',
     'main.newFileDetected': '새 파일 감지됨',
@@ -772,6 +773,11 @@ export const ko: Record<string, string> = {
     'scene.ar.webxrVerdictFull': '🟢 WebXR 경로 가능',
     'scene.ar.webxrVerdictPartial': '🟡 부분 지원, 폴백 공존 필요',
     'scene.ar.webxrVerdictNone': '🔴 불가능, 네이티브 ARCore 경로로 전환',
+    'scene.ar.arcoreProbe': 'ARCore 공존 프로브',
+    'scene.ar.arcoreLaunch': 'ARCore × WebView 공존 프로브 실행',
+    'scene.ar.arcoreLaunching': 'ARCore 프로브 실행 중, 전체화면 페이지 확인…',
+    'scene.ar.arcoreSuccess': '🟢 ARCore × WebView 공존 검증 성공!',
+    'scene.ar.arcoreFailed': '🔴 ARCore 프로브 실패',
 
     // —— Scene Bundle ——
     'scene.bundle.collecting': '씬 에셋 수집 중…',

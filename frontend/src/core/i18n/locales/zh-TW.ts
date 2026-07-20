@@ -90,6 +90,7 @@ export const zhTW: Record<string, string> = {
     'main.vmdLoadFailed': '✗ VMD 載入失敗: ',
     'main.needFileAccess': '⚠️ 需要檔案存取權限才能讀取 /sdcard/MMD，請在彈窗中授權',
     'main.permissionGranted': '✅ 檔案權限已授予，正在重新掃描模型庫...',
+    'main.pressAgainToExit': '再按一次返回鍵退出應用程式',
     'main.libraryRefreshed': '✅ 模型庫已刷新',
     'main.libraryRefreshFailed': '⚠️ 模型庫刷新失敗：',
     'main.newFileDetected': '檢測到新檔案',
@@ -769,6 +770,11 @@ export const zhTW: Record<string, string> = {
     'scene.ar.webxrVerdictFull': '🟢 WebXR 路線可行',
     'scene.ar.webxrVerdictPartial': '🟡 部分支援，需降級共存',
     'scene.ar.webxrVerdictNone': '🔴 不可行，轉原生 ARCore 路線',
+    'scene.ar.arcoreProbe': 'ARCore 共存探針',
+    'scene.ar.arcoreLaunch': '啟動 ARCore × WebView 共存探針',
+    'scene.ar.arcoreLaunching': 'ARCore 探針已啟動，請檢視全螢幕探針頁面…',
+    'scene.ar.arcoreSuccess': '🟢 ARCore × WebView 共存驗證通過！',
+    'scene.ar.arcoreFailed': '🔴 ARCore 探針失敗',
 
     // —— Scene Bundle ——
     'scene.bundle.collecting': '正在收集場景資源……',
