@@ -893,17 +893,27 @@ export function createWater(state: EnvState): void {
 }
 
 export function disposeWater(): void {
-    // LOD 网格为兄弟根网格（非父子），需显式销毁
-    for (const lod of _waterLODs) {
-        lod.dispose();
+    // [fix] 先解绑所有 mesh 的材质引用，防止 mesh.dispose() 级联销毁
+    // 共享 ShaderMaterial 导致其他仍存活 mesh 引用已销毁材质（_effect=null），
+    // 下一帧 GroundMesh.render() → ShaderMaterial.isReady() → 💥
+    if (_envSys.water.mesh) {
+        _envSys.water.mesh.material = null;
     }
-    _envSys.water.mesh = safeDispose(_envSys.water.mesh, true); // true = recursive
+    for (const lod of _waterLODs) {
+        lod.material = null;
+    }
+    // 先释放材质，确保 _effect 被正确清理
+    _envSys.water.material = safeDispose(_envSys.water.material);
+    // LOD 网格为兄弟根网格（非父子），需显式销毁（材质已解绑，dispose 不再级联）
+    for (const lod of _waterLODs) {
+        lod.dispose(false, false); // doNotRecurse=false, disposeMaterialAndTextures=false
+    }
+    _envSys.water.mesh = safeDispose(_envSys.water.mesh, false, false); // doNotRecurse=false, disposeMaterialAndTextures=false
     _waterLODs = [];
     _activeWaterLOD = -1;
     _waterPhase = 0;
     _waterWaveSpeed = 1;
     clearRipples(); // 清理残留涟漪，避免 dispose 后再次 createWater 时显示旧数据
-    _envSys.water.material = safeDispose(_envSys.water.material);
     // 释放焦散纹理，防止内存泄漏
     _causticTexture = safeDispose(_causticTexture);
     _causticScene = null;
