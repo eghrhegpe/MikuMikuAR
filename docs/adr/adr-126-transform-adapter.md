@@ -1,6 +1,6 @@
 # ADR-126: 变换适配器统一（TransformAdapter Registry）— 跨 kind 拖拽/数值双模态去重
 
-> **状态**: 实施中（Phase 1 + Phase 2 + Phase 3 已完成；Phase 3 已通过代码审核：P1 修复 + P4 派生单测补齐，2026-07-18）
+> **状态**: ✅ 已完成（Phase 1 + Phase 2 + Phase 3 全量落地；2026-07-18 代码审核通过：P1 修复 + P4 派生单测补齐）
 > **日期**: 2026-07-18
 > **路径约定**: 本文档源码路径均省略 `frontend/src/` 前缀（与 ADR-121 / ADR-120 一致），例如 `scene/render/transform-gizmo.ts` = `frontend/src/scene/render/transform-gizmo.ts`。
 

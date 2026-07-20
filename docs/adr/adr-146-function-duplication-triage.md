@@ -1,6 +1,6 @@
 # ADR-146: 函数级重复摸排与收敛（第二波）
 
-- **状态**: 实施中
+- **状态**: 实施中（P1 主题 1 preset-chip 收敛 ✅ 已完成；剩余 P1 主题 2–4 + P2 6 项 + P3 3 项待推进）
 - **日期**: 2026-07-19
 - **相关**: ADR-143（P1 之外剩余项）、ADR-139（ObserverRegistry）、ADR-140（DragSliderController）、ADR-142（withLoadingStatus）、ADR-138（env-dispatcher）、ADR-096（通用 Helper 收敛）、ADR-101（通用逻辑第二波收敛）、ADR-105（AbortSignal 传递规范）、ADR-116（bone override UI）、ADR-129（per-motion UI）
 
