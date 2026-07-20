@@ -13,6 +13,7 @@ import {
     Mesh,
     MeshBuilder,
     CubeTexture,
+    RawCubeTexture,
 } from '@babylonjs/core';
 import { EnvState, envState } from '@/core/config';
 import { col3FromTriple } from '@/core/color-helpers';
@@ -26,6 +27,7 @@ import { safeDispose } from '@/core/dispose-helpers';
 // ======== Module state ========
 let _lastProceduralSkyKey = '';
 let _skyFollowHandle: ObserverHandle | null = null;
+let _proceduralEnvTexture: RawCubeTexture | null = null;
 
 /** 天空渐变 canvas 尺寸 */
 const SKY_TEX_SIZE = 256;
@@ -246,8 +248,63 @@ function createProceduralSky(state: EnvState): void {
     });
 
     scene.clearColor = new Color4(0, 0, 0, 1);
+    
+    // 为 PBR 材质创建简单环境贴图（IBL）
+    createProceduralEnvTexture(state, scene);
+    
     const starsPhase = state.starsEnabled ? (state.sunAngle > 10 ? 'h' : 'l') : '';
     _lastProceduralSkyKey = `${state.skyColorTop}|${state.skyColorMid}|${state.skyColorBot}|${state.skyBrightness}|${state.starsEnabled}|${state.starsTexture}|${starsPhase}`;
+}
+
+/** 为 PBR 材质创建简单环境立方体贴图（基于天空渐变颜色） */
+function createProceduralEnvTexture(state: EnvState, scene: Scene): void {
+    // 释放旧贴图
+    if (_proceduralEnvTexture) {
+        _proceduralEnvTexture.dispose();
+        _proceduralEnvTexture = null;
+    }
+    
+    const size = 32; // 小尺寸足够，环境贴图不需要高分辨率
+    const topColor = col3FromTriple(state.skyColorTop);
+    const midColor = col3FromTriple(state.skyColorMid);
+    const botColor = col3FromTriple(state.skyColorBot);
+    const brightness = state.skyBrightness;
+    
+    // 创建 6 个面的像素数据（简单渐变：上=顶色，中=中色，下=底色）
+    const faces: Uint8Array[] = [];
+    for (let face = 0; face < 6; face++) {
+        const data = new Uint8Array(size * size * 4);
+        for (let y = 0; y < size; y++) {
+            // 根据 y 位置插值颜色
+            const t = y / size;
+            let r: number, g: number, b: number;
+            if (t < 0.5) {
+                // 上半：顶色 → 中色
+                const lt = t * 2;
+                r = (topColor.r * (1 - lt) + midColor.r * lt) * brightness;
+                g = (topColor.g * (1 - lt) + midColor.g * lt) * brightness;
+                b = (topColor.b * (1 - lt) + midColor.b * lt) * brightness;
+            } else {
+                // 下半：中色 → 底色
+                const lt = (t - 0.5) * 2;
+                r = (midColor.r * (1 - lt) + botColor.r * lt) * brightness;
+                g = (midColor.g * (1 - lt) + botColor.g * lt) * brightness;
+                b = (midColor.b * (1 - lt) + botColor.b * lt) * brightness;
+            }
+            for (let x = 0; x < size; x++) {
+                const idx = (y * size + x) * 4;
+                data[idx] = Math.min(255, r * 255);
+                data[idx + 1] = Math.min(255, g * 255);
+                data[idx + 2] = Math.min(255, b * 255);
+                data[idx + 3] = 255;
+            }
+        }
+        faces.push(data);
+    }
+    
+    // 创建 RawCubeTexture
+    _proceduralEnvTexture = new RawCubeTexture(scene, faces, size);
+    scene.environmentTexture = _proceduralEnvTexture;
 }
 
 // ======== CubeTexture Sky ========
@@ -330,6 +387,12 @@ export function disposeSky(): void {
     }
     if (_envSys.sky.skyDynamicTex) {
         _envSys.sky.skyDynamicTex = safeDispose(_envSys.sky.skyDynamicTex);
+    }
+    // 释放程序化环境贴图
+    if (_proceduralEnvTexture) {
+        scene.environmentTexture = null;
+        _proceduralEnvTexture.dispose();
+        _proceduralEnvTexture = null;
     }
     _lastProceduralSkyKey = '';
     _disposeSunDisc();
