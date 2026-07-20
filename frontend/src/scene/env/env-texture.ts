@@ -3,7 +3,7 @@
 // 优先 DynamicTexture（无 PNG 编码开销，复用天空已验证路径）；构造/绘制失败时回退
 // toDataURL→Texture，且回退路径同样吞掉受约束环境（NullEngine 无完整 2D 上下文）的绘制异常。
 
-import { DynamicTexture, Texture, Scene } from '@babylonjs/core';
+import { DynamicTexture, Texture, BaseTexture, Scene } from '@babylonjs/core';
 import { getCanvasCtx } from './env-type-helpers';
 
 export interface CanvasTextureOptions {
@@ -98,6 +98,14 @@ export function createCanvasTexture(opts: CanvasTextureOptions): Texture {
 const _texCache = new Map<string, Texture>();
 
 /**
+ * 缓存所有权标记：凡经 getOrCreateCanvasTexture 创建的贴图均归缓存所有，
+ * 统一由 disposeTextureCache 释放。材质释放路径（disposeGroundMaterial 等）
+ * 须先经 isCacheOwnedTexture 判断并跳过缓存贴图，避免提前 dispose 后
+ * getOrCreateCanvasTexture 命中已失效贴图、地面渲染退化为空白。
+ */
+const _cacheOwned = new WeakSet<BaseTexture>();
+
+/**
  * 按 key 获取或创建 canvas 贴图。key 不变则复用；调用方不应手动 dispose 缓存贴图
  * （统一由 disposeTextureCache 在 disposeEnv 时释放）。
  */
@@ -107,8 +115,14 @@ export function getOrCreateCanvasTexture(key: string, opts: CanvasTextureOptions
         return cached;
     }
     const tex = createCanvasTexture(opts);
+    _cacheOwned.add(tex);
     _texCache.set(key, tex);
     return tex;
+}
+
+/** 判断贴图是否归缓存所有——是则调用方不得手动 dispose（由 disposeTextureCache 统一释放）。 */
+export function isCacheOwnedTexture(tex: BaseTexture | null | undefined): boolean {
+    return !!tex && _cacheOwned.has(tex);
 }
 
 /** 释放全部缓存贴图（供 disposeEnv 统一清理）。 */

@@ -5,6 +5,7 @@ import {
     Scene,
     Color3,
     Texture,
+    BaseTexture,
     DynamicTexture,
     StandardMaterial,
     PBRMaterial,
@@ -25,7 +26,7 @@ import { fbm, hash2 } from './env-terrain';
 import { createHeightmapGround, applyTerrainMaterial } from './env-terrain';
 import { PlanarReflection, registerReflectionSurface } from './planar-reflection';
 import { getPlanarQualityOverride } from './env-reflection';
-import { createCanvasTexture, getOrCreateCanvasTexture } from './env-texture';
+import { createCanvasTexture, getOrCreateCanvasTexture, isCacheOwnedTexture } from './env-texture';
 import { _envSys, getScene } from './env-context';
 import { ensureEnvUpdateObserver } from './env-impl';
 import { getCanvasCtx } from './env-type-helpers';
@@ -390,22 +391,31 @@ function generateProceduralGroundTextures(
     return { albedo: make('albedo'), roughness: make('roughness'), normal: make('normal') };
 }
 
-/** 释放材质及其所有纹理（PBR 和 Standard 共用 opacity/bump/reflection，差异在 albedo/diffuse） */
+/**
+ * 释放材质及其所有纹理（PBR 和 Standard 共用 opacity/bump/reflection，差异在 albedo/diffuse）。
+ * 缓存所有的贴图（程序化三件套 / 边缘淡出）跳过——由 disposeTextureCache 统一释放，
+ * 避免提前 dispose 后 getOrCreateCanvasTexture 复用已失效贴图导致地面空白。
+ */
 function disposeGroundMaterial(mat: Material | null): void {
     if (!mat) {
         return;
     }
+    const disposeTex = (tex: BaseTexture | null) => {
+        if (tex && !isCacheOwnedTexture(tex)) {
+            tex.dispose();
+        }
+    };
     if (mat instanceof PBRMaterial) {
-        mat.albedoTexture?.dispose();
-        mat.metallicTexture?.dispose();
+        disposeTex(mat.albedoTexture);
+        disposeTex(mat.metallicTexture);
     }
     if (mat instanceof StandardMaterial) {
-        mat.diffuseTexture?.dispose();
+        disposeTex(mat.diffuseTexture);
     }
     if (mat instanceof PBRMaterial || mat instanceof StandardMaterial) {
-        mat.bumpTexture?.dispose();
-        mat.opacityTexture?.dispose();
-        mat.reflectionTexture?.dispose();
+        disposeTex(mat.bumpTexture);
+        disposeTex(mat.opacityTexture);
+        disposeTex(mat.reflectionTexture);
     }
     mat.dispose();
 }
@@ -1034,6 +1044,14 @@ export function applyGround(state: EnvState): void {
             mat.bumpTexture = texs.normal;
             // ADR-114 Phase 2: 法线扭曲增强 bumpTexture.level
             mat.bumpTexture.level = _effectiveBumpLevel(state);
+            // ADR-114: 接通粗糙度贴图（此前生成后未赋给材质，逐像素粗糙度被丢弃）。
+            // Babylon 9.x 默认从 metallicTexture 的 Alpha 通道读粗糙度，而程序化贴图为
+            // RGB 灰度（alpha 恒为 1），须改读 Green 通道；Blue（金属度）/Red（AO）通道
+            // 保持关闭——金属度走标量 groundMetallic。标量 roughness 与贴图相乘（Babylon
+            // 约定 “scale the roughness values of the metallic texture”），groundRoughness 滑杆依旧生效。
+            mat.metallicTexture = texs.roughness;
+            mat.useRoughnessFromMetallicTextureAlpha = false;
+            mat.useRoughnessFromMetallicTextureGreen = true;
         }
     } else if (state.groundStyle !== 'texture') {
         // canvas 程序化图案（grid/checker/dots 等）
