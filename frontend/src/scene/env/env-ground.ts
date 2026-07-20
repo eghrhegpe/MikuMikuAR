@@ -21,7 +21,7 @@ import {
 import { EnvState, envState } from '@/core/config';
 import { col3FromTriple, rgbString } from '@/core/color-helpers';
 import { logWarn } from '@/core/logger';
-import { fbm } from './env-terrain';
+import { fbm, hash2 } from './env-terrain';
 import { createHeightmapGround, applyTerrainMaterial } from './env-terrain';
 import { PlanarReflection, registerReflectionSurface } from './planar-reflection';
 import { createCanvasTexture, getOrCreateCanvasTexture } from './env-texture';
