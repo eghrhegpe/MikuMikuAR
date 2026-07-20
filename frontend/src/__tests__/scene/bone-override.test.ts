@@ -122,3 +122,56 @@ describe('bone-override _computeOverride (ADR-116 P1)', () => {
         expect(translation.z).toBeCloseTo(3);
     });
 });
+
+// ── R4 Slerp 分支边界护栏（ADR-147）──
+// 复合分支（weight≥1 → oldRotation × slot.quat）与 Slerp 分支（weight<1 → Slerp(oldRotation, slot.quat, weight)）
+// 在非单位 oldRotation（真实父骨传播）下，于边界处结果截然不同。若有人误改 `>=1` 为 `>1`/`>0`，
+// 或把 Slerp 终点误写成「复合」，以下用例会立刻失败。
+describe('bone-override _computeOverride Slerp 分支边界 (ADR-147 R4)', () => {
+    it('边界 weight=1（复合）vs weight=0.999（Slerp）：同非单位 oldR 下结果发散', () => {
+        const parentRot = Quaternion.FromEulerAngles(0, HALF_PI, 0); // 父骨 90°
+        const slotQuat = Quaternion.FromEulerAngles(0, 0, 0); // 本骨目标 0°
+        const compound = _computeOverride(
+            new Vector3(0, 0, 0),
+            parentRot,
+            { quat: slotQuat, weight: 1, overrideRotation: true }
+        );
+        const slerp = _computeOverride(
+            new Vector3(0, 0, 0),
+            parentRot,
+            { quat: slotQuat, weight: 0.999, overrideRotation: true }
+        );
+        // weight=1 → 复合：父骨 90° × 目标 0° = 90°（保留父骨）
+        expect(compound.rotation.toEulerAngles().y).toBeCloseTo(HALF_PI);
+        // weight=0.999 → Slerp(90°, 0°, 0.999) ≈ 0.09°（父骨被插掉，远小于 45°）
+        expect(slerp.rotation.toEulerAngles().y).toBeLessThan(HALF_PI / 4);
+        // 两分支在边界处必须发散（拦截 `>=1` 被误改）
+        expect(slerp.rotation.toEulerAngles().y).not.toBeCloseTo(HALF_PI);
+    });
+
+    it('下界 weight=0：slot.quat 完全不生效，纯沿用父骨旋转', () => {
+        const parentRot = Quaternion.FromEulerAngles(0, HALF_PI, 0); // 90°
+        const slotQuat = Quaternion.FromEulerAngles(0, Math.PI, 0); // 本骨目标 180°
+        const { rotation } = _computeOverride(
+            new Vector3(0, 0, 0),
+            parentRot,
+            { quat: slotQuat, weight: 0, overrideRotation: true }
+        );
+        // Slerp(90°, 180°, 0) = 起点 = 90°，slot 被忽略
+        expect(rotation.toEulerAngles().y).toBeCloseTo(HALF_PI);
+        expect(rotation.toEulerAngles().y).not.toBeCloseTo(Math.PI);
+    });
+
+    it('weight=1 是复合而非 Slerp@1：非单位 oldR + 非零目标时结果差一倍', () => {
+        const parentRot = Quaternion.FromEulerAngles(0, HALF_PI, 0); // 90°
+        const slotQuat = Quaternion.FromEulerAngles(0, HALF_PI, 0); // 本骨目标 90°
+        const { rotation } = _computeOverride(
+            new Vector3(0, 0, 0),
+            parentRot,
+            { quat: slotQuat, weight: 1, overrideRotation: true }
+        );
+        // 复合：90° × 90° = 180°；若退化成 Slerp(oldR, target, 1) = target = 90° 则失败
+        expect(rotation.toEulerAngles().y).toBeCloseTo(Math.PI);
+        expect(rotation.toEulerAngles().y).not.toBeCloseTo(HALF_PI);
+    });
+});
