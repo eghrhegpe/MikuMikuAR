@@ -149,7 +149,7 @@ interface StageLightEntry {
     state: StageLightState;
     light: SpotLight | PointLight | DirectionalLight;
     indicator: Mesh | null;
-    dirLine: Mesh | null;
+    dirLine: LinesMesh | null;
 }
 const _stageLights = new Map<string, StageLightEntry>();
 let _activeStageLightId: string | null = null;
@@ -207,6 +207,10 @@ export function initLighting(
     envSysShadow: { generator: ShadowGenerator | null },
     saveCb: () => void
 ): void {
+    // 防御重复调用（正常流程由 disposeScene 保证，此处为模块级安全网）
+    if (_scene) {
+        disposeLighting();
+    }
     _scene = scene;
     initTransformGizmo(scene);
     _modelRegistry = modelRegistry;
@@ -278,7 +282,13 @@ function _createStageLight(
         return light;
     }
     // directional
-    const dir = target.subtract(pos).normalize();
+    const dir = target.subtract(pos);
+    // 零向量守卫：target === pos 时 fallback 向下
+    if (dir.lengthSquared() < 1e-6) {
+        dir.set(0, -1, 0);
+    } else {
+        dir.normalize();
+    }
     const light = new DirectionalLight(state.id, dir, _scene!);
     light.intensity = intensity;
     light.diffuse = diffuse;
@@ -288,6 +298,10 @@ function _createStageLight(
 }
 
 // ======== Stage Light Indicator ========
+
+/** 模块级临时向量（避免 _updateIndicator 拖拽时 60fps 分配临时对象） */
+const _tmpTarget = Vector3.Zero();
+const _tmpDir = Vector3.Zero();
 
 function _createIndicator(): Mesh {
     const mesh = MeshBuilder.CreateSphere(
@@ -303,11 +317,12 @@ function _createIndicator(): Mesh {
     return mesh;
 }
 
-function _createDirLine(): Mesh {
+function _createDirLine(): LinesMesh {
     const mesh = MeshBuilder.CreateLines(
         'lightDirLine',
         {
             points: [Vector3.Zero(), new Vector3(0, -2, 0)],
+            updatable: true, // 允许后续通过 instance 更新顶点
         },
         _scene!
     );
@@ -341,25 +356,20 @@ function _updateIndicator(entry: StageLightEntry): void {
         indMat.alpha = state.indicatorOpacity;
         entry.indicator.setEnabled(true);
 
-        // 聚光灯：显示方向线
+        // 聚光灯：显示方向线（通过 instance 更新顶点，避免每帧 dispose+rebuild）
         if (state.type === 'spot' && light instanceof SpotLight) {
             if (!entry.dirLine) {
                 entry.dirLine = _createDirLine();
             }
-            const target = new Vector3(state.targetX, state.targetY, state.targetZ);
-            const dir = target.subtract(light.position).normalize().scale(3);
-            entry.dirLine.position.copyFrom(light.position);
-            // 更新线段点
-            entry.dirLine.dispose();
-            entry.dirLine = MeshBuilder.CreateLines(
+            _tmpTarget.set(state.targetX, state.targetY, state.targetZ);
+            _tmpTarget.subtractToRef(light.position, _tmpDir);
+            _tmpDir.normalize().scaleInPlace(3);
+            // 使用 instance 参数原地更新几何，不创建新 Mesh
+            MeshBuilder.CreateLines(
                 'lightDirLine',
-                {
-                    points: [Vector3.Zero(), dir],
-                },
+                { points: [Vector3.Zero(), _tmpDir], instance: entry.dirLine },
                 _scene!
             );
-            (entry.dirLine as LinesMesh).color = new Color3(1, 1, 0.5);
-            entry.dirLine.isPickable = false;
             entry.dirLine.position.copyFrom(light.position);
             entry.dirLine.setEnabled(true);
         } else {
@@ -511,11 +521,17 @@ export function transitionLighting(
     duration: number = 2000,
     onComplete?: () => void
 ): void {
-    if (!hemiLight || !dirLight || !triggerAutoSave) {
+    if (!hemiLight || !dirLight || !triggerAutoSave || !_scene) {
         return;
     }
     const source = getLightState(); // 当前完整状态
     const startTime = performance.now();
+    // 需要重建阴影生成器的参数 — 动画进行中跳，仅结束时一次性应用
+    const rebuildShadowKeys = new Set<string>([
+        'shadowResolution',
+        'shadowType',
+        'shadowEnabled',
+    ]);
 
     const animLoop = () => {
         const elapsed = performance.now() - startTime;
@@ -523,12 +539,6 @@ export function transitionLighting(
         const lerp = (a: number, b: number) => a + (b - a) * t;
 
         const interpState: Partial<LightState> = {};
-        // 需要重建阴影生成器的参数 — 动画进行中跳过，仅结束时一次性应用
-        const rebuildShadowKeys = new Set<string>([
-            'shadowResolution',
-            'shadowType',
-            'shadowEnabled',
-        ]);
         // 仅对 target 中存在的字段插值
         for (const key of Object.keys(target) as (keyof LightState)[]) {
             // 跳过会触发每帧重建阴影生成器的参数，在动画结束时统一处理
