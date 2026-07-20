@@ -32,6 +32,11 @@
     --bg-scene: rgba(20, 20, 28, 0.88);
     --bg-toast: rgba(0, 0, 0, 0.65);
 
+    /* Toast 通知 */
+    --toast-border-info: rgba(80, 160, 255, 0.35);
+    --toast-border-error: rgba(255, 80, 80, 0.3);
+    --toast-shadow: 0 2px 16px rgba(0, 0, 0, 0.4);
+
     /* UI 缩放 / 动画 / 背景 */
     --ui-scale: 1;
     --ui-animations: 1;
@@ -127,6 +132,10 @@
     --resource-gap: calc(8px * var(--ui-scale));
     --resource-radius: calc(8px * var(--ui-scale));
     --resource-label-height: calc(20px * var(--ui-scale));
+    --resource-icon-size: calc(32px * var(--ui-scale));
+    --resource-icon-sm-size: calc(20px * var(--ui-scale));
+    --resource-thumb-sm-size: calc(40px * var(--ui-scale));
+    --resource-thumb-sm-radius: calc(4px * var(--ui-scale));
     --cs-label-font-size: calc(15px * var(--ui-scale));
     --cs-bar-height: calc(6px * var(--ui-scale));
     --cs-bar-radius: calc(3px * var(--ui-scale));

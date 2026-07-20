@@ -76,13 +76,13 @@ function buildToastElement(
     variant: ToastVariant = 'error'
 ): HTMLElement {
     const toast = document.createElement('div');
-    const borderColor = variant === 'info' ? 'rgba(80,160,255,0.35)' : 'rgba(255,80,80,0.3)';
+    const borderVar = variant === 'info' ? 'var(--toast-border-info)' : 'var(--toast-border-error)';
     toast.style.cssText = [
         'pointer-events:auto',
         'background:var(--bg-scene)',
-        `border:1px solid ${borderColor};border-radius:8px`,
+        `border:1px solid ${borderVar};border-radius:8px`,
         'padding:8px 14px;display:flex;align-items:flex-start;gap:10px',
-        'font-size:var(--font-ui);box-shadow:0 2px 16px rgba(0,0,0,0.4)',
+        'font-size:var(--font-ui);box-shadow:var(--toast-shadow)',
         'width:100%;backdrop-filter:blur(8px)',
         'transition:opacity 0.3s ease,transform 0.3s ease',
     ].join(';');
@@ -135,7 +135,7 @@ function buildToastElement(
             btn.textContent = act.label;
             btn.style.cssText =
                 'padding:3px 10px;border:none;border-radius:4px;font-size:var(--font-ui-sm);' +
-                'cursor:pointer;background:var(--accent);color:#fff';
+                'cursor:pointer;background:var(--accent);color:var(--text-bright)';
             btn.addEventListener('click', () => {
                 act.onClick();
                 if (toastId != null) {

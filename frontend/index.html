@@ -65,10 +65,9 @@
 
 <!-- Loading overlay: 内联样式确保 HTML 解析完就是全屏遮罩，不依赖 app.css -->
 <div id="loading" style="position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;flex-direction:column;pointer-events:none;">
-<div class="spinner" style="width:40px;height:40px;border:3px solid #ffffff33;border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;"></div>
+<div class="spinner"></div>
 <span id="loadingText">正在加载 babymmd ...</span>
 </div>
-<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <!-- Bottom Navigation Bar - 静态页时禁用点击 -->
 <div id="bottomNav">
