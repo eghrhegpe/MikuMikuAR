@@ -69,6 +69,7 @@ export const ko: Record<string, string> = {
     'dialog.inputTitle': '입력',
 
     // ===== 메뉴 =====
+    'menu.canvasLabel': '3D 씬',
     'menu.noHint': '힌트 없음',
     'menu.noDesc': '설명 없음',
 

@@ -69,6 +69,7 @@ export const ja: Record<string, string> = {
     'dialog.inputTitle': '入力',
 
     // ===== メニュー =====
+    'menu.canvasLabel': '3D シーン',
     'menu.noHint': 'ヒントなし',
     'menu.noDesc': '説明なし',
 

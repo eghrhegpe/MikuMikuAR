@@ -21,11 +21,13 @@ import { getFormationLabels } from './model-manager';
 import { registerTransformAdapter } from '../transform/transform-adapter';
 import { Vector3, Quaternion } from '@babylonjs/core/Maths/math.vector';
 import type { VPDBoneData, VPDMorphData } from '@/motion-algos/vpd-parser';
+import { t } from '@/core/i18n/t';
 
 // ======== Model Lifecycle ========
 
 export function removeModel(id: string): void {
     modelManager?.remove(id);
+    dom.canvas.setAttribute('aria-label', t('menu.canvasLabel'));
     refreshWaterRenderList();
 
     if (focusedModelId === null && getCameraMode() === 'concert') {

@@ -279,6 +279,7 @@ export async function loadPMXFile(
             setFocusedModelId(existing.id);
             _modelManager?.focus(existing.id, uiState.autoCenterModel);
             setStatus(t('scene.loader.switched', { name: existing.name }), true);
+            dom.canvas.setAttribute('aria-label', `${t('menu.canvasLabel')}：${existing.name}`);
             return existing.id;
         }
 
@@ -383,6 +384,7 @@ export async function loadPMXFile(
                 }
             }
             setStatus(t('scene.loader.stageLoaded', { name: displayName }), true);
+            dom.canvas.setAttribute('aria-label', `${t('menu.canvasLabel')}：${displayName}`);
             _modelManager.arrange();
             _refreshWaterRenderList();
             rebuildShadowCasters();
@@ -614,6 +616,7 @@ export async function loadPMXFile(
                 : t('scene.loader.actorLoaded', { name: displayName }),
             true
         );
+        dom.canvas.setAttribute('aria-label', `${t('menu.canvasLabel')}：${displayName}`);
         _modelManager.arrange();
         _refreshWaterRenderList();
         rebuildShadowCasters();

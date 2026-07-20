@@ -69,6 +69,7 @@ export const zhTW: Record<string, string> = {
     'dialog.inputTitle': '輸入',
 
     // ===== 選單 =====
+    'menu.canvasLabel': '3D 場景',
     'menu.noHint': '暫無提示',
     'menu.noDesc': '暫無描述',
 
