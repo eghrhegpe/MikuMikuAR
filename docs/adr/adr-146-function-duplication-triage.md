@@ -270,7 +270,7 @@
 - [x] `grep -rn "from '\.\./core/ui-collapsible'" src/menus` 归零
 - [x] `_ensureBlueNoiseTexture` 含 scene 校验
 - [x] `applyWaterPresetToCurrent` 不再含 4 行 setFloat（提取 `applyWaterPresetCoreUniforms`，保留 `!== undefined` 守卫；不可机械改调 `_syncWaterUniforms(state)`——preset 为 Partial 预览应用，会从完整 state 无条件写入并触发 facade 副作用）
-- [ ] `model-material.ts` 行内 toggle 0 处，i18n 硬编码归零（主题9，待续）
+- [x] `model-material.ts` 行内 toggle 0 处，i18n 硬编码归零（主题9）：抽 `buildMatToggle(id, index, name, initialEnabled, row)` 收敛 matRoot 行与 matList 行两处 ~95% 相同手写 toggle（含原生二次 click 去重 bugfix + mat-disabled 联动 + setStatus i18n）；matList 行原硬编码 `✓ 已显示/✕ 已隐藏: ${name}` 改走 `t('model-material.shown'/'hidden', { name })`（key 5 语言齐全）。**不套 slideRow.headerToggle**——其为 `collapsible-header` 布局（图标+label+箭头），与物料列表 `slide-item` 行结构/CSS 不兼容，机械替换将致视觉回归。
 - [x] `motion-popup.ts`（模块列表段）与 `motion-override-levels.ts`（模块列表段）共用 `renderModuleToggleList(container, modelId, { onEnter, initModules? })`（抽至 `motion-popup.ts`，`motion-override-levels` 从之导入）
 - [x] `src/menus` 内 window/document 全局监听改走 `addDisposableListener` + 持有 `Disposable`：`env-menu.ts`/`motion-popup.ts`（`mmar:library-scanned`）、`library-actions.ts`（`mmku:modelLoaded` HMR 重绑）、`motion-override-levels.ts`（outsideClick）、`scene-menu.ts`（`mmar:library-scanned`，ADR 枚举遗漏，本轮补入）。`core/dialog.ts` 因 `{ once: true }` 自清理 + clone-to-detach 模式本就无泄漏，排除。
 

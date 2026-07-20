@@ -38,6 +38,51 @@ function _addGroupSeparator(panel: HTMLElement, label: string): void {
     addSectionTitle(panel, label);
 }
 
+/**
+ * 构造材质行的 header-toggle 开关——收敛 matRoot 行与 matList 行两处 ~95% 相同的
+ * 手写 toggle（含 <label> 原生二次 click 去重 bugfix、mat-disabled class 联动、
+ * setStatus i18n 提示）。读取实时 isMatEnabled 状态，避免依赖过时 input.checked。
+ */
+function buildMatToggle(
+    id: string,
+    index: number,
+    name: string,
+    initialEnabled: boolean,
+    row: HTMLElement
+): HTMLLabelElement {
+    const toggle = document.createElement('label');
+    toggle.className = 'toggle header-toggle';
+    toggle.style.marginLeft = 'auto';
+    const toggleInput = document.createElement('input');
+    toggleInput.type = 'checkbox';
+    toggleInput.checked = initialEnabled;
+    const slider = document.createElement('span');
+    slider.className = 'slider';
+    toggle.appendChild(toggleInput);
+    toggle.appendChild(slider);
+    // 修复：<label> 包裹 checkbox 时浏览器会「原生二次派发 click」到 input，
+    // 令本 handler 双触发；因读取的是实时数据状态，两次取值相反而互相抵消（点击无反应）。
+    // 方案：跳过 synthetic click(target===input)，并用 preventDefault 阻止原生切换造成的视觉错位。
+    toggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (e.target === toggleInput) {
+            return;
+        }
+        e.preventDefault();
+        const newState = !isMatEnabled(id, index);
+        setMatEnabled(id, index, newState);
+        toggleInput.checked = newState;
+        row.classList.toggle('mat-disabled', !newState);
+        setStatus(
+            newState
+                ? t('model-material.shown', { name })
+                : t('model-material.hidden', { name }),
+            true
+        );
+    });
+    return toggle;
+}
+
 function buildMatBatchSchema(id: string, _modelName: string): MenuNode[] {
     const groups = getMatCatGroups(id);
     const detailList = getMatDetailList(id);
@@ -411,40 +456,13 @@ function buildMatRootSchema(
                                         row.appendChild(sub);
                                     }
 
-                                    const toggle = document.createElement('label');
-                                    toggle.className = 'toggle header-toggle';
-                                    toggle.style.marginLeft = 'auto';
-                                    const toggleInput = document.createElement('input');
-                                    toggleInput.type = 'checkbox';
-                                    toggleInput.checked = matEnabled;
-                                    const slider = document.createElement('span');
-                                    slider.className = 'slider';
-                                    toggle.appendChild(toggleInput);
-                                    toggle.appendChild(slider);
-                                    // 修复：<label> 包裹 checkbox 时浏览器会「原生二次派发 click」到 input，
-                                    // 令本 handler 双触发；因读取的是实时数据状态，两次取值相反而互相抵消（点击无反应）。
-                                    // 方案：跳过 synthetic click(target===input)，并用 preventDefault 阻止原生切换造成的视觉错位。
-                                    toggle.addEventListener('click', (e) => {
-                                        e.stopPropagation();
-                                        if (e.target === toggleInput) {
-                                            return;
-                                        }
-                                        e.preventDefault();
-                                        const newState = !isMatEnabled(id, idx);
-                                        setMatEnabled(id, idx, newState);
-                                        toggleInput.checked = newState;
-                                        row.classList.toggle('mat-disabled', !newState);
-                                        setStatus(
-                                            newState
-                                                ? t('model-material.shown', {
-                                                      name: matInfo.mat.name,
-                                                  })
-                                                : t('model-material.hidden', {
-                                                      name: matInfo.mat.name,
-                                                  }),
-                                            true
-                                        );
-                                    });
+                                    const toggle = buildMatToggle(
+                                        id,
+                                        idx,
+                                        matInfo.mat.name,
+                                        matEnabled,
+                                        row
+                                    );
                                     row.appendChild(toggle);
 
                                     row.addEventListener('click', () => {
@@ -751,32 +769,13 @@ function buildMatListSchema(
                             row.appendChild(modSpan);
                         }
 
-                        const toggle = document.createElement('label');
-                        toggle.className = 'toggle header-toggle';
-                        toggle.style.marginLeft = 'auto';
-                        const toggleInput = document.createElement('input');
-                        toggleInput.type = 'checkbox';
-                        toggleInput.checked = matEnabled;
-                        const slider = document.createElement('span');
-                        slider.className = 'slider';
-                        toggle.appendChild(toggleInput);
-                        toggle.appendChild(slider);
-                        // 修复：同 matRoot，<label> 原生二次派发 click 导致 handler 双触发互相抵消。
-                        toggle.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            if (e.target === toggleInput) {
-                                return;
-                            }
-                            e.preventDefault();
-                            const newState = !isMatEnabled(id, detail.index);
-                            setMatEnabled(id, detail.index, newState);
-                            toggleInput.checked = newState;
-                            row.classList.toggle('mat-disabled', !newState);
-                            setStatus(
-                                newState ? `✓ 已显示: ${detail.name}` : `✕ 已隐藏: ${detail.name}`,
-                                true
-                            );
-                        });
+                        const toggle = buildMatToggle(
+                            id,
+                            detail.index,
+                            detail.name,
+                            matEnabled,
+                            row
+                        );
                         row.appendChild(toggle);
 
                         row.addEventListener('click', () => {
