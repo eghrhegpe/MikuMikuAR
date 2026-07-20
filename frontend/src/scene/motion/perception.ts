@@ -6,8 +6,7 @@
 // 各功能实现见 perception-*.ts 子模块。
 
 import type { Scene } from '@babylonjs/core/scene';
-import { observe, type ObserverHandle } from '@/core/observer-handle';
-import { safeDispose } from '@/core/dispose-helpers';
+import { getMotionPipeline } from './motion-pipeline';
 
 import { modelManager, focusedModelId, triggerAutoSave } from '../scene';
 // scene 实例走 env-impl 的 getScene() 延迟获取，避免与 scene.ts 形成静态循环依赖
@@ -52,7 +51,7 @@ export {
 
 let perceptionState: PerceptionState = { ...DEFAULT_PERCEPTION_STATE };
 let perceptionModelId: string | null = null;
-let perceptionObserver: ObserverHandle | null = null;
+let perceptionObserver: (() => void) | null = null;
 
 // ══════════════════════════════════════════════════════════════
 // 公共 API
@@ -83,12 +82,16 @@ export function activatePerception(modelId?: string): void {
     perceptionModelId = targetId;
     const mmdModel = inst.mmdModel;
 
-    // ── 注册统一 observer ──
+    // ── 注册为管线层（stage=perception，显式保证在 bone-override 之后执行，根治 R1 双观察者隐式定序）──
     // 顺序约束：breath → blink → micro → balance → lipsync → gaze
     // gaze 必须最后（读 balance/breath 写入后的骨骼状态）；
     // lipsync 在 micro 之后（避免 smile morph 覆写冲突）。
     // 单帧异常不中断下游（try/catch 包裹每步）。
-    perceptionObserver = observe(getScene().onBeforeRenderObservable, () => {
+    perceptionObserver = getMotionPipeline().register({
+        id: 'perception',
+        stage: 'perception',
+        order: 0,
+        run: () => {
         const scene = getScene();
         if (!scene || scene.isDisposed) {
             return;
@@ -157,6 +160,7 @@ export function activatePerception(modelId?: string): void {
                 }
             }
         }
+    },
     });
 
     logWarn(
@@ -167,7 +171,10 @@ export function activatePerception(modelId?: string): void {
 
 /** 注销感知层 */
 export function deactivatePerception(): void {
-    perceptionObserver = safeDispose(perceptionObserver);
+    if (perceptionObserver) {
+        perceptionObserver();
+        perceptionObserver = null;
+    }
     _resetLastEmotionMorphName(); // 模型切换时清空，避免旧 morph 名残留
     perceptionModelId = null;
     logWarn('perception', '已注销');

@@ -57,7 +57,12 @@ export class MotionPipeline {
      * 注册顺序不影响最终执行序，仅 stage + order 决定。
      */
     register(layer: PipelineLayer): () => void {
-        this.layers.push(layer);
+        const i = this.layers.findIndex((l) => l.id === layer.id);
+        if (i >= 0) {
+            this.layers[i] = layer; // 同 id 覆盖，保证 startBoneOverride 等幂等重入安全
+        } else {
+            this.layers.push(layer);
+        }
         this.sorted = false;
         return () => this.unregister(layer.id);
     }
@@ -100,8 +105,23 @@ export class MotionPipeline {
     /** 按序执行所有层。 */
     runFrame(ctx: FrameContext): void {
         this.ensureSorted();
-        for (const layer of this.layers) {
+        // 快照迭代：允许 run 内 unregister（如 perception 模型销毁时自注销），避免迭代中修改数组导致跳过
+        const snapshot = this.layers.slice();
+        for (const layer of snapshot) {
             layer.run(ctx);
         }
     }
+}
+
+/**
+ * 全局唯一管线实例（scene 级单例）。
+ * 所有骨骼写入层通过本实例 register/unregister，调度顺序由 stage 声明决定，
+ * 与 import / await / onBeforeRenderObservable 注册时序彻底解耦（治理 R1）。
+ */
+let _instance: MotionPipeline | null = null;
+export function getMotionPipeline(): MotionPipeline {
+    if (!_instance) {
+        _instance = new MotionPipeline();
+    }
+    return _instance;
 }
