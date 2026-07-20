@@ -623,6 +623,26 @@ public class MainActivity extends AppCompatActivity {
             }
             return;
         }
+        // ARCore × WebView 共存探针结果 (ADR-073 P1)
+        if (requestCode == 7020) {
+            if (data != null && webView != null) {
+                boolean success = data.getBooleanExtra("success", false);
+                boolean arcoreSession = data.getBooleanExtra("arcoreSession", false);
+                boolean cameraFrame = data.getBooleanExtra("cameraFrame", false);
+                boolean webViewOverlay = data.getBooleanExtra("webViewOverlay", false);
+                int frameCount = data.getIntExtra("frameCount", 0);
+                String error = data.getStringExtra("error");
+                String json = String.format(
+                    "{\"success\":%b,\"arcoreSession\":%b,\"cameraFrame\":%b," +
+                    "\"webViewOverlay\":%b,\"frameCount\":%d,\"error\":%s}",
+                    success, arcoreSession, cameraFrame, webViewOverlay, frameCount,
+                    error != null ? "\"" + error.replace("\"", "\\\"") + "\"" : "null");
+                String js = "window.__onARCoreProbeResult && window.__onARCoreProbeResult('" +
+                    json.replace("'", "\\'") + "');";
+                webView.post(() -> webView.evaluateJavascript(js, null));
+            }
+            return;
+        }
         if (requestCode != FILE_PICKER_REQUEST) {
             return;
         }
