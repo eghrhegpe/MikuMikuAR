@@ -445,7 +445,16 @@ MikuMikuAR/
         │   │── model-preset.ts       # 预设管理
         │   │
         │   ├── env-menu.ts           # 环境菜单总入口
-        │   │── env-feature-levels.ts # 环境功能层级
+        │   │── env-sky-levels.ts     # 天空
+        │   │── env-ground-levels.ts  # 地面
+        │   │── env-water-levels.ts   # 水面
+        │   │── env-wind-levels.ts    # 风
+        │   │── env-cloud-levels.ts   # 云
+        │   │── env-fog-levels.ts     # 雾
+        │   │── env-shadow-levels.ts  # 阴影
+        │   │── env-experimental-levels.ts # 实验功能
+        │   │── env-level-helpers.ts  # 公共助手
+        │   │── env-menu-state.ts     # 状态模块
         │   │── env-preset-levels.ts  # 环境预设层级（ADR-120 分类化：天空/地面/水面/大气）
         │   │── env-brightness-levels.ts  # 环境亮度统一标量（ADR-132）
         │   │

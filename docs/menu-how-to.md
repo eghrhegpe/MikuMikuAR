@@ -33,7 +33,16 @@ frontend/src/menus/
 │   └── scene-physics-levels.ts   #   物理（碰撞/WASM/调试）
 │
 ├── env-menu.ts                  # 环境弹窗入口 + 导航
-│   ├── env-feature-levels.ts    #   天空/地面/水面/风/云/实验功能
+│   ├── env-sky-levels.ts        #   天空
+│   ├── env-ground-levels.ts     #   地面
+│   ├── env-water-levels.ts      #   水面
+│   ├── env-wind-levels.ts       #   风
+│   ├── env-cloud-levels.ts      #   云
+│   ├── env-fog-levels.ts        #   雾
+│   ├── env-shadow-levels.ts     #   阴影
+│   ├── env-experimental-levels.ts#  实验功能
+│   ├── env-level-helpers.ts     #   公共助手
+│   ├── env-menu-state.ts        #   状态模块
 │   └── env-preset-levels.ts     #   环境预设
 │
 ├── motion-popup.ts              # 动作弹窗入口
