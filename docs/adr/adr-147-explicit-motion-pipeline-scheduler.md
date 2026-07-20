@@ -19,7 +19,7 @@
 | # | 根因 | 实测证据 |
 |---|------|---------|
 | R1 | **双观察者隐式定序，无显式 order 声明** | bone-override（`scene.ts:515` 启动期注册）与 perception（`scene.ts:423` `onModelFocused→activateGazeTracking→activatePerception` 模型聚焦时注册）是**两个独立 `onBeforeRenderObservable` 观察者**，Babylon 按注册先后执行。覆写关系全靠「谁先被 import/调用」，编译器/单测无感知 |
-| R2 | **帧钩子插入序决定同骨获胜者** | `_runFrameHooks`（`bone-override.ts:386`）按 `_frameHooks` **插入顺序**遍历，且在 slot 应用（`:496`）**之前**运行（`:478`）。sway/riding/hand-symmetry 中后注册者对同骨盖过先注册者、也盖过静态 `setBoneOverride` |
+| R2 ✅ | **帧钩子插入序决定同骨获胜者（已治理）** | 原 `_runFrameHooks`（`bone-override.ts:389`）按 `_frameHooks` **插入顺序**遍历。现改为带 `order` 的数组并按 `order` 升序 + 快照遍历；`registerBoneOverrideFrameHook(hook, order)` 加显式 order，导出 `FRAME_HOOK_ORDER`（RIDING=10/SWAY=20/HAND_SYMMETRY=30）；三模块显式声明权重。同骨获胜者由声明顺序决定，不再依赖注册次序 |
 | R3 | **三套作用域副本，状态同步靠手维护** | 引擎层 `_overrideMaps`（per-model）+ 模块层 `intent.motionModules`（per-motion，ADR-129）+ 模块运行时 `_ownedBones`（per-model）三套结构各有副本，靠 `module-base.ts` 的 `setParam`/`enable`/`disable` 手动同步 |
 | R4 | **复合语义跨骨传播，对单测不友好** | `_computeOverride`（`bone-override.ts:166`）`weight≥1` 时 `oldRotation × slot.quat`；现有单测 `oldRotation` 恒为 `Identity`，复合分支从未被真实父骨旋转触发（已通过 D 护栏补 4 例 + R4 Slerp 边界 3 例修复，file 现 13 例） |
 
@@ -44,7 +44,7 @@
 | P2 | `_computeOverride` 复合语义（`bone-override.ts:166`） | 所有旧模块 bake 姿态变化（**已于 2026-07-17 真实发生过**） |
 | P3 | `priority` 数值（`registry.ts:179` `myPriority < otherPriority`） | 仲裁结果翻转，姿态错乱 |
 | P4 | `claimBones` 仲裁规则（`registry.ts:149-202`） | `ownedBones` 语义变，disable 清错骨 |
-| P5 | 帧钩子顺序/注册（`bone-override.ts:386`/`:478`） | 帧钩子模块「看起来没生效」 |
+| P5 ✅ | 帧钩子顺序/注册（已治理：`registerBoneOverrideFrameHook` 加显式 `order`，等价于 P5 路径被 `order` 声明拦截） | 帧钩子模块「看起来没生效」 → 已消除 |
 
 ---
 
@@ -60,7 +60,7 @@ type PipelineStage =
   | 'proc-motion'     // ③
   | 'bone-override'   // ⑤ 引擎
   | 'module-bake'     // ⑤a 模块层 bake → _overrideMap
-  | 'frame-hooks'     // ⑤b 帧钩子（内部再按注册序）
+  | 'frame-hooks'     // ⑤b 帧钩子（内部按显式 order 升序）
   | 'perception';     // ⑥
 
 interface PipelineLayer {
@@ -135,6 +135,7 @@ class BoneOverrideStore {
 | Phase 1 切片 1：`MotionPipeline` 内核 + 排序单测 | `5d7a63bd` | ✅ 已落地 | 新文件 `motion-pipeline.ts`，4 例单测锁死「序由 (stage,order) 决定、与注册序无关」。未接入 `scene.ts`（step 2 待协调） |
 | Phase 2 切片 1：`BoneOverrideStore` 内核 + 不变量单测 | `b594a03f` | ✅ 已落地 | 新文件 `bone-override-store.ts`，合并三副本为单一内部存储；6 例单测锁死「disable/release 级联清 slot、抢占记冲突、model 隔离」。未接入运行时（step 2 待协调） |
 | Phase 1 step 2：接入运行时（bone-override/perception 改为管线层 + 单驱动 observer） | `02c1269e` | ✅ 已落地 | `bone-override.ts` 注册 `'bone-override'` 层 + 单一驱动 observer（每帧 `pipeline.runFrame`）；`perception.ts` 注册 `'perception'` 层（模型聚焦时动态 register）。R1 根治：覆写序由 stage 决定，与注册时序解耦。`scene.ts` 零改动 |
+| R2 帧钩子显式 order 排序 | （本提交） | ✅ 已落地 | `bone-override.ts`：`_frameHooks` 由 `Set` 改为带 `order` 数组，按 `order` 升序 + 快照遍历；导出 `FRAME_HOOK_ORDER`；三模块（sway/riding/hand-symmetry）传入显式权重。R2 根治：同骨获胜者由声明顺序决定，不再依赖注册次序。`motion-frame-hooks.test.ts` 4 例锁死 |
 | Phase 2 step 2：运行时接入 | — | ⏸ 阻塞 | 需迁移 `registry.ts`/`module-base.ts`/`motion-intent.ts` 三处读写，待与 `motion-modules/*` 写者协调 |
 
 ---

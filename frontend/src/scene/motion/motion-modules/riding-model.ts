@@ -16,7 +16,7 @@
 //   候选骨名覆盖常见 PMX 变体（左ひざ/左膝 等）
 
 import type { ParamValue } from '@/core/types';
-import { setBoneOverride, registerBoneOverrideFrameHook } from '../bone-override';
+import { setBoneOverride, registerBoneOverrideFrameHook, FRAME_HOOK_ORDER } from '../bone-override';
 import { getModuleState, getOwnedBones } from './registry';
 import type { MotionOverrideModule, ModuleMeta, ModuleDef } from './types';
 import { computePedalPhase, computeFootPitch } from './motion-math';
@@ -161,7 +161,7 @@ function ensureActive(modelId: string): void {
                 const pitch = computeFootPitch(phaseDeg, isLeft);
                 setBoneOverride(bone, [pitch, 0, 0], 1, true, modelId);
             }
-        });
+        }, FRAME_HOOK_ORDER.RIDING);
         _ridingFrameHooks.set(modelId, unregister);
     } else if (!autoPedal && hasHook) {
         _ridingFrameHooks.unregister(modelId);

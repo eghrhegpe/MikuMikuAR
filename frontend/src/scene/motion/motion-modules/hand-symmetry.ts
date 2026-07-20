@@ -25,6 +25,7 @@ import {
     setBoneOverridePosition,
     clearBoneOverride,
     registerBoneOverrideFrameHook,
+    FRAME_HOOK_ORDER,
 } from '../bone-override';
 import {
     matchBone,
@@ -240,7 +241,7 @@ function ensureActive(modelId: string): void {
         _driveArm(bones, cache.l, lRoot, [hx, hy, hz], modelId);
         const rx = symmetry ? -hx : hx; // 对称模式右手 X 镜像
         _driveArm(bones, cache.r, rRoot, [rx, hy, hz], modelId);
-    });
+    }, FRAME_HOOK_ORDER.HAND_SYMMETRY);
     _handFrameHooks.set(modelId, unregister);
 }
 
