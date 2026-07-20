@@ -27,8 +27,8 @@ import { safeDispose } from '@/core/dispose-helpers';
 import {
     getOrbitParams, getFreeflyParams, getConcertParams, getSurroundParams,
     getCameraMode, setCameraMode,
-    getCameraControl,
-    getCameraBehavior,
+    getCameraControl, setCameraControl as _setCameraControlState,
+    getCameraBehavior, setCameraBehavior as _setCameraBehaviorState,
     getScriptedSubMode, setScriptedSubMode,
     getCurrentCamera, setCurrentCamera,
     getFocusCenterY, setFocusCenterY,
@@ -37,7 +37,14 @@ import {
     getCameraVmdName, getCameraVmdPath, hasCameraVmd,
     setCameraVmdState, clearCameraVmdState,
     setAutoCameraEnabledFlag,
+    isAutoCameraEnabled as isAutoCameraEnabledFlag,
+    setAutoCameraBeatCount as _setAutoCameraBeatCount,
+    getAutoCameraBeatCount as _getAutoCameraBeatCount,
+    setAutoCameraPresetIdx as _setAutoCameraPresetIdx,
+    getAutoCameraPresetIdx as _getAutoCameraPresetIdx,
     isTouchDevice,
+    getFov as getFovState,
+    setFov as setFovState,
 } from './camera-state';
 // 注：defaultCameraPreset/getCameraPreset/setCameraPreset/logCameraAlpha/setFov/cameraState 保留本地定义
 // setOrbitParams/setFreeflyParams/setConcertParams/setSurroundParams 保留本地定义（需同步 live camera）
@@ -189,6 +196,7 @@ function scheduleCameraPersist(): void {
 // ======== Sub-preset Getters 已迁移至 camera-state.ts ========
 
 export function setOrbitParams(p: Partial<OrbitParams>): void {
+    Object.assign(getCameraPreset().orbit, p);
     // camera-state.ts 已更新 _currentPreset.orbit，此处仅同步到 live camera
     if (getCameraMode() === 'orbit' && getCurrentCamera() instanceof ArcRotateCamera) {
         const cam = getCurrentCamera() as ArcRotateCamera;
@@ -211,6 +219,7 @@ export function logCameraAlpha(): void {
 }
 
 export function setFreeflyParams(p: Partial<FreeflyParams>): void {
+    Object.assign(getCameraPreset().freefly, p);
     if (getCameraMode() === 'freefly' && getCurrentCamera() instanceof UniversalCamera) {
         const cam = getCurrentCamera() as UniversalCamera;
         if (p.speed !== undefined) {
@@ -222,10 +231,10 @@ export function setFreeflyParams(p: Partial<FreeflyParams>): void {
     }
 }
 export function setConcertParams(p: Partial<ConcertParams>): void {
-    // camera-state.ts 已更新 _currentPreset.concert
+    Object.assign(getCameraPreset().concert, p);
 }
 export function setSurroundParams(p: Partial<SurroundParams>): void {
-    // camera-state.ts 已更新 _currentPreset.surround
+    Object.assign(getCameraPreset().surround, p);
 }
 
 // ======== Internal State ========
@@ -244,7 +253,7 @@ let _previousMode: CameraMode = 'orbit';
  */
 function _resolveBehavior(mode: CameraMode): CameraBehavior {
     const m = LEGACY_MODE_MAP[mode];
-    if (_autoCameraEnabled && m.control === 'orbit' && m.behavior === 'none') {
+    if (isAutoCameraEnabled() && m.control === 'orbit' && m.behavior === 'none') {
         return 'beatcut';
     }
     return m.behavior;
@@ -253,8 +262,8 @@ function _resolveBehavior(mode: CameraMode): CameraBehavior {
 /** ADR-100：由旧 mode 派生双轴状态。switchCameraMode 提交 _cameraMode 时同步调用，作为唯一写入点。 */
 function _syncAxesFromMode(mode: CameraMode): void {
     const m = LEGACY_MODE_MAP[mode];
-    setCameraControl(m.control);
-    setCameraBehavior(_resolveBehavior(mode));
+    _setCameraControlState(m.control);
+    _setCameraBehaviorState(_resolveBehavior(mode));
     if (m.scripted) {
         setScriptedSubMode(m.scripted);
     }
@@ -395,8 +404,9 @@ export function setCameraBehavior(behavior: CameraBehavior): void {
 }
 
 export function setFov(v: number): void {
+    setFovState(clampFov(v));
     if (getCurrentCamera()) {
-        getCurrentCamera()!.fov = clampFov(v);
+        getCurrentCamera()!.fov = getFovState();
     }
 }
 
@@ -1212,14 +1222,14 @@ export function setCameraState(s: CameraState): void {
         behavior = 'beatcut';
     }
     if (behavior === 'beatcut') {
-        _autoCameraEnabled = true;
+        setAutoCameraEnabledFlag(true);
         uiState.autoCameraEnabled = true;
-        _autoCameraBeatsPerSwitch = uiState.autoCameraBeatsPerSwitch || 4;
+        setAutoCameraBeatsPerSwitch(uiState.autoCameraBeatsPerSwitch || 4);
     } else {
         // ADR-100 P3 边界修复：显式非 beatcut 行为须清除自动运镜标志，
         // 否则陈旧 uiState.autoCameraEnabled（启动期 restoreAutoCameraState 先于 setCameraState 执行）
         // 会覆盖已加载的显式行为（如 none），导致自动运镜意外开启。
-        _autoCameraEnabled = false;
+        setAutoCameraEnabledFlag(false);
         uiState.autoCameraEnabled = false;
     }
     const finalMode = deriveLegacyMode(control, behavior, sub);
@@ -1239,7 +1249,7 @@ export function setCameraState(s: CameraState): void {
     const cam = _currentCamera;
     if (!cam) {
         // 无实时相机时仍恢复自动运镜订阅（beatcut 行为需要），随后返回。
-        if (_autoCameraEnabled) {
+        if (isAutoCameraEnabled()) {
             restoreAutoCameraState();
         }
         return;
@@ -1263,7 +1273,7 @@ export function setCameraState(s: CameraState): void {
         getCameraPreset().orbit.targetHeight = (s.targetY ?? 8) - refCenterY;
     }
     // ADR-100 P3：订阅 beat（beatcut 行为需要）；restoreAutoCameraState 内部幂等，重复调用安全。
-    if (_autoCameraEnabled) {
+    if (isAutoCameraEnabled()) {
         restoreAutoCameraState();
     }
 }
@@ -1319,8 +1329,8 @@ function _unsubscribeAutoCameraBeat(): void {
 export function restoreAutoCameraState(): void {
     const s = uiState;
     if (s.autoCameraEnabled) {
-        _autoCameraEnabled = true;
-        _autoCameraBeatsPerSwitch = s.autoCameraBeatsPerSwitch || 4;
+        setAutoCameraEnabledFlag(true);
+        setAutoCameraBeatsPerSwitch(s.autoCameraBeatsPerSwitch || 4);
         _subscribeAutoCameraBeat();
         _syncAxesFromMode(getCameraMode());
     }
@@ -1334,15 +1344,15 @@ export function setAutoCameraEnabled(
     v: boolean,
     beatDetector?: { onBeat: (cb: () => void) => () => void } | null
 ): void {
-    if (v === _autoCameraEnabled) {
+    if (v === isAutoCameraEnabled()) {
         return;
     }
-    _autoCameraEnabled = v;
+    setAutoCameraEnabledFlag(v);
     uiState.autoCameraEnabled = v;
     schedulePersistUI();
     if (v) {
-        _autoCameraBeatCount = 0;
-        _autoCameraPresetIdx = 0;
+        _setAutoCameraBeatCount(0);
+        _setAutoCameraPresetIdx(0);
         _subscribeAutoCameraBeat(beatDetector);
     } else {
         _unsubscribeAutoCameraBeat();
@@ -1352,7 +1362,7 @@ export function setAutoCameraEnabled(
 }
 
 export function isAutoCameraEnabled(): boolean {
-    return _autoCameraEnabled;
+    return isAutoCameraEnabledFlag();
 }
 
 /** 设置每多少拍切换一次镜头。 */
@@ -1373,11 +1383,11 @@ function _onAutoCameraBeat(): void {
     if (getCameraBehavior() !== 'beatcut') {
         return;
     }
-    _autoCameraBeatCount++;
-    if (_autoCameraBeatCount < _autoCameraBeatsPerSwitch) {
+    _setAutoCameraBeatCount(_getAutoCameraBeatCount() + 1);
+    if (_getAutoCameraBeatCount() < getAutoCameraBeatsPerSwitch()) {
         return;
     }
-    _autoCameraBeatCount = 0;
+    _setAutoCameraBeatCount(0);
 
     const cam = _currentCamera;
     if (!cam || !(cam instanceof ArcRotateCamera)) {
@@ -1386,12 +1396,12 @@ function _onAutoCameraBeat(): void {
 
     // 切到下一个预设（避免连续重复）
     let nextIdx =
-        (_autoCameraPresetIdx + 1 + Math.floor(Math.random() * (AUTO_CAMERA_PRESETS.length - 1))) %
+        (_getAutoCameraPresetIdx() + 1 + Math.floor(Math.random() * (AUTO_CAMERA_PRESETS.length - 1))) %
         AUTO_CAMERA_PRESETS.length;
-    if (nextIdx === _autoCameraPresetIdx) {
+    if (nextIdx === _getAutoCameraPresetIdx()) {
         nextIdx = (nextIdx + 1) % AUTO_CAMERA_PRESETS.length;
     }
-    _autoCameraPresetIdx = nextIdx;
+    _setAutoCameraPresetIdx(nextIdx);
 
     const preset = AUTO_CAMERA_PRESETS[nextIdx];
 
@@ -1429,4 +1439,7 @@ export {
     getConcertPaused, setConcertPaused, getSurroundPaused, setSurroundPaused,
     getCameraVmdName, getCameraVmdPath, hasCameraVmd,
     getFov, isTouchDevice,
+    getCameraPreset, setCameraPreset,
+    getCurrentCamera, setCurrentCamera,
+    getFocusCenterY, setFocusCenterY,
 } from './camera-state';
