@@ -264,6 +264,26 @@ function buildSceneRootItems(): PopupRow[] {
             getSceneMenu()?.updateControls();
         },
     });
+    // 反射模式（ADR-151：独立于反射质量，控制 SSR/探针/平面反射的激活策略）
+    items.push({
+        kind: 'modeSlider',
+        label: t('env.reflectionMode'),
+        icon: 'lucide:layers',
+        target: '',
+        modeOptions: [
+            { value: 'auto', label: t('env.reflectionModeAuto') },
+            { value: 'none', label: t('env.reflectionModeNone') },
+            { value: 'probe', label: t('env.reflectionModeProbe') },
+            { value: 'ssr', label: t('env.reflectionModeSsr') },
+            { value: 'planar', label: t('env.reflectionModePlanar') },
+            { value: 'hybrid', label: t('env.reflectionModeHybrid') },
+        ],
+        modeValue: envState.reflectionMode,
+        onModeChange: (v) => {
+            setEnvState({ reflectionMode: v as 'auto' | 'none' | 'probe' | 'ssr' | 'planar' | 'hybrid' });
+            getSceneMenu()?.updateControls();
+        },
+    });
     return items;
 }
 
