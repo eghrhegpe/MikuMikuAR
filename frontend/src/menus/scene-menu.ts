@@ -27,6 +27,7 @@ import {
 } from '../scene/scene';
 import { SelectDir, SaveScreenshot, SaveScenePreset } from '../core/wails-bindings';
 import { waitForFrame, tryCatchStatus, showErrorToast, closeAllOverlays } from '../core/utils';
+import { addDisposableListener } from '../core/dom';
 import { setModelFormation } from '../scene/scene';
 import { focusModel } from '../scene/scene';
 import { t } from '../core/i18n/t';
@@ -91,7 +92,7 @@ export function reRenderSceneMenu(): void {
 
 // 当库扫描完成时，如果场景菜单已打开则 reRender，
 // 使道具面板等依赖 allModels 的 renderCustom 回调拿到最新数据。
-window.addEventListener('mmar:library-scanned', () => {
+const _libraryScannedDisp = addDisposableListener(window, 'mmar:library-scanned', () => {
     reRenderSceneMenu();
 });
 

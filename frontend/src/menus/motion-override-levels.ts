@@ -10,10 +10,11 @@ import {
     focusedModelId,
 } from '../core/config';
 import { addEmptyRow, slideRow, addSectionTitle, addPresetChip } from '../core/ui-helpers';
-import { addSliderRow } from '../core/ui-rows';
+import { addSliderRow } from '../core/ui-helpers';
 import { createTrailingBtn } from '../core/ui-slide-row';
 import { createIconifyIcon } from '../core/icons';
-import { getMotionMenu } from './motion-popup';
+import { getMotionMenu, renderModuleToggleList } from './motion-popup';
+import { addDisposableListener, type Disposable } from '../core/dom';
 import { triggerAutoSave, pushUndoSnapshot, offerSceneUndo } from '../scene/scene';
 import type { BoneOverrideEntry } from '../core/types';
 import {
@@ -27,7 +28,6 @@ import {
     initMotionModules,
     getRegisteredModules,
     createModule,
-    getModuleState,
 } from '../scene/motion/motion-modules/registry';
 import {
     undo,
@@ -194,10 +194,12 @@ function buildMotionOverrideSchema(): MenuNode[] {
                             historyDropdown.remove();
                             historyDropdown = null;
                         }
-                        document.removeEventListener('click', _onOutsideClick);
+                        _onOutsideClickDisp?.dispose();
+                        _onOutsideClickDisp = null;
                     }
 
                     let _onOutsideClick: ((ev: MouseEvent) => void) | null = null;
+                    let _onOutsideClickDisp: Disposable | null = null;
 
                     historyBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
@@ -273,7 +275,8 @@ function buildMotionOverrideSchema(): MenuNode[] {
                                 closeHistoryDropdown();
                             }
                         };
-                        document.addEventListener('click', _onOutsideClick);
+                        _onOutsideClickDisp?.dispose();
+                        _onOutsideClickDisp = addDisposableListener(document, 'click', _onOutsideClick);
 
                         // 定位到按钮下方
                         historyBtn.style.position = 'relative';
@@ -284,44 +287,14 @@ function buildMotionOverrideSchema(): MenuNode[] {
                     titleBar.appendChild(btnGroup);
                     inner.appendChild(titleBar);
 
-                    for (const mod of modules) {
-                        const state = getModuleState(modelId, mod.id);
-                        slideRow(
-                            inner,
-                            mod.meta.icon ?? '',
-                            t(mod.meta.labelKey),
-                            true, // hasArrow → 子页
-                            () => {
-                                const menu = getMotionMenu();
-                                if (menu) {
-                                    menu.push(buildModuleParamLevel(mod.id));
-                                }
-                            },
-                            undefined,
-                            undefined,
-                            undefined,
-                            {
-                                value: state.enabled,
-                                onChange: (v: boolean) => {
-                                    // enable()/disable() 内部已写 state.enabled，无需重复 setModuleEnabled（P4 清理）
-                                    const inst = createModule(mod.id, modelId);
-                                    if (v) {
-                                        inst?.enable();
-                                    } else {
-                                        inst?.disable();
-                                    }
-                                    setStatus(
-                                        v
-                                            ? t('motion.override.enabled')
-                                            : t('motion.override.disabled'),
-                                        true
-                                    );
-                                    getMotionMenu()?.reRender();
-                                },
-                                bind: () => getModuleState(modelId, mod.id).enabled,
+                    renderModuleToggleList(inner, modelId, {
+                        onEnter: (modId) => {
+                            const menu = getMotionMenu();
+                            if (menu) {
+                                menu.push(buildModuleParamLevel(modId));
                             }
-                        );
-                    }
+                        },
+                    });
                 });
             },
         },

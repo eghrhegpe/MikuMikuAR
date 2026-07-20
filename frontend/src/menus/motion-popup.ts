@@ -51,6 +51,7 @@ import {
 } from '../scene/motion/animation-retargeter';
 import { triggerAutoSave, pushUndoSnapshot, offerSceneUndo } from '../scene/scene';
 import { SelectImportFile } from '../core/wails-bindings';
+import { addDisposableListener } from '../core/dom';
 import {
     setProcMotionMode,
     getProcMotionState,
@@ -91,6 +92,56 @@ import { focusedModelId } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
 import { undo, redo, canUndo, canRedo } from '../scene/motion/motion-modules/motion-history';
 import { applyModuleSnapshot } from '../scene/motion/motion-modules/module-base';
+
+/**
+ * 渲染动作模块开关列表到指定容器。
+ * 收敛 ADR-146 主题 11：motion-popup 与 motion-override-levels 两处模块列表渲染段同源重复。
+ *
+ * @param container       挂载容器
+ * @param modelId         目标模型 id
+ * @param opts.initModules 是否先调用 initMotionModules() 注册模块（首屏入口用），默认 false
+ * @param opts.onEnter     点击模块行进入子页的回调（两处语义一致：push buildModuleParamLevel(modId)）
+ */
+export function renderModuleToggleList(
+    container: HTMLElement,
+    modelId: string,
+    opts: { initModules?: boolean; onEnter: (modId: string) => void }
+): void {
+    if (opts.initModules) {
+        initMotionModules();
+    }
+    const modules = getRegisteredModules();
+    for (const mod of modules) {
+        const state = getModuleState(modelId, mod.id);
+        slideRow(
+            container,
+            mod.meta.icon ?? '',
+            t(mod.meta.labelKey),
+            true, // hasArrow → 子页
+            () => opts.onEnter(mod.id),
+            undefined,
+            undefined,
+            undefined,
+            {
+                value: state.enabled,
+                onChange: (v: boolean) => {
+                    const inst = createModule(mod.id, modelId);
+                    if (v) {
+                        inst?.enable();
+                    } else {
+                        inst?.disable();
+                    }
+                    setStatus(
+                        v ? t('motion.override.enabled') : t('motion.override.disabled'),
+                        true
+                    );
+                    getMotionMenu()?.reRender();
+                },
+                bind: () => getModuleState(modelId, mod.id).enabled,
+            }
+        );
+    }
+}
 
 // 模块级状态（动作绑定面板）：
 //   _focusedLayerId      = 当前「焦点动作」：null=基础动作，string=具体叠加层 id。
@@ -607,42 +658,10 @@ function buildMotionDetailSchema(): MenuNode[] {
                             inner.appendChild(btnGroup);
 
                             // 模块列表
-                            initMotionModules();
-                            const modules = getRegisteredModules();
-                            for (const mod of modules) {
-                                const state = getModuleState(modelId, mod.id);
-                                slideRow(
-                                    inner,
-                                    mod.meta.icon ?? '',
-                                    t(mod.meta.labelKey),
-                                    true,
-                                    () => {
-                                        getMotionMenu()?.push(buildModuleParamLevel(mod.id));
-                                    },
-                                    undefined,
-                                    undefined,
-                                    undefined,
-                                    {
-                                        value: state.enabled,
-                                        onChange: (v: boolean) => {
-                                            const inst = createModule(mod.id, modelId);
-                                            if (v) {
-                                                inst?.enable();
-                                            } else {
-                                                inst?.disable();
-                                            }
-                                            setStatus(
-                                                v
-                                                    ? t('motion.override.enabled')
-                                                    : t('motion.override.disabled'),
-                                                true
-                                            );
-                                            getMotionMenu()?.reRender();
-                                        },
-                                        bind: () => getModuleState(modelId, mod.id).enabled,
-                                    }
-                                );
-                            }
+                            renderModuleToggleList(inner, modelId, {
+                                initModules: true,
+                                onEnter: (modId) => getMotionMenu()?.push(buildModuleParamLevel(modId)),
+                            });
 
                             // 高级骨骼覆盖入口
                             slideRow(
@@ -717,11 +736,11 @@ export { getMotionMenu, refreshMotionRoot, showMotionPopup };
 const _onLibraryScanned = (): void => {
     getMotionMenu()?.reRender();
 };
-window.addEventListener('mmar:library-scanned', _onLibraryScanned);
+const _libraryScannedDisp = addDisposableListener(window, 'mmar:library-scanned', _onLibraryScanned);
 
 /** 释放 motion-popup 模块资源（HMR/清理时调用） */
 export function disposeMotionPopup(): void {
-    window.removeEventListener('mmar:library-scanned', _onLibraryScanned);
+    _libraryScannedDisp.dispose();
 }
 
 /** motion-popup 的 onFolderEnter 路由（从 makeMotionMenu 提取） */
