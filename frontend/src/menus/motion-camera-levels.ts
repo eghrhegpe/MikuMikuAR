@@ -691,6 +691,9 @@ function renderWebXRProbeSection(container: HTMLElement): void {
 
     // === ARCore 共存探针 (ADR-073 P1，仅 Android) ===
     renderARCoreProbeSection(container);
+
+    // === Vuforia 共存探针（国产设备备选） ===
+    renderVuforiaProbeSection(container);
 }
 
 function _verdictText(verdict: 'full' | 'partial' | 'none'): string {
@@ -794,6 +797,83 @@ function renderARCoreProbeSection(container: HTMLElement): void {
                 .join('\n');
         } catch {
             result.textContent = _arcoreProbeResult;
+        }
+        container.appendChild(result);
+    }
+}
+
+// ======== Vuforia Probe UI (国产设备备选) ========
+
+let _vuforiaProbeResult: string | null = null;
+
+declare global {
+    interface Window {
+        __onVuforiaProbeResult?: (json: string) => void;
+    }
+}
+
+function renderVuforiaProbeSection(container: HTMLElement): void {
+    const w = window.wails;
+    if (!w || typeof w.launchVuforiaProbe !== 'function') {
+        return;
+    }
+
+    const sep = document.createElement('div');
+    sep.className = 'cs-separator';
+    container.appendChild(sep);
+
+    const title = document.createElement('div');
+    title.className = 'cs-hint';
+    title.textContent = `── ${t('scene.ar.vuforiaProbe')} ──`;
+    container.appendChild(title);
+
+    slideRow(
+        container,
+        'lucide:scan-eye',
+        t('scene.ar.vuforiaLaunch'),
+        false,
+        () => {
+            window.__onVuforiaProbeResult = (json: string) => {
+                window.__onVuforiaProbeResult = undefined;
+                _vuforiaProbeResult = json;
+                try {
+                    const r = JSON.parse(json) as {
+                        success: boolean;
+                        vuforiaInitialized: boolean;
+                        cameraStarted: boolean;
+                        webViewOverlay: boolean;
+                        frameCount: number;
+                        error: string | null;
+                    };
+                    if (r.success) {
+                        setStatus(t('scene.ar.vuforiaSuccess'), true);
+                    } else {
+                        setStatus(`${t('scene.ar.vuforiaFailed')}: ${r.error || 'unknown'}`, false);
+                    }
+                } catch {
+                    setStatus(t('scene.ar.vuforiaFailed'), false);
+                }
+                refreshCameraLevel();
+            };
+            w.launchVuforiaProbe!();
+            setStatus(t('scene.ar.vuforiaLaunching'), true);
+        }
+    );
+
+    if (_vuforiaProbeResult) {
+        const result = document.createElement('div');
+        result.className = 'cs-hint weak-text';
+        result.style.whiteSpace = 'pre-wrap';
+        result.style.fontSize = '0.75em';
+        result.style.lineHeight = '1.4';
+        result.style.padding = '4px 8px';
+        try {
+            const r = JSON.parse(_vuforiaProbeResult) as Record<string, unknown>;
+            result.textContent = Object.entries(r)
+                .map(([k, v]) => `${k}: ${v}`)
+                .join('\n');
+        } catch {
+            result.textContent = _vuforiaProbeResult;
         }
         container.appendChild(result);
     }
