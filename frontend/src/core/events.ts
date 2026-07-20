@@ -53,7 +53,8 @@ export function disposeEventHandlers(): void {
 
 import { Browser } from '@wailsio/runtime';
 import { showModelPopup, showMotionPopup, refreshLibrary } from '../menus/library';
-import { showPlaza, closePlaza } from '../menus/plaza';
+import { showPlaza } from '../menus/plaza-browser';
+import { closePlaza } from '../menus/plaza-state';
 import { loadManager } from './load-manager';
 import { ImportZip, Events } from './wails-bindings';
 import { focusModel } from '../scene/manager/model-ops';
