@@ -60,15 +60,7 @@ export interface RenderState {
     sharpenAmount: number; // 0-1, default 0（内部映射到 sharpen.edgeAmount）
     glowEnabled: boolean;
     glowIntensity: number; // 0-1, default 0（GlowLayer.intensity）
-    // Phase 11 — SSR + Reflection Probe
-    ssrEnabled: boolean;
-    ssrStrength: number; // 0-1, default 0（SSRRenderingPipeline.strength）
-    ssrFalloff: number; // 0-1, default 0（映射到 reflectionSpecularFalloffExponent 1~8）
-    ssrStep: number; // 1-32, default 1（SSRRenderingPipeline.step）
-    ssrThickness: number; // 0-2, default 0.5（SSRRenderingPipeline.thickness）
-    reflectionProbeEnabled: boolean;
-    reflectionIntensity: number; // 0-1, default 0
-    // Phase 11 — SSAO
+    // Phase 11 — SSAO（ADR-151 收口：SSR/反射探针已迁至 env-reflection.ts，由 reflectionMode/reflectionQuality 统一控制）
     ssaoEnabled: boolean;
     ssaoStrength: number; // 0-1, default 0（SSAO2RenderingPipeline.totalStrength 0~2）
     ssaoRadius: number; // 0-1, default 0（SSAO2RenderingPipeline.radius 0~4）
@@ -181,16 +173,6 @@ export function getRenderState(): RenderState {
         sharpenAmount: pipeline.sharpen ? clamp(pipeline.sharpen.edgeAmount, 0, 1) : 0,
         glowEnabled: _glowLayer !== null && _glowLayer.intensity > 0,
         glowIntensity: _glowLayer ? clamp(_glowLayer.intensity, 0, 1) : 0,
-        ssrEnabled: _ssrPipeline !== null && _ssrPipeline.isEnabled,
-        ssrStrength: _ssrPipeline ? clamp(_ssrPipeline.strength, 0, 1) : 0,
-        ssrFalloff: _ssrPipeline
-            ? clamp((_ssrPipeline.reflectionSpecularFalloffExponent - 1) / 7, 0, 1)
-            : 0,
-        ssrStep: _ssrPipeline ? clamp(_ssrPipeline.step, 1, 32) : 1,
-        ssrThickness: _ssrPipeline ? clamp(_ssrPipeline.thickness, 0, 2) : 0.5,
-        // ADR-151: Probe 状态由 env-reflection.ts 管理，此处报告 SSR 状态
-        reflectionProbeEnabled: false,
-        reflectionIntensity: 0,
         ssaoEnabled: _ssaoPipeline !== null,
         ssaoStrength: _ssaoPipeline ? clamp(_ssaoPipeline.totalStrength / 2, 0, 1) : 0,
         ssaoRadius: _ssaoPipeline ? clamp(_ssaoPipeline.radius / 4, 0, 1) : 0,
@@ -223,13 +205,6 @@ export function defaultRenderState(): RenderState {
         sharpenAmount: 0,
         glowEnabled: false,
         glowIntensity: 0,
-        ssrEnabled: false,
-        ssrStrength: 0,
-        ssrFalloff: 0,
-        ssrStep: 1,
-        ssrThickness: 0.5,
-        reflectionProbeEnabled: false,
-        reflectionIntensity: 0,
         ssaoEnabled: false,
         ssaoStrength: 0,
         ssaoRadius: 0,
@@ -290,10 +265,6 @@ function _applyRenderState(s: Partial<RenderState>): void {
     const gi = s.grainIntensity !== undefined ? clamp(s.grainIntensity, 0, 1) : undefined;
     const sa = s.sharpenAmount !== undefined ? clamp(s.sharpenAmount, 0, 1) : undefined;
     const gl = s.glowIntensity !== undefined ? clamp(s.glowIntensity, 0, 1) : undefined;
-    const ssrStr = s.ssrStrength !== undefined ? clamp(s.ssrStrength, 0, 1) : undefined;
-    const ssrFal = s.ssrFalloff !== undefined ? clamp(s.ssrFalloff, 0, 1) : undefined;
-    const ssrStp = s.ssrStep !== undefined ? clamp(s.ssrStep, 1, 32) : undefined;
-    const ssrThk = s.ssrThickness !== undefined ? clamp(s.ssrThickness, 0, 2) : undefined;
 
     // Post-processing
     if (s.bloomEnabled !== undefined) {
@@ -403,62 +374,8 @@ function _applyRenderState(s: Partial<RenderState>): void {
         }
     }
 
-    // SSR (Screen-Space Reflections) — 独立 pipeline，不走 DefaultRenderingPipeline
-    if (
-        s.ssrEnabled !== undefined ||
-        ssrStr !== undefined ||
-        ssrFal !== undefined ||
-        ssrStp !== undefined ||
-        ssrThk !== undefined
-    ) {
-        if (s.ssrEnabled !== undefined) {
-            const ssrCamera = _pipelineCamera ?? _scene.activeCamera;
-            if (s.ssrEnabled && !_ssrPipeline && _scene && ssrCamera) {
-                try {
-                    _ssrPipeline = new SSRRenderingPipeline('ssr', _scene, [ssrCamera]);
-                    _ssrPipeline.maxDistance = 50;
-                    _ssrPipeline.step = 1;
-                    _ssrPipeline.thickness = 0.5;
-                    _ssrPipeline.strength = 1;
-                    _ssrPipeline.reflectionSpecularFalloffExponent = 1;
-                    _ssrPipeline.samples = 1;
-                    _ssrPipeline.isEnabled = true;
-                } catch (err) {
-                    logWarn('renderer', 'SSR pipeline 创建失败:', err);
-                    _ssrPipeline = null;
-                }
-            } else if (!s.ssrEnabled && _ssrPipeline) {
-                _ssrPipeline = safeDispose(_ssrPipeline);
-            }
-        }
-        if (_ssrPipeline) {
-            if (ssrStr !== undefined) {
-                _ssrPipeline.strength = ssrStr;
-            }
-            if (ssrFal !== undefined) {
-                _ssrPipeline.reflectionSpecularFalloffExponent = 1 + ssrFal * 7;
-            } // 0→1, 1→8
-            if (ssrStp !== undefined) {
-                _ssrPipeline.step = Math.round(ssrStp);
-            }
-            if (ssrThk !== undefined) {
-                _ssrPipeline.thickness = ssrThk;
-            }
-            // SSR + Bloom 互斥：Bloom weight > 0.5 时自动降低 SSR 强度防止白出
-            // 基于当前 pipeline 强度（已更新）而非传入值，避免覆盖用户设置
-            const bloomW = pipeline.bloomWeight ?? 0;
-            if (bloomW > 0.5) {
-                _ssrPipeline.strength *= 1 - (bloomW - 0.5);
-            }
-        }
-    }
-
-    // ADR-151: Reflection Probe 已迁移至 env-reflection.ts 统一管理。
-    // 性能降级系统发送的 reflectionProbeEnabled 由 env-reflection 的 applyReflection 处理。
-    // 此处保留空分支避免未知字段警告。
-    if (s.reflectionProbeEnabled !== undefined || s.reflectionIntensity !== undefined) {
-        // no-op: Probe 生命周期由 env-reflection.ts 管理
-    }
+    // ADR-151 收口：SSR + 反射探针已迁至 env-reflection.ts 统一管理（setSSRFromReflection）。
+    // render 状态不再持有反射字段；旧存档的反射设置由 env.reflectionMode/reflectionQuality 恢复。
 
     // SSAO (Screen-Space Ambient Occlusion) — 独立 pipeline
     if (
@@ -790,11 +707,6 @@ export function transitionRenderState(
         'grainIntensity',
         'sharpenAmount',
         'glowIntensity',
-        'ssrStrength',
-        'ssrFalloff',
-        'ssrStep',
-        'ssrThickness',
-        'reflectionIntensity',
         'ssaoStrength',
         'ssaoRadius',
         'ssaoSamples',
@@ -811,8 +723,6 @@ export function transitionRenderState(
         'chromaticAberrationEnabled',
         'grainEnabled',
         'glowEnabled',
-        'ssrEnabled',
-        'reflectionProbeEnabled',
         'ssaoEnabled',
         'celShadingMode',
     ];
@@ -851,7 +761,7 @@ export function transitionRenderState(
             if (key === 'glowEnabled') {
                 return t >= 0.3;
             }
-            if (key === 'ssrEnabled' || key === 'reflectionProbeEnabled' || key === 'ssaoEnabled') {
+            if (key === 'ssaoEnabled') {
                 return t >= 0.3;
             }
             // outline / fxaa 无关联数值，延迟到 80%

@@ -426,7 +426,8 @@ function buildPostProcessCoreSchema(): MenuNode[] {
                 },
             ],
         },
-        // ===== 环境效果折叠头（SSR/反射探针/SSAO） =====
+        // ===== 环境效果折叠头（SSAO） =====
+        // ADR-151 收口：SSR/反射探针已迁移至场景根目录「反射模式 + 反射质量」统一控制
         {
             id: 'postprocess:env',
             kind: 'folder',
@@ -434,88 +435,6 @@ function buildPostProcessCoreSchema(): MenuNode[] {
             icon: 'lucide:box',
             defaultOpen: false,
             children: [
-                {
-                    id: 'postprocess:env:ssr',
-                    kind: 'toggle',
-                    label: 'scene.ssr',
-                    icon: 'lucide:flip-horizontal-2',
-                    control: {
-                        bind: 'render.ssrEnabled',
-                        onChange: () => {
-                            triggerAutoSave();
-                            reRenderSceneMenu();
-                        },
-                    },
-                },
-                {
-                    id: 'postprocess:env:ssr:strength',
-                    kind: 'slider',
-                    label: 'scene.ssrStrength',
-                    icon: 'lucide:circle-dashed',
-                    visibleWhen: () => getRenderState().ssrEnabled,
-                    control: {
-                        bind: 'render.ssrStrength',
-                        min: 0,
-                        max: 1,
-                        step: 0.05,
-                        onChange: () => triggerAutoSave(),
-                    },
-                },
-                {
-                    id: 'postprocess:env:ssr:falloff',
-                    kind: 'slider',
-                    label: 'scene.ssrFalloff',
-                    icon: 'lucide:square-dashed',
-                    visibleWhen: () => getRenderState().ssrEnabled,
-                    control: {
-                        bind: 'render.ssrFalloff',
-                        min: 0,
-                        max: 1,
-                        step: 0.05,
-                        onChange: () => triggerAutoSave(),
-                    },
-                },
-                {
-                    id: 'postprocess:env:ssr:step',
-                    kind: 'slider',
-                    label: 'scene.ssrStep',
-                    icon: 'lucide:ruler',
-                    visibleWhen: () => getRenderState().ssrEnabled,
-                    control: {
-                        bind: 'render.ssrStep',
-                        min: 1,
-                        max: 32,
-                        step: 1,
-                        onChange: () => triggerAutoSave(),
-                    },
-                },
-                {
-                    id: 'postprocess:env:ssr:thickness',
-                    kind: 'slider',
-                    label: 'scene.ssrThickness',
-                    icon: 'lucide:layers',
-                    visibleWhen: () => getRenderState().ssrEnabled,
-                    control: {
-                        bind: 'render.ssrThickness',
-                        min: 0,
-                        max: 2,
-                        step: 0.1,
-                        onChange: () => triggerAutoSave(),
-                    },
-                },
-                {
-                    id: 'postprocess:env:reflectionProbe',
-                    kind: 'toggle',
-                    label: 'scene.reflectionProbe',
-                    icon: 'lucide:scan',
-                    control: {
-                        bind: 'render.reflectionProbeEnabled',
-                        onChange: (v) => {
-                            setRenderState({ reflectionIntensity: v ? 1 : 0 });
-                            triggerAutoSave();
-                        },
-                    },
-                },
                 {
                     id: 'postprocess:env:ssao',
                     kind: 'toggle',

@@ -9,7 +9,7 @@
 > Grep `> \*\*状态\*\*:.*(规划|实施中|部分实现)` in docs\adr，看是否已有类似实现。
 > 编号只允许给 ADR、novel 写。
 > 禁止 `git stash`，禁止 `git stash pop`等高风险行为。
-> 自行提交自己的代码：git add <我改的路径...> && git commit。
+> 完成工作后，自行提交自己的代码：git add <我改的路径...> && git commit , 更新一下adr。
 > 保存、推送指令一到，先测试，再 git status --short 抓取当前文件清单,按功能git add正常的文件/文件夹，git commit正常的更改。最后询问用户是否需要处理报错。
 
 ## 去哪里查

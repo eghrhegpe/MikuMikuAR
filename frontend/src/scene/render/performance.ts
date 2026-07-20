@@ -67,13 +67,14 @@ interface LevelConfig {
     chromaticAberrationEnabled: boolean;
     grainEnabled: boolean;
     glowEnabled: boolean;
-    ssrEnabled: boolean;
-    reflectionProbeEnabled: boolean;
     ssaoEnabled: boolean;
     /** ADR-130 Phase 2.3: 统一质量档位，反射/云/粒子等从此派生 */
     qualityProfile?: 'high' | 'medium' | 'low';
     label: string;
 }
+
+/** 反射质量档位序（降级上限守卫用：off < low < medium < high） */
+const REFLECTION_QUALITY_ORDER: Record<string, number> = { off: 0, low: 1, medium: 2, high: 3 };
 
 const LEVEL_CONFIGS: Record<DegradeLevel, LevelConfig> = {
     0: {
@@ -87,8 +88,6 @@ const LEVEL_CONFIGS: Record<DegradeLevel, LevelConfig> = {
         chromaticAberrationEnabled: true,
         grainEnabled: true,
         glowEnabled: true,
-        ssrEnabled: true,
-        reflectionProbeEnabled: true,
         ssaoEnabled: true,
         qualityProfile: 'high',
         label: '正常',
@@ -104,8 +103,6 @@ const LEVEL_CONFIGS: Record<DegradeLevel, LevelConfig> = {
         chromaticAberrationEnabled: false,
         grainEnabled: false,
         glowEnabled: false,
-        ssrEnabled: false,
-        reflectionProbeEnabled: true,
         ssaoEnabled: true,
         qualityProfile: 'medium',
         label: '轻度降级',
@@ -121,8 +118,6 @@ const LEVEL_CONFIGS: Record<DegradeLevel, LevelConfig> = {
         chromaticAberrationEnabled: false,
         grainEnabled: false,
         glowEnabled: false,
-        ssrEnabled: false,
-        reflectionProbeEnabled: false,
         ssaoEnabled: false,
         qualityProfile: 'low',
         label: '中度降级',
@@ -138,8 +133,6 @@ const LEVEL_CONFIGS: Record<DegradeLevel, LevelConfig> = {
         chromaticAberrationEnabled: false,
         grainEnabled: false,
         glowEnabled: false,
-        ssrEnabled: false,
-        reflectionProbeEnabled: false,
         ssaoEnabled: false,
         qualityProfile: 'low',
         label: '重度降级',
@@ -184,18 +177,16 @@ function levelDiff(
     if (prev.glowEnabled !== next.glowEnabled) {
         render.glowEnabled = next.glowEnabled;
     }
-    if (prev.ssrEnabled !== next.ssrEnabled) {
-        render.ssrEnabled = next.ssrEnabled;
-    }
-    if (prev.reflectionProbeEnabled !== next.reflectionProbeEnabled) {
-        render.reflectionProbeEnabled = next.reflectionProbeEnabled;
-    }
     if (prev.ssaoEnabled !== next.ssaoEnabled) {
         render.ssaoEnabled = next.ssaoEnabled;
     }
     // ADR-130 Phase 2.3: 统一质量档位
     if (prev.qualityProfile !== next.qualityProfile && next.qualityProfile) {
         env.qualityProfile = next.qualityProfile;
+        // ADR-151 收口：反射降级统一走 env-reflection —— reflectionQuality 驱动模式/预设推导
+        // （auto 下 medium=probe、low=轻量 probe、off=全关），取代旧 render.ssrEnabled /
+        // render.reflectionProbeEnabled 双源控制。
+        env.reflectionQuality = resolveQualityProfile(next.qualityProfile).reflectionQuality;
     }
     return { light, render, env };
 }
@@ -236,6 +227,7 @@ function applyDegrade(level: DegradeLevel, force = false): void {
             render: getRenderState(),
             env: {
                 qualityProfile: envState.qualityProfile,
+                reflectionQuality: envState.reflectionQuality,
             },
         };
     }
@@ -289,6 +281,20 @@ function applyDegrade(level: DegradeLevel, force = false): void {
             }
         } finally {
             _suppressSnapshotReset = false;
+        }
+    }
+
+    // ADR-151 收口：反射降级上限守卫 —— 降级目标不得高于用户原始 reflectionQuality，
+    // 避免「用户关了反射，降级却把反射打开」的反直觉行为。
+    if (changes.env && changes.env.reflectionQuality !== undefined) {
+        const userQ = _snapshot?.env?.reflectionQuality;
+        if (userQ !== undefined) {
+            if (
+                (REFLECTION_QUALITY_ORDER[changes.env.reflectionQuality] ?? 0) >
+                (REFLECTION_QUALITY_ORDER[userQ] ?? 0)
+            ) {
+                changes.env.reflectionQuality = userQ;
+            }
         }
     }
 
