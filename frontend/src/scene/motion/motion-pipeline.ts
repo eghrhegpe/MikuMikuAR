@@ -108,7 +108,13 @@ export class MotionPipeline {
         // 快照迭代：允许 run 内 unregister（如 perception 模型销毁时自注销），避免迭代中修改数组导致跳过
         const snapshot = this.layers.slice();
         for (const layer of snapshot) {
-            layer.run(ctx);
+            // 异常隔离：单 layer 抛错不影响后续层
+            // （与 Babylon 单 observer 抛错不影响其他 observer 行为一致；否则单个新层异常会静默掐断下游所有层）
+            try {
+                layer.run(ctx);
+            } catch (err) {
+                console.error(`[MotionPipeline] layer "${layer.id}" run 抛错，已跳过：${String(err)}`);
+            }
         }
     }
 }

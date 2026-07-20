@@ -110,6 +110,8 @@ export class InMemoryBoneOverrideStore implements BoneOverrideStore {
         bones: readonly string[]
     ): string[] {
         this._ensureModule(modelId, moduleId, priority);
+        // claimBones 携带权威 priority，每次刷新（setModuleEnabled 不传 priority，不能覆盖既有优先级）
+        this._moduleState.get(modelId)!.get(moduleId)!.priority = priority;
         const owned = this._ownedMap(modelId).get(moduleId)!;
         const ownerByBone = this._ownerMap(modelId);
         const preempted: string[] = [];
@@ -117,7 +119,9 @@ export class InMemoryBoneOverrideStore implements BoneOverrideStore {
         for (const bone of bones) {
             const conflict = ownerByBone.get(bone);
             if (conflict && conflict.moduleId !== moduleId) {
-                if (priority > conflict.priority) {
+                // 与 registry.ts:204 一致：数值越小优先级越高
+                // （ADR-147 §六 语义迁移映射：避免 Phase 2 step2 接入时仲裁结果整体翻转）
+                if (priority < conflict.priority) {
                     // 抢占：清落败方所有权 + 槽位，记录冲突
                     this._releaseBoneFromOwner(modelId, conflict.moduleId, bone);
                     this.clearSlot(modelId, bone);
@@ -204,6 +208,7 @@ export class InMemoryBoneOverrideStore implements BoneOverrideStore {
         if (!perModel.has(moduleId)) {
             perModel.set(moduleId, { enabled: true, priority, ownedBones: new Set() });
         } else if (priority !== 0) {
+            // 仅显式传入非 0 priority 时刷新（setModuleEnabled 调 _ensureModule 不传 priority=0，避免误清既有优先级）
             perModel.get(moduleId)!.priority = priority;
         }
         // 同步确保 _ownedBones 的 per-module set 存在（避免 claimBones 取 owned 时 undefined）

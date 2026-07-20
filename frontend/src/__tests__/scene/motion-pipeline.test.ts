@@ -60,4 +60,20 @@ describe('MotionPipeline (ADR-147 Phase 1)', () => {
         pipeline.runFrame(ctx);
         expect(seq).toEqual(['vb', 'p']); // 执行序仍由 stage 决定
     });
+
+    it('单 layer 抛错不中断后续层（异常隔离，ADR-147 审核 P3）', () => {
+        const pipeline = new MotionPipeline();
+        const seq: string[] = [];
+        const boom = makeLayer('boom', 'bone-override', 0);
+        boom.run = vi.fn(() => {
+            throw new Error('layer failed');
+        });
+        const after = makeLayer('after', 'perception', 0);
+        after.run = vi.fn(() => seq.push('after'));
+        pipeline.register(boom);
+        pipeline.register(after);
+
+        expect(() => pipeline.runFrame(ctx)).not.toThrow();
+        expect(seq).toEqual(['after']); // 后续层仍执行
+    });
 });
