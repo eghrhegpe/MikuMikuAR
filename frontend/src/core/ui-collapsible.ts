@@ -14,6 +14,7 @@ import { getCurrentRenderingMenu } from '../menus/menu';
  * @param config.title 标题
  * @param config.icon Iconify 图标名（可选）
  * @param config.defaultOpen 默认是否展开（默认 false）
+ * @param config.openWhen 当此条件为 true 时自动展开面板（覆盖 defaultOpen），适用于"开关触发后自动展开子设置"场景
  * @param config.renderContent 内容渲染回调
  */
 export function addCollapsible(
@@ -23,6 +24,8 @@ export function addCollapsible(
         icon?: string;
         variant?: 'default' | 'mat';
         defaultOpen?: boolean;
+        /** 当此条件为 true 时自动展开面板（覆盖 defaultOpen），适用于"开关触发后自动展开子设置"场景 */
+        openWhen?: boolean;
         testId?: string;
         headerToggle?: {
             value: boolean;
@@ -113,7 +116,7 @@ export function addCollapsible(
     panel.appendChild(inner);
 
     // State
-    let isOpen = config.defaultOpen ?? false;
+    let isOpen = config.openWhen ?? config.defaultOpen ?? false;
 
     function applyState(open: boolean) {
         panel.classList.toggle('open', open);

@@ -1,6 +1,7 @@
 // [doc:adr-085] Feet Adjustment — 脚部地面跟随（MMD-native IK）
 // 职责: 每帧驱动左/右足IK 骨骼世界坐标到地面 + 重解该腿 IK
-// 与 ADR-061 bone-override 同构（逐帧后处理），注册顺序在 bone-override 之前
+// 注册为 MotionPipeline bone-override 层（order=5），在帧钩子（RIDING=10）之前执行，
+// 脚 IK 为自动约束基础，手动 Override 叠加其上。
 // 依赖: env-impl.getGroundHeightAt / proc-motion-shared 骨骼候选 / babylon-mmd IkSolver
 //
 // 关键机制（2026-07-11 复核）:
@@ -24,8 +25,7 @@ import { solveFootTarget } from '@/motion-algos/feet-adjustment-math';
 // 落地判定（无 Babylon 依赖，便于单测）见 motion-algos/footstep-detect.ts
 import { detectFootLanding } from '@/motion-algos/footstep-detect';
 import { logWarn } from '../../core/logger';
-import { observe, type ObserverHandle } from '@/core/observer-handle';
-import { safeDispose } from '@/core/dispose-helpers';
+import { getMotionPipeline } from './motion-pipeline';
 export { solveFootTarget };
 export type { SolveFootInput, SolveFootOutput } from '@/motion-algos/feet-adjustment-math';
 
@@ -53,7 +53,7 @@ interface _ModelCache {
 }
 
 const _cache = new Map<string, _ModelCache>();
-let _observerHandle: ObserverHandle | null = null;
+let _unregisterHandle: (() => void) | null = null;
 // ADR-088 落地事件回调（setOnFootLand 注入）；脚步声消费此事件
 let _onFootLand: ((e: FootLandEvent) => void) | null = null;
 // 帧间隔计时（供落地垂直速度估算）
@@ -112,7 +112,7 @@ export function setOnFootLand(cb: ((e: FootLandEvent) => void) | null): void {
 
 /** 查询脚部跟随系统是否正在运行（observer 已注册）。 */
 export function isFeetAdjustmentRunning(): boolean {
-    return _observerHandle !== null;
+    return _unregisterHandle !== null;
 }
 
 /** 沿 parentBone 向上找大腿根骨骼（用于估算髋世界坐标与腿长） */
@@ -258,14 +258,13 @@ function _adjustFoot(
 }
 
 /**
- * 启动脚部调整系统：注册 onBeforeRenderObservable 回调。
- * 必须在 bone-override 之前注册（脚 IK 为自动约束基础，手动 Override 叠加其上）。
+ * 启动脚部调整系统：注册为 MotionPipeline bone-override 层（order=5）。
+ * 在帧钩子（RIDING=10）之前执行：脚 IK 为自动约束基础，手动 Override 叠加其上。
  */
 export function startFeetAdjustment(
-    getModels: FeetModelProvider,
-    scene: import('@babylonjs/core/scene').Scene
+    getModels: FeetModelProvider
 ): void {
-    if (_observerHandle) {
+    if (_unregisterHandle) {
         return;
     }
 
@@ -313,12 +312,20 @@ export function startFeetAdjustment(
         }
     };
 
-    _observerHandle = observe(scene.onBeforeRenderObservable, callback);
+    _unregisterHandle = getMotionPipeline().register({
+        id: 'feet-adjustment',
+        stage: 'bone-override',
+        order: 5,
+        run: callback,
+    });
 }
 
 /** 停止脚部调整系统并清空缓存。 */
 export function stopFeetAdjustment(): void {
-    _observerHandle = safeDispose(_observerHandle);
+    if (_unregisterHandle) {
+        _unregisterHandle();
+        _unregisterHandle = null;
+    }
     _cache.clear();
     _lastTickTime = 0; // 重置时间戳，避免重启后首帧 dt 异常
 }
