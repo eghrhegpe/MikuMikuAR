@@ -98,7 +98,8 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
     if (hemiLight) {
         hemiLight.intensity = getLightState().hemiIntensity;
         hemiLight.diffuse = col3FromTriple(skyMid);
-        hemiLight.groundColor = new Color3(0.3, 0.3, 0.4);
+        // groundColor 从 skyColorBot 派生，保持三色统一
+        hemiLight.groundColor = col3FromTriple(state.skyColorBot);
     }
     // 场景环境色 — envIntensity 控制渗透力度，最大不超过 0.5 以免冲淡方向光
     const ambientStrength = Math.min(state.envIntensity * 0.15, ENV_LIGHT_MAX);
@@ -117,7 +118,8 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
     ) {
         const derived = deriveLighting(state.skyColorTop, state.sunAngle, state.azimuth ?? -45);
         setLightState({
-            dirColor: [1, 0.95, 0.9],
+            // dirColor 从天空颜色派生，保持三色统一
+            dirColor: derived.dirDiffuse,
             dirX: derived.dirDirection[0],
             dirY: derived.dirDirection[1],
             dirZ: derived.dirDirection[2],
