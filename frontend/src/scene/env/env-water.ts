@@ -18,6 +18,7 @@ import { EnvState, envState } from '@/core/config';
 import { col3FromTriple } from '@/core/color-helpers';
 import { _envSys, getScene } from './env-context';
 import { PlanarReflection, registerReflectionSurface } from './planar-reflection';
+import { getPlanarQualityOverride } from './env-reflection';
 import { createCanvasTexture } from './env-texture';
 import { registerEnvCallback } from './env-dispatcher';
 import { clamp01 } from '@/core/utils';
@@ -142,12 +143,19 @@ const waterReflection = new PlanarReflection({
     mode: 'screenSpace',
     resolutionMap: { high: 2048, medium: 1024, low: 512, off: 0 },
     getQuality: (s) => {
+        // ADR-151: reflectionMode 全局覆盖（none→强关、planar→拔高到至少 low）
+        const override = getPlanarQualityOverride(s);
+        if (override === 'off') return 'off';
+        let q: string;
         // reflectionQuality 显式指定（含 'off'）直接返回；仅当值不在合法列表时 fallback
         if (['high', 'medium', 'low', 'off'].includes(s.reflectionQuality)) {
-            return s.reflectionQuality;
+            q = s.reflectionQuality;
+        } else {
+            const map: Record<string, string> = { high: 'high', medium: 'medium', low: 'low' };
+            q = map[s.qualityProfile] ?? 'off';
         }
-        const map: Record<string, string> = { high: 'high', medium: 'medium', low: 'low' };
-        return map[s.qualityProfile] ?? 'off';
+        if (override === 'low' && q === 'off') return 'low';
+        return q;
     },
     getBlend: (s) => s.planarReflectBlend ?? 0.5,
     getSurfaceLevel: (s) => s.waterLevel,
@@ -1285,6 +1293,7 @@ const _WATER_KEYS = [
     'waterAnimSpeed',
     'planarReflectBlend',
     'reflectionQuality',
+    'reflectionMode',
     'qualityProfile',
     // Water shader
     'waterFogColor',

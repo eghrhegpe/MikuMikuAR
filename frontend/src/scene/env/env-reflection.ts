@@ -22,7 +22,7 @@ import type { EnvState } from '@/core/config';
 import { envState } from '@/core/config';
 import { getScene } from './env-context';
 import { registerEnvCallback } from './env-dispatcher';
-import { setSSRFromReflection } from '../render/renderer';
+import { setSSRFromReflection, isSSRActive } from '../render/renderer';
 
 // ======== 类型定义 ========
 
@@ -31,9 +31,6 @@ export type ReflectionMode = 'auto' | 'none' | 'probe' | 'ssr' | 'planar' | 'hyb
 
 /** 推导后的实际激活模式（不含 auto） */
 export type ResolvedReflectionMode = 'none' | 'probe' | 'ssr' | 'planar' | 'hybrid';
-
-/** reflectionTexture 所有权声明 */
-type ReflectionTextureOwner = 'probe' | 'planar' | 'material' | 'none';
 
 // ======== 质量等级参数预设 ========
 
@@ -77,12 +74,6 @@ const QUALITY_PRESETS: Record<string, ReflectionQualityPreset> = {
         probe: { resolution: 256, strength: 0.3 },
         planarQuality: 'medium',
     },
-    ultra: {
-        mode: 'hybrid',
-        ssr: { step: 32, strength: 1.0, thickness: 0.8 },
-        probe: { resolution: 512, strength: 0.5 },
-        planarQuality: 'high',
-    },
 };
 
 // ======== 模块状态 ========
@@ -92,8 +83,14 @@ let _probeRefreshObserver: ObserverHandle | null = null;
 let _lastProbeRefresh = 0;
 let _currentMode: ResolvedReflectionMode = 'none';
 
-/** 所有权追踪：当前哪个子系统占用模型材质的 reflectionTexture 槽位 */
-let _textureOwner: ReflectionTextureOwner = 'none';
+/** Probe 创建失败标记：GPU 资源不足等场景下不再无限重试 */
+let _probeCreateFailed = false;
+
+/** hybrid 模式 Probe 强度衰减系数（避免与 SSR 叠加过亮） */
+const HYBRID_PROBE_FACTOR = 0.5;
+
+/** Probe 自动刷新的最低 FPS 守卫：帧率低于此值时跳过本次刷新，避免 cubemap 渲染造成帧 spike */
+const PROBE_REFRESH_MIN_FPS = 24;
 
 /**
  * 保存材质原始 reflectionTexture 的映射（material.uniqueId → 原始纹理）。
@@ -101,10 +98,14 @@ let _textureOwner: ReflectionTextureOwner = 'none';
  */
 const _savedReflectionTextures = new Map<number, BaseTexture | null>();
 
-/** 已绑定 Probe 的材质 uniqueId 集合（用于增量绑定新模型） */
-const _probeBoundMaterials = new Set<number>();
+/**
+ * 已绑定 Probe 的材质映射（uniqueId → 材质引用）。
+ * dispose 时直接遍历值恢复，避免网格被移出场景（模型卸载）后
+ * 遍历 scene.meshes 漏掉其材质导致悬空指针。
+ */
+const _probeBoundMaterials = new Map<number, MaterialWithReflection>();
 
-/** Probe 当前强度（hybrid 模式下减半） */
+/** Probe 当前强度（hybrid 模式下按 HYBRID_PROBE_FACTOR 衰减） */
 let _probeStrength = 1;
 
 // ======== 模式推导 ========
@@ -136,6 +137,20 @@ export function resolveReflectionMode(state: EnvState): ResolvedReflectionMode {
 export function getQualityPreset(state: EnvState): ReflectionQualityPreset {
     const quality = state.reflectionQuality ?? 'off';
     return QUALITY_PRESETS[quality] ?? QUALITY_PRESETS['off'];
+}
+
+/**
+ * ADR-151: 平面反射质量全局覆盖（供 env-ground / env-water 的 getQuality 检查）。
+ * - reflectionMode='none'  → 强制 'off'（关闭全部反射，含平面反射）
+ * - reflectionMode='planar' → 至少 'low'（避免"平面模式却零质量"的矛盾）
+ * - 其他模式               → null（平面反射遵循用户 reflectionQuality 设置）
+ * 纯函数于 state，与 dispatcher 回调执行顺序无关，保证任意时序下结论一致。
+ */
+export function getPlanarQualityOverride(state: EnvState): 'off' | 'low' | null {
+    const mode = resolveReflectionMode(state);
+    if (mode === 'none') return 'off';
+    if (mode === 'planar') return 'low';
+    return null;
 }
 
 // ======== 所有权管理 ========
@@ -179,7 +194,7 @@ function _restoreOriginalTexture(mat: MaterialWithReflection): void {
  * @param resolution cubemap 分辨率（默认 256）
  */
 function _createProbe(scene: Scene, resolution = 256): void {
-    if (_reflectionProbe) {
+    if (_reflectionProbe || _probeCreateFailed) {
         return;
     }
     try {
@@ -193,8 +208,9 @@ function _createProbe(scene: Scene, resolution = 256): void {
         );
         _reflectionProbe.refreshRate = 0; // 静态环境，仅渲染一次
     } catch (err) {
-        logWarn('env-reflection', 'ReflectionProbe 创建失败:', err);
+        logWarn('env-reflection', 'ReflectionProbe 创建失败（本次会话不再重试）:', err);
         _reflectionProbe = null;
+        _probeCreateFailed = true;
         return;
     }
 
@@ -206,6 +222,10 @@ function _createProbe(scene: Scene, resolution = 256): void {
         }
         const now = performance.now();
         if (now - _lastProbeRefresh < 10000) {
+            return;
+        }
+        // FPS 守卫：帧率过低时跳过本次刷新，避免 cubemap 渲染造成帧 spike
+        if (scene.getEngine().getFps() < PROBE_REFRESH_MIN_FPS) {
             return;
         }
         _lastProbeRefresh = now;
@@ -238,26 +258,26 @@ export function bindProbeToMeshes(meshes: AbstractMesh[]): void {
     }
     for (const mesh of meshes) {
         // 排除环境网格（地面/水面/天空），它们的 reflectionTexture 由 PlanarReflection 管理
-        if (
-            mesh.name.startsWith('env') ||
-            mesh.name.startsWith('envGround') ||
-            mesh.name.startsWith('envWater') ||
-            mesh.name === 'envSkySphere' ||
-            mesh.name === 'envSkyDome'
-        ) {
+        // （'env' 前缀已覆盖 envGround/envWater/envSkySphere 等，无需冗余判断）
+        if (mesh.name.startsWith('env')) {
             continue;
         }
-        const m = mesh.material as unknown as MaterialWithReflection | null;
-        if (m && 'reflectionTexture' in m) {
-            _saveOriginalTexture(m);
-            m.reflectionTexture = rt;
-            _probeBoundMaterials.add(m.uniqueId);
-            // 设置反射强度
-            if ('reflectionColor' in m) {
-                const intensity = _probeStrength;
-                (m as unknown as { reflectionColor: { set: (r: number, g: number, b: number) => void } })
-                    .reflectionColor.set(intensity, intensity, intensity);
+        try {
+            const m = mesh.material as unknown as MaterialWithReflection | null;
+            if (m && !m.isDisposed && 'reflectionTexture' in m) {
+                _saveOriginalTexture(m);
+                m.reflectionTexture = rt;
+                _probeBoundMaterials.set(m.uniqueId, m);
+                // 设置反射强度
+                if ('reflectionColor' in m) {
+                    const intensity = _probeStrength;
+                    (m as unknown as { reflectionColor: { set: (r: number, g: number, b: number) => void } })
+                        .reflectionColor.set(intensity, intensity, intensity);
+                }
             }
+        } catch (err) {
+            // 单个网格绑定失败（如 MultiMaterial 等特殊结构）不中断其他网格
+            logWarn('env-reflection', `Probe 绑定网格 ${mesh.name} 失败:`, err);
         }
     }
 }
@@ -265,17 +285,16 @@ export function bindProbeToMeshes(meshes: AbstractMesh[]): void {
 /**
  * 从所有已绑定材质恢复原始 reflectionTexture，然后销毁 Probe。
  */
-function _disposeProbe(scene: Scene): void {
+function _disposeProbe(_scene: Scene): void {
     if (!_reflectionProbe) {
         return;
     }
 
-    // 恢复所有已绑定材质的原始纹理
-    for (const mesh of scene.meshes) {
-        const m = mesh.material as unknown as MaterialWithReflection | null;
-        if (m && _probeBoundMaterials.has(m.uniqueId)) {
-            _restoreOriginalTexture(m);
-        }
+    // 恢复所有已绑定材质的原始纹理。
+    // 直接遍历材质引用映射（而非 scene.meshes），确保已被移出场景的
+    // 网格（模型卸载）其材质也能被正确恢复，消除悬空指针。
+    for (const m of _probeBoundMaterials.values()) {
+        _restoreOriginalTexture(m);
     }
     _probeBoundMaterials.clear();
     _savedReflectionTextures.clear();
@@ -284,7 +303,6 @@ function _disposeProbe(scene: Scene): void {
     _probeRefreshObserver = safeDispose(_probeRefreshObserver);
     _reflectionProbe = safeDispose(_reflectionProbe);
     _lastProbeRefresh = 0;
-    _textureOwner = 'none';
 }
 
 // ======== SSR 控制（委托 renderer.ts） ========
@@ -314,9 +332,20 @@ export function applyReflection(state: EnvState): void {
     const mode = resolveReflectionMode(state);
     const preset = getQualityPreset(state);
 
-    // 模式未变化且 Probe 已存在 → 仅更新参数（避免无谓重建）
-    if (mode === _currentMode && _reflectionProbe && mode !== 'none') {
-        _updateProbeStrength(preset, mode);
+    // 模式未变化 → 仅更新参数（避免无谓重建）
+    if (mode === _currentMode && mode !== 'none') {
+        if ((mode === 'probe' || mode === 'hybrid') && _reflectionProbe) {
+            _updateProbeStrength(preset, mode);
+        }
+        // 同步更新 SSR 参数（仅在 SSR 当前激活时，尊重用户手动关闭）
+        if ((mode === 'ssr' || mode === 'hybrid') && isSSRActive()) {
+            _applySSR({
+                enabled: true,
+                step: preset.ssr?.step ?? 16,
+                strength: preset.ssr?.strength ?? 0.7,
+                thickness: preset.ssr?.thickness ?? 0.5,
+            });
+        }
         return;
     }
 
@@ -341,9 +370,9 @@ export function applyReflection(state: EnvState): void {
             break;
 
         case 'planar':
-            // PlanarReflection 由 env-ground / env-water 各自管理，
-            // 此处仅确保 SSR 和 Probe 关闭（已在 _disableCurrentMode 中处理）。
-            // reflectionQuality 保持用户设置，PlanarReflection 内部自行判断 shouldEnable。
+            // PlanarReflection 仍由 env-ground / env-water 各自管理（SSR 与 Probe 已关闭）。
+            // 最低质量保证通过 getPlanarQualityOverride 在二者 getQuality 内完成
+            // （reflectionMode='planar' 时拔高到至少 low）。
             break;
 
         case 'hybrid':
@@ -374,7 +403,6 @@ function _enableProbe(scene: Scene, preset: ReflectionQualityPreset, mode: Resol
     _probeStrength = preset.probe?.strength ?? 0.5;
     _createProbe(scene, resolution);
     if (_reflectionProbe) {
-        _textureOwner = 'probe';
         // 绑定到场景中已有的模型网格
         bindProbeToMeshes(scene.meshes);
     }
@@ -397,12 +425,11 @@ function _enableSSR(preset: ReflectionQualityPreset): void {
  * Probe 提供基础环境反射底色（强度减半），SSR 提供动态细节叠加。
  */
 function _enableHybrid(scene: Scene, preset: ReflectionQualityPreset): void {
-    // Probe 层：强度减半避免与 SSR 叠加过亮
+    // Probe 层：强度衰减避免与 SSR 叠加过亮
     const resolution = preset.probe?.resolution ?? 256;
-    _probeStrength = (preset.probe?.strength ?? 0.3) * 0.5;
+    _probeStrength = (preset.probe?.strength ?? 0.3) * HYBRID_PROBE_FACTOR;
     _createProbe(scene, resolution);
     if (_reflectionProbe) {
-        _textureOwner = 'probe';
         bindProbeToMeshes(scene.meshes);
     }
 
@@ -420,19 +447,14 @@ function _enableHybrid(scene: Scene, preset: ReflectionQualityPreset): void {
  */
 function _updateProbeStrength(preset: ReflectionQualityPreset, mode: ResolvedReflectionMode): void {
     const baseStrength = preset.probe?.strength ?? 0.5;
-    const newStrength = mode === 'hybrid' ? baseStrength * 0.5 : baseStrength;
+    const newStrength = mode === 'hybrid' ? baseStrength * HYBRID_PROBE_FACTOR : baseStrength;
     if (Math.abs(newStrength - _probeStrength) < 0.01) {
         return;
     }
     _probeStrength = newStrength;
-    // 更新已绑定材质的反射强度
-    const scene = getScene();
-    if (!scene) {
-        return;
-    }
-    for (const mesh of scene.meshes) {
-        const m = mesh.material as unknown as MaterialWithReflection | null;
-        if (m && _probeBoundMaterials.has(m.uniqueId) && 'reflectionColor' in m) {
+    // 更新已绑定材质的反射强度（直接遍历材质引用映射，跳过已 dispose 的）
+    for (const m of _probeBoundMaterials.values()) {
+        if (!m.isDisposed && 'reflectionColor' in m) {
             (m as unknown as { reflectionColor: { set: (r: number, g: number, b: number) => void } })
                 .reflectionColor.set(_probeStrength, _probeStrength, _probeStrength);
         }
@@ -478,19 +500,15 @@ export function disposeReflection(): void {
         _reflectionProbe = safeDispose(_reflectionProbe);
     }
     _currentMode = 'none';
-    _textureOwner = 'none';
     _probeStrength = 1;
+    _probeCreateFailed = false;
     _savedReflectionTextures.clear();
     _probeBoundMaterials.clear();
 }
 
 // ======== env-dispatcher 回调注册 ========
 
-const _REFLECTION_KEYS = [
-    'reflectionMode',
-    'reflectionQuality',
-    'qualityProfile',
-];
+const _REFLECTION_KEYS = ['reflectionMode', 'reflectionQuality'];
 
 registerEnvCallback((changed, state) => {
     if (!changed || [...changed].some((k) => _REFLECTION_KEYS.includes(k))) {

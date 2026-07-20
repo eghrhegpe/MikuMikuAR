@@ -962,6 +962,13 @@ export function reattachPipeline(): void {
 // ======== ADR-151: SSR 控制接口（供 env-reflection.ts 调用） ========
 
 /**
+ * SSR 管线当前是否激活（供 env-reflection 检查，尊重用户手动关闭）。
+ */
+export function isSSRActive(): boolean {
+    return _ssrPipeline !== null && _ssrPipeline.isEnabled;
+}
+
+/**
  * 反射系统专用 SSR 控制接口（不触发 auto-save）。
  * 由 env-reflection.ts 的 applyReflection 调用，避免循环依赖。
  */

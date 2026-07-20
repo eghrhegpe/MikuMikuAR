@@ -127,6 +127,7 @@ const _GROUND_KEYS = [
     'groundTileScale',
     'groundReflectionEnabled',
     'reflectionQuality',
+    'reflectionMode',
     'groundReflectionBlend',
     'groundReflectionBlur',
     'groundReflectionDistort',
