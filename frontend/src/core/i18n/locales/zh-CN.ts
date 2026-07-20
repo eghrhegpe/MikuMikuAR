@@ -28,6 +28,55 @@ export const zhCN: Record<string, string> = {
     'settings.about': '关于',
     'settings.language': '语言',
 
+    // ===== 设置·新信息架构根级（ADR-157） =====
+    'settings.graphics': '画面',
+    'settings.controls': '操控',
+    'settings.resources': '资源',
+    'settings.media': '媒体',
+    'settings.system': '系统',
+
+    // ===== 设置·画面 graphics（ADR-157） =====
+    'settings.graphics.preset': '性能预设',
+    'settings.graphics.frameQuality': '帧率与画质',
+    'settings.graphics.effects': '渲染效果',
+    'settings.graphics.physicsHud': '物理与 HUD',
+
+    // ===== 设置·操控 controls（ADR-157） =====
+    'settings.controls.camera': '相机',
+
+    // ===== 设置·资源 resources / 模型库（ADR-157） =====
+    'settings.library.sortMode': '排序方式',
+    'settings.library.sortByName': '按名称排序',
+    'settings.library.sortByDefault': '按默认顺序',
+    'settings.library.namePriority': '显示名优先级',
+    'settings.library.materialMap': '材质分类映射',
+    'settings.library.addMaterialMap': '添加映射',
+    'settings.library.patternLabel': '匹配规则',
+    'settings.library.patternPlaceholder': '正则表达式，如 裙',
+    'settings.library.categoryLabel': '分类',
+    'settings.library.categoryPlaceholder': '皮肤/头发/眼睛/服装/配件/道具',
+    'settings.paths.modelCount': '模型数量：',
+    'settings.saveFailed': '保存失败',
+
+    // ===== 设置·媒体 media / 截图（ADR-157） =====
+    'settings.screenshot.format': '格式',
+    'settings.screenshot.quality': '质量',
+    'settings.screenshot.thumbRes': '缩略图分辨率',
+    'settings.screenshot.thumbResSet': '缩略图分辨率已设为 {label}',
+    'settings.screenshot.saveDir': '保存目录',
+    'settings.screenshot.dirNotSet': '未设置（使用默认）',
+    'settings.screenshot.selectDir': '选择目录',
+    'settings.screenshot.openDir': '打开目录',
+
+    // ===== 设置·系统 system / 软件 / 关于补充（ADR-157） =====
+    'settings.software.actions': '操作',
+    'settings.software.info': '信息',
+    'settings.importBadFormat': '设置文件格式不正确',
+    'settings.about.versionInfo': '版本信息',
+    'settings.about.cache.counting': '统计中…',
+    'settings.about.update.checkHint': '点击「检查更新」查看是否有新版本',
+    'settings.about.update.goDownload': '前往下载 →',
+
     // ===== 语言清单 =====
     'lang.zh-CN': '简体中文',
     'lang.en': 'English',
@@ -1348,8 +1397,12 @@ export const zhCN: Record<string, string> = {
     'common.stage': '舞台',
     'common.model': '模型',
     'common.prop': '道具',
+    'common.delete': '删除',
+    'common.items': '项',
+    'common.unknown': '未知',
     'model-detail.unloadThis': '卸载此{kind}',
     'status.loop': '循环: {state}',
+    'status.error': '错误：{message}',
     'env.propExists': '道具已存在: {name}',
     'env.propAdded': '✓ 道具: {name}',
     'env.propRemoved': '✓ 已移除道具: {name}',
