@@ -492,7 +492,7 @@ vi.mock('../scene/render/lighting', () => {
         setLightState: mockSetLightState,
         getLightState: mockGetLightState,
         setSkipLightAutoSave: mockSetSkipLightAutoSave,
-        hemiLight,
+        getHemiLight: () => hemiLight,
         _updateSunDisc: mockUpdateSunDisc,
         applyLightingPresetFromEnv: mockApplyLightingPresetFromEnv,
     };
@@ -551,7 +551,7 @@ import {
     envState as mockConfigEnvState,
     triggerAutoSave as mockConfigTriggerAutoSave,
 } from '../core/config';
-import { hemiLight as mockLightingHemiLight } from '../scene/render/lighting';
+import { getHemiLight as mockGetHemiLight } from '../scene/render/lighting';
 import { scene as mockSceneInstance } from '../scene/scene';
 
 import {
@@ -742,15 +742,15 @@ describe('_applyEnvStateFacade (via setEnvState)', () => {
             shadowBias: 0.0001,
         });
         setEnvState({ skyMode: 'procedural' });
-        expect(mockLightingHemiLight.intensity).toBe(0.6);
+        expect(mockGetHemiLight()!.intensity).toBe(0.6);
     });
 
     it('sets hemiLight.diffuse from skyColorMid when present', () => {
         mockConfigEnvState.skyColorMid = [0.7, 0.7, 0.8];
         setEnvState({ skyMode: 'procedural' });
-        expect(mockLightingHemiLight.diffuse.r).toBe(0.7);
-        expect(mockLightingHemiLight.diffuse.g).toBe(0.7);
-        expect(mockLightingHemiLight.diffuse.b).toBe(0.8);
+        expect(mockGetHemiLight()!.diffuse.r).toBe(0.7);
+        expect(mockGetHemiLight()!.diffuse.g).toBe(0.7);
+        expect(mockGetHemiLight()!.diffuse.b).toBe(0.8);
     });
 
     it('computes hemiLight.diffuse as average of top/bot when skyColorMid absent', () => {
@@ -761,17 +761,17 @@ describe('_applyEnvStateFacade (via setEnvState)', () => {
         const avgR = (0.4 + 0.2) / 2;
         const avgG = (0.6 + 0.4) / 2;
         const avgB = (0.9 + 0.7) / 2;
-        expect(mockLightingHemiLight.diffuse.r).toBeCloseTo(avgR);
-        expect(mockLightingHemiLight.diffuse.g).toBeCloseTo(avgG);
-        expect(mockLightingHemiLight.diffuse.b).toBeCloseTo(avgB);
+        expect(mockGetHemiLight()!.diffuse.r).toBeCloseTo(avgR);
+        expect(mockGetHemiLight()!.diffuse.g).toBeCloseTo(avgG);
+        expect(mockGetHemiLight()!.diffuse.b).toBeCloseTo(avgB);
     });
 
     it('sets hemiLight.groundColor from skyColorBot', () => {
         setEnvState({});
         // groundColor 从 skyColorBot 派生，保持三色统一
-        expect(mockLightingHemiLight.groundColor.r).toBeCloseTo(0.2);
-        expect(mockLightingHemiLight.groundColor.g).toBeCloseTo(0.2);
-        expect(mockLightingHemiLight.groundColor.b).toBeCloseTo(0.25);
+        expect(mockGetHemiLight()!.groundColor.r).toBeCloseTo(0.2);
+        expect(mockGetHemiLight()!.groundColor.g).toBeCloseTo(0.2);
+        expect(mockGetHemiLight()!.groundColor.b).toBeCloseTo(0.25);
     });
 
     it('sets scene.ambientColor based on envIntensity (capped at 0.5)', () => {

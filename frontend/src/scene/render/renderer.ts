@@ -18,7 +18,7 @@ import { resetPerformanceSnapshot, isSnapshotResetSuppressed } from './performan
 import { clamp, clamp01, lerp, lerpArray, setKey } from '@/core/utils';
 import { logWarn } from '@/core/logger';
 import type { EnvState } from '@/core/config';
-import { dirLight } from './lighting';
+import { getDirLight } from './lighting';
 
 // ======== Tone Mapping Modes ========
 
@@ -581,7 +581,8 @@ export function setContactShadow(state: EnvState): void {
                 y: _scene!.getEngine().getRenderHeight(),
             });
             // 方向光反向作为光线方向；转换到视图空间
-            const lightDir = dirLight ? dirLight.direction : { x: 0, y: -1, z: 0 };
+            const dl = getDirLight();
+            const lightDir = dl ? dl.direction : { x: 0, y: -1, z: 0 };
             const viewMat = camera.getViewMatrix();
             // 视图空间 = viewMatrix * worldDir（仅方向，忽略平移）
             const vlx =
