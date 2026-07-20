@@ -1,6 +1,6 @@
 # ADR-147: 动作管线显式调度器 + 集中骨骼覆盖状态
 
-> **状态**: 规划中
+> **状态**: 实施中（Phase 1+2 内核切片已落地，待与 motion-modules 写者协调后接入运行时）
 > **背景**: 用户反馈骨骼修改系统「设计让人头晕、难排查、后面 AI 改了连带前面代码出问题」。经实地查证（见 2026-07-20 骨骼修改链路审计），根因是**管线顺序靠注册时序隐式决定、骨骼写入状态分散在三个数据结构**。同一时段出现第二个 AI 并发提交 `motion-modules/*`（7f0c1a18），证实多写者互相踩的现实风险已发生。本 ADR 在已落地的缓解措施（D 测试护栏 + B 冲突可视化）之上，给出根因级修复设计。
 > **范围**: 新增 `MotionPipeline` 显式调度器（治理注册时序隐式定序）+ 可选 `BoneOverrideStore` 集中状态（治理三套作用域副本）。**本 ADR 仅为设计立项，不修改任何 `scene/motion/*` 运行时源码**，待协调后按 Phase 实施。
 
@@ -127,6 +127,15 @@ class BoneOverrideStore {
 | **Phase 1** | 方案 A：`MotionPipeline` 调度器 + `scene.ts` 注册迁移 | 无 | 6 层顺序可由 stage 常量声明；单测验证 stage 序；现有 44 例 motion 单测全绿 |
 | **Phase 2** | 方案 E：`BoneOverrideStore` 合并三副本 | Phase 1 | `grep` 确认 `_overrideMaps`/`intent.motionModules`/`_ownedBones` 仅 store 持有；B banner 迁移到 store API |
 | **Phase 3** | 去隐式依赖：移除旧 `onBeforeRenderObservable` 双写路径 + 帧钩子裸注册 | Phase 1+2 | 全场景（含切模型/聚焦/disable）覆写关系稳定，无 console.warn 冲突残留 |
+
+### 实施进度（2026-07-20）
+
+| 切片 | 提交 | 状态 | 说明 |
+|------|------|------|------|
+| Phase 1 切片 1：`MotionPipeline` 内核 + 排序单测 | `5d7a63bd` | ✅ 已落地 | 新文件 `motion-pipeline.ts`，4 例单测锁死「序由 (stage,order) 决定、与注册序无关」。未接入 `scene.ts`（step 2 待协调） |
+| Phase 2 切片 1：`BoneOverrideStore` 内核 + 不变量单测 | `b594a03f` | ✅ 已落地 | 新文件 `bone-override-store.ts`，合并三副本为单一内部存储；6 例单测锁死「disable/release 级联清 slot、抢占记冲突、model 隔离」。未接入运行时（step 2 待协调） |
+| Phase 1 step 2：`scene.ts` 注册迁移 | — | ⏸ 阻塞 | 需改 `scene.ts`/`bone-override.ts`，与并发写者冲突面最大，先协调 |
+| Phase 2 step 2：运行时接入 | — | ⏸ 阻塞 | 需迁移 `registry.ts`/`module-base.ts`/`motion-intent.ts` 三处读写，先协调 |
 
 ---
 
