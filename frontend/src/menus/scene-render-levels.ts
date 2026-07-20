@@ -23,7 +23,7 @@ import {
     LoadSceneFile,
 } from '../core/wails-bindings';
 import { presetListContent } from './preset-list-viewer';
-import { reRenderSceneMenu } from './scene-menu';
+import { reRenderSceneMenu } from './scene-menu-state';
 import { FILTER_PRESET_LABELS, getFilterPreset } from './scene-render-presets';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';

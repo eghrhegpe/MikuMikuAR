@@ -15,7 +15,7 @@ import {
     defaultRenderState,
 } from '../scene/scene';
 import { GetRenderPresets, SaveRenderPreset } from '../core/wails-bindings';
-import { reRenderSceneMenu, getSceneMenu } from './scene-menu';
+import { reRenderSceneMenu, getSceneMenu } from './scene-menu-state';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
 import { renderMenu } from './render-menu';

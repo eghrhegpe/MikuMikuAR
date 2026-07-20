@@ -16,3 +16,22 @@ export function setSceneMenu(menu: SlideMenu | null): void {
 export function getSceneMenu(): SlideMenu | null {
     return _sceneMenu;
 }
+
+// ======== reRender 便捷函数 ========
+
+export function reRenderSceneMenu(): void {
+    _sceneMenu?.reRender();
+}
+
+// ======== refreshRoot 注册表 ========
+// refreshRoot 由 registerPopupMenu 返回，用于重建菜单根级 items
+
+let _refreshSceneRoot: (() => void) | null = null;
+
+export function setRefreshSceneRoot(fn: () => void): void {
+    _refreshSceneRoot = fn;
+}
+
+export function refreshSceneRoot(): void {
+    _refreshSceneRoot?.();
+}

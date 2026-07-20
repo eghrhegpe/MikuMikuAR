@@ -14,7 +14,7 @@ import { createIconifyIcon } from '../core/icons';
 import { slideRow, addSectionTitle, addCollapsible } from '../core/ui-helpers';
 import { removeModel, setModelVisibility } from '../scene/manager/model-ops';
 import { getPropList, removeProp, modelManager, setEnvState } from '../scene/scene';
-import { reRenderSceneMenu, getSceneMenu } from './scene-menu';
+import { reRenderSceneMenu, getSceneMenu } from './scene-menu-state';
 import { buildTransformCard, buildMaterialCard, buildDangerCard } from './resource-detail-helpers';
 
 import { buildPropDetailLevel } from './scene-prop-levels';
