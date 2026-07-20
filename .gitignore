@@ -84,3 +84,4 @@ build/android/*.apk
 
 # Runtime local config (absolute paths + personal data — never commit)
 setting/
+nul

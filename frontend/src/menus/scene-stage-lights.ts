@@ -492,6 +492,7 @@ function buildStageLightSchema(): MenuNode[] {
                         title: t('scene.shadow'),
                         icon: 'lucide:cloud',
                         defaultOpen: false,
+                        openWhen: state.shadowEnabled,
                         headerToggle: {
                             value: state.shadowEnabled,
                             onChange: (v) => {

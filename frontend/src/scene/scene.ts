@@ -488,7 +488,7 @@ export async function initScene(): Promise<void> {
     }, PointerEventTypes.POINTERDOWN);
 
     // 7. 脚部调整系统启动（ADR-085）
-    // 注册在 bone-override 之前：脚 IK 为自动约束基础，手动 Override 叠加其上
+    // 注册为 Pipeline bone-override 层（order=5），在帧钩子（RIDING=10）之前执行
     const { startFeetAdjustment } = await import('./motion/feet-adjustment');
     startFeetAdjustment(
         (): { id: string; feet: FeetState; runtimeBones: readonly IMmdRuntimeBone[] }[] => {
@@ -501,8 +501,7 @@ export async function initScene(): Promise<void> {
                 }
             }
             return out;
-        },
-        scene
+        }
     );
 
     // 7.5 脚步声系统启动（ADR-088）：消费 feet-adjustment 落地事件发声
