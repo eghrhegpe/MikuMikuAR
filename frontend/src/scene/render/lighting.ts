@@ -28,6 +28,7 @@ import { scheduleRefresh } from '@/core/reactivity';
 import { resetPerformanceSnapshot, isSnapshotResetSuppressed } from './performance';
 import { col3FromTriple } from '@/core/color-helpers';
 import { setKey } from '@/core/utils';
+import { logWarn } from '@/core/logger';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { safeDispose } from '@/core/dispose-helpers';
 import { LIGHTING_PRESETS } from './lighting-presets';
@@ -290,7 +291,10 @@ function _updateIndicator(entry: StageLightEntry): void {
             mat.disableLighting = true;
             entry.indicator.material = mat;
         }
-        (entry.indicator.material as StandardMaterial).alpha = state.indicatorOpacity;
+        const indMat = entry.indicator.material as StandardMaterial;
+        indMat.alpha = state.indicatorOpacity;
+        // ADR-152 P2: 同步 diffuseColor 给体积光 PostProcess（useDiffuseColor=true 读取此通道）
+        indMat.diffuseColor = light.diffuse.clone();
         entry.indicator.setEnabled(true);
 
         // 聚光灯：显示方向线
@@ -335,6 +339,9 @@ function _disposeIndicator(entry: StageLightEntry): void {
         entry.indicator.material?.dispose();
         entry.indicator.dispose();
         entry.indicator = null;
+        // ADR-152 P1: indicator 被 PostProcess.attachedNode 引用，重建前必须先 dispose 体积光，
+        // _updateIndicator 重建 indicator 后由调用方触发 _ensureStageVolumetric 重新绑定
+        _disposeStageVolumetric(entry.state.id);
     }
     if (entry.dirLine) {
         entry.dirLine.dispose();
@@ -632,6 +639,8 @@ const _stageShadows = new Map<string, ShadowGenerator>();
 const _stageVolumetrics = new Map<string, VolumetricLightScatteringPostProcess>();
 /** 同时启用体积光的灯光数上限（性能保护） */
 const MAX_VOLUMETRIC_LIGHTS = 2;
+/** PostProcess 默认 weight（Babylon 文档默认 0.2，经验值） */
+const VOLUMETRIC_DEFAULT_WEIGHT = 0.2;
 
 export function getStageLights(): StageLightState[] {
     const result: StageLightState[] = [];
@@ -725,7 +734,15 @@ export function setStageLightState(s: Partial<StageLightState>, id?: string): vo
         }
     }
     if (needVolumetricUpdate) {
-        _ensureStageVolumetric(targetId);
+        const ok = _ensureStageVolumetric(targetId);
+        // P2: 超限拒绝创建时回滚 state，避免 UI 显示 ON 但无效果
+        if (!ok && s.volumetricEnabled === true && entry.state.volumetricEnabled) {
+            entry.state.volumetricEnabled = false;
+            logWarn(
+                'stage-volumetric',
+                `volumetric light limit reached (${MAX_VOLUMETRIC_LIGHTS}), rollback enabled=false for light ${targetId}`
+            );
+        }
     }
 
     // 更新指示器
@@ -1046,41 +1063,53 @@ function _disposeStageShadow(id: string): void {
 
 // ======== ADR-152: 体积光散射（Volumetric Light Scattering） ========
 
-/** 确保指定舞台灯的体积光 PostProcess 与 state 同步（按需创建/销毁/更新参数） */
-function _ensureStageVolumetric(id: string): void {
+/**
+ * 确保指定舞台灯的体积光 PostProcess 与 state 同步（按需创建/销毁/更新参数）。
+ * @returns true 表示已激活（或已存在），false 表示因关闭/超限/无 indicator 等原因未激活
+ */
+function _ensureStageVolumetric(id: string): boolean {
     if (!_scene) {
-        return;
+        return false;
     }
     const entry = _stageLights.get(id);
     if (!entry) {
         _disposeStageVolumetric(id);
-        return;
+        return false;
     }
     const state = entry.state;
 
     // 关闭或不满足条件 → 释放后返回
     if (!state.enabled || !state.volumetricEnabled) {
         _disposeStageVolumetric(id);
-        return;
+        return false;
+    }
+
+    // P3 防御：indicator 必须存在（PostProcess.attachedNode 需要有效引用）
+    if (!entry.indicator) {
+        // 强制先创建 indicator（_updateIndicator 内部会按需创建）
+        _updateIndicator(entry);
+        if (!entry.indicator) {
+            return false;
+        }
     }
 
     // 性能保护：超过上限拒绝创建（已存在的保留）
     const existing = _stageVolumetrics.get(id);
     if (!existing && _stageVolumetrics.size >= MAX_VOLUMETRIC_LIGHTS) {
-        return;
+        return false;
     }
 
     const camera = _scene.activeCamera;
     if (!camera) {
-        return;
+        return false;
     }
 
-    // 参数变更时重建（Babylon PostProcess 不支持热更新 mesh/attachedNode）
+    // 参数变更时更新（exposure/decay/density 支持热更新）
     if (existing) {
         existing.exposure = state.volumetricExposure;
         existing.decay = state.volumetricDecay;
         existing.density = state.volumetricDensity;
-        return;
+        return true;
     }
 
     try {
@@ -1088,17 +1117,19 @@ function _ensureStageVolumetric(id: string): void {
             `stage-volumetric-${id}`,
             1.0, // 全屏分辨率
             camera,
-            entry.indicator ?? undefined, // 复用位置指示球作为光源 mesh
+            entry.indicator, // 复用位置指示球作为光源 mesh（P1：indicator 重建时同步重建 PP，见 _disposeIndicator）
             100 // samples
         );
         pp.exposure = state.volumetricExposure;
         pp.decay = state.volumetricDecay;
         pp.density = state.volumetricDensity;
-        pp.weight = 0.2;
-        pp.useDiffuseColor = true; // 用 indicator 的 diffuse color 作为光色
+        pp.weight = VOLUMETRIC_DEFAULT_WEIGHT;
+        pp.useDiffuseColor = true; // 用 indicator 的 diffuse color 作为光色（P2：由 _updateIndicator 同步）
         _stageVolumetrics.set(id, pp);
-    } catch {
-        // 创建失败静默 — 不影响其他灯光
+        return true;
+    } catch (e) {
+        console.warn('[stage-volumetric] create failed:', e);
+        return false;
     }
 }
 
@@ -1114,8 +1145,8 @@ function _disposeStageVolumetric(id: string): void {
             } else {
                 // 相机已销毁，直接从 map 移除（PostProcess 会随 scene 自动 GC）
             }
-        } catch {
-            // Intentionally empty
+        } catch (e) {
+            console.warn('[stage-volumetric] dispose failed:', e);
         }
         _stageVolumetrics.delete(id);
     }

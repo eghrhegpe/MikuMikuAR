@@ -243,6 +243,7 @@ export function showErrorAction(title: string, message: string): void {
 
     overlay.classList.add('mmd-dialog-visible');
     dialog.style.display = '';
+    _trapRestore = createFocusTrap({ container: dialog, onEscape: onClose });
 }
 
 /** Show a confirmation dialog. Returns true if confirmed, false if cancelled. */

@@ -690,6 +690,7 @@ export const zhCN: Record<string, string> = {
     'scene.volumetric': '体积光',
     'scene.decay': '衰减',
     'scene.density': '密度',
+    'scene.volumetricLimitReached': '体积光数量已达上限，请先关闭其他灯光',
     'scene.positionOrbit': '位置（轨道）',
     'scene.horizontalAngle': '水平角度',
     'scene.elevationAngle': '仰角',
