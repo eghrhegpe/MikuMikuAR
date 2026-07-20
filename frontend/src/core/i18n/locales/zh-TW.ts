@@ -761,6 +761,14 @@ export const zhTW: Record<string, string> = {
     'scene.ar.cameraUnavailable': '✗ 相機不可用（環境未提供媒體能力，桌面端可能需授予權限）',
     'scene.ar.switchedUser': '✓ 已切換至前置相機',
     'scene.ar.switchedEnv': '✓ 已切換至後置相機',
+    'scene.ar.webxrProbe': 'WebXR 探針',
+    'scene.ar.webxrProbing': '探測中…',
+    'scene.ar.webxrDeepProbe': '深度探針（觸發 AR 權限）',
+    'scene.ar.webxrCopyReport': '複製報告',
+    'scene.ar.webxrCopied': '✓ 探針報告已複製到剪貼簿',
+    'scene.ar.webxrVerdictFull': '🟢 WebXR 路線可行',
+    'scene.ar.webxrVerdictPartial': '🟡 部分支援，需降級共存',
+    'scene.ar.webxrVerdictNone': '🔴 不可行，轉原生 ARCore 路線',
 
     // —— Scene Bundle ——
     'scene.bundle.collecting': '正在收集場景資源……',

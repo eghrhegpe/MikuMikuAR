@@ -184,6 +184,67 @@ public class WailsJSBridge {
     }
 
     /**
+     * Probe WebXR support in the current WebView (ADR-072 P1).
+     * Evaluates navigator.xr availability and reports the result back to JS
+     * via window.__onWebXRProbeResult(json).
+     *
+     * The probe checks:
+     * - WebView package name and version (identifies Chrome vs System WebView)
+     * - navigator.xr existence
+     * - Whether the WebView was launched with WebXR flags (if accessible)
+     *
+     * Called from JavaScript: wails.probeWebXRSupport()
+     */
+    @JavascriptInterface
+    public void probeWebXRSupport() {
+        webView.post(() -> {
+            // Gather WebView package info
+            String webViewPackage = "unknown";
+            String webViewVersion = "unknown";
+            try {
+                android.webkit.WebView currentWebView = webView;
+                if (currentWebView != null) {
+                    android.content.pm.PackageInfo pi = android.webkit.WebView.getCurrentWebViewPackage();
+                    if (pi != null) {
+                        webViewPackage = pi.packageName != null ? pi.packageName : "unknown";
+                        webViewVersion = pi.versionName != null ? pi.versionName : "unknown";
+                    }
+                }
+            } catch (Exception e) {
+                Log.w(TAG, "probeWebXRSupport: failed to get WebView package info", e);
+            }
+
+            final String pkg = webViewPackage;
+            final String ver = webViewVersion;
+
+            // Evaluate navigator.xr in the WebView context
+            String js = "(function() {" +
+                "var result = {" +
+                "  webViewPackage: '" + pkg.replace("'", "\\'") + "'," +
+                "  webViewVersion: '" + ver.replace("'", "\\'") + "'," +
+                "  xrExists: typeof navigator.xr !== 'undefined'," +
+                "  xrIsSessionSupported: false," +
+                "  userAgent: navigator.userAgent" +
+                "};" +
+                "if (result.xrExists && navigator.xr.isSessionSupported) {" +
+                "  navigator.xr.isSessionSupported('immersive-ar').then(function(supported) {" +
+                "    result.xrIsSessionSupported = supported;" +
+                "    window.__onWebXRProbeResult && window.__onWebXRProbeResult(JSON.stringify(result));" +
+                "  }).catch(function(e) {" +
+                "    result.error = e.message || String(e);" +
+                "    window.__onWebXRProbeResult && window.__onWebXRProbeResult(JSON.stringify(result));" +
+                "  });" +
+                "} else {" +
+                "  window.__onWebXRProbeResult && window.__onWebXRProbeResult(JSON.stringify(result));" +
+                "}" +
+                "return 'probe_started';" +
+                "})()";
+
+            webView.evaluateJavascript(js, null);
+        });
+    }
+
+    /**
      * Send a callback response to JavaScript
      */
     private void sendCallback(String callbackId, String result, String error) {

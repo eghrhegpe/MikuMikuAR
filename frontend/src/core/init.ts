@@ -395,6 +395,7 @@ declare global {
             requestStoragePermission?: () => void;
             hasCameraPermission?: () => boolean;
             requestCameraPermission?: () => void;
+            probeWebXRSupport?: () => void;
         };
     }
 }

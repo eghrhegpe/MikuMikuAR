@@ -767,6 +767,14 @@ export const ja: Record<string, string> = {
         '✗ カメラが利用できません（環境がメディア機能を提供していません。デスクトップでは権限付与が必要な場合があります）',
     'scene.ar.switchedUser': '✓ フロントカメラに切り替えました',
     'scene.ar.switchedEnv': '✓ バックカメラに切り替えました',
+    'scene.ar.webxrProbe': 'WebXR プローブ',
+    'scene.ar.webxrProbing': '探测中…',
+    'scene.ar.webxrDeepProbe': '深度プローブ（AR 権限をトリガー）',
+    'scene.ar.webxrCopyReport': 'レポートをコピー',
+    'scene.ar.webxrCopied': '✓ プローブレポートをクリップボードにコピーしました',
+    'scene.ar.webxrVerdictFull': '🟢 WebXR ルート実現可能',
+    'scene.ar.webxrVerdictPartial': '🟡 一部サポート、フォールバック共存が必要',
+    'scene.ar.webxrVerdictNone': '🔴 実現不可、ネイティブ ARCore ルートへ',
 
     // —— Scene Bundle ——
     'scene.bundle.collecting': 'シーンアセットを収集中…',
