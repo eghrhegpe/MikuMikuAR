@@ -79,9 +79,77 @@ _envSys.water.mesh = safeDispose(_envSys.water.mesh, false, false);
 
 ---
 
+---
+
+## 第二条崩溃路径（2026-07-20 后续发现）
+
+**相同的错误堆栈，不同的根本原因。**
+
+### 症状
+
+```
+GroundMesh.render → ShaderMaterial.isReadyForSubMesh → ShaderMaterial.isReady
+Cannot read properties of null (reading 'isReady')
+    at ShaderMaterial.isReady (shaderMaterial.pure.js:653:39)
+```
+
+### 根因 #2：`PlanarReflectionSurface.disable()` → `mount(null)` → `setTexture(null)` 污染 `_textures`
+
+#### 调用链
+
+1. 用户切换 `reflectionQuality` 从 `'high'` → `'off'`
+2. `createWater()` 惰性路径：`needReflect !== hasReflect` → 调用 `_rebuildWaterMaterial()` 创建**新** ShaderMaterial（不含 `PLANAR_REFLECTION` define，samplers 无 `reflectionTexture`）
+3. 然后 `_setupMirrorRT()` → `waterReflection.update()` → `shouldEnable=false` → `disable()`
+4. `disable()` 第 306 行：`this.cfg.mount(null)`
+5. 水面的 `mount` 回调：`mat.setTexture('reflectionTexture', null)`
+6. Babylon `ShaderMaterial.setTexture()` 的实现（shaderMaterial.pure.js:149-155）：
+
+```javascript
+setTexture(name, texture) {
+    if (this._options.samplers.indexOf(name) === -1) {
+        this._options.samplers.push(name);   // ← 把 reflectionTexture 加入新材质的 samplers！
+    }
+    this._textures[name] = texture;          // ← this._textures['reflectionTexture'] = null
+    return this;
+}
+```
+
+7. 下一帧 `ShaderMaterial.isReady()`（shaderMaterial.pure.js:652-653）：
+
+```javascript
+for (const name in this._textures) {
+    if (!this._textures[name].isReady()) {   // ← null.isReady() → 💥
+```
+
+#### 关键失误
+
+- **`setTexture(name, null)` 不是"移除纹理"，是"把纹理设为 null"**。key 仍然存在于 `this._textures` 中
+- `isReady()` 的 `for...in` 遍历会碰到这个 null 值
+- 调用 `removeTexture()` 才是正确做法：执行 `delete this._textures[name]`
+
+#### 修复（env-water.ts:167-172）
+
+```typescript
+mount: (rt) => {
+    const mat = _envSys.water.material as ShaderMaterial | null;
+    if (mat) {
+        if (rt) {
+            mat.setTexture('reflectionTexture', rt as Texture);
+        } else {
+            // setTexture(name, null) → _textures[name]=null → isReady() 遍历崩溃
+            // 改用 removeTexture 彻底删除 key
+            (mat as ShaderMaterial).removeTexture('reflectionTexture');
+        }
+    }
+},
+```
+
+---
+
 ## 教训
 
 1. **共享材质 dispose 必须先解绑** — 多个 mesh 共享同一材质时，必须先 `mesh.material = null` 再 dispose 材质，否则任一 mesh 的 `dispose()` 会级联销毁材质，导致其他仍存活的 mesh 引用已死材质。
 2. **`mesh.dispose()` 的第二个参数决定生死** — `disposeMaterialAndTextures` 默认为 `true`，在共享材质场景下是陷阱。要么传 `false`，要么提前解绑。
 3. **类比**：先拔掉所有插头（解绑引用），再关电闸（释放材质），最后搬走电器（释放 mesh）——不会因为先关电闸导致还在运行的电器烧掉。
 4. **GroundMesh + ShaderMaterial 是特殊组合** — `GroundMesh.render()` 直接进入 Babylon 原生渲染管线，不像我们自己的 mesh 有额外守卫，崩溃直接抛到全局。
+5. **`ShaderMaterial.setTexture(name, null)` 是毒药** — Babylon 的 `setTexture` 对 null 值直接赋值 `this._textures[name] = null`，不删除 key。`isReady()` 遍历 `for...in` 会命中 null 并崩溃。解绑纹理必须用 `removeTexture()`（执行 `delete`）。

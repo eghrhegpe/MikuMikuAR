@@ -12,7 +12,7 @@ import { ShaderMaterial } from '@babylonjs/core/Materials/shaderMaterial';
 import { DirectionalLight } from '@babylonjs/core/Lights/directionalLight';
 import { DefaultRenderingPipeline } from '@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline';
 import { Effect } from '@babylonjs/core/Materials/effect';
-import { PostProcess } from '@babylonjs/core/PostProcesses/postProcess';
+
 import { Plane } from '@babylonjs/core/Maths/math.plane';
 import { EnvState, envState } from '@/core/config';
 import { col3FromTriple } from '@/core/color-helpers';
@@ -22,7 +22,7 @@ import { createCanvasTexture } from './env-texture';
 import { registerEnvCallback } from './env-dispatcher';
 import { clamp01 } from '@/core/utils';
 import { logWarn } from '@/core/logger';
-import { setPostProcessEnabled } from './env-type-helpers';
+
 import WATER_VERT_SRC from './shaders/water.vert.glsl?raw';
 import WATER_FRAG_SRC from './shaders/water.frag.glsl?raw';
 
@@ -167,7 +167,13 @@ const waterReflection = new PlanarReflection({
     mount: (rt) => {
         const mat = _envSys.water.material as ShaderMaterial | null;
         if (mat) {
-            mat.setTexture('reflectionTexture', rt as Texture | null);
+            if (rt) {
+                mat.setTexture('reflectionTexture', rt as Texture);
+            } else {
+                // ADR-### P1: setTexture(name, null) 在 Babylon 中直接赋值 _textures[name]=null，
+                // 导致 isReady() for…in 遍历时 null.isReady() 崩溃。改用 removeTexture 彻底删除 key。
+                (mat as ShaderMaterial).removeTexture('reflectionTexture');
+            }
         }
     },
     setBlend: (b) => {
@@ -201,42 +207,9 @@ let _ripples: RippleSource[] = [];
 // 每秒新增涟漪时间累加器（_waterUpdateCallback 每帧累加 dt，满 1/RIPPLE_MAX_PER_SECOND 秒允许一次）
 let _rippleAccumulator = 0;
 
-// ======== 水下 Tint 后处理（自定义 PostProcess，替代不存在的 tintColor/tintAmount）========
-Effect.ShadersStore['underwaterTintFragmentShader'] = [
-    'precision highp float;',
-    'varying vec2 vUV;',
-    'uniform sampler2D textureSampler;',
-    'uniform vec3 tintColor;',
-    'uniform float tintAmount;',
-    'void main() {',
-    '    vec4 color = texture2D(textureSampler, vUV);',
-    '    vec3 mixed = mix(color.rgb, tintColor, tintAmount);',
-    '    gl_FragColor = vec4(mixed, color.a);',
-    '}',
-].join('\n');
-
-let _tintPostProcess: PostProcess | null = null;
-
-function ensureTintPostProcess(camera: Camera): void {
-    if (_tintPostProcess) {
-        return;
-    }
-    _tintPostProcess = new PostProcess(
-        'underwaterTint',
-        'underwaterTint',
-        ['tintColor', 'tintAmount'],
-        null,
-        1.0,
-        camera,
-        Constants.TEXTURE_BILINEAR_SAMPLINGMODE
-    );
-    // PostProcess 没有 .disable() 实例方法；用 _enabled 属性控制
-    setPostProcessEnabled(_tintPostProcess, false);
-}
-
-function disposeTintPostProcess(): void {
-    _tintPostProcess = safeDispose(_tintPostProcess);
-}
+// ======== 水下灯光衰减（入水后降低灯光强度，避免暖光+蓝雾产生脏色）========
+const UNDERWATER_DIR_INTENSITY_SCALE = 0.3;
+const UNDERWATER_HEMI_INTENSITY_SCALE = 0.4;
 
 export function addRipple(pos: Vector3, radius = 5, strength = 0.5, speed = 2, maxLife = 3): void {
     // 每秒新增上限：暴雨时碰撞频率极高，限制每秒最多 4 个，保证 256 slot 不被瞬间占满
@@ -935,7 +908,6 @@ export function disposeWater(): void {
     _underwaterTarget = false;
     // 清理平面反射（委托引擎：释放 RT、镜像相机、移出 customRenderTargets、清材质引用）
     waterReflection.dispose();
-    disposeTintPostProcess();
 }
 
 /**
@@ -1013,32 +985,17 @@ export function updateUnderwaterTransition(scene: Scene, pipeline: DefaultRender
         );
         scene.fogDensity = envState.underwaterFogDensity * t * UNDERWATER_FOG_DENSITY_FACTOR;
 
-        // 自定义 Tint PostProcess（替代不存在的 tintColor/tintAmount）
-        if (scene.activeCamera) {
-            ensureTintPostProcess(scene.activeCamera);
+        // 水下灯光衰减：降低方向光和半球光强度，避免暖光+蓝雾产生脏色
+        const dl = scene.getLightByName('dir');
+        if (dl) {
+            dl.intensity = dl.intensity * (1 - t) + dl.intensity * UNDERWATER_DIR_INTENSITY_SCALE * t;
         }
-        if (_tintPostProcess) {
-            setPostProcessEnabled(_tintPostProcess, true);
-            const wc = envState.waterColor;
-            _tintPostProcess.onApply = (effect) => {
-                // tintColor 由 waterColor × underwaterTintStrength 派生（默认强度 0.5，即水色×0.5）
-                effect.setFloat3(
-                    'tintColor',
-                    wc[0] * envState.underwaterTintStrength,
-                    wc[1] * envState.underwaterTintStrength,
-                    wc[2] * envState.underwaterTintStrength
-                );
-                effect.setFloat(
-                    'tintAmount',
-                    t * envState.underwaterToneIntensity * (1 - envState.waterTransparency * 0.5)
-                );
-            };
+        const hl = scene.getLightByName('hemi');
+        if (hl) {
+            hl.intensity = hl.intensity * (1 - t) + hl.intensity * UNDERWATER_HEMI_INTENSITY_SCALE * t;
         }
     } else if (!_underwaterActive) {
         pipeline.chromaticAberrationEnabled = false;
-        if (_tintPostProcess) {
-            setPostProcessEnabled(_tintPostProcess, false);
-        }
     }
 }
 
@@ -1053,9 +1010,6 @@ export function resetUnderwaterState(scene: Scene, pipeline: DefaultRenderingPip
     _underwaterTransitionProgress = 0;
     _underwaterTarget = false;
     pipeline.chromaticAberrationEnabled = false;
-    if (_tintPostProcess) {
-        setPostProcessEnabled(_tintPostProcess, false);
-    }
 }
 
 // ======== Water Presets (migrated from env-lighting.ts) =======
