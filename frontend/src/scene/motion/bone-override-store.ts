@@ -10,6 +10,7 @@
 // 需与 motion-modules 写者协调认领边界，规避源码碰撞。
 
 import { Quaternion, Vector3 } from '@babylonjs/core';
+import { clearBoneOverride } from './bone-override';
 
 // ── 统一类型（复用现有 _OverrideSlot 契约，并补 sourceModuleId 归属追踪）──
 
@@ -55,8 +56,15 @@ export interface BoneConflict {
 
 /** 构造选项（ADR-147 M8：注入模块→stage 解析器，填充 BoneConflict.stage） */
 export interface BoneOverrideStoreOptions {
-    /** 模块 → stage 解析器；返回 undefined 表示未知 stage */
+    /** 模块 → stage 解析器；返回 undefined 表示未知 stage（M8：填充 BoneConflict.stage） */
     stageOf?: (moduleId: string) => string | undefined;
+    /**
+     * 引擎槽清除回调（M7 运行时接入）：store 接管骨骼所有权后，
+     * 抢占 / release / dispose 时须经此回调清真实引擎覆盖（bone-override.clearBoneOverride），
+     * 保持与旧 registry 行为一致（claimBones 抢占即清落败方引擎槽、disable 清 owned 骨骼）。
+     * store 自身只维护逻辑副本，不直接持有 Babylon 运行时。
+     */
+    onClearEngineSlot?: (modelId: string, bone: string) => void;
 }
 
 // ── 存储契约 ──
@@ -81,6 +89,8 @@ export interface BoneOverrideStore {
     /** 释放模块全部已认领骨骼，并级联清理其槽位；返回被释放的骨骼集合 */
     releaseBones(modelId: string, moduleId: string): Set<string>;
     getOwnedBones(modelId: string, moduleId: string): Set<string>;
+    /** 查询某骨当前归属模块 id（无归属返回 null）；供 isBoneOwnedByOther 等运行时判定 */
+    getBoneOwnerModule(modelId: string, bone: string): string | null;
     setModuleEnabled(modelId: string, moduleId: string, enabled: boolean): void;
 
     // —— 冲突（原 _boneConflicts 职责）——
@@ -138,6 +148,8 @@ export class InMemoryBoneOverrideStore implements BoneOverrideStore {
             return;
         }
         this._slots.get(modelId)?.delete(bone);
+        // M7：清真实引擎槽（store 只维护逻辑副本，引擎清理委托回调）
+        this._opts.onClearEngineSlot?.(modelId, bone);
     }
 
     // —— 模块认领 ——
@@ -163,6 +175,9 @@ export class InMemoryBoneOverrideStore implements BoneOverrideStore {
                 // （ADR-147 §六 语义迁移映射：避免 Phase 2 step2 接入时仲裁结果整体翻转）
                 if (priority < conflict.priority) {
                     // 抢占：清落败方所有权 + 槽位，记录「落败方视角」冲突（loser=原主）
+                    console.warn(
+                        `[adr-147] bone "${bone}" 被模块 "${moduleId}"(priority=${priority}) 从 "${conflict.moduleId}"(priority=${conflict.priority}) 抢占`
+                    );
                     this._releaseBoneFromOwner(modelId, conflict.moduleId, bone);
                     this.clearSlot(modelId, bone, conflict.moduleId);
                     this._recordConflict(
@@ -175,6 +190,9 @@ export class InMemoryBoneOverrideStore implements BoneOverrideStore {
                     );
                 } else {
                     // 落败：跳过该骨（不拥有），但记录「本模块视角」冲突（M4 双视角，对齐 registry:220 loser=moduleId）
+                    console.warn(
+                        `[adr-147] bone "${bone}" 已被模块 "${conflict.moduleId}"(priority=${conflict.priority}) 占用，模块 "${moduleId}"(priority=${priority}) 跳过该骨骼`
+                    );
                     this._recordConflict(
                         modelId,
                         bone,
@@ -218,6 +236,10 @@ export class InMemoryBoneOverrideStore implements BoneOverrideStore {
         return new Set(this._ownedMap(modelId).get(moduleId) ?? []);
     }
 
+    getBoneOwnerModule(modelId: string, bone: string): string | null {
+        return this._ownerMap(modelId).get(bone)?.moduleId ?? null;
+    }
+
     setModuleEnabled(modelId: string, moduleId: string, enabled: boolean): void {
         this._ensureModule(modelId, moduleId);
         const state = this._moduleState.get(modelId)!.get(moduleId)!;
@@ -243,6 +265,15 @@ export class InMemoryBoneOverrideStore implements BoneOverrideStore {
     // —— 模型生命周期 ——
 
     disposeModel(modelId: string): void {
+        // M7：清真实引擎槽（按所有权遍历，因为引擎槽由模块直接写 _overrideMaps，store._slots 可能为空）
+        const ownedMap = this._ownedBones.get(modelId);
+        if (ownedMap) {
+            for (const set of ownedMap.values()) {
+                for (const bone of set) {
+                    this._opts.onClearEngineSlot?.(modelId, bone);
+                }
+            }
+        }
         this._slots.delete(modelId);
         this._ownedBones.delete(modelId);
         this._boneOwner.delete(modelId);
@@ -324,4 +355,20 @@ export class InMemoryBoneOverrideStore implements BoneOverrideStore {
             winnerStage: this._opts.stageOf?.(winnerModuleId),
         });
     }
+}
+
+// ── 单例（Phase 2 step 2 运行时接入；引擎槽清除委托 bone-override.clearBoneOverride）──
+
+let _storeInstance: BoneOverrideStore | null = null;
+
+/** 获取全局 BoneOverrideStore 单例（registry / module-base 等委托此存储骨骼所有权与冲突状态） */
+export function getBoneOverrideStore(): BoneOverrideStore {
+    if (!_storeInstance) {
+        _storeInstance = new InMemoryBoneOverrideStore({
+            stageOf: () => 'bone-override',
+            // store 回调签名为 (modelId, bone)，而 clearBoneOverride 为 (bone, modelId)，此处重排
+            onClearEngineSlot: (modelId, bone) => clearBoneOverride(bone, modelId),
+        });
+    }
+    return _storeInstance;
 }
