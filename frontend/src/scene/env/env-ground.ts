@@ -289,7 +289,13 @@ const groundReflection = new PlanarReflection({
         }
         return new Plane(0, -1, 0, 0);
     },
-    predicate: (mesh, _level) => !mesh.name.startsWith('envGround') && mesh.isEnabled(),
+    predicate: (mesh, _level) => {
+        // 排除地面自身和天空球（天空球跟随主相机，在镜像相机中位置不对）
+        // 天空反射由 scene.environmentTexture (IBL) 处理
+        if (mesh.name.startsWith('envGround')) return false;
+        if (mesh.name === 'envSkySphere' || mesh.name === 'envSkyDome') return false;
+        return mesh.isEnabled();
+    },
     getMaterial: () => _envSys.ground.mesh?.material ?? null,
     mount: (rt) => {
         const mat = _envSys.ground.mesh?.material as GroundMat | null;
