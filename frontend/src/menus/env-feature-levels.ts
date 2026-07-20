@@ -357,26 +357,55 @@ export function buildGroundLevel(): PopupLevel {
                 label: 'env.textureMode',
                 icon: 'lucide:image',
                 defaultOpen: false,
-                headerToggle: { bind: 'env.groundTextureEnabled' },
+                headerToggle: {
+                    bind: 'env.groundTextureEnabled',
+                    get: (v) => !!(v as boolean) || envState.groundProceduralTexture !== 'none',
+                    set: (on) => {
+                        if (!on) {
+                            setEnvState({
+                                groundProceduralTexture: 'none' as const,
+                                groundTexture: '',
+                                groundTextureEnabled: false,
+                            });
+                        }
+                        return on;
+                    },
+                },
                 renderCustom: (cc) => {
                     const texturePresets = [
-                        { value: 'textures/grass.png', label: t('env.grass') },
-                        { value: 'textures/stone.png', label: t('env.stone') },
-                        { value: 'textures/sand.png', label: t('env.sand') },
+                        { value: 'textures/grass.png', label: t('env.grass'), isProc: false },
+                        { value: 'textures/stone.png', label: t('env.stone'), isProc: false },
+                        { value: 'textures/sand.png', label: t('env.sand'), isProc: false },
+                        { value: 'wood', label: t('env.wood'), isProc: true },
+                        { value: 'marble', label: t('env.marble'), isProc: true },
+                        { value: 'concrete', label: t('env.concrete'), isProc: true },
                     ];
                     buildPresetChipGroup(
                         cc,
                         texturePresets.map((tp) => ({
                             label: tp.label,
-                            isActive: () => envState.groundTexture === tp.value,
+                            isActive: () =>
+                                tp.isProc
+                                    ? envState.groundProceduralTexture === tp.value
+                                    : envState.groundTexture === tp.value,
                             onClick: () => {
-                                const hasTex = !!tp.value;
-                                const patch: Record<string, string | boolean | null> = {
-                                    groundTexture: tp.value ?? null,
-                                    groundTextureEnabled: hasTex,
-                                    groundStyle: hasTex ? 'texture' : 'solid',
-                                };
-                                setEnvState(patch as Parameters<typeof setEnvState>[0]);
+                                if (tp.isProc) {
+                                    const patch: Record<string, string | boolean> = {
+                                        groundTexture: '',
+                                        groundTextureEnabled: false,
+                                        groundProceduralTexture: tp.value,
+                                        groundStyle: 'solid',
+                                    };
+                                    setEnvState(patch as Parameters<typeof setEnvState>[0]);
+                                } else {
+                                    const patch: Record<string, string | boolean> = {
+                                        groundTexture: tp.value,
+                                        groundTextureEnabled: true,
+                                        groundProceduralTexture: 'none',
+                                        groundStyle: 'texture',
+                                    };
+                                    setEnvState(patch as Parameters<typeof setEnvState>[0]);
+                                }
                             },
                         }))
                     );
@@ -422,17 +451,7 @@ export function buildGroundLevel(): PopupLevel {
                         (v) => setEnvState({ groundTextureScale: v }),
                         'lucide:zoom-in'
                     );
-                    addSliderRow(
-                        cc,
-                        t('env.textureRotation'),
-                        envState.groundTextureRotation,
-                        0,
-                        360,
-                        1,
-                        (v) => setEnvState({ groundTextureRotation: v }),
-                        'lucide:rotate-cw'
-                    );
-                },
+                    },
             },
         ];
         renderMenu(textureSchema, c);
@@ -784,50 +803,6 @@ export function buildGroundLevel(): PopupLevel {
             },
         ];
         renderMenu(pbrSchema, c);
-
-        // ===== 程序化纹理（ADR-114，PBR 专属）=====
-        const proceduralSchema: MenuNode[] = [
-            {
-                id: 'env:ground:procedural',
-                kind: 'folder',
-                label: 'env.proceduralTexture',
-                icon: 'lucide:paintbrush',
-                defaultOpen: false,
-                visibleWhen: () => envState.groundPbrEnabled && !envState.groundTextureEnabled,
-                children: [
-                    {
-                        id: 'env:ground:procType',
-                        kind: 'modeSlider',
-                        label: 'env.proceduralType',
-                        control: {
-                            bind: 'env.groundProceduralTexture',
-                            options: [
-                                { value: 'none', label: 'env.off' },
-                                { value: 'wood', label: 'env.wood' },
-                                { value: 'marble', label: 'env.marble' },
-                                { value: 'concrete', label: 'env.concrete' },
-                            ],
-                        },
-                        icon: 'lucide:palette',
-                    },
-                    {
-                        id: 'env:ground:procSeed',
-                        kind: 'slider',
-                        label: 'env.proceduralSeed',
-                        control: { bind: 'env.groundProceduralSeed', min: 0, max: 999, step: 1 },
-                        icon: 'lucide:dices',
-                    },
-                    {
-                        id: 'env:ground:procScale',
-                        kind: 'slider',
-                        label: 'env.proceduralScale',
-                        control: { bind: 'env.groundProceduralScale', min: 0.1, max: 5, step: 0.1 },
-                        icon: 'lucide:scaling',
-                    },
-                ],
-            },
-        ];
-        renderMenu(proceduralSchema, c);
     });
 }
 
