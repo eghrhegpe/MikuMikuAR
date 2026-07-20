@@ -100,6 +100,7 @@ function buildDefaultEnvState(): EnvState {
         waterAnimSpeed: s.waterAnimSpeed.default,
         planarReflectBlend: s.planarReflectBlend.default,
         reflectionQuality: s.reflectionQuality.default,
+        reflectionMode: s.reflectionMode.default,
         qualityProfile: s.qualityProfile.default,
         waterFogColor: s.waterFogColor.default.slice() as [number, number, number],
         waterFogDensity: s.waterFogDensity.default,
