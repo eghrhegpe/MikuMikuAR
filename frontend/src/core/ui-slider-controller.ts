@@ -78,11 +78,9 @@ export class DragSliderController {
 
     private readonly onElClick = (e: MouseEvent): void => {
         e.preventDefault();
-        e.stopPropagation();
-        // 快速单击（非拖拽）：跳转到点击位置
-        if (this.dragRect) {
-            this.setValueFromClientX(e.clientX, this.dragRect);
-        }
+        // no stopPropagation — 允许 click 冒泡到 .cs-row
+        const el = e.currentTarget as HTMLElement;
+        this.setValueFromClientX(e.clientX, el.getBoundingClientRect());
     };
 
     private readonly onDragMove = (e: MouseEvent): void => {
@@ -102,7 +100,7 @@ export class DragSliderController {
         this.endDisp = null;
 
         if (!this.dragging && this.dragRect) {
-            // 单击（非拖拽）：跳转到点击位置
+            // 快速单击（非拖拽）：跳转到点击位置
             this.setValueFromClientX(e.clientX, this.dragRect);
         }
         this.dragRect = null;

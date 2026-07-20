@@ -6,8 +6,9 @@ import { getCurrentRenderingMenu } from '../menus/menu';
 import { ControlOptions } from './ui-types';
 import { slideRow } from './ui-slide-row';
 import { t } from './i18n/t';
-import { clampPct, swallowError } from '@/core/utils';
+import { clamp01, clampPct, swallowError } from '@/core/utils';
 import { DragSliderController } from './ui-slider-controller';
+import { SLIDER_QUARTER_LARGE_STEP, SLIDER_QUARTER_SMALL_STEP } from './ui-constants';
 
 // ===================================================================
 // addToggleRow
@@ -236,6 +237,29 @@ export function addSliderRow(
         },
     });
     controller.bind(bar);
+
+    // cs-top 四分区域相对步进：左→右 = 减大步 → 减小步 → 加小步 → 加大步
+    top.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const rect = top.getBoundingClientRect();
+        const pct = clamp01((e.clientX - rect.left) / rect.width);
+        const delta = pct < 0.25
+            ? -(range * SLIDER_QUARTER_LARGE_STEP)
+            : pct < 0.5
+                ? -(range * SLIDER_QUARTER_SMALL_STEP)
+                : pct < 0.75
+                    ? (range * SLIDER_QUARTER_SMALL_STEP)
+                    : (range * SLIDER_QUARTER_LARGE_STEP);
+        const raw = currentValue + delta;
+        const precision = step > 0 ? 1 / step : 1;
+        const snapped = Math.round(raw * precision) / precision;
+        const clamped = Math.max(min, Math.min(max, snapped));
+        if (clamped !== currentValue) {
+            currentValue = clamped;
+            updateDisplay(clamped);
+            onChange(clamped);
+        }
+    });
 
     row.appendChild(top);
     row.appendChild(bar);

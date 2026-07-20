@@ -387,22 +387,33 @@ export function addModeSlider<T extends string | number>(
         top.setAttribute('aria-valuenow', String(idx));
     }
 
-    const controller = new DragSliderController({
-        value: currentIndex,
-        min: 0,
-        max: Math.max(0, total - 1),
-        step: 1,
-        onChange: (v) => {
-            const idx = Math.round(v);
-            updateDisplay(idx);
-            onChange(options[idx].value);
-        },
-        onDragEnd: (v) => {
-            const idx = Math.round(v);
-            onDragEndCb?.(options[idx].value);
-        },
+    function cycleIdx(dir: -1 | 1): void {
+        const next = Math.max(0, Math.min(total - 1, currentIndex + dir));
+        if (next !== currentIndex) {
+            updateDisplay(next);
+            onChange(options[next].value);
+            onDragEndCb?.(options[next].value);
+        }
+    }
+
+    // 键盘方向键切换
+    top.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            cycleIdx(-1);
+        } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+            e.preventDefault();
+            cycleIdx(1);
+        }
     });
-    controller.bind(top);
+
+    // 点击 cs-top：左半前一项、右半后一项
+    top.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const rect = top.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width;
+        cycleIdx(x < 0.5 ? -1 : 1);
+    });
 
     row.appendChild(top);
     row.appendChild(bar);
@@ -416,7 +427,6 @@ export function addModeSlider<T extends string | number>(
         const idx = options.findIndex((o) => o.value === v);
         if (idx >= 0) {
             updateDisplay(idx);
-            controller.setValue(idx);
         }
         return true;
     });
