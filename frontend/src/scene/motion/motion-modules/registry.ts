@@ -7,7 +7,7 @@ import type { MotionModuleState, ParamValue, SceneMotionIntent } from '@/core/ty
 import { modelRegistry } from '@/core/state';
 import { triggerAutoSave } from '@/core/utils';
 import type { MotionOverrideModule, ModuleFactory, ModuleMeta } from './types';
-import { clearBoneOverride } from '../bone-override';
+import { getBoneOverrideStore } from '../bone-override-store';
 import type { ModuleDef } from './types';
 import { BODY_POSTURE_DEF } from './body-posture';
 import { HAND_SYMMETRY_DEF } from './hand-symmetry';
@@ -125,117 +125,29 @@ export function setModuleEnabled(_modelId: string, moduleId: string, enabled: bo
     triggerAutoSave();
 }
 
-// ── ownedBones 运行时追踪（per-model，用于骨骼冲突仲裁）──
-// 结构: modelId -> moduleId -> Set<boneName>
-// 语义: 每条骨骼同一时刻只能被一个模块 owned；bake 时检测冲突，disable 时仅清自有骨
-const _ownedBones = new Map<string, Map<string, Set<string>>>();
-
-function _ownedMap(modelId: string): Map<string, Set<string>> {
-    let m = _ownedBones.get(modelId);
-    if (!m) {
-        m = new Map();
-        _ownedBones.set(modelId, m);
-    }
-    return m;
-}
-
 /**
  * 为模块声明对一组骨骼的所有权（bake 前调用）。
  * 冲突仲裁: 按 priority 抢占（数值越小优先级越高）。
  * - 若新模块 priority < 冲突方，则抢占（清落败方 ownedBones + 引擎 slot）
  * - 否则跳过并 console.warn
  * 返回实际成功 claim 的骨骼列表。
+ *
+ * [doc:adr-147 Phase 2 step 2] 所有权与冲突状态现已委托 BoneOverrideStore 单例，
+ * 本文件仅作 thin facade（保留旧公开签名与 {bone,byModule} 冲突形状，供 UI/测试兼容）。
  */
-// ── 骨骼冲突记录（供 UI 冲突可视化；[doc:adr-116 conflict-visibility]）──
-// 每条记录 = 某模块在 claimBones 时被其他（更高优先级）模块抢占的骨骼明细。
-// 结构: Map<modelId, Map<moduleId, Array<{bone, byModule}>>>
-const _boneConflicts = new Map<string, Map<string, Array<{ bone: string; byModule: string }>>>();
-
-function _recordConflict(modelId: string, moduleId: string, bone: string, byModule: string): void {
-    let byMod = _boneConflicts.get(modelId);
-    if (!byMod) {
-        byMod = new Map();
-        _boneConflicts.set(modelId, byMod);
-    }
-    let list = byMod.get(moduleId);
-    if (!list) {
-        list = [];
-        byMod.set(moduleId, list);
-    }
-    if (!list.some((c) => c.bone === bone && c.byModule === byModule)) {
-        list.push({ bone, byModule });
-    }
-}
-
-function _clearConflict(modelId: string, moduleId: string): void {
-    _boneConflicts.get(modelId)?.delete(moduleId);
-}
-
 export function claimBones(modelId: string, moduleId: string, bones: readonly string[]): string[] {
-    const owned = _ownedMap(modelId);
-    let mySet = owned.get(moduleId);
-    if (!mySet) {
-        mySet = new Set();
-        owned.set(moduleId, mySet);
-    }
-
-    // 查询新模块的 priority
-    const myEntry = _registry.get(moduleId);
-    const myPriority = myEntry?.priority ?? 999;
-
-    const claimed: string[] = [];
-    for (const bone of bones) {
-        if (mySet.has(bone)) {
-            claimed.push(bone);
-            continue;
-        }
-        // 检查是否被其他模块占用
-        let conflictOwner: string | null = null;
-        for (const [otherId, otherSet] of owned) {
-            if (otherId !== moduleId && otherSet.has(bone)) {
-                conflictOwner = otherId;
-                break;
-            }
-        }
-        if (conflictOwner) {
-            // 比较 priority：数值越小优先级越高
-            const otherEntry = _registry.get(conflictOwner);
-            const otherPriority = otherEntry?.priority ?? 999;
-            if (myPriority < otherPriority) {
-                // 抢占：清落败方的 ownedBones + 引擎 slot
-                const otherSet = owned.get(conflictOwner);
-                if (otherSet?.has(bone)) {
-                    otherSet.delete(bone);
-                    clearBoneOverride(bone, modelId);
-                    // 落败方视角：它现在被 moduleId 抢占了这根骨（供 UI 可视化）
-                    _recordConflict(modelId, conflictOwner, bone, moduleId);
-                    console.warn(
-                        `[adr-129] bone "${bone}" 被模块 "${moduleId}"(priority=${myPriority}) 从 "${conflictOwner}"(priority=${otherPriority}) 抢占`
-                    );
-                }
-                // 继续执行 claim 逻辑
-            } else {
-                // 落败：跳过并 console.warn
-                // 记录：本模块想要这根骨但被 conflictOwner 抢占（供 UI 可视化）
-                _recordConflict(modelId, moduleId, bone, conflictOwner);
-                console.warn(
-                    `[adr-129] bone "${bone}" 已被模块 "${conflictOwner}"(priority=${otherPriority}) 占用，模块 "${moduleId}"(priority=${myPriority}) 跳过该骨骼`
-                );
-                continue;
-            }
-        }
-        mySet.add(bone);
-        claimed.push(bone);
-    }
-    return claimed;
+    const myPriority = _registry.get(moduleId)?.priority ?? 999;
+    return getBoneOverrideStore().claimBones(modelId, moduleId, myPriority, bones);
 }
 
 /** 获取模块当前 owned 的骨骼（disable 时用于精确清除） */
 export function getOwnedBones(modelId: string, moduleId: string): Set<string> {
-    return _ownedMap(modelId).get(moduleId) ?? new Set();
+    return getBoneOverrideStore().getOwnedBones(modelId, moduleId);
 }
 
 // ── 骨骼冲突查询（供 UI 冲突可视化；[doc:adr-116 conflict-visibility]）──
+// 冲突状态由 BoneOverrideStore 存储（store.getConflicts 返回 loser/winner 视角），
+// 此处重新映射回旧 {bone, byModule} 形状并按 loser 分组，保持 UI/测试兼容。
 
 export interface BoneConflict {
     /** 被抢占的骨骼名 */
@@ -244,57 +156,46 @@ export interface BoneConflict {
     byModule: string;
 }
 
-/** 获取某模块被其他模块抢占的骨骼明细 */
+/** 获取某模块被其他模块抢占的骨骼明细（loser 视角：本模块想要但被谁抢） */
 export function getModuleConflicts(modelId: string, moduleId: string): BoneConflict[] {
-    return _boneConflicts.get(modelId)?.get(moduleId) ?? [];
+    return getBoneOverrideStore()
+        .getConflicts(modelId)
+        .filter((c) => c.loserModuleId === moduleId)
+        .map((c) => ({ bone: c.bone, byModule: c.winnerModuleId }));
 }
 
-/** 获取某模型全部模块的冲突明细 */
+/** 获取某模型全部模块的冲突明细（按 loser 模块分组） */
 export function getAllConflicts(
     modelId: string
 ): Array<{ moduleId: string; conflicts: BoneConflict[] }> {
-    const byMod = _boneConflicts.get(modelId);
-    if (!byMod) {
-        return [];
+    const byLoser = new Map<string, BoneConflict[]>();
+    for (const c of getBoneOverrideStore().getConflicts(modelId)) {
+        const entry: BoneConflict = { bone: c.bone, byModule: c.winnerModuleId };
+        const list = byLoser.get(c.loserModuleId);
+        if (list) list.push(entry);
+        else byLoser.set(c.loserModuleId, [entry]);
     }
-    return Array.from(byMod.entries()).map(([mid, conflicts]) => ({ moduleId: mid, conflicts }));
+    return Array.from(byLoser.entries()).map(([mid, conflicts]) => ({ moduleId: mid, conflicts }));
 }
 
 /** 获取某模型冲突总数（骨骼数） */
 export function getConflictCount(modelId: string): number {
-    let n = 0;
-    _boneConflicts.get(modelId)?.forEach((list) => {
-        n += list.length;
-    });
-    return n;
+    return getBoneOverrideStore().getConflicts(modelId).length;
 }
 
 /**
  * [doc:adr-116 P3] 判定指定骨骼是否被「其他模块」占用（无副作用、不 warn）。
  * 用于时间驱动模块（sway/riding）的帧钩子做让位判定：
- * 若被高优先级模块（如 position-offset 占用 センター）占用则让位，
- * 否则可安全重新认领。区别于 claimBones（会触发 warn / 抢占副作用）。
+ * 若被高优先级模块占用则让位，否则可安全重新认领。区别于 claimBones（会触发 warn / 抢占副作用）。
  */
 export function isBoneOwnedByOther(modelId: string, moduleId: string, bone: string): boolean {
-    const owned = _ownedMap(modelId);
-    for (const [otherId, otherSet] of owned) {
-        if (otherId !== moduleId && otherSet.has(bone)) {
-            return true;
-        }
-    }
-    return false;
+    const owner = getBoneOverrideStore().getBoneOwnerModule(modelId, bone);
+    return owner !== null && owner !== moduleId;
 }
 
-/** 释放模块的 ownedBones 记录（不清除骨骼覆盖本身，由调用方负责） */
+/** 释放模块的 ownedBones 记录并级联清引擎槽（由 store.releaseBones 负责清除） */
 export function releaseOwnedBones(modelId: string, moduleId: string): Set<string> {
-    const owned = _ownedMap(modelId);
-    const set = owned.get(moduleId);
-    if (!set) {
-        return new Set();
-    }
-    owned.delete(moduleId);
-    _clearConflict(modelId, moduleId);
-    return set;
+    return getBoneOverrideStore().releaseBones(modelId, moduleId);
 }
 
 // ── 模型切换管理 ──
@@ -346,16 +247,8 @@ export function setTargetModel(modelId: string | null): void {
 
 /** 清除指定模型的所有模块覆盖（删除模型时调用） */
 export function clearAllModulesForModel(modelId: string): void {
-    // 释放并清除所有 ownedBones（精确清除，不误伤手动覆盖）
-    const owned = _ownedBones.get(modelId);
-    if (owned) {
-        for (const [, boneSet] of owned) {
-            for (const bone of boneSet) {
-                clearBoneOverride(bone, modelId);
-            }
-        }
-        owned.clear();
-    }
+    // 释放并清除所有 ownedBones + 引擎槽（委托 store.disposeModel）
+    getBoneOverrideStore().disposeModel(modelId);
 }
 
 /**

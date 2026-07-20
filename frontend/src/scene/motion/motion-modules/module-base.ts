@@ -5,7 +5,6 @@
 
 import type { MenuNode } from '@/menus/menu-schema';
 import type { MotionModuleState, ParamValue } from '@/core/types';
-import { clearBoneOverride } from '../bone-override';
 import {
     getModuleState,
     setModuleParam,
@@ -31,11 +30,11 @@ export interface ModuleBaseOverrides {
      */
     action?: (modelId: string) => void;
     /**
-     * 自定义 disable 前置钩子，在默认的 releaseOwnedBones + clearBoneOverride 之前调用。
+     * 自定义 disable 前置钩子，在默认的 releaseOwnedBones（会级联清引擎槽）之前调用。
      * 用于 sway/riding 注销每帧钩子。
      */
     onDisable?: (modelId: string) => void;
-    /** 跳过默认的 releaseOwnedBones + clearBoneOverride（用于不写引擎的模块） */
+    /** 跳过默认的 releaseOwnedBones（其会级联清引擎槽，用于不写引擎的模块） */
     skipBonesCleanup?: boolean;
     /** 在 setParam 时自动启用模块（默认 true，VRChat 行为） */
     autoEnableOnParam?: boolean;
@@ -116,10 +115,9 @@ export function createModuleBase(
             state.enabled = false;
             overrides?.onDisable?.(modelId);
             if (!overrides?.skipBonesCleanup) {
-                const bones = releaseOwnedBones(modelId, moduleId);
-                for (const bone of bones) {
-                    clearBoneOverride(bone, modelId);
-                }
+                // [doc:adr-147 Phase 2 step 2] store.releaseBones 已级联清引擎槽
+                // （onClearEngineSlot → clearBoneOverride），此处不再双清，避免重复调用断言破。
+                releaseOwnedBones(modelId, moduleId);
             }
         },
     };
