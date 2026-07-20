@@ -1,12 +1,36 @@
 // plaza.contract.test.ts — 导出函数存在性 + 签名契约
 //
 // 验证 showPlaza / closePlaza 签名不变（不执行内部逻辑）。
-// 注意：不 vi.mock 整个模块——plaza-browser / plaza-state 无 Babylon 强依赖，
-// vitest 能正常导入。
-//
-// 如果将来 plaza-browser 引入了 vitest 无法解析的依赖，再加 vi.mock 做局部打桩。
+// plaza-download → library → library-core → scene.ts 会触发 Babylon 引擎初始化，
+// 因此需要 mock 掉重依赖链。
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+
+// 阻断 Babylon 引擎初始化（scene.ts 模块级 new Scene(engine)）
+vi.mock('../scene/scene', () => ({
+    focusModel: vi.fn(),
+    modelManager: { get: vi.fn() },
+    scene: {},
+    triggerAutoSave: vi.fn(),
+}));
+vi.mock('../core/wails-bindings', () => ({
+    FetchPlazaConfig: vi.fn(),
+    GetCachedPlazaConfig: vi.fn(),
+    ReadTextFile: vi.fn(),
+    StartProxy: vi.fn(),
+    StopProxy: vi.fn(),
+    ClosePlazaWindow: vi.fn(),
+    PlazaGoBack: vi.fn(),
+    PlazaGoForward: vi.fn(),
+    PlazaReload: vi.fn(),
+    PlazaZoomIn: vi.fn(),
+    PlazaZoomOut: vi.fn(),
+    PlazaZoomReset: vi.fn(),
+    DownloadFromPlaza: vi.fn(),
+}));
+vi.mock('@bindings/mikumikuar/internal/app/app', () => ({}));
+vi.mock('@wailsio/runtime', () => ({ Events: { On: vi.fn(), Off: vi.fn() } }));
+
 import { showPlaza } from '../menus/plaza-browser';
 import { closePlaza } from '../menus/plaza-state';
 

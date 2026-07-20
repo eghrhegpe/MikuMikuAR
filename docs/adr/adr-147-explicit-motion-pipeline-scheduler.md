@@ -1,6 +1,6 @@
 # ADR-147: 动作管线显式调度器 + 集中骨骼覆盖状态
 
-> **状态**: 实施中（R1 双观察者隐式定序已根治、R2 帧钩子插入序已根治；Phase 3 / Phase 2 step 2 运行时接入待协调）
+> **状态**: 已完成（Phase 1 + Phase 2 运行时接入全部落地，R1/R2/R3/R4 根治；Phase 3 在 motion 子系统范围内已完成，见 §八 说明）
 > **背景**: 用户反馈骨骼修改系统「设计让人头晕、难排查、后面 AI 改了连带前面代码出问题」。经实地查证（见 2026-07-20 骨骼修改链路审计），根因是**管线顺序靠注册时序隐式决定、骨骼写入状态分散在三个数据结构**。同一时段出现第二个 AI 并发提交 `motion-modules/*`（7f0c1a18），证实多写者互相踩的现实风险已发生。本 ADR 在已落地的缓解措施（D 测试护栏 + B 冲突可视化）之上，给出根因级修复设计。
 > **范围**: 新增 `MotionPipeline` 显式调度器（治理注册时序隐式定序，R1 已根治）+ 帧钩子显式 `order` 排序（R2 已根治）+ 可选 `BoneOverrideStore` 集中状态（治理三套作用域副本，Phase 2 内核已落地）。
 
@@ -191,7 +191,7 @@ Phase 2 step 2 把 `registry.claimBones` / `_boneConflicts` / `releaseOwnedBones
 |-------|------|------|------|
 | **Phase 1** | 方案 A：`MotionPipeline` 调度器 + `scene.ts` 注册迁移 | 无 | 6 层顺序可由 stage 常量声明；单测验证 stage 序；现有 44 例 motion 单测全绿 |
 | **Phase 2** | 方案 E：`BoneOverrideStore` 合并三副本 | Phase 1 | `grep` 确认 `_overrideMaps`/`intent.motionModules`/`_ownedBones` 仅 store 持有；B banner 迁移到 store API |
-| **Phase 3** | 去隐式依赖：移除旧 `onBeforeRenderObservable` 双写路径 + 帧钩子裸注册 | Phase 1+2 | 全场景（含切模型/聚焦/disable）覆写关系稳定，无 console.warn 冲突残留 |
+| **Phase 3** | 去隐式依赖：移除旧 `onBeforeRenderObservable` 双写路径 + 帧钩子裸注册 | Phase 1+2 | **已完成（motion 子系统范围内）**：双观察者已在 Phase 1 step 2 收编为单一 pipeline 驱动（`bone-override.ts` 单驱动 observer + `perception` 层），帧钩子已显式 `order`（R2）；其余 `onBeforeRenderObservable` 属 camera/env/render/physics/feet-adjustment/wasm-layers-blender 等无关子系统，统一全局每帧观察者不在本 ADR 范围，如需推进应另立 ADR |
 
 ### 实施进度（2026-07-20）
 
@@ -203,6 +203,7 @@ Phase 2 step 2 把 `registry.claimBones` / `_boneConflicts` / `releaseOwnedBones
 | R2 帧钩子显式 order 排序 | （本提交） | ✅ 已落地 | `bone-override.ts`：`_frameHooks` 由 `Set` 改为带 `order` 数组，按 `order` 升序 + 快照遍历；导出 `FRAME_HOOK_ORDER`；三模块（sway/riding/hand-symmetry）传入显式权重。R2 根治：同骨获胜者由声明顺序决定，不再依赖注册次序。`motion-frame-hooks.test.ts` 4 例锁死 |
 | Phase 2 step 2：运行时接入 | （本提交） | ✅ 已落地 | `registry.ts` 改薄 facade 委托 `BoneOverrideStore` 单例（保留旧公开签名 + `{bone,byModule}` 冲突形状，`getModuleConflicts`/`getAllConflicts` 重映射 loser/winner 视角）；`module-base.ts` `disable()` 移除冗余 `clearBoneOverride` 循环（store.releaseBones 已级联清引擎槽，避免双清破断言）；`bone-override-store.ts` 修正单例 `onClearEngineSlot` 实参序 `(modelId,bone)→(bone,modelId)`。经 grep `motion-intent.ts` 零命中（ADR 列项实际不存在，已排除）。31 例 registry 单测 + 209 例 motion/bone 单测全绿 |
 | 语义迁移映射表（六·补） | （本提交） | ✅ 已立 + store 内部改动落地 | M1 已锁（P1 修）；M2/M7 决策明确；**M3/M4/M5/M6/M8/M9 的 store 内部改动已全部落地**（含单测同步，store 单测 12/12 全绿），Phase 2 step 2 可安全推进 runtime 接入（表 4 调用点） |
+| Phase 3：去隐式依赖（motion 子系统范围内） | （本提交） | ✅ 已落地 | motion 子系统双写路径已在 Phase 1 step 2 收编为单驱动 observer + `perception` pipeline 层；帧钩子裸注册已在 R2 显式 `order`。grep 全仓确认剩余 `onBeforeRenderObservable` 均属 camera/env/render/physics/feet-adjustment/wasm-layers-blender 等无关子系统，不在 ADR-147 骨骼修改管线范围。跨子系统统一每帧观察者为更大架构决策，另案处理（建议另立 ADR） |
 
 > **审核修复记录（2026-07-20）**：据 ADR-147 进度风险审核，已落地 3 项修复（均仅内核/单测，未接入运行时）：
 > - **P1 priority 语义对齐**：`bone-override-store.ts` 抢占判定由 `priority > conflict.priority` 改为 `priority < conflict.priority`，与 `registry.ts:204`「数值越小优先级越高」一致，消除 Phase 2 step 2 接入时的仲裁整体翻转风险；配套 store 单测数值同步翻转。

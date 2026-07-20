@@ -5,7 +5,7 @@ import { Quaternion } from '@babylonjs/core';
 import {
     migratePerceptionFromProcMotion,
     migrateLipSyncFromOldState,
-} from '../scene/scene-serialize';
+} from '../scene/scene-migrate';
 
 // =====================================================================
 // hoisted mock state
