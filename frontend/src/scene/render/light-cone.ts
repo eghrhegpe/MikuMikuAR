@@ -173,7 +173,7 @@ export function createLightCone(
     mesh.material = material;
 
     // 初始 transform
-    _applyTransform(mesh, light, coneLength);
+    _applyTransform(mesh, light);
 
     // 初始 uniforms
     material.setColor3('u_color', color);
@@ -191,7 +191,7 @@ export function updateLightConeTransform(
     light: SpotLight,
     coneLength: number
 ): void {
-    _applyTransform(entry.mesh, light, coneLength);
+    _applyTransform(entry.mesh, light);
     entry.material.setVector3('u_apexPos', light.position.clone());
 }
 
@@ -225,14 +225,12 @@ export function rebuildLightConeGeometry(
     const oldMesh = entry.mesh;
     const newMesh = _createConeMesh(scene, coneLength, halfAngle);
     newMesh.material = entry.material;
-    newMesh.position.copyFrom(oldMesh.position);
-    newMesh.rotationQuaternion = oldMesh.rotationQuaternion?.clone() ?? Quaternion.Identity();
     newMesh.setEnabled(oldMesh.isEnabled());
     safeDispose(oldMesh);
     entry.mesh = newMesh;
     entry.geoLength = coneLength;
     entry.geoAngle = light.angle;
-    _applyTransform(newMesh, light, coneLength);
+    _applyTransform(newMesh, light);
 }
 
 /** 设置光锥可见性 */
@@ -240,15 +238,15 @@ export function setLightConeEnabled(entry: LightConeEntry, enabled: boolean): vo
     entry.mesh.setEnabled(enabled);
 }
 
-/** 释放光锥资源 */
+/** 释放光锥资源（先 mesh 后 material，避免 mesh.dispose 内部引用已释放材质） */
 export function disposeLightCone(entry: LightConeEntry): void {
-    safeDispose(entry.material);
     safeDispose(entry.mesh);
+    safeDispose(entry.material);
 }
 
 // ======== Internal ========
 
-function _applyTransform(mesh: Mesh, light: SpotLight, _coneLength: number): void {
+function _applyTransform(mesh: Mesh, light: SpotLight): void {
     mesh.position.copyFrom(light.position);
     // SpotLight.direction 已归一化，直接对齐
     const dir = light.direction.normalize();
