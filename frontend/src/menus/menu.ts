@@ -5,6 +5,7 @@ import { createTrailingBtn, createLeadingBtn } from '../core/ui-slide-row';
 import { subscribe } from '../core/reactivity';
 import { t } from '../core/i18n/t';
 import { logWarn } from '../core/logger';
+import { safeCallAsync } from '../core/safe-call';
 import { addDisposableListener, type Disposable } from '../core/dom';
 
 /** 菜单过渡时间常量（与 app.css :root --menu-transition-duration 同步） */
@@ -193,14 +194,14 @@ export class SlideMenu {
         this.panel.style.transition = 'none';
         this.panel.style.opacity = '1';
         this.panel.style.transform = 'translateX(0)';
-        this.buildPanel(level)
-            .then(() => {
+        safeCallAsync('menu', 'buildPanel failed:', () =>
+            this.buildPanel(level).then(() => {
                 this.updateHeader(level);
                 this.setupFocus();
                 this.onAfterRender?.(level, this);
                 this.onLevelEnter?.(level, this);
             })
-            .catch((err) => logWarn('menu', 'buildPanel failed:', err));
+        );
     }
 
     push(level: PopupLevel): void {
@@ -343,14 +344,14 @@ export class SlideMenu {
         this.panel.style.transition = 'none';
         this.panel.style.opacity = '1';
         this.panel.style.transform = 'translateX(0)';
-        this.buildPanel(level)
-            .then(() => {
+        safeCallAsync('menu', 'buildPanel failed:', () =>
+            this.buildPanel(level).then(() => {
                 this.updateHeader(level);
                 this.setupFocus();
                 this.onAfterRender?.(level, this);
                 this.onLevelEnter?.(level, this);
             })
-            .catch((err) => logWarn('menu', 'buildPanel failed:', err));
+        );
     }
 
     reRender(opts?: { preserveFocus?: boolean }): void {
@@ -424,19 +425,19 @@ export class SlideMenu {
                 return;
             }
             // 没有旧 DOM → 退化为全量重建
-            this.buildPanel(level)
-                .then(finalize)
-                .catch((err) => logWarn('menu', 'buildPanel failed:', err));
+            safeCallAsync('menu', 'buildPanel failed:', () =>
+                this.buildPanel(level).then(finalize)
+            );
         } else if (level.renderCustom || level.items.length === 0) {
             // === 自定义渲染 / 空列表 → 全量重建 ===
-            this.buildPanel(level)
-                .then(finalize)
-                .catch((err) => logWarn('menu', 'buildPanel failed:', err));
+            safeCallAsync('menu', 'buildPanel failed:', () =>
+                this.buildPanel(level).then(finalize)
+            );
         } else {
             // === 纯 items → 全量重建（card-per-divider 结构不支持增量 patch） ===
-            this.buildPanel(level)
-                .then(finalize)
-                .catch((err) => logWarn('menu', 'buildPanel failed:', err));
+            safeCallAsync('menu', 'buildPanel failed:', () =>
+                this.buildPanel(level).then(finalize)
+            );
             finalize();
         }
     }

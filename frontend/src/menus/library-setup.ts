@@ -31,6 +31,7 @@ import {
 } from '../core/config';
 import { tryCatchStatus, isUnderRoot } from '../core/utils';
 import { logWarn } from '../core/logger';
+import { safeCallAsync } from '../core/safe-call';
 import { showConfirm } from '../core/dialog';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
@@ -82,7 +83,7 @@ export async function initLibrary(): Promise<void> {
         } catch (err) {
             logWarn('library-setup', 'ScanModelDir refresh:', err);
         }
-        CleanOrphanCache().catch((err) => logWarn('library-setup', 'CleanOrphanCache:', err));
+        safeCallAsync('library-setup', 'CleanOrphanCache:', () => CleanOrphanCache());
         setStatus(t('library.browseHint2'), false);
     } catch (err) {
         logWarn('library-setup', 'initLibrary:', err);

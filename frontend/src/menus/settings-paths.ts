@@ -40,6 +40,7 @@ import { t } from '../core/i18n/t';
 import { setLang, type LangCode } from '../core/i18n/locale';
 import { CATEGORY_DIR } from '../core/utils';
 import { logWarn } from '../core/logger';
+import { safeCallAsync } from '../core/safe-call';
 import { SETTINGS_ACTION } from './settings-targets';
 import { isAndroidPlatform } from '../core/platform';
 import { buildSettingsLanguageLevel } from './settings-language';
@@ -60,55 +61,49 @@ import {
 /** 设置动作映射表——替代原 handleSettingsAction 的 switch 链 */
 export const SETTINGS_ACTIONS: Record<string, (row: PopupRow) => void> = {
     [SETTINGS_ACTION.CLEAR_EXTRACT_CACHE]: () => {
-        ClearExtractCache()
-            .then(() => {
-                setStatus(t('settings.extractCacheCleared'), true);
-                window.dispatchEvent(new CustomEvent('mmar:cache-cleared'));
-            })
-            .catch((err) => logWarn('paths', '', err));
+        safeCallAsync('paths', '', () => ClearExtractCache().then(() => {
+            setStatus(t('settings.extractCacheCleared'), true);
+            window.dispatchEvent(new CustomEvent('mmar:cache-cleared'));
+        }));
     },
     [SETTINGS_ACTION.CLEAR_THUMBNAIL]: () => {
         (async () => {
             if (await showConfirm(t('settings.paths.clearThumbConfirm'))) {
-                ClearThumbnailCache()
-                    .then(() => {
-                        setStatus(t('settings.thumbnailCacheCleared'), true);
-                        window.dispatchEvent(new CustomEvent('mmar:cache-cleared'));
-                    })
-                    .catch((err) => logWarn('paths', '', err));
+                safeCallAsync('paths', '', () => ClearThumbnailCache().then(() => {
+                    setStatus(t('settings.thumbnailCacheCleared'), true);
+                    window.dispatchEvent(new CustomEvent('mmar:cache-cleared'));
+                }));
             }
         })();
     },
     [SETTINGS_ACTION.CLEAR_ALL_CACHE]: () => {
         (async () => {
             if (await showConfirm(t('settings.paths.clearAllConfirm'))) {
-                ClearAllCaches()
-                    .then(() => {
-                        setStatus(t('settings.allCacheCleared'), true);
-                        window.dispatchEvent(new CustomEvent('mmar:cache-cleared'));
-                    })
-                    .catch((err) => logWarn('paths', '', err));
+                safeCallAsync('paths', '', () => ClearAllCaches().then(() => {
+                    setStatus(t('settings.allCacheCleared'), true);
+                    window.dispatchEvent(new CustomEvent('mmar:cache-cleared'));
+                }));
             }
         })();
     },
     [SETTINGS_ACTION.RESOURCE_ROOT]: () =>
-        selectResourceRoot().catch((err) => logWarn('paths', '', err)),
+        safeCallAsync('paths', '', () => selectResourceRoot()),
     [SETTINGS_ACTION.PATH_PMX]: (_row) =>
-        selectOverridePath('pmx').catch((err) => logWarn('paths', '', err)),
+        safeCallAsync('paths', '', () => selectOverridePath('pmx')),
     [SETTINGS_ACTION.PATH_VMD]: (_row) =>
-        selectOverridePath('vmd').catch((err) => logWarn('paths', '', err)),
+        safeCallAsync('paths', '', () => selectOverridePath('vmd')),
     [SETTINGS_ACTION.PATH_AUDIO]: (_row) =>
-        selectOverridePath('audio').catch((err) => logWarn('paths', '', err)),
+        safeCallAsync('paths', '', () => selectOverridePath('audio')),
     [SETTINGS_ACTION.PATH_PROP]: (_row) =>
-        selectOverridePath('prop').catch((err) => logWarn('paths', '', err)),
+        safeCallAsync('paths', '', () => selectOverridePath('prop')),
     [SETTINGS_ACTION.PATH_STAGE]: (_row) =>
-        selectOverridePath('stage').catch((err) => logWarn('paths', '', err)),
+        safeCallAsync('paths', '', () => selectOverridePath('stage')),
     [SETTINGS_ACTION.PATH_ENVIRONMENT]: (_row) =>
-        selectOverridePath('environment').catch((err) => logWarn('paths', '', err)),
+        safeCallAsync('paths', '', () => selectOverridePath('environment')),
     [SETTINGS_ACTION.PATH_MD_DRESS]: (_row) =>
-        selectOverridePath('md_dress').catch((err) => logWarn('paths', '', err)),
+        safeCallAsync('paths', '', () => selectOverridePath('md_dress')),
     [SETTINGS_ACTION.PATH_SETTING]: (_row) =>
-        selectOverridePath('setting').catch((err) => logWarn('paths', '', err)),
+        safeCallAsync('paths', '', () => selectOverridePath('setting')),
 };
 
 export function handleSettingsAction(row: PopupRow, menu?: SlideMenu): void {

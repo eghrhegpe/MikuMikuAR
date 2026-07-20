@@ -22,7 +22,7 @@ import {
 } from '../core/wails-bindings';
 import { isAndroidPlatform, openExternalURL } from '../core/platform';
 import { closeAllOverlays, swallowError } from '../core/utils';
-import { logWarn } from '../core/logger';
+import { safeCallAsync } from '../core/safe-call';
 import { PLAZA_SITES, type PlazaSite } from './plaza-sites';
 import { PLAZA_CREATORS, type PlazaCreator } from './plaza-creators';
 import { FetchPlazaConfig, GetCachedPlazaConfig, ReadTextFile } from '../core/wails-bindings';
@@ -926,8 +926,8 @@ function installEventListeners(): void {
                 {
                     label: t('plaza.viewLibrary'),
                     onClick: () => {
-                        refreshLibrary().catch((err) =>
-                            logWarn('plaza', 'refresh after plaza download:', err)
+                        safeCallAsync('plaza', 'refresh after plaza download', () =>
+                            refreshLibrary()
                         );
                     },
                 },
@@ -1036,12 +1036,12 @@ function renderRemote(site: PlazaSite): void {
             title: site.name,
             onBack: async () => {
                 plazaProxyActive = false;
-                await ClosePlazaWindow().catch((err) => logWarn('plaza', '', err));
+                await safeCallAsync('plaza', '', () => ClosePlazaWindow());
                 renderHome();
             },
             onClose: async () => {
                 plazaProxyActive = false;
-                await ClosePlazaWindow().catch((err) => logWarn('plaza', '', err));
+                await safeCallAsync('plaza', '', () => ClosePlazaWindow());
                 closePlaza();
             },
         })

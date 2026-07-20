@@ -16,6 +16,7 @@ import { schedulePersistUI } from '../env/env-bridge';
 import { freeflyInput } from '@/core/freefly-state';
 import { clamp, debounce, deepClone } from '@/core/utils';
 import { logWarn } from '@/core/logger';
+import { safeCallAsync } from '@/core/safe-call';
 import { t } from '@/core/i18n/t';
 import { focusModel, reattachPipeline, setARMode, getProcBeatDetector } from '../scene';
 import { InvertableArcRotateCameraPointersInput } from './invertablePointersInput';
@@ -679,8 +680,8 @@ export function switchCameraMode(mode: CameraMode): void {
         _cameraMode = 'ar';
         _syncAxesFromMode('ar');
         _currentPreset.mode = 'ar';
-        setARMode(true)
-            .then((ok) => {
+        safeCallAsync('camera', 'setARMode failed:', () =>
+            setARMode(true).then((ok) => {
                 if (!ok) {
                     // 失败：若后续切换尚未把模式改走（仍在 ar），才提示并还原标记。
                     if (_cameraMode === 'ar') {
@@ -691,7 +692,7 @@ export function switchCameraMode(mode: CameraMode): void {
                     _currentPreset.mode = _previousMode;
                 }
             })
-            .catch((e) => logWarn('camera', 'setARMode failed:', e));
+        );
         return;
     }
 
