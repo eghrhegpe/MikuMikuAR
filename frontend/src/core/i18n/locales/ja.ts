@@ -1547,6 +1547,8 @@ export const ja: Record<string, string> = {
     'plaza.openFail': 'ウィンドウのオープンに失敗: {err}',
     'plaza.opening': '{name} をオープン中...',
     'plaza.viewLibrary': 'モデルライブラリを表示',
+    'plaza.loading': '読み込み中...',
+    'plaza.remoteHint': '広場ウィンドウが開いています。ダウンロードリンクは自動的にインポートされます',
     'scene.accessory.attachToBone': 'ボーンにアタッチ',
     'scene.accessory.attached': '✓ {name} を {bone} にアタッチしました',
     'scene.accessory.boneNoLink': '✗ ボーンにリンクできません（プロキシボーンは未対応）',

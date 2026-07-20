@@ -1528,6 +1528,8 @@ export const zhTW: Record<string, string> = {
     'plaza.openFail': '開啟視窗失敗: {err}',
     'plaza.opening': '正在開啟 {name}...',
     'plaza.viewLibrary': '查看模型庫',
+    'plaza.loading': '載入中...',
+    'plaza.remoteHint': '廣場視窗已開啟，點擊下載連結會自動入庫',
     'scene.accessory.attachToBone': '附加到骨骼',
     'scene.accessory.attached': '✓ {name} 已掛載到 {bone}',
     'scene.accessory.boneNoLink': '✗ 骨骼無法綁定（proxy 骨骼暫不支援）',
