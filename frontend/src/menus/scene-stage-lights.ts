@@ -228,96 +228,91 @@ function buildStageLightSchema(): MenuNode[] {
                 });
             },
         },
-        // 卡片 3.5：体积光（ADR-152）
+        // 卡片 3.5：光锥（真实锥形光柱可视化）
     {
-        id: 'light:volumetric',
+        id: 'light:cone',
         kind: 'custom',
-        visibleWhen: () => !!state,
+        visibleWhen: () => !!state && state.type === 'spot',
         renderCustom: (c) => {
             if (!state) {
                 return;
             }
             cardContainer(c, (inner) => {
                 addCollapsible(inner, {
-                    title: t('scene.volumetric'),
-                    icon: 'lucide:sun-medium',
+                    title: t('scene.lightCone'),
+                    icon: 'lucide:flashlight',
                     defaultOpen: false,
                     headerToggle: {
-                        value: state.volumetricEnabled,
+                        value: state.coneEnabled,
                         onChange: (v) => {
-                            setStageLightState({ volumetricEnabled: v }, state.id);
+                            setStageLightState({ coneEnabled: v }, state.id);
                             getSceneMenu()?.updateControls();
-                            // ADR-152 P2: 超限时 state 被回滚，提示用户
-                            const updated = getStageLights().find((l) => l.id === state.id);
-                            if (v && !updated?.volumetricEnabled) {
-                                setStatus(t('scene.volumetricLimitReached'), true);
-                            }
                         },
                         bind: () => {
                             const lights = getStageLights();
                             const activeId = getActiveStageLightId();
                             const s = lights.find((l) => l.id === activeId) ?? lights[0];
-                            return s?.volumetricEnabled ?? false;
+                            return s?.coneEnabled ?? false;
                         },
                     },
                     renderContent: (ci) => {
                         addSliderRow(
                             ci,
-                            t('scene.exposure'),
-                            state.volumetricExposure,
+                            t('scene.coneIntensity'),
+                            state.coneIntensity,
                             0,
-                            1,
+                            2,
                             0.05,
                             () => {},
                             'lucide:sun',
-                            (v) => setStageLightState({ volumetricExposure: v }, state.id),
+                            (v) => setStageLightState({ coneIntensity: v }, state.id),
                             {
                                 bind: () => {
                                     const lights = getStageLights();
                                     const activeId = getActiveStageLightId();
                                     const s =
                                         lights.find((l) => l.id === activeId) ?? lights[0];
-                                    return s?.volumetricExposure ?? 0.3;
+                                    return s?.coneIntensity ?? 0.5;
                                 },
                             }
                         );
                         addSliderRow(
                             ci,
-                            t('scene.decay'),
-                            state.volumetricDecay,
-                            0,
+                            t('scene.coneLength'),
+                            state.coneLength,
                             1,
-                            0.05,
+                            50,
+                            0.5,
                             () => {},
-                            'lucide:arrow-down',
-                            (v) => setStageLightState({ volumetricDecay: v }, state.id),
+                            'lucide:ruler',
+                            (v) => setStageLightState({ coneLength: v }, state.id),
                             {
                                 bind: () => {
                                     const lights = getStageLights();
                                     const activeId = getActiveStageLightId();
                                     const s =
                                         lights.find((l) => l.id === activeId) ?? lights[0];
-                                    return s?.volumetricDecay ?? 0.9;
+                                    return s?.coneLength ?? 20;
                                 },
                             }
                         );
                         addSliderRow(
                             ci,
-                            t('scene.density'),
-                            state.volumetricDensity,
+                            t('scene.coneSoftness'),
+                            state.coneSoftness,
                             0,
                             1,
                             0.05,
                             () => {},
-                            'lucide:grid-3x3',
-                            (v) => setStageLightState({ volumetricDensity: v }, state.id),
+                            'lucide:circle-dashed',
+                            (v) => setStageLightState({ coneSoftness: v }, state.id),
                             {
                                 bind: () => {
                                     const lights = getStageLights();
                                     const activeId = getActiveStageLightId();
                                     const s =
                                         lights.find((l) => l.id === activeId) ?? lights[0];
-                                    return s?.volumetricDensity ?? 0.5;
+                                    return s?.coneSoftness ?? 0.5;
                                 },
                             }
                         );
