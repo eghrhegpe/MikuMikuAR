@@ -829,7 +829,6 @@ export function applyGround(state: EnvState): void {
     ground.material = mat;
 
     if (
-        state.groundPbrEnabled &&
         state.groundProceduralTexture !== 'none' &&
         !state.groundTextureEnabled
     ) {
