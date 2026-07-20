@@ -5,7 +5,7 @@
 import { setStatus, cardContainer } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import type { RenderState } from '../scene/scene';
-import { tryCatchStatus, swallowError } from '../core/utils';
+import { tryCatchStatus, swallowError, showErrorToast } from '../core/utils';
 import { addModeSlider, slideRow, addPresetChip } from '../core/ui-helpers';
 import { exportSceneBundle, importSceneBundle } from '../scene/scene-bundle';
 import {
@@ -15,17 +15,22 @@ import {
     setRenderState,
     transitionRenderState,
     defaultRenderState,
+    serializeScene,
+    popUndoSnapshot,
+    restoreUndoSnapshot,
 } from '../scene/scene';
 import {
     GetPresetScenes,
     GetPresetScenesDir,
     DeletePresetScene,
     LoadSceneFile,
+    SaveScenePreset,
 } from '../core/wails-bindings';
 import { presetListContent } from './preset-list-viewer';
 import { reRenderSceneMenu } from './scene-menu-state';
 import { FILTER_PRESET_LABELS, getFilterPreset } from './scene-render-presets';
 import { t } from '../core/i18n/t';
+import { translateGoError } from '../core/i18n/goerr';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 
@@ -138,6 +143,57 @@ function buildPresetScenesSchema(): MenuNode[] {
                         _renderScenePresetList(c, scenes || []);
                     })
                 );
+            },
+        },
+        // 撤销 / 保存场景
+        {
+            id: 'presetScenes:actions',
+            kind: 'custom',
+            renderCustom: (c) => {
+                const actions = document.createElement('div');
+                actions.className = 'lcard';
+                slideRow(
+                    actions,
+                    'lucide:undo-2',
+                    t('scene.undo'),
+                    false,
+                    () => {
+                        const snap = popUndoSnapshot();
+                        if (!snap) {
+                            setStatus(t('scene.statusNoUndo'), false);
+                            return;
+                        }
+                        void restoreUndoSnapshot(snap).then((ok) => {
+                            if (ok) {
+                                setStatus(t('scene.undoApplied'), true);
+                            }
+                        });
+                    }
+                );
+                slideRow(
+                    actions,
+                    'lucide:save',
+                    t('scene.saveScene'),
+                    false,
+                    async () => {
+                        const json = JSON.stringify(serializeScene(), null, 2);
+                        try {
+                            const filename = await SaveScenePreset(json);
+                            try {
+                                await navigator.clipboard.writeText(json);
+                                setStatus(t('scene.statusSceneSavedClipboard', { filename }), true);
+                            } catch {
+                                setStatus(t('scene.statusSceneSaved', { filename }), true);
+                            }
+                            reRenderSceneMenu();
+                        } catch (err) {
+                            const msg = translateGoError(err);
+                            setStatus(t('scene.statusSaveFailed'), false);
+                            showErrorToast(t('scene.toastSaveSceneFailed'), msg);
+                        }
+                    }
+                );
+                c.appendChild(actions);
             },
         },
     ] satisfies MenuNode[];

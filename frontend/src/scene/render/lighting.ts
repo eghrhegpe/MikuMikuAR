@@ -270,6 +270,14 @@ function _updateIndicator(entry: StageLightEntry): void {
         }
         entry.indicator.position.copyFrom(light.position);
         entry.indicator.scaling.setAll(state.indicatorScale);
+        // 防御：material 可能被外部清理（scene 重置 / material cache 清除等），
+        // 此时重建而非崩溃。
+        if (!entry.indicator.material) {
+            const mat = new StandardMaterial('lightIndicatorMat', _scene!);
+            mat.emissiveColor = new Color3(1, 1, 1);
+            mat.disableLighting = true;
+            entry.indicator.material = mat;
+        }
         (entry.indicator.material as StandardMaterial).alpha = state.indicatorOpacity;
         entry.indicator.setEnabled(true);
 

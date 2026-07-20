@@ -22,7 +22,6 @@ import {
     takeARScreenshot,
     setEnvState,
     popUndoSnapshot,
-    canUndo,
     restoreUndoSnapshot,
 } from '../scene/scene';
 import { SelectDir, SaveScreenshot, SaveScenePreset } from '../core/wails-bindings';
@@ -42,7 +41,7 @@ import { buildGroundLevel } from './env-ground-levels';
 import { buildWaterLevel } from './env-water-levels';
 import { envState } from '../core/state';
 import { getEnvTextureBindingTarget, clearEnvTextureBindingTarget } from './env-menu';
-import { setSceneMenu, setRefreshSceneRoot, reRenderSceneMenu } from './scene-menu-state';
+import { setSceneMenu, setRefreshSceneRoot, reRenderSceneMenu, getSceneMenu } from './scene-menu-state';
 import {
     setMirrorSize,
     getMirrorInfo,
@@ -134,74 +133,41 @@ function buildMirrorLevel(): PopupLevel {
             const wrapper = document.createElement('div');
             wrapper.style.padding = '8px';
 
-            addToggleRow(
+            addModeSlider(
                 wrapper,
-                t('scene.mirror'),
-                info.active,
-                () => {
-                    toggleMirror();
-                    const menu = getSceneMenu();
-                    if (menu) {
-                        menu.reRender();
-                    }
+                t('scene.mirrorWidth'),
+                Array.from({ length: 15 }, (_, i) => ({
+                    value: String(2 + i * 2),
+                    label: `${2 + i * 2}m`,
+                })),
+                String(info.width),
+                (v) => {
+                    const w = parseFloat(v);
+                    const cur = getMirrorInfo();
+                    setMirrorSize(w, cur.height);
                 },
-                'lucide:sparkles'
+                'lucide:move-horizontal'
             );
-
-            if (info.active) {
-                addModeSlider(
-                    wrapper,
-                    t('scene.mirrorWidth'),
-                    Array.from({ length: 15 }, (_, i) => ({
-                        value: String(2 + i * 2),
-                        label: `${2 + i * 2}m`,
-                    })),
-                    String(info.width),
-                    (v) => {
-                        const w = parseFloat(v);
-                        const cur = getMirrorInfo();
-                        setMirrorSize(w, cur.height);
-                    },
-                    'lucide:move-horizontal'
-                );
-                addModeSlider(
-                    wrapper,
-                    t('scene.mirrorHeight'),
-                    Array.from({ length: 10 }, (_, i) => ({
-                        value: String(1 + i * 2),
-                        label: `${1 + i * 2}m`,
-                    })),
-                    String(info.height),
-                    (v) => {
-                        const h = parseFloat(v);
-                        const cur = getMirrorInfo();
-                        setMirrorSize(cur.width, h);
-                    },
-                    'lucide:move-vertical'
-                );
-                addModeSlider(
-                    wrapper,
-                    t('env.reflectionQuality'),
-                    [
-                        { value: 'high', label: t('env.reflectionQualityHigh') },
-                        { value: 'medium', label: t('env.reflectionQualityMedium') },
-                        { value: 'low', label: t('env.reflectionQualityLow') },
-                        { value: 'off', label: t('env.reflectionQualityOff') },
-                    ],
-                    envState.reflectionQuality,
-                    (v) => {
-                        setEnvState({ reflectionQuality: v as 'high' | 'medium' | 'low' | 'off' });
-                        const menu = getSceneMenu();
-                        if (menu) menu.reRender();
-                    },
-                    'lucide:monitor'
-                );
-                const p = info.position;
-                const infoText = info.active
-                    ? `mesh: ${info.meshCount} | pos: (${p[0].toFixed(1)}, ${p[1].toFixed(1)}, ${p[2].toFixed(1)}) | ${info.width}×${info.height}m @ ${info.resolution}px`
-                    : t('scene.mirrorHint');
-                slideRow(wrapper, 'lucide:info', infoText, false, () => {}, undefined, undefined, false, undefined, { testId: 'menu.scene.mirrorInfo' });
-            }
+            addModeSlider(
+                wrapper,
+                t('scene.mirrorHeight'),
+                Array.from({ length: 10 }, (_, i) => ({
+                    value: String(1 + i * 2),
+                    label: `${1 + i * 2}m`,
+                })),
+                String(info.height),
+                (v) => {
+                    const h = parseFloat(v);
+                    const cur = getMirrorInfo();
+                    setMirrorSize(cur.width, h);
+                },
+                'lucide:move-vertical'
+            );
+            const p = info.position;
+            const infoText = info.active
+                ? `mesh: ${info.meshCount} | pos: (${p[0].toFixed(1)}, ${p[1].toFixed(1)}, ${p[2].toFixed(1)}) | ${info.width}×${info.height}m @ ${info.resolution}px`
+                : t('scene.mirrorHint');
+            slideRow(wrapper, 'lucide:info', infoText, false, () => {}, undefined, undefined, false, undefined, { testId: 'menu.scene.mirrorInfo' });
 
             container.appendChild(wrapper);
         },
@@ -280,17 +246,23 @@ function buildSceneRootItems(): PopupRow[] {
             bind: () => isMirrorActive(),
         },
     });
+    // 反射质量（统一控制：水面 + 地面 + 镜面反射）
     items.push({
-        kind: 'action',
-        label: t('scene.undo'),
-        icon: 'lucide:undo-2',
-        target: 'scene:undo',
-    });
-    items.push({
-        kind: 'action',
-        label: t('scene.saveScene'),
-        icon: 'lucide:save',
-        target: SCENE_EVENTS.SAVE,
+        kind: 'modeSlider',
+        label: t('env.reflectionQuality'),
+        icon: 'lucide:monitor',
+        target: '',
+        modeOptions: [
+            { value: 'off', label: t('env.reflectionQualityOff') },
+            { value: 'low', label: t('env.reflectionQualityLow') },
+            { value: 'medium', label: t('env.reflectionQualityMedium') },
+            { value: 'high', label: t('env.reflectionQualityHigh') },
+        ],
+        modeValue: envState.reflectionQuality,
+        onModeChange: (v) => {
+            setEnvState({ reflectionQuality: v as 'high' | 'medium' | 'low' | 'off' });
+            getSceneMenu()?.updateControls();
+        },
     });
     return items;
 }
