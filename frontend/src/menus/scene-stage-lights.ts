@@ -492,12 +492,11 @@ function buildStageLightSchema(): MenuNode[] {
                         title: t('scene.shadow'),
                         icon: 'lucide:cloud',
                         defaultOpen: false,
-                        openWhen: state.shadowEnabled,
                         headerToggle: {
                             value: state.shadowEnabled,
                             onChange: (v) => {
                                 setStageLightState({ shadowEnabled: v }, state.id);
-                                reRenderSceneMenu();
+                                getSceneMenu()?.updateControls();
                             },
                             bind: () => {
                                 const ls = getStageLights();
@@ -506,75 +505,73 @@ function buildStageLightSchema(): MenuNode[] {
                             },
                         },
                         renderContent: (ci) => {
-                            if (state.shadowEnabled) {
-                                addModeSlider(
-                                    ci,
-                                    t('scene.shadowType'),
-                                    [
-                                        { value: 'hard', label: t('scene.hardShadow') },
-                                        { value: 'soft', label: t('scene.softShadow') },
-                                        { value: 'pcf', label: 'PCF' },
-                                    ],
-                                    state.shadowType,
-                                    (v) => {
-                                        setStageLightState(
-                                            { shadowType: v as 'hard' | 'soft' | 'pcf' },
-                                            state.id
-                                        );
+                            addModeSlider(
+                                ci,
+                                t('scene.shadowType'),
+                                [
+                                    { value: 'hard', label: t('scene.hardShadow') },
+                                    { value: 'soft', label: t('scene.softShadow') },
+                                    { value: 'pcf', label: 'PCF' },
+                                ],
+                                state.shadowType,
+                                (v) => {
+                                    setStageLightState(
+                                        { shadowType: v as 'hard' | 'soft' | 'pcf' },
+                                        state.id
+                                    );
+                                },
+                                'lucide:cloud',
+                                undefined,
+                                {
+                                    bind: () => {
+                                        const ls = getStageLights();
+                                        const s =
+                                            ls.find((l) => l.id === getActiveStageLightId()) ??
+                                            ls[0];
+                                        return s?.shadowType ?? 'hard';
                                     },
-                                    'lucide:cloud',
-                                    undefined,
-                                    {
-                                        bind: () => {
-                                            const ls = getStageLights();
-                                            const s =
-                                                ls.find((l) => l.id === getActiveStageLightId()) ??
-                                                ls[0];
-                                            return s?.shadowType ?? 'hard';
-                                        },
-                                    }
-                                );
-                                addSliderRow(
-                                    ci,
-                                    t('scene.resolution'),
-                                    state.shadowResolution,
-                                    256,
-                                    4096,
-                                    256,
-                                    () => {},
-                                    'lucide:grid-3x3',
-                                    (v) => setStageLightState({ shadowResolution: v }, state.id),
-                                    {
-                                        bind: () => {
-                                            const ls = getStageLights();
-                                            const s =
-                                                ls.find((l) => l.id === getActiveStageLightId()) ??
-                                                ls[0];
-                                            return s?.shadowResolution ?? 1024;
-                                        },
-                                    }
-                                );
-                                addSliderRow(
-                                    ci,
-                                    t('scene.shadowBias'),
-                                    state.shadowBias,
-                                    0,
-                                    0.01,
-                                    0.0001,
-                                    () => {},
-                                    'lucide:move',
-                                    (v) => setStageLightState({ shadowBias: v }, state.id),
-                                    {
-                                        bind: () => {
-                                            const ls = getStageLights();
-                                            const s =
-                                                ls.find((l) => l.id === getActiveStageLightId()) ??
-                                                ls[0];
-                                            return s?.shadowBias ?? 0.001;
-                                        },
-                                    }
-                                );
-                            }
+                                }
+                            );
+                            addSliderRow(
+                                ci,
+                                t('scene.resolution'),
+                                state.shadowResolution,
+                                256,
+                                4096,
+                                256,
+                                () => {},
+                                'lucide:grid-3x3',
+                                (v) => setStageLightState({ shadowResolution: v }, state.id),
+                                {
+                                    bind: () => {
+                                        const ls = getStageLights();
+                                        const s =
+                                            ls.find((l) => l.id === getActiveStageLightId()) ??
+                                            ls[0];
+                                        return s?.shadowResolution ?? 1024;
+                                    },
+                                }
+                            );
+                            addSliderRow(
+                                ci,
+                                t('scene.shadowBias'),
+                                state.shadowBias,
+                                0,
+                                0.01,
+                                0.0001,
+                                () => {},
+                                'lucide:move',
+                                (v) => setStageLightState({ shadowBias: v }, state.id),
+                                {
+                                    bind: () => {
+                                        const ls = getStageLights();
+                                        const s =
+                                            ls.find((l) => l.id === getActiveStageLightId()) ??
+                                            ls[0];
+                                        return s?.shadowBias ?? 0.001;
+                                    },
+                                }
+                            );
                         },
                     });
                 });

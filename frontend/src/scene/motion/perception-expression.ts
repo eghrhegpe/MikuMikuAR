@@ -6,7 +6,9 @@ import type { Emotion, MmdModelLike } from './perception-shared';
 /** 情绪 → morph 名候选（按优先级降序匹配，复用 matchBone） */
 const EMOTION_MORPH_CANDIDATES: Record<Exclude<Emotion, 'neutral'>, string[]> = {
     happy: ['笑み', 'Smile', 'smile', 'にっこり', 'Happy'],
-    sad: ['困り', 'Troubled', 'troubled', '悲しい', 'Sad'],
+    // 「困り」语义为「困扰/为难」非「悲伤」，已修正为悲伤系候选
+    // （与 proc-motion-autodance-emotion.ts 的 sad 候选保持一致）
+    sad: ['悲しみ', 'sad', 'cry', '泣き', '哀しみ', 'Sad', '悲しい'],
     surprised: ['驚き', 'Surprised', 'surprised', 'びっくり', 'Surprise'],
     angry: ['怒り', 'Angry', 'angry', '怒', 'Angry2'],
 };
@@ -17,7 +19,7 @@ const MICRO_EXPR_PERIOD = 4.0;
 const MICRO_EXPR_PEAK = 0.12;
 
 /** 上次写入的 morph 名（用于关闭/切换情绪时复位，防止残留冻结） */
-export let _lastEmotionMorphName: string | null = null;
+let _lastEmotionMorphName: string | null = null;
 
 /** 内部 setter（供 perception.ts 在 deactivate/reset 时调用） */
 export function _resetLastEmotionMorphName(): void {

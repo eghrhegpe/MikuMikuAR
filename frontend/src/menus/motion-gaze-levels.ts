@@ -219,6 +219,15 @@ const gazeSchema: MenuNode[] = [
             },
         ],
     },
+    // ── 重心微动（[doc:adr-079] Phase 2，从 idle 躯干微晃迁入） ──
+    {
+        id: 'perception:balanceSway',
+        kind: 'folder',
+        label: 'motion.balanceSway',
+        icon: 'lucide:move-3d',
+        headerToggle: { bind: 'perception.balanceSwayEnabled', onChange: withActivate },
+        children: [],
+    },
     // ── Lip-sync（已有 headerToggle 模式） ──
     {
         id: 'perception:lipsync',

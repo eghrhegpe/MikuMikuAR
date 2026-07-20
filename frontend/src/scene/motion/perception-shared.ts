@@ -18,6 +18,8 @@ export interface PerceptionState {
     eyeTrackingEnabled: boolean;
     microExpressionEnabled: boolean;
     emotion: Emotion;
+    // 重心微动（[doc:adr-079] Phase 2：从 idle 躯干微晃迁入感知层）
+    balanceSwayEnabled: boolean;
     // Lip-sync（从 lipsync-bridge.ts 迁入）
     lipSyncEnabled: boolean;
     lipSyncSensitivity: number; // 0..1，振幅阈值
@@ -45,6 +47,7 @@ export const DEFAULT_PERCEPTION_STATE: PerceptionState = {
     eyeTrackingEnabled: true,
     microExpressionEnabled: true,
     emotion: 'neutral',
+    balanceSwayEnabled: true,
     lipSyncEnabled: false,
     lipSyncSensitivity: 0.2,
     lipSyncIntensity: 0.8,
@@ -52,7 +55,7 @@ export const DEFAULT_PERCEPTION_STATE: PerceptionState = {
     // 可调参数默认值（与原硬编码常量一致）
     breathFrequency: 0.3,
     breathAmplitude: 0.02,
-    blinkFrequency: 0.15,
+    blinkFrequency: 0.25, // 生理合理（每 4 秒一次，下界）
     blinkAmplitude: 1.0,
     headGazeMaxYaw: 75,
     headGazeMaxPitch: 35,

@@ -418,25 +418,6 @@ export function buildWaterLevel(): PopupLevel {
                                 },
                                 icon: 'lucide:sliders-horizontal',
                             },
-                            {
-                                id: 'env:water:reflectQuality',
-                                kind: 'modeSlider',
-                                label: 'env.reflectionQuality',
-                                control: {
-                                    bind: 'env.reflectionQuality',
-                                    options: [
-                                        { value: 'high', label: 'env.reflectionQualityHigh' },
-                                        { value: 'medium', label: 'env.reflectionQualityMedium' },
-                                        { value: 'low', label: 'env.reflectionQualityLow' },
-                                        { value: 'off', label: 'env.reflectionQualityOff' },
-                                    ],
-                                    onChange: () => {
-                                        disposeWater();
-                                        createWater(envState);
-                                    },
-                                },
-                                icon: 'lucide:gauge',
-                            },
                         ],
                     },
                 ];

@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => {
         eyeTrackingEnabled: true,
         microExpressionEnabled: true,
         emotion: 'neutral',
+        balanceSwayEnabled: true,
         lipSyncEnabled: false,
         lipSyncSensitivity: 0.2,
         lipSyncIntensity: 0.8,
@@ -24,7 +25,7 @@ const mocks = vi.hoisted(() => {
         // 感知层可调参数默认值
         breathFrequency: 0.3,
         breathAmplitude: 0.02,
-        blinkFrequency: 0.15,
+        blinkFrequency: 0.25,
         blinkAmplitude: 1.0,
         headGazeMaxYaw: 75,
         headGazeMaxPitch: 35,

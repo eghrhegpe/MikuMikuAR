@@ -54,6 +54,11 @@ export function migratePerceptionFromProcMotion(
 ): Partial<PerceptionState> {
     const t = old.boneToggles;
     const lipSync = migrateLipSyncFromOldState(old);
+    // 旧存档 boneToggles 任一躯干微动开关为 true → balanceSwayEnabled=true；
+    // 否则默认 true（与 DEFAULT_PERCEPTION_STATE 一致，always-on 语义）
+    // [doc:adr-079] Phase 2：center/upper2/waist/allParent 已迁入感知层
+    const hasBalanceToggles = !!(t?.center || t?.upper2 || t?.waist || t?.allParent);
+    const balanceSwayEnabled = t == null ? true : hasBalanceToggles;
     return {
         eyeTrackingEnabled: old.eyeTrackingEnabled ?? true,
         headTrackingEnabled: old.headTrackingEnabled ?? true,
@@ -61,6 +66,7 @@ export function migratePerceptionFromProcMotion(
         breathEnabled: true,
         microExpressionEnabled: t?.emotion ?? true,
         emotion: 'neutral',
+        balanceSwayEnabled,
         lipSyncEnabled: lipSync.lipSyncEnabled,
         lipSyncSensitivity: lipSync.lipSyncSensitivity,
         lipSyncIntensity: lipSync.lipSyncIntensity,

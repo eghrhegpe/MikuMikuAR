@@ -29,9 +29,10 @@ import {
     _clampEyeGazeTarget,
     applyGazeWasm,
 } from './perception-gaze';
-import { _applyBreathing } from './perception-breathing';
+import { _applyBreathing, _resetBreathingState } from './perception-breathing';
 import { _applyBlinking } from './perception-blinking';
 import { _applyMicroExpression, _resetLastEmotionMorphName } from './perception-expression';
+import { _applyBalanceSway, _resetBalanceSwayState } from './perception-balance';
 import { clamp01 } from '@/core/utils';
 import { logWarn } from '@/core/logger';
 import { _applyLipSync } from './perception-lipsync';
@@ -78,6 +79,10 @@ export function activatePerception(modelId?: string): void {
 
     // 注销旧 observer
     deactivatePerception();
+
+    // 重置 balance / breathing 增量状态，避免跨模型残留（与 _resetLastEmotionMorphName 同款守卫）
+    _resetBalanceSwayState();
+    _resetBreathingState();
 
     perceptionModelId = targetId;
     const mmdModel = inst.mmdModel;
@@ -133,7 +138,15 @@ export function activatePerception(modelId?: string): void {
             logWarn('perception', 'micro-expression 异常:', (e as Error)?.message);
         }
 
-        // 4. Lip-sync（无条件调用，内部处理关闭复位）
+        // 4. 重心微动（balance sway，[doc:adr-079] Phase 2）
+        //    内部使用 delta 增量叠加，不会覆盖 VMD/Bone Override 的躯干基准旋转
+        try {
+            _applyBalanceSway(mmdModel, time, perceptionState.balanceSwayEnabled);
+        } catch (e) {
+            logWarn('perception', 'balance-sway 异常:', (e as Error)?.message);
+        }
+
+        // 5. Lip-sync（无条件调用，内部处理关闭复位）
         try {
             _applyLipSync(
                 mmdModel,
@@ -176,6 +189,8 @@ export function deactivatePerception(): void {
         perceptionObserver = null;
     }
     _resetLastEmotionMorphName(); // 模型切换时清空，避免旧 morph 名残留
+    _resetBalanceSwayState(); // 重置 balance 增量状态，避免跨模型残留导致塌地
+    _resetBreathingState(); // 重置 breathing 增量状态，避免跨模型残留导致旋转冻结
     perceptionModelId = null;
     logWarn('perception', '已注销');
 }
@@ -228,6 +243,12 @@ export function setEyeTrackingEnabled(v: boolean): void {
 /** 设置微表情开关 */
 export function setMicroExpressionEnabled(v: boolean): void {
     perceptionState = { ...perceptionState, microExpressionEnabled: v };
+    triggerAutoSave();
+}
+
+/** 设置重心微动开关（[doc:adr-079] Phase 2） */
+export function setBalanceSwayEnabled(v: boolean): void {
+    perceptionState = { ...perceptionState, balanceSwayEnabled: v };
     triggerAutoSave();
 }
 

@@ -47,25 +47,15 @@ import {
     getFov as getFovState,
     setFov as setFovState,
 } from './camera-state';
+import type {
+    CameraMode, CameraControl, CameraBehavior, ScriptedSubMode,
+    OrbitParams, FreeflyParams, SurroundParams, ConcertParams, CameraPreset,
+} from './camera-state';
 // 注：setFov/setCameraControl/setCameraBehavior/isAutoCameraEnabled 保留本地定义（含 scene 依赖逻辑）
 // setOrbitParams/setFreeflyParams/setConcertParams/setSurroundParams 保留本地定义（需同步 live camera）
 
-// ======== Types ========
-/**
- * @deprecated ADR-100：单枚举混淆「控制方案 × 运动行为」两轴，保留为兼容别名。
- * 新代码请用 {@link CameraControl} × {@link CameraBehavior}。双写于 `core/types.ts`。
- */
-export type CameraMode =
-    'orbit' | 'freefly' | 'surround' | 'concert' | 'oneshot' | 'vmd' | 'ar' | 'beatcut';
-
-/** ADR-100 轴 A — 控制方案（相机类 + 输入）。双写于 `core/types.ts`。 */
-export type CameraControl = 'orbit' | 'freefly' | 'ar';
-
-/** ADR-100 轴 B — 运动行为（仅对 orbit/ArcRotate 生效，初版互斥）。双写于 `core/types.ts`。 */
-export type CameraBehavior = 'none' | 'turntable' | 'concert' | 'beatcut' | 'scripted';
-
-/** ADR-100 §6.4 — scripted 行为子态。 */
-export type ScriptedSubMode = 'loop' | 'oneshot';
+// ======== Types (单源定义在 camera-state.ts，此处 re-export) ========
+// LEGACY_MODE_MAP / deriveLegacyMode 含场景逻辑，保留本地定义
 
 /** ADR-100 §6.1 — 旧模式 → 双轴映射（迁移 / shim 共用）。 */
 export const LEGACY_MODE_MAP: Record<
@@ -111,50 +101,6 @@ export function deriveLegacyMode(
         default:
             return 'orbit';
     }
-}
-
-/**
- * Orbit camera parameters.
- * targetHeight: 相对当前聚焦模型中心的垂直偏移（0 = 正中，正 = 抬高，负 = 压低）。
- *   旧版本为绝对世界 Y；现改为相对偏移，使换不同中心高度的模型时无需反复手调。
- */
-export interface OrbitParams {
-    targetHeight: number;
-    distance: number;
-    beta: number;
-}
-
-/** Freefly camera parameters. */
-export interface FreeflyParams {
-    speed: number;
-    angularSensibility: number;
-}
-
-/** Surround (turntable) camera parameters — automatic full-circle orbit around target. */
-export interface SurroundParams {
-    radius: number;
-    height: number;
-    speed: number;
-}
-
-/** Concert (fan-cam) camera parameters — limited horizontal sweep + sinusoidal vertical bob. */
-export interface ConcertParams {
-    radius: number; // distance to target
-    height: number; // target Y
-    sweepAngle: number; // total horizontal sweep in degrees (default 120 → ±60°)
-    sweepSpeed: number; // horizontal sweep frequency multiplier
-    baseBeta: number; // center pitch in radians (default PI/3)
-    bobAmplitude: number; // vertical oscillation amplitude in degrees
-    bobSpeed: number; // vertical oscillation frequency multiplier
-}
-
-/** Per-mode parameter bundle, persisted with scene files. */
-export interface CameraPreset {
-    mode?: CameraMode;
-    orbit: OrbitParams;
-    freefly: FreeflyParams;
-    surround: SurroundParams;
-    concert: ConcertParams;
 }
 
 // ======== Runtime Preset State ========
@@ -1410,6 +1356,10 @@ function _onAutoCameraBeat(): void {
 }
 
 // ======== Re-exports from camera-state.ts (backward compat) ========
+export type {
+    CameraMode, CameraControl, CameraBehavior, ScriptedSubMode,
+    OrbitParams, FreeflyParams, SurroundParams, ConcertParams, CameraPreset,
+} from './camera-state';
 export {
     defaultCameraPreset,
     getCameraMode, getCameraControl, getCameraBehavior, getScriptedSubMode,
