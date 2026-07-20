@@ -109,6 +109,71 @@ class BoneOverrideStore {
 
 ---
 
+## 六·补 语义迁移映射表（Phase 2 step 2 前置决策）
+
+Phase 2 step 2 把 `registry.claimBones` / `_boneConflicts` / `releaseOwnedBones` 替换为 `BoneOverrideStore` 对应 API。两侧语义存在 **6 处差异**，未对齐即接入会导致 **仲裁翻转 / bake 静默跳过 / 冲突幽灵 / banner 缺卡片** 四类静默回归。本表逐项锁定迁移决策，step 2 实施须逐条对照。
+
+### 表 1：核心语义对照
+
+| # | 维度 | registry 现状 | store 现状 | 迁移决策 | 代码改动点 |
+|---|------|--------------|-----------|---------|-----------|
+| **M1** | 优先级方向 | `myPriority < otherPriority` → 小=高（registry.ts:204） | 已对齐为 `<`（bone-override-store.ts:124） | ✅ **已锁定一致**，接入零翻转 | 无（P1 已修） |
+| **M2** | priority 来源 | `_registry.get(moduleId)?.priority ?? 999`（registry.ts:183-184） | 调用方显式传入（claimBones 第 3 参） | step 2 中 `prepareBake` 显式透传 `mod.priority`；无 priority 的模块按 999（最低）处理 | module-base.ts:235 |
+| **M3** | **返回值语义** | 返 `claimed` = 本模块**现拥有**骨（含已拥有+新认领+抢占），不含落败骨（registry.ts:186/228/230） | 当前返 `preempted` = 本模块**从他人抢来**的骨（bone-override-store.ts:147） | 🔴 **须翻转为 `claimed`**，否则 6 个 bake 的 `claimed.includes()` / `claimed.length===0` 判定全部错位（riding-model:77 会误跳过整个 bake） | bone-override-store.ts `claimBones` 返回集 + 单测（bone-override-store.test.ts:29-51）同步改 |
+| **M4** | **冲突记录视角** | 双视角：抢占方记「落败方视角」(registry.ts:211) + 落败方记「自身视角」(registry.ts:220)，均 keyed by **loser** | 仅记赢家视角一次（bone-override-store.ts:129-136），落败分支不记录（:137-139） | 🔴 **须补落败方视角**，使 store `getConflicts` 按 loser 分组后与 registry 输出一致（B banner 才能显示「我想抢但被抢」卡片） | bone-override-store.ts `claimBones` 落败分支补 `_recordConflict` |
+| **M5** | **释放清冲突** | `releaseOwnedBones` 调 `_clearConflict(modelId, moduleId)` 清该 loser 卡片（registry.ts:296） | `releaseBones` **不清 `_conflicts`**（bone-override-store.ts:150-162），仅 `disposeModel` 清 | 🔴 **须补**：`releaseBones` 末尾清 `loserModuleId===moduleId` 的冲突（对齐 registry，避免幽灵冲突累积） | bone-override-store.ts `releaseBones` |
+| **M6** | **setSlot/clearSlot 所有权守卫** | 无公开 setSlot；槽位仅经 claimBones 内部 `clearBoneOverride` 管理，外部无法绕过 | 公开 `setSlot`/`clearSlot` 无守卫，外部可写/清未认领骨的 slot → R3「幽灵 slot」换壳 | 🟠 **须加守卫**：`setSlot` 要求 `slot.sourceModuleId` 已认领该骨，否则 warn+忽略；`clearSlot` 要求调用方持有所有权 | bone-override-store.ts `setSlot`/`clearSlot` |
+| **M7** | release 行为差 | `releaseOwnedBones` 只清 ownedBones 记录，**不**清引擎 slot（registry.ts:288 注释明示由调用方负责） | `releaseBones` 额外 `clearSlot`（bone-override-store.ts:157） | step 2 中 store 已合并清 slot，调用方原 `clearBoneOverride` 冗余调用可删（或保留为无害双清，须验证无副作用） | module-base / 各 disable 路径 |
+| **M8** | **BoneConflict.stage 字段** | 接口 `BoneConflict{bone,byModule}`，无 stage（registry.ts:240-245） | 接口 `BoneConflict{modelId,bone,loserModuleId,winnerModuleId,loserPriority,winnerPriority}`，无 stage（bone-override-store.ts:43-50） | 🟡 **须补可选 `winnerStage?`/`loserStage?`**，满足 §九 验收 3「冲突来源可追溯至 stage」；经注入 `stageResolver` 或 claimBones 传入 stage 填充 | bone-override-store.ts 接口 + 构造注入 |
+| **M9** | **priority=0 哨兵歧义** | 无此问题（priority 始终从 `_registry` 读，claimBones 不经 `_ensureModule`） | `_ensureModule(modelId, moduleId, priority=0)` 的 `else if (priority !== 0)` 守卫，priority=0 合法值却不更新（bone-override-store.ts:210） | 🟡 **重构**：`_ensureModule` 去掉 priority 形参，仅首建置默认；`claimBones` 内 `state.priority = priority` 统一权威写入（M1 已含该写入，保留即可） | bone-override-store.ts `_ensureModule`/`claimBones` |
+
+### 表 2：API 名称 / 签名迁移
+
+| registry API | store 等价 | 迁移说明 |
+|--------------|-----------|---------|
+| `claimBones(modelId, moduleId, bones)` | `store.claimBones(modelId, moduleId, priority, bones)` | 增 priority 形参（M2）；返回值改 claimed（M3） |
+| `releaseOwnedBones(modelId, moduleId)` | `store.releaseBones(modelId, moduleId)` | 行为含清 slot（M7）+ 清冲突（M5） |
+| `getOwnedBones(modelId, moduleId)` | `store.getOwnedBones(modelId, moduleId)` | 签名一致 |
+| `getModuleConflicts(modelId, moduleId)` | `store.getConflicts(modelId)` 后按 `loserModuleId` 分组 | 形状差异，banner 侧包 `groupByLoser` 适配器（M4） |
+| `getAllConflicts(modelId)` | `store.getConflicts(modelId)` | store 已扁平化；banner 分组即可 |
+| `getConflictCount(modelId)` | `store.getConflicts(modelId).length` | 直接替代 |
+| `clearBoneOverride(bone, modelId)`（引擎级） | `store.clearSlot(modelId, bone)` | store 的 slot 即覆盖；M7 双清须验证 |
+| `_boneConflicts` 内部 | `store._conflicts`（私有） | 不再暴露，UI 经 `getConflicts` |
+
+### 表 3：B banner（motion-override-levels.ts）迁移
+
+- 现状：`getAllConflicts(modelId)` 返 `Array<{moduleId, conflicts: BoneConflict[]}>`，按 loser 渲染「⚠ {moduleId}: {bone}←{byModule}」。
+- 迁移：`getConflicts(modelId)` 返扁平 `BoneConflict[]`，banner 内须 `groupByLoser(edges)` 还原 `{loserModuleId, edges}` 结构后再渲染；**store 须按 M4 双视角记录**，否则 only-winner 视角会丢「落败方卡片」。
+- stage 展示：M8 落地后，卡片可附加 `(loserStage)` / `(winnerStage)` 后缀，满足 §九 验收 3。
+
+### 表 4：调用点清单（step 2 须逐处改造）
+
+| 调用点 | 当前 | step 2 改造 |
+|--------|------|------------|
+| `module-base.ts:235` `prepareBake` | `claimBones(modelId, moduleId, bones)` | `store.claimBones(modelId, moduleId, mod.priority, bones)`；返回值语义由 M3 保证 |
+| `sway-motion.ts:91` | `claimBones(modelId, MODULE_ID, MANAGED_BONES)` | 同上，priority 取 sway 模块 `def.priority` |
+| `module-base.ts` disable 路径 | `releaseOwnedBones(...)` | `store.releaseBones(...)`（含清 slot+冲突，M5/M7） |
+| `motion-override-levels.ts` `updateConflictBanner` | `getAllConflicts` | `getConflicts` + `groupByLoser` 适配器（M4） |
+| 各 bake（body-posture/hand-symmetry/position-offset/riding-model/finger-pose/sway-motion） | `claimed.includes(bone)` / `claimed.length===0` | 依赖 M3（store 返 claimed）即零改；不依赖返回值顺序 |
+
+### 决策状态汇总
+
+| 决策 | 状态 | 接入前必须？ |
+|------|------|------------|
+| M1 priority 方向 | ✅ 已锁（P1 修） | 已满足 |
+| M2 priority 来源 | 决策明确 | 是（prepareBake 透传） |
+| M3 返回值翻 claimed | 🔴 待改 | **是（否则 bake 静默跳过）** |
+| M4 冲突双视角 | 🔴 待改 | 是（否则 banner 缺卡片） |
+| M5 releaseBones 清冲突 | 🔴 待改 | 是（否则幽灵冲突） |
+| M6 setSlot/clearSlot 守卫 | 🟠 待改 | 是（否则 R3 换壳） |
+| M7 release 清 slot 双清验证 | 决策明确 | 是（验证无害） |
+| M8 BoneConflict.stage | 🟡 待改 | 是（满足 §九 验收 3） |
+| M9 priority=0 哨兵 | 🟡 待改 | 建议（消除歧义） |
+
+> **结论**：M1 已锁；M2/M7 决策明确；**M3/M4/M5/M6 为接入前置硬约束**（不落地即静默回归）；M8/M9 为验收/健壮性补全。step 2 实施前须先完成 M3–M6 的 store 内部改动（含其单测同步），再动 runtime 调用点（表 4）。
+
+---
+
 ## 七、多写者并发风险（本 ADR 的现实触发点）
 
 审计期间观测到第二个 AI 并发提交 `motion-modules/*`（7f0c1a18 `getModuleMeta/inspectModule`）。若本 ADR 的 A/E 在**未协调**情况下直接改 `registry.ts`/`bone-override.ts`，将与对方改动形成冲突合并，正是 P3/P4 路径的活体版。
@@ -137,6 +202,7 @@ class BoneOverrideStore {
 | Phase 1 step 2：接入运行时（bone-override/perception 改为管线层 + 单驱动 observer） | `02c1269e` | ✅ 已落地 | `bone-override.ts` 注册 `'bone-override'` 层 + 单一驱动 observer（每帧 `pipeline.runFrame`）；`perception.ts` 注册 `'perception'` 层（模型聚焦时动态 register）。R1 根治：覆写序由 stage 决定，与注册时序解耦。`scene.ts` 零改动 |
 | R2 帧钩子显式 order 排序 | （本提交） | ✅ 已落地 | `bone-override.ts`：`_frameHooks` 由 `Set` 改为带 `order` 数组，按 `order` 升序 + 快照遍历；导出 `FRAME_HOOK_ORDER`；三模块（sway/riding/hand-symmetry）传入显式权重。R2 根治：同骨获胜者由声明顺序决定，不再依赖注册次序。`motion-frame-hooks.test.ts` 4 例锁死 |
 | Phase 2 step 2：运行时接入 | — | ⏸ 阻塞 | 需迁移 `registry.ts`/`module-base.ts`/`motion-intent.ts` 三处读写，待与 `motion-modules/*` 写者协调 |
+| 语义迁移映射表（六·补） | （本提交） | ✅ 已立 | M1 已锁（P1 修）；M2/M7 决策明确；**M3–M6 为接入前置硬约束**（返回值翻 claimed / 冲突双视角 / release 清冲突 / setSlot 守卫）；M8/M9 为验收补全。step 2 实施前须先落 M3–M6 的 store 内部改动（含单测同步） |
 
 > **审核修复记录（2026-07-20）**：据 ADR-147 进度风险审核，已落地 3 项修复（均仅内核/单测，未接入运行时）：
 > - **P1 priority 语义对齐**：`bone-override-store.ts` 抢占判定由 `priority > conflict.priority` 改为 `priority < conflict.priority`，与 `registry.ts:204`「数值越小优先级越高」一致，消除 Phase 2 step 2 接入时的仲裁整体翻转风险；配套 store 单测数值同步翻转。
