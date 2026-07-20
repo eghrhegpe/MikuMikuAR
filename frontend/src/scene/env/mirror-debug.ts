@@ -15,6 +15,7 @@ import {
 } from '@babylonjs/core';
 import { getScene } from './env-context';
 import { envState } from '@/core/config';
+import { setEnvState } from './env-bridge';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 
 let _mirrorMesh: Mesh | null = null;
@@ -85,7 +86,12 @@ export function createMirror(): void {
     _mirrorMesh.isPickable = false;
 
     // MirrorTexture：反射全部 mesh
-    _mirrorRT = new MirrorTexture('mirrorRT', RESOLUTION_MAP[envState.reflectionQuality] ?? 512, scene, false);
+    _mirrorRT = new MirrorTexture(
+        'mirrorRT',
+        RESOLUTION_MAP[envState.reflectionQuality] ?? 512,
+        scene,
+        false
+    );
     _mirrorRT.level = 1; // 完全反射
     _mirrorRT.adaptiveBlurKernel = 0; // 关闭模糊，锐利反射便于排查
     updateMirrorClearColor(); // 根据当前天空模式设置 clearColor
@@ -186,11 +192,18 @@ export function setMirrorRotationY(rad: number): void {
 }
 
 export function setMirrorResolution(res: number): void {
-    // 统一反射分辨率：将像素值反向映射到 quality 枚举
-    if (res >= 2048) envState.reflectionQuality = 'high';
-    else if (res >= 1024) envState.reflectionQuality = 'medium';
-    else if (res >= 512) envState.reflectionQuality = 'low';
-    else envState.reflectionQuality = 'off';
+    // 统一反射分辨率：将像素值反向映射到 quality 枚举，经 setEnvState 写入（不直接写 envState）
+    let quality: 'high' | 'medium' | 'low' | 'off';
+    if (res >= 2048) {
+        quality = 'high';
+    } else if (res >= 1024) {
+        quality = 'medium';
+    } else if (res >= 512) {
+        quality = 'low';
+    } else {
+        quality = 'off';
+    }
+    setEnvState({ reflectionQuality: quality });
     // 需要重建才生效
     if (_mirrorRT) {
         const wasActive = isMirrorActive();

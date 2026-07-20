@@ -13,12 +13,10 @@
 //   实际 PMX 骨骼名可能为「左親指０/左親指１/左親指２」等变体，
 //   bake() 内 candidate 列表按优先级匹配，缺失则跳过
 
-import type { MenuNode } from '@/menus/menu-schema';
 import type { ParamValue } from '@/core/types';
 import { setBoneOverride } from '../bone-override';
-import { registerModule, getModuleState, claimBones } from './registry';
-import type { MotionOverrideModule, ModuleMeta } from './types';
-import { createModuleBase } from './module-base';
+import type { MotionOverrideModule, ModuleMeta, ModuleDef } from './types';
+import { createModuleBase, createModuleShell, prepareBake } from './module-base';
 
 const MODULE_ID = 'finger-pose';
 
@@ -72,15 +70,15 @@ const MANAGED_BONES = buildCandidateBones();
 
 /** 烘焙：将预设写入指骨 */
 function bake(modelId: string): void {
-    const state = getModuleState(modelId, MODULE_ID);
-    if (!state.enabled) {
+    const prep = prepareBake(modelId, MODULE_ID, MANAGED_BONES);
+    if (!prep) {
         return;
     }
+    const { state, claimed } = prep;
     const presetName = (state.params.preset as string) ?? 'relax';
     const intensity = (state.params.intensity as number) ?? 1;
     const preset = PRESETS[presetName as FingerPreset] ?? PRESETS.relax;
 
-    const claimed = claimBones(modelId, MODULE_ID, MANAGED_BONES);
     if (claimed.length === 0) {
         return;
     }
@@ -115,13 +113,13 @@ function bake(modelId: string): void {
 /** 创建手指姿势模块实例 */
 export function createFingerPoseModule(modelId: string): MotionOverrideModule {
     const base = createModuleBase(modelId, MODULE_ID, DEFAULTS, bake);
-    return {
+    return createModuleShell({
         id: MODULE_ID,
         meta: META,
         priority: 3,
         managedBones: MANAGED_BONES,
 
-        buildSchema(): MenuNode[] {
+        buildSchema: () => {
             return [
                 {
                     id: 'finger-pose:preset',
@@ -160,15 +158,14 @@ export function createFingerPoseModule(modelId: string): MotionOverrideModule {
             ];
         },
 
-        getState: base.getState,
-        setState: base.setState,
-        setParam: base.setParam,
-        enable: base.enable,
-        disable: base.disable,
-    };
+        base,
+    });
 }
 
-/** 注册手指姿势模块 */
-export function registerFingerPose(): void {
-    registerModule(MODULE_ID, META, 3, createFingerPoseModule);
-}
+/** 手指姿势模块注册定义（供 registry BUILTIN_MODULE_DEFS 批量注册） */
+export const FINGER_POSE_DEF: ModuleDef = {
+    id: MODULE_ID,
+    meta: META,
+    priority: 3,
+    factory: createFingerPoseModule,
+};

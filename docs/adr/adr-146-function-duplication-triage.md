@@ -276,11 +276,11 @@
 
 ### P3
 
-- [ ] 6 个 `registerXxx` 函数归零
-- [ ] 6 个工厂末尾 spread 归零
-- [ ] 6 个 bake 头部 4 行模板归零
-- [ ] `env-bridge.ts` setter 全部走 `setEnvState`
-- [ ] `mirror-debug.ts` 不直接写 `envState`
+- [x] 6 个 `registerXxx` 函数归零（改为 `XXX_DEF` 导出 + `BUILTIN_MODULE_DEFS` 聚合，`grep -rn "function register(BodyPosture|HandSymmetry|...)" src` 无匹配）
+- [x] 6 个工厂末尾 spread 归零（统一走 `createModuleShell({id,meta,priority,managedBones,buildSchema,base})`）
+- [x] 6 个 bake 头部 4 行模板归零（统一走 `prepareBake(modelId, MODULE_ID, MANAGED_BONES)` 返回 null 提前 return）
+- [x] `env-bridge.ts` setter 全部走 `setEnvState({...}, true)`（`collisionEnabled`/`bodyCollisionEnabled`/`groundCollisionEnabled`/`timeOfDaySpeed`/`timeOfDayActive`；`setGroundCollisionEnabled` 保留 `applyGroundCollision` 副作用与 `=== value` 守卫；仅剩 2 处 `envState.xxx` 为读取型守卫与注释）
+- [x] `mirror-debug.ts` 不直接写 `envState`（`setMirrorResolution` 改走 `setEnvState({ reflectionQuality })`）
 
 ### 全量
 
@@ -448,3 +448,27 @@ ADR-146 收尾：将 P1 阶段遗留的两个分散反模式彻底归零。
 - 验证：`grep "window.addEventListener('mmar:library-scanned'" src/menus` 仅剩 scene-menu（已在本轮改）+ 其余全部归零；`_mmkuHandler` 全量归零。
 
 验证：`cd frontend && npm run build`（tsc + vite）0 错误（380 模块）；env-water + water-preset-repro + dom 单测 37/37 通过。**未推送**。P2 剩余：主题9（model-material 行内 toggle）。
+
+### 2026-07-20 — P3 阶段：主题12 createModuleShell + BUILTIN_MODULE_DEFS / 主题13 prepareBake / 主题14 setter→setEnvState
+
+用户授权「继续吧」推进 P3 三主题（长期收益项）。全部零/低行为变化，统一复用既有设施。
+
+#### 主题 12：createModuleShell + BUILTIN_MODULE_DEFS 聚合
+- `module-base.ts` 新增 `createModuleShell({id, meta, priority, managedBones, buildSchema, base})`，6 个工厂末尾重复的 `id/meta/priority/managedBones/buildSchema + getState/setState/setParam/enable/disable` spread 归零。
+- 6 个工厂 `registerXxx()` 改为 `export const XXX_DEF: ModuleDef = { id, meta, priority, factory: createXxxModule }`（`types.ts` 新增 `ModuleDef` 接口）。`createXxxModule` 保留 export（被 `motion-modules-timed.test.ts` 引用）。
+- `registry.ts` 用 `BUILTIN_MODULE_DEFS` 在 `initMotionModules` 里一次循环注册，替代 6 个分散 `registerXxx()` 调用。
+
+#### 主题 13：prepareBake 头部守卫
+- `module-base.ts` 新增 `prepareBake(modelId, moduleId, bones): { state, claimed } | null`，消除 6 个 bake 重复的 `getModuleState + enabled 守卫 + claimBones` 头部 4 行模板。返回 null 时 bake 提前 return。
+
+#### 主题 14：env setter → setEnvState({...}, true)
+- `env-bridge.ts` 三个碰撞 setter（`setCollisionEnabled`/`setBodyCollisionEnabled`/`setGroundCollisionEnabled`）+ 三个 time-of-day 方法（`setTimeOfDaySpeed`/`startTimeOfDay`/`stopTimeOfDay`）全部改走 `setEnvState({...}, true)`（skipAutoSave=true，保留原 `triggerAutoSave`/`persistEnvState` 副作用）。
+- `setGroundCollisionEnabled` 保留 `applyGroundCollision()` 副作用调用与 `if (envState.groundCollisionEnabled === value) return` 前置守卫；碰撞字段无 dispatchEnvChange handler 响应（仅自身 getter/ground-collision.ts/schema/defaults/测试消费），迁移安全。
+- `mirror-debug.ts` `setMirrorResolution` 改走 `setEnvState({ reflectionQuality })` 触发重建，不再直接写 `envState`。
+- `_timeOfDayTick` 每帧直接写 `envState.sunAngle` 属 ADR 标注豁免项（性能），保持不变。
+
+#### 关键修复：registry ↔ 工厂循环依赖 TDZ（P3 引入的回归，已修）
+- **症状**：`motion-modules-timed.test.ts` 5 例全失败 `TypeError: Cannot read properties of undefined (reading 'id')` @ `registry.ts` `initMotionModules` → `BUILTIN_MODULE_DEFS` 中 `SWAY_MOTION_DEF` 为 undefined。
+- **根因**：registry 与 6 个工厂模块存在循环依赖（工厂 import registry 取 `getModuleState/claimBones`，registry import 工厂取 `XXX_DEF`）。原实现 `initMotionModules` 调 `registerXxx()`（运行时函数，所有模块已加载，无 TDZ）；P3 重构把注册改成**顶层数组字面量** `BUILTIN_MODULE_DEFS = [...]` 在模块求值期捕获各 DEF 值。当测试**先 import `sway-motion` 再 import `registry`** 时，循环从 sway-motion 侧进入：registry 在求值其数组时 sway-motion 尚未定义 `SWAY_MOTION_DEF`，捕获到 undefined。`registry.test` 因先 import registry 而侥幸通过（顺序依赖，脆弱）。
+- **修复**：将顶层 `const BUILTIN_MODULE_DEFS` 改为惰性求值函数 `getBuiltinModuleDefs()`，在 `initMotionModules()` 调用时（所有模块已加载完成）才读取各 DEF 绑定，彻底规避循环依赖求值顺序 TDZ。仍为单一聚合点，ADR-146 主题12 意图不变。
+- **验证**：`motion-modules-timed.test.ts` 5/5 通过（此前 0/5）；全量 `vitest run` **76 文件 / 1700 用例全绿**；`npm run build`（tsc + vite）0 错误（380 模块）。**未推送**。

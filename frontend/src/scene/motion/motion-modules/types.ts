@@ -45,3 +45,11 @@ export interface MotionOverrideModule {
 
 /** 模块工厂函数：接受 modelId，返回绑定到该模型的模块实例 */
 export type ModuleFactory = (modelId: string) => MotionOverrideModule;
+
+/** 模块注册定义（工厂 + 元信息 + 优先级），用于 BUILTIN_MODULE_DEFS 批量注册 */
+export interface ModuleDef {
+    id: string;
+    meta: ModuleMeta;
+    priority: number;
+    factory: ModuleFactory;
+}

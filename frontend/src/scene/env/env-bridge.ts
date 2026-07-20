@@ -149,7 +149,7 @@ export function getGravityStrength(): number {
 // ======== Collision (WASM Bullet) ========
 
 export function setCollisionEnabled(value: boolean): void {
-    envState.collisionEnabled = value;
+    setEnvState({ collisionEnabled: value }, true);
     triggerAutoSave();
 }
 
@@ -158,7 +158,7 @@ export function getCollisionEnabled(): boolean {
 }
 
 export function setBodyCollisionEnabled(value: boolean): void {
-    envState.bodyCollisionEnabled = value;
+    setEnvState({ bodyCollisionEnabled: value }, true);
     triggerAutoSave();
 }
 
@@ -170,7 +170,7 @@ export function setGroundCollisionEnabled(value: boolean): void {
     if (envState.groundCollisionEnabled === value) {
         return;
     }
-    envState.groundCollisionEnabled = value;
+    setEnvState({ groundCollisionEnabled: value }, true);
     applyGroundCollision();
     triggerAutoSave();
 }
@@ -260,12 +260,12 @@ function _timeOfDayTick(): void {
 export function startTimeOfDay(speed?: number): void {
     if (speed !== undefined) {
         _timeOfDaySpeed = speed;
-        envState.timeOfDaySpeed = speed;
+        setEnvState({ timeOfDaySpeed: speed }, true);
     }
     if (envState.timeOfDayActive && !_timeOfDayPaused) {
         return;
     }
-    envState.timeOfDayActive = true;
+    setEnvState({ timeOfDayActive: true }, true);
     _timeOfDayPaused = false;
     _lastSkySunAngle = envSunAngle;
     _lastAutoLinkSunAngle = envSunAngle;
@@ -275,7 +275,7 @@ export function startTimeOfDay(speed?: number): void {
 }
 
 export function stopTimeOfDay(): void {
-    envState.timeOfDayActive = false;
+    setEnvState({ timeOfDayActive: false }, true);
     _timeOfDayPaused = false;
     if (_unregisterTimeOfDay) {
         _unregisterTimeOfDay();
@@ -295,7 +295,7 @@ export function getTimeOfDaySpeed(): number {
 
 export function setTimeOfDaySpeed(s: number): void {
     _timeOfDaySpeed = s;
-    envState.timeOfDaySpeed = s;
+    setEnvState({ timeOfDaySpeed: s }, true);
 }
 
 /** 从持久化的 envState 恢复 time-of-day 模块变量（启动时调用） */
@@ -575,8 +575,7 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
     // ADR-130 Phase 2.3: 用户手动修改反射质量 → 冻结自动降级
     // 仅当变更来自用户（非自动降级）且当前为 auto 模式时，切换到 custom 模式
     if (!isAutoDegradingReflection() && getPerformanceMode() === 'auto') {
-        const hasReflectionChange =
-            migrated.reflectionQuality !== undefined;
+        const hasReflectionChange = migrated.reflectionQuality !== undefined;
         if (hasReflectionChange) {
             setPerformanceMode('custom');
         }

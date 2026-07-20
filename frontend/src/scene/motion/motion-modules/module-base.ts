@@ -3,6 +3,7 @@
 // 用法: 模块工厂内调用 createModuleBase(modelId, MODULE_ID, DEFAULTS, bake, overrides?)
 // 返回 { getState, setState, setParam, enable, disable }，spread 到模块对象即可
 
+import type { MenuNode } from '@/menus/menu-schema';
 import type { MotionModuleState, ParamValue } from '@/core/types';
 import { clearBoneOverride } from '../bone-override';
 import {
@@ -11,9 +12,10 @@ import {
     releaseOwnedBones,
     getRegisteredModules,
     createModule,
+    claimBones,
 } from './registry';
 import { pushHistory } from './motion-history';
-import type { MotionOverrideModule } from './types';
+import type { MotionOverrideModule, ModuleMeta } from './types';
 
 /** createModuleBase 返回的方法子集（与 MotionOverrideModule 对应方法签名一致） */
 export type ModuleBaseMethods = Pick<
@@ -184,4 +186,52 @@ export function createFrameHookManager() {
             return _hooks.has(modelId);
         },
     };
+}
+
+/**
+ * [doc:adr-146 P3 主题12] 模块实例外壳 — 消除 6 个工厂末尾重复的
+ * `id/meta/priority/managedBones/buildSchema + getState/setState/setParam/enable/disable` spread。
+ * 工厂只需提供 base（createModuleBase 返回值）+ buildSchema 闭包（捕获 modelId）。
+ */
+export interface ModuleShellConfig {
+    id: string;
+    meta: ModuleMeta;
+    priority: number;
+    managedBones: string[];
+    /** buildSchema 闭包，捕获 modelId，返回该模型的 MenuNode[] */
+    buildSchema: () => MenuNode[];
+    base: ModuleBaseMethods;
+}
+
+export function createModuleShell(cfg: ModuleShellConfig): MotionOverrideModule {
+    return {
+        id: cfg.id,
+        meta: cfg.meta,
+        priority: cfg.priority,
+        managedBones: cfg.managedBones,
+        buildSchema: cfg.buildSchema,
+        getState: cfg.base.getState,
+        setState: cfg.base.setState,
+        setParam: cfg.base.setParam,
+        enable: cfg.base.enable,
+        disable: cfg.base.disable,
+    };
+}
+
+/**
+ * [doc:adr-146 P3 主题13] bake 头部守卫 — 消除 6 个 bake 重复的
+ * `getModuleState + enabled 守卫 + claimBones` 模板。
+ * 返回 null 时调用方提前 return；否则返回 state（含 params）与 claimed 骨骼列表。
+ */
+export function prepareBake(
+    modelId: string,
+    moduleId: string,
+    bones: readonly string[]
+): { state: MotionModuleState; claimed: string[] } | null {
+    const state = getModuleState(modelId, moduleId);
+    if (!state.enabled) {
+        return null;
+    }
+    const claimed = claimBones(modelId, moduleId, bones);
+    return { state, claimed };
 }
