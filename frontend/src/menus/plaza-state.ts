@@ -38,7 +38,10 @@ export function getCurrentSite(): PlazaSite | undefined {
 
 export let layer: HTMLElement | null = null;
 export function setLayer(el: HTMLElement | null): void { layer = el; }
-export function getLayer(): HTMLElement | null { return layer; }
+export function getLayer(): HTMLElement | null {
+    if (!layer) layer = document.getElementById('webviewLayer');
+    return layer;
+}
 
 // ======== 代理状态 ========
 
