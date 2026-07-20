@@ -15,13 +15,17 @@
 //   - 足: 左足/右足 踏板位置（autoPedal 时由每帧钩子按 pedalSpeed 循环驱动，否则用 pedalAngle）
 //   候选骨名覆盖常见 PMX 变体（左ひざ/左膝 等）
 
-import type { MenuNode } from '@/menus/menu-schema';
 import type { ParamValue } from '@/core/types';
 import { setBoneOverride, registerBoneOverrideFrameHook } from '../bone-override';
-import { registerModule, getModuleState, claimBones, getOwnedBones } from './registry';
-import type { MotionOverrideModule, ModuleMeta } from './types';
+import { getModuleState, getOwnedBones } from './registry';
+import type { MotionOverrideModule, ModuleMeta, ModuleDef } from './types';
 import { computePedalPhase, computeFootPitch } from './motion-math';
-import { createModuleBase, createFrameHookManager } from './module-base';
+import {
+    createModuleBase,
+    createFrameHookManager,
+    createModuleShell,
+    prepareBake,
+} from './module-base';
 
 const MODULE_ID = 'riding-model';
 
@@ -59,17 +63,17 @@ const MANAGED_BONES = ['腰', '左ひざ', '右ひざ', '左膝', '右膝', '左
 
 /** 烘焙：将骑行静态姿态（腰/膝）写入骨骼；足部由 ensureActive 决定是否交给帧钩子 */
 function bake(modelId: string): void {
-    const state = getModuleState(modelId, MODULE_ID);
-    if (!state.enabled) {
+    const prep = prepareBake(modelId, MODULE_ID, MANAGED_BONES);
+    if (!prep) {
         return;
     }
+    const { state, claimed } = prep;
     const presetName = (state.params.preset as string) ?? 'bicycle';
     const saddleHeight = (state.params.saddleHeight as number) ?? 0.6;
     const pedalAngle = (state.params.pedalAngle as number) ?? 0;
     const autoPedal = (state.params.autoPedal as boolean) ?? false;
     const lean = PRESET_LEAN[presetName as RidingPreset] ?? 20;
 
-    const claimed = claimBones(modelId, MODULE_ID, MANAGED_BONES);
     if (claimed.length === 0) {
         return;
     }
@@ -172,13 +176,13 @@ export function createRidingModelModule(modelId: string): MotionOverrideModule {
             _ridingFrameHooks.unregister(mid);
         },
     });
-    return {
+    return createModuleShell({
         id: MODULE_ID,
         meta: META,
         priority: 3,
         managedBones: MANAGED_BONES,
 
-        buildSchema(): MenuNode[] {
+        buildSchema: () => {
             return [
                 {
                     id: 'riding-model:preset',
@@ -257,15 +261,14 @@ export function createRidingModelModule(modelId: string): MotionOverrideModule {
             ];
         },
 
-        getState: base.getState,
-        setState: base.setState,
-        setParam: base.setParam,
-        enable: base.enable,
-        disable: base.disable,
-    };
+        base,
+    });
 }
 
-/** 注册骑行模型模块 */
-export function registerRidingModel(): void {
-    registerModule(MODULE_ID, META, 3, createRidingModelModule);
-}
+/** 骑行模型模块注册定义（供 registry BUILTIN_MODULE_DEFS 批量注册） */
+export const RIDING_MODEL_DEF: ModuleDef = {
+    id: MODULE_ID,
+    meta: META,
+    priority: 3,
+    factory: createRidingModelModule,
+};

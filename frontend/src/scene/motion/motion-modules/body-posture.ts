@@ -2,12 +2,10 @@
 // 职责: 将语义参数（倾斜/弯曲/扭曲）烘焙为上半身骨骼旋转覆盖
 // P2 位置覆盖已拆分为独立 position-offset 模块
 
-import type { MenuNode } from '@/menus/menu-schema';
 import type { ParamValue } from '@/core/types';
 import { setBoneOverride } from '../bone-override';
-import { registerModule, getModuleState, claimBones } from './registry';
-import type { MotionOverrideModule, ModuleMeta } from './types';
-import { createModuleBase } from './module-base';
+import type { MotionOverrideModule, ModuleMeta, ModuleDef } from './types';
+import { createModuleBase, createModuleShell, prepareBake } from './module-base';
 
 const MODULE_ID = 'body-posture';
 
@@ -30,16 +28,15 @@ const MANAGED_BONES = ['上半身', '上半身2'];
 
 /** 烘焙：将语义参数写入引擎（仅 enabled 时生效，通过 claimBones 仲裁冲突） */
 function bake(modelId: string): void {
-    const state = getModuleState(modelId, MODULE_ID);
-    if (!state.enabled) {
+    const prep = prepareBake(modelId, MODULE_ID, MANAGED_BONES);
+    if (!prep) {
         return; // 门控：未启用时不烘焙（P1-2 修复）
     }
+    const { state, claimed } = prep;
     const tilt = (state.params.tilt as number) ?? 0;
     const bend = (state.params.bend as number) ?? 0;
     const twist = (state.params.twist as number) ?? 0;
 
-    // 声明骨骼所有权（已被其他模块占用的骨骼会被跳过并 warn）
-    const claimed = claimBones(modelId, MODULE_ID, MANAGED_BONES);
     if (claimed.includes('上半身')) {
         // tilt + bend 合并为上半身总俯仰角（避免操作 腰 带动腿骨旋转）
         setBoneOverride('上半身', [tilt + bend, 0, 0], 1, true, modelId);
@@ -53,13 +50,13 @@ function bake(modelId: string): void {
 /** 创建身体姿态模块实例 */
 export function createBodyPostureModule(modelId: string): MotionOverrideModule {
     const base = createModuleBase(modelId, MODULE_ID, DEFAULTS, bake);
-    return {
+    return createModuleShell({
         id: MODULE_ID,
         meta: META,
         priority: 1,
         managedBones: MANAGED_BONES,
 
-        buildSchema(): MenuNode[] {
+        buildSchema: () => {
             return [
                 {
                     id: 'body-posture:tilt',
@@ -109,15 +106,14 @@ export function createBodyPostureModule(modelId: string): MotionOverrideModule {
             ];
         },
 
-        getState: base.getState,
-        setState: base.setState,
-        setParam: base.setParam,
-        enable: base.enable,
-        disable: base.disable,
-    };
+        base,
+    });
 }
 
-/** 注册身体姿态模块 */
-export function registerBodyPosture(): void {
-    registerModule(MODULE_ID, META, 1, createBodyPostureModule);
-}
+/** 身体姿态模块注册定义（供 registry BUILTIN_MODULE_DEFS 批量注册） */
+export const BODY_POSTURE_DEF: ModuleDef = {
+    id: MODULE_ID,
+    meta: META,
+    priority: 1,
+    factory: createBodyPostureModule,
+};

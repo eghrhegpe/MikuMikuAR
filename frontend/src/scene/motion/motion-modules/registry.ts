@@ -8,12 +8,13 @@ import { modelRegistry } from '@/core/state';
 import { triggerAutoSave } from '@/core/utils';
 import type { MotionOverrideModule, ModuleFactory, ModuleMeta } from './types';
 import { clearBoneOverride } from '../bone-override';
-import { registerBodyPosture } from './body-posture';
-import { registerHandSymmetry } from './hand-symmetry';
-import { registerSwayMotion } from './sway-motion';
-import { registerFingerPose } from './finger-pose';
-import { registerRidingModel } from './riding-model';
-import { registerPositionOffset } from './position-offset';
+import type { ModuleDef } from './types';
+import { BODY_POSTURE_DEF } from './body-posture';
+import { HAND_SYMMETRY_DEF } from './hand-symmetry';
+import { SWAY_MOTION_DEF } from './sway-motion';
+import { FINGER_POSE_DEF } from './finger-pose';
+import { RIDING_MODEL_DEF } from './riding-model';
+import { POSITION_OFFSET_DEF } from './position-offset';
 
 // ── 注册表 ──
 
@@ -325,16 +326,32 @@ export function applyMotionModulesToModel(modelId: string): void {
 
 let _initialized = false;
 
+/**
+ * 内置模块定义聚合（供 initMotionModules 批量注册，消除 6 个 registerXxx 分散调用）。
+ * 使用惰性求值函数而非顶层数组字面量：registry 与工厂模块存在循环依赖
+ * （工厂 import registry 取 getModuleState/claimBones，registry import 工厂取 DEF），
+ * 若顶层字面量在模块求值期捕获 DEF 值，当某工厂被先于 registry 求值时会出现 TDZ
+ * （典型：测试先 import sway-motion 再 import registry → SWAY_MOTION_DEF 为 undefined）。
+ * 改为在 initMotionModules 调用时（所有模块已加载完成）读取绑定，规避求值顺序问题。
+ */
+export function getBuiltinModuleDefs(): ModuleDef[] {
+    return [
+        BODY_POSTURE_DEF,
+        HAND_SYMMETRY_DEF,
+        SWAY_MOTION_DEF,
+        FINGER_POSE_DEF,
+        RIDING_MODEL_DEF,
+        POSITION_OFFSET_DEF,
+    ];
+}
+
 /** 注册所有内置模块（幂等，重复调用安全） */
 export function initMotionModules(): void {
     if (_initialized) {
         return;
     }
-    registerBodyPosture();
-    registerHandSymmetry();
-    registerSwayMotion();
-    registerFingerPose();
-    registerRidingModel();
-    registerPositionOffset();
+    for (const def of getBuiltinModuleDefs()) {
+        registerModule(def.id, def.meta, def.priority, def.factory);
+    }
     _initialized = true;
 }

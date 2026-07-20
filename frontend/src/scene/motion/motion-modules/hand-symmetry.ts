@@ -19,7 +19,6 @@
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 import type { MmdRuntimeBoneExtended, ParamValue } from '@/core/types';
-import type { MenuNode } from '@/menus/menu-schema';
 import { modelRegistry } from '@/core/state';
 import {
     setBoneOverride,
@@ -34,9 +33,14 @@ import {
     BONE_SHOULDER_L_CANDIDATES,
     BONE_SHOULDER_R_CANDIDATES,
 } from '@/motion-algos/proc-motion-shared';
-import { registerModule, getModuleState, claimBones } from './registry';
-import type { MotionOverrideModule, ModuleMeta } from './types';
-import { createModuleBase, createFrameHookManager } from './module-base';
+import { getModuleState } from './registry';
+import type { MotionOverrideModule, ModuleMeta, ModuleDef } from './types';
+import {
+    createModuleBase,
+    createFrameHookManager,
+    createModuleShell,
+    prepareBake,
+} from './module-base';
 
 const MODULE_ID = 'hand-symmetry';
 
@@ -71,10 +75,11 @@ const MANAGED_BONES = ['左手首', '右手首', '左肩', '右肩'];
  * 故「重解 IK 定位手臂」与「叠加手腕旋转」顺序正确、互不覆盖。
  */
 function bake(modelId: string): void {
-    const state = getModuleState(modelId, MODULE_ID);
-    if (!state.enabled) {
+    const prep = prepareBake(modelId, MODULE_ID, MANAGED_BONES);
+    if (!prep) {
         return;
     }
+    const { state, claimed } = prep;
     const symmetry = (state.params.symmetry as boolean) ?? true;
     const pitch = (state.params.pitch as number) ?? 0;
     const yaw = (state.params.yaw as number) ?? 0;
@@ -83,8 +88,6 @@ function bake(modelId: string): void {
     const rightPitch = (state.params.rightPitch as number) ?? 0;
     const rightYaw = (state.params.rightYaw as number) ?? 0;
     const rightRoll = (state.params.rightRoll as number) ?? 0;
-
-    const claimed = claimBones(modelId, MODULE_ID, MANAGED_BONES);
 
     // 左手：直接设值
     if (claimed.includes('左手首')) {
@@ -254,13 +257,13 @@ export function createHandSymmetryModule(modelId: string): MotionOverrideModule 
             _handFrameHooks.unregister(mid);
         },
     });
-    return {
+    return createModuleShell({
         id: MODULE_ID,
         meta: META,
         priority: 1,
         managedBones: MANAGED_BONES,
 
-        buildSchema(): MenuNode[] {
+        buildSchema: () => {
             const isSymmetry = (): boolean =>
                 (getModuleState(modelId, MODULE_ID).params.symmetry as boolean) ?? true;
             return [
@@ -452,15 +455,14 @@ export function createHandSymmetryModule(modelId: string): MotionOverrideModule 
             ];
         },
 
-        getState: base.getState,
-        setState: base.setState,
-        setParam: base.setParam,
-        enable: base.enable,
-        disable: base.disable,
-    };
+        base,
+    });
 }
 
-/** 注册手腕对称模块 */
-export function registerHandSymmetry(): void {
-    registerModule(MODULE_ID, META, 1, createHandSymmetryModule);
-}
+/** 手腕对称模块注册定义（供 registry BUILTIN_MODULE_DEFS 批量注册） */
+export const HAND_SYMMETRY_DEF: ModuleDef = {
+    id: MODULE_ID,
+    meta: META,
+    priority: 1,
+    factory: createHandSymmetryModule,
+};

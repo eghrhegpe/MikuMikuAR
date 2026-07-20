@@ -11,19 +11,17 @@
 // 与 position-offset 共享 センター：若 position-offset 占用 センター（更高优先级），
 // 本模块每帧钩子自动让位（见钩子内 getOwnedBones 判定），两者不互相踩踏。
 
-import type { MenuNode } from '@/menus/menu-schema';
 import type { ParamValue } from '@/core/types';
 import { setBoneOverride, registerBoneOverrideFrameHook } from '../bone-override';
-import {
-    registerModule,
-    getModuleState,
-    claimBones,
-    getOwnedBones,
-    isBoneOwnedByOther,
-} from './registry';
-import type { MotionOverrideModule, ModuleMeta } from './types';
+import { getModuleState, claimBones, getOwnedBones, isBoneOwnedByOther } from './registry';
+import type { MotionOverrideModule, ModuleMeta, ModuleDef } from './types';
 import { computeSwayYaw } from './motion-math';
-import { createModuleBase, createFrameHookManager } from './module-base';
+import {
+    createModuleBase,
+    createFrameHookManager,
+    createModuleShell,
+    prepareBake,
+} from './module-base';
 
 const MODULE_ID = 'sway-motion';
 
@@ -51,11 +49,11 @@ const MANAGED_BONES = ['センター'];
  * 实时正弦由 ensureActive 注册的每帧钩子接管（frequency/decay 真正生效）。
  */
 function bake(modelId: string): void {
-    const state = getModuleState(modelId, MODULE_ID);
-    if (!state.enabled) {
+    const prep = prepareBake(modelId, MODULE_ID, MANAGED_BONES);
+    if (!prep) {
         return;
     }
-    const claimed = claimBones(modelId, MODULE_ID, MANAGED_BONES);
+    const { state, claimed } = prep;
     if (claimed.includes('センター')) {
         // 初始静态峰值姿态；帧钩子随后每帧覆盖为动态振荡值
         const amplitude = (state.params.amplitude as number) ?? 5;
@@ -113,13 +111,13 @@ export function createSwayMotionModule(modelId: string): MotionOverrideModule {
             _swayFrameHooks.unregister(mid);
         },
     });
-    return {
+    return createModuleShell({
         id: MODULE_ID,
         meta: META,
         priority: 3,
         managedBones: MANAGED_BONES,
 
-        buildSchema(): MenuNode[] {
+        buildSchema: () => {
             return [
                 {
                     id: 'sway-motion:amplitude',
@@ -169,15 +167,14 @@ export function createSwayMotionModule(modelId: string): MotionOverrideModule {
             ];
         },
 
-        getState: base.getState,
-        setState: base.setState,
-        setParam: base.setParam,
-        enable: base.enable,
-        disable: base.disable,
-    };
+        base,
+    });
 }
 
-/** 注册摇摆运动模块 */
-export function registerSwayMotion(): void {
-    registerModule(MODULE_ID, META, 3, createSwayMotionModule);
-}
+/** 摇摆运动模块注册定义（供 registry BUILTIN_MODULE_DEFS 批量注册） */
+export const SWAY_MOTION_DEF: ModuleDef = {
+    id: MODULE_ID,
+    meta: META,
+    priority: 3,
+    factory: createSwayMotionModule,
+};
