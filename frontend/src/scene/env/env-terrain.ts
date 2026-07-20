@@ -5,11 +5,12 @@ import {
     StandardMaterial,
     PBRMaterial,
     Texture,
+    BaseTexture,
     Color3,
     VertexBuffer,
 } from '@babylonjs/core';
 import { EnvState } from '@/core/config';
-import { createCanvasDataURL } from './env-texture';
+import { createCanvasDataURL, isCacheOwnedTexture } from './env-texture';
 import { clamp01 } from '@/core/utils';
 import { _effectiveBumpLevel } from './env-ground';
 
@@ -141,17 +142,24 @@ export function applyTerrainMaterial(ground: GroundMesh, state: EnvState, scene:
     // 释放旧材质及其纹理，防止 GPU 显存泄漏
     const oldMat = ground.material;
     if (oldMat) {
+        // 缓存所有的贴图（如边缘淡出 opacityTexture）跳过——由 disposeTextureCache 统一释放，
+        // 避免提前 dispose 后 getOrCreateCanvasTexture 复用已失效贴图。
+        const disposeTex = (tex: BaseTexture | null) => {
+            if (tex && !isCacheOwnedTexture(tex)) {
+                tex.dispose();
+            }
+        };
         if (oldMat instanceof PBRMaterial) {
-            oldMat.albedoTexture?.dispose();
-            oldMat.metallicTexture?.dispose();
+            disposeTex(oldMat.albedoTexture);
+            disposeTex(oldMat.metallicTexture);
         }
         if (oldMat instanceof StandardMaterial) {
-            oldMat.diffuseTexture?.dispose();
+            disposeTex(oldMat.diffuseTexture);
         }
         if (oldMat instanceof PBRMaterial || oldMat instanceof StandardMaterial) {
-            oldMat.bumpTexture?.dispose();
-            oldMat.opacityTexture?.dispose();
-            oldMat.reflectionTexture?.dispose();
+            disposeTex(oldMat.bumpTexture);
+            disposeTex(oldMat.opacityTexture);
+            disposeTex(oldMat.reflectionTexture);
         }
         oldMat.dispose();
         ground.material = null;
