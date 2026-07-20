@@ -20,6 +20,7 @@ import { col3FromTriple } from '@/core/color-helpers';
 import { _catOf } from '../scene/manager/material';
 import { triggerAutoSave } from '../core/config';
 import { loadOverlay, hideMaterials, restoreMaterials, disposeOverlay } from './outfit-overlay';
+import type { MmdStandardMaterial } from '../core/types';
 
 // [adr-104] Scene 引用注入：由 scene.ts 初始化后调用 setSceneRef() 注入，
 // 破除 outfit → scene → scene-serialize → outfit 的循环依赖（原靠动态 import 解耦，
@@ -37,11 +38,6 @@ async function _getScene(): Promise<Scene> {
         _sceneRef = mod.scene;
     }
     return _sceneRef;
-}
-
-interface MmdStandardMaterial extends StandardMaterial {
-    toonTexture: Texture | null;
-    sphereTexture: Texture | null;
 }
 
 type TextureSlotKey =
