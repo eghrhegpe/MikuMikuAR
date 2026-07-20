@@ -64,6 +64,8 @@
 3. **不引入重型框架**：不引入 `@axe-core/playwright` 之外的 a11y 运行时库（如 `aria-live-poller`），保持零运行时依赖
 4. **分批推进**：按 P1 止血 → P2 关键缺口 → P3 长期建设 三阶段，每阶段独立可交付、可回退
 5. **不降级现有交互**：恢复焦点环不破坏现有视觉，仅在 `:focus-visible` 触发；高对比度模式独立 CSS 块，不污染默认主题
+6. **不重复造 accessible name**：WCAG 的 [Accessible Name and Description](https://www.w3.org/TR/accname-1.1/) 计算规则会自动取按钮可见文字、`aria-labelledby`、`aria-label`、`title` 依次回退。**只在「无可见文字控件」（图标按钮、canvas 等）才补 aria-label**，文字按钮复用现有 label 即可，避免「同一控件两个 accessible name」语义冲突
+7. **i18n 沿用现有 key**：不新建 `a11y.*` 命名空间。toast / 状态栏的播报文本就是现有 i18n 文本，加 `role="status"` + `aria-live` 让屏幕阅读器读取即可；关闭/删除等图标按钮的 aria-label 复用现有 `common.close` / `common.delete` 类 key，缺失时再就近补
 
 ### Phase 1：P1 止血（一次性提交）
 
@@ -129,15 +131,16 @@ function trapFocus(e: KeyboardEvent) {
 
 #### 1.4 canvas 基础 ARIA
 
-[index.html:64](../../frontend/index.html) 给 `renderCanvas` 加：
+[index.html:64](../../frontend/index.html) 给 `renderCanvas` 加 `role="img"` + `tabindex="0"`，`aria-label` 在场景模块加载/卸载模型时动态更新（拼接模型名，模型名本身已是业务数据，不需要 i18n key 包裹）。初始态沿用现有 `menu.canvasLabel` 类 key（若不存在，按核心原则 7 就近补一个，不引入 `a11y.*` 命名空间）：
 
-```html
-<canvas id="renderCanvas" role="img"
-    aria-label="3D 场景画布"
-    tabindex="0"></canvas>
+```typescript
+// 加载模型时
+renderCanvas.setAttribute('aria-label', `${t('menu.canvasLabel')}：${model.name}`);
+// 卸载时
+renderCanvas.setAttribute('aria-label', t('menu.canvasLabel'));
 ```
 
-`tabindex="0"` 允许键盘用户聚焦画布触发 freefly 快捷键；动态 `aria-label` 由场景模块在加载模型时更新为 `3D 场景：{modelName}`。
+`tabindex="0"` 允许键盘用户聚焦画布触发 freefly 快捷键。
 
 #### Phase 1 验收标准
 
@@ -213,26 +216,25 @@ shortcut-registry 增加守卫：canvas 聚焦时 Arrow 不触发全局快捷键
 
 ### Phase 3：P3 长期建设
 
-#### 3.1 i18n a11y 命名空间
+#### 3.1 图标按钮 accessible name 补全（不新建 a11y.* 命名空间）
 
-5 语种（zh-CN / zh-TW / en / ja / ko）新增 `a11y.*` 命名空间，首批 key：
+项目里实际缺 accessible name 的控件**仅 3 处纯图标 `✕` 按钮**，复用现有 i18n key 即可，不引入 `a11y.*` 命名空间：
 
-```typescript
-a11y: {
-    canvasEmpty: '3D 场景画布',
-    canvasWithModel: '3D 场景：{name}',
-    dialogClose: '关闭对话框',
-    toastError: '错误：{message}',
-    toastInfo: '提示：{message}',
-    sliderValue: '当前值 {value}',
-    switchOn: '已开启',
-    switchOff: '已关闭',
-    loading: '加载中',
-    loaded: '加载完成',
-}
-```
+| 文件:行号 | 现状 | 复用 key（若已有）或就近补 |
+|-----------|------|---------------------------|
+| `core/toast.ts:150` | `closeBtn.textContent = '✕'` 无 aria-label | `common.close`（若缺则在该 key 同分组补 5 语种） |
+| `core/ui-fullscreen-overlay.ts:184` | `closeBtn.textContent = '✕'` 无 aria-label | 同上 `common.close` |
+| `menus/preset-list-viewer.ts:112` | `delBtn.textContent = '✕'` 无 aria-label | `common.delete`（若缺则同上补） |
 
-UI builder（`ui-rows.ts` / `ui-advanced-rows.ts`）在 `aria-label` 中替换硬编码文本为 `t('a11y.sliderValue', { value })`。
+**禁止给以下控件加 aria-label**（已有 accessible name，重复设置会语义冲突）：
+- 滑块 `bar` — 已有 `aria-label` + `aria-labelledby`（`ui-rows.ts:201` / `ui-advanced-rows.ts:62,221,334`）
+- 开关 `toggle` — 已有 `aria-label` + `aria-labelledby`（`ui-rows.ts:65,67`）
+- 底部导航按钮 — 已有 `aria-label`（`index.html:73-98`）
+- dialog 取消/确认按钮 — 有可见文字填充（`dialog.ts:47-48`，文字来自现有 i18n）
+- 所有菜单 `.slide-item` — 有可见 label 文字，屏幕阅读器自动读
+- toast / 状态栏文本本身 — 加 `role="status"` + `aria-live` 让屏幕阅读器读现有 i18n 文本即可，**不需要**「toastError」「toastInfo」这类包裹 key
+
+**唯一需要就近补的 i18n key**（最多 2 个：`common.close` / `common.delete`），按 ADR-059 i18n 框架的 5 语种同步规范补充。
 
 #### 3.2 快捷键 aria-keyshortcuts
 
@@ -269,7 +271,7 @@ expect(results.violations).toEqual([]);
 
 - [ ] `npm run test:e2e` 包含 a11y 扫描，无 critical 违规
 - [ ] 所有快捷键按钮有 `aria-keyshortcuts`
-- [ ] 5 语种 `a11y.*` key 齐全
+- [ ] 3 处 `✕` 按钮有 `aria-label`（复用 `common.close` / `common.delete`）
 - [ ] 三处方向键导航共用同一工具
 - [ ] Windows 高对比度切换时应用主题跟随
 
@@ -290,7 +292,7 @@ expect(results.violations).toEqual([]);
 |------|------|-----------|------|
 | Phase 1 | P1 止血：焦点环 + aria-live + focus trap/restore + canvas ARIA | 1 次提交 | 键盘导航完整、屏幕阅读器感知动态信息 |
 | Phase 2 | P2 关键：prefers-* 媒体查询 + Android 返回键 + 3D 键盘控制 + 模型 alt | 2~3 次提交 | 系统偏好跟随、Android 退出可预期 |
-| Phase 3 | P3 长期：i18n a11y 命名空间 + aria-keyshortcuts + axe E2E + 方向键工具抽离 + Go 桥接 | 多次分散提交 | a11y 回归有自动化保障 |
+| Phase 3 | P3 长期：图标按钮 aria-label 补全 + aria-keyshortcuts + axe E2E + 方向键工具抽离 + Go 桥接 | 多次分散提交 | a11y 回归有自动化保障 |
 
 每阶段独立可交付、可回退（git revert 单阶段不影响其他阶段）。
 
@@ -299,3 +301,4 @@ expect(results.violations).toEqual([]);
 | 日期 | 修订 |
 |------|------|
 | 2026-07-20 | 初版，三阶段路线图 |
+| 2026-07-20 | 修订：核心原则补「不重复造 accessible name」「i18n 沿用现有 key」两条；Phase 3.1 从「新建 `a11y.*` 命名空间 + 10 个 key」精简为「3 处 `✕` 按钮复用 `common.close`/`common.delete`」；Phase 1.4 canvas aria-label 改为拼接现有 key + 模型名，不硬编码描述文字 |
