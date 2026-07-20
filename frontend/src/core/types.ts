@@ -470,6 +470,8 @@ export interface UIState {
     showRuntimeBadge?: boolean | null;
     /** Android 前台屏幕常亮（仅 Android 生效）；undefined 视为 true（默认开启） */
     keepAwake?: boolean;
+    /** Android 屏幕方向（仅 Android 生效）：'auto'=跟随系统, 'portrait'=竖屏, 'landscape'=横屏；undefined 视为 'auto' */
+    screenOrientation?: 'auto' | 'portrait' | 'landscape';
 }
 
 // [doc:test-strategy] Go↔TS UIState 字段同步哨兵

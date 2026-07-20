@@ -263,7 +263,7 @@ function _renderAnimationControls(
     );
 }
 
-// ======== 屏幕控件（仅 Android：屏幕常亮） ========
+// ======== 屏幕控件（仅 Android：常亮 + 方向） ========
 function _renderScreenControls(
     container: HTMLElement,
     getSettingsMenu: () => SettingsMenuHandle
@@ -284,6 +284,49 @@ function _renderScreenControls(
             bind: () => uiState.keepAwake !== false,
         }
     );
+
+    // 屏幕方向（竖/横/自动）——三选一列表，复用字体选择器模式
+    addSectionTitle(container, t('settings.orientation'));
+    const ORIENTATIONS: { key: 'auto' | 'portrait' | 'landscape'; label: string }[] = [
+        { key: 'auto', label: t('settings.orientationAuto') },
+        { key: 'portrait', label: t('settings.orientationPortrait') },
+        { key: 'landscape', label: t('settings.orientationLandscape') },
+    ];
+    const currentOrientation = (): 'auto' | 'portrait' | 'landscape' =>
+        uiState.screenOrientation ?? 'auto';
+    const orientationRows: HTMLElement[] = [];
+    for (const o of ORIENTATIONS) {
+        const isActive = currentOrientation() === o.key;
+        const row = slideRow(
+            container,
+            `lucide:${isActive ? 'check' : 'circle'}`,
+            o.label,
+            false,
+            () => {
+                // 持久化 + 立即调原生 setRequestedOrientation（configChanges 下就地旋转）
+                setUIState({ screenOrientation: o.key });
+                window.wails?.setScreenOrientation?.(o.key);
+                getSettingsMenu()?.updateControls();
+            },
+            undefined,
+            undefined,
+            isActive
+        );
+        orientationRows.push(row);
+    }
+    getCurrentRenderingMenu()?.registerControl(() => {
+        const cur = currentOrientation();
+        for (let i = 0; i < orientationRows.length; i++) {
+            const isActive = cur === ORIENTATIONS[i].key;
+            orientationRows[i].className = 'slide-item' + (isActive ? ' slide-focused' : '');
+            const icon = orientationRows[i].querySelector(
+                '.slide-icon iconify-icon'
+            ) as HTMLElement | null;
+            if (icon) {
+                icon.setAttribute('icon', `lucide:${isActive ? 'check' : 'circle'}`);
+            }
+        }
+    });
 }
 
 // ======== 恢复默认 ========
