@@ -23,6 +23,26 @@ import { InvertableArcRotateCameraPointersInput } from './invertablePointersInpu
 import { addDisposableListener, type Disposable } from '@/core/dom';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { safeDispose } from '@/core/dispose-helpers';
+// 从 camera-state.ts 导入纯状态函数（仅导入本地未定义的函数）
+import {
+    getOrbitParams, getFreeflyParams, getConcertParams, getSurroundParams,
+    getCameraMode, setCameraMode,
+    getCameraControl,
+    getCameraBehavior,
+    getScriptedSubMode, setScriptedSubMode,
+    getCurrentCamera, setCurrentCamera,
+    getFocusCenterY, setFocusCenterY,
+    getConcertPaused, setConcertPaused,
+    getSurroundPaused, setSurroundPaused,
+    getCameraVmdName, getCameraVmdPath, hasCameraVmd,
+    setCameraVmdState, clearCameraVmdState,
+    setAutoCameraEnabledFlag,
+    isTouchDevice,
+} from './camera-state';
+// 注：defaultCameraPreset/getCameraPreset/setCameraPreset/logCameraAlpha/setFov/cameraState 保留本地定义
+// setOrbitParams/setFreeflyParams/setConcertParams/setSurroundParams 保留本地定义（需同步 live camera）
+// setCameraControl/setCameraBehavior 保留本地定义（含 switchCameraMode 场景依赖）
+// isAutoCameraEnabled 保留本地定义（含 scene 依赖逻辑）
 
 // ======== Types ========
 /**
@@ -150,14 +170,8 @@ export function defaultCameraPreset(): CameraPreset {
 }
 
 // ======== Runtime Preset State ========
-let _currentPreset: CameraPreset = defaultCameraPreset();
-
-export function getCameraPreset(): CameraPreset {
-    return _currentPreset;
-}
-export function setCameraPreset(p: CameraPreset): void {
-    _currentPreset = p;
-}
+// 模块级状态已迁移至 camera-state.ts，此处保留引用
+import { getCameraPreset, setCameraPreset } from './camera-state';
 
 // ======== Camera Persist (拖拽结束后自动保存) ========
 const _scheduleCameraPersist = debounce((): void => {
@@ -172,69 +186,56 @@ function scheduleCameraPersist(): void {
     _scheduleCameraPersist();
 }
 
-export function getOrbitParams(): OrbitParams {
-    return _currentPreset.orbit;
-}
-export function getFreeflyParams(): FreeflyParams {
-    return _currentPreset.freefly;
-}
-export function getConcertParams(): ConcertParams {
-    return _currentPreset.concert;
-}
-export function getSurroundParams(): SurroundParams {
-    return _currentPreset.surround;
-}
+// ======== Sub-preset Getters 已迁移至 camera-state.ts ========
 
 export function setOrbitParams(p: Partial<OrbitParams>): void {
-    Object.assign(_currentPreset.orbit, p);
-    // Sync to live camera if orbit mode is active
-    if (_cameraMode === 'orbit' && _currentCamera instanceof ArcRotateCamera) {
+    // camera-state.ts 已更新 _currentPreset.orbit，此处仅同步到 live camera
+    if (getCameraMode() === 'orbit' && getCurrentCamera() instanceof ArcRotateCamera) {
+        const cam = getCurrentCamera() as ArcRotateCamera;
         if (p.distance !== undefined) {
-            _currentCamera.radius = p.distance;
+            cam.radius = p.distance;
         }
         if (p.beta !== undefined) {
-            _currentCamera.beta = p.beta;
+            cam.beta = p.beta;
         }
         if (p.targetHeight !== undefined) {
-            _currentCamera.target.y = _focusCenterY + p.targetHeight;
+            cam.target.y = getFocusCenterY() + p.targetHeight;
         }
     }
 }
 /** Log current camera alpha for diagnostics. */
 export function logCameraAlpha(): void {
-    if (_cameraMode === 'orbit' && _currentCamera instanceof ArcRotateCamera) {
-        console.info('[camera] current alpha:', _currentCamera.alpha.toFixed(3));
+    if (getCameraMode() === 'orbit' && getCurrentCamera() instanceof ArcRotateCamera) {
+        console.info('[camera] current alpha:', (getCurrentCamera() as ArcRotateCamera).alpha.toFixed(3));
     }
 }
 
 export function setFreeflyParams(p: Partial<FreeflyParams>): void {
-    Object.assign(_currentPreset.freefly, p);
-    if (_cameraMode === 'freefly' && _currentCamera instanceof UniversalCamera) {
+    if (getCameraMode() === 'freefly' && getCurrentCamera() instanceof UniversalCamera) {
+        const cam = getCurrentCamera() as UniversalCamera;
         if (p.speed !== undefined) {
-            (_currentCamera as UniversalCamera).speed = p.speed;
+            cam.speed = p.speed;
         }
         if (p.angularSensibility !== undefined) {
-            (_currentCamera as UniversalCamera).angularSensibility = p.angularSensibility;
+            cam.angularSensibility = p.angularSensibility;
         }
     }
 }
 export function setConcertParams(p: Partial<ConcertParams>): void {
-    Object.assign(_currentPreset.concert, p);
+    // camera-state.ts 已更新 _currentPreset.concert
 }
 export function setSurroundParams(p: Partial<SurroundParams>): void {
-    Object.assign(_currentPreset.surround, p);
+    // camera-state.ts 已更新 _currentPreset.surround
 }
 
 // ======== Internal State ========
 let _scene: Scene | null = null;
 let _canvas: HTMLCanvasElement | null = null;
-let _cameraMode: CameraMode = 'orbit';
 let _previousMode: CameraMode = 'orbit';
 // ADR-100 双轴状态。_cameraMode 保留为兼容别名，三者由 _syncAxesFromMode 在 switchCameraMode
 // 内统一派生，保证单一写入点（避免幽灵路径）。
-let _cameraControl: CameraControl = 'orbit';
-let _cameraBehavior: CameraBehavior = 'none';
-let _scriptedSubMode: ScriptedSubMode = 'loop';
+// 注：模块级 _cameraControl/_cameraBehavior/_scriptedSubMode 已迁移至 camera-state.ts，
+// 通过 getCameraControl/setCameraControl 等访问
 
 /**
  * ADR-100 §6.3 — 行为轴派生（含 beatcut 叠加与互斥）。
@@ -252,10 +253,10 @@ function _resolveBehavior(mode: CameraMode): CameraBehavior {
 /** ADR-100：由旧 mode 派生双轴状态。switchCameraMode 提交 _cameraMode 时同步调用，作为唯一写入点。 */
 function _syncAxesFromMode(mode: CameraMode): void {
     const m = LEGACY_MODE_MAP[mode];
-    _cameraControl = m.control;
-    _cameraBehavior = _resolveBehavior(mode);
+    setCameraControl(m.control);
+    setCameraBehavior(_resolveBehavior(mode));
     if (m.scripted) {
-        _scriptedSubMode = m.scripted;
+        setScriptedSubMode(m.scripted);
     }
 }
 let _currentCamera: Camera | null = null;
@@ -263,15 +264,8 @@ let _fov = 0.8; // default FOV, migrated from RenderState in Phase 9
 // 当前聚焦模型包围盒中心的 Y。targetHeight 现表现为「相对此中心的垂直偏移」，
 // 0 = 正中。无模型时的初始值 8 保持与旧默认绝对高度一致，避免首屏镜头压脚底。
 let _focusCenterY = 8;
-
-/** Detect touch-capable device for camera parameter tuning. */
-export function isTouchDevice(): boolean {
-    return (
-        'ontouchstart' in window ||
-        navigator.maxTouchPoints > 0 ||
-        window.matchMedia('(pointer: coarse)').matches
-    );
-}
+// 注：_currentCamera/_fov/_focusCenterY 已迁移至 camera-state.ts 的
+// getCurrentCamera/setCurrentCamera/getFov/setFov/getFocusCenterY/setFocusCenterY
 
 function clampFov(v: number): number {
     return clamp(v, 0.1, 3);
@@ -281,39 +275,15 @@ let _concertT = 0;
 let _surroundUpdateHandle: ObserverHandle | null = null;
 let _viewMatrixHandle: ObserverHandle | null = null;
 let _surroundAngle = 0;
-let _concertPaused = false;
+// 注：_concertPaused 已迁移至 camera-state.ts（getConcertPaused/setConcertPaused/getSurroundPaused/setSurroundPaused）
 // Cached target vector for concert/surround modes (avoids per-frame Vector3 allocation)
 const _concertTarget = new Vector3(0, 8, 0);
 
-export function getConcertPaused(): boolean {
-    return _concertPaused;
-}
-export function setConcertPaused(paused: boolean): void {
-    _concertPaused = paused;
-}
-/** Surround (turntable) shares the same auto-pause flag as concert. */
-export function getSurroundPaused(): boolean {
-    return _concertPaused;
-}
-export function setSurroundPaused(paused: boolean): void {
-    _concertPaused = paused;
-}
-
 // ======== Camera VMD ========
 let _mmdCamera: MmdCamera | null = null;
-let _cameraVmdName = '';
-let _cameraVmdPath = '';
 let _cameraAnimationHandle: number | null = null;
-
-export function getCameraVmdName(): string {
-    return _cameraVmdName;
-}
-export function getCameraVmdPath(): string {
-    return _cameraVmdPath;
-}
-export function hasCameraVmd(): boolean {
-    return _mmdCamera !== null && _cameraAnimationHandle !== null;
-}
+// 注：_cameraVmdName/_cameraVmdPath 已迁移至 camera-state.ts
+// （getCameraVmdName/getCameraVmdPath/hasCameraVmd/setCameraVmdState/clearCameraVmdState）
 
 /** Load camera animation from a VMD (MmdAnimation) and create an MmdCamera. */
 export function loadCameraVmd(mmdAnimation: MmdAnimation, vmdPath: string, vmdName: string): void {
@@ -334,26 +304,24 @@ export function loadCameraVmd(mmdAnimation: MmdAnimation, vmdPath: string, vmdNa
 
     _mmdCamera = mmdCam;
     _cameraAnimationHandle = handle;
-    _cameraVmdName = vmdName;
-    _cameraVmdPath = vmdPath;
+    setCameraVmdState(vmdName, vmdPath);
 }
 
 export function clearCameraVmd(): void {
     if (_mmdCamera && _scene) {
-        if (_cameraMode === 'vmd' && _scene) {
+        if (getCameraMode() === 'vmd' && _scene) {
             switchCameraMode('orbit');
         }
         _scene.removeCamera(_mmdCamera);
         _mmdCamera = safeDispose(_mmdCamera);
         _cameraAnimationHandle = null;
-        _cameraVmdName = '';
-        _cameraVmdPath = '';
+        clearCameraVmdState();
     }
 }
 
 /** Animate the VMD camera to a given 30fps frame time. Called every tick by scene.ts. */
 export function animateCameraVmd(frameTime: number): void {
-    if (_mmdCamera && _cameraMode === 'vmd') {
+    if (_mmdCamera && getCameraMode() === 'vmd') {
         _mmdCamera.animate(frameTime);
     }
 }
@@ -371,25 +339,11 @@ function createVmdCamera(): MmdCamera {
 let _freeflyUpdateHandle: ObserverHandle | null = null;
 let _boneLockUpdateHandle: ObserverHandle | null = null;
 
-// ======== Public Getters ========
-export function getCurrentCamera(): Camera | null {
-    return _currentCamera;
-}
-export function getCameraMode(): CameraMode {
-    return _cameraMode;
-}
+// ======== Public Getters 已迁移至 camera-state.ts ========
 
 // ======== Dual-Axis Accessors (ADR-100) ========
 // _cameraMode 仍是兼容别名，双轴值由 _syncAxesFromMode() 单点派生。
-export function getCameraControl(): CameraControl {
-    return _cameraControl;
-}
-export function getCameraBehavior(): CameraBehavior {
-    return _cameraBehavior;
-}
-export function getScriptedSubMode(): ScriptedSubMode {
-    return _scriptedSubMode;
-}
+// getCameraControl/getCameraBehavior/getScriptedSubMode 已迁移至 camera-state.ts
 
 /**
  * ADR-100 P4 — 直接设置控制方案轴（轴 A）。
@@ -397,15 +351,15 @@ export function getScriptedSubMode(): ScriptedSubMode {
  * orbit 下保留当前行为（含 beatcut 叠加语义，由 _resolveBehavior 派生）。
  */
 export function setCameraControl(control: CameraControl): void {
-    if (control === _cameraControl) {
+    if (control === getCameraControl()) {
         return; // 已是该控制方案，无需重建相机
     }
-    const baseBehavior: CameraBehavior = _cameraBehavior === 'beatcut' ? 'none' : _cameraBehavior;
-    const legacy = deriveLegacyMode(control, baseBehavior, _scriptedSubMode);
+    const baseBehavior: CameraBehavior = getCameraBehavior() === 'beatcut' ? 'none' : getCameraBehavior();
+    const legacy = deriveLegacyMode(control, baseBehavior, getScriptedSubMode());
     switchCameraMode(legacy);
     // ADR-100 P4：headless 下 switchCameraMode 因缺 _scene/_canvas 早退、不提交 _cameraMode 亦不派生双轴；
     // 此处补提交并直接派生，使双轴出口对 scene 无关（与 setCameraState 一致），production 下为幂等重同步。
-    _cameraMode = legacy;
+    setCameraMode(legacy);
     _syncAxesFromMode(legacy);
     if (control !== 'orbit') {
         setAutoCameraEnabled(false); // 非 orbit：行为轴强制 none，自动运镜无意义
@@ -418,36 +372,31 @@ export function setCameraControl(control: CameraControl): void {
  * 非 orbit 控制下调用非 none 行为将被忽略（行为轴对 Universal/AR 不适用）。
  */
 export function setCameraBehavior(behavior: CameraBehavior): void {
-    if (behavior === _cameraBehavior) {
+    if (behavior === getCameraBehavior()) {
         return;
     }
-    if (_cameraControl !== 'orbit' && behavior !== 'none') {
+    if (getCameraControl() !== 'orbit' && behavior !== 'none') {
         return; // 行为轴仅对 orbit 生效，非 orbit 强制 none
     }
     if (behavior === 'beatcut') {
         // 确保控制为 orbit，再开启自动运镜（_resolveBehavior 派生 beatcut）
-        const legacy = deriveLegacyMode(_cameraControl, 'none', _scriptedSubMode);
+        const legacy = deriveLegacyMode(getCameraControl(), 'none', getScriptedSubMode());
         switchCameraMode(legacy);
-        _cameraMode = legacy;
+        setCameraMode(legacy);
         _syncAxesFromMode(legacy); // 同 setCameraControl：headless 下补派生，production 幂等
         setAutoCameraEnabled(true);
         return;
     }
     setAutoCameraEnabled(false);
-    const legacy = deriveLegacyMode(_cameraControl, behavior, _scriptedSubMode);
+    const legacy = deriveLegacyMode(getCameraControl(), behavior, getScriptedSubMode());
     switchCameraMode(legacy);
-    _cameraMode = legacy;
+    setCameraMode(legacy);
     _syncAxesFromMode(legacy); // 同 setCameraControl：headless 下补派生，production 幂等
 }
 
-export function getFov(): number {
-    return _fov;
-}
-
 export function setFov(v: number): void {
-    _fov = clampFov(v);
-    if (_currentCamera) {
-        _currentCamera.fov = _fov;
+    if (getCurrentCamera()) {
+        getCurrentCamera()!.fov = clampFov(v);
     }
 }
 
@@ -507,7 +456,7 @@ export function refreshCameraUserSettings(): void {
 }
 
 function createOrbitCamera(scene: Scene, canvas: HTMLCanvasElement): ArcRotateCamera {
-    const p = _currentPreset.orbit;
+    const p = getCameraPreset().orbit;
     const cam = new ArcRotateCamera(
         'camera',
         -Math.PI / 2,
@@ -535,7 +484,7 @@ function createOrbitCamera(scene: Scene, canvas: HTMLCanvasElement): ArcRotateCa
 }
 
 function createFreeflyCamera(scene: Scene, canvas: HTMLCanvasElement): UniversalCamera {
-    const p = _currentPreset.freefly;
+    const p = getCameraPreset().freefly;
     const cam = new UniversalCamera('freeflyCam', new Vector3(0, 8, 16), scene);
     cam.minZ = 0.1;
     cam.speed = p.speed;
@@ -552,7 +501,7 @@ function createFreeflyCamera(scene: Scene, canvas: HTMLCanvasElement): Universal
 }
 
 function createSurroundCamera(scene: Scene): ArcRotateCamera {
-    const p = _currentPreset.surround;
+    const p = getCameraPreset().surround;
     const cam = new ArcRotateCamera(
         'surroundCam',
         -Math.PI / 2,
@@ -573,7 +522,7 @@ function createSurroundCamera(scene: Scene): ArcRotateCamera {
 
 /** Concert (fan-cam): limited horizontal sweep + sinusoidal vertical bob around the target. */
 function createConcertCamera(scene: Scene): ArcRotateCamera {
-    const p = _currentPreset.concert;
+    const p = getCameraPreset().concert;
     const cam = new ArcRotateCamera(
         'concertCam',
         -Math.PI / 2,
@@ -627,8 +576,8 @@ export function initCameraSystem(scene: Scene, canvas: HTMLCanvasElement): Camer
     _scene = scene;
     _canvas = canvas;
     const cam = createOrbitCamera(scene, canvas);
-    _currentCamera = cam;
-    _cameraMode = 'orbit';
+    setCurrentCamera(cam);
+    setCameraMode('orbit');
     _syncAxesFromMode('orbit');
     scene.activeCamera = cam;
     return cam;
@@ -638,7 +587,7 @@ export function initCameraSystem(scene: Scene, canvas: HTMLCanvasElement): Camer
 
 /** Switch to a different camera mode, preserving position as much as possible. */
 export function switchCameraMode(mode: CameraMode): void {
-    if (mode === _cameraMode && _currentCamera) {
+    if (mode === getCameraMode() && getCurrentCamera()) {
         return;
     }
     if (!_scene || !_canvas) {
@@ -652,44 +601,44 @@ export function switchCameraMode(mode: CameraMode): void {
     // 原实现在 `mode==='ar'` 早退分支跳过了此块，导致 orbit 骨骼锁、
     // freefly/concert/surround 的 onBeforeRender 回调在切到 AR 时残留注册
     // （仅靠各回调内部的 _cameraMode 守卫变 no-op，属轻微泄漏，AR 审查 #5）。
-    if (_cameraMode === 'ar') {
+    if (getCameraMode() === 'ar') {
         setARMode(false);
     } else {
-        if (_cameraMode === 'freefly') {
+        if (getCameraMode() === 'freefly') {
             stopFreefly();
         }
-        if (_cameraMode === 'concert') {
+        if (getCameraMode() === 'concert') {
             stopConcert();
         }
-        if (_cameraMode === 'surround') {
+        if (getCameraMode() === 'surround') {
             stopSurround();
         }
-        if (_cameraMode === 'orbit') {
+        if (getCameraMode() === 'orbit') {
             _stopBoneLock();
         }
     }
 
     if (mode === 'ar') {
-        if (_cameraMode !== 'ar') {
-            _previousMode = _cameraMode;
+        if (getCameraMode() !== 'ar') {
+            _previousMode = getCameraMode();
         }
         // 乐观提交 _cameraMode='ar'，保证"进入 AR 期间用户切走"时下方
         // `if (_cameraMode === 'ar')` 离开检测能命中并正确注销摄像头。
         // 真正的视频激活由 setARMode(true) 异步完成；若失败，仅还原模式标记，
         // 不重建相机（进入 AR 时从未切换/重建 Babylon 相机）。
-        _cameraMode = 'ar';
+        setCameraMode('ar');
         _syncAxesFromMode('ar');
-        _currentPreset.mode = 'ar';
+        getCameraPreset().mode = 'ar';
         safeCallAsync('camera', 'setARMode failed:', () =>
             setARMode(true).then((ok) => {
                 if (!ok) {
                     // 失败：若后续切换尚未把模式改走（仍在 ar），才提示并还原标记。
-                    if (_cameraMode === 'ar') {
+                    if (getCameraMode() === 'ar') {
                         setStatus(t('scene.camera.arFailed'), false);
                     }
-                    _cameraMode = _previousMode;
+                    setCameraMode(_previousMode);
                     _syncAxesFromMode(_previousMode);
-                    _currentPreset.mode = _previousMode;
+                    getCameraPreset().mode = _previousMode;
                 }
             })
         );
@@ -764,12 +713,12 @@ export function switchCameraMode(mode: CameraMode): void {
     }
 
     scene.activeCamera = newCam;
-    _currentCamera = newCam;
-    _cameraMode = mode;
+    setCurrentCamera(newCam);
+    setCameraMode(mode);
     _syncAxesFromMode(mode);
     // Persist camera mode for scene auto-save (skip oneshot — it's a transient action)
     if (mode !== 'oneshot') {
-        _currentPreset.mode = mode;
+        getCameraPreset().mode = mode;
     }
 
     // Start new mode's side-effects
@@ -808,11 +757,11 @@ export function autoFrame(center: Vector3, extent: number): void {
     }
 
     // 记录聚焦模型中心 Y，使 targetHeight 表现为相对中心的偏移
-    _focusCenterY = center.y;
+    setFocusCenterY(center.y);
     if (cam instanceof ArcRotateCamera) {
         cam.setTarget(center);
         // 叠加用户偏移偏好（相对模型中心的垂直偏移，0 = 正中）
-        cam.target.y = center.y + _currentPreset.orbit.targetHeight;
+        cam.target.y = center.y + getCameraPreset().orbit.targetHeight;
         cam.radius = extent * 0.75 + 2;
         cam.alpha = -Math.PI / 2;
         cam.beta = Math.PI / 2.2;
@@ -882,7 +831,7 @@ function initFreeflyTouch(canvas: HTMLCanvasElement): void {
     }
 
     _freeflyTouchHandler = (e: TouchEvent) => {
-        if (_cameraMode !== 'freefly') {
+        if (getCameraMode() !== 'freefly') {
             return;
         }
         if (e.touches.length < 2) {
@@ -976,8 +925,8 @@ function startSurround(scene: Scene): void {
         if (!cam || !(cam instanceof ArcRotateCamera)) {
             return;
         }
-        const p = _currentPreset.surround;
-        if (!_concertPaused) {
+        const p = getCameraPreset().surround;
+        if (!getConcertPaused()) {
             const delta = scene.getAnimationRatio() * p.speed * (scene.deltaTime / 1000);
             _surroundAngle += delta;
         }
@@ -1018,8 +967,8 @@ function startConcert(scene: Scene): void {
         if (!cam || !(cam instanceof ArcRotateCamera)) {
             return;
         }
-        const p = _currentPreset.concert;
-        if (!_concertPaused) {
+        const p = getCameraPreset().concert;
+        if (!getConcertPaused()) {
             _concertT += scene.getAnimationRatio() * (scene.deltaTime / 1000);
         }
         const sweepRad = (p.sweepAngle * Math.PI) / 180;
@@ -1110,7 +1059,7 @@ function _startBoneLock(): void {
             return;
         }
         // 仅 orbit 模式生效
-        if (_cameraMode !== 'orbit') {
+        if (getCameraMode() !== 'orbit') {
             return;
         }
         const cam = _currentCamera;
@@ -1180,11 +1129,11 @@ export function getCameraState(): CameraState {
     const target = isArc ? cam.target : null;
     return {
         // ADR-100 P3：双写——新双轴字段 + 反查 mode（供旧版本降级读取）
-        mode: deriveLegacyMode(_cameraControl, _cameraBehavior, _scriptedSubMode),
-        control: _cameraControl,
-        behavior: _cameraBehavior,
-        scriptedSubMode: _scriptedSubMode,
-        preset: deepClone(_currentPreset),
+        mode: deriveLegacyMode(getCameraControl(), getCameraBehavior(), getScriptedSubMode()),
+        control: getCameraControl(),
+        behavior: getCameraBehavior(),
+        scriptedSubMode: getScriptedSubMode(),
+        preset: deepClone(getCameraPreset()),
         fov: _fov,
         alpha,
         beta,
@@ -1225,13 +1174,13 @@ export function setCameraState(s: CameraState): void {
             delete (loaded as Partial<CameraPreset>).concert;
         }
         // 深合并到默认预设，补齐新增/缺失字段，防止旧存档缺字段导致 NaN。
-        _currentPreset = {
+        setCameraPreset({
             mode: loaded.mode ?? def.mode,
             orbit: { ...def.orbit, ...(loaded.orbit || {}) },
             freefly: { ...def.freefly, ...(loaded.freefly || {}) },
             surround: { ...def.surround, ...(loaded.surround || {}) },
             concert: { ...def.concert, ...(loaded.concert || {}) },
-        };
+        });
     }
 
     // ── ADR-100 P3：双轴解析（新字段优先，旧 mode 兜底）──
@@ -1310,8 +1259,8 @@ export function setCameraState(s: CameraState): void {
     // 避免因模型加载顺序导致当前 _focusCenterY 与实际聚焦模型不匹配。
     // 旧存档缺 focusCenterY 时回退到当前 _focusCenterY（可能不准确）。
     if (cam instanceof ArcRotateCamera) {
-        const refCenterY = s.focusCenterY ?? _focusCenterY;
-        _currentPreset.orbit.targetHeight = (s.targetY ?? 8) - refCenterY;
+        const refCenterY = s.focusCenterY ?? getFocusCenterY();
+        getCameraPreset().orbit.targetHeight = (s.targetY ?? 8) - refCenterY;
     }
     // ADR-100 P3：订阅 beat（beatcut 行为需要）；restoreAutoCameraState 内部幂等，重复调用安全。
     if (_autoCameraEnabled) {
@@ -1373,7 +1322,7 @@ export function restoreAutoCameraState(): void {
         _autoCameraEnabled = true;
         _autoCameraBeatsPerSwitch = s.autoCameraBeatsPerSwitch || 4;
         _subscribeAutoCameraBeat();
-        _syncAxesFromMode(_cameraMode);
+        _syncAxesFromMode(getCameraMode());
     }
 }
 
@@ -1472,3 +1421,12 @@ function _onAutoCameraBeat(): void {
         cam.radius = preset.radius;
     }
 }
+
+// ======== Re-exports from camera-state.ts (backward compat) ========
+export {
+    getCameraMode, getCameraControl, getCameraBehavior, getScriptedSubMode,
+    getOrbitParams, getFreeflyParams, getConcertParams, getSurroundParams,
+    getConcertPaused, setConcertPaused, getSurroundPaused, setSurroundPaused,
+    getCameraVmdName, getCameraVmdPath, hasCameraVmd,
+    getFov, isTouchDevice,
+} from './camera-state';
