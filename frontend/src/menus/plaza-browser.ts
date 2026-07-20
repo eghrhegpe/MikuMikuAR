@@ -6,12 +6,13 @@ import type { PlazaCreator } from './plaza-creators';
 import {
     allSites, allCreators, currentSiteId, setCurrentSiteId,
     setAllSites, setAllCreators, CUSTOM_SITES_PATH, GLOBAL_MODE_KEY,
-    SITE_GROUPS, getCurrentSite, layer, setLayer, getLayer,
+    SITE_GROUPS, getCurrentSite, getLayer,
     plazaProxyActive, setPlazaProxyActive,
     plazaIframe, setPlazaIframe,
     remoteURLDisplay, setRemoteURLDisplay,
     remoteProgress, setRemoteProgress,
     loadGlobalMode, saveGlobalMode, effectiveMode,
+    stopProxy, closePlaza,
     type OpenMode,
 } from './plaza-state';
 import { FetchPlazaConfig, GetCachedPlazaConfig, ReadTextFile,
@@ -20,15 +21,16 @@ import { FetchPlazaConfig, GetCachedPlazaConfig, ReadTextFile,
 } from '../core/wails-bindings';
 import { NavigatePlazaWindow } from '@bindings/mikumikuar/internal/app/app';
 import { isAndroidPlatform, openExternalURL } from '../core/platform';
-import { closeAllOverlays, swallowError } from '../core/utils';
+import { closeAllOverlays, swallowError, escapeHtml } from '../core/utils';
 import { safeCallAsync } from '../core/safe-call';
 import { setStatus } from '../core/status-bar';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
 import { showErrorToast } from '../core/toast';
-import { registerShortcuts } from '../core/shortcut-registry';
 import { addDisposableListener, type Disposable } from '../core/dom';
 import { safeDispose } from '../core/dispose-helpers';
+import { _plazaBtn, _plazaSectionHeader } from './plaza-thumbnail';
+import { installDownloadListener, installEventListeners, installShortcuts, ensureObserver } from './plaza-download';
 import { PLAZA_SITES } from './plaza-sites';
 import { PLAZA_CREATORS } from './plaza-creators';
 
@@ -51,38 +53,6 @@ const L: Record<string, string> = {
     downloading: '下载中',
     downloadComplete: '下载完成',
 };
-
-// ======== 公共 DOM 辅助函数 ========
-
-export function escapeHtml(s: string): string {
-    return s.replace(/[&<>"']/g, (c) =>
-        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] ?? c);
-}
-
-export function _plazaBtn(html: string, onClick: () => void, className = 'plaza-btn', title?: string): HTMLButtonElement {
-    const btn = document.createElement('button');
-    btn.className = className;
-    btn.innerHTML = html;
-    btn.onclick = onClick;
-    if (title) btn.title = title;
-    return btn;
-}
-
-export function _plazaSectionHeader(titleHtml: string, ...actions: HTMLElement[]): HTMLDivElement {
-    const header = document.createElement('div');
-    header.className = 'plaza-section-header';
-    const title = document.createElement('div');
-    title.className = 'plaza-section-title';
-    title.innerHTML = titleHtml;
-    header.appendChild(title);
-    if (actions.length > 0) {
-        const actionBar = document.createElement('div');
-        actionBar.className = 'plaza-section-actions';
-        for (const a of actions) actionBar.appendChild(a);
-        header.appendChild(actionBar);
-    }
-    return header;
-}
 
 // ======== 站点数据管理 ========
 
@@ -670,5 +640,12 @@ export function renderRemote(site: PlazaSite): void {
     el.appendChild(root);
 }
 
-// 从 plaza.ts 引用的函数
-import { stopProxy, closePlaza } from './plaza-state';
+// ======== 入口函数 ========
+
+export async function showPlaza(): Promise<void> {
+    installDownloadListener();
+    installEventListeners();
+    installShortcuts();
+    ensureObserver();
+    await renderHome();
+}

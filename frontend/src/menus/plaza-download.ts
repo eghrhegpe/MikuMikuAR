@@ -12,6 +12,7 @@ import { swallowError } from '../core/utils';
 import { safeCallAsync } from '../core/safe-call';
 import {
     PlazaGoBack, PlazaGoForward, PlazaReload, PlazaZoomIn, PlazaZoomOut, PlazaZoomReset,
+    DownloadFromPlaza,
 } from '../core/wails-bindings';
 import {
     downloadListenerInstalled, setDownloadListenerInstalled,
@@ -21,15 +22,6 @@ import {
     observer, setObserver,
     getLayer, stopProxy, closePlaza,
 } from './plaza-state';
-import { renderHome } from './plaza-browser';
-
-// ======== 本地化文本 ========
-
-const L: Record<string, string> = {
-    loading: '加载中...',
-    downloading: '下载中',
-    downloadComplete: '下载完成',
-};
 
 // ======== 下载监听 ========
 
@@ -61,7 +53,6 @@ export async function handlePlazaDownload(
 
     setStatus(t('plaza.downloading', { name: filename }), false, true);
     try {
-        const { DownloadFromPlaza } = await import('../core/wails-bindings');
         if (effectiveSignal.aborted) return;
         if (typeof DownloadFromPlaza !== 'function') throw new Error('binding not available');
         const result = await DownloadFromPlaza(url, filename);
@@ -119,20 +110,20 @@ export function installEventListeners(): void {
     Events.On('plaza:urlChanged', (data) => {
         const d = data as unknown as { url: string; title: string };
         if (remoteURLDisplay) {
-            remoteURLDisplay.textContent = d.title || d.url || L.loading;
+            remoteURLDisplay.textContent = d.title || d.url || t('plaza.loading');
         }
     });
     Events.On('plaza:downloadProgress', (data) => {
         const d = data as unknown as { fileName: string; read: number; total: number; percent: number };
         if (remoteProgress) {
             const percent = d.percent > 0 ? `${d.percent.toFixed(0)}%` : `${(d.read / 1024).toFixed(0)} KB`;
-            remoteProgress.textContent = `${L.downloading} ${d.fileName}: ${percent}`;
+            remoteProgress.textContent = t('plaza.downloading', { name: d.fileName }) + `: ${percent}`;
         }
     });
     Events.On('plaza:downloadComplete', (data) => {
         const d = data as unknown as { fileName: string; size: number };
         if (remoteProgress) {
-            remoteProgress.textContent = `${L.downloadComplete}: ${d.fileName} (${(d.size / 1024).toFixed(1)} KB)`;
+            remoteProgress.textContent = t('plaza.downloaded', { name: d.fileName, size: (d.size / 1024).toFixed(1) });
         }
         setTimeout(() => {
             if (remoteProgress) remoteProgress.textContent = '';
