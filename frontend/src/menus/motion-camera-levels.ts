@@ -688,6 +688,9 @@ function renderWebXRProbeSection(container: HTMLElement): void {
         result.textContent = _formatShortResult(_probeResult);
         container.appendChild(result);
     }
+
+    // === ARCore 共存探针 (ADR-073 P1，仅 Android) ===
+    renderARCoreProbeSection(container);
 }
 
 function _verdictText(verdict: 'full' | 'partial' | 'none'): string {
@@ -714,4 +717,84 @@ function _formatShortResult(r: WebXRProbeResult): string {
     }
     lines.push(r.summary);
     return lines.join('\n');
+}
+
+// ======== ARCore Probe UI (ADR-073 P1) ========
+
+let _arcoreProbeResult: string | null = null;
+
+declare global {
+    interface Window {
+        __onARCoreProbeResult?: (json: string) => void;
+    }
+}
+
+function renderARCoreProbeSection(container: HTMLElement): void {
+    // 仅在 Android 平台显示
+    const w = window.wails;
+    if (!w || typeof w.launchARCoreProbe !== 'function') {
+        return;
+    }
+
+    const sep = document.createElement('div');
+    sep.className = 'cs-separator';
+    container.appendChild(sep);
+
+    const title = document.createElement('div');
+    title.className = 'cs-hint';
+    title.textContent = `── ${t('scene.ar.arcoreProbe')} (ADR-073) ──`;
+    container.appendChild(title);
+
+    slideRow(
+        container,
+        'lucide:box',
+        t('scene.ar.arcoreLaunch'),
+        false,
+        () => {
+            // 注册回调
+            window.__onARCoreProbeResult = (json: string) => {
+                window.__onARCoreProbeResult = undefined;
+                _arcoreProbeResult = json;
+                try {
+                    const r = JSON.parse(json) as {
+                        success: boolean;
+                        arcoreSession: boolean;
+                        cameraFrame: boolean;
+                        webViewOverlay: boolean;
+                        frameCount: number;
+                        error: string | null;
+                    };
+                    if (r.success) {
+                        setStatus(t('scene.ar.arcoreSuccess'), true);
+                    } else {
+                        setStatus(`${t('scene.ar.arcoreFailed')}: ${r.error || 'unknown'}`, false);
+                    }
+                } catch {
+                    setStatus(t('scene.ar.arcoreFailed'), false);
+                }
+                refreshCameraLevel();
+            };
+            w.launchARCoreProbe!();
+            setStatus(t('scene.ar.arcoreLaunching'), true);
+        }
+    );
+
+    // 显示上次探针结果
+    if (_arcoreProbeResult) {
+        const result = document.createElement('div');
+        result.className = 'cs-hint weak-text';
+        result.style.whiteSpace = 'pre-wrap';
+        result.style.fontSize = '0.75em';
+        result.style.lineHeight = '1.4';
+        result.style.padding = '4px 8px';
+        try {
+            const r = JSON.parse(_arcoreProbeResult) as Record<string, unknown>;
+            result.textContent = Object.entries(r)
+                .map(([k, v]) => `${k}: ${v}`)
+                .join('\n');
+        } catch {
+            result.textContent = _arcoreProbeResult;
+        }
+        container.appendChild(result);
+    }
 }
