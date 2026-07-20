@@ -204,6 +204,20 @@ public class WailsJSBridge {
     }
 
     /**
+     * Keep the screen on while the app is in the foreground (ADR-017 A1-04).
+     * Without this, Android's screen timeout turns the display off even while
+     * a dance is playing — the audio keeps running but the screen goes black.
+     * Delegates to WailsBridge.setKeepAwake, which adds/clears
+     * FLAG_KEEP_SCREEN_ON on the activity window (posted to the UI thread).
+     *
+     * Called from JavaScript: wails.setKeepAwake(true|false)
+     */
+    @JavascriptInterface
+    public void setKeepAwake(final boolean on) {
+        bridge.setKeepAwake(on ? 1 : 0);
+    }
+
+    /**
      * Probe WebXR support in the current WebView (ADR-072 P1).
      * Evaluates navigator.xr availability and reports the result back to JS
      * via window.__onWebXRProbeResult(json).
@@ -285,6 +299,27 @@ public class WailsJSBridge {
         activity.runOnUiThread(() -> {
             android.content.Intent intent = new android.content.Intent(activity, ARCoreProbeActivity.class);
             activity.startActivityForResult(intent, 7020, null);
+        });
+    }
+
+    /**
+     * Launch the Vuforia × WebView coexistence probe activity.
+     * Alternative AR probe for devices not supported by ARCore (e.g., Chinese brands).
+     *
+     * The result is delivered to JS via window.__onVuforiaProbeResult(json).
+     *
+     * Called from JavaScript: wails.launchVuforiaProbe()
+     */
+    @JavascriptInterface
+    public void launchVuforiaProbe() {
+        android.app.Activity activity = bridge.getActivity();
+        if (activity == null) {
+            Log.w(TAG, "launchVuforiaProbe: no activity available");
+            return;
+        }
+        activity.runOnUiThread(() -> {
+            android.content.Intent intent = new android.content.Intent(activity, VuforiaProbeActivity.class);
+            activity.startActivityForResult(intent, 7021, null);
         });
     }
 

@@ -291,6 +291,12 @@ async function restoreUIState(): Promise<void> {
     if (s.autoUpdateEnabled) {
         uiState.autoUpdateEnabled = s.autoUpdateEnabled;
     }
+    // Android 屏幕常亮（ADR-017 A1-04）：undefined 视为 true（默认开启）。
+    // 桌面端无 setKeepAwake 桥，可选链自动 no-op；Android 端同步原生窗口标志。
+    if (s.keepAwake !== undefined) {
+        uiState.keepAwake = s.keepAwake;
+    }
+    window.wails?.setKeepAwake?.(s.keepAwake !== false);
     // 恢复原会话级字段（跨重启持久化）
     if (s.fpsLimit !== undefined) {
         uiState.fpsLimit = s.fpsLimit;
@@ -398,7 +404,9 @@ declare global {
             requestCameraPermission?: () => void;
             probeWebXRSupport?: () => void;
             launchARCoreProbe?: () => void;
+            launchVuforiaProbe?: () => void;
             exitApp?: () => void;
+            setKeepAwake?: (on: boolean) => void;
         };
     }
 }

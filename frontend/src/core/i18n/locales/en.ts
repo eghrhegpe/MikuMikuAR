@@ -9,6 +9,8 @@ export const en: Record<string, string> = {
     'settings.font': 'Font',
     'settings.slideAnimation': 'Slide Animation',
     'settings.bgBlur': 'Background Blur',
+    'settings.screen': 'Screen',
+    'settings.keepAwake': 'Keep Screen On',
     'settings.resetAppearance': 'Reset Appearance',
     'settings.filename': 'Filename',
     'settings.library': 'Library',
@@ -855,6 +857,11 @@ export const en: Record<string, string> = {
     'scene.ar.arcoreLaunching': 'ARCore probe launched, check fullscreen probe page…',
     'scene.ar.arcoreSuccess': '🟢 ARCore × WebView coexistence verified!',
     'scene.ar.arcoreFailed': '🔴 ARCore probe failed',
+    'scene.ar.vuforiaProbe': 'Vuforia Coexistence Probe',
+    'scene.ar.vuforiaLaunch': 'Launch Vuforia × WebView Coexistence Probe',
+    'scene.ar.vuforiaLaunching': 'Vuforia probe launched…',
+    'scene.ar.vuforiaSuccess': '🟢 Vuforia × WebView coexistence verified!',
+    'scene.ar.vuforiaFailed': '🔴 Vuforia probe failed',
 
     // scene.bundle — scene pack/unpack status
     'scene.bundle.collecting': 'Collecting scene assets…',

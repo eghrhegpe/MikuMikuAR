@@ -9,6 +9,8 @@ export const zhTW: Record<string, string> = {
     'settings.font': '字體',
     'settings.slideAnimation': '滑動動畫',
     'settings.bgBlur': '背景模糊',
+    'settings.screen': '螢幕',
+    'settings.keepAwake': '螢幕常亮',
     'settings.resetAppearance': '恢復預設外觀',
     'settings.filename': '檔案名稱',
     'settings.library': '庫設定',
@@ -775,6 +777,11 @@ export const zhTW: Record<string, string> = {
     'scene.ar.arcoreLaunching': 'ARCore 探針已啟動，請檢視全螢幕探針頁面…',
     'scene.ar.arcoreSuccess': '🟢 ARCore × WebView 共存驗證通過！',
     'scene.ar.arcoreFailed': '🔴 ARCore 探針失敗',
+    'scene.ar.vuforiaProbe': 'Vuforia 共存探針',
+    'scene.ar.vuforiaLaunch': '啟動 Vuforia × WebView 共存探針',
+    'scene.ar.vuforiaLaunching': 'Vuforia 探針已啟動…',
+    'scene.ar.vuforiaSuccess': '🟢 Vuforia × WebView 共存驗證通過！',
+    'scene.ar.vuforiaFailed': '🔴 Vuforia 探針失敗',
 
     // —— Scene Bundle ——
     'scene.bundle.collecting': '正在收集場景資源……',

@@ -26,6 +26,8 @@ import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 import { getLang, setLang, SUPPORTED_LANGS } from '../core/i18n/locale';
 import { AVAILABLE_LANGS } from '../core/i18n/t';
+import { uiState, setUIState } from '../core/state';
+import { isAndroidPlatform } from '../core/platform';
 
 // ======== UI 尺寸控件（缩放 + 弹窗宽度） ========
 function _renderUISizeControls(
@@ -261,6 +263,29 @@ function _renderAnimationControls(
     );
 }
 
+// ======== 屏幕控件（仅 Android：屏幕常亮） ========
+function _renderScreenControls(
+    container: HTMLElement,
+    getSettingsMenu: () => SettingsMenuHandle
+): void {
+    addSectionTitle(container, t('settings.screen'));
+    addToggleRow(
+        container,
+        t('settings.keepAwake'),
+        uiState.keepAwake !== false,
+        (v) => {
+            // 持久化（防抖写回 Go 配置）+ 立即同步原生窗口标志
+            setUIState({ keepAwake: v });
+            window.wails?.setKeepAwake?.(v);
+            getSettingsMenu()?.updateControls();
+        },
+        'lucide:sun',
+        {
+            bind: () => uiState.keepAwake !== false,
+        }
+    );
+}
+
 // ======== 恢复默认 ========
 function _renderResetButton(
     container: HTMLElement,
@@ -293,7 +318,7 @@ function _renderResetButton(
 // ======== Schema 定义 ========
 
 function buildAppearanceSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
-    return [
+    const nodes: MenuNode[] = [
         // 卡片 1：UI 尺寸（缩放 + 弹窗宽度）
         {
             id: 'appearance:size',
@@ -402,7 +427,21 @@ function buildAppearanceSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
                 });
             },
         },
-    ] satisfies MenuNode[];
+    ];
+    // 屏幕常亮仅 Android 有效（桌面无 setKeepAwake 桥），避免展示无效开关。
+    // 插入到动效卡片之后（index 5），保持「恢复默认」始终位于末尾。
+    if (isAndroidPlatform()) {
+        nodes.splice(5, 0, {
+            id: 'appearance:screen',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    _renderScreenControls(inner, getSettingsMenu);
+                });
+            },
+        });
+    }
+    return nodes;
 }
 
 export function buildSettingsAppearanceLevel(
