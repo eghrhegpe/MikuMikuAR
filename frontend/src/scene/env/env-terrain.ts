@@ -11,6 +11,7 @@ import {
 import { EnvState } from '@/core/config';
 import { createCanvasDataURL } from './env-texture';
 import { clamp01 } from '@/core/utils';
+import { _effectiveBumpLevel } from './env-ground';
 
 // ======== 确定性值噪声（FBM）========
 // 用整数哈希产生可复现的伪随机，seed 相同则地形一致。
@@ -204,10 +205,12 @@ export function applyTerrainMaterial(ground: GroundMesh, state: EnvState, scene:
         }
     }
 
-    // Phase B: 法线贴图（PBR 和 Standard 都用 bumpTexture）
+    // Phase B: 法线贴图（PBR 使用 _effectiveBumpLevel 支持法线扭曲增强，Standard 直接用 groundNormalStrength）
     if (state.groundNormalTexture) {
         mat.bumpTexture = new Texture(resolve(state.groundNormalTexture), scene);
-        mat.bumpTexture.level = state.groundNormalStrength;
+        mat.bumpTexture.level = mat instanceof PBRMaterial
+            ? _effectiveBumpLevel(state)
+            : state.groundNormalStrength;
     }
 }
 

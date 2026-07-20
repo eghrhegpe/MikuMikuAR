@@ -72,7 +72,7 @@ function _effectiveRoughness(state: EnvState): number {
 }
 
 /** ADR-114 Phase 2: 法线扭曲映射到 bumpTexture.level 增强（distort=1 时额外 +2.0）；低质量模式自动关闭 */
-function _effectiveBumpLevel(state: EnvState): number {
+export function _effectiveBumpLevel(state: EnvState): number {
     // 低质量模式自动关闭法线扭曲
     if (state.reflectionQuality === 'low' || state.reflectionQuality === 'off') {
         return state.groundNormalStrength;
