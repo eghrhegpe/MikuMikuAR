@@ -749,11 +749,18 @@ export function disposeClouds(): void {
 // ======== [ADR-138] env-dispatcher 回调注册 ========
 const _CLOUD_KEYS = [
     'cloudsEnabled',
+    'debugClouds',
     'cloudCover',
-    'cloudSpeed',
+    'cloudScale',
     'cloudHeight',
-    'cloudDensity',
-    'cloudLightAttenuation',
+    'cloudThickness',
+    'cloudVisibility',
+    'cloudGap',
+    'cloudErosion',
+    'cloudWeatherStrength',
+    'cloudBacklight',
+    'cloudPowder',
+    'cloudQuality',
 ];
 
 registerEnvCallback((changed, state) => {

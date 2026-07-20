@@ -275,7 +275,10 @@ const groundReflection = new PlanarReflection({
     // ADR-114 Phase 2: 开启 mipmap 供 PBR roughness 驱动反射模糊
     generateMipMaps: true,
     getQuality: (s) => {
-        if (s.reflectionQuality !== 'off') return s.reflectionQuality;
+        // reflectionQuality 显式指定（含 'off'）直接返回；仅当值不在合法列表时 fallback
+        if (['high', 'medium', 'low', 'off'].includes(s.reflectionQuality)) {
+            return s.reflectionQuality;
+        }
         const map: Record<string, string> = { high: 'high', medium: 'medium', low: 'low' };
         return map[s.qualityProfile] ?? 'off';
     },
