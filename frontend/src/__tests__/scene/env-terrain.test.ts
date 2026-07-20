@@ -1,4 +1,17 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+import { Scene } from '@babylonjs/core/scene';
+
+// 隔离全局 scene 单例：env-terrain.ts 从 env-ground.ts 导入 _effectiveBumpLevel，
+// 后者传递性拉起 scene/render/performance.ts → scene/scene.ts。scene.ts 模块顶层
+// new Scene(engine) 在 vitest 下会崩——Engine 已被别名到 mocks/engine-mock.ts，
+// 该 mock 无 scenes 数组，真实 Scene 构造器执行 engine.scenes.push(this) 时抛
+// "Cannot read properties of undefined (reading 'push')"。
+// 被测的 hash2/valueNoise/fbm/generateTerrainHeightmapURL 均为纯函数，不依赖 scene
+// 单例，故 mock 掉顶层 Scene 构造即可（与 env-impl.test.ts 同一模式）。
+vi.mock('../../scene/scene', () => ({
+    scene: {} as unknown as Scene,
+}));
+
 import { hash2, valueNoise, fbm, generateTerrainHeightmapURL } from '../../scene/env/env-terrain';
 
 // happy-dom 无真实 2D canvas；为 generateTerrainHeightmapURL 提供最小桩：
