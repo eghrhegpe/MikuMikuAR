@@ -6,7 +6,6 @@ scope:
     - frontend/src/menus/
     - frontend/src/menus/menu-schema.ts
     - frontend/src/menus/menu.ts
-    - frontend/src/menus/builders/
 ---
 
 ## SlideMenu 引擎
@@ -69,25 +68,19 @@ function setStateValue(path: StatePath, value: any) {
 }
 ```
 
-## 菜单文件组织（51 个文件）
+## 菜单文件组织（64 个文件）
 
 ```
 frontend/src/menus/
 ├── menu.ts              — SlideMenu 引擎核心
 ├── menu-schema.ts       — MenuNode/MenuItem 类型定义
 ├── menu-factory.ts      — 工厂函数（创建各类菜单项）
-├── menu-helpers.ts      — UI 工具函数
-├── menu-icons.ts        — 图标映射表
-├── menu-init.ts         — 初始化入口
-├── builders/            — 子菜单 builder（每个文件一个功能域）
-│   ├── build-env-menu.ts
-│   ├── build-light-menu.ts
-│   ├── build-motion-menu.ts
-│   ├── build-model-menu.ts
-│   └── ...（约 30 个 builder）
-└── panels/              — 独立面板组件
-    ├── settings-panel.ts
-    └── ...
+├── env-menu.ts          — 环境菜单总入口
+├── motion-popup.ts      — 动作菜单总入口
+├── scene-menu.ts        — 场景菜单总入口
+├── settings.ts          — 设置页总入口
+├── ...（其他菜单文件）
+└── __tests__/           — 单元测试
 ```
 
 ## 回调钩子
@@ -118,7 +111,7 @@ menu.onAfterRender = () => { ... };
 
 | 规则 | 说明 |
 |------|------|
-| 新增菜单项 | 在对应 `build-*-menu.ts` 中用 `MenuNode` 声明 |
+| 新增菜单项 | 在对应菜单文件（如 `env-menu.ts`、`motion-popup.ts`）中用 `MenuNode` 声明 |
 | 绑定状态 | 使用 `statePath: 'env.xxx'` 自动双向绑定 |
 | 动态显隐 | 用 `visibleWhen: () => boolean`，不手动操作 DOM |
 | 不直接操作 DOM | 通过 Schema 声明 + 引擎渲染，保持数据驱动 |
