@@ -1198,4 +1198,12 @@ export function buildGroundPresetEnvState(preset: GroundPreset): Partial<EnvStat
 
 export function disposeGround(): void {
     disposeGroundReflection();
+    if (_envSys.ground.mesh) {
+        disposeGroundMaterial(_envSys.ground.mesh.material);
+        _envSys.ground.mesh.dispose();
+        _envSys.ground.mesh = null;
+    }
+    _currentGroundKey = '';
+    _groundScrollU = 0;
+    _groundScrollV = 0;
 }
