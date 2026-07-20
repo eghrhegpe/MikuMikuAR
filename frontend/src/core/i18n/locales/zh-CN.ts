@@ -832,6 +832,14 @@ export const zhCN: Record<string, string> = {
     'scene.ar.cameraUnavailable': '✗ 摄像头不可用（环境未提供媒体能力，可能需在桌面端授予权限）',
     'scene.ar.switchedUser': '✓ 已切换到前置摄像头',
     'scene.ar.switchedEnv': '✓ 已切换到后置摄像头',
+    'scene.ar.webxrProbe': 'WebXR 探针',
+    'scene.ar.webxrProbing': '探测中…',
+    'scene.ar.webxrDeepProbe': '深度探针（触发 AR 权限）',
+    'scene.ar.webxrCopyReport': '复制报告',
+    'scene.ar.webxrCopied': '✓ 探针报告已复制到剪贴板',
+    'scene.ar.webxrVerdictFull': '🟢 WebXR 路线可行',
+    'scene.ar.webxrVerdictPartial': '🟡 部分支持，需降级共存',
+    'scene.ar.webxrVerdictNone': '🔴 不可行，转原生 ARCore 路线',
 
     // scene.bundle — 场景打包/解包状态
     'scene.bundle.collecting': '正在收集场景资源…',

@@ -764,6 +764,14 @@ export const ko: Record<string, string> = {
         '✗ 카메라를 사용할 수 없음(환경에서 미디어 기능을 제공하지 않음, 데스크톱은 권한 부여가 필요할 수 있음)',
     'scene.ar.switchedUser': '✓ 전면 카메라로 전환됨',
     'scene.ar.switchedEnv': '✓ 후면 카메라로 전환됨',
+    'scene.ar.webxrProbe': 'WebXR 프로브',
+    'scene.ar.webxrProbing': '탐지 중…',
+    'scene.ar.webxrDeepProbe': '심층 프로브 (AR 권한 트리거)',
+    'scene.ar.webxrCopyReport': '보고서 복사',
+    'scene.ar.webxrCopied': '✓ 프로브 보고서가 클립보드에 복사됨',
+    'scene.ar.webxrVerdictFull': '🟢 WebXR 경로 가능',
+    'scene.ar.webxrVerdictPartial': '🟡 부분 지원, 폴백 공존 필요',
+    'scene.ar.webxrVerdictNone': '🔴 불가능, 네이티브 ARCore 경로로 전환',
 
     // —— Scene Bundle ——
     'scene.bundle.collecting': '씬 에셋 수집 중…',

@@ -52,6 +52,12 @@ import {
     getARFacing,
     isARActive,
 } from '../scene/ar/ar-camera';
+import {
+    probeWebXR,
+    probeWebXRFeatures,
+    formatProbeReport,
+    type WebXRProbeResult,
+} from '../scene/ar/ar-webxr-probe';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
 import { renderMenu } from './render-menu';
 import { addDisabledRow } from '../core/ui-helpers';
@@ -590,4 +596,122 @@ function renderARParams(container: HTMLElement): void {
         tip.textContent = t('motion.cameraStarting');
         container.appendChild(tip);
     }
+
+    // === WebXR 探针 (ADR-072 P1) ===
+    renderWebXRProbeSection(container);
+}
+
+// ======== WebXR Probe UI ========
+
+let _probeResult: WebXRProbeResult | null = null;
+let _probing = false;
+
+function renderWebXRProbeSection(container: HTMLElement): void {
+    // 分隔线
+    const sep = document.createElement('div');
+    sep.className = 'cs-separator';
+    container.appendChild(sep);
+
+    // 探针标题
+    const title = document.createElement('div');
+    title.className = 'cs-hint';
+    title.textContent = `── ${t('scene.ar.webxrProbe')} (ADR-072) ──`;
+    container.appendChild(title);
+
+    // 快速探针按钮（非侵入式）
+    slideRow(
+        container,
+        'lucide:radar',
+        _probing ? t('scene.ar.webxrProbing') : t('scene.ar.webxrProbe'),
+        false,
+        async () => {
+            if (_probing) return;
+            _probing = true;
+            refreshCameraLevel();
+            try {
+                _probeResult = await probeWebXR();
+                setStatus(_verdictText(_probeResult.verdict), _probeResult.verdict !== 'none');
+            } catch (e) {
+                setStatus(`WebXR probe error: ${e}`, false);
+            }
+            _probing = false;
+            refreshCameraLevel();
+        }
+    );
+
+    // 深度探针按钮（会触发 AR session + 权限弹窗）
+    slideRow(
+        container,
+        'lucide:scan',
+        t('scene.ar.webxrDeepProbe'),
+        false,
+        async () => {
+            if (_probing) return;
+            _probing = true;
+            refreshCameraLevel();
+            try {
+                _probeResult = await probeWebXRFeatures();
+                setStatus(_verdictText(_probeResult.verdict), _probeResult.verdict !== 'none');
+            } catch (e) {
+                setStatus(`WebXR deep probe error: ${e}`, false);
+            }
+            _probing = false;
+            refreshCameraLevel();
+        }
+    );
+
+    // 复制报告按钮（仅在有结果时显示）
+    if (_probeResult) {
+        slideRow(
+            container,
+            'lucide:copy',
+            t('scene.ar.webxrCopyReport'),
+            false,
+            async () => {
+                try {
+                    await navigator.clipboard.writeText(formatProbeReport(_probeResult!));
+                    setStatus(t('scene.ar.webxrCopied'), true);
+                } catch {
+                    // clipboard API 可能不可用（需用户手势）
+                    setStatus('Clipboard unavailable', false);
+                }
+            }
+        );
+
+        // 显示探针结果摘要
+        const result = document.createElement('div');
+        result.className = 'cs-hint weak-text';
+        result.style.whiteSpace = 'pre-wrap';
+        result.style.fontSize = '0.75em';
+        result.style.lineHeight = '1.4';
+        result.style.padding = '4px 8px';
+        result.textContent = _formatShortResult(_probeResult);
+        container.appendChild(result);
+    }
+}
+
+function _verdictText(verdict: 'full' | 'partial' | 'none'): string {
+    switch (verdict) {
+        case 'full':
+            return t('scene.ar.webxrVerdictFull');
+        case 'partial':
+            return t('scene.ar.webxrVerdictPartial');
+        case 'none':
+            return t('scene.ar.webxrVerdictNone');
+    }
+}
+
+function _formatShortResult(r: WebXRProbeResult): string {
+    const lines: string[] = [
+        `${_verdictText(r.verdict)}`,
+        `platform: ${r.platform}`,
+        `navigator.xr: ${r.xrAvailable ? '✓' : '✗'}`,
+        `immersive-ar: ${r.immersiveAR ? '✓' : '✗'}`,
+    ];
+    if (r.immersiveAR) {
+        lines.push(`hit-test: ${r.hitTest ? '✓' : '?'}`);
+        lines.push(`plane-detection: ${r.planeDetection ? '✓' : '?'}`);
+    }
+    lines.push(r.summary);
+    return lines.join('\n');
 }
