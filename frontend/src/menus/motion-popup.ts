@@ -1,60 +1,25 @@
-// [doc:architecture] Motion Popup — 动作弹窗（核心 + barrel export）
-// 拆分后保留: 动作绑定/音乐/动作菜单/入口 + barrel re-export
+// [doc:architecture] Motion Popup — 动作弹窗（barrel + 路由 + 入口注册）
+// 拆分后保留: registerPopupMenu 注册 / MOTION_FOLDER_ROUTES / motionOnItemClick 路由
+// 子文件: motion-binding-ui / motion-detail-ui / motion-root-ui
 
 import {
     setStatus,
-    libraryRoot,
-    overridePaths,
     PopupLevel,
     PopupRow,
     getBrowseDir,
     isPlaying,
     setIsPlaying,
     mmdRuntime,
-    autoLoop,
-    setAutoLoop,
     stackRegistry,
     closeAllOverlays,
-    cardContainer,
 } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
-import {
-    slideRow,
-    addToggleRow,
-    addSliderRow,
-    addEmptyRow,
-    addSectionTitle,
-    addPresetChip,
-} from '../core/ui-helpers';
 import { loadManager } from '../core/load-manager';
-
-import {
-    loadVPDPose,
-    updatePlaybackUI,
-    focusModel,
-    getPhysicsCategories,
-    isPhysicsCategoryEnabled,
-    setPhysicsCategory,
-    modelManager,
-} from '../scene/scene';
-import {
-    getVmdLayers,
-    toggleVmdLayer,
-    setVmdLayerWeight,
-    removeVmdLayer,
-    replaceVmdLayerVmd,
-} from '../scene/motion/vmd-layers';
-import { clearAudio, getAudioName, syncAudioPlayback } from '../outfit/audio';
-import {
-    loadAndRetargetAnimation,
-    playRetargetedAnimation,
-} from '../scene/motion/animation-retargeter';
-import { triggerAutoSave, pushUndoSnapshot, offerSceneUndo } from '../scene/scene';
-import { SelectImportFile } from '../core/wails-bindings';
-import { addDisposableListener } from '../core/dom';
+import { modelManager, updatePlaybackUI, loadVPDPose, triggerAutoSave, pushUndoSnapshot, offerSceneUndo } from '../scene/scene';
+import { getVmdLayers } from '../scene/motion/vmd-layers';
+import { clearAudio, getAudioName } from '../outfit/audio';
 import {
     setProcMotionMode,
-    getProcMotionState,
     regenerateProcMotion,
     getLipSyncState,
     setLipSyncEnabled,
@@ -63,654 +28,47 @@ import type { ProcMotionMode } from '../motion-algos/procedural-motion';
 import { buildProcMotionLevel } from './motion-procmotion-levels';
 import { buildGazeTrackingLevel } from './motion-gaze-levels';
 import { buildCameraLevel } from './motion-camera-levels';
-import {
-    buildMotionOverrideLevel,
-    buildModuleParamLevel,
-    buildAdvancedBoneOverrideLevel,
-} from './motion-override-levels';
-import {
-    initMotionModules,
-    getRegisteredModules,
-    createModule,
-    getModuleState,
-} from '../scene/motion/motion-modules/registry';
+import { buildMotionOverrideLevel } from './motion-override-levels';
 import { buildPoseStudioLevel } from './motion-pose-levels';
-import { t } from '../core/i18n/t'; // [doc:adr-059]
+import { t } from '../core/i18n/t';
 import {
     setActiveMotion,
     getActiveMotion,
-    getMotionGen,
-    resolveCompatibility,
-    initMotionIntent,
 } from '../scene/motion/motion-intent';
-import { applyMotionModulesToModel } from '../scene/motion/motion-modules/registry';
-import type { SceneMotionIntent, VmdLayer, ModelMotionSlots, ModelInstance } from '@/core/types';
-import { renderMenu } from './render-menu';
+import type { VmdLayer } from '@/core/types';
 import { logWarn } from '../core/logger';
-import type { MenuNode } from './menu-schema';
-import { focusedModelId } from '../core/config';
-import { createIconifyIcon } from '../core/icons';
-import { undo, redo, canUndo, canRedo } from '../scene/motion/motion-modules/motion-history';
-import { applyModuleSnapshot } from '../scene/motion/motion-modules/module-base';
+import { addDisposableListener } from '../core/dom';
 
-/**
- * 渲染动作模块开关列表到指定容器。
- * 收敛 ADR-146 主题 11：motion-popup 与 motion-override-levels 两处模块列表渲染段同源重复。
- *
- * @param container       挂载容器
- * @param modelId         目标模型 id
- * @param opts.initModules 是否先调用 initMotionModules() 注册模块（首屏入口用），默认 false
- * @param opts.onEnter     点击模块行进入子页的回调（两处语义一致：push buildModuleParamLevel(modId)）
- */
-export function renderModuleToggleList(
-    container: HTMLElement,
-    modelId: string,
-    opts: { initModules?: boolean; onEnter: (modId: string) => void }
-): void {
-    if (opts.initModules) {
-        initMotionModules();
-    }
-    const modules = getRegisteredModules();
-    for (const mod of modules) {
-        const state = getModuleState(modelId, mod.id);
-        slideRow(
-            container,
-            mod.meta.icon ?? '',
-            t(mod.meta.labelKey),
-            true, // hasArrow → 子页
-            () => opts.onEnter(mod.id),
-            undefined,
-            undefined,
-            undefined,
-            {
-                value: state.enabled,
-                onChange: (v: boolean) => {
-                    const inst = createModule(mod.id, modelId);
-                    if (v) {
-                        inst?.enable();
-                    } else {
-                        inst?.disable();
-                    }
-                    setStatus(
-                        v ? t('motion.override.enabled') : t('motion.override.disabled'),
-                        true
-                    );
-                    getMotionMenu()?.reRender();
-                },
-                bind: () => getModuleState(modelId, mod.id).enabled,
-            }
-        );
-    }
-}
+// ── 子文件导入 ──
+import {
+    resetFocusedLayerId,
+    buildActionBindingLevel,
+    handleModelAction,
+} from './motion-binding-ui';
+import {
+    buildMotionDetailLevel,
+    buildLayerLevel,
+    buildPlaybackSpeedLevel,
+} from './motion-detail-ui';
+import {
+    buildMotionRootLevel,
+    buildMotionRootItems,
+    buildRetargetLevel,
+    importExternalAnimation,
+    hideMotionPopup,
+} from './motion-root-ui';
 
-// 模块级状态（动作绑定面板）：
-//   _focusedLayerId      = 当前「焦点动作」：null=基础动作，string=具体叠加层 id。
-//                         行 leading check-circle 写入；顶层 browse 读取，按需替换该动作。
-//                         「添加动作」语义：无动作→新增基础；焦点层→替换该层；焦点基础→替换基础。
-//                         进入动作绑定面板（motionOnItemClick）重置为 null（基础）。
-let _focusedLayerId: string | null = null;
+// ═══════════════════════════════════════════════════════════
+// Barrel Re-Exports（外部调用方继续从 ./motion-popup 导入）
+// ═══════════════════════════════════════════════════════════
 
-// [doc:adr-121] 默认双槽位（inherit + idle）
-const DEFAULT_MOTION_SLOTS: ModelMotionSlots = {
-    primary: { source: 'inherit', status: 'idle' },
-    overlay: { source: 'inherit', status: 'idle' },
-};
+export { renderModuleToggleList, applyIntentToModel, initMotionBroadcast } from './motion-binding-ui';
+export { syncPlaybackSpeedToRuntime } from './motion-detail-ui';
+export { hideMotionPopup, buildMotionRootItems } from './motion-root-ui';
 
-/** 确保 inst.motionSlots 存在并返回（懒初始化，保留已有 overlay） */
-function _ensureMotionSlots(inst: ModelInstance): ModelMotionSlots {
-    if (!inst.motionSlots) {
-        inst.motionSlots = {
-            primary: { ...DEFAULT_MOTION_SLOTS.primary },
-            overlay: { ...DEFAULT_MOTION_SLOTS.overlay },
-        };
-    }
-    return inst.motionSlots;
-}
-
-// [doc:adr-121] 向单个模型应用动作意图（复用广播与 unpin 场景）
-export function applyIntentToModel(id: string, intent: SceneMotionIntent, gen: number): void {
-    const inst = modelManager.get(id);
-    if (!inst) {
-        return;
-    }
-    const slots = _ensureMotionSlots(inst);
-    const bones =
-        inst.mmdModel?.runtimeBones?.map((b) => b.name) ??
-        inst.meshes[0]?.skeleton?.bones?.map((b) => b.name) ??
-        [];
-    const compat = resolveCompatibility(bones, intent);
-    if (!compat.compatible) {
-        slots.primary = { ...slots.primary, status: 'incompatible' };
-        return;
-    }
-    // [fix:adr-129] 动作本体未变（仅模块配置变更 / 同路径重广播）时跳过 VMD 重载：
-    // 否则每次 setActiveMotion 都会重新 load + seekAnimation(0)，把动画重启到帧 0，
-    // 表现为角色持续抖动 + 播放进度重置到 ~0.01s。
-    if (intent.vmdPath && inst.vmdPath === intent.vmdPath) {
-        applyMotionModulesToModel(id);
-        return;
-    }
-    if (!intent.vmdPath) {
-        // 仅模块配置（无动作路径）或 runtime 未就绪的 pending 状态：不重载 VMD
-        return;
-    }
-    loadManager
-        .load({ kind: 'vmd', path: intent.vmdPath, modelId: id })
-        .then((handle) => {
-            if (getMotionGen() !== gen) {
-                return;
-            }
-            if (handle) {
-                inst.vmdName = handle.name;
-                inst.vmdPath = intent.vmdPath;
-                slots.primary = { source: 'inherit', status: 'compatible' };
-                // [doc:adr-129] 应用场景级模块配置
-                applyMotionModulesToModel(id);
-            }
-        })
-        .catch(() => {
-            if (getMotionGen() !== gen) {
-                return;
-            }
-            slots.primary = { source: 'inherit', status: 'incompatible' };
-        });
-}
-
-// [doc:adr-121] 注册广播回调：setActiveMotion 时按 per-model assignment 策略应用动作
-// 不再在模块顶层注册，改由 scene.ts initScene 通过 initMotionBroadcast() 显式调用
-// 以避免 import 时即注册的副作用（HMR/测试场景下回调被覆盖）
-export function initMotionBroadcast(): void {
-    initMotionIntent((intent, gen, prev) => {
-        for (const [id, inst] of modelManager.modelRegistry) {
-            const slots = inst.motionSlots ?? DEFAULT_MOTION_SLOTS;
-            // pinned/procedural 槽位1 不被场景广播覆盖
-            if (slots.primary.source === 'pinned' || slots.primary.source === 'procedural') {
-                continue;
-            }
-            if (!intent) {
-                if (
-                    inst.mmdModel &&
-                    mmdRuntime &&
-                    inst.vmdPath &&
-                    prev?.vmdPath &&
-                    inst.vmdPath === prev.vmdPath
-                ) {
-                    inst.mmdModel.setRuntimeAnimation(null);
-                    inst.vmdData = null;
-                    inst.vmdName = '';
-                    inst.vmdPath = null;
-                    inst.animationDuration = 0;
-                }
-            } else {
-                applyIntentToModel(id, intent, gen);
-            }
-        }
-    });
-}
-
-// ======== 从子文件导入 ========
-// ======== Barrel Re-Exports ========
-// ======== 物理类别 → i18n key 映射（运行时 t()，支持热切换）========
-const CAT_KEYS: Record<string, string> = {
-    skirt: 'motion.catSkirt',
-    chest: 'motion.catChest',
-    hair: 'motion.catHair',
-    accessory: 'motion.catAccessory',
-};
-
-// ======== Build action model row and binding =====
-// [doc:adr-129] 角色绑定面板：仅保留 per-model 专属功能（姿势库、pin/unpin、物理开关）
-// 动作覆盖模块已移至场景级（随动作走），不再在此面板显示
-
-function buildActionBindingSchema(id: string): MenuNode[] {
-    const inst = modelManager.get(id);
-    if (!inst) {
-        return [] satisfies MenuNode[];
-    }
-
-    return [
-        // 卡片 1：姿势库
-        {
-            id: 'binding:pose',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    slideRow(inner, 'lucide:user', t('motion.poseLibrary'), true, () => {
-                        const level = stackRegistry.buildLevel!(
-                            getBrowseDir('vpd'),
-                            t('motion.poseLibrary'),
-                            (m) => m.format === 'vpd',
-                            getMotionMenu() ?? undefined
-                        );
-                        level.label = t('motion.poseTo', { name: inst.name });
-                        if (getMotionMenu()) {
-                            getMotionMenu()?.push(level);
-                        }
-                    });
-                });
-            },
-        },
-        // 卡片 2：动作分配策略（pin/unpin）
-        {
-            id: 'binding:assignment',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    const slots = inst.motionSlots ?? DEFAULT_MOTION_SLOTS;
-                    const active = getActiveMotion();
-                    const isPinned = slots.primary.source === 'pinned';
-                    const isIncompatible = slots.primary.status === 'incompatible';
-                    const hasGlobalMotion = !!active && !!active.vmdPath;
-
-                    // 不兼容提示
-                    if (isIncompatible) {
-                        const warn = document.createElement('div');
-                        warn.style.cssText =
-                            'color:var(--color-warn);padding:4px 0;font-size:12px;';
-                        warn.textContent = t('motion.intent.incompatible');
-                        inner.appendChild(warn);
-                    }
-
-                    if (hasGlobalMotion || isPinned) {
-                        if (isPinned) {
-                            addPresetChip(inner, t('motion.context.unpin'), false, () => {
-                                _ensureMotionSlots(inst).primary = {
-                                    source: 'inherit',
-                                    status: 'idle',
-                                };
-                                if (active) {
-                                    applyIntentToModel(id, active, getMotionGen());
-                                }
-                                getMotionMenu()?.reRender();
-                                setStatus(t('motion.override.redoApplied'), true);
-                            });
-                        } else {
-                            addPresetChip(inner, t('motion.context.pinMotion'), false, () => {
-                                if (active) {
-                                    _ensureMotionSlots(inst).primary = {
-                                        source: 'pinned',
-                                        pinned: structuredClone(active),
-                                        status: 'overridden',
-                                    };
-                                    getMotionMenu()?.reRender();
-                                    setStatus(t('motion.override.redoApplied'), true);
-                                }
-                            });
-                        }
-                    } else {
-                        const hint = document.createElement('div');
-                        hint.className = 'cs-hint';
-                        hint.textContent = t('motion.intent.noGlobalHint');
-                        inner.appendChild(hint);
-                    }
-                });
-            },
-        },
-        // 卡片 3：物理开关
-        {
-            id: 'binding:tools',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    const cats = getPhysicsCategories(id);
-                    if (cats.length === 0) {
-                        addEmptyRow(inner, t('motion.noPhysics'));
-                        return;
-                    }
-                    for (const cat of cats) {
-                        const enabled = isPhysicsCategoryEnabled(id, cat);
-                        addToggleRow(
-                            inner,
-                            t(CAT_KEYS[cat] || cat),
-                            enabled,
-                            (v) => {
-                                setPhysicsCategory(id, cat, v);
-                                getMotionMenu()?.updateControls();
-                                const catLabel = t(CAT_KEYS[cat] || cat);
-                                setStatus(
-                                    v
-                                        ? t('motion.catEnabled', { cat: catLabel })
-                                        : t('motion.catDisabled', { cat: catLabel }),
-                                    true
-                                );
-                            },
-                            'lucide:settings',
-                            {
-                                bind: () => isPhysicsCategoryEnabled(id, cat),
-                            }
-                        );
-                    }
-                });
-            },
-        },
-    ] satisfies MenuNode[];
-}
-
-function buildActionBindingLevel(id: string): PopupLevel {
-    const inst = modelManager.get(id);
-    if (!inst) {
-        return { label: t('motion.intent.title'), dir: '', items: [] };
-    }
-    return {
-        label: inst.name,
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            renderMenu(buildActionBindingSchema(id), container);
-        },
-    };
-}
-
-/** 单图层次级菜单：将「内联权重进度条」下沉为可扩展的次级菜单项。
- *  行三区(leading eye / label / trailing trash)仅做快操，细节编辑走此菜单，
- *  与模型库「齿轮→工具菜单」范式一致，为后续大统一铺路。 */
-function buildLayerLevel(layerId: string, id: string): PopupLevel {
-    return {
-        label: t('motion.layerSettings'),
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            const layer = getVmdLayers(id).find((l) => l.id === layerId);
-            if (!layer) {
-                return;
-            }
-            const schema: MenuNode[] = [
-                // 启用开关（原行内 eye 开关下沉至此）
-                {
-                    id: 'layer:enable',
-                    kind: 'custom',
-                    renderCustom: (c) => {
-                        cardContainer(c, (inner) => {
-                            addToggleRow(
-                                inner,
-                                t('motion.enable'),
-                                layer.enabled,
-                                () => {
-                                    toggleVmdLayer(layerId, id);
-                                    getMotionMenu()?.reRender();
-                                },
-                                'lucide:eye',
-                                {
-                                    bind: () =>
-                                        getVmdLayers(id).find((l) => l.id === layerId)?.enabled ??
-                                        false,
-                                }
-                            );
-                        });
-                    },
-                },
-                // 权重滑块（原行内进度条的等价功能，下沉至此）
-                {
-                    id: 'layer:weight',
-                    kind: 'custom',
-                    renderCustom: (c) => {
-                        cardContainer(c, (inner) => {
-                            addSliderRow(
-                                inner,
-                                t('motion.weight'),
-                                layer.weight,
-                                0,
-                                1,
-                                0.05,
-                                (v) => setVmdLayerWeight(layerId, v, id),
-                                'lucide:sliders-horizontal'
-                            );
-                        });
-                    },
-                },
-                // 删除图层
-                {
-                    id: 'layer:delete',
-                    kind: 'custom',
-                    renderCustom: (c) => {
-                        cardContainer(c, (inner) => {
-                            slideRow(
-                                inner,
-                                'lucide:trash-2',
-                                t('motion.deleteLayer'),
-                                false,
-                                () => {
-                                    const snap = pushUndoSnapshot();
-                                    removeVmdLayer(layerId, id);
-                                    triggerAutoSave();
-                                    getMotionMenu()?.pop();
-                                    getMotionMenu()?.reRender();
-                                    offerSceneUndo(t('motion.deleteLayer'), snap, () => {
-                                        getMotionMenu()?.reRender();
-                                        setStatus(t('motion.undoApplied'), true);
-                                    });
-                                },
-                                undefined,
-                                undefined,
-                                undefined,
-                                undefined,
-                                { variant: 'danger' }
-                            );
-                        });
-                    },
-                },
-            ];
-            renderMenu(schema, container);
-        },
-    };
-}
-
-// ======== Motion Detail (ADR-129 Phase 2) ========
-
-/**
- * 动作详情子页 schema——场景级当前动作的统一管理入口（ADR-129 Phase 2）。
- * 整合：当前动作 + 清除 / 图层管理 / 完整播放控制（播放·循环·进度·速度）。
- * 图层以「聚焦模型 / 首个 actor」为目标，与根层 Card 1 状态行共用 playback.ts 单一数据源。
- */
-function buildMotionDetailSchema(): MenuNode[] {
-    const active = getActiveMotion();
-    const foc = modelManager.focused();
-    const target =
-        foc ?? [...modelManager.modelRegistry.values()].find((m) => m.kind === 'actor') ?? null;
-
-    return [
-        {
-            id: 'detail:main',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    // ── 当前动作 ──
-                    addSectionTitle(inner, t('motion.currentMotion'));
-                    slideRow(
-                        inner,
-                        active ? 'lucide:clapperboard' : 'lucide:circle-slash',
-                        active?.vmdName || t('motion.intent.none'),
-                        false,
-                        () => {},
-                        undefined,
-                        undefined,
-                        undefined,
-                        undefined,
-                        { wrapLabel: true }
-                    );
-                    if (active && target?.mmdModel && mmdRuntime) {
-                        addPresetChip(inner, t('motion.clearVmd'), false, () => {
-                            const snap = pushUndoSnapshot();
-                            setActiveMotion(null);
-                            if (isPlaying) {
-                                mmdRuntime.pauseAnimation();
-                                setIsPlaying(false);
-                            }
-                            updatePlaybackUI();
-                            getMotionMenu()?.reRender();
-                            triggerAutoSave();
-                            setStatus(t('motion.motionCleared'), true);
-                            offerSceneUndo(t('motion.motionCleared'), snap, () => {
-                                getMotionMenu()?.reRender();
-                                setStatus(t('motion.undoApplied'), true);
-                            });
-                        });
-                    }
-
-                    // ── 图层（有叠加层时显示） ──
-                    if (active && active.vmdLayers.length > 0) {
-                        addSectionTitle(inner, t('motion.layerSettings'));
-                        for (const layer of active.vmdLayers) {
-                            slideRow(
-                                inner,
-                                '',
-                                layer.name,
-                                false,
-                                () => {
-                                    const lvl = buildLayerLevel(layer.id, target?.id ?? '');
-                                    getMotionMenu()?.push(lvl);
-                                },
-                                undefined,
-                                undefined,
-                                undefined,
-                                undefined,
-                                {
-                                    wrapLabel: true,
-                                    trailing: {
-                                        icon: 'lucide:settings-2',
-                                        title: t('library.modelTools'),
-                                        onClick: () => {
-                                            const lvl = buildLayerLevel(layer.id, target?.id ?? '');
-                                            getMotionMenu()?.push(lvl);
-                                        },
-                                    },
-                                }
-                            );
-                        }
-                    }
-
-                    // ── 动作覆盖（模块列表） ──
-                    if (active) {
-                        const modelId = focusedModelId;
-                        if (modelId) {
-                            addSectionTitle(inner, t('motion.override.title'));
-
-                            // 撤销/重做
-                            const btnGroup = document.createElement('div');
-                            btnGroup.style.cssText = 'display:flex;gap:4px;padding:0 0 4px;';
-
-                            const undoBtn = document.createElement('button');
-                            undoBtn.className = 'slide-action';
-                            const undoIcon = createIconifyIcon('lucide:undo-2');
-                            if (undoIcon) {
-                                undoBtn.appendChild(undoIcon);
-                            }
-                            undoBtn.title = 'Ctrl+Z';
-                            undoBtn.style.opacity = canUndo(modelId) ? '1' : '0.3';
-                            undoBtn.style.pointerEvents = canUndo(modelId) ? 'auto' : 'none';
-                            undoBtn.addEventListener('click', () => {
-                                if (!canUndo(modelId)) {
-                                    return;
-                                }
-                                const applier = (
-                                    snap: Record<
-                                        string,
-                                        {
-                                            enabled: boolean;
-                                            params: Record<
-                                                string,
-                                                import('@/core/types').ParamValue
-                                            >;
-                                        }
-                                    >
-                                ) => {
-                                    applyModuleSnapshot(modelId, snap);
-                                };
-                                undo(modelId, applier);
-                                setStatus(t('motion.undoApplied'), true);
-                                getMotionMenu()?.reRender();
-                            });
-                            btnGroup.appendChild(undoBtn);
-
-                            const redoBtn = document.createElement('button');
-                            redoBtn.className = 'slide-action';
-                            const redoIcon = createIconifyIcon('lucide:redo-2');
-                            if (redoIcon) {
-                                redoBtn.appendChild(redoIcon);
-                            }
-                            redoBtn.title = 'Ctrl+Shift+Z';
-                            redoBtn.style.opacity = canRedo(modelId) ? '1' : '0.3';
-                            redoBtn.style.pointerEvents = canRedo(modelId) ? 'auto' : 'none';
-                            redoBtn.addEventListener('click', () => {
-                                if (!canRedo(modelId)) {
-                                    return;
-                                }
-                                const applier = (
-                                    snap: Record<
-                                        string,
-                                        {
-                                            enabled: boolean;
-                                            params: Record<
-                                                string,
-                                                import('@/core/types').ParamValue
-                                            >;
-                                        }
-                                    >
-                                ) => {
-                                    applyModuleSnapshot(modelId, snap);
-                                };
-                                redo(modelId, applier);
-                                setStatus(t('motion.override.redoApplied'), true);
-                                getMotionMenu()?.reRender();
-                            });
-                            btnGroup.appendChild(redoBtn);
-
-                            inner.appendChild(btnGroup);
-
-                            // 模块列表
-                            renderModuleToggleList(inner, modelId, {
-                                initModules: true,
-                                onEnter: (modId) => getMotionMenu()?.push(buildModuleParamLevel(modId)),
-                            });
-
-                            // 高级骨骼覆盖入口
-                            slideRow(
-                                inner,
-                                'tabler:bone',
-                                t('motion.boneOverride.title'),
-                                true,
-                                () => {
-                                    getMotionMenu()?.push(buildAdvancedBoneOverrideLevel());
-                                }
-                            );
-                        }
-                    }
-
-                    // ── 播放速度 ──
-                    addSectionTitle(inner, t('motion.playbackSpeed'));
-                    addSliderRow(
-                        inner,
-                        t('motion.playbackSpeed'),
-                        _playbackSpeed,
-                        0.1,
-                        2.0,
-                        0.05,
-                        (v) => {
-                            _playbackSpeed = v;
-                            if (mmdRuntime) {
-                                mmdRuntime.timeScale = v;
-                            }
-                        },
-                        'lucide:gauge'
-                    );
-                });
-            },
-        },
-    ] satisfies MenuNode[];
-}
-
-function buildMotionDetailLevel(): PopupLevel {
-    return {
-        label: t('motion.detail.title'),
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            renderMenu(buildMotionDetailSchema(), container);
-        },
-    };
-}
-
-// ======== Motion Stack ========
+// ═══════════════════════════════════════════════════════════
+// 入口注册
+// ═══════════════════════════════════════════════════════════
 
 const {
     getMenu: getMotionMenu,
@@ -730,9 +88,7 @@ const {
 
 export { getMotionMenu, refreshMotionRoot, showMotionPopup };
 
-// 当库扫描完成时，如果动作菜单已打开则 reRender，
-// 使音乐库等依赖 allModels 的 renderCustom 回调拿到最新数据。
-// 提取为命名函数以便 removeEventListener 配对
+// 当库扫描完成时，如果动作菜单已打开则 reRender
 const _onLibraryScanned = (): void => {
     getMotionMenu()?.reRender();
 };
@@ -743,8 +99,10 @@ export function disposeMotionPopup(): void {
     _libraryScannedDisp.dispose();
 }
 
-/** motion-popup 的 onFolderEnter 路由（从 makeMotionMenu 提取） */
-// [doc:adr-065] 子层路由表：target → 纯 items 构建器；自动挂 itemBuilder 实现语言热刷新
+// ═══════════════════════════════════════════════════════════
+// 子层路由表（ADR-065）
+// ═══════════════════════════════════════════════════════════
+
 const MOTION_FOLDER_ROUTES: Record<string, () => PopupLevel> = {
     'motion:camera': buildCameraLevel,
     'motion:playbackSpeed': buildPlaybackSpeedLevel,
@@ -765,12 +123,13 @@ function motionOnFolderEnter(row: PopupRow): PopupLevel | null {
     return null;
 }
 
-/** motion-popup 的 onItemClick（从 makeMotionMenu 提取） */
+// ═══════════════════════════════════════════════════════════
+// 点击路由
+// ═══════════════════════════════════════════════════════════
+
 function motionOnItemClick(row: PopupRow): void {
     if (row.model) {
-        // [doc:adr-131] 相机 VMD 加载入口：通过 outcome.mode='bindCameraVmd' 标识
-        // （由 motion-camera-levels.ts 的「加载相机 VMD」按钮在 buildLevel 时设置）。
-        // 必须在动作 VMD 分支之前检查，否则会被场景级动作加载拦截。
+        // [doc:adr-131] 相机 VMD 加载入口
         const outcome = getMotionMenu()?.currentLevel?.outcome;
         if (row.model.format === 'vmd' && outcome?.mode === 'bindCameraVmd') {
             loadManager
@@ -788,16 +147,10 @@ function motionOnItemClick(row: PopupRow): void {
                 });
             return;
         }
-        // 顶层「添加动作」上下文敏感语义（对齐模型库「加载首个/替换已选」能力，移除叠加入口）：
-        //   · 无动作            → 新增为第一个基础动作（loadManager.load 写 vmdData）
-        //   · 焦点在具体叠加层  → 仅替换该层 VMD（replaceVmdLayerVmd，保留层 id/权重/启用，不清旧）
-        //   · 焦点在基础动作    → 替换基础动作（loadManager.load 覆盖 vmdData，保留其余图层）
-        // 基础/图层选中由行 leading check-circle 写入 _focusedLayerId；进入面板默认 null=基础。
+        // 场景级 VMD 加载
         if (row.model.format === 'vmd') {
-            // 场景级路径：VMD 选中后直接加载（无 per-model 绑定，统一走 outcome 契约）
             const cur = getActiveMotion();
             if (!cur) {
-                // 无动作 → 设为当前动作
                 setActiveMotion({
                     vmdPath: row.model.file_path,
                     vmdName: row.model.name_jp || row.model.name_en || '',
@@ -805,7 +158,6 @@ function motionOnItemClick(row: PopupRow): void {
                     source: 'vmd',
                 });
             } else {
-                // 已有动作 → 添加为叠加层
                 const layerName = (row.model.name_jp || row.model.name_en || '').replace(
                     /\.vmd$/i,
                     ''
@@ -814,7 +166,7 @@ function motionOnItemClick(row: PopupRow): void {
                     id: `layer_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
                     name: layerName,
                     kind: 'vmd',
-                    data: new ArrayBuffer(0), // 运行时由广播加载
+                    data: new ArrayBuffer(0),
                     path: row.model.file_path,
                     weight: 1.0,
                     enabled: true,
@@ -846,10 +198,10 @@ function motionOnItemClick(row: PopupRow): void {
         }
         return;
     }
+    // per-model 动作绑定面板入口
     if (row.target && row.target.startsWith('action:binding:')) {
         const id = row.target.replace('action:binding:', '');
-        // 进入动作绑定面板：焦点动作重置为基础（清跨模型残留焦点）
-        _focusedLayerId = null;
+        resetFocusedLayerId();
         const lvl = buildActionBindingLevel(id);
         lvl.itemBuilder = () => buildActionBindingLevel(id).items;
         if (getMotionMenu()) {
@@ -867,74 +219,13 @@ function motionOnItemClick(row: PopupRow): void {
         getMotionMenu()?.reRender();
         return;
     }
+    // per-model 播放控制（委托到 motion-binding-ui）
     if (row.target && row.target.startsWith('action:motion:')) {
         const parts = row.target.split(':');
         const action = parts[2];
         const id = parts.slice(3).join(':');
-        if (!id) {
-            return;
-        }
-        const inst = modelManager.get(id);
-        if (!inst) {
-            return;
-        }
-        switch (action) {
-            case 'pause':
-                if (mmdRuntime) {
-                    if (isPlaying) {
-                        mmdRuntime.pauseAnimation();
-                        setIsPlaying(false);
-                        setAutoLoop(false);
-                    } else {
-                        setAutoLoop(true);
-                        mmdRuntime
-                            .playAnimation()
-                            .then(() => setIsPlaying(true))
-                            .catch((err) => {
-                                setIsPlaying(false);
-                                logWarn('motion-popup', 'playAnimation failed:', err);
-                            });
-                    }
-                    updatePlaybackUI();
-                    getMotionMenu()?.reRender();
-                }
-                break;
-            case 'reset':
-                if (inst.mmdModel && mmdRuntime) {
-                    setActiveMotion(null);
-                    if (isPlaying) {
-                        mmdRuntime.pauseAnimation();
-                        setIsPlaying(false);
-                    }
-                    updatePlaybackUI();
-                    if (getMotionMenu()) {
-                        getMotionMenu()?.reRender();
-                    }
-                    setStatus(t('motion.motionReset'), true);
-                }
-                break;
-            case 'pose':
-                (async () => {
-                    const level = stackRegistry.buildLevel!(
-                        getBrowseDir('vpd'),
-                        t('motion.poseLibrary'),
-                        (m) => m.format === 'vpd',
-                        getMotionMenu() ?? undefined
-                    );
-                    level.label = t('motion.poseTo', { name: inst.name });
-                    if (getMotionMenu()) {
-                        getMotionMenu()?.push(level);
-                    }
-                })();
-                break;
-            case 'loop':
-                setAutoLoop(!autoLoop);
-                getMotionMenu()?.reRender();
-                setStatus(
-                    t('motion.loopState', { state: autoLoop ? t('motion.on') : t('motion.off') }),
-                    true
-                );
-                break;
+        if (id) {
+            handleModelAction(action, id);
         }
         return;
     }
@@ -950,9 +241,9 @@ function motionOnItemClick(row: PopupRow): void {
         }
         return;
     }
-    // [doc:adr-129] 场景级动作库浏览：选 VMD → setActiveMotion 广播到所有 inherit 模型。
+    // [doc:adr-129] 场景级动作库浏览
     if (row.target === '__scene_motion_browse__') {
-        _focusedLayerId = null;
+        resetFocusedLayerId();
         const foc = modelManager.focused();
         const target =
             foc ?? [...modelManager.modelRegistry.values()].find((m) => m.kind === 'actor') ?? null;
@@ -960,7 +251,6 @@ function motionOnItemClick(row: PopupRow): void {
             setStatus(t('motion.retarget.noModel'), false);
             return;
         }
-        // [doc:adr-131] 连续预览：声明 stay 契约，点选 VMD 后保持浏览器打开
         const level = stackRegistry.buildLevel!(
             getBrowseDir('vmd'),
             t('motion.browseMotionLibrary'),
@@ -974,7 +264,7 @@ function motionOnItemClick(row: PopupRow): void {
         }
         return;
     }
-    // [doc:adr-129] 动作详情入口：当前场景级动作 → 图层管理 + 清除 + 播放控制
+    // [doc:adr-129] 动作详情入口
     if (row.target === '__motion_detail__') {
         const lvl = buildMotionDetailLevel();
         lvl.itemBuilder = () => [];
@@ -1000,336 +290,15 @@ function motionOnItemClick(row: PopupRow): void {
         return;
     }
     if (row.target === '__retarget_mixamo__') {
-        _importExternalAnimation('mixamo');
+        importExternalAnimation('mixamo');
         return;
     }
     if (row.target === '__retarget_vrm__') {
-        _importExternalAnimation('vrm');
+        importExternalAnimation('vrm');
         return;
     }
     if (row.target === '__retarget_custom__') {
-        _importExternalAnimation('custom');
+        importExternalAnimation('custom');
         return;
     }
-}
-
-// ======== Playback Speed (VMD timeScale) ========
-// 仅影响 VMD 骨骼动画时间推进（mmdRuntime.timeScale），不联动音频/节拍/物理/相机 VMD。
-// 模块级变量：mmdRuntime 为 null 时仍记忆用户选择，等 runtime 就绪后应用。
-let _playbackSpeed = 1.0;
-
-/** 将记忆中的播放速度同步到新的 mmdRuntime 实例（防状态漂移）。 */
-export function syncPlaybackSpeedToRuntime(runtime: { timeScale: number }): void {
-    runtime.timeScale = _playbackSpeed;
-}
-
-function buildPlaybackSpeedSchema(): MenuNode[] {
-    return [
-        {
-            id: 'playbackSpeed:slider',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    addSliderRow(
-                        inner,
-                        t('motion.playbackSpeed'),
-                        _playbackSpeed,
-                        0.1,
-                        2.0,
-                        0.05,
-                        (v) => {
-                            _playbackSpeed = v;
-                            if (mmdRuntime) {
-                                mmdRuntime.timeScale = v;
-                            }
-                        },
-                        'lucide:gauge'
-                    );
-                });
-            },
-        },
-    ] satisfies MenuNode[];
-}
-
-function buildPlaybackSpeedLevel(): PopupLevel {
-    return {
-        label: t('motion.playbackSpeed'),
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            renderMenu(buildPlaybackSpeedSchema(), container);
-        },
-    };
-}
-
-// ======== Advanced (收纳高级/技术向功能) ========
-// 注：脚步调整 / 虚拟裙骨已迁移至模型详情页「故障排除」折叠组（per-model）。
-// 骨骼覆盖已移至动作详情页。本「高级」菜单已清空，相关入口已从根菜单移除。
-
-// ======== 外部动作导入 — 骨骼映射预设选择 ========
-
-function buildRetargetLevel(): PopupLevel {
-    return {
-        label: t('motion.retarget.title'),
-        dir: '',
-        items: [
-            {
-                kind: 'action',
-                label: t('motion.retarget.mixamo'),
-                icon: 'lucide:user',
-                target: '__retarget_mixamo__',
-                sublabel: t('motion.retarget.mixamoHint'),
-            },
-            {
-                kind: 'action',
-                label: t('motion.retarget.vrm'),
-                icon: 'lucide:user',
-                target: '__retarget_vrm__',
-                sublabel: t('motion.retarget.vrmHint'),
-            },
-            {
-                kind: 'action',
-                label: t('motion.retarget.customMap'),
-                icon: 'lucide:edit',
-                target: '__retarget_custom__',
-                sublabel: t('motion.retarget.customHint'),
-            },
-        ],
-    };
-}
-
-// ======== Motion Root (items-based) ========
-
-/** 构建当前动作源显示标签（VMD 或程序化动作） */
-function _buildCurrentMotionLabel(): { label: string; icon: string } {
-    const active = getActiveMotion();
-    if (active?.vmdName) {
-        return { label: active.vmdName, icon: 'lucide:clapperboard' };
-    }
-    const procState = getProcMotionState();
-    if (procState.mode !== 'off') {
-        const modeLabel =
-            procState.mode === 'idle' ? t('motion.modeIdle') : t('motion.modeAutodance');
-        return { label: modeLabel, icon: 'lucide:wind' };
-    }
-    return { label: t('motion.noMotionHint'), icon: 'lucide:circle-slash' };
-}
-
-function buildMotionRootItems(): PopupRow[] {
-    const items: PopupRow[] = [];
-    const { label: motionLabel, icon: motionIcon } = _buildCurrentMotionLabel();
-
-    // ===== Card 1: 当前动作（场景级）+ 图层管理 =====
-    const active = getActiveMotion();
-    const procState = getProcMotionState();
-    const hasMotion = !!active?.vmdName || procState.mode !== 'off';
-
-    if (hasMotion && active) {
-        // 当前动作名 → 点击进入详情页（包含覆盖、速度等设置）
-        items.push({
-            kind: 'action',
-            label: motionLabel,
-            icon: motionIcon,
-            target: '__motion_detail__',
-            sublabel: t('motion.currentMotion'),
-            wrapLabel: true,
-            trailing: {
-                icon: 'lucide:trash-2',
-                title: t('motion.clearVmd'),
-                danger: true,
-                onClick: () => {
-                    const snap = pushUndoSnapshot();
-                    setActiveMotion(null);
-                    if (isPlaying && mmdRuntime) {
-                        mmdRuntime.pauseAnimation();
-                        setIsPlaying(false);
-                    }
-                    updatePlaybackUI();
-                    getMotionMenu()?.reRender();
-                    triggerAutoSave();
-                    setStatus(t('motion.motionCleared'), true);
-                    offerSceneUndo(t('motion.motionCleared'), snap, () => {
-                        getMotionMenu()?.reRender();
-                        setStatus(t('motion.undoApplied'), true);
-                    });
-                },
-            },
-        });
-        // 场景级图层列表（内联显示）
-        for (const layer of active.vmdLayers) {
-            items.push({
-                kind: 'action',
-                label: layer.name,
-                icon: 'lucide:layers',
-                target: '',
-                sublabel: `${(layer.weight * 100).toFixed(0)}%`,
-                trailing: {
-                    icon: 'lucide:settings-2',
-                    title: t('library.modelTools'),
-                    onClick: () => {
-                        const foc = modelManager.focused();
-                        const targetId =
-                            foc?.id ??
-                            [...modelManager.modelRegistry.values()].find((m) => m.kind === 'actor')
-                                ?.id ??
-                            '';
-                        const lvl = buildLayerLevel(layer.id, targetId);
-                        getMotionMenu()?.push(lvl);
-                    },
-                },
-            });
-        }
-    } else {
-        // 无动作时显示提示
-        items.push({
-            kind: 'action',
-            label: motionLabel,
-            icon: motionIcon,
-            target: '',
-            sublabel: t('motion.noMotionHint'),
-            wrapLabel: true,
-        });
-    }
-
-    // ===== Card 2: 库 =====
-    items.push({ kind: 'divider', label: '', icon: '', target: '' });
-    items.push({
-        kind: 'action',
-        label: t('motion.browseMotionLibrary'),
-        icon: 'lucide:folder-search',
-        target: '__scene_motion_browse__',
-    });
-    items.push({
-        kind: 'action',
-        label: getAudioName() || t('motion.browseMusic'),
-        icon: 'lucide:music',
-        target: '__music_browse__',
-        sublabel: getAudioName() ? t('motion.musicLibrary') : undefined,
-        wrapLabel: true,
-        trailing: getAudioName()
-            ? {
-                  icon: 'lucide:trash-2',
-                  title: t('motion.removeMusic'),
-                  danger: true,
-                  onClick: () => {
-                      const snap = pushUndoSnapshot();
-                      clearAudio();
-                      getMotionMenu()?.reRender();
-                      setStatus(t('motion.musicRemoved'), true);
-                      offerSceneUndo(t('motion.musicRemoved'), snap, () => {
-                          getMotionMenu()?.reRender();
-                          setStatus(t('motion.undoApplied'), true);
-                      });
-                  },
-              }
-            : undefined,
-    });
-
-    // ===== Card 3: 场景工具 =====
-    items.push({ kind: 'divider', label: '', icon: '', target: '' });
-    items.push({
-        kind: 'folder',
-        label: t('motion.camera'),
-        icon: 'lucide:video',
-        target: 'motion:camera',
-    });
-    items.push({
-        kind: 'folder',
-        label: t('motion.poseStudio.title'),
-        icon: 'lucide:camera',
-        target: 'motion:poseStudio',
-    });
-    items.push({
-        kind: 'folder',
-        label: t('motion.gazeTracking'),
-        icon: 'lucide:eye',
-        target: 'motion:gaze',
-    });
-    if (modelManager.size > 0) {
-        items.push({
-            kind: 'folder',
-            label: t('motion.externalImport'),
-            icon: 'lucide:upload',
-            target: 'motion:retarget',
-        });
-    }
-    return items;
-}
-
-/** 构建 per-model 角色状态子标签 */
-function _buildActorSublabel(inst: {
-    vmdName?: string;
-    motionSlots?: ModelMotionSlots;
-}): string | undefined {
-    const slots = inst.motionSlots ?? DEFAULT_MOTION_SLOTS;
-    if (slots.primary.status === 'incompatible') {
-        return t('motion.intent.incompatible');
-    }
-    if (slots.primary.source === 'pinned') {
-        const name = inst.vmdName || slots.primary.pinned?.vmdName || '?';
-        return t('motion.pinnedFmt', { name });
-    }
-    const active = getActiveMotion();
-    if (active && active.vmdPath) {
-        return t('motion.followGlobal');
-    }
-    return inst.vmdName || undefined;
-}
-
-function buildMotionRootLevel(): PopupLevel {
-    return {
-        label: t('motion.title'),
-        dir: '',
-        items: buildMotionRootItems(),
-        itemBuilder: () => buildMotionRootItems(),
-    };
-}
-
-export function hideMotionPopup(): void {
-    closeAllOverlays();
-}
-
-// ======== 外部动作导入 ========
-
-/** 外部动作导入：选文件 → 重定向骨骼 → 播放。 */
-async function _importExternalAnimation(
-    preset: 'mixamo' | 'vrm' | 'custom' = 'mixamo'
-): Promise<void> {
-    // 1. 选文件
-    let path: string;
-    try {
-        path = await SelectImportFile();
-    } catch {
-        return; // 用户取消
-    }
-    if (!path) {
-        return;
-    }
-
-    // 2. 找聚焦模型
-    const foc = modelManager.focused();
-    if (!foc || !foc.mmdModel) {
-        setStatus(t('motion.retarget.noModel'), false);
-        return;
-    }
-
-    // 3. 获取模型骨骼
-    const mesh = foc.mmdModel.mesh;
-    if (!mesh || !mesh.skeleton) {
-        setStatus(t('motion.retarget.noBones'), false);
-        return;
-    }
-
-    // 4. 加载并重定向
-    const scene = mesh.getScene();
-    const result = await loadAndRetargetAnimation(scene, path, mesh.skeleton, preset);
-    if (!result) {
-        // 错误已在 loadAndRetargetAnimation 中通过 setStatus 报告
-        return;
-    }
-
-    // 5. 播放
-    hideMotionPopup();
-    playRetargetedAnimation(scene, result);
-    setStatus(t('motion.retarget.loaded', { preset }), true);
 }

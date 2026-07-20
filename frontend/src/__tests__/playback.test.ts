@@ -148,15 +148,28 @@ describe('updatePlaybackUI', () => {
         mockDom.seekProgress.style.width = '';
     });
 
-    it('throws when mmdRuntime is null (Fail-Fast)', () => {
+    it('warns and skips when mmdRuntime is null (graceful degradation)', () => {
         mockState.mmdRuntime = null;
-        expect(() => updatePlaybackUI()).toThrow();
+        const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        updatePlaybackUI();
+        expect(spy).toHaveBeenCalledWith(
+            '[playback] updatePlaybackUI: mmdRuntime 或 seekBar 未就绪，跳过本帧'
+        );
+        // DOM 不应被修改
+        expect(mockDom.playbackBar.style.display).toBe('');
+        spy.mockRestore();
     });
 
-    it('throws when dom.seekBar is null (Fail-Fast)', () => {
+    it('warns and skips when dom.seekBar is null (graceful degradation)', () => {
         const saved = mockDom.seekBar;
         mockDom.seekBar = null;
-        expect(() => updatePlaybackUI()).toThrow();
+        const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        updatePlaybackUI();
+        expect(spy).toHaveBeenCalledWith(
+            '[playback] updatePlaybackUI: mmdRuntime 或 seekBar 未就绪，跳过本帧'
+        );
+        expect(mockDom.playbackBar.style.display).toBe('');
+        spy.mockRestore();
         mockDom.seekBar = saved;
     });
 
@@ -204,9 +217,13 @@ describe('updatePlaybackUI', () => {
         expect(mockDom.seekProgress.style.width).toBe('100%');
     });
 
-    it('throws when mmdRuntime is null and dom.playbackBar exists', () => {
+    it('warns and skips when mmdRuntime is null and dom.playbackBar exists', () => {
         mockState.mmdRuntime = null;
-        expect(() => updatePlaybackUI()).toThrow();
+        const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        updatePlaybackUI();
+        expect(spy).toHaveBeenCalled();
+        expect(mockDom.timeDisplay.textContent).toBe('');
+        spy.mockRestore();
     });
 });
 
