@@ -457,7 +457,8 @@ export function applyEnvPresetObject(preset: {
               return { ...preset, ...d };
           })();
     const targetLight: Partial<LightState> = {
-        dirColor: [1, 0.95, 0.9],
+        // dirColor 从天空颜色派生，保持三色统一
+        dirColor: derived.dirDiffuse,
         dirX: derived.dirDirection[0],
         dirY: derived.dirDirection[1],
         dirZ: derived.dirDirection[2],

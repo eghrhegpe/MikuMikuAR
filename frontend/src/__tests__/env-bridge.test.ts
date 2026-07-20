@@ -765,11 +765,12 @@ describe('_applyEnvStateFacade (via setEnvState)', () => {
         expect(mockLightingHemiLight.diffuse.b).toBeCloseTo(avgB);
     });
 
-    it('sets hemiLight.groundColor to fixed neutral', () => {
+    it('sets hemiLight.groundColor from skyColorBot', () => {
         setEnvState({});
-        expect(mockLightingHemiLight.groundColor.r).toBeCloseTo(0.3);
-        expect(mockLightingHemiLight.groundColor.g).toBeCloseTo(0.3);
-        expect(mockLightingHemiLight.groundColor.b).toBeCloseTo(0.4);
+        // groundColor 从 skyColorBot 派生，保持三色统一
+        expect(mockLightingHemiLight.groundColor.r).toBeCloseTo(0.2);
+        expect(mockLightingHemiLight.groundColor.g).toBeCloseTo(0.2);
+        expect(mockLightingHemiLight.groundColor.b).toBeCloseTo(0.25);
     });
 
     it('sets scene.ambientColor based on envIntensity (capped at 0.5)', () => {
