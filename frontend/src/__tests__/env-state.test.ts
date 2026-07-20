@@ -79,6 +79,7 @@ const defaultEnv: EnvState = {
     fresnelPower: 3.0,
     diffuseStrength: 0.15,
     ambientStrength: 0.15,
+    waterRippleSlots: 256,
     rippleNormalStrength: 0.15,
     rippleGlintStrength: 0.25,
     waterNormalStrength: 0.15,

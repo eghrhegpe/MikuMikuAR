@@ -1199,6 +1199,7 @@ export const zhCN: Record<string, string> = {
     'env.foamTransition': '泡沫过渡范围',
     'env.rippleNormal': '涟漪法线强度',
     'env.rippleGlint': '涟漪光泽强度',
+    'env.waterRippleSlots': '涟漪数量',
     'env.causticColor1': '焦散亮色',
     'env.causticColor2': '焦散暗色',
     'env.causticIntensity': '焦散强度',
