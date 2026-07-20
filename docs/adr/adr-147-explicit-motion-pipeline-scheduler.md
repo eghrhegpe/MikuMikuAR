@@ -21,7 +21,7 @@
 | R1 | **双观察者隐式定序，无显式 order 声明** | bone-override（`scene.ts:515` 启动期注册）与 perception（`scene.ts:423` `onModelFocused→activateGazeTracking→activatePerception` 模型聚焦时注册）是**两个独立 `onBeforeRenderObservable` 观察者**，Babylon 按注册先后执行。覆写关系全靠「谁先被 import/调用」，编译器/单测无感知 |
 | R2 | **帧钩子插入序决定同骨获胜者** | `_runFrameHooks`（`bone-override.ts:386`）按 `_frameHooks` **插入顺序**遍历，且在 slot 应用（`:496`）**之前**运行（`:478`）。sway/riding/hand-symmetry 中后注册者对同骨盖过先注册者、也盖过静态 `setBoneOverride` |
 | R3 | **三套作用域副本，状态同步靠手维护** | 引擎层 `_overrideMaps`（per-model）+ 模块层 `intent.motionModules`（per-motion，ADR-129）+ 模块运行时 `_ownedBones`（per-model）三套结构各有副本，靠 `module-base.ts` 的 `setParam`/`enable`/`disable` 手动同步 |
-| R4 | **复合语义跨骨传播，对单测不友好** | `_computeOverride`（`bone-override.ts:166`）`weight≥1` 时 `oldRotation × slot.quat`；现有单测 `oldRotation` 恒为 `Identity`，复合分支从未被真实父骨旋转触发（已通过 D 护栏补 4 例修复） |
+| R4 | **复合语义跨骨传播，对单测不友好** | `_computeOverride`（`bone-override.ts:166`）`weight≥1` 时 `oldRotation × slot.quat`；现有单测 `oldRotation` 恒为 `Identity`，复合分支从未被真实父骨旋转触发（已通过 D 护栏补 4 例 + R4 Slerp 边界 3 例修复，file 现 13 例） |
 
 ---
 
