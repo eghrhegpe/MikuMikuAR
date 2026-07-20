@@ -90,4 +90,7 @@ dependencies {
     implementation 'androidx.security:security-crypto:1.1.0-alpha06'
     // ARCore SDK (ADR-073 P1 探针)
     implementation 'com.google.ar:core:1.42.0'
+    // Vuforia Engine (国产设备 AR 备选探针)
+    // 注意：Vuforia SDK 需从 developer.vuforia.com 手动下载 AAR 并放入 libs/
+    // implementation 'com.ptc.vuforia:vuforia-sdk:10.22.3'
 }
