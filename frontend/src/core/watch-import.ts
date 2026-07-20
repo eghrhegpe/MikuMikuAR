@@ -6,7 +6,7 @@ import { ImportLocalFile, Events } from './wails-bindings';
 import { refreshLibrary } from '../menus/library';
 import { getAutoImportCached } from '../menus/settings-shared';
 import { DebouncedTimer } from './utils';
-import { logWarn } from './logger';
+import { safeCallAsync } from './safe-call';
 
 // ======== Download Watch Notification ========
 const importToastTimer = new DebouncedTimer();
@@ -16,7 +16,7 @@ export async function importToLibrary(path: string, displayName: string): Promis
     try {
         await ImportLocalFile(path);
         setStatus(t('main.imported', { name: displayName }), true);
-        refreshLibrary().catch((err) => logWarn('watch-import', 'refresh after import', err));
+        safeCallAsync('watch-import', 'refresh after import', () => refreshLibrary());
     } catch (err: unknown) {
         setStatus(t('main.importFailed') + ': ' + formatError(err), false);
         console.error('[watch] import failed:', err);

@@ -259,7 +259,7 @@
 ### P1
 
 - [x] `grep -rn "className.*preset-chip" src/menus` 归零（除 `env-preset-levels.ts:142` 豁免）
-- [x] `core/safe-call.ts` 三件套已建 + 单测通过；ADR 枚举「前 11 项」文件内的**纯 logWarn 吞错**散点全部收敛（16 处：outfit/audio×2、outfit-overlay×1、physics-bridge×1、beat-detector×1、env-preset-levels×1、events×1、library-actions×4、init×5）；多用途 catch（含 setStatus/console.error/资源清理/返回值）按设计保留。grep 审计发现更广表面（settings-paths 等 ~9 文件，约 26 处纯吞错 `.catch`）列为 主题2-b 后续，不强行 `grep` 归零以免破坏行为。
+- [x] `core/safe-call.ts` 三件套已建 + 单测通过；ADR 枚举「前 11 项」文件内的**纯 logWarn 吞错**散点全部收敛（16 处：outfit/audio×2、outfit-overlay×1、physics-bridge×1、beat-detector×1、env-preset-levels×1、events×1、library-actions×4、init×5）；多用途 catch（含 setStatus/console.error/资源清理/返回值）按设计保留。主题2-b（箭头形式纯吞错 22 处）已收敛：library-setup×1、menu×5、plaza×2、settings-paths×12（68/78/90 + 9 个 `SETTINGS_ACTION` 方法）、watch-import×1、camera×1；剩余箭头形式属嵌套 promise 链末端（model-detail:813/815、settings-about:178、settings-paths:449），留 主题2-c 逐处定位，不强行机械替换以免破坏链结构。
 - [ ] `grep -rn "if (\_.*\) { \_.*\.dispose(); \_.* = null; }" src/scene/env` 按文件归零
 - [x] `grep -n "onViewMatrixChangedObservable.add" src/scene/camera/camera.ts` 0 处
 - [x] `menus/menu.ts:853-867` 双触发 bug 修复（含 `preventDefault`）
@@ -372,3 +372,20 @@
 验证：`cd frontend && npm run build`（tsc + vite build）通过，0 错误；`grep -n "onViewMatrixChangedObservable.add" src/scene/camera/camera.ts` 归零。行为零变化（仅 observer 生命周期从「依赖 cam.dispose 隐式清理」提升为「显式句柄追踪」）。
 
 提交范围：仅 `frontend/src/scene/camera/camera.ts`、`docs/adr/adr-146-function-duplication-triage.md`。工作树其余 `docs/*` 改动非本次任务，未纳入。
+
+### 2026-07-20 — P1 主题2-b：safeCall 更广表面（箭头形式 22 处）收敛
+
+用户批准「继续」后，推进主题2 更广表面中**低风险、零行为变化**的子集——纯箭头 `.catch((err) => logWarn(tag, msg, err))` 形式（无返回值依赖、无副作用，等价于 `safeCallAsync` 语义）。块形式 `catch {}` 多 50+ 处（含返回值/副作用）及嵌套 promise 链末端留作 主题2-c 逐处确认。
+
+- **收敛 22 处**跨 6 文件，`X().catch(logWarn)` → `safeCallAsync(tag, msg, () => X())`；`await X().catch(logWarn)` → `await safeCallAsync(...)`；`() => X().catch(logWarn)`（SETTINGS_ACTION 方法值）→ `() => safeCallAsync(...)`；`X().then(cb).catch(logWarn)` → `safeCallAsync(tag, msg, () => X().then(cb))`：
+  - `menus/library-setup.ts:85`（CleanOrphanCache，fire-and-forget）
+  - `menus/menu.ts:203,353`（buildPanel + 内联 then 回调，2 处）、`:429,434,439`（buildPanel + `.then(finalize)`，3 处）
+  - `menus/plaza.ts:1039,1044`（await ClosePlazaWindow，2 处）
+  - `menus/settings-paths.ts:68,78,90`（Clear*Cache + then 回调）、`:94-111`（9 个 `SETTINGS_ACTION` 方法值：selectResourceRoot / selectOverridePath 8 类）
+  - `core/watch-import.ts:19`（refreshLibrary，try 内 fire-and-forget）
+  - `scene/camera/camera.ts:694`（setARMode(true).then(ok => ...) 链）
+- **import 处理**：`library-setup`/`settings-paths`/`menu`/`camera` 四文件 `logWarn` 仍有块形式他处使用（library-setup:68/82/87、settings-paths:387、menu:391、camera:741），保留 `logWarn` 并新增 `safe-call` import；`plaza`/`watch-import` 仅 2 处箭头使用，直接以 `safe-call` 替换 `logWarn` import。
+- **语义等价论证**：原 `.catch(handler)` 失败时解析 `undefined`（handler 返回 void），`safeCallAsync` 失败时同样解析 `undefined`，`Promise.all`/对象方法返回值语义不变；`await X().catch(...)` 不消费返回值，`await safeCallAsync(...)` 等价。
+- **主题2-c 预留**（嵌套链末端，需读完整链起点再改，本次不动）：`model-detail.ts:813,815`、`settings-about.ts:178`、`settings-paths.ts:449`。
+
+验证：`cd frontend && npm run build`（tsc + vite）预期 0 错误；`grep -rn "\.catch(.*) => logWarn" src` 在 6 文件归零，全量仅剩 主题2-c 4 处嵌套 + `safe-call.ts`/`utils.ts` 注释。
