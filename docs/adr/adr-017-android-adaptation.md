@@ -130,6 +130,7 @@ type FileAccessor interface {
 | A1-02 | Blender/MMD/外部程序菜单项可见但点击报错 | 前端需隐藏或灰显这些入口 | ✅ 已修复：`platform.ts` `guardExternalAction()` 安卓返回 false（与决策点 5 一致） |
 | A1-03 | `isAndroidPlatform()` 调用时 `window.wails` bridge 未就绪 | 读到 `undefined !== 'android'` → 误判为桌面 | ✅ 已修复：`platform.ts` `isAndroidPlatform()` 改读 `window.wails.platform()` + `awaitWailsBridge()` 轮询待 bridge 就绪 |
 | A1-04 | 看舞蹈时屏幕随系统熄屏超时自动关闭（音频继续播放、画面黑屏） | 核心观看体验中断；USB 调试的「保持唤醒」开发者选项会掩盖该问题，真机用户必现 | ✅ 已修复（2026-07-20）：接线孤儿桥 `WailsBridge.setKeepAwake`——`WailsJSBridge` 暴露 `setKeepAwake` @JavascriptInterface；前端启动恢复设置时调用（undefined 视为开启），外观设置新增「屏幕→屏幕常亮」开关（仅 Android 展示，`keepAwake` 经 `SetUIState` 持久化到 `UIState`） |
+| A1-05 | 屏幕方向无法切换（仅能跟随系统旋转，缺竖/横/自动开关） | 用户无法锁定或主动切换横竖屏（如系统关闭自动旋转时看舞蹈无法转横屏） | ✅ 已实现（2026-07-20）：`WailsJSBridge` 新增 `setScreenOrientation` @JavascriptInterface（映射 `setRequestedOrientation`：portrait/landscape 锁定、auto=UNSPECIFIED 跟随系统）；外观设置「屏幕」卡片加自动/竖屏/横屏三选一（仅 Android，`screenOrientation` 经 `SetUIState` 持久化）；`configChanges` 已声明 orientation|screenSize，旋转就地处理（前端 window-resize → `engine.resize`）不重建 Activity |
 
 ### P2 — 偶发级
 

@@ -218,6 +218,38 @@ public class WailsJSBridge {
     }
 
     /**
+     * Set the requested screen orientation (ADR-017 A1-05).
+     * "portrait" locks portrait, "landscape" locks landscape, anything else
+     * ("auto") resets to the default policy, which follows the user's system
+     * auto-rotate setting. The activity declares
+     * configChanges="orientation|screenSize", so a rotation is handled in
+     * place (onConfigurationChanged + the frontend's window-resize →
+     * engine.resize) without recreating the activity.
+     *
+     * Called from JavaScript: wails.setScreenOrientation("auto"|"portrait"|"landscape")
+     */
+    @JavascriptInterface
+    public void setScreenOrientation(final String mode) {
+        android.app.Activity activity = bridge.getActivity();
+        if (activity == null) {
+            Log.w(TAG, "setScreenOrientation: no activity available");
+            return;
+        }
+        final int requested;
+        if ("portrait".equals(mode)) {
+            requested = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+        } else if ("landscape".equals(mode)) {
+            requested = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+        } else {
+            // "auto" — defer to the default policy (system auto-rotate)
+            requested = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
+        }
+        // @JavascriptInterface runs on the WebView bridge thread;
+        // setRequestedOrientation must be posted to the UI thread.
+        activity.runOnUiThread(() -> activity.setRequestedOrientation(requested));
+    }
+
+    /**
      * Probe WebXR support in the current WebView (ADR-072 P1).
      * Evaluates navigator.xr availability and reports the result back to JS
      * via window.__onWebXRProbeResult(json).

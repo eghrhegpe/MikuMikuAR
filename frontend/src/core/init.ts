@@ -297,6 +297,11 @@ async function restoreUIState(): Promise<void> {
         uiState.keepAwake = s.keepAwake;
     }
     window.wails?.setKeepAwake?.(s.keepAwake !== false);
+    // Android 屏幕方向（ADR-017 A1-05）：undefined 视为 'auto'（跟随系统）。
+    if (s.screenOrientation !== undefined) {
+        uiState.screenOrientation = s.screenOrientation;
+    }
+    window.wails?.setScreenOrientation?.(s.screenOrientation ?? 'auto');
     // 恢复原会话级字段（跨重启持久化）
     if (s.fpsLimit !== undefined) {
         uiState.fpsLimit = s.fpsLimit;
@@ -407,6 +412,7 @@ declare global {
             launchVuforiaProbe?: () => void;
             exitApp?: () => void;
             setKeepAwake?: (on: boolean) => void;
+            setScreenOrientation?: (mode: string) => void;
         };
     }
 }
