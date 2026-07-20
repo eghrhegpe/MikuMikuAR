@@ -54,7 +54,7 @@ import {
 } from '../scene/ar/ar-camera';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
 import { renderMenu } from './render-menu';
-import { addDisabledRow } from '../core/ui-rows';
+import { addDisabledRow } from '../core/ui-helpers';
 import type { MenuNode } from './menu-schema';
 
 function refreshCameraLevel(): void {
