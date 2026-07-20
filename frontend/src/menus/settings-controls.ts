@@ -1,7 +1,10 @@
-// settings-shortcuts.ts — 快捷键设置子菜单
+// settings-controls.ts — 操控设置子菜单（ADR-157：相机项 + 快捷键合并）
+// 相机灵敏度/Y轴反转/自动居中 来自原 settings-performance；快捷键重绑来自原 settings-shortcuts。
 
+import { t } from '../core/i18n/t';
 import { setStatus, uiState, setUIState, cardContainer } from '../core/config';
 import { slideRow, addSectionTitle } from '../core/ui-helpers';
+import { refreshCameraUserSettings } from '../scene/camera/camera';
 import {
     getAllShortcuts,
     formatKeyBinding,
@@ -12,14 +15,106 @@ import {
     exportKeyBindings,
 } from '../core/shortcut-registry';
 import { showConfirm } from '../core/dialog';
-import { t } from '../core/i18n/t';
-import { renderMenu } from './render-menu';
-import type { PopupLevel } from '../core/config';
-import type { MenuNode } from './menu-schema';
-import type { SettingsMenuHandle } from './settings-shared';
 import { addDisposableListener, type Disposable } from '../core/dom';
 import { logWarn } from '../core/logger';
 import { safeDispose } from '../core/dispose-helpers';
+import type { PopupLevel } from '../core/config';
+import type { SettingsMenuHandle } from './settings-shared';
+import { renderMenu } from './render-menu';
+import type { MenuNode } from './menu-schema';
+
+// ======== 卡片 1：相机 ========
+function buildCameraSchema(): MenuNode[] {
+    return [
+        {
+            id: 'controls:camSens',
+            kind: 'slider',
+            label: 'settings.perf.camSens',
+            control: {
+                bind: 'ui.cameraSensitivity',
+                min: 0.2,
+                max: 3,
+                step: 0.1,
+                get: (v) => (v as number) ?? 1,
+                set: (v) => Math.round((v as number) * 10) / 10,
+                onChange: (v) => {
+                    refreshCameraUserSettings();
+                    setStatus(t('settings.camSens', { x: v as number }), true);
+                },
+            },
+            icon: 'lucide:move',
+        },
+        {
+            id: 'controls:camSensHint',
+            kind: 'custom',
+            renderCustom: (c) => {
+                const hint = document.createElement('div');
+                hint.className = 'setting-hint';
+                hint.textContent = t('settings.perf.camSensHint');
+                c.appendChild(hint);
+            },
+        },
+        {
+            id: 'controls:invertY',
+            kind: 'toggle',
+            label: 'settings.perf.invertY',
+            control: {
+                bind: 'ui.invertYAxis',
+                get: (v) => v === true,
+                set: (v) => v,
+                onChange: (v) => {
+                    refreshCameraUserSettings();
+                    setStatus(
+                        t('settings.invertY', { state: v ? t('common.on') : t('common.off') }),
+                        true
+                    );
+                },
+            },
+            icon: 'lucide:flip-vertical',
+        },
+        {
+            id: 'controls:invertYHint',
+            kind: 'custom',
+            renderCustom: (c) => {
+                const hint = document.createElement('div');
+                hint.className = 'setting-hint';
+                hint.textContent = t('settings.perf.invertYHint');
+                c.appendChild(hint);
+            },
+        },
+        {
+            id: 'controls:autoCenter',
+            kind: 'toggle',
+            label: 'settings.perf.autoCenter',
+            control: {
+                bind: 'ui.autoCenterModel',
+                get: (v) => v !== false,
+                set: (v) => v,
+                onChange: (v) => {
+                    setStatus(
+                        t('settings.perf.autoCenterState', {
+                            state: v ? t('common.on') : t('common.off'),
+                        }),
+                        true
+                    );
+                },
+            },
+            icon: 'lucide:crosshair',
+        },
+        {
+            id: 'controls:autoCenterHint',
+            kind: 'custom',
+            renderCustom: (c) => {
+                const hint = document.createElement('div');
+                hint.className = 'setting-hint';
+                hint.textContent = t('settings.perf.autoCenterHint');
+                c.appendChild(hint);
+            },
+        },
+    ] satisfies MenuNode[];
+}
+
+// ======== 快捷键重绑（修复：从 row 精确定位 label/sublabel，避免命中错误行） ========
 
 function _isModifierOnly(code: string): boolean {
     return (
@@ -39,7 +134,7 @@ let _rebindingId: string | null = null;
 function buildShortcutsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
     return [
         {
-            id: 'shortcuts:groups',
+            id: 'controls:shortcut-groups',
             kind: 'custom',
             renderCustom: (container) => {
                 _rebindingId = null;
@@ -83,7 +178,9 @@ function buildShortcutsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
                             const sublabel =
                                 combo + (isOverridden ? ' · ' + t('shortcuts.custom') : '');
 
-                            slideRow(
+                            // 修复：先声明 row 引用，点击时从 row（而非整个卡片容器）定位 label
+                            let rowEl: HTMLElement | null = null;
+                            rowEl = slideRow(
                                 c,
                                 'lucide:keyboard',
                                 t(s.label),
@@ -93,8 +190,9 @@ function buildShortcutsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
                                         return;
                                     }
                                     _rebindingId = s.id;
-                                    const labelSpan = c.querySelector('.slide-label');
-                                    const sublabelSpan = c.querySelector('.slide-sublabel');
+                                    const labelSpan = rowEl?.querySelector('.slide-label') ?? null;
+                                    const sublabelSpan =
+                                        rowEl?.querySelector('.slide-sublabel') ?? null;
                                     if (labelSpan) {
                                         labelSpan.textContent = t('shortcuts.pressNewCombo');
                                     }
@@ -155,16 +253,21 @@ function buildShortcutsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
                                                 })
                                                 .catch((err) =>
                                                     logWarn(
-                                                        'settings-shortcuts',
+                                                        'settings-controls',
                                                         'setUIState failed:',
                                                         err
                                                     )
                                                 );
                                         }
                                     };
-                                    keyDisp = addDisposableListener(document, 'keydown', handler, {
-                                        capture: true,
-                                    });
+                                    keyDisp = addDisposableListener(
+                                        document,
+                                        'keydown',
+                                        handler,
+                                        {
+                                            capture: true,
+                                        }
+                                    );
                                 },
                                 sublabel
                             );
@@ -174,7 +277,7 @@ function buildShortcutsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
             },
         },
         {
-            id: 'shortcuts:reset-all',
+            id: 'controls:shortcut-reset-all',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
@@ -190,13 +293,33 @@ function buildShortcutsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
     ] satisfies MenuNode[];
 }
 
-export function buildSettingsShortcutsLevel(getSettingsMenu: () => SettingsMenuHandle): PopupLevel {
+function buildControlsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
+    return [
+        // 卡片 1：相机
+        {
+            id: 'controls:camera-card',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    addSectionTitle(inner, t('settings.controls.camera'));
+                    renderMenu(buildCameraSchema(), inner);
+                });
+            },
+        },
+        // 快捷键分组卡片 + 重置（buildShortcutsSchema 内部自带 cardContainer）
+        ...buildShortcutsSchema(getSettingsMenu),
+    ];
+}
+
+export function buildSettingsControlsLevel(
+    getSettingsMenu: () => SettingsMenuHandle
+): PopupLevel {
     return {
-        label: t('shortcuts.title'),
+        label: t('settings.controls'),
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildShortcutsSchema(getSettingsMenu), container);
+            renderMenu(buildControlsSchema(getSettingsMenu), container);
         },
     };
 }

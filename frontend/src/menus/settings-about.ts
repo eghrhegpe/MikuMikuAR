@@ -1,133 +1,19 @@
-// settings-about.ts — 关于页面 + 设置导入/导出/重置
+// settings-about.ts — 关于页面（ADR-157 瘦身：仅版本信息 / 链接 / 更新）
+// 设置导入/导出/重置已迁移至 settings-system.ts；快捷键只读副本已删除（可编辑版在操控页）。
 
-import {
-    SetUIScale,
-    SetUIPopupWidth,
-    SetUIAccent,
-    SetUIFontFamily,
-    SetUIAnimations,
-    SetUIBlurBg,
-    SetPerformanceMode,
-    GetBuildInfo,
-    CheckForUpdate,
-    SetUIAutoUpdate,
-} from '../core/wails-bindings';
+import { GetBuildInfo, CheckForUpdate, SetUIAutoUpdate } from '../core/wails-bindings';
 import { setStatus, uiState, setUIState, cardContainer } from '../core/config';
-import { schedulePersistUI } from '../scene/env/env-bridge';
 import { slideRow, addToggleRow, addSectionTitle } from '../core/ui-helpers';
 import { Browser } from '@wailsio/runtime';
 import { t } from '../core/i18n/t';
-import { translateGoError } from '../core/i18n/goerr';
 import { openExternalURL } from '../core/platform';
 import { renderMenu } from './render-menu';
 import type { PopupLevel } from '../core/config';
 import type { MenuNode } from './menu-schema';
-import { applyUIAppearanceDom, type SettingsMenuHandle } from './settings-shared';
-import { getAllShortcuts, formatKeyBinding } from '../core/shortcut-registry';
-import { setPerformanceMode } from '../scene/render/performance';
-import { engine, applyFrameControl } from '../scene/scene';
-import { calcHardwareScaling } from '../core/render-loop';
-import { refreshCameraUserSettings } from '../scene/camera/camera';
-import { setVolume, getVolume, setAudioOffset, getAudioOffset } from '../outfit/audio';
-import { swallowError, jsonStringify } from '../core/utils';
+import type { SettingsMenuHandle } from './settings-shared';
 import { safeCallAsync } from '../core/safe-call';
-import { showConfirm } from '../core/dialog';
 
-function exportSettings(): void {
-    const data = jsonStringify(uiState);
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const stamp = new Date().toISOString().slice(0, 10);
-    a.href = url;
-    a.download = `mikumikuar-settings-${stamp}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    setStatus(t('settings.exported'), true);
-}
-
-function reapplyImportedSettings(): void {
-    applyFrameControl();
-    engine.setHardwareScalingLevel(
-        calcHardwareScaling(window.devicePixelRatio || 1, uiState.renderScale ?? 1)
-    );
-    refreshCameraUserSettings();
-    setVolume(getVolume());
-    setAudioOffset(getAudioOffset());
-    applyUIAppearanceDom(uiState);
-    const pm = uiState.performanceMode ?? 'auto';
-    setPerformanceMode(pm);
-    swallowError(SetPerformanceMode(pm));
-    swallowError(SetUIScale(uiState.scale ?? 1));
-    if (uiState.popupWidth) {
-        swallowError(SetUIPopupWidth(uiState.popupWidth));
-    }
-    if (uiState.accent) {
-        swallowError(SetUIAccent(uiState.accent));
-    }
-    if (uiState.fontFamily) {
-        swallowError(SetUIFontFamily(uiState.fontFamily));
-    }
-    swallowError(SetUIAnimations(uiState.animations !== false));
-    swallowError(SetUIBlurBg(!!uiState.blurBg));
-}
-
-function importSettings(): void {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'application/json,.json';
-    input.onchange = () => {
-        const file = input.files?.[0];
-        if (!file) {
-            return;
-        }
-        const reader = new FileReader();
-        reader.onload = () => {
-            try {
-                const parsed = JSON.parse(String(reader.result)) as Record<string, unknown>;
-                if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-                    throw new Error('文件格式不正确');
-                }
-                Object.assign(uiState, parsed);
-                schedulePersistUI();
-                reapplyImportedSettings();
-                // getSettingsMenu will be called via reRender from the caller
-                setStatus(t('settings.imported'), true);
-            } catch (e) {
-                setStatus(t('settings.importFailed') + translateGoError(e), true);
-            }
-        };
-        reader.onerror = () => setStatus(t('settings.readFailed'), true);
-        reader.readAsText(file);
-    };
-    input.click();
-}
-
-function resetAllSettings(getSettingsMenu: () => SettingsMenuHandle): void {
-    for (const k of Object.keys(uiState)) {
-        delete (uiState as Record<string, unknown>)[k];
-    }
-    schedulePersistUI();
-    reapplyImportedSettings();
-    getSettingsMenu()?.reRender();
-    setStatus(t('settings.resetToDefault'), true);
-}
-
-function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
-    // 从注册表动态读取快捷键，避免硬编码漂移
-    const registeredShortcuts = getAllShortcuts().map((s) => ({
-        key: formatKeyBinding(s.currentKey, s.currentCtrl, s.currentShift, s.currentAlt),
-        desc: t(s.label),
-    }));
-    // 补充：非注册表的连续移动控制（WASD/Q-E 不适合进 shortcut-registry）
-    const extraControls: Array<{ key: string; desc: string }> = [
-        { key: 'WASD', desc: t('settings.about.shortcuts.freefly') },
-        { key: 'Q / E', desc: t('settings.about.shortcuts.freeflyUpDown') },
-    ];
-    const shortcuts = [...registeredShortcuts, ...extraControls];
-
+function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
     return [
         // 卡片 1：版本信息
         {
@@ -135,7 +21,7 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    addSectionTitle(inner, '版本信息');
+                    addSectionTitle(inner, t('settings.about.versionInfo'));
                     const title = document.createElement('div');
                     title.style.cssText = 'text-align:center;padding:16px 14px 8px;';
 
@@ -153,8 +39,7 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
 
                     inner.appendChild(title);
                     safeCallAsync('settings-about', '', () =>
-                        GetBuildInfo()
-                            .then((info) => {
+                        GetBuildInfo().then((info) => {
                             const el = title.querySelector<HTMLElement>('[data-app-version]');
                             if (el) {
                                 el.textContent = `v${info.version}`;
@@ -180,70 +65,7 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                 });
             },
         },
-        // 卡片 2：设置管理（导入/导出/重置）
-        {
-            id: 'about:settings-mgmt',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    addSectionTitle(inner, t('settings.about.settingsMgmt'));
-                    slideRow(
-                        inner,
-                        'lucide:download',
-                        t('settings.about.settingsMgmt.export'),
-                        false,
-                        () => exportSettings()
-                    );
-                    slideRow(
-                        inner,
-                        'lucide:upload',
-                        t('settings.about.settingsMgmt.import'),
-                        false,
-                        () => {
-                            importSettings();
-                            getSettingsMenu()?.reRender();
-                        }
-                    );
-                    slideRow(
-                        inner,
-                        'lucide:rotate-ccw',
-                        t('settings.about.settingsMgmt.reset'),
-                        false,
-                        () => {
-                            showConfirm(t('settings.about.settingsMgmt.resetConfirm')).then(
-                                (ok) => {
-                                    if (ok) {
-                                        resetAllSettings(getSettingsMenu);
-                                    }
-                                }
-                            );
-                        }
-                    );
-                    const hint = document.createElement('div');
-                    hint.className = 'setting-hint';
-                    hint.textContent = t('settings.about.settingsMgmt.hint');
-                    inner.appendChild(hint);
-                });
-            },
-        },
-        // 卡片 3：快捷键列表
-        {
-            id: 'about:shortcuts',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    addSectionTitle(inner, t('settings.about.shortcuts'));
-                    for (const s of shortcuts) {
-                        const row = document.createElement('div');
-                        row.className = 'slide-item';
-                        row.style.cssText = 'padding:6px 14px;';
-                        row.innerHTML = `<span class="slide-label" style="flex:1;">${s.desc}</span><span style="font-family:monospace;font-size:11px;color:var(--accent);background:var(--accent-dim);padding:2px 8px;border-radius:4px;">${s.key}</span>`;
-                        inner.appendChild(row);
-                    }
-                });
-            },
-        },
-        // 卡片 4：链接
+        // 卡片 2：链接
         {
             id: 'about:links',
             kind: 'custom',
@@ -274,7 +96,7 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                 });
             },
         },
-        // 卡片 5：更新
+        // 卡片 3：更新
         {
             id: 'about:update',
             kind: 'custom',
@@ -287,7 +109,7 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                         uiState.autoUpdateEnabled === true,
                         (v) => {
                             setUIState({ autoUpdateEnabled: v });
-                            SetUIAutoUpdate(v);
+                            void SetUIAutoUpdate(v);
                             setStatus(
                                 t('settings.autoUpdate', {
                                     state: v ? t('common.on') : t('common.off'),
@@ -300,8 +122,21 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                     resultRow.className = 'slide-item';
                     resultRow.style.cssText =
                         'flex-direction:column;align-items:stretch;gap:4px;padding:8px 14px;';
-                    resultRow.innerHTML =
-                        '<div data-update-status style="font-size:12px;color:var(--text);">点击「检查更新」查看版本</div><a data-update-link href="#" style="display:none;font-size:12px;color:var(--accent);cursor:pointer;">前往下载最新版本 →</a>';
+
+                    const updateStatus = document.createElement('div');
+                    updateStatus.dataset.updateStatus = '';
+                    updateStatus.style.cssText = 'font-size:12px;color:var(--text);';
+                    updateStatus.textContent = t('settings.about.update.checkHint');
+                    resultRow.appendChild(updateStatus);
+
+                    const updateLink = document.createElement('a');
+                    updateLink.dataset.updateLink = '';
+                    updateLink.href = '#';
+                    updateLink.style.cssText =
+                        'display:none;font-size:12px;color:var(--accent);cursor:pointer;';
+                    updateLink.textContent = t('settings.about.update.goDownload');
+                    resultRow.appendChild(updateLink);
+
                     inner.appendChild(resultRow);
                     slideRow(
                         inner,
@@ -309,43 +144,29 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                         t('settings.about.update.checkNow'),
                         false,
                         async () => {
-                            const statusEl =
-                                resultRow.querySelector<HTMLElement>('[data-update-status]');
-                            const linkEl =
-                                resultRow.querySelector<HTMLAnchorElement>('[data-update-link]');
-                            if (statusEl) {
-                                statusEl.textContent = t('settings.about.update.checking');
-                            }
-                            if (linkEl) {
-                                linkEl.style.display = 'none';
-                            }
+                            updateLink.style.display = 'none';
+                            updateStatus.textContent = t('settings.about.update.checking');
                             try {
                                 const r = await CheckForUpdate();
                                 if (!r) {
-                                    if (statusEl) {
-                                        statusEl.textContent = t('settings.about.update.failed');
-                                    }
+                                    updateStatus.textContent = t('settings.about.update.failed');
                                     return;
                                 }
                                 if (r.error) {
-                                    if (statusEl) {
-                                        statusEl.textContent = t('settings.about.update.error', {
-                                            err: r.error,
-                                        });
-                                    }
+                                    updateStatus.textContent = t('settings.about.update.error', {
+                                        err: r.error,
+                                    });
                                     return;
                                 }
-                                if (statusEl) {
-                                    statusEl.textContent = r.available
-                                        ? t('settings.about.update.available', {
-                                              latest: r.latest,
-                                              current: r.current,
-                                          })
-                                        : t('settings.about.update.latest', { current: r.current });
-                                }
-                                if (linkEl && r.available && r.url) {
-                                    linkEl.style.display = 'inline';
-                                    linkEl.onclick = (e) => {
+                                updateStatus.textContent = r.available
+                                    ? t('settings.about.update.available', {
+                                          latest: r.latest,
+                                          current: r.current,
+                                      })
+                                    : t('settings.about.update.latest', { current: r.current });
+                                if (r.available && r.url) {
+                                    updateLink.style.display = 'inline';
+                                    updateLink.onclick = (e) => {
                                         e.preventDefault();
                                         if (!openExternalURL(r.url)) {
                                             Browser.OpenURL(r.url);
@@ -353,9 +174,7 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                                     };
                                 }
                             } catch {
-                                if (statusEl) {
-                                    statusEl.textContent = t('settings.about.update.failed');
-                                }
+                                updateStatus.textContent = t('settings.about.update.failed');
                             }
                         }
                     );

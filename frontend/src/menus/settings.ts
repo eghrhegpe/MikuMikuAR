@@ -1,6 +1,7 @@
 // [doc:architecture] Settings — 设置页路由 + barrel re-export
 // 规范文档: docs/architecture.md §模型库管理
 // 职责: 菜单注册、路由表、re-export 公开符号
+// ADR-157: 信息架构重组为 7 分类（外观/画面/操控/资源/媒体/系统/关于）。
 // 各子页面实现在 settings-*.ts 子模块中。
 
 import { registerPopupMenu } from './menu-factory';
@@ -21,15 +22,13 @@ export { getSettingsMenu, refreshSettingsRoot, showSettings };
 
 // ======== Sub-module imports ========
 import { buildSettingsAppearanceLevel } from './settings-appearance';
-import { buildSettingsLibraryLevel } from './settings-library';
-import { buildSettingsPathsLevel, handleSettingsAction } from './settings-paths';
-import { buildSettingsPerformanceLevel } from './settings-performance';
-import { buildSettingsRenderingLevel } from './settings-rendering';
-import { buildSettingsScreenshotLevel } from './settings-screenshot';
-import { buildSettingsAudioLevel } from './settings-audio';
+import { buildSettingsGraphicsLevel } from './settings-graphics';
+import { buildSettingsControlsLevel } from './settings-controls';
+import { buildSettingsResourcesLevel } from './settings-resources';
+import { buildSettingsMediaLevel } from './settings-media';
+import { buildSettingsSystemLevel, buildSoftwareDetailLevel } from './settings-system';
 import { buildSettingsAboutLevel } from './settings-about';
-import { buildSettingsShortcutsLevel } from './settings-shortcuts';
-import { buildSettingsSoftwareLevel, buildSoftwareDetailLevel } from './settings-software';
+import { handleSettingsAction } from './settings-actions';
 
 // ======== Menu registration ========
 
@@ -49,7 +48,7 @@ const {
     },
 });
 
-// ======== Root items ========
+// ======== Root items（ADR-157：7 分类） ========
 
 function buildSettingsRootItems(): PopupRow[] {
     const items: PopupRow[] = [];
@@ -61,51 +60,33 @@ function buildSettingsRootItems(): PopupRow[] {
     });
     items.push({
         kind: 'folder',
-        label: t('settings.library'),
-        icon: 'lucide:file-text',
-        target: SETTINGS.LIBRARY,
-    });
-    items.push({
-        kind: 'folder',
-        label: t('settings.performance'),
-        icon: 'lucide:zap',
-        target: SETTINGS.PERFORMANCE,
-    });
-    items.push({
-        kind: 'folder',
-        label: t('settings.rendering'),
+        label: t('settings.graphics'),
         icon: 'lucide:monitor',
-        target: SETTINGS.RENDERING,
+        target: SETTINGS.GRAPHICS,
     });
     items.push({
         kind: 'folder',
-        label: t('settings.paths'),
+        label: t('settings.controls'),
+        icon: 'lucide:gamepad-2',
+        target: SETTINGS.CONTROLS,
+    });
+    items.push({
+        kind: 'folder',
+        label: t('settings.resources'),
         icon: 'lucide:folder-tree',
-        target: SETTINGS.PATHS,
+        target: SETTINGS.RESOURCES,
     });
     items.push({
         kind: 'folder',
-        label: t('settings.screenshot'),
-        icon: 'lucide:camera',
-        target: SETTINGS.SCREENSHOT,
+        label: t('settings.media'),
+        icon: 'lucide:clapperboard',
+        target: SETTINGS.MEDIA,
     });
     items.push({
         kind: 'folder',
-        label: t('settings.audio'),
-        icon: 'lucide:volume-2',
-        target: SETTINGS.AUDIO,
-    });
-    items.push({
-        kind: 'folder',
-        label: t('settings.shortcuts'),
-        icon: 'lucide:keyboard',
-        target: SETTINGS.SHORTCUTS,
-    });
-    items.push({
-        kind: 'folder',
-        label: t('settings.software'),
-        icon: 'lucide:package',
-        target: SETTINGS.SOFTWARE,
+        label: t('settings.system'),
+        icon: 'lucide:settings-2',
+        target: SETTINGS.SYSTEM,
     });
     items.push({
         kind: 'folder',
@@ -138,8 +119,8 @@ function settingsOnFolderEnter(row: PopupRow) {
 
         if (row.target.startsWith(SOFTWARE_DETAIL_PREFIX)) {
             const path = row.target.slice(SOFTWARE_DETAIL_PREFIX.length);
-            const lvl = buildSoftwareDetailLevel(path);
-            lvl.itemBuilder = () => buildSoftwareDetailLevel(path).items;
+            const lvl = buildSoftwareDetailLevel(path, getSettingsMenu);
+            lvl.itemBuilder = () => buildSoftwareDetailLevel(path, getSettingsMenu).items;
             return lvl;
         }
     }
@@ -148,13 +129,10 @@ function settingsOnFolderEnter(row: PopupRow) {
 
 const SETTINGS_FOLDER_ROUTES: Record<SettingsFolderTarget, () => PopupLevel> = {
     [SETTINGS.APPEARANCE]: () => buildSettingsAppearanceLevel(getSettingsMenu),
-    [SETTINGS.LIBRARY]: () => buildSettingsLibraryLevel(getSettingsMenu),
-    [SETTINGS.PERFORMANCE]: () => buildSettingsPerformanceLevel(getSettingsMenu),
-    [SETTINGS.RENDERING]: () => buildSettingsRenderingLevel(getSettingsMenu),
-    [SETTINGS.PATHS]: () => buildSettingsPathsLevel(getSettingsMenu),
-    [SETTINGS.SOFTWARE]: () => buildSettingsSoftwareLevel(),
-    [SETTINGS.SCREENSHOT]: () => buildSettingsScreenshotLevel(getSettingsMenu),
-    [SETTINGS.AUDIO]: () => buildSettingsAudioLevel(getSettingsMenu),
-    [SETTINGS.SHORTCUTS]: () => buildSettingsShortcutsLevel(getSettingsMenu),
+    [SETTINGS.GRAPHICS]: () => buildSettingsGraphicsLevel(getSettingsMenu),
+    [SETTINGS.CONTROLS]: () => buildSettingsControlsLevel(getSettingsMenu),
+    [SETTINGS.RESOURCES]: () => buildSettingsResourcesLevel(getSettingsMenu),
+    [SETTINGS.MEDIA]: () => buildSettingsMediaLevel(getSettingsMenu),
+    [SETTINGS.SYSTEM]: () => buildSettingsSystemLevel(getSettingsMenu),
     [SETTINGS.ABOUT]: () => buildSettingsAboutLevel(getSettingsMenu),
 };
