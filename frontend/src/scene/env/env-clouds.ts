@@ -18,6 +18,7 @@ import { _envSys, getScene } from './env-context';
 import { ensureEnvUpdateObserver } from './env-impl';
 import { registerEnvCallback } from './env-dispatcher';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
+import { safeDispose } from '@/core/dispose-helpers';
 
 // ======== Cloud System Constants ========
 /** Density scale factor applied to cloudCover (1.2 = 20% boost) */
@@ -74,10 +75,7 @@ function _ensureNoiseTexture(scene: Scene): RawTexture3D {
     if (_noiseTex3D && _noiseTex3D.getScene() === scene) {
         return _noiseTex3D;
     }
-    if (_noiseTex3D) {
-        _noiseTex3D.dispose();
-        _noiseTex3D = null;
-    }
+    _noiseTex3D = safeDispose(_noiseTex3D);
     const S = 256;
     const data = _generateNoise3D();
     _noiseTex3D = new RawTexture3D(
@@ -168,10 +166,7 @@ function _ensureBlueNoiseTexture(scene: Scene): Texture {
     if (_blueNoiseTex && _blueNoiseTex.getScene() === scene) {
         return _blueNoiseTex;
     }
-    if (_blueNoiseTex) {
-        _blueNoiseTex.dispose();
-        _blueNoiseTex = null;
-    }
+    _blueNoiseTex = safeDispose(_blueNoiseTex);
     const size = BLUE_NOISE_SIZE;
     const data = _generateBlueNoise(size, 20);
     _blueNoiseTex = new RawTexture(
@@ -230,18 +225,12 @@ let _cloudUpdateHandle: ObserverHandle | null = null;
 /** 清理所有调试可视化对象。 */
 function _clearDebugVisuals(): void {
     const _scene = getScene();
-    if (_debugCloudRing) {
-        _debugCloudRing.dispose();
-        _debugCloudRing = null;
-    }
+    _debugCloudRing = safeDispose(_debugCloudRing);
     for (const m of _debugCloudMarkers) {
         m.dispose();
     }
     _debugCloudMarkers = [];
-    if (_debugCloudDeck) {
-        _debugCloudDeck.dispose();
-        _debugCloudDeck = null;
-    }
+    _debugCloudDeck = safeDispose(_debugCloudDeck);
 }
 
 /** 创建调试可视化对象（红色环 + 色标）。 */
@@ -735,51 +724,26 @@ export function disposeClouds(): void {
     _clearDebugVisuals();
 
     // Remove observers first (before disposing mesh/material)
-    if (_cloudFollowHandle) {
-        _cloudFollowHandle.dispose();
-        _cloudFollowHandle = null;
-    }
-    if (_cloudUpdateHandle) {
-        _cloudUpdateHandle.dispose();
-        _cloudUpdateHandle = null;
-    }
+    _cloudFollowHandle = safeDispose(_cloudFollowHandle);
+    _cloudUpdateHandle = safeDispose(_cloudUpdateHandle);
 
     // Dispose material before mesh (material may reference mesh)
-    if (_volCloudMat) {
-        _volCloudMat.dispose();
-        _volCloudMat = null;
-    }
-    if (_volCloudMesh) {
-        _volCloudMesh.dispose();
-        _volCloudMesh = null;
-    }
+    _volCloudMat = safeDispose(_volCloudMat);
+    _volCloudMesh = safeDispose(_volCloudMesh);
 
     // Clean up _envSys.clouds resources (legacy, kept for safety)
-    if (_envSys.clouds.material) {
-        _envSys.clouds.material.dispose(false, true);
-        _envSys.clouds.material = null;
-    }
-    if (_envSys.clouds.texture) {
-        _envSys.clouds.texture.dispose();
-        _envSys.clouds.texture = null;
-    }
+    _envSys.clouds.material = safeDispose(_envSys.clouds.material, false, true);
+    _envSys.clouds.texture = safeDispose(_envSys.clouds.texture);
     for (const key of ['postProcess', 'postProcess2'] as const) {
         const m = _envSys.clouds[key];
         if (m) {
-            m.dispose();
-            _envSys.clouds[key] = null;
+            _envSys.clouds[key] = safeDispose(m);
         }
     }
 
     // Issue #6: 释放 3D 噪声纹理，避免禁用云时显存泄漏
-    if (_noiseTex3D) {
-        _noiseTex3D.dispose();
-        _noiseTex3D = null;
-    }
-    if (_blueNoiseTex) {
-        _blueNoiseTex.dispose();
-        _blueNoiseTex = null;
-    }
+    _noiseTex3D = safeDispose(_noiseTex3D);
+    _blueNoiseTex = safeDispose(_blueNoiseTex);
 }
 
 // ======== [ADR-138] env-dispatcher 回调注册 ========

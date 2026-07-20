@@ -12,6 +12,7 @@ import type { Camera } from '@babylonjs/core/Cameras/camera';
 import { GlowLayer } from '@babylonjs/core/Layers/glowLayer';
 import { ReflectionProbe } from '@babylonjs/core/Probes/reflectionProbe';
 import { observe, observeOnce, type ObserverHandle } from '@/core/observer-handle';
+import { safeDispose } from '@/core/dispose-helpers';
 import { scheduleRefresh } from '@/core/reactivity';
 import { resetPerformanceSnapshot, isSnapshotResetSuppressed } from './performance';
 import { clamp, clamp01, lerp, lerpArray, setKey } from '@/core/utils';
@@ -152,32 +153,18 @@ export function isRendererReady(): boolean {
 /** 释放渲染管线及相关资源。在场景销毁时调用。 */
 export function disposeRenderer(): void {
     if (_probeRefreshObserver && _scene) {
-        _probeRefreshObserver.dispose();
-        _probeRefreshObserver = null;
+        _probeRefreshObserver = safeDispose(_probeRefreshObserver);
     }
     // HMR 重入时清零时间戳，避免旧值导致下一次 probe refresh 提前触发
     _lastProbeRefresh = 0;
-    if (_glowLayer) {
-        _glowLayer.dispose();
-        _glowLayer = null;
-    }
-    if (_ssrPipeline) {
-        _ssrPipeline.dispose();
-        _ssrPipeline = null;
-    }
-    if (_ssaoPipeline) {
-        _ssaoPipeline.dispose();
-        _ssaoPipeline = null;
-    }
+    _glowLayer = safeDispose(_glowLayer);
+    _ssrPipeline = safeDispose(_ssrPipeline);
+    _ssaoPipeline = safeDispose(_ssaoPipeline);
     if (_contactShadowPP) {
-        _contactShadowPP.dispose();
-        _contactShadowPP = null;
+        _contactShadowPP = safeDispose(_contactShadowPP);
         _contactShadowHandle = null;
     }
-    if (_reflectionProbe) {
-        _reflectionProbe.dispose();
-        _reflectionProbe = null;
-    }
+    _reflectionProbe = safeDispose(_reflectionProbe);
     if (pipeline) {
         pipeline.dispose();
         pipeline = undefined;

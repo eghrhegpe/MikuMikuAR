@@ -4,6 +4,7 @@ import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { Vector3, Matrix } from '@babylonjs/core/Maths/math.vector';
 import { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
+import { safeDispose } from '@/core/dispose-helpers';
 import { Constants } from '@babylonjs/core/Engines/constants';
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
@@ -192,10 +193,7 @@ function ensureTintPostProcess(camera: Camera): void {
 }
 
 function disposeTintPostProcess(): void {
-    if (_tintPostProcess) {
-        _tintPostProcess.dispose();
-        _tintPostProcess = null;
-    }
+    _tintPostProcess = safeDispose(_tintPostProcess);
 }
 
 export function addRipple(pos: Vector3, radius = 5, strength = 0.5, speed = 2, maxLife = 3): void {
@@ -313,10 +311,7 @@ function regenerateCausticTexture(scene: Scene, waterColor: [number, number, num
         ctx.putImageData(imgData, 0, 0);
     };
 
-    if (_causticTexture) {
-        _causticTexture.dispose();
-        _causticTexture = null;
-    }
+    _causticTexture = safeDispose(_causticTexture);
     // 焦散纹理直调 createCanvasTexture（不经 _texCache）：水面单实例，随颜色变化重建；
     // 重建前已 dispose 旧纹理（上方程序 272-275），水 dispose 时一并释放。
     _causticTexture = createCanvasTexture({
@@ -410,10 +405,7 @@ function regenerateDetailNormalTexture(scene: Scene): void {
         ctx.putImageData(imgData, 0, 0);
     };
 
-    if (_detailNormalTexture) {
-        _detailNormalTexture.dispose();
-        _detailNormalTexture = null;
-    }
+    _detailNormalTexture = safeDispose(_detailNormalTexture);
     _detailNormalTexture = createCanvasTexture({
         size: S,
         draw,
@@ -880,36 +872,24 @@ export function disposeWater(): void {
     for (const lod of _waterLODs) {
         lod.dispose();
     }
-    if (_envSys.water.mesh) {
-        _envSys.water.mesh.dispose(true); // true = recursive
-        _envSys.water.mesh = null;
-    }
+    _envSys.water.mesh = safeDispose(_envSys.water.mesh, true); // true = recursive
     _waterLODs = [];
     _activeWaterLOD = -1;
     _waterPhase = 0;
     _waterWaveSpeed = 1;
     clearRipples(); // 清理残留涟漪，避免 dispose 后再次 createWater 时显示旧数据
-    if (_envSys.water.material) {
-        _envSys.water.material.dispose();
-        _envSys.water.material = null;
-    }
+    _envSys.water.material = safeDispose(_envSys.water.material);
     // 释放焦散纹理，防止内存泄漏
-    if (_causticTexture) {
-        _causticTexture.dispose();
-        _causticTexture = null;
-    }
+    _causticTexture = safeDispose(_causticTexture);
     _causticScene = null;
     _lastCausticColor = null;
     // ADR-115 P1: 释放法线细节纹理
-    if (_detailNormalTexture) {
-        _detailNormalTexture.dispose();
-        _detailNormalTexture = null;
-    }
+    _detailNormalTexture = safeDispose(_detailNormalTexture);
     _detailNormalScene = null;
     if (_waterUpdateObserver) {
         // 使用注册时捕获的 scene 引用摘除，避免 getScene() 在 scene 已 dispose 时返回 null 导致漏删
         if (_waterScene) {
-            _waterUpdateObserver.dispose();
+            _waterUpdateObserver = safeDispose(_waterUpdateObserver);
         }
         _waterUpdateObserver = null;
         _waterScene = null;

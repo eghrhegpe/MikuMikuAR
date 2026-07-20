@@ -10,6 +10,7 @@ import { EnvState, envState } from '@/core/config';
 import { getWindVector } from '@/core/wind-utils';
 import { logWarn } from '@/core/logger';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
+import { safeDispose } from '@/core/dispose-helpers';
 import { registerEnvCallback } from './env-dispatcher';
 import { ensureEnvUpdateObserver, addRipple, getGroundHeightAt } from './env-impl';
 import { _envSys, getScene } from './env-context';
@@ -475,18 +476,9 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
 
 export function disposeParticles(): void {
     const scene = getScene();
-    if (_collisionObserver) {
-        _collisionObserver.dispose();
-        _collisionObserver = null;
-    }
-    if (_envSys.particles.followObserver) {
-        _envSys.particles.followObserver.dispose();
-        _envSys.particles.followObserver = null;
-    }
-    if (_envSys.particles.system) {
-        _envSys.particles.system.dispose();
-        _envSys.particles.system = null;
-    }
+    _collisionObserver = safeDispose(_collisionObserver);
+    _envSys.particles.followObserver = safeDispose(_envSys.particles.followObserver);
+    _envSys.particles.system = safeDispose(_envSys.particles.system);
     disposeSplash(); // 粒子销毁时同步销毁溅射
     stopFireworkBursts(); // 烟花 burst 清理
     // 释放粒子纹理缓存（防止 GPU 资源泄漏）
@@ -597,10 +589,7 @@ function _gridCellKey(x: number, z: number): number {
 /** 启动碰撞检测 — 每帧遍历 CPU 粒子数组，检测地面碰撞 */
 function startCollisionDetection(ps: ParticleSystem, type: EnvState['particleType']): void {
     const scene = getScene();
-    if (_collisionObserver) {
-        _collisionObserver.dispose();
-        _collisionObserver = null;
-    }
+    _collisionObserver = safeDispose(_collisionObserver);
 
     const splashProb = type === 'rain' ? 0.15 : type === 'snow' ? 0.3 : 0.4;
     const frameSkip = type === 'rain' ? 4 : 2;
