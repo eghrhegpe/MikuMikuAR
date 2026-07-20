@@ -1,7 +1,9 @@
 package app
 
 import (
+	"bufio"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -308,6 +310,8 @@ func (a *App) StartProxy(target, mode string) (string, error) {
 		port := listener.Addr().(*net.TCPAddr).Port
 
 		rp := httputil.NewSingleHostReverseProxy(targetURL)
+		// FlushInterval=-1：有数据立即刷出，SSE / 流式响应不攒缓冲。
+		rp.FlushInterval = -1
 		baseDirector := rp.Director
 		rp.Director = func(req *http.Request) {
 		baseDirector(req)
@@ -420,7 +424,14 @@ func (a *App) StartProxy(target, mode string) (string, error) {
 		mux := http.NewServeMux()
 		mux.HandleFunc("/__plaza_dl__", a.handlePlazaDownloadPost)
 		mux.HandleFunc("/__plaza_url__", a.handlePlazaUrlPost)
-		mux.Handle("/", rp)
+		// WebSocket 升级请求走专用 Hijack 通道，其余走标准 ReverseProxy。
+		mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if isWebSocketUpgrade(r) {
+				a.proxyWebSocket(w, r, targetURL, sess)
+				return
+			}
+			rp.ServeHTTP(w, r)
+		}))
 
 		srv := &http.Server{
 			Handler:      mux,
@@ -480,6 +491,113 @@ func cookiesToString(cookies []*http.Cookie) string {
 		parts = append(parts, c.Name+"="+c.Value)
 	}
 	return strings.Join(parts, "; ")
+}
+
+// isWebSocketUpgrade reports whether the request is a WebSocket upgrade
+// (Connection: Upgrade + Upgrade: websocket).
+func isWebSocketUpgrade(r *http.Request) bool {
+	return strings.EqualFold(r.Header.Get("Upgrade"), "websocket") &&
+		strings.Contains(strings.ToLower(r.Header.Get("Connection")), "upgrade")
+}
+
+// proxyWebSocket handles a WebSocket upgrade request by hijacking the client
+// connection, dialing the upstream target, and bidirectionally copying bytes
+// between the two until either side closes. This enables real-time features
+// (live notifications, chat, collaborative editing) on proxied plaza sites.
+//
+// Cookie relay is applied: cookies from the session jar are injected into the
+// upstream handshake request so login-gated WebSocket endpoints work.
+func (a *App) proxyWebSocket(w http.ResponseWriter, r *http.Request, target *url.URL, sess *proxySession) {
+	// 1. Hijack the client connection.
+	hj, ok := w.(http.Hijacker)
+	if !ok {
+		http.Error(w, "websocket: server does not support hijacking", http.StatusInternalServerError)
+		return
+	}
+	clientConn, clientBuf, err := hj.Hijack()
+	if err != nil {
+		http.Error(w, "websocket: hijack failed: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer clientConn.Close()
+
+	// 2. Determine upstream address and dial.
+	upHost := target.Host
+	if !strings.Contains(upHost, ":") {
+		if target.Scheme == "wss" || target.Scheme == "https" {
+			upHost += ":443"
+		} else {
+			upHost += ":80"
+		}
+	}
+
+	var upConn net.Conn
+	dialer := net.Dialer{Timeout: 15 * time.Second}
+	if target.Scheme == "wss" || target.Scheme == "https" {
+		upConn, err = tls.DialWithDialer(&dialer, "tcp", upHost, &tls.Config{
+			ServerName: target.Hostname(),
+		})
+	} else {
+		upConn, err = dialer.Dial("tcp", upHost)
+	}
+	if err != nil {
+		a.safeLogError("proxyWebSocket: dial upstream %s: %v", upHost, err)
+		// Best-effort 502 to the client (connection already hijacked, write raw HTTP).
+		_, _ = clientBuf.WriteString("HTTP/1.1 502 Bad Gateway\r\nContent-Length: 0\r\n\r\n")
+		_ = clientBuf.Flush()
+		return
+	}
+	defer upConn.Close()
+
+	// 3. Forward the original upgrade request to upstream (rewrite Host, inject cookies).
+	outReq := r.Clone(r.Context())
+	outReq.URL.Scheme = target.Scheme
+	outReq.URL.Host = target.Host
+	outReq.Host = target.Host
+	outReq.RequestURI = "" // must clear for Write
+	if cookies := sess.getCookies(target); len(cookies) > 0 {
+		outReq.Header.Set("Cookie", cookiesToString(cookies))
+	}
+	if err := outReq.Write(upConn); err != nil {
+		a.safeLogError("proxyWebSocket: write upstream request: %v", err)
+		_, _ = clientBuf.WriteString("HTTP/1.1 502 Bad Gateway\r\nContent-Length: 0\r\n\r\n")
+		_ = clientBuf.Flush()
+		return
+	}
+
+	// 4. Read the upstream 101 Switching Protocols response and relay to client.
+	upBuf := bufio.NewReader(upConn)
+	resp, err := http.ReadResponse(upBuf, outReq)
+	if err != nil {
+		a.safeLogError("proxyWebSocket: read upstream response: %v", err)
+		_, _ = clientBuf.WriteString("HTTP/1.1 502 Bad Gateway\r\nContent-Length: 0\r\n\r\n")
+		_ = clientBuf.Flush()
+		return
+	}
+	_ = resp.Write(clientBuf)
+	_ = clientBuf.Flush()
+
+	if resp.StatusCode != http.StatusSwitchingProtocols {
+		// Upstream refused the upgrade; connection will close naturally.
+		a.safeLogInfo("proxyWebSocket: upstream returned %d (not 101)", resp.StatusCode)
+		return
+	}
+
+	// 5. Bidirectional copy until either side closes.
+	a.safeLogInfo("proxyWebSocket: established ws tunnel to %s%s", target.Host, r.URL.Path)
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		_, _ = io.Copy(upConn, clientBuf) // client → upstream
+		_ = upConn.Close()
+	}()
+	go func() {
+		defer wg.Done()
+		_, _ = io.Copy(clientConn, upBuf) // upstream → client
+		_ = clientConn.Close()
+	}()
+	wg.Wait()
 }
 
 // PlazaDownloadResult is the return type for DownloadFromPlaza.

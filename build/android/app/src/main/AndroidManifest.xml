@@ -12,6 +12,8 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- ARCore (ADR-073 P1 探针) -->
+    <uses-feature android:name="android.hardware.camera.ar" android:required="false" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
@@ -56,6 +58,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- ARCore × WebView 共存探针 (ADR-073 P1) -->
+        <activity
+            android:name=".ARCoreProbeActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
