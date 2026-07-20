@@ -97,41 +97,31 @@ function _renderScenePresetList(container: HTMLElement, scenes: string[]): void 
     );
 }
 
-function buildPresetScenesSchema(): MenuNode[] {
-    return [
-        // 导出/导入场景包
-        {
-            id: 'presetScenes:bundle',
-            kind: 'custom',
-            renderCustom: (c) => {
-                const bundleActions = document.createElement('div');
-                bundleActions.className = 'lcard';
+export function buildPresetScenesLevel(): PopupLevel {
+    return {
+        label: t('scene.presetScenes'),
+        dir: '',
+        items: [],
+        renderCustom: (container) => {
+            // 卡片 1：导入 / 导出场景包
+            cardContainer(container, (c) => {
                 slideRow(
-                    bundleActions,
+                    c,
                     'lucide:file-up',
                     t('scene.exportSceneBundle'),
                     false,
-                    () => {
-                        void exportSceneBundle();
-                    }
+                    () => { void exportSceneBundle(); }
                 );
                 slideRow(
-                    bundleActions,
+                    c,
                     'lucide:file-down',
                     t('scene.importSceneBundle'),
                     false,
-                    () => {
-                        void importSceneBundle();
-                    }
+                    () => { void importSceneBundle(); }
                 );
-                c.appendChild(bundleActions);
-            },
-        },
-        // 预设列表（异步加载）
-        {
-            id: 'presetScenes:list',
-            kind: 'custom',
-            renderCustom: (c) => {
+            });
+            // 卡片 2：预设场景列表（异步加载）
+            cardContainer(container, (c) => {
                 const loadingPlaceholder = document.createElement('div');
                 loadingPlaceholder.textContent = t('common.loading');
                 loadingPlaceholder.style.cssText =
@@ -143,17 +133,11 @@ function buildPresetScenesSchema(): MenuNode[] {
                         _renderScenePresetList(c, scenes || []);
                     })
                 );
-            },
-        },
-        // 撤销 / 保存场景
-        {
-            id: 'presetScenes:actions',
-            kind: 'custom',
-            renderCustom: (c) => {
-                const actions = document.createElement('div');
-                actions.className = 'lcard';
+            });
+            // 卡片 3：撤销 / 保存场景
+            cardContainer(container, (c) => {
                 slideRow(
-                    actions,
+                    c,
                     'lucide:undo-2',
                     t('scene.undo'),
                     false,
@@ -171,7 +155,7 @@ function buildPresetScenesSchema(): MenuNode[] {
                     }
                 );
                 slideRow(
-                    actions,
+                    c,
                     'lucide:save',
                     t('scene.saveScene'),
                     false,
@@ -193,20 +177,7 @@ function buildPresetScenesSchema(): MenuNode[] {
                         }
                     }
                 );
-                c.appendChild(actions);
-            },
-        },
-    ] satisfies MenuNode[];
-}
-
-export function buildPresetScenesLevel(): PopupLevel {
-    return {
-        label: t('scene.presetScenes'),
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            container.classList.remove('render-card');
-            renderMenu(buildPresetScenesSchema(), container);
+            });
         },
     };
 }
