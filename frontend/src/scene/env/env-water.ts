@@ -1200,13 +1200,11 @@ export function buildWaterPresetEnvState(preset: WaterPreset): Partial<EnvState>
 }
 
 // ======== 应用水预设参数到当前材质 ========
-export function applyWaterPresetToCurrent(preset: Partial<WaterPreset>): void {
-    const mat = _envSys.water.material as ShaderMaterial | null;
-    if (!mat) {
-        return;
-    }
-
-    // 应用新增的可调参数（如果预设中有定义）
+// 收敛 ADR-146 主题 8：fresnelBias/fresnelPower/diffuseStrength/ambientStrength 4 行
+// setFloat 与 _syncWaterUniforms 同源，提取为私有 helper 消除字面重复。
+// 保留 `!== undefined` 守卫——preset 为 Partial 预览应用，仅覆盖已定义字段，
+// 不可机械改调 _syncWaterUniforms(state)（会从完整 state 无条件写入并触发 facade 副作用）。
+function applyWaterPresetCoreUniforms(mat: ShaderMaterial, preset: Partial<WaterPreset>): void {
     if (preset.fresnelBias !== undefined) {
         mat.setFloat('fresnelBias', preset.fresnelBias);
     }
@@ -1219,6 +1217,16 @@ export function applyWaterPresetToCurrent(preset: Partial<WaterPreset>): void {
     if (preset.ambientStrength !== undefined) {
         mat.setFloat('ambientStrength', preset.ambientStrength);
     }
+}
+
+export function applyWaterPresetToCurrent(preset: Partial<WaterPreset>): void {
+    const mat = _envSys.water.material as ShaderMaterial | null;
+    if (!mat) {
+        return;
+    }
+
+    // 应用新增的可调参数（如果预设中有定义）
+    applyWaterPresetCoreUniforms(mat, preset);
     if (preset.rippleNormalStrength !== undefined) {
         mat.setFloat('rippleNormalStrength', preset.rippleNormalStrength);
     }
