@@ -85,7 +85,7 @@ function buildWasmPhysicsSchema(): MenuNode[] {
                 });
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 /** 构建 WASM 物理子页（Bullet 骨髁物理信息 + 全局开关） */
@@ -152,7 +152,7 @@ function buildPhysicsDebugSchema(): MenuNode[] {
                 });
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 /** 构建物理调试子页（材质线框/骨骼 — WASM 相关，由模型详情页调用） */

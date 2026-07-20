@@ -151,7 +151,7 @@ function buildAudioCoreSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
                 c.appendChild(row);
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 function buildSfxSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
@@ -224,7 +224,7 @@ function buildSfxSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
                 },
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 export function buildSettingsAudioLevel(getSettingsMenu: () => SettingsMenuHandle): PopupLevel {

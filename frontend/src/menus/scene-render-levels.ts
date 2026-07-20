@@ -140,7 +140,7 @@ function buildPresetScenesSchema(): MenuNode[] {
                 );
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 export function buildPresetScenesLevel(): PopupLevel {
@@ -546,7 +546,7 @@ function buildPostProcessCoreSchema(): MenuNode[] {
                 },
             ],
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 /** 后处理 schema — 色彩层（色调映射） */
@@ -602,7 +602,7 @@ function buildPostProcessColorSchema(): MenuNode[] {
                 },
             ],
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 export function buildPostProcessLevel(): PopupLevel {

@@ -254,7 +254,7 @@ function buildPresetsSchema(): MenuNode[] {
                 reRender();
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 export function buildPresetsLevel(): PopupLevel {

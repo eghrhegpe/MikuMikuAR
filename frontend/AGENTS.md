@@ -225,7 +225,7 @@ frontend/src/
 │   │── plaza-sites.ts            # 广场站点列表
 │   │── preset-list-viewer.ts     # 预设列表查看器
 │   │── resource-detail-helpers.ts # 资源详情辅助
-│   │── render-menu.ts            # 渲染菜单（遗留，待 ADR-093 迁移）
+│   │── render-menu.ts            # 渲染菜单（声明式 Schema 单渲染器，ADR-093 核心）
 │   │
 │   └── __tests__/              # 单元测试
 │       ├── menu-schema.test.ts
@@ -307,7 +307,7 @@ frontend/src/
 
 | ADR | 标题 | 状态 | 主要影响模块 |
 |-----|------|------|-------------|
-| ADR-093 | 菜单声明式 Schema（单一数据源 + 单渲染器） | ✅ 已完成 | menus/ 全域（menu-schema.ts / menu-factory.ts） |
+| ADR-093 | 菜单声明式 Schema（单一数据源 + 单渲染器） | ✅ P0+P1+P2 已完成（P3 收尾待推进） | menus/ 全域（menu-schema.ts / menu-factory.ts） |
 | ADR-106 | 时序审核与异步生命周期规范 | 🔄 部分实现（Phase 3 完成；P1/P2 待修复） | 全域（env-bridge.ts 已修复） |
 | ADR-112 | SdefInjector + SdefMesh 接入 — SDEF 球面变形 | ✅ 已完成 | scene/（side-effect import 已加入 scene.ts） |
 | ADR-092 | 贴图与反射统一（纹理工厂 + 平面反射引擎） | 已完成 | scene/env/（env-texture.ts / planar-reflection.ts） |

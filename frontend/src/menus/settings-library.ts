@@ -177,7 +177,7 @@ function buildLibrarySchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode
                 });
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 export function buildSettingsLibraryLevel(getSettingsMenu: () => SettingsMenuHandle): PopupLevel {

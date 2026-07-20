@@ -187,7 +187,7 @@ function buildShortcutsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
                 });
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 export function buildSettingsShortcutsLevel(getSettingsMenu: () => SettingsMenuHandle): PopupLevel {

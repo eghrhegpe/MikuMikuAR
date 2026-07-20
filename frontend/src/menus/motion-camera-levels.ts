@@ -250,7 +250,7 @@ function buildCameraSchema(): MenuNode[] {
                 });
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 export function buildCameraLevel(): PopupLevel {

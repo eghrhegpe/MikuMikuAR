@@ -265,7 +265,7 @@ const CAT_KEYS: Record<string, string> = {
 function buildActionBindingSchema(id: string): MenuNode[] {
     const inst = modelManager.get(id);
     if (!inst) {
-        return [];
+        return [] satisfies MenuNode[];
     }
 
     return [
@@ -383,7 +383,7 @@ function buildActionBindingSchema(id: string): MenuNode[] {
                 });
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 function buildActionBindingLevel(id: string): PopupLevel {
@@ -696,7 +696,7 @@ function buildMotionDetailSchema(): MenuNode[] {
                 });
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 function buildMotionDetailLevel(): PopupLevel {
@@ -1048,7 +1048,7 @@ function buildPlaybackSpeedSchema(): MenuNode[] {
                 });
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 function buildPlaybackSpeedLevel(): PopupLevel {

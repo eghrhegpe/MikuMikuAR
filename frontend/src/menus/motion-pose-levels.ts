@@ -51,7 +51,7 @@ function buildPoseStudioSchema(): MenuNode[] {
                     addEmptyRow(c, t('motion.poseStudio.noModel'));
                 },
             },
-        ];
+        ] satisfies MenuNode[];
     }
 
     const menu = getMotionMenu();
@@ -266,7 +266,7 @@ function buildPoseStudioSchema(): MenuNode[] {
                 });
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 export function buildPoseStudioLevel(): PopupLevel {

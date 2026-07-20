@@ -242,7 +242,7 @@ function buildParticleSchema(): MenuNode[] {
                 );
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 export function buildParticleLevel(): PopupLevel {

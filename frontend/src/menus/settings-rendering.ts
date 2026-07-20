@@ -107,7 +107,7 @@ function buildRenderingSchema(): MenuNode[] {
                 c.appendChild(hint);
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 export function buildSettingsRenderingLevel(getSettingsMenu: () => SettingsMenuHandle): PopupLevel {

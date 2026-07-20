@@ -232,7 +232,7 @@ function buildOpenWithSchema(id: string): MenuNode[] {
                 })();
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 export function buildOpenWithLevel(id: string): PopupLevel {
@@ -251,7 +251,7 @@ export function buildOpenWithLevel(id: string): PopupLevel {
 function buildModelSchema(id: string): MenuNode[] {
     const inst = modelManager.get(id);
     if (!inst) {
-        return [];
+        return [] satisfies MenuNode[];
     }
     const handle: ResourceHandle = { id, kind: 'actor', name: inst.name };
 
@@ -356,7 +356,7 @@ function buildModelSchema(id: string): MenuNode[] {
                 });
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 /**
@@ -546,7 +546,7 @@ export function buildModelLevel(id: string): PopupLevel {
 function buildModelInfoSchema(id: string): MenuNode[] {
     const inst = modelManager.get(id);
     if (!inst) {
-        return [];
+        return [] satisfies MenuNode[];
     }
     return [
         {
@@ -615,7 +615,7 @@ function buildModelInfoSchema(id: string): MenuNode[] {
                 });
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 export function buildModelInfoLevel(id: string): PopupLevel {
@@ -638,7 +638,7 @@ export function buildModelInfoLevel(id: string): PopupLevel {
 function buildModelTagsSchema(id: string): MenuNode[] {
     const inst = modelManager.get(id);
     if (!inst) {
-        return [];
+        return [] satisfies MenuNode[];
     }
     const libRef = inst.filePath ? computeLibraryRef(inst.filePath) : null;
     return [
@@ -820,7 +820,7 @@ function buildModelTagsSchema(id: string): MenuNode[] {
                 });
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 export function buildModelTagsLevel(id: string): PopupLevel {
@@ -930,7 +930,7 @@ function buildMorphPreviewSchema(id: string): MenuNode[] {
                 });
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 export function buildMorphPreviewLevel(id: string): PopupLevel {
@@ -949,11 +949,11 @@ export function buildMorphPreviewLevel(id: string): PopupLevel {
 function buildBoneHierarchySchema(id: string): MenuNode[] {
     const inst = modelManager.get(id);
     if (!inst?.mmdModel) {
-        return [];
+        return [] satisfies MenuNode[];
     }
     const bones = inst.mmdModel.runtimeBones;
     if (!bones || bones.length === 0) {
-        return [];
+        return [] satisfies MenuNode[];
     }
 
     // Build parent→children map
@@ -1073,7 +1073,7 @@ function buildBoneHierarchySchema(id: string): MenuNode[] {
                 });
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 export function buildBoneHierarchyLevel(id: string): PopupLevel {

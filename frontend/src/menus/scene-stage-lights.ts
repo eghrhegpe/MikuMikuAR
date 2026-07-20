@@ -636,7 +636,7 @@ function buildStageLightSchema(): MenuNode[] {
                 });
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 export function buildStageLightLevel(): PopupLevel {

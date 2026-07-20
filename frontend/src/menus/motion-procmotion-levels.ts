@@ -288,7 +288,7 @@ function buildProcMotionSchema(modelId?: string): MenuNode[] {
                 });
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 export function buildProcMotionLevel(modelId?: string): PopupLevel {

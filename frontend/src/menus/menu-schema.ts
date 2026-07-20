@@ -1,6 +1,6 @@
 // [doc:architecture] Menu Declarative Schema — ADR-093
 // 单一数据源 + 单渲染器，消除命令式 builder 膨胀。
-// 当前状态：PoC，仅地面面板「基础设置」试点。
+// 当前状态：P0+P1+P2 全量落地（57 面板），P3 类型化增强中。
 
 import { envState } from '@/core/config';
 import { setEnvState, getRenderState, setRenderState } from '@/scene/scene';
