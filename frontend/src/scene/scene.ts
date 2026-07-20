@@ -7,6 +7,7 @@ import { Engine } from '@babylonjs/core/Engines/engine';
 import { Scene } from '@babylonjs/core/scene';
 import { RenderingManager } from '@babylonjs/core/Rendering/renderingManager';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
+import { safeDispose } from '@/core/dispose-helpers';
 import { Color4 } from '@babylonjs/core/Maths/math.color';
 import '@babylonjs/core/Physics/v2/physicsEngineComponent';
 import { PointerEventTypes } from '@babylonjs/core/Events/pointerEvents';
@@ -182,8 +183,7 @@ export function disposeScene(): void {
 
     // 1. 移除 scene.onDisposeObservable 订阅，避免 scene.dispose() 触发冗余回调
     if (_sceneDisposeObserverHandle) {
-        _sceneDisposeObserverHandle.dispose();
-        _sceneDisposeObserverHandle = null;
+        _sceneDisposeObserverHandle = safeDispose(_sceneDisposeObserverHandle);
     }
 
     // 2. 清理播放相关 observer

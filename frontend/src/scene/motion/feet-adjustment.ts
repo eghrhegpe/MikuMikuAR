@@ -25,6 +25,7 @@ import { solveFootTarget } from '@/motion-algos/feet-adjustment-math';
 import { detectFootLanding } from '@/motion-algos/footstep-detect';
 import { logWarn } from '../../core/logger';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
+import { safeDispose } from '@/core/dispose-helpers';
 export { solveFootTarget };
 export type { SolveFootInput, SolveFootOutput } from '@/motion-algos/feet-adjustment-math';
 
@@ -317,10 +318,7 @@ export function startFeetAdjustment(
 
 /** 停止脚部调整系统并清空缓存。 */
 export function stopFeetAdjustment(): void {
-    if (_observerHandle) {
-        _observerHandle.dispose();
-        _observerHandle = null;
-    }
+    _observerHandle = safeDispose(_observerHandle);
     _cache.clear();
     _lastTickTime = 0; // 重置时间戳，避免重启后首帧 dt 异常
 }

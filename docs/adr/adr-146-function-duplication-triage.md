@@ -1,6 +1,6 @@
 # ADR-146: 函数级重复摸排与收敛（第二波）
 
-- **状态**: 立项
+- **状态**: 实施中
 - **日期**: 2026-07-19
 - **相关**: ADR-143（P1 之外剩余项）、ADR-139（ObserverRegistry）、ADR-140（DragSliderController）、ADR-142（withLoadingStatus）、ADR-138（env-dispatcher）、ADR-096（通用 Helper 收敛）、ADR-101（通用逻辑第二波收敛）、ADR-105（AbortSignal 传递规范）、ADR-116（bone override UI）、ADR-129（per-motion UI）
 
@@ -259,8 +259,8 @@
 ### P1
 
 - [x] `grep -rn "className.*preset-chip" src/menus` 归零（除 `env-preset-levels.ts:142` 豁免）
-- [x] `core/safe-call.ts` 三件套已建 + 单测通过；ADR 枚举「前 11 项」文件内的**纯 logWarn 吞错**散点全部收敛（16 处：outfit/audio×2、outfit-overlay×1、physics-bridge×1、beat-detector×1、env-preset-levels×1、events×1、library-actions×4、init×5）；多用途 catch（含 setStatus/console.error/资源清理/返回值）按设计保留。主题2-b（箭头形式纯吞错 22 处）已收敛：library-setup×1、menu×5、plaza×2、settings-paths×12（68/78/90 + 9 个 `SETTINGS_ACTION` 方法）、watch-import×1、camera×1；剩余箭头形式属嵌套 promise 链末端（model-detail:813/815、settings-about:178、settings-paths:449），留 主题2-c 逐处定位，不强行机械替换以免破坏链结构。
-- [x] 纯 `if(x){x.dispose();x=null;}` 模板在 `src/scene/env` + `src/scene/render` 归零（~45 处收敛到 `safeDispose`）；`mirror-debug.ts` 5 处属 P3 主题14 留待该轮；11 个非枚举文件（bone-override/scene/feet-adjustment/ar-scene/vmd-evaluator/footstep-detect-fallback/camera/perception/render-loop/ui-resource-panel）属更大范围扫尾，留 **主题3-b** 后续单独一轮（与 主题2-b 策略一致，避免单轮 blast radius 过大）。
+- [x] `core/safe-call.ts` 三件套已建 + 单测通过；ADR 枚举「前 11 项」文件内的**纯 logWarn 吞错**散点全部收敛（16 处：outfit/audio×2、outfit-overlay×1、physics-bridge×1、beat-detector×1、env-preset-levels×1、events×1、library-actions×4、init×5）；多用途 catch（含 setStatus/console.error/资源清理/返回值）按设计保留。主题2-b（箭头形式纯吞错 22 处）已收敛：library-setup×1、menu×5、plaza×2、settings-paths×12（68/78/90 + 9 个 `SETTINGS_ACTION` 方法）、watch-import×1、camera×1；剩余箭头形式（嵌套 promise 链末端 model-detail:813/815、settings-about:178、settings-paths:449）**已于扫尾轮（主题2-c）全部收敛到 safeCallAsync**，零行为变化。
+- [x] 纯 `if(x){x.dispose();x=null;}` 模板在 `src/scene/env` + `src/scene/render` 归零（~45 处收敛到 `safeDispose`）；`mirror-debug.ts` 5 处属 P3 主题14 留待该轮；11 个非枚举文件（bone-override/scene/feet-adjustment/ar-scene/vmd-evaluator/footstep-detect-fallback/camera/perception/render-loop/ui-resource-panel）+ 主题3 漏网的 render 子系统分散模板（renderer/lighting/transform-gizmo）**已于扫尾轮（主题3-b）全部收敛到 safeDispose**；仅 `mirror-debug.ts` 5 处依设计留 P3 主题14。
 - [x] `grep -n "onViewMatrixChangedObservable.add" src/scene/camera/camera.ts` 0 处
 - [x] `menus/menu.ts:853-867` 双触发 bug 修复（含 `preventDefault`）
 
@@ -387,7 +387,7 @@
   - `scene/camera/camera.ts:694`（setARMode(true).then(ok => ...) 链）
 - **import 处理**：`library-setup`/`settings-paths`/`menu`/`camera` 四文件 `logWarn` 仍有块形式他处使用（library-setup:68/82/87、settings-paths:387、menu:391、camera:741），保留 `logWarn` 并新增 `safe-call` import；`plaza`/`watch-import` 仅 2 处箭头使用，直接以 `safe-call` 替换 `logWarn` import。
 - **语义等价论证**：原 `.catch(handler)` 失败时解析 `undefined`（handler 返回 void），`safeCallAsync` 失败时同样解析 `undefined`，`Promise.all`/对象方法返回值语义不变；`await X().catch(...)` 不消费返回值，`await safeCallAsync(...)` 等价。
-- **主题2-c 预留**（嵌套链末端，需读完整链起点再改，本次不动）：`model-detail.ts:813,815`、`settings-about.ts:178`、`settings-paths.ts:449`。
+- **主题2-c（嵌套链末端，已收敛）**：`model-detail.ts:813,815`、`settings-about.ts:178`、`settings-paths.ts:449` 四处 `.catch((e) => logWarn(...))` 链末端全部迁移到 `safeCallAsync`（语义等价，零行为变化）。
 
 验证：`cd frontend && npm run build`（tsc + vite）预期 0 错误；`grep -rn "\.catch(.*) => logWarn" src` 在 6 文件归零，全量仅剩 主题2-c 4 处嵌套 + `safe-call.ts`/`utils.ts` 注释。
 
@@ -408,9 +408,20 @@
   - `scene/render/transform-gizmo.ts`：detachGizmo（pos/rot/scale gizmo×3；`_gizmoLayer` 保留 `shouldRender=false` 额外语句）—— 不在 ADR 枚举 7 文件内，但同属 render 子系统、同模式，一并收敛
 - **不折叠（按设计保留）**：`env-ground.ts` `disposeGroundMaterial(mat)`（参数是 `mat` 且内部 `?.dispose()` 子纹理而非 `= null` 重赋值，不匹配模板，0 处）；各 dispose 块内的循环 `lod.dispose()`/`tex.dispose()`（无 `= null`）、`waterReflection.dispose()`/`disposeTintPostProcess()`（无守卫无 null）、renderer `pipeline = undefined`（`| undefined` 类型）；`mirror-debug.ts` 5 处（P3 主题14，保留其 setter→setEnvState 迁移语境）。
 - **类型安全前置**：先查 `env-context.ts` 确认 `_envSys.*` 字段均为 `T | null`，`safeDispose` 返回 `null` 赋值安全；确认仅 `pipeline` 为 `| undefined` 后保留原写法。
-- **扩展扫尾（主题3-b 预留）**：全量 grep 显示 11 个非枚举文件（bone-override/scene/feet-adjustment/ar-scene/vmd-evaluator/footstep-detect-fallback/camera/perception/render-loop/ui-resource-panel）仍有同模板，属更大 blast radius，留单独一轮（与 主题2-b 同理），不强行并入本轮以免风险集中。
+- **扩展扫尾（主题3-b，已完成）**：全量 grep 的 11 个非枚举文件 + render 子系统分散模板（renderer×10、camera×7、lighting、transform-gizmo）+ core（shortcut-registry、ui-resource-panel）+ menus（settings-shortcuts、motion-override-levels、plaza）+ scene（ground-collision、ar-scene、proc-motion-bridge、bone-override、feet-adjustment、perception、vmd-evaluator、footstep-detect-fallback）共 23 文件，纯 `if(x){x.dispose();x=null;}` / `x?.dispose();x=null;` 模板全部收敛到 `safeDispose`；`mirror-debug.ts` 5 处依设计留 P3 主题14。
 
 验证：`cd frontend && npm run build`（tsc + vite）0 错误（380 模块）；`vitest run dispose-helpers.test.ts` 5/5；env 子系统单测 `env-water(28)+env-sky+env-clouds+env-particles` 50/50 通过；multiline grep `src/scene/env` + `src/scene/render` 纯模板归零（仅剩 `mirror-debug.ts`）。**未推送**。
+
+### 2026-07-20 — 扫尾轮：主题2-c（嵌套 .catch 末端）+ 主题3-b（safeDispose 全量收敛）
+
+ADR-146 收尾：将 P1 阶段遗留的两个分散反模式彻底归零。
+
+- **主题2-c（safeCallAsync 4 处）**：`model-detail.ts`（813/815 深层嵌套标签增删链末端）、`settings-about.ts:178`（GetBuildInfo 链末端）、`settings-paths.ts:449`（GetCacheStats 链末端）。均为 `.then(...).catch((e) => logWarn(tag, msg, e))` 纯吞错链末端，`safeCallAsync` 语义严格等价（失败时解析 `undefined`，无返回值依赖），零行为变化。`settings-about` 改后删除唯一 `logWarn` import 改加 `safeCallAsync`；`model-detail` 新增 `safeCallAsync` import（`logWarn` 仍用于块形式）；`settings-paths` 已有该 import。
+- **主题3-b（safeDispose 全量）**：在 P1 主题3（env/render ~45 处）+ P2 主题9 之外，对全量纯 `if(x){x.dispose();x=null;}` / `x?.dispose();x=null;` 模板做收尾。共 23 文件：render 子系统分散模板（renderer×10、camera×7、lighting、transform-gizmo）、core（shortcut-registry、ui-resource-panel）、menus（settings-shortcuts、motion-override-levels、plaza）、scene（ground-collision、ar-scene、proc-motion-bridge、bone-override、feet-adjustment、perception、vmd-evaluator、footstep-detect-fallback）。`mirror-debug.ts` 5 处依设计留 P3 主题14（与 setEnvState 迁移同轮）。
+- **ground-collision 特殊处理**：`disableGroundCollision` 中 `_groundBody` 已在函数入口判非空（先 `removeRigidBodyFromGlobal(_groundBody)` 再 dispose），`_groundInfo?./_groundShape?.` 用 `?.` 守卫；三者分别 `= safeDispose(...)` 折叠，语义严格等价（safeDispose 对 null no-op 并返回 null）。
+- **行尾纪律**：批量折叠用脚本时遭遇 Windows `write_text` 把 `\n` 翻成 `\r\n` 叠加两次行尾修复，导致 4 文件（shortcut-registry/plaza/camera/renderer）双换行整文件 diff。修正：先 `git checkout` 还原，再用 raw 读写（`newline=''`）脚本重跑，diff 恢复最小。
+
+验证：`cd frontend && npm run build`（tsc + vite）0 错误（380 模块）；multiline grep `\.dispose\(\);\s*\n\s*\w+ = null` 全量仅剩 `mirror-debug.ts`（5 处，P3 主题14）+ `__tests__/menu.test.ts`（测试文件，刻意保留显式 teardown）。**未推送**。
 
 ### 2026-07-20 — P2 主题 10 / 8 / 11 / 6 中收益项批量收敛
 

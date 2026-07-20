@@ -42,6 +42,7 @@ import { applyModuleSnapshot } from '../scene/motion/motion-modules/module-base'
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
+import { safeDispose } from '@/core/dispose-helpers';
 
 // ======== 模块列表层（ADR-116 主入口） ========
 
@@ -194,8 +195,7 @@ function buildMotionOverrideSchema(): MenuNode[] {
                             historyDropdown.remove();
                             historyDropdown = null;
                         }
-                        _onOutsideClickDisp?.dispose();
-                        _onOutsideClickDisp = null;
+                        _onOutsideClickDisp = safeDispose(_onOutsideClickDisp);
                     }
 
                     let _onOutsideClick: ((ev: MouseEvent) => void) | null = null;

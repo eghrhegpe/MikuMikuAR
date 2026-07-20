@@ -19,6 +19,7 @@ import type { MenuNode } from './menu-schema';
 import type { SettingsMenuHandle } from './settings-shared';
 import { addDisposableListener, type Disposable } from '../core/dom';
 import { logWarn } from '../core/logger';
+import { safeDispose } from '../core/dispose-helpers';
 
 function _isModifierOnly(code: string): boolean {
     return (
@@ -111,8 +112,7 @@ function buildShortcutsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
                                         if (_isModifierOnly(e.code)) {
                                             return;
                                         }
-                                        keyDisp?.dispose();
-                                        keyDisp = null;
+                                        keyDisp = safeDispose(keyDisp);
                                         if (e.code === 'Escape') {
                                             _rebindingId = null;
                                             getSettingsMenu()?.reRender();

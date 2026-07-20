@@ -7,6 +7,7 @@ import { uiState, dom } from './config';
 import { formatTimestamp } from './utils';
 import { logWarn } from './logger';
 import { observe, type ObserverHandle } from './observer-handle';
+import { safeDispose } from './dispose-helpers';
 
 // 模块级句柄：使渲染循环可被幂等销毁（Vite HMR 重跑 bootstrap 但无真实页面卸载）
 let _fpsClockId: ReturnType<typeof setInterval> | null = null;
@@ -129,12 +130,10 @@ export function stopRenderLoop(): void {
         _resizeHandler = null;
     }
     if (_beforeObs) {
-        _beforeObs.dispose();
-        _beforeObs = null;
+        _beforeObs = safeDispose(_beforeObs);
     }
     if (_afterObs) {
-        _afterObs.dispose();
-        _afterObs = null;
+        _afterObs = safeDispose(_afterObs);
     }
     engine.stopRenderLoop();
 }

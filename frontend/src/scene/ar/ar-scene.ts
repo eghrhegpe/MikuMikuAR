@@ -21,6 +21,7 @@ import {
 } from '../motion/perception';
 import { focusedModelId, modelRegistry } from '@/core/config';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
+import { safeDispose } from '@/core/dispose-helpers';
 
 // ======== Internal State ========
 
@@ -135,8 +136,7 @@ function _updateContactShadow(): void {
 
 function _disposeContactShadow(): void {
     if (_contactShadowHandle) {
-        _contactShadowHandle.dispose();
-        _contactShadowHandle = null;
+        _contactShadowHandle = safeDispose(_contactShadowHandle);
     }
     if (_contactShadow) {
         const mat = _contactShadow.material;
@@ -144,8 +144,7 @@ function _disposeContactShadow(): void {
             mat.diffuseTexture?.dispose();
             mat.dispose();
         }
-        _contactShadow.dispose();
-        _contactShadow = null;
+        _contactShadow = safeDispose(_contactShadow);
     }
 }
 

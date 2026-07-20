@@ -13,6 +13,7 @@ import { triggerAutoSave, setUIState } from '../core/config';
 import { clamp01 } from '@/core/utils';
 import { logWarn } from '@/core/logger';
 import { safeCallAsync } from '@/core/safe-call';
+import { safeDispose } from '@/core/dispose-helpers';
 import type { BeatDetector } from '../motion-algos/beat-detector';
 import { uiState } from '../core/state';
 
@@ -391,8 +392,7 @@ export function disposeAudio(): void {
     if (streamPlayer) {
         streamPlayer.pause();
         streamPlayer.source = '';
-        streamPlayer.dispose();
-        streamPlayer = null;
+        streamPlayer = safeDispose(streamPlayer);
     }
     audioName = '';
     audioPath = '';
@@ -408,8 +408,7 @@ export function disposeAudio(): void {
     }
 
     if (beatDetector) {
-        beatDetector.dispose();
-        beatDetector = null;
+        beatDetector = safeDispose(beatDetector);
         beatDetectorAttached = false;
     }
 }

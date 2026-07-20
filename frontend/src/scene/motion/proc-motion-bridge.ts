@@ -23,6 +23,7 @@ import { modelManager, focusedMmdModel, focusedModel, loadVMDMotion } from '../s
 import { setGazeConfig, onPerceptionModelRemoved, activatePerception } from './perception';
 import { clamp01 } from '@/core/utils';
 import { logWarn } from '@/core/logger';
+import { safeDispose } from '@/core/dispose-helpers';
 import { getActiveMotion } from './motion-intent';
 import { rebuildCompositeAnimation } from './vmd-layers';
 import type { ProcMotionConfig } from '@/core/types';
@@ -469,8 +470,7 @@ export function setGazeLayerActive(active: boolean, intensity: number): void {
 /** 释放程序化动作模块全部资源。应用关闭 / 模块卸载时调用。 */
 export function disposeProcMotion(): void {
     stopProcMotion();
-    procBeatDetector?.dispose();
-    procBeatDetector = null;
+    procBeatDetector = safeDispose(procBeatDetector);
     _fallbackProcState = { ...DEFAULT_PROC_STATE };
     _regeneratePending = false;
     _stopRequested = false;

@@ -18,6 +18,7 @@ import { RigidBodyConstructionInfo } from 'babylon-mmd/esm/Runtime/Optimized/Phy
 import { PhysicsBoxShape } from 'babylon-mmd/esm/Runtime/Optimized/Physics/Bind/physicsShape';
 import { MotionType } from 'babylon-mmd/esm/Runtime/Optimized/Physics/Bind/motionType';
 import { envState, mmdRuntime } from '@/core/config';
+import { safeDispose } from '@/core/dispose-helpers';
 
 /** 地板半尺寸（x/z 足够大以覆盖整个场景，y 为厚度一半） */
 const GROUND_HALF = new Vector3(2000, 1, 2000);
@@ -87,12 +88,9 @@ export function disableGroundCollision(): void {
         return;
     }
     impl.removeRigidBodyFromGlobal(_groundBody);
-    _groundBody.dispose();
-    _groundInfo?.dispose();
-    _groundShape?.dispose();
-    _groundBody = null;
-    _groundInfo = null;
-    _groundShape = null;
+    _groundBody = safeDispose(_groundBody);
+    _groundInfo = safeDispose(_groundInfo);
+    _groundShape = safeDispose(_groundShape);
 }
 
 /** 根据当前 envState 还原地面碰撞状态（运行时就绪 / 场景加载后调用） */
