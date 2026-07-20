@@ -76,7 +76,7 @@ export const ENV_STATE_SCHEMA = {
     groundPbrEnabled: { type: 'boolean', default: false },
     groundProceduralTexture: {
         type: 'enum',
-        values: ['none', 'wood', 'marble', 'concrete'] as const,
+        values: ['none', 'wood', 'marble', 'concrete', 'tile', 'carpet', 'metal'] as const,
         default: 'none' as const,
     },
     groundProceduralSeed: { type: 'number', default: 42 },

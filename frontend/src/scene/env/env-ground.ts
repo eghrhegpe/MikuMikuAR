@@ -102,76 +102,268 @@ function _needAlphaBlend(state: EnvState): boolean {
     return state.groundAlpha < 1 || state.groundEdgeFade > 0;
 }
 
-// ======== ADR-114: 程序化纹理生成（木纹）========
+// ======== ADR-114: 程序化纹理生成（木纹/大理石/混凝土/瓷砖/地毯/金属板）========
 
 const PROCEDURAL_SIZE = 512;
 
-function generateWoodAlbedo(ctx: CanvasRenderingContext2D, size: number, seed: number): void {
+/** 程序化地面纹理类型（单一来源：env-state-schema.ts 的 groundProceduralTexture 枚举） */
+export type GroundProceduralKind = EnvState['groundProceduralTexture'];
+
+// ---- 通用像素填充辅助（统一标准，消除逐通道样板代码）----
+
+function _clamp255(v: number): number {
+    return Math.max(0, Math.min(255, Math.round(v)));
+}
+
+/** 遍历 size×size 像素；pixel() 返回 [r,g,b]（自动夹取 0~255，alpha 恒 255）。 */
+function _fillPixels(
+    ctx: CanvasRenderingContext2D,
+    size: number,
+    pixel: (x: number, y: number) => [number, number, number]
+): void {
     const img = ctx.createImageData(size, size);
     const data = img.data;
     for (let y = 0; y < size; y++) {
         for (let x = 0; x < size; x++) {
-            const nLow = fbm(x * 0.02, y * 0.005, seed, 4, 1.0); // ~[-1, 1]
-            const nHigh = fbm(x * 0.2, y * 0.2, seed + 100, 2, 1.0);
-            const n = (nLow + nHigh * 0.2 + 1) * 0.5; // 归一化 ~[0, 1]
-
-            const r = Math.round(139 + n * 40 - 10);
-            const g = Math.round(69 + n * 25 - 5);
-            const b = Math.round(19 + n * 12 - 2);
-
+            const [r, g, b] = pixel(x, y);
             const i = (y * size + x) * 4;
-            data[i] = Math.max(0, Math.min(255, r));
-            data[i + 1] = Math.max(0, Math.min(255, g));
-            data[i + 2] = Math.max(0, Math.min(255, b));
+            data[i] = _clamp255(r);
+            data[i + 1] = _clamp255(g);
+            data[i + 2] = _clamp255(b);
             data[i + 3] = 255;
         }
     }
     ctx.putImageData(img, 0, 0);
+}
+
+/** 灰度粗糙度贴图：value() 返回粗糙度 0~1（自动夹取）。 */
+function _roughnessMap(
+    ctx: CanvasRenderingContext2D,
+    size: number,
+    value: (x: number, y: number) => number
+): void {
+    _fillPixels(ctx, size, (x, y) => {
+        const v = Math.max(0, Math.min(1, value(x, y))) * 255;
+        return [v, v, v];
+    });
+}
+
+/** 法线贴图：由高度函数前向差分导出（与 Babylon bump 约定一致），strength 控制凹凸强度。 */
+function _normalMap(
+    ctx: CanvasRenderingContext2D,
+    size: number,
+    height: (x: number, y: number) => number,
+    strength: number
+): void {
+    _fillPixels(ctx, size, (x, y) => {
+        const c = height(x, y);
+        const cx = height(x + 1, y);
+        const cy = height(x, y + 1);
+        const dx = (cx - c) * strength;
+        const dy = (cy - c) * strength;
+        const nz = 1.0;
+        const len = Math.sqrt(dx * dx + dy * dy + nz * nz);
+        return [
+            ((dx / len) * 0.5 + 0.5) * 255,
+            ((dy / len) * 0.5 + 0.5) * 255,
+            ((nz / len) * 0.5 + 0.5) * 255,
+        ];
+    });
+}
+
+// ---- 木纹 wood ----
+
+function _woodGrain(x: number, y: number, seed: number): number {
+    const nLow = fbm(x * 0.02, y * 0.005, seed, 4, 1.0); // ~[-1, 1]
+    const nHigh = fbm(x * 0.2, y * 0.2, seed + 100, 2, 1.0);
+    return (nLow + nHigh * 0.2 + 1) * 0.5; // ~[0,1]
+}
+
+function generateWoodAlbedo(ctx: CanvasRenderingContext2D, size: number, seed: number): void {
+    _fillPixels(ctx, size, (x, y) => {
+        const n = _woodGrain(x, y, seed);
+        return [139 + n * 40 - 10, 69 + n * 25 - 5, 19 + n * 12 - 2];
+    });
 }
 
 function generateWoodRoughness(ctx: CanvasRenderingContext2D, size: number, seed: number): void {
-    const img = ctx.createImageData(size, size);
-    const data = img.data;
-    for (let y = 0; y < size; y++) {
-        for (let x = 0; x < size; x++) {
-            const n = (fbm(x * 0.015, y * 0.004, seed, 3, 1.0) + 1) * 0.5; // [0,1]
-            const roughness = 0.4 + n * 0.2; // [0.2, 0.6]
-            const v = Math.round(roughness * 255);
-
-            const i = (y * size + x) * 4;
-            data[i] = v;
-            data[i + 1] = v;
-            data[i + 2] = v;
-            data[i + 3] = 255;
-        }
-    }
-    ctx.putImageData(img, 0, 0);
+    _roughnessMap(ctx, size, (x, y) => {
+        const n = (fbm(x * 0.015, y * 0.004, seed, 3, 1.0) + 1) * 0.5;
+        return 0.4 + n * 0.2; // [0.4, 0.6]
+    });
 }
 
 function generateWoodNormal(ctx: CanvasRenderingContext2D, size: number, seed: number): void {
-    const img = ctx.createImageData(size, size);
-    const data = img.data;
-    const eps = 1.0;
-    for (let y = 0; y < size; y++) {
-        for (let x = 0; x < size; x++) {
-            const c = fbm(x * 0.02, y * 0.005, seed, 4, 1.0);
-            const cx = fbm((x + eps) * 0.02, y * 0.005, seed, 4, 1.0);
-            const cy = fbm(x * 0.02, (y + eps) * 0.005, seed, 4, 1.0);
-
-            const dx = (cx - c) * 20.0;
-            const dy = (cy - c) * 20.0;
-            const nz = 1.0;
-            const len = Math.sqrt(dx * dx + dy * dy + nz * nz);
-
-            const i = (y * size + x) * 4;
-            data[i] = Math.round(((dx / len) * 0.5 + 0.5) * 255);
-            data[i + 1] = Math.round(((dy / len) * 0.5 + 0.5) * 255);
-            data[i + 2] = Math.round(((nz / len) * 0.5 + 0.5) * 255);
-            data[i + 3] = 255;
-        }
-    }
-    ctx.putImageData(img, 0, 0);
+    _normalMap(ctx, size, (x, y) => fbm(x * 0.02, y * 0.005, seed, 4, 1.0), 20.0);
 }
+
+// ---- 大理石 marble ----
+// 经典白灰大理石：fbm 湍流扭曲 sin 场产生细脉络纹。
+
+function _marbleVein(x: number, y: number, seed: number): number {
+    const turb = fbm(x * 0.008, y * 0.008, seed, 5, 1.0);
+    const vein = Math.abs(Math.sin((x + y) * 0.015 + turb * 6));
+    return Math.pow(vein, 3); // 0 = 脉络中心（暗），1 = 石基（亮）
+}
+
+function generateMarbleAlbedo(ctx: CanvasRenderingContext2D, size: number, seed: number): void {
+    _fillPixels(ctx, size, (x, y) => {
+        const vein = _marbleVein(x, y, seed);
+        const base = 228 + fbm(x * 0.05, y * 0.05, seed + 50, 2, 1.0) * 12;
+        const dark = 95;
+        const c = dark + (base - dark) * vein;
+        return [c, c * 0.99, c * 0.97]; // 微暖白
+    });
+}
+
+function generateMarbleRoughness(ctx: CanvasRenderingContext2D, size: number, seed: number): void {
+    _roughnessMap(ctx, size, (x, y) => {
+        const vein = _marbleVein(x, y, seed);
+        return 0.16 + (1 - vein) * 0.14; // 脉络处略粗糙
+    });
+}
+
+function generateMarbleNormal(ctx: CanvasRenderingContext2D, size: number, seed: number): void {
+    _normalMap(ctx, size, (x, y) => _marbleVein(x, y, seed), 6.0);
+}
+
+// ---- 混凝土 concrete ----
+// 水泥基面：大面积斑驳 + 细骨料噪点。
+
+function _concreteBase(x: number, y: number, seed: number): number {
+    const blotch = fbm(x * 0.015, y * 0.015, seed, 4, 1.0);
+    const fine = fbm(x * 0.15, y * 0.15, seed + 77, 2, 1.0);
+    return 128 + blotch * 30 + fine * 14;
+}
+
+function generateConcreteAlbedo(ctx: CanvasRenderingContext2D, size: number, seed: number): void {
+    _fillPixels(ctx, size, (x, y) => {
+        const c = _concreteBase(x, y, seed);
+        return [c, c, c * 1.03]; // 微冷灰
+    });
+}
+
+function generateConcreteRoughness(ctx: CanvasRenderingContext2D, size: number, seed: number): void {
+    _roughnessMap(ctx, size, (x, y) => {
+        const fine = (fbm(x * 0.15, y * 0.15, seed + 77, 2, 1.0) + 1) * 0.5;
+        return 0.72 + fine * 0.18;
+    });
+}
+
+function generateConcreteNormal(ctx: CanvasRenderingContext2D, size: number, seed: number): void {
+    _normalMap(ctx, size, (x, y) => fbm(x * 0.15, y * 0.15, seed + 77, 3, 1.0), 10.0);
+}
+
+// ---- 瓷砖 tile ----
+// 方形瓷砖 + 填缝剂缝，每砖色差，凹陷缝法线。
+
+const _TILE = 128;
+const _GROUT = 6;
+const _BEVEL = 8;
+
+/** 砖面高度：0 = 缝内，1 = 砖面，缝到砖面有倒角过渡。 */
+function _tileFace(x: number, y: number): number {
+    const gx = x % _TILE;
+    const gy = y % _TILE;
+    const hx = gx < _GROUT ? 0 : Math.min(1, (gx - _GROUT) / _BEVEL);
+    const hy = gy < _GROUT ? 0 : Math.min(1, (gy - _GROUT) / _BEVEL);
+    return Math.min(hx, hy);
+}
+
+function generateTileAlbedo(ctx: CanvasRenderingContext2D, size: number, seed: number): void {
+    _fillPixels(ctx, size, (x, y) => {
+        const face = _tileFace(x, y);
+        if (face === 0) {
+            return [72, 72, 75]; // 填缝剂（深灰）
+        }
+        const tx = Math.floor(x / _TILE);
+        const ty = Math.floor(y / _TILE);
+        const tint = hash2(tx, ty, seed); // 每砖色差
+        const n = fbm(x * 0.05, y * 0.05, seed + tx * 7 + ty * 13, 2, 1.0);
+        const base = 198 + tint * 28 + n * 8;
+        return [base, base, base + 6]; // 陶瓷白，微冷
+    });
+}
+
+function generateTileRoughness(ctx: CanvasRenderingContext2D, size: number, _seed: number): void {
+    _roughnessMap(ctx, size, (x, y) => (_tileFace(x, y) === 0 ? 0.85 : 0.22)); // 缝粗糙、砖面光滑
+}
+
+function generateTileNormal(ctx: CanvasRenderingContext2D, size: number, _seed: number): void {
+    _normalMap(ctx, size, (x, y) => _tileFace(x, y), 30.0); // 缝凹陷
+}
+
+// ---- 地毯 carpet ----
+// 深红地毯：高频绒毛噪点 + 大面积磨损斑块，高粗糙度。
+
+function _carpetPile(x: number, y: number, seed: number): number {
+    return fbm(x * 0.3, y * 0.3, seed, 3, 1.0);
+}
+
+function generateCarpetAlbedo(ctx: CanvasRenderingContext2D, size: number, seed: number): void {
+    _fillPixels(ctx, size, (x, y) => {
+        const pile = _carpetPile(x, y, seed);
+        const wear = fbm(x * 0.02, y * 0.02, seed + 33, 3, 1.0); // 磨损斑块
+        return [118 + pile * 26 + wear * 22, 42 + pile * 12 + wear * 10, 46 + pile * 12 + wear * 10];
+    });
+}
+
+function generateCarpetRoughness(ctx: CanvasRenderingContext2D, size: number, seed: number): void {
+    _roughnessMap(ctx, size, (x, y) => {
+        const pile = (_carpetPile(x, y, seed) + 1) * 0.5;
+        return 0.88 + pile * 0.1;
+    });
+}
+
+function generateCarpetNormal(ctx: CanvasRenderingContext2D, size: number, seed: number): void {
+    _normalMap(ctx, size, (x, y) => _carpetPile(x, y, seed), 14.0);
+}
+
+// ---- 金属板 metal ----
+// 拉丝金属：沿 x 轴拉长的各向异性拉丝纹，低粗糙度。
+
+function _metalStreak(x: number, y: number, seed: number): number {
+    return fbm(x * 0.005, y * 0.25, seed, 3, 1.0); // x 低频 → 拉丝沿 x 方向
+}
+
+function generateMetalAlbedo(ctx: CanvasRenderingContext2D, size: number, seed: number): void {
+    _fillPixels(ctx, size, (x, y) => {
+        const s = _metalStreak(x, y, seed);
+        const base = 158 + s * 34;
+        return [base, base, base + 7]; // 冷调钢灰
+    });
+}
+
+function generateMetalRoughness(ctx: CanvasRenderingContext2D, size: number, seed: number): void {
+    _roughnessMap(ctx, size, (x, y) => {
+        const s = (_metalStreak(x, y, seed) + 1) * 0.5;
+        return 0.24 + s * 0.2; // 拉丝各向异性
+    });
+}
+
+function generateMetalNormal(ctx: CanvasRenderingContext2D, size: number, seed: number): void {
+    _normalMap(ctx, size, (x, y) => _metalStreak(x, y, seed), 5.0);
+}
+
+// ---- 生成器注册表 + 入口 ----
+
+interface ProceduralGenerators {
+    albedo: (ctx: CanvasRenderingContext2D, size: number, seed: number) => void;
+    roughness: (ctx: CanvasRenderingContext2D, size: number, seed: number) => void;
+    normal: (ctx: CanvasRenderingContext2D, size: number, seed: number) => void;
+}
+
+const PROCEDURAL_GENERATORS: Record<
+    Exclude<GroundProceduralKind, 'none'>,
+    ProceduralGenerators
+> = {
+    wood: { albedo: generateWoodAlbedo, roughness: generateWoodRoughness, normal: generateWoodNormal },
+    marble: { albedo: generateMarbleAlbedo, roughness: generateMarbleRoughness, normal: generateMarbleNormal },
+    concrete: { albedo: generateConcreteAlbedo, roughness: generateConcreteRoughness, normal: generateConcreteNormal },
+    tile: { albedo: generateTileAlbedo, roughness: generateTileRoughness, normal: generateTileNormal },
+    carpet: { albedo: generateCarpetAlbedo, roughness: generateCarpetRoughness, normal: generateCarpetNormal },
+    metal: { albedo: generateMetalAlbedo, roughness: generateMetalRoughness, normal: generateMetalNormal },
+};
 
 interface ProceduralTextures {
     albedo: Texture;
@@ -180,43 +372,21 @@ interface ProceduralTextures {
 }
 
 function generateProceduralGroundTextures(
-    type: string,
+    type: Exclude<GroundProceduralKind, 'none'>,
     seed: number,
     scene: Scene
 ): ProceduralTextures {
-    // 目前仅支持 wood，marble/concrete 为后续扩展预留
-    const genAlbedo = (ctx: CanvasRenderingContext2D, s: number) =>
-        generateWoodAlbedo(ctx, s, seed);
-    const genRoughness = (ctx: CanvasRenderingContext2D, s: number) =>
-        generateWoodRoughness(ctx, s, seed);
-    const genNormal = (ctx: CanvasRenderingContext2D, s: number) =>
-        generateWoodNormal(ctx, s, seed);
-
-    const albedo = getOrCreateCanvasTexture(`groundProcedural_${type}_${seed}_albedo`, {
-        size: PROCEDURAL_SIZE,
-        draw: genAlbedo,
-        scene,
-        name: `groundProcedural_${type}_albedo`,
-        wrap: 'wrap',
-        generateMipMaps: true,
-    });
-    const roughness = getOrCreateCanvasTexture(`groundProcedural_${type}_${seed}_roughness`, {
-        size: PROCEDURAL_SIZE,
-        draw: genRoughness,
-        scene,
-        name: `groundProcedural_${type}_roughness`,
-        wrap: 'wrap',
-        generateMipMaps: true,
-    });
-    const normal = getOrCreateCanvasTexture(`groundProcedural_${type}_${seed}_normal`, {
-        size: PROCEDURAL_SIZE,
-        draw: genNormal,
-        scene,
-        name: `groundProcedural_${type}_normal`,
-        wrap: 'wrap',
-        generateMipMaps: true,
-    });
-    return { albedo, roughness, normal };
+    const gens = PROCEDURAL_GENERATORS[type];
+    const make = (channel: 'albedo' | 'roughness' | 'normal') =>
+        getOrCreateCanvasTexture(`groundProcedural_${type}_${seed}_${channel}`, {
+            size: PROCEDURAL_SIZE,
+            draw: (ctx, s) => gens[channel](ctx, s, seed),
+            scene,
+            name: `groundProcedural_${type}_${channel}`,
+            wrap: 'wrap',
+            generateMipMaps: true,
+        });
+    return { albedo: make('albedo'), roughness: make('roughness'), normal: make('normal') };
 }
 
 /** 释放材质及其所有纹理（PBR 和 Standard 共用 opacity/bump/reflection，差异在 albedo/diffuse） */
@@ -946,7 +1116,7 @@ export interface GroundPreset {
     groundMetallic: number;
     groundRoughness: number;
     // Procedural
-    groundProceduralTexture: 'none' | 'wood' | 'marble' | 'concrete';
+    groundProceduralTexture: GroundProceduralKind;
     groundProceduralSeed: number;
     groundProceduralScale: number;
     // Reflection
