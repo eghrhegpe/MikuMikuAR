@@ -184,6 +184,26 @@ public class WailsJSBridge {
     }
 
     /**
+     * Request the application to exit (finish the root Activity).
+     * Invoked by the web frontend's double-back-to-exit flow (ADR-017 A2-02):
+     * when the user presses back twice with no overlay open, JS calls this to
+     * actually terminate the app instead of being trapped inside it.
+     *
+     * Called from JavaScript: wails.exitApp()
+     */
+    @JavascriptInterface
+    public void exitApp() {
+        android.app.Activity activity = bridge.getActivity();
+        if (activity != null) {
+            // @JavascriptInterface runs on the WebView bridge thread; finish()
+            // must be posted to the UI thread.
+            activity.runOnUiThread(activity::finish);
+        } else {
+            Log.w(TAG, "exitApp: no activity available");
+        }
+    }
+
+    /**
      * Probe WebXR support in the current WebView (ADR-072 P1).
      * Evaluates navigator.xr availability and reports the result back to JS
      * via window.__onWebXRProbeResult(json).
@@ -241,6 +261,30 @@ public class WailsJSBridge {
                 "})()";
 
             webView.evaluateJavascript(js, null);
+        });
+    }
+
+    /**
+     * Launch the ARCore × WebView coexistence probe activity (ADR-073 P1).
+     * This opens a separate Activity that:
+     * 1. Creates an ARCore session and renders camera frames to a GLSurfaceView
+     * 2. Overlays a transparent WebView on top
+     * 3. Reports whether the coexistence works (no EGL conflict)
+     *
+     * The result is delivered to JS via window.__onARCoreProbeResult(json).
+     *
+     * Called from JavaScript: wails.launchARCoreProbe()
+     */
+    @JavascriptInterface
+    public void launchARCoreProbe() {
+        android.app.Activity activity = bridge.getActivity();
+        if (activity == null) {
+            Log.w(TAG, "launchARCoreProbe: no activity available");
+            return;
+        }
+        activity.runOnUiThread(() -> {
+            android.content.Intent intent = new android.content.Intent(activity, ARCoreProbeActivity.class);
+            activity.startActivityForResult(intent, 7020, null);
         });
     }
 

@@ -850,6 +850,11 @@ export const en: Record<string, string> = {
     'scene.ar.webxrVerdictFull': '🟢 WebXR route viable',
     'scene.ar.webxrVerdictPartial': '🟡 Partial support, fallback coexistence needed',
     'scene.ar.webxrVerdictNone': '🔴 Not viable, switch to native ARCore route',
+    'scene.ar.arcoreProbe': 'ARCore Coexistence Probe',
+    'scene.ar.arcoreLaunch': 'Launch ARCore × WebView Coexistence Probe',
+    'scene.ar.arcoreLaunching': 'ARCore probe launched, check fullscreen probe page…',
+    'scene.ar.arcoreSuccess': '🟢 ARCore × WebView coexistence verified!',
+    'scene.ar.arcoreFailed': '🔴 ARCore probe failed',
 
     // scene.bundle — scene pack/unpack status
     'scene.bundle.collecting': 'Collecting scene assets…',
@@ -1073,6 +1078,7 @@ export const en: Record<string, string> = {
     'main.needFileAccess':
         '⚠️ File access permission needed to read /sdcard/MMD. Please grant in the dialog.',
     'main.permissionGranted': '✅ File permission granted, rescanning model library...',
+    'main.pressAgainToExit': 'Press back again to exit',
     'main.libraryRefreshed': '✅ Model library refreshed',
     'main.libraryRefreshFailed': '⚠️ Library refresh failed: ',
     'main.newFileDetected': 'New file detected',

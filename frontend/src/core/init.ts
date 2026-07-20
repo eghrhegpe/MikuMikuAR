@@ -35,6 +35,7 @@ import { initRuntimeBadge } from './runtime-mode';
 import { applyHudVisibility, disposeStatusBar } from './status-bar';
 import { hexToRgb, rgbToString } from './color-helpers';
 import { fireAndForget, swallowError } from './utils';
+import { showInfoToast } from './toast';
 import { safeCallAsync } from './safe-call';
 import { setPerformanceMode } from '../scene/render/performance';
 import { initLibrary, showModelPopup, showMotionPopup, refreshLibrary } from '../menus/library';
@@ -396,6 +397,8 @@ declare global {
             hasCameraPermission?: () => boolean;
             requestCameraPermission?: () => void;
             probeWebXRSupport?: () => void;
+            launchARCoreProbe?: () => void;
+            exitApp?: () => void;
         };
     }
 }
@@ -433,9 +436,40 @@ Events.On('storage:permissionGranted', async () => {
     }
 });
 
-// Android back gesture → pop the MenuStack overlay stack.
+// Android back gesture → close overlays first; double-back to exit (ADR-017 A2-02).
+// Single source of truth for back handling: plaza gets dedicated cleanup
+// (stop proxy + release iframe) via closePlaza(); everything else via
+// closeAllOverlays(). The redundant handler in plaza-download.ts was removed
+// to avoid order-dependent cleanup being skipped.
+const BACK_EXIT_INTERVAL_MS = 2000;
+let _lastBackExitPress = 0;
 Events.On('android:back', () => {
-    closeAllOverlays();
+    // Was anything actually open? Must check BEFORE closing anything.
+    const anyOverlayOpen =
+        document.querySelector('[data-overlay].visible') !== null ||
+        document.querySelector('.mmd-dialog-visible') !== null;
+
+    if (anyOverlayOpen) {
+        // Plaza needs dedicated cleanup (stop proxy + release iframe);
+        // closePlaza() internally calls closeAllOverlays().
+        const plazaLayer = document.getElementById('webviewLayer');
+        if (plazaLayer && plazaLayer.classList.contains('visible')) {
+            closePlaza();
+        } else {
+            closeAllOverlays();
+        }
+        _lastBackExitPress = 0; // closing a panel resets the exit window
+        return;
+    }
+
+    // Nothing open → double-back-to-exit
+    const now = Date.now();
+    if (now - _lastBackExitPress < BACK_EXIT_INTERVAL_MS) {
+        window.wails?.exitApp?.();
+        return;
+    }
+    _lastBackExitPress = now;
+    showInfoToast(t('main.pressAgainToExit'), undefined, undefined, BACK_EXIT_INTERVAL_MS);
 });
 
 // ======== Bootstrap ========
