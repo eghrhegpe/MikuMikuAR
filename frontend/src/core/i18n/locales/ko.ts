@@ -1540,6 +1540,8 @@ export const ko: Record<string, string> = {
     'plaza.openFail': '윈도우 열기 실패: {err}',
     'plaza.opening': '{name} 열기 중...',
     'plaza.viewLibrary': '모델 라이브러리 보기',
+    'plaza.loading': '로딩 중...',
+    'plaza.remoteHint': '플라자 창이 열려 있습니다. 다운로드 링크가 자동으로 가져와집니다',
     'scene.accessory.attachToBone': '뼈에 부착',
     'scene.accessory.attached': '✓ {name}을(를) {bone}에 부착함',
     'scene.accessory.boneNoLink': '✗ 뼈에 링크할 수 없음 (프록시 뼈대는 미지원)',

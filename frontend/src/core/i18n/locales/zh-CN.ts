@@ -1371,6 +1371,8 @@ export const zhCN: Record<string, string> = {
     'plaza.opening': '正在打开 {name}...',
     'plaza.openFail': '打开窗口失败: {err}',
     'plaza.viewLibrary': '查看模型库',
+    'plaza.loading': '加载中...',
+    'plaza.remoteHint': '广场窗口已打开，点击下载链接会自动入库',
     'toast.undo': '撤销',
     'settings.software.title': '软件管理',
     'settings.software.custom': '自定义',

@@ -1388,6 +1388,8 @@ export const en: Record<string, string> = {
     'plaza.opening': 'Opening {name}...',
     'plaza.openFail': 'Failed to open window: {err}',
     'plaza.viewLibrary': 'View Model Library',
+    'plaza.loading': 'Loading...',
+    'plaza.remoteHint': 'Plaza window is open, download links will be auto-imported',
     'toast.undo': 'Undo',
     'settings.software.title': 'Software',
     'settings.software.custom': 'Custom',
