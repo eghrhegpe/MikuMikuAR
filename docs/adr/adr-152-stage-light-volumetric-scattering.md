@@ -1,54 +1,37 @@
 # ADR-152: 舞台灯光体积光散射（Volumetric Light Scattering）
 
-- **状态**: ✅ 已实施
+- **状态**: ✅ 已实施（v2 — 真实光锥网格）
 - **日期**: 2026-07-20
-- **相关**: ADR-151（反射统一架构，参考生命周期模式）、ADR-114（接触阴影 PostProcess，参考相机挂接模式）
+- **相关**: ADR-151（反射统一架构，参考生命周期模式）
 
 ---
 
 ## 背景与问题
 
-用户反馈："开了反射就看不见聚光灯了。"
+用户反馈：“开了反射就看不见聚光灯了。”
 
-当前 [lighting.ts](../../frontend/src/scene/render/lighting.ts) 中的舞台聚光灯/点光源/方向光都是 Babylon.js 的**数学光照**——只对受光物体的着色产生影响，本身在屏幕上不可见。配合 [env-reflection.ts](../../frontend/src/scene/env/env-reflection.ts) 的 SSR/Probe/Planar 反射后，场景中已无"光柱可见性"的视觉表达，导致用户无法直观感知灯光位置与方向。
+当前 [lighting.ts](../../frontend/src/scene/render/lighting.ts) 中的舞台聚光灯/点光源/方向光都是 Babylon.js 的**数学光照**——只对受光物体的着色产生影响，本身在屏幕上不可见。需求：在聚光灯上附加**可见光柱**效果（丁达尔效应），且与反射系统共存不冲突。
 
-需求：在聚光灯/方向光上附加**可见光柱**效果（丁达尔效应），且与反射系统共存不冲突。
+## 方案演进
 
-## 调研结论
+### v1（已废弃）：VolumetricLightScatteringPostProcess
 
-### 方案对比
+初版采用 Babylon.js 内置的屏幕空间径向模糊后处理。废弃原因：
+- **不是真正的光锥**：全屏放射状散射，不感知 SpotLight 锥角，视觉上无法表达灯光方向与范围
+- **相机绑定**：每个 PostProcess 必须挂接相机，相机切换时需 dispose + 重建（`reattachStageVolumetrics`）
+- **数量限制**：单个 PostProcess 约 2-3% FPS，最多 2 盏
 
-| 方案 | 接近辉光 | 性能 | 实现复杂度 | 与反射共存 |
-|------|---------|------|-----------|------------|
-| **VolumetricLightScatteringPostProcess** | ★★★★★ | 中（单次屏幕后处理） | ⭐⭐ | ✅ 互不影响（后处理 vs 材质纹理） |
-| GlowLayer（已有） | ★★★★ | 低 | ⭐ | ✅ 但只让 emissive 物体发光，无光柱 |
-| 光锥 Mesh + 发光材质 | ★★ | 低 | ⭐ | ⚠ 几何体可能被反射捕获产生伪像 |
-| 自定义 ray-marched 体积光 | ★ | 极高 | ⭐⭐⭐⭐ | ✅ 但过度工程 |
+### v2（当前）：真实光锥 Mesh + ShaderMaterial
 
-### 选定方案：VolumetricLightScatteringPostProcess
+用锥体网格 + 自定义 Shader 替代后处理，实现真正的锥形光柱。
 
-**理由：**
-1. Babylon.js 内置后处理，与 DefaultRenderingPipeline 同层，不侵入材质系统
-2. 与反射系统正交（反射写 `reflectionTexture`，体积光操作屏幕像素），无槽位冲突
-3. 实现成本远低于反射系统（单 PostProcess vs 多模式架构）
-4. 参考 ADR-114 接触阴影的相机挂接模式，生命周期已验证
-
-### API 关键约束（已查 Babylon.js 官方 TypeDoc）
-
-| 属性 | 类型 | 说明 |
-|------|------|------|
-| `mesh` | `Mesh` | 内部使用的光源位置 mesh（构造第 4 参数） |
-| `attachedNode` | `{ position: Vector3 }` | 光源位置跟随节点（推荐用 indicator） |
-| `useCustomMeshPosition` + `customMeshPosition` | `boolean` + `Vector3` | 手动指定光源位置（备选） |
-| `exposure` | `number` | 整体强度 |
-| `decay` | `0~1` | 每采样的衰减 |
-| `density` | `number` | 采样密度 |
-| `weight` | `number` | 每采样权重 |
-| `invert` | `boolean` | 反向散射（聚光灯从光源向外） |
-| `useDiffuseColor` | `boolean` | 用 mesh 的 diffuse color 做光色 |
-| `excludedMeshes` / `includedMeshes` | `AbstractMesh[]` | 网格过滤 |
-
-**一个 PostProcess 绑定一个光源位置**，多舞台灯需要各自一个实例。
+| 维度 | v1 (PostProcess) | v2 (光锥 Mesh) |
+|------|------------------|------------------|
+| 视觉形状 | 全屏放射状散射 | 真实锥形光柱，跟随 SpotLight 锥角 |
+| 相机依赖 | 需挂接相机，切换时重建 | 无（普通 Mesh，相机无关） |
+| 数量限制 | MAX=2（性能） | 无限制（单锥 ~200 顶点，开销忽略） |
+| 性能 | 2-3% FPS/盏 | <0.1% FPS/盏 |
+| 实现复杂度 | ⭐⭐ | ⭐⭐ |
 
 ## 决策
 
@@ -59,129 +42,107 @@
 ```typescript
 export interface StageLightState {
     // ... 现有字段
-    // 体积光（VolumetricLightScatteringPostProcess）
-    volumetricEnabled: boolean;
-    volumetricExposure: number;   // 0-1, default 0.3
-    volumetricDecay: number;      // 0-1, default 0.9
-    volumetricDensity: number;    // 0-1, default 0.5
+    // 真实光锥（锥形光柱可视化）
+    coneEnabled: boolean;
+    coneIntensity: number;   // 0-2, default 0.5
+    coneLength: number;      // 1-50, default 20
+    coneSoftness: number;    // 0-1, default 0.5
 }
 ```
 
-**默认值：** `_defaultStageLightState` 中 `volumetricEnabled: false`（默认关闭，按需开启）。
+**默认值：** `_defaultStageLightState` 中 `coneEnabled: false`（默认关闭，按需开启）。
 
-### 决策二：生命周期复用阴影模式
+**旧存档迁移：** `volumetricEnabled → coneEnabled`、`volumetricExposure*0.5 → coneIntensity`、`1-volumetricDensity → coneSoftness`。迁移在 `loadStageLights`（加载时）和 `_readStageLightState`（读取时）双路径执行。
 
-参考 `_ensureStageShadow` / `_disposeStageShadow` 的配对模式，新增：
+### 决策二：光锥模块独立
+
+新建 [light-cone.ts](../../frontend/src/scene/render/light-cone.ts)，职责单一：
+
+| API | 职责 |
+|-----|------|
+| `createLightCone(scene, light, color, intensity, coneLength, softness)` | 创建锥体 Mesh + ShaderMaterial |
+| `updateLightConeTransform(entry, light, coneLength)` | 同步位置/朝向 |
+| `updateLightConeUniforms(entry, color, intensity, softness, coneLength)` | 更新 shader 参数 |
+| `rebuildLightConeGeometry(entry, scene, light, coneLength)` | 锥长/锥角变化时重建几何 |
+| `setLightConeEnabled(entry, enabled)` | 可见性开关 |
+| `disposeLightCone(entry)` | 释放 Mesh + Material |
+
+### 决策三：Shader 设计
+
+```glsl
+// Fragment Shader 核心逻辑
+float t = clamp(dist / u_coneLength, 0.0, 1.0);  // 归一化距离
+float distFade = pow(1.0 - t, 1.5);               // 距离衰减
+float fresnel = pow(1.0 - NdotV, 1.0 + u_softness * 2.0);  // 边缘辉光
+float alpha = u_intensity * distFade * (0.12 + 0.88 * fresnel);
+gl_FragColor = vec4(u_color * alpha, alpha);       // Additive blending
+```
+
+材质设置：`ALPHA_ADD` + 双面渲染 + 不写深度。
+
+### 决策四：生命周期复用阴影模式
+
+参考 `_ensureStageShadow` / `_disposeStageShadow` 的配对模式：
 
 ```typescript
-const _stageVolumetrics = new Map<string, VolumetricLightScatteringPostProcess>();
+const _stageCones = new Map<string, LightConeEntry>();
 
-function _ensureStageVolumetric(id: string): void {
-    // 1. dispose 旧的（参数变化或关闭时）
-    // 2. state.volumetricEnabled 且 state.enabled 时创建
-    // 3. attachedNode = entry.indicator（复用位置指示球）
-    // 4. camera = renderer 暴露的 _pipelineCamera
+function _ensureStageCone(id: string): void {
+    // 1. 关闭或非 SpotLight → 释放
+    // 2. 已存在 → 重建几何/更新 transform/更新 uniforms
+    // 3. 不存在 → 创建
 }
 
-function _disposeStageVolumetric(id: string): void {
-    // camera.detachPostProcess + dispose + map.delete
+function _disposeStageCone(id: string): void {
+    // disposeLightCone + map.delete
 }
 ```
 
 **生命周期触发点：**
-- `setStageLightState`：检查 `volumetricEnabled / volumetricExposure / volumetricDecay / volumetricDensity` 字段变化 → `_ensureStageVolumetric`
+- `setStageLightState`：检查 `_CONE_UPDATE_KEYS` 字段变化 → `_ensureStageCone`
 - `addStageLight` / `loadStageLights` / `removeStageLight`：与阴影同步管理
 - `disposeLighting`：统一释放
-- 相机切换：通过 `renderer.reattachPipeline()` 新增广播钩子（见决策四）
+- **无需相机切换重建**（光锥是普通 Mesh，不依赖相机挂接）
 
-### 决策三：光源位置同步
+### 决策五：每帧相机位置更新
 
-体积光的光源位置**必须跟随灯光移动**。方案：
-
-| 方式 | 说明 | 选择 |
-|------|------|------|
-| `attachedNode = entry.indicator` | indicator.position 已在 `_updateIndicator` 中与 `light.position` 同步 | ✅ **推荐** |
-| `useCustomMeshPosition = true` | 每帧手动 `setCustomMeshPosition(light.position)` | 备选（indicator 不存在时） |
-
-**注意：** indicator 在 `state.enabled = false` 时被 `setEnabled(false)`，但 position 仍正确。体积光开启时强制保留 indicator。
-
-### 决策四：相机切换同步
-
-`renderer.reattachPipeline()` 已处理 SSR/SSAO 重建。体积光同样需要：
+光锥 Shader 的 Fresnel 计算需要相机位置。通过 `onBeforeRenderObservable` 每帧更新所有光锥的 `u_cameraPos` uniform：
 
 ```typescript
-// renderer.ts 内新增
-export function reattachVolumetricLights(cam: Camera): void {
-    // 由 lighting.ts 注册回调，或 lighting.ts 导出 getActiveStageLightIds()
-}
+_coneUpdateHandle = observe(_scene.onBeforeRenderObservable, () => {
+    const cam = _scene?.activeCamera;
+    if (!cam) return;
+    for (const [, cone] of _stageCones) {
+        cone.material.setVector3('u_cameraPos', cam.position);
+    }
+});
 ```
-
-**简化方案：** 在 `reattachPipeline` 末尾调用 `lighting.reattachStageVolumetrics()`，由 lighting 模块自行 dispose + 重建所有活跃的体积光 PostProcess。
-
-### 决策五：性能限制
-
-**最多 N 盏灯同时启用体积光**（建议 N=2）：
-- 单个 VolumetricLightScatteringPostProcess 在 100 samples 下约 2-3% FPS
-- 多灯叠加开销线性增长
-- 超过限制时：UI 显示警告 + 拒绝开启第 N+1 盏
-
-实现：`_ensureStageVolumetric` 入口检查 `_stageVolumetrics.size >= MAX_VOLUMETRIC_LIGHTS`。
 
 ### 决策六：UI 接入
 
-在 [scene-stage-lights.ts](../../frontend/src/menus/scene-stage-lights.ts) 卡片 3（基础参数）下方新增**卡片 3.5：体积光**：
+在 [scene-stage-lights.ts](../../frontend/src/menus/scene-stage-lights.ts) 卡片 3.5：光锥（仅聚光灯显示）：
 
 ```typescript
-// 卡片 3.5：体积光（条件：有选中灯光）
 {
-    id: 'light:volumetric',
+    id: 'light:cone',
     kind: 'custom',
-    visibleWhen: () => !!state,
+    visibleWhen: () => !!state && state.type === 'spot',
     renderCustom: (c) => {
-        cardContainer(c, (inner) => {
-            addCollapsible(inner, {
-                title: t('scene.volumetric'),  // 新增 i18n key
-                icon: 'lucide:sun-medium',
-                defaultOpen: false,
-                headerToggle: {
-                    value: state.volumetricEnabled,
-                    onChange: (v) => setStageLightState({ volumetricEnabled: v }, state.id),
-                    bind: () => /* ... */,
-                },
-                renderContent: (ci) => {
-                    addSliderRow(ci, t('scene.exposure'), state.volumetricExposure, 0, 1, 0.05, ...);
-                    addSliderRow(ci, t('scene.decay'), state.volumetricDecay, 0, 1, 0.05, ...);
-                    addSliderRow(ci, t('scene.density'), state.volumetricDensity, 0, 1, 0.05, ...);
-                },
-            });
-        });
+        // headerToggle: coneEnabled
+        // 滑块: coneIntensity(0-2), coneLength(1-50), coneSoftness(0-1)
     },
 }
 ```
 
 **i18n key 清单（5 语言）：**
-- `scene.volumetric` — 体积光 / Volumetric Light / ボリュームライト / 볼륨 라이트 / 体积光
-- `scene.exposure` — 曝光 / Exposure / 明るさ / 노출 / 曝光
-- `scene.decay` — 衰减 / Decay / 減衰 / 감쇠 / 衰减
-- `scene.density` — 密度 / Density / 密度 / 밀도 / 密度
+- `scene.cone` — 光锥 / Light Cone / ライトコーン / 라이트 콘 / 光锥
+- `scene.coneIntensity` — 光锥亮度 / Cone Intensity / コーンの明るさ / 콘 밝기 / 光锥亮度
+- `scene.coneLength` — 光锥长度 / Cone Length / コーンの長さ / 콘 길이 / 光锥长度
+- `scene.coneSoftness` — 边缘柔和度 / Edge Softness / 边缘の柔らかさ / 가장자리 부드러움 / 边缘柔和度
 
 ### 决策七：序列化兼容
 
-`loadStageLights` 已通过 `...s` 浅拷贝整个 state，新字段自动跟随。**旧存档兼容**：
-- 反序列化旧 JSON 时 `volumetricEnabled` 为 `undefined`
-- `_readStageLightState` 入口补默认值：`volumetricEnabled: state.volumetricEnabled ?? false`
-
-## 与反射系统的关系
-
-| 维度 | 反射系统（ADR-151） | 体积光（本 ADR） |
-|------|-------------------|-----------------|
-| 操作对象 | 材质的 `reflectionTexture` 槽位 | 屏幕后处理 PostProcess |
-| 模式数量 | 5 种（none/probe/ssr/planar/hybrid） | 1 种（单 PostProcess） |
-| 参数空间 | 多子系统各自参数 | 4 个参数（enabled/exposure/decay/density） |
-| 生命周期入口 | `applyReflection(state)` | `setStageLightState(s, id)` 内联 |
-| 相机挂接 | 通过 `_pipelineCamera` | 通过 `_pipelineCamera`（一致） |
-
-**互不冲突**：反射改变物体着色（材质层），体积光改变屏幕像素（后处理层）。两者可同时启用。
+`loadStageLights` 加载时即执行 `volumetric* → cone*` 迁移，确保旧存档的 `volumetricEnabled: true` 能正确创建光锥。`_readStageLightState` 读取时同样补迁移（双路径防御）。
 
 ## 实施清单
 
@@ -189,31 +150,21 @@ export function reattachVolumetricLights(cam: Camera): void {
 
 | 文件 | 改动 |
 |------|------|
-| [lighting.ts](../../frontend/src/scene/render/lighting.ts) | 扩展 `StageLightState` 4 字段；新增 `_stageVolumetrics` Map + `_ensureStageVolumetric` / `_disposeStageVolumetric`；`setStageLightState` 增加体积光字段检查；`disposeLighting` 清理；新增 `reattachStageVolumetrics` 导出 |
-| [renderer.ts](../../frontend/src/scene/render/renderer.ts) | `reattachPipeline` 末尾调用 `reattachStageVolumetrics` |
-| [scene.ts](../../frontend/src/scene/scene.ts) | barrel re-export `reattachStageVolumetrics` |
-| [scene-stage-lights.ts](../../frontend/src/menus/scene-stage-lights.ts) | 卡片 3.5 新增体积光面板 |
+| [light-cone.ts](../../frontend/src/scene/render/light-cone.ts) | **新建**：锥体网格生成 + ShaderMaterial + 变换/更新/释放 API |
+| [lighting.ts](../../frontend/src/scene/render/lighting.ts) | 扩展 `StageLightState` 4 字段；新增 `_stageCones` Map + `_ensureStageCone` / `_disposeStageCone`；`setStageLightState` 增加光锥字段检查；`disposeLighting` 清理；每帧 observer 更新 `u_cameraPos` |
+| [renderer.ts](../../frontend/src/scene/render/renderer.ts) | 移除 `reattachStageVolumetrics` 导入和调用（光锥无需相机重绑定） |
+| [scene-stage-lights.ts](../../frontend/src/menus/scene-stage-lights.ts) | 卡片 3.5 光锥面板（仅 spot 显示） |
 | [i18n/locales/*.ts](../../frontend/src/core/i18n/locales/) | 5 语言新增 4 个 key |
-
-### 测试
-
-| 测试 | 类型 | 目标 |
-|------|------|------|
-| `stage-light-volumetric.test.ts` | 单元 | `_ensureStageVolumetric` 在不同参数下的创建/销毁路径 |
-| `stage-light-volumetric.contract.test.ts` | 契约 | `StageLightState` 4 字段存在性 + 默认值 |
-| 现有 `lighting.test.ts` | 回归 | 确保未引入破坏 |
 
 ### 风险
 
 | 风险 | 等级 | 缓解 |
 |------|------|------|
-| 多灯叠加性能下降 | 🟡 中 | MAX_VOLUMETRIC_LIGHTS=2 限制 |
-| 相机切换后 PostProcess 丢失 | 🟠 高 | `reattachStageVolumetrics` 在 `reattachPipeline` 末尾调用 |
-| indicator 被外部清理导致 attachedNode 失效 | 🟢 低 | `_updateIndicator` 已有 material 重建逻辑，体积光复用相同防御 |
-| 旧存档反序列化缺字段 | 🟢 低 | `_readStageLightState` 用 `??` 补默认值 |
-| 与 Bloom 叠加过亮 | 🟡 中 | 参考 GlowLayer 的 `bloomW > 0.5` 自动降低逻辑，可后续追加 |
+| 旧存档反序列化缺字段 | 🟢 低 | `loadStageLights` + `_readStageLightState` 双路径迁移 |
+| 与 Bloom 叠加过亮 | 🟡 中 | `coneIntensity` 默认 0.5，用户可调；后续可追加自动降低逻辑 |
+| Additive blending 与透明物体排序 | 🟢 低 | `renderingGroupId = 1` + 不写深度 |
 
 ## 未实现部分（后续 ADR 处理）
 
-- **光柱几何形状约束**：当前 PostProcess 是全屏放射状散射，无法限制在 SpotLight 锥角内。若需精确锥形光柱，需自定义 ShaderMaterial（后续 ADR）
-- **方向光太阳神光**：本 ADR 只覆盖舞台灯。方向光（dirLight）的太阳神光若需要，可复用相同 PostProcess 挂到 `_sunDisc`（已有）
+- **方向光太阳神光**：本 ADR 只覆盖舞台灯。方向光（dirLight）的太阳神光若需要，可复用相同光锥方案（圆柱形光束）
+- **噪声纹理模拟尘埃粒子**：当前 Shader 是均匀光柱，可追加 3D 噪声纹理模拟空气中的尘埃散射
