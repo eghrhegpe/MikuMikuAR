@@ -22,6 +22,7 @@ import type { EnvState } from '@/core/config';
 import { envState } from '@/core/config';
 import { getScene } from './env-context';
 import { registerEnvCallback } from './env-dispatcher';
+import { getEnvKeys } from '@/core/env-state-schema';
 import { setSSRFromReflection, isSSRActive } from '../render/renderer';
 
 // ======== 类型定义 ========
@@ -508,7 +509,7 @@ export function disposeReflection(): void {
 
 // ======== env-dispatcher 回调注册 ========
 
-const _REFLECTION_KEYS = ['reflectionMode', 'reflectionQuality'];
+const _REFLECTION_KEYS = getEnvKeys('reflection');
 
 registerEnvCallback((changed, state) => {
     if (!changed || [...changed].some((k) => _REFLECTION_KEYS.includes(k))) {

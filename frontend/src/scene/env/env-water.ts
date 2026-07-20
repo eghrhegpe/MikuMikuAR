@@ -21,6 +21,7 @@ import { PlanarReflection, registerReflectionSurface } from './planar-reflection
 import { getPlanarQualityOverride } from './env-reflection';
 import { createCanvasTexture } from './env-texture';
 import { registerEnvCallback } from './env-dispatcher';
+import { getEnvKeys } from '@/core/env-state-schema';
 import { clamp01 } from '@/core/utils';
 import { logWarn } from '@/core/logger';
 
@@ -67,8 +68,9 @@ export function computeWaveDirs(windDir: [number, number, number]): number[] {
     // Float32Array → number[] 因为 Babylon setArray2 需要 number[]
     const arr: number[] = new Array(8).fill(0); // 4 × vec2
     if (!windDir || (windDir[0] === 0 && windDir[2] === 0)) {
-        // Fail-Fast: 无有效风向直接抛错
-        throw new Error('env-water: 无有效风向，请先设置风向');
+        // 零风向时回退到默认方向（Z+），避免运行时 throw 导致水面崩溃
+        logWarn('env-water', '零风向，回退到默认方向 [0,0,1]');
+        windDir = [0, 0, 1];
     }
     // 从 windDirection 计算风向角（XZ 平面）
     const angle = Math.atan2(windDir[0], windDir[2]);
@@ -1252,48 +1254,7 @@ export function applyWaterPresetToCurrent(preset: Partial<WaterPreset>): void {
 }
 
 // ======== [ADR-138] env-dispatcher 回调注册 ========
-const _WATER_KEYS = [
-    'waterEnabled',
-    'waterLevel',
-    'waterFlip',
-    'waterColor',
-    'waterTransparency',
-    'waterWaveHeight',
-    'bigWaveHeight',
-    'smallWaveHeight',
-    'waterSize',
-    'waterAnimSpeed',
-    'planarReflectBlend',
-    'reflectionQuality',
-    'reflectionMode',
-    'qualityProfile',
-    // Water shader
-    'waterFogColor',
-    'waterFogDensity',
-    'waterFogOpacityInfluence',
-    'waterHorizonFade',
-    'waterSkyColorBlend',
-    'fresnelBias',
-    'fresnelPower',
-    'diffuseStrength',
-    'ambientStrength',
-    'rippleNormalStrength',
-    'rippleGlintStrength',
-    'waterNormalStrength',
-    'waterGlintStrength',
-    'causticIntensity',
-    'causticColor1',
-    'causticColor2',
-    'causticScrollX',
-    'causticScrollY',
-    'fresnelAlphaInfluence',
-    // Underwater
-    'underwaterFogDensity',
-    'underwaterChromaticAmount',
-    'underwaterToneIntensity',
-    'underwaterFogMultiplier',
-    'underwaterTintStrength',
-];
+const _WATER_KEYS = getEnvKeys('water');
 
 registerEnvCallback((changed, state) => {
     if (!changed || [...changed].some((k) => _WATER_KEYS.includes(k))) {

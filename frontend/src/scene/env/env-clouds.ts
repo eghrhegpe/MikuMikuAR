@@ -17,6 +17,7 @@ import { EnvState } from '@/core/config';
 import { _envSys, getScene } from './env-context';
 import { ensureEnvUpdateObserver } from './env-impl';
 import { registerEnvCallback } from './env-dispatcher';
+import { getEnvKeys } from '@/core/env-state-schema';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { safeDispose } from '@/core/dispose-helpers';
 
@@ -747,21 +748,7 @@ export function disposeClouds(): void {
 }
 
 // ======== [ADR-138] env-dispatcher 回调注册 ========
-const _CLOUD_KEYS = [
-    'cloudsEnabled',
-    'debugClouds',
-    'cloudCover',
-    'cloudScale',
-    'cloudHeight',
-    'cloudThickness',
-    'cloudVisibility',
-    'cloudGap',
-    'cloudErosion',
-    'cloudWeatherStrength',
-    'cloudBacklight',
-    'cloudPowder',
-    'cloudQuality',
-];
+const _CLOUD_KEYS = getEnvKeys('cloud');
 
 registerEnvCallback((changed, state) => {
     if (!changed || [...changed].some((k) => _CLOUD_KEYS.includes(k))) {

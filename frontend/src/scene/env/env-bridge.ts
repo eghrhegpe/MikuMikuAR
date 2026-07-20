@@ -227,7 +227,7 @@ function _timeOfDayTick(): void {
     if (!envState.timeOfDayActive || _timeOfDayPaused) {
         return;
     }
-    const dt = scene.getAnimationRatio() * (1 / 60);
+    const dt = scene.deltaTime / 1000; // 用真实 deltaTime，兼容高刷新率屏幕
     envSunAngle += _timeOfDaySpeed * dt;
     if (envSunAngle > 90) {
         envSunAngle = -15;
@@ -559,10 +559,12 @@ function migrateEnvState(input: Partial<EnvState>): Partial<EnvState> {
 }
 
 export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): void {
-    const keys = Object.keys(partial).join(', ');
-    console.info(
-        `[env-persist] setEnvState() called: ${keys} ${skipAutoSave ? '(skipAutoSave)' : ''}`
-    );
+    if (import.meta.env.DEV) {
+        const keys = Object.keys(partial).join(', ');
+        console.info(
+            `[env-persist] setEnvState() called: ${keys} ${skipAutoSave ? '(skipAutoSave)' : ''}`
+        );
+    }
     const migrated = migrateEnvState(partial);
     Object.assign(envState, migrated);
 
@@ -591,7 +593,9 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
 
     _envPersistTimer.schedule(() => {
         // 传普通对象副本（非 reactive Proxy），避免 JSON.stringify 对 Proxy 枚举不完整
-        console.info('[env-persist] debounce fired → SetEnvState()');
+        if (import.meta.env.DEV) {
+            console.info('[env-persist] debounce fired → SetEnvState()');
+        }
         persistEnvState({ ...envState });
     }, 500);
 
@@ -605,7 +609,9 @@ registerSetEnvState(setEnvState);
 
 /** 立即刷写 env state 到后端（无防抖）。关闭/隐藏页面时调用。 */
 export function flushEnvState(): void {
-    console.info('[env-persist] flushEnvState() — immediate flush');
+    if (import.meta.env.DEV) {
+        console.info('[env-persist] flushEnvState() — immediate flush');
+    }
     _envPersistTimer.cancel();
     // 传普通对象副本（非 reactive Proxy）
     persistEnvState({ ...envState });
@@ -655,7 +661,9 @@ function persistUIState(payload: Partial<UIState>): void {
 
 /** 立即刷写 UI state 到后端（无防抖）。关闭/隐藏页面时调用。 */
 export function flushUIState(): void {
-    console.info('[ui-persist] flushUIState() — immediate flush');
+    if (import.meta.env.DEV) {
+        console.info('[ui-persist] flushUIState() — immediate flush');
+    }
     _uiPersistTimer.cancel();
     const payload = _buildUIStatePayload();
     if (Object.keys(payload).length === 0) {

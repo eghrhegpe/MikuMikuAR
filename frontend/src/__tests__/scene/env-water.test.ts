@@ -236,8 +236,12 @@ describe('Water 预设 — 扩展参数进入 envState', () => {
 
 // ──────────────── 波方向（风向联动）────────────────
 describe('Water 波方向 — 归一化', () => {
-    it('无风向时直接抛错（Fail-Fast）', () => {
-        expect(() => computeWaveDirs([0, 0, 0])).toThrow();
+    it('零风向时回退到默认方向 [0,0,1]（不抛错）', () => {
+        const d = computeWaveDirs([0, 0, 0]);
+        expect(d.length).toBe(8);
+        // 回退后主方向应沿 Z+（angle=atan2(0,1)=0 → sin=0, cos=1）
+        expect(d[0]).toBeCloseTo(0, 3);
+        expect(d[1]).toBeCloseTo(1, 3);
     });
 
     it('有风向时返回 4 个归一化方向', () => {
