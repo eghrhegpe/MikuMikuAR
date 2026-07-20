@@ -28,7 +28,7 @@ function buildFeetSchema(): MenuNode[] {
                     addEmptyRow(c, t('motion.feet.noModel'));
                 },
             },
-        ];
+        ] satisfies MenuNode[];
     }
     const inst = modelRegistry.get(modelId);
     if (!inst?.mmdModel) {
@@ -40,7 +40,7 @@ function buildFeetSchema(): MenuNode[] {
                     addEmptyRow(c, t('motion.feet.noModel'));
                 },
             },
-        ];
+        ] satisfies MenuNode[];
     }
     const feet = inst.feet;
     const menu = getMotionMenu();
@@ -201,7 +201,7 @@ function buildFeetSchema(): MenuNode[] {
                 });
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 export function buildFeetLevel(): PopupLevel {

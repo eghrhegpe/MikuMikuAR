@@ -1,6 +1,15 @@
 // [doc:adr-056] WASM 图层混合器 — JS 帧流合并让 WASM 拿到多图层能力
 // 复用 perception.ts 的 _isWasmRuntime / _writeMatToBuffer / _propagateChildrenWasm
-// 职责: 单 observer 调度（图层混合 → gaze 覆写 → 子骨骼传播）
+//
+// 职责: 注册为 MotionPipeline vmd-layers 层，在 bone-override 之前执行图层混合。
+// gaze 覆写已由 perception 层统一处理（参见 ADR-071），本模块不再涉及 gaze。
+//
+// 时序治理（ADR-147）：
+// - wasm-layers-blender 原为独立 onBeforeRenderObservable 观察者，
+//   注册时机晚于 Pipeline 驱动（setupWasmLayersBlender 在运行时被调用），
+//   导致 vmd-layers 阶段（②）在 bone-override（⑤）和 perception（⑥）之后执行，
+//   图层混合的世界矩阵写入覆盖了骨骼覆盖/感知层的输出。
+// - 修复：注册为 Pipeline 的 vmd-layers 层，由 MotionPipeline 按 (stage, order) 统一调度。
 
 import { Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Matrix } from '@babylonjs/core/Maths/math';
@@ -8,16 +17,14 @@ import {
     _isWasmRuntime,
     _writeMatToBuffer,
     _propagateChildrenWasm,
-    applyGazeWasm,
-    type GazeConfig,
 } from './perception';
 import type { MmdRuntimeBoneExtended } from '@/core/types';
 import { createVmdEvaluator, type VmdEvaluator } from '@/motion-algos/vmd-evaluator';
 import { DEFAULT_LAYER_BONE_FILTER } from './wasm-layers-config';
 import { scene, modelManager, loadVMDMotion } from '../scene';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
-import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { clamp01 } from '@/core/utils';
+import { getMotionPipeline } from './motion-pipeline';
 
 export { DEFAULT_LAYER_BONE_FILTER } from './wasm-layers-config';
 
@@ -39,16 +46,38 @@ interface WasmLayerEntry {
 interface BlenderState {
     modelId: string;
     layers: Map<string, WasmLayerEntry>;
-    observer: ObserverHandle;
     enabled: boolean;
     baseAnimationName: string;
-    gazeConfig: { headEnabled: boolean; eyeEnabled: boolean };
     animationFrame: number;
 }
 
 const _blenderStates = new Map<string, BlenderState>();
 
 const VMD_FPS = 30;
+
+// ── Pipeline vmd-layers 层 ──────────────────────────────────────────────
+// 注册一次，在 bone-override 之前执行所有活跃模型的 WASM 图层混合。
+let _vmdLayersRegistered = false;
+
+function _ensureVmdLayersLayer(): void {
+    if (_vmdLayersRegistered) return;
+    _vmdLayersRegistered = true;
+    getMotionPipeline().register({
+        id: 'wasm-vmd-layers',
+        stage: 'vmd-layers',
+        order: 0,
+        run: () => {
+            for (const [modelId, state] of _blenderStates) {
+                if (!state.enabled) continue;
+                const dt = scene.deltaTime || 16.67;
+                state.animationFrame += (dt / 1000) * VMD_FPS;
+                _applyLayersBlending(modelId);
+            }
+        },
+    });
+}
+
+// ── 公开 API ────────────────────────────────────────────────────────────
 
 export async function setupWasmLayersBlender(
     modelId: string,
@@ -62,24 +91,14 @@ export async function setupWasmLayersBlender(
         throw new Error(`Model ${modelId} not found`);
     }
 
-    const observer = observe(scene.onBeforeRenderObservable, () => {
-        const state = _blenderStates.get(modelId);
-        if (!state || !state.enabled) {
-            return;
-        }
-        const dt = scene.deltaTime || 16.67;
-        state.animationFrame += (dt / 1000) * VMD_FPS;
-        _applyLayersBlending(modelId);
-        _applyGazeIfEnabled(modelId);
-    });
+    // 确保 vmd-layers 管线段已注册（幂等）
+    _ensureVmdLayersLayer();
 
     _blenderStates.set(modelId, {
         modelId,
         layers: new Map(),
-        observer,
         enabled: true,
         baseAnimationName: baseName,
-        gazeConfig: { headEnabled: false, eyeEnabled: false },
         animationFrame: 0,
     });
 
@@ -87,15 +106,12 @@ export async function setupWasmLayersBlender(
 }
 
 export function teardownWasmLayersBlender(modelId: string): void {
-    // 契约：本函数在对应模型 destroyMmdModel 之后（微任务）被调用，只操作 _blenderStates，
-    // 绝不访问已销毁的 mmdModel 或 modelRegistry。若需模型实例须先加 modelRegistry.get(id) 守卫。
     const state = _blenderStates.get(modelId);
     if (!state) {
         return;
     }
 
-    state.observer.dispose();
-
+    // 无独立 observer 需 dispose — 由 Pipeline vmd-layers 层统一调度
     for (const [, layer] of state.layers) {
         layer.evaluator.dispose();
     }
@@ -105,7 +121,6 @@ export function teardownWasmLayersBlender(modelId: string): void {
 }
 
 export function isWasmLayersBlenderActive(modelId: string): boolean {
-    // has() 守卫保证 get() 非空
     return _blenderStates.has(modelId) && _blenderStates.get(modelId)!.enabled;
 }
 
@@ -153,32 +168,7 @@ export function updateWasmLayerWeight(modelId: string, layerId: string, weight: 
     }
 }
 
-export function setWasmLayersGazeConfig(modelId: string, config: GazeConfig): void {
-    const state = _blenderStates.get(modelId);
-    if (!state) {
-        return;
-    }
-    state.gazeConfig = config;
-}
-
-function _applyGazeIfEnabled(modelId: string): void {
-    const state = _blenderStates.get(modelId);
-    if (!state) {
-        return;
-    }
-
-    const inst = modelManager.get(modelId);
-    if (!inst?.mmdModel) {
-        return;
-    }
-
-    const cam = scene.activeCamera;
-    if (!cam) {
-        return;
-    }
-
-    applyGazeWasm(inst.mmdModel.runtimeBones, cam, state.gazeConfig);
-}
+// ── 内部实现 ────────────────────────────────────────────────────────────
 
 function _applyLayersBlending(modelId: string): void {
     const state = _blenderStates.get(modelId);

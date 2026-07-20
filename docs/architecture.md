@@ -496,7 +496,7 @@ MikuMikuAR/
         │   │── plaza-sites.ts            # 广场站点列表
         │   │── preset-list-viewer.ts     # 预设列表查看器（ADR-129 组件化）
         │   │── resource-detail-helpers.ts # 资源详情辅助
-        │   │── render-menu.ts            # 渲染菜单（遗留，待 ADR-093 迁移）
+        │   │── render-menu.ts            # 渲染菜单（声明式 Schema 单渲染器，ADR-093 核心）
         │   │
         │   └── __tests__/              # 单元测试
         │

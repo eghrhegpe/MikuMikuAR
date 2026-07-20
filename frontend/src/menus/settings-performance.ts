@@ -341,7 +341,7 @@ function buildPerfSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] 
                 c.appendChild(hint);
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 export function buildSettingsPerformanceLevel(

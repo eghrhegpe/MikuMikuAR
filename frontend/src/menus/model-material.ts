@@ -217,7 +217,7 @@ function buildMatBatchSchema(id: string, _modelName: string): MenuNode[] {
                 });
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 export function buildMatBatchLevel(id: string, modelName: string): PopupLevel {

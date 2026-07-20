@@ -402,7 +402,7 @@ function buildAppearanceSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
                 });
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 export function buildSettingsAppearanceLevel(

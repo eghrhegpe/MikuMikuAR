@@ -172,7 +172,7 @@ function buildSoftwareListSchema(): MenuNode[] {
                 });
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 export function buildSettingsSoftwareLevel(): PopupLevel {

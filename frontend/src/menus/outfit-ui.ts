@@ -150,7 +150,7 @@ function buildOutfitSchema(id: string): MenuNode[] {
                 void _render();
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 export function buildOutfitLevel(id: string): PopupLevel {

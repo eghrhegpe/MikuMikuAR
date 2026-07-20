@@ -362,7 +362,7 @@ function buildAboutSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                 });
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 export function buildSettingsAboutLevel(getSettingsMenu: () => SettingsMenuHandle): PopupLevel {

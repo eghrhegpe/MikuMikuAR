@@ -334,7 +334,7 @@ function buildVirtualSkirtSchema(): MenuNode[] {
                 });
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 export function buildVirtualSkirtLevel(): PopupLevel {

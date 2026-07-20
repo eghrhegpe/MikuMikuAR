@@ -123,7 +123,7 @@ function buildMotionOverrideSchema(): MenuNode[] {
                     addEmptyRow(c, t('motion.boneOverride.noModel'));
                 },
             },
-        ];
+        ] satisfies MenuNode[];
     }
 
     const modules = getRegisteredModules();
@@ -354,7 +354,7 @@ function buildMotionOverrideSchema(): MenuNode[] {
                 });
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 /** 模块参数子页：渲染模块的 buildSchema() */
@@ -388,7 +388,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
                     addEmptyRow(c, t('motion.boneOverride.noModel'));
                 },
             },
-        ];
+        ] satisfies MenuNode[];
     }
 
     const inst = modelRegistry.get(modelId);
@@ -401,7 +401,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
                     addEmptyRow(c, t('motion.boneOverride.noModel'));
                 },
             },
-        ];
+        ] satisfies MenuNode[];
     }
 
     const bones = inst.mmdModel.runtimeBones;
@@ -414,7 +414,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
                     addEmptyRow(c, t('motion.boneOverride.noBones'));
                 },
             },
-        ];
+        ] satisfies MenuNode[];
     }
 
     const menu = getMotionMenu();
@@ -676,7 +676,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
                 });
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 export function buildAdvancedBoneOverrideLevel(): PopupLevel {

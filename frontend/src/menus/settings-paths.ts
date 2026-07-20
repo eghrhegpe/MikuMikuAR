@@ -539,7 +539,7 @@ function buildPathsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                 });
             },
         },
-    ];
+    ] satisfies MenuNode[];
 }
 
 export function buildSettingsPathsLevel(getSettingsMenu: () => SettingsMenuHandle): PopupLevel {
