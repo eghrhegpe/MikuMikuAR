@@ -1,6 +1,6 @@
 # ADR-093: 菜单声明式 Schema —— 单一数据源 + 单渲染器，根治「大」与「AI 难改」
 
-> **状态**: 实施中（P0+P1 已完成，P2 域迁移实质完成：env/motion/scene/model/settings 全域覆盖，57 个面板迁移完成；P3 收尾待推进）
+> **状态**: 已完成 P0+P1+P2（57 个面板迁移完成，env/motion/scene/model/settings 全域覆盖；library/language 为动态列表/纯导航性质，非面板类面板，无需 schema 化）；P3 收尾（移除死 builder、删除 barrel 兼容 re-export、全量类型化）待推进
 
 ## 1. 背景
 
@@ -222,4 +222,4 @@ interface ControlSpec {
 | P3 | §6 缺 i18n 热切换 e2e 与内存泄漏检查 | **采纳** | 已在 §6 增补 i18n 热切换 e2e（ADR-065 收益）与 dispose 级联/泄漏 vitest。 |
 | P4 | `MenuKind` 缺 `renderCustom`/`dynamic` | **采纳** | `renderCustom` 保留为节点字段（逃生舱）；`MenuKind` 增补 `'dynamic'`（运行时 `childrenResolver` 生成子项）。 |
 
-**状态**：已进入「实施中」——P0+P1 已完成，P2 域迁移推进中。env 域全部面板、motion 域全部面板、scene 域全部面板、model 域 11 个面板（打开方式/模型详情/模型信息/模型标签/表情预览/骨骼层级/材质批量/单材质/材质根/材质列表/替换纹理）、settings 域全部面板已迁移为 schema 驱动。tsc 零错误，1313 测试全绿。剩余迁移目标：settings 域 language 等纯 items 面板（纯 PopupRow 导航，不需 schema 化）+ model-preset 预设库面板（使用 generic preset-list-viewer 渲染后端）+ library 域（buildLevel 为动态列表渲染后端，类似 preset-list-viewer，非面板性质）。
+**状态**：已进入「已完成 P0+P1+P2」。env 域全部面板、motion 域全部面板、scene 域全部面板、model 域 11 个面板（打开方式/模型详情/模型信息/模型标签/表情预览/骨骼层级/材质批量/单材质/材质根/材质列表/替换纹理）、settings 域全部面板已迁移为 schema 驱动。tsc 零错误，测试全绿。剩余 P3 收尾：移除死 builder、删除 barrel 兼容 re-export、全量类型化。settings 域 language 等纯 items 面板（纯 PopupRow 导航，不需 schema 化）、model-preset 预设库面板（使用 generic preset-list-viewer 渲染后端）、library 域（buildLevel 为动态列表渲染后端，非面板性质）均为 P3 范围。
