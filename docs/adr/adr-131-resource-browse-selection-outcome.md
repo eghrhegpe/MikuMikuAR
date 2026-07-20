@@ -1,6 +1,6 @@
 # ADR-131 资源浏览选中结果统一契约（BrowseOutcome）
 
-- **状态**：实施中
+- **状态**：✅ 已完成（2026-07-20 代码核查确认：BrowseOutcome 类型定义、`activateItem` 派发（stay/jumpToDir/close）、grid 模式适配、`buildLevel` outcome 参数均已落地；旧全局标志位 `modelReplaceTargetId`/`layerBindingTargetId`/`motionBindingTargetId` 已移除）
 - **日期**：2026-07-18
 - **相关**：ADR-094（模型替换自动返回资源库）、ADR-065（纯 items 层级语言热刷新）
 
