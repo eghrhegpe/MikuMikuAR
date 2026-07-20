@@ -9,6 +9,8 @@ export const zhCN: Record<string, string> = {
     'settings.font': '字体',
     'settings.slideAnimation': '滑动动画',
     'settings.bgBlur': '背景模糊',
+    'settings.screen': '屏幕',
+    'settings.keepAwake': '屏幕常亮',
     'settings.resetAppearance': '恢复默认外观',
     'settings.filename': '文件名',
     'settings.library': '库设置',
@@ -845,6 +847,11 @@ export const zhCN: Record<string, string> = {
     'scene.ar.arcoreLaunching': 'ARCore 探针已启动，请查看全屏探针页面…',
     'scene.ar.arcoreSuccess': '🟢 ARCore × WebView 共存验证通过！',
     'scene.ar.arcoreFailed': '🔴 ARCore 探针失败',
+    'scene.ar.vuforiaProbe': 'Vuforia 共存探针',
+    'scene.ar.vuforiaLaunch': '启动 Vuforia × WebView 共存探针',
+    'scene.ar.vuforiaLaunching': 'Vuforia 探针已启动…',
+    'scene.ar.vuforiaSuccess': '🟢 Vuforia × WebView 共存验证通过！',
+    'scene.ar.vuforiaFailed': '🔴 Vuforia 探针失败',
 
     // scene.bundle — 场景打包/解包状态
     'scene.bundle.collecting': '正在收集场景资源…',

@@ -32,6 +32,7 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.RenderProcessGoneDetail;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
@@ -218,6 +219,20 @@ public class MainActivity extends AppCompatActivity {
                 // Now that JS listeners are mounted, push a snapshot of the
                 // current battery / network / theme so the UI starts populated.
                 emitSystemSnapshot();
+            }
+
+            @Override
+            public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+                // The WebView renderer died (native crash or system OOM kill).
+                // Returning false lets Android terminate the whole app. Instead,
+                // reload so the renderer restarts and the UI self-heals — without
+                // this the app appears frozen (audio may keep playing, touch dead).
+                // Only referenced on API 26+; on older devices this override is
+                // simply never invoked, so no version guard is required.
+                Log.e(TAG, "WebView render process gone (didCrash=" + detail.didCrash()
+                        + ", priorityAtExit=" + detail.rendererPriorityAtExit() + "); reloading");
+                view.postDelayed(view::reload, 300);
+                return true; // handled — do not kill the app
             }
         });
 
@@ -638,6 +653,26 @@ public class MainActivity extends AppCompatActivity {
                     success, arcoreSession, cameraFrame, webViewOverlay, frameCount,
                     error != null ? "\"" + error.replace("\"", "\\\"") + "\"" : "null");
                 String js = "window.__onARCoreProbeResult && window.__onARCoreProbeResult('" +
+                    json.replace("'", "\\'") + "');";
+                webView.post(() -> webView.evaluateJavascript(js, null));
+            }
+            return;
+        }
+        // Vuforia × WebView 共存探针结果
+        if (requestCode == 7021) {
+            if (data != null && webView != null) {
+                boolean success = data.getBooleanExtra("success", false);
+                boolean vuforiaInitialized = data.getBooleanExtra("vuforiaInitialized", false);
+                boolean cameraStarted = data.getBooleanExtra("cameraStarted", false);
+                boolean webViewOverlay = data.getBooleanExtra("webViewOverlay", false);
+                int frameCount = data.getIntExtra("frameCount", 0);
+                String error = data.getStringExtra("error");
+                String json = String.format(
+                    "{\"success\":%b,\"vuforiaInitialized\":%b,\"cameraStarted\":%b," +
+                    "\"webViewOverlay\":%b,\"frameCount\":%d,\"error\":%s}",
+                    success, vuforiaInitialized, cameraStarted, webViewOverlay, frameCount,
+                    error != null ? "\"" + error.replace("\"", "\\\"") + "\"" : "null");
+                String js = "window.__onVuforiaProbeResult && window.__onVuforiaProbeResult('" +
                     json.replace("'", "\\'") + "');";
                 webView.post(() -> webView.evaluateJavascript(js, null));
             }

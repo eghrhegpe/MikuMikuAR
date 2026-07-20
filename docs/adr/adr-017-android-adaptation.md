@@ -129,6 +129,7 @@ type FileAccessor interface {
 | A1-01 | `Browser.OpenURL` 在 Android 上无文档保证 | "检查更新"/"查看许可证"等按钮静默无响应 | ✅ 已修复：`frontend/src/core/platform.ts` `openExternalURL()` 安卓走 `<a>` 兜底 |
 | A1-02 | Blender/MMD/外部程序菜单项可见但点击报错 | 前端需隐藏或灰显这些入口 | ✅ 已修复：`platform.ts` `guardExternalAction()` 安卓返回 false（与决策点 5 一致） |
 | A1-03 | `isAndroidPlatform()` 调用时 `window.wails` bridge 未就绪 | 读到 `undefined !== 'android'` → 误判为桌面 | ✅ 已修复：`platform.ts` `isAndroidPlatform()` 改读 `window.wails.platform()` + `awaitWailsBridge()` 轮询待 bridge 就绪 |
+| A1-04 | 看舞蹈时屏幕随系统熄屏超时自动关闭（音频继续播放、画面黑屏） | 核心观看体验中断；USB 调试的「保持唤醒」开发者选项会掩盖该问题，真机用户必现 | ✅ 已修复（2026-07-20）：接线孤儿桥 `WailsBridge.setKeepAwake`——`WailsJSBridge` 暴露 `setKeepAwake` @JavascriptInterface；前端启动恢复设置时调用（undefined 视为开启），外观设置新增「屏幕→屏幕常亮」开关（仅 Android 展示，`keepAwake` 经 `SetUIState` 持久化到 `UIState`） |
 
 ### P2 — 偶发级
 
@@ -140,6 +141,7 @@ type FileAccessor interface {
 | A2-04 | 截图 `toDataURL` 低端机 OOM | 截图功能闪退 | 待实施 |
 | A2-05 | 部分国产 ROM `AudioContext` 自动播放限制 | 音乐/节拍检测静音 | 待实施 |
 | A2-06 | `clipboard.writeText` 需用户手势触发 | 复制功能静默失败 | 待实施 |
+| A2-07 | WebView 渲染进程崩溃无兜底（缺 `onRenderProcessGone`） | 渲染器 OOM/native 崩溃后 App 不退出但 UI 假死（音频可能继续播放、触控失效），用户只能杀进程 | ✅ 已修复（2026-07-20）：`MainActivity` WebViewClient 重写 `onRenderProcessGone`，返回 true 阻止系统杀 App，300ms 后 `reload()` 重建渲染器自愈（API 26+ 生效，低版本不调用无需守卫） |
 
 ### P3 — 架构建议
 

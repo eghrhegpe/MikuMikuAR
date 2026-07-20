@@ -468,6 +468,8 @@ export interface UIState {
     showFpsClock?: boolean | null;
     /** 顶部 HUD：多线程（MPR/SPR）徽标显隐；undefined/null=显示 */
     showRuntimeBadge?: boolean | null;
+    /** Android 前台屏幕常亮（仅 Android 生效）；undefined 视为 true（默认开启） */
+    keepAwake?: boolean;
 }
 
 // [doc:test-strategy] Go↔TS UIState 字段同步哨兵

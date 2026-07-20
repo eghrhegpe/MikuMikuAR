@@ -9,6 +9,8 @@ export const ja: Record<string, string> = {
     'settings.font': 'フォント',
     'settings.slideAnimation': 'スライドアニメーション',
     'settings.bgBlur': '背景ぼかし',
+    'settings.screen': '画面',
+    'settings.keepAwake': '画面を常にオン',
     'settings.resetAppearance': '外観をリセット',
     'settings.filename': 'ファイル名',
     'settings.library': 'ライブラリ',
@@ -781,6 +783,11 @@ export const ja: Record<string, string> = {
     'scene.ar.arcoreLaunching': 'ARCore プローブ起動中、フルスクリーンページを確認…',
     'scene.ar.arcoreSuccess': '🟢 ARCore × WebView 共存検証成功！',
     'scene.ar.arcoreFailed': '🔴 ARCore プローブ失敗',
+    'scene.ar.vuforiaProbe': 'Vuforia 共存プローブ',
+    'scene.ar.vuforiaLaunch': 'Vuforia × WebView 共存プローブを起動',
+    'scene.ar.vuforiaLaunching': 'Vuforia プローブ起動中…',
+    'scene.ar.vuforiaSuccess': '🟢 Vuforia × WebView 共存検証成功！',
+    'scene.ar.vuforiaFailed': '🔴 Vuforia プローブ失敗',
 
     // —— Scene Bundle ——
     'scene.bundle.collecting': 'シーンアセットを収集中…',

@@ -357,6 +357,10 @@ type UIState struct {
 	// 使用指针以区分「未设置（nil→默认显示）」与「显式关闭（false）」，确保关闭状态可持久化。
 	ShowFpsClock     *bool `json:"showFpsClock,omitempty"`     // 帧率时钟 HUD 显隐；nil=显示
 	ShowRuntimeBadge *bool `json:"showRuntimeBadge,omitempty"` // 多线程（MPR/SPR）徽标 HUD 显隐；nil=显示
+
+	// --- Android 屏幕常亮（2026-07-20 新增，ADR-017 A1-04）---
+	// 使用指针以区分「未设置（nil→默认开启）」与「显式关闭（false）」，确保关闭状态可持久化。
+	KeepAwake *bool `json:"keepAwake,omitempty"` // Android 前台屏幕常亮；nil=开启（默认）
 }
 
 // KeyBindingOverride stores a single custom key binding override.

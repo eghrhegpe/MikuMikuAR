@@ -9,6 +9,8 @@ export const ko: Record<string, string> = {
     'settings.font': '글꼴',
     'settings.slideAnimation': '슬라이드 애니메이션',
     'settings.bgBlur': '배경 흐림',
+    'settings.screen': '화면',
+    'settings.keepAwake': '화면 항상 켜짐',
     'settings.resetAppearance': '외관 초기화',
     'settings.filename': '파일명',
     'settings.library': '라이브러리',
@@ -778,6 +780,11 @@ export const ko: Record<string, string> = {
     'scene.ar.arcoreLaunching': 'ARCore 프로브 실행 중, 전체화면 페이지 확인…',
     'scene.ar.arcoreSuccess': '🟢 ARCore × WebView 공존 검증 성공!',
     'scene.ar.arcoreFailed': '🔴 ARCore 프로브 실패',
+    'scene.ar.vuforiaProbe': 'Vuforia 공존 프로브',
+    'scene.ar.vuforiaLaunch': 'Vuforia × WebView 공존 프로브 실행',
+    'scene.ar.vuforiaLaunching': 'Vuforia 프로브 실행 중…',
+    'scene.ar.vuforiaSuccess': '🟢 Vuforia × WebView 공존 검증 성공!',
+    'scene.ar.vuforiaFailed': '🔴 Vuforia 프로브 실패',
 
     // —— Scene Bundle ——
     'scene.bundle.collecting': '씬 에셋 수집 중…',
