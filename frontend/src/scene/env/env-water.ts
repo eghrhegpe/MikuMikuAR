@@ -83,6 +83,29 @@ export function computeWaveDirs(windDir: [number, number, number]): number[] {
     return arr;
 }
 
+// ======== 共享噪声工具（消除焦散与法线纹理间的重复代码）========
+// _hash2d + _valueNoise 供 regenerateDetailNormalTexture 内部使用；
+// 与 env-terrain.ts 的 valueNoise 不同（后者含 seed），此处无状态、不需要 seed。
+function _hash2d(x: number, y: number): number {
+    let h = (x * 374761393 + y * 668265263) | 0;
+    h = (h ^ (h >> 13)) * 1274126177;
+    return ((h ^ (h >> 16)) >>> 0) / 4294967295;
+}
+
+function _valueNoise(x: number, y: number): number {
+    const ix = Math.floor(x);
+    const iy = Math.floor(y);
+    const fx = x - ix;
+    const fy = y - iy;
+    const a = _hash2d(ix, iy);
+    const b = _hash2d(ix + 1, iy);
+    const c = _hash2d(ix, iy + 1);
+    const d = _hash2d(ix + 1, iy + 1);
+    const ux = fx * fx * (3 - 2 * fx);
+    const uy = fy * fy * (3 - 2 * fy);
+    return a * (1 - ux) * (1 - uy) + b * ux * (1 - uy) + c * (1 - ux) * uy + d * ux * uy;
+}
+
 // === LOD 水面：记录所有 LOD 子网格（兄弟根网格），用于同步缩放/位置和手动可见性控制 ===
 let _waterLODs: Mesh[] = [];
 let _activeWaterLOD = -1; // 手动 LOD 当前层级：-1=未初始化, 0=high, 1=mid, 2=low
@@ -359,28 +382,6 @@ function ensureCausticTexture(scene: Scene, waterColor: [number, number, number]
 }
 
 // ======== ADR-115 P1: 程序化法线细节纹理 ========
-// 生成 512×512 双通道噪声法线图：多层 Value noise 叠加 → 中心差分求法线
-// 纹理编码：R=世界X梯度, G=世界Z梯度, B=世界Y(上, ~1.0)
-function _hash2d(x: number, y: number): number {
-    let h = (x * 374761393 + y * 668265263) | 0;
-    h = (h ^ (h >> 13)) * 1274126177;
-    return ((h ^ (h >> 16)) >>> 0) / 4294967295;
-}
-
-function _valueNoise(x: number, y: number): number {
-    const ix = Math.floor(x);
-    const iy = Math.floor(y);
-    const fx = x - ix;
-    const fy = y - iy;
-    const a = _hash2d(ix, iy);
-    const b = _hash2d(ix + 1, iy);
-    const c = _hash2d(ix, iy + 1);
-    const d = _hash2d(ix + 1, iy + 1);
-    const ux = fx * fx * (3 - 2 * fx);
-    const uy = fy * fy * (3 - 2 * fy);
-    return a * (1 - ux) * (1 - uy) + b * ux * (1 - uy) + c * (1 - ux) * uy + d * ux * uy;
-}
-
 function regenerateDetailNormalTexture(scene: Scene): void {
     const S = DETAIL_NORMAL_TEX_SIZE;
     const draw = (ctx: CanvasRenderingContext2D, s: number) => {
@@ -464,7 +465,7 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     mat.setFloat('bigWaveHeight', state.bigWaveHeight ?? 1.0);
     mat.setFloat('smallWaveHeight', state.smallWaveHeight ?? 1.0);
     _waterWaveSpeed = (state.waterAnimSpeed ?? 1) * 1.0;
-    mat.setFloat('wavePhase', _waterPhase);
+    // wavePhase 由 _waterUpdateCallback 每帧统一写入，此处无需重复赋值
     mat.setColor3('waterColor', col3FromTriple(state.waterColor));
     mat.setFloat('waterTransparency', state.waterTransparency);
     mat.setFloat('waterLevel', state.waterLevel);
