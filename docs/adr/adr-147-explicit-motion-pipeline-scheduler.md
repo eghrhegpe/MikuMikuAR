@@ -138,6 +138,11 @@ class BoneOverrideStore {
 | R2 帧钩子显式 order 排序 | （本提交） | ✅ 已落地 | `bone-override.ts`：`_frameHooks` 由 `Set` 改为带 `order` 数组，按 `order` 升序 + 快照遍历；导出 `FRAME_HOOK_ORDER`；三模块（sway/riding/hand-symmetry）传入显式权重。R2 根治：同骨获胜者由声明顺序决定，不再依赖注册次序。`motion-frame-hooks.test.ts` 4 例锁死 |
 | Phase 2 step 2：运行时接入 | — | ⏸ 阻塞 | 需迁移 `registry.ts`/`module-base.ts`/`motion-intent.ts` 三处读写，待与 `motion-modules/*` 写者协调 |
 
+> **审核修复记录（2026-07-20）**：据 ADR-147 进度风险审核，已落地 3 项修复（均仅内核/单测，未接入运行时）：
+> - **P1 priority 语义对齐**：`bone-override-store.ts` 抢占判定由 `priority > conflict.priority` 改为 `priority < conflict.priority`，与 `registry.ts:204`「数值越小优先级越高」一致，消除 Phase 2 step 2 接入时的仲裁整体翻转风险；配套 store 单测数值同步翻转。
+> - **P2 资源泄漏**：`stopBoneOverride` 补释放 `_driverHandle`（单一驱动 observer）并重置 `_driverScene`，修复 stop 后每帧仍触发 `runFrame` 的残留 observer 泄漏。
+> - **P3 runFrame 异常隔离**：`MotionPipeline.runFrame` 单 layer 抛错 `try/catch` 隔离，不影响后续层（对齐 Babylon 单 observer 抛错不影响其他 observer 行为）；新增隔离单测锁死。
+
 ---
 
 ## 九、验收标准
