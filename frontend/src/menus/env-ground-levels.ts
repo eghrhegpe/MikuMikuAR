@@ -126,6 +126,9 @@ export function buildGroundLevel(): PopupLevel {
                         { value: 'wood', label: t('env.wood'), isProc: true },
                         { value: 'marble', label: t('env.marble'), isProc: true },
                         { value: 'concrete', label: t('env.concrete'), isProc: true },
+                        { value: 'tile', label: t('env.tile'), isProc: true },
+                        { value: 'carpet', label: t('env.carpet'), isProc: true },
+                        { value: 'metal', label: t('env.metal'), isProc: true },
                     ];
                     buildPresetChipGroup(
                         cc,
