@@ -168,6 +168,33 @@ export function setSkipLightAutoSave(skip: boolean): void {
     _skipLightAutoSave = skip;
 }
 
+// 阴影/光锥重建条件键集（模块级常量，避免每次 setStageLightState 重建 Set）
+const _SHADOW_REBUILD_KEYS = new Set([
+    'enabled',
+    'shadowEnabled',
+    'shadowType',
+    'shadowResolution',
+    'shadowBias',
+]);
+const _CONE_UPDATE_KEYS = new Set([
+    'enabled',
+    'coneEnabled',
+    'coneIntensity',
+    'coneLength',
+    'coneSoftness',
+    'angle',
+    'posX',
+    'posY',
+    'posZ',
+    'targetX',
+    'targetY',
+    'targetZ',
+    'orbitAzimuth',
+    'orbitElevation',
+    'orbitDistance',
+    'color',
+]);
+
 const SUN_DISC_DISTANCE = 1000;
 
 /** 太阳圆盘可见的最小方向光强度。低于此值时隐藏。 */
@@ -712,15 +739,8 @@ export function setStageLightState(s: Partial<StageLightState>, id?: string): vo
     _applyStageLightParams(entry, s);
 
     // 阴影重建条件
-    const shadowKeys = new Set([
-        'enabled',
-        'shadowEnabled',
-        'shadowType',
-        'shadowResolution',
-        'shadowBias',
-    ]);
     let needShadowRebuild = false;
-    for (const key of shadowKeys) {
+    for (const key of _SHADOW_REBUILD_KEYS) {
         if ((s as Record<string, unknown>)[key] !== undefined) {
             needShadowRebuild = true;
             break;
@@ -731,26 +751,8 @@ export function setStageLightState(s: Partial<StageLightState>, id?: string): vo
     }
 
     // 光锥重建/更新条件
-    const coneKeys = new Set([
-        'enabled',
-        'coneEnabled',
-        'coneIntensity',
-        'coneLength',
-        'coneSoftness',
-        'angle',
-        'posX',
-        'posY',
-        'posZ',
-        'targetX',
-        'targetY',
-        'targetZ',
-        'orbitAzimuth',
-        'orbitElevation',
-        'orbitDistance',
-        'color',
-    ]);
     let needConeUpdate = false;
-    for (const key of coneKeys) {
+    for (const key of _CONE_UPDATE_KEYS) {
         if ((s as Record<string, unknown>)[key] !== undefined) {
             needConeUpdate = true;
             break;
@@ -890,13 +892,22 @@ export function loadStageLights(states: StageLightState[]): void {
 
     let maxNum = 0;
     for (const s of states) {
-        const light = _createStageLight(s.type, s);
-        const entry: StageLightEntry = { state: { ...s }, light, indicator: null, dirLine: null };
-        _stageLights.set(s.id, entry);
-        _ensureStageShadow(s.id);
-        _ensureStageCone(s.id);
+        // 旧存档迁移：volumetric* → cone*（与 _readStageLightState 保持一致）
+        const raw = s as unknown as Record<string, unknown>;
+        const migrated: StageLightState = {
+            ...s,
+            coneEnabled: s.coneEnabled ?? (raw.volumetricEnabled as boolean | undefined) ?? false,
+            coneIntensity: s.coneIntensity ?? Math.min(2, ((raw.volumetricExposure as number | undefined) ?? 1) * 0.5),
+            coneLength: s.coneLength ?? 20,
+            coneSoftness: s.coneSoftness ?? (1 - ((raw.volumetricDensity as number | undefined) ?? 0.5)),
+        };
+        const light = _createStageLight(migrated.type, migrated);
+        const entry: StageLightEntry = { state: migrated, light, indicator: null, dirLine: null };
+        _stageLights.set(migrated.id, entry);
+        _ensureStageShadow(migrated.id);
+        _ensureStageCone(migrated.id);
         _updateIndicator(entry);
-        const m = s.id.match(/light-(\d+)/);
+        const m = migrated.id.match(/light-(\d+)/);
         if (m) {
             maxNum = Math.max(maxNum, parseInt(m[1]));
         }
@@ -930,9 +941,9 @@ function _readStageLightState(entry: StageLightEntry): StageLightState {
         indicatorOpacity: state.indicatorOpacity ?? 1,
         // 光锥字段（兼容旧存档 volumetric* → cone*）
         coneEnabled: state.coneEnabled ?? (state as unknown as Record<string, unknown>).volumetricEnabled as boolean ?? false,
-        coneIntensity: state.coneIntensity ?? (state as unknown as Record<string, unknown>).volumetricExposure as number ?? 0.5,
+        coneIntensity: state.coneIntensity ?? Math.min(2, (((state as unknown as Record<string, unknown>).volumetricExposure as number | undefined) ?? 1) * 0.5),
         coneLength: state.coneLength ?? 20,
-        coneSoftness: state.coneSoftness ?? (state as unknown as Record<string, unknown>).volumetricDensity as number ?? 0.5,
+        coneSoftness: state.coneSoftness ?? (1 - (((state as unknown as Record<string, unknown>).volumetricDensity as number | undefined) ?? 0.5)),
         intensity: light.intensity,
         color: [light.diffuse.r, light.diffuse.g, light.diffuse.b],
         posX: light.position.x,
@@ -1203,7 +1214,8 @@ function _tweenValue(
     from: number,
     to: number,
     durationMs: number,
-    onUpdate: (v: number) => void
+    onUpdate: (v: number) => void,
+    onComplete?: () => void
 ): LightingTween {
     const id = ++_tweenIdCounter;
     let cancelled = false;
@@ -1218,6 +1230,7 @@ function _tweenValue(
         onUpdate(from + (to - from) * eased);
         if (t >= 1) {
             _activeTweens.delete(id);
+            onComplete?.();
         } else {
             // 未完成时重新注册下一帧
             _scene?.onBeforeRenderObservable.addOnce(tick);
@@ -1240,7 +1253,8 @@ function _tweenColor3(
     from: Color3,
     to: Color3,
     durationMs: number,
-    onUpdate: (c: Color3) => void
+    onUpdate: (c: Color3) => void,
+    onComplete?: () => void
 ): void {
     const result = new Color3(0, 0, 0);
     _tweenValue(0, 1, durationMs, (t) => {
@@ -1248,7 +1262,7 @@ function _tweenColor3(
         result.g = from.g + (to.g - from.g) * t;
         result.b = from.b + (to.b - from.b) * t;
         onUpdate(result);
-    });
+    }, onComplete);
 }
 
 // ======== Lighting Preset Application ========
@@ -1286,6 +1300,17 @@ export function applyLightingPresetFromEnv(presetName: string | null): void {
     // 3. 平滑过渡每盏灯的参数
     // 动画期间抑制自动保存（tween 每帧触发 setStageLightState，避免大量写盘）
     _skipLightAutoSave = true;
+    // 追踪活跃 tween 数量，全部完成后恢复自动保存
+    let pendingTweens = 0;
+    const onTweenDone = () => {
+        pendingTweens--;
+        if (pendingTweens <= 0) {
+            _skipLightAutoSave = false;
+            if (triggerAutoSave) {
+                triggerAutoSave();
+            }
+        }
+    };
     const ids = Array.from(_stageLights.keys());
     for (let i = 0; i < ids.length; i++) {
         const entry = _stageLights.get(ids[i]);
@@ -1315,6 +1340,7 @@ export function applyLightingPresetFromEnv(presetName: string | null): void {
             const toAz = (pl.state.orbitAzimuth as number) ?? fromAz;
             const toEl = (pl.state.orbitElevation as number) ?? fromEl;
             const toDist = (pl.state.orbitDistance as number) ?? fromDist;
+            pendingTweens++;
             _tweenValue(0, 1, 500, (t) => {
                 setStageLightState(
                     {
@@ -1324,16 +1350,17 @@ export function applyLightingPresetFromEnv(presetName: string | null): void {
                     },
                     ids[i]
                 );
-            });
+            }, onTweenDone);
         }
 
         // 强度过渡
         if (pl.state.intensity !== undefined) {
             const from = entry.state.intensity;
             const to = pl.state.intensity as number;
+            pendingTweens++;
             _tweenValue(from, to, 300, (v) => {
                 setStageLightState({ intensity: v }, ids[i]);
-            });
+            }, onTweenDone);
         }
 
         // 颜色过渡
@@ -1345,9 +1372,10 @@ export function applyLightingPresetFromEnv(presetName: string | null): void {
             );
             const tc = pl.state.color as [number, number, number];
             const to = col3FromTriple(tc);
+            pendingTweens++;
             _tweenColor3(from, to, 300, (c) => {
                 setStageLightState({ color: [c.r, c.g, c.b] }, ids[i]);
-            });
+            }, onTweenDone);
         }
 
         // 直接设置的参数（无 tween）
@@ -1374,6 +1402,14 @@ export function applyLightingPresetFromEnv(presetName: string | null): void {
                 directUpdates as Partial<import('./lighting').StageLightState>,
                 ids[i]
             );
+        }
+    }
+
+    // 无 tween 时立即恢复（所有灯走了类型切换 / 直接赋值路径）
+    if (pendingTweens <= 0) {
+        _skipLightAutoSave = false;
+        if (triggerAutoSave) {
+            triggerAutoSave();
         }
     }
 }
