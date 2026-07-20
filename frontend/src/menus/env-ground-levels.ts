@@ -11,7 +11,7 @@ import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 import { _buildLevel, _openTexturePicker } from './env-level-helpers';
 import { getEnvMenu } from './env-menu-state';
-import { getSceneMenu } from './scene-menu';
+import { getSceneMenu } from './scene-menu-state';
 
 /** 预设 key → i18n key 映射 */
 const GROUND_PRESET_I18N: Record<string, string> = {

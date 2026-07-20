@@ -2,8 +2,6 @@
 // 从 camera.ts 拆分，切断 camera ↔ scene 循环依赖
 // 本模块只读写模块级变量，不涉及 Babylon.js 相机对象或 scene 操作
 
-import { triggerAutoSave } from '@/core/config';
-import { debounce } from '@/core/utils';
 import type { Camera } from '@babylonjs/core/Cameras/camera';
 
 // ======== Types ========
@@ -41,7 +39,7 @@ export interface ConcertParams {
 }
 
 export interface CameraPreset {
-    mode: CameraMode;
+    mode?: CameraMode;
     orbit: OrbitParams;
     freefly: FreeflyParams;
     surround: SurroundParams;
@@ -63,7 +61,6 @@ let _surroundPaused = false;
 let _cameraVmdName = '';
 let _cameraVmdPath = '';
 let _autoCameraEnabled = false;
-let _autoCameraBeatsPerSwitch = 4;
 let _autoCameraBeatCount = 0;
 let _autoCameraPresetIdx = 0;
 
@@ -74,8 +71,16 @@ export function defaultCameraPreset(): CameraPreset {
         mode: 'orbit',
         orbit: { targetHeight: 0, distance: 16, beta: Math.PI / 3 },
         freefly: { speed: 0.5, angularSensibility: 2000 },
-        surround: { radius: 16, height: 8, speed: 0.3 },
-        concert: { radius: 8, height: 6, sweepAngle: 0.5, sweepSpeed: 0.6, baseBeta: Math.PI / 3, bobAmplitude: 12, bobSpeed: 0.7 },
+        surround: { radius: 12, height: 8, speed: 0.3 },
+        concert: {
+            radius: 12,
+            height: 8,
+            sweepAngle: 120,
+            sweepSpeed: 0.6,
+            baseBeta: Math.PI / 3,
+            bobAmplitude: 12,
+            bobSpeed: 0.7,
+        },
     };
 }
 
@@ -88,12 +93,6 @@ export function getCameraPreset(): CameraPreset {
 export function setCameraPreset(p: CameraPreset): void {
     _currentPreset = p;
 }
-
-// ======== Camera Persist (拖拽结束后自动保存) ========
-
-const _scheduleCameraPersist = debounce((): void => {
-    triggerAutoSave();
-}, 500);
 
 // ======== Sub-preset Getters ========
 
@@ -113,31 +112,22 @@ export function getSurroundParams(): SurroundParams {
     return _currentPreset.surround;
 }
 
-// ======== Sub-preset Setters (persist on change) ========
+// ======== Sub-preset Setters (纯状态变更，持久化由 camera.ts 的 viewMatrix observer 驱动) ========
 
 export function setOrbitParams(p: Partial<OrbitParams>): void {
     Object.assign(_currentPreset.orbit, p);
-    _scheduleCameraPersist();
 }
 
 export function setFreeflyParams(p: Partial<FreeflyParams>): void {
     Object.assign(_currentPreset.freefly, p);
-    _scheduleCameraPersist();
 }
 
 export function setConcertParams(p: Partial<ConcertParams>): void {
     Object.assign(_currentPreset.concert, p);
-    _scheduleCameraPersist();
 }
 
 export function setSurroundParams(p: Partial<SurroundParams>): void {
     Object.assign(_currentPreset.surround, p);
-    _scheduleCameraPersist();
-}
-
-/** 用于缩放等场景的 alpha 只读查询 */
-export function logCameraAlpha(): number {
-    return _currentPreset.orbit.beta;
 }
 
 // ======== Mode getters/setters ========
@@ -254,14 +244,6 @@ export function isAutoCameraEnabled(): boolean {
 
 export function setAutoCameraEnabledFlag(v: boolean): void {
     _autoCameraEnabled = v;
-}
-
-export function getAutoCameraBeatsPerSwitch(): number {
-    return _autoCameraBeatsPerSwitch;
-}
-
-export function setAutoCameraBeatsPerSwitch(v: number): void {
-    _autoCameraBeatsPerSwitch = v;
 }
 
 export function getAutoCameraBeatCount(): number {
