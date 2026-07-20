@@ -26,6 +26,7 @@ import { loadManager } from '../core/load-manager';
 import { removeModel } from '../scene/scene';
 import { loadVPDPose } from '../scene/scene';
 import { slideRow } from '../core/ui-helpers';
+import { addDisposableListener, type Disposable } from '../core/dom';
 import {
     GetThumbnailBatch,
     GetModelMetaBatch,
@@ -74,7 +75,7 @@ import { librarySessionStore } from './library-session-store';
 
 // mmku:modelLoaded 事件：模型加载完成后刷新模型库弹窗根级列表
 // 用命名函数 + 模块级引用，支持 HMR 幂等清理
-let _mmkuHandler: (() => void) | null = null;
+let _mmkuDisp: Disposable | null = null;
 function _onModelLoaded(): void {
     if (librarySessionStore.isReplaceLoading()) {
         return;
@@ -101,11 +102,8 @@ function _onModelLoaded(): void {
     });
 }
 // 先移除旧监听器再注册，确保 HMR 重载不重复绑定
-if (_mmkuHandler) {
-    document.removeEventListener('mmku:modelLoaded', _mmkuHandler);
-}
-_mmkuHandler = _onModelLoaded;
-document.addEventListener('mmku:modelLoaded', _mmkuHandler);
+_mmkuDisp?.dispose();
+_mmkuDisp = addDisposableListener(document, 'mmku:modelLoaded', _onModelLoaded);
 
 // ======== 缩略图 ========
 

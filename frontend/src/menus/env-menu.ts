@@ -11,6 +11,7 @@ import { getLightState, setLightState as setLightingState } from '../scene/rende
 import { closeAllOverlays } from '../core/utils';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
+import { addDisposableListener } from '../core/dom';
 import type { MenuNode } from './menu-schema';
 // ======== 从子文件导入 ========
 import {
@@ -79,11 +80,11 @@ export { getEnvMenu, refreshEnvRoot, showEnvMenu };
 const _onLibraryScanned = (): void => {
     getEnvMenu()?.reRender();
 };
-window.addEventListener('mmar:library-scanned', _onLibraryScanned);
+const _libraryScannedDisp = addDisposableListener(window, 'mmar:library-scanned', _onLibraryScanned);
 
 /** 清理环境菜单的全局事件监听（测试/HMR 时调用，配对 removeEventListener） */
 export function disposeEnvMenuListeners(): void {
-    window.removeEventListener('mmar:library-scanned', _onLibraryScanned);
+    _libraryScannedDisp.dispose();
 }
 
 /** 环境弹窗根级 items 构建器——动态反映 envState 各 toggle 状态。 */
