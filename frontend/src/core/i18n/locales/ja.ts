@@ -692,6 +692,10 @@ export const ja: Record<string, string> = {
     'scene.softShadow': 'ソフトシャドウ',
     'scene.resolution': '解像度',
     'scene.shadowBias': 'シャドウバイアス',
+    // ADR-152: ボリュームライト
+    'scene.volumetric': 'ボリュームライト',
+    'scene.decay': '減衰',
+    'scene.density': '密度',
     'scene.positionOrbit': '位置（オービット）',
     'scene.horizontalAngle': '水平角度',
     'scene.elevationAngle': '仰角',

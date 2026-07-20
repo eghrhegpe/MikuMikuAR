@@ -689,6 +689,10 @@ export const zhTW: Record<string, string> = {
     'scene.softShadow': '軟陰影',
     'scene.resolution': '解析度',
     'scene.shadowBias': '陰影偏移',
+    // ADR-152: 體積光
+    'scene.volumetric': '體積光',
+    'scene.decay': '衰減',
+    'scene.density': '密度',
     'scene.positionOrbit': '位置（軌道）',
     'scene.horizontalAngle': '水平角度',
     'scene.elevationAngle': '仰角',

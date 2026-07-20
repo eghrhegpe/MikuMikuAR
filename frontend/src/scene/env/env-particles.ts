@@ -625,10 +625,10 @@ function startCollisionDetection(ps: ParticleSystem, type: EnvState['particleTyp
                 if (envState.waterEnabled && envState.waterLevel >= gh) {
                     addRipple(
                         new Vector3(p.position.x, envState.waterLevel, p.position.z),
-                        2.5,
+                        0.5,
                         0.35,
-                        1.2,
-                        2
+                        6,
+                        1
                     );
                 } else if (envState.particleSplash && Math.random() < splashProb) {
                     spawnSplashAt(p.position.x, gh, p.position.z);

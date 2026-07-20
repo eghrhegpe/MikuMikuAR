@@ -228,9 +228,102 @@ function buildStageLightSchema(): MenuNode[] {
                 });
             },
         },
-        // 卡片 4：Spot 参数
-        {
-            id: 'light:spot-params',
+        // 卡片 3.5：体积光（ADR-152）
+    {
+        id: 'light:volumetric',
+        kind: 'custom',
+        visibleWhen: () => !!state,
+        renderCustom: (c) => {
+            if (!state) {
+                return;
+            }
+            cardContainer(c, (inner) => {
+                addCollapsible(inner, {
+                    title: t('scene.volumetric'),
+                    icon: 'lucide:sun-medium',
+                    defaultOpen: false,
+                    headerToggle: {
+                        value: state.volumetricEnabled,
+                        onChange: (v) => {
+                            setStageLightState({ volumetricEnabled: v }, state.id);
+                            getSceneMenu()?.updateControls();
+                        },
+                        bind: () => {
+                            const lights = getStageLights();
+                            const activeId = getActiveStageLightId();
+                            const s = lights.find((l) => l.id === activeId) ?? lights[0];
+                            return s?.volumetricEnabled ?? false;
+                        },
+                    },
+                    renderContent: (ci) => {
+                        addSliderRow(
+                            ci,
+                            t('scene.exposure'),
+                            state.volumetricExposure,
+                            0,
+                            1,
+                            0.05,
+                            () => {},
+                            'lucide:sun',
+                            (v) => setStageLightState({ volumetricExposure: v }, state.id),
+                            {
+                                bind: () => {
+                                    const lights = getStageLights();
+                                    const activeId = getActiveStageLightId();
+                                    const s =
+                                        lights.find((l) => l.id === activeId) ?? lights[0];
+                                    return s?.volumetricExposure ?? 0.3;
+                                },
+                            }
+                        );
+                        addSliderRow(
+                            ci,
+                            t('scene.decay'),
+                            state.volumetricDecay,
+                            0,
+                            1,
+                            0.05,
+                            () => {},
+                            'lucide:arrow-down',
+                            (v) => setStageLightState({ volumetricDecay: v }, state.id),
+                            {
+                                bind: () => {
+                                    const lights = getStageLights();
+                                    const activeId = getActiveStageLightId();
+                                    const s =
+                                        lights.find((l) => l.id === activeId) ?? lights[0];
+                                    return s?.volumetricDecay ?? 0.9;
+                                },
+                            }
+                        );
+                        addSliderRow(
+                            ci,
+                            t('scene.density'),
+                            state.volumetricDensity,
+                            0,
+                            1,
+                            0.05,
+                            () => {},
+                            'lucide:grid-3x3',
+                            (v) => setStageLightState({ volumetricDensity: v }, state.id),
+                            {
+                                bind: () => {
+                                    const lights = getStageLights();
+                                    const activeId = getActiveStageLightId();
+                                    const s =
+                                        lights.find((l) => l.id === activeId) ?? lights[0];
+                                    return s?.volumetricDensity ?? 0.5;
+                                },
+                            }
+                        );
+                    },
+                });
+            });
+        },
+    },
+    // 卡片 4：Spot 参数
+    {
+        id: 'light:spot-params',
             kind: 'custom',
             visibleWhen: () => state?.type === 'spot',
             renderCustom: (c) => {

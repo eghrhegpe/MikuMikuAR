@@ -13,6 +13,7 @@
  */
 
 import { t } from './i18n/t';
+import { createFocusTrap } from './ui-focus-trap';
 
 export interface DialogOptions {
     title: string;
@@ -31,6 +32,7 @@ export interface DialogOptions {
 
 // Lazy-created singleton overlay
 let _overlay: HTMLDivElement | null = null;
+let _trapRestore: (() => void) | null = null;
 
 function getOverlay(): HTMLDivElement {
     if (_overlay) {
@@ -103,6 +105,8 @@ function showDialog(opts: DialogOptions): Promise<string | boolean | null> {
         cancelBtn.style.display = opts.cancelLabel === '' ? 'none' : '';
 
         const cleanup = (result: string | boolean | null) => {
+            _trapRestore?.();
+            _trapRestore = null;
             overlay.classList.remove('mmd-dialog-visible');
             // 隐藏后恢复 pointer-events 为 CSS 默认值
             overlay.style.pointerEvents = '';
@@ -150,6 +154,7 @@ function showDialog(opts: DialogOptions): Promise<string | boolean | null> {
         // Show with animation
         overlay.classList.add('mmd-dialog-visible');
         dialog.style.display = '';
+        _trapRestore = createFocusTrap({ container: dialog, onEscape: onCancel });
     });
 }
 
@@ -187,6 +192,8 @@ export function showErrorAction(title: string, message: string): void {
     confirmBtn.textContent = t('dialog.copy');
 
     const cleanup = () => {
+        _trapRestore?.();
+        _trapRestore = null;
         overlay.classList.remove('mmd-dialog-visible');
     };
 

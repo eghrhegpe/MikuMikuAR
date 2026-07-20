@@ -39,8 +39,8 @@ const WAVE_DIR_OFFSETS: [number, number, number, number] = [0, 0.3, -0.2, 0.1];
 const RIPPLE_MIN_RADIUS = 0.1;
 const RIPPLE_MIN_SPEED = 0.1;
 const RIPPLE_INFINITY_LIFE = 9999;
-// 每秒新增涟漪上限（暴雨时碰撞频率极高，限制每秒最多 4 个，保证 256 slot 不被瞬间占满）
-const RIPPLE_MAX_PER_SECOND = 4;
+// 每秒新增涟漪上限：与粒子碰撞频率匹配，256 slot × ~2s 寿命 / 60 ≈ 85% 占用
+const RIPPLE_MAX_PER_SECOND = 60;
 // 焦散着色系数（暗部底色 / 亮部增量）
 const CAUSTIC_DARK_FACTOR = 0.3;
 const CAUSTIC_BRIGHT_FACTOR = 0.9;
@@ -220,7 +220,7 @@ const UNDERWATER_DIR_INTENSITY_SCALE = 0.3;
 const UNDERWATER_HEMI_INTENSITY_SCALE = 0.4;
 
 export function addRipple(pos: Vector3, radius = 5, strength = 0.5, speed = 2, maxLife = 3): void {
-    // 每秒新增上限：暴雨时碰撞频率极高，限制每秒最多 4 个，保证 256 slot 不被瞬间占满
+    // 每秒新增上限：60/s 时每 ~16ms 一次，256 slot × ~2s 寿命 ≈ 85% 占用
     // 累加器在 _waterUpdateCallback 每帧累加 dt；此处减去 interval 消费一个配额。
     // 高频调用时累加器可能暂时为负，guard 会持续拒绝直到自然回升——此行为预期。
     const interval = 1 / RIPPLE_MAX_PER_SECOND;

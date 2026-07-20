@@ -686,6 +686,10 @@ export const zhCN: Record<string, string> = {
     'scene.softShadow': '软阴影',
     'scene.resolution': '分辨率',
     'scene.shadowBias': '阴影偏移',
+    // ADR-152: 体积光散射
+    'scene.volumetric': '体积光',
+    'scene.decay': '衰减',
+    'scene.density': '密度',
     'scene.positionOrbit': '位置（轨道）',
     'scene.horizontalAngle': '水平角度',
     'scene.elevationAngle': '仰角',

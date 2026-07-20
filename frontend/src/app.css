@@ -200,6 +200,14 @@
     --slide-header-gap: calc(6px * var(--ui-scale));
 }
 
+/* ===== 无障碍：键盘焦点视觉指示 ===== */
+/* 鼠标点击不触发焦点环，键盘 Tab 触发 */
+:focus { outline: none; }
+:focus-visible {
+    outline: calc(2px * var(--ui-scale)) solid var(--accent);
+    outline-offset: calc(1px * var(--ui-scale));
+}
+
 /* ===== 移动端适配：窄屏缩小弹窗宽度 ===== */
 @media (max-width: 480px) {
     :root {
@@ -2420,7 +2428,7 @@ textarea,
     pointer-events: none;
 }
 .cs-bar:focus-visible {
-    outline: none;
+    /* box-shadow 提供键盘焦点视觉指示，优先级高于全局 :focus-visible outline */
     box-shadow:
         inset 0 1px 2px rgba(0, 0, 0, 0.3),
         0 0 0 2px var(--accent),
