@@ -48,7 +48,7 @@ import {
     toggleMirror,
     isMirrorActive,
 } from '../scene/env/env';
-import { addModeSlider, addToggleRow, slideRow } from '../core/ui-helpers';
+import { addModeSlider, addSliderRow, addToggleRow, slideRow } from '../core/ui-helpers';
 import { SCENE_EVENTS } from '../core/ui-constants';
 
 // ======== Barrel Re-Exports ========
@@ -133,33 +133,25 @@ function buildMirrorLevel(): PopupLevel {
             const wrapper = document.createElement('div');
             wrapper.style.padding = '8px';
 
-            addModeSlider(
+            addSliderRow(
                 wrapper,
                 t('scene.mirrorWidth'),
-                Array.from({ length: 15 }, (_, i) => ({
-                    value: String(2 + i * 2),
-                    label: `${2 + i * 2}m`,
-                })),
-                String(info.width),
+                info.width,
+                0, 40, 1,
                 (v) => {
-                    const w = parseFloat(v);
                     const cur = getMirrorInfo();
-                    setMirrorSize(w, cur.height);
+                    setMirrorSize(v, cur.height);
                 },
                 'lucide:move-horizontal'
             );
-            addModeSlider(
+            addSliderRow(
                 wrapper,
                 t('scene.mirrorHeight'),
-                Array.from({ length: 10 }, (_, i) => ({
-                    value: String(1 + i * 2),
-                    label: `${1 + i * 2}m`,
-                })),
-                String(info.height),
+                info.height,
+                0, 30, 1,
                 (v) => {
-                    const h = parseFloat(v);
                     const cur = getMirrorInfo();
-                    setMirrorSize(cur.width, h);
+                    setMirrorSize(cur.width, v);
                 },
                 'lucide:move-vertical'
             );

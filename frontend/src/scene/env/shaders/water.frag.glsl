@@ -76,11 +76,13 @@ uniform int uRippleCount;
 float calcRipple(vec3 worldPos, vec3 center, float radius, float strength, float speed, float life, float maxLife) {
     vec2 delta = worldPos.xz - center.xz;
     float dist = length(delta);
-    float elapsed = maxLife - life;
-    float expandingRadius = radius * (1.0 + elapsed * speed * 0.15);
-    if (dist > expandingRadius || life <= 0.0 || maxLife <= 0.0) return 0.0;
-    float phase = elapsed * speed * 1.0;
-    float rings = 2.0;
+    if (life <= 0.0 || maxLife <= 0.0) return 0.0;
+    float t = clamp((maxLife - life) / maxLife, 0.0, 1.0);
+    float endRadius = radius * max(1.0, speed);
+    float expandingRadius = mix(radius, endRadius, t);
+    if (dist > expandingRadius) return 0.0;
+    float phase = (maxLife - life) * speed;
+    float rings = 1.0;
     float wave = sin(dist * 6.28 * rings / expandingRadius - phase);
     float fade = exp(-dist / (expandingRadius * 0.8));
     float envelope = strength * (1.0 - dist / expandingRadius) * fade;

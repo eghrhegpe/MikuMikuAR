@@ -26,8 +26,8 @@ let _meshAddedObserver: ObserverHandle | null = null;
 let _meshRemovedObserver: ObserverHandle | null = null;
 
 // 可调参数（通过 API 修改，下次 create 时生效）
-let _mirrorWidth = 22;
-let _mirrorHeight = 19;
+let _mirrorWidth = 18;
+let _mirrorHeight = 21;
 let _mirrorPosition: [number, number, number] = [0, 1.5, 4];
 let _mirrorRotationY = 0; // 水平旋转（弧度）
 
