@@ -9,6 +9,7 @@ import type { MmdRuntimeBoneExtended } from '@/core/types';
 import { clamp01 } from '@/core/utils';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { safeDispose } from '@/core/dispose-helpers';
+import { getMotionPipeline } from './motion-pipeline';
 import { focusedModelId } from '@/core/state';
 
 /** 持久化的单条骨骼覆盖配置 */
@@ -42,7 +43,9 @@ interface _OverrideSlot {
 
 // ── 管理器（per-model） ──
 
-let _observerHandle: ObserverHandle | null = null; // ObserverHandle 实例
+let _observerHandle: (() => void) | null = null; // 已注册层的 unregister 句柄
+let _driverHandle: ObserverHandle | null = null; // 单一驱动 observer 句柄
+let _driverScene: import('@babylonjs/core/scene').Scene | null = null; // 驱动所绑定的 scene（随重建更新）
 const _overrideMaps = new Map<string, Map<string, _OverrideSlot>>();
 /** [doc:adr-116 P3] 每帧钩子集合：由时间驱动模块（sway/riding）注册，渲染回调每帧调用 */
 const _frameHooks = new Set<(timeSec: number, modelId: string) => void>();
@@ -509,12 +512,27 @@ export function startBoneOverride(
         }
     };
 
-    _observerHandle = observe(scene.onBeforeRenderObservable, callback);
+    // 单一驱动 observer：每帧按 (stage, order) 显式调度所有骨骼写入层，
+    // 取代原先 bone-override 与 perception 各自注册 onBeforeRenderObservable 的隐式定序（治理 R1）
+    if (!_driverHandle || _driverScene !== scene) {
+        _driverHandle = safeDispose(_driverHandle);
+        _driverScene = scene;
+        _driverHandle = observe(scene.onBeforeRenderObservable, () => getMotionPipeline().runFrame({ scene }));
+    }
+    _observerHandle = getMotionPipeline().register({
+        id: 'bone-override',
+        stage: 'bone-override',
+        order: 0,
+        run: callback,
+    });
 }
 
 /** 停止覆盖系统。 */
 export function stopBoneOverride(): void {
-    _observerHandle = safeDispose(_observerHandle);
+    if (_observerHandle) {
+        _observerHandle();
+        _observerHandle = null;
+    }
     _frameHooks.clear();
     clearAllOverrides();
 }
