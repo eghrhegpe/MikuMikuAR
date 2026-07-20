@@ -336,6 +336,7 @@ export function buildGroundLevel(): PopupLevel {
                         label: 'env.range',
                         control: { bind: 'env.groundSize', min: 10, max: 1000, step: 10 },
                         icon: 'lucide:maximize',
+                        visibleWhen: () => !envState.groundInfinite,
                     },
                     {
                         id: 'env:ground:edgeFade',
@@ -372,10 +373,8 @@ export function buildGroundLevel(): PopupLevel {
                     },
                 },
                 renderCustom: (cc) => {
+                    // ADR-072: 文件纹理（草地/石板/沙滩）已移至顶部预设，贴图面板仅保留程序化纹理
                     const texturePresets = [
-                        { value: 'textures/grass.png', label: t('env.grass'), isProc: false },
-                        { value: 'textures/stone.png', label: t('env.stone'), isProc: false },
-                        { value: 'textures/sand.png', label: t('env.sand'), isProc: false },
                         { value: 'wood', label: t('env.wood'), isProc: true },
                         { value: 'marble', label: t('env.marble'), isProc: true },
                         { value: 'concrete', label: t('env.concrete'), isProc: true },
@@ -476,7 +475,7 @@ export function buildGroundLevel(): PopupLevel {
                         renderCustom: (cc) => {
                             const decoPresets = [
                                 { value: 'grid', label: t('env.grid') },
-                                { value: 'checker', label: t('env.checker') },
+                                { value: 'checker', label: t('env.decoPattern') },
                             ] as const;
                             buildPresetChipGroup(
                                 cc,
@@ -513,10 +512,10 @@ export function buildGroundLevel(): PopupLevel {
                         control: {
                             bind: 'env.groundPattern',
                             options: [
-                                { value: 'checker', label: 'env.checker' },
-                                { value: 'dots', label: 'env.dots' },
-                                { value: 'stripes', label: 'env.stripes' },
-                                { value: 'radial', label: 'env.radial' },
+                                { value: 'checker', label: 'env.patternChecker' },
+                                { value: 'dots', label: 'env.patternDots' },
+                                { value: 'stripes', label: 'env.patternStripes' },
+                                { value: 'radial', label: 'env.patternRadial' },
                             ],
                         },
                         icon: 'lucide:grid-3x3',
@@ -659,40 +658,33 @@ export function buildGroundLevel(): PopupLevel {
         ];
         renderMenu(enhanceSchema, c);
 
-        // ===== 地面反射 =====
-        const reflectionSchema: MenuNode[] = [
+        // ===== 材质与反射（ADR-114 合并，消除「反射」vs「PBR」边界模糊）=====
+        const mergedSchema: MenuNode[] = [
             {
-                id: 'env:ground:reflection',
+                id: 'env:ground:material',
                 kind: 'folder',
-                label: 'env.groundReflection',
-                icon: 'lucide:reflection',
+                label: 'env.groundMaterial',
+                icon: 'lucide:sparkles',
                 defaultOpen: false,
+                headerToggle: { bind: 'env.groundPbrEnabled' },
                 children: [
+                    // ── PBR 参数（PBR 开启时显示）──
                     {
-                        id: 'env:ground:reflectBlend',
+                        id: 'env:ground:metallic',
                         kind: 'slider',
-                        label: 'env.groundReflectBlend',
-                        control: {
-                            bind: 'env.groundReflectionBlend',
-                            min: 0,
-                            max: 1,
-                            step: 0.05,
-                        },
-                        icon: 'lucide:blend',
+                        label: 'env.metallic',
+                        control: { bind: 'env.groundMetallic', min: 0, max: 1, step: 0.05 },
+                        icon: 'lucide:circle-dot',
+                        visibleWhen: () => envState.groundPbrEnabled,
                     },
                     {
-                        id: 'env:ground:normalStrength',
+                        id: 'env:ground:roughness',
                         kind: 'slider',
-                        label: 'env.groundNormalStrength',
-                        control: {
-                            bind: 'env.groundNormalStrength',
-                            min: 0,
-                            max: 2,
-                            step: 0.05,
-                        },
-                        icon: 'lucide:layers',
+                        label: 'env.roughness',
+                        control: { bind: 'env.groundRoughness', min: 0, max: 1, step: 0.05 },
+                        icon: 'lucide:grid-2x2',
+                        visibleWhen: () => envState.groundPbrEnabled,
                     },
-                    // ADR-114 Phase 2: 反射模糊 + 法线扭曲（PBR 专属）
                     {
                         id: 'env:ground:reflectionBlur',
                         kind: 'slider',
@@ -719,7 +711,32 @@ export function buildGroundLevel(): PopupLevel {
                         icon: 'lucide:waves',
                         visibleWhen: () => envState.groundPbrEnabled,
                     },
-                    // ADR-114 Phase 3: 接触阴影（屏幕空间 ray marching 后处理）
+                    // ── 反射（始终显示）──
+                    {
+                        id: 'env:ground:reflectBlend',
+                        kind: 'slider',
+                        label: 'env.groundReflectBlend',
+                        control: {
+                            bind: 'env.groundReflectionBlend',
+                            min: 0,
+                            max: 1,
+                            step: 0.05,
+                        },
+                        icon: 'lucide:blend',
+                    },
+                    {
+                        id: 'env:ground:normalStrength',
+                        kind: 'slider',
+                        label: 'env.groundNormalStrength',
+                        control: {
+                            bind: 'env.groundNormalStrength',
+                            min: 0,
+                            max: 2,
+                            step: 0.05,
+                        },
+                        icon: 'lucide:layers',
+                    },
+                    // ── 接触阴影（反射质量 ≥ medium）──
                     {
                         id: 'env:ground:contactShadow',
                         kind: 'toggle',
@@ -762,6 +779,7 @@ export function buildGroundLevel(): PopupLevel {
                             (envState.reflectionQuality === 'medium' ||
                                 envState.reflectionQuality === 'high'),
                     },
+                    // ── 地形专属（terrain 模式）──
                     {
                         id: 'env:ground:elevationColoring',
                         kind: 'toggle',
@@ -773,36 +791,26 @@ export function buildGroundLevel(): PopupLevel {
                 ],
             },
         ];
-        renderMenu(reflectionSchema, c);
+        renderMenu(mergedSchema, c);
 
-        // ===== PBR 材质（ADR-114）=====
-        const pbrSchema: MenuNode[] = [
+        // ===== 接触阴影提示（反射质量不足时显示）=====
+        const csHintSchema: MenuNode[] = [
             {
-                id: 'env:ground:pbr',
-                kind: 'folder',
-                label: 'env.pbr',
-                icon: 'lucide:sparkles',
-                defaultOpen: false,
-                headerToggle: { bind: 'env.groundPbrEnabled' },
-                children: [
-                    {
-                        id: 'env:ground:metallic',
-                        kind: 'slider',
-                        label: 'env.metallic',
-                        control: { bind: 'env.groundMetallic', min: 0, max: 1, step: 0.05 },
-                        icon: 'lucide:circle-dot',
-                    },
-                    {
-                        id: 'env:ground:roughness',
-                        kind: 'slider',
-                        label: 'env.roughness',
-                        control: { bind: 'env.groundRoughness', min: 0, max: 1, step: 0.05 },
-                        icon: 'lucide:grid-2x2',
-                    },
-                ],
+                id: 'env:ground:contactShadowHint',
+                kind: 'custom',
+                visibleWhen: () =>
+                    envState.reflectionQuality !== 'medium' &&
+                    envState.reflectionQuality !== 'high',
+                renderCustom: (cc) => {
+                    const hint = document.createElement('div');
+                    hint.textContent = t('env.contactShadowHint');
+                    hint.style.cssText =
+                        'font-size:11px;color:var(--text-dim);padding:4px 12px;opacity:0.7;';
+                    cc.appendChild(hint);
+                },
             },
         ];
-        renderMenu(pbrSchema, c);
+        renderMenu(csHintSchema, c);
     });
 }
 
