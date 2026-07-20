@@ -12,7 +12,7 @@
 // 本模块每帧钩子自动让位（见钩子内 getOwnedBones 判定），两者不互相踩踏。
 
 import type { ParamValue } from '@/core/types';
-import { setBoneOverride, registerBoneOverrideFrameHook } from '../bone-override';
+import { setBoneOverride, registerBoneOverrideFrameHook, FRAME_HOOK_ORDER } from '../bone-override';
 import { getModuleState, claimBones, getOwnedBones, isBoneOwnedByOther } from './registry';
 import type { MotionOverrideModule, ModuleMeta, ModuleDef } from './types';
 import { computeSwayYaw } from './motion-math';
@@ -99,7 +99,7 @@ function ensureActive(modelId: string): void {
         // yaw(t) = amplitude * (1 - decay) * sin(2π·frequency·t)
         const yaw = computeSwayYaw(amp, decay, freq, t);
         setBoneOverride('センター', [0, yaw, 0], 1, true, modelId);
-    });
+    }, FRAME_HOOK_ORDER.SWAY);
     _swayFrameHooks.set(modelId, unregister);
 }
 

@@ -38,6 +38,7 @@ vi.mock('@/scene/motion/bone-override', () => ({
     clearBoneOverride: data.clearBoneOverrideSpy,
     setBoneOverridePosition: data.setBoneOverridePositionSpy,
     registerBoneOverrideFrameHook: data.registerFrameHookSpy,
+    FRAME_HOOK_ORDER: { RIDING: 10, SWAY: 20, HAND_SYMMETRY: 30 },
 }));
 
 vi.mock('@/scene/motion/perception', () => ({
