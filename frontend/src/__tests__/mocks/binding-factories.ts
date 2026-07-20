@@ -174,6 +174,7 @@ export function createMockEnvState(overrides?: Partial<EnvState>): EnvState {
         waterAnimSpeed: 1,
         planarReflectBlend: 0,
         reflectionQuality: 'off',
+        reflectionMode: 'auto',
         qualityProfile: 'high',
         fresnelBias: 0.02,
         fresnelPower: 5,

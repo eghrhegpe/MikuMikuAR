@@ -114,7 +114,7 @@ let _probeStrength = 1;
  * 优先级：reflectionMode 手动指定 > reflectionQuality 自动推导。
  */
 export function resolveReflectionMode(state: EnvState): ResolvedReflectionMode {
-    const mode = (state as EnvState & { reflectionMode?: ReflectionMode }).reflectionMode ?? 'auto';
+    const mode = state.reflectionMode ?? 'auto';
 
     // 手动指定模式（非 auto）直接返回
     if (mode !== 'auto') {
@@ -247,7 +247,7 @@ export function bindProbeToMeshes(meshes: AbstractMesh[]): void {
         ) {
             continue;
         }
-        const m = mesh.material as MaterialWithReflection | null;
+        const m = mesh.material as unknown as MaterialWithReflection | null;
         if (m && 'reflectionTexture' in m) {
             _saveOriginalTexture(m);
             m.reflectionTexture = rt;
@@ -272,7 +272,7 @@ function _disposeProbe(scene: Scene): void {
 
     // 恢复所有已绑定材质的原始纹理
     for (const mesh of scene.meshes) {
-        const m = mesh.material as MaterialWithReflection | null;
+        const m = mesh.material as unknown as MaterialWithReflection | null;
         if (m && _probeBoundMaterials.has(m.uniqueId)) {
             _restoreOriginalTexture(m);
         }
@@ -431,7 +431,7 @@ function _updateProbeStrength(preset: ReflectionQualityPreset, mode: ResolvedRef
         return;
     }
     for (const mesh of scene.meshes) {
-        const m = mesh.material as MaterialWithReflection | null;
+        const m = mesh.material as unknown as MaterialWithReflection | null;
         if (m && _probeBoundMaterials.has(m.uniqueId) && 'reflectionColor' in m) {
             (m as unknown as { reflectionColor: { set: (r: number, g: number, b: number) => void } })
                 .reflectionColor.set(_probeStrength, _probeStrength, _probeStrength);
