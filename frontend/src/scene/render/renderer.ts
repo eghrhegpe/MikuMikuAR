@@ -10,7 +10,7 @@ import { Effect } from '@babylonjs/core/Materials/effect';
 import { Color4 } from '@babylonjs/core/Maths/math.color';
 import type { Camera } from '@babylonjs/core/Cameras/camera';
 import { GlowLayer } from '@babylonjs/core/Layers/glowLayer';
-import { ReflectionProbe } from '@babylonjs/core/Probes/reflectionProbe';
+// ADR-151: ReflectionProbe 已迁移至 env-reflection.ts 统一管理
 import { observe, observeOnce, type ObserverHandle } from '@/core/observer-handle';
 import { safeDispose } from '@/core/dispose-helpers';
 import { scheduleRefresh } from '@/core/reactivity';
@@ -89,9 +89,7 @@ let _triggerAutoSave: (() => void) | null = null;
 let _glowLayer: GlowLayer | null = null;
 let _ssrPipeline: SSRRenderingPipeline | null = null;
 let _ssaoPipeline: SSAO2RenderingPipeline | null = null;
-let _reflectionProbe: ReflectionProbe | null = null;
-let _probeRefreshObserver: ObserverHandle | null = null;
-let _lastProbeRefresh = 0;
+// ADR-151: ReflectionProbe 已迁移至 env-reflection.ts
 // ADR-114 Phase 3: 接触阴影后处理（屏幕空间 ray marching）
 let _contactShadowPP: PostProcess | null = null;
 /** ADR-114 Phase 3: 接触阴影 onApply handler 句柄，用于 update 路径精确移除而非 clear() */
@@ -119,30 +117,7 @@ export function initRenderer(
     pipeline.bloomEnabled = false;
     pipeline.imageProcessingEnabled = true;
 
-    // Reflection Probe 自动刷新 — 每 10 秒检查一次环境变化
-    _probeRefreshObserver = observe(scene.onBeforeRenderObservable, () => {
-        if (!_reflectionProbe || !scene) {
-            return;
-        }
-        const now = performance.now();
-        if (now - _lastProbeRefresh < 10000) {
-            return;
-        }
-        _lastProbeRefresh = now;
-        try {
-            _reflectionProbe!.renderList = scene.meshes.filter(
-                (m) =>
-                    m.name.includes('sky') ||
-                    m.name.includes('env') ||
-                    m.name.includes('ground') ||
-                    m.name.includes('water')
-            );
-            // 强制刷新：直接渲染探针 cubeTexture 的 6 个面（语义明确，替代 refreshRate 1→0 双写黑魔法）
-            _reflectionProbe!.cubeTexture.render();
-        } catch (err) {
-            logWarn('renderer', 'ReflectionProbe 自动刷新失败:', err);
-        }
-    });
+    // ADR-151: ReflectionProbe 自动刷新已迁移至 env-reflection.ts
 }
 
 /** 检查渲染器是否已初始化。外部代码在调用 setRenderState 前可先检查。 */
@@ -152,11 +127,7 @@ export function isRendererReady(): boolean {
 
 /** 释放渲染管线及相关资源。在场景销毁时调用。 */
 export function disposeRenderer(): void {
-    if (_probeRefreshObserver && _scene) {
-        _probeRefreshObserver = safeDispose(_probeRefreshObserver);
-    }
-    // HMR 重入时清零时间戳，避免旧值导致下一次 probe refresh 提前触发
-    _lastProbeRefresh = 0;
+    // ADR-151: ReflectionProbe 已迁移至 env-reflection.ts，由 disposeReflection() 释放
     _glowLayer = safeDispose(_glowLayer);
     _ssrPipeline = safeDispose(_ssrPipeline);
     _ssaoPipeline = safeDispose(_ssaoPipeline);
@@ -164,7 +135,6 @@ export function disposeRenderer(): void {
         _contactShadowPP = safeDispose(_contactShadowPP);
         _contactShadowHandle = null;
     }
-    _reflectionProbe = safeDispose(_reflectionProbe);
     if (pipeline) {
         pipeline.dispose();
         pipeline = undefined;
@@ -218,8 +188,9 @@ export function getRenderState(): RenderState {
             : 0,
         ssrStep: _ssrPipeline ? clamp(_ssrPipeline.step, 1, 32) : 1,
         ssrThickness: _ssrPipeline ? clamp(_ssrPipeline.thickness, 0, 2) : 0.5,
-        reflectionProbeEnabled: _reflectionProbe !== null,
-        reflectionIntensity: _reflectionProbe ? 1 : 0,
+        // ADR-151: Probe 状态由 env-reflection.ts 管理，此处报告 SSR 状态
+        reflectionProbeEnabled: false,
+        reflectionIntensity: 0,
         ssaoEnabled: _ssaoPipeline !== null,
         ssaoStrength: _ssaoPipeline ? clamp(_ssaoPipeline.totalStrength / 2, 0, 1) : 0,
         ssaoRadius: _ssaoPipeline ? clamp(_ssaoPipeline.radius / 4, 0, 1) : 0,
@@ -482,66 +453,11 @@ function _applyRenderState(s: Partial<RenderState>): void {
         }
     }
 
-    // Reflection Probe — 环境反射
+    // ADR-151: Reflection Probe 已迁移至 env-reflection.ts 统一管理。
+    // 性能降级系统发送的 reflectionProbeEnabled 由 env-reflection 的 applyReflection 处理。
+    // 此处保留空分支避免未知字段警告。
     if (s.reflectionProbeEnabled !== undefined || s.reflectionIntensity !== undefined) {
-        if (s.reflectionProbeEnabled !== undefined) {
-            if (s.reflectionProbeEnabled && !_reflectionProbe && _scene) {
-                try {
-                    _reflectionProbe = new ReflectionProbe('envProbe', 256, _scene);
-                    _reflectionProbe.renderList = _scene.meshes.filter(
-                        (m) =>
-                            m.name.includes('sky') ||
-                            m.name.includes('env') ||
-                            m.name.includes('ground') ||
-                            m.name.includes('water')
-                    );
-                    _reflectionProbe.refreshRate = 0; // 静态环境，仅渲染一次
-                } catch (err) {
-                    logWarn('renderer', 'ReflectionProbe 创建失败:', err);
-                    _reflectionProbe = null;
-                }
-            } else if (!s.reflectionProbeEnabled && _reflectionProbe) {
-                // 清除所有模型材质的 reflectionTexture
-                if (_modelRegistry) {
-                    for (const inst of _modelRegistry.values()) {
-                        for (const mesh of inst.meshes) {
-                            const m = mesh.material;
-                            if (m && 'reflectionTexture' in m) {
-                                (m as { reflectionTexture: unknown }).reflectionTexture = null;
-                            }
-                        }
-                    }
-                }
-                _reflectionProbe = safeDispose(_reflectionProbe);
-            }
-        }
-        // 绑定反射探针到模型材质
-        if (_reflectionProbe && s.reflectionProbeEnabled) {
-            const rt = _reflectionProbe.cubeTexture;
-            if (rt && _modelRegistry) {
-                for (const inst of _modelRegistry.values()) {
-                    for (const mesh of inst.meshes) {
-                        const m = mesh.material;
-                        if (m && 'reflectionTexture' in m) {
-                            (
-                                m as {
-                                    reflectionTexture: import('@babylonjs/core/Materials/Textures/texture').Texture;
-                                }
-                            ).reflectionTexture = rt;
-                            // 设置反射强度
-                            if (s.reflectionIntensity !== undefined && 'reflectionColor' in m) {
-                                const intensity = s.reflectionIntensity;
-                                (
-                                    m as {
-                                        reflectionColor: import('@babylonjs/core/Maths/math.color').Color3;
-                                    }
-                                ).reflectionColor.set(intensity, intensity, intensity);
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        // no-op: Probe 生命周期由 env-reflection.ts 管理
     }
 
     // SSAO (Screen-Space Ambient Occlusion) — 独立 pipeline
@@ -1043,47 +959,49 @@ export function reattachPipeline(): void {
     }
 }
 
+// ======== ADR-151: SSR 控制接口（供 env-reflection.ts 调用） ========
+
+/**
+ * 反射系统专用 SSR 控制接口（不触发 auto-save）。
+ * 由 env-reflection.ts 的 applyReflection 调用，避免循环依赖。
+ */
+export function setSSRFromReflection(params: {
+    enabled: boolean;
+    step?: number;
+    strength?: number;
+    thickness?: number;
+}): void {
+    if (!_scene || !pipeline) {
+        return;
+    }
+    const ssrCamera = _pipelineCamera ?? _scene.activeCamera;
+    if (params.enabled && !_ssrPipeline && ssrCamera) {
+        try {
+            _ssrPipeline = new SSRRenderingPipeline('ssr', _scene, [ssrCamera]);
+            _ssrPipeline.maxDistance = 50;
+            _ssrPipeline.step = params.step ?? 16;
+            _ssrPipeline.thickness = params.thickness ?? 0.5;
+            _ssrPipeline.strength = params.strength ?? 0.7;
+            _ssrPipeline.reflectionSpecularFalloffExponent = 1;
+            _ssrPipeline.samples = 1;
+            _ssrPipeline.isEnabled = true;
+        } catch (err) {
+            logWarn('renderer', 'SSR pipeline 创建失败 (env-reflection):', err);
+            _ssrPipeline = null;
+        }
+    } else if (!params.enabled && _ssrPipeline) {
+        _ssrPipeline = safeDispose(_ssrPipeline);
+    }
+    if (_ssrPipeline && params.enabled) {
+        if (params.step !== undefined) _ssrPipeline.step = params.step;
+        if (params.strength !== undefined) _ssrPipeline.strength = params.strength;
+        if (params.thickness !== undefined) _ssrPipeline.thickness = params.thickness;
+    }
+}
+
 // ======== 边缘高亮重建 ========
 
-/** 当环境变化时（天空/地面/水面切换），刷新 Reflection Probe 的 renderList。 */
-export function refreshReflectionProbe(): void {
-    if (!_reflectionProbe || !_scene) {
-        return;
-    }
-    _reflectionProbe.renderList = _scene.meshes.filter(
-        (m) =>
-            m.name.includes('sky') ||
-            m.name.includes('env') ||
-            m.name.includes('ground') ||
-            m.name.includes('water')
-    );
-    // 强制刷新：临时设置 refreshRate 为 1 触发重新渲染
-    _reflectionProbe.refreshRate = 1;
-    _reflectionProbe.refreshRate = 0;
-}
-
-/** 将 Reflection Probe 绑定到指定模型的所有材质（模型加载后调用）。 */
-export function bindReflectionProbeToModel(
-    meshes: import('@babylonjs/core/Meshes/mesh').Mesh[]
-): void {
-    if (!_reflectionProbe) {
-        return;
-    }
-    const rt = _reflectionProbe.cubeTexture;
-    if (!rt) {
-        return;
-    }
-    for (const mesh of meshes) {
-        const m = mesh.material;
-        if (m && 'reflectionTexture' in m) {
-            (
-                m as {
-                    reflectionTexture: import('@babylonjs/core/Materials/Textures/texture').Texture;
-                }
-            ).reflectionTexture = rt;
-        }
-    }
-}
+// ADR-151: refreshReflectionProbe 和 bindReflectionProbeToModel 已迁移至 env-reflection.ts
 
 /** 当模型注册表更新时，重新应用边缘高亮状态。 */
 export function rebuildOutlineState(): void {
