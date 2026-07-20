@@ -10,11 +10,7 @@ import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { modelRegistry, uiState } from '@/core/config';
 import { triggerAutoSave } from '@/core/config';
 import { logWarn } from '../../core/logger';
-
-interface MmdStandardMaterial extends StandardMaterial {
-    toonTexture: Texture | null;
-    sphereTexture: Texture | null;
-}
+import type { MmdStandardMaterial } from '../../core/types';
 
 // ======== 外部材质目标注册表 ========
 // 让 propRegistry 等 non-model 资源也能复用 id-based 材质 API。
@@ -640,9 +636,12 @@ export function applyUnlitFallback(id: string): void {
     };
     // 清理逐材质覆盖，避免局部参数干扰全局兜底
     _matState.delete(id);
+    const state = _ensureState(id);
     for (const cat of CATEGORIES) {
-        setMatCatParams(id, cat, fallback);
+        _clampAndAssign(state.get(cat)!, fallback);
     }
+    _applyAll(id);
+    triggerAutoSave();
 }
 
 function _ensureMatState(id: string): Map<number, MaterialCategoryParams> {

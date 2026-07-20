@@ -10,6 +10,7 @@ import type { MmdRuntimeAnimationHandle } from 'babylon-mmd/esm/Runtime/mmdRunti
 import type { Nullable } from '@babylonjs/core/types';
 import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 import type { Texture } from '@babylonjs/core/Materials/Textures/texture';
+import type { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import type { UIState as GoUIState } from './wails-bindings';
 import type { TrailingAction } from './ui-slide-row';
 
@@ -571,4 +572,10 @@ export interface RecentMotion {
     path: string;
     name: string;
     timestamp: number;
+}
+
+/** MmdStandardMaterial 扩展 — 用于材质系统和换装系统共享的类型定义 */
+export interface MmdStandardMaterial extends StandardMaterial {
+    toonTexture: Texture | null;
+    sphereTexture: Texture | null;
 }

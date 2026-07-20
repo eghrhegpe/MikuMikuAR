@@ -12,7 +12,6 @@ import {
     getMatParams,
     setMatParams,
     resetSingleMatParams,
-    resetAllMatParams,
     isMatEnabled,
     setMatEnabled,
     isMatCategoryAllEnabled,
@@ -545,7 +544,6 @@ function buildMatRootSchema(
                         false,
                         () => {
                             resetMatCatParams(id);
-                            resetAllMatParams(id);
                             _selectedMat = null;
                             (targetStack ?? stackRegistry.modelStack)?.reRender();
                             setStatus(t('model-material.resetAllDone'), true);
