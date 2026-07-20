@@ -1402,4 +1402,12 @@ export function disposeGround(): void {
     _currentGroundKey = '';
     _groundScrollU = 0;
     _groundScrollV = 0;
+    // 补全状态重置：回调引用 / 纹理缓存 / diff 哨兵值，避免场景重建后脏值泄漏
+    _onTerrainReady = null;
+    _onGroundChanged = null;
+    _groundActualSize = 60;
+    _prevGroundHeight = NaN;
+    _prevGroundPitch = NaN;
+    _prevGroundRoll = NaN;
+    clearGroundTexCache();
 }

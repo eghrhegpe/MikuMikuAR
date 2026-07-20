@@ -193,7 +193,7 @@ export function disposeScene(): void {
     // 3. [fix:P3] 释放程序化动作模块（BeatDetector + perception observer）
     import('./motion/proc-motion-bridge')
         .then(({ disposeProcMotion }) => disposeProcMotion())
-        .catch(() => {});
+        .catch((e) => logWarn('scene', 'disposeProcMotion failed:', e));
 
     // 4. 释放反射系统、渲染管线、环境更新、物理风系统
     disposeReflection();

@@ -1,8 +1,8 @@
-# ADR-158 动作系统三连修：playback 守卫 / proc-motion 状态收口 / motion-popup 拆分
+# ADR-158 动作系统三连修 + 全项目审核快修
 
 > **状态**: 已实施
 > **日期**: 2026-07-21
-> **关联**: ADR-021（程序化动作）、ADR-051（VMD 图层）
+> **关联**: ADR-021（程序化动作）、ADR-051（VMD 图层）、ADR-138（env-dispatcher 破循环依赖）
 
 ## 背景
 
@@ -38,3 +38,30 @@ barrel re-export 保持 API 兼容，外部调用方零改动。子文件通过 
 - tsc 零新增错误
 - 1767/1768 单测通过（1 个既有 ui-helpers 失败）
 - playback.test.ts 31/31 通过（3 个 `toThrow` 断言改为验证 `console.warn` + DOM 未修改）
+
+---
+
+## Phase 2：全项目审核快修
+
+动作系统修复后，对全项目做七维审核（幽灵状态 / 渲染循环安全 / 类型安全 / 资源管理 / 测试覆盖 / 错误处理 / 代码重复），发现并修复：
+
+### P1-1: `runSceneTickCallbacks` 每帧 tick 无保护
+
+`env-dispatcher.ts` 的 `dispatchEnvChange` 有 try/catch，但同文件的 `runSceneTickCallbacks`（每帧由 scene observer 调用）没有——一个回调炸掉同帧所有回调。已补齐 try/catch + `console.warn`，并新增单测验证“单个回调抛错不阻断其他回调”。
+
+### P1-2: `disposeGround` 状态残留
+
+dispose 只清了 3 个变量，遗漏 7 个：`_onTerrainReady` / `_onGroundChanged`（回调引用泄漏）、`_texGroundImg` / `_texGroundImgUrl` / `_texGroundGeneration`（纹理缓存 + generation 计数器——重建后异步竞态守卫可能误判）、`_prevGroundHeight/Pitch/Roll`（脏哨兵值）。已补全重置，复用已有 `clearGroundTexCache()`。
+
+### P2-6: `scene.ts` dispose 路径静默吞错
+
+`import('./motion/proc-motion-bridge').then(...).catch(() => {})` 改为 `.catch((e) => logWarn('scene', 'disposeProcMotion failed:', e))`。
+
+### 审核发现待办（未修）
+
+| 优先级 | 问题 | 文件 |
+|--------|------|------|
+| P2 | lighting.ts 1310 行 + 15 个模块级 let + dispose 遗漏阴影参数 | `scene/render/lighting.ts` |
+| P2 | env-water.ts 4 个 `export let` 水下状态 + 12 个模块级 let | `scene/env/env-water.ts` |
+| P3 | 撤销模式 5 文件 ×9 处重复 | menus/* |
+| P3 | scene-serialize.ts 1293 行零测试 | `scene/scene-serialize.ts` |

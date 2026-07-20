@@ -63,9 +63,14 @@ export function clearSceneTickCallbacks(): void {
     _sceneTickCallbacks.clear();
 }
 
-/** 执行所有已注册的场景 tick 回调（由 ensureEnvUpdateObserver 的 scene observer 每帧调用）。 */
+/** 执行所有已注册的场景 tick 回调（由 ensureEnvUpdateObserver 的 scene observer 每帧调用）。
+ *  单个回调抛错不应中断同帧其他回调——与 dispatchEnvChange 防护标准对齐。 */
 export function runSceneTickCallbacks(): void {
     for (const cb of _sceneTickCallbacks) {
-        cb();
+        try {
+            cb();
+        } catch (e) {
+            console.warn('[env-dispatcher] tick callback error:', e);
+        }
     }
 }
