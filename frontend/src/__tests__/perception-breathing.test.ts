@@ -4,6 +4,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Quaternion } from '@babylonjs/core/Maths/math.vector';
 import type { PerceptionContext, PerceptionState } from '../scene/motion/perception-shared';
+import { _createPerceptionPool } from '../scene/motion/perception-shared';
 
 type Sut = typeof import('../scene/motion/perception-breathing');
 let sut: Sut;
@@ -53,6 +54,7 @@ function makeCtx(state?: Partial<PerceptionState>): PerceptionContext {
             },
             emotion: null,
         },
+        pool: _createPerceptionPool(),
     };
 }
 

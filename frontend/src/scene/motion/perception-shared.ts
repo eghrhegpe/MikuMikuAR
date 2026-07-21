@@ -84,28 +84,87 @@ export interface MmdModelLike {
     };
 }
 
-// ── 对象池（避免每帧 new Vector3/Matrix/Quaternion，消除 GC 压力） ──
-// 池容量需 ≥ 单帧最大消费数，否则循环覆写会污染已外泄的引用。
-// [doc:adr-164 P2] high 档 100 模型全激活时：
-//   单模型 max ≈ gaze-wasm(17q) + breathing(2q) + balance(8q) + gaze-js-fallback(18q)
-//   但 gaze-wasm 与 gaze-js 互斥，按 gaze-js 全跑估算每模型 ~28q
-//   100 模型 × 28q ≈ 2800，取 2048（覆盖 ~73 模型，剩余走 new + GC）
-//   注：per-context 独立池是 ADR-166 返工的更彻底方案，此处做容量保底
-const _v3Pool = Array.from({ length: 128 }, () => new Vector3());
-const _mPool = Array.from({ length: 256 }, () => new Matrix());
-const _qPool = Array.from({ length: 2048 }, () => new Quaternion());
-let _v3Idx = 0,
-    _mIdx = 0,
-    _qIdx = 0;
+// ── 对象池（per-context，避免各模型间覆写外泄引用） ──
+// 每模型 max 单帧消费（取各子模块 union 的最大值）：
+//   gaze-js: head(10q + 5m + 2v) + eye(10q + 3m + 2v)
+//   gaze-wasm: head(9q + 3m + 2v) + eye(7q + 3m + 2v)（wasm 比 js 略低）
+//   breathing: 2q
+//   balance: 8q
+//   合计 max ≈ 20q / 8m / 4v，取 32q / 16m / 8v 留余量
+// 溢出时走 new + GC（非池化），不覆写已外泄引用，保证安全
+// [doc:adr-164] 彻底替代全局单例池，解决多模型覆写污染
+
+/** 单 context 对象池（per-model 隔离，解决全局池覆写污染） */
+export interface PerceptionPool {
+    _v3: Vector3[];
+    _m: Matrix[];
+    _q: Quaternion[];
+    _v3Idx: number;
+    _mIdx: number;
+    _qIdx: number;
+}
+
+/** 创建单 context 对象池 */
+export function _createPerceptionPool(): PerceptionPool {
+    return {
+        _v3: Array.from({ length: 8 }, () => new Vector3()),
+        _m: Array.from({ length: 16 }, () => new Matrix()),
+        _q: Array.from({ length: 32 }, () => new Quaternion()),
+        _v3Idx: 0,
+        _mIdx: 0,
+        _qIdx: 0,
+    };
+}
+
+// ── 全局"当前池"切换机制 ──
+// perception-observer 在遍历 context 时按顺序切换，
+// 各 context 使用独立池，不互相污染。
+// 注意：同步代码，无竞态；仅在 observer run 循环内有效。
+let _currentPool: PerceptionPool | null = null;
+
+/** 切换到指定 context 的池（进入该 context 感知管线前调用） */
+export function _setContextPool(pool: PerceptionPool): void {
+    _currentPool = pool;
+}
+
+/** 重置当前池的 index（context 切换时重置，避免跨帧累积） */
+export function _resetContextPool(): void {
+    if (_currentPool) {
+        _currentPool._v3Idx = 0;
+        _currentPool._mIdx = 0;
+        _currentPool._qIdx = 0;
+    }
+}
 
 export function _v3(): Vector3 {
-    return _v3Pool[_v3Idx++ % _v3Pool.length];
+    if (!_currentPool) {
+        return new Vector3();
+    }
+    const p = _currentPool._v3;
+    if (_currentPool._v3Idx >= p.length) {
+        return new Vector3(); // 溢出：new，不覆写
+    }
+    return p[_currentPool._v3Idx++];
 }
 export function _m(): Matrix {
-    return _mPool[_mIdx++ % _mPool.length];
+    if (!_currentPool) {
+        return new Matrix();
+    }
+    const p = _currentPool._m;
+    if (_currentPool._mIdx >= p.length) {
+        return new Matrix(); // 溢出：new，不覆写
+    }
+    return p[_currentPool._mIdx++];
 }
 export function _q(): Quaternion {
-    return _qPool[_qIdx++ % _qPool.length];
+    if (!_currentPool) {
+        return new Quaternion();
+    }
+    const p = _currentPool._q;
+    if (_currentPool._qIdx >= p.length) {
+        return new Quaternion(); // 溢出：new，不覆写
+    }
+    return p[_currentPool._qIdx++];
 }
 
 // ── WASM 辅助 ──
@@ -236,6 +295,8 @@ export interface PerceptionContext {
         balance: BalanceSwayState;
         emotion: string | null;
     };
+    /** [doc:adr-164 P2] per-context 对象池，解决全局池覆写污染 */
+    pool: PerceptionPool;
 }
 
 // ── [doc:adr-164] Phase 1 — 性能档位与监控 ──
