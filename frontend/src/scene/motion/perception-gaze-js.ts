@@ -4,7 +4,7 @@ import { Quaternion, Vector3, Matrix } from '@babylonjs/core/Maths/math.vector';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 
 import type { MmdRuntimeBoneExtended } from '@/core/types';
-import { _v3, _m, _q } from './perception-shared';
+import { _v3, _m, _q, _gazeAlpha } from './perception-shared';
 import { _updateBoneChain } from './perception-breathing';
 import {
     _clampHeadGazeTarget,
@@ -15,7 +15,7 @@ import {
 } from './perception-gaze';
 
 /** JS 模式：头部跟随 */
-export function _applyHeadGazeJS(headRuntime: IMmdRuntimeBone, gazeTarget: Vector3): void {
+export function _applyHeadGazeJS(headRuntime: IMmdRuntimeBone, gazeTarget: Vector3, dt: number): void {
     const headPos = _v3();
     headRuntime.getWorldTranslationToRef(headPos);
 
@@ -39,7 +39,8 @@ export function _applyHeadGazeJS(headRuntime: IMmdRuntimeBone, gazeTarget: Vecto
     const parentInvQ = Quaternion.FromRotationMatrix(parentWorldInv);
     const parentWorldQ = _q().copyFrom(parentInvQ).invert();
     const clampedTargetQ = _clampHeadGazeTarget(oldHeadRotQ, targetWorldQ, parentWorldQ);
-    const blended = _q().copyFrom(Quaternion.Slerp(oldHeadRotQ, clampedTargetQ, 0.5));
+    const alpha = _gazeAlpha(0.7, dt);
+    const blended = _q().copyFrom(Quaternion.Slerp(oldHeadRotQ, clampedTargetQ, alpha));
     const localQ = _q();
     parentInvQ.multiplyToRef(blended, localQ);
 
@@ -53,7 +54,7 @@ export function _applyHeadGazeJS(headRuntime: IMmdRuntimeBone, gazeTarget: Vecto
 }
 
 /** JS 模式：眼部跟随 */
-export function _applyEyeGazeJS(eyeRuntimes: IMmdRuntimeBone[], gazeTarget: Vector3): void {
+export function _applyEyeGazeJS(eyeRuntimes: IMmdRuntimeBone[], gazeTarget: Vector3, dt: number): void {
     const eyeCenter = _v3();
     for (const eyeRb of eyeRuntimes) {
         const eb = (eyeRb as MmdRuntimeBoneExtended).worldMatrix;
@@ -93,8 +94,9 @@ export function _applyEyeGazeJS(eyeRuntimes: IMmdRuntimeBone[], gazeTarget: Vect
             getEyeGazeMaxYaw(),
             getEyeGazeMaxPitch()
         );
+        const alpha = _gazeAlpha(getEyeGazeSmooth(), dt);
         const newWorldQ = _q().copyFrom(
-            Quaternion.Slerp(curWorldQ, clampedTargetQ, getEyeGazeSmooth())
+            Quaternion.Slerp(curWorldQ, clampedTargetQ, alpha)
         );
 
         const localQ = _q();

@@ -736,16 +736,30 @@ describe('_gazeAlpha', () => {
 
 describe('gaze reset', () => {
     it('deactivatePerception 时调用 _resetGazeState', () => {
-        const spy = vi.spyOn(sut, '_resetGazeState');
         mockState.focusedModelId = 'm1';
         mockState.modelManager.get.mockReturnValue({
             mmdModel: { mesh: { isDisposed: () => false } },
         });
+        const before = sut._getGazeResetTick();
         sut.activatePerception('m1');
-        spy.mockClear();
+        const afterActivate = sut._getGazeResetTick();
         sut.deactivatePerception();
-        expect(spy).toHaveBeenCalledOnce();
-        spy.mockRestore();
+        const afterDeactivate = sut._getGazeResetTick();
+        // activatePerception 内部先调 deactivatePerception（+1），再直接调 _resetGazeState（+1）
+        expect(afterActivate).toBe(before + 2);
+        expect(afterDeactivate).toBe(afterActivate + 1);
+    });
+
+    it('setHeadTrackingEnabled 切换时调用 _resetGazeState', () => {
+        const before = sut._getGazeResetTick();
+        sut.setHeadTrackingEnabled(false);
+        expect(sut._getGazeResetTick()).toBe(before + 1);
+    });
+
+    it('setEyeTrackingEnabled 切换时调用 _resetGazeState', () => {
+        const before = sut._getGazeResetTick();
+        sut.setEyeTrackingEnabled(false);
+        expect(sut._getGazeResetTick()).toBe(before + 1);
     });
 });
 

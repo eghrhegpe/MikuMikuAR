@@ -11,6 +11,7 @@ import type { MeshMetadata, GazeConfig, MmdModelLike } from './perception-shared
 import {
     _v3,
     _q,
+    _gazeAlpha,
     _isWasmRuntime,
     getHeadGazeMaxYaw,
     getHeadGazeMaxPitch,
@@ -111,7 +112,8 @@ export function _clampEyeGazeTarget(
 export function _applyGaze(
     mmdModel: MmdModelLike,
     cam: Camera,
-    config: { headEnabled: boolean; eyeEnabled: boolean }
+    config: { headEnabled: boolean; eyeEnabled: boolean },
+    dt: number
 ): void {
     if (!config.headEnabled && !config.eyeEnabled) {
         return;
@@ -135,17 +137,17 @@ export function _applyGaze(
 
     if (isWasm) {
         if (needHead && headRuntime) {
-            _applyHeadGazeWasm(headRuntime, gazeTarget);
+            _applyHeadGazeWasm(headRuntime, gazeTarget, dt);
         }
         if (needEye) {
-            _applyEyeGazeWasm(eyeRuntimes, gazeTarget);
+            _applyEyeGazeWasm(eyeRuntimes, gazeTarget, dt);
         }
     } else {
         if (needHead && headRuntime) {
-            _applyHeadGazeJS(headRuntime, gazeTarget);
+            _applyHeadGazeJS(headRuntime, gazeTarget, dt);
         }
         if (needEye) {
-            _applyEyeGazeJS(eyeRuntimes, gazeTarget);
+            _applyEyeGazeJS(eyeRuntimes, gazeTarget, dt);
         }
         const skeleton = (mmdModel.mesh.metadata as MeshMetadata)?.skeleton;
         skeleton?._markAsDirty?.();
@@ -170,7 +172,8 @@ const EYE_BONE_CANDIDATES = [
 export function applyGazeWasm(
     bones: readonly IMmdRuntimeBone[],
     cam: Camera,
-    config: GazeConfig
+    config: GazeConfig,
+    dt: number
 ): void {
     if (!config.headEnabled && !config.eyeEnabled) {
         return;
@@ -189,10 +192,10 @@ export function applyGazeWasm(
     const gazeTarget = _getGazeTarget(cam, _v3());
 
     if (needHead && headRuntime) {
-        _applyHeadGazeWasm(headRuntime, gazeTarget);
+        _applyHeadGazeWasm(headRuntime, gazeTarget, dt);
     }
 
     if (needEye) {
-        _applyEyeGazeWasm(eyeRuntimes, gazeTarget);
+        _applyEyeGazeWasm(eyeRuntimes, gazeTarget, dt);
     }
 }
