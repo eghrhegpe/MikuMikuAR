@@ -24,10 +24,7 @@ export {
     addRipple,
     clearRipples,
     updateWaterAnimSpeed,
-    _underwaterActive,
-    _underwaterSavedFog,
-    _underwaterTransitionProgress,
-    _underwaterTarget,
+    isUnderwaterActive,
 } from './env-water';
 import {
     createWater,

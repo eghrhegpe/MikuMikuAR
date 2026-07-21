@@ -58,7 +58,7 @@ import {
     clearRipples,
     updateUnderwaterTransition,
     resetUnderwaterState,
-    _underwaterActive,
+    isUnderwaterActive,
     applyWaterPresetToCurrent,
 } from '../../scene/env/env-water';
 
@@ -337,7 +337,7 @@ describe('Water Underwater — 相机入水触发过渡', () => {
         const pipeline = makePipelineStub();
         envState.waterEnabled = false;
         updateUnderwaterTransition(scene, pipeline);
-        expect(_underwaterActive).toBe(false);
+        expect(isUnderwaterActive()).toBe(false);
     });
 
     it('相机在水面以上时 _underwaterActive 保持 false', () => {
@@ -348,7 +348,7 @@ describe('Water Underwater — 相机入水触发过渡', () => {
 
         const pipeline = makePipelineStub();
         updateUnderwaterTransition(scene, pipeline);
-        expect(_underwaterActive).toBe(false);
+        expect(isUnderwaterActive()).toBe(false);
     });
 
     it('相机潜入水面以下时 _underwaterActive 变为 true', () => {
@@ -359,7 +359,7 @@ describe('Water Underwater — 相机入水触发过渡', () => {
 
         const pipeline = makePipelineStub();
         updateUnderwaterTransition(scene, pipeline);
-        expect(_underwaterActive).toBe(true);
+        expect(isUnderwaterActive()).toBe(true);
     });
 
     it('resetUnderwaterState 清除 _underwaterActive 和过渡进度', () => {
@@ -370,10 +370,10 @@ describe('Water Underwater — 相机入水触发过渡', () => {
 
         const pipeline = makePipelineStub();
         updateUnderwaterTransition(scene, pipeline);
-        expect(_underwaterActive).toBe(true);
+        expect(isUnderwaterActive()).toBe(true);
 
         resetUnderwaterState(scene, pipeline);
-        expect(_underwaterActive).toBe(false);
+        expect(isUnderwaterActive()).toBe(false);
     });
 });
 
