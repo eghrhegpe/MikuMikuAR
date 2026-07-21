@@ -125,17 +125,17 @@ export async function setTheme(
 
 // ======== Font map ========
 
-export const FONT_MAP: Record<string, { label: string; css: string }> = {
+export const FONT_MAP: Record<string, { labelKey: string; css: string }> = {
     system: {
-        label: '系统默认',
+        labelKey: 'settings.font.system',
         css: "'Segoe UI', 'Yu Gothic', 'Meiryo', 'Noto Sans CJK SC', system-ui, sans-serif",
     },
     noto: {
-        label: '思源黑体',
+        labelKey: 'settings.font.noto',
         css: "'Source Han Sans SC', 'Noto Sans CJK SC', system-ui, sans-serif",
     },
     yahei: {
-        label: '微软雅黑',
+        labelKey: 'settings.font.yahei',
         css: "'Microsoft YaHei', 'Microsoft YaHei UI', system-ui, sans-serif",
     },
 };
@@ -146,23 +146,24 @@ export const SETTINGS_FONT_RESTORE: Record<string, string> = Object.fromEntries(
 
 // ======== Theme presets ========
 
-export const THEME_PRESETS: Array<{ label: string; color: string }> = [
-    { label: '经典蓝', color: '#4a6cf7' },
-    { label: '樱花粉', color: '#f74a6c' },
-    { label: '薄荷绿', color: '#4af7a6' },
-    { label: '日落橙', color: '#f7a64a' },
-    { label: '暗夜紫', color: '#6c4af7' },
-    { label: '极简灰', color: '#888888' },
+export const THEME_PRESETS: Array<{ labelKey: string; color: string }> = [
+    { labelKey: 'settings.theme.classicBlue', color: '#4a6cf7' },
+    { labelKey: 'settings.theme.sakuraPink', color: '#f74a6c' },
+    { labelKey: 'settings.theme.mintGreen', color: '#4af7a6' },
+    { labelKey: 'settings.theme.sunsetOrange', color: '#f7a64a' },
+    { labelKey: 'settings.theme.nightPurple', color: '#6c4af7' },
+    { labelKey: 'settings.theme.minimalGray', color: '#888888' },
 ];
 
 // ======== Display name priority ========
 
 import type { DisplayNamePriority } from '../core/config';
 
+/** displayNamePriority → 显示名 i18n key（渲染时用 t() 解析，避免硬编码中文） */
 export const NAME_PRIORITY_LABELS: Record<DisplayNamePriority, string> = {
-    name_jp: '日语名',
-    name_en: '英语名',
-    filename: '文件名',
+    name_jp: 'settings.namePriority.jp',
+    name_en: 'settings.namePriority.en',
+    filename: 'settings.namePriority.filename',
 };
 
 export const NAME_PRIORITY_INDEX: Record<number, DisplayNamePriority> = {

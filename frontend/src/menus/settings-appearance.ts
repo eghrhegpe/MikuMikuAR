@@ -100,7 +100,7 @@ function _renderThemePresetList(
         const row = document.createElement('div');
         row.className = 'slide-item' + (isActive ? ' slide-focused' : '');
         row.dataset.themeColor = p.color;
-        row.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:${isActive ? 'check-circle' : 'circle'}"></iconify-icon></span><span class="slide-label">${p.label}</span>`;
+        row.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:${isActive ? 'check-circle' : 'circle'}"></iconify-icon></span><span class="slide-label">${t(p.labelKey)}</span>`;
         const swatch = document.createElement('span');
         swatch.className = 'theme-swatch';
         swatch.style.cssText = `width:16px;height:16px;border-radius:50%;background:${p.color};border:2px solid var(--white-12);flex-shrink:0;margin-left:auto;`;
@@ -182,13 +182,13 @@ function _renderFontControls(
         const row = slideRow(
             container,
             `lucide:${isActive ? 'check' : 'circle'}`,
-            f.label,
+            t(f.labelKey),
             false,
             () => {
                 document.documentElement.style.setProperty('--font', f.css);
                 swallowError(SetUIFontFamily(key));
                 getSettingsMenu()?.updateControls();
-                setStatus(t('settings.fontSet', { label: f.label }), true);
+                setStatus(t('settings.fontSet', { label: t(f.labelKey) }), true);
             },
             undefined,
             undefined,

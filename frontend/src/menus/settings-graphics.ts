@@ -23,18 +23,18 @@ import type { MenuNode } from './menu-schema';
 
 const PERFORMANCE_MODES: Array<{
     key: 'auto' | 'quality' | 'balanced' | 'performance' | 'custom';
-    label: string;
-    desc: string;
+    labelKey: string;
+    descKey: string;
 }> = [
-    { key: 'auto', label: t('settings.perf.auto'), desc: t('settings.perf.autoDesc') },
-    { key: 'quality', label: t('settings.perf.quality'), desc: t('settings.perf.qualityDesc') },
-    { key: 'balanced', label: t('settings.perf.balanced'), desc: t('settings.perf.balancedDesc') },
+    { key: 'auto', labelKey: 'settings.perf.auto', descKey: 'settings.perf.autoDesc' },
+    { key: 'quality', labelKey: 'settings.perf.quality', descKey: 'settings.perf.qualityDesc' },
+    { key: 'balanced', labelKey: 'settings.perf.balanced', descKey: 'settings.perf.balancedDesc' },
     {
         key: 'performance',
-        label: t('settings.perf.performance'),
-        desc: t('settings.perf.performanceDesc'),
+        labelKey: 'settings.perf.performance',
+        descKey: 'settings.perf.performanceDesc',
     },
-    { key: 'custom', label: t('settings.perf.custom'), desc: t('settings.perf.customDesc') },
+    { key: 'custom', labelKey: 'settings.perf.custom', descKey: 'settings.perf.customDesc' },
 ];
 
 // ======== 卡片 1：性能预设 ========
@@ -51,7 +51,7 @@ function buildPresetSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                     const row = slideRow(
                         c,
                         `lucide:${isActive ? 'check-circle' : 'circle'}`,
-                        m.label,
+                        t(m.labelKey),
                         false,
                         () => {
                             setPerformanceMode(m.key);
@@ -61,9 +61,9 @@ function buildPresetSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                             } else {
                                 getSettingsMenu()?.updateControls();
                             }
-                            setStatus(t('settings.perfModeSet', { label: m.label }), true);
+                            setStatus(t('settings.perfModeSet', { label: t(m.labelKey) }), true);
                         },
-                        m.desc,
+                        t(m.descKey),
                         undefined,
                         isActive
                     );

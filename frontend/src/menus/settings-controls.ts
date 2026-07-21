@@ -130,6 +130,13 @@ function _isModifierOnly(code: string): boolean {
 }
 
 let _rebindingId: string | null = null;
+let _activeKeyDisp: Disposable | null = null;
+
+/** 取消进行中的快捷键重绑：移除 document 级 keydown 监听并复位状态（生命周期随菜单，防泄漏/幽灵重绑）。 */
+function _cancelRebinding(): void {
+    _activeKeyDisp = safeDispose(_activeKeyDisp);
+    _rebindingId = null;
+}
 
 function buildShortcutsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
     return [
@@ -137,7 +144,7 @@ function buildShortcutsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
             id: 'controls:shortcut-groups',
             kind: 'custom',
             renderCustom: (container) => {
-                _rebindingId = null;
+                _cancelRebinding();
 
                 const persisted = (uiState as Record<string, unknown>).keyBindings as
                     | Record<
@@ -200,7 +207,6 @@ function buildShortcutsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
                                         sublabelSpan.textContent = '';
                                     }
 
-                                    let keyDisp: Disposable | null = null;
                                     const handler = (e: KeyboardEvent) => {
                                         if (e.repeat) {
                                             return;
@@ -210,7 +216,7 @@ function buildShortcutsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
                                         if (_isModifierOnly(e.code)) {
                                             return;
                                         }
-                                        keyDisp = safeDispose(keyDisp);
+                                        _activeKeyDisp = safeDispose(_activeKeyDisp);
                                         if (e.code === 'Escape') {
                                             _rebindingId = null;
                                             getSettingsMenu()?.reRender();
@@ -260,7 +266,7 @@ function buildShortcutsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
                                                 );
                                         }
                                     };
-                                    keyDisp = addDisposableListener(
+                                    _activeKeyDisp = addDisposableListener(
                                         document,
                                         'keydown',
                                         handler,
@@ -274,6 +280,11 @@ function buildShortcutsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
                         }
                     });
                 }
+
+                // 菜单关闭/重渲染时释放进行中的重绑监听，防止 document 级泄漏与幽灵重绑
+                return () => {
+                    _cancelRebinding();
+                };
             },
         },
         {

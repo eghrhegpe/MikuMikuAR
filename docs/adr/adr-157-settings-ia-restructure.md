@@ -1,7 +1,7 @@
 # ADR-157: 设置界面信息架构重组 — 10 分类 → 7 分类
 
 **日期**: 2026-07-21
-> **状态**: 已实施 — Phase 1（IA 重组 + 缺陷修复 + 5 语言 i18n）完成并通过构建/单测；搜索/color picker 留待 Phase 3
+> **状态**: 已实施 — Phase 1（IA 重组 + 缺陷修复 + 5 语言 i18n）+ Phase 1.5（审核后补修：监听器泄漏 / i18n 冻结 / renderCustom 契约）均完成并通过构建/单测；搜索/color picker 留待 Phase 3
 
 ---
 
@@ -71,6 +71,18 @@
 | `setTheme` 误用 `t('status.error')` 作 tryCatchStatus 上下文（残留 `{message}` 字面量） | 改传操作标签 `t('settings.themeColor')` |
 | Android 存储卡 `renderCustom: async` 返回 `Promise<void>` 不合 `MenuNode` 契约 | 抽出同步 `renderAndroidStorage`，内部 Promise + disposed 守卫，返回 dispose |
 
+### 5. 审核后补修（Phase 1.5，2026-07-21）
+
+重组后对新模块做五维审核（导入图谱 / 状态读写追踪 / 资源配对 / 心理模拟），发现并修复以下**迁移前即存在**（忠实搬运）的缺陷：
+
+| 缺陷 | 修法 |
+|------|------|
+| 快捷键重绑 keydown 监听仅在“按键/ESC”时移除，关菜单即泄漏，之后按键会幽灵重绑（菜单已关仍改绑定） | 提升 `_activeKeyDisp` + `_cancelRebinding()`；`renderCustom` 返回 dispose，监听器生命周期随菜单（ADR-093 级联释放） |
+| `PERFORMANCE_MODES` 模块加载期调 `t()`，语言切换后标签冻结不刷新 | 改存 `labelKey`/`descKey`，渲染时 `t()` 解析（与 `MenuNode.label` 存 key 范式对齐） |
+| `FONT_MAP`/`THEME_PRESETS`/`NAME_PRIORITY_LABELS` 硬编码中文（'经典蓝'/'日语名'…）未走 i18n | 改存 i18n key，消费端渲染时 `t()`；新增 12 key × 5 语言 |
+| 软件列表 `renderCustom: async` 挂 `MenuNode` 上，返回 `Promise<void>` 违约（与 Android 存储卡修复不一致） | 改同步壳 + 内部 async IIFE + disposed 守卫，返回 dispose |
+| 缓存统计 `t('common.items') \|\| 'items'` 死代码（`t()` 永不返回假值） | 删除 `\|\| 'items'` 兜底 |
+
 ## 后果
 
 **正面**：
@@ -90,6 +102,6 @@
 ## 验证
 
 - `cd frontend && npm run build` 通过（tsc + vite）
-- `cd frontend && npx vitest run` ：1767 过 / 1 败——败例为 `ui-helpers.test.ts` addModeSlider 拖拽用例，系预存问题（ui-helpers 本次未改动），与本重构无关
-- i18n 校验：新 settings 模块引用的 221 个 key 于 zh-CN 基准包零缺失，en/ja/ko/zh-TW 同步补齐
+- `cd frontend && npx vitest run` ：1768 过 / 1 败——败例为 `ui-helpers.test.ts` addModeSlider 拖拽用例，系预存问题（ui-helpers 本次未改动），与本重构无关
+- i18n 校验：新 settings 模块引用的 key 于 zh-CN 基准包零缺失，en/ja/ko/zh-TW 同步补齐（Phase 1.5 另增 12 key × 5 语言）
 - 手动核对 7 个分类控件渲染与交互无回归
