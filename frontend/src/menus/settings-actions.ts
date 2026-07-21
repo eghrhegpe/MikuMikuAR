@@ -2,11 +2,7 @@
 // 职责：集中管理 target→handler 映射。各设置页直接调用 SETTINGS_ACTIONS[target]()，
 // 不再构造假 PopupRow 套娃；settings.ts 的 onItemClick 仍经 handleSettingsAction 分发。
 
-import {
-    ClearExtractCache,
-    ClearThumbnailCache,
-    ClearAllCaches,
-} from '../core/wails-bindings';
+import { ClearExtractCache, ClearThumbnailCache, ClearAllCaches } from '../core/wails-bindings';
 import { setStatus, type PopupRow } from '../core/config';
 import { showConfirm } from '../core/dialog';
 import { selectResourceRoot, selectOverridePath } from './library-core';
@@ -56,8 +52,7 @@ export const SETTINGS_ACTIONS: Record<string, (row?: PopupRow) => void> = {
     [SETTINGS_ACTION.PATH_VMD]: () => safeCallAsync('paths', '', () => selectOverridePath('vmd')),
     [SETTINGS_ACTION.PATH_AUDIO]: () =>
         safeCallAsync('paths', '', () => selectOverridePath('audio')),
-    [SETTINGS_ACTION.PATH_PROP]: () =>
-        safeCallAsync('paths', '', () => selectOverridePath('prop')),
+    [SETTINGS_ACTION.PATH_PROP]: () => safeCallAsync('paths', '', () => selectOverridePath('prop')),
     [SETTINGS_ACTION.PATH_STAGE]: () =>
         safeCallAsync('paths', '', () => selectOverridePath('stage')),
     [SETTINGS_ACTION.PATH_ENVIRONMENT]: () =>

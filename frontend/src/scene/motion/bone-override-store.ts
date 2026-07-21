@@ -88,7 +88,12 @@ export interface BoneOverrideStore {
      * 供各 bake 门控（`claimed.includes(bone)` / `claimed.length === 0`）。
      * 注意：与旧 registry 一致，返回 `claimed` 而非 `preempted`（ADR-147 M3）。
      */
-    claimBones(modelId: string, moduleId: string, priority: number, bones: readonly string[]): string[];
+    claimBones(
+        modelId: string,
+        moduleId: string,
+        priority: number,
+        bones: readonly string[]
+    ): string[];
     /** 释放模块全部已认领骨骼，并级联清理其槽位；返回被释放的骨骼集合 */
     releaseBones(modelId: string, moduleId: string): Set<string>;
     getOwnedBones(modelId: string, moduleId: string): Set<string>;
@@ -150,7 +155,12 @@ export class InMemoryBoneOverrideStore implements BoneOverrideStore {
     clearSlot(modelId: string, bone: string, expectedModuleId?: string): void {
         // M6 所有权守卫：提供 expectedModuleId 时，仅当 slot 归属匹配才清，否则 warn 并忽略
         const existing = this._slots.get(modelId)?.get(bone);
-        if (expectedModuleId && existing && existing.sourceModuleId && existing.sourceModuleId !== expectedModuleId) {
+        if (
+            expectedModuleId &&
+            existing &&
+            existing.sourceModuleId &&
+            existing.sourceModuleId !== expectedModuleId
+        ) {
             console.warn(
                 `[adr-147] clearSlot 越权：${expectedModuleId} 清 bone="${bone}" 但 slot 归属 ${existing.sourceModuleId}，已忽略`
             );
@@ -236,7 +246,10 @@ export class InMemoryBoneOverrideStore implements BoneOverrideStore {
         // M5：清本模块作为 loser 的冲突卡片（对齐 registry._clearConflict）
         const list = this._conflicts.get(modelId);
         if (list) {
-            this._conflicts.set(modelId, list.filter((c) => c.loserModuleId !== moduleId));
+            this._conflicts.set(
+                modelId,
+                list.filter((c) => c.loserModuleId !== moduleId)
+            );
         }
         // 通知 release 监听器（P2-1 reclaim 触发链路）
         for (const l of this._releaseListeners) {
@@ -282,7 +295,7 @@ export class InMemoryBoneOverrideStore implements BoneOverrideStore {
     }
 
     removeReleaseListener(listener: ReleaseListener): void {
-        this._releaseListeners = this._releaseListeners.filter(l => l !== listener);
+        this._releaseListeners = this._releaseListeners.filter((l) => l !== listener);
     }
 
     // —— 模型生命周期 ——
@@ -364,7 +377,14 @@ export class InMemoryBoneOverrideStore implements BoneOverrideStore {
             this._conflicts.set(modelId, list);
         }
         // 去重（对齐 registry._recordConflict 的 some 检查，避免同 (bone,loser,winner) 重复累加）
-        if (list.some((c) => c.bone === bone && c.loserModuleId === loserModuleId && c.winnerModuleId === winnerModuleId)) {
+        if (
+            list.some(
+                (c) =>
+                    c.bone === bone &&
+                    c.loserModuleId === loserModuleId &&
+                    c.winnerModuleId === winnerModuleId
+            )
+        ) {
             return;
         }
         list.push({
@@ -388,7 +408,8 @@ let _storeInstance: BoneOverrideStore | null = null;
 export function getBoneOverrideStore(): BoneOverrideStore {
     if (!_storeInstance) {
         _storeInstance = new InMemoryBoneOverrideStore({
-            stageOf: (moduleId) => (moduleId.startsWith('perception.') ? 'perception' : 'bone-override'),
+            stageOf: (moduleId) =>
+                moduleId.startsWith('perception.') ? 'perception' : 'bone-override',
             // store 回调签名为 (modelId, bone)，而 clearBoneOverride 为 (bone, modelId)，此处重排
             onClearEngineSlot: (modelId, bone) => clearBoneOverride(bone, modelId),
         });

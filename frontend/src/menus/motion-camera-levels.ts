@@ -639,43 +639,31 @@ function renderWebXRProbeSection(container: HTMLElement): void {
     );
 
     // 深度探针按钮（会触发 AR session + 权限弹窗）
-    slideRow(
-        container,
-        'lucide:scan',
-        t('scene.ar.webxrDeepProbe'),
-        false,
-        async () => {
-            if (_probing) return;
-            _probing = true;
-            refreshCameraLevel();
-            try {
-                _probeResult = await probeWebXRFeatures();
-                setStatus(_verdictText(_probeResult.verdict), _probeResult.verdict !== 'none');
-            } catch (e) {
-                setStatus(`WebXR deep probe error: ${e}`, false);
-            }
-            _probing = false;
-            refreshCameraLevel();
+    slideRow(container, 'lucide:scan', t('scene.ar.webxrDeepProbe'), false, async () => {
+        if (_probing) return;
+        _probing = true;
+        refreshCameraLevel();
+        try {
+            _probeResult = await probeWebXRFeatures();
+            setStatus(_verdictText(_probeResult.verdict), _probeResult.verdict !== 'none');
+        } catch (e) {
+            setStatus(`WebXR deep probe error: ${e}`, false);
         }
-    );
+        _probing = false;
+        refreshCameraLevel();
+    });
 
     // 复制报告按钮（仅在有结果时显示）
     if (_probeResult) {
-        slideRow(
-            container,
-            'lucide:copy',
-            t('scene.ar.webxrCopyReport'),
-            false,
-            async () => {
-                try {
-                    await navigator.clipboard.writeText(formatProbeReport(_probeResult!));
-                    setStatus(t('scene.ar.webxrCopied'), true);
-                } catch {
-                    // clipboard API 可能不可用（需用户手势）
-                    setStatus('Clipboard unavailable', false);
-                }
+        slideRow(container, 'lucide:copy', t('scene.ar.webxrCopyReport'), false, async () => {
+            try {
+                await navigator.clipboard.writeText(formatProbeReport(_probeResult!));
+                setStatus(t('scene.ar.webxrCopied'), true);
+            } catch {
+                // clipboard API 可能不可用（需用户手势）
+                setStatus('Clipboard unavailable', false);
             }
-        );
+        });
 
         // 显示探针结果摘要
         const result = document.createElement('div');
@@ -747,39 +735,33 @@ function renderARCoreProbeSection(container: HTMLElement): void {
     title.textContent = `── ${t('scene.ar.arcoreProbe')} (ADR-073) ──`;
     container.appendChild(title);
 
-    slideRow(
-        container,
-        'lucide:box',
-        t('scene.ar.arcoreLaunch'),
-        false,
-        () => {
-            // 注册回调
-            window.__onARCoreProbeResult = (json: string) => {
-                window.__onARCoreProbeResult = undefined;
-                _arcoreProbeResult = json;
-                try {
-                    const r = JSON.parse(json) as {
-                        success: boolean;
-                        arcoreSession: boolean;
-                        cameraFrame: boolean;
-                        webViewOverlay: boolean;
-                        frameCount: number;
-                        error: string | null;
-                    };
-                    if (r.success) {
-                        setStatus(t('scene.ar.arcoreSuccess'), true);
-                    } else {
-                        setStatus(`${t('scene.ar.arcoreFailed')}: ${r.error || 'unknown'}`, false);
-                    }
-                } catch {
-                    setStatus(t('scene.ar.arcoreFailed'), false);
+    slideRow(container, 'lucide:box', t('scene.ar.arcoreLaunch'), false, () => {
+        // 注册回调
+        window.__onARCoreProbeResult = (json: string) => {
+            window.__onARCoreProbeResult = undefined;
+            _arcoreProbeResult = json;
+            try {
+                const r = JSON.parse(json) as {
+                    success: boolean;
+                    arcoreSession: boolean;
+                    cameraFrame: boolean;
+                    webViewOverlay: boolean;
+                    frameCount: number;
+                    error: string | null;
+                };
+                if (r.success) {
+                    setStatus(t('scene.ar.arcoreSuccess'), true);
+                } else {
+                    setStatus(`${t('scene.ar.arcoreFailed')}: ${r.error || 'unknown'}`, false);
                 }
-                refreshCameraLevel();
-            };
-            w.launchARCoreProbe!();
-            setStatus(t('scene.ar.arcoreLaunching'), true);
-        }
-    );
+            } catch {
+                setStatus(t('scene.ar.arcoreFailed'), false);
+            }
+            refreshCameraLevel();
+        };
+        w.launchARCoreProbe!();
+        setStatus(t('scene.ar.arcoreLaunching'), true);
+    });
 
     // 显示上次探针结果
     if (_arcoreProbeResult) {
@@ -826,38 +808,32 @@ function renderVuforiaProbeSection(container: HTMLElement): void {
     title.textContent = `── ${t('scene.ar.vuforiaProbe')} ──`;
     container.appendChild(title);
 
-    slideRow(
-        container,
-        'lucide:scan-eye',
-        t('scene.ar.vuforiaLaunch'),
-        false,
-        () => {
-            window.__onVuforiaProbeResult = (json: string) => {
-                window.__onVuforiaProbeResult = undefined;
-                _vuforiaProbeResult = json;
-                try {
-                    const r = JSON.parse(json) as {
-                        success: boolean;
-                        vuforiaInitialized: boolean;
-                        cameraStarted: boolean;
-                        webViewOverlay: boolean;
-                        frameCount: number;
-                        error: string | null;
-                    };
-                    if (r.success) {
-                        setStatus(t('scene.ar.vuforiaSuccess'), true);
-                    } else {
-                        setStatus(`${t('scene.ar.vuforiaFailed')}: ${r.error || 'unknown'}`, false);
-                    }
-                } catch {
-                    setStatus(t('scene.ar.vuforiaFailed'), false);
+    slideRow(container, 'lucide:scan-eye', t('scene.ar.vuforiaLaunch'), false, () => {
+        window.__onVuforiaProbeResult = (json: string) => {
+            window.__onVuforiaProbeResult = undefined;
+            _vuforiaProbeResult = json;
+            try {
+                const r = JSON.parse(json) as {
+                    success: boolean;
+                    vuforiaInitialized: boolean;
+                    cameraStarted: boolean;
+                    webViewOverlay: boolean;
+                    frameCount: number;
+                    error: string | null;
+                };
+                if (r.success) {
+                    setStatus(t('scene.ar.vuforiaSuccess'), true);
+                } else {
+                    setStatus(`${t('scene.ar.vuforiaFailed')}: ${r.error || 'unknown'}`, false);
                 }
-                refreshCameraLevel();
-            };
-            w.launchVuforiaProbe!();
-            setStatus(t('scene.ar.vuforiaLaunching'), true);
-        }
-    );
+            } catch {
+                setStatus(t('scene.ar.vuforiaFailed'), false);
+            }
+            refreshCameraLevel();
+        };
+        w.launchVuforiaProbe!();
+        setStatus(t('scene.ar.vuforiaLaunching'), true);
+    });
 
     if (_vuforiaProbeResult) {
         const result = document.createElement('div');

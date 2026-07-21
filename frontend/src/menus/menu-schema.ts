@@ -6,7 +6,12 @@ import { envState } from '@/core/config';
 import { setEnvState, getRenderState, setRenderState } from '@/scene/scene';
 import { getLightState, setLightState } from '@/scene/render/lighting';
 import { uiState, setUIState, focusedModelId, modelRegistry } from '@/core/state';
-import { getPerceptionState, getPerceptionStateFor, setPerceptionState, setPerceptionStateFor } from '@/scene/motion/perception';
+import {
+    getPerceptionState,
+    getPerceptionStateFor,
+    setPerceptionState,
+    setPerceptionStateFor,
+} from '@/scene/motion/perception';
 import { getModuleDefaultParam } from '@/scene/motion/motion-modules/registry';
 
 // 状态路径：类型化字符串，由解析器按前缀映射到 reactive state 对象
@@ -87,7 +92,12 @@ export function getStateValue(path: StatePath, modelId?: string): unknown {
             return (uiState as unknown as Record<string, unknown>)[key];
         case 'perception': {
             const mid = modelId ?? focusedModelId;
-            return ((mid ? getPerceptionStateFor(mid) : getPerceptionState()) as unknown as Record<string, unknown>)[key];
+            return (
+                (mid ? getPerceptionStateFor(mid) : getPerceptionState()) as unknown as Record<
+                    string,
+                    unknown
+                >
+            )[key];
         }
         case 'motionModule': {
             // 格式: motionModule.${moduleId}.${paramKey}

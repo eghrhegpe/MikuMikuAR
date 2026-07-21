@@ -541,8 +541,7 @@ export function setContactShadow(state: EnvState): void {
     }
 
     // 中/高质量守卫：low/off 时自动关闭
-    const qualityOk =
-        state.reflectionQuality === 'medium' || state.reflectionQuality === 'high';
+    const qualityOk = state.reflectionQuality === 'medium' || state.reflectionQuality === 'high';
     const shouldEnable = state.groundContactShadowEnabled && qualityOk;
 
     if (shouldEnable) {

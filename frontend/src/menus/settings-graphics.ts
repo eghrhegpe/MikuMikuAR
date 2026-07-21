@@ -414,9 +414,7 @@ function buildGraphicsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
     ];
 }
 
-export function buildSettingsGraphicsLevel(
-    getSettingsMenu: () => SettingsMenuHandle
-): PopupLevel {
+export function buildSettingsGraphicsLevel(getSettingsMenu: () => SettingsMenuHandle): PopupLevel {
     return {
         label: t('settings.graphics'),
         dir: '',

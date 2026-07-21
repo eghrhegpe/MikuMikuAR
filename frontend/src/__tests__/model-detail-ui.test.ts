@@ -418,7 +418,7 @@ describe('buildModelLevel', () => {
 
         const text = container.textContent ?? '';
         // 关键标签以可见文本形式渲染（不依赖具体 class，避免 UI 重构导致脆弱断言）
-        expect(text).toContain('基本信息');
+        expect(text).toContain('模型详情');
         // [AI 菜单收纳] 独立的布尔「可见」开关已改为变换卡的「透明度」滑块
         // （与基本信息三态「可见性」预设互补），断言同步更新为可见性细调入口。
         expect(text).toContain('透明度');

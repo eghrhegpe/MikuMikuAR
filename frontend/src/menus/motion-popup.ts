@@ -15,7 +15,14 @@ import {
 } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
 import { loadManager } from '../core/load-manager';
-import { modelManager, updatePlaybackUI, loadVPDPose, triggerAutoSave, pushUndoSnapshot, offerSceneUndoAndRefresh } from '../scene/scene';
+import {
+    modelManager,
+    updatePlaybackUI,
+    loadVPDPose,
+    triggerAutoSave,
+    pushUndoSnapshot,
+    offerSceneUndoAndRefresh,
+} from '../scene/scene';
 import { getVmdLayers } from '../scene/motion/vmd-layers';
 import { clearAudio, getAudioName } from '../outfit/audio';
 import {
@@ -31,11 +38,7 @@ import { buildCameraLevel } from './motion-camera-levels';
 import { buildMotionOverrideLevel } from './motion-override-levels';
 import { buildPoseStudioLevel } from './motion-pose-levels';
 import { t } from '../core/i18n/t';
-import {
-    setActiveMotion,
-    getActiveMotion,
-} from '../scene/motion/motion-intent';
-import type { VmdLayer } from '@/core/types';
+import { addSceneMotion, clearAllSceneMotions } from '../scene/motion/motion-intent';
 import { logWarn } from '../core/logger';
 import { addDisposableListener } from '../core/dom';
 
@@ -62,7 +65,11 @@ import {
 // Barrel Re-Exports（外部调用方继续从 ./motion-popup 导入）
 // ═══════════════════════════════════════════════════════════
 
-export { renderModuleToggleList, applyIntentToModel, initMotionBroadcast } from './motion-binding-ui';
+export {
+    renderModuleToggleList,
+    applyIntentToModel,
+    initMotionBroadcast,
+} from './motion-binding-ui';
 export { syncPlaybackSpeedToRuntime } from './motion-detail-ui';
 export { hideMotionPopup, buildMotionRootItems } from './motion-root-ui';
 
@@ -92,7 +99,11 @@ export { getMotionMenu, refreshMotionRoot, showMotionPopup };
 const _onLibraryScanned = (): void => {
     getMotionMenu()?.reRender();
 };
-const _libraryScannedDisp = addDisposableListener(window, 'mmar:library-scanned', _onLibraryScanned);
+const _libraryScannedDisp = addDisposableListener(
+    window,
+    'mmar:library-scanned',
+    _onLibraryScanned
+);
 
 /** 释放 motion-popup 模块资源（HMR/清理时调用） */
 export function disposeMotionPopup(): void {
@@ -147,36 +158,14 @@ function motionOnItemClick(row: PopupRow): void {
                 });
             return;
         }
-        // 场景级 VMD 加载
+        // 场景级 VMD 加载（ADR-167：每次都加入场景库，不再 1+5 混合）
         if (row.model.format === 'vmd') {
-            const cur = getActiveMotion();
-            if (!cur) {
-                setActiveMotion({
-                    vmdPath: row.model.file_path,
-                    vmdName: row.model.name_jp || row.model.name_en || '',
-                    vmdLayers: [],
-                    source: 'vmd',
-                });
-            } else {
-                const layerName = (row.model.name_jp || row.model.name_en || '').replace(
-                    /\.vmd$/i,
-                    ''
-                );
-                const newLayer: VmdLayer = {
-                    id: `layer_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-                    name: layerName,
-                    kind: 'vmd',
-                    data: new ArrayBuffer(0),
-                    path: row.model.file_path,
-                    weight: 1.0,
-                    enabled: true,
-                    boneFilter: [],
-                };
-                setActiveMotion({
-                    ...cur,
-                    vmdLayers: [...cur.vmdLayers, newLayer],
-                });
-            }
+            addSceneMotion({
+                vmdPath: row.model.file_path,
+                vmdName: row.model.name_jp || row.model.name_en || '',
+                vmdLayers: [],
+                source: 'vmd',
+            });
             if (getMotionMenu()) {
                 getMotionMenu()?.pop();
                 getMotionMenu()?.reRender();
@@ -253,31 +242,14 @@ function motionOnItemClick(row: PopupRow): void {
             {
                 mode: 'stay',
                 onVmdPick: (path: string, name: string) => {
-                    const cur = getActiveMotion();
+                    // [doc:adr-167] 每次选择都作为新主动作加入场景库（非 1+5 叠加）
                     const vmdName = name.replace(/\.vmd$/i, '');
-                    if (!cur) {
-                        setActiveMotion({
-                            vmdPath: path,
-                            vmdName,
-                            vmdLayers: [],
-                            source: 'vmd',
-                        });
-                    } else {
-                        const newLayer: VmdLayer = {
-                            id: `layer_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-                            name: vmdName,
-                            kind: 'vmd' as const,
-                            data: new ArrayBuffer(0),
-                            path,
-                            weight: 1.0,
-                            enabled: true,
-                            boneFilter: [],
-                        };
-                        setActiveMotion({
-                            ...cur,
-                            vmdLayers: [...cur.vmdLayers, newLayer],
-                        });
-                    }
+                    addSceneMotion({
+                        vmdPath: path,
+                        vmdName,
+                        vmdLayers: [],
+                        source: 'vmd',
+                    });
                     getMotionMenu()?.reRender();
                 },
             }
@@ -287,17 +259,18 @@ function motionOnItemClick(row: PopupRow): void {
         }
         return;
     }
-    // [doc:adr-129] 动作详情入口
-    if (row.target === '__motion_detail__') {
-        const lvl = buildMotionDetailLevel();
+    // [doc:adr-167] 动作详情入口：target 编码 sceneMotionId（__motion_detail__:<id>）
+    if (row.target === '__motion_detail__' || row.target.startsWith('__motion_detail__:')) {
+        const sceneMotionId = row.target.split(':')[1] || undefined;
+        const lvl = buildMotionDetailLevel(sceneMotionId);
         lvl.itemBuilder = () => [];
         getMotionMenu()?.push(lvl);
         return;
     }
-    // 清除场景级动作
+    // 清除场景级动作（ADR-167：清空整个场景库 + 默认动作）
     if (row.target === '__motion_clear__') {
         const snap = pushUndoSnapshot();
-        setActiveMotion(null);
+        clearAllSceneMotions();
         if (isPlaying && mmdRuntime) {
             mmdRuntime.pauseAnimation();
             setIsPlaying(false);

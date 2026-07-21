@@ -601,7 +601,9 @@ export function startBoneOverride(
     if (!_driverHandle || _driverScene !== scene) {
         _driverHandle = safeDispose(_driverHandle);
         _driverScene = scene;
-        _driverHandle = observe(scene.onBeforeRenderObservable, () => getMotionPipeline().runFrame({ scene }));
+        _driverHandle = observe(scene.onBeforeRenderObservable, () =>
+            getMotionPipeline().runFrame({ scene })
+        );
     }
     _observerHandle = getMotionPipeline().register({
         id: 'bone-override',

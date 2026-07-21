@@ -222,7 +222,10 @@ export function rebuildLightConeGeometry(
 ): void {
     const halfAngle = light.angle / 2;
     // 仅在参数实际变化时重建
-    if (Math.abs(entry.geoLength - coneLength) < 0.01 && Math.abs(entry.geoAngle - light.angle) < 0.001) {
+    if (
+        Math.abs(entry.geoLength - coneLength) < 0.01 &&
+        Math.abs(entry.geoAngle - light.angle) < 0.001
+    ) {
         return;
     }
     // 重建几何（保留材质）

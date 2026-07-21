@@ -27,7 +27,12 @@ import { _openTexturePicker } from './env-level-helpers';
 import { buildPresetLevel } from './env-preset-levels';
 import { buildPostProcessLevel } from './scene-render-levels';
 import type { EnvTextureBindingTarget } from './env-menu-state';
-import { setEnvTextureBindingTarget, clearEnvTextureBindingTarget, getEnvTextureBindingTarget, setEnvMenu } from './env-menu-state';
+import {
+    setEnvTextureBindingTarget,
+    clearEnvTextureBindingTarget,
+    getEnvTextureBindingTarget,
+    setEnvMenu,
+} from './env-menu-state';
 
 // ======== Barrel Re-Exports ========
 export { buildSkyLevel } from './env-sky-levels';
@@ -41,7 +46,11 @@ export { buildPresetLevel, SCENE_PRESETS } from './env-preset-levels';
 // ======== Env Texture Binding Target ========
 // 已迁移到 env-menu-state.ts，此处保留 re-export 保持向后兼容
 export type { EnvTextureBindingTarget } from './env-menu-state';
-export { setEnvTextureBindingTarget, clearEnvTextureBindingTarget, getEnvTextureBindingTarget } from './env-menu-state';
+export {
+    setEnvTextureBindingTarget,
+    clearEnvTextureBindingTarget,
+    getEnvTextureBindingTarget,
+} from './env-menu-state';
 
 // ======== Env Menu State ========
 
@@ -70,7 +79,11 @@ export { getEnvMenu, refreshEnvRoot, showEnvMenu };
 const _onLibraryScanned = (): void => {
     getEnvMenu()?.reRender();
 };
-const _libraryScannedDisp = addDisposableListener(window, 'mmar:library-scanned', _onLibraryScanned);
+const _libraryScannedDisp = addDisposableListener(
+    window,
+    'mmar:library-scanned',
+    _onLibraryScanned
+);
 
 /** 清理环境菜单的全局事件监听（测试/HMR 时调用，配对 removeEventListener） */
 export function disposeEnvMenuListeners(): void {

@@ -4,7 +4,14 @@ import { Quaternion, Vector3, Matrix } from '@babylonjs/core/Maths/math.vector';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 
 import type { MmdRuntimeBoneExtended } from '@/core/types';
-import { _v3, _m, _q, _gazeAlpha, _writeMatToBuffer, _propagateChildrenWasm } from './perception-shared';
+import {
+    _v3,
+    _m,
+    _q,
+    _gazeAlpha,
+    _writeMatToBuffer,
+    _propagateChildrenWasm,
+} from './perception-shared';
 import {
     _clampHeadGazeTarget,
     _clampGazeTargetInParentFrame,
@@ -14,7 +21,11 @@ import {
 } from './perception-gaze';
 
 /** WASM 模式：头部跟随 */
-export function _applyHeadGazeWasm(headRuntime: IMmdRuntimeBone, gazeTarget: Vector3, dt: number): void {
+export function _applyHeadGazeWasm(
+    headRuntime: IMmdRuntimeBone,
+    gazeTarget: Vector3,
+    dt: number
+): void {
     const headBuf = (headRuntime as MmdRuntimeBoneExtended).worldMatrix;
     const oldHeadMat = _m().copyFrom(Matrix.FromArray(headBuf));
     const headPos = oldHeadMat.getTranslation();
@@ -54,7 +65,11 @@ export function _applyHeadGazeWasm(headRuntime: IMmdRuntimeBone, gazeTarget: Vec
 }
 
 /** WASM 模式：眼部跟随 */
-export function _applyEyeGazeWasm(eyeRuntimes: IMmdRuntimeBone[], gazeTarget: Vector3, dt: number): void {
+export function _applyEyeGazeWasm(
+    eyeRuntimes: IMmdRuntimeBone[],
+    gazeTarget: Vector3,
+    dt: number
+): void {
     const eyeCenter = _v3();
     for (const eyeRb of eyeRuntimes) {
         const eb = (eyeRb as MmdRuntimeBoneExtended).worldMatrix;
@@ -95,9 +110,7 @@ export function _applyEyeGazeWasm(eyeRuntimes: IMmdRuntimeBone[], gazeTarget: Ve
             getEyeGazeMaxPitch()
         );
         const alpha = _gazeAlpha(getEyeGazeSmooth(), dt);
-        const newEyeQ = _q().copyFrom(
-            Quaternion.Slerp(curEyeQ, clampedTargetQ, alpha)
-        );
+        const newEyeQ = _q().copyFrom(Quaternion.Slerp(curEyeQ, clampedTargetQ, alpha));
         const newEyeMat = _m().copyFrom(Matrix.Compose(Vector3.One(), newEyeQ, eyePos));
 
         _writeMatToBuffer(eyeBuf, newEyeMat);

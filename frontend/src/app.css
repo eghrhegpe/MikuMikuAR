@@ -202,7 +202,9 @@
 
 /* ===== 无障碍：键盘焦点视觉指示 ===== */
 /* 鼠标点击不触发焦点环，键盘 Tab 触发 */
-:focus { outline: none; }
+:focus {
+    outline: none;
+}
 :focus-visible {
     outline: calc(2px * var(--ui-scale)) solid var(--accent);
     outline-offset: calc(1px * var(--ui-scale));
@@ -3040,6 +3042,37 @@ textarea,
     border-radius: var(--lcard-radius);
     padding: 0 var(--lcard-pad-x);
     margin-bottom: var(--lcard-margin-bottom);
+}
+
+/* ===== 模型详情全屏页 Tab ===== */
+.model-detail-tabs {
+    display: flex;
+    gap: calc(8px * var(--ui-scale));
+    border-bottom: calc(1px * var(--ui-scale)) solid var(--white-08);
+    padding: 0 calc(4px * var(--ui-scale));
+    flex-shrink: 0;
+}
+.model-detail-tab-btn {
+    background: transparent;
+    border: none;
+    border-bottom: calc(2px * var(--ui-scale)) solid transparent;
+    color: var(--text-dim);
+    font-size: var(--font-ui);
+    padding: calc(8px * var(--ui-scale)) calc(12px * var(--ui-scale));
+    cursor: pointer;
+    transition:
+        color 0.15s,
+        border-color 0.15s;
+}
+.model-detail-tab-btn:hover {
+    color: var(--text-bright);
+}
+.model-detail-tab-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+.model-detail-tab-content {
+    min-height: 0;
 }
 
 /* ===== 对话框（替换 prompt/confirm） ===== */

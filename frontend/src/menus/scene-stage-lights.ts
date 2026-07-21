@@ -229,101 +229,101 @@ function buildStageLightSchema(): MenuNode[] {
             },
         },
         // 卡片 3.5：光锥（真实锥形光柱可视化）
-    {
-        id: 'light:cone',
-        kind: 'custom',
-        visibleWhen: () => !!state && state.type === 'spot',
-        renderCustom: (c) => {
-            if (!state) {
-                return;
-            }
-            cardContainer(c, (inner) => {
-                addCollapsible(inner, {
-                    title: t('scene.lightCone'),
-                    icon: 'lucide:flashlight',
-                    defaultOpen: false,
-                    headerToggle: {
-                        value: state.coneEnabled,
-                        onChange: (v) => {
-                            setStageLightState({ coneEnabled: v }, state.id);
-                            getSceneMenu()?.updateControls();
+        {
+            id: 'light:cone',
+            kind: 'custom',
+            visibleWhen: () => !!state && state.type === 'spot',
+            renderCustom: (c) => {
+                if (!state) {
+                    return;
+                }
+                cardContainer(c, (inner) => {
+                    addCollapsible(inner, {
+                        title: t('scene.lightCone'),
+                        icon: 'lucide:flashlight',
+                        defaultOpen: false,
+                        headerToggle: {
+                            value: state.coneEnabled,
+                            onChange: (v) => {
+                                setStageLightState({ coneEnabled: v }, state.id);
+                                getSceneMenu()?.updateControls();
+                            },
+                            bind: () => {
+                                const lights = getStageLights();
+                                const activeId = getActiveStageLightId();
+                                const s = lights.find((l) => l.id === activeId) ?? lights[0];
+                                return s?.coneEnabled ?? false;
+                            },
                         },
-                        bind: () => {
-                            const lights = getStageLights();
-                            const activeId = getActiveStageLightId();
-                            const s = lights.find((l) => l.id === activeId) ?? lights[0];
-                            return s?.coneEnabled ?? false;
+                        renderContent: (ci) => {
+                            addSliderRow(
+                                ci,
+                                t('scene.coneIntensity'),
+                                state.coneIntensity,
+                                0,
+                                2,
+                                0.05,
+                                () => {},
+                                'lucide:sun',
+                                (v) => setStageLightState({ coneIntensity: v }, state.id),
+                                {
+                                    bind: () => {
+                                        const lights = getStageLights();
+                                        const activeId = getActiveStageLightId();
+                                        const s =
+                                            lights.find((l) => l.id === activeId) ?? lights[0];
+                                        return s?.coneIntensity ?? 0.5;
+                                    },
+                                }
+                            );
+                            addSliderRow(
+                                ci,
+                                t('scene.coneLength'),
+                                state.coneLength,
+                                1,
+                                50,
+                                0.5,
+                                () => {},
+                                'lucide:ruler',
+                                (v) => setStageLightState({ coneLength: v }, state.id),
+                                {
+                                    bind: () => {
+                                        const lights = getStageLights();
+                                        const activeId = getActiveStageLightId();
+                                        const s =
+                                            lights.find((l) => l.id === activeId) ?? lights[0];
+                                        return s?.coneLength ?? 20;
+                                    },
+                                }
+                            );
+                            addSliderRow(
+                                ci,
+                                t('scene.coneSoftness'),
+                                state.coneSoftness,
+                                0,
+                                1,
+                                0.05,
+                                () => {},
+                                'lucide:circle-dashed',
+                                (v) => setStageLightState({ coneSoftness: v }, state.id),
+                                {
+                                    bind: () => {
+                                        const lights = getStageLights();
+                                        const activeId = getActiveStageLightId();
+                                        const s =
+                                            lights.find((l) => l.id === activeId) ?? lights[0];
+                                        return s?.coneSoftness ?? 0.5;
+                                    },
+                                }
+                            );
                         },
-                    },
-                    renderContent: (ci) => {
-                        addSliderRow(
-                            ci,
-                            t('scene.coneIntensity'),
-                            state.coneIntensity,
-                            0,
-                            2,
-                            0.05,
-                            () => {},
-                            'lucide:sun',
-                            (v) => setStageLightState({ coneIntensity: v }, state.id),
-                            {
-                                bind: () => {
-                                    const lights = getStageLights();
-                                    const activeId = getActiveStageLightId();
-                                    const s =
-                                        lights.find((l) => l.id === activeId) ?? lights[0];
-                                    return s?.coneIntensity ?? 0.5;
-                                },
-                            }
-                        );
-                        addSliderRow(
-                            ci,
-                            t('scene.coneLength'),
-                            state.coneLength,
-                            1,
-                            50,
-                            0.5,
-                            () => {},
-                            'lucide:ruler',
-                            (v) => setStageLightState({ coneLength: v }, state.id),
-                            {
-                                bind: () => {
-                                    const lights = getStageLights();
-                                    const activeId = getActiveStageLightId();
-                                    const s =
-                                        lights.find((l) => l.id === activeId) ?? lights[0];
-                                    return s?.coneLength ?? 20;
-                                },
-                            }
-                        );
-                        addSliderRow(
-                            ci,
-                            t('scene.coneSoftness'),
-                            state.coneSoftness,
-                            0,
-                            1,
-                            0.05,
-                            () => {},
-                            'lucide:circle-dashed',
-                            (v) => setStageLightState({ coneSoftness: v }, state.id),
-                            {
-                                bind: () => {
-                                    const lights = getStageLights();
-                                    const activeId = getActiveStageLightId();
-                                    const s =
-                                        lights.find((l) => l.id === activeId) ?? lights[0];
-                                    return s?.coneSoftness ?? 0.5;
-                                },
-                            }
-                        );
-                    },
+                    });
                 });
-            });
+            },
         },
-    },
-    // 卡片 4：Spot 参数
-    {
-        id: 'light:spot-params',
+        // 卡片 4：Spot 参数
+        {
+            id: 'light:spot-params',
             kind: 'custom',
             visibleWhen: () => state?.type === 'spot',
             renderCustom: (c) => {

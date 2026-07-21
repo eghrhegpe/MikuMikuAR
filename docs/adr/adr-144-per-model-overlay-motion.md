@@ -1,6 +1,11 @@
 # ADR-144: Per-model Overlay Motion（动作2 叠加层）
 
-> **状态**: 实施中
+> ⚠️ **已废弃（2026-07-21）**：本 ADR 被 [ADR-167: 场景级动作库](./adr-167-scene-motion-library.md) 方案 A 完全取代。
+> ADR-167 实施后，`MotionSlotConfig.overlayPath/overlayName/overlayWeight` 字段移除，
+> `buildMotionOverlayLevel` 函数删除，per-model overlay 运行时函数移除。
+> VMD 叠加统一走「主动作内部 vmdLayers」，程序化叠加走角色面板「程序化动作」入口。
+>
+> **状态**: 已废弃（被 ADR-167 取代）
 > **日期**: 2026-07-19
 > **依赖**: ADR-121（全局动作意图）、ADR-056（WASM Motion Layers）、ADR-129（场景级动作 UI）
 

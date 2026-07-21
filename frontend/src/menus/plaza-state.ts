@@ -13,8 +13,16 @@ export const CUSTOM_SITES_PATH = 'workshop_sites.json';
 export const GLOBAL_MODE_KEY = 'miku.plaza.globalMode';
 
 export const SITE_GROUPS: { label: string; icon: string; ids: string[] }[] = [
-    { label: '国内', icon: 'lucide:map-pin', ids: ['mzhouse', 'bilibili', 'afdian', 'github', 'cms-blueprint'] },
-    { label: '海外', icon: 'lucide:globe-2', ids: ['bowlroll', 'booth', 'nicovideo', 'deviantart', 'vroid'] },
+    {
+        label: '国内',
+        icon: 'lucide:map-pin',
+        ids: ['mzhouse', 'bilibili', 'afdian', 'github', 'cms-blueprint'],
+    },
+    {
+        label: '海外',
+        icon: 'lucide:globe-2',
+        ids: ['bowlroll', 'booth', 'nicovideo', 'deviantart', 'vroid'],
+    },
 ];
 
 // ======== 站点列表状态 ========
@@ -22,14 +30,20 @@ export const SITE_GROUPS: { label: string; icon: string; ids: string[] }[] = [
 export let allSites: PlazaSite[] = [];
 export let allCreators: PlazaCreator[] = [];
 
-export function setAllSites(sites: PlazaSite[]): void { allSites = sites; }
-export function setAllCreators(creators: PlazaCreator[]): void { allCreators = creators; }
+export function setAllSites(sites: PlazaSite[]): void {
+    allSites = sites;
+}
+export function setAllCreators(creators: PlazaCreator[]): void {
+    allCreators = creators;
+}
 
 // ======== 当前站点 ========
 
 export let currentSiteId: string = '';
 
-export function setCurrentSiteId(id: string): void { currentSiteId = id; }
+export function setCurrentSiteId(id: string): void {
+    currentSiteId = id;
+}
 export function getCurrentSite(): PlazaSite | undefined {
     return allSites.find((s) => s.id === currentSiteId);
 }
@@ -37,7 +51,9 @@ export function getCurrentSite(): PlazaSite | undefined {
 // ======== 界面层 ========
 
 export let layer: HTMLElement | null = null;
-export function setLayer(el: HTMLElement | null): void { layer = el; }
+export function setLayer(el: HTMLElement | null): void {
+    layer = el;
+}
 export function getLayer(): HTMLElement | null {
     if (!layer) layer = document.getElementById('webviewLayer');
     return layer;
@@ -46,12 +62,16 @@ export function getLayer(): HTMLElement | null {
 // ======== 代理状态 ========
 
 export let plazaProxyActive = false;
-export function setPlazaProxyActive(v: boolean): void { plazaProxyActive = v; }
+export function setPlazaProxyActive(v: boolean): void {
+    plazaProxyActive = v;
+}
 
 // ======== Observer ========
 
 export let observer: MutationObserver | null = null;
-export function setObserver(o: MutationObserver | null): void { observer = o; }
+export function setObserver(o: MutationObserver | null): void {
+    observer = o;
+}
 
 // ======== 安装守卫 ========
 
@@ -59,21 +79,33 @@ export let downloadListenerInstalled = false;
 export let eventListenersInstalled = false;
 export let shortcutsRegistered = false;
 
-export function setDownloadListenerInstalled(v: boolean): void { downloadListenerInstalled = v; }
-export function setEventListenersInstalled(v: boolean): void { eventListenersInstalled = v; }
-export function setShortcutsRegistered(v: boolean): void { shortcutsRegistered = v; }
+export function setDownloadListenerInstalled(v: boolean): void {
+    downloadListenerInstalled = v;
+}
+export function setEventListenersInstalled(v: boolean): void {
+    eventListenersInstalled = v;
+}
+export function setShortcutsRegistered(v: boolean): void {
+    shortcutsRegistered = v;
+}
 
 // ======== Iframe 引用 ========
 
 export let plazaIframe: HTMLIFrameElement | null = null;
-export function setPlazaIframe(el: HTMLIFrameElement | null): void { plazaIframe = el; }
+export function setPlazaIframe(el: HTMLIFrameElement | null): void {
+    plazaIframe = el;
+}
 
 // ======== 遥控面板 ========
 
 export let remoteURLDisplay: HTMLElement | null = null;
 export let remoteProgress: HTMLElement | null = null;
-export function setRemoteURLDisplay(el: HTMLElement | null): void { remoteURLDisplay = el; }
-export function setRemoteProgress(el: HTMLElement | null): void { remoteProgress = el; }
+export function setRemoteURLDisplay(el: HTMLElement | null): void {
+    remoteURLDisplay = el;
+}
+export function setRemoteProgress(el: HTMLElement | null): void {
+    remoteProgress = el;
+}
 
 // ======== 打开模式 ========
 
@@ -83,12 +115,18 @@ export function loadGlobalMode(): OpenMode | null {
     try {
         const v = localStorage.getItem(GLOBAL_MODE_KEY);
         if (v === 'embed' || v === 'external' || v === 'window') return v;
-    } catch { /* ignore */ }
+    } catch {
+        /* ignore */
+    }
     return null;
 }
 
 export function saveGlobalMode(mode: OpenMode): void {
-    try { localStorage.setItem(GLOBAL_MODE_KEY, mode); } catch { /* ignore */ }
+    try {
+        localStorage.setItem(GLOBAL_MODE_KEY, mode);
+    } catch {
+        /* ignore */
+    }
 }
 
 export function effectiveMode(site: PlazaSite): OpenMode {
@@ -96,7 +134,9 @@ export function effectiveMode(site: PlazaSite): OpenMode {
         const key = `miku.plaza.mode.${site.name}`;
         const saved = localStorage.getItem(key);
         if (saved === 'embed' || saved === 'external' || saved === 'window') return saved;
-    } catch { /* ignore */ }
+    } catch {
+        /* ignore */
+    }
     const global = loadGlobalMode();
     if (global) return global;
     return site.mode ?? 'embed';

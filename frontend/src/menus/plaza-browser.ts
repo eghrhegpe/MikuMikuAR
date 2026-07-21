@@ -4,20 +4,44 @@
 import type { PlazaSite } from './plaza-sites';
 import type { PlazaCreator } from './plaza-creators';
 import {
-    allSites, allCreators, currentSiteId, setCurrentSiteId,
-    setAllSites, setAllCreators, CUSTOM_SITES_PATH, GLOBAL_MODE_KEY,
-    SITE_GROUPS, getCurrentSite, getLayer,
-    plazaProxyActive, setPlazaProxyActive,
-    plazaIframe, setPlazaIframe,
-    remoteURLDisplay, setRemoteURLDisplay,
-    remoteProgress, setRemoteProgress,
-    loadGlobalMode, saveGlobalMode, effectiveMode,
-    stopProxy, closePlaza,
+    allSites,
+    allCreators,
+    currentSiteId,
+    setCurrentSiteId,
+    setAllSites,
+    setAllCreators,
+    CUSTOM_SITES_PATH,
+    GLOBAL_MODE_KEY,
+    SITE_GROUPS,
+    getCurrentSite,
+    getLayer,
+    plazaProxyActive,
+    setPlazaProxyActive,
+    plazaIframe,
+    setPlazaIframe,
+    remoteURLDisplay,
+    setRemoteURLDisplay,
+    remoteProgress,
+    setRemoteProgress,
+    loadGlobalMode,
+    saveGlobalMode,
+    effectiveMode,
+    stopProxy,
+    closePlaza,
     type OpenMode,
 } from './plaza-state';
-import { FetchPlazaConfig, GetCachedPlazaConfig, ReadTextFile,
-    StartProxy, ClosePlazaWindow, PlazaGoBack, PlazaGoForward,
-    PlazaReload, PlazaZoomIn, PlazaZoomOut, PlazaZoomReset,
+import {
+    FetchPlazaConfig,
+    GetCachedPlazaConfig,
+    ReadTextFile,
+    StartProxy,
+    ClosePlazaWindow,
+    PlazaGoBack,
+    PlazaGoForward,
+    PlazaReload,
+    PlazaZoomIn,
+    PlazaZoomOut,
+    PlazaZoomReset,
 } from '../core/wails-bindings';
 import { NavigatePlazaWindow } from '@bindings/mikumikuar/internal/app/app';
 import { isAndroidPlatform, openExternalURL } from '../core/platform';
@@ -30,7 +54,12 @@ import { showErrorToast } from '../core/toast';
 import { addDisposableListener, type Disposable } from '../core/dom';
 import { safeDispose } from '../core/dispose-helpers';
 import { _plazaBtn, _plazaSectionHeader } from './plaza-thumbnail';
-import { installDownloadListener, installEventListeners, installShortcuts, ensureObserver } from './plaza-download';
+import {
+    installDownloadListener,
+    installEventListeners,
+    installShortcuts,
+    ensureObserver,
+} from './plaza-download';
 import { PLAZA_SITES } from './plaza-sites';
 import { PLAZA_CREATORS } from './plaza-creators';
 
@@ -46,7 +75,17 @@ export function normalizeSite(raw: any): PlazaSite | null {
     if (icon && /^[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]$/u.test(icon)) {
         icon = `data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><text y=%2220%22 font-size=%2220%22>${icon}</text></svg>`;
     }
-    return { id: raw.id, name, url, mode, icon: icon || 'lucide:globe', desc: raw.desc || '', group: raw.group || 'search', searchUrl: raw.searchUrl, presetSearches: raw.presetSearches || [] };
+    return {
+        id: raw.id,
+        name,
+        url,
+        mode,
+        icon: icon || 'lucide:globe',
+        desc: raw.desc || '',
+        group: raw.group || 'search',
+        searchUrl: raw.searchUrl,
+        presetSearches: raw.presetSearches || [],
+    };
 }
 
 export function normalizeCreator(raw: any): PlazaCreator | null {
@@ -57,7 +96,13 @@ export function normalizeCreator(raw: any): PlazaCreator | null {
     if (tag === 'repo') tag = 'creator';
     if (!['official', 'creator', 'vup', 'oc'].includes(tag)) tag = 'creator';
     const primarySite = (site as string).split(';')[0];
-    return { name: raw.name, desc: raw.desc || '', tag: tag as PlazaCreator['tag'], tier: raw.tier || undefined, site: primarySite };
+    return {
+        name: raw.name,
+        desc: raw.desc || '',
+        tag: tag as PlazaCreator['tag'],
+        tier: raw.tier || undefined,
+        site: primarySite,
+    };
 }
 
 export async function loadCustomSites(): Promise<PlazaSite[]> {
@@ -66,7 +111,9 @@ export async function loadCustomSites(): Promise<PlazaSite[]> {
         if (!raw) return [];
         const parsed = JSON.parse(raw) as any[];
         return parsed.map(normalizeSite).filter(Boolean) as PlazaSite[];
-    } catch { return []; }
+    } catch {
+        return [];
+    }
 }
 
 export function mergeSites(base: PlazaSite[], extras: PlazaSite[]): PlazaSite[] {
@@ -92,10 +139,16 @@ export async function loadCachedConfig(): Promise<void> {
         const cached = await GetCachedPlazaConfig();
         if (cached && cached[0]) {
             const parsed = JSON.parse(cached[0]) as { sites?: any[]; creators?: any[] };
-            if (parsed.sites?.length) setAllSites(parsed.sites.map(normalizeSite).filter(Boolean) as PlazaSite[]);
-            if (parsed.creators?.length) setAllCreators(parsed.creators.map(normalizeCreator).filter(Boolean) as PlazaCreator[]);
+            if (parsed.sites?.length)
+                setAllSites(parsed.sites.map(normalizeSite).filter(Boolean) as PlazaSite[]);
+            if (parsed.creators?.length)
+                setAllCreators(
+                    parsed.creators.map(normalizeCreator).filter(Boolean) as PlazaCreator[]
+                );
         }
-    } catch { /* ignore */ }
+    } catch {
+        /* ignore */
+    }
 }
 
 export async function ensureSitesLoaded(): Promise<void> {
@@ -139,11 +192,17 @@ export function openInWindow(site: PlazaSite, url?: string): void {
 export function getCustomPresets(siteId: string): { label: string; q: string }[] {
     try {
         return JSON.parse(localStorage.getItem(`miku.plaza.presets.${siteId}`) || '[]');
-    } catch { return []; }
+    } catch {
+        return [];
+    }
 }
 
 export function saveCustomPresets(siteId: string, presets: { label: string; q: string }[]): void {
-    try { localStorage.setItem(`miku.plaza.presets.${siteId}`, JSON.stringify(presets)); } catch { /* ignore */ }
+    try {
+        localStorage.setItem(`miku.plaza.presets.${siteId}`, JSON.stringify(presets));
+    } catch {
+        /* ignore */
+    }
 }
 
 export function buildSiteTabs(): HTMLElement {
@@ -214,7 +273,12 @@ export function renderSiteContent(site: PlazaSite): HTMLElement {
     searchHeader.appendChild(searchTitle);
     const searchActions = document.createElement('div');
     searchActions.className = 'plaza-section-actions';
-    const addBtn = _plazaBtn('<iconify-icon icon="lucide:plus"></iconify-icon>', () => {}, 'plaza-btn', '添加搜索词');
+    const addBtn = _plazaBtn(
+        '<iconify-icon icon="lucide:plus"></iconify-icon>',
+        () => {},
+        'plaza-btn',
+        '添加搜索词'
+    );
     addBtn.onclick = (e) => {
         e.stopPropagation();
         addBtn.style.display = 'none';
@@ -224,8 +288,16 @@ export function renderSiteContent(site: PlazaSite): HTMLElement {
         input.type = 'text';
         input.className = 'plaza-preset-input';
         input.placeholder = '输入搜索词…';
-        const confirmBtn = _plazaBtn('<iconify-icon icon="lucide:check"></iconify-icon>', () => {}, 'plaza-btn plaza-btn-primary');
-        const cancelBtn = _plazaBtn('<iconify-icon icon="lucide:x"></iconify-icon>', () => {}, 'plaza-btn');
+        const confirmBtn = _plazaBtn(
+            '<iconify-icon icon="lucide:check"></iconify-icon>',
+            () => {},
+            'plaza-btn plaza-btn-primary'
+        );
+        const cancelBtn = _plazaBtn(
+            '<iconify-icon icon="lucide:x"></iconify-icon>',
+            () => {},
+            'plaza-btn'
+        );
         inputRow.append(input, confirmBtn, cancelBtn);
         searchSection.insertBefore(inputRow, presetArea);
         function commit(): void {
@@ -242,16 +314,29 @@ export function renderSiteContent(site: PlazaSite): HTMLElement {
             addBtn.style.display = '';
         }
         confirmBtn.onclick = commit;
-        cancelBtn.onclick = () => { inputRow.remove(); addBtn.style.display = ''; };
+        cancelBtn.onclick = () => {
+            inputRow.remove();
+            addBtn.style.display = '';
+        };
         input.addEventListener('keydown', (ev) => {
             if (ev.key === 'Enter') commit();
-            if (ev.key === 'Escape') { inputRow.remove(); addBtn.style.display = ''; }
+            if (ev.key === 'Escape') {
+                inputRow.remove();
+                addBtn.style.display = '';
+            }
         });
         input.focus();
     };
     searchActions.appendChild(addBtn);
-    const moreBtn = _plazaBtn('<iconify-icon icon="lucide:more-horizontal"></iconify-icon>', () => {}, 'plaza-btn');
-    moreBtn.onclick = (e) => { e.stopPropagation(); showActionsMenu(site, moreBtn); };
+    const moreBtn = _plazaBtn(
+        '<iconify-icon icon="lucide:more-horizontal"></iconify-icon>',
+        () => {},
+        'plaza-btn'
+    );
+    moreBtn.onclick = (e) => {
+        e.stopPropagation();
+        showActionsMenu(site, moreBtn);
+    };
     searchActions.appendChild(moreBtn);
     searchHeader.appendChild(searchActions);
     searchSection.appendChild(searchHeader);
@@ -264,7 +349,8 @@ export function renderSiteContent(site: PlazaSite): HTMLElement {
         if (!hasContent) {
             const empty = document.createElement('div');
             empty.className = 'plaza-empty';
-            empty.innerHTML = '<iconify-icon icon="lucide:search-x"></iconify-icon><span>暂无搜索词，点 ➕ 添加</span>';
+            empty.innerHTML =
+                '<iconify-icon icon="lucide:search-x"></iconify-icon><span>暂无搜索词，点 ➕ 添加</span>';
             presetArea.appendChild(empty);
             updateSearchCount();
             return;
@@ -315,10 +401,12 @@ export function renderSiteContent(site: PlazaSite): HTMLElement {
     creatorActions.className = 'plaza-section-actions';
     const updateBtn = document.createElement('button');
     updateBtn.className = 'plaza-btn plaza-update-btn';
-    updateBtn.innerHTML = '<iconify-icon icon="lucide:refresh-cw"></iconify-icon><span>更新配置</span>';
+    updateBtn.innerHTML =
+        '<iconify-icon icon="lucide:refresh-cw"></iconify-icon><span>更新配置</span>';
     updateBtn.onclick = async () => {
         updateBtn.disabled = true;
-        updateBtn.innerHTML = '<iconify-icon icon="lucide:loader-2" class="plaza-spin"></iconify-icon><span>更新中...</span>';
+        updateBtn.innerHTML =
+            '<iconify-icon icon="lucide:loader-2" class="plaza-spin"></iconify-icon><span>更新中...</span>';
         try {
             const [crJson, stJson] = await FetchPlazaConfig();
             if (stJson) {
@@ -338,7 +426,8 @@ export function renderSiteContent(site: PlazaSite): HTMLElement {
             showErrorToast(`更新失败: ${translateGoError(e)}`);
         } finally {
             updateBtn.disabled = false;
-            updateBtn.innerHTML = '<iconify-icon icon="lucide:refresh-cw"></iconify-icon><span>更新配置</span>';
+            updateBtn.innerHTML =
+                '<iconify-icon icon="lucide:refresh-cw"></iconify-icon><span>更新配置</span>';
         }
     };
     creatorActions.appendChild(updateBtn);
@@ -367,29 +456,44 @@ export function renderSiteContent(site: PlazaSite): HTMLElement {
         const creatorGrid = document.createElement('div');
         creatorGrid.className = 'plaza-creator-grid';
         function isFaved(name: string): boolean {
-            try { return JSON.parse(localStorage.getItem('miku.plaza.favCreators') || '[]').includes(name); } catch { return false; }
+            try {
+                return JSON.parse(localStorage.getItem('miku.plaza.favCreators') || '[]').includes(
+                    name
+                );
+            } catch {
+                return false;
+            }
         }
         function toggleFav(name: string): boolean {
             try {
                 const favs = JSON.parse(localStorage.getItem('miku.plaza.favCreators') || '[]');
                 const idx = favs.indexOf(name);
-                if (idx >= 0) favs.splice(idx, 1); else favs.unshift(name);
+                if (idx >= 0) favs.splice(idx, 1);
+                else favs.unshift(name);
                 localStorage.setItem('miku.plaza.favCreators', JSON.stringify(favs));
                 return idx < 0;
-            } catch { return false; }
+            } catch {
+                return false;
+            }
         }
         function getFilteredCreators(): PlazaCreator[] {
             const kw = searchKw.trim().toLowerCase();
-            let list = activeTag ? siteCreators.filter((c) => c.tag === activeTag) : [...siteCreators];
+            let list = activeTag
+                ? siteCreators.filter((c) => c.tag === activeTag)
+                : [...siteCreators];
             const favMap = new Map(list.map((c) => [c.name, isFaved(c.name) ? 1 : 0]));
             list.sort((a, b) => {
-                const af = favMap.get(a.name) ?? 0, bf = favMap.get(b.name) ?? 0;
+                const af = favMap.get(a.name) ?? 0,
+                    bf = favMap.get(b.name) ?? 0;
                 if (af !== bf) return bf - af;
                 const at = a.tier === 'gold' ? 0 : a.tier === 'silver' ? 1 : 2;
                 const bt = b.tier === 'gold' ? 0 : b.tier === 'silver' ? 1 : 2;
                 return at - bt;
             });
-            if (kw) list = list.filter((c) => c.name.toLowerCase().includes(kw) || c.desc.toLowerCase().includes(kw));
+            if (kw)
+                list = list.filter(
+                    (c) => c.name.toLowerCase().includes(kw) || c.desc.toLowerCase().includes(kw)
+                );
             return list;
         }
         function renderCreators(): void {
@@ -404,7 +508,9 @@ export function renderSiteContent(site: PlazaSite): HTMLElement {
                 const tierBar = cr.tier ? '<div class="plaza-cr-tier-bar"></div>' : '';
                 const fav = isFaved(cr.name) ? '★' : '☆';
                 const tagIcon = tags.find((t) => t.key === cr.tag)?.icon ?? 'lucide:user';
-                card.innerHTML = tierBar + `<div class="plaza-cr-header"><div class="plaza-cr-avatar-container"><div class="plaza-cr-avatar-ring${cr.tier ? ` plaza-cr-ring-${cr.tier}` : ''}"></div><div class="plaza-cr-avatar plaza-cr-avatar-fb">${cr.name.charAt(0).toUpperCase()}</div></div><div class="plaza-cr-name-row"><span class="plaza-cr-name">${escapeHtml(cr.name)}</span><span class="plaza-cr-star" data-star="${escapeHtml(cr.name)}">${fav}</span></div></div><div class="plaza-cr-desc">${escapeHtml(cr.desc)}</div><div class="plaza-cr-footer"><span class="plaza-cr-tag plaza-cr-tag-${cr.tag}"><iconify-icon icon="${tagIcon}" width="10" height="10"></iconify-icon><span>${cr.tag}</span></span></div>`;
+                card.innerHTML =
+                    tierBar +
+                    `<div class="plaza-cr-header"><div class="plaza-cr-avatar-container"><div class="plaza-cr-avatar-ring${cr.tier ? ` plaza-cr-ring-${cr.tier}` : ''}"></div><div class="plaza-cr-avatar plaza-cr-avatar-fb">${cr.name.charAt(0).toUpperCase()}</div></div><div class="plaza-cr-name-row"><span class="plaza-cr-name">${escapeHtml(cr.name)}</span><span class="plaza-cr-star" data-star="${escapeHtml(cr.name)}">${fav}</span></div></div><div class="plaza-cr-desc">${escapeHtml(cr.desc)}</div><div class="plaza-cr-footer"><span class="plaza-cr-tag plaza-cr-tag-${cr.tag}"><iconify-icon icon="${tagIcon}" width="10" height="10"></iconify-icon><span>${cr.tag}</span></span></div>`;
                 card.addEventListener('click', (e) => {
                     if ((e.target as HTMLElement).closest('.plaza-cr-star')) return;
                     const url = site.searchUrl?.replace('{{q}}', encodeURIComponent(cr.name));
@@ -423,14 +529,19 @@ export function renderSiteContent(site: PlazaSite): HTMLElement {
             const countEl = creatorSection.querySelector('.plaza-section-sub');
             if (countEl) countEl.textContent = `(${filtered.length}/${siteCreators.length})`;
         }
-        searchInput.addEventListener('input', () => { searchKw = searchInput.value; renderCreators(); });
+        searchInput.addEventListener('input', () => {
+            searchKw = searchInput.value;
+            renderCreators();
+        });
         for (const t of tags) {
             const btn = document.createElement('button');
             btn.className = 'plaza-tag-btn' + (t.key === '' ? ' active' : '');
             btn.innerHTML = `<iconify-icon icon="${t.icon}" width="12" height="12"></iconify-icon><span>${t.label}</span>`;
             btn.onclick = () => {
                 activeTag = t.key;
-                tagRow.querySelectorAll('.plaza-tag-btn').forEach((b) => b.classList.remove('active'));
+                tagRow
+                    .querySelectorAll('.plaza-tag-btn')
+                    .forEach((b) => b.classList.remove('active'));
                 btn.classList.add('active');
                 renderCreators();
             };
@@ -442,14 +553,22 @@ export function renderSiteContent(site: PlazaSite): HTMLElement {
     } else {
         const empty = document.createElement('div');
         empty.className = 'plaza-empty';
-        empty.innerHTML = '<iconify-icon icon="lucide:user-x"></iconify-icon><span>暂无收录创作者，点击「更新配置」拉取</span>';
+        empty.innerHTML =
+            '<iconify-icon icon="lucide:user-x"></iconify-icon><span>暂无收录创作者，点击「更新配置」拉取</span>';
         creatorSection.appendChild(empty);
     }
     container.appendChild(creatorSection);
     return container;
 }
 
-export function buildToolbar(opts: { title: string; onBack?: () => void; onOpen?: () => void; onRefresh?: () => void; onClose: () => void; globalModeSwitch?: HTMLElement }): HTMLElement {
+export function buildToolbar(opts: {
+    title: string;
+    onBack?: () => void;
+    onOpen?: () => void;
+    onRefresh?: () => void;
+    onClose: () => void;
+    globalModeSwitch?: HTMLElement;
+}): HTMLElement {
     const bar = document.createElement('div');
     bar.className = 'plaza-toolbar';
     const left = document.createElement('div');
@@ -469,7 +588,10 @@ export function buildToolbar(opts: { title: string; onBack?: () => void; onOpen?
         label.textContent = '全局';
         right.appendChild(label);
     }
-    if (opts.onOpen) right.appendChild(_plazaBtn(t('plaza.openInBrowser'), opts.onOpen, 'plaza-btn plaza-btn-accent'));
+    if (opts.onOpen)
+        right.appendChild(
+            _plazaBtn(t('plaza.openInBrowser'), opts.onOpen, 'plaza-btn plaza-btn-accent')
+        );
     if (opts.onRefresh) right.appendChild(_plazaBtn(t('plaza.refresh'), opts.onRefresh));
     const close = _plazaBtn(t('plaza.close'), opts.onClose);
     close.title = t('plaza.close');
@@ -493,7 +615,11 @@ export function showActionsMenu(site: PlazaSite, anchor: HTMLElement): void {
         { key: 'auto', label: '自动' },
         ...(isAndroidPlatform()
             ? [{ key: 'external' as const, label: '系统浏览器' }]
-            : [{ key: 'embed' as const, label: '内嵌页' }, { key: 'external' as const, label: '系统浏览器' }, { key: 'window' as const, label: '独立窗口' }]),
+            : [
+                  { key: 'embed' as const, label: '内嵌页' },
+                  { key: 'external' as const, label: '系统浏览器' },
+                  { key: 'window' as const, label: '独立窗口' },
+              ]),
     ];
     const current = loadGlobalMode() ?? 'auto';
     for (const o of opts) {
@@ -501,8 +627,15 @@ export function showActionsMenu(site: PlazaSite, anchor: HTMLElement): void {
         b.className = 'plaza-actions-menu-item' + (current === o.key ? ' active' : '');
         b.textContent = o.label;
         b.onclick = () => {
-            if (o.key === 'auto') { try { localStorage.removeItem(GLOBAL_MODE_KEY); } catch { /* ignore */ } }
-            else { saveGlobalMode(o.key); }
+            if (o.key === 'auto') {
+                try {
+                    localStorage.removeItem(GLOBAL_MODE_KEY);
+                } catch {
+                    /* ignore */
+                }
+            } else {
+                saveGlobalMode(o.key);
+            }
             menu.remove();
         };
         modes.appendChild(b);
@@ -511,9 +644,23 @@ export function showActionsMenu(site: PlazaSite, anchor: HTMLElement): void {
     const divider = document.createElement('div');
     divider.className = 'plaza-actions-menu-divider';
     menu.appendChild(divider);
-    const openBtn = _plazaBtn('<iconify-icon icon="lucide:external-link"></iconify-icon><span>打开网站</span>', () => { openSiteByMode(site); menu.remove(); }, 'plaza-actions-menu-item plaza-actions-menu-item-accent');
+    const openBtn = _plazaBtn(
+        '<iconify-icon icon="lucide:external-link"></iconify-icon><span>打开网站</span>',
+        () => {
+            openSiteByMode(site);
+            menu.remove();
+        },
+        'plaza-actions-menu-item plaza-actions-menu-item-accent'
+    );
     menu.appendChild(openBtn);
-    const closeBtn = _plazaBtn('<iconify-icon icon="lucide:x"></iconify-icon><span>关闭</span>', () => { closePlaza(); menu.remove(); }, 'plaza-actions-menu-item');
+    const closeBtn = _plazaBtn(
+        '<iconify-icon icon="lucide:x"></iconify-icon><span>关闭</span>',
+        () => {
+            closePlaza();
+            menu.remove();
+        },
+        'plaza-actions-menu-item'
+    );
     menu.appendChild(closeBtn);
     document.body.appendChild(menu);
     const anchorRect = anchor.getBoundingClientRect();
@@ -522,9 +669,14 @@ export function showActionsMenu(site: PlazaSite, anchor: HTMLElement): void {
     menu.style.top = `${Math.min(anchorRect.bottom + 4, window.innerHeight - menuRect.height - 8)}px`;
     let onDownDisp: Disposable | null = null;
     const onDown = (e: MouseEvent): void => {
-        if (!menu.contains(e.target as Node)) { menu.remove(); onDownDisp = safeDispose(onDownDisp); }
+        if (!menu.contains(e.target as Node)) {
+            menu.remove();
+            onDownDisp = safeDispose(onDownDisp);
+        }
     };
-    setTimeout(() => { onDownDisp = addDisposableListener(document, 'mousedown', onDown); }, 0);
+    setTimeout(() => {
+        onDownDisp = addDisposableListener(document, 'mousedown', onDown);
+    }, 0);
 }
 
 export async function renderHome(): Promise<void> {
@@ -564,18 +716,35 @@ export function renderEmbed(site: PlazaSite): void {
     iframe.addEventListener('drop', (e) => e.preventDefault());
     setPlazaIframe(iframe);
     body.appendChild(iframe);
-    root.appendChild(buildToolbar({ title: site.name, onBack: renderHome, onOpen: () => openExternal(site), onRefresh: () => { if (iframe.src) { spinner.classList.remove('is-hidden'); iframe.src = iframe.src; } }, onClose: closePlaza }));
+    root.appendChild(
+        buildToolbar({
+            title: site.name,
+            onBack: renderHome,
+            onOpen: () => openExternal(site),
+            onRefresh: () => {
+                if (iframe.src) {
+                    spinner.classList.remove('is-hidden');
+                    iframe.src = iframe.src;
+                }
+            },
+            onClose: closePlaza,
+        })
+    );
     root.appendChild(body);
     el.appendChild(root);
     setPlazaProxyActive(true);
-    StartProxy(site.url, 'embed').then((proxyUrl) => { iframe.src = proxyUrl; }).catch((e) => {
-        setPlazaProxyActive(false);
-        spinner.classList.add('is-hidden');
-        const err = document.createElement('div');
-        err.className = 'plaza-error';
-        err.textContent = t('plaza.proxyError', { err: translateGoError(e) });
-        body.appendChild(err);
-    });
+    StartProxy(site.url, 'embed')
+        .then((proxyUrl) => {
+            iframe.src = proxyUrl;
+        })
+        .catch((e) => {
+            setPlazaProxyActive(false);
+            spinner.classList.add('is-hidden');
+            const err = document.createElement('div');
+            err.className = 'plaza-error';
+            err.textContent = t('plaza.proxyError', { err: translateGoError(e) });
+            body.appendChild(err);
+        });
 }
 
 export function renderRemote(site: PlazaSite): void {
@@ -584,7 +753,21 @@ export function renderRemote(site: PlazaSite): void {
     el.innerHTML = '';
     const root = document.createElement('div');
     root.className = 'plaza-root plaza-remote';
-    root.appendChild(buildToolbar({ title: site.name, onBack: async () => { setPlazaProxyActive(false); await safeCallAsync('plaza', '', () => ClosePlazaWindow()); renderHome(); }, onClose: async () => { setPlazaProxyActive(false); await safeCallAsync('plaza', '', () => ClosePlazaWindow()); closePlaza(); } }));
+    root.appendChild(
+        buildToolbar({
+            title: site.name,
+            onBack: async () => {
+                setPlazaProxyActive(false);
+                await safeCallAsync('plaza', '', () => ClosePlazaWindow());
+                renderHome();
+            },
+            onClose: async () => {
+                setPlazaProxyActive(false);
+                await safeCallAsync('plaza', '', () => ClosePlazaWindow());
+                closePlaza();
+            },
+        })
+    );
     const body = document.createElement('div');
     body.className = 'plaza-remote-body';
     const hint = document.createElement('div');
@@ -606,7 +789,9 @@ export function renderRemote(site: PlazaSite): void {
         const b = document.createElement('button');
         b.className = 'plaza-btn plaza-remote-btn';
         b.textContent = label;
-        b.onclick = () => { swallowError(fn()); };
+        b.onclick = () => {
+            swallowError(fn());
+        };
         controls.appendChild(b);
     };
     addBtn(t('plaza.goBack'), () => PlazaGoBack());

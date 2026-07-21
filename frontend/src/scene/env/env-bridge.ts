@@ -108,7 +108,10 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
         hemi.groundColor = col3FromTriple(state.skyColorBot);
     }
     // 场景环境色 — envIntensity 控制渗透力度，最大不超过 0.5 以免冲淡方向光
-    const ambientStrength = Math.min(state.envIntensity * 0.15 * envBrightness, ENV_LIGHT_MAX * envBrightness);
+    const ambientStrength = Math.min(
+        state.envIntensity * 0.15 * envBrightness,
+        ENV_LIGHT_MAX * envBrightness
+    );
     scene.ambientColor = new Color3(
         skyMid[0] * ambientStrength,
         skyMid[1] * ambientStrength,

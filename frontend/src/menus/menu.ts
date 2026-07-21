@@ -1,6 +1,12 @@
 import { PopupLevel, PopupRow, showHint, hideHint } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
-import { slideRow, addSliderRow, addToggleRow, addModeSlider, addPresetChip } from '../core/ui-helpers';
+import {
+    slideRow,
+    addSliderRow,
+    addToggleRow,
+    addModeSlider,
+    addPresetChip,
+} from '../core/ui-helpers';
 import { createTrailingBtn, createLeadingBtn } from '../core/ui-slide-row';
 import { subscribe } from '../core/reactivity';
 import { t } from '../core/i18n/t';

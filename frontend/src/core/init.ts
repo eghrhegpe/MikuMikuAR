@@ -129,8 +129,12 @@ async function init(): Promise<void> {
         _initDisposables.push(
             addDisposableListener(dom.btnSettings, 'click', async () => {
                 const m = await import('../menus/settings');
-                await safeCallAsync('init', 'preloadAutoImportState', () => m.preloadAutoImportState()); // 静默失败，避免阻塞 UI
-                await safeCallAsync('init', 'preloadDownloadWatchState', () => m.preloadDownloadWatchState()); // 预加载监听开关状态
+                await safeCallAsync('init', 'preloadAutoImportState', () =>
+                    m.preloadAutoImportState()
+                ); // 静默失败，避免阻塞 UI
+                await safeCallAsync('init', 'preloadDownloadWatchState', () =>
+                    m.preloadDownloadWatchState()
+                ); // 预加载监听开关状态
                 toggleOverlay('sceneOverlay', m.showSettings);
             })
         );

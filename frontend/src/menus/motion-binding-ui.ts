@@ -13,12 +13,7 @@ import {
     getBrowseDir,
     cardContainer,
 } from '../core/config';
-import {
-    slideRow,
-    addToggleRow,
-    addEmptyRow,
-    addPresetChip,
-} from '../core/ui-helpers';
+import { slideRow, addToggleRow, addEmptyRow, addPresetChip } from '../core/ui-helpers';
 import { loadManager } from '../core/load-manager';
 import {
     modelManager,
@@ -35,9 +30,10 @@ import {
     applyMotionModulesToModel,
 } from '../scene/motion/motion-modules/registry';
 import {
-    setActiveMotion,
     getActiveMotion,
     getMotionGen,
+    getSceneMotions,
+    clearAllSceneMotions,
     resolveCompatibility,
     initMotionIntent,
 } from '../scene/motion/motion-intent';
@@ -112,24 +108,23 @@ export function resetFocusedLayerId(): void {
     _focusedLayerId = null;
 }
 
-// [doc:adr-121] 默认双槽位（inherit + idle）
+// [doc:adr-167] 默认单槽位（inherit + idle；overlay 槽位已移除）
 export const DEFAULT_MOTION_SLOTS: ModelMotionSlots = {
     primary: { source: 'inherit', status: 'idle' },
-    overlay: { source: 'inherit', status: 'idle' },
 };
 
-/** 确保 inst.motionSlots 存在并返回（懒初始化，保留已有 overlay） */
+/** [doc:adr-167] 确保 inst.motionSlots 存在并返回（懒初始化；overlay 槽位已移除） */
 export function ensureMotionSlots(inst: ModelInstance): ModelMotionSlots {
     if (!inst.motionSlots) {
         inst.motionSlots = {
             primary: { ...DEFAULT_MOTION_SLOTS.primary },
-            overlay: { ...DEFAULT_MOTION_SLOTS.overlay },
         };
     }
     return inst.motionSlots;
 }
 
-// [doc:adr-121] 向单个模型应用动作意图（复用广播与 unpin 场景）
+// [doc:adr-167] 向单个模型应用动作意图（复用广播与 unpin 场景）。
+// 保留 slots.primary.sceneMotionId —— 由调用方（场景库选择/broadcast）设置，apply 不重置。
 export function applyIntentToModel(id: string, intent: SceneMotionIntent, gen: number): void {
     const inst = modelManager.get(id);
     if (!inst) {
@@ -162,7 +157,12 @@ export function applyIntentToModel(id: string, intent: SceneMotionIntent, gen: n
             if (handle) {
                 inst.vmdName = handle.name;
                 inst.vmdPath = intent.vmdPath;
-                slots.primary = { source: 'inherit', status: 'compatible' };
+                // [doc:adr-167] 保留 sceneMotionId（角色选用标记）
+                slots.primary = {
+                    source: 'inherit',
+                    sceneMotionId: slots.primary.sceneMotionId,
+                    status: 'compatible',
+                };
                 applyMotionModulesToModel(id);
             }
         })
@@ -170,11 +170,15 @@ export function applyIntentToModel(id: string, intent: SceneMotionIntent, gen: n
             if (getMotionGen() !== gen) {
                 return;
             }
-            slots.primary = { source: 'inherit', status: 'incompatible' };
+            slots.primary = {
+                source: 'inherit',
+                sceneMotionId: slots.primary.sceneMotionId,
+                status: 'incompatible',
+            };
         });
 }
 
-// [doc:adr-121] 注册广播回调
+// [doc:adr-167] 注册广播回调：按角色 sceneMotionId 解析具体动作
 export function initMotionBroadcast(): void {
     initMotionIntent((intent, gen, prev) => {
         for (const [id, inst] of modelManager.modelRegistry) {
@@ -182,7 +186,20 @@ export function initMotionBroadcast(): void {
             if (slots.primary.source === 'pinned' || slots.primary.source === 'procedural') {
                 continue;
             }
-            if (!intent) {
+            // [doc:adr-167] 角色优先按自选 sceneMotionId 解析；
+            // 未指定或失效则回退到默认动作（intent）
+            let resolvedIntent = intent;
+            const pickedId = slots.primary.sceneMotionId;
+            if (pickedId) {
+                const picked = getSceneMotions().find((m) => m.id === pickedId);
+                if (picked) {
+                    resolvedIntent = picked;
+                } else {
+                    // 失效引用：清掉，回退默认
+                    slots.primary.sceneMotionId = undefined;
+                }
+            }
+            if (!resolvedIntent) {
                 if (
                     inst.mmdModel &&
                     mmdRuntime &&
@@ -197,7 +214,7 @@ export function initMotionBroadcast(): void {
                     inst.animationDuration = 0;
                 }
             } else {
-                applyIntentToModel(id, intent, gen);
+                applyIntentToModel(id, resolvedIntent, gen);
             }
         }
     });
@@ -387,7 +404,8 @@ export function handleModelAction(action: string, id: string): void {
             break;
         case 'reset':
             if (inst.mmdModel && mmdRuntime) {
-                setActiveMotion(null);
+                // [doc:adr-167] 清空整个场景动作库 + 默认动作
+                clearAllSceneMotions();
                 if (isPlaying) {
                     mmdRuntime.pauseAnimation();
                     setIsPlaying(false);

@@ -7,12 +7,7 @@ import { modelRegistry, focusedModelId, triggerAutoSave } from '@/core/config';
 import { getBaseName, clamp01 } from '@/core/utils';
 import { logWarn } from '@/core/logger';
 import { readFileBytes } from '@/core/wails-bindings';
-import {
-    addVmdLayer,
-    removeVmdLayer,
-    setVmdLayerWeight,
-    getVmdLayers,
-} from './vmd-layers';
+import { addVmdLayer, removeVmdLayer, setVmdLayerWeight, getVmdLayers } from './vmd-layers';
 
 /** overlay 层 id 前缀，用于在 vmdLayers 中标识 overlay 条目 */
 const OVERLAY_PREFIX = 'ovl_';
@@ -36,9 +31,7 @@ function _ensureMotionSlots(modelId: string) {
 
 /** 在 vmdLayers 中查找 overlay 层（通过 id 前缀识别） */
 function _findOverlayLayer(modelId: string): VmdLayer | undefined {
-    return getVmdLayers(modelId).find(
-        (l) => l.id.startsWith(OVERLAY_PREFIX) && l.kind === 'vmd'
-    );
+    return getVmdLayers(modelId).find((l) => l.id.startsWith(OVERLAY_PREFIX) && l.kind === 'vmd');
 }
 
 // ── 公开 API ──
@@ -115,10 +108,7 @@ export async function clearOverlayLayer(modelId: string): Promise<void> {
 }
 
 /** 设置 overlay 权重 */
-export async function setOverlayWeight(
-    modelId: string,
-    weight: number
-): Promise<void> {
+export async function setOverlayWeight(modelId: string, weight: number): Promise<void> {
     const targetId = modelId || focusedModelId;
     if (!targetId) {
         return;

@@ -113,7 +113,9 @@ export class MotionPipeline {
             try {
                 layer.run(ctx);
             } catch (err) {
-                console.error(`[MotionPipeline] layer "${layer.id}" run 抛错，已跳过：${String(err)}`);
+                console.error(
+                    `[MotionPipeline] layer "${layer.id}" run 抛错，已跳过：${String(err)}`
+                );
             }
         }
     }

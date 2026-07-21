@@ -146,7 +146,9 @@ export function _applyGaze(
             _applyHeadGazeWasm(headRuntime, gazeTarget, dt);
         }
         if (needEye) {
-            const filteredEyes = eyeClaimed ? eyeRuntimes.filter((e) => eyeClaimed.includes(e.name)) : eyeRuntimes;
+            const filteredEyes = eyeClaimed
+                ? eyeRuntimes.filter((e) => eyeClaimed.includes(e.name))
+                : eyeRuntimes;
             if (filteredEyes.length > 0) {
                 _applyEyeGazeWasm(filteredEyes, gazeTarget, dt);
             }
@@ -156,7 +158,9 @@ export function _applyGaze(
             _applyHeadGazeJS(headRuntime, gazeTarget, dt);
         }
         if (needEye) {
-            const filteredEyes = eyeClaimed ? eyeRuntimes.filter((e) => eyeClaimed.includes(e.name)) : eyeRuntimes;
+            const filteredEyes = eyeClaimed
+                ? eyeRuntimes.filter((e) => eyeClaimed.includes(e.name))
+                : eyeRuntimes;
             if (filteredEyes.length > 0) {
                 _applyEyeGazeJS(filteredEyes, gazeTarget, dt);
             }

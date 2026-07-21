@@ -11,7 +11,12 @@ import {
     matchBone,
 } from '../../motion-algos/proc-motion-shared';
 import { _q } from './perception-shared';
-import type { BalanceSwayState, MmdModelLike, PerceptionContext, PerceptionTier } from './perception-shared';
+import type {
+    BalanceSwayState,
+    MmdModelLike,
+    PerceptionContext,
+    PerceptionTier,
+} from './perception-shared';
 
 /** 重心微动周期（秒，从 idle loopFrames=120@60fps 转换：120/60=2s） */
 const BALANCE_SWAY_PERIOD = 2.0;

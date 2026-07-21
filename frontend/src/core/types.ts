@@ -115,6 +115,8 @@ export type MotionSource = 'vmd' | 'retargeted';
 
 /** 场景级动作意图（「场上在跳什么」） */
 export interface SceneMotionIntent {
+    /** [doc:adr-167] 场景级动作库唯一 id；由 addSceneMotion 自动生成 */
+    id?: string;
     vmdPath: string | null;
     vmdName: string;
     vmdLayers: VmdLayer[];
@@ -132,24 +134,19 @@ export type SlotSource = 'inherit' | 'pinned' | 'procedural';
 /** 单个槽位的配置 */
 export interface MotionSlotConfig {
     source: SlotSource;
+    /** [doc:adr-167] source==='inherit' 时引用场景库中某个主动作；undefined/null = 跟随 _activeMotionId */
+    sceneMotionId?: string;
     /** source==='pinned' 时有效；须 structuredClone(activeMotion) 冻结快照 */
     pinned?: SceneMotionIntent;
     /** source==='procedural' 时选预设角色 */
     procRole?: 'idle' | 'autodance' | 'gesture' | 'expression';
     /** 运行时派生状态，不持久化 */
     status: 'compatible' | 'incompatible' | 'idle' | 'overridden';
-    /** [doc:adr-144] overlay VMD 文件路径（用户选择的叠加动作） */
-    overlayPath?: string;
-    /** [doc:adr-144] overlay 显示名 */
-    overlayName?: string;
-    /** [doc:adr-144] overlay 混合权重 0–1 */
-    overlayWeight?: number;
 }
 
-/** 双槽位：槽位1 基础 + 槽位2 叠加 */
+/** [doc:adr-167] 单槽位：overlay 槽位已移除（ADR-144 废弃） */
 export interface ModelMotionSlots {
     primary: MotionSlotConfig;
-    overlay: MotionSlotConfig;
 }
 
 /**

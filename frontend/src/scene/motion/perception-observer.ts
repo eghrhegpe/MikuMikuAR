@@ -79,7 +79,7 @@ export function _applyPerceptionForContext(
     }
 
     if (tier !== 'low') {
-        const shouldRunExpr = tier === 'high' || (frameCounter % 4 === 0);
+        const shouldRunExpr = tier === 'high' || frameCounter % 4 === 0;
         if (shouldRunExpr) {
             try {
                 _applyMicroExpression(
@@ -101,15 +101,7 @@ export function _applyPerceptionForContext(
             const centerClaimed = owned?.get('perception.balance.center');
             const upperClaimed = owned?.get('perception.balance.upper');
             const waistClaimed = owned?.get('perception.balance.waist');
-            _applyBalanceSway(
-                mmdModel,
-                time,
-                ctx,
-                centerClaimed,
-                upperClaimed,
-                waistClaimed,
-                tier
-            );
+            _applyBalanceSway(mmdModel, time, ctx, centerClaimed, upperClaimed, waistClaimed, tier);
         } catch (e) {
             logWarn('perception', 'balance-sway 异常:', e);
         }
@@ -117,31 +109,32 @@ export function _applyPerceptionForContext(
 
     if (tier !== 'low') {
         try {
-            _applyLipSync(
-                mmdModel,
-                time,
-                state.lipSyncEnabled,
-                ctx.modelId,
-                state,
-                tier
-            );
+            _applyLipSync(mmdModel, time, state.lipSyncEnabled, ctx.modelId, state, tier);
         } catch (e) {
             logWarn('perception', 'lipsync 异常:', e);
         }
     }
 
     if (tier !== 'low') {
-        const shouldRunGaze = tier === 'high' || (frameCounter % 2 === 0);
+        const shouldRunGaze = tier === 'high' || frameCounter % 2 === 0;
         if (shouldRunGaze && (state.headTrackingEnabled || state.eyeTrackingEnabled)) {
             const cam = getScene().activeCamera;
             if (cam) {
                 try {
                     const headClaimed = owned?.get('perception.gaze.head');
                     const eyeClaimed = owned?.get('perception.gaze.eye');
-                    _applyGaze(mmdModel, cam, {
-                        headEnabled: state.headTrackingEnabled,
-                        eyeEnabled: state.eyeTrackingEnabled,
-                    }, dt, headClaimed, eyeClaimed, tier);
+                    _applyGaze(
+                        mmdModel,
+                        cam,
+                        {
+                            headEnabled: state.headTrackingEnabled,
+                            eyeEnabled: state.eyeTrackingEnabled,
+                        },
+                        dt,
+                        headClaimed,
+                        eyeClaimed,
+                        tier
+                    );
                 } catch (e) {
                     logWarn('perception', 'gaze 异常:', e);
                 }

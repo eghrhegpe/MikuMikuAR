@@ -41,7 +41,11 @@ import {
     jumpToHistory,
 } from '../scene/motion/motion-modules/motion-history';
 import { applyModuleSnapshot } from '../scene/motion/motion-modules/module-base';
-import { applyMotionPreset, generatePresetId, modulesToPresetMap } from '../scene/motion/motion-modules/preset-types';
+import {
+    applyMotionPreset,
+    generatePresetId,
+    modulesToPresetMap,
+} from '../scene/motion/motion-modules/preset-types';
 import type { MotionPreset } from '@/core/types';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
@@ -196,7 +200,8 @@ function buildMotionOverrideSchema(): MenuNode[] {
                         inner.appendChild(empty);
                     } else {
                         const list = document.createElement('div');
-                        list.style.cssText = 'padding:4px 14px 8px;display:flex;flex-direction:column;gap:4px;';
+                        list.style.cssText =
+                            'padding:4px 14px 8px;display:flex;flex-direction:column;gap:4px;';
                         for (const preset of presets) {
                             const row = document.createElement('div');
                             row.style.cssText =
@@ -204,7 +209,8 @@ function buildMotionOverrideSchema(): MenuNode[] {
                                 'padding:4px 8px;border-radius:4px;background:var(--bg2, rgba(255,255,255,0.05));';
 
                             const nameSpan = document.createElement('span');
-                            nameSpan.style.cssText = 'font-size:12px;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+                            nameSpan.style.cssText =
+                                'font-size:12px;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
                             nameSpan.textContent = preset.name;
                             row.appendChild(nameSpan);
 
@@ -433,7 +439,11 @@ function buildMotionOverrideSchema(): MenuNode[] {
                             }
                         };
                         _onOutsideClickDisp?.dispose();
-                        _onOutsideClickDisp = addDisposableListener(document, 'click', _onOutsideClick);
+                        _onOutsideClickDisp = addDisposableListener(
+                            document,
+                            'click',
+                            _onOutsideClick
+                        );
 
                         // 定位到按钮下方
                         historyBtn.style.position = 'relative';
@@ -447,7 +457,8 @@ function buildMotionOverrideSchema(): MenuNode[] {
                     // [doc:adr-116 conflict-visibility] 骨骼冲突可视化 banner
                     // 靠面板 reRender 刷新快照（模块开关 onChange 已触发 reRender）
                     const conflictBanner = document.createElement('div');
-                    conflictBanner.style.cssText = 'padding:2px 14px 8px;font-size:11px;line-height:1.5;';
+                    conflictBanner.style.cssText =
+                        'padding:2px 14px 8px;font-size:11px;line-height:1.5;';
                     updateConflictBanner(conflictBanner, modelId);
                     inner.appendChild(conflictBanner);
 
@@ -646,20 +657,33 @@ function buildBoneOverrideSchema(): MenuNode[] {
                         { bind: () => formState.weight }
                     );
 
-                    addPresetChip(inner, t('motion.boneOverride.apply'), false, () => {
-                        const boneName = formState.boneName;
-                        if (!boneName) {
-                            return;
-                        }
+                    addPresetChip(
+                        inner,
+                        t('motion.boneOverride.apply'),
+                        false,
+                        () => {
+                            const boneName = formState.boneName;
+                            if (!boneName) {
+                                return;
+                            }
 
-                        const { pitch, yaw, roll, weight } = formState;
+                            const { pitch, yaw, roll, weight } = formState;
 
-                        setBoneOverride(boneName, [pitch, yaw, roll], weight, true, undefined, true);
-                        _syncOverrideToInstance(modelId);
+                            setBoneOverride(
+                                boneName,
+                                [pitch, yaw, roll],
+                                weight,
+                                true,
+                                undefined,
+                                true
+                            );
+                            _syncOverrideToInstance(modelId);
 
-                        setStatus(t('motion.boneOverride.applied', { bone: boneName }), true);
-                        menu?.reRender();
-                    }, { marginTop: 8 });
+                            setStatus(t('motion.boneOverride.applied', { bone: boneName }), true);
+                            menu?.reRender();
+                        },
+                        { marginTop: 8 }
+                    );
                 });
             },
         },
@@ -702,7 +726,14 @@ function buildBoneOverrideSchema(): MenuNode[] {
                                 b.boneName === ov.boneName ? updated : b
                             );
                             if (updated.enabled) {
-                                setBoneOverride(ov.boneName, ov.euler, ov.weight, true, undefined, ov.absolute);
+                                setBoneOverride(
+                                    ov.boneName,
+                                    ov.euler,
+                                    ov.weight,
+                                    true,
+                                    undefined,
+                                    ov.absolute
+                                );
                             } else {
                                 clearBoneOverride(ov.boneName);
                             }
@@ -786,17 +817,27 @@ function buildBoneOverrideSchema(): MenuNode[] {
             visibleWhen: () => allEntries.length > 0,
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    addPresetChip(inner, t('motion.boneOverride.clearAll'), false, () => {
-                        const snap = pushUndoSnapshot();
-                        clearAllOverrides();
-                        inst.boneOverrides = [];
-                        triggerAutoSave();
-                        setStatus(t('motion.boneOverride.allCleared'), true);
-                        menu?.reRender();
-                        offerSceneUndoAndRefresh(t('motion.boneOverride.allCleared'), snap, () => {
+                    addPresetChip(
+                        inner,
+                        t('motion.boneOverride.clearAll'),
+                        false,
+                        () => {
+                            const snap = pushUndoSnapshot();
+                            clearAllOverrides();
+                            inst.boneOverrides = [];
+                            triggerAutoSave();
+                            setStatus(t('motion.boneOverride.allCleared'), true);
                             menu?.reRender();
-                        });
-                    }, { variant: 'danger' });
+                            offerSceneUndoAndRefresh(
+                                t('motion.boneOverride.allCleared'),
+                                snap,
+                                () => {
+                                    menu?.reRender();
+                                }
+                            );
+                        },
+                        { variant: 'danger' }
+                    );
                 });
             },
         },
@@ -818,8 +859,16 @@ export function buildAdvancedBoneOverrideLevel(): PopupLevel {
 
 /** [doc:adr-122 P3] 已知 IK 骨骼名集合（含 IK 目标骨 + 链骨） */
 const IK_BONE_NAMES = new Set([
-    '左足IK', '右足IK', '左腕IK', '右腕IK', '左足首', '右足首',
-    '左ひざ', '右ひざ', '左ひじ', '右ひじ',
+    '左足IK',
+    '右足IK',
+    '左腕IK',
+    '右腕IK',
+    '左足首',
+    '右足首',
+    '左ひざ',
+    '右ひざ',
+    '左ひじ',
+    '右ひじ',
 ]);
 
 /** [doc:adr-122 P3] 判断骨骼是否为 IK 相关骨骼 */

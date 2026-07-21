@@ -73,9 +73,7 @@ function buildMatToggle(
         toggleInput.checked = newState;
         row.classList.toggle('mat-disabled', !newState);
         setStatus(
-            newState
-                ? t('model-material.shown', { name })
-                : t('model-material.hidden', { name }),
+            newState ? t('model-material.shown', { name }) : t('model-material.hidden', { name }),
             true
         );
     });

@@ -20,9 +20,11 @@ describe('safe-call', () => {
     it('safeCallVoid does not throw and logs on throw', () => {
         const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
         const err = new Error('boom');
-        expect(() => safeCallVoid('t', 'm', () => {
-            throw err;
-        })).not.toThrow();
+        expect(() =>
+            safeCallVoid('t', 'm', () => {
+                throw err;
+            })
+        ).not.toThrow();
         expect(spy).toHaveBeenCalledWith('[t] m', err);
         spy.mockRestore();
     });

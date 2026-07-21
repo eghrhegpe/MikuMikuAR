@@ -17,7 +17,8 @@ import { removeModel } from '../scene/manager/model-ops';
 import { buildTransformCard, type ResourceHandle } from './resource-detail-helpers';
 import { buildMatRootLevel } from './model-material';
 import { createIconifyIcon, softwareKindIcon } from '../core/icons';
-import { slideRow, addFieldRow, addSectionTitle, addPresetChip } from '../core/ui-helpers';
+import { slideRow, addFieldRow, addSectionTitle, addPresetChip, addEmptyRow } from '../core/ui-helpers';
+import { openFullscreen } from '../core/ui-fullscreen-overlay';
 import { buildOutfitLevel } from './outfit-ui';
 import { savePresetToLibDialog, buildPresetListLevel } from './model-preset';
 import { buildFeetLevel } from './motion-feet-levels';
@@ -32,14 +33,19 @@ import {
     ScanSoftwareDir,
 } from '../core/wails-bindings';
 import type { SoftwareEntry } from '../core/wails-bindings';
-import { tryCatchStatus, getBaseName } from '../core/utils';
+import { tryCatchStatus } from '../core/utils';
 import { logWarn } from '../core/logger';
 import { safeCallAsync } from '../core/safe-call';
 import { pushUndoSnapshot, offerSceneUndo } from '../scene/scene';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
-import { getActiveMotion, getMotionGen } from '../scene/motion/motion-intent';
+import {
+    getActiveMotion,
+    getMotionGen,
+    getSceneMotions,
+    getActiveMotionId,
+} from '../scene/motion/motion-intent';
 import { applyIntentToModel } from './motion-popup';
 import {
     setProcMotionMode,
@@ -52,21 +58,12 @@ import { buildProcMotionLevel } from './motion-procmotion-levels';
 import { loadManager } from '../core/load-manager';
 import { getBrowseDir } from '../core/config';
 import type { ModelInstance, ModelMotionSlots } from '@/core/types';
-import {
-    ensureOverlayLayer,
-    clearOverlayLayer,
-    setOverlayWeight,
-    getOverlayStatus,
-} from '../scene/motion/overlay-manager';
-import { SelectImportFile } from '../core/wails-bindings';
-import { addSliderRow } from '../core/ui-helpers';
 
-/** 确保 inst.motionSlots 存在并返回（懒初始化，保留已有 overlay） */
+/** [doc:adr-167] 确保 inst.motionSlots 存在并返回（懒初始化；overlay 槽位已移除） */
 function _ensureMotionSlots(inst: ModelInstance): ModelMotionSlots {
     if (!inst.motionSlots) {
         inst.motionSlots = {
             primary: { source: 'inherit', status: 'idle' },
-            overlay: { source: 'inherit', status: 'idle' },
         };
     }
     return inst.motionSlots;
@@ -272,9 +269,9 @@ function buildModelSchema(id: string): MenuNode[] {
                     // ── 动作 ──
                     addSectionTitle(c, t('model-detail.motion'));
                     {
+                        // [doc:adr-167] overlay 槽位已移除，仅保留 primary
                         const slots = inst.motionSlots ?? {
                             primary: { source: 'inherit' as const, status: 'idle' as const },
-                            overlay: { source: 'inherit' as const, status: 'idle' as const },
                         };
                         const active = getActiveMotion();
                         let subText: string;
@@ -308,30 +305,8 @@ function buildModelSchema(id: string): MenuNode[] {
                             labelEl.appendChild(subLabel);
                         }
                     }
-                    // ── 叠加动作 [doc:adr-144] ──
-                    {
-                        const overlayStatus = getOverlayStatus(id);
-                        const overlayRow = slideRow(
-                            c,
-                            'lucide:layers',
-                            t('model-detail.overlay'),
-                            true,
-                            () => {
-                                stackRegistry.modelStack?.push(
-                                    buildMotionOverlayLevel(id, inst)
-                                );
-                            }
-                        );
-                        const overlaySubLabel = document.createElement('span');
-                        overlaySubLabel.className = 'slide-sublabel';
-                        overlaySubLabel.textContent = overlayStatus.hasOverlay
-                            ? overlayStatus.name
-                            : t('model-detail.overlayNone');
-                        const overlayLabelEl = overlayRow.querySelector('.slide-label');
-                        if (overlayLabelEl) {
-                            overlayLabelEl.appendChild(overlaySubLabel);
-                        }
-                    }
+                    // [doc:adr-167] per-model overlay 入口已移除（ADR-144 废弃）。
+                    // 叠加图层现由场景级动作详情页内 vmdLayers 配置，随动作走。
                     slideRow(c, 'lucide:user', t('motion.poseLibrary'), true, () => {
                         const level = stackRegistry.buildLevel!(
                             getBrowseDir('vpd'),
@@ -359,13 +334,8 @@ function buildModelSchema(id: string): MenuNode[] {
 
                     // ── 模型信息 ──
                     addSectionTitle(c, t('model-detail.modelInfo'));
-                    slideRow(c, 'lucide:info', t('model-detail.basicInfo'), true, () => {
-                        const level = buildModelInfoLevel(id);
-                        stackRegistry.modelStack.push(level);
-                    });
-                    slideRow(c, 'lucide:git-branch', t('model-detail.boneHierarchy'), true, () => {
-                        const level = buildBoneHierarchyLevel(id);
-                        stackRegistry.modelStack.push(level);
+                    slideRow(c, 'lucide:info', t('model-detail.modelDetail'), true, () => {
+                        openModelDetailFullscreen(id);
                     });
 
                     // ── 变换控制 ──
@@ -397,7 +367,7 @@ function buildModelSchema(id: string): MenuNode[] {
  * 采用整体 renderCustom + cardContainer 包裹（与详情面板卡片同 lcard 范式）+ 每行 slideRow 自带 onClick，
  * 不依赖 SlideMenu 级 onItemClick。
  */
-/** 构建动作1（基础）次级菜单：已加载动作 + 程序化动作 */
+/** 构建动作1（基础）次级菜单：场景库选择 + 已加载动作 + 程序化动作 */
 export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLevel {
     return {
         dir: '',
@@ -405,12 +375,66 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
         items: [],
         renderCustom: (container) => {
             cardContainer(container, (c) => {
+                // ── [doc:adr-167] 从场景库选择主动作 ──
+                // 角色从此处选用场景库中某个主动作；未选 = 跟随默认动作
+                addSectionTitle(c, t('motion.library.title'));
+                {
+                    const sceneMotions = getSceneMotions();
+                    const activeId = getActiveMotionId();
+                    const currentPick =
+                        inst.motionSlots?.primary.source === 'inherit'
+                            ? inst.motionSlots.primary.sceneMotionId ?? null
+                            : null;
+                    if (sceneMotions.length === 0) {
+                        addEmptyRow(c, t('motion.library.emptyHint'));
+                    } else {
+                        // 「跟随默认」选项 = sceneMotionId 置空
+                        slideRow(
+                            c,
+                            'lucide:circle-slash',
+                            t('motion.library.followDefault'),
+                            true,
+                            () => {
+                                const slots = _ensureMotionSlots(inst);
+                                slots.primary = { source: 'inherit', status: 'idle' };
+                                applyIntentToModel(id, getActiveMotion(), getMotionGen());
+                                stackRegistry.modelStack?.reRender();
+                            },
+                            currentPick === null ? t('motion.library.currentPick') : undefined
+                        );
+                        for (const motion of sceneMotions) {
+                            const isCurrent = currentPick === motion.id;
+                            const isDefault = motion.id === activeId;
+                            // sublabel 优先级：当前选择 > 默认动作徽标
+                            const sublabel = isCurrent
+                                ? t('motion.library.currentPick')
+                                : isDefault
+                                  ? t('motion.defaultMotion')
+                                  : undefined;
+                            slideRow(
+                                c,
+                                isDefault ? 'lucide:clapperboard' : 'lucide:circle-play',
+                                motion.vmdName || t('motion.intent.none'),
+                                true,
+                                () => {
+                                    const slots = _ensureMotionSlots(inst);
+                                    slots.primary = {
+                                        source: 'inherit',
+                                        sceneMotionId: motion.id ?? undefined,
+                                        status: 'idle',
+                                    };
+                                    applyIntentToModel(id, motion, getMotionGen());
+                                    stackRegistry.modelStack?.reRender();
+                                },
+                                sublabel
+                            );
+                        }
+                    }
+                }
+
                 // ── 已加载动作（始终可见，点击即从程序化切回并重新应用）──
                 addSectionTitle(c, t('model-detail.loadedMotion'));
-                const slots0 = inst.motionSlots ?? {
-                    primary: { source: 'inherit' as const, status: 'idle' as const },
-                    overlay: { source: 'inherit' as const, status: 'idle' as const },
-                };
+                const slots0 = _ensureMotionSlots(inst);
                 const active = getActiveMotion();
                 const isPinned = slots0.primary.source === 'pinned';
                 const isProc = slots0.primary.source === 'procedural';
@@ -501,194 +525,8 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
     };
 }
 
-/** [doc:adr-144] 构建叠加动作次级菜单：选择叠加 VMD / 程序化叠加 / 权重调节 / 清除 */
-function buildMotionOverlayLevel(id: string, inst: ModelInstance): PopupLevel {
-    return {
-        dir: '',
-        label: t('model-detail.overlay'),
-        items: [],
-        renderCustom: (container) => {
-            cardContainer(container, (c) => {
-                const overlayStatus = getOverlayStatus(id);
-                const slots = _ensureMotionSlots(inst);
-
-                // ── 已加载叠加动作 ──
-                addSectionTitle(c, t('model-detail.loadedMotion'));
-
-                if (overlayStatus.hasOverlay) {
-                    // 显示当前叠加动作名 + 清除按钮
-                    const overlayRow = slideRow(
-                        c,
-                        'lucide:layers',
-                        overlayStatus.name,
-                        false,
-                        () => {}
-                    );
-                    addPresetChip(
-                        overlayRow,
-                        t('model-detail.overlayClear'),
-                        false,
-                        async () => {
-                            await clearOverlayLayer(id);
-                            stackRegistry.modelStack?.reRender();
-                        },
-                        { variant: 'danger', marginLeft: 'auto', stopPropagation: true }
-                    );
-
-                    // 权重滑块
-                    addSliderRow(
-                        c,
-                        t('model-detail.overlayWeight'),
-                        overlayStatus.weight,
-                        0,
-                        1,
-                        0.05,
-                        async (v) => {
-                            await setOverlayWeight(id, v);
-                        },
-                        'lucide:sliders-horizontal'
-                    );
-                } else {
-                    // 无叠加动作时显示选择按钮
-                    slideRow(
-                        c,
-                        'lucide:plus',
-                        t('model-detail.overlaySelect'),
-                        true,
-                        async () => {
-                            let path: string;
-                            try {
-                                path = await SelectImportFile();
-                            } catch {
-                                return; // 用户取消
-                            }
-                            if (!path) {
-                                return;
-                            }
-                            if (!path.toLowerCase().endsWith('.vmd')) {
-                                setStatus(t('scene.vmd.notVmd'), false);
-                                return;
-                            }
-                            const name = getBaseName(path).replace(/\.vmd$/i, '');
-                            await ensureOverlayLayer(id, path, name, 1.0);
-                            stackRegistry.modelStack?.reRender();
-                        }
-                    );
-                }
-
-                // ── 程序化叠加 ──
-                addSectionTitle(c, t('model-detail.procOverlay'));
-
-                // 待机呼吸叠加
-                const isIdleOverlay =
-                    slots.overlay.source === 'procedural' && slots.overlay.procRole === 'idle';
-                const idleOverlayRow = slideRow(
-                    c,
-                    'lucide:wand-sparkles',
-                    t('motion.modeIdle'),
-                    true,
-                    async () => {
-                        await _setProcOverlayForModel(id, inst, 'idle');
-                        stackRegistry.modelStack?.reRender();
-                    },
-                    isIdleOverlay ? t('model-detail.procActive') : undefined
-                );
-                if (!isIdleOverlay && !overlayStatus.hasOverlay) {
-                    addPresetChip(
-                        idleOverlayRow,
-                        t('model-detail.procOverlayApply'),
-                        false,
-                        async () => {
-                            await _setProcOverlayForModel(id, inst, 'idle');
-                            stackRegistry.modelStack?.reRender();
-                        },
-                        { marginLeft: 'auto', stopPropagation: true }
-                    );
-                }
-
-                // 自动舞蹈叠加
-                const isAutodanceOverlay =
-                    slots.overlay.source === 'procedural' &&
-                    slots.overlay.procRole === 'autodance';
-                const autodanceOverlayRow = slideRow(
-                    c,
-                    'lucide:wand-sparkles',
-                    t('motion.modeAutodance'),
-                    true,
-                    async () => {
-                        await _setProcOverlayForModel(id, inst, 'autodance');
-                        stackRegistry.modelStack?.reRender();
-                    },
-                    isAutodanceOverlay ? t('model-detail.procActive') : undefined
-                );
-                if (!isAutodanceOverlay && !overlayStatus.hasOverlay) {
-                    addPresetChip(
-                        autodanceOverlayRow,
-                        t('model-detail.procOverlayApply'),
-                        false,
-                        async () => {
-                            await _setProcOverlayForModel(id, inst, 'autodance');
-                            stackRegistry.modelStack?.reRender();
-                        },
-                        { marginLeft: 'auto', stopPropagation: true }
-                    );
-                }
-            });
-        },
-    };
-}
-
-/** [doc:adr-144] 程序化 overlay 注入：生成 proc VMD 作为叠加层 */
-async function _setProcOverlayForModel(
-    modelId: string,
-    inst: ModelInstance,
-    role: 'idle' | 'autodance'
-): Promise<void> {
-    // 导入程序化动作生成
-    const { generateIdleVmd, generateAutoDanceVmd } = await import(
-        '../motion-algos/procedural-motion'
-    );
-    const { addVmdLayer } = await import('../scene/motion/vmd-layers');
-
-    // 获取骨骼名
-    const boneNames =
-        inst.mmdModel?.runtimeBones?.map((b) => b.name) ??
-        inst.meshes[0]?.skeleton?.bones?.map((b) => b.name) ??
-        [];
-    const morphNames = inst.meshes[0]?.metadata?.morphNames ?? [];
-
-    // 生成程序化 VMD
-    const procState = inst.procMotion ?? DEFAULT_PROC_STATE;
-    let vmdBuffer: ArrayBuffer;
-    let procName: string;
-    if (role === 'autodance') {
-        vmdBuffer = generateAutoDanceVmd(procState, 120, morphNames, boneNames);
-        procName = 'AutoDance Overlay';
-    } else {
-        vmdBuffer = generateIdleVmd(procState, boneNames);
-        procName = 'Idle Overlay';
-    }
-
-    // 先清除旧 overlay
-    await clearOverlayLayer(modelId);
-
-    // 注入为 overlay 层
-    const layer = await addVmdLayer(vmdBuffer, procName, modelId, 0.8, []);
-    if (layer) {
-        // 替换 id 为 overlay 前缀
-        layer.id = `ovl_${crypto.randomUUID().slice(0, 8)}`;
-
-        // 更新 motionSlots.overlay 状态
-        const slots = _ensureMotionSlots(inst);
-        slots.overlay = {
-            source: 'procedural',
-            procRole: role,
-            status: 'idle',
-            overlayName: procName,
-            overlayWeight: 0.8,
-        };
-    }
-}
+/** [doc:adr-167] 叠加动作次级菜单已移除（ADR-144 per-model overlay 废弃）。
+ * 叠加图层现由场景级动作详情页内 vmdLayers 配置，随动作保存。 */
 
 export function buildModelToolsLevel(id: string): PopupLevel {
     const inst = modelManager.get(id);
@@ -760,6 +598,74 @@ export function buildModelLevel(id: string): PopupLevel {
             renderMenu(buildModelSchema(id), container);
         },
     };
+}
+
+// ======== Model Detail Fullscreen ========
+
+function openModelDetailFullscreen(id: string): void {
+    const inst = modelManager.get(id);
+    if (!inst) {
+        return;
+    }
+
+    openFullscreen({
+        title: t('model-detail.modelDetail'),
+        onBack: () => {
+            // 全屏关闭后自动回到模型菜单，无需额外操作
+        },
+        renderContent: (container) => {
+            container.style.display = 'flex';
+            container.style.flexDirection = 'column';
+            container.style.gap = '12px';
+
+            const tabs = document.createElement('div');
+            tabs.className = 'model-detail-tabs';
+
+            const content = document.createElement('div');
+            content.className = 'model-detail-tab-content';
+            content.style.flex = '1';
+            content.style.overflowY = 'auto';
+            content.style.minHeight = '0';
+
+            let activeDispose: (() => void) | null = null;
+
+            const renderTab = (tab: 'info' | 'bones'): void => {
+                if (activeDispose) {
+                    activeDispose();
+                    activeDispose = null;
+                }
+                content.innerHTML = '';
+                const schema = tab === 'info' ? buildModelInfoSchema(id) : buildBoneHierarchySchema(id);
+                activeDispose = renderMenu(schema, content);
+            };
+
+            const createTabButton = (tab: 'info' | 'bones', label: string): HTMLButtonElement => {
+                const btn = document.createElement('button');
+                btn.className = 'model-detail-tab-btn';
+                btn.type = 'button';
+                btn.textContent = label;
+                btn.addEventListener('click', () => {
+                    tabs.querySelectorAll('.model-detail-tab-btn').forEach((b) => {
+                        b.classList.remove('active');
+                    });
+                    btn.classList.add('active');
+                    renderTab(tab);
+                });
+                return btn;
+            };
+
+            const infoBtn = createTabButton('info', t('model-detail.basicInfo'));
+            const boneBtn = createTabButton('bones', t('model-detail.boneHierarchy'));
+            tabs.appendChild(infoBtn);
+            tabs.appendChild(boneBtn);
+
+            container.appendChild(tabs);
+            container.appendChild(content);
+
+            infoBtn.classList.add('active');
+            renderTab('info');
+        },
+    });
 }
 
 // ======== Model Info ========

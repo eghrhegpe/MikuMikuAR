@@ -250,10 +250,10 @@ function createProceduralSky(state: EnvState): void {
     });
 
     scene.clearColor = new Color4(0, 0, 0, 1);
-    
+
     // 为 PBR 材质创建简单环境贴图（IBL）
     createProceduralEnvTexture(state, scene);
-    
+
     const envBrightness = state.envBrightness ?? 1;
     const effectiveSkyBrightness = state.skyBrightness * envBrightness;
     const starsPhase = state.starsEnabled ? (state.sunAngle > 10 ? 'h' : 'l') : '';
@@ -267,13 +267,13 @@ function createProceduralEnvTexture(state: EnvState, scene: Scene): void {
         _proceduralEnvTexture.dispose();
         _proceduralEnvTexture = null;
     }
-    
+
     const size = 32; // 小尺寸足够，环境贴图不需要高分辨率
     const topColor = col3FromTriple(state.skyColorTop);
     const midColor = col3FromTriple(state.skyColorMid);
     const botColor = col3FromTriple(state.skyColorBot);
     const brightness = state.skyBrightness * (state.envBrightness ?? 1);
-    
+
     // 创建 6 个面的像素数据（简单渐变：上=顶色，中=中色，下=底色）
     const faces: Uint8Array[] = [];
     for (let face = 0; face < 6; face++) {
@@ -305,7 +305,7 @@ function createProceduralEnvTexture(state: EnvState, scene: Scene): void {
         }
         faces.push(data);
     }
-    
+
     // 创建 RawCubeTexture
     _proceduralEnvTexture = new RawCubeTexture(scene, faces, size);
     scene.environmentTexture = _proceduralEnvTexture;
@@ -455,6 +455,10 @@ export function applySky(state: EnvState): void {
 
     disposeSky();
     if (state.skyTexture) {
-        loadSkyCube(state.skyTexture, state.skyRotationY, state.envIntensity * (state.envBrightness ?? 1));
+        loadSkyCube(
+            state.skyTexture,
+            state.skyRotationY,
+            state.envIntensity * (state.envBrightness ?? 1)
+        );
     }
 }

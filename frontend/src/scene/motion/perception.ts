@@ -165,7 +165,12 @@ function _claimPerceptionBones(modelId: string): void {
     const perModel = new Map<string, string[]>();
     _perceptionOwnedBones.set(modelId, perModel);
 
-    const headClaimed = store.claimBones(modelId, 'perception.gaze.head', 100, HEAD_BONE_CANDIDATES);
+    const headClaimed = store.claimBones(
+        modelId,
+        'perception.gaze.head',
+        100,
+        HEAD_BONE_CANDIDATES
+    );
     perModel.set('perception.gaze.head', headClaimed);
 
     const eyeClaimed = store.claimBones(modelId, 'perception.gaze.eye', 100, EYE_BONE_CANDIDATES);
@@ -183,10 +188,20 @@ function _claimPerceptionBones(modelId: string): void {
     const centerClaimed = store.claimBones(modelId, 'perception.balance.center', 100, centerBones);
     perModel.set('perception.balance.center', centerClaimed);
 
-    const upperClaimed = store.claimBones(modelId, 'perception.balance.upper', 100, BONE_UPPER2_CANDIDATES);
+    const upperClaimed = store.claimBones(
+        modelId,
+        'perception.balance.upper',
+        100,
+        BONE_UPPER2_CANDIDATES
+    );
     perModel.set('perception.balance.upper', upperClaimed);
 
-    const waistClaimed = store.claimBones(modelId, 'perception.balance.waist', 100, BONE_WAIST_CANDIDATES);
+    const waistClaimed = store.claimBones(
+        modelId,
+        'perception.balance.waist',
+        100,
+        BONE_WAIST_CANDIDATES
+    );
     perModel.set('perception.balance.waist', waistClaimed);
 }
 
@@ -272,7 +287,15 @@ function _ensureObserverRegistered(): void {
                     }
                     continue;
                 }
-                _applyPerceptionForContext(ctx, inst.mmdModel, time, dt, tier, _frameCounter, _perceptionOwnedBones);
+                _applyPerceptionForContext(
+                    ctx,
+                    inst.mmdModel,
+                    time,
+                    dt,
+                    tier,
+                    _frameCounter,
+                    _perceptionOwnedBones
+                );
             }
         },
     });
@@ -397,10 +420,13 @@ export function getPerceptionState(): PerceptionState {
 export function setPerceptionState(s: Partial<PerceptionState>): void {
     // 钳制 gaze 角度参数（与各单项 setter 一致，避免绕过 clamp）
     const clamped: Partial<PerceptionState> = {};
-    if ('headGazeMaxYaw' in s) clamped.headGazeMaxYaw = Math.max(0, Math.min(90, s.headGazeMaxYaw!));
-    if ('headGazeMaxPitch' in s) clamped.headGazeMaxPitch = Math.max(0, Math.min(90, s.headGazeMaxPitch!));
+    if ('headGazeMaxYaw' in s)
+        clamped.headGazeMaxYaw = Math.max(0, Math.min(90, s.headGazeMaxYaw!));
+    if ('headGazeMaxPitch' in s)
+        clamped.headGazeMaxPitch = Math.max(0, Math.min(90, s.headGazeMaxPitch!));
     if ('eyeGazeMaxYaw' in s) clamped.eyeGazeMaxYaw = Math.max(0, Math.min(15, s.eyeGazeMaxYaw!));
-    if ('eyeGazeMaxPitch' in s) clamped.eyeGazeMaxPitch = Math.max(0, Math.min(15, s.eyeGazeMaxPitch!));
+    if ('eyeGazeMaxPitch' in s)
+        clamped.eyeGazeMaxPitch = Math.max(0, Math.min(15, s.eyeGazeMaxPitch!));
     if ('eyeGazeSmooth' in s) clamped.eyeGazeSmooth = Math.max(0, Math.min(1, s.eyeGazeSmooth!));
     // 非 gaze 字段原样传入
     for (const k of Object.keys(s)) {
@@ -644,10 +670,13 @@ export function getPerceptionStateFor(modelId: string): PerceptionState {
 export function setPerceptionStateFor(modelId: string, s: Partial<PerceptionState>): void {
     // 钳制 gaze 角度参数（与各单项 setter 一致，避免绕过 clamp）
     const clamped: Partial<PerceptionState> = {};
-    if ('headGazeMaxYaw' in s) clamped.headGazeMaxYaw = Math.max(0, Math.min(90, s.headGazeMaxYaw!));
-    if ('headGazeMaxPitch' in s) clamped.headGazeMaxPitch = Math.max(0, Math.min(90, s.headGazeMaxPitch!));
+    if ('headGazeMaxYaw' in s)
+        clamped.headGazeMaxYaw = Math.max(0, Math.min(90, s.headGazeMaxYaw!));
+    if ('headGazeMaxPitch' in s)
+        clamped.headGazeMaxPitch = Math.max(0, Math.min(90, s.headGazeMaxPitch!));
     if ('eyeGazeMaxYaw' in s) clamped.eyeGazeMaxYaw = Math.max(0, Math.min(15, s.eyeGazeMaxYaw!));
-    if ('eyeGazeMaxPitch' in s) clamped.eyeGazeMaxPitch = Math.max(0, Math.min(15, s.eyeGazeMaxPitch!));
+    if ('eyeGazeMaxPitch' in s)
+        clamped.eyeGazeMaxPitch = Math.max(0, Math.min(15, s.eyeGazeMaxPitch!));
     if ('eyeGazeSmooth' in s) clamped.eyeGazeSmooth = Math.max(0, Math.min(1, s.eyeGazeSmooth!));
     // 非 gaze 字段原样传入
     for (const k of Object.keys(s)) {

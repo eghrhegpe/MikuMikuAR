@@ -7,7 +7,11 @@ import {
     migrateLipSyncFromOldState,
     migratePerceptionData,
 } from '../scene/scene-migrate';
-import { _gazeAlpha, PerceptionPerfMonitor, type PerceptionTier } from '../scene/motion/perception-shared';
+import {
+    _gazeAlpha,
+    PerceptionPerfMonitor,
+    type PerceptionTier,
+} from '../scene/motion/perception-shared';
 import { _getActiveContextsByTier } from '../scene/motion/perception-observer';
 // updatePerceptionConflictBanner 在测试体内动态导入，避免 vi.resetModules() 后 singleton 漂移
 
@@ -266,14 +270,18 @@ describe('activatePerception', () => {
 
     it('模型已加载时注册 observer', () => {
         mockState.focusedModelId = 'm1';
-        mockState.modelManager.get.mockReturnValue({ mmdModel: { mesh: { isDisposed: () => false } } });
+        mockState.modelManager.get.mockReturnValue({
+            mmdModel: { mesh: { isDisposed: () => false } },
+        });
         sut.activatePerception();
         expect(mockPipeline.register).toHaveBeenCalledOnce();
     });
 
     it('重复激活同一模型不重复注册', () => {
         mockState.focusedModelId = 'm1';
-        mockState.modelManager.get.mockReturnValue({ mmdModel: { mesh: { isDisposed: () => false } } });
+        mockState.modelManager.get.mockReturnValue({
+            mmdModel: { mesh: { isDisposed: () => false } },
+        });
         sut.activatePerception();
         sut.activatePerception();
         expect(mockPipeline.register).toHaveBeenCalledOnce();
@@ -281,7 +289,9 @@ describe('activatePerception', () => {
 
     it('切换模型时先注销旧 observer 再注册新 observer', () => {
         mockState.focusedModelId = 'm1';
-        mockState.modelManager.get.mockReturnValue({ mmdModel: { mesh: { isDisposed: () => false } } });
+        mockState.modelManager.get.mockReturnValue({
+            mmdModel: { mesh: { isDisposed: () => false } },
+        });
         sut.activatePerception();
         sut.activatePerception('m2');
         expect(mockPipeline.unregister).toHaveBeenCalled();
@@ -292,7 +302,9 @@ describe('activatePerception', () => {
 describe('deactivatePerception', () => {
     it('注销 observer', () => {
         mockState.focusedModelId = 'm1';
-        mockState.modelManager.get.mockReturnValue({ mmdModel: { mesh: { isDisposed: () => false } } });
+        mockState.modelManager.get.mockReturnValue({
+            mmdModel: { mesh: { isDisposed: () => false } },
+        });
         sut.activatePerception();
         sut.deactivatePerception();
         expect(mockPipeline.unregister).toHaveBeenCalledOnce();
@@ -310,7 +322,9 @@ describe('deactivatePerception', () => {
 describe('onPerceptionModelRemoved', () => {
     it('移除当前感知模型时注销 observer', () => {
         mockState.focusedModelId = 'm1';
-        mockState.modelManager.get.mockReturnValue({ mmdModel: { mesh: { isDisposed: () => false } } });
+        mockState.modelManager.get.mockReturnValue({
+            mmdModel: { mesh: { isDisposed: () => false } },
+        });
         sut.activatePerception();
         sut.onPerceptionModelRemoved('m1');
         expect(mockPipeline.unregister).toHaveBeenCalledOnce();
@@ -318,7 +332,9 @@ describe('onPerceptionModelRemoved', () => {
 
     it('移除其他模型时不影响当前 observer', () => {
         mockState.focusedModelId = 'm1';
-        mockState.modelManager.get.mockReturnValue({ mmdModel: { mesh: { isDisposed: () => false } } });
+        mockState.modelManager.get.mockReturnValue({
+            mmdModel: { mesh: { isDisposed: () => false } },
+        });
         sut.activatePerception();
         sut.onPerceptionModelRemoved('other');
         expect(mockPipeline.unregister).not.toHaveBeenCalled();
@@ -1103,11 +1119,13 @@ describe('ADR-164 enableAllPerception / disableAllPerception', () => {
         const mockMorphManager = makeMockMorphManager(['笑み']);
         const mockMmdModel = makeMockModelWithMorphManager(mockMorphManager);
         // 给 mock 模型一个上半身骨，让 _applyBreathing 真正写入 lastOffsets
-        mockMmdModel.runtimeBones = [{
-            name: '上半身',
-            linkedBone: { rotationQuaternion: { copyFrom: vi.fn(), setAll: vi.fn() } },
-            childBones: [],
-        }];
+        mockMmdModel.runtimeBones = [
+            {
+                name: '上半身',
+                linkedBone: { rotationQuaternion: { copyFrom: vi.fn(), setAll: vi.fn() } },
+                childBones: [],
+            },
+        ];
         const inst = { mmdModel: mockMmdModel };
         mockState.modelManager.get.mockImplementation(() => inst);
         mockState.modelManager.modelRegistry.set('m1', inst);
@@ -1339,9 +1357,7 @@ describe('ADR-164 PerceptionPerfMonitor tier', () => {
 describe('ADR-164 模型加载自动激活', () => {
     it('8. 全员感知模式下新模型加载时自动激活', () => {
         const inst1 = { mmdModel: { mesh: { isDisposed: () => false }, runtimeBones: [] } };
-        mockState.modelManager.get.mockImplementation((id: string) =>
-            id === 'm1' ? inst1 : null
-        );
+        mockState.modelManager.get.mockImplementation((id: string) => (id === 'm1' ? inst1 : null));
         mockState.modelManager.modelRegistry.set('m1', inst1);
         mockState.focusedModelId = 'm1';
         sut.activatePerception('m1');

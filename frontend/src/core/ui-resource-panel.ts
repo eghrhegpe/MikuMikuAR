@@ -320,7 +320,8 @@ function createGridCard(
     } else {
         const iconEl = createIconifyIcon(item.isFolder ? 'folder' : item.icon);
         if (iconEl) {
-            iconEl.style.cssText = 'width:var(--resource-icon-size);height:var(--resource-icon-size);opacity:0.5';
+            iconEl.style.cssText =
+                'width:var(--resource-icon-size);height:var(--resource-icon-size);opacity:0.5';
             thumb.appendChild(iconEl);
         }
     }
@@ -438,7 +439,8 @@ function createListRow(
     } else {
         const iconEl = createIconifyIcon(item.isFolder ? 'folder' : item.icon);
         if (iconEl) {
-            iconEl.style.cssText = 'width:var(--resource-icon-sm-size);height:var(--resource-icon-sm-size);opacity:0.5';
+            iconEl.style.cssText =
+                'width:var(--resource-icon-sm-size);height:var(--resource-icon-sm-size);opacity:0.5';
             thumb.appendChild(iconEl);
         }
     }

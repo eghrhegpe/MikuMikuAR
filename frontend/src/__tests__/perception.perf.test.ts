@@ -112,12 +112,26 @@ function createSyntheticModelStub(): ModelStub {
 
     // 手指（填充骨量到 ~100）
     const fingerNames = [
-        '親指', '人差指', '中指', '薬指', '小指',
-        '親指１', '親指２', '親指３',
-        '人差指１', '人差指２', '人差指３',
-        '中指１', '中指２', '中指３',
-        '薬指１', '薬指２', '薬指３',
-        '小指１', '小指２', '小指３',
+        '親指',
+        '人差指',
+        '中指',
+        '薬指',
+        '小指',
+        '親指１',
+        '親指２',
+        '親指３',
+        '人差指１',
+        '人差指２',
+        '人差指３',
+        '中指１',
+        '中指２',
+        '中指３',
+        '薬指１',
+        '薬指２',
+        '薬指３',
+        '小指１',
+        '小指２',
+        '小指３',
     ];
     for (const side of ['左', '右']) {
         const parentWrist = side === '左' ? wristL : wristR;
@@ -171,7 +185,8 @@ function createSyntheticModelStub(): ModelStub {
             morphTargetManager: {
                 numTargets: morphTargets.length,
                 getTarget: (i: number) => morphTargets[i],
-                getTargetByName: (name: string) => morphTargets.find((t) => t.name === name) ?? null,
+                getTargetByName: (name: string) =>
+                    morphTargets.find((t) => t.name === name) ?? null,
             },
         },
     };
@@ -271,9 +286,7 @@ function benchApplyBreathing(stub: ModelStub, time: number): void {
 
     const boneNames = stub.runtimeBones.map((b) => b.name);
     const spineName = matchBone(boneNames, BONE_UPPER_CANDIDATES);
-    const spine = spineName
-        ? stub.runtimeBones.find((b) => b.name === spineName)
-        : null;
+    const spine = spineName ? stub.runtimeBones.find((b) => b.name === spineName) : null;
     if (!spine) {
         return;
     }
@@ -380,7 +393,9 @@ function benchApplyBalanceSway(stub: ModelStub, time: number): void {
             const rz = Math.sin(slowPhase) * 0.05;
             const rx = Math.sin(phase * 0.37 + 0.5) * 0.02;
             if (bone.linkedBone.rotationQuaternion) {
-                const deltaQ = _q().copyFrom(Quaternion.FromEulerAngles(rx * factor, 0, rz * factor));
+                const deltaQ = _q().copyFrom(
+                    Quaternion.FromEulerAngles(rx * factor, 0, rz * factor)
+                );
                 const localQ = _q().copyFrom(bone.linkedBone.rotationQuaternion);
                 deltaQ.multiplyToRef(localQ, localQ);
                 bone.linkedBone.rotationQuaternion.copyFrom(localQ);
@@ -442,7 +457,9 @@ function benchApplyGaze(stub: ModelStub, gazeTarget: Vector3): void {
     headPos.z = headRuntime.worldMatrix[14];
 
     const oldHeadMat = _m().copyFrom(Matrix.FromArray(headRuntime.worldMatrix));
-    const oldHeadRotQ = _q().copyFrom(Quaternion.FromRotationMatrix(oldHeadMat.getRotationMatrix()));
+    const oldHeadRotQ = _q().copyFrom(
+        Quaternion.FromRotationMatrix(oldHeadMat.getRotationMatrix())
+    );
 
     const lookDir = headPos.subtractToRef(gazeTarget, _v3()).normalize();
     const targetWorldQ = _q().copyFrom(Quaternion.FromLookDirectionRH(lookDir, Vector3.UpReadOnly));
@@ -646,7 +663,10 @@ test('ADR-155 感知层性能基准', async () => {
     const ITEMS = [
         { name: 'breathing', fn: (s: ModelStub, t: number) => benchApplyBreathing(s, t) },
         { name: 'blinking', fn: (s: ModelStub, t: number) => benchApplyBlinking(s, t) },
-        { name: 'microExpression', fn: (s: ModelStub, t: number) => benchApplyMicroExpression(s, t) },
+        {
+            name: 'microExpression',
+            fn: (s: ModelStub, t: number) => benchApplyMicroExpression(s, t),
+        },
         { name: 'balanceSway', fn: (s: ModelStub, t: number) => benchApplyBalanceSway(s, t) },
         { name: 'lipSync', fn: (s: ModelStub, _t: number) => benchApplyLipSync(s) },
         { name: 'gaze', fn: (s: ModelStub, _t: number) => benchApplyGaze(s, gazeTarget) },
@@ -682,7 +702,9 @@ test('ADR-155 感知层性能基准', async () => {
             `  ${item.name.padEnd(17)} | ${total.toFixed(2).padStart(8)} | ${pct.toFixed(1).padStart(8)} | ${perFrame.toFixed(2).padStart(8)}`
         );
     }
-    console.log(`  ${'合计'.padEnd(17)} | ${totalItemTime.toFixed(2).padStart(8)} | ${'100.0'.padStart(8)} | ${((totalItemTime / FRAMES_C) * 1000).toFixed(2).padStart(8)}`);
+    console.log(
+        `  ${'合计'.padEnd(17)} | ${totalItemTime.toFixed(2).padStart(8)} | ${'100.0'.padStart(8)} | ${((totalItemTime / FRAMES_C) * 1000).toFixed(2).padStart(8)}`
+    );
 
     // ═══════════════════════════════════════════════════════
     // d) 100 模型感知层 < 16.67ms（60fps 预算，软断言 warn）

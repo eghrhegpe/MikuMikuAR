@@ -248,7 +248,9 @@ function buildLibrarySchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode
                             onUpdate: (el) => {
                                 const valEl = el.querySelector('.cs-value');
                                 if (valEl) {
-                                    valEl.textContent = t(NAME_PRIORITY_LABELS[displayNamePriority]);
+                                    valEl.textContent = t(
+                                        NAME_PRIORITY_LABELS[displayNamePriority]
+                                    );
                                 }
                             },
                         }
@@ -300,35 +302,43 @@ function buildLibrarySchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode
                     }
 
                     // 添加新映射
-                    slideRow(inner, 'lucide:plus', t('settings.library.addMaterialMap'), false, async () => {
-                        const result = await showPrompt2({
-                            title: t('settings.library.addMaterialMap'),
-                            label1: t('settings.library.patternLabel'),
-                            placeholder1: t('settings.library.patternPlaceholder'),
-                            label2: t('settings.library.categoryLabel'),
-                            placeholder2: t('settings.library.categoryPlaceholder'),
-                        });
-                        if (!result) {
-                            return;
+                    slideRow(
+                        inner,
+                        'lucide:plus',
+                        t('settings.library.addMaterialMap'),
+                        false,
+                        async () => {
+                            const result = await showPrompt2({
+                                title: t('settings.library.addMaterialMap'),
+                                label1: t('settings.library.patternLabel'),
+                                placeholder1: t('settings.library.patternPlaceholder'),
+                                label2: t('settings.library.categoryLabel'),
+                                placeholder2: t('settings.library.categoryPlaceholder'),
+                            });
+                            if (!result) {
+                                return;
+                            }
+                            const [pattern, category] = result;
+                            try {
+                                new RegExp(pattern);
+                            } catch {
+                                setStatus(t('settings.invalidRegex'), false);
+                                return;
+                            }
+                            if (
+                                !['皮肤', '头发', '眼睛', '服装', '配件', '道具'].includes(category)
+                            ) {
+                                setStatus(t('settings.invalidCategory'), false);
+                                return;
+                            }
+                            if (!uiState.materialCategoryMap) {
+                                uiState.materialCategoryMap = {};
+                            }
+                            uiState.materialCategoryMap[pattern] = category;
+                            setUIState({ materialCategoryMap: uiState.materialCategoryMap });
+                            getSettingsMenu()?.reRender();
                         }
-                        const [pattern, category] = result;
-                        try {
-                            new RegExp(pattern);
-                        } catch {
-                            setStatus(t('settings.invalidRegex'), false);
-                            return;
-                        }
-                        if (!['皮肤', '头发', '眼睛', '服装', '配件', '道具'].includes(category)) {
-                            setStatus(t('settings.invalidCategory'), false);
-                            return;
-                        }
-                        if (!uiState.materialCategoryMap) {
-                            uiState.materialCategoryMap = {};
-                        }
-                        uiState.materialCategoryMap[pattern] = category;
-                        setUIState({ materialCategoryMap: uiState.materialCategoryMap });
-                        getSettingsMenu()?.reRender();
-                    });
+                    );
                 });
             },
         },
@@ -353,12 +363,42 @@ function buildOverrideSchema(): MenuNode[] {
     };
 
     const overrideRows: Array<{ icon: string; labelKey: string; action: string; key: string }> = [
-        { icon: 'lucide:box', labelKey: 'settings.paths.pmx', action: SETTINGS_ACTION.PATH_PMX, key: 'pmx' },
-        { icon: 'lucide:music', labelKey: 'settings.paths.vmd', action: SETTINGS_ACTION.PATH_VMD, key: 'vmd' },
-        { icon: 'lucide:headphones', labelKey: 'settings.paths.audio', action: SETTINGS_ACTION.PATH_AUDIO, key: 'audio' },
-        { icon: 'lucide:gem', labelKey: 'settings.paths.prop', action: SETTINGS_ACTION.PATH_PROP, key: 'prop' },
-        { icon: 'lucide:home', labelKey: 'settings.paths.stage', action: SETTINGS_ACTION.PATH_STAGE, key: 'stage' },
-        { icon: 'lucide:cloud', labelKey: 'settings.paths.environment', action: SETTINGS_ACTION.PATH_ENVIRONMENT, key: 'environment' },
+        {
+            icon: 'lucide:box',
+            labelKey: 'settings.paths.pmx',
+            action: SETTINGS_ACTION.PATH_PMX,
+            key: 'pmx',
+        },
+        {
+            icon: 'lucide:music',
+            labelKey: 'settings.paths.vmd',
+            action: SETTINGS_ACTION.PATH_VMD,
+            key: 'vmd',
+        },
+        {
+            icon: 'lucide:headphones',
+            labelKey: 'settings.paths.audio',
+            action: SETTINGS_ACTION.PATH_AUDIO,
+            key: 'audio',
+        },
+        {
+            icon: 'lucide:gem',
+            labelKey: 'settings.paths.prop',
+            action: SETTINGS_ACTION.PATH_PROP,
+            key: 'prop',
+        },
+        {
+            icon: 'lucide:home',
+            labelKey: 'settings.paths.stage',
+            action: SETTINGS_ACTION.PATH_STAGE,
+            key: 'stage',
+        },
+        {
+            icon: 'lucide:cloud',
+            labelKey: 'settings.paths.environment',
+            action: SETTINGS_ACTION.PATH_ENVIRONMENT,
+            key: 'environment',
+        },
     ];
 
     return [
@@ -469,9 +509,7 @@ function buildResourcesSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
     ];
 }
 
-export function buildSettingsResourcesLevel(
-    getSettingsMenu: () => SettingsMenuHandle
-): PopupLevel {
+export function buildSettingsResourcesLevel(getSettingsMenu: () => SettingsMenuHandle): PopupLevel {
     return {
         label: t('settings.resources'),
         dir: '',
