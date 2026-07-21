@@ -1,4 +1,4 @@
-# ADR-151: balanceSway 独立参数暴露 — 补齐感知层 UI 可调性
+# ADR-161: balanceSway 独立参数暴露 — 补齐感知层 UI 可调性
 
 > **状态**: 已完成
 > **关联**: ADR-079（感知层扩展）、ADR-116（感知层滑块功能）、ADR-150（gaze delta）
@@ -60,7 +60,7 @@ balanceSwayAmplitude: number;  // 全局振幅乘数，0–2.0，默认 1.0
 export interface PerceptionState {
     // ... 既有字段
     balanceSwayEnabled: boolean;
-    // 新增：balanceSway 参数（[doc:adr-151]）
+    // 新增：balanceSway 参数（[doc:adr-161]）
     balanceSwayPeriod: number;     // 0.5–5.0s，默认 2.0
     balanceSwayAmplitude: number;  // 0–2.0，默认 1.0
 }
@@ -73,16 +73,23 @@ export const DEFAULT_PERCEPTION_STATE: PerceptionState = {
 };
 ```
 
-#### 2.2.2 perception-balance.ts — 读取 state 参数
+#### 2.2.2 perception-balance.ts — 读取 ctx.state 参数
 
 ```typescript
 export function _applyBalanceSway(
     mmdModel: MmdModelLike,
     time: number,
-    enabled: boolean,
-    period: number,      // 新增参数
-    amplitude: number,  // 新增参数
+    ctx: PerceptionContext,            // 适配 ADR-162 多模型 context 架构
+    centerClaimed?: readonly string[], // 骨骼冲突宣告
+    upper2Claimed?: readonly string[],
+    waistClaimed?: readonly string[],
+    tier?: PerceptionTier             // tier 守卫
 ): void {
+    const enabled = ctx.state.balanceSwayEnabled;
+    const period = ctx.state.balanceSwayPeriod;       // 从 ctx 读取
+    const amplitude = ctx.state.balanceSwayAmplitude; // 从 ctx 读取
+    // 关闭/amplitude=0 时撤销 bobY 残留 + 重置增量状态
+    if (!enabled || amplitude === 0) { ... return; }
     // 原 const phase = ((time % BALANCE_SWAY_PERIOD) / BALANCE_SWAY_PERIOD) * Math.PI * 2;
     const phase = ((time % period) / period) * Math.PI * 2;
     
@@ -107,13 +114,15 @@ export function setBalanceSwayAmplitude(v: number): void {
     triggerAutoSave();
 }
 
-// observer 调用处传入参数
+// observer 调用处传入 ctx（[doc:adr-162]）
 _applyBalanceSway(
     mmdModel,
     time,
-    perceptionState.balanceSwayEnabled,
-    perceptionState.balanceSwayPeriod,      // 新增
-    perceptionState.balanceSwayAmplitude,   // 新增
+    ctx,
+    centerClaimed,   // 骨骼冲突宣告
+    upperClaimed,
+    waistClaimed,
+    tier             // tier 守卫
 );
 ```
 
@@ -145,6 +154,8 @@ _applyBalanceSway(
 },
 ```
 
+**注意 — conflictHint 不对称设计**：`balanceSwayAmplitude` 挂了 `conflictHint: 'perception.balance.center'` 因为幅度变化直接影响骨骼位移量，与骨骼冲突模块存在交互；`balanceSwayPeriod` 仅控制摆动周期/速度，不涉及骨骼占用优先级，故不挂 conflictHint。
+
 #### 2.2.5 i18n — 5 语种补充
 
 ```json
@@ -155,7 +166,8 @@ _applyBalanceSway(
 ### 2.3 序列化与迁移
 
 - **序列化**：`PerceptionState` 已整体走 [scene-serialize.ts:457](file:///c:/Users/zhujieling11/MikuMikuAR/frontend/src/scene/scene-serialize.ts#L457)，新字段自动包含，**0 改动**
-- **迁移**：旧存档无 `balanceSwayPeriod/Amplitude` 字段，`setPerceptionState` 用 `?? DEFAULT` 兜底，**0 改动**
+- **迁移（新字段兜底）**：旧存档无 `balanceSwayPeriod/Amplitude` 字段，`setPerceptionState` 用 `?? DEFAULT` 兜底，**0 改动**
+- **迁移（老存档 boneToggles → balanceSwayEnabled）**：[scene-migrate.ts:73](file:///c:/Users/zhujieling11/MikuMikuAR/frontend/src/scene/scene-migrate.ts#L73) `migratePerceptionFromProcMotion` 将旧 `ProcMotionState.boneToggles` 的 center/upper2/waist/allParent 任一为 true 时设 `balanceSwayEnabled=true`；全 false 时设 `false`；无 toggles 时默认 `true`（always-on 语义）。新字段 `balanceSwayPeriod/Amplitude` 不走此迁移，直接由 `?? DEFAULT` 兜底
 - **测试 mock**：`lipsync-bridge.test.ts` 的 `defaultPerception` mock 需加 2 字段
 
 ---
