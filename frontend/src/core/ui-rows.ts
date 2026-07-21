@@ -389,6 +389,43 @@ export function addFieldRow(
 }
 
 // ===================================================================
+// addInfoGrid / addInfoCard — 响应式信息卡网格
+// 数字类短字段进常规卡（窄屏 2 列、宽屏 auto-fill 自动加列），
+// 长文本字段传 wide:true 跨整行，避免截断。
+// 用 textContent 写入，天然免疫 HTML 注入，无需 escapeHtml。
+// ===================================================================
+
+export function addInfoGrid(container: HTMLElement): HTMLElement {
+    const grid = document.createElement('div');
+    grid.className = 'info-grid';
+    container.appendChild(grid);
+    return grid;
+}
+
+export function addInfoCard(
+    container: HTMLElement,
+    label: string,
+    value: string,
+    opts?: { wide?: boolean; testId?: string }
+): HTMLElement {
+    const card = document.createElement('div');
+    card.className = 'info-card' + (opts?.wide ? ' info-card--wide' : '');
+    if (opts?.testId) {
+        card.setAttribute('data-testid', opts.testId);
+    }
+    const labelEl = document.createElement('div');
+    labelEl.className = 'info-card-label';
+    labelEl.textContent = label;
+    const valueEl = document.createElement('div');
+    valueEl.className = 'info-card-value';
+    valueEl.textContent = value;
+    card.appendChild(labelEl);
+    card.appendChild(valueEl);
+    container.appendChild(card);
+    return card;
+}
+
+// ===================================================================
 // sliderRow — addSliderRow 的简化版，只保留 onDragEnd
 // ===================================================================
 

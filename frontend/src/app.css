@@ -1918,6 +1918,40 @@ textarea,
     margin-left: auto;
 }
 
+/* 基本信息区：响应式信息卡网格（auto-fill，窄屏 2 列、宽屏自动加列） */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(calc(108px * var(--ui-scale)), 1fr));
+    gap: calc(6px * var(--ui-scale));
+}
+.info-card {
+    background: rgba(255, 255, 255, 0.06);
+    border: 0.5px solid rgba(255, 255, 255, 0.1);
+    border-radius: calc(6px * var(--ui-scale));
+    padding: calc(5px * var(--ui-scale)) calc(7px * var(--ui-scale));
+    min-width: 0;
+    overflow: hidden;
+}
+.info-card--wide {
+    grid-column: 1 / -1;
+}
+.info-card-label {
+    font-size: calc(11px * var(--ui-scale));
+    color: var(--text-dim);
+    margin-bottom: calc(2px * var(--ui-scale));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.info-card-value {
+    font-size: calc(13px * var(--ui-scale));
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
 /* Slide action button — 行内操作按钮（替代 inline button style） */
 .slide-act-btn {
     flex-shrink: 0;
