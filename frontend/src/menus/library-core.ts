@@ -530,6 +530,7 @@ function renderItemsWithRAF(
                     kind: 'vmd',
                     path: item.model.file_path,
                     modelId: outcome.modelId,
+                    skipSceneIntent: true,
                 });
                 return;
             }
@@ -726,6 +727,7 @@ function renderGridMode(
                             kind: 'vmd',
                             path: m.file_path,
                             modelId: outcome.modelId,
+                            skipSceneIntent: true,
                         });
                         return;
                     }

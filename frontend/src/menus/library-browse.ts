@@ -218,6 +218,7 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                         kind: 'vmd',
                         path: row.model.file_path,
                         modelId: outcome.modelId,
+                        skipSceneIntent: true,
                     });
                     return;
                 }
