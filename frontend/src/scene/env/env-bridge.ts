@@ -33,6 +33,7 @@ import {
     setSkipLightAutoSave,
     getHemiLight,
     _updateSunDisc,
+    rebakeEnvBrightness,
 } from '../render/lighting';
 import type { LightState } from '../render/lighting';
 import { applyLightingPresetFromEnv } from '../render/lighting';
@@ -63,6 +64,9 @@ function _applyIfChanged(
         logWarn('env', `${label} fail:`, e);
     }
 }
+
+// [doc:adr-132] 上一次 envBrightness 值，用于变化时 rebake 光照强度
+let _prevEnvBrightness = 1;
 
 // ADR-114 Phase 3: 接触阴影后处理（转发到 renderer.setContactShadow）
 const _CONTACT_SHADOW_KEYS = [
@@ -110,6 +114,12 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
         skyMid[1] * ambientStrength,
         skyMid[2] * ambientStrength
     );
+
+    // [doc:adr-132] envBrightness 变化时 rebake 存储的光照强度
+    if (changed?.has('envBrightness')) {
+        rebakeEnvBrightness(envBrightness / _prevEnvBrightness);
+    }
+    _prevEnvBrightness = envBrightness;
 
     // 方向光同步：跳过预设动画期间（applyEnvPresetObject 有自己的动画循环管理 dirLight）
     const _LIGHT_SYNC_KEYS = ['sunAngle', 'azimuth', 'skyColorTop', 'skyColorBot'];

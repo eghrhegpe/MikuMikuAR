@@ -12,6 +12,7 @@ const defaultEnv: EnvState = {
     skyRotationSpeed: 0,
     skyBrightness: 1,
     envIntensity: 1,
+    envBrightness: 1,
     starsEnabled: false,
     starsTexture: '',
     groundVisible: true,
