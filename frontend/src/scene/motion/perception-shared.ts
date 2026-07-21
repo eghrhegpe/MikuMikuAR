@@ -205,3 +205,31 @@ export function setGazeAngles(
     _eyeGazeMaxPitch = (eyePitchDeg * Math.PI) / 180;
     _eyeGazeSmooth = eyeSmooth;
 }
+
+// ── PerceptionContext 类型（[doc:adr-162] Phase 1） ──
+
+/** 重心微动增量状态（供 PerceptionContext.lastOffsets.balance 使用） */
+export interface BalanceSwayState {
+    lastBobY: number;
+    swayCenterName: string | null;
+    lastCenterRz: number;
+    lastCenterRx: number;
+    lastUpperRx: number;
+    lastWaistRz: number;
+    lastAllParentRx: number;
+    lastAllParentRz: number;
+    lastSwayTime: number;
+}
+
+/** 每模型感知上下文（替代原单例，支持焦点 + pinned 多模型） */
+export interface PerceptionContext {
+    modelId: string;
+    state: PerceptionState;
+    isActive: boolean;
+    isPinned: boolean;
+    lastOffsets: {
+        breath: number;
+        balance: BalanceSwayState;
+        emotion: string | null;
+    };
+}
