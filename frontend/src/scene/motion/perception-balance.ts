@@ -11,7 +11,7 @@ import {
     matchBone,
 } from '../../motion-algos/proc-motion-shared';
 import { _q } from './perception-shared';
-import type { BalanceSwayState, MmdModelLike, PerceptionTier } from './perception-shared';
+import type { BalanceSwayState, MmdModelLike, PerceptionContext, PerceptionTier } from './perception-shared';
 
 /** 重心微动周期（秒，从 idle loopFrames=120@60fps 转换：120/60=2s） */
 const BALANCE_SWAY_PERIOD = 2.0;
@@ -39,22 +39,21 @@ export function _resetBalanceSwayState(state: BalanceSwayState): void {
     state.lastWaistRz = 0;
     state.lastAllParentRx = 0;
     state.lastAllParentRz = 0;
-    state.lastSwayTime = 0;
-    state.lastBalanceSwayBones = [];
 }
 
 export function _applyBalanceSway(
     mmdModel: MmdModelLike,
     time: number,
-    enabled: boolean,
-    period: number,
-    amplitude: number,
-    balanceState: BalanceSwayState,
+    ctx: PerceptionContext,
     centerClaimed?: readonly string[],
     upper2Claimed?: readonly string[],
     waistClaimed?: readonly string[],
     tier?: PerceptionTier
 ): void {
+    const enabled = ctx.state.balanceSwayEnabled;
+    const period = ctx.state.balanceSwayPeriod;
+    const amplitude = ctx.state.balanceSwayAmplitude;
+    const balanceState = ctx.lastOffsets.balance;
     // [doc:adr-164] tier 守卫：low 跳过
     if (tier === 'low') return;
     const boneNames: string[] = mmdModel.runtimeBones.map((b: IMmdRuntimeBone) => b.name);
@@ -79,7 +78,6 @@ export function _applyBalanceSway(
 
     const phase = ((time % period) / period) * Math.PI * 2;
     const slowPhase = phase * 0.5;
-    const written: string[] = [];
 
     // center: position bobY + rotation rz/rx
     if (centerName) {
@@ -110,7 +108,6 @@ export function _applyBalanceSway(
             }
             balanceState.lastCenterRz = rz;
             balanceState.lastCenterRx = rx;
-            written.push(centerName);
         }
     }
 
@@ -127,7 +124,6 @@ export function _applyBalanceSway(
                 bone.linkedBone.rotationQuaternion.copyFrom(localQ);
             }
             balanceState.lastUpperRx = rx;
-            written.push(upper2Name);
         }
     }
 
@@ -144,7 +140,6 @@ export function _applyBalanceSway(
                 bone.linkedBone.rotationQuaternion.copyFrom(localQ);
             }
             balanceState.lastWaistRz = rz;
-            written.push(waistName);
         }
     }
 
@@ -164,9 +159,6 @@ export function _applyBalanceSway(
             }
             balanceState.lastAllParentRx = rx;
             balanceState.lastAllParentRz = rz;
-            written.push(allParentName);
         }
     }
-
-    balanceState.lastBalanceSwayBones = written;
 }

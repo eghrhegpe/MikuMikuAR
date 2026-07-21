@@ -1200,11 +1200,11 @@ describe('ADR-164 模型加载自动激活', () => {
 describe('ADR-166 多模型隔离', () => {
     it('1. setPerceptionStateFor 写入不同 context 互不干扰', () => {
         sut.setPerceptionStateFor('m1', { breathFrequency: 0.5 });
-        sut.setPerceptionStateFor('m2', { breathFrequency: 0.3 });
+        sut.setPerceptionStateFor('m2', { breathFrequency: 0.7 });
 
         expect(sut.getPerceptionStateFor('m1').breathFrequency).toBe(0.5);
-        expect(sut.getPerceptionStateFor('m2').breathFrequency).toBe(0.3);
-        expect(sut.getPerceptionState().breathFrequency).toBe(0.25); // fallback 默认不受影响
+        expect(sut.getPerceptionStateFor('m2').breathFrequency).toBe(0.7);
+        expect(sut.getPerceptionState().breathFrequency).toBe(0.3); // fallback 默认不受影响
     });
 
     it('2. 焦点 setBreathFrequency 不污染 pinned 模型 ctx.state', () => {

@@ -29,11 +29,9 @@ function makeCtx(state?: Partial<PerceptionState>): PerceptionContext {
         isPinned: false,
         lastOffsets: {
             breath: 0,
-            breathBoneName: null,
             balance: {
                 lastBobY: 0, swayCenterName: null, lastCenterRz: 0, lastCenterRx: 0,
                 lastUpperRx: 0, lastWaistRz: 0, lastAllParentRx: 0, lastAllParentRz: 0,
-                lastSwayTime: 0, lastBalanceSwayBones: [],
             },
             emotion: null,
         },

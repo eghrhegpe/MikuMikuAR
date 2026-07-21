@@ -220,8 +220,6 @@ export interface BalanceSwayState {
     lastWaistRz: number;
     lastAllParentRx: number;
     lastAllParentRz: number;
-    lastSwayTime: number;
-    lastBalanceSwayBones: string[];
 }
 
 /** 每模型感知上下文（替代原单例，支持焦点 + pinned 多模型） */
@@ -232,7 +230,6 @@ export interface PerceptionContext {
     isPinned: boolean;
     lastOffsets: {
         breath: number;
-        breathBoneName: string | null;
         balance: BalanceSwayState;
         emotion: string | null;
     };
