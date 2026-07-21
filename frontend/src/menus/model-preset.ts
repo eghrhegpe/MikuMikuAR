@@ -169,7 +169,12 @@ export async function applyModelPreset(id: string, jsonStr: string): Promise<voi
         if (preset.vmd.path) {
             stopVMD(id);
             try {
-                await loadManager.load({ kind: 'vmd', path: preset.vmd.path, modelId: id });
+                await loadManager.load({
+                    kind: 'vmd',
+                    path: preset.vmd.path,
+                    modelId: id,
+                    skipSceneIntent: true,
+                });
             } catch (vmdErr) {
                 setStatus(t('model-preset.vmdLoadFailed'), false);
                 logWarn('model-preset', 'applyModelPreset: vmd load failed', vmdErr);
