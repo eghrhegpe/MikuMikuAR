@@ -1,6 +1,6 @@
 # ADR-159 渲染模块重复收口 + 关键补测 + 两项结构性重构决策
 
-> **状态**: 部分实现（Phase 1/2 已实施；P3-A 已实施；P3-B 规划中）
+> **状态**: 部分实现（Phase 1/2/P3-A/P3-B 已实施；P4 遗留未处理）
 > **日期**: 2026-07-21
 > **关联**: ADR-138（env-dispatcher 破循环依赖，回调注册范式）、ADR-148（overload 文件拆分）、ADR-152（舞台灯体积散射→光锥）、ADR-158（lighting 状态收口 P2-3）
 
@@ -20,7 +20,7 @@
 | 1 | 4 处文件内重复收口 + 附带隐患消除（DEV 守卫/GC/材质泄漏/skipAutoSave） | ✅ 已实施 | 🧱 已浇筑的墙 |
 | 2 | 快照恢复 + 舞台灯生命周期补测（10 例）+ 测试范式沉淀 | ✅ 已实施 | 🧱 已浇筑的墙 |
 | 3-A | performance→scene 静态重 import → 桥接注入（复用 ADR-138 延迟绑定范式） | ✅ 已实施 | 🧱 已浇筑的墙 |
-| 3-B | lighting.ts（1434 行）按职责拆 5+1 文件（复用 ADR-148/158 barrel 范式 + 独立状态归属模块） | 📋 规划中 | 📐 图纸上的承重梁 |
+| 3-B | lighting.ts（1434 行）按职责拆 5+1 文件（复用 ADR-148/158 barrel 范式 + 独立状态归属模块） | ✅ 已实施 | 🧱 已浇筑的墙 |
 
 ---
 
@@ -57,9 +57,9 @@
 
 ---
 
-## 📐 图纸上的承重梁（Phase 3 规划中）
+## Phase 3 结构性重构（已实施 — 承重梁已浇筑）
 
-> 以下两项为已设计、待施工的主体重构。图纸已定，施工须按 ADR-138/148/158 既有范式推进。
+> 以下两项主体重构均已完成施工，图纸已落地为混凝土结构，复用 ADR-138/148/158 既有范式推进。
 
 ### P3-A：performance → scene 静态重 import → 桥接注入（✅ 已实施，复用 ADR-138 延迟绑定范式）
 
@@ -76,7 +76,7 @@
 
 **验证**：tsc 零新增错误；render/scene 单测无回归。
 
-### P3-B：`lighting.ts`（1434 行）按职责拆分（复用 ADR-148/158 barrel 范式）
+### P3-B：`lighting.ts`（1434 行）按职责拆分（✅ 已实施，复用 ADR-148/158 barrel 范式）
 
 #### 前置：状态归属设计（✅ 已完成勘察）
 
@@ -118,10 +118,16 @@
 - 全量单测 **1786/1786 通过**（新增 10 例：4 快照 + 6 舞台灯，含 1 个 `saveCalls` 自动保存契约断言）
 - 提交：`5480b351`（收口）、`3ac42ad3`（补测）
 
+## 验证（P3-A / P3-B）
+
+- **P3-A**（提交 `da1ad8c6`）：tsc 零新增错误；`performance-snapshot.test.ts` 移除对 `scene` 的全量 stub，改 `registerRenderBridge` 注入 mock，4/4 通过；render/scene 单测无回归。
+- **P3-B**（提交 `db7126eb`）：tsc 零错误（含测试类型修复——`RenderState` 改从 `./renderer` 导入）；全量单测 **1786/1786 通过**（拆分零回归）；eslint 零告警（prettier `--fix` 清 39 处子代理生成遗留格式告警）。
+- 拆分落地文件：`lighting.ts`（barrel + 主光 + init/dispose）、`lighting-state.ts`（唯一可变状态所有者）、`lighting-stage.ts`、`lighting-shadow.ts`、`lighting-sun.ts`、`lighting-tween.ts`。外部 API 经 `export *` barrel 零改动。
+
 ## 待办
 
 | 优先级 | 项 | 状态 |
 |--------|----|----|
 | P2 | P3-A performance→scene 桥接注入 | ✅ 已实施 |
-| P3 | P3-B lighting.ts 拆分（状态归属设计已完成，待施工） | 规划中（图纸+设计已定） |
+| P3 | P3-B lighting.ts 拆分（6 文件落地：lighting-state + barrel + stage + shadow + sun + tween） | ✅ 已实施 |
 | P4 | `transitionLighting` observer 泄漏排查、`refreshRate` 非标准 API 兜底 | 未处理（ADR-158 遗留同批） |
