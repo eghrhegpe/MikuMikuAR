@@ -23,6 +23,10 @@ export {
     refreshWaterRenderList,
     addRipple,
     clearRipples,
+    addGroundRipple,
+    clearGroundRipples,
+    getGroundRippleTexture,
+    updateGroundRipples,
     updateWaterAnimSpeed,
     isUnderwaterActive,
 } from './env-water';
@@ -31,6 +35,7 @@ import {
     disposeWater,
     updateUnderwaterTransition,
     resetUnderwaterState,
+    updateGroundRipples,
 } from './env-water';
 export { createClouds, disposeClouds } from './env-clouds';
 import { createClouds, disposeClouds } from './env-clouds';
@@ -178,6 +183,9 @@ export function ensureEnvUpdateObserver(): void {
 
         // Ground per-frame updates (scroll, reflection, follow-camera)
         tickGround(dt);
+
+        // Ground ripples per-frame update
+        updateGroundRipples(dt);
 
         // Underwater
         updateUnderwaterTransition(scene, pipeline);

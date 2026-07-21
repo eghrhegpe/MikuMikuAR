@@ -3,6 +3,7 @@ import { Camera } from '@babylonjs/core/Cameras/camera';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { Vector3, Matrix } from '@babylonjs/core/Maths/math.vector';
 import { Texture } from '@babylonjs/core/Materials/Textures/texture';
+import { DynamicTexture } from '@babylonjs/core/Materials/Textures/dynamicTexture';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { safeDispose } from '@/core/dispose-helpers';
 import { Constants } from '@babylonjs/core/Engines/constants';
@@ -151,7 +152,9 @@ const waterReflection = new PlanarReflection({
     getQuality: (s) => {
         // ADR-151: reflectionMode 全局覆盖（none→强关、planar→拔高到至少 low）
         const override = getPlanarQualityOverride(s);
-        if (override === 'off') return 'off';
+        if (override === 'off') {
+            return 'off';
+        }
         let q: string;
         // reflectionQuality 显式指定（含 'off'）直接返回；仅当值不在合法列表时 fallback
         if (['high', 'medium', 'low', 'off'].includes(s.reflectionQuality)) {
@@ -160,7 +163,9 @@ const waterReflection = new PlanarReflection({
             const map: Record<string, string> = { high: 'high', medium: 'medium', low: 'low' };
             q = map[s.qualityProfile] ?? 'off';
         }
-        if (override === 'low' && q === 'off') return 'low';
+        if (override === 'low' && q === 'off') {
+            return 'low';
+        }
         return q;
     },
     getBlend: (s) => s.planarReflectBlend ?? 0.5,
@@ -242,7 +247,11 @@ export function addRipple(pos: Vector3, radius = 5, strength = 0.5, speed = 2, m
         const idx = _ripples.length;
         _ripples.push({
             position: new Vector3(0, 0, 0),
-            radius: 0, strength: 0, speed: 0, life: 0, maxLife: 0,
+            radius: 0,
+            strength: 0,
+            speed: 0,
+            life: 0,
+            maxLife: 0,
         });
         _fillSlot(idx, pos, radius, strength, speed, maxLife);
         return;
@@ -250,12 +259,21 @@ export function addRipple(pos: Vector3, radius = 5, strength = 0.5, speed = 2, m
     // 3. 全活 → 替换寿命最短的（等效缩短其动画，适应高密度场景）
     let oldest = 0;
     for (let i = 1; i < _ripples.length; i++) {
-        if (_ripples[i].life < _ripples[oldest].life) oldest = i;
+        if (_ripples[i].life < _ripples[oldest].life) {
+            oldest = i;
+        }
     }
     _fillSlot(oldest, pos, radius, strength, speed, maxLife);
 }
 
-function _fillSlot(idx: number, pos: Vector3, radius: number, strength: number, speed: number, maxLife: number): void {
+function _fillSlot(
+    idx: number,
+    pos: Vector3,
+    radius: number,
+    strength: number,
+    speed: number,
+    maxLife: number
+): void {
     const r = _ripples[idx];
     r.position.copyFrom(pos);
     r.radius = Math.max(RIPPLE_MIN_RADIUS, radius);
@@ -267,6 +285,167 @@ function _fillSlot(idx: number, pos: Vector3, radius: number, strength: number, 
 
 export function clearRipples(): void {
     _ripples = [];
+}
+
+// ======== 地面涟漪系统（Ground Ripples）========
+// 与水面涟漪结构相同，但渲染到地面材质的 bumpTexture（法线扰动）
+// 由 env-particles 在粒子落地时触发，模拟雨滴/落叶触地效果
+const GROUND_RIPPLE_SIZE = 256; // 地面涟漪纹理尺寸
+const GROUND_RIPPLE_MAX = 64; // 最大同时活跃数
+let _groundRipples: RippleSource[] = [];
+let _groundRippleTex: DynamicTexture | null = null;
+let _groundRippleScene: Scene | null = null;
+let _groundRippleDirty = false;
+
+/** 添加地面涟漪（粒子落地时调用） */
+export function addGroundRipple(
+    pos: Vector3,
+    radius = 3,
+    strength = 0.3,
+    speed = 1.5,
+    maxLife = 2
+): void {
+    // 复用死亡 slot
+    for (let i = 0; i < _groundRipples.length; i++) {
+        if (_groundRipples[i].life <= 0) {
+            _fillGroundRippleSlot(i, pos, radius, strength, speed, maxLife);
+            return;
+        }
+    }
+    // 未满 → push
+    if (_groundRipples.length < GROUND_RIPPLE_MAX) {
+        const idx = _groundRipples.length;
+        _groundRipples.push({
+            position: new Vector3(0, 0, 0),
+            radius: 0,
+            strength: 0,
+            speed: 0,
+            life: 0,
+            maxLife: 0,
+        });
+        _fillGroundRippleSlot(idx, pos, radius, strength, speed, maxLife);
+        return;
+    }
+    // 全活 → 替换寿命最短的
+    let oldest = 0;
+    for (let i = 1; i < _groundRipples.length; i++) {
+        if (_groundRipples[i].life < _groundRipples[oldest].life) {
+            oldest = i;
+        }
+    }
+    _fillGroundRippleSlot(oldest, pos, radius, strength, speed, maxLife);
+}
+
+function _fillGroundRippleSlot(
+    idx: number,
+    pos: Vector3,
+    radius: number,
+    strength: number,
+    speed: number,
+    maxLife: number
+): void {
+    const r = _groundRipples[idx];
+    r.position.copyFrom(pos);
+    r.radius = Math.max(0.5, radius);
+    r.strength = clamp01(strength);
+    r.speed = Math.max(0.5, speed);
+    r.life = maxLife > 0 ? maxLife : 3;
+    r.maxLife = maxLife;
+    _groundRippleDirty = true;
+}
+
+export function clearGroundRipples(): void {
+    _groundRipples = [];
+    _groundRippleDirty = true;
+}
+
+/** 获取地面涟漪纹理（供 env-ground 设置到 bumpTexture） */
+export function getGroundRippleTexture(scene: Scene): Texture | null {
+    if (!_groundRippleTex || _groundRippleScene !== scene) {
+        _groundRippleScene = scene;
+        const tex = new DynamicTexture(
+            'groundRippleTex',
+            { width: GROUND_RIPPLE_SIZE, height: GROUND_RIPPLE_SIZE },
+            scene,
+            false
+        );
+        tex.name = 'groundRippleTex';
+        _groundRippleTex = tex;
+        _groundRippleDirty = true;
+    }
+    return _groundRippleTex;
+}
+
+/** 是否有活跃的地面涟漪（供 env-ground 判断是否需要叠加 ripple 法线纹理） */
+export function hasActiveGroundRipples(): boolean {
+    return _groundRipples.length > 0;
+}
+
+/** 每帧更新地面涟漪纹理（由 env-ground 的 update observer 驱动） */
+export function updateGroundRipples(dt: number): void {
+    if (_groundRipples.length === 0) {
+        return;
+    }
+
+    // 更新生命
+    let anyAlive = false;
+    for (const r of _groundRipples) {
+        if (r.life <= 0) {
+            continue;
+        }
+        r.life -= dt;
+        anyAlive = true;
+    }
+    if (!anyAlive) {
+        _groundRipples = [];
+        return;
+    }
+
+    if (!_groundRippleDirty && _groundRipples.every((r) => r.life <= 0)) {
+        return;
+    }
+    _groundRippleDirty = false;
+
+    // 绘制涟漪法线扰动到 DynamicTexture 的 canvas
+    const rippleTex = _groundRippleTex;
+    if (!rippleTex) {
+        return;
+    }
+    const ctx = rippleTex.getContext();
+    if (!ctx) {
+        return;
+    }
+
+    const S = GROUND_RIPPLE_SIZE;
+    ctx.clearRect(0, 0, S, S);
+    // 默认法线朝上 (128,128,255) = 无扰动
+    ctx.fillStyle = 'rgb(128,128,255)';
+    ctx.fillRect(0, 0, S, S);
+
+    for (const r of _groundRipples) {
+        if (r.life <= 0) {
+            continue;
+        }
+        const lifeRatio = r.life / (r.maxLife || 1);
+        const alpha = Math.max(0, lifeRatio);
+        const currentRadius = r.radius * (1 + (1 - lifeRatio) * 0.5);
+        const pixelRadius = Math.max(2, currentRadius * (S / 200));
+
+        // 径向渐变法线扰动：中心法线偏转最大，向外衰减
+        const grad = ctx.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, pixelRadius);
+        // 涟漪中心：法线偏转（r=偏红, g=偏绿, b=255）
+        const rStrength = r.strength * alpha;
+        grad.addColorStop(0, `rgb(${128 + rStrength * 80}, ${128}, 255)`);
+        grad.addColorStop(0.5, `rgb(128, ${128 + rStrength * 60}, 255)`);
+        grad.addColorStop(1, 'rgb(128,128,255)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(S / 2 - pixelRadius, S / 2 - pixelRadius, pixelRadius * 2, pixelRadius * 2);
+    }
+
+    // 更新 texture
+    if (_groundRippleTex) {
+        _groundRippleTex.update();
+    }
 }
 
 // ======== 焦散系统（静态纹理 + UV 滚动）========
@@ -976,11 +1155,13 @@ export function updateUnderwaterTransition(scene: Scene, pipeline: DefaultRender
         // 水下灯光衰减：降低方向光和半球光强度，避免暖光+蓝雾产生脏色
         const dl = scene.getLightByName('dir');
         if (dl) {
-            dl.intensity = dl.intensity * (1 - t) + dl.intensity * UNDERWATER_DIR_INTENSITY_SCALE * t;
+            dl.intensity =
+                dl.intensity * (1 - t) + dl.intensity * UNDERWATER_DIR_INTENSITY_SCALE * t;
         }
         const hl = scene.getLightByName('hemi');
         if (hl) {
-            hl.intensity = hl.intensity * (1 - t) + hl.intensity * UNDERWATER_HEMI_INTENSITY_SCALE * t;
+            hl.intensity =
+                hl.intensity * (1 - t) + hl.intensity * UNDERWATER_HEMI_INTENSITY_SCALE * t;
         }
     } else if (!_underwaterActive) {
         pipeline.chromaticAberrationEnabled = false;

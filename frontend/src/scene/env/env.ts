@@ -78,6 +78,22 @@ export function clearRipples(): void {
     impl.clearRipples();
 }
 
+// ======== Ground Ripples ========
+
+export function addGroundRipple(
+    pos: Vector3,
+    radius?: number,
+    strength?: number,
+    speed?: number,
+    maxLife?: number
+): void {
+    impl.addGroundRipple(pos, radius, strength, speed, maxLife);
+}
+
+export function clearGroundRipples(): void {
+    impl.clearGroundRipples();
+}
+
 // ======== Particles ========
 
 export function createParticleEmitter(state?: EnvState): void {
