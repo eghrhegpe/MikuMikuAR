@@ -7,14 +7,12 @@ import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { SpotLight } from '@babylonjs/core/Lights/spotLight';
 import { DirectionalLight } from '@babylonjs/core/Lights/directionalLight';
 import { lightingState } from './lighting-state';
+import { modelRegistry, propRegistry } from '@/core/config';
 import { rebuildStageLightShadows } from './lighting-stage';
 
 /** 遍历所有模型/道具的 Mesh，加入阴影生成器。 */
 export function _addAllMeshesToShadow(gen: ShadowGenerator | CascadedShadowGenerator): void {
-    if (!lightingState.modelRegistry || !lightingState.propRegistry) {
-        return;
-    }
-    for (const [, inst] of lightingState.modelRegistry) {
+    for (const [, inst] of modelRegistry) {
         for (const m of inst.meshes) {
             if (m instanceof Mesh) {
                 gen.addShadowCaster(m);
@@ -22,7 +20,7 @@ export function _addAllMeshesToShadow(gen: ShadowGenerator | CascadedShadowGener
             }
         }
     }
-    for (const [, inst] of lightingState.propRegistry) {
+    for (const [, inst] of propRegistry) {
         for (const m of inst.meshes) {
             if (m instanceof Mesh) {
                 gen.addShadowCaster(m);
@@ -35,8 +33,6 @@ export function _addAllMeshesToShadow(gen: ShadowGenerator | CascadedShadowGener
 export function _ensureShadow(): void {
     if (
         !lightingState.scene ||
-        !lightingState.modelRegistry ||
-        !lightingState.propRegistry ||
         !lightingState.envSysShadow
     ) {
         return;
@@ -72,7 +68,7 @@ export function rebuildShadowCasters(): void {
 }
 
 export function _ensureStageShadow(id: string): void {
-    if (!lightingState.scene || !lightingState.modelRegistry || !lightingState.propRegistry) {
+    if (!lightingState.scene) {
         return;
     }
     const entry = lightingState.stageLights.get(id);

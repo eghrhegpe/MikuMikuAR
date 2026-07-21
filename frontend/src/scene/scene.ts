@@ -356,7 +356,7 @@ export async function initScene(): Promise<void> {
     );
 
     // 2. 各子系统初始化（相机系统已在模块顶层初始化）
-    initLighting(scene, modelRegistry, propRegistry, _envSys.shadow, triggerAutoSave);
+    initLighting(scene, _envSys.shadow, triggerAutoSave);
     initRenderer(scene, modelRegistry, triggerAutoSave);
     initEnvFacade(scene, pipeline);
 

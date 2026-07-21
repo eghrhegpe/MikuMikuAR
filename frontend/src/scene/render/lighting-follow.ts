@@ -5,6 +5,8 @@
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { SpotLight } from '@babylonjs/core/Lights/spotLight';
+import { ShadowGenerator } from '@babylonjs/core/Lights/Shadows/shadowGenerator';
+import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { lightingState } from './lighting-state';
 import { modelRegistry } from '@/core/config';
 import { safeDispose } from '@/core/dispose-helpers';
@@ -19,6 +21,7 @@ export interface PersonalLightSettings {
 
 interface PersonalLightEntry {
     light: SpotLight;
+    shadowGen: ShadowGenerator;
     settings: PersonalLightSettings;
     currentPos: Vector3;
 }
@@ -61,8 +64,19 @@ export function attachPersonalLight(modelId: string, overrides?: Partial<Persona
     light.specular = new Color3(0.3, 0.3, 0.3);
     light.range = settings.height * 3;
 
+    const shadowGen = new ShadowGenerator(512, light);
+    shadowGen.usePercentageCloserFiltering = true;
+    shadowGen.bias = 0.001;
+    for (const m of model.meshes) {
+        if (m instanceof Mesh) {
+            shadowGen.addShadowCaster(m);
+            m.receiveShadows = true;
+        }
+    }
+
     _entries.set(modelId, {
         light,
+        shadowGen,
         settings,
         currentPos: startPos.clone(),
     });
@@ -71,6 +85,7 @@ export function attachPersonalLight(modelId: string, overrides?: Partial<Persona
 export function detachPersonalLight(modelId: string): void {
     const entry = _entries.get(modelId);
     if (!entry) return;
+    safeDispose(entry.shadowGen);
     safeDispose(entry.light);
     _entries.delete(modelId);
 }
