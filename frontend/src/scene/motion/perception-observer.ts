@@ -8,7 +8,13 @@ import { _applyMicroExpression } from './perception-expression';
 import { _applyBalanceSway } from './perception-balance';
 import { _applyLipSync } from './perception-lipsync';
 import { _applyGaze } from './perception-gaze';
-import type { PerceptionContext, MmdModelLike, PerceptionTier } from './perception-shared';
+import {
+    _setContextPool,
+    _resetContextPool,
+    type PerceptionContext,
+    type MmdModelLike,
+    type PerceptionTier,
+} from './perception-shared';
 import { logWarn } from '@/core/logger';
 import { getScene } from '../env/env-impl';
 
@@ -58,87 +64,95 @@ export function _applyPerceptionForContext(
     frameCounter: number,
     ownedBonesMap: Map<string, Map<string, string[]>> | undefined
 ): void {
-    const state = ctx.state;
-    const owned = ownedBonesMap?.get(ctx.modelId);
+    // [doc:adr-164 P2] 切换到本 context 的独立对象池
+    _setContextPool(ctx.pool);
+    _resetContextPool();
+    try {
+        const state = ctx.state;
+        const owned = ownedBonesMap?.get(ctx.modelId);
 
-    if (state.breathEnabled) {
-        try {
-            const claimed = owned?.get('perception.breath');
-            _applyBreathing(mmdModel, time, ctx, claimed);
-        } catch (e) {
-            logWarn('perception', 'breathing 异常:', e);
-        }
-    }
-
-    if (state.blinkEnabled) {
-        try {
-            _applyBlinking(mmdModel, time, ctx);
-        } catch (e) {
-            logWarn('perception', 'blinking 异常:', e);
-        }
-    }
-
-    if (tier !== 'low') {
-        const shouldRunExpr = tier === 'high' || frameCounter % 4 === 0;
-        if (shouldRunExpr) {
+        if (state.breathEnabled) {
             try {
-                _applyMicroExpression(
-                    mmdModel,
-                    time,
-                    state.microExpressionEnabled,
-                    state.emotion,
-                    ctx,
-                    tier
-                );
+                const claimed = owned?.get('perception.breath');
+                _applyBreathing(mmdModel, time, ctx, claimed);
             } catch (e) {
-                logWarn('perception', 'micro-expression 异常:', e);
+                logWarn('perception', 'breathing 异常:', e);
             }
         }
-    }
 
-    if (tier !== 'low') {
-        try {
-            const centerClaimed = owned?.get('perception.balance.center');
-            const upperClaimed = owned?.get('perception.balance.upper');
-            const waistClaimed = owned?.get('perception.balance.waist');
-            _applyBalanceSway(mmdModel, time, ctx, centerClaimed, upperClaimed, waistClaimed, tier);
-        } catch (e) {
-            logWarn('perception', 'balance-sway 异常:', e);
+        if (state.blinkEnabled) {
+            try {
+                _applyBlinking(mmdModel, time, ctx);
+            } catch (e) {
+                logWarn('perception', 'blinking 异常:', e);
+            }
         }
-    }
 
-    if (tier !== 'low') {
-        try {
-            _applyLipSync(mmdModel, time, state.lipSyncEnabled, ctx.modelId, state, tier);
-        } catch (e) {
-            logWarn('perception', 'lipsync 异常:', e);
-        }
-    }
-
-    if (tier !== 'low') {
-        const shouldRunGaze = tier === 'high' || frameCounter % 2 === 0;
-        if (shouldRunGaze && (state.headTrackingEnabled || state.eyeTrackingEnabled)) {
-            const cam = getScene().activeCamera;
-            if (cam) {
+        if (tier !== 'low') {
+            const shouldRunExpr = tier === 'high' || frameCounter % 4 === 0;
+            if (shouldRunExpr) {
                 try {
-                    const headClaimed = owned?.get('perception.gaze.head');
-                    const eyeClaimed = owned?.get('perception.gaze.eye');
-                    _applyGaze(
+                    _applyMicroExpression(
                         mmdModel,
-                        cam,
-                        {
-                            headEnabled: state.headTrackingEnabled,
-                            eyeEnabled: state.eyeTrackingEnabled,
-                        },
-                        dt,
-                        headClaimed,
-                        eyeClaimed,
+                        time,
+                        state.microExpressionEnabled,
+                        state.emotion,
+                        ctx,
                         tier
                     );
                 } catch (e) {
-                    logWarn('perception', 'gaze 异常:', e);
+                    logWarn('perception', 'micro-expression 异常:', e);
                 }
             }
         }
+
+        if (tier !== 'low') {
+            try {
+                const centerClaimed = owned?.get('perception.balance.center');
+                const upperClaimed = owned?.get('perception.balance.upper');
+                const waistClaimed = owned?.get('perception.balance.waist');
+                _applyBalanceSway(mmdModel, time, ctx, centerClaimed, upperClaimed, waistClaimed, tier);
+            } catch (e) {
+                logWarn('perception', 'balance-sway 异常:', e);
+            }
+        }
+
+        if (tier !== 'low') {
+            try {
+                _applyLipSync(mmdModel, time, state.lipSyncEnabled, ctx.modelId, state, tier);
+            } catch (e) {
+                logWarn('perception', 'lipsync 异常:', e);
+            }
+        }
+
+        if (tier !== 'low') {
+            const shouldRunGaze = tier === 'high' || frameCounter % 2 === 0;
+            if (shouldRunGaze && (state.headTrackingEnabled || state.eyeTrackingEnabled)) {
+                const cam = getScene().activeCamera;
+                if (cam) {
+                    try {
+                        const headClaimed = owned?.get('perception.gaze.head');
+                        const eyeClaimed = owned?.get('perception.gaze.eye');
+                        _applyGaze(
+                            mmdModel,
+                            cam,
+                            {
+                                headEnabled: state.headTrackingEnabled,
+                                eyeEnabled: state.eyeTrackingEnabled,
+                            },
+                            dt,
+                            headClaimed,
+                            eyeClaimed,
+                            tier
+                        );
+                    } catch (e) {
+                        logWarn('perception', 'gaze 异常:', e);
+                    }
+                }
+            }
+        }
+    } finally {
+        // [doc:adr-164 P2] 恢复全局池为 null（避免遗留指向已切换 context 的引用）
+        _setContextPool(null as any);
     }
 }

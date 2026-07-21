@@ -28,6 +28,7 @@ import {
     _gazeAlpha,
     setGazeAngles,
     PerceptionPerfMonitor,
+    _createPerceptionPool,
 } from './perception-shared';
 import {
     _clampHeadGazeTarget,
@@ -121,6 +122,7 @@ function _getOrCreateContext(modelId: string): PerceptionContext {
                 },
                 emotion: null,
             },
+            pool: _createPerceptionPool(),
         };
         _contexts.set(modelId, ctx);
     }
