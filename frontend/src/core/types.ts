@@ -121,6 +121,12 @@ export interface MotionSlotConfig {
     procRole?: 'idle' | 'autodance' | 'gesture' | 'expression';
     /** 运行时派生状态，不持久化 */
     status: 'compatible' | 'incompatible' | 'idle' | 'overridden';
+    /** [doc:adr-144] overlay VMD 文件路径（用户选择的叠加动作） */
+    overlayPath?: string;
+    /** [doc:adr-144] overlay 显示名 */
+    overlayName?: string;
+    /** [doc:adr-144] overlay 混合权重 0–1 */
+    overlayWeight?: number;
 }
 
 /** 双槽位：槽位1 基础 + 槽位2 叠加 */

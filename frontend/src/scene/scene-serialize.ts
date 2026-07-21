@@ -197,6 +197,14 @@ export interface SceneFile {
                     source: 'vmd' | 'retargeted';
                 };
             };
+            /** [doc:adr-144] overlay 槽位（overlayPath 非空时存在） */
+            overlay?: {
+                source: 'inherit' | 'pinned' | 'procedural';
+                overlayPath?: string;
+                overlayName?: string;
+                overlayWeight?: number;
+                procRole?: 'idle' | 'autodance' | 'gesture' | 'expression';
+            };
         };
         /** @deprecated 旧格式 motionAssignment，反序列化时迁移到 motionSlots */
         motionAssignment?: {
@@ -365,10 +373,11 @@ export function serializeScene(): SceneFile {
                     : undefined,
             feet: inst.feet,
             // [doc:adr-121] 序列化双槽位（仅 primary.source==='pinned' 落盘）
-            motionSlots:
-                inst.motionSlots?.primary.source === 'pinned'
-                    ? {
-                          primary: {
+            // [doc:adr-144] 序列化 overlay 槽位（overlayPath 非空时落盘）
+            motionSlots: (() => {
+                const primary =
+                    inst.motionSlots?.primary.source === 'pinned'
+                        ? {
                               source: 'pinned' as const,
                               pinned: {
                                   vmdPath: inst.motionSlots.primary.pinned?.vmdPath ?? null,
@@ -384,9 +393,23 @@ export function serializeScene(): SceneFile {
                                       })) ?? [],
                                   source: inst.motionSlots.primary.pinned?.source ?? 'vmd',
                               },
-                          },
-                      }
-                    : undefined,
+                          }
+                        : undefined;
+                const overlay =
+                    inst.motionSlots?.overlay.overlayPath
+                        ? {
+                              source: inst.motionSlots.overlay.source,
+                              overlayPath: inst.motionSlots.overlay.overlayPath,
+                              overlayName: inst.motionSlots.overlay.overlayName ?? '',
+                              overlayWeight: inst.motionSlots.overlay.overlayWeight ?? 1,
+                              procRole: inst.motionSlots.overlay.procRole,
+                          }
+                        : undefined;
+                if (!primary && !overlay) {
+                    return undefined;
+                }
+                return { primary, overlay };
+            })(),
             // [fix:material-persist] 落盘材质状态（仅非 null 才写，避免默认值噪声）
             ...(() => {
                 const ms = getMatState(inst.id);
@@ -651,6 +674,23 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                     primary: { source: 'inherit', status: 'idle' },
                     overlay: { source: 'inherit', status: 'idle' },
                 };
+            }
+
+            // [doc:adr-144] 恢复 overlay 槽位（overlayPath 非空时异步加载）
+            if (m.motionSlots?.overlay?.overlayPath) {
+                const resolvedOverlayPath = resolvePathFromRef(
+                    m.motionSlots.overlay.overlayPath,
+                    undefined
+                );
+                if (resolvedOverlayPath) {
+                    const { ensureOverlayLayer } = await import('./motion/overlay-manager');
+                    await ensureOverlayLayer(
+                        inst.id,
+                        resolvedOverlayPath,
+                        m.motionSlots.overlay.overlayName || '',
+                        m.motionSlots.overlay.overlayWeight ?? 1
+                    );
+                }
             }
             if (inst.visible === false) {
                 for (const mesh of inst.meshes) {
