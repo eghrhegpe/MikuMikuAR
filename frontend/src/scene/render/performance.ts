@@ -369,8 +369,10 @@ function applyDegrade(level: DegradeLevel, force = false): void {
 
 // ======== Thresholds with Hysteresis ========
 
-// 刷新率感知：将阈值按 refRate/60 缩放，使高刷设备获得正确校准。
+// Phase 1: 刷新率感知——将阈值按 refRate/60 缩放，使高刷设备获得正确校准。
 // 60Hz 下 RSCALE=1，行为与历史完全一致（零回归）。
+// Phase 2: 运行时峰值校准——启动后 ~3s 预热期后滚动 maxFPS 作为 observedCeiling，
+// 综合基准 reference = max(hardwareRefRate, observedCeiling) 防止首帧卡顿污染天花板。
 // `screen.refreshRate` 是非标准属性（仅部分 Chromium/特供浏览器暴露，WebView2 运行时不支持），
 // 故以异常安全方式读取，缺失/非有限正数/访问异常时一律回退 60Hz。
 interface ScreenWithRefreshRate extends Screen {
@@ -390,23 +392,53 @@ function detectRefreshRate(): number {
 function clampRate(v: number, lo: number, hi: number): number {
     return Math.min(hi, Math.max(lo, v));
 }
-const REF_RATE = clampRate(detectRefreshRate(), 30, 240);
-const RSCALE = REF_RATE / 60;
 
-// 降级阈值（帧率低于此值则降级），按刷新率缩放
-const DEGRADE_THRESHOLDS: Record<DegradeLevel, number> = {
-    0: Infinity, // 不降级
-    1: 28 * RSCALE, // 60Hz→28；120Hz→56（原 25/28，收紧提前干预）
-    2: 20 * RSCALE, // 60Hz→20；120Hz→40
-    3: 14 * RSCALE, // 60Hz→14；120Hz→28
-};
-// 恢复阈值（帧率高于此值才允许恢复），按刷新率缩放
-const RECOVERY_THRESHOLDS: Record<DegradeLevel, number> = {
-    0: Infinity,
-    1: 32 * RSCALE, // 60Hz→32；120Hz→64（gap 4，原 7）
-    2: 24 * RSCALE, // 60Hz→24；120Hz→48
-    3: 18 * RSCALE, // 60Hz→18；120Hz→36
-};
+// ===== Phase 2: 运行时峰值校准 =====
+
+/** 硬件刷新率（模块加载时定一次，resize 时可重读）。 */
+let _hardwareRefRate = clampRate(detectRefreshRate(), 30, 240);
+
+/** 稳态滚动 maxFPS（预热期后开始累积）。 */
+let _steadyMaxFps = 0;
+
+/** 运行时观测峰值，用于综合基准计算。 */
+let _observedCeiling = 0;
+
+/** 预热期标志：启动后前 ~3s 不追踪天花板，避免首帧卡顿污染。 */
+let _warmup = true;
+
+/** 预热开始时间戳。 */
+let _warmupStartTime = 0;
+
+/** 综合基准参考值：取硬件刷新率与观测峰值的较大者。 */
+function getReference(): number {
+    return Math.max(_hardwareRefRate, _observedCeiling);
+}
+
+/** 阈值缩放因子：reference / 60。 */
+function getRScale(): number {
+    return getReference() / 60;
+}
+
+/** 降级阈值（帧率低于此值则降级），按 reference 动态缩放。 */
+function getDegradeThreshold(level: DegradeLevel): number {
+    // 60Hz→28/20/14；120Hz→56/40/28
+    return [Infinity, 28, 20, 14][level] * getRScale();
+}
+
+/** 恢复阈值（帧率高于此值才允许恢复），按 reference 动态缩放。 */
+function getRecoveryThreshold(level: DegradeLevel): number {
+    // 60Hz→32/24/18；120Hz→64/48/36
+    return [Infinity, 32, 24, 18][level] * getRScale();
+}
+
+/**
+ * 重新计算刷新率基准（外接显示器变化时由 render-loop resize 触发）。
+ * 不重置 _observedCeiling / _steadyMaxFps，它们跨显示器有效。
+ */
+export function recalcPerformanceReference(): void {
+    _hardwareRefRate = clampRate(detectRefreshRate(), 30, 240);
+}
 
 // ======== Public API ========
 
@@ -448,6 +480,22 @@ export function updatePerformance(): void {
 
     const avgFps = _fpsSamples.reduce((a, b) => a + b, 0) / _fpsSamples.length;
 
+    // Phase 2: 运行时峰值校准（预热期后滚动 maxFPS）
+    if (_warmup) {
+        if (_warmupStartTime === 0) {
+            _warmupStartTime = performance.now();
+        } else if (performance.now() - _warmupStartTime > 3000) {
+            _warmup = false;
+            _steadyMaxFps = avgFps;
+        }
+    } else {
+        // 稳态：天花板只升不降（峰值校准，非实时 throttle 检测）
+        if (avgFps > _steadyMaxFps) {
+            _steadyMaxFps = avgFps;
+        }
+        _observedCeiling = _steadyMaxFps;
+    }
+
     // 确定目标级别
     let targetLevel: DegradeLevel;
     if (_mode === 'performance') {
@@ -460,11 +508,11 @@ export function updatePerformance(): void {
         // - 恢复：当 FPS 高于当前级别的恢复阈值，则升一级
         // - 两端互不干扰，避免阈值附近的来回跳变
         targetLevel = _currentLevel;
-        if (_currentLevel < 3 && avgFps < DEGRADE_THRESHOLDS[(_currentLevel + 1) as DegradeLevel]) {
+        if (_currentLevel < 3 && avgFps < getDegradeThreshold((_currentLevel + 1) as DegradeLevel)) {
             targetLevel = (_currentLevel + 1) as DegradeLevel;
         } else if (
             _currentLevel > 0 &&
-            avgFps > RECOVERY_THRESHOLDS[_currentLevel as DegradeLevel]
+            avgFps > getRecoveryThreshold(_currentLevel as DegradeLevel)
         ) {
             targetLevel = (_currentLevel - 1) as DegradeLevel;
         }

@@ -1,6 +1,6 @@
 # ADR-118: 刷新率感知的自动降级阈值
 
-> **状态**: Phase 1 已完成（刷新率相对阈值已落地 `frontend/src/scene/render/performance.ts`）；Phase 2 峰值校准规划中
+> **状态**: ✅ 已完成（Phase 1 刷新率相对阈值 + Phase 2 运行时峰值校准全量落地）
 > **背景**: 自动降级系统（`performance.ts` 的 `DEGRADE_THRESHOLDS` / `RECOVERY_THRESHOLDS`）使用**绝对 FPS 阈值**（28/20/14 降级、32/24/18 恢复），隐含假设基线为 60Hz。在 90/120/144Hz 高刷设备上，绝对阈值严重失准：120Hz 下 45fps 已明显卡顿（仅 37% 刷新率），但因 45 > 28 不触发降级，用户以为"没降级=没问题"，实际在掉帧。该问题由 ADR-DPR 修复（高 DPI 渲染清晰度修复）**直接激化**——修复后渲染缓冲区放大 9×，GPU 开始干真活，FPS 可能下滑，高刷设备的阈值失准从"理论"变"现实"。
 > **关联**: 高 DPI 渲染清晰化修复（同轮 `render-loop.ts` 的 `calcHardwareScaling` + DPR 纳入）、[ADR-100](adr-100-camera-control-behavior-dual-axis.md)（性能相关收尾）
 
@@ -128,14 +128,14 @@ const RECOVERY_THRESHOLDS: Record<DegradeLevel, number> = {
 - [x] `npm run build` + `npm run test`（1498 全绿）验证零回归
 - [x] 提交：`fix: 自动降级阈值改为刷新率相对标定（120Hz 适配，60Hz 零回归）`
 
-### Phase 2: 运行时峰值校准（规划中，可选）
+### Phase 2: 运行时峰值校准 ✅ 已完成
 
-- [ ] 新增 `observedCeiling`：启动后 ~3s 稳定期滚动 maxFPS
-- [ ] `reference = max(detectRefreshRate() || 60, observedCeiling)`
-- [ ] 阈值改用 `reference/60` 缩放
-- [ ] 区分"预热期"与"稳态"，避免首帧卡顿污染天花板
-- [ ] 在 `render-loop.ts` resize DPR 检测处一并重算（覆盖外接显示器刷新率变化）
-- [ ] 验证：`npm run check && npm run test && npm run build` 全绿
+- [x] 新增 `observedCeiling`：启动后 ~3s 稳定期滚动 maxFPS
+- [x] `reference = max(detectRefreshRate() || 60, observedCeiling)`
+- [x] 阈值改用 `reference/60` 缩放
+- [x] 区分"预热期"与"稳态"，避免首帧卡顿污染天花板
+- [x] 在 `render-loop.ts` resize DPR 检测处一并重算（覆盖外接显示器刷新率变化）
+- [x] 验证：`npm run check && npm run test` 全绿
 
 ---
 
