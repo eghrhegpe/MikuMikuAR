@@ -29,6 +29,7 @@ import { getPlanarQualityOverride } from './env-reflection';
 import { createCanvasTexture, getOrCreateCanvasTexture, isCacheOwnedTexture } from './env-texture';
 import { _envSys, getScene } from './env-context';
 import { ensureEnvUpdateObserver } from './env-impl';
+import { getGroundRippleTexture, updateGroundRipples, hasActiveGroundRipples } from './env-water';
 import { getCanvasCtx } from './env-type-helpers';
 
 // ======== ADR-114: 材质适配层（StandardMaterial ↔ PBRMaterial）========
@@ -245,7 +246,11 @@ function generateConcreteAlbedo(ctx: CanvasRenderingContext2D, size: number, see
     });
 }
 
-function generateConcreteRoughness(ctx: CanvasRenderingContext2D, size: number, seed: number): void {
+function generateConcreteRoughness(
+    ctx: CanvasRenderingContext2D,
+    size: number,
+    seed: number
+): void {
     _roughnessMap(ctx, size, (x, y) => {
         const fine = (fbm(x * 0.15, y * 0.15, seed + 77, 2, 1.0) + 1) * 0.5;
         return 0.72 + fine * 0.18;
@@ -306,7 +311,11 @@ function generateCarpetAlbedo(ctx: CanvasRenderingContext2D, size: number, seed:
     _fillPixels(ctx, size, (x, y) => {
         const pile = _carpetPile(x, y, seed);
         const wear = fbm(x * 0.02, y * 0.02, seed + 33, 3, 1.0); // 磨损斑块
-        return [118 + pile * 26 + wear * 22, 42 + pile * 12 + wear * 10, 46 + pile * 12 + wear * 10];
+        return [
+            118 + pile * 26 + wear * 22,
+            42 + pile * 12 + wear * 10,
+            46 + pile * 12 + wear * 10,
+        ];
     });
 }
 
@@ -355,16 +364,37 @@ interface ProceduralGenerators {
     normal: (ctx: CanvasRenderingContext2D, size: number, seed: number) => void;
 }
 
-const PROCEDURAL_GENERATORS: Record<
-    Exclude<GroundProceduralKind, 'none'>,
-    ProceduralGenerators
-> = {
-    wood: { albedo: generateWoodAlbedo, roughness: generateWoodRoughness, normal: generateWoodNormal },
-    marble: { albedo: generateMarbleAlbedo, roughness: generateMarbleRoughness, normal: generateMarbleNormal },
-    concrete: { albedo: generateConcreteAlbedo, roughness: generateConcreteRoughness, normal: generateConcreteNormal },
-    tile: { albedo: generateTileAlbedo, roughness: generateTileRoughness, normal: generateTileNormal },
-    carpet: { albedo: generateCarpetAlbedo, roughness: generateCarpetRoughness, normal: generateCarpetNormal },
-    metal: { albedo: generateMetalAlbedo, roughness: generateMetalRoughness, normal: generateMetalNormal },
+const PROCEDURAL_GENERATORS: Record<Exclude<GroundProceduralKind, 'none'>, ProceduralGenerators> = {
+    wood: {
+        albedo: generateWoodAlbedo,
+        roughness: generateWoodRoughness,
+        normal: generateWoodNormal,
+    },
+    marble: {
+        albedo: generateMarbleAlbedo,
+        roughness: generateMarbleRoughness,
+        normal: generateMarbleNormal,
+    },
+    concrete: {
+        albedo: generateConcreteAlbedo,
+        roughness: generateConcreteRoughness,
+        normal: generateConcreteNormal,
+    },
+    tile: {
+        albedo: generateTileAlbedo,
+        roughness: generateTileRoughness,
+        normal: generateTileNormal,
+    },
+    carpet: {
+        albedo: generateCarpetAlbedo,
+        roughness: generateCarpetRoughness,
+        normal: generateCarpetNormal,
+    },
+    metal: {
+        albedo: generateMetalAlbedo,
+        roughness: generateMetalRoughness,
+        normal: generateMetalNormal,
+    },
 };
 
 interface ProceduralTextures {
@@ -436,6 +466,31 @@ let _prevGroundRoll = NaN;
 let _groundScrollU = 0;
 let _groundScrollV = 0;
 
+// ======== 地面涟漪状态 ========
+let _groundRipples: BaseTexture | null = null;
+let _groundRippleApplied = false;
+
+function _syncGroundRippleTexture(mat: GroundMat, scene: import('@babylonjs/core').Scene): void {
+    const tex = getGroundRippleTexture(scene);
+    if (tex) {
+        // 暂存用户的 normalTexture，用 ripple 纹理覆盖 bumpTexture
+        if (!_groundRipples) {
+            _groundRipples = mat.bumpTexture;
+        }
+        mat.bumpTexture = tex;
+        tex.level = 0.5; // 半强度叠加，不淹没原始法线
+        _groundRippleApplied = true;
+    }
+}
+
+export function _disableGroundRippleTexture(mat: GroundMat): void {
+    if (_groundRippleApplied && _groundRipples !== undefined) {
+        mat.bumpTexture = _groundRipples;
+        _groundRipples = null;
+        _groundRippleApplied = false;
+    }
+}
+
 // ======== Texture mode cache ========
 const _TEX_GROUND_SIZE = 512;
 let _texGroundImg: HTMLImageElement | null = null;
@@ -458,7 +513,9 @@ const groundReflection = new PlanarReflection({
     getQuality: (s) => {
         // ADR-151: reflectionMode 全局覆盖（none→强关、planar→拔高到至少 low）
         const override = getPlanarQualityOverride(s);
-        if (override === 'off') return 'off';
+        if (override === 'off') {
+            return 'off';
+        }
         let q: string;
         // reflectionQuality 显式指定（含 'off'）直接返回；仅当值不在合法列表时 fallback
         if (['high', 'medium', 'low', 'off'].includes(s.reflectionQuality)) {
@@ -467,7 +524,9 @@ const groundReflection = new PlanarReflection({
             const map: Record<string, string> = { high: 'high', medium: 'medium', low: 'low' };
             q = map[s.qualityProfile] ?? 'off';
         }
-        if (override === 'low' && q === 'off') return 'low';
+        if (override === 'low' && q === 'off') {
+            return 'low';
+        }
         return q;
     },
     getBlend: (s) => s.groundReflectionBlend,
@@ -483,8 +542,12 @@ const groundReflection = new PlanarReflection({
     predicate: (mesh, _level) => {
         // 排除地面自身和天空球（天空球跟随主相机，在镜像相机中位置不对）
         // 天空反射由 scene.environmentTexture (IBL) 处理
-        if (mesh.name.startsWith('envGround')) return false;
-        if (mesh.name === 'envSkySphere' || mesh.name === 'envSkyDome') return false;
+        if (mesh.name.startsWith('envGround')) {
+            return false;
+        }
+        if (mesh.name === 'envSkySphere' || mesh.name === 'envSkyDome') {
+            return false;
+        }
         return mesh.isEnabled();
     },
     getMaterial: () => _envSys.ground.mesh?.material ?? null,
@@ -785,7 +848,7 @@ function _syncTextureGroundTexture(mat: GroundMat, state: EnvState, scene: Scene
     let dt = _getAlbedoTex(mat) as DynamicTexture | null;
     const needCreate = !dt || !(dt instanceof DynamicTexture) || dt.name !== 'envGroundTex';
     // [fix] 纹理密度与 mesh 尺寸成正比：mesh 变大时自动增加平铺次数，避免拉伸模糊
-    const baseScale = (_groundActualSize / 10) / Math.max(0.1, state.groundTextureScale);
+    const baseScale = _groundActualSize / 10 / Math.max(0.1, state.groundTextureScale);
     if (needCreate) {
         if (dt) {
             dt.dispose();
@@ -949,10 +1012,14 @@ export function applyGround(state: EnvState): void {
             if (albedoTex && albedoTex instanceof Texture) {
                 // [fix] 纹理密度与 mesh 尺寸成正比，避免拉伸模糊
                 albedoTex.uScale = albedoTex.vScale =
-                    (_groundActualSize / 10) / Math.max(0.1, state.groundTextureScale);
+                    _groundActualSize / 10 / Math.max(0.1, state.groundTextureScale);
                 _syncGroundTextureOffset(mat, state);
             }
             _syncGroundNormalTexture(mat, state);
+            // [doc:adr-123 Phase 2] 地面涟漪法线纹理叠加
+            if (hasActiveGroundRipples() || _groundRippleApplied) {
+                _syncGroundRippleTexture(mat, scene);
+            }
             if (state.groundStyle === 'texture') {
                 _syncTextureGroundTexture(mat, state, scene);
             }
@@ -1023,10 +1090,7 @@ export function applyGround(state: EnvState): void {
     mat.backFaceCulling = false;
     ground.material = mat;
 
-    if (
-        state.groundProceduralTexture !== 'none' &&
-        !state.groundTextureEnabled
-    ) {
+    if (state.groundProceduralTexture !== 'none' && !state.groundTextureEnabled) {
         // ADR-114: 程序化纹理模式（PBR 专属）
         const texs = generateProceduralGroundTextures(
             state.groundProceduralTexture,
@@ -1034,7 +1098,7 @@ export function applyGround(state: EnvState): void {
             scene
         );
         // [fix] 纹理密度与 mesh 尺寸成正比，避免拉伸模糊
-        const scale = (_groundActualSize / 10) / Math.max(0.1, state.groundProceduralScale);
+        const scale = _groundActualSize / 10 / Math.max(0.1, state.groundProceduralScale);
         texs.albedo.uScale = texs.albedo.vScale = scale;
         texs.roughness.uScale = texs.roughness.vScale = scale;
         texs.normal.uScale = texs.normal.vScale = scale;

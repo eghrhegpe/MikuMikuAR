@@ -7,13 +7,14 @@ import {
     Scene,
 } from '@babylonjs/core';
 import { EnvState, envState } from '@/core/config';
+import { modelRegistry } from '@/core/scene-state';
 import { getWindVector } from '@/core/wind-utils';
 import { logWarn } from '@/core/logger';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { safeDispose } from '@/core/dispose-helpers';
 import { registerEnvCallback } from './env-dispatcher';
 import { getEnvKeys } from '@/core/env-state-schema';
-import { ensureEnvUpdateObserver, addRipple, getGroundHeightAt } from './env-impl';
+import { ensureEnvUpdateObserver, addRipple, addGroundRipple, getGroundHeightAt } from './env-impl';
 import { _envSys, getScene } from './env-context';
 import { createCanvasTexture } from './env-texture';
 
@@ -28,12 +29,69 @@ interface SplashBurst {
     busy: boolean;
     releaseTimer: ReturnType<typeof setTimeout> | null;
 }
-const SPLASH_POOL_SIZE = 6;
+const SPLASH_POOL_SIZE = 12; // [doc:adr-123 Phase 3] 增大池容量以支持雨天地面溅射
 let _splashBurstPool: SplashBurst[] = [];
 let _splashPoolReady = false;
 
 // 碰撞检测 observer — 每帧遍历 CPU 粒子，检测地面碰撞
 let _collisionObserver: ObserverHandle | null = null;
+
+// ======== 湿身效果（Wet Body Effect）========
+// [doc:adr-123 Phase 3] 雨天时降低模型材质粗糙度，模拟湿身反光效果
+let _wetnessActive = false;
+/** 存储各 mesh 被修改前的原始 roughness 值 */
+const _originalRoughness = new Map<string, number>();
+
+/** 应用湿身效果：降低所有模型材质的 roughness */
+function _applyWetnessToModels(): void {
+    if (_wetnessActive) {
+        return;
+    }
+    _wetnessActive = true;
+    _originalRoughness.clear();
+    // 遍历所有已注册模型
+    for (const [, inst] of modelRegistry) {
+        if (!inst.meshes) {
+            continue;
+        }
+        for (const mesh of inst.meshes) {
+            const mat = mesh.material;
+            if (!mat) {
+                continue;
+            }
+            // 保存原始 roughness（PBRMaterial 用 roughness，StandardMaterial 无直接对应）
+            const pbr = mat as unknown as { roughness?: number };
+            if (pbr.roughness !== undefined) {
+                _originalRoughness.set(mesh.id, pbr.roughness);
+                pbr.roughness = Math.max(0.1, pbr.roughness * 0.5); // 粗糙度减半，最低 0.1
+            }
+        }
+    }
+}
+
+/** 移除湿身效果：恢复原始 roughness */
+function _removeWetnessFromModels(): void {
+    if (!_wetnessActive) {
+        return;
+    }
+    _wetnessActive = false;
+    for (const [, inst] of modelRegistry) {
+        if (!inst.meshes) {
+            continue;
+        }
+        for (const mesh of inst.meshes) {
+            const orig = _originalRoughness.get(mesh.id);
+            if (orig === undefined) {
+                continue;
+            }
+            const mat = mesh.material as unknown as { roughness?: number };
+            if (mat && mat.roughness !== undefined) {
+                mat.roughness = orig;
+            }
+        }
+    }
+    _originalRoughness.clear();
+}
 
 // 保存粒子系统创建时的初始发射方向，风力基于此计算，避免叠加
 let _initialDir1: Vector3 | null = null;
@@ -398,10 +456,18 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
     if (_envSys.particles.system && _currentParticleType === type) {
         return;
     }
+    // [doc:adr-123 Phase 3] 粒子类型切换时同步湿身效果
+    const prevType = _currentParticleType;
     if (_envSys.particles.system) {
         disposeParticles();
     }
     _currentParticleType = type;
+    // 湿身效果：进入/退出雨天时切换
+    if (isWeatherType(type) && type === 'rain' && !isWeatherType(prevType)) {
+        _applyWetnessToModels();
+    } else if (isWeatherType(prevType) && !isWeatherType(type)) {
+        _removeWetnessFromModels();
+    }
     if (type === 'none') {
         return;
     }
@@ -517,21 +583,21 @@ function initSplashBurstPool(): void {
     }
     const scene = getScene();
     for (let i = 0; i < SPLASH_POOL_SIZE; i++) {
-        const ps = new GPUParticleSystem(`splashBurst_${i}`, { capacity: 20 }, scene);
+        const ps = new GPUParticleSystem(`splashBurst_${i}`, { capacity: 30 }, scene);
         ps.particleTexture = makeParticleTexture('splash');
         ps.emitRate = 0; // 待命状态，不持续发射
         ps.emitter = new Vector3(0, 0, 0);
         ps.minLifeTime = 0.3;
-        ps.maxLifeTime = 0.6;
-        ps.minSize = 0.03;
-        ps.maxSize = 0.08;
-        ps.minEmitPower = 2;
-        ps.maxEmitPower = 5;
-        ps.gravity = new Vector3(0, -15, 0);
+        ps.maxLifeTime = 0.8;
+        ps.minSize = 0.04;
+        ps.maxSize = 0.12;
+        ps.minEmitPower = 3;
+        ps.maxEmitPower = 6;
+        ps.gravity = new Vector3(0, -12, 0);
         ps.blendMode = ParticleSystem.BLENDMODE_STANDARD;
-        ps.direction1 = new Vector3(-1, 2, -1);
-        ps.direction2 = new Vector3(1, 4, 1);
-        ps.addColorGradient(0, new Color4(0.8, 0.9, 1, 0.8), new Color4(0.9, 0.95, 1, 0.9));
+        ps.direction1 = new Vector3(-1.5, 2, -1.5);
+        ps.direction2 = new Vector3(1.5, 4, 1.5);
+        ps.addColorGradient(0, new Color4(0.8, 0.9, 1, 0.9), new Color4(0.9, 0.95, 1, 0.95));
         ps.addColorGradient(1, new Color4(0.8, 0.9, 1, 0), new Color4(0.9, 0.95, 1, 0));
         ps.updateSpeed = 0.01;
         ps.start();
@@ -624,6 +690,7 @@ function startCollisionDetection(ps: ParticleSystem, type: EnvState['particleTyp
             if (p.position.y <= deathY) {
                 p.age = p.lifeTime;
                 if (envState.waterEnabled && envState.waterLevel >= gh) {
+                    // 水面涟漪
                     addRipple(
                         new Vector3(p.position.x, envState.waterLevel, p.position.z),
                         0.5,
@@ -631,8 +698,18 @@ function startCollisionDetection(ps: ParticleSystem, type: EnvState['particleTyp
                         6,
                         1
                     );
-                } else if (envState.particleSplash && Math.random() < splashProb) {
-                    spawnSplashAt(p.position.x, gh, p.position.z);
+                } else {
+                    // 地面涟漪 + splash（雨滴/落叶触地）
+                    addGroundRipple(
+                        new Vector3(p.position.x, gh, p.position.z),
+                        2, // 半径略小于水面，地面涟漪扩散范围小
+                        0.25, // 强度适中
+                        1.5, // 速度
+                        1.5 // 寿命1.5秒
+                    );
+                    if (envState.particleSplash && Math.random() < splashProb) {
+                        spawnSplashAt(p.position.x, gh, p.position.z);
+                    }
                 }
             }
         }
