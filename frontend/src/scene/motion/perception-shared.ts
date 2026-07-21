@@ -36,7 +36,7 @@ export interface PerceptionState {
     eyeGazeMaxYaw: number; // 0–15°，默认 9
     eyeGazeMaxPitch: number; // 0–15°，默认 8
     eyeGazeSmooth: number; // 0–1，默认 0.35
-    // ── 重心微动可调参数（[doc:adr-151] 暴露给用户） ──
+    // ── 重心微动可调参数（[doc:adr-161] 暴露给用户） ──
     balanceSwayPeriod: number; // 0.5–5.0 s，默认 2.0
     balanceSwayAmplitude: number; // 0–2.0，默认 1.0（全局振幅乘数）
 }
@@ -264,8 +264,8 @@ export class PerceptionPerfMonitor {
 
         // 手动覆盖优先
         if (this._manualTier !== 'auto') {
-            // [doc:adr-164] 手动档下帧率持续偏低时 warn 用户
-            if (this.fps < 30 && modelCount > 20) {
+            // [doc:adr-164] 手动档下帧率持续偏低时 warn 用户（阈值与自动档一致）
+            if (this.fps < 45 && modelCount > 20) {
                 logWarn('perception', `手动档 ${this._manualTier} 但 fps=${this.fps.toFixed(0)} 模型=${modelCount}，建议切回 auto`);
             }
             this.tier = this._manualTier;

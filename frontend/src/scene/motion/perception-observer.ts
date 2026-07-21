@@ -66,7 +66,7 @@ export function _applyPerceptionForContext(
             const claimed = owned?.get('perception.breath');
             _applyBreathing(mmdModel, time, ctx, claimed);
         } catch (e) {
-            logWarn('perception', 'breathing 异常:', (e as Error)?.message);
+            logWarn('perception', 'breathing 异常:', e);
         }
     }
 
@@ -74,7 +74,7 @@ export function _applyPerceptionForContext(
         try {
             _applyBlinking(mmdModel, time, ctx);
         } catch (e) {
-            logWarn('perception', 'blinking 异常:', (e as Error)?.message);
+            logWarn('perception', 'blinking 异常:', e);
         }
     }
 
@@ -91,7 +91,7 @@ export function _applyPerceptionForContext(
                     tier
                 );
             } catch (e) {
-                logWarn('perception', 'micro-expression 异常:', (e as Error)?.message);
+                logWarn('perception', 'micro-expression 异常:', e);
             }
         }
     }
@@ -111,7 +111,7 @@ export function _applyPerceptionForContext(
                 tier
             );
         } catch (e) {
-            logWarn('perception', 'balance-sway 异常:', (e as Error)?.message);
+            logWarn('perception', 'balance-sway 异常:', e);
         }
     }
 
@@ -126,7 +126,7 @@ export function _applyPerceptionForContext(
                 tier
             );
         } catch (e) {
-            logWarn('perception', 'lipsync 异常:', (e as Error)?.message);
+            logWarn('perception', 'lipsync 异常:', e);
         }
     }
 
@@ -143,7 +143,7 @@ export function _applyPerceptionForContext(
                         eyeEnabled: state.eyeTrackingEnabled,
                     }, dt, headClaimed, eyeClaimed, tier);
                 } catch (e) {
-                    logWarn('perception', 'gaze 异常:', (e as Error)?.message);
+                    logWarn('perception', 'gaze 异常:', e);
                 }
             }
         }

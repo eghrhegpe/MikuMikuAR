@@ -809,7 +809,7 @@ describe('migratePerceptionFromProcMotion — balanceSway 迁移', () => {
 });
 
 // =====================================================================
-// [doc:adr-151] balanceSway 独立参数暴露
+// [doc:adr-161] balanceSway 独立参数暴露
 // =====================================================================
 
 describe('balanceSway 可调参数', () => {
@@ -1097,6 +1097,40 @@ describe('ADR-164 enableAllPerception / disableAllPerception', () => {
         // 焦点 m1 和 pinned m2 保留，其他关闭
         expect(sut.getPerceptionStateFor('m1').breathEnabled).toBe(true);
         expect(sut.getPerceptionStateFor('m2').breathEnabled).toBe(true);
+    });
+
+    it('3. enable→disable→enable toggle 后 lastOffsets 正确重置', () => {
+        const mockMorphManager = makeMockMorphManager(['笑み']);
+        const mockMmdModel = makeMockModelWithMorphManager(mockMorphManager);
+        const inst = { mmdModel: mockMmdModel };
+        mockState.modelManager.get.mockImplementation(() => inst);
+        mockState.modelManager.modelRegistry.set('m1', inst);
+        mockState.modelManager.modelRegistry.set('m2', inst);
+        mockState.focusedModelId = 'm1';
+
+        // 第 1 步：激活 m1
+        sut.activatePerception('m1');
+        expect(sut.__testOnlyGetContext('m1')?.lastOffsets.breath).toBe(0);
+
+        // 第 2 步：全员开启，m2 也激活
+        sut.enableAllPerception();
+        expect(sut.__testOnlyGetContext('m2')?.lastOffsets.breath).toBe(0);
+
+        // 第 3 步：触发 observer，m2 的 lastOffsets.breath 应被写入非 0 值
+        vi.spyOn(performance, 'now').mockReturnValue(1000);
+        triggerLastObserver();
+        const ctxBefore = sut.__testOnlyGetContext('m2');
+        expect(ctxBefore?.lastOffsets.breath).not.toBe(0);
+
+        // 第 4 步：disableAll，m2 的 offsets 应被重置
+        sut.disableAllPerception();
+        expect(sut.__testOnlyGetContext('m2')?.lastOffsets.breath).toBe(0);
+
+        // 第 5 步：再次 enableAll，m2 offsets 仍为 0（toggle 正确重置）
+        sut.enableAllPerception();
+        expect(sut.__testOnlyGetContext('m2')?.lastOffsets.breath).toBe(0);
+
+        vi.restoreAllMocks();
     });
 });
 

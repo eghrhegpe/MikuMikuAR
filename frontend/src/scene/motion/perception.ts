@@ -687,6 +687,8 @@ export function enableAllPerception(): void {
                 if (headOwned.size === 0) {
                     _reclaimPerceptionBones(id);
                 }
+                // [doc:adr-164] toggle enable→disable→enable 时重置 offsets，避免残留
+                _resetContextOffsets(ctx);
             }
         }
     }
@@ -699,6 +701,14 @@ export function disableAllPerception(): void {
     _allEnabled = false;
     for (const ctx of _contexts.values()) {
         if (ctx.modelId === _focusedContextId || ctx.isPinned) {
+            continue;
+        }
+        // [doc:adr-164] 已 dispose 的模型直接移除 context，避免占位
+        const inst = modelManager.get(ctx.modelId);
+        if (!inst?.mmdModel || inst.mmdModel.mesh?.isDisposed()) {
+            _releasePerceptionBones(ctx.modelId);
+            _contexts.delete(ctx.modelId);
+            _perceptionOwnedBones.delete(ctx.modelId);
             continue;
         }
         ctx.isActive = false;
@@ -751,13 +761,26 @@ export function setGazeConfig(headEnabled: boolean, eyeEnabled: boolean): void {
     triggerAutoSave();
 }
 
+/** 内部统一：完全移除指定 context（释放骨骼 + 删除 Map 占位） */
+function _removeContext(modelId: string): void {
+    const ctx = _contexts.get(modelId);
+    if (ctx) {
+        _releasePerceptionBones(modelId);
+        _contexts.delete(modelId);
+        _perceptionOwnedBones.delete(modelId);
+    }
+}
+
+/** 测试用：获取指定模型的 context（含 lastOffsets） */
+export function __testOnlyGetContext(modelId: string): PerceptionContext | undefined {
+    return _contexts.get(modelId);
+}
+
 /** 兼容接口：模型移除时清理（供 proc-motion-bridge.ts 调用） */
 export function onPerceptionModelRemoved(id: string): void {
     if (_focusedContextId === id) {
         deactivatePerception();
     } else {
-        _releasePerceptionBones(id);
+        _removeContext(id);
     }
-    _contexts.delete(id);
-    _perceptionOwnedBones.delete(id);
 }
