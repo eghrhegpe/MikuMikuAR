@@ -67,12 +67,14 @@ export interface MenuNode {
     visibleWhen?: () => boolean;
     /** [doc:adr-163] 冲突提示：对应感知层/模块层 moduleId，渲染时若该模块骨骼被抢占则显示警告图标 */
     conflictHint?: string;
+    /** [doc:adr-166] 模型 ID 覆写：感知层 path 时优先读/写指定模型的 ctx.state，而非焦点模型 */
+    modelId?: string;
 }
 
 // ======== 状态路径解析器 ========
 
 /** 按 StatePath 获取当前值 */
-export function getStateValue(path: StatePath): unknown {
+export function getStateValue(path: StatePath, modelId?: string): unknown {
     const [prefix, key] = path.split('.') as [string, string];
     switch (prefix) {
         case 'env':
@@ -83,8 +85,10 @@ export function getStateValue(path: StatePath): unknown {
             return (getLightState() as unknown as Record<string, unknown>)[key];
         case 'ui':
             return (uiState as unknown as Record<string, unknown>)[key];
-        case 'perception':
-            return ((focusedModelId ? getPerceptionStateFor(focusedModelId) : getPerceptionState()) as unknown as Record<string, unknown>)[key];
+        case 'perception': {
+            const mid = modelId ?? focusedModelId;
+            return ((mid ? getPerceptionStateFor(mid) : getPerceptionState()) as unknown as Record<string, unknown>)[key];
+        }
         case 'motionModule': {
             // 格式: motionModule.${moduleId}.${paramKey}
             // 注: 解构只取前两段，需从 path 重新解析剩余部分以支持 moduleId.paramKey 结构
@@ -114,7 +118,7 @@ export function getStateValue(path: StatePath): unknown {
 }
 
 /** 按 StatePath 设置值 */
-export function setStateValue(path: StatePath, value: unknown): void {
+export function setStateValue(path: StatePath, value: unknown, modelId?: string): void {
     const [prefix, key] = path.split('.') as [string, string];
     switch (prefix) {
         case 'env':
@@ -129,13 +133,15 @@ export function setStateValue(path: StatePath, value: unknown): void {
         case 'ui':
             setUIState({ [key]: value });
             break;
-        case 'perception':
-            if (focusedModelId) {
-                setPerceptionStateFor(focusedModelId, { [key]: value });
+        case 'perception': {
+            const mid = modelId ?? focusedModelId;
+            if (mid) {
+                setPerceptionStateFor(mid, { [key]: value });
             } else {
                 setPerceptionState({ [key]: value });
             }
             break;
+        }
         case 'motionModule': {
             // 格式: motionModule.${moduleId}.${paramKey}
             // 注: 解构只取前两段，需从 path 重新解析剩余部分

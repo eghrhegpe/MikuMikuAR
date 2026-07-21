@@ -57,7 +57,6 @@ export function _applyBreathing(mmdModel: MmdModelLike, time: number, ctx: Perce
         curQ.copyFrom(localQ);
     }
     ctx.lastOffsets.breath = breathOffset;
-    ctx.lastOffsets.breathBoneName = spineName;
 
     if ('updateWorldMatrix' in spine) {
         (spine as MmdRuntimeBoneExtended).updateWorldMatrix(false, false);

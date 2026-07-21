@@ -20,7 +20,6 @@ import {
     type GazeConfig,
     type PerceptionContext,
     type BalanceSwayState,
-    type MmdModelLike,
     type PerceptionTier,
     DEFAULT_PERCEPTION_STATE,
     _writeMatToBuffer,
@@ -31,22 +30,13 @@ import {
     PerceptionPerfMonitor,
 } from './perception-shared';
 import {
-    _applyGaze,
     _clampHeadGazeTarget,
     _clampEyeGazeTarget,
     applyGazeWasm,
     HEAD_BONE_CANDIDATES,
     EYE_BONE_CANDIDATES,
 } from './perception-gaze';
-import { _applyBreathing } from './perception-breathing';
-import { _applyBlinking } from './perception-blinking';
-import { _applyMicroExpression } from './perception-expression';
-import { _applyBalanceSway, _resetBalanceSwayState } from './perception-balance';
-import { clamp01 } from '@/core/utils';
-import { logWarn } from '@/core/logger';
-import { _applyLipSync } from './perception-lipsync';
-import { getBoneOverrideStore } from './bone-override-store';
-import { releaseOwnedBones } from './motion-modules/registry';
+import { _resetBalanceSwayState } from './perception-balance';
 import {
     BONE_UPPER_CANDIDATES,
     BONE_NECK_CANDIDATES,
@@ -56,6 +46,11 @@ import {
     BONE_WAIST_CANDIDATES,
     BONE_ALLPARENT_CANDIDATES,
 } from '../../motion-algos/proc-motion-shared';
+import { clamp01 } from '@/core/utils';
+import { logWarn } from '@/core/logger';
+import { getBoneOverrideStore } from './bone-override-store';
+import { releaseOwnedBones } from './motion-modules/registry';
+import { _applyPerceptionForContext, _getActiveContextsByTier } from './perception-observer';
 
 // ── re-export（保持外部导入路径不变） ──
 export type { Emotion, PerceptionState, GazeConfig, PerceptionContext, BalanceSwayState };
@@ -114,7 +109,6 @@ function _getOrCreateContext(modelId: string): PerceptionContext {
             isPinned: false,
             lastOffsets: {
                 breath: 0,
-                breathBoneName: null,
                 balance: {
                     lastBobY: 0,
                     swayCenterName: null,
@@ -124,8 +118,6 @@ function _getOrCreateContext(modelId: string): PerceptionContext {
                     lastWaistRz: 0,
                     lastAllParentRx: 0,
                     lastAllParentRz: 0,
-                    lastSwayTime: 0,
-                    lastBalanceSwayBones: [],
                 },
                 emotion: null,
             },
@@ -163,7 +155,6 @@ function _updateFocusedState(partial: Partial<PerceptionState>): void {
 /** 重置指定 context 的 lastOffsets（激活/注销时调用，避免跨模型残留） */
 function _resetContextOffsets(ctx: PerceptionContext): void {
     ctx.lastOffsets.breath = 0;
-    ctx.lastOffsets.breathBoneName = null;
     _resetBalanceSwayState(ctx.lastOffsets.balance);
     ctx.lastOffsets.emotion = null;
 }
@@ -223,116 +214,6 @@ function _reclaimPerceptionBones(modelId: string): void {
     _claimPerceptionBones(modelId);
 }
 
-/** 对单个 context 应用完整感知管线（[doc:adr-162] Phase 2 抽取；[doc:adr-164] 加 tier） */
-function _applyPerceptionForContext(
-    ctx: PerceptionContext,
-    mmdModel: MmdModelLike,
-    time: number,
-    dt: number,
-    tier: PerceptionTier,
-    frameCounter: number
-): void {
-    const state = ctx.state;
-    const owned = _perceptionOwnedBones.get(ctx.modelId);
-
-    // 1. 呼吸（所有 tier 运行）
-    if (state.breathEnabled) {
-        try {
-            const claimed = owned?.get('perception.breath');
-            _applyBreathing(mmdModel, time, ctx, claimed);
-        } catch (e) {
-            logWarn('perception', 'breathing 异常:', (e as Error)?.message);
-        }
-    }
-
-    // 2. 眨眼（所有 tier 运行）
-    if (state.blinkEnabled) {
-        try {
-            _applyBlinking(mmdModel, time, ctx);
-        } catch (e) {
-            logWarn('perception', 'blinking 异常:', (e as Error)?.message);
-        }
-    }
-
-    // 3. 微表情（high 每帧 / medium 每 4 帧 / low 跳过）
-    if (tier !== 'low') {
-        const shouldRunExpr = tier === 'high' || (frameCounter % 4 === 0);
-        if (shouldRunExpr) {
-            try {
-                _applyMicroExpression(
-                    mmdModel,
-                    time,
-                    state.microExpressionEnabled,
-                    state.emotion,
-                    ctx,
-                    tier
-                );
-            } catch (e) {
-                logWarn('perception', 'micro-expression 异常:', (e as Error)?.message);
-            }
-        }
-    }
-
-    // 4. 重心微动（low 跳过）
-    if (tier !== 'low') {
-        try {
-            const centerClaimed = owned?.get('perception.balance.center');
-            const upperClaimed = owned?.get('perception.balance.upper');
-            const waistClaimed = owned?.get('perception.balance.waist');
-            _applyBalanceSway(
-                mmdModel,
-                time,
-                state.balanceSwayEnabled,
-                state.balanceSwayPeriod,
-                state.balanceSwayAmplitude,
-                ctx.lastOffsets.balance,
-                centerClaimed,
-                upperClaimed,
-                waistClaimed,
-                tier
-            );
-        } catch (e) {
-            logWarn('perception', 'balance-sway 异常:', (e as Error)?.message);
-        }
-    }
-
-    // 5. Lip-sync（medium/high 运行，low 跳过）
-    if (tier !== 'low') {
-        try {
-            _applyLipSync(
-                mmdModel,
-                time,
-                state.lipSyncEnabled,
-                ctx.modelId,
-                state,
-                tier
-            );
-        } catch (e) {
-            logWarn('perception', 'lipsync 异常:', (e as Error)?.message);
-        }
-    }
-
-    // 6. 头部跟随 + 眼部跟随（high 每帧 / medium 每 2 帧 / low 跳过）
-    if (tier !== 'low') {
-        const shouldRunGaze = tier === 'high' || (frameCounter % 2 === 0);
-        if (shouldRunGaze && (state.headTrackingEnabled || state.eyeTrackingEnabled)) {
-            const cam = getScene().activeCamera;
-            if (cam) {
-                try {
-                    const headClaimed = owned?.get('perception.gaze.head');
-                    const eyeClaimed = owned?.get('perception.gaze.eye');
-                    _applyGaze(mmdModel, cam, {
-                        headEnabled: state.headTrackingEnabled,
-                        eyeEnabled: state.eyeTrackingEnabled,
-                    }, dt, headClaimed, eyeClaimed, tier);
-                } catch (e) {
-                    logWarn('perception', 'gaze 异常:', (e as Error)?.message);
-                }
-            }
-        }
-    }
-}
-
 /** 注销单个 context（供 observer 遍历中发现模型已 dispose 时调用） */
 function _deactivateContext(modelId: string): void {
     const ctx = _contexts.get(modelId);
@@ -342,30 +223,6 @@ function _deactivateContext(modelId: string): void {
     if (_focusedContextId === modelId) {
         _focusedContextId = null;
     }
-}
-
-/** [doc:adr-164] medium 档最多保留的非焦点非 pinned 模型数 */
-const MEDIUM_MAX_OTHERS = 10;
-
-/** [doc:adr-164] 根据 tier 返回应激活的 context 列表 */
-function _getActiveContextsByTier(tier: PerceptionTier): PerceptionContext[] {
-    const all = Array.from(_contexts.values()).filter((c) => c.isActive);
-    if (tier === 'high') {
-        return all;
-    }
-    if (tier === 'low') {
-        // 仅焦点 + pinned
-        return all.filter((c) => c.modelId === _focusedContextId || c.isPinned);
-    }
-    // medium：焦点 + pinned + 前 MEDIUM_MAX_OTHERS 个
-    const focused = all.find((c) => c.modelId === _focusedContextId);
-    const pinned = all.filter((c) => c.isPinned && c.modelId !== _focusedContextId);
-    const others = all.filter((c) => c.modelId !== _focusedContextId && !c.isPinned);
-    const result: PerceptionContext[] = [];
-    if (focused) result.push(focused);
-    result.push(...pinned);
-    result.push(...others.slice(0, MEDIUM_MAX_OTHERS));
-    return result;
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -394,7 +251,7 @@ function _ensureObserverRegistered(): void {
             _perfMonitor.update(scene, activeCount);
             const tier = _perfMonitor.getTier();
 
-            const activeContexts = _getActiveContextsByTier(tier);
+            const activeContexts = _getActiveContextsByTier(tier, _contexts, _focusedContextId);
 
             for (const ctx of activeContexts) {
                 const inst = modelManager.get(ctx.modelId);
@@ -406,7 +263,7 @@ function _ensureObserverRegistered(): void {
                     }
                     continue;
                 }
-                _applyPerceptionForContext(ctx, inst.mmdModel, time, dt, tier, _frameCounter);
+                _applyPerceptionForContext(ctx, inst.mmdModel, time, dt, tier, _frameCounter, _perceptionOwnedBones);
             }
         },
     });
