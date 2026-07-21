@@ -2,12 +2,10 @@
 // 从 motion-popup.ts 拆出：buildMotionRootItems / buildMotionRootLevel /
 // buildRetargetLevel / _importExternalAnimation
 
-import { showConfirm } from '../core/dialog';
 import { setStatus, stackRegistry, getBrowseDir, closeAllOverlays } from '../core/config';
 import type { PopupLevel, PopupRow } from '../core/config';
 import {
     modelManager,
-    updatePlaybackUI,
     triggerAutoSave,
     pushUndoSnapshot,
     offerSceneUndoAndRefresh,
@@ -17,8 +15,9 @@ import {
     getSceneMotions,
     getActiveMotionId,
     setDefaultMotion,
-    removeSceneMotion,
 } from '../scene/motion/motion-intent';
+// [doc:adr-170] 行尾「动作工具」推进详情页；循环依赖安全：仅在函数体内调用
+import { buildMotionDetailLevel } from './motion-detail-ui';
 import { clearAudio, getAudioName } from '../outfit/audio';
 import { t } from '../core/i18n/t';
 import { logWarn } from '../core/logger';
@@ -53,56 +52,44 @@ export function buildMotionRootItems(): PopupRow[] {
         });
     } else {
         for (const motion of sceneMotions) {
-            const isDefault = motion.id === activeId;
+            // [doc:adr-170] 选中范式：对齐模型焦点——行首 check-circle「选中」，行尾 settings-2「动作工具」；
+            // 删除/设为默认等低频操作收入详情页
+            const isSelected = motion.id === activeId;
+            const radioIcon = isSelected ? 'lucide:check-circle' : 'lucide:circle';
             items.push({
                 kind: 'action',
                 label: motion.vmdName || t('motion.intent.none'),
-                icon: isDefault ? 'lucide:clapperboard' : 'lucide:circle-play',
+                icon: radioIcon,
                 // [doc:adr-167] target 编码 sceneMotionId，路由侧解析后进对应详情页
                 target: `__motion_detail__:${motion.id ?? ''}`,
-                sublabel: isDefault ? t('motion.defaultMotion') : undefined,
+                sublabel: isSelected ? t('motion.defaultMotion') : undefined,
                 wrapLabel: true,
-                // 非默认动作 trailing 提供「设为默认」；默认动作无 trailing（sublabel 已显示徽标）
-                trailing: isDefault
-                    ? undefined
-                    : {
-                          icon: 'lucide:star',
-                          title: t('motion.setDefault'),
-                          onClick: () => {
-                              if (!motion.id) return;
-                              const snap = pushUndoSnapshot();
-                              setDefaultMotion(motion.id);
-                              getMotionMenu()?.reRender();
-                              triggerAutoSave();
-                              setStatus(
-                                  t('motion.defaultMotionSet', { name: motion.vmdName }),
-                                  true
-                              );
-                              offerSceneUndoAndRefresh(
-                                  t('motion.defaultMotionSet', { name: motion.vmdName }),
-                                  snap,
-                                  () => getMotionMenu()?.reRender()
-                              );
-                          },
-                      },
+                rowKey: 'motion:' + (motion.id ?? '') + (isSelected ? ':on' : ':off'),
                 leading: {
-                    icon: 'lucide:trash-2',
-                    title: t('motion.deleteMotion'),
-                    onClick: async () => {
-                        if (!motion.id) return;
-                        if (!(await showConfirm(t('motion.deleteMotionConfirm', { name: motion.vmdName })))) return;
+                    icon: radioIcon,
+                    title: t('motion.selectMotion'),
+                    onClick: () => {
+                        if (!motion.id || motion.id === activeId) return;
                         const snap = pushUndoSnapshot();
-                        const removedName = motion.vmdName;
-                        removeSceneMotion(motion.id);
-                        updatePlaybackUI();
+                        setDefaultMotion(motion.id);
                         getMotionMenu()?.reRender();
                         triggerAutoSave();
-                        setStatus(t('motion.motionRemoved', { name: removedName }), true);
+                        setStatus(
+                            t('motion.defaultMotionSet', { name: motion.vmdName }),
+                            true
+                        );
                         offerSceneUndoAndRefresh(
-                            t('motion.motionRemoved', { name: removedName }),
+                            t('motion.defaultMotionSet', { name: motion.vmdName }),
                             snap,
                             () => getMotionMenu()?.reRender()
                         );
+                    },
+                },
+                trailing: {
+                    icon: 'lucide:settings-2',
+                    title: t('motion.motionTools'),
+                    onClick: () => {
+                        getMotionMenu()?.push(buildMotionDetailLevel(motion.id));
                     },
                 },
             });

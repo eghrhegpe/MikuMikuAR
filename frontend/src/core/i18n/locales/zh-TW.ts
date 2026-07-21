@@ -419,6 +419,8 @@ export const zhTW: Record<string, string> = {
     'motion.defaultMotion': '預設',
     'motion.setDefault': '設為預設',
     'motion.defaultMotionSet': '✓ 已將 {name} 設為預設動作',
+    'motion.selectMotion': '選中',
+    'motion.motionTools': '動作工具',
     'motion.deleteMotion': '刪除動作',
     'motion.deleteMotionConfirm': '確定要刪除動作 "{name}" 嗎？',
     'motion.motionRemoved': '✓ 動作 {name} 已刪除',

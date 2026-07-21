@@ -269,6 +269,8 @@ export const en: Record<string, string> = {
     'motion.defaultMotion': 'Default',
     'motion.setDefault': 'Set as default',
     'motion.defaultMotionSet': '✓ {name} set as default motion',
+    'motion.selectMotion': 'Select',
+    'motion.motionTools': 'Motion tools',
     'motion.deleteMotion': 'Delete motion',
     'motion.deleteMotionConfirm': 'Delete motion "{name}"? This cannot be undone.',
     'motion.motionRemoved': '✓ Motion {name} removed',

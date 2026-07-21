@@ -425,6 +425,8 @@ export const ko: Record<string, string> = {
     'motion.defaultMotion': '기본',
     'motion.setDefault': '기본으로 설정',
     'motion.defaultMotionSet': '✓ {name} 이(가) 기본 모션으로 설정됨',
+    'motion.selectMotion': '선택',
+    'motion.motionTools': '모션 도구',
     'motion.deleteMotion': '모션 삭제',
     'motion.deleteMotionConfirm': '모션 "{name}"을(를) 삭제하시겠습니까?',
     'motion.motionRemoved': '✓ 모션 {name} 삭제됨',
