@@ -578,6 +578,7 @@ export {
     popUndoSnapshot,
     restoreUndoSnapshot,
     offerSceneUndo,
+    offerSceneUndoAndRefresh,
     canUndo,
 } from './scene-serialize';
 export { applyEnvState } from './env/env';

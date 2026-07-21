@@ -15,7 +15,7 @@ import { createTrailingBtn } from '../core/ui-slide-row';
 import { createIconifyIcon } from '../core/icons';
 import { getMotionMenu, renderModuleToggleList } from './motion-popup';
 import { addDisposableListener, type Disposable } from '../core/dom';
-import { triggerAutoSave, pushUndoSnapshot, offerSceneUndo } from '../scene/scene';
+import { triggerAutoSave, pushUndoSnapshot, offerSceneUndoAndRefresh } from '../scene/scene';
 import type { BoneOverrideEntry } from '../core/types';
 import {
     setBoneOverride,
@@ -638,12 +638,11 @@ function buildBoneOverrideSchema(): MenuNode[] {
                                         true
                                     );
                                     menu?.reRender();
-                                    offerSceneUndo(
+                                    offerSceneUndoAndRefresh(
                                         t('motion.boneOverride.removed', { bone: ov.boneName }),
                                         snap,
                                         () => {
                                             menu?.reRender();
-                                            setStatus(t('motion.undoApplied'), true);
                                         }
                                     );
                                 },
@@ -668,9 +667,8 @@ function buildBoneOverrideSchema(): MenuNode[] {
                         triggerAutoSave();
                         setStatus(t('motion.boneOverride.allCleared'), true);
                         menu?.reRender();
-                        offerSceneUndo(t('motion.boneOverride.allCleared'), snap, () => {
+                        offerSceneUndoAndRefresh(t('motion.boneOverride.allCleared'), snap, () => {
                             menu?.reRender();
-                            setStatus(t('motion.undoApplied'), true);
                         });
                     }, { variant: 'danger' });
                 });

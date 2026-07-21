@@ -43,7 +43,7 @@ import {
     type CameraControl,
     type CameraBehavior,
 } from '../scene/camera/camera';
-import { triggerAutoSave, pushUndoSnapshot, offerSceneUndo } from '../scene/scene';
+import { triggerAutoSave, pushUndoSnapshot, offerSceneUndoAndRefresh } from '../scene/scene';
 import { getMotionMenu } from './motion-popup';
 import {
     switchARCameraFacing,
@@ -220,9 +220,8 @@ function buildCameraSchema(): MenuNode[] {
                             triggerAutoSave();
                             refreshCameraLevel();
                             setStatus(t('motion.camVmdCleared'), true);
-                            offerSceneUndo(t('motion.camVmdCleared'), snap, () => {
+                            offerSceneUndoAndRefresh(t('motion.camVmdCleared'), snap, () => {
                                 refreshCameraLevel();
-                                setStatus(t('motion.undoApplied'), true);
                             });
                         });
                     }
