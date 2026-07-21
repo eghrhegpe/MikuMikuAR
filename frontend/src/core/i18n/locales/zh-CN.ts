@@ -409,6 +409,14 @@ export const zhCN: Record<string, string> = {
     'motion.balanceSway': '重心微动',
     'motion.balanceSwayPeriod': '周期',
     'motion.balanceSwayAmplitude': '幅度',
+    // ── [doc:adr-164] 全员感知 + 性能档位 ──
+    'motion.perceptionEnableAll': '全员感知',
+    'motion.perceptionTier': '性能档位',
+    'motion.perceptionTierAuto': '自动',
+    'motion.perceptionTierHigh': '全效',
+    'motion.perceptionTierMedium': '均衡',
+    'motion.perceptionTierLow': '节能',
+    'motion.perceptionDegraded': '部分感知项已降级',
     // ── 感知层可调参数（[doc:adr-116] 感知层滑块功能） ──
     'perception.headFollowParams': '头部跟随参数',
     'perception.headYawRange': '水平范围',

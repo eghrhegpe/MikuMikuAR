@@ -21,12 +21,14 @@ import {
     type PerceptionContext,
     type BalanceSwayState,
     type MmdModelLike,
+    type PerceptionTier,
     DEFAULT_PERCEPTION_STATE,
     _writeMatToBuffer,
     _propagateChildrenWasm,
     _isWasmRuntime,
     _gazeAlpha,
     setGazeAngles,
+    PerceptionPerfMonitor,
 } from './perception-shared';
 import {
     _applyGaze,
@@ -77,6 +79,12 @@ let _focusedContextId: string | null = null;
 let perceptionObserver: (() => void) | null = null;
 /** [doc:adr-163] 感知层已认领骨骼：modelId → moduleId → claimed[] */
 let _perceptionOwnedBones = new Map<string, Map<string, string[]>>();
+/** [doc:adr-164] 性能监控器 */
+let _perfMonitor = new PerceptionPerfMonitor();
+/** [doc:adr-164] 全局帧计数器（供 tier 降采样使用） */
+let _frameCounter = 0;
+/** [doc:adr-164] 全员感知开关 */
+let _allEnabled = false;
 
 // ══════════════════════════════════════════════════════════════
 // 内部 helpers
@@ -200,17 +208,19 @@ function _releasePerceptionBones(modelId: string): void {
     _perceptionOwnedBones.delete(modelId);
 }
 
-/** 对单个 context 应用完整感知管线（[doc:adr-162] Phase 2 抽取） */
+/** 对单个 context 应用完整感知管线（[doc:adr-162] Phase 2 抽取；[doc:adr-164] 加 tier） */
 function _applyPerceptionForContext(
     ctx: PerceptionContext,
     mmdModel: MmdModelLike,
     time: number,
-    dt: number
+    dt: number,
+    tier: PerceptionTier,
+    frameCounter: number
 ): void {
     const state = ctx.state;
     const owned = _perceptionOwnedBones.get(ctx.modelId);
 
-    // 1. 呼吸
+    // 1. 呼吸（所有 tier 运行）
     if (state.breathEnabled) {
         try {
             const claimed = owned?.get('perception.breath');
@@ -220,7 +230,7 @@ function _applyPerceptionForContext(
         }
     }
 
-    // 2. 眨眼
+    // 2. 眨眼（所有 tier 运行）
     if (state.blinkEnabled) {
         try {
             _applyBlinking(mmdModel, time);
@@ -229,63 +239,78 @@ function _applyPerceptionForContext(
         }
     }
 
-    // 3. 微表情（无条件调用，内部处理关闭/neutral 复位）
-    try {
-        _applyMicroExpression(
-            mmdModel,
-            time,
-            state.microExpressionEnabled,
-            state.emotion
-        );
-    } catch (e) {
-        logWarn('perception', 'micro-expression 异常:', (e as Error)?.message);
-    }
-
-    // 4. 重心微动（balance sway，[doc:adr-079] Phase 2）
-    try {
-        const centerClaimed = owned?.get('perception.balance.center');
-        const upperClaimed = owned?.get('perception.balance.upper');
-        const waistClaimed = owned?.get('perception.balance.waist');
-        _applyBalanceSway(
-            mmdModel,
-            time,
-            state.balanceSwayEnabled,
-            state.balanceSwayPeriod,
-            state.balanceSwayAmplitude,
-            centerClaimed,
-            upperClaimed,
-            waistClaimed
-        );
-    } catch (e) {
-        logWarn('perception', 'balance-sway 异常:', (e as Error)?.message);
-    }
-
-    // 5. Lip-sync（无条件调用，内部处理关闭复位）
-    try {
-        _applyLipSync(
-            mmdModel,
-            time,
-            state.lipSyncEnabled,
-            ctx.modelId,
-            state
-        );
-    } catch (e) {
-        logWarn('perception', 'lipsync 异常:', (e as Error)?.message);
-    }
-
-    // 6. 头部跟随 + 眼部跟随（gaze）
-    if (state.headTrackingEnabled || state.eyeTrackingEnabled) {
-        const cam = getScene().activeCamera;
-        if (cam) {
+    // 3. 微表情（high 每帧 / medium 每 4 帧 / low 跳过）
+    if (tier !== 'low') {
+        const shouldRunExpr = tier === 'high' || (frameCounter % 4 === 0);
+        if (shouldRunExpr) {
             try {
-                const headClaimed = owned?.get('perception.gaze.head');
-                const eyeClaimed = owned?.get('perception.gaze.eye');
-                _applyGaze(mmdModel, cam, {
-                    headEnabled: state.headTrackingEnabled,
-                    eyeEnabled: state.eyeTrackingEnabled,
-                }, dt, headClaimed, eyeClaimed);
+                _applyMicroExpression(
+                    mmdModel,
+                    time,
+                    state.microExpressionEnabled,
+                    state.emotion,
+                    tier
+                );
             } catch (e) {
-                logWarn('perception', 'gaze 异常:', (e as Error)?.message);
+                logWarn('perception', 'micro-expression 异常:', (e as Error)?.message);
+            }
+        }
+    }
+
+    // 4. 重心微动（low 跳过）
+    if (tier !== 'low') {
+        try {
+            const centerClaimed = owned?.get('perception.balance.center');
+            const upperClaimed = owned?.get('perception.balance.upper');
+            const waistClaimed = owned?.get('perception.balance.waist');
+            _applyBalanceSway(
+                mmdModel,
+                time,
+                state.balanceSwayEnabled,
+                state.balanceSwayPeriod,
+                state.balanceSwayAmplitude,
+                centerClaimed,
+                upperClaimed,
+                waistClaimed,
+                tier
+            );
+        } catch (e) {
+            logWarn('perception', 'balance-sway 异常:', (e as Error)?.message);
+        }
+    }
+
+    // 5. Lip-sync（medium/high 运行，low 跳过）
+    if (tier !== 'low') {
+        try {
+            _applyLipSync(
+                mmdModel,
+                time,
+                state.lipSyncEnabled,
+                ctx.modelId,
+                state,
+                tier
+            );
+        } catch (e) {
+            logWarn('perception', 'lipsync 异常:', (e as Error)?.message);
+        }
+    }
+
+    // 6. 头部跟随 + 眼部跟随（high 每帧 / medium 每 2 帧 / low 跳过）
+    if (tier !== 'low') {
+        const shouldRunGaze = tier === 'high' || (frameCounter % 2 === 0);
+        if (shouldRunGaze && (state.headTrackingEnabled || state.eyeTrackingEnabled)) {
+            const cam = getScene().activeCamera;
+            if (cam) {
+                try {
+                    const headClaimed = owned?.get('perception.gaze.head');
+                    const eyeClaimed = owned?.get('perception.gaze.eye');
+                    _applyGaze(mmdModel, cam, {
+                        headEnabled: state.headTrackingEnabled,
+                        eyeEnabled: state.eyeTrackingEnabled,
+                    }, dt, headClaimed, eyeClaimed, tier);
+                } catch (e) {
+                    logWarn('perception', 'gaze 异常:', (e as Error)?.message);
+                }
             }
         }
     }
@@ -300,6 +325,27 @@ function _deactivateContext(modelId: string): void {
     if (_focusedContextId === modelId) {
         _focusedContextId = null;
     }
+}
+
+/** [doc:adr-164] 根据 tier 返回应激活的 context 列表 */
+function _getActiveContextsByTier(tier: PerceptionTier): PerceptionContext[] {
+    const all = Array.from(_contexts.values()).filter((c) => c.isActive);
+    if (tier === 'high') {
+        return all;
+    }
+    if (tier === 'low') {
+        // 仅焦点 + pinned
+        return all.filter((c) => c.modelId === _focusedContextId || c.isPinned);
+    }
+    // medium：焦点 + pinned + 前 10 个
+    const focused = all.find((c) => c.modelId === _focusedContextId);
+    const pinned = all.filter((c) => c.isPinned && c.modelId !== _focusedContextId);
+    const others = all.filter((c) => c.modelId !== _focusedContextId && !c.isPinned);
+    const result: PerceptionContext[] = [];
+    if (focused) result.push(focused);
+    result.push(...pinned);
+    result.push(...others.slice(0, 10));
+    return result;
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -321,9 +367,16 @@ function _ensureObserverRegistered(): void {
             }
             const time = performance.now() / 1000;
             const dt = (scene.getEngine?.().getDeltaTime?.() ?? 0) / 1000;
+            _frameCounter++;
 
-            for (const ctx of _contexts.values()) {
-                if (!ctx.isActive) continue;
+            // [doc:adr-164] 性能监控与 tier 决策
+            const activeCount = Array.from(_contexts.values()).filter((c) => c.isActive).length;
+            _perfMonitor.update(scene, activeCount);
+            const tier = _perfMonitor.getTier();
+
+            const activeContexts = _getActiveContextsByTier(tier);
+
+            for (const ctx of activeContexts) {
                 const inst = modelManager.get(ctx.modelId);
                 if (!inst?.mmdModel || inst.mmdModel.mesh?.isDisposed()) {
                     if (_focusedContextId === ctx.modelId) {
@@ -333,7 +386,7 @@ function _ensureObserverRegistered(): void {
                     }
                     continue;
                 }
-                _applyPerceptionForContext(ctx, inst.mmdModel, time, dt);
+                _applyPerceptionForContext(ctx, inst.mmdModel, time, dt, tier, _frameCounter);
             }
         },
     });
@@ -350,6 +403,16 @@ export function activatePerception(modelId?: string): void {
     const inst = modelManager.get(targetId);
     if (!inst?.mmdModel) {
         logWarn('perception', 'activate: 模型未加载或无 mmdModel');
+        return;
+    }
+
+    // [doc:adr-164] 非焦点模型激活（全员感知模式）：不切换焦点，仅激活 context
+    if (_allEnabled && modelId && modelId !== _focusedContextId) {
+        const ctx = _getOrCreateContext(targetId);
+        _resetContextOffsets(ctx);
+        ctx.isActive = true;
+        _claimPerceptionBones(targetId);
+        _ensureObserverRegistered();
         return;
     }
 
@@ -615,22 +678,14 @@ function _syncGazeAngles(): void {
 // [doc:adr-162] Phase 3 — pin / unpin API
 // ══════════════════════════════════════════════════════════════
 
-const MAX_PINNED_MODELS = 5;
-
-/** pin 模型感知（≤5 上限，超限 console.warn 并拒绝） */
+/** [doc:adr-164] pin 模型感知（原 ≤5 上限已移除，全员感知由 tier 控制） */
 export function pinPerception(modelId: string, state?: Partial<PerceptionState>): void {
-    const pinnedCount = Array.from(_contexts.values()).filter((c) => c.isPinned).length;
     const ctx = _getOrCreateContext(modelId);
 
     if (ctx.isPinned) {
         if (state) {
             ctx.state = { ...ctx.state, ...state };
         }
-        return;
-    }
-
-    if (pinnedCount >= MAX_PINNED_MODELS) {
-        console.warn(`[perception] pin 上限 ${MAX_PINNED_MODELS}，拒绝 pin 模型 ${modelId}`);
         return;
     }
 
@@ -693,6 +748,66 @@ export function setPerceptionStateFor(modelId: string, s: Partial<PerceptionStat
         ctx.state = { ...ctx.state, ...s };
     }
     triggerAutoSave();
+}
+
+// ══════════════════════════════════════════════════════════════
+// [doc:adr-164] Phase 3 — enableAll / disableAll / tier API
+// ══════════════════════════════════════════════════════════════
+
+/** 全员激活感知层（受 tier 限制） */
+export function enableAllPerception(): void {
+    _allEnabled = true;
+    for (const [id, inst] of modelManager.modelRegistry) {
+        if (inst?.mmdModel && !inst.mmdModel.mesh?.isDisposed()) {
+            const ctx = _getOrCreateContext(id);
+            if (!ctx.isActive) {
+                _resetContextOffsets(ctx);
+                ctx.isActive = true;
+                _claimPerceptionBones(id);
+            }
+        }
+    }
+    _ensureObserverRegistered();
+    logWarn('perception', '全员感知已开启');
+}
+
+/** 全员关闭感知层（仅焦点 + pinned 保留） */
+export function disableAllPerception(): void {
+    _allEnabled = false;
+    for (const ctx of _contexts.values()) {
+        if (ctx.modelId === _focusedContextId || ctx.isPinned) {
+            continue;
+        }
+        ctx.isActive = false;
+        _releasePerceptionBones(ctx.modelId);
+        _resetContextOffsets(ctx);
+    }
+    logWarn('perception', '全员感知已关闭');
+}
+
+/** 获取当前性能档位 */
+export function getPerceptionPerfTier(): PerceptionTier {
+    return _perfMonitor.getTier();
+}
+
+/** 手动设置性能档位（auto/high/medium/low） */
+export function setPerceptionPerfTier(tier: PerceptionTier | 'auto'): void {
+    _perfMonitor.setManualTier(tier);
+    triggerAutoSave();
+}
+
+/** [doc:adr-164] 获取全员感知开关状态 */
+export function isAllPerceptionEnabled(): boolean {
+    return _allEnabled;
+}
+
+/** [doc:adr-164] 设置全员感知开关状态 */
+export function setAllPerceptionEnabled(enabled: boolean): void {
+    if (enabled) {
+        enableAllPerception();
+    } else {
+        disableAllPerception();
+    }
 }
 
 // ══════════════════════════════════════════════════════════════

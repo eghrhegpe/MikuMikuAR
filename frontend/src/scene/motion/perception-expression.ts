@@ -1,7 +1,7 @@
 // [doc:adr-079] 感知层 — 微表情（情绪 morph 实时脉冲）
 
 import { matchBone } from '../../motion-algos/proc-motion-shared';
-import type { Emotion, MmdModelLike } from './perception-shared';
+import type { Emotion, MmdModelLike, PerceptionTier } from './perception-shared';
 
 /** 情绪 → morph 名候选（按优先级降序匹配，复用 matchBone） */
 const EMOTION_MORPH_CANDIDATES: Record<Exclude<Emotion, 'neutral'>, string[]> = {
@@ -30,8 +30,13 @@ export function _applyMicroExpression(
     mmdModel: MmdModelLike,
     time: number,
     enabled: boolean,
-    emotion: Emotion
+    emotion: Emotion,
+    tier?: PerceptionTier,
+    frameCounter?: number
 ): void {
+    // [doc:adr-164] tier 守卫：low 跳过；medium 每 4 帧一次
+    if (tier === 'low') return;
+    if (tier === 'medium' && frameCounter !== undefined && frameCounter % 4 !== 0) return;
     const morphManager = mmdModel.mesh?.morphTargetManager;
     if (!morphManager) {
         return;

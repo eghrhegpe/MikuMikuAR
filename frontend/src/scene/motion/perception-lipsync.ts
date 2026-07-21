@@ -3,7 +3,7 @@
 import { getProcBeatDetector } from './proc-motion-bridge';
 import { isAudioPlaying, getAudioPath } from '@/outfit/audio';
 import { findLipMorph, findAllLipMorphs, amplitudeToWeight } from '@/motion-algos/lipsync';
-import type { PerceptionState, MmdModelLike } from './perception-shared';
+import type { PerceptionState, MmdModelLike, PerceptionTier } from './perception-shared';
 
 /** 人声频段范围（与 lipsync-bridge.ts 一致） */
 const VOICE_BIN_START = 10;
@@ -31,8 +31,11 @@ export function _applyLipSync(
     time: number,
     enabled: boolean,
     perceptionModelId: string | null,
-    perceptionState: PerceptionState
+    perceptionState: PerceptionState,
+    tier?: PerceptionTier
 ): void {
+    // [doc:adr-164] tier 守卫：low 跳过
+    if (tier === 'low') return;
     const morphManager = mmdModel.mesh?.morphTargetManager;
     if (!morphManager) {
         return;
