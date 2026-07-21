@@ -9,7 +9,7 @@ import { HemisphericLight } from '@babylonjs/core/Lights/hemisphericLight';
 import { DirectionalLight } from '@babylonjs/core/Lights/directionalLight';
 import type { Scene } from '@babylonjs/core/scene';
 import type { ShadowGenerator } from '@babylonjs/core/Lights/Shadows/shadowGenerator';
-import type { ModelInstance, PropInstance } from '@/core/config';
+
 import { observe } from '@/core/observer-handle';
 import { initTransformGizmo } from './transform-gizmo';
 import { scheduleRefresh } from '@/core/reactivity';
@@ -137,8 +137,6 @@ export function setSkipLightAutoSave(skip: boolean): void {
 
 export function initLighting(
     scene: Scene,
-    modelRegistry: Map<string, ModelInstance>,
-    propRegistry: Map<string, PropInstance>,
     envSysShadow: { generator: ShadowGenerator | null },
     saveCb: () => void
 ): void {
@@ -148,8 +146,6 @@ export function initLighting(
     }
     lightingState.scene = scene;
     initTransformGizmo(scene);
-    lightingState.modelRegistry = modelRegistry;
-    lightingState.propRegistry = propRegistry;
     lightingState.envSysShadow = envSysShadow;
     lightingState.triggerAutoSave = saveCb;
 
@@ -444,8 +440,6 @@ export function disposeLighting(): void {
     }
     lightingState.scene = null;
     lightingState.triggerAutoSave = null;
-    lightingState.modelRegistry = null;
-    lightingState.propRegistry = null;
     // 补全阴影参数重置：避免场景重建后携带上一场景的脏值
     lightingState.shadowEnabled = false;
     lightingState.shadowType = 'soft';

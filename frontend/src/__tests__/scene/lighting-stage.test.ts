@@ -46,7 +46,7 @@ beforeEach(() => {
     engine = new NullEngine();
     scene = new Scene(engine);
     saveCalls = 0;
-    initLighting(scene, new Map(), new Map(), { generator: null }, () => {
+    initLighting(scene, { generator: null }, () => {
         saveCalls++;
     });
 });

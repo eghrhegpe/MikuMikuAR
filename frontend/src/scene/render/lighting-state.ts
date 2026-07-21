@@ -13,7 +13,7 @@ import { PointLight } from '@babylonjs/core/Lights/pointLight';
 import { ShadowGenerator } from '@babylonjs/core/Lights/Shadows/shadowGenerator';
 import type { LightConeEntry } from './light-cone';
 import type { ObserverHandle } from '@/core/observer-handle';
-import type { ModelInstance, PropInstance } from '@/core/config';
+
 // 类型仅依赖（type-only，不会造成运行时环）
 import type { StageLightState } from './lighting';
 
@@ -31,8 +31,6 @@ export interface LightingTween {
 
 export interface LightingStateValues {
     scene: Scene | null;
-    modelRegistry: Map<string, ModelInstance> | null;
-    propRegistry: Map<string, PropInstance> | null;
     envSysShadow: { generator: ShadowGenerator | null } | null;
     triggerAutoSave: (() => void) | null;
     /** 预设动画期间临时抑制 setLightState 内的自动保存，由 applyEnvPreset 控制 */
@@ -96,8 +94,6 @@ export const SUN_DISC_MIN_INTENSITY = 0.01;
 
 export const lightingState: LightingStateValues = {
     scene: null,
-    modelRegistry: null,
-    propRegistry: null,
     envSysShadow: null,
     triggerAutoSave: null,
     skipLightAutoSave: false,
