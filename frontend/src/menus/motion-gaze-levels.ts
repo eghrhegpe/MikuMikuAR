@@ -10,6 +10,11 @@ import {
     setPerceptionState,
     activatePerception,
     pinPerception,
+    enableAllPerception,
+    disableAllPerception,
+    getPerceptionPerfTier,
+    setPerceptionPerfTier,
+    isAllPerceptionEnabled,
 } from '../scene/motion/perception';
 import { triggerAutoSave } from '../core/utils';
 import { getMotionMenu } from './motion-popup';
@@ -35,6 +40,84 @@ function withSaveOnly(_v: unknown): void {
 }
 
 const gazeSchema: MenuNode[] = [
+    // ── [doc:adr-164] 全员感知开关 ──
+    {
+        id: 'perception:enableAll',
+        kind: 'toggle',
+        label: 'motion.perceptionEnableAll',
+        control: {
+            bind: 'perception.allEnabled',
+            get: () => isAllPerceptionEnabled(),
+            set: (v: unknown) => {
+                const enabled = Boolean(v);
+                if (enabled) {
+                    enableAllPerception();
+                } else {
+                    disableAllPerception();
+                }
+                return enabled;
+            },
+            onChange: () => {
+                triggerAutoSave();
+                refreshMotionMenu();
+            },
+        },
+    },
+    // ── [doc:adr-164] 当前性能档位显示 ──
+    {
+        id: 'perception:tierDisplay',
+        kind: 'custom',
+        renderCustom: (c) => {
+            const tier = getPerceptionPerfTier();
+            const tierKey: Record<string, string> = {
+                high: 'motion.perceptionTierHigh',
+                medium: 'motion.perceptionTierMedium',
+                low: 'motion.perceptionTierLow',
+            };
+            const wrap = document.createElement('div');
+            wrap.style.cssText = 'padding:6px 14px;font-size:12px;color:var(--text-secondary);';
+            const icon = tier === 'low' ? '⚠️ ' : '';
+            wrap.textContent = `${icon}${t('motion.perceptionTier')}: ${t(tierKey[tier] ?? tierKey.high)}`;
+            c.appendChild(wrap);
+        },
+    },
+    // ── [doc:adr-164] 手动性能档位覆盖 ──
+    {
+        id: 'perception:tierOverride',
+        kind: 'custom',
+        renderCustom: (c) => {
+            const wrap = document.createElement('div');
+            wrap.style.cssText = 'padding:4px 14px;';
+            const label = document.createElement('label');
+            label.style.cssText = 'font-size:12px;color:var(--text-secondary);margin-right:8px;';
+            label.textContent = t('motion.perceptionTier');
+            const select = document.createElement('select');
+            select.style.cssText = 'font-size:12px;padding:2px 6px;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);';
+            const options = [
+                { value: 'auto', label: 'motion.perceptionTierAuto' },
+                { value: 'high', label: 'motion.perceptionTierHigh' },
+                { value: 'medium', label: 'motion.perceptionTierMedium' },
+                { value: 'low', label: 'motion.perceptionTierLow' },
+            ];
+            for (const opt of options) {
+                const o = document.createElement('option');
+                o.value = opt.value;
+                o.textContent = t(opt.label);
+                select.appendChild(o);
+            }
+            // 读取当前手动设置（通过 getPerceptionPerfTier 近似，实际无存储态暴露，
+            // 故默认 auto；用户切换后由 setPerceptionPerfTier 持久化）
+            select.value = 'auto';
+            select.onchange = () => {
+                setPerceptionPerfTier(select.value as 'auto' | 'high' | 'medium' | 'low');
+                triggerAutoSave();
+                refreshMotionMenu();
+            };
+            wrap.appendChild(label);
+            wrap.appendChild(select);
+            c.appendChild(wrap);
+        },
+    },
     // ── 头部跟随：开关在 header，参数在 folder 内 ──
     {
         id: 'perception:headFollow',
@@ -318,9 +401,15 @@ const gazeSchema: MenuNode[] = [
     },
 ];
 
-/** [doc:adr-163] 渲染感知层骨骼冲突 banner（复用 motion-override-levels.ts 的 updateConflictBanner 模式） */
+/** [doc:adr-163/adr-164] 渲染感知层骨骼冲突 banner（仅显示焦点模型冲突） */
 export function updatePerceptionConflictBanner(el: HTMLElement, modelId: string | null): void {
     if (!modelId) {
+        el.textContent = '';
+        el.style.display = 'none';
+        return;
+    }
+    // [doc:adr-164] 冲突收敛：仅显示焦点模型的冲突
+    if (modelId !== focusedModelId) {
         el.textContent = '';
         el.style.display = 'none';
         return;
@@ -349,7 +438,7 @@ export function updatePerceptionConflictBanner(el: HTMLElement, modelId: string 
     el.style.display = '';
     el.style.color = 'var(--warn, #e0a030)';
     el.style.whiteSpace = 'pre-line';
-    el.textContent = `感知层冲突 (${lines.length})\n` + lines.join('\n');
+    el.textContent = `${t('motion.perceptionDegraded')} (${lines.length})\n` + lines.join('\n');
 }
 
 export function buildGazeTrackingLevel(): PopupLevel {

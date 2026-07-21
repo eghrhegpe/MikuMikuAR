@@ -425,8 +425,13 @@ export async function initScene(): Promise<void> {
     // 5. 注入回调解耦：model-loader / model-manager 不再直接动态导入 renderer / proc-motion-bridge
     setOnMeshesReady((meshes) => onModelMeshesReady(meshes));
     const procMotionMod = await import('./motion/proc-motion-bridge');
+    const { activatePerception } = await import('./motion/perception');
     modelManager.onModelFocused = () => procMotionMod.activateGazeTracking();
-    setOnModelLoaded(() => procMotionMod.activateGazeTracking());
+    setOnModelLoaded((id) => {
+        procMotionMod.activateGazeTracking();
+        // [doc:adr-164] 新模型加载时自动激活感知层（全员感知模式下激活所有模型）
+        activatePerception(id);
+    });
 
     // 6. Loader（必须在 modelManager + setTriggerAutoSave 之后）
     // 破除循环依赖：scene.ts 不再静态 import outfit / model-preset，

@@ -114,6 +114,10 @@ import {
     getPinnedModelIds,
     getPerceptionStateFor,
     pinPerception,
+    enableAllPerception,
+    setPerceptionPerfTier,
+    getPerceptionPerfTier,
+    isAllPerceptionEnabled,
     type PerceptionState,
 } from './motion/perception';
 
@@ -256,11 +260,14 @@ export interface SceneFile {
     procMotion?: ProcMotionState;
     /** [doc:adr-071] 感知层状态（呼吸/眨眼/视线追踪），独立于程序化动作 */
     /** [doc:adr-162] Phase 4: 新格式 { focused: PerceptionState, pinned: Array<{ modelId, state }> } */
+    /** [doc:adr-164] 新增 tier + allEnabled */
     perception?:
         | PerceptionState
         | {
               focused: PerceptionState;
               pinned: Array<{ modelId: string; state: PerceptionState }>;
+              tier?: 'high' | 'medium' | 'low' | 'auto';
+              allEnabled?: boolean;
           };
     lipSync?: LipSyncStateType;
     props?: Array<{
@@ -470,6 +477,9 @@ export function serializeScene(): SceneFile {
                 modelId: id,
                 state: { ...getPerceptionStateFor(id) },
             })),
+            // [doc:adr-164] 性能档位与全员感知开关
+            tier: getPerceptionPerfTier(),
+            allEnabled: isAllPerceptionEnabled(),
         },
         lipSync: { ...lipState },
         props: Array.from(propRegistry.values()).map((p) => {
@@ -907,12 +917,20 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
     }
 
     // --- Perception Layer --- [doc:adr-071]
-    // 优先读 data.perception（兼容旧格式 PerceptionState 与新格式 { focused, pinned }）
+    // 优先读 data.perception（兼容旧格式 PerceptionState 与新格式 { focused, pinned, tier, allEnabled }）
     const perceptionData = migratePerceptionData(data.perception);
     if (perceptionData) {
         setPerceptionState(perceptionData.focused);
         for (const p of perceptionData.pinned) {
             pinPerception(p.modelId, p.state);
+        }
+        // [doc:adr-164] 恢复性能档位与全员感知开关
+        const pAny = data.perception as any;
+        if (pAny?.tier) {
+            setPerceptionPerfTier(pAny.tier);
+        }
+        if (pAny?.allEnabled === true) {
+            enableAllPerception();
         }
     } else if (data.procMotion) {
         setPerceptionState(

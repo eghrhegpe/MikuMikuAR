@@ -19,6 +19,7 @@ const mockState = vi.hoisted(() => ({
     triggerAutoSave: vi.fn(),
     modelManager: {
         get: vi.fn(),
+        modelRegistry: new Map(),
     } as any,
     scene: {
         onBeforeRenderObservable: {
@@ -62,7 +63,11 @@ vi.mock('../ar/ar-camera', () => ({
 vi.mock('../core/wails-bindings', () => ({}));
 vi.mock('../core/i18n/t', () => ({ t: (k: string) => k }));
 vi.mock('@babylonjs/core/Materials/standardMaterial', () => ({}));
-vi.mock('../core/config', () => ({}));
+vi.mock('../core/config', () => ({
+    get focusedModelId() {
+        return mockState.focusedModelId;
+    },
+}));
 vi.mock('../scene/camera/camera', () => ({}));
 vi.mock('../scene/motion/vmd-loader', () => ({}));
 vi.mock('../outfit/audio', () => ({
@@ -866,17 +871,11 @@ describe('pinPerception', () => {
         expect(sut.getPerceptionStateFor('m2').breathEnabled).toBe(true);
     });
 
-    it('pin 上限 5，第 6 个 console.warn 并拒绝', () => {
-        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-        for (let i = 1; i <= 5; i++) {
+    it('[doc:adr-164] pin 上限已移除，可 pin 超过 5 个模型', () => {
+        for (let i = 1; i <= 6; i++) {
             sut.pinPerception(`m${i}`);
         }
-        expect(sut.getPinnedModelIds().length).toBe(5);
-
-        sut.pinPerception('m6');
-        expect(sut.getPinnedModelIds().length).toBe(5);
-        expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('pin 上限 5'));
-        warnSpy.mockRestore();
+        expect(sut.getPinnedModelIds().length).toBe(6);
     });
 
     it('unpin 非焦点模型后该模型从 pinned 列表移除', () => {
@@ -989,7 +988,8 @@ describe('ADR-163 claimBones', () => {
         expect(store.getOwnedBones('m1', 'perception.breath').size).toBe(0);
     });
 
-    it('d) 冲突 banner 文本内容正确', async () => {
+    it('d) 冲突 banner 文本内容正确（仅焦点模型显示）', async () => {
+        mockState.focusedModelId = 'm1';
         const store = await getStore();
         store.claimBones('m1', 'perception.gaze.head', 100, ['頭']);
         store.claimBones('m1', 'body-posture', 1, ['頭']);
@@ -1005,9 +1005,165 @@ describe('ADR-163 claimBones', () => {
     });
 
     it('d) 冲突 banner 无冲突时隐藏', async () => {
+        mockState.focusedModelId = 'm1';
         const { updatePerceptionConflictBanner } = await import('../menus/motion-gaze-levels');
         const el = document.createElement('div');
         updatePerceptionConflictBanner(el, 'm1');
         expect(el.style.display).toBe('none');
+    });
+
+    it('d) 非焦点模型冲突 banner 收敛为隐藏', async () => {
+        mockState.focusedModelId = 'm1';
+        const store = await getStore();
+        store.claimBones('m2', 'perception.gaze.head', 100, ['頭']);
+        store.claimBones('m2', 'body-posture', 1, ['頭']);
+
+        const { updatePerceptionConflictBanner } = await import('../menus/motion-gaze-levels');
+        const el = document.createElement('div');
+        updatePerceptionConflictBanner(el, 'm2');
+
+        // [doc:adr-164] 非焦点模型冲突不显示
+        expect(el.style.display).toBe('none');
+    });
+});
+
+// =====================================================================
+// [doc:adr-164] Phase 7 — 全员感知 + 性能档位测试
+// =====================================================================
+
+describe('ADR-164 enableAllPerception / disableAllPerception', () => {
+    it('1. enableAllPerception 后所有已加载模型有 context', () => {
+        const inst = { mmdModel: { mesh: { isDisposed: () => false }, runtimeBones: [] } };
+        mockState.modelManager.get.mockImplementation((id: string) =>
+            id === 'm1' || id === 'm2' ? inst : null
+        );
+        mockState.modelManager.modelRegistry.set('m1', inst);
+        mockState.modelManager.modelRegistry.set('m2', inst);
+        mockState.focusedModelId = 'm1';
+        sut.activatePerception('m1');
+        sut.enableAllPerception();
+
+        // m2 也应被激活（全员感知）
+        expect(sut.getPerceptionStateFor('m2').breathEnabled).toBe(true);
+    });
+
+    it('2. disableAllPerception 后仅焦点保留', () => {
+        mockState.modelManager.get.mockImplementation((id: string) =>
+            id === 'm1' || id === 'm2'
+                ? { mmdModel: { mesh: { isDisposed: () => false }, runtimeBones: [] } }
+                : null
+        );
+        mockState.focusedModelId = 'm1';
+        sut.activatePerception('m1');
+        sut.pinPerception('m2');
+        sut.disableAllPerception();
+
+        // 焦点 m1 和 pinned m2 保留，其他关闭
+        expect(sut.getPerceptionStateFor('m1').breathEnabled).toBe(true);
+        expect(sut.getPerceptionStateFor('m2').breathEnabled).toBe(true);
+    });
+});
+
+describe('ADR-164 PerceptionPerfMonitor tier', () => {
+    it('3. getPerceptionPerfTier 默认返回 high', () => {
+        expect(sut.getPerceptionPerfTier()).toBe('high');
+    });
+
+    it('4. setPerceptionPerfTier 手动设置覆盖 auto', () => {
+        sut.setPerceptionPerfTier('low');
+        expect(sut.getPerceptionPerfTier()).toBe('low');
+        sut.setPerceptionPerfTier('medium');
+        expect(sut.getPerceptionPerfTier()).toBe('medium');
+        sut.setPerceptionPerfTier('auto');
+        // 切回 auto 后，因无场景/模型数 ≤20，应恢复 high
+        expect(sut.getPerceptionPerfTier()).toBe('high');
+    });
+
+    it('5. 手动 tier=low 时 gaze/balance/expression/lipsync 在 observer 中跳过', () => {
+        const nowSpy = vi.spyOn(performance, 'now').mockReturnValue(1000);
+        const mockMorphManager = makeMockMorphManager(['笑み']);
+        const mmdModel = makeMockModelWithMorphManager(mockMorphManager);
+        mockState.modelManager.get.mockReturnValue({ mmdModel });
+        mockState.focusedModelId = 'm1';
+        sut.setPerceptionState({ emotion: 'happy', microExpressionEnabled: true });
+        sut.activatePerception('m1');
+
+        // 强制 low 档
+        sut.setPerceptionPerfTier('low');
+
+        // 触发 observer
+        triggerLastObserver();
+
+        // low 档下 expression 应被跳过（morph 权重为 0）
+        expect(mockMorphManager.getInfluence('笑み')).toBe(0);
+        nowSpy.mockRestore();
+    });
+
+    it('6. 手动 tier=medium 时 gaze 每 2 帧一次、expression 每 4 帧一次', () => {
+        const nowSpy = vi.spyOn(performance, 'now').mockReturnValue(1000);
+        const mockMorphManager = makeMockMorphManager(['笑み']);
+        const mmdModel = makeMockModelWithMorphManager(mockMorphManager);
+        mockState.modelManager.get.mockReturnValue({ mmdModel });
+        mockState.focusedModelId = 'm1';
+        sut.setPerceptionState({ emotion: 'happy', microExpressionEnabled: true });
+        sut.activatePerception('m1');
+
+        sut.setPerceptionPerfTier('medium');
+
+        // 第 1 帧（frameCounter=1）：expression 不运行（1%4!==0）
+        triggerLastObserver();
+        const inf1 = mockMorphManager.getInfluence('笑み');
+
+        // 第 4 帧（frameCounter=4）：expression 运行（4%4===0）
+        // 需要再触发 3 次 observer 使 frameCounter 增加到 4
+        for (let i = 0; i < 3; i++) {
+            triggerLastObserver();
+        }
+        const inf4 = mockMorphManager.getInfluence('笑み');
+
+        // 第 1 帧应为 0，第 4 帧应 >0
+        expect(inf1).toBe(0);
+        expect(inf4).toBeGreaterThan(0);
+        nowSpy.mockRestore();
+    });
+
+    it('7. pinPerception + tier=low 时 pinned 模型保留感知', () => {
+        mockState.modelManager.get.mockImplementation((id: string) =>
+            id === 'm1' || id === 'm2'
+                ? { mmdModel: { mesh: { isDisposed: () => false }, runtimeBones: [] } }
+                : null
+        );
+        mockState.focusedModelId = 'm1';
+        sut.activatePerception('m1');
+        sut.pinPerception('m2');
+        sut.setPerceptionPerfTier('low');
+
+        // low 档下仅焦点 + pinned 保留
+        const tier = sut.getPerceptionPerfTier();
+        expect(tier).toBe('low');
+        expect(sut.getPinnedModelIds()).toContain('m2');
+    });
+});
+
+describe('ADR-164 模型加载自动激活', () => {
+    it('8. 全员感知模式下新模型加载时自动激活', () => {
+        const inst1 = { mmdModel: { mesh: { isDisposed: () => false }, runtimeBones: [] } };
+        mockState.modelManager.get.mockImplementation((id: string) =>
+            id === 'm1' ? inst1 : null
+        );
+        mockState.modelManager.modelRegistry.set('m1', inst1);
+        mockState.focusedModelId = 'm1';
+        sut.activatePerception('m1');
+        sut.enableAllPerception();
+
+        // 模拟新模型 m2 加载
+        const inst2 = { mmdModel: { mesh: { isDisposed: () => false }, runtimeBones: [] } };
+        mockState.modelManager.get.mockImplementation((id: string) =>
+            id === 'm1' ? inst1 : id === 'm2' ? inst2 : null
+        );
+        mockState.modelManager.modelRegistry.set('m2', inst2);
+        // 在全员感知模式下调用 activatePerception(m2) 应激活 m2
+        sut.activatePerception('m2');
+        expect(sut.getPerceptionStateFor('m2').breathEnabled).toBe(true);
     });
 });

@@ -11,7 +11,7 @@ import {
     matchBone,
 } from '../../motion-algos/proc-motion-shared';
 import { _q } from './perception-shared';
-import type { MmdModelLike } from './perception-shared';
+import type { MmdModelLike, PerceptionTier } from './perception-shared';
 
 /** 重心微动周期（秒，从 idle loopFrames=120@60fps 转换：120/60=2s） */
 const BALANCE_SWAY_PERIOD = 2.0;
@@ -67,8 +67,11 @@ export function _applyBalanceSway(
     amplitude: number,
     centerClaimed?: readonly string[],
     upper2Claimed?: readonly string[],
-    waistClaimed?: readonly string[]
+    waistClaimed?: readonly string[],
+    tier?: PerceptionTier
 ): void {
+    // [doc:adr-164] tier 守卫：low 跳过
+    if (tier === 'low') return;
     const boneNames: string[] = mmdModel.runtimeBones.map((b: IMmdRuntimeBone) => b.name);
     const centerName = matchBone(boneNames, BONE_CENTER_CANDIDATES);
     const upper2Name = matchBone(boneNames, BONE_UPPER2_CANDIDATES);

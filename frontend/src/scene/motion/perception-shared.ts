@@ -233,3 +233,116 @@ export interface PerceptionContext {
         emotion: string | null;
     };
 }
+
+// ── [doc:adr-164] Phase 1 — 性能档位与监控 ──
+
+export type PerceptionTier = 'high' | 'medium' | 'low';
+
+/** 感知层性能监控器：三档自动降级 + 手动覆盖 */
+export class PerceptionPerfMonitor {
+    fps = 60;
+    modelCount = 0;
+    tier: PerceptionTier = 'high';
+
+    private _manualTier: PerceptionTier | 'auto' = 'auto';
+    private _frameCounter = 0;
+    private _sampleInterval = 30;
+    private _lowStreak = 0;
+    private _highStreak = 0;
+    private _thresholdDown = 45;
+    private _thresholdUp = 55;
+    private _framesForDown = 60;
+    private _framesForUp = 120;
+    private _forceLowModelCount = 50;
+    private _forceHighModelCount = 20;
+
+    /** 每帧调用（内部按 _sampleInterval 采样 fps） */
+    update(scene: { getEngine(): { getFps(): number } } | null, modelCount: number): void {
+        this.modelCount = modelCount;
+        this._frameCounter++;
+
+        // 手动覆盖优先
+        if (this._manualTier !== 'auto') {
+            this.tier = this._manualTier;
+            return;
+        }
+
+        // 模型数硬边界
+        if (modelCount > this._forceLowModelCount) {
+            this.tier = 'low';
+            this._lowStreak = 0;
+            this._highStreak = 0;
+            return;
+        }
+        if (modelCount <= this._forceHighModelCount) {
+            this.tier = 'high';
+            this._lowStreak = 0;
+            this._highStreak = 0;
+            return;
+        }
+
+        // 采样 fps
+        if (this._frameCounter % this._sampleInterval !== 0) {
+            return;
+        }
+
+        const fps = scene?.getEngine().getFps() ?? 60;
+        this.fps = fps;
+
+        if (fps < this._thresholdDown) {
+            this._lowStreak += this._sampleInterval;
+            this._highStreak = 0;
+        } else if (fps > this._thresholdUp) {
+            this._highStreak += this._sampleInterval;
+            this._lowStreak = 0;
+        } else {
+            // 45–55 之间：稳定带，不累积 streak（避免边缘抖动）
+            this._lowStreak = 0;
+            this._highStreak = 0;
+        }
+
+        // 降级（滞后 60 帧）
+        if (this._lowStreak >= this._framesForDown) {
+            this.tier = this._stepDown(this.tier);
+            this._lowStreak = 0;
+        }
+        // 升级（滞后 120 帧，更保守）
+        if (this._highStreak >= this._framesForUp) {
+            this.tier = this._stepUp(this.tier);
+            this._highStreak = 0;
+        }
+    }
+
+    getTier(): PerceptionTier {
+        return this.tier;
+    }
+
+    setManualTier(tier: PerceptionTier | 'auto'): void {
+        this._manualTier = tier;
+        if (tier !== 'auto') {
+            this.tier = tier;
+        } else {
+            // 切回 auto 时立即根据当前模型数重新评估（fps 采样需等下一帧）
+            if (this.modelCount <= this._forceHighModelCount) {
+                this.tier = 'high';
+            } else if (this.modelCount > this._forceLowModelCount) {
+                this.tier = 'low';
+            }
+            // 否则保持当前 tier，等 fps 采样自然调整
+        }
+        this._lowStreak = 0;
+        this._highStreak = 0;
+    }
+
+    private _stepDown(t: PerceptionTier): PerceptionTier {
+        if (t === 'high') return 'medium';
+        if (t === 'medium') return 'low';
+        return 'low';
+    }
+
+    private _stepUp(t: PerceptionTier): PerceptionTier {
+        if (t === 'low') return 'medium';
+        if (t === 'medium') return 'high';
+        return 'high';
+    }
+}

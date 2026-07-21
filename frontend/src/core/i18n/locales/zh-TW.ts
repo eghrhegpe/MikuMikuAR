@@ -561,6 +561,14 @@ export const zhTW: Record<string, string> = {
     'motion.balanceSway': '重心微動',
     'motion.balanceSwayPeriod': '周期',
     'motion.balanceSwayAmplitude': '振幅',
+    // ── [doc:adr-164] 全員感知 + 效能等級 ──
+    'motion.perceptionEnableAll': '全員感知',
+    'motion.perceptionTier': '效能等級',
+    'motion.perceptionTierAuto': '自動',
+    'motion.perceptionTierHigh': '高效',
+    'motion.perceptionTierMedium': '均衡',
+    'motion.perceptionTierLow': '節能',
+    'motion.perceptionDegraded': '部分感知項已降級',
     // ── 感知層可調參數（doc:adr-116） ──
     'perception.headFollowParams': '頭部跟隨設定',
     'perception.headYawRange': '水平範圍',

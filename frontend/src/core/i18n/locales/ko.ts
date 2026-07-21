@@ -566,6 +566,14 @@ export const ko: Record<string, string> = {
     'motion.balanceSway': '중심 미동',
     'motion.balanceSwayPeriod': '주기',
     'motion.balanceSwayAmplitude': '진폭',
+    // ── [doc:adr-164] 전체 감지 + 성능 등급 ──
+    'motion.perceptionEnableAll': '전체 감지',
+    'motion.perceptionTier': '성능 등급',
+    'motion.perceptionTierAuto': '자동',
+    'motion.perceptionTierHigh': '높음',
+    'motion.perceptionTierMedium': '중간',
+    'motion.perceptionTierLow': '낮음',
+    'motion.perceptionDegraded': '일부 감지 항목이 저하되었습니다',
     // ── 지각 레이어 조정 가능 파라미터 (doc:adr-116) ──
     'perception.headFollowParams': '머리 따라가기 설정',
     'perception.headYawRange': '요 범위',

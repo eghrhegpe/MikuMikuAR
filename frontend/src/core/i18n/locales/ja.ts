@@ -566,6 +566,14 @@ export const ja: Record<string, string> = {
     'motion.balanceSway': '重心微動',
     'motion.balanceSwayPeriod': '周期',
     'motion.balanceSwayAmplitude': '振幅',
+    // ── [doc:adr-164] 全員感知 + パフォーマンス档位 ──
+    'motion.perceptionEnableAll': '全員感知',
+    'motion.perceptionTier': 'パフォーマンス',
+    'motion.perceptionTierAuto': '自動',
+    'motion.perceptionTierHigh': '高品質',
+    'motion.perceptionTierMedium': '中品質',
+    'motion.perceptionTierLow': '低品質',
+    'motion.perceptionDegraded': '一部の感知項目が低下しました',
     // ── 感知層調整可能パラメータ（doc:adr-116） ──
     'perception.headFollowParams': '頭部追随設定',
     'perception.headYawRange': 'ヨー範囲',

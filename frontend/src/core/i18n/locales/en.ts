@@ -410,6 +410,14 @@ export const en: Record<string, string> = {
     'motion.balanceSway': 'Balance Sway',
     'motion.balanceSwayPeriod': 'Period',
     'motion.balanceSwayAmplitude': 'Amplitude',
+    // ── [doc:adr-164] Enable All + Performance Tier ──
+    'motion.perceptionEnableAll': 'Enable All',
+    'motion.perceptionTier': 'Tier',
+    'motion.perceptionTierAuto': 'Auto',
+    'motion.perceptionTierHigh': 'High',
+    'motion.perceptionTierMedium': 'Medium',
+    'motion.perceptionTierLow': 'Low',
+    'motion.perceptionDegraded': 'Some perception items degraded',
     // ── Perception adjustable params (doc:adr-116) ──
     'perception.headFollowParams': 'Head Follow Settings',
     'perception.headYawRange': 'Yaw Range',
