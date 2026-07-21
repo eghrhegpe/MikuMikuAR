@@ -18,6 +18,7 @@ import { t } from '@/core/i18n/t';
 import { getBaseName } from '@/core/utils';
 import { logWarn, logError } from '@/core/logger';
 import { renderPropThumbnail } from '../manager/thumbnail-capture';
+import { setTransformMetadata } from '../transform/transform-pick';
 import { thumbnailBaseKey } from '../manager/thumbnail-key';
 import { registerTransformAdapter } from '../transform/transform-adapter';
 
@@ -127,6 +128,7 @@ export async function loadProp(filePath: string, signal?: AbortSignal): Promise<
             visible: true,
         };
         propRegistry.set(id, inst);
+        setTransformMetadata(container, 'prop', id);
 
         // 注册到材质系统，使 prop 可用 model 一致的材质 API
         registerMaterialTarget(id, loadedMeshes);

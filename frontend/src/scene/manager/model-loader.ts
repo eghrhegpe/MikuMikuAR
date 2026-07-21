@@ -41,6 +41,7 @@ import { retryWindPhysicsSubscription } from '../../physics/wind-physics';
 import { _capture } from './material';
 import { rebuildShadowCasters } from '../render/lighting';
 import { getGroundHeightAt, setOnTerrainReady, setOnGroundChanged } from '../env/env-impl';
+import { setTransformMetadata } from '../transform/transform-pick';
 
 // ======== Loader Dependencies ========
 
@@ -375,6 +376,7 @@ export async function loadPMXFile(
             // Register via ModelManager only — it owns the registry
             _modelManager.register(inst);
             registeredId = id;
+            setTransformMetadata(inst.rootMesh, 'stage', id);
             // Pre-capture material original values for reset functionality
             for (const mesh of meshes) {
                 if (mesh.material) {
@@ -463,6 +465,7 @@ export async function loadPMXFile(
                 : null;
         _modelManager.register(inst);
         registeredId = id;
+        setTransformMetadata(inst.rootMesh, 'actor', id);
         // [adr-XX per-motion] 继承上一个角色的槽位1 source/procRole（不继承 pinned 快照）
         // [doc:adr-167] overlay 槽位已移除
         if (prevInst && prevInst.motionSlots) {

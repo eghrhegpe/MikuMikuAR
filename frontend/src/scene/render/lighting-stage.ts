@@ -35,6 +35,7 @@ import {
     isGizmoActive as _isGizmoActive,
     getGizmoTargetId as _getGizmoTargetId,
 } from '../transform/transform-adapter';
+import { setTransformMetadata } from '../transform/transform-pick';
 
 // _createStageLight / _createIndicator / _createDirLine 均仅在 addStageLight
 // 中调用，而 addStageLight 在 scene === null 时 early return，
@@ -129,6 +130,7 @@ export function _updateIndicator(entry: StageLightEntry): void {
     if (state.enabled) {
         if (!entry.indicator) {
             entry.indicator = _createIndicator();
+            setTransformMetadata(entry.indicator, 'light', state.id);
         }
         entry.indicator.position.copyFrom(light.position);
         entry.indicator.scaling.setAll(state.indicatorScale);

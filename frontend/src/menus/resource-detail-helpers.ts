@@ -72,6 +72,37 @@ function updateSliderDisplay(
     }
 }
 
+export function buildSnapSettings(container: HTMLElement, onRefresh: () => void): void {
+    const snap = getGizmoSnapConfig();
+    addToggleRow(
+        container,
+        t('scene.snapEnable'),
+        snap.enabled,
+        (v) => {
+            setGizmoSnapDistance(v, snap.step);
+            onRefresh();
+        },
+        'lucide:grid-3x3',
+        undefined,
+        'transform:snap-toggle'
+    );
+    if (snap.enabled) {
+        addSliderRow(
+            container,
+            t('scene.snapStep'),
+            snap.step,
+            0.1,
+            5,
+            0.1,
+            (v) => setGizmoSnapDistance(true, v),
+            'lucide:ruler',
+            undefined,
+            undefined,
+            'transform:snap-step'
+        );
+    }
+}
+
 /** 拖拽操控卡片：Gizmo 拖拽 + 缩放倍率 + 透明度
  *  [doc:adr-049] 位置/旋转由 3D Gizmo 实时拖拽取代，不再显示滑块。
  *  按 kind 派发到 model-ops（actor/stage）、prop-ops（prop）或 lighting（light）。 */
@@ -125,34 +156,7 @@ export function buildTransformCard(container: HTMLElement, handle: ResourceHandl
             );
 
             // 网格吸附（ADR-126 Phase 3）：全局拖拽偏好，下次/当前 Gizmo 生效
-            const snap = getGizmoSnapConfig();
-            addToggleRow(
-                c,
-                t('scene.snapEnable'),
-                snap.enabled,
-                (v) => {
-                    setGizmoSnapDistance(v, snap.step);
-                    render();
-                },
-                'lucide:grid-3x3',
-                undefined,
-                'transform:snap-toggle'
-            );
-            if (snap.enabled) {
-                addSliderRow(
-                    c,
-                    t('scene.snapStep'),
-                    snap.step,
-                    0.1,
-                    5,
-                    0.1,
-                    (v) => setGizmoSnapDistance(true, v),
-                    'lucide:ruler',
-                    undefined,
-                    undefined,
-                    'transform:snap-step'
-                );
-            }
+            buildSnapSettings(c, render);
 
             if (adapter.capabilities.includes('slider-scale')) {
                 addSliderRow(

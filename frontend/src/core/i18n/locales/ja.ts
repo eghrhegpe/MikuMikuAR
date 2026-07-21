@@ -818,6 +818,7 @@ export const ja: Record<string, string> = {
     'scene.positionOrbit': '位置（オービット）',
     'scene.horizontalAngle': '水平角度',
     'scene.elevationAngle': '仰角',
+    'scene.dragMode': 'ドラッグモード',
     'scene.exitDrag': 'ドラッグを終了',
     'scene.dragPosition': 'ドラッグで位置調整',
     'scene.snapEnable': 'グリッド吸着',

@@ -791,6 +791,7 @@ export const zhCN: Record<string, string> = {
     'scene.positionOrbit': '位置（轨道）',
     'scene.horizontalAngle': '水平角度',
     'scene.elevationAngle': '仰角',
+    'scene.dragMode': '拖拽模式',
     'scene.exitDrag': '退出拖拽',
     'scene.dragPosition': '拖拽定位',
     'scene.snapEnable': '网格吸附',
