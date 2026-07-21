@@ -286,7 +286,7 @@ function _applyRenderState(s: Partial<RenderState>): void {
         pipeline.samples = clamp(s.msaaSamples, 1, 8);
     }
 
-    // Outline — 仅在状态/颜色实际变化时遍历模型
+    // Outline — 仅在状态/颜色实际变化时重建（复用 rebuildOutlineState，避免重复遍历逻辑）
     const outlineChanged = s.outlineEnabled !== undefined;
     const outlineColorChanged = s.outlineColor !== undefined;
 
@@ -297,25 +297,8 @@ function _applyRenderState(s: Partial<RenderState>): void {
         _outlineColor = s.outlineColor;
     }
     if (outlineChanged || outlineColorChanged) {
-        for (const inst of _modelRegistry.values()) {
-            for (const m of inst.meshes) {
-                if (outlineChanged) {
-                    if (_outlineEnabled) {
-                        m.enableEdgesRendering();
-                    } else {
-                        m.disableEdgesRendering();
-                    }
-                }
-                if (m.edgesRenderer && outlineColorChanged) {
-                    m.edgesColor = new Color4(
-                        clamp01(_outlineColor[0]),
-                        clamp01(_outlineColor[1]),
-                        clamp01(_outlineColor[2]),
-                        1
-                    );
-                }
-            }
-        }
+        // _outlineEnabled/_outlineColor 已更新为新值，rebuildOutlineState 应用完整当前状态
+        rebuildOutlineState();
     }
 
     // DOF — 可选链保护（0-1 → fStop 0.5~10）

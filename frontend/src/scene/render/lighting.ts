@@ -790,6 +790,22 @@ export function setStageLightState(s: Partial<StageLightState>, id?: string): vo
     }
 }
 
+/** 释放单个舞台灯 entry 的全部资源（指示器 + 灯 + 阴影 + 光锥）。 */
+function _disposeStageLightEntry(id: string, entry: StageLightEntry): void {
+    _disposeIndicator(entry);
+    entry.light.dispose();
+    _disposeStageShadow(id);
+    _disposeStageCone(id);
+}
+
+/** 注册舞台灯 entry：写入映射 + 生成阴影/光锥 + 更新指示器。 */
+function _registerStageLight(id: string, entry: StageLightEntry): void {
+    _stageLights.set(id, entry);
+    _ensureStageShadow(id);
+    _ensureStageCone(id);
+    _updateIndicator(entry);
+}
+
 export function addStageLight(
     type: StageLightType = 'spot',
     preset?: Partial<StageLightState>
@@ -807,11 +823,8 @@ export function addStageLight(
     state.orbitAzimuth = 180 + (_stageLightCounter - 1) * 30;
     const light = _createStageLight(type, state);
     const entry: StageLightEntry = { state, light, indicator: null, dirLine: null };
-    _stageLights.set(id, entry);
+    _registerStageLight(id, entry);
     _activeStageLightId = id;
-    _ensureStageShadow(id);
-    _ensureStageCone(id);
-    _updateIndicator(entry);
     if (triggerAutoSave && !_skipLightAutoSave) {
         triggerAutoSave();
     }
@@ -826,10 +839,7 @@ export function removeStageLight(id: string): boolean {
     if (_stageLights.size <= 1) {
         return false;
     }
-    _disposeIndicator(entry);
-    entry.light.dispose();
-    _disposeStageShadow(id);
-    _disposeStageCone(id);
+    _disposeStageLightEntry(id, entry);
     _stageLights.delete(id);
     if (_activeStageLightId === id) {
         _activeStageLightId = _stageLights.keys().next().value ?? null;
@@ -846,21 +856,13 @@ export function disposeLighting(): void {
     // P1-fix: 预设动画中途销毁场景时，被取消的 tween 不会触发 onTweenDone，
     // 必须显式重置标志，否则重新初始化后自动保存永久失效。
     _skipLightAutoSave = false;
-    // 清理舞台灯
-    for (const [_lid, entry] of _stageLights) {
-        _disposeIndicator(entry);
-        entry.light.dispose();
-        // 清理阴影
-        const sg = _stageShadows.get(entry.state.id);
-        if (sg) {
-            sg.dispose();
-        }
-        // 清理光锥
-        _disposeStageCone(entry.state.id);
+    // 清理舞台灯（含各自的指示器/阴影/光锥）
+    for (const [lid, entry] of _stageLights) {
+        _disposeStageLightEntry(lid, entry);
     }
     _stageLights.clear();
     _stageShadows.clear();
-    _stageCones.clear(); // _disposeStageCone 已在上方循环中逐个释放
+    _stageCones.clear();
     if (_coneUpdateHandle) {
         _coneUpdateHandle.dispose();
         _coneUpdateHandle = null;
@@ -891,32 +893,21 @@ export function disposeLighting(): void {
 
 /** 批量加载舞台灯（反序列化用），会清空现有灯 */
 export function loadStageLights(states: StageLightState[]): void {
-    // 清空旧灯
-    for (const [_lid, entry] of _stageLights) {
-        _disposeIndicator(entry);
-        entry.light.dispose();
+    // 清空旧灯（含各自的指示器/阴影/光锥）
+    for (const [lid, entry] of _stageLights) {
+        _disposeStageLightEntry(lid, entry);
     }
     _stageLights.clear();
-    for (const [sid] of _stageShadows) {
-        _disposeStageShadow(sid);
-    }
     _stageShadows.clear();
-    // 清空光锥
-    for (const [cid, cone] of _stageCones) {
-        disposeLightCone(cone);
-    }
     _stageCones.clear();
 
     if (states.length === 0) {
         const def = _defaultStageLightState('light-1', '主光');
         const light = _createStageLight(def.type, def);
         const entry: StageLightEntry = { state: def, light, indicator: null, dirLine: null };
-        _stageLights.set(def.id, entry);
+        _registerStageLight(def.id, entry);
         _activeStageLightId = def.id;
         _stageLightCounter = 1;
-        _ensureStageShadow(def.id);
-        _ensureStageCone(def.id);
-        _updateIndicator(entry);
         return;
     }
 
@@ -933,10 +924,7 @@ export function loadStageLights(states: StageLightState[]): void {
         };
         const light = _createStageLight(migrated.type, migrated);
         const entry: StageLightEntry = { state: migrated, light, indicator: null, dirLine: null };
-        _stageLights.set(migrated.id, entry);
-        _ensureStageShadow(migrated.id);
-        _ensureStageCone(migrated.id);
-        _updateIndicator(entry);
+        _registerStageLight(migrated.id, entry);
         const m = migrated.id.match(/light-(\d+)/);
         if (m) {
             maxNum = Math.max(maxNum, parseInt(m[1]));
