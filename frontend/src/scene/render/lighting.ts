@@ -198,8 +198,15 @@ function _defaultLightState(): LightState {
     };
 }
 
+/** [doc:adr-132] 当 envBrightness 变化时 rebake 存储的光照强度 */
+export function rebakeEnvBrightness(ratio: number): void {
+    if (!lightingState.hemiLight || !lightingState.dirLight || ratio <= 0) return;
+    lightingState.hemiLight.intensity *= ratio;
+    lightingState.dirLight.intensity *= ratio;
+}
+
 export function getLightState(): LightState {
-    const envBrightness = envState.envBrightness ?? 1;
+    const envBrightness = Math.max(0.01, envState.envBrightness ?? 1);
     if (!lightingState.hemiLight || !lightingState.dirLight || !lightingState.envSysShadow) {
         const base = _defaultLightState();
         return {
@@ -245,7 +252,7 @@ export function setLightState(s: Partial<LightState>): void {
         return;
     }
 
-    const envBrightness = envState.envBrightness ?? 1;
+    const envBrightness = Math.max(0.01, envState.envBrightness ?? 1);
     if (s.hemiIntensity !== undefined) {
         lightingState.hemiLight.intensity = s.hemiIntensity * envBrightness;
     }

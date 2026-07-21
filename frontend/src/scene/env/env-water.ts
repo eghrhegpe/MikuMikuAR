@@ -444,9 +444,10 @@ export function updateGroundRipples(dt: number): void {
 
     // 地面 mesh 几何：将涟漪世界坐标映射到纹理 UV（原点/尺寸由 env-ground 注入）
     const geom = _groundGeomProvider();
-    const halfSize = geom.size / 2 || 30;
+    const safeSize = geom.size || 60;
+    const halfSize = safeSize / 2;
     // 世界单位 → 像素比例（用于半径换算，使涟漪大小与地面尺度一致）
-    const worldToPixel = S / geom.size;
+    const worldToPixel = S / safeSize;
 
     for (const r of _groundRipples) {
         if (r.life <= 0) {
