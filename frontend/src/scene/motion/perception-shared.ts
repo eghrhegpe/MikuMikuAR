@@ -35,6 +35,9 @@ export interface PerceptionState {
     eyeGazeMaxYaw: number; // 0–15°，默认 9
     eyeGazeMaxPitch: number; // 0–15°，默认 8
     eyeGazeSmooth: number; // 0–1，默认 0.35
+    // ── 重心微动可调参数（[doc:adr-151] 暴露给用户） ──
+    balanceSwayPeriod: number; // 0.5–5.0 s，默认 2.0
+    balanceSwayAmplitude: number; // 0–2.0，默认 1.0（全局振幅乘数）
 }
 
 /** Gaze 配置类型 */
@@ -62,6 +65,9 @@ export const DEFAULT_PERCEPTION_STATE: PerceptionState = {
     eyeGazeMaxYaw: 9,
     eyeGazeMaxPitch: 8,
     eyeGazeSmooth: 0.35,
+    // 重心微动可调参数默认值
+    balanceSwayPeriod: 2.0,
+    balanceSwayAmplitude: 1.0,
 };
 
 export interface MeshMetadata {
@@ -172,6 +178,17 @@ export function getEyeGazeMaxPitch(): number {
 /** 获取眼部跟随平滑度 */
 export function getEyeGazeSmooth(): number {
     return _eyeGazeSmooth;
+}
+
+/**
+ * 计算 gaze Slerp alpha（基于 deltaTime 的指数衰减，帧率无关）
+ * @param smooth 平滑度（0=迟钝，1=快速）
+ * @param dt 帧时间增量（秒）
+ * @param timeConstant 时间常数（秒），默认 0.15
+ */
+export function _gazeAlpha(smooth: number, dt: number, timeConstant = 0.15): number {
+    const tau = timeConstant * (1.1 - smooth);
+    return Math.max(0, Math.min(1, 1 - Math.exp(-dt / tau)));
 }
 
 /** 更新头部跟随角度限位（度→弧度，由 perception.ts setter 调用） */

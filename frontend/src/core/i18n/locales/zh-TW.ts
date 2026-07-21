@@ -559,6 +559,8 @@ export const zhTW: Record<string, string> = {
     'motion.emotionSurprised': '驚訝',
     'motion.emotionAngry': '憤怒',
     'motion.balanceSway': '重心微動',
+    'motion.balanceSwayPeriod': '周期',
+    'motion.balanceSwayAmplitude': '振幅',
     // ── 感知層可調參數（doc:adr-116） ──
     'perception.headFollowParams': '頭部跟隨設定',
     'perception.headYawRange': '水平範圍',

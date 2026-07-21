@@ -408,6 +408,8 @@ export const en: Record<string, string> = {
     'motion.emotionSurprised': 'Surprised',
     'motion.emotionAngry': 'Angry',
     'motion.balanceSway': 'Balance Sway',
+    'motion.balanceSwayPeriod': 'Period',
+    'motion.balanceSwayAmplitude': 'Amplitude',
     // ── Perception adjustable params (doc:adr-116) ──
     'perception.headFollowParams': 'Head Follow Settings',
     'perception.headYawRange': 'Yaw Range',

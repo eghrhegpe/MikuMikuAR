@@ -564,6 +564,8 @@ export const ko: Record<string, string> = {
     'motion.emotionSurprised': '놀람',
     'motion.emotionAngry': '분노',
     'motion.balanceSway': '중심 미동',
+    'motion.balanceSwayPeriod': '주기',
+    'motion.balanceSwayAmplitude': '진폭',
     // ── 지각 레이어 조정 가능 파라미터 (doc:adr-116) ──
     'perception.headFollowParams': '머리 따라가기 설정',
     'perception.headYawRange': '요 범위',

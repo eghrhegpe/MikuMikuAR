@@ -564,6 +564,8 @@ export const ja: Record<string, string> = {
     'motion.emotionSurprised': '驚き',
     'motion.emotionAngry': '怒り',
     'motion.balanceSway': '重心微動',
+    'motion.balanceSwayPeriod': '周期',
+    'motion.balanceSwayAmplitude': '振幅',
     // ── 感知層調整可能パラメータ（doc:adr-116） ──
     'perception.headFollowParams': '頭部追随設定',
     'perception.headYawRange': 'ヨー範囲',
