@@ -248,7 +248,7 @@ function buildLibrarySchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode
                             onUpdate: (el) => {
                                 const valEl = el.querySelector('.cs-value');
                                 if (valEl) {
-                                    valEl.textContent = NAME_PRIORITY_LABELS[displayNamePriority];
+                                    valEl.textContent = t(NAME_PRIORITY_LABELS[displayNamePriority]);
                                 }
                             },
                         }

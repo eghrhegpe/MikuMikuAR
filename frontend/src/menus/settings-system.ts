@@ -296,10 +296,10 @@ function buildCacheSchema(): MenuNode[] {
                                 resourceRow.textContent = `${t('settings.about.cache.resource')}: ${formatBytes(s.resourceBytes)}`;
                                 detailEl.appendChild(resourceRow);
                                 const extractedRow = document.createElement('div');
-                                extractedRow.textContent = `${t('settings.about.cache.extracted')}: ${formatBytes(s.extractedBytes)} (${s.extractedCount} ${t('common.items') || 'items'})`;
+                                extractedRow.textContent = `${t('settings.about.cache.extracted')}: ${formatBytes(s.extractedBytes)} (${s.extractedCount} ${t('common.items')})`;
                                 detailEl.appendChild(extractedRow);
                                 const thumbRow = document.createElement('div');
-                                thumbRow.textContent = `${t('settings.about.cache.thumbnails')}: ${formatBytes(s.thumbnailBytes)} (${s.thumbnailCount} ${t('common.items') || 'items'})`;
+                                thumbRow.textContent = `${t('settings.about.cache.thumbnails')}: ${formatBytes(s.thumbnailBytes)} (${s.thumbnailCount} ${t('common.items')})`;
                                 detailEl.appendChild(thumbRow);
                             })
                         );
@@ -443,57 +443,67 @@ function buildSoftwareListSchema(getSettingsMenu: () => SlideMenu | null): MenuN
         {
             id: 'system:software-list',
             kind: 'custom',
-            renderCustom: async (container) => {
-                await scanSoftwareDir();
-                const entries = cachedSoftwareEntries;
-                if (entries && entries.length > 0) {
-                    cardContainer(container, (c) => {
-                        addSectionTitle(c, t('settings.software.title'));
-                        for (const entry of entries) {
-                            slideRow(
-                                c,
-                                softwareKindIcon(entry.kind),
-                                escapeHtml(entry.name),
-                                false,
-                                () =>
-                                    getSettingsMenu()?.push(
-                                        buildSoftwareDetailLevel(entry.path, getSettingsMenu)
-                                    ),
-                                escapeHtml(entry.kind),
-                                entry.managed ? t('settings.software.custom') : 'auto',
-                                undefined,
-                                undefined,
-                                {
-                                    trailing: {
-                                        icon: '▶',
-                                        onClick: async () => {
-                                            const r = await tryCatchStatus(
-                                                async () => {
-                                                    await LaunchSoftware(
-                                                        entry.path,
-                                                        entry.args || ''
-                                                    );
-                                                    return true as const;
-                                                },
-                                                t('settings.softwareStartFail', {
-                                                    name: entry.name,
-                                                })
-                                            );
-                                            if (r !== undefined) {
-                                                setStatus(
-                                                    t('settings.softwareStarted', {
+            renderCustom: (container) => {
+                // 同步壳 + 内部 async + disposed 守卫：MenuNode.renderCustom 契约不允许返回 Promise（与 settings-resources 范式一致）
+                let disposed = false;
+                void (async () => {
+                    await scanSoftwareDir();
+                    if (disposed) {
+                        return;
+                    }
+                    const entries = cachedSoftwareEntries;
+                    if (entries && entries.length > 0) {
+                        cardContainer(container, (c) => {
+                            addSectionTitle(c, t('settings.software.title'));
+                            for (const entry of entries) {
+                                slideRow(
+                                    c,
+                                    softwareKindIcon(entry.kind),
+                                    escapeHtml(entry.name),
+                                    false,
+                                    () =>
+                                        getSettingsMenu()?.push(
+                                            buildSoftwareDetailLevel(entry.path, getSettingsMenu)
+                                        ),
+                                    escapeHtml(entry.kind),
+                                    entry.managed ? t('settings.software.custom') : 'auto',
+                                    undefined,
+                                    undefined,
+                                    {
+                                        trailing: {
+                                            icon: '▶',
+                                            onClick: async () => {
+                                                const r = await tryCatchStatus(
+                                                    async () => {
+                                                        await LaunchSoftware(
+                                                            entry.path,
+                                                            entry.args || ''
+                                                        );
+                                                        return true as const;
+                                                    },
+                                                    t('settings.softwareStartFail', {
                                                         name: entry.name,
-                                                    }),
-                                                    true
+                                                    })
                                                 );
-                                            }
+                                                if (r !== undefined) {
+                                                    setStatus(
+                                                        t('settings.softwareStarted', {
+                                                            name: entry.name,
+                                                        }),
+                                                        true
+                                                    );
+                                                }
+                                            },
                                         },
-                                    },
-                                }
-                            );
-                        }
-                    });
-                }
+                                    }
+                                );
+                            }
+                        });
+                    }
+                })();
+                return () => {
+                    disposed = true;
+                };
             },
         },
         {
