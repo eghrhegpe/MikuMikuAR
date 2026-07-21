@@ -809,6 +809,7 @@ export const zhCN: Record<string, string> = {
     'scene.followOffsetY': '偏移 Y',
     'scene.followSmoothing': '平滑度',
     'scene.followMoveWithTarget': '灯随动',
+    'scene.followNoActor': '请先加载角色模型',
 
     // —— 物理层级 scene-physics-levels ——
     'scene.gravityStrength': '重力强度（WASM + 布料）',

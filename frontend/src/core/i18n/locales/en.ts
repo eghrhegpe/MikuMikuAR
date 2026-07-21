@@ -812,6 +812,7 @@ export const en: Record<string, string> = {
     'scene.followOffsetY': 'Offset Y',
     'scene.followSmoothing': 'Smoothing',
     'scene.followMoveWithTarget': 'Move Light',
+    'scene.followNoActor': 'Load a character model first',
 
     // —— Physics levels ——
     'scene.gravityStrength': 'Gravity Strength (WASM + Cloth)',

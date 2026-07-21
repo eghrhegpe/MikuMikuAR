@@ -836,6 +836,7 @@ export const ja: Record<string, string> = {
     'scene.followOffsetY': 'オフセット Y',
     'scene.followSmoothing': 'スムージング',
     'scene.followMoveWithTarget': 'ライト追従',
+    'scene.followNoActor': 'キャラクターモデルを読み込んでください',
 
     'scene.preset.standard': '標準',
     'scene.preset.cinematic': 'シネマティック',

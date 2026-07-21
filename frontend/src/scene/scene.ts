@@ -77,6 +77,7 @@ import { detectRuntimeMode, persistRuntimeMode, renderRuntimeBadge } from '../co
 import { _catState, _matState, _matEnabled } from './manager/material';
 import { updatePlaybackUI, initPlaybackObservables } from './motion/playback';
 import { initLighting, _updateSunDisc, setLightState, getLightState } from './render/lighting';
+import { clearFollowBoneCache } from './render/lighting-follow';
 import {
     initRenderer,
     rebuildOutlineState,
@@ -372,6 +373,9 @@ export async function initScene(): Promise<void> {
         // 否则下一帧 observer 同时读到 _procVmdActive=true + mmdModel 已销毁 → skeleton null → TypeError
         // 见 proc-motion-bridge.ts onModelRemoved
         onModelRemoved(id);
+
+        // [doc:adr-168] 清除追光骨骼缓存，避免持有已销毁 bone 引用
+        clearFollowBoneCache(id);
 
         // 同步销毁 MMD 模型：必须在网格释放 / modelRegistry.delete 之前执行
         // （见 model-manager.ts remove() 的调用顺序），且必须早于下方三个 fire-and-forget 清理。
