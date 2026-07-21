@@ -454,6 +454,32 @@ export function updatePerceptionConflictBanner(el: HTMLElement, modelId: string 
     el.textContent = `${t('motion.perceptionDegraded')} (${lines.length})\n` + lines.join('\n');
 }
 
+/**
+ * [doc:adr-166 P2-3] 渲染「焦点 + 全部 pinned」模型的感知层冲突 banner。
+ * 复用单模型 `updatePerceptionConflictBanner`（受测），对去重后的模型集逐个渲染子 banner。
+ * 单模型场景（仅焦点、无 pinned）输出与旧版一致；多模型时每段加 modelId 前缀以区分归属。
+ */
+export function renderPerceptionConflictBanners(container: HTMLElement): void {
+    const ids: string[] = [];
+    if (focusedModelId) ids.push(focusedModelId);
+    for (const pid of getPinnedModelIds()) {
+        if (!ids.includes(pid)) ids.push(pid);
+    }
+    const multi = ids.length > 1;
+    for (const id of ids) {
+        const sub = document.createElement('div');
+        updatePerceptionConflictBanner(sub, id);
+        if (sub.style.display === 'none') continue; // 该模型无冲突则跳过
+        if (multi) {
+            const head = document.createElement('div');
+            head.style.cssText = 'font-weight:600;opacity:0.75;margin-top:4px;';
+            head.textContent = `▸ ${id}`;
+            container.appendChild(head);
+        }
+        container.appendChild(sub);
+    }
+}
+
 export function buildGazeTrackingLevel(): PopupLevel {
     return {
         label: t('motion.gazeTracking'),
@@ -463,7 +489,7 @@ export function buildGazeTrackingLevel(): PopupLevel {
             cardContainer(container, (c) => {
                 const banner = document.createElement('div');
                 banner.style.cssText = 'padding:2px 14px 8px;font-size:11px;line-height:1.5;';
-                updatePerceptionConflictBanner(banner, focusedModelId);
+                renderPerceptionConflictBanners(banner);
                 c.appendChild(banner);
                 renderMenu(gazeSchema, c);
             });
