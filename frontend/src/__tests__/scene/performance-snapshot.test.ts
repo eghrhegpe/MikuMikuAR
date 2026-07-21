@@ -10,6 +10,8 @@
 // 测试直接注入 mock bridge，无需 mock 整个 scene 模块——这正是 P3-A 的可测性收益。
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { LightState } from '../../scene/render/lighting';
+import type { RenderState } from '../../scene/render/renderer';
 
 // 原始（用户）设置：快照应捕获并在恢复时精确回写这些值
 const ORIGINAL_LIGHT = { hemiIntensity: 0.9, dirIntensity: 0.5 };
@@ -29,8 +31,10 @@ const h = vi.hoisted(() => {
         box,
         setLightState,
         setRenderState: vi.fn(),
-        getLightState: vi.fn(() => ({ hemiIntensity: 0.9, dirIntensity: 0.5 })),
-        getRenderState: vi.fn(() => ({ msaaSamples: 8 })),
+        getLightState: vi.fn(
+            () => ({ hemiIntensity: 0.9, dirIntensity: 0.5 }) as unknown as LightState
+        ),
+        getRenderState: vi.fn(() => ({ msaaSamples: 8 }) as unknown as RenderState),
         setAutoDegradingReflection: vi.fn(),
         setEnvStateForPerformance: vi.fn(),
         setUIState: vi.fn(),
