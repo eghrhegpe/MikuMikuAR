@@ -23,7 +23,7 @@ import { _createStageLight, _updateIndicator, _disposeStageLightEntry } from './
 import { _ensureShadow } from './lighting-shadow';
 import { _updateSunDisc, _disposeSunDisc } from './lighting-sun';
 import { _cancelAllLightingTweens } from './lighting-tween';
-import { tickFollowLights, clearFollowBoneCache } from './lighting-follow';
+import { tickPersonalLights, disposeAllPersonalLights } from './lighting-follow';
 
 // ======== Light State ========
 
@@ -44,20 +44,6 @@ export interface LightState {
 }
 
 export type StageLightType = 'spot' | 'point' | 'directional';
-
-/** [doc:adr-168] 灯光跟随目标绑定 */
-export interface FollowTarget {
-    /** 绑定的模型 ID（modelRegistry key） */
-    modelId: string;
-    /** 骨骼名（null = 模型根节点 / 重心） */
-    boneName: string | null;
-    /** 相对骨骼的世界偏移 [x, y, z] */
-    offset: [number, number, number];
-    /** 追踪平滑系数（0-1，越大越快；0 = 瞬移） */
-    smoothing: number;
-    /** 灯自身是否也跟随移动（true = 灯位置相对目标保持轨道；false = 只转 target） */
-    moveWithTarget: boolean;
-}
 
 export interface StageLightState {
     id: string; // 唯一标识
@@ -96,8 +82,6 @@ export interface StageLightState {
     coneIntensity: number; // 0-2, default 0.5
     coneLength: number; // 1-50, default 20
     coneSoftness: number; // 0-1, default 0.5
-    // [doc:adr-168] 动态追光
-    followTarget: FollowTarget | null;
 }
 
 export function _defaultStageLightState(id: string, name: string): StageLightState {
@@ -131,8 +115,6 @@ export function _defaultStageLightState(id: string, name: string): StageLightSta
         coneIntensity: 0.5,
         coneLength: 20,
         coneSoftness: 0.5,
-        // [doc:adr-168] 追光默认关闭
-        followTarget: null,
     };
 }
 
@@ -198,10 +180,10 @@ export function initLighting(
         }
     });
 
-    // [doc:adr-168] 追光 tick：每帧更新绑定目标的灯光 target/position
-    lightingState.followTickHandle = observe(
+    // [doc:adr-168] 个人灯 tick：每帧更新角色专属跟随灯位置
+    lightingState.personalLightTickHandle = observe(
         lightingState.scene.onBeforeRenderObservable,
-        tickFollowLights
+        tickPersonalLights
     );
 }
 
@@ -438,12 +420,12 @@ export function disposeLighting(): void {
         lightingState.coneUpdateHandle.dispose();
         lightingState.coneUpdateHandle = null;
     }
-    // [doc:adr-168] 释放追光 tick observer + 骨骼缓存
-    if (lightingState.followTickHandle) {
-        lightingState.followTickHandle.dispose();
-        lightingState.followTickHandle = null;
+    // [doc:adr-168] 释放个人灯 tick observer + 所有个人灯
+    if (lightingState.personalLightTickHandle) {
+        lightingState.personalLightTickHandle.dispose();
+        lightingState.personalLightTickHandle = null;
     }
-    clearFollowBoneCache();
+    disposeAllPersonalLights();
     // P4-fix: 释放在途主光过渡 observer，避免场景销毁后其仍挂在旧 scene 的渲染循环上
     if (lightingState.activeTransitionObs) {
         lightingState.activeTransitionObs.dispose();

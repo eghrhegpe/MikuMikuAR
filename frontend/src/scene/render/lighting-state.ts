@@ -51,8 +51,8 @@ export interface LightingStateValues {
     stageShadows: Map<string, ShadowGenerator>;
     stageCones: Map<string, LightConeEntry>;
     coneUpdateHandle: ObserverHandle | null;
-    /** [doc:adr-168] 追光 tick observer 句柄；disposeLighting 时释放 */
-    followTickHandle: ObserverHandle | null;
+    /** [doc:adr-168] 个人灯 tick observer 句柄；disposeLighting 时释放 */
+    personalLightTickHandle: ObserverHandle | null;
     /** 主光过渡动画（transitionLighting）持有的渲染循环 observer 句柄；重入时取消旧动画、disposeLighting 时显式释放 */
     activeTransitionObs: ObserverHandle | null;
     tweenIdCounter: number;
@@ -115,7 +115,7 @@ export const lightingState: LightingStateValues = {
     stageShadows: new Map<string, ShadowGenerator>(),
     stageCones: new Map<string, LightConeEntry>(),
     coneUpdateHandle: null,
-    followTickHandle: null,
+    personalLightTickHandle: null,
     activeTransitionObs: null,
     tweenIdCounter: 0,
     activeTweens: new Map<number, LightingTween>(),

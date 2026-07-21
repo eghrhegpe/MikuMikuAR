@@ -24,6 +24,8 @@ import {
     addSectionTitle,
     addPresetChip,
     addEmptyRow,
+    addSliderRow,
+    addToggleRow,
 } from '../core/ui-helpers';
 import { openFullscreen } from '../core/ui-fullscreen-overlay';
 import { buildOutfitLevel } from './outfit-ui';
@@ -31,6 +33,7 @@ import { savePresetToLibDialog, buildPresetListLevel } from './model-preset';
 import { buildFeetLevel } from './motion-feet-levels';
 import { buildVirtualSkirtLevel } from './motion-cloth-levels';
 import { buildPhysicsDebugLevel } from './scene-physics-levels';
+import { getPersonalLightState, setPersonalLightState } from '../scene/render/lighting-follow';
 import {
     GetTagsByModel,
     AddTag,
@@ -338,6 +341,51 @@ function buildModelSchema(id: string): MenuNode[] {
                         const level = buildOutfitLevel(id);
                         stackRegistry.modelStack.push(level);
                     });
+
+                    // ── 个人灯光 ──
+                    {
+                        const pls = getPersonalLightState(id);
+                        if (pls) {
+                            addSectionTitle(c, t('model-detail.personalLight'));
+                            addToggleRow(
+                                c,
+                                t('model-detail.personalLightEnabled'),
+                                pls.enabled,
+                                (v) => setPersonalLightState(id, { enabled: v }),
+                                'lucide:lightbulb'
+                            );
+                            addSliderRow(
+                                c,
+                                t('model-detail.personalLightIntensity'),
+                                pls.intensity,
+                                0,
+                                3,
+                                0.05,
+                                (v) => setPersonalLightState(id, { intensity: v }),
+                                'lucide:sun'
+                            );
+                            addSliderRow(
+                                c,
+                                t('model-detail.personalLightAngle'),
+                                pls.angle,
+                                0.3,
+                                1.5,
+                                0.05,
+                                (v) => setPersonalLightState(id, { angle: v }),
+                                'lucide:flashlight'
+                            );
+                            addSliderRow(
+                                c,
+                                t('model-detail.personalLightHeight'),
+                                pls.height,
+                                5,
+                                30,
+                                0.5,
+                                (v) => setPersonalLightState(id, { height: v }),
+                                'lucide:move-vertical'
+                            );
+                        }
+                    }
 
                     // ── 模型信息 ──
                     addSectionTitle(c, t('model-detail.modelInfo'));
