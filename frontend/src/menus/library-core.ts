@@ -521,6 +521,11 @@ function renderItemsWithRAF(
         } else if (item.model) {
             // [doc:adr-131] 连续预览：加载后保持浏览器打开，不收起 overlay
             if (item.model.format === 'vmd' && outcome.mode === 'stay') {
+                if (outcome.onVmdPick) {
+                    const name = item.model.name_jp || item.model.name_en || '';
+                    outcome.onVmdPick(item.model.file_path, name);
+                    return;
+                }
                 loadManager.load({
                     kind: 'vmd',
                     path: item.model.file_path,

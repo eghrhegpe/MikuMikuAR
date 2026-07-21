@@ -85,6 +85,20 @@ let _perfMonitor = new PerceptionPerfMonitor();
 let _frameCounter = 0;
 /** [doc:adr-164] 全员感知开关 */
 let _allEnabled = false;
+/** [doc:adr-166 P2-1] reclaim 监听器已注册标志，避免多次订阅 bone-override-store release 事件 */
+let _reclaimListenerAdded = false;
+
+/**
+ * [doc:adr-166 P2-1] bone-override-store release 事件回调：
+ * 感知层自有骨骼被释放时自动 reclaim，解决关闭 Bone Override 后 gaze 头部跟随永不恢复
+ */
+function _onBoneOverrideRelease(modelId: string, moduleId: string, _bones: Set<string>): void {
+    // 忽略感知层自身释放（如 _releasePerceptionBones 内循环调 releaseOwnedBones 触发本监听器），避免递归 reclaim
+    if (moduleId.startsWith('perception.')) return;
+    if (_perceptionOwnedBones.has(modelId)) {
+        _reclaimPerceptionBones(modelId);
+    }
+}
 
 // ══════════════════════════════════════════════════════════════
 // 内部 helpers
@@ -187,6 +201,9 @@ function _claimPerceptionBones(modelId: string): void {
 
 /** [doc:adr-163] 释放指定模型的全部感知层骨骼 */
 function _releasePerceptionBones(modelId: string): void {
+    // 先标记释放，防止 releaseOwnedBones 触发的 _onBoneOverrideRelease 回调
+    // 通过 _perceptionOwnedBones.has(modelId) 判断后尝试 reclaim → 形成无限递归
+    _perceptionOwnedBones.delete(modelId);
     const modules = [
         'perception.gaze.head',
         'perception.gaze.eye',
@@ -198,7 +215,6 @@ function _releasePerceptionBones(modelId: string): void {
     for (const moduleId of modules) {
         releaseOwnedBones(modelId, moduleId);
     }
-    _perceptionOwnedBones.delete(modelId);
 }
 
 /** [doc:adr-166] 回收指定模型的感知骨骼：先释放再重认领，解决 Close Override 夺走后不回抢 */
@@ -394,6 +410,13 @@ function _ensureObserverRegistered(): void {
             }
         },
     });
+
+    // [doc:adr-166 P2-1] 注册 bone-override-store release 监听器（仅一次），
+    // 当其他模块释放骨骼（如关闭 Bone Override）时自动触发感知层 reclaim
+    if (!_reclaimListenerAdded) {
+        getBoneOverrideStore().addReleaseListener(_onBoneOverrideRelease);
+        _reclaimListenerAdded = true;
+    }
 }
 
 /** 激活感知层（呼吸/眨眼/gaze） */
@@ -719,6 +742,7 @@ export function unpinPerception(modelId: string): void {
 
     ctx.isPinned = false;
 
+    // 焦点 unpin 仅清 pinned 标志，isActive 保留至焦点切换（仍为当前编辑目标，不应释放骨骼）
     // 非焦点模型：取消激活
     if (_focusedContextId !== modelId) {
         _releasePerceptionBones(modelId);
@@ -791,8 +815,12 @@ export function enableAllPerception(): void {
                 ctx.isActive = true;
                 _claimPerceptionBones(id);
             } else {
-                // [doc:adr-166] 已激活但骨骼可能被 Close Override 夺走，回收重认领
-                _reclaimPerceptionBones(id);
+                // [doc:adr-166] 已激活但骨骼可能被 Close Override 夺走
+                const store = getBoneOverrideStore();
+                const headOwned = store.getOwnedBones(id, 'perception.gaze.head');
+                if (headOwned.size === 0) {
+                    _reclaimPerceptionBones(id);
+                }
             }
         }
     }

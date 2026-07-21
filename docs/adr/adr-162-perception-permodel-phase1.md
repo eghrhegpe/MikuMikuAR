@@ -172,7 +172,7 @@ perceptionObserver = getMotionPipeline().register({
 |------|---------|
 | 焦点模型感知行为不变 | 加载单模型，呼吸/眨眼/gaze 正常 |
 | Pinned 模型在焦点切换时仍激活 | pin 模型 A，切焦点到 B，A 仍呼吸 |
-| Pinned 上限 5 个 | pin 第 6 个时 warn 并拒绝 |
+| Pinned 上限已移除（受 ADR-164 tier 控制） | pin 第 6+ 个时正常运作，不 warn 不拒绝 |
 | 旧存档加载后使用默认值 | 加载旧场景，无 NaN |
 | 57 项 perception 测试全绿 | `npm run test -- perception.test.ts` |
 | 新增 pin 相关测试通过 | `npm run test -- perception.test.ts` |
@@ -183,7 +183,7 @@ perceptionObserver = getMotionPipeline().register({
 
 | 项 | Phase 1（本 ADR） | Phase 2（ADR-164） |
 |----|------------------|-------------------|
-| 激活模型数 | 焦点 + pinned ≤5 | 全员 |
+| 激活模型数 | 焦点 + pinned（上限由 ADR-164 tier 控制：high=全员、medium=焦点+pinned+前 10 个、low=仅焦点+pinned） | 全员 |
 | 性能降级 | 不需要 | 三档（high/medium/low） |
 | UI | pin 按钮 | 全员默认开关 |
 | 性能基准 | 不需要 | 必须先做 |
