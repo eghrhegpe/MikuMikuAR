@@ -21,7 +21,7 @@ import { logWarn } from '@/core/logger';
 import { encodeFileRef } from '@/core/fileservice';
 import { readFileBytes } from '@/core/wails-bindings';
 import { t } from '@/core/i18n/t';
-import { setActiveMotion, getActiveMotion } from './motion-intent';
+import { replaceDefaultMotion, getActiveMotion } from './motion-intent';
 import { loadCameraVmd } from '../camera/camera';
 import { loadAudioFile } from '@/outfit/audio';
 import { PROC_VMD_NAME_IDLE, PROC_VMD_NAME_AUTODANCE } from '@/motion-algos/procedural-motion';
@@ -79,7 +79,7 @@ export async function loadVMDMotion(
         throw new DOMException('Aborted', 'AbortError');
     }
     if (!mmdRuntime) {
-        setActiveMotion({ vmdPath: null, vmdName: name, vmdLayers: [], source: 'vmd' });
+        replaceDefaultMotion({ vmdPath: null, vmdName: name, vmdLayers: [], source: 'vmd' });
         setStatus(t('scene.vmd.cachedWaiting'), false);
         return;
     }
@@ -224,13 +224,15 @@ export async function loadVMDFromPath(
                 if (foc) {
                     foc.vmdPath = path;
                 }
-                // 设置场景级 activeMotion（守卫：避免广播回调重复触发）
+                // 设置场景级默认动作（守卫：避免同路径重复触发广播）
                 // [fix:adr-167] skipSceneIntent 时跳过：per-model 应用（applyIntentToModel /
-                // 程序化切回）不应触碰场景库——setActiveMotion 是单例替换语义，会把其他主动作清掉。
+                // 程序化切回）不应触碰场景库。
+                // [adr-169] 用 replaceDefaultMotion 原位替换默认：旧默认被顶替移除，
+                // 其余主动作保留（取代已废弃的 setActiveMotion 单例清库语义）。
                 if (!skipSceneIntent) {
                     const cur = getActiveMotion();
                     if (!cur || cur.vmdPath !== path) {
-                        setActiveMotion({
+                        replaceDefaultMotion({
                             vmdPath: path,
                             vmdName: vmdName.replace(/\.vmd$/i, ''),
                             vmdLayers: [],
@@ -239,7 +241,7 @@ export async function loadVMDFromPath(
                     }
                 }
             } else if (!skipSceneIntent) {
-                setActiveMotion({
+                replaceDefaultMotion({
                     vmdPath: path,
                     vmdName: vmdName.replace(/\.vmd$/i, ''),
                     vmdLayers: [],

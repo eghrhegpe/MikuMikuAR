@@ -417,6 +417,7 @@ export const zhTW: Record<string, string> = {
     'motion.deleteMotion': '刪除動作',
     'motion.deleteMotionConfirm': '確定要刪除動作 "{name}" 嗎？',
     'motion.motionRemoved': '✓ 動作 {name} 已刪除',
+    'motion.motionReplaced': '✓ 預設動作已替換為 {name}',
     'motion.library.title': '場景動作庫',
     'motion.library.emptyHint': '場景庫為空，請先載入動作',
     'motion.library.followDefault': '跟隨預設動作',

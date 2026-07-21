@@ -146,7 +146,7 @@ export function setDefaultMotion(id: string | null): void {
 
 /**
  * 清空整个场景动作库 + 默认动作。
- * 用于「清除场景动作」UI（兼容旧 setActiveMotion(null) 语义）。
+ * 用于「清除场景动作」UI。
  */
 export function clearAllSceneMotions(): void {
     const prev = getActiveMotion();
@@ -156,30 +156,54 @@ export function clearAllSceneMotions(): void {
     _broadcastCallback?.(null, _motionGen, prev);
 }
 
-// ── 兼容旧 API（ADR-121 setActiveMotion）──
-
 /**
- * [adr-121 兼容] 设置场景级动作意图。
+ * [adr-169] 原位替换默认动作。
  *
- * 语义保留为「单例替换」：
- * - intent === null → 清空整个场景库 + 默认（等同 clearAllSceneMotions）
- * - intent !== null → 替换为单例：_sceneMotions = [intent]，_activeMotionId = intent.id
+ * 「从文件装载动作」的统一语义：装载的动作成为新默认，旧默认被原位顶替。
+ * 是 removeSceneMotion + addSceneMotion + setDefaultMotion 的原子组合，
+ * 保证「移除旧默认 → 加入/复用新动作 → 设默认 → 广播」在一次 generation
+ * 递增内完成，避免中间态被并发广播读到。
  *
- * @deprecated 新代码请使用 addSceneMotion / setDefaultMotion / removeSceneMotion / clearAllSceneMotions。
- *             本函数保留供旧调用点（motion-popup.ts 等）渐进迁移。
+ * - 装载路径已是库中候选 → 复用该候选（提升为默认），不重复添加
+ * - 否则新增动作，插入到旧默认原位置（保持库顺序稳定）
+ * - 旧默认（若存在且非复用项）从库中移除
+ * - 触发广播：跟随默认 / 引用旧默认的角色切到新动作
+ *
+ * @returns 新默认动作的 id
  */
-export function setActiveMotion(intent: SceneMotionIntent | null): void {
+export function replaceDefaultMotion(intent: SceneMotionIntent): string {
     const prev = getActiveMotion();
-    if (intent === null) {
-        _sceneMotions = [];
-        _activeMotionId = null;
+    const prevId = _activeMotionId;
+
+    // 去重：装载路径已是库中候选 → 复用（提升为默认）
+    const existing = intent.vmdPath
+        ? _sceneMotions.find((m) => m.vmdPath === intent.vmdPath)
+        : undefined;
+
+    let newId: string;
+    if (existing) {
+        newId = existing.id;
+        // 旧默认若非复用项本身，从库中移除
+        if (prevId !== null && prevId !== newId) {
+            _sceneMotions = _sceneMotions.filter((m) => m.id !== prevId);
+        }
     } else {
-        const id = intent.id ?? genMotionId();
-        _sceneMotions = [{ ...intent, id }];
-        _activeMotionId = id;
+        newId = intent.id ?? genMotionId();
+        const withId: SceneMotionIntent = { ...intent, id: newId };
+        if (prevId !== null) {
+            // 原位插入到旧默认位置，保持库顺序稳定
+            const idx = _sceneMotions.findIndex((m) => m.id === prevId);
+            _sceneMotions = _sceneMotions.filter((m) => m.id !== prevId);
+            _sceneMotions.splice(idx >= 0 ? idx : _sceneMotions.length, 0, withId);
+        } else {
+            _sceneMotions.push(withId);
+        }
     }
+
+    _activeMotionId = newId;
     _motionGen++;
     _broadcastCallback?.(getActiveMotion(), _motionGen, prev);
+    return newId;
 }
 
 // ── 兼容性解析 ──

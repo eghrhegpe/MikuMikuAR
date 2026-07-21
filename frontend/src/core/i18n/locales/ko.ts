@@ -423,6 +423,7 @@ export const ko: Record<string, string> = {
     'motion.deleteMotion': '모션 삭제',
     'motion.deleteMotionConfirm': '모션 "{name}"을(를) 삭제하시겠습니까?',
     'motion.motionRemoved': '✓ 모션 {name} 삭제됨',
+    'motion.motionReplaced': '✓ 기본 모션이 {name}(으)로 교체됨',
     'motion.library.title': '장면 모션 라이브러리',
     'motion.library.emptyHint': '장면 라이브러리가 비어 있습니다. 먼저 모션을 로드하세요',
     'motion.library.followDefault': '기본값 따르기',

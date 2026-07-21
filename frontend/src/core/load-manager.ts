@@ -48,8 +48,8 @@ export interface LoadRequest {
     /**
      * [fix:adr-167] 跳过场景级动作意图更新（kind='vmd' 时使用）。
      * per-model 动作应用（applyIntentToModel / 程序化切回）走此标志，
-     * 避免 loadVMDFromPath 内部调用已废弃的 setActiveMotion（单例替换语义）
-     * 把整个场景动作库碾成单个动作、波及其他角色。
+     * 避免 loadVMDFromPath 内部更新场景级默认动作（[adr-169] replaceDefaultMotion）
+     * 时波及场景动作库与其他角色。
      */
     skipSceneIntent?: boolean;
     /**
