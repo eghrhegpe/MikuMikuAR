@@ -15,6 +15,8 @@ import { logWarn } from '@/core/logger';
 // ======== 骨骼缓存（避免每帧 O(n) find） ========
 
 const _boneCache = new Map<string, IMmdRuntimeBone | null>();
+/** 已警告过的骨骼缺失 key，避免每帧刷屏 */
+const _warnedKeys = new Set<string>();
 
 /** 模型卸载 / 场景销毁时清除骨骼缓存 */
 export function clearFollowBoneCache(modelId?: string): void {
@@ -22,10 +24,12 @@ export function clearFollowBoneCache(modelId?: string): void {
         for (const key of _boneCache.keys()) {
             if (key.startsWith(modelId + ':')) {
                 _boneCache.delete(key);
+                _warnedKeys.delete(key);
             }
         }
     } else {
         _boneCache.clear();
+        _warnedKeys.clear();
     }
 }
 
@@ -133,7 +137,11 @@ function _resolveFollowWorldPos(
             return true;
         }
         // 骨骼未找到 → fallback 根节点（仅首次 warn）
-        logWarn('lighting-follow', `骨骼 "${ft.boneName}" 未找到，回退根节点`);
+        const warnKey = `${model.id}:${ft.boneName}`;
+        if (!_warnedKeys.has(warnKey)) {
+            _warnedKeys.add(warnKey);
+            logWarn('lighting-follow', `骨骼 "${ft.boneName}" 未找到，回退根节点`);
+        }
     }
 
     // 根节点模式

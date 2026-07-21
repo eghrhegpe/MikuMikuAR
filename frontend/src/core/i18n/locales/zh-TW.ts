@@ -831,6 +831,7 @@ export const zhTW: Record<string, string> = {
     'scene.followOffsetY': '偏移 Y',
     'scene.followSmoothing': '平滑度',
     'scene.followMoveWithTarget': '燈隨動',
+    'scene.followNoActor': '請先載入角色模型',
 
     'scene.preset.standard': '標準',
     'scene.preset.cinematic': '電影',

@@ -834,6 +834,7 @@ export const ko: Record<string, string> = {
     'scene.followOffsetY': '오프셋 Y',
     'scene.followSmoothing': '부드러움',
     'scene.followMoveWithTarget': '라이트 추적',
+    'scene.followNoActor': '캐릭터 모델을 먼저 불러오세요',
 
     'scene.preset.standard': '스탠다드',
     'scene.preset.cinematic': '시네마틱',

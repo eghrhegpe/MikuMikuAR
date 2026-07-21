@@ -345,7 +345,11 @@ function buildStageLightSchema(): MenuNode[] {
                                     const actors = Array.from(modelRegistry.entries()).filter(
                                         ([, inst]) => inst.kind === 'actor'
                                     );
-                                    const firstId = actors[0]?.[0] ?? '';
+                                    if (actors.length === 0) {
+                                        setStatus(t('scene.followNoActor'), true);
+                                        return;
+                                    }
+                                    const firstId = actors[0][0];
                                     setStageLightState(
                                         {
                                             followTarget: {
