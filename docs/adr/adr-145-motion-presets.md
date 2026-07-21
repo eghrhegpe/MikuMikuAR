@@ -1,7 +1,7 @@
 # ADR-145: 多模块协同预设 — 一键启用组合姿态
 
 **日期**: 2026-07-17
-> **状态**: 规划中
+> **状态**: ✅ P1 已实施（类型定义 + applyMotionPreset + UI 卡片 + Go 侧 .mcpreset.json CRUD + 5 语言 i18n）
 > **背景**: 用户需要「坐姿」「站姿」「舞蹈准备」等复合姿态，涉及多个模块协同（如 body-posture + riding-model + position-offset 同时启用并设定特定参数值）。当前需手动逐个开关、调参，缺一键应用能力。
 
 ---
