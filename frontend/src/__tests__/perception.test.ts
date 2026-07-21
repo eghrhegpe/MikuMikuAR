@@ -1026,6 +1026,30 @@ describe('ADR-163 claimBones', () => {
         expect(el.style.display).not.toBe('none');
         expect(el.textContent).toContain('perception.gaze.head');
     });
+
+    it('d) [doc:adr-166 P2-3] renderPerceptionConflictBanners 同屏并显焦点+pinned 冲突', async () => {
+        mockState.focusedModelId = 'm1';
+        mockState.modelManager.get.mockReturnValue({
+            mmdModel: { mesh: { isDisposed: () => false }, runtimeBones: [] },
+        });
+        const store = await getStore();
+        // 焦点 m1 有冲突
+        store.claimBones('m1', 'perception.gaze.head', 100, ['頭']);
+        store.claimBones('m1', 'body-posture', 1, ['頭']);
+        // pinned m2 有冲突（pin 后再制造抢占）
+        sut.pinPerception('m2');
+        store.claimBones('m2', 'perception.gaze.head', 100, ['頭']);
+        store.claimBones('m2', 'body-posture', 1, ['頭']);
+
+        const { renderPerceptionConflictBanners } = await import('../menus/motion-gaze-levels');
+        const container = document.createElement('div');
+        renderPerceptionConflictBanners(container);
+
+        // 多模型场景：焦点 + pinned 冲突均显示，且带 modelId 前缀区分归属
+        expect(container.textContent).toContain('m1');
+        expect(container.textContent).toContain('m2');
+        expect(container.textContent).toContain('perception.gaze.head');
+    });
 });
 
 // =====================================================================
