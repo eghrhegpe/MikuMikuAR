@@ -56,7 +56,7 @@ items.push({
 |---|---|
 | `focusedModelId` 焦点指针 | `_activeMotionId`——原样复用，零新增状态 |
 | 行首 check-circle「设为焦点」 | 行首 check-circle「选中」 |
-| 行尾 settings-2「模型工具」 | 行尾 settings-2「动作工具」→ 详情页 |
+| 行尾 settings-2「模型工具」 | 行尾 settings-2「动作工具」→ 动作工具页（`buildMotionToolsLevel`，对齐 `buildModelToolsLevel`） |
 | 网格双击 = 替换焦点模型 | 网格双击 = 替换选中动作（`replaceDefaultMotion` 不变） |
 
 缺的从来不是逻辑，是**寻址能力**。
@@ -80,8 +80,8 @@ items.push({
     },
     trailing: {
         icon: 'lucide:settings-2',
-        title: t('motion.motionTools'),                // 「动作工具」→ 详情页
-        onClick: () => { /* push buildMotionDetailLevel(motion.id) */ },
+        title: t('motion.motionTools'),                // 「动作工具」→ 工具页
+        onClick: () => { /* push buildMotionToolsLevel(motion.id) */ },
     },
 });
 ```
@@ -92,8 +92,8 @@ items.push({
 |---|---|---|
 | 行主图标 | clapperboard / circle-play | check-circle / circle（单选态，对齐模型） |
 | 行首 | trash-2「删除动作」 | check-circle「选中」（= setDefaultMotion，带撤销快照） |
-| 行尾 | star「设为默认」（仅非默认行） | settings-2「动作工具」→ 详情页（所有行） |
-| 删除 | 行首按钮 | **收进详情页**（`buildMotionDetailSchema` 已有删除 chip，[motion-detail-ui.ts:172](../../frontend/src/menus/motion-detail-ui.ts#L172)，行内按钮直接移除） |
+| 行尾 | star「设为默认」（仅非默认行） | settings-2「动作工具」→ 动作工具页（所有行） |
+| 删除 | 行首按钮 | **收进动作工具页**（新增 `buildMotionToolsLevel` 承载；原详情页删除 chip 移入，对齐模型「卸载只在工具页」的分层） |
 
 > 少用功能（删除）收敛到工具页，行内只保留"选中"这一主操作——与模型行「行首焦点 + 行尾工具」的布局完全对齐。
 
@@ -121,7 +121,7 @@ items.push({
 | `motion.selectMotion` | 选中 |
 | `motion.motionTools` | 动作工具 |
 
-（`motion.defaultMotion`=「默认」徽标、`motion.deleteMotion`=删除 复用现有 key；删除入口移至详情页，key 不变。）
+（`motion.defaultMotion`=「默认」徽标、`motion.deleteMotion`=删除 复用现有 key；删除入口移至动作工具页，key 不变。）
 
 ---
 
@@ -129,9 +129,9 @@ items.push({
 
 | 阶段 | 文件 | 操作 | 验收 |
 |---|---|---|---|
-| **P0** | `menus/motion-root-ui.ts` | 动作行重构：行首 check-circle「选中」（setDefaultMotion + pushUndoSnapshot/offerSceneUndoAndRefresh + reRender），行尾 settings-2「动作工具」→ 详情，移除行内 trash 与 star，行主图标改单选态 | tsc 通过；行内可选中任意动作，选中行显示 check-circle + 「默认」徽标 |
+| **P0** | `menus/motion-root-ui.ts` | 动作行重构：行首 check-circle「选中」（setDefaultMotion + pushUndoSnapshot/offerSceneUndoAndRefresh + reRender），行尾 settings-2「动作工具」→ 工具页，移除行内 trash 与 star，行主图标改单选态 | tsc 通过；行内可选中任意动作，选中行显示 check-circle + 「默认」徽标 |
 | **P0** | `core/i18n/locales/*` | 新增 `motion.selectMotion` / `motion.motionTools`（zh-CN/zh-TW/ja/en/ko） | 5 语言 key 齐全 |
-| **P1** | `menus/motion-detail-ui.ts` | 确认详情页删除 chip 存在（已有，仅核验）；行尾「动作工具」与行点击同指详情页，无冗余副作用 | 详情页可删除动作（带确认 + 撤销） |
+| **P1** | `menus/motion-detail-ui.ts` | 新增 `buildMotionToolsLevel`（对齐 `buildModelToolsLevel`，承载删除动作，带撤销保护）；详情页删除 chip 移入工具页 | 行尾进工具页可删除动作（带撤销）；详情页只剩图层/覆盖 |
 | **P1** | `__tests__/` | 如有动作行渲染测试则更新；`replaceDefaultMotion` 单测已覆盖替换语义（ADR-169） | `npm run test` 全绿 |
 
 ---
@@ -141,7 +141,7 @@ items.push({
 | 级别 | 风险 | 缓解 |
 |---|---|---|
 | 🟠 P2 | 选中即生效：点「选中」会切换角色正在跳的动作，用户可能误触 | 带 pushUndoSnapshot + 撤销 toast；且"选中即预览"是焦点语义的固有行为，在 ADR 中明示 |
-| 🟡 P3 | 行点击与行尾「动作工具」同指详情页，入口冗余 | 与模型行一致的视觉范式（行尾工具图标），多入口无害；行点击保留为主导航 |
+| 🟡 P3 | ~~行点击与行尾「动作工具」同指详情页，入口冗余~~ **已化解**（实施修正）：行尾改指独立 `buildMotionToolsLevel`（删除动作），与行点击（详情：图层/覆盖）完全分流，对齐模型 detail/tools 双层 | 两入口职责正交，无冗余 |
 | 🟡 P3 | 「默认」徽标与「选中」按钮并存，概念双名 | 徽标保留"默认"以延续 ADR-167 的"跟随默认"语义；行首按钮用"选中"表达操作，二者指向同一状态，不新增状态 |
 
 ---
@@ -152,7 +152,7 @@ items.push({
 |---|---|
 | `replaceDefaultMotion`（ADR-169） | 靶子本就是 `_activeMotionId`，暴露选中后语义自动对齐，零改动 |
 | `setDefaultMotion` / `_activeMotionId` / 广播逻辑 | 选中复用默认指针，状态机不变 |
-| 详情页 `buildMotionDetailSchema`（删除/图层/覆盖） | 删除本就在详情页，仅从行内撤出 |
+| 详情页 `buildMotionDetailSchema`（图层/覆盖） | 删除移入新增工具页后，详情页职责更纯（图层 + 覆盖模块） |
 | 库网格双击 `replaceMotion` | 替换选中（默认）的入口不变 |
 | 「浏览动作库」`onVmdPick`（addSceneMotion） | 显式"添加候选"语义保持（ADR-169 已界定边界） |
 

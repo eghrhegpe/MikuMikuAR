@@ -16,8 +16,8 @@ import {
     getActiveMotionId,
     setDefaultMotion,
 } from '../scene/motion/motion-intent';
-// [doc:adr-170] 行尾「动作工具」推进详情页；循环依赖安全：仅在函数体内调用
-import { buildMotionDetailLevel } from './motion-detail-ui';
+// [doc:adr-170] 行尾「动作工具」推进独立工具页；循环依赖安全：仅在函数体内调用
+import { buildMotionToolsLevel } from './motion-detail-ui';
 import { clearAudio, getAudioName } from '../outfit/audio';
 import { t } from '../core/i18n/t';
 import { logWarn } from '../core/logger';
@@ -89,7 +89,8 @@ export function buildMotionRootItems(): PopupRow[] {
                     icon: 'lucide:settings-2',
                     title: t('motion.motionTools'),
                     onClick: () => {
-                        getMotionMenu()?.push(buildMotionDetailLevel(motion.id));
+                        if (!motion.id) return;
+                        getMotionMenu()?.push(buildMotionToolsLevel(motion.id));
                     },
                 },
             });

@@ -9,7 +9,6 @@ import {
     addToggleRow,
     addSliderRow,
     addSectionTitle,
-    addPresetChip,
 } from '../core/ui-helpers';
 import {
     modelManager,
@@ -168,23 +167,8 @@ function buildMotionDetailSchema(sceneMotionId?: string): MenuNode[] {
                         undefined,
                         { wrapLabel: true }
                     );
-                    // [doc:adr-167] 删除此主动作（仅删除场景库中的这一项，不影响其他主动作）
-                    if (motion?.id) {
-                        addPresetChip(inner, t('motion.deleteMotion'), false, () => {
-                            const snap = pushUndoSnapshot();
-                            removeSceneMotion(motion.id!);
-                            updatePlaybackUI();
-                            getMotionMenu()?.pop();
-                            getMotionMenu()?.reRender();
-                            triggerAutoSave();
-                            setStatus(t('motion.motionRemoved', { name: motion.vmdName }), true);
-                            offerSceneUndoAndRefresh(
-                                t('motion.motionRemoved', { name: motion.vmdName }),
-                                snap,
-                                () => getMotionMenu()?.reRender()
-                            );
-                        });
-                    }
+                    // [doc:adr-170] 删除动作已移入动作工具页（buildMotionToolsLevel），
+                    // 详情页只保留图层与覆盖模块——对齐模型「详情 vs 工具」分层
 
                     // ── 该主动作内部的图层 ──
                     if (motion && motion.vmdLayers.length > 0) {
@@ -350,6 +334,54 @@ export function buildMotionDetailLevel(sceneMotionId?: string): PopupLevel {
         items: [],
         renderCustom: (container) => {
             renderMenu(buildMotionDetailSchema(sceneMotionId), container);
+        },
+    };
+}
+
+/**
+ * [doc:adr-170] 动作工具页 level——对齐 buildModelToolsLevel 的「详情 vs 工具」分层：
+ * 行点击进详情（图层/覆盖），行尾 settings-2 进工具页（低频破坏性操作）。
+ * 删除动作带场景级撤销保护（pushUndoSnapshot + offerSceneUndoAndRefresh），无需确认弹窗。
+ */
+export function buildMotionToolsLevel(sceneMotionId: string): PopupLevel {
+    const motion = getSceneMotions().find((m) => m.id === sceneMotionId);
+    return {
+        label: t('motion.motionTools'),
+        dir: '',
+        items: [],
+        renderCustom: (container) => {
+            cardContainer(container, (c) => {
+                if (!motion) {
+                    slideRow(c, 'lucide:circle-slash', t('motion.intent.none'), false, () => {});
+                    return;
+                }
+                slideRow(
+                    c,
+                    'lucide:trash-2',
+                    t('motion.deleteMotion'),
+                    false,
+                    () => {
+                        const snap = pushUndoSnapshot();
+                        const removedName = motion.vmdName;
+                        removeSceneMotion(motion.id!);
+                        updatePlaybackUI();
+                        getMotionMenu()?.pop();
+                        getMotionMenu()?.reRender();
+                        triggerAutoSave();
+                        setStatus(t('motion.motionRemoved', { name: removedName }), true);
+                        offerSceneUndoAndRefresh(
+                            t('motion.motionRemoved', { name: removedName }),
+                            snap,
+                            () => getMotionMenu()?.reRender()
+                        );
+                    },
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    { wrapLabel: true }
+                );
+            });
         },
     };
 }
