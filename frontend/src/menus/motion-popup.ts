@@ -244,20 +244,43 @@ function motionOnItemClick(row: PopupRow): void {
     // [doc:adr-129] 场景级动作库浏览
     if (row.target === '__scene_motion_browse__') {
         resetFocusedLayerId();
-        const foc = modelManager.focused();
-        const target =
-            foc ?? [...modelManager.modelRegistry.values()].find((m) => m.kind === 'actor') ?? null;
-        if (!target) {
-            setStatus(t('motion.retarget.noModel'), false);
-            return;
-        }
         const level = stackRegistry.buildLevel!(
             getBrowseDir('vmd'),
             t('motion.browseMotionLibrary'),
             (m) => m.format === 'vmd',
             getMotionMenu() ?? undefined,
             undefined,
-            { mode: 'stay', modelId: target.id }
+            {
+                mode: 'stay',
+                onVmdPick: (path: string, name: string) => {
+                    const cur = getActiveMotion();
+                    const vmdName = name.replace(/\.vmd$/i, '');
+                    if (!cur) {
+                        setActiveMotion({
+                            vmdPath: path,
+                            vmdName,
+                            vmdLayers: [],
+                            source: 'vmd',
+                        });
+                    } else {
+                        const newLayer: VmdLayer = {
+                            id: `layer_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+                            name: vmdName,
+                            kind: 'vmd' as const,
+                            data: new ArrayBuffer(0),
+                            path,
+                            weight: 1.0,
+                            enabled: true,
+                            boneFilter: [],
+                        };
+                        setActiveMotion({
+                            ...cur,
+                            vmdLayers: [...cur.vmdLayers, newLayer],
+                        });
+                    }
+                    getMotionMenu()?.reRender();
+                },
+            }
         );
         if (getMotionMenu()) {
             getMotionMenu()?.push(level);

@@ -69,6 +69,9 @@ export interface BoneOverrideStoreOptions {
 
 // ── 存储契约 ──
 
+/** 骨骼释放事件监听器 */
+export type ReleaseListener = (modelId: string, moduleId: string, bones: Set<string>) => void;
+
 export interface BoneOverrideStore {
     // —— 槽位（原 _overrideMaps 职责）——
     setSlot(modelId: string, bone: string, slot: OverrideSlot): void;
@@ -97,6 +100,11 @@ export interface BoneOverrideStore {
     getConflicts(modelId: string): BoneConflict[];
     getAllConflicts(): BoneConflict[];
 
+    // —— 事件监听 ——
+    /** 注册骨骼释放监听器（关闭 Bone Override 等路径释放骨骼后触发，供感知层 reclaim） */
+    addReleaseListener(listener: ReleaseListener): void;
+    removeReleaseListener(listener: ReleaseListener): void;
+
     // —— 模型生命周期 ——
     disposeModel(modelId: string): void;
 }
@@ -109,6 +117,7 @@ export class InMemoryBoneOverrideStore implements BoneOverrideStore {
     private _boneOwner = new Map<string, Map<string, BoneOwnership>>();
     private _moduleState = new Map<string, Map<string, ModuleRuntimeState>>();
     private _conflicts = new Map<string, BoneConflict[]>();
+    private _releaseListeners: ReleaseListener[] = [];
     private _opts: BoneOverrideStoreOptions;
 
     constructor(opts: BoneOverrideStoreOptions = {}) {
@@ -229,6 +238,10 @@ export class InMemoryBoneOverrideStore implements BoneOverrideStore {
         if (list) {
             this._conflicts.set(modelId, list.filter((c) => c.loserModuleId !== moduleId));
         }
+        // 通知 release 监听器（P2-1 reclaim 触发链路）
+        for (const l of this._releaseListeners) {
+            l(modelId, moduleId, released);
+        }
         return released;
     }
 
@@ -260,6 +273,16 @@ export class InMemoryBoneOverrideStore implements BoneOverrideStore {
         const all: BoneConflict[] = [];
         for (const list of this._conflicts.values()) all.push(...list);
         return all;
+    }
+
+    // —— 事件监听 ——
+
+    addReleaseListener(listener: ReleaseListener): void {
+        this._releaseListeners.push(listener);
+    }
+
+    removeReleaseListener(listener: ReleaseListener): void {
+        this._releaseListeners = this._releaseListeners.filter(l => l !== listener);
     }
 
     // —— 模型生命周期 ——

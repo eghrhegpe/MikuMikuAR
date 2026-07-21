@@ -1192,3 +1192,55 @@ describe('ADR-164 模型加载自动激活', () => {
         expect(sut.getPerceptionStateFor('m2').breathEnabled).toBe(true);
     });
 });
+
+// =====================================================================
+// [doc:adr-166] P4-3 — 多模型隔离回归测试
+// =====================================================================
+
+describe('ADR-166 多模型隔离', () => {
+    it('1. setPerceptionStateFor 写入不同 context 互不干扰', () => {
+        sut.setPerceptionStateFor('m1', { breathFrequency: 0.5 });
+        sut.setPerceptionStateFor('m2', { breathFrequency: 0.3 });
+
+        expect(sut.getPerceptionStateFor('m1').breathFrequency).toBe(0.5);
+        expect(sut.getPerceptionStateFor('m2').breathFrequency).toBe(0.3);
+        expect(sut.getPerceptionState().breathFrequency).toBe(0.25); // fallback 默认不受影响
+    });
+
+    it('2. 焦点 setBreathFrequency 不污染 pinned 模型 ctx.state', () => {
+        mockState.focusedModelId = 'm1';
+        mockState.modelManager.get.mockReturnValue({
+            mmdModel: { mesh: { isDisposed: () => false }, runtimeBones: [] },
+        });
+        sut.activatePerception('m1');
+        sut.pinPerception('m2');
+        sut.setPerceptionStateFor('m2', { breathFrequency: 0.3 });
+
+        // 焦点 setter 仅影响焦点 context，不污染 pinned
+        sut.setBreathFrequency(0.7);
+
+        expect(sut.getPerceptionStateFor('m1').breathFrequency).toBe(0.7);
+        expect(sut.getPerceptionStateFor('m2').breathFrequency).toBe(0.3);
+    });
+
+    it('3. 非感知模块释放骨骼时触发感知层自动 reclaim', async () => {
+        mockState.focusedModelId = 'm1';
+        mockState.modelManager.get.mockReturnValue({
+            mmdModel: { mesh: { isDisposed: () => false }, runtimeBones: [] },
+        });
+        sut.activatePerception('m1');
+
+        const mod = await import('../scene/motion/bone-override-store');
+        const store = mod.getBoneOverrideStore();
+
+        // 模拟其他模块抢占 頭 骨
+        store.claimBones('m1', 'body-posture', 1, ['頭']);
+        expect(store.getOwnedBones('m1', 'perception.gaze.head').has('頭')).toBe(false);
+
+        // 模拟关闭 Bone Override：body-posture 释放骨骼
+        store.releaseBones('m1', 'body-posture');
+
+        // 感知层应自动 reclaim → 重新拥有 頭
+        expect(store.getOwnedBones('m1', 'perception.gaze.head').has('頭')).toBe(true);
+    });
+});
