@@ -5,8 +5,9 @@
 //   2. 恢复全程 `_suppressSnapshotReset` 守卫为 true（防「降级→恢复→再降级」反馈循环）
 //   3. 无快照时 resetPerformanceSnapshot 为 no-op（不误触发回写）
 //
-// performance.ts 从 '../scene' 导入 engine（模块级 new Scene()），故 mock 整个 '../scene'
-// 避免拉起真实 Babylon 场景。
+// ADR-159 P3-A：performance.ts 不再静态 import '../scene'，改为通过 registerRenderBridge
+// 注入 engine + setLightState/setRenderState/getLightState/getRenderState（依赖注入）。
+// 测试直接注入 mock bridge，无需 mock 整个 scene 模块——这正是 P3-A 的可测性收益。
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
@@ -35,15 +36,6 @@ const h = vi.hoisted(() => {
         setUIState: vi.fn(),
     };
 });
-
-vi.mock('../../scene/scene', () => ({
-    engine: { getFps: () => 60 },
-    scene: { onBeforeRenderObservable: { add: () => ({}), remove: () => {} } },
-    setLightState: h.setLightState,
-    setRenderState: h.setRenderState,
-    getLightState: h.getLightState,
-    getRenderState: h.getRenderState,
-}));
 
 vi.mock('../../scene/render/performance-env-bridge', async (importOriginal) => {
     const actual =
@@ -82,12 +74,21 @@ import {
     resetPerformanceSnapshot,
     getCurrentDegradeLevel,
     isSnapshotResetSuppressed,
+    registerRenderBridge,
 } from '../../scene/render/performance';
 
 // wire：让 setLightState mock 能读到真实抑制标志
 h.box.isSuppressed = isSnapshotResetSuppressed;
 
 beforeEach(() => {
+    // ADR-159 P3-A：注入 mock bridge，替代原 '../scene' 静态 import
+    registerRenderBridge({
+        engine: { getFps: () => 60 },
+        setLightState: h.setLightState,
+        setRenderState: h.setRenderState,
+        getLightState: h.getLightState,
+        getRenderState: h.getRenderState,
+    });
     // 每例复位到全质量（清 level/snapshot），并清空 spy 历史
     resetPerformanceSnapshot();
     h.setLightState.mockClear();

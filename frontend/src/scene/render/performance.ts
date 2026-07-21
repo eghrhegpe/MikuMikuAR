@@ -2,9 +2,8 @@
 // 在渲染循环中调用，根据帧率自动调整渲染质量。
 // 注意：模块级状态假定单例场景，不适用于多渲染上下文。
 
-import { engine } from '../scene';
-import { setLightState, setRenderState, getLightState, getRenderState } from '../scene';
-import type { LightState, RenderState } from '../scene';
+import type { LightState } from './lighting';
+import type { RenderState } from './renderer';
 import type { EnvState } from '@/core/config';
 import { envState } from '@/core/config';
 import { formatTimestamp } from '@/core/utils';
@@ -12,6 +11,33 @@ import { uiState, setUIState } from '@/core/state';
 import type { UIState } from '@/core/types';
 import { setAutoDegradingReflection, setEnvStateForPerformance } from './performance-env-bridge';
 import { resolveQualityProfile } from './quality-profile';
+
+// ======== 渲染桥接（ADR-159 P3-A：消除 performance↔scene 静态依赖）========
+// 由 scene.ts 在 initScene() 时注入，单向依赖 scene → performance。
+// 未注册时各成员为安全默认，避免 bridge 未就绪调用崩溃。
+
+export interface RenderBridge {
+    engine: { getFps: () => number };
+    setLightState: (state: Partial<LightState>) => void;
+    setRenderState: (state: Partial<RenderState>) => void;
+    getLightState: () => LightState;
+    getRenderState: () => RenderState;
+}
+
+let _bridgeEngine: { getFps: () => number } | null = null;
+let _bridgeSetLightState: (state: Partial<LightState>) => void = () => {};
+let _bridgeSetRenderState: (state: Partial<RenderState>) => void = () => {};
+let _bridgeGetLightState: () => LightState = () => ({}) as LightState;
+let _bridgeGetRenderState: () => RenderState = () => ({}) as RenderState;
+
+/** ADR-159 P3-A：延迟绑定渲染桥接，由 scene.ts 在 initScene() 时注入。 */
+export function registerRenderBridge(bridge: RenderBridge): void {
+    _bridgeEngine = bridge.engine;
+    _bridgeSetLightState = bridge.setLightState;
+    _bridgeSetRenderState = bridge.setRenderState;
+    _bridgeGetLightState = bridge.getLightState;
+    _bridgeGetRenderState = bridge.getRenderState;
+}
 
 // ======== Types ========
 
@@ -209,8 +235,8 @@ function _restoreSnapshot(): boolean {
     _snapshot = null;
     _suppressSnapshotReset = true;
     try {
-        setLightState(light);
-        setRenderState(render);
+        _bridgeSetLightState(light);
+        _bridgeSetRenderState(render);
         if (snapEnv && Object.keys(snapEnv).length > 0) {
             setAutoDegradingReflection(true);
             try {
@@ -255,8 +281,8 @@ function applyDegrade(level: DegradeLevel, force = false): void {
     // 首次降级时保存快照（用户原始设置）
     if (!_snapshot && level > 0) {
         _snapshot = {
-            light: getLightState(),
-            render: getRenderState(),
+            light: _bridgeGetLightState(),
+            render: _bridgeGetRenderState(),
             env: {
                 qualityProfile: envState.qualityProfile,
                 reflectionQuality: envState.reflectionQuality,
@@ -290,10 +316,10 @@ function applyDegrade(level: DegradeLevel, force = false): void {
         _suppressSnapshotReset = true;
         try {
             if (Object.keys(changes.light).length > 0) {
-                setLightState(changes.light);
+                _bridgeSetLightState(changes.light);
             }
             if (Object.keys(changes.render).length > 0) {
-                setRenderState(changes.render);
+                _bridgeSetRenderState(changes.render);
             }
         } finally {
             _suppressSnapshotReset = false;
@@ -380,9 +406,13 @@ export function updatePerformance(): void {
     if (_mode === 'quality' || _mode === 'custom') {
         return;
     }
+    // ADR-159 P3-A：bridge 未注册（initScene 尚未完成）时安全跳过，不触发降级
+    if (!_bridgeEngine) {
+        return;
+    }
 
     // 采集 FPS 样本
-    const fps = engine.getFps();
+    const fps = _bridgeEngine.getFps();
     _fpsSamples.push(fps);
     if (_fpsSamples.length > _fpsSampleSize) {
         _fpsSamples.shift();
