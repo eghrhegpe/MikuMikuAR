@@ -155,7 +155,7 @@ export function applyIntentToModel(id: string, intent: SceneMotionIntent, gen: n
         return;
     }
     loadManager
-        .load({ kind: 'vmd', path: intent.vmdPath, modelId: id })
+        .load({ kind: 'vmd', path: intent.vmdPath, modelId: id, skipSceneIntent: true })
         .then((handle) => {
             if (getMotionGen() !== gen) {
                 return;

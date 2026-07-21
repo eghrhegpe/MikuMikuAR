@@ -142,7 +142,7 @@ function _applyLoadedMotion(id: string, inst: ModelInstance): void {
     if (pinned) {
         const gen = getMotionGen();
         loadManager
-            .load({ kind: 'vmd', path: pinned.vmdPath, modelId: id })
+            .load({ kind: 'vmd', path: pinned.vmdPath, modelId: id, skipSceneIntent: true })
             .then((handle) => {
                 _applyingMotionId = null;
                 if (getMotionGen() !== gen) {
