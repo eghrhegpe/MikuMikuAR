@@ -1,6 +1,6 @@
 # ADR-153: 无障碍（a11y）支持总体方案
 
-- **状态**: 🔄 规划中
+- **状态**: ✅ Phase 1 已实施（2026-07-21）— 焦点环恢复（`:focus-visible`）、toast/状态栏 `aria-live`、`ui-focus-trap.ts` focus trap + restore、canvas ARIA 全部落地；Phase 2/3 待推进
 - **日期**: 2026-07-20
 - **相关**: ADR-017（Android 适配，A2-02 返回键待实施）、ADR-036（快捷键注册表）、ADR-059（i18n 框架）、ADR-060（E2E 测试策略）、ADR-140（DragSliderController 统一方向键步进）
 
