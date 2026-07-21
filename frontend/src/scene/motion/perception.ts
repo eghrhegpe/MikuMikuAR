@@ -319,6 +319,9 @@ function _deactivateContext(modelId: string): void {
     }
 }
 
+/** [doc:adr-164] medium 档最多保留的非焦点非 pinned 模型数 */
+const MEDIUM_MAX_OTHERS = 10;
+
 /** [doc:adr-164] 根据 tier 返回应激活的 context 列表 */
 function _getActiveContextsByTier(tier: PerceptionTier): PerceptionContext[] {
     const all = Array.from(_contexts.values()).filter((c) => c.isActive);
@@ -329,14 +332,14 @@ function _getActiveContextsByTier(tier: PerceptionTier): PerceptionContext[] {
         // 仅焦点 + pinned
         return all.filter((c) => c.modelId === _focusedContextId || c.isPinned);
     }
-    // medium：焦点 + pinned + 前 10 个
+    // medium：焦点 + pinned + 前 MEDIUM_MAX_OTHERS 个
     const focused = all.find((c) => c.modelId === _focusedContextId);
     const pinned = all.filter((c) => c.isPinned && c.modelId !== _focusedContextId);
     const others = all.filter((c) => c.modelId !== _focusedContextId && !c.isPinned);
     const result: PerceptionContext[] = [];
     if (focused) result.push(focused);
     result.push(...pinned);
-    result.push(...others.slice(0, 10));
+    result.push(...others.slice(0, MEDIUM_MAX_OTHERS));
     return result;
 }
 
@@ -806,6 +809,11 @@ export function disableAllPerception(): void {
 /** 获取当前性能档位 */
 export function getPerceptionPerfTier(): PerceptionTier {
     return _perfMonitor.getTier();
+}
+
+/** [doc:adr-164] 获取手动档位设置（'auto' 表示自动降级模式） */
+export function getPerceptionPerfManualTier(): PerceptionTier | 'auto' {
+    return _perfMonitor.getManualTier();
 }
 
 /** 手动设置性能档位（auto/high/medium/low） */

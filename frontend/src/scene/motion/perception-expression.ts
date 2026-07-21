@@ -31,12 +31,10 @@ export function _applyMicroExpression(
     time: number,
     enabled: boolean,
     emotion: Emotion,
-    tier?: PerceptionTier,
-    frameCounter?: number
+    tier?: PerceptionTier
 ): void {
-    // [doc:adr-164] tier 守卫：low 跳过；medium 每 4 帧一次
+    // [doc:adr-164] tier 守卫：low 跳过（medium 由外部 caller 按 frameCounter % 4 控制）
     if (tier === 'low') return;
-    if (tier === 'medium' && frameCounter !== undefined && frameCounter % 4 !== 0) return;
     const morphManager = mmdModel.mesh?.morphTargetManager;
     if (!morphManager) {
         return;

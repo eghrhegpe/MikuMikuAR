@@ -13,6 +13,7 @@ import {
     enableAllPerception,
     disableAllPerception,
     getPerceptionPerfTier,
+    getPerceptionPerfManualTier,
     setPerceptionPerfTier,
     isAllPerceptionEnabled,
 } from '../scene/motion/perception';
@@ -105,9 +106,8 @@ const gazeSchema: MenuNode[] = [
                 o.textContent = t(opt.label);
                 select.appendChild(o);
             }
-            // 读取当前手动设置（通过 getPerceptionPerfTier 近似，实际无存储态暴露，
-            // 故默认 auto；用户切换后由 setPerceptionPerfTier 持久化）
-            select.value = 'auto';
+            // 读取当前手动设置（getPerceptionPerfManualTier 暴露存储态）
+            select.value = getPerceptionPerfManualTier();
             select.onchange = () => {
                 setPerceptionPerfTier(select.value as 'auto' | 'high' | 'medium' | 'low');
                 triggerAutoSave();

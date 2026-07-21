@@ -441,6 +441,17 @@ export interface ModelPresetEntry {
 }
 
 /**
+ * MotionPresetEntry is a listing entry for a motion preset in the library.
+ */
+export interface MotionPresetEntry {
+    "name": string;
+    "presetName": string;
+    "modelName": string;
+    "modelRef": string;
+    "updatedAt": number;
+}
+
+/**
  * OverridePaths allows per-category path overrides.
  * If a field is empty, the default path under ResourceRoot is used.
  */

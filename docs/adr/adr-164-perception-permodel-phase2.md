@@ -153,6 +153,8 @@ perceptionObserver = getMotionPipeline().register({
 // 推荐方案 B，与 ADR-162 的 per-context 设计一致
 ```
 
+> **审核注记（2026-07-21）**：当前实施使用全局单例池（`_v3Pool[16]`/`_mPool[16]`/`_qPool[32]`），未做 per-context 改造。理由：`_q()` 返回的引用紧随 `copyFrom` 消费，调用序列内无跨帧保留引用行为，安全可证。100 模型场景下槽位循环覆写 ~75 次/帧，无数据污染风险。per-context 改造推迟到 P2 实测发现实际问题时再实施。
+
 ### 3.7 冲突 banner 收敛
 
 ADR-163 的冲突 banner 在全员感知下会爆炸（100 模型 × M 模块）。收敛策略：

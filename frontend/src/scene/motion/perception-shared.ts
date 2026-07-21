@@ -5,6 +5,7 @@ import { Quaternion, Vector3, Matrix } from '@babylonjs/core/Maths/math.vector';
 import type { MorphTargetManager } from '@babylonjs/core/Morph/morphTargetManager';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 import type { MmdRuntimeBoneExtended } from '@/core/types';
+import { logWarn } from '@/core/logger';
 
 // ── 感知状态（独立于 ProcMotionState） ──
 
@@ -264,6 +265,10 @@ export class PerceptionPerfMonitor {
 
         // 手动覆盖优先
         if (this._manualTier !== 'auto') {
+            // [doc:adr-164] 手动档下帧率持续偏低时 warn 用户
+            if (this.fps < 30 && modelCount > 20) {
+                logWarn('perception', `手动档 ${this._manualTier} 但 fps=${this.fps.toFixed(0)} 模型=${modelCount}，建议切回 auto`);
+            }
             this.tier = this._manualTier;
             return;
         }
@@ -316,6 +321,11 @@ export class PerceptionPerfMonitor {
 
     getTier(): PerceptionTier {
         return this.tier;
+    }
+
+    /** 获取手动档位设置（'auto' 表示自动降级模式） */
+    getManualTier(): PerceptionTier | 'auto' {
+        return this._manualTier;
     }
 
     setManualTier(tier: PerceptionTier | 'auto'): void {
