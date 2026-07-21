@@ -194,6 +194,38 @@ function levelDiff(
 // ======== Apply Degradation ========
 
 /**
+ * 恢复快照到用户原始设置的公共逻辑（applyDegrade level=0 与 resetPerformanceSnapshot 共用）。
+ * 先提取 + 清空 `_snapshot` 再应用，避免 setLightState → resetPerformanceSnapshot 死循环；
+ * 全程置 `_suppressSnapshotReset` 防止反向恢复反馈。
+ * @returns 是否存在快照（存在才实际执行了恢复）
+ */
+function _restoreSnapshot(): boolean {
+    if (!_snapshot) {
+        return false;
+    }
+    const light = _snapshot.light;
+    const render = _snapshot.render;
+    const snapEnv = _snapshot.env;
+    _snapshot = null;
+    _suppressSnapshotReset = true;
+    try {
+        setLightState(light);
+        setRenderState(render);
+        if (snapEnv && Object.keys(snapEnv).length > 0) {
+            setAutoDegradingReflection(true);
+            try {
+                setEnvStateForPerformance(snapEnv, true);
+            } finally {
+                setAutoDegradingReflection(false);
+            }
+        }
+    } finally {
+        _suppressSnapshotReset = false;
+    }
+    return true;
+}
+
+/**
  * 应用指定级别的降级/恢复。
  * @param level 目标级别
  * @param force 若为 true，绕过冷却检查（用于强制模式切换）
@@ -234,25 +266,7 @@ function applyDegrade(level: DegradeLevel, force = false): void {
 
     // 恢复到 Level 0：使用快照还原用户原始设置
     if (level === 0 && _snapshot) {
-        const light = _snapshot.light;
-        const render = _snapshot.render;
-        const snapEnv = _snapshot.env;
-        _snapshot = null;
-        _suppressSnapshotReset = true;
-        try {
-            setLightState(light);
-            setRenderState(render);
-            if (snapEnv && Object.keys(snapEnv).length > 0) {
-                setAutoDegradingReflection(true);
-                try {
-                    setEnvStateForPerformance(snapEnv, true);
-                } finally {
-                    setAutoDegradingReflection(false);
-                }
-            }
-        } finally {
-            _suppressSnapshotReset = false;
-        }
+        _restoreSnapshot();
         _currentLevel = 0;
         _lastRecoveryTime = now;
         if (import.meta.env.DEV) {
@@ -466,29 +480,7 @@ export function getCurrentDegradeLevel(): DegradeLevel {
  * Issue #4: 重置前先恢复到全质量，避免状态卡死在降级画质。
  */
 export function resetPerformanceSnapshot(): void {
-    if (_snapshot) {
-        // 先提取 + 清空快照，再恢复，避免 setLightState → resetPerformanceSnapshot 死循环
-        const light = _snapshot.light;
-        const render = _snapshot.render;
-        const snapEnv = _snapshot.env;
-        _snapshot = null;
-        // 恢复快照时抑制 setLightState/setRenderState 内部的 resetPerformanceSnapshot 调用
-        _suppressSnapshotReset = true;
-        try {
-            setLightState(light);
-            setRenderState(render);
-            if (snapEnv && Object.keys(snapEnv).length > 0) {
-                setAutoDegradingReflection(true);
-                try {
-                    setEnvStateForPerformance(snapEnv, true);
-                } finally {
-                    setAutoDegradingReflection(false);
-                }
-            }
-        } finally {
-            _suppressSnapshotReset = false;
-        }
-    }
+    _restoreSnapshot();
     _currentLevel = 0;
     _lastDegradeTime = 0;
     _lastRecoveryTime = 0;
