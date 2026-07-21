@@ -29,7 +29,7 @@ import { getPlanarQualityOverride } from './env-reflection';
 import { createCanvasTexture, getOrCreateCanvasTexture, isCacheOwnedTexture } from './env-texture';
 import { _envSys, getScene } from './env-context';
 import { ensureEnvUpdateObserver } from './env-impl';
-import { getGroundRippleTexture, updateGroundRipples, hasActiveGroundRipples } from './env-water';
+import { getGroundRippleTexture, hasActiveGroundRipples } from './env-water';
 import { getCanvasCtx } from './env-type-helpers';
 
 // ======== ADR-114: 材质适配层（StandardMaterial ↔ PBRMaterial）========
