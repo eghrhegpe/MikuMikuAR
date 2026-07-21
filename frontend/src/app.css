@@ -1936,7 +1936,7 @@ textarea,
     grid-column: 1 / -1;
 }
 .info-card-label {
-    font-size: calc(11px * var(--ui-scale));
+    font-size: var(--font-time);
     color: var(--text-dim);
     margin-bottom: calc(2px * var(--ui-scale));
     white-space: nowrap;
@@ -1944,15 +1944,15 @@ textarea,
     text-overflow: ellipsis;
 }
 .info-card-value {
-    font-size: calc(13px * var(--ui-scale));
-    font-weight: 500;
+    font-size: var(--font-title);
+    font-weight: 600;
     color: var(--text);
     line-height: 1.35;
     overflow-wrap: anywhere;
     word-break: break-word;
 }
 .info-card-sub {
-    font-size: calc(11px * var(--ui-scale));
+    font-size: var(--font-ui-xs);
     color: var(--text-dim);
     margin-top: calc(2px * var(--ui-scale));
     white-space: nowrap;
