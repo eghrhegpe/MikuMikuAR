@@ -85,6 +85,8 @@ export interface SlideRowExtra {
     rightLabel?: string;
     /** 动态图标工厂函数——替代 icon 字符串参数，每次渲染调用 */
     iconFactory?: () => HTMLElement;
+    /** key-value 字段行专用：为 true 时不渲染左侧图标占位，避免 21px 空白。addFieldRow 默认开启 */
+    hideIcon?: boolean;
     /** sublabel 内联在 label 后（而非右对齐），适合需要 text-overflow 的场景 */
     inlineSub?: boolean;
     /** label 允许双行显示（用于长文件名等场景） */
@@ -213,10 +215,10 @@ export function slideRow(
         // 点击 stopPropagation 后触发该动作（如切焦点），与整行 onClick 解耦。
         if (extra?.leading) {
             row.appendChild(createLeadingBtn(extra.leading));
-        } else {
-            const iconSpan = document.createElement('span');
-            iconSpan.className = 'slide-icon';
-            if (extra?.iconFactory) {
+            } else if (!extra?.hideIcon) {
+                const iconSpan = document.createElement('span');
+                iconSpan.className = 'slide-icon';
+                if (extra?.iconFactory) {
                 const el = extra.iconFactory();
                 if (el) {
                     iconSpan.appendChild(el);

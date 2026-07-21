@@ -1902,6 +1902,10 @@ textarea,
     font-size: calc(11px * var(--ui-scale));
     color: var(--text);
 }
+/* key-value 字段行（addFieldRow）：隐藏左侧空图标占位后，将值推至行尾右对齐 */
+.field-row .field-value {
+    margin-left: auto;
+}
 
 /* Slide action button — 行内操作按钮（替代 inline button style） */
 .slide-act-btn {
