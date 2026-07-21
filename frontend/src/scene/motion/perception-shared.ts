@@ -86,11 +86,14 @@ export interface MmdModelLike {
 
 // ── 对象池（避免每帧 new Vector3/Matrix/Quaternion，消除 GC 压力） ──
 // 池容量需 ≥ 单帧最大消费数，否则循环覆写会污染已外泄的引用。
-// 单帧最大消费：breathing(2) + balance(8) + gaze-js head(8) + gaze-js eye(10) ≈ 28
-// [doc:adr-166] 扩大池容量，适配多 pinned 模型（每模型 ~20q/4v/8m，按 5 模型估算）
-const _v3Pool = Array.from({ length: 32 }, () => new Vector3());
-const _mPool = Array.from({ length: 64 }, () => new Matrix());
-const _qPool = Array.from({ length: 256 }, () => new Quaternion());
+// [doc:adr-164 P2] high 档 100 模型全激活时：
+//   单模型 max ≈ gaze-wasm(17q) + breathing(2q) + balance(8q) + gaze-js-fallback(18q)
+//   但 gaze-wasm 与 gaze-js 互斥，按 gaze-js 全跑估算每模型 ~28q
+//   100 模型 × 28q ≈ 2800，取 2048（覆盖 ~73 模型，剩余走 new + GC）
+//   注：per-context 独立池是 ADR-166 返工的更彻底方案，此处做容量保底
+const _v3Pool = Array.from({ length: 128 }, () => new Vector3());
+const _mPool = Array.from({ length: 256 }, () => new Matrix());
+const _qPool = Array.from({ length: 2048 }, () => new Quaternion());
 let _v3Idx = 0,
     _mIdx = 0,
     _qIdx = 0;
