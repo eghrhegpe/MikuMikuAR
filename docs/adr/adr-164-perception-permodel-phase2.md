@@ -142,18 +142,19 @@ perceptionObserver = getMotionPipeline().register({
 
 ```typescript
 // perception-shared.ts
-// 原：单帧最大消费 28（单模型）
-// 新：根据 tier 动态评估
-//   high (20 模型): 20 × 28 = 560
-//   medium (10 模型): 10 × 28 = 280
-//   low (5 模型): 5 × 14 = 70（仅 breath+blink）
-
-// 方案 A：扩容池到 600（覆盖 high 档）
-// 方案 B：per-context 独立池（避免大池浪费）
-// 推荐方案 B，与 ADR-162 的 per-context 设计一致
+// 原（ADR-162）：单帧最大消费 28（单模型）
+//   池容量：_v3Pool[16] / _mPool[16] / _qPool[32]
+//   单模型消费：breathing(2) + balance(8) + gaze-js head(8) + gaze-js eye(10) ≈ 28
+//
+// ADR-166 扩容：适配多 pinned 模型（每模型 ~20q/4v/8m，按 5 模型估算）
+//   实际值：_v3Pool[32] / _mPool[64] / _qPool[256]
+//   扩容依据：(b4)§4.2.2 回收测试未达瓶颈，选保守倍数扩容避免 GC
+// 注：未做 per-context 独立池。理由：_q() 返回的引用紧随 copyFrom 消费，
+// 调用序列内无跨帧保留引用行为，安全可证。
+// 100 模型场景下槽位循环覆写 ~75 次/帧，无数据污染风险。
 ```
 
-> **审核注记（2026-07-21）**：当前实施使用全局单例池（`_v3Pool[16]`/`_mPool[16]`/`_qPool[32]`），未做 per-context 改造。理由：`_q()` 返回的引用紧随 `copyFrom` 消费，调用序列内无跨帧保留引用行为，安全可证。100 模型场景下槽位循环覆写 ~75 次/帧，无数据污染风险。per-context 改造推迟到 P2 实测发现实际问题时再实施。
+> **ADR-164 审核注记（2026-07-21）**：当前实施使用全局单例池（`_v3Pool[32]`/`_mPool[64]`/`_qPool[256]`），未做 per-context 改造。理由如上。per-context 改造推迟到实测发现实际问题时再实施。
 
 ### 3.7 冲突 banner 收敛
 

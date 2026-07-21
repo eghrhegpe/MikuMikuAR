@@ -253,6 +253,15 @@ function _ensureObserverRegistered(): void {
 
             const activeContexts = _getActiveContextsByTier(tier, _contexts, _focusedContextId);
 
+            // [doc:adr-164 P3-2] 无活跃 context 时注销 observer，避免空转
+            if (activeContexts.length === 0) {
+                if (perceptionObserver) {
+                    perceptionObserver();
+                    perceptionObserver = null;
+                }
+                return;
+            }
+
             for (const ctx of activeContexts) {
                 const inst = modelManager.get(ctx.modelId);
                 if (!inst?.mmdModel || inst.mmdModel.mesh?.isDisposed()) {
