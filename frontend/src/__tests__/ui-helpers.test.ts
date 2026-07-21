@@ -552,7 +552,8 @@ describe('addModeSlider', () => {
         expect(row.querySelector('.cs-value')!.textContent).toBe('Mid');
     });
 
-    it('drag on top jumps to clicked index via onChange', () => {
+    // ADR-140 后 7e8346fd 改为 cs-top 半区相对步进：左半 −1 / 右半 +1（非绝对位置映射）
+    it('click on right half cycles to next option via onChange', () => {
         const container = document.createElement('div');
         const onChange = vi.fn();
         addModeSlider(container, 'Mode', opts, 'low', onChange);
@@ -571,11 +572,35 @@ describe('addModeSlider', () => {
                 toJSON: () => ({}),
             }) as DOMRect;
 
-        // clientX=200 → x=1 → index round(1*2)=2 → 'high'
-        top.dispatchEvent(new MouseEvent('mousedown', { clientX: 200 }));
-        document.dispatchEvent(new MouseEvent('mouseup', { clientX: 200 }));
+        // clientX=200 → x=1（右半）→ cycleIdx(+1)：'low' → 'mid'
+        top.dispatchEvent(new MouseEvent('click', { clientX: 200 }));
 
-        expect(onChange).toHaveBeenCalledWith('high');
+        expect(onChange).toHaveBeenCalledWith('mid');
+    });
+
+    it('click on left half cycles to previous option via onChange', () => {
+        const container = document.createElement('div');
+        const onChange = vi.fn();
+        addModeSlider(container, 'Mode', opts, 'high', onChange);
+
+        const top = container.querySelector('.cs-top')! as HTMLDivElement;
+        top.getBoundingClientRect = () =>
+            ({
+                left: 0,
+                width: 200,
+                top: 0,
+                height: 20,
+                right: 200,
+                bottom: 20,
+                x: 0,
+                y: 0,
+                toJSON: () => ({}),
+            }) as DOMRect;
+
+        // clientX=0 → x=0（左半）→ cycleIdx(−1)：'high' → 'mid'
+        top.dispatchEvent(new MouseEvent('click', { clientX: 0 }));
+
+        expect(onChange).toHaveBeenCalledWith('mid');
     });
 
     it('keyboard ArrowRight moves to next option', () => {
