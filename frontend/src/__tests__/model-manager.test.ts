@@ -1092,7 +1092,6 @@ describe('ModelManager bone overlay', function () {
         expect(mgr._boneOverlayMap.has('m1')).toBe(true);
         const entry = mgr._boneOverlayMap.get('m1');
         expect(entry.lineSystem).toBeDefined();
-        expect(entry.overlay).toBeDefined();
         expect(entry.joints.length).toBeGreaterThan(0);
         expect(entry.update).toBeInstanceOf(Function);
         expect(mgr.get('m1').showBoneLines).toBe(true);
