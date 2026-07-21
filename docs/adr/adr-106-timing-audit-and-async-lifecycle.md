@@ -5,6 +5,8 @@
 > 2026-07-16 对账修正：P1 `waitForTransition` 安全网（events.ts:105 `Math.max(dur*2,500)`）与 `enqueue` 显式 onRejected（load-manager.ts）经代码核实已修复，更新从"待修复"→✅ 已完成。
 >
 > 2026-07-16 再次对账：P2 全部 5 项经代码核实已实现（3 项在 Phase 3 整改中顺手修完，2 项在 P2 审计时即已满足），更新状态从"P2 🟡 待修复"→✅ 已完成。
+>
+> 2026-07-21 回归修正：`bfcacc35b`（HMR 级联释放）顺手在 `cleanupAndFlushSave()` 中加入 `disposeScene()`，导致 `visibilitychange → hidden`（最小化/Alt+Tab）误销毁 Scene/Engine，切回后渲染器冻结。已由 `36b529b0` 修复：`disposeScene()` 仅保留在 `beforeunload`（真正退出）路径，`hidden` 只刷盘。详见 `docs/buglog/2026-07-21-visibilitychange-dispose-scene-freeze.md`。
 
 **决策者**: Riku（联邦首席架构师 AI）、Jieling（人类侧首席架构师）
 
