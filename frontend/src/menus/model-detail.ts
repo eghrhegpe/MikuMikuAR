@@ -17,7 +17,13 @@ import { removeModel } from '../scene/manager/model-ops';
 import { buildTransformCard, type ResourceHandle } from './resource-detail-helpers';
 import { buildMatRootLevel } from './model-material';
 import { createIconifyIcon, softwareKindIcon } from '../core/icons';
-import { slideRow, addFieldRow, addSectionTitle, addPresetChip, addEmptyRow } from '../core/ui-helpers';
+import {
+    slideRow,
+    addFieldRow,
+    addSectionTitle,
+    addPresetChip,
+    addEmptyRow,
+} from '../core/ui-helpers';
 import { openFullscreen } from '../core/ui-fullscreen-overlay';
 import { buildOutfitLevel } from './outfit-ui';
 import { savePresetToLibDialog, buildPresetListLevel } from './model-preset';
@@ -383,7 +389,7 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
                     const activeId = getActiveMotionId();
                     const currentPick =
                         inst.motionSlots?.primary.source === 'inherit'
-                            ? inst.motionSlots.primary.sceneMotionId ?? null
+                            ? (inst.motionSlots.primary.sceneMotionId ?? null)
                             : null;
                     if (sceneMotions.length === 0) {
                         addEmptyRow(c, t('motion.library.emptyHint'));
@@ -459,7 +465,11 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
                             : t('motion.modeIdle'),
                         false,
                         () => {},
-                        { variant: 'badge', marginLeft: 'auto', title: t('model-detail.procActive') }
+                        {
+                            variant: 'badge',
+                            marginLeft: 'auto',
+                            title: t('model-detail.procActive'),
+                        }
                     );
                 }
 
@@ -493,10 +503,16 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
                     isIdleActive ? t('model-detail.procActive') : undefined
                 );
                 if (!isIdleActive) {
-                    addPresetChip(idleRow, t('model-detail.procEdit'), false, () => {
-                        _setProcForModel(id, inst, 'idle');
-                        stackRegistry.modelStack?.push(buildProcMotionLevel(id));
-                    }, { marginLeft: 'auto', stopPropagation: true });
+                    addPresetChip(
+                        idleRow,
+                        t('model-detail.procEdit'),
+                        false,
+                        () => {
+                            _setProcForModel(id, inst, 'idle');
+                            stackRegistry.modelStack?.push(buildProcMotionLevel(id));
+                        },
+                        { marginLeft: 'auto', stopPropagation: true }
+                    );
                 }
 
                 // 自动舞蹈
@@ -515,10 +531,16 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
                     isAutodanceActive ? t('model-detail.procActive') : undefined
                 );
                 if (!isAutodanceActive) {
-                    addPresetChip(autodanceRow, t('model-detail.procEdit'), false, () => {
-                        _setProcForModel(id, inst, 'autodance');
-                        stackRegistry.modelStack?.push(buildProcMotionLevel(id));
-                    }, { marginLeft: 'auto', stopPropagation: true });
+                    addPresetChip(
+                        autodanceRow,
+                        t('model-detail.procEdit'),
+                        false,
+                        () => {
+                            _setProcForModel(id, inst, 'autodance');
+                            stackRegistry.modelStack?.push(buildProcMotionLevel(id));
+                        },
+                        { marginLeft: 'auto', stopPropagation: true }
+                    );
                 }
             });
         },
@@ -608,10 +630,16 @@ function openModelDetailFullscreen(id: string): void {
         return;
     }
 
+    // 外层闭包持有当前 Tab 的 dispose，供 onBack 在全屏关闭时级联释放
+    let activeDispose: (() => void) | null = null;
+
     openFullscreen({
         title: t('model-detail.modelDetail'),
         onBack: () => {
-            // 全屏关闭后自动回到模型菜单，无需额外操作
+            if (activeDispose) {
+                activeDispose();
+                activeDispose = null;
+            }
         },
         renderContent: (container) => {
             container.style.display = 'flex';
@@ -627,15 +655,14 @@ function openModelDetailFullscreen(id: string): void {
             content.style.overflowY = 'auto';
             content.style.minHeight = '0';
 
-            let activeDispose: (() => void) | null = null;
-
             const renderTab = (tab: 'info' | 'bones'): void => {
                 if (activeDispose) {
                     activeDispose();
                     activeDispose = null;
                 }
                 content.innerHTML = '';
-                const schema = tab === 'info' ? buildModelInfoSchema(id) : buildBoneHierarchySchema(id);
+                const schema =
+                    tab === 'info' ? buildModelInfoSchema(id) : buildBoneHierarchySchema(id);
                 activeDispose = renderMenu(schema, content);
             };
 
@@ -645,9 +672,8 @@ function openModelDetailFullscreen(id: string): void {
                 btn.type = 'button';
                 btn.textContent = label;
                 btn.addEventListener('click', () => {
-                    tabs.querySelectorAll('.model-detail-tab-btn').forEach((b) => {
-                        b.classList.remove('active');
-                    });
+                    const active = tabs.querySelector('.model-detail-tab-btn.active');
+                    active?.classList.remove('active');
                     btn.classList.add('active');
                     renderTab(tab);
                 });
@@ -869,79 +895,77 @@ function buildModelTagsSchema(id: string): MenuNode[] {
                     const picker = document.createElement('div');
                     picker.className = 'tag-container';
                     safeCallAsync('model-detail', 'tag load failed:', () =>
-                        GetAllTags()
-                            .then((allTags) => {
-                                if (!container.isConnected) {
-                                    return;
-                                }
-                                const assigned = new Set<string>();
-                                safeCallAsync('model-detail', 'tag load failed:', () =>
-                                    GetTagsByModel(libRef!)
-                                        .then((modelTags) => {
-                                            if (!container.isConnected) {
+                        GetAllTags().then((allTags) => {
+                            if (!container.isConnected) {
+                                return;
+                            }
+                            const assigned = new Set<string>();
+                            safeCallAsync('model-detail', 'tag load failed:', () =>
+                                GetTagsByModel(libRef!).then((modelTags) => {
+                                    if (!container.isConnected) {
+                                        return;
+                                    }
+                                    (modelTags || []).forEach((tm) => assigned.add(tm));
+                                    (allTags || []).forEach((tag) => {
+                                        if (tag === '收藏') {
+                                            return;
+                                        }
+                                        const chip = document.createElement('span');
+                                        chip.className =
+                                            'tag-chip' + (assigned.has(tag) ? ' active' : '');
+                                        chip.style.cssText = assigned.has(tag)
+                                            ? 'border:1px solid var(--accent);color:var(--accent);background:var(--accent-dim);'
+                                            : 'border:1px solid var(--white-08);color:var(--text-dim);background:transparent;cursor:pointer;';
+                                        chip.textContent = assigned.has(tag)
+                                            ? `✓ ${tag}`
+                                            : `+ ${tag}`;
+                                        chip.title = assigned.has(tag)
+                                            ? t('model-detail.tagAddedRemove')
+                                            : t('model-detail.tagAdd');
+                                        chip.addEventListener('click', () => {
+                                            if (!libRef || !container.isConnected) {
                                                 return;
                                             }
-                                            (modelTags || []).forEach((tm) => assigned.add(tm));
-                                            (allTags || []).forEach((tag) => {
-                                                if (tag === '收藏') {
-                                                    return;
-                                                }
-                                                const chip = document.createElement('span');
-                                                chip.className =
-                                                    'tag-chip' + (assigned.has(tag) ? ' active' : '');
-                                                chip.style.cssText = assigned.has(tag)
-                                                    ? 'border:1px solid var(--accent);color:var(--accent);background:var(--accent-dim);'
-                                                    : 'border:1px solid var(--white-08);color:var(--text-dim);background:transparent;cursor:pointer;';
-                                                chip.textContent = assigned.has(tag)
-                                                    ? `✓ ${tag}`
-                                                    : `+ ${tag}`;
-                                                chip.title = assigned.has(tag)
-                                                    ? t('model-detail.tagAddedRemove')
-                                                    : t('model-detail.tagAdd');
-                                                chip.addEventListener('click', () => {
-                                                    if (!libRef || !container.isConnected) {
-                                                        return;
-                                                    }
-                                                    if (assigned.has(tag)) {
-                                                        RemoveTag(libRef, tag)
-                                                            .then(() => {
-                                                                refreshTags();
-                                                            })
-                                                            .catch((e) =>
-                                                                logWarn(
-                                                                    'model-detail',
-                                                                    'remove tag failed:',
-                                                                    e
-                                                                )
-                                                            );
-                                                    } else {
-                                                        AddTag(libRef, tag)
-                                                            .then(() => {
-                                                                refreshTags();
-                                                            })
-                                                            .catch((e) =>
-                                                                logWarn(
-                                                                    'model-detail',
-                                                                    'add tag failed:',
-                                                                    e
-                                                                )
-                                                            );
-                                                    }
-                                                });
-                                                picker.appendChild(chip);
-                                            });
-                                        if (
-                                            !allTags ||
-                                            allTags.filter((tg) => tg !== '收藏').length === 0
-                                        ) {
-                                            picker.innerHTML =
-                                                '<span style="color:var(--text-muted);font-size:11px;">' +
-                                                t('model-detail.noGlobalTags') +
-                                                '</span>';
-                                        }
-                                    })
-                                );
-                            })
+                                            if (assigned.has(tag)) {
+                                                RemoveTag(libRef, tag)
+                                                    .then(() => {
+                                                        refreshTags();
+                                                    })
+                                                    .catch((e) =>
+                                                        logWarn(
+                                                            'model-detail',
+                                                            'remove tag failed:',
+                                                            e
+                                                        )
+                                                    );
+                                            } else {
+                                                AddTag(libRef, tag)
+                                                    .then(() => {
+                                                        refreshTags();
+                                                    })
+                                                    .catch((e) =>
+                                                        logWarn(
+                                                            'model-detail',
+                                                            'add tag failed:',
+                                                            e
+                                                        )
+                                                    );
+                                            }
+                                        });
+                                        picker.appendChild(chip);
+                                    });
+                                    if (
+                                        !allTags ||
+                                        allTags.filter((tg) => tg !== '收藏').length === 0
+                                    ) {
+                                        picker.innerHTML =
+                                            '<span style="color:var(--text-muted);font-size:11px;">' +
+                                            t('model-detail.noGlobalTags') +
+                                            '</span>';
+                                    }
+                                })
+                            );
+                        })
                     );
                     c.appendChild(picker);
                 });
@@ -1116,6 +1140,9 @@ function buildBoneHierarchySchema(id: string): MenuNode[] {
             kind: 'custom',
             renderCustom: (container) => {
                 container.classList.remove('render-card');
+                // AbortController 统一管理所有骨骼树节点 listener，
+                // dispose 时一次 abort 即移除全部（配合 activeDispose 链路）
+                const ac = new AbortController();
                 cardContainer(container, (c) => {
                     const header = document.createElement('div');
                     header.style.cssText =
@@ -1148,20 +1175,26 @@ function buildBoneHierarchySchema(id: string): MenuNode[] {
                             const childContainer = document.createElement('div');
                             let childrenRendered = false;
 
-                            toggle.addEventListener('click', (e) => {
-                                e.stopPropagation();
-                                expanded = !expanded;
-                                toggle.textContent = expanded ? '▾' : '▸';
-                                childContainer.style.display = expanded ? '' : 'none';
-                                if (expanded && !childrenRendered) {
-                                    childrenRendered = true;
-                                    const childIndices = childrenMap.get(idx) ?? [];
-                                    for (const ci of childIndices) {
-                                        renderBoneTree(childContainer, ci, depth + 1);
+                            toggle.addEventListener(
+                                'click',
+                                (e) => {
+                                    e.stopPropagation();
+                                    expanded = !expanded;
+                                    toggle.textContent = expanded ? '▾' : '▸';
+                                    childContainer.style.display = expanded ? '' : 'none';
+                                    if (expanded && !childrenRendered) {
+                                        childrenRendered = true;
+                                        const childIndices = childrenMap.get(idx) ?? [];
+                                        for (const ci of childIndices) {
+                                            renderBoneTree(childContainer, ci, depth + 1);
+                                        }
                                     }
-                                }
+                                },
+                                { signal: ac.signal }
+                            );
+                            label.addEventListener('click', () => toggle.click(), {
+                                signal: ac.signal,
                             });
-                            label.addEventListener('click', () => toggle.click());
 
                             parent.appendChild(row);
                             childContainer.style.display = expanded ? '' : 'none';
@@ -1198,6 +1231,8 @@ function buildBoneHierarchySchema(id: string): MenuNode[] {
                         renderBoneTree(c, ri, 0);
                     }
                 });
+                // 返回 dispose：abort 一次性移除所有骨骼树 listener
+                return () => ac.abort();
             },
         },
     ] satisfies MenuNode[];
