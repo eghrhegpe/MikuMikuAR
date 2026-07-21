@@ -368,7 +368,7 @@ export function addFieldRow(
     value: string,
     testId?: string
 ): HTMLElement {
-    return slideRow(
+    const row = slideRow(
         container,
         '',
         label,
@@ -380,9 +380,12 @@ export function addFieldRow(
         undefined,
         {
             rightLabel: value,
+            hideIcon: true,
             ...(testId ? { testId } : {}),
         }
     );
+    row.classList.add('field-row');
+    return row;
 }
 
 // ===================================================================
