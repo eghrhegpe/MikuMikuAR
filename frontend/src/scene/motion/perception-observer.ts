@@ -2,7 +2,6 @@
 // 从 perception.ts 分离，职责：按 tier 筛选 context + 逐 context 运行感知管线
 // 不持有模块级可变状态，全部通过参数注入
 
-import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 import { _applyBreathing } from './perception-breathing';
 import { _applyBlinking } from './perception-blinking';
 import { _applyMicroExpression } from './perception-expression';
@@ -13,8 +12,18 @@ import type { PerceptionContext, MmdModelLike, PerceptionTier } from './percepti
 import { logWarn } from '@/core/logger';
 import { getScene } from '../env/env-impl';
 
-/** [doc:adr-164] medium 档最多保留的非焦点非 pinned 模型数 */
-const MEDIUM_MAX_OTHERS = 10;
+/** [doc:adr-164] medium 档最多保留的非焦点非 pinned 模型数（可配置） */
+let _mediumMaxOthers = 10;
+
+/** 获取 medium 档非焦点模型上限 */
+export function getMediumMaxOthers(): number {
+    return _mediumMaxOthers;
+}
+
+/** 设置 medium 档非焦点模型上限（最小 1） */
+export function setMediumMaxOthers(v: number): void {
+    _mediumMaxOthers = Math.max(1, v);
+}
 
 /** [doc:adr-164] 根据 tier 返回应激活的 context 列表 */
 export function _getActiveContextsByTier(
@@ -35,7 +44,7 @@ export function _getActiveContextsByTier(
     const result: PerceptionContext[] = [];
     if (focused) result.push(focused);
     result.push(...pinned);
-    result.push(...others.slice(0, MEDIUM_MAX_OTHERS));
+    result.push(...others.slice(0, getMediumMaxOthers()));
     return result;
 }
 

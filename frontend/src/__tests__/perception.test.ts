@@ -7,7 +7,8 @@ import {
     migrateLipSyncFromOldState,
     migratePerceptionData,
 } from '../scene/scene-migrate';
-import { _gazeAlpha } from '../scene/motion/perception-shared';
+import { _gazeAlpha, PerceptionPerfMonitor, type PerceptionTier } from '../scene/motion/perception-shared';
+import { _getActiveContextsByTier } from '../scene/motion/perception-observer';
 // updatePerceptionConflictBanner 在测试体内动态导入，避免 vi.resetModules() 后 singleton 漂移
 
 // =====================================================================
@@ -908,10 +909,20 @@ describe('migratePerceptionData', () => {
         expect(migrated!.pinned).toEqual([]);
     });
 
-    it('新格式直接透传', () => {
+    it('旧格式迁移结果不含 tier/allEnabled', () => {
+        const old = { breathEnabled: true };
+        const migrated = migratePerceptionData(old);
+        expect(migrated).not.toBeNull();
+        expect(migrated!.tier).toBeUndefined();
+        expect(migrated!.allEnabled).toBeUndefined();
+    });
+
+    it('新格式直接透传（含 tier/allEnabled）', () => {
         const neu = {
             focused: { breathEnabled: true },
             pinned: [{ modelId: 'm1', state: { breathEnabled: false } }],
+            tier: 'medium' as const,
+            allEnabled: true,
         };
         const migrated = migratePerceptionData(neu);
         expect(migrated).toEqual(neu);
@@ -1167,6 +1178,121 @@ describe('ADR-164 PerceptionPerfMonitor tier', () => {
         const tier = sut.getPerceptionPerfTier();
         expect(tier).toBe('low');
         expect(sut.getPinnedModelIds()).toContain('m2');
+    });
+
+    // ════════════════════════════════════════════════
+    // ADR-164 审核补测：自动降级 6 分支
+    // ════════════════════════════════════════════════
+
+    it('A. 自动降级：fps<45 持续 60 帧→high→medium', () => {
+        const monitor = new PerceptionPerfMonitor();
+        const fpsMock = { getFps: () => 44 };
+        const sceneMock = { getEngine: () => fpsMock };
+
+        // 初始为 high
+        expect(monitor.getTier()).toBe('high');
+
+        // 前 29 帧：未到采样边界，tier 不变
+        for (let i = 0; i < 29; i++) {
+            monitor.update(sceneMock, 30);
+            expect(monitor.getTier()).toBe('high');
+        }
+        // 第 30 帧（首次采样）：fps=44 < 45 → _lowStreak=30，但未达 60
+        monitor.update(sceneMock, 30);
+        expect(monitor.getTier()).toBe('high');
+
+        // 再 30 帧（第 60 帧）：_lowStreak=60 ≥ 60 → stepDown: high→medium
+        for (let i = 0; i < 29; i++) {
+            monitor.update(sceneMock, 30);
+            expect(monitor.getTier()).toBe('high');
+        }
+        monitor.update(sceneMock, 30);
+        expect(monitor.getTier()).toBe('medium');
+    });
+
+    it('B. 自动升级：fps>55 持续 120 帧→medium→high', () => {
+        const monitor = new PerceptionPerfMonitor();
+        const lowFpsMock = { getFps: () => 44 };
+        const highFpsMock = { getFps: () => 60 };
+        const sceneLow = { getEngine: () => lowFpsMock };
+        const sceneHigh = { getEngine: () => highFpsMock };
+
+        // 先降级到 medium
+        for (let i = 0; i < 60; i++) {
+            monitor.update(sceneLow, 30);
+        }
+        expect(monitor.getTier()).toBe('medium');
+
+        // 切到高 fps 累积 120 帧 → medium→high
+        for (let i = 0; i < 120; i++) {
+            monitor.update(sceneHigh, 30);
+        }
+        expect(monitor.getTier()).toBe('high');
+    });
+
+    it('C. 模型数>50 强制 low', () => {
+        const monitor = new PerceptionPerfMonitor();
+        const sceneMock = { getEngine: () => ({ getFps: () => 60 }) };
+
+        monitor.update(sceneMock, 51);
+        expect(monitor.getTier()).toBe('low');
+    });
+
+    it('D. 模型数≤20 强制 high', () => {
+        const monitor = new PerceptionPerfMonitor();
+        const sceneMock = { getEngine: () => ({ getFps: () => 30 }) };
+
+        // 即使 fps=30（本应降级），模型数≤20 强制 high
+        monitor.update(sceneMock, 5);
+        expect(monitor.getTier()).toBe('high');
+    });
+
+    it('E. medium 档最多 10 个非焦点模型', () => {
+        const contexts = new Map<string, any>();
+        for (let i = 1; i <= 15; i++) {
+            const id = `m${i}`;
+            contexts.set(id, {
+                modelId: id,
+                isActive: true,
+                isPinned: false,
+            });
+        }
+
+        // 焦点 m1 也 active
+        const focused = contexts.get('m1')!;
+        const result = _getActiveContextsByTier('medium', contexts, 'm1');
+
+        // 应包含焦点 + pinned(0) + 前 10 个其他 = 11 个
+        expect(result.length).toBe(11);
+        expect(result[0].modelId).toBe('m1');
+        // m1 排首位，其余按 Map 序遍历顺序取前 10
+        for (let i = 2; i <= 11; i++) {
+            expect(result.some((c) => c.modelId === `m${i}`)).toBe(true);
+        }
+        // m12-m15 被截断
+        expect(result.some((c) => c.modelId === 'm12')).toBe(false);
+    });
+
+    it('F. 手动档 + fps 偏低 + 模型数多时 warn', () => {
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const monitor = new PerceptionPerfMonitor();
+        const lowFpsMock = { getFps: () => 25 };
+        const sceneMock = { getEngine: () => lowFpsMock };
+
+        // 先让 monitor 在 auto 模式下采样到低 fps（第 30 帧采样）
+        monitor.update(sceneMock, 30);
+        for (let i = 0; i < 29; i++) monitor.update(sceneMock, 30);
+
+        // 此时 this.fps = 25（已采样）+ 模型数 30 > 20
+        // 切手动后，下次 update 应命中 fps<30 + modelCount>20 条件
+        monitor.setManualTier('low');
+        monitor.update(sceneMock, 30);
+
+        expect(warnSpy).toHaveBeenCalled();
+        const callArg = warnSpy.mock.calls[0][0] as string;
+        expect(callArg).toContain('手动档');
+        expect(callArg).toContain('fps');
+        warnSpy.mockRestore();
     });
 });
 

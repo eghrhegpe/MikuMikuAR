@@ -71,16 +71,24 @@ const gazeSchema: MenuNode[] = [
         id: 'perception:tierDisplay',
         kind: 'custom',
         renderCustom: (c) => {
-            const tier = getPerceptionPerfTier();
-            const tierKey: Record<string, string> = {
-                high: 'motion.perceptionTierHigh',
-                medium: 'motion.perceptionTierMedium',
-                low: 'motion.perceptionTierLow',
-            };
             const wrap = document.createElement('div');
             wrap.style.cssText = 'padding:6px 14px;font-size:12px;color:var(--text-secondary);';
-            const icon = tier === 'low' ? '⚠️ ' : '';
-            wrap.textContent = `${icon}${t('motion.perceptionTier')}: ${t(tierKey[tier] ?? tierKey.high)}`;
+            const updateTier = () => {
+                const tier = getPerceptionPerfTier();
+                const tierKey: Record<string, string> = {
+                    high: 'motion.perceptionTierHigh',
+                    medium: 'motion.perceptionTierMedium',
+                    low: 'motion.perceptionTierLow',
+                };
+                const icon = tier === 'low' ? '⚠️ ' : '';
+                wrap.textContent = `${icon}${t('motion.perceptionTier')}: ${t(tierKey[tier] ?? tierKey.high)}`;
+            };
+            updateTier();
+            // 注册自更新，tier 变化（包括自动降级）时刷新文本，不重建 DOM
+            const menu = getMotionMenu();
+            if (menu) {
+                menu.registerControl(updateTier);
+            }
             c.appendChild(wrap);
         },
     },
