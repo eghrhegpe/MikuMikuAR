@@ -425,6 +425,8 @@ export const ja: Record<string, string> = {
     'motion.defaultMotion': 'デフォルト',
     'motion.setDefault': 'デフォルトに設定',
     'motion.defaultMotionSet': '✓ {name} をデフォルトモーションに設定しました',
+    'motion.selectMotion': '選択',
+    'motion.motionTools': 'モーションツール',
     'motion.deleteMotion': 'モーション削除',
     'motion.deleteMotionConfirm': 'モーション "{name}" を削除しますか？',
     'motion.motionRemoved': '✓ モーション {name} を削除しました',

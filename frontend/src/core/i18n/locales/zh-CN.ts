@@ -267,6 +267,8 @@ export const zhCN: Record<string, string> = {
     'motion.defaultMotion': '默认',
     'motion.setDefault': '设为默认',
     'motion.defaultMotionSet': '✓ 已将 {name} 设为默认动作',
+    'motion.selectMotion': '选中',
+    'motion.motionTools': '动作工具',
     'motion.deleteMotion': '删除动作',
     'motion.deleteMotionConfirm': '确定要删除动作 "{name}" 吗？',
     'motion.motionRemoved': '✓ 动作 {name} 已删除',
