@@ -174,7 +174,9 @@ export function applyFrameControl(): void {
 
 /**
  * 级联释放 Scene → Engine 及其所有子资源。
- * - 同步操作，适合在 beforeunload / visibilitychange 中调用以释放 WebGL context。
+ * - 同步操作，仅在 beforeunload（真正退出）或 initScene HMR 重入时调用。
+ * - ⚠️ 禁止挂在 visibilitychange / pagehide —— hidden 在最小化/切后台即触发，
+ *   会导致切回后渲染器冻结（见 buglog 2026-07-21-visibilitychange-dispose-scene-freeze）。
  * - 幂等：_sceneDisposed 标志防止重复释放。
  * - 释放顺序：子系统 observer → Scene → Engine（WebGL context 最后释放）。
  */
