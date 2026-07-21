@@ -325,7 +325,19 @@ export function transitionLighting(
     // 需要重建阴影生成器的参数 — 动画进行中跳，仅结束时一次性应用
     const rebuildShadowKeys = new Set<string>(['shadowResolution', 'shadowType', 'shadowEnabled']);
 
+    // P4-fix: 取消任何在途过渡，避免重复调用堆叠多个渲染循环 observer（并发打架、旧动画覆盖新值）
+    if (lightingState.activeTransitionObs) {
+        lightingState.activeTransitionObs.dispose();
+        lightingState.activeTransitionObs = null;
+    }
+
     const animLoop = () => {
+        // 防御：场景/主光已被销毁（disposeLighting 已清理）则立即退出并移除 observer，避免对已释放对象操作
+        if (!lightingState.scene || !lightingState.hemiLight || !lightingState.dirLight) {
+            lightingState.activeTransitionObs?.dispose();
+            lightingState.activeTransitionObs = null;
+            return;
+        }
         const elapsed = performance.now() - startTime;
         const t = Math.min(elapsed / duration, 1.0);
         const lerp = (a: number, b: number) => a + (b - a) * t;
@@ -359,7 +371,8 @@ export function transitionLighting(
         setLightState(interpState);
         if (t >= 1) {
             // 动画结束，移除自身 observer
-            animLoopObs.dispose();
+            lightingState.activeTransitionObs?.dispose();
+            lightingState.activeTransitionObs = null;
             if (onComplete) {
                 onComplete();
             }
@@ -367,7 +380,10 @@ export function transitionLighting(
     };
 
     // 注册到渲染循环，每帧驱动插值
-    const animLoopObs = observe(lightingState.scene.onBeforeRenderObservable, animLoop);
+    lightingState.activeTransitionObs = observe(
+        lightingState.scene.onBeforeRenderObservable,
+        animLoop
+    );
 }
 
 /** 整体清理光照模块（场景销毁时调用） */
@@ -386,6 +402,11 @@ export function disposeLighting(): void {
     if (lightingState.coneUpdateHandle) {
         lightingState.coneUpdateHandle.dispose();
         lightingState.coneUpdateHandle = null;
+    }
+    // P4-fix: 释放在途主光过渡 observer，避免场景销毁后其仍挂在旧 scene 的渲染循环上
+    if (lightingState.activeTransitionObs) {
+        lightingState.activeTransitionObs.dispose();
+        lightingState.activeTransitionObs = null;
     }
     lightingState.stageLightCounter = 0;
     lightingState.activeStageLightId = null;
