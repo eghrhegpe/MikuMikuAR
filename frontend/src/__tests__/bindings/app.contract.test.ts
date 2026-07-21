@@ -413,6 +413,16 @@ describe('binding contract: function exports', () => {
         'StopWatchDir',
         'ToggleFavorite',
         'UpdateCustomSoftware',
+        'DeleteMotionPreset',
+        'GetMotionPresets',
+        'LoadMotionPreset',
+        'LoadMotionPresetFromLib',
+        'RenameMotionPreset',
+        'SaveMotionPreset',
+        'SaveMotionPresetToLib',
+        'SaveMotionPresetToLibAuto',
+        'SelectMotionPresetOpenFile',
+        'SelectMotionPresetSaveFile',
     ];
 
     it(`exports ${expectedFunctions.length} functions`, () => {
@@ -563,6 +573,16 @@ describe('binding contract: method IDs', () => {
         'StopWatchDir',
         'ToggleFavorite',
         'UpdateCustomSoftware',
+        'DeleteMotionPreset',
+        'GetMotionPresets',
+        'LoadMotionPreset',
+        'LoadMotionPresetFromLib',
+        'RenameMotionPreset',
+        'SaveMotionPreset',
+        'SaveMotionPresetToLib',
+        'SaveMotionPresetToLibAuto',
+        'SelectMotionPresetOpenFile',
+        'SelectMotionPresetSaveFile',
     ];
 
     it('all method IDs match FNV-1a 32-bit hash', () => {
