@@ -10,7 +10,7 @@ import { logWarn } from '@/core/logger';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { safeDispose } from '@/core/dispose-helpers';
 import { disposeTextureCache } from './env-texture';
-import { _envSys, getScene, getPipeline, isInitialized, resolveStaticAsset } from './env-context';
+import { _envSys, getScene, getPipeline, isInitialized } from './env-context';
 import { clearSceneTickCallbacks, runSceneTickCallbacks } from './env-dispatcher';
 
 // Re-export shared context for backward compatibility
@@ -30,15 +30,8 @@ export {
     updateWaterAnimSpeed,
     isUnderwaterActive,
 } from './env-water';
-import {
-    createWater,
-    disposeWater,
-    updateUnderwaterTransition,
-    resetUnderwaterState,
-    updateGroundRipples,
-} from './env-water';
+import { updateUnderwaterTransition, resetUnderwaterState, updateGroundRipples } from './env-water';
 export { createClouds, disposeClouds } from './env-clouds';
-import { createClouds, disposeClouds } from './env-clouds';
 export {
     createMirror,
     disposeMirror,
