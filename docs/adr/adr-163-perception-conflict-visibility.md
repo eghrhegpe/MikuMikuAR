@@ -1,7 +1,7 @@
-# ADR-153: 感知层冲突可视化 — 闭环「左右脑互博」用户层可见性
+# ADR-163: 感知层冲突可视化 — 闭环「左右脑互博」用户层可见性
 
 > **状态**: 已实施但需返工（2026-07-21 审核；关闭 Bone Override 后感知层不重新 claim 等承诺未实施，追踪见 ADR-166）
-> **关联**: ADR-071（程序化与感知边界）、ADR-116（冲突可视化）、ADR-147（显式管线调度器）、ADR-150（gaze delta）、ADR-152（per-model）
+> **关联**: ADR-071（程序化与感知边界）、ADR-116（冲突可视化）、ADR-147（显式管线调度器）、ADR-150（gaze delta）、ADR-162（per-model）
 > **来源**: 2026-07-19 topics [6a5b5da3] 用户层「左右脑互博」可见性未闭环风险
 > **日期**: 2026-07-21
 
@@ -187,18 +187,18 @@ function updatePerceptionConflictBanner(el: HTMLElement, modelId: string | null)
 
 ---
 
-## 七、与 ADR-150 / ADR-152 的协同
+## 七、与 ADR-150 / ADR-162 的协同
 
 | ADR | 关系 |
 |-----|------|
 | ADR-150（gaze delta） | 物理层闭环：避免 gaze 覆写 VMD |
-| ADR-152（per-model） | 状态层扩展：perception → per-model context |
-| **ADR-153（本）** | 可见性层闭环：用户能看到感知层与模块层的冲突 |
+| ADR-162（per-model） | 状态层扩展：perception → per-model context |
+| **ADR-163（本）** | 可见性层闭环：用户能看到感知层与模块层的冲突 |
 
 三者共同闭环「左右脑互博」的三层风险：
 1. **物理层**（ADR-150）：delta 叠加避免覆写
-2. **状态层**（ADR-152）：per-model 避免单例限制
-3. **可见性层**（ADR-153）：冲突 banner 让用户知道发生了什么
+2. **状态层**（ADR-162）：per-model 避免单例限制
+3. **可见性层**（ADR-163）：冲突 banner 让用户知道发生了什么
 
 ---
 
