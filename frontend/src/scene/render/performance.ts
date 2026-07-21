@@ -371,9 +371,21 @@ function applyDegrade(level: DegradeLevel, force = false): void {
 
 // 刷新率感知：将阈值按 refRate/60 缩放，使高刷设备获得正确校准。
 // 60Hz 下 RSCALE=1，行为与历史完全一致（零回归）。
+// `screen.refreshRate` 是非标准属性（仅部分 Chromium/特供浏览器暴露，WebView2 运行时不支持），
+// 故以异常安全方式读取，缺失/非有限正数/访问异常时一律回退 60Hz。
+interface ScreenWithRefreshRate extends Screen {
+    refreshRate?: number;
+}
 function detectRefreshRate(): number {
-    const r = (window.screen as unknown as { refreshRate?: number }).refreshRate;
-    return typeof r === 'number' && r > 0 ? r : 60;
+    try {
+        const r = (window.screen as ScreenWithRefreshRate).refreshRate;
+        if (typeof r === 'number' && Number.isFinite(r) && r > 0) {
+            return r;
+        }
+    } catch {
+        // screen 在受限环境不可访问，走下方默认
+    }
+    return 60;
 }
 function clampRate(v: number, lo: number, hi: number): number {
     return Math.min(hi, Math.max(lo, v));

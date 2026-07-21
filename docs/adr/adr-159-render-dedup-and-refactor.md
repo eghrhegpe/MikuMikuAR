@@ -1,6 +1,6 @@
 # ADR-159 渲染模块重复收口 + 关键补测 + 两项结构性重构决策
 
-> **状态**: 部分实现（Phase 1/2/P3-A/P3-B 已实施；P4 遗留未处理）
+> **状态**: 已实施（Phase 1/2/P3-A/P3-B/P4 全部完成）
 > **日期**: 2026-07-21
 > **关联**: ADR-138（env-dispatcher 破循环依赖，回调注册范式）、ADR-148（overload 文件拆分）、ADR-152（舞台灯体积散射→光锥）、ADR-158（lighting 状态收口 P2-3）
 
@@ -124,10 +124,17 @@
 - **P3-B**（提交 `db7126eb`）：tsc 零错误（含测试类型修复——`RenderState` 改从 `./renderer` 导入）；全量单测 **1786/1786 通过**（拆分零回归）；eslint 零告警（prettier `--fix` 清 39 处子代理生成遗留格式告警）。
 - 拆分落地文件：`lighting.ts`（barrel + 主光 + init/dispose）、`lighting-state.ts`（唯一可变状态所有者）、`lighting-stage.ts`、`lighting-shadow.ts`、`lighting-sun.ts`、`lighting-tween.ts`。外部 API 经 `export *` barrel 零改动。
 
+## 验证（P4：observer 泄漏排查 + refreshRate 兜底）
+
+- **P4-A `transitionLighting` observer 泄漏**：根因——`animLoopObs` 为 `transitionLighting` 局部变量，仅动画自然结束（t≥1）时由闭包自移除；**重入不取消旧 observer**（重复调用堆叠多个渲染循环 observer、并发打架）、**`disposeLighting()` 不跟踪它**（场景中途销毁后 observer 滞留旧 scene）。修复：在 `lightingState` 新增 `activeTransitionObs` 句柄；`transitionLighting` 入口先 `dispose` 在途动画；`animLoop` 加防御性 guard（scene/主光已销毁即退出并移除 observer）；`disposeLighting` 显式 `dispose` 并在途 observer。彻底消除泄漏与并发。
+- **P4-B `refreshRate` 非标准 API 兜底**：`detectRefreshRate()` 原用 `as unknown as` 裸 cast 读取非标准 `screen.refreshRate`，缺异常防护。改为 `ScreenWithRefreshRate` 类型化安全读取 + `try/catch`，缺失/非有限正数/访问异常时回退 60Hz（RSCALE=1，行为与历史零回归），补文档说明非标准性。
+- 验证：改动文件（lighting.ts/lighting-state.ts/performance.ts）tsc 零错误、eslint 零告警；P4 相关单测 `performance-snapshot(4)` + `env-lighting(22)` + `lighting-stage(6)` = **32/32 通过**。
+- 注意：全量单测 68 失败 / 12 失败套件为独立问题——`src/scene/env/env-water.ts` 存在用户未提交的 Ground Ripples WIP（line 329 `new import('@babylonjs/core').Texture(...)` 非法语法），级联拖垮整个 env/asset 子系统。该 WIP 非 P4 范围，P4 改动本身隔离无回归。
+
 ## 待办
 
 | 优先级 | 项 | 状态 |
 |--------|----|----|
 | P2 | P3-A performance→scene 桥接注入 | ✅ 已实施 |
 | P3 | P3-B lighting.ts 拆分（6 文件落地：lighting-state + barrel + stage + shadow + sun + tween） | ✅ 已实施 |
-| P4 | `transitionLighting` observer 泄漏排查、`refreshRate` 非标准 API 兜底 | 未处理（ADR-158 遗留同批） |
+| P4 | `transitionLighting` observer 泄漏排查 + `refreshRate` 非标准 API 兜底 | ✅ 已实施 |
