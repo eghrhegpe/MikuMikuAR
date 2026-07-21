@@ -32,7 +32,7 @@ import {
     ScanSoftwareDir,
 } from '../core/wails-bindings';
 import type { SoftwareEntry } from '../core/wails-bindings';
-import { tryCatchStatus } from '../core/utils';
+import { tryCatchStatus, getBaseName } from '../core/utils';
 import { logWarn } from '../core/logger';
 import { safeCallAsync } from '../core/safe-call';
 import { pushUndoSnapshot, offerSceneUndo } from '../scene/scene';
@@ -52,6 +52,14 @@ import { buildProcMotionLevel } from './motion-procmotion-levels';
 import { loadManager } from '../core/load-manager';
 import { getBrowseDir } from '../core/config';
 import type { ModelInstance, ModelMotionSlots } from '@/core/types';
+import {
+    ensureOverlayLayer,
+    clearOverlayLayer,
+    setOverlayWeight,
+    getOverlayStatus,
+} from '../scene/motion/overlay-manager';
+import { SelectImportFile } from '../core/wails-bindings';
+import { addSliderRow } from '../core/ui-helpers';
 
 /** 确保 inst.motionSlots 存在并返回（懒初始化，保留已有 overlay） */
 function _ensureMotionSlots(inst: ModelInstance): ModelMotionSlots {
@@ -300,6 +308,30 @@ function buildModelSchema(id: string): MenuNode[] {
                             labelEl.appendChild(subLabel);
                         }
                     }
+                    // ── 叠加动作 [doc:adr-144] ──
+                    {
+                        const overlayStatus = getOverlayStatus(id);
+                        const overlayRow = slideRow(
+                            c,
+                            'lucide:layers',
+                            t('model-detail.overlay'),
+                            true,
+                            () => {
+                                stackRegistry.modelStack?.push(
+                                    buildMotionOverlayLevel(id, inst)
+                                );
+                            }
+                        );
+                        const overlaySubLabel = document.createElement('span');
+                        overlaySubLabel.className = 'slide-sublabel';
+                        overlaySubLabel.textContent = overlayStatus.hasOverlay
+                            ? overlayStatus.name
+                            : t('model-detail.overlayNone');
+                        const overlayLabelEl = overlayRow.querySelector('.slide-label');
+                        if (overlayLabelEl) {
+                            overlayLabelEl.appendChild(overlaySubLabel);
+                        }
+                    }
                     slideRow(c, 'lucide:user', t('motion.poseLibrary'), true, () => {
                         const level = stackRegistry.buildLevel!(
                             getBrowseDir('vpd'),
@@ -467,6 +499,195 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
             });
         },
     };
+}
+
+/** [doc:adr-144] 构建叠加动作次级菜单：选择叠加 VMD / 程序化叠加 / 权重调节 / 清除 */
+function buildMotionOverlayLevel(id: string, inst: ModelInstance): PopupLevel {
+    return {
+        dir: '',
+        label: t('model-detail.overlay'),
+        items: [],
+        renderCustom: (container) => {
+            cardContainer(container, (c) => {
+                const overlayStatus = getOverlayStatus(id);
+                const slots = _ensureMotionSlots(inst);
+
+                // ── 已加载叠加动作 ──
+                addSectionTitle(c, t('model-detail.loadedMotion'));
+
+                if (overlayStatus.hasOverlay) {
+                    // 显示当前叠加动作名 + 清除按钮
+                    const overlayRow = slideRow(
+                        c,
+                        'lucide:layers',
+                        overlayStatus.name,
+                        false,
+                        () => {}
+                    );
+                    addPresetChip(
+                        overlayRow,
+                        t('model-detail.overlayClear'),
+                        false,
+                        async () => {
+                            await clearOverlayLayer(id);
+                            stackRegistry.modelStack?.reRender();
+                        },
+                        { variant: 'danger', marginLeft: 'auto', stopPropagation: true }
+                    );
+
+                    // 权重滑块
+                    addSliderRow(
+                        c,
+                        t('model-detail.overlayWeight'),
+                        overlayStatus.weight,
+                        0,
+                        1,
+                        0.05,
+                        async (v) => {
+                            await setOverlayWeight(id, v);
+                        },
+                        'lucide:sliders-horizontal'
+                    );
+                } else {
+                    // 无叠加动作时显示选择按钮
+                    slideRow(
+                        c,
+                        'lucide:plus',
+                        t('model-detail.overlaySelect'),
+                        true,
+                        async () => {
+                            let path: string;
+                            try {
+                                path = await SelectImportFile();
+                            } catch {
+                                return; // 用户取消
+                            }
+                            if (!path) {
+                                return;
+                            }
+                            if (!path.toLowerCase().endsWith('.vmd')) {
+                                setStatus(t('scene.vmd.notVmd'), false);
+                                return;
+                            }
+                            const name = getBaseName(path).replace(/\.vmd$/i, '');
+                            await ensureOverlayLayer(id, path, name, 1.0);
+                            stackRegistry.modelStack?.reRender();
+                        }
+                    );
+                }
+
+                // ── 程序化叠加 ──
+                addSectionTitle(c, t('model-detail.procOverlay'));
+
+                // 待机呼吸叠加
+                const isIdleOverlay =
+                    slots.overlay.source === 'procedural' && slots.overlay.procRole === 'idle';
+                const idleOverlayRow = slideRow(
+                    c,
+                    'lucide:wand-sparkles',
+                    t('motion.modeIdle'),
+                    true,
+                    async () => {
+                        await _setProcOverlayForModel(id, inst, 'idle');
+                        stackRegistry.modelStack?.reRender();
+                    },
+                    isIdleOverlay ? t('model-detail.procActive') : undefined
+                );
+                if (!isIdleOverlay && !overlayStatus.hasOverlay) {
+                    addPresetChip(
+                        idleOverlayRow,
+                        t('model-detail.procOverlayApply'),
+                        false,
+                        async () => {
+                            await _setProcOverlayForModel(id, inst, 'idle');
+                            stackRegistry.modelStack?.reRender();
+                        },
+                        { marginLeft: 'auto', stopPropagation: true }
+                    );
+                }
+
+                // 自动舞蹈叠加
+                const isAutodanceOverlay =
+                    slots.overlay.source === 'procedural' &&
+                    slots.overlay.procRole === 'autodance';
+                const autodanceOverlayRow = slideRow(
+                    c,
+                    'lucide:wand-sparkles',
+                    t('motion.modeAutodance'),
+                    true,
+                    async () => {
+                        await _setProcOverlayForModel(id, inst, 'autodance');
+                        stackRegistry.modelStack?.reRender();
+                    },
+                    isAutodanceOverlay ? t('model-detail.procActive') : undefined
+                );
+                if (!isAutodanceOverlay && !overlayStatus.hasOverlay) {
+                    addPresetChip(
+                        autodanceOverlayRow,
+                        t('model-detail.procOverlayApply'),
+                        false,
+                        async () => {
+                            await _setProcOverlayForModel(id, inst, 'autodance');
+                            stackRegistry.modelStack?.reRender();
+                        },
+                        { marginLeft: 'auto', stopPropagation: true }
+                    );
+                }
+            });
+        },
+    };
+}
+
+/** [doc:adr-144] 程序化 overlay 注入：生成 proc VMD 作为叠加层 */
+async function _setProcOverlayForModel(
+    modelId: string,
+    inst: ModelInstance,
+    role: 'idle' | 'autodance'
+): Promise<void> {
+    // 导入程序化动作生成
+    const { generateIdleVmd, generateAutoDanceVmd } = await import(
+        '../motion-algos/procedural-motion'
+    );
+    const { addVmdLayer } = await import('../scene/motion/vmd-layers');
+
+    // 获取骨骼名
+    const boneNames =
+        inst.mmdModel?.runtimeBones?.map((b) => b.name) ??
+        inst.meshes[0]?.skeleton?.bones?.map((b) => b.name) ??
+        [];
+    const morphNames = inst.meshes[0]?.metadata?.morphNames ?? [];
+
+    // 生成程序化 VMD
+    const procState = inst.procMotion ?? DEFAULT_PROC_STATE;
+    let vmdBuffer: ArrayBuffer;
+    let procName: string;
+    if (role === 'autodance') {
+        vmdBuffer = generateAutoDanceVmd(procState, 120, morphNames, boneNames);
+        procName = 'AutoDance Overlay';
+    } else {
+        vmdBuffer = generateIdleVmd(procState, boneNames);
+        procName = 'Idle Overlay';
+    }
+
+    // 先清除旧 overlay
+    await clearOverlayLayer(modelId);
+
+    // 注入为 overlay 层
+    const layer = await addVmdLayer(vmdBuffer, procName, modelId, 0.8, []);
+    if (layer) {
+        // 替换 id 为 overlay 前缀
+        layer.id = `ovl_${crypto.randomUUID().slice(0, 8)}`;
+
+        // 更新 motionSlots.overlay 状态
+        const slots = _ensureMotionSlots(inst);
+        slots.overlay = {
+            source: 'procedural',
+            procRole: role,
+            status: 'idle',
+            overlayName: procName,
+            overlayWeight: 0.8,
+        };
+    }
 }
 
 export function buildModelToolsLevel(id: string): PopupLevel {
