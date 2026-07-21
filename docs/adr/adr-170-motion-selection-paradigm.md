@@ -1,6 +1,6 @@
 # ADR-170: 动作库选中范式 —— 将「默认」暴露为逐行「选中」（对齐模型焦点范式）
 
-> **状态**: 规划中
+> **状态**: 已实施（2026-07-22, 9ac064d9）
 > **日期**: 2026-07-22
 > **依赖**: ADR-167（场景级动作库）、ADR-169（动作装载语义统一 replaceDefaultMotion）
 > **路径约定**: 源码路径省略 `frontend/src/` 前缀，例如 `menus/motion-root-ui.ts` = `frontend/src/menus/motion-root-ui.ts`
