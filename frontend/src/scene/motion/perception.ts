@@ -38,9 +38,9 @@ import {
     HEAD_BONE_CANDIDATES,
     EYE_BONE_CANDIDATES,
 } from './perception-gaze';
-import { _applyBreathing, _resetBreathingState } from './perception-breathing';
+import { _applyBreathing } from './perception-breathing';
 import { _applyBlinking } from './perception-blinking';
-import { _applyMicroExpression, _resetLastEmotionMorphName } from './perception-expression';
+import { _applyMicroExpression } from './perception-expression';
 import { _applyBalanceSway, _resetBalanceSwayState } from './perception-balance';
 import { clamp01 } from '@/core/utils';
 import { logWarn } from '@/core/logger';
@@ -100,6 +100,7 @@ function _getOrCreateContext(modelId: string): PerceptionContext {
             isPinned: false,
             lastOffsets: {
                 breath: 0,
+                breathBoneName: null,
                 balance: {
                     lastBobY: 0,
                     swayCenterName: null,
@@ -148,6 +149,7 @@ function _updateFocusedState(partial: Partial<PerceptionState>): void {
 /** 重置指定 context 的 lastOffsets（激活/注销时调用，避免跨模型残留） */
 function _resetContextOffsets(ctx: PerceptionContext): void {
     ctx.lastOffsets.breath = 0;
+    ctx.lastOffsets.breathBoneName = null;
     _resetBalanceSwayState(ctx.lastOffsets.balance);
     ctx.lastOffsets.emotion = null;
 }
@@ -199,6 +201,12 @@ function _releasePerceptionBones(modelId: string): void {
     _perceptionOwnedBones.delete(modelId);
 }
 
+/** [doc:adr-166] 回收指定模型的感知骨骼：先释放再重认领，解决 Close Override 夺走后不回抢 */
+function _reclaimPerceptionBones(modelId: string): void {
+    _releasePerceptionBones(modelId);
+    _claimPerceptionBones(modelId);
+}
+
 /** 对单个 context 应用完整感知管线（[doc:adr-162] Phase 2 抽取；[doc:adr-164] 加 tier） */
 function _applyPerceptionForContext(
     ctx: PerceptionContext,
@@ -215,7 +223,7 @@ function _applyPerceptionForContext(
     if (state.breathEnabled) {
         try {
             const claimed = owned?.get('perception.breath');
-            _applyBreathing(mmdModel, time, claimed);
+            _applyBreathing(mmdModel, time, ctx, claimed);
         } catch (e) {
             logWarn('perception', 'breathing 异常:', (e as Error)?.message);
         }
@@ -224,7 +232,7 @@ function _applyPerceptionForContext(
     // 2. 眨眼（所有 tier 运行）
     if (state.blinkEnabled) {
         try {
-            _applyBlinking(mmdModel, time);
+            _applyBlinking(mmdModel, time, ctx);
         } catch (e) {
             logWarn('perception', 'blinking 异常:', (e as Error)?.message);
         }
@@ -240,6 +248,7 @@ function _applyPerceptionForContext(
                     time,
                     state.microExpressionEnabled,
                     state.emotion,
+                    ctx,
                     tier
                 );
             } catch (e) {
@@ -424,17 +433,15 @@ export function activatePerception(modelId?: string): void {
         const oldCtx = _contexts.get(_focusedContextId);
         if (oldCtx && !oldCtx.isPinned) {
             oldCtx.isActive = false;
+            _releasePerceptionBones(oldCtx.modelId);
             _resetContextOffsets(oldCtx);
         }
     }
 
-    // 无 pinned 模型时保持旧行为：注销旧 observer 再注册新 observer
-    // 有 pinned 模型时保留 observer，只重置增量状态
+    // 无 pinned 模型时注销旧 observer；有 pinned 模型时保留 observer
+    // （增量状态已通过 _resetContextOffsets 按 ctx 独立管理，无需模块级重置）
     if (!hasPinned) {
         deactivatePerception();
-    } else {
-        _resetBreathingState();
-        _resetLastEmotionMorphName();
     }
     _resetGazeState();
 
@@ -476,8 +483,6 @@ export function deactivatePerception(): void {
         perceptionObserver();
         perceptionObserver = null;
     }
-    _resetLastEmotionMorphName(); // 模型切换时清空，避免旧 morph 名残留
-    _resetBreathingState(); // 重置 breathing 增量状态，避免跨模型残留导致旋转冻结
     _resetGazeState(); // 重置 gaze 状态，避免关闭后重新开启出现跳跃
 
     if (_focusedContextId) {
@@ -785,6 +790,9 @@ export function enableAllPerception(): void {
                 _resetContextOffsets(ctx);
                 ctx.isActive = true;
                 _claimPerceptionBones(id);
+            } else {
+                // [doc:adr-166] 已激活但骨骼可能被 Close Override 夺走，回收重认领
+                _reclaimPerceptionBones(id);
             }
         }
     }

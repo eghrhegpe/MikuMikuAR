@@ -6,7 +6,7 @@ import { envState } from '@/core/config';
 import { setEnvState, getRenderState, setRenderState } from '@/scene/scene';
 import { getLightState, setLightState } from '@/scene/render/lighting';
 import { uiState, setUIState, focusedModelId, modelRegistry } from '@/core/state';
-import { getPerceptionState, setPerceptionState } from '@/scene/motion/perception';
+import { getPerceptionState, getPerceptionStateFor, setPerceptionState, setPerceptionStateFor } from '@/scene/motion/perception';
 import { getModuleDefaultParam } from '@/scene/motion/motion-modules/registry';
 
 // 状态路径：类型化字符串，由解析器按前缀映射到 reactive state 对象
@@ -84,7 +84,7 @@ export function getStateValue(path: StatePath): unknown {
         case 'ui':
             return (uiState as unknown as Record<string, unknown>)[key];
         case 'perception':
-            return (getPerceptionState() as unknown as Record<string, unknown>)[key];
+            return ((focusedModelId ? getPerceptionStateFor(focusedModelId) : getPerceptionState()) as unknown as Record<string, unknown>)[key];
         case 'motionModule': {
             // 格式: motionModule.${moduleId}.${paramKey}
             // 注: 解构只取前两段，需从 path 重新解析剩余部分以支持 moduleId.paramKey 结构
@@ -130,7 +130,11 @@ export function setStateValue(path: StatePath, value: unknown): void {
             setUIState({ [key]: value });
             break;
         case 'perception':
-            setPerceptionState({ [key]: value });
+            if (focusedModelId) {
+                setPerceptionStateFor(focusedModelId, { [key]: value });
+            } else {
+                setPerceptionState({ [key]: value });
+            }
             break;
         case 'motionModule': {
             // 格式: motionModule.${moduleId}.${paramKey}

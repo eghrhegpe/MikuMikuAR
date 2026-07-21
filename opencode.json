@@ -1,4 +1,4 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": ["oh-my-opencode", "opencode-vibeguard", "@tarquinen/opencode-dcp", "opencode-notify", "@nick-vi/opencode-type-inject"]
+  "plugin": ["opencode-vibeguard", "@tarquinen/opencode-dcp", "opencode-notify", "@nick-vi/opencode-type-inject"]
 }
