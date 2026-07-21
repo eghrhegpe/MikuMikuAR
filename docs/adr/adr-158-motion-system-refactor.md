@@ -71,8 +71,12 @@ dispose 只清了 3 个变量，遗漏 7 个：`_onTerrainReady` / `_onGroundCha
 
 motion-* 5 文件 ×9 处撤销调用点的 `onRestored` 尾巴完全一致（`reRender()` + `setStatus(t('motion.undoApplied'), true)`）。新增 `offerSceneUndoAndRefresh(message, snap, reRender)`（scene-serialize.ts）收敛该尾巴，调用点只传各自的 reRender 闭包（`getMotionMenu()?.reRender()` / `refreshCameraLevel()` / `menu?.reRender()`）。model-detail.ts（异步 import 恢复）与 scene-menu / scene-render-levels（全局撤销按钮走 pop/restore）语义不同，保留原样。
 
+### P3: scene-serialize 撤销 UX 层补测
+
+scene-serialize.ts（1293 行）原零直接测试。新增 `scene-serialize-undo.test.ts`（6 例）覆盖撤销 UX 层：`offerSceneUndo` / `offerSceneUndoAndRefresh` 的 null-snap 守卫、toast 接线形状（含「撤销」动作 + 8s）、以及恢复失败（版本不支持）时 onRestored/reRender 不触发。序列化/反序列化主体依赖重（~30 collaborators），本次不展开。
+
 ### 审核发现待办（未修）
 
 | 优先级 | 问题 | 文件 |
 |--------|------|------|
-| P3 | scene-serialize.ts 1293 行零测试 | `scene/scene-serialize.ts` |
+| P3 | scene-serialize.ts 序列化/反序列化主体仍零测试（需重 mock scaffold） | `scene/scene-serialize.ts` |
