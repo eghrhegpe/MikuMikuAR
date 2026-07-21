@@ -265,6 +265,7 @@ export const zhCN: Record<string, string> = {
     'motion.deleteMotion': '删除动作',
     'motion.deleteMotionConfirm': '确定要删除动作 "{name}" 吗？',
     'motion.motionRemoved': '✓ 动作 {name} 已删除',
+    'motion.motionReplaced': '✓ 默认动作已替换为 {name}',
     'motion.library.title': '场景动作库',
     'motion.library.emptyHint': '场景库为空，请先加载动作',
     'motion.library.followDefault': '跟随默认动作',

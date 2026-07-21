@@ -23,8 +23,14 @@ import {
     stackRegistry,
 } from '../core/config';
 import { loadManager } from '../core/load-manager';
-import { removeModel } from '../scene/scene';
-import { loadVPDPose } from '../scene/scene';
+import {
+    removeModel,
+    loadVPDPose,
+    triggerAutoSave,
+    pushUndoSnapshot,
+    offerSceneUndoAndRefresh,
+} from '../scene/scene';
+import { getMotionMenu } from './motion-popup';
 import { slideRow } from '../core/ui-helpers';
 import { addDisposableListener, type Disposable } from '../core/dom';
 import {
@@ -442,9 +448,16 @@ function replaceMotion(m: LibraryModel): void {
     }
     closeAllOverlays();
     const targetId = focusedModelId;
+    const motionName = m.name_jp || m.name_en || getBaseName(m.file_path).replace(/\.vmd$/i, '');
     const doLoad = async (path: string): Promise<void> => {
+        // [adr-169] 原位替换默认动作是破坏性操作（旧默认被移除）：操作前快照，成功后提供撤销
+        const snap = pushUndoSnapshot();
         await withLoadingStatus('library.loadingMotion', 'status.done', () =>
             loadManager.load({ kind: 'vmd', path, modelId: targetId })
+        );
+        triggerAutoSave();
+        offerSceneUndoAndRefresh(t('motion.motionReplaced', { name: motionName }), snap, () =>
+            getMotionMenu()?.reRender()
         );
     };
     if (m.container === 'zip') {

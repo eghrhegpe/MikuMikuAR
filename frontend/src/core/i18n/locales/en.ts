@@ -267,6 +267,7 @@ export const en: Record<string, string> = {
     'motion.deleteMotion': 'Delete motion',
     'motion.deleteMotionConfirm': 'Delete motion "{name}"? This cannot be undone.',
     'motion.motionRemoved': '✓ Motion {name} removed',
+    'motion.motionReplaced': '✓ Default motion replaced with {name}',
     'motion.library.title': 'Scene Motion Library',
     'motion.library.emptyHint': 'Scene library is empty, load a motion first',
     'motion.library.followDefault': 'Follow Default',

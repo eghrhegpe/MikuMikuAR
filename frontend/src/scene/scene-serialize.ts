@@ -26,7 +26,6 @@ import {
     getActiveMotion,
     getActiveMotionId,
     getSceneMotions,
-    setActiveMotion,
     addSceneMotion,
     setDefaultMotion,
     clearAllSceneMotions,

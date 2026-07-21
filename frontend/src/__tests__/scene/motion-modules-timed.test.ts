@@ -57,9 +57,6 @@ vi.mock('@/scene/motion/perception', () => ({
 const mockActiveMotion = { value: null as any };
 vi.mock('@/scene/motion/motion-intent', () => ({
     getActiveMotion: () => mockActiveMotion.value,
-    setActiveMotion: vi.fn((intent: any) => {
-        mockActiveMotion.value = intent;
-    }),
 }));
 
 import { createSwayMotionModule } from '@/scene/motion/motion-modules/sway-motion';

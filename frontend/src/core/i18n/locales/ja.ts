@@ -423,6 +423,7 @@ export const ja: Record<string, string> = {
     'motion.deleteMotion': 'モーション削除',
     'motion.deleteMotionConfirm': 'モーション "{name}" を削除しますか？',
     'motion.motionRemoved': '✓ モーション {name} を削除しました',
+    'motion.motionReplaced': '✓ デフォルトモーションを {name} に置き換えました',
     'motion.library.title': 'シーンモーションライブラリ',
     'motion.library.emptyHint': 'シーンライブラリが空です。先にモーションを読み込んでください',
     'motion.library.followDefault': 'デフォルトに追従',

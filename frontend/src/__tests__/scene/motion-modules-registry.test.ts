@@ -12,15 +12,11 @@ const {
     setBoneOverrideSpy,
     clearBoneOverrideSpy,
     mockActiveMotion,
-    mockSetActiveMotion,
 } = vi.hoisted(() => ({
     mockModelRegistry: new Map<string, any>(),
     setBoneOverrideSpy: vi.fn(),
     clearBoneOverrideSpy: vi.fn(),
     mockActiveMotion: { value: null as any },
-    mockSetActiveMotion: vi.fn((intent: any) => {
-        mockActiveMotion.value = intent;
-    }),
 }));
 
 vi.mock('@/core/state', () => ({
@@ -40,7 +36,6 @@ vi.mock('@/scene/motion/perception', () => ({
 
 vi.mock('@/scene/motion/motion-intent', () => ({
     getActiveMotion: () => mockActiveMotion.value,
-    setActiveMotion: mockSetActiveMotion,
 }));
 
 // [doc:adr-125] mock pushHistory 以验证 setParam 集成
@@ -90,7 +85,6 @@ function resetAll(): void {
     setBoneOverrideSpy.mockClear();
     clearBoneOverrideSpy.mockClear();
     mockActiveMotion.value = null;
-    mockSetActiveMotion.mockClear();
     // 重置 setTargetModel 内部 _currentModelId：通过切换到 null 再到目标
     setTargetModel(null);
 }
