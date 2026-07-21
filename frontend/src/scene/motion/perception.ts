@@ -410,6 +410,7 @@ export function activatePerception(modelId?: string): void {
 
     // 避免重复激活同一焦点模型
     if (_focusedContextId === targetId && perceptionObserver) {
+        _resetGazeState();
         return;
     }
 
@@ -497,7 +498,20 @@ export function getPerceptionState(): PerceptionState {
 
 /** 设置感知状态（从存储恢复时使用） */
 export function setPerceptionState(s: Partial<PerceptionState>): void {
-    _setFocusedState(s);
+    // 钳制 gaze 角度参数（与各单项 setter 一致，避免绕过 clamp）
+    const clamped: Partial<PerceptionState> = {};
+    if ('headGazeMaxYaw' in s) clamped.headGazeMaxYaw = Math.max(0, Math.min(90, s.headGazeMaxYaw!));
+    if ('headGazeMaxPitch' in s) clamped.headGazeMaxPitch = Math.max(0, Math.min(90, s.headGazeMaxPitch!));
+    if ('eyeGazeMaxYaw' in s) clamped.eyeGazeMaxYaw = Math.max(0, Math.min(15, s.eyeGazeMaxYaw!));
+    if ('eyeGazeMaxPitch' in s) clamped.eyeGazeMaxPitch = Math.max(0, Math.min(15, s.eyeGazeMaxPitch!));
+    if ('eyeGazeSmooth' in s) clamped.eyeGazeSmooth = Math.max(0, Math.min(1, s.eyeGazeSmooth!));
+    // 非 gaze 字段原样传入
+    for (const k of Object.keys(s)) {
+        if (!(k in clamped)) {
+            (clamped as Record<string, unknown>)[k] = (s as Record<string, unknown>)[k];
+        }
+    }
+    _setFocusedState(clamped);
     // 检测角度参数变化，同步到 perception-shared（避免循环依赖）
     if (
         'headGazeMaxYaw' in s ||
@@ -730,12 +744,26 @@ export function getPerceptionStateFor(modelId: string): PerceptionState {
 
 /** 设置指定模型的感知状态 */
 export function setPerceptionStateFor(modelId: string, s: Partial<PerceptionState>): void {
+    // 钳制 gaze 角度参数（与各单项 setter 一致，避免绕过 clamp）
+    const clamped: Partial<PerceptionState> = {};
+    if ('headGazeMaxYaw' in s) clamped.headGazeMaxYaw = Math.max(0, Math.min(90, s.headGazeMaxYaw!));
+    if ('headGazeMaxPitch' in s) clamped.headGazeMaxPitch = Math.max(0, Math.min(90, s.headGazeMaxPitch!));
+    if ('eyeGazeMaxYaw' in s) clamped.eyeGazeMaxYaw = Math.max(0, Math.min(15, s.eyeGazeMaxYaw!));
+    if ('eyeGazeMaxPitch' in s) clamped.eyeGazeMaxPitch = Math.max(0, Math.min(15, s.eyeGazeMaxPitch!));
+    if ('eyeGazeSmooth' in s) clamped.eyeGazeSmooth = Math.max(0, Math.min(1, s.eyeGazeSmooth!));
+    // 非 gaze 字段原样传入
+    for (const k of Object.keys(s)) {
+        if (!(k in clamped)) {
+            (clamped as Record<string, unknown>)[k] = (s as Record<string, unknown>)[k];
+        }
+    }
+
     const ctx = _contexts.get(modelId);
     if (!ctx) {
         const newCtx = _getOrCreateContext(modelId);
-        newCtx.state = { ...newCtx.state, ...s };
+        newCtx.state = { ...newCtx.state, ...clamped };
     } else {
-        ctx.state = { ...ctx.state, ...s };
+        ctx.state = { ...ctx.state, ...clamped };
     }
     triggerAutoSave();
 }
