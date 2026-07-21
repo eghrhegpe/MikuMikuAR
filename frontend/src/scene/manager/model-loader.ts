@@ -20,6 +20,7 @@ import {
     uiState,
     type RuntimeModel,
 } from '@/core/config';
+import type { ModelMotionSlots } from '@/core/types';
 import { getBaseName, swallowError, isUnderRoot } from '@/core/utils';
 import { logWarn } from '@/core/logger';
 import {
@@ -543,15 +544,18 @@ export async function loadPMXFile(
             });
         }
 
-        // [doc:adr-121] 应用场景级 activeMotion（继承），替代旧 pendingVmd
+        // [doc:adr-167] 应用场景级动作（按角色 sceneMotionId 解析；未指定则用默认动作）
         let appliedVmd = '';
-        const activeMotion = getActiveMotion();
+        const slots: ModelMotionSlots = inst.motionSlots ?? {
+            primary: { source: 'inherit', status: 'idle' },
+        };
+        const pickedId = slots.primary.sceneMotionId;
+        const pickedMotion = pickedId
+            ? getSceneMotions().find((m) => m.id === pickedId) ?? null
+            : null;
+        const activeMotion = pickedMotion ?? getActiveMotion();
         const loadGen = getMotionGen(); // 捕获当前 generation，防止异步加载过期
         if (activeMotion && activeMotion.vmdPath && _mmdRuntime) {
-            const slots = inst.motionSlots ?? {
-                primary: { source: 'inherit' as const, status: 'idle' as const },
-                overlay: { source: 'inherit' as const, status: 'idle' as const },
-            };
             if (slots.primary.source === 'inherit') {
                 // 兼容性检查
                 const bones =
