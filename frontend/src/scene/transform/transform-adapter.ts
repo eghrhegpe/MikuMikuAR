@@ -12,6 +12,7 @@ import {
     attachGizmo,
     detachGizmo,
     isGizmoActive,
+    isGizmoDragging,
     getGizmoTargetId,
     onGizmoDragObservable,
     getGizmoNode,
@@ -85,6 +86,7 @@ export function attachGizmoForKind(kind: ResourceKind, id: string): boolean {
 export {
     detachGizmo,
     isGizmoActive,
+    isGizmoDragging,
     getGizmoTargetId,
     onGizmoDragObservable,
     getGizmoNode,

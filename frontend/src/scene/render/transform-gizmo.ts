@@ -29,6 +29,7 @@ let _gizmoNode: Node | null = null;
 // Babylon 语义：snapDistance=0 即禁用吸附，故默认关闭即零副作用。
 let _snapEnabled = false;
 let _snapStep = 1.0; // 场景单位（position）；rotation/scale 按轴派生
+let _isDragging = false;
 
 /** 拖拽进行中（连续）可观察量：任一 Gizmo 轴被拖动时每帧触发，
  *  供数值滑杆实时同步显示（ADR-126 Phase 2 双模态）。
@@ -115,9 +116,15 @@ export function attachGizmo(options: GizmoAttachOptions): boolean {
                 const g = new PositionGizmo(layer);
                 g.attachedNode = node;
                 g.snapDistance = _snapFor('position');
+                g.onDragStartObservable.add(() => {
+                    _isDragging = true;
+                });
                 if (options.onPositionDragEnd) {
                     g.onDragEndObservable.add(() => options.onPositionDragEnd!(options.node));
                 }
+                g.onDragEndObservable.add(() => {
+                    _isDragging = false;
+                });
                 g.onDragObservable.add(() => onGizmoDragObservable.notifyObservers());
                 _posGizmo = g;
                 break;
@@ -128,9 +135,15 @@ export function attachGizmo(options: GizmoAttachOptions): boolean {
                 const g = new RotationGizmo(layer, 32, true);
                 g.attachedNode = node;
                 g.snapDistance = _snapFor('rotation');
+                g.onDragStartObservable.add(() => {
+                    _isDragging = true;
+                });
                 if (options.onRotationDragEnd) {
                     g.onDragEndObservable.add(() => options.onRotationDragEnd!(options.node));
                 }
+                g.onDragEndObservable.add(() => {
+                    _isDragging = false;
+                });
                 g.onDragObservable.add(() => onGizmoDragObservable.notifyObservers());
                 _rotGizmo = g;
                 break;
@@ -141,9 +154,15 @@ export function attachGizmo(options: GizmoAttachOptions): boolean {
                 // ScaleGizmo 默认有等比缩放 corner handle（uniformScaleGizmo）
                 // 无需额外启用
                 g.snapDistance = _snapFor('scale');
+                g.onDragStartObservable.add(() => {
+                    _isDragging = true;
+                });
                 if (options.onScaleDragEnd) {
                     g.onDragEndObservable.add(() => options.onScaleDragEnd!(options.node));
                 }
+                g.onDragEndObservable.add(() => {
+                    _isDragging = false;
+                });
                 g.onDragObservable.add(() => onGizmoDragObservable.notifyObservers());
                 _scaleGizmo = g;
                 break;
@@ -167,6 +186,7 @@ export function detachGizmo(): void {
     }
     _gizmoTargetId = null;
     _gizmoNode = null;
+    _isDragging = false;
 }
 
 // ======== Queries ========
@@ -174,6 +194,11 @@ export function detachGizmo(): void {
 /** 当前是否有 Gizmo 激活。 */
 export function isGizmoActive(): boolean {
     return _gizmoTargetId !== null;
+}
+
+/** 当前是否正在拖拽 Gizmo（drag start → drag end 之间为 true）。 */
+export function isGizmoDragging(): boolean {
+    return _isDragging;
 }
 
 /** 获取当前 Gizmo 绑定的实体 ID。 */

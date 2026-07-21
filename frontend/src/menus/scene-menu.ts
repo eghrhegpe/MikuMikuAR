@@ -39,10 +39,12 @@ import { buildStageLightLevel } from './scene-stage-lights';
 import { buildPhysicsLevel, buildWasmPhysicsLevel } from './scene-physics-levels';
 import { buildGroundLevel } from './env-ground-levels';
 import { buildWaterLevel } from './env-water-levels';
+import { buildDragModeLevel } from './scene-drag-levels';
 import { envState } from '../core/state';
 import { getEnvTextureBindingTarget, clearEnvTextureBindingTarget } from './env-menu';
 import { setSceneMenu, setRefreshSceneRoot, reRenderSceneMenu } from './scene-menu-state';
 import { setMirrorSize, getMirrorInfo, toggleMirror, isMirrorActive } from '../scene/env/env';
+import { isDragModeEnabled, setDragModeEnabled } from '../scene/transform/transform-mode';
 import { addModeSlider, addSliderRow, addToggleRow, slideRow } from '../core/ui-helpers';
 import { SCENE_EVENTS } from '../core/ui-constants';
 
@@ -212,6 +214,17 @@ function buildSceneRootItems(): PopupRow[] {
     });
     items.push({
         kind: 'folder',
+        label: t('scene.dragMode'),
+        icon: 'lucide:move-3d',
+        target: 'scene:dragMode',
+        headerToggle: {
+            value: isDragModeEnabled(),
+            onChange: (v: boolean) => setDragModeEnabled(v),
+            bind: () => isDragModeEnabled(),
+        },
+    });
+    items.push({
+        kind: 'folder',
         label: t('scene.stage'),
         icon: 'lucide:monitor',
         target: 'scene:render:stage',
@@ -308,6 +321,7 @@ const SCENE_FOLDER_ROUTES: Record<string, () => PopupLevel> = {
     'scene:stageLight': buildStageLightLevel,
     'scene:ground': buildGroundLevel,
     'scene:water': buildWaterLevel,
+    'scene:dragMode': buildDragModeLevel,
     'scene:physics': buildPhysicsLevel,
     'scene:formation': buildFormationLevel,
     'scene:mirror': buildMirrorLevel,
