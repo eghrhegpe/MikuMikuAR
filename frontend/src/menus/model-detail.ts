@@ -439,26 +439,29 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
                     }
                 }
 
-                // ── 已加载动作（始终可见，点击即从程序化切回并重新应用）──
-                addSectionTitle(c, t('model-detail.loadedMotion'));
+                // ── 已加载动作（仅程序化激活时展示，作为快捷回退入口）──
                 const slots0 = _ensureMotionSlots(inst);
                 const active = getActiveMotion();
                 const isPinned = slots0.primary.source === 'pinned';
                 const isProc = slots0.primary.source === 'procedural';
-                // 程序化激活时仍显示「已加载动作」本名，而非程序化模式名——
-                // 这样用户随时能点它切回原动作，无需先「取消程序化」。
-                const loadedName =
-                    slots0.primary.pinned?.vmdName ||
-                    active?.vmdName ||
-                    inst.vmdName ||
-                    t('model-detail.noMotion');
+                // 非程序化激活时不显示此板块（场景动作库已提供全部信息）
+                if (!isProc && !isPinned) {
+                    // nothing to show
+                } else if (isProc) {
+                    addSectionTitle(c, t('model-detail.loadedMotion'));
+                    // 程序化激活时仍显示「已加载动作」本名，而非程序化模式名——
+                    // 这样用户随时能点它切回原动作，无需先「取消程序化」。
+                    const loadedName =
+                        slots0.primary.pinned?.vmdName ||
+                        active?.vmdName ||
+                        inst.vmdName ||
+                        t('model-detail.noMotion');
 
-                const loadedRow = slideRow(c, 'lucide:clapperboard', loadedName, true, () => {
-                    _applyLoadedMotion(id, inst);
-                    stackRegistry.modelStack?.reRender();
-                });
-                // 程序化激活时右侧显示状态徽标（仅指示，点击整行即切回已加载动作）
-                if (isProc) {
+                    const loadedRow = slideRow(c, 'lucide:clapperboard', loadedName, true, () => {
+                        _applyLoadedMotion(id, inst);
+                        stackRegistry.modelStack?.reRender();
+                    });
+                    // 程序化激活时右侧显示状态徽标（仅指示，点击整行即切回已加载动作）
                     addPresetChip(
                         loadedRow,
                         slots0.primary.procRole === 'autodance'
@@ -472,10 +475,9 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
                             title: t('model-detail.procActive'),
                         }
                     );
-                }
-
-                // 固定动作时显示取消固定行（与程序化切换解耦）
-                if (isPinned) {
+                } else {
+                    // isPinned 但非程序化：显示取消固定行
+                    addSectionTitle(c, t('model-detail.loadedMotion'));
                     slideRow(c, 'lucide:pin-off', t('motion.context.unpin'), false, () => {
                         _ensureMotionSlots(inst).primary = { source: 'inherit', status: 'idle' };
                         if (active) {
