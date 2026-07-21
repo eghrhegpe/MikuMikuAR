@@ -261,9 +261,7 @@ function _adjustFoot(
  * 启动脚部调整系统：注册为 MotionPipeline bone-override 层（order=5）。
  * 在帧钩子（RIDING=10）之前执行：脚 IK 为自动约束基础，手动 Override 叠加其上。
  */
-export function startFeetAdjustment(
-    getModels: FeetModelProvider
-): void {
+export function startFeetAdjustment(getModels: FeetModelProvider): void {
     if (_unregisterHandle) {
         return;
     }

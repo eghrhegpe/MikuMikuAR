@@ -235,7 +235,17 @@ describe('env-feature-levels 导出契约', () => {
             vi.importActual('../menus/env-experimental-levels') as any,
             vi.importActual('../menus/env-level-helpers') as any,
         ]);
-        mod = { ...sky, ...ground, ...water, ...wind, ...cloud, ...fog, ...shadow, ...exp, ...helpers } as any;
+        mod = {
+            ...sky,
+            ...ground,
+            ...water,
+            ...wind,
+            ...cloud,
+            ...fog,
+            ...shadow,
+            ...exp,
+            ...helpers,
+        } as any;
     });
 
     describe('8 个 build*Level 函数存在性', () => {

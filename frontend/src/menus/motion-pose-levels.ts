@@ -211,13 +211,23 @@ function buildPoseStudioSchema(): MenuNode[] {
                     const batchRow = document.createElement('div');
                     batchRow.style.cssText = 'display:flex;gap:6px;padding:8px 14px;';
 
-                    addPresetChip(batchRow, '📷 ' + t('motion.poseStudio.screenshot'), false, () => {
-                        screenshotCurrent();
-                    });
+                    addPresetChip(
+                        batchRow,
+                        '📷 ' + t('motion.poseStudio.screenshot'),
+                        false,
+                        () => {
+                            screenshotCurrent();
+                        }
+                    );
 
-                    addPresetChip(batchRow, '📸 ' + t('motion.poseStudio.batchExport'), false, () => {
-                        _batchScreenshot(presets, modelId);
-                    });
+                    addPresetChip(
+                        batchRow,
+                        '📸 ' + t('motion.poseStudio.batchExport'),
+                        false,
+                        () => {
+                            _batchScreenshot(presets, modelId);
+                        }
+                    );
 
                     inner.appendChild(batchRow);
 

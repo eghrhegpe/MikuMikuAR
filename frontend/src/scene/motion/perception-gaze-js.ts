@@ -15,7 +15,11 @@ import {
 } from './perception-gaze';
 
 /** JS 模式：头部跟随 */
-export function _applyHeadGazeJS(headRuntime: IMmdRuntimeBone, gazeTarget: Vector3, dt: number): void {
+export function _applyHeadGazeJS(
+    headRuntime: IMmdRuntimeBone,
+    gazeTarget: Vector3,
+    dt: number
+): void {
     const headPos = _v3();
     headRuntime.getWorldTranslationToRef(headPos);
 
@@ -54,7 +58,11 @@ export function _applyHeadGazeJS(headRuntime: IMmdRuntimeBone, gazeTarget: Vecto
 }
 
 /** JS 模式：眼部跟随 */
-export function _applyEyeGazeJS(eyeRuntimes: IMmdRuntimeBone[], gazeTarget: Vector3, dt: number): void {
+export function _applyEyeGazeJS(
+    eyeRuntimes: IMmdRuntimeBone[],
+    gazeTarget: Vector3,
+    dt: number
+): void {
     const eyeCenter = _v3();
     for (const eyeRb of eyeRuntimes) {
         const eb = (eyeRb as MmdRuntimeBoneExtended).worldMatrix;
@@ -95,9 +103,7 @@ export function _applyEyeGazeJS(eyeRuntimes: IMmdRuntimeBone[], gazeTarget: Vect
             getEyeGazeMaxPitch()
         );
         const alpha = _gazeAlpha(getEyeGazeSmooth(), dt);
-        const newWorldQ = _q().copyFrom(
-            Quaternion.Slerp(curWorldQ, clampedTargetQ, alpha)
-        );
+        const newWorldQ = _q().copyFrom(Quaternion.Slerp(curWorldQ, clampedTargetQ, alpha));
 
         const localQ = _q();
         parentInvQ.multiplyToRef(newWorldQ, localQ);

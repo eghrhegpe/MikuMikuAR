@@ -105,20 +105,12 @@ export function buildPresetScenesLevel(): PopupLevel {
         renderCustom: (container) => {
             // 卡片 1：导入 / 导出场景包
             cardContainer(container, (c) => {
-                slideRow(
-                    c,
-                    'lucide:file-up',
-                    t('scene.exportSceneBundle'),
-                    false,
-                    () => { void exportSceneBundle(); }
-                );
-                slideRow(
-                    c,
-                    'lucide:file-down',
-                    t('scene.importSceneBundle'),
-                    false,
-                    () => { void importSceneBundle(); }
-                );
+                slideRow(c, 'lucide:file-up', t('scene.exportSceneBundle'), false, () => {
+                    void exportSceneBundle();
+                });
+                slideRow(c, 'lucide:file-down', t('scene.importSceneBundle'), false, () => {
+                    void importSceneBundle();
+                });
             });
             // 卡片 2：预设场景列表（异步加载）
             cardContainer(container, (c) => {
@@ -136,47 +128,35 @@ export function buildPresetScenesLevel(): PopupLevel {
             });
             // 卡片 3：撤销 / 保存场景
             cardContainer(container, (c) => {
-                slideRow(
-                    c,
-                    'lucide:undo-2',
-                    t('scene.undo'),
-                    false,
-                    () => {
-                        const snap = popUndoSnapshot();
-                        if (!snap) {
-                            setStatus(t('scene.statusNoUndo'), false);
-                            return;
-                        }
-                        void restoreUndoSnapshot(snap).then((ok) => {
-                            if (ok) {
-                                setStatus(t('scene.undoApplied'), true);
-                            }
-                        });
+                slideRow(c, 'lucide:undo-2', t('scene.undo'), false, () => {
+                    const snap = popUndoSnapshot();
+                    if (!snap) {
+                        setStatus(t('scene.statusNoUndo'), false);
+                        return;
                     }
-                );
-                slideRow(
-                    c,
-                    'lucide:save',
-                    t('scene.saveScene'),
-                    false,
-                    async () => {
-                        const json = JSON.stringify(serializeScene(), null, 2);
+                    void restoreUndoSnapshot(snap).then((ok) => {
+                        if (ok) {
+                            setStatus(t('scene.undoApplied'), true);
+                        }
+                    });
+                });
+                slideRow(c, 'lucide:save', t('scene.saveScene'), false, async () => {
+                    const json = JSON.stringify(serializeScene(), null, 2);
+                    try {
+                        const filename = await SaveScenePreset(json);
                         try {
-                            const filename = await SaveScenePreset(json);
-                            try {
-                                await navigator.clipboard.writeText(json);
-                                setStatus(t('scene.statusSceneSavedClipboard', { filename }), true);
-                            } catch {
-                                setStatus(t('scene.statusSceneSaved', { filename }), true);
-                            }
-                            reRenderSceneMenu();
-                        } catch (err) {
-                            const msg = translateGoError(err);
-                            setStatus(t('scene.statusSaveFailed'), false);
-                            showErrorToast(t('scene.toastSaveSceneFailed'), msg);
+                            await navigator.clipboard.writeText(json);
+                            setStatus(t('scene.statusSceneSavedClipboard', { filename }), true);
+                        } catch {
+                            setStatus(t('scene.statusSceneSaved', { filename }), true);
                         }
+                        reRenderSceneMenu();
+                    } catch (err) {
+                        const msg = translateGoError(err);
+                        setStatus(t('scene.statusSaveFailed'), false);
+                        showErrorToast(t('scene.toastSaveSceneFailed'), msg);
                     }
-                );
+                });
             });
         },
     };

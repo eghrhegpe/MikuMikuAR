@@ -147,7 +147,11 @@ async function probeFeaturesBySession(
 
 // ======== Platform Detection ========
 
-function detectPlatform(): { isAndroidWebView: boolean; isDesktopWebView2: boolean; platform: string } {
+function detectPlatform(): {
+    isAndroidWebView: boolean;
+    isDesktopWebView2: boolean;
+    platform: string;
+} {
     const ua = navigator.userAgent;
     const isAndroid = /Android/i.test(ua);
     // Android WebView 的 UA 包含 "wv" 标记或 Version/x.x（Chrome 无此标记）
@@ -231,7 +235,9 @@ export async function probeWebXR(): Promise<WebXRProbeResult> {
         if (isDesktopWebView2) {
             summary = 'WebView2 无 XR 后端 → 永久降级 passthrough（ADR-072 §1.3 已确认）';
         } else if (isAndroidWebView) {
-            const pkgInfo = webViewPackage ? ` [WebView: ${webViewPackage} v${webViewVersion}]` : '';
+            const pkgInfo = webViewPackage
+                ? ` [WebView: ${webViewPackage} v${webViewVersion}]`
+                : '';
             summary =
                 `Android WebView 未暴露 navigator.xr → WebXR 默认禁用${pkgInfo}，` +
                 '需评估启用机制（flag / WebViewCompat / ROM）';
@@ -241,8 +247,7 @@ export async function probeWebXR(): Promise<WebXRProbeResult> {
     } else if (!immersiveAR) {
         verdict = 'none';
         summary =
-            'navigator.xr 存在但 immersive-ar 不受支持 → ' +
-            '可能仅支持 immersive-vr 或 inline';
+            'navigator.xr 存在但 immersive-ar 不受支持 → ' + '可能仅支持 immersive-vr 或 inline';
     } else {
         // immersive-ar 支持，但具体 features 未验证
         verdict = 'partial';

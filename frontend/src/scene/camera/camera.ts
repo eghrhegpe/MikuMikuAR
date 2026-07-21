@@ -25,18 +25,34 @@ import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { safeDispose } from '@/core/dispose-helpers';
 // 从 camera-state.ts 导入纯状态函数（仅导入本地未定义的函数）
 import {
-    defaultCameraPreset, getCameraPreset, setCameraPreset,
-    getOrbitParams, getFreeflyParams, getConcertParams, getSurroundParams,
-    getCameraMode, setCameraMode,
-    getCameraControl, setCameraControl as _setCameraControlState,
-    getCameraBehavior, setCameraBehavior as _setCameraBehaviorState,
-    getScriptedSubMode, setScriptedSubMode,
-    getCurrentCamera, setCurrentCamera,
-    getFocusCenterY, setFocusCenterY,
-    getConcertPaused, setConcertPaused,
-    getSurroundPaused, setSurroundPaused,
-    getCameraVmdName, getCameraVmdPath, hasCameraVmd,
-    setCameraVmdState, clearCameraVmdState,
+    defaultCameraPreset,
+    getCameraPreset,
+    setCameraPreset,
+    getOrbitParams,
+    getFreeflyParams,
+    getConcertParams,
+    getSurroundParams,
+    getCameraMode,
+    setCameraMode,
+    getCameraControl,
+    setCameraControl as _setCameraControlState,
+    getCameraBehavior,
+    setCameraBehavior as _setCameraBehaviorState,
+    getScriptedSubMode,
+    setScriptedSubMode,
+    getCurrentCamera,
+    setCurrentCamera,
+    getFocusCenterY,
+    setFocusCenterY,
+    getConcertPaused,
+    setConcertPaused,
+    getSurroundPaused,
+    setSurroundPaused,
+    getCameraVmdName,
+    getCameraVmdPath,
+    hasCameraVmd,
+    setCameraVmdState,
+    clearCameraVmdState,
     setAutoCameraEnabledFlag,
     isAutoCameraEnabled as isAutoCameraEnabledFlag,
     setAutoCameraBeatCount as _setAutoCameraBeatCount,
@@ -48,8 +64,15 @@ import {
     setFov as setFovState,
 } from './camera-state';
 import type {
-    CameraMode, CameraControl, CameraBehavior, ScriptedSubMode,
-    OrbitParams, FreeflyParams, SurroundParams, ConcertParams, CameraPreset,
+    CameraMode,
+    CameraControl,
+    CameraBehavior,
+    ScriptedSubMode,
+    OrbitParams,
+    FreeflyParams,
+    SurroundParams,
+    ConcertParams,
+    CameraPreset,
 } from './camera-state';
 // 注：setFov/setCameraControl/setCameraBehavior/isAutoCameraEnabled 保留本地定义（含 scene 依赖逻辑）
 // setOrbitParams/setFreeflyParams/setConcertParams/setSurroundParams 保留本地定义（需同步 live camera）
@@ -139,7 +162,10 @@ export function setOrbitParams(p: Partial<OrbitParams>): void {
 /** Log current camera alpha for diagnostics. */
 export function logCameraAlpha(): void {
     if (getCameraMode() === 'orbit' && getCurrentCamera() instanceof ArcRotateCamera) {
-        console.info('[camera] current alpha:', (getCurrentCamera() as ArcRotateCamera).alpha.toFixed(3));
+        console.info(
+            '[camera] current alpha:',
+            (getCurrentCamera() as ArcRotateCamera).alpha.toFixed(3)
+        );
     }
 }
 
@@ -283,7 +309,8 @@ export function setCameraControl(control: CameraControl): void {
     if (control === getCameraControl()) {
         return; // 已是该控制方案，无需重建相机
     }
-    const baseBehavior: CameraBehavior = getCameraBehavior() === 'beatcut' ? 'none' : getCameraBehavior();
+    const baseBehavior: CameraBehavior =
+        getCameraBehavior() === 'beatcut' ? 'none' : getCameraBehavior();
     const legacy = deriveLegacyMode(control, baseBehavior, getScriptedSubMode());
     switchCameraMode(legacy);
     // ADR-100 P4：headless 下 switchCameraMode 因缺 _scene/_canvas 早退、不提交 _cameraMode 亦不派生双轴；
@@ -1319,7 +1346,9 @@ function _onAutoCameraBeat(): void {
 
     // 切到下一个预设（避免连续重复）
     let nextIdx =
-        (_getAutoCameraPresetIdx() + 1 + Math.floor(Math.random() * (AUTO_CAMERA_PRESETS.length - 1))) %
+        (_getAutoCameraPresetIdx() +
+            1 +
+            Math.floor(Math.random() * (AUTO_CAMERA_PRESETS.length - 1))) %
         AUTO_CAMERA_PRESETS.length;
     if (nextIdx === _getAutoCameraPresetIdx()) {
         nextIdx = (nextIdx + 1) % AUTO_CAMERA_PRESETS.length;
@@ -1357,17 +1386,39 @@ function _onAutoCameraBeat(): void {
 
 // ======== Re-exports from camera-state.ts (backward compat) ========
 export type {
-    CameraMode, CameraControl, CameraBehavior, ScriptedSubMode,
-    OrbitParams, FreeflyParams, SurroundParams, ConcertParams, CameraPreset,
+    CameraMode,
+    CameraControl,
+    CameraBehavior,
+    ScriptedSubMode,
+    OrbitParams,
+    FreeflyParams,
+    SurroundParams,
+    ConcertParams,
+    CameraPreset,
 } from './camera-state';
 export {
     defaultCameraPreset,
-    getCameraMode, getCameraControl, getCameraBehavior, getScriptedSubMode,
-    getOrbitParams, getFreeflyParams, getConcertParams, getSurroundParams,
-    getConcertPaused, setConcertPaused, getSurroundPaused, setSurroundPaused,
-    getCameraVmdName, getCameraVmdPath, hasCameraVmd,
-    getFov, isTouchDevice,
-    getCameraPreset, setCameraPreset,
-    getCurrentCamera, setCurrentCamera,
-    getFocusCenterY, setFocusCenterY,
+    getCameraMode,
+    getCameraControl,
+    getCameraBehavior,
+    getScriptedSubMode,
+    getOrbitParams,
+    getFreeflyParams,
+    getConcertParams,
+    getSurroundParams,
+    getConcertPaused,
+    setConcertPaused,
+    getSurroundPaused,
+    setSurroundPaused,
+    getCameraVmdName,
+    getCameraVmdPath,
+    hasCameraVmd,
+    getFov,
+    isTouchDevice,
+    getCameraPreset,
+    setCameraPreset,
+    getCurrentCamera,
+    setCurrentCamera,
+    getFocusCenterY,
+    setFocusCenterY,
 } from './camera-state';

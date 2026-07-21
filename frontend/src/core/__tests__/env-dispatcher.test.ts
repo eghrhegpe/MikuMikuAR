@@ -110,7 +110,10 @@ describe('env-dispatcher: registerSceneTickCallback / runSceneTickCallbacks', ()
         const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
         expect(() => runSceneTickCallbacks()).not.toThrow();
         expect(cb2).toHaveBeenCalledTimes(1);
-        expect(spy).toHaveBeenCalledWith('[env-dispatcher] tick callback error:', expect.any(Error));
+        expect(spy).toHaveBeenCalledWith(
+            '[env-dispatcher] tick callback error:',
+            expect.any(Error)
+        );
         spy.mockRestore();
     });
 });

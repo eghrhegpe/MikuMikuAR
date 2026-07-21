@@ -13,11 +13,7 @@
 
 import { Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Matrix } from '@babylonjs/core/Maths/math';
-import {
-    _isWasmRuntime,
-    _writeMatToBuffer,
-    _propagateChildrenWasm,
-} from './perception';
+import { _isWasmRuntime, _writeMatToBuffer, _propagateChildrenWasm } from './perception';
 import type { MmdRuntimeBoneExtended } from '@/core/types';
 import { createVmdEvaluator, type VmdEvaluator } from '@/motion-algos/vmd-evaluator';
 import { DEFAULT_LAYER_BONE_FILTER } from './wasm-layers-config';

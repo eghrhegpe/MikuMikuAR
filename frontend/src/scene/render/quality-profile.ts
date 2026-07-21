@@ -47,10 +47,7 @@ export function inferQualityProfile(
     // 逐档检查：从低到高，全匹配才返回
     const profiles: QualityProfile[] = ['low', 'medium', 'high'];
     for (const p of profiles) {
-        if (
-            REFLECTION_QUALITY[p] === reflectionQuality &&
-            CLOUD_QUALITY[p] === cloudQuality
-        ) {
+        if (REFLECTION_QUALITY[p] === reflectionQuality && CLOUD_QUALITY[p] === cloudQuality) {
             return p;
         }
     }

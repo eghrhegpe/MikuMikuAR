@@ -171,7 +171,12 @@ class ProcMotionController {
             throw new Error('proc-motion: autodance 模式需要有效 BPM，当前 BPM 无效');
         }
         if (targetMode === 'autodance' && bpmValid) {
-            buf = generateAutoDanceVmd(this._refProcState(modelIdOverride), bpm!, morphNames, boneNames);
+            buf = generateAutoDanceVmd(
+                this._refProcState(modelIdOverride),
+                bpm!,
+                morphNames,
+                boneNames
+            );
             this._lastBeatBpm = bpm!;
             this._activeKind = 'autodance';
         } else {
@@ -197,7 +202,9 @@ class ProcMotionController {
             // [adr-XX per-motion] 程序化 base 走 vmdLayers 管线：写入 vmdData + rebuild
             // 替代旧的直写 loadVMDMotion/setRuntimeAnimation，避免与图层叠加冲突
             const procVmdName =
-                targetMode === 'autodance' && bpmValid ? PROC_VMD_NAME_AUTODANCE : PROC_VMD_NAME_IDLE;
+                targetMode === 'autodance' && bpmValid
+                    ? PROC_VMD_NAME_AUTODANCE
+                    : PROC_VMD_NAME_IDLE;
             inst.vmdData = buf;
             inst.vmdName = procVmdName;
             inst.vmdPath = null; // 程序化无文件路径
@@ -238,13 +245,16 @@ class ProcMotionController {
             // 取最后一个活跃模型重触发
             const lastModel = [...this._activeModels].pop();
             if (lastModel) {
-                const mode = this._refProcState(lastModel).mode === 'autodance' ? 'autodance' : 'idle';
+                const mode =
+                    this._refProcState(lastModel).mode === 'autodance' ? 'autodance' : 'idle';
                 const bpm = this._beatDetector?.getBPM() ?? 120;
-                void this._startProcMotion(mode, mode === 'autodance' ? bpm : undefined, lastModel).catch(
-                    (e) => {
-                        logWarn('proc-motion', 'Re-trigger startProcMotion 失败:', e);
-                    }
-                );
+                void this._startProcMotion(
+                    mode,
+                    mode === 'autodance' ? bpm : undefined,
+                    lastModel
+                ).catch((e) => {
+                    logWarn('proc-motion', 'Re-trigger startProcMotion 失败:', e);
+                });
             } else {
                 logWarn('proc-motion', 'Re-trigger skipped: no active models');
             }
@@ -389,9 +399,7 @@ class ProcMotionController {
     }
 
     /** 批量设置微动效果开关 */
-    setProcMotionBoneToggles(
-        bt: Partial<Record<ProcMotionBoneCategory, boolean>>
-    ): void {
+    setProcMotionBoneToggles(bt: Partial<Record<ProcMotionBoneCategory, boolean>>): void {
         for (const [k, v] of Object.entries(bt)) {
             if (typeof v !== 'boolean') {
                 logWarn(
@@ -492,7 +500,9 @@ class ProcMotionController {
         }
         // 以下执行 regenerate（冷启动或热更新均走此路径）
         // [P5 per-slot] 优先使用传入的 modelId；否则回退到焦点
-        const targetModel = modelId ? (modelManager.get(modelId)?.mmdModel ?? null) : focusedMmdModel();
+        const targetModel = modelId
+            ? (modelManager.get(modelId)?.mmdModel ?? null)
+            : focusedMmdModel();
         if (!targetModel) {
             logWarn('proc-motion', 'regenerateProcMotion: 无目标 MMD 模型，跳过');
             return;
@@ -503,7 +513,9 @@ class ProcMotionController {
             return;
         }
         const mode =
-            this._refProcState(modelId).mode === 'autodance' ? ('autodance' as const) : ('idle' as const);
+            this._refProcState(modelId).mode === 'autodance'
+                ? ('autodance' as const)
+                : ('idle' as const);
         // Issue #5: _beatDetector 可能为 null
         const bpm = this._beatDetector?.getBPM() ?? 120;
         this._startProcMotion(mode, mode === 'autodance' ? bpm : undefined, modelId);

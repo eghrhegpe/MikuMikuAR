@@ -44,7 +44,10 @@ export function createFocusTrap(opts: FocusTrapOptions): () => void {
         if (e.shiftKey && document.activeElement === first) {
             e.preventDefault();
             last.focus();
-        } else if (!e.shiftKey && (document.activeElement === last || document.activeElement === container)) {
+        } else if (
+            !e.shiftKey &&
+            (document.activeElement === last || document.activeElement === container)
+        ) {
             e.preventDefault();
             first.focus();
         }
@@ -54,7 +57,11 @@ export function createFocusTrap(opts: FocusTrapOptions): () => void {
 
     return function restore(): void {
         container.removeEventListener('keydown', handleKeyDown);
-        if (previousFocus && previousFocus.isConnected && typeof previousFocus.focus === 'function') {
+        if (
+            previousFocus &&
+            previousFocus.isConnected &&
+            typeof previousFocus.focus === 'function'
+        ) {
             previousFocus.focus();
         }
     };

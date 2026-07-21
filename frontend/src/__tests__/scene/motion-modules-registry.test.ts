@@ -405,7 +405,10 @@ describe('ownedBones 冲突仲裁', () => {
         expect(getConflictCount('m1')).toBe(1);
         // 全部模型冲突快照
         expect(getAllConflicts('m1')).toEqual([
-            { moduleId: 'hand-symmetry', conflicts: [{ bone: '上半身', byModule: 'body-posture' }] },
+            {
+                moduleId: 'hand-symmetry',
+                conflicts: [{ bone: '上半身', byModule: 'body-posture' }],
+            },
         ]);
 
         releaseOwnedBones('m1', 'body-posture');

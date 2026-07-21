@@ -87,7 +87,8 @@ export const en: Record<string, string> = {
     'settings.importBadFormat': 'Invalid settings file format',
     'settings.about.versionInfo': 'Version Info',
     'settings.about.cache.counting': 'Counting…',
-    'settings.about.update.checkHint': 'Click "Check for updates" to see if a new version is available',
+    'settings.about.update.checkHint':
+        'Click "Check for updates" to see if a new version is available',
     'settings.about.update.goDownload': 'Go to download →',
 
     // ===== Language list =====
@@ -113,6 +114,7 @@ export const en: Record<string, string> = {
     'model-detail.appearance': 'Appearance',
     'model-detail.dragControl': 'Drag Control',
     'model-detail.modelInfo': 'Model Info',
+    'model-detail.modelDetail': 'Model Details',
     'model-detail.motion': 'Motion',
     'model-detail.motionAssign': 'Assign Motion',
     'model-detail.motionPrimary': 'Motion 1 (Base)',
@@ -265,6 +267,12 @@ export const en: Record<string, string> = {
     'motion.focusModel': '🎯 Focus Model',
     'motion.clearVmd': '🗑 Clear VMD',
     'motion.motionCleared': '✓ Motion cleared',
+    // [doc:adr-167] Scene motion library UI
+    'motion.defaultMotion': 'Default',
+    'motion.setDefault': 'Set as default',
+    'motion.defaultMotionSet': '✓ {name} set as default motion',
+    'motion.deleteMotion': 'Delete motion',
+    'motion.motionRemoved': '✓ Motion {name} removed',
     'motion.undoApplied': '✓ Undone',
     'motion.music': 'Music',
     'motion.browseMusic': 'Browse Music',

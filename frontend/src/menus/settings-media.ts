@@ -15,7 +15,11 @@ import {
     setFootstepVolume,
 } from '../core/audio-bus';
 import { setBpmQuantizeEnabled } from '../scene/motion/proc-motion-bridge';
-import { setAutoLoadCompanionAudio, truncatePath, type SettingsMenuHandle } from './settings-shared';
+import {
+    setAutoLoadCompanionAudio,
+    truncatePath,
+    type SettingsMenuHandle,
+} from './settings-shared';
 import type { PopupLevel } from '../core/config';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
@@ -412,12 +416,18 @@ function buildScreenshotSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
                         dirSub
                     );
 
-                    slideRow(inner, 'lucide:folder-open', t('settings.screenshot.openDir'), false, () => {
-                        OpenScreenshotDir().catch((err: unknown) => {
-                            const msg = translateGoError(err);
-                            setStatus(`✗ ${msg}`, false);
-                        });
-                    });
+                    slideRow(
+                        inner,
+                        'lucide:folder-open',
+                        t('settings.screenshot.openDir'),
+                        false,
+                        () => {
+                            OpenScreenshotDir().catch((err: unknown) => {
+                                const msg = translateGoError(err);
+                                setStatus(`✗ ${msg}`, false);
+                            });
+                        }
+                    );
                 });
             },
         },

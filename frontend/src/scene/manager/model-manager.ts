@@ -195,7 +195,6 @@ export class ModelManager {
         string,
         {
             lineSystem: Mesh;
-            overlay: Mesh;
             joints: Mesh[];
             update: () => void;
             dirty: boolean;
@@ -479,7 +478,9 @@ export class ModelManager {
             this.destroyBoneOverlay(id);
         } else if (hadOverlay) {
             const entry = this._boneOverlayMap.get(id)!;
-            entry.overlay.setEnabled(show);
+            for (const j of entry.joints) {
+                j.setEnabled(show);
+            }
             entry.markDirty();
         }
         this.triggerAutoSave();
@@ -850,9 +851,10 @@ export class ModelManager {
         }
 
         // Create overlay: line system + sphere meshes
+        // updatable: true 必填，否则 updateVerticesData 不写入 GPU buffer，骨骼线无法跟随骨骼运动
         const lineSystem = MeshBuilder.CreateLineSystem(
             'bone_overlay_lines',
-            { lines },
+            { lines, updatable: true },
             this.scene
         );
         lineSystem.color = new Color3(1, 1, 1);
@@ -909,21 +911,17 @@ export class ModelManager {
             }
         };
 
-        const overlay = Mesh.MergeMeshes(joints, true, true, undefined, false, true) as Mesh;
-        if (overlay) {
-            overlay.position.set(0, 0, 0);
-            overlay.isPickable = false;
-            overlay.setEnabled(inst.showBoneJoints);
-        } else {
-            // fallback: keep individual spheres visible
-            for (const j of joints) {
-                j.isVisible = inst.showBoneJoints;
-            }
+        // 不合并 sphere meshes：
+        // Mesh.MergeMeshes(disposeSource=true) 会 dispose 原始 sphere，
+        // 而合并后 overlay 的顶点数据无法逐 bone 更新 —— 关节球一旦创建就固化在初始位置。
+        // 改为保留独立 sphere mesh，每帧由 updateFn 直接修改 mesh.position 跟随骨骼世界坐标。
+        for (const j of joints) {
+            j.isPickable = false;
+            j.setEnabled(inst.showBoneJoints);
         }
 
         this._boneOverlayMap.set(id, {
             lineSystem,
-            overlay: overlay || joints[0],
             joints,
             update: updateFn,
             dirty: true,
@@ -936,7 +934,6 @@ export class ModelManager {
         const entry = this._boneOverlayMap.get(id);
         if (entry) {
             entry.lineSystem.dispose();
-            entry.overlay.dispose();
             for (const j of entry.joints) {
                 j.dispose();
             }
@@ -960,7 +957,6 @@ export class ModelManager {
                     (!inst.showBoneLines && !inst.showBoneJoints)
                 ) {
                     entry.lineSystem.dispose();
-                    entry.overlay.dispose();
                     for (const j of entry.joints) {
                         j.dispose();
                     }
@@ -983,10 +979,9 @@ export class ModelManager {
             this._boneUpdateObserver.dispose();
             this._boneUpdateObserver = null;
         }
-        // Dispose all bone overlay resources (lineSystem + overlay + joints)
+        // Dispose all bone overlay resources (lineSystem + joints)
         for (const [, entry] of this._boneOverlayMap) {
             entry.lineSystem.dispose();
-            entry.overlay.dispose();
             for (const j of entry.joints) {
                 j.dispose();
             }

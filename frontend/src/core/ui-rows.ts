@@ -243,13 +243,14 @@ export function addSliderRow(
         e.stopPropagation();
         const rect = top.getBoundingClientRect();
         const pct = clamp01((e.clientX - rect.left) / rect.width);
-        const delta = pct < 0.25
-            ? -(range * SLIDER_QUARTER_LARGE_STEP)
-            : pct < 0.5
-                ? -(range * SLIDER_QUARTER_SMALL_STEP)
-                : pct < 0.75
-                    ? (range * SLIDER_QUARTER_SMALL_STEP)
-                    : (range * SLIDER_QUARTER_LARGE_STEP);
+        const delta =
+            pct < 0.25
+                ? -(range * SLIDER_QUARTER_LARGE_STEP)
+                : pct < 0.5
+                  ? -(range * SLIDER_QUARTER_SMALL_STEP)
+                  : pct < 0.75
+                    ? range * SLIDER_QUARTER_SMALL_STEP
+                    : range * SLIDER_QUARTER_LARGE_STEP;
         const raw = currentValue + delta;
         const precision = step > 0 ? 1 / step : 1;
         const snapped = Math.round(raw * precision) / precision;

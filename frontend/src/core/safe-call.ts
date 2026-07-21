@@ -43,7 +43,11 @@ export function safeCallVoid(tag: string, msg: string, fn: () => void): void {
  *
  * 注意：不传播 rejection，调用方不应再依赖其结果值；不保留 tag/msg 之外的上下文。
  */
-export function safeCallAsync<T>(tag: string, msg: string, fn: () => Promise<T>): Promise<T | undefined> {
+export function safeCallAsync<T>(
+    tag: string,
+    msg: string,
+    fn: () => Promise<T>
+): Promise<T | undefined> {
     return fn().then(
         (v) => v,
         (err) => {

@@ -11,16 +11,28 @@ import { registerShortcuts } from '../core/shortcut-registry';
 import { swallowError } from '../core/utils';
 import { safeCallAsync } from '../core/safe-call';
 import {
-    PlazaGoBack, PlazaGoForward, PlazaReload, PlazaZoomIn, PlazaZoomOut, PlazaZoomReset,
+    PlazaGoBack,
+    PlazaGoForward,
+    PlazaReload,
+    PlazaZoomIn,
+    PlazaZoomOut,
+    PlazaZoomReset,
     DownloadFromPlaza,
 } from '../core/wails-bindings';
 import {
-    downloadListenerInstalled, setDownloadListenerInstalled,
-    eventListenersInstalled, setEventListenersInstalled,
-    shortcutsRegistered, setShortcutsRegistered,
-    plazaIframe, remoteURLDisplay, remoteProgress,
-    observer, setObserver,
-    getLayer, stopProxy,
+    downloadListenerInstalled,
+    setDownloadListenerInstalled,
+    eventListenersInstalled,
+    setEventListenersInstalled,
+    shortcutsRegistered,
+    setShortcutsRegistered,
+    plazaIframe,
+    remoteURLDisplay,
+    remoteProgress,
+    observer,
+    setObserver,
+    getLayer,
+    stopProxy,
 } from './plaza-state';
 
 // ======== 下载监听 ========
@@ -57,7 +69,10 @@ export async function handlePlazaDownload(
         if (typeof DownloadFromPlaza !== 'function') throw new Error('binding not available');
         const result = await DownloadFromPlaza(url, filename);
         if (effectiveSignal.aborted) return;
-        setStatus(t('plaza.downloaded', { name: result.fileName, size: (result.size / 1024).toFixed(1) }), true);
+        setStatus(
+            t('plaza.downloaded', { name: result.fileName, size: (result.size / 1024).toFixed(1) }),
+            true
+        );
     } catch (e) {
         setStatus(t('plaza.downloadFail', { err: translateGoError(e) }), true);
     } finally {
@@ -114,16 +129,26 @@ export function installEventListeners(): void {
         }
     });
     Events.On('plaza:downloadProgress', (data) => {
-        const d = data as unknown as { fileName: string; read: number; total: number; percent: number };
+        const d = data as unknown as {
+            fileName: string;
+            read: number;
+            total: number;
+            percent: number;
+        };
         if (remoteProgress) {
-            const percent = d.percent > 0 ? `${d.percent.toFixed(0)}%` : `${(d.read / 1024).toFixed(0)} KB`;
-            remoteProgress.textContent = t('plaza.downloading', { name: d.fileName }) + `: ${percent}`;
+            const percent =
+                d.percent > 0 ? `${d.percent.toFixed(0)}%` : `${(d.read / 1024).toFixed(0)} KB`;
+            remoteProgress.textContent =
+                t('plaza.downloading', { name: d.fileName }) + `: ${percent}`;
         }
     });
     Events.On('plaza:downloadComplete', (data) => {
         const d = data as unknown as { fileName: string; size: number };
         if (remoteProgress) {
-            remoteProgress.textContent = t('plaza.downloaded', { name: d.fileName, size: (d.size / 1024).toFixed(1) });
+            remoteProgress.textContent = t('plaza.downloaded', {
+                name: d.fileName,
+                size: (d.size / 1024).toFixed(1),
+            });
         }
         setTimeout(() => {
             if (remoteProgress) remoteProgress.textContent = '';
@@ -131,7 +156,15 @@ export function installEventListeners(): void {
         showErrorToast(
             t('plaza.downloaded', { name: d.fileName, size: (d.size / 1024).toFixed(1) }),
             undefined,
-            [{ label: t('plaza.viewLibrary'), onClick: () => safeCallAsync('plaza', 'refresh after plaza download', () => refreshLibrary()) }],
+            [
+                {
+                    label: t('plaza.viewLibrary'),
+                    onClick: () =>
+                        safeCallAsync('plaza', 'refresh after plaza download', () =>
+                            refreshLibrary()
+                        ),
+                },
+            ],
             8000
         );
     });

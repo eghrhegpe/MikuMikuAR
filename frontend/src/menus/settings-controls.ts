@@ -322,9 +322,7 @@ function buildControlsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
     ];
 }
 
-export function buildSettingsControlsLevel(
-    getSettingsMenu: () => SettingsMenuHandle
-): PopupLevel {
+export function buildSettingsControlsLevel(getSettingsMenu: () => SettingsMenuHandle): PopupLevel {
     return {
         label: t('settings.controls'),
         dir: '',

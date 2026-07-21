@@ -18,7 +18,12 @@
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 import type { ParamValue } from '@/core/types';
 import { modelRegistry } from '@/core/state';
-import { applyBoneOverrideIK, setBoneOverride, registerBoneOverrideFrameHook, FRAME_HOOK_ORDER } from '../bone-override';
+import {
+    applyBoneOverrideIK,
+    setBoneOverride,
+    registerBoneOverrideFrameHook,
+    FRAME_HOOK_ORDER,
+} from '../bone-override';
 import { getModuleState, getOwnedBones } from './registry';
 import type { MotionOverrideModule, ModuleMeta, ModuleDef } from './types';
 import { computePedalPhase, computeFootPitch } from './motion-math';
@@ -168,7 +173,9 @@ function ensureActive(modelId: string): void {
                 }
                 const isLeft = bone.startsWith('左');
                 const pitch = computeFootPitch(phaseDeg, isLeft);
-                applyBoneOverrideIK(bone, [pitch, 0, 0], 1, true, modelId, () => _getRuntimeBones(modelId));
+                applyBoneOverrideIK(bone, [pitch, 0, 0], 1, true, modelId, () =>
+                    _getRuntimeBones(modelId)
+                );
             }
         }, FRAME_HOOK_ORDER.RIDING);
         _ridingFrameHooks.set(modelId, unregister);

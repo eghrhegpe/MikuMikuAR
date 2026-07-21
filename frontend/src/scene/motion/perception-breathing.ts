@@ -20,7 +20,12 @@ const DEFAULT_BREATH_AMP = 0.02; // radians
 /** 旋转增量缩放系数（<1.0 使微动更柔和，保留 VMD 基准旋转） */
 const BREATH_DELTA_FACTOR = 0.6;
 
-export function _applyBreathing(mmdModel: MmdModelLike, time: number, ctx: PerceptionContext, claimedBones?: readonly string[]): void {
+export function _applyBreathing(
+    mmdModel: MmdModelLike,
+    time: number,
+    ctx: PerceptionContext,
+    claimedBones?: readonly string[]
+): void {
     const s = ctx.state;
     const freq = s.breathFrequency ?? DEFAULT_BREATH_FREQ;
     const amp = s.breathAmplitude ?? DEFAULT_BREATH_AMP;

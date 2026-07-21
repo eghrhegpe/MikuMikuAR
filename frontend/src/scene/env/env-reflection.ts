@@ -272,8 +272,11 @@ export function bindProbeToMeshes(meshes: AbstractMesh[]): void {
                 // 设置反射强度
                 if ('reflectionColor' in m) {
                     const intensity = _probeStrength;
-                    (m as unknown as { reflectionColor: { set: (r: number, g: number, b: number) => void } })
-                        .reflectionColor.set(intensity, intensity, intensity);
+                    (
+                        m as unknown as {
+                            reflectionColor: { set: (r: number, g: number, b: number) => void };
+                        }
+                    ).reflectionColor.set(intensity, intensity, intensity);
                 }
             }
         } catch (err) {
@@ -312,7 +315,12 @@ function _disposeProbe(_scene: Scene): void {
  * 通过 renderer.setRenderState 控制 SSR 管线。
  * SSR pipeline 对象仍在 renderer.ts 维护（渲染管线资源），控制权由本模块行使。
  */
-function _applySSR(params: { enabled: boolean; step?: number; strength?: number; thickness?: number }): void {
+function _applySSR(params: {
+    enabled: boolean;
+    step?: number;
+    strength?: number;
+    thickness?: number;
+}): void {
     setSSRFromReflection(params);
 }
 
@@ -399,7 +407,11 @@ function _disableCurrentMode(scene: Scene): void {
 /**
  * 启用 Probe 模式。
  */
-function _enableProbe(scene: Scene, preset: ReflectionQualityPreset, mode: ResolvedReflectionMode): void {
+function _enableProbe(
+    scene: Scene,
+    preset: ReflectionQualityPreset,
+    mode: ResolvedReflectionMode
+): void {
     const resolution = preset.probe?.resolution ?? 256;
     _probeStrength = preset.probe?.strength ?? 0.5;
     _createProbe(scene, resolution);
@@ -456,8 +468,11 @@ function _updateProbeStrength(preset: ReflectionQualityPreset, mode: ResolvedRef
     // 更新已绑定材质的反射强度（直接遍历材质引用映射，跳过已 dispose 的）
     for (const m of _probeBoundMaterials.values()) {
         if (!m.isDisposed && 'reflectionColor' in m) {
-            (m as unknown as { reflectionColor: { set: (r: number, g: number, b: number) => void } })
-                .reflectionColor.set(_probeStrength, _probeStrength, _probeStrength);
+            (
+                m as unknown as {
+                    reflectionColor: { set: (r: number, g: number, b: number) => void };
+                }
+            ).reflectionColor.set(_probeStrength, _probeStrength, _probeStrength);
         }
     }
 }

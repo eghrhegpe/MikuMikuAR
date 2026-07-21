@@ -3,7 +3,12 @@
 
 // ======== 按钮工厂 ========
 
-export function _plazaBtn(html: string, onClick: () => void, className = 'plaza-btn', title?: string): HTMLButtonElement {
+export function _plazaBtn(
+    html: string,
+    onClick: () => void,
+    className = 'plaza-btn',
+    title?: string
+): HTMLButtonElement {
     const btn = document.createElement('button');
     btn.className = className;
     btn.innerHTML = html;

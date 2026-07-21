@@ -42,12 +42,7 @@ import { buildWaterLevel } from './env-water-levels';
 import { envState } from '../core/state';
 import { getEnvTextureBindingTarget, clearEnvTextureBindingTarget } from './env-menu';
 import { setSceneMenu, setRefreshSceneRoot, reRenderSceneMenu } from './scene-menu-state';
-import {
-    setMirrorSize,
-    getMirrorInfo,
-    toggleMirror,
-    isMirrorActive,
-} from '../scene/env/env';
+import { setMirrorSize, getMirrorInfo, toggleMirror, isMirrorActive } from '../scene/env/env';
 import { addModeSlider, addSliderRow, addToggleRow, slideRow } from '../core/ui-helpers';
 import { SCENE_EVENTS } from '../core/ui-constants';
 
@@ -137,7 +132,9 @@ function buildMirrorLevel(): PopupLevel {
                 wrapper,
                 t('scene.mirrorWidth'),
                 info.width,
-                0, 40, 1,
+                0,
+                40,
+                1,
                 (v) => {
                     const cur = getMirrorInfo();
                     setMirrorSize(v, cur.height);
@@ -148,7 +145,9 @@ function buildMirrorLevel(): PopupLevel {
                 wrapper,
                 t('scene.mirrorHeight'),
                 info.height,
-                0, 30, 1,
+                0,
+                30,
+                1,
                 (v) => {
                     const cur = getMirrorInfo();
                     setMirrorSize(cur.width, v);
@@ -159,7 +158,18 @@ function buildMirrorLevel(): PopupLevel {
             const infoText = info.active
                 ? `mesh: ${info.meshCount} | pos: (${p[0].toFixed(1)}, ${p[1].toFixed(1)}, ${p[2].toFixed(1)}) | ${info.width}×${info.height}m @ ${info.resolution}px`
                 : t('scene.mirrorHint');
-            slideRow(wrapper, 'lucide:info', infoText, false, () => {}, undefined, undefined, false, undefined, { testId: 'menu.scene.mirrorInfo' });
+            slideRow(
+                wrapper,
+                'lucide:info',
+                infoText,
+                false,
+                () => {},
+                undefined,
+                undefined,
+                false,
+                undefined,
+                { testId: 'menu.scene.mirrorInfo' }
+            );
 
             container.appendChild(wrapper);
         },
@@ -272,7 +282,9 @@ function buildSceneRootItems(): PopupRow[] {
         ],
         modeValue: envState.reflectionMode,
         onModeChange: (v) => {
-            setEnvState({ reflectionMode: v as 'auto' | 'none' | 'probe' | 'ssr' | 'planar' | 'hybrid' });
+            setEnvState({
+                reflectionMode: v as 'auto' | 'none' | 'probe' | 'ssr' | 'planar' | 'hybrid',
+            });
             getSceneMenu()?.updateControls();
         },
     });

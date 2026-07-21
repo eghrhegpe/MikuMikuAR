@@ -114,7 +114,12 @@ describe('bone-override _computeOverride (ADR-116 P1)', () => {
     it('父骨传播 + 位置覆盖：平移加法与旋转复合互不干扰', () => {
         const parentRot = Quaternion.FromEulerAngles(0, HALF_PI, 0);
         const slotQuat = Quaternion.FromEulerAngles(0, HALF_PI, 0);
-        const slot = { quat: slotQuat, weight: 1, pos: new Vector3(1, 2, 3), overrideRotation: true };
+        const slot = {
+            quat: slotQuat,
+            weight: 1,
+            pos: new Vector3(1, 2, 3),
+            overrideRotation: true,
+        };
         const { translation, rotation } = _computeOverride(new Vector3(0, 0, 0), parentRot, slot);
         expect(rotation.toEulerAngles().y).toBeCloseTo(Math.PI); // 旋转复合 180°
         expect(translation.x).toBeCloseTo(1); // 平移走纯加法，不受旋转复合影响
@@ -131,16 +136,16 @@ describe('bone-override _computeOverride Slerp 分支边界 (ADR-147 R4)', () =>
     it('边界 weight=1（复合）vs weight=0.999（Slerp）：同非单位 oldR 下结果发散', () => {
         const parentRot = Quaternion.FromEulerAngles(0, HALF_PI, 0); // 父骨 90°
         const slotQuat = Quaternion.FromEulerAngles(0, 0, 0); // 本骨目标 0°
-        const compound = _computeOverride(
-            new Vector3(0, 0, 0),
-            parentRot,
-            { quat: slotQuat, weight: 1, overrideRotation: true }
-        );
-        const slerp = _computeOverride(
-            new Vector3(0, 0, 0),
-            parentRot,
-            { quat: slotQuat, weight: 0.999, overrideRotation: true }
-        );
+        const compound = _computeOverride(new Vector3(0, 0, 0), parentRot, {
+            quat: slotQuat,
+            weight: 1,
+            overrideRotation: true,
+        });
+        const slerp = _computeOverride(new Vector3(0, 0, 0), parentRot, {
+            quat: slotQuat,
+            weight: 0.999,
+            overrideRotation: true,
+        });
         // weight=1 → 复合：父骨 90° × 目标 0° = 90°（保留父骨）
         expect(compound.rotation.toEulerAngles().y).toBeCloseTo(HALF_PI);
         // weight=0.999 → Slerp(90°, 0°, 0.999) ≈ 0.09°（父骨被插掉，远小于 45°）
@@ -152,11 +157,11 @@ describe('bone-override _computeOverride Slerp 分支边界 (ADR-147 R4)', () =>
     it('下界 weight=0：slot.quat 完全不生效，纯沿用父骨旋转', () => {
         const parentRot = Quaternion.FromEulerAngles(0, HALF_PI, 0); // 90°
         const slotQuat = Quaternion.FromEulerAngles(0, Math.PI, 0); // 本骨目标 180°
-        const { rotation } = _computeOverride(
-            new Vector3(0, 0, 0),
-            parentRot,
-            { quat: slotQuat, weight: 0, overrideRotation: true }
-        );
+        const { rotation } = _computeOverride(new Vector3(0, 0, 0), parentRot, {
+            quat: slotQuat,
+            weight: 0,
+            overrideRotation: true,
+        });
         // Slerp(90°, 180°, 0) = 起点 = 90°，slot 被忽略
         expect(rotation.toEulerAngles().y).toBeCloseTo(HALF_PI);
         expect(rotation.toEulerAngles().y).not.toBeCloseTo(Math.PI);
@@ -165,11 +170,11 @@ describe('bone-override _computeOverride Slerp 分支边界 (ADR-147 R4)', () =>
     it('weight=1 是复合而非 Slerp@1：非单位 oldR + 非零目标时结果差一倍', () => {
         const parentRot = Quaternion.FromEulerAngles(0, HALF_PI, 0); // 90°
         const slotQuat = Quaternion.FromEulerAngles(0, HALF_PI, 0); // 本骨目标 90°
-        const { rotation } = _computeOverride(
-            new Vector3(0, 0, 0),
-            parentRot,
-            { quat: slotQuat, weight: 1, overrideRotation: true }
-        );
+        const { rotation } = _computeOverride(new Vector3(0, 0, 0), parentRot, {
+            quat: slotQuat,
+            weight: 1,
+            overrideRotation: true,
+        });
         // 复合：90° × 90° = 180°；若退化成 Slerp(oldR, target, 1) = target = 90° 则失败
         expect(rotation.toEulerAngles().y).toBeCloseTo(Math.PI);
         expect(rotation.toEulerAngles().y).not.toBeCloseTo(HALF_PI);

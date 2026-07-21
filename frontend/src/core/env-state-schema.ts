@@ -22,9 +22,21 @@ export const ENV_STATE_SCHEMA = {
         default: 'color' as const,
         group: 'sky',
     },
-    skyColorTop: { type: 'tuple3', default: [0.3, 0.5, 0.8] as [number, number, number], group: 'sky' },
-    skyColorMid: { type: 'tuple3', default: [0.8, 0.8, 0.9] as [number, number, number], group: 'sky' },
-    skyColorBot: { type: 'tuple3', default: [0.2, 0.2, 0.25] as [number, number, number], group: 'sky' },
+    skyColorTop: {
+        type: 'tuple3',
+        default: [0.3, 0.5, 0.8] as [number, number, number],
+        group: 'sky',
+    },
+    skyColorMid: {
+        type: 'tuple3',
+        default: [0.8, 0.8, 0.9] as [number, number, number],
+        group: 'sky',
+    },
+    skyColorBot: {
+        type: 'tuple3',
+        default: [0.2, 0.2, 0.25] as [number, number, number],
+        group: 'sky',
+    },
     skyTexture: { type: 'string', default: '', group: 'sky' },
     skyRotationY: { type: 'number', default: 0, group: 'sky' },
     skyRotationSpeed: { type: 'number', default: 0, group: 'sky' },
@@ -37,7 +49,12 @@ export const ENV_STATE_SCHEMA = {
 
     // --- Ground ---
     groundVisible: { type: 'boolean', default: true, group: 'ground' },
-    groundType: { type: 'enum', values: ['flat', 'terrain'] as const, default: 'flat' as const, group: 'ground' },
+    groundType: {
+        type: 'enum',
+        values: ['flat', 'terrain'] as const,
+        default: 'flat' as const,
+        group: 'ground',
+    },
     groundStyle: {
         type: 'enum',
         values: ['solid', 'grid', 'checker', 'texture'] as const,
@@ -50,14 +67,22 @@ export const ENV_STATE_SCHEMA = {
         default: 'none' as const,
         group: 'ground',
     },
-    groundColor: { type: 'tuple3', default: [0.15, 0.15, 0.18] as [number, number, number], group: 'ground' },
+    groundColor: {
+        type: 'tuple3',
+        default: [0.15, 0.15, 0.18] as [number, number, number],
+        group: 'ground',
+    },
     groundAlpha: { type: 'number', default: 0.6, group: 'ground' },
     groundTexture: { type: 'string', default: '', group: 'ground' },
     groundTextureEnabled: { type: 'boolean', default: false, group: 'ground' },
     groundTextureScale: { type: 'number', default: 1, group: 'ground' },
     groundTextureRotation: { type: 'number', default: 0, group: 'ground' },
     groundGridSize: { type: 'number', default: 1, group: 'ground' },
-    groundLineColor: { type: 'tuple3', default: [0.5, 0.5, 0.55] as [number, number, number], group: 'ground' },
+    groundLineColor: {
+        type: 'tuple3',
+        default: [0.5, 0.5, 0.55] as [number, number, number],
+        group: 'ground',
+    },
     groundTerrainHeight: { type: 'number', default: 4, group: 'ground' },
     groundTerrainScale: { type: 'number', default: 0.06, group: 'ground' },
     groundTerrainSeed: { type: 'number', default: 1337, group: 'ground' },
@@ -105,7 +130,11 @@ export const ENV_STATE_SCHEMA = {
 
     // --- Wind ---
     windEnabled: { type: 'boolean', default: true, group: ['particle', 'water'] },
-    windDirection: { type: 'tuple3', default: [0, 0, 1] as [number, number, number], group: ['particle', 'water'] },
+    windDirection: {
+        type: 'tuple3',
+        default: [0, 0, 1] as [number, number, number],
+        group: ['particle', 'water'],
+    },
     windSpeed: { type: 'number', default: 5, group: ['particle', 'water'] },
 
     // --- Particle ---
@@ -126,7 +155,11 @@ export const ENV_STATE_SCHEMA = {
     waterEnabled: { type: 'boolean', default: false, group: 'water' },
     waterLevel: { type: 'number', default: 0, group: 'water' },
     waterFlip: { type: 'boolean', default: false, group: 'water' },
-    waterColor: { type: 'tuple3', default: [0.15, 0.4, 0.6] as [number, number, number], group: 'water' },
+    waterColor: {
+        type: 'tuple3',
+        default: [0.15, 0.4, 0.6] as [number, number, number],
+        group: 'water',
+    },
     waterTransparency: { type: 'number', default: 0.88, group: 'water' },
     waterWaveHeight: { type: 'number', default: 0.15, group: 'water' },
     bigWaveHeight: { type: 'number', default: 1.0, group: 'water' },
@@ -156,7 +189,11 @@ export const ENV_STATE_SCHEMA = {
     },
 
     // --- Water shader ---
-    waterFogColor: { type: 'tuple3', default: [0.5, 0.52, 0.62] as [number, number, number], group: 'water' },
+    waterFogColor: {
+        type: 'tuple3',
+        default: [0.5, 0.52, 0.62] as [number, number, number],
+        group: 'water',
+    },
     waterFogDensity: { type: 'number', default: 0.006, group: 'water' },
     waterFogOpacityInfluence: { type: 'number', default: 0, group: 'water' },
     waterHorizonFade: { type: 'number', default: 0.8, group: 'water' },
@@ -172,8 +209,16 @@ export const ENV_STATE_SCHEMA = {
     waterNormalStrength: { type: 'number', default: 0.35, group: 'water' },
     waterGlintStrength: { type: 'number', default: 0.1, group: 'water' },
     causticIntensity: { type: 'number', default: 0.1, group: 'water' },
-    causticColor1: { type: 'tuple3', default: [1.0, 0.9, 0.6] as [number, number, number], group: 'water' },
-    causticColor2: { type: 'tuple3', default: [1.0, 1.0, 0.8] as [number, number, number], group: 'water' },
+    causticColor1: {
+        type: 'tuple3',
+        default: [1.0, 0.9, 0.6] as [number, number, number],
+        group: 'water',
+    },
+    causticColor2: {
+        type: 'tuple3',
+        default: [1.0, 1.0, 0.8] as [number, number, number],
+        group: 'water',
+    },
     causticScrollX: { type: 'number', default: 0.1, group: 'water' },
     causticScrollY: { type: 'number', default: 0.15, group: 'water' },
     fresnelAlphaInfluence: { type: 'number', default: 0.35, group: 'water' },
@@ -198,15 +243,29 @@ export const ENV_STATE_SCHEMA = {
     cloudWeatherStrength: { type: 'number', default: 0.6, group: 'cloud' },
     cloudBacklight: { type: 'number', default: 0.5, group: 'cloud' },
     cloudPowder: { type: 'number', default: 0.8, group: 'cloud' },
-    cloudQuality: { type: 'enum', values: ['standard', 'high'] as const, default: 'high' as const, group: 'cloud' },
+    cloudQuality: {
+        type: 'enum',
+        values: ['standard', 'high'] as const,
+        default: 'high' as const,
+        group: 'cloud',
+    },
 
     // --- Mirror ---
     mirrorEnabled: { type: 'boolean', default: false, group: 'mirror' },
 
     // --- Fog ---
     fogEnabled: { type: 'boolean', default: false, group: 'fog' },
-    fogMode: { type: 'enum', values: ['exp', 'exp2', 'linear'] as const, default: 'exp2' as const, group: 'fog' },
-    fogColor: { type: 'tuple3', default: [0.5, 0.5, 0.6] as [number, number, number], group: 'fog' },
+    fogMode: {
+        type: 'enum',
+        values: ['exp', 'exp2', 'linear'] as const,
+        default: 'exp2' as const,
+        group: 'fog',
+    },
+    fogColor: {
+        type: 'tuple3',
+        default: [0.5, 0.5, 0.6] as [number, number, number],
+        group: 'fog',
+    },
     fogDensity: { type: 'number', default: 0.01, group: 'fog' },
     fogStart: { type: 'number', default: 10, group: 'fog' },
     fogEnd: { type: 'number', default: 100, group: 'fog' },
@@ -229,7 +288,8 @@ export type EnvStateSchema = typeof ENV_STATE_SCHEMA;
 // ======== Dispatch Key 派生 ========
 
 /** 已定义的 dispatch 分组名称 */
-export type EnvDispatchGroup = 'sky' | 'ground' | 'fog' | 'water' | 'particle' | 'cloud' | 'reflection' | 'mirror';
+export type EnvDispatchGroup =
+    'sky' | 'ground' | 'fog' | 'water' | 'particle' | 'cloud' | 'reflection' | 'mirror';
 
 const _groupCache = new Map<string, string[]>();
 

@@ -2,14 +2,7 @@
 // 从 motion-popup.ts 拆出：buildLayerLevel / buildMotionDetailSchema /
 // buildMotionDetailLevel / 播放速度 / buildPlaybackSpeedLevel
 
-import {
-    setStatus,
-    isPlaying,
-    setIsPlaying,
-    mmdRuntime,
-    cardContainer,
-    focusedModelId,
-} from '../core/config';
+import { setStatus, mmdRuntime, cardContainer, focusedModelId } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import {
     slideRow,
@@ -18,14 +11,20 @@ import {
     addSectionTitle,
     addPresetChip,
 } from '../core/ui-helpers';
-import { modelManager, updatePlaybackUI, triggerAutoSave, pushUndoSnapshot, offerSceneUndoAndRefresh } from '../scene/scene';
+import {
+    modelManager,
+    updatePlaybackUI,
+    triggerAutoSave,
+    pushUndoSnapshot,
+    offerSceneUndoAndRefresh,
+} from '../scene/scene';
 import {
     getVmdLayers,
     toggleVmdLayer,
     setVmdLayerWeight,
     removeVmdLayer,
 } from '../scene/motion/vmd-layers';
-import { getActiveMotion, setActiveMotion } from '../scene/motion/motion-intent';
+import { getActiveMotion, getSceneMotions, removeSceneMotion } from '../scene/motion/motion-intent';
 import { t } from '../core/i18n/t';
 import type { MenuNode } from './menu-schema';
 import { renderMenu } from './render-menu';
@@ -33,10 +32,7 @@ import { createIconifyIcon } from '../core/icons';
 import { undo, redo, canUndo, canRedo } from '../scene/motion/motion-modules/motion-history';
 import { applyModuleSnapshot } from '../scene/motion/motion-modules/module-base';
 import { renderModuleToggleList } from './motion-binding-ui';
-import {
-    buildModuleParamLevel,
-    buildAdvancedBoneOverrideLevel,
-} from './motion-override-levels';
+import { buildModuleParamLevel, buildAdvancedBoneOverrideLevel } from './motion-override-levels';
 // 循环依赖安全：getMotionMenu 仅在函数体内调用
 import { getMotionMenu } from './motion-popup';
 
@@ -137,11 +133,17 @@ export function buildLayerLevel(layerId: string, id: string): PopupLevel {
 // ═══════════════════════════════════════════════════════════
 
 /**
- * 动作详情子页 schema——场景级当前动作的统一管理入口。
- * 整合：当前动作 + 清除 / 图层管理 / 动作覆盖模块 / 播放速度。
+ * [doc:adr-167] 动作详情子页 schema——某个主动作的统一管理入口。
+ * 整合：动作名 + 删除 / 内部图层管理 / 动作覆盖模块 / 播放速度。
+ * @param sceneMotionId 指定主动作 id；undefined 时回退到当前默认动作（兼容旧调用）
  */
-function buildMotionDetailSchema(): MenuNode[] {
+function buildMotionDetailSchema(sceneMotionId?: string): MenuNode[] {
+    // [doc:adr-167] 按 id 解析指定主动作；未传或找不到则回退到默认动作
+    const sceneMotions = getSceneMotions();
     const active = getActiveMotion();
+    const motion = sceneMotionId
+        ? (sceneMotions.find((m) => m.id === sceneMotionId) ?? active)
+        : active;
     const foc = modelManager.focused();
     const target =
         foc ?? [...modelManager.modelRegistry.values()].find((m) => m.kind === 'actor') ?? null;
@@ -152,12 +154,12 @@ function buildMotionDetailSchema(): MenuNode[] {
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    // ── 当前动作 ──
+                    // ── 当前主动作 ──
                     addSectionTitle(inner, t('motion.currentMotion'));
                     slideRow(
                         inner,
-                        active ? 'lucide:clapperboard' : 'lucide:circle-slash',
-                        active?.vmdName || t('motion.intent.none'),
+                        motion ? 'lucide:clapperboard' : 'lucide:circle-slash',
+                        motion?.vmdName || t('motion.intent.none'),
                         false,
                         () => {},
                         undefined,
@@ -166,28 +168,28 @@ function buildMotionDetailSchema(): MenuNode[] {
                         undefined,
                         { wrapLabel: true }
                     );
-                    if (active && target?.mmdModel && mmdRuntime) {
-                        addPresetChip(inner, t('motion.clearVmd'), false, () => {
+                    // [doc:adr-167] 删除此主动作（仅删除场景库中的这一项，不影响其他主动作）
+                    if (motion?.id) {
+                        addPresetChip(inner, t('motion.deleteMotion'), false, () => {
                             const snap = pushUndoSnapshot();
-                            setActiveMotion(null);
-                            if (isPlaying) {
-                                mmdRuntime.pauseAnimation();
-                                setIsPlaying(false);
-                            }
+                            removeSceneMotion(motion.id!);
                             updatePlaybackUI();
+                            getMotionMenu()?.pop();
                             getMotionMenu()?.reRender();
                             triggerAutoSave();
-                            setStatus(t('motion.motionCleared'), true);
-                            offerSceneUndoAndRefresh(t('motion.motionCleared'), snap, () => {
-                                getMotionMenu()?.reRender();
-                            });
+                            setStatus(t('motion.motionRemoved', { name: motion.vmdName }), true);
+                            offerSceneUndoAndRefresh(
+                                t('motion.motionRemoved', { name: motion.vmdName }),
+                                snap,
+                                () => getMotionMenu()?.reRender()
+                            );
                         });
                     }
 
-                    // ── 图层（有叠加层时显示） ──
-                    if (active && active.vmdLayers.length > 0) {
+                    // ── 该主动作内部的图层 ──
+                    if (motion && motion.vmdLayers.length > 0) {
                         addSectionTitle(inner, t('motion.layerSettings'));
-                        for (const layer of active.vmdLayers) {
+                        for (const layer of motion.vmdLayers) {
                             slideRow(
                                 inner,
                                 '',
@@ -217,7 +219,7 @@ function buildMotionDetailSchema(): MenuNode[] {
                     }
 
                     // ── 动作覆盖（模块列表） ──
-                    if (active) {
+                    if (motion) {
                         const modelId = focusedModelId;
                         if (modelId) {
                             addSectionTitle(inner, t('motion.override.title'));
@@ -297,7 +299,8 @@ function buildMotionDetailSchema(): MenuNode[] {
                             // 模块列表
                             renderModuleToggleList(inner, modelId, {
                                 initModules: true,
-                                onEnter: (modId) => getMotionMenu()?.push(buildModuleParamLevel(modId)),
+                                onEnter: (modId) =>
+                                    getMotionMenu()?.push(buildModuleParamLevel(modId)),
                             });
 
                             // 高级骨骼覆盖入口
@@ -336,13 +339,17 @@ function buildMotionDetailSchema(): MenuNode[] {
     ] satisfies MenuNode[];
 }
 
-export function buildMotionDetailLevel(): PopupLevel {
+/**
+ * [doc:adr-167] 构建动作详情页 level。
+ * @param sceneMotionId 主动作 id；undefined 时回退到当前默认动作
+ */
+export function buildMotionDetailLevel(sceneMotionId?: string): PopupLevel {
     return {
         label: t('motion.detail.title'),
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildMotionDetailSchema(), container);
+            renderMenu(buildMotionDetailSchema(sceneMotionId), container);
         },
     };
 }

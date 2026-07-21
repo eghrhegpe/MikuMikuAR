@@ -411,11 +411,17 @@ export function buildBoneAttachCard(
                 );
 
                 // 解除按钮
-                addPresetChip(c, t('scene.accessory.detachFromBone'), false, () => {
-                    detachPropFromBone(id);
-                    onStateChange?.();
-                    render();
-                }, { marginTop: 4 });
+                addPresetChip(
+                    c,
+                    t('scene.accessory.detachFromBone'),
+                    false,
+                    () => {
+                        detachPropFromBone(id);
+                        onStateChange?.();
+                        render();
+                    },
+                    { marginTop: 4 }
+                );
             } else {
                 // —— 未挂载状态：选择模型 + 骨骼 ——
                 const modelSelect = document.createElement('select');
@@ -459,18 +465,30 @@ export function buildBoneAttachCard(
                 });
                 c.appendChild(boneSelect);
 
-                addPresetChip(c, t('scene.accessory.attachToBone'), false, () => {
-                    const targetModelId = modelSelect.value;
-                    const boneName = boneSelect.value;
-                    if (!targetModelId || !boneName) {
-                        return;
-                    }
-                    const ok = attachPropToBone(id, boneName, targetModelId, [0, 0, 0], [0, 0, 0]);
-                    if (ok) {
-                        onStateChange?.();
-                        render();
-                    }
-                }, { marginTop: 4 });
+                addPresetChip(
+                    c,
+                    t('scene.accessory.attachToBone'),
+                    false,
+                    () => {
+                        const targetModelId = modelSelect.value;
+                        const boneName = boneSelect.value;
+                        if (!targetModelId || !boneName) {
+                            return;
+                        }
+                        const ok = attachPropToBone(
+                            id,
+                            boneName,
+                            targetModelId,
+                            [0, 0, 0],
+                            [0, 0, 0]
+                        );
+                        if (ok) {
+                            onStateChange?.();
+                            render();
+                        }
+                    },
+                    { marginTop: 4 }
+                );
             }
         };
 

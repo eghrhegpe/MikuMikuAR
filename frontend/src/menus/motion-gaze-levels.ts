@@ -103,7 +103,8 @@ const gazeSchema: MenuNode[] = [
             label.style.cssText = 'font-size:12px;color:var(--text-secondary);margin-right:8px;';
             label.textContent = t('motion.perceptionTier');
             const select = document.createElement('select');
-            select.style.cssText = 'font-size:12px;padding:2px 6px;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);';
+            select.style.cssText =
+                'font-size:12px;padding:2px 6px;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);';
             const options = [
                 { value: 'auto', label: 'motion.perceptionTierAuto' },
                 { value: 'high', label: 'motion.perceptionTierHigh' },

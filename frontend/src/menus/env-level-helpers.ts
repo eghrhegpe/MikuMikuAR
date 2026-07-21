@@ -47,7 +47,9 @@ export function _openTexturePicker(
     }
     if (!stackRegistry.buildLevel) {
         if (import.meta.env.DEV) {
-            console.warn('[env-level-helpers] buildLevel not yet registered, ignoring texture picker call');
+            console.warn(
+                '[env-level-helpers] buildLevel not yet registered, ignoring texture picker call'
+            );
         }
         return;
     }

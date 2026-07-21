@@ -1,5 +1,6 @@
 // [doc:adr-121] 全局动作意图（Scene-level Motion Intent）
-// 职责: 场景级 activeMotion 意图 + 每实例继承/覆盖 + 广播/兼容性解析
+// [doc:adr-167] 场景级动作库（Scene Motion Library）— 多主动作平等共存
+// 职责: 场景级 _sceneMotions 动作库 + _activeMotionId 默认动作 + 每实例继承/覆盖 + 广播/兼容性解析
 // 设计: 轻量 singleton（非 EnvState），规避 Go struct 同步 + wails 绑定重生成本
 // 依赖方向: 不 import 任何 UI 模块；由 broadcastMotion 遍历 modelRegistry 写入 inst.vmd*
 
@@ -8,12 +9,33 @@ import { matchBone } from '@/motion-algos/proc-motion-shared';
 
 // ── 场景级 store（轻量 singleton，非 EnvState）──
 
-let _activeMotion: SceneMotionIntent | null = null; // null = none（静态）
-let _motionGen = 0; // generation counter，每次 setActiveMotion 递增，用于守护异步广播竞态
+let _sceneMotions: SceneMotionIntent[] = []; // 场景级主动作库（多主动作平等共存，ADR-167）
+let _activeMotionId: string | null = null; // 默认动作 id；null = 无默认（新角色静止）
+let _motionGen = 0; // generation counter，每次变更递增，用于守护异步广播竞态
 
-/** 获取当前场景级动作意图。null = 静态（无动作）。 */
+/** 生成场景动作 id（稳定唯一，用于引用与序列化） */
+function genMotionId(): string {
+    return `motion_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/**
+ * 获取当前默认动作（派生自 _activeMotionId）。
+ * 保持原签名以最小化下游改动（playback/vmd-loader/vmd-layers 链路无感知）。
+ * null = 无默认动作（静态场景）。
+ */
 export function getActiveMotion(): SceneMotionIntent | null {
-    return _activeMotion;
+    if (!_activeMotionId) return null;
+    return _sceneMotions.find((m) => m.id === _activeMotionId) ?? null;
+}
+
+/** 获取场景级动作库（所有主动作列表）。 */
+export function getSceneMotions(): SceneMotionIntent[] {
+    return _sceneMotions;
+}
+
+/** 获取当前默认动作 id。null = 无默认。 */
+export function getActiveMotionId(): string | null {
+    return _activeMotionId;
 }
 
 /** 获取当前 generation 值。用于异步操作中判断是否为最新广播。 */
@@ -55,15 +77,109 @@ export function setBroadcastCallback(
     _broadcastCallback = cb;
 }
 
+// ── 场景动作库 API（ADR-167）──
+
 /**
- * 设置场景级动作意图并触发广播。
- * @param intent 意图对象，null 表示清除（静态场景）
+ * 新增主动作到场景库。
+ * - 若 intent 无 id，自动生成
+ * - 若 _sceneMotions 为空（首次添加），自动设为默认
+ * - 触发广播：所有 sceneMotionId===undefined 的 inherit 角色套用新默认（若默认变更）
+ * @returns 新增动作的 id
+ */
+export function addSceneMotion(intent: SceneMotionIntent): string {
+    const id = intent.id ?? genMotionId();
+    const withId: SceneMotionIntent = { ...intent, id };
+    _sceneMotions.push(withId);
+
+    // 首次添加自动设为默认
+    const prev = getActiveMotion();
+    if (_activeMotionId === null && _sceneMotions.length === 1) {
+        _activeMotionId = id;
+    }
+
+    _motionGen++;
+    _broadcastCallback?.(getActiveMotion(), _motionGen, prev);
+    return id;
+}
+
+/**
+ * 移除场景库中的某个主动作。
+ * - 若移除的是默认动作，自动选列表第一项为新默认（无则 null）
+ * - 引用该 id 的角色由调用方（broadcastMotion）处理回退（置 sceneMotionId=undefined）
+ */
+export function removeSceneMotion(id: string): void {
+    const prev = getActiveMotion();
+    _sceneMotions = _sceneMotions.filter((m) => m.id !== id);
+
+    if (_activeMotionId === id) {
+        _activeMotionId = _sceneMotions.length > 0 ? (_sceneMotions[0].id ?? null) : null;
+    }
+
+    _motionGen++;
+    _broadcastCallback?.(getActiveMotion(), _motionGen, prev);
+}
+
+/**
+ * 更新场景库中某个主动作的数据（如改其 vmdLayers）。
+ * - 保留原 id 不变
+ * - 触发广播：引用该 id 的角色重建 composite animation
+ */
+export function updateSceneMotion(id: string, patch: Partial<SceneMotionIntent>): void {
+    const idx = _sceneMotions.findIndex((m) => m.id === id);
+    if (idx < 0) return;
+    _sceneMotions[idx] = { ..._sceneMotions[idx], ...patch, id }; // 保留 id
+    _motionGen++;
+    _broadcastCallback?.(getActiveMotion(), _motionGen, null);
+}
+
+/**
+ * 设置默认动作 id。
+ * - null = 清空默认（新角色静止，但场景库保留）
+ * - 触发广播：所有 sceneMotionId===undefined 的 inherit 角色重新套用
+ */
+export function setDefaultMotion(id: string | null): void {
+    const prev = getActiveMotion();
+    _activeMotionId = id;
+    _motionGen++;
+    _broadcastCallback?.(getActiveMotion(), _motionGen, prev);
+}
+
+/**
+ * 清空整个场景动作库 + 默认动作。
+ * 用于「清除场景动作」UI（兼容旧 setActiveMotion(null) 语义）。
+ */
+export function clearAllSceneMotions(): void {
+    const prev = getActiveMotion();
+    _sceneMotions = [];
+    _activeMotionId = null;
+    _motionGen++;
+    _broadcastCallback?.(null, _motionGen, prev);
+}
+
+// ── 兼容旧 API（ADR-121 setActiveMotion）──
+
+/**
+ * [adr-121 兼容] 设置场景级动作意图。
+ *
+ * 语义保留为「单例替换」：
+ * - intent === null → 清空整个场景库 + 默认（等同 clearAllSceneMotions）
+ * - intent !== null → 替换为单例：_sceneMotions = [intent]，_activeMotionId = intent.id
+ *
+ * @deprecated 新代码请使用 addSceneMotion / setDefaultMotion / removeSceneMotion / clearAllSceneMotions。
+ *             本函数保留供旧调用点（motion-popup.ts 等）渐进迁移。
  */
 export function setActiveMotion(intent: SceneMotionIntent | null): void {
-    const prev = _activeMotion; // 捕获前一个意图，供广播回调判断清除范围
-    _activeMotion = intent;
+    const prev = getActiveMotion();
+    if (intent === null) {
+        _sceneMotions = [];
+        _activeMotionId = null;
+    } else {
+        const id = intent.id ?? genMotionId();
+        _sceneMotions = [{ ...intent, id }];
+        _activeMotionId = id;
+    }
     _motionGen++;
-    _broadcastCallback?.(intent, _motionGen, prev);
+    _broadcastCallback?.(getActiveMotion(), _motionGen, prev);
 }
 
 // ── 兼容性解析 ──

@@ -117,7 +117,9 @@ export async function loadThumbnailsForLevel(
         return;
     }
     // 流式加载：逐张出现，不阻塞 UI。[adr-136] 透传外部取消信号
-    await safeCallAsync('library-actions', 'loadThumbnailsForLevel:', () => loadThumbnailsStreaming(keys, signal));
+    await safeCallAsync('library-actions', 'loadThumbnailsForLevel:', () =>
+        loadThumbnailsStreaming(keys, signal)
+    );
 }
 
 export async function ensureModelMeta(pmxPaths: string[]): Promise<void> {
@@ -233,7 +235,9 @@ function recordRecentModel(m: LibraryModel): void {
 function recordBrowseDir(m: LibraryModel): void {
     const memCat: 'pmx' | 'stage' | 'prop' =
         m.type === 'prop' ? 'prop' : m.type === 'stage' || m.type === 'scene' ? 'stage' : 'pmx';
-        void safeCallAsync('library-actions', 'SetLastBrowseDir failed:', () => SetLastBrowseDir(memCat, resolveDisplayBrowseDir(m, memCat)));
+    void safeCallAsync('library-actions', 'SetLastBrowseDir failed:', () =>
+        SetLastBrowseDir(memCat, resolveDisplayBrowseDir(m, memCat))
+    );
 }
 
 /** 替换模式入口：加载新模型 → 移除旧模型 → 导航到浏览层。 */

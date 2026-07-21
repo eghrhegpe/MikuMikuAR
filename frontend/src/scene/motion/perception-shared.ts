@@ -269,7 +269,10 @@ export class PerceptionPerfMonitor {
         if (this._manualTier !== 'auto') {
             // [doc:adr-164] 手动档下帧率持续偏低时 warn 用户（阈值与自动档一致）
             if (this.fps < 45 && modelCount > 20) {
-                logWarn('perception', `手动档 ${this._manualTier} 但 fps=${this.fps.toFixed(0)} 模型=${modelCount}，建议切回 auto`);
+                logWarn(
+                    'perception',
+                    `手动档 ${this._manualTier} 但 fps=${this.fps.toFixed(0)} 模型=${modelCount}，建议切回 auto`
+                );
             }
             this.tier = this._manualTier;
             return;

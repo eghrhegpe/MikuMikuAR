@@ -72,7 +72,10 @@ function renderCategorizedPresets(
                         category: string;
                         createdAt: number;
                     }[] = [];
-                    entries = (await safeCallAsync('env-preset', 'ListEnvPresets failed:', () => ListEnvPresets())) ?? [];
+                    entries =
+                        (await safeCallAsync('env-preset', 'ListEnvPresets failed:', () =>
+                            ListEnvPresets()
+                        )) ?? [];
                     return entries
                         .filter((e) => (e.category || 'sky') === category)
                         .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));

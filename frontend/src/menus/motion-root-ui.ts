@@ -2,19 +2,22 @@
 // 从 motion-popup.ts 拆出：buildMotionRootItems / buildMotionRootLevel /
 // buildRetargetLevel / _importExternalAnimation
 
-import {
-    setStatus,
-    isPlaying,
-    setIsPlaying,
-    mmdRuntime,
-    stackRegistry,
-    getBrowseDir,
-    closeAllOverlays,
-} from '../core/config';
+import { setStatus, stackRegistry, getBrowseDir, closeAllOverlays } from '../core/config';
 import type { PopupLevel, PopupRow } from '../core/config';
-import { modelManager, updatePlaybackUI, triggerAutoSave, pushUndoSnapshot, offerSceneUndoAndRefresh } from '../scene/scene';
-import { getActiveMotion, setActiveMotion } from '../scene/motion/motion-intent';
-import { getProcMotionState } from '../scene/scene';
+import {
+    modelManager,
+    updatePlaybackUI,
+    triggerAutoSave,
+    pushUndoSnapshot,
+    offerSceneUndoAndRefresh,
+} from '../scene/scene';
+import {
+    getActiveMotion,
+    getSceneMotions,
+    getActiveMotionId,
+    setDefaultMotion,
+    removeSceneMotion,
+} from '../scene/motion/motion-intent';
 import { clearAudio, getAudioName } from '../outfit/audio';
 import { t } from '../core/i18n/t';
 import { logWarn } from '../core/logger';
@@ -27,98 +30,81 @@ import { DEFAULT_MOTION_SLOTS } from './motion-binding-ui';
 import type { ModelMotionSlots } from '@/core/types';
 // 循环依赖安全：getMotionMenu 仅在函数体内调用
 import { getMotionMenu } from './motion-popup';
-import { buildLayerLevel } from './motion-detail-ui';
 
 // ═══════════════════════════════════════════════════════════
 // 根菜单构建
 // ═══════════════════════════════════════════════════════════
 
-/** 构建当前动作源显示标签（VMD 或程序化动作） */
-function _buildCurrentMotionLabel(): { label: string; icon: string } {
-    const active = getActiveMotion();
-    if (active?.vmdName) {
-        return { label: active.vmdName, icon: 'lucide:clapperboard' };
-    }
-    const procState = getProcMotionState();
-    if (procState.mode !== 'off') {
-        const modeLabel =
-            procState.mode === 'idle' ? t('motion.modeIdle') : t('motion.modeAutodance');
-        return { label: modeLabel, icon: 'lucide:wind' };
-    }
-    return { label: t('motion.noMotionHint'), icon: 'lucide:circle-slash' };
-}
-
 export function buildMotionRootItems(): PopupRow[] {
     const items: PopupRow[] = [];
-    const { label: motionLabel, icon: motionIcon } = _buildCurrentMotionLabel();
+    const sceneMotions = getSceneMotions();
+    const activeId = getActiveMotionId();
 
-    // ===== Card 1: 当前动作（场景级）+ 图层管理 =====
-    const active = getActiveMotion();
-    const procState = getProcMotionState();
-    const hasMotion = !!active?.vmdName || procState.mode !== 'off';
-
-    if (hasMotion && active) {
+    // ===== Card 1: 场景动作库（ADR-167：所有主动作平等共存） =====
+    if (sceneMotions.length === 0) {
         items.push({
             kind: 'action',
-            label: motionLabel,
-            icon: motionIcon,
-            target: '__motion_detail__',
-            sublabel: t('motion.currentMotion'),
+            label: t('motion.noMotionHint'),
+            icon: 'lucide:circle-slash',
+            target: '',
+            sublabel: t('motion.browseMotionLibrary'),
             wrapLabel: true,
-            trailing: {
-                icon: 'lucide:trash-2',
-                title: t('motion.clearVmd'),
-                danger: true,
-                onClick: () => {
-                    const snap = pushUndoSnapshot();
-                    setActiveMotion(null);
-                    if (isPlaying && mmdRuntime) {
-                        mmdRuntime.pauseAnimation();
-                        setIsPlaying(false);
-                    }
-                    updatePlaybackUI();
-                    getMotionMenu()?.reRender();
-                    triggerAutoSave();
-                    setStatus(t('motion.motionCleared'), true);
-                    offerSceneUndoAndRefresh(t('motion.motionCleared'), snap, () => {
-                        getMotionMenu()?.reRender();
-                    });
-                },
-            },
         });
-        // 场景级图层列表（内联显示）
-        for (const layer of active.vmdLayers) {
+    } else {
+        for (const motion of sceneMotions) {
+            const isDefault = motion.id === activeId;
             items.push({
                 kind: 'action',
-                label: layer.name,
-                icon: 'lucide:layers',
-                target: '',
-                sublabel: `${(layer.weight * 100).toFixed(0)}%`,
-                trailing: {
-                    icon: 'lucide:settings-2',
-                    title: t('library.modelTools'),
+                label: motion.vmdName || t('motion.intent.none'),
+                icon: isDefault ? 'lucide:clapperboard' : 'lucide:circle-play',
+                // [doc:adr-167] target 编码 sceneMotionId，路由侧解析后进对应详情页
+                target: `__motion_detail__:${motion.id ?? ''}`,
+                sublabel: isDefault ? t('motion.defaultMotion') : undefined,
+                wrapLabel: true,
+                // 非默认动作 trailing 提供「设为默认」；默认动作无 trailing（sublabel 已显示徽标）
+                trailing: isDefault
+                    ? undefined
+                    : {
+                          icon: 'lucide:star',
+                          title: t('motion.setDefault'),
+                          onClick: () => {
+                              if (!motion.id) return;
+                              const snap = pushUndoSnapshot();
+                              setDefaultMotion(motion.id);
+                              getMotionMenu()?.reRender();
+                              triggerAutoSave();
+                              setStatus(
+                                  t('motion.defaultMotionSet', { name: motion.vmdName }),
+                                  true
+                              );
+                              offerSceneUndoAndRefresh(
+                                  t('motion.defaultMotionSet', { name: motion.vmdName }),
+                                  snap,
+                                  () => getMotionMenu()?.reRender()
+                              );
+                          },
+                      },
+                leading: {
+                    icon: 'lucide:trash-2',
+                    title: t('motion.deleteMotion'),
                     onClick: () => {
-                        const foc = modelManager.focused();
-                        const targetId =
-                            foc?.id ??
-                            [...modelManager.modelRegistry.values()].find((m) => m.kind === 'actor')
-                                ?.id ??
-                            '';
-                        const lvl = buildLayerLevel(layer.id, targetId);
-                        getMotionMenu()?.push(lvl);
+                        if (!motion.id) return;
+                        const snap = pushUndoSnapshot();
+                        const removedName = motion.vmdName;
+                        removeSceneMotion(motion.id);
+                        updatePlaybackUI();
+                        getMotionMenu()?.reRender();
+                        triggerAutoSave();
+                        setStatus(t('motion.motionRemoved', { name: removedName }), true);
+                        offerSceneUndoAndRefresh(
+                            t('motion.motionRemoved', { name: removedName }),
+                            snap,
+                            () => getMotionMenu()?.reRender()
+                        );
                     },
                 },
             });
         }
-    } else {
-        items.push({
-            kind: 'action',
-            label: motionLabel,
-            icon: motionIcon,
-            target: '',
-            sublabel: t('motion.noMotionHint'),
-            wrapLabel: true,
-        });
     }
 
     // ===== Card 2: 库 =====

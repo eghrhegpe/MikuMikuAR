@@ -508,7 +508,10 @@ export function updatePerformance(): void {
         // - 恢复：当 FPS 高于当前级别的恢复阈值，则升一级
         // - 两端互不干扰，避免阈值附近的来回跳变
         targetLevel = _currentLevel;
-        if (_currentLevel < 3 && avgFps < getDegradeThreshold((_currentLevel + 1) as DegradeLevel)) {
+        if (
+            _currentLevel < 3 &&
+            avgFps < getDegradeThreshold((_currentLevel + 1) as DegradeLevel)
+        ) {
             targetLevel = (_currentLevel + 1) as DegradeLevel;
         } else if (
             _currentLevel > 0 &&

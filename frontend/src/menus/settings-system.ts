@@ -56,9 +56,7 @@ type SettingValidator = (v: unknown) => unknown | undefined;
 const num =
     (min: number, max: number): SettingValidator =>
     (v) =>
-        typeof v === 'number' && Number.isFinite(v)
-            ? Math.min(max, Math.max(min, v))
-            : undefined;
+        typeof v === 'number' && Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : undefined;
 const bool: SettingValidator = (v) => (typeof v === 'boolean' ? v : undefined);
 const str: SettingValidator = (v) => (typeof v === 'string' ? v : undefined);
 const enumOf =
@@ -67,8 +65,7 @@ const enumOf =
         typeof v === 'string' && allowed.includes(v) ? v : undefined;
 const plainObj: SettingValidator = (v) =>
     typeof v === 'object' && v !== null && !Array.isArray(v) ? v : undefined;
-const boolOrNull: SettingValidator = (v) =>
-    typeof v === 'boolean' || v === null ? v : undefined;
+const boolOrNull: SettingValidator = (v) => (typeof v === 'boolean' || v === null ? v : undefined);
 
 const UI_SETTINGS_VALIDATORS: Record<string, SettingValidator> = {
     scale: num(0.5, 2),
@@ -305,7 +302,11 @@ function buildCacheSchema(): MenuNode[] {
                         );
                     };
                     refreshCacheStats();
-                    refreshDisp = addDisposableListener(window, 'mmar:cache-cleared', refreshCacheStats);
+                    refreshDisp = addDisposableListener(
+                        window,
+                        'mmar:cache-cleared',
+                        refreshCacheStats
+                    );
 
                     // 缓存清理按钮
                     slideRow(

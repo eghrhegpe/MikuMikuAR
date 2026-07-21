@@ -43,9 +43,7 @@ export function migrateLipSyncFromOldState(old: {
  * [doc:adr-166] 新增 tier/allEnabled 透传。
  * 纯函数，无外部依赖。
  */
-export function migratePerceptionData(
-    perception: unknown
-): {
+export function migratePerceptionData(perception: unknown): {
     focused: PerceptionState;
     pinned: Array<{ modelId: string; state: PerceptionState }>;
     tier?: 'high' | 'medium' | 'low' | 'auto';

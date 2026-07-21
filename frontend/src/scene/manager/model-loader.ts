@@ -22,7 +22,12 @@ import {
 } from '@/core/config';
 import { getBaseName, swallowError, isUnderRoot } from '@/core/utils';
 import { logWarn } from '@/core/logger';
-import { getActiveMotion, getMotionGen, resolveCompatibility } from '../motion/motion-intent';
+import {
+    getActiveMotion,
+    getSceneMotions,
+    getMotionGen,
+    resolveCompatibility,
+} from '../motion/motion-intent';
 import { createDefaultFeetState } from '@/core/state';
 import { resolveModelDir } from '@/core/fileservice';
 import { readFileBytes, ListDirRecursive } from '@/core/wails-bindings';
@@ -457,13 +462,13 @@ export async function loadPMXFile(
                 : null;
         _modelManager.register(inst);
         registeredId = id;
-        // [adr-XX per-motion] 继承上一个角色的槽位1 source/procRole（不继承 pinned 快照、overlay）
+        // [adr-XX per-motion] 继承上一个角色的槽位1 source/procRole（不继承 pinned 快照）
+        // [doc:adr-167] overlay 槽位已移除
         if (prevInst && prevInst.motionSlots) {
             const prevPrimary = prevInst.motionSlots.primary;
             if (!inst.motionSlots) {
                 inst.motionSlots = {
                     primary: { source: 'inherit', status: 'idle' },
-                    overlay: { source: 'inherit', status: 'idle' },
                 };
             }
             // 只继承 inherit/procedural（pinned 不继承：快照是 per-model 的，新模型不一定有该动作）
@@ -557,7 +562,6 @@ export async function loadPMXFile(
                 if (!compat.compatible) {
                     inst.motionSlots = {
                         primary: { ...slots.primary, status: 'incompatible' },
-                        overlay: slots.overlay,
                     };
                 } else {
                     appliedVmd = activeMotion.vmdName;
@@ -574,9 +578,13 @@ export async function loadPMXFile(
                                 activeMotion.vmdName,
                                 id
                             );
+                            // [doc:adr-167] 保留 sceneMotionId（由 broadcast 设置）
                             inst.motionSlots = {
-                                primary: { source: 'inherit', status: 'compatible' },
-                                overlay: slots.overlay,
+                                primary: {
+                                    source: 'inherit',
+                                    sceneMotionId: slots.primary.sceneMotionId,
+                                    status: 'compatible',
+                                },
                             };
                         }
                     } catch (vmdErr) {
@@ -590,8 +598,11 @@ export async function loadPMXFile(
                                 false
                             );
                             inst.motionSlots = {
-                                primary: { source: 'inherit', status: 'incompatible' },
-                                overlay: slots.overlay,
+                                primary: {
+                                    source: 'inherit',
+                                    sceneMotionId: slots.primary.sceneMotionId,
+                                    status: 'incompatible',
+                                },
                             };
                         }
                     }

@@ -216,9 +216,8 @@ export function applyTerrainMaterial(ground: GroundMesh, state: EnvState, scene:
     // Phase B: 法线贴图（PBR 使用 _effectiveBumpLevel 支持法线扭曲增强，Standard 直接用 groundNormalStrength）
     if (state.groundNormalTexture) {
         mat.bumpTexture = new Texture(resolve(state.groundNormalTexture), scene);
-        mat.bumpTexture.level = mat instanceof PBRMaterial
-            ? _effectiveBumpLevel(state)
-            : state.groundNormalStrength;
+        mat.bumpTexture.level =
+            mat instanceof PBRMaterial ? _effectiveBumpLevel(state) : state.groundNormalStrength;
     }
 }
 
