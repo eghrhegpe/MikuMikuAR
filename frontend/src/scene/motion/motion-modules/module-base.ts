@@ -15,6 +15,8 @@ import {
 } from './registry';
 import { pushHistory } from './motion-history';
 import type { MotionOverrideModule, ModuleMeta } from './types';
+// [doc:adr-122 P2] 在 module-base 暴露 IK 辅助函数，供新模块复用
+export { applyBoneOverrideIK } from '../bone-override';
 
 /** createModuleBase 返回的方法子集（与 MotionOverrideModule 对应方法签名一致） */
 export type ModuleBaseMethods = Pick<

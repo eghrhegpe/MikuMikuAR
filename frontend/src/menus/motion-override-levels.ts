@@ -454,7 +454,8 @@ function buildBoneOverrideSchema(): MenuNode[] {
                         for (const bn of boneNames) {
                             const opt = document.createElement('option');
                             opt.value = bn;
-                            opt.textContent = bn;
+                            // [doc:adr-122 P3] IK 骨骼附加标记
+                            opt.textContent = _isIkBone(bn) ? `${bn} (IK)` : bn;
                             optGroup.appendChild(opt);
                         }
                         boneSelect.appendChild(optGroup);
@@ -530,7 +531,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
 
                         const { pitch, yaw, roll, weight } = formState;
 
-                        setBoneOverride(boneName, [pitch, yaw, roll], weight, true);
+                        setBoneOverride(boneName, [pitch, yaw, roll], weight, true, undefined, true);
                         _syncOverrideToInstance(modelId);
 
                         setStatus(t('motion.boneOverride.applied', { bone: boneName }), true);
@@ -578,7 +579,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
                                 b.boneName === ov.boneName ? updated : b
                             );
                             if (updated.enabled) {
-                                setBoneOverride(ov.boneName, ov.euler, ov.weight, true);
+                                setBoneOverride(ov.boneName, ov.euler, ov.weight, true, undefined, ov.absolute);
                             } else {
                                 clearBoneOverride(ov.boneName);
                             }
@@ -596,7 +597,9 @@ function buildBoneOverrideSchema(): MenuNode[] {
                         info.style.flex = '1';
                         info.style.fontSize = '11px';
                         info.style.opacity = ov.enabled ? '1' : '0.35';
-                        info.textContent = `${ov.boneName}  P:${ov.euler[0].toFixed(0)} Y:${ov.euler[1].toFixed(0)} R:${ov.euler[2].toFixed(0)}  W:${ov.weight.toFixed(2)}`;
+                        // [doc:adr-122 P3] IK 骨骼附加标记
+                        const ikTag = _isIkBone(ov.boneName) ? ' [IK]' : '';
+                        info.textContent = `${ov.boneName}${ikTag}  P:${ov.euler[0].toFixed(0)} Y:${ov.euler[1].toFixed(0)} R:${ov.euler[2].toFixed(0)}  W:${ov.weight.toFixed(2)}`;
 
                         row.appendChild(info);
                         // [doc:adr-116 P3-3] 编辑按钮：调用 getOverride 回填表单（引擎最新值）
@@ -689,6 +692,17 @@ export function buildAdvancedBoneOverrideLevel(): PopupLevel {
 }
 
 // ======== 内部工具 ========
+
+/** [doc:adr-122 P3] 已知 IK 骨骼名集合（含 IK 目标骨 + 链骨） */
+const IK_BONE_NAMES = new Set([
+    '左足IK', '右足IK', '左腕IK', '右腕IK', '左足首', '右足首',
+    '左ひざ', '右ひざ', '左ひじ', '右ひじ',
+]);
+
+/** [doc:adr-122 P3] 判断骨骼是否为 IK 相关骨骼 */
+function _isIkBone(boneName: string): boolean {
+    return IK_BONE_NAMES.has(boneName) || boneName.endsWith('IK');
+}
 
 /** 按类别分组骨骼选项 */
 function _buildBoneOptions(

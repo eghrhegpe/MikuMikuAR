@@ -23,6 +23,8 @@ export type BoneOverrideEntry = {
     enabled: boolean;
     /** [doc:adr-116] 可选位置覆盖 [x, y, z]（P2 引擎扩展，支持 height/fwdBack 等语义参数） */
     position?: [number, number, number];
+    /** [doc:adr-123 P1] 绝对覆盖模式：true=替换 oldRotation，false/undefined=复合 */
+    absolute?: boolean;
 };
 
 /** 运行时缓存：四元数 + 混合参数 + 可选位置 */
@@ -39,6 +41,13 @@ interface _OverrideSlot {
      * undefined 视为 false（安全默认：绝不静默抹除动画旋转）
      */
     overrideRotation?: boolean;
+    /**
+     * [doc:adr-123 P1] 绝对覆盖模式。
+     * - true：weight≥1 时完全替换 oldRotation（不复合父骨传播）
+     * - false/undefined：复合模式（默认，oldRotation × slot.quat）
+     * 仅 weight≥1 时生效；weight<1 时始终走 Slerp。
+     */
+    absolute?: boolean;
 }
 
 // ── 管理器（per-model） ──
@@ -157,12 +166,15 @@ export interface OverrideSlotLike {
     weight: number;
     pos?: Vector3;
     overrideRotation?: boolean;
+    /** [doc:adr-123 P1] 绝对覆盖模式：true=替换 oldRotation，false/undefined=复合 */
+    absolute?: boolean;
 }
 
 /**
  * [doc:adr-116 P1] 计算单槽覆盖后的平移与旋转。
  * - 平移：slot.pos 存在时 = 动画平移 + 偏移（加法语义）；否则沿用动画平移。
  * - 旋转：仅当 overrideRotation 为 true 才覆盖；否则沿用动画旋转。
+ * - [doc:adr-123 P1] absolute 模式：weight≥1 且 absolute=true 时完全替换 oldRotation。
  * 抽离为纯函数，无需真实骨骼运行时即可单测。
  */
 export function _computeOverride(
@@ -173,7 +185,9 @@ export function _computeOverride(
     const translation = slot.pos ? oldTranslation.add(slot.pos) : oldTranslation;
     const rotation = slot.overrideRotation
         ? slot.weight >= 1
-            ? oldRotation.multiply(slot.quat) // 复合：父骨传播旋转 × 本骨覆盖，不丢失父骨变换
+            ? slot.absolute
+                ? slot.quat // 绝对覆盖：完全替换 oldRotation（不复合父骨传播）
+                : oldRotation.multiply(slot.quat) // 复合：父骨传播旋转 × 本骨覆盖，不丢失父骨变换
             : Quaternion.Slerp(oldRotation, slot.quat, slot.weight)
         : oldRotation;
     return { translation, rotation };
@@ -204,7 +218,9 @@ export function setBoneOverride(
     euler: [number, number, number],
     weight: number,
     enabled = true,
-    modelId?: string
+    modelId?: string,
+    /** [doc:adr-123 P1] 绝对覆盖模式：true=替换 oldRotation，false/undefined=复合 */
+    absolute?: boolean
 ): void {
     const mid = _resolveModelId(modelId);
     if (!mid) {
@@ -219,7 +235,41 @@ export function setBoneOverride(
         // [doc:adr-116 P1] 保留既有位置覆盖，避免旋转覆盖静默清除位置
         pos: existing?.pos,
         overrideRotation: true,
+        absolute,
     });
+}
+
+/**
+ * [doc:adr-122 P1] IK 感知的骨骼覆盖。
+ * 先写入骨骼覆盖（同 setBoneOverride），再检测该骨骼是否挂载 IK 求解器，
+ * 若有则调用 ikSolver.solve() 重解 IK，使覆盖与 IK 解算器协调。
+ * 无 IK 求解器时回退为普通覆盖，不报错。
+ *
+ * @param getRuntimeBones 返回模型运行时骨骼列表的回调（由调用方注入，避免循环依赖）
+ */
+export function applyBoneOverrideIK(
+    boneName: string,
+    euler: [number, number, number],
+    weight: number,
+    enabled = true,
+    modelId?: string,
+    getRuntimeBones?: () => readonly IMmdRuntimeBone[]
+): void {
+    // 1. 写入骨骼覆盖（同 setBoneOverride 语义）
+    setBoneOverride(boneName, euler, weight, enabled, modelId);
+
+    // 2. 检测 IK 求解器，有则重解
+    if (!getRuntimeBones) {
+        return;
+    }
+    const bones = getRuntimeBones();
+    const rb = bones.find((b) => b.name === boneName);
+    if (rb) {
+        const solver = (rb as MmdRuntimeBoneExtended).ikSolver;
+        if (solver) {
+            solver.solve(false);
+        }
+    }
 }
 
 /**
@@ -307,6 +357,8 @@ function _slotToEntry(boneName: string, slot: _OverrideSlot): BoneOverrideEntry 
         weight: slot.weight,
         enabled: slot.enabled,
         position: slot.pos ? [slot.pos.x, slot.pos.y, slot.pos.z] : undefined,
+        // [doc:adr-123 P1] 序列化 absolute 标志
+        absolute: slot.absolute,
     };
 }
 
@@ -404,6 +456,8 @@ export function restoreOverrides(entries: BoneOverrideEntry[], modelId?: string)
             // [doc:adr-116 P1] 含位置字段的条目必为位置覆盖（来自 setBoneOverridePosition），
             // 不应覆盖动画旋转；纯旋转条目（手动覆盖）overrideRotation=true。
             overrideRotation: !e.position,
+            // [doc:adr-123 P1] 反序列化 absolute 标志
+            absolute: e.absolute,
         });
     }
 }
