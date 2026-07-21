@@ -1,7 +1,7 @@
-# ADR-154: 感知层 per-model 实例化 — Phase 2（全员感知 + 性能降级）
+# ADR-164: 感知层 per-model 实例化 — Phase 2（全员感知 + 性能降级）
 
 > **状态**: 已实现（2026-07-21；全员感知 + 三档自动降级已落地，1821 测试通过）
-> **关联**: ADR-071（程序化与感知边界）、ADR-079（感知层扩展）、ADR-147（显式管线调度器）、ADR-152（per-model Phase 1）、ADR-153（冲突可视化）
+> **关联**: ADR-071（程序化与感知边界）、ADR-079（感知层扩展）、ADR-147（显式管线调度器）、ADR-162（per-model Phase 1）、ADR-163（冲突可视化）
 > **来源**: 2026-07-20 感知层审核 P2 — perceptionState 单例导致多模型场景仅焦点模型有感知
 > **日期**: 2026-07-21
 
@@ -11,7 +11,7 @@
 
 ### 1.1 背景
 
-ADR-152 Phase 1 已将感知层从单例重构为 `Map<modelId, PerceptionContext>`，支持焦点模型 + pinned 模型（≤5 个）。但**普通模型仍无感知**，多角色场景下大部分角色仍是"木偶"。
+ADR-162 Phase 1 已将感知层从单例重构为 `Map<modelId, PerceptionContext>`，支持焦点模型 + pinned 模型（≤5 个）。但**普通模型仍无感知**，多角色场景下大部分角色仍是"木偶"。
 
 ### 1.2 为什么 Phase 1 不直接做全员
 
@@ -32,7 +32,7 @@ ADR-152 Phase 1 已将感知层从单例重构为 `Map<modelId, PerceptionContex
 
 ## 二、前置条件（必须先完成）
 
-### 2.1 ADR-152 Phase 1 落地
+### 2.1 ADR-162 Phase 1 落地
 
 `PerceptionContext` 抽象、`_contexts: Map<modelId, Context>` 存储、observer 遍历机制已就位。Phase 2 在此基础上：
 - 移除"仅焦点 + pinned ≤5"限制
@@ -40,7 +40,7 @@ ADR-152 Phase 1 已将感知层从单例重构为 `Map<modelId, PerceptionContex
 
 ### 2.2 性能基准 ADR（待立项）
 
-**必须先做**独立的性能基准 ADR（暂称 ADR-155），测量：
+**必须先做**独立的性能基准 ADR（暂称 ADR-165），测量：
 - 单模型感知层单帧耗时（baseline）
 - N 模型（10/50/100）的帧时间曲线
 - 各感知项（breath/blink/gaze/balance/expression）的耗时占比
@@ -79,21 +79,21 @@ interface PerceptionPerfMonitor {
 - 连续 120 帧 fps > 55 → 自动升一档（滞后避免抖动）
 - 模型数 > 50 → 强制 low 档（不等待 fps 下降）
 
-### 3.3 API 扩展（在 ADR-152 基础上）
+### 3.3 API 扩展（在 ADR-162 基础上）
 
 ```typescript
-// ADR-152 已有
+// ADR-162 已有
 export function activatePerception(modelId?: string): void;
 export function pinPerception(modelId: string): void;
 
-// ADR-154 新增
+// ADR-164 新增
 export function enableAllPerception(): void;           // 全员激活（受 tier 限制）
 export function disableAllPerception(): void;          // 全员关闭（仅焦点保留）
 export function getPerceptionPerfTier(): 'high' | 'medium' | 'low';
 export function setPerceptionPerfTier(tier: 'high' | 'medium' | 'low' | 'auto'): void;
 ```
 
-### 3.4 observer 改造（在 ADR-152 基础上）
+### 3.4 observer 改造（在 ADR-162 基础上）
 
 ```typescript
 perceptionObserver = getMotionPipeline().register({
@@ -150,19 +150,19 @@ perceptionObserver = getMotionPipeline().register({
 
 // 方案 A：扩容池到 600（覆盖 high 档）
 // 方案 B：per-context 独立池（避免大池浪费）
-// 推荐方案 B，与 ADR-152 的 per-context 设计一致
+// 推荐方案 B，与 ADR-162 的 per-context 设计一致
 ```
 
 ### 3.7 冲突 banner 收敛
 
-ADR-153 的冲突 banner 在全员感知下会爆炸（100 模型 × M 模块）。收敛策略：
+ADR-163 的冲突 banner 在全员感知下会爆炸（100 模型 × M 模块）。收敛策略：
 - **默认仅显示焦点模型的冲突**
 - pinned 模型的冲突在 pinned 面板独立显示
 - 普通模型的冲突不显示（tier=low 时感知层大部分关闭，冲突自然减少）
 
 ---
 
-## 四、改动范围（在 ADR-152 基础上）
+## 四、改动范围（在 ADR-162 基础上）
 
 | 文件 | 改动 | 风险 |
 |------|------|------|
@@ -179,7 +179,7 @@ ADR-153 的冲突 banner 在全员感知下会爆炸（100 模型 × M 模块）
 
 | 风险 | 级别 | 缓解措施 |
 |------|------|---------|
-| 100 模型感知导致掉帧 | 🔴 高 | 性能基准 ADR-155 必须先做；自动降级触发 |
+| 100 模型感知导致掉帧 | 🔴 高 | 性能基准 ADR-165 必须先做；自动降级触发 |
 | 对象池扩容导致内存增长 | 🟠 中 | 改 per-context 池，按需分配 |
 | 全员感知时模型加载/移除频繁触发 claimBones | 🟠 中 | claimBones 仅在 activate 时调一次，非每帧 |
 | 冲突 banner 信息爆炸 | 🟡 低 | 仅显示焦点模型冲突 |
@@ -192,10 +192,10 @@ ADR-153 的冲突 banner 在全员感知下会爆炸（100 模型 × M 模块）
 
 | 阶段 | 内容 | 前置条件 |
 |------|------|---------|
-| **Phase 0** | 性能基准 ADR-155 立项与实施 | 无 |
+| **Phase 0** | 性能基准 ADR-165 立项与实施 | 无 |
 | **Phase 1** | PerceptionPerfMonitor 实现；tier 触发逻辑 | Phase 0 完成 |
 | **Phase 2** | observer 加 tier 守卫；感知项降级 | Phase 1 完成 |
-| **Phase 3** | enableAll/disableAll API；scene.ts 自动激活 | ADR-152 落地 |
+| **Phase 3** | enableAll/disableAll API；scene.ts 自动激活 | ADR-162 落地 |
 | **Phase 4** | UI 加全员开关 + tier 显示 | Phase 3 完成 |
 | **Phase 5** | 对象池 per-context 改造 | Phase 1 完成（容量评估后） |
 | **Phase 6** | 测试 + 性能验证 | 全部完成 |
@@ -212,13 +212,13 @@ ADR-153 的冲突 banner 在全员感知下会爆炸（100 模型 × M 模块）
 | low 档下 gaze/balance/expression 关闭 | 实测 |
 | 手动设置 tier=high 覆盖自动降级 | UI 测试 |
 | 冲突 banner 仅显示焦点模型 | UI 检查 |
-| ADR-152 的 pin 功能不受影响 | 回归测试 |
+| ADR-162 的 pin 功能不受影响 | 回归测试 |
 
 ---
 
-## 八、与 ADR-152 的边界
+## 八、与 ADR-162 的边界
 
-| 项 | Phase 1（ADR-152） | Phase 2（本 ADR） |
+| 项 | Phase 1（ADR-162） | Phase 2（本 ADR） |
 |----|-------------------|------------------|
 | 激活模型数 | 焦点 + pinned ≤5 | 全员（受 tier 限制） |
 | 性能降级 | 不需要 | 三档自动 + 手动覆盖 |
@@ -234,7 +234,7 @@ ADR-153 的冲突 banner 在全员感知下会爆炸（100 模型 × M 模块）
 2. **用户手动 tier=auto 与手动档的冲突**：若用户手动设为 high 但帧率持续下降，是否强制降级？当前设计不强制，仅 warn。
 3. **AR 模式下的全员感知**：AR 中通常仅 1 个模型，全员感知意义不大，建议 AR 模式下强制 tier=high 且仅焦点激活。
 4. **模型移除时的 context 清理**：需确保 `modelManager.remove` 时同步调用 `_deactivateContext`，避免内存泄漏。
-5. **性能基准 ADR-155 的测量维度**：建议至少测量 1/10/50/100 模型的帧时间、GC 频率、各感知项耗时占比。
+5. **性能基准 ADR-165 的测量维度**：建议至少测量 1/10/50/100 模型的帧时间、GC 频率、各感知项耗时占比。
 
 ---
 
@@ -244,8 +244,8 @@ ADR-153 的冲突 banner 在全员感知下会爆炸（100 模型 × M 模块）
 |-----|------|---------|
 | ADR-150 | 物理层 | delta 叠加避免 gaze 覆写 VMD |
 | ADR-151 | UI 层 | balanceSway 参数可调 |
-| ADR-152 | 状态层 | per-model context（pinned ≤5） |
-| ADR-153 | 可见性层 | 感知层冲突 banner |
-| **ADR-154** | **性能层** | **全员感知 + 自动降级** |
+| ADR-162 | 状态层 | per-model context（pinned ≤5） |
+| ADR-163 | 可见性层 | 感知层冲突 banner |
+| **ADR-164** | **性能层** | **全员感知 + 自动降级** |
 
 五份 ADR 共同构成感知层「左右脑互博」的完整闭环：从物理根因（delta）到状态架构（per-model）到用户可见性（冲突 banner）到性能保障（全员降级）。
