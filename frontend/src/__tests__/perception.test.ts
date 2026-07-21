@@ -1102,6 +1102,12 @@ describe('ADR-164 enableAllPerception / disableAllPerception', () => {
     it('3. enable→disable→enable toggle 后 lastOffsets 正确重置', () => {
         const mockMorphManager = makeMockMorphManager(['笑み']);
         const mockMmdModel = makeMockModelWithMorphManager(mockMorphManager);
+        // 给 mock 模型一个上半身骨，让 _applyBreathing 真正写入 lastOffsets
+        mockMmdModel.runtimeBones = [{
+            name: '上半身',
+            linkedBone: { rotationQuaternion: { copyFrom: vi.fn(), setAll: vi.fn() } },
+            childBones: [],
+        }];
         const inst = { mmdModel: mockMmdModel };
         mockState.modelManager.get.mockImplementation(() => inst);
         mockState.modelManager.modelRegistry.set('m1', inst);
