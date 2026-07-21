@@ -177,6 +177,8 @@ perceptionObserver = getMotionPipeline().register({
 | 57 项 perception 测试全绿 | `npm run test -- perception.test.ts` |
 | 新增 pin 相关测试通过 | `npm run test -- perception.test.ts` |
 
+> ⚠️ **ADR-166 返工同步（2026-07-21）：** §6 验收标准已过时。Phase 1 pin 功能已随 ADR-164/166 整合入 tier 系统。当前测试基线 1833 项全绿，pinned 模型在 low 档仍保留感知，由 ADR-164 tier 统一控制。旧"57 项"基线已升级为全量回归。
+
 ---
 
 ## 七、与 ADR-164（Phase 2）的边界
@@ -193,5 +195,5 @@ perceptionObserver = getMotionPipeline().register({
 ## 八、开放问题
 
 1. **Pinned 模型的感知参数是否独立？** 当前设计是独立（per-context state），但 UI 编辑 pinned 模型参数需切换"编辑对象"。可考虑「继承焦点参数 + 个别覆盖」模式。
-2. **Pinned 上限 5 是否合适？** 需实测性能后决定。若 5 模型 × 28 = 140 对象池消费无压力，可上调。
+2. **Pinned 上限 5 是否合适？** ~~需实测性能后决定。若 5 模型 × 28 = 140 对象池消费无压力，可上调。~~ → ADR-166 返工后 pinned 上限已移除，由 ADR-164 tier 系统统一控制。
 3. **AR 模式下 pin 行为？** AR 中通常仅 1 个模型，pin 意义不大，可隐藏 UI。
