@@ -8,6 +8,7 @@ import {
     migratePerceptionData,
 } from '../scene/scene-migrate';
 import { _gazeAlpha } from '../scene/motion/perception-shared';
+// updatePerceptionConflictBanner 在测试体内动态导入，避免 vi.resetModules() 后 singleton 漂移
 
 // =====================================================================
 // hoisted mock state
@@ -920,5 +921,93 @@ describe('migratePerceptionData', () => {
     it('null/undefined 输入返回 null', () => {
         expect(migratePerceptionData(null)).toBeNull();
         expect(migratePerceptionData(undefined)).toBeNull();
+    });
+});
+
+// =====================================================================
+// [doc:adr-163] 感知层冲突可视化
+// =====================================================================
+
+describe('ADR-163 claimBones', () => {
+    async function getStore() {
+        const mod = await import('../scene/motion/bone-override-store');
+        return mod.getBoneOverrideStore();
+    }
+
+    beforeEach(async () => {
+        // 清理 store 中可能残留的冲突状态（使用与 sut 同一次模块求值的 store）
+        const store = await getStore();
+        store.disposeModel('m1');
+        store.disposeModel('m2');
+    });
+
+    it('a) activatePerception 后感知层骨骼被正确认领', async () => {
+        mockState.focusedModelId = 'm1';
+        mockState.modelManager.get.mockReturnValue({
+            mmdModel: { mesh: { isDisposed: () => false }, runtimeBones: [] },
+        });
+        sut.activatePerception('m1');
+        const store = await getStore();
+        expect(store.getOwnedBones('m1', 'perception.gaze.head').size).toBeGreaterThan(0);
+        expect(store.getOwnedBones('m1', 'perception.gaze.eye').size).toBeGreaterThan(0);
+        expect(store.getOwnedBones('m1', 'perception.breath').size).toBeGreaterThan(0);
+        expect(store.getOwnedBones('m1', 'perception.balance.center').size).toBeGreaterThan(0);
+    });
+
+    it('b) P1 抢占后感知层 ownedBones 不再包含被抢占骨骼', async () => {
+        mockState.focusedModelId = 'm1';
+        mockState.modelManager.get.mockReturnValue({
+            mmdModel: { mesh: { isDisposed: () => false }, runtimeBones: [] },
+        });
+        sut.activatePerception('m1');
+
+        const store = await getStore();
+        const before = store.getOwnedBones('m1', 'perception.gaze.head');
+        expect(before.has('頭')).toBe(true);
+
+        // P1 模块抢占 頭
+        store.claimBones('m1', 'body-posture', 1, ['頭']);
+
+        const after = store.getOwnedBones('m1', 'perception.gaze.head');
+        expect(after.has('頭')).toBe(false);
+    });
+
+    it('c) deactivatePerception 后 ownedBones 被释放', async () => {
+        mockState.focusedModelId = 'm1';
+        mockState.modelManager.get.mockReturnValue({
+            mmdModel: { mesh: { isDisposed: () => false }, runtimeBones: [] },
+        });
+        sut.activatePerception('m1');
+
+        const store = await getStore();
+        expect(store.getOwnedBones('m1', 'perception.gaze.head').size).toBeGreaterThan(0);
+
+        sut.deactivatePerception();
+
+        expect(store.getOwnedBones('m1', 'perception.gaze.head').size).toBe(0);
+        expect(store.getOwnedBones('m1', 'perception.gaze.eye').size).toBe(0);
+        expect(store.getOwnedBones('m1', 'perception.breath').size).toBe(0);
+    });
+
+    it('d) 冲突 banner 文本内容正确', async () => {
+        const store = await getStore();
+        store.claimBones('m1', 'perception.gaze.head', 100, ['頭']);
+        store.claimBones('m1', 'body-posture', 1, ['頭']);
+
+        const { updatePerceptionConflictBanner } = await import('../menus/motion-gaze-levels');
+        const el = document.createElement('div');
+        updatePerceptionConflictBanner(el, 'm1');
+
+        expect(el.textContent).toContain('perception.gaze.head');
+        expect(el.textContent).toContain('頭');
+        expect(el.textContent).toContain('body-posture');
+        expect(el.style.display).not.toBe('none');
+    });
+
+    it('d) 冲突 banner 无冲突时隐藏', async () => {
+        const { updatePerceptionConflictBanner } = await import('../menus/motion-gaze-levels');
+        const el = document.createElement('div');
+        updatePerceptionConflictBanner(el, 'm1');
+        expect(el.style.display).toBe('none');
     });
 });

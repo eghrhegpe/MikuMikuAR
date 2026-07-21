@@ -33,6 +33,8 @@ import {
     _clampHeadGazeTarget,
     _clampEyeGazeTarget,
     applyGazeWasm,
+    HEAD_BONE_CANDIDATES,
+    EYE_BONE_CANDIDATES,
 } from './perception-gaze';
 import { _applyBreathing, _resetBreathingState } from './perception-breathing';
 import { _applyBlinking } from './perception-blinking';
@@ -41,6 +43,17 @@ import { _applyBalanceSway, _resetBalanceSwayState } from './perception-balance'
 import { clamp01 } from '@/core/utils';
 import { logWarn } from '@/core/logger';
 import { _applyLipSync } from './perception-lipsync';
+import { getBoneOverrideStore } from './bone-override-store';
+import { releaseOwnedBones } from './motion-modules/registry';
+import {
+    BONE_UPPER_CANDIDATES,
+    BONE_NECK_CANDIDATES,
+    BONE_HEAD_CANDIDATES,
+    BONE_CENTER_CANDIDATES,
+    BONE_UPPER2_CANDIDATES,
+    BONE_WAIST_CANDIDATES,
+    BONE_ALLPARENT_CANDIDATES,
+} from '../../motion-algos/proc-motion-shared';
 
 // ── re-export（保持外部导入路径不变） ──
 export type { Emotion, PerceptionState, GazeConfig, PerceptionContext, BalanceSwayState };
@@ -62,6 +75,8 @@ let _contexts = new Map<string, PerceptionContext>();
 /** 当前焦点模型 ID */
 let _focusedContextId: string | null = null;
 let perceptionObserver: (() => void) | null = null;
+/** [doc:adr-163] 感知层已认领骨骼：modelId → moduleId → claimed[] */
+let _perceptionOwnedBones = new Map<string, Map<string, string[]>>();
 
 // ══════════════════════════════════════════════════════════════
 // 内部 helpers
@@ -138,6 +153,53 @@ function _resetContextOffsets(ctx: PerceptionContext): void {
     ctx.lastOffsets.emotion = null;
 }
 
+/** [doc:adr-163] 为指定模型认领感知层骨骼（P3=100） */
+function _claimPerceptionBones(modelId: string): void {
+    const store = getBoneOverrideStore();
+    const perModel = new Map<string, string[]>();
+    _perceptionOwnedBones.set(modelId, perModel);
+
+    const headClaimed = store.claimBones(modelId, 'perception.gaze.head', 100, HEAD_BONE_CANDIDATES);
+    perModel.set('perception.gaze.head', headClaimed);
+
+    const eyeClaimed = store.claimBones(modelId, 'perception.gaze.eye', 100, EYE_BONE_CANDIDATES);
+    perModel.set('perception.gaze.eye', eyeClaimed);
+
+    const breathBones = [
+        ...BONE_UPPER_CANDIDATES,
+        ...BONE_NECK_CANDIDATES,
+        ...BONE_HEAD_CANDIDATES,
+    ];
+    const breathClaimed = store.claimBones(modelId, 'perception.breath', 100, breathBones);
+    perModel.set('perception.breath', breathClaimed);
+
+    const centerBones = [...BONE_CENTER_CANDIDATES, ...BONE_ALLPARENT_CANDIDATES];
+    const centerClaimed = store.claimBones(modelId, 'perception.balance.center', 100, centerBones);
+    perModel.set('perception.balance.center', centerClaimed);
+
+    const upperClaimed = store.claimBones(modelId, 'perception.balance.upper', 100, BONE_UPPER2_CANDIDATES);
+    perModel.set('perception.balance.upper', upperClaimed);
+
+    const waistClaimed = store.claimBones(modelId, 'perception.balance.waist', 100, BONE_WAIST_CANDIDATES);
+    perModel.set('perception.balance.waist', waistClaimed);
+}
+
+/** [doc:adr-163] 释放指定模型的全部感知层骨骼 */
+function _releasePerceptionBones(modelId: string): void {
+    const modules = [
+        'perception.gaze.head',
+        'perception.gaze.eye',
+        'perception.breath',
+        'perception.balance.center',
+        'perception.balance.upper',
+        'perception.balance.waist',
+    ];
+    for (const moduleId of modules) {
+        releaseOwnedBones(modelId, moduleId);
+    }
+    _perceptionOwnedBones.delete(modelId);
+}
+
 /** 对单个 context 应用完整感知管线（[doc:adr-162] Phase 2 抽取） */
 function _applyPerceptionForContext(
     ctx: PerceptionContext,
@@ -146,11 +208,13 @@ function _applyPerceptionForContext(
     dt: number
 ): void {
     const state = ctx.state;
+    const owned = _perceptionOwnedBones.get(ctx.modelId);
 
     // 1. 呼吸
     if (state.breathEnabled) {
         try {
-            _applyBreathing(mmdModel, time);
+            const claimed = owned?.get('perception.breath');
+            _applyBreathing(mmdModel, time, claimed);
         } catch (e) {
             logWarn('perception', 'breathing 异常:', (e as Error)?.message);
         }
@@ -179,12 +243,18 @@ function _applyPerceptionForContext(
 
     // 4. 重心微动（balance sway，[doc:adr-079] Phase 2）
     try {
+        const centerClaimed = owned?.get('perception.balance.center');
+        const upperClaimed = owned?.get('perception.balance.upper');
+        const waistClaimed = owned?.get('perception.balance.waist');
         _applyBalanceSway(
             mmdModel,
             time,
             state.balanceSwayEnabled,
             state.balanceSwayPeriod,
-            state.balanceSwayAmplitude
+            state.balanceSwayAmplitude,
+            centerClaimed,
+            upperClaimed,
+            waistClaimed
         );
     } catch (e) {
         logWarn('perception', 'balance-sway 异常:', (e as Error)?.message);
@@ -208,10 +278,12 @@ function _applyPerceptionForContext(
         const cam = getScene().activeCamera;
         if (cam) {
             try {
+                const headClaimed = owned?.get('perception.gaze.head');
+                const eyeClaimed = owned?.get('perception.gaze.eye');
                 _applyGaze(mmdModel, cam, {
                     headEnabled: state.headTrackingEnabled,
                     eyeEnabled: state.eyeTrackingEnabled,
-                }, dt);
+                }, dt, headClaimed, eyeClaimed);
             } catch (e) {
                 logWarn('perception', 'gaze 异常:', (e as Error)?.message);
             }
@@ -223,6 +295,7 @@ function _applyPerceptionForContext(
 function _deactivateContext(modelId: string): void {
     const ctx = _contexts.get(modelId);
     if (!ctx) return;
+    _releasePerceptionBones(modelId);
     ctx.isActive = false;
     if (_focusedContextId === modelId) {
         _focusedContextId = null;
@@ -313,6 +386,7 @@ export function activatePerception(modelId?: string): void {
     _focusedContextId = targetId;
     ctx.isActive = true;
 
+    _claimPerceptionBones(targetId);
     _ensureObserverRegistered();
 
     logWarn(
@@ -350,6 +424,7 @@ export function deactivatePerception(): void {
     _resetGazeState(); // 重置 gaze 状态，避免关闭后重新开启出现跳跃
 
     if (_focusedContextId) {
+        _releasePerceptionBones(_focusedContextId);
         const ctx = _contexts.get(_focusedContextId);
         if (ctx) {
             _resetContextOffsets(ctx);
@@ -565,6 +640,7 @@ export function pinPerception(modelId: string, state?: Partial<PerceptionState>)
         ctx.state = { ...ctx.state, ...state };
     }
 
+    _claimPerceptionBones(modelId);
     _ensureObserverRegistered();
     logWarn('perception', `pin: 模型=${modelId}`);
 }
@@ -578,6 +654,7 @@ export function unpinPerception(modelId: string): void {
 
     // 非焦点模型：取消激活
     if (_focusedContextId !== modelId) {
+        _releasePerceptionBones(modelId);
         ctx.isActive = false;
         _resetContextOffsets(ctx);
     }
@@ -635,6 +712,9 @@ export function setGazeConfig(headEnabled: boolean, eyeEnabled: boolean): void {
 export function onPerceptionModelRemoved(id: string): void {
     if (_focusedContextId === id) {
         deactivatePerception();
+    } else {
+        _releasePerceptionBones(id);
     }
     _contexts.delete(id);
+    _perceptionOwnedBones.delete(id);
 }
