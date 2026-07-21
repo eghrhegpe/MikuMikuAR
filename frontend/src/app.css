@@ -1902,7 +1902,18 @@ textarea,
     font-size: calc(11px * var(--ui-scale));
     color: var(--text);
 }
-/* key-value 字段行（addFieldRow）：隐藏左侧空图标占位后，将值推至行尾右对齐 */
+/* key-value 字段行（addFieldRow）：纯展示信息，无需 38px 触控热区，压缩为紧凑行 */
+.field-row {
+    min-height: calc(24px * var(--ui-scale));
+    padding-top: calc(2px * var(--ui-scale));
+    padding-bottom: calc(2px * var(--ui-scale));
+    margin-bottom: 0;
+    cursor: default;
+}
+.field-row:hover {
+    background: transparent;
+}
+/* 隐藏左侧空图标占位后，将值推至行尾右对齐 */
 .field-row .field-value {
     margin-left: auto;
 }
