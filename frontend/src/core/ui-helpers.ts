@@ -13,6 +13,8 @@ export {
     toggleRow,
     addDangerRow,
     addFieldRow,
+    addInfoGrid,
+    addInfoCard,
     addEmptyRow,
     addWatchDirRow,
     addActionRow,
