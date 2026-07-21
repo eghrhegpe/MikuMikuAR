@@ -1,11 +1,4 @@
-import {
-    Color4,
-    Vector3,
-    Texture,
-    GPUParticleSystem,
-    ParticleSystem,
-    Scene,
-} from '@babylonjs/core';
+import { Color4, Vector3, Texture, GPUParticleSystem, ParticleSystem } from '@babylonjs/core';
 import { EnvState, envState } from '@/core/config';
 import { modelRegistry } from '@/core/scene-state';
 import { getWindVector } from '@/core/wind-utils';
@@ -286,8 +279,6 @@ interface ParticleConfig {
     colors: Array<[number, Color4, Color4]>;
 }
 
-const WEATHER_EMITTER: ParticleConfig['emitter'] = undefined; // 各天气类型覆盖
-
 const PARTICLE_CONFIGS: Record<string, ParticleConfig> = {
     sakura: {
         blendMode: ParticleSystem.BLENDMODE_STANDARD,
@@ -542,7 +533,6 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
 }
 
 export function disposeParticles(): void {
-    const scene = getScene();
     _collisionObserver = safeDispose(_collisionObserver);
     _envSys.particles.followObserver = safeDispose(_envSys.particles.followObserver);
     _envSys.particles.system = safeDispose(_envSys.particles.system);

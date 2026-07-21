@@ -1,18 +1,15 @@
 import { Scene } from '@babylonjs/core/scene';
-import { Camera } from '@babylonjs/core/Cameras/camera';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { Vector3, Matrix } from '@babylonjs/core/Maths/math.vector';
 import { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import { DynamicTexture } from '@babylonjs/core/Materials/Textures/dynamicTexture';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { safeDispose } from '@/core/dispose-helpers';
-import { Constants } from '@babylonjs/core/Engines/constants';
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
 import { ShaderMaterial } from '@babylonjs/core/Materials/shaderMaterial';
 import { DirectionalLight } from '@babylonjs/core/Lights/directionalLight';
 import { DefaultRenderingPipeline } from '@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline';
-import { Effect } from '@babylonjs/core/Materials/effect';
 
 import { Plane } from '@babylonjs/core/Maths/math.plane';
 import { EnvState, envState } from '@/core/config';
@@ -44,10 +41,6 @@ const RIPPLE_INFINITY_LIFE = 9999;
 // 焦散着色系数（暗部底色 / 亮部增量）
 const CAUSTIC_DARK_FACTOR = 0.3;
 const CAUSTIC_BRIGHT_FACTOR = 0.9;
-// 涟漪扩展速率
-const RIPPLE_EXPANSION_RATE = 0.15;
-// 涟漪 shader 衰减系数
-const RIPPLE_SHADER_FADE_FACTOR = 0.8;
 // deltaTime 钳制上限（秒），防止切后台返回时跳变
 const DT_CLAMP_MAX = 0.1;
 // 水下雾密度系数
