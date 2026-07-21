@@ -102,8 +102,17 @@ var sceneFilters = []application.FileFilter{
 	{DisplayName: "All Files (*.*)", Pattern: "*.*"},
 }
 
+var motionPresetFilters = []application.FileFilter{
+	{DisplayName: "MikuMikuAR Motion Preset (*.mcpreset.json)", Pattern: "*.mcpreset.json"},
+	{DisplayName: "All Files (*.*)", Pattern: "*.*"},
+}
+
 func SelectPresetOpen(wailsApp *application.App, startDir string) (string, error) {
 	return OpenFile(wailsApp, "加载模型预设", presetFilters, startDir)
+}
+
+func SelectMotionPresetOpen(wailsApp *application.App, startDir string) (string, error) {
+	return OpenFile(wailsApp, "加载动作预设", motionPresetFilters, startDir)
 }
 
 func SelectSceneOpen(wailsApp *application.App, startDir string) (string, error) {
@@ -131,6 +140,10 @@ func SaveFile(wailsApp *application.App, title, filename string, filters []appli
 
 func SelectPresetSave(wailsApp *application.App, startDir string) (string, error) {
 	return SaveFile(wailsApp, "保存模型预设", "preset.mcupreset.json", presetFilters, startDir)
+}
+
+func SelectMotionPresetSave(wailsApp *application.App, startDir string) (string, error) {
+	return SaveFile(wailsApp, "保存动作预设", "preset.mcpreset.json", motionPresetFilters, startDir)
 }
 
 func SelectSceneSave(wailsApp *application.App, startDir string) (string, error) {

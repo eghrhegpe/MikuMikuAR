@@ -32,6 +32,8 @@ export const ENV_STATE_SCHEMA = {
     starsEnabled: { type: 'boolean', default: false, group: 'sky' },
     starsTexture: { type: 'string', default: '', group: 'sky' },
     envIntensity: { type: 'number', default: 2, group: 'sky' },
+    // [doc:adr-132] 环境亮度统一标量：作为天空/IBL/云/主光/环境光的全局明暗基准
+    envBrightness: { type: 'number', default: 1, group: 'sky' },
 
     // --- Ground ---
     groundVisible: { type: 'boolean', default: true, group: 'ground' },

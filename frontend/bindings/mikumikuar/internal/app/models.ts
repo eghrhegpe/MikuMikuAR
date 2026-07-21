@@ -156,6 +156,7 @@ export interface EnvState {
     "starsEnabled": boolean;
     "starsTexture": string;
     "envIntensity": number;
+    "envBrightness": number;
     "groundVisible": boolean;
     "groundType": string;
     "groundStyle": string;

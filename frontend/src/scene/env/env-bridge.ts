@@ -74,6 +74,7 @@ const _CONTACT_SHADOW_KEYS = [
 /** 等同于 scene-env.ts 的 applyEnvState，但避免循环依赖。 */
 function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): void {
     const changed = partial ? new Set(Object.keys(partial)) : null;
+    const envBrightness = state.envBrightness ?? 1;
 
     // 统一反射质量：reflectionQuality 变化时同步 groundReflectionQuality（Go binding 兼容）
     if (partial?.reflectionQuality !== undefined) {
@@ -97,13 +98,13 @@ function _applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): voi
     ];
     const hemi = getHemiLight();
     if (hemi) {
-        hemi.intensity = getLightState().hemiIntensity;
+        hemi.intensity = getLightState().hemiIntensity * envBrightness;
         hemi.diffuse = col3FromTriple(skyMid);
         // groundColor 从 skyColorBot 派生，保持三色统一
         hemi.groundColor = col3FromTriple(state.skyColorBot);
     }
     // 场景环境色 — envIntensity 控制渗透力度，最大不超过 0.5 以免冲淡方向光
-    const ambientStrength = Math.min(state.envIntensity * 0.15, ENV_LIGHT_MAX);
+    const ambientStrength = Math.min(state.envIntensity * 0.15 * envBrightness, ENV_LIGHT_MAX * envBrightness);
     scene.ambientColor = new Color3(
         skyMid[0] * ambientStrength,
         skyMid[1] * ambientStrength,

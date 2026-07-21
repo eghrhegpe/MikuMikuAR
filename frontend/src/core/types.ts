@@ -43,6 +43,23 @@ export type MotionModuleState = {
     params: Record<string, ParamValue>;
 };
 
+/** [doc:adr-145] 单模块在预设中的状态快照 */
+export type PresetModuleState = {
+    enabled: boolean;
+    params: Record<string, ParamValue>;
+};
+
+/** [doc:adr-145] 动作预设 DTO */
+export type MotionPreset = {
+    id: string;
+    name: string;
+    description?: string;
+    /** 各模块的参数快照（以 moduleId 为 key） */
+    modules: Record<string, PresetModuleState>;
+    /** 可选：模型骨骼映射（用于跨模型适配） */
+    boneMapping?: Record<string, string>;
+};
+
 // ======== Procedural Motion Config (ADR-XX per-motion) ========
 
 import type { ProcMotionState } from '@/motion-algos/procedural-motion';
@@ -221,6 +238,8 @@ export type ModelInstance = {
     boneOverrides: BoneOverrideEntry[];
     /** [doc:adr-116] 动作覆盖模块语义状态（per-model） */
     motionOverrideModules?: MotionModuleState[];
+    /** [doc:adr-145] 多模块协同预设列表（per-model） */
+    motionPresets?: MotionPreset[];
     /** [doc:adr-085] 脚部地面跟随状态（按模型） */
     feet: FeetState;
     /** 程序化动作状态（per-model），未设置时使用全局默认值 */

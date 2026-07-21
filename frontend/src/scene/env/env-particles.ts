@@ -22,7 +22,7 @@ interface SplashBurst {
     busy: boolean;
     releaseTimer: ReturnType<typeof setTimeout> | null;
 }
-const SPLASH_POOL_SIZE = 12; // [doc:adr-123 Phase 3] 增大池容量以支持雨天地面溅射
+const SPLASH_POOL_SIZE = 12; // [doc:adr-160] 增大池容量以支持雨天地面溅射
 let _splashBurstPool: SplashBurst[] = [];
 let _splashPoolReady = false;
 
@@ -30,10 +30,10 @@ let _splashPoolReady = false;
 let _collisionObserver: ObserverHandle | null = null;
 
 // ======== 湿身效果（Wet Body Effect）========
-// [doc:adr-123 Phase 3] 雨天时降低模型材质粗糙度，模拟湿身反光效果
+// [doc:adr-160] 雨天时降低模型材质粗糙度，模拟湿身反光效果
 let _wetnessActive = false;
-/** 存储各 mesh 被修改前的原始 roughness 值 */
-const _originalRoughness = new Map<string, number>();
+/** 存储各材质被修改前的原始 roughness 值（以 material.uniqueId 为 key 去重，避免共享材质重复衰减） */
+const _originalRoughness = new Map<number, number>();
 
 /** 应用湿身效果：降低所有模型材质的 roughness */
 function _applyWetnessToModels(): void {
@@ -52,10 +52,14 @@ function _applyWetnessToModels(): void {
             if (!mat) {
                 continue;
             }
+            // 共享材质去重：同一材质只处理一次，避免 roughness 被多次 *0.5
+            if (_originalRoughness.has(mat.uniqueId)) {
+                continue;
+            }
             // 保存原始 roughness（PBRMaterial 用 roughness，StandardMaterial 无直接对应）
             const pbr = mat as unknown as { roughness?: number };
             if (pbr.roughness !== undefined) {
-                _originalRoughness.set(mesh.id, pbr.roughness);
+                _originalRoughness.set(mat.uniqueId, pbr.roughness);
                 pbr.roughness = Math.max(0.1, pbr.roughness * 0.5); // 粗糙度减半，最低 0.1
             }
         }
@@ -73,14 +77,20 @@ function _removeWetnessFromModels(): void {
             continue;
         }
         for (const mesh of inst.meshes) {
-            const orig = _originalRoughness.get(mesh.id);
+            const mat = mesh.material;
+            if (!mat) {
+                continue;
+            }
+            const orig = _originalRoughness.get(mat.uniqueId);
             if (orig === undefined) {
                 continue;
             }
-            const mat = mesh.material as unknown as { roughness?: number };
-            if (mat && mat.roughness !== undefined) {
-                mat.roughness = orig;
+            const pbr = mat as unknown as { roughness?: number };
+            if (pbr.roughness !== undefined) {
+                pbr.roughness = orig;
             }
+            // 同一材质只恢复一次，恢复后删除，避免共享材质重复命中
+            _originalRoughness.delete(mat.uniqueId);
         }
     }
     _originalRoughness.clear();
@@ -447,10 +457,11 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
     if (_envSys.particles.system && _currentParticleType === type) {
         return;
     }
-    // [doc:adr-123 Phase 3] 粒子类型切换时同步湿身效果
+    // [doc:adr-160] 粒子类型切换时同步湿身效果
     const prevType = _currentParticleType;
     if (_envSys.particles.system) {
-        disposeParticles();
+        // keepWetness=true：内部重建不清湿身，湿身由紧随其后的类型判断逻辑处理
+        disposeParticles(true);
     }
     _currentParticleType = type;
     // 湿身效果：进入/退出雨天时切换
@@ -532,7 +543,7 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
     }
 }
 
-export function disposeParticles(): void {
+export function disposeParticles(keepWetness = false): void {
     _collisionObserver = safeDispose(_collisionObserver);
     _envSys.particles.followObserver = safeDispose(_envSys.particles.followObserver);
     _envSys.particles.system = safeDispose(_envSys.particles.system);
@@ -551,6 +562,11 @@ export function disposeParticles(): void {
     _baseMinEmitPower = 0;
     _baseMaxEmitPower = 0;
     _prevCustomTexKey = null;
+    // 彻底停止粒子（type→none / particleEnabled=false / 场景销毁）时移除湿身，防止状态泄漏；
+    // 内部类型切换重建（keepWetness=true）不清，交由 createParticleEmitter 类型判断处理
+    if (!keepWetness) {
+        _removeWetnessFromModels();
+    }
     // 不重置 _currentParticleType，以便 particleEnabled 自动恢复时知道上次类型
 }
 

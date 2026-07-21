@@ -29,7 +29,12 @@ import { getPlanarQualityOverride } from './env-reflection';
 import { createCanvasTexture, getOrCreateCanvasTexture, isCacheOwnedTexture } from './env-texture';
 import { _envSys, getScene } from './env-context';
 import { ensureEnvUpdateObserver } from './env-impl';
-import { getGroundRippleTexture, hasActiveGroundRipples } from './env-water';
+import {
+    getGroundRippleTexture,
+    hasActiveGroundRipples,
+    setGroundGeometryProvider,
+    disposeGroundRipples,
+} from './env-water';
 import { getCanvasCtx } from './env-type-helpers';
 
 // ======== ADR-114: 材质适配层（StandardMaterial ↔ PBRMaterial）========
@@ -455,6 +460,10 @@ function disposeGroundMaterial(mat: Material | null): void {
 // 无限地面改为固定大 mesh + 纹理世界空间平铺，不再跟随相机移动。
 const INFINITE_GROUND_SIZE = 2000; // 无限地面 mesh 固定尺寸（匹配碰撞体范围）
 let _groundActualSize = 60; // 当前 mesh 实际尺寸（用于 UV 补偿计算）
+
+// [doc:adr-160] 向 env-water 注入地面几何，供涟漪世界坐标→UV 映射。
+// 地面 mesh 不跟随相机，中心在原点 XZ，尺寸为 _groundActualSize。
+setGroundGeometryProvider(() => ({ centerX: 0, centerZ: 0, size: _groundActualSize }));
 
 // ======== Module state ========
 let _currentGroundKey: string = '';
@@ -1016,7 +1025,7 @@ export function applyGround(state: EnvState): void {
                 _syncGroundTextureOffset(mat, state);
             }
             _syncGroundNormalTexture(mat, state);
-            // [doc:adr-123 Phase 2] 地面涟漪法线纹理叠加
+            // [doc:adr-160] 地面涟漪法线纹理叠加
             if (hasActiveGroundRipples()) {
                 _syncGroundRippleTexture(mat, scene);
             } else if (_groundRippleApplied) {
@@ -1476,4 +1485,8 @@ export function disposeGround(): void {
     _prevGroundPitch = NaN;
     _prevGroundRoll = NaN;
     clearGroundTexCache();
+    // 地面涟漪：mesh 已销毁，复位应用标志与暂存的原始 bumpTexture 引用，并释放涟漪纹理
+    _groundRipples = null;
+    _groundRippleApplied = false;
+    disposeGroundRipples();
 }

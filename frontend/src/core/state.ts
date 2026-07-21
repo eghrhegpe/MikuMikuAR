@@ -37,6 +37,7 @@ function buildDefaultEnvState(): EnvState {
         starsEnabled: s.starsEnabled.default,
         starsTexture: s.starsTexture.default,
         envIntensity: s.envIntensity.default,
+        envBrightness: s.envBrightness.default,
         groundVisible: s.groundVisible.default,
         groundType: s.groundType.default,
         groundStyle: s.groundStyle.default,

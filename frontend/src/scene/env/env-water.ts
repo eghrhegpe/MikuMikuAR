@@ -290,6 +290,21 @@ let _groundRippleTex: DynamicTexture | null = null;
 let _groundRippleScene: Scene | null = null;
 let _groundRippleDirty = false;
 
+// 地面几何提供者（由 env-ground 注入，避免 env-water→env-ground 循环依赖）。
+// 用于将涟漪世界坐标映射到地面 mesh 的 UV 空间。默认原点居中、尺寸 60。
+let _groundGeomProvider: () => { centerX: number; centerZ: number; size: number } = () => ({
+    centerX: 0,
+    centerZ: 0,
+    size: 60,
+});
+
+/** 注入地面几何提供者（env-ground 在模块初始化时调用一次） */
+export function setGroundGeometryProvider(
+    provider: () => { centerX: number; centerZ: number; size: number }
+): void {
+    _groundGeomProvider = provider;
+}
+
 /** 添加地面涟漪（粒子落地时调用） */
 export function addGroundRipple(
     pos: Vector3,
@@ -350,6 +365,14 @@ function _fillGroundRippleSlot(
 export function clearGroundRipples(): void {
     _groundRipples = [];
     _groundRippleDirty = true;
+}
+
+/** 释放地面涟漪纹理与状态（由 disposeWater / disposeGround 调用，防止 GPU 纹理泄漏） */
+export function disposeGroundRipples(): void {
+    _groundRippleTex = safeDispose(_groundRippleTex);
+    _groundRippleScene = null;
+    _groundRipples = [];
+    _groundRippleDirty = false;
 }
 
 /** 获取地面涟漪纹理（供 env-ground 设置到 bumpTexture） */
@@ -419,6 +442,12 @@ export function updateGroundRipples(dt: number): void {
     ctx.fillStyle = 'rgb(128,128,255)';
     ctx.fillRect(0, 0, S, S);
 
+    // 地面 mesh 几何：将涟漪世界坐标映射到纹理 UV（原点/尺寸由 env-ground 注入）
+    const geom = _groundGeomProvider();
+    const halfSize = geom.size / 2 || 30;
+    // 世界单位 → 像素比例（用于半径换算，使涟漪大小与地面尺度一致）
+    const worldToPixel = S / geom.size;
+
     for (const r of _groundRipples) {
         if (r.life <= 0) {
             continue;
@@ -426,17 +455,32 @@ export function updateGroundRipples(dt: number): void {
         const lifeRatio = r.life / (r.maxLife || 1);
         const alpha = Math.max(0, lifeRatio);
         const currentRadius = r.radius * (1 + (1 - lifeRatio) * 0.5);
-        const pixelRadius = Math.max(2, currentRadius * (S / 200));
+        const pixelRadius = Math.max(2, currentRadius * worldToPixel);
+
+        // 世界坐标 → UV → 像素中心。地面 mesh 中心对应纹理中心。
+        const u = (r.position.x - geom.centerX) / geom.size + 0.5;
+        const v = (r.position.z - geom.centerZ) / geom.size + 0.5;
+        // 落在地面范围外的涟漪跳过绘制（含半径外扩容差）
+        if (
+            r.position.x < geom.centerX - halfSize - currentRadius ||
+            r.position.x > geom.centerX + halfSize + currentRadius ||
+            r.position.z < geom.centerZ - halfSize - currentRadius ||
+            r.position.z > geom.centerZ + halfSize + currentRadius
+        ) {
+            continue;
+        }
+        const px = u * S;
+        const py = v * S;
 
         // 径向渐变法线扰动：中心法线偏转最大，向外衰减
-        const grad = ctx.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, pixelRadius);
+        const grad = ctx.createRadialGradient(px, py, 0, px, py, pixelRadius);
         // 涟漪中心：法线偏转（r=偏红, g=偏绿, b=255）
         const rStrength = r.strength * alpha;
         grad.addColorStop(0, `rgb(${128 + rStrength * 80}, ${128}, 255)`);
         grad.addColorStop(0.5, `rgb(128, ${128 + rStrength * 60}, 255)`);
         grad.addColorStop(1, 'rgb(128,128,255)');
         ctx.fillStyle = grad;
-        ctx.fillRect(S / 2 - pixelRadius, S / 2 - pixelRadius, pixelRadius * 2, pixelRadius * 2);
+        ctx.fillRect(px - pixelRadius, py - pixelRadius, pixelRadius * 2, pixelRadius * 2);
     }
 
     // 更新 texture
@@ -1051,11 +1095,7 @@ export function disposeWater(): void {
     _waterPhase = 0;
     _waterWaveSpeed = 1;
     clearRipples(); // 清理残留涟漪，避免 dispose 后再次 createWater 时显示旧数据
-    // 释放地面涟漪纹理
-    _groundRippleTex = safeDispose(_groundRippleTex);
-    _groundRippleScene = null;
-    _groundRipples = [];
-    _groundRippleDirty = false;
+    disposeGroundRipples(); // 释放地面涟漪 DynamicTexture（256×256）+ 状态，防止 GPU 泄漏
     // 释放焦散纹理，防止内存泄漏
     _causticTexture = safeDispose(_causticTexture);
     _causticScene = null;

@@ -147,6 +147,8 @@ function drawSkyGradient(
 
 function updateSkyDynamicTexture(state: EnvState): DynamicTexture {
     const scene = getScene();
+    const envBrightness = state.envBrightness ?? 1;
+    const effectiveSkyBrightness = state.skyBrightness * envBrightness;
     let tex = _envSys.sky.skyDynamicTex;
     if (!tex) {
         tex = new DynamicTexture(
@@ -177,7 +179,7 @@ function updateSkyDynamicTexture(state: EnvState): DynamicTexture {
         col3FromTriple(state.skyColorTop),
         col3FromTriple(state.skyColorMid),
         col3FromTriple(state.skyColorBot),
-        state.skyBrightness,
+        effectiveSkyBrightness,
         state.sunAngle,
         state.starsEnabled,
         starsImg
@@ -200,7 +202,7 @@ function updateSkyDynamicTexture(state: EnvState): DynamicTexture {
                 col3FromTriple(state.skyColorTop),
                 col3FromTriple(state.skyColorMid),
                 col3FromTriple(state.skyColorBot),
-                state.skyBrightness,
+                effectiveSkyBrightness,
                 state.sunAngle,
                 state.starsEnabled,
                 img
@@ -252,8 +254,10 @@ function createProceduralSky(state: EnvState): void {
     // 为 PBR 材质创建简单环境贴图（IBL）
     createProceduralEnvTexture(state, scene);
     
+    const envBrightness = state.envBrightness ?? 1;
+    const effectiveSkyBrightness = state.skyBrightness * envBrightness;
     const starsPhase = state.starsEnabled ? (state.sunAngle > 10 ? 'h' : 'l') : '';
-    _lastProceduralSkyKey = `${state.skyColorTop}|${state.skyColorMid}|${state.skyColorBot}|${state.skyBrightness}|${state.starsEnabled}|${state.starsTexture}|${starsPhase}`;
+    _lastProceduralSkyKey = `${state.skyColorTop}|${state.skyColorMid}|${state.skyColorBot}|${effectiveSkyBrightness}|${state.starsEnabled}|${state.starsTexture}|${starsPhase}`;
 }
 
 /** 为 PBR 材质创建简单环境立方体贴图（基于天空渐变颜色） */
@@ -268,7 +272,7 @@ function createProceduralEnvTexture(state: EnvState, scene: Scene): void {
     const topColor = col3FromTriple(state.skyColorTop);
     const midColor = col3FromTriple(state.skyColorMid);
     const botColor = col3FromTriple(state.skyColorBot);
-    const brightness = state.skyBrightness;
+    const brightness = state.skyBrightness * (state.envBrightness ?? 1);
     
     // 创建 6 个面的像素数据（简单渐变：上=顶色，中=中色，下=底色）
     const faces: Uint8Array[] = [];
@@ -423,8 +427,10 @@ export function applySky(state: EnvState): void {
         if (mesh.material && mesh.material.getClassName() === 'StandardMaterial') {
             const mat = mesh.material as StandardMaterial;
 
+            const envBrightness = state.envBrightness ?? 1;
+            const effectiveSkyBrightness = state.skyBrightness * envBrightness;
             const starsPhase = state.starsEnabled ? (state.sunAngle > 10 ? 'h' : 'l') : '';
-            const skyKey = `${state.skyColorTop}|${state.skyColorMid}|${state.skyColorBot}|${state.skyBrightness}|${state.starsEnabled}|${state.starsTexture}|${starsPhase}`;
+            const skyKey = `${state.skyColorTop}|${state.skyColorMid}|${state.skyColorBot}|${effectiveSkyBrightness}|${state.starsEnabled}|${state.starsTexture}|${starsPhase}`;
             if (skyKey === _lastProceduralSkyKey && _envSys.sky.skyDynamicTex) {
                 return;
             }
@@ -449,6 +455,6 @@ export function applySky(state: EnvState): void {
 
     disposeSky();
     if (state.skyTexture) {
-        loadSkyCube(state.skyTexture, state.skyRotationY, state.envIntensity);
+        loadSkyCube(state.skyTexture, state.skyRotationY, state.envIntensity * (state.envBrightness ?? 1));
     }
 }
