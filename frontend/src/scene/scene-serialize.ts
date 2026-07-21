@@ -1354,8 +1354,6 @@ export async function saveSceneImmediate(suppressToast = false): Promise<void> {
 /** Clean up pending timers and save state. Must be called before window unload. */
 function cleanupAndFlushSave(): void {
     console.info('[auto-save] cleanupAndFlushSave() — visibilitychange/beforeunload triggered');
-    // Dispose Scene/Engine to release WebGL context (GPU memory / context leak prevention)
-    disposeScene();
     // Clear any pending debounced save — we're about to flush immediately
     _autoSaveDebounced.cancel();
     flushEnvState();
@@ -1365,6 +1363,7 @@ function cleanupAndFlushSave(): void {
 
 // Flush save when page becomes hidden (covers app close / Alt+F4 / refresh).
 // visibilitychange fires reliably in Wails; beforeunload is fallback.
+// NOTE: hidden 只刷盘，不 dispose —— 最小化/切后台再回来时渲染循环保持存活。
 if (typeof document !== 'undefined') {
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') {
@@ -1373,6 +1372,8 @@ if (typeof document !== 'undefined') {
     });
     window.addEventListener('beforeunload', () => {
         cleanupAndFlushSave();
+        // 仅在应用真正退出时释放 WebGL context（GPU 内存回收）
+        disposeScene();
     });
 }
 
