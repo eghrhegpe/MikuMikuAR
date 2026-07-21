@@ -1,7 +1,7 @@
 // [doc:architecture] Scene Stage Lights — 舞台灯光弹窗层级
 // 从 scene-render-levels.ts 拆分
 
-import { setStatus, cardContainer, envState } from '../core/config';
+import { setStatus, cardContainer, envState, modelRegistry } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { showConfirm } from '../core/dialog';
 import {
@@ -12,6 +12,7 @@ import {
     addSectionTitle,
     addPresetChip,
     addDangerRow,
+    addToggleRow,
 } from '../core/ui-helpers';
 import {
     setStageLightState,
@@ -20,6 +21,7 @@ import {
     removeStageLight,
     getActiveStageLightId,
     setActiveStageLightId,
+    type FollowTarget,
 } from '../scene/scene';
 import { buildTransformCard } from './resource-detail-helpers';
 import { LIGHTING_PRESETS, PRESET_NAMES } from '../scene/render/lighting-presets';
@@ -313,6 +315,205 @@ function buildStageLightSchema(): MenuNode[] {
                                         const s =
                                             lights.find((l) => l.id === activeId) ?? lights[0];
                                         return s?.coneSoftness ?? 0.5;
+                                    },
+                                }
+                            );
+                        },
+                    });
+                });
+            },
+        },
+        // 卡片 3.6：跟随目标（ADR-168）
+        {
+            id: 'light:follow',
+            kind: 'custom',
+            visibleWhen: () => !!state,
+            renderCustom: (c) => {
+                if (!state) {
+                    return;
+                }
+                cardContainer(c, (inner) => {
+                    const ft = state.followTarget;
+                    addCollapsible(inner, {
+                        title: t('scene.followTarget'),
+                        icon: 'lucide:locate-fixed',
+                        defaultOpen: !!ft,
+                        headerToggle: {
+                            value: !!ft,
+                            onChange: (on) => {
+                                if (on) {
+                                    const actors = Array.from(modelRegistry.entries()).filter(
+                                        ([, inst]) => inst.kind === 'actor'
+                                    );
+                                    const firstId = actors[0]?.[0] ?? '';
+                                    setStageLightState(
+                                        {
+                                            followTarget: {
+                                                modelId: firstId,
+                                                boneName: null,
+                                                offset: [0, 10, 0],
+                                                smoothing: 0.08,
+                                                moveWithTarget: false,
+                                            },
+                                        },
+                                        state.id
+                                    );
+                                } else {
+                                    setStageLightState({ followTarget: null }, state.id);
+                                }
+                                reRenderSceneMenu();
+                            },
+                        },
+                        renderContent: (ci) => {
+                            const curFt = state.followTarget;
+                            if (!curFt) {
+                                return;
+                            }
+                            // —— 目标模型选择 ——
+                            const actors = Array.from(modelRegistry.entries()).filter(
+                                ([, inst]) => inst.kind === 'actor'
+                            );
+                            const modelOptions: { value: string; label: string }[] = [
+                                { value: '__none__', label: t('scene.followNone') },
+                                ...actors.map(([id, inst]) => ({ value: id, label: inst.name })),
+                            ];
+                            addModeSlider(
+                                ci,
+                                t('scene.followTarget'),
+                                modelOptions,
+                                curFt.modelId || '__none__',
+                                (v) => {
+                                    if (v === '__none__') {
+                                        setStageLightState({ followTarget: null }, state.id);
+                                    } else {
+                                        setStageLightState(
+                                            { followTarget: { ...curFt, modelId: v } },
+                                            state.id
+                                        );
+                                    }
+                                    reRenderSceneMenu();
+                                },
+                                'lucide:user'
+                            );
+
+                            // —— 骨骼下拉 ——
+                            const model = modelRegistry.get(curFt.modelId);
+                            const bones = model?.mmdModel?.runtimeBones;
+                            if (bones && bones.length > 0) {
+                                const label = document.createElement('div');
+                                label.className = 'setting-label';
+                                label.textContent = t('scene.followBone');
+                                label.style.margin = '8px 0 4px';
+                                ci.appendChild(label);
+
+                                const boneSelect = document.createElement('select');
+                                boneSelect.className = 'setting-select';
+                                boneSelect.style.width = '100%';
+                                boneSelect.style.margin = '0 0 6px';
+                                // 根节点选项
+                                const rootOpt = document.createElement('option');
+                                rootOpt.value = '';
+                                rootOpt.textContent = t('scene.followRoot');
+                                boneSelect.appendChild(rootOpt);
+                                for (const b of bones) {
+                                    const opt = document.createElement('option');
+                                    opt.value = b.name;
+                                    opt.textContent = b.name;
+                                    boneSelect.appendChild(opt);
+                                }
+                                boneSelect.value = curFt.boneName ?? '';
+                                boneSelect.addEventListener('change', () => {
+                                    setStageLightState(
+                                        {
+                                            followTarget: {
+                                                ...curFt,
+                                                boneName: boneSelect.value || null,
+                                            },
+                                        },
+                                        state.id
+                                    );
+                                });
+                                ci.appendChild(boneSelect);
+                            }
+
+                            // —— 偏移 Y ——
+                            addSliderRow(
+                                ci,
+                                t('scene.followOffsetY'),
+                                curFt.offset[1],
+                                -2,
+                                5,
+                                0.1,
+                                () => {},
+                                'lucide:move-vertical',
+                                (v) => {
+                                    setStageLightState(
+                                        {
+                                            followTarget: {
+                                                ...curFt,
+                                                offset: [curFt.offset[0], v, curFt.offset[2]],
+                                            },
+                                        },
+                                        state.id
+                                    );
+                                },
+                                {
+                                    bind: () => {
+                                        const ls = getStageLights();
+                                        const s =
+                                            ls.find((l) => l.id === getActiveStageLightId()) ??
+                                            ls[0];
+                                        return s?.followTarget?.offset[1] ?? 10;
+                                    },
+                                }
+                            );
+
+                            // —— 平滑度 ——
+                            addSliderRow(
+                                ci,
+                                t('scene.followSmoothing'),
+                                curFt.smoothing,
+                                0.01,
+                                0.5,
+                                0.01,
+                                () => {},
+                                'lucide:timer',
+                                (v) => {
+                                    setStageLightState(
+                                        { followTarget: { ...curFt, smoothing: v } },
+                                        state.id
+                                    );
+                                },
+                                {
+                                    bind: () => {
+                                        const ls = getStageLights();
+                                        const s =
+                                            ls.find((l) => l.id === getActiveStageLightId()) ??
+                                            ls[0];
+                                        return s?.followTarget?.smoothing ?? 0.08;
+                                    },
+                                }
+                            );
+
+                            // —— 灯随动 ——
+                            addToggleRow(
+                                ci,
+                                t('scene.followMoveWithTarget'),
+                                curFt.moveWithTarget,
+                                (v) => {
+                                    setStageLightState(
+                                        { followTarget: { ...curFt, moveWithTarget: v } },
+                                        state.id
+                                    );
+                                },
+                                'lucide:move',
+                                {
+                                    bind: () => {
+                                        const ls = getStageLights();
+                                        const s =
+                                            ls.find((l) => l.id === getActiveStageLightId()) ??
+                                            ls[0];
+                                        return s?.followTarget?.moveWithTarget ?? false;
                                     },
                                 }
                             );

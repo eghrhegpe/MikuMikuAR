@@ -804,6 +804,15 @@ export const en: Record<string, string> = {
     'scene.lightPreset.naturalDaylight': 'Natural Daylight',
     'scene.lightPreset.nightScene': 'Night Scene',
 
+    // —— Follow Target (ADR-168) ——
+    'scene.followTarget': 'Follow Target',
+    'scene.followNone': 'None (Static)',
+    'scene.followBone': 'Bone',
+    'scene.followRoot': 'Root',
+    'scene.followOffsetY': 'Offset Y',
+    'scene.followSmoothing': 'Smoothing',
+    'scene.followMoveWithTarget': 'Move Light',
+
     // —— Physics levels ——
     'scene.gravityStrength': 'Gravity Strength (WASM + Cloth)',
     'scene.wasmPhysics': 'WASM Physics',

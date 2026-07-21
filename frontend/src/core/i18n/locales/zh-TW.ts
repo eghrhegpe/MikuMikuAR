@@ -822,6 +822,16 @@ export const zhTW: Record<string, string> = {
     'scene.lightPreset.dancePerformance': '舞蹈表演',
     'scene.lightPreset.naturalDaylight': '自然日光',
     'scene.lightPreset.nightScene': '夜間場景',
+
+    // —— 追光（ADR-168）——
+    'scene.followTarget': '跟隨目標',
+    'scene.followNone': '無（靜態）',
+    'scene.followBone': '骨骼',
+    'scene.followRoot': '根節點',
+    'scene.followOffsetY': '偏移 Y',
+    'scene.followSmoothing': '平滑度',
+    'scene.followMoveWithTarget': '燈隨動',
+
     'scene.preset.standard': '標準',
     'scene.preset.cinematic': '電影',
     'scene.preset.cartoon': '卡通',

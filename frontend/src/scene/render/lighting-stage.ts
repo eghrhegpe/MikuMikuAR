@@ -370,6 +370,8 @@ export function loadStageLights(states: StageLightState[]): void {
             coneLength: s.coneLength ?? 20,
             coneSoftness:
                 s.coneSoftness ?? 1 - ((raw.volumetricDensity as number | undefined) ?? 0.5),
+            // [doc:adr-168] 旧存档无 followTarget 字段 → 默认 null（静态模式）
+            followTarget: s.followTarget ?? null,
         };
         const light = _createStageLight(migrated.type, migrated);
         const entry: StageLightEntry = { state: migrated, light, indicator: null, dirLine: null };
