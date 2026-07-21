@@ -492,7 +492,9 @@ MikuMikuAR/
         │   │── settings-targets.ts        # 输出目标
         │   │
         │   │── outfit-ui.ts              # 换装 UI
-        │   │── plaza.ts                  # 模型广场
+        │   │── plaza-browser.ts          # 模型广场浏览器入口（showPlaza/renderHome/renderEmbed）
+        │   │── plaza-state.ts            # 广场模块级状态 + closePlaza/stopProxy
+        │   │── plaza-download.ts         # 下载代理（handlePlazaDownload/installDownloadListener）
         │   │── plaza-sites.ts            # 广场站点列表
         │   │── preset-list-viewer.ts     # 预设列表查看器（ADR-129 组件化）
         │   │── resource-detail-helpers.ts # 资源详情辅助
