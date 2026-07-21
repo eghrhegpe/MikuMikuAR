@@ -46,6 +46,13 @@ export interface LoadRequest {
     /** 跳过自动应用（kind='actor'/'stage' 时使用） */
     skipAutoApply?: boolean;
     /**
+     * [fix:adr-167] 跳过场景级动作意图更新（kind='vmd' 时使用）。
+     * per-model 动作应用（applyIntentToModel / 程序化切回）走此标志，
+     * 避免 loadVMDFromPath 内部调用已废弃的 setActiveMotion（单例替换语义）
+     * 把整个场景动作库碾成单个动作、波及其他角色。
+     */
+    skipSceneIntent?: boolean;
+    /**
      * [fix:thumbnail] 库引用路径（zip 模型的 zip 包绝对路径）。
      * 解压加载时 path 是临时解压路径，但缩略图缓存以库引用路径为 key，
      * 故需透传原始 m.file_path，否则 zip 模型缩略图永远 miss。
@@ -174,9 +181,10 @@ class LoadManager {
                 }
                 case 'vmd': {
                     const { loadVMDFromPath } = await import('../scene/motion/vmd-loader');
-                    await loadVMDFromPath(req.path, req.modelId, signal);
+                    await loadVMDFromPath(req.path, req.modelId, signal, req.skipSceneIntent);
                     // [fix] 对齐 actor/stage：VMD 加载成功后刷新 motion-popup，
-                    // 使常驻打开的菜单在加载完成后立即反映当前动作（getActiveMotion 已由 loadVMDFromPath 内 setActiveMotion 更新）。
+                    // 使常驻打开的菜单在加载完成后立即反映当前动作。
+                    // 注意：skipSceneIntent 时 loadVMDFromPath 不更新场景级 activeMotion（per-model 应用）。
                     this._phase = 'refresh';
                     this._refreshMenus();
                     const fileName = req.path.split(/[\\/]/).pop() || '';

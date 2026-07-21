@@ -198,7 +198,8 @@ export async function loadVMDMotion(
 export async function loadVMDFromPath(
     path: string,
     targetModelId?: string,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    skipSceneIntent?: boolean
 ): Promise<void> {
     const { focusedMmdModel, focusedModel } = await getScene();
     await withLoadingIndicator('scene.loader.vmdLoading', async () => {
@@ -224,16 +225,20 @@ export async function loadVMDFromPath(
                     foc.vmdPath = path;
                 }
                 // 设置场景级 activeMotion（守卫：避免广播回调重复触发）
-                const cur = getActiveMotion();
-                if (!cur || cur.vmdPath !== path) {
-                    setActiveMotion({
-                        vmdPath: path,
-                        vmdName: vmdName.replace(/\.vmd$/i, ''),
-                        vmdLayers: [],
-                        source: 'vmd',
-                    });
+                // [fix:adr-167] skipSceneIntent 时跳过：per-model 应用（applyIntentToModel /
+                // 程序化切回）不应触碰场景库——setActiveMotion 是单例替换语义，会把其他主动作清掉。
+                if (!skipSceneIntent) {
+                    const cur = getActiveMotion();
+                    if (!cur || cur.vmdPath !== path) {
+                        setActiveMotion({
+                            vmdPath: path,
+                            vmdName: vmdName.replace(/\.vmd$/i, ''),
+                            vmdLayers: [],
+                            source: 'vmd',
+                        });
+                    }
                 }
-            } else {
+            } else if (!skipSceneIntent) {
                 setActiveMotion({
                     vmdPath: path,
                     vmdName: vmdName.replace(/\.vmd$/i, ''),
