@@ -1,6 +1,6 @@
 # ADR-152: 感知层 per-model 实例化 — Phase 1（pinned 模型支持）
 
-> **状态**: 已完成（Phase 1 全量落地；Phase 2 全员感知见 ADR-154）
+> **状态**: 已实施但需返工（2026-07-21 实施代码深度审核总体结论：不通过；P1 缺陷追踪见 ADR-166）
 > **关联**: ADR-071（程序化与感知边界）、ADR-079（感知层扩展）、ADR-147（显式管线调度器）
 > **来源**: 2026-07-20 感知层审核 P2 — perceptionState 单例导致多模型场景仅焦点模型有感知
 > **日期**: 2026-07-21
@@ -31,7 +31,7 @@
 | 冲突面 | 模块层 claimBones 已 per-model，感知层 per-model 后 N×M 冲突可能爆炸 |
 | UX | 100 模型各自配置呼吸/眨眼/gaze 不现实，需要"全员默认 + 个别 pin"模式 |
 
-**决策**：本 ADR 仅做 Phase 1（pinned 模型支持，≤5 个），Phase 2（全员感知 + 性能降级）立项为 ADR-154，需先做性能基准。
+**决策**：本 ADR 仅做 Phase 1（pinned 模型支持，≤5 个），Phase 2（全员感知 + 性能降级）立项为 ADR-164，需先做性能基准。
 
 ---
 
@@ -179,9 +179,9 @@ perceptionObserver = getMotionPipeline().register({
 
 ---
 
-## 七、与 ADR-154（Phase 2）的边界
+## 七、与 ADR-164（Phase 2）的边界
 
-| 项 | Phase 1（本 ADR） | Phase 2（ADR-154） |
+| 项 | Phase 1（本 ADR） | Phase 2（ADR-164） |
 |----|------------------|-------------------|
 | 激活模型数 | 焦点 + pinned ≤5 | 全员 |
 | 性能降级 | 不需要 | 三档（high/medium/low） |
