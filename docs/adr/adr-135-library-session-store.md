@@ -1,6 +1,6 @@
 # ADR-135 LibrarySessionStore — 资源库状态收敛基座
 
-- **状态**：实施中（P0.1 ✅ / P0.3 ✅ 已完成；P0.2 loadId trace 独立于本 store；P2 兼容门面移除待办）
+- **状态**：实施中（P0.1 ✅ / P0.3 ✅ / P2 ✅ 已完成；P0.2 loadId trace 独立于本 store）
 - **日期**：2026-07-19
 - **相关**：ADR-097（资源库恢复汇总）、ADR-131（BrowseOutcome 契约）、ADR-106（时序审计与异步生命周期）、ADR-105（AbortSignal 与异步错误处理）
 
@@ -186,4 +186,4 @@ export function setPendingAutoExpand(v: string[] | null): void {
 - **P0.3 deferRestore 可见化**：store 加 `restore.status` 字段（`'idle' | 'polling' | 'timeout' | 'ready'`），`deferRestore` 内部更新该字段，UI 通过 store getter 显示「正在扫描 X 目录…（已等待 3s）」
 - **P1.2 per-model 守卫**：`loading.extraction` 从 `boolean` 升级为 `Set<string>`（按模型 id 守卫），非 zip 模型直接放行
 - **P1.3 ADR-131 后续清理**：3 个绑定标志位从 state.ts 移到 store 的 `binding` 命名空间，最终由 ADR-131 契约彻底移除
-- **P2 移除兼容门面**：`library-core.ts` 的 4 个导出函数移除，所有调用方直接用 `librarySessionStore`
+- **P2 移除兼容门面**：`library-core.ts` 的 4 个导出函数移除，所有调用方直接用 `librarySessionStore` ✅ 已完成（P0.1/P0.3 实施时顺带完成，经 grep 确认无残留引用）
