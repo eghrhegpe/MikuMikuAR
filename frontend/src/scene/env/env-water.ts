@@ -53,10 +53,16 @@ const DT_CLAMP_MAX = 0.1;
 const UNDERWATER_FOG_DENSITY_FACTOR = 0.5;
 
 // ======== 水下状态（供 Env Update Observer 和 disposeWater 使用）========
-export let _underwaterActive = false;
-export let _underwaterSavedFog: { mode: number; color: Color3; density: number } | null = null;
-export let _underwaterTransitionProgress = 0;
-export let _underwaterTarget = false;
+// 私有化 + getter 导出，消除导出可变绑定（审核 P2-4）
+let _underwaterActive = false;
+let _underwaterSavedFog: { mode: number; color: Color3; density: number } | null = null;
+let _underwaterTransitionProgress = 0;
+let _underwaterTarget = false;
+
+/** 相机是否处于水下（雾效接管中）。 */
+export function isUnderwaterActive(): boolean {
+    return _underwaterActive;
+}
 
 // ======== 波方向计算（风向联动）========
 /**
