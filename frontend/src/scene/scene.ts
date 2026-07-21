@@ -76,13 +76,16 @@ import { attachBeatDetector, getStreamPlayer } from '../outfit/audio';
 import { detectRuntimeMode, persistRuntimeMode, renderRuntimeBadge } from '../core/runtime-mode';
 import { _catState, _matState, _matEnabled } from './manager/material';
 import { updatePlaybackUI, initPlaybackObservables } from './motion/playback';
-import { initLighting, _updateSunDisc } from './render/lighting';
+import { initLighting, _updateSunDisc, setLightState, getLightState } from './render/lighting';
 import {
     initRenderer,
     rebuildOutlineState,
     pipeline,
     disposeRenderer,
+    setRenderState,
+    getRenderState,
 } from './render/renderer';
+import { registerRenderBridge } from './render/performance';
 import { onModelMeshesReady, disposeReflection } from './env/env-reflection';
 import { initLoader, setOnMeshesReady, setOnModelLoaded } from './manager/model-loader';
 
@@ -527,6 +530,11 @@ export async function initScene(): Promise<void> {
     // 必须在 focusModel 可能被调用之前完成；registry 内 setTargetModel/createModule 也有幂等兜底
     const { initMotionModules } = await import('./motion/motion-modules/registry');
     initMotionModules();
+
+    // [ADR-159 P3-A] 注入渲染桥接：单向依赖 scene → performance，
+    // 消除 performance.ts 对 scene.ts 的静态 import（测试可独立 mock bridge）。
+    // 须在首帧 updatePerformance() 前注册；HMR 重入时 engine 已重建，此处重新注入最新引用。
+    registerRenderBridge({ engine, setLightState, setRenderState, getLightState, getRenderState });
 
     // 标记首次初始化完成，HMR 重入时触发 disposeScene() + 重建路径
     _sceneInitialized = true;
