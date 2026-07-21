@@ -12,7 +12,7 @@ import {
     closeAllOverlays,
 } from '../core/config';
 import type { PopupLevel, PopupRow } from '../core/config';
-import { modelManager, updatePlaybackUI, triggerAutoSave, pushUndoSnapshot, offerSceneUndo } from '../scene/scene';
+import { modelManager, updatePlaybackUI, triggerAutoSave, pushUndoSnapshot, offerSceneUndoAndRefresh } from '../scene/scene';
 import { getActiveMotion, setActiveMotion } from '../scene/motion/motion-intent';
 import { getProcMotionState } from '../scene/scene';
 import { clearAudio, getAudioName } from '../outfit/audio';
@@ -80,9 +80,8 @@ export function buildMotionRootItems(): PopupRow[] {
                     getMotionMenu()?.reRender();
                     triggerAutoSave();
                     setStatus(t('motion.motionCleared'), true);
-                    offerSceneUndo(t('motion.motionCleared'), snap, () => {
+                    offerSceneUndoAndRefresh(t('motion.motionCleared'), snap, () => {
                         getMotionMenu()?.reRender();
-                        setStatus(t('motion.undoApplied'), true);
                     });
                 },
             },
@@ -147,9 +146,8 @@ export function buildMotionRootItems(): PopupRow[] {
                       clearAudio();
                       getMotionMenu()?.reRender();
                       setStatus(t('motion.musicRemoved'), true);
-                      offerSceneUndo(t('motion.musicRemoved'), snap, () => {
+                      offerSceneUndoAndRefresh(t('motion.musicRemoved'), snap, () => {
                           getMotionMenu()?.reRender();
-                          setStatus(t('motion.undoApplied'), true);
                       });
                   },
               }

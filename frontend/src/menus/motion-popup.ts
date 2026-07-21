@@ -15,7 +15,7 @@ import {
 } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
 import { loadManager } from '../core/load-manager';
-import { modelManager, updatePlaybackUI, loadVPDPose, triggerAutoSave, pushUndoSnapshot, offerSceneUndo } from '../scene/scene';
+import { modelManager, updatePlaybackUI, loadVPDPose, triggerAutoSave, pushUndoSnapshot, offerSceneUndoAndRefresh } from '../scene/scene';
 import { getVmdLayers } from '../scene/motion/vmd-layers';
 import { clearAudio, getAudioName } from '../outfit/audio';
 import {
@@ -283,9 +283,8 @@ function motionOnItemClick(row: PopupRow): void {
         getMotionMenu()?.reRender();
         triggerAutoSave();
         setStatus(t('motion.motionCleared'), true);
-        offerSceneUndo(t('motion.motionCleared'), snap, () => {
+        offerSceneUndoAndRefresh(t('motion.motionCleared'), snap, () => {
             getMotionMenu()?.reRender();
-            setStatus(t('motion.undoApplied'), true);
         });
         return;
     }

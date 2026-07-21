@@ -17,6 +17,7 @@ import {
     modelRegistry,
     propRegistry,
     showErrorToast,
+    setStatus,
 } from '../core/config';
 import { showInfoToast } from '../core/toast';
 import { debounce, swallowError } from '../core/utils';
@@ -1174,6 +1175,19 @@ export function offerSceneUndo(message: string, snap: string | null, onRestored:
         ],
         8000
     );
+}
+
+/** offerSceneUndo 的常见变体：撤销恢复后执行 reRender 回调并统一提示 `undoApplied`。
+ *  收敛 motion-* / override / camera 各撤销调用点重复的 onRestored 尾巴（reRender + setStatus）。 */
+export function offerSceneUndoAndRefresh(
+    message: string,
+    snap: string | null,
+    reRender: () => void
+): void {
+    offerSceneUndo(message, snap, () => {
+        reRender();
+        setStatus(t('motion.undoApplied'), true);
+    });
 }
 
 /** Save scene immediately (no debounce). Used in visibilitychange / beforeunload.

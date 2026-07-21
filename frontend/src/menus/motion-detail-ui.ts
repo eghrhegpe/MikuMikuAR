@@ -18,7 +18,7 @@ import {
     addSectionTitle,
     addPresetChip,
 } from '../core/ui-helpers';
-import { modelManager, updatePlaybackUI, triggerAutoSave, pushUndoSnapshot, offerSceneUndo } from '../scene/scene';
+import { modelManager, updatePlaybackUI, triggerAutoSave, pushUndoSnapshot, offerSceneUndoAndRefresh } from '../scene/scene';
 import {
     getVmdLayers,
     toggleVmdLayer,
@@ -113,9 +113,8 @@ export function buildLayerLevel(layerId: string, id: string): PopupLevel {
                                     triggerAutoSave();
                                     getMotionMenu()?.pop();
                                     getMotionMenu()?.reRender();
-                                    offerSceneUndo(t('motion.deleteLayer'), snap, () => {
+                                    offerSceneUndoAndRefresh(t('motion.deleteLayer'), snap, () => {
                                         getMotionMenu()?.reRender();
-                                        setStatus(t('motion.undoApplied'), true);
                                     });
                                 },
                                 undefined,
@@ -179,9 +178,8 @@ function buildMotionDetailSchema(): MenuNode[] {
                             getMotionMenu()?.reRender();
                             triggerAutoSave();
                             setStatus(t('motion.motionCleared'), true);
-                            offerSceneUndo(t('motion.motionCleared'), snap, () => {
+                            offerSceneUndoAndRefresh(t('motion.motionCleared'), snap, () => {
                                 getMotionMenu()?.reRender();
-                                setStatus(t('motion.undoApplied'), true);
                             });
                         });
                     }
