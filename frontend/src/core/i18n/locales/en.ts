@@ -133,6 +133,11 @@ export const en: Record<string, string> = {
     'model-detail.materialAdjust': 'Material',
     'model-detail.morphPreview': 'Morph Preview',
     'model-detail.outfitVariant': 'Replace Textures',
+    'model-detail.personalLight': 'Personal Light',
+    'model-detail.personalLightEnabled': 'Enabled',
+    'model-detail.personalLightIntensity': 'Intensity',
+    'model-detail.personalLightAngle': 'Cone Angle',
+    'model-detail.personalLightHeight': 'Height',
     'model-detail.info': 'Info',
     'model-detail.basicInfo': 'Basic Info',
     'model-detail.boneHierarchy': 'Bone Hierarchy',
@@ -804,16 +809,6 @@ export const en: Record<string, string> = {
     'scene.lightPreset.dancePerformance': 'Dance Performance',
     'scene.lightPreset.naturalDaylight': 'Natural Daylight',
     'scene.lightPreset.nightScene': 'Night Scene',
-
-    // —— Follow Target (ADR-168) ——
-    'scene.followTarget': 'Follow Target',
-    'scene.followNone': 'None (Static)',
-    'scene.followBone': 'Bone',
-    'scene.followRoot': 'Root',
-    'scene.followOffsetY': 'Offset Y',
-    'scene.followSmoothing': 'Smoothing',
-    'scene.followMoveWithTarget': 'Move Light',
-    'scene.followNoActor': 'Load a character model first',
 
     // —— Physics levels ——
     'scene.gravityStrength': 'Gravity Strength (WASM + Cloth)',

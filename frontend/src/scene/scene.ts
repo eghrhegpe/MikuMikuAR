@@ -77,7 +77,7 @@ import { detectRuntimeMode, persistRuntimeMode, renderRuntimeBadge } from '../co
 import { _catState, _matState, _matEnabled } from './manager/material';
 import { updatePlaybackUI, initPlaybackObservables } from './motion/playback';
 import { initLighting, _updateSunDisc, setLightState, getLightState } from './render/lighting';
-import { clearFollowBoneCache } from './render/lighting-follow';
+import { attachPersonalLight, detachPersonalLight } from './render/lighting-follow';
 import {
     initRenderer,
     rebuildOutlineState,
@@ -374,8 +374,8 @@ export async function initScene(): Promise<void> {
         // 见 proc-motion-bridge.ts onModelRemoved
         onModelRemoved(id);
 
-        // [doc:adr-168] 清除追光骨骼缓存，避免持有已销毁 bone 引用
-        clearFollowBoneCache(id);
+        // [doc:adr-168] 释放角色专属个人灯
+        detachPersonalLight(id);
 
         // 同步销毁 MMD 模型：必须在网格释放 / modelRegistry.delete 之前执行
         // （见 model-manager.ts remove() 的调用顺序），且必须早于下方三个 fire-and-forget 清理。
@@ -437,6 +437,11 @@ export async function initScene(): Promise<void> {
         procMotionMod.activateGazeTracking();
         // [doc:adr-164] 新模型加载时自动激活感知层（全员感知模式下激活所有模型）
         activatePerception(id);
+        // [doc:adr-168] 角色模型自动获得专属个人灯
+        const inst = modelRegistry.get(id);
+        if (inst?.kind === 'actor') {
+            attachPersonalLight(id);
+        }
     });
 
     // 6. Loader（必须在 modelManager + setTriggerAutoSave 之后）

@@ -203,6 +203,11 @@ export const zhTW: Record<string, string> = {
     'model-detail.materialAdjust': '材質調節',
     'model-detail.morphPreview': '表情預覽',
     'model-detail.outfitVariant': '替換紋理',
+    'model-detail.personalLight': '個人燈光',
+    'model-detail.personalLightEnabled': '啟用',
+    'model-detail.personalLightIntensity': '亮度',
+    'model-detail.personalLightAngle': '錐角',
+    'model-detail.personalLightHeight': '高度',
     'model-detail.info': '資訊',
     'model-detail.basicInfo': '基本資訊',
     'model-detail.boneHierarchy': '骨骼層級',
@@ -823,16 +828,6 @@ export const zhTW: Record<string, string> = {
     'scene.lightPreset.dancePerformance': '舞蹈表演',
     'scene.lightPreset.naturalDaylight': '自然日光',
     'scene.lightPreset.nightScene': '夜間場景',
-
-    // —— 追光（ADR-168）——
-    'scene.followTarget': '跟隨目標',
-    'scene.followNone': '無（靜態）',
-    'scene.followBone': '骨骼',
-    'scene.followRoot': '根節點',
-    'scene.followOffsetY': '偏移 Y',
-    'scene.followSmoothing': '平滑度',
-    'scene.followMoveWithTarget': '燈隨動',
-    'scene.followNoActor': '請先載入角色模型',
 
     'scene.preset.standard': '標準',
     'scene.preset.cinematic': '電影',

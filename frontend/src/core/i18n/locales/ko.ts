@@ -205,6 +205,11 @@ export const ko: Record<string, string> = {
     'model-detail.materialAdjust': '재질 조정',
     'model-detail.morphPreview': '모프 미리보기',
     'model-detail.outfitVariant': '텍스처 교체',
+    'model-detail.personalLight': '개인 조명',
+    'model-detail.personalLightEnabled': '활성화',
+    'model-detail.personalLightIntensity': '밝기',
+    'model-detail.personalLightAngle': '콘 각도',
+    'model-detail.personalLightHeight': '높이',
     'model-detail.info': '정보',
     'model-detail.basicInfo': '기본 정보',
     'model-detail.boneHierarchy': '뼈대 계층',
@@ -826,16 +831,6 @@ export const ko: Record<string, string> = {
     'scene.lightPreset.dancePerformance': '댄스 공연',
     'scene.lightPreset.naturalDaylight': '자연 채광',
     'scene.lightPreset.nightScene': '야경',
-
-    // —— 추적 대상 (ADR-168) ——
-    'scene.followTarget': '추적 대상',
-    'scene.followNone': '없음 (정적)',
-    'scene.followBone': '본',
-    'scene.followRoot': '루트',
-    'scene.followOffsetY': '오프셋 Y',
-    'scene.followSmoothing': '부드러움',
-    'scene.followMoveWithTarget': '라이트 추적',
-    'scene.followNoActor': '캐릭터 모델을 먼저 불러오세요',
 
     'scene.preset.standard': '스탠다드',
     'scene.preset.cinematic': '시네마틱',

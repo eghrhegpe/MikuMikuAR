@@ -204,6 +204,11 @@ export const ja: Record<string, string> = {
     'model-detail.materialAdjust': 'マテリアル調整',
     'model-detail.morphPreview': 'モーフプレビュー',
     'model-detail.outfitVariant': 'テクスチャ置換',
+    'model-detail.personalLight': 'パーソナルライト',
+    'model-detail.personalLightEnabled': '有効',
+    'model-detail.personalLightIntensity': '明るさ',
+    'model-detail.personalLightAngle': 'コーン角度',
+    'model-detail.personalLightHeight': '高さ',
     'model-detail.info': '情報',
     'model-detail.basicInfo': '基本情報',
     'model-detail.boneHierarchy': 'ボーン階層',
@@ -828,16 +833,6 @@ export const ja: Record<string, string> = {
     'scene.lightPreset.dancePerformance': 'ダンスパフォーマンス',
     'scene.lightPreset.naturalDaylight': '自然光',
     'scene.lightPreset.nightScene': '夜景',
-
-    // —— 追従ターゲット (ADR-168) ——
-    'scene.followTarget': '追従ターゲット',
-    'scene.followNone': 'なし（静的）',
-    'scene.followBone': 'ボーン',
-    'scene.followRoot': 'ルート',
-    'scene.followOffsetY': 'オフセット Y',
-    'scene.followSmoothing': 'スムージング',
-    'scene.followMoveWithTarget': 'ライト追従',
-    'scene.followNoActor': 'キャラクターモデルを読み込んでください',
 
     'scene.preset.standard': '標準',
     'scene.preset.cinematic': 'シネマティック',

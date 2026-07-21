@@ -132,6 +132,11 @@ export const zhCN: Record<string, string> = {
     'model-detail.materialAdjust': '材质调节',
     'model-detail.morphPreview': '表情预览',
     'model-detail.outfitVariant': '替换纹理',
+    'model-detail.personalLight': '个人灯光',
+    'model-detail.personalLightEnabled': '启用',
+    'model-detail.personalLightIntensity': '亮度',
+    'model-detail.personalLightAngle': '锥角',
+    'model-detail.personalLightHeight': '高度',
     'model-detail.info': '信息',
     'model-detail.basicInfo': '基本信息',
     'model-detail.boneHierarchy': '骨骼层级',
@@ -801,16 +806,6 @@ export const zhCN: Record<string, string> = {
     'scene.lightPreset.dancePerformance': '舞蹈表演',
     'scene.lightPreset.naturalDaylight': '自然日光',
     'scene.lightPreset.nightScene': '夜间场景',
-
-    // —— 追光（ADR-168）——
-    'scene.followTarget': '跟随目标',
-    'scene.followNone': '无（静态）',
-    'scene.followBone': '骨骼',
-    'scene.followRoot': '根节点',
-    'scene.followOffsetY': '偏移 Y',
-    'scene.followSmoothing': '平滑度',
-    'scene.followMoveWithTarget': '灯随动',
-    'scene.followNoActor': '请先加载角色模型',
 
     // —— 物理层级 scene-physics-levels ——
     'scene.gravityStrength': '重力强度（WASM + 布料）',

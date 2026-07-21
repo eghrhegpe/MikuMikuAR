@@ -370,8 +370,6 @@ export function loadStageLights(states: StageLightState[]): void {
             coneLength: s.coneLength ?? 20,
             coneSoftness:
                 s.coneSoftness ?? 1 - ((raw.volumetricDensity as number | undefined) ?? 0.5),
-            // [doc:adr-168] 旧存档无 followTarget 字段 → 默认 null（静态模式）
-            followTarget: s.followTarget ?? null,
         };
         const light = _createStageLight(migrated.type, migrated);
         const entry: StageLightEntry = { state: migrated, light, indicator: null, dirLine: null };
@@ -431,18 +429,11 @@ function _readStageLightState(entry: StageLightEntry): StageLightState {
         posX: light.position.x,
         posY: light.position.y,
         posZ: light.position.z,
-        // [doc:adr-168] moveWithTarget 模式下灯位置由追光 tick 写入，
-        // 不能从 light.position 反算轨道参数，保留用户设定值。
-        orbitAzimuth: state.followTarget?.moveWithTarget
-            ? state.orbitAzimuth
-            : (Math.atan2(light.position.x, light.position.z) * 180) / Math.PI,
-        orbitElevation: state.followTarget?.moveWithTarget
-            ? state.orbitElevation
-            : (Math.asin(light.position.y / Math.max(0.1, light.position.length())) * 180) /
-              Math.PI,
-        orbitDistance: state.followTarget?.moveWithTarget
-            ? state.orbitDistance
-            : light.position.length(),
+        orbitAzimuth: (Math.atan2(light.position.x, light.position.z) * 180) / Math.PI,
+        orbitElevation:
+            (Math.asin(light.position.y / Math.max(0.1, light.position.length())) * 180) /
+            Math.PI,
+        orbitDistance: light.position.length(),
     };
     if (state.type === 'spot' && light instanceof SpotLight) {
         base.angle = light.angle;
