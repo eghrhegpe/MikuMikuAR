@@ -2,6 +2,7 @@
 // 从 motion-popup.ts 拆出：buildMotionRootItems / buildMotionRootLevel /
 // buildRetargetLevel / _importExternalAnimation
 
+import { showConfirm } from '../core/dialog';
 import { setStatus, stackRegistry, getBrowseDir, closeAllOverlays } from '../core/config';
 import type { PopupLevel, PopupRow } from '../core/config';
 import {
@@ -87,8 +88,9 @@ export function buildMotionRootItems(): PopupRow[] {
                 leading: {
                     icon: 'lucide:trash-2',
                     title: t('motion.deleteMotion'),
-                    onClick: () => {
+                    onClick: async () => {
                         if (!motion.id) return;
+                        if (!(await showConfirm(t('motion.deleteMotionConfirm', { name: motion.vmdName })))) return;
                         const snap = pushUndoSnapshot();
                         const removedName = motion.vmdName;
                         removeSceneMotion(motion.id);

@@ -43,6 +43,7 @@ import type { MenuNode } from './menu-schema';
 import type { PopupLevel } from '../core/config';
 import { renderMenu } from './render-menu';
 import { logWarn } from '../core/logger';
+import { showConfirm } from '../core/dialog';
 // 循环依赖安全：getMotionMenu 仅在函数体内调用，不在模块求值期访问
 import { getMotionMenu } from './motion-popup';
 
@@ -140,8 +141,13 @@ export function applyIntentToModel(id: string, intent: SceneMotionIntent, gen: n
         slots.primary = { ...slots.primary, status: 'incompatible' };
         return;
     }
-    // [fix:adr-129] 动作本体未变（仅模块配置变更 / 同路径重广播）时跳过 VMD 重载
-    if (intent.vmdPath && inst.vmdPath === intent.vmdPath) {
+    // [fix:adr-129+adr-167] 动作本体未变（仅模块配置变更 / 同路径重广播）时跳过 VMD 重载
+    // 但若 sceneMotionId 变了（切换到另一场景动作），vmdLayers/motionModules 可能不同，需重载
+    if (
+        intent.vmdPath &&
+        inst.vmdPath === intent.vmdPath &&
+        slots.primary.sceneMotionId === intent.id
+    ) {
         applyMotionModulesToModel(id);
         return;
     }
@@ -376,7 +382,7 @@ export function buildActionBindingLevel(id: string): PopupLevel {
 // ═══════════════════════════════════════════════════════════
 
 /** 处理 per-model 动作控制指令（pause / reset / pose / loop）。 */
-export function handleModelAction(action: string, id: string): void {
+export async function handleModelAction(action: string, id: string): Promise<void> {
     const inst = modelManager.get(id);
     if (!inst) {
         return;
@@ -404,6 +410,7 @@ export function handleModelAction(action: string, id: string): void {
             break;
         case 'reset':
             if (inst.mmdModel && mmdRuntime) {
+                if (!(await showConfirm(t('motion.resetConfirm')))) return;
                 // [doc:adr-167] 清空整个场景动作库 + 默认动作
                 clearAllSceneMotions();
                 if (isPlaying) {
