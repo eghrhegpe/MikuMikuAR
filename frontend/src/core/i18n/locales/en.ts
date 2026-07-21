@@ -795,6 +795,7 @@ export const en: Record<string, string> = {
     'scene.horizontalAngle': 'Horizontal Angle',
     'scene.elevationAngle': 'Elevation Angle',
     'scene.dragMode': 'Drag Mode',
+    'scene.dragModeHint': 'Drag mode: click object to move, click empty space to exit',
     'scene.exitDrag': 'Exit Drag',
     'scene.dragPosition': 'Drag to Position',
     'scene.snapEnable': 'Grid Snap',

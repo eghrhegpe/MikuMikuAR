@@ -45,6 +45,7 @@ import { getEnvTextureBindingTarget, clearEnvTextureBindingTarget } from './env-
 import { setSceneMenu, setRefreshSceneRoot, reRenderSceneMenu } from './scene-menu-state';
 import { setMirrorSize, getMirrorInfo, toggleMirror, isMirrorActive } from '../scene/env/env';
 import { isDragModeEnabled, setDragModeEnabled } from '../scene/transform/transform-mode';
+import { attachGizmoForKind } from '../scene/transform/transform-adapter';
 import { addModeSlider, addSliderRow, addToggleRow, slideRow } from '../core/ui-helpers';
 import { SCENE_EVENTS } from '../core/ui-constants';
 
@@ -219,7 +220,16 @@ function buildSceneRootItems(): PopupRow[] {
         target: 'scene:dragMode',
         headerToggle: {
             value: isDragModeEnabled(),
-            onChange: (v: boolean) => setDragModeEnabled(v),
+            onChange: (v: boolean) => {
+                setDragModeEnabled(v);
+                if (v) {
+                    closeAllOverlays();
+                    setStatus(t('scene.dragModeHint'), false);
+                    const id = focusedModelId;
+                    const inst = id ? modelRegistry.get(id) : undefined;
+                    if (inst) attachGizmoForKind(inst.kind, inst.id);
+                }
+            },
             bind: () => isDragModeEnabled(),
         },
     });
