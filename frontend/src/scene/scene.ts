@@ -89,9 +89,9 @@ import {
 import { registerRenderBridge } from './render/performance';
 import { onModelMeshesReady, disposeReflection } from './env/env-reflection';
 import { initLoader, setOnMeshesReady, setOnModelLoaded } from './manager/model-loader';
-import { isDragModeEnabled, setDragModeEnabled } from './transform/transform-mode';
+import { isDragModeEnabled } from './transform/transform-mode';
 import { tryAttachGizmoFromPick } from './transform/transform-pick';
-import { detachGizmo, isGizmoDragging } from './transform/transform-adapter';
+import { isGizmoDragging } from './transform/transform-adapter';
 
 // Re-export material system (extracted to material.ts for file size)
 export {
@@ -511,7 +511,7 @@ export async function initScene(): Promise<void> {
         addRipple(hit, 5, 0.6, 2, 2.5);
     }, PointerEventTypes.POINTERDOWN);
 
-    // [doc:adr-171] 场景级拖拽模式：点击物体 → 附加 Gizmo；点击空白 → 退出拖拽模式
+    // [doc:adr-171] 场景级拖拽模式：点击物体 → 附加 Gizmo
     let _dragModePointerDownX = 0;
     let _dragModePointerDownY = 0;
     scene.onPointerObservable.add((info) => {
@@ -534,11 +534,7 @@ export async function initScene(): Promise<void> {
         if (dx * dx + dy * dy > 25) {
             return;
         }
-        const attached = tryAttachGizmoFromPick(scene, info.event.clientX, info.event.clientY);
-        if (!attached) {
-            detachGizmo();
-            setDragModeEnabled(false);
-        }
+        tryAttachGizmoFromPick(scene, scene.pointerX, scene.pointerY);
     }, PointerEventTypes.POINTERDOWN | PointerEventTypes.POINTERUP);
 
     // 7. 脚部调整系统启动（ADR-085）

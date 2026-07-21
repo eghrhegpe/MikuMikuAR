@@ -1,7 +1,7 @@
 import type { Scene } from '@babylonjs/core/scene';
 import type { Node } from '@babylonjs/core/node';
 import type { ResourceKind } from '@/core/load-manager';
-import { attachGizmoForKind } from './transform-adapter';
+import { attachGizmoForKind, getGizmoTargetId } from './transform-adapter';
 
 export interface TransformPickResult {
     kind: ResourceKind;
@@ -54,6 +54,9 @@ export function tryAttachGizmoFromPick(scene: Scene, x: number, y: number): bool
     const result = pickTransformTarget(scene, x, y);
     if (!result) {
         return false;
+    }
+    if (getGizmoTargetId() === result.id) {
+        return true;
     }
     return attachGizmoForKind(result.kind, result.id);
 }

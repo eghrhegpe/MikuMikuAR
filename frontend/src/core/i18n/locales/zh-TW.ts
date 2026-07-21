@@ -814,6 +814,7 @@ export const zhTW: Record<string, string> = {
     'scene.horizontalAngle': '水平角度',
     'scene.elevationAngle': '仰角',
     'scene.dragMode': '拖拽模式',
+    'scene.dragModeHint': '拖拽模式：點擊物體移動，點擊空白退出',
     'scene.exitDrag': '退出拖拽',
     'scene.dragPosition': '拖拽定位',
     'scene.snapEnable': '網格吸附',

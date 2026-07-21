@@ -14,7 +14,7 @@ function _ensureSunDisc(): Mesh {
     }
     lightingState.sunDisc = MeshBuilder.CreateSphere(
         'sunDisc',
-        { diameter: 30, segments: 16 },
+        { diameter: 60, segments: 16 },
         lightingState.scene
     );
     const mat = new StandardMaterial('sunDiscMat', lightingState.scene);

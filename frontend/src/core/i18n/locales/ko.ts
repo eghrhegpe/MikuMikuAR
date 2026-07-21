@@ -817,6 +817,7 @@ export const ko: Record<string, string> = {
     'scene.horizontalAngle': '수평 각도',
     'scene.elevationAngle': '고도 각도',
     'scene.dragMode': '드래그 모드',
+    'scene.dragModeHint': '드래그 모드: 객체를 클릭하여 이동, 빈 공간 클릭으로 종료',
     'scene.exitDrag': '드래그 종료',
     'scene.dragPosition': '드래그하여 위치 지정',
     'scene.snapEnable': '그리드 스냅',
