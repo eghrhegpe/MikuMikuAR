@@ -337,6 +337,23 @@ export const ko: Record<string, string> = {
     'model-preset.deleteFailed': '✗ 삭제 실패',
     'model-preset.deleted': '✓ 프리셋 삭제됨',
 
+    // ===== 모션 프리셋 motion-preset =====
+    'motion-preset.title': '모션 프리셋',
+    'motion-preset.save': '프리셋 저장',
+    'motion-preset.apply': '적용',
+    'motion-preset.delete': '삭제',
+    'motion-preset.saved': '✓ 프리셋 저장됨',
+    'motion-preset.applied': '✓ 프리셋 적용됨',
+    'motion-preset.deleted': '✓ 프리셋 삭제됨',
+    'motion-preset.noPresets': '아직 프리셋이 없습니다',
+    'motion-preset.saveTitle': '현재 모션을 프리셋으로 저장',
+    'motion-preset.inputName': '프리셋 이름 입력:',
+    'motion-preset.nameEmpty': '✗ 이름이 비어 있을 수 없습니다',
+    'motion-preset.tooManyPresets': '✗ 프리셋이 최대 개수(10)에 도달했습니다. 오래된 프리셋을 삭제해 주세요',
+    'motion-preset.confirmDelete': '"{name}"을(를) 삭제하시겠습니까?',
+    'motion-preset.deleteFailed': '✗ 삭제 실패',
+    'motion-preset.applyFailed': '✗ 프리셋 적용 실패',
+
     // ===== 모션 motion =====
     'motion.title': '모션',
     'motion.advanced': '고급',
