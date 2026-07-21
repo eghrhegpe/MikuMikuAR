@@ -10,8 +10,10 @@ import {
     setPerceptionState,
     activatePerception,
     pinPerception,
+    unpinPerception,
     enableAllPerception,
     disableAllPerception,
+    getPinnedModelIds,
     getPerceptionPerfTier,
     getPerceptionPerfManualTier,
     setPerceptionPerfTier,
@@ -341,22 +343,39 @@ const gazeSchema: MenuNode[] = [
             },
         ],
     },
-    // ── Pin 当前模型（[doc:adr-162] Phase 3） ──
+    // ── Pin / Unpin 当前模型（[doc:adr-162] Phase 3；[doc:adr-166] 加 unpin 按钮） ──
     {
         id: 'perception:pinModel',
         kind: 'custom',
         renderCustom: (c) => {
-            const btn = document.createElement('button');
-            btn.className = 'action-button';
-            btn.textContent = t('motion.pinModel');
-            btn.onclick = () => {
+            const wrap = document.createElement('div');
+            wrap.style.cssText = 'display:flex;gap:8px;';
+            const pinBtn = document.createElement('button');
+            pinBtn.className = 'action-button';
+            pinBtn.textContent = t('motion.pinModel');
+            pinBtn.onclick = () => {
                 if (focusedModelId) {
                     pinPerception(focusedModelId);
                     triggerAutoSave();
                     refreshMotionMenu();
                 }
             };
-            c.appendChild(btn);
+            wrap.appendChild(pinBtn);
+            const pinned = focusedModelId ? getPinnedModelIds().includes(focusedModelId) : false;
+            if (pinned) {
+                const unpinBtn = document.createElement('button');
+                unpinBtn.className = 'action-button';
+                unpinBtn.textContent = t('motion.unpinModel');
+                unpinBtn.onclick = () => {
+                    if (focusedModelId) {
+                        unpinPerception(focusedModelId);
+                        triggerAutoSave();
+                        refreshMotionMenu();
+                    }
+                };
+                wrap.appendChild(unpinBtn);
+            }
+            c.appendChild(wrap);
         },
     },
     // ── Lip-sync（已有 headerToggle 模式） ──
@@ -401,15 +420,9 @@ const gazeSchema: MenuNode[] = [
     },
 ];
 
-/** [doc:adr-163/adr-164] 渲染感知层骨骼冲突 banner（仅显示焦点模型冲突） */
+/** [doc:adr-163/adr-164/adr-166] 渲染指定模型的感知层骨骼冲突 banner */
 export function updatePerceptionConflictBanner(el: HTMLElement, modelId: string | null): void {
     if (!modelId) {
-        el.textContent = '';
-        el.style.display = 'none';
-        return;
-    }
-    // [doc:adr-164] 冲突收敛：仅显示焦点模型的冲突
-    if (modelId !== focusedModelId) {
         el.textContent = '';
         el.style.display = 'none';
         return;

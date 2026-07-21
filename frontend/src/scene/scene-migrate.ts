@@ -40,11 +40,17 @@ export function migrateLipSyncFromOldState(old: {
 
 /**
  * 旧存档 perception 格式迁移：PerceptionState → { focused, pinned }。
+ * [doc:adr-166] 新增 tier/allEnabled 透传。
  * 纯函数，无外部依赖。
  */
 export function migratePerceptionData(
     perception: unknown
-): { focused: PerceptionState; pinned: Array<{ modelId: string; state: PerceptionState }> } | null {
+): {
+    focused: PerceptionState;
+    pinned: Array<{ modelId: string; state: PerceptionState }>;
+    tier?: 'high' | 'medium' | 'low' | 'auto';
+    allEnabled?: boolean;
+} | null {
     if (!perception || typeof perception !== 'object') {
         return null;
     }
@@ -52,6 +58,8 @@ export function migratePerceptionData(
         return perception as {
             focused: PerceptionState;
             pinned: Array<{ modelId: string; state: PerceptionState }>;
+            tier?: 'high' | 'medium' | 'low' | 'auto';
+            allEnabled?: boolean;
         };
     }
     // 旧格式：直接是 PerceptionState

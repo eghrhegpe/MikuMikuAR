@@ -1012,7 +1012,7 @@ describe('ADR-163 claimBones', () => {
         expect(el.style.display).toBe('none');
     });
 
-    it('d) 非焦点模型冲突 banner 收敛为隐藏', async () => {
+    it('d) [doc:adr-166] 任意模型冲突均显示 banner（不限焦点）', async () => {
         mockState.focusedModelId = 'm1';
         const store = await getStore();
         store.claimBones('m2', 'perception.gaze.head', 100, ['頭']);
@@ -1022,8 +1022,9 @@ describe('ADR-163 claimBones', () => {
         const el = document.createElement('div');
         updatePerceptionConflictBanner(el, 'm2');
 
-        // [doc:adr-164] 非焦点模型冲突不显示
-        expect(el.style.display).toBe('none');
+        // [doc:adr-166] banner 不再限焦点，m2 有冲突即显示
+        expect(el.style.display).not.toBe('none');
+        expect(el.textContent).toContain('perception.gaze.head');
     });
 });
 

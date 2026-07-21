@@ -924,13 +924,11 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
         for (const p of perceptionData.pinned) {
             pinPerception(p.modelId, p.state);
         }
-        // [doc:adr-164] 恢复性能档位与全员感知开关
-        const pAny = data.perception as any;
-        if (pAny?.tier && pAny.tier !== 'auto') {
-            setPerceptionPerfTier(pAny.tier);
+        // [doc:adr-164/adr-166] 恢复性能档位与全员感知开关（通过 migratePerceptionData 安全取值）
+        if (perceptionData.tier && perceptionData.tier !== 'auto') {
+            setPerceptionPerfTier(perceptionData.tier);
         }
-        // tier === 'auto' 或 undefined：保持默认自动降级，不覆盖 _manualTier
-        if (pAny?.allEnabled === true) {
+        if (perceptionData.allEnabled === true) {
             enableAllPerception();
         }
     } else if (data.procMotion) {

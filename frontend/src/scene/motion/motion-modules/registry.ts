@@ -2,6 +2,9 @@
 // 职责: 注册模块工厂、创建模块实例、管理场景级模块配置、ownedBones 冲突仲裁
 // 架构变更: 配置存储从 per-model 改为 per-motion（随动作走）
 // 冲突仲裁: 每条骨骼同一时刻只能被一个模块 owned；bake 时若骨骼已被其他模块占用，console.warn 跳过
+// [doc:adr-166] Perception 模块（perception.*）免于注册表管理，其骨骼由 perception.ts
+// 的 _claimPerceptionBones / _releasePerceptionBones 直接通过 BoneOverrideStore 管理，
+// 注册表仅作 releaseOwnedBones 的透传入口（claimBones 在 perception.ts 内部绕过本注册表）。
 
 import type { MotionModuleState, ParamValue, SceneMotionIntent } from '@/core/types';
 import { modelRegistry } from '@/core/state';

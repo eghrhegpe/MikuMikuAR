@@ -6,16 +6,15 @@
 //   3. 关闭时清零 morph（防残留冻结）
 
 import { MORPH_BLINK_CANDIDATES, matchBone } from '../../motion-algos/proc-motion-shared';
-import type { MmdModelLike } from './perception-shared';
-import { getPerceptionState } from './perception';
+import type { MmdModelLike, PerceptionContext } from './perception-shared';
 
 // ── 眨眼参数（默认值，实际从 perceptionState 读取） ──
 // 生理上人每 2-4 秒眨一次眼，对应 0.25-0.5 Hz，默认取下界 0.25
 const DEFAULT_BLINK_FREQ = 0.25; // Hz
 const DEFAULT_BLINK_AMP = 1.0; // 眨眼力度系数
 
-export function _applyBlinking(mmdModel: MmdModelLike, time: number): void {
-    const s = getPerceptionState();
+export function _applyBlinking(mmdModel: MmdModelLike, time: number, ctx: PerceptionContext): void {
+    const s = ctx.state;
     const freq = s.blinkFrequency ?? DEFAULT_BLINK_FREQ;
     const amp = s.blinkAmplitude ?? DEFAULT_BLINK_AMP;
     // amp=0 时跳过：避免每帧 influence=0 覆盖 VMD 半眨眼 / 情绪眨眼关键帧

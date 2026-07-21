@@ -87,9 +87,10 @@ export interface MmdModelLike {
 // ── 对象池（避免每帧 new Vector3/Matrix/Quaternion，消除 GC 压力） ──
 // 池容量需 ≥ 单帧最大消费数，否则循环覆写会污染已外泄的引用。
 // 单帧最大消费：breathing(2) + balance(8) + gaze-js head(8) + gaze-js eye(10) ≈ 28
-const _v3Pool = Array.from({ length: 16 }, () => new Vector3());
-const _mPool = Array.from({ length: 16 }, () => new Matrix());
-const _qPool = Array.from({ length: 32 }, () => new Quaternion());
+// [doc:adr-166] 扩大池容量，适配多 pinned 模型（每模型 ~20q/4v/8m，按 5 模型估算）
+const _v3Pool = Array.from({ length: 32 }, () => new Vector3());
+const _mPool = Array.from({ length: 64 }, () => new Matrix());
+const _qPool = Array.from({ length: 128 }, () => new Quaternion());
 let _v3Idx = 0,
     _mIdx = 0,
     _qIdx = 0;
@@ -231,6 +232,7 @@ export interface PerceptionContext {
     isPinned: boolean;
     lastOffsets: {
         breath: number;
+        breathBoneName: string | null;
         balance: BalanceSwayState;
         emotion: string | null;
     };
