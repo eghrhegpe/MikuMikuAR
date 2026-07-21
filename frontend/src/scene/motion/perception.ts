@@ -191,10 +191,18 @@ export function activatePerception(modelId?: string): void {
     );
 }
 
+let _gazeResetTick = 0;
+
+/** 获取 gaze 重置计数（供测试验证调用时机） */
+export function _getGazeResetTick(): number {
+    return _gazeResetTick;
+}
+
 /** 重置 gaze 增量状态（无持久化状态，仅清理临时变量） */
 export function _resetGazeState(): void {
     // gaze 不累积旋转偏移，每帧重新计算 targetQ；
     // 本函数作为生命周期守卫，在 activate/deactivate/开关切换时调用，确保无残留
+    _gazeResetTick++;
 }
 
 /** 注销感知层 */
