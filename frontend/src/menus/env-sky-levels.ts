@@ -150,6 +150,13 @@ export function buildSkyLevel(): PopupLevel {
                         icon: 'lucide:sun',
                     },
                     {
+                        id: 'env:sky:globalBrightness',
+                        kind: 'slider',
+                        label: 'env.environmentBrightness',
+                        control: { bind: 'env.envBrightness', min: 0.1, max: 3, step: 0.05 },
+                        icon: 'lucide:sun-dim',
+                    },
+                    {
                         id: 'env:sky:stars',
                         kind: 'toggle',
                         label: 'env.stars',

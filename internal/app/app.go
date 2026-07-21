@@ -431,6 +431,7 @@ type EnvState struct {
 	StarsEnabled     bool       `json:"starsEnabled"`
 	StarsTexture     string     `json:"starsTexture"`
 	EnvIntensity     float64    `json:"envIntensity"`
+	EnvBrightness    float64    `json:"envBrightness"`
 
 	GroundVisible         bool       `json:"groundVisible"`
 	GroundType            string     `json:"groundType"`

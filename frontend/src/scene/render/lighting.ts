@@ -17,6 +17,7 @@ import { resetPerformanceSnapshot, isSnapshotResetSuppressed } from './performan
 import { setKey } from '@/core/utils';
 import { safeDispose } from '@/core/dispose-helpers';
 import { col3FromTriple } from '@/core/color-helpers';
+import { envState } from '@/core/config';
 import { lightingState } from './lighting-state';
 import { _createStageLight, _updateIndicator, _disposeStageLightEntry } from './lighting-stage';
 import { _ensureShadow } from './lighting-shadow';
@@ -198,6 +199,7 @@ function _defaultLightState(): LightState {
 }
 
 export function getLightState(): LightState {
+    const envBrightness = envState.envBrightness ?? 1;
     if (!lightingState.hemiLight || !lightingState.dirLight || !lightingState.envSysShadow) {
         const base = _defaultLightState();
         return {
@@ -210,8 +212,8 @@ export function getLightState(): LightState {
         };
     }
     return {
-        hemiIntensity: lightingState.hemiLight.intensity,
-        dirIntensity: lightingState.dirLight.intensity,
+        hemiIntensity: lightingState.hemiLight.intensity / envBrightness,
+        dirIntensity: lightingState.dirLight.intensity / envBrightness,
         dirX: -lightingState.dirLight.direction.x,
         dirY: -lightingState.dirLight.direction.y,
         dirZ: -lightingState.dirLight.direction.z,
@@ -243,11 +245,12 @@ export function setLightState(s: Partial<LightState>): void {
         return;
     }
 
+    const envBrightness = envState.envBrightness ?? 1;
     if (s.hemiIntensity !== undefined) {
-        lightingState.hemiLight.intensity = s.hemiIntensity;
+        lightingState.hemiLight.intensity = s.hemiIntensity * envBrightness;
     }
     if (s.dirIntensity !== undefined) {
-        lightingState.dirLight.intensity = s.dirIntensity;
+        lightingState.dirLight.intensity = s.dirIntensity * envBrightness;
     }
     if (s.dirX !== undefined || s.dirY !== undefined || s.dirZ !== undefined) {
         const dir = new Vector3(
