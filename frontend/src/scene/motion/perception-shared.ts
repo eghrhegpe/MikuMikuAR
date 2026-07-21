@@ -219,6 +219,7 @@ export interface BalanceSwayState {
     lastAllParentRx: number;
     lastAllParentRz: number;
     lastSwayTime: number;
+    lastBalanceSwayBones: string[];
 }
 
 /** 每模型感知上下文（替代原单例，支持焦点 + pinned 多模型） */
