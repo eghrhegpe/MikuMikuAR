@@ -1921,7 +1921,7 @@ textarea,
 /* 基本信息区：响应式信息卡网格（auto-fill，窄屏 2 列、宽屏自动加列） */
 .info-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(calc(108px * var(--ui-scale)), 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(calc(96px * var(--ui-scale)), 1fr));
     gap: calc(6px * var(--ui-scale));
 }
 .info-card {
@@ -1950,6 +1950,14 @@ textarea,
     line-height: 1.35;
     overflow-wrap: anywhere;
     word-break: break-word;
+}
+.info-card-sub {
+    font-size: calc(11px * var(--ui-scale));
+    color: var(--text-dim);
+    margin-top: calc(2px * var(--ui-scale));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* Slide action button — 行内操作按钮（替代 inline button style） */

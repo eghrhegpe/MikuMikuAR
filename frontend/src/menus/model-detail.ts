@@ -727,12 +727,14 @@ function buildModelInfoSchema(id: string): MenuNode[] {
                     const mm = m as unknown as { materials?: readonly unknown[] };
                     return n + (mm.materials?.length ?? (m.material ? 1 : 0));
                 }, 0);
-                const fields: Array<{ label: string; value: string; wide?: boolean }> = [
-                    { label: t('model-detail.fName'), value: inst.name, wide: true },
+                const fileName = inst.filePath.split(/[/\\]/).pop() || inst.filePath;
+                const comment = meta?.comment ? meta.comment.substring(0, 80) : '';
+                const fields: Array<{ label: string; value: string; wide?: boolean; sub?: string }> = [
                     {
-                        label: t('model-detail.fFile'),
-                        value: inst.filePath.split(/[/\\]/).pop() || inst.filePath,
+                        label: t('model-detail.fName'),
+                        value: inst.name,
                         wide: true,
+                        sub: `${t('model-detail.fFile')}: ${fileName}`,
                     },
                     {
                         label: t('model-detail.fType'),
@@ -741,11 +743,7 @@ function buildModelInfoSchema(id: string): MenuNode[] {
                                 ? t('model-detail.actorModel')
                                 : t('model-detail.stageModel'),
                     },
-                    {
-                        label: t('model-detail.fMotion'),
-                        value: inst.vmdName || t('model-detail.none'),
-                        wide: true,
-                    },
+                    { label: t('model-detail.fMotion'), value: inst.vmdName || t('model-detail.none') },
                     { label: t('model-detail.fVerts'), value: vertCount.toLocaleString() },
                     { label: t('model-detail.fFaces'), value: (faceCount / 3).toLocaleString() },
                     { label: t('model-detail.fMaterials'), value: String(matCount) },
@@ -757,18 +755,21 @@ function buildModelInfoSchema(id: string): MenuNode[] {
                         label: t('model-detail.fMorphs'),
                         value: morphCount !== null ? morphCount.toLocaleString() : 'N/A',
                     },
-                    { label: t('model-detail.fNameJp'), value: meta?.name_jp || '—', wide: true },
-                    { label: t('model-detail.fNameEn'), value: meta?.name_en || '—', wide: true },
-                    {
-                        label: t('model-detail.fComment'),
-                        value: meta?.comment ? meta.comment.substring(0, 80) : '—',
-                        wide: true,
-                    },
+                    { label: t('model-detail.fNameJp'), value: meta?.name_jp || '—' },
+                    { label: t('model-detail.fNameEn'), value: meta?.name_en || '—' },
+                    ...(comment
+                        ? [{ label: t('model-detail.fComment'), value: comment, wide: true }]
+                        : []),
                 ];
                 cardContainer(container, (c) => {
                     const grid = addInfoGrid(c);
                     for (const f of fields) {
-                        addInfoCard(grid, f.label, f.value, f.wide ? { wide: true } : undefined);
+                        addInfoCard(
+                            grid,
+                            f.label,
+                            f.value,
+                            f.wide ? { wide: true, sub: f.sub } : f.sub ? { sub: f.sub } : undefined
+                        );
                     }
                 });
             },

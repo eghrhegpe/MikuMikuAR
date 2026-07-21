@@ -406,7 +406,7 @@ export function addInfoCard(
     container: HTMLElement,
     label: string,
     value: string,
-    opts?: { wide?: boolean; testId?: string }
+    opts?: { wide?: boolean; sub?: string; testId?: string }
 ): HTMLElement {
     const card = document.createElement('div');
     card.className = 'info-card' + (opts?.wide ? ' info-card--wide' : '');
@@ -421,6 +421,12 @@ export function addInfoCard(
     valueEl.textContent = value;
     card.appendChild(labelEl);
     card.appendChild(valueEl);
+    if (opts?.sub) {
+        const subEl = document.createElement('div');
+        subEl.className = 'info-card-sub';
+        subEl.textContent = opts.sub;
+        card.appendChild(subEl);
+    }
     container.appendChild(card);
     return card;
 }
