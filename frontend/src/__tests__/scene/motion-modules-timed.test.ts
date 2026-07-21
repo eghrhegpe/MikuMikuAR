@@ -39,6 +39,9 @@ vi.mock('@/scene/motion/bone-override', () => ({
     setBoneOverridePosition: data.setBoneOverridePositionSpy,
     registerBoneOverrideFrameHook: data.registerFrameHookSpy,
     FRAME_HOOK_ORDER: { RIDING: 10, SWAY: 20, HAND_SYMMETRY: 30 },
+    // [doc:adr-122 P1] IK 感知覆盖（mock 中降级为 setBoneOverride，忽略 getRuntimeBones）
+    applyBoneOverrideIK: (boneName: string, euler: [number, number, number], weight: number, enabled: boolean, modelId?: string) =>
+        data.setBoneOverrideSpy(boneName, euler, weight, enabled, modelId),
 }));
 
 vi.mock('@/scene/motion/perception', () => ({

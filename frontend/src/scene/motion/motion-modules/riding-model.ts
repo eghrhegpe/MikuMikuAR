@@ -15,8 +15,10 @@
 //   - 足: 左足/右足 踏板位置（autoPedal 时由每帧钩子按 pedalSpeed 循环驱动，否则用 pedalAngle）
 //   候选骨名覆盖常见 PMX 变体（左ひざ/左膝 等）
 
+import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 import type { ParamValue } from '@/core/types';
-import { setBoneOverride, registerBoneOverrideFrameHook, FRAME_HOOK_ORDER } from '../bone-override';
+import { modelRegistry } from '@/core/state';
+import { applyBoneOverrideIK, setBoneOverride, registerBoneOverrideFrameHook, FRAME_HOOK_ORDER } from '../bone-override';
 import { getModuleState, getOwnedBones } from './registry';
 import type { MotionOverrideModule, ModuleMeta, ModuleDef } from './types';
 import { computePedalPhase, computeFootPitch } from './motion-math';
@@ -61,6 +63,11 @@ const META: ModuleMeta = {
 /** 管理的骨骼（腰 + 左右膝 + 左右足，覆盖常见命名变体） */
 const MANAGED_BONES = ['腰', '左ひざ', '右ひざ', '左膝', '右膝', '左足', '右足'];
 
+/** [doc:adr-122 P1] 获取模型运行时骨骼列表（用于 IK 感知覆盖） */
+function _getRuntimeBones(modelId: string): readonly IMmdRuntimeBone[] {
+    return modelRegistry.get(modelId)?.mmdModel?.runtimeBones ?? [];
+}
+
 /** 烘焙：将骑行静态姿态（腰/膝）写入骨骼；足部由 ensureActive 决定是否交给帧钩子 */
 function bake(modelId: string): void {
     const prep = prepareBake(modelId, MODULE_ID, MANAGED_BONES);
@@ -86,18 +93,20 @@ function bake(modelId: string): void {
     // 膝盖弯曲：saddleHeight 越高弯曲越小
     // 弯曲角度 = (1 - saddleHeight) * 90 度（0=伸直, 90=全弯）
     const kneePitch = (1 - saddleHeight) * 90;
+    const bones = _getRuntimeBones(modelId);
+    const getBonesFn = () => bones;
     if (claimed.includes('左ひざ')) {
-        setBoneOverride('左ひざ', [kneePitch, 0, 0], 1, true, modelId);
+        applyBoneOverrideIK('左ひざ', [kneePitch, 0, 0], 1, true, modelId, getBonesFn);
     }
     if (claimed.includes('右ひざ')) {
-        setBoneOverride('右ひざ', [kneePitch, 0, 0], 1, true, modelId);
+        applyBoneOverrideIK('右ひざ', [kneePitch, 0, 0], 1, true, modelId, getBonesFn);
     }
     // 命名变体兜底
     if (claimed.includes('左膝') && !claimed.includes('左ひざ')) {
-        setBoneOverride('左膝', [kneePitch, 0, 0], 1, true, modelId);
+        applyBoneOverrideIK('左膝', [kneePitch, 0, 0], 1, true, modelId, getBonesFn);
     }
     if (claimed.includes('右膝') && !claimed.includes('右ひざ')) {
-        setBoneOverride('右膝', [kneePitch, 0, 0], 1, true, modelId);
+        applyBoneOverrideIK('右膝', [kneePitch, 0, 0], 1, true, modelId, getBonesFn);
     }
 
     // 足部：记录已认领的足骨（供帧钩子驱动）；autoPedal 关闭时写静态 pedalAngle
@@ -116,10 +125,10 @@ function bake(modelId: string): void {
         const leftFootPitch = Math.sin(rad) * 20;
         const rightFootPitch = Math.sin(rad + Math.PI) * 20;
         if (feet.includes('左足')) {
-            setBoneOverride('左足', [leftFootPitch, 0, 0], 1, true, modelId);
+            applyBoneOverrideIK('左足', [leftFootPitch, 0, 0], 1, true, modelId, getBonesFn);
         }
         if (feet.includes('右足')) {
-            setBoneOverride('右足', [rightFootPitch, 0, 0], 1, true, modelId);
+            applyBoneOverrideIK('右足', [rightFootPitch, 0, 0], 1, true, modelId, getBonesFn);
         }
     }
     // autoPedal 开启时不写静态足骨，交由 ensureActive 注册的每帧钩子驱动
@@ -159,7 +168,7 @@ function ensureActive(modelId: string): void {
                 }
                 const isLeft = bone.startsWith('左');
                 const pitch = computeFootPitch(phaseDeg, isLeft);
-                setBoneOverride(bone, [pitch, 0, 0], 1, true, modelId);
+                applyBoneOverrideIK(bone, [pitch, 0, 0], 1, true, modelId, () => _getRuntimeBones(modelId));
             }
         }, FRAME_HOOK_ORDER.RIDING);
         _ridingFrameHooks.set(modelId, unregister);

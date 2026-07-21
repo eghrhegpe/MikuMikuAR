@@ -27,6 +27,8 @@ export type BoneOverrideEntry = {
     weight: number;
     /** 启用/禁用 */
     enabled: boolean;
+    /** [doc:adr-123 P1] 绝对覆盖模式：true=替换 oldRotation，false/undefined=复合 */
+    absolute?: boolean;
 };
 
 // ======== Motion Override Module Types (ADR-116) ========
