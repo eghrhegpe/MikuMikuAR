@@ -333,6 +333,23 @@ export const zhTW: Record<string, string> = {
     'model-preset.deleteFailed': '✗ 刪除失敗',
     'model-preset.deleted': '✓ 預設已刪除',
 
+    // ===== 動作預設 motion-preset =====
+    'motion-preset.title': '動作預設',
+    'motion-preset.save': '儲存預設',
+    'motion-preset.apply': '套用',
+    'motion-preset.delete': '刪除',
+    'motion-preset.saved': '✓ 預設已儲存',
+    'motion-preset.applied': '✓ 預設已套用',
+    'motion-preset.deleted': '✓ 預設已刪除',
+    'motion-preset.noPresets': '暫無預設',
+    'motion-preset.saveTitle': '儲存目前動作為預設',
+    'motion-preset.inputName': '輸入預設名稱：',
+    'motion-preset.nameEmpty': '✗ 名稱不能為空',
+    'motion-preset.tooManyPresets': '✗ 預設已達上限 (10)，請刪除舊預設',
+    'motion-preset.confirmDelete': '確定刪除「{name}」？',
+    'motion-preset.deleteFailed': '✗ 刪除失敗',
+    'motion-preset.applyFailed': '✗ 套用預設失敗',
+
     // ===== 動作 motion =====
     'motion.title': '動作',
     'motion.advanced': '進階',

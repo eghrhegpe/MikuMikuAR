@@ -337,6 +337,23 @@ export const ja: Record<string, string> = {
     'model-preset.deleteFailed': '✗ 削除に失敗しました',
     'model-preset.deleted': '✓ プリセットを削除しました',
 
+    // ===== モーションプリセット motion-preset =====
+    'motion-preset.title': 'モーションプリセット',
+    'motion-preset.save': 'プリセットを保存',
+    'motion-preset.apply': '適用',
+    'motion-preset.delete': '削除',
+    'motion-preset.saved': '✓ プリセットを保存しました',
+    'motion-preset.applied': '✓ プリセットを適用しました',
+    'motion-preset.deleted': '✓ プリセットを削除しました',
+    'motion-preset.noPresets': 'プリセットがありません',
+    'motion-preset.saveTitle': '現在のモーションをプリセットとして保存',
+    'motion-preset.inputName': 'プリセット名を入力：',
+    'motion-preset.nameEmpty': '✗ 名前を入力してください',
+    'motion-preset.tooManyPresets': '✗ プリセット数の上限 (10) に達しました。古いプリセットを削除してください',
+    'motion-preset.confirmDelete': '「{name}」を削除してもよろしいですか？',
+    'motion-preset.deleteFailed': '✗ 削除に失敗しました',
+    'motion-preset.applyFailed': '✗ プリセットの適用に失敗しました',
+
     // ===== モーション motion =====
     'motion.title': 'モーション',
     'motion.advanced': '詳細設定',

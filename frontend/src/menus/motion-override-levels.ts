@@ -16,7 +16,7 @@ import { createIconifyIcon } from '../core/icons';
 import { getMotionMenu, renderModuleToggleList } from './motion-popup';
 import { addDisposableListener, type Disposable } from '../core/dom';
 import { triggerAutoSave, pushUndoSnapshot, offerSceneUndoAndRefresh } from '../scene/scene';
-import type { BoneOverrideEntry } from '../core/types';
+import type { BoneOverrideEntry, MotionModuleState } from '../core/types';
 import {
     setBoneOverride,
     clearBoneOverride,
@@ -45,6 +45,7 @@ import { applyMotionPreset, generatePresetId, modulesToPresetMap } from '../scen
 import type { MotionPreset } from '@/core/types';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
+import type { MenuNode } from './menu-schema';
 import { safeDispose } from '@/core/dispose-helpers';
 
 // ======== 模块列表层（ADR-116 主入口） ========

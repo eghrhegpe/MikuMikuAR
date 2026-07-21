@@ -1066,6 +1066,23 @@ export const en: Record<string, string> = {
     'model-preset.deleteFailed': '✗ Delete failed',
     'model-preset.deleted': '✓ Preset deleted',
 
+    // motion-preset — motion preset UI
+    'motion-preset.title': 'Motion Presets',
+    'motion-preset.save': 'Save Preset',
+    'motion-preset.apply': 'Apply',
+    'motion-preset.delete': 'Delete',
+    'motion-preset.saved': '✓ Preset saved',
+    'motion-preset.applied': '✓ Preset applied',
+    'motion-preset.deleted': '✓ Preset deleted',
+    'motion-preset.noPresets': 'No presets yet',
+    'motion-preset.saveTitle': 'Save current motion as preset',
+    'motion-preset.inputName': 'Enter preset name:',
+    'motion-preset.nameEmpty': '✗ Name cannot be empty',
+    'motion-preset.tooManyPresets': '✗ Preset limit (10) reached. Delete old presets first.',
+    'motion-preset.confirmDelete': 'Delete "{name}"?',
+    'motion-preset.deleteFailed': '✗ Delete failed',
+    'motion-preset.applyFailed': '✗ Failed to apply preset',
+
     // outfit — outfit variant UI
     'outfit.variant': 'Replace Textures',
     'outfit.modelRemoved': 'Model removed',

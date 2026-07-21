@@ -1054,6 +1054,23 @@ export const zhCN: Record<string, string> = {
     'model-preset.deleteFailed': '✗ 删除失败',
     'model-preset.deleted': '✓ 预设已删除',
 
+    // motion-preset — 动作预设 UI
+    'motion-preset.title': '动作预设',
+    'motion-preset.save': '保存预设',
+    'motion-preset.apply': '应用',
+    'motion-preset.delete': '删除',
+    'motion-preset.saved': '✓ 预设已保存',
+    'motion-preset.applied': '✓ 预设已应用',
+    'motion-preset.deleted': '✓ 预设已删除',
+    'motion-preset.noPresets': '暂无预设',
+    'motion-preset.saveTitle': '保存当前动作为预设',
+    'motion-preset.inputName': '输入预设名称：',
+    'motion-preset.nameEmpty': '✗ 名称不能为空',
+    'motion-preset.tooManyPresets': '✗ 预设已达上限 (10)，请删除旧预设',
+    'motion-preset.confirmDelete': '确定删除「{name}」？',
+    'motion-preset.deleteFailed': '✗ 删除失败',
+    'motion-preset.applyFailed': '✗ 应用预设失败',
+
     // outfit — 服装变体 UI
     'outfit.variant': '替换纹理',
     'outfit.modelRemoved': '模型已移除',
