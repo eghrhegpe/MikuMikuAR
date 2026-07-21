@@ -3,6 +3,7 @@
 // 性能日志改为 DEV-only + 每 60 帧采样（P4 降噪，见代码审核报告）。
 import { engine, scene, applyFrameControl } from '../scene/scene';
 import { updatePerformance } from '../scene/render/performance';
+import { recalcPerformanceReference } from '../scene/render/performance';
 import { uiState, dom } from './config';
 import { formatTimestamp } from './utils';
 import { logWarn } from './logger';
@@ -101,6 +102,8 @@ export function startRenderLoop(): void {
         if (newDpr !== _lastDpr) {
             _lastDpr = newDpr;
             applyScaling();
+            // ADR-118 Phase 2: 外接显示器变化时一并重算刷新率基准
+            recalcPerformanceReference();
         }
     };
     window.addEventListener('resize', _resizeHandler);
