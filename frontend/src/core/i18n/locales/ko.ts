@@ -825,6 +825,16 @@ export const ko: Record<string, string> = {
     'scene.lightPreset.dancePerformance': '댄스 공연',
     'scene.lightPreset.naturalDaylight': '자연 채광',
     'scene.lightPreset.nightScene': '야경',
+
+    // —— 추적 대상 (ADR-168) ——
+    'scene.followTarget': '추적 대상',
+    'scene.followNone': '없음 (정적)',
+    'scene.followBone': '본',
+    'scene.followRoot': '루트',
+    'scene.followOffsetY': '오프셋 Y',
+    'scene.followSmoothing': '부드러움',
+    'scene.followMoveWithTarget': '라이트 추적',
+
     'scene.preset.standard': '스탠다드',
     'scene.preset.cinematic': '시네마틱',
     'scene.preset.cartoon': '카툰',

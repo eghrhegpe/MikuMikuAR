@@ -801,6 +801,15 @@ export const zhCN: Record<string, string> = {
     'scene.lightPreset.naturalDaylight': '自然日光',
     'scene.lightPreset.nightScene': '夜间场景',
 
+    // —— 追光（ADR-168）——
+    'scene.followTarget': '跟随目标',
+    'scene.followNone': '无（静态）',
+    'scene.followBone': '骨骼',
+    'scene.followRoot': '根节点',
+    'scene.followOffsetY': '偏移 Y',
+    'scene.followSmoothing': '平滑度',
+    'scene.followMoveWithTarget': '灯随动',
+
     // —— 物理层级 scene-physics-levels ——
     'scene.gravityStrength': '重力强度（WASM + 布料）',
     'scene.wasmPhysics': 'WASM 物理',

@@ -827,6 +827,16 @@ export const ja: Record<string, string> = {
     'scene.lightPreset.dancePerformance': 'ダンスパフォーマンス',
     'scene.lightPreset.naturalDaylight': '自然光',
     'scene.lightPreset.nightScene': '夜景',
+
+    // —— 追従ターゲット (ADR-168) ——
+    'scene.followTarget': '追従ターゲット',
+    'scene.followNone': 'なし（静的）',
+    'scene.followBone': 'ボーン',
+    'scene.followRoot': 'ルート',
+    'scene.followOffsetY': 'オフセット Y',
+    'scene.followSmoothing': 'スムージング',
+    'scene.followMoveWithTarget': 'ライト追従',
+
     'scene.preset.standard': '標準',
     'scene.preset.cinematic': 'シネマティック',
     'scene.preset.cartoon': 'カートゥーン',
