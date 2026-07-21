@@ -22,7 +22,15 @@ import {
 import { showInfoToast } from '../core/toast';
 import { debounce, swallowError } from '../core/utils';
 import { logWarn } from '../core/logger';
-import { getActiveMotion, setActiveMotion } from './motion/motion-intent';
+import {
+    getActiveMotion,
+    getActiveMotionId,
+    getSceneMotions,
+    setActiveMotion,
+    addSceneMotion,
+    setDefaultMotion,
+    clearAllSceneMotions,
+} from './motion/motion-intent';
 import {
     getCameraState,
     setCameraState,
@@ -293,11 +301,33 @@ export interface SceneFile {
     };
     stageLight?: StageLightState;
     stageLights?: StageLightState[];
-    /** [doc:adr-121] 场景级动作意图（持久化，加载时还原） */
+    /** [doc:adr-167] 场景级动作库（持久化，加载时还原）
+     *  新格式：sceneMotions + activeMotionId（多主动作平等共存）
+     *  旧格式：vmdPath/vmdName/vmdLayers/...（单例；仅反序列化时识别并迁移）
+     *  所有字段皆可选以支持新/旧格式共存。 */
     motion?: {
-        vmdPath: string | null;
-        vmdName: string;
-        vmdLayers: Array<{
+        // ── 新格式字段（ADR-167）──
+        sceneMotions?: Array<{
+            id?: string;
+            vmdPath?: string | null;
+            vmdName?: string;
+            vmdLayers?: Array<{
+                name: string;
+                path: string | null;
+                weight: number;
+                boneFilter: string[];
+                kind?: 'vmd' | 'gaze';
+                enabled?: boolean;
+            }>;
+            source?: 'vmd' | 'retargeted';
+            motionModules?: MotionModuleState[];
+            procMotion?: Partial<ProcMotionState>;
+        }>;
+        activeMotionId?: string | null;
+        // ── 旧格式字段（ADR-121；仅反序列化兼容，新存档不写）──
+        vmdPath?: string | null;
+        vmdName?: string;
+        vmdLayers?: Array<{
             name: string;
             path: string | null;
             weight: number;
@@ -305,9 +335,8 @@ export interface SceneFile {
             kind?: 'vmd' | 'gaze';
             enabled?: boolean;
         }>;
-        source: 'vmd' | 'retargeted';
+        source?: 'vmd' | 'retargeted';
         motionModules?: MotionModuleState[];
-        /** [adr-XX per-motion] 程序化动作参数（随动作走） */
         procMotion?: Partial<ProcMotionState>;
     } | null;
 }
@@ -496,27 +525,32 @@ export function serializeScene(): SceneFile {
             ? { type: getActiveFormation()!, spacing: getActiveFormationSpacing() }
             : undefined,
         stageLights: getStageLights(),
-        // [doc:adr-121] 场景级动作意图
+        // [doc:adr-167] 场景级动作库（新格式：sceneMotions + activeMotionId）
         motion: (() => {
-            const a = getActiveMotion();
-            return a
-                ? {
-                      vmdPath: a.vmdPath,
-                      vmdName: a.vmdName,
-                      vmdLayers: a.vmdLayers.map((l) => ({
-                          kind: l.kind,
-                          name: l.name,
-                          path: l.path,
-                          weight: l.weight,
-                          boneFilter: l.boneFilter,
-                          enabled: l.enabled,
-                      })),
-                      source: a.source,
-                      motionModules: a.motionModules,
-                      // [adr-XX per-motion] 程序化动作参数（随动作走）
-                      procMotion: a.procMotion,
-                  }
-                : null;
+            const sceneMotions = getSceneMotions();
+            const activeMotionId = getActiveMotionId();
+            if (sceneMotions.length === 0 && activeMotionId === null) {
+                return null;
+            }
+            return {
+                sceneMotions: sceneMotions.map((m) => ({
+                    id: m.id ?? undefined,
+                    vmdPath: m.vmdPath,
+                    vmdName: m.vmdName,
+                    vmdLayers: m.vmdLayers.map((l) => ({
+                        kind: l.kind,
+                        name: l.name,
+                        path: l.path,
+                        weight: l.weight,
+                        boneFilter: l.boneFilter,
+                        enabled: l.enabled,
+                    })),
+                    source: m.source,
+                    motionModules: m.motionModules,
+                    procMotion: m.procMotion,
+                })),
+                activeMotionId,
+            };
         })(),
     };
 }
@@ -1047,39 +1081,94 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
         }
     }
 
-    // [doc:adr-121] 恢复场景级动作意图（旧存档无此字段时回退到每模型 vmdPath 缓存）
+    // [doc:adr-167] 恢复场景级动作库（新格式优先；旧格式单例迁移）
     // 注意：motion 恢复在模型加载完成后执行，此时各模型 vmdPath 已由旧序列化恢复
-    // 如果 data.motion 存在，用场景级意图覆盖（setActiveMotion 触发广播）
-    // 如果 data.motion 不存在且模型有 vmdPath，保持旧行为（每模型独立 VMD）
     if (data.motion) {
-        setActiveMotion({
-            vmdPath: data.motion.vmdPath,
-            vmdName: data.motion.vmdName,
-            vmdLayers: data.motion.vmdLayers.map((l) => ({
-                id: '',
-                kind: l.kind ?? 'vmd',
-                name: l.name,
-                data: new ArrayBuffer(0),
-                path: l.path,
-                weight: l.weight,
-                boneFilter: l.boneFilter,
-                enabled: l.enabled ?? true,
-            })),
-            source: data.motion.source,
-            motionModules: data.motion.motionModules,
-            // [adr-XX per-motion] 程序化动作参数（随动作走）
-            procMotion: data.motion.procMotion
-                ? ({
-                      ...DEFAULT_PROC_STATE,
-                      ...(data.motion.procMotion as Partial<ProcMotionState>),
-                  } as ProcMotionConfig)
-                : undefined,
-        });
+        // 先清空运行时场景库（防止残留旧数据）
+        clearAllSceneMotions();
+        if (data.motion.sceneMotions && data.motion.sceneMotions.length > 0) {
+            // 新格式：多主动作平等共存
+            let firstId: string | null = null;
+            for (const m of data.motion.sceneMotions) {
+                const id = addSceneMotion({
+                    id: m.id,
+                    vmdPath: m.vmdPath,
+                    vmdName: m.vmdName,
+                    vmdLayers: m.vmdLayers.map((l) => ({
+                        id: '',
+                        kind: l.kind ?? 'vmd',
+                        name: l.name,
+                        data: new ArrayBuffer(0),
+                        path: l.path,
+                        weight: l.weight,
+                        boneFilter: l.boneFilter,
+                        enabled: l.enabled ?? true,
+                    })),
+                    source: m.source,
+                    motionModules: m.motionModules,
+                    procMotion: m.procMotion
+                        ? ({
+                              ...DEFAULT_PROC_STATE,
+                              ...(m.procMotion as Partial<ProcMotionState>),
+                          } as ProcMotionConfig)
+                        : undefined,
+                });
+                if (firstId === null) {
+                    firstId = id;
+                }
+            }
+            // 设置默认动作（若存档中明确为 null，则保留 null=无默认；否则用 activeMotionId 或首项）
+            const desired = data.motion.activeMotionId ?? firstId;
+            setDefaultMotion(desired);
+        } else if (
+            data.motion.vmdPath !== undefined ||
+            data.motion.vmdName !== undefined ||
+            (data.motion.vmdLayers && data.motion.vmdLayers.length > 0)
+        ) {
+            // 旧格式：单例迁移到新场景库
+            const legacy = data.motion as {
+                vmdPath: string | null;
+                vmdName: string;
+                vmdLayers: Array<{
+                    name: string;
+                    path: string | null;
+                    weight: number;
+                    boneFilter: string[];
+                    kind?: 'vmd' | 'gaze';
+                    enabled?: boolean;
+                }>;
+                source: 'vmd' | 'retargeted';
+                motionModules?: MotionModuleState[];
+                procMotion?: Partial<ProcMotionState>;
+            };
+            addSceneMotion({
+                vmdPath: legacy.vmdPath,
+                vmdName: legacy.vmdName,
+                vmdLayers: legacy.vmdLayers.map((l) => ({
+                    id: '',
+                    kind: l.kind ?? 'vmd',
+                    name: l.name,
+                    data: new ArrayBuffer(0),
+                    path: l.path,
+                    weight: l.weight,
+                    boneFilter: l.boneFilter,
+                    enabled: l.enabled ?? true,
+                })),
+                source: legacy.source,
+                motionModules: legacy.motionModules,
+                procMotion: legacy.procMotion
+                    ? ({
+                          ...DEFAULT_PROC_STATE,
+                          ...(legacy.procMotion as Partial<ProcMotionState>),
+                      } as ProcMotionConfig)
+                    : undefined,
+            });
+            // addSceneMotion 首次添加自动设为默认
+        }
+        // 否则（motion 存在但字段全空）= 显式清空状态，保持 clearAllSceneMotions 结果
     } else {
         // 旧场景文件无 motion 块 → 保持已有 vmdPath 缓存（与当前行为一致）
-        // 但需将 activeMotion 设为 null 以避免广播覆盖每模型独立 VMD
-        // 注意：setActiveMotion(null) 会清空所有模型 VMD，所以不调用它
-        // activeMotion 保持 null，各模型继续使用自己的 vmdData
+        // 不调用 clearAllSceneMotions 避免覆盖每模型独立 VMD
     }
 
     // --- Report loading errors ---
