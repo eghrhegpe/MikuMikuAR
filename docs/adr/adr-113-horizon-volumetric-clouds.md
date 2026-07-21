@@ -116,7 +116,7 @@ ADR-032 已列明且至今未改：
 
 ## 决策
 
-保留 ShaderMaterial-on-Sphere 架构（ADR-032 结论仍成立：Babylon 9.14.0 无内置体积云，第三方均不兼容），**在现有 shader 上做增量升级**，不重写、不引依赖。按价值/成本排序分 4 阶段。
+保留 ShaderMaterial-on-Sphere 架构（ADR-032 结论仍成立：Babylon 9.x 无内置体积云，第三方均不兼容），**在现有 shader 上做增量升级**，不重写、不引依赖。按价值/成本排序分 4 阶段。
 
 ### 前置：天空盒与体积云的渲染分层（🚨 阻塞 Phase A，已落地）
 
@@ -446,7 +446,7 @@ float t = tEnter + jitter * firstDt;
 | 方案 | 否决理由 |
 |------|----------|
 | Cloud Cards / Billboard 云片（首轮讨论方案 C） | 与现有 shader 球体架构并存会造成双套云系统、状态同步复杂；地平线延展问题用自适应步长即可解决，无需引入新架构 |
-| Babylon 内置 VolumetricClouds | ADR-032 已确认不存在（9.14.0） |
+| Babylon 内置 VolumetricClouds | ADR-032 已确认不存在（9.x 通用） |
 | 第三方云库（three-clouds 等） | 依赖 Three.js，不兼容 Babylon |
 | 重写为纯 post-process 全屏 raymarch | 收益不明显，且丢弃现有可用的球壳裁剪/early-exit 优化，成本高 |
 

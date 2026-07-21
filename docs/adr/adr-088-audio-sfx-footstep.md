@@ -31,7 +31,7 @@
 | **音乐 ↔ 动画同步** | `outfit/audio.ts:176` `syncAudioPlayback` | 与 VMD 时间轴对齐，含 `audioOffset` 全局偏移、漂移纠正（阈值 0.1s） |
 | **BPM 节拍检测** | `motion-algos/beat-detector.ts` | 基于 `AudioContext` + `AnalyserNode`，驱动 BPM 量化 |
 | **音频设置菜单** | `menus/settings-audio.ts` | 默认音量、静音、音频偏移、BPM 量化、自动加载同目录音乐 |
-| **音量持久化** | `SettingsStore` (`volume`/`audioOffset`) | 全局设置存储 |
+| **音量持久化** | `uiState` 持久化（ADR-103）(`volume`/`audioOffset`) | 全局设置存储（原 `SettingsStore` 已移除） |
 
 ### 1.2 未实现（本 ADR 目标）
 
@@ -74,9 +74,9 @@
 export function getAudioContext(): AudioContext;
 // SFX 主增益（独立于音乐音量）
 export function getSfxMasterGain(): GainNode;
-export function setSfxVolume(v: number): void;   // 0..1，写 SettingsStore('sfxVolume')
+export function setSfxVolume(v: number): void;   // 0..1，写 uiState 持久化（ADR-103）('sfxVolume')
 export function getSfxVolume(): number;
-export function setSfxEnabled(on: boolean): void; // 写 SettingsStore('sfxEnabled')
+export function setSfxEnabled(on: boolean): void; // 写 uiState 持久化（ADR-103）('sfxEnabled')
 export function getSfxEnabled(): boolean;
 
 // 采样缓存：url -> 已解码 AudioBuffer（避免重复 fetch/decode）
@@ -160,14 +160,14 @@ export function stopFootstep(): void;
 
 ### 3.5 状态管理
 
-脚步声/SFX 是**全局播放器配置**（非 per-model），归 `SettingsStore` + `EnvState`：
+脚步声/SFX 是**全局播放器配置**（非 per-model），归 `uiState` 持久化（ADR-103）+ `EnvState`：
 
 | 字段 | 存储 | 默认 | 说明 |
 |------|------|------|------|
-| `sfxEnabled` | SettingsStore | `true` | SFX 总线总开关 |
-| `sfxVolume` | SettingsStore | `0.7` | SFX 主音量（独立于音乐） |
-| `footstepEnabled` | SettingsStore | `false` | 脚步声开关（默认关，避免意外发声） |
-| `footstepVolume` | SettingsStore | `0.8` | 脚步声相对音量 |
+| `sfxEnabled` | uiState（ADR-103） | `true` | SFX 总线总开关 |
+| `sfxVolume` | uiState（ADR-103） | `0.7` | SFX 主音量（独立于音乐） |
+| `footstepEnabled` | uiState（ADR-103） | `false` | 脚步声开关（默认关，避免意外发声） |
+| `footstepVolume` | uiState（ADR-103） | `0.8` | 脚步声相对音量 |
 
 > 与 ADR-085 `FeetState`（per-model）不同：脚步声是听觉全局配置，一套即可。
 

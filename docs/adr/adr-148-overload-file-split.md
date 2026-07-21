@@ -34,8 +34,9 @@ scene-menu.ts → env-feature-levels.ts: import { buildGroundLevel, buildWaterLe
 
 ### 隐式风险：循环依赖
 
-- [env-feature-levels.ts:37-38](file:///c:/Users/zhujieling11/MikuMikuAR/frontend/src/menus/env-feature-levels.ts#L37-L38) `import { getEnvMenu, setEnvTextureBindingTarget } from './env-menu'`
-- [env-menu.ts:26,38](file:///c:/Users/zhujieling11/MikuMikuAR/frontend/src/menus/env-menu.ts#L26) `} from './env-feature-levels'`
+- `env-feature-levels.ts`（拆分前）`import { getEnvMenu, setEnvTextureBindingTarget } from './env-menu'` —— 该文件已于阶段 1 删除，拆分为 `env-*-levels.ts` + `env-menu-state.ts`
+- [env-menu.ts:19-27](file:///c:/Users/zhujieling11/MikuMikuAR/frontend/src/menus/env-menu.ts#L19-L27) `} from './env-{sky,wind,experimental,fog,shadow,cloud}-levels'`、`env-level-helpers`、`env-preset-levels`
+- 等价现任引用：[env-preset-levels.ts:34 `import { getEnvMenu } from './env-menu'`](file:///c:/Users/zhujieling11/MikuMikuAR/frontend/src/menus/env-preset-levels.ts#L34)、[env-menu-state.ts:13 `setEnvTextureBindingTarget`](file:///c:/Users/zhujieling11/MikuMikuAR/frontend/src/menus/env-menu-state.ts#L13)
 
 `env-menu ↔ env-feature-levels` 已存在双向 import。拆分时若把 `buildWaterLevel` 挪到 `env-water-levels.ts`，新文件会继续 import `env-menu`，循环不会消失——但因为是 getter/setter 软循环（无 top-level 副作用求值），运行时不爆雷，仅是耦合气味。
 

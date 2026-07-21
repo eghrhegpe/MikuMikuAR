@@ -140,7 +140,7 @@ groundMat.environmentTexture = cubeTexture;     // 环境反射
 | **短期（1-2 天）** | 路径 A + C | 零新依赖，PBR 材质 + 模糊反射立竿见影 |
 | **中期（1 周）** | 路径 D | 木纹贴图资源到位后混合落地 |
 | **长期（技术债）** | 路径 B | SSR 后处理是 UE5 Lumen 风格的核心，但 Babylon 生态不成熟，需自研 |
-| **不建议** | 光线追踪 | Babylon.js 9.14.0 无硬件 RT 支持；WebGPU RT 仍在实验阶段 |
+| **不建议** | 光线追踪 | Babylon.js 9.x（撰写时 9.14.0）无硬件 RT 支持；WebGPU RT 仍在实验阶段 |
 
 ---
 

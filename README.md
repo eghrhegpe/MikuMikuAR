@@ -6,7 +6,7 @@
 [![Release](https://img.shields.io/github/v/release/eghrhegpe/MikuMikuAR?logo=github)](https://github.com/eghrhegpe/MikuMikuAR/releases)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?logo=go)](https://go.dev/)
 [![Wails](https://img.shields.io/badge/Wails-v3-DF0000?logo=wails)](https://wails.io)
-[![Babylon.js](https://img.shields.io/badge/Babylon.js-9.14-AD1F23?logo=babylondotjs)](https://babylonjs.com/)
+[![Babylon.js](https://img.shields.io/badge/Babylon.js-9.16-AD1F23?logo=babylondotjs)](https://babylonjs.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.4-646CFF?logo=vite)](https://vitejs.dev/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)

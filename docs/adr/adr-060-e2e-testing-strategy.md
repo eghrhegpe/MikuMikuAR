@@ -12,7 +12,7 @@
 
 | 项 | 事实 | 来源 |
 |----|------|------|
-| 前端框架 | **Vite + 原生 TypeScript + Babylon.js 9.14.0 + babylon-mmd**（非 React/Vue，非 Three.js） | `frontend/AGENTS.md`、本项目事实 |
+| 前端框架 | **Vite + 原生 TypeScript + Babylon.js 9.16.x + babylon-mmd**（非 React/Vue，非 Three.js） | `frontend/AGENTS.md`、本项目事实 |
 | 桌面壳 | **Wails v3**（Go + WebView2） | `AGENTS.md` 技术栈 |
 | 开发地址 | Vite `localhost:5173`（DOM-only）、WebView2 调试端口 `9222`（全量） | `frontend/playwright.config.ts`、`e2e/wails-fixture.ts` |
 | E2E 框架 | **Playwright 已接入**，含双模式 fixture：`vitePage`（Chromium 打 5173，不依赖 Wails）+ `wailsPage`（`connectOverCDP` 连 9222，真·Wails 运行时） | `frontend/e2e/wails-fixture.ts` |
