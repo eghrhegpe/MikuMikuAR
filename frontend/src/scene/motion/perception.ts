@@ -110,6 +110,7 @@ function _getOrCreateContext(modelId: string): PerceptionContext {
                     lastAllParentRx: 0,
                     lastAllParentRz: 0,
                     lastSwayTime: 0,
+                    lastBalanceSwayBones: [],
                 },
                 emotion: null,
             },
@@ -147,17 +148,7 @@ function _updateFocusedState(partial: Partial<PerceptionState>): void {
 /** 重置指定 context 的 lastOffsets（激活/注销时调用，避免跨模型残留） */
 function _resetContextOffsets(ctx: PerceptionContext): void {
     ctx.lastOffsets.breath = 0;
-    ctx.lastOffsets.balance = {
-        lastBobY: 0,
-        swayCenterName: null,
-        lastCenterRz: 0,
-        lastCenterRx: 0,
-        lastUpperRx: 0,
-        lastWaistRz: 0,
-        lastAllParentRx: 0,
-        lastAllParentRz: 0,
-        lastSwayTime: 0,
-    };
+    _resetBalanceSwayState(ctx.lastOffsets.balance);
     ctx.lastOffsets.emotion = null;
 }
 
@@ -269,6 +260,7 @@ function _applyPerceptionForContext(
                 state.balanceSwayEnabled,
                 state.balanceSwayPeriod,
                 state.balanceSwayAmplitude,
+                ctx.lastOffsets.balance,
                 centerClaimed,
                 upperClaimed,
                 waistClaimed,
@@ -437,7 +429,6 @@ export function activatePerception(modelId?: string): void {
     if (!hasPinned) {
         deactivatePerception();
     } else {
-        _resetBalanceSwayState();
         _resetBreathingState();
         _resetLastEmotionMorphName();
     }
@@ -482,7 +473,6 @@ export function deactivatePerception(): void {
         perceptionObserver = null;
     }
     _resetLastEmotionMorphName(); // 模型切换时清空，避免旧 morph 名残留
-    _resetBalanceSwayState(); // 重置 balance 增量状态，避免跨模型残留导致塌地
     _resetBreathingState(); // 重置 breathing 增量状态，避免跨模型残留导致旋转冻结
     _resetGazeState(); // 重置 gaze 状态，避免关闭后重新开启出现跳跃
 
