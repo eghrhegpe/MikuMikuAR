@@ -39,6 +39,26 @@ export function migrateLipSyncFromOldState(old: {
 }
 
 /**
+ * 旧存档 perception 格式迁移：PerceptionState → { focused, pinned }。
+ * 纯函数，无外部依赖。
+ */
+export function migratePerceptionData(
+    perception: unknown
+): { focused: PerceptionState; pinned: Array<{ modelId: string; state: PerceptionState }> } | null {
+    if (!perception || typeof perception !== 'object') {
+        return null;
+    }
+    if ('focused' in perception) {
+        return perception as {
+            focused: PerceptionState;
+            pinned: Array<{ modelId: string; state: PerceptionState }>;
+        };
+    }
+    // 旧格式：直接是 PerceptionState
+    return { focused: perception as PerceptionState, pinned: [] };
+}
+
+/**
  * 旧存档 ProcMotionState → 新版 PerceptionState 迁移。
  * 纯函数，无外部依赖。
  */

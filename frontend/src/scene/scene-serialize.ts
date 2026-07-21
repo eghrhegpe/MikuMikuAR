@@ -39,6 +39,7 @@ import type { CameraState } from './camera/camera';
 import {
     migrateLipSyncFromOldState,
     migratePerceptionFromProcMotion,
+    migratePerceptionData,
 } from './scene-migrate';
 import {
     getAudioName,
@@ -110,6 +111,9 @@ import {
     getPerceptionState,
     setPerceptionState,
     activatePerception,
+    getPinnedModelIds,
+    getPerceptionStateFor,
+    pinPerception,
     type PerceptionState,
 } from './motion/perception';
 
@@ -251,7 +255,13 @@ export interface SceneFile {
     };
     procMotion?: ProcMotionState;
     /** [doc:adr-071] 感知层状态（呼吸/眨眼/视线追踪），独立于程序化动作 */
-    perception?: PerceptionState;
+    /** [doc:adr-162] Phase 4: 新格式 { focused: PerceptionState, pinned: Array<{ modelId, state }> } */
+    perception?:
+        | PerceptionState
+        | {
+              focused: PerceptionState;
+              pinned: Array<{ modelId: string; state: PerceptionState }>;
+          };
     lipSync?: LipSyncStateType;
     props?: Array<{
         filePath: string;
@@ -454,7 +464,13 @@ export function serializeScene(): SceneFile {
               }
             : undefined,
         procMotion: { ...procState },
-        perception: { ...getPerceptionState() },
+        perception: {
+            focused: { ...getPerceptionState() },
+            pinned: getPinnedModelIds().map((id) => ({
+                modelId: id,
+                state: { ...getPerceptionStateFor(id) },
+            })),
+        },
         lipSync: { ...lipState },
         props: Array.from(propRegistry.values()).map((p) => {
             let uuid = propUuidMap.get(p.id);
@@ -891,9 +907,13 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
     }
 
     // --- Perception Layer --- [doc:adr-071]
-    // 优先读 data.perception；旧存档无此字段时从 procMotion 迁移
-    if (data.perception) {
-        setPerceptionState(data.perception as Partial<PerceptionState>);
+    // 优先读 data.perception（兼容旧格式 PerceptionState 与新格式 { focused, pinned }）
+    const perceptionData = migratePerceptionData(data.perception);
+    if (perceptionData) {
+        setPerceptionState(perceptionData.focused);
+        for (const p of perceptionData.pinned) {
+            pinPerception(p.modelId, p.state);
+        }
     } else if (data.procMotion) {
         setPerceptionState(
             migratePerceptionFromProcMotion(data.procMotion as Partial<ProcMotionState>)

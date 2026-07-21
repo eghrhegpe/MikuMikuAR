@@ -5,6 +5,7 @@ import { Quaternion } from '@babylonjs/core';
 import {
     migratePerceptionFromProcMotion,
     migrateLipSyncFromOldState,
+    migratePerceptionData,
 } from '../scene/scene-migrate';
 import { _gazeAlpha } from '../scene/motion/perception-shared';
 
@@ -834,5 +835,90 @@ describe('balanceSway 可调参数', () => {
         expect(mockState.triggerAutoSave).toHaveBeenCalled();
         sut.setBalanceSwayAmplitude(0.5);
         expect(mockState.triggerAutoSave).toHaveBeenCalled();
+    });
+});
+
+// =====================================================================
+// [doc:adr-162] Phase 3 — pin / unpin API
+// =====================================================================
+
+describe('pinPerception', () => {
+    it('pin 模型后焦点切换时 pinned 仍激活', () => {
+        mockState.focusedModelId = 'm1';
+        mockState.modelManager.get.mockReturnValue({
+            mmdModel: { mesh: { isDisposed: () => false } },
+        });
+        sut.activatePerception('m1');
+        sut.pinPerception('m1');
+
+        // 切换焦点到 m2
+        mockState.focusedModelId = 'm2';
+        mockState.modelManager.get.mockImplementation((id: string) =>
+            id === 'm2' ? { mmdModel: { mesh: { isDisposed: () => false } } } : null
+        );
+        sut.activatePerception('m2');
+
+        expect(sut.getPinnedModelIds()).toContain('m1');
+        // m1 pinned 后切换焦点到 m2，observer 保留运行（不注销再注册）
+        expect(mockPipeline.register).toHaveBeenCalledTimes(1);
+        // m2 成为新焦点
+        expect(sut.getPerceptionStateFor('m2').breathEnabled).toBe(true);
+    });
+
+    it('pin 上限 5，第 6 个 console.warn 并拒绝', () => {
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        for (let i = 1; i <= 5; i++) {
+            sut.pinPerception(`m${i}`);
+        }
+        expect(sut.getPinnedModelIds().length).toBe(5);
+
+        sut.pinPerception('m6');
+        expect(sut.getPinnedModelIds().length).toBe(5);
+        expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('pin 上限 5'));
+        warnSpy.mockRestore();
+    });
+
+    it('unpin 非焦点模型后该模型从 pinned 列表移除', () => {
+        sut.pinPerception('m1');
+        expect(sut.getPinnedModelIds()).toContain('m1');
+        sut.unpinPerception('m1');
+        expect(sut.getPinnedModelIds()).not.toContain('m1');
+    });
+});
+
+describe('setPerceptionStateFor', () => {
+    it('可为指定模型独立设置感知状态', () => {
+        sut.setPerceptionStateFor('m1', { breathEnabled: false });
+        expect(sut.getPerceptionStateFor('m1').breathEnabled).toBe(false);
+        // 未激活时 fallback 状态不受影响
+        expect(sut.getPerceptionState().breathEnabled).toBe(true);
+    });
+});
+
+// =====================================================================
+// [doc:adr-162] Phase 4 — 旧存档 perception 迁移
+// =====================================================================
+
+describe('migratePerceptionData', () => {
+    it('旧格式 PerceptionState → { focused: oldState, pinned: [] }', () => {
+        const old = { breathEnabled: false, blinkEnabled: true };
+        const migrated = migratePerceptionData(old);
+        expect(migrated).not.toBeNull();
+        expect(migrated!.focused.breathEnabled).toBe(false);
+        expect(migrated!.pinned).toEqual([]);
+    });
+
+    it('新格式直接透传', () => {
+        const neu = {
+            focused: { breathEnabled: true },
+            pinned: [{ modelId: 'm1', state: { breathEnabled: false } }],
+        };
+        const migrated = migratePerceptionData(neu);
+        expect(migrated).toEqual(neu);
+    });
+
+    it('null/undefined 输入返回 null', () => {
+        expect(migratePerceptionData(null)).toBeNull();
+        expect(migratePerceptionData(undefined)).toBeNull();
     });
 });

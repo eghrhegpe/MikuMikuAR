@@ -3,12 +3,13 @@
 // 与程序化动作解耦，独立文件责任分明
 // 开关合并至 folder headerToggle（参考 env-menu 模式）
 
-import { cardContainer } from '../core/config';
+import { cardContainer, focusedModelId } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import {
     getPerceptionState,
     setPerceptionState,
     activatePerception,
+    pinPerception,
 } from '../scene/motion/perception';
 import { triggerAutoSave } from '../core/utils';
 import { getMotionMenu } from './motion-popup';
@@ -252,6 +253,24 @@ const gazeSchema: MenuNode[] = [
                 },
             },
         ],
+    },
+    // ── Pin 当前模型（[doc:adr-162] Phase 3） ──
+    {
+        id: 'perception:pinModel',
+        kind: 'custom',
+        renderCustom: (c) => {
+            const btn = document.createElement('button');
+            btn.className = 'action-button';
+            btn.textContent = t('motion.pinModel');
+            btn.onclick = () => {
+                if (focusedModelId) {
+                    pinPerception(focusedModelId);
+                    triggerAutoSave();
+                    refreshMotionMenu();
+                }
+            };
+            c.appendChild(btn);
+        },
     },
     // ── Lip-sync（已有 headerToggle 模式） ──
     {
