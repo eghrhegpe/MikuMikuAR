@@ -407,6 +407,8 @@ export const zhCN: Record<string, string> = {
     'motion.emotionSurprised': '惊讶',
     'motion.emotionAngry': '愤怒',
     'motion.balanceSway': '重心微动',
+    'motion.balanceSwayPeriod': '周期',
+    'motion.balanceSwayAmplitude': '幅度',
     // ── 感知层可调参数（[doc:adr-116] 感知层滑块功能） ──
     'perception.headFollowParams': '头部跟随参数',
     'perception.headYawRange': '水平范围',

@@ -59,7 +59,13 @@ export function _resetBalanceSwayState(): void {
     _lastSwayTime = 0;
 }
 
-export function _applyBalanceSway(mmdModel: MmdModelLike, time: number, enabled: boolean): void {
+export function _applyBalanceSway(
+    mmdModel: MmdModelLike,
+    time: number,
+    enabled: boolean,
+    period: number,
+    amplitude: number
+): void {
     const boneNames: string[] = mmdModel.runtimeBones.map((b: IMmdRuntimeBone) => b.name);
     const centerName = matchBone(boneNames, BONE_CENTER_CANDIDATES);
     const upper2Name = matchBone(boneNames, BONE_UPPER2_CANDIDATES);
@@ -67,7 +73,7 @@ export function _applyBalanceSway(mmdModel: MmdModelLike, time: number, enabled:
     const allParentName = matchBone(boneNames, BONE_ALLPARENT_CANDIDATES);
 
     // 关闭时撤销 center position 的 bob 残留 + 重置增量状态（避免残留冻结）
-    if (!enabled) {
+    if (!enabled || amplitude === 0) {
         if (_lastBobY !== 0 && _swayCenterName) {
             const bone = mmdModel.runtimeBones.find(
                 (b: IMmdRuntimeBone) => b.name === _swayCenterName
@@ -81,7 +87,7 @@ export function _applyBalanceSway(mmdModel: MmdModelLike, time: number, enabled:
         return;
     }
 
-    const phase = ((time % BALANCE_SWAY_PERIOD) / BALANCE_SWAY_PERIOD) * Math.PI * 2;
+    const phase = ((time % period) / period) * Math.PI * 2;
     const slowPhase = phase * 0.5;
     const written: string[] = [];
 
@@ -89,14 +95,14 @@ export function _applyBalanceSway(mmdModel: MmdModelLike, time: number, enabled:
     if (centerName) {
         const bone = mmdModel.runtimeBones.find((b: IMmdRuntimeBone) => b.name === centerName);
         if (bone?.linkedBone) {
-            const bobY = Math.sin(phase) * SWAY_AMP.center_bobY;
+            const bobY = Math.sin(phase) * SWAY_AMP.center_bobY * amplitude;
             // 增量叠加：先撤上帧 bob，再加本帧 bob，保持基准 position.y 不变（修复塌到地面）
             bone.linkedBone.position.y = bone.linkedBone.position.y - _lastBobY + bobY;
             _lastBobY = bobY;
             _swayCenterName = centerName;
 
-            const rz = Math.sin(slowPhase) * SWAY_AMP.center_rz;
-            const rx = Math.sin(phase * 0.37 + 0.5) * SWAY_AMP.center_rx;
+            const rz = Math.sin(slowPhase) * SWAY_AMP.center_rz * amplitude;
+            const rx = Math.sin(phase * 0.37 + 0.5) * SWAY_AMP.center_rx * amplitude;
             // rotation 增量叠加（deltaQ * currentQ × SWAY_DELTA_FACTOR，
             // 避免 Slerp 平均吃掉非零基准旋转 / VMD 旋转，同时控制振幅感知）
             const deltaCenterRz = (rz - _lastCenterRz) * SWAY_DELTA_FACTOR;
@@ -122,7 +128,7 @@ export function _applyBalanceSway(mmdModel: MmdModelLike, time: number, enabled:
     if (upper2Name) {
         const bone = mmdModel.runtimeBones.find((b: IMmdRuntimeBone) => b.name === upper2Name);
         if (bone?.linkedBone) {
-            const rx = Math.sin(phase * 0.7 + 0.3) * SWAY_AMP.upper2_rx;
+            const rx = Math.sin(phase * 0.7 + 0.3) * SWAY_AMP.upper2_rx * amplitude;
             const deltaRx = (rx - _lastUpperRx) * SWAY_DELTA_FACTOR;
             if (deltaRx !== 0 && bone.linkedBone.rotationQuaternion) {
                 const deltaQ = _q().copyFrom(Quaternion.FromEulerAngles(deltaRx, 0, 0));
@@ -139,7 +145,7 @@ export function _applyBalanceSway(mmdModel: MmdModelLike, time: number, enabled:
     if (waistName) {
         const bone = mmdModel.runtimeBones.find((b: IMmdRuntimeBone) => b.name === waistName);
         if (bone?.linkedBone) {
-            const rz = Math.sin(phase + 0.5) * SWAY_AMP.waist_rz;
+            const rz = Math.sin(phase + 0.5) * SWAY_AMP.waist_rz * amplitude;
             const deltaRz = (rz - _lastWaistRz) * SWAY_DELTA_FACTOR;
             if (deltaRz !== 0 && bone.linkedBone.rotationQuaternion) {
                 const deltaQ = _q().copyFrom(Quaternion.FromEulerAngles(0, 0, deltaRz));
@@ -156,8 +162,8 @@ export function _applyBalanceSway(mmdModel: MmdModelLike, time: number, enabled:
     if (allParentName) {
         const bone = mmdModel.runtimeBones.find((b: IMmdRuntimeBone) => b.name === allParentName);
         if (bone?.linkedBone) {
-            const rx = Math.sin(phase * 0.2 + 1.1) * SWAY_AMP.allParent_rx;
-            const rz = Math.sin(phase * 0.3 + 2.3) * SWAY_AMP.allParent_rz;
+            const rx = Math.sin(phase * 0.2 + 1.1) * SWAY_AMP.allParent_rx * amplitude;
+            const rz = Math.sin(phase * 0.3 + 2.3) * SWAY_AMP.allParent_rz * amplitude;
             const deltaRx = (rx - _lastAllParentRx) * SWAY_DELTA_FACTOR;
             const deltaRz = (rz - _lastAllParentRz) * SWAY_DELTA_FACTOR;
             if ((deltaRx !== 0 || deltaRz !== 0) && bone.linkedBone.rotationQuaternion) {

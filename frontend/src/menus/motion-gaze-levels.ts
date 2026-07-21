@@ -226,7 +226,32 @@ const gazeSchema: MenuNode[] = [
         label: 'motion.balanceSway',
         icon: 'lucide:move-3d',
         headerToggle: { bind: 'perception.balanceSwayEnabled', onChange: withActivate },
-        children: [],
+        children: [
+            {
+                id: 'perception:balanceSwayPeriod',
+                kind: 'slider',
+                label: 'motion.balanceSwayPeriod',
+                control: {
+                    bind: 'perception.balanceSwayPeriod',
+                    min: 0.5,
+                    max: 5.0,
+                    step: 0.1,
+                    onChange: withActivate,
+                },
+            },
+            {
+                id: 'perception:balanceSwayAmplitude',
+                kind: 'slider',
+                label: 'motion.balanceSwayAmplitude',
+                control: {
+                    bind: 'perception.balanceSwayAmplitude',
+                    min: 0,
+                    max: 2.0,
+                    step: 0.05,
+                    onChange: withActivate,
+                },
+            },
+        ],
     },
     // ── Lip-sync（已有 headerToggle 模式） ──
     {

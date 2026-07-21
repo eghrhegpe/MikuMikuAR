@@ -21,6 +21,7 @@ import {
     _writeMatToBuffer,
     _propagateChildrenWasm,
     _isWasmRuntime,
+    _gazeAlpha,
     setGazeAngles,
 } from './perception-shared';
 import {
@@ -80,9 +81,10 @@ export function activatePerception(modelId?: string): void {
     // 注销旧 observer
     deactivatePerception();
 
-    // 重置 balance / breathing 增量状态，避免跨模型残留（与 _resetLastEmotionMorphName 同款守卫）
+    // 重置 balance / breathing / gaze 增量状态，避免跨模型残留（与 _resetLastEmotionMorphName 同款守卫）
     _resetBalanceSwayState();
     _resetBreathingState();
+    _resetGazeState();
 
     perceptionModelId = targetId;
     const mmdModel = inst.mmdModel;
@@ -141,7 +143,13 @@ export function activatePerception(modelId?: string): void {
         // 4. 重心微动（balance sway，[doc:adr-079] Phase 2）
         //    内部使用 delta 增量叠加，不会覆盖 VMD/Bone Override 的躯干基准旋转
         try {
-            _applyBalanceSway(mmdModel, time, perceptionState.balanceSwayEnabled);
+            _applyBalanceSway(
+                mmdModel,
+                time,
+                perceptionState.balanceSwayEnabled,
+                perceptionState.balanceSwayPeriod,
+                perceptionState.balanceSwayAmplitude
+            );
         } catch (e) {
             logWarn('perception', 'balance-sway 异常:', (e as Error)?.message);
         }
@@ -164,10 +172,11 @@ export function activatePerception(modelId?: string): void {
             const cam = getScene().activeCamera;
             if (cam) {
                 try {
+                    const dt = scene.getEngine().getDeltaTime() / 1000;
                     _applyGaze(mmdModel, cam, {
                         headEnabled: perceptionState.headTrackingEnabled,
                         eyeEnabled: perceptionState.eyeTrackingEnabled,
-                    });
+                    }, dt);
                 } catch (e) {
                     logWarn('perception', 'gaze 异常:', (e as Error)?.message);
                 }
@@ -182,6 +191,12 @@ export function activatePerception(modelId?: string): void {
     );
 }
 
+/** 重置 gaze 增量状态（无持久化状态，仅清理临时变量） */
+export function _resetGazeState(): void {
+    // gaze 不累积旋转偏移，每帧重新计算 targetQ；
+    // 本函数作为生命周期守卫，在 activate/deactivate/开关切换时调用，确保无残留
+}
+
 /** 注销感知层 */
 export function deactivatePerception(): void {
     if (perceptionObserver) {
@@ -191,6 +206,7 @@ export function deactivatePerception(): void {
     _resetLastEmotionMorphName(); // 模型切换时清空，避免旧 morph 名残留
     _resetBalanceSwayState(); // 重置 balance 增量状态，避免跨模型残留导致塌地
     _resetBreathingState(); // 重置 breathing 增量状态，避免跨模型残留导致旋转冻结
+    _resetGazeState(); // 重置 gaze 状态，避免关闭后重新开启出现跳跃
     perceptionModelId = null;
     logWarn('perception', '已注销');
 }
@@ -231,12 +247,14 @@ export function setBlinkEnabled(v: boolean): void {
 /** 设置头部跟随开关 */
 export function setHeadTrackingEnabled(v: boolean): void {
     perceptionState = { ...perceptionState, headTrackingEnabled: v };
+    _resetGazeState();
     triggerAutoSave();
 }
 
 /** 设置眼部跟随开关 */
 export function setEyeTrackingEnabled(v: boolean): void {
     perceptionState = { ...perceptionState, eyeTrackingEnabled: v };
+    _resetGazeState();
     triggerAutoSave();
 }
 
@@ -249,6 +267,18 @@ export function setMicroExpressionEnabled(v: boolean): void {
 /** 设置重心微动开关（[doc:adr-079] Phase 2） */
 export function setBalanceSwayEnabled(v: boolean): void {
     perceptionState = { ...perceptionState, balanceSwayEnabled: v };
+    triggerAutoSave();
+}
+
+/** 设置重心微动周期（秒，钳制 0.5–5.0） */
+export function setBalanceSwayPeriod(v: number): void {
+    perceptionState = { ...perceptionState, balanceSwayPeriod: Math.max(0.5, Math.min(5.0, v)) };
+    triggerAutoSave();
+}
+
+/** 设置重心微动振幅（全局乘数，钳制 0–2.0） */
+export function setBalanceSwayAmplitude(v: number): void {
+    perceptionState = { ...perceptionState, balanceSwayAmplitude: Math.max(0, Math.min(2.0, v)) };
     triggerAutoSave();
 }
 

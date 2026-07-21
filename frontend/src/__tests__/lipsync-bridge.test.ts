@@ -32,6 +32,8 @@ const mocks = vi.hoisted(() => {
         eyeGazeMaxYaw: 9,
         eyeGazeMaxPitch: 8,
         eyeGazeSmooth: 0.35,
+        balanceSwayPeriod: 2.0,
+        balanceSwayAmplitude: 1.0,
     };
     return {
         defaultPerception,
