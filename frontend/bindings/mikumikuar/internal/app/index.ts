@@ -18,6 +18,7 @@ export type {
     ModelEntry,
     ModelMeta,
     ModelPresetEntry,
+    MotionPresetEntry,
     OverridePaths,
     PlazaDownloadResult,
     RenderPreset,

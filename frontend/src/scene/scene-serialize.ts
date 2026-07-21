@@ -116,7 +116,7 @@ import {
     pinPerception,
     enableAllPerception,
     setPerceptionPerfTier,
-    getPerceptionPerfTier,
+    getPerceptionPerfManualTier,
     isAllPerceptionEnabled,
     type PerceptionState,
 } from './motion/perception';
@@ -477,8 +477,8 @@ export function serializeScene(): SceneFile {
                 modelId: id,
                 state: { ...getPerceptionStateFor(id) },
             })),
-            // [doc:adr-164] 性能档位与全员感知开关
-            tier: getPerceptionPerfTier(),
+            // [doc:adr-164] 性能档位与全员感知开关（保存用户意图而非运行时 tier，防止反序列化后自动降级失效）
+            tier: getPerceptionPerfManualTier(),
             allEnabled: isAllPerceptionEnabled(),
         },
         lipSync: { ...lipState },
@@ -926,9 +926,10 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
         }
         // [doc:adr-164] 恢复性能档位与全员感知开关
         const pAny = data.perception as any;
-        if (pAny?.tier) {
+        if (pAny?.tier && pAny.tier !== 'auto') {
             setPerceptionPerfTier(pAny.tier);
         }
+        // tier === 'auto' 或 undefined：保持默认自动降级，不覆盖 _manualTier
         if (pAny?.allEnabled === true) {
             enableAllPerception();
         }

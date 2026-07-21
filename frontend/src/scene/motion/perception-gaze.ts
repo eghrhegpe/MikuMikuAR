@@ -116,12 +116,10 @@ export function _applyGaze(
     dt: number,
     headClaimed?: readonly string[],
     eyeClaimed?: readonly string[],
-    tier?: PerceptionTier,
-    frameCounter?: number
+    tier?: PerceptionTier
 ): void {
-    // [doc:adr-164] tier 守卫：low 跳过；medium 每 2 帧一次
+    // [doc:adr-164] tier 守卫：low 跳过（medium 由外部 caller 按 frameCounter % 2 控制）
     if (tier === 'low') return;
-    if (tier === 'medium' && frameCounter !== undefined && frameCounter % 2 !== 0) return;
 
     if (!config.headEnabled && !config.eyeEnabled) {
         return;

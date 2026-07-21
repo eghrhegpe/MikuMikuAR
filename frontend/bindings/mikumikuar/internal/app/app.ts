@@ -115,6 +115,13 @@ export function DeleteModelPreset(name: string): $CancellablePromise<void> {
 }
 
 /**
+ * DeleteMotionPreset removes a named motion preset from the library.
+ */
+export function DeleteMotionPreset(name: string): $CancellablePromise<void> {
+    return $Call.ByID(3163590093, name);
+}
+
+/**
  * DeletePresetScene deletes a named preset scene file.
  */
 export function DeletePresetScene(name: string): $CancellablePromise<void> {
@@ -279,6 +286,13 @@ export function GetModelPresets(): $CancellablePromise<$models.ModelPresetEntry[
  */
 export function GetModelsByTag(tag: string): $CancellablePromise<string[] | null> {
     return $Call.ByID(1267757778, tag);
+}
+
+/**
+ * GetMotionPresets lists all .mcpreset.json files in the motion presets directory.
+ */
+export function GetMotionPresets(): $CancellablePromise<$models.MotionPresetEntry[] | null> {
+    return $Call.ByID(579869357);
 }
 
 /**
@@ -451,6 +465,20 @@ export function LoadModelPresetFromLib(name: string): $CancellablePromise<string
 }
 
 /**
+ * LoadMotionPreset reads a JSON motion preset file from the given path.
+ */
+export function LoadMotionPreset(path: string): $CancellablePromise<string> {
+    return $Call.ByID(2815713086, path);
+}
+
+/**
+ * LoadMotionPresetFromLib reads a motion preset JSON from the library by name.
+ */
+export function LoadMotionPresetFromLib(name: string): $CancellablePromise<string> {
+    return $Call.ByID(1083346953, name);
+}
+
+/**
  * LoadOutfitFile reads <modelDir>/outfits.json. Returns empty string if not found.
  */
 export function LoadOutfitFile(pmxPath: string): $CancellablePromise<string> {
@@ -599,6 +627,13 @@ export function RenameModelPreset(oldName: string, newName: string): $Cancellabl
 }
 
 /**
+ * RenameMotionPreset renames a motion preset in the library.
+ */
+export function RenameMotionPreset(oldName: string, newName: string): $CancellablePromise<void> {
+    return $Call.ByID(3823727896, oldName, newName);
+}
+
+/**
  * SaveEnvPreset writes a .env JSON file under env-presets/<name>.env.
  */
 export function SaveEnvPreset(name: string, jsonStr: string): $CancellablePromise<void> {
@@ -640,6 +675,28 @@ export function SaveModelPresetToLib(name: string, jsonStr: string): $Cancellabl
  */
 export function SaveModelPresetToLibAuto(jsonStr: string): $CancellablePromise<string> {
     return $Call.ByID(438435951, jsonStr);
+}
+
+/**
+ * SaveMotionPreset writes a JSON motion preset file to the given path.
+ */
+export function SaveMotionPreset(jsonStr: string, path: string): $CancellablePromise<void> {
+    return $Call.ByID(2890793031, jsonStr, path);
+}
+
+/**
+ * SaveMotionPresetToLib saves a motion preset JSON to the library with the given name.
+ */
+export function SaveMotionPresetToLib(name: string, jsonStr: string): $CancellablePromise<void> {
+    return $Call.ByID(4038634865, name, jsonStr);
+}
+
+/**
+ * SaveMotionPresetToLibAuto saves a motion preset JSON as an auto-numbered .mcpreset.json in the motion presets directory.
+ * Returns the generated filename (e.g. "003.mcpreset.json").
+ */
+export function SaveMotionPresetToLibAuto(jsonStr: string): $CancellablePromise<string> {
+    return $Call.ByID(3382461082, jsonStr);
 }
 
 /**
@@ -740,6 +797,20 @@ export function SelectExeFile(): $CancellablePromise<string> {
  */
 export function SelectImportFile(): $CancellablePromise<string> {
     return $Call.ByID(750228192);
+}
+
+/**
+ * SelectMotionPresetOpenFile opens a file dialog to pick a motion preset file.
+ */
+export function SelectMotionPresetOpenFile(): $CancellablePromise<string> {
+    return $Call.ByID(3357826928);
+}
+
+/**
+ * SelectMotionPresetSaveFile opens a save dialog for motion preset files.
+ */
+export function SelectMotionPresetSaveFile(): $CancellablePromise<string> {
+    return $Call.ByID(1596787437);
 }
 
 /**
