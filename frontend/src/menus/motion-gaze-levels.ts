@@ -17,6 +17,7 @@ import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 import { addPresetChip } from '../core/ui-helpers';
+import { getModuleConflicts } from '../scene/motion/motion-modules/registry';
 
 function refreshMotionMenu(): void {
     getMotionMenu()?.reRender();
@@ -46,6 +47,7 @@ const gazeSchema: MenuNode[] = [
                 id: 'perception:headYawRange',
                 kind: 'slider',
                 label: 'perception.headYawRange',
+                conflictHint: 'perception.gaze.head',
                 control: {
                     bind: 'perception.headGazeMaxYaw',
                     min: 0,
@@ -138,6 +140,7 @@ const gazeSchema: MenuNode[] = [
                 id: 'perception:breathAmp',
                 kind: 'slider',
                 label: 'perception.breathAmp',
+                conflictHint: 'perception.breath',
                 control: {
                     bind: 'perception.breathAmplitude',
                     min: 0,
@@ -244,6 +247,7 @@ const gazeSchema: MenuNode[] = [
                 id: 'perception:balanceSwayAmplitude',
                 kind: 'slider',
                 label: 'motion.balanceSwayAmplitude',
+                conflictHint: 'perception.balance.center',
                 control: {
                     bind: 'perception.balanceSwayAmplitude',
                     min: 0,
@@ -314,6 +318,40 @@ const gazeSchema: MenuNode[] = [
     },
 ];
 
+/** [doc:adr-163] 渲染感知层骨骼冲突 banner（复用 motion-override-levels.ts 的 updateConflictBanner 模式） */
+export function updatePerceptionConflictBanner(el: HTMLElement, modelId: string | null): void {
+    if (!modelId) {
+        el.textContent = '';
+        el.style.display = 'none';
+        return;
+    }
+    const modules = [
+        'perception.gaze.head',
+        'perception.gaze.eye',
+        'perception.breath',
+        'perception.balance.center',
+        'perception.balance.upper',
+        'perception.balance.waist',
+    ];
+    const lines: string[] = [];
+    for (const moduleId of modules) {
+        const conflicts = getModuleConflicts(modelId, moduleId);
+        if (conflicts.length > 0) {
+            const detail = conflicts.map((c) => `${c.bone}←${c.byModule}`).join('、');
+            lines.push(`⚠ ${moduleId}: ${detail}`);
+        }
+    }
+    if (lines.length === 0) {
+        el.textContent = '';
+        el.style.display = 'none';
+        return;
+    }
+    el.style.display = '';
+    el.style.color = 'var(--warn, #e0a030)';
+    el.style.whiteSpace = 'pre-line';
+    el.textContent = `感知层冲突 (${lines.length})\n` + lines.join('\n');
+}
+
 export function buildGazeTrackingLevel(): PopupLevel {
     return {
         label: t('motion.gazeTracking'),
@@ -321,6 +359,10 @@ export function buildGazeTrackingLevel(): PopupLevel {
         items: [],
         renderCustom: (container) => {
             cardContainer(container, (c) => {
+                const banner = document.createElement('div');
+                banner.style.cssText = 'padding:2px 14px 8px;font-size:11px;line-height:1.5;';
+                updatePerceptionConflictBanner(banner, focusedModelId);
+                c.appendChild(banner);
                 renderMenu(gazeSchema, c);
             });
         },

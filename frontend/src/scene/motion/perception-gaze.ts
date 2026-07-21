@@ -113,7 +113,9 @@ export function _applyGaze(
     mmdModel: MmdModelLike,
     cam: Camera,
     config: { headEnabled: boolean; eyeEnabled: boolean },
-    dt: number
+    dt: number,
+    headClaimed?: readonly string[],
+    eyeClaimed?: readonly string[]
 ): void {
     if (!config.headEnabled && !config.eyeEnabled) {
         return;
@@ -136,18 +138,24 @@ export function _applyGaze(
     const gazeTarget = _getGazeTarget(cam, _v3());
 
     if (isWasm) {
-        if (needHead && headRuntime) {
+        if (needHead && headRuntime && (!headClaimed || headClaimed.includes(headRuntime.name))) {
             _applyHeadGazeWasm(headRuntime, gazeTarget, dt);
         }
         if (needEye) {
-            _applyEyeGazeWasm(eyeRuntimes, gazeTarget, dt);
+            const filteredEyes = eyeClaimed ? eyeRuntimes.filter((e) => eyeClaimed.includes(e.name)) : eyeRuntimes;
+            if (filteredEyes.length > 0) {
+                _applyEyeGazeWasm(filteredEyes, gazeTarget, dt);
+            }
         }
     } else {
-        if (needHead && headRuntime) {
+        if (needHead && headRuntime && (!headClaimed || headClaimed.includes(headRuntime.name))) {
             _applyHeadGazeJS(headRuntime, gazeTarget, dt);
         }
         if (needEye) {
-            _applyEyeGazeJS(eyeRuntimes, gazeTarget, dt);
+            const filteredEyes = eyeClaimed ? eyeRuntimes.filter((e) => eyeClaimed.includes(e.name)) : eyeRuntimes;
+            if (filteredEyes.length > 0) {
+                _applyEyeGazeJS(filteredEyes, gazeTarget, dt);
+            }
         }
         const skeleton = (mmdModel.mesh.metadata as MeshMetadata)?.skeleton;
         skeleton?._markAsDirty?.();
@@ -155,9 +163,9 @@ export function _applyGaze(
 }
 
 /** 头部骨骼候选名（JS/WASM 路径共用） */
-const HEAD_BONE_CANDIDATES = ['頭', '首', 'head', 'Head'];
+export const HEAD_BONE_CANDIDATES = ['頭', '首', 'head', 'Head'];
 /** 眼球骨骼候选名（JS/WASM 路径共用） */
-const EYE_BONE_CANDIDATES = [
+export const EYE_BONE_CANDIDATES = [
     '右目',
     '左目',
     'Eye_R',

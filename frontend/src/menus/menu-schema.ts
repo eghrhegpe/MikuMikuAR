@@ -65,6 +65,8 @@ export interface MenuNode {
     renderCustom?: (container: HTMLElement) => (() => void) | void;
     /** 条件守卫：返回 false 时该节点不渲染（如 groundType !== 'terrain' 时隐藏 pitch/roll） */
     visibleWhen?: () => boolean;
+    /** [doc:adr-163] 冲突提示：对应感知层/模块层 moduleId，渲染时若该模块骨骼被抢占则显示警告图标 */
+    conflictHint?: string;
 }
 
 // ======== 状态路径解析器 ========

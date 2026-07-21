@@ -64,7 +64,10 @@ export function _applyBalanceSway(
     time: number,
     enabled: boolean,
     period: number,
-    amplitude: number
+    amplitude: number,
+    centerClaimed?: readonly string[],
+    upper2Claimed?: readonly string[],
+    waistClaimed?: readonly string[]
 ): void {
     const boneNames: string[] = mmdModel.runtimeBones.map((b: IMmdRuntimeBone) => b.name);
     const centerName = matchBone(boneNames, BONE_CENTER_CANDIDATES);
@@ -94,7 +97,7 @@ export function _applyBalanceSway(
     // center: position bobY + rotation rz/rx
     if (centerName) {
         const bone = mmdModel.runtimeBones.find((b: IMmdRuntimeBone) => b.name === centerName);
-        if (bone?.linkedBone) {
+        if (bone?.linkedBone && (!centerClaimed || centerClaimed.includes(centerName))) {
             const bobY = Math.sin(phase) * SWAY_AMP.center_bobY * amplitude;
             // 增量叠加：先撤上帧 bob，再加本帧 bob，保持基准 position.y 不变（修复塌到地面）
             bone.linkedBone.position.y = bone.linkedBone.position.y - _lastBobY + bobY;
@@ -127,7 +130,7 @@ export function _applyBalanceSway(
     // upper2: rotation rx
     if (upper2Name) {
         const bone = mmdModel.runtimeBones.find((b: IMmdRuntimeBone) => b.name === upper2Name);
-        if (bone?.linkedBone) {
+        if (bone?.linkedBone && (!upper2Claimed || upper2Claimed.includes(upper2Name))) {
             const rx = Math.sin(phase * 0.7 + 0.3) * SWAY_AMP.upper2_rx * amplitude;
             const deltaRx = (rx - _lastUpperRx) * SWAY_DELTA_FACTOR;
             if (deltaRx !== 0 && bone.linkedBone.rotationQuaternion) {
@@ -144,7 +147,7 @@ export function _applyBalanceSway(
     // waist: rotation rz
     if (waistName) {
         const bone = mmdModel.runtimeBones.find((b: IMmdRuntimeBone) => b.name === waistName);
-        if (bone?.linkedBone) {
+        if (bone?.linkedBone && (!waistClaimed || waistClaimed.includes(waistName))) {
             const rz = Math.sin(phase + 0.5) * SWAY_AMP.waist_rz * amplitude;
             const deltaRz = (rz - _lastWaistRz) * SWAY_DELTA_FACTOR;
             if (deltaRz !== 0 && bone.linkedBone.rotationQuaternion) {
@@ -158,10 +161,10 @@ export function _applyBalanceSway(
         }
     }
 
-    // allParent: rotation rx/rz
+    // allParent: rotation rx/rz（归属 perception.balance.center）
     if (allParentName) {
         const bone = mmdModel.runtimeBones.find((b: IMmdRuntimeBone) => b.name === allParentName);
-        if (bone?.linkedBone) {
+        if (bone?.linkedBone && (!centerClaimed || centerClaimed.includes(allParentName))) {
             const rx = Math.sin(phase * 0.2 + 1.1) * SWAY_AMP.allParent_rx * amplitude;
             const rz = Math.sin(phase * 0.3 + 2.3) * SWAY_AMP.allParent_rz * amplitude;
             const deltaRx = (rx - _lastAllParentRx) * SWAY_DELTA_FACTOR;

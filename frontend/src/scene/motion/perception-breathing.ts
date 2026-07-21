@@ -32,7 +32,7 @@ export function _resetBreathingState(): void {
     _lastBreathOffset = 0;
 }
 
-export function _applyBreathing(mmdModel: MmdModelLike, time: number): void {
+export function _applyBreathing(mmdModel: MmdModelLike, time: number, claimedBones?: readonly string[]): void {
     const s = getPerceptionState();
     const freq = s.breathFrequency ?? DEFAULT_BREATH_FREQ;
     const amp = s.breathAmplitude ?? DEFAULT_BREATH_AMP;
@@ -45,6 +45,9 @@ export function _applyBreathing(mmdModel: MmdModelLike, time: number): void {
         ? mmdModel.runtimeBones.find((b: IMmdRuntimeBone) => b.name === spineName)
         : null;
     if (!spine) {
+        return;
+    }
+    if (claimedBones && spineName && !claimedBones.includes(spineName)) {
         return;
     }
 

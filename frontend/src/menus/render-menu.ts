@@ -13,6 +13,9 @@ import {
     addSectionTitle,
 } from '../core/ui-helpers';
 import { t } from '../core/i18n/t';
+import { getModuleConflicts } from '../scene/motion/motion-modules/registry';
+import { createIconifyIcon } from '../core/icons';
+import { focusedModelId } from '../core/state';
 
 /** 渲染一个 MenuNode 树到 container 中。返回 dispose 函数，调用时级联释放所有 renderCustom 资源 */
 export function renderMenu(schema: MenuNode[], container: HTMLElement): () => void {
@@ -149,6 +152,25 @@ function renderSlider(node: MenuNode, container: HTMLElement): void {
         },
         node.id
     );
+
+    // [doc:adr-163] 滑块冲突标记
+    if (node.conflictHint && focusedModelId) {
+        const conflicts = getModuleConflicts(focusedModelId, node.conflictHint);
+        if (conflicts.length > 0) {
+            const row = container.lastElementChild as HTMLElement | null;
+            const top = row?.querySelector('.cs-top');
+            if (top) {
+                const warnIcon = createIconifyIcon('lucide:alert-triangle');
+                if (warnIcon) {
+                    warnIcon.style.color = 'var(--warn, #e0a030)';
+                    warnIcon.style.marginLeft = '4px';
+                    warnIcon.style.flexShrink = '0';
+                    warnIcon.title = t('motion.conflictHint', { module: node.conflictHint });
+                    top.appendChild(warnIcon);
+                }
+            }
+        }
+    }
 }
 
 // ======== Color Slider ========

@@ -365,7 +365,7 @@ let _storeInstance: BoneOverrideStore | null = null;
 export function getBoneOverrideStore(): BoneOverrideStore {
     if (!_storeInstance) {
         _storeInstance = new InMemoryBoneOverrideStore({
-            stageOf: () => 'bone-override',
+            stageOf: (moduleId) => (moduleId.startsWith('perception.') ? 'perception' : 'bone-override'),
             // store 回调签名为 (modelId, bone)，而 clearBoneOverride 为 (bone, modelId)，此处重排
             onClearEngineSlot: (modelId, bone) => clearBoneOverride(bone, modelId),
         });
