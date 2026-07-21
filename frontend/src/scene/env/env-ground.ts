@@ -1019,6 +1019,8 @@ export function applyGround(state: EnvState): void {
             // [doc:adr-123 Phase 2] 地面涟漪法线纹理叠加
             if (hasActiveGroundRipples() || _groundRippleApplied) {
                 _syncGroundRippleTexture(mat, scene);
+            } else if (_groundRippleApplied) {
+                _disableGroundRippleTexture(mat);
             }
             if (state.groundStyle === 'texture') {
                 _syncTextureGroundTexture(mat, state, scene);

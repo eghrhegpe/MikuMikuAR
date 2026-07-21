@@ -355,6 +355,10 @@ export function clearGroundRipples(): void {
 /** 获取地面涟漪纹理（供 env-ground 设置到 bumpTexture） */
 export function getGroundRippleTexture(scene: Scene): Texture | null {
     if (!_groundRippleTex || _groundRippleScene !== scene) {
+        // 场景变更时释放旧纹理
+        if (_groundRippleTex && _groundRippleScene !== scene) {
+            _groundRippleTex.dispose();
+        }
         _groundRippleScene = scene;
         const tex = new DynamicTexture(
             'groundRippleTex',
@@ -1047,6 +1051,11 @@ export function disposeWater(): void {
     _waterPhase = 0;
     _waterWaveSpeed = 1;
     clearRipples(); // 清理残留涟漪，避免 dispose 后再次 createWater 时显示旧数据
+    // 释放地面涟漪纹理
+    _groundRippleTex = safeDispose(_groundRippleTex);
+    _groundRippleScene = null;
+    _groundRipples = [];
+    _groundRippleDirty = false;
     // 释放焦散纹理，防止内存泄漏
     _causticTexture = safeDispose(_causticTexture);
     _causticScene = null;
