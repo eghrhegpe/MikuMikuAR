@@ -62,15 +62,15 @@
 
 | 函数/符号 | 文件 | 说明 |
 |-----------|------|------|
-| `showPlaza()` | `menus/plaza.ts` | 打开模型广场全屏视图（iframe/窗口/外部浏览器三模式） |
-| `closePlaza()` | `menus/plaza.ts` | 关闭模型广场并回收代理 |
-| `handlePlazaDownload()` | `menus/plaza.ts` | 处理从 iframe 内注入脚本发来的下载请求（ADR-078） |
-| `installDownloadListener()` | `menus/plaza.ts` | 安装 postMessage 监听器，接收 iframe 下载请求 |
-| `openExternal()` | `menus/plaza.ts` | 用系统浏览器打开广场站点 |
-| `openInWindow()` | `menus/plaza.ts` | 用 Wails 新窗口打开广场站点 |
-| `stopProxy()` | `menus/plaza.ts` | 停止 Go 反向代理（幂等） |
-| `renderHome()` | `menus/plaza.ts` | 渲染广场主页站点列表 |
-| `renderEmbed()` | `menus/plaza.ts` | 渲染内嵌 iframe 视图（启动代理） |
+| `showPlaza()` | `menus/plaza-browser.ts` | 打开模型广场全屏视图（iframe/窗口/外部浏览器三模式） |
+| `closePlaza()` | `menus/plaza-state.ts` | 关闭模型广场并回收代理 |
+| `handlePlazaDownload()` | `menus/plaza-download.ts` | 处理从 iframe 内注入脚本发来的下载请求（ADR-078） |
+| `installDownloadListener()` | `menus/plaza-download.ts` | 安装 postMessage 监听器，接收 iframe 下载请求 |
+| `openExternal()` | `menus/plaza-browser.ts` | 用系统浏览器打开广场站点 |
+| `openInWindow()` | `menus/plaza-browser.ts` | 用 Wails 新窗口打开广场站点 |
+| `stopProxy()` | `menus/plaza-state.ts` | 停止 Go 反向代理（幂等） |
+| `renderHome()` | `menus/plaza-browser.ts` | 渲染广场主页站点列表 |
+| `renderEmbed()` | `menus/plaza-browser.ts` | 渲染内嵌 iframe 视图（启动代理） |
 
 ## 相机
 

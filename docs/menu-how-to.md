@@ -69,7 +69,10 @@ frontend/src/menus/
 │   ├── settings-about.ts        #   关于
 │   └── settings-software.ts     #   软件管理
 │
-├── plaza.ts                     # 模型广场入口
+├── plaza-browser.ts             # 模型广场入口（showPlaza/renderHome/renderEmbed）
+├── plaza-state.ts               # 广场模块级状态 + closePlaza/stopProxy
+├── plaza-download.ts            # 下载代理（handlePlazaDownload/installDownloadListener）
+├── plaza-thumbnail.ts           # 缩略图
 └── plaza-sites.ts                # 广场站点列表
 ```
 
