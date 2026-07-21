@@ -6,7 +6,7 @@
 
 **开始日期**: 2026-07-15
 
-**关联**: `docs/research/ue5-ground-reflection-analysis.md`、ADR-092（PlanarReflection 统一引擎）、`frontend/src/scene/env/env-impl.ts`（地面系统）、`frontend/src/scene/env/env-texture.ts`（统一贴图工厂）、`frontend/src/scene/env/planar-reflection.ts`（平面反射引擎）、`frontend/src/menus/env-feature-levels.ts`（环境菜单面板）、`frontend/src/core/types.ts`（EnvState 定义）
+**关联**: `docs/research/ue5-ground-reflection-analysis.md`、ADR-092（PlanarReflection 统一引擎）、`frontend/src/scene/env/env-impl.ts`（地面系统）、`frontend/src/scene/env/env-texture.ts`（统一贴图工厂）、`frontend/src/scene/env/planar-reflection.ts`（平面反射引擎）、`frontend/src/menus/env-menu.ts`（环境菜单）+ `env-*-levels.ts`（拆分后各子系统面板）、`frontend/src/core/types.ts`（EnvState 定义）
 
 ---
 
@@ -466,7 +466,7 @@ const typeKey =
 
 ### 面板层级
 
-在 [env-feature-levels.ts:250 `buildGroundLevel()`](file:///C:/Users/zhujieling11/MikuMikuAR/frontend/src/menus/env-feature-levels.ts#L250) 内新增/调整以下 folder：
+在 [env-ground-levels.ts:26 `buildGroundLevel()`](file:///C:/Users/zhujieling11/MikuMikuAR/frontend/src/menus/env-ground-levels.ts#L26) 内新增/调整以下 folder：
 
 | Folder | 位置 | 内容 |
 |--------|------|------|
@@ -531,7 +531,7 @@ const typeKey =
 
 | 方案 | 否决理由 |
 |------|----------|
-| **SSR 后处理（路径 B）** | Babylon 9.14.0 有 SSRRenderingPipeline（见 `renderer.ts`），但全局 SSR 开销大，且地面反射已经有 PlanarReflection 精确解，SSR 主要补非平面物体，非地面刚需 |
+| **SSR 后处理（路径 B）** | Babylon.js 9.x（撰写时 9.14.0）有 SSRRenderingPipeline（见 `renderer.ts`），但全局 SSR 开销大，且地面反射已经有 PlanarReflection 精确解，SSR 主要补非平面物体，非地面刚需 |
 | **RT ping-pong 模糊** | 需额外 2 个 RT + 两次后处理，性能开销 > mipmap 方案，且与法线扭曲不能合并 |
 | **Lumen 近似（路径 D 长期）** | 需导出深度+法线缓冲，与现有后处理链集成复杂度高 |
 | **光线追踪** | Babylon.js 无硬件 RT 支持；WebGPU RT 仍在实验阶段 |

@@ -99,3 +99,21 @@
 3. 🟠 P2-4 / P2-5：AGENTS.md 与 README 徽章版本对齐 9.16.x。
 4. 🟡 P3-6 / P3-7：软化 ADR/research 中的版本引脚；视情况更新 USER.md 基线。
 5. 🟢 P4-8：历史 ADR 旧路径引用保留不动。
+
+---
+
+## 修复执行记录（2026-07-21 第二轮）
+
+> 用户确认执行（"zhixing"=执行）后，按 P1→P4 顺序实际落地全部 P1/P2/P3 修复。
+
+| 项 | 文件 | 改动 |
+|----|------|------|
+| P1-1 | `docs/adr/adr-114-ground-reflection-enhancement.md:9,469` | 失效 `file:///...env-feature-levels.ts` 死链 → `env-ground-levels.ts:26`；关联列表指针同步 |
+| P1-2 | `docs/adr/adr-148-overload-file-split.md:37-38` | 循环依赖分析死链 → 改指 post-split 等效引用（`env-menu.ts:19-27` / `env-preset-levels.ts:34` / `env-menu-state.ts:13`），并标注"该文件已于阶段 1 删除" |
+| P2-3 | `docs/adr/adr-088-audio-sfx-footstep.md:34,77,79,163,167-170` | `SettingsStore` → `uiState 持久化（ADR-103）`（5 处，含表格 4 行 + 接口注释 + 状态管理段） |
+| P2-4 | `AGENTS.md:40` | `Babylon.js 9.14.0` → `9.16.x` |
+| P2-5 | `README.md` / `README.en.md` / `README.ja.md` / `README.ko.md` / `README.zh-TW.md`（徽章行） | `Babylon.js-9.14-` → `Babylon.js-9.16-` |
+| P3-6 | `adr-032:14` / `adr-060:15` / `adr-113:119,449` / `research/ue5-ground-reflection-analysis.md:143` / `adr-114:534` | 把"当前版本 9.14.0"硬断言软化为"9.x（撰写时 9.14.0）"，保留技术结论 |
+| P3-7 | `~/.workbuddy/USER.md:38-39`（身份基线，仓库外） | `Babylon.js 9.14.0`→`9.16.1`、`ADR 编号 已达 106`→`已达 159` |
+
+**核验结论**：修复后 `grep "当前版本 9.14.0"` 仅在本文（审计记录本身）出现；`SettingsStore` 在 adr-088 仅剩"原已移除"说明性引用；5 语 README 徽章与 AGENTS.md 均指向 9.16.x。P4-8 历史路径引用按原则保留未动。

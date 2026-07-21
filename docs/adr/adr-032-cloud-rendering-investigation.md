@@ -11,7 +11,7 @@
 
 ## 调查结论
 
-**Babylon.js 9.x（当前版本 9.14.0）没有内置 VolumetricClouds。**
+**Babylon.js 9.x 没有内置 VolumetricClouds（撰写时 9.14.0，结论在多版本间成立）。**
 
 验证方式：
 - GitHub 源码 `packages/dev/core/src/PostProcesses/` 目录无 cloud 相关文件
