@@ -18,9 +18,10 @@ import { RegisterDxBmpTextureLoader } from 'babylon-mmd/esm/Loader/registerDxBmp
 // MMD 原生描边：side-effect import，把 getMmdOutlineRenderer() 补丁挂到 Scene.prototype。
 // 之后带描边(edge)标记的 PMX 材质在 renderOutline=true 时会惰性注册描边组件并渲染轮廓线。
 import 'babylon-mmd/esm/Loader/mmdOutlineRenderer';
-// SDEF 球面变形：side-effect import，注册 SDEF 着色器变体到 MmdStandardMaterial。
-// 网格含 SDEF 顶点数据时自动启用球面变形，关节弯曲更自然；无 SDEF 顶点时零开销。
-import 'babylon-mmd/esm/Loader/sdefInjector';
+// SDEF 球面变形：显式挂载 SdefInjector。sdefInjector 模块仅导出类、无顶层 side-effect，
+// 必须调用 OverrideEngineCreateEffect(engine) 改写 engine.createEffect，才能为含骨骼(mBones)
+// 的着色器注入球面变形顶点代码；网格含 SDEF 顶点时关节弯曲更自然。
+import { SdefInjector } from 'babylon-mmd/esm/Loader/sdefInjector';
 import { GetMmdWasmInstance } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmInstance';
 import { MmdWasmInstanceTypeSPR } from 'babylon-mmd/esm/Runtime/Optimized/InstanceType/singlePhysicsRelease';
 // MPR（多线程 WASM 物理）依赖 SharedArrayBuffer + COOP/COEP 跨源隔离，
@@ -148,6 +149,12 @@ export let engine = new Engine(dom.canvas, true, {
     stencil: true,
     alpha: true,
 });
+// 启用 SDEF 球面变形：改写 engine.createEffect，为含骨骼(mBones)的着色器注入球面变形顶点代码。
+// 须在模型加载前、ShadowGenerator/后处理管线创建前调用，覆盖所有蒙皮材质。
+// 测试态下 engine 为不完整的 mock（无 createEffect），跳过以避免 TypeError；生产路径始终挂载。
+if (!_isTestEnv) {
+    SdefInjector.OverrideEngineCreateEffect(engine);
+}
 // 扩展渲染组下限至 -2：天空盒(Group -2)先于体积云(Group -1)先于 Group 0（地面/角色）。
 // Babylon 默认 MIN_RENDERINGGROUPS=0 会跳过负数 group，导致负组 mesh 不渲染。
 RenderingManager.MIN_RENDERINGGROUPS = -2;
@@ -259,6 +266,11 @@ export async function initScene(): Promise<void> {
             stencil: true,
             alpha: true,
         });
+        // HMR 重建 engine 后需重新挂载 SDEF 改写（旧 engine 的 createEffect 改写随其 dispose 丢失）
+        // 测试态跳过（同模块顶层守卫）
+        if (!_isTestEnv) {
+            SdefInjector.OverrideEngineCreateEffect(engine);
+        }
         scene = new Scene(engine);
         scene.clearColor = new Color4(0.12, 0.12, 0.16, 1.0);
         // 重新初始化相机系统（新 scene 实例，需重新绑定 canvas）
