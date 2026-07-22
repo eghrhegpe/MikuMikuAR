@@ -24,7 +24,6 @@ import {
     setOverridePaths,
     LibraryModel,
     normPath,
-    displayNamePriority,
     setDisplayNamePriority,
     DisplayNamePriority,
     stackRegistry,
@@ -35,7 +34,7 @@ import { safeCallAsync } from '../core/safe-call';
 import { showConfirm } from '../core/dialog';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
-import { buildLevel, buildModelRootItems, setResourceViewMode } from './library-core';
+import { buildLevel, setResourceViewMode } from './library-core';
 import { showModelPopup } from './library-browse';
 
 // ======== 初始化 ========

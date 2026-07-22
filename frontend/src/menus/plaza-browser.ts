@@ -15,13 +15,9 @@ import {
     SITE_GROUPS,
     getCurrentSite,
     getLayer,
-    plazaProxyActive,
     setPlazaProxyActive,
-    plazaIframe,
     setPlazaIframe,
-    remoteURLDisplay,
     setRemoteURLDisplay,
-    remoteProgress,
     setRemoteProgress,
     loadGlobalMode,
     saveGlobalMode,
@@ -45,9 +41,8 @@ import {
 } from '../core/wails-bindings';
 import { NavigatePlazaWindow } from '@bindings/mikumikuar/internal/app/app';
 import { isAndroidPlatform, openExternalURL } from '../core/platform';
-import { closeAllOverlays, swallowError, escapeHtml } from '../core/utils';
+import { swallowError, escapeHtml } from '../core/utils';
 import { safeCallAsync } from '../core/safe-call';
-import { setStatus } from '../core/status-bar';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
 import { showErrorToast } from '../core/toast';

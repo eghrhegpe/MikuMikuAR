@@ -3,7 +3,6 @@
 
 import { envState } from '../core/config';
 import type { PopupLevel } from '../core/config';
-import { setEnvState } from '../scene/scene';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';

@@ -59,7 +59,6 @@ import {
 } from '../scene/motion/motion-intent';
 import { applyIntentToModel } from './motion-popup';
 import {
-    setProcMotionMode,
     regenerateProcMotion,
     isProcVmdActive,
     stopProcMotion,

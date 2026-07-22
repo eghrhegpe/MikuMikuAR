@@ -2,7 +2,7 @@
 // 职责：定义 applyMotionPreset + 转换函数
 // MotionPreset / PresetModuleState 类型定义在 core/types.ts（因 ModelInstance 引用）
 
-import type { MotionModuleState, MotionPreset, PresetModuleState } from '@/core/types';
+import type { MotionModuleState, MotionPreset } from '@/core/types';
 import { setModuleEnabled, setModuleParam, createModule } from './registry';
 
 /** 序列化格式（含版本号，用于文件/库存储） */

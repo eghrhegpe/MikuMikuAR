@@ -1,6 +1,5 @@
 import { Color4, Vector3, Texture, GPUParticleSystem, ParticleSystem } from '@babylonjs/core';
 import { EnvState, envState } from '@/core/config';
-import { modelRegistry } from '@/core/scene-state';
 import { getWindVector } from '@/core/wind-utils';
 import { logWarn } from '@/core/logger';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
@@ -13,8 +12,6 @@ import { createCanvasTexture } from './env-texture';
 import {
     applyWetnessToAllModels,
     removeWetnessFromAllModels,
-    isWetnessActive,
-    applyWetnessToInst,
 } from './env-wetness';
 
 // ======== Particle System ========

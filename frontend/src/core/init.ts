@@ -13,7 +13,6 @@ import {
     EnvState,
     formatError,
     uiState,
-    envState,
 } from './config';
 import { t } from './i18n/t';
 import { translateGoError } from './i18n/goerr';
@@ -27,7 +26,6 @@ import {
     initScene,
     tryRestoreLastScene,
     setEnvState,
-    applyEnvState,
     setSuppressAutoSave,
     cancelEnvPersistTimer,
 } from '../scene/scene';

@@ -259,7 +259,7 @@ export function addVector3SliderRow(
             max,
             step,
             onChange: (v) => updateDisplay(v),
-            onDragEnd: (v) => onDragEndCb?.([current[0], current[1], current[2]]),
+            onDragEnd: (_v) => onDragEndCb?.([current[0], current[1], current[2]]),
         });
         controller.bind(bar);
         controllers[ai] = controller;

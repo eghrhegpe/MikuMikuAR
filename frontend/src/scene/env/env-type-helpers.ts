@@ -1,8 +1,7 @@
 // env-type-helpers.ts — 封装 Babylon.js 类型逃逸，集中管理私有 API 访问
 // 每个 helper 对应一处 `as unknown as` 断言，消除散落在业务代码中的类型逃生。
 
-import type { DynamicTexture, PostProcess, AbstractMesh, BaseTexture, Mesh } from '@babylonjs/core';
-import type { Scene } from '@babylonjs/core/scene';
+import type { DynamicTexture, PostProcess, AbstractMesh } from '@babylonjs/core';
 
 // ======== DynamicTexture.getContext() 返回 RenderingContext | null ========
 // 实际使用时一定是 CanvasRenderingContext2D，封装一次断言。

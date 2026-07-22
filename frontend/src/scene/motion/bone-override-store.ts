@@ -237,7 +237,7 @@ export class InMemoryBoneOverrideStore implements BoneOverrideStore {
         if (!owned) {
             return new Set();
         }
-        const ownerByBone = this._ownerMap(modelId);
+        const _ownerByBone = this._ownerMap(modelId);
         const released = new Set<string>();
         for (const bone of [...owned]) {
             this._releaseBoneFromOwner(modelId, moduleId, bone);

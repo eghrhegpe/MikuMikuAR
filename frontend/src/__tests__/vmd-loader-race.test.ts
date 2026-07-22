@@ -6,7 +6,7 @@
  * 后者需要 Babylon Engine + canvas DOM → 不在此处集成测试。
  * 本文件仅覆盖可隔离测试的单元。
  */
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 // ======== isValidVmd 签名校验（纯函数，手动提取逻辑测试） ========
 
@@ -122,7 +122,7 @@ describe('AbortSignal.any 合并逻辑', () => {
         // 正确做法：用 any 合并
         const correct = AbortSignal.any([externalCtrl.signal, internalCtrl.signal]);
         // 错误做法：用 ?? 回退（语义：只要给了一个 signal 就用它，不管内部）
-        const wrong = externalCtrl.signal; // 模拟 ?? 回退行为
+        const _wrong = externalCtrl.signal; // 模拟 ?? 回退行为
 
         // 内部取消时：
         internalCtrl.abort();

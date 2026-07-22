@@ -7,13 +7,12 @@ import {
     modelRegistry,
     overridePaths,
     libraryRoot,
-    escapeHtml,
 } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow, addSectionTitle, addCollapsible } from '../core/ui-helpers';
 import { removeModel, setModelVisibility } from '../scene/manager/model-ops';
-import { getPropList, removeProp, modelManager, setEnvState } from '../scene/scene';
+import { getPropList, removeProp, modelManager } from '../scene/scene';
 import { reRenderSceneMenu, getSceneMenu } from './scene-menu-state';
 import { buildTransformCard, buildMaterialCard, buildDangerCard } from './resource-detail-helpers';
 

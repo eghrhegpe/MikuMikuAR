@@ -7,7 +7,6 @@ import { SetEnvState, SetUIState, type UIState } from '@/core/wails-bindings';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
-import type { Scene } from '@babylonjs/core/scene';
 
 import { envState, EnvState, triggerAutoSave, mmdRuntime } from '@/core/config';
 import { uiState, setUIPersistCallback } from '@/core/state';

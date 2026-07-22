@@ -2,7 +2,7 @@
 // 从 motion-popup.ts 拆出：buildMotionRootItems / buildMotionRootLevel /
 // buildRetargetLevel / _importExternalAnimation
 
-import { setStatus, stackRegistry, getBrowseDir, closeAllOverlays } from '../core/config';
+import { setStatus, closeAllOverlays } from '../core/config';
 import type { PopupLevel, PopupRow } from '../core/config';
 import {
     modelManager,
@@ -20,7 +20,6 @@ import {
 import { buildMotionToolsLevel } from './motion-detail-ui';
 import { clearAudio, getAudioName } from '../outfit/audio';
 import { t } from '../core/i18n/t';
-import { logWarn } from '../core/logger';
 import { SelectRetargetFile } from '../core/wails-bindings';
 import {
     loadAndRetargetAnimation,

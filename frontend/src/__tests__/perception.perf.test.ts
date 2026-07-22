@@ -84,10 +84,10 @@ function createSyntheticModelStub(): ModelStub {
     const lowerBody = addBone('下半身', groove);
     const legL = addBone('左足', lowerBody);
     const kneeL = addBone('左ひざ', legL);
-    const ankleL = addBone('左足首', kneeL);
+    const _ankleL = addBone('左足首', kneeL);
     const legR = addBone('右足', lowerBody);
     const kneeR = addBone('右ひざ', legR);
-    const ankleR = addBone('右足首', kneeR);
+    const _ankleR = addBone('右足首', kneeR);
 
     // 上半身链
     const waist = addBone('腰', groove);
@@ -97,8 +97,8 @@ function createSyntheticModelStub(): ModelStub {
     const head = addBone('頭', neck);
 
     // 眼睛
-    const eyeL = addBone('左目', head);
-    const eyeR = addBone('右目', head);
+    const _eyeL = addBone('左目', head);
+    const _eyeR = addBone('右目', head);
 
     // 手臂
     const shoulderL = addBone('左肩', upperBody2);

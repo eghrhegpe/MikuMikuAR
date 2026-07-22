@@ -94,7 +94,7 @@ import { setSceneMenu, setRefreshSceneRoot, reRenderSceneMenu } from './scene-me
 import { setMirrorSize, getMirrorInfo, toggleMirror, isMirrorActive } from '../scene/env/env';
 import { isDragModeEnabled, setDragModeEnabled } from '../scene/transform/transform-mode';
 import { attachGizmoForKind, detachGizmo } from '../scene/transform/transform-adapter';
-import { addModeSlider, addSliderRow, addToggleRow } from '../core/ui-helpers';
+import { addSliderRow } from '../core/ui-helpers';
 import { SCENE_EVENTS } from '../core/ui-constants';
 
 // ======== Barrel Re-Exports ========

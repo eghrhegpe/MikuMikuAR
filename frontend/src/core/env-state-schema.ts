@@ -4,7 +4,7 @@
 // 无需再手工维护 _SKY_KEYS / _GROUND_KEYS / _WATER_KEYS 等数组。
 
 /** Schema 字段类型定义 */
-type FieldDef<TType extends string, TDefault> = {
+type _FieldDef<TType extends string, TDefault> = {
     type: TType;
     default: TDefault;
     /** dispatch 分组：字段变化时触发哪些子系统回调。未指定 = 不触发任何子系统。 */

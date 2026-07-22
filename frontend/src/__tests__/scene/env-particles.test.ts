@@ -50,7 +50,6 @@ import {
     disposeParticles,
     getCurrentParticleType,
     updateParticleParams,
-    updateParticleTexture,
     applyWindToParticles,
     isWetnessActive,
     applyWetnessToInst,

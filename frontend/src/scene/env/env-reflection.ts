@@ -475,7 +475,7 @@ function _disableCurrentMode(scene: Scene): void {
 function _enableProbe(
     scene: Scene,
     preset: ReflectionQualityPreset,
-    mode: ResolvedReflectionMode
+    _mode: ResolvedReflectionMode
 ): void {
     const resolution = preset.probe?.resolution ?? 256;
     _probeStrength = preset.probe?.strength ?? 0.5;

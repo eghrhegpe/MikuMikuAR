@@ -1,13 +1,11 @@
 // [doc:architecture] Env Sky Level — 天空功能面板
 // 从 env-feature-levels.ts 拆分
 
-import { envState, cardContainer, setStatus, getBrowseDir } from '../core/config';
+import { envState } from '../core/config';
 import type { PopupLevel } from '../core/config';
-import { createIconifyIcon } from '../core/icons';
 import { slideRow, addSliderRow, buildPresetChipGroup, addClearRow } from '../core/ui-helpers';
 import { setEnvState } from '../scene/scene';
 import { t } from '../core/i18n/t';
-import { getLightState, setLightState as setLightingState } from '../scene/render/lighting';
 import { TIME_OF_DAY_PRESETS } from '../scene/env/env-lighting';
 import { applyEnvPreset } from '../scene/env/env-bridge';
 import { activeTimeOfDayPreset, setActiveTimeOfDayPreset } from '../core/state';
