@@ -275,6 +275,11 @@ func (a *App) SelectExeFile() (string, error) {
 	return a.selectFile("exe", dialogs.SelectExe)
 }
 
+// SelectRetargetFile opens a file dialog to select an external animation file (FBX/GLB/GLTF) for retargeting.
+func (a *App) SelectRetargetFile() (string, error) {
+	return a.selectFile("retarget", dialogs.SelectRetarget)
+}
+
 // ======== Model Library Types ========
 
 // ModelEntry represents a model, motion, or zip entry found during library scan.
