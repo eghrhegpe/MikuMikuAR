@@ -11,6 +11,7 @@ import {
     _gazeAlpha,
     _writeMatToBuffer,
     _propagateChildrenWasm,
+    type GazeCache,
 } from './perception-shared';
 import {
     _clampHeadGazeTarget,
@@ -24,12 +25,13 @@ import {
 export function _applyHeadGazeWasm(
     headRuntime: IMmdRuntimeBone,
     gazeTarget: Vector3,
-    dt: number
+    dt: number,
+    cache?: GazeCache
 ): void {
     const headBuf = (headRuntime as MmdRuntimeBoneExtended).worldMatrix;
     const oldHeadMat = _m().copyFrom(Matrix.FromArray(headBuf));
     const headPos = oldHeadMat.getTranslation();
-    const oldHeadRotQ = _q().copyFrom(
+    const oldHeadRotQ = cache?.headWorldQ ?? _q().copyFrom(
         Quaternion.FromRotationMatrix(oldHeadMat.getRotationMatrix())
     );
 
@@ -57,8 +59,14 @@ export function _applyHeadGazeWasm(
     const clampedTargetQ = _clampHeadGazeTarget(oldHeadRotQ, targetWorldQ, parentWorldQ);
     const alpha = _gazeAlpha(0.7, dt);
     const blended = _q().copyFrom(Quaternion.Slerp(oldHeadRotQ, clampedTargetQ, alpha));
+    const finalQ = _clampHeadGazeTarget(blended, blended, parentWorldQ);
 
-    const newHeadMat = _m().copyFrom(Matrix.Compose(Vector3.One(), blended, headPos));
+    if (cache) {
+        if (!cache.headWorldQ) cache.headWorldQ = new Quaternion();
+        cache.headWorldQ.copyFrom(finalQ);
+    }
+
+    const newHeadMat = _m().copyFrom(Matrix.Compose(Vector3.One(), finalQ, headPos));
     _writeMatToBuffer(headBuf, newHeadMat);
 
     _propagateChildrenWasm(headRuntime, oldHeadMat, newHeadMat);
@@ -68,7 +76,8 @@ export function _applyHeadGazeWasm(
 export function _applyEyeGazeWasm(
     eyeRuntimes: IMmdRuntimeBone[],
     gazeTarget: Vector3,
-    dt: number
+    dt: number,
+    cache?: GazeCache
 ): void {
     const eyeCenter = _v3();
     for (const eyeRb of eyeRuntimes) {
@@ -100,7 +109,10 @@ export function _applyEyeGazeWasm(
         const eyeBuf = (eyeRb as MmdRuntimeBoneExtended).worldMatrix;
         const eyeMat = _m().copyFrom(Matrix.FromArray(eyeBuf));
         const eyePos = eyeMat.getTranslation();
-        const curEyeQ = _q().copyFrom(Quaternion.FromRotationMatrix(eyeMat.getRotationMatrix()));
+        const boneName = eyeRb.linkedBone?.name ?? '';
+        const curEyeQ = cache?.eyeWorldQ.get(boneName) ?? _q().copyFrom(
+            Quaternion.FromRotationMatrix(eyeMat.getRotationMatrix())
+        );
 
         const clampedTargetQ = _clampGazeTargetInParentFrame(
             curEyeQ,
@@ -111,7 +123,18 @@ export function _applyEyeGazeWasm(
         );
         const alpha = _gazeAlpha(getEyeGazeSmooth(), dt);
         const newEyeQ = _q().copyFrom(Quaternion.Slerp(curEyeQ, clampedTargetQ, alpha));
-        const newEyeMat = _m().copyFrom(Matrix.Compose(Vector3.One(), newEyeQ, eyePos));
+        const finalEyeQ = _clampGazeTargetInParentFrame(newEyeQ, newEyeQ, parentWorldQ, getEyeGazeMaxYaw(), getEyeGazeMaxPitch());
+
+        if (cache) {
+            let cached = cache.eyeWorldQ.get(boneName);
+            if (!cached) {
+                cached = new Quaternion();
+                cache.eyeWorldQ.set(boneName, cached);
+            }
+            cached.copyFrom(finalEyeQ);
+        }
+
+        const newEyeMat = _m().copyFrom(Matrix.Compose(Vector3.One(), finalEyeQ, eyePos));
 
         _writeMatToBuffer(eyeBuf, newEyeMat);
         _propagateChildrenWasm(eyeRb, eyeMat, newEyeMat);

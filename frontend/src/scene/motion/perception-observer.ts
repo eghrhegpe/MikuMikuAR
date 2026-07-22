@@ -126,8 +126,7 @@ export function _applyPerceptionForContext(
         }
 
         if (tier !== 'low') {
-            const shouldRunGaze = tier === 'high' || frameCounter % 2 === 0;
-            if (shouldRunGaze && (state.headTrackingEnabled || state.eyeTrackingEnabled)) {
+            if (state.headTrackingEnabled || state.eyeTrackingEnabled) {
                 const cam = getScene().activeCamera;
                 if (cam) {
                     try {
@@ -143,7 +142,8 @@ export function _applyPerceptionForContext(
                             dt,
                             headClaimed,
                             eyeClaimed,
-                            tier
+                            tier,
+                            ctx.gazeCache
                         );
                     } catch (e) {
                         logWarn('perception', 'gaze 异常:', e);

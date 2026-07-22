@@ -21,6 +21,7 @@ import {
     type PerceptionContext,
     type BalanceSwayState,
     type PerceptionTier,
+    type GazeCache,
     DEFAULT_PERCEPTION_STATE,
     _writeMatToBuffer,
     _propagateChildrenWasm,
@@ -123,6 +124,7 @@ function _getOrCreateContext(modelId: string): PerceptionContext {
                 emotion: null,
             },
             pool: _createPerceptionPool(),
+            gazeCache: { headWorldQ: null, eyeWorldQ: new Map() },
         };
         _contexts.set(modelId, ctx);
     }
@@ -159,6 +161,8 @@ function _resetContextOffsets(ctx: PerceptionContext): void {
     ctx.lastOffsets.breath = 0;
     _resetBalanceSwayState(ctx.lastOffsets.balance);
     ctx.lastOffsets.emotion = null;
+    ctx.gazeCache.headWorldQ = null;
+    ctx.gazeCache.eyeWorldQ.clear();
 }
 
 /** [doc:adr-163] 为指定模型认领感知层骨骼（P3=100） */
@@ -381,11 +385,13 @@ export function _getGazeResetTick(): number {
     return _gazeResetTick;
 }
 
-/** 重置 gaze 增量状态（无持久化状态，仅清理临时变量） */
+/** 重置 gaze 增量状态（清理跨帧缓存，避免切换/开关后出现跳跃） */
 export function _resetGazeState(): void {
-    // gaze 不累积旋转偏移，每帧重新计算 targetQ；
-    // 本函数作为生命周期守卫，在 activate/deactivate/开关切换时调用，确保无残留
     _gazeResetTick++;
+    for (const ctx of _contexts.values()) {
+        ctx.gazeCache.headWorldQ = null;
+        ctx.gazeCache.eyeWorldQ.clear();
+    }
 }
 
 /** 注销感知层 */

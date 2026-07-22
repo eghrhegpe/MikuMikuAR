@@ -1383,7 +1383,7 @@ export const ko: Record<string, string> = {
     'settings.perfModeSet': '✓ 성능 모드: {label}',
     'settings.perfFpsUnlimited': '✓ FPS 제한 없음',
     'settings.perfFpsLimit': '✓ FPS 상한: {limit} FPS',
-    'settings.perfVsync': '✓ 수직 동기화: {state}',
+    'settings.perfVsync': '✓ 프레임 제한기: {state}',
     'settings.physOn': '✓ 기본 물리 시뮬레이션 활성화',
     'settings.physOff': '✓ 기본 물리 시뮬레이션 비활성화 (이후 로드에만 영향)',
     'settings.renderScale': '✓ 렌더링 스케일: {pct}%',
@@ -1404,13 +1404,13 @@ export const ko: Record<string, string> = {
     'settings.perf.fpsHint': '0으로 설정 시 무제한. 모바일에서는 절전을 위해 30 권장.',
     'settings.perf.showFpsClock': 'FPS 시계 표시',
     'settings.perf.showRuntimeBadge': '멀티스레드 배지 표시',
-    'settings.perf.vsync': '수직 동기화',
+    'settings.perf.vsync': '프레임 제한기',
     'settings.perf.vsyncHintOn':
-        '활성화 시 requestAnimationFrame 루프 사용; 비활성화 시 FPS 제한 해제 but 상한 설정 불가.',
+        '활성화 시 "FPS 상한" 슬라이더가 적용되어 렌더링이 설정값으로 제한됩니다.',
     'settings.perf.vsyncHintOff':
-        '비활성화 시 "FPS 상한" 사용 불가; Engine 항상 무제한 (maxFPS=0).',
+        '비활성화 시 인위적 제한을 해제하고 디스플레이 주사율로 렌더링. "FPS 상한" 슬라이더는 비활성화됩니다.',
     'settings.perf.vsyncHintBrowser':
-        '브라우저/WebView는 기본적으로 rAF 사용; 비활성화 시 인위적 제한 해제 (실제로는 새로고침 주수로 제한).',
+        '브라우저/WebView 렌더링 루프는 requestAnimationFrame으로 구동되며 항상 디스플레이와 동기화됩니다. 이 스위치는 인위적 FPS 상한 적용 여부만 제어합니다.',
     'settings.perf.defaultPhysics': '기본 물리 시뮬레이션',
     'settings.perf.defaultPhysicsHint': '비활성화 시 저사양 장치 성능 향상; 이후 로드에만 영향.',
     'settings.perf.autoCenter': '새 모델 자동 중앙 배치',

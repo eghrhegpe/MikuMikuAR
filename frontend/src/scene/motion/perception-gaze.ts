@@ -7,7 +7,7 @@ import { Camera } from '@babylonjs/core/Cameras/camera';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 
 import { isARActive } from '../ar/ar-camera';
-import type { MeshMetadata, GazeConfig, MmdModelLike, PerceptionTier } from './perception-shared';
+import type { MeshMetadata, GazeConfig, MmdModelLike, PerceptionTier, GazeCache } from './perception-shared';
 import {
     _v3,
     _q,
@@ -116,9 +116,10 @@ export function _applyGaze(
     dt: number,
     headClaimed?: readonly string[],
     eyeClaimed?: readonly string[],
-    tier?: PerceptionTier
+    tier?: PerceptionTier,
+    cache?: GazeCache
 ): void {
-    // [doc:adr-164] tier 守卫：low 跳过（medium 由外部 caller 按 frameCounter % 2 控制）
+    // [doc:adr-164] tier 守卫：low 跳过
     if (tier === 'low') return;
 
     if (!config.headEnabled && !config.eyeEnabled) {
@@ -143,26 +144,26 @@ export function _applyGaze(
 
     if (isWasm) {
         if (needHead && headRuntime && (!headClaimed || headClaimed.includes(headRuntime.name))) {
-            _applyHeadGazeWasm(headRuntime, gazeTarget, dt);
+            _applyHeadGazeWasm(headRuntime, gazeTarget, dt, cache);
         }
         if (needEye) {
             const filteredEyes = eyeClaimed
                 ? eyeRuntimes.filter((e) => eyeClaimed.includes(e.name))
                 : eyeRuntimes;
             if (filteredEyes.length > 0) {
-                _applyEyeGazeWasm(filteredEyes, gazeTarget, dt);
+                _applyEyeGazeWasm(filteredEyes, gazeTarget, dt, cache);
             }
         }
     } else {
         if (needHead && headRuntime && (!headClaimed || headClaimed.includes(headRuntime.name))) {
-            _applyHeadGazeJS(headRuntime, gazeTarget, dt);
+            _applyHeadGazeJS(headRuntime, gazeTarget, dt, cache);
         }
         if (needEye) {
             const filteredEyes = eyeClaimed
                 ? eyeRuntimes.filter((e) => eyeClaimed.includes(e.name))
                 : eyeRuntimes;
             if (filteredEyes.length > 0) {
-                _applyEyeGazeJS(filteredEyes, gazeTarget, dt);
+                _applyEyeGazeJS(filteredEyes, gazeTarget, dt, cache);
             }
         }
         const skeleton = (mmdModel.mesh.metadata as MeshMetadata)?.skeleton;

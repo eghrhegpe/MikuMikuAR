@@ -1505,7 +1505,7 @@ export const en: Record<string, string> = {
     'settings.perfModeSet': '✓ Performance mode: {label}',
     'settings.perfFpsUnlimited': '✓ FPS unlimited',
     'settings.perfFpsLimit': '✓ FPS cap: {limit} FPS',
-    'settings.perfVsync': '✓ VSync: {state}',
+    'settings.perfVsync': '✓ Frame Rate Limiter: {state}',
     'settings.physOn': '✓ Physics simulation enabled by default',
     'settings.physOff': '✓ Physics simulation disabled by default (affects subsequent loads only)',
     'settings.renderScale': '✓ Render scale: {pct}%',
@@ -1597,13 +1597,13 @@ export const en: Record<string, string> = {
     'settings.perf.fpsHint': 'Set to 0 for unlimited. Mobile建议30 to save battery.',
     'settings.perf.showFpsClock': 'Show FPS clock',
     'settings.perf.showRuntimeBadge': 'Show multithreading badge',
-    'settings.perf.vsync': 'VSync',
+    'settings.perf.vsync': 'Frame Rate Limiter',
     'settings.perf.vsyncHintOn':
-        'Enables requestAnimationFrame loop; off removes FPS cap but cannot set limit.',
+        'When on, the "FPS Cap" slider takes effect and rendering is capped at the set value.',
     'settings.perf.vsyncHintOff':
-        'Cannot use "FPS Cap" when off; Engine always unlimited (maxFPS=0).',
+        'When off, no artificial cap is applied; rendering runs at the display refresh rate and the "FPS Cap" slider has no effect.',
     'settings.perf.vsyncHintBrowser':
-        'Browser/WebView uses rAF by default; off removes artificial cap (still limited by refresh rate).',
+        'Browser/WebView render loops are driven by requestAnimationFrame and always sync to the display; this toggle only controls whether an artificial FPS cap is applied.',
     'settings.perf.defaultPhysics': 'Default Physics',
     'settings.perf.defaultPhysicsHint':
         'Off improves low-end performance; only affects subsequent loads.',

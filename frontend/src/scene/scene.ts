@@ -161,15 +161,16 @@ let _sceneDisposed = false;
 let _sceneInitialized = false;
 
 /**
- * 统一应用帧率控制：垂直同步 + 帧率上限。
- * - 垂直同步关闭（vsync=false）：解除本应用层限帧（engine.maxFPS=0）。
- *   注意：浏览器/WebView 渲染循环由 requestAnimationFrame 驱动，天然与显示器刷新同步，
- *   无法在 Web 层真正关闭 vsync；此开关等价于"不施加任何人为限帧"。
- * - 垂直同步开启（默认）：应用帧率上限 fpsLimit（0=不限制=原生刷新同步）。
+ * 统一应用帧率控制：帧率限制器开关 + 帧率上限。
+ * - 限制器关闭（uiState.vsync=false）：不施加任何人为限帧（engine.maxFPS=undefined），
+ *   渲染以显示器刷新率运行。注意：浏览器/WebView 渲染循环由 requestAnimationFrame 驱动，
+ *   天然与显示器刷新同步，Web 层无法真正关闭 vsync。
+ *   （状态键沿用历史命名 vsync 以保持设置持久化兼容，UI 已更名为"帧率限制器"。）
+ * - 限制器开启（默认）：应用帧率上限 fpsLimit（0=不限制=原生刷新同步）。
  */
 export function applyFrameControl(): void {
     if (uiState.vsync === false) {
-        engine.maxFPS = 0; // 关闭垂直同步：不限帧
+        engine.maxFPS = undefined; // 关闭限制器：不限帧（0 会被 Babylon 视为"永不渲染"）
         return;
     }
     const limit = uiState.fpsLimit ?? 0;

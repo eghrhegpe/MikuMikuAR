@@ -4,7 +4,7 @@ import { Quaternion, Vector3, Matrix } from '@babylonjs/core/Maths/math.vector';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 
 import type { MmdRuntimeBoneExtended } from '@/core/types';
-import { _v3, _m, _q, _gazeAlpha } from './perception-shared';
+import { _v3, _m, _q, _gazeAlpha, type GazeCache } from './perception-shared';
 import { _updateBoneChain } from './perception-breathing';
 import {
     _clampHeadGazeTarget,
@@ -18,13 +18,14 @@ import {
 export function _applyHeadGazeJS(
     headRuntime: IMmdRuntimeBone,
     gazeTarget: Vector3,
-    dt: number
+    dt: number,
+    cache?: GazeCache
 ): void {
     const headPos = _v3();
     headRuntime.getWorldTranslationToRef(headPos);
 
     const oldHeadMat = _m().copyFrom(Matrix.FromArray(headRuntime.worldMatrix));
-    const oldHeadRotQ = _q().copyFrom(
+    const oldHeadRotQ = cache?.headWorldQ ?? _q().copyFrom(
         Quaternion.FromRotationMatrix(oldHeadMat.getRotationMatrix())
     );
 
@@ -45,8 +46,14 @@ export function _applyHeadGazeJS(
     const clampedTargetQ = _clampHeadGazeTarget(oldHeadRotQ, targetWorldQ, parentWorldQ);
     const alpha = _gazeAlpha(0.7, dt);
     const blended = _q().copyFrom(Quaternion.Slerp(oldHeadRotQ, clampedTargetQ, alpha));
+    const finalQ = _clampHeadGazeTarget(blended, blended, parentWorldQ);
     const localQ = _q();
-    parentInvQ.multiplyToRef(blended, localQ);
+    parentInvQ.multiplyToRef(finalQ, localQ);
+
+    if (cache) {
+        if (!cache.headWorldQ) cache.headWorldQ = new Quaternion();
+        cache.headWorldQ.copyFrom(finalQ);
+    }
 
     // 写入既有实例，不外泄池引用
     const headQ = headRuntime.linkedBone.rotationQuaternion;
@@ -61,7 +68,8 @@ export function _applyHeadGazeJS(
 export function _applyEyeGazeJS(
     eyeRuntimes: IMmdRuntimeBone[],
     gazeTarget: Vector3,
-    dt: number
+    dt: number,
+    cache?: GazeCache
 ): void {
     const eyeCenter = _v3();
     for (const eyeRb of eyeRuntimes) {
@@ -82,7 +90,10 @@ export function _applyEyeGazeJS(
 
     for (const eyeRb of eyeRuntimes) {
         const eyeMat = _m().copyFrom(Matrix.FromArray(eyeRb.worldMatrix));
-        const curWorldQ = _q().copyFrom(Quaternion.FromRotationMatrix(eyeMat.getRotationMatrix()));
+        const boneName = eyeRb.linkedBone?.name ?? '';
+        const curWorldQ = cache?.eyeWorldQ.get(boneName) ?? _q().copyFrom(
+            Quaternion.FromRotationMatrix(eyeMat.getRotationMatrix())
+        );
 
         const parentBone = eyeRb.parentBone;
         const parentWorldInv = _m();
@@ -104,9 +115,19 @@ export function _applyEyeGazeJS(
         );
         const alpha = _gazeAlpha(getEyeGazeSmooth(), dt);
         const newWorldQ = _q().copyFrom(Quaternion.Slerp(curWorldQ, clampedTargetQ, alpha));
+        const finalEyeQ = _clampGazeTargetInParentFrame(newWorldQ, newWorldQ, parentWorldQ, getEyeGazeMaxYaw(), getEyeGazeMaxPitch());
+
+        if (cache) {
+            let cached = cache.eyeWorldQ.get(boneName);
+            if (!cached) {
+                cached = new Quaternion();
+                cache.eyeWorldQ.set(boneName, cached);
+            }
+            cached.copyFrom(finalEyeQ);
+        }
 
         const localQ = _q();
-        parentInvQ.multiplyToRef(newWorldQ, localQ);
+        parentInvQ.multiplyToRef(finalEyeQ, localQ);
 
         // 写入既有实例，不外泄池引用
         const eyeQ = eyeRb.linkedBone.rotationQuaternion;
