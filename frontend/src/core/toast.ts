@@ -167,6 +167,7 @@ function buildToastElement(
 
     const closeBtn = document.createElement('span');
     closeBtn.textContent = '✕';
+    closeBtn.setAttribute('aria-label', t('common.close'));
     closeBtn.style.cssText =
         'font-size:11px;color:var(--text-dim);cursor:pointer;padding:2px 4px;line-height:1';
     closeBtn.addEventListener('click', () => {

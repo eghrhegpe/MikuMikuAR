@@ -1585,7 +1585,8 @@ export const zhTW: Record<string, string> = {
     // ===== i18n Phase 4 — missing keys =====
     'common.model': '模型',
     'common.prop': '道具',
-    'common.delete': '刪除',
+    'common.close': '關閉',
+'common.delete': '刪除',
     'common.items': '項',
     'common.unknown': '未知',
     'model-detail.unloadThis': '卸載此{kind}',

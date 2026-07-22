@@ -3002,6 +3002,40 @@ textarea,
     font-size: var(--font-ui-sm);
 }
 
+/* ===== ADR-153 Phase 2: 无障碍系统偏好媒体查询 ===== */
+
+/* 减少动态效果：关闭 CSS 动画/过渡 */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* 高对比度：提升文字可读性 */
+@media (prefers-contrast: more) {
+    :root {
+        --accent: #ffff00;
+        --bg-panel: #000000;
+        --text-primary: #ffffff;
+    }
+    .slide-item {
+        border: 1px solid var(--text-primary);
+    }
+}
+
+/* 深色模式：仅在用户未自定义主题时生效（通过 :root[data-theme="auto"] 守卫） */
+@media (prefers-color-scheme: dark) {
+    :root[data-theme='auto'] {
+        --bg-scene: #0a0a14;
+        --card-bg: #12121e;
+        --text: #e0e0e0;
+        --text-bright: #ffffff;
+    }
+}
+
 
 .lcard {
     background: var(--lcard-bg);

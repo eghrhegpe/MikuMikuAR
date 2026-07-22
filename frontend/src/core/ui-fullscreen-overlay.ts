@@ -5,6 +5,7 @@
 import { logWarn } from './logger';
 import { addDisposableListener } from './dom';
 import { createFocusTrap } from './ui-focus-trap';
+import { t } from './i18n/t';
 
 // 用 WeakMap 存储 overlay 清理函数，避免 DOM 属性污染
 const _cleanupMap = new WeakMap<HTMLElement, () => void>();
@@ -187,6 +188,7 @@ function createOverlayElement(options: FullscreenOverlayOptions): HTMLElement {
     const closeBtn = document.createElement('button');
     closeBtn.className = 'btn btn-ghost btn-sm';
     closeBtn.textContent = '✕';
+    closeBtn.setAttribute('aria-label', t('common.close'));
     closeBtn.title = '关闭';
     closeBtn.addEventListener('click', () => {
         closeFullscreen();
