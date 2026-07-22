@@ -38,7 +38,7 @@ export const ja: Record<string, string> = {
     'settings.screenshot': 'スクリーンショット',
     'settings.audio': 'オーディオ',
     'settings.shortcuts': 'ショートカット',
-    'settings.about': 'について',
+    'settings.about': 'バージョン情報',
     'settings.language': '言語',
 
     // ===== 設定·新IA根ラベル（ADR-157） =====
@@ -232,7 +232,7 @@ export const ja: Record<string, string> = {
     'model-detail.boneHierarchy': 'ボーン階層',
     'model-detail.tags': 'タグ管理',
     'model-detail.tagsFallback': 'タグ',
-    'model-detail.visibility': '表示設定',
+    'model-detail.visibility': '表示切替',
     'model-detail.visible': '表示',
     'model-detail.semi': '半透明',
     'model-detail.hidden': '非表示',
@@ -364,9 +364,6 @@ export const ja: Record<string, string> = {
     'motion-preset.deleted': '✓ プリセットを削除しました',
     'motion-preset.noPresets': 'プリセットがありません',
     'motion-preset.saveTitle': '現在のモーションをプリセットとして保存',
-    'motion-preset.saveCurrent': '現在をプリセットとして保存',
-    'motion-preset.defaultName': '新規プリセット',
-    'motion-preset.limitReached': '✗ プリセット数の上限 (10) に達しました。古いプリセットを削除してください',
     'motion-preset.inputName': 'プリセット名を入力：',
     'motion-preset.nameEmpty': '✗ 名前を入力してください',
     'motion-preset.tooManyPresets':
@@ -378,7 +375,7 @@ export const ja: Record<string, string> = {
     // ===== モーション motion =====
     'motion.title': 'モーション',
     'motion.advanced': '詳細設定',
-    'motion.bindingTitle': 'モーションバインディング',
+    'motion.bindingTitle': 'モーション割当',
     'motion.intent.title': '場上の動作',
     'motion.intent.none': '静止（動作なし）',
     'motion.intent.incompatible': 'このキャラは現在の動作非対応',
@@ -1250,6 +1247,7 @@ export const ja: Record<string, string> = {
     'env.foamTransition': '泡の移行範囲',
     'env.rippleNormal': '波紋法線強度',
     'env.rippleGlint': '波紋輝き強度',
+    'env.waterRippleSlots': 'リップル数',
     'env.causticColor1': 'コースティクス明色',
     'env.causticColor2': 'コースティクス暗色',
     'env.causticIntensity': 'コースティクス強度',
@@ -1635,6 +1633,7 @@ export const ja: Record<string, string> = {
     // [doc:adr-116] モーションオーバーライド モジュールUI
     'motion.override.title': 'モーションオーバーライド',
     'motion.override.enabled': '✓ モジュール有効',
+    'motion.override.disabled': '✕ モジュール無効',
     'motion.override.redoApplied': '✓ 元に戻しました（やり直し）',
     'motion.override.history': '履歴',
     'motion.override.module.bodyPosture': 'ボディポスチャー',
@@ -1695,6 +1694,7 @@ export const ja: Record<string, string> = {
     'motion.feet.maxAngle': '最大足角度',
     'motion.feet.reachAngle': 'リーチ角度',
     'motion.feet.noModel': '⚠ 最初にモデルを読み込んでください',
+    'motion.externalImport': '外部モーション取り込み',
     'motion.boneOverride.applied': '✓ {bone} のオーバーライドを適用しました',
     'motion.boneOverride.apply': '適用',
     'motion.boneOverride.clearAll': 'すべてクリア',
