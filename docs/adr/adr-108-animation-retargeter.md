@@ -1,6 +1,6 @@
 # ADR-108: AnimationRetargeter + HumanoidMmd 接入 — 扩展动作来源
 
-**状态**: 已落地（2026-07-14 — 桥接模块 + UI 入口 + 骨骼映射预设选择完整）
+**状态**: 已落地（2026-07-14 — 桥接模块 + UI 入口 + 骨骼映射预设选择完整；2026-07-22 校准"未落地"清单）
 
 **决策者**: Riku（联邦首席架构师 AI）、Jieling（人类侧首席架构师）
 
@@ -119,9 +119,9 @@ getBoneMapPresets()
 
 | 项 | 原因 | 计划 |
 |----|------|------|
-| 骨骼映射预设选择 UI | 暂时硬编码 `mixamo`，未做预设选择下拉 | 阶段二补充 |
-| 场景序列化 | `SceneFile` 未记录 retargeted 动画状态 | 阶段三 |
-| 多文件格式支持 | 仅通过 `SelectImportFile` 通用选择器，未做文件类型过滤 | 后续可添加 Go 端 `SelectFBXFile` 绑定 |
+| ~~骨骼映射预设选择 UI~~ | 已落地（`buildRetargetLevel()` 提供 Mixamo/VRM/自定义三按钮选择） | ✅ 阶段二已完成 |
+| 场景序列化 | `SceneFile` 未记录 retargeted 动画状态（加载场景后需重新导入） | 待排期 |
+| 多文件格式过滤 | 仅通过 `SelectImportFile` 通用选择器，未做 `.fbx`/`.glb`/`.gltf` 过滤 | 后续可添加 Go 端文件类型过滤 |
 
 ---
 

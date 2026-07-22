@@ -633,8 +633,12 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
                 const blendEnabled = import.meta.env.VITE_WASM_LAYERS_BLEND !== '0';
                 if (blendEnabled) {
                     try {
-                        const { setupWasmLayersBlender, addWasmLayer } =
+                        const { initWasmLayersBlender, setupWasmLayersBlender, addWasmLayer } =
                             await import('./wasm-layers-blender');
+                        const { modelManager } = await getScene();
+                        const { loadVMDMotion } = await import('./vmd-loader');
+
+                        initWasmLayersBlender({ scene, modelManager, loadVMDMotion });
 
                         const baseSrc = sources[0];
                         await setupWasmLayersBlender(modelId, baseSrc.data, baseSrc.name);
@@ -678,7 +682,22 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
         // mmdCompositeRuntimeModelAnimation 中声明的 module augmentation），可直接传入，无需双重 cast
 
         // 绑定到模型
+        // 释放旧动画句柄，防止切换 VMD 图层时 WASM 内存泄漏。
+        // setRuntimeAnimation(null) 仅解绑、不释放 WASM buffer；必须显式 dispose 旧
+        // runtime animation（其内部 onDispose 回调触发 _destroyRuntimeAnimation，从
+        // _animationHandleMap 删除并回收 WASM AnimCurve 资源）。
+        // 与 vmd-loader.ts:148-158 对齐。
+        const prevAnim =
+            (inst.mmdModel as { currentAnimation?: { dispose?: () => void } | null })
+                .currentAnimation ?? null;
         inst.mmdModel.setRuntimeAnimation(null);
+        if (prevAnim) {
+            try {
+                prevAnim.dispose?.();
+            } catch {
+                // 旧动画句柄清理失败不影响本次绑定
+            }
+        }
         const handle = inst.mmdModel.createRuntimeAnimation(composite);
         inst.mmdModel.setRuntimeAnimation(handle);
 
