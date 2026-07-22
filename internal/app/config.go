@@ -365,4 +365,12 @@ func mergeUIState(dst *UIState, src UIState) {
 	if src.KeyBindings != nil {
 		dst.KeyBindings = src.KeyBindings
 	}
+	// Android 屏幕常亮（指针区分 nil=开启 vs false=关闭）
+	if src.KeepAwake != nil {
+		dst.KeepAwake = src.KeepAwake
+	}
+	// Android 屏幕方向（空=auto，显式保存 "auto"/"portrait"/"landscape"）
+	if src.ScreenOrientation != "" {
+		dst.ScreenOrientation = src.ScreenOrientation
+	}
 }

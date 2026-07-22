@@ -41,7 +41,7 @@ function buildDefaultEnvState(): EnvState {
         groundVisible: s.groundVisible.default,
         groundType: s.groundType.default,
         groundStyle: s.groundStyle.default,
-        groundDecoStyle: s.groundDecoStyle.default,
+        groundOverlay: s.groundOverlay.default,
         groundColor: s.groundColor.default.slice() as [number, number, number],
         groundAlpha: s.groundAlpha.default,
         groundTexture: s.groundTexture.default,

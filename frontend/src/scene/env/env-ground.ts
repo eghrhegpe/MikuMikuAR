@@ -411,13 +411,23 @@ interface ProceduralTextures {
 function generateProceduralGroundTextures(
     type: Exclude<GroundProceduralKind, 'none'>,
     seed: number,
-    scene: Scene
+    scene: Scene,
+    state?: EnvState
 ): ProceduralTextures {
     const gens = PROCEDURAL_GENERATORS[type];
+    const hasOverlay = state != null && state.groundOverlay !== 'none';
+    const overlaySuffix = hasOverlay
+        ? `_ov:${state!.groundOverlay}:${state!.groundGridSize}:${state!.groundLineColor.join(',')}`
+        : '';
     const make = (channel: 'albedo' | 'roughness' | 'normal') =>
-        getOrCreateCanvasTexture(`groundProcedural_${type}_${seed}_${channel}`, {
+        getOrCreateCanvasTexture(`groundProcedural_${type}_${seed}_${channel}${channel === 'albedo' ? overlaySuffix : ''}`, {
             size: PROCEDURAL_SIZE,
-            draw: (ctx, s) => gens[channel](ctx, s, seed),
+            draw: (ctx, s) => {
+                gens[channel](ctx, s, seed);
+                if (channel === 'albedo' && hasOverlay) {
+                    _drawOverlayPattern(ctx, s, state!);
+                }
+            },
             scene,
             name: `groundProcedural_${type}_${channel}`,
             wrap: 'wrap',
@@ -698,7 +708,7 @@ function _generateGroundTexture(state: EnvState, scene: Scene): Texture {
         ctx.fillStyle = c0;
         ctx.fillRect(0, 0, s, s);
 
-        if (state.groundDecoStyle === 'grid') {
+        if (state.groundOverlay === 'grid') {
             const tileSize = Math.max(8, Math.round(64 * state.groundGridSize));
             ctx.strokeStyle = c1;
             ctx.lineWidth = Math.max(1, Math.round(tileSize / 24));
@@ -714,7 +724,7 @@ function _generateGroundTexture(state: EnvState, scene: Scene): Texture {
                 ctx.lineTo(s, y);
                 ctx.stroke();
             }
-        } else if (state.groundDecoStyle === 'checker') {
+        } else if (state.groundOverlay === 'checker') {
             const tileSize = Math.max(8, Math.round(64 * state.groundGridSize));
             switch (state.groundPattern) {
                 case 'checker':
@@ -772,6 +782,41 @@ function _generateGroundTexture(state: EnvState, scene: Scene): Texture {
     return createCanvasTexture({ size, draw, scene, name: 'envGround', wrap: 'clamp' });
 }
 
+// ======== Overlay pattern (grid/checker) for any canvas context ========
+
+function _drawOverlayPattern(
+    ctx: CanvasRenderingContext2D,
+    size: number,
+    state: EnvState
+): void {
+    if (state.groundOverlay === 'none') return;
+    const r = Math.round(state.groundLineColor[0] * 255);
+    const g = Math.round(state.groundLineColor[1] * 255);
+    const b = Math.round(state.groundLineColor[2] * 255);
+    const lineColor = `rgb(${r},${g},${b})`;
+    const tileSize = Math.max(8, Math.round(64 * state.groundGridSize));
+
+    if (state.groundOverlay === 'grid') {
+        ctx.strokeStyle = lineColor;
+        ctx.lineWidth = Math.max(1, Math.round(tileSize / 24));
+        for (let x = tileSize; x < size; x += tileSize) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, size); ctx.stroke();
+        }
+        for (let y = tileSize; y < size; y += tileSize) {
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(size, y); ctx.stroke();
+        }
+    } else if (state.groundOverlay === 'checker') {
+        ctx.fillStyle = lineColor;
+        for (let y = 0; y < size; y += tileSize) {
+            for (let x = 0; x < size; x += tileSize) {
+                if ((x / tileSize + y / tileSize) % 2 === 0) {
+                    ctx.fillRect(x, y, tileSize, tileSize);
+                }
+            }
+        }
+    }
+}
+
 // ======== Texture mode: external image compositing ========
 
 function _drawTextureGroundCanvas(
@@ -782,41 +827,7 @@ function _drawTextureGroundCanvas(
 ): void {
     ctx.clearRect(0, 0, size, size);
     ctx.drawImage(img, 0, 0, size, size);
-    if (state.groundDecoStyle === 'none') {
-        return;
-    }
-
-    const r = Math.round(state.groundLineColor[0] * 255);
-    const g = Math.round(state.groundLineColor[1] * 255);
-    const b = Math.round(state.groundLineColor[2] * 255);
-    const lineColor = `rgb(${r},${g},${b})`;
-    const tileSize = Math.max(8, Math.round(64 * state.groundGridSize));
-
-    if (state.groundDecoStyle === 'grid') {
-        ctx.strokeStyle = lineColor;
-        ctx.lineWidth = Math.max(1, Math.round(tileSize / 24));
-        for (let x = tileSize; x < size; x += tileSize) {
-            ctx.beginPath();
-            ctx.moveTo(x, 0);
-            ctx.lineTo(x, size);
-            ctx.stroke();
-        }
-        for (let y = tileSize; y < size; y += tileSize) {
-            ctx.beginPath();
-            ctx.moveTo(0, y);
-            ctx.lineTo(size, y);
-            ctx.stroke();
-        }
-    } else if (state.groundDecoStyle === 'checker') {
-        for (let y = 0; y < size; y += tileSize) {
-            for (let x = 0; x < size; x += tileSize) {
-                if ((x / tileSize + y / tileSize) % 2 === 0) {
-                    ctx.fillStyle = lineColor;
-                    ctx.fillRect(x, y, tileSize, tileSize);
-                }
-            }
-        }
-    }
+    _drawOverlayPattern(ctx, size, state);
 }
 
 function _ensureTextureGroundImage(url: string, onReady: (img: HTMLImageElement) => void): void {
@@ -1019,7 +1030,7 @@ export function applyGround(state: EnvState): void {
     const pbrKey = `:pbr:${state.groundPbrEnabled}`;
     const proceduralKey =
         state.groundProceduralTexture !== 'none' && !state.groundTextureEnabled
-            ? `:proc:${state.groundProceduralTexture}:${state.groundProceduralSeed}:${state.groundProceduralScale}`
+            ? `:proc:${state.groundProceduralTexture}:${state.groundProceduralSeed}:${state.groundProceduralScale}:deco:${state.groundOverlay}`
             : '';
     const typeKey =
         state.groundType === 'terrain'
@@ -1133,7 +1144,8 @@ export function applyGround(state: EnvState): void {
         const texs = generateProceduralGroundTextures(
             state.groundProceduralTexture,
             state.groundProceduralSeed,
-            scene
+            scene,
+            state
         );
         // [fix] 纹理密度与 mesh 尺寸成正比，避免拉伸模糊
         const scale = _groundActualSize / 10 / Math.max(0.1, state.groundProceduralScale);
@@ -1227,7 +1239,7 @@ export interface GroundPreset {
     label: string;
     // Style
     groundStyle: 'solid' | 'grid' | 'checker' | 'texture';
-    groundDecoStyle: 'none' | 'grid' | 'checker';
+    groundOverlay: 'none' | 'grid' | 'checker';
     groundColor: [number, number, number];
     groundAlpha: number;
     groundPattern: 'checker' | 'dots' | 'stripes' | 'radial';
@@ -1268,7 +1280,7 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
     cleanGray: {
         label: '素净灰',
         groundStyle: 'solid',
-        groundDecoStyle: 'none',
+        groundOverlay: 'none',
         groundColor: [0.2, 0.2, 0.22],
         groundAlpha: 0.85,
         groundPattern: 'checker',
@@ -1300,7 +1312,7 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
     mirrorStage: {
         label: '镜面舞台',
         groundStyle: 'solid',
-        groundDecoStyle: 'none',
+        groundOverlay: 'none',
         groundColor: [0.05, 0.05, 0.08],
         groundAlpha: 1,
         groundPattern: 'checker',
@@ -1332,7 +1344,7 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
     grass: {
         label: '草地',
         groundStyle: 'texture',
-        groundDecoStyle: 'none',
+        groundOverlay: 'none',
         groundColor: [0.3, 0.5, 0.25],
         groundAlpha: 1,
         groundPattern: 'checker',
@@ -1364,7 +1376,7 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
     stoneTile: {
         label: '石板',
         groundStyle: 'texture',
-        groundDecoStyle: 'none',
+        groundOverlay: 'none',
         groundColor: [0.35, 0.33, 0.3],
         groundAlpha: 1,
         groundPattern: 'checker',
@@ -1396,7 +1408,7 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
     woodStage: {
         label: '木纹舞台',
         groundStyle: 'texture',
-        groundDecoStyle: 'none',
+        groundOverlay: 'none',
         groundColor: [0.55, 0.4, 0.25],
         groundAlpha: 1,
         groundPattern: 'checker',
@@ -1428,7 +1440,7 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
     cyberGrid: {
         label: '赛博网格',
         groundStyle: 'grid',
-        groundDecoStyle: 'grid',
+        groundOverlay: 'grid',
         groundColor: [0.02, 0.02, 0.06],
         groundAlpha: 1,
         groundPattern: 'checker',
@@ -1463,7 +1475,7 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
 export function buildGroundPresetEnvState(preset: GroundPreset): Partial<EnvState> {
     return {
         groundStyle: preset.groundStyle,
-        groundDecoStyle: preset.groundDecoStyle,
+        groundOverlay: preset.groundOverlay,
         groundColor: preset.groundColor,
         groundAlpha: preset.groundAlpha,
         groundPattern: preset.groundPattern,

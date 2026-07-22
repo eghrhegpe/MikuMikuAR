@@ -18,7 +18,7 @@ const defaultEnv: EnvState = {
     groundVisible: true,
     groundType: 'flat',
     groundStyle: 'solid',
-    groundDecoStyle: 'none',
+    groundOverlay: 'none',
     groundColor: [0.15, 0.15, 0.18],
     groundAlpha: 0.6,
     groundTexture: '',

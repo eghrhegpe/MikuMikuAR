@@ -111,7 +111,7 @@ vi.mock('../core/config', async (importOriginal) => {
             groundTexture: '',
             groundTextureScale: 1,
             groundProceduralTexture: 'none',
-            groundDecoStyle: 'none',
+            groundOverlay: 'none',
             groundGridSize: 1,
             groundLineColor: '#ffffff',
             groundPattern: 'checker',

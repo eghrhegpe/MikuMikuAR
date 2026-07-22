@@ -1119,7 +1119,7 @@ export const ko: Record<string, string> = {
     'env.ground': '지면',
     'env.showGround': '지면 표시',
     'env.baseSettings': '기본 설정',
-    'env.decoration': '장식',
+    'env.groundOverlay': '오버레이 그리드',
     'env.style': '스타일',
     'env.groundHeight': '지면 높이',
     'env.groundType': '지면 종류',
@@ -1168,6 +1168,7 @@ export const ko: Record<string, string> = {
     'env.range': '범위',
     'env.edgeFade': '엣지 페이드',
     'env.groundEnhance': '지면 강화',
+    'env.groundInfinite': '무한 지면',
     'env.groundPitch': '피치',
     'env.groundRoll': '롤',
     'env.groundScrollX': '스크롤 X',
@@ -1180,7 +1181,7 @@ export const ko: Record<string, string> = {
     'env.heightmapNoTilt': '높이맵 모드에서는 기울기 지원 안 함',
     'env.groundReflection': '지면 반사와 재질',
     'env.groundMaterial': '재질 및 반사',
-    'env.decoPattern': '패턴 장식',
+    'env.overlayPattern': '오버레이 패턴',
     'env.groundReflectQuality': '반사 품질',
     'env.groundReflectBlend': '반사 블렌드',
     'env.groundNormalStrength': '노멀 강도',
@@ -1409,11 +1410,11 @@ export const ko: Record<string, string> = {
     'settings.perf.showRuntimeBadge': '멀티스레드 배지 표시',
     'settings.perf.vsync': '프레임 제한기',
     'settings.perf.vsyncHintOn':
-        '활성화 시 "FPS 상한" 슬라이더가 적용되어 렌더링이 설정값으로 제한됩니다.',
+        '활성화 시 babymmd 렌더링 프레임률 제한 (브라우저/WebView 렌더링에 VSync 내장, 별도 설정 불필요)',
     'settings.perf.vsyncHintOff':
         '비활성화 시 인위적 제한을 해제하고 디스플레이 주사율로 렌더링. "FPS 상한" 슬라이더는 비활성화됩니다.',
     'settings.perf.vsyncHintBrowser':
-        '브라우저/WebView 렌더링 루프는 requestAnimationFrame으로 구동되며 항상 디스플레이와 동기화됩니다. 이 스위치는 인위적 FPS 상한 적용 여부만 제어합니다.',
+        'babymmd 렌더링 프레임률 제어 (브라우저/WebView 렌더링에 이미 VSync 내장, 별도 설정 불필요)',
     'settings.perf.defaultPhysics': '물리 시뮬레이션',
     'settings.perf.defaultPhysicsHint':
         '비활성화 시 저사양 장치 성능 향상; 전환 시 로드된 모든 모델에 즉시 적용.',

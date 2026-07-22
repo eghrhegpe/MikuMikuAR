@@ -1256,7 +1256,7 @@ export const en: Record<string, string> = {
     'env.ground': 'Ground',
     'env.showGround': 'Show ground',
     'env.baseSettings': 'Basic Settings',
-    'env.decoration': 'Decoration',
+    'env.groundOverlay': 'Overlay Grid',
     'env.style': 'Style',
     'env.groundHeight': 'Ground height',
     'env.groundType': 'Ground type',
@@ -1305,6 +1305,7 @@ export const en: Record<string, string> = {
     'env.range': 'Range',
     'env.edgeFade': 'Edge Fade',
     'env.groundEnhance': 'Ground Enhance',
+    'env.groundInfinite': 'Infinite Ground',
     'env.groundPitch': 'Pitch',
     'env.groundRoll': 'Roll',
     'env.groundScrollX': 'Scroll X',
@@ -1317,7 +1318,7 @@ export const en: Record<string, string> = {
     'env.heightmapNoTilt': 'Tilt not supported in heightmap mode',
     'env.groundReflection': 'Ground Reflection & Material',
     'env.groundMaterial': 'Material & Reflection',
-    'env.decoPattern': 'Pattern Decoration',
+    'env.overlayPattern': 'Overlay Pattern',
     'env.groundReflectQuality': 'Reflection Quality',
     'env.groundReflectBlend': 'Reflection Blend',
     'env.groundNormalStrength': 'Normal Strength',
@@ -1602,11 +1603,11 @@ export const en: Record<string, string> = {
     'settings.perf.showRuntimeBadge': 'Show multithreading badge',
     'settings.perf.vsync': 'Frame Rate Limiter',
     'settings.perf.vsyncHintOn':
-        'When on, the "FPS Cap" slider takes effect and rendering is capped at the set value.',
+        'When on, limits babymmd render frame rate (browser/WebView rendering has built-in VSync, no separate VSync setting needed)',
     'settings.perf.vsyncHintOff':
         'When off, no artificial cap is applied; rendering runs at the display refresh rate and the "FPS Cap" slider has no effect.',
     'settings.perf.vsyncHintBrowser':
-        'Browser/WebView render loops are driven by requestAnimationFrame and always sync to the display; this toggle only controls whether an artificial FPS cap is applied.',
+        'Controls babymmd render frame rate (browser/WebView rendering already has built-in VSync, no separate VSync setting needed)',
     'settings.perf.defaultPhysics': 'Physics Simulation',
     'settings.perf.defaultPhysicsHint':
         'Off improves low-end performance; applies immediately to all loaded models.',

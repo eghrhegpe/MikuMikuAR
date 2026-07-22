@@ -436,7 +436,7 @@ type EnvState struct {
 	GroundVisible         bool       `json:"groundVisible"`
 	GroundType            string     `json:"groundType"`
 	GroundStyle           string     `json:"groundStyle"`
-	GroundDecoStyle       string     `json:"groundDecoStyle"`
+	GroundOverlay       string     `json:"groundOverlay"`
 	GroundColor           [3]float64 `json:"groundColor"`
 	GroundAlpha           float64    `json:"groundAlpha"`
 	GroundTexture         string     `json:"groundTexture"`

@@ -61,7 +61,7 @@ export const ENV_STATE_SCHEMA = {
         default: 'solid' as const,
         group: 'ground',
     },
-    groundDecoStyle: {
+    groundOverlay: {
         type: 'enum',
         values: ['none', 'grid', 'checker'] as const,
         default: 'none' as const,
