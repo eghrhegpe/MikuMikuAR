@@ -57,6 +57,7 @@ import {
 import { registerAppShortcuts } from './shortcut-app';
 import { addDisposableListener } from './dom';
 import { disposeOverlay2 } from './dialog';
+import { saveSceneImmediate } from '../scene/scene-serialize';
 
 // [adr:audit] init 层本地事件监听收集，配合 disposeEventHandlers 实现 HMR 幂等清理
 const _initDisposables: { dispose(): void }[] = [];
@@ -492,6 +493,41 @@ Events.On('android:back', () => {
     }
     _lastBackExitPress = now;
     showInfoToast(t('main.pressAgainToExit'), undefined, undefined, BACK_EXIT_INTERVAL_MS);
+});
+
+// Android 系统事件消费（ADR-017 A3-04）
+// Java 端经 emitSystemEvent 转发 6 类事件；back/permissionGranted 已在上方消费，
+// 此处补齐剩余 4 类：ScreenLocked/NetworkChanged/BatteryChanged/ThemeChanged。
+// 仅 Android 平台注册，桌面端 Events.On 无副作用但避免无意义监听。
+
+// 屏幕锁定 → 立即刷盘保存场景。
+// 比 visibilitychange 更可靠：部分国产 ROM WebView 切后台 visibilityState 不变 hidden，
+// 导致 cleanupAndFlushSave() 不触发；ScreenLocked 是原生广播，信号确切。
+Events.On('android:ScreenLocked', () => {
+    swallowError(saveSceneImmediate(true));
+});
+
+// 网络变化 → toast 提示（plaza 等在线功能依赖网络）
+// payload: {"online":true|false}
+Events.On('android:NetworkChanged', (data: { online?: boolean } | null) => {
+    const online = data?.online === true;
+    if (online) {
+        showInfoToast(t('main.networkOnline'));
+    } else {
+        showInfoToast(t('main.networkOffline'));
+    }
+});
+
+// 电量变化 → 仅日志，暂不消费（预留扩展点，未来可低电量降级渲染）
+// payload: {"level":int,"scale":int,"plugged":bool}
+Events.On('android:BatteryChanged', (_data: unknown) => {
+    // no-op: 预留扩展点
+});
+
+// 主题变化 → 仅日志，暂不消费（预留扩展点，未来可跟随系统暗色模式）
+// payload: {"nightMode":bool}
+Events.On('android:ThemeChanged', (_data: unknown) => {
+    // no-op: 预留扩展点
 });
 
 // ======== Bootstrap ========

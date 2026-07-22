@@ -164,6 +164,9 @@ export const ko: Record<string, string> = {
     'main.permissionGranted':
         '✅ 파일 권한이 허용되었습니다. 모델 라이브러리를 다시 스캔하는 중...',
     'main.pressAgainToExit': '한 번 더 누르면 앱이 종료됩니다',
+    'main.networkOffline': '⚠️ 네트워크가 끊겼습니다. 플라자 등 온라인 기능을 사용할 수 없습니다',
+    'main.networkOnline': '✅ 네트워크가 복구되었습니다',
+    'main.sceneAutoSaved': '장면이 자동 저장되었습니다',
     'main.libraryRefreshed': '✅ 모델 라이브러리 새로고침 완료',
     'main.libraryRefreshFailed': '⚠️ 모델 라이브러리 새로고침 실패: ',
     'main.newFileDetected': '새 파일 감지됨',

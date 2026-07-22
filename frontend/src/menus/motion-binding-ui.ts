@@ -141,6 +141,9 @@ export function applyIntentToModel(id: string, intent: SceneMotionIntent, gen: n
         inst.mmdModel?.runtimeBones?.map((b) => b.name) ??
         inst.meshes[0]?.skeleton?.bones?.map((b) => b.name) ??
         [];
+    // [doc:adr-121 P4-2] 未传 vmdBoneNames → 退回标准 MMD 骨骼预筛（23 根中命中 ≥3 即通过）。
+    // 宽松匹配是有意为之：广播时 VMD 尚未加载，无法提取实际引用骨骼名；
+    // 且非标准模型（如简化骨骼）也应尽量获得动作，误判为 incompatible 的体验代价更高。
     const compat = resolveCompatibility(bones, intent);
     if (!compat.compatible) {
         slots.primary = { ...slots.primary, status: 'incompatible' };

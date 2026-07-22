@@ -212,8 +212,8 @@ export async function setARMode(enabled: boolean): Promise<boolean> {
     }
 }
 
-/** AR 合成截图（视频底 + 3D 层），供截图功能调用。 */
-export function takeARScreenshot(fmt: string, quality: number): string {
+/** AR 合成截图（视频底 + 3D 层），供截图功能调用。异步版（ADR-017 A2-04）。 */
+export function takeARScreenshot(fmt: string, quality: number): Promise<string> {
     return captureARScreenshot(fmt, quality);
 }
 

@@ -249,55 +249,103 @@ export function isARMirrored(): boolean {
 
 /**
  * 截取 AR 合成画面（视频底 + 3D 模型层）。
+ * 异步版：用 toBlob 替代 toDataURL，将 PNG/JPEG 编码移至后台线程，
+ * 避免低端 Android 机同步编码 OOM（ADR-017 A2-04）。
  * @param format 图片格式，默认 image/png
  * @param quality 质量 0~1，默认 0.9
  * @returns base64 字符串（不含 data:image/xxx;base64, 前缀）
  */
-export function captureARScreenshot(format: string = 'image/png', quality: number = 0.9): string {
-    const canvas = dom.canvas;
-    const video = _videoEl;
+export function captureARScreenshot(
+    format: string = 'image/png',
+    quality: number = 0.9
+): Promise<string> {
+    return _canvasToBase64(dom.canvas, format, quality).then((fallbackBase64) => {
+        if (!_active || !_videoEl) {
+            return fallbackBase64;
+        }
+        const video = _videoEl;
+        const out = document.createElement('canvas');
+        out.width = dom.canvas.width;
+        out.height = dom.canvas.height;
+        const ctx = out.getContext('2d');
+        if (!ctx) {
+            return fallbackBase64;
+        }
 
-    if (!_active || !video) {
-        return canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, '');
-    }
+        const vw = video.videoWidth || dom.canvas.width;
+        const vh = video.videoHeight || dom.canvas.height;
+        const cw = dom.canvas.width;
+        const ch = dom.canvas.height;
 
-    const out = document.createElement('canvas');
-    out.width = canvas.width;
-    out.height = canvas.height;
-    const ctx = out.getContext('2d');
-    if (!ctx) {
-        return canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, '');
-    }
+        const vRatio = vw / vh;
+        const cRatio = cw / ch;
 
-    const vw = video.videoWidth || canvas.width;
-    const vh = video.videoHeight || canvas.height;
-    const cw = canvas.width;
-    const ch = canvas.height;
+        let sx = 0,
+            sy = 0,
+            sw = vw,
+            sh = vh;
+        if (vRatio > cRatio) {
+            sw = vh * cRatio;
+            sx = (vw - sw) / 2;
+        } else {
+            sh = vw / cRatio;
+            sy = (vh - sh) / 2;
+        }
 
-    const vRatio = vw / vh;
-    const cRatio = cw / ch;
+        try {
+            ctx.drawImage(video, sx, sy, sw, sh, 0, 0, cw, ch);
+        } catch (e) {
+            logWarn('AR', 'drawImage video failed:', e);
+        }
 
-    let sx = 0,
-        sy = 0,
-        sw = vw,
-        sh = vh;
-    if (vRatio > cRatio) {
-        sw = vh * cRatio;
-        sx = (vw - sw) / 2;
-    } else {
-        sh = vw / cRatio;
-        sy = (vh - sh) / 2;
-    }
+        ctx.drawImage(dom.canvas, 0, 0, cw, ch);
+        return _canvasToBase64(out, format, quality);
+    });
+}
 
-    try {
-        ctx.drawImage(video, sx, sy, sw, sh, 0, 0, cw, ch);
-    } catch (e) {
-        logWarn('AR', 'drawImage video failed:', e);
-    }
-
-    ctx.drawImage(canvas, 0, 0, cw, ch);
-
-    return out.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, '');
+/**
+ * canvas → base64 异步编码（替代同步 toDataURL）。
+ * toBlob 将 PNG/JPEG 编码移至后台线程（Chrome Skia encoder），不阻塞主线程，
+ * 内存峰值显著低于 toDataURL（后者一次性生成完整 data URL 字符串）。
+ * 回退路径：toBlob 不可用或返回 null 时降级 toDataURL（受约束环境兼容）。
+ */
+function _canvasToBase64(
+    canvas: HTMLCanvasElement,
+    format: string,
+    quality: number
+): Promise<string> {
+    return new Promise((resolve) => {
+        canvas.toBlob(
+            (blob) => {
+                if (!blob) {
+                    // toBlob 返回 null（受约束环境或编码失败）→ 降级 toDataURL
+                    resolve(
+                        canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, '')
+                    );
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const result = reader.result;
+                    if (typeof result === 'string') {
+                        resolve(result.replace(/^data:image\/\w+;base64,/, ''));
+                    } else {
+                        resolve(
+                            canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, '')
+                        );
+                    }
+                };
+                reader.onerror = () => {
+                    resolve(
+                        canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, '')
+                    );
+                };
+                reader.readAsDataURL(blob);
+            },
+            format,
+            quality
+        );
+    });
 }
 
 // ======== Internal Helpers ========

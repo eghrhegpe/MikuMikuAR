@@ -80,11 +80,11 @@ let _arSuspended = false;
 /** Probe 创建失败标记：GPU 资源不足等场景下不再无限重试 */
 let _probeCreateFailed = false;
 
-/** hybrid 模式 Probe 强度衰减系数（避免与 SSR 叠加过亮） */
-const HYBRID_PROBE_FACTOR = 0.5;
-
 /** Probe 自动刷新的最低 FPS 守卫：帧率低于此值时跳过本次刷新，避免 cubemap 渲染造成帧 spike */
 const PROBE_REFRESH_MIN_FPS = 24;
+
+/** 上次 Probe renderList 重建时的场景网格数量（增量优化：仅数量变化时重建） */
+let _lastProbeMeshCount = 0;
 
 /**
  * 保存材质原始 reflectionTexture 的映射（material.uniqueId → 原始纹理）。
@@ -101,8 +101,19 @@ const _savedReflectionColors = new Map<number, Color3 | null>();
  */
 const _probeBoundMaterials = new Map<number, MaterialWithReflection>();
 
-/** Probe 当前强度（hybrid 模式下按 HYBRID_PROBE_FACTOR 衰减） */
+/** Probe 当前强度（hybrid 模式下按 _getHybridProbeFactor 衰减） */
 let _probeStrength = 1;
+
+/** Hybrid 模式下 Probe 强度衰减系数：按 reflectionQuality 分级，低画质更依赖 SSR */
+function _getHybridProbeFactor(state: EnvState): number {
+    const quality = state.reflectionQuality ?? 'high';
+    switch (quality) {
+        case 'low': return 0.3;
+        case 'medium': return 0.4;
+        case 'high': return 0.5;
+        default: return 0.5;
+    }
+}
 
 // ======== 模式推导 ========
 
@@ -236,6 +247,7 @@ function _createProbe(scene: Scene, resolution = 256): void {
                 m.name.includes('water')
         );
         _reflectionProbe.refreshRate = 0; // 静态环境，仅渲染一次
+        _lastProbeMeshCount = scene.meshes.length; // 记录初始网格数量
     } catch (err) {
         logWarn('env-reflection', 'ReflectionProbe 创建失败（本次会话不再重试）:', err);
         _reflectionProbe = null;
@@ -259,13 +271,18 @@ function _createProbe(scene: Scene, resolution = 256): void {
         }
         _lastProbeRefresh = now;
         try {
-            _reflectionProbe!.renderList = scene.meshes.filter(
-                (m) =>
-                    m.name.includes('sky') ||
-                    m.name.includes('env') ||
-                    m.name.includes('ground') ||
-                    m.name.includes('water')
-            );
+            // 增量优化：仅当场景网格数量变化时才重建 renderList，避免每 10 秒全量 filter
+            const currentMeshCount = scene.meshes.length;
+            if (currentMeshCount !== _lastProbeMeshCount) {
+                _lastProbeMeshCount = currentMeshCount;
+                _reflectionProbe!.renderList = scene.meshes.filter(
+                    (m) =>
+                        m.name.includes('sky') ||
+                        m.name.includes('env') ||
+                        m.name.includes('ground') ||
+                        m.name.includes('water')
+                );
+            }
             _reflectionProbe!.cubeTexture.render();
         } catch (err) {
             logWarn('env-reflection', 'ReflectionProbe 自动刷新失败:', err);
@@ -373,7 +390,8 @@ export function applyReflection(state: EnvState): void {
     // 模式未变化 → 仅更新参数（避免无谓重建）
     if (mode === _currentMode && mode !== 'none') {
         if ((mode === 'probe' || mode === 'hybrid') && _reflectionProbe) {
-            _updateProbeStrength(preset, mode);
+            const factor = mode === 'hybrid' ? _getHybridProbeFactor(state) : 1.0;
+            _updateProbeStrength(preset, factor);
         }
         // 同步更新 SSR 参数（仅在 SSR 当前激活时，尊重用户手动关闭）
         if ((mode === 'ssr' || mode === 'hybrid') && isSSRActive()) {
@@ -414,7 +432,7 @@ export function applyReflection(state: EnvState): void {
             break;
 
         case 'hybrid':
-            _enableHybrid(scene, preset);
+            _enableHybrid(scene, preset, state);
             break;
     }
 }
@@ -464,12 +482,12 @@ function _enableSSR(preset: ReflectionQualityPreset): void {
 
 /**
  * 启用 hybrid 模式：SSR + Probe 分层混合。
- * Probe 提供基础环境反射底色（强度减半），SSR 提供动态细节叠加。
+ * Probe 提供基础环境反射底色（强度按 reflectionQuality 分级衰减），SSR 提供动态细节叠加。
  */
-function _enableHybrid(scene: Scene, preset: ReflectionQualityPreset): void {
+function _enableHybrid(scene: Scene, preset: ReflectionQualityPreset, state: EnvState): void {
     // Probe 层：强度衰减避免与 SSR 叠加过亮
     const resolution = preset.probe?.resolution ?? 256;
-    _probeStrength = (preset.probe?.strength ?? 0.3) * HYBRID_PROBE_FACTOR;
+    _probeStrength = (preset.probe?.strength ?? 0.3) * _getHybridProbeFactor(state);
     _createProbe(scene, resolution);
     if (_reflectionProbe) {
         bindProbeToMeshes(scene.meshes);
@@ -487,9 +505,9 @@ function _enableHybrid(scene: Scene, preset: ReflectionQualityPreset): void {
 /**
  * 更新 Probe 强度（模式未变但参数变化时调用）。
  */
-function _updateProbeStrength(preset: ReflectionQualityPreset, mode: ResolvedReflectionMode): void {
+function _updateProbeStrength(preset: ReflectionQualityPreset, factor: number): void {
     const baseStrength = preset.probe?.strength ?? 0.5;
-    const newStrength = mode === 'hybrid' ? baseStrength * HYBRID_PROBE_FACTOR : baseStrength;
+    const newStrength = baseStrength * factor;
     if (Math.abs(newStrength - _probeStrength) < 0.01) {
         return;
     }
