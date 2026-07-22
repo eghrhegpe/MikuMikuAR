@@ -102,7 +102,7 @@ function _createIndicator(): Mesh {
     mat.emissiveColor = new Color3(1, 1, 1);
     mat.disableLighting = true;
     mesh.material = mat;
-    mesh.isPickable = false;
+    mesh.isPickable = true;
     return mesh;
 }
 

@@ -42,6 +42,15 @@ function withSaveOnly(_v: unknown): void {
     refreshMotionMenu();
 }
 
+function withActivateLight(_v: unknown): void {
+    activatePerception();
+    triggerAutoSave();
+}
+
+function withSaveOnlyLight(_v: unknown): void {
+    triggerAutoSave();
+}
+
 const gazeSchema: MenuNode[] = [
     // ── [doc:adr-164] 全员感知开关 ──
     {
@@ -147,7 +156,7 @@ const gazeSchema: MenuNode[] = [
                     min: 0,
                     max: 90,
                     step: 1,
-                    onChange: withActivate,
+                    onChange: withActivateLight,
                 },
             },
             {
@@ -159,7 +168,7 @@ const gazeSchema: MenuNode[] = [
                     min: 0,
                     max: 90,
                     step: 1,
-                    onChange: withActivate,
+                    onChange: withActivateLight,
                 },
             },
         ],
@@ -181,7 +190,7 @@ const gazeSchema: MenuNode[] = [
                     min: 0,
                     max: 15,
                     step: 0.5,
-                    onChange: withActivate,
+                    onChange: withActivateLight,
                 },
             },
             {
@@ -193,7 +202,7 @@ const gazeSchema: MenuNode[] = [
                     min: 0,
                     max: 15,
                     step: 0.5,
-                    onChange: withActivate,
+                    onChange: withActivateLight,
                 },
             },
             {
@@ -205,7 +214,7 @@ const gazeSchema: MenuNode[] = [
                     min: 0,
                     max: 1,
                     step: 0.05,
-                    onChange: withActivate,
+                    onChange: withActivateLight,
                 },
             },
         ],
@@ -227,7 +236,7 @@ const gazeSchema: MenuNode[] = [
                     min: 0.1,
                     max: 1.0,
                     step: 0.05,
-                    onChange: withActivate,
+                    onChange: withActivateLight,
                 },
             },
             {
@@ -240,7 +249,7 @@ const gazeSchema: MenuNode[] = [
                     min: 0,
                     max: 0.05,
                     step: 0.005,
-                    onChange: withActivate,
+                    onChange: withActivateLight,
                 },
             },
         ],
@@ -262,7 +271,7 @@ const gazeSchema: MenuNode[] = [
                     min: 0.05,
                     max: 0.5,
                     step: 0.05,
-                    onChange: withActivate,
+                    onChange: withActivateLight,
                 },
             },
             {
@@ -274,7 +283,7 @@ const gazeSchema: MenuNode[] = [
                     min: 0,
                     max: 1,
                     step: 0.05,
-                    onChange: withActivate,
+                    onChange: withActivateLight,
                 },
             },
         ],
@@ -334,7 +343,7 @@ const gazeSchema: MenuNode[] = [
                     min: 0.5,
                     max: 5.0,
                     step: 0.1,
-                    onChange: withActivate,
+                    onChange: withActivateLight,
                 },
             },
             {
@@ -347,7 +356,7 @@ const gazeSchema: MenuNode[] = [
                     min: 0,
                     max: 2.0,
                     step: 0.05,
-                    onChange: withActivate,
+                    onChange: withActivateLight,
                 },
             },
         ],
@@ -404,7 +413,7 @@ const gazeSchema: MenuNode[] = [
                     min: 0,
                     max: 1,
                     step: 0.01,
-                    onChange: withSaveOnly,
+                    onChange: withSaveOnlyLight,
                 },
             },
             {
@@ -416,7 +425,7 @@ const gazeSchema: MenuNode[] = [
                     min: 0,
                     max: 1,
                     step: 0.01,
-                    onChange: withSaveOnly,
+                    onChange: withSaveOnlyLight,
                 },
             },
             {

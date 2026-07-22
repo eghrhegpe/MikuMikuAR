@@ -37,7 +37,7 @@ import { buildGazeTrackingLevel } from './motion-gaze-levels';
 import { buildCameraLevel } from './motion-camera-levels';
 import { buildPoseStudioLevel } from './motion-pose-levels';
 import { t } from '../core/i18n/t';
-import { addSceneMotion, clearAllSceneMotions } from '../scene/motion/motion-intent';
+import { addSceneMotion, clearAllSceneMotions, replaceDefaultMotion } from '../scene/motion/motion-intent';
 import { logWarn } from '../core/logger';
 import { addDisposableListener } from '../core/dom';
 
@@ -164,9 +164,11 @@ function motionOnItemClick(row: PopupRow): void {
                 vmdLayers: [],
                 source: 'vmd',
             });
-            if (getMotionMenu()) {
-                getMotionMenu()?.pop();
-                getMotionMenu()?.reRender();
+            const menu = getMotionMenu();
+            if (menu) {
+                const root = menu.getLevel(0);
+                if (root) root.items = buildMotionRootItems();
+                menu.pop();
             }
             return;
         }
@@ -248,7 +250,25 @@ function motionOnItemClick(row: PopupRow): void {
                         vmdLayers: [],
                         source: 'vmd',
                     });
-                    getMotionMenu()?.reRender();
+                    const menu = getMotionMenu();
+                    if (menu) {
+                        const root = menu.getLevel(0);
+                        if (root) root.items = buildMotionRootItems();
+                    }
+                },
+                onVmdReplace: (path: string, name: string) => {
+                    const vmdName = name.replace(/\.vmd$/i, '');
+                    replaceDefaultMotion({
+                        vmdPath: path,
+                        vmdName,
+                        vmdLayers: [],
+                        source: 'vmd',
+                    });
+                    const menu = getMotionMenu();
+                    if (menu) {
+                        const root = menu.getLevel(0);
+                        if (root) root.items = buildMotionRootItems();
+                    }
                 },
             }
         );
@@ -274,11 +294,11 @@ function motionOnItemClick(row: PopupRow): void {
             setIsPlaying(false);
         }
         updatePlaybackUI();
-        getMotionMenu()?.reRender();
+        refreshMotionRoot();
         triggerAutoSave();
         setStatus(t('motion.motionCleared'), true);
         offerSceneUndoAndRefresh(t('motion.motionCleared'), snap, () => {
-            getMotionMenu()?.reRender();
+            refreshMotionRoot();
         });
         return;
     }
