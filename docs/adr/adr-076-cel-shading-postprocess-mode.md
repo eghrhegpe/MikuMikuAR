@@ -157,3 +157,19 @@ _applyRenderState(rest);
 - ADR 标题仍为「卡通化渲染后处理模式」（历史命名，保留可追溯性；实际效果以本修订记录为准）
 
 **遗留**：限制 #1（非真正色阶量化）仍存在。如未来需要真正的卡通着色效果，走方向 2（自定义 posterize + Sobel shader），届时可考虑新建 ADR-076B 而非修订本 ADR。
+
+### 2026-07-22 Rev 3：设计契合度完善（缺口 #1 + 命名分层 + anime 组合预设）
+
+**背景**：审查发现「卡通化 Cel-shading 后处理」与「渲染预设」两套状态机未打通，导致 3 处设计—使用场景不契合：
+1. **缺口 #1（预设不可忠实还原）**：`celShadingMode` 开启分支（`renderer.ts` `_applyRenderState`）无条件硬码 6 参（exposure 0.7 / contrast 1.4 / ACES / bloom 0.25 / fxaa），丢弃调用方已携带的同名字段。后果：用户保存的 cel 观感（含手动微调）被强制覆盖回 0.7，违反预设系统"保存当前观感→精确还原"契约。
+2. **命名重叠**：`celShadingMode` 开关已在 Rev 2 改名为"柔和调色"，但 `cartoon` FILTER_PRESET 仍标"卡通"，两者都暗示 cel-shading 而都不是，语义重叠无层次。
+3. **无一键 anime**：经典动漫观感 = 色块感 + 描边，需手动同时开 cel 开关 + cartoon 预设，无组合入口。
+
+**修订**：
+- **缺口 #1 修复**（`renderer.ts`：`_applyRenderState` cel-ON 分支）：改为 `s.exposure ?? 0.7` 等"尊重已提供字段、仅回填默认"，cel 预设现可忠实还原用户自定义参数。UI 开关（仅传 `celShadingMode:true`）行为不变，仍回填 0.7 默认值。
+- **命名分层**：`cartoon` 预设 5 语言文案改为"描边风 / Outline / アウトライン / 아웃라인"，与"柔和调色"形成 `柔和调色（cel 观感）` ⊂ `描边风（outline）` ⊂ `动漫（两者组合）` 的层级。
+- **新增 `anime` 组合预设**（`scene-render-presets.ts` `FILTER_PRESETS`）：`celShadingMode:true + outlineEnabled:true + ACES + exposure 0.7 + contrast 1.4 + bloom 0.3 + fxaa`，一键 anime 观感；同步 `FILTER_PRESET_LABELS` / `FILTER_PRESET_DESCS` 与 5 语言 locale。芯片 UI 由 `buildPresetsSchema` 自动遍历生成，无需额外改动。
+
+**不影响**：快照/恢复核心机制、序列化（key 不变）、`cartoon` 预设原有参数化能力、真 cel-shading（限制 #1）仍待方向 2。
+
+**验证**：`cd frontend && npm run build` + `npm run test` 通过；新增 anime 预设经 `transitionRenderState({...defaultRenderState(), ...anime})` 路径验证 cel 参数被忠实应用。
