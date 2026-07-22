@@ -799,11 +799,7 @@ export const en: Record<string, string> = {
     'scene.softShadow': 'Soft Shadow',
     'scene.resolution': 'Resolution',
     'scene.shadowBias': 'Shadow Bias',
-    // ADR-152: Volumetric light scattering
-    'scene.volumetric': 'Volumetric Light',
-    'scene.decay': 'Decay',
-    'scene.density': 'Density',
-    'scene.volumetricLimitReached': 'Volumetric light limit reached, please turn off others first',
+    // ADR-152: Stage light cone
     'scene.lightCone': 'Light Cone',
     'scene.coneIntensity': 'Intensity',
     'scene.coneLength': 'Cone Length',

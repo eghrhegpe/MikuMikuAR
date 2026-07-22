@@ -815,11 +815,7 @@ export const zhTW: Record<string, string> = {
     'scene.softShadow': '軟陰影',
     'scene.resolution': '解析度',
     'scene.shadowBias': '陰影偏移',
-    // ADR-152: 體積光
-    'scene.volumetric': '體積光',
-    'scene.decay': '衰減',
-    'scene.density': '密度',
-    'scene.volumetricLimitReached': '體積光數量已達上限，請先關閉其他燈光',
+    // ADR-152: 舞台燈光光錐
     'scene.lightCone': '光錐',
     'scene.coneIntensity': '亮度',
     'scene.coneLength': '錐長',

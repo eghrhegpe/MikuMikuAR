@@ -818,11 +818,7 @@ export const ko: Record<string, string> = {
     'scene.softShadow': '소프트 섀도',
     'scene.resolution': '해상도',
     'scene.shadowBias': '섀도 바이어스',
-    // ADR-152: 볼륨 라이트
-    'scene.volumetric': '볼륨 라이트',
-    'scene.decay': '감쇠',
-    'scene.density': '밀도',
-    'scene.volumetricLimitReached': '볼륨 라이트 한도에 도달했습니다. 다른 라이트를 먼저 꺼주세요',
+    // ADR-152: 스테이지 라이트 콘
     'scene.lightCone': '라이트 콘',
     'scene.coneIntensity': '밝기',
     'scene.coneLength': '콘 길이',

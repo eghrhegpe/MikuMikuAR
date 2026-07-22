@@ -796,11 +796,7 @@ export const zhCN: Record<string, string> = {
     'scene.softShadow': '软阴影',
     'scene.resolution': '分辨率',
     'scene.shadowBias': '阴影偏移',
-    // ADR-152: 体积光散射
-    'scene.volumetric': '体积光',
-    'scene.decay': '衰减',
-    'scene.density': '密度',
-    'scene.volumetricLimitReached': '体积光数量已达上限，请先关闭其他灯光',
+    // ADR-152: 舞台灯光光锥
     'scene.lightCone': '光锥',
     'scene.coneIntensity': '亮度',
     'scene.coneLength': '锥长',

@@ -819,12 +819,7 @@ export const ja: Record<string, string> = {
     'scene.softShadow': 'ソフトシャドウ',
     'scene.resolution': '解像度',
     'scene.shadowBias': 'シャドウバイアス',
-    // ADR-152: ボリュームライト
-    'scene.volumetric': 'ボリュームライト',
-    'scene.decay': '減衰',
-    'scene.density': '密度',
-    'scene.volumetricLimitReached':
-        'ボリュームライト数が上限に達しました。他のライトを先にオフにしてください',
+    // ADR-152: ステージライトコーン
     'scene.lightCone': 'ライトコーン',
     'scene.coneIntensity': '明るさ',
     'scene.coneLength': 'コーンの長さ',
