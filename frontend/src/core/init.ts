@@ -289,8 +289,12 @@ async function restoreUIState(): Promise<void> {
     document
         .querySelectorAll<HTMLElement>('.overlay')
         .forEach((el) => el.classList.toggle('blur-bg', !!s.blurBg));
+    // 首次启动（无持久化 performanceMode）时，移动端默认 balanced 降一档，
+    // 桌面端走 auto 自适应。已有持久化值的老用户不受影响。
     if (s.performanceMode) {
         setPerformanceMode(s.performanceMode);
+    } else if (isAndroidPlatform()) {
+        setPerformanceMode('balanced');
     }
     if (s.autoUpdateEnabled) {
         uiState.autoUpdateEnabled = s.autoUpdateEnabled;
