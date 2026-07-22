@@ -724,7 +724,8 @@ export function renderEmbed(site: PlazaSite): void {
             onRefresh: () => {
                 if (iframe.src) {
                     spinner.classList.remove('is-hidden');
-                    iframe.src = iframe.src;
+                    const currentSrc = iframe.src;
+                    iframe.src = currentSrc;
                 }
             },
             onClose: closePlaza,

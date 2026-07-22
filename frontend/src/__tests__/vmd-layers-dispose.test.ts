@@ -61,7 +61,7 @@ vi.mock('../core/utils', () => ({
     getBaseName: (p: string) => p.split('/').pop() || p,
     clamp01: (v: number) => Math.max(0, Math.min(1, v)),
     swallowError: vi.fn(),
-    debounce: (fn: Function) => fn,
+    debounce: (fn: (...args: unknown[]) => unknown) => fn,
 }));
 
 vi.mock('../core/logger', () => ({
