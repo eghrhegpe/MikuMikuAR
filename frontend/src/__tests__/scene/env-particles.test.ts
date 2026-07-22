@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { NullEngine } from '@babylonjs/core/Engines/nullEngine';
 import { Scene } from '@babylonjs/core/scene';
+import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
+import { PBRMaterial } from '@babylonjs/core/Materials/PBR/pbrMaterial';
 
 // 隔离 env-impl 重型依赖
 vi.mock('../../scene/env/env-impl', () => {
@@ -42,6 +44,7 @@ vi.mock('../../core/wind-utils', () => ({
 
 import { _envSys } from '../../scene/env/env-impl';
 import { envState } from '../../core/config';
+import { modelRegistry } from '../../core/scene-state';
 import {
     createParticleEmitter,
     disposeParticles,
@@ -49,6 +52,8 @@ import {
     updateParticleParams,
     updateParticleTexture,
     applyWindToParticles,
+    isWetnessActive,
+    applyWetnessToInst,
 } from '../../scene/env/env-particles';
 
 let engine: NullEngine;
@@ -233,6 +238,141 @@ describe('env-particles', () => {
                 direction2: { clone: () => ({ add: () => ({}) }) },
             } as any;
             expect(() => applyWindToParticles(ps)).not.toThrow();
+        });
+    });
+
+    describe('湿身效果（wetness effect）', () => {
+        /** 重置 _currentParticleType = 'none' + 清理湿身，防止跨测试污染 */
+        function _resetParticleState(): void {
+            createParticleEmitter('none', false);
+        }
+
+        beforeEach(() => {
+            _resetParticleState();
+            modelRegistry.set('testModel', {
+                id: 'testModel',
+                name: 'test',
+                filePath: 'test.pmx',
+                modelDir: '',
+                meshes: [
+                    { material: new PBRMaterial('pbr', scene) },
+                    { material: new StandardMaterial('std', scene) },
+                    { material: new StandardMaterial('dup', scene) },
+                ],
+                rootMesh: { material: null } as any,
+                vmdData: null,
+                vmdName: '',
+                vmdPath: null,
+                animationDuration: 0,
+                vmdLayers: [],
+                kind: 'pmx' as any,
+                visible: true,
+                opacity: 1,
+                wireframe: false,
+                showBoneLines: false,
+                showBoneJoints: false,
+                physicsEnabled: false,
+                scaling: 1,
+                rotationY: 0,
+                rotation: [0, 0, 0],
+            } as any);
+        });
+
+        afterEach(() => {
+            modelRegistry.clear();
+        });
+
+        it('不在雨天时不激活', () => {
+            expect(isWetnessActive()).toBe(false);
+            createParticleEmitter('sakura', false);
+            expect(isWetnessActive()).toBe(false);
+        });
+
+        it('创建 rain 粒子时激活湿身', () => {
+            const pbr = modelRegistry.get('testModel')!.meshes[0].material as PBRMaterial;
+            pbr.roughness = 0.8;
+
+            createParticleEmitter('rain', false);
+
+            expect(isWetnessActive()).toBe(true);
+            expect(pbr.roughness).toBeCloseTo(0.4); // 0.8 * 0.5
+        });
+
+        it('PBRMaterial roughness 减半且不低于 0.1', () => {
+            const pbr = modelRegistry.get('testModel')!.meshes[0].material as PBRMaterial;
+            pbr.roughness = 0.05;
+
+            createParticleEmitter('rain', false);
+
+            expect(pbr.roughness).toBeCloseTo(0.1);
+        });
+
+        it('StandardMaterial specularPower 加倍', () => {
+            const std = modelRegistry.get('testModel')!.meshes[1].material as StandardMaterial;
+            std.specularPower = 30;
+            std.specularColor.set(0.4, 0.4, 0.4);
+
+            createParticleEmitter('rain', false);
+
+            expect(std.specularPower).toBe(60);
+            expect(std.specularColor.r).toBeCloseTo(0.52);
+            expect(std.diffuseColor.r).toBeCloseTo(0.85);
+        });
+
+        it('dispose 后恢复所有材质原始值', () => {
+            const pbr = modelRegistry.get('testModel')!.meshes[0].material as PBRMaterial;
+            pbr.roughness = 0.6;
+            const std = modelRegistry.get('testModel')!.meshes[1].material as StandardMaterial;
+            std.specularPower = 20;
+            std.specularColor.set(0.5, 0.5, 0.5);
+            const origRoughness = pbr.roughness;
+            const origSpecPower = std.specularPower;
+            const origSpecR = std.specularColor.r;
+
+            createParticleEmitter('rain', false);
+            disposeParticles();
+
+            expect(isWetnessActive()).toBe(false);
+            expect(pbr.roughness).toBe(origRoughness);
+            expect(std.specularPower).toBe(origSpecPower);
+            expect(std.specularColor.r).toBe(origSpecR);
+        });
+
+        it('applyWetnessToInst 对后加载模型生效', () => {
+            createParticleEmitter('rain', false);
+            expect(isWetnessActive()).toBe(true);
+
+            const newStd = new StandardMaterial('newStd', scene);
+            newStd.specularPower = 40;
+            newStd.specularColor.set(1, 1, 1);
+            const lateInst = {
+                id: 'lateModel',
+                meshes: [{ material: newStd }],
+            } as any;
+
+            applyWetnessToInst(lateInst);
+
+            expect(newStd.specularPower).toBe(80);
+            expect(newStd.diffuseColor.r).toBeCloseTo(0.85);
+        });
+
+        it('共享材质去重：同一材质只处理一次', () => {
+            const sharedMat = new PBRMaterial('shared', scene);
+            sharedMat.roughness = 0.8;
+            modelRegistry.set('modelA', {
+                id: 'modelA',
+                meshes: [{ material: sharedMat }, { material: sharedMat }],
+            } as any);
+            modelRegistry.set('modelB', {
+                id: 'modelB',
+                meshes: [{ material: sharedMat }],
+            } as any);
+
+            createParticleEmitter('rain', false);
+
+            expect(sharedMat.roughness).toBeCloseTo(0.4);
+            disposeParticles();
+            expect(sharedMat.roughness).toBeCloseTo(0.8);
         });
     });
 });

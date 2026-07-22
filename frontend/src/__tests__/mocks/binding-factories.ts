@@ -163,6 +163,7 @@ export function createMockEnvState(overrides?: Partial<EnvState>): EnvState {
         particleSpeed: 1,
         particleSplash: false,
         particleCustomTexture: '',
+        particleQuality: 'high',
         waterEnabled: false,
         waterLevel: 0,
         waterFlip: false,

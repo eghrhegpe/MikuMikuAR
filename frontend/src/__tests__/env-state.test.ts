@@ -63,6 +63,7 @@ const defaultEnv: EnvState = {
     particleSpeed: 1,
     particleSplash: false,
     particleCustomTexture: '',
+    particleQuality: 'high',
     groundLevel: 0,
     groundSize: 60,
     groundEdgeFade: 0,
