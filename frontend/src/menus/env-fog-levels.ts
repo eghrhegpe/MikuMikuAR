@@ -18,9 +18,9 @@ export function buildFogLevel(): PopupLevel {
                 control: {
                     bind: 'env.fogMode',
                     options: [
-                        { value: 'exp2', label: 'EXP2' },
-                        { value: 'exp', label: 'EXP' },
-                        { value: 'linear', label: 'env.linear' },
+                        { value: 'exp2', label: t('env.exp2') },
+                        { value: 'exp', label: t('env.exp') },
+                        { value: 'linear', label: t('env.linear') },
                     ],
                 },
                 icon: 'lucide:layers',
