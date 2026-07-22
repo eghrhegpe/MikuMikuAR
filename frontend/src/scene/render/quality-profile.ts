@@ -18,9 +18,17 @@ const CLOUD_QUALITY: Record<QualityProfile, 'standard' | 'high'> = {
     low: 'standard',
 };
 
+/** 粒子质量映射：profile → particleQuality */
+const PARTICLE_QUALITY: Record<QualityProfile, 'high' | 'medium' | 'low'> = {
+    high: 'high',
+    medium: 'medium',
+    low: 'low',
+};
+
 export interface QualityProfileSettings {
     reflectionQuality: 'high' | 'medium' | 'low' | 'off';
     cloudQuality: 'standard' | 'high';
+    particleQuality: 'high' | 'medium' | 'low';
 }
 
 /**
@@ -31,6 +39,7 @@ export function resolveQualityProfile(profile: QualityProfile): QualityProfileSe
     return {
         reflectionQuality: REFLECTION_QUALITY[profile],
         cloudQuality: CLOUD_QUALITY[profile],
+        particleQuality: PARTICLE_QUALITY[profile],
     };
 }
 
@@ -41,13 +50,16 @@ export function resolveQualityProfile(profile: QualityProfile): QualityProfileSe
  */
 export function inferQualityProfile(
     reflectionQuality: string,
-    _groundReflectionQuality: string,
-    cloudQuality: string
+    cloudQuality: string,
+    particleQuality: string
 ): QualityProfile {
-    // 逐档检查：从低到高，全匹配才返回
     const profiles: QualityProfile[] = ['low', 'medium', 'high'];
     for (const p of profiles) {
-        if (REFLECTION_QUALITY[p] === reflectionQuality && CLOUD_QUALITY[p] === cloudQuality) {
+        if (
+            REFLECTION_QUALITY[p] === reflectionQuality &&
+            CLOUD_QUALITY[p] === cloudQuality &&
+            PARTICLE_QUALITY[p] === particleQuality
+        ) {
             return p;
         }
     }

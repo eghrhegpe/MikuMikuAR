@@ -150,6 +150,12 @@ export const ENV_STATE_SCHEMA = {
     particleSpeed: { type: 'number', default: 1, group: 'particle' },
     particleSplash: { type: 'boolean', default: false, group: 'particle' },
     particleCustomTexture: { type: 'string', default: '', group: 'particle' },
+    particleQuality: {
+        type: 'enum',
+        values: ['high', 'medium', 'low'] as const,
+        default: 'high' as const,
+        group: 'particle',
+    },
 
     // --- Water ---
     waterEnabled: { type: 'boolean', default: false, group: 'water' },
@@ -185,7 +191,7 @@ export const ENV_STATE_SCHEMA = {
         type: 'enum',
         values: ['high', 'medium', 'low'] as const,
         default: 'high' as const,
-        group: 'water',
+        group: ['water', 'cloud', 'particle', 'reflection'],
     },
 
     // --- Water shader ---

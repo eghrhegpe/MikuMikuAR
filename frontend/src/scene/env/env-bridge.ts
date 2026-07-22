@@ -38,6 +38,7 @@ import {
 import type { LightState } from '../render/lighting';
 import { applyLightingPresetFromEnv } from '../render/lighting';
 import { setContactShadow } from '../render/renderer';
+import { resolveQualityProfile, type QualityProfile } from '../render/quality-profile';
 import { scene } from '../scene';
 import { setKey } from '@/core/utils';
 import { isAutoDegradingReflection, registerSetEnvState } from '../render/performance-env-bridge';
@@ -588,6 +589,16 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
     // 从旧 envSunAngle 递增覆盖用户设置，且滑块 getEnvSunAngle() 显示旧值。
     if (migrated.sunAngle !== undefined) {
         envSunAngle = migrated.sunAngle;
+    }
+
+    // ADR-130: qualityProfile 变化时同步各子字段
+    // 确保手动 UI 更改 qualityProfile 后 reflection/cloud/particle 子系统同步更新
+    if (migrated.qualityProfile !== undefined) {
+        const resolved = resolveQualityProfile(migrated.qualityProfile as QualityProfile);
+        envState.reflectionQuality = resolved.reflectionQuality;
+        envState.cloudQuality = resolved.cloudQuality;
+        envState.particleQuality = resolved.particleQuality;
+        Object.assign(migrated, resolved);
     }
 
     _applyEnvStateFacade(envState, migrated);
