@@ -339,6 +339,14 @@ export function GetStorageMode(): $CancellablePromise<string> {
 }
 
 /**
+ * GetSystemA11ySettings 返回当前系统无障碍设置。
+ * 前端在启动时调用，并在收到 system_a11y 事件时重新查询。
+ */
+export function GetSystemA11ySettings(): $CancellablePromise<$models.SystemA11ySettings> {
+    return $Call.ByID(2947408569);
+}
+
+/**
  * GetTagsByModel returns the tags for a specific model.
  */
 export function GetTagsByModel(libraryRef: string): $CancellablePromise<string[] | null> {
@@ -793,13 +801,6 @@ export function SelectExeFile(): $CancellablePromise<string> {
 }
 
 /**
- * SelectRetargetFile opens a file dialog to select an external animation file (FBX/GLB/GLTF) for retargeting.
- */
-export function SelectRetargetFile(): $CancellablePromise<string> {
-    return $Call.ByID(432308705);
-}
-
-/**
  * SelectImportFile opens a file dialog to select PMX / ZIP / VMD files.
  */
 export function SelectImportFile(): $CancellablePromise<string> {
@@ -839,6 +840,13 @@ export function SelectPresetOpenFile(): $CancellablePromise<string> {
  */
 export function SelectPresetSaveFile(): $CancellablePromise<string> {
     return $Call.ByID(986190763);
+}
+
+/**
+ * SelectRetargetFile opens a file dialog to select an external animation file (FBX/GLB/GLTF) for retargeting.
+ */
+export function SelectRetargetFile(): $CancellablePromise<string> {
+    return $Call.ByID(432308705);
 }
 
 /**

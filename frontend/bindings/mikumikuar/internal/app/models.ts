@@ -555,6 +555,14 @@ export interface SoftwareEntry {
 }
 
 /**
+ * SystemA11ySettings 系统无障碍设置
+ */
+export interface SystemA11ySettings {
+    "isDarkMode": boolean;
+    "isHighContrast": boolean;
+}
+
+/**
  * UIState stores user-customizable UI preferences.
  */
 export interface UIState {
