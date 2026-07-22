@@ -19,7 +19,7 @@ import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import type { ModelManager } from '../manager/model-manager';
 import type { BeatDetector } from '@/motion-algos/beat-detector';
 import { clamp01 } from '@/core/utils';
-import { observe, type ObserverHandle } from '@/core/observer-handle';
+import { observe } from '@/core/observer-handle';
 
 // ======== 辅助函数 ========
 

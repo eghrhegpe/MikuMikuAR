@@ -165,6 +165,6 @@ export function _applyPerceptionForContext(
         }
     } finally {
         // [doc:adr-164 P2] 恢复全局池为 null（避免遗留指向已切换 context 的引用）
-        _setContextPool(null as any);
+        _setContextPool(null);
     }
 }

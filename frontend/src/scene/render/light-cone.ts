@@ -189,7 +189,7 @@ export function createLightCone(
 export function updateLightConeTransform(
     entry: LightConeEntry,
     light: SpotLight,
-    coneLength: number
+    _coneLength: number
 ): void {
     _applyTransform(entry.mesh, light);
     // 复用模块级对象，避免每帧 clone 产生 GC 压力

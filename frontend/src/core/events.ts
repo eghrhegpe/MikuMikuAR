@@ -34,6 +34,7 @@ const _eventDisposables: { dispose(): void }[] = [];
 function _reg(
     target: EventTarget,
     event: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     handler: (evt: any) => void,
     options?: AddEventListenerOptions
 ): void {

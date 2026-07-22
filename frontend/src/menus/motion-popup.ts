@@ -48,10 +48,7 @@ import {
     buildActionBindingLevel,
     handleModelAction,
 } from './motion-binding-ui';
-import {
-    buildMotionDetailLevel,
-    buildPlaybackSpeedLevel,
-} from './motion-detail-ui';
+import { buildMotionDetailLevel, buildPlaybackSpeedLevel } from './motion-detail-ui';
 import {
     buildMotionRootLevel,
     buildMotionRootItems,

@@ -6,7 +6,6 @@
 // 各功能实现见 perception-*.ts 子模块。
 // [doc:adr-162] Phase 1: 单例 → Map<modelId, PerceptionContext>
 
-import type { Scene } from '@babylonjs/core/scene';
 import { getMotionPipeline } from './motion-pipeline';
 
 import { modelManager, focusedModelId, triggerAutoSave } from '../scene';
@@ -21,7 +20,6 @@ import {
     type PerceptionContext,
     type BalanceSwayState,
     type PerceptionTier,
-    type GazeCache,
     DEFAULT_PERCEPTION_STATE,
     _writeMatToBuffer,
     _propagateChildrenWasm,

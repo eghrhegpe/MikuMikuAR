@@ -1111,7 +1111,7 @@ export function setCameraState(s: CameraState): void {
         const loaded = deepClone(s.preset) as CameraPreset;
         // 旧存档迁移：concert 曾是「整圈自转」形态（带 speed 字段、无 sweepAngle），
         // 现重定向为 surround（环绕/转台），concert 归位为「粉丝机位」。
-        const oldConcert = loaded.concert as Record<string, any> | undefined;
+        const oldConcert = loaded.concert as unknown as Record<string, unknown> | undefined;
         if (oldConcert && 'speed' in oldConcert && !('sweepAngle' in oldConcert)) {
             loaded.surround = {
                 radius: (oldConcert.radius ?? def.surround.radius) as number,

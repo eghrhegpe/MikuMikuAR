@@ -155,7 +155,7 @@ export function attachPersonalLight(
     _ensurePersonalCone(modelId);
 }
 
-function _createPersonalLightIndicator(settings: PersonalLightSettings): Mesh {
+function _createPersonalLightIndicator(_settings: PersonalLightSettings): Mesh {
     const mesh = MeshBuilder.CreateSphere(
         'personalLightIndicator',
         { diameter: 0.4, segments: 8 },

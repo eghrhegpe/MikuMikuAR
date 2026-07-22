@@ -331,7 +331,7 @@ function loadSkyCube(path: string, rotationY: number, intensity: number): void {
         false,
         null,
         null,
-        (message?: string, exception?: any) => {
+        (message?: string, exception?: unknown) => {
             logWarn('sky', `loadSkyCube failed: ${message}`, exception);
             disposeSky();
             createProceduralSky(envState);

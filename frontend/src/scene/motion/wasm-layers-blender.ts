@@ -16,7 +16,11 @@ import { Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Matrix } from '@babylonjs/core/Maths/math';
 import { _isWasmRuntime, _writeMatToBuffer, _propagateChildrenWasm } from './perception';
 import type { MmdRuntimeBoneExtended } from '@/core/types';
-import { createVmdEvaluator, type VmdEvaluator } from '@/motion-algos/vmd-evaluator';
+import {
+    createVmdEvaluator,
+    type VmdEvaluator,
+    type VmdBoneFrame,
+} from '@/motion-algos/vmd-evaluator';
 import { DEFAULT_LAYER_BONE_FILTER } from './wasm-layers-config';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 import { clamp01 } from '@/core/utils';
@@ -216,7 +220,7 @@ function _applyLayersBlending(modelId: string): void {
 
     const frame = state.animationFrame;
 
-    const allFrames = new Map<string, Array<{ frame: any; weight: number }>>();
+    const allFrames = new Map<string, Array<{ frame: VmdBoneFrame; weight: number }>>();
 
     for (const [, layer] of state.layers) {
         const frameMap = layer.evaluator.evalAllBones(frame);

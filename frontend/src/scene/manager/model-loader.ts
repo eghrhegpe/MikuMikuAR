@@ -4,6 +4,7 @@
 
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { ImportMeshAsync } from '@babylonjs/core/Loading/sceneLoader';
+import type { ISceneLoaderAsyncResult } from '@babylonjs/core/Loading/sceneLoader';
 import { MmdStandardMaterialProxy } from 'babylon-mmd/esm/Runtime/mmdStandardMaterialProxy';
 import { renderInstanceThumbnail } from './thumbnail-capture';
 import { thumbnailBaseKey } from './thumbnail-key';
@@ -41,6 +42,13 @@ import { _capture } from './material';
 import { rebuildShadowCasters } from '../render/lighting';
 import { getGroundHeightAt, setOnTerrainReady, setOnGroundChanged } from '../env/env-impl';
 import { setTransformMetadata } from '../transform/transform-pick';
+
+/** babylon-mmd 扩展 ImportMeshAsync 接受 Uint8Array，原类型签名不支持，需手动断言 */
+const importMeshFromBytes = ImportMeshAsync as unknown as (
+    data: Uint8Array,
+    scene: unknown,
+    options: Record<string, unknown>
+) => Promise<ISceneLoaderAsyncResult>;
 
 // ======== Loader Dependencies ========
 
@@ -321,7 +329,7 @@ export async function loadPMXFile(
         if (!pmxBytes || effectiveSignal.aborted) {
             return null;
         }
-        const result = await (ImportMeshAsync as any)(pmxBytes, _scene, {
+        const result = await importMeshFromBytes(pmxBytes, _scene, {
             pluginExtension: '.pmx',
             pluginOptions: {
                 mmdmodel: {

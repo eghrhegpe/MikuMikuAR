@@ -58,7 +58,7 @@ export async function loadVMDMotion(
     name: string,
     targetModelId?: string,
     signal?: AbortSignal,
-    vmdPath?: string
+    _vmdPath?: string
 ): Promise<void> {
     if (signal?.aborted) {
         throw new DOMException('Aborted', 'AbortError');
@@ -324,7 +324,7 @@ async function _tryLoadCompanionAudio(
     }
 }
 
-export async function loadCameraVmdFromPath(path: string, signal?: AbortSignal): Promise<void> {
+export async function loadCameraVmdFromPath(path: string, _signal?: AbortSignal): Promise<void> {
     const { scene } = await getScene();
     await withLoadingIndicator('scene.loader.cameraVmdLoading', async () => {
         try {
@@ -351,7 +351,7 @@ export async function loadCameraVmdFromPath(path: string, signal?: AbortSignal):
 export async function loadVPDPose(
     path: string,
     targetModelId?: string,
-    signal?: AbortSignal
+    _signal?: AbortSignal
 ): Promise<void> {
     const { focusedModel, stopProcMotion, isProcVmdActive } = await getScene();
     await withLoadingIndicator('scene.loader.vpdLoading', async () => {

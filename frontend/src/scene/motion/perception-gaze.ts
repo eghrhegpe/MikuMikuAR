@@ -35,16 +35,16 @@ import { _applyHeadGazeWasm, _applyEyeGazeWasm } from './perception-gaze-wasm';
 import { _applyHeadGazeJS, _applyEyeGazeJS } from './perception-gaze-js';
 
 // ── 眼球追踪平滑系数（默认值，实际从 perception-shared 动态读取） ──
-const DEFAULT_EYE_SMOOTH = 0.35;
+const _DEFAULT_EYE_SMOOTH = 0.35;
 
 // ── AR 模式视线距离（米） ──
 const AR_GAZE_DISTANCE = 1.5;
 
 // ── 头部/眼球跟随角度限位（默认值，实际从 perception-shared 动态读取） ──
-const DEFAULT_HEAD_GAZE_MAX_YAW = (75 * Math.PI) / 180;
-const DEFAULT_HEAD_GAZE_MAX_PITCH = (35 * Math.PI) / 180;
-const DEFAULT_EYE_GAZE_MAX_YAW = (9 * Math.PI) / 180;
-const DEFAULT_EYE_GAZE_MAX_PITCH = (8 * Math.PI) / 180;
+const _DEFAULT_HEAD_GAZE_MAX_YAW = (75 * Math.PI) / 180;
+const _DEFAULT_HEAD_GAZE_MAX_PITCH = (35 * Math.PI) / 180;
+const _DEFAULT_EYE_GAZE_MAX_YAW = (9 * Math.PI) / 180;
+const _DEFAULT_EYE_GAZE_MAX_PITCH = (8 * Math.PI) / 180;
 
 /**
  * 将"转向相机的目标世界旋转"钳制在相对父骨骼坐标系的 yaw/pitch 锥形内。

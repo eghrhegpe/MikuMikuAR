@@ -65,7 +65,6 @@ import {
     mmdRuntime,
     modelRegistry,
     setModelRegistry,
-    propRegistry,
     envState,
     uiState,
     triggerAutoSave,
