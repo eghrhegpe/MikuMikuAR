@@ -21,6 +21,7 @@ import {
     removeStageLight,
     getActiveStageLightId,
     setActiveStageLightId,
+    type StageLightState,
 } from '../scene/scene';
 import { buildTransformCard } from './resource-detail-helpers';
 import { LIGHTING_PRESETS, PRESET_NAMES } from '../scene/render/lighting-presets';
@@ -31,10 +32,10 @@ import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 
 /** 提取「获取当前活跃灯光 + 读取属性」的公共 bind 工厂，消除 21 处重复 */
-function _activeLightBind(key: string, fallback: unknown = undefined): () => unknown {
+function _activeLightBind<T>(key: keyof StageLightState, fallback: T): () => T {
     return () => {
         const s = getStageLights().find((l) => l.id === getActiveStageLightId()) ?? getStageLights()[0];
-        return (s as Record<string, unknown> | undefined)?.[key] ?? fallback;
+        return (s ? (s[key] as T) : undefined) ?? fallback;
     };
 }
 
@@ -207,7 +208,7 @@ function buildStageLightSchema(): MenuNode[] {
                                     getSceneMenu()?.updateControls();
                                 },
                                 {
-                                    bind: _activeLightBind('color', [1, 1, 1]),
+                                    bind: _activeLightBind<[number, number, number]>('color', [1, 1, 1]),
                                 }
                             );
                         },
