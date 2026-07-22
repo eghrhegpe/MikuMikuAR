@@ -71,6 +71,12 @@ export const ja: Record<string, string> = {
     'settings.library.patternPlaceholder': '正規表現、例: スカート',
     'settings.library.categoryLabel': 'カテゴリ',
     'settings.library.categoryPlaceholder': '肌/髪/目/衣装/アクセサリー/小道具',
+    'settings.library.matCat.skin': '肌',
+    'settings.library.matCat.hair': '髪',
+    'settings.library.matCat.eyes': '目',
+    'settings.library.matCat.clothing': '衣装',
+    'settings.library.matCat.accessory': 'アクセサリー',
+    'settings.library.matCat.prop': '小道具',
     'settings.paths.modelCount': 'モデル数: ',
     'settings.saveFailed': '保存に失敗しました',
 
@@ -103,6 +109,7 @@ export const ja: Record<string, string> = {
     // ===== 設定 - ハードコード状態 =====
     'settings.invalidRegex': '✗ 無効な正規表現',
     'settings.invalidCategory': '✗ 無効なカテゴリ名',
+    'settings.error': '✗ {message}',
     'settings.watchDirFailed': '✗ 監視ディレクトリの設定に失敗',
     'settings.watchStopped': '✓ 監視を停止しました',
     'settings.invalidHex': '✗ 無効なHEXカラー',
@@ -1479,6 +1486,7 @@ export const ja: Record<string, string> = {
     'settings.audio.repeatOne': '1曲リピート',
     'settings.audio.repeatAll': '全曲リピート',
     'settings.audio.repeatShuffle': 'シャッフル',
+    'settings.audio.repeatModeSet': '✓ ループモード: {mode}',
     'settings.companionOn': '✓ 伴奏自動ロードをオン',
     'settings.companionOff': '✓ 伴奏自動ロードをオフ',
     'settings.sfx.title': '効果音',

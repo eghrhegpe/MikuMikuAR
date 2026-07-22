@@ -71,6 +71,12 @@ export const ko: Record<string, string> = {
     'settings.library.patternPlaceholder': '정규식, 예: 스커트',
     'settings.library.categoryLabel': '분류',
     'settings.library.categoryPlaceholder': '피부/머리/눈/의상/액세서리/소품',
+    'settings.library.matCat.skin': '피부',
+    'settings.library.matCat.hair': '머리',
+    'settings.library.matCat.eyes': '눈',
+    'settings.library.matCat.clothing': '의상',
+    'settings.library.matCat.accessory': '액세서리',
+    'settings.library.matCat.prop': '소품',
     'settings.paths.modelCount': '모델 수: ',
     'settings.saveFailed': '저장 실패',
 
@@ -103,6 +109,7 @@ export const ko: Record<string, string> = {
     // ===== 설정 - 하드코딩 상태 =====
     'settings.invalidRegex': '✗ 잘못된 정규식',
     'settings.invalidCategory': '✗ 잘못된 카테고리 이름',
+    'settings.error': '✗ {message}',
     'settings.watchDirFailed': '✗ 감시 디렉터리 설정 실패',
     'settings.watchStopped': '✓ 감시 중지됨',
     'settings.invalidHex': '✗ 잘못된 HEX 색상',
@@ -1474,6 +1481,7 @@ export const ko: Record<string, string> = {
     'settings.audio.repeatOne': '한 곡 반복',
     'settings.audio.repeatAll': '전체 반복',
     'settings.audio.repeatShuffle': '셔플',
+    'settings.audio.repeatModeSet': '✓ 반복 모드: {mode}',
     'settings.companionOn': '✓ 반주 자동 로드 켜짐',
     'settings.companionOff': '✓ 반주 자동 로드 꺼짐',
     'settings.sfx.title': '효과음',

@@ -14,6 +14,7 @@ const _activeToasts: Array<{
     el: HTMLElement;
     timer: ReturnType<typeof setTimeout>;
     fadeTimer: ReturnType<typeof setTimeout> | null;
+    variant: ToastVariant;
 }> = [];
 
 function getToastContainer(): HTMLElement {
@@ -50,6 +51,21 @@ function removeToast(id: number): void {
         entry.el.remove();
     }
     _activeToasts.splice(idx, 1);
+    _syncToastAriaLive();
+}
+
+/** 根据剩余 toast 中是否有 error 来切换容器 aria-live */
+function _syncToastAriaLive(): void {
+    const container = document.getElementById('mmk-toast-container');
+    if (!container) return;
+    const hasError = _activeToasts.some((t) => t.variant === 'error');
+    if (hasError) {
+        container.setAttribute('role', 'alert');
+        container.setAttribute('aria-live', 'assertive');
+    } else {
+        container.setAttribute('role', 'status');
+        container.setAttribute('aria-live', 'polite');
+    }
 }
 
 function fadeAndRemoveToast(id: number, el: HTMLElement, fadeDuration = 300): void {
@@ -183,13 +199,20 @@ export function showToast(
     const id = ++_toastIdCounter;
     const el = buildToastElement(title, detail, actions, id, variant);
     const container = getToastContainer();
+
+    // ADR-153: 错误 toast 用 assertive 打断屏幕阅读器
+    if (variant === 'error') {
+        container.setAttribute('role', 'alert');
+        container.setAttribute('aria-live', 'assertive');
+    }
+
     container.appendChild(el);
 
     const timer = setTimeout(() => {
         fadeAndRemoveToast(id, el);
     }, duration);
 
-    _activeToasts.push({ id, el, timer, fadeTimer: null });
+    _activeToasts.push({ id, el, timer, fadeTimer: null, variant });
 }
 
 export function showErrorToast(
