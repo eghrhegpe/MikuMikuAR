@@ -160,7 +160,7 @@ export interface EnvState {
     "groundVisible": boolean;
     "groundType": string;
     "groundStyle": string;
-    "groundDecoStyle": string;
+    "groundOverlay": string;
     "groundColor": number[];
     "groundAlpha": number;
     "groundTexture": string;

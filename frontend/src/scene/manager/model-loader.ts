@@ -149,6 +149,10 @@ export async function captureThumbnail(
         if (!targetInst || !targetInst.rootMesh) {
             return;
         }
+        // [fix] setTimeout 闭包捕获的 inst 可能在调度前已被卸载（_modelManager.remove dispose 了 meshes）
+        if (targetInst.rootMesh.isDisposed()) {
+            return;
+        }
 
         // 立即冻结物理（render 前的任何异步间隙都无法推进）
         const mmdModel = targetInst.mmdModel;
@@ -252,6 +256,20 @@ async function collectTextureFiles(modelDir: string): Promise<TextureFile[]> {
     } catch (err) {
         logWarn('model-loader', 'texture scan failed, falling back to HTTP:', err);
     }
+    // basename fallback: 为带目录前缀的贴图注册裸文件名副本，
+    // 这样 PMX 引用 "face.png" 也能匹配到 "tex/face.png"
+    const hasBasename = new Set<string>();
+    const fallbacks: TextureFile[] = [];
+    for (const tf of files) {
+        const rel = tf.relativePath.replace(/\\/g, '/');
+        const base = rel.split('/').pop() ?? rel;
+        if (base === rel || hasBasename.has(base)) {
+            continue;
+        }
+        hasBasename.add(base);
+        fallbacks.push({ ...tf, relativePath: base });
+    }
+    files.push(...fallbacks);
     return files;
 }
 
@@ -484,13 +502,14 @@ export async function loadPMXFile(
             }
         }
         if (effectiveSignal.aborted) {
-            // 清理已注册的模型和 wasm 资源，避免泄漏
+            // 清理已注册的模型，避免泄漏。
+            // _modelManager.remove() 内 onRemoveModel 回调（scene.ts:375-394）
+            // 已调用 destroyMmdModel，此处不再重复销毁 wasmModel。
             try {
                 _modelManager.remove(registeredId);
             } catch (e) {
                 logWarn('model-loader', 'Cleanup after abort:', e);
             }
-            _mmdRuntime.destroyMmdModel(wasmModel);
             return null;
         }
         // 贴地：把模型根节点放到当前地面高度（heightmap 模式=真实起伏，其他模式=groundLevel）。
@@ -522,11 +541,6 @@ export async function loadPMXFile(
             }
         }
         setFocusedModelId(id);
-
-        // 加载完成后自动激活默认视线追踪（眼球 + 头部），使配置立即生效
-        if (_onModelLoaded) {
-            swallowError(Promise.resolve(_onModelLoaded(id)));
-        }
 
         // 道具路径下的模型同时注册到 propRegistry（兼容灯光/阴影/序列化）
         const propDir = (
@@ -617,14 +631,21 @@ export async function loadPMXFile(
             }
         }
         if (effectiveSignal.aborted) {
-            // 清理已注册的模型和 wasm 资源，避免泄漏
+            // 清理已注册的模型，避免泄漏。
+            // _modelManager.remove() 内 onRemoveModel 回调（scene.ts:375-394）
+            // 已调用 destroyMmdModel，此处不再重复销毁 wasmModel。
             try {
                 _modelManager.remove(registeredId);
             } catch (e) {
                 logWarn('model-loader', 'Cleanup after abort:', e);
             }
-            _mmdRuntime.destroyMmdModel(wasmModel);
             return null;
+        }
+
+        // [fix] 感知层激活和角色个人灯附着必须在 VMD 继承完成后进行，
+        // 避免 activatePerception 读到无 VMD 帧状态。
+        if (_onModelLoaded) {
+            swallowError(Promise.resolve(_onModelLoaded(id)));
         }
 
         _modelManager.focus(id, uiState.autoCenterModel);

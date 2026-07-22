@@ -187,7 +187,7 @@ export function buildGroundLevel(): PopupLevel {
                                 groundTexture: '',
                                 groundTextureEnabled: false,
                                 groundStyle: 'solid',
-                                groundDecoStyle: 'none',
+                                groundOverlay: 'none',
                             }),
                         t('env.clear'),
                         'env:ground:custom-texture-clear'
@@ -202,39 +202,51 @@ export function buildGroundLevel(): PopupLevel {
                         (v) => setEnvState({ groundTextureScale: v }),
                         'lucide:zoom-in'
                     );
+                    if (envState.groundProceduralTexture !== 'none') {
+                        addSliderRow(
+                            cc,
+                            t('env.proceduralScale'),
+                            envState.groundProceduralScale,
+                            0.1,
+                            5,
+                            0.1,
+                            (v) => setEnvState({ groundProceduralScale: v }),
+                            'lucide:zoom-in'
+                        );
+                    }
                 },
             },
         ];
         renderMenu(textureSchema, c);
 
         // ===== 装饰 =====
-        const decoSchema: MenuNode[] = [
+        const overlaySchema: MenuNode[] = [
             {
-                id: 'env:ground:deco',
+                id: 'env:ground:overlay',
                 kind: 'folder',
-                label: 'env.decoration',
+                label: 'env.groundOverlay',
                 icon: 'lucide:grid-3x3',
                 defaultOpen: true,
                 headerToggle: {
-                    bind: 'env.groundDecoStyle',
+                    bind: 'env.groundOverlay',
                     get: (v) => v !== 'none',
                     set: (on) => (on ? 'grid' : 'none'),
                 },
                 children: [
                     {
-                        id: 'env:ground:decoStyle',
+                        id: 'env:ground:overlayStyle',
                         kind: 'custom',
                         renderCustom: (cc) => {
-                            const decoPresets = [
+                            const overlayPresets = [
                                 { value: 'grid', label: t('env.grid') },
-                                { value: 'checker', label: t('env.decoPattern') },
+                                { value: 'checker', label: t('env.overlayPattern') },
                             ] as const;
                             buildPresetChipGroup(
                                 cc,
-                                decoPresets.map((dp) => ({
+                                overlayPresets.map((dp) => ({
                                     label: dp.label,
-                                    isActive: () => envState.groundDecoStyle === dp.value,
-                                    onClick: () => setEnvState({ groundDecoStyle: dp.value }),
+                                    isActive: () => envState.groundOverlay === dp.value,
+                                    onClick: () => setEnvState({ groundOverlay: dp.value }),
                                 }))
                             );
                         },
@@ -271,12 +283,12 @@ export function buildGroundLevel(): PopupLevel {
                             ],
                         },
                         icon: 'lucide:grid-3x3',
-                        visibleWhen: () => envState.groundDecoStyle === 'checker',
+                        visibleWhen: () => envState.groundOverlay === 'checker',
                     },
                 ],
             },
         ];
-        renderMenu(decoSchema, c);
+        renderMenu(overlaySchema, c);
 
         // ===== 地形（schema 驱动）=====
         const terrainSchema: MenuNode[] = [
@@ -380,7 +392,7 @@ export function buildGroundLevel(): PopupLevel {
                         },
                         icon: 'lucide:move-right',
                         visibleWhen: () =>
-                            envState.groundDecoStyle === 'checker' ||
+                            envState.groundOverlay === 'checker' ||
                             (envState.groundTextureEnabled && !!envState.groundTexture),
                     },
                     {
@@ -395,7 +407,7 @@ export function buildGroundLevel(): PopupLevel {
                         },
                         icon: 'lucide:move-down',
                         visibleWhen: () =>
-                            envState.groundDecoStyle === 'checker' ||
+                            envState.groundOverlay === 'checker' ||
                             (envState.groundTextureEnabled && !!envState.groundTexture),
                     },
                     {

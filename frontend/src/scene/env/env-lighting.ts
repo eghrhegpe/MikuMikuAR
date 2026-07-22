@@ -222,7 +222,7 @@ export const ENV_PRESET_FIELDS: Record<EnvPresetCategory, (keyof EnvState)[]> = 
         'groundVisible',
         'groundType',
         'groundStyle',
-        'groundDecoStyle',
+        'groundOverlay',
         'groundColor',
         'groundAlpha',
         'groundTexture',

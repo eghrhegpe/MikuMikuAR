@@ -92,9 +92,42 @@ function buildPresetSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[
     ];
 }
 
-// ======== 卡片 2：帧率与画质（FPS 上限 / 垂直同步 / 渲染缩放） ========
+// ======== 卡片 2：帧率与画质（垂直同步 / 帧率上限 / 渲染缩放） ========
 function buildFrameQualitySchema(): MenuNode[] {
     return [
+        {
+            id: 'graphics:vsync',
+            kind: 'toggle',
+            label: 'settings.perf.vsync',
+            control: {
+                bind: 'ui.vsync',
+                get: (v) => v !== false,
+                set: (v) => v,
+                onChange: (v) => {
+                    applyFrameControl();
+                    setStatus(
+                        t('settings.perfVsync', {
+                            state: v ? t('common.on') : t('common.off'),
+                        }),
+                        true
+                    );
+                },
+            },
+            icon: 'lucide:monitor-check',
+        },
+        {
+            id: 'graphics:vsyncHint',
+            kind: 'custom',
+            renderCustom: (c) => {
+                const hint = document.createElement('div');
+                hint.className = 'setting-hint';
+                hint.textContent =
+                    uiState.vsync !== false
+                        ? t('settings.perf.vsyncHintOn')
+                        : t('settings.perf.vsyncHintOff');
+                c.appendChild(hint);
+            },
+        },
         {
             id: 'graphics:fps',
             kind: 'slider',
@@ -125,43 +158,6 @@ function buildFrameQualitySchema(): MenuNode[] {
                 const hint = document.createElement('div');
                 hint.className = 'setting-hint';
                 hint.textContent = t('settings.perf.fpsHint');
-                c.appendChild(hint);
-            },
-        },
-        {
-            id: 'graphics:vsync',
-            kind: 'toggle',
-            label: 'settings.perf.vsync',
-            control: {
-                bind: 'ui.vsync',
-                get: (v) => v !== false,
-                set: (v) => v,
-                onChange: (v) => {
-                    applyFrameControl();
-                    setStatus(
-                        t('settings.perfVsync', {
-                            state: v ? t('common.on') : t('common.off'),
-                        }),
-                        true
-                    );
-                },
-            },
-            icon: 'lucide:monitor-check',
-        },
-        {
-            id: 'graphics:vsyncHint',
-            kind: 'custom',
-            renderCustom: (c) => {
-                const hintVsync = document.createElement('div');
-                hintVsync.className = 'setting-hint';
-                hintVsync.textContent =
-                    uiState.vsync !== false
-                        ? t('settings.perf.vsyncHintOn')
-                        : t('settings.perf.vsyncHintOff');
-                c.appendChild(hintVsync);
-                const hint = document.createElement('div');
-                hint.className = 'setting-hint';
-                hint.textContent = t('settings.perf.vsyncHintBrowser');
                 c.appendChild(hint);
             },
         },
@@ -344,7 +340,18 @@ function buildPhysicsHudSchema(): MenuNode[] {
 
 function buildGraphicsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
     return [
-        // 卡片 1：性能预设
+        // 卡片 1：物理与 HUD（与性能模式无关，优先展示）
+        {
+            id: 'graphics:physics-card',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    addSectionTitle(inner, t('settings.graphics.physicsHud'));
+                    renderMenu(buildPhysicsHudSchema(), inner);
+                });
+            },
+        },
+        // 卡片 2：性能预设
         {
             id: 'graphics:preset-card',
             kind: 'custom',
@@ -355,7 +362,7 @@ function buildGraphicsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
                 });
             },
         },
-        // 卡片 2：帧率与画质
+        // 卡片 3：帧率与画质
         {
             id: 'graphics:frame-card',
             kind: 'custom',
@@ -366,7 +373,7 @@ function buildGraphicsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
                 });
             },
         },
-        // 卡片 3：渲染效果
+        // 卡片 4：渲染效果（受性能预设影响最大，放最后方便调优）
         {
             id: 'graphics:effects-card',
             kind: 'custom',
@@ -374,17 +381,6 @@ function buildGraphicsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
                 cardContainer(c, (inner) => {
                     addSectionTitle(inner, t('settings.graphics.effects'));
                     renderMenu(buildEffectsSchema(), inner);
-                });
-            },
-        },
-        // 卡片 4：物理与 HUD
-        {
-            id: 'graphics:physics-card',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    addSectionTitle(inner, t('settings.graphics.physicsHud'));
-                    renderMenu(buildPhysicsHudSchema(), inner);
                 });
             },
         },

@@ -1125,7 +1125,7 @@ export const ja: Record<string, string> = {
     'env.ground': '地面',
     'env.showGround': '地面を表示',
     'env.baseSettings': '基本設定',
-    'env.decoration': '装飾',
+    'env.groundOverlay': 'オーバーレイグリッド',
     'env.style': 'スタイル',
     'env.groundHeight': '地面の高さ',
     'env.groundType': '地面タイプ',
@@ -1174,6 +1174,7 @@ export const ja: Record<string, string> = {
     'env.range': '範囲',
     'env.edgeFade': 'エッジフェード',
     'env.groundEnhance': '地面強化',
+    'env.groundInfinite': '無限地面',
     'env.groundPitch': 'ピッチ',
     'env.groundRoll': 'ロール',
     'env.groundScrollX': 'スクロールX',
@@ -1186,7 +1187,7 @@ export const ja: Record<string, string> = {
     'env.heightmapNoTilt': 'ハイトマップモードでは傾け不可',
     'env.groundReflection': '地面反射とマテリアル',
     'env.groundMaterial': 'マテリアルと反射',
-    'env.decoPattern': 'パターン装飾',
+    'env.overlayPattern': 'オーバーレイパターン',
     'env.groundReflectQuality': '反射品質',
     'env.groundReflectBlend': '反射ブレンド',
     'env.groundNormalStrength': '法線強度',
@@ -1415,11 +1416,11 @@ export const ja: Record<string, string> = {
     'settings.perf.showRuntimeBadge': 'マルチスレッドバッジを表示',
     'settings.perf.vsync': 'フレームレート制限',
     'settings.perf.vsyncHintOn':
-        '有効にすると「FPS上限」スライダーが有効になり、レンダリングが設定値に制限されます。',
+        '有効にすると babymmd のレンダリングフレームレートを制限（ブラウザ/WebView レンダリングには VSync が組み込まれているため、別途設定不要）',
     'settings.perf.vsyncHintOff':
         '無効にすると人為的な制限を解除し、ディスプレイのリフレッシュレートでレンダリング。「FPS上限」スライダーは無効になります。',
     'settings.perf.vsyncHintBrowser':
-        'ブラウザ/WebViewのレンダリングループはrequestAnimationFrameで駆動され、常にディスプレイと同期します。このスイッチは人為的なFPS上限の有効/無効のみを制御します。',
+        'babymmd のレンダリングフレームレートを制御（ブラウザ/WebView レンダリングには既に VSync が組み込まれており、別途設定は不要）',
     'settings.perf.defaultPhysics': '物理シミュレーション',
     'settings.perf.defaultPhysicsHint':
         '無効にするとローエンドデバイスの性能向上；切り替え後、読み込み済みモデルすべてに即座に適用。',

@@ -248,6 +248,14 @@ function recordBrowseDir(m: LibraryModel): void {
 
 /** 替换模式入口：加载新模型 → 移除旧模型 → 导航到浏览层。 */
 function startReplaceModel(m: LibraryModel, replaceId: string): void {
+    // 取消上一次 loadManager 请求，避免快速连点竞态（与 loadModelNormal 共享同一模块级 AbortController）
+    if (_loadManagerAbortCtrl) {
+        _loadManagerAbortCtrl.abort();
+    }
+    const ctrl = new AbortController();
+    _loadManagerAbortCtrl = ctrl;
+    const signal = ctrl.signal;
+
     librarySessionStore.setReplaceLoading(true);
 
     const doReplace = (path: string, libraryPath?: string, innerPath?: string): void => {
@@ -266,7 +274,7 @@ function startReplaceModel(m: LibraryModel, replaceId: string): void {
         }
 
         loadManager
-            .load({ kind: loadKind, path, libraryPath, innerPath })
+            .load({ kind: loadKind, path, libraryPath, innerPath }, signal)
             .then(async (handle) => {
                 if (!handle?.id) {
                     stackRegistry.modelStack?.reRender();
@@ -308,6 +316,9 @@ function startReplaceModel(m: LibraryModel, replaceId: string): void {
             })
             .finally(() => {
                 librarySessionStore.setReplaceLoading(false);
+                if (_loadManagerAbortCtrl === ctrl) {
+                    _loadManagerAbortCtrl = null;
+                }
             });
     };
 
@@ -353,7 +364,8 @@ function loadModelNormal(m: LibraryModel, isStage: boolean): void {
             .then((result) => {
                 setStatus(result.cached ? t('library.cacheHit') : t('library.extracted'), true);
                 if (m.format === 'vmd') {
-                    loadManager.load({ kind: 'vmd', path: result.file_path }, signal);
+                    loadManager.load({ kind: 'vmd', path: result.file_path }, signal)
+                        .catch(err => setStatus(t('library.modelLoadFailed') + formatError(err), false));
                 } else {
                     loadManager.load(
                         {
@@ -363,7 +375,11 @@ function loadModelNormal(m: LibraryModel, isStage: boolean): void {
                             innerPath: m.zip_inner,
                         },
                         signal
-                    );
+                    ).then(handle => {
+                        if (!handle) setStatus(t('library.modelLoadFailed'), false);
+                    }).catch(err => {
+                        setStatus(t('library.modelLoadFailed') + formatError(err), false);
+                    });
                 }
             })
             .catch((err) => {
@@ -380,11 +396,17 @@ function loadModelNormal(m: LibraryModel, isStage: boolean): void {
     }
     closeAllOverlays();
     if (m.format === 'pmx') {
-        loadManager.load({ kind: isStage ? 'stage' : 'actor', path: m.file_path }, signal);
+        loadManager.load({ kind: isStage ? 'stage' : 'actor', path: m.file_path }, signal)
+            .then(handle => { if (!handle) setStatus(t('library.modelLoadFailed'), false); })
+            .catch(err => setStatus(t('library.modelLoadFailed') + formatError(err), false));
     } else if (m.format === 'vmd') {
-        loadManager.load({ kind: 'vmd', path: m.file_path }, signal);
+        loadManager.load({ kind: 'vmd', path: m.file_path }, signal)
+            .then(handle => { if (!handle) setStatus(t('library.modelLoadFailed'), false); })
+            .catch(err => setStatus(t('library.modelLoadFailed') + formatError(err), false));
     } else if (m.format === 'audio') {
-        loadManager.load({ kind: 'audio', path: m.file_path }, signal);
+        loadManager.load({ kind: 'audio', path: m.file_path }, signal)
+            .then(handle => { if (!handle) setStatus(t('library.modelLoadFailed'), false); })
+            .catch(err => setStatus(t('library.modelLoadFailed') + formatError(err), false));
     } else if (m.format === 'vpd') {
         loadVPDPose(m.file_path);
     }
