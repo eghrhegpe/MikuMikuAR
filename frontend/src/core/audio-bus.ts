@@ -72,10 +72,6 @@ export function setFootstepEnabled(on: boolean): void {
     setUIState({ footstepEnabled: on });
 }
 
-export function getFootstepEnabled(): boolean {
-    return uiState.footstepEnabled !== false;
-}
-
 export function setFootstepVolume(v: number): void {
     const val = clamp01(v);
     setUIState({ footstepVolume: val });
