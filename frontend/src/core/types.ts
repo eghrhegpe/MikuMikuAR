@@ -399,7 +399,7 @@ export type PopupLevel = {
     label: string;
     dir: string;
     items: PopupRow[];
-    renderCustom?: (container: HTMLElement) => void | Promise<void>;
+    renderCustom?: (container: HTMLElement) => (() => void) | void | Promise<(() => void) | void>;
     reRenderCustom?: (container: HTMLElement) => void;
     /**
      * [doc:adr-065] 纯 items 层级的语言热刷新：提供 items 重建器。

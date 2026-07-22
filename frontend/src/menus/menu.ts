@@ -54,6 +54,8 @@ export class SlideMenu {
     private _swipeTouchEndDisp: Disposable | null = null;
     /** 自更新控件注册表 — 每个元素有 update() 方法，由 updateControls() 统一调用 */
     private _controls: Array<{ update: () => void }> = [];
+    /** renderCustom 返回的清理函数，在 buildPanel 重建或 dispose 时调用 */
+    private _customDispose: (() => void) | null = null;
     /** 响应式订阅取消函数 — dispose 时调用 */
     private _unsubscribe: (() => void) | null = null;
     /** 记录上一次语言码，供 updateControls 检测 i18n 热切换（ADR-065） */
@@ -769,6 +771,9 @@ export class SlideMenu {
     private async buildPanel(level: PopupLevel): Promise<void> {
         const seq = ++this._buildSeq;
         this.panel.innerHTML = '';
+        // 释放上一次 renderCustom 返回的 dispose
+        this._customDispose?.();
+        this._customDispose = null;
         // 每次重建面板，清空旧的控件注册表
         this._controls = [];
         const list = document.createElement('div');
@@ -804,7 +809,10 @@ export class SlideMenu {
             }
             _renderingStack.push(this);
             try {
-                await level.renderCustom(list);
+                const result = await level.renderCustom(list);
+                if (typeof result === 'function') {
+                    this._customDispose = result;
+                }
             } catch (err) {
                 console.error('[SlideMenu] renderCustom failed:', err);
                 list.innerHTML = `<div class="slide-empty" style="color:var(--danger);">加载失败: ${err instanceof Error ? err.message : '未知错误'}</div>`;
@@ -837,6 +845,8 @@ export class SlideMenu {
         this.levels = [];
         this._cachedExtraBtns = null;
         // 清理 initControl 注册的闭包引用 + panel DOM（ADR-106 补全）
+        this._customDispose?.();
+        this._customDispose = null;
         this._controls = [];
         this.panel.innerHTML = '';
     }

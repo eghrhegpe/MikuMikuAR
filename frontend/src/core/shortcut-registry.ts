@@ -173,6 +173,21 @@ export function formatKeyBinding(key: string, ctrl: boolean, shift: boolean, alt
     return parts.join('+');
 }
 
+/** 将 ShortcutDef 格式化为 aria-keyshortcuts 值，如 "Control+1" */
+export function getAriaKeyshortcuts(def: ShortcutDef): string {
+    const binding = getEffectiveBinding(def);
+    const parts: string[] = [];
+    if (binding.ctrl) parts.push('Control');
+    if (binding.shift) parts.push('Shift');
+    if (binding.alt) parts.push('Alt');
+    // 将 KeyboardEvent.code 转为 aria-keyshortcuts 格式
+    let key = binding.key;
+    if (key.startsWith('Digit')) key = key.slice(5);
+    else if (key.startsWith('Key')) key = key.slice(3);
+    parts.push(key);
+    return parts.join('+');
+}
+
 /**
  * Set custom key binding for a shortcut ID.
  * Returns { ok: true } on success, or conflict info if the key combo is taken.
@@ -260,6 +275,12 @@ export function initShortcutDispatcher(): void {
     _keydownDisposable = addDisposableListener(window, 'keydown', (e: KeyboardEvent) => {
         // Skip if target is an input element
         if (isInputElement(e.target)) {
+            return;
+        }
+
+        // ADR-153: 3D camera keyboard control — skip Arrow/zoom keys when canvas focused
+        const canvasArrowKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Equal', 'Minus', 'NumpadAdd', 'NumpadSubtract'];
+        if (canvasArrowKeys.includes(e.code) && document.activeElement?.id === 'renderCanvas') {
             return;
         }
 
