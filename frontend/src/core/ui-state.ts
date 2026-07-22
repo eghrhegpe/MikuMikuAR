@@ -24,7 +24,12 @@ export function setUIPersistCallback(cb: () => void): void {
 
 export function setUIState(state: UIState): void {
     Object.assign(uiState, state);
-    _uiPersistCb?.();
+    try {
+        _uiPersistCb?.();
+    } catch (e) {
+        // [audit:P3] 持久化回调异常不应阻塞 UI 状态更新
+        console.error('[ui-state] persist callback error:', e);
+    }
 }
 
 // ======== UI 派生记忆态 ========

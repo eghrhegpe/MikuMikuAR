@@ -76,7 +76,9 @@ export function t(key: string, params?: Record<string, string | number>): string
     }
     if (params) {
         for (const k of Object.keys(params)) {
-            s = s.replace(new RegExp(`\\{${k}\\}`, 'g'), String(params[k]));
+            // [audit:P2] 转义正则特殊字符，防 param key 含 $ . 等导致替换异常
+            const escaped = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            s = s.replace(new RegExp(`\\{${escaped}\\}`, 'g'), String(params[k]));
         }
     }
     return s;

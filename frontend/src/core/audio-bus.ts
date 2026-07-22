@@ -103,13 +103,17 @@ export function playSfx(buffer: AudioBuffer, opts: PlaySfxOptions = {}): void {
     }
     const ctx = getAudioContext();
     if (ctx.state === 'suspended') {
-        // 自动播放策略限制：首个用户手势前无法发声，静默放弃本次触发
-        ctx.resume().catch((err) => {
-            // 自动播放策略下 resume 失败属预期；仅在 DEV 暴露，避免生产静默吞错
-            if (import.meta.env.DEV) {
-                console.warn('[audio] AudioContext.resume() failed (autoplay policy):', err);
-            }
-        });
+        // 自动播放策略限制：首个用户手势前无法发声
+        // [audit:P3] resume 成功后重试播放，避免首次点击音效被吞
+        ctx.resume()
+            .then(() => {
+                if (ctx.state === 'running') playSfx(buffer, opts);
+            })
+            .catch((err) => {
+                if (import.meta.env.DEV) {
+                    console.warn('[audio] AudioContext.resume() failed (autoplay policy):', err);
+                }
+            });
         return;
     }
     const master = getSfxMasterGain();

@@ -108,7 +108,11 @@ function waitForTransition(el: HTMLElement, propertyName?: string): Promise<void
     });
 }
 
+let _toggling = false; // [audit:P2] 并发锁：防快速点击导致 DOM 状态不一致
 export async function toggleOverlay(id: string, showFn: () => void): Promise<void> {
+    if (_toggling) return;
+    _toggling = true;
+    try {
     const el = document.getElementById(id);
     if (!el) {
         return;
@@ -142,6 +146,9 @@ export async function toggleOverlay(id: string, showFn: () => void): Promise<voi
         _lastOverlayFn.set(id, showFn);
     }
     syncNavAriaExpanded();
+    } finally {
+        _toggling = false;
+    }
 }
 
 export const navActions: Record<number, () => void | Promise<void>> = {

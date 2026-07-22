@@ -19,6 +19,7 @@ export function setLibraryRoot(r: string): void {
 }
 
 export let resourceRoot = '';
+/** [audit:P2] 同时同步 libraryRoot（历史兼容：二者语义相同，resourceRoot 为新名称）。 */
 export function setResourceRoot(r: string): void {
     resourceRoot = r;
     libraryRoot = r;
@@ -91,8 +92,8 @@ export function addRecentMotion(path: string, name: string): void {
     }
 }
 
-export function getRecentMotions(): RecentMotion[] {
-    return _recentMotions;
+export function getRecentMotions(): readonly RecentMotion[] {
+    return [..._recentMotions]; // [audit:P2] 返回副本，防外部绕过 setter 直接 mutate
 }
 
 // ======== Model Metadata Cache ========
