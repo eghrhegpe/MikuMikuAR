@@ -84,7 +84,9 @@ const VMD_FPS = 30;
 let _vmdLayersRegistered = false;
 
 function _ensureVmdLayersLayer(): void {
-    if (_vmdLayersRegistered) return;
+    if (_vmdLayersRegistered) {
+        return;
+    }
     _vmdLayersRegistered = true;
     getMotionPipeline().register({
         id: 'wasm-vmd-layers',
@@ -92,7 +94,9 @@ function _ensureVmdLayersLayer(): void {
         order: 0,
         run: () => {
             for (const [modelId, state] of _blenderStates) {
-                if (!state.enabled) continue;
+                if (!state.enabled) {
+                    continue;
+                }
                 const dt = _requireDeps().scene.deltaTime || 16.67;
                 state.animationFrame += (dt / 1000) * VMD_FPS;
                 _applyLayersBlending(modelId);

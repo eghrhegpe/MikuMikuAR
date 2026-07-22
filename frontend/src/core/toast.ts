@@ -57,7 +57,9 @@ function removeToast(id: number): void {
 /** 根据剩余 toast 中是否有 error 来切换容器 aria-live */
 function _syncToastAriaLive(): void {
     const container = document.getElementById('mmk-toast-container');
-    if (!container) return;
+    if (!container) {
+        return;
+    }
     const hasError = _activeToasts.some((t) => t.variant === 'error');
     if (hasError) {
         container.setAttribute('role', 'alert');

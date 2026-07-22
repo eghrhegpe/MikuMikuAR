@@ -66,10 +66,14 @@ import { PLAZA_CREATORS } from './plaza-creators';
 // ======== 站点数据管理 ========
 
 export function normalizeSite(raw: any): PlazaSite | null {
-    if (!raw || !raw.id) return null;
+    if (!raw || !raw.id) {
+        return null;
+    }
     const name = raw.name || raw.label || raw.id;
     const url = raw.url || '';
-    if (!name || !url) return null;
+    if (!name || !url) {
+        return null;
+    }
     const mode: 'embed' | 'external' = raw.mode === 'embed' ? 'embed' : 'external';
     let icon = raw.icon;
     if (icon && /^[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]$/u.test(icon)) {
@@ -89,12 +93,20 @@ export function normalizeSite(raw: any): PlazaSite | null {
 }
 
 export function normalizeCreator(raw: any): PlazaCreator | null {
-    if (!raw || !raw.name) return null;
+    if (!raw || !raw.name) {
+        return null;
+    }
     const site = raw.site || raw.type || '';
-    if (!site) return null;
+    if (!site) {
+        return null;
+    }
     let tag = raw.tag || raw.role || 'creator';
-    if (tag === 'repo') tag = 'creator';
-    if (!['official', 'creator', 'vup', 'oc'].includes(tag)) tag = 'creator';
+    if (tag === 'repo') {
+        tag = 'creator';
+    }
+    if (!['official', 'creator', 'vup', 'oc'].includes(tag)) {
+        tag = 'creator';
+    }
     const primarySite = (site as string).split(';')[0];
     return {
         name: raw.name,
@@ -108,7 +120,9 @@ export function normalizeCreator(raw: any): PlazaCreator | null {
 export async function loadCustomSites(): Promise<PlazaSite[]> {
     try {
         const raw = await ReadTextFile(CUSTOM_SITES_PATH);
-        if (!raw) return [];
+        if (!raw) {
+            return [];
+        }
         const parsed = JSON.parse(raw) as any[];
         return parsed.map(normalizeSite).filter(Boolean) as PlazaSite[];
     } catch {
@@ -119,7 +133,9 @@ export async function loadCustomSites(): Promise<PlazaSite[]> {
 export function mergeSites(base: PlazaSite[], extras: PlazaSite[]): PlazaSite[] {
     const map = new Map(base.map((s) => [s.id, s]));
     for (const s of extras) {
-        if (s) map.set(s.id, s);
+        if (s) {
+            map.set(s.id, s);
+        }
     }
     // 按原始顺序排列
     const seen = new Set<string>();
@@ -139,12 +155,14 @@ export async function loadCachedConfig(): Promise<void> {
         const cached = await GetCachedPlazaConfig();
         if (cached && cached[0]) {
             const parsed = JSON.parse(cached[0]) as { sites?: any[]; creators?: any[] };
-            if (parsed.sites?.length)
+            if (parsed.sites?.length) {
                 setAllSites(parsed.sites.map(normalizeSite).filter(Boolean) as PlazaSite[]);
-            if (parsed.creators?.length)
+            }
+            if (parsed.creators?.length) {
                 setAllCreators(
                     parsed.creators.map(normalizeCreator).filter(Boolean) as PlazaCreator[]
                 );
+            }
         }
     } catch {
         /* ignore */
@@ -152,9 +170,13 @@ export async function loadCachedConfig(): Promise<void> {
 }
 
 export async function ensureSitesLoaded(): Promise<void> {
-    if (allSites.length > 0) return;
+    if (allSites.length > 0) {
+        return;
+    }
     await loadCachedConfig();
-    if (allSites.length > 0) return;
+    if (allSites.length > 0) {
+        return;
+    }
     const custom = await loadCustomSites();
     setAllSites(mergeSites(PLAZA_SITES, custom));
     setAllCreators([...PLAZA_CREATORS]);
@@ -210,7 +232,9 @@ export function buildSiteTabs(): HTMLElement {
     wrap.className = 'plaza-site-tabs';
     for (const grp of SITE_GROUPS) {
         const grpSites = allSites.filter((s) => grp.ids.includes(s.id));
-        if (grpSites.length === 0) continue;
+        if (grpSites.length === 0) {
+            continue;
+        }
         const grpWrap = document.createElement('div');
         grpWrap.className = 'plaza-tab-group';
         const grpLabel = document.createElement('span');
@@ -224,7 +248,9 @@ export function buildSiteTabs(): HTMLElement {
             btn.className = 'plaza-site-tab' + (currentSiteId === site.id ? ' active' : '');
             btn.innerHTML = `<iconify-icon icon="${site.icon ?? 'lucide:globe'}"></iconify-icon><span>${site.name}</span>`;
             btn.onclick = () => {
-                if (currentSiteId === site.id) return;
+                if (currentSiteId === site.id) {
+                    return;
+                }
                 setCurrentSiteId(site.id);
                 renderHome();
             };
@@ -243,7 +269,9 @@ export function buildSiteTabs(): HTMLElement {
             btn.className = 'plaza-site-tab' + (currentSiteId === site.id ? ' active' : '');
             btn.innerHTML = `<iconify-icon icon="${site.icon ?? 'lucide:globe'}"></iconify-icon><span>${site.name}</span>`;
             btn.onclick = () => {
-                if (currentSiteId === site.id) return;
+                if (currentSiteId === site.id) {
+                    return;
+                }
                 setCurrentSiteId(site.id);
                 renderHome();
             };
@@ -319,7 +347,9 @@ export function renderSiteContent(site: PlazaSite): HTMLElement {
             addBtn.style.display = '';
         };
         input.addEventListener('keydown', (ev) => {
-            if (ev.key === 'Enter') commit();
+            if (ev.key === 'Enter') {
+                commit();
+            }
             if (ev.key === 'Escape') {
                 inputRow.remove();
                 addBtn.style.display = '';
@@ -367,7 +397,9 @@ export function renderSiteContent(site: PlazaSite): HTMLElement {
                     return;
                 }
                 const url = site.searchUrl?.replace('{{q}}', encodeURIComponent(cp.q || cp.label));
-                if (url) openSiteByMode(site, url);
+                if (url) {
+                    openSiteByMode(site, url);
+                }
             };
             presetArea.appendChild(btn);
         }
@@ -378,7 +410,9 @@ export function renderSiteContent(site: PlazaSite): HTMLElement {
             btn.onclick = () => {
                 const keyword = ps.q || ps.label;
                 const url = site.searchUrl?.replace('{{q}}', encodeURIComponent(keyword));
-                if (url) openSiteByMode(site, url);
+                if (url) {
+                    openSiteByMode(site, url);
+                }
             };
             presetArea.appendChild(btn);
         }
@@ -468,8 +502,11 @@ export function renderSiteContent(site: PlazaSite): HTMLElement {
             try {
                 const favs = JSON.parse(localStorage.getItem('miku.plaza.favCreators') || '[]');
                 const idx = favs.indexOf(name);
-                if (idx >= 0) favs.splice(idx, 1);
-                else favs.unshift(name);
+                if (idx >= 0) {
+                    favs.splice(idx, 1);
+                } else {
+                    favs.unshift(name);
+                }
                 localStorage.setItem('miku.plaza.favCreators', JSON.stringify(favs));
                 return idx < 0;
             } catch {
@@ -485,15 +522,18 @@ export function renderSiteContent(site: PlazaSite): HTMLElement {
             list.sort((a, b) => {
                 const af = favMap.get(a.name) ?? 0,
                     bf = favMap.get(b.name) ?? 0;
-                if (af !== bf) return bf - af;
+                if (af !== bf) {
+                    return bf - af;
+                }
                 const at = a.tier === 'gold' ? 0 : a.tier === 'silver' ? 1 : 2;
                 const bt = b.tier === 'gold' ? 0 : b.tier === 'silver' ? 1 : 2;
                 return at - bt;
             });
-            if (kw)
+            if (kw) {
                 list = list.filter(
                     (c) => c.name.toLowerCase().includes(kw) || c.desc.toLowerCase().includes(kw)
                 );
+            }
             return list;
         }
         function renderCreators(): void {
@@ -502,7 +542,9 @@ export function renderSiteContent(site: PlazaSite): HTMLElement {
             for (const cr of filtered) {
                 const card = document.createElement('div');
                 card.className = 'plaza-cr-card';
-                if (cr.tier) card.dataset.tier = cr.tier;
+                if (cr.tier) {
+                    card.dataset.tier = cr.tier;
+                }
                 card.dataset.tag = cr.tag;
                 card.dataset.name = cr.name;
                 const tierBar = cr.tier ? '<div class="plaza-cr-tier-bar"></div>' : '';
@@ -512,9 +554,13 @@ export function renderSiteContent(site: PlazaSite): HTMLElement {
                     tierBar +
                     `<div class="plaza-cr-header"><div class="plaza-cr-avatar-container"><div class="plaza-cr-avatar-ring${cr.tier ? ` plaza-cr-ring-${cr.tier}` : ''}"></div><div class="plaza-cr-avatar plaza-cr-avatar-fb">${cr.name.charAt(0).toUpperCase()}</div></div><div class="plaza-cr-name-row"><span class="plaza-cr-name">${escapeHtml(cr.name)}</span><span class="plaza-cr-star" data-star="${escapeHtml(cr.name)}">${fav}</span></div></div><div class="plaza-cr-desc">${escapeHtml(cr.desc)}</div><div class="plaza-cr-footer"><span class="plaza-cr-tag plaza-cr-tag-${cr.tag}"><iconify-icon icon="${tagIcon}" width="10" height="10"></iconify-icon><span>${cr.tag}</span></span></div>`;
                 card.addEventListener('click', (e) => {
-                    if ((e.target as HTMLElement).closest('.plaza-cr-star')) return;
+                    if ((e.target as HTMLElement).closest('.plaza-cr-star')) {
+                        return;
+                    }
                     const url = site.searchUrl?.replace('{{q}}', encodeURIComponent(cr.name));
-                    if (url) openSiteByMode(site, url);
+                    if (url) {
+                        openSiteByMode(site, url);
+                    }
                 });
                 const starBtn = card.querySelector('.plaza-cr-star');
                 starBtn?.addEventListener('click', (e) => {
@@ -527,7 +573,9 @@ export function renderSiteContent(site: PlazaSite): HTMLElement {
                 creatorGrid.appendChild(card);
             }
             const countEl = creatorSection.querySelector('.plaza-section-sub');
-            if (countEl) countEl.textContent = `(${filtered.length}/${siteCreators.length})`;
+            if (countEl) {
+                countEl.textContent = `(${filtered.length}/${siteCreators.length})`;
+            }
         }
         searchInput.addEventListener('input', () => {
             searchKw = searchInput.value;
@@ -573,7 +621,9 @@ export function buildToolbar(opts: {
     bar.className = 'plaza-toolbar';
     const left = document.createElement('div');
     left.className = 'plaza-toolbar-left';
-    if (opts.onBack) left.appendChild(_plazaBtn(t('plaza.back'), opts.onBack));
+    if (opts.onBack) {
+        left.appendChild(_plazaBtn(t('plaza.back'), opts.onBack));
+    }
     const title = document.createElement('div');
     title.className = 'plaza-title';
     title.textContent = opts.title;
@@ -588,11 +638,14 @@ export function buildToolbar(opts: {
         label.textContent = '全局';
         right.appendChild(label);
     }
-    if (opts.onOpen)
+    if (opts.onOpen) {
         right.appendChild(
             _plazaBtn(t('plaza.openInBrowser'), opts.onOpen, 'plaza-btn plaza-btn-accent')
         );
-    if (opts.onRefresh) right.appendChild(_plazaBtn(t('plaza.refresh'), opts.onRefresh));
+    }
+    if (opts.onRefresh) {
+        right.appendChild(_plazaBtn(t('plaza.refresh'), opts.onRefresh));
+    }
     const close = _plazaBtn(t('plaza.close'), opts.onClose);
     close.title = t('plaza.close');
     right.appendChild(close);
@@ -602,7 +655,9 @@ export function buildToolbar(opts: {
 
 export function showActionsMenu(site: PlazaSite, anchor: HTMLElement): void {
     const existing = document.querySelector('.plaza-actions-menu');
-    if (existing) existing.remove();
+    if (existing) {
+        existing.remove();
+    }
     const menu = document.createElement('div');
     menu.className = 'plaza-actions-menu';
     const modeTitle = document.createElement('div');
@@ -682,23 +737,31 @@ export function showActionsMenu(site: PlazaSite, anchor: HTMLElement): void {
 export async function renderHome(): Promise<void> {
     stopProxy();
     await ensureSitesLoaded();
-    if (!currentSiteId && allSites.length > 0) setCurrentSiteId(allSites[0].id);
+    if (!currentSiteId && allSites.length > 0) {
+        setCurrentSiteId(allSites[0].id);
+    }
     const el = getLayer();
-    if (!el) return;
+    if (!el) {
+        return;
+    }
     el.innerHTML = '';
     const root = document.createElement('div');
     root.className = 'plaza-root';
     root.appendChild(buildToolbar({ title: t('plaza.title'), onClose: closePlaza }));
     root.appendChild(buildSiteTabs());
     const site = getCurrentSite();
-    if (site) root.appendChild(renderSiteContent(site));
+    if (site) {
+        root.appendChild(renderSiteContent(site));
+    }
     el.appendChild(root);
 }
 
 export function renderEmbed(site: PlazaSite): void {
     stopProxy();
     const el = getLayer();
-    if (!el) return;
+    if (!el) {
+        return;
+    }
     el.innerHTML = '';
     const root = document.createElement('div');
     root.className = 'plaza-root';
@@ -750,7 +813,9 @@ export function renderEmbed(site: PlazaSite): void {
 
 export function renderRemote(site: PlazaSite): void {
     const el = getLayer();
-    if (!el) return;
+    if (!el) {
+        return;
+    }
     el.innerHTML = '';
     const root = document.createElement('div');
     root.className = 'plaza-root plaza-remote';

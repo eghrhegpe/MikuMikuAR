@@ -759,7 +759,12 @@ function buildModelInfoSchema(id: string): MenuNode[] {
                 }, 0);
                 const fileName = inst.filePath.split(/[/\\]/).pop() || inst.filePath;
                 const comment = meta?.comment ? meta.comment.substring(0, 80) : '';
-                const fields: Array<{ label: string; value: string; wide?: boolean; sub?: string }> = [
+                const fields: Array<{
+                    label: string;
+                    value: string;
+                    wide?: boolean;
+                    sub?: string;
+                }> = [
                     {
                         label: t('model-detail.fName'),
                         value: inst.name,
@@ -773,17 +778,24 @@ function buildModelInfoSchema(id: string): MenuNode[] {
                                 ? t('model-detail.actorModel')
                                 : t('model-detail.stageModel'),
                     },
-                    { label: t('model-detail.fMotion'), value: inst.vmdName || t('model-detail.none') },
+                    {
+                        label: t('model-detail.fMotion'),
+                        value: inst.vmdName || t('model-detail.none'),
+                    },
                     { label: t('model-detail.fVerts'), value: vertCount.toLocaleString() },
                     { label: t('model-detail.fFaces'), value: (faceCount / 3).toLocaleString() },
                     { label: t('model-detail.fMaterials'), value: String(matCount) },
                     {
                         label: t('model-detail.fBones'),
-                        value: boneCount !== null ? boneCount.toLocaleString() : t('model-detail.na'),
+                        value:
+                            boneCount !== null ? boneCount.toLocaleString() : t('model-detail.na'),
                     },
                     {
                         label: t('model-detail.fMorphs'),
-                        value: morphCount !== null ? morphCount.toLocaleString() : t('model-detail.na'),
+                        value:
+                            morphCount !== null
+                                ? morphCount.toLocaleString()
+                                : t('model-detail.na'),
                     },
                     { label: t('model-detail.fNameJp'), value: meta?.name_jp || '—' },
                     { label: t('model-detail.fNameEn'), value: meta?.name_en || '—' },

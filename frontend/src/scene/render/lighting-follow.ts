@@ -79,22 +79,34 @@ export const DEFAULT_PERSONAL_LIGHT: PersonalLightSettings = {
 function _getLightBasePos(model: ModelInstance, waistName: string | null): Vector3 {
     if (waistName && model.mmdModel) {
         const p = getBoneWorldPosition(model.mmdModel, waistName);
-        if (p) return p;
+        if (p) {
+            return p;
+        }
     }
     return model.rootMesh.getAbsolutePosition();
 }
 
-export function attachPersonalLight(modelId: string, overrides?: Partial<PersonalLightSettings>): void {
-    if (_entries.has(modelId)) return;
+export function attachPersonalLight(
+    modelId: string,
+    overrides?: Partial<PersonalLightSettings>
+): void {
+    if (_entries.has(modelId)) {
+        return;
+    }
     const scene = lightingState.scene;
-    if (!scene) return;
+    if (!scene) {
+        return;
+    }
 
     const settings: PersonalLightSettings = { ...DEFAULT_PERSONAL_LIGHT, ...overrides };
     const model = modelRegistry.get(modelId);
-    if (!model) return;
+    if (!model) {
+        return;
+    }
 
     const waistName = model.mmdModel
-        ? WAIST_CANDIDATES.find((n) => model.mmdModel!.runtimeBones?.some((b) => b.name === n)) ?? null
+        ? (WAIST_CANDIDATES.find((n) => model.mmdModel!.runtimeBones?.some((b) => b.name === n)) ??
+          null)
         : null;
     const basePos = _getLightBasePos(model, waistName);
     const startPos = new Vector3(
@@ -161,7 +173,9 @@ function _createPersonalLightIndicator(settings: PersonalLightSettings): Mesh {
 function _updatePersonalLightIndicator(id: string): void {
     const entry = _entries.get(id);
     const model = modelRegistry.get(id);
-    if (!entry || !model) return;
+    if (!entry || !model) {
+        return;
+    }
     const basePos = _getLightBasePos(model, entry.waistName);
     const target = new Vector3(
         basePos.x + entry.settings.offsetX,
@@ -175,7 +189,9 @@ function _updatePersonalLightIndicator(id: string): void {
 
 export function detachPersonalLight(modelId: string): void {
     const entry = _entries.get(modelId);
-    if (!entry) return;
+    if (!entry) {
+        return;
+    }
     if (entry.cone) {
         disposeLightCone(entry.cone);
         entry.cone = null;
@@ -186,9 +202,14 @@ export function detachPersonalLight(modelId: string): void {
     _entries.delete(modelId);
 }
 
-export function setPersonalLightState(modelId: string, partial: Partial<PersonalLightSettings>): void {
+export function setPersonalLightState(
+    modelId: string,
+    partial: Partial<PersonalLightSettings>
+): void {
     const entry = _entries.get(modelId);
-    if (!entry) return;
+    if (!entry) {
+        return;
+    }
     Object.assign(entry.settings, partial);
     const { settings, light } = entry;
     light.intensity = settings.enabled ? settings.intensity : 0;
@@ -207,12 +228,18 @@ export function tickPersonalLights(): void {
     const smoothing = 0.15;
 
     for (const [modelId, entry] of _entries) {
-        if (!entry.settings.enabled) continue;
+        if (!entry.settings.enabled) {
+            continue;
+        }
         // 拖拽模式下正在被 gizmo 拖动的个人灯，跳过 tick 避免位置抢夺
-        if (isGizmoDragging() && getGizmoTargetId() === modelId) continue;
+        if (isGizmoDragging() && getGizmoTargetId() === modelId) {
+            continue;
+        }
 
         const model = modelRegistry.get(modelId);
-        if (!model) continue;
+        if (!model) {
+            continue;
+        }
 
         const basePos = _getLightBasePos(model, entry.waistName);
         _tmpTarget.set(
@@ -237,10 +264,14 @@ export function tickPersonalLights(): void {
 
 function _ensurePersonalCone(modelId: string): void {
     const entry = _entries.get(modelId);
-    if (!entry) return;
+    if (!entry) {
+        return;
+    }
     const { settings, light } = entry;
     const scene = lightingState.scene;
-    if (!scene) return;
+    if (!scene) {
+        return;
+    }
 
     if (!settings.enabled || !settings.coneEnabled) {
         if (entry.cone) {
@@ -255,12 +286,25 @@ function _ensurePersonalCone(modelId: string): void {
     if (entry.cone) {
         rebuildLightConeGeometry(entry.cone, scene, light, settings.coneLength);
         updateLightConeTransform(entry.cone, light, settings.coneLength);
-        updateLightConeUniforms(entry.cone, color, settings.coneIntensity, settings.coneSoftness, settings.coneLength);
+        updateLightConeUniforms(
+            entry.cone,
+            color,
+            settings.coneIntensity,
+            settings.coneSoftness,
+            settings.coneLength
+        );
         setLightConeEnabled(entry.cone, true);
         return;
     }
 
-    entry.cone = createLightCone(scene, light, color, settings.coneIntensity, settings.coneLength, settings.coneSoftness);
+    entry.cone = createLightCone(
+        scene,
+        light,
+        color,
+        settings.coneIntensity,
+        settings.coneLength,
+        settings.coneSoftness
+    );
 }
 
 export function disposeAllPersonalLights(): void {
@@ -278,7 +322,9 @@ registerTransformAdapter({
     onPositionDragEnd: (id, node) => {
         const entry = _entries.get(id);
         const model = modelRegistry.get(id);
-        if (!entry || !model) return;
+        if (!entry || !model) {
+            return;
+        }
         const basePos = _getLightBasePos(model, entry.waistName);
         const pos = (node as unknown as { position: Vector3 }).position;
         entry.settings.offsetX = pos.x - basePos.x;

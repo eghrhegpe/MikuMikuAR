@@ -120,7 +120,9 @@ export function applyWatermark(base64: string, format: string, quality: number):
                 (blob) => {
                     if (!blob) {
                         resolve(
-                            canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, '')
+                            canvas
+                                .toDataURL(format, quality)
+                                .replace(/^data:image\/\w+;base64,/, '')
                         );
                         return;
                     }
@@ -137,7 +139,9 @@ export function applyWatermark(base64: string, format: string, quality: number):
                     };
                     reader.onerror = () => {
                         resolve(
-                            canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, '')
+                            canvas
+                                .toDataURL(format, quality)
+                                .replace(/^data:image\/\w+;base64,/, '')
                         );
                     };
                     reader.readAsDataURL(blob);

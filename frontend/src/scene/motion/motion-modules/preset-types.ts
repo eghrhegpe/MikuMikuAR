@@ -37,7 +37,9 @@ export function presetMapToModules(map: MotionPreset['modules']): MotionModuleSt
  */
 export function applyMotionPreset(modelId: string, preset: MotionPreset): void {
     for (const [moduleId, mod] of Object.entries(preset.modules)) {
-        if (!mod) continue;
+        if (!mod) {
+            continue;
+        }
         setModuleEnabled(modelId, moduleId, mod.enabled);
         for (const [key, value] of Object.entries(mod.params)) {
             setModuleParam(modelId, moduleId, key, value);

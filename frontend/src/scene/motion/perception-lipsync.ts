@@ -35,7 +35,9 @@ export function _applyLipSync(
     tier?: PerceptionTier
 ): void {
     // [doc:adr-164] tier 守卫：low 跳过
-    if (tier === 'low') return;
+    if (tier === 'low') {
+        return;
+    }
     const morphManager = mmdModel.mesh?.morphTargetManager;
     if (!morphManager) {
         return;

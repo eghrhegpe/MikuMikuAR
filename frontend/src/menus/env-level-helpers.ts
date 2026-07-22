@@ -26,10 +26,16 @@ export function _buildLevel(
             const disposes: (() => void)[] = [];
             for (const seg of segments) {
                 const d = cardContainer(container, seg);
-                if (typeof d === 'function') disposes.push(d);
+                if (typeof d === 'function') {
+                    disposes.push(d);
+                }
             }
             if (disposes.length > 0) {
-                return () => { for (const d of disposes) d(); };
+                return () => {
+                    for (const d of disposes) {
+                        d();
+                    }
+                };
             }
         },
     };

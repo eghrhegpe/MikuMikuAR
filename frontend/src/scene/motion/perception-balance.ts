@@ -60,7 +60,9 @@ export function _applyBalanceSway(
     const amplitude = ctx.state.balanceSwayAmplitude;
     const balanceState = ctx.lastOffsets.balance;
     // [doc:adr-164] tier 守卫：low 跳过
-    if (tier === 'low') return;
+    if (tier === 'low') {
+        return;
+    }
     const boneNames: string[] = mmdModel.runtimeBones.map((b: IMmdRuntimeBone) => b.name);
     const centerName = matchBone(boneNames, BONE_CENTER_CANDIDATES);
     const upper2Name = matchBone(boneNames, BONE_UPPER2_CANDIDATES);

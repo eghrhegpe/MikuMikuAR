@@ -331,7 +331,9 @@ function _canvasToBase64(
                         resolve(result.replace(/^data:image\/\w+;base64,/, ''));
                     } else {
                         resolve(
-                            canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, '')
+                            canvas
+                                .toDataURL(format, quality)
+                                .replace(/^data:image\/\w+;base64,/, '')
                         );
                     }
                 };

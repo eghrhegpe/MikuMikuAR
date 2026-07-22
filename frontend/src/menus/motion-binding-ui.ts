@@ -68,8 +68,9 @@ export function renderModuleToggleList(
         const state = getModuleState(modelId, mod.id);
         // [P3] 非默认参数摘要：让用户一眼看到哪个模块已调过参，无需逐个点进子页
         const defaults = mod.meta.defaults ?? {};
-        const tuned = Object.keys(state.params).filter((k) => state.params[k] !== defaults[k])
-            .length;
+        const tuned = Object.keys(state.params).filter(
+            (k) => state.params[k] !== defaults[k]
+        ).length;
         const sublabel = tuned > 0 ? t('motion.override.tunedParams', { n: tuned }) : undefined;
         slideRow(
             container,
@@ -418,7 +419,9 @@ export async function handleModelAction(action: string, id: string): Promise<voi
             break;
         case 'reset':
             if (inst.mmdModel && mmdRuntime) {
-                if (!(await showConfirm(t('motion.resetConfirm')))) return;
+                if (!(await showConfirm(t('motion.resetConfirm')))) {
+                    return;
+                }
                 // [doc:adr-167] 清空整个场景动作库 + 默认动作
                 clearAllSceneMotions();
                 if (isPlaying) {

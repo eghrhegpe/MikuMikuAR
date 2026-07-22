@@ -172,7 +172,8 @@ export const ja: Record<string, string> = {
         '⚠️ /sdcard/MMD を読むにはファイルアクセス権限が必要です。ダイアログで許可してください。',
     'main.permissionGranted': '✅ ファイル権限を許可しました、モデルライブラリを再スキャン中...',
     'main.pressAgainToExit': 'もう一度押すとアプリを終了します',
-    'main.networkOffline': '⚠️ ネットワークが切断されました。プラザなどのオンライン機能は利用できません',
+    'main.networkOffline':
+        '⚠️ ネットワークが切断されました。プラザなどのオンライン機能は利用できません',
     'main.networkOnline': '✅ ネットワークが復旧しました',
     'main.sceneAutoSaved': 'シーンを自動保存しました',
     'main.libraryRefreshed': '✅ モデルライブラリを更新しました',
@@ -1629,7 +1630,7 @@ export const ja: Record<string, string> = {
     'common.model': 'モデル',
     'common.prop': '小道具',
     'common.close': '閉じる',
-'common.delete': '削除',
+    'common.delete': '削除',
     'common.items': '件',
     'common.unknown': '不明',
     'model-detail.unloadThis': 'この{kind}をアンロード',

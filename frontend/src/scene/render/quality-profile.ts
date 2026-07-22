@@ -58,10 +58,7 @@ type QualityDimensionKey = (typeof QUALITY_DIMENSIONS)[number]['key'];
  * 注册表加字段后类型自动扩展，无需手动维护 interface。
  */
 export type QualityProfileSettings = {
-    [K in QualityDimensionKey]: Extract<
-        (typeof QUALITY_DIMENSIONS)[number],
-        { key: K }
-    >['default'];
+    [K in QualityDimensionKey]: Extract<(typeof QUALITY_DIMENSIONS)[number], { key: K }>['default'];
 };
 
 /**
@@ -98,10 +95,10 @@ export function inferQualityProfile(
     };
     const profiles: QualityProfile[] = ['low', 'medium', 'high'];
     for (const p of profiles) {
-        const allMatch = QUALITY_DIMENSIONS.every(
-            dim => dim.mapping[p] === values[dim.key]
-        );
-        if (allMatch) return p;
+        const allMatch = QUALITY_DIMENSIONS.every((dim) => dim.mapping[p] === values[dim.key]);
+        if (allMatch) {
+            return p;
+        }
     }
     return 'high';
 }

@@ -28,7 +28,11 @@ import { uiState, setUIState } from '../core/state';
 import { setLang, getLang } from '../core/i18n/locale';
 import type { LangCode } from '../core/i18n/locale';
 import { setLightState } from '../scene/render/lighting';
-import { setPerceptionState, getPerceptionStateFor, setPerceptionStateFor } from '../scene/motion/perception';
+import {
+    setPerceptionState,
+    getPerceptionStateFor,
+    setPerceptionStateFor,
+} from '../scene/motion/perception';
 import { setEnvState } from '../scene/scene';
 import { getStateValue, setStateValue } from '../menus/menu-schema';
 
@@ -781,9 +785,8 @@ describe('ADR-093 Menu Schema PoC', () => {
         });
 
         it('falls back to getModuleDefaultParam when undefined', async () => {
-            const { getModuleDefaultParam: gmdp } = await import(
-                '../scene/motion/motion-modules/registry'
-            );
+            const { getModuleDefaultParam: gmdp } =
+                await import('../scene/motion/motion-modules/registry');
             (gmdp as ReturnType<typeof vi.fn>).mockReturnValue(30);
             const { getStateValue: gsv } = await import('../menus/menu-schema');
             expect(gsv('motionModule.gaze.breathAmp')).toBe(30);
@@ -875,9 +878,8 @@ describe('ADR-093 Menu Schema PoC', () => {
                 const actual = await importOriginal<typeof import('../core/state')>();
                 return { ...actual, focusedModelId: TEST_MID };
             });
-            const { getModuleConflicts: gmc } = await import(
-                '../scene/motion/motion-modules/registry'
-            );
+            const { getModuleConflicts: gmc } =
+                await import('../scene/motion/motion-modules/registry');
             (gmc as ReturnType<typeof vi.fn>).mockReturnValue([
                 { bone: 'Head', byModule: 'breath' },
             ]);
@@ -905,9 +907,8 @@ describe('ADR-093 Menu Schema PoC', () => {
                 const actual = await importOriginal<typeof import('../core/state')>();
                 return { ...actual, focusedModelId: TEST_MID };
             });
-            const { getModuleConflicts: gmc } = await import(
-                '../scene/motion/motion-modules/registry'
-            );
+            const { getModuleConflicts: gmc } =
+                await import('../scene/motion/motion-modules/registry');
             (gmc as ReturnType<typeof vi.fn>).mockReturnValue([]);
             const { renderMenu: rm } = await import('../menus/render-menu');
             const schema: MenuNode[] = [

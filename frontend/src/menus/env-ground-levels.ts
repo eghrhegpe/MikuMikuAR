@@ -577,6 +577,10 @@ export function buildGroundLevel(): PopupLevel {
             },
         ];
         disposes.push(renderMenu(csHintSchema, c));
-        return () => { for (const d of disposes) d(); };
+        return () => {
+            for (const d of disposes) {
+                d();
+            }
+        };
     });
 }

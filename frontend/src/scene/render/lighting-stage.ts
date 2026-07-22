@@ -433,8 +433,7 @@ function _readStageLightState(entry: StageLightEntry): StageLightState {
         posZ: light.position.z,
         orbitAzimuth: (Math.atan2(light.position.x, light.position.z) * 180) / Math.PI,
         orbitElevation:
-            (Math.asin(light.position.y / Math.max(0.1, light.position.length())) * 180) /
-            Math.PI,
+            (Math.asin(light.position.y / Math.max(0.1, light.position.length())) * 180) / Math.PI,
         orbitDistance: light.position.length(),
     };
     if (state.type === 'spot' && light instanceof SpotLight) {

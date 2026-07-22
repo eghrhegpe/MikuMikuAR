@@ -643,7 +643,9 @@ function _runMiddlewares(
     ctx: { skipAutoSave: boolean }
 ): void {
     for (const mw of _middlewares) {
-        if (mw.phase !== phase) continue;
+        if (mw.phase !== phase) {
+            continue;
+        }
         try {
             mw.fn(envState, migrated, ctx);
         } catch (e) {
@@ -722,10 +724,7 @@ registerCelGroundCoupling((celActive: boolean) => {
         };
         // 仅当需要变更时才写：PBR 开启 → 关；接触阴影关闭 → 开
         if (_celGroundSnapshot.pbr || !_celGroundSnapshot.contact) {
-            setEnvState(
-                { groundPbrEnabled: false, groundContactShadowEnabled: true },
-                true
-            );
+            setEnvState({ groundPbrEnabled: false, groundContactShadowEnabled: true }, true);
         }
     } else if (_celGroundSnapshot) {
         setEnvState(

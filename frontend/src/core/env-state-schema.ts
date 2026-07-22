@@ -312,11 +312,15 @@ const _groupCache = new Map<string, string[]>();
  */
 export function getEnvKeys(group: EnvDispatchGroup): string[] {
     const cached = _groupCache.get(group);
-    if (cached) return cached;
+    if (cached) {
+        return cached;
+    }
     const keys: string[] = [];
     for (const [key, def] of Object.entries(ENV_STATE_SCHEMA)) {
         const g = (def as { group?: string | readonly string[] }).group;
-        if (!g) continue;
+        if (!g) {
+            continue;
+        }
         if (typeof g === 'string' ? g === group : g.includes(group)) {
             keys.push(key);
         }

@@ -234,7 +234,9 @@ export class InMemoryBoneOverrideStore implements BoneOverrideStore {
 
     releaseBones(modelId: string, moduleId: string): Set<string> {
         const owned = this._ownedMap(modelId).get(moduleId);
-        if (!owned) return new Set();
+        if (!owned) {
+            return new Set();
+        }
         const ownerByBone = this._ownerMap(modelId);
         const released = new Set<string>();
         for (const bone of [...owned]) {
@@ -284,7 +286,9 @@ export class InMemoryBoneOverrideStore implements BoneOverrideStore {
 
     getAllConflicts(): BoneConflict[] {
         const all: BoneConflict[] = [];
-        for (const list of this._conflicts.values()) all.push(...list);
+        for (const list of this._conflicts.values()) {
+            all.push(...list);
+        }
         return all;
     }
 

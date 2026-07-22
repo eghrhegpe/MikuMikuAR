@@ -200,27 +200,43 @@ export function addPresetChip(
     const btn = document.createElement('button');
     const variant = opts?.variant ?? 'default';
     const classes = ['preset-chip'];
-    if (active) classes.push('active');
-    if (variant === 'danger') classes.push('danger');
-    if (variant === 'badge') classes.push('badge');
-    if (opts?.wrap) classes.push('wrap-2');
+    if (active) {
+        classes.push('active');
+    }
+    if (variant === 'danger') {
+        classes.push('danger');
+    }
+    if (variant === 'badge') {
+        classes.push('badge');
+    }
+    if (opts?.wrap) {
+        classes.push('wrap-2');
+    }
     btn.className = classes.join(' ');
 
     if (opts?.icon) {
         const iconEl = createIconifyIcon(opts.icon);
-        if (iconEl) btn.appendChild(iconEl);
+        if (iconEl) {
+            btn.appendChild(iconEl);
+        }
     }
     btn.appendChild(document.createTextNode(label));
 
-    if (opts?.title) btn.title = opts.title;
-    if (opts?.marginTop != null) btn.style.marginTop = `${opts.marginTop}px`;
+    if (opts?.title) {
+        btn.title = opts.title;
+    }
+    if (opts?.marginTop != null) {
+        btn.style.marginTop = `${opts.marginTop}px`;
+    }
     if (opts?.marginLeft != null) {
         btn.style.marginLeft = opts.marginLeft === 'auto' ? 'auto' : `${opts.marginLeft}px`;
     }
 
     if (variant !== 'badge') {
         btn.addEventListener('click', (e) => {
-            if (opts?.stopPropagation) e.stopPropagation();
+            if (opts?.stopPropagation) {
+                e.stopPropagation();
+            }
             onClick();
         });
     }

@@ -62,7 +62,9 @@ export function unsubscribeAll(): void {
 const _proxyCache = new WeakMap<object, object>(); // [audit:P3] 缓存已创建的 Proxy，保证引用稳定
 export function reactive<T extends object>(obj: T): T {
     const cached = _proxyCache.get(obj);
-    if (cached) return cached as T;
+    if (cached) {
+        return cached as T;
+    }
     const proxy = new Proxy(obj, {
         get(target, key, receiver): unknown {
             const val = Reflect.get(target, key, receiver);
@@ -80,7 +82,9 @@ export function reactive<T extends object>(obj: T): T {
         },
         set(target, key, value, receiver): boolean {
             const old = Reflect.get(target, key, receiver);
-            if (Object.is(old, value)) return true; // [audit:P3] 同值短路，避免不必要刷新
+            if (Object.is(old, value)) {
+                return true;
+            } // [audit:P3] 同值短路，避免不必要刷新
             const result = Reflect.set(target, key, value, receiver);
             scheduleRefresh();
             return result;

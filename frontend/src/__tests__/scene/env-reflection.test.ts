@@ -27,19 +27,33 @@ describe('ADR-151 P2: getPlanarQualityOverride 非 planar 模式保底', () => {
     });
 
     it('reflectionMode=planar → 固定 low（控制平面倒影成本，不受 reflectionQuality 影响）', () => {
-        expect(getPlanarQualityOverride(baseState({ reflectionMode: 'planar', reflectionQuality: 'high' }))).toBe('low');
-        expect(getPlanarQualityOverride(baseState({ reflectionMode: 'planar', reflectionQuality: 'low' }))).toBe('low');
+        expect(
+            getPlanarQualityOverride(
+                baseState({ reflectionMode: 'planar', reflectionQuality: 'high' })
+            )
+        ).toBe('low');
+        expect(
+            getPlanarQualityOverride(
+                baseState({ reflectionMode: 'planar', reflectionQuality: 'low' })
+            )
+        ).toBe('low');
     });
 
     it('P2 修复: ssr/probe/hybrid + reflectionQuality=off → low（不再静默关闭角色倒影）', () => {
         for (const m of ['ssr', 'probe', 'hybrid'] as const) {
-            expect(getPlanarQualityOverride(baseState({ reflectionMode: m, reflectionQuality: 'off' }))).toBe('low');
+            expect(
+                getPlanarQualityOverride(baseState({ reflectionMode: m, reflectionQuality: 'off' }))
+            ).toBe('low');
         }
     });
 
     it('ssr/probe/hybrid + reflectionQuality=high → null（遵循用户显式设置）', () => {
         for (const m of ['ssr', 'probe', 'hybrid'] as const) {
-            expect(getPlanarQualityOverride(baseState({ reflectionMode: m, reflectionQuality: 'high' }))).toBeNull();
+            expect(
+                getPlanarQualityOverride(
+                    baseState({ reflectionMode: m, reflectionQuality: 'high' })
+                )
+            ).toBeNull();
         }
     });
 });
@@ -60,7 +74,11 @@ describe('ADR-151 P3: AR 模式联动反射挂起（纯派生覆盖）', () => {
         setReflectionARSuspended(true);
         setReflectionARSuspended(false);
         expect(resolveReflectionMode(baseState({ reflectionMode: 'hybrid' }))).toBe('hybrid');
-        expect(getPlanarQualityOverride(baseState({ reflectionMode: 'hybrid', reflectionQuality: 'off' }))).toBe('low');
+        expect(
+            getPlanarQualityOverride(
+                baseState({ reflectionMode: 'hybrid', reflectionQuality: 'off' })
+            )
+        ).toBe('low');
     });
 
     it('重复设置同一状态为空操作（不抛错）', () => {

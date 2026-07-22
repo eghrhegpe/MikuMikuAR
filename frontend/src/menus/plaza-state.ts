@@ -55,7 +55,9 @@ export function setLayer(el: HTMLElement | null): void {
     layer = el;
 }
 export function getLayer(): HTMLElement | null {
-    if (!layer) layer = document.getElementById('webviewLayer');
+    if (!layer) {
+        layer = document.getElementById('webviewLayer');
+    }
     return layer;
 }
 
@@ -114,7 +116,9 @@ export type OpenMode = 'embed' | 'external' | 'window';
 export function loadGlobalMode(): OpenMode | null {
     try {
         const v = localStorage.getItem(GLOBAL_MODE_KEY);
-        if (v === 'embed' || v === 'external' || v === 'window') return v;
+        if (v === 'embed' || v === 'external' || v === 'window') {
+            return v;
+        }
     } catch {
         /* ignore */
     }
@@ -133,19 +137,25 @@ export function effectiveMode(site: PlazaSite): OpenMode {
     try {
         const key = `miku.plaza.mode.${site.name}`;
         const saved = localStorage.getItem(key);
-        if (saved === 'embed' || saved === 'external' || saved === 'window') return saved;
+        if (saved === 'embed' || saved === 'external' || saved === 'window') {
+            return saved;
+        }
     } catch {
         /* ignore */
     }
     const global = loadGlobalMode();
-    if (global) return global;
+    if (global) {
+        return global;
+    }
     return site.mode ?? 'embed';
 }
 
 // ======== 代理生命周期 ========
 
 export function stopProxy(): void {
-    if (!plazaProxyActive) return;
+    if (!plazaProxyActive) {
+        return;
+    }
     setPlazaProxyActive(false);
     swallowError(StopProxy());
 }

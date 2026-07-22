@@ -7,7 +7,13 @@ import { Camera } from '@babylonjs/core/Cameras/camera';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 
 import { isARActive } from '../ar/ar-camera';
-import type { MeshMetadata, GazeConfig, MmdModelLike, PerceptionTier, GazeCache } from './perception-shared';
+import type {
+    MeshMetadata,
+    GazeConfig,
+    MmdModelLike,
+    PerceptionTier,
+    GazeCache,
+} from './perception-shared';
 import {
     _v3,
     _q,
@@ -73,14 +79,14 @@ function _clampImpl(
 
     // 限位 twist（yaw）：限制 twist 与 Identity 绕 +Y 的夹角
     let twistAngle = 2 * Math.acos(Math.min(Math.abs(twist.w), 1));
-    if (twist.y < 0) twistAngle = -twistAngle; // 保留方向
+    if (twist.y < 0) {
+        twistAngle = -twistAngle;
+    } // 保留方向
     const clampedTwistAngle = Math.max(-maxYawRad, Math.min(maxYawRad, twistAngle));
-    const clampedTwist = _q().copyFrom(
-        Quaternion.RotationAxis(Vector3.Up(), clampedTwistAngle)
-    );
+    const clampedTwist = _q().copyFrom(Quaternion.RotationAxis(Vector3.Up(), clampedTwistAngle));
 
     // 限位 swing：限制 swing 与 Identity 的总夹角（涵盖 pitch + roll）
-    let swingAngle = 2 * Math.acos(Math.min(Math.abs(desiredLocal.w), 1));
+    const swingAngle = 2 * Math.acos(Math.min(Math.abs(desiredLocal.w), 1));
     // swing 总角 ≈ sqrt(pitch² + roll²)，用 maxPitchRad 作为 swing 上限
     const maxSwingRad = maxPitchRad;
     const clampedSwing = _q();
@@ -148,10 +154,14 @@ export function _getGazeTarget(cam: Camera, out: Vector3): Vector3 {
  */
 function _worldToLocalGazeTarget(mmdModel: MmdModelLike, target: Vector3): void {
     const getWM = mmdModel.mesh.getWorldMatrix;
-    if (!getWM) return;
+    if (!getWM) {
+        return;
+    }
     // Babylon.js Mesh.getWorldMatrix() 返回 Matrix（含 scaling/rotation/translation）
     const rootWorld = getWM.call(mmdModel.mesh) as Matrix;
-    if (!rootWorld) return;
+    if (!rootWorld) {
+        return;
+    }
     const invRoot = _m().copyFrom(rootWorld).invert();
     // target = invRoot × target（把世界坐标转到 rootMesh 局部坐标）
     Vector3.TransformCoordinatesToRef(target, invRoot, target);
@@ -199,7 +209,9 @@ export function _applyGaze(
     cache?: GazeCache
 ): void {
     // [doc:adr-164] tier 守卫：low 跳过
-    if (tier === 'low') return;
+    if (tier === 'low') {
+        return;
+    }
 
     if (!config.headEnabled && !config.eyeEnabled) {
         return;

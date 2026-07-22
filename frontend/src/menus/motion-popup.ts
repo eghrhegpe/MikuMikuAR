@@ -37,7 +37,11 @@ import { buildGazeTrackingLevel } from './motion-gaze-levels';
 import { buildCameraLevel } from './motion-camera-levels';
 import { buildPoseStudioLevel } from './motion-pose-levels';
 import { t } from '../core/i18n/t';
-import { addSceneMotion, clearAllSceneMotions, replaceDefaultMotion } from '../scene/motion/motion-intent';
+import {
+    addSceneMotion,
+    clearAllSceneMotions,
+    replaceDefaultMotion,
+} from '../scene/motion/motion-intent';
 import { logWarn } from '../core/logger';
 import { addDisposableListener } from '../core/dom';
 
@@ -167,7 +171,9 @@ function motionOnItemClick(row: PopupRow): void {
             const menu = getMotionMenu();
             if (menu) {
                 const root = menu.getLevel(0);
-                if (root) root.items = buildMotionRootItems();
+                if (root) {
+                    root.items = buildMotionRootItems();
+                }
                 menu.pop();
             }
             return;
@@ -253,7 +259,9 @@ function motionOnItemClick(row: PopupRow): void {
                     const menu = getMotionMenu();
                     if (menu) {
                         const root = menu.getLevel(0);
-                        if (root) root.items = buildMotionRootItems();
+                        if (root) {
+                            root.items = buildMotionRootItems();
+                        }
                     }
                 },
                 onVmdReplace: (path: string, name: string) => {
@@ -267,7 +275,9 @@ function motionOnItemClick(row: PopupRow): void {
                     const menu = getMotionMenu();
                     if (menu) {
                         const root = menu.getLevel(0);
-                        if (root) root.items = buildMotionRootItems();
+                        if (root) {
+                            root.items = buildMotionRootItems();
+                        }
                     }
                 },
             }

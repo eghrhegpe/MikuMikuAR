@@ -364,22 +364,30 @@ function loadModelNormal(m: LibraryModel, isStage: boolean): void {
             .then((result) => {
                 setStatus(result.cached ? t('library.cacheHit') : t('library.extracted'), true);
                 if (m.format === 'vmd') {
-                    loadManager.load({ kind: 'vmd', path: result.file_path }, signal)
-                        .catch(err => setStatus(t('library.modelLoadFailed') + formatError(err), false));
+                    loadManager
+                        .load({ kind: 'vmd', path: result.file_path }, signal)
+                        .catch((err) =>
+                            setStatus(t('library.modelLoadFailed') + formatError(err), false)
+                        );
                 } else {
-                    loadManager.load(
-                        {
-                            kind: isStage ? 'stage' : 'actor',
-                            path: result.file_path,
-                            libraryPath: m.file_path,
-                            innerPath: m.zip_inner,
-                        },
-                        signal
-                    ).then(handle => {
-                        if (!handle) setStatus(t('library.modelLoadFailed'), false);
-                    }).catch(err => {
-                        setStatus(t('library.modelLoadFailed') + formatError(err), false);
-                    });
+                    loadManager
+                        .load(
+                            {
+                                kind: isStage ? 'stage' : 'actor',
+                                path: result.file_path,
+                                libraryPath: m.file_path,
+                                innerPath: m.zip_inner,
+                            },
+                            signal
+                        )
+                        .then((handle) => {
+                            if (!handle) {
+                                setStatus(t('library.modelLoadFailed'), false);
+                            }
+                        })
+                        .catch((err) => {
+                            setStatus(t('library.modelLoadFailed') + formatError(err), false);
+                        });
                 }
             })
             .catch((err) => {
@@ -396,17 +404,32 @@ function loadModelNormal(m: LibraryModel, isStage: boolean): void {
     }
     closeAllOverlays();
     if (m.format === 'pmx') {
-        loadManager.load({ kind: isStage ? 'stage' : 'actor', path: m.file_path }, signal)
-            .then(handle => { if (!handle) setStatus(t('library.modelLoadFailed'), false); })
-            .catch(err => setStatus(t('library.modelLoadFailed') + formatError(err), false));
+        loadManager
+            .load({ kind: isStage ? 'stage' : 'actor', path: m.file_path }, signal)
+            .then((handle) => {
+                if (!handle) {
+                    setStatus(t('library.modelLoadFailed'), false);
+                }
+            })
+            .catch((err) => setStatus(t('library.modelLoadFailed') + formatError(err), false));
     } else if (m.format === 'vmd') {
-        loadManager.load({ kind: 'vmd', path: m.file_path }, signal)
-            .then(handle => { if (!handle) setStatus(t('library.modelLoadFailed'), false); })
-            .catch(err => setStatus(t('library.modelLoadFailed') + formatError(err), false));
+        loadManager
+            .load({ kind: 'vmd', path: m.file_path }, signal)
+            .then((handle) => {
+                if (!handle) {
+                    setStatus(t('library.modelLoadFailed'), false);
+                }
+            })
+            .catch((err) => setStatus(t('library.modelLoadFailed') + formatError(err), false));
     } else if (m.format === 'audio') {
-        loadManager.load({ kind: 'audio', path: m.file_path }, signal)
-            .then(handle => { if (!handle) setStatus(t('library.modelLoadFailed'), false); })
-            .catch(err => setStatus(t('library.modelLoadFailed') + formatError(err), false));
+        loadManager
+            .load({ kind: 'audio', path: m.file_path }, signal)
+            .then((handle) => {
+                if (!handle) {
+                    setStatus(t('library.modelLoadFailed'), false);
+                }
+            })
+            .catch((err) => setStatus(t('library.modelLoadFailed') + formatError(err), false));
     } else if (m.format === 'vpd') {
         loadVPDPose(m.file_path);
     }

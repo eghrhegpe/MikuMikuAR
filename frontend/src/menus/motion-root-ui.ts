@@ -69,15 +69,14 @@ export function buildMotionRootItems(): PopupRow[] {
                     icon: radioIcon,
                     title: t('motion.selectMotion'),
                     onClick: () => {
-                        if (!motion.id || motion.id === activeId) return;
+                        if (!motion.id || motion.id === activeId) {
+                            return;
+                        }
                         const snap = pushUndoSnapshot();
                         setDefaultMotion(motion.id);
                         getMotionMenu()?.reRender();
                         triggerAutoSave();
-                        setStatus(
-                            t('motion.defaultMotionSet', { name: motion.vmdName }),
-                            true
-                        );
+                        setStatus(t('motion.defaultMotionSet', { name: motion.vmdName }), true);
                         offerSceneUndoAndRefresh(
                             t('motion.defaultMotionSet', { name: motion.vmdName }),
                             snap,
@@ -89,7 +88,9 @@ export function buildMotionRootItems(): PopupRow[] {
                     icon: 'lucide:settings-2',
                     title: t('motion.motionTools'),
                     onClick: () => {
-                        if (!motion.id) return;
+                        if (!motion.id) {
+                            return;
+                        }
                         getMotionMenu()?.push(buildMotionToolsLevel(motion.id));
                     },
                 },

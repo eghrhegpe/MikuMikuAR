@@ -73,7 +73,9 @@ function getValidMaterialCategories(): Set<string> {
         for (const bundle of Object.values(bundles)) {
             for (const key of MATERIAL_CATEGORY_KEYS) {
                 const val = bundle[key];
-                if (val) _validMaterialCategories.add(val);
+                if (val) {
+                    _validMaterialCategories.add(val);
+                }
             }
         }
     }
@@ -338,7 +340,7 @@ function buildLibrarySchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode
                                 label1: t('settings.library.patternLabel'),
                                 placeholder1: t('settings.library.patternPlaceholder'),
                                 label2: t('settings.library.categoryLabel'),
-                                placeholder2: MATERIAL_CATEGORY_KEYS.map(k => t(k)).join('/'),
+                                placeholder2: MATERIAL_CATEGORY_KEYS.map((k) => t(k)).join('/'),
                             });
                             if (!result) {
                                 return;
@@ -350,9 +352,7 @@ function buildLibrarySchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode
                                 setStatus(t('settings.invalidRegex'), false);
                                 return;
                             }
-                            if (
-                                !getValidMaterialCategories().has(category)
-                            ) {
+                            if (!getValidMaterialCategories().has(category)) {
                                 setStatus(t('settings.invalidCategory'), false);
                                 return;
                             }

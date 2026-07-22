@@ -45,7 +45,10 @@ export function getDirPath(p: string): string {
 // ======== Card Container ========
 
 /** Card container helper: removes render-card bg, wraps content in an lcard. Returns dispose from callback if provided. */
-export function cardContainer(container: HTMLElement, fn: (c: HTMLElement) => (() => void) | void): (() => void) | void {
+export function cardContainer(
+    container: HTMLElement,
+    fn: (c: HTMLElement) => (() => void) | void
+): (() => void) | void {
     container.classList.remove('render-card');
     const card = document.createElement('div');
     card.className = 'lcard';

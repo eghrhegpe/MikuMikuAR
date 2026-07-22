@@ -69,7 +69,15 @@ let _feetTick = 0;
 // 大腿根候选（用于估算髋位置与腿长）
 // 日文 PMX 标准名：左足/右足（MMD 惯例）；部分模型用 左大腿/右大腿 或 左腿/右腿
 const BONE_THIGH_L = ['左足', '左大腿', '左腿', 'left leg', 'LeftLeg', 'LeftThigh', 'left thigh'];
-const BONE_THIGH_R = ['右足', '右大腿', '右腿', 'right leg', 'RightLeg', 'RightThigh', 'right thigh'];
+const BONE_THIGH_R = [
+    '右足',
+    '右大腿',
+    '右腿',
+    'right leg',
+    'RightLeg',
+    'RightThigh',
+    'right thigh',
+];
 
 const _vFoot = new Vector3();
 const _vHip = new Vector3();

@@ -25,7 +25,13 @@ import {
     restoreUndoSnapshot,
 } from '../scene/scene';
 import { SelectDir, SaveScreenshot, SaveScenePreset } from '../core/wails-bindings';
-import { waitForFrame, tryCatchStatus, showErrorToast, closeAllOverlays, cardContainer } from '../core/utils';
+import {
+    waitForFrame,
+    tryCatchStatus,
+    showErrorToast,
+    closeAllOverlays,
+    cardContainer,
+} from '../core/utils';
 import { addDisposableListener } from '../core/dom';
 import { focusModel } from '../scene/scene';
 import { t } from '../core/i18n/t';
@@ -36,21 +42,35 @@ import { translateGoError } from '../core/i18n/goerr';
  * 用 toBlob 替代 toDataURL，编码移至后台线程，降低低端机 OOM 风险。
  * toBlob 失败时降级 toDataURL（受约束环境兼容）。
  */
-function canvasToBase64(canvas: HTMLCanvasElement, format: string, quality: number): Promise<string> {
+function canvasToBase64(
+    canvas: HTMLCanvasElement,
+    format: string,
+    quality: number
+): Promise<string> {
     return new Promise((resolve) => {
         canvas.toBlob(
             (blob) => {
                 if (!blob) {
-                    resolve(canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, ''));
+                    resolve(
+                        canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, '')
+                    );
                     return;
                 }
                 const reader = new FileReader();
                 reader.onload = () => {
                     const r = reader.result;
-                    resolve(typeof r === 'string' ? r.replace(/^data:image\/\w+;base64,/, '') : canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, ''));
+                    resolve(
+                        typeof r === 'string'
+                            ? r.replace(/^data:image\/\w+;base64,/, '')
+                            : canvas
+                                  .toDataURL(format, quality)
+                                  .replace(/^data:image\/\w+;base64,/, '')
+                    );
                 };
                 reader.onerror = () => {
-                    resolve(canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, ''));
+                    resolve(
+                        canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, '')
+                    );
                 };
                 reader.readAsDataURL(blob);
             },
@@ -204,7 +224,9 @@ function buildSceneRootItems(): PopupRow[] {
                     setStatus(t('scene.dragModeHint'), false);
                     const id = focusedModelId;
                     const inst = id ? modelRegistry.get(id) : undefined;
-                    if (inst) attachGizmoForKind(inst.kind, inst.id);
+                    if (inst) {
+                        attachGizmoForKind(inst.kind, inst.id);
+                    }
                 } else {
                     detachGizmo();
                     setStatus(t('scene.statusExitDrag'), false);

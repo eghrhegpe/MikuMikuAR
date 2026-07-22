@@ -23,15 +23,14 @@ function readBoneName(data: ArrayBuffer, index: number): string {
     const boneOffset = 54 + index * BONE_FRAME_SIZE;
     const src = new Uint8Array(data);
     let end = 0;
-    while (end < 15 && src[boneOffset + end] !== 0) end++;
+    while (end < 15 && src[boneOffset + end] !== 0) {
+        end++;
+    }
     return new TextDecoder('shift-jis').decode(src.slice(boneOffset, boneOffset + end));
 }
 
 /** 创建测试用 VMD，含指定骨骼名的骨骼帧 */
-function makeVmdWithBones(
-    boneNames: string[],
-    morphCount = 0
-): ArrayBuffer {
+function makeVmdWithBones(boneNames: string[], morphCount = 0): ArrayBuffer {
     const frames: BoneKeyFrame[] = boneNames.map((name, i) => ({
         name,
         frame: i,
@@ -40,9 +39,7 @@ function makeVmdWithBones(
         interp: INTERP_LINEAR,
     }));
     // 添加一个有 morph 帧的版本来验证 morph 保留
-    const morphFrames = morphCount > 0
-        ? [{ name: 'まばたき', frame: 0, weight: 0.5 }]
-        : [];
+    const morphFrames = morphCount > 0 ? [{ name: 'まばたき', frame: 0, weight: 0.5 }] : [];
     return buildVmd(frames, morphFrames);
 }
 

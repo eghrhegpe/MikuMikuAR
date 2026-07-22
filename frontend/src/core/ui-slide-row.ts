@@ -215,10 +215,10 @@ export function slideRow(
         // 点击 stopPropagation 后触发该动作（如切焦点），与整行 onClick 解耦。
         if (extra?.leading) {
             row.appendChild(createLeadingBtn(extra.leading));
-            } else if (!extra?.hideIcon) {
-                const iconSpan = document.createElement('span');
-                iconSpan.className = 'slide-icon';
-                if (extra?.iconFactory) {
+        } else if (!extra?.hideIcon) {
+            const iconSpan = document.createElement('span');
+            iconSpan.className = 'slide-icon';
+            if (extra?.iconFactory) {
                 const el = extra.iconFactory();
                 if (el) {
                     iconSpan.appendChild(el);

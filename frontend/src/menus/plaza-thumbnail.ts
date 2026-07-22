@@ -13,7 +13,9 @@ export function _plazaBtn(
     btn.className = className;
     btn.innerHTML = html;
     btn.onclick = onClick;
-    if (title) btn.title = title;
+    if (title) {
+        btn.title = title;
+    }
     return btn;
 }
 
@@ -29,7 +31,9 @@ export function _plazaSectionHeader(titleHtml: string, ...actions: HTMLElement[]
     if (actions.length > 0) {
         const actionBar = document.createElement('div');
         actionBar.className = 'plaza-section-actions';
-        for (const a of actions) actionBar.appendChild(a);
+        for (const a of actions) {
+            actionBar.appendChild(a);
+        }
         header.appendChild(actionBar);
     }
     return header;

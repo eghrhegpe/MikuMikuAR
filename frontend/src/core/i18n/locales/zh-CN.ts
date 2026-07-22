@@ -1510,7 +1510,7 @@ export const zhCN: Record<string, string> = {
     'common.model': '模型',
     'common.prop': '道具',
     'common.close': '关闭',
-'common.delete': '删除',
+    'common.delete': '删除',
     'common.items': '项',
     'common.unknown': '未知',
     'model-detail.unloadThis': '卸载此{kind}',
@@ -1625,7 +1625,8 @@ export const zhCN: Record<string, string> = {
     'settings.perf.showFpsClock': '显示帧率时钟',
     'settings.perf.showRuntimeBadge': '显示多线程徽标',
     'settings.perf.vsync': '帧率限制器',
-    'settings.perf.vsyncHintOn': '开启后限制 babymmd 的渲染帧率（浏览器/WebView 渲染自带垂直同步效果，故无需设置垂直同步）',
+    'settings.perf.vsyncHintOn':
+        '开启后限制 babymmd 的渲染帧率（浏览器/WebView 渲染自带垂直同步效果，故无需设置垂直同步）',
     'settings.perf.vsyncHintOff':
         '关闭后不施加人为限帧，渲染以显示器刷新率运行，"帧率上限"滑块失效。',
     'settings.perf.vsyncHintBrowser':

@@ -10,7 +10,12 @@ import { getEnvKeys } from '@/core/env-state-schema';
 import { ensureEnvUpdateObserver, addRipple, addGroundRipple, getGroundHeightAt } from './env-impl';
 import { _envSys, getScene } from './env-context';
 import { createCanvasTexture } from './env-texture';
-import { applyWetnessToAllModels, removeWetnessFromAllModels, isWetnessActive, applyWetnessToInst } from './env-wetness';
+import {
+    applyWetnessToAllModels,
+    removeWetnessFromAllModels,
+    isWetnessActive,
+    applyWetnessToInst,
+} from './env-wetness';
 
 // ======== Particle System ========
 let _currentParticleType: EnvState['particleType'] = 'none';
@@ -48,9 +53,12 @@ let _particleQualityMultiplier = 1;
 
 function resolveParticleQualityMultiplier(quality: 'high' | 'medium' | 'low'): number {
     switch (quality) {
-        case 'high': return 1.0;
-        case 'medium': return 0.6;
-        case 'low': return 0.3;
+        case 'high':
+            return 1.0;
+        case 'medium':
+            return 0.6;
+        case 'low':
+            return 0.3;
     }
 }
 
@@ -830,7 +838,10 @@ export function updateParticleParams(): void {
     if (!ps) {
         return;
     }
-    ps.emitRate = Math.max(0, _baseEmitRate * envState.particleEmitRate * _particleQualityMultiplier);
+    ps.emitRate = Math.max(
+        0,
+        _baseEmitRate * envState.particleEmitRate * _particleQualityMultiplier
+    );
     ps.minSize = _baseMinSize * envState.particleSize;
     ps.maxSize = _baseMaxSize * envState.particleSize;
     ps.minEmitPower = _baseMinEmitPower * envState.particleSpeed;

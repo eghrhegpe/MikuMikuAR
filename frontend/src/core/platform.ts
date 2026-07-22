@@ -26,7 +26,9 @@ export function isAndroidPlatform(): boolean {
 export async function awaitWailsBridge(timeout = 3000): Promise<boolean> {
     let settled = false;
     const poll = (resolve: (v: boolean) => void) => {
-        if (settled) return; // [audit:P2] 超时后停止轮询，防定时器泄漏
+        if (settled) {
+            return;
+        } // [audit:P2] 超时后停止轮询，防定时器泄漏
         if (typeof window.wails?.platform === 'function') {
             settled = true;
             resolve(true);

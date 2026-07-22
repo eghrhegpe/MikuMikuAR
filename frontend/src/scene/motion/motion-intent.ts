@@ -24,7 +24,9 @@ function genMotionId(): string {
  * null = 无默认动作（静态场景）。
  */
 export function getActiveMotion(): SceneMotionIntent | null {
-    if (!_activeMotionId) return null;
+    if (!_activeMotionId) {
+        return null;
+    }
     return _sceneMotions.find((m) => m.id === _activeMotionId) ?? null;
 }
 
@@ -128,7 +130,9 @@ export function removeSceneMotion(id: string): void {
  */
 export function updateSceneMotion(id: string, patch: Partial<SceneMotionIntent>): void {
     const idx = _sceneMotions.findIndex((m) => m.id === id);
-    if (idx < 0) return;
+    if (idx < 0) {
+        return;
+    }
     _sceneMotions[idx] = { ..._sceneMotions[idx], ...patch, id }; // 保留 id
     _motionGen++;
     _broadcastCallback?.(getActiveMotion(), _motionGen, null);
