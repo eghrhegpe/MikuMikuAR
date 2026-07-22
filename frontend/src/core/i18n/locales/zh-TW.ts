@@ -1179,7 +1179,7 @@ export const zhTW: Record<string, string> = {
     'env.patternRadial': '徑向漸層',
     'env.heightmapNoTilt': '地形模式不支援傾斜',
     'env.groundReflection': '地面反射與材質',
-    'env.groundMaterial': '材質與反射',
+    'env.groundMaterial': '材質與反射（寫實，可選）',
     'env.overlayPattern': '覆蓋圖案',
     'env.groundReflectQuality': '反射品質',
     'env.groundReflectBlend': '反射混合度',

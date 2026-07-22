@@ -37,7 +37,7 @@ import {
 } from '../render/lighting';
 import type { LightState } from '../render/lighting';
 import { applyLightingPresetFromEnv } from '../render/lighting';
-import { setContactShadow } from '../render/renderer';
+import { setContactShadow, registerCelGroundCoupling } from '../render/renderer';
 import { resolveQualityProfile, type QualityProfile } from '../render/quality-profile';
 import { scene } from '../scene';
 import { setKey } from '@/core/utils';
@@ -710,6 +710,34 @@ registerEnvStateMiddleware({
 
 // ADR-130 Phase 2.3: 注册 setEnvState 到 performance 桥接模块
 registerSetEnvState(setEnvState);
+
+// ADR-114 契合度修复：cel-shading 激活时强制地面哑光 + 接触阴影，消除视觉割裂。
+// 纯运行时守卫（skipAutoSave），不脏化场景；cel 关闭时恢复到开启前快照。
+let _celGroundSnapshot: { pbr: boolean; contact: boolean } | null = null;
+registerCelGroundCoupling((celActive: boolean) => {
+    if (celActive) {
+        _celGroundSnapshot = {
+            pbr: envState.groundPbrEnabled,
+            contact: envState.groundContactShadowEnabled,
+        };
+        // 仅当需要变更时才写：PBR 开启 → 关；接触阴影关闭 → 开
+        if (_celGroundSnapshot.pbr || !_celGroundSnapshot.contact) {
+            setEnvState(
+                { groundPbrEnabled: false, groundContactShadowEnabled: true },
+                true
+            );
+        }
+    } else if (_celGroundSnapshot) {
+        setEnvState(
+            {
+                groundPbrEnabled: _celGroundSnapshot.pbr,
+                groundContactShadowEnabled: _celGroundSnapshot.contact,
+            },
+            true
+        );
+        _celGroundSnapshot = null;
+    }
+});
 
 /** 立即刷写 env state 到后端（无防抖）。关闭/隐藏页面时调用。 */
 export function flushEnvState(): void {

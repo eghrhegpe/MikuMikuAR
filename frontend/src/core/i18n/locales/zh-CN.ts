@@ -1310,7 +1310,7 @@ export const zhCN: Record<string, string> = {
     'env.patternRadial': '径向渐变',
     'env.heightmapNoTilt': '地形模式不支持倾斜',
     'env.groundReflection': '地面反射与材质',
-    'env.groundMaterial': '材质与反射',
+    'env.groundMaterial': '材质与反射（写实，可选）',
     'env.overlayPattern': '覆盖图案',
     'env.groundReflectQuality': '反射质量',
     'env.groundReflectBlend': '反射混合度',

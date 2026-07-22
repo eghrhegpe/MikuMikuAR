@@ -101,6 +101,14 @@ let _celHandle: ObserverHandle | null = null;
 let _celColorLevels = 4;
 let _celEdgeThreshold = 0.2;
 let _celEdgeStrength = 0.6;
+
+// ADR-114 契合度修复：cel 激活时强制地面哑光 + 接触阴影，避免「cel 角色踩镜面地板」割裂。
+// 通过注册回调解耦（renderer 不反向依赖 env-bridge，避免循环依赖）。
+type CelGroundCoupling = (celActive: boolean) => void;
+let _celGroundCoupling: CelGroundCoupling | null = null;
+export function registerCelGroundCoupling(fn: CelGroundCoupling): void {
+    _celGroundCoupling = fn;
+}
 /** 当前渲染过渡动画 observer（用于去重） */
 let _renderTransitionObserver: ObserverHandle | null = null;
 
@@ -486,9 +494,21 @@ function _applyRenderState(s: Partial<RenderState>): void {
             });
             // 真 cel-shading：开启时创建并挂接 cel 后处理（posterize + Sobel）
             _ensureCelPostProcess(true);
+            // ADR-114 契合度修复：强制地面哑光 + 接触阴影，消除与 PBR 镜面地板的视觉割裂
+            try {
+                _celGroundCoupling?.(true);
+            } catch (e) {
+                logWarn('renderer', 'celGroundCoupling(on) 失败:', e);
+            }
         } else {
             // 恢复到快照状态
             _celShadingMode = false;
+            // ADR-114 契合度修复：恢复地面 PBR / 接触阴影到 cel 开启前状态
+            try {
+                _celGroundCoupling?.(false);
+            } catch (e) {
+                logWarn('renderer', 'celGroundCoupling(off) 失败:', e);
+            }
             // 真 cel-shading：关闭时销毁 cel 后处理
             _ensureCelPostProcess(false);
             if (_originalRenderState) {
@@ -677,6 +697,8 @@ function _ensureCelPostProcess(enabled: boolean): void {
                     effect.setFloat('edgeStrength', _celEdgeStrength);
                 });
                 camera.attachPostProcess(_celPP);
+                // ADR-114 契合度修复：保证接触阴影先于 cel 执行（阴影被量化，与 anime 一致）
+                _ensurePostProcessOrder(camera);
             } catch (err) {
                 logWarn('renderer', 'CelShading PostProcess 创建失败:', err);
                 _celPP = null;
@@ -689,6 +711,21 @@ function _ensureCelPostProcess(enabled: boolean): void {
             _celPP = safeDispose(_celPP);
             _celHandle = null;
         }
+    }
+}
+
+/**
+ * ADR-114 契合度修复：当接触阴影与 cel-shading 后处理同时存在时，
+ * 强制接触阴影在 cel 之前执行。接触阴影 darken 地面后，cel 的 posterize + Sobel
+ * 再量化整图，使阴影边缘与 anime 色块感一致；反之 cel 先量化、接触阴影后叠加会割裂。
+ * 仅当两者均存在时重排，单后处理时顺序无关。
+ */
+function _ensurePostProcessOrder(camera: Camera): void {
+    if (_contactShadowPP && _celPP) {
+        camera.detachPostProcess(_contactShadowPP);
+        camera.detachPostProcess(_celPP);
+        camera.attachPostProcess(_contactShadowPP);
+        camera.attachPostProcess(_celPP);
     }
 }
 
@@ -766,6 +803,8 @@ export function setContactShadow(state: EnvState): void {
                 );
                 _contactShadowHandle = observe(_contactShadowPP.onApplyObservable, handler);
                 camera.attachPostProcess(_contactShadowPP);
+                // ADR-114 契合度修复：保证接触阴影先于 cel 执行
+                _ensurePostProcessOrder(camera);
             } catch (err) {
                 logWarn('renderer', 'ContactShadow PostProcess 创建失败:', err);
                 _contactShadowPP = null;

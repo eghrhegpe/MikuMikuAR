@@ -1188,7 +1188,7 @@ export const ko: Record<string, string> = {
     'env.patternRadial': '래디얼',
     'env.heightmapNoTilt': '높이맵 모드에서는 기울기 지원 안 함',
     'env.groundReflection': '지면 반사와 재질',
-    'env.groundMaterial': '재질 및 반사',
+    'env.groundMaterial': '재질 및 반사 (사실적, 선택)',
     'env.overlayPattern': '오버레이 패턴',
     'env.groundReflectQuality': '반사 품질',
     'env.groundReflectBlend': '반사 블렌드',

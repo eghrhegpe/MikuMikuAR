@@ -1194,7 +1194,7 @@ export const ja: Record<string, string> = {
     'env.patternRadial': '放射グラデ',
     'env.heightmapNoTilt': 'ハイトマップモードでは傾け不可',
     'env.groundReflection': '地面反射とマテリアル',
-    'env.groundMaterial': 'マテリアルと反射',
+    'env.groundMaterial': 'マテリアルと反射（写実・オプション）',
     'env.overlayPattern': 'オーバーレイパターン',
     'env.groundReflectQuality': '反射品質',
     'env.groundReflectBlend': '反射ブレンド',
