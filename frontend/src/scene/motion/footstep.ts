@@ -8,7 +8,7 @@
 // 按地面材质微调音色。每个 kind 生成 3 个变体（不同种子），播放时随机选，叠加 detune 音高随机化。
 // 云资源/Promise 不引入。
 
-import { getAudioContext, getSfxEnabled, playSfx } from '@/core/audio-bus';
+import { getAudioContext, getSfxEnabled, getFootstepVolume, playSfx } from '@/core/audio-bus';
 import { uiState, envState } from '@/core/state';
 import { setOnFootLand, isFeetAdjustmentRunning, type FootLandEvent } from './feet-adjustment';
 import {
@@ -52,7 +52,7 @@ function _seededRandom(seed: number): () => number {
 
 /** 依据当前地面类型推断脚步音色。 */
 export function resolveGroundSfxKind(): GroundSfxKind {
-    if (envState.waterEnabled || envState.planarReflectBlend > 0) {
+    if (envState.waterEnabled) {
         return 'water';
     }
     if (envState.groundType === 'terrain') {
@@ -137,7 +137,7 @@ export function startFootstep(scene: import('@babylonjs/core/scene').Scene): voi
         const variants = _getVariants(kind);
         const buf = variants[Math.floor(Math.random() * variants.length)];
         const impactVol = Math.max(0.2, Math.min(1, e.impactSpeed / REF_IMPACT_SPEED));
-        const footstepVol = uiState.footstepVolume ?? 0.8;
+        const footstepVol = getFootstepVolume();
         const vol = impactVol * footstepVol;
         const detune = Math.random() * 160 - 80;
 

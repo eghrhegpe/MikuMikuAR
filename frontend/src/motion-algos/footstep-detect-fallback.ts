@@ -31,12 +31,22 @@ const SOLE_THRESHOLD = 0.05;
 /** 最小落地间隔（ms），复用 feet-adjustment 相同的去抖值 */
 const MIN_STEP_INTERVAL = 120;
 
+/** 复用临时坐标对象：避免每帧每脚分配 {x,y,z}（P4-2 修复） */
+const _tmpPos = { x: 0, y: 0, z: 0 };
+
+/** IK 骨骼最小形态：仅取检测所需字段，解析期缓存引用避免热路径每帧 find（P3-3 修复） */
+type _IkBoneRef = {
+    name: string;
+    getWorldTranslationToRef?(v: { x: number; y: number; z: number }): void;
+};
+
 /** 每只脚的状态缓存 */
 interface _FootState {
     prevGrounded: boolean;
     footYPrev: number;
     lastLandTime: number;
     ikName: string | null;
+    ikBone: _IkBoneRef | null;
 }
 
 /** 每个模型的状态缓存 */
@@ -80,8 +90,8 @@ export function startFallbackDetection(scene: Scene, onFootLand: (e: FootLandEve
             let state = _modelStates.get(modelId);
             if (!state) {
                 state = {
-                    l: { prevGrounded: false, footYPrev: 0, lastLandTime: 0, ikName: null },
-                    r: { prevGrounded: false, footYPrev: 0, lastLandTime: 0, ikName: null },
+                    l: { prevGrounded: false, footYPrev: 0, lastLandTime: 0, ikName: null, ikBone: null },
+                    r: { prevGrounded: false, footYPrev: 0, lastLandTime: 0, ikName: null, ikBone: null },
                     resolved: false,
                 };
                 _modelStates.set(modelId, state);
@@ -90,13 +100,17 @@ export function startFallbackDetection(scene: Scene, onFootLand: (e: FootLandEve
             // 惰性解析 IK 骨骼名
             if (!state.resolved) {
                 const names = bones.map((b) => b.name);
-                state.l.ikName = matchBone(names, BONE_LEG_IK_L_CANDIDATES);
-                state.r.ikName = matchBone(names, BONE_LEG_IK_R_CANDIDATES);
+                const lName = matchBone(names, BONE_LEG_IK_L_CANDIDATES);
+                const rName = matchBone(names, BONE_LEG_IK_R_CANDIDATES);
+                state.l.ikName = lName;
+                state.l.ikBone = lName ? (bones.find((b) => b.name === lName) ?? null) : null;
+                state.r.ikName = rName;
+                state.r.ikBone = rName ? (bones.find((b) => b.name === rName) ?? null) : null;
                 state.resolved = true;
             }
 
-            _checkFoot(bones, state.l, 'L', modelId, dt, now);
-            _checkFoot(bones, state.r, 'R', modelId, dt, now);
+            _checkFoot(state.l, 'L', modelId, dt, now);
+            _checkFoot(state.r, 'R', modelId, dt, now);
         }
     };
 
@@ -111,36 +125,27 @@ export function stopFallbackDetection(): void {
     _lastTickTime = 0;
 }
 
-/** 对单只脚做落地检测。 */
+/** 对单只脚做落地检测（使用解析期缓存的 ikBone 引用，无热路径 find）。 */
 function _checkFoot(
-    bones: readonly {
-        name: string;
-        getWorldTranslationToRef?(v: { x: number; y: number; z: number }): void;
-    }[],
     footState: _FootState,
     side: 'L' | 'R',
     modelId: string,
     dt: number,
     now: number
 ): void {
-    const ikName = footState.ikName;
-    if (!ikName) {
-        return;
-    }
-    const ik = bones.find((b) => b.name === ikName);
+    const ik = footState.ikBone;
     if (!ik || !ik.getWorldTranslationToRef) {
         return;
     }
-    const pos = { x: 0, y: 0, z: 0 };
-    ik.getWorldTranslationToRef(pos);
-    const groundY = getGroundHeightAt(pos.x, pos.z);
-    const grounded = pos.y - groundY < SOLE_THRESHOLD;
+    ik.getWorldTranslationToRef(_tmpPos);
+    const groundY = getGroundHeightAt(_tmpPos.x, _tmpPos.z);
+    const grounded = _tmpPos.y - groundY < SOLE_THRESHOLD;
 
     const det = detectFootLanding({
         prevGrounded: footState.prevGrounded,
         grounded,
         footYPrev: footState.footYPrev,
-        footY: pos.y,
+        footY: _tmpPos.y,
         dt,
         prevStepTime: footState.lastLandTime,
         now,
@@ -149,7 +154,7 @@ function _checkFoot(
 
     // 更新状态（无论是否触发都更新，供下一帧判定）
     footState.prevGrounded = grounded;
-    footState.footYPrev = pos.y;
+    footState.footYPrev = _tmpPos.y;
     if (det.landed) {
         footState.lastLandTime = now;
     }
@@ -160,8 +165,8 @@ function _checkFoot(
             foot: side,
             groundY,
             impactSpeed: det.impactSpeed,
-            worldX: pos.x,
-            worldZ: pos.z,
+            worldX: _tmpPos.x,
+            worldZ: _tmpPos.z,
         });
     }
 }
