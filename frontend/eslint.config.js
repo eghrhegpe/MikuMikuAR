@@ -34,6 +34,9 @@ export default [
         ...globals.browser,
         ...globals.es2022,
         __MMD_ENABLE_MPR__: 'readonly',
+        // 环境全局类型：由 @babylonjs/core 的 `declare global` 注入（Engines/engine.d.ts），
+        // 非运行时值，仅供类型标注；eslint 的 no-undef 看不见全局类型增强，故在此登记。
+        XRSessionMode: 'readonly',
       },
     },
     plugins: {
