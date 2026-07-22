@@ -53,6 +53,8 @@ export function _applyHeadGazeJS(
     if (cache) {
         if (!cache.headWorldQ) cache.headWorldQ = new Quaternion();
         cache.headWorldQ.copyFrom(finalQ);
+        if (!cache.headTargetWorldQ) cache.headTargetWorldQ = new Quaternion();
+        cache.headTargetWorldQ.copyFrom(clampedTargetQ);
     }
 
     // 写入既有实例，不外泄池引用
@@ -101,8 +103,10 @@ export function _applyEyeGazeJS(
             Matrix.IdentityToRef(parentWorldInv);
         }
 
-        const parentInvQ = Quaternion.FromRotationMatrix(parentWorldInv);
-        const parentWorldQ = _q().copyFrom(parentInvQ).invert();
+        const parentWorldQ = cache?.headTargetWorldQ
+            ? _q().copyFrom(cache.headTargetWorldQ)
+            : _q().copyFrom(Quaternion.FromRotationMatrix(parentWorldInv)).invert();
+        const parentInvQ = _q().copyFrom(parentWorldQ).invert();
 
         const cachedLocal = cache?.eyeLocalQ.get(boneName);
         const curWorldQ = cachedLocal
