@@ -290,3 +290,13 @@ export function createDefaultFeetState(): FeetState {
 **锁定**：`feet-adjustment.test.ts` 新增 2 例回归（高地形坡顶脚落回应贴地 `skip=false groundY=3.0` / 高地形上脚真正抬起仍 `skip=true footY=5.5`）。全量单测 1253 例全绿（`npm run check` / `npm run test` / `npm run build` 三项通过）。
 
 **附带修复（无关脚部，env-preset 工作遗留）**：`app.contract.test.ts` 期望清单漏列 `SaveEnvPresetAuto`（ADR-087 新增 Go 绑定 `SaveEnvPresetAuto` 已重新生成），补入「函数导出」+「方法 ID」两处清单，恢复契约测试全绿。
+
+### 应用场景契合度审核修正（2026-07-19）
+
+审核结论：**契合度良好**，3 项代码修正。
+
+| 级别 | 位置 | 问题 | 处置 |
+|------|------|------|------|
+| 🟡 P3 | `motion-feet-levels.ts` | `bodySmooth` 滑块暴露于 UI 但引擎（`solveFootTarget`/`_adjustFoot`）从未读取，用户调了无效果 | ✅ 移除 UI 滑块，替换为注释说明 Phase B 预留（髋部跟随需修改センター骨骼，超出 Phase A 纯 IK 目标驱动范围）；`FeetState.bodySmooth` 字段保留以维持序列化兼容 |
+| 🟡 P3 | `core/types.ts:84` | `bodySmooth` 注释未标注引擎未使用 | ✅ 补充注释：「Phase B 预留：髋部跟随センター骨骼的平滑系数，Phase A 引擎未读取此字段，UI 暂不暴露」 |
+| 🟢 P4 | `feet-adjustment.ts:70-71` | `BONE_THIGH_L/R` 候选仅 3 项（`左足`/`left leg`/`LeftLeg`），缺少日文 PMX 非标准命名（`左大腿`/`左腿`） | ✅ 扩充至 7 项：新增 `左大腿`/`左腿`/`LeftThigh`/`left thigh` 及对应右侧变体，提升非标准 PMX 模型腿长估算精度（`_findHip` 仍有 2 级父骨骼回退兜底） |

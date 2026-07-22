@@ -81,7 +81,8 @@ export type FeetState = {
     soleHeight: number;
     /** 跳跃阈值：脚踝 Y 超过此值暂停校正（允许踢腿/跳跃），默认 0.5 */
     jumpThreshold: number;
-    /** 身体响应平滑 0–1，默认 0.5 */
+    /** 身体响应平滑 0–1，默认 0.5。Phase B 预留：髋部跟随センター骨骼的平滑系数，
+     *  Phase A 引擎未读取此字段（仅脚 IK 目标驱动），UI 暂不暴露。 */
     bodySmooth: number;
     /** 脚部响应平滑 0–1，默认 0.5 */
     footSmooth: number;
