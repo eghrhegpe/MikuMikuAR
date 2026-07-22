@@ -145,6 +145,7 @@ export function buildGroundLevel(): PopupLevel {
                                         groundTextureEnabled: false,
                                         groundProceduralTexture: tp.value,
                                         groundStyle: 'solid',
+                                        groundPbrEnabled: true,
                                     };
                                     setEnvState(patch as Parameters<typeof setEnvState>[0]);
                                 } else {

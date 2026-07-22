@@ -100,20 +100,23 @@ export function removeWetnessFromAllModels(): void {
     if (!_wetnessActive) {
         return;
     }
-    _wetnessActive = false;
-    for (const [, inst] of modelRegistry) {
-        if (!inst.meshes) {
-            continue;
-        }
-        for (const mesh of inst.meshes) {
-            const mat = mesh.material;
-            if (!mat) {
+    try {
+        for (const [, inst] of modelRegistry) {
+            if (!inst.meshes) {
                 continue;
             }
-            _restoreMaterialState(mat);
+            for (const mesh of inst.meshes) {
+                const mat = mesh.material;
+                if (!mat) {
+                    continue;
+                }
+                _restoreMaterialState(mat);
+            }
         }
+    } finally {
+        _wetnessActive = false;
+        _originalMaterialState.clear();
     }
-    _originalMaterialState.clear();
 }
 
 export function isWetnessActive(): boolean {
