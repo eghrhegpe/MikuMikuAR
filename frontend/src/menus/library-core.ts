@@ -864,6 +864,39 @@ export function buildLevel(
     };
 }
 
+const FORMATION_KEYS: Record<string, string> = {
+    'line': 'scene.formation.line',
+    'v-shape': 'scene.formation.vshape',
+    'circle': 'scene.formation.circle',
+    'grid': 'scene.formation.grid',
+    'diagonal': 'scene.formation.diagonal',
+    'arc': 'scene.formation.arc',
+};
+
+// ======== Formation 阵型 ========
+
+export function buildModelFormationLevel(): PopupLevel {
+    const formations: string[] = ['line', 'v-shape', 'circle', 'grid', 'diagonal', 'arc'];
+    const icons: Record<string, string> = {
+        'line': 'lucide:minus',
+        'v-shape': 'lucide:chevron-up',
+        'circle': 'lucide:circle',
+        'grid': 'lucide:grid-3x3',
+        'diagonal': 'lucide:trending-up',
+        'arc': 'lucide:arrow-up-right',
+    };
+    return {
+        label: t('scene.formation'),
+        dir: '',
+        items: formations.map((f) => ({
+            kind: 'action' as const,
+            label: t(FORMATION_KEYS[f]),
+            icon: icons[f],
+            target: `formation:set:${f}`,
+        })),
+    };
+}
+
 // ======== 根级菜单项 ========
 
 export function buildModelRootItems(): PopupRow[] {
@@ -899,6 +932,14 @@ export function buildModelRootItems(): PopupRow[] {
     }
     if (actors.length > 0) {
         items.push({ kind: 'divider', label: '', icon: '', target: '' });
+    }
+    if (modelRegistry.size > 1) {
+        items.push({
+            kind: 'folder',
+            label: t('scene.formation'),
+            icon: 'lucide:layout-grid',
+            target: 'models:formation',
+        });
     }
     items.push({
         kind: 'folder',
