@@ -135,21 +135,9 @@ function buildFeetSchema(): MenuNode[] {
                         { bind: () => inst.feet.jumpThreshold }
                     );
 
-                    addSliderRow(
-                        inner,
-                        t('motion.feet.bodySmooth'),
-                        feet.bodySmooth,
-                        0,
-                        1,
-                        0.05,
-                        (v) => {
-                            feet.bodySmooth = v;
-                            persist();
-                        },
-                        'lucide:waves',
-                        undefined,
-                        { bind: () => inst.feet.bodySmooth }
-                    );
+                    // bodySmooth（身体平滑度）：Phase B 预留 — 髋部跟随需修改センター骨骼，
+                    // 超出 Phase A 纯 IK 目标驱动范围，暂不暴露 UI 滑块。
+                    // 字段保留于 FeetState 以保持序列化兼容。
 
                     addSliderRow(
                         inner,
