@@ -1,7 +1,7 @@
 # ADR-017: Android 平台适配（精简版）
 
-> **状态**: 主体已完成（Phase A/B/C ✅）；§六 P0(A0-01/A0-02) 与 P1(A1-01~03) 已实施；A0-01 采用 `MIXED_CONTENT_ALWAYS_ALLOW` 偏离推荐方案（技术债）；SAF 目录选择（§四）仍待实施（核对于 2026-07-10）
-> **关联**: ADR-058（basenameFallbackFS）
+> **状态**: 主体已完成（Phase A/B/C ✅）；P0(A0-01/A0-02) 与 P1(A1-01~05) ✅ 全部已实施；P2 七项中六项 ✅ 已落地（A2-01/02/05/06/07），A2-04 ⚠️ 部分修复（缩略图迁移 `toBlob`，AR 截图 + 水印仍走 `toDataURL`）；P3 四项中 A3-03 ✅ 已修复、A3-02 ⚪ 风险自愈、A3-01 ⚠️ 半完成（Java 事件总线就绪，前端零消费）、A3-04 🔴 待实施（前端消费事件总线）。A0-01 采用 `MIXED_CONTENT_ALWAYS_ALLOW` 偏离推荐方案（技术债）。§四 SAF 目录选择方案已放弃，改用 `MANAGE_EXTERNAL_STORAGE` 授权 `/sdcard/MMD`（2026-07-22 核对）。
+> **关联**: ADR-058（basenameFallbackFS）、ADR-133（Android MPR 缺口）
 > **来源**: ADR-017 + ADR-023 + ADR-067 + ADR-068 四合一（2026-07-08）
 
 ---
@@ -80,20 +80,33 @@ type FileAccessor interface {
 
 ---
 
-## 四、Android 文件访问现状（勘误后）
+## 四、Android 文件访问现状（2026-07-22 核对）
+
+> **【2026-07-22 重大修订】** 原"SAF 目录选择未走通"方案已**放弃**。改走 `MANAGE_EXTERNAL_STORAGE` 授权整个 `/sdcard/MMD` 目录，Go 端用 `os.*` 直读文件系统路径——无需 SAF `content://` 遍历桥接，更务实。
 
 | 能力 | 状态 | 说明 |
 |------|------|------|
 | SAF 单/多文件选择 | ✅ 正常 | Wails `showFilePicker` → 自动复制到 cache → 返真实路径 |
-| SAF 目录选择 | ❌ **未走通** | Wails 安卓直接拒绝（`dialogs_android.go:120`）；Java `openDocumentTree` 是孤儿桥（无人调用）+ `androidFileAccessor` 不支持 `content://` 遍历 |
-| `content://` 遍历 | ❌ 不支持 | `androidFileAccessor` 对全部 `content://` 返回 `ErrContentUriNotSupported` |
+| 授权目录（`/sdcard/MMD`） | ✅ **已落地** | `MANAGE_EXTERNAL_STORAGE` 权限授权后，Go 端 `os.*` 直读；Java 桥 `requestManageExternalStorage()` + `hasExternalStoragePermission()`（`MainActivity.java:316-355`）；JS 桥 `requestStoragePermission()` / `hasStoragePermission()`（`WailsJSBridge.java:119-142`） |
+| 私有目录（`Android/data/<pkg>/files/MMD`） | ✅ 正常 | 默认存储位置，无需权限 |
+| `content://` 遍历 | ⚪ 不再需要 | 授权目录方案下 Go 走 `os.*` 文件系统路径，无需 SAF `content://` 桥接 |
+| 存储模式切换 | ✅ 已实现 | 前端 `switchStorageMode('private' \| 'shared')`（`library-setup.ts:138`），用户可在私有/授权目录间切换 |
+
+**授权目录实现链路**：
+
+| 层 | 实现 | 位置 |
+|----|------|------|
+| AndroidManifest | 声明 `MANAGE_EXTERNAL_STORAGE`（Android 11+）+ legacy `READ/WRITE_EXTERNAL_STORAGE`（Android 10-） | `AndroidManifest.xml:20-28` |
+| Java 桥 | `requestManageExternalStorage()` 跳系统设置 + `hasExternalStoragePermission()` 查 `Environment.isExternalStorageManager()` | `MainActivity.java:316-355` |
+| JS 桥 | `requestStoragePermission()` / `hasStoragePermission()` @JavascriptInterface | `WailsJSBridge.java:119-142` |
+| Go 路径管理 | private=`/storage/emulated/0/Android/data/<pkg>/files/MMD`；shared=`/sdcard/MMD` | `pathmgr_android.go:18-26` |
+| Go 文件访问 | `os.*` 直读 `/sdcard/MMD`（授权后无需 SAF bridge） | `fileaccess_android.go:14-20` |
+| 前端切换 | `switchStorageMode('private' \| 'shared')` | `library-setup.ts:138` |
+| i18n | `settings.storageShared`「授权目录」+ `library.confirmSwitchShared` + `main.needFileAccess` | `zh-CN.ts:913,1174,1204` |
 
 **桌面端遗留问题**：`SelectDir` 的 `CanChooseDirectories(true)` 在 Windows 上实际弹出文件选择器而非目录选择器（待修复）。
 
-**目录选择三条路径（勘误后）**：
-- **C（止血·推荐）**：前端捕获 `SelectDir()` 异常并提示「安卓暂不支持选目录」
-- **A（治本）**：Go 显式调 `openDocumentTree` + `androidFileAccessor` 经 `ContentResolver` 遍历 `content://` tree（即重启原 B 路径）
-- **B（务实）**：资源根目录改 app 私有/授权目录，模型经 SAF 文件选择器导入
+**Google Play 政策风险**：`MANAGE_EXTERNAL_STORAGE` 受 Google Play 政策限制，仅授予文件管理器/杀毒等类应用。若上架 Google Play 需申请豁免或降级为 MediaStore API + SAF 文件选择；当前走 sideload 分发无影响。
 
 ---
 
@@ -110,7 +123,9 @@ type FileAccessor interface {
 
 > 以下为 ADR-067 扫描出的隐患清单，已排除本 ADR 中已修复的项目。
 
-> **【2026-07-10 核对更新】** 本清单原标注为"待实施"，实际核对代码后：P0 两项（A0-01/A0-02）与 P1 三项（A1-01~03）**均已实施**。其中 A0-02 与推荐方向一致；A0-01 实际以 `MIXED_CONTENT_ALWAYS_ALLOW` 放行，与下方推荐方案及决策点 3（"补 usesCleartextTraffic 而非放宽安全策略"）冲突，列为**技术债**，建议后续改为 `WebViewAssetLoader.PathHandler` 代理模型文件。P2/P3 仍列待实施，本次核对未覆盖。
+> **【2026-07-10 核对更新】** 本清单原标注为"待实施"，实际核对代码后：P0 两项（A0-01/A0-02）与 P1 三项（A1-01~03）**均已实施**。其中 A0-02 与推荐方向一致；A0-01 实际以 `MIXED_CONTENT_ALWAYS_ALLOW` 放行，与下方推荐方案及决策点 3（"补 usesCleartextTraffic 而非放宽安全策略"）冲突，列为**技术债**，建议后续改为 `WebViewAssetLoader.PathHandler` 代理模型文件。
+
+> **【2026-07-22 二次核对更新】** P2/P3 全量核对代码后：A2-01/05/06/07 + A3-03 **已落地**；A2-03 降级 P4（风险被高估）；A2-04 部分修复（缩略图已迁移 `toBlob`，但 AR 截图 + 水印合成仍走 `toDataURL`）；A3-01 半完成（Java 端事件总线就绪，前端零消费——新增 A3-04 跟踪）；A3-02 未变（Android 默认走 WASM 但 `virtual-skirt.ts` 已自动降级 low 质量，风险自愈）。详见各表"实际状态"列。
 
 ### P0 — 阻塞级
 
@@ -134,25 +149,26 @@ type FileAccessor interface {
 
 ### P2 — 偶发级
 
-| ID | 问题 | 影响 | 状态 |
+| ID | 问题 | 影响 | 实际状态（2026-07-22 核对） |
 |----|------|------|------|
-| A2-01 | localStorage 5MB 配额超限后静默截断 | 场景配置写入半截 → 重启后 `JSON.parse` 失败 → 配置归零 | 待实施 |
-| A2-02 | Android 返回键被 `bridge.emitSystemEvent` 吞掉，退不出 App（原描述“关闭面板时直接退出”与事实相反） | 面板全关后按返回无响应，用户只能 Home 键/杀进程退出 | ✅ 已修复（2026-07-20）：前端双击退出——无浮层时 2s 内再按返回调 `WailsJSBridge.exitApp()` 退出；plaza 清理收口至 `init.ts` 单一处理器 |
-| A2-03 | 键盘弹出触发 Canvas 重绘风暴（`adjustResize`） | 低端机帧率抖动 | 待实施 |
-| A2-04 | 截图 `toDataURL` 低端机 OOM | 截图功能闪退 | 待实施 |
-| A2-05 | 部分国产 ROM `AudioContext` 自动播放限制 | 音乐/节拍检测静音 | 待实施 |
-| A2-06 | `clipboard.writeText` 需用户手势触发 | 复制功能静默失败 | 待实施 |
+| A2-01 | localStorage 5MB 配额超限后静默截断 | 场景配置写入半截 → 重启后 `JSON.parse` 失败 → 配置归零 | ✅ 已修复：自动保存走 Go 端 `SaveLastScene(json)` 文件持久化（`scene-serialize.ts:1405`）；localStorage 仅用于 i18n 语言、dragMode、plaza presets 等小数据 |
+| A2-02 | Android 返回键被 `bridge.emitSystemEvent` 吞掉，退不出 App（原描述"关闭面板时直接退出"与事实相反） | 面板全关后按返回无响应，用户只能 Home 键/杀进程退出 | ✅ 已修复（2026-07-20）：前端双击退出——无浮层时 2s 内再按返回调 `WailsJSBridge.exitApp()` 退出；plaza 清理收口至 `init.ts` 单一处理器 |
+| A2-03 | 键盘弹出触发 Canvas 重绘风暴（`adjustResize`） | 低端机帧率抖动 | ⚪ 降级 P4：未查到 `visualViewport` 监听，但 Android 下菜单多为全屏 overlay，键盘弹出不直接影响 canvas；风险被高估，暂不实施 |
+| A2-04 | 截图 `toDataURL` 低端机 OOM | 截图功能闪退 | ⚠️ 部分修复：缩略图已迁移到 `toBlob` 异步（`thumbnail-capture.ts:32`）；但 AR 截图（`ar-camera.ts:261,300`）和 pose 水印合成（`watermark.ts:119`）仍走 `toDataURL`，低端机 OOM 风险未消除 |
+| A2-05 | 部分国产 ROM `AudioContext` 自动播放限制 | 音乐/节拍检测静音 | ✅ 已修复：Java 端 `setMediaPlaybackRequiresUserGesture(false)`（`MainActivity.java:135`）从源头禁用自动播放限制；`audio-bus.ts:107` 还有 `ctx.resume()` 兜底 |
+| A2-06 | `clipboard.writeText` 需用户手势触发 | 复制功能静默失败 | ✅ 已落地：5 处调用均有 `catch` 兜底（`dialog.ts:201-202`、`toast.ts:122-128`、`scene-menu.ts:425` 等）；但 Android WebView 部分版本 Clipboard API 不可用，catch 后用户无感知，建议补 toast 反馈 |
 | A2-07 | WebView 渲染进程崩溃无兜底（缺 `onRenderProcessGone`） | 渲染器 OOM/native 崩溃后 App 不退出但 UI 假死（音频可能继续播放、触控失效），用户只能杀进程 | ✅ 已修复（2026-07-20）：`MainActivity` WebViewClient 重写 `onRenderProcessGone`，返回 true 阻止系统杀 App，300ms 后 `reload()` 重建渲染器自愈（API 26+ 生效，低版本不调用无需守卫） |
 
 ### P3 — 架构建议
 
-| ID | 问题 | 影响 |
-|----|------|------|
-| A3-01 | 未对接 Android 生命周期 | 切后台再返回时场景需重新加载 |
-| A3-02 | WASM 默认启用在低端机初始化慢 | 首载体验差，JS 回退路径存在 |
-| A3-03 | 拖拽事件在触屏上无效 | 部分交互失效 |
+| ID | 问题 | 影响 | 实际状态（2026-07-22 核对） |
+|----|------|------|------|
+| A3-01 | 未对接 Android 生命周期 | 切后台再返回时场景需重新加载 | ⚠️ 半完成：Java 端已转发 `nativeOnPause/Resume/Stop`（`WailsBridge.java:178-189`）+ `emitSystemEvent("android:*")` 完整事件总线（`MainActivity.java:909-1071`：BatteryChanged / NetworkChanged / ScreenLocked / ScreenUnlocked / ThemeChanged / back）；**但前端 `grep "system:" / "android:"` 零命中**——JS 侧未注册任何监听器。直接后果：① 切后台时 `visibilitychange` 在 Android WebView 不可靠（部分国产 ROM `visibilityState` 不变 `hidden`），`cleanupAndFlushSave()` 可能不触发→自动保存丢失；② `android:back` 事件未消费，返回键逻辑可能双轨 |
+| A3-02 | WASM 默认启用在低端机初始化慢 | 首载体验差，JS 回退路径存在 | ⚪ 风险自愈：Android 默认仍走 WASM，但 `virtual-skirt.ts:93` 已有 `isAndroid` 守卫自动降级到 `'low'` 质量；MPR 多线程在 Android 恒不可用（`crossOriginIsolated` 恒 false，见 ADR-133），物理走 SPR 单线程 |
+| A3-03 | 拖拽事件在触屏上无效 | 部分交互失效 | ✅ 已修复：`events.ts` 已全面用 `pointerdown/pointermove` 替代 mouse/touch 分支（`events.ts:269,279,297,347`），Pointer Events 原生统一触屏/鼠标 |
+| A3-04 | **前端未消费 `system:*` / `android:*` 事件总线**（2026-07-22 新增） | Java 端 6 类系统事件已转发但前端零监听——切后台保存、网络断开提示、屏幕锁定触发等场景化行为缺失 | 🔴 待实施（P1）：注册 `window.addEventListener('wails:system:event', ...)` 或对应事件名，至少消费 3 类：`android:back`（菜单层级返回兜底）、`android:ScreenLocked`（触发 `saveSceneImmediate(true)`）、`android:NetworkChanged`（plaza 请求失败时 toast 提示） |
 
-> **P2/P3 核对说明**：A2-01~A3-03 仍按原计划列为待实施，本次（2026-07-10）核对未覆盖，状态以原表为准。
+> **P2/P3 核对说明**：2026-07-22 全量核对代码后更新。剩余真正待实施项为 A2-04（AR 截图 + 水印 `toDataURL` 迁移 `toBlob`）与 A3-04（前端消费事件总线）。A3-01 状态改为"半完成"，与 A3-04 互补。
 
 ---
 
