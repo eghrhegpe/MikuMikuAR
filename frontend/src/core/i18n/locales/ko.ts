@@ -1270,6 +1270,7 @@ export const ko: Record<string, string> = {
     'env.groundPresetStoneTile': '석판',
     'env.groundPresetWoodStage': '목질 무대',
     'env.groundPresetCyberGrid': '사이버 그리드',
+    'env.groundPresetMetalStage': '메탈 스테이지',
 
     // —— Wind ——
     'env.wind': '바람',

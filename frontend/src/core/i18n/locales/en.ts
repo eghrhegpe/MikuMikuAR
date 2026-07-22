@@ -1408,6 +1408,7 @@ export const en: Record<string, string> = {
     'env.groundPresetStoneTile': 'Stone Tile',
     'env.groundPresetWoodStage': 'Wood Stage',
     'env.groundPresetCyberGrid': 'Cyber Grid',
+    'env.groundPresetMetalStage': 'Metal Stage',
     'env.wind': 'Wind',
     'env.windAngle': 'Wind direction',
     'env.windSpeed': 'Wind speed',

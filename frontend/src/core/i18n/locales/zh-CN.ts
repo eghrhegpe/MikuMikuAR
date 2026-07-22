@@ -1392,6 +1392,7 @@ export const zhCN: Record<string, string> = {
     'env.groundPresetStoneTile': '石板',
     'env.groundPresetWoodStage': '木纹舞台',
     'env.groundPresetCyberGrid': '赛博网格',
+    'env.groundPresetMetalStage': '金属舞台',
     'env.wind': '风',
     'env.windAngle': '风向角度',
     'env.windSpeed': '风速',
