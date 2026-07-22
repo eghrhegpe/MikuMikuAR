@@ -27,50 +27,35 @@ import { setSSRFromReflection, isSSRActive } from '../render/renderer';
 
 // ======== 类型定义 ========
 
-/** 反射模式：由 resolveReflectionMode 推导或用户手动指定 */
-export type ReflectionMode = 'auto' | 'none' | 'probe' | 'ssr' | 'planar' | 'hybrid';
+export type ReflectionMode = 'none' | 'planar' | 'ssr' | 'probe' | 'hybrid';
 
-/** 推导后的实际激活模式（不含 auto） */
-export type ResolvedReflectionMode = 'none' | 'probe' | 'ssr' | 'planar' | 'hybrid';
+export type ResolvedReflectionMode = ReflectionMode;
 
 // ======== 质量等级参数预设 ========
 
 interface ReflectionQualityPreset {
-    /** 推导出的默认模式（auto 时使用） */
-    mode: ResolvedReflectionMode;
-    /** SSR 参数 */
     ssr: { step: number; strength: number; thickness: number } | null;
-    /** Probe 参数 */
     probe: { resolution: number; strength: number } | null;
-    /** Planar 质量等级（透传给现有 PlanarReflection） */
     planarQuality: 'high' | 'medium' | 'low' | 'off';
 }
 
-/**
- * 质量等级 → 各子系统参数预设映射表。
- * reflectionQuality 保持原有语义（控制 Planar 分辨率），同时作为 auto 模式的推导依据。
- */
 const QUALITY_PRESETS: Record<string, ReflectionQualityPreset> = {
     off: {
-        mode: 'none',
         ssr: null,
         probe: null,
         planarQuality: 'off',
     },
     low: {
-        mode: 'probe',
         ssr: null,
         probe: { resolution: 256, strength: 0.3 },
         planarQuality: 'off',
     },
     medium: {
-        mode: 'probe',
         ssr: null,
         probe: { resolution: 256, strength: 0.5 },
         planarQuality: 'low',
     },
     high: {
-        mode: 'hybrid',
         ssr: { step: 16, strength: 0.7, thickness: 0.5 },
         probe: { resolution: 256, strength: 0.3 },
         planarQuality: 'medium',
@@ -111,25 +96,8 @@ let _probeStrength = 1;
 
 // ======== 模式推导 ========
 
-/**
- * 根据 EnvState 推导实际反射模式。
- * 优先级：reflectionMode 手动指定 > reflectionQuality 自动推导。
- */
 export function resolveReflectionMode(state: EnvState): ResolvedReflectionMode {
-    const mode = state.reflectionMode ?? 'auto';
-
-    // 手动指定模式（非 auto）直接返回
-    if (mode !== 'auto') {
-        return mode as ResolvedReflectionMode;
-    }
-
-    // auto 模式：根据 reflectionQuality 推导
-    const quality = state.reflectionQuality ?? 'off';
-    const preset = QUALITY_PRESETS[quality];
-    if (!preset) {
-        return 'none';
-    }
-    return preset.mode;
+    return state.reflectionMode ?? 'planar';
 }
 
 /**

@@ -170,15 +170,15 @@ export const ENV_STATE_SCHEMA = {
     reflectionQuality: {
         type: 'enum',
         values: ['high', 'medium', 'low', 'off'] as const,
-        default: 'off' as const,
+        default: 'low' as const,
         group: ['ground', 'water', 'reflection'],
         // 统一控制：水面 + 地面 + 镜面反射分辨率（high=2048, medium=1024, low=512）
     },
     // ADR-151: 反射模式（独立于 reflectionQuality，控制 SSR/Probe/Planar 的激活策略）
     reflectionMode: {
         type: 'enum',
-        values: ['auto', 'none', 'probe', 'ssr', 'planar', 'hybrid'] as const,
-        default: 'auto' as const,
+        values: ['none', 'planar', 'ssr', 'probe', 'hybrid'] as const,
+        default: 'planar' as const,
         group: ['ground', 'water', 'reflection'],
     },
     qualityProfile: {

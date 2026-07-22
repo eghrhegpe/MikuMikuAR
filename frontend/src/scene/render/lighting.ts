@@ -88,7 +88,7 @@ export function _defaultStageLightState(id: string, name: string): StageLightSta
     return {
         id,
         name,
-        enabled: true,
+        enabled: false,
         type: 'spot',
         intensity: 0.8,
         color: [1, 1, 1],
@@ -100,20 +100,20 @@ export function _defaultStageLightState(id: string, name: string): StageLightSta
         shadowResolution: 1024,
         shadowBias: 0.0001,
         posX: 0,
-        posY: 25,
+        posY: 35,
         posZ: 0,
         targetX: 0,
         targetY: 0,
         targetZ: 0,
         orbitAzimuth: 180,
         orbitElevation: 90,
-        orbitDistance: 25,
+        orbitDistance: 35,
         indicatorScale: 1,
         indicatorOpacity: 1,
         // 光锥默认关闭
         coneEnabled: false,
         coneIntensity: 0.5,
-        coneLength: 20,
+        coneLength: 30,
         coneSoftness: 0.5,
     };
 }

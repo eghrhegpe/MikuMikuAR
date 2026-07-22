@@ -10,6 +10,15 @@ import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { lightingState } from './lighting-state';
 import { modelRegistry } from '@/core/config';
 import { safeDispose } from '@/core/dispose-helpers';
+import {
+    createLightCone,
+    updateLightConeTransform,
+    updateLightConeUniforms,
+    rebuildLightConeGeometry,
+    setLightConeEnabled,
+    disposeLightCone,
+    type LightConeEntry,
+} from './light-cone';
 
 export interface PersonalLightSettings {
     enabled: boolean;
@@ -17,6 +26,10 @@ export interface PersonalLightSettings {
     color: [number, number, number];
     angle: number;
     height: number;
+    coneEnabled: boolean;
+    coneIntensity: number;
+    coneLength: number;
+    coneSoftness: number;
 }
 
 interface PersonalLightEntry {
@@ -24,6 +37,7 @@ interface PersonalLightEntry {
     shadowGen: ShadowGenerator;
     settings: PersonalLightSettings;
     currentPos: Vector3;
+    cone: LightConeEntry | null;
 }
 
 const _entries = new Map<string, PersonalLightEntry>();
@@ -36,7 +50,11 @@ export const DEFAULT_PERSONAL_LIGHT: PersonalLightSettings = {
     intensity: 1.2,
     color: [1, 1, 1],
     angle: 0.7,
-    height: 15,
+    height: 35,
+    coneEnabled: true,
+    coneIntensity: 0.6,
+    coneLength: 30,
+    coneSoftness: 0.5,
 };
 
 export function attachPersonalLight(modelId: string, overrides?: Partial<PersonalLightSettings>): void {
@@ -79,12 +97,19 @@ export function attachPersonalLight(modelId: string, overrides?: Partial<Persona
         shadowGen,
         settings,
         currentPos: startPos.clone(),
+        cone: null,
     });
+
+    _ensurePersonalCone(modelId);
 }
 
 export function detachPersonalLight(modelId: string): void {
     const entry = _entries.get(modelId);
     if (!entry) return;
+    if (entry.cone) {
+        disposeLightCone(entry.cone);
+        entry.cone = null;
+    }
     safeDispose(entry.shadowGen);
     safeDispose(entry.light);
     _entries.delete(modelId);
@@ -99,6 +124,7 @@ export function setPersonalLightState(modelId: string, partial: Partial<Personal
     light.diffuse.set(settings.color[0], settings.color[1], settings.color[2]);
     light.angle = settings.angle;
     light.range = settings.height * 3;
+    _ensurePersonalCone(modelId);
 }
 
 export function getPersonalLightState(modelId: string): PersonalLightSettings | null {
@@ -120,7 +146,39 @@ export function tickPersonalLights(): void {
 
         _tmpPos.set(rootPos.x, rootPos.y, rootPos.z);
         entry.light.setDirectionToTarget(_tmpPos);
+
+        if (entry.cone) {
+            updateLightConeTransform(entry.cone, entry.light, entry.settings.coneLength);
+        }
     }
+}
+
+function _ensurePersonalCone(modelId: string): void {
+    const entry = _entries.get(modelId);
+    if (!entry) return;
+    const { settings, light } = entry;
+    const scene = lightingState.scene;
+    if (!scene) return;
+
+    if (!settings.enabled || !settings.coneEnabled) {
+        if (entry.cone) {
+            disposeLightCone(entry.cone);
+            entry.cone = null;
+        }
+        return;
+    }
+
+    const color = new Color3(settings.color[0], settings.color[1], settings.color[2]);
+
+    if (entry.cone) {
+        rebuildLightConeGeometry(entry.cone, scene, light, settings.coneLength);
+        updateLightConeTransform(entry.cone, light, settings.coneLength);
+        updateLightConeUniforms(entry.cone, color, settings.coneIntensity, settings.coneSoftness, settings.coneLength);
+        setLightConeEnabled(entry.cone, true);
+        return;
+    }
+
+    entry.cone = createLightCone(scene, light, color, settings.coneIntensity, settings.coneLength, settings.coneSoftness);
 }
 
 export function disposeAllPersonalLights(): void {
