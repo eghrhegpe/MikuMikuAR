@@ -27,7 +27,6 @@ import {
 import { SelectDir, SaveScreenshot, SaveScenePreset } from '../core/wails-bindings';
 import { waitForFrame, tryCatchStatus, showErrorToast, closeAllOverlays } from '../core/utils';
 import { addDisposableListener } from '../core/dom';
-import { setModelFormation } from '../scene/scene';
 import { focusModel } from '../scene/scene';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
@@ -54,16 +53,6 @@ import { SCENE_EVENTS } from '../core/ui-constants';
 export { buildPresetScenesLevel } from './scene-render-levels';
 export { buildStageLevel, buildStageTransformLevel } from './scene-stage-levels';
 export { buildPropDetailLevel } from './scene-prop-levels';
-
-// ======== Formation key map（热切换安全：仅存 i18n key，不含中文）========
-const FORMATION_KEYS: Record<string, string> = {
-    'line': 'scene.formation.line',
-    'v-shape': 'scene.formation.vshape',
-    'circle': 'scene.formation.circle',
-    'grid': 'scene.formation.grid',
-    'diagonal': 'scene.formation.diagonal',
-    'arc': 'scene.formation.arc',
-};
 
 // ======== Scene Menu State ========
 
@@ -96,28 +85,6 @@ export { reRenderSceneMenu, refreshSceneRoot } from './scene-menu-state';
 const _libraryScannedDisp = addDisposableListener(window, 'mmar:library-scanned', () => {
     reRenderSceneMenu();
 });
-
-function buildFormationLevel(): PopupLevel {
-    const formations: string[] = ['line', 'v-shape', 'circle', 'grid', 'diagonal', 'arc'];
-    const icons: Record<string, string> = {
-        'line': 'lucide:minus',
-        'v-shape': 'lucide:chevron-up',
-        'circle': 'lucide:circle',
-        'grid': 'lucide:grid-3x3',
-        'diagonal': 'lucide:trending-up',
-        'arc': 'lucide:arrow-up-right',
-    };
-    return {
-        label: t('scene.formation'),
-        dir: '',
-        items: formations.map((f) => ({
-            kind: 'action' as const,
-            label: t(FORMATION_KEYS[f]),
-            icon: icons[f],
-            target: `formation:set:${f}`,
-        })),
-    };
-}
 
 // ======== Mirror Level ========
 
@@ -184,7 +151,7 @@ function buildMirrorLevel(): PopupLevel {
 /** 场景弹窗根级 items 构建器——items-based，支持增量 patch */
 function buildSceneRootItems(): PopupRow[] {
     const items: PopupRow[] = [];
-    // 高频功能前置：灯光 > 地面/水面（带开关）> 舞台 > 物理 > 阵型 > 预设场景/镜像/撤销/保存
+    // 高频功能前置：灯光 > 地面/水面（带开关）> 舞台 > 物理 > 预设场景/镜像/撤销/保存
     items.push({
         kind: 'folder',
         label: t('scene.stageLight'),
@@ -248,14 +215,6 @@ function buildSceneRootItems(): PopupRow[] {
         icon: 'lucide:atom',
         target: 'scene:physics',
     });
-    if (modelRegistry.size > 1) {
-        items.push({
-            kind: 'folder',
-            label: t('scene.formation'),
-            icon: 'lucide:layout-grid',
-            target: 'scene:formation',
-        });
-    }
     // 场景操作：预设场景 > 镜像 > 撤销 > 保存场景（从原"高级"folder 拆出）
     items.push({
         kind: 'folder',
@@ -335,7 +294,6 @@ const SCENE_FOLDER_ROUTES: Record<string, () => PopupLevel> = {
     'scene:water': buildWaterLevel,
     'scene:dragMode': buildDragModeLevel,
     'scene:physics': buildPhysicsLevel,
-    'scene:formation': buildFormationLevel,
     'scene:mirror': buildMirrorLevel,
     'physics:wasm': buildWasmPhysicsLevel,
 };
@@ -499,30 +457,6 @@ const SCENE_ACTIONS: Record<string, () => void> = {
                 setStatus(t('scene.undoApplied'), true);
             }
         });
-    },
-    'formation:set:line': () => {
-        setModelFormation('line');
-        setStatus(t('scene.formationStatus.line'), true);
-    },
-    'formation:set:v-shape': () => {
-        setModelFormation('v-shape');
-        setStatus(t('scene.formationStatus.vshape'), true);
-    },
-    'formation:set:circle': () => {
-        setModelFormation('circle');
-        setStatus(t('scene.formationStatus.circle'), true);
-    },
-    'formation:set:grid': () => {
-        setModelFormation('grid');
-        setStatus(t('scene.formationStatus.grid'), true);
-    },
-    'formation:set:diagonal': () => {
-        setModelFormation('diagonal');
-        setStatus(t('scene.formationStatus.diagonal'), true);
-    },
-    'formation:set:arc': () => {
-        setModelFormation('arc');
-        setStatus(t('scene.formationStatus.arc'), true);
     },
 };
 

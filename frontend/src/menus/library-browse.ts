@@ -26,10 +26,12 @@ import { logWarn } from '../core/logger';
 import { SetLastBrowseDir } from '../core/wails-bindings';
 import { buildModelLevel, buildModelToolsLevel } from './model-detail';
 import { buildStageTransformLevel } from './scene-menu';
+import { setModelFormation } from '../scene/scene';
 import {
     buildLevel,
     modelToRow,
     buildModelRootItems,
+    buildModelFormationLevel,
     isModelDirTarget,
     abortThumbnailStreaming,
 } from './library-core';
@@ -192,6 +194,9 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                     stackRegistry.modelStack!
                 );
             }
+            if (row.target === 'models:formation') {
+                return buildModelFormationLevel();
+            }
             return null;
         },
         onItemClick: (row: PopupRow) => {
@@ -237,6 +242,12 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
             }
             if (row.target === 'models:import-file') {
                 importFile();
+                return;
+            }
+            if (row.target && row.target.startsWith('formation:set:')) {
+                const type = row.target.replace('formation:set:', '');
+                setModelFormation(type as any);
+                setStatus(t('scene.formationStatus.' + type), true);
                 return;
             }
         },
