@@ -584,38 +584,13 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
     const migrated = migrateEnvState(partial);
     Object.assign(envState, migrated);
 
-    // [fix:ghost-state] 反向同步 envSunAngle 模块缓存，消除双源漂移：
-    // 原代码只写 envState.sunAngle，漏写 envSunAngle，导致 _timeOfDayTick
-    // 从旧 envSunAngle 递增覆盖用户设置，且滑块 getEnvSunAngle() 显示旧值。
-    if (migrated.sunAngle !== undefined) {
-        envSunAngle = migrated.sunAngle;
-    }
-
-    // ADR-130: qualityProfile 变化时同步各子字段
-    // 确保手动 UI 更改 qualityProfile 后 reflection/cloud/particle 子系统同步更新
-    if (migrated.qualityProfile !== undefined) {
-        const resolved = resolveQualityProfile(migrated.qualityProfile as QualityProfile);
-        envState.reflectionQuality = resolved.reflectionQuality;
-        envState.cloudQuality = resolved.cloudQuality;
-        envState.particleQuality = resolved.particleQuality;
-        Object.assign(migrated, resolved);
-    }
+    // ADR-173: 执行 pre-facade middleware（补全 envState/migrated 后、派发前）
+    _runMiddlewares('pre-facade', envState, migrated, { skipAutoSave });
 
     _applyEnvStateFacade(envState, migrated);
 
-    // ADR-130 Phase 2.3: 用户手动修改反射质量 → 冻结自动降级
-    // 仅当变更来自用户（非自动降级）且当前为 auto 模式时，切换到 custom 模式
-    if (!isAutoDegradingReflection() && getPerformanceMode() === 'auto') {
-        const hasReflectionChange = migrated.reflectionQuality !== undefined;
-        if (hasReflectionChange) {
-            setPerformanceMode('custom');
-        }
-    }
-
-    // 灯光预设变化 → 平滑过渡
-    if (partial.lightingPresetName !== undefined) {
-        applyLightingPresetFromEnv(partial.lightingPresetName);
-    }
+    // ADR-173: 执行 post-facade middleware（派发后处理副作用）
+    _runMiddlewares('post-facade', envState, migrated, { skipAutoSave });
 
     _envPersistTimer.schedule(() => {
         // 传普通对象副本（非 reactive Proxy），避免 JSON.stringify 对 Proxy 枚举不完整
@@ -629,6 +604,109 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
         triggerAutoSave();
     }
 }
+
+// ======== ADR-173: setEnvState 中间件注册机制 ========
+//
+// 将 setEnvState 中跨系统字段的特判 if-block 抽取为独立 middleware，
+// 新增跨系统字段只需注册一个新 middleware，不触及核心流程。
+//
+// middleware 分两阶段执行：
+// - pre-facade: 在 _applyEnvStateFacade 之前，用于补全 envState/migrated
+// - post-facade: 在 _applyEnvStateFacade 之后，用于处理副作用（如调用 setPerformanceMode）
+//
+// 错误隔离：单个 middleware 抛异常不影响后续 middleware 和 persist/autoSave。
+
+type EnvStateMiddlewareFn = (
+    envState: EnvState,
+    migrated: Partial<EnvState>,
+    ctx: { skipAutoSave: boolean }
+) => void;
+
+interface EnvStateMiddleware {
+    name: string;
+    phase: 'pre-facade' | 'post-facade';
+    fn: EnvStateMiddlewareFn;
+}
+
+const _middlewares: EnvStateMiddleware[] = [];
+
+/** 注册 setEnvState 中间件（仅限 env-bridge.ts 内调用） */
+function registerEnvStateMiddleware(mw: EnvStateMiddleware): void {
+    _middlewares.push(mw);
+}
+
+/** 按阶段遍历 middleware，异常隔离 */
+function _runMiddlewares(
+    phase: 'pre-facade' | 'post-facade',
+    envState: EnvState,
+    migrated: Partial<EnvState>,
+    ctx: { skipAutoSave: boolean }
+): void {
+    for (const mw of _middlewares) {
+        if (mw.phase !== phase) continue;
+        try {
+            mw.fn(envState, migrated, ctx);
+        } catch (e) {
+            console.warn(`[env-mw] ${mw.name} failed`, e);
+        }
+    }
+}
+
+// ======== ADR-173 Phase 2: 现有 if-block 迁移为 middleware ========
+
+// [fix:ghost-state] 反向同步 envSunAngle 模块缓存，消除双源漂移：
+// 原代码只写 envState.sunAngle，漏写 envSunAngle，导致 _timeOfDayTick
+// 从旧 envSunAngle 递增覆盖用户设置，且滑块 getEnvSunAngle() 显示旧值。
+registerEnvStateMiddleware({
+    name: 'syncEnvSunAngle',
+    phase: 'pre-facade',
+    fn: (envState, migrated) => {
+        if (migrated.sunAngle !== undefined) {
+            envSunAngle = migrated.sunAngle;
+        }
+    },
+});
+
+// ADR-130: qualityProfile 变化时同步各子字段
+// 确保手动 UI 更改 qualityProfile 后 reflection/cloud/particle 子系统同步更新
+registerEnvStateMiddleware({
+    name: 'resolveQualityProfileMiddleware',
+    phase: 'pre-facade',
+    fn: (envState, migrated) => {
+        if (migrated.qualityProfile !== undefined) {
+            const resolved = resolveQualityProfile(migrated.qualityProfile as QualityProfile);
+            envState.reflectionQuality = resolved.reflectionQuality;
+            envState.cloudQuality = resolved.cloudQuality;
+            envState.particleQuality = resolved.particleQuality;
+            Object.assign(migrated, resolved);
+        }
+    },
+});
+
+// ADR-130 Phase 2.3: 用户手动修改反射质量 → 冻结自动降级
+// 仅当变更来自用户（非自动降级）且当前为 auto 模式时，切换到 custom 模式
+registerEnvStateMiddleware({
+    name: 'freezeAutoDegradeOnReflectionChange',
+    phase: 'post-facade',
+    fn: (_envState, migrated) => {
+        if (!isAutoDegradingReflection() && getPerformanceMode() === 'auto') {
+            if (migrated.reflectionQuality !== undefined) {
+                setPerformanceMode('custom');
+            }
+        }
+    },
+});
+
+// 灯光预设变化 → 平滑过渡
+registerEnvStateMiddleware({
+    name: 'applyLightingPresetMiddleware',
+    phase: 'post-facade',
+    fn: (_envState, migrated) => {
+        if (migrated.lightingPresetName !== undefined) {
+            applyLightingPresetFromEnv(migrated.lightingPresetName);
+        }
+    },
+});
 
 // ADR-130 Phase 2.3: 注册 setEnvState 到 performance 桥接模块
 registerSetEnvState(setEnvState);

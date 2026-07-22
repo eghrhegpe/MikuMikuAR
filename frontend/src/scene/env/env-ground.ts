@@ -1034,7 +1034,7 @@ export function applyGround(state: EnvState): void {
             : '';
     const typeKey =
         state.groundType === 'terrain'
-            ? `heightmap:${state.groundTerrainHeight}:${state.groundTerrainScale}:${state.groundTerrainSeed}:${state.groundTerrainOctaves}:${state.groundLevel}:${state.groundSize}:${state.groundColor.join(',')}:${state.groundAlpha}:${state.groundTextureEnabled}:${state.groundTexture}:${state.groundTextureScale}:${state.groundTextureRotation}${pbrKey}${infKey}`
+            ? `heightmap:${state.groundTerrainHeight}:${state.groundTerrainScale}:${state.groundTerrainSeed}:${state.groundTerrainOctaves}:${state.groundLevel}:${state.groundSize}:${state.groundColor.join(',')}:${state.groundAlpha}:${state.groundTextureEnabled}:${state.groundTexture}:${state.groundTextureScale}:${state.groundTextureRotation}${pbrKey}${proceduralKey}${infKey}`
             : state.groundTextureEnabled && state.groundTexture
               ? `texture:${state.groundTexture}:${state.groundSize}:${state.reflectionQuality}${pbrKey}${infKey}`
               : `canvas:${state.groundStyle}:${state.groundGridSize}:${state.groundColor.join(',')}:${state.groundLineColor.join(',')}:${state.groundSize}:${state.reflectionQuality}${pbrKey}${proceduralKey}${infKey}`;
@@ -1113,6 +1113,28 @@ export function applyGround(state: EnvState): void {
     if (state.groundType === 'terrain') {
         const hg = createHeightmapGround(state, scene, (gm) => {
             applyTerrainMaterial(gm, state, scene);
+            if (state.groundProceduralTexture !== 'none' && !state.groundTextureEnabled) {
+                const mat = gm.material as GroundMat;
+                const texs = generateProceduralGroundTextures(
+                    state.groundProceduralTexture,
+                    state.groundProceduralSeed,
+                    scene,
+                    state,
+                );
+                const scale = state.groundSize / 10 / Math.max(0.1, state.groundProceduralScale);
+                texs.albedo.uScale = texs.albedo.vScale = scale;
+                texs.roughness.uScale = texs.roughness.vScale = scale;
+                texs.normal.uScale = texs.normal.vScale = scale;
+                _setAlbedoTex(mat, texs.albedo);
+                _setAlbedoColor(mat, new Color3(1, 1, 1));
+                if (mat instanceof PBRMaterial) {
+                    mat.bumpTexture = texs.normal;
+                    mat.bumpTexture.level = _effectiveBumpLevel(state);
+                    mat.metallicTexture = texs.roughness;
+                    mat.useRoughnessFromMetallicTextureAlpha = false;
+                    mat.useRoughnessFromMetallicTextureGreen = true;
+                }
+            }
             applyGroundEdgeFade(gm.material as GroundMat, state.groundEdgeFade, scene);
             _onTerrainReady?.();
         });
@@ -1407,21 +1429,21 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
     },
     woodStage: {
         label: '木纹舞台',
-        groundStyle: 'texture',
+        groundStyle: 'solid',
         groundOverlay: 'none',
         groundColor: [0.55, 0.4, 0.25],
         groundAlpha: 1,
         groundPattern: 'checker',
-        groundTexture: 'textures/stone.png',
-        groundTextureEnabled: true,
-        groundTextureScale: 2,
+        groundTexture: '',
+        groundTextureEnabled: false,
+        groundTextureScale: 1,
         groundTextureRotation: 0,
         groundGridSize: 1,
         groundLineColor: [0.4, 0.3, 0.2],
         groundPbrEnabled: true,
         groundMetallic: 0,
         groundRoughness: 0.8,
-        groundProceduralTexture: 'none',
+        groundProceduralTexture: 'wood',
         groundProceduralSeed: 42,
         groundProceduralScale: 1,
         reflectionQuality: 'medium',
