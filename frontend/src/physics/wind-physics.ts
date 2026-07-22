@@ -37,12 +37,13 @@ const _subs = new Map<IMmdRuntime, _WindSub>();
  * physics impl 在首个模型加载前为 null，需延迟获取。
  */
 function _getPhysicsImpl(runtime: IMmdRuntime): MmdWasmPhysicsRuntimeImpl | null {
-    const physics = (runtime as any).physics;
+    const physics = (runtime as unknown as Record<string, unknown>).physics as
+        Record<string, unknown> | undefined;
     if (!physics) {
         return null;
     }
     // MmdWasmPhysicsRuntime.impl 是 public getter
-    const impl = physics.impl;
+    const impl = physics.impl as MmdWasmPhysicsRuntimeImpl | undefined;
     return impl ?? null;
 }
 
@@ -54,7 +55,7 @@ function _getPhysicsImpl(runtime: IMmdRuntime): MmdWasmPhysicsRuntimeImpl | null
 export function _getBundles(
     impl: MmdWasmPhysicsRuntimeImpl
 ): Iterable<{ count: number; applyCentralForce(index: number, force: Vector3): void }> {
-    const map = (impl as any)._rigidBodyBundleMap;
+    const map = (impl as unknown as Record<string, unknown>)._rigidBodyBundleMap;
     if (map instanceof Map) {
         return map.keys();
     }

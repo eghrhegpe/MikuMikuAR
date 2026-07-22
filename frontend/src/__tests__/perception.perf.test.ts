@@ -595,9 +595,9 @@ test('ADR-155 感知层性能基准', async () => {
         runFullPerceptionPipeline(baseStub, f / 60, gazeTarget);
     }
 
-    console.log('\n=== ADR-155 感知层性能基准 ===');
-    console.log(`模型骨骼数: ${totalBones}`);
-    console.log(`Morph 目标数: ${baseStub.mesh.morphTargetManager?.numTargets ?? 0}`);
+    console.info('\n=== ADR-155 感知层性能基准 ===');
+    console.info(`模型骨骼数: ${totalBones}`);
+    console.info(`Morph 目标数: ${baseStub.mesh.morphTargetManager?.numTargets ?? 0}`);
 
     // ═══════════════════════════════════════════════════════
     // a) 单模型感知层单帧耗时（1000 帧）
@@ -615,8 +615,8 @@ test('ADR-155 感知层性能基准', async () => {
     const p95A = percentile(samplesA, 95);
     const p99A = percentile(samplesA, 99);
 
-    console.log('\n[a] 单模型感知层单帧耗时（1000 帧）');
-    console.log(`  P50: ${formatMs(p50A)}  P95: ${formatMs(p95A)}  P99: ${formatMs(p99A)}`);
+    console.info('\n[a] 单模型感知层单帧耗时（1000 帧）');
+    console.info(`  P50: ${formatMs(p50A)}  P95: ${formatMs(p95A)}  P99: ${formatMs(p99A)}`);
     softAssert('单模型 P50', p50A, 0.5);
     softAssert('单模型 P95', p95A, 0.5);
 
@@ -626,9 +626,9 @@ test('ADR-155 感知层性能基准', async () => {
     const modelCounts = [1, 10, 20, 50, 100];
     const FRAMES_B = 100;
 
-    console.log('\n[b] N 模型帧时间曲线（100 帧/点）');
-    console.log('  模型数 | P50      | P95      | P99      | 预算');
-    console.log('  -------|----------|----------|----------|------');
+    console.info('\n[b] N 模型帧时间曲线（100 帧/点）');
+    console.info('  模型数 | P50      | P95      | P99      | 预算');
+    console.info('  -------|----------|----------|----------|------');
 
     for (const n of modelCounts) {
         const stubs: ModelStub[] = [baseStub];
@@ -652,7 +652,7 @@ test('ADR-155 感知层性能基准', async () => {
         const budget = n * 0.5;
         const ok = p50 <= budget ? '✓' : '✗';
 
-        console.log(
+        console.info(
             `  ${String(n).padStart(6)} | ${formatMs(p50).padStart(8)} | ${formatMs(p95).padStart(8)} | ${formatMs(p99).padStart(8)} | ${formatMs(budget)} ${ok}`
         );
     }
@@ -691,18 +691,18 @@ test('ADR-155 感知层性能基准', async () => {
         totalItemTime += total;
     }
 
-    console.log('\n[c] 各感知项耗时占比（10000 帧累计）');
-    console.log('  感知项            | 累计(ms) | 占比(%)  | 每帧(μs)');
-    console.log('  ------------------|----------|----------|----------');
+    console.info('\n[c] 各感知项耗时占比（10000 帧累计）');
+    console.info('  感知项            | 累计(ms) | 占比(%)  | 每帧(μs)');
+    console.info('  ------------------|----------|----------|----------');
     for (const item of ITEMS) {
         const total = itemTimes[item.name];
         const pct = (total / totalItemTime) * 100;
         const perFrame = (total / FRAMES_C) * 1000;
-        console.log(
+        console.info(
             `  ${item.name.padEnd(17)} | ${total.toFixed(2).padStart(8)} | ${pct.toFixed(1).padStart(8)} | ${perFrame.toFixed(2).padStart(8)}`
         );
     }
-    console.log(
+    console.info(
         `  ${'合计'.padEnd(17)} | ${totalItemTime.toFixed(2).padStart(8)} | ${'100.0'.padStart(8)} | ${((totalItemTime / FRAMES_C) * 1000).toFixed(2).padStart(8)}`
     );
 
@@ -729,12 +729,12 @@ test('ADR-155 感知层性能基准', async () => {
     const p50D = percentile(samplesD, 50);
     const p95D = percentile(samplesD, 95);
 
-    console.log('\n[d] 100 模型感知层帧时间（100 帧）');
-    console.log(`  P50: ${formatMs(p50D)}  P95: ${formatMs(p95D)}  预算: 16.67ms (60fps)`);
+    console.info('\n[d] 100 模型感知层帧时间（100 帧）');
+    console.info(`  P50: ${formatMs(p50D)}  P95: ${formatMs(p95D)}  预算: 16.67ms (60fps)`);
     softAssert('100 模型 P50', p50D, 16.67);
     softAssert('100 模型 P95', p95D, 16.67);
 
-    console.log('\n=== ADR-155 基准完成 ===\n');
+    console.info('\n=== ADR-155 基准完成 ===\n');
 
     // 硬断言：至少模型加载成功且骨骼数 > 0
     expect(totalBones).toBeGreaterThan(0);

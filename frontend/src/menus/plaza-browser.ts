@@ -60,7 +60,32 @@ import { PLAZA_CREATORS } from './plaza-creators';
 
 // ======== 站点数据管理 ========
 
-export function normalizeSite(raw: any): PlazaSite | null {
+/** JSON 解析后的原始站点数据（未校验） */
+interface RawSiteInput {
+    id?: string;
+    name?: string;
+    label?: string;
+    url?: string;
+    mode?: string;
+    icon?: string;
+    desc?: string;
+    group?: string;
+    searchUrl?: string;
+    presetSearches?: { label: string; q?: string }[];
+}
+
+/** JSON 解析后的原始创作者数据（未校验） */
+interface RawCreatorInput {
+    name?: string;
+    site?: string;
+    type?: string;
+    tag?: string;
+    role?: string;
+    desc?: string;
+    tier?: 'gold' | 'silver';
+}
+
+export function normalizeSite(raw: RawSiteInput): PlazaSite | null {
     if (!raw || !raw.id) {
         return null;
     }
@@ -87,7 +112,7 @@ export function normalizeSite(raw: any): PlazaSite | null {
     };
 }
 
-export function normalizeCreator(raw: any): PlazaCreator | null {
+export function normalizeCreator(raw: RawCreatorInput): PlazaCreator | null {
     if (!raw || !raw.name) {
         return null;
     }
@@ -118,7 +143,7 @@ export async function loadCustomSites(): Promise<PlazaSite[]> {
         if (!raw) {
             return [];
         }
-        const parsed = JSON.parse(raw) as any[];
+        const parsed = JSON.parse(raw) as RawSiteInput[];
         return parsed.map(normalizeSite).filter(Boolean) as PlazaSite[];
     } catch {
         return [];
@@ -149,7 +174,10 @@ export async function loadCachedConfig(): Promise<void> {
     try {
         const cached = await GetCachedPlazaConfig();
         if (cached && cached[0]) {
-            const parsed = JSON.parse(cached[0]) as { sites?: any[]; creators?: any[] };
+            const parsed = JSON.parse(cached[0]) as {
+                sites?: RawSiteInput[];
+                creators?: RawCreatorInput[];
+            };
             if (parsed.sites?.length) {
                 setAllSites(parsed.sites.map(normalizeSite).filter(Boolean) as PlazaSite[]);
             }
@@ -439,12 +467,12 @@ export function renderSiteContent(site: PlazaSite): HTMLElement {
         try {
             const [crJson, stJson] = await FetchPlazaConfig();
             if (stJson) {
-                const raw = JSON.parse(stJson) as any[];
+                const raw = JSON.parse(stJson) as RawSiteInput[];
                 const remote = raw.map(normalizeSite).filter(Boolean) as PlazaSite[];
                 setAllSites(mergeSites(PLAZA_SITES, remote));
             }
             if (crJson) {
-                const raw = JSON.parse(crJson) as any[];
+                const raw = JSON.parse(crJson) as RawCreatorInput[];
                 setAllCreators(raw.map(normalizeCreator).filter(Boolean) as PlazaCreator[]);
             }
             if (!allSites.some((s) => s.id === currentSiteId)) {

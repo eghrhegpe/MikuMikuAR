@@ -38,11 +38,7 @@ import { GetThumbnail, GetModelMetaBatch } from '../core/wails-bindings';
 import { loadManager } from '../core/load-manager';
 import { focusModel } from '../scene/scene';
 import { buildModelToolsLevel } from './model-detail';
-import {
-    onModelRowClick,
-    replaceModel,
-    replaceMotion,
-} from './library-actions';
+import { onModelRowClick, replaceModel, replaceMotion } from './library-actions';
 
 // ======== Resource View Mode ========
 

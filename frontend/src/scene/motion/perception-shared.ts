@@ -125,7 +125,7 @@ export function _createPerceptionPool(): PerceptionPool {
 let _currentPool: PerceptionPool | null = null;
 
 /** 切换到指定 context 的池（进入该 context 感知管线前调用） */
-export function _setContextPool(pool: PerceptionPool): void {
+export function _setContextPool(pool: PerceptionPool | null): void {
     _currentPool = pool;
 }
 
@@ -453,8 +453,11 @@ export function _incGazeLogFrame(): void {
     _gazeLogFrame++;
 }
 export function _gazeLog(...args: unknown[]): void {
-    if (_gazeLogEnabled || (typeof window !== 'undefined' && (window as any).__GAZE_LOG)) {
-        console.log(`[GAZE:${_gazeLogFrame}]`, ...args);
+    if (
+        _gazeLogEnabled ||
+        (typeof window !== 'undefined' && (window as unknown as Record<string, unknown>).__GAZE_LOG)
+    ) {
+        console.info(`[GAZE:${_gazeLogFrame}]`, ...args);
     }
 }
 /** 两四元数夹角（度） */

@@ -20,9 +20,9 @@
  * @param args 透传给 `obj.dispose(...args)` 的参数（如 mesh.dispose(true) 的 recursive）
  * @returns null（调用方应将原引用赋值为此返回值以完成置空）
  */
-export function safeDispose<T extends { dispose(...args: any[]): void }>(
+export function safeDispose<T extends { dispose(...args: unknown[]): void }>(
     obj: T | null,
-    ...args: any[]
+    ...args: unknown[]
 ): null {
     obj?.dispose(...args);
     return null;

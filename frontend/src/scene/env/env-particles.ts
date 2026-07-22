@@ -9,10 +9,7 @@ import { getEnvKeys } from '@/core/env-state-schema';
 import { ensureEnvUpdateObserver, addRipple, addGroundRipple, getGroundHeightAt } from './env-impl';
 import { _envSys, getScene } from './env-context';
 import { createCanvasTexture } from './env-texture';
-import {
-    applyWetnessToAllModels,
-    removeWetnessFromAllModels,
-} from './env-wetness';
+import { applyWetnessToAllModels, removeWetnessFromAllModels } from './env-wetness';
 
 // ======== Particle System ========
 let _currentParticleType: EnvState['particleType'] = 'none';

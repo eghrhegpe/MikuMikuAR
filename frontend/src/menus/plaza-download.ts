@@ -112,7 +112,13 @@ export function installShortcuts(): void {
         }
     };
 
-    const PLAZA_SHORTCUTS = [
+    const PLAZA_SHORTCUTS: Array<{
+        id: string;
+        key: string;
+        ctrl?: boolean;
+        alt?: boolean;
+        handler: () => void;
+    }> = [
         { id: 'plaza:reload', key: 'F5', handler: PlazaReload },
         { id: 'plaza:reload-ctrl', key: 'KeyR', ctrl: true, handler: PlazaReload },
         { id: 'plaza:goBack', key: 'ArrowLeft', alt: true, handler: PlazaGoBack },
@@ -128,8 +134,8 @@ export function installShortcuts(): void {
             label: 'shortcuts.label.plaza' as const,
             group: 'shortcuts.group.plaza' as const,
             defaultKey: s.key,
-            defaultCtrl: (s as any).ctrl ?? false,
-            defaultAlt: (s as any).alt ?? false,
+            defaultCtrl: s.ctrl ?? false,
+            defaultAlt: s.alt ?? false,
             prevent: true,
             handler: visibleGuard(s.handler),
         }))

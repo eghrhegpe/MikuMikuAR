@@ -27,9 +27,9 @@ import {
     PROC_VMD_NAME_AUTODANCE,
 } from '@/motion-algos/procedural-motion';
 import { BeatDetector } from '@/motion-algos/beat-detector';
-import { mmdRuntime, triggerAutoSave, focusedModelId, setUIState } from '@/core/config';
+import { triggerAutoSave, focusedModelId, setUIState } from '@/core/config';
 import { isAudioPlaying } from '@/outfit/audio';
-import { modelManager, focusedMmdModel, focusedModel, loadVMDMotion } from '../scene';
+import { modelManager, focusedMmdModel, focusedModel } from '../scene';
 import { setGazeConfig, onPerceptionModelRemoved, activatePerception } from './perception';
 import { clamp01 } from '@/core/utils';
 import { logWarn } from '@/core/logger';

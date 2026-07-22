@@ -23,7 +23,6 @@ import { showInfoToast } from '../core/toast';
 import { debounce, swallowError } from '../core/utils';
 import { logWarn } from '../core/logger';
 import {
-    getActiveMotion,
     getActiveMotionId,
     getSceneMotions,
     addSceneMotion,
@@ -43,11 +42,7 @@ import {
 } from './camera/camera';
 import { loadCameraVmdFromPath } from './motion/vmd-loader';
 import type { CameraState } from './camera/camera';
-import {
-    migrateLipSyncFromOldState,
-    migratePerceptionFromProcMotion,
-    migratePerceptionData,
-} from './scene-migrate';
+import { migratePerceptionFromProcMotion, migratePerceptionData } from './scene-migrate';
 import {
     getAudioName,
     getAudioPath,
@@ -128,13 +123,7 @@ import {
     isAllPerceptionEnabled,
     type PerceptionState,
 } from './motion/perception';
-import {
-    getRetargetPlayState,
-    stopCurrentRetarget,
-    loadAndRetargetAnimation,
-    playRetargetedAnimation,
-    restoreRetargetAnimation,
-} from './motion/animation-retargeter';
+import { getRetargetPlayState, restoreRetargetAnimation } from './motion/animation-retargeter';
 
 // ======== Utilities ========
 

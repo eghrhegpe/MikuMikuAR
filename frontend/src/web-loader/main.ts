@@ -15,6 +15,7 @@ import { DirectionalLight } from '@babylonjs/core/Lights/directionalLight';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Color3, Color4 } from '@babylonjs/core/Maths/math.color';
 import { ImportMeshAsync } from '@babylonjs/core/Loading/sceneLoader';
+import type { ISceneLoaderAsyncResult } from '@babylonjs/core/Loading/sceneLoader';
 import { CreateGround } from '@babylonjs/core/Meshes/Builders/groundBuilder';
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
@@ -30,6 +31,13 @@ import { translateGoError } from '../core/i18n/goerr';
 
 // ======== JSZip（浏览器端 zip 解压） ========
 import * as JSZip from 'jszip';
+
+/** babylon-mmd 扩展 ImportMeshAsync 接受 Uint8Array，原类型签名不支持，需手动断言 */
+const importMeshFromBytes = ImportMeshAsync as unknown as (
+    data: Uint8Array,
+    scene: Scene,
+    options: Record<string, unknown>
+) => Promise<ISceneLoaderAsyncResult>;
 
 // ======== DOM 引用 ========
 const canvas = document.getElementById('renderCanvas') as HTMLCanvasElement;
@@ -126,7 +134,7 @@ async function loadModel(
         // 直接传 ArrayBufferView + referenceFiles 给 ImportMeshAsync
         // babylon-mmd 的 PmxLoader 识别 ArrayBufferView 后不走 HTTP 请求
         const view = new Uint8Array(pmxBuffer);
-        const result = await (ImportMeshAsync as any)(view, scene, {
+        const result = await importMeshFromBytes(view, scene, {
             pluginExtension: '.pmx',
             pluginOptions: {
                 mmdmodel: {
@@ -146,7 +154,7 @@ async function loadModel(
         // 找根 mesh
         let rootMesh: Mesh | null = null;
         for (const m of meshes) {
-            if ((m.metadata as any)?.isMmdModel) {
+            if ((m.metadata as Record<string, unknown> | null)?.isMmdModel) {
                 rootMesh = m;
                 break;
             }
@@ -222,7 +230,7 @@ async function handleRawFiles(rawFiles: File[]): Promise<void> {
 
     // 先找 .pmx，再收集纹理——都用 webkitRelativePath 或 name 作为相对路径
     for (const file of rawFiles) {
-        const relPath = (file as any).webkitRelativePath || file.name;
+        const relPath = file.webkitRelativePath || file.name;
         if (/\.pmx$/i.test(relPath)) {
             pmxBuffer = await file.arrayBuffer();
             pmxName = relPath;
@@ -235,7 +243,7 @@ async function handleRawFiles(rawFiles: File[]): Promise<void> {
     }
 
     for (const file of rawFiles) {
-        const relPath = (file as any).webkitRelativePath || file.name;
+        const relPath = file.webkitRelativePath || file.name;
         if (/\.(png|jpg|jpeg|bmp|tga|dds|tif|tiff)$/i.test(relPath)) {
             textures.push({
                 relativePath: relPath,

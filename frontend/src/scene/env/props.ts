@@ -6,6 +6,7 @@
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import { ImportMeshAsync } from '@babylonjs/core/Loading/sceneLoader';
+import type { ISceneLoaderAsyncResult } from '@babylonjs/core/Loading/sceneLoader';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 
 import { propRegistry, setStatus, triggerAutoSave, dom, PropInstance } from '@/core/config';
@@ -21,6 +22,13 @@ import { renderPropThumbnail } from '../manager/thumbnail-capture';
 import { setTransformMetadata } from '../transform/transform-pick';
 import { thumbnailBaseKey } from '../manager/thumbnail-key';
 import { registerTransformAdapter } from '../transform/transform-adapter';
+
+/** babylon-mmd 扩展 ImportMeshAsync 接受 Uint8Array，原类型签名不支持，需手动断言 */
+const importMeshFromBytes = ImportMeshAsync as unknown as (
+    data: Uint8Array,
+    scene: unknown,
+    options: Record<string, unknown>
+) => Promise<ISceneLoaderAsyncResult>;
 
 // ======== 类型守卫 ========
 
@@ -74,7 +82,7 @@ export async function loadProp(filePath: string, signal?: AbortSignal): Promise<
         const fileName = getBaseName(filePath) || '';
         setStatus(t('props.loading'), false);
 
-        const result = await (ImportMeshAsync as any)(pmxBytes, scene, {
+        const result = await importMeshFromBytes(pmxBytes, scene, {
             pluginExtension: '.pmx',
             onProgress: (evt) => {
                 if (effectiveSignal.aborted) {

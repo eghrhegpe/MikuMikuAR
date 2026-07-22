@@ -19,7 +19,7 @@
 //   reg.add(scene.onAfterRenderObservable, () => { ... });
 //   reg.disposeAll(); // 一次性清理所有
 
-import { Observable, Observer } from '@babylonjs/core/Misc/observable';
+import { Observable, Observer, type EventState } from '@babylonjs/core/Misc/observable';
 
 // ======== ObserverHandle ========
 
@@ -28,11 +28,11 @@ import { Observable, Observer } from '@babylonjs/core/Misc/observable';
  * 调用 dispose() 从 Observable 中移除对应的 observer。
  * 幂等：重复调用 dispose() 安全。
  */
-export class ObserverHandle {
-    private _observable: Observable<any> | null;
-    private _observer: Observer<any> | null;
+export class ObserverHandle<T = unknown> {
+    private _observable: Observable<T> | null;
+    private _observer: Observer<T> | null;
 
-    constructor(observable: Observable<any>, observer: Observer<any>) {
+    constructor(observable: Observable<T>, observer: Observer<T>) {
         this._observable = observable;
         this._observer = observer;
     }
@@ -59,8 +59,8 @@ export class ObserverHandle {
  */
 export function observe<T>(
     observable: Observable<T>,
-    callback: (eventData: T, eventState: any) => void
-): ObserverHandle {
+    callback: (eventData: T, eventState: EventState) => void
+): ObserverHandle<T> {
     const observer = observable.add(callback);
     if (!observer) {
         throw new Error('ObserverHandle: observable.add() returned null');
@@ -73,8 +73,8 @@ export function observe<T>(
  */
 export function observeOnce<T>(
     observable: Observable<T>,
-    callback: (eventData: T, eventState: any) => void
-): ObserverHandle {
+    callback: (eventData: T, eventState: EventState) => void
+): ObserverHandle<T> {
     const observer = observable.addOnce(callback);
     if (!observer) {
         throw new Error('ObserverHandle: observable.addOnce() returned null');
@@ -94,8 +94,8 @@ export class ObserverRegistry {
     /** 订阅并注册，返回句柄。 */
     add<T>(
         observable: Observable<T>,
-        callback: (eventData: T, eventState: any) => void
-    ): ObserverHandle {
+        callback: (eventData: T, eventState: EventState) => void
+    ): ObserverHandle<T> {
         const handle = observe(observable, callback);
         this._handles.push(handle);
         return handle;

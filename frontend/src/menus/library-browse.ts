@@ -24,7 +24,7 @@ import { logWarn } from '../core/logger';
 import { SetLastBrowseDir } from '../core/wails-bindings';
 import { buildModelLevel } from './model-detail';
 import { buildStageTransformLevel } from './scene-menu';
-import { setModelFormation } from '../scene/scene';
+import { setModelFormation, type FormationType } from '../scene/scene';
 import {
     buildLevel,
     modelToRow,
@@ -244,7 +244,7 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
             }
             if (row.target && row.target.startsWith('formation:set:')) {
                 const type = row.target.replace('formation:set:', '');
-                setModelFormation(type as any);
+                setModelFormation(type as FormationType);
                 setStatus(t('scene.formationStatus.' + type), true);
                 return;
             }
