@@ -37,6 +37,54 @@ function _addGroupSeparator(panel: HTMLElement, label: string): void {
     addSectionTitle(panel, label);
 }
 
+/** 10 个材质参数的元数据定义——buildPerMatSchema 与 _renderParamCard 共享 */
+const MAT_PARAM_DEFS: Array<{
+    key: keyof typeof DEFAULT_MAT_PARAMS;
+    labelKey: string;
+    min: number;
+    max: number;
+    step: number;
+    icon?: string;
+}> = [
+    { key: 'diffuseMul', labelKey: 'model-material.diffuseMul', min: 0, max: 2, step: 0.05 },
+    { key: 'specularMul', labelKey: 'model-material.specularMul', min: 0, max: 2, step: 0.05 },
+    { key: 'shininess', labelKey: 'model-material.shininess', min: 0, max: 200, step: 1 },
+    { key: 'ambientMul', labelKey: 'model-material.ambientMul', min: 0, max: 2, step: 0.05 },
+    { key: 'emissiveMul', labelKey: 'model-material.emissiveMul', min: 0, max: 2, step: 0.05 },
+    { key: 'diffuseTexLevel', labelKey: 'model-material.diffuseTexLevel', min: 0, max: 3, step: 0.1, icon: 'lucide:image' },
+    { key: 'bumpTexLevel', labelKey: 'model-material.bumpTexLevel', min: 0, max: 3, step: 0.1, icon: 'lucide:box' },
+    { key: 'toonTexLevel', labelKey: 'model-material.toonTexLevel', min: 0, max: 3, step: 0.1, icon: 'lucide:palette' },
+    { key: 'sphereTexLevel', labelKey: 'model-material.sphereTexLevel', min: 0, max: 3, step: 0.1, icon: 'lucide:circle-dot' },
+    { key: 'emissiveTexLevel', labelKey: 'model-material.emissiveTexLevel', min: 0, max: 3, step: 0.1, icon: 'lucide:sparkles' },
+];
+
+/** 用 MAT_PARAM_DEFS 批量渲染滑块；withIcons 区分 batch 详情两种 UI */
+function _renderMatParamSliders(
+    container: HTMLElement,
+    id: string,
+    matIndex: number,
+    params: typeof DEFAULT_MAT_PARAMS,
+    withIcons: boolean,
+): void {
+    let groupEmitted = false;
+    for (const def of MAT_PARAM_DEFS) {
+        if (def.icon && !groupEmitted) {
+            _addGroupSeparator(container, t('model-material.texLevelGroup'));
+            groupEmitted = true;
+        }
+        addSliderRow(
+            container,
+            t(def.labelKey),
+            params[def.key] as number,
+            def.min,
+            def.max,
+            def.step,
+            (v) => setMatParams(id, matIndex, { [def.key]: v }),
+            withIcons ? def.icon : undefined,
+        );
+    }
+}
+
 /**
  * 构造材质行的 header-toggle 开关——收敛 matRoot 行与 matList 行两处 ~95% 相同的
  * 手写 toggle（含 <label> 原生二次 click 去重 bugfix、mat-disabled class 联动、
@@ -258,97 +306,7 @@ function buildPerMatSchema(
                     stackingHint.textContent = t('model-material.stackingHint');
                     inner.appendChild(stackingHint);
 
-                    addSliderRow(
-                        inner,
-                        t('model-material.diffuseMul'),
-                        params.diffuseMul,
-                        0,
-                        2,
-                        0.05,
-                        (v) => setMatParams(id, matIndex, { diffuseMul: v })
-                    );
-                    addSliderRow(
-                        inner,
-                        t('model-material.specularMul'),
-                        params.specularMul,
-                        0,
-                        2,
-                        0.05,
-                        (v) => setMatParams(id, matIndex, { specularMul: v })
-                    );
-                    addSliderRow(
-                        inner,
-                        t('model-material.shininess'),
-                        params.shininess,
-                        0,
-                        200,
-                        1,
-                        (v) => setMatParams(id, matIndex, { shininess: v })
-                    );
-                    addSliderRow(
-                        inner,
-                        t('model-material.ambientMul'),
-                        params.ambientMul,
-                        0,
-                        2,
-                        0.05,
-                        (v) => setMatParams(id, matIndex, { ambientMul: v })
-                    );
-                    addSliderRow(
-                        inner,
-                        t('model-material.emissiveMul'),
-                        params.emissiveMul,
-                        0,
-                        2,
-                        0.05,
-                        (v) => setMatParams(id, matIndex, { emissiveMul: v })
-                    );
-                    _addGroupSeparator(inner, t('model-material.texLevelGroup'));
-                    addSliderRow(
-                        inner,
-                        t('model-material.diffuseTexLevel'),
-                        params.diffuseTexLevel,
-                        0,
-                        3,
-                        0.1,
-                        (v) => setMatParams(id, matIndex, { diffuseTexLevel: v })
-                    );
-                    addSliderRow(
-                        inner,
-                        t('model-material.bumpTexLevel'),
-                        params.bumpTexLevel,
-                        0,
-                        3,
-                        0.1,
-                        (v) => setMatParams(id, matIndex, { bumpTexLevel: v })
-                    );
-                    addSliderRow(
-                        inner,
-                        t('model-material.toonTexLevel'),
-                        params.toonTexLevel,
-                        0,
-                        3,
-                        0.1,
-                        (v) => setMatParams(id, matIndex, { toonTexLevel: v })
-                    );
-                    addSliderRow(
-                        inner,
-                        t('model-material.sphereTexLevel'),
-                        params.sphereTexLevel,
-                        0,
-                        3,
-                        0.1,
-                        (v) => setMatParams(id, matIndex, { sphereTexLevel: v })
-                    );
-                    addSliderRow(
-                        inner,
-                        t('model-material.emissiveTexLevel'),
-                        params.emissiveTexLevel,
-                        0,
-                        3,
-                        0.1,
-                        (v) => setMatParams(id, matIndex, { emissiveTexLevel: v })
-                    );
+                    _renderMatParamSliders(inner, id, matIndex, params, false);
 
                     if (isModified) {
                         slideRow(
@@ -606,107 +564,7 @@ function _renderParamCard(
         renderContent: (panel) => {
             addSectionTitle(panel, `${cat} > ${matName}`);
 
-            addSliderRow(
-                panel,
-                t('model-material.diffuseMul'),
-                params.diffuseMul,
-                0,
-                2,
-                0.05,
-                (v) => setMatParams(id, index, { diffuseMul: v }),
-                'lucide:droplet'
-            );
-            addSliderRow(
-                panel,
-                t('model-material.specularMul'),
-                params.specularMul,
-                0,
-                2,
-                0.05,
-                (v) => setMatParams(id, index, { specularMul: v }),
-                'lucide:sparkle'
-            );
-            addSliderRow(
-                panel,
-                t('model-material.shininess'),
-                params.shininess,
-                0,
-                200,
-                1,
-                (v) => setMatParams(id, index, { shininess: v }),
-                'lucide:zap'
-            );
-            addSliderRow(
-                panel,
-                t('model-material.ambientMul'),
-                params.ambientMul,
-                0,
-                2,
-                0.05,
-                (v) => setMatParams(id, index, { ambientMul: v }),
-                'lucide:sun'
-            );
-            addSliderRow(
-                panel,
-                t('model-material.emissiveMul'),
-                params.emissiveMul,
-                0,
-                2,
-                0.05,
-                (v) => setMatParams(id, index, { emissiveMul: v }),
-                'lucide:flame'
-            );
-            _addGroupSeparator(panel, t('model-material.texLevelGroup'));
-            addSliderRow(
-                panel,
-                t('model-material.diffuseTexLevel'),
-                params.diffuseTexLevel,
-                0,
-                3,
-                0.1,
-                (v) => setMatParams(id, index, { diffuseTexLevel: v }),
-                'lucide:image'
-            );
-            addSliderRow(
-                panel,
-                t('model-material.bumpTexLevel'),
-                params.bumpTexLevel,
-                0,
-                3,
-                0.1,
-                (v) => setMatParams(id, index, { bumpTexLevel: v }),
-                'lucide:box'
-            );
-            addSliderRow(
-                panel,
-                t('model-material.toonTexLevel'),
-                params.toonTexLevel,
-                0,
-                3,
-                0.1,
-                (v) => setMatParams(id, index, { toonTexLevel: v }),
-                'lucide:palette'
-            );
-            addSliderRow(
-                panel,
-                t('model-material.sphereTexLevel'),
-                params.sphereTexLevel,
-                0,
-                3,
-                0.1,
-                (v) => setMatParams(id, index, { sphereTexLevel: v }),
-                'lucide:circle-dot'
-            );
-            addSliderRow(
-                panel,
-                t('model-material.emissiveTexLevel'),
-                params.emissiveTexLevel,
-                0,
-                3,
-                0.1,
-                (v) => setMatParams(id, index, { emissiveTexLevel: v }),
-                'lucide:sparkles'
-            );
+            _renderMatParamSliders(panel, id, index, params, true);
 
             if (current !== null) {
                 slideRow(panel, 'lucide:rotate-ccw', t('model-material.resetThis'), false, () => {
