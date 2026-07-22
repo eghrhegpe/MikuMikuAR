@@ -45,6 +45,10 @@ vi.mock('../../scene/env/env-reflection', () => ({
 
 import { _envSys } from '../../scene/env/env-impl';
 import {
+    _effectiveBumpLevel,
+    _effectiveRoughness,
+} from '../../scene/env/env-ground';
+import {
     clearGroundTexCache,
     setOnTerrainReady,
     setOnGroundChanged,
@@ -162,5 +166,60 @@ describe('disposeGround — 幂等与资源释放', () => {
 
         expect(() => disposeGround()).not.toThrow();
         expect(_envSys.ground.mesh).toBeNull();
+    });
+});
+
+// ──────────────── _effectiveBumpLevel — 法线扭曲增强 ────────────────
+describe('_effectiveBumpLevel — 法线扭曲映射', () => {
+    function mockState(overrides: Record<string, unknown> = {}): any {
+        return {
+            groundNormalStrength: 1.0,
+            groundReflectionDistort: 0.3,
+            reflectionQuality: 'medium' as const,
+            ...overrides,
+        };
+    }
+
+    it('中等/高质量下 bumpLevel = normalStrength + distort*2.0', () => {
+        expect(_effectiveBumpLevel(mockState({ groundNormalStrength: 1, groundReflectionDistort: 0 }))).toBeCloseTo(1.0);
+        expect(_effectiveBumpLevel(mockState({ groundNormalStrength: 1, groundReflectionDistort: 0.3 }))).toBeCloseTo(1.6);
+        expect(_effectiveBumpLevel(mockState({ groundNormalStrength: 2, groundReflectionDistort: 1 }))).toBeCloseTo(4.0);
+        expect(_effectiveBumpLevel(mockState({ groundNormalStrength: 0, groundReflectionDistort: 0.5 }))).toBeCloseTo(1.0);
+    });
+
+    it('低质量/关闭时退化为 groundNormalStrength（忽略 distort）', () => {
+        for (const q of ['low' as const, 'off' as const]) {
+            expect(_effectiveBumpLevel(mockState({ reflectionQuality: q, groundNormalStrength: 1, groundReflectionDistort: 0.8 }))).toBeCloseTo(1.0);
+            expect(_effectiveBumpLevel(mockState({ reflectionQuality: q, groundNormalStrength: 0.5, groundReflectionDistort: 1 }))).toBeCloseTo(0.5);
+        }
+    });
+});
+
+// ──────────────── _effectiveRoughness — 反射模糊映射 ────────────────
+describe('_effectiveRoughness — 反射模糊映射', () => {
+    function mockState(overrides: Record<string, unknown> = {}): any {
+        return {
+            groundRoughness: 0.6,
+            groundReflectionBlur: 0.3,
+            reflectionQuality: 'medium' as const,
+            ...overrides,
+        };
+    }
+
+    it('中等/高质量下 roughness = groundRoughness + blur * 0.4', () => {
+        expect(_effectiveRoughness(mockState({ groundRoughness: 0.6, groundReflectionBlur: 0 }))).toBeCloseTo(0.6);
+        expect(_effectiveRoughness(mockState({ groundRoughness: 0.6, groundReflectionBlur: 0.3 }))).toBeCloseTo(0.72);
+        expect(_effectiveRoughness(mockState({ groundRoughness: 0.3, groundReflectionBlur: 1 }))).toBeCloseTo(0.7);
+    });
+
+    it('模糊+粗糙度总和不超过 1', () => {
+        expect(_effectiveRoughness(mockState({ groundRoughness: 0.9, groundReflectionBlur: 1 }))).toBeCloseTo(1.0);
+        expect(_effectiveRoughness(mockState({ groundRoughness: 1, groundReflectionBlur: 0.5 }))).toBeCloseTo(1.0);
+    });
+
+    it('低质量/关闭时退化为 groundRoughness（忽略 blur）', () => {
+        for (const q of ['low' as const, 'off' as const]) {
+            expect(_effectiveRoughness(mockState({ reflectionQuality: q, groundRoughness: 0.6, groundReflectionBlur: 0.8 }))).toBeCloseTo(0.6);
+        }
     });
 });
