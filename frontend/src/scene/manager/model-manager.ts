@@ -27,6 +27,7 @@ import { disposeOverlay, restoreMaterials } from '@/outfit/outfit-overlay';
 import { clamp01, swallowError } from '@/core/utils';
 import { logWarn } from '@/core/logger';
 import { disposeModelMaterialState } from './material';
+import { applyWetnessToInst } from '@/scene/env/env-wetness';
 
 // ======== Per-model state maps ========
 // (owned by ModelManager, not exported directly)
@@ -239,6 +240,7 @@ export class ModelManager {
     /** Register a new model instance. */
     register(inst: ModelInstance): void {
         this.modelRegistry.set(inst.id, inst);
+        applyWetnessToInst(inst);
     }
 
     /** Store initial rigid body state for physics toggle restoration. */

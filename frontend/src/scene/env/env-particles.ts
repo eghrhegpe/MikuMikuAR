@@ -10,6 +10,7 @@ import { getEnvKeys } from '@/core/env-state-schema';
 import { ensureEnvUpdateObserver, addRipple, addGroundRipple, getGroundHeightAt } from './env-impl';
 import { _envSys, getScene } from './env-context';
 import { createCanvasTexture } from './env-texture';
+import { applyWetnessToAllModels, removeWetnessFromAllModels, isWetnessActive, applyWetnessToInst } from './env-wetness';
 
 // ======== Particle System ========
 let _currentParticleType: EnvState['particleType'] = 'none';
@@ -29,72 +30,9 @@ let _splashPoolReady = false;
 // 碰撞检测 observer — 每帧遍历 CPU 粒子，检测地面碰撞
 let _collisionObserver: ObserverHandle | null = null;
 
-// ======== 湿身效果（Wet Body Effect）========
-// [doc:adr-160] 雨天时降低模型材质粗糙度，模拟湿身反光效果
-let _wetnessActive = false;
-/** 存储各材质被修改前的原始 roughness 值（以 material.uniqueId 为 key 去重，避免共享材质重复衰减） */
-const _originalRoughness = new Map<number, number>();
-
-/** 应用湿身效果：降低所有模型材质的 roughness */
-function _applyWetnessToModels(): void {
-    if (_wetnessActive) {
-        return;
-    }
-    _wetnessActive = true;
-    _originalRoughness.clear();
-    // 遍历所有已注册模型
-    for (const [, inst] of modelRegistry) {
-        if (!inst.meshes) {
-            continue;
-        }
-        for (const mesh of inst.meshes) {
-            const mat = mesh.material;
-            if (!mat) {
-                continue;
-            }
-            // 共享材质去重：同一材质只处理一次，避免 roughness 被多次 *0.5
-            if (_originalRoughness.has(mat.uniqueId)) {
-                continue;
-            }
-            // 保存原始 roughness（PBRMaterial 用 roughness，StandardMaterial 无直接对应）
-            const pbr = mat as unknown as { roughness?: number };
-            if (pbr.roughness !== undefined) {
-                _originalRoughness.set(mat.uniqueId, pbr.roughness);
-                pbr.roughness = Math.max(0.1, pbr.roughness * 0.5); // 粗糙度减半，最低 0.1
-            }
-        }
-    }
-}
-
-/** 移除湿身效果：恢复原始 roughness */
-function _removeWetnessFromModels(): void {
-    if (!_wetnessActive) {
-        return;
-    }
-    _wetnessActive = false;
-    for (const [, inst] of modelRegistry) {
-        if (!inst.meshes) {
-            continue;
-        }
-        for (const mesh of inst.meshes) {
-            const mat = mesh.material;
-            if (!mat) {
-                continue;
-            }
-            const orig = _originalRoughness.get(mat.uniqueId);
-            if (orig === undefined) {
-                continue;
-            }
-            const pbr = mat as unknown as { roughness?: number };
-            if (pbr.roughness !== undefined) {
-                pbr.roughness = orig;
-            }
-            // 同一材质只恢复一次，恢复后删除，避免共享材质重复命中
-            _originalRoughness.delete(mat.uniqueId);
-        }
-    }
-    _originalRoughness.clear();
-}
+// 湿身效果移至 env-wetness.ts（统一管理材质粗糙度/镜面反射修改）
+// [doc:adr-160] 提供 applyWetnessToAllModels / removeWetnessFromAllModels / isWetnessActive / applyWetnessToInst
+export { isWetnessActive, applyWetnessToInst } from './env-wetness';
 
 // 保存粒子系统创建时的初始发射方向，风力基于此计算，避免叠加
 let _initialDir1: Vector3 | null = null;
@@ -106,6 +44,15 @@ let _baseMinSize = 0;
 let _baseMaxSize = 0;
 let _baseMinEmitPower = 0;
 let _baseMaxEmitPower = 0;
+let _particleQualityMultiplier = 1;
+
+function resolveParticleQualityMultiplier(quality: 'high' | 'medium' | 'low'): number {
+    switch (quality) {
+        case 'high': return 1.0;
+        case 'medium': return 0.6;
+        case 'low': return 0.3;
+    }
+}
 
 // ---------- 全景天气 vs 局部效果参数 ----------
 // 全景天气（雨/雪/樱花/落叶）：粒子出生在世界地面以上固定高度，XZ 大幅覆盖
@@ -466,9 +413,9 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
     _currentParticleType = type;
     // 湿身效果：进入/退出雨天时切换
     if (isWeatherType(type) && type === 'rain' && !isWeatherType(prevType)) {
-        _applyWetnessToModels();
+        applyWetnessToAllModels();
     } else if (isWeatherType(prevType) && !isWeatherType(type)) {
-        _removeWetnessFromModels();
+        removeWetnessFromAllModels();
     }
     if (type === 'none') {
         return;
@@ -499,10 +446,11 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
     _initialDir1 = ps.direction1.clone();
     _initialDir2 = ps.direction2.clone();
 
-    // 应用 multiplier
-    if (envState.particleEmitRate !== 1) {
-        ps.emitRate = Math.max(0, ps.emitRate * envState.particleEmitRate);
-    }
+    // 应用 multiplier（用户设置 + 质量档位）
+    _particleQualityMultiplier = resolveParticleQualityMultiplier(
+        envState.particleQuality ?? 'high'
+    );
+    ps.emitRate = Math.max(0, ps.emitRate * envState.particleEmitRate * _particleQualityMultiplier);
     if (envState.particleSize !== 1) {
         ps.minSize *= envState.particleSize;
         ps.maxSize *= envState.particleSize;
@@ -565,7 +513,7 @@ export function disposeParticles(keepWetness = false): void {
     // 彻底停止粒子（type→none / particleEnabled=false / 场景销毁）时移除湿身，防止状态泄漏；
     // 内部类型切换重建（keepWetness=true）不清，交由 createParticleEmitter 类型判断处理
     if (!keepWetness) {
-        _removeWetnessFromModels();
+        removeWetnessFromAllModels();
     }
     // 不重置 _currentParticleType，以便 particleEnabled 自动恢复时知道上次类型
 }
@@ -882,7 +830,7 @@ export function updateParticleParams(): void {
     if (!ps) {
         return;
     }
-    ps.emitRate = Math.max(0, _baseEmitRate * envState.particleEmitRate);
+    ps.emitRate = Math.max(0, _baseEmitRate * envState.particleEmitRate * _particleQualityMultiplier);
     ps.minSize = _baseMinSize * envState.particleSize;
     ps.maxSize = _baseMaxSize * envState.particleSize;
     ps.minEmitPower = _baseMinEmitPower * envState.particleSpeed;
@@ -915,6 +863,14 @@ const _PARTICLE_KEYS = getEnvKeys('particle');
 
 registerEnvCallback((changed, state) => {
     if (!changed || [...changed].some((k) => _PARTICLE_KEYS.includes(k))) {
+        // particleQuality-only change: light update, no full rebuild
+        if (changed && changed.size === 1 && changed.has('particleQuality')) {
+            _particleQualityMultiplier = resolveParticleQualityMultiplier(
+                state.particleQuality ?? 'high'
+            );
+            updateParticleParams();
+            return;
+        }
         if (state.particleEnabled && state.particleType && state.particleType !== 'none') {
             createParticleEmitter(state.particleType, state.windEnabled);
         } else {
