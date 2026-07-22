@@ -51,6 +51,7 @@ import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 import { safeDispose } from '@/core/dispose-helpers';
+import { showConfirm } from '../core/dialog';
 
 // ======== 可复用卡片渲染器（供 motion-detail-ui 消费） ========
 
@@ -89,7 +90,7 @@ export function renderPresetCard(container: HTMLElement, modelId: string): void 
         if (saveIcon) {
             saveBtn.appendChild(saveIcon);
         }
-        saveBtn.title = t('motion-preset.saveCurrent');
+        saveBtn.title = t('motion-preset.saveTitle');
         const menuRefForPreset = getMotionMenu();
         saveBtn.addEventListener('click', () => {
             if (!modelId || !inst) {
@@ -97,7 +98,7 @@ export function renderPresetCard(container: HTMLElement, modelId: string): void 
             }
             // 检查数量限制
             if (presets.length >= 10) {
-                setStatus(t('motion-preset.limitReached'), true);
+                setStatus(t('motion-preset.tooManyPresets'), true);
                 return;
             }
             const modules = getRegisteredModules();
@@ -108,7 +109,7 @@ export function renderPresetCard(container: HTMLElement, modelId: string): void 
             }
             const newPreset: MotionPreset = {
                 id: generatePresetId(),
-                name: t('motion-preset.defaultName'),
+                name: `${t('motion-preset.title')} ${presets.length + 1}`,
                 modules: modulesToPresetMap(states),
             };
             if (!inst.motionPresets) {
@@ -152,8 +153,16 @@ export function renderPresetCard(container: HTMLElement, modelId: string): void 
                     if (!modelId) {
                         return;
                     }
+                    const snap = pushUndoSnapshot();
                     applyMotionPreset(modelId, preset);
                     setStatus(t('motion-preset.applied'), true);
+                    if (snap) {
+                        offerSceneUndoAndRefresh(
+                            t('motion.undo.appliedPreset', { name: preset.name }),
+                            snap,
+                            () => menuRefForPreset?.reRender()
+                        );
+                    }
                     menuRefForPreset?.reRender();
                 });
                 row.appendChild(applyBtn);
@@ -167,14 +176,21 @@ export function renderPresetCard(container: HTMLElement, modelId: string): void 
                 }
                 delBtn.style.cssText = 'font-size:11px;color:var(--danger,#e05050);';
                 delBtn.title = t('motion-preset.delete');
-                delBtn.addEventListener('click', () => {
+                delBtn.addEventListener('click', async () => {
                     if (!inst?.motionPresets) {
+                        return;
+                    }
+                    const ok = await showConfirm(
+                        t('motion-preset.confirmDelete', { name: preset.name })
+                    );
+                    if (!ok) {
                         return;
                     }
                     const idx = inst.motionPresets.indexOf(preset);
                     if (idx !== -1) {
                         inst.motionPresets.splice(idx, 1);
                     }
+                    setStatus(t('motion-preset.deleted'), true);
                     menuRefForPreset?.reRender();
                 });
                 row.appendChild(delBtn);
@@ -358,7 +374,7 @@ export function renderOverrideCard(
                     // [doc:adr-125 fix] 跳转后重建 dropdown 以更新游标高亮，不关闭
                     // 让用户立即看到新游标位置，可点击外部或再次点击按钮关闭
                     const newCursor = getHistoryCursor(modelId);
-                    for (const child of historyDropdown!.children) {
+                    for (const child of Array.from(historyDropdown!.children)) {
                         const idx = Number((child as HTMLElement).dataset.historyIndex ?? -1);
                         if (idx === newCursor) {
                             (child as HTMLElement).style.background = 'var(--hover)';

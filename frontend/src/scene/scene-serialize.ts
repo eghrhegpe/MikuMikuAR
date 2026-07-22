@@ -112,6 +112,7 @@ import type {
     BoneOverrideEntry,
     FeetState,
     MotionModuleState,
+    MotionPreset,
     ProcMotionConfig,
 } from '../core/types';
 import {
@@ -201,6 +202,8 @@ export interface SceneFile {
         motionOverrideModules?: MotionModuleState[];
         /** [doc:adr-085] 脚部地面跟随状态（按模型） */
         feet?: FeetState;
+        /** [doc:adr-145] 动作预设列表 */
+        motionPresets?: MotionPreset[];
         /** [doc:adr-121] 双槽位动作分配（仅 primary.source==='pinned' 落盘，inherit 不落盘） */
         motionSlots?: {
             primary: {
@@ -424,6 +427,11 @@ export function serializeScene(): SceneFile {
                     ? inst.motionOverrideModules
                     : undefined,
             feet: inst.feet,
+            // [doc:adr-145] 序列化动作预设
+            motionPresets:
+                inst.motionPresets && inst.motionPresets.length > 0
+                    ? inst.motionPresets
+                    : undefined,
             // [doc:adr-121] 序列化 primary 槽位（仅 source==='pinned' 落盘）
             // [doc:adr-167] overlay 槽位已移除（ADR-144 废弃）
             motionSlots: (() => {
@@ -701,6 +709,10 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
             // [doc:adr-116] 恢复模块语义状态（仅写入 ModelInstance，运行时烘焙在下方 restoreOverrides 之后）
             if (m.motionOverrideModules) {
                 inst.motionOverrideModules = m.motionOverrideModules;
+            }
+            // [doc:adr-145] 恢复动作预设
+            if (m.motionPresets && Array.isArray(m.motionPresets)) {
+                inst.motionPresets = m.motionPresets;
             }
             // 恢复脚部调整状态（合并默认值，向前兼容缺字段的旧存档）
             if (m.feet) {

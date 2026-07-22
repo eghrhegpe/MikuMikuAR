@@ -114,7 +114,8 @@ let _waterPhase = 0; // 累计波相位，避免调节波速时相位跳变
 let _waterWaveSpeed = 1; // 当前波速，供每帧相位累加使用
 
 // Gerstner 波参数（与 water.vert.glsl 中 WAVE_SPEED/WAVE_FREQ 保持一致）
-const _GERSTNER_WAVE_FREQ = [0.15, 0.2, 0.25, 0.3] as const;
+// ADR-115 P5: 层 0/1 频率下调（0.15/0.2 → 0.07/0.11），拉长波长制造连绵涌浪
+const _GERSTNER_WAVE_FREQ = [0.07, 0.11, 0.25, 0.3] as const;
 const _GERSTNER_WAVE_SPEED = [0.7, 0.9, 0.5, 1.2] as const;
 
 /**
@@ -126,7 +127,7 @@ const _GERSTNER_WAVE_SPEED = [0.7, 0.9, 0.5, 1.2] as const;
  */
 function computeDetailNormalSpeeds(waveSpeedMultiplier = 1): [number, number] {
     // 第 0 层（大波组代表层）：speed/freq，决定大尺度法线滚动基准
-    const baseSpeed = _GERSTNER_WAVE_SPEED[0] / _GERSTNER_WAVE_FREQ[0]; // ≈ 4.67
+    const baseSpeed = _GERSTNER_WAVE_SPEED[0] / _GERSTNER_WAVE_FREQ[0]; // ≈ 10（P5 后）
     // 大尺度层：与主波同速；小尺度层：稍慢（反向交错感）
     const speed1 = baseSpeed * waveSpeedMultiplier; // 沿风向滚动
     const speed2 = baseSpeed * waveSpeedMultiplier * 0.55; // 反向，0.55:1 比例（两层不重复）

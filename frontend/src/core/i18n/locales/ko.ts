@@ -354,6 +354,9 @@ export const ko: Record<string, string> = {
     'motion-preset.deleted': '✓ 프리셋 삭제됨',
     'motion-preset.noPresets': '아직 프리셋이 없습니다',
     'motion-preset.saveTitle': '현재 모션을 프리셋으로 저장',
+    'motion-preset.saveCurrent': '현재를 프리셋으로 저장',
+    'motion-preset.defaultName': '새 프리셋',
+    'motion-preset.limitReached': '✗ 프리셋이 최대 개수(10)에 도달했습니다. 오래된 프리셋을 삭제해 주세요',
     'motion-preset.inputName': '프리셋 이름 입력:',
     'motion-preset.nameEmpty': '✗ 이름이 비어 있을 수 없습니다',
     'motion-preset.tooManyPresets':
@@ -444,6 +447,7 @@ export const ko: Record<string, string> = {
     'motion.library.followDefault': '기본값 따르기',
     'motion.library.currentPick': '현재 선택',
     'motion.undoApplied': '✓ 실행 취소됨',
+    'motion.undo.appliedPreset': '실행 취소: 프리셋 "{name}" 적용',
     'motion.music': '음악',
     'motion.browseMusic': '음악 찾아보기',
     'motion.musicLibrary': '음악 라이브러리',

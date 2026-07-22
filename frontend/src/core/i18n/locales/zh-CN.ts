@@ -286,6 +286,7 @@ export const zhCN: Record<string, string> = {
     'motion.library.followDefault': '跟随默认动作',
     'motion.library.currentPick': '当前选择',
     'motion.undoApplied': '✓ 已撤销',
+    'motion.undo.appliedPreset': '撤销：应用预设「{name}」',
     'motion.music': '音乐',
     'motion.browseMusic': '浏览音乐库',
     'motion.musicLibrary': '音乐库',
