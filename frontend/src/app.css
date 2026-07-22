@@ -239,6 +239,19 @@
     }
 }
 
+/* ===== 横屏适配：限高防止面板顶出屏幕（ADR-017 A2-03 降级后补充） =====
+ * 问题：#sceneOverlay 用 bottom + max-height:80vh 从底部向上展开，
+ *   横屏屏幕高度小（如 360px），80vh=288px + bottom:80px = 368px，超出屏幕顶部，
+ *   导致 .slide-header 标题栏被挤到屏幕顶部边缘，"外观"等按钮难以点击。
+ * 方案：横屏时 max-height 改为 calc(100vh - overlay-bottom - 8px)，
+ *   确保面板顶部永远在屏幕内，留 8px 安全间距。
+ */
+@media (orientation: landscape) and (max-height: 500px) {
+    #sceneOverlay {
+        max-height: calc(100vh - var(--overlay-bottom) - 8px);
+    }
+}
+
 /* ===== Global Selection Highlight ===== */
 ::selection {
     background: var(--accent-dim);
