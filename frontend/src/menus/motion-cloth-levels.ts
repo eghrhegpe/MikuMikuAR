@@ -12,6 +12,7 @@ import type { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRu
 import type { VirtualSkirtConfig } from '../scene/physics/virtual-skirt';
 import { getMotionMenu } from './motion-popup';
 import { t } from '../core/i18n/t';
+import { translateGoError } from '../core/i18n/goerr';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 import { DebouncedTimer } from '../core/utils';
@@ -128,14 +129,14 @@ async function rebuildAll(): Promise<void> {
             t('cloth.applied', { n: injected }) +
                 ' · ' +
                 t('cloth.buildFailed', {
-                    err: firstError instanceof Error ? firstError.message : String(firstError),
+                    err: translateGoError(firstError),
                 }),
             false
         );
     } else if (failed > 0) {
         setStatus(
             t('cloth.buildFailed', {
-                err: firstError instanceof Error ? firstError.message : String(firstError),
+                err: translateGoError(firstError),
             }),
             false
         );

@@ -25,6 +25,9 @@ import '@babylonjs/core/Loading/loadingScreen';
 import 'babylon-mmd/esm/Loader/mmdModelLoader.default';
 import 'babylon-mmd/esm/Loader/pmxLoader';
 
+// ======== ADR-117 多语言错误翻译（translateGoError） ========
+import { translateGoError } from '../core/i18n/goerr';
+
 // ======== JSZip（浏览器端 zip 解压） ========
 import * as JSZip from 'jszip';
 
@@ -175,7 +178,7 @@ async function loadModel(
         setStatus(`✅ 加载完成：${displayName}`);
     } catch (err) {
         console.error('loadModel failed:', err);
-        setStatus(`❌ 加载失败：${err instanceof Error ? err.message : String(err)}`);
+        setStatus(`❌ 加载失败：${translateGoError(err)}`);
     }
 }
 

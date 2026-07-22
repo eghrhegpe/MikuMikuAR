@@ -5,6 +5,8 @@
 // [doc:adr-135] P0.2: loadId trace 链路 — 每次加载分配 loadId + phase 追踪，错误包装为 LibraryLoadError
 // 后续: 为 LoadManager 补并发排队/反序列化恢复（跳过队列）的单元测试覆盖（当前仅靠手动验证）。
 
+import { translateGoError } from './i18n/goerr';
+
 export type ResourceKind = 'actor' | 'stage' | 'prop' | 'vmd' | 'audio' | 'camera-vmd' | 'light' | 'personalLight';
 
 /**
@@ -233,7 +235,7 @@ class LoadManager {
                 phase: this._phase ?? 'unknown',
                 cause: err,
                 req,
-                message: err instanceof Error ? err.message : String(err),
+                message: translateGoError(err),
             };
             throw wrapped;
         } finally {
