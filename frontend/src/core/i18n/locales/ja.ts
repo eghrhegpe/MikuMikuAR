@@ -1390,8 +1390,8 @@ export const ja: Record<string, string> = {
     'settings.perfFpsUnlimited': '✓ FPS 制限なし',
     'settings.perfFpsLimit': '✓ FPS 上限: {limit} FPS',
     'settings.perfVsync': '✓ フレームレート制限: {state}',
-    'settings.physOn': '✓ デフォルトで物理シミュレーションを有効化',
-    'settings.physOff': '✓ デフォルトで物理シミュレーションを無効化（以降のロードのみ影響）',
+    'settings.physOn': '✓ 物理シミュレーションを有効化しました',
+    'settings.physOff': '✓ 物理シミュレーションを無効化しました',
     'settings.renderScale': '✓ レンダリングスケール: {pct}%',
     'settings.camSens': '✓ カメラ感度: {s}x',
     'settings.invertY': '✓ Y軸反転: {state}',
@@ -1417,9 +1417,9 @@ export const ja: Record<string, string> = {
         '無効にすると人為的な制限を解除し、ディスプレイのリフレッシュレートでレンダリング。「FPS上限」スライダーは無効になります。',
     'settings.perf.vsyncHintBrowser':
         'ブラウザ/WebViewのレンダリングループはrequestAnimationFrameで駆動され、常にディスプレイと同期します。このスイッチは人為的なFPS上限の有効/無効のみを制御します。',
-    'settings.perf.defaultPhysics': 'デフォルト物理シミュレーション',
+    'settings.perf.defaultPhysics': '物理シミュレーション',
     'settings.perf.defaultPhysicsHint':
-        '無効にするとローエンドデバイスの性能向上；以降のロードのみ影響。',
+        '無効にするとローエンドデバイスの性能向上；切り替え後、読み込み済みモデルすべてに即座に適用。',
     'settings.perf.autoCenter': '新規モデルの自動中央配置',
     'settings.perf.autoCenterHint':
         '新規ロードモデルをカメラが自動で中央配置；無効時は現在の視点を維持しフォーカスのみ切替。',

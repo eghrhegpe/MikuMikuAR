@@ -1488,8 +1488,8 @@ export const zhCN: Record<string, string> = {
     'settings.perfFpsUnlimited': '✓ 帧率不限制',
     'settings.perfFpsLimit': '✓ 帧率上限: {limit} FPS',
     'settings.perfVsync': '✓ 帧率限制器: {state}',
-    'settings.physOn': '✓ 默认启用物理模拟',
-    'settings.physOff': '✓ 默认关闭物理模拟（仅影响后续加载）',
+    'settings.physOn': '✓ 已启用物理模拟',
+    'settings.physOff': '✓ 已关闭物理模拟',
     'settings.renderScale': '✓ 渲染缩放: {pct}%',
     'settings.camSens': '✓ 相机灵敏度: {s}x',
     'settings.invertY': '✓ 反转 Y 轴: {state}',
@@ -1585,9 +1585,9 @@ export const zhCN: Record<string, string> = {
         '关闭后不施加人为限帧，渲染以显示器刷新率运行，"帧率上限"滑块失效。',
     'settings.perf.vsyncHintBrowser':
         '浏览器/WebView 渲染循环由 requestAnimationFrame 驱动，天然与显示器刷新同步；此开关仅控制是否启用人为帧率上限。',
-    'settings.perf.defaultPhysics': '默认启用物理模拟',
+    'settings.perf.defaultPhysics': '启用物理模拟',
     'settings.perf.defaultPhysicsHint':
-        '关闭可提升低配设备性能；仅影响后续加载的模型，已加载模型不受影响。',
+        '关闭可提升低配设备性能；切换后立即对所有已加载模型生效。',
     'settings.perf.autoCenter': '默认模型自动居中',
     'settings.perf.autoCenterHint':
         '新加载模型时相机自动对准取景；关闭则保留当前视角，仅切换焦点。',

@@ -1506,8 +1506,8 @@ export const en: Record<string, string> = {
     'settings.perfFpsUnlimited': '✓ FPS unlimited',
     'settings.perfFpsLimit': '✓ FPS cap: {limit} FPS',
     'settings.perfVsync': '✓ Frame Rate Limiter: {state}',
-    'settings.physOn': '✓ Physics simulation enabled by default',
-    'settings.physOff': '✓ Physics simulation disabled by default (affects subsequent loads only)',
+    'settings.physOn': '✓ Physics simulation enabled',
+    'settings.physOff': '✓ Physics simulation disabled',
     'settings.renderScale': '✓ Render scale: {pct}%',
     'settings.camSens': '✓ Camera sensitivity: {s}x',
     'settings.invertY': '✓ Invert Y axis: {state}',
@@ -1604,9 +1604,9 @@ export const en: Record<string, string> = {
         'When off, no artificial cap is applied; rendering runs at the display refresh rate and the "FPS Cap" slider has no effect.',
     'settings.perf.vsyncHintBrowser':
         'Browser/WebView render loops are driven by requestAnimationFrame and always sync to the display; this toggle only controls whether an artificial FPS cap is applied.',
-    'settings.perf.defaultPhysics': 'Default Physics',
+    'settings.perf.defaultPhysics': 'Physics Simulation',
     'settings.perf.defaultPhysicsHint':
-        'Off improves low-end performance; only affects subsequent loads.',
+        'Off improves low-end performance; applies immediately to all loaded models.',
     'settings.perf.autoCenter': 'Auto-center new model',
     'settings.perf.autoCenterHint':
         'Camera auto-frames newly loaded models; off keeps current view and only switches focus.',
