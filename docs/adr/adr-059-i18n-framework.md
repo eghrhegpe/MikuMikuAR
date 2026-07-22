@@ -1,6 +1,6 @@
 # ADR-059: i18n 多语言切换框架
 
-> **状态**: 已完成（2026-07-10 全部 Phase 落地，奇偶校验脚本已接 CI；剩余 ja/ko/zh-TW 翻译缺口为人工/AI 走查任务，非框架范畴）
+> **状态**: 已完成（2026-07-10 全部 Phase 落地，奇偶校验脚本已接 CI；2026-07-22 废弃 Go UIState 持久化升级预留路径；剩余 ja/ko/zh-TW 翻译质量为人工/AI 走查任务，非框架范畴）
 > **关联**: [ADR-043](adr-043-dancexr-gap-analysis.md)（DanceXR 差距分析）、[ADR-044](adr-044-competitive-analysis.md)（竞品分析）
 > **背景**: 当前全仓 UI 字符串为硬编码中文，约 100 个 `.ts` 文件含中文字面量，分布于 `menus/`、`core/ui-*`、`scene/`、`physics/`。无 i18n 框架、无语言偏好入口。竞品 DanceXR 已支持 5 种语言（简/繁中、英、日、韩）。本 ADR 锁定一套与现有 `core/reactivity` 体系对齐的轻量 i18n 方案。
 
@@ -195,7 +195,7 @@ locale bundle 为同步导入的 TS 对象（体积小、可 tree-shake），无
 
 **选 A 为 MVP**：复用 `setMmdRuntimeType` 的 localStorage 先例，零 Go 改动，最快跑通热切换闭环。
 
-**持久化升级（未来可选）**：若需语言随「设置导入/导出」统一或跨设备同步，再升级为 Go `UIState` + `SetUILanguage` 绑定（届时本 ADR 追加 Phase）。当前 MVP 明确**不**动 Go。
+**持久化升级路径（已废弃）**：原预留"语言进 Go `UIState` + `SetUILanguage` 绑定"的升级路径已被废弃。经评估，迁移至 Go 持久化会破坏首屏同步时序、增加热切换异步复杂度、并在 `npm run dev` 无 Wails 模式下引入 binding mock 成本，收益（设置包统一、跨设备同步）与本项目当前阶段不匹配。语言持久化永久采用 `localStorage`，与 `setMmdRuntimeType` 先例保持一致。若未来出现强需求（如云账号同步、设置包必须包含语言），应作为新 ADR 重新评估，而非直接执行本 ADR 预留路径。
 
 ---
 
@@ -239,6 +239,10 @@ locale bundle 为同步导入的 TS 对象（体积小、可 tree-shake），无
 - [x] `locales/ja.ts`、`ko.ts`、`zh-TW.ts` bundle 已建（t.ts 已注册，语言菜单可选）；翻译 key 对齐由 `scripts/i18n-check.mjs` 奇偶校验守门，剩余缺口见 §3.5
 - [x] i18n bundle key 奇偶校验脚本 `scripts/i18n-check.mjs` 接入 CI（见 §3.5，strict 模式，缺口清零后升级）
 
+### 修订记录（2026-07-22）
+
+- [x] **废弃 Go 持久化升级路径**：原预留"语言进 Go `UIState` + `SetUILanguage` 绑定"的升级路径被废弃。语言持久化永久采用 `localStorage`，与 `setMmdRuntimeType` 先例保持一致。理由见 §四决策对比。若未来出现强需求，应通过新 ADR 重新评估。
+
 ---
 
 ## 六、风险与边界
@@ -249,7 +253,7 @@ locale bundle 为同步导入的 TS 对象（体积小、可 tree-shake），无
 | 动态字符串占位符约定不一致 | 中 | 统一 `{name}` 语法；`t()` 强制 params 类型 |
 | 首屏闪烁（语言未定先渲染） | 低 | locale 模块加载期即读 localStorage，菜单渲染前已定 |
 | 已开菜单未重渲染 | 低 | 所有标签在 `updateControls()` 内调 `t()`，由 `scheduleRefresh()` 触发 |
-| 持久化与设置导入/导出不统一 | 低 | MVP 接受（同 `MmdRuntimeType` 先例）；未来可升 Go |
+| 持久化与设置导入/导出不统一 | 低 | 已接受；语言跟随本地偏好，与 `MmdRuntimeType` 先例一致。Go 升级路径已废弃。 |
 | 翻译内容质量（en/ja/ko） | 中 | 独立工作量，可由用户或 AI 提供；架构不阻塞 |
 | ja/ko 翻译审校流程缺失 | 中 | 见下方「翻译审校流程」补充说明 |
 
@@ -266,7 +270,7 @@ locale bundle 为同步导入的 TS 对象（体积小、可 tree-shake），无
 ### 边界
 
 - 本 ADR **不引入** i18next 等第三方 i18n 库。
-- 本 ADR **MVP 阶段不修改** Go 后端；持久化用 `localStorage`。
+- 本 ADR **不修改** Go 后端；语言持久化永久使用 `localStorage`，不再升级为 Go `UIState`。
 - 本 ADR **不涉及** 模型内文件名 / 资源路径编码（属 ADR-057/058 范畴）。
 - 本 ADR **不处理** 运行时动态加载的第三方内容文本（如 PMX 内部字符串）。
 - 多 AI 协作：实施阶段若触碰 `settings.ts` / `types.ts` / `config` 默认值 / `core/orbit.ts`，须先在当日 `memory/YYYY-MM-DD.md` 认领（见项目铁律）。
