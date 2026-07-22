@@ -552,6 +552,15 @@ function renderItemsWithRAF(
             replaceModel(item.model);
             return;
         }
+        if (item.model && item.model.format === 'vmd') {
+            const stack = targetStack || stackRegistry.modelStack;
+            const outcome = stack?.currentLevel?.outcome ?? { mode: 'close' as const };
+            if (outcome.mode === 'stay' && outcome.onVmdReplace) {
+                const name = item.model.name_jp || item.model.name_en || '';
+                outcome.onVmdReplace(item.model.file_path, name);
+                return;
+            }
+        }
         activateItem(item);
     };
     const buildRowExtra = (item: PopupRow): SlideRowExtra | undefined => {

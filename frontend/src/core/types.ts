@@ -388,7 +388,7 @@ export type PopupRow = {
 // 类型（模型 / 动作 / 音频 / 相机 VMD）具备一致的「选中后该干嘛」能力。
 export type BrowseOutcome =
     | { mode: 'close' } // 默认：加载即完成，关闭浏览器（一次性绑定 / 加载即完成）
-    | { mode: 'stay'; modelId?: string; onVmdPick?: (path: string, name: string) => void } // 连续预览：加载后保持浏览器打开
+    | { mode: 'stay'; modelId?: string; onVmdPick?: (path: string, name: string) => void; onVmdReplace?: (path: string, name: string) => void } // 连续预览：加载后保持浏览器打开
     | { mode: 'jumpToDir'; modelId?: string; dir?: string } // 加载后回到指定目录（模型替换，旧 ADR-094 自动跳转）
     | { mode: 'bindLayer'; modelId: string } // 绑定到图层（一次性，关闭）
     | { mode: 'bindMotion'; modelId: string } // 绑定到动作槽（一次性，关闭）

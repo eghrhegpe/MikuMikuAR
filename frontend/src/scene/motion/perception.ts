@@ -700,6 +700,9 @@ export function setPerceptionStateFor(modelId: string, s: Partial<PerceptionStat
     } else {
         ctx.state = { ...ctx.state, ...clamped };
     }
+    if (modelId === _focusedContextId) {
+        _syncGazeAngles();
+    }
     triggerAutoSave();
 }
 
