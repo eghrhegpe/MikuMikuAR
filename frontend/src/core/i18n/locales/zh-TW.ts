@@ -1400,8 +1400,7 @@ export const zhTW: Record<string, string> = {
     'settings.perf.vsyncHintBrowser':
         '瀏覽器/WebView 渲染循環由 requestAnimationFrame 驅動，天然與顯示器刷新同步；此開關僅控制是否啟用人為幀率上限。',
     'settings.perf.defaultPhysics': '啟用物理模擬',
-    'settings.perf.defaultPhysicsHint':
-        '關閉可提升低配裝置效能；切換後立即對所有已載入模型生效。',
+    'settings.perf.defaultPhysicsHint': '關閉可提升低配裝置效能；切換後立即對所有已載入模型生效。',
     'settings.perf.autoCenter': '預設模型自動置中',
     'settings.perf.autoCenterHint':
         '新載入模型時相機自動對準取景；關閉則保留目前視角，僅切換焦點。',

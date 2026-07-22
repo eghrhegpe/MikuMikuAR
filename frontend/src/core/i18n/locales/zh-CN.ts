@@ -1586,8 +1586,7 @@ export const zhCN: Record<string, string> = {
     'settings.perf.vsyncHintBrowser':
         '浏览器/WebView 渲染循环由 requestAnimationFrame 驱动，天然与显示器刷新同步；此开关仅控制是否启用人为帧率上限。',
     'settings.perf.defaultPhysics': '启用物理模拟',
-    'settings.perf.defaultPhysicsHint':
-        '关闭可提升低配设备性能；切换后立即对所有已加载模型生效。',
+    'settings.perf.defaultPhysicsHint': '关闭可提升低配设备性能；切换后立即对所有已加载模型生效。',
     'settings.perf.autoCenter': '默认模型自动居中',
     'settings.perf.autoCenterHint':
         '新加载模型时相机自动对准取景；关闭则保留当前视角，仅切换焦点。',
