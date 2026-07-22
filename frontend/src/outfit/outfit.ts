@@ -21,6 +21,10 @@ import { _catOf } from '../scene/manager/material';
 import { triggerAutoSave } from '../core/config';
 import { loadOverlay, hideMaterials, restoreMaterials, disposeOverlay } from './outfit-overlay';
 import type { MmdStandardMaterial } from '../core/types';
+import { t } from '../core/i18n/t';
+
+/** 恢复默认变体的标识名（非 outfits.json 中定义的变体名） */
+const RESET_VARIANT = '默认';
 
 // [adr-104] Scene 引用注入：由 scene.ts 初始化后调用 setSceneRef() 注入，
 // 破除 outfit → scene → scene-serialize → outfit 的循环依赖（原靠动态 import 解耦，
@@ -308,21 +312,20 @@ async function _applySlot(
                 resolve(); // 超时：loaded 保持 false
             }, 5000);
         });
-        // 加载成功时替换纹理
         if (loaded) {
             if (cur && cur !== origTex) {
                 cur.dispose();
             }
             mmdSm[slot] = newTex;
+            URL.revokeObjectURL(url);
         } else {
-            // 超时：不立即丢弃已下载的纹理，后台继续加载；
-            // 加载完成且本槽尚未被后续切换覆盖时再替换，避免重复下载浪费与孤儿纹理泄漏
             let done = false;
             const trySwap = (): void => {
                 if (done) {
                     return;
                 }
                 done = true;
+                URL.revokeObjectURL(url);
                 if (mmdSm[slot] === cur) {
                     if (cur && cur !== origTex) {
                         cur.dispose();
@@ -510,10 +513,10 @@ async function _applyOutfitVariantCore(id: string, variantName: string): Promise
         return;
     }
     const variant =
-        variantName === '默认'
+        variantName === RESET_VARIANT
             ? undefined
             : inst.outfitFile.variants.find((v) => v.name === variantName);
-    if (!variant && variantName !== '默认') {
+    if (!variant && variantName !== RESET_VARIANT) {
         return;
     }
 
@@ -651,7 +654,6 @@ async function _applyOutfitVariantCore(id: string, variantName: string): Promise
 
     await Promise.all(promises);
     inst.activeVariant = variantName;
-    const { t } = await import('../core/i18n/t');
     setStatus(t('outfit.switched', { name: variantName }), true);
     triggerAutoSave();
 }
