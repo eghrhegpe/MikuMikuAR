@@ -35,7 +35,6 @@ import type { ProcMotionMode } from '../motion-algos/procedural-motion';
 import { buildProcMotionLevel } from './motion-procmotion-levels';
 import { buildGazeTrackingLevel } from './motion-gaze-levels';
 import { buildCameraLevel } from './motion-camera-levels';
-import { buildMotionOverrideLevel } from './motion-override-levels';
 import { buildPoseStudioLevel } from './motion-pose-levels';
 import { t } from '../core/i18n/t';
 import { addSceneMotion, clearAllSceneMotions } from '../scene/motion/motion-intent';
@@ -119,7 +118,6 @@ const MOTION_FOLDER_ROUTES: Record<string, () => PopupLevel> = {
     'motion:playbackSpeed': buildPlaybackSpeedLevel,
     'motion:procmotion': buildProcMotionLevel,
     'motion:gaze': buildGazeTrackingLevel,
-    'motion:boneOverride': buildMotionOverrideLevel,
     'motion:poseStudio': buildPoseStudioLevel,
     'motion:retarget': buildRetargetLevel,
 };

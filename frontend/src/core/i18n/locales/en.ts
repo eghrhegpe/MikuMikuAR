@@ -494,6 +494,8 @@ export const en: Record<string, string> = {
     'motion.override.module.fingerPose': 'Finger Pose',
     'motion.override.module.ridingModel': 'Riding Model',
     'motion.override.module.positionOffset': 'Position Offset',
+    'motion.override.tunedParams': '{n} params tuned',
+    'motion.override.activeBoneOverrides': '{n} overrides',
     'param.tilt': 'Tilt (Upper Body)',
     'param.bend': 'Bend Waist',
     'param.twist': 'Twist Waist',
