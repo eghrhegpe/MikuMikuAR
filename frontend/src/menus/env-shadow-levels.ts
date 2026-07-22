@@ -28,9 +28,9 @@ export function buildShadowLevel(): PopupLevel {
                         control: {
                             bind: 'light.shadowType',
                             options: [
-                                { value: 'hard', label: 'env.hardShadow' },
-                                { value: 'soft', label: 'env.softShadow' },
-                                { value: 'pcf', label: 'PCF' },
+                                { value: 'hard', label: t('env.hardShadow') },
+                                { value: 'soft', label: t('env.softShadow') },
+                                { value: 'pcf', label: t('env.pcf') },
                             ],
                         },
                         icon: 'lucide:cloud',

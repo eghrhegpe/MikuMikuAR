@@ -477,7 +477,7 @@ function updateConflictBanner(el: HTMLElement, modelId: string | null): void {
     el.style.display = '';
     el.style.color = 'var(--warn, #e0a030)';
     el.style.whiteSpace = 'pre-line';
-    el.textContent = `骨骼冲突 (${total})\n` + lines.join('\n');
+    el.textContent = `${t('motion.boneConflictCount', { total })}\n` + lines.join('\n');
 }
 
 /** 模块参数子页：渲染模块的 buildSchema() */
@@ -578,7 +578,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
                             const opt = document.createElement('option');
                             opt.value = bn;
                             // [doc:adr-122 P3] IK 骨骼附加标记
-                            opt.textContent = _isIkBone(bn) ? `${bn} (IK)` : bn;
+                            opt.textContent = _isIkBone(bn) ? `${bn} ${t('motion.ikTag')}` : bn;
                             optGroup.appendChild(opt);
                         }
                         boneSelect.appendChild(optGroup);
@@ -741,7 +741,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
                         info.style.fontSize = '11px';
                         info.style.opacity = ov.enabled ? '1' : '0.35';
                         // [doc:adr-122 P3] IK 骨骼附加标记
-                        const ikTag = _isIkBone(ov.boneName) ? ' [IK]' : '';
+                        const ikTag = _isIkBone(ov.boneName) ? ` ${t('motion.ikTag')}` : '';
                         info.textContent = `${ov.boneName}${ikTag}  P:${ov.euler[0].toFixed(0)} Y:${ov.euler[1].toFixed(0)} R:${ov.euler[2].toFixed(0)}  W:${ov.weight.toFixed(2)}`;
 
                         row.appendChild(info);

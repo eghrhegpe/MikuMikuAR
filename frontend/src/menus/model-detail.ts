@@ -779,11 +779,11 @@ function buildModelInfoSchema(id: string): MenuNode[] {
                     { label: t('model-detail.fMaterials'), value: String(matCount) },
                     {
                         label: t('model-detail.fBones'),
-                        value: boneCount !== null ? boneCount.toLocaleString() : 'N/A',
+                        value: boneCount !== null ? boneCount.toLocaleString() : t('model-detail.na'),
                     },
                     {
                         label: t('model-detail.fMorphs'),
-                        value: morphCount !== null ? morphCount.toLocaleString() : 'N/A',
+                        value: morphCount !== null ? morphCount.toLocaleString() : t('model-detail.na'),
                     },
                     { label: t('model-detail.fNameJp'), value: meta?.name_jp || '—' },
                     { label: t('model-detail.fNameEn'), value: meta?.name_en || '—' },

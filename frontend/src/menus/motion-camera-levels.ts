@@ -691,7 +691,7 @@ function renderWebXRProbeSection(container: HTMLElement): void {
                 _probeResult = await probeWebXR();
                 setStatus(_verdictText(_probeResult.verdict), _probeResult.verdict !== 'none');
             } catch (e) {
-                setStatus(`WebXR probe error: ${e}`, false);
+                setStatus(t('motion.webxrProbeError', { e: String(e) }), false);
             }
             _probing = false;
             refreshCameraLevel();
@@ -707,7 +707,7 @@ function renderWebXRProbeSection(container: HTMLElement): void {
             _probeResult = await probeWebXRFeatures();
             setStatus(_verdictText(_probeResult.verdict), _probeResult.verdict !== 'none');
         } catch (e) {
-            setStatus(`WebXR deep probe error: ${e}`, false);
+            setStatus(t('motion.webxrDeepProbeError', { e: String(e) }), false);
         }
         _probing = false;
         refreshCameraLevel();
@@ -721,7 +721,7 @@ function renderWebXRProbeSection(container: HTMLElement): void {
                 setStatus(t('scene.ar.webxrCopied'), true);
             } catch {
                 // clipboard API 可能不可用（需用户手势）
-                setStatus('Clipboard unavailable', false);
+                setStatus(t('motion.clipboardUnavailable'), false);
             }
         });
 

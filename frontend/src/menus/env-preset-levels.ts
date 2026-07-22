@@ -148,6 +148,7 @@ function renderCategorizedPresets(
 // ======== Env Preset Config（场景氛围快速预设，跨类别） ========
 
 interface EnvPresetConfig {
+    labelKey: string;
     env: Partial<import('../core/config').EnvState>;
     lights?: Partial<import('../scene/scene').LightState>;
     render?: Partial<import('../scene/scene').RenderState>;
@@ -155,6 +156,7 @@ interface EnvPresetConfig {
 
 export const SCENE_PRESETS: Record<string, EnvPresetConfig> = {
     '舞台-A': {
+        labelKey: 'env-preset.stageA',
         env: {
             skyMode: 'procedural',
             skyColorTop: [0.05, 0.05, 0.15],
@@ -173,6 +175,7 @@ export const SCENE_PRESETS: Record<string, EnvPresetConfig> = {
         render: { vignetteEnabled: true, vignetteDarkness: 0.3, exposure: 1.2 },
     },
     '户外晴天': {
+        labelKey: 'env-preset.outdoorSunny',
         env: {
             skyMode: 'procedural',
             skyColorTop: [0.3, 0.6, 1],
@@ -191,6 +194,7 @@ export const SCENE_PRESETS: Record<string, EnvPresetConfig> = {
         render: { exposure: 1.4, toneMapping: 1 },
     },
     '演唱会': {
+        labelKey: 'env-preset.concert',
         env: {
             skyMode: 'procedural',
             skyColorTop: [0.4, 0.1, 0.6],
@@ -211,6 +215,7 @@ export const SCENE_PRESETS: Record<string, EnvPresetConfig> = {
         render: { vignetteEnabled: true, vignetteDarkness: 0.5, exposure: 0.9, toneMapping: 1 },
     },
     '摄影棚': {
+        labelKey: 'env-preset.photoStudio',
         env: {
             skyMode: 'color',
             skyColorTop: [0.4, 0.4, 0.45],
@@ -229,6 +234,7 @@ export const SCENE_PRESETS: Record<string, EnvPresetConfig> = {
         render: { exposure: 1.0, toneMapping: 1 },
     },
     '黄昏柔光': {
+        labelKey: 'env-preset.duskSoft',
         env: {
             skyMode: 'procedural',
             skyColorTop: [0.9, 0.45, 0.2],
@@ -248,6 +254,7 @@ export const SCENE_PRESETS: Record<string, EnvPresetConfig> = {
         render: { vignetteEnabled: true, vignetteDarkness: 0.2, exposure: 0.8, toneMapping: 2 },
     },
     '雨天': {
+        labelKey: 'env-preset.rainyDay',
         env: {
             skyMode: 'procedural',
             skyColorTop: [0.25, 0.28, 0.32],
@@ -267,6 +274,7 @@ export const SCENE_PRESETS: Record<string, EnvPresetConfig> = {
         render: { exposure: 0.7, toneMapping: 4 },
     },
     '樱花季': {
+        labelKey: 'env-preset.sakuraSeason',
         env: {
             skyMode: 'procedural',
             skyColorTop: [0.95, 0.85, 0.9],
@@ -287,6 +295,7 @@ export const SCENE_PRESETS: Record<string, EnvPresetConfig> = {
         render: { exposure: 1.1, toneMapping: 2 },
     },
     '赛博都市': {
+        labelKey: 'env-preset.cyberCity',
         env: {
             skyMode: 'procedural',
             skyColorTop: [0.05, 0.02, 0.1],
@@ -321,8 +330,8 @@ export function buildPresetLevel(): PopupLevel {
                 const chipGroup = document.createElement('div');
                 chipGroup.className = 'preset-group';
                 chipGroup.style.paddingBottom = '6px';
-                for (const [name, preset] of entries) {
-                    addPresetChip(chipGroup, name, false, () => {
+                for (const [, preset] of entries) {
+                    addPresetChip(chipGroup, t(preset.labelKey), false, () => {
                         const envUpdate = { ...preset.env };
                         // 自动推算中间色，与天空预设双色逻辑看齐
                         if (
