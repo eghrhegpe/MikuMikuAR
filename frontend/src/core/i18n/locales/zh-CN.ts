@@ -568,9 +568,8 @@ export const zhCN: Record<string, string> = {
     'motion.poseStudio.poseApplied': '✓ 已应用 {pose}',
     'motion.poseStudio.poseFailed': '✗ 姿态应用失败',
     'motion.poseStudio.depthOfField': '景深控制',
-    'motion.poseStudio.dofAmount': '虚化强度',
-    'motion.poseStudio.dofFocus': '对焦距离',
-    'motion.poseStudio.dofFocal': '焦距',
+    'motion.poseStudio.dofHint': '景深属镜头参数，请在相机面板调整',
+    'motion.poseStudio.openLensSettings': '在相机面板调整景深',
     'motion.poseStudio.cameraPresets': '相机角度预设',
     'motion.poseStudio.cameraApplied': '✓ 已切换至 {name} 角度',
     'motion.poseStudio.screenshot': '单张截图',
@@ -583,6 +582,7 @@ export const zhCN: Record<string, string> = {
 
     // ===== 相机 camera =====
     'motion.cameraMode': '相机模式',
+    'motion.cameraLens': '镜头（景深）',
     'motion.cameraControl': '控制方案',
     'motion.cameraBehavior': '运动行为',
     'motion.behaviorNone': '静止（手动）',

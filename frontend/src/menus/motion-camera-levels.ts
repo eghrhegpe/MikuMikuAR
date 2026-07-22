@@ -44,6 +44,7 @@ import {
     type CameraBehavior,
 } from '../scene/camera/camera';
 import { triggerAutoSave, pushUndoSnapshot, offerSceneUndoAndRefresh } from '../scene/scene';
+import { getRenderState, setRenderState } from '../scene/render/renderer';
 import { getMotionMenu } from './motion-popup';
 import {
     switchARCameraFacing,
@@ -118,6 +119,65 @@ function buildCameraSchema(): MenuNode[] {
                         },
                         { bind: () => getFov() },
                         'camera:main:fov'
+                    );
+                });
+            },
+        },
+        // 卡片 1b：镜头（景深）—— 方案 C：DOF 编辑入口统一收口到相机面板
+        {
+            id: 'camera:lens',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    const title = document.createElement('div');
+                    title.className = 'card-title';
+                    title.textContent = t('motion.cameraLens');
+                    inner.appendChild(title);
+
+                    addSliderRow(
+                        inner,
+                        t('scene.dof'),
+                        getRenderState().dofAperture,
+                        0,
+                        1,
+                        0.05,
+                        (v) => {
+                            setRenderState({ dofEnabled: (v as number) > 0, dofAperture: v as number });
+                            triggerAutoSave();
+                        },
+                        'lucide:camera',
+                        undefined,
+                        { bind: () => getRenderState().dofAperture }
+                    );
+                    addSliderRow(
+                        inner,
+                        t('scene.dofFocus'),
+                        getRenderState().dofFocusDistance,
+                        1,
+                        300,
+                        1,
+                        (v) => {
+                            setRenderState({ dofEnabled: true, dofFocusDistance: v as number });
+                            triggerAutoSave();
+                        },
+                        'lucide:crosshair',
+                        undefined,
+                        { bind: () => getRenderState().dofFocusDistance }
+                    );
+                    addSliderRow(
+                        inner,
+                        t('scene.dofFocal'),
+                        getRenderState().dofFocalLength,
+                        20,
+                        200,
+                        1,
+                        (v) => {
+                            setRenderState({ dofEnabled: true, dofFocalLength: v as number });
+                            triggerAutoSave();
+                        },
+                        'lucide:aperture',
+                        undefined,
+                        { bind: () => getRenderState().dofFocalLength }
                     );
                 });
             },

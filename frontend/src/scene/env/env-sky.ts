@@ -26,6 +26,7 @@ import { safeDispose } from '@/core/dispose-helpers';
 
 // ======== Module state ========
 let _lastProceduralSkyKey = '';
+let _lastSkyCubePath: string | null = null; // cube 路径缓存，避免旋转/强度微调时重复从磁盘加载
 let _skyFollowHandle: ObserverHandle | null = null;
 let _proceduralEnvTexture: RawCubeTexture | null = null;
 
@@ -342,6 +343,7 @@ function loadSkyCube(path: string, rotationY: number, intensity: number): void {
     scene.environmentIntensity = intensity;
     scene.clearColor = new Color4(0, 0, 0, 1);
     _envSys.sky.skyCubeTexture = cubeTex;
+    _lastSkyCubePath = path; // 缓存成功加载的路径，供 applySky 判定是否需重载
 
     const cam = scene.activeCamera;
     const farZ = cam?.maxZ ?? 10000;
@@ -399,6 +401,7 @@ export function disposeSky(): void {
         _proceduralEnvTexture = null;
     }
     _lastProceduralSkyKey = '';
+    _lastSkyCubePath = null;
     _disposeSunDisc();
 }
 
@@ -453,12 +456,22 @@ export function applySky(state: EnvState): void {
         return;
     }
 
-    disposeSky();
     if (state.skyTexture) {
-        loadSkyCube(
-            state.skyTexture,
-            state.skyRotationY,
-            state.envIntensity * (state.envBrightness ?? 1)
-        );
+        const intensity = state.envIntensity * (state.envBrightness ?? 1);
+        // 路径未变：仅更新静态旋转与 IBL 强度，避免重复从磁盘加载 CubeTexture
+        // （旋转滑块拖动 / 强度微调场景 —— 修复此前每次 sky key 变更都整图重载的隐患）
+        if (
+            _lastSkyCubePath === state.skyTexture &&
+            _envSys.sky.skyCubeTexture &&
+            _envSys.sky.skyMesh
+        ) {
+            (_envSys.sky.skyCubeTexture as CubeTexture).rotationY = state.skyRotationY;
+            getScene().environmentIntensity = intensity;
+            return;
+        }
+        disposeSky();
+        loadSkyCube(state.skyTexture, state.skyRotationY, intensity);
+    } else {
+        disposeSky();
     }
 }

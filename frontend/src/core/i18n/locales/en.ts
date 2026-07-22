@@ -571,9 +571,8 @@ export const en: Record<string, string> = {
     'motion.poseStudio.poseApplied': '✓ {pose} applied',
     'motion.poseStudio.poseFailed': '✗ Pose apply failed',
     'motion.poseStudio.depthOfField': 'Depth of Field',
-    'motion.poseStudio.dofAmount': 'Blur Amount',
-    'motion.poseStudio.dofFocus': 'Focus Distance',
-    'motion.poseStudio.dofFocal': 'Focal Length',
+    'motion.poseStudio.dofHint': 'Depth of field is a lens property — adjust it in the Camera panel',
+    'motion.poseStudio.openLensSettings': 'Adjust DoF in Camera panel',
     'motion.poseStudio.cameraPresets': 'Camera Angle Presets',
     'motion.poseStudio.cameraApplied': '✓ Switched to {name} angle',
     'motion.poseStudio.screenshot': 'Screenshot',
@@ -586,6 +585,7 @@ export const en: Record<string, string> = {
 
     // ===== Camera =====
     'motion.cameraMode': 'Camera Mode',
+    'motion.cameraLens': 'Lens (DoF)',
     'motion.cameraControl': 'Control Scheme',
     'motion.cameraBehavior': 'Motion Behavior',
     'motion.behaviorNone': 'Static (manual)',
