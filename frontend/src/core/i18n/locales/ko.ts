@@ -1412,7 +1412,8 @@ export const ko: Record<string, string> = {
     'settings.perf.vsyncHintBrowser':
         '브라우저/WebView 렌더링 루프는 requestAnimationFrame으로 구동되며 항상 디스플레이와 동기화됩니다. 이 스위치는 인위적 FPS 상한 적용 여부만 제어합니다.',
     'settings.perf.defaultPhysics': '물리 시뮬레이션',
-    'settings.perf.defaultPhysicsHint': '비활성화 시 저사양 장치 성능 향상; 전환 시 로드된 모든 모델에 즉시 적용.',
+    'settings.perf.defaultPhysicsHint':
+        '비활성화 시 저사양 장치 성능 향상; 전환 시 로드된 모든 모델에 즉시 적용.',
     'settings.perf.autoCenter': '새 모델 자동 중앙 배치',
     'settings.perf.autoCenterHint':
         '새로 로드된 모델을 카메라가 자동으로 중앙 배치; 비활성 시 현재 뷰 유지, 포커스만 전환.',
