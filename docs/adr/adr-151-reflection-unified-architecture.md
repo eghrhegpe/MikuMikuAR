@@ -1,8 +1,11 @@
-# ADR-151: 反射系统统一架构（Reflection Unification）
+# ADR-151: 反射系统统一架构（SSR/Probe 统一入口 + Planar 协调）
 
 - **状态**: ✅ 已实施
 - **日期**: 2026-07-20
+- **文档修订**: 2026-07-22（修正 `auto`/`ultra` 漂移、决策四 `_textureOwner` 描述、补充遗留问题；与 `env-reflection.ts` / `env-state-schema.ts` 现状对齐）
 - **相关**: ADR-024（SSR/ReflectionProbe）、ADR-062（水面平面反射）、ADR-092（统一平面反射引擎）、ADR-013（天空贴图系统，参考模式）
+
+> **范围说明**：本 ADR 的"统一"指 **SSR 与 ReflectionProbe 的统一入口 `applyReflection` + 单一 `reflectionMode` 控制**；PlanarReflection（地面/水面）保持 `env-ground`/`env-water` 自管理，仅通过 `getPlanarQualityOverride` 做质量协调，其生命周期不在 `applyReflection` 内。
 
 ---
 
@@ -64,8 +67,8 @@ ReflectionProbe 遍历所有模型网格直接写入 `reflectionTexture`（`rend
 // env-reflection.ts — 反射子系统统一入口
 // 参考 sky 子系统（env-sky.ts）的 applySky 模式
 
-export type ReflectionMode = 'auto' | 'none' | 'probe' | 'ssr' | 'planar' | 'hybrid';
-export type ResolvedReflectionMode = 'none' | 'probe' | 'ssr' | 'planar' | 'hybrid';
+export type ReflectionMode = 'none' | 'planar' | 'ssr' | 'probe' | 'hybrid';
+export type ResolvedReflectionMode = 'none' | 'planar' | 'ssr' | 'probe' | 'hybrid';
 
 export function applyReflection(state: EnvState): void {
     const mode = resolveReflectionMode(state);
@@ -79,7 +82,7 @@ export function applyReflection(state: EnvState): void {
 }
 ```
 
-`resolveReflectionMode` 根据 `state.reflectionMode`（手动指定）或 `state.reflectionQuality`（auto 推导）确定最终模式。
+`resolveReflectionMode` 直接返回 `state.reflectionMode`（手动指定，默认 `planar`）；`reflectionQuality` 不参与模式推导，仅在已选模式内微调 SSR/Probe 参数与 PlanarReflection 分辨率。
 
 ### 决策二：`reflectionMode` 独立字段（审查后调整）
 
@@ -91,14 +94,13 @@ export function applyReflection(state: EnvState): void {
 // env-state-schema.ts
 reflectionMode: {
     type: 'enum',
-    values: ['auto', 'none', 'probe', 'ssr', 'planar', 'hybrid'],
-    default: 'auto',
+    values: ['none', 'planar', 'ssr', 'probe', 'hybrid'],
+    default: 'planar',
 }
 ```
 
-- `auto`：根据 `reflectionQuality` 自动推导模式
-- 其他值：手动覆盖，优先级高于推导
-- `reflectionQuality` 保持原有语义（仅控制 Planar 分辨率 + auto 模式推导依据）
+- 五个值均为**手动指定**模式（无 `auto` 推导档；`auto` 已从 schema 移除）
+- `reflectionQuality` 保持原有语义：在已选模式内微调 SSR/Probe 参数（step/strength/thickness、Probe 分辨率/强度），并控制 PlanarReflection 分辨率/帧率
 
 ### 决策三：模式定义与行为
 
@@ -121,33 +123,39 @@ reflectionMode: {
 3. SSR + Bloom 互斥仍然保留（现有逻辑）
 4. `planarReflectBlend` 与混合模式无关，水面/地面单独控制
 
-### 决策四：`reflectionTexture` 所有权声明
+### 决策四：`reflectionTexture` 保存/恢复机制
 
-引入 `_textureOwner` 模块级变量 + `_savedReflectionTextures` Map：
+> **修订说明（2026-07-22）**：原方案拟引入 `_textureOwner` 模块级变量做所有权声明与优先级协商，实际实现改为更简单的 **save/restore** 方案：因 Probe 绑定始终排除 `env*` 前缀网格（地面/水面/天空），与 PlanarReflection 写入的 `reflectionTexture` 槽位**不存在同网格冲突路径**，故无需全局所有权仲裁。
+
+引入 `_savedReflectionTextures` Map + `_probeBoundMaterials` Map：
 
 ```typescript
-type ReflectionTextureOwner = 'probe' | 'planar' | 'material' | 'none';
-let _textureOwner: ReflectionTextureOwner = 'none';
+// 材质 uniqueId → 原始 reflectionTexture（绑定前逐个保存，避免 cubeTexture 被误存为"原始值"）
 const _savedReflectionTextures = new Map<number, BaseTexture | null>();
-const _probeBoundMaterials = new Set<number>();
+// 材质 uniqueId → 材质引用（dispose 时直接遍历恢复，规避模型卸载后 scene.meshes 漏恢复）
+const _probeBoundMaterials = new Map<number, MaterialWithReflection>();
 ```
 
-**安全机制（审查后调整）：**
+**安全机制：**
 - 绑定前逐个保存（非批量一次性），新模型加载时通过 `onModelMeshesReady` 自动补绑
-- restore 时校验材质是否仍存活（`isDisposed` 守卫）
+- restore 时校验材质是否仍存活（`isDisposed` 守卫，已 dispose 的材质跳过并清理映射）
 - Probe 排除 `env*` 前缀网格，避免与 PlanarReflection 的地面/水面槽位冲突
+- **遗留问题（P4）**：`_restoreOriginalTexture` 还原 `reflectionTexture` 但未还原 `reflectionColor`，Probe 退出后材质残留绑定期强度色。MMD 材质一般无自有 `reflectionTexture`，实际良性，待补还原。
 
-### 决策五：质量层级联动
+### 决策五：质量参数映射（模式内固定，非模式推导）
 
-`reflectionQuality` 在 `auto` 模式下推导默认模式及参数：
+> **修订说明（2026-07-22）**：`reflectionQuality` **不推导模式**（无 `auto` 档），仅在已手动选定的模式内决定 SSR/Probe 的具体参数与 PlanarReflection 分辨率。`resolveReflectionMode` 忽略 `reflectionQuality` 做模式选择。
 
-| 等级 | 推导模式 | SSR 参数 | Probe | PlanarReflection |
-|------|---------|---------|-------|------------------|
-| `off` | `none` | — | 关 | 关 |
-| `low` | `probe` | — | 256px, strength=0.3 | 关 |
-| `medium` | `probe` | — | 256px, strength=0.5 | low (每 4 帧) |
-| `high` | `hybrid` | step=16, strength=0.7 | 256px, strength=0.3 | medium (每 2 帧) |
-| `ultra` | `hybrid` | step=32, strength=1.0 | 512px, strength=0.5 | high (每帧) |
+`QUALITY_PRESETS` 映射（内置于 `env-reflection.ts`，无 `ultra` 等级）：
+
+| 等级 | SSR 参数 | Probe 参数 | PlanarReflection |
+|------|---------|-----------|------------------|
+| `off` | 关 | 关 | 关 |
+| `low` | 关 | 256px, strength=0.3 | 依 `reflectionQuality` 自身档位 |
+| `medium` | 关 | 256px, strength=0.5 | 同上 |
+| `high` | step=16, strength=0.7, thickness=0.5 | 256px, strength=0.3 | 同上 |
+
+> SSR/Probe 参数仅在 `reflectionMode` 为 `ssr`/`hybrid`（`ssr`）或 `probe`/`hybrid`（`probe`）时生效；`planar`/`none` 模式忽略本表 SSR/Probe 列。PlanarReflection 分辨率仍由 `reflectionQuality` 原语义驱动，并经 `getPlanarQualityOverride` 协调（`none`→强制 off，`planar`→至少 low）。
 
 ### 决策六：资源迁移
 
@@ -179,9 +187,9 @@ SSR 的 `SSRRenderingPipeline` 对象仍在 `renderer.ts` 维护，但新增 `se
 | 1.4 | 从 `renderer.ts` 删除 Probe 代码，新增 `setSSRFromReflection` 导出 | 简化后的 renderer |
 | 1.5 | `scene.ts` 改用 `onModelMeshesReady` + `disposeReflection` | 模型加载绑定 + 场景销毁释放 |
 
-### Phase 2：质量层级联动（已完成）
+### Phase 2：质量参数映射（已完成）
 
-`QUALITY_PRESETS` 映射表内置于 `env-reflection.ts`，`auto` 模式下自动推导。
+`QUALITY_PRESETS` 映射表内置于 `env-reflection.ts`，在已选模式内提供 SSR/Probe 参数微调（无 `auto` 模式推导；`reflectionQuality` 仅作参数与 Planar 分辨率来源）。
 
 ### Phase 3：`hybrid` 模式（已完成）
 
@@ -197,9 +205,9 @@ Probe 强度减半 + SSR 独立渲染，通过 `_enableHybrid` 分支实现。
 
 ## 已解决的问题
 
-1. **`reflectionQuality` vs 现有字段的兼容**：新增独立的 `reflectionMode` 字段（`auto/none/probe/ssr/planar/hybrid`），`reflectionQuality` 保持原有语义（Planar 分辨率 + auto 推导依据）。两者解耦，互不干扰。
+1. **`reflectionQuality` vs 现有字段的兼容**：新增独立的 `reflectionMode` 字段（`none/planar/ssr/probe/hybrid`），`reflectionQuality` 保持原有语义（Planar 分辨率 + 已选模式内参数微调依据）。两者解耦，互不干扰。
 
-2. **`ultra` 等级 Probe 分辨率**：`QUALITY_PRESETS` 中 `ultra` 已配置 512px Probe（显存 ≈6MB + MIP chain ≈8MB，可接受）。
+2. **`reflectionQuality` vs 现有字段的兼容**（修订）：`ultra` 等级已从 schema 与 `QUALITY_PRESETS` 移除（最高档为 `high`，Probe 256px）。遗留 `ultra` 值会在 `getQualityPreset` 中回退 `off` 并静默关闭反射，UI 不应再产生该值。
 
 3. **过渡动画兼容**：模式切换时通过 `_disableCurrentMode` 全量清理旧资源再重建，避免残留状态。数值过渡（如 SSR strength 渐变）由 `transitionRenderState` 处理，模式切换本身不做插值。
 
@@ -217,3 +225,5 @@ Probe 强度减半 + SSR 独立渲染，通过 `_enableHybrid` 分支实现。
 | 性能降级系统仍通过 `setRenderState({ reflectionProbeEnabled })` 发送指令 | ✅ 已解决 | **收口完成（2026-07-20）**：降级系统改写为写入 `env.reflectionQuality`（经 `resolveQualityProfile` → `applyReflection` 统一驱动），`renderer.ts` 的 no-op 空分支已移除，并新增「降级不高于用户原始反射质量」上限守卫 |
 | 现有 UI 面板直接操作 `ssrEnabled` / `reflectionProbeEnabled` | ✅ 已解决 | **收口完成（2026-07-20）**：旧 SSR 开关/4 滑杆与探针开关已从渲染菜单、设置面板、渲染预设中移除，`RenderState` 反射字段删除，反射控制单源化到 `reflectionMode` / `reflectionQuality` |
 | 模式切换时资源重建可能导致 1-2 帧卡顿 | P4 | 水面材质始终包含 `PLANAR_REFLECTION` define，通过 blend=0 控制可见性，避免 shader 重编译 |
+| `reflectionMode` 若残留 `auto` 值（旧存档/旧 UI）会静默 no-op 致零反射 | P3 | `resolveReflectionMode` 已无 `auto` 分支；schema 已移除该枚举。建议兜底 `?? 'planar'` 处显式拒绝 `auto`：`if (mode === 'auto') return 'planar'` |
+| Probe 退出时 `reflectionColor` 未随 `reflectionTexture` 还原 | P4 | `_restoreOriginalTexture` 仅恢复纹理；MMD 材质一般无自有 `reflectionTexture`，实际良性。待补 `reflectionColor` 还原以消除状态不一致（见决策四遗留问题） |

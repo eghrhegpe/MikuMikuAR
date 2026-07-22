@@ -2,11 +2,25 @@
 
 ## 状态
 
-**状态**: 完成（前置渲染分层 + Phase A 自适应步长/地平线延展/地面交界/距离雾 + Phase B Weather Map/Erosion + Phase C 双瓣散射/Powder/日落着色 + Phase D1 Blue-noise dither 全部落地）
+**状态**: 完成（前置渲染分层 + Phase A slab-uniform 步长/地平线延展/地面交界/距离雾 + Phase B Weather Map/Erosion + Phase C 双瓣散射/Powder/高度梯度日落着色 + Phase D1 Blue-noise dither 全部落地）
 
 **开始日期**: 2026-07-15
 
 **关联**: ADR-012（Perlin 双分层，已被取代）、ADR-032（体积云调查，结论保留自定义 shader）、ADR-013（Skybox）
+
+---
+
+## 实施修订纪要（2026-07-22，与 docs/audit/adr-113-audit.md 对齐）
+
+本 ADR 原始文本在落地过程中有两处决策被工程实现**有意推翻**，原评审未回写文档。现以代码为事实来源对齐，避免后续读者被误导（文档宪法要求）。
+
+| # | 原 ADR 文本 | 实际实现（代码为准） | 理由 |
+|---|------------|----------------------|------|
+| 1 | Phase A 自适应增长步 `dt = CLOUD_STEP_MIN + t*GROWTH`（GROWTH=0.030），"近密远疏" | **slab-uniform 步长**：`slabDt = clamp(slabLen/24, STEP_MIN*0.25, STEP_MAX)`，平板长度自适应、距离无关 | 自适应增长步在 40-unit 薄云板上近地平线处仅 1–2 次命中，高空云发平/失真；slab-uniform 对高空云更稳 |
+| 2 | `cloudQuality`：`standard`=满血(200 步)，`high`=降步(96)+蓝噪；默认 `standard` | `standard`=轻量(96 步 + 1 光照步 + hash jitter，无蓝噪纹理)；`high`=满血(200 步 + 2 光照步 + blue-noise dither)；**默认 `high`** | `standard` 作为轻量档、默认用 `high` 满血档，性能/画质取舍更务实；`high` 档仅在 high 模式分配蓝噪纹理 |
+| 3 | 距离雾硬编码 `vec3(1,1,1)`（白雾） | fade 到 `sceneFogColor`（天色匹配），`cloudColor` 作云反照率基底（高度梯度 × 日落双因子） | 原"白雾"使地平线永远泛白；`cloudColor` 此前为死 uniform，现已连通 |
+
+> 数值表（L230-253 的 GROWTH 覆盖表）与落地清单中 `float dt = CLOUD_STEP_MIN + t` 断言**已失效**，以 slab-uniform 为准（见下方 Phase A / 落地清单修订）。其余 Phase B/C/D1 主体与代码一致。
 
 ---
 
@@ -61,7 +75,7 @@ ADR-032 已列明且至今未改：
 | 噪声太简单（3 octaves FBM + 256³ value noise） | Phase B | erosion 减法侵蚀 + weather map 低频覆盖控制 |
 | 无 weather map（云密度全局均匀） | Phase B | 低频次 FBM 生成覆盖图，乘入 `getDensity` |
 | 无 erosion/sharpen（边缘模糊） | Phase B | 最高频 `n3` 做减法侵蚀，雕出卷曲边缘 |
-| 步进固定（200 步 × 8.0 单位） | Phase A | 自适应步长 `dt = STEP_MIN + t × GROWTH`，近密远疏 |
+| 步进固定（200 步 × 8.0 单位） | Phase A | slab-uniform 步长（`slabDt = clamp(slabLen/24, STEP_MIN*0.25, STEP_MAX)`，距离无关；低仰角放宽 march 上限 ×3 延展地平线） |
 | 无 temporal reprojection（闪烁） | Phase D1/D2 | D1: blue-noise dither；D2: temporal reprojection（可选） |
 | 光照简陋（单次散射 + 固定 ambient） | Phase C | 双瓣 HG + powder + 高度着色 + 太阳高度角色彩 |
 | 性能（200 步 raymarch/fragment） | Phase A + D | A: 平板相交跳过空白段；D1: blue-noise 降步数至 ~96 |
@@ -81,14 +95,14 @@ ADR-032 已列明且至今未改：
 | `cloudScale` | number | `0.55` | 0.1–1, step 0.05 | 噪声缩放 |
 | `cloudHeight` | number | `300` | 50–3000, step 5 | 云层中心高度（1 单位 ≈ 0.1m，默认 30m） |
 | `cloudThickness` | number | `60` | 10–200, step 1 | 云层厚度（默认 6m） |
-| `cloudVisibility` | number | `3000` | 500–8000, step 100 | 云渲染距离 |
+| `cloudVisibility` | number | `8000` | 500–8000, step 100 | 云渲染距离 |
 | `cloudGap` | number | `0.1` | 0–1, step 0.01 | 云间隙 |
 
 ### Phase A 调整
 
 | 字段 | 变更 | 说明 |
 |------|------|------|
-| `cloudVisibility` | 默认值 `3000→6000`，UI max `8000→12000` | 配合自适应步长延展地平线，保留用户降距能力 |
+| `cloudVisibility` | 默认值 `3000→8000`，UI max 保持 `8000` | 配合 slab-uniform 步长 + 低仰角 march 上限放宽（×3）延展地平线，保留用户降距能力 |
 
 ### Phase B 新增
 
@@ -108,7 +122,7 @@ ADR-032 已列明且至今未改：
 
 | 字段 | 类型 | 默认值 | UI 范围 | 说明 |
 |------|------|--------|---------|------|
-| `cloudQuality` | `'standard' \| 'high'` | `'standard'` | modeRow | `high` 启用 blue-noise + 降步数；`standard` 保持 Phase A-C 行为 |
+| `cloudQuality` | `'standard' \| 'high'` | `'high'` | modeRow | `standard`=轻量（96 步 + 1 光照步 + hash jitter，无蓝噪纹理）；`high`=满血（200 步 + 2 光照步 + blue-noise dither，默认） |
 
 > **UI 布局**：Phase B/C 新增控件追加到 `buildCloudLevel()` 的 `cloudSchema` 数组末尾，按 Phase 分组用 `sectionTitle` 分隔。`cloudQuality` 作为 modeRow 放在面板顶部。
 
@@ -173,17 +187,19 @@ RenderingManager.MAX_RENDERINGGROUPS = 4;  // 上限（不包含）
 
 ---
 
-### Phase A — 自适应步长 + 延展地平线（🔴 核心，解决"宽"）
+### Phase A — slab-uniform 步长 + 延展地平线（🔴 核心，解决"宽"）
 
-将固定步长改为随射线深度线性增长（近密远疏），覆盖到 `cloudVisibility`；同时用**解析式平板相交测试**取代原基于固定步长的 `stepsNeeded` early-exit，使仰角 0° 等极端角度稳健、不崩溃。
+> **决策变更（2026-07-22）**：原 ADR 设计的自适应增长步 `dt = STEP_MIN + t*GROWTH` 在落地时被**有意推翻**，改为 slab-uniform 步长（见上方「实施修订纪要 #1」）。原因如下：自适应增长步在 40-unit 薄云板上近地平线处仅 1–2 次命中，高空云发平/失真；slab-uniform 步长 `slabDt = clamp(slabLen/24, STEP_MIN*0.25, STEP_MAX)` 由解析平板长度决定、距离无关，对高空云更稳。下方代码块以**实际实现**为准。
+
+将固定步长改为由**解析平板相交长度**决定的均匀步长（slab-uniform），覆盖到 `cloudVisibility`；同时用**解析式平板相交测试**取代原基于固定步长的 `stepsNeeded` early-exit，使仰角 0° 等极端角度稳健、不崩溃。低仰角（地平线方向）额外放宽 march 上限（`cloudVisibility * 3`）并由距离雾淡出，使地面 POV 也能看到延展到地平线的云。
 
 ```glsl
 // 替换 #define CLOUD_FIXED_STEP 8.0
-#define CLOUD_STEP_MIN 8.0        // 近处精细步长
-#define CLOUD_STEP_GROWTH 0.012   // 步长随距离线性增长率
+#define CLOUD_STEP_MIN 8.0        // 近处精细步长下限
+#define CLOUD_STEP_MAX 48.0       // 远/地平线方向步长上限（覆盖长 slab）
+// 注：原 ADR 的 CLOUD_STEP_GROWTH 自适应增长步已废弃，改为 slab-uniform（见实施修订纪要）
 
 // —— main() 顶部：解析平板相交（方向无关，仰角 0° 安全）——
-float baseStep = CLOUD_STEP_MIN;
 float tEnter, tExit;
 if (abs(rd.y) < 1e-4) {
     // 水平射线：仅当相机已在云层高度内才可能相交
@@ -201,15 +217,16 @@ if (abs(rd.y) < 1e-4) {
 // 原 L293 基于固定步长 stepsNeeded 估算在自适应步长下失效（删除），改由 tExit 自然收口。
 
 // 从云层入口起步进，跳过射线进入前的空白段（额外性能收益）
-float jitter = hash13(vec3(gl_FragCoord.xy, 1.0));
-float startT = tEnter + jitter * baseStep;
-float t = startT;
+float slabLen = tExit - tEnter;
+float slabDt = clamp(slabLen / 24.0, CLOUD_STEP_MIN * 0.25, CLOUD_STEP_MAX);
+float jitter = hash13(vec3(gl_FragCoord.xy, 1.0));   // standard 用 hash；high 由 blue-noise 注入替代
+float t = tEnter + jitter * slabDt;
 float T = 1.0;
 vec3 L = vec3(0.0);
 ...
 for (int i = 0; i < CLOUD_MAX_STEPS; i++) {
-    // ⭐ dt 在循环内逐迭代计算，作用域严格限制于本次迭代
-    float dt = CLOUD_STEP_MIN + t * CLOUD_STEP_GROWTH;
+    // slab-uniform：步长由平板长度决定，距离无关
+    float dt = slabDt;
     t += dt;
     if (t > tExit) break;                 // 离开云层即停
     vec3 p = ro + rd * t;
@@ -239,7 +256,7 @@ for (int i = 0; i < CLOUD_MAX_STEPS; i++) {
 | 0.035 | 222,149 | 138.8× | 7,520 |
 | 0.036 | 288,000 | 180× | ≈10,000 |
 
-**关键补充发现：真正的地平线闸门是 `cloudVisibility`，不是步长。** 代码 `env-clouds.ts:365/438` 默认 `cloudVisibility ?? 2000`，且 `maxT = cloudVisibility`（`env-clouds.ts:285`）——云只在相机 **2000 单位内**渲染，而球壳直径 `min(20000, farZ*1.8)` 半径达 10000。即**当前云到不了地平线的主因是 2000 的渲染距离上限**，固定步长 1600 仅为次要限制。
+**关键补充发现：真正的地平线闸门是 `cloudVisibility`，不是步长。** 代码默认 `cloudVisibility ?? 8000`（与 schema 默认 8000 对齐），且低仰角时 `maxT` 放宽至 `cloudVisibility * 3`——云在近地平线方向可渲染到约 3× 距离，由距离雾淡出；球壳直径 `min(40000, farZ*1.8)` 半径达 20000。即**地平线延展靠「放宽 march 上限 + 距离雾淡出」协同实现**，而非单纯提高步数。**
 
 达成"云铺到地平线"需**两处协同修改**：① 提高 `cloudVisibility`（建议默认 8000，可随球壳半径缩放）；② 选足够 GROWTH 使 200 步覆盖该距离。
 
@@ -247,7 +264,7 @@ for (int i = 0; i < CLOUD_MAX_STEPS; i++) {
 - GROWTH=0.030（**推荐**）：覆盖 98k ≫ 任何合理地平线距离，200 步末步 dt 2,869（约跨 14× 云层厚度，轻微条带，Phase D blue-noise 兜底），性价比最佳。
 - GROWTH=0.036（审查选项 B 原始目标）：覆盖 288k，末步 dt≈10,000 跨整层 → 条带风险高，需 Phase D 先落地。
 
-**Phase A 标定结论：采用 GROWTH=0.030 + 提高 `cloudVisibility` 默认至 8000**（而非原 0.012 或激进 0.036），待 Phase D blue-noise 落地后再视情况上调 GROWTH。
+**Phase A 标定结论（2026-07-22 修订）：原 GROWTH 自适应增长步方案已废弃，改为 slab-uniform 步长（`slabDt = clamp(slabLen/24, STEP_MIN*0.25, STEP_MAX=48)`）。`cloudVisibility` 默认提至 8000，低仰角额外放宽 march 上限至 3× 并由距离雾（`sceneFogColor`）淡出，使云延展到地平线。上方 GROWTH 覆盖数值表视为失效参考。**
 - **early-exit 处理（回应审查建议）**：原 L293 的 `stepsNeeded > CLOUD_MAX_STEPS → discard` 依赖固定步长，自适应后既失效又会误裁地平线云。不采用"简单删除"——改为解析平板相交测试 `tEnter/tExit`，方向无关，在**仰角 0°**（水平射线）等极端角度下通过 `abs(rd.y) < 1e-4` 分支安全判离，绝不崩溃；原 L289 方向 early-exit 已被此测试涵盖。
 - **附加性能收益**：从 `tEnter` 起步进、`tExit` 收口，跳过射线进入云层前的空白段，减少无效 `getDensity` 调用。
 - 球壳直径同步放大：`SPHERE_DIAMETER = Math.min(40000, farZ * 1.8)`（`env-clouds.ts:352`），确保远处顶点不被裁。
@@ -315,12 +332,12 @@ const mesh = MeshBuilder.CreateSphere(
 
 #### Phase A jitter 计算修正
 
-> **问题**：原方案 `startT = tEnter + jitter * baseStep` 只偏移第一步，自适应步长下远处采样点仍对齐，条带集中在远处。
+> **问题**：jitter 偏移量应匹配入口处的步长，否则远处采样点对齐产生条带。slab-uniform 下入口步长即 `slabDt`（由平板长度决定）。
 
 ```glsl
-// 修正：jitter 偏移量应匹配入口处的预期步长
-float firstDt = CLOUD_STEP_MIN + tEnter * CLOUD_STEP_GROWTH;
-float t = tEnter + jitter * firstDt;
+// slab-uniform：jitter 偏移入口处的 slabDt
+// high 模式由 buildJitterSource 注入 blue-noise 采样，standard 注入 hash 抖动
+float t = tEnter + jitter * slabDt;
 ```
 
 #### Phase A 极端相机角度验证矩阵
@@ -386,22 +403,21 @@ float t = tEnter + jitter * firstDt;
 
 ### Phase D1 — Blue Noise Dither（🟡 降条带，低风险）
 
-jitter 由 `hash13`（固定 seed）改为 **blue-noise 纹理 + 帧序号偏移**，利用 blue-noise 的频谱特性将采样误差分散为高频噪声（人眼不易感知），显著降低远处条带伪影。
+jitter 在 **high** 模式由 `hash13`（固定 seed）改为 **blue-noise 纹理采样**；**standard** 模式保留廉价 `hash` jitter（无纹理依赖）。blue-noise 的频谱特性将采样误差分散为高频噪声（人眼不易感知），显著降低远处条带伪影。步数由 `cloudQuality` 经 `resolveCloudShaderParams` 注入 `CLOUD_MAX_STEPS`（`high`=200，`standard`=96），D1 本身不降步数，仅改善画质。
 
 ```glsl
-// 替换 hash13 jitter
-uniform sampler2D blueNoiseTex; // 256×256 RGBA8
-uniform float frameIndex;
-vec2 bnUv = gl_FragCoord.xy / 256.0 + vec2(frameIndex * 0.6180339, 0.0);
-float jitter = texture(blueNoiseTex, bnUv).r; // golden ratio 偏移每帧变化
-float firstDt = CLOUD_STEP_MIN + tEnter * CLOUD_STEP_GROWTH;
-float t = tEnter + jitter * firstDt;
+// buildJitterSource(useBlueNoise) 模板注入：
+// high:
+float jitter = texture(blueNoiseTex, gl_FragCoord.xy / 64.0).r;
+// standard:
+float jitter = fract(gl_FragCoord.x * 0.12345 + gl_FragCoord.y * 0.67890);
+// 偏移入口步长 slabDt（slab-uniform）
+float t = tEnter + jitter * slabDt;
 ```
 
 **资源管理**：
-- blue-noise 纹理：256×256 `RawTexture`，JS 侧预生成（使用内置 blue-noise 算法或从常量数组加载），全局缓存（同 `_noiseTex3D` 模式），在 `disposeClouds()` 中释放。
-- `frameIndex`：TS 侧维护帧计数器，每帧 `setFloat('frameIndex', ...)` 传入。
-- 不降步数（`CLOUD_MAX_STEPS` 保持 200），仅改善画质。
+- blue-noise 纹理（64×64 `RawTexture`，JS 侧 Lloyd 松弛预生成）：**仅在 `high` 模式创建、绑定到 `blueNoiseTex` sampler 并在 `disposeClouds()` 释放**；`standard` 模式不分配该纹理（避免每帧重建时多余 64×64 纹理）。全局缓存同 `_noiseTex3D` 模式。
+- 不引入 `frameIndex`（无 temporal reprojection，D2 未实施，故不做每帧 golden-ratio 偏移）。
 
 ### Phase D2 — Temporal Reprojection（🟡 降步数，高复杂度，可选）
 
@@ -426,11 +442,11 @@ float t = tEnter + jitter * firstDt;
 | 风险 | 等级 | 缓解 |
 |------|------|------|
 | 自适应步长远处欠采样致条带 | 🟠 | Phase A 定标 GROWTH=0.030（末步 dt≈2,869，跨 ~14× 云层厚度，轻微条带）；Phase D1 blue-noise dither 兜底；激进 0.036 末步 dt≈10,000 条带显著，故不采用 |
-| 光学深度 `od = d*dt` 的 dt 作用域 | 🟢 | dt 严格为循环内局部变量，`od` 直接使用该 `dt`；单测断言 shader 字符串含 `float dt = CLOUD_STEP_MIN + t` |
+| 光学深度 `od = d*dt` 的 dt 作用域 | 🟢 | dt 为 slabDt（slab-uniform，循环内不变），`od` 直接使用该 `dt`；单测断言 shader 字符串含 `slabDt = clamp(slabLen / 24.0` |
 | early-exit 替换后极端角度崩溃 | 🟢 | 解析平板相交测试（`abs(rd.y)<1e-4` 分支）覆盖仰角 0°，见 Phase A 验证矩阵；`env-sky.spec.ts` 增 `rd.y≈0` 用例 |
 | 球壳放大 40000 触碰 `camera.maxZ` 远平面 | 🟡 | `SPHERE_DIAMETER` 仍以 `farZ*1.8` 为上界联动 |
 | 球壳 48 段顶点数增加 | 🟢 | 24→48 段，顶点量翻倍但仍 <2k；球壳无光照计算，仅背面渲染，GPU 开销可忽略 |
-| `cloudVisibility` 默认值 3000 构成地平线硬闸门 | 🟠 | 与自适应步长**协同修改**：Phase A 将默认提至 6000（UI max 扩展至 12000），否则仅改步长仍到不了地平线（已定位为主因） |
+| `cloudVisibility` 默认值 3000 构成地平线硬闸门 | 🟠 | 协同修改：Phase A 将默认提至 8000，并对低仰角放宽 march 上限至 3× + 距离雾淡出，否则云到不了地平线（已定位为主因） |
 | 远处云硬边剪影（无雾衰减） | 🟠 | Phase A 新增 shader 内距离雾衰减，`cloudVisibility*0.6 ~ cloudVisibility` 区间 fade 到雾色/天空色 |
 | 低空云穿透地面 | 🟠 | Phase A 新增 `groundLevel` uniform + smoothstep 密度衰减，射线穿地后 break |
 | Weather map 低频 FBM 仍不够大尺度 | 🟡 | 降级为独立 128×128 2D `RawTexture`（JS 侧低频 Perlin 生成） |
@@ -454,13 +470,13 @@ float t = tEnter + jitter * firstDt;
 
 ## 落地检查清单
 
-### Phase A — 自适应步长 + 延展地平线
+### Phase A — slab-uniform 步长 + 延展地平线
 
-- [ ] 自适应步长（GROWTH=0.030）+ 解析平板相交 early-exit
-- [ ] `cloudVisibility` 默认提至 6000，UI max 扩展至 12000
+- [ ] slab-uniform 步长（`slabDt = clamp(slabLen/24, STEP_MIN*0.25, STEP_MAX)`）+ 解析平板相交 early-exit + 低仰角 `maxT×3` 地平线延展
+- [ ] `cloudVisibility` 默认提至 8000，UI max 保持 8000
 - [ ] 球壳放大 `SPHERE_DIAMETER = min(40000, farZ*1.8)` + segments 24→48
-- [ ] jitter 修正：`firstDt = STEP_MIN + tEnter * GROWTH`
-- [ ] 远距离雾衰减：新增 `sceneFogColor` uniform，shader 内 distance fade
+- [ ] jitter 偏移 `slabDt`：high 用 blue-noise，standard 用 hash
+- [ ] 远距离雾衰减：新增 `sceneFogColor` uniform，shader 内 distance fade 到 `sceneFogColor`（非白雾硬编码）
 - [ ] 地面交界处理：新增 `groundLevel` uniform，smoothstep 密度衰减 + 穿地 break
 - [ ] `env-bridge.ts` 的 `cloudKeys` 同步扩展（如需新增字段）
 - [ ] **验证**：低空俯瞰地平线有云；远处云与天空融合无硬边；低空云不穿透地面；仰角 0° 不崩溃
@@ -485,10 +501,9 @@ float t = tEnter + jitter * firstDt;
 
 ### Phase D1 — Blue Noise Dither
 
-- [ ] blue-noise 纹理生成 + `RawTexture` 缓存 + `disposeClouds()` 释放
-- [ ] `frameIndex` uniform 每帧更新
-- [ ] `cloudQuality` modeRow（`'standard' | 'high'`）控制开关
-- [ ] **验证**：远处条带显著减轻；`high` 模式帧率不劣于 `standard`
+- [ ] blue-noise 纹理生成（仅 high 模式）+ `RawTexture` 缓存 + `disposeClouds()` 释放
+- [ ] `cloudQuality` modeRow（`'standard' | 'high'`）控制开关，`standard` 不分配蓝噪纹理
+- [ ] **验证**：两档远处条带均显著减轻；`high`（满血）画质优于 `standard`（轻量），帧率符合性能验收标准
 - [ ] `npm run check` 通过
 
 ### Phase D2 — Temporal Reprojection（可选）
@@ -509,10 +524,10 @@ float t = tEnter + jitter * firstDt;
 | 1080p 桌面端，D2 temporal 启用 | ≥ 60 fps（步数降 52%） | 同上 |
 | 云关闭时 | 帧率不受影响（基线对比） | 开关前后 `getFps()` 差值 < 1 fps |
 
-> 测量时相机正对地平线（最差 case），`cloudVisibility=6000`，`cloudCover=0.5`。使用 `performance.ts` 现有 FPS 采样管线（30 样本滑动窗口），无需新增测量工具。
+> 测量时相机正对地平线（最差 case），`cloudVisibility=8000`，`cloudCover=0.5`。使用 `performance.ts` 现有 FPS 采样管线（30 样本滑动窗口），无需新增测量工具。
 
 ### 全程
 
 - [ ] `npm run check` 通过（每 Phase）
 - [ ] `frontend/e2e/env-sky.spec.ts` 绿
-- [ ] shader 字符串单测断言：`float dt = CLOUD_STEP_MIN + t`、`sceneFogColor`、`groundLevel`、`blueNoiseTex`（按 Phase 逐步添加）
+- [ ] shader 字符串单测断言：`slabDt = clamp(slabLen / 24.0`、`sceneFogColor`、`cloudColor`、`groundLevel`、`blueNoiseTex`（high）/ `fract(`（standard）（见 `env-clouds.test.ts`）

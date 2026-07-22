@@ -14,7 +14,7 @@ import {
     Constants,
 } from '@babylonjs/core';
 import { EnvState } from '@/core/config';
-import { _envSys, getScene } from './env-context';
+import { getScene } from './env-context';
 import { ensureEnvUpdateObserver } from './env-impl';
 import { registerEnvCallback } from './env-dispatcher';
 import { getEnvKeys } from '@/core/env-state-schema';
@@ -217,7 +217,7 @@ const SHADER_DENSITY_THRESHOLD = CLOUD_DENSITY_THRESHOLD.toFixed(3);
  * - standard: 96 步主 march + 1 步光照 march + 无纹理 jitter（hash 替代）
  *   砍步数 ~52%，关 blue-noise 纹理查找，GPU 负载显著降低。
  */
-function resolveCloudShaderParams(quality: 'standard' | 'high' | undefined): {
+export function resolveCloudShaderParams(quality: 'standard' | 'high' | undefined): {
     maxSteps: number;
     lightSteps: number;
     useBlueNoise: boolean;
@@ -229,7 +229,7 @@ function resolveCloudShaderParams(quality: 'standard' | 'high' | undefined): {
 }
 
 /** 根据 useBlueNoise 选择 jitter 代码路径（模板注入） */
-function buildJitterSource(useBlueNoise: boolean): string {
+export function buildJitterSource(useBlueNoise: boolean): string {
     if (useBlueNoise) {
         return `float jitter = texture(blueNoiseTex, gl_FragCoord.xy / ${BLUE_NOISE_SIZE}.0).r;`;
     }
@@ -327,7 +327,7 @@ void main(){
     gl_Position = worldViewProjection * vec4(position, 1.0);
 }`;
 
-const FRAG_SRC = `
+export const FRAG_SRC = `
 #version 300 es
 precision highp float;
 precision highp sampler3D;
@@ -366,6 +366,7 @@ out vec4 fragColor;
 #define CLOUD_LIGHT_STEPS \${CLOUD_LIGHT_STEPS_INJECT}
 #define CLOUD_MAX_STEPS \${CLOUD_MAX_STEPS_INJECT}
 #define CLOUD_STEP_MIN 8.0
+#define CLOUD_STEP_MAX 48.0
 #define CLOUD_FBM_OCTAVES 3
 #define NOISE_PERIOD 256.0
 
@@ -389,15 +390,9 @@ float powder(float od) {
     return 1.0 - exp(-od * 2.0 * cloudPowder);
 }
 
-// Sunset tint: blend warm orange near horizon, cool blue high up
-vec3 applySunsetTint(vec3 col, vec3 lightDir) {
-    // sunHeight: 1=overhead, 0=horizon, -1=below
-    float sunHeight = lightDir.y;
-    // Warm tint strength peaks at horizon (sunHeight ~ 0)
-    float warmFactor = 1.0 - smoothstep(0.0, 0.3, abs(sunHeight));
-    vec3 warmCol = vec3(1.0, 0.55, 0.25);
-    return mix(col, col * warmCol, warmFactor * 0.6);
-}
+// Sunset tint two-factor (ADR-113 Phase C): height gradient × sun elevation.
+// Computed per-sample inside the march; see main() loop. No standalone helper
+// needed — kept inline so cloudColor (live light albedo) drives the gradient.
 
 float noise3D(vec3 p) {
     vec3 uvw = fract(p / NOISE_PERIOD);
@@ -449,7 +444,10 @@ float getDensity(vec3 pos, float dScale, vec3 wind) {
 void main(){
     vec3 ro = cameraPosition;
     vec3 rd = normalize(vWorldPos - cameraPosition);
-    float maxT = cloudVisibility;
+    // 地平线延展（ADR-113 修正）：低仰角射线在 cloudVisibility 内 tEnter 可能已越闸门而
+    // 直接 discard，导致地面 POV 看地平线整片无云。对低仰角放宽 march 上限（至多 3×），
+    // 越界样本由距离雾（fade 到 sceneFogColor）自然淡出，不引入硬边。
+    float maxT = (abs(rd.y) < 0.06) ? cloudVisibility * 3.0 : cloudVisibility;
 
     // ===== Analytic slab intersection (horizon-safe) =====
     float tEnter, tExit;
@@ -468,23 +466,28 @@ void main(){
 
     float T = 1.0;
     vec3 L = vec3(0.0);
-    vec3 cloudCol = vec3(1.0, 1.0, 1.0);
-    // Apply sunset tint to base cloud color and light color
-    vec3 sunDirN = normalize(sunDir);
-    cloudCol = applySunsetTint(cloudCol, sunDirN);
-    vec3 lightCol = applySunsetTint(sceneLightColor * brightness, sunDirN);
+    // 太阳高度角因子：sunHeight=1 正午，≈0 日落/日出（ADR-113 Phase C 双因子着色）
+    float sunHeight = max(0.0, -sunDir.y);
+    float sunsetMix = pow(1.0 - sunHeight, 2.0);
+    // 入射光色（含日落暖调），与 per-sample 云反照率 cloudCol 分离
+    vec3 lightCol = mix(
+        sceneLightColor * brightness,
+        (sceneLightColor * brightness) * vec3(1.0, 0.55, 0.25),
+        sunsetMix * 0.6
+    );
     vec3 Ldir = normalize(-sceneLightDir);
 
-    // Adaptive jitter with blue-noise for smoother dithering and less banding
-    // Blue noise has better spatial distribution than white noise at equal sample count.
+    // Jitter + slab-uniform step (ADR-113 ratified): step derived from the
+    // analytic cloud slab length so volumetric detail is distance-independent.
     // NOTE: 除数 ${BLUE_NOISE_SIZE} 必须与 _ensureBlueNoiseTexture() 的 size 参数一致
-    // Slab-uniform dense sampling: step derived from the analytic cloud slab
-    // length (tExit - tEnter) so volumetric detail is distance-independent.
-    // Fixes high-altitude clouds rendering flat/distorted — the old growing
-    // step (8 + t*0.03) sampled a 40-unit-thick slab with only 1-2 hits at t~325.
+    // Slab-uniform dense sampling (ADR-113  ratified 方案): step derived from the
+    // analytic cloud slab length (tExit - tEnter) so volumetric detail is distance
+    // independent. 取代原自适应增长步 dt=STEP_MIN + t*GROWTH——后者在 40-unit 薄云板
+    // 上近地平线处仅 1-2 次命中，导致高空云发平/失真。上限放宽到 CLOUD_STEP_MAX 以
+    // 让低仰角（地平线方向）的长 slab 在固定步数预算内仍被充分覆盖。
     \${JITTER_SOURCE_INJECT}
     float slabLen = tExit - tEnter;
-    float slabDt = clamp(slabLen / 24.0, CLOUD_STEP_MIN * 0.25, CLOUD_STEP_MIN * 1.5);
+    float slabDt = clamp(slabLen / 24.0, CLOUD_STEP_MIN * 0.25, CLOUD_STEP_MAX);
     float t = tEnter + jitter * slabDt;
 
     for (int i = 0; i < CLOUD_MAX_STEPS; i++) {
@@ -501,6 +504,16 @@ void main(){
 
         float d = getDensity(p, cloudDensity, windDirection) * groundMask;
         if (d > CLOUD_DENSITY_THRESHOLD) {
+            // 高度梯度底色 × 日落暖色（ADR-113 Phase C 双因子）。
+            // cloudColor 为实时光照色，作为云反照率基底，使其随光色/日落联动。
+            float cloudHeightFactor = clamp(
+                (p.y - cloudBaseY) / max(cloudTopY - cloudBaseY, 1.0),
+                0.0, 1.0
+            );
+            vec3 cloudBot = cloudColor * vec3(1.0, 0.62, 0.42);   // 近地暖色
+            vec3 cloudTop = cloudColor * vec3(0.82, 0.90, 1.02);  // 高空冷色
+            vec3 cloudCol = mix(cloudBot, cloudTop, cloudHeightFactor);
+            cloudCol = mix(cloudCol, cloudCol * vec3(1.0, 0.55, 0.25), sunsetMix * 0.6);
             // ---- Light march: integrate transmittance toward the sun ----
             // Produces volumetric self-shadowing: dense cloud in front of this
             // sample point attenuates the in-scattered light, giving the cloud
@@ -540,16 +553,18 @@ void main(){
     // Ambient fill follows BOTH sun brightness and sky brightness so clouds
     // respond to the sky-brightness knob (previously only the sun drove cloud
     // luminance, leaving clouds disconnected from the sky tint/intensity).
-    vec3 ambient = cloudCol * 0.15 * (1.0 - T) * skyBrightness;
+    vec3 ambient = cloudColor * 0.15 * (1.0 - T) * skyBrightness;
     vec3 color = L + ambient;
     float alpha = 1.0 - T;
     if (alpha < 0.008) discard;
 
-    // Distance fog: fade out distant clouds gradually without color shift
+    // Distance fog: fade out distant clouds into the scene fog color (sky-matched),
+    // not a hardcoded white — fixes the horizon always showing white haze (ADR-113).
     float dist = length(vWorldPos - cameraPosition);
     float fogStart = cloudVisibility * 0.6;
     float fogFactor = smoothstep(fogStart, cloudVisibility, dist);
-    color = mix(color, vec3(1.0, 1.0, 1.0), fogFactor * 0.3);
+    vec3 fogCol = sceneFogColor;
+    color = mix(color, fogCol, fogFactor * 0.3);
     alpha *= (1.0 - fogFactor * 0.85);
 
     fragColor = vec4(color, alpha);
@@ -603,7 +618,7 @@ export function createClouds(state: EnvState): void {
             _volCloudMat.setFloat('cloudBaseY', state.cloudHeight - halfThick);
             _volCloudMat.setFloat('cloudTopY', state.cloudHeight + halfThick);
             _volCloudMat.setFloat('cloudScale', state.cloudScale);
-            _volCloudMat.setFloat('cloudVisibility', state.cloudVisibility ?? 2000);
+            _volCloudMat.setFloat('cloudVisibility', state.cloudVisibility ?? 8000);
             _volCloudMat.setFloat('cloudGap', state.cloudGap ?? 0.5);
             _volCloudMat.setFloat('cloudErosion', state.cloudErosion ?? 0.4);
             _volCloudMat.setFloat('cloudWeatherStrength', state.cloudWeatherStrength ?? 0.6);
@@ -682,7 +697,7 @@ export function createClouds(state: EnvState): void {
                 'groundLevel',
                 'sceneFogColor',
             ],
-            samplers: ['noiseTex', 'blueNoiseTex'],
+            samplers: ['noiseTex', ...(cloudParams.useBlueNoise ? ['blueNoiseTex'] : [])],
             needAlphaBlending: true,
         }
     );
@@ -692,15 +707,18 @@ export function createClouds(state: EnvState): void {
     // Bind 3D noise texture (must be after mat is created)
     const noiseTex = _ensureNoiseTexture(scene);
     mat.setTexture('noiseTex', noiseTex);
-    const blueNoise = _ensureBlueNoiseTexture(scene);
-    mat.setTexture('blueNoiseTex', blueNoise);
+    // blue-noise 仅在 high 模式使用（standard 走 hash jitter，从不采样该纹理）
+    if (cloudParams.useBlueNoise) {
+        const blueNoise = _ensureBlueNoiseTexture(scene);
+        mat.setTexture('blueNoiseTex', blueNoise);
+    }
 
     const halfThick = (state.cloudThickness ?? 40) / 2;
     mat.setFloat('cloudDensity', state.cloudCover * CLOUD_DENSITY_SCALE);
     mat.setFloat('cloudBaseY', state.cloudHeight - halfThick);
     mat.setFloat('cloudTopY', state.cloudHeight + halfThick);
     mat.setFloat('cloudScale', state.cloudScale);
-    mat.setFloat('cloudVisibility', state.cloudVisibility ?? 2000);
+    mat.setFloat('cloudVisibility', state.cloudVisibility ?? 8000);
     mat.setFloat('cloudGap', state.cloudGap ?? 0.5);
     mat.setFloat('cloudErosion', state.cloudErosion ?? 0.4);
     mat.setFloat('cloudWeatherStrength', state.cloudWeatherStrength ?? 0.6);
@@ -771,16 +789,6 @@ export function disposeClouds(): void {
     // Dispose material before mesh (material may reference mesh)
     _volCloudMat = safeDispose(_volCloudMat);
     _volCloudMesh = safeDispose(_volCloudMesh);
-
-    // Clean up _envSys.clouds resources (legacy, kept for safety)
-    _envSys.clouds.material = safeDispose(_envSys.clouds.material, false, true);
-    _envSys.clouds.texture = safeDispose(_envSys.clouds.texture);
-    for (const key of ['postProcess', 'postProcess2'] as const) {
-        const m = _envSys.clouds[key];
-        if (m) {
-            _envSys.clouds[key] = safeDispose(m);
-        }
-    }
 
     // Issue #6: 释放 3D 噪声纹理，避免禁用云时显存泄漏
     _noiseTex3D = safeDispose(_noiseTex3D);

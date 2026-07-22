@@ -1326,7 +1326,7 @@ export const en: Record<string, string> = {
     'env.patternRadial': 'Radial',
     'env.heightmapNoTilt': 'Tilt not supported in heightmap mode',
     'env.groundReflection': 'Ground Reflection & Material',
-    'env.groundMaterial': 'Material & Reflection',
+    'env.groundMaterial': 'Material & Reflection (realistic, optional)',
     'env.overlayPattern': 'Overlay Pattern',
     'env.groundReflectQuality': 'Reflection Quality',
     'env.groundReflectBlend': 'Reflection Blend',

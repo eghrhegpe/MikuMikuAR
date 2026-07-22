@@ -604,3 +604,24 @@ const typeKey =
 | **动态湿润效果** | 雨天时地面 roughness 降低，反射增强 |
 | **Puddle 系统** | 低洼区域积水，局部启用 PlanarReflection |
 | **地形 PBR 材质混合** | 高度驱动草地/泥土/岩石混合（splat mapping） |
+
+---
+
+## 修订记录
+
+### 2026-07-22 Rev 1：设计契合度修复（接触阴影默认开 + cel 互斥 + PP 顺序）
+
+**背景**：设计契合度审查发现 ADR-114 与项目 anime/cel 主轴（ADR-076 真 cel-shading）存在三处不契合：
+1. 接触阴影默认关闭，medium+ 质量用户仍无落地感；
+2. 接触阴影后处理与 cel 后处理挂载顺序未显式约定，可能使阴影未被 posterize 量化；
+3. 地面 PBR（EnvState）与 cel-shading（RenderState）为两正交状态机，可任意组合出「cel 角色踩 PBR 镜面地板」的视觉割裂，UI 无互斥提示。
+
+**修订**：
+- **接触阴影默认开启**（`core/env-state-schema.ts`）：`groundContactShadowEnabled` 默认 `false → true`；`setContactShadow` 仍由 `reflectionQuality ≥ medium` 质量守卫拦截，low/off 自动禁用。
+- **显式 PP 顺序**（`scene/render/renderer.ts`）：新增 `_ensurePostProcessOrder(camera)`，在接触阴影与 cel 后处理均存在时 detach 后按「接触阴影 → cel」重挂，使接触阴影 darken 先发生、cel 的 posterize+Sobel 再量化整图，与 anime 观感一致。两者创建路径各调用一次。
+- **cel 激活强制地面哑光 + 接触阴影**（`scene/render/renderer.ts` + `scene/env/env-bridge.ts`）：renderer 新增 `registerCelGroundCoupling(fn)`（注册回调解耦，避免 renderer→env-bridge 循环依赖）；env-bridge 注册回调，cel 开启时快照 `groundPbrEnabled`/`groundContactShadowEnabled` 并强制 `groundPbrEnabled:false` + `groundContactShadowEnabled:true`（skipAutoSave，纯运行时守卫不脏化场景），cel 关闭时恢复到快照。覆盖 cel 开关与 anime 预设两条路径（均经 `_applyRenderState` cel 分支）。
+- **PBR 地面 UI 标注可选**（`menus/env-ground-levels.ts` + 5 语言 locale）：材质文件夹标题 `env.groundMaterial` 改为「材质与反射（写实，可选）」等，明确写实 PBR 为可选进阶能力、非默认推荐。
+
+**不影响**：PBR 地面回退 StandardMaterial 路径；程序化纹理/反射模糊/法线扭曲逻辑；接触阴影与方向光阴影相乘混合；cel 开关快照/恢复机制；旧场景文件反序列化（缺 `groundContactShadowEnabled` 仍回填默认 true）。
+
+**验证**：`npm run build`（tsc+vite 0 错误）；env 套件 115/115、render-postprocess 33/33 通过；全量 `npm run test` 通过（待后台任务确认）。
