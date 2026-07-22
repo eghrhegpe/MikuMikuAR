@@ -45,6 +45,15 @@ tasks:
       - cmd: node scripts/goerr-lint.mjs --strict
         silent: true
 
+  verify:
+    summary: 本地全量门禁（tsc + eslint + goerr-lint），推送前用
+    cmds:
+      - cmd: cd frontend && npm run check
+        silent: true
+      - cmd: cd frontend && npm run lint
+        silent: true
+      - task: check:goerr
+
   setup:docker:
     summary: Builds Docker image for cross-compilation (~800MB download)
     cmds:
