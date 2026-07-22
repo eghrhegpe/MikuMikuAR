@@ -59,6 +59,10 @@ import { loadManager } from './load-manager';
 import { ImportZip, Events } from './wails-bindings';
 import { focusModel } from '../scene/manager/model-ops';
 import { safeCallAsync } from './safe-call';
+import { getAllShortcuts, getAriaKeyshortcuts } from './shortcut-registry';
+import { getCurrentCamera } from '../scene/camera/camera';
+import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
+import { clamp } from './utils';
 
 // ======== Module-level state ========
 const _lastOverlayFn = new Map<string, () => void>();
@@ -265,6 +269,48 @@ export function registerEventHandlers(): void {
         }
     });
 
+    // ======== ADR-153: 3D camera keyboard orbit (canvas focused) ========
+    _reg(window, 'keydown', (e) => {
+        if (document.activeElement !== dom.canvas) return;
+        const t = e.target as HTMLElement;
+        if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+        const cam = getCurrentCamera();
+        if (!cam || !(cam instanceof ArcRotateCamera)) return;
+        const shift = e.shiftKey ? 3 : 1;
+        const yawStep = (5 * Math.PI) / 180 * shift; // 5° per press
+        const pitchStep = (5 * Math.PI) / 180 * shift;
+        const zoomFactor = shift > 1 ? 0.7 : 0.9; // 30% vs 10% per press
+
+        switch (e.code) {
+            case 'ArrowLeft':
+                cam.alpha -= yawStep;
+                e.preventDefault();
+                break;
+            case 'ArrowRight':
+                cam.alpha += yawStep;
+                e.preventDefault();
+                break;
+            case 'ArrowUp':
+                cam.beta = clamp(cam.beta - pitchStep, 0.1, Math.PI - 0.1);
+                e.preventDefault();
+                break;
+            case 'ArrowDown':
+                cam.beta = clamp(cam.beta + pitchStep, 0.1, Math.PI - 0.1);
+                e.preventDefault();
+                break;
+            case 'Equal':
+            case 'NumpadAdd':
+                cam.radius *= zoomFactor;
+                e.preventDefault();
+                break;
+            case 'Minus':
+            case 'NumpadSubtract':
+                cam.radius /= zoomFactor;
+                e.preventDefault();
+                break;
+        }
+    });
+
     // Seek bar
     _reg(dom.seekBar, 'pointerdown', (e) => {
         setSeekDragging(true);
@@ -358,6 +404,7 @@ export function registerEventHandlers(): void {
 
 // ======== Build nav shortcut maps ========
 export function buildNavMaps(): void {
+    const shortcuts = getAllShortcuts();
     document.querySelectorAll<HTMLElement>('[data-shortcut]').forEach((el) => {
         const key = el.dataset.shortcut || '';
         const k = parseInt(key, 10);
@@ -374,6 +421,12 @@ export function buildNavMaps(): void {
         if (hint) {
             const clean = hint.replace(/\s*·\s*Ctrl\+\d+$/, '');
             el.setAttribute('data-hint', `${clean} · Ctrl+${key}`);
+        }
+        // ADR-153: aria-keyshortcuts for screen readers
+        const shortcutId = `toggle:${el.dataset.popupType || ''}`;
+        const def = shortcuts.find((s) => s.id === shortcutId);
+        if (def) {
+            el.setAttribute('aria-keyshortcuts', getAriaKeyshortcuts(def));
         }
     });
 }

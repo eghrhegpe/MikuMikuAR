@@ -30,6 +30,7 @@
     "outdated": "npm outdated"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@iconify/icons-lucide": "^1.2.135",
     "@playwright/test": "^1.61.1",
     "@typescript-eslint/eslint-plugin": "^8.62.1",

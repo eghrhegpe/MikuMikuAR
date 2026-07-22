@@ -5,6 +5,7 @@
 import { logWarn } from './logger';
 import { addDisposableListener } from './dom';
 import { createFocusTrap } from './ui-focus-trap';
+import { createKeyboardNav } from './ui-keyboard-nav';
 import { t } from './i18n/t';
 
 // 用 WeakMap 存储 overlay 清理函数，避免 DOM 属性污染
@@ -236,31 +237,10 @@ function createOverlayElement(options: FullscreenOverlayOptions): HTMLElement {
             return;
         }
 
-        // [doc:adr-066] 方向键 + Enter 键盘导航
-        const cards = content.querySelectorAll<HTMLElement>('.resource-card, .resource-row');
-        if (cards.length === 0) {
-            return;
-        }
-
-        const focused = content.querySelector<HTMLElement>(
-            '.resource-card:focus, .resource-row:focus'
-        );
-        const idx = focused ? Array.from(cards).indexOf(focused) : -1;
-
-        if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
-            e.preventDefault();
-            const next = idx < cards.length - 1 ? idx + 1 : 0;
-            cards[next].focus();
-        } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
-            e.preventDefault();
-            const prev = idx > 0 ? idx - 1 : cards.length - 1;
-            cards[prev].focus();
-        } else if (e.key === 'Enter' && focused) {
-            e.preventDefault();
-            focused.click();
-        }
-    };
-    const keydownDisp = addDisposableListener(document, 'keydown', handleKeyDown);
+        // ADR-153: 键盘导航（Arrow 键 + Enter 激活资源卡片）
+    const keyNavDisp = createKeyboardNav(content, {
+        selector: '.resource-card, .resource-row',
+    });
 
     // Overlay 背景点击关闭
     overlay.addEventListener('click', (e) => {
@@ -273,7 +253,7 @@ function createOverlayElement(options: FullscreenOverlayOptions): HTMLElement {
 
     // 清理函数
     const cleanup = () => {
-        keydownDisp.dispose();
+        keyNavDisp.dispose();
     };
 
     // 将 cleanup 存入 WeakMap，供外部调用
