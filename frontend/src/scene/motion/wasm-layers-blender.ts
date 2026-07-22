@@ -11,16 +11,44 @@
 //   图层混合的世界矩阵写入覆盖了骨骼覆盖/感知层的输出。
 // - 修复：注册为 Pipeline 的 vmd-layers 层，由 MotionPipeline 按 (stage, order) 统一调度。
 
+import type { Scene } from '@babylonjs/core/scene';
 import { Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Matrix } from '@babylonjs/core/Maths/math';
 import { _isWasmRuntime, _writeMatToBuffer, _propagateChildrenWasm } from './perception';
 import type { MmdRuntimeBoneExtended } from '@/core/types';
 import { createVmdEvaluator, type VmdEvaluator } from '@/motion-algos/vmd-evaluator';
 import { DEFAULT_LAYER_BONE_FILTER } from './wasm-layers-config';
-import { scene, modelManager, loadVMDMotion } from '../scene';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 import { clamp01 } from '@/core/utils';
 import { getMotionPipeline } from './motion-pipeline';
+import type { ModelManager } from '../manager/model-manager';
+
+// ── 依赖注入：打破 wasm-layers-blender → scene.ts 的静态循环依赖 ──
+// vmd-layers.ts 在调用 setupWasmLayersBlender 前必须调用 initWasmLayersBlender。
+// 所有引用 scene.ts 的函数通过 _requireDeps() 获取，而非静态 import。
+
+interface BlenderDeps {
+    scene: Scene;
+    modelManager: ModelManager;
+    loadVMDMotion: (data: ArrayBuffer, name: string, modelId?: string) => Promise<void>;
+}
+
+let _deps: BlenderDeps | null = null;
+
+function _requireDeps(): BlenderDeps {
+    if (!_deps) {
+        throw new Error(
+            'WASM layers blender not initialized — call initWasmLayersBlender before setupWasmLayersBlender'
+        );
+    }
+    return _deps;
+}
+
+/** 初始化 blender 的场景级依赖（必须在 setupWasmLayersBlender 之前调用）。
+ *  此函数打破 wasm-layers-blender → scene.ts 的循环依赖链。 */
+export function initWasmLayersBlender(deps: BlenderDeps): void {
+    _deps = deps;
+}
 
 export { DEFAULT_LAYER_BONE_FILTER } from './wasm-layers-config';
 
@@ -65,7 +93,7 @@ function _ensureVmdLayersLayer(): void {
         run: () => {
             for (const [modelId, state] of _blenderStates) {
                 if (!state.enabled) continue;
-                const dt = scene.deltaTime || 16.67;
+                const dt = _requireDeps().scene.deltaTime || 16.67;
                 state.animationFrame += (dt / 1000) * VMD_FPS;
                 _applyLayersBlending(modelId);
             }
@@ -82,7 +110,7 @@ export async function setupWasmLayersBlender(
 ): Promise<void> {
     teardownWasmLayersBlender(modelId);
 
-    const inst = modelManager.get(modelId);
+    const inst = _requireDeps().modelManager.get(modelId);
     if (!inst?.mmdModel) {
         throw new Error(`Model ${modelId} not found`);
     }
@@ -98,7 +126,7 @@ export async function setupWasmLayersBlender(
         animationFrame: 0,
     });
 
-    await loadVMDMotion(baseData, baseName, modelId);
+    await _requireDeps().loadVMDMotion(baseData, baseName, modelId);
 }
 
 export function teardownWasmLayersBlender(modelId: string): void {
@@ -172,7 +200,7 @@ function _applyLayersBlending(modelId: string): void {
         return;
     }
 
-    const inst = modelManager.get(modelId);
+    const inst = _requireDeps().modelManager.get(modelId);
     if (!inst?.mmdModel) {
         return;
     }

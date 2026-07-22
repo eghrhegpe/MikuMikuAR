@@ -74,6 +74,9 @@ let _probeRefreshObserver: ObserverHandle | null = null;
 let _lastProbeRefresh = 0;
 let _currentMode: ResolvedReflectionMode = 'none';
 
+/** AR 模式激活时挂起全部反射（纯派生覆盖，退出 AR 后恢复用户 reflectionMode） */
+let _arSuspended = false;
+
 /** Probe 创建失败标记：GPU 资源不足等场景下不再无限重试 */
 let _probeCreateFailed = false;
 
@@ -104,6 +107,8 @@ let _probeStrength = 1;
 // ======== 模式推导 ========
 
 export function resolveReflectionMode(state: EnvState): ResolvedReflectionMode {
+    // AR 场景无背景平面，角色倒影/环境反射无意义且浪费 GPU：纯派生覆盖为 'none'
+    if (_arSuspended) return 'none';
     const mode = state.reflectionMode;
     // 防御旧版持久化存档残留的非法枚举（如 ADR-151 修订前 schema 曾含 'auto'），
     // 避免落入 applyReflection 的 switch 无匹配分支导致零反射静默 no-op。
@@ -111,6 +116,24 @@ export function resolveReflectionMode(state: EnvState): ResolvedReflectionMode {
         return 'planar';
     }
     return mode;
+}
+
+/**
+ * AR 模式联动：挂起/恢复反射子系统。
+ * 由 ar-scene.ts 的 setARMode 在 AR 激活成功时挂起、退出时恢复。
+ * 采用派生覆盖（不改写用户 reflectionMode），避免状态泄漏与回滚遗漏。
+ */
+export function setReflectionARSuspended(suspended: boolean): void {
+    if (_arSuspended === suspended) return;
+    _arSuspended = suspended;
+    // 立即重算反射（envState 为当前态），使进入/退出 AR 反射即时开关。
+    // scene 未初始化（模块加载期/测试环境）时 applyReflection 会抛，安全跳过：
+    // 派生标志 _arSuspended 已更新，待下次反射状态变化重算时生效。
+    try {
+        applyReflection(envState);
+    } catch (err) {
+        logWarn('env-reflection', 'setReflectionARSuspended: applyReflection 跳过（scene 未就绪）:', err);
+    }
 }
 
 /**

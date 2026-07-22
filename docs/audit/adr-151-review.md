@@ -41,7 +41,23 @@
 
 ---
 
-## 三、前置 ADR 回链状态（已于 2026-07-22 补齐）
+## 三、修复记录（2026-07-22 晚，代码已落地 + 单测闭环）
+
+用户要求"边核对边修"→ 当场核对并修复 P2/P3 行为风险（P4 已于前序 PR 修复）。
+
+| 等级 | 风险 | 修复方案 | 落点 | 验证 |
+|------|------|----------|------|------|
+| 🟠 P2 | 非 planar 模式 + `reflectionQuality='off'` 静默关地面/水面倒影 | `getPlanarQualityOverride` 对 `ssr/probe/hybrid` 模式在 `reflectionQuality='off'` 时也保底 `'low'`（不再返回 `null`）；`planar` 固定 `low` 语义保留 | `env-reflection.ts:131` `getPlanarQualityOverride` | 新增 `env-reflection.test.ts` 覆盖该分支，3 文件 50 用例全绿 |
+| 🟡 P3 | 全仓无 preset 写 `reflectionMode`，AR 场景需手动切 none | 派生覆盖方案（零用户状态污染）：`env-reflection.ts` 新增 `_arSuspended` 标志 + `setReflectionARSuspended()`，`resolveReflectionMode` 在 AR 下纯派生为 `'none'`；`ar-scene.ts` 的 `setARMode` 进入成功时挂起、退出时恢复（失败分支不挂起，天然无回滚遗漏） | `env-reflection.ts:106`（`resolveReflectionMode` 守卫）、`env-reflection.ts:119`（`setReflectionARSuspended`）、`ar-scene.ts:157`（setARMode 两处调用） | 同测试文件覆盖挂起/恢复/重复设置；全量 `tsc --noEmit` EXIT=0 |
+| 🟡 P3 | ADR-024 降级策略失效 | 已在上一轮文档修订（ADR-024 声明反射质量由 qualityProfile 写 `reflectionQuality`，SSR 仅 `high` 启用；Probe 管理已合并至 ADR-151） | `adr-024` 第 27 行 + ReflectionProbe 节 + 相关 ADR 节 | 文档已对齐 |
+| 🟢 P4 | `reflectionColor` 未还原 | 已于前序落地：`_savedReflectionColors` + `copyFrom` 还原 | `env-reflection.ts:177` | 构建通过 |
+
+> 设计取舍：P3 未采用"在 quality-profile 注册表加 reflectionMode 维度"或"camera.ts 三处硬编码保存/恢复"，因前者语义不符（模式≠质量档位）、后者易在 AR 进入失败回滚时遗漏恢复。
+> 采用 env 层派生覆盖，使反射联动 AR 由 AR 激活权威函数（`setARMode`）集中管理，单一写入点、零状态泄漏。
+
+---
+
+## 四、前置 ADR 回链状态（已于 2026-07-22 补齐）
 
 > 用户批准补写。ADR-024 直接声明 ReflectionProbe 管理**合并至 ADR-151**（减少迁移难度）；ADR-062/092/013 加交叉引用。
 

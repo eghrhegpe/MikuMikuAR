@@ -11,6 +11,7 @@ import { DynamicTexture } from '@babylonjs/core/Materials/Textures/dynamicTextur
 import { Material } from '@babylonjs/core/Materials/material';
 import { scene } from '../scene';
 import { _envSys } from '../env/env-impl';
+import { setReflectionARSuspended } from '../env/env-reflection';
 import { startARCamera, stopARCamera, captureARScreenshot, isARActive } from './ar-camera';
 import type { CameraFacing } from './ar-camera';
 import {
@@ -185,6 +186,8 @@ export async function setARMode(enabled: boolean): Promise<boolean> {
         if (!_contactShadowHandle) {
             _contactShadowHandle = observe(scene.onBeforeRenderObservable, _updateContactShadow);
         }
+        // AR 场景无背景平面：挂起全部反射（退出 AR 时恢复）
+        setReflectionARSuspended(true);
         return true;
     } else {
         stopARCamera();
@@ -203,6 +206,8 @@ export async function setARMode(enabled: boolean): Promise<boolean> {
             activatePerception();
             _prevGazeState = null;
         }
+        // 退出 AR：恢复用户 reflectionMode（纯派生覆盖解除）
+        setReflectionARSuspended(false);
         return true;
     }
 }
