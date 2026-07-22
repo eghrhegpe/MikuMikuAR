@@ -857,8 +857,10 @@ export function buildLevel(
             if (resourceViewMode === 'grid') {
                 renderGridMode(container, dir, liveItems, filter, targetStack);
             } else {
-                addListViewToolbar(container, dir, liveItems, filter, targetStack, resourceItems);
-                renderItemsWithRAF(container, liveItems, filter, targetStack);
+                cardContainer(container, (card) => {
+                    addListViewToolbar(card, dir, liveItems, filter, targetStack, resourceItems);
+                    renderItemsWithRAF(card, liveItems, filter, targetStack);
+                });
             }
         },
     };

@@ -75,45 +75,18 @@ const gazeSchema: MenuNode[] = [
             },
         },
     },
-    // ── [doc:adr-164] 当前性能档位显示 ──
-    {
-        id: 'perception:tierDisplay',
-        kind: 'custom',
-        renderCustom: (c) => {
-            const wrap = document.createElement('div');
-            wrap.style.cssText = 'padding:6px 14px;font-size:12px;color:var(--text-secondary);';
-            const updateTier = () => {
-                const tier = getPerceptionPerfTier();
-                const tierKey: Record<string, string> = {
-                    high: 'motion.perceptionTierHigh',
-                    medium: 'motion.perceptionTierMedium',
-                    low: 'motion.perceptionTierLow',
-                };
-                const icon = tier === 'low' ? '⚠️ ' : '';
-                wrap.textContent = `${icon}${t('motion.perceptionTier')}: ${t(tierKey[tier] ?? tierKey.high)}`;
-            };
-            updateTier();
-            // 注册自更新，tier 变化（包括自动降级）时刷新文本，不重建 DOM
-            const menu = getMotionMenu();
-            if (menu) {
-                menu.registerControl(updateTier);
-            }
-            c.appendChild(wrap);
-        },
-    },
-    // ── [doc:adr-164] 手动性能档位覆盖 ──
+    // ── [doc:adr-164] 性能档位（手动覆盖 + 降级警示合并为一行） ──
     {
         id: 'perception:tierOverride',
         kind: 'custom',
         renderCustom: (c) => {
-            const wrap = document.createElement('div');
-            wrap.style.cssText = 'padding:4px 14px;';
-            const label = document.createElement('label');
-            label.style.cssText = 'font-size:12px;color:var(--text-secondary);margin-right:8px;';
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 14px;';
+            const label = document.createElement('span');
+            label.className = 'slider-label';
             label.textContent = t('motion.perceptionTier');
             const select = document.createElement('select');
-            select.style.cssText =
-                'font-size:12px;padding:2px 6px;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);';
+            select.className = 'setting-select';
             const options = [
                 { value: 'auto', label: 'motion.perceptionTierAuto' },
                 { value: 'high', label: 'motion.perceptionTierHigh' },
@@ -133,9 +106,22 @@ const gazeSchema: MenuNode[] = [
                 triggerAutoSave();
                 refreshMotionMenu();
             };
-            wrap.appendChild(label);
-            wrap.appendChild(select);
-            c.appendChild(wrap);
+            // 降级警示：实际档位被自动降到节能时显示 ⚠️
+            const warn = document.createElement('span');
+            warn.style.cssText = 'font-size:12px;flex-shrink:0;';
+            const updateWarn = () => {
+                warn.textContent = getPerceptionPerfTier() === 'low' ? '⚠️' : '';
+            };
+            updateWarn();
+            // 注册自更新，tier 变化（包括自动降级）时刷新警示，不重建 DOM
+            const menu = getMotionMenu();
+            if (menu) {
+                menu.registerControl(updateWarn);
+            }
+            row.appendChild(label);
+            row.appendChild(select);
+            row.appendChild(warn);
+            c.appendChild(row);
         },
     },
     // ── 头部跟随：开关在 header，参数在 folder 内 ──
@@ -367,9 +353,9 @@ const gazeSchema: MenuNode[] = [
         kind: 'custom',
         renderCustom: (c) => {
             const wrap = document.createElement('div');
-            wrap.style.cssText = 'display:flex;gap:8px;';
+            wrap.style.cssText = 'display:flex;gap:8px;padding:6px 14px;';
             const pinBtn = document.createElement('button');
-            pinBtn.className = 'action-button';
+            pinBtn.className = 'btn btn-sm btn-primary';
             pinBtn.textContent = t('motion.pinModel');
             pinBtn.onclick = () => {
                 if (focusedModelId) {
@@ -382,7 +368,7 @@ const gazeSchema: MenuNode[] = [
             const pinned = focusedModelId ? getPinnedModelIds().includes(focusedModelId) : false;
             if (pinned) {
                 const unpinBtn = document.createElement('button');
-                unpinBtn.className = 'action-button';
+                unpinBtn.className = 'btn btn-sm btn-ghost';
                 unpinBtn.textContent = t('motion.unpinModel');
                 unpinBtn.onclick = () => {
                     if (focusedModelId) {

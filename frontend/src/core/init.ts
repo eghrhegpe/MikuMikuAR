@@ -80,6 +80,23 @@ function _updateStaticHtmlTexts(): void {
     setText('#updateToast .toast-ignore-btn', 'main.importIgnore');
 }
 
+// [doc:adr-153] 启动时主动读取系统无障碍设置（暗色/高对比度）。
+// 主路径：CSS @media prefers-color-scheme / prefers-contrast 由浏览器自动匹配。
+// 备用路径：data-theme / data-high-contrast 属性，给 WebView2 媒体查询异常时兜底。
+// 纯 Vite 模式下 Go 绑定不可用，由 fireAndForget → swallowError 静默吞错。
+function _applySystemA11y(): void {
+    fireAndForget(async () => {
+        const settings = await GetSystemA11ySettings();
+        const root = document.documentElement;
+        if (settings.isDarkMode) {
+            root.dataset.theme = 'dark';
+        }
+        if (settings.isHighContrast) {
+            root.dataset.highContrast = 'true';
+        }
+    });
+}
+
 // ======== Init ========
 async function init(): Promise<void> {
     try {

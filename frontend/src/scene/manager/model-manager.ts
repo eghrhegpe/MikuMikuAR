@@ -841,7 +841,7 @@ export class ModelManager {
                 this.scene
             );
             sphere.position.copyFrom(pos);
-            sphere.isVisible = false;
+            sphere.setEnabled(false);
             joints.push(sphere);
             jointData.push({ mesh: sphere, boneIndex: i });
 

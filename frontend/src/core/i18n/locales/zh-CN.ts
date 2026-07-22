@@ -448,6 +448,8 @@ export const zhCN: Record<string, string> = {
     'motion.perceptionTierMedium': '均衡',
     'motion.perceptionTierLow': '节能',
     'motion.perceptionDegraded': '部分感知项已降级',
+    'motion.pinModel': '固定感知到当前模型',
+    'motion.unpinModel': '取消固定',
     // ── 感知层可调参数（[doc:adr-116] 感知层滑块功能） ──
     'perception.headFollowParams': '头部跟随参数',
     'perception.headYawRange': '水平范围',
