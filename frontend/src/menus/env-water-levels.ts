@@ -254,6 +254,17 @@ export function buildWaterLevel(): PopupLevel {
                             },
                         },
                         {
+                            id: 'env:water:lowFreqNormal',
+                            kind: 'slider',
+                            label: 'env.lowFreqNormalStrength',
+                            control: {
+                                bind: 'env.lowFreqNormalStrength',
+                                min: 0,
+                                max: 0.5,
+                                step: 0.01,
+                            },
+                        },
+                        {
                             id: 'env:water:horizonFade',
                             kind: 'slider',
                             label: 'env.waterHorizonFade',

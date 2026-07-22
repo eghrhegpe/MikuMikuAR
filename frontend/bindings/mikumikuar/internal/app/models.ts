@@ -253,6 +253,7 @@ export interface EnvState {
     "rippleGlintStrength": number;
     "waterNormalStrength": number;
     "waterGlintStrength": number;
+    "lowFreqNormalStrength": number;
     "waterHorizonFade": number;
     "waterSkyColorBlend": number;
     "causticIntensity": number;

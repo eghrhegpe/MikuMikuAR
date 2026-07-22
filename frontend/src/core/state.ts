@@ -117,6 +117,7 @@ function buildDefaultEnvState(): EnvState {
         rippleGlintStrength: s.rippleGlintStrength.default,
         waterNormalStrength: s.waterNormalStrength.default,
         waterGlintStrength: s.waterGlintStrength.default,
+        lowFreqNormalStrength: s.lowFreqNormalStrength.default,
         causticIntensity: s.causticIntensity.default,
         causticColor1: s.causticColor1.default.slice() as [number, number, number],
         causticColor2: s.causticColor2.default.slice() as [number, number, number],

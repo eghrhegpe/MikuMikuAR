@@ -19,6 +19,10 @@ export interface FrameContext {
  * 管线阶段。顺序来自 ADR-116 §一 的 6 层动作管线；
  * Ragdoll(④) 已于 ADR-061 永久移除，此处省略。
  * 同帧内「后注册阶段」覆盖「先注册阶段」的骨骼写入。
+ *
+ * 注意：`vmd-base`（① VMD 基础动画）和 `proc-motion`（③ 程序化动作）
+ * 由 babylon-mmd 运行时在 WASM 层面处理，不经过本 JS 管线调度。
+ * 本管线仅治理 JS 侧的骨覆写层注册时序隐式定序问题（R1）。
  */
 export type PipelineStage =
     | 'vmd-base' // ① VMD 基础动画

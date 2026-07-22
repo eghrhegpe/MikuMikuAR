@@ -15,7 +15,7 @@ uniform int uWaterFlip;
 // WAVE_DIR 由外部 uniform uWindDir[4] 驱动（风向联动），在 createWater 时计算并传入
 const int WAVE_COUNT = 4;
 uniform vec2 uWindDir[4];
-const float WAVE_FREQ[4] = float[4](0.15, 0.2, 0.25, 0.3);
+const float WAVE_FREQ[4] = float[4](0.07, 0.11, 0.25, 0.3); // ADR-115 P5: 层 0/1 拉长波长（42→90/57 单位），制造连绵涌浪
 const float WAVE_AMP[4] = float[4](0.3, 0.25, 0.2, 0.15);
 const float WAVE_SPEED[4] = float[4](0.7, 0.9, 0.5, 1.2);
 

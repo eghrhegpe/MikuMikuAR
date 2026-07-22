@@ -1374,6 +1374,7 @@ export const en: Record<string, string> = {
     'env.causticIntensity': 'Caustic intensity',
     'env.waterNormalStrength': 'Wave detail',
     'env.waterGlintStrength': 'Sun glitter',
+    'env.lowFreqNormalStrength': 'Low-Freq Glint',
     'env.waterHorizonFade': 'Horizon fade',
     'env.waterSkyColorBlend': 'Sky color blend',
     'env.causticScrollX': 'Caustic scroll X',

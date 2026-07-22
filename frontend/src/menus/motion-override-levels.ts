@@ -234,6 +234,8 @@ export function renderOverrideCard(
             };
             undo(modelId, applier);
             setStatus(t('motion.undoApplied'), true);
+            updateUndoState();
+            updateRedoState();
             getMotionMenu()?.reRender();
         });
         const updateUndoState = () => {
@@ -266,6 +268,8 @@ export function renderOverrideCard(
             };
             redo(modelId, applier);
             setStatus(t('motion.override.redoApplied'), true);
+            updateUndoState();
+            updateRedoState();
             getMotionMenu()?.reRender();
         });
         const updateRedoState = () => {
@@ -334,6 +338,7 @@ export function renderOverrideCard(
                     item.style.fontWeight = '600';
                 }
                 item.textContent = entry.description;
+                item.dataset.historyIndex = String(realIndex);
                 item.addEventListener('click', () => {
                     if (!modelId) {
                         return;
@@ -350,14 +355,27 @@ export function renderOverrideCard(
                         applyModuleSnapshot(modelId, snap);
                     };
                     jumpToHistory(modelId, realIndex, applier);
-                    closeHistoryDropdown();
+                    // [doc:adr-125 fix] 跳转后重建 dropdown 以更新游标高亮，不关闭
+                    // 让用户立即看到新游标位置，可点击外部或再次点击按钮关闭
+                    const newCursor = getHistoryCursor(modelId);
+                    for (const child of historyDropdown!.children) {
+                        const idx = Number((child as HTMLElement).dataset.historyIndex ?? -1);
+                        if (idx === newCursor) {
+                            (child as HTMLElement).style.background = 'var(--hover)';
+                            (child as HTMLElement).style.fontWeight = '600';
+                        } else {
+                            (child as HTMLElement).style.background = '';
+                            (child as HTMLElement).style.fontWeight = '';
+                        }
+                    }
                     getMotionMenu()?.reRender();
                 });
                 item.addEventListener('mouseenter', () => {
                     item.style.background = 'var(--hover)';
                 });
                 item.addEventListener('mouseleave', () => {
-                    if (realIndex !== cursor) {
+                    const cur = getHistoryCursor(modelId ?? '');
+                    if (realIndex !== cur) {
                         item.style.background = '';
                     }
                 });
