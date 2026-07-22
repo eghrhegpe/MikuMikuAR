@@ -65,7 +65,7 @@ export const DEFAULT_PERCEPTION_STATE: PerceptionState = {
     headGazeMaxPitch: 35,
     eyeGazeMaxYaw: 9,
     eyeGazeMaxPitch: 8,
-    eyeGazeSmooth: 0.35,
+    eyeGazeSmooth: 0.65,
     // 重心微动可调参数默认值
     balanceSwayPeriod: 2.0,
     balanceSwayAmplitude: 1.0,
@@ -221,7 +221,7 @@ let _headGazeMaxYaw = (75 * Math.PI) / 180;
 let _headGazeMaxPitch = (35 * Math.PI) / 180;
 let _eyeGazeMaxYaw = (9 * Math.PI) / 180;
 let _eyeGazeMaxPitch = (8 * Math.PI) / 180;
-let _eyeGazeSmooth = 0.35;
+let _eyeGazeSmooth = 0.65;
 
 /** 获取头部跟随最大偏航角（弧度） */
 export function getHeadGazeMaxYaw(): number {
@@ -284,10 +284,10 @@ export interface BalanceSwayState {
     lastAllParentRz: number;
 }
 
-/** Gaze 跨帧缓存：存储上一帧 gaze 输出的世界四元数，使 Slerp 可累积 */
+/** Gaze 跨帧缓存：头部存世界 Q，眼部存本地 Q（相对父骨骼，避免头部旋转后缓存过期） */
 export interface GazeCache {
     headWorldQ: Quaternion | null;
-    eyeWorldQ: Map<string, Quaternion>;
+    eyeLocalQ: Map<string, Quaternion>;
 }
 
 /** 每模型感知上下文（替代原单例，支持焦点 + pinned 多模型） */
