@@ -76,6 +76,8 @@
 
 > **【评审结论】**：低成本、低收益，不单列 P1 宣传点；降级为 Pose Studio 子开关（见 2.5）。2A 路线成本≈0（VPD 预置文件，无运行时逻辑），故保留不删。
 
+> **【对账修正 2026-07-22】**：最终实现采用 **2B 程序化路线**的变体——`motion-algos/pose-preset.ts` 的 `generatePoseVmd()` 在运行时程序化生成 T/A/rest 的 **VMD 二进制**（经 `vmd-writer.buildVmd` 编码标准骨骼名），再经 babylon-mmd `VmdLoader` 应用，而非 2A 的 VPD 预置文件。功能等价、零新增依赖，但属「有运行时逻辑」路线，与 2A「零运行时」描述不同；2A 文字保留作历史参考。
+
 ### 2.3 布娃娃物理 Ragdoll
 
 **定义**：碰撞 / 受击 / 跌倒驱动的自由骨骼物理，动画暂停后由物理约束解算骨骼姿态。
@@ -114,7 +116,7 @@
 
 **技术路线**：
 1. **构图辅助线**：在 canvas 上叠加三分法 / 黄金分割 / 对角线网格（CSS overlay 或 Babylon.js GUI texture），复用现有 canvas overlay 机制。
-2. **景深控制**：复用 `renderer.ts` 已有的 DOF（Depth of Field）后处理管线，暴露光圈 / 焦距 / 对焦距离滑块。
+2. **景深控制**：复用 `renderer.ts` 已有的 DOF（Depth of Field）后处理管线，暴露 **光圈（fStop）/ 焦距（focalLength）/ 对焦距离（focusDistance）** 三滑块；焦距 / 对焦距离经 `RenderState.dofFocalLength` / `dofFocusDistance` 写入 `DepthOfFieldEffect`。
 3. **批量出图**：基于现有 `SaveScreenshot` 扩展，支持多角度预设（正面 / 侧面 / 45° / 自定义相机位）批量渲染 + 导出。
 4. **水印**：canvas 合成阶段叠加文字 / 图片水印（可配置位置 / 透明度 / 内容）。
 5. **UI**：独立 Pose Studio 面板，包含相机控制 + 渲染设置 + 导出按钮，复用 MenuStack 导航栈。
@@ -133,7 +135,7 @@
 | WASM / JS 运行时分裂（ADR-056 已统一） | 2.1 / 2.3 | Override 为纯前端后处理，Ragdoll 3B 依赖 Bullet |
 | XPBD 引擎（体积约束预置） | 2.3 | 3A 路线直接复用 |
 | VPD 体系（已就绪） | 2.2 | 2A 零成本路径 |
-| DOF 后处理管线（已就绪） | 2.5 | Pose Studio 景深控制直接复用 |
+| DOF 后处理管线（已就绪） | 2.5 | Pose Studio 景深控制直接复用，且已扩展焦点平面（focusDistance）/ 焦距（focalLength）两维，原设计「三滑块」全部落地 |
 | 截图功能（已就绪） | 2.5 | Pose Studio 导出扩展 |
 | Scene Bundle / UIState 持久化（ADR-050） | 2.1 / 2.2 / 2.4 / 2.5 | 配置序列化复用统一机制 |
 | MenuStack 导航栈 + 骨骼名选择器 UI | 全部 | UI 范式复用 |

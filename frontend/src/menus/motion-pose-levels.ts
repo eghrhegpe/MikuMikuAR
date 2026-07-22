@@ -172,6 +172,34 @@ function buildPoseStudioSchema(): MenuNode[] {
                         undefined,
                         { bind: () => getRenderState().dofAperture }
                     );
+                    addSliderRow(
+                        inner,
+                        t('motion.poseStudio.dofFocus'),
+                        renderState.dofFocusDistance,
+                        1,
+                        300,
+                        1,
+                        (v) => {
+                            setRenderState({ dofEnabled: true, dofFocusDistance: v });
+                        },
+                        undefined,
+                        undefined,
+                        { bind: () => getRenderState().dofFocusDistance }
+                    );
+                    addSliderRow(
+                        inner,
+                        t('motion.poseStudio.dofFocal'),
+                        renderState.dofFocalLength,
+                        20,
+                        200,
+                        1,
+                        (v) => {
+                            setRenderState({ dofEnabled: true, dofFocalLength: v });
+                        },
+                        undefined,
+                        undefined,
+                        { bind: () => getRenderState().dofFocalLength }
+                    );
                 });
             },
         },
