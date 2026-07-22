@@ -75,6 +75,11 @@ export function startRenderLoop(): void {
         }
     });
     engine.runRenderLoop(() => {
+        // [audit:P1] dispose 后下一帧回调仍会执行，必须守卫
+        if (scene.isDisposed) {
+            stopRenderLoop();
+            return;
+        }
         const _obsBefore = scene.onBeforeRenderObservable.observers
             ? scene.onBeforeRenderObservable.observers.length
             : 0;

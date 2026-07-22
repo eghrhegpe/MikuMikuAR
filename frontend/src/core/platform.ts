@@ -24,22 +24,26 @@ export function isAndroidPlatform(): boolean {
  * Android WebView may not have the bridge available at module-parse time.
  */
 export async function awaitWailsBridge(timeout = 3000): Promise<boolean> {
-    const poll = (resolve: (v: boolean) => void, reject: (e: Error) => void) => {
+    let settled = false;
+    const poll = (resolve: (v: boolean) => void) => {
+        if (settled) return; // [audit:P2] 超时后停止轮询，防定时器泄漏
         if (typeof window.wails?.platform === 'function') {
+            settled = true;
             resolve(true);
         } else {
-            setTimeout(() => poll(resolve, reject), 50);
+            setTimeout(() => poll(resolve), 50);
         }
     };
-    return new Promise((resolve, reject) => {
-        const timer = setTimeout(() => reject(new Error('Wails bridge timeout')), timeout);
+    return new Promise<boolean>((resolve) => {
+        const timer = setTimeout(() => {
+            settled = true;
+            resolve(false);
+        }, timeout);
         poll((v) => {
             clearTimeout(timer);
             resolve(v);
-        }, reject);
-    })
-        .then(() => true)
-        .catch(() => false);
+        });
+    });
 }
 
 /**

@@ -50,7 +50,7 @@ export function unsubscribeAll(): void {
 /**
  * 用 Proxy 包裹对象，拦截 set 操作。
  * 任何属性赋值都会自动触发 scheduleRefresh()。
- * 深度代理：嵌套普通对象也会被包裹。
+ * 深度代理：嵌套普通对象也会被包裹（WeakMap 缓存保证引用稳定）。
  *
  * ⚠️ 数组字段约定（如 envState.skyColorTop: [number, number, number]）：
  * Proxy 不代理数组（避免包装 push/pop/splice 等方法带来的复杂度与性能开销），
@@ -59,8 +59,11 @@ export function unsubscribeAll(): void {
  * 或通过 setEnvState({ skyColorTop: [...] })（内部 Object.assign 整体赋值）。
  * Map/Set 同理：替换整个实例，不依赖内部变更触发刷新。
  */
+const _proxyCache = new WeakMap<object, object>(); // [audit:P3] 缓存已创建的 Proxy，保证引用稳定
 export function reactive<T extends object>(obj: T): T {
-    return new Proxy(obj, {
+    const cached = _proxyCache.get(obj);
+    if (cached) return cached as T;
+    const proxy = new Proxy(obj, {
         get(target, key, receiver): unknown {
             const val = Reflect.get(target, key, receiver);
             // 只代理普通对象（不代理数组/Map/Set/DOM 等）
@@ -76,11 +79,15 @@ export function reactive<T extends object>(obj: T): T {
             return val;
         },
         set(target, key, value, receiver): boolean {
+            const old = Reflect.get(target, key, receiver);
+            if (Object.is(old, value)) return true; // [audit:P3] 同值短路，避免不必要刷新
             const result = Reflect.set(target, key, value, receiver);
             scheduleRefresh();
             return result;
         },
     }) as T;
+    _proxyCache.set(obj, proxy);
+    return proxy;
 }
 
 /**

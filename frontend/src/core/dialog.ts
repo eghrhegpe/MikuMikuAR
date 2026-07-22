@@ -34,6 +34,22 @@ export interface DialogOptions {
 let _overlay: HTMLDivElement | null = null;
 let _trapRestore: (() => void) | null = null;
 
+// [audit:P2] 并发队列：串行化 showDialog，防止第二次调用覆盖第一次 DOM 导致 Promise 永不 resolve
+let _dialogActive = false;
+const _pendingDialogs: Array<{ opts: DialogOptions; resolve: (v: string | boolean | null) => void }> = [];
+
+function _drainDialogQueue(): void {
+    _dialogActive = false;
+    const next = _pendingDialogs.shift();
+    if (next) {
+        _dialogActive = true;
+        _showDialogInner(next.opts).then(
+            (v) => { next.resolve(v); _drainDialogQueue(); },
+            () => { next.resolve(null); _drainDialogQueue(); }
+        );
+    }
+}
+
 function getOverlay(): HTMLDivElement {
     if (_overlay) {
         return _overlay;
@@ -74,6 +90,20 @@ function _replaceButtonListeners(
 }
 
 function showDialog(opts: DialogOptions): Promise<string | boolean | null> {
+    // [audit:P2] 串行化：首次调用同步执行（测试兼容），后续排队等前一个关闭
+    if (!_dialogActive) {
+        _dialogActive = true;
+        return _showDialogInner(opts).then(
+            (v) => { _drainDialogQueue(); return v; },
+            (e) => { _drainDialogQueue(); throw e; }
+        );
+    }
+    return new Promise<string | boolean | null>((resolve) => {
+        _pendingDialogs.push({ opts, resolve });
+    });
+}
+
+function _showDialogInner(opts: DialogOptions): Promise<string | boolean | null> {
     return new Promise((resolve) => {
         const overlay = getOverlay();
         // 清除前一次可能残留的 inline style，让 CSS class 重新生效

@@ -157,7 +157,8 @@ function buildDefaultEnvState(): EnvState {
         lightingPresetName: s.lightingPresetName.default,
         timeOfDayActive: s.timeOfDayActive.default,
         timeOfDaySpeed: s.timeOfDaySpeed.default,
-    } as EnvState;
+        waterRippleSlots: s.waterRippleSlots.default,
+    } satisfies EnvState;
 }
 
 export const envState: EnvState = reactive<EnvState>(buildDefaultEnvState());

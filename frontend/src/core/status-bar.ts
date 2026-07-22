@@ -7,6 +7,7 @@ let hintActive = false;
 let savedStatusText = '';
 let savedStatusColor = '';
 let _statusTimer: ReturnType<typeof setTimeout> | null = null;
+let _statusFadeTimer: ReturnType<typeof setTimeout> | null = null; // [audit:P3] 内层淡出 timer
 const _hintDisposables: { dispose(): void }[] = [];
 
 /**
@@ -50,6 +51,10 @@ export function setStatus(text: string, ok: boolean, hold = false): void {
         clearTimeout(_statusTimer);
         _statusTimer = null;
     }
+    if (_statusFadeTimer) {
+        clearTimeout(_statusFadeTimer); // [audit:P3] 新状态到来时取消未完成的淡出
+        _statusFadeTimer = null;
+    }
 
     if (hintActive) {
         savedStatusText = text;
@@ -67,7 +72,8 @@ export function setStatus(text: string, ok: boolean, hold = false): void {
         _statusTimer = setTimeout(() => {
             dom.statusText.style.transition = 'opacity 0.5s ease';
             dom.statusText.style.opacity = '0';
-            _statusTimer = setTimeout(() => {
+            _statusFadeTimer = setTimeout(() => {
+                _statusFadeTimer = null;
                 dom.statusText.textContent = '';
                 dom.statusText.style.transition = '';
                 dom.statusText.style.opacity = '1';
@@ -108,6 +114,10 @@ export function disposeStatusBar(): void {
     if (_statusTimer) {
         clearTimeout(_statusTimer);
         _statusTimer = null;
+    }
+    if (_statusFadeTimer) {
+        clearTimeout(_statusFadeTimer);
+        _statusFadeTimer = null;
     }
     for (const d of _hintDisposables) {
         d.dispose();
