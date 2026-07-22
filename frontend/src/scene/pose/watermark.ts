@@ -115,10 +115,36 @@ export function applyWatermark(base64: string, format: string, quality: number):
             ctx.fillText(_config.text, x, y);
             ctx.restore();
 
-            const result = canvas
-                .toDataURL(format, quality)
-                .replace(/^data:image\/\w+;base64,/, '');
-            resolve(result);
+            // 异步编码：toBlob 移至后台线程，避免低端机 OOM（ADR-017 A2-04）
+            canvas.toBlob(
+                (blob) => {
+                    if (!blob) {
+                        resolve(
+                            canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, '')
+                        );
+                        return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        const r = reader.result;
+                        resolve(
+                            typeof r === 'string'
+                                ? r.replace(/^data:image\/\w+;base64,/, '')
+                                : canvas
+                                      .toDataURL(format, quality)
+                                      .replace(/^data:image\/\w+;base64,/, '')
+                        );
+                    };
+                    reader.onerror = () => {
+                        resolve(
+                            canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, '')
+                        );
+                    };
+                    reader.readAsDataURL(blob);
+                },
+                format,
+                quality
+            );
         };
         img.onerror = () => {
             clearTimeout(timeoutId);

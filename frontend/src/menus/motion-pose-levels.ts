@@ -347,7 +347,38 @@ async function _batchScreenshot(presets: CameraAnglePreset[], modelId: string): 
             // 截图
             const fmt = uiState.screenshotFormat ?? 'image/png';
             const q = uiState.screenshotQuality ?? 0.9;
-            let base64 = dom.canvas.toDataURL(fmt, q).replace(/^data:image\/\w+;base64,/, '');
+            // 异步编码：toBlob 移至后台线程，避免低端机 OOM（ADR-017 A2-04）
+            const base64 = await new Promise<string>((resolve) => {
+                dom.canvas.toBlob(
+                    (blob) => {
+                        if (!blob) {
+                            resolve(
+                                dom.canvas.toDataURL(fmt, q).replace(/^data:image\/\w+;base64,/, '')
+                            );
+                            return;
+                        }
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                            const r = reader.result;
+                            resolve(
+                                typeof r === 'string'
+                                    ? r.replace(/^data:image\/\w+;base64,/, '')
+                                    : dom.canvas
+                                          .toDataURL(fmt, q)
+                                          .replace(/^data:image\/\w+;base64,/, '')
+                            );
+                        };
+                        reader.onerror = () => {
+                            resolve(
+                                dom.canvas.toDataURL(fmt, q).replace(/^data:image\/\w+;base64,/, '')
+                            );
+                        };
+                        reader.readAsDataURL(blob);
+                    },
+                    fmt,
+                    q
+                );
+            });
 
             // 水印
             base64 = await applyWatermark(base64, fmt, q);
