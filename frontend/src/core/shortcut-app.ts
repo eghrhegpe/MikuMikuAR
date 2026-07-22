@@ -22,7 +22,7 @@ import { navActions, navLabels } from './events';
 export function registerAppShortcuts(): void {
     registerShortcuts([
         {
-            id: 'toggle:models',
+            id: 'toggle:model',
             label: 'shortcuts.label.models',
             defaultKey: 'Digit1',
             defaultCtrl: true,

@@ -3018,17 +3018,19 @@ textarea,
 @media (prefers-contrast: more) {
     :root {
         --accent: #ffff00;
-        --bg-panel: #000000;
-        --text-primary: #ffffff;
+        --bg-scene: #000000;
+        --text: #ffffff;
+        --text-bright: #ffffff;
+        --card-bg: #000000;
     }
     .slide-item {
-        border: 1px solid var(--text-primary);
+        border: 1px solid var(--text);
     }
 }
 
-/* 深色模式：仅在用户未自定义主题时生效（通过 :root[data-theme="auto"] 守卫） */
+/* 深色模式：跟随系统（无需 JS 守卫，浏览器自动匹配 prefers-color-scheme） */
 @media (prefers-color-scheme: dark) {
-    :root[data-theme='auto'] {
+    :root {
         --bg-scene: #0a0a14;
         --card-bg: #12121e;
         --text: #e0e0e0;

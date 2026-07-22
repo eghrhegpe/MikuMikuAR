@@ -12,18 +12,35 @@ vi.mock('@/scene/render/lighting', () => ({
 }));
 vi.mock('@/scene/motion/perception', () => ({
     getPerceptionState: vi.fn(() => ({})),
+    getPerceptionStateFor: vi.fn(() => ({})),
     setPerceptionState: vi.fn(),
+    setPerceptionStateFor: vi.fn(),
 }));
+vi.mock('@/scene/motion/motion-modules/registry', () => ({
+    getModuleDefaultParam: vi.fn(),
+    getModuleConflicts: vi.fn(() => []),
+}));
+vi.mock('@/core/state', async (importOriginal) => {
+    const actual = await vi.importActual<typeof import('../core/state')>('../core/state');
+    return {
+        ...actual,
+        focusedModelId: null as string | null,
+        modelRegistry: new Map(),
+    };
+});
 
 import { renderMenu } from '../menus/render-menu';
 import type { MenuNode } from '../menus/menu-schema';
 import { envState } from '../core/config';
-import { uiState, setUIState } from '../core/state';
+import { uiState, setUIState, focusedModelId, modelRegistry } from '../core/state';
 import { setLang, getLang } from '../core/i18n/locale';
 import type { LangCode } from '../core/i18n/locale';
 import { setLightState } from '../scene/render/lighting';
-import { setPerceptionState } from '../scene/motion/perception';
+import { setPerceptionState, getPerceptionStateFor, setPerceptionStateFor } from '../scene/motion/perception';
 import { setEnvState } from '../scene/scene';
+import { getStateValue, setStateValue } from '../menus/menu-schema';
+import { getModuleDefaultParam } from '../scene/motion/motion-modules/registry';
+import { getModuleConflicts } from '../scene/motion/motion-modules/registry';
 
 // ─── ADR-093 Menu Schema PoC 验证 ─────────────────────────────
 // 覆盖 §6 要求：各 kind 渲染 / visibleWhen 守卫 / renderCustom dispose 级联 / i18n 热切换
@@ -734,6 +751,176 @@ describe('ADR-093 Menu Schema PoC', () => {
                 envState.groundType = original;
                 vi.clearAllMocks();
             }
+        });
+    });
+
+    // ═══════════════════════════════════════════════════════
+    // §6.10 motionModule. StatePath 前缀
+    // ═══════════════════════════════════════════════════════
+    describe('motionModule. StatePath 前缀', () => {
+        const TEST_MID = 'test-model-1';
+
+        beforeEach(() => {
+            vi.clearAllMocks();
+            (focusedModelId as { value: string | null }).value = TEST_MID;
+            modelRegistry.set(TEST_MID, {
+                motionOverrideModules: [
+                    { id: 'gaze', enabled: true, params: { headYawRange: 45 } },
+                ],
+            } as any);
+        });
+
+        afterEach(() => {
+            (focusedModelId as { value: string | null }).value = null;
+            modelRegistry.clear();
+        });
+
+        it('reads from modelRegistry motionOverrideModules', () => {
+            expect(getStateValue('motionModule.gaze.headYawRange')).toBe(45);
+        });
+
+        it('falls back to getModuleDefaultParam when undefined', () => {
+            (getModuleDefaultParam as ReturnType<typeof vi.fn>).mockReturnValue(30);
+            expect(getStateValue('motionModule.gaze.breathAmp')).toBe(30);
+            expect(getModuleDefaultParam).toHaveBeenCalledWith('gaze', 'breathAmp');
+        });
+
+        it('writes create module state if not exists', () => {
+            setStateValue('motionModule.newMod.someParam', 0.75);
+            const inst = modelRegistry.get(TEST_MID);
+            const mod = inst?.motionOverrideModules?.find((m) => m.id === 'newMod');
+            expect(mod).toBeTruthy();
+            expect(mod!.params.someParam).toBe(0.75);
+        });
+
+        it('returns undefined when no focused model', () => {
+            (focusedModelId as { value: string | null }).value = null;
+            expect(getStateValue('motionModule.gaze.headYawRange')).toBeUndefined();
+        });
+    });
+
+    // ═══════════════════════════════════════════════════════
+    // §6.11 modeRow kind 渲染
+    // ═══════════════════════════════════════════════════════
+    describe('modeRow kind 渲染', () => {
+        it('renders horizontal button group with active state', () => {
+            const schema: MenuNode[] = [
+                {
+                    id: 't:modeRow',
+                    kind: 'modeRow',
+                    label: 'env.skyMode',
+                    control: {
+                        bind: 'env.skyMode',
+                        options: [
+                            { value: 'color', label: 'env.solid' },
+                            { value: 'texture', label: 'env.texture' },
+                        ],
+                    },
+                },
+            ];
+            renderMenu(schema, container);
+            const typeRow = container.querySelector('.type-row');
+            expect(typeRow).toBeTruthy();
+            const btns = typeRow!.querySelectorAll('.mode-btn');
+            expect(btns.length).toBe(2);
+        });
+
+        it('clicking button triggers onChange and updates state', () => {
+            const schema: MenuNode[] = [
+                {
+                    id: 't:modeRow2',
+                    kind: 'modeRow',
+                    label: 'env.skyMode',
+                    control: {
+                        bind: 'env.skyMode',
+                        options: [
+                            { value: 'color', label: 'env.solid' },
+                            { value: 'texture', label: 'env.texture' },
+                        ],
+                    },
+                },
+            ];
+            renderMenu(schema, container);
+            const btns = container.querySelectorAll('.mode-btn');
+            expect(btns.length).toBe(2);
+            (btns[1] as HTMLElement).click();
+            expect(setEnvState).toHaveBeenCalledWith({ skyMode: 'texture' });
+        });
+    });
+
+    // ═══════════════════════════════════════════════════════
+    // §6.12 conflictHint 冲突标记（ADR-163）
+    // ═══════════════════════════════════════════════════════
+    describe('conflictHint 冲突标记', () => {
+        const TEST_MID = 'conflict-model';
+
+        beforeEach(() => {
+            vi.clearAllMocks();
+            (focusedModelId as { value: string | null }).value = TEST_MID;
+        });
+
+        afterEach(() => {
+            (focusedModelId as { value: string | null }).value = null;
+        });
+
+        it('shows warning icon when module conflicts exist', () => {
+            (getModuleConflicts as ReturnType<typeof vi.fn>).mockReturnValue([
+                { bone: 'Head', byModule: 'breath' },
+            ]);
+            const schema: MenuNode[] = [
+                {
+                    id: 't:conflict',
+                    kind: 'slider',
+                    label: 'env.groundPitch',
+                    control: { bind: 'env.groundPitch', min: 0, max: 90, step: 1 },
+                    conflictHint: 'perception.gaze.head',
+                },
+            ];
+            renderMenu(schema, container);
+            const warnIcon = container.querySelector('iconify-icon');
+            expect(warnIcon).toBeTruthy();
+            expect((warnIcon as HTMLElement).style.color).toContain('e0a030');
+        });
+
+        it('no icon when no conflicts', () => {
+            (getModuleConflicts as ReturnType<typeof vi.fn>).mockReturnValue([]);
+            const schema: MenuNode[] = [
+                {
+                    id: 't:noConflict',
+                    kind: 'slider',
+                    label: 'env.groundPitch',
+                    control: { bind: 'env.groundPitch', min: 0, max: 90, step: 1 },
+                    conflictHint: 'perception.gaze.head',
+                },
+            ];
+            renderMenu(schema, container);
+            const warnIcon = container.querySelector('iconify-icon');
+            expect(warnIcon).toBeNull();
+        });
+    });
+
+    // ═══════════════════════════════════════════════════════
+    // §6.13 modelId override（ADR-166）
+    // ═══════════════════════════════════════════════════════
+    describe('modelId override', () => {
+        beforeEach(() => {
+            vi.clearAllMocks();
+        });
+
+        it('perception. uses getPerceptionStateFor with node modelId', () => {
+            (getPerceptionStateFor as ReturnType<typeof vi.fn>).mockReturnValue({
+                eyeTrackingEnabled: true,
+            });
+            const val = getStateValue('perception.eyeTrackingEnabled', 'other-model');
+            expect(getPerceptionStateFor).toHaveBeenCalledWith('other-model');
+            expect(val).toBe(true);
+        });
+
+        it('perception. set uses setPerceptionStateFor with node modelId', () => {
+            setStateValue('perception.eyeTrackingEnabled', false, 'other-model');
+            expect(setPerceptionStateFor).toHaveBeenCalledWith('other-model', {
+                eyeTrackingEnabled: false,
+            });
         });
     });
 });
