@@ -25,6 +25,7 @@ function getToastContainer(): HTMLElement {
     container.id = 'mmk-toast-container';
     container.setAttribute('role', 'status');
     container.setAttribute('aria-live', 'polite');
+    container.setAttribute('aria-atomic', 'true');
     container.style.cssText = [
         'position:fixed;top:64px;left:50%;transform:translateX(-50%)',
         'display:flex;flex-direction:column;align-items:center;gap:8px;z-index:9999',
