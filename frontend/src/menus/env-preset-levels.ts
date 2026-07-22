@@ -160,6 +160,7 @@ export const SCENE_PRESETS: Record<string, EnvPresetConfig> = {
             skyColorTop: [0.05, 0.05, 0.15],
             skyColorBot: [0.1, 0.05, 0.15],
             envIntensity: 0.5,
+            envBrightness: 1,
             particleEnabled: false,
         },
         lights: {
@@ -178,6 +179,7 @@ export const SCENE_PRESETS: Record<string, EnvPresetConfig> = {
             skyColorBot: [0.6, 0.8, 1],
             skyBrightness: 2,
             envIntensity: 1.5,
+            envBrightness: 1,
         },
         lights: {
             hemiIntensity: 1,
@@ -195,6 +197,7 @@ export const SCENE_PRESETS: Record<string, EnvPresetConfig> = {
             skyColorMid: [0.2, 0.05, 0.4],
             skyColorBot: [0.1, 0.02, 0.2],
             envIntensity: 0.3,
+            envBrightness: 1,
             particleEnabled: true,
             particleType: 'fireworks',
         },
@@ -213,6 +216,7 @@ export const SCENE_PRESETS: Record<string, EnvPresetConfig> = {
             skyColorTop: [0.4, 0.4, 0.45],
             skyColorBot: [0.25, 0.25, 0.3],
             envIntensity: 0.8,
+            envBrightness: 1,
             particleEnabled: false,
         },
         lights: {
@@ -231,6 +235,7 @@ export const SCENE_PRESETS: Record<string, EnvPresetConfig> = {
             skyColorBot: [0.6, 0.2, 0.1],
             skyBrightness: 1.2,
             envIntensity: 0.7,
+            envBrightness: 1,
             particleEnabled: false,
         },
         lights: {
@@ -249,6 +254,7 @@ export const SCENE_PRESETS: Record<string, EnvPresetConfig> = {
             skyColorBot: [0.15, 0.18, 0.22],
             skyBrightness: 0.5,
             envIntensity: 0.4,
+            envBrightness: 1,
             particleEnabled: true,
             particleType: 'rain',
         },
@@ -267,6 +273,7 @@ export const SCENE_PRESETS: Record<string, EnvPresetConfig> = {
             skyColorBot: [0.7, 0.6, 0.75],
             skyBrightness: 1.5,
             envIntensity: 1.2,
+            envBrightness: 1,
             particleEnabled: true,
             particleType: 'sakura',
         },
@@ -286,6 +293,7 @@ export const SCENE_PRESETS: Record<string, EnvPresetConfig> = {
             skyColorBot: [0.15, 0.02, 0.2],
             skyBrightness: 0.8,
             envIntensity: 0.3,
+            envBrightness: 1,
             particleEnabled: true,
             particleType: 'fireflies',
         },
