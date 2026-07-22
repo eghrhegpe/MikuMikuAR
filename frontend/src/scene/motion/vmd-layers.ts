@@ -56,8 +56,10 @@ const VMD_BONE_FRAME_SIZE = 111; // 标准 VMD 骨骼帧大小（15 骨骼名 + 
  * 过滤 VMD 二进制数据，只保留指定骨骼的关键帧。
  * 在 VMD 二进制层面操作，完整保留插值曲线、morph 帧、相机帧等所有其他数据。
  * @returns 新的 VMD ArrayBuffer，或 boneFilter 为空时返回原始引用
+ *
+ * @internal — exported for testing
  */
-function _filterVmdBones(data: ArrayBuffer, boneFilter: string[]): ArrayBuffer {
+export function _filterVmdBones(data: ArrayBuffer, boneFilter: string[]): ArrayBuffer {
     if (boneFilter.length === 0) {
         return data;
     }

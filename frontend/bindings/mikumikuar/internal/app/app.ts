@@ -793,6 +793,13 @@ export function SelectExeFile(): $CancellablePromise<string> {
 }
 
 /**
+ * SelectRetargetFile opens a file dialog to select an external animation file (FBX/GLB/GLTF) for retargeting.
+ */
+export function SelectRetargetFile(): $CancellablePromise<string> {
+    return $Call.ByID(432308705);
+}
+
+/**
  * SelectImportFile opens a file dialog to select PMX / ZIP / VMD files.
  */
 export function SelectImportFile(): $CancellablePromise<string> {

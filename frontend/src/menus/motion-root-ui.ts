@@ -21,7 +21,7 @@ import { buildMotionToolsLevel } from './motion-detail-ui';
 import { clearAudio, getAudioName } from '../outfit/audio';
 import { t } from '../core/i18n/t';
 import { logWarn } from '../core/logger';
-import { SelectImportFile } from '../core/wails-bindings';
+import { SelectRetargetFile } from '../core/wails-bindings';
 import {
     loadAndRetargetAnimation,
     playRetargetedAnimation,
@@ -234,7 +234,7 @@ export async function importExternalAnimation(
 ): Promise<void> {
     let path: string;
     try {
-        path = await SelectImportFile();
+        path = await SelectRetargetFile();
     } catch {
         return; // 用户取消
     }
@@ -261,6 +261,6 @@ export async function importExternalAnimation(
     }
 
     closeAllOverlays();
-    playRetargetedAnimation(scene, result);
+    playRetargetedAnimation(scene, result, path);
     setStatus(t('motion.retarget.loaded', { preset }), true);
 }

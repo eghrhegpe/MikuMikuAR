@@ -1,5 +1,15 @@
 # 第⑤轮审核 — VMD 加载 + 图层
 
+> **处置记录（2026-07-22）**：
+> - 🔴 P1 `vmd-layers.ts` 零测试 → ✅ 已添加 `_filterVmdBones` 13 项单元测试（`vmd-layers-filter.test.ts`）
+> - 🔴 P1 `vmd-loader.ts` `isValidVmd` 零测试 → ⬜ 待处理
+> - 🟠 P2 `vmd-layers.ts` 双重 cast → ✅ 已消除（代码重构后直接使用 module augmentation 类型增强）
+> - 🟠 P2 `vmd-layers.ts` 611 行超限 → ⬜ 已增长至 732 行，提单待拆分
+> - 🟠 P2 `wasm-layers-blender.ts` `_applyLayersBlending` 零功能测试 → ⬜ 待处理（需 WASM 管线 mock）
+> - 🟡 P3 `vmd-layers.ts` 权重归一化除零 → ✅ 已修复（`totalWeight > 0` 守卫，L615）
+> - 🟡 P3 `wasm-layers-blender.ts` 循环依赖 scene.ts → ✅ 已通过依赖注入 `initWasmLayersBlender` 消除
+> - 🟢 P4 骨骼名编码统一 → ⬜ 待处理
+
 ## vmd-loader.ts (318行)
 
 **总体结论：⚠️ 有条件通过**

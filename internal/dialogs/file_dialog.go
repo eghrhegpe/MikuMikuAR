@@ -92,8 +92,17 @@ func SelectExe(wailsApp *application.App, startDir string) (string, error) {
 	return OpenFile(wailsApp, "选择可执行文件", exeFilters, startDir)
 }
 
+func SelectRetarget(wailsApp *application.App, startDir string) (string, error) {
+	return OpenFile(wailsApp, "选择外部动画文件", retargetFilters, startDir)
+}
+
 var presetFilters = []application.FileFilter{
 	{DisplayName: "MikuMikuAR Model Preset (*.mcupreset.json)", Pattern: "*.mcupreset.json"},
+	{DisplayName: "All Files (*.*)", Pattern: "*.*"},
+}
+
+var retargetFilters = []application.FileFilter{
+	{DisplayName: "Animation Files (*.fbx *.glb *.gltf)", Pattern: "*.fbx;*.glb;*.gltf"},
 	{DisplayName: "All Files (*.*)", Pattern: "*.*"},
 }
 

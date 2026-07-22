@@ -127,6 +127,13 @@ import {
     isAllPerceptionEnabled,
     type PerceptionState,
 } from './motion/perception';
+import {
+    getRetargetPlayState,
+    stopCurrentRetarget,
+    loadAndRetargetAnimation,
+    playRetargetedAnimation,
+    restoreRetargetAnimation,
+} from './motion/animation-retargeter';
 
 // ======== Utilities ========
 
@@ -337,6 +344,14 @@ export interface SceneFile {
         source?: 'vmd' | 'retargeted';
         motionModules?: MotionModuleState[];
         procMotion?: Partial<ProcMotionState>;
+    } | null;
+    /** [doc:adr-108] 当前活跃的 retarget 动画状态（外部动作重定向）。
+     *  仅存储源文件路径和骨骼映射预设；AnimationGroup 不可序列化，
+     *  反序列化时需重新执行 loadAndRetargetAnimation。 */
+    retarget?: {
+        filePath: string;
+        libraryRef?: string;
+        boneMapPreset: string;
     } | null;
 }
 
@@ -549,6 +564,18 @@ export function serializeScene(): SceneFile {
                     procMotion: m.procMotion,
                 })),
                 activeMotionId,
+            };
+        })(),
+        // [doc:adr-108] 序列化当前活跃的 retarget 动画状态
+        retarget: (() => {
+            const state = getRetargetPlayState();
+            if (!state) {
+                return null;
+            }
+            return {
+                filePath: state.filePath,
+                libraryRef: computeLibraryRef(state.filePath) || undefined,
+                boneMapPreset: state.boneMapPreset,
             };
         })(),
     };
@@ -1168,6 +1195,29 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
     } else {
         // 旧场景文件无 motion 块 → 保持已有 vmdPath 缓存（与当前行为一致）
         // 不调用 clearAllSceneMotions 避免覆盖每模型独立 VMD
+    }
+
+    // [doc:adr-108] 恢复 retarget 动画状态（在模型加载完成后执行）
+    if (data.retarget && data.retarget.filePath) {
+        const resolvedPath = resolvePathFromRef(
+            data.retarget.filePath,
+            data.retarget.libraryRef
+        );
+        if (resolvedPath) {
+            const foc = modelManager.focused();
+            if (foc) {
+                const preset = data.retarget.boneMapPreset as 'mixamo' | 'vrm' | 'custom';
+                await restoreRetargetAnimation(resolvedPath, preset, foc.id).catch(
+                    (err) => {
+                        logWarn(
+                            'scene-serialize',
+                            'retarget 动画恢复失败:',
+                            err
+                        );
+                    }
+                );
+            }
+        }
     }
 
     // --- Report loading errors ---
