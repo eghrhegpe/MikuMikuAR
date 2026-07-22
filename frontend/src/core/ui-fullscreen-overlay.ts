@@ -3,7 +3,6 @@
 // 所有关闭入口统一调用 closeFullscreen()
 
 import { logWarn } from './logger';
-import { addDisposableListener } from './dom';
 import { createFocusTrap } from './ui-focus-trap';
 import { createKeyboardNav } from './ui-keyboard-nav';
 import { t } from './i18n/t';

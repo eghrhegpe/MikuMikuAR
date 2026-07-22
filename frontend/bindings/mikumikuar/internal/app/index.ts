@@ -23,6 +23,7 @@ export type {
     PlazaDownloadResult,
     RenderPreset,
     SoftwareEntry,
+    SystemA11ySettings,
     UIState,
     UpdateCheckResult
 } from "./models.js";

@@ -12,10 +12,10 @@ import { getEnvMenu } from './env-menu-state';
 /** 通用的环境功能层级构建器：包裹 cardContainer + renderMenu 模板 */
 export function _buildLevel(
     label: string,
-    buildSchema: (c: HTMLElement) => void,
-    buildExtraSegments?: Array<(c: HTMLElement) => void>
+    buildSchema: (c: HTMLElement) => (() => void) | void,
+    buildExtraSegments?: Array<(c: HTMLElement) => (() => void) | void>
 ): PopupLevel {
-    const segments: Array<(c: HTMLElement) => void> = buildExtraSegments
+    const segments: Array<(c: HTMLElement) => (() => void) | void> = buildExtraSegments
         ? [buildSchema, ...buildExtraSegments]
         : [buildSchema];
     return {
@@ -23,8 +23,13 @@ export function _buildLevel(
         dir: '',
         items: [],
         renderCustom: (container) => {
+            const disposes: (() => void)[] = [];
             for (const seg of segments) {
-                cardContainer(container, seg);
+                const d = cardContainer(container, seg);
+                if (typeof d === 'function') disposes.push(d);
+            }
+            if (disposes.length > 0) {
+                return () => { for (const d of disposes) d(); };
             }
         },
     };
