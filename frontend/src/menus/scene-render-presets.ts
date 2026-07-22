@@ -128,6 +128,18 @@ const FILTER_PRESETS: Record<string, Partial<RenderState>> = {
         ssaoStrength: 0.7,
         ssaoRadius: 0.6,
     },
+    // --- 动漫风 — 柔和调色(cel) + 描边，一键 anime 观感（依赖 renderer.ts 缺口#1 修复，cel 参数可被忠实还原）---
+    anime: {
+        celShadingMode: true,
+        outlineEnabled: true,
+        outlineColor: [0, 0, 0],
+        toneMapping: 1,
+        exposure: 0.7,
+        contrast: 1.4,
+        bloomEnabled: true,
+        bloomWeight: 0.3,
+        fxaaEnabled: true,
+    },
 };
 
 // 预设名/描述 → i18n key 映射（热切换安全：仅存 key，不含中文）
@@ -138,6 +150,7 @@ export const FILTER_PRESET_LABELS: Record<string, string> = {
     realistic: 'scene.preset.realistic',
     warm: 'scene.preset.warm',
     cyberpunk: 'scene.preset.cyberpunk',
+    anime: 'scene.preset.anime',
 };
 
 const FILTER_PRESET_DESCS: Record<string, string> = {
@@ -147,6 +160,7 @@ const FILTER_PRESET_DESCS: Record<string, string> = {
     realistic: 'scene.presetDesc.realistic',
     warm: 'scene.presetDesc.warm',
     cyberpunk: 'scene.presetDesc.cyberpunk',
+    anime: 'scene.presetDesc.anime',
 };
 
 export function getFilterPreset(name: string): Partial<RenderState> | undefined {

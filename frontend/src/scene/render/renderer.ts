@@ -49,6 +49,8 @@ export interface RenderState {
     // Phase 8 — DOF + Vignette
     dofEnabled: boolean;
     dofAperture: number; // 0-1, default 0（内部映射到 fStop 0.5~10）
+    dofFocusDistance: number; // 对焦距离（场景单位，默认 22 ≈ 模型距离）
+    dofFocalLength: number; // 焦距（mm，默认 50）
     vignetteEnabled: boolean;
     vignetteDarkness: number; // 0-1, default 0
     // Phase 9 — 色差 + 颗粒
@@ -162,6 +164,8 @@ export function getRenderState(): RenderState {
         dofAperture: pipeline.depthOfField
             ? clamp((10 - pipeline.depthOfField.fStop) / 9.5, 0, 1)
             : 0,
+        dofFocusDistance: pipeline.depthOfField ? pipeline.depthOfField.focusDistance : 22,
+        dofFocalLength: pipeline.depthOfField ? pipeline.depthOfField.focalLength : 50,
         vignetteEnabled: pipeline.imageProcessing.vignetteEnabled ?? false,
         vignetteDarkness: pipeline.imageProcessing.vignetteWeight ?? 0,
         chromaticAberrationEnabled: pipeline.chromaticAberrationEnabled ?? false,
@@ -196,6 +200,8 @@ export function defaultRenderState(): RenderState {
         contrast: 1,
         dofEnabled: false,
         dofAperture: 0,
+        dofFocusDistance: 22,
+        dofFocalLength: 50,
         vignetteEnabled: false,
         vignetteDarkness: 0,
         chromaticAberrationEnabled: false,
@@ -257,6 +263,10 @@ function _applyRenderState(s: Partial<RenderState>): void {
     const e = s.exposure !== undefined ? clamp(s.exposure, 0, 4) : undefined;
     const c = s.contrast !== undefined ? clamp(s.contrast, 0, 4) : undefined;
     const da = s.dofAperture !== undefined ? clamp(s.dofAperture, 0, 1) : undefined;
+    const dfd =
+        s.dofFocusDistance !== undefined ? clamp(s.dofFocusDistance, 1, 300) : undefined;
+    const dfl =
+        s.dofFocalLength !== undefined ? clamp(s.dofFocalLength, 20, 200) : undefined;
     const vd = s.vignetteDarkness !== undefined ? clamp(s.vignetteDarkness, 0, 1) : undefined;
     const ca =
         s.chromaticAberrationAmount !== undefined
@@ -307,6 +317,13 @@ function _applyRenderState(s: Partial<RenderState>): void {
     }
     if (da !== undefined && pipeline.depthOfField) {
         pipeline.depthOfField.fStop = 10 - da * 9.5; // 0→清晰(f10), 1→虚化(f0.5)
+    }
+    // 对焦距离 / 焦距 — 直接写入 DepthOfFieldEffect（场景单位 / mm）
+    if (dfd !== undefined && pipeline.depthOfField) {
+        pipeline.depthOfField.focusDistance = dfd;
+    }
+    if (dfl !== undefined && pipeline.depthOfField) {
+        pipeline.depthOfField.focalLength = dfl;
     }
 
     // Vignette
@@ -419,13 +436,16 @@ function _applyRenderState(s: Partial<RenderState>): void {
             // 保存当前状态 → 切换到预设
             _originalRenderState = getRenderState();
             _celShadingMode = true;
+            // [doc:adr-076] 修复缺口#1：尊重调用方已提供的字段（如保存的 cel 预设携带自定义
+            // exposure/contrast 等），仅对未提供的字段回填默认 cel 观感。否则保存的 cel 观感
+            // 会被硬编码覆盖，无法忠实还原（违反预设系统"保存当前观感→精确还原"契约）。
             _applyRenderState({
-                exposure: 0.7,
-                contrast: 1.4,
-                toneMapping: ToneMappingMode.ACES,
-                bloomEnabled: true,
-                bloomWeight: 0.25,
-                fxaaEnabled: true,
+                exposure: s.exposure ?? 0.7,
+                contrast: s.contrast ?? 1.4,
+                toneMapping: s.toneMapping ?? ToneMappingMode.ACES,
+                bloomEnabled: s.bloomEnabled ?? true,
+                bloomWeight: s.bloomWeight ?? 0.25,
+                fxaaEnabled: s.fxaaEnabled ?? true,
             });
         } else {
             // 恢复到快照状态
@@ -685,6 +705,8 @@ export function transitionRenderState(
         'exposure',
         'contrast',
         'dofAperture',
+        'dofFocusDistance',
+        'dofFocalLength',
         'vignetteDarkness',
         'chromaticAberrationAmount',
         'grainIntensity',

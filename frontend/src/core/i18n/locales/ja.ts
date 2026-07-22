@@ -752,6 +752,8 @@ export const ja: Record<string, string> = {
     'scene.outline': 'アウトライン',
     'scene.antialiasing': 'アンチエイリアス',
     'scene.dof': '被写界深度',
+    'scene.dofFocus': 'フォーカス距離',
+    'scene.dofFocal': '焦点距離',
     'scene.vignette': 'ビネット',
     'scene.chromatic': '色収差',
     'scene.grain': 'グレイン',
@@ -848,10 +850,11 @@ export const ja: Record<string, string> = {
 
     'scene.preset.standard': '標準',
     'scene.preset.cinematic': 'シネマティック',
-    'scene.preset.cartoon': 'カートゥーン',
+    'scene.preset.cartoon': 'アウトライン',
     'scene.preset.realistic': 'リアリスティック',
     'scene.preset.warm': '暖色',
     'scene.preset.cyberpunk': 'サイバーパンク',
+    'scene.preset.anime': 'アニメ',
     'scene.presetDesc.standard': '標準トーンマッピング・基準参照',
     'scene.presetDesc.cinematic':
         'ACESトーンマッピング・フィルムカーブ・自然なハイライトロールオフ',
@@ -860,6 +863,7 @@ export const ja: Record<string, string> = {
     'scene.presetDesc.warm': 'Cineonトーンマッピング・暖色背景・フィルム調',
     'scene.presetDesc.cyberpunk':
         'Neutralトーンマッピング・ハイライトブルーム・極端なポストプロセス',
+    'scene.presetDesc.anime': 'ソフト調色 + 黒アウトライン · ワンクリックでアニメ風',
     'scene.saveCurrentAsPreset': '現在の設定をプリセットとして保存',
     'scene.promptPresetName': 'プリセット名を入力してください:',
     'scene.statusSavePresetFailed': '✗ プリセットの保存に失敗しました',
@@ -1692,6 +1696,8 @@ export const ja: Record<string, string> = {
     'motion.poseStudio.depthOfField': '被写界深度',
     'motion.poseStudio.diagonal': '対角線',
     'motion.poseStudio.dofAmount': 'ボケ量',
+    'motion.poseStudio.dofFocus': 'フォーカス距離',
+    'motion.poseStudio.dofFocal': '焦点距離',
     'motion.poseStudio.goldenRatio': '黄金比',
     'motion.poseStudio.noModel': '⚠ 先にモデルを読み込んでください',
     'motion.poseStudio.off': 'オフ',
