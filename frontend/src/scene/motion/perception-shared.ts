@@ -81,6 +81,8 @@ export interface MmdModelLike {
     mesh: {
         metadata?: MeshMetadata;
         morphTargetManager?: MorphTargetManager;
+        /** rootMesh 世界矩阵（含 scaling/rotation/translation） */
+        getWorldMatrix?(): unknown;
     };
 }
 
@@ -429,4 +431,24 @@ export class PerceptionPerfMonitor {
         if (t === 'medium') return 'high';
         return 'high';
     }
+}
+
+// ── Gaze 收敛日志（调试用，窗口设 window.__GAZE_LOG = true 启用） ──
+
+let _gazeLogFrame = 0;
+let _gazeLogEnabled = false;
+
+export function _enableGazeLog(enabled: boolean): void {
+    _gazeLogEnabled = enabled;
+}
+export function _incGazeLogFrame(): void {
+    _gazeLogFrame++;
+}
+export function _gazeLog(...args: unknown[]): void {
+    if (_gazeLogEnabled || (typeof window !== 'undefined' && (window as any).__GAZE_LOG)) console.log(`[GAZE:${_gazeLogFrame}]`, ...args);
+}
+/** 两四元数夹角（度） */
+export function _qAngleDeg(a: Quaternion, b: Quaternion): number {
+    const dot = Math.abs(a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w);
+    return 2 * Math.acos(Math.min(dot, 1)) * 180 / Math.PI;
 }

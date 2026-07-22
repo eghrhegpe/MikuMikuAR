@@ -11,6 +11,8 @@ import {
     _gazeAlpha,
     _writeMatToBuffer,
     _propagateChildrenWasm,
+    _gazeLog,
+    _qAngleDeg,
     type GazeCache,
 } from './perception-shared';
 import {
@@ -35,6 +37,7 @@ export function _applyHeadGazeWasm(
         Quaternion.FromRotationMatrix(oldHeadMat.getRotationMatrix())
     );
 
+    // ── 方向说明：bonePos - cameraPos（理由同 JS head 注释） ──
     const lookDir = headPos.subtractToRef(gazeTarget, _v3());
     const lookLen = Math.sqrt(lookDir.x ** 2 + lookDir.y ** 2 + lookDir.z ** 2);
     if (lookLen <= 0.0001) {
@@ -56,9 +59,10 @@ export function _applyHeadGazeWasm(
     } else {
         parentWorldQ.copyFrom(Quaternion.Identity());
     }
+    const clampedTarget = _clampHeadGazeTarget(oldHeadRotQ, targetWorldQ, parentWorldQ);
     const alpha = _gazeAlpha(0.7, dt);
-    const blended = _q().copyFrom(Quaternion.Slerp(oldHeadRotQ, targetWorldQ, alpha));
-    const finalQ = _clampHeadGazeTarget(blended, blended, parentWorldQ);
+    const finalQ = _q().copyFrom(Quaternion.Slerp(oldHeadRotQ, clampedTarget, alpha));
+    _gazeLog('HEAD', headRuntime.linkedBone?.name, 'dt', dt.toFixed(4), 'α', alpha.toFixed(4), 'err→', _qAngleDeg(oldHeadRotQ, targetWorldQ).toFixed(1), 'clamp', _qAngleDeg(clampedTarget, targetWorldQ).toFixed(1), 'err←', _qAngleDeg(finalQ, targetWorldQ).toFixed(1));
 
     if (cache) {
         if (!cache.headWorldQ) cache.headWorldQ = new Quaternion();
@@ -87,6 +91,7 @@ export function _applyEyeGazeWasm(
     }
     eyeCenter.scaleInPlace(1 / eyeRuntimes.length);
 
+    // ── 方向说明：bonePos - cameraPos（理由同 JS head 注释） ──
     const lookDir = eyeCenter.subtractToRef(gazeTarget, _v3());
     if (lookDir.lengthSquared() < 0.0001) {
         return;
@@ -115,9 +120,10 @@ export function _applyEyeGazeWasm(
             ? _q().copyFrom(parentWorldQ).multiplyInPlace(cachedLocal)
             : _q().copyFrom(Quaternion.FromRotationMatrix(eyeMat.getRotationMatrix()));
 
+        const clampedTarget = _clampGazeTargetInParentFrame(curEyeQ, targetWorldQ, parentWorldQ, getEyeGazeMaxYaw(), getEyeGazeMaxPitch());
         const alpha = _gazeAlpha(getEyeGazeSmooth(), dt);
-        const newEyeQ = _q().copyFrom(Quaternion.Slerp(curEyeQ, targetWorldQ, alpha));
-        const finalEyeQ = _clampGazeTargetInParentFrame(newEyeQ, newEyeQ, parentWorldQ, getEyeGazeMaxYaw(), getEyeGazeMaxPitch());
+        const finalEyeQ = _q().copyFrom(Quaternion.Slerp(curEyeQ, clampedTarget, alpha));
+        _gazeLog('EYE', boneName, 'dt', dt.toFixed(4), 'α', alpha.toFixed(4), 'err→', _qAngleDeg(curEyeQ, targetWorldQ).toFixed(1), 'clamp', _qAngleDeg(clampedTarget, targetWorldQ).toFixed(1), 'err←', _qAngleDeg(finalEyeQ, targetWorldQ).toFixed(1));
 
         const invParentQ = _q().copyFrom(parentWorldQ).invert();
         const localQ = _q().copyFrom(invParentQ).multiplyInPlace(finalEyeQ);

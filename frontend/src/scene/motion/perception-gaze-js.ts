@@ -4,7 +4,7 @@ import { Quaternion, Vector3, Matrix } from '@babylonjs/core/Maths/math.vector';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 
 import type { MmdRuntimeBoneExtended } from '@/core/types';
-import { _v3, _m, _q, _gazeAlpha, type GazeCache } from './perception-shared';
+import { _v3, _m, _q, _gazeAlpha, _gazeLog, _qAngleDeg, type GazeCache } from './perception-shared';
 import { _updateBoneChain } from './perception-breathing';
 import {
     _clampHeadGazeTarget,
@@ -29,6 +29,10 @@ export function _applyHeadGazeJS(
         Quaternion.FromRotationMatrix(oldHeadMat.getRotationMatrix())
     );
 
+    // ── 方向说明 ──
+    // Babylon.js FromLookDirectionRH 对齐 -Z 到 lookDir。
+    // MMD 骨骼 +Z = 朝前。要让骨骼 +Z 朝向相机，需 -Z 背对相机 → lookDir = 骨→相机（away from camera）。
+    // 即 bonePos - cameraPos。注意：此方向与直觉相反，已踩坑 3 次。
     const lookDir = headPos.subtractToRef(gazeTarget, _v3()).normalize();
     const targetWorldQ = _q().copyFrom(Quaternion.FromLookDirectionRH(lookDir, Vector3.UpReadOnly));
 
@@ -43,9 +47,10 @@ export function _applyHeadGazeJS(
 
     const parentInvQ = Quaternion.FromRotationMatrix(parentWorldInv);
     const parentWorldQ = _q().copyFrom(parentInvQ).invert();
+    const clampedTarget = _clampHeadGazeTarget(oldHeadRotQ, targetWorldQ, parentWorldQ);
     const alpha = _gazeAlpha(0.7, dt);
-    const blended = _q().copyFrom(Quaternion.Slerp(oldHeadRotQ, targetWorldQ, alpha));
-    const finalQ = _clampHeadGazeTarget(blended, blended, parentWorldQ);
+    const finalQ = _q().copyFrom(Quaternion.Slerp(oldHeadRotQ, clampedTarget, alpha));
+    _gazeLog('HEAD', headRuntime.linkedBone?.name, 'dt', dt.toFixed(4), 'α', alpha.toFixed(4), 'err→', _qAngleDeg(oldHeadRotQ, targetWorldQ).toFixed(1), 'clamp', _qAngleDeg(clampedTarget, targetWorldQ).toFixed(1), 'err←', _qAngleDeg(finalQ, targetWorldQ).toFixed(1));
     const localQ = _q();
     parentInvQ.multiplyToRef(finalQ, localQ);
 
@@ -79,6 +84,7 @@ export function _applyEyeGazeJS(
     }
     eyeCenter.scaleInPlace(1 / eyeRuntimes.length);
 
+    // ── 方向说明：bonePos - cameraPos（理由同上 head 注释） ──
     const lookDir = eyeCenter.subtractToRef(gazeTarget, _v3());
     if (lookDir.lengthSquared() < 0.0001) {
         return;
@@ -108,9 +114,10 @@ export function _applyEyeGazeJS(
             ? _q().copyFrom(parentWorldQ).multiplyInPlace(cachedLocal)
             : _q().copyFrom(Quaternion.FromRotationMatrix(eyeMat.getRotationMatrix()));
 
+        const clampedTarget = _clampGazeTargetInParentFrame(curWorldQ, targetWorldQ, parentWorldQ, getEyeGazeMaxYaw(), getEyeGazeMaxPitch());
         const alpha = _gazeAlpha(getEyeGazeSmooth(), dt);
-        const newWorldQ = _q().copyFrom(Quaternion.Slerp(curWorldQ, targetWorldQ, alpha));
-        const finalEyeQ = _clampGazeTargetInParentFrame(newWorldQ, newWorldQ, parentWorldQ, getEyeGazeMaxYaw(), getEyeGazeMaxPitch());
+        const finalEyeQ = _q().copyFrom(Quaternion.Slerp(curWorldQ, clampedTarget, alpha));
+        _gazeLog('EYE', boneName, 'dt', dt.toFixed(4), 'α', alpha.toFixed(4), 'err→', _qAngleDeg(curWorldQ, targetWorldQ).toFixed(1), 'clamp', _qAngleDeg(clampedTarget, targetWorldQ).toFixed(1), 'err←', _qAngleDeg(finalEyeQ, targetWorldQ).toFixed(1));
 
         const localQ = _q();
         parentInvQ.multiplyToRef(finalEyeQ, localQ);
