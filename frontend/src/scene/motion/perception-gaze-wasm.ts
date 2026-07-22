@@ -64,6 +64,8 @@ export function _applyHeadGazeWasm(
     if (cache) {
         if (!cache.headWorldQ) cache.headWorldQ = new Quaternion();
         cache.headWorldQ.copyFrom(finalQ);
+        if (!cache.headTargetWorldQ) cache.headTargetWorldQ = new Quaternion();
+        cache.headTargetWorldQ.copyFrom(clampedTargetQ);
     }
 
     const newHeadMat = _m().copyFrom(Matrix.Compose(Vector3.One(), finalQ, headPos));
@@ -97,12 +99,16 @@ export function _applyEyeGazeWasm(
     const targetWorldQ = _q().copyFrom(Quaternion.FromLookDirectionRH(lookDir, Vector3.UpReadOnly));
 
     const parentWorldQ = _q();
-    const eyeParentBone = eyeRuntimes[0].parentBone;
-    if (eyeParentBone) {
-        const pMat = _m().copyFrom(Matrix.FromArray(eyeParentBone.worldMatrix));
-        Quaternion.FromRotationMatrixToRef(pMat.getRotationMatrix(), parentWorldQ);
+    if (cache?.headTargetWorldQ) {
+        parentWorldQ.copyFrom(cache.headTargetWorldQ);
     } else {
-        parentWorldQ.copyFrom(Quaternion.Identity());
+        const eyeParentBone = eyeRuntimes[0].parentBone;
+        if (eyeParentBone) {
+            const pMat = _m().copyFrom(Matrix.FromArray(eyeParentBone.worldMatrix));
+            Quaternion.FromRotationMatrixToRef(pMat.getRotationMatrix(), parentWorldQ);
+        } else {
+            parentWorldQ.copyFrom(Quaternion.Identity());
+        }
     }
 
     for (const eyeRb of eyeRuntimes) {
