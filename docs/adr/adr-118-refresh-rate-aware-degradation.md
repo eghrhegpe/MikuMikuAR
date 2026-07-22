@@ -41,33 +41,44 @@
 - `RSCALE = 2.0` @120Hz → 阈值翻倍，正确校准高刷
 - `RSCALE = 1.5` @90Hz / `2.4` @144Hz → 线性适配
 
-### 2.2 Phase 1 实现（已落地）
+### 2.2 Phase 1 实现（已落地，Phase 2 重构为函数形式）
 
-`performance.ts` 阈值定义段改为：
+`performance.ts` 阈值定义段（Phase 2 将 Phase 1 的常量对象重构为函数，以支持运行时动态 `reference`）：
 
 ```typescript
 function detectRefreshRate(): number {
-    const r = (window.screen as unknown as { refreshRate?: number }).refreshRate;
-    return typeof r === 'number' && r > 0 ? r : 60; // 不支持时回落 60
+    try {
+        const r = (window.screen as ScreenWithRefreshRate).refreshRate;
+        if (typeof r === 'number' && Number.isFinite(r) && r > 0) {
+            return r;
+        }
+    } catch {
+        // screen 在受限环境不可访问，走下方默认
+    }
+    return 60;
 }
 function clampRate(v: number, lo: number, hi: number): number {
     return Math.min(hi, Math.max(lo, v));
 }
-const REF_RATE = clampRate(detectRefreshRate(), 30, 240); // 钳位异常值
-const RSCALE = REF_RATE / 60;
 
-const DEGRADE_THRESHOLDS: Record<DegradeLevel, number> = {
-    0: Infinity,
-    1: 28 * RSCALE, // 60Hz→28；120Hz→56
-    2: 20 * RSCALE, // 60Hz→20；120Hz→40
-    3: 14 * RSCALE, // 60Hz→14；120Hz→28
-};
-const RECOVERY_THRESHOLDS: Record<DegradeLevel, number> = {
-    0: Infinity,
-    1: 32 * RSCALE, // 60Hz→32；120Hz→64
-    2: 24 * RSCALE, // 60Hz→24；120Hz→48
-    3: 18 * RSCALE, // 60Hz→18；120Hz→36
-};
+let _hardwareRefRate = clampRate(detectRefreshRate(), 30, 240);
+
+/** 综合基准：取硬件刷新率与观测峰值的较大者，上限 240 防空场景 FPS 飙升。 */
+function getReference(): number {
+    return Math.min(Math.max(_hardwareRefRate, _observedCeiling), 240);
+}
+function getRScale(): number {
+    return getReference() / 60;
+}
+
+/** 降级阈值（帧率低于此值则降级），按 reference 动态缩放。 */
+function getDegradeThreshold(level: DegradeLevel): number {
+    return [Infinity, 28, 20, 14][level] * getRScale(); // 60Hz→28/20/14；120Hz→56/40/28
+}
+/** 恢复阈值（帧率高于此值才允许恢复），按 reference 动态缩放。 */
+function getRecoveryThreshold(level: DegradeLevel): number {
+    return [Infinity, 32, 24, 18][level] * getRScale(); // 60Hz→32/24/18；120Hz→64/48/36
+}
 ```
 
 ### 2.3 缩放后阈值对照
@@ -136,6 +147,7 @@ const RECOVERY_THRESHOLDS: Record<DegradeLevel, number> = {
 - [x] 区分"预热期"与"稳态"，避免首帧卡顿污染天花板
 - [x] 在 `render-loop.ts` resize DPR 检测处一并重算（覆盖外接显示器刷新率变化）
 - [x] 验证：`npm run check && npm run test` 全绿
+- [x] 单测覆盖：`__tests__/scene/performance-refresh-rate.test.ts`（8 用例：60Hz 零回归 + 恢复、120Hz 阈值翻倍、240Hz 钳位、undefined/0 回落、recalc 运行时更新）
 
 ---
 

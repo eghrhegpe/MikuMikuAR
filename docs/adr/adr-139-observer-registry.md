@@ -95,8 +95,9 @@ class ObserverRegistry {
 |------|------|
 | `transform-gizmo.ts` | 6 个 add 由 `gizmo.dispose()` 自动清理 |
 | `planar-reflection.ts` | 4 个 add 由 `rt.dispose()` 自动清理 |
-| `camera.ts` onViewMatrixChangedObservable | 5 个 add 由 camera dispose 自动清理 |
 | `scene.ts` onPointerObservable | 需 mask 参数，由 scene dispose 自动清理 |
+
+> **修订记录**：`camera.ts` 的 `onViewMatrixChangedObservable` 原列于本表（理由「由 camera dispose 自动清理」），但实际代码已全部迁移至 `observe()` + `ObserverHandle`（5 处），切换相机时显式 `safeDispose` 形成双保险。已从保留表移除。
 
 ## 影响面
 
