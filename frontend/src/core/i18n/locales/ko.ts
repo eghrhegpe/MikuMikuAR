@@ -629,6 +629,7 @@ export const ko: Record<string, string> = {
 
     // ===== 카메라 camera =====
     'motion.cameraMode': '카메라 모드',
+    'motion.cameraLens': '렌즈(피사계심도)',
     'motion.cameraControl': '카메라 제어',
     'motion.cameraBehavior': '카메라 동작',
     'motion.behaviorNone': '정지(수동)',
@@ -1688,9 +1689,8 @@ export const ko: Record<string, string> = {
     'motion.poseStudio.composition': '구도 보조',
     'motion.poseStudio.depthOfField': '피사계 심도',
     'motion.poseStudio.diagonal': '대각선',
-    'motion.poseStudio.dofAmount': '배경 흐림 강도',
-    'motion.poseStudio.dofFocus': '초점 거리',
-    'motion.poseStudio.dofFocal': '초점 길이',
+    'motion.poseStudio.dofHint': '피사계 심도는 렌즈 속성입니다 — 카메라 패널에서 조정하세요',
+    'motion.poseStudio.openLensSettings': '카메라 패널에서 조정',
     'motion.poseStudio.goldenRatio': '황금비',
     'motion.poseStudio.noModel': '⚠ 모델을 먼저 로드하세요',
     'motion.poseStudio.off': '꺼짐',

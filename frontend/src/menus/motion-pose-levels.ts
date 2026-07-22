@@ -15,10 +15,11 @@ import {
     isPlaying,
     setIsPlaying,
 } from '../core/config';
-import { addToggleRow, addSliderRow, addEmptyRow, addPresetChip } from '../core/ui-helpers';
+import { addToggleRow, addSliderRow, addEmptyRow, addPresetChip, slideRow } from '../core/ui-helpers';
 import { waitForFrame } from '../core/utils';
 import { logWarn } from '../core/logger';
 import { getMotionMenu } from './motion-popup';
+import { buildCameraLevel } from './motion-camera-levels';
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
 import { setRenderState, getRenderState } from '../scene/render/renderer';
 import { getGuideMode, setGuideMode } from '../scene/pose/composition-guide';
@@ -147,7 +148,7 @@ function buildPoseStudioSchema(): MenuNode[] {
                 });
             },
         },
-        // 卡片 3：景深控制
+        // 卡片 3：景深（方案 C：编辑入口收口到相机面板，此处仅引导跳转）
         {
             id: 'pose:dof',
             kind: 'custom',
@@ -158,47 +159,27 @@ function buildPoseStudioSchema(): MenuNode[] {
                     title.textContent = t('motion.poseStudio.depthOfField');
                     inner.appendChild(title);
 
-                    addSliderRow(
+                    const hint = document.createElement('div');
+                    hint.style.cssText = 'font-size:12px;opacity:0.65;margin:2px 0 10px;line-height:1.5;';
+                    hint.textContent = t('motion.poseStudio.dofHint');
+                    inner.appendChild(hint);
+
+                    slideRow(
                         inner,
-                        t('motion.poseStudio.dofAmount'),
-                        renderState.dofAperture,
-                        0,
-                        1,
-                        0.05,
-                        (v) => {
-                            setRenderState({ dofEnabled: v > 0, dofAperture: v });
+                        'lucide:camera',
+                        t('motion.poseStudio.openLensSettings'),
+                        false,
+                        () => {
+                            const menu = getMotionMenu();
+                            if (menu) {
+                                menu.push(buildCameraLevel());
+                            }
                         },
                         undefined,
                         undefined,
-                        { bind: () => getRenderState().dofAperture }
-                    );
-                    addSliderRow(
-                        inner,
-                        t('motion.poseStudio.dofFocus'),
-                        renderState.dofFocusDistance,
-                        1,
-                        300,
-                        1,
-                        (v) => {
-                            setRenderState({ dofEnabled: true, dofFocusDistance: v });
-                        },
                         undefined,
                         undefined,
-                        { bind: () => getRenderState().dofFocusDistance }
-                    );
-                    addSliderRow(
-                        inner,
-                        t('motion.poseStudio.dofFocal'),
-                        renderState.dofFocalLength,
-                        20,
-                        200,
-                        1,
-                        (v) => {
-                            setRenderState({ dofEnabled: true, dofFocalLength: v });
-                        },
-                        undefined,
-                        undefined,
-                        { bind: () => getRenderState().dofFocalLength }
+                        { testId: 'menu.pose.openLensSettings' }
                     );
                 });
             },

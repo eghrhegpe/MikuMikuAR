@@ -621,6 +621,7 @@ export const zhTW: Record<string, string> = {
 
     // ===== 相機 camera =====
     'motion.cameraMode': '相機模式',
+    'motion.cameraLens': '鏡頭（景深）',
     'motion.cameraControl': '控制方案',
     'motion.cameraBehavior': '運動行為',
     'motion.behaviorNone': '静止（手動）',
@@ -1672,9 +1673,8 @@ export const zhTW: Record<string, string> = {
     'motion.poseStudio.composition': '構圖輔助',
     'motion.poseStudio.depthOfField': '景深控制',
     'motion.poseStudio.diagonal': '對角線',
-    'motion.poseStudio.dofAmount': '虛化強度',
-    'motion.poseStudio.dofFocus': '對焦距離',
-    'motion.poseStudio.dofFocal': '焦距',
+    'motion.poseStudio.dofHint': '景深屬鏡頭參數，請在相機面板調整',
+    'motion.poseStudio.openLensSettings': '在相機面板調整景深',
     'motion.poseStudio.goldenRatio': '黃金分割',
     'motion.poseStudio.noModel': '⚠ 請先載入模型',
     'motion.poseStudio.off': '關閉',

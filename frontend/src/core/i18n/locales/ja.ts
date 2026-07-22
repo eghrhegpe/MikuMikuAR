@@ -629,6 +629,7 @@ export const ja: Record<string, string> = {
 
     // ===== カメラ camera =====
     'motion.cameraMode': 'カメラモード',
+    'motion.cameraLens': 'レンズ(被写界深度)',
     'motion.cameraControl': 'カメラ制御',
     'motion.cameraBehavior': 'カメラ挙動',
     'motion.behaviorNone': '静止（手動）',
@@ -1695,9 +1696,8 @@ export const ja: Record<string, string> = {
     'motion.poseStudio.composition': '構図補助',
     'motion.poseStudio.depthOfField': '被写界深度',
     'motion.poseStudio.diagonal': '対角線',
-    'motion.poseStudio.dofAmount': 'ボケ量',
-    'motion.poseStudio.dofFocus': 'フォーカス距離',
-    'motion.poseStudio.dofFocal': '焦点距離',
+    'motion.poseStudio.dofHint': '被写界深度はレンズの属性です — カメラパネルで調整',
+    'motion.poseStudio.openLensSettings': 'カメラパネルで調整',
     'motion.poseStudio.goldenRatio': '黄金比',
     'motion.poseStudio.noModel': '⚠ 先にモデルを読み込んでください',
     'motion.poseStudio.off': 'オフ',

@@ -295,55 +295,6 @@ function buildPostProcessCoreSchema(): MenuNode[] {
                 },
             ],
         },
-        // ===== 景深（slider 控制复合状态：dofAperture 主字段 + dofEnabled 附加字段） =====
-        {
-            id: 'postprocess:dof',
-            kind: 'slider',
-            label: 'scene.dof',
-            icon: 'lucide:camera',
-            control: {
-                bind: 'render.dofAperture',
-                min: 0,
-                max: 1,
-                step: 0.05,
-                onChange: (v) => {
-                    setRenderState({ dofEnabled: (v as number) > 0 });
-                    triggerAutoSave();
-                },
-            },
-        },
-        {
-            id: 'postprocess:dofFocus',
-            kind: 'slider',
-            label: 'scene.dofFocus',
-            icon: 'lucide:crosshair',
-            control: {
-                bind: 'render.dofFocusDistance',
-                min: 1,
-                max: 300,
-                step: 1,
-                onChange: (v) => {
-                    setRenderState({ dofEnabled: true, dofFocusDistance: v as number });
-                    triggerAutoSave();
-                },
-            },
-        },
-        {
-            id: 'postprocess:dofFocal',
-            kind: 'slider',
-            label: 'scene.dofFocal',
-            icon: 'lucide:aperture',
-            control: {
-                bind: 'render.dofFocalLength',
-                min: 20,
-                max: 200,
-                step: 1,
-                onChange: (v) => {
-                    setRenderState({ dofEnabled: true, dofFocalLength: v as number });
-                    triggerAutoSave();
-                },
-            },
-        },
         // ===== 暗角（slider 控制复合状态：vignetteDarkness + vignetteEnabled） =====
         {
             id: 'postprocess:vignette',
