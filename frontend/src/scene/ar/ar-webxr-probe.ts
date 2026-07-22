@@ -3,6 +3,7 @@
 // 决策前提: 探针结果决定 WebXR 路线(ADR-072)是否可行，不可行则转原生 ARCore(ADR-073)
 
 import { logWarn } from '@/core/logger';
+import { translateGoError } from '@/core/i18n/goerr';
 
 // ======== Types ========
 
@@ -140,7 +141,7 @@ async function probeFeaturesBySession(
         await session.end();
         return { granted, error: null };
     } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
+        const msg = translateGoError(e);
         return { granted: [], error: msg };
     }
 }
