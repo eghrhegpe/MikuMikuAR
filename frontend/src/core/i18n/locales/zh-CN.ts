@@ -71,6 +71,12 @@ export const zhCN: Record<string, string> = {
     'settings.library.patternPlaceholder': '正则表达式，如 裙',
     'settings.library.categoryLabel': '分类',
     'settings.library.categoryPlaceholder': '皮肤/头发/眼睛/服装/配件/道具',
+    'settings.library.matCat.skin': '皮肤',
+    'settings.library.matCat.hair': '头发',
+    'settings.library.matCat.eyes': '眼睛',
+    'settings.library.matCat.clothing': '服装',
+    'settings.library.matCat.accessory': '配件',
+    'settings.library.matCat.prop': '道具',
     'settings.paths.modelCount': '模型数量：',
     'settings.saveFailed': '保存失败',
 
@@ -1159,6 +1165,7 @@ export const zhCN: Record<string, string> = {
     // settings — 硬编码状态文案收口
     'settings.invalidRegex': '✗ 无效的正则表达式',
     'settings.invalidCategory': '✗ 无效的分类名',
+    'settings.error': '✗ {message}',
     'settings.watchDirFailed': '✗ 设置监听目录失败',
     'settings.watchStopped': '✓ 已停止监听',
     'settings.invalidHex': '✗ 无效的 hex 颜色',
@@ -1528,6 +1535,7 @@ export const zhCN: Record<string, string> = {
     'settings.audio.repeatOne': '单曲循环',
     'settings.audio.repeatAll': '列表循环',
     'settings.audio.repeatShuffle': '随机播放',
+    'settings.audio.repeatModeSet': '✓ 循环模式: {mode}',
     'settings.bpmQuantOn': '✓ BPM 量化已开启',
     'settings.bpmQuantOff': '✓ BPM 量化已关闭',
     'settings.companionOn': '✓ 伴音自动加载已开启',

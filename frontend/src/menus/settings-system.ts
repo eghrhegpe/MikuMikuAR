@@ -320,7 +320,7 @@ function buildCacheSchema(): MenuNode[] {
                                     typeof err === 'object' && err !== null && 'message' in err
                                         ? String((err as { message: unknown }).message)
                                         : String(err);
-                                setStatus(`✗ ${msg}`, false);
+                                setStatus(t('settings.error', { message: msg }), false);
                             });
                         }
                     );
@@ -342,7 +342,7 @@ function buildCacheSchema(): MenuNode[] {
                                     typeof err === 'object' && err !== null && 'message' in err
                                         ? String((err as { message: unknown }).message)
                                         : String(err);
-                                setStatus(`✗ ${msg}`, false);
+                                setStatus(t('settings.error', { message: msg }), false);
                             });
                         }
                     );

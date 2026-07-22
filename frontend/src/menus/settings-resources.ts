@@ -35,7 +35,7 @@ import {
 import { showPrompt2 } from '../core/dialog';
 import { getCurrentRenderingMenu } from './menu';
 import { switchStorageMode, refreshLibrary } from './library-core';
-import { t } from '../core/i18n/t';
+import { t, bundles } from '../core/i18n/t';
 import { CATEGORY_DIR } from '../core/utils';
 import { logWarn } from '../core/logger';
 import { SETTINGS_ACTION } from './settings-targets';
@@ -54,6 +54,31 @@ import {
     setAutoImportCached,
     type SettingsMenuHandle,
 } from './settings-shared';
+
+// 材质分类标准 key（en），用于构建跨语言校验集
+const MATERIAL_CATEGORY_KEYS = [
+    'settings.library.matCat.skin',
+    'settings.library.matCat.hair',
+    'settings.library.matCat.eyes',
+    'settings.library.matCat.clothing',
+    'settings.library.matCat.accessory',
+    'settings.library.matCat.prop',
+] as const;
+
+/** 所有语言下合法的材质分类名集合（含历史中文值，向后兼容）。 */
+let _validMaterialCategories: Set<string> | null = null;
+function getValidMaterialCategories(): Set<string> {
+    if (!_validMaterialCategories) {
+        _validMaterialCategories = new Set();
+        for (const bundle of Object.values(bundles)) {
+            for (const key of MATERIAL_CATEGORY_KEYS) {
+                const val = bundle[key];
+                if (val) _validMaterialCategories.add(val);
+            }
+        }
+    }
+    return _validMaterialCategories;
+}
 
 // ======== 模型库：显示名优先级持久化 ========
 function applyDisplayNamePriority(priority: DisplayNamePriority): void {
@@ -313,7 +338,7 @@ function buildLibrarySchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode
                                 label1: t('settings.library.patternLabel'),
                                 placeholder1: t('settings.library.patternPlaceholder'),
                                 label2: t('settings.library.categoryLabel'),
-                                placeholder2: t('settings.library.categoryPlaceholder'),
+                                placeholder2: MATERIAL_CATEGORY_KEYS.map(k => t(k)).join('/'),
                             });
                             if (!result) {
                                 return;
@@ -326,7 +351,7 @@ function buildLibrarySchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode
                                 return;
                             }
                             if (
-                                !['皮肤', '头发', '眼睛', '服装', '配件', '道具'].includes(category)
+                                !getValidMaterialCategories().has(category)
                             ) {
                                 setStatus(t('settings.invalidCategory'), false);
                                 return;

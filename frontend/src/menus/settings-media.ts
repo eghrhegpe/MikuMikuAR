@@ -165,7 +165,7 @@ function buildAudioCoreSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
                     const next = modes[(idx + 1) % modes.length];
                     setRepeatMode(next);
                     updateLabel();
-                    setStatus(`✓ ${modeLabels[next]}`, true);
+                    setStatus(t('settings.audio.repeatModeSet', { mode: modeLabels[next] }), true);
                     refresh();
                 });
                 c.appendChild(row);
@@ -424,7 +424,7 @@ function buildScreenshotSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
                         () => {
                             OpenScreenshotDir().catch((err: unknown) => {
                                 const msg = translateGoError(err);
-                                setStatus(`✗ ${msg}`, false);
+                                setStatus(t('settings.error', { message: msg }), false);
                             });
                         }
                     );

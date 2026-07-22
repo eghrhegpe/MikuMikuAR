@@ -299,6 +299,7 @@ export interface Prompt2Options {
 }
 
 let _overlay2: HTMLDivElement | null = null;
+let _trapRestore2: (() => void) | null = null;
 
 function getOverlay2(): HTMLDivElement {
     if (_overlay2) {
@@ -331,6 +332,8 @@ function getOverlay2(): HTMLDivElement {
 
 /** 移除 showPrompt2 创建的 overlay2 DOM（供 HMR 清理入口调用）。 */
 export function disposeOverlay2(): void {
+    _trapRestore2?.();
+    _trapRestore2 = null;
     if (_overlay2) {
         _overlay2.remove();
         _overlay2 = null;
@@ -367,6 +370,8 @@ export function showPrompt2(opts: Prompt2Options): Promise<[string, string] | nu
         cancelBtn.textContent = opts.cancelLabel ?? t('dialog.cancel');
 
         const cleanup = (result: [string, string] | null) => {
+            _trapRestore2?.();
+            _trapRestore2 = null;
             overlay.classList.remove('mmd-dialog-visible');
             resolve(result);
         };
@@ -400,5 +405,6 @@ export function showPrompt2(opts: Prompt2Options): Promise<[string, string] | nu
         overlay.classList.add('mmd-dialog-visible');
         dialog.style.display = '';
         fields[0].focus();
+        _trapRestore2 = createFocusTrap({ container: dialog, onEscape: onCancel });
     });
 }

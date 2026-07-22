@@ -71,6 +71,12 @@ export const zhTW: Record<string, string> = {
     'settings.library.patternPlaceholder': '正規表示式，如 裙',
     'settings.library.categoryLabel': '分類',
     'settings.library.categoryPlaceholder': '皮膚/頭髮/眼睛/服裝/配件/道具',
+    'settings.library.matCat.skin': '皮膚',
+    'settings.library.matCat.hair': '頭髮',
+    'settings.library.matCat.eyes': '眼睛',
+    'settings.library.matCat.clothing': '服裝',
+    'settings.library.matCat.accessory': '配件',
+    'settings.library.matCat.prop': '道具',
     'settings.paths.modelCount': '模型數量：',
     'settings.saveFailed': '儲存失敗',
 
@@ -103,6 +109,7 @@ export const zhTW: Record<string, string> = {
     // ===== 設定 - 硬編碼狀態 =====
     'settings.invalidRegex': '✗ 無效的正規表達式',
     'settings.invalidCategory': '✗ 無效的分類名稱',
+    'settings.error': '✗ {message}',
     'settings.watchDirFailed': '✗ 設定監聽目錄失敗',
     'settings.watchStopped': '✓ 已停止監聽',
     'settings.invalidHex': '✗ 無效的十六進位顏色',
@@ -1460,6 +1467,7 @@ export const zhTW: Record<string, string> = {
     'settings.audio.repeatOne': '單曲循環',
     'settings.audio.repeatAll': '列表循環',
     'settings.audio.repeatShuffle': '隨機播放',
+    'settings.audio.repeatModeSet': '✓ 循環模式: {mode}',
     'settings.companionOn': '✓ 伴音自動載入已開啟',
     'settings.companionOff': '✓ 伴音自動載入已關閉',
     'settings.sfx.title': '音效',

@@ -8,7 +8,7 @@ import { zhTW } from './locales/zh-TW';
 
 type Bundle = Record<string, string>;
 
-const bundles: Record<string, Bundle> = {
+export const bundles: Record<string, Bundle> = {
     'zh-CN': zhCN,
     en,
     ja,

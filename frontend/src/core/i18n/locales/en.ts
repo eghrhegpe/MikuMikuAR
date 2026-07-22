@@ -71,6 +71,12 @@ export const en: Record<string, string> = {
     'settings.library.patternPlaceholder': 'Regex, e.g. skirt',
     'settings.library.categoryLabel': 'Category',
     'settings.library.categoryPlaceholder': 'Skin/Hair/Eyes/Clothing/Accessory/Prop',
+    'settings.library.matCat.skin': 'Skin',
+    'settings.library.matCat.hair': 'Hair',
+    'settings.library.matCat.eyes': 'Eyes',
+    'settings.library.matCat.clothing': 'Clothing',
+    'settings.library.matCat.accessory': 'Accessory',
+    'settings.library.matCat.prop': 'Prop',
     'settings.paths.modelCount': 'Models: ',
     'settings.saveFailed': 'Save failed',
 
@@ -1176,6 +1182,7 @@ export const en: Record<string, string> = {
     // settings — hardcoded status messages
     'settings.invalidRegex': '✗ Invalid regex',
     'settings.invalidCategory': '✗ Invalid category name',
+    'settings.error': '✗ {message}',
     'settings.watchDirFailed': '✗ Failed to set watch directory',
     'settings.watchStopped': '✓ Watch stopped',
     'settings.invalidHex': '✗ Invalid hex color',
@@ -1549,6 +1556,7 @@ export const en: Record<string, string> = {
     'settings.audio.repeatOne': 'Repeat One',
     'settings.audio.repeatAll': 'Repeat All',
     'settings.audio.repeatShuffle': 'Shuffle',
+    'settings.audio.repeatModeSet': '✓ Repeat mode: {mode}',
     'settings.bpmQuantOn': '✓ BPM quantization on',
     'settings.bpmQuantOff': '✓ BPM quantization off',
     'settings.companionOn': '✓ Companion audio auto-load on',
