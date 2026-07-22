@@ -159,7 +159,7 @@ export function buildOutfitLevel(id: string): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildOutfitSchema(id), container);
+            return renderMenu(buildOutfitSchema(id), container);
         },
     };
 }

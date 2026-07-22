@@ -48,7 +48,8 @@ export function buildGroundLevel(): PopupLevel {
                 },
             },
         ];
-        renderMenu(presetsSchema, c);
+        const disposes: (() => void)[] = [];
+        disposes.push(renderMenu(presetsSchema, c));
 
         // ===== 基础设置（schema 驱动，ADR-093 PoC）=====
         const baseSchema: MenuNode[] = [
@@ -97,7 +98,7 @@ export function buildGroundLevel(): PopupLevel {
                 ],
             },
         ];
-        renderMenu(baseSchema, c);
+        disposes.push(renderMenu(baseSchema, c));
 
         // ===== 贴图 =====
         const textureSchema: MenuNode[] = [
@@ -218,7 +219,7 @@ export function buildGroundLevel(): PopupLevel {
                 },
             },
         ];
-        renderMenu(textureSchema, c);
+        disposes.push(renderMenu(textureSchema, c));
 
         // ===== 装饰 =====
         const overlaySchema: MenuNode[] = [
@@ -289,7 +290,7 @@ export function buildGroundLevel(): PopupLevel {
                 ],
             },
         ];
-        renderMenu(overlaySchema, c);
+        disposes.push(renderMenu(overlaySchema, c));
 
         // ===== 地形（schema 驱动）=====
         const terrainSchema: MenuNode[] = [
@@ -356,7 +357,7 @@ export function buildGroundLevel(): PopupLevel {
                 ],
             },
         ];
-        renderMenu(terrainSchema, c);
+        disposes.push(renderMenu(terrainSchema, c));
 
         // ===== 地面增强 =====
         const enhanceSchema: MenuNode[] = [
@@ -421,7 +422,7 @@ export function buildGroundLevel(): PopupLevel {
                 ],
             },
         ];
-        renderMenu(enhanceSchema, c);
+        disposes.push(renderMenu(enhanceSchema, c));
 
         // ===== 材质与反射（ADR-114 合并，消除「反射」vs「PBR」边界模糊）=====
         const mergedSchema: MenuNode[] = [
@@ -556,7 +557,7 @@ export function buildGroundLevel(): PopupLevel {
                 ],
             },
         ];
-        renderMenu(mergedSchema, c);
+        disposes.push(renderMenu(mergedSchema, c));
 
         // ===== 接触阴影提示（反射质量不足时显示）=====
         const csHintSchema: MenuNode[] = [
@@ -575,6 +576,7 @@ export function buildGroundLevel(): PopupLevel {
                 },
             },
         ];
-        renderMenu(csHintSchema, c);
+        disposes.push(renderMenu(csHintSchema, c));
+        return () => { for (const d of disposes) d(); };
     });
 }

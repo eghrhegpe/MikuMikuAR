@@ -40,6 +40,6 @@ export function buildWindLevel(): PopupLevel {
                 icon: 'lucide:gauge',
             },
         ];
-        renderMenu(windSchema, c);
+        return renderMenu(windSchema, c);
     });
 }

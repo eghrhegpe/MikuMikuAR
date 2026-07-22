@@ -562,16 +562,20 @@ export function buildPostProcessLevel(): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
+            const disposes: (() => void)[] = [];
             // 核心层（高频效果 + 高级层折叠头）—— 单卡片视觉分组
-            cardContainer(container, (c) => {
-                renderMenu(buildPostProcessCoreSchema(), c);
+            const d1 = cardContainer(container, (c) => {
+                return renderMenu(buildPostProcessCoreSchema(), c);
             });
+            if (typeof d1 === 'function') disposes.push(d1);
             // 色彩层（色调映射）—— 独立卡片
-            cardContainer(container, (c) => {
-                renderMenu(buildPostProcessColorSchema(), c);
+            const d2 = cardContainer(container, (c) => {
+                return renderMenu(buildPostProcessColorSchema(), c);
             });
+            if (typeof d2 === 'function') disposes.push(d2);
             // 滤镜预设芯片组
             _renderFilterPresetChips(container);
+            if (disposes.length > 0) return () => { for (const d of disposes) d(); };
         },
     };
 }

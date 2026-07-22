@@ -331,7 +331,7 @@ function buildScreenshotSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
                             icon: 'lucide:gauge',
                         },
                     ];
-                    renderMenu(qualitySchema, inner);
+                    return renderMenu(qualitySchema, inner);
                 });
             },
         },
@@ -443,7 +443,7 @@ function buildMediaSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
                     addSectionTitle(inner, t('settings.audio'));
-                    renderMenu(buildAudioCoreSchema(getSettingsMenu), inner);
+                    return renderMenu(buildAudioCoreSchema(getSettingsMenu), inner);
                 });
             },
         },
@@ -454,7 +454,7 @@ function buildMediaSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
                     addSectionTitle(inner, t('settings.sfx.title'));
-                    renderMenu(buildSfxSchema(getSettingsMenu), inner);
+                    return renderMenu(buildSfxSchema(getSettingsMenu), inner);
                 });
             },
         },
@@ -469,7 +469,7 @@ export function buildSettingsMediaLevel(getSettingsMenu: () => SettingsMenuHandl
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildMediaSchema(getSettingsMenu), container);
+            return renderMenu(buildMediaSchema(getSettingsMenu), container);
         },
     };
 }

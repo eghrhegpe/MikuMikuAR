@@ -328,7 +328,7 @@ export function buildSettingsControlsLevel(getSettingsMenu: () => SettingsMenuHa
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildControlsSchema(getSettingsMenu), container);
+            return renderMenu(buildControlsSchema(getSettingsMenu), container);
         },
     };
 }

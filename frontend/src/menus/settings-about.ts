@@ -190,7 +190,7 @@ export function buildSettingsAboutLevel(getSettingsMenu: () => SettingsMenuHandl
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildAboutSchema(getSettingsMenu), container);
+            return renderMenu(buildAboutSchema(getSettingsMenu), container);
         },
     };
 }

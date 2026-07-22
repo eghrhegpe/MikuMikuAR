@@ -198,7 +198,7 @@ export function buildFeetLevel(): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildFeetSchema(), container);
+            return renderMenu(buildFeetSchema(), container);
         },
     };
 }

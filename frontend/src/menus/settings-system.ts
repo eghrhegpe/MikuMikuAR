@@ -748,7 +748,7 @@ export function buildSoftwareDetailLevel(
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(schema, container);
+            return renderMenu(schema, container);
         },
     };
 }
@@ -769,7 +769,7 @@ export function buildSettingsSystemLevel(getSettingsMenu: () => SlideMenu | null
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildSystemSchema(getSettingsMenu), container);
+            return renderMenu(buildSystemSchema(getSettingsMenu), container);
         },
     };
 }

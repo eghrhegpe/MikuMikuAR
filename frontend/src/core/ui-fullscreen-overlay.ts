@@ -3,6 +3,7 @@
 // 所有关闭入口统一调用 closeFullscreen()
 
 import { logWarn } from './logger';
+import { addDisposableListener } from './dom';
 import { createFocusTrap } from './ui-focus-trap';
 import { createKeyboardNav } from './ui-keyboard-nav';
 import { t } from './i18n/t';
@@ -228,15 +229,16 @@ function createOverlayElement(options: FullscreenOverlayOptions): HTMLElement {
         if (currentState !== 'FULLSCREEN') {
             return;
         }
-
         if (e.key === 'Escape') {
             cleanup();
             closeFullscreen();
             options.onBack();
             return;
         }
+    };
+    const escapeDisp = addDisposableListener(document, 'keydown', handleKeyDown);
 
-        // ADR-153: 键盘导航（Arrow 键 + Enter 激活资源卡片）
+    // ADR-153: 键盘导航（Arrow 键 + Enter 激活资源卡片）
     const keyNavDisp = createKeyboardNav(content, {
         selector: '.resource-card, .resource-row',
     });
@@ -252,6 +254,7 @@ function createOverlayElement(options: FullscreenOverlayOptions): HTMLElement {
 
     // 清理函数
     const cleanup = () => {
+        escapeDisp.dispose();
         keyNavDisp.dispose();
     };
 

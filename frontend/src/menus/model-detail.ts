@@ -257,7 +257,7 @@ export function buildOpenWithLevel(id: string): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildOpenWithSchema(id), container);
+            return renderMenu(buildOpenWithSchema(id), container);
         },
     };
 }
@@ -648,7 +648,7 @@ export function buildModelLevel(id: string): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildModelSchema(id), container);
+            return renderMenu(buildModelSchema(id), container);
         },
     };
 }
@@ -817,7 +817,7 @@ export function buildModelInfoLevel(id: string): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildModelInfoSchema(id), container);
+            return renderMenu(buildModelInfoSchema(id), container);
         },
     };
 }
@@ -1020,7 +1020,7 @@ export function buildModelTagsLevel(id: string): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildModelTagsSchema(id), container);
+            return renderMenu(buildModelTagsSchema(id), container);
         },
     };
 }
@@ -1126,7 +1126,7 @@ export function buildMorphPreviewLevel(id: string): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildMorphPreviewSchema(id), container);
+            return renderMenu(buildMorphPreviewSchema(id), container);
         },
     };
 }
@@ -1381,7 +1381,7 @@ export function buildBoneHierarchyLevel(id: string): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildBoneHierarchySchema(id), container);
+            return renderMenu(buildBoneHierarchySchema(id), container);
         },
     };
 }

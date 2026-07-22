@@ -294,7 +294,7 @@ export function buildPoseStudioLevel(): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildPoseStudioSchema(), container);
+            return renderMenu(buildPoseStudioSchema(), container);
         },
     };
 }

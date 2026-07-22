@@ -324,7 +324,7 @@ export function buildCameraLevel(): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildCameraSchema(), container);
+            return renderMenu(buildCameraSchema(), container);
         },
     };
 }

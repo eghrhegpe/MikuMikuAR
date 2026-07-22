@@ -225,7 +225,7 @@ export function buildMatBatchLevel(id: string, modelName: string): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildMatBatchSchema(id, modelName), container);
+            return renderMenu(buildMatBatchSchema(id, modelName), container);
         },
     };
 }
@@ -383,7 +383,7 @@ export function buildPerMatLevel(
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildPerMatSchema(id, modelName, matName, matIndex, targetStack), container);
+            return renderMenu(buildPerMatSchema(id, modelName, matName, matIndex, targetStack), container);
         },
     };
 }
@@ -563,7 +563,7 @@ export function buildMatRootLevel(
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildMatRootSchema(id, modelName, targetStack), container);
+            return renderMenu(buildMatRootSchema(id, modelName, targetStack), container);
         },
     };
 }
@@ -804,7 +804,7 @@ export function buildMatListLevel(
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildMatListSchema(id, modelName, targetStack), container);
+            return renderMenu(buildMatListSchema(id, modelName, targetStack), container);
         },
     };
 }

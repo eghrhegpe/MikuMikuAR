@@ -737,7 +737,7 @@ export function buildStageLightLevel(): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildStageLightSchema(), container);
+            return renderMenu(buildStageLightSchema(), container);
         },
     };
 }

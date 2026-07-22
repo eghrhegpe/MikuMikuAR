@@ -24,6 +24,6 @@ export function buildExperimentalLevel(): PopupLevel {
                 },
             },
         ];
-        renderMenu(expSchema, c);
+        return renderMenu(expSchema, c);
     });
 }

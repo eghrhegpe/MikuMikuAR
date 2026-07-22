@@ -343,7 +343,7 @@ export function buildVirtualSkirtLevel(): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildVirtualSkirtSchema(), container);
+            return renderMenu(buildVirtualSkirtSchema(), container);
         },
     };
 }

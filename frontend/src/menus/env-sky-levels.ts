@@ -201,6 +201,6 @@ export function buildSkyLevel(): PopupLevel {
                 ],
             },
         ];
-        renderMenu(skySchema, c);
+        return renderMenu(skySchema, c);
     });
 }

@@ -380,7 +380,7 @@ export function buildActionBindingLevel(id: string): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildActionBindingSchema(id), container);
+            return renderMenu(buildActionBindingSchema(id), container);
         },
     };
 }

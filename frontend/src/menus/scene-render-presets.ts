@@ -264,7 +264,7 @@ export function buildPresetsLevel(): PopupLevel {
         items: [],
         renderCustom: (container) => {
             container.classList.remove('render-card');
-            renderMenu(buildPresetsSchema(), container);
+            return renderMenu(buildPresetsSchema(), container);
         },
     };
 }

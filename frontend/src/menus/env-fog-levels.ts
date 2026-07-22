@@ -66,6 +66,6 @@ export function buildFogLevel(): PopupLevel {
                 visibleWhen: () => envState.fogMode === 'linear',
             },
         ];
-        renderMenu(fogSchema, c);
+        return renderMenu(fogSchema, c);
     });
 }

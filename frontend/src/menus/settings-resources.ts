@@ -540,7 +540,7 @@ export function buildSettingsResourcesLevel(getSettingsMenu: () => SettingsMenuH
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildResourcesSchema(getSettingsMenu), container);
+            return renderMenu(buildResourcesSchema(getSettingsMenu), container);
         },
     };
 }

@@ -347,7 +347,7 @@ function buildGraphicsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
                     addSectionTitle(inner, t('settings.graphics.physicsHud'));
-                    renderMenu(buildPhysicsHudSchema(), inner);
+                    return renderMenu(buildPhysicsHudSchema(), inner);
                 });
             },
         },
@@ -358,7 +358,7 @@ function buildGraphicsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
                     addSectionTitle(inner, t('settings.graphics.preset'));
-                    renderMenu(buildPresetSchema(getSettingsMenu), inner);
+                    return renderMenu(buildPresetSchema(getSettingsMenu), inner);
                 });
             },
         },
@@ -369,7 +369,7 @@ function buildGraphicsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
                     addSectionTitle(inner, t('settings.graphics.frameQuality'));
-                    renderMenu(buildFrameQualitySchema(), inner);
+                    return renderMenu(buildFrameQualitySchema(), inner);
                 });
             },
         },
@@ -380,7 +380,7 @@ function buildGraphicsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
                     addSectionTitle(inner, t('settings.graphics.effects'));
-                    renderMenu(buildEffectsSchema(), inner);
+                    return renderMenu(buildEffectsSchema(), inner);
                 });
             },
         },
@@ -393,7 +393,7 @@ export function buildSettingsGraphicsLevel(getSettingsMenu: () => SettingsMenuHa
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildGraphicsSchema(getSettingsMenu), container);
+            return renderMenu(buildGraphicsSchema(getSettingsMenu), container);
         },
     };
 }
