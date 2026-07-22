@@ -11,6 +11,7 @@ import { _applyGaze } from './perception-gaze';
 import {
     _setContextPool,
     _resetContextPool,
+    _incGazeLogFrame,
     type PerceptionContext,
     type MmdModelLike,
     type PerceptionTier,
@@ -127,6 +128,7 @@ export function _applyPerceptionForContext(
 
         if (tier !== 'low') {
             if (state.headTrackingEnabled || state.eyeTrackingEnabled) {
+                _incGazeLogFrame();
                 const cam = getScene().activeCamera;
                 if (cam) {
                     try {

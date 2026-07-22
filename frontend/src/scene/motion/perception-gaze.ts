@@ -2,7 +2,7 @@
 // WASM 路径实现 → perception-gaze-wasm.ts
 // JS   路径实现 → perception-gaze-js.ts
 
-import { Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { Quaternion, Vector3, Matrix } from '@babylonjs/core/Maths/math.vector';
 import { Camera } from '@babylonjs/core/Cameras/camera';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 
@@ -11,7 +11,10 @@ import type { MeshMetadata, GazeConfig, MmdModelLike, PerceptionTier, GazeCache 
 import {
     _v3,
     _q,
+    _m,
     _gazeAlpha,
+    _gazeLog,
+    _qAngleDeg,
     _isWasmRuntime,
     getHeadGazeMaxYaw,
     getHeadGazeMaxPitch,
@@ -59,11 +62,67 @@ function _clampImpl(
 ): Quaternion {
     const invParent = _q().copyFrom(parentWorldQ).invert();
     const desiredLocal = _q().copyFrom(invParent).multiplyInPlace(targetWorldQ);
-    const e = desiredLocal.toEulerAngles();
-    const yaw = Math.max(-maxYawRad, Math.min(maxYawRad, e.y));
-    const pitch = Math.max(-maxPitchRad, Math.min(maxPitchRad, e.x));
-    const clampedLocal = Quaternion.FromEulerAngles(pitch, yaw, 0);
+
+    // ── Swing-Twist 分解 ──
+    // desiredLocal = swing × twist
+    // twist = 绕父骨骼 +Y 轴的旋转（yaw，左右转头）
+    // swing = 剩余偏转（含 pitch 俯仰 + roll 翻滚）
+    // 分解后分别限位 yaw 和 swing 总角，避免 toEulerAngles 在大角度复合旋转下的信息丢失。
+    const twist = _q();
+    _swingTwistDecompose(desiredLocal, Vector3.Up(), twist);
+
+    // 限位 twist（yaw）：限制 twist 与 Identity 绕 +Y 的夹角
+    let twistAngle = 2 * Math.acos(Math.min(Math.abs(twist.w), 1));
+    if (twist.y < 0) twistAngle = -twistAngle; // 保留方向
+    const clampedTwistAngle = Math.max(-maxYawRad, Math.min(maxYawRad, twistAngle));
+    const clampedTwist = _q().copyFrom(
+        Quaternion.RotationAxis(Vector3.Up(), clampedTwistAngle)
+    );
+
+    // 限位 swing：限制 swing 与 Identity 的总夹角（涵盖 pitch + roll）
+    let swingAngle = 2 * Math.acos(Math.min(Math.abs(desiredLocal.w), 1));
+    // swing 总角 ≈ sqrt(pitch² + roll²)，用 maxPitchRad 作为 swing 上限
+    const maxSwingRad = maxPitchRad;
+    const clampedSwing = _q();
+    if (swingAngle > maxSwingRad && swingAngle > 1e-6) {
+        // 等比缩放 swing 四元数的旋转角度
+        const scale = maxSwingRad / swingAngle;
+        // swing = desiredLocal × twist⁻¹
+        const invTwist = _q().copyFrom(twist).invert();
+        const swing = _q().copyFrom(desiredLocal).multiplyInPlace(invTwist);
+        // 缩放：对 swing 做 slerp(Identity, swing, scale)
+        Quaternion.SlerpToRef(Quaternion.Identity(), swing, scale, clampedSwing);
+    } else {
+        const invTwist = _q().copyFrom(twist).invert();
+        clampedSwing.copyFrom(desiredLocal).multiplyInPlace(invTwist);
+    }
+
+    // 重组：clampedLocal = clampedSwing × clampedTwist
+    const clampedLocal = _q().copyFrom(clampedSwing).multiplyInPlace(clampedTwist);
+
     return _q().copyFrom(parentWorldQ).multiplyInPlace(clampedLocal);
+}
+
+/**
+ * Swing-Twist 分解：把 q 分解为 swing × twist，twist 是绕指定轴的旋转。
+ * 参考：https://www.euclideanspace.com/maths/geometry/rotations/for/decomposition/
+ */
+function _swingTwistDecompose(q: Quaternion, twistAxis: Vector3, outTwist: Quaternion): void {
+    // twist = (q·axis) / |q·axis| 投影到轴上
+    // p = (dot(q.xyz, axis), normalized) — q 的轴向分量
+    const dot = q.x * twistAxis.x + q.y * twistAxis.y + q.z * twistAxis.z;
+    const axisLen = Math.sqrt(dot * dot + q.w * q.w);
+    if (axisLen < 1e-6) {
+        // q 几乎纯 swing（无 twist 分量），twist = Identity
+        outTwist.set(0, 0, 0, 1);
+        return;
+    }
+    outTwist.set(
+        (dot * twistAxis.x) / axisLen,
+        (dot * twistAxis.y) / axisLen,
+        (dot * twistAxis.z) / axisLen,
+        q.w / axisLen
+    );
 }
 
 /** 获取视线目标点（AR 模式沿相机朝向投射，普通模式用相机位置） */
@@ -76,6 +135,26 @@ export function _getGazeTarget(cam: Camera, out: Vector3): Vector3 {
     }
     out.copyFrom(cam.position);
     return out;
+}
+
+/**
+ * [adr-071] 坐标系对齐：把世界坐标系下的 gazeTarget 转换到 rootMesh 局部坐标系。
+ *
+ * babylon-mmd 的骨骼 worldMatrix 是 rootMesh 局部坐标系（不含 rootMesh 的 scaling/rotation/translation），
+ * 而相机 position 是世界坐标系。若模型有 autoScale 或位置偏移，两个坐标系不一致，
+ * 会导致 gaze 方向计算错误（典型症状：眼睛看向角色原始正前方而非相机）。
+ *
+ * 此函数原地修改 target，使其与骨骼 worldMatrix 在同一坐标系。
+ */
+function _worldToLocalGazeTarget(mmdModel: MmdModelLike, target: Vector3): void {
+    const getWM = mmdModel.mesh.getWorldMatrix;
+    if (!getWM) return;
+    // Babylon.js Mesh.getWorldMatrix() 返回 Matrix（含 scaling/rotation/translation）
+    const rootWorld = getWM.call(mmdModel.mesh) as Matrix;
+    if (!rootWorld) return;
+    const invRoot = _m().copyFrom(rootWorld).invert();
+    // target = invRoot × target（把世界坐标转到 rootMesh 局部坐标）
+    Vector3.TransformCoordinatesToRef(target, invRoot, target);
 }
 
 /** 头部专用包装（维持已有回归测试签名不变） */
@@ -141,6 +220,11 @@ export function _applyGaze(
 
     const isWasm = _isWasmRuntime(headRuntime ?? eyeRuntimes[0]);
     const gazeTarget = _getGazeTarget(cam, _v3());
+
+    // [adr-071] 坐标系对齐：骨骼 worldMatrix 是 rootMesh 局部坐标系（不含 rootMesh scaling），
+    // 而相机 position 是世界坐标系。需把 gazeTarget 转换到 rootMesh 局部坐标系，
+    // 否则当模型 autoScale 后骨骼坐标与相机坐标不在同一空间，gaze 方向计算错误。
+    _worldToLocalGazeTarget(mmdModel, gazeTarget);
 
     if (isWasm) {
         if (needHead && headRuntime && (!headClaimed || headClaimed.includes(headRuntime.name))) {
