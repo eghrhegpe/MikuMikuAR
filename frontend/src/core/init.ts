@@ -19,7 +19,7 @@ import { t } from './i18n/t';
 import { translateGoError } from './i18n/goerr';
 import { registerIconBundle } from './icons-bundle';
 import { initI18n } from './i18n/locale';
-import { GetConfig, Events, CheckForUpdate } from './wails-bindings';
+import { GetConfig, Events, CheckForUpdate, GetSystemA11ySettings } from './wails-bindings';
 import { isAndroidPlatform } from './platform';
 import { generateTextColors } from '../menus/settings';
 import { SETTINGS_FONT_RESTORE } from '../menus/settings-shared';
@@ -94,6 +94,7 @@ async function init(): Promise<void> {
         // 注册本地图标 bundle，使 iconify 离线可用
         registerIconBundle();
         initI18n(); // [doc:adr-059] 在菜单渲染前确定语言并同步 <html lang>
+        _applySystemA11y(); // [doc:adr-153] 启动时应用系统无障碍设置（暗色/高对比度）
         _updateStaticHtmlTexts(); // 更新 HTML 模板中的硬编码文案
         initRuntimeBadge(); // [adr-099] 立即渲染持久化的运行时模式徽标（刷新不丢）
         registerEventHandlers(); // [adr-102] P3: 全局 DOM/window 监听器迁至 events.ts

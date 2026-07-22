@@ -7,7 +7,7 @@ import { addDisposableListener, type Disposable } from './dom';
 import { safeDispose } from './dispose-helpers';
 
 export interface ShortcutDef {
-    id: string; // unique, e.g. 'toggle:models'
+    id: string; // unique, e.g. 'toggle:model'
     label: string; // i18n key into shortcuts.label.* (e.g. 'shortcuts.label.models')
     defaultKey: string; // KeyboardEvent.code value, e.g. 'Digit1'
     defaultCtrl?: boolean;
