@@ -56,16 +56,13 @@ export function _applyHeadGazeWasm(
     } else {
         parentWorldQ.copyFrom(Quaternion.Identity());
     }
-    const clampedTargetQ = _clampHeadGazeTarget(oldHeadRotQ, targetWorldQ, parentWorldQ);
     const alpha = _gazeAlpha(0.7, dt);
-    const blended = _q().copyFrom(Quaternion.Slerp(oldHeadRotQ, clampedTargetQ, alpha));
+    const blended = _q().copyFrom(Quaternion.Slerp(oldHeadRotQ, targetWorldQ, alpha));
     const finalQ = _clampHeadGazeTarget(blended, blended, parentWorldQ);
 
     if (cache) {
         if (!cache.headWorldQ) cache.headWorldQ = new Quaternion();
         cache.headWorldQ.copyFrom(finalQ);
-        if (!cache.headTargetWorldQ) cache.headTargetWorldQ = new Quaternion();
-        cache.headTargetWorldQ.copyFrom(clampedTargetQ);
     }
 
     const newHeadMat = _m().copyFrom(Matrix.Compose(Vector3.One(), finalQ, headPos));
@@ -99,16 +96,12 @@ export function _applyEyeGazeWasm(
     const targetWorldQ = _q().copyFrom(Quaternion.FromLookDirectionRH(lookDir, Vector3.UpReadOnly));
 
     const parentWorldQ = _q();
-    if (cache?.headTargetWorldQ) {
-        parentWorldQ.copyFrom(cache.headTargetWorldQ);
+    const eyeParentBone = eyeRuntimes[0].parentBone;
+    if (eyeParentBone) {
+        const pMat = _m().copyFrom(Matrix.FromArray(eyeParentBone.worldMatrix));
+        Quaternion.FromRotationMatrixToRef(pMat.getRotationMatrix(), parentWorldQ);
     } else {
-        const eyeParentBone = eyeRuntimes[0].parentBone;
-        if (eyeParentBone) {
-            const pMat = _m().copyFrom(Matrix.FromArray(eyeParentBone.worldMatrix));
-            Quaternion.FromRotationMatrixToRef(pMat.getRotationMatrix(), parentWorldQ);
-        } else {
-            parentWorldQ.copyFrom(Quaternion.Identity());
-        }
+        parentWorldQ.copyFrom(Quaternion.Identity());
     }
 
     for (const eyeRb of eyeRuntimes) {
@@ -122,15 +115,8 @@ export function _applyEyeGazeWasm(
             ? _q().copyFrom(parentWorldQ).multiplyInPlace(cachedLocal)
             : _q().copyFrom(Quaternion.FromRotationMatrix(eyeMat.getRotationMatrix()));
 
-        const clampedTargetQ = _clampGazeTargetInParentFrame(
-            curEyeQ,
-            targetWorldQ,
-            parentWorldQ,
-            getEyeGazeMaxYaw(),
-            getEyeGazeMaxPitch()
-        );
         const alpha = _gazeAlpha(getEyeGazeSmooth(), dt);
-        const newEyeQ = _q().copyFrom(Quaternion.Slerp(curEyeQ, clampedTargetQ, alpha));
+        const newEyeQ = _q().copyFrom(Quaternion.Slerp(curEyeQ, targetWorldQ, alpha));
         const finalEyeQ = _clampGazeTargetInParentFrame(newEyeQ, newEyeQ, parentWorldQ, getEyeGazeMaxYaw(), getEyeGazeMaxPitch());
 
         const invParentQ = _q().copyFrom(parentWorldQ).invert();

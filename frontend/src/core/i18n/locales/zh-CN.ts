@@ -52,7 +52,10 @@ export const zhCN: Record<string, string> = {
     'settings.graphics.preset': '性能预设',
     'settings.graphics.frameQuality': '帧率与画质',
     'settings.graphics.effects': '渲染效果',
-    'settings.graphics.physicsHud': '物理与 HUD',
+    'settings.graphics.physicsHud': '物理与显示',
+    'settings.effects.lighting': '光照',
+    'settings.effects.antialiasing': '抗锯齿',
+    'settings.effects.postprocess': '后处理',
 
     // ===== 设置·操控 controls（ADR-157） =====
     'settings.controls.camera': '相机',
@@ -709,7 +712,7 @@ export const zhCN: Record<string, string> = {
     'scene.grain': '颗粒',
     'scene.sharpen': '锐化',
     'scene.glow': '辉光',
-    'scene.opticalEffects': '光学效果',
+    'scene.opticalEffects': '视觉效果',
     'scene.environmentEffects': '环境效果',
     'scene.ssao': '环境遮蔽 (SSAO)',
     'scene.ssaoStrength': '遮蔽强度',

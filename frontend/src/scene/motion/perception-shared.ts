@@ -287,8 +287,6 @@ export interface BalanceSwayState {
 /** Gaze 跨帧缓存：头部存世界 Q，眼部存本地 Q（相对父骨骼，避免头部旋转后缓存过期） */
 export interface GazeCache {
     headWorldQ: Quaternion | null;
-    /** 头部钳制后的目标世界 Q（Slerp 前的终点），供眼部在头部目标坐标系下计算增量 */
-    headTargetWorldQ: Quaternion | null;
     eyeLocalQ: Map<string, Quaternion>;
 }
 

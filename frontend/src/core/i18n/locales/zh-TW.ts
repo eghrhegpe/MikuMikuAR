@@ -52,7 +52,10 @@ export const zhTW: Record<string, string> = {
     'settings.graphics.preset': '效能預設',
     'settings.graphics.frameQuality': '幀率與畫質',
     'settings.graphics.effects': '渲染效果',
-    'settings.graphics.physicsHud': '物理與 HUD',
+    'settings.graphics.physicsHud': '物理與顯示',
+    'settings.effects.lighting': '光照',
+    'settings.effects.antialiasing': '抗鋸齒',
+    'settings.effects.postprocess': '後處理',
 
     // ===== 設定·操控 controls（ADR-157） =====
     'settings.controls.camera': '相機',
@@ -745,7 +748,7 @@ export const zhTW: Record<string, string> = {
     'scene.grain': '顆粒',
     'scene.sharpen': '銳利化',
     'scene.glow': '輝光',
-    'scene.opticalEffects': '光學效果',
+    'scene.opticalEffects': '視覺效果',
     'scene.environmentEffects': '環境效果',
     'scene.ssao': '環境遮蔽 (SSAO)',
     'scene.ssaoStrength': '遮蔽強度',

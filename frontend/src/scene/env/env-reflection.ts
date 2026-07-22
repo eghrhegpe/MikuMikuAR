@@ -36,29 +36,24 @@ export type ResolvedReflectionMode = ReflectionMode;
 interface ReflectionQualityPreset {
     ssr: { step: number; strength: number; thickness: number } | null;
     probe: { resolution: number; strength: number } | null;
-    planarQuality: 'high' | 'medium' | 'low' | 'off';
 }
 
 const QUALITY_PRESETS: Record<string, ReflectionQualityPreset> = {
     off: {
         ssr: null,
         probe: null,
-        planarQuality: 'off',
     },
     low: {
         ssr: null,
         probe: { resolution: 256, strength: 0.3 },
-        planarQuality: 'off',
     },
     medium: {
         ssr: null,
         probe: { resolution: 256, strength: 0.5 },
-        planarQuality: 'low',
     },
     high: {
         ssr: { step: 16, strength: 0.7, thickness: 0.5 },
         probe: { resolution: 256, strength: 0.3 },
-        planarQuality: 'medium',
     },
 };
 

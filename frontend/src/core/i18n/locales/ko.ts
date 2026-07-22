@@ -52,7 +52,10 @@ export const ko: Record<string, string> = {
     'settings.graphics.preset': '성능 프리셋',
     'settings.graphics.frameQuality': '프레임 속도 및 화질',
     'settings.graphics.effects': '렌더링 효과',
-    'settings.graphics.physicsHud': '물리 및 HUD',
+    'settings.graphics.physicsHud': '물리 및 표시',
+    'settings.effects.lighting': '조명',
+    'settings.effects.antialiasing': '안티앨리어싱',
+    'settings.effects.postprocess': '후처리',
 
     // ===== 설정·조작（ADR-157） =====
     'settings.controls.camera': '카메라',
@@ -753,7 +756,7 @@ export const ko: Record<string, string> = {
     'scene.grain': '노이즈',
     'scene.sharpen': '샤픈',
     'scene.glow': '글로우',
-    'scene.opticalEffects': '광학 효과',
+    'scene.opticalEffects': '시각 효과',
     'scene.environmentEffects': '환경 효과',
     'scene.ssao': '앰비언트 오클루전 (SSAO)',
     'scene.ssaoStrength': '오클루전 강도',

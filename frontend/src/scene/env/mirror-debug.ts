@@ -86,12 +86,12 @@ export function createMirror(): void {
     _mirrorMesh.isPickable = false;
 
     // MirrorTexture：反射全部 mesh
-    _mirrorRT = new MirrorTexture(
-        'mirrorRT',
-        RESOLUTION_MAP[envState.reflectionQuality] ?? 512,
-        scene,
-        false
-    );
+    const resolution = RESOLUTION_MAP[envState.reflectionQuality] ?? 512;
+    if (!resolution) {
+        disposeMirror();
+        return;
+    }
+    _mirrorRT = new MirrorTexture('mirrorRT', resolution, scene, false);
     _mirrorRT.level = 1; // 完全反射
     _mirrorRT.adaptiveBlurKernel = 0; // 关闭模糊，锐利反射便于排查
     updateMirrorClearColor(); // 根据当前天空模式设置 clearColor

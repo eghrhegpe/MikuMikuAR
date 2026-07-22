@@ -1,5 +1,5 @@
 // settings-graphics.ts — 画面设置子菜单（ADR-157：合并原 performance + rendering）
-// 页面流：性能预设 → 帧率与画质 → 渲染效果 → 物理与HUD，单页闭环。
+// 页面流：性能预设 → 帧率与画质 → 渲染效果 → 物理与显示，单页闭环。
 
 import { SetPerformanceMode } from '../core/wails-bindings';
 import { t } from '../core/i18n/t';
@@ -211,74 +211,51 @@ function buildEffectsSchema(): MenuNode[] {
                 resetPerformanceSnapshot();
                 const rs = getRenderState();
                 const ls = getLightState();
-                const renderToggles: Array<{
-                    label: string;
-                    value: boolean;
-                    apply: (v: boolean) => void;
-                }> = [
-                    {
-                        label: t('settings.perf.shadow'),
-                        value: ls.shadowEnabled,
-                        apply: (v) => setLightState({ shadowEnabled: v }),
-                    },
-                    {
-                        label: t('settings.perf.bloom'),
-                        value: rs.bloomEnabled,
-                        apply: (v) => setRenderState({ bloomEnabled: v }),
-                    },
-                    {
-                        label: t('settings.perf.fxaa'),
-                        value: rs.fxaaEnabled,
-                        apply: (v) => setRenderState({ fxaaEnabled: v }),
-                    },
-                    {
-                        label: t('settings.perf.dof'),
-                        value: rs.dofEnabled,
-                        apply: (v) => setRenderState({ dofEnabled: v }),
-                    },
-                    {
-                        label: t('settings.perf.vignette'),
-                        value: rs.vignetteEnabled,
-                        apply: (v) => setRenderState({ vignetteEnabled: v }),
-                    },
-                    {
-                        label: t('settings.perf.outline'),
-                        value: rs.outlineEnabled,
-                        apply: (v) => setRenderState({ outlineEnabled: v }),
-                    },
-                    {
-                        label: t('settings.perf.glow'),
-                        value: rs.glowEnabled,
-                        apply: (v) => setRenderState({ glowEnabled: v }),
-                    },
-                    {
-                        label: t('settings.perf.chromaticAberration'),
-                        value: rs.chromaticAberrationEnabled,
-                        apply: (v) => setRenderState({ chromaticAberrationEnabled: v }),
-                    },
-                    {
-                        label: t('settings.perf.grain'),
-                        value: rs.grainEnabled,
-                        apply: (v) => setRenderState({ grainEnabled: v }),
-                    },
-                    {
-                        label: t('settings.perf.ssao'),
-                        value: rs.ssaoEnabled,
-                        apply: (v) => setRenderState({ ssaoEnabled: v }),
-                    },
-                ];
-                for (const toggle of renderToggles) {
-                    addInlineToggleRow(c, toggle.label, toggle.value, (v) => {
-                        toggle.apply(v);
+                const toggle = (label: string, value: boolean, apply: (v: boolean) => void) => {
+                    addInlineToggleRow(c, label, value, (v) => {
+                        apply(v);
                         setStatus(
                             t('settings.toggleState', {
-                                label: toggle.label,
+                                label,
                                 state: v ? t('common.on') : t('common.off'),
                             }),
                             true
                         );
                     });
-                }
+                };
+                addSectionTitle(c, t('settings.effects.lighting'));
+                toggle(t('settings.perf.shadow'), ls.shadowEnabled, (v) =>
+                    setLightState({ shadowEnabled: v })
+                );
+                toggle(t('settings.perf.bloom'), rs.bloomEnabled, (v) =>
+                    setRenderState({ bloomEnabled: v })
+                );
+                toggle(t('settings.perf.glow'), rs.glowEnabled, (v) =>
+                    setRenderState({ glowEnabled: v })
+                );
+                toggle(t('settings.perf.ssao'), rs.ssaoEnabled, (v) =>
+                    setRenderState({ ssaoEnabled: v })
+                );
+                addSectionTitle(c, t('settings.effects.antialiasing'));
+                toggle(t('settings.perf.fxaa'), rs.fxaaEnabled, (v) =>
+                    setRenderState({ fxaaEnabled: v })
+                );
+                addSectionTitle(c, t('settings.effects.postprocess'));
+                toggle(t('settings.perf.dof'), rs.dofEnabled, (v) =>
+                    setRenderState({ dofEnabled: v })
+                );
+                toggle(t('settings.perf.vignette'), rs.vignetteEnabled, (v) =>
+                    setRenderState({ vignetteEnabled: v })
+                );
+                toggle(t('settings.perf.outline'), rs.outlineEnabled, (v) =>
+                    setRenderState({ outlineEnabled: v })
+                );
+                toggle(t('settings.perf.chromaticAberration'), rs.chromaticAberrationEnabled, (v) =>
+                    setRenderState({ chromaticAberrationEnabled: v })
+                );
+                toggle(t('settings.perf.grain'), rs.grainEnabled, (v) =>
+                    setRenderState({ grainEnabled: v })
+                );
                 const hint = document.createElement('div');
                 hint.className = 'setting-hint';
                 hint.textContent = t('settings.perf.customHint');
@@ -288,7 +265,7 @@ function buildEffectsSchema(): MenuNode[] {
     ] satisfies MenuNode[];
 }
 
-// ======== 卡片 4：物理与 HUD ========
+// ======== 卡片 4：物理与显示 ========
 function buildPhysicsHudSchema(): MenuNode[] {
     return [
         {
