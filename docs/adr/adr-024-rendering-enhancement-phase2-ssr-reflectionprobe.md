@@ -24,7 +24,7 @@ Phase 1（Motion Blur / Sharpen / GlowLayer）已完成，管线从 10 类后处
 | 与材质无关 | 读取 depth/normal/reflectivity buffer |
 | 已知限制 | StandardMaterial 默认 reflectivity 黑色，效果有限 |
 | SSR + Bloom 互斥 | Bloom weight > 0.5 时自动降低 SSR 强度 |
-| 性能降级 | L1 关闭 SSR，L2/L3 关闭 SSR + Reflection Probe |
+| 性能降级 | 原策略 L1 关闭 SSR，L2/L3 关闭 SSR + Reflection Probe；**ADR-151 收口后改为**由 qualityProfile 写入 `env.reflectionQuality`（SSR 仅 `high` 档启用、Probe 各档保留），不再经 `setRenderState` 切换开关，详见 [ADR-151](adr-151-reflection-unified-architecture.md) |
 
 **UI 映射**：
 
@@ -41,6 +41,7 @@ Phase 1（Motion Blur / Sharpen / GlowLayer）已完成，管线从 10 类后处
 - 每 10 秒检查环境变化并刷新 renderList
 - renderList 含 sky/env/ground/water mesh，**不含模型**（避免自身反射）
 - 绑定到 StandardMaterial 的 `reflectionTexture`
+- **管理入口已并入 ADR-151**：Probe 的创建 / 绑定 / 刷新 / 销毁现统一由 `env-reflection.ts` 的 `applyReflection` / `bindProbeToMeshes` / `disposeReflection` 驱动（新增 `reflectionMode` 字段控制激活），本 ADR 仅保留设计动机与参数基线，详见 [ADR-151](adr-151-reflection-unified-architecture.md)
 
 ### SSAO（屏幕空间环境遮蔽）✅
 
@@ -57,3 +58,4 @@ Phase 1（Motion Blur / Sharpen / GlowLayer）已完成，管线从 10 类后处
 ## 相关 ADR
 
 - ADR-062（水面反射）：本 ADR 的 ReflectionProbe 是 cubemap 反射源，与 planar RT 分层混合
+- [ADR-151](adr-151-reflection-unified-architecture.md)（反射系统统一架构）：**本 ADR 的 ReflectionProbe 管理已合并至 ADR-151**（SSR/Probe 单源收口到 `reflectionMode`/`reflectionQuality`，降级策略亦改由 `reflectionQuality` 驱动）。后续维护以 ADR-151 为准。

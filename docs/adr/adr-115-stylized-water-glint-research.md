@@ -624,6 +624,93 @@ for (int i = 0; i < WAVE_COUNT; i++) {
 
 ---
 
+### 4.8 "海洋波澜"专项（P5，贴近竞品海洋风格）
+
+#### 4.8.1 根因（承接 §4.7 诊断）
+
+P4 调的是 **「几何振幅」轴**（Gerstner 顶点位移的 `bigWaveHeight`/`smallWaveHeight`），而竞品的「海洋波澜」来自 **「低频滚动法线 × 天光反射」轴**。两轴不同源，故 P4 放大波高后 ocean 只是「平静水面放大版」，无连绵涌浪光带。
+
+**核心公式**：波澜观感 = 大尺度滚动法线（吃天光）→ 粼光带。我方三处缺口：
+
+| # | 缺口 | 证据 |
+|---|------|------|
+| 1 | 缺低频法线层 | detail normal 仅两层：`uDetailNormalTiling1=0.5`/`uDetailNormalTiling2=1.5`（env-water.ts:705-706 实际生效值；shader 注释 `0.1/0.3` 已过时），全为细碎尺度（格 ≈2 / 0.67 单位）。中─大尺度法线带为空，仅有近平面细碎波光 |
+| 2 | Gerstner 大波组波长偏短 | 层 0/1 `WAVE_FREQ=0.15/0.20`（water.vert.glsl:18）→ 波长 ≈42/31 单位；`waterSize` 默认 50（env-state-schema.ts:174）→ 水面内约 1.2 个波，读成「单穹顶」而非连绵涌浪 |
+| 3 | 天光混合被压低 | ocean/tropical 预设 `waterSkyColorBlend` 仅 0.25/0.3（env-water.ts:1316,1352），滚动法线未被点亮 |
+
+#### 4.8.2 措施 A：新增低频滚动法线层（核心）
+
+在 `water.frag.glsl` 现有两层 detail normal（`n1`/`n2`）之上新增第三层低频法线采样 `n3`，复用同一张 `uDetailNormalTex`（程序化生成，零资产依赖），极低 tiling 制造大尺度滚动光带：
+
+```glsl
+// 现有（§4.1.2，细碎尺度）
+vec2 nUV1 = vWorldPos.xz * uDetailNormalTiling1 + wind * wavePhase * uDetailNormalSpeed1; // tiling 0.5
+vec2 nUV2 = vWorldPos.xz * uDetailNormalTiling2 - wind * wavePhase * uDetailNormalSpeed2; // tiling 1.5
+vec3 n1 = texture2D(uDetailNormalTex, nUV1).rgb * 2.0 - 1.0;
+vec3 n2 = texture2D(uDetailNormalTex, nUV2).rgb * 2.0 - 1.0;
+
+// P5 新增：低频层（格 ≈ 12–25 单位，制造大尺度滚动光带）
+vec2 nUV3 = vWorldPos.xz * uLowFreqNormalTiling + wind * wavePhase * uLowFreqNormalSpeed; // tiling ≈ 0.04
+vec3 n3 = texture2D(uDetailNormalTex, nUV3).rgb * 2.0 - 1.0;
+
+vec3 detailNormal = normalize(n1 + n2 * 0.5 + n3 * uLowFreqNormalStrength);
+```
+
+- 新增 uniform：`uLowFreqNormalTiling`（默认 ≈0.04）、`uLowFreqNormalStrength`（默认 ≈0.15）、`uLowFreqNormalSpeed`（默认 ≈0.05）。
+- 接入 `_syncWaterUniforms`（env-water.ts `setFloat` 三处），并列入 uniform 列表（与 :878-879,892 同范式）。
+- **状态链路最小化**：`uLowFreqNormalStrength` 作为 **预设驱动的可选字段** `lowFreqNormalStrength?: number`（沿用 §4.7 的 `??` 兜底范式），默认 0.15；`_syncWaterUniforms` 写入 `?? 0.15`，预设映射 `?? 0.15`（与 `waterHorizonFade ?? 0` 同型，env-water.ts:1186）。**不新增必填字段**，避免触发 P4 的 NaN 三道防线复杂度。
+- `uLowFreqNormalTiling`/`uLowFreqNormalSpeed` 为 shader 常量（不进 state），默认固化即可。
+
+#### 4.8.3 措施 B：调整 Gerstner 大波组频率配比
+
+`water.vert.glsl:18` 当前层 0/1 `WAVE_FREQ=0.15/0.20`。P5 初值建议下调以拉长波长、降坡度：
+
+```glsl
+const float WAVE_FREQ[4] = float[4](0.07, 0.11, 0.25, 0.3); // 层 0/1 拉长，层 2/3 不变
+```
+
+> ⚠️ **方向校准风险**：纯降 freq 会减少水面波数（波长 42→90 单位，waterSize=50 内从 ~1.2 个波降至 ~0.55 个）。若视觉校准发现 ocean 仍偏「稀穹顶」而非「连绵涌浪」，应**反向**——保持或略提 freq（如 0.18/0.22）+ 适当增 `WAVE_AMP[0/1]`，以在 waterSize 内形成 2–3 道涌浪。措施 B 终值以 ocean/tropical 预设视觉校准为准，初值仅作起点。
+>
+> 补充：坡度 = f·a，降 freq 即降坡度 → 更平缓，与「连绵」不冲突；「波数少」才是需监控的核心指标。
+
+#### 4.8.4 措施 C：ocean/tropical 预设提天光混合
+
+当前 `waterSkyColorBlend` 预设值：ocean=0.25、tropical=0.3（env-water.ts:1316,1352）。P5 将这两档提到 0.5–0.7，让滚动法线吃进天空色 → 粼光浮现：
+
+| 预设 | 当前 `waterSkyColorBlend` | P5 建议 | 理由 |
+|------|--------------------------|---------|------|
+| ocean 海浪 | 0.25 | 0.6 | 强天光混合点亮低频滚动法线，出连绵粼光涌浪 |
+| tropical 热带 | 0.3 | 0.55 | 暖色海水 + 天光，活泼波光 |
+| calm / ripple / storm | 0.15 / 0.2 / 0.15 | 不变 | 非海洋 mood，保持冷静 / 风暴基调 |
+
+#### 4.8.5 预设差异化取值表（P5 增量）
+
+仅列 P5 新增/改动字段，未列字段沿用 §4.7.6：
+
+| 预设 | `lowFreqNormalStrength` | 备注 |
+|------|------------------------|------|
+| calm 平静 | 0.0 | 无大尺度波澜，保持冷静 |
+| ripple 涟漪 | 0.08 | 轻微滚动 |
+| ocean 海浪 | 0.35 | 强低频滚动光带 |
+| storm 风暴 | 0.15 | 风暴主靠几何巨浪，法线滚动次之 |
+| tropical 热带 | 0.3 | 暖海活泼滚动 |
+
+（`uLowFreqNormalTiling` 全局常量 ≈0.04，不随预设变）
+
+#### 4.8.6 UI / i18n
+
+- `lowFreqNormalStrength` 进「高级参数」折叠组（与 P1 的 `waterNormalStrength` 同组），滑块范围 0–0.5，默认 0.15。
+- i18n 新增键 `env.lowFreqNormalStrength`（大尺度波光 / Low-Freq Glint / 大波の光帯 / 큰 파 광택 / 大尺度波光）。
+- 措施 B（vert 常量）、措施 C（预设值）**不新增 UI**，仅在 shader / 预设层生效。
+
+#### 4.8.7 NaN 与回归防护
+
+- **零回归**：`lowFreqNormalStrength` 缺失时 `?? 0.15` 兜底，且 calm 预设显式 0.0 → 该预设退化为纯 P4 效果，无意外波澜。
+- **不引入必填 state 字段**：仅 `uLowFreqNormalTiling`/`uLowFreqNormalSpeed` 为 shader 常量，`lowFreqNormalStrength` 为可选字段 + `??` 兜底，不触发 P4 的 NaN 三道防线（无需 Go struct 改动 / 绑定重生成，因字段可选且前端 `EnvState` 已用可选链读取）。
+- **若后续决定暴露 `uLowFreqNormalTiling` 为可调字段**：须走 §4.7.4 的 NaN 三道防线（state 种默认 + 预设双重 `??` + 同步 `??` 兜底）+ Go struct + `npm run generate:bindings`。本 ADR 暂将其固化为常量，规避该风险。
+
+---
+
 ## 五、实施路径与排序（优化版）
 
 按「成本-收益-可行性」重新排序：**P2 成本最低、收益明确、零资源依赖 → 立即排期**；**P1 视觉收益高但被法线资源门槛与 double-count 风险卡住 → 先解决资源与去重再实施**；P3/P4 留作后续评估。
@@ -633,7 +720,8 @@ for (int i = 0; i < WAVE_COUNT; i++) {
 | ① | P2 | 焦散强度 UI 暴露 + 水面 UI 预设化折叠 | 高 | 低 | 中 | ✅ 已完成 (e54d67e) |
 | ② | P1 | shader 高频法线扰动层 + Sun Glitter 项 | 高 | 中 | 高 | ✅ 已完成 (e54d67e) |
 | ③ | P3 | 无限水面 + 地平线雾融合 + 天空-水面颜色联动 | 高 | 中 | 高 | ✅ 已完成 (df7db01) |
-| ④ | P4 | "波纹/大波"双层尺度拆分 | 高 | 中 | 中 | 方案已补充，待评审实施 |
+| ④ | P4 | "波纹/大波"双层尺度拆分 | 高 | 中 | 中 | ✅ 已完成（2026-07-22 确认） |
+| ⑤ | P5 | 海洋波澜专项（低频法线层 + 波长配比 + 天光混合） | 高 | 中 | 高 | 方案已补充，待评审实施 |
 
 **P1 解锁前置条件（已全部解决，2026-07-17）**：
 1. ✅ **法线资源来源**：程序化 512×512 Value noise 法线贴图（`env-water.ts:regenerateDetailNormalTexture`）
@@ -721,7 +809,7 @@ P2（焦散强度 + UI 预设化）涉及的所有变更点，实施时逐项打
 - [x] `waterSkyColorBlend = 0` 时，水色与当前一致（零回归）
 - [x] `waterSkyColorBlend = 1` 时，水色与天空底部色一致
 
-#### 5.2.5 P4 波纹/大波双层拆分（待实施时验证）
+#### 5.2.5 P4 波纹/大波双层拆分（已实施，2026-07-22 确认）
 
 - [ ] `bigWaveHeight == smallWaveHeight == 1.0` 时，水面效果与当前 `waveHeight` 完全一致（零回归）
 - [ ] `bigWaveHeight = 0, smallWaveHeight = 1.0` 时，仅高频小波纹可见，无大浪起伏
@@ -732,6 +820,15 @@ P2（焦散强度 + UI 预设化）涉及的所有变更点，实施时逐项打
 - [ ] **【NaN 防护回归】任一预设漏配 `bigWaveHeight`/`smallWaveHeight` 时，切到该预设水面仍正常渲染（退回 1.0 全局缩放），不出现水面消失**
 - [ ] **【旧版本兼容】新场景（含 big/small 字段）用旧版本客户端打开，水面正常渲染（旧版仅读 `waterWaveHeight` 全局乘子），波形为已知可接受降级——非崩溃、非黑面**
 - [ ] 修改 `waterWaveHeight` 全局乘子时，大波与小波振幅同步等比缩放（验证三者叠乘语义）
+
+#### 5.2.6 P5 海洋波澜专项（待实施时验证）
+
+- [ ] ocean 预设下水面出现中─大尺度滚动光带（连绵粼光），非单穹顶
+- [ ] `lowFreqNormalStrength = 0`（calm 预设）时水面退化为 P4 效果，无意外波澜（零回归）
+- [ ] 措施 B 校准后 ocean 水面在 `waterSize` 内呈 2–3 道涌浪；若初值（降 freq）致波过稀，已按 §4.8.3 反向校准并复核方向
+- [ ] ocean/tropical 预设 `waterSkyColorBlend` 提升至 0.6/0.55，天光粼光明显浮现
+- [ ] 切换 5 个预设时，低频法线强度同步变化为 §4.8.5 取值
+- [ ] FPS 影响 ≤ 3%（仅增 1 次 512² 纹理采样，属 P1 同类开销，由全局 `qualityProfile` 接管）
 
 ---
 
@@ -754,6 +851,8 @@ P2（焦散强度 + UI 预设化）涉及的所有变更点，实施时逐项打
 | 🟢 低 | wails 绑定漏生成 | EnvState 新字段未同步 Go struct + 重生成绑定 → `SetEnvState` 静默丢弃 | §4.7.4 第 5/6 项强制 `app.go` 补字段 + `npm run generate:bindings` |
 | 🟢 低 | UI 折叠后功能不可达 | 参数收进折叠组后，用户可能找不到高级选项 | 折叠组标题明确，搜索功能可命中折叠组内参数 |
 | 🟡 P3 | 云壳 camera-follow 与反射 RT 相机切换交互 | 体积云球壳在反射 RT 渲染时移位到反射相机位置 | 非本次更新引入；建议后续评估是否修复或接受 gap |
+| 🟡 P5 | 低频法线层方向校准 | 措施 B 降 freq 可能使水面波数更少（稀穹顶），与「连绵涌浪」目标反向 | §4.8.3 已标注方向风险，终值以 ocean/tropical 预设视觉校准为准；必要时反向（提 freq + 增 amp） |
+| 🟢 低 | P5 措施 A 性能 | 第三层 detail normal 仅 1 次 512² 纹理采样 | 与 P1 同类开销，全局 `qualityProfile` 已接管（见本节性能行） |
 
 ---
 

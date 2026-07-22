@@ -140,7 +140,7 @@ const _probeBoundMaterials = new Map<number, MaterialWithReflection>();
 - 绑定前逐个保存（非批量一次性），新模型加载时通过 `onModelMeshesReady` 自动补绑
 - restore 时校验材质是否仍存活（`isDisposed` 守卫，已 dispose 的材质跳过并清理映射）
 - Probe 排除 `env*` 前缀网格，避免与 PlanarReflection 的地面/水面槽位冲突
-- **遗留问题（P4）**：`_restoreOriginalTexture` 还原 `reflectionTexture` 但未还原 `reflectionColor`，Probe 退出后材质残留绑定期强度色。MMD 材质一般无自有 `reflectionTexture`，实际良性，待补还原。
+- **遗留问题（P4）**：~~`_restoreOriginalTexture` 还原 `reflectionTexture` 但未还原 `reflectionColor`~~ ✅ 已于 2026-07-22 落地修复：新增 `_savedReflectionColors` 对称映射，绑定前 `.clone()` 保存原始 `reflectionColor`，退出时 `copyFrom` 还原（无原始值时兜底白），状态不一致已消除。
 
 ### 决策五：质量参数映射（模式内固定，非模式推导）
 
@@ -225,5 +225,16 @@ Probe 强度减半 + SSR 独立渲染，通过 `_enableHybrid` 分支实现。
 | 性能降级系统仍通过 `setRenderState({ reflectionProbeEnabled })` 发送指令 | ✅ 已解决 | **收口完成（2026-07-20）**：降级系统改写为写入 `env.reflectionQuality`（经 `resolveQualityProfile` → `applyReflection` 统一驱动），`renderer.ts` 的 no-op 空分支已移除，并新增「降级不高于用户原始反射质量」上限守卫 |
 | 现有 UI 面板直接操作 `ssrEnabled` / `reflectionProbeEnabled` | ✅ 已解决 | **收口完成（2026-07-20）**：旧 SSR 开关/4 滑杆与探针开关已从渲染菜单、设置面板、渲染预设中移除，`RenderState` 反射字段删除，反射控制单源化到 `reflectionMode` / `reflectionQuality` |
 | 模式切换时资源重建可能导致 1-2 帧卡顿 | P4 | 水面材质始终包含 `PLANAR_REFLECTION` define，通过 blend=0 控制可见性，避免 shader 重编译 |
-| `reflectionMode` 若残留 `auto` 值（旧存档/旧 UI）会静默 no-op 致零反射 | P3 | `resolveReflectionMode` 已无 `auto` 分支；schema 已移除该枚举。建议兜底 `?? 'planar'` 处显式拒绝 `auto`：`if (mode === 'auto') return 'planar'` |
-| Probe 退出时 `reflectionColor` 未随 `reflectionTexture` 还原 | P4 | `_restoreOriginalTexture` 仅恢复纹理；MMD 材质一般无自有 `reflectionTexture`，实际良性。待补 `reflectionColor` 还原以消除状态不一致（见决策四遗留问题） |
+| `reflectionMode` 残留 `auto` 等非法值（旧存档）会静默 no-op 致零反射 | P3 | ✅ 已落地（2026-07-22）：`resolveReflectionMode` 新增白名单 `VALID_REFLECTION_MODES` 断言，非法值（含 `auto`）兜底 `planar`，单点收敛防御 |
+| Probe 退出时 `reflectionColor` 未随 `reflectionTexture` 还原 | P4 | ✅ 已落地（2026-07-22）：新增 `_savedReflectionColors`，绑定前 `reflectionColor.clone()` 保存、退出时 `copyFrom` 还原（`_disposeProbe`/`disposeReflection` 同步 clear），消除状态不一致 |
+
+---
+
+## 实施修订记录（Rev 2 · 2026-07-22）
+
+ADR-151 审查（2026-07-22）两项待办，本修订一并落地，验证 `npm run build`（tsc && vite build）0 错误。
+
+| 项 | 改动文件 | 落地内容 |
+|----|---------|---------|
+| 🟡 P3 | `frontend/src/scene/env/env-reflection.ts` | `resolveReflectionMode` 新增白名单 `VALID_REFLECTION_MODES` 断言；旧存档残留 `auto` 等非法 `reflectionMode` 兜底 `planar`，消除零反射静默 no-op（单点收敛防御） |
+| 🟢 P4 | `frontend/src/scene/env/env-reflection.ts` | 新增 `_savedReflectionColors` 对称映射；绑定前 `reflectionColor.clone()` 保存（避免 `.set()` 原地修改污染原始值），退出时 `copyFrom` 还原，dispose 两路径同步 clear |

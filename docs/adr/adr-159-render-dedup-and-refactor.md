@@ -129,7 +129,7 @@
 - **P4-A `transitionLighting` observer 泄漏**：根因——`animLoopObs` 为 `transitionLighting` 局部变量，仅动画自然结束（t≥1）时由闭包自移除；**重入不取消旧 observer**（重复调用堆叠多个渲染循环 observer、并发打架）、**`disposeLighting()` 不跟踪它**（场景中途销毁后 observer 滞留旧 scene）。修复：在 `lightingState` 新增 `activeTransitionObs` 句柄；`transitionLighting` 入口先 `dispose` 在途动画；`animLoop` 加防御性 guard（scene/主光已销毁即退出并移除 observer）；`disposeLighting` 显式 `dispose` 并在途 observer。彻底消除泄漏与并发。
 - **P4-B `refreshRate` 非标准 API 兜底**：`detectRefreshRate()` 原用 `as unknown as` 裸 cast 读取非标准 `screen.refreshRate`，缺异常防护。改为 `ScreenWithRefreshRate` 类型化安全读取 + `try/catch`，缺失/非有限正数/访问异常时回退 60Hz（RSCALE=1，行为与历史零回归），补文档说明非标准性。
 - 验证：改动文件（lighting.ts/lighting-state.ts/performance.ts）tsc 零错误、eslint 零告警；P4 相关单测 `performance-snapshot(4)` + `env-lighting(22)` + `lighting-stage(6)` = **32/32 通过**。
-- 注意：全量单测 68 失败 / 12 失败套件为独立问题——`src/scene/env/env-water.ts` 存在用户未提交的 Ground Ripples WIP（line 329 `new import('@babylonjs/core').Texture(...)` 非法语法），级联拖垮整个 env/asset 子系统。该 WIP 非 P4 范围，P4 改动本身隔离无回归。
+- 注意（**2026-07-22 审核修订 · 文本已失效**）：原文所述「`src/scene/env/env-water.ts` 存在未提交 Ground Ripples WIP（line 329 `new import('@babylonjs/core').Texture(...)` 非法语法），级联拖垮整个 env/asset 子系统、全量 68 失败 / 12 失败套件」**已不成立**。截至本日核查：`git status --short` 显示 env-water.ts 跟踪树内干净（无未提交改动）；全仓 `grep 'new import('` 零匹配；`cd frontend && tsc --noEmit` 退出码 0（构建绿）。该 WIP 应已在 P4 之后被完成或回退，ADR 文本未同步。结论不变：**P4 改动本身隔离无回归**。
 
 ## 待办
 

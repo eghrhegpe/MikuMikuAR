@@ -94,3 +94,7 @@ interface PlanarReflectionConfig {
 - `npx tsc --noEmit` 通过。
 - `npm run test` 全量 env 套件通过（env-bridge 72 + env-state 16 + env-water 26 + integration）。
 - 运行时（Wails/WebView2）需人工确认：地面反射随倾斜对齐、水面反射随相机正确、互斥切换可恢复、无双重渲染开销。
+
+## 5. 相关 ADR
+
+- [ADR-151](adr-151-reflection-unified-architecture.md)（反射系统统一架构）：本 ADR 的 `PlanarReflection` 统一平面反射引擎由 ADR-151 经 `getPlanarQualityOverride` 协调分辨率 / 可见性；SSR/Probe 单源收口到 `reflectionMode`/`reflectionQuality`，二者经 `reflectionMode='none'` 强制关闭平面反射、`planar` 拔高到至少 `low`。

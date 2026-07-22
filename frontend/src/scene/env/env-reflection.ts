@@ -15,6 +15,7 @@ import { ReflectionProbe } from '@babylonjs/core/Probes/reflectionProbe';
 import { Scene } from '@babylonjs/core/scene';
 import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import type { BaseTexture } from '@babylonjs/core/Materials/Textures/baseTexture';
+import type { Color3 } from '@babylonjs/core/Maths/math.color';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { safeDispose } from '@/core/dispose-helpers';
 import { logWarn } from '@/core/logger';
@@ -87,6 +88,8 @@ const PROBE_REFRESH_MIN_FPS = 24;
  * Probe 绑定前逐个保存，退出时逐个恢复，消除悬空指针。
  */
 const _savedReflectionTextures = new Map<number, BaseTexture | null>();
+/** 保存材质原始 reflectionColor（与 _savedReflectionTextures 对称，P4 修复） */
+const _savedReflectionColors = new Map<number, Color3 | null>();
 
 /**
  * 已绑定 Probe 的材质映射（uniqueId → 材质引用）。
@@ -121,14 +124,20 @@ export function getQualityPreset(state: EnvState): ReflectionQualityPreset {
 /**
  * ADR-151: 平面反射质量全局覆盖（供 env-ground / env-water 的 getQuality 检查）。
  * - reflectionMode='none'  → 强制 'off'（关闭全部反射，含平面反射）
- * - reflectionMode='planar' → 至少 'low'（避免"平面模式却零质量"的矛盾）
- * - 其他模式               → null（平面反射遵循用户 reflectionQuality 设置）
+ * - reflectionMode='planar' → 固定 'low'（控制平面倒影成本）
+ * - 其他模式且 reflectionQuality='off' → 'low'（保底，避免已选反射模式却零倒影）
+ * - 其他模式且 reflectionQuality≠'off' → null（平面倒影遵循用户 reflectionQuality 设置）
  * 纯函数于 state，与 dispatcher 回调执行顺序无关，保证任意时序下结论一致。
  */
 export function getPlanarQualityOverride(state: EnvState): 'off' | 'low' | null {
     const mode = resolveReflectionMode(state);
     if (mode === 'none') return 'off';
+    // planar 模式固定 low（控制平面倒影成本）；
+    // ssr/probe/hybrid 模式下 reflectionQuality='off' 仅关 SSR/Probe 层，
+    // 不应连带关闭地面/水面平面倒影（尤其 hybrid=最高画质预期）。
     if (mode === 'planar') return 'low';
+    const quality = state.reflectionQuality ?? 'off';
+    if (quality === 'off') return 'low';
     return null;
 }
 
@@ -137,6 +146,7 @@ export function getPlanarQualityOverride(state: EnvState): 'off' | 'low' | null 
 interface MaterialWithReflection {
     uniqueId: number;
     reflectionTexture: BaseTexture | null;
+    reflectionColor?: Color3 | null;
     isDisposed?: boolean;
 }
 
@@ -147,6 +157,11 @@ interface MaterialWithReflection {
 function _saveOriginalTexture(mat: MaterialWithReflection): void {
     if (!_savedReflectionTextures.has(mat.uniqueId)) {
         _savedReflectionTextures.set(mat.uniqueId, mat.reflectionTexture);
+        // P4 修复：克隆原始 reflectionColor，避免后续 .set() 原地修改污染保存值
+        _savedReflectionColors.set(
+            mat.uniqueId,
+            mat.reflectionColor ? mat.reflectionColor.clone() : null,
+        );
     }
 }
 
@@ -163,6 +178,18 @@ function _restoreOriginalTexture(mat: MaterialWithReflection): void {
     const saved = _savedReflectionTextures.get(mat.uniqueId);
     mat.reflectionTexture = saved ?? null;
     _savedReflectionTextures.delete(mat.uniqueId);
+
+    // P4 修复：同步还原 reflectionColor，消除 Probe 退出后残留强度色
+    const savedColor = _savedReflectionColors.get(mat.uniqueId);
+    if (mat.reflectionColor) {
+        if (savedColor) {
+            mat.reflectionColor.copyFrom(savedColor);
+        } else {
+            mat.reflectionColor.set(1, 1, 1);
+        }
+    }
+    _savedReflectionColors.delete(mat.uniqueId);
+
     _probeBoundMaterials.delete(mat.uniqueId);
 }
 
@@ -280,6 +307,7 @@ function _disposeProbe(_scene: Scene): void {
     }
     _probeBoundMaterials.clear();
     _savedReflectionTextures.clear();
+    _savedReflectionColors.clear();
 
     // 释放 observer + probe
     _probeRefreshObserver = safeDispose(_probeRefreshObserver);
@@ -497,6 +525,7 @@ export function disposeReflection(): void {
     _probeStrength = 1;
     _probeCreateFailed = false;
     _savedReflectionTextures.clear();
+    _savedReflectionColors.clear();
     _probeBoundMaterials.clear();
 }
 
