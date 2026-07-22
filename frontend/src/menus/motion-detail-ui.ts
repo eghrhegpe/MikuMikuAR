@@ -27,11 +27,11 @@ import { getActiveMotion, getSceneMotions, removeSceneMotion } from '../scene/mo
 import { t } from '../core/i18n/t';
 import type { MenuNode } from './menu-schema';
 import { renderMenu } from './render-menu';
-import { createIconifyIcon } from '../core/icons';
-import { undo, redo, canUndo, canRedo } from '../scene/motion/motion-modules/motion-history';
-import { applyModuleSnapshot } from '../scene/motion/motion-modules/module-base';
-import { renderModuleToggleList } from './motion-binding-ui';
-import { buildModuleParamLevel, buildAdvancedBoneOverrideLevel } from './motion-override-levels';
+import {
+    buildModuleParamLevel,
+    renderOverrideCard,
+    renderPresetCard,
+} from './motion-override-levels';
 // 循环依赖安全：getMotionMenu 仅在函数体内调用
 import { getMotionMenu } from './motion-popup';
 
@@ -133,7 +133,9 @@ export function buildLayerLevel(layerId: string, id: string): PopupLevel {
 
 /**
  * [doc:adr-167] 动作详情子页 schema——某个主动作的统一管理入口。
- * 整合：动作名 + 删除 / 内部图层管理 / 动作覆盖模块 / 播放速度。
+ * 拆分为多卡片：动作信息 / 图层 / 动作覆盖（核心）/ 动作预设 / 播放速度。
+ * [doc:adr-116/125/145] 覆盖卡复用 renderOverrideCard（撤销/重做/历史/冲突 banner），
+ * 预设卡复用 renderPresetCard——原死路由 motion:boneOverride 的沉没功能由此重新可达。
  * @param sceneMotionId 指定主动作 id；undefined 时回退到当前默认动作（兼容旧调用）
  */
 function buildMotionDetailSchema(sceneMotionId?: string): MenuNode[] {
@@ -146,14 +148,15 @@ function buildMotionDetailSchema(sceneMotionId?: string): MenuNode[] {
     const foc = modelManager.focused();
     const target =
         foc ?? [...modelManager.modelRegistry.values()].find((m) => m.kind === 'actor') ?? null;
+    const modelId = focusedModelId;
 
-    return [
+    const nodes: MenuNode[] = [
+        // ── 卡片 1：当前主动作 ──
         {
-            id: 'detail:main',
+            id: 'detail:info',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    // ── 当前主动作 ──
                     addSectionTitle(inner, t('motion.currentMotion'));
                     slideRow(
                         inner,
@@ -167,160 +170,100 @@ function buildMotionDetailSchema(sceneMotionId?: string): MenuNode[] {
                         undefined,
                         { wrapLabel: true }
                     );
-                    // [doc:adr-170] 删除动作已移入动作工具页（buildMotionToolsLevel），
-                    // 详情页只保留图层与覆盖模块——对齐模型「详情 vs 工具」分层
-
-                    // ── 该主动作内部的图层 ──
-                    if (motion && motion.vmdLayers.length > 0) {
-                        addSectionTitle(inner, t('motion.layerSettings'));
-                        for (const layer of motion.vmdLayers) {
-                            slideRow(
-                                inner,
-                                '',
-                                layer.name,
-                                false,
-                                () => {
-                                    const lvl = buildLayerLevel(layer.id, target?.id ?? '');
-                                    getMotionMenu()?.push(lvl);
-                                },
-                                undefined,
-                                undefined,
-                                undefined,
-                                undefined,
-                                {
-                                    wrapLabel: true,
-                                    trailing: {
-                                        icon: 'lucide:settings-2',
-                                        title: t('library.modelTools'),
-                                        onClick: () => {
-                                            const lvl = buildLayerLevel(layer.id, target?.id ?? '');
-                                            getMotionMenu()?.push(lvl);
-                                        },
-                                    },
-                                }
-                            );
-                        }
-                    }
-
-                    // ── 动作覆盖（模块列表） ──
-                    if (motion) {
-                        const modelId = focusedModelId;
-                        if (modelId) {
-                            addSectionTitle(inner, t('motion.override.title'));
-
-                            // 撤销/重做
-                            const btnGroup = document.createElement('div');
-                            btnGroup.style.cssText = 'display:flex;gap:4px;padding:0 0 4px;';
-
-                            const undoBtn = document.createElement('button');
-                            undoBtn.className = 'slide-action';
-                            const undoIcon = createIconifyIcon('lucide:undo-2');
-                            if (undoIcon) {
-                                undoBtn.appendChild(undoIcon);
-                            }
-                            undoBtn.title = 'Ctrl+Z';
-                            undoBtn.style.opacity = canUndo(modelId) ? '1' : '0.3';
-                            undoBtn.style.pointerEvents = canUndo(modelId) ? 'auto' : 'none';
-                            undoBtn.addEventListener('click', () => {
-                                if (!canUndo(modelId)) {
-                                    return;
-                                }
-                                const applier = (
-                                    snap: Record<
-                                        string,
-                                        {
-                                            enabled: boolean;
-                                            params: Record<
-                                                string,
-                                                import('@/core/types').ParamValue
-                                            >;
-                                        }
-                                    >
-                                ) => {
-                                    applyModuleSnapshot(modelId, snap);
-                                };
-                                undo(modelId, applier);
-                                setStatus(t('motion.undoApplied'), true);
-                                getMotionMenu()?.reRender();
-                            });
-                            btnGroup.appendChild(undoBtn);
-
-                            const redoBtn = document.createElement('button');
-                            redoBtn.className = 'slide-action';
-                            const redoIcon = createIconifyIcon('lucide:redo-2');
-                            if (redoIcon) {
-                                redoBtn.appendChild(redoIcon);
-                            }
-                            redoBtn.title = 'Ctrl+Shift+Z';
-                            redoBtn.style.opacity = canRedo(modelId) ? '1' : '0.3';
-                            redoBtn.style.pointerEvents = canRedo(modelId) ? 'auto' : 'none';
-                            redoBtn.addEventListener('click', () => {
-                                if (!canRedo(modelId)) {
-                                    return;
-                                }
-                                const applier = (
-                                    snap: Record<
-                                        string,
-                                        {
-                                            enabled: boolean;
-                                            params: Record<
-                                                string,
-                                                import('@/core/types').ParamValue
-                                            >;
-                                        }
-                                    >
-                                ) => {
-                                    applyModuleSnapshot(modelId, snap);
-                                };
-                                redo(modelId, applier);
-                                setStatus(t('motion.override.redoApplied'), true);
-                                getMotionMenu()?.reRender();
-                            });
-                            btnGroup.appendChild(redoBtn);
-
-                            inner.appendChild(btnGroup);
-
-                            // 模块列表
-                            renderModuleToggleList(inner, modelId, {
-                                initModules: true,
-                                onEnter: (modId) =>
-                                    getMotionMenu()?.push(buildModuleParamLevel(modId)),
-                            });
-
-                            // 高级骨骼覆盖入口
-                            slideRow(
-                                inner,
-                                'tabler:bone',
-                                t('motion.boneOverride.title'),
-                                true,
-                                () => {
-                                    getMotionMenu()?.push(buildAdvancedBoneOverrideLevel());
-                                }
-                            );
-                        }
-                    }
-
-                    // ── 播放速度 ──
-                    addSectionTitle(inner, t('motion.playbackSpeed'));
-                    addSliderRow(
-                        inner,
-                        t('motion.playbackSpeed'),
-                        _playbackSpeed,
-                        0.1,
-                        2.0,
-                        0.05,
-                        (v) => {
-                            _playbackSpeed = v;
-                            if (mmdRuntime) {
-                                mmdRuntime.timeScale = v;
-                            }
-                        },
-                        'lucide:gauge'
-                    );
                 });
             },
         },
-    ] satisfies MenuNode[];
+    ];
+
+    // ── 卡片 2：该主动作内部的图层 ──
+    // [doc:adr-170] 删除动作已移入动作工具页（buildMotionToolsLevel），
+    // 详情页只保留图层与覆盖模块——对齐模型「详情 vs 工具」分层
+    if (motion && motion.vmdLayers.length > 0) {
+        nodes.push({
+            id: 'detail:layers',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    addSectionTitle(inner, t('motion.layerSettings'));
+                    for (const layer of motion.vmdLayers) {
+                        slideRow(
+                            inner,
+                            '',
+                            layer.name,
+                            false,
+                            () => {
+                                const lvl = buildLayerLevel(layer.id, target?.id ?? '');
+                                getMotionMenu()?.push(lvl);
+                            },
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            {
+                                wrapLabel: true,
+                                trailing: {
+                                    icon: 'lucide:settings-2',
+                                    title: t('library.modelTools'),
+                                    onClick: () => {
+                                        const lvl = buildLayerLevel(layer.id, target?.id ?? '');
+                                        getMotionMenu()?.push(lvl);
+                                    },
+                                },
+                            }
+                        );
+                    }
+                });
+            },
+        });
+    }
+
+    // ── 卡片 3：动作覆盖（核心）+ 卡片 4：动作预设 ──
+    if (motion && modelId) {
+        nodes.push({
+            id: 'detail:override',
+            kind: 'custom',
+            renderCustom: (c) => {
+                renderOverrideCard(c, modelId, {
+                    onEnter: (modId) => getMotionMenu()?.push(buildModuleParamLevel(modId)),
+                });
+            },
+        });
+        nodes.push({
+            id: 'detail:presets',
+            kind: 'custom',
+            renderCustom: (c) => {
+                renderPresetCard(c, modelId);
+            },
+        });
+    }
+
+    // ── 卡片 5：播放速度 ──
+    nodes.push({
+        id: 'detail:speed',
+        kind: 'custom',
+        renderCustom: (c) => {
+            cardContainer(c, (inner) => {
+                addSectionTitle(inner, t('motion.playbackSpeed'));
+                addSliderRow(
+                    inner,
+                    t('motion.playbackSpeed'),
+                    _playbackSpeed,
+                    0.1,
+                    2.0,
+                    0.05,
+                    (v) => {
+                        _playbackSpeed = v;
+                        if (mmdRuntime) {
+                            mmdRuntime.timeScale = v;
+                        }
+                    },
+                    'lucide:gauge'
+                );
+            });
+        },
+    });
+
+    return nodes;
 }
 
 /**

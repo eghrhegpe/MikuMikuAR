@@ -67,10 +67,9 @@ const {
         onFolderEnter: envOnFolderEnter,
         onItemClick: envOnItemClick,
     },
+    onShow: (menu) => setEnvMenu(menu),
+    onClose: () => setEnvMenu(null),
 });
-
-// 注册到 env-menu-state.ts，供 env-*-levels.ts 通过 getEnvMenu() 获取菜单实例
-setEnvMenu(getEnvMenu());
 
 export { getEnvMenu, refreshEnvRoot, showEnvMenu };
 

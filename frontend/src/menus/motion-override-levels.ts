@@ -1,6 +1,7 @@
 // [doc:adr-116] Motion Override Levels — 模块化动作覆盖 UI
-// 职责: 模块列表（开关+▸）+ 模块参数子页 + 高级骨骼覆盖子页
-// 路由: motion-popup.ts → motionOnFolderEnter → 'motion:boneOverride'
+// 职责: 可复用覆盖卡片渲染器（renderOverrideCard / renderPresetCard，供动作详情页消费）
+//       + 模块参数子页 + 高级骨骼覆盖子页
+// 入口: motion-detail-ui.ts → buildMotionDetailSchema（原死路由 motion:boneOverride 已移除）
 
 import {
     setStatus,
@@ -9,7 +10,7 @@ import {
     modelRegistry,
     focusedModelId,
 } from '../core/config';
-import { addEmptyRow, slideRow, addSectionTitle, addPresetChip } from '../core/ui-helpers';
+import { addEmptyRow, slideRow, addPresetChip } from '../core/ui-helpers';
 import { addSliderRow } from '../core/ui-helpers';
 import { createTrailingBtn } from '../core/ui-slide-row';
 import { createIconifyIcon } from '../core/icons';
@@ -25,7 +26,6 @@ import {
     getOverride,
 } from '../scene/motion/bone-override';
 import {
-    initMotionModules,
     getRegisteredModules,
     createModule,
     getModuleState,
@@ -52,15 +52,7 @@ import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 import { safeDispose } from '@/core/dispose-helpers';
 
-// ======== 模块列表层（ADR-116 主入口） ========
-
-let _modulesInitialized = false;
-function ensureModulesInit(): void {
-    if (!_modulesInitialized) {
-        initMotionModules();
-        _modulesInitialized = true;
-    }
-}
+// ======== 可复用卡片渲染器（供 motion-detail-ui 消费） ========
 
 // [doc:adr-116 P3-3] 表单状态（per-model）：供列表项「编辑」按钮回填
 // 提升到模块级 Map 避免 reRender 时丢失
@@ -73,17 +65,352 @@ interface OverrideFormState {
 }
 const _overrideFormStates = new Map<string, OverrideFormState>();
 
-/** 构建动作覆盖主面板：模块列表 + 高级骨骼覆盖入口 */
-export function buildMotionOverrideLevel(): PopupLevel {
-    ensureModulesInit();
-    return {
-        label: t('motion.override.title'),
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            renderMenu(buildMotionOverrideSchema(), container);
-        },
-    };
+/**
+ * [doc:adr-145] 动作预设卡片：标题栏（保存按钮）+ 预设列表 / 空状态。
+ * 提取自已移除的独立覆盖页（原死路由 motion:boneOverride），供动作详情页消费。
+ */
+export function renderPresetCard(container: HTMLElement, modelId: string): void {
+    const inst = modelRegistry.get(modelId);
+    const presets = inst?.motionPresets ?? [];
+    cardContainer(container, (inner) => {
+        // 标题
+        const titleBar = document.createElement('div');
+        titleBar.style.cssText =
+            'display:flex;align-items:center;justify-content:space-between;padding:8px 14px 4px;';
+        const titleText = document.createElement('span');
+        titleText.style.cssText = 'font-size:12px;color:var(--text);font-weight:600;';
+        titleText.textContent = t('motion-preset.title');
+        titleBar.appendChild(titleText);
+
+        // 保存按钮
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'slide-action';
+        const saveIcon = createIconifyIcon('lucide:save');
+        if (saveIcon) {
+            saveBtn.appendChild(saveIcon);
+        }
+        saveBtn.title = t('motion-preset.saveCurrent');
+        const menuRefForPreset = getMotionMenu();
+        saveBtn.addEventListener('click', () => {
+            if (!modelId || !inst) {
+                return;
+            }
+            // 检查数量限制
+            if (presets.length >= 10) {
+                setStatus(t('motion-preset.limitReached'), true);
+                return;
+            }
+            const modules = getRegisteredModules();
+            const states: MotionModuleState[] = [];
+            for (const m of modules) {
+                const st = getModuleState(modelId, m.id);
+                states.push(st);
+            }
+            const newPreset: MotionPreset = {
+                id: generatePresetId(),
+                name: t('motion-preset.defaultName'),
+                modules: modulesToPresetMap(states),
+            };
+            if (!inst.motionPresets) {
+                inst.motionPresets = [];
+            }
+            inst.motionPresets.push(newPreset);
+            setStatus(t('motion-preset.saved'), true);
+            menuRefForPreset?.reRender();
+        });
+        titleBar.appendChild(saveBtn);
+        inner.appendChild(titleBar);
+
+        if (presets.length === 0) {
+            const empty = document.createElement('div');
+            empty.style.cssText =
+                'font-size:12px;color:var(--text-dim);text-align:center;padding:16px;';
+            empty.textContent = t('motion-preset.noPresets');
+            inner.appendChild(empty);
+        } else {
+            const list = document.createElement('div');
+            list.style.cssText =
+                'padding:4px 14px 8px;display:flex;flex-direction:column;gap:4px;';
+            for (const preset of presets) {
+                const row = document.createElement('div');
+                row.style.cssText =
+                    'display:flex;align-items:center;justify-content:space-between;gap:6px;' +
+                    'padding:4px 8px;border-radius:4px;background:var(--bg2, rgba(255,255,255,0.05));';
+
+                const nameSpan = document.createElement('span');
+                nameSpan.style.cssText =
+                    'font-size:12px;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+                nameSpan.textContent = preset.name;
+                row.appendChild(nameSpan);
+
+                // 应用按钮
+                const applyBtn = document.createElement('button');
+                applyBtn.className = 'slide-action';
+                applyBtn.textContent = t('motion-preset.apply');
+                applyBtn.style.cssText = 'font-size:11px;padding:2px 8px;';
+                applyBtn.addEventListener('click', () => {
+                    if (!modelId) {
+                        return;
+                    }
+                    applyMotionPreset(modelId, preset);
+                    setStatus(t('motion-preset.applied'), true);
+                    menuRefForPreset?.reRender();
+                });
+                row.appendChild(applyBtn);
+
+                // 删除按钮
+                const delBtn = document.createElement('button');
+                delBtn.className = 'slide-action';
+                const delIcon = createIconifyIcon('lucide:trash-2');
+                if (delIcon) {
+                    delBtn.appendChild(delIcon);
+                }
+                delBtn.style.cssText = 'font-size:11px;color:var(--danger,#e05050);';
+                delBtn.title = t('motion-preset.delete');
+                delBtn.addEventListener('click', () => {
+                    if (!inst?.motionPresets) {
+                        return;
+                    }
+                    const idx = inst.motionPresets.indexOf(preset);
+                    if (idx !== -1) {
+                        inst.motionPresets.splice(idx, 1);
+                    }
+                    menuRefForPreset?.reRender();
+                });
+                row.appendChild(delBtn);
+
+                list.appendChild(row);
+            }
+            inner.appendChild(list);
+        }
+    });
+}
+
+/**
+ * [doc:adr-116/125] 动作覆盖卡片：标题栏（撤销/重做/历史）+ 骨骼冲突 banner
+ * + 模块开关列表 + 高级骨骼覆盖入口。提取自已移除的独立覆盖页（原死路由
+ * motion:boneOverride），供动作详情页消费——详情页由此成为覆盖功能唯一入口，
+ * 原沉没的冲突可视化 / 历史下拉随之重新可达。
+ */
+export function renderOverrideCard(
+    container: HTMLElement,
+    modelId: string,
+    opts: { onEnter: (modId: string) => void }
+): void {
+    cardContainer(container, (inner) => {
+        // [doc:adr-125 P2] 标题栏 + 撤销/重做按钮
+        const titleBar = document.createElement('div');
+        titleBar.style.cssText =
+            'display:flex;align-items:center;justify-content:space-between;padding:8px 14px 4px;';
+        const titleText = document.createElement('span');
+        titleText.style.cssText = 'font-size:12px;color:var(--text);font-weight:600;';
+        titleText.textContent = t('motion.override.title');
+        titleBar.appendChild(titleText);
+
+        const btnGroup = document.createElement('div');
+        btnGroup.style.cssText = 'display:flex;gap:4px;';
+
+        const undoBtn = document.createElement('button');
+        undoBtn.className = 'slide-action';
+        const undoIcon = createIconifyIcon('lucide:undo-2');
+        if (undoIcon) {
+            undoBtn.appendChild(undoIcon);
+        }
+        undoBtn.title = 'Ctrl+Z';
+        undoBtn.addEventListener('click', () => {
+            if (!modelId || !canUndo(modelId)) {
+                return;
+            }
+            const applier = (
+                snap: Record<
+                    string,
+                    {
+                        enabled: boolean;
+                        params: Record<string, import('@/core/types').ParamValue>;
+                    }
+                >
+            ) => {
+                applyModuleSnapshot(modelId, snap);
+            };
+            undo(modelId, applier);
+            setStatus(t('motion.undoApplied'), true);
+            getMotionMenu()?.reRender();
+        });
+        const updateUndoState = () => {
+            undoBtn.style.opacity = modelId && canUndo(modelId) ? '1' : '0.3';
+            undoBtn.style.pointerEvents = modelId && canUndo(modelId) ? 'auto' : 'none';
+        };
+        updateUndoState();
+
+        const redoBtn = document.createElement('button');
+        redoBtn.className = 'slide-action';
+        const redoIcon = createIconifyIcon('lucide:redo-2');
+        if (redoIcon) {
+            redoBtn.appendChild(redoIcon);
+        }
+        redoBtn.title = 'Ctrl+Shift+Z';
+        redoBtn.addEventListener('click', () => {
+            if (!modelId || !canRedo(modelId)) {
+                return;
+            }
+            const applier = (
+                snap: Record<
+                    string,
+                    {
+                        enabled: boolean;
+                        params: Record<string, import('@/core/types').ParamValue>;
+                    }
+                >
+            ) => {
+                applyModuleSnapshot(modelId, snap);
+            };
+            redo(modelId, applier);
+            setStatus(t('motion.override.redoApplied'), true);
+            getMotionMenu()?.reRender();
+        });
+        const updateRedoState = () => {
+            redoBtn.style.opacity = modelId && canRedo(modelId) ? '1' : '0.3';
+            redoBtn.style.pointerEvents = modelId && canRedo(modelId) ? 'auto' : 'none';
+        };
+        updateRedoState();
+
+        btnGroup.appendChild(undoBtn);
+        btnGroup.appendChild(redoBtn);
+
+        // [doc:adr-125 P3] 历史列表下拉按钮
+        const historyBtn = document.createElement('button');
+        historyBtn.className = 'slide-action';
+        const historyIcon = createIconifyIcon('lucide:more-vertical');
+        if (historyIcon) {
+            historyBtn.appendChild(historyIcon);
+        }
+        historyBtn.title = t('motion.override.history');
+        historyBtn.style.fontSize = '14px';
+        let historyDropdown: HTMLElement | null = null;
+
+        function closeHistoryDropdown(): void {
+            if (historyDropdown) {
+                historyDropdown.remove();
+                historyDropdown = null;
+            }
+            _onOutsideClickDisp = safeDispose(_onOutsideClickDisp);
+        }
+
+        let _onOutsideClick: ((ev: MouseEvent) => void) | null = null;
+        let _onOutsideClickDisp: Disposable | null = null;
+
+        historyBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (historyDropdown) {
+                closeHistoryDropdown();
+                return;
+            }
+            if (!modelId) {
+                return;
+            }
+            const entries = getHistoryEntries(modelId);
+            if (entries.length === 0) {
+                return;
+            }
+            const cursor = getHistoryCursor(modelId);
+
+            historyDropdown = document.createElement('div');
+            historyDropdown.style.cssText =
+                'position:absolute;right:8px;top:100%;z-index:100;' +
+                'background:var(--bg);border:1px solid var(--border);border-radius:6px;' +
+                'box-shadow:0 4px 12px rgba(0,0,0,0.3);max-height:240px;overflow-y:auto;' +
+                'min-width:200px;padding:4px 0;';
+
+            // 显示最近 10 条，最新在上
+            const visible = entries.slice(-10).reverse();
+            for (const entry of visible) {
+                const realIndex = entries.indexOf(entry);
+                const item = document.createElement('div');
+                item.style.cssText =
+                    'padding:6px 12px;font-size:11px;cursor:pointer;' +
+                    'color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+                if (realIndex === cursor) {
+                    item.style.background = 'var(--hover)';
+                    item.style.fontWeight = '600';
+                }
+                item.textContent = entry.description;
+                item.addEventListener('click', () => {
+                    if (!modelId) {
+                        return;
+                    }
+                    const applier = (
+                        snap: Record<
+                            string,
+                            {
+                                enabled: boolean;
+                                params: Record<string, import('@/core/types').ParamValue>;
+                            }
+                        >
+                    ) => {
+                        applyModuleSnapshot(modelId, snap);
+                    };
+                    jumpToHistory(modelId, realIndex, applier);
+                    closeHistoryDropdown();
+                    getMotionMenu()?.reRender();
+                });
+                item.addEventListener('mouseenter', () => {
+                    item.style.background = 'var(--hover)';
+                });
+                item.addEventListener('mouseleave', () => {
+                    if (realIndex !== cursor) {
+                        item.style.background = '';
+                    }
+                });
+                historyDropdown.appendChild(item);
+            }
+
+            // 点击外部关闭（同步注册，避免 setTimeout 时序问题）
+            _onOutsideClick = (ev: MouseEvent) => {
+                if (historyDropdown && !historyDropdown.contains(ev.target as Node)) {
+                    closeHistoryDropdown();
+                }
+            };
+            _onOutsideClickDisp?.dispose();
+            _onOutsideClickDisp = addDisposableListener(document, 'click', _onOutsideClick);
+
+            // 定位到按钮下方
+            historyBtn.style.position = 'relative';
+            historyBtn.appendChild(historyDropdown);
+        });
+
+        btnGroup.appendChild(historyBtn);
+        titleBar.appendChild(btnGroup);
+        inner.appendChild(titleBar);
+
+        // [doc:adr-116 conflict-visibility] 骨骼冲突可视化 banner
+        // 靠面板 reRender 刷新快照（模块开关 onChange 已触发 reRender）
+        const conflictBanner = document.createElement('div');
+        conflictBanner.style.cssText = 'padding:2px 14px 8px;font-size:11px;line-height:1.5;';
+        updateConflictBanner(conflictBanner, modelId);
+        inner.appendChild(conflictBanner);
+
+        // 模块开关列表
+        renderModuleToggleList(inner, modelId, {
+            initModules: true,
+            onEnter: opts.onEnter,
+        });
+
+        // [doc:adr-116] 高级骨骼覆盖入口（附激活计数 sublabel，避免被快速滑过）
+        const ovCount = modelRegistry.get(modelId)?.boneOverrides?.length ?? 0;
+        slideRow(
+            inner,
+            'tabler:bone',
+            t('motion.boneOverride.title'),
+            true,
+            () => {
+                const menu = getMotionMenu();
+                if (menu) {
+                    menu.push(buildAdvancedBoneOverrideLevel());
+                }
+            },
+            ovCount > 0 ? t('motion.override.activeBoneOverrides', { n: ovCount }) : undefined
+        );
+    });
 }
 
 // [doc:adr-116 conflict-visibility] 渲染骨骼冲突 banner（实时快照）
@@ -117,378 +444,6 @@ function updateConflictBanner(el: HTMLElement, modelId: string | null): void {
     el.style.color = 'var(--warn, #e0a030)';
     el.style.whiteSpace = 'pre-line';
     el.textContent = `骨骼冲突 (${total})\n` + lines.join('\n');
-}
-
-function buildMotionOverrideSchema(): MenuNode[] {
-    const modelId = focusedModelId;
-    if (!modelId) {
-        return [
-            {
-                id: 'override:empty',
-                kind: 'custom',
-                renderCustom: (c) => {
-                    addEmptyRow(c, t('motion.boneOverride.noModel'));
-                },
-            },
-        ] satisfies MenuNode[];
-    }
-
-    const modules = getRegisteredModules();
-    const inst = modelRegistry.get(modelId);
-    const presets = inst?.motionPresets ?? [];
-
-    return [
-        // [doc:adr-145] 卡片 0：动作预设
-        {
-            id: 'override:presets',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    // 标题
-                    const titleBar = document.createElement('div');
-                    titleBar.style.cssText =
-                        'display:flex;align-items:center;justify-content:space-between;padding:8px 14px 4px;';
-                    const titleText = document.createElement('span');
-                    titleText.style.cssText = 'font-size:12px;color:var(--text);font-weight:600;';
-                    titleText.textContent = t('motion-preset.title');
-                    titleBar.appendChild(titleText);
-
-                    // 保存按钮
-                    const saveBtn = document.createElement('button');
-                    saveBtn.className = 'slide-action';
-                    const saveIcon = createIconifyIcon('lucide:save');
-                    if (saveIcon) {
-                        saveBtn.appendChild(saveIcon);
-                    }
-                    saveBtn.title = t('motion-preset.saveCurrent');
-                    const menuRefForPreset = getMotionMenu();
-                    saveBtn.addEventListener('click', () => {
-                        if (!modelId || !inst) {
-                            return;
-                        }
-                        // 检查数量限制
-                        if (presets.length >= 10) {
-                            setStatus(t('motion-preset.limitReached'), true);
-                            return;
-                        }
-                        const modules = getRegisteredModules();
-                        const states: MotionModuleState[] = [];
-                        for (const m of modules) {
-                            const st = getModuleState(modelId, m.id);
-                            states.push(st);
-                        }
-                        const newPreset: MotionPreset = {
-                            id: generatePresetId(),
-                            name: t('motion-preset.defaultName'),
-                            modules: modulesToPresetMap(states),
-                        };
-                        if (!inst.motionPresets) {
-                            inst.motionPresets = [];
-                        }
-                        inst.motionPresets.push(newPreset);
-                        setStatus(t('motion-preset.saved'), true);
-                        menuRefForPreset?.reRender();
-                    });
-                    titleBar.appendChild(saveBtn);
-                    inner.appendChild(titleBar);
-
-                    if (presets.length === 0) {
-                        const empty = document.createElement('div');
-                        empty.style.cssText =
-                            'font-size:12px;color:var(--text-dim);text-align:center;padding:16px;';
-                        empty.textContent = t('motion-preset.noPresets');
-                        inner.appendChild(empty);
-                    } else {
-                        const list = document.createElement('div');
-                        list.style.cssText =
-                            'padding:4px 14px 8px;display:flex;flex-direction:column;gap:4px;';
-                        for (const preset of presets) {
-                            const row = document.createElement('div');
-                            row.style.cssText =
-                                'display:flex;align-items:center;justify-content:space-between;gap:6px;' +
-                                'padding:4px 8px;border-radius:4px;background:var(--bg2, rgba(255,255,255,0.05));';
-
-                            const nameSpan = document.createElement('span');
-                            nameSpan.style.cssText =
-                                'font-size:12px;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
-                            nameSpan.textContent = preset.name;
-                            row.appendChild(nameSpan);
-
-                            // 应用按钮
-                            const applyBtn = document.createElement('button');
-                            applyBtn.className = 'slide-action';
-                            applyBtn.textContent = t('motion-preset.apply');
-                            applyBtn.style.cssText = 'font-size:11px;padding:2px 8px;';
-                            applyBtn.addEventListener('click', () => {
-                                if (!modelId) {
-                                    return;
-                                }
-                                applyMotionPreset(modelId, preset);
-                                setStatus(t('motion-preset.applied'), true);
-                                menuRefForPreset?.reRender();
-                            });
-                            row.appendChild(applyBtn);
-
-                            // 删除按钮
-                            const delBtn = document.createElement('button');
-                            delBtn.className = 'slide-action';
-                            const delIcon = createIconifyIcon('lucide:trash-2');
-                            if (delIcon) {
-                                delBtn.appendChild(delIcon);
-                            }
-                            delBtn.style.cssText = 'font-size:11px;color:var(--danger,#e05050);';
-                            delBtn.title = t('motion-preset.delete');
-                            delBtn.addEventListener('click', () => {
-                                if (!inst?.motionPresets) {
-                                    return;
-                                }
-                                const idx = inst.motionPresets.indexOf(preset);
-                                if (idx !== -1) {
-                                    inst.motionPresets.splice(idx, 1);
-                                }
-                                menuRefForPreset?.reRender();
-                            });
-                            row.appendChild(delBtn);
-
-                            list.appendChild(row);
-                        }
-                        inner.appendChild(list);
-                    }
-                });
-            },
-        },
-        // 卡片 1：模块列表
-        {
-            id: 'override:modules',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    // [doc:adr-125 P2] 标题栏 + 撤销/重做按钮
-                    const titleBar = document.createElement('div');
-                    titleBar.style.cssText =
-                        'display:flex;align-items:center;justify-content:space-between;padding:8px 14px 4px;';
-                    const titleText = document.createElement('span');
-                    titleText.style.cssText = 'font-size:12px;color:var(--text);font-weight:600;';
-                    titleText.textContent = t('motion.override.title');
-                    titleBar.appendChild(titleText);
-
-                    const btnGroup = document.createElement('div');
-                    btnGroup.style.cssText = 'display:flex;gap:4px;';
-
-                    const undoBtn = document.createElement('button');
-                    undoBtn.className = 'slide-action';
-                    const undoIcon = createIconifyIcon('lucide:undo-2');
-                    if (undoIcon) {
-                        undoBtn.appendChild(undoIcon);
-                    }
-                    undoBtn.title = 'Ctrl+Z';
-                    undoBtn.addEventListener('click', () => {
-                        if (!modelId || !canUndo(modelId)) {
-                            return;
-                        }
-                        const applier = (
-                            snap: Record<
-                                string,
-                                {
-                                    enabled: boolean;
-                                    params: Record<string, import('@/core/types').ParamValue>;
-                                }
-                            >
-                        ) => {
-                            applyModuleSnapshot(modelId, snap);
-                        };
-                        undo(modelId, applier);
-                        setStatus(t('motion.undoApplied'), true);
-                        getMotionMenu()?.reRender();
-                    });
-                    const updateUndoState = () => {
-                        undoBtn.style.opacity = modelId && canUndo(modelId) ? '1' : '0.3';
-                        undoBtn.style.pointerEvents = modelId && canUndo(modelId) ? 'auto' : 'none';
-                    };
-                    updateUndoState();
-
-                    const redoBtn = document.createElement('button');
-                    redoBtn.className = 'slide-action';
-                    const redoIcon = createIconifyIcon('lucide:redo-2');
-                    if (redoIcon) {
-                        redoBtn.appendChild(redoIcon);
-                    }
-                    redoBtn.title = 'Ctrl+Shift+Z';
-                    redoBtn.addEventListener('click', () => {
-                        if (!modelId || !canRedo(modelId)) {
-                            return;
-                        }
-                        const applier = (
-                            snap: Record<
-                                string,
-                                {
-                                    enabled: boolean;
-                                    params: Record<string, import('@/core/types').ParamValue>;
-                                }
-                            >
-                        ) => {
-                            applyModuleSnapshot(modelId, snap);
-                        };
-                        redo(modelId, applier);
-                        setStatus(t('motion.override.redoApplied'), true);
-                        getMotionMenu()?.reRender();
-                    });
-                    const updateRedoState = () => {
-                        redoBtn.style.opacity = modelId && canRedo(modelId) ? '1' : '0.3';
-                        redoBtn.style.pointerEvents = modelId && canRedo(modelId) ? 'auto' : 'none';
-                    };
-                    updateRedoState();
-
-                    btnGroup.appendChild(undoBtn);
-                    btnGroup.appendChild(redoBtn);
-
-                    // [doc:adr-125 P3] 历史列表下拉按钮
-                    const historyBtn = document.createElement('button');
-                    historyBtn.className = 'slide-action';
-                    const historyIcon = createIconifyIcon('lucide:more-vertical');
-                    if (historyIcon) {
-                        historyBtn.appendChild(historyIcon);
-                    }
-                    historyBtn.title = t('motion.override.history');
-                    historyBtn.style.fontSize = '14px';
-                    let historyDropdown: HTMLElement | null = null;
-
-                    function closeHistoryDropdown(): void {
-                        if (historyDropdown) {
-                            historyDropdown.remove();
-                            historyDropdown = null;
-                        }
-                        _onOutsideClickDisp = safeDispose(_onOutsideClickDisp);
-                    }
-
-                    let _onOutsideClick: ((ev: MouseEvent) => void) | null = null;
-                    let _onOutsideClickDisp: Disposable | null = null;
-
-                    historyBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        if (historyDropdown) {
-                            closeHistoryDropdown();
-                            return;
-                        }
-                        if (!modelId) {
-                            return;
-                        }
-                        const entries = getHistoryEntries(modelId);
-                        if (entries.length === 0) {
-                            return;
-                        }
-                        const cursor = getHistoryCursor(modelId);
-
-                        historyDropdown = document.createElement('div');
-                        historyDropdown.style.cssText =
-                            'position:absolute;right:8px;top:100%;z-index:100;' +
-                            'background:var(--bg);border:1px solid var(--border);border-radius:6px;' +
-                            'box-shadow:0 4px 12px rgba(0,0,0,0.3);max-height:240px;overflow-y:auto;' +
-                            'min-width:200px;padding:4px 0;';
-
-                        // 显示最近 10 条，最新在上
-                        const visible = entries.slice(-10).reverse();
-                        for (const entry of visible) {
-                            const realIndex = entries.indexOf(entry);
-                            const item = document.createElement('div');
-                            item.style.cssText =
-                                'padding:6px 12px;font-size:11px;cursor:pointer;' +
-                                'color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
-                            if (realIndex === cursor) {
-                                item.style.background = 'var(--hover)';
-                                item.style.fontWeight = '600';
-                            }
-                            item.textContent = entry.description;
-                            item.addEventListener('click', () => {
-                                if (!modelId) {
-                                    return;
-                                }
-                                const applier = (
-                                    snap: Record<
-                                        string,
-                                        {
-                                            enabled: boolean;
-                                            params: Record<
-                                                string,
-                                                import('@/core/types').ParamValue
-                                            >;
-                                        }
-                                    >
-                                ) => {
-                                    applyModuleSnapshot(modelId, snap);
-                                };
-                                jumpToHistory(modelId, realIndex, applier);
-                                closeHistoryDropdown();
-                                getMotionMenu()?.reRender();
-                            });
-                            item.addEventListener('mouseenter', () => {
-                                item.style.background = 'var(--hover)';
-                            });
-                            item.addEventListener('mouseleave', () => {
-                                if (realIndex !== cursor) {
-                                    item.style.background = '';
-                                }
-                            });
-                            historyDropdown.appendChild(item);
-                        }
-
-                        // 点击外部关闭（同步注册，避免 setTimeout 时序问题）
-                        _onOutsideClick = (ev: MouseEvent) => {
-                            if (historyDropdown && !historyDropdown.contains(ev.target as Node)) {
-                                closeHistoryDropdown();
-                            }
-                        };
-                        _onOutsideClickDisp?.dispose();
-                        _onOutsideClickDisp = addDisposableListener(
-                            document,
-                            'click',
-                            _onOutsideClick
-                        );
-
-                        // 定位到按钮下方
-                        historyBtn.style.position = 'relative';
-                        historyBtn.appendChild(historyDropdown);
-                    });
-
-                    btnGroup.appendChild(historyBtn);
-                    titleBar.appendChild(btnGroup);
-                    inner.appendChild(titleBar);
-
-                    // [doc:adr-116 conflict-visibility] 骨骼冲突可视化 banner
-                    // 靠面板 reRender 刷新快照（模块开关 onChange 已触发 reRender）
-                    const conflictBanner = document.createElement('div');
-                    conflictBanner.style.cssText =
-                        'padding:2px 14px 8px;font-size:11px;line-height:1.5;';
-                    updateConflictBanner(conflictBanner, modelId);
-                    inner.appendChild(conflictBanner);
-
-                    renderModuleToggleList(inner, modelId, {
-                        onEnter: (modId) => {
-                            const menu = getMotionMenu();
-                            if (menu) {
-                                menu.push(buildModuleParamLevel(modId));
-                            }
-                        },
-                    });
-                });
-            },
-        },
-        // 卡片 2：高级骨骼覆盖入口
-        {
-            id: 'override:advanced',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    slideRow(inner, 'tabler:bone', t('motion.boneOverride.title'), true, () => {
-                        const menu = getMotionMenu();
-                        if (menu) {
-                            menu.push(buildAdvancedBoneOverrideLevel());
-                        }
-                    });
-                });
-            },
-        },
-    ] satisfies MenuNode[];
 }
 
 /** 模块参数子页：渲染模块的 buildSchema() */

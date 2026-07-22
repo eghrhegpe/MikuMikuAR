@@ -66,13 +66,18 @@ export function renderModuleToggleList(
     const modules = getRegisteredModules();
     for (const mod of modules) {
         const state = getModuleState(modelId, mod.id);
+        // [P3] 非默认参数摘要：让用户一眼看到哪个模块已调过参，无需逐个点进子页
+        const defaults = mod.meta.defaults ?? {};
+        const tuned = Object.keys(state.params).filter((k) => state.params[k] !== defaults[k])
+            .length;
+        const sublabel = tuned > 0 ? t('motion.override.tunedParams', { n: tuned }) : undefined;
         slideRow(
             container,
             mod.meta.icon ?? '',
             t(mod.meta.labelKey),
             true,
             () => opts.onEnter(mod.id),
-            undefined,
+            sublabel,
             undefined,
             undefined,
             {

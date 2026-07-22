@@ -80,12 +80,12 @@ const {
         onItemClick: (row) => handleSceneAction(row),
         onFolderEnter: sceneOnFolderEnter,
     },
+    onShow: (menu) => setSceneMenu(menu),
+    onClose: () => setSceneMenu(null),
 });
 
 export { getSceneMenu, showSceneMenu };
 
-// 注册到 scene-menu-state.ts，供 scene-*-levels.ts / env-ground-levels.ts 获权访问
-setSceneMenu(getSceneMenu());
 setRefreshSceneRoot(refreshSceneRoot);
 
 // 从 scene-menu-state.ts 再导出，切断子文件与 scene-menu 的直接 import 路径
