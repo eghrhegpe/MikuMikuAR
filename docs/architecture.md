@@ -308,7 +308,7 @@ VMD 文件 → VmdLoader → MmdAnimation → createRuntimeAnimation → MmdCame
 
 ### 12. 目录结构
 
-> 更新于 2026-07-19（ADR-127~132 新增模块）
+> 更新于 2026-07-23（ADR-166~175 新增模块：env-wetness / quality-profile / scene-drag-levels / env-reflection / env-context / env-type-helpers / bone-override-store / motion-pipeline / perception-observer / env-state-schema 等）
 
 ```
 MikuMikuAR/
@@ -341,6 +341,7 @@ MikuMikuAR/
         │   ├── config.ts             # barrel re-export → types.ts / state.ts / dom.ts / utils.ts
         │   ├── types.ts              # 全局类型定义
         │   ├── state.ts              # UI/环境状态管理
+        │   ├── env-state-schema.ts   # EnvState 单一源 Schema（ADR-137）
         │   ├── fileservice.ts        # resolveFileUrl 统一文件 URL 解析
         │   ├── dialog.ts             # 通用对话框
         │   ├── reactivity.ts         # 简易响应式（signal / effect）
@@ -375,6 +376,7 @@ MikuMikuAR/
         │   │   ├── lighting.ts       # 灯光管理
         │   │   ├── lighting-presets.ts # 灯光预设
         │   │   ├── performance.ts    # 性能监控（ADR-132 亮度统一标量）
+        │   │   ├── quality-profile.ts # 质量维度注册表（ADR-174）
         │   │   └── transform-gizmo.ts # 变换控制器
         │   ├── manager/              # 模型管理
         │   │   ├── model-manager.ts  # 模型管理器
@@ -406,6 +408,9 @@ MikuMikuAR/
         │   │   ├── motion-slot.ts           # 双槽位动作系统（ADR-129）
         │   │   ├── motion-preset-list.ts    # 预设列表组件化（ADR-129）
         │   │   ├── motion-per-motion.ts     # per-motion 程序化动作（ADR-129）
+        │   │   ├── motion-pipeline.ts       # 动作管线显式调度器（ADR-147）
+        │   │   ├── bone-override-store.ts   # 骨骼覆盖集中存储（ADR-116/125）
+        │   │   ├── perception-observer.ts   # 感知层 observer 统一注册
         │   │   └── playback.ts              # 播放控制
         │   ├── physics/              # 物理（WASM Bullet）
         │   │   ├── skirt-analyzer.ts  # 裙装分析器（ADR-084）
@@ -422,6 +427,10 @@ MikuMikuAR/
         │   │   ├── env-ground.ts      # 地面 PBR 材质 + 程序化木纹 + 反射模糊 + 接触阴影（ADR-114）
         │   │   ├── env-particles.ts   # 粒子（ADR-132 地面网格缓存）
         │   │   ├── env-lighting.ts    # 环境灯光
+        │   │   ├── env-context.ts       # 环境上下文（ADR-173 中间件化基底）
+        │   │   ├── env-type-helpers.ts  # 环境类型助手
+        │   │   ├── env-reflection.ts    # 反射统一（ADR-151）
+        │   │   ├── env-wetness.ts       # 湿身效果（ADR-172 雨天材质湿润感）
         │   │   ├── accessory.ts       # 配件
         │   │   ├── props.ts           # 道具
         │   │   └── planar-reflection.ts # 平面反射引擎（ADR-092）
@@ -475,6 +484,7 @@ MikuMikuAR/
         │   │── scene-render-presets.ts    # 渲染预设
         │   │── scene-stage-levels.ts      # 舞台设置
         │   │── scene-stage-lights.ts      # 舞台灯光
+        │   │   ├── scene-drag-levels.ts       # 场景级拖拽模式（ADR-171）
         │   │── scene-browse-outcome.ts    # 资源浏览选中结果契约（ADR-131）
         │   │
         │   │── settings.ts           # 设置页总入口
@@ -912,4 +922,19 @@ ObserverRegistry ── 批量管理器，disposeAll() 一次性清理
 - **禁止**使用 `removeCallback()`，必须使用 `handle.dispose()`
 - 模块级变量的类型统一为 `ObserverHandle | null`，而非 `Observer<Scene> | null`
 - 依赖父对象 dispose 自动清理的 observer（如 gizmo、render target）可豁免
+
+### 20. 近期新增子系统（2026-07-21~23，ADR-166~175）
+
+> 本段补充 §12 目录树中 2026-07-19 快照之后落地的子系统，与 §12 文件清单一一对应。
+
+| 子系统 | ADR | 关键文件 | 说明 |
+|--------|-----|----------|------|
+| 感知层 per-model 真实隔离返工 | ADR-166（收口 ADR-162/163） | scene/motion/perception*.ts | 真实 per-context 隔离 + 对象池，多角色独立呼吸/眨眼/视线跟随；独立审核 1821/1829 测试全绿 |
+| 场景级拖拽模式 | ADR-171 | menus/scene-drag-levels.ts + scene/transform/transform-mode.ts | 快捷开关 + 收纳文件夹 |
+| 湿身效果 | ADR-172 | scene/env/env-wetness.ts | 雨天角色材质湿润感（法线/粗糙度调制） |
+| env-bridge 中间件化 | ADR-173 | scene/env/env-bridge.ts + env-context.ts | setEnvState 中间件链，破隐式状态写入 |
+| 质量维度注册表 | ADR-174 | scene/render/quality-profile.ts | 统一 qualityProfile 扩展点 |
+| 动态追光 | ADR-168 | scene/env/env-lighting.ts | 舞台灯跟随角色/骨骼（部分实现） |
+| 动作库选中范式 | ADR-170 | scene/motion/motion-slot.ts | 默认暴露为逐行「选中」，对齐模型焦点范式 |
+| 光照强度多入口裁决 | ADR-175 | — | 裁决「保留多入口」，固化契约，无代码改动 |
 
