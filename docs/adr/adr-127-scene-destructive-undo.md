@@ -107,7 +107,8 @@ const _undoStack: string[] = [];   // 整场景序列化 JSON 字符串，环形
 | `scene/scene-serialize.ts` | 撤销段：`pushUndoSnapshot` / `restoreUndoSnapshot` / `offerSceneUndo` / `canUndo`（环形上限 5） |
 | `scene/scene.ts` | 再导出上述 4 函数 |
 | `core/i18n/locales/*`（5 语种） | 新增 `motion.undoApplied` |
-| `menus/motion-popup.ts` | 清除全部 VMD、删除 VMD 图层 |
+| `menus/motion-popup.ts` | 清除全部场景动作（ADR-167「场景级清除」替代了原「清除全部 VMD」） |
+| `menus/motion-detail-ui.ts` | 删除 VMD 图层（`removeVmdLayer` + 撤销 toast） |
 | `menus/motion-override-levels.ts` | 删除单条骨骼覆盖、清除全部骨骼覆盖 |
 | `menus/motion-camera-levels.ts` | 清除相机 VMD |
 

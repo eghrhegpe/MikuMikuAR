@@ -215,6 +215,8 @@ export const ENV_STATE_SCHEMA = {
     rippleGlintStrength: { type: 'number', default: 0.5, group: 'water' },
     waterNormalStrength: { type: 'number', default: 0.35, group: 'water' },
     waterGlintStrength: { type: 'number', default: 0.1, group: 'water' },
+    // ADR-115 P5: 低频滚动法线层强度（0=关闭，默认 0.15）
+    lowFreqNormalStrength: { type: 'number', default: 0.15, group: 'water' },
     causticIntensity: { type: 'number', default: 0.1, group: 'water' },
     causticColor1: {
         type: 'tuple3',

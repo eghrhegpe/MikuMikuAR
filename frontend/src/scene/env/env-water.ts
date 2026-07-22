@@ -714,6 +714,11 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     mat.setFloat('uGlintScale', 80.0);
     mat.setFloat('uGlintSpeed', 2.0);
 
+    // ——— ADR-115 P5: 低频滚动法线层（大尺度滚动光带）——
+    mat.setFloat('uLowFreqNormalTiling', 0.04);
+    mat.setFloat('uLowFreqNormalStrength', state.lowFreqNormalStrength ?? 0.15);
+    mat.setFloat('uLowFreqNormalSpeed', 0.05);
+
     // ——— ADR-115 P3: 地平线淡出 + 天空-水面颜色联动 ———
     // 天空基准色：优先 skyColorBot，fallback waterFogColor
     const skyBot = state.skyColorBot ?? state.waterFogColor;
@@ -890,6 +895,10 @@ const WATER_UNIFORMS = [
     'uHorizonColor',
     'uSkyBlendColor',
     'uSkyColorBlend',
+    // ADR-115 P5: 低频滚动法线层
+    'uLowFreqNormalTiling',
+    'uLowFreqNormalStrength',
+    'uLowFreqNormalSpeed',
 ];
 
 function _createWaterMaterial(scene: Scene, state: EnvState): ShaderMaterial {
@@ -1257,6 +1266,8 @@ export interface WaterPreset {
     // ADR-115 P3: 地平线淡出 + 天空联动
     waterHorizonFade?: number;
     waterSkyColorBlend?: number;
+    // ADR-115 P5: 低频滚动法线层
+    lowFreqNormalStrength?: number;
 }
 
 export const WATER_PRESETS: Record<string, WaterPreset> = {
@@ -1278,6 +1289,8 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         // ADR-115 P3: 地平线淡出 + 天空联动（原缺失，补全）
         waterHorizonFade: 0.8,
         waterSkyColorBlend: 0.15,
+        // ADR-115 P5: 低频滚动法线层
+        lowFreqNormalStrength: 0.0,
     },
     ripple: {
         label: '涟漪',
@@ -1296,6 +1309,8 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         waterGlintStrength: 0.2,
         waterHorizonFade: 0.85,
         waterSkyColorBlend: 0.2,
+        // ADR-115 P5: 低频滚动法线层
+        lowFreqNormalStrength: 0.08,
     },
     ocean: {
         label: '海浪',
@@ -1313,7 +1328,9 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         waterNormalStrength: 0.6,
         waterGlintStrength: 0.3,
         waterHorizonFade: 0.9,
-        waterSkyColorBlend: 0.25,
+        waterSkyColorBlend: 0.6,
+        // ADR-115 P5: 低频滚动法线层
+        lowFreqNormalStrength: 0.35,
     },
     storm: {
         label: '风暴',
@@ -1332,6 +1349,8 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         waterGlintStrength: 0.1,
         waterHorizonFade: 0.9,
         waterSkyColorBlend: 0.15,
+        // ADR-115 P5: 低频滚动法线层
+        lowFreqNormalStrength: 0.15,
     },
     tropical: {
         label: '热带',
@@ -1349,7 +1368,9 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         waterNormalStrength: 0.55,
         waterGlintStrength: 0.35,
         waterHorizonFade: 0.85,
-        waterSkyColorBlend: 0.3,
+        waterSkyColorBlend: 0.55,
+        // ADR-115 P5: 低频滚动法线层
+        lowFreqNormalStrength: 0.3,
     },
 };
 
@@ -1397,6 +1418,8 @@ export function buildWaterPresetEnvState(preset: WaterPreset): Partial<EnvState>
         // _syncWaterUniforms 的 setFloat 写入 NaN，导致真实引擎下水面渲染消失且不可逆。
         waterHorizonFade: preset.waterHorizonFade ?? 0,
         waterSkyColorBlend: preset.waterSkyColorBlend ?? 0,
+        // ADR-115 P5: 低频滚动法线层（可选字段，?? 0.15 兜底）
+        lowFreqNormalStrength: preset.lowFreqNormalStrength ?? 0.15,
     };
 }
 
@@ -1480,6 +1503,10 @@ export function applyWaterPresetToCurrent(preset: Partial<WaterPreset>): void {
     }
     if (preset.waterSkyColorBlend !== undefined) {
         mat.setFloat('uSkyColorBlend', preset.waterSkyColorBlend);
+    }
+    // ADR-115 P5: 低频滚动法线层
+    if (preset.lowFreqNormalStrength !== undefined) {
+        mat.setFloat('uLowFreqNormalStrength', preset.lowFreqNormalStrength);
     }
 }
 

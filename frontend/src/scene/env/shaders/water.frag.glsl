@@ -52,6 +52,11 @@ uniform float uGlintPower;            // 高光锐利度（默认 96）
 uniform float uGlintScale;            // 噪声颗粒大小（默认 80.0）
 uniform float uGlintSpeed;            // 闪烁动画速度（默认 2.0）
 
+// ======== ADR-115 P5: 低频滚动法线层（大尺度滚动光带）========
+uniform float uLowFreqNormalTiling;   // 低频法线平铺（默认 0.04，格 ≈25 单位）
+uniform float uLowFreqNormalStrength; // 低频法线强度（默认 0.15，0=关闭零回归）
+uniform float uLowFreqNormalSpeed;    // 低频法线滚动速度（默认 0.05）
+
 // ======== ADR-115 P3: 地平线淡出 + 天空-水面颜色联动 ========
 uniform float uHorizonFade;           // 地平线淡出强度（0=关闭，1=完全淡出）
 uniform float uHorizonStart;          // 淡出起始距离（TS端按 waterSize*0.7 计算）
@@ -128,7 +133,10 @@ void main() {
     // 纹理编码：R=世界X, G=世界Z, B=世界Y(上)
     vec3 n1 = texture2D(uDetailNormalTex, nUV1).rgb * 2.0 - 1.0;
     vec3 n2 = texture2D(uDetailNormalTex, nUV2).rgb * 2.0 - 1.0;
-    vec3 detailNormal = normalize(n1 + n2 * 0.5);
+    // ADR-115 P5: 低频滚动法线层 — 大尺度滚动光带（格 ≈25 单位）
+    vec2 nUV3 = vWorldPos.xz * uLowFreqNormalTiling + wind * wavePhase * uLowFreqNormalSpeed;
+    vec3 n3 = texture2D(uDetailNormalTex, nUV3).rgb * 2.0 - 1.0;
+    vec3 detailNormal = normalize(n1 + n2 * 0.5 + n3 * uLowFreqNormalStrength);
 
     normal = normalize(
         normal * gerstnerScale +
