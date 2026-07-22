@@ -72,3 +72,8 @@ CubeTexture → scene.environmentTexture（IBL）
 3. scene.ts: 重写 _loadEnvTexture（CubeTexture + sky dome）
 4. scene-menu.ts: 贴图模式 UI 改用 async file dialog + 提示文字
 ```
+
+## 相关 ADR
+
+- [ADR-151](adr-151-reflection-unified-architecture.md)（反射系统统一架构）：借鉴本 ADR 的 `applySky` 统一入口模式（单入口 + 全量清理 + 去重 + 模式互斥），应用于 `env-reflection.ts` 的 `applyReflection`。
+```

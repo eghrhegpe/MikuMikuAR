@@ -369,7 +369,7 @@ export function loadStageLights(states: StageLightState[]): void {
             coneIntensity:
                 s.coneIntensity ??
                 Math.min(2, ((raw.volumetricExposure as number | undefined) ?? 1) * 0.5),
-            coneLength: s.coneLength ?? 20,
+            coneLength: s.coneLength ?? 30,
             coneSoftness:
                 s.coneSoftness ?? 1 - ((raw.volumetricDensity as number | undefined) ?? 0.5),
         };

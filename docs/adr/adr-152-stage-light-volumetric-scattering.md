@@ -1,8 +1,10 @@
-# ADR-152: 舞台灯光体积光散射（Volumetric Light Scattering）
+# ADR-152: 舞台灯光光锥（Light Cone）
 
 - **状态**: ✅ 已实施（v2 — 真实光锥网格）
 - **日期**: 2026-07-20
 - **相关**: ADR-151（反射统一架构，参考生命周期模式）
+
+> **命名说明（Rev 2 修订）**：本 ADR 早期以「体积光散射（Volumetric Light Scattering）」命名，但该表述不准确——当前实现为**发光锥体可视化**（additive 双面锥 + Fresnel 边缘辉光），并非物理意义的参与介质散射（无遮挡、无光线步进）。v1 采用的 Babylon 内置 `VolumetricLightScatteringPostProcess` 同为屏幕空间假散射。故更名为「**光锥 / Light Cone**」，与 UI（`scene.lightCone`）及代码（`cone*` 字段）统一。如需真正的体积散射（光柱被人物/道具切断），见末节「深度/ShadowMap 遮挡增强」。
 
 ---
 
@@ -45,7 +47,7 @@ export interface StageLightState {
     // 真实光锥（锥形光柱可视化）
     coneEnabled: boolean;
     coneIntensity: number;   // 0-2, default 0.5
-    coneLength: number;      // 1-50, default 20
+    coneLength: number;      // 1-50, default 30
     coneSoftness: number;    // 0-1, default 0.5
 }
 ```
@@ -82,24 +84,22 @@ gl_FragColor = vec4(u_color * alpha, alpha);       // Additive blending
 
 ### 决策四：生命周期复用阴影模式
 
-参考 `_ensureStageShadow` / `_disposeStageShadow` 的配对模式：
+参考 `_ensureStageShadow` / `_disposeStageShadow` 的配对模式（光锥 Map 实为 `lightingState.stageCones`，定义于 `lighting-state.ts`）：
 
 ```typescript
-const _stageCones = new Map<string, LightConeEntry>();
-
 function _ensureStageCone(id: string): void {
-    // 1. 关闭或非 SpotLight → 释放
-    // 2. 已存在 → 重建几何/更新 transform/更新 uniforms
-    // 3. 不存在 → 创建
+    // 1. 关闭或非 SpotLight → _disposeStageCone
+    // 2. 已存在 → rebuildLightConeGeometry + updateLightConeTransform + updateLightConeUniforms
+    // 3. 不存在 → createLightCone 并写入 lightingState.stageCones
 }
 
 function _disposeStageCone(id: string): void {
-    // disposeLightCone + map.delete
+    // disposeLightCone + lightingState.stageCones.delete
 }
 ```
 
 **生命周期触发点：**
-- `setStageLightState`：检查 `_CONE_UPDATE_KEYS` 字段变化 → `_ensureStageCone`
+- `setStageLightState`：每次调用经 `_ensureStageCone(id)` 按需创建/更新/释放（含 cone* 字段变化）
 - `addStageLight` / `loadStageLights` / `removeStageLight`：与阴影同步管理
 - `disposeLighting`：统一释放
 - **无需相机切换重建**（光锥是普通 Mesh，不依赖相机挂接）
@@ -112,7 +112,7 @@ function _disposeStageCone(id: string): void {
 _coneUpdateHandle = observe(_scene.onBeforeRenderObservable, () => {
     const cam = _scene?.activeCamera;
     if (!cam) return;
-    for (const [, cone] of _stageCones) {
+    for (const [, cone] of lightingState.stageCones) {
         cone.material.setVector3('u_cameraPos', cam.position);
     }
 });
@@ -151,7 +151,7 @@ _coneUpdateHandle = observe(_scene.onBeforeRenderObservable, () => {
 | 文件 | 改动 |
 |------|------|
 | [light-cone.ts](../../frontend/src/scene/render/light-cone.ts) | **新建**：锥体网格生成 + ShaderMaterial + 变换/更新/释放 API |
-| [lighting.ts](../../frontend/src/scene/render/lighting.ts) | 扩展 `StageLightState` 4 字段；新增 `_stageCones` Map + `_ensureStageCone` / `_disposeStageCone`；`setStageLightState` 增加光锥字段检查；`disposeLighting` 清理；每帧 observer 更新 `u_cameraPos` |
+| [lighting.ts](../../frontend/src/scene/render/lighting.ts) | 扩展 `StageLightState` 4 字段；`setStageLightState` 增加光锥字段处理；`disposeLighting` 清理 `stageCones`；每帧 observer 更新 `u_cameraPos`（光锥 Map 实际存于 `lighting-state.ts` 的 `lightingState.stageCones`） |
 | [renderer.ts](../../frontend/src/scene/render/renderer.ts) | 移除 `reattachStageVolumetrics` 导入和调用（光锥无需相机重绑定） |
 | [scene-stage-lights.ts](../../frontend/src/menus/scene-stage-lights.ts) | 卡片 3.5 光锥面板（仅 spot 显示） |
 | [i18n/locales/*.ts](../../frontend/src/core/i18n/locales/) | 5 语言新增 4 个 key |
@@ -168,3 +168,8 @@ _coneUpdateHandle = observe(_scene.onBeforeRenderObservable, () => {
 
 - **方向光太阳神光**：本 ADR 只覆盖舞台灯。方向光（dirLight）的太阳神光若需要，可复用相同光锥方案（圆柱形光束）
 - **噪声纹理模拟尘埃粒子**：当前 Shader 是均匀光柱，可追加 3D 噪声纹理模拟空气中的尘埃散射
+- **深度/ShadowMap 遮挡增强**：当前光锥为均匀发光锥体，不感知场景几何，光柱会穿透人物/道具。可采样场景深度或 ShadowMap 在 shader 中衰减 `alpha`，实现真正的体积散射（光柱被不透明物切断）。此为「体积光散射」命名所指向的物理效果，当前未实现。
+
+## 修订记录
+
+- **Rev 2（2026-07-22）**：更名「体积光散射」→「光锥 / Light Cone」，消除与 UI（`scene.lightCone`）及代码（`cone*` 字段）的命名错位；修正 `coneLength` 默认值描述 20→30 与 `_defaultStageLightState` 对齐；订正生命周期描述（`_stageCones`/`_CONE_UPDATE_KEYS` 实为 `lightingState.stageCones` 与无条件 `_ensureStageCone` 触发）。明确当前实现为发光锥体可视化，非物理参与介质散射。
