@@ -211,6 +211,32 @@ const SHADER_CLOUD_LIGHT_ATTEN = CLOUD_LIGHT_ATTEN.toFixed(2);
 const SHADER_SCATTER_INTENSITY = CLOUD_SCATTER_INTENSITY.toFixed(2);
 const SHADER_DENSITY_THRESHOLD = CLOUD_DENSITY_THRESHOLD.toFixed(3);
 
+/**
+ * 按质量档派生 shader 注入参数：
+ * - high: 200 步主 march + 2 步光照 march + blue-noise jitter
+ * - standard: 96 步主 march + 1 步光照 march + 无纹理 jitter（hash 替代）
+ *   砍步数 ~52%，关 blue-noise 纹理查找，GPU 负载显著降低。
+ */
+function resolveCloudShaderParams(quality: 'standard' | 'high' | undefined): {
+    maxSteps: number;
+    lightSteps: number;
+    useBlueNoise: boolean;
+} {
+    if (quality === 'standard') {
+        return { maxSteps: 96, lightSteps: 1, useBlueNoise: false };
+    }
+    return { maxSteps: 200, lightSteps: 2, useBlueNoise: true };
+}
+
+/** 根据 useBlueNoise 选择 jitter 代码路径（模板注入） */
+function buildJitterSource(useBlueNoise: boolean): string {
+    if (useBlueNoise) {
+        return `float jitter = texture(blueNoiseTex, gl_FragCoord.xy / ${BLUE_NOISE_SIZE}.0).r;`;
+    }
+    // standard 档：无纹理依赖的廉价 jitter，分布质量略低但消除硬带状
+    return `float jitter = fract(gl_FragCoord.x * 0.12345 + gl_FragCoord.y * 0.67890);`;
+}
+
 // ======== Volumetric Cloud (ShaderMaterial-on-Sphere) ========
 let _volCloudMesh: Mesh | null = null;
 let _volCloudMat: ShaderMaterial | null = null;
@@ -337,8 +363,8 @@ out vec4 fragColor;
 #define CLOUD_PHASE_G 0.8
 #define CLOUD_SCATTER_INTENSITY ${SHADER_SCATTER_INTENSITY}
 #define CLOUD_DENSITY_THRESHOLD ${SHADER_DENSITY_THRESHOLD}
-#define CLOUD_LIGHT_STEPS 2
-#define CLOUD_MAX_STEPS 200
+#define CLOUD_LIGHT_STEPS \${CLOUD_LIGHT_STEPS_INJECT}
+#define CLOUD_MAX_STEPS \${CLOUD_MAX_STEPS_INJECT}
 #define CLOUD_STEP_MIN 8.0
 #define CLOUD_FBM_OCTAVES 3
 #define NOISE_PERIOD 256.0
@@ -456,7 +482,7 @@ void main(){
     // length (tExit - tEnter) so volumetric detail is distance-independent.
     // Fixes high-altitude clouds rendering flat/distorted — the old growing
     // step (8 + t*0.03) sampled a 40-unit-thick slab with only 1-2 hits at t~325.
-    float jitter = texture(blueNoiseTex, gl_FragCoord.xy / ${BLUE_NOISE_SIZE}.0).r;
+    \${JITTER_SOURCE_INJECT}
     float slabLen = tExit - tEnter;
     float slabDt = clamp(slabLen / 24.0, CLOUD_STEP_MIN * 0.25, CLOUD_STEP_MIN * 1.5);
     float t = tEnter + jitter * slabDt;
@@ -539,6 +565,9 @@ export function createClouds(state: EnvState): void {
     }
     const scene = getScene();
 
+    // cloudQuality 决定 shader 变体（步数 + jitter 方式），变更时必须重建 material
+    const cloudParams = resolveCloudShaderParams(state.cloudQuality);
+
     // P1 修复：场景重建时（如 HMR、场景切换），模块级单例的 mesh/material
     // 仍附着在旧 scene 上。若直接复用会导致 uniform 写入废弃对象 + observer
     // 仍向旧 scene 推送事件。检测到不一致时强制 dispose 重建。
@@ -555,10 +584,13 @@ export function createClouds(state: EnvState): void {
 
     // Update existing material uniforms without rebuilding mesh
     if (_volCloudMesh && _volCloudMat) {
-        // P3 修复：球壳直径取决于 camera.maxZ，farZ 显著变化时需重建 mesh
-        // （segments 是创建时定下的 48，不能仅靠 scaling 调整）
-        const prevFarZ = (_volCloudMesh.metadata?.farZ as number | undefined) ?? 0;
-        if (Math.abs(farZ - prevFarZ) > 500) {
+        // cloudQuality 变化 → shader 变体不同，必须 dispose 重建
+        const prevQuality = _volCloudMesh.metadata?.cloudQuality as string | undefined;
+        if (prevQuality !== (state.cloudQuality ?? 'high')) {
+            disposeClouds();
+            // 走完整重建路径
+        } else if (Math.abs(farZ - ((_volCloudMesh.metadata?.farZ as number) ?? 0)) > 500) {
+            // P3 修复：球壳直径取决于 camera.maxZ，farZ 显著变化时需重建 mesh
             disposeClouds();
             // 走完整重建路径
         } else {
@@ -601,6 +633,8 @@ export function createClouds(state: EnvState): void {
     mesh.renderingGroupId = -1;
     mesh.isPickable = false;
     mesh.position.y = 0;
+    // 记录 cloudQuality 和 farZ，供下次 createClouds 检测是否需重建
+    mesh.metadata = { farZ, cloudQuality: state.cloudQuality ?? 'high' };
 
     _cloudFollowHandle = observe(scene.onBeforeRenderObservable, () => {
         const cam = scene.activeCamera;
@@ -614,7 +648,13 @@ export function createClouds(state: EnvState): void {
     const mat = new ShaderMaterial(
         'volCloudMat',
         scene,
-        { vertexSource: VERT_SRC, fragmentSource: FRAG_SRC },
+        {
+            vertexSource: VERT_SRC,
+            fragmentSource: FRAG_SRC
+                .replace('${CLOUD_LIGHT_STEPS_INJECT}', String(cloudParams.lightSteps))
+                .replace('${CLOUD_MAX_STEPS_INJECT}', String(cloudParams.maxSteps))
+                .replace('${JITTER_SOURCE_INJECT}', buildJitterSource(cloudParams.useBlueNoise)),
+        },
         {
             attributes: ['position'],
             uniforms: [
