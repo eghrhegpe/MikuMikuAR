@@ -73,6 +73,16 @@ let _snapshot: {
 // 形成「降级→恢复→再降级」的反馈循环。
 let _suppressSnapshotReset = false;
 
+// ======== renderScale 像素比杠杆（ADR-118 扩展）========
+// 降级到 Level 2/3 时自动降低像素比至 0.7，是最有效的 GPU 减负杠杆。
+// render-loop.ts 的 applyScaling() 会读取此乘数并与用户 renderScale 相乘。
+let _perfRenderScaleMul = 1.0;
+
+/** 降级系统对 renderScale 的乘数（1.0=无影响，0.7=降级时降至 70%）。 */
+export function getPerfRenderScaleMul(): number {
+    return _perfRenderScaleMul;
+}
+
 /** 供 setLightState/setRenderState 检查是否应跳过 resetPerformanceSnapshot。 */
 export function isSnapshotResetSuppressed(): boolean {
     return _suppressSnapshotReset;
@@ -248,6 +258,8 @@ function _restoreSnapshot(): boolean {
     } finally {
         _suppressSnapshotReset = false;
     }
+    // 恢复 renderScale 乘数
+    _perfRenderScaleMul = 1.0;
     return true;
 }
 
@@ -359,6 +371,17 @@ function applyDegrade(level: DegradeLevel, force = false): void {
     } else {
         // 实际发生了恢复
         _lastRecoveryTime = now;
+    }
+
+    // renderScale 像素比杠杆：Level 2/3 自动降至 0.7，Level 0/1 恢复 1.0
+    const targetMul = level >= 2 ? 0.7 : 1.0;
+    if (_perfRenderScaleMul !== targetMul) {
+        _perfRenderScaleMul = targetMul;
+        if (import.meta.env.DEV) {
+            console.info(
+                `[${formatTimestamp()}] [Performance] renderScale mul → ${targetMul}`
+            );
+        }
     }
     if (import.meta.env.DEV) {
         console.info(

@@ -2,7 +2,7 @@
 // [adr:audit] 修复：FPS setInterval 与 render-loop 现支持幂等 stop（防 HMR 重复泄漏），
 // 性能日志改为 DEV-only + 每 60 帧采样（P4 降噪，见代码审核报告）。
 import { engine, scene, applyFrameControl } from '../scene/scene';
-import { updatePerformance } from '../scene/render/performance';
+import { updatePerformance, getPerfRenderScaleMul } from '../scene/render/performance';
 import { recalcPerformanceReference } from '../scene/render/performance';
 import { uiState, dom } from './config';
 import { formatTimestamp } from './utils';
@@ -17,6 +17,7 @@ let _resizeHandler: (() => void) | null = null;
 let _beforeObs: ObserverHandle | null = null;
 let _afterObs: ObserverHandle | null = null;
 let _lastDpr = 1; // 上次检测到的 DPR，用于 resize 时判断是否变化
+let _lastMul = 1.0; // 上次降级乘数，用于检测变化时触发 applyScaling
 
 const PERF_SAMPLE_INTERVAL = 60; // 每 60 帧评估一次性能日志（采样降频，P4）
 
@@ -42,10 +43,12 @@ export function calcHardwareScaling(dpr: number, renderScale: number): number {
     return base;
 }
 
-/** 应用 hardwareScalingLevel（含 DPR + GL 钳位） */
+/** 应用 hardwareScalingLevel（含 DPR + GL 钳位 + 降级乘数） */
 function applyScaling(): void {
     const dpr = window.devicePixelRatio || 1;
-    engine.setHardwareScalingLevel(calcHardwareScaling(dpr, uiState.renderScale ?? 1));
+    // 用户 renderScale × 降级乘数（Level 2/3 时自动降至 0.7）
+    const effectiveScale = (uiState.renderScale ?? 1) * getPerfRenderScaleMul();
+    engine.setHardwareScalingLevel(calcHardwareScaling(dpr, effectiveScale));
 }
 
 export function startRenderLoop(): void {
@@ -95,6 +98,12 @@ export function startRenderLoop(): void {
             );
         }
         updatePerformance();
+        // 降级系统改了 renderScale 乘数时立即重算 hardwareScalingLevel
+        const _mulNow = getPerfRenderScaleMul();
+        if (_mulNow !== _lastMul) {
+            _lastMul = _mulNow;
+            applyScaling();
+        }
     });
     _resizeHandler = () => {
         engine.resize();
