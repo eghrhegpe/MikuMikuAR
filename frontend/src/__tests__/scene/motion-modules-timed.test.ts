@@ -66,7 +66,7 @@ vi.mock('@/scene/motion/motion-intent', async (importOriginal) => {
 import { createSwayMotionModule } from '@/scene/motion/motion-modules/sway-motion';
 import { createRidingModelModule } from '@/scene/motion/motion-modules/riding-model';
 import { createPositionOffsetModule } from '@/scene/motion/motion-modules/position-offset';
-import { setTargetModel, getModuleState } from '@/scene/motion/motion-modules/registry';
+import { setTargetModel } from '@/scene/motion/motion-modules/registry';
 
 function makeModel(id: string): any {
     return { id, name: id, motionOverrideModules: undefined as any, boneOverrides: [] };
@@ -168,7 +168,7 @@ describe('riding-model 自动踏板', () => {
         // 清掉 bake 写入的静态骨（腰/膝），单独验证钩子驱动足骨
         data.setBoneOverrideSpy.mockClear();
 
-        const pedalSpeed = 0.5;
+        const _pedalSpeed = 0.5;
         const t = 0.5; // phase = 0.5*0.5*360 = 90°
         data.frameHooks[0](t, 'ride-auto');
 

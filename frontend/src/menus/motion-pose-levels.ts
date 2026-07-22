@@ -27,7 +27,7 @@ import { logWarn } from '../core/logger';
 import { getMotionMenu } from './motion-popup';
 import { buildCameraLevel } from './motion-camera-levels';
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
-import { setRenderState, getRenderState } from '../scene/render/renderer';
+import { getRenderState } from '../scene/render/renderer';
 import { getGuideMode, setGuideMode } from '../scene/pose/composition-guide';
 import { generatePoseVmd } from '../motion-algos/pose-preset';
 import { loadVMDMotion, stopVMD } from '../scene/scene';
@@ -62,7 +62,7 @@ function buildPoseStudioSchema(): MenuNode[] {
     }
 
     const menu = getMotionMenu();
-    const renderState = getRenderState();
+    const _renderState = getRenderState();
     const wmConfig = getWatermarkConfig();
 
     return [

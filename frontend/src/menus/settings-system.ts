@@ -24,7 +24,6 @@ import {
 import {
     setStatus,
     uiState,
-    setUIState,
     cardContainer,
     escapeHtml,
     type PopupLevel,

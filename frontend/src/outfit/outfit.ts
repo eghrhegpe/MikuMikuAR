@@ -1,6 +1,6 @@
 // [doc:architecture] Outfit — 换装系统核心逻辑（load/apply/reset + 自动发现）
 
-import { observe, type ObserverHandle } from '@/core/observer-handle';
+import { observe } from '@/core/observer-handle';
 
 import { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';

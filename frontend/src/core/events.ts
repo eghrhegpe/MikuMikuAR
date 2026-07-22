@@ -19,7 +19,7 @@ import {
     setStatus,
     setOnCloseAllOverlays,
 } from './config';
-import { focusedModel, updatePlaybackUI, seekFromEvent, focusedMmdModel } from '../scene/scene';
+import { updatePlaybackUI, seekFromEvent, focusedMmdModel } from '../scene/scene';
 import { freeflyInput } from './freefly-state';
 import { getCameraMode } from '../scene/camera/camera';
 import { t } from './i18n/t';
@@ -56,7 +56,7 @@ import { showModelPopup, showMotionPopup, refreshLibrary } from '../menus/librar
 import { showPlaza } from '../menus/plaza-browser';
 import { closePlaza } from '../menus/plaza-state';
 import { loadManager } from './load-manager';
-import { ImportZip, Events } from './wails-bindings';
+import { ImportZip } from './wails-bindings';
 import { focusModel } from '../scene/manager/model-ops';
 import { safeCallAsync } from './safe-call';
 import { getAllShortcuts, getAriaKeyshortcuts } from './shortcut-registry';

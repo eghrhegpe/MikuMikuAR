@@ -6,10 +6,7 @@ import {
     allModels,
     LibraryModel,
     PopupLevel,
-    PopupRow,
     normPath,
-    thumbnailCache,
-    setThumbnailCache,
     modelMetaCache,
     setModelMetaCache,
     closeAllOverlays,
@@ -34,7 +31,6 @@ import { getMotionMenu } from './motion-popup';
 import { slideRow } from '../core/ui-helpers';
 import { addDisposableListener, type Disposable } from '../core/dom';
 import {
-    GetThumbnailBatch,
     GetModelMetaBatch,
     AddRecentModel,
     ExtractZip,
@@ -46,26 +42,20 @@ import {
     SetLastBrowseDir,
 } from '../core/wails-bindings';
 import {
-    tryCatchStatus,
     withLoadingStatus,
     getBrowseDir,
     isUnderRoot,
     getBaseName,
     logWarn,
     isStageLike,
-    LoadingGuard,
 } from '../core/utils';
 import { safeCallAsync } from '@/core/safe-call';
-import { showConfirm } from '../core/dialog';
 import { t } from '../core/i18n/t';
 import { createIconifyIcon } from '../core/icons';
 import {
     buildLevel,
     modelToRow,
-    modelToResourceItem,
     thumbnailKeyForModel,
-    buildResourceItemsForDir,
-    buildModelRootItems,
     splitSubdirSegments,
     computeRestoreSegments,
     getPendingMetaGuard,
@@ -469,7 +459,7 @@ function onModelRowClick(m: LibraryModel, jumpToDirModelId?: string): void {
 }
 
 function replaceModel(m: LibraryModel): void {
-    const isActor =
+    const _isActor =
         m.format === 'pmx' && m.type !== 'stage' && m.type !== 'scene' && m.type !== 'prop';
     // [doc:adr-131] 传参取代 mutation of currentLevel.outcome
     onModelRowClick(m, focusedModelId ?? undefined);

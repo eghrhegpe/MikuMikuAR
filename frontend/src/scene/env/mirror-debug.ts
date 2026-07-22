@@ -119,7 +119,7 @@ export function createMirror(): void {
 
 /** 销毁镜面 */
 export function disposeMirror(): void {
-    const scene = getScene();
+    const _scene = getScene();
     if (_meshAddedObserver) {
         _meshAddedObserver.dispose();
         _meshAddedObserver = null;

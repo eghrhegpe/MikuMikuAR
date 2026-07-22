@@ -2,13 +2,11 @@
 // 从 library-core.ts 拆分：浏览逻辑 → library-browse.ts，动作 → library-actions.ts，配置 → library-setup.ts
 
 import {
-    setStatus,
     allModels,
     LibraryModel,
     PopupRow,
     PopupLevel,
     normPath,
-    setThumbnailCache,
     thumbnailCache,
     modelMetaCache,
     setModelMetaCache,
@@ -29,7 +27,6 @@ import {
 } from '../core/config';
 import { SlideMenu } from './menu';
 import { safeDispose } from '../core/dispose-helpers';
-import { createIconifyIcon } from '../core/icons';
 import { slideRow, createResourcePanel, openFullscreen, closeFullscreen } from '../core/ui-helpers';
 import { notifyThumbnailUpdate } from '../core/ui-resource-panel';
 import type { ResourceItem, SlideRowExtra, ResourcePanelHandle } from '../core/ui-helpers';
@@ -37,7 +34,7 @@ import { isUnderRoot, isStageLike, getDirPath } from '../core/utils';
 import { libraryModelBaseKey, buildThumbnailKey } from '@/scene/manager/thumbnail-key';
 import { t } from '../core/i18n/t';
 import { getLang } from '../core/i18n/locale';
-import { GetThumbnail, GetThumbnailBatch, GetModelMetaBatch } from '../core/wails-bindings';
+import { GetThumbnail, GetModelMetaBatch } from '../core/wails-bindings';
 import { loadManager } from '../core/load-manager';
 import { focusModel } from '../scene/scene';
 import { buildModelToolsLevel } from './model-detail';
@@ -45,8 +42,6 @@ import {
     onModelRowClick,
     replaceModel,
     replaceMotion,
-    prepareModelRestore,
-    importFile,
 } from './library-actions';
 
 // ======== Resource View Mode ========

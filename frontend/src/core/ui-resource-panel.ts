@@ -283,7 +283,7 @@ function createGridCard(
     cache: Map<string, string>,
     onSelect: (item: ResourceItem) => void,
     onEnterFolder?: (path: string) => void,
-    itemHeight: number = 120
+    _itemHeight: number = 120
 ): HTMLElement {
     const card = document.createElement('div');
     card.className = 'resource-card';

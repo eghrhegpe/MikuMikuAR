@@ -9,7 +9,7 @@ import { registerShortcuts } from './shortcut-registry';
 import { screenshotCurrent } from '../menus/scene-menu';
 import { undo, redo, canUndo, canRedo } from '../scene/motion/motion-modules/motion-history';
 import { applyModuleSnapshot } from '../scene/motion/motion-modules/module-base';
-import { popUndoSnapshot, restoreUndoSnapshot, canUndo as canSceneUndo } from '../scene/scene';
+import { popUndoSnapshot, restoreUndoSnapshot } from '../scene/scene';
 
 /**
  * navActions 与 navLabels 由 events.ts 管理，本模块只消费。

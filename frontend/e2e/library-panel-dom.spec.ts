@@ -28,7 +28,7 @@ test.describe("Library — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, () 
     test("模型库: 无配置时显示首次使用提示", async ({ vitePage: page }) => {
         // First-use hint appears when no resource_root is set
         // This is a soft label hint about initial setup
-        const hint = page.getByText("首次使用", { exact: false });
+        const _hint = page.getByText("首次使用", { exact: false });
         // The hint may or may not be visible depending on dev state,
         // but the library panel container should be present
         await expect(page.locator("#sceneOverlay")).toHaveClass(/visible/);

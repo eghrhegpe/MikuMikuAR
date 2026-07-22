@@ -6,8 +6,7 @@
 // 的 _claimPerceptionBones / _releasePerceptionBones 直接通过 BoneOverrideStore 管理，
 // 注册表仅作 releaseOwnedBones 的透传入口（claimBones 在 perception.ts 内部绕过本注册表）。
 
-import type { MotionModuleState, ParamValue, SceneMotionIntent } from '@/core/types';
-import { modelRegistry } from '@/core/state';
+import type { MotionModuleState, ParamValue } from '@/core/types';
 import { triggerAutoSave } from '@/core/utils';
 import type { MotionOverrideModule, ModuleFactory, ModuleMeta } from './types';
 import { getBoneOverrideStore } from '../bone-override-store';

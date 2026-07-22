@@ -6,7 +6,6 @@ import {
     Color3,
     Color4,
     Texture,
-    BaseTexture,
     DynamicTexture,
     StandardMaterial,
     Constants,

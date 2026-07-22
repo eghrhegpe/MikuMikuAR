@@ -12,7 +12,6 @@ import {
     addSectionTitle,
     addPresetChip,
     addDangerRow,
-    addToggleRow,
 } from '../core/ui-helpers';
 import {
     setStageLightState,

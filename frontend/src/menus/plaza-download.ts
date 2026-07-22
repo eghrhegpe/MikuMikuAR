@@ -16,7 +16,6 @@ import {
     PlazaReload,
     PlazaZoomIn,
     PlazaZoomOut,
-    PlazaZoomReset,
     ClosePlazaWindow,
     DownloadFromPlaza,
 } from '../core/wails-bindings';

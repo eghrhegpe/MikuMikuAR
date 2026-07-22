@@ -11,20 +11,17 @@ import {
     setIsPlaying,
     mmdRuntime,
     stackRegistry,
-    closeAllOverlays,
 } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
 import { loadManager } from '../core/load-manager';
 import {
-    modelManager,
     updatePlaybackUI,
     loadVPDPose,
     triggerAutoSave,
     pushUndoSnapshot,
     offerSceneUndoAndRefresh,
 } from '../scene/scene';
-import { getVmdLayers } from '../scene/motion/vmd-layers';
-import { clearAudio, getAudioName } from '../outfit/audio';
+import { getAudioName } from '../outfit/audio';
 import {
     setProcMotionMode,
     regenerateProcMotion,
@@ -53,7 +50,6 @@ import {
 } from './motion-binding-ui';
 import {
     buildMotionDetailLevel,
-    buildLayerLevel,
     buildPlaybackSpeedLevel,
 } from './motion-detail-ui';
 import {

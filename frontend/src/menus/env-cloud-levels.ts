@@ -1,9 +1,7 @@
 // [doc:architecture] Env Cloud Level — 云功能面板
 // 从 env-feature-levels.ts 拆分
 
-import { envState } from '../core/config';
 import type { PopupLevel } from '../core/config';
-import { setEnvState } from '../scene/scene';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';

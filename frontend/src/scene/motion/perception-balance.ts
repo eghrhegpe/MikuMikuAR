@@ -19,7 +19,7 @@ import type {
 } from './perception-shared';
 
 /** 重心微动周期（秒，从 idle loopFrames=120@60fps 转换：120/60=2s） */
-const BALANCE_SWAY_PERIOD = 2.0;
+const _BALANCE_SWAY_PERIOD = 2.0;
 /** 重心微动各骨骼振幅（从 idle 算法提取，已削至微动量级，intensity 固定 1.0） */
 const SWAY_AMP = {
     center_rz: 0.05, // center 慢速摆动（削半：原 0.1 → 0.05，避免 VMD 播放时过晃）

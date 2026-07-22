@@ -7,11 +7,7 @@ import {
     migrateLipSyncFromOldState,
     migratePerceptionData,
 } from '../scene/scene-migrate';
-import {
-    _gazeAlpha,
-    PerceptionPerfMonitor,
-    type PerceptionTier,
-} from '../scene/motion/perception-shared';
+import { _gazeAlpha, PerceptionPerfMonitor } from '../scene/motion/perception-shared';
 import { _getActiveContextsByTier } from '../scene/motion/perception-observer';
 // updatePerceptionConflictBanner 在测试体内动态导入，避免 vi.resetModules() 后 singleton 漂移
 
@@ -1317,7 +1313,7 @@ describe('ADR-164 PerceptionPerfMonitor tier', () => {
         }
 
         // 焦点 m1 也 active
-        const focused = contexts.get('m1')!;
+        const _focused = contexts.get('m1')!;
         const result = _getActiveContextsByTier('medium', contexts, 'm1');
 
         // 应包含焦点 + pinned(0) + 前 10 个其他 = 11 个

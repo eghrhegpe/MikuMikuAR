@@ -5,7 +5,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mockEnvState = vi.hoisted(() => ({ groundVisible: true, waterEnabled: false }));
 const mockSetEnvState = vi.hoisted(() => vi.fn());
 const mockPush = vi.hoisted(() => vi.fn());
-const mockCreateIconifyIcon = vi.hoisted(() =>
+const _mockCreateIconifyIcon = vi.hoisted(() =>
     vi.fn(() => {
         const el = document.createElement('span');
         el.className = 'mock-icon';
@@ -95,7 +95,7 @@ function renderLevel(level: ReturnType<typeof buildStageLevel>): HTMLElement {
     return container;
 }
 
-function findToggleRow(
+function _findToggleRow(
     container: HTMLElement,
     label: string
 ): {

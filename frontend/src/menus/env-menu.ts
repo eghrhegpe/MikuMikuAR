@@ -26,9 +26,7 @@ import { _buildLevel } from './env-level-helpers';
 import { _openTexturePicker } from './env-level-helpers';
 import { buildPresetLevel } from './env-preset-levels';
 import { buildPostProcessLevel } from './scene-render-levels';
-import type { EnvTextureBindingTarget } from './env-menu-state';
 import {
-    setEnvTextureBindingTarget,
     clearEnvTextureBindingTarget,
     getEnvTextureBindingTarget,
     setEnvMenu,

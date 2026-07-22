@@ -22,7 +22,6 @@ import {
     exportCategorizedEnvPreset,
     importCategorizedEnvPreset,
     type EnvPresetCategory,
-    type CategorizedEnvPreset,
 } from '../scene/env/env-lighting';
 import {
     SaveEnvPresetAuto,

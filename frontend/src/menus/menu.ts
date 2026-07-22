@@ -1065,7 +1065,7 @@ export class SlideMenu {
                 createTrailingBtn({
                     icon: 'lucide:plus',
                     title: t('library.loadModel'),
-                    onClick: (e) => row.onAddClick!(),
+                    onClick: (_e) => row.onAddClick!(),
                 })
             );
         } else if (row.kind === 'folder') {

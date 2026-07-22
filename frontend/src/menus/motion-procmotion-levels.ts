@@ -16,7 +16,6 @@ import { setProcMotionBoneToggle } from '../scene/motion/proc-motion-bridge';
 import { getProcMotionBoneCategories } from '../motion-algos/procedural-motion';
 import type { ProcMotionMode, ProcMotionState } from '../motion-algos/procedural-motion';
 import { DEFAULT_PROC_STATE } from '../motion-algos/procedural-motion';
-import { getMotionMenu } from './motion-popup';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';

@@ -6,9 +6,7 @@ import {
     closeAllOverlays,
     setStatus,
     allModels,
-    LibraryModel,
     PopupRow,
-    PopupLevel,
     normPath,
     modelRegistry,
     recentModels,
@@ -24,7 +22,7 @@ import { SlideMenu } from './menu';
 import { t } from '../core/i18n/t';
 import { logWarn } from '../core/logger';
 import { SetLastBrowseDir } from '../core/wails-bindings';
-import { buildModelLevel, buildModelToolsLevel } from './model-detail';
+import { buildModelLevel } from './model-detail';
 import { buildStageTransformLevel } from './scene-menu';
 import { setModelFormation } from '../scene/scene';
 import {
