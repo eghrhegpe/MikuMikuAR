@@ -219,10 +219,11 @@ function levelDiff(
     // ADR-130 Phase 2.3: 统一质量档位
     if (prev.qualityProfile !== next.qualityProfile && next.qualityProfile) {
         env.qualityProfile = next.qualityProfile;
+        const r = resolveQualityProfile(next.qualityProfile);
         // ADR-151 收口：反射降级统一走 env-reflection —— reflectionQuality 驱动模式/预设推导
-        // （auto 下 medium=probe、low=轻量 probe、off=全关），取代旧 render.ssrEnabled /
-        // render.reflectionProbeEnabled 双源控制。
-        env.reflectionQuality = resolveQualityProfile(next.qualityProfile).reflectionQuality;
+        env.reflectionQuality = r.reflectionQuality;
+        env.cloudQuality = r.cloudQuality;
+        env.particleQuality = r.particleQuality;
     }
     return { light, render, env };
 }
@@ -298,6 +299,8 @@ function applyDegrade(level: DegradeLevel, force = false): void {
             env: {
                 qualityProfile: envState.qualityProfile,
                 reflectionQuality: envState.reflectionQuality,
+                cloudQuality: envState.cloudQuality,
+                particleQuality: envState.particleQuality,
             },
         };
     }

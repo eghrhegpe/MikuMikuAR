@@ -89,6 +89,7 @@ function buildDefaultEnvState(): EnvState {
         particleSpeed: s.particleSpeed.default,
         particleSplash: s.particleSplash.default,
         particleCustomTexture: s.particleCustomTexture.default,
+        particleQuality: s.particleQuality.default,
         waterEnabled: s.waterEnabled.default,
         waterLevel: s.waterLevel.default,
         waterFlip: s.waterFlip.default,
