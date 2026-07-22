@@ -1276,6 +1276,7 @@ export const ja: Record<string, string> = {
     'env.groundPresetStoneTile': '石畳',
     'env.groundPresetWoodStage': '木目ステージ',
     'env.groundPresetCyberGrid': 'サイバーグリッド',
+    'env.groundPresetMetalStage': 'メタルステージ',
 
     // —— Wind ——
     'env.wind': '風',

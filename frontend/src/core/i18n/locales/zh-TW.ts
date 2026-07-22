@@ -1261,6 +1261,7 @@ export const zhTW: Record<string, string> = {
     'env.groundPresetStoneTile': '石板',
     'env.groundPresetWoodStage': '木紋舞台',
     'env.groundPresetCyberGrid': '賽博網格',
+    'env.groundPresetMetalStage': '金屬舞台',
 
     // —— Wind ——
     'env.wind': '風',

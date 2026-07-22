@@ -1030,7 +1030,7 @@ export function applyGround(state: EnvState): void {
     const pbrKey = `:pbr:${state.groundPbrEnabled}`;
     const proceduralKey =
         state.groundProceduralTexture !== 'none' && !state.groundTextureEnabled
-            ? `:proc:${state.groundProceduralTexture}:${state.groundProceduralSeed}:${state.groundProceduralScale}:deco:${state.groundOverlay}`
+            ? `:proc:${state.groundProceduralTexture}:${state.groundProceduralSeed}:${state.groundProceduralScale}:overlay:${state.groundOverlay}`
             : '';
     const typeKey =
         state.groundType === 'terrain'
@@ -1113,7 +1113,7 @@ export function applyGround(state: EnvState): void {
     if (state.groundType === 'terrain') {
         const hg = createHeightmapGround(state, scene, (gm) => {
             applyTerrainMaterial(gm, state, scene);
-            if (state.groundProceduralTexture !== 'none' && !state.groundTextureEnabled) {
+            if (state.groundProceduralTexture !== 'none' && !state.groundTextureEnabled && !state.groundElevationColoring) {
                 const mat = gm.material as GroundMat;
                 const texs = generateProceduralGroundTextures(
                     state.groundProceduralTexture,
@@ -1485,6 +1485,38 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
         groundReflectionDistort: 0,
         groundContactShadowEnabled: false,
         groundContactShadowIntensity: 0.5,
+        groundContactShadowDistance: 0.5,
+        groundElevationColoring: false,
+        groundEdgeFade: 0,
+        groundPitch: 0,
+        groundRoll: 0,
+    },
+    metalStage: {
+        label: '金属舞台',
+        groundStyle: 'solid',
+        groundOverlay: 'none',
+        groundColor: [0.55, 0.55, 0.57],
+        groundAlpha: 1,
+        groundPattern: 'checker',
+        groundTexture: '',
+        groundTextureEnabled: false,
+        groundTextureScale: 1,
+        groundTextureRotation: 0,
+        groundGridSize: 1,
+        groundLineColor: [0.5, 0.5, 0.55],
+        groundPbrEnabled: true,
+        groundMetallic: 0.9,
+        groundRoughness: 0.15,
+        groundProceduralTexture: 'metal',
+        groundProceduralSeed: 42,
+        groundProceduralScale: 1,
+        reflectionQuality: 'medium',
+        groundReflectionBlend: 0.5,
+        groundNormalStrength: 1.5,
+        groundReflectionBlur: 0.1,
+        groundReflectionDistort: 0.3,
+        groundContactShadowEnabled: true,
+        groundContactShadowIntensity: 0.4,
         groundContactShadowDistance: 0.5,
         groundElevationColoring: false,
         groundEdgeFade: 0,
