@@ -1126,6 +1126,7 @@ export const ja: Record<string, string> = {
     'env.skyTexture': 'スカイテクスチャ',
     'env.rotateY': 'Y回転',
     'env.brightness': '輝度',
+    'env.environmentBrightness': '環境輝度',
     'env.skyRotationSpeed': '空の回転速度',
     'env.lightControl': '照明制御',
     'env.sunIntensity': '太陽強度',

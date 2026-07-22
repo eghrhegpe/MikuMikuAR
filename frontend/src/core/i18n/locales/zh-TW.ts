@@ -1114,6 +1114,7 @@ export const zhTW: Record<string, string> = {
     'env.skyTexture': '天空貼圖',
     'env.rotateY': '旋 Y',
     'env.brightness': '亮度',
+    'env.environmentBrightness': '環境亮度',
 
     // —— Ground ——
     'env.ground': '地面',

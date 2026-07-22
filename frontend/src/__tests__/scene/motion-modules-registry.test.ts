@@ -34,9 +34,13 @@ vi.mock('@/scene/motion/perception', () => ({
     setHeadTrackingEnabled: vi.fn(),
 }));
 
-vi.mock('@/scene/motion/motion-intent', () => ({
-    getActiveMotion: () => mockActiveMotion.value,
-}));
+vi.mock('@/scene/motion/motion-intent', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('@/scene/motion/motion-intent')>();
+    return {
+        ...actual,
+        getActiveMotion: () => mockActiveMotion.value,
+    };
+});
 
 // [doc:adr-125] mock pushHistory 以验证 setParam 集成
 const { pushHistorySpy } = vi.hoisted(() => ({

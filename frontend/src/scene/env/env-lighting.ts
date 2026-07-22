@@ -212,6 +212,7 @@ export const ENV_PRESET_FIELDS: Record<EnvPresetCategory, (keyof EnvState)[]> = 
         'starsEnabled',
         'starsTexture',
         'envIntensity',
+        'envBrightness', // [doc:adr-132] 全局明暗基准随天空预设快照/恢复
         'sunAngle',
         'azimuth',
         'lightingPresetName',

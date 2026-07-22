@@ -1261,6 +1261,7 @@ export const en: Record<string, string> = {
     'env.skyTexture': 'Sky texture',
     'env.rotateY': 'Rotate Y',
     'env.brightness': 'Brightness',
+    'env.environmentBrightness': 'Environment Brightness',
     'env.skyRotationSpeed': 'Sky rotation speed',
     'env.lightControl': 'Light control',
     'env.sunIntensity': 'Sun intensity',

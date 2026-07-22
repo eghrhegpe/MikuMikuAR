@@ -509,7 +509,9 @@ Events.On('android:ScreenLocked', () => {
 
 // 网络变化 → toast 提示（plaza 等在线功能依赖网络）
 // payload: {"online":true|false}
-Events.On('android:NetworkChanged', (data: { online?: boolean } | null) => {
+Events.On('android:NetworkChanged', (ev: unknown) => {
+    // Wails 事件对象：data 字段承载 Java 端 emitSystemEvent 的 JSON payload
+    const data = (ev as { data?: { online?: boolean } } | null)?.data;
     const online = data?.online === true;
     if (online) {
         showInfoToast(t('main.networkOnline'));
@@ -520,13 +522,13 @@ Events.On('android:NetworkChanged', (data: { online?: boolean } | null) => {
 
 // 电量变化 → 仅日志，暂不消费（预留扩展点，未来可低电量降级渲染）
 // payload: {"level":int,"scale":int,"plugged":bool}
-Events.On('android:BatteryChanged', (_data: unknown) => {
+Events.On('android:BatteryChanged', (_ev: unknown) => {
     // no-op: 预留扩展点
 });
 
 // 主题变化 → 仅日志，暂不消费（预留扩展点，未来可跟随系统暗色模式）
 // payload: {"nightMode":bool}
-Events.On('android:ThemeChanged', (_data: unknown) => {
+Events.On('android:ThemeChanged', (_ev: unknown) => {
     // no-op: 预留扩展点
 });
 

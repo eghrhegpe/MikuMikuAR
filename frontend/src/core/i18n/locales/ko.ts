@@ -1121,6 +1121,7 @@ export const ko: Record<string, string> = {
     'env.skyTexture': '하늘 텍스처',
     'env.rotateY': 'Y 회전',
     'env.brightness': '밝기',
+    'env.environmentBrightness': '환경 밝기',
     'env.skyRotationSpeed': '하늘 회전 속도',
     'env.lightControl': '조명 제어',
     'env.sunIntensity': '태양 강도',
