@@ -296,17 +296,16 @@ function buildSceneRootItems(): PopupRow[] {
         icon: 'lucide:layers',
         target: '',
         modeOptions: [
-            { value: 'auto', label: t('env.reflectionModeAuto') },
             { value: 'none', label: t('env.reflectionModeNone') },
-            { value: 'probe', label: t('env.reflectionModeProbe') },
-            { value: 'ssr', label: t('env.reflectionModeSsr') },
             { value: 'planar', label: t('env.reflectionModePlanar') },
+            { value: 'ssr', label: t('env.reflectionModeSsr') },
+            { value: 'probe', label: t('env.reflectionModeProbe') },
             { value: 'hybrid', label: t('env.reflectionModeHybrid') },
         ],
         modeValue: envState.reflectionMode,
         onModeChange: (v) => {
             setEnvState({
-                reflectionMode: v as 'auto' | 'none' | 'probe' | 'ssr' | 'planar' | 'hybrid',
+                reflectionMode: v as 'none' | 'planar' | 'ssr' | 'probe' | 'hybrid',
             });
             getSceneMenu()?.updateControls();
         },

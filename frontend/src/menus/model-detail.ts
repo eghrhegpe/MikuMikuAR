@@ -26,6 +26,7 @@ import {
     addEmptyRow,
     addSliderRow,
     addToggleRow,
+    addColorSliderRow,
 } from '../core/ui-helpers';
 import { openFullscreen } from '../core/ui-fullscreen-overlay';
 import { buildOutfitLevel } from './outfit-ui';
@@ -342,47 +343,26 @@ function buildModelSchema(id: string): MenuNode[] {
                         stackRegistry.modelStack.push(level);
                     });
 
-                    // ── 个人灯光 ──
+                    // ── 个人灯光（次级菜单） ──
                     {
                         const pls = getPersonalLightState(id);
                         if (pls) {
-                            addSectionTitle(c, t('model-detail.personalLight'));
-                            addToggleRow(
+                            slideRow(
                                 c,
-                                t('model-detail.personalLightEnabled'),
-                                pls.enabled,
-                                (v) => setPersonalLightState(id, { enabled: v }),
-                                'lucide:lightbulb'
-                            );
-                            addSliderRow(
-                                c,
-                                t('model-detail.personalLightIntensity'),
-                                pls.intensity,
-                                0,
-                                3,
-                                0.05,
-                                (v) => setPersonalLightState(id, { intensity: v }),
-                                'lucide:sun'
-                            );
-                            addSliderRow(
-                                c,
-                                t('model-detail.personalLightAngle'),
-                                pls.angle,
-                                0.3,
-                                1.5,
-                                0.05,
-                                (v) => setPersonalLightState(id, { angle: v }),
-                                'lucide:flashlight'
-                            );
-                            addSliderRow(
-                                c,
-                                t('model-detail.personalLightHeight'),
-                                pls.height,
-                                5,
-                                30,
-                                0.5,
-                                (v) => setPersonalLightState(id, { height: v }),
-                                'lucide:move-vertical'
+                                'lucide:lightbulb',
+                                t('model-detail.personalLight'),
+                                true,
+                                () => {
+                                    stackRegistry.modelStack.push(buildPersonalLightLevel(id));
+                                },
+                                undefined,
+                                undefined,
+                                undefined,
+                                {
+                                    value: pls.enabled,
+                                    onChange: (v) => setPersonalLightState(id, { enabled: v }),
+                                    bind: () => getPersonalLightState(id)?.enabled ?? false,
+                                }
                             );
                         }
                     }
@@ -1147,6 +1127,99 @@ export function buildMorphPreviewLevel(id: string): PopupLevel {
         items: [],
         renderCustom: (container) => {
             renderMenu(buildMorphPreviewSchema(id), container);
+        },
+    };
+}
+
+// ======== Personal Light ========
+
+export function buildPersonalLightLevel(id: string): PopupLevel {
+    return {
+        label: t('model-detail.personalLight'),
+        dir: '',
+        items: [],
+        renderCustom: (c) => {
+            const pls = getPersonalLightState(id);
+            if (!pls) {
+                return;
+            }
+            addSliderRow(
+                c,
+                t('model-detail.personalLightIntensity'),
+                pls.intensity,
+                0,
+                3,
+                0.05,
+                (v) => setPersonalLightState(id, { intensity: v }),
+                'lucide:sun'
+            );
+            addColorSliderRow(
+                c,
+                t('model-detail.personalLightColor'),
+                pls.color,
+                (v) => setPersonalLightState(id, { color: v }),
+                undefined,
+                'personal-light-color'
+            );
+            addSliderRow(
+                c,
+                t('model-detail.personalLightAngle'),
+                pls.angle,
+                0.3,
+                1.5,
+                0.05,
+                (v) => setPersonalLightState(id, { angle: v }),
+                'lucide:flashlight'
+            );
+            addSliderRow(
+                c,
+                t('model-detail.personalLightHeight'),
+                pls.height,
+                5,
+                50,
+                0.5,
+                (v) => setPersonalLightState(id, { height: v }),
+                'lucide:move-vertical'
+            );
+            addToggleRow(
+                c,
+                t('model-detail.personalLightCone'),
+                pls.coneEnabled,
+                (v) => setPersonalLightState(id, { coneEnabled: v }),
+                'lucide:cone'
+            );
+            if (pls.coneEnabled) {
+                addSliderRow(
+                    c,
+                    t('model-detail.personalLightConeIntensity'),
+                    pls.coneIntensity,
+                    0,
+                    2,
+                    0.05,
+                    (v) => setPersonalLightState(id, { coneIntensity: v }),
+                    'lucide:sun-medium'
+                );
+                addSliderRow(
+                    c,
+                    t('model-detail.personalLightConeLength'),
+                    pls.coneLength,
+                    1,
+                    50,
+                    0.5,
+                    (v) => setPersonalLightState(id, { coneLength: v }),
+                    'lucide:move-down'
+                );
+                addSliderRow(
+                    c,
+                    t('model-detail.personalLightConeSoftness'),
+                    pls.coneSoftness,
+                    0,
+                    1,
+                    0.05,
+                    (v) => setPersonalLightState(id, { coneSoftness: v }),
+                    'lucide:blur'
+                );
+            }
         },
     };
 }
