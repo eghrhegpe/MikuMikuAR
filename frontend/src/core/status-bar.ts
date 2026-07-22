@@ -40,6 +40,12 @@ export function setStatus(text: string, ok: boolean, hold = false): void {
         return;
     }
 
+    // ADR-153: 状态栏文本变化时屏幕阅读器可感知
+    if (!dom.statusText.hasAttribute('role')) {
+        dom.statusText.setAttribute('role', 'status');
+        dom.statusText.setAttribute('aria-live', 'polite');
+    }
+
     if (_statusTimer) {
         clearTimeout(_statusTimer);
         _statusTimer = null;

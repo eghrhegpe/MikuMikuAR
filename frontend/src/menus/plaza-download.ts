@@ -17,6 +17,7 @@ import {
     PlazaZoomIn,
     PlazaZoomOut,
     PlazaZoomReset,
+    ClosePlazaWindow,
     DownloadFromPlaza,
 } from '../core/wails-bindings';
 import {
@@ -101,6 +102,7 @@ export function installShortcuts(): void {
         { id: 'plaza:goForward', key: 'ArrowRight', alt: true, handler: PlazaGoForward },
         { id: 'plaza:zoomIn', key: 'Equal', ctrl: true, handler: PlazaZoomIn },
         { id: 'plaza:zoomOut', key: 'Minus', ctrl: true, handler: PlazaZoomOut },
+        { id: 'plaza:closeWindow', key: 'KeyW', ctrl: true, handler: ClosePlazaWindow },
     ];
 
     registerShortcuts(
