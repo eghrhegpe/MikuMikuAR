@@ -354,6 +354,9 @@ export const ja: Record<string, string> = {
     'motion-preset.deleted': '✓ プリセットを削除しました',
     'motion-preset.noPresets': 'プリセットがありません',
     'motion-preset.saveTitle': '現在のモーションをプリセットとして保存',
+    'motion-preset.saveCurrent': '現在をプリセットとして保存',
+    'motion-preset.defaultName': '新規プリセット',
+    'motion-preset.limitReached': '✗ プリセット数の上限 (10) に達しました。古いプリセットを削除してください',
     'motion-preset.inputName': 'プリセット名を入力：',
     'motion-preset.nameEmpty': '✗ 名前を入力してください',
     'motion-preset.tooManyPresets':
@@ -444,6 +447,7 @@ export const ja: Record<string, string> = {
     'motion.library.followDefault': 'デフォルトに追従',
     'motion.library.currentPick': '現在の選択',
     'motion.undoApplied': '✓ 元に戻しました',
+    'motion.undo.appliedPreset': '元に戻す：プリセット「{name}」を適用',
     'motion.music': '音楽',
     'motion.browseMusic': '音楽を選択',
     'motion.musicLibrary': '音楽ライブラリ',
