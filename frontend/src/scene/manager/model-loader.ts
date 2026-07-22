@@ -404,7 +404,7 @@ export async function loadPMXFile(
                 // Intentionally empty — 自定义事件派发失败不影响模型加载主流程
             }
             // [fix:thumbnail] stage 同样需要缩略图（库网格含 stage 模型）；用库引用路径作 key
-            // [fix:thumbnail-defer] setTimeout 0 推迟到下一事件循环，避免阻塞主线程
+            // [fix:thumbnail-async] 缩略图编码已改为 toBlob 异步（后台线程），不再阻塞主线程
             setTimeout(() => {
                 swallowError(captureThumbnail(filePath, libraryPath, innerPath, inst));
             }, 0);
@@ -642,8 +642,7 @@ export async function loadPMXFile(
         // Auto-capture thumbnail for future popup display
         // 与 stage 分支(330 行)对称:显式传 inst,避免依赖 _modelManager.focused() 的竞态兜底
         // (focused() 在加载时序波动时返回 null/错位实例 → 早退 → 缩略图间歇 miss = 历史反弹根因)。
-        // [fix:thumbnail-defer] setTimeout 0 推迟到下一事件循环，避免 canvas.toDataURL()
-        // 同步 PNG 编码阻塞主线程 0.5–2s（用户看到模型渲染后仍卡顿）。
+        // [fix:thumbnail-async] 缩略图编码已改为 toBlob 异步（后台线程），不再阻塞主线程。
         setTimeout(() => {
             swallowError(captureThumbnail(filePath, libraryPath, innerPath, inst));
         }, 0);
