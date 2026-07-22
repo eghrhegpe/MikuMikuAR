@@ -66,7 +66,7 @@ function _renderUISizeControls(
         container,
         t('settings.popupWidth'),
         initialWidth,
-        220,
+        180,
         360,
         10,
         (v) => {

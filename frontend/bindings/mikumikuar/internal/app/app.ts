@@ -341,6 +341,7 @@ export function GetStorageMode(): $CancellablePromise<string> {
 /**
  * GetSystemA11ySettings 返回当前系统无障碍设置。
  * 前端在启动时调用，并在收到 system_a11y 事件时重新查询。
+ * detectDarkMode/detectHighContrast 由平台特定文件实现。
  */
 export function GetSystemA11ySettings(): $CancellablePromise<$models.SystemA11ySettings> {
     return $Call.ByID(2947408569);
