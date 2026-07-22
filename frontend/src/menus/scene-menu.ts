@@ -31,6 +31,35 @@ import { focusModel } from '../scene/scene';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
 
+/**
+ * canvas → base64 异步编码（ADR-017 A2-04）。
+ * 用 toBlob 替代 toDataURL，编码移至后台线程，降低低端机 OOM 风险。
+ * toBlob 失败时降级 toDataURL（受约束环境兼容）。
+ */
+function canvasToBase64(canvas: HTMLCanvasElement, format: string, quality: number): Promise<string> {
+    return new Promise((resolve) => {
+        canvas.toBlob(
+            (blob) => {
+                if (!blob) {
+                    resolve(canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, ''));
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const r = reader.result;
+                    resolve(typeof r === 'string' ? r.replace(/^data:image\/\w+;base64,/, '') : canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, ''));
+                };
+                reader.onerror = () => {
+                    resolve(canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, ''));
+                };
+                reader.readAsDataURL(blob);
+            },
+            format,
+            quality
+        );
+    });
+}
+
 // ======== 导入 ========
 import { buildPresetScenesLevel } from './scene-render-levels';
 import { buildStageLevel } from './scene-stage-levels';
@@ -345,9 +374,9 @@ export async function screenshotCurrent(): Promise<void> {
     const ext = fmt === 'image/jpeg' ? 'jpg' : fmt === 'image/webp' ? 'webp' : 'png';
     let base64: string;
     if (isARModeActive()) {
-        base64 = takeARScreenshot(fmt, q);
+        base64 = await takeARScreenshot(fmt, q);
     } else {
-        base64 = dom.canvas.toDataURL(fmt, q).replace(/^data:image\/\w+;base64,/, '');
+        base64 = await canvasToBase64(dom.canvas, fmt, q);
     }
     const filename = `${inst.name.replace(/[\\/:*?"<>|]/g, '_')}_${ts}.${ext}`;
     const r = await tryCatchStatus(async () => {
@@ -393,9 +422,9 @@ async function screenshotBatch(): Promise<void> {
             const q = uiState.screenshotQuality ?? 0.9;
             let base64: string;
             if (isARModeActive()) {
-                base64 = takeARScreenshot(fmt, q);
+                base64 = await takeARScreenshot(fmt, q);
             } else {
-                base64 = dom.canvas.toDataURL(fmt, q).replace(/^data:image\/\w+;base64,/, '');
+                base64 = await canvasToBase64(dom.canvas, fmt, q);
             }
 
             const ts = Date.now();

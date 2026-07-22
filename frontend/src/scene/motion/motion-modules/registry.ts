@@ -63,34 +63,38 @@ export function createModule(id: string, modelId: string): MotionOverrideModule 
 
 // ── 场景级配置管理（per-motion，随动作走）──
 
-import { getActiveMotion } from '../motion-intent';
+import { getActiveMotion, findOrCreateModuleState } from '../motion-intent';
 
-/** 获取当前动作的模块配置（不存在则创建默认状态，种入 defaults） */
+/**
+ * 获取当前动作的模块配置（不存在则创建默认状态，种入 defaults）。
+ * [doc:adr-121 P4-4] _modelId 未使用：ADR-129 将配置存储从 per-model 改为 per-motion（随动作走），
+ * 保留参数仅为维持接口兼容（UI 调用方均传入 modelId）。
+ */
 export function getModuleState(_modelId: string, moduleId: string): MotionModuleState {
     initMotionModules(); // 幂等兜底
     const intent = getActiveMotion();
 
-    // 无动作时返回默认状态
+    // 无动作时返回临时默认状态（不写入 intent）
     if (!intent) {
         return { id: moduleId, enabled: false, params: {} };
     }
 
-    // 确保配置数组存在
-    if (!intent.motionModules) {
-        intent.motionModules = [];
+    // 快速路径：已存在则直接返回
+    if (intent.motionModules) {
+        const existing = intent.motionModules.find((m) => m.id === moduleId);
+        if (existing) {
+            return existing;
+        }
     }
 
-    let state = intent.motionModules.find((m) => m.id === moduleId);
-    if (!state) {
-        // 将模块注册的默认值种入 params，避免 schema 首次渲染读到 undefined
-        const entry = _registry.get(moduleId);
-        const defs = entry?.meta.defaults;
-        state = {
-            id: moduleId,
-            enabled: false,
-            params: defs ? { ...defs } : {},
-        };
-        intent.motionModules.push(state);
+    // 创建路径：通过 findOrCreateModuleState 收敛 mutate 入口 [doc:adr-121 P4-1]
+    const state = findOrCreateModuleState(intent, moduleId);
+
+    // 将模块注册的默认值种入 params，避免 schema 首次渲染读到 undefined
+    const entry = _registry.get(moduleId);
+    const defs = entry?.meta.defaults;
+    if (defs) {
+        state.params = { ...defs };
     }
     return state;
 }

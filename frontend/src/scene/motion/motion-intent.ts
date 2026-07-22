@@ -4,7 +4,7 @@
 // 设计: 轻量 singleton（非 EnvState），规避 Go struct 同步 + wails 绑定重生成本
 // 依赖方向: 不 import 任何 UI 模块；由 broadcastMotion 遍历 modelRegistry 写入 inst.vmd*
 
-import type { SceneMotionIntent } from '@/core/types';
+import type { SceneMotionIntent, MotionModuleState } from '@/core/types';
 import { matchBone } from '@/motion-algos/proc-motion-shared';
 
 // ── 场景级 store（轻量 singleton，非 EnvState）──
@@ -67,7 +67,9 @@ export function initMotionIntent(
 }
 
 /**
- * @deprecated 请使用 initMotionIntent() 替代。此函数仅保留供测试覆写。
+ * @deprecated 请使用 initMotionIntent() 替代。此函数仅保留供测试覆写：
+ * 测试用例间需 setBroadcastCallback(null) 隔离回调，而 initMotionIntent 的幂等守卫不允许置空。
+ * 生产代码应使用 initMotionIntent()。
  */
 export function setBroadcastCallback(
     cb:
@@ -154,6 +156,26 @@ export function clearAllSceneMotions(): void {
     _activeMotionId = null;
     _motionGen++;
     _broadcastCallback?.(null, _motionGen, prev);
+}
+
+/**
+ * [doc:adr-121 P4-1] 在 intent.motionModules 中查找或创建模块状态。
+ * 收敛 mutate 入口：外部模块（如 registry）不再直接 push intent.motionModules，
+ * 而是通过此函数获取引用，保持写入路径可追踪。
+ */
+export function findOrCreateModuleState(
+    intent: SceneMotionIntent,
+    moduleId: string
+): MotionModuleState {
+    if (!intent.motionModules) {
+        intent.motionModules = [];
+    }
+    let state = intent.motionModules.find((m) => m.id === moduleId);
+    if (!state) {
+        state = { id: moduleId, enabled: false, params: {} };
+        intent.motionModules.push(state);
+    }
+    return state;
 }
 
 /**

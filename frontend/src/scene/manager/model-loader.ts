@@ -579,6 +579,7 @@ export async function loadPMXFile(
                     inst.mmdModel?.runtimeBones?.map((b) => b.name) ??
                     inst.meshes[0]?.skeleton?.bones?.map((b) => b.name) ??
                     [];
+                // [doc:adr-121 P4-2] 宽松匹配：未传 vmdBoneNames，退回标准骨骼预筛（有意为之，见 motion-binding-ui.ts 注释）
                 const compat = resolveCompatibility(bones, activeMotion);
                 if (!compat.compatible) {
                     inst.motionSlots = {
