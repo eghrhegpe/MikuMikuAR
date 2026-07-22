@@ -135,6 +135,6 @@ export function buildCloudLevel(): PopupLevel {
                 icon: 'lucide:snowflake',
             },
         ];
-        renderMenu(cloudSchema, c);
+        return renderMenu(cloudSchema, c);
     });
 }

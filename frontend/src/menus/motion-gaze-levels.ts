@@ -504,12 +504,12 @@ export function buildGazeTrackingLevel(): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
-            cardContainer(container, (c) => {
+            return cardContainer(container, (c) => {
                 const banner = document.createElement('div');
                 banner.style.cssText = 'padding:2px 14px 8px;font-size:11px;line-height:1.5;';
                 renderPerceptionConflictBanners(banner);
                 c.appendChild(banner);
-                renderMenu(gazeSchema, c);
+                return renderMenu(gazeSchema, c);
             });
         },
     };

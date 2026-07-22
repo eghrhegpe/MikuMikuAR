@@ -493,7 +493,7 @@ export function buildModuleParamLevel(moduleId: string): PopupLevel {
                 addEmptyRow(container, t('motion.boneOverride.noModel'));
                 return;
             }
-            renderMenu(mod.buildSchema(), container);
+            return renderMenu(mod.buildSchema(), container);
         },
     };
 }
@@ -839,7 +839,7 @@ export function buildAdvancedBoneOverrideLevel(): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildBoneOverrideSchema(), container);
+            return renderMenu(buildBoneOverrideSchema(), container);
         },
     };
 }

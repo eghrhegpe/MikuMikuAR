@@ -122,7 +122,7 @@ export function buildLayerLevel(layerId: string, id: string): PopupLevel {
                     },
                 },
             ];
-            renderMenu(schema, container);
+            return renderMenu(schema, container);
         },
     };
 }
@@ -276,7 +276,7 @@ export function buildMotionDetailLevel(sceneMotionId?: string): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildMotionDetailSchema(sceneMotionId), container);
+            return renderMenu(buildMotionDetailSchema(sceneMotionId), container);
         },
     };
 }
@@ -374,7 +374,7 @@ export function buildPlaybackSpeedLevel(): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildPlaybackSpeedSchema(), container);
+            return renderMenu(buildPlaybackSpeedSchema(), container);
         },
     };
 }

@@ -386,7 +386,7 @@ export function buildWaterLevel(): PopupLevel {
                     ],
                 },
             ];
-            renderMenu(waterSchema, c);
+            return renderMenu(waterSchema, c);
         },
         [
             // —— 质量档位（ADR-130 Phase 2.3）——
@@ -411,7 +411,7 @@ export function buildWaterLevel(): PopupLevel {
                         icon: 'lucide:gauge',
                     },
                 ];
-                renderMenu(profileSchema, rc);
+                return renderMenu(profileSchema, rc);
             },
             // —— 反射（ADR-062 P1）——
             (rc) => {
@@ -438,7 +438,7 @@ export function buildWaterLevel(): PopupLevel {
                         ],
                     },
                 ];
-                renderMenu(reflectionSchema, rc);
+                return renderMenu(reflectionSchema, rc);
             },
         ]
     );

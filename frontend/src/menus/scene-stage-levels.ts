@@ -270,7 +270,7 @@ export function buildStageLevel(): PopupLevel {
         items: [],
         renderCustom: (container) => {
             container.classList.remove('render-card');
-            renderMenu(buildStageSchema(), container);
+            return renderMenu(buildStageSchema(), container);
         },
     };
 }

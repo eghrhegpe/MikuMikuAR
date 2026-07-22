@@ -297,7 +297,7 @@ export function buildProcMotionLevel(modelId?: string): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildProcMotionSchema(modelId), container);
+            return renderMenu(buildProcMotionSchema(modelId), container);
         },
     };
 }

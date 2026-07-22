@@ -495,7 +495,7 @@ export function buildSettingsAppearanceLevel(
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildAppearanceSchema(getSettingsMenu), container);
+            return renderMenu(buildAppearanceSchema(getSettingsMenu), container);
         },
     };
 }

@@ -95,7 +95,7 @@ export function buildWasmPhysicsLevel(): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildWasmPhysicsSchema(), container);
+            return renderMenu(buildWasmPhysicsSchema(), container);
         },
     };
 }
@@ -162,7 +162,7 @@ export function buildPhysicsDebugLevel(): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
-            renderMenu(buildPhysicsDebugSchema(), container);
+            return renderMenu(buildPhysicsDebugSchema(), container);
         },
     };
 }

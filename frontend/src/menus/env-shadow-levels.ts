@@ -118,6 +118,6 @@ export function buildShadowLevel(): PopupLevel {
                 },
             },
         ];
-        renderMenu(shadowSchema, c);
+        return renderMenu(shadowSchema, c);
     });
 }
