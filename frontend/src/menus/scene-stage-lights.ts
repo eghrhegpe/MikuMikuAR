@@ -30,6 +30,14 @@ import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 
+/** 提取「获取当前活跃灯光 + 读取属性」的公共 bind 工厂，消除 21 处重复 */
+function _activeLightBind(key: string, fallback: unknown = undefined): () => unknown {
+    return () => {
+        const s = getStageLights().find((l) => l.id === getActiveStageLightId()) ?? getStageLights()[0];
+        return (s as Record<string, unknown> | undefined)?.[key] ?? fallback;
+    };
+}
+
 // 灯光预设 key 映射（热切换安全：仅存 i18n key，不含中文）
 const LIGHTING_PRESET_KEYS: Record<string, string> = {
     'character-portrait': 'scene.lightPreset.characterPortrait',
@@ -150,12 +158,7 @@ function buildStageLightSchema(): MenuNode[] {
                                 setStageLightState({ enabled: v }, state.id);
                                 getSceneMenu()?.updateControls();
                             },
-                            bind: () => {
-                                const lights = getStageLights();
-                                const activeId = getActiveStageLightId();
-                                const s = lights.find((l) => l.id === activeId) ?? lights[0];
-                                return s?.enabled ?? true;
-                            },
+                            bind: _activeLightBind('enabled', true),
                         },
                         renderContent: (ci) => {
                             addModeSlider(
@@ -177,13 +180,7 @@ function buildStageLightSchema(): MenuNode[] {
                                 'lucide:lightbulb',
                                 undefined,
                                 {
-                                    bind: () => {
-                                        const lights = getStageLights();
-                                        const activeId = getActiveStageLightId();
-                                        const s =
-                                            lights.find((l) => l.id === activeId) ?? lights[0];
-                                        return s?.type ?? 'spot';
-                                    },
+                                    bind: _activeLightBind('type', 'spot'),
                                 }
                             );
                             addSliderRow(
@@ -197,13 +194,7 @@ function buildStageLightSchema(): MenuNode[] {
                                 'lucide:sun',
                                 (v) => setStageLightState({ intensity: v }, state.id),
                                 {
-                                    bind: () => {
-                                        const lights = getStageLights();
-                                        const activeId = getActiveStageLightId();
-                                        const s =
-                                            lights.find((l) => l.id === activeId) ?? lights[0];
-                                        return s?.intensity ?? 1;
-                                    },
+                                    bind: _activeLightBind('intensity', 1),
                                 }
                             );
                             addColorSliderRow(
@@ -215,13 +206,7 @@ function buildStageLightSchema(): MenuNode[] {
                                     getSceneMenu()?.updateControls();
                                 },
                                 {
-                                    bind: () => {
-                                        const lights = getStageLights();
-                                        const activeId = getActiveStageLightId();
-                                        const s =
-                                            lights.find((l) => l.id === activeId) ?? lights[0];
-                                        return s?.color ?? [1, 1, 1];
-                                    },
+                                    bind: _activeLightBind('color', [1, 1, 1]),
                                 }
                             );
                         },
@@ -249,12 +234,7 @@ function buildStageLightSchema(): MenuNode[] {
                                 setStageLightState({ coneEnabled: v }, state.id);
                                 getSceneMenu()?.updateControls();
                             },
-                            bind: () => {
-                                const lights = getStageLights();
-                                const activeId = getActiveStageLightId();
-                                const s = lights.find((l) => l.id === activeId) ?? lights[0];
-                                return s?.coneEnabled ?? false;
-                            },
+                            bind: _activeLightBind('coneEnabled', false),
                         },
                         renderContent: (ci) => {
                             addSliderRow(
@@ -268,13 +248,7 @@ function buildStageLightSchema(): MenuNode[] {
                                 'lucide:sun',
                                 (v) => setStageLightState({ coneIntensity: v }, state.id),
                                 {
-                                    bind: () => {
-                                        const lights = getStageLights();
-                                        const activeId = getActiveStageLightId();
-                                        const s =
-                                            lights.find((l) => l.id === activeId) ?? lights[0];
-                                        return s?.coneIntensity ?? 0.5;
-                                    },
+                                    bind: _activeLightBind('coneIntensity', 0.5),
                                 }
                             );
                             addSliderRow(
@@ -288,13 +262,7 @@ function buildStageLightSchema(): MenuNode[] {
                                 'lucide:ruler',
                                 (v) => setStageLightState({ coneLength: v }, state.id),
                                 {
-                                    bind: () => {
-                                        const lights = getStageLights();
-                                        const activeId = getActiveStageLightId();
-                                        const s =
-                                            lights.find((l) => l.id === activeId) ?? lights[0];
-                                        return s?.coneLength ?? 20;
-                                    },
+                                    bind: _activeLightBind('coneLength', 20),
                                 }
                             );
                             addSliderRow(
@@ -308,13 +276,7 @@ function buildStageLightSchema(): MenuNode[] {
                                 'lucide:circle-dashed',
                                 (v) => setStageLightState({ coneSoftness: v }, state.id),
                                 {
-                                    bind: () => {
-                                        const lights = getStageLights();
-                                        const activeId = getActiveStageLightId();
-                                        const s =
-                                            lights.find((l) => l.id === activeId) ?? lights[0];
-                                        return s?.coneSoftness ?? 0.5;
-                                    },
+                                    bind: _activeLightBind('coneSoftness', 0.5),
                                 }
                             );
                         },
@@ -348,13 +310,7 @@ function buildStageLightSchema(): MenuNode[] {
                                 'lucide:circle',
                                 (v) => setStageLightState({ angle: v }, state.id),
                                 {
-                                    bind: () => {
-                                        const ls = getStageLights();
-                                        const s =
-                                            ls.find((l) => l.id === getActiveStageLightId()) ??
-                                            ls[0];
-                                        return s?.angle ?? 1.0;
-                                    },
+                                    bind: _activeLightBind('angle', 1.0),
                                 }
                             );
                             addSliderRow(
@@ -368,13 +324,7 @@ function buildStageLightSchema(): MenuNode[] {
                                 'lucide:arrow-down',
                                 (v) => setStageLightState({ exponent: v }, state.id),
                                 {
-                                    bind: () => {
-                                        const ls = getStageLights();
-                                        const s =
-                                            ls.find((l) => l.id === getActiveStageLightId()) ??
-                                            ls[0];
-                                        return s?.exponent ?? 1;
-                                    },
+                                    bind: _activeLightBind('exponent', 1),
                                 }
                             );
                             addCollapsible(ci, {
@@ -393,14 +343,7 @@ function buildStageLightSchema(): MenuNode[] {
                                         'lucide:move-horizontal',
                                         (v) => setStageLightState({ targetX: v }, state.id),
                                         {
-                                            bind: () => {
-                                                const ls = getStageLights();
-                                                const s =
-                                                    ls.find(
-                                                        (l) => l.id === getActiveStageLightId()
-                                                    ) ?? ls[0];
-                                                return s?.targetX ?? 0;
-                                            },
+                                            bind: _activeLightBind('targetX', 0),
                                         }
                                     );
                                     addSliderRow(
@@ -414,14 +357,7 @@ function buildStageLightSchema(): MenuNode[] {
                                         'lucide:move-vertical',
                                         (v) => setStageLightState({ targetY: v }, state.id),
                                         {
-                                            bind: () => {
-                                                const ls = getStageLights();
-                                                const s =
-                                                    ls.find(
-                                                        (l) => l.id === getActiveStageLightId()
-                                                    ) ?? ls[0];
-                                                return s?.targetY ?? 5;
-                                            },
+                                            bind: _activeLightBind('targetY', 5),
                                         }
                                     );
                                     addSliderRow(
@@ -435,14 +371,7 @@ function buildStageLightSchema(): MenuNode[] {
                                         'lucide:move',
                                         (v) => setStageLightState({ targetZ: v }, state.id),
                                         {
-                                            bind: () => {
-                                                const ls = getStageLights();
-                                                const s =
-                                                    ls.find(
-                                                        (l) => l.id === getActiveStageLightId()
-                                                    ) ?? ls[0];
-                                                return s?.targetZ ?? 0;
-                                            },
+                                            bind: _activeLightBind('targetZ', 0),
                                         }
                                     );
                                 },
@@ -478,13 +407,7 @@ function buildStageLightSchema(): MenuNode[] {
                                 'lucide:ruler',
                                 (v) => setStageLightState({ range: v }, state.id),
                                 {
-                                    bind: () => {
-                                        const ls = getStageLights();
-                                        const s =
-                                            ls.find((l) => l.id === getActiveStageLightId()) ??
-                                            ls[0];
-                                        return s?.range ?? 10;
-                                    },
+                                    bind: _activeLightBind('range', 10),
                                 }
                             );
                         },
@@ -518,13 +441,7 @@ function buildStageLightSchema(): MenuNode[] {
                                 'lucide:move-horizontal',
                                 (v) => setStageLightState({ targetX: v }, state.id),
                                 {
-                                    bind: () => {
-                                        const ls = getStageLights();
-                                        const s =
-                                            ls.find((l) => l.id === getActiveStageLightId()) ??
-                                            ls[0];
-                                        return s?.targetX ?? 0;
-                                    },
+                                    bind: _activeLightBind('targetX', 0),
                                 }
                             );
                             addSliderRow(
@@ -538,13 +455,7 @@ function buildStageLightSchema(): MenuNode[] {
                                 'lucide:move-vertical',
                                 (v) => setStageLightState({ targetY: v }, state.id),
                                 {
-                                    bind: () => {
-                                        const ls = getStageLights();
-                                        const s =
-                                            ls.find((l) => l.id === getActiveStageLightId()) ??
-                                            ls[0];
-                                        return s?.targetY ?? 5;
-                                    },
+                                    bind: _activeLightBind('targetY', 5),
                                 }
                             );
                             addSliderRow(
@@ -558,13 +469,7 @@ function buildStageLightSchema(): MenuNode[] {
                                 'lucide:move',
                                 (v) => setStageLightState({ targetZ: v }, state.id),
                                 {
-                                    bind: () => {
-                                        const ls = getStageLights();
-                                        const s =
-                                            ls.find((l) => l.id === getActiveStageLightId()) ??
-                                            ls[0];
-                                        return s?.targetZ ?? 0;
-                                    },
+                                    bind: _activeLightBind('targetZ', 0),
                                 }
                             );
                         },
@@ -592,11 +497,7 @@ function buildStageLightSchema(): MenuNode[] {
                                 setStageLightState({ shadowEnabled: v }, state.id);
                                 getSceneMenu()?.updateControls();
                             },
-                            bind: () => {
-                                const ls = getStageLights();
-                                const s = ls.find((l) => l.id === getActiveStageLightId()) ?? ls[0];
-                                return s?.shadowEnabled ?? false;
-                            },
+                            bind: _activeLightBind('shadowEnabled', false),
                         },
                         renderContent: (ci) => {
                             addModeSlider(
@@ -617,13 +518,7 @@ function buildStageLightSchema(): MenuNode[] {
                                 'lucide:cloud',
                                 undefined,
                                 {
-                                    bind: () => {
-                                        const ls = getStageLights();
-                                        const s =
-                                            ls.find((l) => l.id === getActiveStageLightId()) ??
-                                            ls[0];
-                                        return s?.shadowType ?? 'hard';
-                                    },
+                                    bind: _activeLightBind('shadowType', 'hard'),
                                 }
                             );
                             addSliderRow(
@@ -637,13 +532,7 @@ function buildStageLightSchema(): MenuNode[] {
                                 'lucide:grid-3x3',
                                 (v) => setStageLightState({ shadowResolution: v }, state.id),
                                 {
-                                    bind: () => {
-                                        const ls = getStageLights();
-                                        const s =
-                                            ls.find((l) => l.id === getActiveStageLightId()) ??
-                                            ls[0];
-                                        return s?.shadowResolution ?? 1024;
-                                    },
+                                    bind: _activeLightBind('shadowResolution', 1024),
                                 }
                             );
                             addSliderRow(
@@ -657,13 +546,7 @@ function buildStageLightSchema(): MenuNode[] {
                                 'lucide:move',
                                 (v) => setStageLightState({ shadowBias: v }, state.id),
                                 {
-                                    bind: () => {
-                                        const ls = getStageLights();
-                                        const s =
-                                            ls.find((l) => l.id === getActiveStageLightId()) ??
-                                            ls[0];
-                                        return s?.shadowBias ?? 0.001;
-                                    },
+                                    bind: _activeLightBind('shadowBias', 0.001),
                                 }
                             );
                         },
