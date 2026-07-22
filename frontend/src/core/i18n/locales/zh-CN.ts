@@ -1242,6 +1242,7 @@ export const zhCN: Record<string, string> = {
     'env.skyTexture': '天空贴图',
     'env.rotateY': '旋 Y',
     'env.brightness': '亮度',
+    'env.environmentBrightness': '环境亮度',
     'env.skyRotationSpeed': '天空旋转速度',
     'env.lightControl': '光照控制',
     'env.sunIntensity': '太阳强度',

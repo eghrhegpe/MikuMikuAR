@@ -348,7 +348,7 @@ async function _batchScreenshot(presets: CameraAnglePreset[], modelId: string): 
             const fmt = uiState.screenshotFormat ?? 'image/png';
             const q = uiState.screenshotQuality ?? 0.9;
             // 异步编码：toBlob 移至后台线程，避免低端机 OOM（ADR-017 A2-04）
-            const base64 = await new Promise<string>((resolve) => {
+            let base64 = await new Promise<string>((resolve) => {
                 dom.canvas.toBlob(
                     (blob) => {
                         if (!blob) {

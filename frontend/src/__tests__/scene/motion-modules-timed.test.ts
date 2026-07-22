@@ -55,9 +55,13 @@ vi.mock('@/scene/motion/perception', () => ({
 
 // [doc:adr-129] mock motion-intent（场景级配置）
 const mockActiveMotion = { value: null as any };
-vi.mock('@/scene/motion/motion-intent', () => ({
-    getActiveMotion: () => mockActiveMotion.value,
-}));
+vi.mock('@/scene/motion/motion-intent', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('@/scene/motion/motion-intent')>();
+    return {
+        ...actual,
+        getActiveMotion: () => mockActiveMotion.value,
+    };
+});
 
 import { createSwayMotionModule } from '@/scene/motion/motion-modules/sway-motion';
 import { createRidingModelModule } from '@/scene/motion/motion-modules/riding-model';
