@@ -440,9 +440,9 @@ let _warmup = true;
 /** 预热开始时间戳。 */
 let _warmupStartTime = 0;
 
-/** 综合基准参考值：取硬件刷新率与观测峰值的较大者。 */
+/** 综合基准参考值：取硬件刷新率与观测峰值的较大者，上限 240 防止空场景 FPS 飙升永久禁用降级。 */
 function getReference(): number {
-    return Math.max(_hardwareRefRate, _observedCeiling);
+    return Math.min(Math.max(_hardwareRefRate, _observedCeiling), 240);
 }
 
 /** 阈值缩放因子：reference / 60。 */
@@ -464,10 +464,18 @@ function getRecoveryThreshold(level: DegradeLevel): number {
 
 /**
  * 重新计算刷新率基准（外接显示器变化时由 render-loop resize 触发）。
- * 不重置 _observedCeiling / _steadyMaxFps，它们跨显示器有效。
+ * 仅当硬件刷新率实际下降时收敛 ceiling，避免 WebView2 回退 60Hz 误钳高刷 ceiling。
  */
 export function recalcPerformanceReference(): void {
+    const prev = _hardwareRefRate;
     _hardwareRefRate = clampRate(detectRefreshRate(), 30, 240);
+    if (_hardwareRefRate < prev) {
+        const cap = _hardwareRefRate * 1.1;
+        if (_observedCeiling > cap) {
+            _observedCeiling = cap;
+            _steadyMaxFps = cap;
+        }
+    }
 }
 
 // ======== Public API ========
@@ -513,15 +521,16 @@ export function updatePerformance(): void {
     // Phase 2: 运行时峰值校准（预热期后滚动 maxFPS）
     if (_warmup) {
         if (_warmupStartTime === 0) {
-            _warmupStartTime = performance.now();
-        } else if (performance.now() - _warmupStartTime > 3000) {
+            _warmupStartTime = now;
+        } else if (now - _warmupStartTime > 3000) {
             _warmup = false;
             _steadyMaxFps = avgFps;
         }
     } else {
-        // 稳态：天花板只升不降（峰值校准，非实时 throttle 检测）
         if (avgFps > _steadyMaxFps) {
             _steadyMaxFps = avgFps;
+        } else {
+            _steadyMaxFps = Math.max(avgFps, _steadyMaxFps * 0.998);
         }
         _observedCeiling = _steadyMaxFps;
     }

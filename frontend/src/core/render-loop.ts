@@ -111,9 +111,8 @@ export function startRenderLoop(): void {
         if (newDpr !== _lastDpr) {
             _lastDpr = newDpr;
             applyScaling();
-            // ADR-118 Phase 2: 外接显示器变化时一并重算刷新率基准
-            recalcPerformanceReference();
         }
+        recalcPerformanceReference();
     };
     window.addEventListener('resize', _resizeHandler);
 
