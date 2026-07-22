@@ -21,6 +21,7 @@ const GROUND_PRESET_I18N: Record<string, string> = {
     stoneTile: 'env.groundPresetStoneTile',
     woodStage: 'env.groundPresetWoodStage',
     cyberGrid: 'env.groundPresetCyberGrid',
+    metalStage: 'env.groundPresetMetalStage',
 };
 
 export function buildGroundLevel(): PopupLevel {
