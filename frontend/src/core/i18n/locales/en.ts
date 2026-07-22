@@ -741,6 +741,9 @@ export const en: Record<string, string> = {
     'scene.exposure': 'Exposure',
     'scene.contrast': 'Contrast',
     'scene.celShading': 'Soft toning',
+    'scene.celColorLevels': 'Color levels',
+    'scene.celEdgeThreshold': 'Edge sensitivity',
+    'scene.celEdgeStrength': 'Edge strength',
 
     // —— Stage levels ——
     'scene.loadedStages': 'Loaded Stages',

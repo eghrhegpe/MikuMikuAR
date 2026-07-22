@@ -173,3 +173,28 @@ _applyRenderState(rest);
 **不影响**：快照/恢复核心机制、序列化（key 不变）、`cartoon` 预设原有参数化能力、真 cel-shading（限制 #1）仍待方向 2。
 
 **验证**：`cd frontend && npm run build` + `npm run test` 通过；新增 anime 预设经 `transitionRenderState({...defaultRenderState(), ...anime})` 路径验证 cel 参数被忠实应用。
+
+### 2026-07-22 Rev 4：方向 2 落地——真 cel-shading 后处理（posterize + Sobel）
+
+**问题**：Rev 2/Rev 3 仍保留限制 #1「非真正色阶量化」——`celShadingMode` 仅是调色参数组合（柔和调色），无 posterize / Sobel 后处理，做不出真正卡通着色的色块感与描边。用户期望的"卡通化 Cel-shading"根因未消除。
+
+**修订**：采纳方向 2，在 `DefaultRenderingPipeline` 末尾挂自定义 `PostProcess` shader，零材质改动，仍守 ADR-076「不触碰材质类型」边界。
+
+**实现**：
+- `renderer.ts` 新增 `Effect.ShadersStore['celShadingFragmentShader']`：对最终图像做 `floor(color * colorLevels) / colorLevels` 色阶量化（posterize）+ 基于亮度的 Sobel 边缘检测，边缘处压暗形成黑描边。
+- 新增 `_ensureCelPostProcess(enabled)`：复用 ADR-114 接触阴影 `PostProcess` 范式（`camera.attachPostProcess`），将 cel PP 挂相机后处理链末尾，运行于色调映射 + bloom 之后。
+- `celShadingMode` 开关驱动：`_applyRenderState` cel-ON 分支创建并挂接 cel PP（保留既有柔和调色参数组合打底），cel-OFF 分支销毁 PP；`disposeRenderer` 级联释放 `_celPP`。
+- 新增 3 个可调参数（序列化进 `RenderState`，场景文件可持久化）：
+  - `celColorLevels` 2–8（色阶段数，默认 4）
+  - `celEdgeThreshold` 0–1（Sobel 边缘灵敏度，默认 0.2）
+  - `celEdgeStrength` 0–1（描边强度，默认 0.6）
+- `getRenderState` / `defaultRenderState` 同步读取与默认；`_applyRenderState` 无条件更新模块变量（PP `onApply` handler 每帧读取，过渡中间帧即生效）；`transitionRenderState` 的 `numericKeys` 收录三者，anime 预设过渡可平滑插值。
+- `scene-render-levels.ts`：在"柔和调色"开关下新增 3 个滑块（`visibleWhen: celShadingMode`），暴露实时微调。
+- `scene-render-presets.ts` `anime` 预设补充 `celColorLevels:4 / celEdgeThreshold:0.15 / celEdgeStrength:0.7`，一键 anime 观感现为"柔和调色 + 真色块量化 + 黑描边 + 描边"完整组合。
+- 5 语言 locale 新增 `scene.celColorLevels / celEdgeThreshold / celEdgeStrength` 文案。
+
+**效果**：开启"柔和调色"即获得真正 cel-shading（色块化 + 黑描边），可经滑块微调色阶数与描边强度/灵敏度；anime 预设一键直达完整动漫观感。限制 #1 正式消除。
+
+**不影响**：morph / 材质类型（仍零改动）；快照/恢复机制；序列化 key 兼容（旧存档 `celShadingMode` 仍可反序列化）；ContactShadow / SSR / SSAO 等既有后处理链。
+
+**验证**：`cd frontend && npm run build`（tsc + vite）0 错误；`npm run test` 1858/1858 全绿；anime 预设经 `transitionRenderState` 路径验证 cel 参数（含 posterize/Sobel PP 创建）被忠实应用。

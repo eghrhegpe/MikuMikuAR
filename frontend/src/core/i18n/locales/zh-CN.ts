@@ -738,6 +738,9 @@ export const zhCN: Record<string, string> = {
     'scene.exposure': '曝光',
     'scene.contrast': '对比度',
     'scene.celShading': '柔和调色',
+    'scene.celColorLevels': '色阶级数',
+    'scene.celEdgeThreshold': '描边灵敏度',
+    'scene.celEdgeStrength': '描边强度',
 
     // —— 舞台层级 scene-stage-levels ——
     'scene.loadedStages': '已加载舞台',

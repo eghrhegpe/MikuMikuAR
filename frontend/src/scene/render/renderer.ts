@@ -69,6 +69,10 @@ export interface RenderState {
     ssaoSamples: number; // 4-32, default 8（SSAO2RenderingPipeline.samples）
     // Phase 12 — 卡通化渲染预设（后处理风格化）
     celShadingMode: boolean;
+    // Phase 12 — 真 cel-shading 后处理参数（posterize + Sobel，挂管线末尾）
+    celColorLevels: number; // 色阶量化级数 2-8, default 4
+    celEdgeThreshold: number; // Sobel 边缘灵敏度 0-1, default 0.2
+    celEdgeStrength: number; // 边缘描边强度 0-1, default 0.6
 }
 
 // ======== Renderer State (module-level) ========
@@ -91,6 +95,12 @@ let _contactShadowHandle: ObserverHandle | null = null;
 // 卡通化渲染预设状态
 let _celShadingMode = false;
 let _originalRenderState: RenderState | null = null;
+// ADR-076 方向 2：真 cel-shading 后处理（posterize + Sobel）状态
+let _celPP: PostProcess | null = null;
+let _celHandle: ObserverHandle | null = null;
+let _celColorLevels = 4;
+let _celEdgeThreshold = 0.2;
+let _celEdgeStrength = 0.6;
 /** 当前渲染过渡动画 observer（用于去重） */
 let _renderTransitionObserver: ObserverHandle | null = null;
 
@@ -128,6 +138,10 @@ export function disposeRenderer(): void {
     if (_contactShadowPP) {
         _contactShadowPP = safeDispose(_contactShadowPP);
         _contactShadowHandle = null;
+    }
+    if (_celPP) {
+        _celPP = safeDispose(_celPP);
+        _celHandle = null;
     }
     if (pipeline) {
         pipeline.dispose();
@@ -182,6 +196,9 @@ export function getRenderState(): RenderState {
         ssaoRadius: _ssaoPipeline ? clamp(_ssaoPipeline.radius / 4, 0, 1) : 0,
         ssaoSamples: _ssaoPipeline ? clamp(_ssaoPipeline.samples, 4, 32) : 8,
         celShadingMode: _celShadingMode,
+        celColorLevels: _celColorLevels,
+        celEdgeThreshold: _celEdgeThreshold,
+        celEdgeStrength: _celEdgeStrength,
     };
 }
 
@@ -216,6 +233,9 @@ export function defaultRenderState(): RenderState {
         ssaoRadius: 0,
         ssaoSamples: 8,
         celShadingMode: false,
+        celColorLevels: 4,
+        celEdgeThreshold: 0.2,
+        celEdgeStrength: 0.6,
     };
 }
 
@@ -275,6 +295,11 @@ function _applyRenderState(s: Partial<RenderState>): void {
     const gi = s.grainIntensity !== undefined ? clamp(s.grainIntensity, 0, 1) : undefined;
     const sa = s.sharpenAmount !== undefined ? clamp(s.sharpenAmount, 0, 1) : undefined;
     const gl = s.glowIntensity !== undefined ? clamp(s.glowIntensity, 0, 1) : undefined;
+    const cl = s.celColorLevels !== undefined ? clamp(s.celColorLevels, 2, 8) : undefined;
+    const cet =
+        s.celEdgeThreshold !== undefined ? clamp(s.celEdgeThreshold, 0, 1) : undefined;
+    const ces =
+        s.celEdgeStrength !== undefined ? clamp(s.celEdgeStrength, 0, 1) : undefined;
 
     // Post-processing
     if (s.bloomEnabled !== undefined) {
@@ -430,6 +455,18 @@ function _applyRenderState(s: Partial<RenderState>): void {
         }
     }
 
+    // 真 cel-shading 参数（posterize/Sobel）：模块变量由 cel PP onApply handler 读取。
+    // 无条件更新（UI 仅在 cel 激活时暴露滑块；过渡中间帧亦会更新，PP 创建时即取最新值）。
+    if (cl !== undefined) {
+        _celColorLevels = cl;
+    }
+    if (cet !== undefined) {
+        _celEdgeThreshold = cet;
+    }
+    if (ces !== undefined) {
+        _celEdgeStrength = ces;
+    }
+
     // 卡通化渲染预设：快照/恢复
     if (s.celShadingMode !== undefined) {
         if (s.celShadingMode) {
@@ -447,9 +484,13 @@ function _applyRenderState(s: Partial<RenderState>): void {
                 bloomWeight: s.bloomWeight ?? 0.25,
                 fxaaEnabled: s.fxaaEnabled ?? true,
             });
+            // 真 cel-shading：开启时创建并挂接 cel 后处理（posterize + Sobel）
+            _ensureCelPostProcess(true);
         } else {
             // 恢复到快照状态
             _celShadingMode = false;
+            // 真 cel-shading：关闭时销毁 cel 后处理
+            _ensureCelPostProcess(false);
             if (_originalRenderState) {
                 // 先清空快照引用，并从快照中剥离 celShadingMode 字段后再递归：
                 // 快照里的 celShadingMode===false 会再次进入本分支 (s.celShadingMode !== undefined)，
@@ -549,6 +590,107 @@ void main(void) {
     gl_FragColor = vec4(baseColor.rgb * shadow, baseColor.a);
 }
 `;
+
+// ======== ADR-076 方向 2: 真 cel-shading 后处理（posterize + Sobel，挂管线末尾）========
+
+/**
+ * 真 cel-shading 后处理：
+ * - posterize：色阶量化 `floor(color * colorLevels) / colorLevels`，制造色块感
+ * - Sobel：基于亮度的屏幕空间边缘检测，边缘处压暗形成黑描边
+ * 零材质改动，符合 ADR-076「不触碰材质类型」边界。挂相机 PostProcess 链末尾，
+ * 运行于色调映射 + bloom 之后，对最终图像做量化与描边。
+ */
+Effect.ShadersStore['celShadingFragmentShader'] = `
+uniform sampler2D textureSampler;
+uniform vec2 resolution;
+uniform float colorLevels;
+uniform float edgeThreshold;
+uniform float edgeStrength;
+
+varying vec2 vUV;
+
+float luma(vec3 c) {
+    return dot(c, vec3(0.299, 0.587, 0.114));
+}
+
+void main(void) {
+    vec3 base = texture2D(textureSampler, vUV).rgb;
+
+    // 色阶量化（posterize）
+    vec3 posterized = floor(base * colorLevels) / colorLevels;
+
+    // Sobel 边缘检测（基于亮度）
+    vec2 texel = 1.0 / resolution;
+    float tl = luma(texture2D(textureSampler, vUV + vec2(-texel.x,  texel.y)).rgb);
+    float  t = luma(texture2D(textureSampler, vUV + vec2( 0.0,      texel.y)).rgb);
+    float tr = luma(texture2D(textureSampler, vUV + vec2( texel.x,  texel.y)).rgb);
+    float  l = luma(texture2D(textureSampler, vUV + vec2(-texel.x,  0.0)).rgb);
+    float  r = luma(texture2D(textureSampler, vUV + vec2( texel.x,  0.0)).rgb);
+    float bl = luma(texture2D(textureSampler, vUV + vec2(-texel.x, -texel.y)).rgb);
+    float  b = luma(texture2D(textureSampler, vUV + vec2( 0.0,     -texel.y)).rgb);
+    float br = luma(texture2D(textureSampler, vUV + vec2( texel.x, -texel.y)).rgb);
+
+    float gx = -tl - 2.0 * l - bl + tr + 2.0 * r + br;
+    float gy =  tl + 2.0 * t + tr - bl - 2.0 * b - br;
+    float edge = sqrt(gx * gx + gy * gy);
+
+    // 边缘处压暗（黑描边）
+    float edgeFactor = 1.0 - clamp(edge - edgeThreshold, 0.0, 1.0) * edgeStrength;
+
+    gl_FragColor = vec4(posterized * edgeFactor, 1.0);
+}
+`;
+
+/**
+ * 创建/销毁 cel-shading 后处理（由 celShadingMode 开关驱动）。
+ * 复用 ADR-114 接触阴影 PostProcess 范式：相机 attachPostProcess 挂链末尾，
+ * 运行于 DefaultRenderingPipeline（色调映射 + bloom 等）之后。
+ */
+function _ensureCelPostProcess(enabled: boolean): void {
+    if (!_scene) {
+        return;
+    }
+    const camera = _pipelineCamera ?? _scene.activeCamera;
+    if (!camera) {
+        return;
+    }
+    if (enabled) {
+        if (!_celPP) {
+            try {
+                _celPP = new PostProcess(
+                    'celShading',
+                    'celShading',
+                    ['resolution', 'colorLevels', 'edgeThreshold', 'edgeStrength'],
+                    null,
+                    1.0,
+                    null,
+                    0,
+                    _scene.getEngine()
+                );
+                _celHandle = observe(_celPP.onApplyObservable, (effect: Effect) => {
+                    effect.setVector2('resolution', {
+                        x: _scene!.getEngine().getRenderWidth(),
+                        y: _scene!.getEngine().getRenderHeight(),
+                    });
+                    effect.setFloat('colorLevels', _celColorLevels);
+                    effect.setFloat('edgeThreshold', _celEdgeThreshold);
+                    effect.setFloat('edgeStrength', _celEdgeStrength);
+                });
+                camera.attachPostProcess(_celPP);
+            } catch (err) {
+                logWarn('renderer', 'CelShading PostProcess 创建失败:', err);
+                _celPP = null;
+                _celHandle = null;
+            }
+        }
+    } else {
+        if (_celPP) {
+            camera.detachPostProcess(_celPP);
+            _celPP = safeDispose(_celPP);
+            _celHandle = null;
+        }
+    }
+}
 
 /**
  * 应用接触阴影后处理（由 env-bridge 转发 envState 变化调用）。
@@ -715,6 +857,9 @@ export function transitionRenderState(
         'ssaoStrength',
         'ssaoRadius',
         'ssaoSamples',
+        'celColorLevels',
+        'celEdgeThreshold',
+        'celEdgeStrength',
     ];
     // 颜色字段列表（逐通道 lerp）
     const colorKeys: (keyof RenderState)[] = ['outlineColor'];

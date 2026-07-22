@@ -131,6 +131,9 @@ const FILTER_PRESETS: Record<string, Partial<RenderState>> = {
     // --- 动漫风 — 柔和调色(cel) + 描边，一键 anime 观感（依赖 renderer.ts 缺口#1 修复，cel 参数可被忠实还原）---
     anime: {
         celShadingMode: true,
+        celColorLevels: 4,
+        celEdgeThreshold: 0.15,
+        celEdgeStrength: 0.7,
         outlineEnabled: true,
         outlineColor: [0, 0, 0],
         toneMapping: 1,
