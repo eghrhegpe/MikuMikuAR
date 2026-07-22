@@ -71,7 +71,7 @@ function _setAlbedoColor(mat: GroundMat, color: Color3): void {
 // ======== ADR-114: PBR 材质工厂 ========
 
 /** ADR-114 Phase 2: 反射模糊映射到 roughness 偏移（blur=1 最多增加 0.4）；低质量模式自动关闭 */
-function _effectiveRoughness(state: EnvState): number {
+export function _effectiveRoughness(state: EnvState): number {
     // 低质量模式自动关闭反射模糊（退化为锐利反射）
     if (state.reflectionQuality === 'low' || state.reflectionQuality === 'off') {
         return state.groundRoughness;
@@ -922,10 +922,17 @@ function _syncGroundTextureOffset(mat: GroundMat, state: EnvState): void {
         return;
     }
     const angle = (state.groundTextureRotation * Math.PI) / 180;
-    const cos = Math.cos(angle);
-    const sin = Math.sin(angle);
-    let u = 0.5 * (1 - cos) + 0.5 * sin + _groundScrollU;
-    let v = 0.5 * (1 - cos) - 0.5 * sin + _groundScrollV;
+    let u: number;
+    let v: number;
+    if (angle === 0) {
+        u = _groundScrollU;
+        v = _groundScrollV;
+    } else {
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        u = 0.5 * (1 - cos) + 0.5 * sin + _groundScrollU;
+        v = 0.5 * (1 - cos) - 0.5 * sin + _groundScrollV;
+    }
     u = u - Math.floor(u);
     v = v - Math.floor(v);
     if (u < 0) {
@@ -955,6 +962,9 @@ function _syncGroundNormalTexture(mat: GroundMat, state: EnvState): void {
     const scene = getScene();
     if (state.groundNormalTexture) {
         if (!mat.bumpTexture || (mat.bumpTexture as Texture).name !== state.groundNormalTexture) {
+            if (mat.bumpTexture && !isCacheOwnedTexture(mat.bumpTexture)) {
+                mat.bumpTexture.dispose();
+            }
             mat.bumpTexture = new Texture(state.groundNormalTexture, scene);
         }
         // ADR-114 Phase 2: PBR 模式下法线扭曲增强 bumpTexture.level
@@ -988,8 +998,9 @@ export function applyGround(state: EnvState): void {
     // ADR-134: 加入 groundInfinite 标记
     const infKey = `:inf:${state.groundInfinite}`;
 
-    // ADR-114: typeKey 加入 PBR / 程序化字段；Phase 2: blur/distort 影响反射视觉需重建
-    const pbrKey = `:pbr:${state.groundPbrEnabled}:rough:${state.groundRoughness}:metal:${state.groundMetallic}:blur:${state.groundReflectionBlur}:distort:${state.groundReflectionDistort}`;
+    // ADR-114: typeKey 加入 PBR / 程序化字段
+    // rough/metal/blur/distort 由 _syncPbrProperties 增量更新，不触发重建
+    const pbrKey = `:pbr:${state.groundPbrEnabled}`;
     const proceduralKey =
         state.groundProceduralTexture !== 'none' && !state.groundTextureEnabled
             ? `:proc:${state.groundProceduralTexture}:${state.groundProceduralSeed}:${state.groundProceduralScale}`
