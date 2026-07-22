@@ -117,3 +117,32 @@
 | P3-7 | `~/.workbuddy/USER.md:38-39`（身份基线，仓库外） | `Babylon.js 9.14.0`→`9.16.1`、`ADR 编号 已达 106`→`已达 159` |
 
 **核验结论**：修复后 `grep "当前版本 9.14.0"` 仅在本文（审计记录本身）出现；`SettingsStore` 在 adr-088 仅剩"原已移除"说明性引用；5 语 README 徽章与 AGENTS.md 均指向 9.16.x。P4-8 历史路径引用按原则保留未动。
+
+---
+
+## 2026-07-23 复核（ADR 159 → 175）
+
+> 上一轮（07-21）事实基线已部分过期，本轮重新核对并处置。
+
+### 事实基线（2026-07-23）
+
+| 项 | 当前真实状态 | 来源 |
+|----|--------------|------|
+| Babylon.js | `^9.16.1` | `frontend/package.json`（未变） |
+| Wails | `v3` | `go.mod`（未变） |
+| ADR 最大编号 | **175** | `docs/adr/` 目录 |
+| `SettingsStore` | 已移除（ADR-103） | 源码无符号（未变） |
+
+### 本轮处置
+
+1. **`docs/status.md` / `docs/architecture.md` 已刷新至 ADR-175**：ADR-166~175 索引补全、目录树补 10 个新模块、§20 近期子系统对照表、快照日期 → 07-23。
+2. **`.workbuddy/USER.md` 基线 ADR 编号 159 → 175**（07-21 审计 P3-7 记录「→159」已被本轮 supersede 为 175；Babylon 版本此前已为 9.16.1）。
+3. **版本引脚复核**：全仓仅剩 release notes 历史快照、`research`/历史 ADR 的「撰写时 9.14.0」软化表述、及 `adr-084` 对 babylon-mmd fork `v9.14.0` 的时戳性审计——均无"当前版本"硬断言，符合原则，不改动。
+4. **`function-map.md` 漏登缺口（新发现，🟠 P2）**：ADR-166~175 引入的 8 个模块共约 40+ 对外导出符号未入表（quality-profile / env-context / env-reflection / env-wetness / bone-override-store / motion-pipeline / perception-observer / scene-drag-levels）。该文档已自标注"部分过时"，本轮在文末追加「近期新增模块（ADR-166~175）」补充表（增量、不改动既有行）。
+
+### 不在范围 / 已核验非缺陷
+
+- `Wails v2` 表述仍仅出现在历史/对比语境（adr-011/060、research），无误导。
+- `SettingsStore` 在 `status.md` / `grand-blueprint.md` 中均为"已移除"语境，属正确记录。
+- `menus/plaza.ts` / `menus/env-feature-levels.ts` 历史路径引用：13+9 处历史 ADR，按原则保留不动。
+- `CONTEXT.md`（领域术语表）、5 语 `README` 徽章（已指 9.16）无新增漂移。

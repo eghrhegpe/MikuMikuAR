@@ -165,3 +165,34 @@
 | `_catOf()` / `_applyAll()` / `setMatParams()` | `scene/manager/material.ts` | 材质分类/批量应用/设参 |
 | `_capture()` | `scene/manager/material.ts` | 原始值捕获 |
 | `getMatCatGroups()` / `getMatDetailList()` | `scene/manager/material.ts` | 分组/详情查询 |
+
+---
+
+## 近期新增模块（ADR-166~175，grep 为准）
+
+> 以下为 ADR-166~175 引入的对外公共符号补登（文末增量，不改动上方既有行）。
+> 路径以源码为准；本表仅列主要入口，完整符号请 `grep "^export " <file>`。
+
+### 质量维度 & 场景拖拽（ADR-173/174/171）
+
+| 函数/符号 | 文件 | 说明 |
+|-----------|------|------|
+| `QualityProfile` / `QualityDimension` / `QualityProfileSettings` | `scene/render/quality-profile.ts` | 质量维度类型 + 配置 |
+| `resolveQualityProfile()` / `inferQualityProfile()` | `scene/render/quality-profile.ts` | 维度→预设解析 / 运行时推断 |
+| `buildDragModeLevel()` | `menus/scene-drag-levels.ts` | 拖拽模式设置面板层级 |
+
+### 环境子系统（ADR-151/172/173）
+
+| 函数/符号 | 文件 | 说明 |
+|-----------|------|------|
+| `initEnvImpl()` / `getScene()` / `getPipeline()` / `resolveStaticAsset()` / `isInitialized()` | `scene/env/env-context.ts` | 环境上下文（场景/管线/静态资源） |
+| `ReflectionMode` / `resolveReflectionMode()` / `applyReflection()` / `getCurrentReflectionMode()` / `bindProbeToMeshes()` / `disposeReflection()` / `setReflectionARSuspended()` | `scene/env/env-reflection.ts` | 反射模式解析与执行（planar/ssr/probe/hybrid） |
+| `applyWetnessToAllModels()` / `removeWetnessFromAllModels()` / `applyWetnessToInst()` / `isWetnessActive()` | `scene/env/env-wetness.ts` | 湿身效果（ADR-172） |
+
+### 动作 / 感知（ADR-166/167/169）
+
+| 函数/符号 | 文件 | 说明 |
+|-----------|------|------|
+| `BoneOverrideStore` / `InMemoryBoneOverrideStore` / `getBoneOverrideStore()` / `BoneConflict` | `scene/motion/bone-override-store.ts` | 骨骼占用登记与冲突检测 |
+| `MotionPipeline` / `getMotionPipeline()` / `PipelineStage` / `PipelineLayer` | `scene/motion/motion-pipeline.ts` | 动作管线分层框架 |
+| `getMediumMaxOthers()` / `setMediumMaxOthers()` / `_getActiveContextsByTier()` / `_applyPerceptionForContext()` | `scene/motion/perception-observer.ts` | 感知层 per-model 上下文观察（ADR-166） |
