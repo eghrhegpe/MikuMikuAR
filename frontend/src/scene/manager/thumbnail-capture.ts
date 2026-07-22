@@ -22,6 +22,34 @@ import { logWarn } from '@/core/logger';
 import { type PropInstance, type RuntimeModel } from '@/core/types';
 import { buildThumbnailKey } from './thumbnail-key';
 
+/**
+ * canvas → base64 异步编码（替代同步 toDataURL）。
+ * toBlob 将 PNG/JPEG 编码移至后台线程（Chrome Skia encoder），不阻塞主线程。
+ * readAsDataURL 异步分片读取 Blob 为 base64 data URL，最后剥离前缀得到纯 base64。
+ */
+function canvasToBase64(canvas: HTMLCanvasElement, fmt: string, q: number): Promise<string> {
+    return new Promise((resolve, reject) => {
+        canvas.toBlob(
+            (blob) => {
+                if (!blob) {
+                    reject(new Error('canvas.toBlob returned null'));
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const dataUrl = reader.result as string;
+                    const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, '');
+                    resolve(base64);
+                };
+                reader.onerror = () => reject(reader.error ?? new Error('FileReader error'));
+                reader.readAsDataURL(blob);
+            },
+            fmt,
+            q
+        );
+    });
+}
+
 // 缩略图渲染所需的最小实例形状：ModelInstance 与 PropInstance 均可适配。
 // 仅消费三个字段：rootMesh（渲染根节点）、kind（宽高比判定）、mmdModel?（物理冻结，可选）。
 // 用 TransformNode 而非 Mesh：道具的渲染根是其父级容器（TransformNode），
@@ -259,9 +287,11 @@ async function _renderThumbnailImpl(
             ctx.putImageData(imageData, 0, 0);
 
             // 复用截图格式/质量设置（PNG 无损，JPEG/WebP 受 quality 控制）
+            // [fix:thumbnail-async] 用 toBlob 异步编码替代同步 toDataURL，
+            // 将 PNG/JPEG 编码移至后台线程，避免阻塞主线程 0.5–2s（加载时跌帧元凶）。
             const fmt = uiState.screenshotFormat ?? 'image/png';
             const q = uiState.screenshotQuality ?? 0.9;
-            const base64 = canvas.toDataURL(fmt, q).replace(/^data:image\/\w+;base64,/, '');
+            const base64 = await canvasToBase64(canvas, fmt, q);
 
             try {
                 await SaveThumbnail(cacheKey, base64);
