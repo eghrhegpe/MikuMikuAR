@@ -1,7 +1,7 @@
 # ADR-122: IK 感知骨骼覆盖 — 运动模块 IK 适配
 
 **日期**: 2026-07-17
-> **状态**: P1 已实施（2026-07-21）— `applyBoneOverrideIK` 辅助函数已新增，riding-model 膝/足骨已改用 IK 感知写入；P2（module-base 暴露）已完成；P3（UI 标记）已完成
+> **状态**: P1 已实施（2026-07-21）— `applyBoneOverrideIK` 辅助函数已新增，riding-model 膝/足骨已改用 IK 感知写入；P2（module-base 暴露）已完成；**P3（高级骨骼覆盖 UI IK 骨骼标记）已完成** — `motion-override-levels.ts:580/743` 两处 `_isIkBone` 标记
 > **背景**: `riding-model` 模块直接写 `左足/右足` 骨骼，绕过 MMD 腿部 IK 求解器，导致覆盖与 IK 每帧冲突。`feet-adjustment` 已实现正确的 MMD-native IK 驱动模式，本 ADR 将其推广到运动模块层。
 
 ---
