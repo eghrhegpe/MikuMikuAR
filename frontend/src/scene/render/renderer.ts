@@ -1084,7 +1084,7 @@ export function setSSRFromReflection(params: {
     const ssrCamera = _pipelineCamera ?? _scene.activeCamera;
     if (params.enabled && !_ssrPipeline && ssrCamera) {
         try {
-            _ssrPipeline = new SSRRenderingPipeline('ssr', _scene, [ssrCamera], undefined, true);
+            _ssrPipeline = new SSRRenderingPipeline('ssr', _scene, [ssrCamera], true);
             _ssrPipeline.maxDistance = 50;
             _ssrPipeline.step = params.step ?? 16;
             _ssrPipeline.thickness = params.thickness ?? 0.5;
