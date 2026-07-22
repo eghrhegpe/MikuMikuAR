@@ -52,7 +52,10 @@ export const ja: Record<string, string> = {
     'settings.graphics.preset': 'パフォーマンスプリセット',
     'settings.graphics.frameQuality': 'フレームレートと画質',
     'settings.graphics.effects': 'レンダリング効果',
-    'settings.graphics.physicsHud': '物理と HUD',
+    'settings.graphics.physicsHud': '物理と表示',
+    'settings.effects.lighting': 'ライティング',
+    'settings.effects.antialiasing': 'アンチエイリアス',
+    'settings.effects.postprocess': 'ポストプロセス',
 
     // ===== 設定·操作（ADR-157） =====
     'settings.controls.camera': 'カメラ',
@@ -754,7 +757,7 @@ export const ja: Record<string, string> = {
     'scene.grain': 'グレイン',
     'scene.sharpen': 'シャープ',
     'scene.glow': 'グロー',
-    'scene.opticalEffects': '光学効果',
+    'scene.opticalEffects': 'ビジュアル効果',
     'scene.environmentEffects': '環境効果',
     'scene.ssao': 'SSAO（アンビエントオクルージョン）',
     'scene.ssaoStrength': 'オクルージョン強度',

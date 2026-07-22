@@ -43,9 +43,8 @@ export function _applyHeadGazeJS(
 
     const parentInvQ = Quaternion.FromRotationMatrix(parentWorldInv);
     const parentWorldQ = _q().copyFrom(parentInvQ).invert();
-    const clampedTargetQ = _clampHeadGazeTarget(oldHeadRotQ, targetWorldQ, parentWorldQ);
     const alpha = _gazeAlpha(0.7, dt);
-    const blended = _q().copyFrom(Quaternion.Slerp(oldHeadRotQ, clampedTargetQ, alpha));
+    const blended = _q().copyFrom(Quaternion.Slerp(oldHeadRotQ, targetWorldQ, alpha));
     const finalQ = _clampHeadGazeTarget(blended, blended, parentWorldQ);
     const localQ = _q();
     parentInvQ.multiplyToRef(finalQ, localQ);
@@ -53,8 +52,6 @@ export function _applyHeadGazeJS(
     if (cache) {
         if (!cache.headWorldQ) cache.headWorldQ = new Quaternion();
         cache.headWorldQ.copyFrom(finalQ);
-        if (!cache.headTargetWorldQ) cache.headTargetWorldQ = new Quaternion();
-        cache.headTargetWorldQ.copyFrom(clampedTargetQ);
     }
 
     // 写入既有实例，不外泄池引用
@@ -103,25 +100,16 @@ export function _applyEyeGazeJS(
             Matrix.IdentityToRef(parentWorldInv);
         }
 
-        const parentWorldQ = cache?.headTargetWorldQ
-            ? _q().copyFrom(cache.headTargetWorldQ)
-            : _q().copyFrom(Quaternion.FromRotationMatrix(parentWorldInv)).invert();
-        const parentInvQ = _q().copyFrom(parentWorldQ).invert();
+        const parentInvQ = Quaternion.FromRotationMatrix(parentWorldInv);
+        const parentWorldQ = _q().copyFrom(parentInvQ).invert();
 
         const cachedLocal = cache?.eyeLocalQ.get(boneName);
         const curWorldQ = cachedLocal
             ? _q().copyFrom(parentWorldQ).multiplyInPlace(cachedLocal)
             : _q().copyFrom(Quaternion.FromRotationMatrix(eyeMat.getRotationMatrix()));
 
-        const clampedTargetQ = _clampGazeTargetInParentFrame(
-            curWorldQ,
-            targetWorldQ,
-            parentWorldQ,
-            getEyeGazeMaxYaw(),
-            getEyeGazeMaxPitch()
-        );
         const alpha = _gazeAlpha(getEyeGazeSmooth(), dt);
-        const newWorldQ = _q().copyFrom(Quaternion.Slerp(curWorldQ, clampedTargetQ, alpha));
+        const newWorldQ = _q().copyFrom(Quaternion.Slerp(curWorldQ, targetWorldQ, alpha));
         const finalEyeQ = _clampGazeTargetInParentFrame(newWorldQ, newWorldQ, parentWorldQ, getEyeGazeMaxYaw(), getEyeGazeMaxPitch());
 
         const localQ = _q();

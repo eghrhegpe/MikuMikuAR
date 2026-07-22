@@ -343,7 +343,7 @@ function buildPostProcessCoreSchema(): MenuNode[] {
                 onChange: () => triggerAutoSave(),
             },
         },
-        // ===== 光学效果折叠头（抗锯齿/颗粒/色差/辉光） =====
+        // ===== 视觉效果折叠头（抗锯齿/颗粒/色差/辉光） =====
         {
             id: 'postprocess:optical',
             kind: 'folder',
