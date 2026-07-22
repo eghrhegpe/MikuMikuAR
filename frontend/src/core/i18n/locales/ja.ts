@@ -1389,7 +1389,7 @@ export const ja: Record<string, string> = {
     'settings.perfModeSet': '✓ パフォーマンスモード: {label}',
     'settings.perfFpsUnlimited': '✓ FPS 制限なし',
     'settings.perfFpsLimit': '✓ FPS 上限: {limit} FPS',
-    'settings.perfVsync': '✓ 垂直同期: {state}',
+    'settings.perfVsync': '✓ フレームレート制限: {state}',
     'settings.physOn': '✓ デフォルトで物理シミュレーションを有効化',
     'settings.physOff': '✓ デフォルトで物理シミュレーションを無効化（以降のロードのみ影響）',
     'settings.renderScale': '✓ レンダリングスケール: {pct}%',
@@ -1410,13 +1410,13 @@ export const ja: Record<string, string> = {
     'settings.perf.fpsHint': '0で無制限。モバイルでは省電力のため30推奨。',
     'settings.perf.showFpsClock': 'FPSクロックを表示',
     'settings.perf.showRuntimeBadge': 'マルチスレッドバッジを表示',
-    'settings.perf.vsync': '垂直同期',
+    'settings.perf.vsync': 'フレームレート制限',
     'settings.perf.vsyncHintOn':
-        '有効にするとrequestAnimationFrameループを使用；無効にするとFPS制限を解除しますが上限設定不可。',
+        '有効にすると「FPS上限」スライダーが有効になり、レンダリングが設定値に制限されます。',
     'settings.perf.vsyncHintOff':
-        '無効だと「FPS上限」を使用できません。Engineは常に無制限（maxFPS=0相当）。',
+        '無効にすると人為的な制限を解除し、ディスプレイのリフレッシュレートでレンダリング。「FPS上限」スライダーは無効になります。',
     'settings.perf.vsyncHintBrowser':
-        'ブラウザ/WebViewはデフォルトでrAFを使用；無効にすると人為的制限を解除（実際はリフレッシュレートで制限）。',
+        'ブラウザ/WebViewのレンダリングループはrequestAnimationFrameで駆動され、常にディスプレイと同期します。このスイッチは人為的なFPS上限の有効/無効のみを制御します。',
     'settings.perf.defaultPhysics': 'デフォルト物理シミュレーション',
     'settings.perf.defaultPhysicsHint':
         '無効にするとローエンドデバイスの性能向上；以降のロードのみ影響。',

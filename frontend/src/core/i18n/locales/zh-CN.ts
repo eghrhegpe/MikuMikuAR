@@ -1487,7 +1487,7 @@ export const zhCN: Record<string, string> = {
     'settings.perfModeSet': '✓ 性能模式: {label}',
     'settings.perfFpsUnlimited': '✓ 帧率不限制',
     'settings.perfFpsLimit': '✓ 帧率上限: {limit} FPS',
-    'settings.perfVsync': '✓ 垂直同步: {state}',
+    'settings.perfVsync': '✓ 帧率限制器: {state}',
     'settings.physOn': '✓ 默认启用物理模拟',
     'settings.physOff': '✓ 默认关闭物理模拟（仅影响后续加载）',
     'settings.renderScale': '✓ 渲染缩放: {pct}%',
@@ -1579,13 +1579,12 @@ export const zhCN: Record<string, string> = {
     'settings.perf.fpsHint': '设为 0 表示不限制。移动端建议 30 以省电。',
     'settings.perf.showFpsClock': '显示帧率时钟',
     'settings.perf.showRuntimeBadge': '显示多线程徽标',
-    'settings.perf.vsync': '垂直同步',
-    'settings.perf.vsyncHintOn':
-        '开启该项后，框架采用 requestAnimationFrame 循环；关闭后帧率不受刷新率限制，但无法设置帧率上限。',
+    'settings.perf.vsync': '帧率限制器',
+    'settings.perf.vsyncHintOn': '开启后"帧率上限"滑块生效，渲染帧率被限制为设定值。',
     'settings.perf.vsyncHintOff':
-        '关闭后无法使用"帧率上限"，Engine 总是不限帧（相当于 maxFPS=0）。',
+        '关闭后不施加人为限帧，渲染以显示器刷新率运行，"帧率上限"滑块失效。',
     'settings.perf.vsyncHintBrowser':
-        '浏览器/WebView 渲染循环由 requestAnimationFrame 驱动，天然与刷新同步；关闭后解除人为限帧（实际仍受刷新率约束）。',
+        '浏览器/WebView 渲染循环由 requestAnimationFrame 驱动，天然与显示器刷新同步；此开关仅控制是否启用人为帧率上限。',
     'settings.perf.defaultPhysics': '默认启用物理模拟',
     'settings.perf.defaultPhysicsHint':
         '关闭可提升低配设备性能；仅影响后续加载的模型，已加载模型不受影响。',

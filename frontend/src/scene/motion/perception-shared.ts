@@ -284,6 +284,12 @@ export interface BalanceSwayState {
     lastAllParentRz: number;
 }
 
+/** Gaze 跨帧缓存：存储上一帧 gaze 输出的世界四元数，使 Slerp 可累积 */
+export interface GazeCache {
+    headWorldQ: Quaternion | null;
+    eyeWorldQ: Map<string, Quaternion>;
+}
+
 /** 每模型感知上下文（替代原单例，支持焦点 + pinned 多模型） */
 export interface PerceptionContext {
     modelId: string;
@@ -297,6 +303,7 @@ export interface PerceptionContext {
     };
     /** [doc:adr-164 P2] per-context 对象池，解决全局池覆写污染 */
     pool: PerceptionPool;
+    gazeCache: GazeCache;
 }
 
 // ── [doc:adr-164] Phase 1 — 性能档位与监控 ──

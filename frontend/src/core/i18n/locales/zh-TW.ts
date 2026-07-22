@@ -1372,7 +1372,7 @@ export const zhTW: Record<string, string> = {
     'settings.perfModeSet': '✓ 效能模式: {label}',
     'settings.perfFpsUnlimited': '✓ 幀率不限制',
     'settings.perfFpsLimit': '✓ 幀率上限: {limit} FPS',
-    'settings.perfVsync': '✓ 垂直同步: {state}',
+    'settings.perfVsync': '✓ 幀率限制器: {state}',
     'settings.physOn': '✓ 預設啟用物理模擬',
     'settings.physOff': '✓ 預設關閉物理模擬（僅影響後續載入）',
     'settings.renderScale': '✓ 渲染縮放: {pct}%',
@@ -1393,13 +1393,12 @@ export const zhTW: Record<string, string> = {
     'settings.perf.fpsHint': '設為 0 表示不限制。行動裝置建議 30 以省電。',
     'settings.perf.showFpsClock': '顯示幀率時鐘',
     'settings.perf.showRuntimeBadge': '顯示多執行緒徽標',
-    'settings.perf.vsync': '垂直同步',
-    'settings.perf.vsyncHintOn':
-        '啟用後採用 requestAnimationFrame 循環；關閉後幀率不受刷新率限制，但無法設定幀率上限。',
+    'settings.perf.vsync': '幀率限制器',
+    'settings.perf.vsyncHintOn': '開啟後「幀率上限」滑桿生效，渲染幀率被限制為設定值。',
     'settings.perf.vsyncHintOff':
-        '關閉後無法使用「幀率上限」，Engine 總是不限幀（相當於 maxFPS=0）。',
+        '關閉後不施加人為限幀，渲染以顯示器刷新率執行，「幀率上限」滑桿失效。',
     'settings.perf.vsyncHintBrowser':
-        '瀏覽器/WebView 渲染循環由 requestAnimationFrame 驅動，天然與刷新同步；關閉後解除人為限幀（實際仍受刷新率約束）。',
+        '瀏覽器/WebView 渲染循環由 requestAnimationFrame 驅動，天然與顯示器刷新同步；此開關僅控制是否啟用人為幀率上限。',
     'settings.perf.defaultPhysics': '預設啟用物理模擬',
     'settings.perf.defaultPhysicsHint':
         '關閉可提升低配裝置效能；僅影響後續載入的模型，已載入模型不受影響。',
