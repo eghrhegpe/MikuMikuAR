@@ -31,6 +31,15 @@ export type ReflectionMode = 'none' | 'planar' | 'ssr' | 'probe' | 'hybrid';
 
 export type ResolvedReflectionMode = ReflectionMode;
 
+/** 合法反射模式白名单：用于防御旧版持久化存档残留的非法枚举值（如 ADR-151 修订前 schema 曾含 'auto'） */
+const VALID_REFLECTION_MODES: readonly ResolvedReflectionMode[] = [
+    'none',
+    'planar',
+    'ssr',
+    'probe',
+    'hybrid',
+];
+
 // ======== 质量等级参数预设 ========
 
 interface ReflectionQualityPreset {
@@ -92,7 +101,13 @@ let _probeStrength = 1;
 // ======== 模式推导 ========
 
 export function resolveReflectionMode(state: EnvState): ResolvedReflectionMode {
-    return state.reflectionMode ?? 'planar';
+    const mode = state.reflectionMode;
+    // 防御旧版持久化存档残留的非法枚举（如 ADR-151 修订前 schema 曾含 'auto'），
+    // 避免落入 applyReflection 的 switch 无匹配分支导致零反射静默 no-op。
+    if (!mode || !VALID_REFLECTION_MODES.includes(mode)) {
+        return 'planar';
+    }
+    return mode;
 }
 
 /**

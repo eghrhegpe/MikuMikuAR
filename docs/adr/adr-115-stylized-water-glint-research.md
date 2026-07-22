@@ -744,7 +744,7 @@ P2（焦散强度 + UI 预设化）涉及的所有变更点，实施时逐项打
 | 🟢 已化解 | Sun Glitter 光照方向依赖 | `lightDir` uniform 已存在并传入，可直接复用 |
 | 🟢 P2 | 焦散强度 UI 暴露后用户误调 | 已设上限 `max = 0.5`，默认值 0.15 |
 | 🟡 P3 | 天空-水面颜色联动破坏自定义水色 | 默认值 0（不联动），用户须主动上调 |
-| 🟡 中 | 性能 | 额外法线贴图采样 + glitter 噪声增加 fragment 开销 | **性能降级策略**：引入 `waterQuality` 三档（高/中/低），低端关闭法线细节层+glitter |
+| 🟢 已化解 | 性能 | 额外法线贴图采样（单张 512² detail normal，1 次纹理采样）+ glitter（shader 内联 `hash()`，无贴图读取）增加少量 fragment ALU/采样开销 | **性能由全局 `qualityProfile` 统一调控，无需水体专属开关**：`getQuality`（`env-water.ts:145`）将 `qualityProfile` 映射为平面反射 RT 分辨率（high 2048 / medium 1024 / low 512，ADR-151 反射引擎，`resolutionMap` 见 `env-water.ts:144`）；低端档反射 RT 降为 512 即削减水体主要开销。detail normal 仅 1 次纹理采样、glitter 为无 fetch 的内联噪声，开销极低且为「波光粼粼」核心效果，故**不另设质量 kill-switch**。（注：原设想「引入 `waterQuality` 三档、低端关闭法线层+glitter」经代码核实不成立——全局 `qualityProfile` 已通过反射 RT 接管性能调控，glint/normal 常驻执行属预期设计。） |
 | 🟡 中 | 资源依赖 | 法线贴图引入外部资产 | 已用程序化生成（`regenerateDetailNormalTexture`），零 bundled 资源 |
 | 🟢 低 | 过度仿制 | 竞品走"美术夸张"，我方用户群更重视"物理可控" | 仅借鉴波光手段，不削弱现有参数体系 |
 | 🔴 P4 | **预设漏配致 NaN → 水面消失（不可逆）** | `_syncWaterUniforms` 裸 `setFloat` 无 fallback（`env-water.ts:438,479`），若 `WATER_PRESETS` 任一预设漏配新字段 → `buildWaterPresetEnvState` 输出 `undefined` → 写入 NaN → 真实引擎水面渲染消失且不可逆（与 P3 `env-water.ts:1184-1185` 教训同型） | **三道防线（§4.7.4）**：① `state.ts` 种默认 1.0；② `buildWaterPresetEnvState` 双重 `?? preset.waterWaveHeight ?? 1.0`；③ `_syncWaterUniforms` 写入前 `?? 1.0`。验收 §5.2.5 含 NaN 防护回归项 |
