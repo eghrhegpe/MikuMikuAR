@@ -51,11 +51,46 @@ const MAT_PARAM_DEFS: Array<{
     { key: 'shininess', labelKey: 'model-material.shininess', min: 0, max: 200, step: 1 },
     { key: 'ambientMul', labelKey: 'model-material.ambientMul', min: 0, max: 2, step: 0.05 },
     { key: 'emissiveMul', labelKey: 'model-material.emissiveMul', min: 0, max: 2, step: 0.05 },
-    { key: 'diffuseTexLevel', labelKey: 'model-material.diffuseTexLevel', min: 0, max: 3, step: 0.1, icon: 'lucide:image' },
-    { key: 'bumpTexLevel', labelKey: 'model-material.bumpTexLevel', min: 0, max: 3, step: 0.1, icon: 'lucide:box' },
-    { key: 'toonTexLevel', labelKey: 'model-material.toonTexLevel', min: 0, max: 3, step: 0.1, icon: 'lucide:palette' },
-    { key: 'sphereTexLevel', labelKey: 'model-material.sphereTexLevel', min: 0, max: 3, step: 0.1, icon: 'lucide:circle-dot' },
-    { key: 'emissiveTexLevel', labelKey: 'model-material.emissiveTexLevel', min: 0, max: 3, step: 0.1, icon: 'lucide:sparkles' },
+    {
+        key: 'diffuseTexLevel',
+        labelKey: 'model-material.diffuseTexLevel',
+        min: 0,
+        max: 3,
+        step: 0.1,
+        icon: 'lucide:image',
+    },
+    {
+        key: 'bumpTexLevel',
+        labelKey: 'model-material.bumpTexLevel',
+        min: 0,
+        max: 3,
+        step: 0.1,
+        icon: 'lucide:box',
+    },
+    {
+        key: 'toonTexLevel',
+        labelKey: 'model-material.toonTexLevel',
+        min: 0,
+        max: 3,
+        step: 0.1,
+        icon: 'lucide:palette',
+    },
+    {
+        key: 'sphereTexLevel',
+        labelKey: 'model-material.sphereTexLevel',
+        min: 0,
+        max: 3,
+        step: 0.1,
+        icon: 'lucide:circle-dot',
+    },
+    {
+        key: 'emissiveTexLevel',
+        labelKey: 'model-material.emissiveTexLevel',
+        min: 0,
+        max: 3,
+        step: 0.1,
+        icon: 'lucide:sparkles',
+    },
 ];
 
 /** 用 MAT_PARAM_DEFS 批量渲染滑块；withIcons 区分 batch 详情两种 UI */
@@ -64,7 +99,7 @@ function _renderMatParamSliders(
     id: string,
     matIndex: number,
     params: typeof DEFAULT_MAT_PARAMS,
-    withIcons: boolean,
+    withIcons: boolean
 ): void {
     let groupEmitted = false;
     for (const def of MAT_PARAM_DEFS) {
@@ -80,7 +115,7 @@ function _renderMatParamSliders(
             def.max,
             def.step,
             (v) => setMatParams(id, matIndex, { [def.key]: v }),
-            withIcons ? def.icon : undefined,
+            withIcons ? def.icon : undefined
         );
     }
 }
@@ -341,7 +376,10 @@ export function buildPerMatLevel(
         dir: '',
         items: [],
         renderCustom: (container) => {
-            return renderMenu(buildPerMatSchema(id, modelName, matName, matIndex, targetStack), container);
+            return renderMenu(
+                buildPerMatSchema(id, modelName, matName, matIndex, targetStack),
+                container
+            );
         },
     };
 }

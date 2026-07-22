@@ -70,14 +70,14 @@ export {
 /** 当无焦点模型时的状态回退（兼容旧单例行为） */
 let _fallbackState: PerceptionState = { ...DEFAULT_PERCEPTION_STATE };
 /** 每模型感知上下文 */
-let _contexts = new Map<string, PerceptionContext>();
+const _contexts = new Map<string, PerceptionContext>();
 /** 当前焦点模型 ID */
 let _focusedContextId: string | null = null;
 let perceptionObserver: (() => void) | null = null;
 /** [doc:adr-163] 感知层已认领骨骼：modelId → moduleId → claimed[] */
-let _perceptionOwnedBones = new Map<string, Map<string, string[]>>();
+const _perceptionOwnedBones = new Map<string, Map<string, string[]>>();
 /** [doc:adr-164] 性能监控器 */
-let _perfMonitor = new PerceptionPerfMonitor();
+const _perfMonitor = new PerceptionPerfMonitor();
 /** [doc:adr-164] 全局帧计数器（供 tier 降采样使用） */
 let _frameCounter = 0;
 /** [doc:adr-164] 全员感知开关 */
@@ -91,7 +91,9 @@ let _reclaimListenerAdded = false;
  */
 function _onBoneOverrideRelease(modelId: string, moduleId: string, _bones: Set<string>): void {
     // 忽略感知层自身释放（如 _releasePerceptionBones 内循环调 releaseOwnedBones 触发本监听器），避免递归 reclaim
-    if (moduleId.startsWith('perception.')) return;
+    if (moduleId.startsWith('perception.')) {
+        return;
+    }
     if (_perceptionOwnedBones.has(modelId)) {
         _reclaimPerceptionBones(modelId);
     }
@@ -238,7 +240,9 @@ function _reclaimPerceptionBones(modelId: string): void {
 /** 注销单个 context（供 observer 遍历中发现模型已 dispose 时调用） */
 function _deactivateContext(modelId: string): void {
     const ctx = _contexts.get(modelId);
-    if (!ctx) return;
+    if (!ctx) {
+        return;
+    }
     _releasePerceptionBones(modelId);
     ctx.isActive = false;
     if (_focusedContextId === modelId) {
@@ -252,7 +256,9 @@ function _deactivateContext(modelId: string): void {
 
 /** 确保 perception observer 已注册（供 activatePerception / pinPerception 复用） */
 function _ensureObserverRegistered(): void {
-    if (perceptionObserver) return;
+    if (perceptionObserver) {
+        return;
+    }
 
     perceptionObserver = getMotionPipeline().register({
         id: 'perception',
@@ -428,14 +434,21 @@ export function getPerceptionState(): PerceptionState {
 export function setPerceptionState(s: Partial<PerceptionState>): void {
     // 钳制 gaze 角度参数（与各单项 setter 一致，避免绕过 clamp）
     const clamped: Partial<PerceptionState> = {};
-    if ('headGazeMaxYaw' in s)
+    if ('headGazeMaxYaw' in s) {
         clamped.headGazeMaxYaw = Math.max(0, Math.min(90, s.headGazeMaxYaw!));
-    if ('headGazeMaxPitch' in s)
+    }
+    if ('headGazeMaxPitch' in s) {
         clamped.headGazeMaxPitch = Math.max(0, Math.min(90, s.headGazeMaxPitch!));
-    if ('eyeGazeMaxYaw' in s) clamped.eyeGazeMaxYaw = Math.max(0, Math.min(15, s.eyeGazeMaxYaw!));
-    if ('eyeGazeMaxPitch' in s)
+    }
+    if ('eyeGazeMaxYaw' in s) {
+        clamped.eyeGazeMaxYaw = Math.max(0, Math.min(15, s.eyeGazeMaxYaw!));
+    }
+    if ('eyeGazeMaxPitch' in s) {
         clamped.eyeGazeMaxPitch = Math.max(0, Math.min(15, s.eyeGazeMaxPitch!));
-    if ('eyeGazeSmooth' in s) clamped.eyeGazeSmooth = Math.max(0, Math.min(1, s.eyeGazeSmooth!));
+    }
+    if ('eyeGazeSmooth' in s) {
+        clamped.eyeGazeSmooth = Math.max(0, Math.min(1, s.eyeGazeSmooth!));
+    }
     // 非 gaze 字段原样传入
     for (const k of Object.keys(s)) {
         if (!(k in clamped)) {
@@ -638,7 +651,9 @@ export function pinPerception(modelId: string, state?: Partial<PerceptionState>)
 /** unpin 模型感知（非焦点模型同步 deactivate） */
 export function unpinPerception(modelId: string): void {
     const ctx = _contexts.get(modelId);
-    if (!ctx || !ctx.isPinned) return;
+    if (!ctx || !ctx.isPinned) {
+        return;
+    }
 
     ctx.isPinned = false;
 
@@ -678,14 +693,21 @@ export function getPerceptionStateFor(modelId: string): PerceptionState {
 export function setPerceptionStateFor(modelId: string, s: Partial<PerceptionState>): void {
     // 钳制 gaze 角度参数（与各单项 setter 一致，避免绕过 clamp）
     const clamped: Partial<PerceptionState> = {};
-    if ('headGazeMaxYaw' in s)
+    if ('headGazeMaxYaw' in s) {
         clamped.headGazeMaxYaw = Math.max(0, Math.min(90, s.headGazeMaxYaw!));
-    if ('headGazeMaxPitch' in s)
+    }
+    if ('headGazeMaxPitch' in s) {
         clamped.headGazeMaxPitch = Math.max(0, Math.min(90, s.headGazeMaxPitch!));
-    if ('eyeGazeMaxYaw' in s) clamped.eyeGazeMaxYaw = Math.max(0, Math.min(15, s.eyeGazeMaxYaw!));
-    if ('eyeGazeMaxPitch' in s)
+    }
+    if ('eyeGazeMaxYaw' in s) {
+        clamped.eyeGazeMaxYaw = Math.max(0, Math.min(15, s.eyeGazeMaxYaw!));
+    }
+    if ('eyeGazeMaxPitch' in s) {
         clamped.eyeGazeMaxPitch = Math.max(0, Math.min(15, s.eyeGazeMaxPitch!));
-    if ('eyeGazeSmooth' in s) clamped.eyeGazeSmooth = Math.max(0, Math.min(1, s.eyeGazeSmooth!));
+    }
+    if ('eyeGazeSmooth' in s) {
+        clamped.eyeGazeSmooth = Math.max(0, Math.min(1, s.eyeGazeSmooth!));
+    }
     // 非 gaze 字段原样传入
     for (const k of Object.keys(s)) {
         if (!(k in clamped)) {

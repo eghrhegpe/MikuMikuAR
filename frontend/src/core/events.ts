@@ -110,42 +110,44 @@ function waitForTransition(el: HTMLElement, propertyName?: string): Promise<void
 
 let _toggling = false; // [audit:P2] 并发锁：防快速点击导致 DOM 状态不一致
 export async function toggleOverlay(id: string, showFn: () => void): Promise<void> {
-    if (_toggling) return;
-    _toggling = true;
-    try {
-    const el = document.getElementById(id);
-    if (!el) {
+    if (_toggling) {
         return;
     }
-    const last = _lastOverlayFn.get(id);
-    if (el.classList.contains('visible')) {
-        if (last === showFn) {
-            // Same button clicked again → toggle close
-            el.classList.remove('visible');
-            setPopupOpen(false);
-            syncNavAriaExpanded();
-            _lastOverlayFn.delete(id);
+    _toggling = true;
+    try {
+        const el = document.getElementById(id);
+        if (!el) {
+            return;
+        }
+        const last = _lastOverlayFn.get(id);
+        if (el.classList.contains('visible')) {
+            if (last === showFn) {
+                // Same button clicked again → toggle close
+                el.classList.remove('visible');
+                setPopupOpen(false);
+                syncNavAriaExpanded();
+                _lastOverlayFn.delete(id);
+            } else {
+                // Different button targeting the same overlay → cross-fade switch
+                el.classList.add('overlay-fade-out');
+                await waitForTransition(el, 'opacity');
+                el.classList.remove('overlay-fade-out', 'visible');
+                closeAllOverlays();
+                showFn();
+                document.body.classList.remove('ui-hidden');
+                el.classList.add('visible');
+            }
         } else {
-            // Different button targeting the same overlay → cross-fade switch
-            el.classList.add('overlay-fade-out');
-            await waitForTransition(el, 'opacity');
-            el.classList.remove('overlay-fade-out', 'visible');
             closeAllOverlays();
             showFn();
             document.body.classList.remove('ui-hidden');
+            el.classList.remove('overlay-fade-out'); // 防御：确保残留动画类不影响显示
             el.classList.add('visible');
         }
-    } else {
-        closeAllOverlays();
-        showFn();
-        document.body.classList.remove('ui-hidden');
-        el.classList.remove('overlay-fade-out'); // 防御：确保残留动画类不影响显示
-        el.classList.add('visible');
-    }
-    if (el.classList.contains('visible')) {
-        _lastOverlayFn.set(id, showFn);
-    }
-    syncNavAriaExpanded();
+        if (el.classList.contains('visible')) {
+            _lastOverlayFn.set(id, showFn);
+        }
+        syncNavAriaExpanded();
     } finally {
         _toggling = false;
     }
@@ -278,14 +280,20 @@ export function registerEventHandlers(): void {
 
     // ======== ADR-153: 3D camera keyboard orbit (canvas focused) ========
     _reg(window, 'keydown', (e) => {
-        if (document.activeElement !== dom.canvas) return;
+        if (document.activeElement !== dom.canvas) {
+            return;
+        }
         const t = e.target as HTMLElement;
-        if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+        if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) {
+            return;
+        }
         const cam = getCurrentCamera();
-        if (!cam || !(cam instanceof ArcRotateCamera)) return;
+        if (!cam || !(cam instanceof ArcRotateCamera)) {
+            return;
+        }
         const shift = e.shiftKey ? 3 : 1;
-        const yawStep = (5 * Math.PI) / 180 * shift; // 5° per press
-        const pitchStep = (5 * Math.PI) / 180 * shift;
+        const yawStep = ((5 * Math.PI) / 180) * shift; // 5° per press
+        const pitchStep = ((5 * Math.PI) / 180) * shift;
         const zoomFactor = shift > 1 ? 0.7 : 0.9; // 30% vs 10% per press
 
         switch (e.code) {

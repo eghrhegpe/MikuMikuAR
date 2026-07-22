@@ -568,7 +568,7 @@ export async function loadPMXFile(
         };
         const pickedId = slots.primary.sceneMotionId;
         const pickedMotion = pickedId
-            ? getSceneMotions().find((m) => m.id === pickedId) ?? null
+            ? (getSceneMotions().find((m) => m.id === pickedId) ?? null)
             : null;
         const activeMotion = pickedMotion ?? getActiveMotion();
         const loadGen = getMotionGen(); // 捕获当前 generation，防止异步加载过期

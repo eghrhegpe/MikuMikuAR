@@ -131,7 +131,12 @@ describe('性能快照恢复（_restoreSnapshot 收口路径）', () => {
 
         // env 快照含 qualityProfile/reflectionQuality/cloudQuality/particleQuality → 走桥接分支
         expect(h.setEnvStateForPerformance).toHaveBeenCalledWith(
-            { qualityProfile: 'high', reflectionQuality: 'high', cloudQuality: 'high', particleQuality: 'high' },
+            {
+                qualityProfile: 'high',
+                reflectionQuality: 'high',
+                cloudQuality: 'high',
+                particleQuality: 'high',
+            },
             true
         );
         // 成对切换：先 true 后 false

@@ -24,11 +24,7 @@ vi.mock('@/core/dispose-helpers', () => ({
 }));
 
 // 真实导入被测模块（仅纯函数/着色器字符串，不触发 createClouds）
-import {
-    FRAG_SRC,
-    resolveCloudShaderParams,
-    buildJitterSource,
-} from '../../scene/env/env-clouds';
+import { FRAG_SRC, resolveCloudShaderParams, buildJitterSource } from '../../scene/env/env-clouds';
 
 describe('env-clouds shader 契约 (ADR-113)', () => {
     it('FRAG_SRC 距离雾 fade 到 sceneFogColor（非白雾硬编码）', () => {

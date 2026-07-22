@@ -1623,7 +1623,7 @@ export const ko: Record<string, string> = {
     'common.model': '모델',
     'common.prop': '소품',
     'common.close': '닫기',
-'common.delete': '삭제',
+    'common.delete': '삭제',
     'common.items': '개',
     'common.unknown': '알 수 없음',
     'model-detail.unloadThis': '이 {kind} 언로드',

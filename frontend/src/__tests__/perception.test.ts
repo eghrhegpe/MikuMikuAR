@@ -1339,7 +1339,9 @@ describe('ADR-164 PerceptionPerfMonitor tier', () => {
 
         // 先让 monitor 在 auto 模式下采样到低 fps（第 30 帧采样）
         monitor.update(sceneMock, 30);
-        for (let i = 0; i < 29; i++) monitor.update(sceneMock, 30);
+        for (let i = 0; i < 29; i++) {
+            monitor.update(sceneMock, 30);
+        }
 
         // 此时 this.fps = 25（已采样）+ 模型数 30 > 20
         // 切手动后，下次 update 应命中 fps<30 + modelCount>20 条件

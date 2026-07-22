@@ -31,10 +31,7 @@ export function _addAllMeshesToShadow(gen: ShadowGenerator | CascadedShadowGener
 }
 
 export function _ensureShadow(): void {
-    if (
-        !lightingState.scene ||
-        !lightingState.envSysShadow
-    ) {
+    if (!lightingState.scene || !lightingState.envSysShadow) {
         return;
     }
 

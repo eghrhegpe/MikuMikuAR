@@ -15,7 +15,13 @@ import {
     isPlaying,
     setIsPlaying,
 } from '../core/config';
-import { addToggleRow, addSliderRow, addEmptyRow, addPresetChip, slideRow } from '../core/ui-helpers';
+import {
+    addToggleRow,
+    addSliderRow,
+    addEmptyRow,
+    addPresetChip,
+    slideRow,
+} from '../core/ui-helpers';
 import { waitForFrame } from '../core/utils';
 import { logWarn } from '../core/logger';
 import { getMotionMenu } from './motion-popup';
@@ -160,7 +166,8 @@ function buildPoseStudioSchema(): MenuNode[] {
                     inner.appendChild(title);
 
                     const hint = document.createElement('div');
-                    hint.style.cssText = 'font-size:12px;opacity:0.65;margin:2px 0 10px;line-height:1.5;';
+                    hint.style.cssText =
+                        'font-size:12px;opacity:0.65;margin:2px 0 10px;line-height:1.5;';
                     hint.textContent = t('motion.poseStudio.dofHint');
                     inner.appendChild(hint);
 

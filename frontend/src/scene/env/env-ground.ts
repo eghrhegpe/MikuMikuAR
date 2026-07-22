@@ -420,19 +420,22 @@ function generateProceduralGroundTextures(
         ? `_ov:${state!.groundOverlay}:${state!.groundGridSize}:${state!.groundLineColor.join(',')}`
         : '';
     const make = (channel: 'albedo' | 'roughness' | 'normal') =>
-        getOrCreateCanvasTexture(`groundProcedural_${type}_${seed}_${channel}${channel === 'albedo' ? overlaySuffix : ''}`, {
-            size: PROCEDURAL_SIZE,
-            draw: (ctx, s) => {
-                gens[channel](ctx, s, seed);
-                if (channel === 'albedo' && hasOverlay) {
-                    _drawOverlayPattern(ctx, s, state!);
-                }
-            },
-            scene,
-            name: `groundProcedural_${type}_${channel}`,
-            wrap: 'wrap',
-            generateMipMaps: true,
-        });
+        getOrCreateCanvasTexture(
+            `groundProcedural_${type}_${seed}_${channel}${channel === 'albedo' ? overlaySuffix : ''}`,
+            {
+                size: PROCEDURAL_SIZE,
+                draw: (ctx, s) => {
+                    gens[channel](ctx, s, seed);
+                    if (channel === 'albedo' && hasOverlay) {
+                        _drawOverlayPattern(ctx, s, state!);
+                    }
+                },
+                scene,
+                name: `groundProcedural_${type}_${channel}`,
+                wrap: 'wrap',
+                generateMipMaps: true,
+            }
+        );
     return { albedo: make('albedo'), roughness: make('roughness'), normal: make('normal') };
 }
 
@@ -784,12 +787,10 @@ function _generateGroundTexture(state: EnvState, scene: Scene): Texture {
 
 // ======== Overlay pattern (grid/checker) for any canvas context ========
 
-function _drawOverlayPattern(
-    ctx: CanvasRenderingContext2D,
-    size: number,
-    state: EnvState
-): void {
-    if (state.groundOverlay === 'none') return;
+function _drawOverlayPattern(ctx: CanvasRenderingContext2D, size: number, state: EnvState): void {
+    if (state.groundOverlay === 'none') {
+        return;
+    }
     const r = Math.round(state.groundLineColor[0] * 255);
     const g = Math.round(state.groundLineColor[1] * 255);
     const b = Math.round(state.groundLineColor[2] * 255);
@@ -800,10 +801,16 @@ function _drawOverlayPattern(
         ctx.strokeStyle = lineColor;
         ctx.lineWidth = Math.max(1, Math.round(tileSize / 24));
         for (let x = tileSize; x < size; x += tileSize) {
-            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, size); ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, size);
+            ctx.stroke();
         }
         for (let y = tileSize; y < size; y += tileSize) {
-            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(size, y); ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(size, y);
+            ctx.stroke();
         }
     } else if (state.groundOverlay === 'checker') {
         ctx.fillStyle = lineColor;
@@ -942,8 +949,12 @@ function _getScrollUV(state: EnvState): { u: number; v: number } {
     }
     u = u - Math.floor(u);
     v = v - Math.floor(v);
-    if (u < 0) { u += 1; }
-    if (v < 0) { v += 1; }
+    if (u < 0) {
+        u += 1;
+    }
+    if (v < 0) {
+        v += 1;
+    }
     return { u, v };
 }
 
@@ -1113,13 +1124,17 @@ export function applyGround(state: EnvState): void {
     if (state.groundType === 'terrain') {
         const hg = createHeightmapGround(state, scene, (gm) => {
             applyTerrainMaterial(gm, state, scene);
-            if (state.groundProceduralTexture !== 'none' && !state.groundTextureEnabled && !state.groundElevationColoring) {
+            if (
+                state.groundProceduralTexture !== 'none' &&
+                !state.groundTextureEnabled &&
+                !state.groundElevationColoring
+            ) {
                 const mat = gm.material as GroundMat;
                 const texs = generateProceduralGroundTextures(
                     state.groundProceduralTexture,
                     state.groundProceduralSeed,
                     scene,
-                    state,
+                    state
                 );
                 const scale = state.groundSize / 10 / Math.max(0.1, state.groundProceduralScale);
                 texs.albedo.uScale = texs.albedo.vScale = scale;

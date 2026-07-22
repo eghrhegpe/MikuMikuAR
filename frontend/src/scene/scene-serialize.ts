@@ -1211,23 +1211,14 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
 
     // [doc:adr-108] 恢复 retarget 动画状态（在模型加载完成后执行）
     if (data.retarget && data.retarget.filePath) {
-        const resolvedPath = resolvePathFromRef(
-            data.retarget.filePath,
-            data.retarget.libraryRef
-        );
+        const resolvedPath = resolvePathFromRef(data.retarget.filePath, data.retarget.libraryRef);
         if (resolvedPath) {
             const foc = modelManager.focused();
             if (foc) {
                 const preset = data.retarget.boneMapPreset as 'mixamo' | 'vrm' | 'custom';
-                await restoreRetargetAnimation(resolvedPath, preset, foc.id).catch(
-                    (err) => {
-                        logWarn(
-                            'scene-serialize',
-                            'retarget 动画恢复失败:',
-                            err
-                        );
-                    }
-                );
+                await restoreRetargetAnimation(resolvedPath, preset, foc.id).catch((err) => {
+                    logWarn('scene-serialize', 'retarget 动画恢复失败:', err);
+                });
             }
         }
     }

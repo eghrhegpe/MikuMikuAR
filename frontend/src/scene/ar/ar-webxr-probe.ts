@@ -313,12 +313,22 @@ export async function probeWebXRFeatures(): Promise<WebXRProbeResult> {
     // 至少 hit-test 可用才算 'full'
     const verdict: 'full' | 'partial' | 'none' = hitTest ? 'full' : 'partial';
     const parts: string[] = [];
-    if (hitTest) parts.push('hit-test ✓');
-    if (planeDetection) parts.push('plane-detection ✓');
-    if (lightEstimation) parts.push('light-estimation ✓');
-    if (anchors) parts.push('anchors ✓');
+    if (hitTest) {
+        parts.push('hit-test ✓');
+    }
+    if (planeDetection) {
+        parts.push('plane-detection ✓');
+    }
+    if (lightEstimation) {
+        parts.push('light-estimation ✓');
+    }
+    if (anchors) {
+        parts.push('anchors ✓');
+    }
     const missing = featuresToProbe.filter((f) => !has(f));
-    if (missing.length > 0) parts.push(`缺失: ${missing.join(', ')}`);
+    if (missing.length > 0) {
+        parts.push(`缺失: ${missing.join(', ')}`);
+    }
 
     _cachedResult = {
         ...base,

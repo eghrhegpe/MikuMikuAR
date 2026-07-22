@@ -179,8 +179,11 @@ export function getAllConflicts(
     for (const c of getBoneOverrideStore().getConflicts(modelId)) {
         const entry: BoneConflict = { bone: c.bone, byModule: c.winnerModuleId };
         const list = byLoser.get(c.loserModuleId);
-        if (list) list.push(entry);
-        else byLoser.set(c.loserModuleId, [entry]);
+        if (list) {
+            list.push(entry);
+        } else {
+            byLoser.set(c.loserModuleId, [entry]);
+        }
     }
     return Array.from(byLoser.entries()).map(([mid, conflicts]) => ({ moduleId: mid, conflicts }));
 }

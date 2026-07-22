@@ -275,7 +275,10 @@ function buildCameraSchema(): MenuNode[] {
                         1,
                         0.05,
                         (v) => {
-                            setRenderState({ dofEnabled: (v as number) > 0, dofAperture: v as number });
+                            setRenderState({
+                                dofEnabled: (v as number) > 0,
+                                dofAperture: v as number,
+                            });
                             triggerAutoSave();
                         },
                         'lucide:camera',
@@ -684,7 +687,9 @@ function renderWebXRProbeSection(container: HTMLElement): void {
         _probing ? t('scene.ar.webxrProbing') : t('scene.ar.webxrProbe'),
         false,
         async () => {
-            if (_probing) return;
+            if (_probing) {
+                return;
+            }
             _probing = true;
             refreshCameraLevel();
             try {
@@ -700,7 +705,9 @@ function renderWebXRProbeSection(container: HTMLElement): void {
 
     // 深度探针按钮（会触发 AR session + 权限弹窗）
     slideRow(container, 'lucide:scan', t('scene.ar.webxrDeepProbe'), false, async () => {
-        if (_probing) return;
+        if (_probing) {
+            return;
+        }
         _probing = true;
         refreshCameraLevel();
         try {

@@ -90,8 +90,20 @@ export function startFallbackDetection(scene: Scene, onFootLand: (e: FootLandEve
             let state = _modelStates.get(modelId);
             if (!state) {
                 state = {
-                    l: { prevGrounded: false, footYPrev: 0, lastLandTime: 0, ikName: null, ikBone: null },
-                    r: { prevGrounded: false, footYPrev: 0, lastLandTime: 0, ikName: null, ikBone: null },
+                    l: {
+                        prevGrounded: false,
+                        footYPrev: 0,
+                        lastLandTime: 0,
+                        ikName: null,
+                        ikBone: null,
+                    },
+                    r: {
+                        prevGrounded: false,
+                        footYPrev: 0,
+                        lastLandTime: 0,
+                        ikName: null,
+                        ikBone: null,
+                    },
                     resolved: false,
                 };
                 _modelStates.set(modelId, state);

@@ -459,9 +459,9 @@ describe('buildModelInfoLevel', () => {
         const level = buildModelInfoLevel('m1');
         const container = document.createElement('div');
         level.renderCustom!(container);
-        const labels = Array.from(container.querySelectorAll('.info-card-label, .info-card-value')).map(
-            (el) => el.textContent
-        );
+        const labels = Array.from(
+            container.querySelectorAll('.info-card-label, .info-card-value')
+        ).map((el) => el.textContent);
         expect(labels.some((l) => l && l.includes('1,000'))).toBe(true);
         expect(labels.some((l) => l && l.includes('20'))).toBe(true);
         expect(labels.some((l) => l && l.includes('10'))).toBe(true);
@@ -480,9 +480,9 @@ describe('buildModelInfoLevel', () => {
         const level = buildModelInfoLevel('m1');
         const container = document.createElement('div');
         level.renderCustom!(container);
-        const labels = Array.from(container.querySelectorAll('.info-card-label, .info-card-value')).map(
-            (el) => el.textContent
-        );
+        const labels = Array.from(
+            container.querySelectorAll('.info-card-label, .info-card-value')
+        ).map((el) => el.textContent);
         expect(labels.some((l) => l && l.includes('7'))).toBe(true);
         expect(labels.some((l) => l && l.includes('材质数'))).toBe(true);
     });

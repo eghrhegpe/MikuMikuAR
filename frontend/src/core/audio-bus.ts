@@ -107,7 +107,9 @@ export function playSfx(buffer: AudioBuffer, opts: PlaySfxOptions = {}): void {
         // [audit:P3] resume 成功后重试播放，避免首次点击音效被吞
         ctx.resume()
             .then(() => {
-                if (ctx.state === 'running') playSfx(buffer, opts);
+                if (ctx.state === 'running') {
+                    playSfx(buffer, opts);
+                }
             })
             .catch((err) => {
                 if (import.meta.env.DEV) {

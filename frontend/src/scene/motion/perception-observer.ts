@@ -49,7 +49,9 @@ export function _getActiveContextsByTier(
     const pinned = all.filter((c) => c.isPinned && c.modelId !== focusedContextId);
     const others = all.filter((c) => c.modelId !== focusedContextId && !c.isPinned);
     const result: PerceptionContext[] = [];
-    if (focused) result.push(focused);
+    if (focused) {
+        result.push(focused);
+    }
     result.push(...pinned);
     result.push(...others.slice(0, getMediumMaxOthers()));
     return result;
@@ -112,7 +114,15 @@ export function _applyPerceptionForContext(
                 const centerClaimed = owned?.get('perception.balance.center');
                 const upperClaimed = owned?.get('perception.balance.upper');
                 const waistClaimed = owned?.get('perception.balance.waist');
-                _applyBalanceSway(mmdModel, time, ctx, centerClaimed, upperClaimed, waistClaimed, tier);
+                _applyBalanceSway(
+                    mmdModel,
+                    time,
+                    ctx,
+                    centerClaimed,
+                    upperClaimed,
+                    waistClaimed,
+                    tier
+                );
             } catch (e) {
                 logWarn('perception', 'balance-sway 异常:', e);
             }

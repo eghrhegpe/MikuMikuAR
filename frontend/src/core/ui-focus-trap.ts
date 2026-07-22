@@ -33,10 +33,14 @@ export function createFocusTrap(opts: FocusTrapOptions): () => void {
             onEscape();
             return;
         }
-        if (e.key !== 'Tab') return;
+        if (e.key !== 'Tab') {
+            return;
+        }
 
         const focusable = getFocusableElements(container);
-        if (focusable.length === 0) return;
+        if (focusable.length === 0) {
+            return;
+        }
 
         const first = focusable[0];
         const last = focusable[focusable.length - 1];

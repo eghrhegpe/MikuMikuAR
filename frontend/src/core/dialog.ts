@@ -36,7 +36,10 @@ let _trapRestore: (() => void) | null = null;
 
 // [audit:P2] 并发队列：串行化 showDialog，防止第二次调用覆盖第一次 DOM 导致 Promise 永不 resolve
 let _dialogActive = false;
-const _pendingDialogs: Array<{ opts: DialogOptions; resolve: (v: string | boolean | null) => void }> = [];
+const _pendingDialogs: Array<{
+    opts: DialogOptions;
+    resolve: (v: string | boolean | null) => void;
+}> = [];
 
 function _drainDialogQueue(): void {
     _dialogActive = false;
@@ -44,8 +47,14 @@ function _drainDialogQueue(): void {
     if (next) {
         _dialogActive = true;
         _showDialogInner(next.opts).then(
-            (v) => { next.resolve(v); _drainDialogQueue(); },
-            () => { next.resolve(null); _drainDialogQueue(); }
+            (v) => {
+                next.resolve(v);
+                _drainDialogQueue();
+            },
+            () => {
+                next.resolve(null);
+                _drainDialogQueue();
+            }
         );
     }
 }
@@ -94,8 +103,14 @@ function showDialog(opts: DialogOptions): Promise<string | boolean | null> {
     if (!_dialogActive) {
         _dialogActive = true;
         return _showDialogInner(opts).then(
-            (v) => { _drainDialogQueue(); return v; },
-            (e) => { _drainDialogQueue(); throw e; }
+            (v) => {
+                _drainDialogQueue();
+                return v;
+            },
+            (e) => {
+                _drainDialogQueue();
+                throw e;
+            }
         );
     }
     return new Promise<string | boolean | null>((resolve) => {

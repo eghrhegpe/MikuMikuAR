@@ -130,8 +130,7 @@ export function renderPresetCard(container: HTMLElement, modelId: string): void 
             inner.appendChild(empty);
         } else {
             const list = document.createElement('div');
-            list.style.cssText =
-                'padding:4px 14px 8px;display:flex;flex-direction:column;gap:4px;';
+            list.style.cssText = 'padding:4px 14px 8px;display:flex;flex-direction:column;gap:4px;';
             for (const preset of presets) {
                 const row = document.createElement('div');
                 row.style.cssText =

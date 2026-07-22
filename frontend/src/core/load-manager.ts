@@ -7,7 +7,8 @@
 
 import { translateGoError } from './i18n/goerr';
 
-export type ResourceKind = 'actor' | 'stage' | 'prop' | 'vmd' | 'audio' | 'camera-vmd' | 'light' | 'personalLight';
+export type ResourceKind =
+    'actor' | 'stage' | 'prop' | 'vmd' | 'audio' | 'camera-vmd' | 'light' | 'personalLight';
 
 /**
  * [doc:adr-135] P0.2 加载阶段标签。dispatch 内部按 phase 更新，

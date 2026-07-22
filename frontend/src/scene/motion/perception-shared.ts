@@ -421,14 +421,22 @@ export class PerceptionPerfMonitor {
     }
 
     private _stepDown(t: PerceptionTier): PerceptionTier {
-        if (t === 'high') return 'medium';
-        if (t === 'medium') return 'low';
+        if (t === 'high') {
+            return 'medium';
+        }
+        if (t === 'medium') {
+            return 'low';
+        }
         return 'low';
     }
 
     private _stepUp(t: PerceptionTier): PerceptionTier {
-        if (t === 'low') return 'medium';
-        if (t === 'medium') return 'high';
+        if (t === 'low') {
+            return 'medium';
+        }
+        if (t === 'medium') {
+            return 'high';
+        }
         return 'high';
     }
 }
@@ -445,10 +453,12 @@ export function _incGazeLogFrame(): void {
     _gazeLogFrame++;
 }
 export function _gazeLog(...args: unknown[]): void {
-    if (_gazeLogEnabled || (typeof window !== 'undefined' && (window as any).__GAZE_LOG)) console.log(`[GAZE:${_gazeLogFrame}]`, ...args);
+    if (_gazeLogEnabled || (typeof window !== 'undefined' && (window as any).__GAZE_LOG)) {
+        console.log(`[GAZE:${_gazeLogFrame}]`, ...args);
+    }
 }
 /** 两四元数夹角（度） */
 export function _qAngleDeg(a: Quaternion, b: Quaternion): number {
     const dot = Math.abs(a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w);
-    return 2 * Math.acos(Math.min(dot, 1)) * 180 / Math.PI;
+    return (2 * Math.acos(Math.min(dot, 1)) * 180) / Math.PI;
 }

@@ -25,9 +25,9 @@ export function _applyHeadGazeJS(
     headRuntime.getWorldTranslationToRef(headPos);
 
     const oldHeadMat = _m().copyFrom(Matrix.FromArray(headRuntime.worldMatrix));
-    const oldHeadRotQ = cache?.headWorldQ ?? _q().copyFrom(
-        Quaternion.FromRotationMatrix(oldHeadMat.getRotationMatrix())
-    );
+    const oldHeadRotQ =
+        cache?.headWorldQ ??
+        _q().copyFrom(Quaternion.FromRotationMatrix(oldHeadMat.getRotationMatrix()));
 
     // ── 方向说明 ──
     // Babylon.js FromLookDirectionRH 对齐 -Z 到 lookDir。
@@ -50,12 +50,27 @@ export function _applyHeadGazeJS(
     const clampedTarget = _clampHeadGazeTarget(oldHeadRotQ, targetWorldQ, parentWorldQ);
     const alpha = _gazeAlpha(0.7, dt);
     const finalQ = _q().copyFrom(Quaternion.Slerp(oldHeadRotQ, clampedTarget, alpha));
-    _gazeLog('HEAD', headRuntime.linkedBone?.name, 'dt', dt.toFixed(4), 'α', alpha.toFixed(4), 'err→', _qAngleDeg(oldHeadRotQ, targetWorldQ).toFixed(1), 'clamp', _qAngleDeg(clampedTarget, targetWorldQ).toFixed(1), 'err←', _qAngleDeg(finalQ, targetWorldQ).toFixed(1));
+    _gazeLog(
+        'HEAD',
+        headRuntime.linkedBone?.name,
+        'dt',
+        dt.toFixed(4),
+        'α',
+        alpha.toFixed(4),
+        'err→',
+        _qAngleDeg(oldHeadRotQ, targetWorldQ).toFixed(1),
+        'clamp',
+        _qAngleDeg(clampedTarget, targetWorldQ).toFixed(1),
+        'err←',
+        _qAngleDeg(finalQ, targetWorldQ).toFixed(1)
+    );
     const localQ = _q();
     parentInvQ.multiplyToRef(finalQ, localQ);
 
     if (cache) {
-        if (!cache.headWorldQ) cache.headWorldQ = new Quaternion();
+        if (!cache.headWorldQ) {
+            cache.headWorldQ = new Quaternion();
+        }
         cache.headWorldQ.copyFrom(finalQ);
     }
 
@@ -114,10 +129,29 @@ export function _applyEyeGazeJS(
             ? _q().copyFrom(parentWorldQ).multiplyInPlace(cachedLocal)
             : _q().copyFrom(Quaternion.FromRotationMatrix(eyeMat.getRotationMatrix()));
 
-        const clampedTarget = _clampGazeTargetInParentFrame(curWorldQ, targetWorldQ, parentWorldQ, getEyeGazeMaxYaw(), getEyeGazeMaxPitch());
+        const clampedTarget = _clampGazeTargetInParentFrame(
+            curWorldQ,
+            targetWorldQ,
+            parentWorldQ,
+            getEyeGazeMaxYaw(),
+            getEyeGazeMaxPitch()
+        );
         const alpha = _gazeAlpha(getEyeGazeSmooth(), dt);
         const finalEyeQ = _q().copyFrom(Quaternion.Slerp(curWorldQ, clampedTarget, alpha));
-        _gazeLog('EYE', boneName, 'dt', dt.toFixed(4), 'α', alpha.toFixed(4), 'err→', _qAngleDeg(curWorldQ, targetWorldQ).toFixed(1), 'clamp', _qAngleDeg(clampedTarget, targetWorldQ).toFixed(1), 'err←', _qAngleDeg(finalEyeQ, targetWorldQ).toFixed(1));
+        _gazeLog(
+            'EYE',
+            boneName,
+            'dt',
+            dt.toFixed(4),
+            'α',
+            alpha.toFixed(4),
+            'err→',
+            _qAngleDeg(curWorldQ, targetWorldQ).toFixed(1),
+            'clamp',
+            _qAngleDeg(clampedTarget, targetWorldQ).toFixed(1),
+            'err←',
+            _qAngleDeg(finalEyeQ, targetWorldQ).toFixed(1)
+        );
 
         const localQ = _q();
         parentInvQ.multiplyToRef(finalEyeQ, localQ);

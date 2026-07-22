@@ -291,10 +291,8 @@ function _applyRenderState(s: Partial<RenderState>): void {
     const e = s.exposure !== undefined ? clamp(s.exposure, 0, 4) : undefined;
     const c = s.contrast !== undefined ? clamp(s.contrast, 0, 4) : undefined;
     const da = s.dofAperture !== undefined ? clamp(s.dofAperture, 0, 1) : undefined;
-    const dfd =
-        s.dofFocusDistance !== undefined ? clamp(s.dofFocusDistance, 1, 300) : undefined;
-    const dfl =
-        s.dofFocalLength !== undefined ? clamp(s.dofFocalLength, 20, 200) : undefined;
+    const dfd = s.dofFocusDistance !== undefined ? clamp(s.dofFocusDistance, 1, 300) : undefined;
+    const dfl = s.dofFocalLength !== undefined ? clamp(s.dofFocalLength, 20, 200) : undefined;
     const vd = s.vignetteDarkness !== undefined ? clamp(s.vignetteDarkness, 0, 1) : undefined;
     const ca =
         s.chromaticAberrationAmount !== undefined
@@ -304,10 +302,8 @@ function _applyRenderState(s: Partial<RenderState>): void {
     const sa = s.sharpenAmount !== undefined ? clamp(s.sharpenAmount, 0, 1) : undefined;
     const gl = s.glowIntensity !== undefined ? clamp(s.glowIntensity, 0, 1) : undefined;
     const cl = s.celColorLevels !== undefined ? clamp(s.celColorLevels, 2, 8) : undefined;
-    const cet =
-        s.celEdgeThreshold !== undefined ? clamp(s.celEdgeThreshold, 0, 1) : undefined;
-    const ces =
-        s.celEdgeStrength !== undefined ? clamp(s.celEdgeStrength, 0, 1) : undefined;
+    const cet = s.celEdgeThreshold !== undefined ? clamp(s.celEdgeThreshold, 0, 1) : undefined;
+    const ces = s.celEdgeStrength !== undefined ? clamp(s.celEdgeStrength, 0, 1) : undefined;
 
     // Post-processing
     if (s.bloomEnabled !== undefined) {
@@ -1100,9 +1096,15 @@ export function setSSRFromReflection(params: {
         _ssrPipeline = safeDispose(_ssrPipeline);
     }
     if (_ssrPipeline && params.enabled) {
-        if (params.step !== undefined) _ssrPipeline.step = params.step;
-        if (params.strength !== undefined) _ssrPipeline.strength = params.strength;
-        if (params.thickness !== undefined) _ssrPipeline.thickness = params.thickness;
+        if (params.step !== undefined) {
+            _ssrPipeline.step = params.step;
+        }
+        if (params.strength !== undefined) {
+            _ssrPipeline.strength = params.strength;
+        }
+        if (params.thickness !== undefined) {
+            _ssrPipeline.thickness = params.thickness;
+        }
     }
 }
 

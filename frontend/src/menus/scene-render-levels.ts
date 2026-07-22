@@ -567,15 +567,25 @@ export function buildPostProcessLevel(): PopupLevel {
             const d1 = cardContainer(container, (c) => {
                 return renderMenu(buildPostProcessCoreSchema(), c);
             });
-            if (typeof d1 === 'function') disposes.push(d1);
+            if (typeof d1 === 'function') {
+                disposes.push(d1);
+            }
             // 色彩层（色调映射）—— 独立卡片
             const d2 = cardContainer(container, (c) => {
                 return renderMenu(buildPostProcessColorSchema(), c);
             });
-            if (typeof d2 === 'function') disposes.push(d2);
+            if (typeof d2 === 'function') {
+                disposes.push(d2);
+            }
             // 滤镜预设芯片组
             _renderFilterPresetChips(container);
-            if (disposes.length > 0) return () => { for (const d of disposes) d(); };
+            if (disposes.length > 0) {
+                return () => {
+                    for (const d of disposes) {
+                        d();
+                    }
+                };
+            }
         },
     };
 }

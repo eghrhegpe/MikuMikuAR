@@ -222,12 +222,15 @@ function levelDiff(
     if (next.qualityProfile) {
         const prevR = resolveQualityProfile(prev.qualityProfile || 'high');
         const nextR = resolveQualityProfile(next.qualityProfile);
-        if (prevR.reflectionQuality !== nextR.reflectionQuality)
+        if (prevR.reflectionQuality !== nextR.reflectionQuality) {
             env.reflectionQuality = nextR.reflectionQuality;
-        if (prevR.cloudQuality !== nextR.cloudQuality)
+        }
+        if (prevR.cloudQuality !== nextR.cloudQuality) {
             env.cloudQuality = nextR.cloudQuality;
-        if (prevR.particleQuality !== nextR.particleQuality)
+        }
+        if (prevR.particleQuality !== nextR.particleQuality) {
             env.particleQuality = nextR.particleQuality;
+        }
     }
     return { light, render, env };
 }
@@ -385,9 +388,7 @@ function applyDegrade(level: DegradeLevel, force = false): void {
     if (_perfRenderScaleMul !== targetMul) {
         _perfRenderScaleMul = targetMul;
         if (import.meta.env.DEV) {
-            console.info(
-                `[${formatTimestamp()}] [Performance] renderScale mul → ${targetMul}`
-            );
+            console.info(`[${formatTimestamp()}] [Performance] renderScale mul → ${targetMul}`);
         }
     }
     if (import.meta.env.DEV) {

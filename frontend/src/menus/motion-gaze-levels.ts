@@ -465,15 +465,21 @@ export function updatePerceptionConflictBanner(el: HTMLElement, modelId: string 
  */
 export function renderPerceptionConflictBanners(container: HTMLElement): void {
     const ids: string[] = [];
-    if (focusedModelId) ids.push(focusedModelId);
+    if (focusedModelId) {
+        ids.push(focusedModelId);
+    }
     for (const pid of getPinnedModelIds()) {
-        if (!ids.includes(pid)) ids.push(pid);
+        if (!ids.includes(pid)) {
+            ids.push(pid);
+        }
     }
     const multi = ids.length > 1;
     for (const id of ids) {
         const sub = document.createElement('div');
         updatePerceptionConflictBanner(sub, id);
-        if (sub.style.display === 'none') continue; // 该模型无冲突则跳过
+        if (sub.style.display === 'none') {
+            continue;
+        } // 该模型无冲突则跳过
         if (multi) {
             const head = document.createElement('div');
             head.style.cssText = 'font-weight:600;opacity:0.75;margin-top:4px;';

@@ -1438,7 +1438,8 @@ export const zhTW: Record<string, string> = {
     'settings.perf.showFpsClock': '顯示幀率時鐘',
     'settings.perf.showRuntimeBadge': '顯示多執行緒徽標',
     'settings.perf.vsync': '幀率限制器',
-    'settings.perf.vsyncHintOn': '開啟後限制 babymmd 的渲染幀率（瀏覽器/WebView 渲染自帶垂直同步效果，故無需設定垂直同步）',
+    'settings.perf.vsyncHintOn':
+        '開啟後限制 babymmd 的渲染幀率（瀏覽器/WebView 渲染自帶垂直同步效果，故無需設定垂直同步）',
     'settings.perf.vsyncHintOff':
         '關閉後不施加人為限幀，渲染以顯示器刷新率執行，「幀率上限」滑桿失效。',
     'settings.perf.vsyncHintBrowser':
@@ -1605,7 +1606,7 @@ export const zhTW: Record<string, string> = {
     'common.model': '模型',
     'common.prop': '道具',
     'common.close': '關閉',
-'common.delete': '刪除',
+    'common.delete': '刪除',
     'common.items': '項',
     'common.unknown': '未知',
     'model-detail.unloadThis': '卸載此{kind}',

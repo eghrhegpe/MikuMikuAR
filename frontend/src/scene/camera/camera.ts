@@ -1247,9 +1247,9 @@ const AUTO_CAMERA_PRESETS: AutoCameraPreset[] = [
     { alpha: -Math.PI / 2, beta: Math.PI / 4, radius: 22 }, // 远景
 ];
 
-let _autoCameraEnabled = false;
-let _autoCameraBeatCount = 0;
-let _autoCameraPresetIdx = 0;
+const _autoCameraEnabled = false;
+const _autoCameraBeatCount = 0;
+const _autoCameraPresetIdx = 0;
 let _autoCameraBeatsPerSwitch = 4; // 每 4 拍切换一次
 let _autoCameraUnsub: (() => void) | null = null;
 

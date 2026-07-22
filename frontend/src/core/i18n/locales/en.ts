@@ -582,7 +582,8 @@ export const en: Record<string, string> = {
     'motion.poseStudio.poseApplied': '✓ {pose} applied',
     'motion.poseStudio.poseFailed': '✗ Pose apply failed',
     'motion.poseStudio.depthOfField': 'Depth of Field',
-    'motion.poseStudio.dofHint': 'Depth of field is a lens property — adjust it in the Camera panel',
+    'motion.poseStudio.dofHint':
+        'Depth of field is a lens property — adjust it in the Camera panel',
     'motion.poseStudio.openLensSettings': 'Adjust DoF in Camera panel',
     'motion.poseStudio.cameraPresets': 'Camera Angle Presets',
     'motion.poseStudio.cameraApplied': '✓ Switched to {name} angle',
@@ -1528,7 +1529,7 @@ export const en: Record<string, string> = {
     'common.model': 'model',
     'common.prop': 'prop',
     'common.close': 'Close',
-'common.delete': 'Delete',
+    'common.delete': 'Delete',
     'common.items': 'items',
     'common.unknown': 'Unknown',
     'model-detail.unloadThis': 'Unload this {kind}',

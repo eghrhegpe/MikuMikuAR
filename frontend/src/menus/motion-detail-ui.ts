@@ -4,12 +4,7 @@
 
 import { setStatus, mmdRuntime, cardContainer, focusedModelId } from '../core/config';
 import type { PopupLevel } from '../core/config';
-import {
-    slideRow,
-    addToggleRow,
-    addSliderRow,
-    addSectionTitle,
-} from '../core/ui-helpers';
+import { slideRow, addToggleRow, addSliderRow, addSectionTitle } from '../core/ui-helpers';
 import {
     modelManager,
     updatePlaybackUI,

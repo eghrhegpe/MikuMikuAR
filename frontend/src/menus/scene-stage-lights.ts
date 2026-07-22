@@ -34,7 +34,8 @@ import type { MenuNode } from './menu-schema';
 /** 提取「获取当前活跃灯光 + 读取属性」的公共 bind 工厂，消除 21 处重复 */
 function _activeLightBind<T>(key: keyof StageLightState, fallback: T): () => T {
     return () => {
-        const s = getStageLights().find((l) => l.id === getActiveStageLightId()) ?? getStageLights()[0];
+        const s =
+            getStageLights().find((l) => l.id === getActiveStageLightId()) ?? getStageLights()[0];
         return (s ? (s[key] as T) : undefined) ?? fallback;
     };
 }
@@ -208,7 +209,10 @@ function buildStageLightSchema(): MenuNode[] {
                                     getSceneMenu()?.updateControls();
                                 },
                                 {
-                                    bind: _activeLightBind<[number, number, number]>('color', [1, 1, 1]),
+                                    bind: _activeLightBind<[number, number, number]>(
+                                        'color',
+                                        [1, 1, 1]
+                                    ),
                                 }
                             );
                         },

@@ -234,7 +234,7 @@ export function buildJitterSource(useBlueNoise: boolean): string {
         return `float jitter = texture(blueNoiseTex, gl_FragCoord.xy / ${BLUE_NOISE_SIZE}.0).r;`;
     }
     // standard 档：无纹理依赖的廉价 jitter，分布质量略低但消除硬带状
-    return `float jitter = fract(gl_FragCoord.x * 0.12345 + gl_FragCoord.y * 0.67890);`;
+    return 'float jitter = fract(gl_FragCoord.x * 0.12345 + gl_FragCoord.y * 0.67890);';
 }
 
 // ======== Volumetric Cloud (ShaderMaterial-on-Sphere) ========
@@ -665,8 +665,10 @@ export function createClouds(state: EnvState): void {
         scene,
         {
             vertexSource: VERT_SRC,
-            fragmentSource: FRAG_SRC
-                .replace('${CLOUD_LIGHT_STEPS_INJECT}', String(cloudParams.lightSteps))
+            fragmentSource: FRAG_SRC.replace(
+                '${CLOUD_LIGHT_STEPS_INJECT}',
+                String(cloudParams.lightSteps)
+            )
                 .replace('${CLOUD_MAX_STEPS_INJECT}', String(cloudParams.maxSteps))
                 .replace('${JITTER_SOURCE_INJECT}', buildJitterSource(cloudParams.useBlueNoise)),
         },

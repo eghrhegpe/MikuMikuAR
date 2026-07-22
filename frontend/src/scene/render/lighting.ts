@@ -203,7 +203,9 @@ function _defaultLightState(): LightState {
 
 /** [doc:adr-132] 当 envBrightness 变化时 rebake 存储的光照强度 */
 export function rebakeEnvBrightness(ratio: number): void {
-    if (!lightingState.hemiLight || !lightingState.dirLight || ratio <= 0) return;
+    if (!lightingState.hemiLight || !lightingState.dirLight || ratio <= 0) {
+        return;
+    }
     lightingState.hemiLight.intensity *= ratio;
     lightingState.dirLight.intensity *= ratio;
 }

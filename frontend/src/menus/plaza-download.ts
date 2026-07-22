@@ -39,13 +39,21 @@ import {
 // ======== 下载监听 ========
 
 export function installDownloadListener(): void {
-    if (downloadListenerInstalled) return;
+    if (downloadListenerInstalled) {
+        return;
+    }
     setDownloadListenerInstalled(true);
     window.addEventListener('message', (e: MessageEvent) => {
-        if (e.data?.type !== 'plaza-download-request') return;
-        if (!plazaIframe || e.source !== plazaIframe.contentWindow) return;
+        if (e.data?.type !== 'plaza-download-request') {
+            return;
+        }
+        if (!plazaIframe || e.source !== plazaIframe.contentWindow) {
+            return;
+        }
         const { url, filename } = e.data as { url: string; filename: string };
-        if (!url) return;
+        if (!url) {
+            return;
+        }
         handlePlazaDownload(url, filename || 'download');
     });
 }
@@ -66,10 +74,16 @@ export async function handlePlazaDownload(
 
     setStatus(t('plaza.downloading', { name: filename }), false, true);
     try {
-        if (effectiveSignal.aborted) return;
-        if (typeof DownloadFromPlaza !== 'function') throw new Error('binding not available');
+        if (effectiveSignal.aborted) {
+            return;
+        }
+        if (typeof DownloadFromPlaza !== 'function') {
+            throw new Error('binding not available');
+        }
         const result = await DownloadFromPlaza(url, filename);
-        if (effectiveSignal.aborted) return;
+        if (effectiveSignal.aborted) {
+            return;
+        }
         setStatus(
             t('plaza.downloaded', { name: result.fileName, size: (result.size / 1024).toFixed(1) }),
             true
@@ -84,14 +98,18 @@ export async function handlePlazaDownload(
 // ======== 快捷键 ========
 
 export function installShortcuts(): void {
-    if (shortcutsRegistered) return;
+    if (shortcutsRegistered) {
+        return;
+    }
     setShortcutsRegistered(true);
 
     const visibleGuard = (fn: () => Promise<unknown> | void) => () => {
         const l = getLayer();
         if (l && l.classList.contains('visible')) {
             const r = fn();
-            if (r) swallowError(r);
+            if (r) {
+                swallowError(r);
+            }
         }
     };
 
@@ -122,7 +140,9 @@ export function installShortcuts(): void {
 // ======== 事件监听 ========
 
 export function installEventListeners(): void {
-    if (eventListenersInstalled) return;
+    if (eventListenersInstalled) {
+        return;
+    }
     setEventListenersInstalled(true);
     Events.On('plaza:urlChanged', (data) => {
         const d = data as unknown as { url: string; title: string };
@@ -153,7 +173,9 @@ export function installEventListeners(): void {
             });
         }
         setTimeout(() => {
-            if (remoteProgress) remoteProgress.textContent = '';
+            if (remoteProgress) {
+                remoteProgress.textContent = '';
+            }
         }, 3000);
         showErrorToast(
             t('plaza.downloaded', { name: d.fileName, size: (d.size / 1024).toFixed(1) }),
@@ -175,9 +197,13 @@ export function installEventListeners(): void {
 // ======== Observer ========
 
 export function ensureObserver(): void {
-    if (observer) return;
+    if (observer) {
+        return;
+    }
     const el = getLayer();
-    if (!el) return;
+    if (!el) {
+        return;
+    }
     const obs = new MutationObserver(() => {
         if (!el.classList.contains('visible')) {
             stopProxy();

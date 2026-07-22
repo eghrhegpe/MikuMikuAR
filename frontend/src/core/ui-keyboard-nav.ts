@@ -30,7 +30,9 @@ export function createKeyboardNav(
 
     const handler = (e: KeyboardEvent) => {
         const items = container.querySelectorAll<HTMLElement>(selector);
-        if (items.length === 0) return;
+        if (items.length === 0) {
+            return;
+        }
 
         const focused = container.querySelector<HTMLElement>(`${selector}:focus`);
         const idx = focused ? Array.from(items).indexOf(focused) : -1;
@@ -39,18 +41,14 @@ export function createKeyboardNav(
             case 'ArrowDown':
             case 'ArrowRight': {
                 e.preventDefault();
-                const next = wrap
-                    ? (idx + 1) % items.length
-                    : Math.min(idx + 1, items.length - 1);
+                const next = wrap ? (idx + 1) % items.length : Math.min(idx + 1, items.length - 1);
                 items[next].focus();
                 break;
             }
             case 'ArrowUp':
             case 'ArrowLeft': {
                 e.preventDefault();
-                const prev = wrap
-                    ? (idx - 1 + items.length) % items.length
-                    : Math.max(idx - 1, 0);
+                const prev = wrap ? (idx - 1 + items.length) % items.length : Math.max(idx - 1, 0);
                 items[prev].focus();
                 break;
             }

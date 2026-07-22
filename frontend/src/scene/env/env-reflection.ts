@@ -108,10 +108,14 @@ let _probeStrength = 1;
 function _getHybridProbeFactor(state: EnvState): number {
     const quality = state.reflectionQuality ?? 'high';
     switch (quality) {
-        case 'low': return 0.3;
-        case 'medium': return 0.4;
-        case 'high': return 0.5;
-        default: return 0.5;
+        case 'low':
+            return 0.3;
+        case 'medium':
+            return 0.4;
+        case 'high':
+            return 0.5;
+        default:
+            return 0.5;
     }
 }
 
@@ -119,7 +123,9 @@ function _getHybridProbeFactor(state: EnvState): number {
 
 export function resolveReflectionMode(state: EnvState): ResolvedReflectionMode {
     // AR 场景无背景平面，角色倒影/环境反射无意义且浪费 GPU：纯派生覆盖为 'none'
-    if (_arSuspended) return 'none';
+    if (_arSuspended) {
+        return 'none';
+    }
     const mode = state.reflectionMode;
     // 防御旧版持久化存档残留的非法枚举（如 ADR-151 修订前 schema 曾含 'auto'），
     // 避免落入 applyReflection 的 switch 无匹配分支导致零反射静默 no-op。
@@ -135,7 +141,9 @@ export function resolveReflectionMode(state: EnvState): ResolvedReflectionMode {
  * 采用派生覆盖（不改写用户 reflectionMode），避免状态泄漏与回滚遗漏。
  */
 export function setReflectionARSuspended(suspended: boolean): void {
-    if (_arSuspended === suspended) return;
+    if (_arSuspended === suspended) {
+        return;
+    }
     _arSuspended = suspended;
     // 立即重算反射（envState 为当前态），使进入/退出 AR 反射即时开关。
     // scene 未初始化（模块加载期/测试环境）时 applyReflection 会抛，安全跳过：
@@ -143,7 +151,11 @@ export function setReflectionARSuspended(suspended: boolean): void {
     try {
         applyReflection(envState);
     } catch (err) {
-        logWarn('env-reflection', 'setReflectionARSuspended: applyReflection 跳过（scene 未就绪）:', err);
+        logWarn(
+            'env-reflection',
+            'setReflectionARSuspended: applyReflection 跳过（scene 未就绪）:',
+            err
+        );
     }
 }
 
@@ -165,13 +177,19 @@ export function getQualityPreset(state: EnvState): ReflectionQualityPreset {
  */
 export function getPlanarQualityOverride(state: EnvState): 'off' | 'low' | null {
     const mode = resolveReflectionMode(state);
-    if (mode === 'none') return 'off';
+    if (mode === 'none') {
+        return 'off';
+    }
     // planar 模式固定 low（控制平面倒影成本）；
     // ssr/probe/hybrid 模式下 reflectionQuality='off' 仅关 SSR/Probe 层，
     // 不应连带关闭地面/水面平面倒影（尤其 hybrid=最高画质预期）。
-    if (mode === 'planar') return 'low';
+    if (mode === 'planar') {
+        return 'low';
+    }
     const quality = state.reflectionQuality ?? 'off';
-    if (quality === 'off') return 'low';
+    if (quality === 'off') {
+        return 'low';
+    }
     return null;
 }
 
@@ -194,7 +212,7 @@ function _saveOriginalTexture(mat: MaterialWithReflection): void {
         // P4 修复：克隆原始 reflectionColor，避免后续 .set() 原地修改污染保存值
         _savedReflectionColors.set(
             mat.uniqueId,
-            mat.reflectionColor ? mat.reflectionColor.clone() : null,
+            mat.reflectionColor ? mat.reflectionColor.clone() : null
         );
     }
 }
