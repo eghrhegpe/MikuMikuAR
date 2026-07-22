@@ -110,6 +110,7 @@ export async function presetListContent<T>(
             if (config.onDelete) {
                 const delBtn = document.createElement('span');
                 delBtn.textContent = '✕';
+                delBtn.setAttribute('aria-label', t('common.delete'));
                 delBtn.title = '删除';
                 delBtn.style.cssText =
                     'font-size:10px;color:var(--text-dim);cursor:pointer;padding:2px 6px;';

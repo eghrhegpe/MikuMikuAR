@@ -1609,7 +1609,8 @@ export const ja: Record<string, string> = {
     // ===== i18n Phase 4 — missing keys =====
     'common.model': 'モデル',
     'common.prop': '小道具',
-    'common.delete': '削除',
+    'common.close': '閉じる',
+'common.delete': '削除',
     'common.items': '件',
     'common.unknown': '不明',
     'model-detail.unloadThis': 'この{kind}をアンロード',
