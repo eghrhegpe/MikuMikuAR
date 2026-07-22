@@ -798,7 +798,7 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
         if (m.outfitVariant) {
             try {
                 await loadOutfits(id);
-                applyOutfitVariant(id, m.outfitVariant);
+                await applyOutfitVariant(id, m.outfitVariant);
             } catch (err) {
                 logWarn('scene-serialize', `场景恢复: 模型 ${m.name} 变体应用失败:`, err);
             }
