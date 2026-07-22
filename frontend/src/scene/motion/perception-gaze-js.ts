@@ -91,9 +91,6 @@ export function _applyEyeGazeJS(
     for (const eyeRb of eyeRuntimes) {
         const eyeMat = _m().copyFrom(Matrix.FromArray(eyeRb.worldMatrix));
         const boneName = eyeRb.linkedBone?.name ?? '';
-        const curWorldQ = cache?.eyeWorldQ.get(boneName) ?? _q().copyFrom(
-            Quaternion.FromRotationMatrix(eyeMat.getRotationMatrix())
-        );
 
         const parentBone = eyeRb.parentBone;
         const parentWorldInv = _m();
@@ -106,6 +103,12 @@ export function _applyEyeGazeJS(
 
         const parentInvQ = Quaternion.FromRotationMatrix(parentWorldInv);
         const parentWorldQ = _q().copyFrom(parentInvQ).invert();
+
+        const cachedLocal = cache?.eyeLocalQ.get(boneName);
+        const curWorldQ = cachedLocal
+            ? _q().copyFrom(parentWorldQ).multiplyInPlace(cachedLocal)
+            : _q().copyFrom(Quaternion.FromRotationMatrix(eyeMat.getRotationMatrix()));
+
         const clampedTargetQ = _clampGazeTargetInParentFrame(
             curWorldQ,
             targetWorldQ,
@@ -117,17 +120,17 @@ export function _applyEyeGazeJS(
         const newWorldQ = _q().copyFrom(Quaternion.Slerp(curWorldQ, clampedTargetQ, alpha));
         const finalEyeQ = _clampGazeTargetInParentFrame(newWorldQ, newWorldQ, parentWorldQ, getEyeGazeMaxYaw(), getEyeGazeMaxPitch());
 
-        if (cache) {
-            let cached = cache.eyeWorldQ.get(boneName);
-            if (!cached) {
-                cached = new Quaternion();
-                cache.eyeWorldQ.set(boneName, cached);
-            }
-            cached.copyFrom(finalEyeQ);
-        }
-
         const localQ = _q();
         parentInvQ.multiplyToRef(finalEyeQ, localQ);
+
+        if (cache) {
+            let cached = cache.eyeLocalQ.get(boneName);
+            if (!cached) {
+                cached = new Quaternion();
+                cache.eyeLocalQ.set(boneName, cached);
+            }
+            cached.copyFrom(localQ);
+        }
 
         // 写入既有实例，不外泄池引用
         const eyeQ = eyeRb.linkedBone.rotationQuaternion;

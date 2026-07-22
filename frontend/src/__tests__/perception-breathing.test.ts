@@ -55,7 +55,7 @@ function makeCtx(state?: Partial<PerceptionState>): PerceptionContext {
             emotion: null,
         },
         pool: _createPerceptionPool(),
-        gazeCache: { headWorldQ: null, eyeWorldQ: new Map() },
+        gazeCache: { headWorldQ: null, eyeLocalQ: new Map() },
     };
 }
 

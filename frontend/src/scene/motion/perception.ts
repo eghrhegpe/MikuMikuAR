@@ -124,7 +124,7 @@ function _getOrCreateContext(modelId: string): PerceptionContext {
                 emotion: null,
             },
             pool: _createPerceptionPool(),
-            gazeCache: { headWorldQ: null, eyeWorldQ: new Map() },
+            gazeCache: { headWorldQ: null, eyeLocalQ: new Map() },
         };
         _contexts.set(modelId, ctx);
     }
@@ -162,7 +162,7 @@ function _resetContextOffsets(ctx: PerceptionContext): void {
     _resetBalanceSwayState(ctx.lastOffsets.balance);
     ctx.lastOffsets.emotion = null;
     ctx.gazeCache.headWorldQ = null;
-    ctx.gazeCache.eyeWorldQ.clear();
+    ctx.gazeCache.eyeLocalQ.clear();
 }
 
 /** [doc:adr-163] 为指定模型认领感知层骨骼（P3=100） */
@@ -390,7 +390,7 @@ export function _resetGazeState(): void {
     _gazeResetTick++;
     for (const ctx of _contexts.values()) {
         ctx.gazeCache.headWorldQ = null;
-        ctx.gazeCache.eyeWorldQ.clear();
+        ctx.gazeCache.eyeLocalQ.clear();
     }
 }
 

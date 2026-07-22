@@ -110,9 +110,11 @@ export function _applyEyeGazeWasm(
         const eyeMat = _m().copyFrom(Matrix.FromArray(eyeBuf));
         const eyePos = eyeMat.getTranslation();
         const boneName = eyeRb.linkedBone?.name ?? '';
-        const curEyeQ = cache?.eyeWorldQ.get(boneName) ?? _q().copyFrom(
-            Quaternion.FromRotationMatrix(eyeMat.getRotationMatrix())
-        );
+
+        const cachedLocal = cache?.eyeLocalQ.get(boneName);
+        const curEyeQ = cachedLocal
+            ? _q().copyFrom(parentWorldQ).multiplyInPlace(cachedLocal)
+            : _q().copyFrom(Quaternion.FromRotationMatrix(eyeMat.getRotationMatrix()));
 
         const clampedTargetQ = _clampGazeTargetInParentFrame(
             curEyeQ,
@@ -125,13 +127,16 @@ export function _applyEyeGazeWasm(
         const newEyeQ = _q().copyFrom(Quaternion.Slerp(curEyeQ, clampedTargetQ, alpha));
         const finalEyeQ = _clampGazeTargetInParentFrame(newEyeQ, newEyeQ, parentWorldQ, getEyeGazeMaxYaw(), getEyeGazeMaxPitch());
 
+        const invParentQ = _q().copyFrom(parentWorldQ).invert();
+        const localQ = _q().copyFrom(invParentQ).multiplyInPlace(finalEyeQ);
+
         if (cache) {
-            let cached = cache.eyeWorldQ.get(boneName);
+            let cached = cache.eyeLocalQ.get(boneName);
             if (!cached) {
                 cached = new Quaternion();
-                cache.eyeWorldQ.set(boneName, cached);
+                cache.eyeLocalQ.set(boneName, cached);
             }
-            cached.copyFrom(finalEyeQ);
+            cached.copyFrom(localQ);
         }
 
         const newEyeMat = _m().copyFrom(Matrix.Compose(Vector3.One(), finalEyeQ, eyePos));
