@@ -870,7 +870,7 @@ function _syncTextureGroundTexture(mat: GroundMat, state: EnvState, scene: Scene
     } else {
         dt.uScale = dt.vScale = baseScale;
     }
-    _syncGroundTextureOffset(mat, state);
+    _syncAllTextureOffsets(mat, state);
 
     _ensureTextureGroundImage(url, (img) => {
         const cur = _getAlbedoTex(mat) as DynamicTexture | null;
@@ -916,11 +916,7 @@ function applyGroundEdgeFade(mat: GroundMat, fade: number, scene: Scene): void {
     mat.opacityTexture = getGroundEdgeFadeTexture(fade, scene);
 }
 
-function _syncGroundTextureOffset(mat: GroundMat, state: EnvState): void {
-    const tex = _getAlbedoTex(mat);
-    if (!tex) {
-        return;
-    }
+function _getScrollUV(state: EnvState): { u: number; v: number } {
     const angle = (state.groundTextureRotation * Math.PI) / 180;
     let u: number;
     let v: number;
@@ -935,14 +931,34 @@ function _syncGroundTextureOffset(mat: GroundMat, state: EnvState): void {
     }
     u = u - Math.floor(u);
     v = v - Math.floor(v);
-    if (u < 0) {
-        u += 1;
+    if (u < 0) { u += 1; }
+    if (v < 0) { v += 1; }
+    return { u, v };
+}
+
+function _syncGroundTextureOffset(mat: GroundMat, state: EnvState): void {
+    const tex = _getAlbedoTex(mat);
+    if (!tex) {
+        return;
     }
-    if (v < 0) {
-        v += 1;
-    }
+    const { u, v } = _getScrollUV(state);
     tex.uOffset = u;
     tex.vOffset = v;
+}
+
+function _syncAllTextureOffsets(mat: GroundMat, state: EnvState): void {
+    const { u, v } = _getScrollUV(state);
+    const apply = (tex: BaseTexture | null) => {
+        if (tex instanceof Texture) {
+            tex.uOffset = u;
+            tex.vOffset = v;
+        }
+    };
+    apply(_getAlbedoTex(mat));
+    if (mat instanceof PBRMaterial) {
+        apply(mat.bumpTexture);
+        apply(mat.metallicTexture);
+    }
 }
 
 function _updateGroundTexture(mat: GroundMat, state: EnvState): void {
@@ -1033,7 +1049,7 @@ export function applyGround(state: EnvState): void {
                 // [fix] 纹理密度与 mesh 尺寸成正比，避免拉伸模糊
                 albedoTex.uScale = albedoTex.vScale =
                     _groundActualSize / 10 / Math.max(0.1, state.groundTextureScale);
-                _syncGroundTextureOffset(mat, state);
+                _syncAllTextureOffsets(mat, state);
             }
             _syncGroundNormalTexture(mat, state);
             // [doc:adr-160] 地面涟漪法线纹理叠加
@@ -1196,7 +1212,7 @@ export function tickGround(dt: number): void {
                 if (_groundScrollV < 0) {
                     _groundScrollV += 1;
                 }
-                _syncGroundTextureOffset(mat as GroundMat, envState);
+                _syncAllTextureOffsets(mat as GroundMat, envState);
             }
         }
     }
