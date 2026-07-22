@@ -103,16 +103,7 @@ export function buildPresetScenesLevel(): PopupLevel {
         dir: '',
         items: [],
         renderCustom: (container) => {
-            // 卡片 1：导入 / 导出场景包
-            cardContainer(container, (c) => {
-                slideRow(c, 'lucide:file-up', t('scene.exportSceneBundle'), false, () => {
-                    void exportSceneBundle();
-                });
-                slideRow(c, 'lucide:file-down', t('scene.importSceneBundle'), false, () => {
-                    void importSceneBundle();
-                });
-            });
-            // 卡片 2：预设场景列表（异步加载）
+            // 卡片 1：预设场景列表（异步加载）
             cardContainer(container, (c) => {
                 const loadingPlaceholder = document.createElement('div');
                 loadingPlaceholder.textContent = t('common.loading');
@@ -126,7 +117,7 @@ export function buildPresetScenesLevel(): PopupLevel {
                     })
                 );
             });
-            // 卡片 3：撤销 / 保存场景
+            // 卡片 2：撤销 / 保存场景
             cardContainer(container, (c) => {
                 slideRow(c, 'lucide:undo-2', t('scene.undo'), false, () => {
                     const snap = popUndoSnapshot();
@@ -156,6 +147,15 @@ export function buildPresetScenesLevel(): PopupLevel {
                         setStatus(t('scene.statusSaveFailed'), false);
                         showErrorToast(t('scene.toastSaveSceneFailed'), msg);
                     }
+                });
+            });
+            // 卡片 3：导入 / 导出场景包（低频操作置底）
+            cardContainer(container, (c) => {
+                slideRow(c, 'lucide:file-up', t('scene.exportSceneBundle'), false, () => {
+                    void exportSceneBundle();
+                });
+                slideRow(c, 'lucide:file-down', t('scene.importSceneBundle'), false, () => {
+                    void importSceneBundle();
                 });
             });
         },

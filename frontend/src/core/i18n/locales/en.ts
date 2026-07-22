@@ -450,6 +450,8 @@ export const en: Record<string, string> = {
     'motion.perceptionTierMedium': 'Medium',
     'motion.perceptionTierLow': 'Low',
     'motion.perceptionDegraded': 'Some perception items degraded',
+    'motion.pinModel': 'Pin Perception to Model',
+    'motion.unpinModel': 'Unpin',
     // ── Perception adjustable params (doc:adr-116) ──
     'perception.headFollowParams': 'Head Follow Settings',
     'perception.headYawRange': 'Yaw Range',

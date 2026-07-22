@@ -7,7 +7,7 @@
 
 import { envState, PopupLevel, PopupRow } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
-import { slideRow, addClearRow } from '../core/ui-helpers';
+import { slideRow, addClearRow, addPresetChip } from '../core/ui-helpers';
 import { setEnvState } from '../scene/scene';
 import { getLightState, setLightState as setLightingState } from '../scene/render/lighting';
 import { closeAllOverlays } from '../core/utils';
@@ -186,20 +186,27 @@ function buildParticleSchema(): MenuNode[] {
     return [
         {
             id: 'env:particle:type',
-            kind: 'modeSlider',
-            label: 'env.particleType',
-            icon: 'lucide:sparkles',
-            control: {
-                bind: 'env.particleType',
-                options: [
-                    { value: 'none', label: 'env.none' },
-                    { value: 'sakura', label: 'env.sakura' },
-                    { value: 'rain', label: 'env.rain' },
-                    { value: 'snow', label: 'env.snow' },
-                    { value: 'fireworks', label: 'env.fireworks' },
-                    { value: 'fireflies', label: 'env.fireflies' },
-                    { value: 'leaves', label: 'env.leaves' },
-                ],
+            kind: 'custom',
+            renderCustom: (c) => {
+                const group = document.createElement('div');
+                group.className = 'preset-group';
+                const types = [
+                    { value: 'none', label: 'env.none', emoji: '🚫' },
+                    { value: 'sakura', label: 'env.sakura', emoji: '🌸' },
+                    { value: 'rain', label: 'env.rain', emoji: '🌧️' },
+                    { value: 'snow', label: 'env.snow', emoji: '❄️' },
+                    { value: 'fireworks', label: 'env.fireworks', emoji: '🎆' },
+                    { value: 'fireflies', label: 'env.fireflies', emoji: '✨' },
+                    { value: 'leaves', label: 'env.leaves', emoji: '🍂' },
+                ];
+                const current = envState.particleType;
+                for (const pt of types) {
+                    addPresetChip(group, `${pt.emoji} ${t(pt.label)}`, current === pt.value, () => {
+                        setEnvState({ particleType: pt.value as typeof envState.particleType });
+                        getEnvMenu()?.reRender();
+                    });
+                }
+                c.appendChild(group);
             },
         },
         {

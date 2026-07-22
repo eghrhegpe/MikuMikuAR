@@ -25,7 +25,7 @@ import {
     restoreUndoSnapshot,
 } from '../scene/scene';
 import { SelectDir, SaveScreenshot, SaveScenePreset } from '../core/wails-bindings';
-import { waitForFrame, tryCatchStatus, showErrorToast, closeAllOverlays } from '../core/utils';
+import { waitForFrame, tryCatchStatus, showErrorToast, closeAllOverlays, cardContainer } from '../core/utils';
 import { addDisposableListener } from '../core/dom';
 import { focusModel } from '../scene/scene';
 import { t } from '../core/i18n/t';
@@ -74,7 +74,7 @@ import { setSceneMenu, setRefreshSceneRoot, reRenderSceneMenu } from './scene-me
 import { setMirrorSize, getMirrorInfo, toggleMirror, isMirrorActive } from '../scene/env/env';
 import { isDragModeEnabled, setDragModeEnabled } from '../scene/transform/transform-mode';
 import { attachGizmoForKind, detachGizmo } from '../scene/transform/transform-adapter';
-import { addModeSlider, addSliderRow, addToggleRow, slideRow } from '../core/ui-helpers';
+import { addModeSlider, addSliderRow, addToggleRow } from '../core/ui-helpers';
 import { SCENE_EVENTS } from '../core/ui-constants';
 
 // ======== Barrel Re-Exports ========
@@ -124,53 +124,34 @@ function buildMirrorLevel(): PopupLevel {
         items: [],
         renderCustom: (container) => {
             const info = getMirrorInfo();
-            const wrapper = document.createElement('div');
-            wrapper.style.padding = '8px';
-
-            addSliderRow(
-                wrapper,
-                t('scene.mirrorWidth'),
-                info.width,
-                0,
-                40,
-                1,
-                (v) => {
-                    const cur = getMirrorInfo();
-                    setMirrorSize(v, cur.height);
-                },
-                'lucide:move-horizontal'
-            );
-            addSliderRow(
-                wrapper,
-                t('scene.mirrorHeight'),
-                info.height,
-                0,
-                30,
-                1,
-                (v) => {
-                    const cur = getMirrorInfo();
-                    setMirrorSize(cur.width, v);
-                },
-                'lucide:move-vertical'
-            );
-            const p = info.position;
-            const infoText = info.active
-                ? `mesh: ${info.meshCount} | pos: (${p[0].toFixed(1)}, ${p[1].toFixed(1)}, ${p[2].toFixed(1)}) | ${info.width}×${info.height}m @ ${info.resolution}px`
-                : t('scene.mirrorHint');
-            slideRow(
-                wrapper,
-                'lucide:info',
-                infoText,
-                false,
-                () => {},
-                undefined,
-                undefined,
-                false,
-                undefined,
-                { testId: 'menu.scene.mirrorInfo' }
-            );
-
-            container.appendChild(wrapper);
+            cardContainer(container, (card) => {
+                addSliderRow(
+                    card,
+                    t('scene.mirrorWidth'),
+                    info.width,
+                    0,
+                    40,
+                    1,
+                    (v) => {
+                        const cur = getMirrorInfo();
+                        setMirrorSize(v, cur.height);
+                    },
+                    'lucide:move-horizontal'
+                );
+                addSliderRow(
+                    card,
+                    t('scene.mirrorHeight'),
+                    info.height,
+                    0,
+                    30,
+                    1,
+                    (v) => {
+                        const cur = getMirrorInfo();
+                        setMirrorSize(cur.width, v);
+                    },
+                    'lucide:move-vertical'
+                );
+            });
         },
     };
 }

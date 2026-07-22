@@ -605,6 +605,8 @@ export const zhTW: Record<string, string> = {
     'motion.perceptionTierMedium': '均衡',
     'motion.perceptionTierLow': '節能',
     'motion.perceptionDegraded': '部分感知項已降級',
+    'motion.pinModel': '固定感知到目前模型',
+    'motion.unpinModel': '取消固定',
     // ── 感知層可調參數（doc:adr-116） ──
     'perception.headFollowParams': '頭部跟隨設定',
     'perception.headYawRange': '水平範圍',

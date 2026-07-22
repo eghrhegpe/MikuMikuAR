@@ -611,6 +611,8 @@ export const ko: Record<string, string> = {
     'motion.perceptionTierMedium': '중간',
     'motion.perceptionTierLow': '낮음',
     'motion.perceptionDegraded': '일부 감지 항목이 저하되었습니다',
+    'motion.pinModel': '현재 모델에 감지 고정',
+    'motion.unpinModel': '고정 해제',
     // ── 지각 레이어 조정 가능 파라미터 (doc:adr-116) ──
     'perception.headFollowParams': '머리 따라가기 설정',
     'perception.headYawRange': '요 범위',

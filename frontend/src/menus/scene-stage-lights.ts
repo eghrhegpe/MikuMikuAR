@@ -122,7 +122,8 @@ function buildStageLightSchema(): MenuNode[] {
                             }
                         );
                         // 禁用态半透明（active 类管选中态，opacity 管启用态）
-                        btn.style.opacity = light.enabled ? '1' : '0.5';
+                        // 选中 chip 保持全不透明，避免 accent 选中色被冲淡
+                        btn.style.opacity = light.enabled || light.id === activeId ? '1' : '0.5';
                     }
                     addPresetChip(
                         chipGroup,

@@ -611,6 +611,8 @@ export const ja: Record<string, string> = {
     'motion.perceptionTierMedium': '中品質',
     'motion.perceptionTierLow': '低品質',
     'motion.perceptionDegraded': '一部の感知項目が低下しました',
+    'motion.pinModel': '現在のモデルに感知を固定',
+    'motion.unpinModel': '固定解除',
     // ── 感知層調整可能パラメータ（doc:adr-116） ──
     'perception.headFollowParams': '頭部追随設定',
     'perception.headYawRange': 'ヨー範囲',
