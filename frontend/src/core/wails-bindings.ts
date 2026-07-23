@@ -10,7 +10,7 @@
 // - ❌ 禁止在此新增绕过 resolveBackend 的直连导出（Android 冷启动竞态，见 ADR-176）。
 
 export * from '@bindings/mikumikuar/internal/app/app';
-export { Events } from '@wailsio/runtime';
+export { events as Events } from './runtime-bridge';
 export type {
     Config,
     EnvPresetEntry,

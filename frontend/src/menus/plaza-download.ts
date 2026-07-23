@@ -1,7 +1,7 @@
 // plaza-download.ts — 模型广场：下载监听 + 事件 + 快捷键
 // 从 plaza.ts 拆分
 
-import { Events } from '@wailsio/runtime';
+import { events } from '../core/runtime-bridge';
 import { setStatus } from '../core/status-bar';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
@@ -149,13 +149,13 @@ export function installEventListeners(): void {
         return;
     }
     setEventListenersInstalled(true);
-    Events.On('plaza:urlChanged', (data) => {
+    events.on('plaza:urlChanged', (data) => {
         const d = data as unknown as { url: string; title: string };
         if (remoteURLDisplay) {
             remoteURLDisplay.textContent = d.title || d.url || t('plaza.loading');
         }
     });
-    Events.On('plaza:downloadProgress', (data) => {
+    events.on('plaza:downloadProgress', (data) => {
         const d = data as unknown as {
             fileName: string;
             read: number;
@@ -169,7 +169,7 @@ export function installEventListeners(): void {
                 t('plaza.downloading', { name: d.fileName }) + `: ${percent}`;
         }
     });
-    Events.On('plaza:downloadComplete', (data) => {
+    events.on('plaza:downloadComplete', (data) => {
         const d = data as unknown as { fileName: string; size: number };
         if (remoteProgress) {
             remoteProgress.textContent = t('plaza.downloaded', {
