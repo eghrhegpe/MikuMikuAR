@@ -155,6 +155,9 @@ function _showDialogInner(opts: DialogOptions): Promise<string | boolean | null>
             overlay.classList.remove('mmd-dialog-visible');
             // 隐藏后恢复 pointer-events 为 CSS 默认值
             overlay.style.pointerEvents = '';
+            // [bugfix:dialog-escape] 显式移除监听器（替代 { once: true }）
+            document.removeEventListener('keydown', onKeyDown);
+            overlay.removeEventListener('click', onBackdropClick);
             resolve(result);
         };
 
@@ -183,18 +186,13 @@ function _showDialogInner(opts: DialogOptions): Promise<string | boolean | null>
 
         // Remove old listeners by cloning
         _replaceButtonListeners(confirmBtn, cancelBtn, onConfirm, onCancel);
-        document.addEventListener('keydown', onKeyDown, { once: true });
-
-        // Click on backdrop closes
-        overlay.addEventListener(
-            'click',
-            (e) => {
-                if (e.target === overlay) {
-                    onCancel();
-                }
-            },
-            { once: true }
-        );
+        // [bugfix:dialog-escape] 不用 { once: true }：任何按键（Tab/方向键）都会移除监听器，
+        // 导致后续 Escape 失效。改为在 cleanup 中显式移除。
+        const onBackdropClick = (e: MouseEvent) => {
+            if (e.target === overlay) onCancel();
+        };
+        document.addEventListener('keydown', onKeyDown);
+        overlay.addEventListener('click', onBackdropClick);
 
         // Show with animation
         overlay.classList.add('mmd-dialog-visible');
@@ -240,6 +238,9 @@ export function showErrorAction(title: string, message: string): void {
         _trapRestore?.();
         _trapRestore = null;
         overlay.classList.remove('mmd-dialog-visible');
+        // [bugfix:dialog-escape] 显式移除监听器（替代 { once: true }）
+        document.removeEventListener('keydown', onKey);
+        overlay.removeEventListener('click', onBackdropClick);
     };
 
     const onCopy = () => {
@@ -266,25 +267,16 @@ export function showErrorAction(title: string, message: string): void {
     };
 
     // Clone to remove old listeners
+    // [bugfix:dialog-escape] 命名监听器以便 cleanup 移除（替代 { once: true }）
+    const onKey = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') onClose();
+    };
+    const onBackdropClick = (e: MouseEvent) => {
+        if (e.target === overlay) onClose();
+    };
     _replaceButtonListeners(confirmBtn, cancelBtn, onCopy, onClose);
-    document.addEventListener(
-        'keydown',
-        (e: KeyboardEvent) => {
-            if (e.key === 'Escape') {
-                onClose();
-            }
-        },
-        { once: true }
-    );
-    overlay.addEventListener(
-        'click',
-        (e) => {
-            if (e.target === overlay) {
-                onClose();
-            }
-        },
-        { once: true }
-    );
+    document.addEventListener('keydown', onKey);
+    overlay.addEventListener('click', onBackdropClick);
 
     overlay.classList.add('mmd-dialog-visible');
     dialog.style.display = '';
@@ -418,6 +410,9 @@ export function showPrompt2(opts: Prompt2Options): Promise<[string, string] | nu
             _trapRestore2?.();
             _trapRestore2 = null;
             overlay.classList.remove('mmd-dialog-visible');
+            // [bugfix:dialog-escape] 显式移除监听器（替代 { once: true }）
+            document.removeEventListener('keydown', onKeyDown);
+            overlay.removeEventListener('click', onBackdropClick);
             resolve(result);
         };
 
@@ -436,16 +431,12 @@ export function showPrompt2(opts: Prompt2Options): Promise<[string, string] | nu
         };
 
         _replaceButtonListeners(confirmBtn, cancelBtn, onConfirm, onCancel);
-        document.addEventListener('keydown', onKeyDown, { once: true });
-        overlay.addEventListener(
-            'click',
-            (e) => {
-                if (e.target === overlay) {
-                    onCancel();
-                }
-            },
-            { once: true }
-        );
+        // [bugfix:dialog-escape] 不用 { once: true }，改为 cleanup 显式移除
+        const onBackdropClick = (e: MouseEvent) => {
+            if (e.target === overlay) onCancel();
+        };
+        document.addEventListener('keydown', onKeyDown);
+        overlay.addEventListener('click', onBackdropClick);
 
         overlay.classList.add('mmd-dialog-visible');
         dialog.style.display = '';

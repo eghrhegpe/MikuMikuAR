@@ -70,5 +70,8 @@ export function initRuntimeBadge(): void {
     const persisted = loadPersistedRuntimeMode();
     if (persisted) {
         renderRuntimeBadge(persisted);
+        return;
     }
+    // [bugfix:cap-badge] 首次访问（无持久化）时渲染当前检测结果，避免徽标空白
+    renderRuntimeBadge(detectRuntimeMode());
 }
