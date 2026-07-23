@@ -5,11 +5,16 @@
  *  - 自动扫描 frontend/src 所有图标引用，不再手维护列表，杜绝「新增图标漏网 → 运行时回退到 Iconify 公共 API 拉取 + 缓存」的病灶。
  *  - 生成的 icons-bundle.ts 经 addCollection 注册到 iconify 运行时，使 <iconify-icon> 全程离线、无网络缓存。
  *
- * 重新生成：   node scripts/gen-icon-bundle.mjs           # 从仓库根运行
- * 仅校验（不写文件，缺失则 exit 1）：node scripts/gen-icon-bundle.mjs --check
+ * 重新生成：   node scripts/gen-icon-bundle.mjs              # 从仓库根运行
+ * 仅校验：     node scripts/gen-icon-bundle.mjs --check      # 缺失则 exit 1
+ * 离线校验：   node scripts/gen-icon-bundle.mjs --check --offline
+ * 离线重写：   node scripts/gen-icon-bundle.mjs --offline     # 用已有 bundle 重写
  *
- * 注意：本脚本在「生成期」需要访问 api.iconify.design 拉取图标 body（一次性，可离线缓存到本地文件）。
- *       生成产物 icons-bundle.ts 提交进仓库后即「固化进项目」，运行期完全不依赖网络。
+ * 注意：本脚本在生成期需访问 api.iconify.design 拉取图标 body（一次性）。
+ *       - 超时 15 秒，自动重试 2 次（指数退避）
+ *       - 网络失败时自动降级到已有 bundle（如存在）
+ *       - 写入采用原子重命名（先 .tmp 再 rename），避免中断损坏
+ *       生成产物 icons-bundle.ts 提交进仓库后即固化，运行期零网络。
  */
 
 import { fileURLToPath } from 'node:url';
