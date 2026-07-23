@@ -47,6 +47,8 @@ export class SlideMenu {
     /** 触屏滑动手势起始坐标 */
     private _swipeStartX = 0;
     private _swipeStartY = 0;
+    /** 本次滑动手势是否有效（仅单指有效；多指手势置 false 取消判定，避免双指误触发 pop） */
+    private _swipeActive = false;
     private _swipeTouchStartHandler: ((e: TouchEvent) => void) | null = null;
     private _swipeTouchEndHandler: ((e: TouchEvent) => void) | null = null;
     private _keydownDisp: Disposable | null = null;
@@ -151,10 +153,14 @@ export class SlideMenu {
             if (e.touches.length === 1) {
                 this._swipeStartX = e.touches[0].clientX;
                 this._swipeStartY = e.touches[0].clientY;
+                this._swipeActive = true;
+            } else {
+                // 多指（双指缩放/平移）→ 取消本次滑动判定，避免误触发 pop()
+                this._swipeActive = false;
             }
         };
         this._swipeTouchEndHandler = (e: TouchEvent) => {
-            if (this.transitioning || this.levels.length <= 1) {
+            if (!this._swipeActive || this.transitioning || this.levels.length <= 1) {
                 return;
             }
             const ct = e.changedTouches[0];
