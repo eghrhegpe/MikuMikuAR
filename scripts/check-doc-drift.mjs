@@ -26,6 +26,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { getExportedSymbols } from './_lib/source-graph.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -82,22 +83,6 @@ function walkRepo(dir, out = []) {
     else if (e.isFile()) out.push(e.name);
   }
   return out;
-}
-
-function getExportedSymbols(filePath) {
-  const text = fs.readFileSync(filePath, 'utf8');
-  const syms = new Set();
-  const re1 = /^export\s+(?:async\s+)?(?:function|const|let|class|interface|type|enum)\s+([A-Za-z0-9_]+)/gm;
-  let m;
-  while ((m = re1.exec(text))) syms.add(m[1]);
-  const re2 = /^export\s*\{([^}]+)\}/gm;
-  while ((m = re2.exec(text))) {
-    m[1].split(',').forEach((s) => {
-      const name = s.trim().split(/\s+as\s+/).pop().trim();
-      if (name && /^[A-Za-z0-9_]+$/.test(name)) syms.add(name);
-    });
-  }
-  return [...syms];
 }
 
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
