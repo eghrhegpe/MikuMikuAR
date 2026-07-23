@@ -57,7 +57,8 @@ function _cap(): BackendCapabilities {
         proxyServer: false,
         fileServer: false,
         systemDirOpen: false,
-        storageMode: false,
+        // [doc:adr-177] 有 FSA API 时浏览器可设置根目录（showDirectoryPicker + 递归扫描写 IndexedDB）
+        storageMode: fsAccess,
         screenshotSave: true,
         cacheManage: true,
         configPersist: true,
@@ -186,6 +187,41 @@ async function _pickFile(accept?: string): Promise<FileSystemFileHandle | null> 
     if (typeof picker !== 'function') return null;
     const handles = await picker(accept ? { types: [{ accept: { 'application/octet-stream': [accept] } }] } : undefined);
     return handles[0] ?? null;
+}
+
+// [doc:adr-177] FSA 目录扫描：递归遍历 directory handle，将 .pmx/.zip 文件写入 IndexedDB。
+// 键规约与 web-loader/library.ts saveModel 一致：file:<stem> + entry:<stem>
+let _fsaRootHandle: FileSystemDirectoryHandle | null = null;
+
+// [doc:adr-177] FSA 目录句柄的异步迭代器接口（TS DOM lib 未含 values()，手动断言）
+interface FsaDirHandle extends FileSystemDirectoryHandle {
+    values(): AsyncIterableIterator<FileSystemHandle>;
+}
+
+async function _scanDirIntoIDB(dirHandle: FileSystemDirectoryHandle): Promise<void> {
+    const dir = dirHandle as FsaDirHandle;
+    for await (const entry of dir.values()) {
+        if (entry.kind === 'file') {
+            const name = entry.name.toLowerCase();
+            if (name.endsWith('.pmx') || name.endsWith('.zip')) {
+                const fileHandle = entry as FileSystemFileHandle;
+                const file = await fileHandle.getFile();
+                const bytes = new Uint8Array(await file.arrayBuffer());
+                const stem = entry.name.replace(/\.(pmx|zip)$/i, '');
+                await idbSet('models', `file:${stem}`, bytes);
+                await idbSet('models', `entry:${stem}`, {
+                    name: stem,
+                    fileName: entry.name,
+                    kind: name.endsWith('.pmx') ? 'pmx' : 'zip',
+                    size: bytes.byteLength,
+                    savedAt: Date.now(),
+                });
+            }
+        } else if (entry.kind === 'directory') {
+            const subHandle = await dir.getDirectoryHandle(entry.name);
+            await _scanDirIntoIDB(subHandle);
+        }
+    }
 }
 
 export const browserAdapter: BackendService = {
@@ -501,8 +537,11 @@ export const browserAdapter: BackendService = {
     async SetPerformanceMode(v: boolean): Promise<void> {
         await idbSet('config', 'performanceMode', v);
     },
+    // [doc:adr-177] 写入 Config.resource_root 字段（对齐主应用 initLibrary 读取路径 cfg.resource_root）
+    // 原实现写 config.resourceRoot 独立键，GetConfig 读不到，导致浏览器侧设置根目录后无法持久化恢复
     async SetResourceRoot(p: string): Promise<void> {
-        await idbSet('config', 'resourceRoot', p);
+        const cfg = (await idbGet<Config>('config', 'config')) ?? _defaultConfig();
+        await idbSet('config', 'config', { ...cfg, resource_root: p });
     },
     async SetDisplayNamePriority(v: string): Promise<void> {
         await idbSet('config', 'displayNamePriority', v);
@@ -615,10 +654,14 @@ export const browserAdapter: BackendService = {
     },
 
     // ============ ② File System Access API 对话框替代 ============
+    // [doc:adr-177] SelectDir：浏览器端根目录设置入口。
+    // 调用 showDirectoryPicker 获取句柄 → 保存到 _fsaRootHandle → 递归扫描写 IndexedDB。
+    // 返回 'web://selected-dir' 作为虚拟根路径，供 SetResourceRoot 持久化。
     async SelectDir(): Promise<string> {
         const picker = (window as { showDirectoryPicker?: () => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker;
         if (typeof picker !== 'function') throw new NotSupportedError('SelectDir');
-        await picker();
+        _fsaRootHandle = await picker();
+        await _scanDirIntoIDB(_fsaRootHandle);
         return 'web://selected-dir';
     },
     async SelectImportFile(): Promise<string> {
