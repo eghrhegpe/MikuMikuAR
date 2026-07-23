@@ -14,6 +14,8 @@ export interface LightingPreset {
     label: string;
     icon: string;
     lights: LightingPresetLight[];
+    /** [doc:adr-168] 预设切换时联动个人灯参数（缺省 = 不改动） */
+    personalLight?: Record<string, unknown>;
 }
 
 export const LIGHTING_PRESETS: Record<string, LightingPreset> = {
@@ -21,6 +23,7 @@ export const LIGHTING_PRESETS: Record<string, LightingPreset> = {
         name: 'character-portrait',
         label: '角色肖像',
         icon: 'lucide:user',
+        personalLight: { intensity: 1.0, color: [1, 0.95, 0.9], angle: 0.7 },
         lights: [
             // 主光：45° 侧上方，暖色
             {
@@ -67,6 +70,7 @@ export const LIGHTING_PRESETS: Record<string, LightingPreset> = {
         name: 'prop-product',
         label: '道具产品',
         icon: 'lucide:box',
+        personalLight: { intensity: 0.8, color: [1, 1, 1], angle: 1.0 },
         lights: [
             // 顶部柔光
             {
@@ -100,6 +104,7 @@ export const LIGHTING_PRESETS: Record<string, LightingPreset> = {
         name: 'stage-drama',
         label: '舞台戏剧',
         icon: 'lucide:theater',
+        personalLight: { intensity: 1.5, color: [1, 0.9, 0.7], angle: 0.4 },
         lights: [
             // 单盏强聚光，高对比
             {
@@ -123,6 +128,7 @@ export const LIGHTING_PRESETS: Record<string, LightingPreset> = {
         name: 'dance-performance',
         label: '舞蹈表演',
         icon: 'lucide:music',
+        personalLight: { intensity: 1.2, color: [0.9, 0.9, 1], angle: 0.6 },
         lights: [
             // 三色聚光，120° 间隔
             {

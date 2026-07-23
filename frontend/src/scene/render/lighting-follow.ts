@@ -80,8 +80,8 @@ export const DEFAULT_PERSONAL_LIGHT: PersonalLightSettings = {
 
 /** 取个人灯跟随基准点：用户指定骨骼 → 腰骨候选 → 根节点（兜底） */
 function _getLightBasePos(model: ModelInstance, waistName: string | null): Vector3 {
-    if (model.mmdModel) {
-        const p = getBoneWorldPosition(model.mmdModel, waistName ?? '');
+    if (waistName && model.mmdModel) {
+        const p = getBoneWorldPosition(model.mmdModel, waistName);
         if (p) {
             return p;
         }
@@ -332,6 +332,33 @@ export function disposeAllPersonalLights(): void {
     }
 }
 
+// ======== Serialization (ADR-168) ========
+
+export interface SerializedPersonalLight {
+    modelUuid: string;
+    settings: PersonalLightSettings;
+}
+
+/** 导出所有个人灯状态（仅非默认值差异落盘由调用方决定） */
+export function getAllPersonalLights(): Array<{ modelId: string; settings: PersonalLightSettings }> {
+    const result: Array<{ modelId: string; settings: PersonalLightSettings }> = [];
+    for (const [modelId, entry] of _entries) {
+        result.push({ modelId, settings: { ...entry.settings } });
+    }
+    return result;
+}
+
+/** 场景反序列化后，按 modelId 恢复个人灯设置（attach 已由 onModelLoaded 触发，此处仅覆盖参数） */
+export function restorePersonalLights(
+    entries: Array<{ modelId: string; settings: Partial<PersonalLightSettings> }>
+): void {
+    for (const { modelId, settings } of entries) {
+        if (_entries.has(modelId)) {
+            setPersonalLightState(modelId, settings);
+        }
+    }
+}
+
 // ======== Transform Adapter (Gizmo 支持) ========
 
 registerTransformAdapter({
@@ -354,3 +381,64 @@ registerTransformAdapter({
     },
     capabilities: [],
 });
+
+// ======== Stage Light Follow Tick (ADR-168) ========
+
+const _stageTmpTarget = Vector3.Zero();
+const _stageTmpCurrent = Vector3.Zero();
+
+/** 舞台灯追光 tick：更新所有绑定了 followTarget 的舞台灯 */
+export function tickStageLightFollow(): void {
+    for (const [, entry] of lightingState.stageLights) {
+        const ft = entry.state.followTarget;
+        if (!ft) {
+            continue;
+        }
+
+        const model = modelRegistry.get(ft.modelId);
+        if (!model) {
+            continue;
+        }
+
+        // 解析目标位置
+        const boneName = ft.boneName ?? 
+            (model.mmdModel
+                ? (WAIST_CANDIDATES.find((n) =>
+                      model.mmdModel!.runtimeBones?.some((b) => b.name === n)
+                  ) ?? null)
+                : null);
+        
+        const basePos = _getLightBasePos(model, boneName);
+        _stageTmpTarget.set(
+            basePos.x + ft.offset[0],
+            basePos.y + ft.offset[1],
+            basePos.z + ft.offset[2]
+        );
+
+        // 平滑插值
+        _stageTmpCurrent.set(entry.state.targetX, entry.state.targetY, entry.state.targetZ);
+        Vector3.LerpToRef(_stageTmpCurrent, _stageTmpTarget, ft.smoothing, _stageTmpCurrent);
+
+        // 更新 target
+        entry.state.targetX = _stageTmpCurrent.x;
+        entry.state.targetY = _stageTmpCurrent.y;
+        entry.state.targetZ = _stageTmpCurrent.z;
+        
+        // 应用方向更新（SpotLight / DirectionalLight 有 setDirectionToTarget；PointLight 无方向）
+        if ('setDirectionToTarget' in entry.light) {
+            (entry.light as SpotLight).setDirectionToTarget(_stageTmpCurrent);
+        }
+
+        // moveWithTarget: 灯位置也跟随
+        if (ft.moveWithTarget) {
+            const currentPos = entry.light.position;
+            const delta = _stageTmpTarget.subtract(_stageTmpCurrent);
+            currentPos.addInPlace(delta);
+            
+            entry.state.posX = currentPos.x;
+            entry.state.posY = currentPos.y;
+            entry.state.posZ = currentPos.z;
+        }
+    }
+}
+

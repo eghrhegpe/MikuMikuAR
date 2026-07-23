@@ -124,6 +124,11 @@ import {
     type PerceptionState,
 } from './motion/perception';
 import { getRetargetPlayState, restoreRetargetAnimation } from './motion/animation-retargeter';
+import {
+    getPersonalLightState,
+    restorePersonalLights,
+    DEFAULT_PERSONAL_LIGHT,
+} from './render/lighting-follow';
 
 // ======== Utilities ========
 
@@ -236,6 +241,8 @@ export interface SceneFile {
         materialCategories?: Record<string, MaterialCategoryParams>;
         materialOverrides?: Record<number, MaterialCategoryParams>;
         materialEnabled?: Record<number, boolean>;
+        /** [doc:adr-168] 个人灯设置（仅 actor 类型模型；缺省 = 默认值） */
+        personalLight?: Partial<import('./render/lighting-follow').PersonalLightSettings>;
     }>;
     camera: CameraState;
     lights: LightState;
@@ -460,6 +467,24 @@ export function serializeScene(): SceneFile {
                     materialOverrides: ms.overrides,
                     materialEnabled: ms.enabled,
                 };
+            })(),
+            // [doc:adr-168] 个人灯设置（仅 actor 且有差异时落盘）
+            ...(() => {
+                if (inst.kind !== 'actor') {
+                    return {};
+                }
+                const pls = getPersonalLightState(inst.id);
+                if (!pls) {
+                    return {};
+                }
+                // 只存与默认值不同的字段，减少噪声
+                const diff: Record<string, unknown> = {};
+                for (const key of Object.keys(pls) as Array<keyof typeof pls>) {
+                    if (JSON.stringify(pls[key]) !== JSON.stringify(DEFAULT_PERSONAL_LIGHT[key])) {
+                        diff[key] = pls[key];
+                    }
+                }
+                return Object.keys(diff).length > 0 ? { personalLight: diff } : {};
             })(),
         };
     });
@@ -875,6 +900,14 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                 });
             } catch (err) {
                 logWarn('scene-serialize', `场景恢复: 模型 ${m.name} 材质状态恢复失败:`, err);
+            }
+        }
+        // [doc:adr-168] 恢复个人灯设置（attach 已由 onModelLoaded 触发，此处覆盖参数）
+        if (m.personalLight) {
+            try {
+                restorePersonalLights([{ modelId: id, settings: m.personalLight }]);
+            } catch (err) {
+                logWarn('scene-serialize', `场景恢复: 模型 ${m.name} 个人灯恢复失败:`, err);
             }
         }
     }

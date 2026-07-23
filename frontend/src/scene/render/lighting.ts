@@ -23,7 +23,7 @@ import { _createStageLight, _updateIndicator, _disposeStageLightEntry } from './
 import { _ensureShadow } from './lighting-shadow';
 import { _updateSunDisc, _disposeSunDisc } from './lighting-sun';
 import { _cancelAllLightingTweens } from './lighting-tween';
-import { tickPersonalLights, disposeAllPersonalLights } from './lighting-follow';
+import { tickPersonalLights, disposeAllPersonalLights, tickStageLightFollow } from './lighting-follow';
 
 // ======== Light State ========
 
@@ -82,6 +82,14 @@ export interface StageLightState {
     coneIntensity: number; // 0-2, default 0.5
     coneLength: number; // 1-50, default 20
     coneSoftness: number; // 0-1, default 0.5
+    // [doc:adr-168] 跟随目标（null = 静态模式，向后兼容）
+    followTarget: {
+        modelId: string;
+        boneName: string | null;
+        offset: [number, number, number];
+        smoothing: number; // 0-1, default 0.15
+        moveWithTarget: boolean; // default false
+    } | null;
 }
 
 export function _defaultStageLightState(id: string, name: string): StageLightState {
@@ -115,6 +123,8 @@ export function _defaultStageLightState(id: string, name: string): StageLightSta
         coneIntensity: 0.5,
         coneLength: 30,
         coneSoftness: 0.5,
+        // [doc:adr-168] 默认静态模式
+        followTarget: null,
     };
 }
 
@@ -176,11 +186,14 @@ export function initLighting(
         }
     });
 
-    // [doc:adr-168] 个人灯 tick：每帧更新角色专属跟随灯位置
+    // [doc:adr-168] 个人灯 tick：骨骼动画求值后再更新灯位置，避免延迟一帧
     lightingState.personalLightTickHandle = observe(
-        lightingState.scene.onBeforeRenderObservable,
+        lightingState.scene.onAfterAnimationsObservable,
         tickPersonalLights
     );
+
+    // [doc:adr-168] 舞台灯追光 tick：更新绑定了 followTarget 的舞台灯
+    observe(lightingState.scene.onAfterAnimationsObservable, tickStageLightFollow);
 }
 
 function _defaultLightState(): LightState {

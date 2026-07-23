@@ -153,6 +153,8 @@ export const zhCN: Record<string, string> = {
     'model-detail.personalLightConeIntensity': '光锥亮度',
     'model-detail.personalLightConeLength': '光锥长度',
     'model-detail.personalLightConeSoftness': '光锥柔和度',
+    'model-detail.personalLightBone': '跟随骨骼',
+    'model-detail.personalLightBoneAuto': '自动（腰部）',
     'model-detail.info': '信息',
     'model-detail.basicInfo': '基本信息',
     'model-detail.boneHierarchy': '骨骼层级',
@@ -812,6 +814,12 @@ export const zhCN: Record<string, string> = {
     'scene.softShadow': '软阴影',
     'scene.resolution': '分辨率',
     'scene.shadowBias': '阴影偏移',
+    // ADR-168: 舞台灯跟随目标
+    'scene.followTarget': '跟随目标',
+    'scene.followNone': '无（静态）',
+    'scene.followBoneAuto': '自动（腰部）',
+    'scene.followSmoothing': '平滑度',
+    'scene.followMoveWith': '灯随动',
     // ADR-152: 舞台灯光光锥
     'scene.lightCone': '光锥',
     'scene.coneIntensity': '亮度',

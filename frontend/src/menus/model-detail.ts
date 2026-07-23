@@ -1154,6 +1154,37 @@ export function buildPersonalLightLevel(id: string): PopupLevel {
             if (!pls) {
                 return;
             }
+            // [doc:adr-168] 骨骼跟随目标选择
+            const inst = modelManager.get(id);
+            if (inst?.mmdModel?.runtimeBones?.length) {
+                const boneRow = document.createElement('div');
+                boneRow.className = 'type-row';
+                boneRow.style.cssText = 'flex-direction:column;align-items:stretch;gap:4px;';
+                const lbl = document.createElement('span');
+                lbl.className = 'type-label';
+                lbl.textContent = t('model-detail.personalLightBone');
+                boneRow.appendChild(lbl);
+                const sel = document.createElement('select');
+                sel.style.cssText =
+                    'width:100%;padding:6px 8px;border-radius:6px;' +
+                    'background:var(--surface2);color:var(--text);border:1px solid var(--border);font-size:12px;';
+                const autoOpt = document.createElement('option');
+                autoOpt.value = '';
+                autoOpt.textContent = t('model-detail.personalLightBoneAuto');
+                sel.appendChild(autoOpt);
+                for (const b of inst.mmdModel.runtimeBones) {
+                    const opt = document.createElement('option');
+                    opt.value = b.name;
+                    opt.textContent = b.name;
+                    sel.appendChild(opt);
+                }
+                sel.value = pls.boneName ?? '';
+                sel.addEventListener('change', () => {
+                    setPersonalLightState(id, { boneName: sel.value || null });
+                });
+                boneRow.appendChild(sel);
+                c.appendChild(boneRow);
+            }
             addSliderRow(
                 c,
                 t('model-detail.personalLightIntensity'),

@@ -230,6 +230,8 @@ export const ja: Record<string, string> = {
     'model-detail.personalLightConeIntensity': 'コーン輝度',
     'model-detail.personalLightConeLength': 'コーン長さ',
     'model-detail.personalLightConeSoftness': 'コーン柔らかさ',
+    'model-detail.personalLightBone': '追従ボーン',
+    'model-detail.personalLightBoneAuto': '自動（腰部）',
     'model-detail.info': '情報',
     'model-detail.basicInfo': '基本情報',
     'model-detail.boneHierarchy': 'ボーン階層',
@@ -841,6 +843,12 @@ export const ja: Record<string, string> = {
     'scene.softShadow': 'ソフトシャドウ',
     'scene.resolution': '解像度',
     'scene.shadowBias': 'シャドウバイアス',
+    // ADR-168: ステージライト追従ターゲット
+    'scene.followTarget': '追従ターゲット',
+    'scene.followNone': 'なし（静的）',
+    'scene.followBoneAuto': '自動（腰部）',
+    'scene.followSmoothing': 'スムージング',
+    'scene.followMoveWith': 'ターゲットと共に移動',
     // ADR-152: ステージライトコーン
     'scene.lightCone': 'ライトコーン',
     'scene.coneIntensity': '明るさ',
