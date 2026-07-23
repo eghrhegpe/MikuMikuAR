@@ -15,7 +15,7 @@ import {
 } from '@babylonjs/core';
 import { EnvState } from '@/core/config';
 import { getScene } from './env-context';
-import { ensureEnvUpdateObserver } from './env-impl';
+import { ensureEnvUpdateObserver } from './env';
 import { registerEnvCallback } from './env-dispatcher';
 import { getEnvKeys } from '@/core/env-state-schema';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
