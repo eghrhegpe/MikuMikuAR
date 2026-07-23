@@ -230,6 +230,8 @@ export const ko: Record<string, string> = {
     'model-detail.personalLightConeIntensity': '콘 밝기',
     'model-detail.personalLightConeLength': '콘 길이',
     'model-detail.personalLightConeSoftness': '콘 부드러움',
+    'model-detail.personalLightBone': '추적 본',
+    'model-detail.personalLightBoneAuto': '자동 (허리)',
     'model-detail.info': '정보',
     'model-detail.basicInfo': '기본 정보',
     'model-detail.boneHierarchy': '뼈대 계층',
@@ -839,6 +841,12 @@ export const ko: Record<string, string> = {
     'scene.softShadow': '소프트 섀도',
     'scene.resolution': '해상도',
     'scene.shadowBias': '섀도 바이어스',
+    // ADR-168: 스테이지 라이트 추적 대상
+    'scene.followTarget': '추적 대상',
+    'scene.followNone': '없음 (정적)',
+    'scene.followBoneAuto': '자동 (허리)',
+    'scene.followSmoothing': '스무딩',
+    'scene.followMoveWith': '대상과 함께 이동',
     // ADR-152: 스테이지 라이트 콘
     'scene.lightCone': '라이트 콘',
     'scene.coneIntensity': '밝기',

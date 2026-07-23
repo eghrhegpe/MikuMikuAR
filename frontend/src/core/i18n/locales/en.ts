@@ -154,6 +154,8 @@ export const en: Record<string, string> = {
     'model-detail.personalLightConeIntensity': 'Cone Intensity',
     'model-detail.personalLightConeLength': 'Cone Length',
     'model-detail.personalLightConeSoftness': 'Cone Softness',
+    'model-detail.personalLightBone': 'Follow Bone',
+    'model-detail.personalLightBoneAuto': 'Auto (Waist)',
     'model-detail.info': 'Info',
     'model-detail.basicInfo': 'Basic Info',
     'model-detail.boneHierarchy': 'Bone Hierarchy',
@@ -816,6 +818,12 @@ export const en: Record<string, string> = {
     'scene.softShadow': 'Soft Shadow',
     'scene.resolution': 'Resolution',
     'scene.shadowBias': 'Shadow Bias',
+    // ADR-168: Stage light follow target
+    'scene.followTarget': 'Follow Target',
+    'scene.followNone': 'None (Static)',
+    'scene.followBoneAuto': 'Auto (Waist)',
+    'scene.followSmoothing': 'Smoothing',
+    'scene.followMoveWith': 'Move with Target',
     // ADR-152: Stage light cone
     'scene.lightCone': 'Light Cone',
     'scene.coneIntensity': 'Intensity',

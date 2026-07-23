@@ -228,6 +228,8 @@ export const zhTW: Record<string, string> = {
     'model-detail.personalLightConeIntensity': '光錐亮度',
     'model-detail.personalLightConeLength': '光錐長度',
     'model-detail.personalLightConeSoftness': '光錐柔和度',
+    'model-detail.personalLightBone': '跟隨骨骼',
+    'model-detail.personalLightBoneAuto': '自動（腰部）',
     'model-detail.info': '資訊',
     'model-detail.basicInfo': '基本資訊',
     'model-detail.boneHierarchy': '骨骼層級',
@@ -836,6 +838,12 @@ export const zhTW: Record<string, string> = {
     'scene.softShadow': '軟陰影',
     'scene.resolution': '解析度',
     'scene.shadowBias': '陰影偏移',
+    // ADR-168: 舞台燈跟隨目標
+    'scene.followTarget': '跟隨目標',
+    'scene.followNone': '無（靜態）',
+    'scene.followBoneAuto': '自動（腰部）',
+    'scene.followSmoothing': '平滑度',
+    'scene.followMoveWith': '燈隨動',
     // ADR-152: 舞台燈光光錐
     'scene.lightCone': '光錐',
     'scene.coneIntensity': '亮度',

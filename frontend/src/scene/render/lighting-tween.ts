@@ -6,6 +6,8 @@ import { lightingState, type LightingTween } from './lighting-state';
 import { col3FromTriple } from '@/core/color-helpers';
 import { addStageLight, removeStageLight, setStageLightState } from './lighting-stage';
 import { LIGHTING_PRESETS } from './lighting-presets';
+import { getAllPersonalLights, setPersonalLightState } from './lighting-follow';
+import type { PersonalLightSettings } from './lighting-follow';
 
 export function _cancelAllLightingTweens(): void {
     for (const [, tw] of lightingState.activeTweens) {
@@ -238,6 +240,35 @@ export function applyLightingPresetFromEnv(presetName: string | null): void {
         lightingState.skipLightAutoSave = false;
         if (lightingState.triggerAutoSave) {
             lightingState.triggerAutoSave();
+        }
+    }
+
+    // [doc:adr-168] 预设联动个人灯：平滑过渡 intensity / color / angle
+    if (preset.personalLight) {
+        const plOverride = preset.personalLight as Partial<PersonalLightSettings>;
+        const allLights = getAllPersonalLights();
+        for (const { modelId, settings } of allLights) {
+            if (plOverride.intensity !== undefined) {
+                const from = settings.intensity;
+                const to = plOverride.intensity;
+                _tweenValue(from, to, 300, (v) => {
+                    setPersonalLightState(modelId, { intensity: v });
+                });
+            }
+            if (plOverride.color !== undefined) {
+                const from = new Color3(
+                    settings.color[0],
+                    settings.color[1],
+                    settings.color[2]
+                );
+                const to = col3FromTriple(plOverride.color);
+                _tweenColor3(from, to, 300, (c) => {
+                    setPersonalLightState(modelId, { color: [c.r, c.g, c.b] });
+                });
+            }
+            if (plOverride.angle !== undefined) {
+                setPersonalLightState(modelId, { angle: plOverride.angle });
+            }
         }
     }
 }

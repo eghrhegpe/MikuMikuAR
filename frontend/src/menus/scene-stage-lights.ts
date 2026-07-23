@@ -1,7 +1,7 @@
 // [doc:architecture] Scene Stage Lights — 舞台灯光弹窗层级
 // 从 scene-render-levels.ts 拆分
 
-import { setStatus, cardContainer, envState } from '../core/config';
+import { setStatus, cardContainer, envState, modelRegistry } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { showConfirm } from '../core/dialog';
 import {
@@ -554,6 +554,167 @@ function buildStageLightSchema(): MenuNode[] {
                                     bind: _activeLightBind('shadowBias', 0.001),
                                 }
                             );
+                        },
+                    });
+                });
+            },
+        },
+        // 卡片 7.5：跟随目标（ADR-168）
+        {
+            id: 'light:follow',
+            kind: 'custom',
+            visibleWhen: () => !!state,
+            renderCustom: (c) => {
+                if (!state) {
+                    return;
+                }
+                cardContainer(c, (inner) => {
+                    addCollapsible(inner, {
+                        title: t('scene.followTarget'),
+                        icon: 'lucide:crosshair',
+                        defaultOpen: false,
+                        renderContent: (ci) => {
+                            // 模型选择下拉
+                            const modelSelect = document.createElement('select');
+                            modelSelect.style.cssText =
+                                'width:100%;padding:6px 8px;margin:4px 0;border-radius:6px;' +
+                                'background:var(--surface2);color:var(--text);border:1px solid var(--border);font-size:12px;';
+                            const noneOpt = document.createElement('option');
+                            noneOpt.value = '';
+                            noneOpt.textContent = t('scene.followNone');
+                            modelSelect.appendChild(noneOpt);
+                            
+                            const models = Array.from(modelRegistry.values());
+                            for (const m of models) {
+                                const opt = document.createElement('option');
+                                opt.value = m.id;
+                                opt.textContent = m.name;
+                                modelSelect.appendChild(opt);
+                            }
+                            modelSelect.value = state.followTarget?.modelId ?? '';
+                            ci.appendChild(modelSelect);
+
+                            // 骨骼选择下拉（仅在选中模型后显示）
+                            const boneSelect = document.createElement('select');
+                            boneSelect.style.cssText =
+                                'width:100%;padding:6px 8px;margin:4px 0;border-radius:6px;' +
+                                'background:var(--surface2);color:var(--text);border:1px solid var(--border);font-size:12px;';
+                            boneSelect.style.display = 'none';
+                            ci.appendChild(boneSelect);
+
+                            const updateBoneOptions = (modelId: string) => {
+                                boneSelect.innerHTML = '';
+                                const autoOpt = document.createElement('option');
+                                autoOpt.value = '';
+                                autoOpt.textContent = t('scene.followBoneAuto');
+                                boneSelect.appendChild(autoOpt);
+                                
+                                const model = modelRegistry.get(modelId);
+                                if (model?.mmdModel?.runtimeBones?.length) {
+                                    for (const b of model.mmdModel.runtimeBones) {
+                                        const opt = document.createElement('option');
+                                        opt.value = b.name;
+                                        opt.textContent = b.name;
+                                        boneSelect.appendChild(opt);
+                                    }
+                                }
+                                boneSelect.value = state.followTarget?.boneName ?? '';
+                                boneSelect.style.display = modelId ? '' : 'none';
+                            };
+
+                            if (state.followTarget?.modelId) {
+                                updateBoneOptions(state.followTarget.modelId);
+                            }
+
+                            modelSelect.addEventListener('change', () => {
+                                const modelId = modelSelect.value;
+                                if (!modelId) {
+                                    setStageLightState({ followTarget: null }, state.id);
+                                    boneSelect.style.display = 'none';
+                                } else {
+                                    setStageLightState(
+                                        {
+                                            followTarget: {
+                                                modelId,
+                                                boneName: null,
+                                                offset: [0, 0, 0],
+                                                smoothing: 0.15,
+                                                moveWithTarget: false,
+                                            },
+                                        },
+                                        state.id
+                                    );
+                                    updateBoneOptions(modelId);
+                                }
+                                getSceneMenu()?.updateControls();
+                            });
+
+                            boneSelect.addEventListener('change', () => {
+                                if (state.followTarget) {
+                                    setStageLightState(
+                                        {
+                                            followTarget: {
+                                                ...state.followTarget,
+                                                boneName: boneSelect.value || null,
+                                            },
+                                        },
+                                        state.id
+                                    );
+                                }
+                            });
+
+                            // 平滑度滑块
+                            addSliderRow(
+                                ci,
+                                t('scene.followSmoothing'),
+                                state.followTarget?.smoothing ?? 0.15,
+                                0.01,
+                                1,
+                                0.01,
+                                () => {},
+                                'lucide:activity',
+                                (v) => {
+                                    if (state.followTarget) {
+                                        setStageLightState(
+                                            {
+                                                followTarget: {
+                                                    ...state.followTarget,
+                                                    smoothing: v,
+                                                },
+                                            },
+                                            state.id
+                                        );
+                                    }
+                                },
+                                {
+                                    bind: () => state.followTarget?.smoothing ?? 0.15,
+                                }
+                            );
+
+                            // 灯随动开关
+                            const moveToggle = document.createElement('label');
+                            moveToggle.style.cssText = 'display:flex;align-items:center;gap:8px;margin:8px 0;';
+                            const checkbox = document.createElement('input');
+                            checkbox.type = 'checkbox';
+                            checkbox.checked = state.followTarget?.moveWithTarget ?? false;
+                            checkbox.addEventListener('change', () => {
+                                if (state.followTarget) {
+                                    setStageLightState(
+                                        {
+                                            followTarget: {
+                                                ...state.followTarget,
+                                                moveWithTarget: checkbox.checked,
+                                            },
+                                        },
+                                        state.id
+                                    );
+                                }
+                            });
+                            moveToggle.appendChild(checkbox);
+                            const label = document.createElement('span');
+                            label.textContent = t('scene.followMoveWith');
+                            moveToggle.appendChild(label);
+                            ci.appendChild(moveToggle);
                         },
                     });
                 });
