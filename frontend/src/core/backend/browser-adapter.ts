@@ -506,26 +506,29 @@ export const browserAdapter: BackendService = {
         }
         return false;
     },
+    // [doc:adr-177] 细粒度 UI setter 统一委托 SetUIState → 写入 Config.ui_state，
+    // 对齐恢复侧 restoreUIState() 的 GetConfig().ui_state 读取路径。
+    // 旧实现写独立 key（ui.accent 等），GetConfig 读不到，导致网页端设置无法持久化。
     async SetUIAccent(v: string): Promise<void> {
-        await idbSet('config', 'ui.accent', v);
+        await this.SetUIState({ accent: v } as Partial<UIState>);
     },
     async SetUIAnimations(v: boolean): Promise<void> {
-        await idbSet('config', 'ui.animations', v);
+        await this.SetUIState({ animations: v } as Partial<UIState>);
     },
     async SetUIAutoUpdate(v: boolean): Promise<void> {
-        await idbSet('config', 'ui.autoUpdate', v);
+        await this.SetUIState({ autoUpdateEnabled: v } as Partial<UIState>);
     },
     async SetUIBlurBg(v: boolean): Promise<void> {
-        await idbSet('config', 'ui.blurBg', v);
+        await this.SetUIState({ blurBg: v } as Partial<UIState>);
     },
     async SetUIFontFamily(v: string): Promise<void> {
-        await idbSet('config', 'ui.fontFamily', v);
+        await this.SetUIState({ fontFamily: v } as Partial<UIState>);
     },
     async SetUIPopupWidth(v: number): Promise<void> {
-        await idbSet('config', 'ui.popupWidth', v);
+        await this.SetUIState({ popupWidth: v } as Partial<UIState>);
     },
     async SetUIScale(v: number): Promise<void> {
-        await idbSet('config', 'ui.scale', v);
+        await this.SetUIState({ scale: v } as Partial<UIState>);
     },
     async GetDownloadAutoImport(): Promise<boolean> {
         return (await idbGet<boolean>('config', 'dl.autoImport')) ?? false;
@@ -548,17 +551,25 @@ export const browserAdapter: BackendService = {
     async GetLastBrowseDir(): Promise<string> {
         return (await idbGet<string>('config', 'lastBrowseDir')) ?? '';
     },
+    // [doc:adr-177] Config 级 setter 委托 SetConfig → 写入 'config' key 下完整对象，
+    // 对齐恢复侧 GetConfig() 读取路径。旧实现写独立 key，GetConfig 读不到。
     async SetBlenderPath(p: string): Promise<void> {
-        await idbSet('config', 'blenderPath', p);
+        await this.SetConfig({ blender_path: p } as Partial<Config>);
     },
     async SetMMDPath(p: string): Promise<void> {
-        await idbSet('config', 'mmdPath', p);
+        await this.SetConfig({ mmd_path: p } as Partial<Config>);
     },
-    async SetOverridePath(p: string): Promise<void> {
-        await idbSet('config', 'overridePath', p);
+    // [doc:adr-177] 对齐 Go 签名 SetOverridePath(category, path) 双参。
+    // 旧实现误用单参 (p)，业务侧 SetOverridePath(category, dir) 的 dir 丢失。
+    async SetOverridePath(category: string, path: string): Promise<void> {
+        const cfg = await this.GetConfig();
+        const override_paths = { ...(cfg.override_paths ?? {}), [category]: path };
+        await this.SetConfig({ override_paths } as Partial<Config>);
     },
-    async SetPerformanceMode(v: boolean): Promise<void> {
-        await idbSet('config', 'performanceMode', v);
+    // [doc:adr-177] 对齐 Go 签名 SetPerformanceMode(mode string)。
+    // 旧实现误用 (v: boolean)，performanceMode 实际是字符串（'balanced' 等）。
+    async SetPerformanceMode(v: string): Promise<void> {
+        await this.SetUIState({ performanceMode: v } as Partial<UIState>);
     },
     // [doc:adr-177] 写入 Config.resource_root 字段（对齐主应用 initLibrary 读取路径 cfg.resource_root）
     // 原实现写 config.resourceRoot 独立键，GetConfig 读不到，导致浏览器侧设置根目录后无法持久化恢复
@@ -567,7 +578,7 @@ export const browserAdapter: BackendService = {
         await idbSet('config', 'config', { ...cfg, resource_root: p });
     },
     async SetDisplayNamePriority(v: string): Promise<void> {
-        await idbSet('config', 'displayNamePriority', v);
+        await this.SetConfig({ display_name_priority: v } as Partial<Config>);
     },
     async ReadTextFile(path: string): Promise<string | null> {
         // [doc:adr-177] 经 _resolveIdbKey 映射（场景存档 JSON / outfit JSON 等）
@@ -688,8 +699,37 @@ export const browserAdapter: BackendService = {
         return 'web://selected-dir';
     },
     async SelectImportFile(): Promise<string> {
+        // [doc:adr-177] 浏览器侧真实实现：选文件后读取字节写入 IndexedDB，
+        // 返回文件名供 importFile() 按扩展名分发。
         const h = await _pickFile();
-        return h ? 'web://file' : '';
+        if (!h) return '';
+        const file = await h.getFile();
+        const lower = file.name.toLowerCase();
+        // 只处理支持的后缀，其余走 importFile 的 unsupported 分支
+        if (!lower.endsWith('.zip') && !lower.endsWith('.pmx') && !lower.endsWith('.vmd')) {
+            return file.name;
+        }
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        const stem = file.name.replace(/\.(zip|pmx|vmd)$/i, '');
+        await idbSet('models', `file:${stem}`, bytes);
+        if (lower.endsWith('.pmx') || lower.endsWith('.zip')) {
+            // 写入 entry 使模型库可见（web-loader/library.ts saveModel 等价逻辑）
+            const kind = lower.endsWith('.zip') ? 'zip' : 'pmx';
+            await idbSet('models', `entry:${stem}`, {
+                name: stem,
+                fileName: file.name,
+                kind,
+                size: bytes.byteLength,
+                savedAt: Date.now(),
+            });
+        }
+        // [fix:import-file-web] 返回文件名（含扩展名），而非 'web://file'
+        // - .pmx/.vmd: importFile() 直接 loadManager.load({ kind, path: file.name })
+        //   loadManager → loadPMXFile/loadVMDFromPath → 内部 readFileBytes → _resolveIdbKey → file:<stem>
+        // - .zip:      importFile() → ImportZip(file.name) → ExtractZip(file.name) → readFileBytes
+        //   同上路由。ExtractZip 首次调用 this.readFileBytes(file.name) 就能读到写入的 file:<stem>。
+        // - 不支持格式: importFile 的 else 分支显示 unsupported 提示
+        return file.name;
     },
     async SelectBundleSaveFile(): Promise<string> {
         const picker = (window as { showSaveFilePicker?: () => Promise<FileSystemFileHandle> }).showSaveFilePicker;
