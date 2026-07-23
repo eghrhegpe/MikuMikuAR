@@ -25,7 +25,7 @@ import { replaceDefaultMotion, getActiveMotion } from './motion-intent';
 import { loadCameraVmd } from '../camera/camera';
 import { loadAudioFile } from '@/outfit/audio';
 import { PROC_VMD_NAME_IDLE, PROC_VMD_NAME_AUTODANCE } from '@/motion-algos/procedural-motion';
-import { isAutoLoadCompanionAudioEnabled } from '@/menus/settings';
+import { isAutoLoadCompanionAudioEnabled } from '@/core/state';
 
 function getScene() {
     return import('../scene') as Promise<typeof import('../scene')>;

@@ -14,10 +14,11 @@ export { refreshLibrary } from './library';
 export {
     preloadAutoImportState,
     preloadDownloadWatchState,
-    isAutoLoadCompanionAudioEnabled,
     setAutoLoadCompanionAudio,
     generateTextColors,
 } from './settings-shared';
+// [doc:adr-dep-graph] isAutoLoadCompanionAudioEnabled 已迁移到 core/state.ts，不再 re-export
+export { isAutoLoadCompanionAudioEnabled } from '../core/state';
 export { getSettingsMenu, refreshSettingsRoot, showSettings };
 
 // ======== Sub-module imports ========

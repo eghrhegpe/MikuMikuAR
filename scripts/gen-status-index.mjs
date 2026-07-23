@@ -4,8 +4,9 @@
  * 从 ADR 文件首部自动生成状态索引表，替换 docs/status.md 中标记区域。
  *
  * 用法：
- *   node scripts/gen-status-index.mjs          # 生成并写入
- *   node scripts/gen-status-index.mjs --check  # 只检查是否已同步
+ *   node scripts/gen-status-index.mjs              # 生成并写入（升序）
+ *   node scripts/gen-status-index.mjs --reverse    # 生成并写入（倒序，最新在前）
+ *   node scripts/gen-status-index.mjs --check      # 只检查是否已同步
  *
  * 前置条件：
  *   - docs/status.md 包含 <!-- GEN:ADR_INDEX start --> 和 <!-- GEN:ADR_INDEX end --> 标记
@@ -165,8 +166,13 @@ function main() {
     process.exit(1);
   }
 
-  // 按编号升序排列
+  const isReverse = process.argv.includes('--reverse');
+
+  // 按编号排序
   entries.sort((a, b) => a.num - b.num);
+  if (isReverse) {
+    entries.reverse();
+  }
 
   console.log(`📄 扫描到 ${entries.length} 个 ADR 文件`);
 
