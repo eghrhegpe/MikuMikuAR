@@ -173,6 +173,7 @@ function _showDialogInner(opts: DialogOptions): Promise<string | boolean | null>
             _trapRestore?.();
             _trapRestore = null;
             unfreezeBackground();
+            overlay.setAttribute('inert', '');
             overlay.classList.remove('mmd-dialog-visible');
             // 隐藏后恢复 pointer-events 为 CSS 默认值
             overlay.style.pointerEvents = '';
@@ -227,6 +228,7 @@ function _showDialogInner(opts: DialogOptions): Promise<string | boolean | null>
         // Show with animation
         overlay.classList.add('mmd-dialog-visible');
         dialog.style.display = '';
+        overlay.removeAttribute('inert');
         freezeBackground(overlay);
         _trapRestore = createFocusTrap({ container: dialog, onEscape: onCancel });
     });
@@ -269,6 +271,7 @@ export function showErrorAction(title: string, message: string): void {
         _trapRestore?.();
         _trapRestore = null;
         unfreezeBackground();
+        overlay.setAttribute('inert', '');
         overlay.classList.remove('mmd-dialog-visible');
         // [bugfix:dialog-escape] 显式移除监听器（替代 { once: true }）
         document.removeEventListener('keydown', onKey);
@@ -312,6 +315,7 @@ export function showErrorAction(title: string, message: string): void {
 
     overlay.classList.add('mmd-dialog-visible');
     dialog.style.display = '';
+    overlay.removeAttribute('inert');
     freezeBackground(overlay);
     _trapRestore = createFocusTrap({ container: dialog, onEscape: onClose });
 }
@@ -444,6 +448,7 @@ export function showPrompt2(opts: Prompt2Options): Promise<[string, string] | nu
             _trapRestore2?.();
             _trapRestore2 = null;
             unfreezeBackground();
+            overlay.setAttribute('inert', '');
             overlay.classList.remove('mmd-dialog-visible');
             // [bugfix:dialog-escape] 显式移除监听器（替代 { once: true }）
             document.removeEventListener('keydown', onKeyDown);
@@ -485,6 +490,7 @@ export function showPrompt2(opts: Prompt2Options): Promise<[string, string] | nu
         overlay.classList.add('mmd-dialog-visible');
         dialog.style.display = '';
         fields[0].focus();
+        overlay.removeAttribute('inert');
         freezeBackground(overlay);
         _trapRestore2 = createFocusTrap({ container: dialog, onEscape: onCancel });
     });
