@@ -463,17 +463,16 @@ function updateConflictBanner(el: HTMLElement, modelId: string | null): void {
         return;
     }
     const total = all.reduce((s, a) => s + a.conflicts.length, 0);
-    const lines = all.map((a) => {
-        const meta = getRegisteredModules().find((m) => m.id === a.moduleId)?.meta;
-        const name = meta ? t(meta.labelKey) : a.moduleId;
-        const detail = a.conflicts
-            .map((c) => {
-                const byMeta = getRegisteredModules().find((m) => m.id === c.byModule)?.meta;
-                const byName = byMeta ? t(byMeta.labelKey) : c.byModule;
-                return `${c.bone}←${byName}`;
-            })
-            .join('、');
-        return `⚠ ${name}: ${detail}`;
+    // [doc:adr-116 P3 conflict-visibility] 用户语言化：用「当前生效 / 被让位」表达抢占关系，
+    // 替代旧的技术化 "骨A←模块B"。loser(a.moduleId)=被让位模块，winner(c.byModule)=当前生效模块。
+    const lines = all.flatMap((a) => {
+        const loserMeta = getRegisteredModules().find((m) => m.id === a.moduleId)?.meta;
+        const loserName = loserMeta ? t(loserMeta.labelKey) : a.moduleId;
+        return a.conflicts.map((c) => {
+            const winnerMeta = getRegisteredModules().find((m) => m.id === c.byModule)?.meta;
+            const winnerName = winnerMeta ? t(winnerMeta.labelKey) : c.byModule;
+            return t('motion.boneConflict.line', { bone: c.bone, winner: winnerName, loser: loserName });
+        });
     });
     el.style.display = '';
     el.style.color = 'var(--warn, #e0a030)';
@@ -542,6 +541,19 @@ function buildBoneOverrideSchema(): MenuNode[] {
     }
 
     const menu = getMotionMenu();
+    // [doc:adr-116 P4] 统一动作收尾：写运行时→同步实例→自动保存→状态提示→重渲染。
+    // 收敛 apply / toggle 两路径的重复尾部，保证持久化行为一致。
+    const finalizeOverride = (boneName: string, enabled: boolean): void => {
+        _syncOverrideToInstance(modelId);
+        triggerAutoSave();
+        setStatus(
+            enabled
+                ? t('motion.boneOverride.applied', { bone: boneName })
+                : t('motion.boneOverride.removed', { bone: boneName }),
+            true
+        );
+        menu?.reRender();
+    };
     const allEntries = inst.boneOverrides;
 
     // [doc:adr-116 P3-3] 表单状态：供列表项「编辑」按钮回填（getOverride 接线）
@@ -588,6 +600,24 @@ function buildBoneOverrideSchema(): MenuNode[] {
                     boneSelect.addEventListener('change', () => {
                         formState.boneName = boneSelect.value;
                     });
+                    // [doc:adr-116 P4] 骨骼搜索框：原生 select 不支持搜索，附加过滤输入框
+                    const boneSearch = document.createElement('input');
+                    boneSearch.type = 'text';
+                    boneSearch.placeholder = t('motion.boneOverride.search');
+                    boneSearch.style.cssText = 'width:100%;margin:6px 0;box-sizing:border-box;';
+                    boneSearch.addEventListener('input', () => {
+                        const q = boneSearch.value.trim().toLowerCase();
+                        for (const g of Array.from(boneSelect.querySelectorAll('optgroup'))) {
+                            let visible = 0;
+                            for (const opt of Array.from(g.querySelectorAll('option'))) {
+                                const hit = !q || (opt.textContent ?? '').toLowerCase().includes(q);
+                                (opt as HTMLElement).style.display = hit ? '' : 'none';
+                                if (hit) visible++;
+                            }
+                            (g as HTMLElement).style.display = visible > 0 ? '' : 'none';
+                        }
+                    });
+                    inner.appendChild(boneSearch);
                     inner.appendChild(boneSelect);
 
                     addSliderRow(
@@ -667,12 +697,8 @@ function buildBoneOverrideSchema(): MenuNode[] {
                                 undefined,
                                 absolute
                             );
-                            _syncOverrideToInstance(modelId);
-                            // [doc:adr-116 P2] 应用新增覆盖后必须持久化，否则离开场景丢失
-                            triggerAutoSave();
-
-                            setStatus(t('motion.boneOverride.applied', { bone: boneName }), true);
-                            menu?.reRender();
+                            // [doc:adr-116 P4] 收尾（同步实例+自动保存+提示+重渲染）统一由 finalizeOverride 处理
+                            finalizeOverride(boneName, true);
                         },
                         { marginTop: 8 }
                     );
@@ -729,15 +755,8 @@ function buildBoneOverrideSchema(): MenuNode[] {
                             } else {
                                 clearBoneOverride(ov.boneName);
                             }
-                            setStatus(
-                                updated.enabled
-                                    ? t('motion.boneOverride.applied', { bone: ov.boneName })
-                                    : t('motion.boneOverride.removed', { bone: ov.boneName }),
-                                true
-                            );
-                            // [doc:adr-116 P2] 启用/禁用单条覆盖后必须持久化（删除/清除已有保存，行为需一致）
-                            triggerAutoSave();
-                            menu?.reRender();
+                            // [doc:adr-116 P4] 收尾统一由 finalizeOverride 处理（与 apply 行为一致）
+                            finalizeOverride(ov.boneName, updated.enabled);
                         });
                         row.appendChild(toggleBtn);
 

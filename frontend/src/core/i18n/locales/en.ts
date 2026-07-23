@@ -609,6 +609,8 @@ export const en: Record<string, string> = {
     'motion.behaviorNone': 'Static (manual)',
     'motion.behaviorNA': 'Only available for orbit camera',
     'motion.boneConflictCount': 'Bone conflicts ({total})',
+    'motion.boneConflict.line': '{bone}: now active from "{winner}", "{loser}" overridden',
+    'motion.boneOverride.search': 'Search bones…',
     'motion.ikTag': '(IK)',
     'motion.webxrProbeError': 'WebXR probe error: {e}',
     'motion.webxrDeepProbeError': 'WebXR deep probe error: {e}',

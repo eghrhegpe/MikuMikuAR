@@ -605,6 +605,8 @@ export const zhCN: Record<string, string> = {
     'motion.behaviorNone': '静止（手动）',
     'motion.behaviorNA': '仅轨道相机可用',
     'motion.boneConflictCount': '骨骼冲突 ({total})',
+    'motion.boneConflict.line': '{bone} 当前生效「{winner}」，原「{loser}」已让位',
+    'motion.boneOverride.search': '搜索骨骼…',
     'motion.ikTag': '(IK)',
     'motion.webxrProbeError': 'WebXR 探测错误: {e}',
     'motion.webxrDeepProbeError': 'WebXR 深度探测错误: {e}',
