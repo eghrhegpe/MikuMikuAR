@@ -12,6 +12,12 @@
 //   - _defaultConfig / _defaultUIState：补全完整默认值，避免首屏空字段守护风暴
 //   - Delete*Preset：从 no-op 改为真实删除（idbDelete）
 //   - SetEnvState：从 uistate/envState 双源改为 Config.env 单源（对齐主应用 restoreEnvState）
+//   - A4 剩余项（p2-5）：ListDirRecursive/LoadOutfitFile/LoadSceneFile/IsolateModelDir 浏览器实现
+//     - 虚拟目录语义：IsolateModelDir 返回 web://model/<stem>，ListDirRecursive 扫描
+//       dir:<stem>:<relativePath> 前缀，readFileBytes 透明路由到 dir: 键
+//     - 键规约：dir:<stem>:<relativePath>（纹理字节，带目录结构）、outfit:<stem>（outfits.json）、
+//       scenes store 的 bundle:<zipStem>（scene.json）
+//     - ExtractZip 解压时按主 PMX stem 分组存 dir:/outfit:，识别 scene.json 存 bundle:
 
 import JSZip from 'jszip';
 import type {
@@ -20,6 +26,7 @@ import type {
     EnvState,
     ModelEntry,
     ExtractResult,
+    FileInfo,
     UpdateCheckResult,
     RenderPreset,
 } from '@bindings/mikumikuar/internal/app/models';
@@ -108,32 +115,56 @@ function _defaultConfig(): Config {
 }
 
 /**
- * [doc:adr-177] 将主应用传入的绝对路径映射为 IndexedDB key。
+ * [doc:adr-177] 将主应用传入的路径映射为 IndexedDB key。
  *
  * 主应用模型加载器传绝对路径（如 `D:/models/foo.pmx`），但 IndexedDB 的 models store
  * 用 `file:<name>` 键规约存储原档字节（web-loader/library.ts:saveModel 写入）。
  * 本函数做透明映射，使主应用 readFileBytes('D:/models/foo.pmx') 能命中 file:foo。
  *
  * 映射规则：
- * 1. 已是 IDB key 前缀（file:/entry:/recent 等）→ 原样返回
- * 2. 绝对路径 → 提取文件名 → 去扩展名 → `file:<name>`
- * 3. 兜底 → `file:<完整文件名（含扩展名）>`
+ * 1. `web://model/<stem>/<relativePath>` → `dir:<stem>:<relativePath>`（虚拟目录资源）
+ * 2. 已是 IDB key 前缀（file:/entry:/recent/dir:/outfit:）→ 原样返回
+ * 3. 其他 `web://` / `content://` 虚拟 URI → 原样返回
+ * 4. 绝对路径 → 提取文件名 → 去扩展名 → `file:<name>`
  *
  * 注意：同名文件（不同目录）会冲突——这是 IndexedDB 扁平键的既有设计限制。
  */
 function _resolveIdbKey(path: string): string {
+    // 虚拟目录资源：web://model/<stem>/<relativePath> → dir:<stem>:<relativePath>
+    const dirMatch = path.match(/^web:\/\/model\/([^/?#]+)\/(.+)$/);
+    if (dirMatch) {
+        return `dir:${dirMatch[1]}:${dirMatch[2].replace(/\\/g, '/')}`;
+    }
     // 已是 IDB key 前缀
-    if (/^(file|entry|recent):/.test(path) || path === 'recent') {
+    if (/^(file|entry|recent|dir|outfit):/.test(path) || path === 'recent') {
         return path;
     }
-    // Android SAF URI 原样返回（browser-adapter 不支持，但避免误转换）
+    // Android SAF URI / 其他 web:// 虚拟 URI 原样返回（browser-adapter 不支持，但避免误转换）
     if (path.startsWith('content://') || path.startsWith('web://')) {
         return path;
     }
     // 绝对路径 → 提取文件名（去扩展名）
     const baseName = path.split(/[/\\]/).pop() || path;
-    const name = baseName.replace(/\.(pmx|zip|vmd|vpd|png|jpg|jpeg|bmp|tga|dds|tif|tiff|wav|mp3|ogg|flac)$/i, '');
+    const name = baseName.replace(/\.(pmx|zip|vmd|vpd|png|jpg|jpeg|bmp|tga|dds|tif|tiff|wav|mp3|ogg|flac|json)$/i, '');
     return `file:${name}`;
+}
+
+/**
+ * [doc:adr-177] 从路径提取模型 stem（去扩展名的文件名）。
+ *
+ * 用于 IsolateModelDir / LoadOutfitFile / ListDirRecursive 等需要按模型 stem
+ * 索引 IndexedDB 的方法。支持多种输入格式：
+ * - `web://model/<stem>` 或 `web://model/<stem>/<relativePath>` → 取 <stem>
+ * - `file:<stem>` / `entry:<stem>` → 取 <stem>
+ * - 绝对路径（`D:/models/foo.pmx`）→ 文件名去扩展名
+ */
+function _extractStem(path: string): string {
+    const m = path.match(/^web:\/\/model\/([^/?#]+)/);
+    if (m) return m[1];
+    const m2 = path.match(/^(?:file|entry):(.+)$/);
+    if (m2) return m2[1];
+    const baseName = path.split(/[/\\]/).pop() || path;
+    return baseName.replace(/\.[^.]+$/, '');
 }
 
 async function _listModels(): Promise<ModelEntry[]> {
@@ -167,10 +198,12 @@ export const browserAdapter: BackendService = {
         const key = _resolveIdbKey(path);
         const bytes = (await idbGet<Uint8Array>('models', key)) ?? null;
         if (bytes) return bytes;
-        // 兜底：尝试完整文件名（含扩展名），覆盖 web-loader saveModel 未去扩展名的边界情况
+        // 兜底：dir:<stem>:<relPath> 未命中时，按 ExtractZip 扁平键 file:<stem>（去扩展名）再查一次
         const baseName = path.split(/[/\\]/).pop() || path;
         if (baseName && baseName !== path) {
-            return (await idbGet<Uint8Array>('models', `file:${baseName}`)) ?? null;
+            const stem = baseName.replace(/\.[^.]+$/, '');
+            const fallback = (await idbGet<Uint8Array>('models', `file:${stem}`)) ?? null;
+            if (fallback) return fallback;
         }
         return null;
     },
@@ -227,26 +260,63 @@ export const browserAdapter: BackendService = {
     },
     async ExtractZip(zipPath: string, _innerPath: string): Promise<ExtractResult | null> {
         // [doc:adr-177] 浏览器侧：调用方先将 zip 字节写入 IndexedDB file:<zipStem>，
-        // 此处 readFileBytes 读回 → JSZip 解压 → 内部资源落地 file:<stem> → 返回主 PMX。
+        // 此处 readFileBytes 读回 → JSZip 解压 → 内部资源落地 → 返回主 PMX + 虚拟 dir。
         // 语义对齐 Go 的 ExtractZip（解压到缓存目录，浏览器侧缓存即 IndexedDB）。
+        //
+        // 落地键规约（p2-5）：
+        //   file:<stem>            —— 扁平存（兼容 readFileBytes 绝对路径兜底）
+        //   dir:<pmxStem>:<relPath>—— 带目录结构存（ListDirRecursive 扫描 + readFileBytes 路由）
+        //   outfit:<pmxStem>       —— outfits.json（LoadOutfitFile 读取）
+        //   scenes store bundle:<zipStem> —— scene.json（LoadSceneFile bundle 路径）
         const buf = await this.readFileBytes(zipPath);
         if (!buf) return null;
         const zip = await JSZip.loadAsync(buf);
         const ASSET_RE = /\.(pmx|vmd|vpd|png|jpg|jpeg|bmp|tga|dds|tif|tiff|wav|mp3|ogg|flac|glb)$/i;
         const fileNames = Object.keys(zip.files).filter((n) => !zip.files[n].dir);
+        // 第一遍：找主 PMX stem（同步遍历，不读字节）
+        let mainPmxName = '';
+        let mainPmxStem = '';
+        for (const name of fileNames) {
+            const baseName = name.split(/[/\\]/).pop() || name;
+            if (/\.pmx$/i.test(baseName)) {
+                mainPmxName = baseName;
+                mainPmxStem = baseName.replace(/\.pmx$/i, '');
+                break;
+            }
+        }
+        const zipStem = _extractStem(zipPath);
+        // 第二遍：并发存资源（含 dir: / outfit: / bundle: 分类）
         const baseNames: string[] = [];
         await Promise.all(
             fileNames.map(async (name) => {
                 const bytes = new Uint8Array(await zip.files[name].async('arraybuffer'));
                 const baseName = name.split(/[/\\]/).pop() || name;
-                if (!ASSET_RE.test(baseName)) return;
                 const stem = baseName.replace(/\.[^.]+$/, '');
-                await idbSet('models', `file:${stem}`, bytes);
-                baseNames.push(baseName);
+                const relPath = name.replace(/\\/g, '/');
+                if (ASSET_RE.test(baseName)) {
+                    await idbSet('models', `file:${stem}`, bytes);
+                    // 按主 PMX stem 存带目录结构的纹理（ListDirRecursive + readFileBytes 路由）
+                    if (mainPmxStem) {
+                        await idbSet('models', `dir:${mainPmxStem}:${relPath}`, bytes);
+                    }
+                    baseNames.push(baseName);
+                }
+                // outfits.json → outfit:<pmxStem>（伴生换装配置）
+                if (baseName.toLowerCase() === 'outfits.json' && mainPmxStem) {
+                    await idbSet('models', `outfit:${mainPmxStem}`, bytes);
+                }
+                // scene.json → scenes store bundle:<zipStem>（LoadSceneFile bundle 路径）
+                if (baseName.toLowerCase() === 'scene.json' && zipStem) {
+                    await idbSet('scenes', `bundle:${zipStem}`, bytes);
+                }
             })
         );
-        const mainPmx = baseNames.find((b) => b.toLowerCase().endsWith('.pmx')) ?? '';
-        return { file_path: mainPmx, dir: '', cached: false } as unknown as ExtractResult;
+        // 返回主 PMX + 虚拟 dir（LoadSceneFile bundle 路径 web://bundle/<zipStem>/scene.json）
+        return {
+            file_path: mainPmxName,
+            dir: zipStem ? `web://bundle/${zipStem}` : '',
+            cached: false,
+        } as unknown as ExtractResult;
     },
     async SaveScreenshot(data: Uint8Array): Promise<void> {
         const blob = new Blob([data as BlobPart], { type: 'image/png' });
@@ -492,20 +562,53 @@ export const browserAdapter: BackendService = {
     async DeletePresetScene(name: string): Promise<void> {
         await idbDelete('presets', `scene:${name}`);
     },
-    async IsolateModelDir(): Promise<string> {
-        return '';
+    async IsolateModelDir(pmxPath: string): Promise<string> {
+        // [doc:adr-177] 浏览器侧无真实目录，返回虚拟目录 web://model/<stem>，
+        // 供 ListDirRecursive 扫描 dir:<stem>: 前缀 + readFileBytes 透明路由
+        return `web://model/${_extractStem(pmxPath)}`;
     },
-    async ListDirRecursive(): Promise<string[]> {
+    async ListDirRecursive(dirPath: string): Promise<FileInfo[]> {
+        // [doc:adr-177] 浏览器侧：从虚拟目录 web://model/<stem> 提取 stem，
+        // 扫描 models store 的 dir:<stem>:<relativePath> 前缀，重建目录条目。
+        // 调用方据 entry.relativePath 再 readFileBytes(modelDir + '/' + relativePath) 读字节。
+        const stem = _extractStem(dirPath);
+        const prefix = `dir:${stem}:`;
+        const keys = (await idbKeys('models')).filter((k) => k.startsWith(prefix));
+        return keys.map((k) => {
+            const relativePath = k.slice(prefix.length);
+            const name = relativePath.split('/').pop() ?? relativePath;
+            return { name, relativePath } as FileInfo;
+        });
+    },
+    async ListSubDirs(_dirPath: string): Promise<string[]> {
+        // 浏览器侧无子目录概念，返回空（outfit 自动发现 fallback 无可用子目录）
         return [];
     },
-    async ListSubDirs(): Promise<string[]> {
-        return [];
+    async LoadOutfitFile(pmxPath: string): Promise<string> {
+        // [doc:adr-177] 读 outfits.json（ExtractZip 解压时存入 outfit:<stem>）
+        // 对齐 Go：文件不存在返回 ("", nil)，调用方 fall through 到自动发现
+        const stem = _extractStem(pmxPath);
+        const bytes = await idbGet<Uint8Array>('models', `outfit:${stem}`);
+        return bytes ? new TextDecoder().decode(bytes) : '';
     },
-    async LoadOutfitFile(): Promise<Uint8Array | null> {
-        return null;
-    },
-    async LoadSceneFile(): Promise<Uint8Array | null> {
-        return null;
+    async LoadSceneFile(path: string): Promise<string> {
+        // [doc:adr-177] 三路路由：
+        // 1. 预设场景 web://presets/scenes/<name> → presets store scene:<name>
+        // 2. bundle 场景 web://bundle/<stem>/scene.json → scenes store bundle:<stem>
+        // 3. 兜底：_resolveIdbKey 映射
+        const presetMatch = path.match(/^web:\/\/presets\/scenes\/(.+)$/);
+        if (presetMatch) {
+            const bytes = await idbGet<Uint8Array>('presets', `scene:${presetMatch[1]}`);
+            return bytes ? new TextDecoder().decode(bytes) : '';
+        }
+        const bundleMatch = path.match(/^web:\/\/bundle\/([^/]+)\/scene\.json$/);
+        if (bundleMatch) {
+            const bytes = await idbGet<Uint8Array>('scenes', `bundle:${bundleMatch[1]}`);
+            return bytes ? new TextDecoder().decode(bytes) : '';
+        }
+        const key = _resolveIdbKey(path);
+        const bytes = await idbGet<Uint8Array>('models', key);
+        return bytes ? new TextDecoder().decode(bytes) : '';
     },
     async ScanModelDir(): Promise<ModelEntry[]> {
         return _listModels();
