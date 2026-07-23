@@ -4,6 +4,8 @@
   "version": "1.6.3",
   "scripts": {
     "gen:status": "node scripts/gen-status-index.mjs",
+    "check:status": "node scripts/gen-status-index.mjs --check",
+    "check:docs": "npm run check:status && node scripts/check-doc-drift.mjs",
     "test:e2e": "cd frontend && npm run test:e2e",
     "test": "cd frontend && npm test",
     "build": "cd frontend && npm run build",
