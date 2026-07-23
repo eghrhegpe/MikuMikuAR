@@ -40,7 +40,7 @@ const DEFAULTS: Record<string, ParamValue> = {
 
 const META: ModuleMeta = {
     labelKey: 'motion.override.module.fingerPose',
-    icon: 'lucide:hand-finger',
+    icon: 'lucide:hand',
     defaults: DEFAULTS,
 };
 

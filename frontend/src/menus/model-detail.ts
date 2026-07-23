@@ -1259,7 +1259,7 @@ export function buildPersonalLightLevel(id: string): PopupLevel {
                     1,
                     0.05,
                     (v) => setPersonalLightState(id, { coneSoftness: v }),
-                    'lucide:blur'
+                    'lucide:haze'
                 );
             }
         },

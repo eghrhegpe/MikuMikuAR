@@ -420,7 +420,7 @@ export function buildWaterLevel(): PopupLevel {
                         id: 'env:water:reflection',
                         kind: 'folder',
                         label: 'env.reflection',
-                        icon: 'lucide:mirror',
+                        icon: 'lucide:rotate-ccw',
                         defaultOpen: false,
                         children: [
                             {
