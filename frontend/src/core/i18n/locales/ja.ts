@@ -686,6 +686,7 @@ export const ja: Record<string, string> = {
     'motion.boneLock': 'ボーン固定',
     'motion.boneLockEnable': 'ボーンに固定',
     'motion.boneLockSelect': 'ボーン選択',
+    'motion.boneLockDamping': '追従スムージング',
     'motion.boneLockApplied': '✓ カメラをボーン {bone} に固定しました',
     'motion.boneLockCleared': '✓ ボーン固定を解除しました',
     'motion.moveSpeed': '移動速度',

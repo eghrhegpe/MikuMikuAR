@@ -636,6 +636,7 @@ export const zhCN: Record<string, string> = {
     'motion.boneLock': '骨骼锁定',
     'motion.boneLockEnable': '锁定到骨骼',
     'motion.boneLockSelect': '选择骨骼',
+    'motion.boneLockDamping': '跟随平滑',
     'motion.boneLockApplied': '✓ 相机已锁定到骨骼 {bone}',
     'motion.boneLockCleared': '✓ 已解除骨骼锁定',
     'motion.moveSpeed': '移动速度',

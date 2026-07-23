@@ -640,6 +640,7 @@ export const en: Record<string, string> = {
     'motion.boneLock': 'Bone Lock',
     'motion.boneLockEnable': 'Lock to Bone',
     'motion.boneLockSelect': 'Select Bone',
+    'motion.boneLockDamping': 'Follow Smoothing',
     'motion.boneLockApplied': '✓ Camera locked to bone {bone}',
     'motion.boneLockCleared': '✓ Bone lock cleared',
     'motion.moveSpeed': 'Move Speed',
