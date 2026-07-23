@@ -41,6 +41,7 @@ import { logWarn } from '../core/logger';
 import { SETTINGS_ACTION } from './settings-targets';
 import { SETTINGS_ACTIONS } from './settings-actions';
 import { isAndroidPlatform } from '../core/platform';
+import { getCachedCapabilities } from '../core/backend';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 import {

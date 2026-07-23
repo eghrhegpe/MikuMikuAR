@@ -6,6 +6,7 @@ import { focusedModelId } from './state';
 import { focusedModel, updatePlaybackUI, focusedMmdModel } from '../scene/scene';
 import { getCameraMode, switchCameraMode } from '../scene/camera/camera';
 import { registerShortcuts } from './shortcut-registry';
+import { getCachedCapabilities } from './backend';
 import { screenshotCurrent } from '../menus/scene-menu';
 import { undo, redo, canUndo, canRedo } from '../scene/motion/motion-modules/motion-history';
 import { applyModuleSnapshot } from '../scene/motion/motion-modules/module-base';
@@ -88,6 +89,7 @@ export function registerAppShortcuts(): void {
             defaultCtrl: true,
             prevent: true,
             handler: () => {
+                if (!getCachedCapabilities().ar) return;
                 const currentMode = getCameraMode();
                 if (currentMode === 'ar') {
                     switchCameraMode('orbit');

@@ -62,6 +62,7 @@ import {
 import { t } from '../core/i18n/t'; // [doc:adr-059]
 import { renderMenu } from './render-menu';
 import { addDisabledRow } from '../core/ui-helpers';
+import { getCachedCapabilities } from '../core/backend';
 import type { MenuNode } from './menu-schema';
 
 function refreshCameraLevel(): void {
@@ -88,8 +89,10 @@ function buildCameraSchema(): MenuNode[] {
                     const controlOptions: Array<{ value: string; label: string }> = [
                         { value: 'orbit', label: t('motion.camOrbit') },
                         { value: 'freefly', label: t('motion.camFreefly') },
-                        { value: 'ar', label: t('motion.camAR') },
                     ];
+                    if (getCachedCapabilities().ar) {
+                        controlOptions.push({ value: 'ar', label: t('motion.camAR') });
+                    }
                     addModeSlider(
                         inner,
                         t('motion.cameraControl'),

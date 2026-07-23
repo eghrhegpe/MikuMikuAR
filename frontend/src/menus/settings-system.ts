@@ -42,6 +42,7 @@ import { applyUIAppearanceDom, formatBytes } from './settings-shared';
 import type { SlideMenu } from './menu';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
+import { getCachedCapabilities } from '../core/backend';
 
 // ======== 设置导入白名单校验（修复零校验污染 uiState） ========
 
@@ -302,21 +303,23 @@ function buildCacheSchema(): MenuNode[] {
                     );
 
                     // 缓存清理按钮
-                    slideRow(
-                        inner,
-                        'lucide:folder-open',
-                        t('settings.about.maintenance.openExtract'),
-                        false,
-                        () => {
-                            OpenCacheDir('extracted').catch((err: unknown) => {
-                                const msg =
-                                    typeof err === 'object' && err !== null && 'message' in err
-                                        ? String((err as { message: unknown }).message)
-                                        : String(err);
-                                setStatus(t('settings.error', { message: msg }), false);
-                            });
-                        }
-                    );
+                    if (getCachedCapabilities().systemDirOpen) {
+                        slideRow(
+                            inner,
+                            'lucide:folder-open',
+                            t('settings.about.maintenance.openExtract'),
+                            false,
+                            () => {
+                                OpenCacheDir('extracted').catch((err: unknown) => {
+                                    const msg =
+                                        typeof err === 'object' && err !== null && 'message' in err
+                                            ? String((err as { message: unknown }).message)
+                                            : String(err);
+                                    setStatus(t('settings.error', { message: msg }), false);
+                                });
+                            }
+                        );
+                    }
                     slideRow(
                         inner,
                         'lucide:trash-2',
@@ -324,21 +327,23 @@ function buildCacheSchema(): MenuNode[] {
                         false,
                         () => SETTINGS_ACTIONS[SETTINGS_ACTION.CLEAR_EXTRACT_CACHE]()
                     );
-                    slideRow(
-                        inner,
-                        'lucide:folder-open',
-                        t('settings.about.maintenance.openThumbnail'),
-                        false,
-                        () => {
-                            OpenCacheDir('thumbnails').catch((err: unknown) => {
-                                const msg =
-                                    typeof err === 'object' && err !== null && 'message' in err
-                                        ? String((err as { message: unknown }).message)
-                                        : String(err);
-                                setStatus(t('settings.error', { message: msg }), false);
-                            });
-                        }
-                    );
+                    if (getCachedCapabilities().systemDirOpen) {
+                        slideRow(
+                            inner,
+                            'lucide:folder-open',
+                            t('settings.about.maintenance.openThumbnail'),
+                            false,
+                            () => {
+                                OpenCacheDir('thumbnails').catch((err: unknown) => {
+                                    const msg =
+                                        typeof err === 'object' && err !== null && 'message' in err
+                                            ? String((err as { message: unknown }).message)
+                                            : String(err);
+                                    setStatus(t('settings.error', { message: msg }), false);
+                                });
+                            }
+                        );
+                    }
                     slideRow(
                         inner,
                         'lucide:image',
@@ -437,6 +442,7 @@ function buildSoftwareListSchema(getSettingsMenu: () => SlideMenu | null): MenuN
         {
             id: 'system:software-list',
             kind: 'custom',
+            visibleWhen: () => getCachedCapabilities().externalApps,
             renderCustom: (container) => {
                 // 同步壳 + 内部 async + disposed 守卫：MenuNode.renderCustom 契约不允许返回 Promise（与 settings-resources 范式一致）
                 let disposed = false;

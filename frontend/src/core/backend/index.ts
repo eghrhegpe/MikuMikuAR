@@ -8,7 +8,7 @@
 // - Web 入口置 globalThis.__MMKU_WEB__ = true（或 import.meta.env.MODE === 'web'）
 //   短路 awaitWailsBridge 的 3s 超时等待，直接返回 browserAdapter。
 
-import type { BackendService } from './types';
+import type { BackendService, BackendCapabilities } from './types';
 import { browserAdapter } from './browser-adapter';
 import { awaitWailsBridge } from '../platform';
 
@@ -50,4 +50,37 @@ export function resolveBackend(): Promise<BackendService> {
     })();
 
     return _resolving;
+}
+
+// [doc:adr-177] Phase 2 A5 能力门控：跨后端 capabilities 缓存。
+// - getCapabilities(): 异步解析后端后读取 capabilities() 并缓存，供初始化阶段预热。
+// - getCachedCapabilities(): 同步读缓存；未预热时返回 ALL_TRUE_CAPS（对齐桌面默认全开行为，
+//   避免菜单首次渲染因缓存未就绪而闪烁隐藏原生入口）。
+let _caps: BackendCapabilities | null = null;
+
+const ALL_TRUE_CAPS: BackendCapabilities = {
+    ar: true,
+    externalApps: true,
+    plazaWindow: true,
+    fsAccess: false,
+    watchDir: true,
+    proxyServer: true,
+    fileServer: true,
+    systemDirOpen: true,
+    storageMode: true,
+    screenshotSave: true,
+    cacheManage: true,
+    configPersist: true,
+    modelScan: true,
+};
+
+export async function getCapabilities(): Promise<BackendCapabilities> {
+    if (_caps) return _caps;
+    const b = await resolveBackend();
+    _caps = b.capabilities();
+    return _caps;
+}
+
+export function getCachedCapabilities(): BackendCapabilities {
+    return _caps ?? ALL_TRUE_CAPS;
 }

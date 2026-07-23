@@ -20,7 +20,8 @@ import { registerIconBundle } from './icons-bundle';
 import { initI18n } from './i18n/locale';
 import { GetConfig, CheckForUpdate, GetSystemA11ySettings } from './wails-bindings';
 import { events } from './runtime-bridge';
-import { isAndroidPlatform } from './platform';
+import { isAndroidPlatform, isWebPlatform } from './platform';
+import { getCapabilities } from './backend';
 import { generateTextColors } from '../menus/settings';
 import { SETTINGS_FONT_RESTORE } from '../menus/settings-shared';
 import {
@@ -119,6 +120,12 @@ async function init(): Promise<void> {
         registerAppShortcuts();
         initShortcutDispatcher();
         setStatus(t('main.initializing'), false);
+        // [doc:adr-177] Phase 2 A5：web 入口预热 capabilities 缓存
+        // 桌面 capabilities 全 true，fallback 全 true 已正确，无需阻塞 awaitWailsBridge；
+        // web 入口短路快，await 无延迟，确保菜单 visibleWhen 首次渲染读到真实 capabilities。
+        if (isWebPlatform()) {
+            await getCapabilities();
+        }
 
         // [doc:e2e] 按钮监听器在 initScene 之前注册，确保纯 Vite 模式下 overlay 可打开
         // 即使 WASM 加载失败或场景初始化异常，用户仍能点击导航按钮查看菜单
