@@ -141,29 +141,20 @@ function main() {
     ? path.resolve(ROOT, args[fileIdx + 1]) : null;
 
   const isCheck = args.includes('--check');
+  const localOnly = args.includes('--local-only');
 
   if (!['mermaid', 'list', 'json'].includes(format)) {
     console.error(`❌ 不支持的格式：${format}（可选：mermaid / list / json）`);
     process.exit(1);
   }
 
-  // 1. 扫描文件
-  const allFiles = scanSourceGraph(SRC_DIR).files;
-  console.error(`📄 扫描到 ${allFiles.length} 个 TS 源文件`);
-
-  // 按 scope 过滤
-  const files = scope
-    ? allFiles.filter((f) => f.rel.startsWith(scope + '/'))
-    : allFiles;
-
-  console.error(`   scope${scope ? `=${scope}` : '=全部'} → ${files.length} 个文件`);
-
-  // 2. 解析依赖
-  const entries = files;
-  const graph = scanSourceGraph(SRC_DIR, { scope }).graph;
+  // 1. 扫描文件 + 解析依赖（scope 递归展开依赖，--local-only 限制 scope 内）
+  const { files, graph } = scanSourceGraph(SRC_DIR, { scope, localOnly });
+  console.error(`📄 ${scope ? `scope=${scope}${localOnly ? ' (local-only)' : ''}` : '全部'} → ${files.length} 个文件`);
   const edges = [...graph.entries()].flatMap(([from, deps]) => [...deps].map((to) => [from, to]));
-
   console.error(`   解析到 ${edges.length} 条依赖边`);
+
+  const entries = files;
 
   // 3. 渲染输出
   let output;

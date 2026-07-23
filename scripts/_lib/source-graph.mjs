@@ -64,31 +64,78 @@ export function resolveSourceImport(spec, importerFile, srcDir) {
 export function parseSourceImports(filePath, srcDir) {
   const text = fs.readFileSync(filePath, 'utf8');
   const imports = [];
-  const re = /^\s*import\s+(type\s+)?(?:[\s\S]*?\s+from\s+)?['"]([^'"]+)['"]/gm;
-  let match;
+  const specs = new Set();
 
-  while ((match = re.exec(text))) {
-    const resolved = resolveSourceImport(match[2], filePath, srcDir);
-    if (resolved) {
-      imports.push({ path: resolved, isTypeOnly: Boolean(match[1]) });
+  // 正则 A: import / export ... from '...'（跨行，支持 import type / export {}/*/as ns）
+  const reFrom = /(?:^|\n)\s*(?:\/\/[^\n]*\n)*\s*(?:import|export)\b[\s\S]*?\bfrom\s+['"]([^'"]+)['"]/gm;
+  // 正则 B: import '...'（纯 side-effect，无 from）
+  const reSide = /(?:^|\n)\s*(?:\/\/[^\n]*\n)*\s*import\s+['"]([^'"]+)['"]/gm;
+  // 正则 C: await import('...') — 任意位置（不要求行首）
+  const reDyna = /await\s+import\s*\(\s*['"]([^'"]+)['"]\s*\)/gm;
+
+  for (const re of [reFrom, reSide, reDyna]) {
+    let match;
+    while ((match = re.exec(text))) {
+      const spec = match[1];
+      if (!specs.has(spec)) {
+        specs.add(spec);
+        const resolved = resolveSourceImport(spec, filePath, srcDir);
+        if (resolved) {
+          imports.push({ path: resolved, isTypeOnly: false });
+        }
+      }
     }
   }
 
   return imports;
 }
 
-export function scanSourceGraph(srcDir, { scope = null, includeTypeOnly = true } = {}) {
+export function scanSourceGraph(srcDir, { scope = null, localOnly = false } = {}) {
+  // 始终扫描全部文件构建全量图
   const files = walkSourceFiles(srcDir);
-  const selected = scope ? files.filter(({ rel }) => rel.startsWith(`${scope}/`)) : files;
-  const graph = new Map(selected.map(({ rel }) => [rel, new Set()]));
+  const graph = new Map(files.map(({ rel }) => [rel, new Set()]));
 
-  for (const { file, rel } of selected) {
+  for (const { file, rel } of files) {
     for (const imported of parseSourceImports(file, srcDir)) {
-      if (includeTypeOnly || !imported.isTypeOnly) {
-        graph.get(rel).add(imported.path);
-      }
+      graph.get(rel).add(imported.path);
     }
   }
 
-  return { files: selected, graph };
+  // scope 过滤
+  if (!scope) return { files, graph };
+
+  const scopeSet = new Set(files.filter(({ rel }) => rel.startsWith(`${scope}/`)).map((f) => f.rel));
+
+  if (localOnly) {
+    // localOnly: 只保留 scope 内节点，不展开依赖
+    const localGraph = new Map();
+    for (const rel of scopeSet) {
+      if (graph.has(rel)) {
+        localGraph.set(rel, new Set([...graph.get(rel)].filter((d) => scopeSet.has(d))));
+      }
+    }
+    return { files: [...scopeSet].sort().map((rel) => ({ file: path.join(srcDir, rel), rel })), graph: localGraph };
+  }
+
+  // 默认 scope 模式：递归展开所有可达依赖
+  const visited = new Set();
+  const reachable = new Set();
+  function walk(node) {
+    if (visited.has(node)) return;
+    visited.add(node);
+    reachable.add(node);
+    const deps = graph.get(node);
+    if (deps) for (const dep of deps) walk(dep);
+  }
+  for (const rel of scopeSet) walk(rel);
+
+  const scopedGraph = new Map();
+  for (const rel of reachable) {
+    if (graph.has(rel)) {
+      scopedGraph.set(rel, new Set([...graph.get(rel)].filter((d) => reachable.has(d))));
+    }
+  }
+  const scopedFiles = [...reachable].sort().map((rel) => ({ file: path.join(srcDir, rel), rel }));
+
+  return { files: scopedFiles, graph: scopedGraph };
 }

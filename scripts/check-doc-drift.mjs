@@ -228,7 +228,7 @@ function checkKnowledgeCards() {
 function checkGeneratedStatus() {
   const script = path.join(ROOT, 'scripts', 'gen-status-index.mjs');
   try {
-    execFileSync(process.execPath, [script, '--check'], {
+    execFileSync(process.execPath, [script, '--reverse', '--check'], {
       cwd: ROOT,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],

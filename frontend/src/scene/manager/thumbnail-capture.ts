@@ -65,20 +65,8 @@ export interface ThumbnailSource {
 // 并发调用会导致 WebGL 状态冲突或截图内容错乱。
 let _thumbMutex: Promise<unknown> = Promise.resolve();
 
-/** base64 缩略图数据的 MIME 嗅探：PNG/JPEG/WebP 头部字节不同 */
-export function thumbDataUrl(base64: string): string {
-    if (base64.startsWith('iVBOR')) {
-        return `data:image/png;base64,${base64}`;
-    }
-    if (base64.startsWith('/9j/')) {
-        return `data:image/jpeg;base64,${base64}`;
-    }
-    if (base64.startsWith('UklGR')) {
-        return `data:image/webp;base64,${base64}`;
-    }
-    // 兜底：默认 PNG
-    return `data:image/png;base64,${base64}`;
-}
+// [doc:adr-dep-graph] thumbDataUrl 已迁移到 core/utils.ts，此处 re-export 保持向后兼容
+export { thumbDataUrl } from '@/core/utils';
 
 /**
  * 用离屏 RenderTargetTexture 渲染指定模型实例的「当前骨骼姿态」并保存为缩略图。

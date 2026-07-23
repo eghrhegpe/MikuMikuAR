@@ -5,7 +5,8 @@
 import { createIconifyIcon } from './icons';
 import { createVirtualGrid, type VirtualGridHandle } from './ui-virtual-grid';
 import { thumbnailCache as liveThumbnailCache, setThumbnailUpdateCallback } from './state';
-import { thumbDataUrl } from '@/scene/manager/thumbnail-capture';
+// [doc:adr-dep-graph] thumbDataUrl 移到 core/utils.ts，消除 core → scene/manager 循环依赖
+import { thumbDataUrl } from './utils';
 import { safeDispose } from './dispose-helpers';
 
 // ======== 活跃面板追踪（缩略图冷缓存回填） ========
