@@ -10,6 +10,7 @@
 > 编号只允许给 ADR、novel 写。
 > 信任本机改动，别怕错误，通通提交代码：git add <通过测试的路径...> && git commit，会有GitHub PR review 审核。
 > 保存、推送指令一到，先测试，再 git status --short 抓取当前文件清单,按功能git add正常的文件/文件夹，git commit正常的更改。最后询问用户是否需要处理报错。
+> 翻译文件在此：frontend/src/core/i18n
 > 放弃低效的 `git stash`， `git stash pop`指令吧。
 
 ## 去哪里查
@@ -19,6 +20,7 @@
 | 查当前决策 + 坑点| `grep docs/adr/` |
 | 查/更新项目状态 | `docs/status.md`（ADR 索引表由 `npm run gen:status -- --reverse` 自动生成，改状态只需改 ADR 文件首部） |
 | 查模块依赖图 | `npm run dep:graph`（Mermaid 图） / `npm run dep:graph:list`（缩进列表） |
+| 查某模块「现在长啥样、去哪找」的现状快照 | `docs/knowledge/`（先读 `README.md` 索引定位卡片，grep 卡正文锁定符号，再按 `source_files` 跳源码；比直接 grep 全量 .ts 省上下文） |
 | 查/更新函数索引 | `docs/function-map.md`（由 `npm run gen:funcmap` 自动生成，改动后运行 `npm run check:funcmap` 校验） |
 | 校验文档漂移 | `npm run check:docs`（ADR 索引同步 + 架构树完整性 + 知识卡 source_files 有效性 + i18n + Go 错误 i18n） |
 | 查项目技术 | `docs/architecture.md` |
