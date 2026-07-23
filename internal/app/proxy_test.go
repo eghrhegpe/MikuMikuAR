@@ -256,6 +256,10 @@ func TestPlazaSSRFGuard_BlocksPrivate(t *testing.T) {
 // TestDownloadFromPlaza_SizeLimit verifies a download exceeding the cap is
 // aborted and the partial file is cleaned up.
 func TestDownloadFromPlaza_SizeLimit(t *testing.T) {
+	// [buglog:2026-07-17] 隔离 configDir，否则 updateConfig 把 tmpDir 写入
+	// 用户真实的 %APPDATA%/MikuMikuAR/config.json，污染 resource_root。
+	testConfigDir(t)
+
 	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
 		buf := make([]byte, 4096)
