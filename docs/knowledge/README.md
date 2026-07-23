@@ -3,7 +3,7 @@
 > 本目录是 MikuMikuAR 的**原子化架构知识层**，借鉴 repowiki 的「知识卡 + `source_files` 机器可校验」范式，
 > 但**主权归城邦**：由我们拥有、可重生成、受 `scripts/check-doc-drift.mjs` 守护。
 >
-> 生成日期基线：2026-07-23（覆盖 ADR-166~175 引入的子系统）
+> 生成日期基线：2026-07-23（覆盖 ADR-166~175 引入的子系统）；同日扩展「物理系统（physics）」分组，补录 ADR-081/084/104 的 WASM Bullet 物理子系统（physics-bridge / wind-physics / skirt-analyzer / virtual-skirt / ground-collision）。
 
 ## 它解决什么
 
@@ -24,7 +24,7 @@
 ---
 kind: <snake_case 标识符>
 name: <中文短名>
-category: <rendering|env|motion|ui|core|backend>
+category: <rendering|env|motion|ui|core|backend|physics>
 scope:
   - <模块目录 glob>
 source_files:        # 仓库相对路径，必须真实存在于磁盘
@@ -59,7 +59,7 @@ adr:                 # 关联决策（可选）
 
 跑法：`node scripts/check-doc-drift.mjs`（或 `--json`）。可接 CI 卡点。
 
-## 卡片索引（65 张，按 category 分组）
+## 卡片索引（70 张，按 category 分组）
 
 ### 环境系统（env）
 
@@ -77,6 +77,16 @@ adr:                 # 关联决策（可选）
 | [湿身效果系统](./env-wetness.md) | `scene/env/env-wetness.ts` | ADR-172 |
 | [镜面道具](./mirror-debug.md) | `scene/env/mirror-debug.ts` | ADR-128 |
 | [道具系统](./props.md) | `scene/env/props.ts` | — |
+
+### 物理系统（physics）
+
+| 卡片 | 模块 | 关联 ADR |
+|------|------|----------|
+| [物理骨骼桥与每帧注册表](./physics-bridge.md) | `physics/physics-bridge.ts` | ADR-081 |
+| [风力物理注入](./wind-physics.md) | `physics/wind-physics.ts` | ADR-104 |
+| [裙摆拓扑分析](./skirt-analyzer.md) | `scene/physics/skirt-analyzer.ts` | ADR-084 |
+| [虚拟裙骨物理控制器](./virtual-skirt.md) | `scene/physics/virtual-skirt.ts` | ADR-081/084 |
+| [地面碰撞体](./ground-collision.md) | `scene/physics/ground-collision.ts` | — |
 
 ### 渲染系统（rendering）
 
