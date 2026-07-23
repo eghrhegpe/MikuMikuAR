@@ -1703,6 +1703,9 @@ textarea,
     flex-direction: column;
     flex: 1;
     min-height: 0;
+    /* 仅允许纵向滚动（pan-y），横向手势交还给 JS 右滑返回，
+       避免 iOS Safari 把菜单内横滑识别为浏览器前进/后退滑动（P3） */
+    touch-action: pan-y;
 }
 
 .slide-viewport {
