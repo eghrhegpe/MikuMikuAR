@@ -1573,7 +1573,9 @@ describe('SlideMenu — 触屏手势守卫与平台适配', () => {
 
     it('isVisible 在 close 后为 false，即便容器有布局尺寸（_isOpen 短路，不误判）', () => {
         // 模拟旧实现会误判为可见的场景：容器有布局尺寸
-        vi.spyOn(container, 'getClientRects').mockReturnValue([{} as DOMRect]);
+        vi.spyOn(container, 'getClientRects').mockReturnValue(
+            [{} as DOMRect] as unknown as DOMRectList
+        );
         expect(container.getClientRects().length).toBeGreaterThan(0);
         menu.close();
         expect(menu.isVisible).toBe(false);
