@@ -23,6 +23,7 @@ import {
 import type { PopupLevel } from '../core/config';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
+import { getCachedCapabilities } from '../core/backend';
 
 // ======== 音频核心（音量/偏移/BPM/伴奏/循环） ========
 function buildAudioCoreSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
@@ -416,18 +417,20 @@ function buildScreenshotSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
                         dirSub
                     );
 
-                    slideRow(
-                        inner,
-                        'lucide:folder-open',
-                        t('settings.screenshot.openDir'),
-                        false,
-                        () => {
-                            OpenScreenshotDir().catch((err: unknown) => {
-                                const msg = translateGoError(err);
-                                setStatus(t('settings.error', { message: msg }), false);
-                            });
-                        }
-                    );
+                    if (getCachedCapabilities().systemDirOpen) {
+                        slideRow(
+                            inner,
+                            'lucide:folder-open',
+                            t('settings.screenshot.openDir'),
+                            false,
+                            () => {
+                                OpenScreenshotDir().catch((err: unknown) => {
+                                    const msg = translateGoError(err);
+                                    setStatus(t('settings.error', { message: msg }), false);
+                                });
+                            }
+                        );
+                    }
                 });
             },
         },

@@ -17,6 +17,7 @@ import { removeModel } from '../scene/manager/model-ops';
 import { buildTransformCard, type ResourceHandle } from './resource-detail-helpers';
 import { buildMatRootLevel } from './model-material';
 import { createIconifyIcon, softwareKindIcon } from '../core/icons';
+import { getCachedCapabilities } from '../core/backend';
 import {
     slideRow,
     addInfoGrid,
@@ -180,6 +181,7 @@ function buildOpenWithSchema(id: string): MenuNode[] {
         {
             id: 'open-with:root',
             kind: 'custom',
+            visibleWhen: () => getCachedCapabilities().externalApps,
             renderCustom: (container) => {
                 container.classList.remove('render-card');
                 void (async () => {
