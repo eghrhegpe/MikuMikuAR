@@ -10,6 +10,7 @@
     "dep:graph:list": "node scripts/gen-dep-graph.mjs --format list",
     "gen:funcmap": "node scripts/gen-funcmap.mjs",
     "check:funcmap": "node scripts/gen-funcmap.mjs --check",
+    "test:scripts": "node --test scripts/_lib/source-graph.test.mjs",
     "test:e2e": "cd frontend && npm run test:e2e",
     "test": "cd frontend && npm test",
     "build": "cd frontend && npm run build",

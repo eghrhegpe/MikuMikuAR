@@ -18,6 +18,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { scanSourceGraph } from './_lib/source-graph.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -25,100 +26,17 @@ const SRC_DIR = path.join(ROOT, 'frontend', 'src');
 
 // ── 配置 ──
 
-const EXCLUDE_DIRS = [
-  '__tests__', '__mocks__', 'node_modules', 'wailsjs',
-];
-
-const EXCLUDE_FILES = [
-  /\.d\.ts$/, /\.test\.ts$/, /\.spec\.ts$/, /\.gen\.ts$/,
-];
-
-// 已知外部包前缀（不走相对路径解析，仅标注为「外部」）
-const EXTERNAL_PREFIXES = [
-  '@', 'babylonjs', 'babylon-mmd', 'react', 'vue', 'svelte',
-];
-
-// ── 工具 ──
-
-function isSourceFile(name) {
-  if (!name.endsWith('.ts')) return false;
-  if (EXCLUDE_FILES.some((re) => re.test(name))) return false;
-  return true;
-}
-
-function shouldTraverseDir(name) {
-  return !name.startsWith('.') && !EXCLUDE_DIRS.includes(name);
-}
-
-/** 递归扫描 frontend/src/ 下所有 TS 源文件 */
-function walkDir(dir, base = '') {
-  const entries = [];
-  if (!fs.existsSync(dir)) return entries;
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    const rel = base ? `${base}/${entry.name}` : entry.name;
-    if (entry.isDirectory()) {
-      if (shouldTraverseDir(entry.name)) {
-        entries.push(...walkDir(full, rel));
-      }
-    } else if (entry.isFile() && isSourceFile(entry.name)) {
-      entries.push({ file: full, rel });
-    }
-  }
-  return entries;
-}
-
-/** 解析 .ts 文件中的 import 语句，返回依赖的相对路径列表 */
-function parseImports(filePath, relPath) {
-  const text = fs.readFileSync(filePath, 'utf8');
-  const deps = new Set();
-  const dir = path.dirname(filePath);
-
-  // 匹配 import ... from '...' 和 import '...'
-  const re = /(?:^|\n)\s*import(?:[\s\S]*?)\s+from\s+['"]([^'"]+)['"]|(?:^|\n)\s*import\s+['"]([^'"]+)['"]/g;
-  let m;
-  while ((m = re.exec(text))) {
-    const spec = m[1] || m[2];
-    if (!spec) continue;
-    // 跳过外部包
-    if (EXTERNAL_PREFIXES.some((p) => spec.startsWith(p))) continue;
-    // 跳过以 @/ 开头的别名导入（内部模块，但不做路径解析）
-    if (spec.startsWith('@/')) {
-      // 将 @/xxx 转换为 frontend/src/xxx 的相对路径
-      const resolved = spec.replace(/^@\//, '');
-      deps.add(resolved);
-      continue;
-    }
-    // 相对路径
-    if (spec.startsWith('.')) {
-      const resolved = path.resolve(dir, spec);
-      // 尝试多种扩展名
-      const candidates = [resolved + '.ts', resolved + '.tsx', resolved + '/index.ts', resolved + '/index.tsx'];
-      const found = candidates.find((c) => fs.existsSync(c));
-      if (found) {
-        const rel = path.relative(SRC_DIR, found).replace(/\\/g, '/');
-        deps.add(rel);
-      }
-      // 还要处理 .js 导入（在 Vite 中 TS 文件常被 import 为 .js）
-      // 也尝试 .mjs
-      // 实际上更简单：直接找 resolved 目录下的 index.ts
-      continue;
-    }
-  }
-  return [...deps];
-}
-
 /** 生成安全的 Mermaid 节点 ID */
 function toNodeId(rel) {
   return rel
-    .replace(/\.ts$/i, '')
+    .replace(/\.tsx?$/i, '')
     .replace(/[\/\\\.-]/g, '_')
     .replace(/[^a-zA-Z0-9_]/g, '');
 }
 
 /** 文件路径 → 显示名 */
 function toLabel(rel) {
-  return rel.replace(/\.ts$/i, '');
+  return rel.replace(/\.tsx?$/i, '');
 }
 
 // ── 输出格式 ──
@@ -230,7 +148,7 @@ function main() {
   }
 
   // 1. 扫描文件
-  const allFiles = walkDir(SRC_DIR);
+  const allFiles = scanSourceGraph(SRC_DIR).files;
   console.error(`📄 扫描到 ${allFiles.length} 个 TS 源文件`);
 
   // 按 scope 过滤
@@ -241,15 +159,9 @@ function main() {
   console.error(`   scope${scope ? `=${scope}` : '=全部'} → ${files.length} 个文件`);
 
   // 2. 解析依赖
-  const entries = [];
-  const edges = [];
-  for (const f of files) {
-    const deps = parseImports(f.file, f.rel);
-    entries.push(f);
-    for (const dep of deps) {
-      edges.push([f.rel, dep]);
-    }
-  }
+  const entries = files;
+  const graph = scanSourceGraph(SRC_DIR, { scope }).graph;
+  const edges = [...graph.entries()].flatMap(([from, deps]) => [...deps].map((to) => [from, to]));
 
   console.error(`   解析到 ${edges.length} 条依赖边`);
 
