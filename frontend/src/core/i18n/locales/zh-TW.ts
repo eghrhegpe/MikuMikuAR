@@ -646,6 +646,8 @@ export const zhTW: Record<string, string> = {
     'motion.behaviorNone': '静止（手動）',
     'motion.behaviorNA': '僅軌道相機可用',
     'motion.boneConflictCount': '骨骼衝突 ({total})',
+    'motion.boneConflict.line': '{bone} 當前生效「{winner}」，原「{loser}」已讓位',
+    'motion.boneOverride.search': '搜尋骨骼…',
     'motion.ikTag': '(IK)',
     'motion.webxrProbeError': 'WebXR 探測錯誤: {e}',
     'motion.webxrDeepProbeError': 'WebXR 深度探測錯誤: {e}',

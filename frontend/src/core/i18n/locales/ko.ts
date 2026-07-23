@@ -654,6 +654,8 @@ export const ko: Record<string, string> = {
     'motion.behaviorNone': '정지(수동)',
     'motion.behaviorNA': '궤도 카메라만 사용 가능',
     'motion.boneConflictCount': '본 충돌 ({total})',
+    'motion.boneConflict.line': '{bone} 현재 적용: 「{winner}」, 「{loser}」 우선순위 밀림',
+    'motion.boneOverride.search': '본 검색…',
     'motion.ikTag': '(IK)',
     'motion.webxrProbeError': 'WebXR probe error: {e}',
     'motion.webxrDeepProbeError': 'WebXR deep probe error: {e}',
