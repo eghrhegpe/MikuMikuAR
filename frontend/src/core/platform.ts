@@ -19,6 +19,17 @@ export function isAndroidPlatform(): boolean {
 }
 
 /**
+ * Returns true when running in a pure browser (no Wails bridge).
+ *
+ * ⚠️ 同步判定，仅用于**运行时已稳定**的 UI 降级（配合 backend.capabilities()）。
+ * Android 冷启动 `window.wails` 尚未注入时会被误判为 web —— 启动期 backend 选型
+ * 必须用 `await resolveBackend()`（异步 + awaitWailsBridge），见 ADR-176。
+ */
+export function isWebPlatform(): boolean {
+    return typeof window !== 'undefined' && typeof (window as { wails?: unknown }).wails === 'undefined';
+}
+
+/**
  * Waits for the Wails bridge (window.wails) to be injected by the WebView.
  * Returns true if the bridge became ready within the timeout, false otherwise.
  * Android WebView may not have the bridge available at module-parse time.
@@ -67,11 +78,14 @@ export function openExternalURL(url: string): boolean {
 
 /**
  * Guards an external application action (Blender, MMD, etc.) that is
- * not available on Android. Returns true if the action should proceed,
- * false if it was blocked (Android).
+ * not available on Android or in a pure browser. Returns true if the
+ * action should proceed, false if it was blocked.
+ *
+ * ADR-176：扩展为同挡 Android + Web（externalApps 在两者均为 false）。
+ * 注意 isAndroidPlatform() 优先判定，Android 冷启动误判 web 不影响结果。
  */
 export function guardExternalAction(_label: string): boolean {
-    if (isAndroidPlatform()) {
+    if (isAndroidPlatform() || isWebPlatform()) {
         return false;
     }
     return true;
