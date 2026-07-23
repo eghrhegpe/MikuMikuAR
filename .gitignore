@@ -34,6 +34,9 @@ reasonix.toml
 .workbuddy/
 .mimocode/
 
+# Qoder — other-software generated repo wiki/artifacts (vendor-generated, not ours)
+.qoder/
+
 # Test coverage output
 coverage/
 

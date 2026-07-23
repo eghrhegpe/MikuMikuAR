@@ -46,13 +46,15 @@ tasks:
         silent: true
 
   verify:
-    summary: 本地全量门禁（tsc + eslint + goerr-lint），推送前用
+    summary: 本地全量门禁（tsc + eslint + goerr-lint + doc-drift），推送前用
     cmds:
       - cmd: cd frontend && npm run check
         silent: true
       - cmd: cd frontend && npm run lint
         silent: true
       - task: check:goerr
+      - cmd: node scripts/check-doc-drift.mjs
+        silent: true
 
   setup:docker:
     summary: Builds Docker image for cross-compilation (~800MB download)

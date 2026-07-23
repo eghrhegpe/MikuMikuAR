@@ -60,6 +60,12 @@ jobs:
         # 路径以仓库根为基准，与 cwd 无关。
         run: node ../scripts/goerr-lint.mjs --strict
 
+      - name: Documentation drift check
+        # 比对「代码现实」与「架构文档声称」：架构树陈旧引用 / ADR 索引滞后 /
+        # 知识卡 source_files 失效。任何 ERROR 级漂移即 exit 1 阻塞 CI。
+        # 路径以仓库根为基准，与 cwd 无关（从 frontend/ 跑 ../scripts/ 亦可）。
+        run: node ../scripts/check-doc-drift.mjs
+
       - name: Build
         run: npx vite build
 
