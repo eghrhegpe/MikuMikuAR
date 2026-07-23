@@ -25,4 +25,4 @@ key 格式：`<baseKey>::<resolution>::<aspect>`。
 - `thumbnailKeyForKind(input)` — 便捷：由 kind/type 字符串直接构造完整 key。
 
 ## 与其他子系统关系
-- 被 `thumbnail-capture`（写侧）与 `library-core`（读侧）共同引用，确保 key 一致。
+- 被 [`thumbnail-capture`](./thumbnail-capture.md)（写侧）与 `library-core`（读侧）共同引用，确保 key 一致。

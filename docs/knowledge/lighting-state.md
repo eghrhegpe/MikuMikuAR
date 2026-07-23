@@ -27,4 +27,4 @@ adr:
 - `lightingState` — 灯光系统模块级状态单例（含所有灯光/阴影/光锥/动画的运行时引用）。
 
 ## 与其他子系统关系
-- 被 `lighting.ts`、`lighting-stage.ts`、`lighting-shadow.ts`、`lighting-sun.ts`、`lighting-tween.ts`、`lighting-follow.ts`、`light-cone.ts` 共同读写。
+- 被 `lighting.ts`、[`lighting-stage.ts`](./lighting-stage.md)、[`lighting-shadow.ts`](./lighting-shadow.md)、[`lighting-sun.ts`](./lighting-sun.md)、[`lighting-tween.ts`](./lighting-tween.md)、[`lighting-follow.ts`](./lighting-follow.md)、[`light-cone.ts`](./light-cone.md) 共同读写。

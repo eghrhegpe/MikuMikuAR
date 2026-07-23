@@ -24,4 +24,4 @@ adr:
 
 ## 与其他子系统关系
 - `performance.ts` 调用 `setAutoDegradingReflection` / `setEnvStateForPerformance`。
-- `env-bridge.ts` 调用 `isAutoDegradingReflection` / `registerSetEnvState`。
+- [env-bridge.ts](./env-dispatcher.md) 调用 `isAutoDegradingReflection` / `registerSetEnvState`。

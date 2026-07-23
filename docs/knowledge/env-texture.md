@@ -25,5 +25,5 @@ adr:
 - `createCanvasDataURL(opts)` — 创建 canvas 并导出 data URL（供 `CreateGroundFromHeightMap` 等以 URL 为输入的场景使用）。
 
 ## 与其他子系统关系
-- 被 `env-ground`（程序化纹理）、`env-terrain`（高度图 URL）、`env-water`（涟漪贴图）直接依赖。
+- 被 [`env-ground`](./env-ground.md)（程序化纹理）、[`env-terrain`](./env-terrain.md)（高度图 URL）、`env-water`（涟漪贴图）直接依赖。
 - 缓存所有权机制（`WeakSet`）确保 `disposeGround` 等路径不错误释放缓存贴图。

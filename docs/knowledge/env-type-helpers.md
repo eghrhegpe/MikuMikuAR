@@ -23,5 +23,5 @@ adr: []
 - `FrozenCamera` — `FreeCamera` 私有字段接口（`_worldMatrix` / `_isWorldMatrixFrozen`），供 `planar-reflection` 镜像相机矩阵设置用。
 
 ## 与其他子系统关系
-- 被 `env-texture`、`env-ground` 等环境子系统引用。
+- 被 [`env-texture`](./env-texture.md)、[`env-ground`](./env-ground.md) 等环境子系统引用。
 - `FrozenCamera` 被 `planar-reflection` 使用。

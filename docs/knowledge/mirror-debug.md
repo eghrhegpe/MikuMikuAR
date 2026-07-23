@@ -31,4 +31,4 @@ adr:
 
 ## 与其他子系统关系
 - 依赖 `env-context` 获取场景引用。
-- 分辨率设置通过 `env-bridge` 的 `setEnvState` 写入 `reflectionQuality`。
+- 分辨率设置通过 [env-bridge](./env-dispatcher.md) 的 `setEnvState` 写入 `reflectionQuality`。

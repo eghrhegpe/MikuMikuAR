@@ -60,6 +60,18 @@ vi.mock('@wailsio/runtime', () => ({
     },
 }));
 
+// ── ADR-176: Wails 桥标记注入 ────────────────────────────
+// resolveBackend() 以 window.wails 判定 go/browser。本 setup 已 mock
+// @wailsio/runtime（Call.ByID 秒回 null），语义等价「Go 后端在场」，故显式注入
+// 桥标记让选型器立即选 goAdapter——否则 awaitWailsBridge 空等 3s 后误降级
+// browser-adapter（happy-dom 无 indexedDB，直接爆错）。
+// 需要测试 browser 路径的单测（backend.test.ts）可自行 delete window.wails 覆盖。
+if (typeof window !== 'undefined' && typeof (window as { wails?: unknown }).wails === 'undefined') {
+    (window as unknown as { wails: { platform: () => string } }).wails = {
+        platform: () => 'windows',
+    };
+}
+
 // ── Babylon.js Engine (root cause of _renderLoops parse error) ──
 // The real Engine class has _renderLoops as a class field that esbuild on CI
 // cannot parse. Mocking it here prevents the parse error during vi.mock hoisting.

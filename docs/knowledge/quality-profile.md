@@ -25,5 +25,5 @@ adr:
 - `inferQualityProfile(...)` — 依据运行环境（GPU / 分辨率）推断推荐档位。
 
 ## 与其他子系统关系
-- 被 `env-reflection.ts` 的 `getQualityPreset(state)` 引用，按当前档位取反射质量预设。
+- 被 [`env-reflection.ts`](./env-reflection.md) 的 `getQualityPreset(state)` 引用，按当前档位取反射质量预设。
 - 是渲染子系统「按档位降级」的统一入口；新增维度需在 `QualityDimension` 注册并在 `resolve` 中分支。

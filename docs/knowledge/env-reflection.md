@@ -30,5 +30,5 @@ adr:
 - `disposeReflection()` — 释放探针与渲染目标。
 
 ## 与其他子系统关系
-- 依赖 `quality-profile` 的质量预设；被环境初始化（`env-context` 所属管线）驱动。
+- 依赖 [`quality-profile`](./quality-profile.md) 的质量预设；被环境初始化（[`env-context`](./env-context.md) 所属管线）驱动。
 - 反射探针需与模型加载时序对齐（`onModelMeshesReady`），避免网格未就绪时绑定失败。

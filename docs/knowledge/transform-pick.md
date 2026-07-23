@@ -23,5 +23,5 @@ adr: []
 - `tryAttachGizmoFromPick(scene, x, y)` — 拾取并附加 Gizmo：若已拾取到当前 Gizmo 目标则跳过，否则 `attachGizmoForKind`。
 
 ## 与其他子系统关系
-- 依赖 `transform-adapter` 的 `attachGizmoForKind` 与 `getGizmoTargetId`。
+- 依赖 [`transform-adapter`](./transform-adapter.md) 的 `attachGizmoForKind` 与 `getGizmoTargetId`。
 - 被 `scene.ts` 或事件处理模块在点击场景时调用。

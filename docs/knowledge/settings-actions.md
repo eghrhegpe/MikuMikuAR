@@ -23,5 +23,5 @@ adr:
 ## 与其他子系统关系
 - 依赖 `settings-targets` 的 `SETTINGS_ACTION` 枚举。
 - 依赖 `wails-bindings` 的缓存清理函数。
-- 依赖 `i18n/locale` 的语言切换。
+- 依赖 `i18n/locale`（[国际化语言状态](./locale.md)）的语言切换。
 - 被 `settings.ts` 的 `onItemClick` 调用。

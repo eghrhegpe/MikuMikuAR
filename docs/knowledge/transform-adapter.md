@@ -27,4 +27,5 @@ adr:
 ## 与其他子系统关系
 - 不 import 任何 kind 模块（避免循环依赖）。
 - 被 `model-ops` / `props` / `lighting` 等模块反向注册。
-- 被 `transform-pick` 引用以统一 Gizmo 入口。
+- 被 [`transform-pick`](./transform-pick.md) 引用以统一 Gizmo 入口。
+- 被 `model-ops` / [`props`](./props.md) / `lighting` 等模块反向注册。

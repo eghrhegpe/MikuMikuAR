@@ -39,5 +39,5 @@ adr:
 
 ## 与其他子系统关系
 - 依赖 `shortcut-registry` 的 `registerShortcuts` 注册快捷键。
-- 依赖 `events.ts` 的 `navActions` / `navLabels` 导航映射。
+- 依赖 [`events.ts`](./events.md) 的 `navActions` / `navLabels` 导航映射。
 - 依赖 `scene/motion/motion-modules/motion-history` 的撤销/重做。

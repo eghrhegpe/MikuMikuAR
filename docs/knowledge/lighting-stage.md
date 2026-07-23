@@ -35,7 +35,7 @@ adr: []
 - `_registerStageLight(id, entry)` — 注册灯光到状态表。
 
 ## 与其他子系统关系
-- 状态集中于 `lighting-state`。
-- 阴影由 `lighting-shadow` 管理。
-- 光锥由 `light-cone` 渲染。
-- 预设过渡动画由 `lighting-tween` 驱动。
+- 状态集中于 [`lighting-state`](./lighting-state.md)。
+- 阴影由 [`lighting-shadow`](./lighting-shadow.md) 管理。
+- 光锥由 [`light-cone`](./light-cone.md) 渲染。
+- 预设过渡动画由 [`lighting-tween`](./lighting-tween.md) 驱动。

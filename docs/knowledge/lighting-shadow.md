@@ -23,6 +23,6 @@ adr: []
 - `_disposeStageShadow(id)` — 释放指定舞台灯光的阴影生成器。
 
 ## 与其他子系统关系
-- 状态集中于 `lighting-state` 的 `lightingState` 对象。
-- 被 `lighting.ts` 主光照模块与 `lighting-stage.ts` 舞台灯光模块引用。
-- 依赖 `transform-pick` 的变换元数据。
+- 状态集中于 [`lighting-state`](./lighting-state.md) 的 `lightingState` 对象。
+- 被 `lighting.ts` 主光照模块与 [`lighting-stage.ts`](./lighting-stage.md) 舞台灯光模块引用。
+- 依赖 [`transform-pick`](./transform-pick.md) 的变换元数据。

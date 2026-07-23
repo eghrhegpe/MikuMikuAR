@@ -27,5 +27,5 @@ adr: []
 
 ## 与其他子系统关系
 - 依赖 `wails-bindings` 的 `SaveThumbnail` 保存缩略图。
-- 依赖 `thumbnail-key` 构建缓存 key。
+- 依赖 [`thumbnail-key`](./thumbnail-key.md) 构建缓存 key。
 - 依赖 `core/config` 的 `thumbnailCache` 缓存管理。

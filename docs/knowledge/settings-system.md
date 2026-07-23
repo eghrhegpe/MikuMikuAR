@@ -35,5 +35,5 @@ adr:
 
 ## 与其他子系统关系
 - 依赖 `wails-bindings` 的缓存清理与软件操作。
-- 依赖 `settings-actions` 的 `SETTINGS_ACTIONS` 动作分发。
+- 依赖 [`settings-actions`](./settings-actions.md) 的 `SETTINGS_ACTIONS` 动作分发。
 - 依赖 `render-menu` 渲染菜单 Schema。

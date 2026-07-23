@@ -27,7 +27,7 @@ adr: []
 - 动画期间 `lightingState.skipLightAutoSave = true` 抑制自动保存。
 
 ## 与其他子系统关系
-- 状态集中于 `lighting-state`。
-- 被 `env-bridge.ts` 在 `lightingPresetName` 变化时调用。
-- 依赖 `lighting-stage` 的 `addStageLight` / `removeStageLight` / `setStageLightState`。
+- 状态集中于 [`lighting-state`](./lighting-state.md)。
+- 被 [env-bridge.ts](./env-dispatcher.md) 在 `lightingPresetName` 变化时调用。
+- 依赖 [`lighting-stage`](./lighting-stage.md) 的 `addStageLight` / `removeStageLight` / `setStageLightState`。
 - 依赖 `lighting-presets` 的 `LIGHTING_PRESETS` 预设定义。

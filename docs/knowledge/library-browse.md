@@ -24,7 +24,7 @@ adr: []
 - `_isDirDataReady(targetDir)` — 目录数据是否就绪检查。
 
 ## 与其他子系统关系
-- 依赖 `library-session-store` 的恢复链路状态。
+- 依赖 [`library-session-store`](./library-session-store.md) 的恢复链路状态。
 - 依赖 `model-detail` 构建模型详情层级。
 - 依赖 `scene-menu` 构建舞台变换层级。
 - 依赖 `load-manager` 获取模型加载状态。

@@ -1,5 +1,5 @@
 ---
-kind: zh_TW
+kind: zh_tw
 name: 繁体中文语言包
 category: core
 scope:
@@ -15,6 +15,9 @@ adr:
 
 ## 核心职责
 - `zh-TW.ts` — 繁体中文语言键值映射（`Record<string, string>`）。
+
+## 对外 API（节选）
+- `zhTW` — 包含约 1800 个键值对的繁体中文语言对象，被 `t.ts` 按需加载。
 
 ## 导出
 - `zhTW` — 包含约 1800 个键值对的繁体中文语言对象。
