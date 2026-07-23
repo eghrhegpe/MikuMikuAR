@@ -4,9 +4,10 @@
 > **日期**: 2026-07-23
 > **关联**: ADR-176（前端 Backend 适配器双实现）、ADR-017（安卓适配，platform 探测范式）、ADR-159（桥接注入范式）、ADR-093（声明式菜单 Schema）
 > **前置**: ADR-176 Phase 1-3 已落地（backend 适配器层、wails-bindings 106 函数全代理化、web-loader 网页原型已上线 GitHub Pages）
-> **审核记录**: 2026-07-23 架构审核（两轮）——有条件通过。
+> **审核记录**: 2026-07-23 架构审核（三轮）——有条件通过。
 > - **第一轮修订**：① @wailsio/runtime value import 不只 Events，还有 Browser（2 处）；② capabilities() 是契约非完整 UI 门控；③ 主应用首屏数据链未证明；④ index.web.html 不能仅复制 index.html；⑤ 新增 Phase 0 Spike 作为前置门槛；⑥ Phase 4 默认保留 web-loader。
 > - **第二轮修订**：① Runtime Bridge 接口对齐 Wails 真实 API（`Off(...names)` 可变参数、`Emit` 返回 `Promise<boolean>`、`On` 返回 unsubscribe 为主契约）；② Phase 0 明确临时 Vite alias/stub 边界（生产代码 4 处直接 import 未迁移）；③ Phase 0 增加 PMX/ZIP/VMD 拖入真实验收；④ browser-adapter 模型加载链路现状表（ListDirRecursive 返回 []、LoadOutfitFile 返回 null）；⑤ A5 命名统一为 `GetLibraryIndex()`/`ScanModelDir()`；⑥ Phase 1 白名单验收明确（menus/events/wails-bindings 零残留）；⑦ Phase 4 smoke 细节（localhost+Pages 双路径、Chromium、失败阈值）。
+> - **第三轮修订**：① Runtime Bridge 使用规范（业务侧优先 unsubscribe、off() 仅兼容、disposeAll() 仅应用级 shutdown）；② browser.openURL Web 侧行为明确（window.open + noopener + 拦截诊断）；③ Phase 0 Spike 产物清单（临时 config/stub/命令留存）；④ VMD 验收两类（独立 + ZIP 内）+ 可观察断言；⑤ Phase 4 本地静态服务器为主路径，Pages 为发布后补充。
 
 ## 背景
 
@@ -180,7 +181,16 @@ ADR-176 已铺好统一的基础设施，但主应用跑浏览器的硬依赖面
 - ✅ **空 IndexedDB 启动**：清空 IndexedDB 后首屏不崩
 - ✅ **PMX 拖入加载**：拖入 .pmx 文件，模型成功渲染（验证 readFileBytes 键规约）
 - ✅ **ZIP 拖入加载**：拖入 .zip（含 PMX+纹理），解包+渲染成功
-- ✅ **VMD 拖入加载**：拖入 .vmd，动作播放成功（验证 ListDirRecursive 降级语义）
+- ✅ **VMD 拖入加载**（两类）：
+  - 独立 `.vmd` 文件拖入，动作绑定到当前模型并播放
+  - ZIP 内 `.vmd` 文件拖入，解包后动作绑定并播放
+  - 可观察断言：播放状态为 playing + 时长 > 0（`#btnPlayPause` 状态 + `#timeDisplay` 非空）
+
+**Phase 0 Spike 产物**（必须留存以复现）：
+- 临时 Vite config 文件路径（如 `vite.spike.config.ts`）
+- 临时 `@wailsio/runtime` stub 文件路径
+- 构建命令（如 `npx vite build --config vite.spike.config.ts`）
+- 验收截图/日志
 
 > **若 Phase 0 未通过**：方向 A 暂缓，回退评估方向 B/C 或修订方案。
 
@@ -211,13 +221,19 @@ export interface RuntimeBridge {
     offAll(): void;  // 清空所有监听
   };
   browser: {
-    openURL(url: string): Promise<void>;  // Wails: 原生；Web: window.open
+    openURL(url: string): Promise<void>;  // Wails: 原生；Web: window.open(url, '_blank', 'noopener,noreferrer')，被拦截时 throw 可诊断错误
   };
   disposeAll(): void;  // 释放所有订阅，dispose 时调用（内部维护 listener 映射）
 }
 ```
 
 > **Wails API 契约说明**（审核修订）：原版 `off(name, cb)` 与 Wails 真实 `Off(...eventNames)` 不一致，已对齐为按事件名可变参数移除。`emit()` 原返回 `void`，已对齐为 `Promise<boolean>`（Wails Emit 底层是 `call()` 链返回 Promise）。Bridge 内部维护 listener 映射以支持 `disposeAll()`。
+
+> **使用规范**（审核补充）：
+> - **业务侧优先保存 `on()` 返回的 unsubscribe 并在 dispose 时调用**——这是主契约。
+> - `off(...names)` 仅作为兼容能力（如无法持有 unsubscribe 的场景），**按事件名移除会清掉所有模块的监听，使用需谨慎**。
+> - `disposeAll()` 仅供应用级 shutdown（`shutdownWithTimeout`）调用，**不允许业务模块随意调用全局清理**，避免误删其他模块监听。
+> - Web 侧 `browser.openURL` 使用 `window.open(url, '_blank', 'noopener,noreferrer')`；若被浏览器拦截（返回 null），throw 含 url 的可诊断错误。
 
 **白名单验收**（Phase 1 完成后强制）：
 ```bash
@@ -298,10 +314,11 @@ rg "@wailsio/runtime" frontend/src --glob "*.ts"
 - ✅ 主应用 Web 入口连续构建通过
 - ✅ **Playwright 浏览器 smoke 测试通过**：
   - 路径 1：`http://localhost:<port>/MikuMikuAR/`（本地 preview）
-  - 路径 2：`https://eghrhegpe.github.io/MikuMikuAR/`（GitHub Pages）
+  - 路径 2：`https://eghrhegpe.github.io/MikuMikuAR/`（GitHub Pages，发布后补充检查）
   - 浏览器矩阵：至少 Chromium（Chrome/Edge）；Firefox/Safari 可选
   - 失败阈值：0 个 P0/P1 失败用例
   - 覆盖项：首屏渲染、PMX 加载、ZIP 加载、VMD 加载、菜单导航、IndexedDB 读写
+  - **本地静态服务器验收**（主路径）：`npx vite preview` 或 `python -m http.server` 起本地静态服务器跑 smoke，避免依赖线上环境受部署延迟/网络影响；GitHub Pages smoke 作为发布后补充检查
 - ✅ PMX、ZIP、VMD 三类资源均验证可加载
 - ✅ IndexedDB 旧数据迁移完成
 - ✅ 主应用 Web 入口连续两次发布无回归
