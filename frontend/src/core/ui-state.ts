@@ -39,3 +39,9 @@ export let activeTimeOfDayPreset = 'noon';
 export function setActiveTimeOfDayPreset(v: string): void {
     activeTimeOfDayPreset = v;
 }
+
+// ======== VMD 伴音自动加载 ========
+/** 加载 VMD 动作时自动发现并加载同目录同名音频（.mp3/.wav/.ogg/.flac）。默认开启。 */
+export function isAutoLoadCompanionAudioEnabled(): boolean {
+    return uiState.autoLoadCompanionAudio !== false;
+}

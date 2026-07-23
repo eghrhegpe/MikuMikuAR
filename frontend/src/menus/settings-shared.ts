@@ -55,18 +55,14 @@ export function setDownloadWatchEnabledCached(v: boolean): void {
 
 // ======== VMD 伴音自动加载 ========
 /** 加载 VMD 动作时自动发现并加载同目录同名音频（.mp3/.wav/.ogg/.flac）。默认开启。 */
-import { uiState, setUIState } from '../core/state';
-
-export function isAutoLoadCompanionAudioEnabled(): boolean {
-    return uiState.autoLoadCompanionAudio !== false;
-}
+import { isAutoLoadCompanionAudioEnabled, setUIState } from '../core/state';
 
 export function setAutoLoadCompanionAudio(v: boolean): void {
     setUIState({ autoLoadCompanionAudio: v });
 }
 
 export function getAutoLoadCompanionAudio(): boolean {
-    return uiState.autoLoadCompanionAudio !== false;
+    return isAutoLoadCompanionAudioEnabled();
 }
 
 // ======== Color utilities ========
