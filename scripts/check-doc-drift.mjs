@@ -35,9 +35,7 @@ const asPosix = (p) => p.split(path.sep).join('/');
 const CONFIG = {
   // 符号覆盖率扫描根（近期子系统集中地）。可加目录扩展覆盖面。
   sourceRoots: [
-    'frontend/src/scene/env',
-    'frontend/src/scene/motion',
-    'frontend/src/scene/render',
+    'frontend/src/scene',
     'frontend/src/menus',
     'frontend/src/core',
   ],
@@ -223,6 +221,39 @@ function checkKnowledgeCards() {
   return { cards: cardFiles.length, missingSources, coveredCount: covered.size };
 }
 
+// ---------- 检查 4b：知识卡反向覆盖（磁盘源文件 → 是否有卡片引用，INFO） ----------
+// 与检查 4（卡片 source_files 是否真实存在）互补：从「代码现实」出发，
+// 扫描 sourceRoots 下每个 .ts 源文件，确认至少有 1 张知识卡的 source_files 引用了它。
+// 列为 INFO（不阻断 CI），用于揭示「代码有模块、知识库无卡片」的盲区，指导持续补登。
+function checkKnowledgeCoverage() {
+  const dir = path.join(ROOT, CONFIG.knowledgeDir);
+  if (!fs.existsSync(dir)) {
+    return { total: 0, byDir: {} };
+  }
+  const cardFiles = fs
+    .readdirSync(dir)
+    .filter((f) => f.endsWith('.md') && f.toLowerCase() !== 'readme.md');
+  const referenced = new Set();
+  for (const cf of cardFiles) {
+    const text = fs.readFileSync(path.join(dir, cf), 'utf8');
+    for (const src of parseSourceFiles(text)) {
+      referenced.add(src.replace(/\\/g, '/'));
+    }
+  }
+  const byDir = {};
+  let total = 0;
+  for (const root of CONFIG.sourceRoots) {
+    for (const f of walk(path.join(ROOT, root))) {
+      const rel = asPosix(f).replace(asPosix(ROOT) + '/', '');
+      if (referenced.has(rel)) continue;
+      total++;
+      const top = rel.split('/').slice(1, 3).join('/'); // frontend/src/<a>/<b>
+      byDir[top] = (byDir[top] || 0) + 1;
+    }
+  }
+  return { total, byDir };
+}
+
 // ---------- 检查 5：status.md 生成区是否同步（ERROR） ----------
 function checkGeneratedStatus() {
   const script = path.join(ROOT, 'scripts', 'gen-status-index.mjs');
@@ -261,6 +292,8 @@ function main() {
     errors.push(`知识卡 ${ms.card} 的 source_files 指向不存在的文件：${ms.src}`);
   }
 
+  const rev = checkKnowledgeCoverage();
+
   const generatedStatusError = checkGeneratedStatus();
   if (generatedStatusError) {
     errors.push(`status.md ADR 生成区未同步：${generatedStatusError}`);
@@ -268,7 +301,7 @@ function main() {
 
   if (json) {
     console.log(
-      JSON.stringify({ adr, stale, coverage: cov, knowledge: kc, errors }, null, 2)
+      JSON.stringify({ adr, stale, coverage: cov, knowledge: kc, reverse: rev, errors }, null, 2)
     );
     process.exit(errors.length ? 1 : 0);
   }
@@ -282,6 +315,13 @@ function main() {
   console.log(`知识卡数 / source 覆盖   : ${kc.cards} 张 / ${kc.coveredCount} 个源文件`);
   console.log(`知识卡失效 source_files  : ${kc.missingSources.length ? kc.missingSources.length + ' 个 ❌' : '无 ✅'}`);
   console.log(`符号 0% 未文档化模块     : ${cov.undocumented}（INFO）`);
+  console.log(`知识卡未覆盖源文件       : ${rev.total} 个（INFO）`);
+  if (rev.total) {
+    const parts = Object.entries(rev.byDir)
+      .sort((a, b) => b[1] - a[1])
+      .map(([d, n]) => `${d}: ${n}`);
+    console.log('   按目录: ' + parts.join('，'));
+  }
   if (cov.undocumented) {
     const parts = Object.entries(cov.undocumentedByDir)
       .sort((a, b) => b[1] - a[1])
