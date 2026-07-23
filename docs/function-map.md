@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 64 | 500 |
+| 核心基础设施 | 65 | 502 |
 | 3D 场景 | 98 | 1052 |
 | 菜单 & UI | 65 | 339 |
 | 换装 & 音频 | 3 | 38 |
@@ -62,6 +62,8 @@
 | `DomRefs()` | `core/dom` | — |
 | `addDisposableListener()` | `core/dom` | — |
 | `dom()` | `core/dom` | — |
+| `handleDropFile()` | `core/drop-import` | — |
+| `handleDroppedFile()` | `core/drop-import` | — |
 | `ENV_STATE_SCHEMA()` | `core/env-state-schema` | — |
 | `EnvDispatchGroup()` | `core/env-state-schema` | — |
 | `EnvStateSchema()` | `core/env-state-schema` | — |
@@ -2118,5 +2120,5 @@
 
 ---
 
-> 共 251 个文件，2085 个导出符号。
+> 共 252 个文件，2087 个导出符号。
 > 说明列（—）待知识库或人工补充。

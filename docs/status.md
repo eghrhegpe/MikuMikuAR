@@ -15,7 +15,7 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
-| ADR-177 | Web Loader 与主应用统一路径 | Phase 1 Runtime Bridge 实施完成（2026-07-23；生产代码白名单零残留，tsc 0 错误，1971 测试全绿。可进入 Phase 2 能力门控 + 首屏数据链） |
+| ADR-177 | Web Loader 与主应用统一路径 | Phase 2 A4 首屏数据链 + 拖拽导入闭环实施完成（2026-07-23；browser-adapter 默认值/path 映射/ExtractZip 对齐 Go 签名；events.ts drop → IndexedDB file:<name> → readFileBytes 读回闭环打通；drop 逻辑抽至 core/drop-import.ts 便于单测，13 项单测覆盖桌面/浏览器分支与错误路径；tsc 0 错误，1998 测试全绿。剩余 A4：ListDirRecursive/LoadOutfitFile/LoadSceneFile 浏览器补齐；A5 能力门控未启动） |
 | ADR-176 | 前端 Backend 适配器双实现（Web/Desktop 通杀） | 已完成（2026-07-23；Phase 1-3 全部落地。Phase 3 已完成 web-loader 准完整网页入口、IndexedDB 模型库、能力徽章、lastModel 恢复引导和库面板；验证：tsc 0 错、backend 16/16、契约 17/17、全量回归绿） |
 | ADR-175 | 光照强度多入口设计意图裁决 | ✅ 已裁决（裁决为「保留多入口，不收敛为单入口」；无代码改动，仅固化契约）（2026-07-22） |
 | ADR-174 | 质量维度注册表 — 统一 qualityProfile 扩展点 | 已完成（2026-07-22） |
