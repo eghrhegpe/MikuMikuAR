@@ -4,7 +4,7 @@
 import { GetBuildInfo, CheckForUpdate, SetUIAutoUpdate } from '../core/wails-bindings';
 import { setStatus, uiState, setUIState, cardContainer } from '../core/config';
 import { slideRow, addToggleRow, addSectionTitle } from '../core/ui-helpers';
-import { Browser } from '@wailsio/runtime';
+import { browser } from '../core/runtime-bridge';
 import { t } from '../core/i18n/t';
 import { openExternalURL } from '../core/platform';
 import { renderMenu } from './render-menu';
@@ -74,7 +74,7 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                     addSectionTitle(inner, t('settings.about.links'));
                     slideRow(inner, 'lucide:github', t('about.github'), false, () => {
                         if (!openExternalURL('https://github.com/eghrhegpe/MikuMikuAR')) {
-                            Browser.OpenURL('https://github.com/eghrhegpe/MikuMikuAR');
+                            void browser.openURL('https://github.com/eghrhegpe/MikuMikuAR');
                         }
                     });
                     slideRow(inner, 'lucide:scroll', t('about.license'), false, () => {
@@ -83,14 +83,14 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                                 'https://github.com/eghrhegpe/MikuMikuAR/blob/main/LICENSE'
                             )
                         ) {
-                            Browser.OpenURL(
+                            void browser.openURL(
                                 'https://github.com/eghrhegpe/MikuMikuAR/blob/main/LICENSE'
                             );
                         }
                     });
                     slideRow(inner, 'lucide:bug', t('about.issues'), false, () => {
                         if (!openExternalURL('https://github.com/eghrhegpe/MikuMikuAR/issues')) {
-                            Browser.OpenURL('https://github.com/eghrhegpe/MikuMikuAR/issues');
+                            void browser.openURL('https://github.com/eghrhegpe/MikuMikuAR/issues');
                         }
                     });
                 });
@@ -169,7 +169,7 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                                     updateLink.onclick = (e) => {
                                         e.preventDefault();
                                         if (!openExternalURL(r.url)) {
-                                            Browser.OpenURL(r.url);
+                                            void browser.openURL(r.url);
                                         }
                                     };
                                 }

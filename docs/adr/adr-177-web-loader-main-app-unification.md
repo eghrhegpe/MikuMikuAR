@@ -1,6 +1,6 @@
 # ADR-177: Web Loader 与主应用统一路径
 
-> **状态**: Phase 0 Spike 通过（2026-07-23；S1-S7 全绿，主应用在浏览器成功启动。可进入 Phase 1 Runtime Bridge 实施。资源拖入加载需手动验证）
+> **状态**: Phase 1 Runtime Bridge 实施完成（2026-07-23；生产代码白名单零残留，tsc 0 错误，1971 测试全绿。可进入 Phase 2 能力门控 + 首屏数据链）
 > **日期**: 2026-07-23
 > **关联**: ADR-176（前端 Backend 适配器双实现）、ADR-017（安卓适配，platform 探测范式）、ADR-159（桥接注入范式）、ADR-093（声明式菜单 Schema）
 > **前置**: ADR-176 Phase 1-3 已落地（backend 适配器层、wails-bindings 106 函数全代理化、web-loader 网页原型已上线 GitHub Pages）
@@ -289,6 +289,45 @@ rg "@wailsio/runtime" frontend/src --glob "*.ts"
 - `__tests__/**`（测试 mock，type import 允许）
 
 **不得出现在**任何 `menus/**`、`core/events.ts`、`core/wails-bindings.ts`、其他业务文件。迁移后 grep 验证零残留。
+
+### Phase 1 实施结果（2026-07-23 完成）
+
+**结论：白名单零残留，tsc 0 错误，1971 测试全绿，Phase 1 完成。**
+
+**实施产物**：
+- `frontend/src/core/runtime-bridge.ts`（新建，191 行）：单例 `getRuntimeBridge()` + Web 侧 no-op + Wails 侧动态 `import('@wailsio/runtime')` + Proxy 便捷导出 `events`/`browser` + `initRuntimeBridge()` bootstrap 钩子 + `disposeAll()` 应用级清理
+- `frontend/src/core/init.ts`：`Events.On` × 6 处迁移为 `events.on`，import 链切到 runtime-bridge，bootstrap 调用 `initRuntimeBridge()`
+- `frontend/src/core/events.ts`：`Browser.OpenURL` 迁移为 `browser.openURL`
+- `frontend/src/menus/plaza-download.ts`：`Events.On` × 3 处迁移为 `events.on`
+- `frontend/src/menus/settings-about.ts`：`Browser.OpenURL` × 3 处迁移为 `browser.openURL`
+- `frontend/src/core/watch-import.ts`：`Events.On` × 1 处迁移为 `events.on`
+- `frontend/src/core/wails-bindings.ts`：`export { Events } from '@wailsio/runtime'` 改为 `export { events as Events } from './runtime-bridge'`（向后兼容）
+
+**关键实现决策**：
+- **Wails 侧动态 import**：`runtime-bridge.ts` 用 `await import('@wailsio/runtime')` 而非静态 import，使 web 入口短路路径完全不加载 go-adapter chunk + @wailsio/runtime chunk（毫秒级开销仅在桌面/安卓首次调用）
+- **Proxy 便捷导出**：`events`/`browser` 用 `new Proxy({}, { get })` 代理到 `getRuntimeBridge().events[prop]`，业务侧直接 `import { events } from './runtime-bridge'` 即可，无需每次手动取 bridge
+- **Off 签名对齐**：Wails v3 `Off(...eventNames: [WailsEventName, ...WailsEventName[]])` 是非空元组，runtime-bridge 用 `names.length > 0` 守卫 + `as [string, ...string[]]` cast 适配
+- **EventCallback 签名**：对外 `(data: unknown) => void`，但 Wails 真实回调收到 `WailsEvent` 对象（含 `.data`/`.name`/`.sender`）。业务侧按 init.ts 范式 `(ev: unknown) => { (ev as { data?: ... }).data }` 访问
+
+**白名单验收明细**（2026-07-23 实测）：
+```
+# rg "from '@wailsio/runtime'" frontend/src --glob "*.ts"
+src/__tests__/bindings/app.functions.contract.test.ts:6  (type-only import 允许)
+src/__tests__/library-thumbnail-streaming.test.ts:151    (type-only import 允许)
+# rg "Events\.(On|Off|Emit|Once)\(" frontend/src --glob "*.ts"
+src/core/runtime-bridge.ts:91,96,101,107  (Wails 侧 wrapper，合法)
+# rg "Browser\.OpenURL\(" frontend/src --glob "*.ts"
+src/core/runtime-bridge.ts:112  (Wails 侧 wrapper，合法)
+```
+
+**回归验收**：
+- `npx tsc --noEmit`：0 错误
+- `npm run test`：95 文件 / 1971 用例全绿
+- `npm run check:docs`：0 漂移（ADR 索引 171 行同步，知识卡 65/65 覆盖）
+
+**Phase 1 遗留项**（Phase 2 处理）：
+- ⚠️ 6 处 init.ts 事件订阅目前未保存 unsubscribe——业务侧尚未统一持有 unsubscribe 并在 dispose 时调用。Phase 2 A4 改造时需补 dispose 链路（统一推入 `_initDisposables` 或在 `shutdownWithTimeout` 调 `disposeAll()`）
+- ⚠️ `runtime-bridge.ts` 的 `EventCallback` 类型与 Wails 真实回调签名（`WailsEvent` 对象）有偏差——当前靠 `(ev: unknown)` + 内部 `.data` 访问绕过。若 Phase 2 引入新订阅点，需考虑是否在 bridge 内展开 `ev.data` 后再传给业务回调
 
 ### Phase 2：能力门控 + 首屏数据（A4 + A5）
 

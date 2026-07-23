@@ -52,7 +52,7 @@ export function disposeEventHandlers(): void {
     }
 }
 
-import { Browser } from '@wailsio/runtime';
+import { browser } from './runtime-bridge';
 import { showModelPopup, showMotionPopup, refreshLibrary } from '../menus/library';
 import { showPlaza } from '../menus/plaza-browser';
 import { closePlaza } from '../menus/plaza-state';
@@ -461,7 +461,7 @@ export function showUpdateToast(latest: string, url: string): void {
     if (btn) {
         btn.onclick = () => {
             if (!openExternalURL(url)) {
-                Browser.OpenURL(url);
+                void browser.openURL(url);
             }
             toast.classList.remove('visible');
         };

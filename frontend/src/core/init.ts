@@ -18,7 +18,8 @@ import { t } from './i18n/t';
 import { translateGoError } from './i18n/goerr';
 import { registerIconBundle } from './icons-bundle';
 import { initI18n } from './i18n/locale';
-import { GetConfig, Events, CheckForUpdate, GetSystemA11ySettings } from './wails-bindings';
+import { GetConfig, CheckForUpdate, GetSystemA11ySettings } from './wails-bindings';
+import { events } from './runtime-bridge';
 import { isAndroidPlatform } from './platform';
 import { generateTextColors } from '../menus/settings';
 import { SETTINGS_FONT_RESTORE } from '../menus/settings-shared';
@@ -464,7 +465,7 @@ function checkAndroidStoragePermission(): void {
 }
 
 // When the native side reports a fresh grant, rescan the library.
-Events.On('storage:permissionGranted', async () => {
+events.on('storage:permissionGranted', async () => {
     setStatus(t('main.permissionGranted'), false);
     try {
         await refreshLibrary();
@@ -482,7 +483,7 @@ Events.On('storage:permissionGranted', async () => {
 // to avoid order-dependent cleanup being skipped.
 const BACK_EXIT_INTERVAL_MS = 2000;
 let _lastBackExitPress = 0;
-Events.On('android:back', () => {
+events.on('android:back', () => {
     // Was anything actually open? Must check BEFORE closing anything.
     const anyOverlayOpen =
         document.querySelector('[data-overlay].visible') !== null ||
@@ -519,13 +520,13 @@ Events.On('android:back', () => {
 // 屏幕锁定 → 立即刷盘保存场景。
 // 比 visibilitychange 更可靠：部分国产 ROM WebView 切后台 visibilityState 不变 hidden，
 // 导致 cleanupAndFlushSave() 不触发；ScreenLocked 是原生广播，信号确切。
-Events.On('android:ScreenLocked', () => {
+events.on('android:ScreenLocked', () => {
     swallowError(saveSceneImmediate(true));
 });
 
 // 网络变化 → toast 提示（plaza 等在线功能依赖网络）
 // payload: {"online":true|false}
-Events.On('android:NetworkChanged', (ev: unknown) => {
+events.on('android:NetworkChanged', (ev: unknown) => {
     // Wails 事件对象：data 字段承载 Java 端 emitSystemEvent 的 JSON payload
     const data = (ev as { data?: { online?: boolean } } | null)?.data;
     const online = data?.online === true;
@@ -538,13 +539,13 @@ Events.On('android:NetworkChanged', (ev: unknown) => {
 
 // 电量变化 → 仅日志，暂不消费（预留扩展点，未来可低电量降级渲染）
 // payload: {"level":int,"scale":int,"plugged":bool}
-Events.On('android:BatteryChanged', (_ev: unknown) => {
+events.on('android:BatteryChanged', (_ev: unknown) => {
     // no-op: 预留扩展点
 });
 
 // 主题变化 → 仅日志，暂不消费（预留扩展点，未来可跟随系统暗色模式）
 // payload: {"nightMode":bool}
-Events.On('android:ThemeChanged', (_ev: unknown) => {
+events.on('android:ThemeChanged', (_ev: unknown) => {
     // no-op: 预留扩展点
 });
 

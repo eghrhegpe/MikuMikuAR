@@ -2,7 +2,8 @@
 // 处理文件监控发现新文件后的自动/手动导入逻辑。
 import { setStatus, formatError } from './config';
 import { t } from './i18n/t';
-import { ImportLocalFile, Events } from './wails-bindings';
+import { ImportLocalFile } from './wails-bindings';
+import { events } from './runtime-bridge';
 import { refreshLibrary } from '../menus/library';
 import { getAutoImportCached } from '../menus/settings-shared';
 import { DebouncedTimer } from './utils';
@@ -23,8 +24,13 @@ export async function importToLibrary(path: string, displayName: string): Promis
     }
 }
 
-Events.On('watch:newfile', (ev) => {
-    const payload = ev.data as { path: string; name: string; type: string };
+events.on('watch:newfile', (ev: unknown) => {
+    // Wails 事件对象：data 字段承载 Go 端 EventsEmit 的 payload
+    const payload = (ev as { data?: { path: string; name: string; type: string } } | null)?.data ?? {
+        path: '',
+        name: '',
+        type: '',
+    };
     const displayName = payload.name || payload.path;
 
     // 自动导入模式：跳过 toast，直接入库（不加载到场景）
