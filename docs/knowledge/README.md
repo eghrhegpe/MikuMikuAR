@@ -90,7 +90,7 @@ use_when:
 
 跑法：`node scripts/check-doc-drift.mjs`（或 `--json`）。可接 CI 卡点。
 
-## 卡片索引（106 张，按 category 分组）
+## 卡片索引（112 张，按 category 分组）
 
 ### 环境系统（env）
 
@@ -213,6 +213,11 @@ use_when:
 | [EnvState 单一源 Schema](./env-state-schema.md) | `core/env-state-schema.ts` | ADR-137/132 |
 | [Runtime 隔离桥](./runtime-bridge.md) | `core/runtime-bridge.ts` | ADR-177 |
 | [后端绑定聚合层](./wails-bindings.md) | `core/wails-bindings.ts` | ADR-176 |
+| [平台能力探测](./platform.md) | `core/platform.ts` | ADR-176 |
+| [统一资源加载队列](./load-manager.md) | `core/load-manager.ts` | ADR-045/135 |
+| [跨平台对话框](./dialog.md) | `core/dialog.ts` | ADR-153 |
+| [Toast 通知系统](./toast.md) | `core/toast.ts` | — |
+| [状态栏与提示系统](./status-bar.md) | `core/status-bar.ts` | ADR-153 |
 | [Observer 生命周期管理](./observer-handle.md) | `core/observer-handle.ts` | — |
 | [轻量响应式刷新系统](./reactivity.md) | `core/reactivity.ts` | — |
 | [渲染循环与 FPS 时钟](./render-loop.md) | `core/render-loop.ts` | ADR-102 |

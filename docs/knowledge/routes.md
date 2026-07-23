@@ -15,6 +15,11 @@
 | 菜单、设置、按钮、滑块、键盘导航、焦点 | [menu.md](./menu.md)、[menu-schema.md](./menu-schema.md) | [settings.md](./settings.md)、[ui-slider-controller.md](./ui-slider-controller.md)、[ui-keyboard-nav.md](./ui-keyboard-nav.md)、[ui-focus-trap.md](./ui-focus-trap.md) |
 | 全局状态、响应式、UI 持久化、环境状态 | [state.md](./state.md)、[env-state-schema.md](./env-state-schema.md) | [reactivity.md](./reactivity.md)、[ui-state.md](./ui-state.md) |
 | Wails、运行时桥、绑定、Go 错误、后端调用 | [runtime-bridge.md](./runtime-bridge.md)、[wails-bindings.md](./wails-bindings.md) | [goerr.md](./goerr.md)、[safe-call.md](./safe-call.md) |
+| Android、Web、平台判断、外部链接、桌面应用能力 | [platform.md](./platform.md) | [runtime-bridge.md](./runtime-bridge.md)、[wails-bindings.md](./wails-bindings.md) |
+| 模型/动作/道具/音频加载、队列、取消、loadId | [load-manager.md](./load-manager.md) | [library.md](./library.md)、[model-loader.md](./model-loader.md) |
+| 确认框、输入框、错误详情、Android prompt | [dialog.md](./dialog.md) | [ui-focus-trap.md](./ui-focus-trap.md)、[goerr.md](./goerr.md) |
+| Toast、错误提示、复制详情、撤销按钮 | [toast.md](./toast.md) | [status-bar.md](./status-bar.md)、[goerr.md](./goerr.md) |
+| 状态栏、HUD、FPS、鼠标提示、加载反馈 | [status-bar.md](./status-bar.md) | [ui-state.md](./ui-state.md)、[ui-keyboard-nav.md](./ui-keyboard-nav.md) |
 | 性能、渲染循环、FPS、质量档位、资源释放 | [performance.md](./performance.md)、[render-loop.md](./render-loop.md)、[dispose-helpers.md](./dispose-helpers.md) | [quality-profile.md](./quality-profile.md)、[renderer.md](./renderer.md) |
 | 资源库、浏览、会话、预设、缩略图 | [library.md](./library.md)、[library-browse.md](./library-browse.md) | [library-session-store.md](./library-session-store.md)、[preset-manager.md](./preset-manager.md)、[thumbnail-key.md](./thumbnail-key.md) |
 
