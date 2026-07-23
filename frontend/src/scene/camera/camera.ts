@@ -957,8 +957,9 @@ let _boneLockBoneName: string | null = null;
 let _boneLockModelId: string | null = null;
 // 可复用临时向量，避免每帧 new Vector3
 const _boneLockTempVec = new Vector3(0, 0, 0);
-// 锁定前保存原始平移灵敏度用于恢复
+// 锁定前保存原始平移灵敏度/惯性用于恢复
 let _savedPanningSensibility = 50;
+let _savedInertia = 0.9;
 
 /** 启用/禁用轨道相机骨骼锁定。启用后相机 target 每帧锁定到指定骨骼的世界位置。 */
 export function setOrbitBoneLock(enabled: boolean, boneName?: string): void {
@@ -996,11 +997,13 @@ function _startBoneLock(): void {
     }
     _stopBoneLock();
 
-    // 保存并禁用平移
+    // 保存并禁用平移 + 惯性
     const boneLockCam = getCurrentCamera();
     if (boneLockCam instanceof ArcRotateCamera) {
         _savedPanningSensibility = boneLockCam.panningSensibility;
         boneLockCam.panningSensibility = 0; // 0 = 完全禁用平移
+        _savedInertia = boneLockCam.inertia;
+        boneLockCam.inertia = 0; // 关闭惯性，避免与每帧 target 跟随冲突
     }
 
     _boneLockUpdateHandle = observe(_scene.onBeforeRenderObservable, () => {
@@ -1028,10 +1031,16 @@ function _startBoneLock(): void {
             return;
         }
 
-        // 从 worldMatrix（列主序 Float32Array[16]）提取世界位置
+        // 从 worldMatrix（列主序 Float32Array[16]）提取骨骼世界平移，已含模型根变换
         if (bone.worldMatrix) {
             _boneLockTempVec.set(bone.worldMatrix[12], bone.worldMatrix[13], bone.worldMatrix[14]);
-            cam.setTarget(_boneLockTempVec);
+
+            // 刚性跟随：保持相机当前视角（alpha/beta/radius 不变），将 target 与 position
+            // 按同一位移量一起平移到骨骼。避免 setTarget 每帧 rebuildAnglesAndRadius 重算朝向，
+            // 否则会与相机惯性拉扯导致焦点左右漂移。
+            const delta = _boneLockTempVec.subtract(cam.target);
+            cam.target.addInPlace(delta);
+            cam.position.addInPlace(delta);
         }
     });
 }
@@ -1040,10 +1049,11 @@ function _stopBoneLock(): void {
     if (_boneLockUpdateHandle) {
         _boneLockUpdateHandle = safeDispose(_boneLockUpdateHandle);
     }
-    // 恢复平移灵敏度
+    // 恢复平移灵敏度与惯性
     const boneLockCam = getCurrentCamera();
     if (boneLockCam instanceof ArcRotateCamera) {
         boneLockCam.panningSensibility = _savedPanningSensibility;
+        boneLockCam.inertia = _savedInertia;
     }
 }
 
