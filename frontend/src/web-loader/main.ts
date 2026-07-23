@@ -37,6 +37,19 @@ import { translateGoError } from '../core/i18n/goerr';
 // ======== JSZip（浏览器端 zip 解压） ========
 import * as JSZip from 'jszip';
 
+// ======== ADR-176 Phase 3：backend 选型 + 模型库持久化 ========
+import { resolveBackend } from '../core/backend';
+import {
+    saveModel,
+    listModels,
+    loadModelBytes,
+    getModelEntry,
+    deleteModel,
+    setLastModel,
+    getLastModel,
+    formatSize,
+} from './library';
+
 /** babylon-mmd 扩展 ImportMeshAsync 接受 Uint8Array，原类型签名不支持，需手动断言 */
 const importMeshFromBytes = ImportMeshAsync as unknown as (
     data: Uint8Array,
@@ -51,6 +64,10 @@ const statusBar = document.getElementById('statusBar') as HTMLDivElement;
 const modelNameEl = document.getElementById('modelName') as HTMLDivElement;
 const modelStatsEl = document.getElementById('modelStats') as HTMLDivElement;
 const fileInput = document.getElementById('fileInput') as HTMLInputElement;
+const libraryPanel = document.getElementById('libraryPanel') as HTMLDivElement;
+const libraryList = document.getElementById('libraryList') as HTMLDivElement;
+const libraryToggle = document.getElementById('libraryToggle') as HTMLButtonElement;
+const capBadge = document.getElementById('capBadge') as HTMLDivElement;
 
 // ======== IArrayBufferFile 类型（babylon-mmd 内部接口，此处重复定义避免 import 歧义） ========
 interface IArrayBufferFile {
@@ -127,9 +144,9 @@ async function loadModel(
     pmxBuffer: ArrayBuffer,
     textures: IArrayBufferFile[],
     modelName: string
-): Promise<void> {
+): Promise<boolean> {
     if (!scene) {
-        return;
+        return false;
     }
 
     setStatus('正在加载模型…');
@@ -153,7 +170,7 @@ async function loadModel(
 
         if (meshes.length === 0) {
             setStatus('模型加载完成，但未生成网格');
-            return;
+            return false;
         }
 
         // 找根 mesh
@@ -189,9 +206,11 @@ async function loadModel(
         modelStatsEl.textContent = `${meshes.length} 个网格 · ${textures.length} 个纹理`;
 
         setStatus(`✅ 加载完成：${displayName}`);
+        return true;
     } catch (err) {
         console.error('loadModel failed:', err);
         setStatus(`❌ 加载失败：${translateGoError(err)}`);
+        return false;
     }
 }
 
@@ -262,61 +281,176 @@ async function handleRawFiles(rawFiles: File[]): Promise<void> {
     await loadModel(pmxBuffer, textures, pmxName);
 }
 
+/** 解析 zip 字节：提取 PMX + 纹理。未找到 PMX 返回 null。 */
+async function parseZip(
+    data: ArrayBuffer | Uint8Array
+): Promise<{ pmxBuffer: ArrayBuffer; pmxName: string; textures: IArrayBufferFile[] } | null> {
+    const zip = await JSZip.loadAsync(data);
+
+    let pmxBuffer: ArrayBuffer | null = null;
+    let pmxName = '';
+    const textures: IArrayBufferFile[] = [];
+
+    const files = zip.files as Record<
+        string,
+        { dir: boolean; async: (t: 'arraybuffer') => Promise<ArrayBuffer> }
+    >;
+    const allNames = Object.keys(files);
+
+    // 优先找 .pmx
+    for (const name of allNames) {
+        const entry = files[name];
+        if (entry.dir) {
+            continue;
+        }
+        if (/\.pmx$/i.test(name)) {
+            pmxBuffer = await entry.async('arraybuffer');
+            pmxName = name;
+            break;
+        }
+    }
+    if (!pmxBuffer) {
+        return null;
+    }
+
+    // 收集纹理
+    for (const name of allNames) {
+        const entry = files[name];
+        if (entry.dir) {
+            continue;
+        }
+        if (/\.(png|jpg|jpeg|bmp|tga|dds|tif|tiff)$/i.test(name)) {
+            textures.push({
+                relativePath: name,
+                mimeType: getMimeType(name),
+                data: await entry.async('arraybuffer'),
+            });
+        }
+    }
+
+    return { pmxBuffer, pmxName, textures };
+}
+
+/** 加载成功后异步入库（失败不阻断展示，仅提示）。 */
+async function persistToLibrary(fileName: string, bytes: Uint8Array, kind: 'pmx' | 'zip'): Promise<void> {
+    try {
+        const entry = await saveModel(fileName, bytes, kind);
+        await setLastModel(entry.name);
+        await refreshLibraryPanel();
+        setStatus(`✅ 已加载并存入模型库：${entry.name}（${formatSize(entry.size)}）`);
+    } catch (err) {
+        // IndexedDB 配额不足等场景：展示不受影响，仅提示未持久化
+        console.warn('persistToLibrary failed:', err);
+        setStatus(`✅ 加载完成（⚠️ 入库失败：${translateGoError(err)}）`);
+    }
+}
+
 async function handleFile(file: File): Promise<void> {
     if (file.name.endsWith('.pmx')) {
         // 单 PMX 文件：纹理无法加载（无对应图片文件）
         const buffer = await file.arrayBuffer();
-        await loadModel(buffer, [], file.name);
+        const ok = await loadModel(buffer, [], file.name);
+        if (ok) {
+            await persistToLibrary(file.name, new Uint8Array(buffer), 'pmx');
+        }
     } else if (file.name.endsWith('.zip')) {
         setStatus('正在解压 ZIP…');
-        const zip = await JSZip.loadAsync(file);
-
-        let pmxBuffer: ArrayBuffer | null = null;
-        let pmxName = '';
-        const textures: IArrayBufferFile[] = [];
-
-        const files = zip.files as Record<
-            string,
-            { dir: boolean; async: (t: 'arraybuffer') => Promise<ArrayBuffer> }
-        >;
-        const allNames = Object.keys(files);
-
-        // 优先找 .pmx
-        for (const name of allNames) {
-            const entry = files[name];
-            if (entry.dir) {
-                continue;
-            }
-            if (/\.pmx$/i.test(name)) {
-                pmxBuffer = await entry.async('arraybuffer');
-                pmxName = name;
-                break;
-            }
-        }
-        if (!pmxBuffer) {
+        const buffer = await file.arrayBuffer();
+        const parsed = await parseZip(buffer);
+        if (!parsed) {
             setStatus('❌ ZIP 中未找到 .pmx 文件');
             return;
         }
-
-        // 收集纹理
-        for (const name of allNames) {
-            const entry = files[name];
-            if (entry.dir) {
-                continue;
-            }
-            if (/\.(png|jpg|jpeg|bmp|tga|dds|tif|tiff)$/i.test(name)) {
-                textures.push({
-                    relativePath: name,
-                    mimeType: getMimeType(name),
-                    data: await entry.async('arraybuffer'),
-                });
-            }
+        setStatus(`找到 ${parsed.pmxName}，${parsed.textures.length} 个纹理，加载中…`);
+        const ok = await loadModel(parsed.pmxBuffer, parsed.textures, parsed.pmxName);
+        if (ok) {
+            await persistToLibrary(file.name, new Uint8Array(buffer), 'zip');
         }
-
-        setStatus(`找到 ${pmxName}，${textures.length} 个纹理，加载中…`);
-        await loadModel(pmxBuffer, textures, pmxName);
     } else {
         setStatus('⚠️ 请拖拽 .pmx 或 .zip 文件');
+    }
+}
+
+// ======== 模型库（ADR-176 Phase 3） ========
+
+/** 从库中重载模型（zip 走 parseZip 还原纹理，pmx 直载）。 */
+async function loadFromLibrary(name: string): Promise<void> {
+    const entry = await getModelEntry(name);
+    const bytes = await loadModelBytes(name);
+    if (!entry || !bytes) {
+        setStatus(`❌ 模型库中不存在：${name}`);
+        await refreshLibraryPanel();
+        return;
+    }
+    setStatus(`从模型库载入：${name}…`);
+    let ok = false;
+    if (entry.kind === 'zip') {
+        const parsed = await parseZip(bytes);
+        if (!parsed) {
+            setStatus(`❌ 库内 zip 已损坏（未找到 .pmx）：${name}`);
+            return;
+        }
+        ok = await loadModel(parsed.pmxBuffer, parsed.textures, parsed.pmxName);
+    } else {
+        // Uint8Array 可能是大 buffer 的视图，切出精确段
+        const buf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+        ok = await loadModel(buf, [], entry.fileName);
+    }
+    if (ok) {
+        await setLastModel(name);
+        showDropZone(false);
+        setStatus(`✅ 已从模型库载入：${name}`);
+    }
+}
+
+/** 渲染模型库面板列表（空状态给行动引导）。 */
+async function refreshLibraryPanel(): Promise<void> {
+    const models = await listModels();
+    libraryList.replaceChildren();
+
+    if (models.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'lib-empty';
+        empty.textContent = '模型库为空 — 拖拽 .pmx / .zip 加载后自动入库';
+        libraryList.appendChild(empty);
+        return;
+    }
+
+    for (const m of models) {
+        const row = document.createElement('div');
+        row.className = 'lib-row';
+
+        const info = document.createElement('div');
+        info.className = 'lib-info';
+        const nameEl = document.createElement('div');
+        nameEl.className = 'lib-name';
+        nameEl.textContent = m.name;
+        nameEl.title = `点击载入 ${m.fileName}`;
+        const metaEl = document.createElement('div');
+        metaEl.className = 'lib-meta';
+        metaEl.textContent = `${m.kind.toUpperCase()} · ${formatSize(m.size)} · ${new Date(m.savedAt).toLocaleDateString()}`;
+        info.appendChild(nameEl);
+        info.appendChild(metaEl);
+        info.addEventListener('click', () => void loadFromLibrary(m.name));
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'lib-del';
+        delBtn.textContent = '✕';
+        delBtn.title = `删除 ${m.name}`;
+        delBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            // 破坏性操作防呆：二次确认
+            if (!window.confirm(`确定从模型库删除「${m.name}」？（${formatSize(m.size)}，不可撤销）`)) {
+                return;
+            }
+            await deleteModel(m.name);
+            setStatus(`已删除：${m.name}`);
+            await refreshLibraryPanel();
+        });
+
+        row.appendChild(info);
+        row.appendChild(delBtn);
+        libraryList.appendChild(row);
     }
 }
 
@@ -401,6 +535,39 @@ canvas.addEventListener('dblclick', () => {
     setStatus('就绪，拖拽或选择文件');
 });
 
-// ======== 启动 ========
-initScene();
-showDropZone(true);
+// ======== 模型库面板开关 ========
+libraryToggle.addEventListener('click', () => {
+    const willShow = libraryPanel.classList.contains('hidden');
+    libraryPanel.classList.toggle('hidden', !willShow);
+    if (willShow) {
+        void refreshLibraryPanel();
+    }
+});
+
+// ======== 启动（ADR-176 Phase 3：backend 选型 + 库恢复） ========
+async function bootstrap(): Promise<void> {
+    initScene();
+    showDropZone(true);
+
+    try {
+        // __MMKU_WEB__ 已置位：resolveBackend 直选 browser-adapter，无 3s 桥接等待
+        const backend = await resolveBackend();
+        const caps = backend.capabilities();
+        capBadge.textContent = `backend: ${backend.kind} · 存储: IndexedDB${caps.fsAccess ? ' · FSA ✓' : ''}`;
+
+        await refreshLibraryPanel();
+
+        // 「继续上次」引导：有 lastModel 时提示一键恢复
+        const last = await getLastModel();
+        if (last && (await getModelEntry(last))) {
+            setStatus(`就绪 — 上次加载过「${last}」，打开📚模型库可一键恢复`);
+        }
+    } catch (err) {
+        // backend 初始化失败不阻断拖拽主链路（隐私模式禁 IndexedDB 等场景）
+        console.warn('backend bootstrap failed:', err);
+        capBadge.textContent = 'backend: 不可用（仅拖拽加载）';
+        setStatus('⚠️ 持久化不可用，拖拽加载仍可正常使用');
+    }
+}
+
+void bootstrap();

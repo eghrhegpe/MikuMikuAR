@@ -57,7 +57,10 @@ function _defaultConfig(): Config {
 }
 
 async function _listModels(): Promise<ModelEntry[]> {
-    const keys = await idbKeys('models');
+    // 键规约（ADR-176 Phase 3，与 web-loader/library.ts 共享）：
+    //   `entry:<name>` = 模型元数据；`file:<name>` = 原档字节；`recent` = 最近列表。
+    // 仅列 entry: 前缀，避免把原档字节 / recent 数组误当 ModelEntry 返回。
+    const keys = (await idbKeys('models')).filter((k) => k.startsWith('entry:'));
     const out: ModelEntry[] = [];
     for (const k of keys) {
         const m = await idbGet<ModelEntry>('models', k);
