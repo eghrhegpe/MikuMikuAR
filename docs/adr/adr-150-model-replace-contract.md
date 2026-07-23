@@ -1,9 +1,21 @@
 # ADR-150: 模型替换原子操作契约（Model Replace Contract）
 
-- **状态**: ✅ 已完成
+- **状态**: 🔄 实施中（2026-07-22 重构方案，决策二已落地）
 - **日期**: 2026-07-20
-- **完成日期**: 2026-07-20
-- **相关**: ADR-131（BrowseOutcome 统一契约）、ADR-045（统一 LoadManager 队列）、ADR-121（全局动作意图）、ADR-124（文件系统架构）
+- **完成日期**: 2026-07-22（决策二状态继承落地）
+- **相关**: ADR-131（BrowseOutcome 统一契约）、ADR-045（统一 LoadManager 队列）、ADR-121（全局动作意图）、ADR-124（文件系统架构）、ADR-167（场景级动作库）、ADR-127（场景级撤销）
+
+## 方案裁剪说明（2026-07-22 重估）
+
+> 本 ADR 原含三大决策，经后 ADR-167（场景级动作库）落地后的代码现状重估，裁剪如下：
+
+| 决策 | 状态 | 理由 |
+|------|------|------|
+| 决策一：LoadManager 三层 `load`/`restore`/`loadPMXFile` + priority bypass | **永久搁置** | 反序列化并行加载实际无故障；restore 插队逻辑增加调度器复杂度但用户感知收益为零 |
+| 决策二：Replace 原子操作 + 状态继承 | **已落地** | 真实用户痛点。VMD 继承路径从 `loadVMDInternal` 改为 `sceneMotionId` 引用场景动作库 |
+| 决策三：`loadVMDInternal` | **移除** | 后 ADR-167 时代 VMD 通过 `sceneMotionId` 引用，`model-loader.ts` 已有自动应用逻辑，无需半公开加载路径 |
+
+**与 ADR-131 的边界澄清：** ADR-131 管"替换后 UI 去哪"（BrowseOutcome 派发，已完成）；ADR-150 管"替换时状态怎么传"（状态继承，决策二已落地）。
 
 ## 背景与问题
 

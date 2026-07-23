@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 65 | 502 |
-| 3D 场景 | 98 | 1052 |
+| 3D 场景 | 98 | 1055 |
 | 菜单 & UI | 65 | 339 |
 | 换装 & 音频 | 3 | 38 |
 | 动作算法 | 17 | 129 |
@@ -942,8 +942,11 @@
 | `FormationType()` | `scene/manager/model-manager` | — |
 | `ModelManager()` | `scene/manager/model-manager` | — |
 | `getFormationLabels()` | `scene/manager/model-manager` | — |
+| `ReplaceSnapshot()` | `scene/manager/model-ops` | — |
+| `applyInheritedState()` | `scene/manager/model-ops` | — |
 | `applyVPDPose()` | `scene/manager/model-ops` | — |
 | `arrangeModels()` | `scene/manager/model-ops` | — |
+| `captureInheritedState()` | `scene/manager/model-ops` | — |
 | `focusModel()` | `scene/manager/model-ops` | — |
 | `focusedMmdModel()` | `scene/manager/model-ops` | — |
 | `focusedModel()` | `scene/manager/model-ops` | — |
@@ -2120,5 +2123,5 @@
 
 ---
 
-> 共 252 个文件，2087 个导出符号。
+> 共 252 个文件，2090 个导出符号。
 > 说明列（—）待知识库或人工补充。
