@@ -1,10 +1,12 @@
 # ADR-177: Web Loader 与主应用统一路径
 
-> **状态**: 有条件通过（2026-07-23；方向 A 可行，但当前文档可行性判断偏乐观。采纳方向 A，但需先补 Phase 0 Spike 和 Runtime Bridge 设计；不要按当前文档直接进入 A1。总体可行度约 7/10）
+> **状态**: 有条件通过（2026-07-23；方向 A 可行。批准进入 Phase 0 Spike 设计与验证，但不直接进入 Phase 1 实施。总体可行度约 7/10）
 > **日期**: 2026-07-23
 > **关联**: ADR-176（前端 Backend 适配器双实现）、ADR-017（安卓适配，platform 探测范式）、ADR-159（桥接注入范式）、ADR-093（声明式菜单 Schema）
 > **前置**: ADR-176 Phase 1-3 已落地（backend 适配器层、wails-bindings 106 函数全代理化、web-loader 网页原型已上线 GitHub Pages）
-> **审核记录**: 2026-07-23 架构审核——有条件通过。关键修订：① @wailsio/runtime value import 不只 Events，还有 Browser（2 处）；② capabilities() 是契约非完整 UI 门控；③ 主应用首屏数据链未证明；④ index.web.html 不能仅复制 index.html；⑤ 新增 Phase 0 Spike 作为前置门槛；⑥ Phase 4 默认保留 web-loader。
+> **审核记录**: 2026-07-23 架构审核（两轮）——有条件通过。
+> - **第一轮修订**：① @wailsio/runtime value import 不只 Events，还有 Browser（2 处）；② capabilities() 是契约非完整 UI 门控；③ 主应用首屏数据链未证明；④ index.web.html 不能仅复制 index.html；⑤ 新增 Phase 0 Spike 作为前置门槛；⑥ Phase 4 默认保留 web-loader。
+> - **第二轮修订**：① Runtime Bridge 接口对齐 Wails 真实 API（`Off(...names)` 可变参数、`Emit` 返回 `Promise<boolean>`、`On` 返回 unsubscribe 为主契约）；② Phase 0 明确临时 Vite alias/stub 边界（生产代码 4 处直接 import 未迁移）；③ Phase 0 增加 PMX/ZIP/VMD 拖入真实验收；④ browser-adapter 模型加载链路现状表（ListDirRecursive 返回 []、LoadOutfitFile 返回 null）；⑤ A5 命名统一为 `GetLibraryIndex()`/`ScanModelDir()`；⑥ Phase 1 白名单验收明确（menus/events/wails-bindings 零残留）；⑦ Phase 4 smoke 细节（localhost+Pages 双路径、Chromium、失败阈值）。
 
 ## 背景
 
@@ -154,25 +156,31 @@ ADR-176 已铺好统一的基础设施，但主应用跑浏览器的硬依赖面
 
 **目标**：验证主应用 web 入口能启动不崩，作为采纳方向 A 的前置门槛。
 
-**做法**：新增临时入口，仅验证最小链路。
+**关键边界**：Phase 0 使用**临时 Vite alias/stub** 隔离 `@wailsio/runtime`，不修改生产代码。因为当前生产代码仍有 4 处直接导入 `@wailsio/runtime`（`core/events.ts`、`menus/plaza-download.ts`、`menus/settings-about.ts`、`core/wails-bindings.ts`），Phase 0 不做迁移，仅用临时桩验证可行性。正式迁移在 Phase 1 Runtime Bridge。
 
-| 步骤 | 验证项 | 验收条件 |
-|------|--------|----------|
-| S1 | 置 `globalThis.__MMKU_WEB__ = true` | 短路标记生效 |
-| S2 | 加载 `core/main.ts` | 无 JS 错误 |
-| S3 | 注入 `@wailsio/runtime` stub | 不请求 `/wails/custom.js` |
-| S4 | 初始化 Babylon Scene | 场景渲染不崩 |
-| S5 | 初始化 `resolveBackend()` | 选到 browserAdapter |
-| S6 | 读取 `GetConfig()`、`GetUIState()` | 返回默认值不抛错 |
-| S7 | 渲染一个最小菜单壳 | menu-factory 可渲染 |
+**做法**：新增临时入口 + 临时 Vite config，仅验证最小链路。
+
+| 步骤 | 验证项 | 验收条件（可观察指标） |
+|------|--------|--------------------------|
+| S1 | 置 `globalThis.__MMKU_WEB__ = true` | 短路标记在所有业务 import 之前设置 |
+| S2 | 加载 `core/main.ts`（经临时 alias 隔离 @wailsio/runtime） | 无 JS 错误；无未捕获 Promise rejection |
+| S3 | 注入 `@wailsio/runtime` 临时桩 | network 无 `/wails/custom.js` 请求 |
+| S4 | 初始化 Babylon Scene | 首帧成功（canvas 非黑）；无 WebGL 错误 |
+| S5 | 初始化 `resolveBackend()` | 选到 browserAdapter；capBadge 显示 browser |
+| S6 | 读取 `GetConfig()`、`GetUIState()` | 返回默认值不抛错；无 undefined 字段访问 |
+| S7 | 渲染一个最小菜单壳 | menu-factory 可渲染；底部导航 6 个按钮 DOM 存在（#btnMainAction/#btnMotionPopup/#btnScene/#btnEnv/#btnSettings/#btnPlaza） |
 
 **Phase 0 验收门槛**：
-- ✅ 不请求 `/wails/custom.js`
-- ✅ 不访问 `window.wails!`
+- ✅ 不请求 `/wails/custom.js`（network 零命中）
+- ✅ 不访问 `window.wails!`（无运行时错误）
 - ✅ 不触发未捕获 `NotSupportedError`
 - ✅ 不产生 `Events` 运行时异常
-- ✅ 不依赖 Go 后端
-- ✅ GitHub Pages base path 下资源全部可加载
+- ✅ 不依赖 Go 后端（无 wails binding 调用）
+- ✅ GitHub Pages base path 下资源全部 200
+- ✅ **空 IndexedDB 启动**：清空 IndexedDB 后首屏不崩
+- ✅ **PMX 拖入加载**：拖入 .pmx 文件，模型成功渲染（验证 readFileBytes 键规约）
+- ✅ **ZIP 拖入加载**：拖入 .zip（含 PMX+纹理），解包+渲染成功
+- ✅ **VMD 拖入加载**：拖入 .vmd，动作播放成功（验证 ListDirRecursive 降级语义）
 
 > **若 Phase 0 未通过**：方向 A 暂缓，回退评估方向 B/C 或修订方案。
 
@@ -184,30 +192,43 @@ ADR-176 已铺好统一的基础设施，但主应用跑浏览器的硬依赖面
 |------|------|------|
 | A3 | 新建 `core/runtime-bridge.ts`：`events.on/off/emit` + `browser.openURL` + platform no-op + `disposeAll()` | 11 处 Events + 2 处 Browser 调用迁移 |
 
-**Runtime Bridge 接口设计**：
+**Runtime Bridge 接口设计**（对齐 Wails 真实 API 契约）：
 ```typescript
 // core/runtime-bridge.ts
+// 对齐 @wailsio/runtime Events 真实签名：
+//   On(name, cb) → 返回 unsubscribe: () => void
+//   Off(...names) → 按事件名移除（可变参数，非 callback）
+//   Emit(name, data) → 返回 Promise<boolean>（底层 call() 链）
+//   Once(name, cb) → 一次性订阅
+//   OffAll() → 清空所有
+
 export interface RuntimeBridge {
   events: {
-    on(name: string, cb: (data: unknown) => void): () => void;  // 返回 unsubscribe
-    off(name: string, cb: (data: unknown) => void): void;
-    emit(name: string, data?: unknown): void;
+    on(name: string, cb: (data: unknown) => void): () => void;  // 返回 unsubscribe（主契约）
+    once(name: string, cb: (data: unknown) => void): void;
+    off(...names: string[]): void;  // 按事件名移除（对齐 Wails Off 签名）
+    emit(name: string, data?: unknown): Promise<boolean>;  // 返回 Promise<boolean>（对齐 Wails Emit）
+    offAll(): void;  // 清空所有监听
   };
   browser: {
     openURL(url: string): Promise<void>;  // Wails: 原生；Web: window.open
   };
-  disposeAll(): void;  // 释放所有订阅，dispose 时调用
+  disposeAll(): void;  // 释放所有订阅，dispose 时调用（内部维护 listener 映射）
 }
 ```
 
-**白名单验证**（迁移后）：
+> **Wails API 契约说明**（审核修订）：原版 `off(name, cb)` 与 Wails 真实 `Off(...eventNames)` 不一致，已对齐为按事件名可变参数移除。`emit()` 原返回 `void`，已对齐为 `Promise<boolean>`（Wails Emit 底层是 `call()` 链返回 Promise）。Bridge 内部维护 listener 映射以支持 `disposeAll()`。
+
+**白名单验收**（Phase 1 完成后强制）：
 ```bash
 rg "@wailsio/runtime" frontend/src --glob "*.ts"
 ```
-只允许出现在：
+**只允许出现在**：
 - `core/runtime-bridge.ts`（Wails 侧实现）
 - `core/backend/go-adapter.ts`（透传）
-- 测试 mock
+- `__tests__/**`（测试 mock，type import 允许）
+
+**不得出现在**任何 `menus/**`、`core/events.ts`、`core/wails-bindings.ts`、其他业务文件。迁移后 grep 验证零残留。
 
 ### Phase 2：能力门控 + 首屏数据（A4 + A5）
 
@@ -223,6 +244,19 @@ rg "@wailsio/runtime" frontend/src --glob "*.ts"
 | `readFileBytes()` IndexedDB key 与主应用模型加载器路径是否一致？ | 对齐键规约 | 统一键规约 |
 | 拖拽导入的 `.pmx/.zip` 是否进入统一模型注册与缓存链？ | 验证 | 统一入口 |
 
+**browser-adapter 模型加载链路现状**（审核新增，P1 阻塞判断）：
+
+| 方法 | 当前实现 | 主应用依赖 | 差距 |
+|------|----------|------------|------|
+| `readFileBytes(path)` | IndexedDB `models` store 按 path 取 | 模型加载器读 PMX/纹理/VMD | 键规约需对齐（`file:<name>`） |
+| `ListDirRecursive()` | **返回 `[]`** | 模型加载器扫描资源目录 | **降级语义未证明**——需改为 IndexedDB 索引遍历 |
+| `ImportLocalFile()` | 返回 `_listModels()` | 文件选择器入口 | 不负责实际文件选择，需 FSA 对接 |
+| `LoadOutfitFile()` | **返回 `null`** | 服装加载链 | **未实现**——需补 IndexedDB 读取 |
+| `LoadSceneFile()` | 返回 `null` | 场景加载 | 未实现，需补 |
+| `GetLibraryIndex()` / `ScanModelDir()` | 都返回 `_listModels()` | 模型库列表 | 已可用（IndexedDB 索引） |
+
+> **关键阻塞**：主应用模型加载器 → `ListDirRecursive()` → `readFileBytes()` → IndexedDB。当前 `ListDirRecursive()` 返回空数组，资源纹理、VMD、服装链路尚未证明。Phase 0 必须加入「空 IndexedDB + 拖入 PMX/ZIP + 纹理/VMD 加载」的真实验收。
+
 **A5 能力门控（非机械）**——生产菜单实际调用清单：
 
 | 能力键 | 生产入口 | 浏览器行为 | 降级实现 |
@@ -233,7 +267,7 @@ rg "@wailsio/runtime" frontend/src --glob "*.ts"
 | `watchDir` | 自动导入监听开关 | 隐藏 | `if (capabilities().watchDir === false) hide` |
 | `systemDirOpen` | 打开系统目录按钮 | 隐藏 | `if (capabilities().systemDirOpen === false) hide` |
 | `fsAccess` | 模型目录选择 | 改为 FSA 或拖拽 | `if (capabilities().fsAccess) showFSA else showDrag` |
-| `modelScan` | 扫描模型库 | 改为 IndexedDB/FSA | browser-adapter `listModels()` |
+| `modelScan` | 扫描模型库 | 改为 IndexedDB/FSA | `browserAdapter.GetLibraryIndex()` / `ScanModelDir()`（统一归 BackendService，非 web-loader `library.ts`） |
 | `proxyServer` | 代理设置 | 隐藏 | `if (capabilities().proxyServer === false) hide` |
 | `fileServer` | 静态文件服务 | 隐藏 | `if (capabilities().fileServer === false) hide` |
 | `storageMode` | 存储模式切换 | 隐藏（固定 'web'） | `if (capabilities().storageMode === false) hide` |
@@ -262,7 +296,12 @@ rg "@wailsio/runtime" frontend/src --glob "*.ts"
 **不立即废弃 `web-loader.html`**。至少保留到以下条件全部满足：
 
 - ✅ 主应用 Web 入口连续构建通过
-- ✅ Playwright 浏览器 smoke 测试通过
+- ✅ **Playwright 浏览器 smoke 测试通过**：
+  - 路径 1：`http://localhost:<port>/MikuMikuAR/`（本地 preview）
+  - 路径 2：`https://eghrhegpe.github.io/MikuMikuAR/`（GitHub Pages）
+  - 浏览器矩阵：至少 Chromium（Chrome/Edge）；Firefox/Safari 可选
+  - 失败阈值：0 个 P0/P1 失败用例
+  - 覆盖项：首屏渲染、PMX 加载、ZIP 加载、VMD 加载、菜单导航、IndexedDB 读写
 - ✅ PMX、ZIP、VMD 三类资源均验证可加载
 - ✅ IndexedDB 旧数据迁移完成
 - ✅ 主应用 Web 入口连续两次发布无回归
@@ -315,10 +354,18 @@ rg "@wailsio/runtime" frontend/src --glob "*.ts"
 
 ## 待决策
 
+**复审结论**：批准进入 Phase 0 Spike 设计与验证；暂不批准直接进入 Phase 1 Runtime Bridge 全量迁移。
+
+**进入 Phase 1 前必须补齐**：
+1. Runtime Bridge 与真实 Wails API 的契约（本轮已修订）
+2. 空库启动与 PMX/ZIP 真实导入 smoke（Phase 0 验收门槛）
+3. `ListDirRecursive`、资源文件、VMD、服装加载的浏览器降级语义（Phase 0/2 回答）
+4. Runtime 直接导入白名单验收（Phase 1 完成后 grep 零残留）
+
 **需用户确认**：
 1. 是否采纳方向 A（有条件）作为统一路径？
 2. 若采纳，是否同意 Phase 0 Spike 作为前置门槛（未通过则暂缓方向 A）？
-3. Phase 1 Runtime Bridge 接口设计是否合理？
-4. Phase 4 保留 web-loader 的验收条件是否合理？
+3. Phase 1 Runtime Bridge 接口设计是否合理（已对齐 Wails 真实 API）？
+4. Phase 4 保留 web-loader 的验收条件是否合理（含 Playwright smoke 细节）？
 
 **若用户选方向 B 或 C**：本 ADR 的「实施路径」节需重写，其余评估仍有效。
