@@ -1,21 +1,22 @@
-# ADR-176 Phase 3: Web Loader → GitHub Pages 自动部署
+# ADR-177 Phase 3: 主应用 Web 入口 → GitHub Pages 自动部署
 #
-# 将 web-loader.html（纯浏览器 PMX 加载器原型）构建并部署到 GitHub Pages。
+# 将主应用 web 入口（index.web.html，完整菜单 + 场景 + 模型加载）构建并部署到 GitHub Pages。
 # 仓库 eghrhegpe/MikuMikuAR → 访问地址 https://eghrhegpe.github.io/MikuMikuAR/
 #
-# 触发条件：main 分支 push 且 web-loader 相关文件改动时。
+# 触发条件：main 分支 push 且 web 入口相关文件改动时。
 # 部署方式：官方 actions/deploy-pages（artifact 上传，无需 gh-pages 分支）。
 #
 # 前置：仓库 Settings → Pages → Source 选 "GitHub Actions"。
-name: Web Loader — GitHub Pages Deploy
+name: Web — GitHub Pages Deploy
 
 on:
   push:
     branches: [main]
     paths:
-      - 'frontend/web-loader.html'
-      - 'frontend/src/web-loader/**'
-      - 'frontend/vite.web-loader.config.ts'
+      - 'frontend/index.web.html'
+      - 'frontend/vite.web.config.ts'
+      - 'frontend/src/**'
+      - 'frontend/bindings/**'
       - '.github/workflows/web-loader-pages.yml'
   workflow_dispatch: # 允许手动触发
 
@@ -50,15 +51,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build web-loader (production)
-        # 独立构建配置：不 externalize babylon / base=/MikuMikuAR/ / @wailsio/runtime stub
+      - name: Build web entry (production)
+        # [doc:adr-177] Phase 3 主应用 web 入口生产构建
+        # 不 externalize babylon / base=/MikuMikuAR/ / @wailsio/runtime stub
         # 产物输出到 frontend/dist-web/
-        run: npx vite build --config vite.web-loader.config.ts
+        run: npx vite build --config vite.web.config.ts
 
       - name: Add index.html entry
-        # GitHub Pages 默认入口是 index.html，复制 web-loader.html 以支持根路径访问
+        # GitHub Pages 默认入口是 index.html，复制 index.web.html 以支持根路径访问
         # （https://eghrhegpe.github.io/MikuMikuAR/ 自动打开）
-        run: cp dist-web/web-loader.html dist-web/index.html
+        run: cp dist-web/index.web.html dist-web/index.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
