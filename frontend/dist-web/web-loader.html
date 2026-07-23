@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>MikuMikuAR — Web Loader 原型</title>
+    <link rel="icon" href="data:,">
+  <script type="module" crossorigin src="/MikuMikuAR/assets/web-loader-CKxzBnvk.js"></script>
+  <link rel="modulepreload" crossorigin href="/MikuMikuAR/assets/babylon-vendor-sIMzUAI2.js">
+  <link rel="modulepreload" crossorigin href="/MikuMikuAR/assets/mmd-vendor-BnV44XeA.js">
+  <link rel="modulepreload" crossorigin href="/MikuMikuAR/assets/vendor-BnryQF7W.js">
+  <link rel="stylesheet" crossorigin href="/MikuMikuAR/assets/web-loader-Boc4Agl-.css">
+</head>
+<body>
+    <div id="app">
+        <!-- 拖拽区 -->
+        <div id="dropZone">
+            <div id="dropInner">
+                <div id="dropIcon">📦</div>
+                <div id="dropText">拖拽 .pmx 或 .zip 到此处</div>
+                <div id="dropHint">或点击选择文件</div>
+                <input type="file" id="fileInput" accept=".pmx,.zip" hidden>
+            </div>
+            <div id="statusBar">就绪</div>
+        </div>
+
+        <!-- 3D Canvas -->
+        <canvas id="renderCanvas"></canvas>
+
+        <!-- 信息面板 -->
+        <div id="infoPanel">
+            <div id="modelName">—</div>
+            <div id="modelStats">等待加载…</div>
+            <div id="capBadge">backend: 初始化中…</div>
+        </div>
+
+        <!-- 模型库（ADR-176 Phase 3） -->
+        <button id="libraryToggle" title="模型库">📚 模型库</button>
+        <div id="libraryPanel" class="hidden">
+            <div id="libraryHeader">模型库（IndexedDB · 本机同源）</div>
+            <div id="libraryList"></div>
+        </div>
+
+        <!-- 操作提示 -->
+        <div id="tips">
+            <span>🖱 拖拽旋转 · 滚轮缩放 · 双击换模型</span>
+        </div>
+    </div>
+
+</body>
+</html>

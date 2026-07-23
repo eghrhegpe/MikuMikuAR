@@ -89,6 +89,19 @@ const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const appearsIn = (text, sym) =>
   new RegExp('\\b' + escapeRe(sym) + '\\b').test(text);
 
+// 从 architecture.md 目录树行中提取所有引用的文件名（basename）
+function getArchTreeBasenames() {
+  const arch = read(CONFIG.archDoc);
+  const names = new Set();
+  const re = /[├└]──\s*([^\s#├└]+\.(?:ts|go))/g;
+  let m;
+  while ((m = re.exec(arch))) {
+    // token 可能是 core/state.ts 或 motion-slot.ts → 统一取 basename
+    names.add(path.basename(m[1]));
+  }
+  return names;
+}
+
 // ---------- 检查 1：架构目录树引用完整性（ERROR） ----------
 function checkTreeIntegrity() {
   const arch = read(CONFIG.archDoc);
@@ -135,6 +148,7 @@ function checkSymbolCoverage() {
   const arch = read(CONFIG.archDoc);
   const func = read(CONFIG.funcDoc);
   const files = CONFIG.sourceRoots.flatMap((r) => walk(path.join(ROOT, r)));
+  const archTreeBasenames = getArchTreeBasenames();
   const undocumentedByDir = {};
   let undocumented = 0;
   for (const f of files) {
@@ -143,7 +157,7 @@ function checkSymbolCoverage() {
     const inArch = syms.filter((s) => appearsIn(arch, s)).length;
     const inFunc = syms.filter((s) => appearsIn(func, s)).length;
     const coverage = Math.max(inArch, inFunc) / syms.length;
-    if (coverage === 0 && !arch.includes(path.basename(f))) {
+    if (coverage === 0 && !archTreeBasenames.has(path.basename(f))) {
       undocumented++;
       const rel = asPosix(f).replace(asPosix(ROOT) + '/', '');
       const top = rel.split('/').slice(1, 3).join('/'); // frontend/src/<a>/<b>
