@@ -240,6 +240,8 @@ export type ModelInstance = {
     motionPresets?: MotionPreset[];
     /** 程序化动作状态（per-model），未设置时使用全局默认值 */
     procMotion?: ProcMotionState;
+    /** [doc:adr-085] 足部 IK 调整状态（per-model），未设置时使用全局默认值 */
+    feet?: FeetState;
     /** [doc:adr-049] 球面坐标轨道控制：坐标模式，默认 'cartesian' */
     positionMode?: 'cartesian' | 'orbit';
     /** [doc:adr-049] 水平方位角（度，-180~180），仅 positionMode==='orbit' 时生效 */
