@@ -59,7 +59,7 @@ adr:                 # 关联决策（可选）
 
 跑法：`node scripts/check-doc-drift.mjs`（或 `--json`）。可接 CI 卡点。
 
-## 卡片索引（105 张，按 category 分组）
+## 卡片索引（106 张，按 category 分组）
 
 ### 环境系统（env）
 
@@ -206,3 +206,4 @@ adr:                 # 关联决策（可选）
 | [统一风场辅助函数](./wind-utils.md) | `core/wind-utils.ts` | — |
 | [简体中文语言包](./zh-CN.md) | `core/i18n/locales/zh-CN.ts` | ADR-059 |
 | [繁体中文语言包](./zh-TW.md) | `core/i18n/locales/zh-TW.ts` | ADR-059 |
+| [轻量日志工具（无依赖）](./logger.md) | `core/logger.ts` | ADR-141 |

@@ -14,13 +14,18 @@ source_files:
 ## 核心职责
 - 汇聚 re-export：water（`createWater`/`disposeWater`/`refreshWaterRenderList`/ripple 系列）、clouds（`createClouds`/`disposeClouds`）、mirror（`createMirror`/`disposeMirror`/`isMirrorActive`/`updateMirrorClearColor`）
 - 环境 observer：`ensureEnvUpdateObserver` / `disposeEnvUpdateObserver`（由门面 re-export 供 scene 清理）
-- fog 应用、共享上下文 `_envSys` / `getScene` / `getPipeline` / `resolveStaticAsset` / `isInitialized`
-- 场景 tick 回调注册表（`registerSceneTickCallback` / `clearSceneTickCallbacks` / `runSceneTickCallbacks`，供 time-of-day）
+- fog 应用（`applyFog`）、共享上下文 `_envSys` / `getScene` / `getPipeline` / `resolveStaticAsset` / `isInitialized`（后 5 者为来自 `env-context` 的 barrel 重导出）
+- 场景 tick 回调 **barrel 重导出**（定义见 `env-dispatcher`）：`registerSceneTickCallback` / `clearSceneTickCallbacks` / `runSceneTickCallbacks`，observer 每帧调用 `runSceneTickCallbacks()`，`disposeEnvUpdateObserver` 中调用 `clearSceneTickCallbacks()`
 
 ## 对外 API（节选）
-- `initEnvImpl(scene, pipeline)`
-- `ensureEnvUpdateObserver()` / `disposeEnvUpdateObserver()`
-- `registerSceneTickCallback(cb)` / `runSceneTickCallbacks(dt)`
+本文件**自身定义**：
+- `ensureEnvUpdateObserver()` / `disposeEnvUpdateObserver()` — 每帧 observer 的注册与级联释放
+- `applyFog(state: EnvState)` — 按 `fogMode`/`fogDensity` 等应用雾
+
+本文件为 **barrel 重导出**（定义见上游模块）：
+- `initEnvImpl(scene, pipeline)`（定义于 `env-context`）
+- `registerSceneTickCallback(cb)` / `clearSceneTickCallbacks()` / `runSceneTickCallbacks()`（定义于 `env-dispatcher`，**无参数**）
+- water/clouds/mirror/sky/ground/particles 各子系统 API（定义于各自 `env-*` 模块）
 
 ## 关键约定
 - dispose 链路级联释放 water/clouds/mirror 子资源（见各子系统卡）
