@@ -20,8 +20,8 @@ Model 子菜单：从 `library.ts` 提取。职责：模型各层级构建（外
 - 预设：`savePresetToLibDialog` / `buildPresetListLevel`（model-preset）
 
 ## 对外 API（节选）
-- 各模型层级构建器（外观/信息/标签/表情/材质）
-- `buildModelDetailLevel(...)`（根层级）
+- 各模型层级构建器：`buildModelLevel`（根）/ `buildModelToolsLevel` / `buildModelInfoLevel` / `buildModelTagsLevel` / `buildMorphPreviewLevel` / `buildPersonalLightLevel` / `buildBoneHierarchyLevel` / `buildOpenWithLevel` / `buildMotionSlotLevel`
+- `buildModelLevel(id)`（根层级，由 `library`/`scene-menu` 推入）
 
 ## 关键约定
 - 详情页复用 `buildTransformCard` 统一变换交互
