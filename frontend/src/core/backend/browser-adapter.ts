@@ -225,16 +225,28 @@ export const browserAdapter: BackendService = {
             url: '',
         } as unknown as UpdateCheckResult;
     },
-    async ExtractZip(buf: Uint8Array): Promise<ExtractResult> {
+    async ExtractZip(zipPath: string, _innerPath: string): Promise<ExtractResult | null> {
+        // [doc:adr-177] 浏览器侧：调用方先将 zip 字节写入 IndexedDB file:<zipStem>，
+        // 此处 readFileBytes 读回 → JSZip 解压 → 内部资源落地 file:<stem> → 返回主 PMX。
+        // 语义对齐 Go 的 ExtractZip（解压到缓存目录，浏览器侧缓存即 IndexedDB）。
+        const buf = await this.readFileBytes(zipPath);
+        if (!buf) return null;
         const zip = await JSZip.loadAsync(buf);
-        const files: Record<string, Uint8Array> = {};
+        const ASSET_RE = /\.(pmx|vmd|vpd|png|jpg|jpeg|bmp|tga|dds|tif|tiff|wav|mp3|ogg|flac|glb)$/i;
+        const fileNames = Object.keys(zip.files).filter((n) => !zip.files[n].dir);
+        const baseNames: string[] = [];
         await Promise.all(
-            Object.keys(zip.files).map(async (name) => {
-                const f = zip.files[name];
-                if (!f.dir) files[name] = new Uint8Array(await f.async('arraybuffer'));
+            fileNames.map(async (name) => {
+                const bytes = new Uint8Array(await zip.files[name].async('arraybuffer'));
+                const baseName = name.split(/[/\\]/).pop() || name;
+                if (!ASSET_RE.test(baseName)) return;
+                const stem = baseName.replace(/\.[^.]+$/, '');
+                await idbSet('models', `file:${stem}`, bytes);
+                baseNames.push(baseName);
             })
         );
-        return { files, rootDir: '', entries: Object.keys(files) } as unknown as ExtractResult;
+        const mainPmx = baseNames.find((b) => b.toLowerCase().endsWith('.pmx')) ?? '';
+        return { file_path: mainPmx, dir: '', cached: false } as unknown as ExtractResult;
     },
     async SaveScreenshot(data: Uint8Array): Promise<void> {
         const blob = new Blob([data as BlobPart], { type: 'image/png' });
@@ -441,9 +453,9 @@ export const browserAdapter: BackendService = {
     async ImportLocalFile(): Promise<ModelEntry[]> {
         return _listModels();
     },
-    async ImportZip(buf: Uint8Array): Promise<ModelEntry[]> {
-        await this.ExtractZip(buf);
-        return _listModels();
+    async ImportZip(zipPath: string): Promise<ExtractResult | null> {
+        // [doc:adr-177] 对齐 Go 签名（zipPath），内部委托 ExtractZip
+        return this.ExtractZip(zipPath, '');
     },
 
     // —— PlazaGo* 系列（①，网页内 iframe 可控）——

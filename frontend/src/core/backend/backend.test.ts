@@ -39,7 +39,17 @@ vi.mock('./idb', () => ({
 }));
 
 import { browserAdapter } from './browser-adapter';
+import type { UIState, EnvState } from '@bindings/mikumikuar/internal/app/models';
 import { isWebPlatform, isAndroidPlatform, guardExternalAction } from '../platform';
+
+// [doc:adr-177] browser-adapter 扩展方法（Partial 签名便利方法，不在统一 BackendService 接口；
+// Go 侧用 SetConfig 统一持久化，浏览器侧提供细粒度 GetUIState/SetUIState/SetEnvState）
+interface BrowserAdapterExt {
+    GetUIState(): Promise<UIState>;
+    SetUIState(s: Partial<UIState>): Promise<void>;
+    SetEnvState(e: Partial<EnvState>): Promise<void>;
+}
+const ext = browserAdapter as unknown as BrowserAdapterExt;
 
 function setWindow(w: unknown): void {
     (globalThis as { window?: unknown }).window = w;
@@ -128,7 +138,7 @@ describe('ADR-177 Phase 2 A4：browser-adapter 数据链补齐', () => {
         });
 
         it('GetUIState 首次启动返回完整默认值（非空对象）', async () => {
-            const s = await browserAdapter.GetUIState();
+            const s = await ext.GetUIState();
             expect(s.scale).toBe(1.0);
             expect(s.popupWidth).toBe(280);
             expect(s.accent).toBe('#4a6cf7');
@@ -137,7 +147,7 @@ describe('ADR-177 Phase 2 A4：browser-adapter 数据链补齐', () => {
         });
 
         it('SetUIState 双写 Config.ui_state + uistate store', async () => {
-            await browserAdapter.SetUIState({ scale: 1.3 });
+            await ext.SetUIState({ scale: 1.3 });
             const cfg = await browserAdapter.GetConfig();
             expect(cfg.ui_state.scale).toBe(1.3);
             expect(_idbStore.get('state')).toMatchObject({ scale: 1.3 });
@@ -146,7 +156,7 @@ describe('ADR-177 Phase 2 A4：browser-adapter 数据链补齐', () => {
 
     describe('SetEnvState 单源（Config.env）', () => {
         it('写入 Config.env（非 uistate/envState）', async () => {
-            await browserAdapter.SetEnvState({ skyMode: 'sunset' });
+            await ext.SetEnvState({ skyMode: 'sunset' });
             const cfg = await browserAdapter.GetConfig();
             expect(cfg.env).toBeDefined();
             expect(cfg.env.skyMode).toBe('sunset');
@@ -155,8 +165,8 @@ describe('ADR-177 Phase 2 A4：browser-adapter 数据链补齐', () => {
         });
 
         it('重复写入合并而非覆盖', async () => {
-            await browserAdapter.SetEnvState({ skyMode: 'sunset' });
-            await browserAdapter.SetEnvState({ groundVisible: false });
+            await ext.SetEnvState({ skyMode: 'sunset' });
+            await ext.SetEnvState({ groundVisible: false });
             const cfg = await browserAdapter.GetConfig();
             expect(cfg.env.skyMode).toBe('sunset');
             expect(cfg.env.groundVisible).toBe(false);
