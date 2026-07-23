@@ -1,9 +1,10 @@
 # ADR-177: Web Loader 与主应用统一路径
 
-> **状态**: 规划中（2026-07-23；三方向评估完成，推荐方向 A「主应用直接跑浏览器」，待用户审核决策后推进至实施）
+> **状态**: 有条件通过（2026-07-23；方向 A 可行，但当前文档可行性判断偏乐观。采纳方向 A，但需先补 Phase 0 Spike 和 Runtime Bridge 设计；不要按当前文档直接进入 A1。总体可行度约 7/10）
 > **日期**: 2026-07-23
 > **关联**: ADR-176（前端 Backend 适配器双实现）、ADR-017（安卓适配，platform 探测范式）、ADR-159（桥接注入范式）、ADR-093（声明式菜单 Schema）
 > **前置**: ADR-176 Phase 1-3 已落地（backend 适配器层、wails-bindings 106 函数全代理化、web-loader 网页原型已上线 GitHub Pages）
+> **审核记录**: 2026-07-23 架构审核——有条件通过。关键修订：① @wailsio/runtime value import 不只 Events，还有 Browser（2 处）；② capabilities() 是契约非完整 UI 门控；③ 主应用首屏数据链未证明；④ index.web.html 不能仅复制 index.html；⑤ 新增 Phase 0 Spike 作为前置门槛；⑥ Phase 4 默认保留 web-loader。
 
 ## 背景
 
@@ -20,51 +21,63 @@ ADR-176 Phase 3 将 web-loader 升级为准完整网页入口，已上线 `https
 
 用户诉求：**统一两者**，而非维护两套界面与功能割裂的入口。
 
-### 关键量化发现（2026-07-23 实测）
+### 关键量化发现（2026-07-23 实测，含审核修订）
 
-ADR-176 已铺好统一的基础设施，主应用跑浏览器的硬依赖面极窄：
+ADR-176 已铺好统一的基础设施，但主应用跑浏览器的硬依赖面**比初版评估更宽**：
 
 | 指标 | 数量 | 评估 |
 |------|------|------|
 | `window.wails?.xxx?.()` 可选链兜底 | 7 处 / 3 文件 | 浏览器侧静默 no-op，**不崩** |
 | `window.wails!.xxx` 断言调用 | **1 处** / 1 文件（`init.ts:456` Android 存储权限） | 需 web 分支守卫 |
-| `Events.On/Off/Emit` 调用 | 11 处 / 3 文件（`init.ts`、`plaza-download.ts`、`watch-import.ts`） | 需 Events 抽象或 stub 注入 |
+| `Events.On/Off/Emit` 调用 | 11 处 / 3 文件 | 需 Runtime Bridge 抽象 |
+| **`@wailsio/runtime` value import** | **4 处 / 4 文件**（见下表） | **不止 Events，还有 Browser** |
 | `wails-bindings.ts` 已代理化函数 | 106 / 139（76%） | **已完成**，业务调用零改动经 `resolveBackend()` 路由 |
-| `@wailsio/runtime` value import 来源 | `@bindings/app.ts:11` + `wails-bindings.ts:13` | web-loader 已用 stub 隔离 |
 
-结论：**主应用跑浏览器的潜力比直觉大得多**——硬阻塞点仅 1 处断言 + 11 处 Events，基础设施（backend 代理层）已就位。
+**`@wailsio/runtime` value import 全清单**（审核新增）：
+
+| 文件 | 行 | 导入符号 | 用途 |
+|------|-----|---------|------|
+| `core/events.ts:55` | `Browser` | `Browser.openURL` — 外部链接打开 |
+| `menus/plaza-download.ts:4` | `Events` | `Events.On/Off` — 下载事件订阅 |
+| `menus/settings-about.ts:7` | `Browser` | `Browser.openURL` — 仓库链接打开 |
+| `core/wails-bindings.ts:13` | `Events` | re-export — 业务消费 Events 的聚合点 |
+
+> **修订结论**：A3 不只是迁移 11 个 Events 调用点，至少还要统一 Events（On/Off/Emit）+ Browser（openURL）+ Wails 全局能力访问 + 事件订阅的 dispose 生命周期。建议将 `events-bridge.ts` 扩展为 `runtime-bridge.ts`，否则只抽 Events，Browser 仍会成为第二个浏览器入口风险。
+
+**capabilities() 现状**（审核新增）：当前 `capabilities()` 主要出现在 `backend/types.ts`、`browser-adapter.ts`、backend 测试——**是契约，不是完整 UI 门控**。生产菜单层尚未形成完整的能力门控闭环。A5「隐藏 AR/外部程序/广场入口」不是低风险机械工作，而是需要逐入口接入。
 
 ## 决策树：三个统一方向
 
-### 方向 A：主应用直接跑浏览器（推荐）
+### 方向 A：主应用直接跑浏览器（推荐，有条件采纳）
 
-**方案**：改造主应用 `index.html` + `init.ts`，让同一套代码在 Wails（桌面/安卓）和浏览器两环境运行。原生独占功能（AR、外部程序、模型广场窗口控制）用 `capabilities()` 屏蔽 UI。web-loader 降级为轻量入口或废弃。
+**方案**：改造主应用 `index.html` + `init.ts`，让同一套代码在 Wails（桌面/安卓）和浏览器两环境运行。原生独占功能（AR、外部程序、模型广场窗口控制）用 `capabilities()` 屏蔽 UI。web-loader 作为回退入口保留。
 
-**改造点清单**：
+**改造点清单（审核修订版）**：
 
-| # | 改造点 | 文件 | 工作量 | 风险 |
-|---|--------|------|--------|------|
-| A1 | `index.html` web 入口变体 | 新增 `index.web.html`（移除 `<script src="/lib/babylon.js">` UMD，置 `__MMKU_WEB__=true`） | 小 | 低 |
-| A2 | `init.ts` web 分支守卫 | `core/init.ts:456` `window.wails!` 加 `if (isWebPlatform()) return` 早返 | 极小 | 低 |
-| A3 | Events 抽象 | 新建 `core/events-bridge.ts`，Wails 侧透传 `@wailsio/runtime`，web 侧 no-op（复用 web-loader stub） | 小 | 中（11 处调用点需迁移 import） |
-| A4 | bootstrap web 分支 | `init.ts` 首屏链（`GetConfig`/`GetSystemA11ySettings`/`CheckForUpdate`/`initLibrary`）经 `resolveBackend()` 取数，web 侧 IndexedDB 兜底 | 中 | 中（首屏行为可能差异） |
-| A5 | 原生独占 UI 降级 | 菜单系统按 `capabilities()` 隐藏 AR/外部程序/广场窗口入口 | 中 | 低（`guardExternalAction` 已扩展三态） |
-| A6 | 构建配置统一 | `vite.web-loader.config.ts` 升级为 `vite.web.config.ts`，入口改 `index.web.html` | 小 | 低 |
-| A7 | GitHub Pages workflow 更新 | `web-loader-pages.yml` 改构建入口 + base path | 极小 | 低 |
+| # | 改造点 | 文件 | 工作量 | 风险 | 修订说明 |
+|---|--------|------|--------|------|----------|
+| A1 | `index.web.html` web 入口变体 | 新增（移除 babylon UMD + 置 `__MMKU_WEB__` + WASM/shader/base path 适配） | 中 | 中 | **修订**：不能仅复制 index.html，需验证 babylon-mmd WASM/worker/shader/.fx 资源在 GitHub Pages base path 下可加载 |
+| A2 | `init.ts` web 分支守卫 | `core/init.ts:456` `window.wails!` 加 `if (isWebPlatform()) return` 早返 | 极小 | 低 | — |
+| A3 | **Runtime Bridge**（不只 Events） | 新建 `core/runtime-bridge.ts`：`events.on/off/emit` + `browser.openURL` + platform no-op + `disposeAll()` | 中 | 中 | **修订**：扩展为 Runtime Bridge，统一 Events + Browser + 生命周期。生产代码中 `rg "@wailsio/runtime" frontend/src --glob "*.ts"` 只允许出现在 `core/runtime-bridge.ts`、`core/backend/go-adapter.ts`、测试 mock |
+| A4 | **首屏数据源切换**（核心风险） | `init.ts` 首屏链经 `resolveBackend()` 取数；web 侧 IndexedDB 兜底 | **高** | **高** | **修订升级为核心风险**：browserAdapter 能提供 IndexedDB 读写，但「主应用首屏如何得到模型、场景、UI 状态」未证明——见「首屏数据链未决问题清单」 |
+| A5 | 原生独占 UI 降级（能力门控闭环） | 菜单系统按 `capabilities()` 隐藏 AR/外部程序/广场窗口入口 | 中-高 | 中 | **修订**：非机械工作，需逐入口接入。补「生产菜单实际调用清单」表 |
+| A6 | 构建配置统一 | `vite.web-loader.config.ts` 升级为 `vite.web.config.ts`，入口改 `index.web.html`；验证 WASM/worker/shader/.fx 资源路径 | 中 | 中 | **修订**：增加 WASM/worker/shader/GitHub Pages base path 验证 |
+| A7 | GitHub Pages workflow 更新 | `web-loader-pages.yml` 改构建入口 + base path | 极小 | 低 | — |
 
-**总工作量**：中（A4/A5 是主体，A1-A3/A6/A7 是辅助）
+**总工作量**：中-高（A4 是核心风险，A5 非机械）
 
 **收益**：
 - ✅ 一套代码两环境，**终极统一**
 - ✅ 主应用完整 UI/功能在浏览器可用（原生独占降级）
-- ✅ web-loader 可废弃或保留为轻量入口
+- ✅ web-loader 保留为回退入口
 - ✅ 长期维护成本最低（无两套代码漂移）
 - ✅ ADR-176 终极目标达成
 
 **风险**：
-- 🟠 bootstrap 改造可能引入回归（A4）——需充分测试
-- 🟠 Events 抽象需迁移 11 处调用点（A3）——机械工作但需仔细
-- 🟡 首屏数据源切换在浏览器侧的行为差异（IndexedDB vs Go 文件系统）
+- 🔴 **首屏数据链未证明（A4）**——browserAdapter 能读写 IndexedDB，但主应用 bootstrap 是否能从空 IndexedDB 启动完整 UI 未验证
+- 🟠 bootstrap 改造引入主应用回归（A4）
+- 🟠 Runtime Bridge 迁移需统一 Events + Browser + dispose（A3）
+- 🟠 能力门控需逐入口接入，非机械工作（A5）
 
 ### 方向 B：web-loader 复用主应用 UI（折中）
 
@@ -114,95 +127,198 @@ ADR-176 已铺好统一的基础设施，主应用跑浏览器的硬依赖面极
 | 维度 | 方向 A（主应用跑浏览器） | 方向 B（web-loader 复用 UI） | 方向 C（渐进式增强） |
 |------|--------------------------|------------------------------|---------------------|
 | 统一程度 | ★★★★★ 终极统一 | ★★★☆ UI 统一功能割裂 | ★★☆☆ 渐进但无终点 |
-| 工作量 | 中（7 改造点） | 中-大（4 大改造点） | 持续投入 |
-| 风险 | 中（bootstrap 回归） | 高（幽灵入口 + DRY 违反） | 中（漂移 + 半途而废） |
+| 工作量 | 中-高（7 改造点，A4 核心风险） | 中-大（4 大改造点） | 持续投入 |
+| 风险 | 高（首屏数据链未证明） | 高（幽灵入口 + DRY 违反） | 中（漂移 + 半途而废） |
 | 长期维护成本 | ★ 最低 | ★★★ 两套代码 | ★★ 渐进收敛 |
 | ADR-176 目标达成 | ✅ 终极 | ❌ 偏离 | ⚠️ 部分 |
 | 用户功能完整性 | ★★★★★ 完整（降级原生独占） | ★★☆ UI 壳无功能 | ★★☆ 逐步补全 |
 | 测试覆盖 | 复用主应用现有测试 | 需新建 web-loader 测试 | 渐进补充 |
+| 前置门槛 | **Phase 0 Spike** | 无 | 无 |
 
-## 推荐：方向 A
+## 推荐：方向 A（有条件采纳）
+
+**采纳条件**：先完成 Phase 0 Spike 验证可行性，再进入 Phase 1-3。不要按当前文档直接进入 A1。
 
 **理由**：
 
-1. **基础设施已就位**：ADR-176 Phase 1-3 已将 wails-bindings 全代理化（106 函数），backend 适配器层（go/browser）+ `resolveBackend()` 三路径 + `capabilities()` 三态矩阵 + `isWebPlatform()` + `guardExternalAction` 全部落地。方向 A 是「在已铺好的路上走最后一段」。
-
-2. **硬阻塞面极窄**：实测 `window.wails!` 断言仅 1 处，Events 依赖 11 处（3 文件）。相比 106 函数代理化已完成的工作量，剩余改造是收尾性质。
-
+1. **基础设施已就位**：ADR-176 Phase 1-3 已将 wails-bindings 全代理化（106 函数），backend 适配器层（go/browser）+ `resolveBackend()` 三路径 + `capabilities()` 三态矩阵 + `isWebPlatform()` + `guardExternalAction` 全部落地。
+2. **硬阻塞面较窄但非零**：实测 `window.wails!` 断言仅 1 处，@wailsio/runtime value import 4 处（Events + Browser）。相比 106 函数代理化已完成的工作量，剩余改造是收尾性质，但需 Runtime Bridge 统一抽象。
 3. **主应用 UI 系统复用价值高**：ADR-093 声明式菜单 Schema 已全量落地，菜单系统是数据驱动而非硬编码。同一套 Schema + menu-factory 在浏览器侧可直接渲染。
+4. **web-loader 已验证浏览器侧可行性**：PMX 加载 + JSZip + IndexedDB + babylon-mmd 在零后端下完全可用（ADR-176 Phase 3 实测）。
+5. **方向 B/C 是反模式**：B 违反 DRY，C 是无终点的过渡。两者最终都需收敛到方向 A。
+6. **ADR-176 终极目标**：ADR-176 开篇即写「一个前端同时跑在浏览器（零后端）和 Wails（含 Go 后端）两种环境」。
 
-4. **web-loader 已验证浏览器侧可行性**：PMX 加载 + JSZip + IndexedDB + babylon-mmd 在零后端下完全可用（ADR-176 Phase 3 实测）。方向 A 是「把 web-loader 的浏览器验证扩展到主应用全量」。
+## 实施路径（方向 A，审核修订版）
 
-5. **方向 B/C 是反模式**：B 违反 DRY（复制 UI 壳），C 是无终点的过渡。两者最终都需收敛到方向 A。
+### Phase 0：可行性 Spike（前置门槛，新增）
 
-6. **ADR-176 终极目标**：ADR-176 开篇即写「一个前端同时跑在浏览器（零后端）和 Wails（含 Go 后端）两种环境」。方向 A 是这一目标的直接实现。
+**目标**：验证主应用 web 入口能启动不崩，作为采纳方向 A 的前置门槛。
 
-## 实施路径（方向 A）
+**做法**：新增临时入口，仅验证最小链路。
 
-### Phase 1：bootstrap web 分支（A1-A3）
+| 步骤 | 验证项 | 验收条件 |
+|------|--------|----------|
+| S1 | 置 `globalThis.__MMKU_WEB__ = true` | 短路标记生效 |
+| S2 | 加载 `core/main.ts` | 无 JS 错误 |
+| S3 | 注入 `@wailsio/runtime` stub | 不请求 `/wails/custom.js` |
+| S4 | 初始化 Babylon Scene | 场景渲染不崩 |
+| S5 | 初始化 `resolveBackend()` | 选到 browserAdapter |
+| S6 | 读取 `GetConfig()`、`GetUIState()` | 返回默认值不抛错 |
+| S7 | 渲染一个最小菜单壳 | menu-factory 可渲染 |
 
-**目标**：主应用 `index.html` 在浏览器侧能启动不崩。
+**Phase 0 验收门槛**：
+- ✅ 不请求 `/wails/custom.js`
+- ✅ 不访问 `window.wails!`
+- ✅ 不触发未捕获 `NotSupportedError`
+- ✅ 不产生 `Events` 运行时异常
+- ✅ 不依赖 Go 后端
+- ✅ GitHub Pages base path 下资源全部可加载
+
+> **若 Phase 0 未通过**：方向 A 暂缓，回退评估方向 B/C 或修订方案。
+
+### Phase 1：Runtime Bridge（A3 修订，前置）
+
+**目标**：统一 @wailsio/runtime 隔离层，生产代码只允许在白名单文件 import @wailsio/runtime。
 
 | 步骤 | 改造 | 验证 |
 |------|------|------|
-| A1 | 新增 `index.web.html`（移除 babylon UMD，置 `__MMKU_WEB__=true`，入口 `core/main.ts`） | 浏览器打开无 JS 错误 |
-| A2 | `init.ts:456` `window.wails!` 加 `if (isWebPlatform()) return` 早返 | 浏览器侧不崩 |
-| A3 | 新建 `core/events-bridge.ts`：Wails 侧透传 `@wailsio/runtime` Events，web 侧复用 web-loader stub | 11 处 Events 调用迁移 import |
+| A3 | 新建 `core/runtime-bridge.ts`：`events.on/off/emit` + `browser.openURL` + platform no-op + `disposeAll()` | 11 处 Events + 2 处 Browser 调用迁移 |
 
-### Phase 2：首屏数据源 + UI 降级（A4-A5）
+**Runtime Bridge 接口设计**：
+```typescript
+// core/runtime-bridge.ts
+export interface RuntimeBridge {
+  events: {
+    on(name: string, cb: (data: unknown) => void): () => void;  // 返回 unsubscribe
+    off(name: string, cb: (data: unknown) => void): void;
+    emit(name: string, data?: unknown): void;
+  };
+  browser: {
+    openURL(url: string): Promise<void>;  // Wails: 原生；Web: window.open
+  };
+  disposeAll(): void;  // 释放所有订阅，dispose 时调用
+}
+```
+
+**白名单验证**（迁移后）：
+```bash
+rg "@wailsio/runtime" frontend/src --glob "*.ts"
+```
+只允许出现在：
+- `core/runtime-bridge.ts`（Wails 侧实现）
+- `core/backend/go-adapter.ts`（透传）
+- 测试 mock
+
+### Phase 2：能力门控 + 首屏数据（A4 + A5）
 
 **目标**：浏览器侧首屏有数据 + 原生独占入口隐藏。
 
-| 步骤 | 改造 | 验证 |
-|------|------|------|
-| A4 | `init.ts` 首屏链经 `resolveBackend()` 取数；web 侧 IndexedDB 兜底默认配置 | 首屏有配置/UIState |
-| A5 | 菜单系统按 `capabilities()` 隐藏 AR/外部程序/广场窗口入口 | 无「幽灵入口」 |
+**A4 首屏数据链（核心风险）**——需先回答以下未决问题：
 
-### Phase 3：构建配置 + 部署（A6-A7）
+| 问题 | 验证方法 | 失败兜底 |
+|------|----------|----------|
+| `GetConfig()` 默认值是否足够启动完整 UI？ | Phase 0 S6 验证 | browser-adapter 补默认配置 |
+| `GetUIState()` 返回空对象是否触发未定义字段？ | Phase 0 S6 验证 | browser-adapter 补默认 UIState |
+| 模型库从 `web-loader/library.ts` 迁移还是复用 `browser-adapter`？ | 决策 | 统一到 browser-adapter |
+| `readFileBytes()` IndexedDB key 与主应用模型加载器路径是否一致？ | 对齐键规约 | 统一键规约 |
+| 拖拽导入的 `.pmx/.zip` 是否进入统一模型注册与缓存链？ | 验证 | 统一入口 |
+
+**A5 能力门控（非机械）**——生产菜单实际调用清单：
+
+| 能力键 | 生产入口 | 浏览器行为 | 降级实现 |
+|--------|----------|------------|----------|
+| `ar` | AR 菜单/按钮 | 隐藏 | `if (capabilities().ar === false) hide` |
+| `externalApps` | Blender/MMD 启动 | 隐藏或禁用 + tooltip | `guardExternalAction` |
+| `plazaWindow` | 广场窗口控制（Navigate/Close） | 改为当前页/iframe/代理 | 保留 PlazaGo* 网页可控 |
+| `watchDir` | 自动导入监听开关 | 隐藏 | `if (capabilities().watchDir === false) hide` |
+| `systemDirOpen` | 打开系统目录按钮 | 隐藏 | `if (capabilities().systemDirOpen === false) hide` |
+| `fsAccess` | 模型目录选择 | 改为 FSA 或拖拽 | `if (capabilities().fsAccess) showFSA else showDrag` |
+| `modelScan` | 扫描模型库 | 改为 IndexedDB/FSA | browser-adapter `listModels()` |
+| `proxyServer` | 代理设置 | 隐藏 | `if (capabilities().proxyServer === false) hide` |
+| `fileServer` | 静态文件服务 | 隐藏 | `if (capabilities().fileServer === false) hide` |
+| `storageMode` | 存储模式切换 | 隐藏（固定 'web'） | `if (capabilities().storageMode === false) hide` |
+
+**Phase 2 顺序**：先模型库 → 设置 → 环境 → 播放栏 → Toast/状态栏；再逐项隐藏 AR、外部程序、目录监听、系统目录打开、广场窗口控制。
+
+### Phase 3：构建配置 + 部署（A1 + A6 + A7）
 
 **目标**：GitHub Pages 部署主应用 web 入口。
 
 | 步骤 | 改造 | 验证 |
 |------|------|------|
-| A6 | `vite.web-loader.config.ts` 升级为 `vite.web.config.ts`，入口改 `index.web.html` | 生产构建通过 |
+| A1 | `index.web.html`（移除 babylon UMD + 置 `__MMKU_WEB__` + WASM/shader/base path 适配） | 浏览器打开无 JS 错误 |
+| A6 | `vite.web.config.ts`（入口改 `index.web.html`）；验证 babylon-mmd WASM/worker/shader/.fx 资源在 GitHub Pages base path 下可加载 | 生产构建通过 + 资源 200 |
 | A7 | `web-loader-pages.yml` 改构建入口 | GitHub Pages 部署成功 |
 
-### Phase 4：web-loader 处置
+**A1/A6 需验证**：
+- 删除 Babylon UMD 后，主应用所有 Babylon import 是否能由 Vite 正确打包？
+- `babylon-mmd` 的 WASM、worker、shader、`.fx` 资源路径是否适配 GitHub Pages base path（`/MikuMikuAR/`）？
+- `@wailsio/runtime` 是否会被静态依赖间接拉入（Phase 1 Runtime Bridge 后应为否）？
+- `window.__MMKU_WEB__` 必须在所有业务 import 之前设置。
+- 浏览器入口是否会加载桌面专属的 `scene.ts`、Wails binding 或原生文件监听模块？
 
-- 选项 1：废弃 `web-loader.html`（主应用 web 入口已覆盖）
-- 选项 2：保留为轻量入口（仅拖拽加载，无菜单），作为「快速预览」入口
+### Phase 4：保留 Web Loader 作为回退入口（修订）
 
-## 风险表
+**不立即废弃 `web-loader.html`**。至少保留到以下条件全部满足：
+
+- ✅ 主应用 Web 入口连续构建通过
+- ✅ Playwright 浏览器 smoke 测试通过
+- ✅ PMX、ZIP、VMD 三类资源均验证可加载
+- ✅ IndexedDB 旧数据迁移完成
+- ✅ 主应用 Web 入口连续两次发布无回归
+
+> 满足后可选择废弃 web-loader 或保留为轻量入口（仅拖拽加载，无菜单），作为「快速预览」入口。
+
+## 首屏数据链未决问题清单（审核新增，A4 核心风险）
+
+> ADR-176 已验证 web-loader 能加载模型，但**这不等于主应用全量 bootstrap 已验证**。以下问题需在 Phase 0/Phase 2 回答。
+
+| # | 问题 | 影响范围 | 验证阶段 |
+|---|------|----------|----------|
+| Q1 | `GetConfig()` 默认值是否足够启动完整 UI？ | 首屏配置 | Phase 0 S6 |
+| Q2 | `GetUIState()` 返回空对象是否触发未定义字段？ | 首屏 UI 状态 | Phase 0 S6 |
+| Q3 | 模型库从 `web-loader/library.ts` 迁移还是复用 `browser-adapter`？ | 模型库架构 | Phase 2 决策 |
+| Q4 | `readFileBytes()` IndexedDB key 与主应用模型加载器路径是否一致？ | 模型加载 | Phase 2 对齐 |
+| Q5 | 拖拽导入的 `.pmx/.zip` 是否进入统一模型注册与缓存链？ | 拖拽入口 | Phase 2 验证 |
+| Q6 | 场景存档（`SaveScene`/`LoadScene`）在浏览器侧的 IndexedDB 键规约？ | 场景持久化 | Phase 2 设计 |
+| Q7 | 预设（模型/环境/渲染）在浏览器侧的存储与 Go 侧是否互通？ | 预设系统 | Phase 2 设计 |
+
+## 风险表（审核修订版）
 
 | 风险 | 等级 | 缓解 |
 |------|------|------|
+| **首屏数据链未证明（A4）** | 🔴 P1 | Phase 0 Spike 前置验证；Phase 2 逐项回答 Q1-Q7 |
+| **capabilities() 非完整 UI 门控（A5）** | 🔴 P1 | 逐入口接入「生产菜单实际调用清单」表 |
 | bootstrap 改造引入主应用回归（桌面/安卓） | 🟠 P2 | 改动需 `if (isWebPlatform())` 守卫，桌面/安卓路径不动；CI 全量回归 |
-| Events 抽象迁移遗漏调用点 | 🟠 P2 | grep `Events\.(On\|Off\|Emit)` 全量迁移，迁移后 grep 零残留 |
-| 首屏行为差异（IndexedDB vs Go 文件系统） | 🟡 P3 | web 侧 IndexedDB 兜底默认配置；首屏加载差异用 Toast 提示 |
-| babylon UMD 移除影响桌面端 | 🟡 P3 | 仅 `index.web.html` 移除 UMD，`index.html` 桌面入口不动 |
+| Runtime Bridge 迁移遗漏调用点（A3） | 🟠 P2 | 迁移后 `rg "@wailsio/runtime"` 白名单验证（仅 runtime-bridge/go-adapter/test） |
+| babylon UMD 移除影响桌面端（A1） | 🟡 P3 | 仅 `index.web.html` 移除 UMD，`index.html` 桌面入口不动 |
 | 主应用 bundle 体积过大（babylon 全量打包） | 🟡 P3 | web 构建用 manualChunks 拆分（已在 vite.web-loader.config.ts 验证） |
-| 原生独占 UI 降级遗漏入口 | 🟡 P3 | 按 `capabilities()` 矩阵逐项 grep 审计 |
+| babylon-mmd WASM/worker/shader base path 不适配 | 🟡 P3 | Phase 3 A6 验证资源 200 |
+| 原生独占 UI 降级遗漏入口 | 🟡 P3 | 按「生产菜单实际调用清单」表逐项 grep 审计 |
+| Events 订阅未 dispose 导致内存泄漏 | 🟡 P3 | Runtime Bridge `disposeAll()` + dispose 生命周期规范 |
 
 ## 边界条件
 
 - **不追求功能全等**：AR（ARCore/Vuforia）、外部程序（Blender/MMD）、系统级文件遍历属原生独占，浏览器侧必须降级，不得伪造（对齐 ADR-176 边界）。
 - **持久化语义差异**：Go 侧为单机文件，浏览器侧为 IndexedDB（同源隔离），跨设备不互通——文档需明示。
-- **`@wailsio/runtime` 隔离**：web 构建用 stub 替换（ADR-176 web-loader 已验证），主应用 `vite.config.ts` 不受扰动。
+- **`@wailsio/runtime` 隔离**：web 构建用 stub 替换（ADR-176 web-loader 已验证），主应用 `vite.config.ts` 不受扰动；Phase 1 Runtime Bridge 后生产代码白名单验证。
 - **菜单 Schema 复用**：ADR-093 声明式菜单 Schema 是数据驱动，同一套 Schema 在浏览器侧直接渲染，无需复制菜单代码。
+- **web-loader 保留**：Phase 4 不立即废弃，作为回退入口直到验收条件满足。
 
 ## 与现有架构的关系
 
-- **ADR-176（核心前置）**：方向 A 是 ADR-176 终极目标的实现。backend 适配器层、wails-bindings 代理化、capabilities() 矩阵、isWebPlatform() 全部复用。
+- **ADR-176（核心前置）**：方向 A 是 ADR-176 终极目标的实现。backend 适配器层、wails-bindings 代理化、capabilities() 矩阵、isWebPlatform() + guardExternalAction 全部复用。
 - **ADR-017（platform 探测）**：复用 `isAndroidPlatform()` 范式，`isWebPlatform()` 已在 ADR-176 新增。
 - **ADR-159（桥接注入）**：`awaitWailsBridge()` + Web 入口短路标记复用。
 - **ADR-093（声明式菜单）**：菜单 Schema 数据驱动，浏览器侧零改动渲染。
-- **ADR-060（E2E 测试）**：web 入口可用 Playwright `@dom` spec 覆盖。
+- **ADR-060（E2E 测试）**：web 入口可用 Playwright `@dom` spec 覆盖；Phase 4 验收条件含 Playwright smoke。
 
 ## 待决策
 
 **需用户确认**：
-1. 是否采纳方向 A 作为统一路径？
-2. 若采纳，Phase 1-3 优先级排序是否合理？
-3. web-loader 在 Phase 4 是废弃还是保留为轻量入口？
+1. 是否采纳方向 A（有条件）作为统一路径？
+2. 若采纳，是否同意 Phase 0 Spike 作为前置门槛（未通过则暂缓方向 A）？
+3. Phase 1 Runtime Bridge 接口设计是否合理？
+4. Phase 4 保留 web-loader 的验收条件是否合理？
 
 **若用户选方向 B 或 C**：本 ADR 的「实施路径」节需重写，其余评估仍有效。
