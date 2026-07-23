@@ -38,6 +38,7 @@ vi.mock('./idb', () => ({
     closeIDB: vi.fn(),
 }));
 
+import JSZip from 'jszip';
 import { browserAdapter } from './browser-adapter';
 import type { UIState, EnvState } from '@bindings/mikumikuar/internal/app/models';
 import { isWebPlatform, isAndroidPlatform, guardExternalAction } from '../platform';
@@ -230,6 +231,152 @@ describe('guardExternalAction 三态', () => {
         setWindow({}); // 无 wails 桥
         expect(isWebPlatform()).toBe(true);
         expect(guardExternalAction('blender')).toBe(false);
+    });
+});
+
+// [doc:adr-177] Phase 2 A4 剩余项（p2-5）：虚拟目录语义 + 伴生文件加载
+describe('ADR-177 Phase 2 A4 p2-5：虚拟目录 + 伴生文件加载', () => {
+    beforeEach(() => {
+        _idbStore.clear();
+    });
+
+    /** 用 JSZip 构造测试 zip 字节。 */
+    async function makeZip(files: Record<string, Uint8Array>): Promise<Uint8Array> {
+        const zip = new JSZip();
+        for (const [name, data] of Object.entries(files)) {
+            zip.file(name, data);
+        }
+        return new Uint8Array(await zip.generateAsync({ type: 'arraybuffer' }));
+    }
+
+    describe('IsolateModelDir 虚拟目录', () => {
+        it('绝对路径 → web://model/<stem>', async () => {
+            expect(await browserAdapter.IsolateModelDir('D:/models/Miku.pmx')).toBe(
+                'web://model/Miku'
+            );
+        });
+        it('file: 前缀 → web://model/<stem>', async () => {
+            expect(await browserAdapter.IsolateModelDir('file:Miku')).toBe('web://model/Miku');
+        });
+    });
+
+    describe('ListDirRecursive 扫描 dir: 前缀', () => {
+        it('返回带 relativePath 的 FileInfo[]', async () => {
+            _idbStore.set('dir:Miku:tex/face.png', new Uint8Array([1]));
+            _idbStore.set('dir:Miku:bg/sky.png', new Uint8Array([2]));
+            _idbStore.set('dir:Other:foo.png', new Uint8Array([3]));
+            const entries = await browserAdapter.ListDirRecursive('web://model/Miku');
+            expect(entries).toHaveLength(2);
+            expect(entries).toEqual(
+                expect.arrayContaining([
+                    { name: 'face.png', relativePath: 'tex/face.png' },
+                    { name: 'sky.png', relativePath: 'bg/sky.png' },
+                ])
+            );
+        });
+
+        it('无 dir: 条目 → 返回空数组', async () => {
+            const entries = await browserAdapter.ListDirRecursive('web://model/Ghost');
+            expect(entries).toEqual([]);
+        });
+    });
+
+    describe('readFileBytes web://model/ 路由', () => {
+        it('经虚拟目录路径命中 dir:<stem>:<relPath>', async () => {
+            const tex = new Uint8Array([9, 9]);
+            _idbStore.set('dir:Miku:tex/face.png', tex);
+            const r = await browserAdapter.readFileBytes('web://model/Miku/tex/face.png');
+            expect(r).toBe(tex);
+        });
+
+        it('dir: 未命中时兜底 file:<baseName>', async () => {
+            const tex = new Uint8Array([7]);
+            _idbStore.set('file:face', tex); // ExtractZip 扁平键兜底
+            const r = await browserAdapter.readFileBytes('web://model/Miku/tex/face.png');
+            expect(r).toBe(tex);
+        });
+    });
+
+    describe('LoadOutfitFile 伴生换装配置', () => {
+        it('查 outfit:<stem> 返回 JSON string', async () => {
+            const json = '{"version":1,"variants":[]}';
+            _idbStore.set('outfit:Miku', new TextEncoder().encode(json));
+            const r = await browserAdapter.LoadOutfitFile('web://model/Miku');
+            expect(r).toBe(json);
+        });
+
+        it('不存在 → 返回空字符串（对齐 Go ("", nil)）', async () => {
+            const r = await browserAdapter.LoadOutfitFile('web://model/None');
+            expect(r).toBe('');
+        });
+    });
+
+    describe('LoadSceneFile 三路路由', () => {
+        it('预设路径 → presets store scene:<name>', async () => {
+            const json = '{"actors":[]}';
+            _idbStore.set('scene:myScene', new TextEncoder().encode(json));
+            const r = await browserAdapter.LoadSceneFile('web://presets/scenes/myScene');
+            expect(r).toBe(json);
+        });
+
+        it('bundle 路径 → scenes store bundle:<stem>', async () => {
+            const json = '{"actors":[]}';
+            _idbStore.set('bundle:MikuPack', new TextEncoder().encode(json));
+            const r = await browserAdapter.LoadSceneFile('web://bundle/MikuPack/scene.json');
+            expect(r).toBe(json);
+        });
+
+        it('兜底走 _resolveIdbKey → file:<stem>', async () => {
+            const json = '{"x":1}';
+            _idbStore.set('file:foo', new TextEncoder().encode(json));
+            const r = await browserAdapter.LoadSceneFile('D:/models/foo.json');
+            expect(r).toBe(json);
+        });
+
+        it('全部未命中 → 返回空字符串', async () => {
+            const r = await browserAdapter.LoadSceneFile('web://presets/scenes/ghost');
+            expect(r).toBe('');
+        });
+    });
+
+    describe('ExtractZip 解压分类落地', () => {
+        it('按主 PMX stem 存 dir:/outfit: + scene.json 存 bundle:', async () => {
+            const pmx = new Uint8Array([1, 2, 3]);
+            const tex = new Uint8Array([4, 5]);
+            const outfit = new TextEncoder().encode('{"version":1,"variants":[]}');
+            const scene = new TextEncoder().encode('{"actors":[]}');
+            const zipBytes = await makeZip({
+                'Miku.pmx': pmx,
+                'tex/face.png': tex,
+                'outfits.json': outfit,
+                'scene.json': scene,
+            });
+            // zipPath 'MikuPack.zip' → _resolveIdbKey → 'file:MikuPack'
+            _idbStore.set('file:MikuPack', zipBytes);
+
+            const result = await browserAdapter.ExtractZip('MikuPack.zip', '');
+
+            expect(result?.file_path).toBe('Miku.pmx');
+            expect(result?.dir).toBe('web://bundle/MikuPack');
+            // dir: 带目录结构（按主 PMX stem 分组）
+            expect(_idbStore.get('dir:Miku:tex/face.png')).toEqual(tex);
+            // outfit: 伴生配置
+            expect(_idbStore.get('outfit:Miku')).toEqual(outfit);
+            // bundle: scene.json（scenes store，_idbStore 单 Map 忽略 store 维度）
+            expect(_idbStore.get('bundle:MikuPack')).toEqual(scene);
+            // file: 扁平兜底
+            expect(_idbStore.get('file:face')).toEqual(tex);
+        });
+
+        it('无 PMX 时 mainPmx 为空，dir: 不写', async () => {
+            const tex = new Uint8Array([1]);
+            const zipBytes = await makeZip({ 'tex/face.png': tex });
+            _idbStore.set('file:TexOnly', zipBytes);
+            const result = await browserAdapter.ExtractZip('TexOnly.zip', '');
+            expect(result?.file_path).toBe('');
+            expect(_idbStore.has('dir::tex/face.png')).toBe(false);
+            expect(_idbStore.get('file:face')).toEqual(tex);
+        });
     });
 });
 
