@@ -9,10 +9,14 @@ vi.mock('../../scene/env/env-context', () => ({
 vi.mock('../../scene/env/env-impl', () => ({
     ensureEnvUpdateObserver: () => {},
 }));
+vi.mock('../../scene/env/env', () => ({
+    ensureEnvUpdateObserver: () => {},
+}));
 vi.mock('../../scene/env/env-dispatcher', () => ({
     registerEnvCallback: vi.fn(),
 }));
-vi.mock('@/core/env-state-schema', () => ({
+vi.mock('@/core/env-state-schema', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('@/core/env-state-schema')>()),
     getEnvKeys: () => [] as string[],
 }));
 vi.mock('@/core/observer-handle', () => ({

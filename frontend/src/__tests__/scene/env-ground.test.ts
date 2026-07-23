@@ -36,6 +36,9 @@ vi.mock('../../scene/env/env-context', () => {
         getPipeline: () => null,
     };
 });
+vi.mock('../../scene/env/env', () => ({
+    ensureEnvUpdateObserver: () => {},
+}));
 // ADR-151: env-ground 从 env-reflection 导入 getPlanarQualityOverride，后者会拉入
 // renderer→performance→scene 重链（模块级 new Scene()）。单测只关注纯函数，
 // 此处桩掉避免测试环境收集期崩溃。
