@@ -51,7 +51,7 @@ frontend/src/menus/
 │   ├── motion-override-levels.ts #  骨骼覆盖
 │   ├── motion-pose-levels.ts    #   姿态工作室
 │   ├── motion-cloth-levels.ts   #   布料参数面板
-│   ├── motion-feet-levels.ts    #   脚部贴地
+│   ├── motion-modules/feet-adjustment-module.ts  #   脚 IK 地面跟随（已并入动作覆盖模块）
 │   └── motion-gaze-levels.ts    #   视线追踪/感知层
 │
 ├── settings.ts                  # 设置页（SlideMenu）

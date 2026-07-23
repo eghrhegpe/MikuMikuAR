@@ -31,7 +31,6 @@ import {
 import { openFullscreen } from '../core/ui-fullscreen-overlay';
 import { buildOutfitLevel } from './outfit-ui';
 import { savePresetToLibDialog, buildPresetListLevel } from './model-preset';
-import { buildFeetLevel } from './motion-feet-levels';
 import { buildVirtualSkirtLevel } from './motion-cloth-levels';
 import { buildPhysicsDebugLevel } from './scene-physics-levels';
 import { getPersonalLightState, setPersonalLightState } from '../scene/render/lighting-follow';
@@ -380,9 +379,6 @@ function buildModelSchema(id: string): MenuNode[] {
 
                     // ── 故障排除 ──
                     addSectionTitle(c, t('model-detail.troubleshoot'));
-                    slideRow(c, 'lucide:footprints', t('motion.feet.title'), true, () => {
-                        stackRegistry.modelStack?.push(buildFeetLevel());
-                    });
                     slideRow(c, 'lucide:shirt', t('cloth.title'), true, () => {
                         stackRegistry.modelStack?.push(buildVirtualSkirtLevel());
                     });

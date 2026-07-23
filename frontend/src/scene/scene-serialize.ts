@@ -105,7 +105,6 @@ import type { ProcMotionState } from '../motion-algos/procedural-motion';
 import type { LipSyncState as LipSyncStateType } from '../motion-algos/lipsync';
 import type {
     BoneOverrideEntry,
-    FeetState,
     MotionModuleState,
     MotionPreset,
     ProcMotionConfig,
@@ -194,8 +193,6 @@ export interface SceneFile {
         boneOverrides?: BoneOverrideEntry[];
         /** [doc:adr-116] 动作覆盖模块语义状态（per-model，序列化语义参数而非骨骼级覆盖） */
         motionOverrideModules?: MotionModuleState[];
-        /** [doc:adr-085] 脚部地面跟随状态（按模型） */
-        feet?: FeetState;
         /** [doc:adr-145] 动作预设列表 */
         motionPresets?: MotionPreset[];
         /** [doc:adr-121] 双槽位动作分配（仅 primary.source==='pinned' 落盘，inherit 不落盘） */
@@ -422,7 +419,6 @@ export function serializeScene(): SceneFile {
                 inst.motionOverrideModules && inst.motionOverrideModules.length > 0
                     ? inst.motionOverrideModules
                     : undefined,
-            feet: inst.feet,
             // [doc:adr-145] 序列化动作预设
             motionPresets:
                 inst.motionPresets && inst.motionPresets.length > 0
@@ -727,10 +723,6 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
             // [doc:adr-145] 恢复动作预设
             if (m.motionPresets && Array.isArray(m.motionPresets)) {
                 inst.motionPresets = m.motionPresets;
-            }
-            // 恢复脚部调整状态（合并默认值，向前兼容缺字段的旧存档）
-            if (m.feet) {
-                Object.assign(inst.feet, m.feet);
             }
             // [doc:adr-121] 恢复双槽位动作分配（兼容旧 motionAssignment 格式）
             const pinnedData =

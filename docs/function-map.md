@@ -7,9 +7,9 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 63 | 491 |
-| 3D 场景 | 97 | 1049 |
-| 菜单 & UI | 66 | 340 |
+| 核心基础设施 | 64 | 500 |
+| 3D 场景 | 98 | 1052 |
+| 菜单 & UI | 65 | 339 |
 | 换装 & 音频 | 3 | 38 |
 | 动作算法 | 17 | 129 |
 | 物理系统 | 2 | 14 |
@@ -159,6 +159,15 @@
 | `calcHardwareScaling()` | `core/render-loop` | — |
 | `startRenderLoop()` | `core/render-loop` | — |
 | `stopRenderLoop()` | `core/render-loop` | — |
+| `EventCallback()` | `core/runtime-bridge` | — |
+| `RuntimeBridge()` | `core/runtime-bridge` | — |
+| `RuntimeBrowser()` | `core/runtime-bridge` | — |
+| `RuntimeEvents()` | `core/runtime-bridge` | — |
+| `Unsubscribe()` | `core/runtime-bridge` | — |
+| `browser()` | `core/runtime-bridge` | — |
+| `events()` | `core/runtime-bridge` | — |
+| `getRuntimeBridge()` | `core/runtime-bridge` | — |
+| `initRuntimeBridge()` | `core/runtime-bridge` | — |
 | `RuntimeMode()` | `core/runtime-mode` | — |
 | `detectRuntimeMode()` | `core/runtime-mode` | — |
 | `initRuntimeBadge()` | `core/runtime-mode` | — |
@@ -1046,6 +1055,9 @@
 | `updateSceneMotion()` | `scene/motion/motion-intent` | — |
 | `BODY_POSTURE_DEF()` | `scene/motion/motion-modules/body-posture` | — |
 | `createBodyPostureModule()` | `scene/motion/motion-modules/body-posture` | — |
+| `FEET_ADJUSTMENT_DEF()` | `scene/motion/motion-modules/feet-adjustment-module` | — |
+| `createFeetAdjustmentModule()` | `scene/motion/motion-modules/feet-adjustment-module` | — |
+| `getFeetStateForModel()` | `scene/motion/motion-modules/feet-adjustment-module` | — |
 | `FINGER_POSE_DEF()` | `scene/motion/motion-modules/finger-pose` | — |
 | `createFingerPoseModule()` | `scene/motion/motion-modules/finger-pose` | — |
 | `HAND_SYMMETRY_DEF()` | `scene/motion/motion-modules/hand-symmetry` | — |
@@ -1721,7 +1733,6 @@
 | `buildMotionToolsLevel()` | `menus/motion-detail-ui` | — |
 | `buildPlaybackSpeedLevel()` | `menus/motion-detail-ui` | — |
 | `syncPlaybackSpeedToRuntime()` | `menus/motion-detail-ui` | — |
-| `buildFeetLevel()` | `menus/motion-feet-levels` | — |
 | `buildGazeTrackingLevel()` | `menus/motion-gaze-levels` | — |
 | `renderPerceptionConflictBanners()` | `menus/motion-gaze-levels` | — |
 | `updatePerceptionConflictBanner()` | `menus/motion-gaze-levels` | — |
@@ -2107,5 +2118,5 @@
 
 ---
 
-> 共 250 个文件，2074 个导出符号。
+> 共 251 个文件，2085 个导出符号。
 > 说明列（—）待知识库或人工补充。

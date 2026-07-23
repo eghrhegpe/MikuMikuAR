@@ -511,6 +511,7 @@ export const zhCN: Record<string, string> = {
     'motion.override.module.fingerPose': '手指姿势',
     'motion.override.module.ridingModel': '骑行模型',
     'motion.override.module.positionOffset': '位置偏移',
+    'motion.override.module.feetAdjustment': '脚 IK 地面跟随',
     'motion.override.tunedParams': '已调 {n} 项',
     'motion.override.activeBoneOverrides': '当前 {n} 条覆盖',
     // [doc:adr-116] 模块参数标签

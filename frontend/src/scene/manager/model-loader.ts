@@ -30,7 +30,6 @@ import {
     getMotionGen,
     resolveCompatibility,
 } from '../motion/motion-intent';
-import { createDefaultFeetState } from '@/core/state';
 import { resolveModelDir } from '@/core/fileservice';
 import { readFileBytes, ListDirRecursive } from '@/core/wails-bindings';
 import { t } from '@/core/i18n/t';
@@ -396,7 +395,6 @@ export async function loadPMXFile(
                 rotationY: 0,
                 rotation: [0, 0, 0],
                 boneOverrides: [],
-                feet: createDefaultFeetState(),
             };
             // Register via ModelManager only — it owns the registry
             _modelManager.register(inst);
@@ -469,11 +467,10 @@ export async function loadPMXFile(
             physicsEnabled: uiState.defaultPhysicsEnabled !== false,
             scaling: 1.0,
             rotationY: 0,
-            rotation: [0, 0, 0],
-            boneOverrides: [],
-            feet: createDefaultFeetState(),
-        };
-        // 默认模型自动缩放：按统一目标高度归一化（仅 actor）
+                rotation: [0, 0, 0],
+                boneOverrides: [],
+            };
+            // 默认模型自动缩放：按统一目标高度归一化（仅 actor）
         if (uiState.autoScaleModel) {
             const bb = rootMesh.getHierarchyBoundingVectors(true);
             const h = bb.max.y - bb.min.y;

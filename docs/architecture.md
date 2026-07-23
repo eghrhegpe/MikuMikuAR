@@ -467,7 +467,7 @@ MikuMikuAR/
         │   │── motion-popup.ts       # 动作菜单总入口（ADR-129 场景级重设计）
         │   │── motion-camera-levels.ts    # 相机控制
         │   │── motion-cloth-levels.ts     # 布料质量（ADR-084）
-        │   │── motion-feet-levels.ts      # 脚部调整（ADR-085）
+        │   │── motion-modules/feet-adjustment-module.ts  # 脚 IK 地面跟随模块（已并入动作覆盖, ADR-085/116）
         │   │── motion-gaze-levels.ts      # 注视控制
         │   │── motion-override-levels.ts  # 骨骼覆盖 → Motion Override（ADR-116/125）
         │   │── motion-pose-levels.ts      # 姿势控制

@@ -1673,6 +1673,7 @@ export const ja: Record<string, string> = {
     'motion.override.module.fingerPose': 'フィンガーポーズ',
     'motion.override.module.ridingModel': 'ライディングモデル',
     'motion.override.module.positionOffset': '位置オフセット',
+    'motion.override.module.feetAdjustment': '足 IK 接地',
     'motion.override.tunedParams': '調整済み {n} 項目',
     'motion.override.activeBoneOverrides': '現在 {n} 件のオーバーライド',
     'param.tilt': '傾き（上半身）',

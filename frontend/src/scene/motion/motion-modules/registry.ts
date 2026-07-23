@@ -17,6 +17,7 @@ import { SWAY_MOTION_DEF } from './sway-motion';
 import { FINGER_POSE_DEF } from './finger-pose';
 import { RIDING_MODEL_DEF } from './riding-model';
 import { POSITION_OFFSET_DEF } from './position-offset';
+import { FEET_ADJUSTMENT_DEF } from './feet-adjustment-module';
 
 // ── 注册表 ──
 
@@ -308,6 +309,7 @@ export function getBuiltinModuleDefs(): ModuleDef[] {
         FINGER_POSE_DEF,
         RIDING_MODEL_DEF,
         POSITION_OFFSET_DEF,
+        FEET_ADJUSTMENT_DEF,
     ];
 }
 
