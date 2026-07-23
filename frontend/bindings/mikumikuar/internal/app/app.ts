@@ -912,6 +912,8 @@ export function SetDownloadWatchEnabled(enabled: boolean): $CancellablePromise<v
 
 /**
  * SetEnvState persists the environment state (sky, ground, particles, fog, etc.).
+ * Uses JSON-based merge (not full-replace) so that callers passing only a subset
+ * of fields do not wipe the other persisted env state fields.
  */
 export function SetEnvState(env: $models.EnvState): $CancellablePromise<void> {
     return $Call.ByID(4283504689, env);
