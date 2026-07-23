@@ -24,7 +24,7 @@
 ---
 kind: <snake_case 标识符>
 name: <中文短名>
-category: <rendering|env|motion|ui|core|backend|physics>
+category: <rendering|env|motion|ui|core|backend|physics|scene>
 scope:
   - <模块目录 glob>
 source_files:        # 仓库相对路径，必须真实存在于磁盘
@@ -59,7 +59,7 @@ adr:                 # 关联决策（可选）
 
 跑法：`node scripts/check-doc-drift.mjs`（或 `--json`）。可接 CI 卡点。
 
-## 卡片索引（70 张，按 category 分组）
+## 卡片索引（75 张，按 category 分组）
 
 ### 环境系统（env）
 
@@ -77,6 +77,16 @@ adr:                 # 关联决策（可选）
 | [湿身效果系统](./env-wetness.md) | `scene/env/env-wetness.ts` | ADR-172 |
 | [镜面道具](./mirror-debug.md) | `scene/env/mirror-debug.ts` | ADR-128 |
 | [道具系统](./props.md) | `scene/env/props.ts` | — |
+
+### 场景编排（scene）
+
+| 卡片 | 模块 | 关联 ADR |
+|------|------|----------|
+| [场景核心编排器](./scene.md) | `scene/scene.ts` | — |
+| [场景打包/解包](./scene-bundle.md) | `scene/scene-bundle.ts` | — |
+| [场景存档迁移](./scene-migrate.md) | `scene/scene-migrate.ts` | ADR-166 |
+| [场景序列化与自动保存](./scene-serialize.md) | `scene/scene-serialize.ts` | — |
+| [相机模式管理系统](./camera.md) | `scene/camera/camera.ts` | ADR-035 |
 
 ### 物理系统（physics）
 
