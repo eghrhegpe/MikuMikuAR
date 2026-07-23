@@ -59,7 +59,7 @@ adr:                 # 关联决策（可选）
 
 跑法：`node scripts/check-doc-drift.mjs`（或 `--json`）。可接 CI 卡点。
 
-## 卡片索引（98 张，按 category 分组）
+## 卡片索引（105 张，按 category 分组）
 
 ### 环境系统（env）
 
@@ -151,6 +151,13 @@ adr:                 # 关联决策（可选）
 
 | 卡片 | 模块 | 关联 ADR |
 |------|------|----------|
+| [滑出式菜单引擎](./menu.md) | `menus/menu.ts` | — |
+| [声明式菜单 Schema](./menu-schema.md) | `menus/menu-schema.ts` | ADR-093 |
+| [设置页路由与编排](./settings.md) | `menus/settings.ts` | ADR-157 |
+| [资源库入口与编排](./library.md) | `menus/library.ts` | — |
+| [环境弹窗（编排 + barrel）](./env-menu.md) | `menus/env-menu.ts` | — |
+| [场景弹窗（编排 + 路由）](./scene-menu.md) | `menus/scene-menu.ts` | — |
+| [模型子菜单构建](./model-detail.md) | `menus/model-detail.ts` | — |
 | [资源库浏览弹窗](./library-browse.md) | `menus/library-browse.ts` | — |
 | [资源库会话状态单例](./library-session-store.md) | `menus/library-session-store.ts` | ADR-135 |
 | [动作绑定 UI](./motion-binding-ui.md) | `menus/motion-binding-ui.ts` | — |
