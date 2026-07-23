@@ -1,6 +1,7 @@
 # Build artifacts
 build/bin
 frontend/dist
+frontend/dist-web
 /dist/
 frontend/node_modules
 

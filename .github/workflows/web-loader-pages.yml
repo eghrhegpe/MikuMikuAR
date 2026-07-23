@@ -1,0 +1,73 @@
+# ADR-176 Phase 3: Web Loader → GitHub Pages 自动部署
+#
+# 将 web-loader.html（纯浏览器 PMX 加载器原型）构建并部署到 GitHub Pages。
+# 仓库 eghrhegpe/MikuMikuAR → 访问地址 https://eghrhegpe.github.io/MikuMikuAR/
+#
+# 触发条件：main 分支 push 且 web-loader 相关文件改动时。
+# 部署方式：官方 actions/deploy-pages（artifact 上传，无需 gh-pages 分支）。
+#
+# 前置：仓库 Settings → Pages → Source 选 "GitHub Actions"。
+name: Web Loader — GitHub Pages Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/web-loader.html'
+      - 'frontend/src/web-loader/**'
+      - 'frontend/vite.web-loader.config.ts'
+      - '.github/workflows/web-loader-pages.yml'
+  workflow_dispatch: # 允许手动触发
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write # deploy-pages 需要
+
+# 同一时间只允许一个部署，新部署取消旧的
+concurrency:
+  group: web-loader-pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web-loader (production)
+        # 独立构建配置：不 externalize babylon / base=/MikuMikuAR/ / @wailsio/runtime stub
+        # 产物输出到 frontend/dist-web/
+        run: npx vite build --config vite.web-loader.config.ts
+
+      - name: Add index.html entry
+        # GitHub Pages 默认入口是 index.html，复制 web-loader.html 以支持根路径访问
+        # （https://eghrhegpe.github.io/MikuMikuAR/ 自动打开）
+        run: cp dist-web/web-loader.html dist-web/index.html
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist-web
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
