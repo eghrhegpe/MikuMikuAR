@@ -182,11 +182,80 @@ async function _listModels(): Promise<ModelEntry[]> {
 }
 
 // —— File System Access 对话框（②）——
+/** 一次选多个文件（.pmx + 伴生纹理）。返回 FileSystemFileHandle 数组。 */
+async function _pickFilesMultiple(
+    acceptPmx: boolean
+): Promise<FileSystemFileHandle[] | null> {
+    const picker = (window as { showOpenFilePicker?: (o?: unknown) => Promise<FileSystemFileHandle[]> }).showOpenFilePicker;
+    if (typeof picker !== 'function') return null;
+    // .pmx 场景：多选模式让用户 Ctrl+选同目录的纹理
+    // 需要同时支持 pmx + 纹理扩展名，但 FSA showOpenFilePicker 的 accept 是"或"语义，
+    // 用 application/octet-stream 兜底接收所有文件，靠后缀在 SelectImportFile 内部分流
+    const opts: Record<string, unknown> = { multiple: true };
+    if (acceptPmx) {
+        opts.types = [{
+            description: 'Model files',
+            accept: { 'application/octet-stream': ['.pmx', '.png', '.jpg', '.jpeg', '.bmp', '.tga', '.dds', '.tif', '.tiff'] }
+        }];
+    }
+    return await picker(opts) ?? null;
+}
+
 async function _pickFile(accept?: string): Promise<FileSystemFileHandle | null> {
     const picker = (window as { showOpenFilePicker?: (o?: unknown) => Promise<FileSystemFileHandle[]> }).showOpenFilePicker;
     if (typeof picker !== 'function') return null;
     const handles = await picker(accept ? { types: [{ accept: { 'application/octet-stream': [accept] } }] } : undefined);
     return handles[0] ?? null;
+}
+
+/** 写入单个模型/动作文件到 IndexedDB，返回文件名。 */
+async function _writeModelFile(file: File): Promise<string> {
+    const lower = file.name.toLowerCase();
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const stem = file.name.replace(/\.(zip|pmx|vmd)$/i, '');
+    await idbSet('models', `file:${stem}`, bytes);
+    if (lower.endsWith('.pmx')) {
+        await idbSet('models', `entry:${stem}`, {
+            name: stem, fileName: file.name, kind: 'pmx',
+            size: bytes.byteLength, savedAt: Date.now(),
+        });
+    } else if (lower.endsWith('.zip')) {
+        await idbSet('models', `entry:${stem}`, {
+            name: stem, fileName: file.name, kind: 'zip',
+            size: bytes.byteLength, savedAt: Date.now(),
+        });
+    }
+    return file.name;
+}
+
+const TEXTURE_EXTS_RE = /\.(png|jpg|jpeg|bmp|tga|dds|tif|tiff)$/i;
+
+/** 写入 .pmx + 伴生纹理文件到 IndexedDB。
+ *  PMX → file:<stem> + entry:<stem>
+ *  纹理 → dir:<stem>:<filename>（供 collectTextureFiles / ListDirRecursive 扫描）
+ */
+async function _writeModelWithTextures(
+    pmxFile: File,
+    allHandles: FileSystemFileHandle[]
+): Promise<string> {
+    const pmxStem = pmxFile.name.replace(/\.pmx$/i, '');
+    // 先写 PMX
+    const pmxBytes = new Uint8Array(await pmxFile.arrayBuffer());
+    await idbSet('models', `file:${pmxStem}`, pmxBytes);
+    await idbSet('models', `entry:${pmxStem}`, {
+        name: pmxStem, fileName: pmxFile.name, kind: 'pmx',
+        size: pmxBytes.byteLength, savedAt: Date.now(),
+    });
+    // 写纹理文件到 dir:<stem>:<filename>
+    for (const handle of allHandles) {
+        const f = await handle.getFile();
+        if (!TEXTURE_EXTS_RE.test(f.name.toLowerCase())) continue;
+        if (f.name === pmxFile.name) continue; // 跳过 PMX 本身
+        const texBytes = new Uint8Array(await f.arrayBuffer());
+        const dirKey = `dir:${pmxStem}:${f.name}`;
+        await idbSet('models', dirKey, texBytes);
+    }
+    return pmxFile.name;
 }
 
 // [doc:adr-177] FSA 目录扫描：递归遍历 directory handle，将 .pmx/.zip 文件写入 IndexedDB。
@@ -198,22 +267,56 @@ interface FsaDirHandle extends FileSystemDirectoryHandle {
     values(): AsyncIterableIterator<FileSystemHandle>;
 }
 
+// [bugfix:web-resource-types] 按扩展名推断资源类别（对齐 Go 端 scanAllCategories）
+// 网页端扁平目录无子目录结构，靠扩展名自动分类：
+//   .pmx → 模型（type='actor'）
+//   .vmd → 动作（type='motion', format='vmd'）
+//   .mp3/.wav/.ogg/.flac/.wma → 音乐（type='audio', format='audio'）
+//   .x → 舞台（type='stage', format='pmx'）
+//   .vpd → 姿势（type='pose', format='vpd'）
+//   .zip → 压缩包（type='actor', format='zip'，解压后按内容分类）
+function _inferTypeByExt(filename: string): { type: string; format: string } {
+    const ext = filename.toLowerCase().split('.').pop() || '';
+    switch (ext) {
+        case 'pmx':
+            return { type: 'actor', format: 'pmx' };
+        case 'vmd':
+            return { type: 'motion', format: 'vmd' };
+        case 'mp3':
+        case 'wav':
+        case 'ogg':
+        case 'flac':
+        case 'wma':
+            return { type: 'audio', format: 'audio' };
+        case 'x':
+            return { type: 'stage', format: 'pmx' };
+        case 'vpd':
+            return { type: 'pose', format: 'vpd' };
+        case 'zip':
+            return { type: 'actor', format: 'zip' };
+        default:
+            return { type: 'actor', format: ext };
+    }
+}
+
 async function _scanDirIntoIDB(dirHandle: FileSystemDirectoryHandle): Promise<void> {
     const dir = dirHandle as FsaDirHandle;
     for await (const entry of dir.values()) {
         if (entry.kind === 'file') {
             const name = entry.name.toLowerCase();
-            if (name.endsWith('.pmx') || name.endsWith('.zip')) {
+            // [bugfix:web-resource-types] 支持所有资源类型（对齐 Go 端 scanAllCategories）
+            const SUPPORTED_EXTS = /\.(pmx|vmd|mp3|wav|ogg|flac|wma|x|vpd|zip)$/i;
+            if (SUPPORTED_EXTS.test(name)) {
                 const fileHandle = entry as FileSystemFileHandle;
                 const file = await fileHandle.getFile();
                 const bytes = new Uint8Array(await file.arrayBuffer());
-                const stem = entry.name.replace(/\.(pmx|zip)$/i, '');
+                const stem = entry.name.replace(/\.(pmx|vmd|mp3|wav|ogg|flac|wma|x|vpd|zip)$/i, '');
                 await idbSet('models', `file:${stem}`, bytes);
                 // [bugfix:library-empty] entry 必须符合 ModelEntry 结构：
                 // library-setup.ts:73 过滤 m.file_path，library-core.ts:186 用 m.dir 分组，
                 // 缺这两个字段会导致模型库显示为空。
                 // 同时保留 name/fileName/kind/size/savedAt 供 web-loader/library.ts 复用。
-                const isPmx = name.endsWith('.pmx');
+                const { type, format } = _inferTypeByExt(entry.name);
                 await idbSet('models', `entry:${stem}`, {
                     // —— ModelEntry 必填字段 ——
                     dir: 'web://selected-dir',
@@ -222,8 +325,8 @@ async function _scanDirIntoIDB(dirHandle: FileSystemDirectoryHandle): Promise<vo
                     name_en: stem,
                     comment: '',
                     has_thumb: false,
-                    type: 'actor',
-                    format: isPmx ? 'pmx' : 'zip',
+                    type,
+                    format,
                     container: 'file',
                     zip_inner: '',
                     category: '',
@@ -231,7 +334,7 @@ async function _scanDirIntoIDB(dirHandle: FileSystemDirectoryHandle): Promise<vo
                     // —— WebModelEntry 兼容字段（web-loader/library.ts 读取）——
                     name: stem,
                     fileName: entry.name,
-                    kind: isPmx ? 'pmx' : 'zip',
+                    kind: format,
                     size: bytes.byteLength,
                     savedAt: Date.now(),
                 });
@@ -699,37 +802,40 @@ export const browserAdapter: BackendService = {
         return 'web://selected-dir';
     },
     async SelectImportFile(): Promise<string> {
-        // [doc:adr-177] 浏览器侧真实实现：选文件后读取字节写入 IndexedDB，
-        // 返回文件名供 importFile() 按扩展名分发。
-        const h = await _pickFile();
-        if (!h) return '';
-        const file = await h.getFile();
-        const lower = file.name.toLowerCase();
-        // 只处理支持的后缀，其余走 importFile 的 unsupported 分支
-        if (!lower.endsWith('.zip') && !lower.endsWith('.pmx') && !lower.endsWith('.vmd')) {
-            return file.name;
+        // [doc:adr-177] 浏览器侧真实实现：弹出文件选择器 → 读字节写入 IndexedDB，
+        // 返回文件名（含扩展名）供 importFile() 按后缀分发。
+        //
+        // .pmx 特殊处理：多选模式，用户一次选 PMX + 同目录纹理文件。
+        // 纹理写入 dir:<stem>:<filename>，使 collectTextureFiles 能扫描到伴生纹理，
+        // 避免 babylon-mmd 因 referenceFiles 为空 fallback 到 HTTP 404。
+        // 先试单文件选择（兼容不支持多选的浏览器）
+        const single = await _pickFile();
+        if (!single) return '';
+        const singleFile = await single.getFile();
+        const singleLower = singleFile.name.toLowerCase();
+        if (singleLower.endsWith('.pmx')) {
+            // 多选：让用户 Ctrl+选同目录的纹理文件
+            const handles = await _pickFilesMultiple(true);
+            if (!handles || handles.length === 0) {
+                // 用户只选了 PMX 但没选纹理，降级：只写 PMX
+                return await _writeModelFile(singleFile);
+            }
+            return await _writeModelWithTextures(singleFile, handles);
         }
-        const bytes = new Uint8Array(await file.arrayBuffer());
-        const stem = file.name.replace(/\.(zip|pmx|vmd)$/i, '');
+        // .zip / .vmd / 不支持格式：走单文件路径
+        const bytes = new Uint8Array(await singleFile.arrayBuffer());
+        const stem = singleFile.name.replace(/\.(zip|pmx|vmd)$/i, '');
         await idbSet('models', `file:${stem}`, bytes);
-        if (lower.endsWith('.pmx') || lower.endsWith('.zip')) {
-            // 写入 entry 使模型库可见（web-loader/library.ts saveModel 等价逻辑）
-            const kind = lower.endsWith('.zip') ? 'zip' : 'pmx';
+        if (singleLower.endsWith('.zip')) {
             await idbSet('models', `entry:${stem}`, {
                 name: stem,
-                fileName: file.name,
-                kind,
+                fileName: singleFile.name,
+                kind: 'zip',
                 size: bytes.byteLength,
                 savedAt: Date.now(),
             });
         }
-        // [fix:import-file-web] 返回文件名（含扩展名），而非 'web://file'
-        // - .pmx/.vmd: importFile() 直接 loadManager.load({ kind, path: file.name })
-        //   loadManager → loadPMXFile/loadVMDFromPath → 内部 readFileBytes → _resolveIdbKey → file:<stem>
-        // - .zip:      importFile() → ImportZip(file.name) → ExtractZip(file.name) → readFileBytes
-        //   同上路由。ExtractZip 首次调用 this.readFileBytes(file.name) 就能读到写入的 file:<stem>。
-        // - 不支持格式: importFile 的 else 分支显示 unsupported 提示
-        return file.name;
+        return singleFile.name;
     },
     async SelectBundleSaveFile(): Promise<string> {
         const picker = (window as { showSaveFilePicker?: () => Promise<FileSystemFileHandle> }).showSaveFilePicker;
