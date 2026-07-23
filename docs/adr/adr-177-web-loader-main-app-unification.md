@@ -1,6 +1,6 @@
 # ADR-177: Web Loader 与主应用统一路径
 
-> **状态**: Phase 1 Runtime Bridge 实施完成（2026-07-23；生产代码白名单零残留，tsc 0 错误，1971 测试全绿。可进入 Phase 2 能力门控 + 首屏数据链）
+> **状态**: Phase 2 A4 首屏数据链 + 拖拽导入闭环实施完成（2026-07-23；browser-adapter 默认值/path 映射/ExtractZip 对齐 Go 签名；events.ts drop → IndexedDB file:<name> → readFileBytes 读回闭环打通；drop 逻辑抽至 core/drop-import.ts 便于单测，13 项单测覆盖桌面/浏览器分支与错误路径；tsc 0 错误，1998 测试全绿。剩余 A4：ListDirRecursive/LoadOutfitFile/LoadSceneFile 浏览器补齐；A5 能力门控未启动）
 > **日期**: 2026-07-23
 > **关联**: ADR-176（前端 Backend 适配器双实现）、ADR-017（安卓适配，platform 探测范式）、ADR-159（桥接注入范式）、ADR-093（声明式菜单 Schema）
 > **前置**: ADR-176 Phase 1-3 已落地（backend 适配器层、wails-bindings 106 函数全代理化、web-loader 网页原型已上线 GitHub Pages）
@@ -356,6 +356,25 @@ src/core/runtime-bridge.ts:112  (Wails 侧 wrapper，合法)
 
 > **关键阻塞**：主应用模型加载器 → `ListDirRecursive()` → `readFileBytes()` → IndexedDB。当前 `ListDirRecursive()` 返回空数组，资源纹理、VMD、服装链路尚未证明。Phase 0 必须加入「空 IndexedDB + 拖入 PMX/ZIP + 纹理/VMD 加载」的真实验收。
 
+**A4 实施记录**（2026-07-23）：
+
+| 子项 | 实现 | 解决问题 |
+|------|------|----------|
+| `_resolveIdbKey` path 映射 | 主应用绝对路径（`D:/models/foo.pmx`）→ IndexedDB key（`file:foo`） | Q4 键规约对齐 |
+| `_defaultConfig` / `_defaultUIState` | 完整默认值（config_version=1、ui_state 全字段、override_paths 等） | Q1/Q2 默认值足够启动 |
+| `GetUIState` / `SetUIState` | 双写 Config.ui_state + uistate store（向后兼容） | Q2 主应用读路径对齐 |
+| `SetEnvState` 单源 | 改写 Config.env（对齐主应用 restoreEnvState） | 修复 uistate/envState 双源 bug |
+| `ExtractZip` / `ImportZip` 对齐 Go 签名 | 双参 `(zipPath, innerPath)`；浏览器侧 JSZip 解压内部资源落地 `file:<stem>` | Q5 zip 解压链统一 |
+| 拖拽导入闭环 | events.ts drop → handleDroppedFile → idbSet `file:<name>` + saveModel `entry:<name>` → handleDropFile → loadManager | Q5 拖拽进入统一注册链 |
+| drop 逻辑抽模块 | handleDropFile + handleDroppedFile → `core/drop-import.ts`（纯逻辑，便于单测） | 13 项单测覆盖桌面/浏览器分支 + 错误路径 |
+
+**Q4/Q5 验收结论**：✅ 已解决。拖入 PMX/ZIP/VMD 后字节落地 IndexedDB `file:<name>`，主应用 readFileBytes 经 `_resolveIdbKey` 透明映射命中，loadManager.load 触发加载，refreshLibrary 刷新模型库。
+
+**A4 剩余项**：
+- ⚠️ `ListDirRecursive()` 仍返回 `[]`——资源纹理扫描、VMD 同包加载需改为 IndexedDB 索引遍历（p2-5）
+- ⚠️ `LoadOutfitFile()` / `LoadSceneFile()` 返回 `null`——服装/场景加载链未补（p2-5）
+- ⚠️ drop 闭环仅单测覆盖，未做浏览器端到端 smoke（Phase 4）
+
 **A5 能力门控（非机械）**——生产菜单实际调用清单：
 
 | 能力键 | 生产入口 | 浏览器行为 | 降级实现 |
@@ -417,8 +436,8 @@ src/core/runtime-bridge.ts:112  (Wails 侧 wrapper，合法)
 | Q1 | `GetConfig()` 默认值是否足够启动完整 UI？ | 首屏配置 | Phase 0 S6 |
 | Q2 | `GetUIState()` 返回空对象是否触发未定义字段？ | 首屏 UI 状态 | Phase 0 S6 |
 | Q3 | 模型库从 `web-loader/library.ts` 迁移还是复用 `browser-adapter`？ | 模型库架构 | Phase 2 决策 |
-| Q4 | `readFileBytes()` IndexedDB key 与主应用模型加载器路径是否一致？ | 模型加载 | Phase 2 对齐 |
-| Q5 | 拖拽导入的 `.pmx/.zip` 是否进入统一模型注册与缓存链？ | 拖拽入口 | Phase 2 验证 |
+| Q4 | `readFileBytes()` IndexedDB key 与主应用模型加载器路径是否一致？ | 模型加载 | ✅ 已解决（`_resolveIdbKey` 绝对路径 → `file:<name>`） |
+| Q5 | 拖拽导入的 `.pmx/.zip` 是否进入统一模型注册与缓存链？ | 拖拽入口 | ✅ 已解决（drop-import.ts + 13 项单测） |
 | Q6 | 场景存档（`SaveScene`/`LoadScene`）在浏览器侧的 IndexedDB 键规约？ | 场景持久化 | Phase 2 设计 |
 | Q7 | 预设（模型/环境/渲染）在浏览器侧的存储与 Go 侧是否互通？ | 预设系统 | Phase 2 设计 |
 

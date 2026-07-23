@@ -87,6 +87,18 @@ const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const appearsIn = (text, sym) =>
   new RegExp('\\b' + escapeRe(sym) + '\\b').test(text);
 
+// 知识卡 API 符号检查：跳过极短 token 与常见框架/内置符号，降低误报噪声。
+const API_SYMBOL_MIN_LEN = 3;
+const API_SYMBOL_DENYLIST = new Set([
+  'console', 'Math', 'Object', 'Array', 'Promise', 'JSON', 'Map', 'Set',
+  'String', 'Number', 'Boolean', 'Error', 'Date', 'Symbol', 'RegExp',
+  'require', 'super', 'void', 'MeshBuilder', 'Vector2', 'Vector3', 'Color3',
+  'Color4', 'Quaternion', 'Matrix', 'Scene', 'Observable', 'Observer',
+  'TransformNode', 'AbstractMesh', 'Mesh', 'Material', 'Texture', 'Node',
+  'PBRMaterial', 'StandardMaterial', 'Scalar', 'Tools', 'Animation',
+  'requestAnimationFrame', 'setTimeout', 'clearTimeout', 'setInterval',
+]);
+
 // 从 architecture.md 目录树行中提取所有引用的文件名（basename）
 function getArchTreeBasenames() {
   const arch = read(CONFIG.archDoc);
@@ -270,6 +282,74 @@ function checkGeneratedStatus() {
   }
 }
 
+// ---------- 检查 6：知识卡「对外 API」符号真实存在性（INFO） ----------
+// 设计：构建 sourceRoots 下全部 .ts 导出符号的全局索引（含 re-export 目标，
+// 故 barrel 入口文件声明的上游函数也能命中），对每张卡正文中 `` `name(...)` ``
+// 形式的符号逐一校验：是否出现在全局导出索引，或其自身 source_files 源码文本中。
+// 全部查无 → 标记为可疑（捕捉编造/更名的函数名，如 enterAR / buildModelDetailLevel）。
+// 列为 INFO：误报（引用框架/外部符号）不阻断 CI，仅供人工复核。
+function buildGlobalExportIndex() {
+  const index = new Map(); // name -> Set(relPath)
+  for (const root of CONFIG.sourceRoots) {
+    for (const f of walk(path.join(ROOT, root))) {
+      let syms = [];
+      try {
+        syms = getExportedSymbols(f);
+      } catch {
+        continue;
+      }
+      const rel = asPosix(f).replace(asPosix(ROOT) + '/', '');
+      for (const s of syms) {
+        if (!index.has(s)) index.set(s, new Set());
+        index.get(s).add(rel);
+      }
+    }
+  }
+  return index;
+}
+
+function checkCardApiSymbols(globalIndex) {
+  const dir = path.join(ROOT, CONFIG.knowledgeDir);
+  if (!fs.existsSync(dir)) return { checked: 0, flagged: [] };
+  const cardFiles = fs
+    .readdirSync(dir)
+    .filter((f) => f.endsWith('.md') && f.toLowerCase() !== 'readme.md');
+  const flagged = [];
+  let checked = 0;
+  for (const cf of cardFiles) {
+    const text = fs.readFileSync(path.join(dir, cf), 'utf8');
+    const sources = parseSourceFiles(text);
+    const body = text.replace(/^---[\s\S]*?---/, ''); // 去 frontmatter
+    const callRe = /`([A-Za-z_$][\w$]*)\s*\(/g;
+    let m;
+    const candidates = new Set();
+    while ((m = callRe.exec(body))) {
+      const name = m[1];
+      if (name.length < API_SYMBOL_MIN_LEN) continue;
+      if (API_SYMBOL_DENYLIST.has(name)) continue;
+      candidates.add(name);
+    }
+    if (candidates.size === 0) continue;
+    // 卡片自身 source_files 的源码文本（兜底：未导出但被调用的内部符号）
+    let localText = '';
+    for (const src of sources) {
+      const abs = path.join(ROOT, src);
+      if (fs.existsSync(abs)) localText += '\n' + fs.readFileSync(abs, 'utf8');
+    }
+    const missing = [];
+    for (const c of candidates) {
+      if (globalIndex.has(c)) continue;
+      if (localText && appearsIn(localText, c)) continue;
+      missing.push(c);
+    }
+    if (missing.length > 0 && missing.length === candidates.size) {
+      checked++;
+      flagged.push({ card: cf, missing: [...missing].slice(0, 15) });
+    }
+  }
+  return { checked, flagged };
+}
+
 // ---------- 主流程 ----------
 function main() {
   const json = process.argv.includes('--json');
@@ -294,6 +374,9 @@ function main() {
 
   const rev = checkKnowledgeCoverage();
 
+  const globalIndex = buildGlobalExportIndex();
+  const apiSym = checkCardApiSymbols(globalIndex);
+
   const generatedStatusError = checkGeneratedStatus();
   if (generatedStatusError) {
     errors.push(`status.md ADR 生成区未同步：${generatedStatusError}`);
@@ -301,7 +384,7 @@ function main() {
 
   if (json) {
     console.log(
-      JSON.stringify({ adr, stale, coverage: cov, knowledge: kc, reverse: rev, errors }, null, 2)
+      JSON.stringify({ adr, stale, coverage: cov, knowledge: kc, reverse: rev, apiSymbols: apiSym, errors }, null, 2)
     );
     process.exit(errors.length ? 1 : 0);
   }
@@ -321,6 +404,12 @@ function main() {
       .sort((a, b) => b[1] - a[1])
       .map(([d, n]) => `${d}: ${n}`);
     console.log('   按目录: ' + parts.join('，'));
+  }
+  console.log(`知识卡 API 符号可疑卡     : ${apiSym.flagged.length} 张（INFO）`);
+  if (apiSym.flagged.length) {
+    for (const f of apiSym.flagged.slice(0, 20)) {
+      console.log(`   ⚠ ${f.card} — 查无符号: ${f.missing.join(', ')}`);
+    }
   }
   if (cov.undocumented) {
     const parts = Object.entries(cov.undocumentedByDir)
