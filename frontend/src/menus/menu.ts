@@ -57,6 +57,8 @@ export class SlideMenu {
     private _swipeStartY = 0;
     /** 本次滑动手势是否有效（仅单指有效；多指手势置 false 取消判定，避免双指误触发 pop） */
     private _swipeActive = false;
+    /** 菜单逻辑打开状态：构造时置 true，close/dispose 置 false；isVisible 的可靠来源，不依赖脆弱的 CSS 布局探测 */
+    private _isOpen = false;
     private _swipeTouchStartHandler: ((e: TouchEvent) => void) | null = null;
     private _swipeTouchEndHandler: ((e: TouchEvent) => void) | null = null;
     private _keydownDisp: Disposable | null = null;
@@ -182,18 +184,26 @@ export class SlideMenu {
                 this.pop();
             }
         };
-        this._swipeTouchStartDisp = addDisposableListener(
-            this.container,
-            'touchstart',
-            this._swipeTouchStartHandler,
-            { passive: true }
-        );
-        this._swipeTouchEndDisp = addDisposableListener(
-            this.container,
-            'touchend',
-            this._swipeTouchEndHandler,
-            { passive: true }
-        );
+        // 菜单逻辑上已打开
+        this._isOpen = true;
+        // 安卓平台交由系统返回键（android:back）唯一处理菜单返回，
+        // 避免「系统返回手势」与「坐标位移右滑」双触发导致一次手势 pop 两级（P2）。
+        // iOS / 桌面触屏仍用屏幕坐标右滑手势作为返回手段。
+        const isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
+        if (!isAndroid) {
+            this._swipeTouchStartDisp = addDisposableListener(
+                this.container,
+                'touchstart',
+                this._swipeTouchStartHandler,
+                { passive: true }
+            );
+            this._swipeTouchEndDisp = addDisposableListener(
+                this.container,
+                'touchend',
+                this._swipeTouchEndHandler,
+                { passive: true }
+            );
+        }
 
         // 响应式订阅：状态变更 → 自动 updateControls
         this._unsubscribe = subscribe(() => this.updateControls());
@@ -212,13 +222,14 @@ export class SlideMenu {
         return this.levels.length;
     }
 
-    /** 菜单容器是否实际可见（有布局尺寸），用于区分「已打开」与「已隐藏/已 dispose」 */
+    /** 菜单容器是否实际可见：以 _isOpen 为可靠来源，并辅以容器布局尺寸探测 */
     get isVisible(): boolean {
-        return this.container.getClientRects().length > 0;
+        return this._isOpen && this.container.getClientRects().length > 0;
     }
 
     /** 关闭整个菜单（触发 onClose，通常内部会 closeAllOverlays + dispose 当前 SlideMenu） */
     close(): void {
+        this._isOpen = false;
         this.onClose?.();
     }
 
@@ -876,6 +887,7 @@ export class SlideMenu {
         this._customDispose = null;
         this._controls = [];
         _liveMenus.delete(this);
+        this._isOpen = false;
         this.panel.innerHTML = '';
     }
 
