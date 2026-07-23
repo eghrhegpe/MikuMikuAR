@@ -357,12 +357,10 @@ async function _scanDirIntoIDB(
         const ext = lower.split('.').pop() || '';
         let type: string, format: string, virtualDir: string;
         if (byDir) {
-            // 结构化目录：按目录约定分类，保留原始相对路径
             type = byDir.type;
             format = byDir.format;
             virtualDir = `web://selected-dir/${relPath}`;
         } else {
-            // 扁平目录 / 未识别子目录：按扩展名分类，映射到虚拟子目录
             const byExt = _CATEGORY_BY_EXT[ext];
             type = byExt?.type ?? 'actor';
             format = byExt?.format ?? ext;
@@ -371,21 +369,77 @@ async function _scanDirIntoIDB(
                 : relPath ? `web://selected-dir/${relPath}` : 'web://selected-dir';
         }
 
-        // [bugfix:zip-container] zip 文件必须标记 container='zip'，
-        // 否则 loadModelNormal 不走 ExtractZip 解压，直接把 zip 字节喂给 PMX 解析器。
-        const container = ext === 'zip' ? 'zip' : 'file';
-
-        await idbSet('models', `entry:${stem}`, {
-            dir: virtualDir,
-            file_path: `${virtualDir}/${name}`,
-            name_jp: stem, name_en: stem,
-            comment: '', has_thumb: false,
-            type, format,
-            container, zip_inner: '', category: '', source: '',
-            name: stem, fileName: name, kind: format,
-            size: bytes.byteLength, savedAt: Date.now(),
-        });
-        console.info(`[web-scan]   写入 entry:${stem} → dir=${virtualDir} type=${type} format=${format} container=${container}`);
+        // [bugfix:zip-expand] 对齐 Go 端 expandZipEntries：扫描时展开 zip 内部文件，
+        // 每个识别文件（pmx/vmd/audio/vpd）生成独立 entry，dir = virtualDir/zipStem（虚拟文件夹），
+        // container='zip' + zip_inner=内部路径。UI 层 buildLevel 按 dir 分组自然形成文件夹层级。
+        if (ext === 'zip') {
+            try {
+                const zip = await JSZip.loadAsync(bytes);
+                const INNER_RE = /\.(pmx|vmd|mp3|wav|ogg|flac|wma|vpd)$/i;
+                const innerFiles = Object.keys(zip.files).filter(
+                    (n) => !zip.files[n].dir && INNER_RE.test(n)
+                );
+                if (innerFiles.length > 0) {
+                    const zipDir = `${virtualDir}/${stem}`;
+                    for (const innerPath of innerFiles) {
+                        const innerBase = innerPath.split(/[/\\]/).pop() || innerPath;
+                        const innerExt = innerBase.toLowerCase().split('.').pop() || '';
+                        const innerStem = innerBase.replace(/\.[^.]+$/, '');
+                        const innerByExt = _CATEGORY_BY_EXT[innerExt];
+                        const innerType = byDir ? byDir.type : (innerByExt?.type ?? 'actor');
+                        const innerFormat = innerByExt?.format ?? innerExt;
+                        // entry key 需唯一：zipStem + 内部路径（去斜杠）
+                        const entryKey = `${stem}__${innerPath.replace(/[/\\]/g, '_')}`;
+                        await idbSet('models', `entry:${entryKey}`, {
+                            dir: zipDir,
+                            file_path: `${virtualDir}/${name}`,
+                            name_jp: innerStem, name_en: innerStem,
+                            comment: '', has_thumb: false,
+                            type: innerType, format: innerFormat,
+                            container: 'zip', zip_inner: innerPath, category: '', source: '',
+                            name: innerStem, fileName: innerBase, kind: innerFormat,
+                            size: 0, savedAt: Date.now(),
+                        });
+                        console.info(`[web-scan]   展开 zip entry:${entryKey} → dir=${zipDir} inner=${innerPath} format=${innerFormat}`);
+                    }
+                } else {
+                    // zip 内无识别资源，作为整体 entry 保留
+                    await idbSet('models', `entry:${stem}`, {
+                        dir: virtualDir, file_path: `${virtualDir}/${name}`,
+                        name_jp: stem, name_en: stem,
+                        comment: '', has_thumb: false,
+                        type, format: 'zip',
+                        container: 'zip', zip_inner: '', category: '', source: '',
+                        name: stem, fileName: name, kind: 'zip',
+                        size: bytes.byteLength, savedAt: Date.now(),
+                    });
+                }
+            } catch (zipErr) {
+                // zip 解析失败（损坏/加密），作为整体 entry 保留
+                console.warn(`[web-scan]   zip 解析失败: ${name}`, zipErr);
+                await idbSet('models', `entry:${stem}`, {
+                    dir: virtualDir, file_path: `${virtualDir}/${name}`,
+                    name_jp: stem, name_en: stem,
+                    comment: '', has_thumb: false,
+                    type, format: 'zip',
+                    container: 'zip', zip_inner: '', category: '', source: '',
+                    name: stem, fileName: name, kind: 'zip',
+                    size: bytes.byteLength, savedAt: Date.now(),
+                });
+            }
+        } else {
+            await idbSet('models', `entry:${stem}`, {
+                dir: virtualDir,
+                file_path: `${virtualDir}/${name}`,
+                name_jp: stem, name_en: stem,
+                comment: '', has_thumb: false,
+                type, format,
+                container: 'file', zip_inner: '', category: '', source: '',
+                name: stem, fileName: name, kind: format,
+                size: bytes.byteLength, savedAt: Date.now(),
+            });
+            console.info(`[web-scan]   写入 entry:${stem} → dir=${virtualDir} type=${type} format=${format}`);
+        }
     }
 
     // 第三遍：为本层的每个 PMX 写入同目录纹理引用
@@ -495,15 +549,25 @@ export const browserAdapter: BackendService = {
         const zip = await JSZip.loadAsync(buf);
         const ASSET_RE = /\.(pmx|vmd|vpd|png|jpg|jpeg|bmp|tga|dds|tif|tiff|wav|mp3|ogg|flac|glb)$/i;
         const fileNames = Object.keys(zip.files).filter((n) => !zip.files[n].dir);
-        // 第一遍：找主 PMX stem（同步遍历，不读字节）
+        // 第一遍：确定目标文件（优先使用 innerPath，兜底找第一个 PMX）
         let mainPmxName = '';
         let mainPmxStem = '';
-        for (const name of fileNames) {
-            const baseName = name.split(/[/\\]/).pop() || name;
-            if (/\.pmx$/i.test(baseName)) {
-                mainPmxName = baseName;
-                mainPmxStem = baseName.replace(/\.pmx$/i, '');
-                break;
+        if (_innerPath) {
+            // [bugfix:zip-innerpath] 多文件 zip 点击特定内部文件时，按 innerPath 定位
+            const target = fileNames.find((n) => n === _innerPath || n.replace(/\\/g, '/') === _innerPath);
+            if (target) {
+                mainPmxName = target.split(/[/\\]/).pop() || target;
+                mainPmxStem = mainPmxName.replace(/\.[^.]+$/, '');
+            }
+        }
+        if (!mainPmxName) {
+            for (const name of fileNames) {
+                const baseName = name.split(/[/\\]/).pop() || name;
+                if (/\.pmx$/i.test(baseName)) {
+                    mainPmxName = baseName;
+                    mainPmxStem = baseName.replace(/\.pmx$/i, '');
+                    break;
+                }
             }
         }
         const zipStem = _extractStem(zipPath);
