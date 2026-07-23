@@ -498,6 +498,8 @@ export const zhCN: Record<string, string> = {
     'motion.boneOverride.yaw': '偏航 (Y)',
     'motion.boneOverride.roll': '翻滚 (Z)',
     'motion.boneOverride.weight': '权重',
+    'motion.boneOverride.axisHint': 'P:俯仰 Y:偏航 R:翻滚 W:权重',
+    'motion.boneOverride.clearAllConfirm': '确定清除所有骨骼覆盖？此操作可通过撤销恢复。',
     // [doc:adr-116] 动作覆盖模块化 UI
     'motion.override.title': '动作覆盖',
     'motion.override.enabled': '✓ 已启用模块',

@@ -1660,6 +1660,8 @@ export const ja: Record<string, string> = {
     'motion.boneOverride.yaw': 'ヨー (Y)',
     'motion.boneOverride.roll': 'ロール (Z)',
     'motion.boneOverride.weight': 'ウェイト',
+    'motion.boneOverride.axisHint': 'P:ピッチ Y:ヨー R:ロール W:ウェイト',
+    'motion.boneOverride.clearAllConfirm': 'すべてのボーンオーバーライドを削除しますか？元に戻せます。',
     // [doc:adr-116] モーションオーバーライド モジュールUI
     'motion.override.title': 'モーションオーバーライド',
     'motion.override.enabled': '✓ モジュール有効',

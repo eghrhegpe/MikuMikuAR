@@ -63,6 +63,8 @@ interface OverrideFormState {
     yaw: number;
     roll: number;
     weight: number;
+    /** [doc:adr-116 P3] 覆盖语义：true=绝对(直接设定角度) / false=复合(当前动作角度上叠加偏移)。编辑时回填，应用保留原值。 */
+    absolute: boolean;
 }
 const _overrideFormStates = new Map<string, OverrideFormState>();
 
@@ -547,7 +549,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
     // 提升到模块级 _overrideFormStates Map，避免 reRender 时丢失
     let formState = _overrideFormStates.get(modelId);
     if (!formState) {
-        formState = { boneName: bones[0]?.name ?? '', pitch: 0, yaw: 0, roll: 0, weight: 1 };
+        formState = { boneName: bones[0]?.name ?? '', pitch: 0, yaw: 0, roll: 0, weight: 1, absolute: true };
         _overrideFormStates.set(modelId, formState);
     }
 
@@ -655,7 +657,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
                                 return;
                             }
 
-                            const { pitch, yaw, roll, weight } = formState;
+                            const { pitch, yaw, roll, weight, absolute } = formState;
 
                             setBoneOverride(
                                 boneName,
@@ -663,9 +665,11 @@ function buildBoneOverrideSchema(): MenuNode[] {
                                 weight,
                                 true,
                                 undefined,
-                                true
+                                absolute
                             );
                             _syncOverrideToInstance(modelId);
+                            // [doc:adr-116 P2] 应用新增覆盖后必须持久化，否则离开场景丢失
+                            triggerAutoSave();
 
                             setStatus(t('motion.boneOverride.applied', { bone: boneName }), true);
                             menu?.reRender();
@@ -731,6 +735,8 @@ function buildBoneOverrideSchema(): MenuNode[] {
                                     : t('motion.boneOverride.removed', { bone: ov.boneName }),
                                 true
                             );
+                            // [doc:adr-116 P2] 启用/禁用单条覆盖后必须持久化（删除/清除已有保存，行为需一致）
+                            triggerAutoSave();
                             menu?.reRender();
                         });
                         row.appendChild(toggleBtn);
@@ -742,6 +748,8 @@ function buildBoneOverrideSchema(): MenuNode[] {
                         // [doc:adr-122 P3] IK 骨骼附加标记
                         const ikTag = _isIkBone(ov.boneName) ? ` ${t('motion.ikTag')}` : '';
                         info.textContent = `${ov.boneName}${ikTag}  P:${ov.euler[0].toFixed(0)} Y:${ov.euler[1].toFixed(0)} R:${ov.euler[2].toFixed(0)}  W:${ov.weight.toFixed(2)}`;
+                        // [doc:adr-116 P4] P/Y/R/W 缩写对非专业用户不语义化，补充 tooltip 解释
+                        info.title = t('motion.boneOverride.axisHint');
 
                         row.appendChild(info);
                         // [doc:adr-116 P3-3] 编辑按钮：调用 getOverride 回填表单（引擎最新值）
@@ -756,6 +764,8 @@ function buildBoneOverrideSchema(): MenuNode[] {
                                     formState.yaw = live.euler[1];
                                     formState.roll = live.euler[2];
                                     formState.weight = live.weight;
+                                    // [doc:adr-116 P3] 回填绝对/复合语义，避免编辑复合覆盖时被静默翻转为绝对
+                                    formState.absolute = live.absolute ?? true;
                                     setStatus(
                                         t('motion.boneOverride.editLoaded', {
                                             bone: ov.boneName,
@@ -810,19 +820,25 @@ function buildBoneOverrideSchema(): MenuNode[] {
                         t('motion.boneOverride.clearAll'),
                         false,
                         () => {
-                            const snap = pushUndoSnapshot();
-                            clearAllOverrides();
-                            inst.boneOverrides = [];
-                            triggerAutoSave();
-                            setStatus(t('motion.boneOverride.allCleared'), true);
-                            menu?.reRender();
-                            offerSceneUndoAndRefresh(
-                                t('motion.boneOverride.allCleared'),
-                                snap,
-                                () => {
-                                    menu?.reRender();
+                            // [doc:adr-116 P3] 破坏性操作：先确认（仍可事后撤销）
+                            void (async () => {
+                                if (!(await showConfirm(t('motion.boneOverride.clearAllConfirm')))) {
+                                    return;
                                 }
-                            );
+                                const snap = pushUndoSnapshot();
+                                clearAllOverrides();
+                                inst.boneOverrides = [];
+                                triggerAutoSave();
+                                setStatus(t('motion.boneOverride.allCleared'), true);
+                                menu?.reRender();
+                                offerSceneUndoAndRefresh(
+                                    t('motion.boneOverride.allCleared'),
+                                    snap,
+                                    () => {
+                                        menu?.reRender();
+                                    }
+                                );
+                            })();
                         },
                         { variant: 'danger' }
                     );

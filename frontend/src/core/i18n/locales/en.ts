@@ -502,6 +502,8 @@ export const en: Record<string, string> = {
     'motion.boneOverride.yaw': 'Yaw (Y)',
     'motion.boneOverride.roll': 'Roll (Z)',
     'motion.boneOverride.weight': 'Weight',
+    'motion.boneOverride.axisHint': 'P:Pitch Y:Yaw R:Roll W:Weight',
+    'motion.boneOverride.clearAllConfirm': 'Clear all bone overrides? This can be undone.',
     // [doc:adr-116] Motion override modular UI
     'motion.override.title': 'Motion Override',
     'motion.override.enabled': '✓ Module enabled',

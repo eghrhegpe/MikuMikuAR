@@ -1653,6 +1653,8 @@ export const ko: Record<string, string> = {
     'motion.boneOverride.yaw': '요 (Y)',
     'motion.boneOverride.roll': '롤 (Z)',
     'motion.boneOverride.weight': '가중치',
+    'motion.boneOverride.axisHint': 'P:피치 Y:요 R:롤 W:가중치',
+    'motion.boneOverride.clearAllConfirm': '모든 본 오버라이드를 삭제할까요? 실행 취소할 수 있습니다.',
     // [doc:adr-116] 모션 오버라이드 모듈 UI
     'motion.override.title': '모션 오버라이드',
     'motion.override.enabled': '✓ 모듈 활성화됨',
