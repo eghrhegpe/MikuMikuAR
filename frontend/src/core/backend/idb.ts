@@ -28,8 +28,15 @@ export function openDB(): Promise<IDBDatabase> {
             return;
         }
         const req = indexedDB.open(DB_NAME, DB_VERSION);
-        req.onupgradeneeded = () => {
+        req.onupgradeneeded = (event) => {
+            // [doc:adr-177] Phase 4 IndexedDB 迁移框架
+            // v1：旧 web-loader 与新主应用共享同一 schema，键规约一致（file:<name>），无需迁移。
+            // 未来 schema 变更在此追加 if (oldVersion < N) { ... } 分支。
             const db = req.result;
+            const oldVersion = event.oldVersion;
+            void oldVersion; // 当前 v1 无迁移逻辑，预留钩子
+
+            // 首次创建或补建缺失 store
             for (const s of STORES) {
                 if (!db.objectStoreNames.contains(s)) db.createObjectStore(s);
             }
