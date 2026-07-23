@@ -195,6 +195,7 @@ export const zhTW: Record<string, string> = {
     'model-detail.model': '模型',
     'model-detail.replaceModel': '更換模型',
     'model-detail.replaceModelTo': '更換模型 → {name}',
+    'model-detail.replaced': '模型已替換',
     'model-detail.unknownModel': '未知模型',
     'model-detail.appearance': '外觀',
     'model-detail.dragControl': '拖拽操控',

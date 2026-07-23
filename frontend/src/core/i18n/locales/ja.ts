@@ -197,6 +197,7 @@ export const ja: Record<string, string> = {
     'model-detail.model': 'モデル',
     'model-detail.replaceModel': 'モデル交代',
     'model-detail.replaceModelTo': 'モデル交代 → {name}',
+    'model-detail.replaced': 'モデルを置換しました',
     'model-detail.unknownModel': '不明なモデル',
     'model-detail.appearance': '外観',
     'model-detail.dragControl': 'ドラッグ操作',
