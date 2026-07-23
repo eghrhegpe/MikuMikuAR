@@ -77,7 +77,7 @@ function isInsideSlider(el: EventTarget | null): boolean {
     if (!el || !(el instanceof HTMLElement)) {
         return false;
     }
-    return !!el.closest('.cs-slider, .color-slider');
+    return !!el.closest('.cs-slider, .color-slider, .cs-bar');
 }
 
 function getCurrentScope(el: EventTarget | null): string {
