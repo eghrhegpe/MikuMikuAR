@@ -59,7 +59,7 @@ adr:                 # 关联决策（可选）
 
 跑法：`node scripts/check-doc-drift.mjs`（或 `--json`）。可接 CI 卡点。
 
-## 卡片索引（75 张，按 category 分组）
+## 卡片索引（82 张，按 category 分组）
 
 ### 环境系统（env）
 
@@ -149,6 +149,13 @@ adr:                 # 关联决策（可选）
 
 | 卡片 | 模块 | 关联 ADR |
 |------|------|----------|
+| [全局状态与场景运行时 Store](./state.md) | `core/state.ts` + `scene-state`/`playback-state`/`library-state` | ADR-141/137 |
+| [EnvState 单一源 Schema](./env-state-schema.md) | `core/env-state-schema.ts` | ADR-137/132 |
+| [Runtime 隔离桥](./runtime-bridge.md) | `core/runtime-bridge.ts` | ADR-177 |
+| [后端绑定聚合层](./wails-bindings.md) | `core/wails-bindings.ts` | ADR-176 |
+| [Observer 生命周期管理](./observer-handle.md) | `core/observer-handle.ts` | — |
+| [轻量响应式刷新系统](./reactivity.md) | `core/reactivity.ts` | — |
+| [渲染循环与 FPS 时钟](./render-loop.md) | `core/render-loop.ts` | ADR-102 |
 | [颜色工具函数](./color-helpers.md) | `core/color-helpers.ts` | — |
 | [开发环境 E2E 钩子](./dev-hooks.md) | `core/dev-hooks.ts` | ADR-102 |
 | [安全释放工具](./dispose-helpers.md) | `core/dispose-helpers.ts` | ADR-146 |
