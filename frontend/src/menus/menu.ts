@@ -134,6 +134,14 @@ export class SlideMenu {
             if (this.transitioning) {
                 return;
             }
+            // [a11y] 当焦点在滑块/进度条/选择器等控件内部时，箭头键由控件自身处理，
+            // 菜单不应劫持为导航操作
+            if (
+                e.target instanceof HTMLElement &&
+                e.target.closest('.cs-slider, .color-slider, .cs-bar, .cs-row, .cs-top')
+            ) {
+                return;
+            }
             switch (e.key) {
                 case 'ArrowDown':
                     e.preventDefault();
@@ -1067,6 +1075,8 @@ export class SlideMenu {
 
         const el = document.createElement('div');
         el.className = 'slide-item' + (row.focused ? ' slide-focused' : '');
+        el.tabIndex = 0;
+        el.role = 'button';
         el.dataset.rowKey = this.rowKey(row);
         el.dataset.testid = this.rowKey(row);
         const hint = row.sublabel || (row.model ? t('menu.noDesc') : t('menu.noHint'));

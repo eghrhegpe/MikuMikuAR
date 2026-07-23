@@ -121,6 +121,8 @@ export function slideRow(
     if (headerToggle) {
         // 使用 addCollapsible 的 header 样式：图标 + label + toggle + 箭头
         row.className = 'collapsible-header';
+        row.tabIndex = 0;
+        row.role = 'button';
 
         const iconSpan = document.createElement('span');
         iconSpan.className = 'collapsible-icon';
@@ -209,6 +211,8 @@ export function slideRow(
         // 原始 slide-item 样式（无 toggle）
         const variant = extra?.variant ?? 'default';
         row.className = 'slide-item' + (focused ? ' slide-focused' : '');
+        row.tabIndex = 0;
+        row.role = 'button';
 
         // === 统一左侧行为区：leading 优先于纯展示 .slide-icon（互斥）===
         // leading 存在时，左侧图标被渲染为可点击按钮（保持 radio 指示视觉），

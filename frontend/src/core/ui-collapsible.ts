@@ -46,6 +46,8 @@ export function addCollapsible(
     // Header
     const header = document.createElement('div');
     header.className = 'collapsible-header' + (variant === 'mat' ? ' collapsible-mat' : '');
+    header.tabIndex = 0;
+    header.role = 'button';
 
     if (config.icon) {
         const iconSpan = document.createElement('span');

@@ -143,6 +143,9 @@ export function registerAppShortcuts(): void {
                     return;
                 }
                 const foc = focusedModel();
+                if (!foc) {
+                    return;
+                }
                 const dur = foc.animationDuration ?? mmdRuntime.animationDuration;
                 if (dur <= 0) {
                     return;
@@ -162,6 +165,9 @@ export function registerAppShortcuts(): void {
                     return;
                 }
                 const foc = focusedModel();
+                if (!foc) {
+                    return;
+                }
                 const dur = foc.animationDuration ?? mmdRuntime.animationDuration;
                 if (dur <= 0) {
                     return;
