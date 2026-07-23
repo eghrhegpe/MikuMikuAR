@@ -253,7 +253,7 @@ function buildVirtualSkirtSchema(): MenuNode[] {
                             cfg.stiffness = Math.round(v);
                             scheduleRebuild();
                         },
-                        'lucide:spring'
+                        'lucide:move-vertical'
                     );
                     addSliderRow(
                         inner,

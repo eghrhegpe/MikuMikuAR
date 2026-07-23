@@ -166,7 +166,7 @@ function buildFeetSchema(): MenuNode[] {
                             feet.maxAngle = v;
                             persist();
                         },
-                        'lucide:angle',
+                        'lucide:compass',
                         undefined,
                         { bind: () => inst.feet.maxAngle }
                     );
