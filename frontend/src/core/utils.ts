@@ -697,6 +697,11 @@ export function getBrowseDir(category: string): string {
     if (!libraryRoot) {
         return '';
     }
+    // [bugfix:web-library-empty] 网页端虚拟根（web://）为扁平目录结构，
+    // 无 PMX/VMD 等子目录，直接返回根路径，避免拼接后路径不匹配导致资源库为空。
+    if (libraryRoot.startsWith('web://')) {
+        return libraryRoot;
+    }
     // 使用与实际目录名一致的子目录名（与 Go 端 GetPath 保持大小写一致）
     const subdir = CATEGORY_DIR[category] ?? category;
     return libraryRoot + '/' + subdir;
