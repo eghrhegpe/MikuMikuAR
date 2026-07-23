@@ -1,6 +1,6 @@
 # ADR-037: P2 功能批量交付 — Lifelike / Formation / Auto Camera / Scene Bundle
 
-**日期**：2026-07-05
+> **日期**: 2026-07-05
 > **状态**: 已完成
 
 ---

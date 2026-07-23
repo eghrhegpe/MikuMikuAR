@@ -1,6 +1,6 @@
 # ADR-036: ShortcutRegistry — 可配置快捷键系统
 
-**日期**: 2026-07-05
+> **日期**: 2026-07-05
 > **状态**: 已完成 — ShortcutRegistry 核心 + main.ts 迁移 + 设置面板 UI 全部就位
 
 ---

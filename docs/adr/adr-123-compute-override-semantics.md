@@ -1,6 +1,6 @@
 # ADR-123: `_computeOverride` 语义正式化 — weight≥1 复合、overrideRotation 标志、absolute 模式
 
-**日期**: 2026-07-17
+> **日期**: 2026-07-17
 > **状态**: P1 已实施（2026-07-21）— `absolute` 标志已加入 `_OverrideSlot`/`OverrideSlotLike`/`BoneOverrideEntry`，`_computeOverride` 已增加 absolute 分支，高级骨骼覆盖 UI 写 `absolute=true`；P2（`restoreOverrides` 处理）已完成
 > **背景**: 2026-07-17 修复 `_computeOverride` `weight≥1` 从绝对覆盖改为复合父骨传播旋转后，核心语义已变更。本 ADR 正式记录此语义，并规划后续的 `absolute` 模式扩展。
 

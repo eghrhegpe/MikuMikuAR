@@ -2,7 +2,7 @@
 
 ## 状态
 
-**状态**: 完成（前置渲染分层 + Phase A slab-uniform 步长/地平线延展/地面交界/距离雾 + Phase B Weather Map/Erosion + Phase C 双瓣散射/Powder/高度梯度日落着色 + Phase D1 Blue-noise dither 全部落地）
+> **状态**: 完成（前置渲染分层 + Phase A slab-uniform 步长/地平线延展/地面交界/距离雾 + Phase B Weather Map/Erosion + Phase C 双瓣散射/Powder/高度梯度日落着色 + Phase D1 Blue-noise dither 全部落地）
 
 **开始日期**: 2026-07-15
 

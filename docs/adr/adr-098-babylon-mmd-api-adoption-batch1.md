@@ -1,6 +1,6 @@
 # ADR-098: babylon-mmd 未利用 API 接入 · 批次一（描边渲染 + Composite 动画类型收敛）
 
-**日期**：2026-07-13
+> **日期**: 2026-07-13
 > **状态**: 已完成
 > **关联**: `docs/research/babylon-mmd-api-analysis.md`（未利用 API 调研，本批次来源）、ADR-064（IMmdModel 类型缺口即时止血，本批次延续其类型收敛思路）、ADR-061（VMD 多图层 / Composite 混合基础）
 > **影响面**: `frontend/src/scene/scene.ts`、`frontend/src/scene/motion/vmd-layers.ts`

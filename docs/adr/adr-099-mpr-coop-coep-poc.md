@@ -1,6 +1,6 @@
 # ADR-099: babylon-mmd 未利用 API 接入 · Item 4 MPR 多线程 WASM 物理（Go 端 COOP/COEP 注入 POC）
 
-**日期**：2026-07-13
+> **日期**: 2026-07-13
 > **状态**: 已完成（Go 端 COOP/COEP 注入 `c2a0734` + 前端 MPR 切换 + 真机 WebView2 验证 `crossOriginIsolated=true` / `SharedArrayBuffer=true` / `useMultiThread=true` 全绿，2026-07-14 收口）
 > **关联**: `docs/research/babylon-mmd-api-analysis.md`（未利用 API 调研，本项来源）、ADR-098（同批 babylon-mmd 接入批次一，已提交 `b604f15`）、ADR-056（Motion Layers / WASM 物理基础）
 > **影响面**: `internal/app/zipextract.go`、`main.go`、`internal/app/coep_middleware_test.go`（Go 半侧）；`frontend/src/scene/scene.ts` + `vite-env.d.ts` + `vite.config.ts`（前端侧已落地）

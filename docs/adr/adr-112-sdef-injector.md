@@ -1,6 +1,6 @@
 # ADR-112: SdefInjector + SdefMesh 接入 — SDEF 球面变形
 
-**状态**: 已完成（2026-07-14 决策；2026-07-22 修正实现 — 由空操作 side-effect import 改为显式 `OverrideEngineCreateEffect(engine)` 调用，SDEF 方真正生效）
+> **状态**: 已完成（2026-07-14 决策；2026-07-22 修正实现 — 由空操作 side-effect import 改为显式 `OverrideEngineCreateEffect(engine)` 调用，SDEF 方真正生效）
 
 **决策者**: Riku（联邦首席架构师 AI）、Jieling（人类侧首席架构师）
 

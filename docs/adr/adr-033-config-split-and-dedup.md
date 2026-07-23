@@ -1,6 +1,6 @@
 # ADR-033: config.ts 四向分裂 + tryCatchStatus 泛化 + slideRow 收束
 
-**日期**：2026-07-05
+> **日期**: 2026-07-05
 > **状态**: 已完成 — config.ts 分裂、tryCatchStatus 替换 13 处、slideRow 替换 5 处，tsc + vite build 通过
 
 ---

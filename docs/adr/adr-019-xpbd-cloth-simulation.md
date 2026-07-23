@@ -1,6 +1,6 @@
 # ADR-019: XPBD 布料模拟引擎选型与架构
 
-**日期**：2026-06-28
+> **日期**: 2026-06-28
 > **状态**: 已完成 — xpbd-solver/collider/cloth/renderer + 20 tests 全通过
 
 ---

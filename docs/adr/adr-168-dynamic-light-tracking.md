@@ -1,7 +1,7 @@
-# ADR-168 — 动态追光：舞台灯跟随角色/骨骼
+# ADR-: — 动态追光：舞台灯跟随角色/骨骼
 
-> **状态**: 部分实现
-> **日期**: 2026-07-22
+> **状态**: 已实现（Phase A-D 完成，E 远期搁置）
+> **日期**: 2026-07-22（立项）→ 2026-07-23（Phase A-D 落地）
 > **关联**: ADR-152（真实光锥）、ADR-159（lighting 拆分）、ADR-167（场景动作库/多角色）
 
 ## 1. 问题陈述
@@ -63,7 +63,7 @@ interface FollowTarget {
 
 ### 3.2 逐帧更新管线
 
-在渲染循环（`onBeforeRenderObservable`）中注册一个 **追光 tick**：
+在渲染循环（`onAfterAnimationsObservable`）中注册 **追光 tick**（骨骼动画求值后再更新灯位置，避免延迟一帧）：
 
 ```typescript
 function _tickFollowLights(): void {
@@ -161,9 +161,52 @@ function _tickFollowLights(): void {
 
 ## 7. 验收清单
 
-- [ ] 单角色绑定后，播放位移动作 VMD，光锥始终覆盖角色
-- [ ] 双角色 + 双灯分别绑定，互不干扰
-- [ ] 旧场景文件（无 followTarget）加载后灯光表现不变
-- [ ] 模型卸载后灯回退静态，无报错
-- [ ] 8 灯 × 4 角色场景帧率无明显下降（< 0.1ms 追光开销）
-- [ ] 预设切换时追踪目标平滑过渡（无跳帧）
+- [x] 单角色绑定后，播放位移动作 VMD，光锥始终覆盖角色（个人灯 + 舞台灯追光双路径）
+- [x] 双角色 + 双灯分别绑定，互不干扰（个人灯独立 `_entries` Map；舞台灯各自 `followTarget`）
+- [x] 旧场景文件（无 followTarget / personalLight）加载后灯光表现不变（默认 null / 默认值）
+- [x] 模型卸载后灯回退静态，无报错（`detachPersonalLight` + `modelRegistry.get` 守卫）
+- [ ] 8 灯 × 4 角色场景帧率无明显下降（< 0.1ms 追光开销）— 待性能基准测试
+- [x] 预设切换时个人灯参数平滑过渡（intensity/color 300ms tween）
+
+## 8. 实现记录（2026-07-23）
+
+### 8.1 双路径架构
+
+实际实现采用**个人灯 + 舞台灯追光**双路径，而非 ADR 原始设计的单一 `followTarget` 方案：
+
+| 路径 | 文件 | 职责 |
+|------|------|------|
+| **个人灯**（Personal Light） | `lighting-follow.ts` | 每个 actor 自动获得一盏 SpotLight，跟随腰骨/根节点；用户可调亮度/颜色/锥角/高度/光锥/跟随骨骼 |
+| **舞台灯追光**（Stage Light Follow） | `lighting-follow.ts` → `tickStageLightFollow()` | 已有舞台灯通过 `followTarget` 字段绑定角色/骨骼，target 逐帧平滑追踪 |
+
+### 8.2 已完成 Phase
+
+| Phase | 状态 | 说明 |
+|-------|------|------|
+| A — 核心追踪 | ✅ | 个人灯逐帧 tick（`onAfterAnimationsObservable`）+ 平滑插值 + 骨骼解析 |
+| B — 骨骼绑定 | ✅ | 个人灯菜单骨骼下拉（`model-detail.ts`）+ 舞台灯跟随目标卡片（`scene-stage-lights.ts`） |
+| C — 灯随动 | ✅ | 个人灯天然随动；舞台灯 `moveWithTarget` 开关 |
+| D — 多灯编排 | ✅ | 4 个内置预设各配 `personalLight` 联动参数；`applyLightingPresetFromEnv` 末尾 tween 过渡 |
+| E — 智能补光 | ❌ 搁置 | 远期，不在本轮范围 |
+
+### 8.3 序列化
+
+- **个人灯**：`SceneFile.models[].personalLight`（差异落盘，仅存与 `DEFAULT_PERSONAL_LIGHT` 不同的字段）
+- **舞台灯追光**：`StageLightState.followTarget` 随 `stageLights[]` 整体序列化（null 时省略）
+- 反序列化 Phase 2 中调用 `restorePersonalLights()` 恢复个人灯参数
+
+### 8.4 测试覆盖
+
+`src/__tests__/scene/lighting-follow.test.ts`（8 tests）：
+- DEFAULT_PERSONAL_LIGHT 默认值完整性（含 boneName）
+- StageLightState.followTarget 向后兼容（默认 null）
+- getAllPersonalLights / restorePersonalLights 边界
+- tickStageLightFollow 无 followTarget / ghost model 静默跳过
+
+### 8.5 已知限制
+
+| 项目 | 说明 |
+|------|------|
+| 性能基准 | 8灯×4角色 < 0.1ms 尚未实测 |
+| 骨骼缓存 | 当前每帧 `WAIST_CANDIDATES.find()`，未做 `Map<modelId+boneName, Bone>` 缓存 |
+| 舞台灯 offset UI | `followTarget.offset` 暂无独立滑块，需通过代码设置 |
