@@ -36,6 +36,9 @@ vi.mock('../../scene/env/env-context', () => {
         getPipeline: () => null,
     };
 });
+vi.mock('../../scene/env/env', () => ({
+    ensureEnvUpdateObserver: () => {},
+}));
 
 // mock wind-utils
 vi.mock('../../core/wind-utils', () => ({

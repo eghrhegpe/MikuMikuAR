@@ -24,7 +24,7 @@ import { col3FromTriple } from '@/core/color-helpers';
 import { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
 import { applyGroundCollision } from '../physics/ground-collision';
 import { deriveLighting, TIME_OF_DAY_PRESETS, type CategorizedEnvPreset } from './env-lighting';
-import { ensureEnvUpdateObserver } from './env';
+import { ensureEnvUpdateObserver } from './env-impl';
 import { dispatchEnvChange, registerSceneTickCallback } from './env-dispatcher';
 import {
     setLightState,
