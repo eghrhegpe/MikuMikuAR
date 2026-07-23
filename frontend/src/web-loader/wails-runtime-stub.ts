@@ -29,8 +29,24 @@ export const Events = {
             /* no-op */
         };
     },
-    Off(): void {
+    OnMultiple(_name: string, _cb: (data: unknown) => void, _max: number): () => void {
+        return () => {
+            /* no-op */
+        };
+    },
+    Once(_name: string, _cb: (data: unknown) => void): () => void {
+        return () => {
+            /* no-op */
+        };
+    },
+    Off(..._names: string[]): void {
         /* no-op */
+    },
+    OffAll(): void {
+        /* no-op */
+    },
+    Emit(_name: string, _data?: unknown): Promise<boolean> {
+        return Promise.resolve(false);
     },
 };
 export const Browser = {
