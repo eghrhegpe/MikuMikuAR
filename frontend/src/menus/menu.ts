@@ -28,6 +28,14 @@ export function getCurrentRenderingMenu(): SlideMenu | null {
     return _renderingStack[_renderingStack.length - 1] ?? null;
 }
 
+/** 存活（未 dispose）的 SlideMenu 实例集合 — 供全局返回逻辑（android:back）查询当前打开的菜单 */
+const _liveMenus = new Set<SlideMenu>();
+
+/** 获取所有当前存活的 SlideMenu 实例（已 dispose 的会自动移除，调用方仍需自行判断可见性） */
+export function getOpenMenus(): SlideMenu[] {
+    return Array.from(_liveMenus);
+}
+
 export class SlideMenu {
     private levels: PopupLevel[] = [];
     private container: HTMLElement;
@@ -189,6 +197,9 @@ export class SlideMenu {
 
         // 响应式订阅：状态变更 → 自动 updateControls
         this._unsubscribe = subscribe(() => this.updateControls());
+
+        // 注册到全局存活集合，供 android:back 等全局返回逻辑查询
+        _liveMenus.add(this);
     }
 
     // ======== 公共 API ========
@@ -199,6 +210,16 @@ export class SlideMenu {
 
     get levelCount(): number {
         return this.levels.length;
+    }
+
+    /** 菜单容器是否实际可见（有布局尺寸），用于区分「已打开」与「已隐藏/已 dispose」 */
+    get isVisible(): boolean {
+        return this.container.getClientRects().length > 0;
+    }
+
+    /** 关闭整个菜单（触发 onClose，通常内部会 closeAllOverlays + dispose 当前 SlideMenu） */
+    close(): void {
+        this.onClose?.();
     }
 
     /** 只读暴露动画中状态，供外部诊断「展开期间 push 被静默丢弃」的 race */
@@ -854,6 +875,7 @@ export class SlideMenu {
         this._customDispose?.();
         this._customDispose = null;
         this._controls = [];
+        _liveMenus.delete(this);
         this.panel.innerHTML = '';
     }
 

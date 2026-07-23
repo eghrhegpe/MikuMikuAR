@@ -24,6 +24,7 @@ import { isAndroidPlatform, isWebPlatform } from './platform';
 import { getCapabilities } from './backend';
 import { generateTextColors } from '../menus/settings';
 import { SETTINGS_FONT_RESTORE } from '../menus/settings-shared';
+import { getOpenMenus } from '../menus/menu';
 import {
     initScene,
     tryRestoreLastScene,
@@ -491,6 +492,19 @@ events.on('storage:permissionGranted', async () => {
 const BACK_EXIT_INTERVAL_MS = 2000;
 let _lastBackExitPress = 0;
 events.on('android:back', () => {
+    // 优先：SlideMenu 子层级返回（如 角色面板 → 渲染设置）。
+    // 用原生返回键驱动 pop()/close()，不再依赖 menu.ts 里脆弱的屏幕坐标位移手势。
+    const openMenus = getOpenMenus().filter((m) => m.isVisible);
+    if (openMenus.length > 0) {
+        const top = openMenus[openMenus.length - 1]; // 最后创建 = 最顶层
+        if (top.levelCount > 1) {
+            top.pop();
+        } else {
+            top.close();
+        }
+        return;
+    }
+
     // Was anything actually open? Must check BEFORE closing anything.
     const anyOverlayOpen =
         document.querySelector('[data-overlay].visible') !== null ||
