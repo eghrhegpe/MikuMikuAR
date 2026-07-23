@@ -267,82 +267,125 @@ interface FsaDirHandle extends FileSystemDirectoryHandle {
     values(): AsyncIterableIterator<FileSystemHandle>;
 }
 
-// [bugfix:web-resource-types] 按扩展名推断资源类别（对齐 Go 端 scanAllCategories）
-// 网页端扁平目录无子目录结构，靠扩展名自动分类：
-//   .pmx → 模型（type='actor'）
-//   .vmd → 动作（type='motion', format='vmd'）
-//   .mp3/.wav/.ogg/.flac/.wma → 音乐（type='audio', format='audio'）
-//   .x → 舞台（type='stage', format='pmx'）
-//   .vpd → 姿势（type='pose', format='vpd'）
-//   .zip → 压缩包（type='actor', format='zip'，解压后按内容分类）
-function _inferTypeByExt(filename: string): { type: string; format: string } {
-    const ext = filename.toLowerCase().split('.').pop() || '';
-    switch (ext) {
-        case 'pmx':
-            return { type: 'actor', format: 'pmx' };
-        case 'vmd':
-            return { type: 'motion', format: 'vmd' };
-        case 'mp3':
-        case 'wav':
-        case 'ogg':
-        case 'flac':
-        case 'wma':
-            return { type: 'audio', format: 'audio' };
-        case 'x':
-            return { type: 'stage', format: 'pmx' };
-        case 'vpd':
-            return { type: 'pose', format: 'vpd' };
-        case 'zip':
-            return { type: 'actor', format: 'zip' };
-        default:
-            return { type: 'actor', format: ext };
-    }
-}
+// ======== 资源分类（对齐桌面端目录约定）========
+//
+// 桌面端靠子目录名分类（Go 端 GetPath / scanAllCategories）：
+//   PMX/ → 模型, VMD/ → 动作, audio/ → 音乐, prop/ → 道具, stage/ → 舞台 …
+// 网页端 SelectDir 扫描时复用同一约定：
+//   1. 文件位于已知类别子目录下 → 按目录分类（结构化目录）
+//   2. 文件不在已知子目录下 → 按扩展名分类，映射到虚拟子目录（扁平目录兜底）
+// 两种模式的 dir 字段都使用 `web://selected-dir/<子目录>` 格式，
+// 使 getBrowseDir(category) → libraryRoot + '/' + CATEGORY_DIR[category] 自然匹配，
+// 无需 web:// 特殊处理。
 
-async function _scanDirIntoIDB(dirHandle: FileSystemDirectoryHandle): Promise<void> {
+/** 桌面端目录约定（对齐 Go 端 GetPath catDef，键为小写目录名）*/
+const _CATEGORY_BY_DIR: Record<string, { type: string; format: string }> = {
+    'pmx':         { type: 'actor',       format: 'pmx' },
+    'vmd':         { type: 'motion',      format: 'vmd' },
+    'audio':       { type: 'audio',       format: 'audio' },
+    'prop':        { type: 'prop',        format: 'pmx' },
+    'stage':       { type: 'stage',       format: 'pmx' },
+    'environment': { type: 'environment', format: 'environment' },
+    'md-dress':    { type: 'outfit',      format: 'pmx' },
+    'setting':     { type: 'setting',     format: 'setting' },
+};
+
+/** 扩展名兜底分类 + 虚拟子目录映射（扁平目录用，子目录名对齐 CATEGORY_DIR）*/
+const _CATEGORY_BY_EXT: Record<string, { subdir: string; type: string; format: string }> = {
+    'pmx':  { subdir: 'PMX',   type: 'actor',  format: 'pmx' },
+    'vmd':  { subdir: 'VMD',   type: 'motion', format: 'vmd' },
+    'mp3':  { subdir: 'audio', type: 'audio',  format: 'audio' },
+    'wav':  { subdir: 'audio', type: 'audio',  format: 'audio' },
+    'ogg':  { subdir: 'audio', type: 'audio',  format: 'audio' },
+    'flac': { subdir: 'audio', type: 'audio',  format: 'audio' },
+    'wma':  { subdir: 'audio', type: 'audio',  format: 'audio' },
+    'x':    { subdir: 'stage', type: 'stage',  format: 'pmx' },
+    'vpd':  { subdir: 'PMX',   type: 'pose',   format: 'vpd' },
+    'zip':  { subdir: 'PMX',   type: 'actor',  format: 'zip' },
+};
+
+const _SUPPORTED_EXTS_RE = /\.(pmx|vmd|mp3|wav|ogg|flac|wma|x|vpd|zip)$/i;
+
+/** FSA 目录递归扫描：保留目录结构，按目录约定分类（对齐桌面端） */
+async function _scanDirIntoIDB(dirHandle: FileSystemDirectoryHandle, relPath = ''): Promise<void> {
     const dir = dirHandle as FsaDirHandle;
+    // 第一遍：收集本层所有文件信息（FileSystemDirectoryHandle 的 values() 是有状态的，一次读完）
+    const files: { name: string; handle: FileSystemFileHandle }[] = [];
+    const subDirs: string[] = [];
     for await (const entry of dir.values()) {
         if (entry.kind === 'file') {
-            const name = entry.name.toLowerCase();
-            // [bugfix:web-resource-types] 支持所有资源类型（对齐 Go 端 scanAllCategories）
-            const SUPPORTED_EXTS = /\.(pmx|vmd|mp3|wav|ogg|flac|wma|x|vpd|zip)$/i;
-            if (SUPPORTED_EXTS.test(name)) {
-                const fileHandle = entry as FileSystemFileHandle;
-                const file = await fileHandle.getFile();
-                const bytes = new Uint8Array(await file.arrayBuffer());
-                const stem = entry.name.replace(/\.(pmx|vmd|mp3|wav|ogg|flac|wma|x|vpd|zip)$/i, '');
-                await idbSet('models', `file:${stem}`, bytes);
-                // [bugfix:library-empty] entry 必须符合 ModelEntry 结构：
-                // library-setup.ts:73 过滤 m.file_path，library-core.ts:186 用 m.dir 分组，
-                // 缺这两个字段会导致模型库显示为空。
-                // 同时保留 name/fileName/kind/size/savedAt 供 web-loader/library.ts 复用。
-                const { type, format } = _inferTypeByExt(entry.name);
-                await idbSet('models', `entry:${stem}`, {
-                    // —— ModelEntry 必填字段 ——
-                    dir: 'web://selected-dir',
-                    file_path: `web://selected-dir/${entry.name}`,
-                    name_jp: stem,
-                    name_en: stem,
-                    comment: '',
-                    has_thumb: false,
-                    type,
-                    format,
-                    container: 'file',
-                    zip_inner: '',
-                    category: '',
-                    source: '',
-                    // —— WebModelEntry 兼容字段（web-loader/library.ts 读取）——
-                    name: stem,
-                    fileName: entry.name,
-                    kind: format,
-                    size: bytes.byteLength,
-                    savedAt: Date.now(),
-                });
-            }
+            files.push({ name: entry.name, handle: entry as FileSystemFileHandle });
         } else if (entry.kind === 'directory') {
-            const subHandle = await dir.getDirectoryHandle(entry.name);
-            await _scanDirIntoIDB(subHandle);
+            subDirs.push(entry.name);
         }
+    }
+
+    // 判定本层类别：顶层目录名匹配已知类别 → 按目录约定分类
+    const topDir = relPath.split('/')[0]?.toLowerCase() || '';
+    const byDir = _CATEGORY_BY_DIR[topDir];
+
+    // 本层 PMX stem 列表（用于纹理关联）
+    const pmxStems = files
+        .filter((f) => /\.pmx$/i.test(f.name))
+        .map((f) => f.name.replace(/\.pmx$/i, ''));
+    const TEXTURE_EXT = /\.(png|jpg|jpeg|bmp|tga|dds|tif|tiff)$/i;
+    const textureFiles = files.filter((f) => TEXTURE_EXT.test(f.name));
+
+    // 第二遍：逐个文件写入
+    for (const { name, handle } of files) {
+        const lower = name.toLowerCase();
+        if (!_SUPPORTED_EXTS_RE.test(lower)) continue;
+        const file = await handle.getFile();
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        const stem = name.replace(/\.(pmx|vmd|mp3|wav|ogg|flac|wma|x|vpd|zip)$/i, '');
+        await idbSet('models', `file:${stem}`, bytes);
+
+        // 分类：目录约定优先，扩展名兜底
+        const ext = lower.split('.').pop() || '';
+        let type: string, format: string, virtualDir: string;
+        if (byDir) {
+            // 结构化目录：按目录约定分类，保留原始相对路径
+            type = byDir.type;
+            format = byDir.format;
+            virtualDir = `web://selected-dir/${relPath}`;
+        } else {
+            // 扁平目录 / 未识别子目录：按扩展名分类，映射到虚拟子目录
+            const byExt = _CATEGORY_BY_EXT[ext];
+            type = byExt?.type ?? 'actor';
+            format = byExt?.format ?? ext;
+            virtualDir = byExt
+                ? `web://selected-dir/${byExt.subdir}`
+                : relPath ? `web://selected-dir/${relPath}` : 'web://selected-dir';
+        }
+
+        await idbSet('models', `entry:${stem}`, {
+            dir: virtualDir,
+            file_path: `${virtualDir}/${name}`,
+            name_jp: stem, name_en: stem,
+            comment: '', has_thumb: false,
+            type, format,
+            container: 'file', zip_inner: '', category: '', source: '',
+            name: stem, fileName: name, kind: format,
+            size: bytes.byteLength, savedAt: Date.now(),
+        });
+    }
+
+    // 第三遍：为本层的每个 PMX 写入同目录纹理引用
+    if (pmxStems.length > 0 && textureFiles.length > 0) {
+        for (const { name, handle } of textureFiles) {
+            const file = await handle.getFile();
+            const texBytes = new Uint8Array(await file.arrayBuffer());
+            for (const stem of pmxStems) {
+                await idbSet('models', `dir:${stem}:${name}`, texBytes);
+            }
+        }
+    }
+
+    // 递归子目录
+    for (const dirName of subDirs) {
+        const subHandle = await dir.getDirectoryHandle(dirName);
+        const subRelPath = relPath ? `${relPath}/${dirName}` : dirName;
+        await _scanDirIntoIDB(subHandle, subRelPath);
     }
 }
 
