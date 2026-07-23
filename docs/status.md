@@ -15,7 +15,7 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
-| ADR-177 | Web Loader 与主应用统一路径 | Phase 2 A4 首屏数据链 + 拖拽导入闭环实施完成（2026-07-23；browser-adapter 默认值/path 映射/ExtractZip 对齐 Go 签名；events.ts drop → IndexedDB file:<name> → readFileBytes 读回闭环打通；drop 逻辑抽至 core/drop-import.ts 便于单测，13 项单测覆盖桌面/浏览器分支与错误路径；tsc 0 错误，1998 测试全绿。剩余 A4：ListDirRecursive/LoadOutfitFile/LoadSceneFile 浏览器补齐；A5 能力门控未启动） |
+| ADR-177 | Web Loader 与主应用统一路径 | Phase 2 A4 首屏数据链 + A5 能力门控实施完成（2026-07-23；A4：browser-adapter 默认值/path 映射/ExtractZip 对齐 Go 签名 + ListDirRecursive/LoadOutfitFile/LoadSceneFile 虚拟目录补齐；drop 闭环 + 13 项单测；A5：capabilities 驱动原生入口隐藏闭环——AR/externalApps/watchDir/systemDirOpen 门控落点（shortcut + 相机模式滑块 + OpenWith + 软件列表 + 截图/缓存目录打开），plazaWindow 门控（effectiveMode 'window'→'embed' 降级 + 模式选择器过滤），storageMode 门控（存储卡片 visibleWhen）；proxyServer/fileServer 为后端自动调用，browser-adapter 抛 NotSupportedError + 调用方 catch 已覆盖，无独立 UI 入口需门控。tsc 0 错误，2023 测试全绿。剩余：Phase 3 构建配置 + 部署，Phase 4 浏览器端到端 smoke） |
 | ADR-176 | 前端 Backend 适配器双实现（Web/Desktop 通杀） | 已完成（2026-07-23；Phase 1-3 全部落地。Phase 3 已完成 web-loader 准完整网页入口、IndexedDB 模型库、能力徽章、lastModel 恢复引导和库面板；验证：tsc 0 错、backend 16/16、契约 17/17、全量回归绿） |
 | ADR-175 | 光照强度多入口设计意图裁决 | ✅ 已裁决（裁决为「保留多入口，不收敛为单入口」；无代码改动，仅固化契约）（2026-07-22） |
 | ADR-174 | 质量维度注册表 — 统一 qualityProfile 扩展点 | 已完成（2026-07-22） |
