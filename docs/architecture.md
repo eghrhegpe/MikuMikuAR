@@ -405,9 +405,6 @@ MikuMikuAR/
         │   │   ├── lipsync-bridge.ts        # LipSync 桥接
         │   │   ├── animation-retargeter.ts  # 骨骼映射 + 动作重定向（ADR-108）
         │   │   ├── motion-intent.ts         # 全局动作意图（ADR-121）
-        │   │   ├── motion-slot.ts           # 双槽位动作系统（ADR-129）
-        │   │   ├── motion-preset-list.ts    # 预设列表组件化（ADR-129）
-        │   │   ├── motion-per-motion.ts     # per-motion 程序化动作（ADR-129）
         │   │   ├── motion-pipeline.ts       # 动作管线显式调度器（ADR-147）
         │   │   ├── bone-override-store.ts   # 骨骼覆盖集中存储（ADR-116/125）
         │   │   ├── perception-observer.ts   # 感知层 observer 统一注册
@@ -521,7 +518,6 @@ MikuMikuAR/
         │   ├── proc-motion-autodance-bones-limbs.ts # 四肢骨骼
         │   ├── proc-motion-autodance-bones-trunk.ts # 躯干骨骼
         │   ├── proc-motion-autodance-emotion.ts     # 情绪动作
-        │   ├── proc-motion-lifelike.ts  # Lifelike（微动叠加层）
         │   ├── vmd-writer.ts            # VMD 二进制写入（Shift-JIS）
         │   ├── vmd-evaluator.ts         # VMD 多图层混合求值器
         │   ├── vpd-parser.ts            # VPD 姿势解析→VMD
@@ -935,6 +931,6 @@ ObserverRegistry ── 批量管理器，disposeAll() 一次性清理
 | env-bridge 中间件化 | ADR-173 | scene/env/env-bridge.ts + env-context.ts | setEnvState 中间件链，破隐式状态写入 |
 | 质量维度注册表 | ADR-174 | scene/render/quality-profile.ts | 统一 qualityProfile 扩展点 |
 | 动态追光 | ADR-168 | scene/env/env-lighting.ts | 舞台灯跟随角色/骨骼（部分实现） |
-| 动作库选中范式 | ADR-170 | scene/motion/motion-slot.ts | 默认暴露为逐行「选中」，对齐模型焦点范式 |
+| 动作库选中范式 | ADR-170 | menus/motion-root-ui.ts | 默认暴露为逐行「选中」，对齐模型焦点范式 |
 | 光照强度多入口裁决 | ADR-175 | — | 裁决「保留多入口」，固化契约，无代码改动 |
 
