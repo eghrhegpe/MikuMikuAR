@@ -8,9 +8,14 @@
  *   node scripts/check-circular.mjs --strict     # 发现循环依赖时 exit 1（CI 阻塞）
  *   node scripts/check-circular.mjs --json       # JSON 输出
  *   node scripts/check-circular.mjs --scope core # 只检测指定模块及其依赖
+ *   node scripts/check-circular.mjs --update-allowlist # 将当前所有环写入白名单
  *
- * 退出码：无循环依赖 → 0；有循环依赖 → 1（--strict 模式）
+ * 白名单：scripts/circular-allowlist.json 记录「已知架构环」。
+ * --strict 模式只对白名单之外的“新增环”exit 1，历史环仅告警。
+ *
+ * 退出码：无新增循环依赖 → 0；有新增循环依赖 → 1（--strict 模式）
  */
+import fs from 'node:fs';
 
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -23,6 +28,8 @@ const SRC_DIR = path.join(ROOT, 'frontend', 'src');
 const args = process.argv.slice(2);
 const strict = args.includes('--strict');
 const jsonOutput = args.includes('--json');
+const updateAllowlist = args.includes('--update-allowlist');
+const ALLOWLIST_PATH = path.join(__dirname, 'circular-allowlist.json');
 let scope = null;
 
 for (let i = 0; i < args.length; i++) {
@@ -118,6 +125,17 @@ function detectCycles(graph) {
 }
 
 /**
+ * 规范化循环路径为稳定 key（从字典序最小节点起始，旋转不变）
+ */
+function normalizeCycleKey(cycle) {
+    const minIdx = cycle.slice(0, -1).reduce((min, val, idx, arr) =>
+        val < arr[min] ? idx : min, 0);
+    const body = cycle.slice(0, -1);
+    const rotated = [...body.slice(minIdx), ...body.slice(0, minIdx), body[minIdx]];
+    return rotated.join('→');
+}
+
+/**
  * 去重循环路径
  */
 function dedupeCycles(cycles) {
@@ -125,11 +143,7 @@ function dedupeCycles(cycles) {
     const unique = [];
 
     for (const cycle of cycles) {
-        const minIdx = cycle.slice(0, -1).reduce((min, val, idx, arr) =>
-            val < arr[min] ? idx : min, 0);
-        const normalized = [...cycle.slice(minIdx), ...cycle.slice(0, minIdx + 1)];
-        const key = normalized.join('→');
-
+        const key = normalizeCycleKey(cycle);
         if (!seen.has(key)) {
             seen.add(key);
             unique.push(cycle);
@@ -139,25 +153,66 @@ function dedupeCycles(cycles) {
     return unique;
 }
 
+// ── 白名单 ──
+
+function loadAllowlist() {
+    if (!fs.existsSync(ALLOWLIST_PATH)) return new Set();
+    try {
+        const data = JSON.parse(fs.readFileSync(ALLOWLIST_PATH, 'utf8'));
+        return new Set((data.cycles || []).map(c => c.key));
+    } catch (e) {
+        console.error(`⚠️  白名单解析失败（${ALLOWLIST_PATH}）：${e.message}`);
+        return new Set();
+    }
+}
+
+function saveAllowlist(cycles) {
+    const data = {
+        $comment: '已知架构循环依赖白名单。CI (--strict) 只对本清单之外的新增环阻断。修复一个环后请运行 node scripts/check-circular.mjs --update-allowlist 收紧清单。',
+        updatedAt: new Date().toISOString().slice(0, 10),
+        cycles: cycles
+            .map(c => ({ key: normalizeCycleKey(c), path: c.join(' → ') }))
+            .sort((a, b) => a.key.localeCompare(b.key)),
+    };
+    fs.writeFileSync(ALLOWLIST_PATH, JSON.stringify(data, null, 2) + '\n', 'utf8');
+}
+
 // ── 主流程 ──
 
-const { graph: fileGraph } = scanSourceGraph(SRC_DIR, {
-    scope,
-    includeTypeOnly: false,
-});
+const { graph: fileGraph } = scanSourceGraph(SRC_DIR, { scope });
 
 const moduleGraph = buildModuleGraph(fileGraph);
 const rawCycles = detectCycles(moduleGraph);
 const cycles = dedupeCycles(rawCycles);
 
+if (updateAllowlist) {
+    saveAllowlist(cycles);
+    console.log(`✅ 白名单已更新：${cycles.length} 个已知环 → ${path.relative(ROOT, ALLOWLIST_PATH)}`);
+    process.exit(0);
+}
+
+const allowlist = loadAllowlist();
+const known = [];
+const added = [];
+for (const cycle of cycles) {
+    (allowlist.has(normalizeCycleKey(cycle)) ? known : added).push(cycle);
+}
+const currentKeys = new Set(cycles.map(normalizeCycleKey));
+const fixedKeys = [...allowlist].filter(k => !currentKeys.has(k));
+
 if (jsonOutput) {
     console.log(JSON.stringify({
         moduleCount: moduleGraph.size,
         cycleCount: cycles.length,
+        knownCount: known.length,
+        newCount: added.length,
+        fixedCount: fixedKeys.length,
         cycles: cycles.map(c => ({
             path: c,
             length: c.length - 1,
+            known: allowlist.has(normalizeCycleKey(c)),
         })),
+        fixed: fixedKeys,
     }, null, 2));
 } else {
     console.log(`扫描到 ${moduleGraph.size} 个模块`);
@@ -165,14 +220,29 @@ if (jsonOutput) {
     if (cycles.length === 0) {
         console.log('✅ 未检测到跨模块循环依赖');
     } else {
-        console.log(`⚠️  检测到 ${cycles.length} 个跨模块循环依赖：\n`);
-        for (const cycle of cycles) {
-            console.log(`  ${cycle.join(' → ')}`);
+        if (known.length > 0) {
+            console.log(`🟡 ${known.length} 个已知架构环（白名单内，不阻断）：\n`);
+            for (const cycle of known) {
+                console.log(`  ${cycle.join(' → ')}`);
+            }
+        }
+        if (added.length > 0) {
+            console.log(`\n🔴 ${added.length} 个新增循环依赖（白名单外${strict ? '，CI 阻断' : ''}）：\n`);
+            for (const cycle of added) {
+                console.log(`  ${cycle.join(' → ')}`);
+            }
+        }
+    }
+
+    if (fixedKeys.length > 0) {
+        console.log(`\n🟢 ${fixedKeys.length} 个白名单环已被修复，可运行 --update-allowlist 收紧清单：`);
+        for (const k of fixedKeys) {
+            console.log(`  ${k}`);
         }
     }
 }
 
-// 退出码
-if (cycles.length > 0 && strict) {
+// 退出码：--strict 只对新增环阻断
+if (added.length > 0 && strict) {
     process.exit(1);
 }

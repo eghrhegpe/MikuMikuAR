@@ -8,6 +8,7 @@
     "check:docs": "npm run check:status && node scripts/check-doc-drift.mjs",
     "dep:graph": "node scripts/gen-dep-graph.mjs",
     "dep:graph:list": "node scripts/gen-dep-graph.mjs --format list",
+    "check:circular": "node scripts/check-circular.mjs",
     "gen:funcmap": "node scripts/gen-funcmap.mjs",
     "check:funcmap": "node scripts/gen-funcmap.mjs --check",
     "test:scripts": "node --test scripts/_lib/source-graph.test.mjs",
