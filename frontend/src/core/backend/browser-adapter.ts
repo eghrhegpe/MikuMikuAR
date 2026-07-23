@@ -178,7 +178,8 @@ async function _listModels(): Promise<ModelEntry[]> {
     const out: ModelEntry[] = [];
     for (const k of keys) {
         const m = await idbGet<ModelEntry>('models', k);
-        if (m) out.push(m);
+        // [bugfix:stale-entry] 过滤无效 entry（旧版扫描残留的缺 dir/file_path 字段数据）
+        if (m && m.dir && m.file_path) out.push(m);
     }
     console.info(`[web-scan] _listModels: 返回 ${out.length} 个 ModelEntry`);
     return out;
