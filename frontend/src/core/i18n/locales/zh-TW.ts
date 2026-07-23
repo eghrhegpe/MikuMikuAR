@@ -1636,6 +1636,8 @@ export const zhTW: Record<string, string> = {
     'motion.boneOverride.yaw': '偏航 (Y)',
     'motion.boneOverride.roll': '翻滾 (Z)',
     'motion.boneOverride.weight': '權重',
+    'motion.boneOverride.axisHint': 'P:俯仰 Y:偏航 R:翻滾 W:權重',
+    'motion.boneOverride.clearAllConfirm': '確定清除所有骨骼覆蓋？此操作可透過撤銷恢復。',
     // [doc:adr-116] 動作覆蓋模組化 UI
     'motion.override.title': '動作覆蓋',
     'motion.override.enabled': '✓ 已啟用模組',
