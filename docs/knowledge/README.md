@@ -59,7 +59,7 @@ adr:                 # 关联决策（可选）
 
 跑法：`node scripts/check-doc-drift.mjs`（或 `--json`）。可接 CI 卡点。
 
-## 卡片索引（92 张，按 category 分组）
+## 卡片索引（98 张，按 category 分组）
 
 ### 环境系统（env）
 
@@ -77,6 +77,11 @@ adr:                 # 关联决策（可选）
 | [湿身效果系统](./env-wetness.md) | `scene/env/env-wetness.ts` | ADR-172 |
 | [镜面道具](./mirror-debug.md) | `scene/env/mirror-debug.ts` | ADR-128 |
 | [道具系统](./props.md) | `scene/env/props.ts` | — |
+| [环境系统门面](./env.md) | `scene/env/env.ts` | — |
+| [环境系统实现核心](./env-impl.md) | `scene/env/env-impl.ts` | — |
+| [环境系统桥接层](./env-bridge.md) | `scene/env/env-bridge.ts` | — |
+| [统一预设系统接口](./preset-manager.md) | `scene/env/preset-manager.ts` | ADR-130 |
+| [统一平面反射引擎](./planar-reflection.md) | `scene/env/planar-reflection.ts` | ADR-092 |
 
 ### 场景编排（scene）
 
@@ -100,8 +105,6 @@ adr:                 # 关联决策（可选）
 | [AR 摄像头视频透传](./ar-camera.md) | `scene/ar/ar-camera.ts` | ADR-055 |
 | [AR 模式场景级协调](./ar-scene.md) | `scene/ar/ar-scene.ts` | ADR-055 |
 | [拖拽变换模式开关](./transform-mode.md) | `scene/transform/transform-mode.ts` | — |
-| [变换目标拾取与元数据](./transform-pick.md) | `scene/transform/transform-pick.ts` | — |
-| [变换适配器注册表](./transform-adapter.md) | `scene/transform/transform-adapter.ts` | ADR-126/121 |
 
 ### 物理系统（physics）
 
@@ -131,6 +134,10 @@ adr:                 # 关联决策（可选）
 | [缩略图渲染](./thumbnail-capture.md) | `scene/manager/thumbnail-capture.ts` | — |
 | [变换适配器注册表](./transform-adapter.md) | `scene/transform/transform-adapter.ts` | ADR-126 |
 | [变换拾取系统](./transform-pick.md) | `scene/transform/transform-pick.ts` | — |
+| [场景渲染管线与后处理](./renderer.md) | `scene/render/renderer.ts` | — |
+| [场景光照与阴影](./lighting.md) | `scene/render/lighting.ts` | — |
+| [性能监控与自动降级](./performance.md) | `scene/render/performance.ts` | ADR-159 |
+| [3D 拖拽 Gizmo 统一抽象](./transform-gizmo.md) | `scene/render/transform-gizmo.ts` | ADR-048/126 |
 
 ### 动作系统（motion）
 
