@@ -388,11 +388,15 @@ export const browserAdapter: BackendService = {
     async GetThumbnail(name: string): Promise<Uint8Array | null> {
         return (await idbGet<Uint8Array>('thumbnails', name)) ?? null;
     },
-    async SaveLastScene(name: string, data: Uint8Array): Promise<void> {
-        await idbSet('scenes', name, data);
+    // [doc:adr-177] 对齐 Go 契约（scene.go:38/65）：SaveLastScene(jsonStr) 单参、
+    // LoadLastScene() 无参返回 string，单文件覆盖语义（Go 写 last_scene.json）。
+    // 旧实现误用 (name, data) 双参，业务侧 SaveLastScene(json) 会把整段 JSON 当作
+    // IndexedDB key、data 为 undefined，导致网页端自动保存静默失效、无法恢复。
+    async SaveLastScene(jsonStr: string): Promise<void> {
+        await idbSet('scenes', 'last_scene', jsonStr);
     },
-    async LoadLastScene(name: string): Promise<Uint8Array | null> {
-        return (await idbGet<Uint8Array>('scenes', name)) ?? null;
+    async LoadLastScene(): Promise<string> {
+        return (await idbGet<string>('scenes', 'last_scene')) ?? '';
     },
     async GetCacheStats(): Promise<{ count: number; size: number }> {
         const keys = await idbKeys('caches');
