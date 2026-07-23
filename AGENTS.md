@@ -36,6 +36,21 @@
 | 写大语言模型小说 | `根目录/adr/` |
 | 完整发版、更新流程 | `docs/releases/release-process.md` |
 
+## 知识库检索协议
+
+处理代码任务时，不得把 `docs/knowledge/` 当作源码替代品；按以下顺序检索，避免无目标通读仓库：
+
+1. 先判断用户意图与所属模块；可先查 `docs/knowledge/routes.md`。
+2. 阅读 `docs/knowledge/README.md`，定位相关知识卡，再按卡片的 `source_files` 跳转源码。
+3. 用 `grep docs/adr/` 查找相关决策、状态和历史坑点；ADR 是决策真相源。
+4. 以当前源码为最终事实来源，核对知识卡中的 API、依赖、不变量和资源生命周期。
+5. 修改后运行最小相关测试；若模块职责、公共 API、状态流、依赖或不变量变化，同步更新知识卡。
+6. 文档变更后运行 `npm run check:docs`；函数签名变化后运行 `npm run check:funcmap`。
+
+知识来源优先级：当前源码 > `docs/adr/` > `docs/knowledge/` > `docs/architecture.md` / `docs/function-map.md` > `docs/research/`。
+若知识卡与源码不一致，报告文档漂移并以源码为准，不得静默假定卡片正确。
+
+
 ## 技术栈
 
 | 层 | 选型 |
