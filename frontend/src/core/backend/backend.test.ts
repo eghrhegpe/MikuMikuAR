@@ -174,6 +174,52 @@ describe('ADR-177 Phase 2 A4：browser-adapter 数据链补齐', () => {
         });
     });
 
+    // [bugfix:web-config-not-persisted] 细粒度 setter 写入路径必须能被
+    // 恢复侧 GetConfig()/GetUIState() 读回（round-trip），防止写读路径脱节回归。
+    describe('细粒度 setter → Config round-trip（对齐恢复侧读取路径）', () => {
+        it('SetUIAccent/Scale/Font 等写入 ui_state，GetUIState 可读回', async () => {
+            await browserAdapter.SetUIAccent('#ff0000');
+            await browserAdapter.SetUIScale(1.5);
+            await browserAdapter.SetUIFontFamily('noto');
+            await browserAdapter.SetUIPopupWidth(320);
+            await browserAdapter.SetUIAnimations(false);
+            await browserAdapter.SetUIBlurBg(false);
+            await browserAdapter.SetUIAutoUpdate(true);
+            const s = await ext.GetUIState();
+            expect(s.accent).toBe('#ff0000');
+            expect(s.scale).toBe(1.5);
+            expect(s.fontFamily).toBe('noto');
+            expect(s.popupWidth).toBe(320);
+            expect(s.animations).toBe(false);
+            expect(s.blurBg).toBe(false);
+            expect(s.autoUpdateEnabled).toBe(true);
+        });
+
+        it('SetPerformanceMode(string) 写入 ui_state.performanceMode', async () => {
+            await browserAdapter.SetPerformanceMode('performance');
+            const s = await ext.GetUIState();
+            expect(s.performanceMode).toBe('performance');
+        });
+
+        it('SetBlenderPath/SetMMDPath/SetDisplayNamePriority 写入 Config 顶层字段', async () => {
+            await browserAdapter.SetBlenderPath('C:/blender.exe');
+            await browserAdapter.SetMMDPath('C:/mmd.exe');
+            await browserAdapter.SetDisplayNamePriority('name_en');
+            const cfg = await browserAdapter.GetConfig();
+            expect(cfg.blender_path).toBe('C:/blender.exe');
+            expect(cfg.mmd_path).toBe('C:/mmd.exe');
+            expect(cfg.display_name_priority).toBe('name_en');
+        });
+
+        it('SetOverridePath(category, path) 双参写入 override_paths[category]', async () => {
+            await browserAdapter.SetOverridePath('pmx', 'D:/models');
+            await browserAdapter.SetOverridePath('vmd', 'D:/motions');
+            const cfg = await browserAdapter.GetConfig();
+            expect(cfg.override_paths.pmx).toBe('D:/models');
+            expect(cfg.override_paths.vmd).toBe('D:/motions');
+        });
+    });
+
     describe('Delete*Preset 真实删除', () => {
         it('DeleteEnvPreset 从 presets store 删除', async () => {
             _idbStore.set('env:sunset', new Uint8Array([1]));
