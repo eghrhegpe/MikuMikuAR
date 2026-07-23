@@ -1,6 +1,6 @@
 # ADR-169: 动作装载语义统一 —— 原位替换默认动作（replaceDefaultMotion）
 
-> **状态**: 规划中
+> **状态**: 已实施
 > **日期**: 2026-07-21
 > **依赖**: ADR-167（场景级动作库）、ADR-121（全局动作意图）、ADR-131（库契约派发）
 > **路径约定**: 源码路径省略 `frontend/src/` 前缀，例如 `core/load-manager.ts` = `frontend/src/core/load-manager.ts`

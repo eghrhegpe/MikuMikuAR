@@ -6,7 +6,7 @@ import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { safeDispose } from '@/core/dispose-helpers';
 import { registerEnvCallback } from './env-dispatcher';
 import { getEnvKeys } from '@/core/env-state-schema';
-import { ensureEnvUpdateObserver, addRipple, addGroundRipple, getGroundHeightAt } from './env-impl';
+import { ensureEnvUpdateObserver, addRipple, addGroundRipple, getGroundHeightAt } from './env';
 import { _envSys, getScene } from './env-context';
 import { createCanvasTexture } from './env-texture';
 import { applyWetnessToAllModels, removeWetnessFromAllModels } from './env-wetness';

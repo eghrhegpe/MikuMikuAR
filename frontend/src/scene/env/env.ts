@@ -207,3 +207,7 @@ export {
     setMirrorResolution,
     getMirrorInfo,
 } from './mirror-debug';
+
+// ======== Ground Height (used by env-particles, env-bridge) ========
+
+export { getGroundHeightAt } from './env-ground';

@@ -1,8 +1,9 @@
 # ADR-167: 场景级动作库（Scene Motion Library）— 多主动作平等共存
 
-> **状态**: 规划中
+> **状态**: 已完成（核心功能已落地，P0-P2 全部实施；P3 i18n + 测试收尾中）
 > **日期**: 2026-07-21
-> **依赖**: ADR-121（全局动作意图）、ADR-129（场景级动作 UI）、ADR-144（per-model overlay）
+> **完成日期**: 2026-07-23
+> **依赖**: ADR-121（全局动作意图）、ADR-129（场景级动作 UI）、ADR-144（per-model overlay，已废弃被本 ADR 取代）
 > **路径约定**: 源码路径省略 `frontend/src/` 前缀，例如 `core/types.ts` = `frontend/src/core/types.ts`
 
 ## 背景与问题
@@ -355,21 +356,21 @@ export type ModelMotionSlots = MotionSlotConfig;  // 不再需要 primary/overla
 
 ## 实施分期
 
-| 阶段 | 文件 | 操作 | 验收 |
-|---|---|---|---|
-| **P0** | `scene/motion/motion-intent.ts` | 新增 `_sceneMotions` / `_activeMotionId` store + `getSceneMotions` / `addSceneMotion` / `removeSceneMotion` / `updateSceneMotion` / `setDefaultMotion` / `getActiveMotionId`；`getActiveMotion` 改为返回默认项 | tsc 通过；旧调用 `getActiveMotion` 不破 |
-| **P0** | `core/types.ts` | `MotionSlotConfig` 新增 `sceneMotionId?`、移除 `overlayPath/overlayName/overlayWeight`；`ModelMotionSlots` 简化为单槽位（或保留 `primary` 字段名）；`SceneMotionIntent` 新增 `id: string` | tsc 通过；overlay 相关引用编译失败清单已识别 |
-| **P0** | `docs/adr/adr-144-per-model-overlay-motion.md` | 顶部加废弃标记，状态改「已废弃，被 ADR-167 取代」 | 文档可追溯 |
-| **P1** | `menus/motion-popup.ts` | `__scene_motion_browse__` 的 `onVmdPick` 改为 `addSceneMotion(...)` | 连续添加 6 个动作 → 场景库有 6 项，非 1+5 |
-| **P1** | `menus/motion-root-ui.ts` | `buildMotionRootItems` 遍历 `_sceneMotions`；每行 trailing 加「设为默认 / 删除」 | 主菜单列出所有主动作，默认项有徽标 |
-| **P1** | `menus/motion-detail-ui.ts` | `buildMotionDetailLevel(sceneMotionId)` 从场景库取项；图层管理作用于该主动作 vmdLayers | 在动作 A 详情页加叠加层，不影响动作 B |
-| **P2** | `menus/model-detail.ts` | `buildMotionSlotLevel` 新增「从场景库选择」行 + 子页；**删除 `buildMotionOverlayLevel` 函数与菜单注册** | 角色可从场景库选任一主动作；叠加动作菜单消失 |
-| **P2** | `scene/motion/motion-binding-ui.ts` | `applyIntentToModel` 按 `sceneMotionId` 解析；`broadcastMotion` 遍历模型按各自 `sceneMotionId` 套用；**删除 `_ensureOverlayLayer` / `clearOverlayLayer` / `setOverlayWeight` / `getOverlayStatus`** | 不同角色跳不同主动作；overlay 运行时无残留 |
-| **P3** | `scene/scene-serialize.ts` | 新增 `motion.sceneMotions` + `activeMotionId`；`inst.motionSlots.primary.sceneMotionId` 落盘；**移除 `motionSlots.overlay` 分支**；旧格式丢弃动作配置 | 保存→重载后场景库与角色引用一致还原 |
-| **P3** | `scene/manager/model-loader.ts` | `pendingVmd` 钩子改为按 `_activeMotionId` 解析 | 新模型加载即继承默认动作 |
-| **P3** | `core/i18n/locales/*.ts`（5 语言） | 新增 `motion.library.*` key（见 §i18n）；移除已废弃的 `model-detail.overlay*` key | 5 语种齐全；无悬空 key |
-| **P3** | `__tests__/` | 移除/重写 overlay 相关测试用例；新增场景库 + 角色引用测试 | `npm run test` 全绿 |
-| **P3** | `__tests__/bindings/app.contract.test.ts` | 本 ADR 不动 Go struct，契约测试应保持通过 | 契约测试通过 |
+| 阶段 | 状态 | 文件 | 操作 | 验收 |
+|---|---|---|---|---|
+| **P0** | ✅ | `scene/motion/motion-intent.ts` | 新增 `_sceneMotions` / `_activeMotionId` store + `getSceneMotions` / `addSceneMotion` / `removeSceneMotion` / `updateSceneMotion` / `setDefaultMotion` / `getActiveMotionId`；`getActiveMotion` 改为返回默认项 | tsc 通过；旧调用 `getActiveMotion` 不破 |
+| **P0** | ✅ | `core/types.ts` | `MotionSlotConfig` 新增 `sceneMotionId?`、移除 `overlayPath/overlayName/overlayWeight`；`ModelMotionSlots` 简化为单槽位（或保留 `primary` 字段名）；`SceneMotionIntent` 新增 `id: string` | tsc 通过；overlay 相关引用编译失败清单已识别 |
+| **P0** | ✅ | `docs/adr/adr-144-per-model-overlay-motion.md` | 顶部加废弃标记，状态改「已废弃，被 ADR-167 取代」 | 文档可追溯 |
+| **P1** | ✅ | `menus/motion-popup.ts` | `__scene_motion_browse__` 的 `onVmdPick` 改为 `addSceneMotion(...)` | 连续添加 6 个动作 → 场景库有 6 项，非 1+5 |
+| **P1** | ✅ | `menus/motion-root-ui.ts` | `buildMotionRootItems` 遍历 `_sceneMotions`；每行 trailing 加「设为默认 / 删除」 | 主菜单列出所有主动作，默认项有徽标 |
+| **P1** | ✅ | `menus/motion-detail-ui.ts` | `buildMotionDetailLevel(sceneMotionId)` 从场景库取项；图层管理作用于该主动作 vmdLayers | 在动作 A 详情页加叠加层，不影响动作 B |
+| **P2** | ✅ | `menus/model-detail.ts` | `buildMotionSlotLevel` 新增「从场景库选择」行 + 子页；**删除 `buildMotionOverlayLevel` 函数与菜单注册** | 角色可从场景库选任一主动作；叠加动作菜单消失 |
+| **P2** | ✅ | `scene/motion/motion-binding-ui.ts` | `applyIntentToModel` 按 `sceneMotionId` 解析；`broadcastMotion` 遍历模型按各自 `sceneMotionId` 套用；**删除 `_ensureOverlayLayer` / `clearOverlayLayer` / `setOverlayWeight` / `getOverlayStatus`** | 不同角色跳不同主动作；overlay 运行时无残留 |
+| **P3** | ✅ | `scene/scene-serialize.ts` | 新增 `motion.sceneMotions` + `activeMotionId`；`inst.motionSlots.primary.sceneMotionId` 落盘；**移除 `motionSlots.overlay` 分支**；旧格式丢弃动作配置 | 保存→重载后场景库与角色引用一致还原 |
+| **P3** | ✅ | `scene/manager/model-loader.ts` | `pendingVmd` 钩子改为按 `_activeMotionId` 解析 | 新模型加载即继承默认动作 |
+| **P3** | ✅ | `core/i18n/locales/*.ts`（5 语言） | 新增 `motion.library.*` key（见 §i18n）；移除已废弃的 `model-detail.overlay*` key | 5 语种齐全；无悬空 key |
+| **P3** | ✅ | `__tests__/` | 移除/重写 overlay 相关测试用例；新增场景库 + 角色引用测试 | `npm run test` 全绿（motion-intent-replace-default.test.ts 覆盖核心场景） |
+| **P3** | ✅ | `__tests__/bindings/app.contract.test.ts` | 本 ADR 不动 Go struct，契约测试应保持通过 | 契约测试通过 |
 
 ---
 

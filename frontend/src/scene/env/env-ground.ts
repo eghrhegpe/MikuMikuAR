@@ -28,7 +28,7 @@ import { PlanarReflection, registerReflectionSurface } from './planar-reflection
 import { getPlanarQualityOverride } from './env-reflection';
 import { createCanvasTexture, getOrCreateCanvasTexture, isCacheOwnedTexture } from './env-texture';
 import { _envSys, getScene } from './env-context';
-import { ensureEnvUpdateObserver } from './env-impl';
+import { ensureEnvUpdateObserver } from './env';
 import {
     getGroundRippleTexture,
     hasActiveGroundRipples,
