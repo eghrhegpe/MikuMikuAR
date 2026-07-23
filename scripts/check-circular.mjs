@@ -20,23 +20,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { scanSourceGraph } from './_lib/source-graph.mjs';
+import { parseArgs } from './_lib/parse-args.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const SRC_DIR = path.join(ROOT, 'frontend', 'src');
-
-const args = process.argv.slice(2);
-const strict = args.includes('--strict');
-const jsonOutput = args.includes('--json');
-const updateAllowlist = args.includes('--update-allowlist');
 const ALLOWLIST_PATH = path.join(__dirname, 'circular-allowlist.json');
-let scope = null;
 
-for (let i = 0; i < args.length; i++) {
-    if (args[i] === '--scope' && args[i + 1]) {
-        scope = args[++i];
-    }
-}
+const args = parseArgs(process.argv.slice(2), {
+    bools: ['strict', 'json', 'update-allowlist'],
+    strings: ['scope'],
+});
 
 // ── 模块映射 ──
 
@@ -179,13 +173,13 @@ function saveAllowlist(cycles) {
 
 // ── 主流程 ──
 
-const { graph: fileGraph } = scanSourceGraph(SRC_DIR, { scope });
+const { graph: fileGraph } = scanSourceGraph(SRC_DIR, { scope: args.scope });
 
 const moduleGraph = buildModuleGraph(fileGraph);
 const rawCycles = detectCycles(moduleGraph);
 const cycles = dedupeCycles(rawCycles);
 
-if (updateAllowlist) {
+if (args['update-allowlist']) {
     saveAllowlist(cycles);
     console.log(`✅ 白名单已更新：${cycles.length} 个已知环 → ${path.relative(ROOT, ALLOWLIST_PATH)}`);
     process.exit(0);
@@ -200,7 +194,7 @@ for (const cycle of cycles) {
 const currentKeys = new Set(cycles.map(normalizeCycleKey));
 const fixedKeys = [...allowlist].filter(k => !currentKeys.has(k));
 
-if (jsonOutput) {
+if (args.json) {
     console.log(JSON.stringify({
         moduleCount: moduleGraph.size,
         cycleCount: cycles.length,
@@ -227,7 +221,7 @@ if (jsonOutput) {
             }
         }
         if (added.length > 0) {
-            console.log(`\n🔴 ${added.length} 个新增循环依赖（白名单外${strict ? '，CI 阻断' : ''}）：\n`);
+            console.log(`\n🔴 ${added.length} 个新增循环依赖（白名单外${args.strict ? '，CI 阻断' : ''}）：\n`);
             for (const cycle of added) {
                 console.log(`  ${cycle.join(' → ')}`);
             }
@@ -243,6 +237,6 @@ if (jsonOutput) {
 }
 
 // 退出码：--strict 只对新增环阻断
-if (added.length > 0 && strict) {
+if (added.length > 0 && args.strict) {
     process.exit(1);
 }

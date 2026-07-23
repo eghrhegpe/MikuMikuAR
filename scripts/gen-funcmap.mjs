@@ -15,73 +15,16 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { walkSourceFiles, getExportedSymbols } from './_lib/source-graph.mjs';
+import { parseArgs } from './_lib/parse-args.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const SRC_DIR = path.join(ROOT, 'frontend', 'src');
 const OUT_FILE = path.join(ROOT, 'docs', 'function-map.md');
 
-const EXCLUDE_DIRS = ['__tests__', '__mocks__', 'node_modules', 'wailsjs'];
-const EXCLUDE_FILES = [/\.d\.ts$/, /\.test\.ts$/, /\.spec\.ts$/, /\.gen\.ts$/];
-
-// ── 扫描 ──
-
-function isSourceFile(name) {
-  if (!name.endsWith('.ts')) return false;
-  return !EXCLUDE_FILES.some((re) => re.test(name));
-}
-
-function shouldTraverseDir(name) {
-  return !name.startsWith('.') && !EXCLUDE_DIRS.includes(name);
-}
-
-function walkDir(dir, base = '') {
-  const entries = [];
-  if (!fs.existsSync(dir)) return entries;
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    const rel = base ? `${base}/${entry.name}` : entry.name;
-    if (entry.isDirectory()) {
-      if (shouldTraverseDir(entry.name)) {
-        entries.push(...walkDir(full, rel));
-      }
-    } else if (entry.isFile() && isSourceFile(entry.name)) {
-      entries.push({ file: full, rel });
-    }
-  }
-  return entries;
-}
-
-// ── 提取导出符号 ──
-
-function getExportedSymbols(filePath) {
-  const text = fs.readFileSync(filePath, 'utf8');
-  const syms = new Set();
-
-  // export function / const / let / class / interface / type / enum / async function
-  const re1 = /^export\s+(?:async\s+)?(?:function|const|let|class|interface|type|enum)\s+([A-Za-z0-9_]+)/gm;
-  let m;
-  while ((m = re1.exec(text))) syms.add(m[1]);
-
-  // export { a, b, c }
-  const re2 = /^export\s*\{([^}]+)\}/gm;
-  while ((m = re2.exec(text))) {
-    m[1].split(',').forEach((s) => {
-      const name = s.trim().split(/\s+as\s+/).pop().trim();
-      if (name && /^[A-Za-z0-9_]+$/.test(name)) syms.add(name);
-    });
-  }
-
-  // export default function/class
-  const re3 = /^export\s+default\s+(?:function|class)\s+([A-Za-z0-9_]+)/gm;
-  while ((m = re3.exec(text))) syms.add(m[1]);
-
-  // export default <name> (after declaration)
-  const re4 = /^export\s+default\s+([A-Za-z0-9_]+)\s*$/gm;
-  while ((m = re4.exec(text))) syms.add(m[1]);
-
-  return [...syms].sort();
-}
+// gen-funcmap 只关心 .ts 文件（不含 .tsx），通过 walkSourceFiles 的 extensions 参数指定
+const TS_EXT = ['.ts'];
 
 // ── 模块分组 ──
 
@@ -175,13 +118,16 @@ function renderMarkdown(groups, entries, scope) {
 // ── 主流程 ──
 
 function main() {
-  const args = process.argv.slice(2);
-  const scopeIdx = args.indexOf('--scope');
-  const scope = scopeIdx !== -1 && args[scopeIdx + 1] ? args[scopeIdx + 1] : null;
-  const isCheck = args.includes('--check');
+  const args = parseArgs(process.argv.slice(2), {
+    bools: ['check'],
+    strings: ['scope'],
+  });
+
+  const scope = args.scope;
+  const isCheck = args.check;
 
   // 1. 扫描文件
-  const allFiles = walkDir(SRC_DIR);
+  const allFiles = walkSourceFiles(SRC_DIR, SRC_DIR, '', TS_EXT);
   const files = scope
     ? allFiles.filter((f) => f.rel.startsWith(scope + '/'))
     : allFiles;

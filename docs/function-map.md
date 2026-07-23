@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 63 | 490 |
+| 核心基础设施 | 63 | 491 |
 | 3D 场景 | 97 | 1049 |
 | 菜单 & UI | 66 | 340 |
 | 换装 & 音频 | 3 | 38 |
@@ -390,6 +390,7 @@
 | `showErrorToast()` | `core/utils` | — |
 | `stackRegistry()` | `core/utils` | — |
 | `swallowError()` | `core/utils` | — |
+| `thumbDataUrl()` | `core/utils` | — |
 | `toBase64()` | `core/utils` | — |
 | `triggerAutoSave()` | `core/utils` | — |
 | `tryCatchStatus()` | `core/utils` | — |
@@ -2106,5 +2107,5 @@
 
 ---
 
-> 共 249 个文件，2069 个导出符号。
+> 共 249 个文件，2070 个导出符号。
 > 说明列（—）待知识库或人工补充。

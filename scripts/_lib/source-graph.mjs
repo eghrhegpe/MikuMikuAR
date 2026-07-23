@@ -3,11 +3,12 @@ import path from 'node:path';
 
 export const EXCLUDE_DIRS = new Set(['__tests__', '__mocks__', 'node_modules', 'wailsjs']);
 export const EXCLUDE_FILES = [/\.d\.ts$/, /\.test\.tsx?$/, /\.spec\.tsx?$/, /\.gen\.tsx?$/];
-const SOURCE_EXTENSIONS = ['.ts', '.tsx'];
+/** 默认源码扩展名（含 .tsx）；gen-funcmap 等用 .ts-only 时传 ['ts'] */
+export const SOURCE_EXTENSIONS = ['.ts', '.tsx'];
 const IMPORT_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'];
 
-export function isSourceFile(name) {
-  return SOURCE_EXTENSIONS.some((ext) => name.endsWith(ext))
+export function isSourceFile(name, extensions = SOURCE_EXTENSIONS) {
+  return extensions.some((ext) => name.endsWith(ext))
     && !EXCLUDE_FILES.some((re) => re.test(name));
 }
 
@@ -15,7 +16,7 @@ export function shouldTraverseDir(name) {
   return !name.startsWith('.') && !EXCLUDE_DIRS.has(name);
 }
 
-export function walkSourceFiles(srcDir, dir = srcDir, base = '') {
+export function walkSourceFiles(srcDir, dir = srcDir, base = '', extensions = SOURCE_EXTENSIONS) {
   const entries = [];
   if (!fs.existsSync(dir)) return entries;
 
@@ -24,9 +25,9 @@ export function walkSourceFiles(srcDir, dir = srcDir, base = '') {
     const rel = base ? `${base}/${entry.name}` : entry.name;
     if (entry.isDirectory()) {
       if (shouldTraverseDir(entry.name)) {
-        entries.push(...walkSourceFiles(srcDir, full, rel));
+        entries.push(...walkSourceFiles(srcDir, full, rel, extensions));
       }
-    } else if (entry.isFile() && isSourceFile(entry.name)) {
+    } else if (entry.isFile() && isSourceFile(entry.name, extensions)) {
       entries.push({ file: full, rel });
     }
   }
@@ -138,4 +139,39 @@ export function scanSourceGraph(srcDir, { scope = null, localOnly = false } = {}
   const scopedFiles = [...reachable].sort().map((rel) => ({ file: path.join(srcDir, rel), rel }));
 
   return { files: scopedFiles, graph: scopedGraph };
+}
+
+// ── 导出符号提取（gen-funcmap / check-doc-drift 共用） ──
+
+/**
+ * 提取文件中的 export 符号列表。
+ * 覆盖：export function/const/let/class/interface/type/enum/default、export { a, b }。
+ */
+export function getExportedSymbols(filePath) {
+  const text = fs.readFileSync(filePath, 'utf8');
+  const syms = new Set();
+
+  // export async function / function / const / let / class / interface / type / enum
+  const re1 = /^export\s+(?:async\s+)?(?:function|const|let|class|interface|type|enum)\s+([A-Za-z0-9_]+)/gm;
+  let m;
+  while ((m = re1.exec(text))) syms.add(m[1]);
+
+  // export { a, b, c } / export { a as b }
+  const re2 = /^export\s*\{([^}]+)\}/gm;
+  while ((m = re2.exec(text))) {
+    m[1].split(',').forEach((s) => {
+      const name = s.trim().split(/\s+as\s+/).pop().trim();
+      if (name && /^[A-Za-z0-9_]+$/.test(name)) syms.add(name);
+    });
+  }
+
+  // export default function/class Name
+  const re3 = /^export\s+default\s+(?:function|class)\s+([A-Za-z0-9_]+)/gm;
+  while ((m = re3.exec(text))) syms.add(m[1]);
+
+  // export default Name (inline)
+  const re4 = /^export\s+default\s+([A-Za-z0-9_]+)\s*$/gm;
+  while ((m = re4.exec(text))) syms.add(m[1]);
+
+  return [...syms].sort();
 }

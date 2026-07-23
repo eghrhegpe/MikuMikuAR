@@ -19,6 +19,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { scanSourceGraph } from './_lib/source-graph.mjs';
+import { parseArgs } from './_lib/parse-args.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -126,22 +127,17 @@ function renderJson(entries, edges) {
 // ── 主流程 ──
 
 function main() {
-  const args = process.argv.slice(2);
+  const args = parseArgs(process.argv.slice(2), {
+    bools: ['check', 'local-only'],
+    strings: ['format', 'scope', 'file'],
+    defaults: { format: 'mermaid', scope: null, file: null },
+  });
 
-  const formatIdx = args.indexOf('--format');
-  const format = formatIdx !== -1 && args[formatIdx + 1]
-    ? args[formatIdx + 1] : 'mermaid';
-
-  const scopeIdx = args.indexOf('--scope');
-  const scope = scopeIdx !== -1 && args[scopeIdx + 1]
-    ? args[scopeIdx + 1] : null;
-
-  const fileIdx = args.indexOf('--file');
-  const outFile = fileIdx !== -1 && args[fileIdx + 1]
-    ? path.resolve(ROOT, args[fileIdx + 1]) : null;
-
-  const isCheck = args.includes('--check');
-  const localOnly = args.includes('--local-only');
+  const format = args.format;
+  const scope = args.scope;
+  const outFile = args.file ? path.resolve(ROOT, args.file) : null;
+  const isCheck = args.check;
+  const localOnly = args['local-only'];
 
   if (!['mermaid', 'list', 'json'].includes(format)) {
     console.error(`❌ 不支持的格式：${format}（可选：mermaid / list / json）`);
