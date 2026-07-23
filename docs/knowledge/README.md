@@ -59,7 +59,7 @@ adr:                 # 关联决策（可选）
 
 跑法：`node scripts/check-doc-drift.mjs`（或 `--json`）。可接 CI 卡点。
 
-## 卡片索引（82 张，按 category 分组）
+## 卡片索引（92 张，按 category 分组）
 
 ### 环境系统（env）
 
@@ -87,6 +87,21 @@ adr:                 # 关联决策（可选）
 | [场景存档迁移](./scene-migrate.md) | `scene/scene-migrate.ts` | ADR-166 |
 | [场景序列化与自动保存](./scene-serialize.md) | `scene/scene-serialize.ts` | — |
 | [相机模式管理系统](./camera.md) | `scene/camera/camera.ts` | ADR-035 |
+
+### 场景子系统（scene）
+
+| 卡片 | 模块 | 关联 ADR |
+|------|------|----------|
+| [PMX 模型加载与缩略图捕获](./model-loader.md) | `scene/manager/model-loader.ts` | — |
+| [模型注册表与生命周期管理](./model-manager.md) | `scene/manager/model-manager.ts` | — |
+| [模型生命周期操作](./model-ops.md) | `scene/manager/model-ops.ts` | ADR-116 |
+| [分类材质系统](./material.md) | `scene/manager/material.ts` | — |
+| [姿势多角度预设系统](./camera-angle.md) | `scene/pose/camera-angle.ts` | — |
+| [AR 摄像头视频透传](./ar-camera.md) | `scene/ar/ar-camera.ts` | ADR-055 |
+| [AR 模式场景级协调](./ar-scene.md) | `scene/ar/ar-scene.ts` | ADR-055 |
+| [拖拽变换模式开关](./transform-mode.md) | `scene/transform/transform-mode.ts` | — |
+| [变换目标拾取与元数据](./transform-pick.md) | `scene/transform/transform-pick.ts` | — |
+| [变换适配器注册表](./transform-adapter.md) | `scene/transform/transform-adapter.ts` | ADR-126/121 |
 
 ### 物理系统（physics）
 
