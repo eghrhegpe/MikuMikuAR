@@ -4,7 +4,8 @@
  * 从 ADR 文件首部自动生成状态索引表，替换 docs/status.md 中标记区域。
  *
  * 用法：
- *   node scripts/gen-status-index.mjs
+ *   node scripts/gen-status-index.mjs          # 生成并写入
+ *   node scripts/gen-status-index.mjs --check  # 只检查是否已同步
  *
  * 前置条件：
  *   - docs/status.md 包含 <!-- GEN:ADR_INDEX start --> 和 <!-- GEN:ADR_INDEX end --> 标记
@@ -54,15 +55,20 @@ function parseAdr(filePath) {
       continue;
     }
 
-    // > **状态**: xxx
-    const mStatus = line.match(/^>\s*\*\*状态\*\*:\s*(.+)/);
+    // 兼容历史 ADR 首部：blockquote / 无序列表 / 表格字段。
+    const mStatus = line.match(/^>\s*\*\*状态\*\*[：:]\s*(.+)/)
+      || line.match(/^[-*]\s*\*\*状态\*\*[：:]\s*(.+)/)
+      || line.match(/^\s*\*\*状态\*\*[：:]\s*(.+)/)
+      || line.match(/^\|\s*\*\*状态\*\*\s*\|\s*(.+?)\s*\|\s*$/);
     if (mStatus) {
       status = mStatus[1].trim();
       continue;
     }
 
-    // > **日期**: yyyy-mm-dd
-    const mDate = line.match(/^>\s*\*\*日期\*\*:\s*(.+)/);
+    const mDate = line.match(/^>\s*\*\*日期\*\*[：:]\s*(.+)/)
+      || line.match(/^[-*]\s*\*\*日期\*\*[：:]\s*(.+)/)
+      || line.match(/^\s*\*\*日期\*\*[：:]\s*(.+)/)
+      || line.match(/^\|\s*\*\*日期\*\*\s*\|\s*(.+?)\s*\|\s*$/);
     if (mDate) {
       date = mDate[1].trim();
       continue;
@@ -70,8 +76,19 @@ function parseAdr(filePath) {
   }
 
   if (num === null) {
-    console.warn(`⚠️  跳过 ${path.basename(filePath)}：未找到 ADR 编号`);
-    return null;
+    return { error: `未找到 ADR 编号` };
+  }
+
+  if (!status) {
+    return { error: `未找到可解析的状态字段` };
+  }
+
+  if (!title) {
+    return { error: `未找到 ADR 标题` };
+  }
+
+  if (date && !/^\d{4}-\d{2}-\d{2}/.test(date)) {
+    return { error: `日期格式不可识别：${date}` };
   }
 
   // 若状态行未包含日期，追加日期
@@ -102,6 +119,22 @@ function generateTable(entries) {
   return [...header, ...rows].join('\n') + '\n';
 }
 
+function replaceGeneratedRegion(statusMd, table) {
+  const startIdx = statusMd.indexOf(MARKER_START);
+  const endIdx = statusMd.indexOf(MARKER_END);
+
+  if (startIdx === -1 || endIdx === -1) {
+    throw new Error(`status.md 中未找到标记（${MARKER_START} / ${MARKER_END}）`);
+  }
+
+  if (startIdx >= endIdx) {
+    throw new Error('status.md 中标记顺序错误：start 在 end 之后');
+  }
+
+  const replacement = `${MARKER_START}\n\n${table}\n${MARKER_END}`;
+  return statusMd.slice(0, startIdx) + replacement + statusMd.slice(endIdx + MARKER_END.length);
+}
+
 // ── 主流程 ──
 
 function main() {
@@ -116,9 +149,20 @@ function main() {
     .sort(); // 按文件名排序本质就是按编号排序
 
   const entries = [];
+  const errors = [];
   for (const f of files) {
     const entry = parseAdr(path.join(ADR_DIR, f));
-    if (entry) entries.push(entry);
+    if (entry?.error) {
+      errors.push(`${f}：${entry.error}`);
+    } else if (entry) {
+      entries.push(entry);
+    }
+  }
+
+  if (errors.length) {
+    console.error('❌ ADR 首部不符合状态索引契约：');
+    errors.forEach((error) => console.error(`   ${error}`));
+    process.exit(1);
   }
 
   // 按编号升序排列
@@ -135,28 +179,26 @@ function main() {
     process.exit(1);
   }
 
-  let statusMd = fs.readFileSync(STATUS_FILE, 'utf8');
-
-  const startIdx = statusMd.indexOf(MARKER_START);
-  const endIdx   = statusMd.indexOf(MARKER_END);
-
-  if (startIdx === -1 || endIdx === -1) {
-    console.error(`❌ status.md 中未找到标记（${MARKER_START} / ${MARKER_END}）`);
-    console.error('请在 ADR 索引表区域的首尾分别插入这两行标记。');
+  const statusMd = fs.readFileSync(STATUS_FILE, 'utf8');
+  let expected;
+  try {
+    expected = replaceGeneratedRegion(statusMd, table);
+  } catch (error) {
+    console.error(`❌ ${error.message}`);
+    console.error('请在 ADR 索引表区域的首尾分别插入生成标记。');
     process.exit(1);
   }
 
-  if (startIdx >= endIdx) {
-    console.error('❌ status.md 中标记顺序错误：start 在 end 之后');
-    process.exit(1);
+  if (process.argv.includes('--check')) {
+    if (expected !== statusMd) {
+      console.error('❌ docs/status.md 的 ADR 索引未同步，请运行：npm run gen:status');
+      process.exit(1);
+    }
+    console.log(`✅ docs/status.md ADR 索引已同步（${entries.length} 行）`);
+    return;
   }
 
-  const replacement = `${MARKER_START}\n\n${table}\n${MARKER_END}`;
-  const before = statusMd.slice(0, startIdx);
-  const after  = statusMd.slice(endIdx + MARKER_END.length);
-  statusMd = before + replacement + after;
-
-  fs.writeFileSync(STATUS_FILE, statusMd, 'utf8');
+  fs.writeFileSync(STATUS_FILE, expected, 'utf8');
 
   console.log(`✅ 已更新 ${STATUS_FILE}`);
   console.log(`   生成 ${entries.length} 行 ADR 索引`);

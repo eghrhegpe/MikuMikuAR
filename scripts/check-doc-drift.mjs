@@ -24,6 +24,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -223,6 +224,22 @@ function checkKnowledgeCards() {
   return { cards: cardFiles.length, missingSources, coveredCount: covered.size };
 }
 
+// ---------- 检查 5：status.md 生成区是否同步（ERROR） ----------
+function checkGeneratedStatus() {
+  const script = path.join(ROOT, 'scripts', 'gen-status-index.mjs');
+  try {
+    execFileSync(process.execPath, [script, '--check'], {
+      cwd: ROOT,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    return null;
+  } catch (error) {
+    const detail = String(error.stderr || error.stdout || error.message).trim();
+    return detail || 'gen-status-index --check 执行失败';
+  }
+}
+
 // ---------- 主流程 ----------
 function main() {
   const json = process.argv.includes('--json');
@@ -243,6 +260,11 @@ function main() {
   const kc = checkKnowledgeCards();
   for (const ms of kc.missingSources) {
     errors.push(`知识卡 ${ms.card} 的 source_files 指向不存在的文件：${ms.src}`);
+  }
+
+  const generatedStatusError = checkGeneratedStatus();
+  if (generatedStatusError) {
+    errors.push(`status.md ADR 生成区未同步：${generatedStatusError}`);
   }
 
   if (json) {

@@ -34,6 +34,7 @@ node scripts/check-doc-drift.mjs --json
 检查项：
 - **ERROR** 架构目录树引用完整性 —— 架构树声明的文件在磁盘不存在
 - **ERROR** status.md 是否涵盖最新 ADR
+- **ERROR** status.md 的 ADR 生成区是否与 ADR 源文件一致
 - **ERROR** 知识卡 `source_files` 完整性 —— 卡片声称的源码路径不存在
 - **INFO** 符号 0% 未文档化模块 —— 源码导出符号未出现在架构/函数文档中
 
@@ -43,9 +44,12 @@ node scripts/check-doc-drift.mjs --json
 
 ```bash
 node scripts/gen-status-index.mjs
+# 只检查 status.md 是否由 ADR 源同步生成
+node scripts/gen-status-index.mjs --check
 ```
 
 **前置条件：** `docs/status.md` 包含 `<!-- GEN:ADR_INDEX start -->` 和 `<!-- GEN:ADR_INDEX end -->` 标记。
+生成区禁止手工修改；状态必须先写入 `docs/adr/adr-*.md` 首部，再运行脚本同步。
 
 ### `fix-adr-format.mjs` — ADR 格式批量修复
 
