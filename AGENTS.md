@@ -18,8 +18,9 @@
 |----------|--------|
 | 查当前决策 + 坑点| `grep docs/adr/` |
 | 查/更新项目状态 | `docs/status.md`（ADR 索引表由 `npm run gen:status -- --reverse` 自动生成，改状态只需改 ADR 文件首部） |
-| 查模块依赖图 | `npm run dep:graph`（Mermaid 图） / `npm run dep:graph:list`（缩进列表） / `node scripts/gen-dep-graph.mjs --format json --file docs/dep-graph.json` |
+| 查模块依赖图 | `npm run dep:graph`（Mermaid 图） / `npm run dep:graph:list`（缩进列表） |
 | 查/更新函数索引 | `docs/function-map.md`（由 `npm run gen:funcmap` 自动生成，改动后运行 `npm run check:funcmap` 校验） |
+| 校验文档漂移 | `npm run check:docs`（ADR 索引同步 + 架构树完整性 + 知识卡 source_files 有效性 + i18n + Go 错误 i18n） |
 | 查项目技术 | `docs/architecture.md` |
 | 查函数大全 | `grep docs/function-map.md` |
 | 加 菜单 | `docs/menu-how-to.md` |

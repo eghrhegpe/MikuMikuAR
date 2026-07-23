@@ -4,7 +4,7 @@
   "version": "1.6.3",
   "scripts": {
     "gen:status": "node scripts/gen-status-index.mjs",
-    "check:status": "node scripts/gen-status-index.mjs --check",
+    "check:status": "node scripts/gen-status-index.mjs --reverse --check",
     "check:docs": "npm run check:status && node scripts/check-doc-drift.mjs",
     "dep:graph": "node scripts/gen-dep-graph.mjs",
     "dep:graph:list": "node scripts/gen-dep-graph.mjs --format list",
