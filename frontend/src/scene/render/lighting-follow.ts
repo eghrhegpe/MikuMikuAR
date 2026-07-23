@@ -41,6 +41,8 @@ export interface PersonalLightSettings {
     coneIntensity: number;
     coneLength: number;
     coneSoftness: number;
+    /** [doc:adr-168] 跟随骨骼名（null = 自动匹配腰骨候选） */
+    boneName: string | null;
 }
 
 interface PersonalLightEntry {
@@ -73,12 +75,13 @@ export const DEFAULT_PERSONAL_LIGHT: PersonalLightSettings = {
     coneIntensity: 0.6,
     coneLength: 30,
     coneSoftness: 0.5,
+    boneName: null,
 };
 
-/** 取个人灯跟随基准点：腰骨（如有）→ 根节点（兜底） */
+/** 取个人灯跟随基准点：用户指定骨骼 → 腰骨候选 → 根节点（兜底） */
 function _getLightBasePos(model: ModelInstance, waistName: string | null): Vector3 {
-    if (waistName && model.mmdModel) {
-        const p = getBoneWorldPosition(model.mmdModel, waistName);
+    if (model.mmdModel) {
+        const p = getBoneWorldPosition(model.mmdModel, waistName ?? '');
         if (p) {
             return p;
         }
@@ -104,10 +107,12 @@ export function attachPersonalLight(
         return;
     }
 
-    const waistName = model.mmdModel
-        ? (WAIST_CANDIDATES.find((n) => model.mmdModel!.runtimeBones?.some((b) => b.name === n)) ??
-          null)
-        : null;
+    const waistName = settings.boneName
+        ? settings.boneName
+        : model.mmdModel
+          ? (WAIST_CANDIDATES.find((n) => model.mmdModel!.runtimeBones?.some((b) => b.name === n)) ??
+            null)
+          : null;
     const basePos = _getLightBasePos(model, waistName);
     const startPos = new Vector3(
         basePos.x + settings.offsetX,
@@ -210,7 +215,21 @@ export function setPersonalLightState(
     if (!entry) {
         return;
     }
+    const boneChanged = 'boneName' in partial && partial.boneName !== entry.settings.boneName;
     Object.assign(entry.settings, partial);
+    if (boneChanged) {
+        // 重新解析跟随骨骼
+        const model = modelRegistry.get(modelId);
+        if (model) {
+            entry.waistName = entry.settings.boneName
+                ? entry.settings.boneName
+                : model.mmdModel
+                  ? (WAIST_CANDIDATES.find((n) =>
+                        model.mmdModel!.runtimeBones?.some((b) => b.name === n)
+                    ) ?? null)
+                  : null;
+        }
+    }
     const { settings, light } = entry;
     light.intensity = settings.enabled ? settings.intensity : 0;
     light.diffuse.set(settings.color[0], settings.color[1], settings.color[2]);
