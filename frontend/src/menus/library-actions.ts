@@ -28,6 +28,8 @@ import {
     offerSceneUndoAndRefresh,
 } from '../scene/scene';
 import { captureInheritedState, applyInheritedState } from '../scene/manager/model-ops'; // [doc:adr-150]
+import { applyIntentToModel } from './motion-binding-ui'; // [doc:adr-150] 触发继承动作的 VMD 应用
+import { getSceneMotions, getMotionGen } from '../scene/motion/motion-intent'; // [doc:adr-150]
 import { getMotionMenu } from './motion-popup';
 import { slideRow } from '../core/ui-helpers';
 import { addDisposableListener, type Disposable } from '../core/dom';
@@ -280,6 +282,15 @@ function startReplaceModel(m: LibraryModel, replaceId: string): void {
                 // 焦点已由 model-loader 切换；旧模型 inst 仍可查询）
                 if (snapshot) {
                     applyInheritedState(handle.id, snapshot);
+                    // [doc:adr-150] sceneMotionId 赋值后手动触发 VMD 应用：
+                    // model-loader 已按新模型默认 motionSlots 加载了 VMD，
+                    // 若继承的 sceneMotionId 对应不同动作，需通过 applyIntentToModel 重新应用
+                    if (snapshot.sceneMotionId) {
+                        const intent = getSceneMotions().find((m) => m.id === snapshot.sceneMotionId);
+                        if (intent) {
+                            applyIntentToModel(handle.id, intent, getMotionGen());
+                        }
+                    }
                 }
                 removeModel(replaceId);
                 // [doc:adr-127] 破坏性操作场景级撤销保护
