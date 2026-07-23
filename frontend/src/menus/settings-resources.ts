@@ -179,6 +179,8 @@ function buildStorageSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode
         {
             id: 'resources:storage',
             kind: 'custom',
+            // [doc:adr-177] A5 能力门控：storageMode===false 时隐藏存储模式卡片（浏览器固定 web 模式）
+            visibleWhen: () => getCachedCapabilities().storageMode,
             renderCustom: (c) => {
                 if (!isAndroid) {
                     cardContainer(c, (inner) => {

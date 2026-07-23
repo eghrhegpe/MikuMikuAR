@@ -40,6 +40,7 @@ import {
     PlazaZoomReset,
 } from '../core/wails-bindings';
 import { NavigatePlazaWindow } from '@bindings/mikumikuar/internal/app/app';
+import { getCachedCapabilities } from '../core/backend';
 import { isAndroidPlatform, openExternalURL } from '../core/platform';
 import { swallowError, escapeHtml } from '../core/utils';
 import { safeCallAsync } from '../core/safe-call';
@@ -696,7 +697,10 @@ export function showActionsMenu(site: PlazaSite, anchor: HTMLElement): void {
             : [
                   { key: 'embed' as const, label: '内嵌页' },
                   { key: 'external' as const, label: '系统浏览器' },
-                  { key: 'window' as const, label: '独立窗口' },
+                  // [doc:adr-177] A5 能力门控：plazaWindow===false 时隐藏「独立窗口」选项
+                  ...(getCachedCapabilities().plazaWindow
+                      ? [{ key: 'window' as const, label: '独立窗口' }]
+                      : []),
               ]),
     ];
     const current = loadGlobalMode() ?? 'auto';

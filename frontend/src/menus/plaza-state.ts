@@ -6,6 +6,7 @@ import type { PlazaCreator } from './plaza-creators';
 import { closeAllOverlays } from '../core/utils';
 import { swallowError } from '../core/utils';
 import { StopProxy } from '../core/wails-bindings';
+import { getCachedCapabilities } from '../core/backend';
 
 // ======== 常量 ========
 
@@ -138,6 +139,11 @@ export function effectiveMode(site: PlazaSite): OpenMode {
         const key = `miku.plaza.mode.${site.name}`;
         const saved = localStorage.getItem(key);
         if (saved === 'embed' || saved === 'external' || saved === 'window') {
+            // [doc:adr-177] A5 能力门控：plazaWindow===false 时 'window' 降级为 'embed'，
+            // 避免 NavigatePlazaWindow/ClosePlazaWindow 抛 NotSupportedError。
+            if (saved === 'window' && !getCachedCapabilities().plazaWindow) {
+                return 'embed';
+            }
             return saved;
         }
     } catch {
@@ -145,6 +151,9 @@ export function effectiveMode(site: PlazaSite): OpenMode {
     }
     const global = loadGlobalMode();
     if (global) {
+        if (global === 'window' && !getCachedCapabilities().plazaWindow) {
+            return 'embed';
+        }
         return global;
     }
     return site.mode ?? 'embed';
