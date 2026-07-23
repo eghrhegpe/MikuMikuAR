@@ -15,7 +15,6 @@ import {
     setPopupOpen,
     focusedModelId,
     stackRegistry,
-    formatError,
     setStatus,
     setOnCloseAllOverlays,
 } from './config';
@@ -53,14 +52,11 @@ export function disposeEventHandlers(): void {
 }
 
 import { browser } from './runtime-bridge';
-import { showModelPopup, showMotionPopup, refreshLibrary } from '../menus/library';
+import { showModelPopup, showMotionPopup } from '../menus/library';
 import { showPlaza } from '../menus/plaza-browser';
 import { closePlaza } from '../menus/plaza-state';
-import { loadManager } from './load-manager';
-import { ImportZip, ExtractZip } from './wails-bindings';
-import { idbSet } from './backend/idb';
+import { handleDroppedFile } from './drop-import';
 import { focusModel } from '../scene/manager/model-ops';
-import { safeCallAsync } from './safe-call';
 import { getAllShortcuts, getAriaKeyshortcuts } from './shortcut-registry';
 import { getCurrentCamera } from '../scene/camera/camera';
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
@@ -475,84 +471,10 @@ export function showUpdateToast(latest: string, url: string): void {
 }
 
 // ======== Drag & Drop Import ========
+// handleDropFile / handleDroppedFile 抽至 ./drop-import（纯逻辑，便于单测）。
+// 此处仅保留 DOM 事件注册 + overlay 视觉控制。
 function hideDropOverlay(): void {
     document.getElementById('dropOverlay')!.classList.remove('visible');
-}
-
-async function handleDropFile(path: string, zipBytes?: Uint8Array): Promise<void> {
-    const lower = path.toLowerCase();
-    if (lower.endsWith('.zip')) {
-        setStatus(t('main.importingZip'), false);
-        try {
-            // [doc:adr-177] 浏览器侧 ExtractZip 内部读 IndexedDB file:<zipStem>、解压、
-            // 落地内部文件到 file:<stem>，返回主 PMX 路径；桌面侧 ImportZip(path) 由 Go 落盘。
-            if (zipBytes !== undefined) {
-                const result = await ExtractZip(path, '');
-                if (result?.file_path) {
-                    await loadManager.load({ kind: 'actor', path: result.file_path });
-                }
-            } else {
-                await ImportZip(path);
-            }
-            setStatus(t('main.zipImported'), true);
-            await safeCallAsync('events', 'refresh after drop', () => refreshLibrary());
-        } catch (err) {
-            setStatus(t('main.importFailedDetail') + formatError(err), false);
-            console.error('ImportZip failed:', err);
-        }
-    } else if (lower.endsWith('.pmx')) {
-        setStatus(t('main.loadingModel'), false);
-        try {
-            await loadManager.load({ kind: 'actor', path });
-        } catch (err) {
-            setStatus(t('main.modelLoadFailed') + formatError(err), false);
-            console.error('loadManager actor failed:', err);
-        }
-    } else if (lower.endsWith('.vmd')) {
-        setStatus(t('main.loadingMotion'), false);
-        try {
-            await loadManager.load({ kind: 'vmd', path });
-        } catch (err) {
-            setStatus(t('main.vmdLoadFailed') + formatError(err), false);
-            console.error('loadManager vmd failed:', err);
-        }
-    }
-}
-
-/**
- * [doc:adr-177] 单个拖入文件落地：桌面走原生 path，浏览器读字节写 IndexedDB。
- *
- * 浏览器侧 File 对象无 path 属性（Wails desktop 才注入），故读 file.arrayBuffer()
- * 写入 models store 的 file:<name>；pmx/zip 额外写 entry:<name> 让 web-loader
- * 模型库可见，vmd 不进模型库（动作文件非库条目）。
- */
-async function handleDroppedFile(file: File): Promise<void> {
-    // Desktop：Wails 在 File 上注入 path（绝对路径），直接走原生导入
-    const desktopPath = (file as File & { path?: string }).path;
-    if (desktopPath) {
-        await handleDropFile(desktopPath);
-        return;
-    }
-    const lower = file.name.toLowerCase();
-    if (!lower.endsWith('.zip') && !lower.endsWith('.pmx') && !lower.endsWith('.vmd')) {
-        return;
-    }
-    const bytes = new Uint8Array(await file.arrayBuffer());
-    if (lower.endsWith('.zip')) {
-        // zip 整体写入 entry（模型库可见），内部文件由 extractAndStageZip 落地
-        const { saveModel } = await import('../web-loader/library');
-        await saveModel(file.name, bytes, 'zip');
-        await handleDropFile(file.name, bytes);
-        return;
-    }
-    // pmx/vmd：落地 file:<name>
-    const name = file.name.replace(/\.(pmx|vmd)$/i, '');
-    await idbSet('models', `file:${name}`, bytes);
-    if (lower.endsWith('.pmx')) {
-        const { saveModel } = await import('../web-loader/library');
-        await saveModel(file.name, bytes, 'pmx');
-    }
-    await handleDropFile(file.name);
 }
 
 export function initDropHandler(): void {
