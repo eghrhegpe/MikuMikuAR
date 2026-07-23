@@ -76,7 +76,7 @@
 | ADR-119 | 缩略图缓存键单一源治理 | Phase 1 + Phase 2 已完成（模型 + 道具写侧收口至 `thumbnail-key.ts`；VMD 缩略图死路径已删除；meta 缓存错位已修复）。后续审计曾将 `thumbnailCache` 内存缓存与 `GetModelMeta.thumbnail` 列为待清理 deferred，经核实二者均**无需清理**（`thumbnailCache` 为活跃 UI 缩略图数据源；`ModelMeta` 本无 `thumbnail` 字段，先前误将 `DanceSet.Thumbnail` 归错）。治理已闭环。契约测试 `thumbnail-key.contract.test.ts` 已作防反弹熔断丝（16 例全过） |
 | ADR-118 | 刷新率感知的自动降级阈值 | ✅ 已完成（Phase 1 刷新率相对阈值 + Phase 2 运行时峰值校准全量落地） |
 | ADR-117 | Go 端用户可见错误的 i18n 化 | ✅ 已完成（Phase 1 + 2 + 3 全部完成；信封方案见 §2.6） |
-| ADR-116 | 动作覆盖系统 — 模块化架构 + 骨骼覆盖下沉 | 已完成（P0+P1+P2+P3 全部实施并通过验证：tsc + 1557 单测 + ESLint）。2026-07-17 补充：`_computeOverride` `weight≥1` 语义修正为复合父骨传播旋转，详见 §十一。 |
+| ADR-116 | 动作覆盖系统 — 模块化架构 + 骨骼覆盖下沉 | 已完成（P0+P1+P2+P3 全部实施并通过验证：tsc + 1557 单测 + ESLint）。2026-07-17 补充：`_computeOverride` `weight≥1` 语义修正为复合父骨传播旋转，详见 §十一。基础层已交付；**Phase 2 打磨（冲突可见性用户语言化、骨骼搜索框、applyOverride 统一函数）见 §十·一**，相关 P2/P3/P4 修复已于 2026-07-23 设计评审落地。 |
 | ADR-115 | 风格化水体竞品调研与波光粼粼增强方向 | P1+P2+P3+P4 已完成（2026-07-22）；P5 海洋波澜专项已实施。 |
 | ADR-114 | 地面反射增强 — 从平面近似到 PBR 材质 | 已完成（Phase 1 ✅ 2026-07-16 — PBR 材质 + 程序化木纹 + UI 面板 + i18n + Go/TS 状态同步；Phase 2 ✅ 2026-07-16 — 反射模糊(mipmap+roughness) + 法线扭曲(bumpTexture) + 低质量守卫；Phase 3 ✅ 2026-07-16 — 接触阴影(屏幕空间 ray marching 后处理) + 中/高质量守卫） |
 | ADR-113 | 体积云延展地平线与画质/性能升级 | 完成（前置渲染分层 + Phase A slab-uniform 步长/地平线延展/地面交界/距离雾 + Phase B Weather Map/Erosion + Phase C 双瓣散射/Powder/高度梯度日落着色 + Phase D1 Blue-noise dither 全部落地） |
