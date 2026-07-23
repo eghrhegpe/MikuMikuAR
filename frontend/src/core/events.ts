@@ -461,13 +461,21 @@ export function showUpdateToast(latest: string, url: string): void {
                 void browser.openURL(url);
             }
             toast.classList.remove('visible');
+            toast.setAttribute('inert', '');
+            toast.setAttribute('aria-hidden', 'true');
         };
     }
     const ignoreBtn = toast.querySelector<HTMLButtonElement>('.toast-ignore-btn');
     if (ignoreBtn) {
-        ignoreBtn.onclick = () => toast.classList.remove('visible');
+        ignoreBtn.onclick = () => {
+            toast.classList.remove('visible');
+            toast.setAttribute('inert', '');
+            toast.setAttribute('aria-hidden', 'true');
+        };
     }
     toast.classList.add('visible');
+    toast.removeAttribute('inert');
+    toast.setAttribute('aria-hidden', 'false');
 }
 
 // ======== Drag & Drop Import ========
