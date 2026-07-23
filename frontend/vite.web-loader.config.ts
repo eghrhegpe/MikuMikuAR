@@ -21,6 +21,10 @@ export default defineConfig({
         alias: {
             '@': path.resolve(__dirname, 'src'),
             '@bindings': path.resolve(__dirname, 'bindings'),
+            // @wailsio/runtime 替换为 no-op 桩：web-loader 不依赖 Wails 运行时，
+            // 避免其 loadOptionalScript → HEAD /wails/custom.js 探测污染浏览器 bundle。
+            // go-adapter 在 web 入口下被 __MMKU_WEB__ 短路，永不加载。
+            '@wailsio/runtime': path.resolve(__dirname, 'src/web-loader/wails-runtime-stub.ts'),
         },
     },
     server: {
