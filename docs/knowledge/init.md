@@ -31,4 +31,4 @@ MikuMikuAR 前端应用的启动引导入口。`bootstrap()` 在 Wails 就绪后
 - 依赖 `platform` 检测平台特性。
 - 依赖 `shortcut-registry` 加载快捷键绑定。
 - 依赖 `render-loop` 启动渲染。
-- 依赖 `scene/env/env-bridge` 同步环境状态。
+- 依赖 `scene/env/env-bridge`（[环境调度器](./env-dispatcher.md)）同步环境状态。

@@ -29,8 +29,8 @@ adr: []
 - `_disableGroundRippleTexture(mat)` — 禁用地面涟漪贴图。
 
 ## 与其他子系统关系
-- 依赖 `env-terrain` 的 FBM 噪声与高度图生成。
-- 依赖 `env-texture` 的统一 canvas 贴图工厂。
-- 依赖 `env-reflection` 的平面反射质量预设。
-- 依赖 `env-context` 的上下文与环境系统引用。
+- 依赖 [`env-terrain`](./env-terrain.md) 的 FBM 噪声与高度图生成。
+- 依赖 [`env-texture`](./env-texture.md) 的统一 canvas 贴图工厂。
+- 依赖 [`env-reflection`](./env-reflection.md) 的平面反射质量预设。
+- 依赖 [`env-context`](./env-context.md) 的上下文与环境系统引用。
 - 地面涟漪与水系统（`env-water`）联动，通过 `env-impl` 注册更新。

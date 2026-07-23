@@ -32,6 +32,6 @@ adr:
 - `_createPersonalLightIndicator(settings)` / `_updatePersonalLightIndicator(id)` — 灯光指示器。
 
 ## 与其他子系统关系
-- 依赖 `lighting-state` 的灯光状态管理。
-- 依赖 `light-cone` 的光锥渲染。
-- 依赖 `transform-pick` 的变换元数据。
+- 依赖 [`lighting-state`](./lighting-state.md) 的灯光状态管理。
+- 依赖 [`light-cone`](./light-cone.md) 的光锥渲染。
+- 依赖 [`transform-pick`](./transform-pick.md) 的变换元数据。

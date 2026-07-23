@@ -29,4 +29,4 @@ adr:
   - `reset()` — 重置恢复链路状态（弹窗关闭时调用，不重置 loading 状态）。
 
 ## 与其他子系统关系
-- 被 `library-browse`（恢复导航）、`library-actions`（解压守卫）、`library-core` 引用。
+- 被 [`library-browse`](./library-browse.md)（恢复导航）、`library-actions`（解压守卫）、`library-core` 引用。

@@ -28,5 +28,5 @@ adr:
 
 ## 与其他子系统关系
 - 依赖 `library-core` 的存储模式切换与库刷新。
-- 依赖 `settings-actions` 的 `SETTINGS_ACTIONS` 动作分发。
+- 依赖 [`settings-actions`](./settings-actions.md) 的 `SETTINGS_ACTIONS` 动作分发。
 - 依赖 `wails-bindings` 的后端操作。

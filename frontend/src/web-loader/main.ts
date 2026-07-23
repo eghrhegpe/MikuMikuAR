@@ -6,6 +6,11 @@
  * 拖拽 .pmx 或 .zip 文件即可加载。
  */
 
+// ======== ADR-176 Web 入口短路标记 ========
+// 置于所有业务 import 之前：resolveBackend() 读到此标记直接选 browser-adapter，
+// 跳过 awaitWailsBridge 的 3s 桥接注入等待（纯 Web 下 window.wails 永不注入）。
+(globalThis as { __MMKU_WEB__?: boolean }).__MMKU_WEB__ = true;
+
 // ======== Babylon.js 核心 ========
 import { Engine } from '@babylonjs/core/Engines/engine';
 import { Scene } from '@babylonjs/core/scene';

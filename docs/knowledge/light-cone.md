@@ -31,5 +31,5 @@ adr:
 - Additive blending，不写深度（避免遮挡其他透明物体）。
 
 ## 与其他子系统关系
-- 被 `lighting.ts` 的舞台灯光系统引用。
+- 被 `lighting.ts` 的[舞台灯光系统](./lighting-stage.md)引用。
 - 依赖 `dispose-helpers` 的 `safeDispose` 释放资源。

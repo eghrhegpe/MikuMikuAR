@@ -1,5 +1,5 @@
 ---
-kind: zh_CN
+kind: zh_cn
 name: 简体中文语言包
 category: core
 scope:
@@ -15,6 +15,9 @@ adr:
 
 ## 核心职责
 - `zh-CN.ts` — 简体中文语言键值映射（`Record<string, string>`）。
+
+## 对外 API（节选）
+- `zhCN` — 包含约 1800 个键值对的简体中文语言对象，被 `t.ts` 按需加载。
 
 ## 导出
 - `zhCN` — 包含约 1800 个键值对的简体中文语言对象。

@@ -26,5 +26,5 @@ adr:
 - `SceneEventKey` — SCENE_EVENTS 各取值的联合类型。
 
 ## 与其他子系统关系
-- 被 `ui-slider-controller` 等 UI 组件引用。
+- 被 [`ui-slider-controller`](./ui-slider-controller.md) 等 UI 组件引用。
 - 被场景事件调度模块引用。

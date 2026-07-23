@@ -59,15 +59,94 @@ adr:                 # 关联决策（可选）
 
 跑法：`node scripts/check-doc-drift.mjs`（或 `--json`）。可接 CI 卡点。
 
-## 卡片索引（首批）
+## 卡片索引（65 张，按 category 分组）
+
+### 环境系统（env）
 
 | 卡片 | 模块 | 关联 ADR |
 |------|------|----------|
-| [quality-profile](./quality-profile.md) | `scene/render/quality-profile.ts` | ADR-174 |
-| [env-wetness](./env-wetness.md) | `scene/env/env-wetness.ts` | ADR-172 |
-| [env-reflection](./env-reflection.md) | `scene/env/env-reflection.ts` | ADR-151/152 |
-| [env-context](./env-context.md) | `scene/env/env-context.ts` | — |
-| [scene-drag-levels](./scene-drag-levels.md) | `menus/scene-drag-levels.ts` | ADR-171 |
-| [bone-override-store](./bone-override-store.md) | `scene/motion/bone-override-store.ts` | ADR-084 |
-| [motion-pipeline](./motion-pipeline.md) | `scene/motion/motion-pipeline.ts` | ADR-129 |
-| [perception-observer](./perception-observer.md) | `scene/motion/perception-observer.ts` | ADR-162/166 |
+| [道具骨骼锚定系统](./accessory.md) | `scene/env/accessory.ts` | — |
+| [环境系统上下文](./env-context.md) | `scene/env/env-context.ts` | — |
+| [环境调度器](./env-dispatcher.md) | `scene/env/env-dispatcher.ts` | ADR-138 |
+| [地面系统](./env-ground.md) | `scene/env/env-ground.ts` | — |
+| [反射系统](./env-reflection.md) | `scene/env/env-reflection.ts` | ADR-151/152 |
+| [天空系统](./env-sky.md) | `scene/env/env-sky.ts` | — |
+| [地形生成器](./env-terrain.md) | `scene/env/env-terrain.ts` | — |
+| [统一贴图工厂](./env-texture.md) | `scene/env/env-texture.ts` | ADR-092 |
+| [Babylon.js 类型逃逸封装](./env-type-helpers.md) | `scene/env/env-type-helpers.ts` | — |
+| [湿身效果系统](./env-wetness.md) | `scene/env/env-wetness.ts` | ADR-172 |
+| [镜面道具](./mirror-debug.md) | `scene/env/mirror-debug.ts` | ADR-128 |
+| [道具系统](./props.md) | `scene/env/props.ts` | — |
+
+### 渲染系统（rendering）
+
+| 卡片 | 模块 | 关联 ADR |
+|------|------|----------|
+| [WebXR 能力探测](./ar-webxr-probe.md) | `scene/ar/ar-webxr-probe.ts` | — |
+| [反 Y 轴指针输入](./invertablePointersInput.md) | `scene/camera/invertablePointersInput.ts` | ADR-035 |
+| [光锥网格](./light-cone.md) | `scene/render/light-cone.ts` | ADR-152 |
+| [个人灯光跟随](./lighting-follow.md) | `scene/render/lighting-follow.ts` | ADR-168 |
+| [阴影生成器](./lighting-shadow.md) | `scene/render/lighting-shadow.ts` | — |
+| [舞台灯光系统](./lighting-stage.md) | `scene/render/lighting-stage.ts` | — |
+| [灯光模块状态对象](./lighting-state.md) | `scene/render/lighting-state.ts` | ADR-159 |
+| [太阳圆盘可视化](./lighting-sun.md) | `scene/render/lighting-sun.ts` | — |
+| [灯光预设过渡动画](./lighting-tween.md) | `scene/render/lighting-tween.ts` | — |
+| [性能降级 — 环境桥接](./performance-env-bridge.md) | `scene/render/performance-env-bridge.ts` | ADR-130 |
+| [质量维度与配置系统](./quality-profile.md) | `scene/render/quality-profile.ts` | ADR-174 |
+| [缩略图渲染](./thumbnail-capture.md) | `scene/manager/thumbnail-capture.ts` | — |
+| [变换适配器注册表](./transform-adapter.md) | `scene/transform/transform-adapter.ts` | ADR-126 |
+| [变换拾取系统](./transform-pick.md) | `scene/transform/transform-pick.ts` | — |
+
+### 动作系统（motion）
+
+| 卡片 | 模块 | 关联 ADR |
+|------|------|----------|
+| [骨骼覆盖存储（多模块仲裁）](./bone-override-store.md) | `scene/motion/bone-override-store.ts` | ADR-084 |
+| [动作管线（逐帧合成）](./motion-pipeline.md) | `scene/motion/motion-pipeline.ts` | ADR-129 |
+| [感知观察者（感知层）](./perception-observer.md) | `scene/motion/perception-observer.ts` | ADR-162/166 |
+
+### UI/菜单（ui）
+
+| 卡片 | 模块 | 关联 ADR |
+|------|------|----------|
+| [资源库浏览弹窗](./library-browse.md) | `menus/library-browse.ts` | — |
+| [资源库会话状态单例](./library-session-store.md) | `menus/library-session-store.ts` | ADR-135 |
+| [动作绑定 UI](./motion-binding-ui.md) | `menus/motion-binding-ui.ts` | — |
+| [动作详情 UI](./motion-detail-ui.md) | `menus/motion-detail-ui.ts` | — |
+| [模型广场创作者列表](./plaza-creators.md) | `menus/plaza-creators.ts` | — |
+| [模型广场 UI 辅助函数](./plaza-thumbnail.md) | `menus/plaza-thumbnail.ts` | — |
+| [场景拖拽层级菜单](./scene-drag-levels.md) | `menus/scene-drag-levels.ts` | ADR-171 |
+| [场景菜单共享状态](./scene-menu-state.md) | `menus/scene-menu-state.ts` | — |
+| [设置 — 关于页面](./settings-about.md) | `menus/settings-about.ts` | ADR-157 |
+| [设置动作映射表](./settings-actions.md) | `menus/settings-actions.ts` | ADR-157 |
+| [设置 — 操控页面](./settings-controls.md) | `menus/settings-controls.ts` | ADR-157 |
+| [设置 — 画面页面](./settings-graphics.md) | `menus/settings-graphics.ts` | ADR-157 |
+| [设置 — 媒体页面](./settings-media.md) | `menus/settings-media.ts` | ADR-157 |
+| [设置 — 资源页面](./settings-resources.md) | `menus/settings-resources.ts` | ADR-157 |
+| [设置 — 系统页面](./settings-system.md) | `menus/settings-system.ts` | ADR-157 |
+
+### 核心基础设施（core）
+
+| 卡片 | 模块 | 关联 ADR |
+|------|------|----------|
+| [颜色工具函数](./color-helpers.md) | `core/color-helpers.ts` | — |
+| [开发环境 E2E 钩子](./dev-hooks.md) | `core/dev-hooks.ts` | ADR-102 |
+| [安全释放工具](./dispose-helpers.md) | `core/dispose-helpers.ts` | ADR-146 |
+| [事件处理与导航系统](./events.md) | `core/events.ts` | — |
+| [Go 错误翻译](./goerr.md) | `core/i18n/goerr.ts` | ADR-117 |
+| [应用启动引导](./init.md) | `core/init.ts` | — |
+| [国际化语言状态](./locale.md) | `core/i18n/locale.ts` | ADR-059 |
+| [轻量日志工具](./logger.md) | `core/logger.ts` | ADR-141 |
+| [安全调用工具](./safe-call.md) | `core/safe-call.ts` | ADR-146 |
+| [应用快捷键定义](./shortcut-app.md) | `core/shortcut-app.ts` | ADR-102 |
+| [缩略图缓存 key 推导](./thumbnail-key.md) | `scene/manager/thumbnail-key.ts` | — |
+| [UI 与场景常量](./ui-constants.md) | `core/ui-constants.ts` | ADR-143 |
+| [焦点陷阱工具](./ui-focus-trap.md) | `core/ui-focus-trap.ts` | ADR-153 |
+| [键盘导航工具](./ui-keyboard-nav.md) | `core/ui-keyboard-nav.ts` | ADR-153 |
+| [预设面板复合组件](./ui-preset.md) | `core/ui-preset.ts` | — |
+| [滑块输入控制器](./ui-slider-controller.md) | `core/ui-slider-controller.ts` | — |
+| [UI 持久化状态](./ui-state.md) | `core/ui-state.ts` | ADR-141 |
+| [文件监控导入](./watch-import.md) | `core/watch-import.ts` | ADR-102 |
+| [统一风场辅助函数](./wind-utils.md) | `core/wind-utils.ts` | — |
+| [简体中文语言包](./zh-CN.md) | `core/i18n/locales/zh-CN.ts` | ADR-059 |
+| [繁体中文语言包](./zh-TW.md) | `core/i18n/locales/zh-TW.ts` | ADR-059 |

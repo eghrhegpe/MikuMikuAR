@@ -27,6 +27,6 @@ adr: []
 - `applyElevationColoring` — 按顶点高度插值三段色（低谷深绿→山腰棕→峰顶白），写入 VertexBuffer.ColorKind。
 
 ## 与其他子系统关系
-- 被 `env-ground` 的 `applyGround` 调用以创建地形模式地面。
-- 依赖 `env-texture` 的 `createCanvasDataURL` 生成高度图 data URL。
-- 依赖 `env-ground` 的 `_effectiveBumpLevel` 计算法线强度。
+- 被 [`env-ground`](./env-ground.md) 的 `applyGround` 调用以创建地形模式地面。
+- 依赖 [`env-texture`](./env-texture.md) 的 `createCanvasDataURL` 生成高度图 data URL。
+- 依赖 [`env-ground`](./env-ground.md) 的 `_effectiveBumpLevel` 计算法线强度。

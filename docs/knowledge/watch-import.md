@@ -27,4 +27,4 @@ adr:
 ## 与其他子系统关系
 - 依赖 `wails-bindings` 的 `ImportLocalFile` 与 `Events`。
 - 依赖 `menus/library` 的 `refreshLibrary` 刷新库列表。
-- 依赖 `safe-call` 安全执行异步刷新。
+- 依赖 [`safe-call`](./safe-call.md) 安全执行异步刷新。

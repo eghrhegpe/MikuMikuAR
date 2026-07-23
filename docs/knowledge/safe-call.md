@@ -22,5 +22,5 @@ adr:
 - `safeCallAsync(tag, msg, fn)` — 安全执行异步函数，异常时 logWarn，Promise 解析为 undefined（不 reject）。
 
 ## 与其他子系统关系
-- 依赖 `logger.ts` 记录警告日志。
-- 被各子系统（watch-import、events 等）广泛引用。
+- 依赖 [`logger.ts`](./logger.md) 记录警告日志。
+- 被各子系统（[`watch-import`](./watch-import.md)、[`events`](./events.md) 等）广泛引用。

@@ -25,5 +25,5 @@ adr: []
 - `_envSys` — 环境系统内部聚合对象（各 env 子模块的运行时句柄）。
 
 ## 与其他子系统关系
-- 是 `env-wetness` / `env-reflection` / 灯光 / 天空 / 水面等 env 模块的共享底座。
+- 是 [`env-wetness`](./env-wetness.md) / [`env-reflection`](./env-reflection.md) / 灯光 / 天空 / 水面等 env 模块的共享底座。
 - 初始化顺序须在场景与渲染管线就绪后调用，否则 `getScene()` 返回未定义。

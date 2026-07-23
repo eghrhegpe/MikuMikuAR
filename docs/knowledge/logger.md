@@ -22,4 +22,4 @@ adr:
 - `logError(tag, message, err?)` — error 级别日志（走 `console.error`），err 可选。
 
 ## 与其他子系统关系
-- 被 `safe-call.ts` 等依赖，是项目内日志记录的唯一入口。
+- 被 [`safe-call.ts`](./safe-call.md) 等依赖，是项目内日志记录的唯一入口。

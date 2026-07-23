@@ -27,4 +27,4 @@ adr:
 ## 与其他子系统关系
 - `env-bridge` 在 `setEnvState` 后调用 `dispatchEnvChange`。
 - `env-impl` 的 `ensureEnvUpdateObserver` 每帧调用 `runSceneTickCallbacks`。
-- 各 env 子系统（env-water / env-sky / env-ground 等）通过 `registerEnvCallback` 注册响应。
+- 各 env 子系统（env-water / [`env-sky`](./env-sky.md) / [`env-ground`](./env-ground.md) 等）通过 `registerEnvCallback` 注册响应。

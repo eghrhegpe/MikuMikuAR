@@ -23,6 +23,6 @@ adr: []
 - `_ensureSunDisc()` — 惰性创建太阳圆盘网格（Sphere + StandardMaterial，emissiveColor 发光，disableLighting）。
 
 ## 与其他子系统关系
-- 状态集中于 `lighting-state` 的 `lightingState.sunDisc`。
+- 状态集中于 [`lighting-state`](./lighting-state.md) 的 `lightingState.sunDisc`。
 - 被 `lighting.ts` 在初始化与 dispose 时调用。
-- 被 `env-sky.ts` 的 `disposeSky` 调用。
+- 被 [`env-sky.ts`](./env-sky.md) 的 `disposeSky` 调用。

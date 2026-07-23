@@ -29,6 +29,6 @@ adr: []
 - `loadSkyCube` — 加载六面体 HDR 贴图并设置环境贴图强度。
 
 ## 与其他子系统关系
-- 依赖 `env-context` 获取场景引用与静态资源路径。
+- 依赖 [`env-context`](./env-context.md) 获取场景引用与静态资源路径。
 - 太阳光晕通过 `ensureEnvUpdateObserver` 注册每帧更新。
 - 释放时调用 `_disposeSunDisc` 清理 `render/lighting` 的太阳光晕。

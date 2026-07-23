@@ -26,5 +26,5 @@ adr:
 
 ## 与其他子系统关系
 - 依赖 `scene/camera/camera` 的 `refreshCameraUserSettings` 应用相机设置。
-- 依赖 `shortcut-registry` 的快捷键注册表。
+- 依赖 `shortcut-registry`（[应用快捷键定义](./shortcut-app.md)）的快捷键注册表。
 - 依赖 `render-menu` 渲染菜单 Schema。

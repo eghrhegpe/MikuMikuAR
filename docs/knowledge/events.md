@@ -29,7 +29,7 @@ adr: []
 - `navActions` / `navLabels` — 导航按钮映射表，被 `shortcut-app.ts` 消费。
 
 ## 与其他子系统关系
-- 依赖 `shortcut-registry` 获取快捷键列表。
+- 依赖 [`shortcut-registry`](./shortcut-app.md) 获取快捷键列表。
 - 依赖 `menus/library` 弹窗模型/动作库。
 - 依赖 `platform` 打开外部 URL。
-- 依赖 `safe-call` 安全执行异步操作。
+- 依赖 [`safe-call`](./safe-call.md) 安全执行异步操作。

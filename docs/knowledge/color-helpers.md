@@ -22,4 +22,4 @@ adr: []
 - `rgbString(c)` — 将 `Color3` 转为 CSS `rgb(r, g, b)` 字符串（0–255 整数）。
 
 ## 与其他子系统关系
-- 被 `init.ts`、`settings-shared.ts` 等模块引用，是主题色解析的唯一实现。
+- 被 [`init.ts`](./init.md)、`settings-shared.ts` 等模块引用，是主题色解析的唯一实现。

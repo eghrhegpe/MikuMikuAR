@@ -28,6 +28,6 @@ adr: []
 ## 与其他子系统关系
 - 依赖 `propRegistry`（`core/config`）管理与持久化。
 - 依赖 `manager/material` 注册/注销材质目标。
-- 依赖 `transform/transform-adapter` 注册变换适配器。
-- 依赖 `manager/thumbnail-capture` 渲染道具缩略图。
+- 依赖 `transform/transform-adapter`（[变换适配器注册表](./transform-adapter.md)）注册变换适配器。
+- 依赖 `manager/thumbnail-capture`（[缩略图渲染](./thumbnail-capture.md)）渲染道具缩略图。
 - 道具加载通过 `readFileBytes`（wails 绑定）读取文件。
