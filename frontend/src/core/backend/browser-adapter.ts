@@ -172,12 +172,15 @@ async function _listModels(): Promise<ModelEntry[]> {
     // 键规约（ADR-176 Phase 3，与 web-loader/library.ts 共享）：
     //   `entry:<name>` = 模型元数据；`file:<name>` = 原档字节；`recent` = 最近列表。
     // 仅列 entry: 前缀，避免把原档字节 / recent 数组误当 ModelEntry 返回。
-    const keys = (await idbKeys('models')).filter((k) => k.startsWith('entry:'));
+    const allKeys = await idbKeys('models');
+    const keys = allKeys.filter((k) => k.startsWith('entry:'));
+    console.info(`[web-scan] _listModels: IDB 共 ${allKeys.length} 个键, 其中 entry: ${keys.length} 个`);
     const out: ModelEntry[] = [];
     for (const k of keys) {
         const m = await idbGet<ModelEntry>('models', k);
         if (m) out.push(m);
     }
+    console.info(`[web-scan] _listModels: 返回 ${out.length} 个 ModelEntry`);
     return out;
 }
 
@@ -307,7 +310,11 @@ const _CATEGORY_BY_EXT: Record<string, { subdir: string; type: string; format: s
 const _SUPPORTED_EXTS_RE = /\.(pmx|vmd|mp3|wav|ogg|flac|wma|x|vpd|zip)$/i;
 
 /** FSA 目录递归扫描：保留目录结构，按目录约定分类（对齐桌面端） */
-async function _scanDirIntoIDB(dirHandle: FileSystemDirectoryHandle, relPath = ''): Promise<void> {
+async function _scanDirIntoIDB(
+    dirHandle: FileSystemDirectoryHandle,
+    relPath = '',
+    parentPmxStems: string[] = []
+): Promise<void> {
     const dir = dirHandle as FsaDirHandle;
     // 第一遍：收集本层所有文件信息（FileSystemDirectoryHandle 的 values() 是有状态的，一次读完）
     const files: { name: string; handle: FileSystemFileHandle }[] = [];
@@ -319,6 +326,9 @@ async function _scanDirIntoIDB(dirHandle: FileSystemDirectoryHandle, relPath = '
             subDirs.push(entry.name);
         }
     }
+    console.info(
+        `[web-scan] 目录 "${relPath || '(根)'}": ${files.length} 个文件, ${subDirs.length} 个子目录 [${subDirs.join(', ')}]`
+    );
 
     // 判定本层类别：顶层目录名匹配已知类别 → 按目录约定分类
     const topDir = relPath.split('/')[0]?.toLowerCase() || '';
@@ -328,6 +338,8 @@ async function _scanDirIntoIDB(dirHandle: FileSystemDirectoryHandle, relPath = '
     const pmxStems = files
         .filter((f) => /\.pmx$/i.test(f.name))
         .map((f) => f.name.replace(/\.pmx$/i, ''));
+    // 合并父层 PMX stem：子目录纹理关联到最近的祖先 PMX
+    const effectivePmxStems = pmxStems.length > 0 ? pmxStems : parentPmxStems;
     const TEXTURE_EXT = /\.(png|jpg|jpeg|bmp|tga|dds|tif|tiff)$/i;
     const textureFiles = files.filter((f) => TEXTURE_EXT.test(f.name));
 
@@ -358,34 +370,42 @@ async function _scanDirIntoIDB(dirHandle: FileSystemDirectoryHandle, relPath = '
                 : relPath ? `web://selected-dir/${relPath}` : 'web://selected-dir';
         }
 
+        // [bugfix:zip-container] zip 文件必须标记 container='zip'，
+        // 否则 loadModelNormal 不走 ExtractZip 解压，直接把 zip 字节喂给 PMX 解析器。
+        const container = ext === 'zip' ? 'zip' : 'file';
+
         await idbSet('models', `entry:${stem}`, {
             dir: virtualDir,
             file_path: `${virtualDir}/${name}`,
             name_jp: stem, name_en: stem,
             comment: '', has_thumb: false,
             type, format,
-            container: 'file', zip_inner: '', category: '', source: '',
+            container, zip_inner: '', category: '', source: '',
             name: stem, fileName: name, kind: format,
             size: bytes.byteLength, savedAt: Date.now(),
         });
+        console.info(`[web-scan]   写入 entry:${stem} → dir=${virtualDir} type=${type} format=${format} container=${container}`);
     }
 
     // 第三遍：为本层的每个 PMX 写入同目录纹理引用
-    if (pmxStems.length > 0 && textureFiles.length > 0) {
+    // [bugfix:texture-subdir] 使用 effectivePmxStems（含父层），
+    // 使子目录纹理（如 tex/face.png）也能关联到父目录的 PMX。
+    if (effectivePmxStems.length > 0 && textureFiles.length > 0) {
         for (const { name, handle } of textureFiles) {
             const file = await handle.getFile();
             const texBytes = new Uint8Array(await file.arrayBuffer());
-            for (const stem of pmxStems) {
+            for (const stem of effectivePmxStems) {
                 await idbSet('models', `dir:${stem}:${name}`, texBytes);
             }
         }
+        console.info(`[web-scan]   纹理关联: ${textureFiles.length} 个纹理 → PMX [${effectivePmxStems.join(', ')}]`);
     }
 
-    // 递归子目录
+    // 递归子目录（传递本层 PMX stem，使子目录纹理能关联到祖先 PMX）
     for (const dirName of subDirs) {
         const subHandle = await dir.getDirectoryHandle(dirName);
         const subRelPath = relPath ? `${relPath}/${dirName}` : dirName;
-        await _scanDirIntoIDB(subHandle, subRelPath);
+        await _scanDirIntoIDB(subHandle, subRelPath, effectivePmxStems);
     }
 }
 
@@ -841,7 +861,9 @@ export const browserAdapter: BackendService = {
         const picker = (window as { showDirectoryPicker?: () => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker;
         if (typeof picker !== 'function') throw new NotSupportedError('SelectDir');
         _fsaRootHandle = await picker();
+        console.info(`[web-scan] SelectDir: 用户选择目录 "${_fsaRootHandle.name}"，开始扫描...`);
         await _scanDirIntoIDB(_fsaRootHandle);
+        console.info('[web-scan] SelectDir: 扫描完成');
         return 'web://selected-dir';
     },
     async SelectImportFile(): Promise<string> {
