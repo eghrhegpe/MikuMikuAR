@@ -94,3 +94,25 @@ func (a *App) DownloadFromPlaza(url, filename string) (DownloadResult, error) {
 - **站内 JS 拦截失效**：部分站用 `download` 属性或 JS 动态生成 blob URL 下载，静态正则拦截不到 → 降级走 fsnotify 兜底
 - **大文件下载阻塞**：Go 端同步下载会阻塞 Wails 线程 → 改为 goroutine + 前端轮询进度
 - **CORS preflight**：注入的 script 与父窗口同源（都在 127.0.0.1），postMessage 无跨域限制
+
+---
+
+## 已知问题
+
+### Bug 1：`TestDownloadFromPlaza_SizeLimit` 污染用户配置（2026-07-23 修复）
+
+**根因**：`internal/app/proxy_test.go` 的 `TestDownloadFromPlaza_SizeLimit` 用 `t.TempDir()` 作为 `ResourceRoot`，但**漏调 `testConfigDir(t)`** 隔离配置目录，导致 `updateConfig` 把临时目录路径 `TestDownloadFromPlaza_SizeLimit4042439480\001` 写入用户真实的 `%APPDATA%/MikuMikuAR/config.json` 的 `resource_root` 字段。
+
+同文件 `TestDownloadFromPlaza`（第140行）有正确的 `testConfigDir(t)` 隔离，SizeLimit 测试是漏网的。
+
+**影响**：`resource_root` 指向已失效的 `%TEMP%` 临时目录，`ScanModelDir` 扫描错误目录导致音乐库/道具列表为空，设置页显示乱码路径。
+
+**修复**：补上 `testConfigDir(t)` 调用（commit `5e66ea3f`）。详见 `docs/buglog/2026-07-17-adr124-file-access-migration.md` Bug 5。
+
+### Bug 2：`SelectDir` 起始目录失效导致对话框打不开（2026-07-23 修复）
+
+**根因**：Bug 1 污染 `resource_root` 后，`getLastDir("library")` 解析相对路径 `./PMX` 时用失效的 `resource_root` 拼出 `...\Temp\TestDownloadFromPlaza_SizeLimit4042439480\001\PMX`，`SelectDir` 直接把失效路径传给 `dialog.SetDirectory` → WebView2 `GetFileAttributesEx` 失败（HTTP 422 Unprocessable Entity）→ 对话框无法弹出 → 用户无法重选根目录，形成死锁。
+
+**修复**：`SelectDir` 调用 `dialog.SetDirectory` 前用 `os.Stat` 校验起始目录存在，失效则跳过设置，WebView2 回退到默认起始位置（commit `124ff9d2`）。
+
+**教训**：下载测试的 `ResourceRoot` 设置必须配合 `testConfigDir(t)` 隔离；`SelectDir` 类对话框不应信任传入路径的有效性。

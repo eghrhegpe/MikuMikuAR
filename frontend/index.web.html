@@ -25,7 +25,7 @@
     <div id="app">
         <canvas id="renderCanvas" role="img" aria-label="3D 场景" tabindex="0"></canvas>
 
-<div id="loading" style="position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;flex-direction:column;pointer-events:none;">
+<div id="loading" role="status" aria-live="polite" aria-busy="true" style="position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;flex-direction:column;pointer-events:auto;">
 <div class="spinner"></div>
 <span id="loadingText">正在加载 babymmd ...</span>
 </div>

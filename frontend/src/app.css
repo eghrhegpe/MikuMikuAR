@@ -204,6 +204,12 @@
 
     /* 警告色 */
     --warn: #f0a020;
+    /* [bugfix:css-token] 补全被引用但未定义的 token，避免回退浏览器默认样式 */
+    --success: #6fcf97;
+    --warning: var(--warn);
+    /* 次级表面色（下拉框/卡片背景）+ 边框色 */
+    --surface2: rgba(255, 255, 255, 0.06);
+    --border: var(--border-color, rgba(255, 255, 255, 0.1));
 
     /* Plaza 表面 / 层级 */
     --plaza-teal-rgb: 57, 197, 187;
@@ -3168,6 +3174,45 @@ textarea,
 .mmd-dialog-cancel {
     background: rgba(255, 255, 255, 0.1);
     color: #ccc;
+}
+
+/* ===== 双字段对话框（添加映射等）===== */
+#mmd-dialog-overlay-2 {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: var(--overlay-bg);
+    backdrop-filter: var(--overlay-blur);
+    -webkit-backdrop-filter: var(--overlay-blur);
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+}
+#mmd-dialog-overlay-2.mmd-dialog-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+#mmd-dialog-overlay-2.mmd-dialog-visible .mmd-dialog {
+    transform: translateY(0) scale(1);
+}
+.mmd-dialog-2fields {
+    display: flex;
+    flex-direction: column;
+    gap: calc(10px * var(--ui-scale));
+    margin-bottom: calc(14px * var(--ui-scale));
+}
+.mmd-dialog-field {
+    display: flex;
+    flex-direction: column;
+    gap: calc(4px * var(--ui-scale));
+}
+.mmd-dialog-field-label {
+    font-size: var(--font-ui);
+    color: #aaa;
+    font-weight: 500;
 }
 
 /* ===== 通用工具类 ===== */
