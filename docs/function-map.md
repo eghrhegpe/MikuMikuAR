@@ -7,9 +7,9 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 65 | 502 |
-| 3D 场景 | 98 | 1055 |
-| 菜单 & UI | 65 | 339 |
+| 核心基础设施 | 65 | 504 |
+| 3D 场景 | 98 | 1057 |
+| 菜单 & UI | 65 | 340 |
 | 换装 & 音频 | 3 | 38 |
 | 动作算法 | 17 | 129 |
 | 物理系统 | 2 | 14 |
@@ -40,6 +40,8 @@
 | `idbKeys()` | `core/backend/idb` | — |
 | `idbSet()` | `core/backend/idb` | — |
 | `openDB()` | `core/backend/idb` | — |
+| `getCachedCapabilities()` | `core/backend/index` | — |
+| `getCapabilities()` | `core/backend/index` | — |
 | `resolveBackend()` | `core/backend/index` | — |
 | `BackendCapabilities()` | `core/backend/types` | — |
 | `BackendService()` | `core/backend/types` | — |
@@ -604,6 +606,7 @@
 | `defaultCameraPreset()` | `scene/camera/camera` | — |
 | `deriveLegacyMode()` | `scene/camera/camera` | — |
 | `getAutoCameraBeatsPerSwitch()` | `scene/camera/camera` | — |
+| `getBoneLockDamping()` | `scene/camera/camera` | — |
 | `getCameraBehavior()` | `scene/camera/camera` | — |
 | `getCameraControl()` | `scene/camera/camera` | — |
 | `getCameraMode()` | `scene/camera/camera` | — |
@@ -633,6 +636,7 @@
 | `restoreAutoCameraState()` | `scene/camera/camera` | — |
 | `setAutoCameraBeatsPerSwitch()` | `scene/camera/camera` | — |
 | `setAutoCameraEnabled()` | `scene/camera/camera` | — |
+| `setBoneLockDamping()` | `scene/camera/camera` | — |
 | `setCameraBehavior()` | `scene/camera/camera` | — |
 | `setCameraControl()` | `scene/camera/camera` | — |
 | `setCameraPreset()` | `scene/camera/camera` | — |
@@ -1697,6 +1701,7 @@
 | `setStateValue()` | `menus/menu-schema` | — |
 | `SlideMenu()` | `menus/menu` | — |
 | `getCurrentRenderingMenu()` | `menus/menu` | — |
+| `getOpenMenus()` | `menus/menu` | — |
 | `buildBoneHierarchyLevel()` | `menus/model-detail` | — |
 | `buildModelInfoLevel()` | `menus/model-detail` | — |
 | `buildModelLevel()` | `menus/model-detail` | — |
@@ -2123,5 +2128,5 @@
 
 ---
 
-> 共 252 个文件，2090 个导出符号。
+> 共 252 个文件，2095 个导出符号。
 > 说明列（—）待知识库或人工补充。
