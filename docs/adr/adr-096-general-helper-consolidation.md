@@ -1,6 +1,6 @@
 # ADR-096: 通用 Helper 单点收敛
 
-**日期**：2026-07-13
+> **日期**: 2026-07-13
 > **状态**: 已完成
 > **关联**: ADR-095（路径归一化收敛，同批次 helper 清理）、ADR-085（feet-adjustment 数学 helper）、ADR-064（scene↔outfit 解耦，getBaseName 复用基础）
 > **影响面**: `frontend/src/core/utils.ts`、`frontend/src/core/color-helpers.ts`（新建）、`frontend/src/core/main.ts`、`frontend/src/menus/settings-shared.ts`、`frontend/src/scene/{env,render,camera,scene-serialize,scene-bundle}`、`frontend/src/outfit/outfit.ts`、`frontend/src/scene/render/performance.ts`

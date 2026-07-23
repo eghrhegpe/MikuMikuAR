@@ -1,6 +1,6 @@
 # ADR-095: 路径归一化与归属判定统一
 
-**日期**：2026-07-13
+> **日期**: 2026-07-13
 > **状态**: 已完成（批次 1–5 全落地，2026-07-13）
 > **关联**: ADR-090（路径边界判定）、ADR-018（Path Manager + 文件 I/O 审计）、ADR-045（统一加载与资源管理）、ADR-023（Android SAF 文件访问）
 > **影响面**: `frontend/src/core/fileservice.ts`(normPath，已增强)、`frontend/src/core/utils.ts`(isUnderRoot / computeLibraryRef / normPath re-export)、`frontend/src/menus/library-core.ts`、`frontend/src/scene/scene-bundle.ts`

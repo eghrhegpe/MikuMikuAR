@@ -1,6 +1,6 @@
 # ADR-034: 菜单体系大统一 — slideRow + cardContainer + lcard
 
-**日期**: 2026-07-05
+> **日期**: 2026-07-05
 > **状态**: 已完成 — 全量迁移完成，所有菜单面板统一为 slideRow/cardContainer 体系，CSS 变量集中管理
 
 ---

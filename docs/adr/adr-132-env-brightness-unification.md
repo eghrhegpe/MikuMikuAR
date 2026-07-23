@@ -1,4 +1,4 @@
-# ADR-132 环境亮度统一标量（EnvBrightness Unification）
+# ADR-132: 环境亮度统一标量（EnvBrightness Unification）
 
 - **状态**：已实施（2026-07-21 UI/i18n/预设层补齐闭环）
 - **日期**：2026-07-18

@@ -1,7 +1,7 @@
 # ADR-073: AR 地形识别 —— 原生 ARCore / ARKit 桥接
 
-**日期**：2026-07-09
-> **状态**：提案（Proposed）—— ADR-055 §3.1 方案 C「平台原生 ARCore / ARKit 桥接」的细化，远期可 reconsider
+> **日期**: 2026-07-09
+> **状态**: 提案（Proposed）—— ADR-055 §3.1 方案 C「平台原生 ARCore / ARKit 桥接」的细化，远期可 reconsider
 > **关联**：ADR-055(AR 相机模式·方案 C)、ADR-017(Android 适配)、ADR-072(WebXR 平面检测，若浏览器路径不可行的替代)
 
 ---

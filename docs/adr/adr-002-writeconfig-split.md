@@ -1,6 +1,6 @@
 # ADR-002: 配置写入分离 — writeConfig 轻写 vs writeConfigAndRescan 全量
 
-**日期**：2026-07-16
+> **日期**: 2026-07-16
 > **状态**: 已完成 — writeConfig 从 writeConfigAndRescan 拆出，SetBlenderPath 改用轻写
 
 ---

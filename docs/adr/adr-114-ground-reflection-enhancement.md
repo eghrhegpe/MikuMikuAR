@@ -2,7 +2,7 @@
 
 ## 状态
 
-**状态**: 已完成（Phase 1 ✅ 2026-07-16 — PBR 材质 + 程序化木纹 + UI 面板 + i18n + Go/TS 状态同步；Phase 2 ✅ 2026-07-16 — 反射模糊(mipmap+roughness) + 法线扭曲(bumpTexture) + 低质量守卫；Phase 3 ✅ 2026-07-16 — 接触阴影(屏幕空间 ray marching 后处理) + 中/高质量守卫）
+> **状态**: 已完成（Phase 1 ✅ 2026-07-16 — PBR 材质 + 程序化木纹 + UI 面板 + i18n + Go/TS 状态同步；Phase 2 ✅ 2026-07-16 — 反射模糊(mipmap+roughness) + 法线扭曲(bumpTexture) + 低质量守卫；Phase 3 ✅ 2026-07-16 — 接触阴影(屏幕空间 ray marching 后处理) + 中/高质量守卫）
 
 **开始日期**: 2026-07-15
 

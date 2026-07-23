@@ -1,6 +1,6 @@
 # ADR-097: 资源库浏览与恢复决策汇总（含模型记忆）
 
-**日期**：2026-07-13
+> **日期**: 2026-07-13
 > **状态**: ✅ 已实施（2026-07-13）
 > **汇总范围**：ADR-066 / ADR-090 / ADR-094 / ADR-095 中「本地模型资源库浏览与恢复」相关部分
 > **影响面**：`frontend/src/menus/library-core.ts`、`frontend/src/menus/model-detail.ts`、`frontend/src/menus/menu.ts`

@@ -1,7 +1,7 @@
 # ADR-072: AR 平面检测 —— WebXR hit-test + plane detection
 
-**日期**：2026-07-09
-> **状态**：提案（Proposed）—— ADR-055 Phase 3「WebXR 升级」的细化，待 P1 探针结果后批准
+> **日期**: 2026-07-09
+> **状态**: 提案（Proposed）—— ADR-055 Phase 3「WebXR 升级」的细化，待 P1 探针结果后批准
 > **关联**：ADR-055(AR 相机模式·Phase 3 WebXR 升级、§3.1 决策第 4 点)、ADR-017(Android 适配)、ADR-071(proc-vs 感知边界)
 
 ---

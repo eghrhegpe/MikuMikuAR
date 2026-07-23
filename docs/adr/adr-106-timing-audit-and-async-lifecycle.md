@@ -1,6 +1,6 @@
 # ADR-106: 时序审核与异步生命周期规范
 
-**状态**: ✅ 全部完成（Phase 1 ✅ + Phase 2 ✅ + Phase 3 ✅）
+> **状态**: ✅ 全部完成（Phase 1 ✅ + Phase 2 ✅ + Phase 3 ✅）
 
 > 2026-07-16 对账修正：P1 `waitForTransition` 安全网（events.ts:105 `Math.max(dur*2,500)`）与 `enqueue` 显式 onRejected（load-manager.ts）经代码核实已修复，更新从"待修复"→✅ 已完成。
 >

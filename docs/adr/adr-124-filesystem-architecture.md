@@ -1,6 +1,6 @@
 # ADR-124: 文件服务架构审计 —— 从 HTTP 中转到 ArrayBuffer 直传
 
-**日期**：2026-07-17
+> **日期**: 2026-07-17
 > **状态**: 已完成（Phase 1-3 全部落地；HTTP 文件服务保留作 fallback）
 > **背景**: 现有桌面版模型加载依赖 Go `StartFileServer` 启动本地 HTTP 服务来喂文件。`web-loader/main.ts` 已验证 `IArrayBufferFile[]` 绕过 HTTP 走内存直传的可行性。本 ADR 审计现有文件服务架构，评估分阶段去除 HTTP 中转层的路径。
 

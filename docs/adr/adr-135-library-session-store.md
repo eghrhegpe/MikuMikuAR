@@ -1,4 +1,4 @@
-# ADR-135 LibrarySessionStore — 资源库状态收敛基座
+# ADR-135: LibrarySessionStore — 资源库状态收敛基座
 
 - **状态**：✅ 已完成（P0.1 ✅ / P0.3 ✅ / P1.2 ✅ / P1.3 ✅ / P2 ✅；P0.2 loadId trace 独立于本 store）
 - **日期**：2026-07-19

@@ -1,6 +1,6 @@
 # ADR-090: 对话框默认目录记忆（按资源类型）—— 双端可用
 
-**日期**：2026-07-11 / 2026-07-12（双端重构 + 浏览器扩展）
+> **日期**: 2026-07-11 / 2026-07-12（双端重构 + 浏览器扩展）
 > **状态**: 已完成（2026-07-12）
 > **关联**: ADR-045（统一加载与资源管理）、ADR-018（PathManager + 文件 I/O 审计）、ADR-023（Android SAF 文件访问）、ADR-064（`*Dir` 包装维持现状）
 > **影响面**: `internal/dialogs/file_dialog.go`、`internal/app/app.go`（Config）、`internal/app/` 各 `Select*` 包装函数、`frontend/src/menus/menu.ts`、`frontend/src/menus/library-core.ts`
