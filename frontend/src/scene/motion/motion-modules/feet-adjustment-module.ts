@@ -31,7 +31,13 @@ const META: ModuleMeta = {
     defaults: DEFAULTS,
 };
 
-/** 声明拥有的骨骼（仅用于冲突可见性；脚 IK 由引擎直写，不经 BoneOverrideStore slot） */
+/**
+ * 声明拥有的骨骼（仅用于冲突可见性 / 冲突 banner 展示）。
+ * 注意：脚 IK 每帧由 feet-adjustment.ts 引擎直写 左/右足IK 世界坐标 + ikSolver.solve 重解，
+ * 实际优先级恒为「脚 IK 胜出」，不服从 BoneOverrideStore 的 claimBones 优先级仲裁。
+ * 因此 claimBones 仅让用户在手动 Override 同骨时看到冲突提示，但手动覆盖运行时会被脚 IK 覆盖。
+ * 这是 ADR-085 的设计（脚必须贴地），非可达成的抢占。
+ */
 const MANAGED_BONES = ['左足IK', '右足IK'];
 
 /**
@@ -48,15 +54,19 @@ export function getFeetStateForModel(modelId: string): FeetState {
     if (!entry) {
         return { ...def, enabled: false };
     }
+    // 参数类型安全收敛：schema 仅写入 number，但若存档/反序列化误带非 number 值，
+    // 退回默认值而非静默误用（NaN/string）。不使用 `Number(v) ?? def`，因 Number(undefined) 为 NaN 且 ?? 不兜底。
+    const num = (v: ParamValue | undefined, d: number): number =>
+        typeof v === 'number' ? v : d;
     return {
         enabled: entry.enabled,
-        intensity: (entry.params.intensity as number) ?? def.intensity,
-        soleHeight: (entry.params.soleHeight as number) ?? def.soleHeight,
-        jumpThreshold: (entry.params.jumpThreshold as number) ?? def.jumpThreshold,
+        intensity: num(entry.params.intensity, def.intensity),
+        soleHeight: num(entry.params.soleHeight, def.soleHeight),
+        jumpThreshold: num(entry.params.jumpThreshold, def.jumpThreshold),
         bodySmooth: def.bodySmooth,
-        footSmooth: (entry.params.footSmooth as number) ?? def.footSmooth,
-        maxAngle: (entry.params.maxAngle as number) ?? def.maxAngle,
-        reachAngle: (entry.params.reachAngle as number) ?? def.reachAngle,
+        footSmooth: num(entry.params.footSmooth, def.footSmooth),
+        maxAngle: num(entry.params.maxAngle, def.maxAngle),
+        reachAngle: num(entry.params.reachAngle, def.reachAngle),
     };
 }
 
