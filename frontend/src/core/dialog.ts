@@ -15,6 +15,26 @@
 import { t } from './i18n/t';
 import { createFocusTrap } from './ui-focus-trap';
 
+// ======== 背景冻结（inert 管理）========
+// 弹窗打开时标记 #app 内的内容为 inert，阻止 Tab/点击逃逸到背景
+let _frozenTarget: HTMLElement | null = null;
+
+function freezeBackground(exceptEl: HTMLElement): void {
+    const app = document.getElementById('app');
+    if (!app) return;
+    _frozenTarget = app;
+    app.inert = true;
+    // 弹窗自身及其 overlay 需要可交互，显式取消 inert
+    exceptEl.inert = false;
+}
+
+function unfreezeBackground(): void {
+    if (_frozenTarget) {
+        _frozenTarget.inert = false;
+        _frozenTarget = null;
+    }
+}
+
 export interface DialogOptions {
     title: string;
     message?: string;
@@ -152,12 +172,19 @@ function _showDialogInner(opts: DialogOptions): Promise<string | boolean | null>
         const cleanup = (result: string | boolean | null) => {
             _trapRestore?.();
             _trapRestore = null;
+            unfreezeBackground();
             overlay.classList.remove('mmd-dialog-visible');
             // 隐藏后恢复 pointer-events 为 CSS 默认值
             overlay.style.pointerEvents = '';
             // [bugfix:dialog-escape] 显式移除监听器（替代 { once: true }）
             document.removeEventListener('keydown', onKeyDown);
             overlay.removeEventListener('click', onBackdropClick);
+
+            // 恢复焦点到之前的元素
+            if (previousFocus && previousFocus.isConnected && typeof previousFocus.focus === 'function') {
+                previousFocus.focus();
+            }
+
             resolve(result);
         };
 
@@ -184,6 +211,9 @@ function _showDialogInner(opts: DialogOptions): Promise<string | boolean | null>
             }
         };
 
+        // 记住弹窗打开前的焦点
+        const previousFocus = document.activeElement as HTMLElement | null;
+
         // Remove old listeners by cloning
         _replaceButtonListeners(confirmBtn, cancelBtn, onConfirm, onCancel);
         // [bugfix:dialog-escape] 不用 { once: true }：任何按键（Tab/方向键）都会移除监听器，
@@ -197,6 +227,7 @@ function _showDialogInner(opts: DialogOptions): Promise<string | boolean | null>
         // Show with animation
         overlay.classList.add('mmd-dialog-visible');
         dialog.style.display = '';
+        freezeBackground(overlay);
         _trapRestore = createFocusTrap({ container: dialog, onEscape: onCancel });
     });
 }
@@ -237,6 +268,7 @@ export function showErrorAction(title: string, message: string): void {
     const cleanup = () => {
         _trapRestore?.();
         _trapRestore = null;
+        unfreezeBackground();
         overlay.classList.remove('mmd-dialog-visible');
         // [bugfix:dialog-escape] 显式移除监听器（替代 { once: true }）
         document.removeEventListener('keydown', onKey);
@@ -280,6 +312,7 @@ export function showErrorAction(title: string, message: string): void {
 
     overlay.classList.add('mmd-dialog-visible');
     dialog.style.display = '';
+    freezeBackground(overlay);
     _trapRestore = createFocusTrap({ container: dialog, onEscape: onClose });
 }
 
@@ -371,6 +404,7 @@ function getOverlay2(): HTMLDivElement {
 export function disposeOverlay2(): void {
     _trapRestore2?.();
     _trapRestore2 = null;
+    unfreezeBackground();
     if (_overlay2) {
         _overlay2.remove();
         _overlay2 = null;
@@ -409,10 +443,17 @@ export function showPrompt2(opts: Prompt2Options): Promise<[string, string] | nu
         const cleanup = (result: [string, string] | null) => {
             _trapRestore2?.();
             _trapRestore2 = null;
+            unfreezeBackground();
             overlay.classList.remove('mmd-dialog-visible');
             // [bugfix:dialog-escape] 显式移除监听器（替代 { once: true }）
             document.removeEventListener('keydown', onKeyDown);
             overlay.removeEventListener('click', onBackdropClick);
+
+            // 恢复焦点到之前的元素
+            if (previousFocus && previousFocus.isConnected && typeof previousFocus.focus === 'function') {
+                previousFocus.focus();
+            }
+
             resolve(result);
         };
 
@@ -430,6 +471,9 @@ export function showPrompt2(opts: Prompt2Options): Promise<[string, string] | nu
             }
         };
 
+        // 记住弹窗打开前的焦点
+        const previousFocus = document.activeElement as HTMLElement | null;
+
         _replaceButtonListeners(confirmBtn, cancelBtn, onConfirm, onCancel);
         // [bugfix:dialog-escape] 不用 { once: true }，改为 cleanup 显式移除
         const onBackdropClick = (e: MouseEvent) => {
@@ -441,6 +485,7 @@ export function showPrompt2(opts: Prompt2Options): Promise<[string, string] | nu
         overlay.classList.add('mmd-dialog-visible');
         dialog.style.display = '';
         fields[0].focus();
+        freezeBackground(overlay);
         _trapRestore2 = createFocusTrap({ container: dialog, onEscape: onCancel });
     });
 }

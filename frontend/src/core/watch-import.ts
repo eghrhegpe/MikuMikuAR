@@ -50,6 +50,8 @@ events.on('watch:newfile', (ev: unknown) => {
         nameEl.textContent = displayName;
     }
     toast.classList.add('visible');
+    toast.removeAttribute('inert');
+    toast.setAttribute('aria-hidden', 'false');
 
     const importBtn = toast.querySelector('.toast-import-btn') as HTMLButtonElement | null;
     if (importBtn) {
@@ -57,6 +59,8 @@ events.on('watch:newfile', (ev: unknown) => {
             importBtn.disabled = true;
             importBtn.textContent = t('main.importing');
             toast.classList.remove('visible');
+            toast.setAttribute('inert', '');
+            toast.setAttribute('aria-hidden', 'true');
             await importToLibrary(payload.path, displayName);
             importBtn.disabled = false;
             importBtn.textContent = t('main.importImport');
@@ -67,9 +71,15 @@ events.on('watch:newfile', (ev: unknown) => {
     if (ignoreBtn) {
         ignoreBtn.onclick = () => {
             toast.classList.remove('visible');
+            toast.setAttribute('inert', '');
+            toast.setAttribute('aria-hidden', 'true');
         };
     }
 
     // Auto-hide after 10 seconds
-    importToastTimer.schedule(() => toast.classList.remove('visible'), 10000);
+    importToastTimer.schedule(() => {
+        toast.classList.remove('visible');
+        toast.setAttribute('inert', '');
+        toast.setAttribute('aria-hidden', 'true');
+    }, 10000);
 });
