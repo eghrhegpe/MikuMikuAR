@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { scanSourceGraph } from './source-graph.mjs';
+import { scanSourceGraph, parseSourceImports } from './source-graph.mjs';
 
 function createFixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'miku-source-graph-'));
@@ -87,6 +87,95 @@ function createCommentFixture() {
   return { root, srcDir };
 }
 
+function createExportRenamedFixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'miku-source-graph-'));
+  const srcDir = path.join(root, 'src');
+  fs.mkdirSync(srcDir, { recursive: true });
+  fs.writeFileSync(path.join(srcDir, 'renamed.ts'), [
+    "export { foo as bar } from './source.js';",
+  ].join('\n'));
+  fs.writeFileSync(path.join(srcDir, 'source.ts'), 'export const foo = 1;');
+  return { root, srcDir };
+}
+
+function createMultiLineExportFixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'miku-source-graph-'));
+  const srcDir = path.join(root, 'src');
+  fs.mkdirSync(srcDir, { recursive: true });
+  fs.writeFileSync(path.join(srcDir, 're-export.ts'), [
+    'export {',
+    '  A,',
+    '  B,',
+    "} from './dep.ts';",
+  ].join('\n'));
+  fs.writeFileSync(path.join(srcDir, 'dep.ts'), 'export const A = 1; export const B = 2;');
+  return { root, srcDir };
+}
+
+function createTypeInsideImportFixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'miku-source-graph-'));
+  const srcDir = path.join(root, 'src');
+  fs.mkdirSync(srcDir, { recursive: true });
+  fs.writeFileSync(path.join(srcDir, 'user.ts'), [
+    "import { type Foo } from './types.js';",
+  ].join('\n'));
+  fs.writeFileSync(path.join(srcDir, 'types.ts'), 'export interface Foo { x: number }');
+  return { root, srcDir };
+}
+
+function createStringContextFixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'miku-source-graph-'));
+  const srcDir = path.join(root, 'src');
+  fs.mkdirSync(srcDir, { recursive: true });
+  fs.writeFileSync(path.join(srcDir, 'test-file.ts'), [
+    "import { real } from './actual.js';",
+    'const str = "import(\'./fake-path.ts\')";',
+    'const tmpl = `import(\'./other.ts\')`;',
+  ].join('\n'));
+  fs.writeFileSync(path.join(srcDir, 'actual.ts'), 'export const real = 1;');
+  return { root, srcDir };
+}
+
+function createMultipleDynamicsFixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'miku-source-graph-'));
+  const srcDir = path.join(root, 'src');
+  fs.mkdirSync(srcDir, { recursive: true });
+  fs.writeFileSync(path.join(srcDir, 'loader.ts'), [
+    "const a = await import('./a.js');",
+    "const b = await import('./b.js');",
+  ].join('\n'));
+  fs.writeFileSync(path.join(srcDir, 'a.ts'), 'export const a = 1;');
+  fs.writeFileSync(path.join(srcDir, 'b.ts'), 'export const b = 2;');
+  return { root, srcDir };
+}
+
+function createMixedFixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'miku-source-graph-'));
+  const srcDir = path.join(root, 'src');
+  fs.mkdirSync(srcDir, { recursive: true });
+  fs.writeFileSync(path.join(srcDir, 'mixed.ts'), [
+    "import './polyfill.js';",
+    "export { helper } from './util.js';",
+    "const lazy = await import('./heavy.js');",
+  ].join('\n'));
+  fs.writeFileSync(path.join(srcDir, 'polyfill.ts'), '// side effect');
+  fs.writeFileSync(path.join(srcDir, 'util.ts'), 'export const helper = true;');
+  fs.writeFileSync(path.join(srcDir, 'heavy.ts'), 'export const heavy = true;');
+  return { root, srcDir };
+}
+
+function createNonExistentImportFixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'miku-source-graph-'));
+  const srcDir = path.join(root, 'src');
+  fs.mkdirSync(srcDir, { recursive: true });
+  fs.writeFileSync(path.join(srcDir, 'file.ts'), [
+    "import './real.js';",
+    "import './i-dont-exist.js';",
+  ].join('\n'));
+  fs.writeFileSync(path.join(srcDir, 'real.ts'), 'export const real = 1;');
+  return { root, srcDir };
+}
+
 test('resolves TypeScript targets imported with JavaScript extensions', () => {
   const fixture = createFixture();
   try {
@@ -164,6 +253,82 @@ test('does not match commented-out imports', () => {
     const { graph } = scanSourceGraph(fixture.srcDir);
     assert.deepEqual([...graph.get('real.ts')], ['actual.ts']);
     assert.equal(graph.has('should-not-match.ts'), false);
+  } finally {
+    fs.rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
+// ── 新增测试（第 2 批）：扩大解析器覆盖 ──
+
+test('resolves export { foo as bar } renamed re-exports', () => {
+  const fixture = createExportRenamedFixture();
+  try {
+    const { graph } = scanSourceGraph(fixture.srcDir);
+    assert.deepEqual([...graph.get('renamed.ts')], ['source.ts']);
+  } finally {
+    fs.rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('resolves multi-line export { } from statements', () => {
+  const fixture = createMultiLineExportFixture();
+  try {
+    const { graph } = scanSourceGraph(fixture.srcDir);
+    assert.deepEqual([...graph.get('re-export.ts')].sort(), ['dep.ts']);
+  } finally {
+    fs.rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('resolves inline type imports like import { type X } from', () => {
+  const fixture = createTypeInsideImportFixture();
+  try {
+    const { graph } = scanSourceGraph(fixture.srcDir);
+    assert.deepEqual([...graph.get('user.ts')], ['types.ts']);
+  } finally {
+    fs.rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('does not match import() inside string literals or template literals', () => {
+  const fixture = createStringContextFixture();
+  try {
+    const { graph } = scanSourceGraph(fixture.srcDir);
+    assert.deepEqual([...graph.get('test-file.ts')], ['actual.ts']);
+  } finally {
+    fs.rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('resolves multiple await import() in same file', () => {
+  const fixture = createMultipleDynamicsFixture();
+  try {
+    const { graph } = scanSourceGraph(fixture.srcDir);
+    assert.deepEqual([...graph.get('loader.ts')].sort(), ['a.ts', 'b.ts']);
+  } finally {
+    fs.rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('resolves mixed syntaxes in one file (side-effect + export from + await import)', () => {
+  const fixture = createMixedFixture();
+  try {
+    const { graph } = scanSourceGraph(fixture.srcDir);
+    assert.deepEqual([...graph.get('mixed.ts')].sort(), [
+      'heavy.ts',
+      'polyfill.ts',
+      'util.ts',
+    ]);
+  } finally {
+    fs.rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('ignores non-existent import paths gracefully', () => {
+  const fixture = createNonExistentImportFixture();
+  try {
+    const { graph } = scanSourceGraph(fixture.srcDir);
+    assert.deepEqual([...graph.get('file.ts')], ['real.ts']);
   } finally {
     fs.rmSync(fixture.root, { recursive: true, force: true });
   }

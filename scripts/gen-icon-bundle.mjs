@@ -5,23 +5,29 @@
  *  - 自动扫描 frontend/src 所有图标引用，不再手维护列表，杜绝「新增图标漏网 → 运行时回退到 Iconify 公共 API 拉取 + 缓存」的病灶。
  *  - 生成的 icons-bundle.ts 经 addCollection 注册到 iconify 运行时，使 <iconify-icon> 全程离线、无网络缓存。
  *
- * 重新生成：  cd frontend && node ../scripts/gen-icon-bundle.mjs
- * 仅校验（不写文件，缺失则 exit 1）：node ../scripts/gen-icon-bundle.mjs --check
+ * 重新生成：   node scripts/gen-icon-bundle.mjs           # 从仓库根运行
+ * 仅校验（不写文件，缺失则 exit 1）：node scripts/gen-icon-bundle.mjs --check
  *
  * 注意：本脚本在「生成期」需要访问 api.iconify.design 拉取图标 body（一次性，可离线缓存到本地文件）。
  *       生成产物 icons-bundle.ts 提交进仓库后即「固化进项目」，运行期完全不依赖网络。
  */
 
-import { fileURLToPath } from 'url';
-import path from 'path';
-import fs from 'fs';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+import fs from 'node:fs';
+import { parseArgs } from './_lib/parse-args.mjs';
 
-const SRC_DIR = path.join(
-    path.dirname(fileURLToPath(import.meta.url)),
-    '..', 'frontend', 'src'
-);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const SRC_DIR = path.resolve(__dirname, '..', 'frontend', 'src');
 const OUT_PATH = path.join(SRC_DIR, 'core', 'icons-bundle.ts');
-const CHECK_ONLY = process.argv.includes('--check');
+const args = parseArgs(process.argv.slice(2), {
+    bools: ['check', 'offline'],
+    strings: [],
+});
+const CHECK_ONLY = args.check;
+const OFFLINE = args.offline;
+const FETCH_TIMEOUT = 15_000; // 15s
+const MAX_RETRIES = 2;
 
 // ---------------------------------------------------------------------------
 // Seed：历史已固化图标（安全网，防止扫描遗漏导致回归）
@@ -97,19 +103,56 @@ function walk(dir) {
     }
 }
 
-console.log(`Scanning ${SRC_DIR} ...`);
+console.log(`📄 扫描 ${SRC_DIR} ...`);
 walk(SRC_DIR);
-console.log(`  lucide: ${lucide.size} · tabler: ${tabler.size}`);
+console.log(`   找到 lucide: ${lucide.size} · tabler: ${tabler.size}`);
 
 // ---------------------------------------------------------------------------
-// 拉取集合（生成期网络）
+// 拉取集合（生成期网络 + 超时 + 重试）
 // ---------------------------------------------------------------------------
+async function fetchWithRetry(url, retries = MAX_RETRIES) {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+            const res = await fetch(url, { signal: controller.signal });
+            clearTimeout(timer);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return await res.json();
+        } catch (err) {
+            if (attempt < retries) {
+                const delay = 1000 * Math.pow(2, attempt); // 1s, 2s
+                console.warn(`  请求失败（${err.message}），${delay / 1000}s 后重试 (${attempt + 1}/${retries})...`);
+                await new Promise((r) => setTimeout(r, delay));
+            } else {
+                throw new Error(`${err.message}（已重试 ${retries} 次）`);
+            }
+        }
+    }
+}
+
 async function fetchCollection(prefix, names) {
     const url = `https://api.iconify.design/${prefix}.json?icons=${[...names].join(',')}`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`Failed to fetch ${prefix}: ${res.status}`);
-    const data = await res.json();
-    return data; // IconifyJSON：{ prefix, icons, aliases, width, height, not_found? }
+    return await fetchWithRetry(url);
+}
+
+// 离线模式：从磁盘已生成文件读取 bundle 数据
+function readExistingBundle() {
+    if (!fs.existsSync(OUT_PATH)) return null;
+    try {
+        const text = fs.readFileSync(OUT_PATH, 'utf8');
+        const lucideMatch = text.match(/const LUCIDE_BUNDLE = (\{[\s\S]*?\});\s*\nconst TABLER_BUNDLE/);
+        const tablerMatch = text.match(/const TABLER_BUNDLE = (\{[\s\S]*?\});\s*\nexport/);
+        if (lucideMatch && tablerMatch) {
+            return {
+                lucide: JSON.parse(lucideMatch[1]),
+                tabler: JSON.parse(tablerMatch[1]),
+            };
+        }
+        return null;
+    } catch {
+        return null;
+    }
 }
 
 function buildCollection(prefix, data) {
@@ -129,15 +172,42 @@ function buildCollection(prefix, data) {
 
 async function main() {
     let lucideData, tablerData;
-    try {
-        [lucideData, tablerData] = await Promise.all([
-            fetchCollection('lucide', lucide),
-            fetchCollection('tabler', tabler),
-        ]);
-    } catch (err) {
-        console.error('Fetch failed:', err.message);
-        console.error('Tip: 生成期需访问 api.iconify.design。若完全离线，请先在本地缓存或用 @iconify/icons-* 包。');
-        process.exit(1);
+    let fromOffline = false;
+
+    if (OFFLINE) {
+        // 离线模式：使用磁盘已有的 bundle
+        const existing = readExistingBundle();
+        if (!existing) {
+            console.error(`❌ 离线模式但 ${OUT_PATH} 不存在。请先在网络环境下运行一次。`);
+            process.exit(1);
+        }
+        console.log('   离线模式：使用已有 bundle，跳过网络请求');
+        lucideData = existing.lucide;
+        tablerData = existing.tabler;
+        fromOffline = true;
+    } else {
+        // 在线模式：超时 + 重试
+        try {
+            [lucideData, tablerData] = await Promise.all([
+                fetchCollection('lucide', lucide),
+                fetchCollection('tabler', tabler),
+            ]);
+        } catch (err) {
+            // 失败时尝试保留旧产物
+            const existing = readExistingBundle();
+            if (existing) {
+                console.error(`⚠️  网络请求失败：${err.message}`);
+                console.error('   将使用已有 bundle 降级输出（图标列表可能不是最新）');
+                lucideData = existing.lucide;
+                tablerData = existing.tabler;
+                fromOffline = true;
+            } else {
+                console.error('❌ 网络请求失败且无已有 bundle 可降级：');
+                console.error('   ' + err.message);
+                console.error('   提示：先在有网络环境运行一次生成 bundle，或使用 --offline 跳过网络请求。');
+                process.exit(1);
+            }
+        }
     }
 
     const lucideBundle = buildCollection('lucide', lucideData);
@@ -172,7 +242,7 @@ async function main() {
     }
 
     const content = `// Auto-generated by scripts/gen-icon-bundle.mjs
-// Do not edit manually. Run: cd frontend && node ../scripts/gen-icon-bundle.mjs
+// Do not edit manually. Run: node scripts/gen-icon-bundle.mjs
 // 离线图标捆绑包：覆盖源码中所有 lucide / tabler 图标引用，运行期零网络。
 
 import { addCollection } from 'iconify-icon';
@@ -186,8 +256,13 @@ export function registerIconBundle(): void {
     addCollection(TABLER_BUNDLE);
 }
 `;
-    fs.writeFileSync(OUT_PATH, content, 'utf-8');
-    console.log(`\n✅ Bundle written to: ${OUT_PATH}`);
+    // 安全写入：先写临时文件，再原子重命名，避免写入中途中断导致 bundle 损坏
+    const tmpPath = OUT_PATH + '.tmp';
+    fs.writeFileSync(tmpPath, content, 'utf-8');
+    fs.renameSync(tmpPath, OUT_PATH);
+    console.log(`\n✅ Bundle written to: ${OUT_PATH}${fromOffline ? '（离线/降级）' : ''}`);
+    console.log(`   Lucide: ${lucideCount} icons + ${lucideAliasCount} aliases`);
+    console.log(`   Tabler: ${tablerCount} icons`);
     console.log(`   Lucide: ${lucideCount} icons + ${lucideAliasCount} aliases`);
     console.log(`   Tabler: ${tablerCount} icons`);
     if (notFound.length > 0) {
