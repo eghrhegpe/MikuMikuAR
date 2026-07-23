@@ -10,15 +10,26 @@ export default defineConfig({
     workers: process.env.CI ? 1 : 2,
     reporter: "html",
 
-    // Auto-start Vite for @dom tests. When wails3 dev or another
-    // process already serves :5173, reuseExistingServer skips launch.
-    webServer: {
-        command: "npm run dev",
-        url: "http://localhost:5173",
-        reuseExistingServer: true,
-        // Vite 首次编译 babylon-mmd 等重模块常需 30-60s，15s 会误判超时。
-        timeout: 60000,
-    },
+    // [doc:adr-177] Phase 4 双 webServer：5173 桌面 dev（@dom/@webgl）+ 4174 web preview（@web）
+    // Playwright 支持数组形式并行启动多 server，各自 reuseExistingServer 避免重复启动。
+    webServer: [
+        {
+            // 主应用桌面入口（vite.config.ts → index.html），@dom/@webgl 测试用
+            command: "npm run dev",
+            url: "http://localhost:5173",
+            reuseExistingServer: true,
+            // Vite 首次编译 babylon-mmd 等重模块常需 30-60s，15s 会误判超时。
+            timeout: 60000,
+        },
+        {
+            // [doc:adr-177] Phase 4 web 入口生产构建预览（vite.web.config.ts → index.web.html）
+            // 需先构建 dist-web/ 再 preview；@web 测试用。port 与 dev 分离避免冲突。
+            command: "npx vite build --config vite.web.config.ts && npx vite preview --config vite.web.config.ts --port 4174 --strictPort",
+            url: "http://localhost:4174/MikuMikuAR/",
+            reuseExistingServer: true,
+            timeout: 120000, // 构建需 70s + preview 启动
+        },
+    ],
 
     use: {
         // Wails WebView2 exposes CDP on 9222 when MMCAR_DEBUG_PORT=9222 is set

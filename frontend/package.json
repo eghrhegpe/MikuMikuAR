@@ -19,6 +19,7 @@
     "test:e2e": "playwright test",
     "test:e2e:dom": "playwright test --grep @dom",
     "test:e2e:webgl": "playwright test --grep @webgl",
+    "test:e2e:web": "playwright test --grep @web",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:ui": "playwright test --ui",
     "lint": "eslint src --ext .ts,.tsx,.js,.jsx",

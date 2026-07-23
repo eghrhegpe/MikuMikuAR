@@ -146,8 +146,28 @@ npm run test                   # 或 npx vitest run
 |-----|--------|------|------|------|
 | `e2e` | ubuntu-latest | **阻塞门禁** | 起 Vite → `npx playwright test --grep "@dom"` | `@dom` ×5 |
 | `e2e-wails` | windows-latest | `continue-on-error` | 起 `wails3 dev`(带 9222) → `npx playwright test --grep "@webgl"` | `@webgl` ×7 |
+| `e2e-web` | ubuntu-latest | **阻塞门禁** | build + preview dist-web → `npx playwright test --grep "@web"` | `@web` ×9（smoke + 资源加载） |
 
 本地复刻 CI 行为即上述「1 / 2」两套命令。本地 `wails3 dev` 就绪时直接套用「3」一次跑全量，最接近 CI 的 `e2e + e2e-wails` 合并结果。
+
+---
+
+## 3.5. Web 入口测试（@web，ADR-177 Phase 4）
+
+主应用 web 入口（`index.web.html` → `vite.web.config.ts`）的 smoke + 资源加载测试，不依赖 Wails runtime。
+
+```bash
+cd frontend
+npm run test:e2e:web            # 自动 build + preview dist-web/ → 跑 @web
+# 或手动：
+npx vite build --config vite.web.config.ts
+npx vite preview --config vite.web.config.ts --port 4174
+npx playwright test --grep "@web"
+```
+
+- **webServer**：`playwright.config.ts` 自动 `vite build + vite preview`（4174 端口，`/MikuMikuAR/` base path）
+- **fixtures**：`frontend/e2e/fixtures/`（sample.pmx 834KB + sample.vmd 19KB + sample.zip 854KB），通过 `page.route()` 注入，不打进 bundle
+- **覆盖项**：首屏渲染、6 nav 按钮、菜单导航、能力门控（AR/广场窗口隐藏）、PMX/ZIP/VMD 加载闭环、IndexedDB CRUD
 
 ---
 

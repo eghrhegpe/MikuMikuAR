@@ -1,6 +1,6 @@
 # ADR-177: Web Loader 与主应用统一路径
 
-> **状态**: Phase 3 构建配置 + 部署实施完成（2026-07-23；A1 index.web.html 新建——基于 spike 升级，移除 babylon UMD + 置 __MMKU_WEB__ + DOM 锚点完整对齐主应用；A6 vite.web.config.ts 新建——融合 spike define + web-loader base/outDir，入口 index.web.html，vite build 验证通过（1m9s，产物含 2 WASM + worker + .fx + CSS + 各 chunk，go-adapter dynamic import chunk 隔离生效）；A7 web-loader-pages.yml 升级——构建入口改 vite.web.config.ts，index.html 复制改 index.web.html，paths 监听改 src/**+bindings/**+index.web.html+vite.web.config.ts。Phase 2 A4+A5 已完成。剩余：Phase 4 浏览器端到端 smoke + IndexedDB 旧数据迁移）
+> **状态**: Phase 4 浏览器端到端 smoke 实施完成（2026-07-23；Playwright 双 webServer——5173 桌面 dev + 4174 web preview（vite build + vite preview --config vite.web.config.ts）；web-smoke.spec.ts 5 项——首屏渲染 + 6 nav 按钮 + 菜单导航 + 能力门控验证（AR/广场窗口隐藏）；web-resources.spec.ts 4 项——PMX/ZIP/VMD fetch+IndexedDB 注入加载闭环 + IndexedDB CRUD；fixtures sample.pmx 834KB + sample.vmd 19KB + sample.zip 854KB（page.route 注入不打进 bundle）；IndexedDB 迁移框架——onupgradeneeded 补 oldVersion 分支钩子，v1 无需迁移（旧 web-loader 与新主应用共享 schema + 键规约一致）；package.json 新增 test:e2e:web 脚本 + e2e README @web 章节。tsc 0 错误，2029 单测全绿，文档无漂移。Phase 3 已完成。剩余：GitHub Pages 线上 smoke + 连续两次发布无回归）
 > **日期**: 2026-07-23
 > **关联**: ADR-176（前端 Backend 适配器双实现）、ADR-017（安卓适配，platform 探测范式）、ADR-159（桥接注入范式）、ADR-093（声明式菜单 Schema）
 > **前置**: ADR-176 Phase 1-3 已落地（backend 适配器层、wails-bindings 106 函数全代理化、web-loader 网页原型已上线 GitHub Pages）
