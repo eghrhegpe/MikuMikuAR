@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<!--
+  ADR-177 Phase 0 Spike — 临时验证入口（非生产）
+
+  与 index.html 的差异：
+    1. 移除 <script src="/lib/babylon.js"> UMD（改由 Vite 打包 ESM）
+    2. 置 globalThis.__MMKU_WEB__ = true（所有业务 import 之前）
+    3. 入口改 ./src/core/main.ts（同主应用）
+
+  ⚠️ Spike 产物：Phase 0 通过后保留作为复现凭证。
+-->
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+    <title>MikuMikuAR — Spike</title>
+    <link rel="icon" href="data:,">
+    <script>
+        // ADR-177 Phase 0：必须在所有业务 import 之前设置
+        globalThis.__MMKU_WEB__ = true;
+    </script>
+</head>
+<body>
+    <div id="app">
+        <canvas id="renderCanvas" role="img" aria-label="3D 场景" tabindex="0"></canvas>
+
+<div id="loading" style="position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;flex-direction:column;pointer-events:none;">
+<div class="spinner"></div>
+<span id="loadingText">正在加载 babymmd ...</span>
+</div>
+
+<div id="bottomNav">
+<button class="nav-tab" id="btnMainAction" title="模型库" aria-label="模型库" aria-controls="sceneOverlay" data-popup-type="model" data-hint="浏览和加载 PMX 模型 · Ctrl+1" data-shortcut="1">
+<iconify-icon icon="tabler:cube-3d-sphere"></iconify-icon><span class="nav-label">模型</span>
+<span class="shortcut-badge">1</span>
+</button>
+<button class="nav-tab" id="btnMotionPopup" title="动作库" aria-label="动作库" aria-controls="sceneOverlay" data-popup-type="motion" data-hint="浏览和加载 VMD 动作 · Ctrl+2" data-shortcut="2">
+<iconify-icon icon="lucide:music"></iconify-icon><span class="nav-label">动作</span>
+<span class="shortcut-badge">2</span>
+</button>
+<button class="nav-tab" id="btnScene" title="场景" aria-label="场景" aria-controls="sceneOverlay" data-popup-type="scene" data-hint="相机、灯光和渲染设置 · Ctrl+3" data-shortcut="3">
+<iconify-icon icon="lucide:monitor"></iconify-icon><span class="nav-label">场景</span>
+<span class="shortcut-badge">3</span>
+</button>
+<button class="nav-tab" id="btnEnv" title="环境" aria-label="环境" aria-controls="sceneOverlay" data-popup-type="env" data-hint="天空、照明、地面和粒子 · Ctrl+4" data-shortcut="4">
+<iconify-icon icon="lucide:cloud-sun"></iconify-icon><span class="nav-label">环境</span>
+<span class="shortcut-badge">4</span>
+</button>
+<button class="nav-tab" id="btnSettings" title="设置" aria-label="设置" aria-controls="sceneOverlay" data-popup-type="settings" data-hint="应用偏好设置 · Ctrl+5" data-shortcut="5">
+<iconify-icon icon="lucide:settings"></iconify-icon><span class="nav-label">设置</span>
+<span class="shortcut-badge">5</span>
+</button>
+<button class="nav-tab" id="btnPlaza" title="模型广场" aria-label="模型广场" aria-controls="sceneOverlay" data-popup-type="plaza" data-hint="浏览模型资源站 · Ctrl+7" data-shortcut="7">
+<iconify-icon icon="lucide:store"></iconify-icon><span class="nav-label">广场</span>
+<span class="shortcut-badge">7</span>
+</button>
+</div>
+
+<div id="playbackBar">
+<button class="playback-btn" id="btnPlayPause"></button>
+<button class="playback-btn" id="btnLoopToggle" title="循环播放"><iconify-icon icon="lucide:repeat"></iconify-icon></button>
+<div id="seekBar"><div id="seekProgress"></div></div>
+<span class="time-display" id="timeDisplay"></span>
+</div>
+
+<div id="sceneOverlay" data-overlay></div>
+<div id="webviewLayer" data-overlay></div>
+<span id="fpsClock"></span>
+<span id="runtimeBadge"></span>
+<div id="statusBar" role="status" aria-live="polite">
+<span id="statusText"></span>
+</div>
+
+        <div id="importToast" class="toast hidden">
+            <div class="toast-icon"></div>
+            <div class="toast-body">
+                <div class="toast-title"></div>
+                <div class="toast-file"></div>
+            </div>
+            <div class="toast-actions">
+                <button class="toast-import-btn"></button>
+                <button class="toast-ignore-btn"></button>
+            </div>
+        </div>
+
+        <div id="updateToast" class="toast hidden">
+            <div class="toast-icon"></div>
+            <div class="toast-body">
+                <div class="toast-title"></div>
+                <div class="toast-file"></div>
+            </div>
+            <div class="toast-actions">
+                <button class="toast-import-btn"></button>
+                <button class="toast-ignore-btn"></button>
+            </div>
+        </div>
+
+        <div id="dropOverlay">
+            <div class="drop-indicator">
+                <span class="drop-icon"></span>
+                <span class="drop-text"></span>
+                <span class="drop-hint"></span>
+            </div>
+        </div>
+    </div>
+    <script src="./src/core/main.ts" type="module"></script>
+</body>
+</html>
