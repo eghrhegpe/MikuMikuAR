@@ -272,10 +272,27 @@ func (a *App) SetPerformanceMode(mode string) error {
 }
 
 // SetEnvState persists the environment state (sky, ground, particles, fog, etc.).
+// Uses JSON-based merge (not full-replace) so that callers passing only a subset
+// of fields do not wipe the other persisted env state fields.
 func (a *App) SetEnvState(env EnvState) error {
 	a.safeLogInfo("[env-persist] SetEnvState: skyMode=%s groundVisible=%v waterEnabled=%v",
 		env.SkyMode, env.GroundVisible, env.WaterEnabled)
-	return a.updateConfig(func(cfg *Config) { cfg.Env = &env }, false)
+	return a.updateConfig(func(cfg *Config) { mergeEnvState(&cfg.Env, env) }, false)
+}
+
+// mergeEnvState merges src into dst using JSON marshal/unmarshal, preserving
+// any dst fields not present in src. Uses JSON round-trip so struct tags are
+// authoritative — the same tags the frontend uses for serialization.
+func mergeEnvState(dst **EnvState, src EnvState) {
+	if *dst == nil {
+		*dst = &src
+		return
+	}
+	data, err := json.Marshal(src)
+	if err != nil {
+		return
+	}
+	_ = json.Unmarshal(data, *dst)
 }
 
 // SetUIState merges the provided UI state fields into the persisted config.
