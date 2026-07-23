@@ -31,6 +31,15 @@ source_files:        # 仓库相对路径，必须真实存在于磁盘
   - frontend/src/scene/render/quality-profile.ts
 adr:                 # 关联决策（可选）
   - ADR-174
+# 以下字段用于帮助 AI 通过用户意图、符号和约束快速检索（可选）
+symbols:
+  - publicFunction
+invariants:
+  - <必须保持的状态、并发或资源约束>
+tests:
+  - frontend/src/__tests__/path/to/module.test.ts
+use_when:
+  - <用户可能描述的功能词>
 ---
 
 ## 系统概览
@@ -44,7 +53,29 @@ adr:                 # 关联决策（可选）
 
 ## 与其他子系统关系
 - <被谁引用 / 引用谁>
+
+## 不变量
+- <不能被修改破坏的状态、资源或并发约束>
+
+## 验证入口
+- 测试：`frontend/src/__tests__/path/to/module.test.ts`
+- 命令：`cd frontend && npm run test -- path/to/module.test.ts`
 ```
+
+
+### AI 使用字段
+
+- `symbols`：列出本卡负责的公共函数、类、状态或常量，便于按符号反查。
+- `invariants`：记录必须保持的约束；代码修改前后都应核对。
+- `tests`：列出最小验证入口，避免每次修改都盲跑全量测试。
+- `use_when`：使用者可能说出的自然语言关键词，用于从 `docs/knowledge/routes.md` 继续路由。
+- 旧卡片不要求一次性补齐；只要卡片被修改或对应模块发生结构性变化，就按模板逐步补充。
+
+### 何时更新知识卡
+
+必须更新：模块拆分/合并、公共 API 变化、状态写入路径变化、资源释放责任变化、并发策略变化、关键依赖变化、`source_files` 路径变化或已知风险变化。
+
+通常不必更新：内部重构但职责和不变量不变、样式微调、变量重命名、仅补充测试。
 
 ### `source_files` 铁律
 - 路径**相对仓库根**，且**必须能在磁盘找到**（由 `scripts/check-doc-drift.mjs` 反向校验）。
