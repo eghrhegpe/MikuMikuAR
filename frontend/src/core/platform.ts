@@ -33,6 +33,10 @@ export function isWebPlatform(): boolean {
  * Waits for the Wails bridge (window.wails) to be injected by the WebView.
  * Returns true if the bridge became ready within the timeout, false otherwise.
  * Android WebView may not have the bridge available at module-parse time.
+ *
+ * [doc:adr-177] 判定条件为 window.wails 对象存在性（非 platform 方法）。
+ * platform 是 Android 专属方法，桌面端 wails 3 不注入该方法，导致误降级 browserAdapter。
+ * Android 冷启动 window.wails 延迟注入，注入后本判定立即满足。
  */
 export async function awaitWailsBridge(timeout = 3000): Promise<boolean> {
     let settled = false;
@@ -40,7 +44,7 @@ export async function awaitWailsBridge(timeout = 3000): Promise<boolean> {
         if (settled) {
             return;
         } // [audit:P2] 超时后停止轮询，防定时器泄漏
-        if (typeof window.wails?.platform === 'function') {
+        if (typeof window !== 'undefined' && typeof (window as { wails?: unknown }).wails === 'object' && (window as { wails?: unknown }).wails !== null) {
             settled = true;
             resolve(true);
         } else {
