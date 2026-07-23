@@ -190,21 +190,26 @@ export function findOrCreateModuleState(
  * 保证「移除旧默认 → 加入/复用新动作 → 设默认 → 广播」在一次 generation
  * 递增内完成，避免中间态被并发广播读到。
  *
+ * ⚠️ vmdPath 为 null/undefined 时直接返回空字符串（不作任何操作），
+ * 防止占位路径污染场景库（见 vmd-loader.ts !mmdRuntime 路径）。
+ *
  * - 装载路径已是库中候选 → 复用该候选（提升为默认），不重复添加
  * - 否则新增动作，插入到旧默认原位置（保持库顺序稳定）
  * - 旧默认（若存在且非复用项）从库中移除
  * - 触发广播：跟随默认 / 引用旧默认的角色切到新动作
  *
- * @returns 新默认动作的 id
+ * @returns 新默认动作的 id；若 vmdPath 为空返回 ''
  */
 export function replaceDefaultMotion(intent: SceneMotionIntent): string {
+    // [doc:adr-169] 无 vmdPath 的占位动作拒绝装载，避免污染场景库
+    if (!intent.vmdPath) {
+        return '';
+    }
     const prev = getActiveMotion();
     const prevId = _activeMotionId;
 
     // 去重：装载路径已是库中候选 → 复用（提升为默认）
-    const existing = intent.vmdPath
-        ? _sceneMotions.find((m) => m.vmdPath === intent.vmdPath)
-        : undefined;
+    const existing = _sceneMotions.find((m) => m.vmdPath === intent.vmdPath);
 
     let newId: string;
     if (existing) {

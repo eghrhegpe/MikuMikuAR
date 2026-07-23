@@ -79,7 +79,7 @@ export async function loadVMDMotion(
         throw new DOMException('Aborted', 'AbortError');
     }
     if (!mmdRuntime) {
-        replaceDefaultMotion({ vmdPath: null, vmdName: name, vmdLayers: [], source: 'vmd' });
+        // [doc:adr-169] 运行时未就绪，不污染场景库；仅提示用户等待
         setStatus(t('scene.vmd.cachedWaiting'), false);
         return;
     }
