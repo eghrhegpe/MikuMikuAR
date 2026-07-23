@@ -27,13 +27,12 @@ describe('getBrowseDir', () => {
         expect(getBrowseDir('pmx')).toBe('E:/custom/models');
     });
 
-    it('网页端虚拟根（web://）→ 扁平结构，不拼接子目录', () => {
+    it('网页端虚拟根（web://）→ 同样拼接标准子目录（扫描已映射到虚拟子目录）', () => {
         setLibraryRoot('web://selected-dir');
-        // 关键回归：所有类别都直接返回根路径，避免拼出 web://selected-dir/PMX
-        expect(getBrowseDir('pmx')).toBe('web://selected-dir');
-        expect(getBrowseDir('vmd')).toBe('web://selected-dir');
-        expect(getBrowseDir('audio')).toBe('web://selected-dir');
-        expect(getBrowseDir('stage')).toBe('web://selected-dir');
+        expect(getBrowseDir('pmx')).toBe('web://selected-dir/PMX');
+        expect(getBrowseDir('vmd')).toBe('web://selected-dir/VMD');
+        expect(getBrowseDir('audio')).toBe('web://selected-dir/audio');
+        expect(getBrowseDir('stage')).toBe('web://selected-dir/stage');
     });
 
     it('网页端 overridePaths 仍优先生效', () => {
