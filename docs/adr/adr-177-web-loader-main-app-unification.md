@@ -1,6 +1,6 @@
 # ADR-177: Web Loader 与主应用统一路径
 
-> **状态**: 有条件通过（2026-07-23；方向 A 可行。批准进入 Phase 0 Spike 设计与验证，但不直接进入 Phase 1 实施。总体可行度约 7/10）
+> **状态**: Phase 0 Spike 通过（2026-07-23；S1-S7 全绿，主应用在浏览器成功启动。可进入 Phase 1 Runtime Bridge 实施。资源拖入加载需手动验证）
 > **日期**: 2026-07-23
 > **关联**: ADR-176（前端 Backend 适配器双实现）、ADR-017（安卓适配，platform 探测范式）、ADR-159（桥接注入范式）、ADR-093（声明式菜单 Schema）
 > **前置**: ADR-176 Phase 1-3 已落地（backend 适配器层、wails-bindings 106 函数全代理化、web-loader 网页原型已上线 GitHub Pages）
@@ -193,6 +193,50 @@ ADR-176 已铺好统一的基础设施，但主应用跑浏览器的硬依赖面
 - 验收截图/日志
 
 > **若 Phase 0 未通过**：方向 A 暂缓，回退评估方向 B/C 或修订方案。
+
+### Phase 0 验收结果（2026-07-23 实测）
+
+**结论：S1-S7 全绿，主应用在浏览器成功启动。Phase 0 通过。**
+
+**Spike 产物**：
+- `frontend/vite.spike.config.ts`（临时配置：alias @wailsio/runtime→stub + define `__MMD_ENABLE_MPR__` + 入口 `index.spike.html`）
+- `frontend/index.spike.html`（移除 babylon UMD + 置 `globalThis.__MMKU_WEB__ = true` + 入口 `core/main.ts`）
+- `frontend/src/web-loader/wails-runtime-stub.ts`（扩展：补 Once/OffAll/Emit/OnMultiple 对齐 Wails 真实 API）
+
+**构建命令**：`npx vite --config vite.spike.config.ts`（dev） / `npx vite build --config vite.spike.config.ts`（prod）
+
+**S1-S7 验收明细**：
+
+| 步骤 | 验证项 | 结果 | 证据 |
+|------|--------|------|------|
+| S1 | `globalThis.__MMKU_WEB__ = true` | ✅ PASS | 控制台 "Browser Environment Detected" |
+| S2 | 加载 `core/main.ts`（经临时 alias 隔离） | ✅ PASS | 无 JS 错误（修复 `__MMD_ENABLE_MPR__` define 后） |
+| S3 | 注入 `@wailsio/runtime` 临时桩 | ✅ PASS | network 无 `/wails/custom.js` 请求 |
+| S4 | 初始化 Babylon Scene | ✅ PASS | 首帧成功（canvas 非黑）；FPS/SPR HUD 显示 |
+| S5 | 初始化 `resolveBackend()` | ✅ PASS | 选到 browserAdapter（控制台确认） |
+| S6 | 读取 `GetConfig()`、`GetUIState()` | ✅ PASS | 返回默认值不抛错（控制台无 undefined 错误） |
+| S7 | 渲染最小菜单壳 | ✅ PASS | 底部导航 6 按钮渲染（模型/动作/场景/环境/设置/广场） |
+
+**验收门槛达成**：
+- ✅ 不请求 `/wails/custom.js`（network 零命中）
+- ✅ 不访问 `window.wails!`（无运行时错误）
+- ✅ 不触发未捕获 `NotSupportedError`
+- ✅ 不产生 `Events` 运行时异常
+- ✅ 不依赖 Go 后端
+- ✅ GitHub Pages base path 下资源全部 200
+- ✅ **空 IndexedDB 启动**：首屏不崩
+
+**未完成项**（资源拖入加载）：
+- ⚠️ PMX/ZIP/VMD 拖入加载未通过 browser 自动化验证——browser 子代理无法注入本地文件路径（`file.path` 浏览器不存在）
+- **原因**：drop handler 用 `file.path || file.name`，浏览器侧 `file.path` 不存在，`readFileBytes(file.name)` 从 IndexedDB 取会返回 null（文件未先存入 IndexedDB）
+- **降级**：资源加载链路的完整验证需 Phase 2 A4「首屏数据链」实施时补齐（需先实现拖入文件 → IndexedDB 存入 → readFileBytes 读取的闭环）
+- **不影响 Phase 0 通过判定**：S1-S7 已证明主应用 bootstrap 链路在浏览器完全可用，资源加载是 Phase 2 数据链问题
+
+**修复过程记录**：
+1. 首次启动报 `ReferenceError: __MMD_ENABLE_MPR__ is not defined`（`init.ts:173` `dom.showApp()`）
+2. 根因：`vite.config.ts:47` 用 `define` 注入构建期常量，spike config 未复制
+3. 修复：`vite.spike.config.ts` 补 `define: { __MMD_ENABLE_MPR__: JSON.stringify(false) }`
+4. 复测：S1-S7 全绿
 
 ### Phase 1：Runtime Bridge（A3 修订，前置）
 
