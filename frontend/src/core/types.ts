@@ -238,8 +238,6 @@ export type ModelInstance = {
     motionOverrideModules?: MotionModuleState[];
     /** [doc:adr-145] 多模块协同预设列表（per-model） */
     motionPresets?: MotionPreset[];
-    /** [doc:adr-085] 脚部地面跟随状态（按模型） */
-    feet: FeetState;
     /** 程序化动作状态（per-model），未设置时使用全局默认值 */
     procMotion?: ProcMotionState;
     /** [doc:adr-049] 球面坐标轨道控制：坐标模式，默认 'cartesian' */

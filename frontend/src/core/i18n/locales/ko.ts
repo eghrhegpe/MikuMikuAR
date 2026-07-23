@@ -1666,6 +1666,7 @@ export const ko: Record<string, string> = {
     'motion.override.module.fingerPose': '핑거 포즈',
     'motion.override.module.ridingModel': '라이딩 모델',
     'motion.override.module.positionOffset': '위치 오프셋',
+    'motion.override.module.feetAdjustment': '발 IK 접지',
     'motion.override.tunedParams': '{n}개 조정됨',
     'motion.override.activeBoneOverrides': '재정의 {n}개',
     'param.tilt': '기울임(상체)',

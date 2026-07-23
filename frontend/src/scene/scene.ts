@@ -42,6 +42,7 @@ import { MmdRuntime } from 'babylon-mmd/esm/Runtime/mmdRuntime';
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 import type { FeetState } from '@/core/types';
+import { getFeetStateForModel } from './motion/motion-modules/feet-adjustment-module';
 import 'babylon-mmd/esm/Runtime/Animation/mmdRuntimeModelAnimation';
 import 'babylon-mmd/esm/Loader/mmdModelLoader.default';
 import '@babylonjs/core/Materials/Textures/Loaders/tgaTextureLoader';
@@ -559,7 +560,9 @@ export async function initScene(): Promise<void> {
             for (const inst of modelRegistry.values()) {
                 const bones = inst.mmdModel?.runtimeBones;
                 if (bones && bones.length > 0) {
-                    out.push({ id: inst.id, feet: inst.feet, runtimeBones: bones });
+                    // [doc:adr-085/129] 脚部状态从动作覆盖模块读取（随动作走），
+                    // 不再依赖 inst.feet（per-model）作为引擎输入
+                    out.push({ id: inst.id, feet: getFeetStateForModel(inst.id), runtimeBones: bones });
                 }
             }
             return out;

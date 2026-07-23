@@ -1649,6 +1649,7 @@ export const zhTW: Record<string, string> = {
     'motion.override.module.fingerPose': '手指姿勢',
     'motion.override.module.ridingModel': '騎行模型',
     'motion.override.module.positionOffset': '位置偏移',
+    'motion.override.module.feetAdjustment': '腳 IK 地面跟隨',
     'motion.override.tunedParams': '已調 {n} 項',
     'motion.override.activeBoneOverrides': '當前 {n} 條覆蓋',
     'param.tilt': '側傾（上半身）',
