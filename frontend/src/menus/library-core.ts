@@ -106,6 +106,7 @@ export function isLeafFlattenDir(
         if (filter && !filter(m)) {
             continue;
         }
+        if (!m.dir) continue; // [bugfix:stale-entry] 防御无效 entry（缺 dir 字段）
         const mdir = normPath(m.dir);
         if (mdir === d) {
             directModelCount++;
