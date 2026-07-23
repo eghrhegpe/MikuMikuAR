@@ -690,6 +690,12 @@ export async function importFile(): Promise<void> {
         if (!imported) {
             return;
         }
+        // [fix:import-file-web] zip 解压后自动加载主 PMX 到场景（拖放导入已有此行为）
+        if (imported.file_path) {
+            await withLoadingStatus('library.loadingModel', 'status.done', () =>
+                loadManager.load({ kind: 'actor', path: imported.file_path })
+            );
+        }
         const { refreshLibrary } = await import('./library-setup');
         await safeCallAsync('library-actions', 'refresh after zip import:', () => refreshLibrary());
     } else if (lower.endsWith('.pmx')) {
