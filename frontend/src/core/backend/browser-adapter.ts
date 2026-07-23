@@ -209,10 +209,29 @@ async function _scanDirIntoIDB(dirHandle: FileSystemDirectoryHandle): Promise<vo
                 const bytes = new Uint8Array(await file.arrayBuffer());
                 const stem = entry.name.replace(/\.(pmx|zip)$/i, '');
                 await idbSet('models', `file:${stem}`, bytes);
+                // [bugfix:library-empty] entry 必须符合 ModelEntry 结构：
+                // library-setup.ts:73 过滤 m.file_path，library-core.ts:186 用 m.dir 分组，
+                // 缺这两个字段会导致模型库显示为空。
+                // 同时保留 name/fileName/kind/size/savedAt 供 web-loader/library.ts 复用。
+                const isPmx = name.endsWith('.pmx');
                 await idbSet('models', `entry:${stem}`, {
+                    // —— ModelEntry 必填字段 ——
+                    dir: 'web://selected-dir',
+                    file_path: `web://selected-dir/${entry.name}`,
+                    name_jp: stem,
+                    name_en: stem,
+                    comment: '',
+                    has_thumb: false,
+                    type: 'actor',
+                    format: isPmx ? 'pmx' : 'zip',
+                    container: 'file',
+                    zip_inner: '',
+                    category: '',
+                    source: '',
+                    // —— WebModelEntry 兼容字段（web-loader/library.ts 读取）——
                     name: stem,
                     fileName: entry.name,
-                    kind: name.endsWith('.pmx') ? 'pmx' : 'zip',
+                    kind: isPmx ? 'pmx' : 'zip',
                     size: bytes.byteLength,
                     savedAt: Date.now(),
                 });
