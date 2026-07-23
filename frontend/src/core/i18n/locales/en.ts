@@ -121,6 +121,7 @@ export const en: Record<string, string> = {
     'model-detail.model': 'Model',
     'model-detail.replaceModel': 'Replace Model',
     'model-detail.replaceModelTo': 'Replace Model → {name}',
+    'model-detail.replaced': 'Model replaced',
     'model-detail.unknownModel': 'Unknown Model',
     'model-detail.appearance': 'Appearance',
     'model-detail.dragControl': 'Drag Control',

@@ -27,6 +27,7 @@ import {
     pushUndoSnapshot,
     offerSceneUndoAndRefresh,
 } from '../scene/scene';
+import { captureInheritedState, applyInheritedState } from '../scene/manager/model-ops'; // [doc:adr-150]
 import { getMotionMenu } from './motion-popup';
 import { slideRow } from '../core/ui-helpers';
 import { addDisposableListener, type Disposable } from '../core/dom';
@@ -249,6 +250,10 @@ function startReplaceModel(m: LibraryModel, replaceId: string): void {
     librarySessionStore.setReplaceLoading(true);
 
     const doReplace = (path: string, libraryPath?: string, innerPath?: string): void => {
+        // [doc:adr-150] 替换前捕获旧模型可继承状态 + 场景撤销快照
+        const oldInst = modelRegistry.get(replaceId);
+        const snapshot = oldInst ? captureInheritedState(oldInst) : null;
+        const undoSnap = pushUndoSnapshot();
         setStatus(t('library.loadingModel'), false);
         let browseCategory: 'pmx' | 'stage' | 'prop' = 'pmx';
         let loadKind: 'actor' | 'stage' | 'prop' = 'actor';
@@ -271,7 +276,18 @@ function startReplaceModel(m: LibraryModel, replaceId: string): void {
                     setStatus(t('library.modelLoadFailed'), false);
                     return;
                 }
+                // [doc:adr-150] 在 removeModel 旧模型之前应用继承状态（此时新模型已注册，
+                // 焦点已由 model-loader 切换；旧模型 inst 仍可查询）
+                if (snapshot) {
+                    applyInheritedState(handle.id, snapshot);
+                }
                 removeModel(replaceId);
+                // [doc:adr-127] 破坏性操作场景级撤销保护
+                offerSceneUndoAndRefresh(
+                    t('model-detail.replaced'),
+                    undoSnap,
+                    () => stackRegistry.modelStack?.reRender()
+                );
                 try {
                     stackRegistry.modelStack?.resetToRoot();
                     let newName = handle.name;

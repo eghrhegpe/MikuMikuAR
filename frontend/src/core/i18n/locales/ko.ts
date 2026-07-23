@@ -197,6 +197,7 @@ export const ko: Record<string, string> = {
     'model-detail.model': '모델',
     'model-detail.replaceModel': '모델 교체',
     'model-detail.replaceModelTo': '모델 교체 → {name}',
+    'model-detail.replaced': '모델을 교체했습니다',
     'model-detail.unknownModel': '알 수 없는 모델',
     'model-detail.appearance': '외관',
     'model-detail.dragControl': '드래그 조작',

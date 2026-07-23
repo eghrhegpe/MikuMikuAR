@@ -120,6 +120,7 @@ export const zhCN: Record<string, string> = {
     'model-detail.model': '模型',
     'model-detail.replaceModel': '更换模型',
     'model-detail.replaceModelTo': '更换模型 → {name}',
+    'model-detail.replaced': '模型已替换',
     'model-detail.unknownModel': '未知模型',
     'model-detail.appearance': '外观',
     'model-detail.dragControl': '拖拽操控',
