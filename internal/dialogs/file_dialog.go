@@ -2,6 +2,7 @@ package dialogs
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -169,8 +170,12 @@ func SelectDir(wailsApp *application.App, title, startDir string) (string, error
 	}
 	dialog := wailsApp.Dialog.OpenFile()
 	dialog.SetTitle(title)
+	// [buglog:2026-07-17] 起始目录失效时回退到用户主目录，避免 GetFileAttributesEx 失败导致对话框打不开。
+	// 失效场景：测试污染 resource_root、U 盘拔出、网络盘断开等。
 	if startDir != "" {
-		dialog.SetDirectory(startDir)
+		if _, err := os.Stat(startDir); err == nil {
+			dialog.SetDirectory(startDir)
+		}
 	}
 	dialog.CanChooseDirectories(true)
 	dialog.CanChooseFiles(false)
