@@ -685,6 +685,7 @@ export const ko: Record<string, string> = {
     'motion.boneLock': '본 잠금',
     'motion.boneLockEnable': '본에 잠금',
     'motion.boneLockSelect': '본 선택',
+    'motion.boneLockDamping': '추적 부드러움',
     'motion.boneLockApplied': '✓ 카메라가 본 {bone}에 잠겼습니다',
     'motion.boneLockCleared': '✓ 본 잠금이 해제되었습니다',
     'motion.moveSpeed': '이동 속도',

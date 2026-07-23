@@ -677,6 +677,7 @@ export const zhTW: Record<string, string> = {
     'motion.boneLock': '骨骼鎖定',
     'motion.boneLockEnable': '鎖定到骨骼',
     'motion.boneLockSelect': '選擇骨骼',
+    'motion.boneLockDamping': '跟隨平滑',
     'motion.boneLockApplied': '✓ 相機已鎖定到骨骼 {bone}',
     'motion.boneLockCleared': '✓ 已解除骨骼鎖定',
     'motion.moveSpeed': '移動速度',

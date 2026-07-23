@@ -38,6 +38,8 @@ import {
     getAutoCameraBeatsPerSwitch,
     setOrbitBoneLock,
     getOrbitBoneLock,
+    setBoneLockDamping,
+    getBoneLockDamping,
     getFocusedModelBoneNames,
     type CameraMode,
     type CameraControl,
@@ -442,6 +444,23 @@ function renderOrbitParams(container: HTMLElement): void {
         hint.className = 'cs-hint weak-text';
         hint.textContent = t('motion.boneOverride.noModel');
         container.appendChild(hint);
+    }
+
+    // 跟随平滑（仅锁定启用时）：0 = 刚性精确跟随，越大越平滑（过滤骨骼微动/物理抖动）。
+    if (boneLock.enabled) {
+        addSliderRow(
+            container,
+            t('motion.boneLockDamping'),
+            getBoneLockDamping(),
+            0,
+            0.95,
+            0.05,
+            (v) => {
+                setBoneLockDamping(v);
+                triggerAutoSave();
+            },
+            'lucide:waves'
+        );
     }
 }
 

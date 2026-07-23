@@ -960,6 +960,8 @@ const _boneLockTempVec = new Vector3(0, 0, 0);
 // 锁定前保存原始平移灵敏度/惯性用于恢复
 let _savedPanningSensibility = 50;
 let _savedInertia = 0.9;
+// 骨骼锁定跟随阻尼：0 = 刚性精确跟随，越大越平滑（滞后）。仅对位移做 lerp。
+let _boneLockDamping = 0;
 
 /** 启用/禁用轨道相机骨骼锁定。启用后相机 target 每帧锁定到指定骨骼的世界位置。 */
 export function setOrbitBoneLock(enabled: boolean, boneName?: string): void {
@@ -979,6 +981,16 @@ export function setOrbitBoneLock(enabled: boolean, boneName?: string): void {
 /** 获取当前骨骼锁定状态。 */
 export function getOrbitBoneLock(): { enabled: boolean; boneName: string | null } {
     return { enabled: _boneLockEnabled, boneName: _boneLockBoneName };
+}
+
+/** 获取骨骼锁定跟随阻尼（0 = 刚性，越大越平滑）。 */
+export function getBoneLockDamping(): number {
+    return _boneLockDamping;
+}
+
+/** 设置骨骼锁定跟随阻尼，范围 [0, 0.95]。 */
+export function setBoneLockDamping(v: number): void {
+    _boneLockDamping = clamp(v, 0, 0.95);
 }
 
 /** 获取当前焦点模型的所有骨骼名称列表。 */
@@ -1039,6 +1051,9 @@ function _startBoneLock(): void {
             // 按同一位移量一起平移到骨骼。避免 setTarget 每帧 rebuildAnglesAndRadius 重算朝向，
             // 否则会与相机惯性拉扯导致焦点左右漂移。
             const delta = _boneLockTempVec.subtract(cam.target);
+            // 跟随阻尼：k=1 刚性精确跟随；k<1 平滑滞后。仅对位移 lerp，不改变视角（alpha/beta/radius）。
+            const k = 1 - _boneLockDamping;
+            delta.scaleInPlace(k);
             cam.target.addInPlace(delta);
             cam.position.addInPlace(delta);
         }
