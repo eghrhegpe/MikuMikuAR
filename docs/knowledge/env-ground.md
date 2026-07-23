@@ -33,4 +33,4 @@ adr: []
 - 依赖 [`env-texture`](./env-texture.md) 的统一 canvas 贴图工厂。
 - 依赖 [`env-reflection`](./env-reflection.md) 的平面反射质量预设。
 - 依赖 [`env-context`](./env-context.md) 的上下文与环境系统引用。
-- 地面涟漪与水系统（`env-water`）联动，通过 `env-impl` 注册更新。
+- 地面涟漪与水系统（`env-water`）联动，通过 `env` 外观（facade）注册更新。

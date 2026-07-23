@@ -11,7 +11,7 @@ adr:
 ---
 
 ## 系统概览
-纯调度层，无状态。破除 `env-bridge` ↔ `env-impl`/`env-water` 的循环依赖：`env-bridge` 只 import dispatcher，不直接 import 各子系统实现。各子系统通过回调注册被动响应变化，由 `dispatchEnvChange` 统一调度。
+纯调度层，无状态。破除 `env-bridge` ↔ `env-impl`/`env-water` 的循环依赖：`env-bridge` 只 import dispatcher 与 `env` 外观（facade），不直接 import 各子系统实现。各子系统通过回调注册被动响应变化，由 `dispatchEnvChange` 统一调度。
 
 ## 核心职责
 - `env-dispatcher.ts` — Env 变化回调注册与分发、场景 tick 回调注册与执行。
@@ -26,5 +26,5 @@ adr:
 
 ## 与其他子系统关系
 - `env-bridge` 在 `setEnvState` 后调用 `dispatchEnvChange`。
-- `env-impl` 的 `ensureEnvUpdateObserver` 每帧调用 `runSceneTickCallbacks`。
+- `env` 外观（facade）的 `ensureEnvUpdateObserver` 每帧调用 `runSceneTickCallbacks`。
 - 各 env 子系统（env-water / [`env-sky`](./env-sky.md) / [`env-ground`](./env-ground.md) 等）通过 `registerEnvCallback` 注册响应。
