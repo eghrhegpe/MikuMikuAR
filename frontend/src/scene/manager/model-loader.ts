@@ -481,6 +481,20 @@ export async function loadPMXFile(
                     const existing = merged.get(cacheKey);
                     merged.set(cacheKey, { comment: metaComment || existing?.comment || '' });
                     setModelMetaCache(merged);
+                    // 如果详情面板正显示该模型的 comment card，更新其内容
+                    const commentCard = document.querySelector('[data-comment-card]');
+                    if (commentCard) {
+                        const valEl = commentCard.querySelector('.info-card-value');
+                        const labelEl = commentCard.querySelector('.info-card-label');
+                        if (labelEl) {
+                            const { t } = await import('@/core/i18n/t');
+                            labelEl.textContent = t('model-detail.fComment');
+                        }
+                        if (valEl) {
+                            valEl.textContent = metaComment || '—';
+                            (valEl as HTMLElement).style.whiteSpace = 'pre-wrap';
+                        }
+                    }
                 }
             }
             // 默认模型自动缩放：按统一目标高度归一化（仅 actor）
