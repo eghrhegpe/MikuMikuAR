@@ -1004,6 +1004,7 @@ export const ko: Record<string, string> = {
     'scene.vmd.wasmSingleLayer': '⚠ WASM은 단일 레이어만 지원, 로드됨: {name}',
     'scene.vmd.layersBlended': '✓ 레이어 블렌드됨: {names}',
     'scene.vmd.blendFailed': '✗ 레이어 블렌드 실패',
+    'scene.vmd.layersBlendFailedFallback': '⚠ 다중 레이어 블렌드 실패, 단일 레이어로 다운그레이드됨. 이유: {reason}',
 
     // —— Scene Camera ——
     'scene.camera.arFailed': '✗ AR 카메라 시작 실패, 원래대로 되돌림',

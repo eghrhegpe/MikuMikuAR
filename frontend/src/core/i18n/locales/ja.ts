@@ -1002,6 +1002,7 @@ export const ja: Record<string, string> = {
     'scene.vmd.wasmSingleLayer': '⚠ WASM は単一レイヤーのみ対応しています、読み込みました: {name}',
     'scene.vmd.layersBlended': '✓ レイヤーをブレンドしました: {names}',
     'scene.vmd.blendFailed': '✗ レイヤーのブレンドに失敗しました',
+    'scene.vmd.layersBlendFailedFallback': '⚠ 多層ブレンド失敗、単一レイヤーにダウングレードしました。理由：{reason}',
 
     // —— Scene Camera ——
     'scene.camera.arFailed': '✗ AR カメラの起動に失敗しました、元に戻しました',

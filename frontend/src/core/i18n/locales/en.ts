@@ -1065,6 +1065,7 @@ export const en: Record<string, string> = {
     'scene.vmd.wasmSingleLayer': '⚠ WASM supports single layer only, loaded: {name}',
     'scene.vmd.layersBlended': '✓ Layers blended: {names}',
     'scene.vmd.blendFailed': '✗ Layer blend failed',
+    'scene.vmd.layersBlendFailedFallback': '⚠ Multi-layer blend failed, downgraded to single layer. Reason: {reason}',
 
     // scene.camera — camera mode switch status
     'scene.camera.arFailed': '✗ AR camera failed to start, reverted',

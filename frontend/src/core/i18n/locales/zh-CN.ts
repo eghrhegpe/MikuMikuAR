@@ -1050,6 +1050,7 @@ export const zhCN: Record<string, string> = {
     'scene.vmd.wasmSingleLayer': '⚠ WASM 仅支持单图层，已加载: {name}',
     'scene.vmd.layersBlended': '✓ 图层混合: {names}',
     'scene.vmd.blendFailed': '✗ 图层混合失败',
+    'scene.vmd.layersBlendFailedFallback': '⚠ 多图层混合失败，已降级为单图层。原因：{reason}',
 
     // scene.camera — 相机模式切换状态
     'scene.camera.arFailed': '✗ AR 相机启动失败，已切回原模式',

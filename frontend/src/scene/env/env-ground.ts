@@ -41,6 +41,44 @@ import { getCanvasCtx } from './env-type-helpers';
 
 type GroundMat = StandardMaterial | PBRMaterial;
 
+// P3-fix: 反射 mount 前保存 StandardMaterial 原始 Fresnel/specular，unmount 时恢复
+// 避免 mount/unmount 用硬编码值覆盖用户自定义材质参数
+interface _GroundMatSnapshot {
+    fresnel: FresnelParameters | null;
+    specular: Color3 | null;
+}
+const _groundMatSnapshots = new WeakMap<StandardMaterial, _GroundMatSnapshot>();
+
+function _saveGroundMatOriginal(mat: StandardMaterial): void {
+    if (_groundMatSnapshots.has(mat)) {
+        return; // 已保存，避免二次保存覆盖原始快照
+    }
+    _groundMatSnapshots.set(mat, {
+        fresnel: mat.reflectionFresnelParameters
+            ? new FresnelParameters(mat.reflectionFresnelParameters)
+            : null,
+        specular: mat.specularColor ? mat.specularColor.clone() : null,
+    });
+}
+
+function _restoreGroundMatOriginal(mat: StandardMaterial): void {
+    const snap = _groundMatSnapshots.get(mat);
+    if (snap) {
+        mat.reflectionFresnelParameters = snap.fresnel
+            ? new FresnelParameters(snap.fresnel)
+            : null;
+        if (snap.specular) {
+            mat.specularColor = snap.specular.clone();
+        }
+        _groundMatSnapshots.delete(mat);
+    } else {
+        // 无快照时退回原硬编码默认值（兼容旧路径）
+        mat.reflectionFresnelParameters = new FresnelParameters();
+        mat.reflectionFresnelParameters.isEnabled = true;
+        mat.specularColor = new Color3(0.2, 0.2, 0.2);
+    }
+}
+
 function _getAlbedoTex(mat: GroundMat): Texture | null {
     if (mat instanceof PBRMaterial) {
         return mat.albedoTexture as Texture | null;
@@ -583,6 +621,8 @@ const groundReflection = new PlanarReflection({
             // 用当前 blend 值初始化 level，避免默认 1.00 闪烁
             (rt as MirrorTexture).level = envState.groundReflectionBlend;
             if (mat instanceof StandardMaterial) {
+                // P3-fix: 保存原始值，unmount 时恢复用户自定义而非硬编码值
+                _saveGroundMatOriginal(mat);
                 mat.reflectionFresnelParameters = new FresnelParameters();
                 mat.reflectionFresnelParameters.isEnabled = false;
                 // specularColor 控制灯光高光强度（太阳等），不是镜面反射叠加强度
@@ -593,9 +633,8 @@ const groundReflection = new PlanarReflection({
         } else {
             mat.reflectionTexture = null;
             if (mat instanceof StandardMaterial) {
-                mat.reflectionFresnelParameters = new FresnelParameters();
-                mat.reflectionFresnelParameters.isEnabled = true;
-                mat.specularColor = new Color3(0.2, 0.2, 0.2);
+                // P3-fix: 恢复 mount 前保存的原始值，避免硬编码覆盖用户自定义
+                _restoreGroundMatOriginal(mat);
             }
         }
     },

@@ -307,6 +307,15 @@ export class PlanarReflection {
             this.cfg.setBlend(0); // 清零反射强度（水面 planarReflectBlend / 地面 level）
         }
         this.cfg.onDisable?.();
+        // P3-fix: 先恢复 backFaceCulling 再 dispose RT，避免渲染中途异常导致材质残留单面
+        if (this.rt && this.bfcMap.size > 0) {
+            for (const mesh of this.rt.renderList ?? []) {
+                const m = mesh.material;
+                if (m && this.bfcMap.has(m.uniqueId)) {
+                    m.backFaceCulling = this.bfcMap.get(m.uniqueId)!;
+                }
+            }
+        }
         this.rt?.dispose();
         this.rt = null;
         this.mirrorCam?.dispose();

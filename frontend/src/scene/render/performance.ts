@@ -453,14 +453,16 @@ function getRScale(): number {
 
 /** 降级阈值（帧率低于此值则降级），按 reference 动态缩放。 */
 function getDegradeThreshold(level: DegradeLevel): number {
-    // 60Hz→28/20/14；120Hz→56/40/28
-    return [Infinity, 28, 20, 14][level] * getRScale();
+    // P3-fix: 28fps 已明显卡顿（用户感知阈值约 30fps），上调至 32/24/16
+    // 60Hz→32/24/16；120Hz→64/48/32
+    return [Infinity, 32, 24, 16][level] * getRScale();
 }
 
 /** 恢复阈值（帧率高于此值才允许恢复），按 reference 动态缩放。 */
 function getRecoveryThreshold(level: DegradeLevel): number {
-    // 60Hz→32/24/18；120Hz→64/48/36
-    return [Infinity, 32, 24, 18][level] * getRScale();
+    // P3-fix: 扩大滞回带防抖动，38/28/20
+    // 60Hz→38/28/20；120Hz→76/56/40
+    return [Infinity, 38, 28, 20][level] * getRScale();
 }
 
 /**
