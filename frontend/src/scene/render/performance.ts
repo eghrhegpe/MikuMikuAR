@@ -57,7 +57,8 @@ let _currentLevel: DegradeLevel = 0;
 
 // FPS smoothing
 const _fpsSamples: number[] = [];
-const _fpsSampleSize = 30; // ~0.5s at 60fps
+// P3-fix: 采样窗口动态化，按参考刷新率 0.5s 计算，避免 120Hz 下窗口过短误触发降级
+let _fpsSampleSize = 30; // 默认 60Hz × 0.5s，updatePerformance 中按 getReference() 重算
 let _lastFpsLog = 0;
 let _fpsReady = false; // 累积足够样本后设为 true
 
@@ -131,8 +132,9 @@ const LEVEL_CONFIGS: Record<DegradeLevel, LevelConfig> = {
     1: {
         shadowResolution: 512,
         shadowEnabled: true,
-        bloomEnabled: false,
-        dofEnabled: true,
+        // P3-fix: DoF 需要深度图开销最重，Level 1 优先关 DoF 保留轻量 bloom
+        bloomEnabled: true,
+        dofEnabled: false,
         vignetteEnabled: true,
         fxaaEnabled: true,
         outlineEnabled: true,
@@ -498,6 +500,11 @@ export function updatePerformance(): void {
 
     // 采集 FPS 样本
     const fps = _bridgeEngine.getFps();
+    // P3-fix: 按 reference 动态调整采样窗口（0.5s 窗口），高刷设备不误触发
+    const targetSampleSize = Math.max(15, Math.round(getReference() * 0.5));
+    if (targetSampleSize !== _fpsSampleSize) {
+        _fpsSampleSize = targetSampleSize;
+    }
     _fpsSamples.push(fps);
     if (_fpsSamples.length > _fpsSampleSize) {
         _fpsSamples.shift();

@@ -640,6 +640,7 @@ function buildStageLightSchema(): MenuNode[] {
                                                 offset: [0, 0, 0],
                                                 smoothing: 0.15,
                                                 moveWithTarget: false,
+                                                cachedWaistBone: null,
                                             },
                                         },
                                         state.id
