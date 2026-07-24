@@ -52,9 +52,6 @@ export function getCurrentSite(): PlazaSite | undefined {
 // ======== 界面层 ========
 
 export let layer: HTMLElement | null = null;
-export function setLayer(el: HTMLElement | null): void {
-    layer = el;
-}
 export function getLayer(): HTMLElement | null {
     if (!layer) {
         layer = document.getElementById('webviewLayer');

@@ -6,7 +6,6 @@ import type { PopupLevel } from '../core/config';
 import type { RenderState } from '../scene/scene';
 import { showPrompt } from '../core/dialog';
 import { tryCatchStatus, showErrorToast } from '../core/utils';
-import { logWarn } from '../core/logger';
 import { slideRow, addPresetChip } from '../core/ui-helpers';
 import {
     getRenderState,
@@ -14,7 +13,7 @@ import {
     transitionRenderState,
     defaultRenderState,
 } from '../scene/scene';
-import { GetRenderPresets, SaveRenderPreset } from '../core/wails-bindings';
+import { SaveRenderPreset } from '../core/wails-bindings';
 import { reRenderSceneMenu, getSceneMenu } from './scene-menu-state';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
@@ -170,10 +169,6 @@ export function getFilterPreset(name: string): Partial<RenderState> | undefined 
     return FILTER_PRESETS[name];
 }
 
-export function getFilterPresetName(name: string): string {
-    return t(FILTER_PRESET_LABELS[name] || name);
-}
-
 function buildPresetsSchema(): MenuNode[] {
     return [
         // 内置预设芯片组
@@ -296,22 +291,3 @@ export async function showPresetSaveDialog(): Promise<void> {
 }
 
 export const USER_FILTER_PRESETS: Record<string, Partial<RenderState>> = {};
-
-let _presetsLoaded = false;
-
-export async function loadUserPresets(): Promise<void> {
-    if (_presetsLoaded) {
-        return;
-    }
-    _presetsLoaded = true;
-    try {
-        const presets = await GetRenderPresets();
-        if (presets) {
-            for (const p of presets) {
-                USER_FILTER_PRESETS[p.name] = p.params as unknown as Partial<RenderState>;
-            }
-        }
-    } catch (err) {
-        logWarn('scene-render-presets', 'loadUserPresets:', err);
-    }
-}

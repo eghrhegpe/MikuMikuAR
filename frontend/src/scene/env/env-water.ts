@@ -1389,13 +1389,6 @@ export function getWaterPhase(): number {
 }
 
 /**
- * 测试/调试用：读取当前波速累加速率。
- */
-export function getWaterWaveSpeed(): number {
-    return _waterWaveSpeed;
-}
-
-/**
  * 预设 → EnvState 完整字段映射（含扩展参数），供 UI chip handler 调用并持久化。
  * 修复前扩展参数仅由 applyWaterPresetToCurrent 写入材质、不进 envState，
  * 会被后续任意 envState 变化还原；此处一并写入，由 _syncWaterUniforms 统一应用。

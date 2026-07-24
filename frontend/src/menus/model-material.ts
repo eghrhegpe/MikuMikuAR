@@ -1,7 +1,6 @@
 // [doc:architecture] Model Material — 材质调节 UI 层（batch/per-mat/root/list）
 
 import { Material } from '@babylonjs/core/Materials/material';
-import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { cardContainer, setStatus, PopupLevel, stackRegistry } from '../core/config';
 import {
     getMatCatGroups,
@@ -16,11 +15,9 @@ import {
     setMatEnabled,
     isMatCategoryAllEnabled,
     setMatCategoryEnabled,
-    getMaterialMeshes,
     DEFAULT_MAT_PARAMS,
     applyUnlitFallback,
 } from '../scene/scene';
-import { createIconifyIcon } from '../core/icons';
 import {
     slideRow,
     addSliderRow,
@@ -154,156 +151,6 @@ function buildMatToggle(
     });
     toggle.style.marginLeft = 'auto';
     return toggle;
-}
-
-function buildMatBatchSchema(id: string, _modelName: string): MenuNode[] {
-    const groups = getMatCatGroups(id);
-    const detailList = getMatDetailList(id);
-    const overrideCount = detailList.filter((d) => d.modified).length;
-
-    const CATEGORY_ICONS: Record<string, string> = {
-        皮肤: 'droplet',
-        头发: 'feather',
-        眼睛: 'eye',
-        服装: 'shirt',
-    };
-
-    return [
-        {
-            id: 'matBatch:list',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    if (overrideCount > 0) {
-                        const hint = document.createElement('div');
-                        hint.className = 'warn-hint';
-                        hint.textContent = t('model-material.overrideHint', {
-                            count: overrideCount,
-                        });
-                        inner.appendChild(hint);
-                    }
-                    for (const [cat, mats] of groups) {
-                        const params = getMatCatParams(id, cat);
-                        addCollapsible(inner, {
-                            title: `${cat} (${mats.length})`,
-                            icon: CATEGORY_ICONS[cat] || 'box',
-                            defaultOpen: false,
-                            headerToggle: {
-                                value: isMatCategoryAllEnabled(id, cat),
-                                onChange: (v) => setMatCategoryEnabled(id, cat, v),
-                                bind: () => isMatCategoryAllEnabled(id, cat),
-                            },
-                            renderContent: (panel) => {
-                                addSliderRow(
-                                    panel,
-                                    t('model-material.diffuseMul'),
-                                    params.diffuseMul,
-                                    0,
-                                    2,
-                                    0.05,
-                                    (v) => setMatCatParams(id, cat, { diffuseMul: v })
-                                );
-                                addSliderRow(
-                                    panel,
-                                    t('model-material.specularMul'),
-                                    params.specularMul,
-                                    0,
-                                    2,
-                                    0.05,
-                                    (v) => setMatCatParams(id, cat, { specularMul: v })
-                                );
-                                addSliderRow(
-                                    panel,
-                                    t('model-material.shininess'),
-                                    params.shininess,
-                                    0,
-                                    200,
-                                    1,
-                                    (v) => setMatCatParams(id, cat, { shininess: v })
-                                );
-                                addSliderRow(
-                                    panel,
-                                    t('model-material.ambientMul'),
-                                    params.ambientMul,
-                                    0,
-                                    2,
-                                    0.05,
-                                    (v) => setMatCatParams(id, cat, { ambientMul: v })
-                                );
-                                addSliderRow(
-                                    panel,
-                                    t('model-material.emissiveMul'),
-                                    params.emissiveMul,
-                                    0,
-                                    2,
-                                    0.05,
-                                    (v) => setMatCatParams(id, cat, { emissiveMul: v })
-                                );
-                                _addGroupSeparator(panel, t('model-material.texLevelGroup'));
-                                addSliderRow(
-                                    panel,
-                                    t('model-material.diffuseTexLevel'),
-                                    params.diffuseTexLevel,
-                                    0,
-                                    3,
-                                    0.1,
-                                    (v) => setMatCatParams(id, cat, { diffuseTexLevel: v })
-                                );
-                                addSliderRow(
-                                    panel,
-                                    t('model-material.bumpTexLevel'),
-                                    params.bumpTexLevel,
-                                    0,
-                                    3,
-                                    0.1,
-                                    (v) => setMatCatParams(id, cat, { bumpTexLevel: v })
-                                );
-                                addSliderRow(
-                                    panel,
-                                    t('model-material.toonTexLevel'),
-                                    params.toonTexLevel,
-                                    0,
-                                    3,
-                                    0.1,
-                                    (v) => setMatCatParams(id, cat, { toonTexLevel: v })
-                                );
-                                addSliderRow(
-                                    panel,
-                                    t('model-material.sphereTexLevel'),
-                                    params.sphereTexLevel,
-                                    0,
-                                    3,
-                                    0.1,
-                                    (v) => setMatCatParams(id, cat, { sphereTexLevel: v })
-                                );
-                                addSliderRow(
-                                    panel,
-                                    t('model-material.emissiveTexLevel'),
-                                    params.emissiveTexLevel,
-                                    0,
-                                    3,
-                                    0.1,
-                                    (v) => setMatCatParams(id, cat, { emissiveTexLevel: v })
-                                );
-                            },
-                        });
-                    }
-                });
-            },
-        },
-    ] satisfies MenuNode[];
-}
-
-export function buildMatBatchLevel(id: string, modelName: string): PopupLevel {
-    const label = t('model-material.batchByPart', { name: modelName });
-    return {
-        label,
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            return renderMenu(buildMatBatchSchema(id, modelName), container);
-        },
-    };
 }
 
 function buildPerMatSchema(
@@ -609,91 +456,3 @@ function _renderParamCard(
     });
 }
 
-function buildMatListSchema(
-    id: string,
-    modelName: string,
-    targetStack?: SlideMenu | null
-): MenuNode[] {
-    return [
-        {
-            id: 'matList:main',
-            kind: 'custom',
-            renderCustom: (c) => {
-                const detailList = getMatDetailList(id);
-                cardContainer(c, (inner) => {
-                    inner.style.padding = '6px 10px';
-                    for (const detail of detailList) {
-                        const meshes = getMaterialMeshes(id);
-                        const mat = meshes?.[detail.index]?.material as StandardMaterial;
-                        if (!mat) {
-                            continue;
-                        }
-                        const matEnabled = isMatEnabled(id, detail.index);
-
-                        const row = document.createElement('div');
-                        row.className = `mat-row${detail.modified ? ' modified' : ''}${!matEnabled ? ' mat-disabled' : ''}`;
-
-                        const idxSpan = document.createElement('span');
-                        idxSpan.className = 'mat-index';
-                        idxSpan.textContent = `#${String(detail.index + 1).padStart(2, '0')}`;
-                        row.appendChild(idxSpan);
-
-                        const nameSpan = document.createElement('span');
-                        nameSpan.className = 'mat-name';
-                        nameSpan.title = detail.name;
-                        nameSpan.textContent = detail.name;
-                        row.appendChild(nameSpan);
-
-                        if (detail.modified) {
-                            const modSpan = document.createElement('span');
-                            modSpan.className = 'mat-modified';
-                            const icon = createIconifyIcon('check-circle');
-                            if (icon) {
-                                modSpan.appendChild(icon);
-                            }
-                            row.appendChild(modSpan);
-                        }
-
-                        const toggle = buildMatToggle(
-                            id,
-                            detail.index,
-                            detail.name,
-                            matEnabled,
-                            row
-                        );
-                        row.appendChild(toggle);
-
-                        row.addEventListener('click', () => {
-                            (targetStack ?? stackRegistry.modelStack)?.push(
-                                buildPerMatLevel(
-                                    id,
-                                    modelName,
-                                    detail.name,
-                                    mat,
-                                    detail.index,
-                                    targetStack
-                                )
-                            );
-                        });
-                        inner.appendChild(row);
-                    }
-                });
-            },
-        },
-    ];
-}
-
-export function buildMatListLevel(
-    id: string,
-    modelName: string,
-    targetStack?: SlideMenu | null
-): PopupLevel {
-    return {
-        label: t('model-material.perMaterial', { name: modelName }),
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            return renderMenu(buildMatListSchema(id, modelName, targetStack), container);
-        },
-    };
-}

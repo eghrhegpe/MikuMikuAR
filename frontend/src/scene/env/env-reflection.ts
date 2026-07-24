@@ -556,20 +556,6 @@ function _updateProbeStrength(preset: ReflectionQualityPreset, factor: number): 
 // ======== 公共 API ========
 
 /**
- * 获取当前反射模式（供 UI 状态栏 / 调试面板读取）。
- */
-export function getCurrentReflectionMode(): ResolvedReflectionMode {
-    return _currentMode;
-}
-
-/**
- * 获取当前 Probe 是否激活。
- */
-export function isReflectionProbeActive(): boolean {
-    return _reflectionProbe !== null;
-}
-
-/**
  * 模型加载后调用：将 Probe 绑定到新模型的网格。
  * 替代旧 renderer.ts 的 bindReflectionProbeToModel。
  */

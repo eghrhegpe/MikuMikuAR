@@ -7,8 +7,6 @@ import {
     LibraryModel,
     PopupLevel,
     normPath,
-    modelMetaCache,
-    setModelMetaCache,
     closeAllOverlays,
     modelRegistry,
     focusedModelId,
@@ -34,7 +32,6 @@ import { getMotionMenu } from './motion-popup';
 import { slideRow } from '../core/ui-helpers';
 import { addDisposableListener, type Disposable } from '../core/dom';
 import {
-    GetModelMetaBatch,
     AddRecentModel,
     ExtractZip,
     GetAllTags,
@@ -58,12 +55,9 @@ import { createIconifyIcon } from '../core/icons';
 import {
     buildLevel,
     modelToRow,
-    thumbnailKeyForModel,
     splitSubdirSegments,
     computeRestoreSegments,
-    getPendingMetaGuard,
     resolveDisplayBrowseDir,
-    loadThumbnailsStreaming,
 } from './library-core';
 import { librarySessionStore } from './library-session-store';
 
@@ -103,50 +97,6 @@ function _onModelLoaded(): void {
 // 先移除旧监听器再注册，确保 HMR 重载不重复绑定
 _mmkuDisp?.dispose();
 _mmkuDisp = addDisposableListener(document, 'mmku:modelLoaded', _onModelLoaded);
-
-// ======== 缩略图 ========
-
-export async function loadThumbnailsForLevel(
-    level: PopupLevel,
-    signal?: AbortSignal
-): Promise<void> {
-    const items = level.items.filter((r) => r.kind === 'model' && r.model);
-    const keys = items.map((r) => thumbnailKeyForModel(r.model!));
-    if (keys.length === 0) {
-        return;
-    }
-    // 流式加载：逐张出现，不阻塞 UI。[adr-136] 透传外部取消信号
-    await safeCallAsync('library-actions', 'loadThumbnailsForLevel:', () =>
-        loadThumbnailsStreaming(keys, signal)
-    );
-}
-
-export async function ensureModelMeta(pmxPaths: string[]): Promise<void> {
-    const guard = getPendingMetaGuard();
-    const uncached = pmxPaths.filter((p) => !modelMetaCache.has(p) && !guard.isLoading(p));
-    if (uncached.length === 0) {
-        return;
-    }
-    for (const p of uncached) {
-        guard.tryEnter(p);
-    }
-    try {
-        const batch = await GetModelMetaBatch(uncached);
-        if (batch) {
-            const merged = new Map(modelMetaCache);
-            for (const [path, meta] of Object.entries(batch)) {
-                merged.set(path, meta);
-            }
-            setModelMetaCache(merged);
-        }
-    } catch (err) {
-        logWarn('library-actions', 'ensureModelMeta:', err);
-    } finally {
-        for (const p of uncached) {
-            guard.leave(p);
-        }
-    }
-}
 
 // ======== 模型恢复（上次浏览目录高亮）========
 

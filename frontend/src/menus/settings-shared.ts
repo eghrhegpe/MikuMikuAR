@@ -55,19 +55,14 @@ export function setDownloadWatchEnabledCached(v: boolean): void {
 
 // ======== VMD 伴音自动加载 ========
 /** 加载 VMD 动作时自动发现并加载同目录同名音频（.mp3/.wav/.ogg/.flac）。默认开启。 */
-import { isAutoLoadCompanionAudioEnabled, setUIState } from '../core/state';
+import { setUIState } from '../core/state';
 
 export function setAutoLoadCompanionAudio(v: boolean): void {
     setUIState({ autoLoadCompanionAudio: v });
 }
 
-export function getAutoLoadCompanionAudio(): boolean {
-    return isAutoLoadCompanionAudioEnabled();
-}
-
 // ======== Color utilities ========
-// 实现下沉至 @/core/color-helpers，此处 re-export 以保持对外 API 稳定。
-export { hexToRgb, rgbToString } from '../core/color-helpers';
+// 实现下沉至 @/core/color-helpers。
 
 export function generateTextColors(hex: string): { bright: string; dim: string; muted: string } {
     const rgb = hexToRgb(hex);

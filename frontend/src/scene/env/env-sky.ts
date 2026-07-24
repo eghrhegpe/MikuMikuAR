@@ -37,16 +37,6 @@ let _texStarsImg: HTMLImageElement | null = null;
 let _texStarsImgUrl: string | null = null;
 let _texStarsGeneration = 0;
 
-export function _getStarsTexCache() {
-    return { img: _texStarsImg, url: _texStarsImgUrl, generation: _texStarsGeneration };
-}
-
-export function _setStarsTexCache(img: HTMLImageElement | null, url: string | null, gen: number) {
-    _texStarsImg = img;
-    _texStarsImgUrl = url;
-    _texStarsGeneration = gen;
-}
-
 export function clearStarsTexCache() {
     _texStarsImg = null;
     _texStarsImgUrl = null;
