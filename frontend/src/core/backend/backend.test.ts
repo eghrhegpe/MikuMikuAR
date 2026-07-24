@@ -593,4 +593,43 @@ describe('FSA 目录扫描嵌套结构（保留目录层级 + 同名不覆盖）
             await browserAdapter.readFileBytes('web://selected-dir/PMX/分类1/sub/miku.pmx')
         ).toEqual(new Uint8Array([5, 6]));
     });
+
+    it('[p2b] 子目录纹理 → 按相对 PMX 路径写入 dir:<stem>:<relPath>，readFileBytes 精确命中', async () => {
+        const root = buildFakeTree({
+            name: 'models',
+            kind: 'directory',
+            children: [
+                {
+                    kind: 'directory',
+                    name: 'PMX',
+                    children: [
+                        { kind: 'file', name: 'miku.pmx', bytes: new Uint8Array([9, 9]) },
+                        { kind: 'file', name: 'toon.png', bytes: new Uint8Array([1, 1]) },
+                        {
+                            kind: 'directory',
+                            name: 'tex',
+                            children: [{ kind: 'file', name: 'face.png', bytes: new Uint8Array([2, 2]) }],
+                        },
+                    ],
+                },
+            ],
+        }) as FileSystemDirectoryHandle;
+        setWindow({ showDirectoryPicker: async () => root });
+        await browserAdapter.SelectDir();
+
+        // 子目录纹理按相对 PMX 路径落地：dir:<stem>:<relToPmx>/<name>
+        expect(_idbStore.get('dir:miku:tex/face.png')).toEqual(new Uint8Array([2, 2]));
+        // 同层纹理仍按 basename 落地（相对 PMX 路径为空）：dir:<stem>:<name>
+        expect(_idbStore.get('dir:miku:toon.png')).toEqual(new Uint8Array([1, 1]));
+        // 旧实现错存键 dir:<stem>:<name>（丢子目录）应不存在
+        expect(_idbStore.get('dir:miku:face.png')).toBeUndefined();
+
+        // 读取侧：web://model/<stem>/<relPath> 精确路由到 dir:<stem>:<relPath>
+        expect(
+            await browserAdapter.readFileBytes('web://model/miku/tex/face.png')
+        ).toEqual(new Uint8Array([2, 2]));
+        expect(
+            await browserAdapter.readFileBytes('web://model/miku/toon.png')
+        ).toEqual(new Uint8Array([1, 1]));
+    });
 });
