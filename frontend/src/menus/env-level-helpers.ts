@@ -9,7 +9,7 @@ import { setEnvTextureBindingTarget } from './env-menu-state';
 import { getEnvMenu } from './env-menu-state';
 
 /** 通用的环境功能层级构建器：包裹 cardContainer + renderMenu 模板 */
-export function _buildLevel(
+export function buildLevel(
     label: string,
     buildSchema: (c: HTMLElement) => (() => void) | void,
     buildExtraSegments?: Array<(c: HTMLElement) => (() => void) | void>
@@ -41,7 +41,7 @@ export function _buildLevel(
 }
 
 /** 打开环境贴图选择器 */
-export function _openTexturePicker(
+export function openTexturePicker(
     target: import('./env-menu-state').EnvTextureBindingTarget,
     label: string,
     browseDir?: string,

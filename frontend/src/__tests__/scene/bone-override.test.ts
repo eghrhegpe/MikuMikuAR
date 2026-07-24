@@ -1,12 +1,12 @@
-// [doc:adr-116 P1] 校验覆盖合成纯函数 _computeOverride 的语义正确性。
+// [doc:adr-116 P1] 校验覆盖合成纯函数 computeOverride 的语义正确性。
 // 重点：位置覆盖应为「动画平移 + 偏移」的加法语义，且位置覆盖不得抹除动画旋转。
 import { describe, it, expect } from 'vitest';
 import { Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector';
-import { _computeOverride } from '@/scene/motion/bone-override';
+import { computeOverride } from '@/scene/motion/bone-override';
 
 const HALF_PI = Math.PI / 2;
 
-describe('bone-override _computeOverride (ADR-116 P1)', () => {
+describe('bone-override computeOverride (ADR-116 P1)', () => {
     it('位置覆盖：保留动画旋转并叠加偏移量（加法语义）', () => {
         const oldT = new Vector3(5, 0, 0);
         const oldR = Quaternion.FromEulerAngles(0, Math.PI / 4, 0); // 45° yaw
@@ -16,7 +16,7 @@ describe('bone-override _computeOverride (ADR-116 P1)', () => {
             pos: new Vector3(0, 1, 0),
             overrideRotation: false,
         };
-        const { translation, rotation } = _computeOverride(oldT, oldR, slot);
+        const { translation, rotation } = computeOverride(oldT, oldR, slot);
         expect(translation.x).toBeCloseTo(5);
         expect(translation.y).toBeCloseTo(1);
         expect(translation.z).toBeCloseTo(0);
@@ -28,7 +28,7 @@ describe('bone-override _computeOverride (ADR-116 P1)', () => {
         const oldT = new Vector3(1, 2, 3);
         const oldR = Quaternion.Identity();
         const slot = { quat: Quaternion.Identity(), weight: 1, overrideRotation: false };
-        const { translation } = _computeOverride(oldT, oldR, slot);
+        const { translation } = computeOverride(oldT, oldR, slot);
         expect(translation.x).toBeCloseTo(1);
         expect(translation.y).toBeCloseTo(2);
         expect(translation.z).toBeCloseTo(3);
@@ -39,7 +39,7 @@ describe('bone-override _computeOverride (ADR-116 P1)', () => {
         const oldR = Quaternion.Identity();
         const target = Quaternion.FromEulerAngles(0, Math.PI, 0); // 180° yaw
         const slot = { quat: target, weight: 1, overrideRotation: true };
-        const { translation, rotation } = _computeOverride(oldT, oldR, slot);
+        const { translation, rotation } = computeOverride(oldT, oldR, slot);
         expect(translation.x).toBeCloseTo(1);
         // oldR=Identity 时 result = Identity × target = target
         expect(rotation.toEulerAngles().y).toBeCloseTo(Math.PI);
@@ -50,7 +50,7 @@ describe('bone-override _computeOverride (ADR-116 P1)', () => {
         const oldR = Quaternion.Identity();
         const target = Quaternion.FromEulerAngles(0, Math.PI, 0); // 180° yaw
         const slot = { quat: target, weight: 0.5, overrideRotation: true };
-        const { rotation } = _computeOverride(oldT, oldR, slot);
+        const { rotation } = computeOverride(oldT, oldR, slot);
         // 半程混合 → 90° yaw
         expect(rotation.toEulerAngles().y).toBeCloseTo(HALF_PI);
     });
@@ -65,7 +65,7 @@ describe('bone-override _computeOverride (ADR-116 P1)', () => {
             pos: new Vector3(0, 2, 0),
             overrideRotation: true,
         };
-        const { translation, rotation } = _computeOverride(oldT, oldR, slot);
+        const { translation, rotation } = computeOverride(oldT, oldR, slot);
         expect(translation.y).toBeCloseTo(2);
         expect(rotation.toEulerAngles().y).toBeCloseTo(HALF_PI);
     });
@@ -74,7 +74,7 @@ describe('bone-override _computeOverride (ADR-116 P1)', () => {
         const oldT = new Vector3(0, 0, 0);
         const oldR = Quaternion.FromEulerAngles(0, Math.PI / 3, 0);
         const slot = { quat: Quaternion.Identity(), weight: 1 }; // 无 overrideRotation
-        const { rotation } = _computeOverride(oldT, oldR, slot);
+        const { rotation } = computeOverride(oldT, oldR, slot);
         expect(rotation.toEulerAngles().y).toBeCloseTo(Math.PI / 3);
     });
 
@@ -87,7 +87,7 @@ describe('bone-override _computeOverride (ADR-116 P1)', () => {
         const parentRot = Quaternion.FromEulerAngles(0, HALF_PI, 0);
         const slotQuat = Quaternion.FromEulerAngles(0, HALF_PI, 0);
         const slot = { quat: slotQuat, weight: 1, overrideRotation: true };
-        const { rotation } = _computeOverride(new Vector3(0, 0, 0), parentRot, slot);
+        const { rotation } = computeOverride(new Vector3(0, 0, 0), parentRot, slot);
         expect(rotation.toEulerAngles().y).toBeCloseTo(Math.PI); // 180°
     });
 
@@ -97,7 +97,7 @@ describe('bone-override _computeOverride (ADR-116 P1)', () => {
         const parentRot = Quaternion.FromEulerAngles(0, HALF_PI, 0);
         const slotQuat = Quaternion.FromEulerAngles(0, HALF_PI, 0);
         const slot = { quat: slotQuat, weight: 1, overrideRotation: true };
-        const { rotation } = _computeOverride(new Vector3(0, 0, 0), parentRot, slot);
+        const { rotation } = computeOverride(new Vector3(0, 0, 0), parentRot, slot);
         expect(rotation.toEulerAngles().y).not.toBeCloseTo(HALF_PI);
         expect(rotation.toEulerAngles().y).toBeCloseTo(Math.PI);
     });
@@ -107,7 +107,7 @@ describe('bone-override _computeOverride (ADR-116 P1)', () => {
         const parentRot = Quaternion.FromEulerAngles(0, HALF_PI, 0);
         const slotQuat = Quaternion.FromEulerAngles(0, 0, 0);
         const slot = { quat: slotQuat, weight: 0.5, overrideRotation: true };
-        const { rotation } = _computeOverride(new Vector3(0, 0, 0), parentRot, slot);
+        const { rotation } = computeOverride(new Vector3(0, 0, 0), parentRot, slot);
         expect(rotation.toEulerAngles().y).toBeCloseTo(HALF_PI / 2); // 45°
     });
 
@@ -120,7 +120,7 @@ describe('bone-override _computeOverride (ADR-116 P1)', () => {
             pos: new Vector3(1, 2, 3),
             overrideRotation: true,
         };
-        const { translation, rotation } = _computeOverride(new Vector3(0, 0, 0), parentRot, slot);
+        const { translation, rotation } = computeOverride(new Vector3(0, 0, 0), parentRot, slot);
         expect(rotation.toEulerAngles().y).toBeCloseTo(Math.PI); // 旋转复合 180°
         expect(translation.x).toBeCloseTo(1); // 平移走纯加法，不受旋转复合影响
         expect(translation.y).toBeCloseTo(2);
@@ -132,16 +132,16 @@ describe('bone-override _computeOverride (ADR-116 P1)', () => {
 // 复合分支（weight≥1 → oldRotation × slot.quat）与 Slerp 分支（weight<1 → Slerp(oldRotation, slot.quat, weight)）
 // 在非单位 oldRotation（真实父骨传播）下，于边界处结果截然不同。若有人误改 `>=1` 为 `>1`/`>0`，
 // 或把 Slerp 终点误写成「复合」，以下用例会立刻失败。
-describe('bone-override _computeOverride Slerp 分支边界 (ADR-147 R4)', () => {
+describe('bone-override computeOverride Slerp 分支边界 (ADR-147 R4)', () => {
     it('边界 weight=1（复合）vs weight=0.999（Slerp）：同非单位 oldR 下结果发散', () => {
         const parentRot = Quaternion.FromEulerAngles(0, HALF_PI, 0); // 父骨 90°
         const slotQuat = Quaternion.FromEulerAngles(0, 0, 0); // 本骨目标 0°
-        const compound = _computeOverride(new Vector3(0, 0, 0), parentRot, {
+        const compound = computeOverride(new Vector3(0, 0, 0), parentRot, {
             quat: slotQuat,
             weight: 1,
             overrideRotation: true,
         });
-        const slerp = _computeOverride(new Vector3(0, 0, 0), parentRot, {
+        const slerp = computeOverride(new Vector3(0, 0, 0), parentRot, {
             quat: slotQuat,
             weight: 0.999,
             overrideRotation: true,
@@ -157,7 +157,7 @@ describe('bone-override _computeOverride Slerp 分支边界 (ADR-147 R4)', () =>
     it('下界 weight=0：slot.quat 完全不生效，纯沿用父骨旋转', () => {
         const parentRot = Quaternion.FromEulerAngles(0, HALF_PI, 0); // 90°
         const slotQuat = Quaternion.FromEulerAngles(0, Math.PI, 0); // 本骨目标 180°
-        const { rotation } = _computeOverride(new Vector3(0, 0, 0), parentRot, {
+        const { rotation } = computeOverride(new Vector3(0, 0, 0), parentRot, {
             quat: slotQuat,
             weight: 0,
             overrideRotation: true,
@@ -170,7 +170,7 @@ describe('bone-override _computeOverride Slerp 分支边界 (ADR-147 R4)', () =>
     it('weight=1 是复合而非 Slerp@1：非单位 oldR + 非零目标时结果差一倍', () => {
         const parentRot = Quaternion.FromEulerAngles(0, HALF_PI, 0); // 90°
         const slotQuat = Quaternion.FromEulerAngles(0, HALF_PI, 0); // 本骨目标 90°
-        const { rotation } = _computeOverride(new Vector3(0, 0, 0), parentRot, {
+        const { rotation } = computeOverride(new Vector3(0, 0, 0), parentRot, {
             quat: slotQuat,
             weight: 1,
             overrideRotation: true,

@@ -9,7 +9,7 @@ import type { MenuNode } from './menu-schema';
 import { _buildLevel } from './env-level-helpers';
 
 export function buildFogLevel(): PopupLevel {
-    return _buildLevel(t('env.fog'), (c) => {
+    return buildLevel(t('env.fog'), (c) => {
         const fogSchema: MenuNode[] = [
             {
                 id: 'env:fog:mode',

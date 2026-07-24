@@ -9,7 +9,7 @@ import type { MenuNode } from './menu-schema';
 import { _buildLevel } from './env-level-helpers';
 
 export function buildWindLevel(): PopupLevel {
-    return _buildLevel(t('env.wind'), (c) => {
+    return buildLevel(t('env.wind'), (c) => {
         const windSchema: MenuNode[] = [
             {
                 id: 'env:wind:angle',

@@ -175,7 +175,7 @@ export interface OverrideSlotLike {
  * - [doc:adr-123 P1] absolute 模式：weight≥1 且 absolute=true 时完全替换 oldRotation。
  * 抽离为纯函数，无需真实骨骼运行时即可单测。
  */
-export function _computeOverride(
+export function computeOverride(
     oldTranslation: Vector3,
     oldRotation: Quaternion,
     slot: OverrideSlotLike
@@ -489,7 +489,7 @@ function _applyWasmOverride(slot: _OverrideSlot, rb: IMmdRuntimeBone): void {
     oldMat.getRotationMatrixToRef(rotMat);
     const oldQ = _q();
     Quaternion.FromRotationMatrixToRef(rotMat, oldQ);
-    const { translation, rotation } = _computeOverride(oldT, oldQ, slot);
+    const { translation, rotation } = computeOverride(oldT, oldQ, slot);
     const newMat = _m();
     Matrix.ComposeToRef(_ONE, rotation, translation, newMat);
     newMat.copyToArray(buf, 0);

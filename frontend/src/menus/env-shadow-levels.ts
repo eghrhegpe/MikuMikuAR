@@ -12,7 +12,7 @@ import type { MenuNode } from './menu-schema';
 import { _buildLevel } from './env-level-helpers';
 
 export function buildShadowLevel(): PopupLevel {
-    return _buildLevel(t('env.shadow'), (c) => {
+    return buildLevel(t('env.shadow'), (c) => {
         const shadowSchema: MenuNode[] = [
             {
                 id: 'env:shadow:env',

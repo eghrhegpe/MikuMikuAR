@@ -28,7 +28,7 @@ const WATER_PRESET_I18N: Record<string, string> = {
 };
 
 export function buildWaterLevel(): PopupLevel {
-    return _buildLevel(
+    return buildLevel(
         t('env.water'),
         (c) => {
             // ===== 水面预设（顶部 chips，一键应用）=====

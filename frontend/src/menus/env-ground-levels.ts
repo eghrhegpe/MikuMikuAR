@@ -25,7 +25,7 @@ const GROUND_PRESET_I18N: Record<string, string> = {
 };
 
 export function buildGroundLevel(): PopupLevel {
-    return _buildLevel(t('env.ground'), (c) => {
+    return buildLevel(t('env.ground'), (c) => {
         // ===== 地面预设（顶部 chips，一键应用）=====
         const presetsSchema: MenuNode[] = [
             {
@@ -172,7 +172,7 @@ export function buildGroundLevel(): PopupLevel {
                         t('env.customTexture'),
                         false,
                         () =>
-                            _openTexturePicker(
+                            openTexturePicker(
                                 'ground',
                                 t('env.customTexture'),
                                 'environment',
