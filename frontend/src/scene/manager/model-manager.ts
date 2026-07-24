@@ -9,6 +9,7 @@
 // - 模型状态完全封装，外部只能通过方法访问
 
 import { Scene } from '@babylonjs/core/scene';
+import { LinesMesh } from '@babylonjs/core/Meshes/linesMesh';
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
@@ -28,6 +29,7 @@ import { clamp01, swallowError } from '@/core/utils';
 import { logWarn } from '@/core/logger';
 import { disposeModelMaterialState } from './material';
 import { applyWetnessToInst } from '@/scene/env/env-wetness';
+import { getOverrideType, type OverrideType } from '../motion/bone-override';
 
 // ======== Per-model state maps ========
 // (owned by ModelManager, not exported directly)
@@ -197,11 +199,15 @@ export class ModelManager {
         {
             lineSystem: Mesh;
             joints: Mesh[];
+            /** 覆盖着色线段（每对骨骼一条，根据覆盖状态显示/隐藏/着色） */
+            overrideLines: LinesMesh[];
             update: () => void;
             dirty: boolean;
             markDirty: () => void;
         }
     >();
+    /** 骨骼覆盖着色材质（懒加载，四种类型共享所有模型） */
+    private _ovMaterials: Record<OverrideType | 'default', StandardMaterial> | null = null;
     private _boneUpdateObserver: ObserverHandle | null = null;
 
     /** Currently active formation type, or null if custom/manual arrangement. */
@@ -816,8 +822,23 @@ export class ModelManager {
         const lines: Vector3[][] = [];
         const tmp = new Vector3();
         const joints: Mesh[] = [];
-        const jointData: { mesh: Mesh; boneIndex: number }[] = [];
+        const jointData: { mesh: Mesh; boneIndex: number; boneName: string }[] = [];
         const lineData: { childIndex: number; parentIndex: number }[] = [];
+
+        // 懒加载覆盖着色材质
+        if (!this._ovMaterials) {
+            this._ovMaterials = {
+                default: new StandardMaterial('bone_ov_default', this.scene),
+                rotation: new StandardMaterial('bone_ov_rotation', this.scene),
+                position: new StandardMaterial('bone_ov_position', this.scene),
+                both: new StandardMaterial('bone_ov_both', this.scene),
+            };
+            this._ovMaterials.default.diffuseColor = new Color3(1, 1, 1);
+            this._ovMaterials.rotation.diffuseColor = new Color3(1, 0.2, 0.2);   // 红 — 旋转覆盖
+            this._ovMaterials.position.diffuseColor = new Color3(0.2, 0.5, 1);   // 蓝 — 位置覆盖
+            this._ovMaterials.both.diffuseColor = new Color3(1, 0.3, 1);         // 紫 — 旋转 + 位置
+        }
+        const ovMat = this._ovMaterials;
 
         for (let i = 0; i < bones.length; i++) {
             const bone = bones[i];
@@ -843,7 +864,7 @@ export class ModelManager {
             sphere.position.copyFrom(pos);
             sphere.setEnabled(false);
             joints.push(sphere);
-            jointData.push({ mesh: sphere, boneIndex: i });
+            jointData.push({ mesh: sphere, boneIndex: i, boneName: bone.name });
 
             // Bone line from parent to child
             const parentPos = new Vector3();
@@ -862,6 +883,23 @@ export class ModelManager {
         lineSystem.color = new Color3(1, 1, 1);
         lineSystem.isPickable = false;
         lineSystem.setEnabled(inst.showBoneLines);
+
+        // [doc:bone-override] 覆盖着色线段：为每对骨骼创建独立 LinesMesh，
+        // 根据覆盖状态显示/隐藏/着色。白色 lineSystem 不可逐段着色，需独立 mesh。
+        const overrideLines: LinesMesh[] = [];
+        for (let i = 0; i < lineData.length; i++) {
+            const ovLine = MeshBuilder.CreateLines(
+                'bone_ov_line',
+                {
+                    points: [Vector3.Zero(), Vector3.Zero()],
+                    updatable: true,
+                },
+                this.scene
+            );
+            ovLine.isPickable = false;
+            ovLine.setEnabled(false);
+            overrideLines.push(ovLine);
+        }
 
         let dirty = true;
         const markDirty = () => {
@@ -896,6 +934,44 @@ export class ModelManager {
                     }
                     lineSystem.updateVerticesData('position', positions);
                 }
+
+                // [doc:bone-override] 覆盖线段着色
+                const ovLineColors: Record<NonNullable<ReturnType<typeof getOverrideType>>, Color3> = {
+                    rotation: new Color3(1, 0.3, 0.3),   // 红
+                    position: new Color3(0.3, 0.5, 1),   // 蓝
+                    both: new Color3(1, 0.3, 1),         // 紫
+                };
+                for (let i = 0; i < lineData.length; i++) {
+                    const ld = lineData[i];
+                    const childBone = bones[ld.childIndex];
+                    const parentBone = bones[ld.parentIndex];
+                    if (!childBone || !parentBone) {
+                        overrideLines[i].setEnabled(false);
+                        continue;
+                    }
+                    const childOv = getOverrideType(childBone.name, id);
+                    const parentOv = getOverrideType(parentBone.name, id);
+                    const ovType = childOv ?? parentOv;
+                    if (!ovType) {
+                        overrideLines[i].setEnabled(false);
+                        continue;
+                    }
+                    const ovLine = overrideLines[i];
+                    const ovPositions = ovLine.getVerticesData('position');
+                    if (ovPositions) {
+                        parentBone.getWorldTranslationToRef(tmp);
+                        ovPositions[0] = tmp.x;
+                        ovPositions[1] = tmp.y;
+                        ovPositions[2] = tmp.z;
+                        childBone.getWorldTranslationToRef(tmp);
+                        ovPositions[3] = tmp.x;
+                        ovPositions[4] = tmp.y;
+                        ovPositions[5] = tmp.z;
+                        ovLine.updateVerticesData('position', ovPositions);
+                    }
+                    ovLine.color = ovLineColors[ovType];
+                    ovLine.setEnabled(true);
+                }
             }
 
             if (!inst.showBoneJoints) {
@@ -910,6 +986,10 @@ export class ModelManager {
                 bone.getWorldTranslationToRef(tmp);
                 jd.mesh.position.copyFrom(tmp);
                 jd.mesh.setEnabled(true);
+
+                // [doc:bone-override] 覆盖状态着色
+                const ovType = getOverrideType(jd.boneName, id);
+                jd.mesh.material = ovType ? ovMat[ovType] : ovMat.default;
             }
         };
 
@@ -925,6 +1005,7 @@ export class ModelManager {
         this._boneOverlayMap.set(id, {
             lineSystem,
             joints,
+            overrideLines,
             update: updateFn,
             dirty: true,
             markDirty,
@@ -938,6 +1019,9 @@ export class ModelManager {
             entry.lineSystem.dispose();
             for (const j of entry.joints) {
                 j.dispose();
+            }
+            for (const ol of entry.overrideLines) {
+                ol.dispose();
             }
             this._boneOverlayMap.delete(id);
         }
@@ -962,6 +1046,9 @@ export class ModelManager {
                     for (const j of entry.joints) {
                         j.dispose();
                     }
+                    for (const ol of entry.overrideLines) {
+                        ol.dispose();
+                    }
                     toDelete.push(id);
                     continue;
                 }
@@ -981,14 +1068,25 @@ export class ModelManager {
             this._boneUpdateObserver.dispose();
             this._boneUpdateObserver = null;
         }
-        // Dispose all bone overlay resources (lineSystem + joints)
+        // Dispose all bone overlay resources (lineSystem + joints + overrideLines)
         for (const [, entry] of this._boneOverlayMap) {
             entry.lineSystem.dispose();
             for (const j of entry.joints) {
                 j.dispose();
             }
+            for (const ol of entry.overrideLines) {
+                ol.dispose();
+            }
         }
         this._boneOverlayMap.clear();
+        // Dispose override coloring materials
+        if (this._ovMaterials) {
+            this._ovMaterials.default.dispose();
+            this._ovMaterials.rotation.dispose();
+            this._ovMaterials.position.dispose();
+            this._ovMaterials.both.dispose();
+            this._ovMaterials = null;
+        }
         // Dispose all remaining outfit overlays
         for (const [, inst] of this.modelRegistry) {
             disposeOverlay(inst);

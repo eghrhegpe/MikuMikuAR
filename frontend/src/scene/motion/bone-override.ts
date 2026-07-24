@@ -73,6 +73,8 @@ let _qIdx = 0;
 
 // JS 路径弃用标志：每个 session 最多 warn 一次，避免每帧 flood 控制台
 let _jsPathWarned = false;
+// 覆盖着色诊断标志：首次调用 getOverrideType 时输出一次诊断信息
+let _overrideTypeDiagnosed = false;
 function _q(): Quaternion {
     return _qPool[_qIdx++ % _qPool.length];
 }
@@ -378,6 +380,62 @@ export function getOverride(boneName: string, modelId?: string): BoneOverrideEnt
     return _slotToEntry(boneName, slot);
 }
 
+/** 骨骼覆盖类型（零分配，适合每帧查询） */
+export type OverrideType = 'rotation' | 'position' | 'both';
+
+/**
+ * 查询骨骼覆盖类型（零分配）。
+ * 与 getOverride 的区别：不创建 BoneOverrideEntry 对象，仅返回覆盖类型枚举，
+ * 适合在渲染循环 / bone overlay updateFn 中每帧高频调用。
+ *
+ * @returns 覆盖类型，未覆盖时返回 null
+ */
+export function getOverrideType(boneName: string, modelId?: string): OverrideType | null {
+    const mid = _resolveModelId(modelId);
+    if (!mid) {
+        return null;
+    }
+    const map = _overrideMaps.get(mid);
+    const slot = map?.get(boneName);
+
+    // 诊断：首次调用时输出完整状态，定位着色失效根因
+    if (!_overrideTypeDiagnosed) {
+        _overrideTypeDiagnosed = true;
+        const modelKeys = Array.from(_overrideMaps.keys());
+        const entryCount = map?.size ?? 0;
+        const entries = map
+            ? Array.from(map.entries()).map(([k, s]) => `${k}(enabled=${s.enabled},rot=${s.overrideRotation},pos=${!!s.pos})`)
+            : [];
+        console.log(
+            '[bone-override] getOverrideType 诊断',
+            JSON.stringify({
+                queryModelId: mid,
+                queryBone: boneName,
+                overrideMapModelKeys: modelKeys,
+                modelKeyMatch: modelKeys.includes(mid),
+                entriesInMap: entryCount,
+                entryNames: entries,
+                slotFound: !!slot,
+                slotEnabled: slot?.enabled,
+            }, null, 2)
+        );
+    }
+
+    if (!slot?.enabled) {
+        return null;
+    }
+    if (slot.overrideRotation && slot.pos) {
+        return 'both';
+    }
+    if (slot.overrideRotation) {
+        return 'rotation';
+    }
+    if (slot.pos) {
+        return 'position';
+    }
+    return null;
+}
+
 /** 清除所有骨骼覆盖。 */
 export function clearAllOverrides(modelId?: string): void {
     const mid = _resolveModelId(modelId);
@@ -397,7 +455,9 @@ export function clearAllOverrides(modelId?: string): void {
  *   使「同骨获胜者」由声明顺序决定，不依赖模块注册先后。建议从 {@link FRAME_HOOK_ORDER} 取值。
  */
 export const FRAME_HOOK_ORDER = {
-    /** 下肢/骑行踏板：身体基础姿态，最先写入 */
+    /** 身体位置偏移（センター 平移）：最基础的身体变换，最先写入 */
+    BODY_POSITION: 5,
+    /** 下肢/骑行踏板：身体基础姿态 */
     RIDING: 10,
     /** 身体摇摆：在下肢之上叠加 */
     SWAY: 20,
@@ -647,6 +707,7 @@ export function stopBoneOverride(): void {
     _frameHooks.length = 0;
     _frameHooksSorted = false;
     _jsPathWarned = false;
+    _overrideTypeDiagnosed = false;
     _getRuntimeBones = null;
     clearAllOverrides();
 }

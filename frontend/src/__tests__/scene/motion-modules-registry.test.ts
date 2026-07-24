@@ -24,6 +24,8 @@ vi.mock('@/scene/motion/bone-override', () => ({
     setBoneOverride: setBoneOverrideSpy,
     clearBoneOverride: clearBoneOverrideSpy,
     setBoneOverridePosition: vi.fn(),
+    registerBoneOverrideFrameHook: vi.fn(() => () => {}),
+    FRAME_HOOK_ORDER: { RIDING: 10, SWAY: 20, HAND_SYMMETRY: 30 },
 }));
 
 vi.mock('@/scene/motion/perception', () => ({
@@ -460,21 +462,21 @@ describe('disable 精确清除（P2-1）', () => {
         const mod = createModule('body-posture', 'm1')!;
 
         // 模拟用户在高级子页手动覆盖 上半身（不经过模块，不被 owned）
-        // 模块 enable 时 claim 并写入 上半身/腰/上半身2
+        // 模块 enable 时 claim 并写入 上半身/上半身2/センター
         mod.enable();
         setBoneOverrideSpy.mockClear();
 
         // 手动覆盖 腰（模拟用户在高级子页操作，模块不知情）
         // 注意：手动覆盖直接写 _overrideMap，不经模块系统
-        // 模块 disable 时应只清 ownedBones（上半身/腰/上半身2），但 腰 是模块 owned 的
-        // 这里验证 disable 调用 clearBoneOverride 的骨骼集合 = ownedBones
+        // 模块 disable 时应只清 ownedBones（上半身/上半身2/センター）
         mod.disable();
 
-        // disable 应调用 clearBoneOverride 2 次（上半身/上半身2 — 腰已移除，センター 不在 body-posture 管理范围）
-        expect(clearBoneOverrideSpy).toHaveBeenCalledTimes(2);
+        // disable 应调用 clearBoneOverride 3 次（上半身/上半身2/センター）
+        expect(clearBoneOverrideSpy).toHaveBeenCalledTimes(3);
         const clearedBones = clearBoneOverrideSpy.mock.calls.map((c) => c[0]);
         expect(clearedBones).toContain('上半身');
         expect(clearedBones).toContain('上半身2');
+        expect(clearedBones).toContain('センター');
     });
 });
 
@@ -539,15 +541,16 @@ describe('applyModuleSnapshot', () => {
     beforeEach(resetAll);
 
     it('非空快照：启用模块并写入 params', () => {
-        mockModelRegistry.set('m1', makeModel('m1'));
+        const mid = 'm-snapshot-nonempty';
+        mockModelRegistry.set(mid, makeModel(mid));
         initMotionModules();
         setActiveMotionWithModules();
 
-        applyModuleSnapshot('m1', {
+        applyModuleSnapshot(mid, {
             'body-posture': { enabled: true, params: { tilt: 10, bend: 5, twist: 3 } },
         });
 
-        const state = getModuleState('m1', 'body-posture');
+        const state = getModuleState(mid, 'body-posture');
         expect(state.enabled).toBe(true);
         expect(state.params.tilt).toBe(10);
         expect(state.params.bend).toBe(5);
@@ -555,19 +558,20 @@ describe('applyModuleSnapshot', () => {
     });
 
     it('空快照：禁用所有已启用模块', () => {
-        mockModelRegistry.set('m1', makeModel('m1'));
+        const mid = 'm-snapshot-empty';
+        mockModelRegistry.set(mid, makeModel(mid));
         initMotionModules();
         setActiveMotionWithModules();
 
         // 先启用 body-posture
-        const mod = createModule('body-posture', 'm1')!;
+        const mod = createModule('body-posture', mid)!;
         mod.enable();
-        expect(getModuleState('m1', 'body-posture').enabled).toBe(true);
+        expect(getModuleState(mid, 'body-posture').enabled).toBe(true);
 
         // 应用空快照
-        applyModuleSnapshot('m1', {});
+        applyModuleSnapshot(mid, {});
 
-        expect(getModuleState('m1', 'body-posture').enabled).toBe(false);
+        expect(getModuleState(mid, 'body-posture').enabled).toBe(false);
         // disable 应触发 clearBoneOverride
         expect(clearBoneOverrideSpy).toHaveBeenCalled();
     });

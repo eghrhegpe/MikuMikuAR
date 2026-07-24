@@ -522,6 +522,9 @@ export const zhCN: Record<string, string> = {
     'param.tilt': '侧倾（上半身）',
     'param.bend': '弯腰',
     'param.twist': '扭腰',
+    'section.bodyPosition': '身体位置偏移',
+    'param.bodyHeight': '身体高度',
+    'param.bodyDepth': '身体前后',
 
     'param.pitch': '屈腕',
     'param.yaw': '摆腕',
