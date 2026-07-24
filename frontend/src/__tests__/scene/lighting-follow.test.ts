@@ -133,6 +133,7 @@ describe('tickStageLightFollow', () => {
                 offset: [0, 0, 0],
                 smoothing: 0.15,
                 moveWithTarget: false,
+                cachedWaistBone: null,
             };
         }
         const before = getStageLights()[0];

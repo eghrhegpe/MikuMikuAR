@@ -403,12 +403,23 @@ export function tickStageLightFollow(): void {
         }
 
         // 解析目标位置
-        const boneName = ft.boneName ?? 
-            (model.mmdModel
-                ? (WAIST_CANDIDATES.find((n) =>
-                      model.mmdModel!.runtimeBones?.some((b) => b.name === n)
-                  ) ?? null)
-                : null);
+        // P3-fix: boneName=null 时用 cachedWaistBone 缓存，避免每帧 find 遍历骨骼
+        let boneName = ft.boneName;
+        if (!boneName) {
+            if (ft.cachedWaistBone === undefined) {
+                // 兼容旧数据：cachedWaistBone 字段未初始化时视为 null 触发首次匹配
+                ft.cachedWaistBone = null;
+            }
+            if (ft.cachedWaistBone) {
+                boneName = ft.cachedWaistBone;
+            } else if (model.mmdModel) {
+                const matched = WAIST_CANDIDATES.find((n) =>
+                    model.mmdModel!.runtimeBones?.some((b) => b.name === n)
+                ) ?? null;
+                ft.cachedWaistBone = matched;
+                boneName = matched;
+            }
+        }
         
         const basePos = _getLightBasePos(model, boneName);
         _stageTmpTarget.set(

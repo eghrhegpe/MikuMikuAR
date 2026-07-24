@@ -102,7 +102,9 @@ function registerBridge(perf: PerformanceModule, getFps: () => number): void {
  * 500ms 评估节流 + 3000ms 初始降级冷却 → 再调一次触发评估。
  */
 function driveEvaluation(perf: PerformanceModule): void {
-    for (let i = 0; i < 35; i++) {
+    // P3-fix: _fpsSampleSize 现按 reference 动态化（60Hz=30, 120Hz=60, 240Hz=120），
+    // 取 130 次覆盖最高 240Hz 档位的样本缓冲需求
+    for (let i = 0; i < 130; i++) {
         perf.updatePerformance();
     }
     vi.advanceTimersByTime(3100);

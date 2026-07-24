@@ -12,6 +12,9 @@ import { DirectionalLight } from '@babylonjs/core/Lights/directionalLight';
 import { DefaultRenderingPipeline } from '@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline';
 
 import { Plane } from '@babylonjs/core/Maths/math.plane';
+
+// P3-fix: 水面镜像反射平面复用，避免每帧 new Plane 造成的 GC 压力
+const _waterMirrorPlane = new Plane(0, 1, 0, 0);
 import { EnvState, envState } from '@/core/config';
 import { col3FromTriple } from '@/core/color-helpers';
 import { _envSys, getScene } from './env-context';
@@ -169,8 +172,10 @@ const waterReflection = new PlanarReflection({
         if (!cam) {
             return null;
         }
-        // 复用 Plane 缓存，避免每帧 new Plane 分配
-        return Matrix.Reflection(new Plane(0, 1, 0, -s.waterLevel)).multiply(cam.getWorldMatrix());
+        // P3-fix: 真正复用 Plane 对象，每帧仅更新 d 参数，避免 GC 压力
+        _waterMirrorPlane.normal.set(0, 1, 0);
+        _waterMirrorPlane.d = -s.waterLevel;
+        return Matrix.Reflection(_waterMirrorPlane).multiply(cam.getWorldMatrix());
     },
     predicate: (mesh, level) =>
         !mesh.name.startsWith('envWater') &&

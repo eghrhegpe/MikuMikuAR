@@ -89,6 +89,9 @@ export interface StageLightState {
         offset: [number, number, number];
         smoothing: number; // 0-1, default 0.15
         moveWithTarget: boolean; // default false
+        // P3-fix: 缓存自动匹配的腰骨名，避免 tickStageLightFollow 每帧 find
+        // boneName 非 null 时此字段不使用；boneName=null 首次匹配后缓存
+        cachedWaistBone: string | null;
     } | null;
 }
 
@@ -124,7 +127,7 @@ export function _defaultStageLightState(id: string, name: string): StageLightSta
         coneLength: 30,
         coneSoftness: 0.5,
         // [doc:adr-168] 默认静态模式
-        followTarget: null,
+        followTarget: null, // 注意：创建 followTarget 时须初始化 cachedWaistBone: null
     };
 }
 

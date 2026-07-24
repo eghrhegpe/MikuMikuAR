@@ -85,6 +85,12 @@ const PROBE_REFRESH_MIN_FPS = 24;
 
 /** 上次 Probe renderList 重建时的场景网格数量（增量优化：仅数量变化时重建） */
 let _lastProbeMeshCount = 0;
+/**
+ * P3-fix: 上次 Probe renderList 重建时的网格 uniqueId 签名。
+ * 仅数量变化不足以捕获"换装/替换模型"场景（mesh 数不变但内容变化），
+ * 用 uniqueId 排序后拼接的签名做脏标记，内容变化时也触发重建。
+ */
+let _lastProbeMeshSignature = '';
 
 /**
  * 保存材质原始 reflectionTexture 的映射（material.uniqueId → 原始纹理）。
@@ -289,9 +295,14 @@ function _createProbe(scene: Scene, resolution = 256): void {
         }
         _lastProbeRefresh = now;
         try {
-            // 增量优化：仅当场景网格数量变化时才重建 renderList，避免每 10 秒全量 filter
+            // P3-fix: 用 uniqueId 签名替代纯数量比较，捕获换装/替换模型时的内容变化
             const currentMeshCount = scene.meshes.length;
-            if (currentMeshCount !== _lastProbeMeshCount) {
+            const currentSignature = scene.meshes
+                .map((m) => m.uniqueId)
+                .sort((a, b) => a - b)
+                .join(',');
+            if (currentSignature !== _lastProbeMeshSignature) {
+                _lastProbeMeshSignature = currentSignature;
                 _lastProbeMeshCount = currentMeshCount;
                 _reflectionProbe!.renderList = scene.meshes.filter(
                     (m) =>
