@@ -1803,6 +1803,8 @@ export const en: Record<string, string> = {
     'boot.engineReady': '✅ Engine ready',
     'boot.readyHint': '✨ Ready · Click "Model" to import PMX',
     'boot.initFailed': '❌ Initialization failed: {msg}',
+    'boot.downloadingWasm': '⏳ Downloading physics engine…',
+    'boot.initScene': '⏳ Initializing scene…',
     'common.empty': 'No content',
     'common.apply': 'Apply',
     'settings.audio.offsetHint':

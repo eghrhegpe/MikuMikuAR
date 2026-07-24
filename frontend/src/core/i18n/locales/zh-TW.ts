@@ -1784,6 +1784,8 @@ export const zhTW: Record<string, string> = {
     'boot.engineReady': '✅ 引擎就緒',
     'boot.readyHint': '✨ 準備就緒 · 點擊"模型"匯入 PMX',
     'boot.initFailed': '❌ 初始化失敗: {msg}',
+    'boot.downloadingWasm': '⏳ 正在下載物理引擎…',
+    'boot.initScene': '⏳ 正在初始化場景…',
     'common.empty': '暫無內容',
     'common.apply': '應用',
     'settings.audio.offsetHint': '正=音訊先播，負=音訊後播（對所有音樂全域生效）',

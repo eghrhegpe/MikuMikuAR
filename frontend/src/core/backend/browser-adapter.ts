@@ -129,65 +129,86 @@ function _defaultConfig(): Config {
 }
 
 /**
- * [doc:adr-177] 将主应用传入的路径映射为 IndexedDB key。
+ * [doc:adr-177] 路径类型判定（统一 _resolveIdbKey / _extractStem 的分支逻辑）。
  *
- * 主应用模型加载器传绝对路径（如 `D:/models/foo.pmx`），但 IndexedDB 的 models store
- * 用 `file:<name>` 键规约存储原档字节（web-loader/library.ts:saveModel 写入）。
- * 本函数做透明映射，使主应用 readFileBytes('D:/models/foo.pmx') 能命中 file:foo。
- *
- * 映射规则：
- * 1. `web://model/<stem>/<relativePath>` → `dir:<stem>:<relativePath>`（虚拟目录资源）
- * 2. 已是 IDB key 前缀（file:/entry:/recent/dir:/outfit:）→ 原样返回
- * 3. 其他 `web://` / `content://` 虚拟 URI → 原样返回
- * 4. 绝对路径 → 提取文件名 → 去扩展名 → `file:<name>`
- *
- * 注意：同名文件（不同目录）会冲突——这是 IndexedDB 扁平键的既有设计限制。
+ * 把 5 种路径形态归一为 { kind, stem?, rest? }，让两个消费方各自只关心"取 stem"还是"拼 key"，
+ * 不再重复写 5 个 if 分支。判定顺序与原 _resolveIdbKey 一致，保持行为兼容。
  */
-function _resolveIdbKey(path: string): string {
-    // 虚拟目录资源：web://model/<stem>/<relativePath> → dir:<stem>:<relativePath>
-    const dirMatch = path.match(/^web:\/\/model\/([^/?#]+)\/(.+)$/);
+type _PathInfo =
+    | { kind: 'model-dir'; stem: string; rest: string }   // web://model/<stem>/<relPath>（有 relPath）
+    | { kind: 'model-stem'; stem: string }                // web://model/<stem>（无 relPath）
+    | { kind: 'selected-dir'; stem: string }              // web://selected-dir/<catRelPath>
+    | { kind: 'idb-key' }                                 // 已是 file:/entry:/recent/dir:/outfit: 前缀
+    | { kind: 'virtual-uri' }                             // content:// 或其他 web://（Android SAF 等）
+    | { kind: 'absolute'; stem: string };                 // 绝对路径 → baseName 去扩展名
+
+function _classifyPath(path: string): _PathInfo {
+    // 1. 虚拟目录资源：web://model/<stem>/...（relPath 可选，决定 model-dir vs model-stem）
+    const dirMatch = path.match(/^web:\/\/model\/([^/?#]+)(?:\/(.+))?$/);
     if (dirMatch) {
-        return `dir:${dirMatch[1]}:${dirMatch[2].replace(/\\/g, '/')}`;
+        const stem = dirMatch[1];
+        const rest = dirMatch[2]?.replace(/\\/g, '/');
+        return rest ? { kind: 'model-dir', stem, rest } : { kind: 'model-stem', stem };
     }
-    // 选中目录资源：web://selected-dir/<catSeg>/<relPath>/<name> →
-    // 去掉类别段、去扩展名 → file:<relIdStem>（与 _scanDirIntoIDB 写入键一致）
+
+    // 2. 选中目录资源：web://selected-dir/<catSeg>/<relPath>
     const selMatch = path.match(/^web:\/\/selected-dir\/(.+)$/);
-    if (selMatch) {
-        const stem = _stripCategorySeg(selMatch[1]).replace(/\.[^.]+$/, '');
-        return `file:${stem}`;
-    }
-    // 已是 IDB key 前缀
+    if (selMatch) return { kind: 'selected-dir', stem: _stripExt(_stripCategorySeg(selMatch[1])) };
+
+    // 3. 已是 IDB key 前缀（含裸 'recent'）
     if (/^(file|entry|recent|dir|outfit):/.test(path) || path === 'recent') {
-        return path;
+        return { kind: 'idb-key' };
     }
-    // Android SAF URI / 其他 web:// 虚拟 URI 原样返回（browser-adapter 不支持，但避免误转换）
+
+    // 4. Android SAF URI / 其他 web:// 虚拟 URI 原样返回
     if (path.startsWith('content://') || path.startsWith('web://')) {
-        return path;
+        return { kind: 'virtual-uri' };
     }
-    // 绝对路径 → 提取文件名（去扩展名）
-    const baseName = path.split(/[/\\]/).pop() || path;
-    const name = baseName.replace(/\.(pmx|zip|vmd|vpd|png|jpg|jpeg|bmp|tga|dds|tif|tiff|wav|mp3|ogg|flac|json)$/i, '');
-    return `file:${name}`;
+
+    // 5. 绝对路径 → baseName 去扩展名
+    return { kind: 'absolute', stem: _stripExt(_baseName(path)) };
 }
 
 /**
- * [doc:adr-177] 从路径提取模型 stem（去扩展名的文件名）。
- *
- * 用于 IsolateModelDir / LoadOutfitFile / ListDirRecursive 等需要按模型 stem
- * 索引 IndexedDB 的方法。支持多种输入格式：
- * - `web://model/<stem>` 或 `web://model/<stem>/<relativePath>` → 取 <stem>
- * - `file:<stem>` / `entry:<stem>` → 取 <stem>
- * - 绝对路径（`D:/models/foo.pmx`）→ 文件名去扩展名
+ * [doc:adr-177] 将主应用传入的路径映射为 IndexedDB key。
+ * 判定委托 _classifyPath，本函数只负责"按 kind 拼 key"。
+ */
+function _resolveIdbKey(path: string): string {
+    const info = _classifyPath(path);
+    switch (info.kind) {
+        case 'model-dir':
+            return `dir:${info.stem}:${info.rest}`;
+        case 'model-stem':
+            // 无 relPath 时原样返回（对齐原实现：dirMatch 要求 /relPath，无则走 virtual-uri）
+            return path;
+        case 'selected-dir':
+        case 'absolute':
+            return `file:${info.stem}`;
+        case 'idb-key':
+        case 'virtual-uri':
+            return path;
+    }
+}
+
+/**
+ * [doc:adr-177] 从路径提取模型 stem（去扩展名的文件名）。判定委托 _classifyPath。
  */
 function _extractStem(path: string): string {
-    const m = path.match(/^web:\/\/model\/([^/?#]+)/);
-    if (m) return m[1];
-    const selMatch = path.match(/^web:\/\/selected-dir\/(.+)$/);
-    if (selMatch) return _stripCategorySeg(selMatch[1]).replace(/\.[^.]+$/, '');
-    const m2 = path.match(/^(?:file|entry):(.+)$/);
-    if (m2) return m2[1];
-    const baseName = path.split(/[/\\]/).pop() || path;
-    return baseName.replace(/\.[^.]+$/, '');
+    const info = _classifyPath(path);
+    switch (info.kind) {
+        case 'model-dir':
+        case 'model-stem':
+        case 'selected-dir':
+        case 'absolute':
+            return info.stem;
+        case 'idb-key': {
+            // 仅 file:/entry: 前缀提取 stem；dir:/outfit:/recent 保持原样（对齐原实现）
+            const m = path.match(/^(?:file|entry):(.+)$/);
+            return m ? m[1] : path;
+        }
+        case 'virtual-uri':
+            return '';
+    }
 }
 
 async function _listModels(): Promise<ModelEntry[]> {
@@ -238,7 +259,7 @@ async function _pickFile(accept?: string): Promise<FileSystemFileHandle | null> 
 async function _writeModelFile(file: File): Promise<string> {
     const lower = file.name.toLowerCase();
     const bytes = new Uint8Array(await file.arrayBuffer());
-    const stem = file.name.replace(/\.(zip|pmx|vmd)$/i, '');
+    const stem = _stripExt(file.name);
     await idbSet('models', `file:${stem}`, bytes);
     if (lower.endsWith('.pmx')) {
         await idbSet('models', `entry:${stem}`, {
@@ -264,7 +285,7 @@ async function _writeModelWithTextures(
     pmxFile: File,
     allHandles: FileSystemFileHandle[]
 ): Promise<string> {
-    const pmxStem = pmxFile.name.replace(/\.pmx$/i, '');
+    const pmxStem = _stripExt(pmxFile.name);
     // 先写 PMX
     const pmxBytes = new Uint8Array(await pmxFile.arrayBuffer());
     await idbSet('models', `file:${pmxStem}`, pmxBytes);
@@ -416,7 +437,7 @@ async function _scanDirIntoIDB(
     const pmxEntries = files
         .filter((f) => /\.pmx$/i.test(f.name))
         .map((f) => {
-            const sn = f.name.replace(/\.pmx$/i, '');
+            const sn = _stripExt(f.name);
             const catRelPath = _computeCategoryRelPath(!!byDir, 'pmx', relPath);
             const relIdCategory = _stripCategorySeg(catRelPath);
             return {
@@ -426,7 +447,6 @@ async function _scanDirIntoIDB(
         });
     // 合并父层 PMX：子目录纹理关联到最近的祖先 PMX
     const effectivePmx = pmxEntries.length > 0 ? pmxEntries : parentPmx;
-    const TEXTURE_EXT = /\.(png|jpg|jpeg|bmp|tga|dds|tif|tiff)$/i;
     // 本层纹理相对分类根的相对路径（所有本层纹理共享同一 relPath，一次算好）
     const texRelIdCategory = _stripCategorySeg(relPath);
     let texLinkedCount = 0; // 本层已关联纹理计数（用于汇总日志）
@@ -436,7 +456,7 @@ async function _scanDirIntoIDB(
         const lower = name.toLowerCase();
 
         // 纹理分支：关联到 effectivePmx（含子目录纹理，[p2b] 相对 PMX 路径）
-        if (TEXTURE_EXT.test(lower)) {
+        if (TEXTURE_EXTS_RE.test(lower)) {
             if (effectivePmx.length > 0) {
                 const file = await handle.getFile();
                 const texBytes = new Uint8Array(await file.arrayBuffer());
@@ -452,7 +472,7 @@ async function _scanDirIntoIDB(
         if (!_SUPPORTED_EXTS_RE.test(lower)) continue;
         const file = await handle.getFile();
         const bytes = new Uint8Array(await file.arrayBuffer());
-        const stem = name.replace(/\.(pmx|vmd|mp3|wav|ogg|flac|wma|x|vpd|zip)$/i, '');
+        const stem = _stripExt(name);
         const ext = lower.split('.').pop() || '';
         const catRelPath = _computeCategoryRelPath(!!byDir, ext, relPath);
         const relIdCategory = _stripCategorySeg(catRelPath);
@@ -484,9 +504,9 @@ async function _scanDirIntoIDB(
                 if (innerFiles.length > 0) {
                     const zipDir = `${virtualDir}/${stem}`;
                     for (const innerPath of innerFiles) {
-                        const innerBase = innerPath.split(/[/\\]/).pop() || innerPath;
+                        const innerBase = _baseName(innerPath);
                         const innerExt = innerBase.toLowerCase().split('.').pop() || '';
-                        const innerStem = innerBase.replace(/\.[^.]+$/, '');
+                        const innerStem = _stripExt(innerBase);
                         const innerByExt = _CATEGORY_BY_EXT[innerExt];
                         const innerType = byDir ? byDir.type : (innerByExt?.type ?? 'actor');
                         const innerFormat = innerByExt?.format ?? innerExt;
@@ -567,9 +587,9 @@ export const browserAdapter: BackendService = {
         const bytes = (await idbGet<Uint8Array>('models', key)) ?? null;
         if (bytes) return bytes;
         // 兜底：dir:<stem>:<relPath> 未命中时，按 ExtractZip 扁平键 file:<stem>（去扩展名）再查一次
-        const baseName = path.split(/[/\\]/).pop() || path;
+        const baseName = _baseName(path);
         if (baseName && baseName !== path) {
-            const stem = baseName.replace(/\.[^.]+$/, '');
+            const stem = _stripExt(baseName);
             const fallback = (await idbGet<Uint8Array>('models', `file:${stem}`)) ?? null;
             if (fallback) return fallback;
         }
@@ -648,16 +668,16 @@ export const browserAdapter: BackendService = {
             // [bugfix:zip-innerpath] 多文件 zip 点击特定内部文件时，按 innerPath 定位
             const target = fileNames.find((n) => n === _innerPath || n.replace(/\\/g, '/') === _innerPath);
             if (target) {
-                mainPmxName = target.split(/[/\\]/).pop() || target;
-                mainPmxStem = mainPmxName.replace(/\.[^.]+$/, '');
+                mainPmxName = _baseName(target);
+                mainPmxStem = _stripExt(mainPmxName);
             }
         }
         if (!mainPmxName) {
             for (const name of fileNames) {
-                const baseName = name.split(/[/\\]/).pop() || name;
+                const baseName = _baseName(name);
                 if (/\.pmx$/i.test(baseName)) {
                     mainPmxName = baseName;
-                    mainPmxStem = baseName.replace(/\.pmx$/i, '');
+                    mainPmxStem = _stripExt(baseName);
                     break;
                 }
             }
@@ -668,8 +688,8 @@ export const browserAdapter: BackendService = {
         await Promise.all(
             fileNames.map(async (name) => {
                 const bytes = new Uint8Array(await zip.files[name].async('arraybuffer'));
-                const baseName = name.split(/[/\\]/).pop() || name;
-                const stem = baseName.replace(/\.[^.]+$/, '');
+                const baseName = _baseName(name);
+                const stem = _stripExt(baseName);
                 const relPath = name.replace(/\\/g, '/');
                 if (ASSET_RE.test(baseName)) {
                     await idbSet('models', `file:${stem}`, bytes);
@@ -825,7 +845,7 @@ export const browserAdapter: BackendService = {
         // [doc:adr-177] 经 _resolveIdbKey 映射，对齐 readFileBytes 路径语义
         const key = _resolveIdbKey(path);
         if ((await idbGet('models', key)) !== undefined) return true;
-        const baseName = path.split(/[/\\]/).pop() || path;
+        const baseName = _baseName(path);
         if (baseName && baseName !== path) {
             return (await idbGet('models', `file:${baseName}`)) !== undefined;
         }
@@ -911,7 +931,7 @@ export const browserAdapter: BackendService = {
         const bytes = await idbGet<Uint8Array>('models', key);
         if (bytes) return new TextDecoder().decode(bytes);
         // 兜底：尝试完整文件名
-        const baseName = path.split(/[/\\]/).pop() || path;
+        const baseName = _baseName(path);
         if (baseName && baseName !== path) {
             const alt = await idbGet<Uint8Array>('models', `file:${baseName}`);
             if (alt) return new TextDecoder().decode(alt);
@@ -1048,7 +1068,7 @@ export const browserAdapter: BackendService = {
         }
         // .zip / .vmd / 不支持格式：走单文件路径
         const bytes = new Uint8Array(await singleFile.arrayBuffer());
-        const stem = singleFile.name.replace(/\.(zip|pmx|vmd)$/i, '');
+        const stem = _stripExt(singleFile.name);
         await idbSet('models', `file:${stem}`, bytes);
         if (singleLower.endsWith('.zip')) {
             await idbSet('models', `entry:${stem}`, {

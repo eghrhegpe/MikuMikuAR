@@ -36,6 +36,7 @@ import { initWindPhysics, disposeWindPhysics } from '../physics/wind-physics';
 import { applyGroundCollision } from './physics/ground-collision';
 import { swallowError } from '../core/utils';
 import { logWarn } from '../core/logger';
+import { t } from '../core/i18n/t';
 import { MmdRuntimeShared } from 'babylon-mmd/esm/Runtime/mmdRuntimeShared';
 // JS 版 runtime（无 WASM 双缓冲，worldMatrix 覆写可生效）
 import { MmdRuntime } from 'babylon-mmd/esm/Runtime/mmdRuntime';
@@ -305,6 +306,7 @@ export async function initScene(): Promise<void> {
         // （漏设 VITE_MMD_WASM_MT 环境变量），也优雅回退 SPR，绝不因 SAB 不可用而崩窗。
         const useMultiThread =
             __MMD_ENABLE_MPR__ && typeof crossOriginIsolated !== 'undefined' && crossOriginIsolated;
+        dom.loadingText.textContent = t('boot.downloadingWasm');
         let wasmInstance;
         if (useMultiThread) {
             try {
@@ -346,6 +348,7 @@ export async function initScene(): Promise<void> {
     runtime.loggingEnabled = true;
     runtime.register(scene);
     setMmdRuntime(runtime);
+    dom.loadingText.textContent = t('boot.initScene');
     // [adr:ground] 运行时就绪后还原持久化/默认的地面碰撞状态
     applyGroundCollision();
     // 将 StreamAudioPlayer 接入 MMD Runtime，实现原生音画同步

@@ -1814,6 +1814,8 @@ export const ja: Record<string, string> = {
     'boot.engineReady': '✅ エンジン準備完了',
     'boot.readyHint': '✨ 準備完了 · 「モデル」をクリックしてPMXを読み込み',
     'boot.initFailed': '❌ 初期化失敗: {msg}',
+    'boot.downloadingWasm': '⏳ 物理エンジンをダウンロード中…',
+    'boot.initScene': '⏳ シーンを初期化中…',
     'common.empty': 'コンテンツがありません',
     'common.apply': '適用',
     'settings.audio.offsetHint': '正=音声先行、負=音声遅れ（全楽曲に全局適用）',
