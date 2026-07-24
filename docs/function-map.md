@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 66 | 528 |
-| 3D 场景 | 94 | 1034 |
+| 3D 场景 | 94 | 1036 |
 | 菜单 & UI | 65 | 305 |
 | 换装 & 音频 | 3 | 38 |
 | 动作算法 | 17 | 129 |
@@ -1027,6 +1027,7 @@
 | `BoneOverrideEntry()` | `scene/motion/bone-override` | — |
 | `FRAME_HOOK_ORDER()` | `scene/motion/bone-override` | — |
 | `OverrideSlotLike()` | `scene/motion/bone-override` | — |
+| `OverrideType()` | `scene/motion/bone-override` | — |
 | `applyBoneOverrideIK()` | `scene/motion/bone-override` | — |
 | `clearAllOverrides()` | `scene/motion/bone-override` | — |
 | `clearBoneOverride()` | `scene/motion/bone-override` | — |
@@ -1034,6 +1035,7 @@
 | `dumpBoneHierarchy()` | `scene/motion/bone-override` | — |
 | `getAllOverrides()` | `scene/motion/bone-override` | — |
 | `getOverride()` | `scene/motion/bone-override` | — |
+| `getOverrideType()` | `scene/motion/bone-override` | — |
 | `registerBoneOverrideFrameHook()` | `scene/motion/bone-override` | — |
 | `restoreOverrides()` | `scene/motion/bone-override` | — |
 | `setBoneOverride()` | `scene/motion/bone-override` | — |
@@ -2094,5 +2096,5 @@
 
 ---
 
-> 共 249 个文件，2060 个导出符号。
+> 共 249 个文件，2062 个导出符号。
 > 说明列（—）待知识库或人工补充。
