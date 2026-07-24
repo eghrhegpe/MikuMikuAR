@@ -223,7 +223,8 @@ export function renderOverrideCard(
         titleBar.appendChild(titleText);
 
         const btnGroup = document.createElement('div');
-        btnGroup.style.cssText = 'display:flex;gap:4px;';
+        btnGroup.className = 'btn-group';
+        btnGroup.style.padding = '0';
 
         const undoBtn = document.createElement('button');
         undoBtn.className = 'slide-action';

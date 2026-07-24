@@ -218,8 +218,8 @@ describe('env-feature-levels 导出契约', () => {
         buildFogLevel: () => any;
         buildShadowLevel: () => any;
         buildExperimentalLevel: () => any;
-        _buildLevel: (...args: any[]) => any;
-        _openTexturePicker: (...args: any[]) => void;
+        buildLevel: (...args: any[]) => any;
+        openTexturePicker: (...args: any[]) => void;
     };
 
     beforeAll(async () => {

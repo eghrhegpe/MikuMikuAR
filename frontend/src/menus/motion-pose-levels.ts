@@ -89,8 +89,7 @@ function buildPoseStudioSchema(): MenuNode[] {
 
                     const currentMode = getGuideMode();
                     const btnGroup = document.createElement('div');
-                    btnGroup.style.cssText =
-                        'display:flex;flex-wrap:wrap;gap:4px;padding:4px 14px 8px;';
+                    btnGroup.className = 'btn-group';
                     for (const m of modes) {
                         addPresetChip(btnGroup, m.label, m.key === currentMode, () => {
                             setGuideMode(m.key);
@@ -204,8 +203,8 @@ function buildPoseStudioSchema(): MenuNode[] {
 
                     const presets = getAllPresets();
                     const btnGroup = document.createElement('div');
-                    btnGroup.style.cssText =
-                        'display:flex;flex-wrap:wrap;gap:4px;padding:4px 14px;';
+                    btnGroup.className = 'btn-group';
+                    btnGroup.style.padding = '4px 14px';
                     for (const preset of presets) {
                         addPresetChip(
                             btnGroup,

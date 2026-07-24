@@ -7,8 +7,8 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 66 | 516 |
-| 3D 场景 | 98 | 1057 |
+| 核心基础设施 | 67 | 526 |
+| 3D 场景 | 98 | 1058 |
 | 菜单 & UI | 65 | 337 |
 | 换装 & 音频 | 3 | 38 |
 | 动作算法 | 17 | 129 |
@@ -227,6 +227,7 @@
 | `initHints()` | `core/status-bar` | — |
 | `setStatus()` | `core/status-bar` | — |
 | `showHint()` | `core/status-bar` | — |
+| `registerServiceWorker()` | `core/sw-register` | — |
 | `ToastAction()` | `core/toast` | — |
 | `ToastVariant()` | `core/toast` | — |
 | `showErrorToast()` | `core/toast` | — |
@@ -292,6 +293,7 @@
 | `openFullscreen()` | `core/ui-fullscreen-overlay` | — |
 | `setCurrentState()` | `core/ui-fullscreen-overlay` | — |
 | `addActionRow()` | `core/ui-helpers` | — |
+| `addBoneSelectRow()` | `core/ui-helpers` | — |
 | `addClearRow()` | `core/ui-helpers` | — |
 | `addCollapsible()` | `core/ui-helpers` | — |
 | `addColorSliderRow()` | `core/ui-helpers` | — |
@@ -310,12 +312,15 @@
 | `addToggleRow()` | `core/ui-helpers` | — |
 | `addVector3SliderRow()` | `core/ui-helpers` | — |
 | `addWatchDirRow()` | `core/ui-helpers` | — |
+| `buildBoneGroups()` | `core/ui-helpers` | — |
 | `buildPresetChipGroup()` | `core/ui-helpers` | — |
 | `closeFullscreen()` | `core/ui-helpers` | — |
+| `createHeaderToggle()` | `core/ui-helpers` | — |
 | `createResourcePanel()` | `core/ui-helpers` | — |
 | `createVirtualGrid()` | `core/ui-helpers` | — |
 | `getCurrentState()` | `core/ui-helpers` | — |
 | `initControl()` | `core/ui-helpers` | — |
+| `isIkBone()` | `core/ui-helpers` | — |
 | `openFullscreen()` | `core/ui-helpers` | — |
 | `setCurrentState()` | `core/ui-helpers` | — |
 | `slideRow()` | `core/ui-helpers` | — |
@@ -331,7 +336,10 @@
 | `ResourcePanelOptions()` | `core/ui-resource-panel` | — |
 | `createResourcePanel()` | `core/ui-resource-panel` | — |
 | `notifyThumbnailUpdate()` | `core/ui-resource-panel` | — |
+| `BoneSelectOptions()` | `core/ui-rows` | — |
+| `HeaderToggleConfig()` | `core/ui-rows` | — |
 | `addActionRow()` | `core/ui-rows` | — |
+| `addBoneSelectRow()` | `core/ui-rows` | — |
 | `addDangerRow()` | `core/ui-rows` | — |
 | `addDisabledRow()` | `core/ui-rows` | — |
 | `addEmptyRow()` | `core/ui-rows` | — |
@@ -343,10 +351,12 @@
 | `addSliderRow()` | `core/ui-rows` | — |
 | `addToggleRow()` | `core/ui-rows` | — |
 | `addWatchDirRow()` | `core/ui-rows` | — |
+| `buildBoneGroups()` | `core/ui-rows` | — |
+| `createHeaderToggle()` | `core/ui-rows` | — |
 | `initControl()` | `core/ui-rows` | — |
+| `isIkBone()` | `core/ui-rows` | — |
 | `sliderRow()` | `core/ui-rows` | — |
 | `toggleRow()` | `core/ui-rows` | — |
-| `HeaderToggleConfig()` | `core/ui-slide-row` | — |
 | `SlideRowExtra()` | `core/ui-slide-row` | — |
 | `TrailingAction()` | `core/ui-slide-row` | — |
 | `createLeadingBtn()` | `core/ui-slide-row` | — |
@@ -1028,10 +1038,10 @@
 | `BoneOverrideEntry()` | `scene/motion/bone-override` | — |
 | `FRAME_HOOK_ORDER()` | `scene/motion/bone-override` | — |
 | `OverrideSlotLike()` | `scene/motion/bone-override` | — |
-| `_computeOverride()` | `scene/motion/bone-override` | — |
 | `applyBoneOverrideIK()` | `scene/motion/bone-override` | — |
 | `clearAllOverrides()` | `scene/motion/bone-override` | — |
 | `clearBoneOverride()` | `scene/motion/bone-override` | — |
+| `computeOverride()` | `scene/motion/bone-override` | — |
 | `getAllOverrides()` | `scene/motion/bone-override` | — |
 | `getOverride()` | `scene/motion/bone-override` | — |
 | `registerBoneOverrideFrameHook()` | `scene/motion/bone-override` | — |
@@ -1206,6 +1216,7 @@
 | `getEyeGazeSmooth()` | `scene/motion/perception-shared` | — |
 | `getHeadGazeMaxPitch()` | `scene/motion/perception-shared` | — |
 | `getHeadGazeMaxYaw()` | `scene/motion/perception-shared` | — |
+| `isWasmRuntime()` | `scene/motion/perception-shared` | — |
 | `setGazeAngles()` | `scene/motion/perception-shared` | — |
 | `__testOnlyGetContext()` | `scene/motion/perception` | — |
 | `_clampEyeGazeTarget()` | `scene/motion/perception` | — |
@@ -1605,8 +1616,8 @@
 | `buildExperimentalLevel()` | `menus/env-experimental-levels` | — |
 | `buildFogLevel()` | `menus/env-fog-levels` | — |
 | `buildGroundLevel()` | `menus/env-ground-levels` | — |
-| `_buildLevel()` | `menus/env-level-helpers` | — |
-| `_openTexturePicker()` | `menus/env-level-helpers` | — |
+| `buildLevel()` | `menus/env-level-helpers` | — |
+| `openTexturePicker()` | `menus/env-level-helpers` | — |
 | `EnvTextureBindingTarget()` | `menus/env-menu-state` | — |
 | `clearEnvTextureBindingTarget()` | `menus/env-menu-state` | — |
 | `getEnvMenu()` | `menus/env-menu-state` | — |
@@ -1758,11 +1769,11 @@
 | `buildGazeTrackingLevel()` | `menus/motion-gaze-levels` | — |
 | `renderPerceptionConflictBanners()` | `menus/motion-gaze-levels` | — |
 | `updatePerceptionConflictBanner()` | `menus/motion-gaze-levels` | — |
-| `_syncOverrideToInstance()` | `menus/motion-override-levels` | — |
 | `buildAdvancedBoneOverrideLevel()` | `menus/motion-override-levels` | — |
 | `buildModuleParamLevel()` | `menus/motion-override-levels` | — |
 | `renderOverrideCard()` | `menus/motion-override-levels` | — |
 | `renderPresetCard()` | `menus/motion-override-levels` | — |
+| `syncOverrideToInstance()` | `menus/motion-override-levels` | — |
 | `applyIntentToModel()` | `menus/motion-popup` | — |
 | `buildMotionRootItems()` | `menus/motion-popup` | — |
 | `disposeMotionPopup()` | `menus/motion-popup` | — |
@@ -2137,5 +2148,5 @@
 
 ---
 
-> 共 253 个文件，2103 个导出符号。
+> 共 254 个文件，2114 个导出符号。
 > 说明列（—）待知识库或人工补充。
