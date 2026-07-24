@@ -139,6 +139,17 @@ node scripts/gen-icon-bundle.mjs
 
 ---
 
+## pre-commit 钩子（左移校验）
+
+版本化钩子位于 `.githooks/pre-commit`，提交前秒级跑 `check:status` + `check:funcmap`，把文档漂移拦在本地而非 CI。
+
+```bash
+# 一次性启用（每个 clone 都需执行）
+git config core.hooksPath .githooks
+```
+
+钩子失败时按提示运行 `npm run gen:status` / `npm run gen:funcmap` 并 `git add` 生成文件即可。
+
 ## 新人上手建议
 
 ```bash

@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 67 | 526 |
+| 核心基础设施 | 67 | 530 |
 | 3D 场景 | 98 | 1058 |
 | 菜单 & UI | 65 | 337 |
 | 换装 & 音频 | 3 | 38 |
@@ -109,6 +109,7 @@
 | `bundles()` | `core/i18n/t` | — |
 | `t()` | `core/i18n/t` | — |
 | `registerIconBundle()` | `core/icons-bundle` | — |
+| `createIconButton()` | `core/icons` | — |
 | `createIconifyIcon()` | `core/icons` | — |
 | `softwareKindIcon()` | `core/icons` | — |
 | `bootstrap()` | `core/init` | — |
@@ -294,6 +295,7 @@
 | `setCurrentState()` | `core/ui-fullscreen-overlay` | — |
 | `addActionRow()` | `core/ui-helpers` | — |
 | `addBoneSelectRow()` | `core/ui-helpers` | — |
+| `addCardTitle()` | `core/ui-helpers` | — |
 | `addClearRow()` | `core/ui-helpers` | — |
 | `addCollapsible()` | `core/ui-helpers` | — |
 | `addColorSliderRow()` | `core/ui-helpers` | — |
@@ -316,6 +318,7 @@
 | `buildPresetChipGroup()` | `core/ui-helpers` | — |
 | `closeFullscreen()` | `core/ui-helpers` | — |
 | `createHeaderToggle()` | `core/ui-helpers` | — |
+| `createIconButton()` | `core/ui-helpers` | — |
 | `createResourcePanel()` | `core/ui-helpers` | — |
 | `createVirtualGrid()` | `core/ui-helpers` | — |
 | `getCurrentState()` | `core/ui-helpers` | — |
@@ -340,6 +343,7 @@
 | `HeaderToggleConfig()` | `core/ui-rows` | — |
 | `addActionRow()` | `core/ui-rows` | — |
 | `addBoneSelectRow()` | `core/ui-rows` | — |
+| `addCardTitle()` | `core/ui-rows` | — |
 | `addDangerRow()` | `core/ui-rows` | — |
 | `addDisabledRow()` | `core/ui-rows` | — |
 | `addEmptyRow()` | `core/ui-rows` | — |
@@ -2148,5 +2152,5 @@
 
 ---
 
-> 共 254 个文件，2114 个导出符号。
+> 共 254 个文件，2118 个导出符号。
 > 说明列（—）待知识库或人工补充。

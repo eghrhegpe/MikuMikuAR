@@ -1,6 +1,6 @@
 # ADR-017: Android 平台适配（精简版）
 
-> **状态**: 主体已完成（Phase A/B/C ✅）；P0(A0-01/A0-02) 与 P1(A1-01~05) ✅ 全部已实施；P2 七项 ✅ 全部已落地（A2-04 于 2026-07-22 完成全路径 `toBlob` 迁移）；P3 四项 ✅ 全部已修复（A3-01/04 于 2026-07-22 完成事件总线消费）。唯一剩余：A0-01 采用 `MIXED_CONTENT_ALWAYS_ALLOW` 偏离推荐方案（技术债，建议收窄为 PathHandler 代理）。§四 SAF 目录选择方案已放弃，改用 `MANAGE_EXTERNAL_STORAGE` 授权 `/sdcard/MMD`（2026-07-22 核对）。
+> **状态**: 主体已完成（Phase A/B/C ✅）；P0(A0-01/A0-02) 与 P1(A1-01~05) ✅ 全部已实施；P2 七项 ✅ 全部已落地（A2-04 于 2026-07-22 完成全路径 `toBlob` 迁移）；P3 四项 ✅ 全部已修复（A3-01/04 于 2026-07-22 完成事件总线消费）。A0-01 已于 2026-07-24 根治：模型文件改经 `readFileBytes` + Blob URL 加载（复用 ADR-176 浏览器端路径，见 frontend/src/core/fileservice.ts `resolveFileUrl`），移除 `MainActivity.java` 的 `MIXED_CONTENT_ALWAYS_ALLOW`；不再依赖 PathHandler 代理方案（ADR-133 方案 B 不再必要）。§四 SAF 目录选择方案已放弃，改用 `MANAGE_EXTERNAL_STORAGE` 授权 `/sdcard/MMD`（2026-07-22 核对）。
 > **关联**: ADR-058（basenameFallbackFS）、ADR-133（Android MPR 缺口）
 > **来源**: ADR-017 + ADR-023 + ADR-067 + ADR-068 四合一（2026-07-08）
 
@@ -131,7 +131,7 @@ type FileAccessor interface {
 
 | ID | 问题 | 影响 | 实际状态（2026-07-10 核对） |
 |----|------|------|------|
-| A0-01 | HTTP 模型文件服务器被 mixed content 拦截 | WebView 页面在 `https://wails.localhost/`，拒绝 `http://127.0.0.1` 请求 → 3D 画面空白 | ✅ 已修复，但用 `MIXED_CONTENT_ALWAYS_ALLOW`（`MainActivity.java:135`）放行，**偏离推荐 PathHandler 代理方案**且与决策点 3 冲突 → 技术债（模型仍走 `http://127.0.0.1:port`，见 `fileservice.ts:44`） |
+| A0-01 | HTTP 模型文件服务器被 mixed content 拦截 | WebView 页面在 `https://wails.localhost/`，拒绝 `http://127.0.0.1` 请求 → 3D 画面空白 | ✅ 已修复，但用 `MIXED_CONTENT_ALWAYS_ALLOW`（`MainActivity.java:135`）放行，**偏离推荐 PathHandler 代理方案**且与决策点 3 冲突 → 已根治（2026-07-24）：模型改经 `readFileBytes` + Blob URL（frontend/src/core/fileservice.ts），Android 不再发 `http://` 子资源；`MainActivity.java` 的 `MIXED_CONTENT_ALWAYS_ALLOW` 已移除，复用 ADR-176 路径，无需 PathHandler 代理 |
 | A0-02 | `setAllowFileAccess(false)` 禁用所有 `file://` 访问 | 所有依赖 `file://` 的资源加载路径全部失效 | ✅ 已修复：`MainActivity.java:132` 禁用 `file://`，资源改经 `WebViewAssetLoader`+`WailsPathHandler`（`https://wails.localhost`），方向一致 |
 
 **推荐方案（A0-01）**`WebViewAssetLoader.PathHandler` 代理模型文件服务——不走 `127.0.0.1:port` HTTP，改走 `https://wails.localhost/models/<port>/file.pmx` 路由经 Java JNI Go 透传，零网络安全配置项。
@@ -168,7 +168,7 @@ type FileAccessor interface {
 | A3-03 | 拖拽事件在触屏上无效 | 部分交互失效 | ✅ 已修复：`events.ts` 已全面用 `pointerdown/pointermove` 替代 mouse/touch 分支（`events.ts:269,279,297,347`），Pointer Events 原生统一触屏/鼠标 |
 | A3-04 | **前端未消费 `system:*` / `android:*` 事件总线**（2026-07-22 新增） | Java 端 6 类系统事件已转发但前端零监听——切后台保存、网络断开提示、屏幕锁定触发等场景化行为缺失 | ✅ 已修复（2026-07-22）：`init.ts` 注册 4 类事件监听——`android:ScreenLocked`（触发 `saveSceneImmediate(true)` 刷盘保存）+ `android:NetworkChanged`（toast 提示网络状态）+ `android:BatteryChanged`（预留扩展点）+ `android:ThemeChanged`（预留扩展点）；`android:back` + `storage:permissionGranted` 此前已消费 |
 
-> **P2/P3 核对说明**：2026-07-22 全量核对代码后更新。A2-04 与 A3-04 已于 2026-07-22 实施完成。剩余待实施项仅 A0-01 技术债（`MIXED_CONTENT_ALWAYS_ALLOW` 过宽，建议收窄为 PathHandler 代理）。
+> **P2/P3 核对说明**：2026-07-22 全量核对代码后更新。A2-04 与 A3-04 已于 2026-07-22 实施完成。A0-01 技术债已于 2026-07-24 根治（见上）——模型走 `readFileBytes` + Blob URL，移除 `MIXED_CONTENT_ALWAYS_ALLOW`，**无剩余待实施项**。
 
 ---
 

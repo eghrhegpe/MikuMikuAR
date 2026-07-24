@@ -7,6 +7,7 @@
 
 import { IsolateModelDir, StartFileServer } from './wails-bindings';
 import { resolveBackend } from './backend';
+import { isAndroidPlatform } from './platform';
 import type { BackendService } from './backend/types';
 
 let _cachedBackend: Promise<BackendService> | null = null;
@@ -55,7 +56,11 @@ export async function resolveFileUrl(
     // [doc:adr-176] 浏览器端 StartFileServer 抛 NotSupportedError，
     // 此时回退到 readFileBytes + Blob URL，构造 chrome-extension:// 或 blob: 前缀。
     const backend = await getBackend();
-    if (backend.kind === 'browser') {
+    // [doc:adr-017][doc:adr-176] 浏览器端与 Android 均不使用 127.0.0.1 HTTP 文件服务：
+    // 改用 readFileBytes + Blob URL，彻底消除 http:// 子资源，从而可移除
+    // MainActivity 的 MIXED_CONTENT_ALWAYS_ALLOW（A0-01 技术债根治，ADR-017 §六）。
+    // 桌面端仍走 StartFileServer（localhost HTTP）以维持既有流式性能与行为。
+    if (backend.kind === 'browser' || isAndroidPlatform()) {
         const bytes = await backend.readFileBytes(safeDir + '/' + fileName);
         if (!bytes) throw new Error(`[fileservice] readFileBytes failed for ${safeDir}/${fileName}`);
         const blobUrl = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/octet-stream' }));
