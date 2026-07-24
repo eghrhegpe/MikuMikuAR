@@ -23,7 +23,7 @@ vi.mock('../wails-bindings', () => ({
     ExtractZip: ExtractZipMock,
 }));
 
-vi.mock('../backend/idb', () => ({ idbSet: idbSetMock }));
+vi.mock('../backend/idb', () => ({ idbSet: idbSetMock, saveModel: saveModelMock }));
 
 vi.mock('../config', () => ({
     setStatus: vi.fn(),
@@ -40,9 +40,6 @@ vi.mock('../../menus/library', () => ({
     refreshLibrary: vi.fn(async () => {}),
 }));
 
-vi.mock('../../web-loader/library', () => ({
-    saveModel: saveModelMock,
-}));
 
 import { handleDroppedFile, handleDropFile } from '../drop-import';
 

@@ -44,7 +44,7 @@ function loadBundle(lang) {
 function extractPlaceholders(file) {
     const text = readFileSync(file, 'utf8');
     const map = new Map(); // key -> Set<string> of placeholder names
-    const re = /^\s*['"]([^'"]+)['"]\s*:\s*['"]((?:[^'"\\]|\\.)*)['"]/gm;
+    const re = /^\s*['"]([^'"]+)['"]\s*:\s*['"]((?:\\.|[^'\\])*)['"]/gm;
     let m;
     while ((m = re.exec(text)) !== null) {
         const key = m[1];

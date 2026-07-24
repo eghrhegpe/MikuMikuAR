@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 65 | 504 |
+| 核心基础设施 | 66 | 516 |
 | 3D 场景 | 98 | 1057 |
 | 菜单 & UI | 65 | 337 |
 | 换装 & 音频 | 3 | 38 |
@@ -34,12 +34,21 @@
 | `goAdapter()` | `core/backend/go-adapter` | — |
 | `STORES()` | `core/backend/idb` | — |
 | `Store()` | `core/backend/idb` | — |
+| `WebModelEntry()` | `core/backend/idb` | — |
 | `closeIDB()` | `core/backend/idb` | — |
+| `deleteModel()` | `core/backend/idb` | — |
+| `formatSize()` | `core/backend/idb` | — |
+| `getLastModel()` | `core/backend/idb` | — |
+| `getModelEntry()` | `core/backend/idb` | — |
 | `idbDelete()` | `core/backend/idb` | — |
 | `idbGet()` | `core/backend/idb` | — |
 | `idbKeys()` | `core/backend/idb` | — |
 | `idbSet()` | `core/backend/idb` | — |
+| `listModels()` | `core/backend/idb` | — |
+| `loadModelBytes()` | `core/backend/idb` | — |
 | `openDB()` | `core/backend/idb` | — |
+| `saveModel()` | `core/backend/idb` | — |
+| `setLastModel()` | `core/backend/idb` | — |
 | `getCachedCapabilities()` | `core/backend/index` | — |
 | `getCapabilities()` | `core/backend/index` | — |
 | `resolveBackend()` | `core/backend/index` | — |
@@ -155,6 +164,8 @@
 | `setAutoLoop()` | `core/playback-state` | — |
 | `setIsPlaying()` | `core/playback-state` | — |
 | `setSeekDragging()` | `core/playback-state` | — |
+| `PmxMeta()` | `core/pmx-meta` | — |
+| `parsePmxComment()` | `core/pmx-meta` | — |
 | `reactive()` | `core/reactivity` | — |
 | `readonly()` | `core/reactivity` | — |
 | `scheduleRefresh()` | `core/reactivity` | — |
@@ -178,6 +189,7 @@
 | `loadPersistedRuntimeMode()` | `core/runtime-mode` | — |
 | `persistRuntimeMode()` | `core/runtime-mode` | — |
 | `renderRuntimeBadge()` | `core/runtime-mode` | — |
+| `setBackendBadge()` | `core/runtime-mode` | — |
 | `safeCall()` | `core/safe-call` | — |
 | `safeCallAsync()` | `core/safe-call` | — |
 | `safeCallVoid()` | `core/safe-call` | — |
@@ -2125,5 +2137,5 @@
 
 ---
 
-> 共 252 个文件，2092 个导出符号。
+> 共 253 个文件，2103 个导出符号。
 > 说明列（—）待知识库或人工补充。
