@@ -8,11 +8,10 @@ source_files:
   - frontend/src/scene/motion/motion-modules/body-posture.ts
 adr: []
 symbols:
-  - BodyPostureModule
-  - applyBodyPosture
+  - createBodyPostureModule
+  - BODY_POSTURE_DEF
 invariants:
   - 姿势参数影响身体倾斜
-  - 与 VMD 身体动作互补
 tests: []
 use_when:
   - 身体姿势

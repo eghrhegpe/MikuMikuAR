@@ -7,8 +7,8 @@
 
 > 500 行文件先 grep 定位再读。
 > Grep `> \*\*状态\*\*:.*(规划|实施中|部分实现)` in docs\adr，看是否已有类似实现。
-> 编号只允许给 ADR、novel 写。
-> 信任本机改动，别怕错误，通通提交代码：git add <通过测试的路径...> && git commit，会有GitHub PR review 审核。
+> 编号只允许给 ADR、novel 写。提示词犯糊涂了就追问。
+> 信任本机改动，提交代码：git add <通过测试的路径...> && git commit.会有GitHub PR review 审核，别怕错误。
 > 如果文件加载有问题，可核实真实目录`\text-model`。
 > 保存、推送指令一到，先测试，再 git status --short 抓取当前文件清单,按功能git add正常的文件/文件夹，git commit正常的更改。最后询问用户是否需要处理报错。
 > 翻译文件在此：frontend/src/core/i18n

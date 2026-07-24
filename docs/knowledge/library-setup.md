@@ -8,7 +8,11 @@ source_files:
   - frontend/src/menus/library-setup.ts
 adr: []
 symbols:
-  - setupLibrary
+  - initLibrary
+  - selectResourceRoot
+  - selectOverridePath
+  - switchStorageMode
+  - rescanAndSync
 invariants:
   - 初始化在应用启动时执行
 tests: []

@@ -8,11 +8,10 @@ source_files:
   - frontend/src/scene/motion/motion-modules/finger-pose.ts
 adr: []
 symbols:
-  - FingerPoseModule
-  - applyFingerPose
+  - createFingerPoseModule
+  - FINGER_POSE_DEF
 invariants:
   - 手指骨骼按预设姿态映射
-  - 与 VMD 手指动作互补
 tests: []
 use_when:
   - 手指姿态

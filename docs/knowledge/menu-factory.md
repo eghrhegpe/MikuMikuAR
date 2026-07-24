@@ -8,10 +8,13 @@ source_files:
   - frontend/src/menus/menu-factory.ts
 adr: []
 symbols:
-  - MenuFactory
-  - createMenu
+  - PopupMenuHandlers
+  - RegisteredPopupMenuConfig
+  - PopupMenuHandle
+  - registerPopupMenu
+  - PopupMenuConfig
 invariants:
-  - 工厂创建菜单实例，不暴露内部实现
+  - 弹窗菜单通过注册表管理
 tests: []
 use_when:
   - 菜单工厂

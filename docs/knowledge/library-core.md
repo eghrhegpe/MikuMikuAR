@@ -8,11 +8,13 @@ source_files:
   - frontend/src/menus/library-core.ts
 adr: []
 symbols:
-  - LibraryCore
-  - scanLibrary
-  - indexResource
+  - ResourceViewMode
+  - getResourceViewMode
+  - setResourceViewMode
+  - isModelDirTarget
+  - getPendingMetaGuard
 invariants:
-  - 资源索引在后台线程构建
+  - 视图模式在 list/grid 之间切换
 tests: []
 use_when:
   - 资源库核心

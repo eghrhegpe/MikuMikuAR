@@ -8,11 +8,10 @@ source_files:
   - frontend/src/scene/motion/motion-modules/sway-motion.ts
 adr: []
 symbols:
-  - SwayMotionModule
-  - applySwayMotion
+  - createSwayMotionModule
+  - SWAY_MOTION_DEF
 invariants:
   - 摇摆幅度由参数控制
-  - 与节拍联动
 tests: []
 use_when:
   - 身体摇摆
