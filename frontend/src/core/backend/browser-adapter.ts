@@ -352,11 +352,31 @@ function _stripCategorySeg(p: string): string {
     return isCat ? p.slice(seg.length + 1) : p;
 }
 
+/**
+ * [doc:adr-177][p2b] 计算纹理文件相对其关联 PMX 的相对路径。
+ *
+ * - `childRelIdCategory`：纹理相对分类根（已去掉类别段）的相对路径，如 `tex` / `分类1/tex`。
+ * - `pmxRelPath`：关联 PMX 相对分类根的相对路径（PMX 所在层计算，如 '' / `分类1`）。
+ * 返回纹理相对 PMX 的路径段（不含文件名），用于构造 `dir:<pmxStem>:<relToPmx>/<name>` 键，
+ * 使读取侧 `readFileBytes('web://model/<pmxStem>/<relToPmx>/<name>')` 能精确命中。
+ *
+ * 例：PMX 在分类根（pmxRelPath=''），纹理在 `tex/face.png`（childRelIdCategory='tex'）→ `tex`；
+ *     PMX 在 `分类1`（pmxRelPath='分类1'），纹理在 `分类1/tex/face.png` → `tex`。
+ */
+function _relPathFrom(childRelIdCategory: string, pmxRelPath: string): string {
+    if (!pmxRelPath) return childRelIdCategory;
+    if (childRelIdCategory === pmxRelPath) return '';
+    if (childRelIdCategory.startsWith(pmxRelPath + '/')) {
+        return childRelIdCategory.slice(pmxRelPath.length + 1);
+    }
+    return childRelIdCategory;
+}
+
 /** FSA 目录递归扫描：保留目录结构，按目录约定分类（对齐桌面端） */
 async function _scanDirIntoIDB(
     dirHandle: FileSystemDirectoryHandle,
     relPath = '',
-    parentPmxStems: string[] = []
+    parentPmx: { stem: string; relPath: string }[] = []
 ): Promise<void> {
     const dir = dirHandle as FsaDirHandle;
     // 第一遍：收集本层所有文件信息（FileSystemDirectoryHandle 的 values() 是有状态的，一次读完）
@@ -377,19 +397,24 @@ async function _scanDirIntoIDB(
     const topDir = relPath.split('/')[0]?.toLowerCase() || '';
     const byDir = _CATEGORY_BY_DIR[topDir];
 
-    // 本层 PMX 的相对 stem 列表（用于纹理关联；含类别段 + 相对路径，杜绝同名文件覆盖）
-    const pmxStems = files
+    // 本层 PMX 的相对 stem + 相对分类根路径（用于纹理关联；含类别段 + 相对路径，杜绝同名文件覆盖）
+    const pmxEntries = files
         .filter((f) => /\.pmx$/i.test(f.name))
         .map((f) => {
             const sn = f.name.replace(/\.pmx$/i, '');
             const catRelPath = _computeCategoryRelPath(!!byDir, 'pmx', relPath);
             const relIdCategory = _stripCategorySeg(catRelPath);
-            return relIdCategory ? `${relIdCategory}/${sn}` : sn;
+            return {
+                stem: relIdCategory ? `${relIdCategory}/${sn}` : sn,
+                relPath: relIdCategory,
+            };
         });
-    // 合并父层 PMX stem：子目录纹理关联到最近的祖先 PMX
-    const effectivePmxStems = pmxStems.length > 0 ? pmxStems : parentPmxStems;
+    // 合并父层 PMX：子目录纹理关联到最近的祖先 PMX
+    const effectivePmx = pmxEntries.length > 0 ? pmxEntries : parentPmx;
     const TEXTURE_EXT = /\.(png|jpg|jpeg|bmp|tga|dds|tif|tiff)$/i;
     const textureFiles = files.filter((f) => TEXTURE_EXT.test(f.name));
+    // 本层纹理相对分类根的相对路径（所有本层纹理共享同一 relPath，一次算好）
+    const texRelIdCategory = _stripCategorySeg(relPath);
 
     // 第二遍：逐个文件写入（键带相对路径 + 类别段，嵌套目录不丢失、同名不覆盖）
     for (const { name, handle } of files) {
@@ -489,25 +514,28 @@ async function _scanDirIntoIDB(
         }
     }
 
-    // 第三遍：为本层的每个 PMX 写入同目录纹理引用
-    // [bugfix:texture-subdir] 使用 effectivePmxStems（含父层），
-    // 使子目录纹理（如 tex/face.png）也能关联到父目录的 PMX。
-    if (effectivePmxStems.length > 0 && textureFiles.length > 0) {
+    // 第三遍：为本层的每个纹理写入「相对其关联 PMX 的路径」引用（含子目录纹理）
+    // [p2b] 旧实现用 basename（dir:<stem>:<name>），子目录纹理（tex/face.png）路径丢失 → 白模。
+    // 现按相对 PMX 的完整路径写入 dir:<stem>:<relToPmx>/<name>，与读取侧
+    // readFileBytes('web://model/<stem>/<relToPmx>/<name>') → dir:<stem>:<relToPmx>/<name> 精确命中。
+    if (effectivePmx.length > 0 && textureFiles.length > 0) {
         for (const { name, handle } of textureFiles) {
             const file = await handle.getFile();
             const texBytes = new Uint8Array(await file.arrayBuffer());
-            for (const stem of effectivePmxStems) {
-                await idbSet('models', `dir:${stem}:${name}`, texBytes);
+            for (const pmx of effectivePmx) {
+                const relToPmx = _relPathFrom(texRelIdCategory, pmx.relPath);
+                const key = relToPmx ? `dir:${pmx.stem}:${relToPmx}/${name}` : `dir:${pmx.stem}:${name}`;
+                await idbSet('models', key, texBytes);
             }
         }
-        console.info(`[web-scan]   纹理关联: ${textureFiles.length} 个纹理 → PMX [${effectivePmxStems.join(', ')}]`);
+        console.info(`[web-scan]   纹理关联: ${textureFiles.length} 个纹理 → PMX [${effectivePmx.map((p) => p.stem).join(', ')}]`);
     }
 
-    // 递归子目录（传递本层 PMX stem，使子目录纹理能关联到祖先 PMX）
+    // 递归子目录（传递本层 PMX，使子目录纹理能按相对 PMX 路径关联祖先）
     for (const dirName of subDirs) {
         const subHandle = await dir.getDirectoryHandle(dirName);
         const subRelPath = relPath ? `${relPath}/${dirName}` : dirName;
-        await _scanDirIntoIDB(subHandle, subRelPath, effectivePmxStems);
+        await _scanDirIntoIDB(subHandle, subRelPath, effectivePmx);
     }
 }
 
