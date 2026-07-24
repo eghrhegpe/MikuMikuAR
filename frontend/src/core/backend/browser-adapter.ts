@@ -560,12 +560,12 @@ async function _scanDirIntoIDB(
                 name: stem, fileName: name, kind: format,
                 size: bytes.byteLength, savedAt: Date.now(),
             });
-            console.info(`[web-scan]   写入 entry:${stem} → dir=${virtualDir} type=${type} format=${format}`);
+            console.info(`[web-scan]   写入 entry:${relIdStem} → dir=${virtualDir} type=${type} format=${format}`);
         }
     }
 
     if (texLinkedCount > 0) {
-        console.info(`[web-scan]   纹理关联: ${texLinkedCount} 个纹理 → PMX [${effectivePmx.map((p) => p.stem).join(', ')}]`);
+        console.info(`[web-scan]   纹理关联: ${texLinkedCount} 个纹理 → PMX [${effectivePmx.map((p) => _baseName(p.stem)).join(', ')}]`);
     }
 
     // 递归子目录（传递本层 PMX，使子目录纹理能按相对 PMX 路径关联祖先）
