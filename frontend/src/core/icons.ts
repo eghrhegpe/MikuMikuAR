@@ -20,6 +20,25 @@ export function createIconifyIcon(name: string): HTMLElement | null {
     }
 }
 
+/**
+ * 创建图标按钮（默认 slide-action 样式）。
+ * 返回按钮元素，调用方自行添加事件监听器和额外样式。
+ */
+export function createIconButton(
+    iconName: string,
+    title: string,
+    className = 'slide-action'
+): HTMLButtonElement {
+    const btn = document.createElement('button');
+    btn.className = className;
+    const icon = createIconifyIcon(iconName);
+    if (icon) {
+        btn.appendChild(icon);
+    }
+    btn.title = title;
+    return btn;
+}
+
 /** Map software kind to an iconify icon name. */
 export function softwareKindIcon(kind: string): string {
     switch (kind) {

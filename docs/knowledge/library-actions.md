@@ -29,7 +29,10 @@ use_when:
 
 ## 对外 API（节选）
 - `interface LibraryActions` — 操作接口。
-- `executeLibraryAction(action, params)` — 执行资源库操作。
+- `loadThumbnailsForLevel(paths, modelId?)` — 异步加载缩略图。
+- `ensureModelMeta(pmxPaths)` — 确保模型元数据已缓存。
+- `prepareModelRestore(pmxPath)` — 准备模型恢复操作。
+- `importFile()` — 触发文件导入对话框。
 
 ## 与其他子系统关系
 - 资源库核心：`library-core.ts`。

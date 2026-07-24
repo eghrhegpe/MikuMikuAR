@@ -31,8 +31,11 @@ use_when:
 - `env-lighting.ts` — 场景灯光初始化、与 env 系统集成、资源释放。
 
 ## 对外 API（节选）
-- `initEnvLighting(scene, options)` — 初始化环境灯光。
-- `disposeEnvLighting()` — 释放灯光资源。
+- `EnvPreset` / `DerivedLighting` — 环境灯光预设接口。
+- `calcLuminance(rgb)` — 计算亮度。
+- `deriveLighting(envState)` — 从 envState 派生灯光配置。
+- `TIME_OF_DAY_PRESETS` — 内置时间段预设集合。
+- `exportEnvPreset(p)` / `importEnvPreset(json)` — 预设导出/导入。
 
 ## 与其他子系统关系
 - 被 `env-impl.ts` 调用。

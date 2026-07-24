@@ -31,7 +31,11 @@ use_when:
 
 ## 对外 API（节选）
 - `class LipsyncBridge` — 口型同步桥实现。
-- `applyLipsync(context, bones, audioSignal)` — 应用口型同步。
+- `initLipSync(modelManager)` — 初始化口型同步。
+- `setLipSyncEnabled(on)` — 开启/关闭口型同步。
+- `setLipSyncSensitivity(v)` — 设置灵敏度。
+- `setLipSyncIntensity(v)` — 设置强度。
+- `setLipSyncMultiMorphEnabled(v)` — 开启/关闭多形态口型。
 
 ## 与其他子系统关系
 - 音频信号：`@/outfit/audio`。

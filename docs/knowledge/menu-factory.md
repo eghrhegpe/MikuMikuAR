@@ -29,7 +29,10 @@ use_when:
 - `menu-factory.ts` — 菜单实例创建、配置、初始化。
 
 ## 对外 API（节选）
-- `createMenu(options)` — 创建新菜单实例。
+- `interface PopupMenuHandlers` — 弹窗菜单处理器接口。
+- `interface RegisteredPopupMenuConfig` — 注册的弹窗菜单配置。
+- `interface PopupMenuHandle` — 弹窗菜单句柄。
+- `registerPopupMenu(config)` — 注册弹窗菜单，返回句柄。
 - `MenuFactory` — 菜单工厂类。
 
 ## 与其他子系统关系

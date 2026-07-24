@@ -34,6 +34,7 @@ export { createResourcePanel } from './ui-resource-panel';
 export type { ResourcePanelOptions, ResourcePanelHandle, ResourceItem } from './ui-resource-panel';
 export { createVirtualGrid } from './ui-virtual-grid';
 export type { VirtualGridOptions, VirtualGridHandle } from './ui-virtual-grid';
+export { createIconButton } from './icons';
 export {
     openFullscreen,
     closeFullscreen,

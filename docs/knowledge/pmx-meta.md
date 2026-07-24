@@ -27,7 +27,8 @@ use_when:
 
 ## 对外 API（节选）
 - `interface PMXMeta` — PMX 元数据描述。
-- `extractPMXMeta(buffer)` — 从 ArrayBuffer 提取元数据。
+- `interface PmxMeta` — PMX 元数据描述。
+- `parsePmxComment(bytes)` — 从 PMX 文件头部解析注释字段。
 
 ## 与其他子系统关系
 - 被 `library-core.ts` 调用（资源索引）。

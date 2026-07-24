@@ -30,6 +30,8 @@ import type {
     FileInfo,
     UpdateCheckResult,
     RenderPreset,
+    SoftwareEntry,
+    PlazaDownloadResult,
 } from '@bindings/mikumikuar/internal/app/models';
 import { NotSupportedError } from './types';
 import type { BackendService, BackendCapabilities } from './types';
@@ -45,6 +47,23 @@ function _baseName(path: string): string {
 /** 去掉文件名最后一个扩展名段（如 `a.pmx` → `a`，`b.tar.gz` → `b.tar`） */
 function _stripExt(name: string): string {
     return name.replace(/\.[^.]+$/, '');
+}
+
+// —— base64 工具（对齐 Go 侧 string ↔ bytes 转换）——
+
+/** base64 字符串 → Uint8Array（兼容浏览器 atob） */
+function _base64ToBytes(b64: string): Uint8Array {
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
+}
+
+/** Uint8Array → base64 字符串（兼容浏览器 btoa） */
+function _bytesToBase64(bytes: Uint8Array): string {
+    let bin = '';
+    for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin);
 }
 
 // —— 资源配对（P4）——
@@ -462,7 +481,9 @@ async function _scanDirIntoIDB(
                 const texBytes = new Uint8Array(await file.arrayBuffer());
                 for (const pmx of effectivePmx) {
                     const relToPmx = _relPathFrom(texRelIdCategory, pmx.relPath);
-                    const key = relToPmx ? `dir:${pmx.stem}:${relToPmx}/${name}` : `dir:${pmx.stem}:${name}`;
+                    // bare stem 统一：剥离类别前缀，使 ListDirRecursive / readFileBytes 查询路径一致
+                    const bareStem = pmx.stem.includes('/') ? pmx.stem.split('/').pop()! : pmx.stem;
+                    const key = relToPmx ? `dir:${bareStem}:${relToPmx}/${name}` : `dir:${bareStem}:${name}`;
                     await idbSet('models', key, texBytes);
                 }
                 texLinkedCount++;
@@ -586,7 +607,21 @@ export const browserAdapter: BackendService = {
         const key = _resolveIdbKey(path);
         const bytes = (await idbGet<Uint8Array>('models', key)) ?? null;
         if (bytes) return bytes;
-        // 兜底：dir:<stem>:<relPath> 未命中时，按 ExtractZip 扁平键 file:<stem>（去扩展名）再查一次
+        // 兜底 1：bare stem fallback（FSA 扫描场景，路径含类别前缀）
+        // _classifyPath regex 只取第一个 / 前段作为 stem，尝试所有可能的 bare stem 边界
+        const modelMatch = path.match(/^web:\/\/model\/(.+)$/);
+        if (modelMatch) {
+            const segments = modelMatch[1].split('/');
+            // 尝试倒数第 2 段作为 bare stem（最后一段是文件名）
+            for (let i = segments.length - 2; i >= 1; i--) {
+                const candidateStem = segments[i];
+                const candidateRest = segments.slice(i + 1).join('/');
+                const candidateKey = `dir:${candidateStem}:${candidateRest}`;
+                const candidateBytes = (await idbGet<Uint8Array>('models', candidateKey)) ?? null;
+                if (candidateBytes) return candidateBytes;
+            }
+        }
+        // 兜底 2：dir:<stem>:<relPath> 未命中时，按 ExtractZip 扁平键 file:<stem>（去扩展名）再查一次
         const baseName = _baseName(path);
         if (baseName && baseName !== path) {
             const stem = _stripExt(baseName);
@@ -611,16 +646,19 @@ export const browserAdapter: BackendService = {
         if (cfg.ui_state) return cfg.ui_state;
         return (await idbGet<UIState>('uistate', 'state')) ?? _defaultUIState();
     },
-    async SetUIState(s: Partial<UIState>): Promise<void> {
+    // [doc:adr-176] 对齐 Go 签名：SetUIState(ui: UIState)。
+    // Go 调用方传完整对象，merge 语义对完整对象等价覆盖；对部分字段调用更健壮。
+    async SetUIState(s: UIState): Promise<void> {
         // [doc:adr-177] 双写：Config.ui_state（主应用读）+ uistate store（向后兼容）
         const cfg = await this.GetConfig();
         const merged = { ...(cfg.ui_state ?? _defaultUIState()), ...s };
         await this.SetConfig({ ui_state: merged } as Partial<Config>);
         await idbSet('uistate', 'state', merged);
     },
-    async SetEnvState(s: Partial<EnvState>): Promise<void> {
+    // [doc:adr-176] 对齐 Go 签名：SetEnvState(env: EnvState)。
+    // merge 语义：Go 调用方传完整 envState 时等价覆盖；部分字段调用保留旧字段。
+    async SetEnvState(s: EnvState): Promise<void> {
         // [doc:adr-177] 单源：写入 Config.env（对齐主应用 restoreEnvState 读取路径）
-        // 旧实现写 uistate/envState，与主应用 cfg.env 读取路径不一致，导致浏览器侧保存的环境状态无法恢复
         const cfg = await this.GetConfig();
         const merged = { ...(cfg.env ?? {}), ...s } as EnvState;
         await this.SetConfig({ env: merged } as Partial<Config>);
@@ -716,20 +754,33 @@ export const browserAdapter: BackendService = {
             cached: false,
         } as unknown as ExtractResult;
     },
-    async SaveScreenshot(data: Uint8Array): Promise<void> {
-        const blob = new Blob([data as BlobPart], { type: 'image/png' });
+    // [doc:adr-176] 对齐 Go 签名：SaveScreenshot(dir, filename, base64PNG)。
+    // base64PNG 是 "data:image/png;base64,..." 或纯 base64，浏览器端转 Uint8Array 下载。
+    async SaveScreenshot(_dir: string, filename: string, base64PNG: string): Promise<void> {
+        const raw = base64PNG.includes(',') ? base64PNG.split(',')[1] : base64PNG;
+        const bytes = _base64ToBytes(raw);
+        const blob = new Blob([bytes as BlobPart], { type: 'image/png' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `screenshot-${Date.now()}.png`;
+        a.download = filename || `screenshot-${Date.now()}.png`;
         a.click();
         URL.revokeObjectURL(url);
     },
-    async SaveThumbnail(name: string, data: Uint8Array): Promise<void> {
-        await idbSet('thumbnails', name, data);
+    // [doc:adr-176] 对齐 Go 签名：SaveThumbnail(modelPath, base64PNG)。
+    // modelPath 经 _resolveIdbKey 映射为 IndexedDB key，base64 → bytes 存储。
+    async SaveThumbnail(modelPath: string, base64PNG: string): Promise<void> {
+        const key = _resolveIdbKey(modelPath);
+        const bytes = _base64ToBytes(base64PNG.includes(',') ? base64PNG.split(',')[1] : base64PNG);
+        await idbSet('thumbnails', key, bytes);
     },
-    async GetThumbnail(name: string): Promise<Uint8Array | null> {
-        return (await idbGet<Uint8Array>('thumbnails', name)) ?? null;
+    // [doc:adr-176] 对齐 Go 签名：GetThumbnail(modelPath): string。
+    // 读 IDB bytes → btoa → base64 string。无缩略图返回空串（对齐 Go 侧行为）。
+    async GetThumbnail(modelPath: string): Promise<string> {
+        const key = _resolveIdbKey(modelPath);
+        const bytes = await idbGet<Uint8Array>('thumbnails', key);
+        if (!bytes) return '';
+        return _bytesToBase64(bytes);
     },
     // [doc:adr-177] 对齐 Go 契约（scene.go:38/65）：SaveLastScene(jsonStr) 单参、
     // LoadLastScene() 无参返回 string，单文件覆盖语义（Go 写 last_scene.json）。
@@ -765,28 +816,56 @@ export const browserAdapter: BackendService = {
     async GetAllTags(): Promise<string[]> {
         return (await idbGet<string[]>('tags', 'all')) ?? [];
     },
-    async AddTag(tag: string): Promise<void> {
+    // [doc:adr-176] 对齐 Go 签名：AddTag(libraryRef, tag)。
+    // 维护全局标签列表 + 模型→标签映射 + 标签→模型映射。
+    async AddTag(libraryRef: string, tag: string): Promise<void> {
         const all = (await idbGet<string[]>('tags', 'all')) ?? [];
-        if (!all.includes(tag)) all.push(tag);
-        await idbSet('tags', 'all', all);
+        if (!all.includes(tag)) {
+            all.push(tag);
+            await idbSet('tags', 'all', all);
+        }
+        const modelTags = (await idbGet<string[]>('tags', `model:${libraryRef}`)) ?? [];
+        if (!modelTags.includes(tag)) {
+            modelTags.push(tag);
+            await idbSet('tags', `model:${libraryRef}`, modelTags);
+        }
+        const tagModels = (await idbGet<string[]>('tags', `tag:${tag}`)) ?? [];
+        if (!tagModels.includes(libraryRef)) {
+            tagModels.push(libraryRef);
+            await idbSet('tags', `tag:${tag}`, tagModels);
+        }
     },
-    async RemoveTag(tag: string): Promise<void> {
-        const all = (await idbGet<string[]>('tags', 'all')) ?? [];
-        await idbSet('tags', 'all', all.filter((t) => t !== tag));
+    // [doc:adr-176] 对齐 Go 签名：RemoveTag(libraryRef, tag)。
+    async RemoveTag(libraryRef: string, tag: string): Promise<void> {
+        const modelTags = (await idbGet<string[]>('tags', `model:${libraryRef}`)) ?? [];
+        await idbSet('tags', `model:${libraryRef}`, modelTags.filter((t) => t !== tag));
+        const tagModels = (await idbGet<string[]>('tags', `tag:${tag}`)) ?? [];
+        const newTagModels = tagModels.filter((r) => r !== libraryRef);
+        if (newTagModels.length === 0) {
+            await idbDelete('tags', `tag:${tag}`);
+            const all = (await idbGet<string[]>('tags', 'all')) ?? [];
+            await idbSet('tags', 'all', all.filter((t) => t !== tag));
+        } else {
+            await idbSet('tags', `tag:${tag}`, newTagModels);
+        }
     },
-    async GetTagsByModel(model: string): Promise<string[]> {
-        return (await idbGet<string[]>(`tags`, `model:${model}`)) ?? [];
+    async GetTagsByModel(libraryRef: string): Promise<string[]> {
+        return (await idbGet<string[]>('tags', `model:${libraryRef}`)) ?? [];
     },
     async GetModelsByTag(tag: string): Promise<string[]> {
-        return (await idbGet<string[]>(`tags`, `tag:${tag}`)) ?? [];
+        return (await idbGet<string[]>('tags', `tag:${tag}`)) ?? [];
     },
-    async GetRecentModels(): Promise<ModelEntry[]> {
-        return (await idbGet<ModelEntry[]>('models', 'recent')) ?? [];
+    // [doc:adr-176] 对齐 Go 签名：GetRecentModels(): string[] | null。
+    // 返回 libraryRef 列表（非 ModelEntry[]）。
+    async GetRecentModels(): Promise<string[]> {
+        return (await idbGet<string[]>('models', 'recent')) ?? [];
     },
-    async AddRecentModel(m: ModelEntry): Promise<void> {
-        const all = (await idbGet<ModelEntry[]>('models', 'recent')) ?? [];
-        all.unshift(m);
-        await idbSet('models', 'recent', all.slice(0, 20));
+    // [doc:adr-176] 对齐 Go 签名：AddRecentModel(libraryRef: string)。
+    async AddRecentModel(libraryRef: string): Promise<void> {
+        const all = (await idbGet<string[]>('models', 'recent')) ?? [];
+        const filtered = all.filter((r) => r !== libraryRef);
+        filtered.unshift(libraryRef);
+        await idbSet('models', 'recent', filtered.slice(0, 20));
     },
     async GetLibraryIndex(): Promise<ModelEntry[]> {
         return _listModels();
@@ -796,23 +875,38 @@ export const browserAdapter: BackendService = {
         // comment 由 loadActor 阶段通过 parsePmxComment 从 PMX 字节提取后填入缓存。
         return {};
     },
-    async SaveModelPreset(name: string, data: Uint8Array): Promise<void> {
-        await idbSet('presets', `model:${name}`, data);
+    // [doc:adr-176] 对齐 Go 签名：SaveModelPreset(jsonStr, path)。
+    // path 推导 name（去扩展名），存 JSON string（Go 侧也是 string 传输）。
+    async SaveModelPreset(jsonStr: string, path: string): Promise<void> {
+        const name = _stripExt(_baseName(path)) || path;
+        await idbSet('presets', `model:${name}`, jsonStr);
     },
     async GetModelPresets(): Promise<string[]> {
         return (await idbKeys('presets')).filter((k) => k.startsWith('model:')).map((k) => k.slice(6));
     },
-    async LoadModelPreset(name: string): Promise<Uint8Array | null> {
-        return (await idbGet<Uint8Array>('presets', `model:${name}`)) ?? null;
+    // [doc:adr-176] 对齐 Go 签名：LoadModelPreset(path): string。
+    // path 推导 name，返回 JSON string。不存在返回空串（对齐 Go）。
+    async LoadModelPreset(path: string): Promise<string> {
+        const name = _stripExt(_baseName(path)) || path;
+        return (await idbGet<string>('presets', `model:${name}`)) ?? '';
     },
-    async LoadModelPresetFromLib(name: string): Promise<Uint8Array | null> {
-        return (await idbGet<Uint8Array>('presets', `model:${name}`)) ?? null;
+    async LoadModelPresetFromLib(name: string): Promise<string> {
+        return (await idbGet<string>('presets', `model:${name}`)) ?? '';
     },
-    async SaveModelPresetToLibAuto(name: string, data: Uint8Array): Promise<void> {
-        await idbSet('presets', `model:${name}`, data);
+    // [doc:adr-176] 对齐 Go 签名：SaveModelPresetToLibAuto(jsonStr): string。
+    // 从 jsonStr 解析 name 字段（约定 name 字段），无则用时间戳。返回 name。
+    async SaveModelPresetToLibAuto(jsonStr: string): Promise<string> {
+        let name = `preset-${Date.now()}`;
+        try {
+            const parsed = JSON.parse(jsonStr) as { name?: string };
+            if (parsed.name) name = parsed.name;
+        } catch { /* 解析失败用默认名 */ }
+        await idbSet('presets', `model:${name}`, jsonStr);
+        return name;
     },
-    async SaveRenderPreset(name: string, data: Uint8Array): Promise<void> {
-        await idbSet('presets', `render:${name}`, data);
+    // [doc:adr-176] 对齐 Go 签名：SaveRenderPreset(name, params: string)。
+    async SaveRenderPreset(name: string, params: string): Promise<void> {
+        await idbSet('presets', `render:${name}`, params);
     },
     async GetRenderPresets(): Promise<RenderPreset[]> {
         const keys = (await idbKeys('presets')).filter((k) => k.startsWith('render:'));
@@ -823,8 +917,16 @@ export const browserAdapter: BackendService = {
         }
         return out;
     },
-    async SaveScenePreset(name: string, data: Uint8Array): Promise<void> {
-        await idbSet('presets', `scene:${name}`, data);
+    // [doc:adr-176] 对齐 Go 签名：SaveScenePreset(jsonStr): string。
+    // 从 jsonStr 解析 name，返回 name。
+    async SaveScenePreset(jsonStr: string): Promise<string> {
+        let name = `scene-${Date.now()}`;
+        try {
+            const parsed = JSON.parse(jsonStr) as { name?: string };
+            if (parsed.name) name = parsed.name;
+        } catch { /* 解析失败用默认名 */ }
+        await idbSet('presets', `scene:${name}`, jsonStr);
+        return name;
     },
     async GetPresetScenes(): Promise<string[]> {
         return (await idbKeys('presets')).filter((k) => k.startsWith('scene:')).map((k) => k.slice(6));
@@ -832,11 +934,18 @@ export const browserAdapter: BackendService = {
     async GetPresetScenesDir(): Promise<string> {
         return 'web://presets/scenes';
     },
-    async SaveEnvPresetAuto(name: string, data: Uint8Array): Promise<void> {
-        await idbSet('presets', `env:${name}`, data);
+    // [doc:adr-176] 对齐 Go 签名：SaveEnvPresetAuto(jsonStr): string。
+    async SaveEnvPresetAuto(jsonStr: string): Promise<string> {
+        let name = `env-${Date.now()}`;
+        try {
+            const parsed = JSON.parse(jsonStr) as { name?: string };
+            if (parsed.name) name = parsed.name;
+        } catch { /* 解析失败用默认名 */ }
+        await idbSet('presets', `env:${name}`, jsonStr);
+        return name;
     },
-    async LoadEnvPreset(name: string): Promise<Uint8Array | null> {
-        return (await idbGet<Uint8Array>('presets', `env:${name}`)) ?? null;
+    async LoadEnvPreset(name: string): Promise<string> {
+        return (await idbGet<string>('presets', `env:${name}`)) ?? '';
     },
     async ListEnvPresets(): Promise<string[]> {
         return (await idbKeys('presets')).filter((k) => k.startsWith('env:')).map((k) => k.slice(4));
@@ -851,29 +960,40 @@ export const browserAdapter: BackendService = {
         }
         return false;
     },
-    // [doc:adr-177] 细粒度 UI setter 统一委托 SetUIState → 写入 Config.ui_state，
-    // 对齐恢复侧 restoreUIState() 的 GetConfig().ui_state 读取路径。
-    // 旧实现写独立 key（ui.accent 等），GetConfig 读不到，导致网页端设置无法持久化。
+    // [doc:adr-177] 细粒度 UI setter：读当前 UIState → merge 单字段 → 写回。
+    // 不能直接传 Partial 给 SetUIState（完整覆盖语义），需 merge 保留其他字段。
     async SetUIAccent(v: string): Promise<void> {
-        await this.SetUIState({ accent: v } as Partial<UIState>);
+        const cur = await this.GetUIState();
+        await this.SetUIState({ ...cur, accent: v });
     },
     async SetUIAnimations(v: boolean): Promise<void> {
-        await this.SetUIState({ animations: v } as Partial<UIState>);
+        const cur = await this.GetUIState();
+        await this.SetUIState({ ...cur, animations: v });
     },
     async SetUIAutoUpdate(v: boolean): Promise<void> {
-        await this.SetUIState({ autoUpdateEnabled: v } as Partial<UIState>);
+        const cur = await this.GetUIState();
+        await this.SetUIState({ ...cur, autoUpdateEnabled: v });
     },
     async SetUIBlurBg(v: boolean): Promise<void> {
-        await this.SetUIState({ blurBg: v } as Partial<UIState>);
+        const cur = await this.GetUIState();
+        await this.SetUIState({ ...cur, blurBg: v });
     },
     async SetUIFontFamily(v: string): Promise<void> {
-        await this.SetUIState({ fontFamily: v } as Partial<UIState>);
+        const cur = await this.GetUIState();
+        await this.SetUIState({ ...cur, fontFamily: v });
     },
     async SetUIPopupWidth(v: number): Promise<void> {
-        await this.SetUIState({ popupWidth: v } as Partial<UIState>);
+        const cur = await this.GetUIState();
+        await this.SetUIState({ ...cur, popupWidth: v });
     },
     async SetUIScale(v: number): Promise<void> {
-        await this.SetUIState({ scale: v } as Partial<UIState>);
+        const cur = await this.GetUIState();
+        await this.SetUIState({ ...cur, scale: v });
+    },
+    // [doc:adr-176] 对齐 Go 签名：SetPerformanceMode(mode: string)。
+    async SetPerformanceMode(v: string): Promise<void> {
+        const cur = await this.GetUIState();
+        await this.SetUIState({ ...cur, performanceMode: v });
     },
     async GetDownloadAutoImport(): Promise<boolean> {
         return (await idbGet<boolean>('config', 'dl.autoImport')) ?? false;
@@ -887,14 +1007,19 @@ export const browserAdapter: BackendService = {
     async SetDownloadWatchEnabled(v: boolean): Promise<void> {
         await idbSet('config', 'dl.watchEnabled', v);
     },
-    async GetDownloadWatchStatus(): Promise<Record<string, unknown>> {
-        return (await idbGet('config', 'dl.watchStatus')) ?? {};
+    // [doc:adr-176] 对齐 Go 签名：GetDownloadWatchStatus(): string。
+    // 返回 JSON string（Go 侧也是 string）。
+    async GetDownloadWatchStatus(): Promise<string> {
+        const v = await idbGet<Record<string, unknown>>('config', 'dl.watchStatus');
+        return v ? JSON.stringify(v) : '';
     },
-    async SetLastBrowseDir(dir: string): Promise<void> {
-        await idbSet('config', 'lastBrowseDir', dir);
+    // [doc:adr-176] 对齐 Go 签名：SetLastBrowseDir(category, dir)。
+    // 按 category 分键存储，对齐 Go 侧按类别持久化。
+    async SetLastBrowseDir(category: string, dir: string): Promise<void> {
+        await idbSet('config', `lastBrowseDir:${category}`, dir);
     },
-    async GetLastBrowseDir(): Promise<string> {
-        return (await idbGet<string>('config', 'lastBrowseDir')) ?? '';
+    async GetLastBrowseDir(category: string): Promise<string> {
+        return (await idbGet<string>('config', `lastBrowseDir:${category}`)) ?? '';
     },
     // [doc:adr-177] Config 级 setter 委托 SetConfig → 写入 'config' key 下完整对象，
     // 对齐恢复侧 GetConfig() 读取路径。旧实现写独立 key，GetConfig 读不到。
@@ -910,11 +1035,6 @@ export const browserAdapter: BackendService = {
         const cfg = await this.GetConfig();
         const override_paths = { ...(cfg.override_paths ?? {}), [category]: path };
         await this.SetConfig({ override_paths } as Partial<Config>);
-    },
-    // [doc:adr-177] 对齐 Go 签名 SetPerformanceMode(mode string)。
-    // 旧实现误用 (v: boolean)，performanceMode 实际是字符串（'balanced' 等）。
-    async SetPerformanceMode(v: string): Promise<void> {
-        await this.SetUIState({ performanceMode: v } as Partial<UIState>);
     },
     // [doc:adr-177] 写入 Config.resource_root 字段（对齐主应用 initLibrary 读取路径 cfg.resource_root）
     // 原实现写 config.resourceRoot 独立键，GetConfig 读不到，导致浏览器侧设置根目录后无法持久化恢复
@@ -938,8 +1058,10 @@ export const browserAdapter: BackendService = {
         }
         return null;
     },
-    async ImportLocalFile(): Promise<ModelEntry[]> {
-        return _listModels();
+    // [doc:adr-176] 对齐 Go 签名：ImportLocalFile(path): ExtractResult | null。
+    // 浏览器侧：path 是已写入 IDB 的文件路径，委托 ExtractZip 处理 zip/资源。
+    async ImportLocalFile(path: string): Promise<ExtractResult | null> {
+        return this.ExtractZip(path, '');
     },
     async ImportZip(zipPath: string): Promise<ExtractResult | null> {
         // [doc:adr-177] 对齐 Go 签名（zipPath），内部委托 ExtractZip
@@ -966,9 +1088,24 @@ export const browserAdapter: BackendService = {
         /* 同上 */
     },
 
-    // ============ ① 其余默认实现（返回合理默认，浏览器降级） ============
-    async BundleScene(): Promise<Uint8Array> {
-        return new Uint8Array();
+    // [doc:adr-176] 对齐 Go 签名：BundleScene(targetPath, sceneJSON, assetPaths): void。
+    // 浏览器侧：用 JSZip 打包 scene.json + 资源字节，触发下载到 targetPath。
+    async BundleScene(_targetPath: string, sceneJSON: string, assetPaths: string[] | null): Promise<void> {
+        const zip = new JSZip();
+        zip.file('scene.json', sceneJSON);
+        if (assetPaths) {
+            for (const p of assetPaths) {
+                const bytes = await this.readFileBytes(p);
+                if (bytes) zip.file(_baseName(p), bytes);
+            }
+        }
+        const blob = await zip.generateAsync({ type: 'blob' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'scene-bundle.zip';
+        a.click();
+        URL.revokeObjectURL(url);
     },
     // [doc:adr-177] Delete*Preset 从 no-op 改为真实删除（idbDelete）
     async DeleteEnvPreset(name: string): Promise<void> {
@@ -991,9 +1128,26 @@ export const browserAdapter: BackendService = {
         // 调用方据 entry.relativePath 再 readFileBytes(modelDir + '/' + relativePath) 读字节。
         const stem = _extractStem(dirPath);
         const prefix = `dir:${stem}:`;
-        const keys = (await idbKeys('models')).filter((k) => k.startsWith(prefix));
+        const allKeys = await idbKeys('models');
+
+        // 第一轮：精确前缀匹配（ZIP 解压、单文件导入场景）
+        let matchedPrefix = prefix;
+        let keys = allKeys.filter((k) => k.startsWith(prefix));
+
+        // 第二轮：bare stem fallback（FSA 扫描场景，路径含类别前缀如 web://model/分类1/Miku）
+        // _classifyPath 的 regex 只取第一个 / 前的段作为 stem，需从原始路径提取完整段
+        if (keys.length === 0) {
+            const modelMatch = dirPath.match(/^web:\/\/model\/(.+)$/);
+            const fullSegment = modelMatch?.[1] ?? '';
+            if (fullSegment.includes('/')) {
+                const bareStem = fullSegment.split('/').pop()!;
+                matchedPrefix = `dir:${bareStem}:`;
+                keys = allKeys.filter((k) => k.startsWith(matchedPrefix));
+            }
+        }
+
         return keys.map((k) => {
-            const relativePath = k.slice(prefix.length);
+            const relativePath = k.slice(matchedPrefix.length);
             const name = relativePath.split('/').pop() ?? relativePath;
             return { name, relativePath } as FileInfo;
         });
@@ -1110,56 +1264,59 @@ export const browserAdapter: BackendService = {
         return h ? 'web://scene' : '';
     },
 
-    // ============ ③ 原生独占，显式降级 ============
-    async AddCustomSoftware(): Promise<void> {
+    // ============ ③ 原生独占，显式降级（签名对齐 Go 接口） ============
+    async AddCustomSoftware(_path: string, _name: string, _args: string): Promise<void> {
         throw new NotSupportedError('AddCustomSoftware');
     },
     async ClosePlazaWindow(): Promise<void> {
         throw new NotSupportedError('ClosePlazaWindow');
     },
-    async DownloadFromPlaza(): Promise<void> {
+    async DownloadFromPlaza(_fileURL: string, _fileName: string): Promise<PlazaDownloadResult | null> {
         throw new NotSupportedError('DownloadFromPlaza');
     },
-    async FetchPlazaConfig(): Promise<Uint8Array> {
+    async FetchPlazaConfig(): Promise<[string, string]> {
         throw new NotSupportedError('FetchPlazaConfig');
     },
-    async GetCachedPlazaConfig(): Promise<Uint8Array | null> {
+    async GetCachedPlazaConfig(): Promise<[string, string]> {
         throw new NotSupportedError('GetCachedPlazaConfig');
     },
-    async LaunchSoftware(): Promise<void> {
+    async LaunchSoftware(_path: string, _args: string): Promise<void> {
         throw new NotSupportedError('LaunchSoftware');
     },
-    async NavigatePlazaWindow(): Promise<void> {
+    async NavigatePlazaWindow(_targetURL: string): Promise<void> {
         throw new NotSupportedError('NavigatePlazaWindow');
     },
-    async OpenCacheDir(): Promise<void> {
+    async OpenCacheDir(_subDir: string): Promise<void> {
         throw new NotSupportedError('OpenCacheDir');
     },
     async OpenScreenshotDir(): Promise<void> {
         throw new NotSupportedError('OpenScreenshotDir');
     },
-    async OpenWithSoftware(): Promise<void> {
+    async OpenWithSoftware(_modelPath: string, _softwarePath: string, _args: string): Promise<void> {
         throw new NotSupportedError('OpenWithSoftware');
     },
-    async RemoveCustomSoftware(): Promise<void> {
+    async RemoveCustomSoftware(_path: string): Promise<void> {
         throw new NotSupportedError('RemoveCustomSoftware');
     },
-    async ScanSoftwareDir(): Promise<void> {
+    async ScanSoftwareDir(): Promise<SoftwareEntry[] | null> {
         throw new NotSupportedError('ScanSoftwareDir');
     },
-    async SetDownloadWatchDir(): Promise<void> {
+    async SetDownloadWatchDir(_dir: string): Promise<void> {
         throw new NotSupportedError('SetDownloadWatchDir');
     },
-    async StartFileServer(): Promise<void> {
+    async StartFileServer(_dirPath: string): Promise<number> {
         throw new NotSupportedError('StartFileServer');
     },
-    async StartProxy(): Promise<void> {
+    async StartProxy(_target: string, _mode: string): Promise<string> {
         throw new NotSupportedError('StartProxy');
     },
     async StopProxy(): Promise<void> {
         throw new NotSupportedError('StopProxy');
     },
-    async UpdateCustomSoftware(): Promise<void> {
+    async UpdateCustomSoftware(_path: string, _name: string, _args: string): Promise<void> {
         throw new NotSupportedError('UpdateCustomSoftware');
     },
+    // [doc:adr-176] 注：返回 Promise 而非 CancellablePromise（Wails 专属类型），
+    // 运行时调用方仅 await，不调 cancel/cancelOn。签名（参数）已对齐 Go 接口。
+    // 双重断言保留，因 CancellablePromise vs Promise 差异是 Wails 类型固有问题。
 } as unknown as BackendService;

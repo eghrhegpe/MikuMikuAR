@@ -27,7 +27,8 @@ use_when:
 
 ## 对外 API（节选）
 - `class BodyPostureModule` — 动作模块实现。
-- `applyBodyPosture(context, bones, posture)` — 应用身体姿势。
+- `createBodyPostureModule(modelId)` — 创建身体姿势动作模块实例。
+- `BODY_POSTURE_DEF` — 模块定义常量（优先级、配置等）。
 
 ## 与其他子系统关系
 - 注册表：`./registry.ts`。

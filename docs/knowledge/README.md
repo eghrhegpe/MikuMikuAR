@@ -4,6 +4,7 @@
 > 但**主权归城邦**：由我们拥有、可重生成、受 `scripts/check-doc-drift.mjs` 守护。
 >
 > 生成日期基线：2026-07-23（覆盖 ADR-166~175 引入的子系统）；同日扩展「物理系统（physics）」分组，补录 ADR-081/084/104 的 WASM Bullet 物理子系统（physics-bridge / wind-physics / skirt-analyzer / virtual-skirt / ground-collision）。
+> 2026-07-25 扩展：新建 41 张卡片覆盖 motion/env/menus/core 四大集群，修正 16 张符号警告。
 
 ## 它解决什么
 
@@ -90,7 +91,7 @@ use_when:
 
 跑法：`node scripts/check-doc-drift.mjs`（或 `--json`）。可接 CI 卡点。
 
-## 卡片索引（112 张，按 category 分组）
+## 卡片索引（153 张，按 category 分组）
 
 ### 环境系统（env）
 
@@ -113,6 +114,10 @@ use_when:
 | [环境系统桥接层](./env-bridge.md) | `scene/env/env-bridge.ts` | — |
 | [统一预设系统接口](./preset-manager.md) | `scene/env/preset-manager.ts` | ADR-130 |
 | [统一平面反射引擎](./planar-reflection.md) | `scene/env/planar-reflection.ts` | ADR-092 |
+| [云层系统](./env-clouds.md) | `scene/env/env-clouds.ts` | — |
+| [水面系统](./env-water.md) | `scene/env/env-water.ts` | — |
+| [粒子系统](./env-particles.md) | `scene/env/env-particles.ts` | — |
+| [环境灯光包装](./env-lighting.md) | `scene/env/env-lighting.ts` | — |
 
 ### 场景编排（scene）
 
@@ -136,6 +141,9 @@ use_when:
 | [AR 摄像头视频透传](./ar-camera.md) | `scene/ar/ar-camera.ts` | ADR-055 |
 | [AR 模式场景级协调](./ar-scene.md) | `scene/ar/ar-scene.ts` | ADR-055 |
 | [拖拽变换模式开关](./transform-mode.md) | `scene/transform/transform-mode.ts` | — |
+| [相机状态管理](./camera-state.md) | `scene/camera/camera-state.ts` | — |
+| [构图指南](./composition-guide.md) | `scene/pose/composition-guide.ts` | — |
+| [水印系统](./watermark.md) | `scene/pose/watermark.ts` | — |
 
 ### 物理系统（physics）
 
@@ -161,14 +169,15 @@ use_when:
 | [太阳圆盘可视化](./lighting-sun.md) | `scene/render/lighting-sun.ts` | — |
 | [灯光预设过渡动画](./lighting-tween.md) | `scene/render/lighting-tween.ts` | — |
 | [性能降级 — 环境桥接](./performance-env-bridge.md) | `scene/render/performance-env-bridge.ts` | ADR-130 |
-| [质量维度与配置系统](./quality-profile.md) | `scene/render/quality-profile.ts` | ADR-174 |
+| [质量维度与配置系统](./quality-profile.md) | `scene/render/quality-profile.ts` | ADR-130/174 |
 | [缩略图渲染](./thumbnail-capture.md) | `scene/manager/thumbnail-capture.ts` | — |
-| [变换适配器注册表](./transform-adapter.md) | `scene/transform/transform-adapter.ts` | ADR-126 |
+| [变换适配器注册表](./transform-adapter.md) | `scene/transform/transform-adapter.ts` | ADR-121/126 |
 | [变换拾取系统](./transform-pick.md) | `scene/transform/transform-pick.ts` | — |
 | [场景渲染管线与后处理](./renderer.md) | `scene/render/renderer.ts` | — |
 | [场景光照与阴影](./lighting.md) | `scene/render/lighting.ts` | — |
 | [性能监控与自动降级](./performance.md) | `scene/render/performance.ts` | ADR-159 |
 | [3D 拖拽 Gizmo 统一抽象](./transform-gizmo.md) | `scene/render/transform-gizmo.ts` | ADR-048/126 |
+| [灯光预设系统](./lighting-presets.md) | `scene/render/lighting-presets.ts` | — |
 
 ### 动作系统（motion）
 
@@ -177,6 +186,21 @@ use_when:
 | [骨骼覆盖存储（多模块仲裁）](./bone-override-store.md) | `scene/motion/bone-override-store.ts` | ADR-084 |
 | [动作管线（逐帧合成）](./motion-pipeline.md) | `scene/motion/motion-pipeline.ts` | ADR-129 |
 | [感知观察者（感知层）](./perception-observer.md) | `scene/motion/perception-observer.ts` | ADR-162/166 |
+| [动作播放控制](./motion-playback.md) | `scene/motion/playback.ts` | — |
+| [外部动作重定向桥](./animation-retargeter.md) | `scene/motion/animation-retargeter.ts` | — |
+| [多 VMD 叠加系统](./vmd-layers.md) | `scene/motion/vmd-layers.ts` | — |
+| [VMD 动作加载器](./vmd-loader.md) | `scene/motion/vmd-loader.ts` | — |
+| [场景级动作意图库](./motion-intent.md) | `scene/motion/motion-intent.ts` | ADR-121/167 |
+| [程序化动作系统](./proc-motion-bridge.md) | `scene/motion/proc-motion-bridge.ts` | — |
+| [脚部地面跟随（MMD-native IK）](./motion-feet-adjustment.md) | `scene/motion/feet-adjustment.ts` | ADR-085 |
+| [脚步声控制器](./motion-footstep.md) | `scene/motion/footstep.ts` | ADR-088 |
+| [口型同步桥](./lipsync-bridge.md) | `scene/motion/lipsync-bridge.ts` | — |
+| [动作模块注册表](./motion-modules-registry.md) | `scene/motion/motion-modules/registry.ts` | — |
+| [动作模块 — 脚部调整](./motion-modules-feet.md) | `scene/motion/motion-modules/feet-adjustment-module.ts` | — |
+| [动作模块 — 手指姿态](./motion-modules-finger.md) | `scene/motion/motion-modules/finger-pose.ts` | — |
+| [动作模块 — 身体摇摆](./motion-modules-sway.md) | `scene/motion/motion-modules/sway-motion.ts` | — |
+| [动作模块 — 身体姿势](./motion-modules-body-posture.md) | `scene/motion/motion-modules/body-posture.ts` | — |
+| [动作模块 — 骑乘模型](./motion-modules-riding.md) | `scene/motion/motion-modules/riding-model.ts` | — |
 
 ### UI/菜单（ui）
 
@@ -204,6 +228,14 @@ use_when:
 | [设置 — 媒体页面](./settings-media.md) | `menus/settings-media.ts` | ADR-157 |
 | [设置 — 资源页面](./settings-resources.md) | `menus/settings-resources.ts` | ADR-157 |
 | [设置 — 系统页面](./settings-system.md) | `menus/settings-system.ts` | ADR-157 |
+| [环境菜单层级系统](./env-menu-levels.md) | `menus/env-level-helpers.ts` | — |
+| [动作菜单层级系统](./motion-menu-levels.md) | `menus/motion-popup.ts` | — |
+| [场景菜单层级系统](./scene-menu-levels.md) | `menus/scene-menu-state.ts` | ADR-171 |
+| [菜单渲染引擎](./render-menu.md) | `menus/render-menu.ts` | ADR-093 |
+| [菜单工厂](./menu-factory.md) | `menus/menu-factory.ts` | — |
+| [资源库操作](./library-actions.md) | `menus/library-actions.ts` | — |
+| [资源库核心](./library-core.md) | `menus/library-core.ts` | — |
+| [资源库初始化](./library-setup.md) | `menus/library-setup.ts` | — |
 
 ### 核心基础设施（core）
 
@@ -242,4 +274,13 @@ use_when:
 | [统一风场辅助函数](./wind-utils.md) | `core/wind-utils.ts` | — |
 | [简体中文语言包](./zh-CN.md) | `core/i18n/locales/zh-CN.ts` | ADR-059 |
 | [繁体中文语言包](./zh-TW.md) | `core/i18n/locales/zh-TW.ts` | ADR-059 |
-| [轻量日志工具（无依赖）](./logger.md) | `core/logger.ts` | ADR-141 |
+| [UI 辅助函数聚合](./ui-helpers.md) | `core/ui-helpers.ts` | — |
+| [拖拽导入逻辑层](./drop-import.md) | `core/drop-import.ts` | ADR-177 |
+| [统一文件服务层](./fileservice.md) | `core/fileservice.ts` | ADR-057 |
+| [配置聚合层](./config-barrel.md) | `core/config.ts` | — |
+| [后端适配层](./core-backend.md) | `core/backend/index.ts` | — |
+| [音频总线](./audio-bus.md) | `core/audio-bus.ts` | — |
+| [快捷键注册表](./shortcut-registry.md) | `core/shortcut-registry.ts` | — |
+| [图标聚合](./icons-bundle.md) | `core/icons.ts` | — |
+| [PMX 元数据提取](./pmx-meta.md) | `core/pmx-meta.ts` | — |
+| [运行模式检测](./runtime-mode.md) | `core/runtime-mode.ts` | — |
