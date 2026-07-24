@@ -21,4 +21,12 @@ node scripts/gen-funcmap.mjs --check || {
   exit 1
 }
 
+echo "[pre-push] check:docs (架构树/知识卡/ADR 三向漂移)"
+node scripts/check-doc-drift.mjs || {
+  echo ""
+  echo "❌ 检测到 ERROR 级文档漂移（架构树/知识卡 source_files/ADR 索引）。"
+  echo "   查看上方 ERROR 明细，修复后用 'npm run check:docs' 复验（INFO/WARNING 不阻断）。"
+  exit 1
+}
+
 echo "[pre-push] 全部通过"
