@@ -624,6 +624,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
 
                             const { pitch, yaw, roll, weight, absolute } = formState;
 
+                            pushUndoSnapshot(); // [fix] 应用覆盖预设可撤销
                             setBoneOverride(
                                 boneName,
                                 [pitch, yaw, roll],
@@ -672,6 +673,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
                             inst.boneOverrides = inst.boneOverrides.map((b) =>
                                 b.boneName === ov.boneName ? updated : b
                             );
+                            const snap = pushUndoSnapshot(); // [fix] 骨骼覆盖 toggle 可撤销
                             if (updated.enabled) {
                                 setBoneOverride(
                                     ov.boneName,
