@@ -1812,6 +1812,8 @@ export const ko: Record<string, string> = {
     'boot.engineReady': '✅ 엔진 준비 완료',
     'boot.readyHint': '✨ 준비 완료 · "모델"을 클릭해 PMX 불러오기',
     'boot.initFailed': '❌ 초기화 실패: {msg}',
+    'boot.downloadingWasm': '⏳ 물리 엔진 다운로드 중…',
+    'boot.initScene': '⏳ 씬 초기화 중…',
     'common.empty': '콘텐츠 없음',
     'common.apply': '적용',
     'settings.audio.offsetHint': '양수=오디오 먼저, 음수=오디오 나중(모든 음악에 전역 적용)',

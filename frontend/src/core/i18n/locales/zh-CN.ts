@@ -1777,6 +1777,8 @@ export const zhCN: Record<string, string> = {
     'boot.engineReady': '✅ 引擎就绪',
     'boot.readyHint': '✨ 准备就绪 · 点击"模型"导入 PMX',
     'boot.initFailed': '❌ 初始化失败: {msg}',
+    'boot.downloadingWasm': '⏳ 正在下载物理引擎…',
+    'boot.initScene': '⏳ 正在初始化场景…',
     'common.empty': '暂无内容',
     'common.apply': '应用',
     'settings.audio.offsetHint': '正=音频先播，负=音频后播（对所有音乐全局生效）',
