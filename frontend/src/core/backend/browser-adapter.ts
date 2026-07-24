@@ -137,6 +137,13 @@ function _resolveIdbKey(path: string): string {
     if (dirMatch) {
         return `dir:${dirMatch[1]}:${dirMatch[2].replace(/\\/g, '/')}`;
     }
+    // 选中目录资源：web://selected-dir/<catSeg>/<relPath>/<name> →
+    // 去掉类别段、去扩展名 → file:<relIdStem>（与 _scanDirIntoIDB 写入键一致）
+    const selMatch = path.match(/^web:\/\/selected-dir\/(.+)$/);
+    if (selMatch) {
+        const stem = _stripCategorySeg(selMatch[1]).replace(/\.[^.]+$/, '');
+        return `file:${stem}`;
+    }
     // 已是 IDB key 前缀
     if (/^(file|entry|recent|dir|outfit):/.test(path) || path === 'recent') {
         return path;
@@ -163,6 +170,8 @@ function _resolveIdbKey(path: string): string {
 function _extractStem(path: string): string {
     const m = path.match(/^web:\/\/model\/([^/?#]+)/);
     if (m) return m[1];
+    const selMatch = path.match(/^web:\/\/selected-dir\/(.+)$/);
+    if (selMatch) return _stripCategorySeg(selMatch[1]).replace(/\.[^.]+$/, '');
     const m2 = path.match(/^(?:file|entry):(.+)$/);
     if (m2) return m2[1];
     const baseName = path.split(/[/\\]/).pop() || path;
@@ -311,6 +320,38 @@ const _CATEGORY_BY_EXT: Record<string, { subdir: string; type: string; format: s
 
 const _SUPPORTED_EXTS_RE = /\.(pmx|vmd|mp3|wav|ogg|flac|wma|x|vpd|zip)$/i;
 
+/**
+ * [doc:adr-177] 计算文件在 IndexedDB 内的「分类相对路径」。
+ *
+ * 对齐桌面端 WalkDir 天然拥有真实路径的语义：web 端没有文件系统，
+ * 需用 `web://selected-dir/<categoryRelPath>` 重建目录树。
+ *
+ * - 当顶层目录名命中 `_CATEGORY_BY_DIR`（PMX/VMD/...）时，relPath 已含类别段，直接返回。
+ * - 否则按扩展名映射虚拟类别段（PMX/VMD/audio...），拼到真实 relPath 前方，
+ *   使 `web://selected-dir/PMX/<真实子目录>` 保留嵌套层级，UI 按 dir 字段自然长出文件夹树。
+ * 返回值不含前缀；为空串时表示根（无子路径）。
+ */
+function _computeCategoryRelPath(byDir: boolean, ext: string, relPath: string): string {
+    if (byDir) return relPath;
+    const byExt = _CATEGORY_BY_EXT[ext];
+    const catSub = byExt?.subdir;
+    return catSub ? (relPath ? `${catSub}/${relPath}` : catSub) : relPath;
+}
+
+/**
+ * [doc:adr-177] 去掉 `web://selected-dir/` 路径开头的类别段（PMX/VMD/audio...），
+ * 返回真实相对路径。与 `_CATEGORY_BY_DIR` / `_CATEGORY_BY_EXT` 对齐。
+ * 例：`PMX/分类1/miku.pmx` → `分类1/miku.pmx`；`分类1/miku.pmx` 原样返回。
+ */
+function _stripCategorySeg(p: string): string {
+    const seg = p.split('/')[0];
+    if (!seg) return p;
+    const isCat =
+        _CATEGORY_BY_DIR[seg.toLowerCase()] !== undefined ||
+        Object.values(_CATEGORY_BY_EXT).some((e) => e.subdir.toLowerCase() === seg.toLowerCase());
+    return isCat ? p.slice(seg.length + 1) : p;
+}
+
 /** FSA 目录递归扫描：保留目录结构，按目录约定分类（对齐桌面端） */
 async function _scanDirIntoIDB(
     dirHandle: FileSystemDirectoryHandle,
@@ -336,38 +377,43 @@ async function _scanDirIntoIDB(
     const topDir = relPath.split('/')[0]?.toLowerCase() || '';
     const byDir = _CATEGORY_BY_DIR[topDir];
 
-    // 本层 PMX stem 列表（用于纹理关联）
+    // 本层 PMX 的相对 stem 列表（用于纹理关联；含类别段 + 相对路径，杜绝同名文件覆盖）
     const pmxStems = files
         .filter((f) => /\.pmx$/i.test(f.name))
-        .map((f) => f.name.replace(/\.pmx$/i, ''));
+        .map((f) => {
+            const sn = f.name.replace(/\.pmx$/i, '');
+            const catRelPath = _computeCategoryRelPath(!!byDir, 'pmx', relPath);
+            const relIdCategory = _stripCategorySeg(catRelPath);
+            return relIdCategory ? `${relIdCategory}/${sn}` : sn;
+        });
     // 合并父层 PMX stem：子目录纹理关联到最近的祖先 PMX
     const effectivePmxStems = pmxStems.length > 0 ? pmxStems : parentPmxStems;
     const TEXTURE_EXT = /\.(png|jpg|jpeg|bmp|tga|dds|tif|tiff)$/i;
     const textureFiles = files.filter((f) => TEXTURE_EXT.test(f.name));
 
-    // 第二遍：逐个文件写入
+    // 第二遍：逐个文件写入（键带相对路径 + 类别段，嵌套目录不丢失、同名不覆盖）
     for (const { name, handle } of files) {
         const lower = name.toLowerCase();
         if (!_SUPPORTED_EXTS_RE.test(lower)) continue;
         const file = await handle.getFile();
         const bytes = new Uint8Array(await file.arrayBuffer());
         const stem = name.replace(/\.(pmx|vmd|mp3|wav|ogg|flac|wma|x|vpd|zip)$/i, '');
-        await idbSet('models', `file:${stem}`, bytes);
-
-        // 分类：目录约定优先，扩展名兜底
         const ext = lower.split('.').pop() || '';
-        let type: string, format: string, virtualDir: string;
+        const catRelPath = _computeCategoryRelPath(!!byDir, ext, relPath);
+        const relIdCategory = _stripCategorySeg(catRelPath);
+        const virtualDir = catRelPath ? `web://selected-dir/${catRelPath}` : 'web://selected-dir';
+        const relIdStem = relIdCategory ? `${relIdCategory}/${stem}` : stem;
+        await idbSet('models', `file:${relIdStem}`, bytes);
+
+        // 分类：目录约定优先，扩展名兜底（type/format 不变）
+        let type: string, format: string;
         if (byDir) {
             type = byDir.type;
             format = byDir.format;
-            virtualDir = `web://selected-dir/${relPath}`;
         } else {
             const byExt = _CATEGORY_BY_EXT[ext];
             type = byExt?.type ?? 'actor';
             format = byExt?.format ?? ext;
-            virtualDir = byExt
-                ? `web://selected-dir/${byExt.subdir}`
-                : relPath ? `web://selected-dir/${relPath}` : 'web://selected-dir';
         }
 
         // [bugfix:zip-expand] 对齐 Go 端 expandZipEntries：扫描时展开 zip 内部文件，
@@ -390,7 +436,7 @@ async function _scanDirIntoIDB(
                         const innerType = byDir ? byDir.type : (innerByExt?.type ?? 'actor');
                         const innerFormat = innerByExt?.format ?? innerExt;
                         // entry key 需唯一：zipStem + 内部路径（去斜杠）
-                        const entryKey = `${stem}__${innerPath.replace(/[/\\]/g, '_')}`;
+                        const entryKey = `${relIdStem}__${innerPath.replace(/[/\\]/g, '_')}`;
                         await idbSet('models', `entry:${entryKey}`, {
                             dir: zipDir,
                             file_path: `${virtualDir}/${name}`,
@@ -403,10 +449,10 @@ async function _scanDirIntoIDB(
                         });
                         console.info(`[web-scan]   展开 zip entry:${entryKey} → dir=${zipDir} inner=${innerPath} format=${innerFormat}`);
                     }
-                } else {
-                    // zip 内无识别资源，作为整体 entry 保留
-                    await idbSet('models', `entry:${stem}`, {
-                        dir: virtualDir, file_path: `${virtualDir}/${name}`,
+            } else {
+                // zip 内无识别资源，作为整体 entry 保留
+                await idbSet('models', `entry:${relIdStem}`, {
+                    dir: virtualDir, file_path: `${virtualDir}/${name}`,
                         name_jp: stem, name_en: stem,
                         comment: '', has_thumb: false,
                         type, format: 'zip',
@@ -418,7 +464,7 @@ async function _scanDirIntoIDB(
             } catch (zipErr) {
                 // zip 解析失败（损坏/加密），作为整体 entry 保留
                 console.warn(`[web-scan]   zip 解析失败: ${name}`, zipErr);
-                await idbSet('models', `entry:${stem}`, {
+                await idbSet('models', `entry:${relIdStem}`, {
                     dir: virtualDir, file_path: `${virtualDir}/${name}`,
                     name_jp: stem, name_en: stem,
                     comment: '', has_thumb: false,
@@ -429,7 +475,7 @@ async function _scanDirIntoIDB(
                 });
             }
         } else {
-            await idbSet('models', `entry:${stem}`, {
+            await idbSet('models', `entry:${relIdStem}`, {
                 dir: virtualDir,
                 file_path: `${virtualDir}/${name}`,
                 name_jp: stem, name_en: stem,

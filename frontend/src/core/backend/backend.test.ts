@@ -120,6 +120,26 @@ describe('ADR-177 Phase 2 A4：browser-adapter 数据链补齐', () => {
             expect(r).toBeNull();
         });
 
+        it('web://selected-dir/ 路径 → 剥离类别段后 file:<relIdStem>', async () => {
+            const bytes = new Uint8Array([8, 8]);
+            _idbStore.set('file:分类1/miku', bytes);
+            const r = await browserAdapter.readFileBytes('web://selected-dir/PMX/分类1/miku.pmx');
+            expect(r).toBe(bytes);
+        });
+
+        it('web://selected-dir/ 深层同名 → 各层 key 不冲突', async () => {
+            const b1 = new Uint8Array([1, 1]);
+            const b2 = new Uint8Array([2, 2]);
+            _idbStore.set('file:分类1/miku', b1);
+            _idbStore.set('file:分类1/sub/miku', b2);
+            expect(
+                await browserAdapter.readFileBytes('web://selected-dir/PMX/分类1/miku.pmx')
+            ).toBe(b1);
+            expect(
+                await browserAdapter.readFileBytes('web://selected-dir/PMX/分类1/sub/miku.pmx')
+            ).toBe(b2);
+        });
+
         it('FileExists 经 path 映射', async () => {
             _idbStore.set('file:bar', new Uint8Array([1]));
             expect(await browserAdapter.FileExists('D:/models/bar.pmx')).toBe(true);
@@ -305,6 +325,11 @@ describe('ADR-177 Phase 2 A4 p2-5：虚拟目录 + 伴生文件加载', () => {
         it('file: 前缀 → web://model/<stem>', async () => {
             expect(await browserAdapter.IsolateModelDir('file:Miku')).toBe('web://model/Miku');
         });
+        it('web://selected-dir/ 路径 → 剥离类别段 web://model/<relIdStem>', async () => {
+            expect(await browserAdapter.IsolateModelDir('web://selected-dir/PMX/分类1/miku.pmx')).toBe(
+                'web://model/分类1/miku'
+            );
+        });
     });
 
     describe('ListDirRecursive 扫描 dir: 前缀', () => {
@@ -478,5 +503,94 @@ describe('resolveBackend 三路径（异步选型，Android 冷启动竞态防�
         const b = await p;
         vi.useRealTimers();
         expect(b.kind).toBe('browser');
+    });
+});
+
+// [doc:test] P1 修复回归：FSA 目录扫描需保留嵌套层级，且不同子目录的同名文件互不覆盖
+describe('FSA 目录扫描嵌套结构（保留目录层级 + 同名不覆盖）', () => {
+    interface FakeNode {
+        name: string;
+        kind: 'directory' | 'file';
+        bytes?: Uint8Array;
+        children?: FakeNode[];
+    }
+    function buildFakeTree(node: FakeNode): unknown {
+        return {
+            name: node.name,
+            kind: 'directory',
+            async *values() {
+                for (const c of node.children ?? []) {
+                    if (c.kind === 'file') {
+                        yield {
+                            kind: 'file',
+                            name: c.name,
+                            getFile: async () => ({
+                                arrayBuffer: async () => (c.bytes ?? new Uint8Array()).buffer,
+                            }),
+                        };
+                    } else {
+                        yield buildFakeTree(c);
+                    }
+                }
+            },
+            async getDirectoryHandle(name: string) {
+                const c = (node.children ?? []).find(
+                    (x) => x.name === name && x.kind === 'directory'
+                );
+                if (!c) throw new Error('no such dir ' + name);
+                return buildFakeTree(c);
+            },
+        };
+    }
+
+    beforeEach(() => {
+        _idbStore.clear();
+    });
+
+    it('嵌套目录 → entry.dir 保留层级，同名 miku.pmx 不互相覆盖', async () => {
+        const root = buildFakeTree({
+            name: 'models',
+            kind: 'directory',
+            children: [
+                { kind: 'file', name: 'test.pmx', bytes: new Uint8Array([1, 2]) },
+                {
+                    kind: 'directory',
+                    name: '分类1',
+                    children: [
+                        { kind: 'file', name: 'miku.pmx', bytes: new Uint8Array([3, 4]) },
+                        {
+                            kind: 'directory',
+                            name: 'sub',
+                            children: [
+                                { kind: 'file', name: 'miku.pmx', bytes: new Uint8Array([5, 6]) },
+                            ],
+                        },
+                    ],
+                },
+            ],
+        }) as FileSystemDirectoryHandle;
+        setWindow({ showDirectoryPicker: async () => root });
+        await browserAdapter.SelectDir();
+
+        const models = await browserAdapter.GetLibraryIndex();
+        const byPath = new Map(models.map((m) => [m.file_path, m]));
+
+        // 根 pmx → web://selected-dir/PMX（扁平子集仍工作）
+        expect(byPath.get('web://selected-dir/PMX/test.pmx')?.dir).toBe('web://selected-dir/PMX');
+        // 分类1/miku → 嵌套 dir
+        const m1 = byPath.get('web://selected-dir/PMX/分类1/miku.pmx');
+        expect(m1?.dir).toBe('web://selected-dir/PMX/分类1');
+        // 分类1/sub/miku → 更深嵌套，独立 entry（同名不覆盖）
+        const m2 = byPath.get('web://selected-dir/PMX/分类1/sub/miku.pmx');
+        expect(m2?.dir).toBe('web://selected-dir/PMX/分类1/sub');
+        expect(m1).not.toBe(m2);
+
+        // readFileBytes 经类别段剥离正确命中各自字节
+        expect(
+            await browserAdapter.readFileBytes('web://selected-dir/PMX/分类1/miku.pmx')
+        ).toEqual(new Uint8Array([3, 4]));
+        expect(
+            await browserAdapter.readFileBytes('web://selected-dir/PMX/分类1/sub/miku.pmx')
+        ).toEqual(new Uint8Array([5, 6]));
     });
 });
