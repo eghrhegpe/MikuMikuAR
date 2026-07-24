@@ -8,7 +8,7 @@ import type { MenuNode } from './menu-schema';
 import { _buildLevel } from './env-level-helpers';
 
 export function buildCloudLevel(): PopupLevel {
-    return _buildLevel(t('env.cloud'), (c) => {
+    return buildLevel(t('env.cloud'), (c) => {
         const cloudSchema: MenuNode[] = [
             {
                 id: 'env:cloud:cover',

@@ -14,7 +14,7 @@ import type { MenuNode } from './menu-schema';
 import { _buildLevel, _openTexturePicker } from './env-level-helpers';
 
 export function buildSkyLevel(): PopupLevel {
-    return _buildLevel(t('env.sky'), (c) => {
+    return buildLevel(t('env.sky'), (c) => {
         const skySchema: MenuNode[] = [
             // 时光预设芯片（黎明/正午/夕阳/夜景/阴天/霓虹）
             {
@@ -91,7 +91,7 @@ export function buildSkyLevel(): PopupLevel {
                         'lucide:image',
                         t('env.skyTexture'),
                         false,
-                        () => _openTexturePicker('sky', t('env.skyTexture')),
+                        () => openTexturePicker('sky', t('env.skyTexture')),
                         fileName
                     );
                     addSliderRow(
@@ -184,7 +184,7 @@ export function buildSkyLevel(): PopupLevel {
                                 'lucide:image',
                                 t('env.starsTexture'),
                                 false,
-                                () => _openTexturePicker('stars', t('env.starsTexture')),
+                                () => openTexturePicker('stars', t('env.starsTexture')),
                                 fileName
                             );
                             addClearRow(

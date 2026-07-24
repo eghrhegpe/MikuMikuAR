@@ -22,8 +22,8 @@ import { buildExperimentalLevel } from './env-experimental-levels';
 import { buildFogLevel } from './env-fog-levels';
 import { buildShadowLevel } from './env-shadow-levels';
 import { buildCloudLevel } from './env-cloud-levels';
-import { _buildLevel } from './env-level-helpers';
-import { _openTexturePicker } from './env-level-helpers';
+import { buildLevel } from './env-level-helpers';
+import { openTexturePicker } from './env-level-helpers';
 import { buildPresetLevel } from './env-preset-levels';
 import { buildPostProcessLevel } from './scene-render-levels';
 import {
@@ -247,7 +247,7 @@ function buildParticleSchema(): MenuNode[] {
                     'lucide:image',
                     t('env.customTexture'),
                     false,
-                    () => _openTexturePicker('particle', t('env.customTexture')),
+                    () => openTexturePicker('particle', t('env.customTexture')),
                     fileName
                 );
                 addClearRow(
@@ -263,7 +263,7 @@ function buildParticleSchema(): MenuNode[] {
 }
 
 export function buildParticleLevel(): PopupLevel {
-    return _buildLevel(t('env.particle'), (c) => renderMenu(buildParticleSchema(), c));
+    return buildLevel(t('env.particle'), (c) => renderMenu(buildParticleSchema(), c));
 }
 
 // ======== Env Stack onFolderEnter ========

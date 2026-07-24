@@ -5,7 +5,7 @@ import { buildSnapSettings } from './resource-detail-helpers';
 import { getSceneMenu } from './scene-menu-state';
 
 export function buildDragModeLevel(): PopupLevel {
-    return _buildLevel(t('scene.dragMode'), (c) => {
+    return buildLevel(t('scene.dragMode'), (c) => {
         buildSnapSettings(c, () => getSceneMenu()?.updateControls());
     });
 }

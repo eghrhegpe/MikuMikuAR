@@ -542,7 +542,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
     // [doc:adr-116 P4] 统一动作收尾：写运行时→同步实例→自动保存→状态提示→重渲染。
     // 收敛 apply / toggle 两路径的重复尾部，保证持久化行为一致。
     const finalizeOverride = (boneName: string, enabled: boolean): void => {
-        _syncOverrideToInstance(modelId);
+        syncOverrideToInstance(modelId);
         triggerAutoSave();
         setStatus(
             enabled
@@ -847,7 +847,7 @@ export function buildAdvancedBoneOverrideLevel(): PopupLevel {
 // ======== 内部工具 ========
 
 /** 将 bone-override.ts 的运行时状态同步回 ModelInstance.boneOverrides 用于持久化 */
-export function _syncOverrideToInstance(modelId: string): void {
+export function syncOverrideToInstance(modelId: string): void {
     const inst = modelRegistry.get(modelId);
     if (!inst) {
         return;

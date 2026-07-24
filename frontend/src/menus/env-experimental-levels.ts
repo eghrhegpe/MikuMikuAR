@@ -8,7 +8,7 @@ import type { PopupLevel } from '../core/config';
 import { _buildLevel } from './env-level-helpers';
 
 export function buildExperimentalLevel(): PopupLevel {
-    return _buildLevel(t('env.experimental'), (c) => {
+    return buildLevel(t('env.experimental'), (c) => {
         const expSchema: MenuNode[] = [
             {
                 id: 'env:exp:warn',
