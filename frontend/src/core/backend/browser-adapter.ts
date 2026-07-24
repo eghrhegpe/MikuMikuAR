@@ -35,6 +35,18 @@ import { NotSupportedError } from './types';
 import type { BackendService, BackendCapabilities } from './types';
 import { idbGet, idbSet, idbDelete, idbKeys, closeIDB } from './idb';
 
+// —— 路径工具函数（消除 6 处 "split + pop + replace" 重复）——
+
+/** 提取路径最后一段文件名（兼容 / 和 \） */
+function _baseName(path: string): string {
+    return path.split(/[/\\]/).pop() || path;
+}
+
+/** 去掉文件名最后一个扩展名段（如 `a.pmx` → `a`，`b.tar.gz` → `b.tar`） */
+function _stripExt(name: string): string {
+    return name.replace(/\.[^.]+$/, '');
+}
+
 // —— 资源配对（P4）——
 if (
     typeof window !== 'undefined' &&
@@ -318,6 +330,12 @@ const _CATEGORY_BY_EXT: Record<string, { subdir: string; type: string; format: s
     'zip':  { subdir: 'PMX',   type: 'actor',  format: 'zip' },
 };
 
+/** 所有类别子目录名（小写），用于 _stripCategorySeg 的 O(1) 判定 */
+const _CATEGORY_SUBDIRS = new Set<string>([
+    ...Object.keys(_CATEGORY_BY_DIR),
+    ...Object.values(_CATEGORY_BY_EXT).map((e) => e.subdir.toLowerCase()),
+]);
+
 const _SUPPORTED_EXTS_RE = /\.(pmx|vmd|mp3|wav|ogg|flac|wma|x|vpd|zip)$/i;
 
 /**
@@ -346,10 +364,7 @@ function _computeCategoryRelPath(byDir: boolean, ext: string, relPath: string): 
 function _stripCategorySeg(p: string): string {
     const seg = p.split('/')[0];
     if (!seg) return p;
-    const isCat =
-        _CATEGORY_BY_DIR[seg.toLowerCase()] !== undefined ||
-        Object.values(_CATEGORY_BY_EXT).some((e) => e.subdir.toLowerCase() === seg.toLowerCase());
-    return isCat ? p.slice(seg.length + 1) : p;
+    return _CATEGORY_SUBDIRS.has(seg.toLowerCase()) ? p.slice(seg.length + 1) : p;
 }
 
 /**
@@ -412,13 +427,28 @@ async function _scanDirIntoIDB(
     // 合并父层 PMX：子目录纹理关联到最近的祖先 PMX
     const effectivePmx = pmxEntries.length > 0 ? pmxEntries : parentPmx;
     const TEXTURE_EXT = /\.(png|jpg|jpeg|bmp|tga|dds|tif|tiff)$/i;
-    const textureFiles = files.filter((f) => TEXTURE_EXT.test(f.name));
     // 本层纹理相对分类根的相对路径（所有本层纹理共享同一 relPath，一次算好）
     const texRelIdCategory = _stripCategorySeg(relPath);
+    let texLinkedCount = 0; // 本层已关联纹理计数（用于汇总日志）
 
-    // 第二遍：逐个文件写入（键带相对路径 + 类别段，嵌套目录不丢失、同名不覆盖）
+    // 第二遍：逐个文件写入（纹理关联 + 资源写入合并为单遍，避免 files 数组二次迭代）
     for (const { name, handle } of files) {
         const lower = name.toLowerCase();
+
+        // 纹理分支：关联到 effectivePmx（含子目录纹理，[p2b] 相对 PMX 路径）
+        if (TEXTURE_EXT.test(lower)) {
+            if (effectivePmx.length > 0) {
+                const file = await handle.getFile();
+                const texBytes = new Uint8Array(await file.arrayBuffer());
+                for (const pmx of effectivePmx) {
+                    const relToPmx = _relPathFrom(texRelIdCategory, pmx.relPath);
+                    const key = relToPmx ? `dir:${pmx.stem}:${relToPmx}/${name}` : `dir:${pmx.stem}:${name}`;
+                    await idbSet('models', key, texBytes);
+                }
+                texLinkedCount++;
+            }
+            continue;
+        }
         if (!_SUPPORTED_EXTS_RE.test(lower)) continue;
         const file = await handle.getFile();
         const bytes = new Uint8Array(await file.arrayBuffer());
@@ -514,21 +544,8 @@ async function _scanDirIntoIDB(
         }
     }
 
-    // 第三遍：为本层的每个纹理写入「相对其关联 PMX 的路径」引用（含子目录纹理）
-    // [p2b] 旧实现用 basename（dir:<stem>:<name>），子目录纹理（tex/face.png）路径丢失 → 白模。
-    // 现按相对 PMX 的完整路径写入 dir:<stem>:<relToPmx>/<name>，与读取侧
-    // readFileBytes('web://model/<stem>/<relToPmx>/<name>') → dir:<stem>:<relToPmx>/<name> 精确命中。
-    if (effectivePmx.length > 0 && textureFiles.length > 0) {
-        for (const { name, handle } of textureFiles) {
-            const file = await handle.getFile();
-            const texBytes = new Uint8Array(await file.arrayBuffer());
-            for (const pmx of effectivePmx) {
-                const relToPmx = _relPathFrom(texRelIdCategory, pmx.relPath);
-                const key = relToPmx ? `dir:${pmx.stem}:${relToPmx}/${name}` : `dir:${pmx.stem}:${name}`;
-                await idbSet('models', key, texBytes);
-            }
-        }
-        console.info(`[web-scan]   纹理关联: ${textureFiles.length} 个纹理 → PMX [${effectivePmx.map((p) => p.stem).join(', ')}]`);
+    if (texLinkedCount > 0) {
+        console.info(`[web-scan]   纹理关联: ${texLinkedCount} 个纹理 → PMX [${effectivePmx.map((p) => p.stem).join(', ')}]`);
     }
 
     // 递归子目录（传递本层 PMX，使子目录纹理能按相对 PMX 路径关联祖先）

@@ -8,7 +8,7 @@ import {
     addSliderRow,
     addToggleRow,
     addModeSlider,
-    addModeRow,
+    addBoneSelectRow,
 } from '../core/ui-helpers';
 import { getBrowseDir } from '../core/utils';
 import {
@@ -430,14 +430,20 @@ function renderOrbitParams(container: HTMLElement): void {
         { bind: () => getOrbitBoneLock().enabled }
     );
 
-    // 骨骼选择器（仅锁定启用且有骨骼时显示）
+    // 骨骼选择器（仅锁定启用且有骨骼时显示）—— 复用骨骼下拉（分组+搜索+IK标记），
+    // 替代 addModeRow 把上百骨骼摊成按钮的误用
     if (boneLock.enabled && boneNames.length > 0) {
-        const boneOptions = boneNames.map((bn) => ({ value: bn, label: bn }));
-        addModeRow(container, t('motion.boneLockSelect'), boneOptions, boneLock.boneName, (bn) => {
-            setOrbitBoneLock(true, bn);
-            setStatus(t('motion.boneLockApplied', { bone: bn }), true);
-            refreshCameraLevel();
-        });
+        addBoneSelectRow(
+            container,
+            t('motion.boneLockSelect'),
+            boneNames,
+            boneLock.boneName,
+            (bn) => {
+                setOrbitBoneLock(true, bn);
+                setStatus(t('motion.boneLockApplied', { bone: bn }), true);
+                refreshCameraLevel();
+            }
+        );
     } else if (boneLock.enabled && boneNames.length === 0) {
         // 有锁定但无骨骼（例如模型未加载）——显示提示
         const hint = document.createElement('div');
