@@ -161,6 +161,14 @@ export function disposeRenderer(): void {
     _pipelineCamera = null;
     _outlineEnabled = false;
     _outlineColor = [0, 0, 0];
+    // P2-fix: 补全 cel 状态与渲染过渡的释放，避免 HMR 重入时残留
+    _cancelRenderTransition();
+    _originalRenderState = null;
+    _celGroundCoupling = null;
+    _celShadingMode = false;
+    _celColorLevels = 4;
+    _celEdgeThreshold = 0.2;
+    _celEdgeStrength = 0.6;
 }
 
 // ======== 状态读取 ========
