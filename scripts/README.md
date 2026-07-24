@@ -70,7 +70,7 @@ node scripts/fix-adr-format.mjs adr-131-*
 
 ### `new-adr.mjs` — 新建 ADR 模板
 
-自动获取下一个编号，生成标准格式模板。
+自动获取下一个编号，生成标准格式模板；创建后自动同步 `docs/status.md` 的 ADR 索引（仅重写标记区，无需手动 `npm run gen:status`）。
 
 ```bash
 node scripts/new-adr.mjs "标题" ["副标题"] ["状态"]
@@ -141,7 +141,7 @@ node scripts/gen-icon-bundle.mjs
 
 ## pre-push 钩子（推送前校验）
 
-版本化钩子位于 `.githooks/pre-push`，推送前秒级跑 `check:status` + `check:funcmap`，把文档漂移拦在本地而非 CI。
+版本化钩子位于 `.githooks/pre-push`，推送前秒级跑 `check:status` + `check:funcmap` + `check:docs`（架构树/知识卡 source_files/ADR 索引三向漂移），把文档漂移拦在本地而非 CI。
 选用 **pre-push 而非 pre-commit**：commit 是本地高频操作，拦 commit 有中断心流、丢失进行中改动的风险；push 是对外发布的边界，在此把关既不打扰本地迭代，又能确保推上去的内容文档同步。
 
 ```bash
@@ -149,7 +149,7 @@ node scripts/gen-icon-bundle.mjs
 git config core.hooksPath .githooks
 ```
 
-钩子失败时按提示运行 `npm run gen:status` / `npm run gen:funcmap` 并 `git add` 生成文件即可；紧急放行用 `git push --no-verify`（不推荐）。
+钩子失败时按提示运行 `npm run gen:status` / `npm run gen:funcmap` / `npm run check:docs` 并 `git add` 生成文件即可；紧急放行用 `git push --no-verify`（不推荐）。
 
 ## 新人上手建议
 

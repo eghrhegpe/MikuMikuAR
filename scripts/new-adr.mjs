@@ -14,6 +14,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { execSync } from 'node:child_process';
 
 const ADR_DIR = path.resolve(process.cwd(), 'docs/adr');
 const title = process.argv[2];
@@ -72,3 +73,12 @@ fs.writeFileSync(filepath, content, 'utf8');
 console.log(`✅ 已创建 ADR-${next}: ${fullTitle}`);
 console.log(`   文件: ${filepath}`);
 console.log(`   > **状态**: ${status}（${today}）`);
+
+// 自动同步 docs/status.md 的 ADR 索引（仅重写 GEN:ADR_INDEX 标记区，不破坏手写区）
+try {
+  execSync('node scripts/gen-status-index.mjs --reverse', { cwd: process.cwd(), stdio: 'pipe' });
+  console.log('✅ 已自动同步 docs/status.md 的 ADR 索引');
+} catch (err) {
+  console.warn('⚠ 自动同步 status.md 失败（ADR 文件已创建），请手动运行: npm run gen:status');
+  if (err && err.message) console.warn('   ' + err.message.split('\n')[0]);
+}
