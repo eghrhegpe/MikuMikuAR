@@ -298,8 +298,12 @@ export function stopTimeOfDay(): void {
         _unregisterTimeOfDay();
         _unregisterTimeOfDay = null;
     }
-    // 持久化当前 sunAngle 到后端
-    persistEnvState({ ...envState });
+    // 持久化当前 sunAngle 到后端（fire-and-forget：stopTimeOfDay 是 void 签名，
+    // 但内部 async 调用必须有 catch 防止 unhandled rejection）
+    void persistEnvState({ ...envState }).catch((err) => {
+        logWarn('stopTimeOfDay', 'persist failed', err);
+        setStatus(t_i18n('env.persistFailed'), false);
+    });
 }
 
 export function isTimeOfDayActive(): boolean {
@@ -418,10 +422,15 @@ function _presetAnimLoop(ctx: PresetAnimCtx, handle: ObserverHandle): void {
             _lastAutoLinkSunAngle = envSunAngle;
         }
         _timeOfDayBeforePreset = null;
-        persistEnvState({ ...envState });
+        // 预设动画完成 → 持久化（fire-and-forget：动画回调内不能 await，
+        // 但 async 调用必须有 catch 防止 unhandled rejection）
+        void persistEnvState({ ...envState }).catch((err) => {
+            logWarn('presetAnim', 'persist failed', err);
+            setStatus(t_i18n('env.persistFailed'), false);
+        });
         triggerAutoSave();
     }
-}
+};
 
 /** 应用任意 EnvPreset 对象（支持用户自定义预设）。 */
 export function applyEnvPresetObject(preset: {
