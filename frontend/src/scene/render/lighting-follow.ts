@@ -415,26 +415,34 @@ export function tickStageLightFollow(): void {
             basePos.z + ft.offset[2]
         );
 
+        // 保存上一帧 smoothed target（moveWithTarget 位移计算需要帧间差值）
+        const prevTargetX = entry.state.targetX;
+        const prevTargetY = entry.state.targetY;
+        const prevTargetZ = entry.state.targetZ;
+
         // 平滑插值
-        _stageTmpCurrent.set(entry.state.targetX, entry.state.targetY, entry.state.targetZ);
+        _stageTmpCurrent.set(prevTargetX, prevTargetY, prevTargetZ);
         Vector3.LerpToRef(_stageTmpCurrent, _stageTmpTarget, ft.smoothing, _stageTmpCurrent);
 
         // 更新 target
         entry.state.targetX = _stageTmpCurrent.x;
         entry.state.targetY = _stageTmpCurrent.y;
         entry.state.targetZ = _stageTmpCurrent.z;
-        
+
         // 应用方向更新（SpotLight / DirectionalLight 有 setDirectionToTarget；PointLight 无方向）
         if ('setDirectionToTarget' in entry.light) {
             (entry.light as SpotLight).setDirectionToTarget(_stageTmpCurrent);
         }
 
-        // moveWithTarget: 灯位置也跟随
+        // moveWithTarget: 灯位置跟随 target 的帧间位移（而非持续向 target 靠近导致飞走）
+        // P2-fix: 原 delta = target - smoothed 会导致灯位置每帧累加 (1-smoothing) 比例的差值，
+        // 持续向 target 方向移动并穿过，灯"飞走"。修正为 delta = 当前smoothed - 上一帧smoothed
         if (ft.moveWithTarget) {
             const currentPos = entry.light.position;
-            const delta = _stageTmpTarget.subtract(_stageTmpCurrent);
-            currentPos.addInPlace(delta);
-            
+            currentPos.x += _stageTmpCurrent.x - prevTargetX;
+            currentPos.y += _stageTmpCurrent.y - prevTargetY;
+            currentPos.z += _stageTmpCurrent.z - prevTargetZ;
+
             entry.state.posX = currentPos.x;
             entry.state.posY = currentPos.y;
             entry.state.posZ = currentPos.z;

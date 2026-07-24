@@ -193,7 +193,11 @@ export function initLighting(
     );
 
     // [doc:adr-168] 舞台灯追光 tick：更新绑定了 followTarget 的舞台灯
-    observe(lightingState.scene.onAfterAnimationsObservable, tickStageLightFollow);
+    // P1-fix: 保存句柄，disposeLighting 时显式释放（原 observe 返回值被丢弃导致泄漏）
+    lightingState.stageFollowTickHandle = observe(
+        lightingState.scene.onAfterAnimationsObservable,
+        tickStageLightFollow
+    );
 }
 
 function _defaultLightState(): LightState {
@@ -437,6 +441,11 @@ export function disposeLighting(): void {
         lightingState.personalLightTickHandle = null;
     }
     disposeAllPersonalLights();
+    // [doc:adr-168] 释放舞台灯追光 tick observer（P1-fix：原句柄未保存导致泄漏）
+    if (lightingState.stageFollowTickHandle) {
+        lightingState.stageFollowTickHandle.dispose();
+        lightingState.stageFollowTickHandle = null;
+    }
     // P4-fix: 释放在途主光过渡 observer，避免场景销毁后其仍挂在旧 scene 的渲染循环上
     if (lightingState.activeTransitionObs) {
         lightingState.activeTransitionObs.dispose();
