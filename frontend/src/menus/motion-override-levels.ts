@@ -24,6 +24,7 @@ import {
     clearAllOverrides,
     getAllOverrides,
     getOverride,
+    dumpBoneHierarchy,
 } from '../scene/motion/bone-override';
 import {
     getRegisteredModules,
@@ -804,6 +805,41 @@ function buildBoneOverrideSchema(): MenuNode[] {
                             })();
                         },
                         { variant: 'danger' }
+                    );
+                });
+            },
+        },
+        // 卡片 4：导出骨骼层级（调试用）
+        {
+            id: 'override:exportHierarchy',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    addPresetChip(
+                        inner,
+                        t('motion.boneOverride.exportHierarchy'),
+                        false,
+                        () => {
+                            const dump = dumpBoneHierarchy(modelId);
+                            if (!dump) {
+                                setStatus(t('motion.boneOverride.exportFailed'), true);
+                                return;
+                            }
+                            const json = JSON.stringify(dump, null, 2);
+                            void navigator.clipboard.writeText(json).then(() => {
+                                setStatus(
+                                    t('motion.boneOverride.exportCopied'),
+                                    true
+                                );
+                            }).catch(() => {
+                                // 剪贴板不可用时降级为 console 输出
+                                console.log('[Bone Hierarchy Export]', json);
+                                setStatus(
+                                    t('motion.boneOverride.exportCopied'),
+                                    true
+                                );
+                            });
+                        }
                     );
                 });
             },

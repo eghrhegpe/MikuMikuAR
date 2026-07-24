@@ -13,6 +13,30 @@ export function setupE2ECapture(): void {
         return;
     }
 
+    // [doc:bone-override] 骨骼层级导出钩子（DEV only）
+    // 用法：在控制台调用 window.__dumpBones() 获取当前模型的骨骼层级 JSON
+    (window as unknown as Record<string, unknown>).__dumpBones = (): unknown => {
+        // 动态导入避免循环依赖 + 仅在需要时加载
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return import('../scene/motion/bone-override').then((m) => {
+            const dump = m.dumpBoneHierarchy();
+            if (!dump) {
+                console.warn('[__dumpBones] 无可用模型或骨骼未初始化');
+                return null;
+            }
+            console.log(`[__dumpBones] 导出完成：${dump.totalBones} 根骨骼，${dump.totalOverridden} 根被覆盖`);
+            console.log('[__dumpBones] 返回值已复制到剪贴板（如可用）');
+            // 尝试复制到剪贴板
+            try {
+                const json = JSON.stringify(dump, null, 2);
+                void navigator.clipboard.writeText(json);
+            } catch {
+                // 剪贴板不可用时静默降级
+            }
+            return dump;
+        });
+    };
+
     window.__capture = async (): Promise<string> => {
         const { CreateScreenshotAsync } = await import('@babylonjs/core/Misc/screenshotTools');
         // Force a render frame so Babylon writes to the backbuffer
