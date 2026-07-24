@@ -16,7 +16,8 @@ source_files:
   - frontend/src/menus/env-water-levels.ts
   - frontend/src/menus/env-wind-levels.ts
   - frontend/src/menus/env-experimental-levels.ts
-adr: []
+adr:
+  - ADR-111
 symbols:
   - PopupLevel
   - buildLevel

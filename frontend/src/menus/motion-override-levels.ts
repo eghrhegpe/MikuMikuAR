@@ -10,7 +10,7 @@ import {
     modelRegistry,
     focusedModelId,
 } from '../core/config';
-import { addEmptyRow, slideRow, addPresetChip } from '../core/ui-helpers';
+import { addEmptyRow, slideRow, addPresetChip, addCardTitle } from '../core/ui-helpers';
 import { addSliderRow, addBoneSelectRow, isIkBone } from '../core/ui-helpers';
 import { createTrailingBtn } from '../core/ui-slide-row';
 import { createIconifyIcon, createIconButton } from '../core/icons';
@@ -541,10 +541,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    const title = document.createElement('div');
-                    title.className = 'card-title';
-                    title.textContent = t('motion.boneOverride.addOverride');
-                    inner.appendChild(title);
+                    addCardTitle(inner, t('motion.boneOverride.addOverride'));
 
                     // [doc:adr-122 P3] 骨骼选择复用 addBoneSelectRow（分组+搜索+IK标记），
                     // 替代内联 select+search 重复实现
@@ -650,16 +647,11 @@ function buildBoneOverrideSchema(): MenuNode[] {
             visibleWhen: () => allEntries.length > 0,
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    const title = document.createElement('div');
-                    title.className = 'card-title';
-                    title.textContent = t('motion.boneOverride.activeOverrides');
-                    inner.appendChild(title);
+                    addCardTitle(inner, t('motion.boneOverride.activeOverrides'));
 
                     for (const ov of allEntries) {
                         const row = document.createElement('div');
                         row.className = 'slide-item';
-                        row.style.display = 'flex';
-                        row.style.alignItems = 'center';
                         row.style.justifyContent = 'space-between';
 
                         const toggleBtn = document.createElement('button');

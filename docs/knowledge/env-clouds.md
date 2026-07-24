@@ -6,7 +6,8 @@ scope:
   - frontend/src/scene/env/env-clouds.ts
 source_files:
   - frontend/src/scene/env/env-clouds.ts
-adr: []
+adr:
+  - ADR-113
 symbols:
   - initClouds
   - disposeClouds

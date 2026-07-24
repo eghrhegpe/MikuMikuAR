@@ -6,6 +6,8 @@ scope:
   - frontend/src/core/reactivity.ts
 source_files:
   - frontend/src/core/reactivity.ts
+adr:
+  - ADR-106
 ---
 
 ## 系统概览

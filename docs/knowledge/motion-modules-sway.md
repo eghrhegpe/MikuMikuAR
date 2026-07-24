@@ -6,7 +6,8 @@ scope:
   - frontend/src/scene/motion/motion-modules/sway-motion.ts
 source_files:
   - frontend/src/scene/motion/motion-modules/sway-motion.ts
-adr: []
+adr:
+  - ADR-161
 symbols:
   - createSwayMotionModule
   - SWAY_MOTION_DEF

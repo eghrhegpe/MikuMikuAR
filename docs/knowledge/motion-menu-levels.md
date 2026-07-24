@@ -13,7 +13,8 @@ source_files:
   - frontend/src/menus/motion-pose-levels.ts
   - frontend/src/menus/motion-procmotion-levels.ts
   - frontend/src/menus/motion-root-ui.ts
-adr: []
+adr:
+  - ADR-071
 symbols:
   - getMotionMenu
   - reRenderMotionMenu

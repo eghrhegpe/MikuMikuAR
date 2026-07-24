@@ -6,7 +6,8 @@ scope:
   - frontend/src/scene/env/**
 source_files:
   - frontend/src/scene/env/env-terrain.ts
-adr: []
+adr:
+  - ADR-073
 ---
 
 ## 系统概览

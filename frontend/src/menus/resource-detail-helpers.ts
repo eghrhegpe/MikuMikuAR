@@ -9,6 +9,7 @@ import {
     slideRow,
     addSliderRow,
     addToggleRow,
+    addCardTitle,
     addDangerRow,
     addVector3SliderRow,
     addPresetChip,
@@ -333,17 +334,11 @@ export function buildBoneAttachCard(
     }
 
     cardContainer(container, (c) => {
-        const title = document.createElement('div');
-        title.className = 'card-title';
-        title.textContent = t('scene.accessory.attachToBone');
-        c.appendChild(title);
+        addCardTitle(c, t('scene.accessory.attachToBone'));
 
         const render = (): void => {
             c.innerHTML = '';
-            const titleEl = document.createElement('div');
-            titleEl.className = 'card-title';
-            titleEl.textContent = t('scene.accessory.attachToBone');
-            c.appendChild(titleEl);
+            addCardTitle(c, t('scene.accessory.attachToBone'));
 
             if (p.boneName && p.targetModelId) {
                 // —— 已挂载状态 ——

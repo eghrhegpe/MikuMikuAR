@@ -4,7 +4,8 @@
 > 但**主权归城邦**：由我们拥有、可重生成、受 `scripts/check-doc-drift.mjs` 守护。
 >
 > 生成日期基线：2026-07-23（覆盖 ADR-166~175 引入的子系统）；同日扩展「物理系统（physics）」分组，补录 ADR-081/084/104 的 WASM Bullet 物理子系统（physics-bridge / wind-physics / skirt-analyzer / virtual-skirt / ground-collision）。
-> 2026-07-25 扩展：新建 41 张卡片覆盖 motion/env/menus/core 四大集群，修正 16 张符号警告。
+> 2026-07-25 扩展：新建 41 张卡片覆盖 motion/env/menus/core 四大集群，修正 16 张符号警告，补录 22 张 ADR 关联。
+> 2026-07-25 二次扩展：新建 11 张高价值源文件卡片，补录 22 张 ADR 关联，修正 5 张符号警告。
 
 ## 它解决什么
 
@@ -91,7 +92,7 @@ use_when:
 
 跑法：`node scripts/check-doc-drift.mjs`（或 `--json`）。可接 CI 卡点。
 
-## 卡片索引（153 张，按 category 分组）
+## 卡片索引（164 张，按 category 分组）
 
 ### 环境系统（env）
 
@@ -185,7 +186,12 @@ use_when:
 |------|------|----------|
 | [骨骼覆盖存储（多模块仲裁）](./bone-override-store.md) | `scene/motion/bone-override-store.ts` | ADR-084 |
 | [动作管线（逐帧合成）](./motion-pipeline.md) | `scene/motion/motion-pipeline.ts` | ADR-129 |
-| [感知观察者（感知层）](./perception-observer.md) | `scene/motion/perception-observer.ts` | ADR-162/166 |
+| [感知层主控](./perception.md) | `scene/motion/perception.ts` | ADR-071/162/166 |
+| [感知层共享类型](./perception-shared.md) | `scene/motion/perception-shared.ts` | ADR-071/162 |
+| [视线追踪主模块](./perception-gaze.md) | `scene/motion/perception-gaze.ts` | ADR-071/162/166 |
+| [感知层共享类型](./perception-shared.md) | `scene/motion/perception-shared.ts` | ADR-071/162 |
+| [视线追踪主模块](./perception-gaze.md) | `scene/motion/perception-gaze.ts` | ADR-071/162/166 |
+| [骨骼覆盖核心 API](./bone-override.md) | `scene/motion/bone-override.ts` | ADR-061/116/123/126 |
 | [动作播放控制](./motion-playback.md) | `scene/motion/playback.ts` | — |
 | [外部动作重定向桥](./animation-retargeter.md) | `scene/motion/animation-retargeter.ts` | — |
 | [多 VMD 叠加系统](./vmd-layers.md) | `scene/motion/vmd-layers.ts` | — |

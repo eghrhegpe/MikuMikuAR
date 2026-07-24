@@ -6,7 +6,8 @@ scope:
   - frontend/src/scene/**
 source_files:
   - frontend/src/scene/scene-bundle.ts
-adr: []
+adr:
+  - ADR-037
 ---
 
 ## 系统概览

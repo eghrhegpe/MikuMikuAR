@@ -6,7 +6,8 @@ scope:
   - frontend/src/scene/env/**
 source_files:
   - frontend/src/scene/env/env-ground.ts
-adr: []
+adr:
+  - ADR-114
 ---
 
 ## 系统概览
