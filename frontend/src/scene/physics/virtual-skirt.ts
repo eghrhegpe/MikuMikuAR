@@ -143,6 +143,26 @@ const WAIST_BONE_CANDIDATES = ['Waist', 'センター', 'Center', '腰', '上半
 const ANCHOR_HALF_SIZE = 0.08;
 
 // ============================================================================
+// worldId 回收（P1 修复：ADR-084 §九 已知限制 — WASM Bullet 无 worldId 释放 API，
+// 本项目侧用 freeList 缓解：dispose 时归还，build 时优先复用，避免 nextWorldId 单调增长）
+// ============================================================================
+const _worldIdFreeList: number[] = [];
+
+function acquireWorldId(physicsRuntime: MmdWasmPhysicsRuntime): number {
+    const reused = _worldIdFreeList.pop();
+    if (reused !== undefined) {
+        return reused;
+    }
+    return physicsRuntime.nextWorldId++;
+}
+
+function releaseWorldId(id: number): void {
+    if (id >= 0 && !_worldIdFreeList.includes(id)) {
+        _worldIdFreeList.push(id);
+    }
+}
+
+// ============================================================================
 // 控制器
 // ============================================================================
 
@@ -275,7 +295,8 @@ export class VirtualSkirtController {
 
         // worldId：始终分配专用 world（不与 PMX 刚体同 world，避免坐标系/碰撞干扰；
         // 也规避 _physicsModel 私有字段访问的脆弱性，见 ADR-084 §九 P1 修复）
-        this.worldId = physicsRuntime.nextWorldId++;
+        // P1-fix: 优先从 freeList 复用，避免 nextWorldId 单调增长
+        this.worldId = acquireWorldId(physicsRuntime);
 
         try {
             const wasmInstance = impl.wasmInstance;
@@ -526,6 +547,9 @@ export class VirtualSkirtController {
         }
         this.anchorShape = null;
 
+        // P1-fix: 归还 worldId 到 freeList，供下次 build 复用
+        releaseWorldId(this.worldId);
+        this.worldId = -1;
         this.impl = null;
         this.analysis = null;
         this.restPositions = null;
