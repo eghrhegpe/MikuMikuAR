@@ -15,7 +15,7 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
-| ADR-177 | Web Loader 与主应用统一路径 | Phase 4 浏览器端到端 smoke 实施完成（2026-07-23；Playwright 双 webServer——5173 桌面 dev + 4174 web preview（vite build + vite preview --config vite.web.config.ts）；web-smoke.spec.ts 5 项——首屏渲染 + 6 nav 按钮 + 菜单导航 + 能力门控验证（AR/广场窗口隐藏）；web-resources.spec.ts 4 项——PMX/ZIP/VMD fetch+IndexedDB 注入加载闭环 + IndexedDB CRUD；fixtures sample.pmx 834KB + sample.vmd 19KB + sample.zip 854KB（page.route 注入不打进 bundle）；IndexedDB 迁移框架——onupgradeneeded 补 oldVersion 分支钩子，v1 无需迁移（旧 web-loader 与新主应用共享 schema + 键规约一致）；package.json 新增 test:e2e:web 脚本 + e2e README @web 章节。tsc 0 错误，2029 单测全绿，文档无漂移。Phase 3 已完成。剩余：GitHub Pages 线上 smoke + 连续两次发布无回归） |
+| ADR-177 | Web Loader 与主应用统一路径 | 部分实现 — Phase 0-4 本地实施完成（2026-07-23；Playwright 双 webServer——5173 桌面 dev + 4174 web preview（vite build + vite preview --config vite.web.config.ts）；web-smoke.spec.ts 5 项——首屏渲染 + 6 nav 按钮 + 菜单导航 + 能力门控验证（AR/广场窗口隐藏）；web-resources.spec.ts 4 项——PMX/ZIP/VMD fetch+IndexedDB 注入加载闭环 + IndexedDB CRUD；fixtures sample.pmx 834KB + sample.vmd 19KB + sample.zip 854KB（page.route 注入不打进 bundle）；IndexedDB 迁移框架——onupgradeneeded 补 oldVersion 分支钩子，v1 无需迁移（旧 web-loader 与新主应用共享 schema + 键规约一致）；package.json 新增 test:e2e:web 脚本 + e2e README @web 章节。tsc 0 错误，2029 单测全绿，文档无漂移）。剩余：① GitHub Pages 线上 smoke + 连续两次发布无回归；② browserAdapter 签名对齐已完成（2026-07-24，34 处参数/类型不匹配修复，见 ADR-176「签名对齐」章节），待浏览器 E2E 验证实际功能正确 |
 | ADR-176 | 前端 Backend 适配器双实现（Web/Desktop 通杀） | 已完成（2026-07-23；Phase 1-3 全部落地。Phase 3 已完成 web-loader 准完整网页入口、IndexedDB 模型库、能力徽章、lastModel 恢复引导和库面板；验证：tsc 0 错、backend 16/16、契约 17/17、全量回归绿） |
 | ADR-175 | 光照强度多入口设计意图裁决 | ✅ 已裁决（裁决为「保留多入口，不收敛为单入口」；无代码改动，仅固化契约）（2026-07-22） |
 | ADR-174 | 质量维度注册表 — 统一 qualityProfile 扩展点 | 已完成（2026-07-22） |

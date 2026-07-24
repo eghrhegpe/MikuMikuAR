@@ -78,9 +78,11 @@ export interface BackendService {
 
 ### 接入点改造（按序，低风险）
 
-0. **首屏数据源切换（最高优先）**：`init.ts` 首屏链 `GetConfig` / `GetSystemA11ySettings` / `CheckForUpdate` / `initLibrary`（Go 扫描）是后端调用最密集处。改为 `const backend = await resolveBackend()` 后取数；否则浏览器侧仍走 `fireAndForget → swallowError` 空壳路径（启动不崩但无配置/UI 状态/场景/模型库的跛脚壳）。
-1. `wails-bindings.ts` 退化为仅 `export * from '@bindings/...'` + 类型，供 `go-adapter.ts` 内部使用；
-2. 业务代码将 `import { readFileBytes } from '@/core/wails-bindings'` 改为 `import { resolveBackend } from '@/core/backend'`，调用 `const backend = await resolveBackend(); backend.readFileBytes(...)`（调用点由同步转异步，需逐处补 `await`）；
+> **实施现状（2026-07-24 核查）**：接入点改造采用**绞杀者模式（Strangler Fig）**，第 1-2 步已合并实现——`wails-bindings.ts` 未退化为纯透传壳，而是保留 `export * from '@bindings/...'` 兜底 33 个零业务调用函数的同时，对 106 个业务真实调用函数以 `_p('FuncName')` 工厂逐个覆写为 `resolveBackend()` 代理导出。业务代码 30+ 文件 **零改动** 即完成双环境路由：`import { AddTag } from '@/core/wails-bindings'` 调用的已是代理，桌面走 goAdapter、浏览器走 browserAdapter。此模式规避了"30 文件逐个改 import + 测试 mock 全迁移"的推倒重来风险，是长治久安方案。验收：`grep "from '.*wails-bindings'"` 在业务代码中仍有 30 处命中，但命中的是代理导出而非直连 Go binding。
+
+0. **首屏数据源切换（最高优先）**：`init.ts` 首屏链 `GetConfig` / `GetSystemA11ySettings` / `CheckForUpdate` / `initLibrary`（Go 扫描）是后端调用最密集处。改为 `const backend = await resolveBackend()` 后取数；否则浏览器侧仍走 `fire-and-forget → swallowError` 空壳路径（启动不崩但无配置/UI 状态/场景/模型库的跛脚壳）。
+1. `wails-bindings.ts` 采用**绞杀者模式**：保留 `export * from '@bindings/...'` 兜底透传 33 个零业务调用函数，同时对 106 个业务真实调用函数以 `_p<K>(name)` 工厂覆写为 `resolveBackend()` 代理导出（本地具名导出优先于 `export *`）。业务代码 import 路径零改动，内部自动路由到 goAdapter/browserAdapter。❌ 禁止在此新增绕过 `_p` 工厂的直连导出。
+2. 业务代码 `import { xxx } from '@/core/wails-bindings'` **无需改动**——绞杀者模式保证具名导出已是代理。新增业务调用应继续从 `wails-bindings` 导入（保持单一入口）；仅在需要 `capabilities()` 或 `readFileBytes` 等接口专属方法时，才直接 `import { resolveBackend } from '@/core/backend'`。
 3. UI 降级：**新建 `isWebPlatform()`**（与 `isAndroidPlatform()` 并列，见 `platform.ts`），`guardExternalAction` 扩展为同挡 Android + Web；启动期 backend 选型必须用 `await resolveBackend()`（异步），运行时 UI 降级判定可用 `isWebPlatform()`/`isAndroidPlatform()` + `backend.capabilities()`（后者已稳定无竞态）；按 `capabilities()` 隐藏/禁用 AR、外部程序入口；
 4. `web-loader` 升级为准完整页：复用 `browser-adapter` 接入模型库/设置/存档，作为网页侧主入口（`web-loader.html`）；入口处置 `globalThis.__MMKU_WEB__ = true` 短路桥接探测。
 
@@ -146,6 +148,37 @@ export interface BackendService {
 - 复用 ADR-017 的 `isAndroidPlatform()` / `window.wails` 探测范式与 ADR-159 桥接注入范式；
 - 复刻 `web-loader` 已验证的浏览器侧 PMX/zip 路径，避免重复造轮子；
 - 不改变 Wails v3 桌面/安卓生产链路，仅在其外包裹一层可替换的 backend 抽象。
+
+## 签名对齐（2026-07-24 实施）
+
+> 目的：修复 browserAdapter 的 34 处签名不匹配，消除"绞杀者模式代理转发后参数错位"的运行时隐患。
+
+### 背景
+
+绞杀者模式（接入点改造第 1-2 步）完成后，`wails-bindings.ts` 的 106 个 `_p('FuncName')` 代理导出会将调用转发到 `browserAdapter[FuncName]`。但 browserAdapter 早期实现为快速验证 Phase 2 数据链，大量方法的**参数个数/类型/返回类型**与 Go 接口签名不符，被 `as unknown as BackendService` 双重断言掩盖。
+
+**风险机制**：调用方按 Go 接口签名传参（如 `AddTag(libraryRef, tag)`），代理透传参数到 browserAdapter.AddTag，但 browserAdapter 只收 `(tag)` 单参 → `libraryRef` 被丢弃 → 浏览器端标签功能静默失效。
+
+### 修复清单（34 处）
+
+| 类别 | 数量 | 代表方法 | 修复方式 |
+|------|------|----------|----------|
+| base64 转换类 | 3 | SaveScreenshot/SaveThumbnail/GetThumbnail | 对齐 `(path, base64)` 签名，内部 atob/btoa 转 bytes |
+| 预设 JSON string 类 | 8 | SaveModelPreset/LoadModelPreset/SaveScenePreset/SaveEnvPresetAuto 等 | 对齐 Go string 传输（旧实现误用 Uint8Array） |
+| 标签/最近/浏览目录参数补全 | 6 | AddTag/RemoveTag/AddRecentModel/GetLastBrowseDir/SetLastBrowseDir | 补全双参签名 |
+| SetEnvState/SetUIState 类型对齐 | 2 | SetEnvState/SetUIState | Partial → 完整类型，保留 merge 语义 |
+| ImportLocalFile/BundleScene/GetDownloadWatchStatus | 3 | — | 对齐 Go 签名 |
+| 降级方法占位符 | 17 | NotSupportedError 系列 | 全部对齐参数签名 + 返回类型 |
+
+### `as unknown as` 保留原因
+
+尝试改用 `satisfies BackendService` 暴露 80+ 处类型错误，全是 `Promise<T>` vs `CancellablePromise<T>` 差异（Wails 专属类型带 cancel/cancelOn）。browser 侧无法返回 CancellablePromise，运行时调用方仅 await 不调 cancel，故不影响功能。这是 Wails 类型系统的固有限制，双重断言保留，但**签名参数已对齐**。
+
+### 验收
+
+- tsc 0 错误
+- 2048 单测全绿（含 backend.test.ts round-trip 测试）
+- 细粒度 UI setter 改为 merge 语义（读当前 UIState → 合并单字段 → 写回），通过 SetUIAccent/SetUIScale round-trip 测试
 
 ## 调用集实证（2026-07-23 实测）
 
