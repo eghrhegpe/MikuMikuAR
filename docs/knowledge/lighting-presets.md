@@ -30,7 +30,10 @@ use_when:
 ## 对外 API（节选）
 - `interface LightingPreset` — 灯光预设描述。
 - `LIGHTING_PRESETS` — 内置预设列表。
-- `applyLightingPreset(presetName, scene)` — 应用预设。
+- `interface LightingPresetLight` — 预设灯光描述。
+- `interface LightingPreset` — 灯光预设集合描述。
+- `LIGHTING_PRESETS` — 内置预设集合。
+- `PRESET_NAMES` — 预设名称列表。
 
 ## 与其他子系统关系
 - 被 `lighting-stage.ts` 调用。

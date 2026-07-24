@@ -27,7 +27,8 @@ use_when:
 
 ## 对外 API（节选）
 - `class SwayMotionModule` — 动作模块实现。
-- `applySwayMotion(context, bones, params)` — 应用身体摇摆。
+- `createSwayMotionModule(modelId)` — 创建身体摇摆动作模块实例。
+- `SWAY_MOTION_DEF` — 模块定义常量。
 
 ## 与其他子系统关系
 - 注册表：`./registry.ts`。

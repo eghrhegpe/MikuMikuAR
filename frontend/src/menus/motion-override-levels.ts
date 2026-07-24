@@ -13,7 +13,7 @@ import {
 import { addEmptyRow, slideRow, addPresetChip } from '../core/ui-helpers';
 import { addSliderRow, addBoneSelectRow, isIkBone } from '../core/ui-helpers';
 import { createTrailingBtn } from '../core/ui-slide-row';
-import { createIconifyIcon } from '../core/icons';
+import { createIconifyIcon, createIconButton } from '../core/icons';
 import { getMotionMenu, renderModuleToggleList } from './motion-popup';
 import { addDisposableListener, type Disposable } from '../core/dom';
 import { triggerAutoSave, pushUndoSnapshot, offerSceneUndoAndRefresh } from '../scene/scene';
@@ -85,13 +85,7 @@ export function renderPresetCard(container: HTMLElement, modelId: string): void 
         titleBar.appendChild(titleText);
 
         // 保存按钮
-        const saveBtn = document.createElement('button');
-        saveBtn.className = 'slide-action';
-        const saveIcon = createIconifyIcon('lucide:save');
-        if (saveIcon) {
-            saveBtn.appendChild(saveIcon);
-        }
-        saveBtn.title = t('motion-preset.saveTitle');
+        const saveBtn = createIconButton('lucide:save', t('motion-preset.saveTitle'));
         const menuRefForPreset = getMotionMenu();
         saveBtn.addEventListener('click', () => {
             if (!modelId || !inst) {
@@ -168,14 +162,8 @@ export function renderPresetCard(container: HTMLElement, modelId: string): void 
                 row.appendChild(applyBtn);
 
                 // 删除按钮
-                const delBtn = document.createElement('button');
-                delBtn.className = 'slide-action';
-                const delIcon = createIconifyIcon('lucide:trash-2');
-                if (delIcon) {
-                    delBtn.appendChild(delIcon);
-                }
+                const delBtn = createIconButton('lucide:trash-2', t('motion-preset.delete'));
                 delBtn.style.cssText = 'font-size:11px;color:var(--danger);';
-                delBtn.title = t('motion-preset.delete');
                 delBtn.addEventListener('click', async () => {
                     if (!inst?.motionPresets) {
                         return;
@@ -226,13 +214,7 @@ export function renderOverrideCard(
         btnGroup.className = 'btn-group';
         btnGroup.style.padding = '0';
 
-        const undoBtn = document.createElement('button');
-        undoBtn.className = 'slide-action';
-        const undoIcon = createIconifyIcon('lucide:undo-2');
-        if (undoIcon) {
-            undoBtn.appendChild(undoIcon);
-        }
-        undoBtn.title = 'Ctrl+Z';
+        const undoBtn = createIconButton('lucide:undo-2', 'Ctrl+Z');
         undoBtn.addEventListener('click', () => {
             if (!modelId || !canUndo(modelId)) {
                 return;
@@ -260,13 +242,7 @@ export function renderOverrideCard(
         };
         updateUndoState();
 
-        const redoBtn = document.createElement('button');
-        redoBtn.className = 'slide-action';
-        const redoIcon = createIconifyIcon('lucide:redo-2');
-        if (redoIcon) {
-            redoBtn.appendChild(redoIcon);
-        }
-        redoBtn.title = 'Ctrl+Shift+Z';
+        const redoBtn = createIconButton('lucide:redo-2', 'Ctrl+Shift+Z');
         redoBtn.addEventListener('click', () => {
             if (!modelId || !canRedo(modelId)) {
                 return;
@@ -298,13 +274,7 @@ export function renderOverrideCard(
         btnGroup.appendChild(redoBtn);
 
         // [doc:adr-125 P3] 历史列表下拉按钮
-        const historyBtn = document.createElement('button');
-        historyBtn.className = 'slide-action';
-        const historyIcon = createIconifyIcon('lucide:more-vertical');
-        if (historyIcon) {
-            historyBtn.appendChild(historyIcon);
-        }
-        historyBtn.title = t('motion.override.history');
+        const historyBtn = createIconButton('lucide:more-vertical', t('motion.override.history'));
         historyBtn.style.fontSize = '14px';
         let historyDropdown: HTMLElement | null = null;
 

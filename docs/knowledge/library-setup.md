@@ -29,7 +29,11 @@ use_when:
 - `library-setup.ts` — 资源库初始化、路径配置、索引建立。
 
 ## 对外 API（节选）
-- `setupLibrary(options)` — 初始化资源库。
+- `initLibrary()` — 初始化资源库（启动时调用）。
+- `selectResourceRoot()` — 选择资源根路径。
+- `selectOverridePath(category)` — 选择覆盖路径。
+- `switchStorageMode(mode)` — 切换存储模式（private/shared）。
+- `rescanAndSync()` — 重新扫描并同步资源库。
 
 ## 与其他子系统关系
 - 资源库核心：`library-core.ts`。

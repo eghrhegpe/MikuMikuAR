@@ -27,7 +27,8 @@ use_when:
 
 ## 对外 API（节选）
 - `class RidingModelModule` — 动作模块实现。
-- `applyRidingModel(context, bones, vehicle)` — 应用骑乘姿态。
+- `createRidingModelModule(modelId)` — 创建骑乘模型动作模块实例。
+- `RIDING_MODEL_DEF` — 模块定义常量。
 
 ## 与其他子系统关系
 - 注册表：`./registry.ts`。

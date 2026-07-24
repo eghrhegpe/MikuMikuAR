@@ -31,7 +31,11 @@ use_when:
 
 ## 对外 API（节选）
 - `enum RuntimeMode` — 运行模式枚举（desktop/browser）。
-- `getRuntimeMode()` — 取当前运行模式。
+- `interface RuntimeMode` — 运行模式接口。
+- `detectRuntimeMode()` — 检测当前运行模式（desktop/browser）。
+- `persistRuntimeMode(mode)` — 持久化运行模式。
+- `loadPersistedRuntimeMode()` — 加载持久化的运行模式。
+- `renderRuntimeBadge(mode)` — 渲染运行模式标识。
 
 ## 与其他子系统关系
 - 被 `drop-import.ts` 调用（分支路由）。

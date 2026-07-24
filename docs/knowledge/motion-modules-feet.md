@@ -29,7 +29,9 @@ use_when:
 
 ## 对外 API（节选）
 - `class FeetAdjustmentModule` — 动作模块实现。
-- `applyFeetAdjustment(context, bones)` — 应用脚部调整。
+- `getFeetStateForModel(modelId)` — 取指定模型的脚部状态。
+- `createFeetAdjustmentModule(modelId)` — 创建脚部调整动作模块实例。
+- `FEET_ADJUSTMENT_DEF` — 模块定义常量。
 
 ## 与其他子系统关系
 - 底层引擎：`../feet-adjustment.ts`。

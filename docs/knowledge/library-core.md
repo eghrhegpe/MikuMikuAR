@@ -30,9 +30,10 @@ use_when:
 - `library-core.ts` — 资源扫描、索引构建、元数据管理。
 
 ## 对外 API（节选）
-- `scanLibrary(paths)` — 扫描资源路径。
-- `indexResource(filePath)` — 索引单个资源。
-- `getIndexedResources()` — 取已索引资源列表。
+- `type ResourceViewMode = 'list' | 'grid'` — 资源库视图模式。
+- `getResourceViewMode()` / `setResourceViewMode(mode)` — 查询/设置视图模式。
+- `isModelDirTarget(target)` — 判断目标是否为模型目录。
+- `getPendingMetaGuard()` — 取后台加载守卫。
 
 ## 与其他子系统关系
 - 文件服务：`@/core/fileservice`。

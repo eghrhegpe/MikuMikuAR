@@ -34,9 +34,11 @@ use_when:
 ## 对外 API（节选）
 - `interface MotionModule` — 动作模块接口（name、priority、apply 函数）。
 - `class MotionModuleRegistry` — 注册表实现。
-- `registerMotionModule(module)` — 注册动作模块。
-- `unregisterMotionModule(name)` — 注销模块。
-- `getMotionModules()` — 取已排序模块列表。
+- `registerModule(id, meta, priority)` — 注册动作模块。
+- `unregisterModule(id)` — 注销动作模块。
+- `getRegisteredModules()` — 取已注册模块列表（按优先级排序）。
+- `createModule(id, modelId)` — 为模型创建模块实例。
+- `getModuleState(modelId, moduleId)` — 取模块运行时状态。
 
 ## 与其他子系统关系
 - 被 `motion-pipeline.ts` 调用，逐帧执行各模块。

@@ -762,11 +762,7 @@ function renderWebXRProbeSection(container: HTMLElement): void {
 
         // 显示探针结果摘要
         const result = document.createElement('div');
-        result.className = 'cs-hint weak-text';
-        result.style.whiteSpace = 'pre-wrap';
-        result.style.fontSize = '0.75em';
-        result.style.lineHeight = '1.4';
-        result.style.padding = '4px 8px';
+        result.className = 'probe-result';
         result.textContent = _formatShortResult(_probeResult);
         container.appendChild(result);
     }
@@ -861,11 +857,7 @@ function renderARCoreProbeSection(container: HTMLElement): void {
     // 显示上次探针结果
     if (_arcoreProbeResult) {
         const result = document.createElement('div');
-        result.className = 'cs-hint weak-text';
-        result.style.whiteSpace = 'pre-wrap';
-        result.style.fontSize = '0.75em';
-        result.style.lineHeight = '1.4';
-        result.style.padding = '4px 8px';
+        result.className = 'probe-result';
         try {
             const r = JSON.parse(_arcoreProbeResult) as Record<string, unknown>;
             result.textContent = Object.entries(r)
@@ -932,11 +924,7 @@ function renderVuforiaProbeSection(container: HTMLElement): void {
 
     if (_vuforiaProbeResult) {
         const result = document.createElement('div');
-        result.className = 'cs-hint weak-text';
-        result.style.whiteSpace = 'pre-wrap';
-        result.style.fontSize = '0.75em';
-        result.style.lineHeight = '1.4';
-        result.style.padding = '4px 8px';
+        result.className = 'probe-result';
         try {
             const r = JSON.parse(_vuforiaProbeResult) as Record<string, unknown>;
             result.textContent = Object.entries(r)

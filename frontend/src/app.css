@@ -3304,6 +3304,14 @@ textarea,
     line-height: 1.5;
 }
 
+/* 探针结果展示区 */
+.probe-result {
+    white-space: pre-wrap;
+    font-size: 0.75em;
+    line-height: 1.4;
+    padding: 4px 8px;
+}
+
 /* 骨骼下拉选择行（addBoneSelectRow wrapper） */
 .bone-select-row {
     display: flex;

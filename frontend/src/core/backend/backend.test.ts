@@ -351,6 +351,21 @@ describe('ADR-177 Phase 2 A4 p2-5：虚拟目录 + 伴生文件加载', () => {
             const entries = await browserAdapter.ListDirRecursive('web://model/Ghost');
             expect(entries).toEqual([]);
         });
+
+        it('FSA stem 含类别前缀 → bare stem fallback 命中', async () => {
+            // FSA 扫描存储 bare stem 键 dir:Miku:tex/face.png，
+            // 查询 web://model/分类1/Miku 时精确前缀 miss，fallback 到 bare stem
+            _idbStore.set('dir:Miku:tex/face.png', new Uint8Array([10]));
+            _idbStore.set('dir:Miku:bg/sky.png', new Uint8Array([20]));
+            const entries = await browserAdapter.ListDirRecursive('web://model/分类1/Miku');
+            expect(entries).toHaveLength(2);
+            expect(entries).toEqual(
+                expect.arrayContaining([
+                    { name: 'face.png', relativePath: 'tex/face.png' },
+                    { name: 'sky.png', relativePath: 'bg/sky.png' },
+                ])
+            );
+        });
     });
 
     describe('readFileBytes web://model/ 路由', () => {
@@ -365,6 +380,16 @@ describe('ADR-177 Phase 2 A4 p2-5：虚拟目录 + 伴生文件加载', () => {
             const tex = new Uint8Array([7]);
             _idbStore.set('file:face', tex); // ExtractZip 扁平键兜底
             const r = await browserAdapter.readFileBytes('web://model/Miku/tex/face.png');
+            expect(r).toBe(tex);
+        });
+
+        it('FSA stem 含类别前缀 → bare stem fallback 命中', async () => {
+            // 模拟真实链路：ListDirRecursive 返回 bare relativePath（tex/face.png），
+            // model-loader 拼接 modelDir + '/' + relativePath 后 readFileBytes 查找
+            // FSA 扫描存储 dir:Miku:tex/face.png（bare stem），拼接路径精确命中
+            const tex = new Uint8Array([11, 12]);
+            _idbStore.set('dir:Miku:tex/face.png', tex);
+            const r = await browserAdapter.readFileBytes('web://model/分类1/Miku/tex/face.png');
             expect(r).toBe(tex);
         });
     });
