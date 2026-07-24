@@ -746,21 +746,25 @@ function buildModelInfoSchema(id: string): MenuNode[] {
                 if (metaKey && !modelMetaCache.has(metaKey)) {
                     GetModelMetaBatch([metaKey])
                         .then((batch) => {
-                            if (batch?.[metaKey]) {
+                            // 优先用 batch 返回的数据，否则回退查已有缓存（可能被 loadActor 先写入）
+                            const commentText =
+                                batch?.[metaKey]?.comment || modelMetaCache.get(metaKey)?.comment || '';
+                            if (batch?.[metaKey] || commentText) {
                                 const merged = new Map(modelMetaCache);
-                                merged.set(metaKey, batch[metaKey]);
+                                if (batch?.[metaKey]) {
+                                    merged.set(metaKey, batch[metaKey]);
+                                }
                                 setModelMetaCache(merged);
-                                // 数据回来后将 comment 注入已有的 comment card
-                                const commentText = batch[metaKey].comment || '';
-                                let el = container.querySelector('[data-comment-card]');
-                                if (el) {
-                                    const labelEl = el.querySelector('.info-card-label');
-                                    const valEl = el.querySelector('.info-card-value');
-                                    if (labelEl) labelEl.textContent = t('model-detail.fComment');
-                                    if (valEl) {
-                                        valEl.textContent = commentText || t('model-detail.fCommentEmpty');
-                                        (valEl as HTMLElement).style.whiteSpace = 'pre-wrap';
-                                    }
+                            }
+                            // 无论是否有新数据，都更新已渲染的 comment card
+                            let el = container.querySelector('[data-comment-card]');
+                            if (el) {
+                                const labelEl = el.querySelector('.info-card-label');
+                                const valEl = el.querySelector('.info-card-value');
+                                if (labelEl) labelEl.textContent = t('model-detail.fComment');
+                                if (valEl) {
+                                    valEl.textContent = commentText || t('model-detail.fCommentEmpty');
+                                    (valEl as HTMLElement).style.whiteSpace = 'pre-wrap';
                                 }
                             }
                         })

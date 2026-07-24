@@ -25,6 +25,7 @@ import type {
     UIState,
     EnvState,
     ModelEntry,
+    ModelMeta,
     ExtractResult,
     FileInfo,
     UpdateCheckResult,
@@ -679,8 +680,10 @@ export const browserAdapter: BackendService = {
     async GetLibraryIndex(): Promise<ModelEntry[]> {
         return _listModels();
     },
-    async GetModelMetaBatch(): Promise<ModelEntry[]> {
-        return _listModels();
+    async GetModelMetaBatch(paths: string[]): Promise<Record<string, ModelMeta>> {
+        // Web 模式下无法解析 PMX 文件头，返回空。
+        // comment 由 loadActor 阶段通过 parsePmxComment 从 PMX 字节提取后填入缓存。
+        return {};
     },
     async SaveModelPreset(name: string, data: Uint8Array): Promise<void> {
         await idbSet('presets', `model:${name}`, data);
