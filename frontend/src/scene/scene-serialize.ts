@@ -20,7 +20,7 @@ import {
     setStatus,
 } from '../core/config';
 import { showInfoToast } from '../core/toast';
-import { debounce, swallowError } from '../core/utils';
+import { debounce, generateUuid, swallowError } from '../core/utils';
 import { logWarn } from '../core/logger';
 import {
     getActiveMotionId,
@@ -353,14 +353,7 @@ export interface SceneFile {
 
 // ======== Serialization ========
 
-/** Generate a simple UUID v4 (browser-safe, no crypto dependency). */
-function generateUuid(): string {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-        const r = (Math.random() * 16) | 0;
-        const v = c === 'x' ? r : (r & 0x3) | 0x8;
-        return v.toString(16);
-    });
-}
+
 
 // Map runtime instance ID → persistent UUID, maintained by serialize/deserialize.
 const modelUuidMap = new Map<string, string>();

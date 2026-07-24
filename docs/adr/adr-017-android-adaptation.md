@@ -156,7 +156,7 @@ type FileAccessor interface {
 | A2-03 | 键盘弹出触发 Canvas 重绘风暴（`adjustResize`） | 低端机帧率抖动 | ⚪ 降级 P4：未查到 `visualViewport` 监听，但 Android 下菜单多为全屏 overlay，键盘弹出不直接影响 canvas；风险被高估，暂不实施 |
 | A2-04 | 截图 `toDataURL` 低端机 OOM | 截图功能闪退 | ✅ 已修复（2026-07-22）：全路径迁移到 `toBlob` 异步编码——`ar-camera.ts` captureARScreenshot + `watermark.ts` applyWatermark + `motion-pose-levels.ts` 批量姿势截图 + `scene-menu.ts` 单/批量截图（含非 AR 路径）；`toBlob` 失败降级 `toDataURL`（受约束环境兼容） |
 | A2-05 | 部分国产 ROM `AudioContext` 自动播放限制 | 音乐/节拍检测静音 | ✅ 已修复：Java 端 `setMediaPlaybackRequiresUserGesture(false)`（`MainActivity.java:135`）从源头禁用自动播放限制；`audio-bus.ts:107` 还有 `ctx.resume()` 兜底 |
-| A2-06 | `clipboard.writeText` 需用户手势触发 | 复制功能静默失败 | ✅ 已落地：5 处调用均有 `catch` 兜底（`dialog.ts:201-202`、`toast.ts:122-128`、`scene-menu.ts:425` 等）；但 Android WebView 部分版本 Clipboard API 不可用，catch 后用户无感知，建议补 toast 反馈 |
+| A2-06 | `clipboard.writeText` 需用户手势触发 | 复制功能静默失败 | ✅ 已闭环（2026-07-24）：5 处调用均有 `catch` 兜底；唯一的静默空 catch（`toast.ts:147`，copyBtn 复制 toast 文本）已补 `showErrorToast(t('motion.clipboardUnavailable'))` 反馈，与其余 4 处口径一致 |
 | A2-07 | WebView 渲染进程崩溃无兜底（缺 `onRenderProcessGone`） | 渲染器 OOM/native 崩溃后 App 不退出但 UI 假死（音频可能继续播放、触控失效），用户只能杀进程 | ✅ 已修复（2026-07-20）：`MainActivity` WebViewClient 重写 `onRenderProcessGone`，返回 true 阻止系统杀 App，300ms 后 `reload()` 重建渲染器自愈（API 26+ 生效，低版本不调用无需守卫） |
 
 ### P3 — 架构建议

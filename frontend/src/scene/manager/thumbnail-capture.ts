@@ -17,38 +17,10 @@ import type { Scene } from '@babylonjs/core/scene';
 import { SaveThumbnail } from '@/core/wails-bindings';
 import { thumbnailCache, setThumbnailCache, type ModelInstance } from '@/core/config';
 import { uiState } from '@/core/state';
-import { isStageLike } from '@/core/utils';
+import { isStageLike, canvasToBase64 } from '@/core/utils';
 import { logWarn } from '@/core/logger';
 import { type PropInstance, type RuntimeModel } from '@/core/types';
 import { buildThumbnailKey } from './thumbnail-key';
-
-/**
- * canvas → base64 异步编码（替代同步 toDataURL）。
- * toBlob 将 PNG/JPEG 编码移至后台线程（Chrome Skia encoder），不阻塞主线程。
- * readAsDataURL 异步分片读取 Blob 为 base64 data URL，最后剥离前缀得到纯 base64。
- */
-function canvasToBase64(canvas: HTMLCanvasElement, fmt: string, q: number): Promise<string> {
-    return new Promise((resolve, reject) => {
-        canvas.toBlob(
-            (blob) => {
-                if (!blob) {
-                    reject(new Error('canvas.toBlob returned null'));
-                    return;
-                }
-                const reader = new FileReader();
-                reader.onload = () => {
-                    const dataUrl = reader.result as string;
-                    const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, '');
-                    resolve(base64);
-                };
-                reader.onerror = () => reject(reader.error ?? new Error('FileReader error'));
-                reader.readAsDataURL(blob);
-            },
-            fmt,
-            q
-        );
-    });
-}
 
 // 缩略图渲染所需的最小实例形状：ModelInstance 与 PropInstance 均可适配。
 // 仅消费三个字段：rootMesh（渲染根节点）、kind（宽高比判定）、mmdModel?（物理冻结，可选）。

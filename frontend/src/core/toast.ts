@@ -144,7 +144,8 @@ function buildToastElement(
                     copyBtn.textContent = t('toast.copy');
                 }, 1500);
             } catch {
-                // clipboard unavailable — silently ignore
+                // clipboard API 可能不可用（需用户手势 / Android WebView 限制）
+                showErrorToast(t('motion.clipboardUnavailable'));
             }
         });
         actionsEl.appendChild(copyBtn);
