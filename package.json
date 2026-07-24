@@ -1,7 +1,7 @@
 {
   "name": "mikumikuar",
   "private": true,
-  "version": "1.6.3",
+  "version": "1.6.5",
   "scripts": {
     "gen:status": "node scripts/gen-status-index.mjs --reverse",
     "check:status": "node scripts/gen-status-index.mjs --reverse --check",
