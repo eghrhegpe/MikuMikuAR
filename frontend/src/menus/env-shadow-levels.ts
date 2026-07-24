@@ -9,7 +9,7 @@ import { t } from '../core/i18n/t';
 import { getLightState, setLightState as setLightingState } from '../scene/render/lighting';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
-import { _buildLevel } from './env-level-helpers';
+import { buildLevel } from './env-level-helpers';
 
 export function buildShadowLevel(): PopupLevel {
     return buildLevel(t('env.shadow'), (c) => {

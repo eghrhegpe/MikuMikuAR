@@ -15,7 +15,7 @@ import {
 } from '../scene/env/env-water';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
-import { _buildLevel } from './env-level-helpers';
+import { buildLevel } from './env-level-helpers';
 import { getEnvMenu } from './env-menu-state';
 
 /** 预设 key → i18n key 映射 */
