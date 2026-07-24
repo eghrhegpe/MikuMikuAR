@@ -19,6 +19,50 @@ vi.mock('../core/backend/idb', () => ({
         [...mem.keys()].filter((k) => k.startsWith(`${store}/`)).map((k) => k.slice(store.length + 1))
     ),
     closeIDB: vi.fn(),
+
+    // 模型库函数转发到 mock
+    saveModel: vi.fn(async (fileName: string, bytes: Uint8Array, kind: 'pmx' | 'zip') => {
+        const name = fileName.replace(/\.(pmx|zip)$/i, '');
+        const entry = { name, fileName, kind, size: bytes.byteLength, savedAt: Date.now() };
+        mem.set(mk('models', `file:${name}`), bytes);
+        mem.set(mk('models', `entry:${name}`), entry);
+        return entry;
+    }),
+    listModels: vi.fn(async () => {
+        const keys = [...mem.keys()]
+            .filter((k) => k.startsWith('models/entry:'))
+            .map((k) => k.slice('models/'.length));
+        const out: unknown[] = [];
+        for (const k of keys) {
+            const e = mem.get(mk('models', k));
+            if (e) out.push(e);
+        }
+        return out.sort((a: any, b: any) => b.savedAt - a.savedAt);
+    }),
+    loadModelBytes: vi.fn(async (name: string) =>
+        (mem.get(mk('models', `file:${name}`)) as Uint8Array) ?? null
+    ),
+    getModelEntry: vi.fn(async (name: string) =>
+        (mem.get(mk('models', `entry:${name}`)) as any) ?? null
+    ),
+    deleteModel: vi.fn(async (name: string) => {
+        mem.delete(mk('models', `entry:${name}`));
+        mem.delete(mk('models', `file:${name}`));
+        const last = mem.get('meta/web-loader.lastModel');
+        if (last === name) mem.delete('meta/web-loader.lastModel');
+    }),
+    setLastModel: vi.fn(async (name: string | null) => {
+        if (name === null) mem.delete('meta/web-loader.lastModel');
+        else mem.set('meta/web-loader.lastModel', name);
+    }),
+    getLastModel: vi.fn(async () =>
+        (mem.get('meta/web-loader.lastModel') as string) ?? null
+    ),
+    formatSize: vi.fn((bytes: number) => {
+        if (bytes < 1024) return `${bytes} B`;
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    }),
 }));
 
 import {

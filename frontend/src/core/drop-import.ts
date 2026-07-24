@@ -13,7 +13,7 @@
 //   handleDropFile(name) → ExtractZip 读 IndexedDB 解压 / loadManager 读 IndexedDB
 import { loadManager } from './load-manager';
 import { ImportZip, ExtractZip } from './wails-bindings';
-import { idbSet } from './backend/idb';
+import { idbSet, saveModel } from './backend/idb';
 import { setStatus, formatError } from './config';
 import { t } from './i18n/t';
 import { safeCallAsync } from './safe-call';
@@ -88,7 +88,6 @@ export async function handleDroppedFile(file: File): Promise<void> {
     const bytes = new Uint8Array(await file.arrayBuffer());
     if (lower.endsWith('.zip')) {
         // zip 整体写入 entry（模型库可见），内部文件由 ExtractZip 落地
-        const { saveModel } = await import('../web-loader/library');
         await saveModel(file.name, bytes, 'zip');
         await handleDropFile(file.name, bytes);
         return;
@@ -97,7 +96,6 @@ export async function handleDroppedFile(file: File): Promise<void> {
     const name = file.name.replace(/\.(pmx|vmd)$/i, '');
     await idbSet('models', `file:${name}`, bytes);
     if (lower.endsWith('.pmx')) {
-        const { saveModel } = await import('../web-loader/library');
         await saveModel(file.name, bytes, 'pmx');
     }
     await handleDropFile(file.name);

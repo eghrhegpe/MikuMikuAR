@@ -8,91 +8,35 @@
 //
 // 分层说明：web-loader 是浏览器专属入口壳，直接消费 idb 与 go-adapter 直连
 // @bindings 对称，不构成对 backend 抽象的绕行（跨平台业务代码仍必须走 backend）。
+//
+// 模型库函数已迁移到 core/backend/idb，此处全部转发以保持向后兼容。
 
-import { idbGet, idbSet, idbDelete, idbKeys } from '../core/backend/idb';
+import {
+    idbGet, idbSet, idbDelete, idbKeys,
+    saveModel as _saveModel,
+    listModels as _listModels,
+    loadModelBytes as _loadModelBytes,
+    getModelEntry as _getModelEntry,
+    deleteModel as _deleteModel,
+    setLastModel as _setLastModel,
+    getLastModel as _getLastModel,
+    formatSize as _formatSize,
+} from '../core/backend/idb';
+export type { WebModelEntry } from '../core/backend/idb';
 
-export interface WebModelEntry {
-    /** 库内唯一名（去扩展名的文件名） */
-    name: string;
-    /** 原始文件名（含 .pmx / .zip 扩展名，恢复加载时还原 File） */
-    fileName: string;
-    kind: 'pmx' | 'zip';
-    /** 原档字节数 */
-    size: number;
-    /** 存入时刻（epoch ms） */
-    savedAt: number;
-}
-
-const entryKey = (name: string): string => `entry:${name}`;
-const fileKey = (name: string): string => `file:${name}`;
-const LAST_MODEL_KEY = 'web-loader.lastModel';
-
-/** 存入模型库（同名覆盖）。返回写入的元数据。 */
-export async function saveModel(
-    fileName: string,
-    bytes: Uint8Array,
-    kind: 'pmx' | 'zip'
-): Promise<WebModelEntry> {
-    const name = fileName.replace(/\.(pmx|zip)$/i, '');
-    const entry: WebModelEntry = {
-        name,
-        fileName,
-        kind,
-        size: bytes.byteLength,
-        savedAt: Date.now(),
-    };
-    await idbSet('models', fileKey(name), bytes);
-    await idbSet('models', entryKey(name), entry);
-    return entry;
-}
-
-/** 列出库内全部模型（按存入时间倒序）。 */
-export async function listModels(): Promise<WebModelEntry[]> {
-    const keys = (await idbKeys('models')).filter((k) => k.startsWith('entry:'));
-    const out: WebModelEntry[] = [];
-    for (const k of keys) {
-        const e = await idbGet<WebModelEntry>('models', k);
-        if (e) out.push(e);
-    }
-    return out.sort((a, b) => b.savedAt - a.savedAt);
-}
-
-/** 读取模型原档字节。 */
-export async function loadModelBytes(name: string): Promise<Uint8Array | null> {
-    return (await idbGet<Uint8Array>('models', fileKey(name))) ?? null;
-}
-
-/** 读取模型元数据。 */
-export async function getModelEntry(name: string): Promise<WebModelEntry | null> {
-    return (await idbGet<WebModelEntry>('models', entryKey(name))) ?? null;
-}
-
-/** 删除模型（元数据 + 原档配对删除；若为 lastModel 一并清除）。 */
-export async function deleteModel(name: string): Promise<void> {
-    await idbDelete('models', entryKey(name));
-    await idbDelete('models', fileKey(name));
-    if ((await getLastModel()) === name) {
-        await setLastModel(null);
-    }
-}
-
-/** 记录/清除上次加载的模型名。 */
-export async function setLastModel(name: string | null): Promise<void> {
-    if (name === null) {
-        await idbDelete('meta', LAST_MODEL_KEY);
-    } else {
-        await idbSet('meta', LAST_MODEL_KEY, name);
-    }
-}
-
-/** 取上次加载的模型名（无则 null）。 */
-export async function getLastModel(): Promise<string | null> {
-    return (await idbGet<string>('meta', LAST_MODEL_KEY)) ?? null;
-}
-
-/** 人类可读字节数。 */
-export function formatSize(bytes: number): string {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
+/** @deprecated 请从 '../core/backend/idb' 直接导入 saveModel */
+export const saveModel = _saveModel;
+/** @deprecated 请从 '../core/backend/idb' 直接导入 listModels */
+export const listModels = _listModels;
+/** @deprecated 请从 '../core/backend/idb' 直接导入 loadModelBytes */
+export const loadModelBytes = _loadModelBytes;
+/** @deprecated 请从 '../core/backend/idb' 直接导入 getModelEntry */
+export const getModelEntry = _getModelEntry;
+/** @deprecated 请从 '../core/backend/idb' 直接导入 deleteModel */
+export const deleteModel = _deleteModel;
+/** @deprecated 请从 '../core/backend/idb' 直接导入 setLastModel */
+export const setLastModel = _setLastModel;
+/** @deprecated 请从 '../core/backend/idb' 直接导入 getLastModel */
+export const getLastModel = _getLastModel;
+/** @deprecated 请从 '../core/backend/idb' 直接导入 formatSize */
+export const formatSize = _formatSize;
