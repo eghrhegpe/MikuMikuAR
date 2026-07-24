@@ -7,18 +7,18 @@ set -e
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
 
-echo "[pre-commit] check:status (ADR 索引同步)"
+echo "[pre-push] check:status (ADR 索引同步)"
 node scripts/gen-status-index.mjs --reverse --check || {
   echo ""
   echo "❌ status.md 与 ADR 源不同步。修复: npm run gen:status && git add docs/status.md"
   exit 1
 }
 
-echo "[pre-commit] check:funcmap (函数索引同步)"
+echo "[pre-push] check:funcmap (函数索引同步)"
 node scripts/gen-funcmap.mjs --check || {
   echo ""
   echo "❌ function-map.md 与源码不同步。修复: npm run gen:funcmap && git add docs/function-map.md"
   exit 1
 }
 
-echo "[pre-commit] ✅ 全部通过"
+echo "[pre-push] 全部通过"
