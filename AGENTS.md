@@ -23,7 +23,7 @@
 | 查模块依赖图 | `npm run dep:graph`（Mermaid 图） / `npm run dep:graph:list`（缩进列表） |
 | 查某模块「现在长啥样、去哪找」的现状快照 | `docs/knowledge/`（先读 `README.md` 索引定位卡片，grep 卡正文锁定符号，再按 `source_files` 跳源码；比直接 grep 全量 .ts 省上下文） |
 | 查/更新函数索引 | `docs/function-map.md`（由 `npm run gen:funcmap` 自动生成，改动后运行 `npm run check:funcmap` 校验） |
-| 校验文档漂移 | `npm run check:docs`（ADR 索引同步 + 架构树完整性 + 知识卡 source_files 有效性 + i18n + Go 错误 i18n） |
+| 校验文档漂移 | `npm run check:docs`（根目录运行，ADR 索引同步 + 架构树完整性 + 知识卡 source_files 有效性） |
 | 查项目技术 | `docs/architecture.md` |
 | 查函数大全 | `grep docs/function-map.md` |
 | 加 菜单 | `docs/menu-how-to.md` |
@@ -46,7 +46,7 @@
 3. 用 `grep docs/adr/` 查找相关决策、状态和历史坑点；ADR 是决策真相源。
 4. 以当前源码为最终事实来源，核对知识卡中的 API、依赖、不变量和资源生命周期。
 5. 修改后运行最小相关测试；若模块职责、公共 API、状态流、依赖或不变量变化，同步更新知识卡。
-6. 文档变更后运行 `npm run check:docs`；函数签名变化后运行 `npm run check:funcmap`。
+6. 文档变更后运行 `npm run check:docs`（根目录）；函数签名变化后运行 `npm run check:funcmap`。
 
 知识来源优先级：当前源码 > `docs/adr/` > `docs/knowledge/` > `docs/architecture.md` / `docs/function-map.md` > `docs/research/`。
 若知识卡与源码不一致，报告文档漂移并以源码为准，不得静默假定卡片正确。
