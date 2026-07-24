@@ -235,14 +235,6 @@ export function applyLightingPresetFromEnv(presetName: string | null): void {
         }
     }
 
-    // 无 tween 时立即恢复（所有灯走了类型切换 / 直接赋值路径）
-    if (pendingTweens <= 0) {
-        lightingState.skipLightAutoSave = false;
-        if (lightingState.triggerAutoSave) {
-            lightingState.triggerAutoSave();
-        }
-    }
-
     // [doc:adr-168] 预设联动个人灯：平滑过渡 intensity / color / angle
     if (preset.personalLight) {
         const plOverride = preset.personalLight as Partial<PersonalLightSettings>;
@@ -272,5 +264,11 @@ export function applyLightingPresetFromEnv(presetName: string | null): void {
                 setPersonalLightState(modelId, { angle: plOverride.angle });
             }
         }
+    }
+
+    // 所有舞台灯与个人灯 tween 均已注册后，再决定是否恢复自动保存。
+    if (pendingTweens <= 0) {
+        lightingState.skipLightAutoSave = false;
+        lightingState.triggerAutoSave?.();
     }
 }

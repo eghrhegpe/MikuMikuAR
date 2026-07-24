@@ -191,13 +191,16 @@ export async function setARMode(enabled: boolean): Promise<boolean> {
         }
         // AR 场景无背景平面：挂起全部反射（退出 AR 时恢复）
         setReflectionARSuspended(true);
-        // P2-fix: AR 模式下 SSAO/DOF/Bloom 与视频背景语义冲突且 GPU 负担重，挂起
-        const rs = getRenderState();
-        _prevPostProcess = {
-            ssao: rs.ssaoEnabled,
-            dof: rs.dofEnabled,
-            bloom: rs.bloomEnabled,
-        };
+        // P2-fix: AR 模式下 SSAO/DOF/Bloom 与视频背景语义冲突且 GPU 负担重，挂起。
+        // 防重入：重复 setARMode(true) 不能覆盖首次保存的用户状态。
+        if (_prevPostProcess === null) {
+            const rs = getRenderState();
+            _prevPostProcess = {
+                ssao: rs.ssaoEnabled,
+                dof: rs.dofEnabled,
+                bloom: rs.bloomEnabled,
+            };
+        }
         setRenderState({ ssaoEnabled: false, dofEnabled: false, bloomEnabled: false });
         return true;
     } else {

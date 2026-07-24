@@ -116,6 +116,19 @@ describe('getOrCreateCanvasTexture', () => {
         const t2 = getOrCreateCanvasTexture('key-b', { size: 32, draw, scene });
         expect(t1).not.toBe(t2);
     });
+
+    it('超过缓存上限时淘汰索引但不立即释放旧贴图', () => {
+        const draw = vi.fn();
+        const first = getOrCreateCanvasTexture('evict-0', { size: 16, draw, scene });
+        const disposeSpy = vi.spyOn(first, 'dispose');
+        for (let i = 1; i <= 32; i++) {
+            getOrCreateCanvasTexture(`evict-${i}`, { size: 16, draw, scene });
+        }
+        expect(disposeSpy).not.toHaveBeenCalled();
+        expect(getOrCreateCanvasTexture('evict-0', { size: 16, draw, scene })).not.toBe(first);
+        disposeTextureCache();
+        expect(disposeSpy).toHaveBeenCalledOnce();
+    });
 });
 
 describe('disposeTextureCache', () => {

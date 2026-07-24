@@ -110,6 +110,11 @@ const MAX_TEXTURE_CACHE_SIZE = 32;
  * getOrCreateCanvasTexture 命中已失效贴图、地面渲染退化为空白。
  */
 const _cacheOwned = new WeakSet<BaseTexture>();
+/**
+ * 已从 key 缓存淘汰但仍由缓存拥有的贴图。
+ * 淘汰时不立即 dispose，避免贴图仍挂在活动材质上；在环境整体销毁时统一释放。
+ */
+const _retiredTextures = new Set<BaseTexture>();
 
 /**
  * 按 key 获取或创建 canvas 贴图。key 不变则复用；调用方不应手动 dispose 缓存贴图
@@ -129,8 +134,8 @@ export function getOrCreateCanvasTexture(key: string, opts: CanvasTextureOptions
         if (oldestKey !== undefined) {
             const oldest = _texCache.get(oldestKey);
             if (oldest) {
-                oldest.dispose();
-                _cacheOwned.delete(oldest);
+                // 仅移出索引，不立即释放：旧贴图可能仍被活动材质引用。
+                _retiredTextures.add(oldest);
             }
             _texCache.delete(oldestKey);
         }
@@ -147,8 +152,14 @@ export function isCacheOwnedTexture(tex: BaseTexture | null | undefined): boolea
 export function disposeTextureCache(): void {
     for (const tex of _texCache.values()) {
         tex.dispose();
+        _cacheOwned.delete(tex);
+    }
+    for (const tex of _retiredTextures) {
+        tex.dispose();
+        _cacheOwned.delete(tex);
     }
     _texCache.clear();
+    _retiredTextures.clear();
 }
 
 /**

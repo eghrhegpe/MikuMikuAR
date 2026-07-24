@@ -20,5 +20,8 @@
     "build:linux": "bash scripts/build-linux.sh",
     "build:android": "powershell -ExecutionPolicy Bypass -File scripts/build-android.ps1 -Arch arm64",
     "build:android:release": "powershell -ExecutionPolicy Bypass -File scripts/build-android.ps1 -Arch arm64 -Production"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
   }
 }
