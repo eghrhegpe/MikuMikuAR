@@ -32,23 +32,10 @@ import {
     setEnvMenu,
 } from './env-menu-state';
 
-// ======== Barrel Re-Exports ========
-export { buildSkyLevel } from './env-sky-levels';
-export { buildWindLevel } from './env-wind-levels';
-export { buildExperimentalLevel } from './env-experimental-levels';
-export { buildFogLevel } from './env-fog-levels';
-export { buildShadowLevel } from './env-shadow-levels';
-export { buildCloudLevel } from './env-cloud-levels';
-export { buildPresetLevel, SCENE_PRESETS } from './env-preset-levels';
-
 // ======== Env Texture Binding Target ========
 // 已迁移到 env-menu-state.ts，此处保留 re-export 保持向后兼容
 export type { EnvTextureBindingTarget } from './env-menu-state';
-export {
-    setEnvTextureBindingTarget,
-    clearEnvTextureBindingTarget,
-    getEnvTextureBindingTarget,
-} from './env-menu-state';
+export { clearEnvTextureBindingTarget, getEnvTextureBindingTarget } from './env-menu-state';
 
 // ======== Env Menu State ========
 
@@ -81,11 +68,6 @@ const _libraryScannedDisp = addDisposableListener(
     'mmar:library-scanned',
     _onLibraryScanned
 );
-
-/** 清理环境菜单的全局事件监听（测试/HMR 时调用，配对 removeEventListener） */
-export function disposeEnvMenuListeners(): void {
-    _libraryScannedDisp.dispose();
-}
 
 /** 环境弹窗根级 items 构建器——动态反映 envState 各 toggle 状态。 */
 function buildEnvRootItems(): PopupRow[] {

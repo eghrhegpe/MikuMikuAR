@@ -88,6 +88,10 @@ export default [
         { max: 250, skipBlankLines: true, skipComments: true },
       ],
       complexity: ['warn', 20],
+      // 高价值防护规则
+      'no-alert': 'warn',                    // 阻止 alert/confirm/prompt，统一走 dialog 系统
+      'no-throw-literal': 'error',           // 强制 throw Error 对象，防止吞错
+      radix: 'warn',                         // parseInt 必须带 radix，防止进制解析 bug
       'no-restricted-imports': [
         'error',
         {

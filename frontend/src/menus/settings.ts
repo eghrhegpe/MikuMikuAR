@@ -10,15 +10,7 @@ import { PopupRow, PopupLevel } from '../core/config';
 import { SETTINGS, SOFTWARE_DETAIL_PREFIX, type SettingsFolderTarget } from './settings-targets';
 
 // ======== Re-exports for backward compatibility ========
-export { refreshLibrary } from './library';
-export {
-    preloadAutoImportState,
-    preloadDownloadWatchState,
-    setAutoLoadCompanionAudio,
-    generateTextColors,
-} from './settings-shared';
-// [doc:adr-dep-graph] isAutoLoadCompanionAudioEnabled 已迁移到 core/state.ts，不再 re-export
-export { isAutoLoadCompanionAudioEnabled } from '../core/state';
+export { preloadAutoImportState, preloadDownloadWatchState, generateTextColors } from './settings-shared';
 export { getSettingsMenu, refreshSettingsRoot, showSettings };
 
 // ======== Sub-module imports ========
