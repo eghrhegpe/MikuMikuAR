@@ -36,6 +36,20 @@
 | 翻译代码命名/图标/状态栏规范 | `docs/terminology.md` |
 | 写大语言模型小说 | `根目录/adr/` |
 | 完整发版、更新流程 | `docs/releases/release-process.md` |
+| MCP 扩展（Context7 / Serena） | 根目录 `.mcp.json` + 下方「MCP 扩展」小节 |
+
+## MCP 扩展（Context7 / Serena）
+
+项目级配置见根目录 `.mcp.json`（`mcpServers` 结构）。激活方式二选一：
+- **CodeBuddy**：侧栏对话面板右上 → CodeBuddy Settings → MCP 标签页 → Add MCP，把 `.mcp.json` 的内容粘贴进去；或在 Market 里一键装。
+- **自动发现**：若 IDE 支持项目级 `.mcp.json`，打开仓库即加载（安装成功后状态显示绿色）。
+
+| 服务 | 干嘛用 | 前置依赖 | 用法提示 |
+|------|--------|----------|----------|
+| `context7` | 拉取依赖最新文档（Babylon.js 9.x、babylon-mmd、Wails v3），给 AI 喂版本准确的 API 与示例 | Node + `npx` | 提问时点名库，如「用 context7 查 babylon-mmd 的 MmdWasmRuntime 用法」 |
+| `serena` | 符号级导航：查定义/引用、按符号跳转，精准定位 `frontend/` 下 365 个 .ts | Python + `uv`（`uvx`） | 先让 AI 用 Serena 在 `frontend/` 建索引，再做跨文件重构/审计 |
+
+注意：Serena 启动后默认不绑定项目，先在对话里让它「索引 `frontend/` 目录」再派活；Context7 免费额度够用，无需 API key。两者均无密钥，`.mcp.json` 可随仓库提交共享。
 
 ## 知识库检索协议
 

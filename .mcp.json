@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "serena": {
+      "command": "serena",
+      "args": [
+        "start-mcp-server",
+        "--transport",
+        "stdio",
+        "--context=ide",
+        "--project-from-cwd"
+      ],
+      "env": {
+        "SERENA_USAGE_REPORTING": "false"
+      },
+      "description": "Serena：符号级代码导航（定义/引用/符号查找），按当前项目工作目录启动"
+    }
+  }
+}
