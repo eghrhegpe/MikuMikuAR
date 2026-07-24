@@ -1,46 +1,7 @@
 #!/bin/sh
-# MikuMikuAR pre-push — 代码质量 + 文档漂移推送前校验
+# MikuMikuAR pre-push — 已精简，全部质量门禁移至 CI
+# CI 工作流: .github/workflows/ci.yml（push/PR 到 main 时触发）
 # 安装方式: git config core.hooksPath .githooks
 # 跳过一次: git push --no-verify（不推荐）
 
-set -e
-ROOT="$(git rev-parse --show-toplevel)"
-cd "$ROOT"
-
-echo "[pre-push] lint (0 errors 允许 warn)" >&2
-cd "$ROOT/frontend" && npm run lint >&2 || {
-  echo "" >&2
-  echo "❌ ESLint 检出 error。修复: npm run lint 查看详情" >&2
-  exit 1
-}
-
-echo "[pre-push] test (无回归门禁)" >&2
-cd "$ROOT/frontend" && npm run test >&2 || {
-  echo "" >&2
-  echo "❌ 测试未全部通过。修复: npm run test 查看详情" >&2
-  exit 1
-}
-
-echo "[pre-push] check:status (ADR 索引同步)" >&2
-cd "$ROOT" && node scripts/gen-status-index.mjs --reverse --check >&2 || {
-  echo "" >&2
-  echo "❌ status.md 与 ADR 源不同步。修复: npm run gen:status && git add docs/status.md" >&2
-  exit 1
-}
-
-echo "[pre-push] check:funcmap (函数索引同步)" >&2
-cd "$ROOT" && node scripts/gen-funcmap.mjs --check >&2 || {
-  echo "" >&2
-  echo "❌ function-map.md 与源码不同步。修复: npm run gen:funcmap && git add docs/function-map.md" >&2
-  exit 1
-}
-
-echo "[pre-push] check:docs (架构树/知识卡/ADR 三向漂移)" >&2
-cd "$ROOT" && node scripts/check-doc-drift.mjs >&2 || {
-  echo "" >&2
-  echo "❌ 检测到 ERROR 级文档漂移（架构树/知识卡 source_files/ADR 索引）。" >&2
-  echo "   查看上方 ERROR 明细，修复后用 'npm run check:docs' 复验（INFO/WARNING 不阻断）。" >&2
-  exit 1
-}
-
-echo "[pre-push] 全部通过" >&2
+echo "[pre-push] 质量检查已移至 CI，推送中..." >&2
