@@ -6,7 +6,8 @@ scope:
   - frontend/src/scene/manager/**
 source_files:
   - frontend/src/scene/manager/thumbnail-key.ts
-adr: []
+adr:
+  - ADR-119
 ---
 
 ## 系统概览

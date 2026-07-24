@@ -6,7 +6,8 @@ scope:
   - frontend/src/scene/motion/proc-motion-bridge.ts
 source_files:
   - frontend/src/scene/motion/proc-motion-bridge.ts
-adr: []
+adr:
+  - ADR-021
 symbols:
   - ProcMotionController
   - ProcMotionState

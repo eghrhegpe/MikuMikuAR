@@ -3,7 +3,7 @@
 
 import { cardContainer, propRegistry } from '../core/config';
 import type { PopupLevel } from '../core/config';
-import { addCollapsible } from '../core/ui-helpers';
+import { addCollapsible, addCardTitle } from '../core/ui-helpers';
 import { getSceneMenu } from './scene-menu-state';
 import {
     buildTransformCard,
@@ -32,10 +32,7 @@ export function buildPropDetailLevel(propId: string): PopupLevel {
 
             // —— 标题 + 变换 ——
             cardContainer(container, (c) => {
-                const title = document.createElement('div');
-                title.className = 'card-title';
-                title.textContent = p.name;
-                c.appendChild(title);
+                addCardTitle(c, p.name);
             });
             addCollapsible(container, {
                 title: t('model-detail.dragControl'),

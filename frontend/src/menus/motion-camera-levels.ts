@@ -5,6 +5,7 @@ import { setStatus, cardContainer, stackRegistry } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import {
     slideRow,
+    addCardTitle,
     addSliderRow,
     addToggleRow,
     addModeSlider,
@@ -267,10 +268,7 @@ function buildCameraSchema(): MenuNode[] {
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    const title = document.createElement('div');
-                    title.className = 'card-title';
-                    title.textContent = t('motion.cameraLens');
-                    inner.appendChild(title);
+                    addCardTitle(inner, t('motion.cameraLens'));
 
                     addSliderRow(
                         inner,

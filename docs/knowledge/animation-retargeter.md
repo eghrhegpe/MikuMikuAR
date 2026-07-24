@@ -6,7 +6,8 @@ scope:
   - frontend/src/scene/motion/animation-retargeter.ts
 source_files:
   - frontend/src/scene/motion/animation-retargeter.ts
-adr: []
+adr:
+  - ADR-108
 symbols:
   - BoneMapPreset
   - RetargetResult

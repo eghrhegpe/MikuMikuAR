@@ -6,7 +6,8 @@ scope:
   - frontend/src/scene/env/env-water.ts
 source_files:
   - frontend/src/scene/env/env-water.ts
-adr: []
+adr:
+  - ADR-062
 symbols:
   - initWater
   - disposeWater

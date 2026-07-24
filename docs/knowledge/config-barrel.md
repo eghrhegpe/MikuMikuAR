@@ -6,7 +6,8 @@ scope:
   - frontend/src/core/config.ts
 source_files:
   - frontend/src/core/config.ts
-adr: []
+adr:
+  - ADR-141
 symbols:
   - types
   - state

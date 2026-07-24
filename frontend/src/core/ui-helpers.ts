@@ -16,6 +16,7 @@ export {
     addInfoGrid,
     addInfoCard,
     addEmptyRow,
+    addCardTitle,
     addWatchDirRow,
     addActionRow,
     addDisabledRow,

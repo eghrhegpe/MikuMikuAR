@@ -6,7 +6,8 @@ scope:
   - frontend/src/scene/motion/lipsync-bridge.ts
 source_files:
   - frontend/src/scene/motion/lipsync-bridge.ts
-adr: []
+adr:
+  - ADR-021
 symbols:
   - initLipSync
   - setLipSyncEnabled

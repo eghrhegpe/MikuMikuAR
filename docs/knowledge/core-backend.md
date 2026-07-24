@@ -10,7 +10,8 @@ source_files:
   - frontend/src/core/backend/browser-adapter.ts
   - frontend/src/core/backend/go-adapter.ts
   - frontend/src/core/backend/idb.ts
-adr: []
+adr:
+  - ADR-176
 symbols:
   - BackendAdapter
   - IndexedDBStore

@@ -6,7 +6,8 @@ scope:
   - frontend/src/core/**
 source_files:
   - frontend/src/core/wind-utils.ts
-adr: []
+adr:
+  - ADR-028
 ---
 
 ## 系统概览

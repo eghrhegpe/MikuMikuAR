@@ -6,7 +6,8 @@ scope:
   - frontend/src/scene/motion/vmd-layers.ts
 source_files:
   - frontend/src/scene/motion/vmd-layers.ts
-adr: []
+adr:
+  - ADR-051
 symbols:
   - VmdLayer
   - addVmdLayer

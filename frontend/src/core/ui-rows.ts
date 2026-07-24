@@ -323,6 +323,15 @@ export function addEmptyRow(parent: HTMLElement, text: string): HTMLElement {
     return el;
 }
 
+/** 创建 card-title 标题行并追加到容器 */
+export function addCardTitle(container: HTMLElement, text: string): HTMLElement {
+    const title = document.createElement('div');
+    title.className = 'card-title';
+    title.textContent = text;
+    container.appendChild(title);
+    return title;
+}
+
 // ===================================================================
 // addDangerRow — 危险/删除操作行
 // ===================================================================

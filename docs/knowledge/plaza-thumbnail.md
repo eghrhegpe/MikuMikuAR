@@ -6,7 +6,8 @@ scope:
   - frontend/src/menus/**
 source_files:
   - frontend/src/menus/plaza-thumbnail.ts
-adr: []
+adr:
+  - ADR-087
 ---
 
 ## 系统概览

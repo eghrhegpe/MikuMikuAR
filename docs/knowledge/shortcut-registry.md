@@ -6,7 +6,8 @@ scope:
   - frontend/src/core/shortcut-registry.ts
 source_files:
   - frontend/src/core/shortcut-registry.ts
-adr: []
+adr:
+  - ADR-036
 symbols:
   - ShortcutRegistry
   - registerShortcut

@@ -6,7 +6,8 @@ scope:
   - frontend/src/scene/motion/vmd-loader.ts
 source_files:
   - frontend/src/scene/motion/vmd-loader.ts
-adr: []
+adr:
+  - ADR-051
 symbols:
   - loadVMDMotion
   - isValidVmd

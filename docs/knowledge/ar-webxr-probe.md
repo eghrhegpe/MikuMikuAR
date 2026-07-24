@@ -6,7 +6,8 @@ scope:
   - frontend/src/scene/ar/**
 source_files:
   - frontend/src/scene/ar/ar-webxr-probe.ts
-adr: []
+adr:
+  - ADR-072
 ---
 
 ## 系统概览

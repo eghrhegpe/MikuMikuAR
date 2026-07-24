@@ -19,6 +19,7 @@ import {
     addToggleRow,
     addSliderRow,
     addEmptyRow,
+    addCardTitle,
     addPresetChip,
     slideRow,
 } from '../core/ui-helpers';
@@ -72,11 +73,7 @@ function buildPoseStudioSchema(): MenuNode[] {
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    const title = document.createElement('div');
-                    title.className = 'card-title';
-                    title.textContent = t('motion.poseStudio.composition');
-                    inner.appendChild(title);
-
+                    addCardTitle(inner, t('motion.poseStudio.composition'));
                     const modes: Array<{
                         key: 'off' | 'ruleOfThirds' | 'goldenRatio' | 'diagonal';
                         label: string;
@@ -106,10 +103,7 @@ function buildPoseStudioSchema(): MenuNode[] {
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    const title = document.createElement('div');
-                    title.className = 'card-title';
-                    title.textContent = t('motion.poseStudio.posePreset');
-                    inner.appendChild(title);
+                    addCardTitle(inner, t('motion.poseStudio.posePreset'));
 
                     const btnGroup = document.createElement('div');
                     btnGroup.className = 'btn-group';
@@ -159,10 +153,7 @@ function buildPoseStudioSchema(): MenuNode[] {
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    const title = document.createElement('div');
-                    title.className = 'card-title';
-                    title.textContent = t('motion.poseStudio.depthOfField');
-                    inner.appendChild(title);
+                    addCardTitle(inner, t('motion.poseStudio.depthOfField'));
 
                     const hint = document.createElement('div');
                     hint.style.cssText =

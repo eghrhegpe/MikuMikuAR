@@ -6,7 +6,8 @@ scope:
   - frontend/src/scene/env/env-particles.ts
 source_files:
   - frontend/src/scene/env/env-particles.ts
-adr: []
+adr:
+  - ADR-026
 symbols:
   - initParticles
   - disposeParticles
