@@ -721,8 +721,8 @@ function renderWebXRProbeSection(container: HTMLElement): void {
             try {
                 _probeResult = await probeWebXR();
                 setStatus(_verdictText(_probeResult.verdict), _probeResult.verdict !== 'none');
-            } catch (e) {
-                setStatus(t('motion.webxrProbeError', { e: String(e) }), false);
+            } catch {
+                setStatus(t('motion.webxrProbeError'), false);
             }
             _probing = false;
             refreshCameraLevel();
@@ -739,8 +739,9 @@ function renderWebXRProbeSection(container: HTMLElement): void {
         try {
             _probeResult = await probeWebXRFeatures();
             setStatus(_verdictText(_probeResult.verdict), _probeResult.verdict !== 'none');
-        } catch (e) {
-            setStatus(t('motion.webxrDeepProbeError', { e: String(e) }), false);
+        } catch {
+            // [fix] 不在错误消息中暴露 String(e)，仅用固定 i18n key
+            setStatus(t('motion.webxrDeepProbeError'), false);
         }
         _probing = false;
         refreshCameraLevel();
