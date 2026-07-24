@@ -6,6 +6,7 @@ import {
     addToggleRow,
     addModeSlider,
     addPresetChip,
+    createHeaderToggle,
 } from '../core/ui-helpers';
 import { createTrailingBtn, createLeadingBtn } from '../core/ui-slide-row';
 import { subscribe } from '../core/reactivity';
