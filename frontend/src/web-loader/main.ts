@@ -9,6 +9,8 @@
 // ======== ADR-176 Web 入口短路标记 ========
 // 置于所有业务 import 之前：resolveBackend() 读到此标记直接选 browser-adapter，
 // 跳过 awaitWailsBridge 的 3s 桥接注入等待（纯 Web 下 window.wails 永不注入）。
+// __MMKU_BACKEND__ = 'browser' 为权威信号：即便本 bundle 被嵌进 Wails webview 也不走 Go。
+(globalThis as { __MMKU_WEB__?: boolean; __MMKU_BACKEND__?: string }).__MMKU_BACKEND__ = 'browser';
 (globalThis as { __MMKU_WEB__?: boolean }).__MMKU_WEB__ = true;
 
 // ======== Babylon.js 核心 ========

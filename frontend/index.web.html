@@ -17,7 +17,11 @@
     <title>MikuMikuAR</title>
     <link rel="icon" href="data:,">
     <script>
-        // [doc:adr-177] 必须在所有业务 import 之前设置，触发 resolveBackend() 走 browserAdapter 短路路径
+        // [doc:adr-177/176] 必须在所有业务 import 之前声明后端身份，并短路 awaitWailsBridge 等待：
+        // 1. __MMKU_BACKEND__ = 'browser' —— 权威信号：即便本 web bundle 被嵌进 Wails webview，
+        //    也强制走 browserAdapter（IndexedDB），消除「网页构建却参杂 Go 逻辑」的误判。
+        // 2. __MMKU_WEB__ = true —— 旧版短路标记，作为兜底与可读信号保留。
+        globalThis.__MMKU_BACKEND__ = 'browser';
         globalThis.__MMKU_WEB__ = true;
     </script>
 </head>

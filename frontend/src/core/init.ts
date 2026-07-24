@@ -21,7 +21,7 @@ import { initI18n } from './i18n/locale';
 import { GetConfig, CheckForUpdate, GetSystemA11ySettings } from './wails-bindings';
 import { events } from './runtime-bridge';
 import { isAndroidPlatform, isWebPlatform } from './platform';
-import { getCapabilities } from './backend';
+import { getCapabilities, resolveBackend } from './backend';
 import { generateTextColors } from '../menus/settings';
 import { SETTINGS_FONT_RESTORE } from '../menus/settings-shared';
 import { getOpenMenus } from '../menus/menu';
@@ -32,7 +32,7 @@ import {
     setSuppressAutoSave,
     cancelEnvPersistTimer,
 } from '../scene/scene';
-import { initRuntimeBadge } from './runtime-mode';
+import { initRuntimeBadge, setBackendBadge } from './runtime-mode';
 import { applyHudVisibility, disposeStatusBar } from './status-bar';
 import { hexToRgb, rgbToString } from './color-helpers';
 import { fireAndForget, swallowError } from './utils';
@@ -127,6 +127,12 @@ async function init(): Promise<void> {
         if (isWebPlatform()) {
             await getCapabilities();
         }
+        // [doc:adr-176] 后台解析后端并把实际选中的 kind（go/browser）写进运行时徽标，
+        // 不阻塞首屏渲染；消除「网页壳参杂 Go 逻辑」的歧义（9245 等 webview 场景一眼可辨）。
+        fireAndForget(async () => {
+            const b = await resolveBackend();
+            setBackendBadge(b.kind);
+        });
 
         // [doc:e2e] 按钮监听器在 initScene 之前注册，确保纯 Vite 模式下 overlay 可打开
         // 即使 WASM 加载失败或场景初始化异常，用户仍能点击导航按钮查看菜单
