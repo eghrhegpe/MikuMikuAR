@@ -453,7 +453,7 @@ export function updatePerceptionConflictBanner(el: HTMLElement, modelId: string 
         return;
     }
     el.style.display = '';
-    el.style.color = 'var(--warn, #e0a030)';
+    el.style.color = 'var(--warn)';
     el.style.whiteSpace = 'pre-line';
     el.textContent = `${t('motion.perceptionDegraded')} (${lines.length})\n` + lines.join('\n');
 }
@@ -498,7 +498,7 @@ export function buildGazeTrackingLevel(): PopupLevel {
         renderCustom: (container) => {
             return cardContainer(container, (c) => {
                 const banner = document.createElement('div');
-                banner.style.cssText = 'padding:2px 14px 8px;font-size:11px;line-height:1.5;';
+                banner.className = 'conflict-banner';
                 renderPerceptionConflictBanners(banner);
                 c.appendChild(banner);
                 return renderMenu(gazeSchema, c);

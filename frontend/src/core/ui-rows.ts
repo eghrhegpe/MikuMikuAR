@@ -636,6 +636,81 @@ export function addInlineToggleRow(
 }
 
 // ===================================================================
+// createHeaderToggle — 标题栏小型开关（toggle.header-toggle）
+// 复用点：menu.ts 弹窗标题 / ui-collapsible 折叠面板 / ui-slide-row 行 /
+//         model-material 材质行。统一双触发去重 + bind 自更新 + disabled
+// ===================================================================
+
+export interface HeaderToggleConfig {
+    value: boolean;
+    onChange: (v: boolean) => void;
+    /** 自更新：菜单重渲染时调用，返回值变化时同步 input.checked */
+    bind?: () => boolean;
+    /** 禁用态：input.disabled + toggle-disabled class，不响应 onChange */
+    disabled?: boolean;
+    /** 禁用态点击回调（如弹出提示） */
+    onDisabledClick?: () => void;
+    /** 禁用态提示文本（保留字段，由调用方自行消费） */
+    disabledHint?: string;
+}
+
+/**
+ * 创建标题栏小型开关。返回 `<label class="toggle header-toggle">`，
+ * 含双触发去重（跳过 target===input 的 synthetic click + preventDefault）。
+ * onChange 接收新状态；若需附加 DOM 副作用（如 row.classList.toggle），调用方自行处理。
+ */
+export function createHeaderToggle(config: HeaderToggleConfig): HTMLLabelElement {
+    const toggle = document.createElement('label');
+    toggle.className = 'toggle header-toggle';
+    if (config.disabled) {
+        toggle.classList.add('toggle-disabled');
+    }
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.checked = config.value;
+    input.disabled = !!config.disabled;
+    const slider = document.createElement('span');
+    slider.className = 'slider';
+    toggle.appendChild(input);
+    toggle.appendChild(slider);
+
+    if (!config.disabled) {
+        // 修复：<label> 包裹 checkbox 时浏览器原生二次派发 click 到 input，导致 handler 双触发。
+        // 跳过 synthetic click(target===input) 并 preventDefault 阻止原生切换造成的视觉错位。
+        toggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (e.target === input) {
+                return;
+            }
+            e.preventDefault();
+            input.checked = !input.checked;
+            config.onChange(input.checked);
+        });
+    } else if (config.onDisabledClick) {
+        toggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            config.onDisabledClick();
+        });
+    }
+
+    // bind 自更新：菜单重渲染时同步 input.checked
+    if (config.bind) {
+        let cached = config.value;
+        const update = (): void => {
+            const v = !!config.bind!();
+            if (v === cached) {
+                return;
+            }
+            cached = v;
+            input.checked = v;
+        };
+        getCurrentRenderingMenu()?.registerControl(update);
+    }
+
+    return toggle;
+}
+
+// ===================================================================
 // addBoneSelectRow — 骨骼下拉选择行（分组 + 搜索 + IK 标记）
 // 替代 addModeRow 在骨骼列表上的误用与各面板内联 select 重复（ADR-122 P3）
 // ===================================================================
@@ -737,21 +812,19 @@ export function addBoneSelectRow(
 
     if (label) {
         const lbl = document.createElement('div');
-        lbl.className = 'cs-label';
-        lbl.style.cssText = 'font-size:12px;color:var(--text);padding:2px 0;';
+        lbl.className = 'cs-label-sm';
         lbl.textContent = label;
         wrapper.appendChild(lbl);
     }
 
     const boneSearch = document.createElement('input');
     boneSearch.type = 'text';
+    boneSearch.className = 'full-input';
     boneSearch.placeholder = opts?.searchPlaceholder ?? t('motion.boneOverride.search');
-    boneSearch.style.cssText = 'width:100%;margin:6px 0;box-sizing:border-box;';
     wrapper.appendChild(boneSearch);
 
     const boneSelect = document.createElement('select');
     boneSelect.className = 'setting-select';
-    boneSelect.style.width = '100%';
 
     const groups = buildBoneGroups(boneNames);
     for (const [groupLabel, names] of groups) {

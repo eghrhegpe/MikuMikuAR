@@ -3,7 +3,7 @@
 
 export type { ControlOptions } from './ui-types';
 export { slideRow } from './ui-slide-row';
-export type { SlideRowExtra, HeaderToggleConfig } from './ui-slide-row';
+export type { SlideRowExtra } from './ui-slide-row';
 export {
     initControl,
     addToggleRow,
@@ -23,8 +23,9 @@ export {
     addBoneSelectRow,
     isIkBone,
     buildBoneGroups,
+    createHeaderToggle,
 } from './ui-rows';
-export type { BoneSelectOptions } from './ui-rows';
+export type { BoneSelectOptions, HeaderToggleConfig } from './ui-rows';
 export { addColorSliderRow, addModeSlider, addVector3SliderRow } from './ui-advanced-rows';
 export { addCollapsible, addSectionTitle, addPresetChip } from './ui-collapsible';
 export { buildPresetChipGroup, addClearRow } from './ui-preset';

@@ -211,9 +211,13 @@ export function _propagateChildrenWasm(
     }
 }
 
-export function _isWasmRuntime(bone: IMmdRuntimeBone): boolean {
+/** 判断骨骼是否运行在 WASM runtime（无 updateWorldMatrix 方法）。
+ *  公共工具：bone-override / perception / perception-gaze / wasm-layers-blender 共用。 */
+export function isWasmRuntime(bone: IMmdRuntimeBone): boolean {
     return !('updateWorldMatrix' in bone);
 }
+// 兼容别名：历史代码用 _isWasmRuntime（带下划线前缀），逐步迁移
+export const _isWasmRuntime = isWasmRuntime;
 
 // ── 感知层可调角度状态（[doc:adr-116] 感知层滑块功能） ──
 // 独立于 PerceptionState（避免 perception-gaze.ts 与 perception.ts 循环依赖）

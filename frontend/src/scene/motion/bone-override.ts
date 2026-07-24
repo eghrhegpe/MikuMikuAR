@@ -11,6 +11,7 @@ import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { safeDispose } from '@/core/dispose-helpers';
 import { getMotionPipeline } from './motion-pipeline';
 import { focusedModelId } from '@/core/state';
+import { isWasmRuntime } from './perception-shared';
 
 /** 持久化的单条骨骼覆盖配置 */
 export type BoneOverrideEntry = {
@@ -122,10 +123,7 @@ function _eulerToQuat(pitchDeg: number, yawDeg: number, rollDeg: number): Quater
 }
 
 // ── WASM 运行时辅助 ──
-
-function _isWasmRuntime(bone: IMmdRuntimeBone): boolean {
-    return !('updateWorldMatrix' in bone);
-}
+// isWasmRuntime 已迁移至 perception-shared.ts，被本文件 + 感知层共用
 
 /**
  * 递归传播子骨骼变换（WASM 模式）。
@@ -578,7 +576,7 @@ export function startBoneOverride(
         for (const b of bones) {
             boneMap.set(b.name, b);
         }
-        const isWasm = _isWasmRuntime(bones[0]);
+        const isWasm = isWasmRuntime(bones[0]);
 
         for (const [boneName, slot] of overrideMap) {
             if (!slot.enabled) {
