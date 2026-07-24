@@ -3,16 +3,9 @@
 
 import { createIconifyIcon } from './icons';
 import { getCurrentRenderingMenu } from '../menus/menu';
+import { createHeaderToggle, type HeaderToggleConfig } from './ui-rows';
 
-export interface HeaderToggleConfig {
-    value: boolean;
-    onChange: (v: boolean) => void;
-    disabled?: boolean;
-    disabledHint?: string;
-    onDisabledClick?: () => void;
-    /** 声明取值方式，updateControls() 时自动同步 toggle 状态 */
-    bind?: () => boolean;
-}
+export type { HeaderToggleConfig };
 
 export interface TrailingAction {
     /** 图标：含 ':' 视为 iconify 名（如 'lucide:settings-2'）渲染为 SVG；否则作为字面字符（如 '▶'）。 */
@@ -150,53 +143,14 @@ export function slideRow(
         }
 
         // Toggle
-        const toggle = document.createElement('label');
-        toggle.className = 'toggle header-toggle';
-        if (headerToggle.disabled) {
-            toggle.classList.add('toggle-disabled');
-        }
-        const input = document.createElement('input');
-        input.type = 'checkbox';
-        input.checked = headerToggle.value;
-        input.disabled = !!headerToggle.disabled;
-        const slider = document.createElement('span');
-        slider.className = 'slider';
-        toggle.appendChild(input);
-        toggle.appendChild(slider);
-
-        if (!headerToggle.disabled) {
-            // 修复：<label> 包裹 checkbox 时浏览器会原生二次派发 click 到 input，导致 handler 双触发。
-            // 跳过 synthetic click(target===input) 并 preventDefault 阻止原生切换造成的视觉错位。
-            toggle.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (e.target === input) {
-                    return;
-                }
-                e.preventDefault();
-                input.checked = !input.checked;
-                headerToggle.onChange(input.checked);
-            });
-        } else if (headerToggle.onDisabledClick) {
-            toggle.addEventListener('click', (e) => {
-                e.stopPropagation();
-                headerToggle.onDisabledClick!();
-            });
-        }
+        const toggle = createHeaderToggle({
+            value: headerToggle.value,
+            onChange: (v) => headerToggle.onChange(v),
+            bind: headerToggle.bind,
+            disabled: headerToggle.disabled,
+            onDisabledClick: headerToggle.onDisabledClick,
+        });
         row.appendChild(toggle);
-
-        // === headerToggle 自更新支持 ===
-        if (headerToggle.bind) {
-            let cachedValue = headerToggle.value;
-            const update = (): void => {
-                const newVal = !!headerToggle!.bind!();
-                if (newVal === cachedValue) {
-                    return;
-                }
-                cachedValue = newVal;
-                input.checked = newVal;
-            };
-            getCurrentRenderingMenu()?.registerControl(update);
-        }
 
         // Arrow
         if (hasArrow) {

@@ -21,7 +21,7 @@ import {
     applyUnlitFallback,
 } from '../scene/scene';
 import { createIconifyIcon } from '../core/icons';
-import { slideRow, addSliderRow, addCollapsible, addSectionTitle } from '../core/ui-helpers';
+import { slideRow, addSliderRow, addCollapsible, addSectionTitle, createHeaderToggle } from '../core/ui-helpers';
 import type { SlideMenu } from './menu';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
@@ -132,34 +132,19 @@ function buildMatToggle(
     initialEnabled: boolean,
     row: HTMLElement
 ): HTMLLabelElement {
-    const toggle = document.createElement('label');
-    toggle.className = 'toggle header-toggle';
-    toggle.style.marginLeft = 'auto';
-    const toggleInput = document.createElement('input');
-    toggleInput.type = 'checkbox';
-    toggleInput.checked = initialEnabled;
-    const slider = document.createElement('span');
-    slider.className = 'slider';
-    toggle.appendChild(toggleInput);
-    toggle.appendChild(slider);
-    // 修复：<label> 包裹 checkbox 时浏览器会「原生二次派发 click」到 input，
-    // 令本 handler 双触发；因读取的是实时数据状态，两次取值相反而互相抵消（点击无反应）。
-    // 方案：跳过 synthetic click(target===input)，并用 preventDefault 阻止原生切换造成的视觉错位。
-    toggle.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (e.target === toggleInput) {
-            return;
-        }
-        e.preventDefault();
-        const newState = !isMatEnabled(id, index);
-        setMatEnabled(id, index, newState);
-        toggleInput.checked = newState;
-        row.classList.toggle('mat-disabled', !newState);
-        setStatus(
-            newState ? t('model-material.shown', { name }) : t('model-material.hidden', { name }),
-            true
-        );
+    const toggle = createHeaderToggle({
+        value: initialEnabled,
+        onChange: (newState) => {
+            // 业务定制：读实时状态 + 同步 UI + setStatus 提示
+            setMatEnabled(id, index, newState);
+            row.classList.toggle('mat-disabled', !newState);
+            setStatus(
+                newState ? t('model-material.shown', { name }) : t('model-material.hidden', { name }),
+                true
+            );
+        },
     });
+    toggle.style.marginLeft = 'auto';
     return toggle;
 }
 

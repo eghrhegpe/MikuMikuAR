@@ -163,7 +163,7 @@ function renderSlider(node: MenuNode, container: HTMLElement): void {
             if (top) {
                 const warnIcon = createIconifyIcon('lucide:alert-triangle');
                 if (warnIcon) {
-                    warnIcon.style.color = 'var(--warn, #e0a030)';
+                    warnIcon.style.color = 'var(--warn)';
                     warnIcon.style.marginLeft = '4px';
                     warnIcon.style.flexShrink = '0';
                     warnIcon.title = t('motion.conflictHint', { module: node.conflictHint });

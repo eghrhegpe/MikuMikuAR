@@ -78,10 +78,9 @@ export function renderPresetCard(container: HTMLElement, modelId: string): void 
     cardContainer(container, (inner) => {
         // 标题
         const titleBar = document.createElement('div');
-        titleBar.style.cssText =
-            'display:flex;align-items:center;justify-content:space-between;padding:8px 14px 4px;';
+        titleBar.className = 'card-title-bar';
         const titleText = document.createElement('span');
-        titleText.style.cssText = 'font-size:12px;color:var(--text);font-weight:600;';
+        titleText.className = 'card-title-text';
         titleText.textContent = t('motion-preset.title');
         titleBar.appendChild(titleText);
 
@@ -175,7 +174,7 @@ export function renderPresetCard(container: HTMLElement, modelId: string): void 
                 if (delIcon) {
                     delBtn.appendChild(delIcon);
                 }
-                delBtn.style.cssText = 'font-size:11px;color:var(--danger,#e05050);';
+                delBtn.style.cssText = 'font-size:11px;color:var(--danger);';
                 delBtn.title = t('motion-preset.delete');
                 delBtn.addEventListener('click', async () => {
                     if (!inst?.motionPresets) {
@@ -217,10 +216,9 @@ export function renderOverrideCard(
     cardContainer(container, (inner) => {
         // [doc:adr-125 P2] 标题栏 + 撤销/重做按钮
         const titleBar = document.createElement('div');
-        titleBar.style.cssText =
-            'display:flex;align-items:center;justify-content:space-between;padding:8px 14px 4px;';
+        titleBar.className = 'card-title-bar';
         const titleText = document.createElement('span');
-        titleText.style.cssText = 'font-size:12px;color:var(--text);font-weight:600;';
+        titleText.className = 'card-title-text';
         titleText.textContent = t('motion.override.title');
         titleBar.appendChild(titleText);
 
@@ -420,7 +418,7 @@ export function renderOverrideCard(
         // [doc:adr-116 conflict-visibility] 骨骼冲突可视化 banner
         // 靠面板 reRender 刷新快照（模块开关 onChange 已触发 reRender）
         const conflictBanner = document.createElement('div');
-        conflictBanner.style.cssText = 'padding:2px 14px 8px;font-size:11px;line-height:1.5;';
+        conflictBanner.className = 'conflict-banner';
         updateConflictBanner(conflictBanner, modelId);
         inner.appendChild(conflictBanner);
 
@@ -475,7 +473,7 @@ function updateConflictBanner(el: HTMLElement, modelId: string | null): void {
         });
     });
     el.style.display = '';
-    el.style.color = 'var(--warn, #e0a030)';
+    el.style.color = 'var(--warn)';
     el.style.whiteSpace = 'pre-line';
     el.textContent = `${t('motion.boneConflictCount', { total })}\n` + lines.join('\n');
 }
@@ -573,8 +571,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
                     const title = document.createElement('div');
-                    title.style.cssText =
-                        'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
+                    title.className = 'card-title';
                     title.textContent = t('motion.boneOverride.addOverride');
                     inner.appendChild(title);
 
@@ -683,8 +680,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
                     const title = document.createElement('div');
-                    title.style.cssText =
-                        'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
+                    title.className = 'card-title';
                     title.textContent = t('motion.boneOverride.activeOverrides');
                     inner.appendChild(title);
 

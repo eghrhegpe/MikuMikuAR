@@ -33,8 +33,7 @@ export function buildPropDetailLevel(propId: string): PopupLevel {
             // —— 标题 + 变换 ——
             cardContainer(container, (c) => {
                 const title = document.createElement('div');
-                title.style.cssText =
-                    'font-size:12px;color:var(--text);padding:8px 14px 4px;font-weight:600;';
+                title.className = 'card-title';
                 title.textContent = p.name;
                 c.appendChild(title);
             });
