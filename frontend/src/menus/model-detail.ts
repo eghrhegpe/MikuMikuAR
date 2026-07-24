@@ -731,19 +731,7 @@ function buildModelInfoSchema(id: string): MenuNode[] {
     if (!inst) {
         return [] satisfies MenuNode[];
     }
-    // 主动确保 PMX 元数据（comment）已加载
     const metaKey = inst.libraryPath ?? inst.filePath;
-    if (metaKey && !modelMetaCache.has(metaKey)) {
-        GetModelMetaBatch([metaKey])
-            .then((batch) => {
-                if (batch?.[metaKey]) {
-                    const merged = new Map(modelMetaCache);
-                    merged.set(metaKey, batch[metaKey]);
-                    setModelMetaCache(merged);
-                }
-            })
-            .catch((err) => logWarn('model-detail', 'GetModelMetaBatch:', err));
-    }
     return [
         {
             id: 'model-info:root',
@@ -753,7 +741,31 @@ function buildModelInfoSchema(id: string): MenuNode[] {
                 // [fix:meta-key] zip 内模型 inst.filePath 为解压临时路径 ≠ 库 file_path，
                 // 而 modelMetaCache 以库绝对路径为 key（library-actions.ts 写入）。
                 // 改用 inst.libraryPath（库引用路径）优先，缺失时回退 filePath，对齐写侧 key。
-                const meta = modelMetaCache.get(inst.libraryPath ?? inst.filePath) ?? null;
+                const meta = metaKey ? (modelMetaCache.get(metaKey) ?? null) : null;
+                // 异步加载 comment（若缓存 miss）
+                if (metaKey && !modelMetaCache.has(metaKey)) {
+                    GetModelMetaBatch([metaKey])
+                        .then((batch) => {
+                            if (batch?.[metaKey]) {
+                                const merged = new Map(modelMetaCache);
+                                merged.set(metaKey, batch[metaKey]);
+                                setModelMetaCache(merged);
+                                // 数据回来后将 comment 注入已有的 comment card
+                                const commentText = batch[metaKey].comment || '';
+                                let el = container.querySelector('[data-comment-card]');
+                                if (el) {
+                                    const labelEl = el.querySelector('.info-card-label');
+                                    const valEl = el.querySelector('.info-card-value');
+                                    if (labelEl) labelEl.textContent = t('model-detail.fComment');
+                                    if (valEl) {
+                                        valEl.textContent = commentText || t('model-detail.fCommentEmpty');
+                                        (valEl as HTMLElement).style.whiteSpace = 'pre-wrap';
+                                    }
+                                }
+                            }
+                        })
+                        .catch((err) => logWarn('model-detail', 'GetModelMetaBatch:', err));
+                }
                 let vertCount = 0,
                     faceCount = 0;
                 for (const m of inst.meshes ?? []) {
@@ -770,7 +782,17 @@ function buildModelInfoSchema(id: string): MenuNode[] {
                     return n + (mm.materials?.length ?? (m.material ? 1 : 0));
                 }, 0);
                 const fileName = inst.filePath.split(/[/\\]/).pop() || inst.filePath;
-                const comment = meta?.comment ? meta.comment : '';
+                // comment 状态：undef=无缓存(加载中), ''=后端返回空, string=内容
+                const metaStatus = metaKey && !modelMetaCache.has(metaKey) ? 'loading' : (meta?.comment ? 'ok' : 'empty');
+                const comment = meta?.comment ?? '';
+                const commentLabel =
+                    metaStatus === 'loading'
+                        ? t('model-detail.fCommentLoading')
+                        : t('model-detail.fComment');
+                const commentValue =
+                    metaStatus === 'loading'
+                        ? t('model-detail.loading')
+                        : comment || t('model-detail.fCommentEmpty');
                 const fields: Array<{
                     label: string;
                     value: string;
@@ -809,19 +831,27 @@ function buildModelInfoSchema(id: string): MenuNode[] {
                                 ? morphCount.toLocaleString()
                                 : t('model-detail.na'),
                     },
-                    ...(comment
-                        ? [{ label: t('model-detail.fComment'), value: comment, wide: true }]
-                        : []),
+                    {
+                        label: commentLabel,
+                        value: commentValue,
+                        wide: true,
+                    },
                 ];
                 cardContainer(container, (c) => {
                     const grid = addInfoGrid(c);
                     for (const f of fields) {
-                        addInfoCard(
+                        const cardEl = addInfoCard(
                             grid,
                             f.label,
                             f.value,
                             f.wide ? { wide: true, sub: f.sub } : f.sub ? { sub: f.sub } : undefined
                         );
+                        // 为 comment 卡片标记 data-comment-card 供异步更新
+                        if (f.label === t('model-detail.fComment') || f.label === t('model-detail.fCommentLoading')) {
+                            cardEl.setAttribute('data-comment-card', '');
+                            const valEl = cardEl.querySelector('.info-card-value');
+                            if (valEl) (valEl as HTMLElement).style.whiteSpace = 'pre-wrap';
+                        }
                     }
                 });
             },

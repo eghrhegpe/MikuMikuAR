@@ -24,6 +24,7 @@ import {
 import type { ModelMotionSlots } from '@/core/types';
 import { getBaseName, swallowError, isUnderRoot } from '@/core/utils';
 import { logWarn } from '@/core/logger';
+import { parsePmxComment } from '@/core/pmx-meta';
 import {
     getActiveMotion,
     getSceneMotions,
@@ -470,6 +471,18 @@ export async function loadPMXFile(
                 rotation: [0, 0, 0],
                 boneOverrides: [],
             };
+            // 从 PMX 字节中提取 comment 写入 modelMetaCache
+            const metaComment = parsePmxComment(pmxBytes);
+            if (metaComment || libraryPath) {
+                const { setModelMetaCache, modelMetaCache } = await import('@/core/config');
+                const cacheKey = libraryPath || filePath;
+                if (!modelMetaCache.has(cacheKey) || metaComment) {
+                    const merged = new Map(modelMetaCache);
+                    const existing = merged.get(cacheKey);
+                    merged.set(cacheKey, { comment: metaComment || existing?.comment || '' });
+                    setModelMetaCache(merged);
+                }
+            }
             // 默认模型自动缩放：按统一目标高度归一化（仅 actor）
         if (uiState.autoScaleModel) {
             const bb = rootMesh.getHierarchyBoundingVectors(true);

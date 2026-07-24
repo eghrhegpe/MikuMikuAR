@@ -182,7 +182,10 @@ export const zhCN: Record<string, string> = {
     'model-detail.fBones': '骨骼数',
     'model-detail.fMorphs': '表情数',
 
-    'model-detail.fComment': '备注',
+    'model-detail.fComment': '使用规约（readme）',
+    'model-detail.fCommentLoading': '使用规约（readme）',
+    'model-detail.fCommentEmpty': '（空）',
+    'model-detail.loading': '加载中…',
     'model-detail.none': '无',
     'model-detail.tagsTitle': '模型标签',
     'model-detail.favHint': '收藏此模型到收藏夹',

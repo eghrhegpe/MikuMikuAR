@@ -262,7 +262,10 @@ export const ko: Record<string, string> = {
     'model-detail.fMorphs': '모프 수',
 
 
-    'model-detail.fComment': '비고',
+    'model-detail.fComment': '리드미（readme）',
+    'model-detail.fCommentLoading': '리드미（readme）',
+    'model-detail.fCommentEmpty': '(비어 있음)',
+    'model-detail.loading': '로딩 중…',
     'model-detail.none': '없음',
     'model-detail.tagsTitle': '모델 태그',
     'model-detail.favHint': '이 모델을 즐겨찾기에 추가',
