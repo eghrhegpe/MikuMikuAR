@@ -186,7 +186,10 @@ export const en: Record<string, string> = {
     'model-detail.fMorphs': 'Morphs',
 
 
-    'model-detail.fComment': 'Comment',
+    'model-detail.fComment': 'Readme（readme）',
+    'model-detail.fCommentLoading': 'Readme（readme）',
+    'model-detail.fCommentEmpty': '(empty)',
+    'model-detail.loading': 'Loading…',
     'model-detail.none': 'None',
     'model-detail.tagsTitle': 'Model Tags',
     'model-detail.favHint': 'Add this model to favorites',

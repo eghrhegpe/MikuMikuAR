@@ -33,8 +33,8 @@ func parsePMXHeaderUnsafe(path string) (*PMXMeta, error) {
 	}
 	defer f.Close()
 
-	// Read first 2048 bytes — more than enough for the header area
-	buf := make([]byte, 2048)
+	// Read first 8192 bytes — enough for the header area including long comments
+	buf := make([]byte, 8192)
 	n, err := f.Read(buf)
 	if err != nil {
 		return nil, WrapError(op, fmt.Errorf("read header: %w", err))
