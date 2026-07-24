@@ -298,8 +298,10 @@ export function stopTimeOfDay(): void {
         _unregisterTimeOfDay();
         _unregisterTimeOfDay = null;
     }
-    // 持久化当前 sunAngle 到后端（fire-and-forget：stopTimeOfDay 是 void 签名，
-    // 但内部 async 调用必须有 catch 防止 unhandled rejection）
+    // 持久化当前 sunAngle 到后端。cancel 防抖定时器避免 500ms 后重复写入同一份 envState
+    // （setEnvState 在上文已 schedule 了一次防抖 persistEnvState）。
+    // fire-and-forget：stopTimeOfDay 是 void 签名，但 async 调用必须有 catch 防 unhandled rejection。
+    _envPersistTimer.cancel();
     void persistEnvState({ ...envState }).catch((err) => {
         logWarn('stopTimeOfDay', 'persist failed', err);
         setStatus(t_i18n('env.persistFailed'), false);
@@ -422,8 +424,10 @@ function _presetAnimLoop(ctx: PresetAnimCtx, handle: ObserverHandle): void {
             _lastAutoLinkSunAngle = envSunAngle;
         }
         _timeOfDayBeforePreset = null;
-        // 预设动画完成 → 持久化（fire-and-forget：动画回调内不能 await，
-        // 但 async 调用必须有 catch 防止 unhandled rejection）
+        // 预设动画完成 → 持久化。cancel 防抖定时器避免动画最后一帧 setEnvState
+        // schedule 的防抖写入与此次立即写入重复（同一份 envState 写两次）。
+        // fire-and-forget：动画回调内不能 await，但 async 调用必须有 catch 防 unhandled rejection。
+        _envPersistTimer.cancel();
         void persistEnvState({ ...envState }).catch((err) => {
             logWarn('presetAnim', 'persist failed', err);
             setStatus(t_i18n('env.persistFailed'), false);
