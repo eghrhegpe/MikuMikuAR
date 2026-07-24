@@ -9,6 +9,7 @@ import { RenderingManager } from '@babylonjs/core/Rendering/renderingManager';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { safeDispose } from '@/core/dispose-helpers';
 import { Color4 } from '@babylonjs/core/Maths/math.color';
+import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import '@babylonjs/core/Physics/v2/physicsEngineComponent';
 import { PointerEventTypes } from '@babylonjs/core/Events/pointerEvents';
 import '@babylonjs/core/Particles/webgl2ParticleSystem';
@@ -254,38 +255,301 @@ if (!_isTestEnv) {
 export { focusedMmdModel, focusedModel } from './manager/model-ops';
 
 // ======== Init Scene ========
+
+/**
+ * 场景初始化入口。首次调用时创建 Scene/Engine/运行时；
+ * HMR 重入时先调用 _reinitSceneForHMR() 清理旧资源再重建。
+ */
 export async function initScene(): Promise<void> {
-    // 0. HMR 重入清理：释放上一轮 Scene/Engine 及其子资源，避免 WebGL context 泄漏（ADR-106 D3 / Phase 3）
-    //    disposeScene() 幂等处理；首次调用时 _sceneInitialized=false 跳过。
     if (_sceneInitialized) {
-        disposeScene();
-        _sceneDisposed = false; // 重置标志，允许本轮重建
-
-        // 重建 Engine + Scene（HMR 重入时旧实例已被 disposeScene() 释放）
-        engine = new Engine(dom.canvas, true, {
-            preserveDrawingBuffer: true,
-            stencil: true,
-            alpha: true,
-        });
-        // HMR 重建 engine 后需重新挂载 SDEF 改写（旧 engine 的 createEffect 改写随其 dispose 丢失）
-        // 测试态跳过（同模块顶层守卫）
-        if (!_isTestEnv) {
-            SdefInjector.OverrideEngineCreateEffect(engine);
-        }
-        scene = new Scene(engine);
-        scene.clearColor = new Color4(0.12, 0.12, 0.16, 1.0);
-        // 重新初始化相机系统（新 scene 实例，需重新绑定 canvas）
-        initCameraSystem(scene, dom.canvas);
-
-        // 0b. 额外子模块清理（disposeScene() 未覆盖的 observer / 定时器 / 订阅）
-        (await import('./motion/bone-override')).stopBoneOverride();
-        (await import('./motion/feet-adjustment')).stopFeetAdjustment();
-        (await import('./motion/footstep')).stopFootstep();
-        (await import('../core/audio-bus')).disposeAudioBus();
-        (await import('../core/reactivity')).unsubscribeAll();
-        (await import('./env/env-bridge')).cancelEnvPersistTimer();
-        (await import('./env/env')).stopTimeOfDay();
+        await _reinitSceneForHMR();
     }
+    const runtime = await _initMmdRuntime();
+    initLighting(scene, _envSys.shadow, triggerAutoSave);
+    initRenderer(scene, modelRegistry, triggerAutoSave);
+    initEnvFacade(scene, pipeline);
+    const beat = createProcBeatDetector();
+    attachBeatDetector(beat);
+    _bindSceneEvents(scene);
+    await _injectRuntimeCallbacks(runtime, scene);
+    _initModelManager(scene, runtime, triggerAutoSave, autoFrame);
+    _injectModelCallbacks(modelManager, runtime);
+    // Loader（必须在 modelManager + setTriggerAutoSave 之后）
+    const outfitMod = await import('../outfit/outfit');
+    const presetMod = await import('../menus/model-preset');
+    initLoader(
+        scene,
+        runtime,
+        modelManager,
+        refreshWaterRenderList,
+        presetMod.tryAutoApplyPreset,
+        (id: string) => outfitMod.loadOutfits(id).then(() => {}),
+        rebuildOutlineState
+    );
+    _disposePlaybackObservables = initPlaybackObservables(
+        runtime,
+        modelManager,
+        updatePlaybackUI,
+        updateProcMotion,
+        getProcBeatDetector
+    );
+    await _initMotionSubsystems(scene, modelManager);
+    applyEnvState(envState);
+    _updateSunDisc();
+    registerRenderBridge({ engine, setLightState, setRenderState, getLightState, getRenderState });
+    _sceneInitialized = true;
+    setTriggerAutoSave(triggerAutoSaveImpl);
+}
+
+/** HMR 重入时清理上一轮 Scene/Engine 及子模块资源。 */
+async function _reinitSceneForHMR(): Promise<void> {
+    disposeScene();
+    _sceneDisposed = false;
+
+    engine = new Engine(dom.canvas, true, {
+        preserveDrawingBuffer: true,
+        stencil: true,
+        alpha: true,
+    });
+    if (!_isTestEnv) {
+        SdefInjector.OverrideEngineCreateEffect(engine);
+    }
+    scene = new Scene(engine);
+    scene.clearColor = new Color4(0.12, 0.12, 0.16, 1.0);
+    initCameraSystem(scene, dom.canvas);
+
+    (await import('./motion/bone-override')).stopBoneOverride();
+    (await import('./motion/feet-adjustment')).stopFeetAdjustment();
+    (await import('./motion/footstep')).stopFootstep();
+    (await import('../core/audio-bus')).disposeAudioBus();
+    (await import('../core/reactivity')).unsubscribeAll();
+    (await import('./env/env-bridge')).cancelEnvPersistTimer();
+    (await import('./env/env')).stopTimeOfDay();
+}
+
+/** 绑定场景级指针事件（水面涟漪 / 拖拽模式）。 */
+function _bindSceneEvents(scene: Scene): void {
+    // 点击水面 → 生成涟漪
+    scene.onPointerObservable.add((info) => {
+        if (info.type !== PointerEventTypes.POINTERDOWN) {
+            return;
+        }
+        if (!envState.waterEnabled) {
+            return;
+        }
+        if (info.pickInfo.hit) {
+            return;
+        }
+        const ray = info.pickInfo.ray;
+        if (!ray || ray.direction.y >= 0) {
+            return;
+        }
+        const waterY = envState.waterLevel;
+        const camY = scene.activeCamera.globalPosition.y;
+        if (camY === undefined || camY <= waterY) {
+            return;
+        }
+        const t = (waterY - ray.origin.y) / ray.direction.y;
+        if (t <= 0) {
+            return;
+        }
+        const hit = ray.origin.add(ray.direction.scale(t));
+        const half = envState.waterSize / 2;
+        if (Math.abs(hit.x) > half || Math.abs(hit.z) > half) {
+            return;
+        }
+        addRipple(hit, 5, 0.6, 2, 2.5);
+    }, PointerEventTypes.POINTERDOWN);
+
+    // [doc:adr-171] 场景级拖拽模式：点击物体 → 附加 Gizmo
+    let _dragModePointerDownX = 0;
+    let _dragModePointerDownY = 0;
+    scene.onPointerObservable.add((info) => {
+        if (!isDragModeEnabled()) {
+            return;
+        }
+        if (info.type === PointerEventTypes.POINTERDOWN) {
+            _dragModePointerDownX = info.event.clientX;
+            _dragModePointerDownY = info.event.clientY;
+            return;
+        }
+        if (info.type !== PointerEventTypes.POINTERUP) {
+            return;
+        }
+        if (isGizmoDragging()) {
+            return;
+        }
+        const dx = info.event.clientX - _dragModePointerDownX;
+        const dy = info.event.clientY - _dragModePointerDownY;
+        if (dx * dx + dy * dy > 25) {
+            return;
+        }
+        tryAttachGizmoFromPick(scene, scene.pointerX, scene.pointerY);
+    }, PointerEventTypes.POINTERDOWN | PointerEventTypes.POINTERUP);
+}
+
+/** 注入运行时回调（音画同步 / 场景引用 / 播放速度 / 动作广播）。 */
+async function _injectRuntimeCallbacks(runtime: IMmdRuntime, scene: Scene): Promise<void> {
+    // 将 StreamAudioPlayer 接入 MMD Runtime，实现原生音画同步
+    // （play/pause/seek 由 Runtime 自动管理，无需手动 syncAudioPlayback）
+    swallowError(
+        Promise.resolve(getStreamPlayer()).then((player) => {
+            if (player) {
+                runtime.setAudioPlayer(player);
+            }
+        })
+    );
+    // [adr-104] 注入 scene 引用到 outfit（破除循环依赖，替代动态 import）。
+    // 动态 import + swallowError 彻底规避 scene↔outfit 静态环，与既有模式一致。
+    swallowError(import('../outfit/outfit').then((m) => m.setSceneRef(scene)));
+    // 同步用户记忆的播放速度到新 runtime，防状态漂移
+    swallowError(
+        import('../menus/motion-popup').then(({ syncPlaybackSpeedToRuntime }) =>
+            syncPlaybackSpeedToRuntime(runtime)
+        )
+    );
+    // [doc:adr-121] 初始化场景级动作意图广播（显式调用，避免模块顶层副作用）
+    swallowError(
+        import('../menus/motion-popup').then(({ initMotionBroadcast }) => initMotionBroadcast())
+    );
+}
+
+/** 创建 ModelManager 并设置模型移除回调。 */
+function _initModelManager(
+    scene: Scene,
+    runtime: IMmdRuntime,
+    triggerAutoSave: () => void,
+    autoFrame: (center: Vector3, extent: number) => void
+): void {
+    modelManager = new ModelManager(scene, triggerAutoSave, autoFrame);
+    modelManager.onRemoveModel = (id) => {
+        // 程序化动作清理（视线追踪 observer 拆除）必须早于 destroyMmdModel
+        // 否则下一帧 observer 同时读到 _procVmdActive=true + mmdModel 已销毁 → skeleton null → TypeError
+        // 见 proc-motion-bridge.ts onModelRemoved
+        onModelRemoved(id);
+
+        // [doc:adr-168] 释放角色专属个人灯
+        detachPersonalLight(id);
+
+        // 同步销毁 MMD 模型：必须在网格释放 / modelRegistry.delete 之前执行
+        // （见 model-manager.ts remove() 的调用顺序），且必须早于下方三个 fire-and-forget 清理。
+        // 下方动态 import 仅「调度」Promise，其 .then 体在微任务中于本同步块结束后、即 destroyMmdModel 之后才运行。
+        const inst = modelRegistry.get(id);
+        if (inst?.mmdModel && mmdRuntime) {
+            try {
+                mmdRuntime.destroyMmdModel(inst.mmdModel);
+            } catch (e) {
+                logWarn('scene', 'removeModel: destroyMmdModel failed', e);
+            }
+        }
+
+        // 三个清理均为 fire-and-forget：在 destroyMmdModel 之后（微任务）才真正执行。
+        // 显式契约：它们只操作各自独立的 registry（_blenderStates / propRegistry / controllers），
+        // 绝不访问已销毁的 mmdModel 或 modelRegistry.get(id)。
+        // 若未来修改任一实现、新增对模型的访问，必须先加 modelRegistry.get(id) 守卫。
+        // WASM 图层混合器 teardown（observer + evaluator 清理）
+        swallowError(
+            import('./motion/wasm-layers-blender').then(({ teardownWasmLayersBlender }) => {
+                if (scene.isDisposed) {
+                    return;
+                }
+                teardownWasmLayersBlender(id);
+            })
+        );
+
+        // 解除此模型上的所有骨骼锚定道具
+        swallowError(
+            import('./env/accessory').then(({ detachModelAccessories }) => {
+                if (scene.isDisposed) {
+                    return;
+                }
+                detachModelAccessories(id);
+            })
+        );
+
+        // ADR-084 P3b: 模型卸载时释放该模型的虚拟裙骨控制器，避免 dispose 泄漏。
+        // 经动态 import（motion-cloth-levels 内部仍以 await import 加载 virtual-skirt），
+        // 不破坏 ADR-081/084 的 virtual-skirt 非 eager 导入约束。
+        swallowError(
+            import('../menus/motion-cloth-levels').then(({ disposeVirtualSkirtForModel }) => {
+                if (scene.isDisposed) {
+                    return;
+                }
+                disposeVirtualSkirtForModel(id);
+            })
+        );
+    };
+    setModelRegistry(modelManager.modelRegistry);
+    setTriggerAutoSave(triggerAutoSave);
+}
+
+/** 注入模型生命周期回调（聚焦 / 加载完成）。 */
+function _injectModelCallbacks(modelManager: ModelManager, runtime: IMmdRuntime): void {
+    // 5. 注入回调解耦：model-loader / model-manager 不再直接动态导入 renderer / proc-motion-bridge
+    setOnMeshesReady((meshes) => onModelMeshesReady(meshes));
+    const procMotionMod = import('./motion/proc-motion-bridge');
+    const activatePerception = import('./motion/perception').then((m) => m.activatePerception);
+    modelManager.onModelFocused = () => {
+        procMotionMod.then((m) => m.activateGazeTracking());
+    };
+    setOnModelLoaded((id) => {
+        procMotionMod.then((m) => m.activateGazeTracking());
+        // [doc:adr-164] 新模型加载时自动激活感知层（全员感知模式下激活所有模型）
+        activatePerception.then((fn) => fn(id));
+        // [doc:adr-168] 角色模型自动获得专属个人灯
+        const inst = modelRegistry.get(id);
+        if (inst?.kind === 'actor') {
+            attachPersonalLight(id);
+        }
+    });
+}
+
+/** 启动运动子系统（脚部跟随 / 脚步声 / 骨骼覆盖 / 程序化动作）。 */
+async function _initMotionSubsystems(scene: Scene, modelManager: ModelManager): Promise<void> {
+    // 7. 脚部调整系统启动（ADR-085）
+    // 注册为 Pipeline bone-override 层（order=5），在帧钩子（RIDING=10）之前执行
+    const { startFeetAdjustment } = await import('./motion/feet-adjustment');
+    startFeetAdjustment(
+        (): { id: string; feet: FeetState; runtimeBones: readonly IMmdRuntimeBone[] }[] => {
+            const out: { id: string; feet: FeetState; runtimeBones: readonly IMmdRuntimeBone[] }[] =
+                [];
+            for (const inst of modelRegistry.values()) {
+                const bones = inst.mmdModel?.runtimeBones;
+                if (bones && bones.length > 0) {
+                    // [doc:adr-085/129] 脚部状态从动作覆盖模块读取（随动作走），
+                    // 不再依赖 inst.feet（per-model）作为引擎输入
+                    out.push({ id: inst.id, feet: getFeetStateForModel(inst.id), runtimeBones: bones });
+                }
+            }
+            return out;
+        }
+    );
+
+    // 7.5 脚步声系统启动（ADR-088）：消费 feet-adjustment 落地事件发声
+    // 必须在 startFeetAdjustment 之后注册（落地事件由脚部跟随产生）
+    const { startFootstep } = await import('./motion/footstep');
+    startFootstep(scene);
+
+    // 8. Bone Override 系统启动
+    // 注册 onBeforeRenderObservable 回调，在动画应用后逐骨骼覆盖
+    const { startBoneOverride } = await import('./motion/bone-override');
+    startBoneOverride(() => {
+        const id = focusedModelId;
+        if (!id) {
+            return [];
+        }
+        const inst = modelRegistry.get(id);
+        return inst?.mmdModel?.runtimeBones ?? [];
+    }, scene);
+
+    // [doc:adr-116] 9. Motion Override Modules 注册（主初始化路径）
+    // 必须在 focusModel 可能被调用之前完成；registry 内 setTargetModel/createModule 也有幂等兜底
+    const { initMotionModules } = await import('./motion/motion-modules/registry');
+    initMotionModules();
+}
+
+/** 初始化 MMD 运行时（WASM 主路径 / JS 调试路径）。 */
+async function _initMmdRuntime(): Promise<IMmdRuntime> {
 
     // 1. MMD 运行时初始化
     RegisterMmdModelLoaders();
@@ -351,258 +615,7 @@ export async function initScene(): Promise<void> {
     dom.loadingText.textContent = t('boot.initScene');
     // [adr:ground] 运行时就绪后还原持久化/默认的地面碰撞状态
     applyGroundCollision();
-    // 将 StreamAudioPlayer 接入 MMD Runtime，实现原生音画同步
-    // （play/pause/seek 由 Runtime 自动管理，无需手动 syncAudioPlayback）
-    swallowError(
-        Promise.resolve(getStreamPlayer()).then((player) => {
-            if (player) {
-                runtime.setAudioPlayer(player);
-            }
-        })
-    );
-    // [adr-104] 注入 scene 引用到 outfit（破除循环依赖，替代动态 import）。
-    // 动态 import + swallowError 彻底规避 scene↔outfit 静态环，与既有模式一致。
-    swallowError(import('../outfit/outfit').then((m) => m.setSceneRef(scene)));
-    // 同步用户记忆的播放速度到新 runtime，防状态漂移
-    swallowError(
-        import('../menus/motion-popup').then(({ syncPlaybackSpeedToRuntime }) =>
-            syncPlaybackSpeedToRuntime(runtime)
-        )
-    );
-    // [doc:adr-121] 初始化场景级动作意图广播（显式调用，避免模块顶层副作用）
-    swallowError(
-        import('../menus/motion-popup').then(({ initMotionBroadcast }) => initMotionBroadcast())
-    );
-
-    // 2. 各子系统初始化（相机系统已在模块顶层初始化）
-    initLighting(scene, _envSys.shadow, triggerAutoSave);
-    initRenderer(scene, modelRegistry, triggerAutoSave);
-    initEnvFacade(scene, pipeline);
-
-    // 3. Beat Detector
-    const beat = createProcBeatDetector();
-    attachBeatDetector(beat);
-
-    // 4. ModelManager（必须在 initLoader 之前初始化）
-    //    注意：setTriggerAutoSave 必须在此之后立即调用，
-    //    确保所有子系统（loader / lighting / renderer）触发保存时函数已实现。
-    modelManager = new ModelManager(scene, triggerAutoSave, autoFrame);
-    modelManager.onRemoveModel = (id) => {
-        // 程序化动作清理（视线追踪 observer 拆除）必须早于 destroyMmdModel
-        // 否则下一帧 observer 同时读到 _procVmdActive=true + mmdModel 已销毁 → skeleton null → TypeError
-        // 见 proc-motion-bridge.ts onModelRemoved
-        onModelRemoved(id);
-
-        // [doc:adr-168] 释放角色专属个人灯
-        detachPersonalLight(id);
-
-        // 同步销毁 MMD 模型：必须在网格释放 / modelRegistry.delete 之前执行
-        // （见 model-manager.ts remove() 的调用顺序），且必须早于下方三个 fire-and-forget 清理。
-        // 下方动态 import 仅「调度」Promise，其 .then 体在微任务中于本同步块结束后、即 destroyMmdModel 之后才运行。
-        const inst = modelRegistry.get(id);
-        if (inst?.mmdModel && mmdRuntime) {
-            try {
-                mmdRuntime.destroyMmdModel(inst.mmdModel);
-            } catch (e) {
-                logWarn('scene', 'removeModel: destroyMmdModel failed', e);
-            }
-        }
-
-        // 三个清理均为 fire-and-forget：在 destroyMmdModel 之后（微任务）才真正执行。
-        // 显式契约：它们只操作各自独立的 registry（_blenderStates / propRegistry / controllers），
-        // 绝不访问已销毁的 mmdModel 或 modelRegistry.get(id)。
-        // 若未来修改任一实现、新增对模型的访问，必须先加 modelRegistry.get(id) 守卫。
-        // WASM 图层混合器 teardown（observer + evaluator 清理）
-        swallowError(
-            import('./motion/wasm-layers-blender').then(({ teardownWasmLayersBlender }) => {
-                if (scene.isDisposed) {
-                    return;
-                }
-                teardownWasmLayersBlender(id);
-            })
-        );
-
-        // 解除此模型上的所有骨骼锚定道具
-        swallowError(
-            import('./env/accessory').then(({ detachModelAccessories }) => {
-                if (scene.isDisposed) {
-                    return;
-                }
-                detachModelAccessories(id);
-            })
-        );
-
-        // ADR-084 P3b: 模型卸载时释放该模型的虚拟裙骨控制器，避免 dispose 泄漏。
-        // 经动态 import（motion-cloth-levels 内部仍以 await import 加载 virtual-skirt），
-        // 不破坏 ADR-081/084 的 virtual-skirt 非 eager 导入约束。
-        swallowError(
-            import('../menus/motion-cloth-levels').then(({ disposeVirtualSkirtForModel }) => {
-                if (scene.isDisposed) {
-                    return;
-                }
-                disposeVirtualSkirtForModel(id);
-            })
-        );
-    };
-    setModelRegistry(modelManager.modelRegistry);
-    setTriggerAutoSave(triggerAutoSaveImpl);
-
-    // 5. 注入回调解耦：model-loader / model-manager 不再直接动态导入 renderer / proc-motion-bridge
-    setOnMeshesReady((meshes) => onModelMeshesReady(meshes));
-    const procMotionMod = await import('./motion/proc-motion-bridge');
-    const { activatePerception } = await import('./motion/perception');
-    modelManager.onModelFocused = () => procMotionMod.activateGazeTracking();
-    setOnModelLoaded((id) => {
-        procMotionMod.activateGazeTracking();
-        // [doc:adr-164] 新模型加载时自动激活感知层（全员感知模式下激活所有模型）
-        activatePerception(id);
-        // [doc:adr-168] 角色模型自动获得专属个人灯
-        const inst = modelRegistry.get(id);
-        if (inst?.kind === 'actor') {
-            attachPersonalLight(id);
-        }
-    });
-
-    // 6. Loader（必须在 modelManager + setTriggerAutoSave 之后）
-    // 破除循环依赖：scene.ts 不再静态 import outfit / model-preset，
-    // 改在 initScene(async) 内动态 import（同 scene.ts:187，adr-053/adr-064）。
-    const outfitMod = await import('../outfit/outfit');
-    const presetMod = await import('../menus/model-preset');
-    initLoader(
-        scene,
-        runtime,
-        modelManager,
-        refreshWaterRenderList,
-        presetMod.tryAutoApplyPreset,
-        (id: string) => outfitMod.loadOutfits(id).then(() => {}),
-        rebuildOutlineState
-    );
-    _disposePlaybackObservables = initPlaybackObservables(
-        runtime,
-        modelManager,
-        updatePlaybackUI,
-        updateProcMotion,
-        getProcBeatDetector
-    );
-
-    // 6. 应用初始环境状态
-    applyEnvState(envState);
-    _updateSunDisc();
-
-    // 无 VMD 时也能驱动程序化动作和口型同步 — 已由 onAnimationTickObservable 驱动（playback.ts），
-    // 此处不再重复注册，避免每帧两次 updateProcMotion 导致竞态（startProcMotion 反复重载）。
-    // scene.onBeforeRenderObservable.add(() => {
-    //     swallowError(updateProcMotion());
-    // });
-
-    // 点击水面 → 生成涟漪
-    scene.onPointerObservable.add((info) => {
-        if (info.type !== PointerEventTypes.POINTERDOWN) {
-            return;
-        }
-        if (!envState.waterEnabled) {
-            return;
-        }
-        if (info.pickInfo.hit) {
-            return;
-        }
-        const ray = info.pickInfo.ray;
-        if (!ray || ray.direction.y >= 0) {
-            return;
-        }
-        const waterY = envState.waterLevel;
-        const camY = scene.activeCamera.globalPosition.y;
-        if (camY === undefined || camY <= waterY) {
-            return;
-        }
-        const t = (waterY - ray.origin.y) / ray.direction.y;
-        if (t <= 0) {
-            return;
-        }
-        const hit = ray.origin.add(ray.direction.scale(t));
-        const half = envState.waterSize / 2;
-        if (Math.abs(hit.x) > half || Math.abs(hit.z) > half) {
-            return;
-        }
-        addRipple(hit, 5, 0.6, 2, 2.5);
-    }, PointerEventTypes.POINTERDOWN);
-
-    // [doc:adr-171] 场景级拖拽模式：点击物体 → 附加 Gizmo
-    let _dragModePointerDownX = 0;
-    let _dragModePointerDownY = 0;
-    scene.onPointerObservable.add((info) => {
-        if (!isDragModeEnabled()) {
-            return;
-        }
-        if (info.type === PointerEventTypes.POINTERDOWN) {
-            _dragModePointerDownX = info.event.clientX;
-            _dragModePointerDownY = info.event.clientY;
-            return;
-        }
-        if (info.type !== PointerEventTypes.POINTERUP) {
-            return;
-        }
-        if (isGizmoDragging()) {
-            return;
-        }
-        const dx = info.event.clientX - _dragModePointerDownX;
-        const dy = info.event.clientY - _dragModePointerDownY;
-        if (dx * dx + dy * dy > 25) {
-            return;
-        }
-        tryAttachGizmoFromPick(scene, scene.pointerX, scene.pointerY);
-    }, PointerEventTypes.POINTERDOWN | PointerEventTypes.POINTERUP);
-
-    // 7. 脚部调整系统启动（ADR-085）
-    // 注册为 Pipeline bone-override 层（order=5），在帧钩子（RIDING=10）之前执行
-    const { startFeetAdjustment } = await import('./motion/feet-adjustment');
-    startFeetAdjustment(
-        (): { id: string; feet: FeetState; runtimeBones: readonly IMmdRuntimeBone[] }[] => {
-            const out: { id: string; feet: FeetState; runtimeBones: readonly IMmdRuntimeBone[] }[] =
-                [];
-            for (const inst of modelRegistry.values()) {
-                const bones = inst.mmdModel?.runtimeBones;
-                if (bones && bones.length > 0) {
-                    // [doc:adr-085/129] 脚部状态从动作覆盖模块读取（随动作走），
-                    // 不再依赖 inst.feet（per-model）作为引擎输入
-                    out.push({ id: inst.id, feet: getFeetStateForModel(inst.id), runtimeBones: bones });
-                }
-            }
-            return out;
-        }
-    );
-
-    // 7.5 脚步声系统启动（ADR-088）：消费 feet-adjustment 落地事件发声
-    // 必须在 startFeetAdjustment 之后注册（落地事件由脚部跟随产生）
-    const { startFootstep } = await import('./motion/footstep');
-    startFootstep(scene);
-
-    // 8. Bone Override 系统启动
-    // 注册 onBeforeRenderObservable 回调，在动画应用后逐骨骼覆盖
-    const { startBoneOverride } = await import('./motion/bone-override');
-    startBoneOverride(() => {
-        const id = focusedModelId;
-        if (!id) {
-            return [];
-        }
-        const inst = modelRegistry.get(id);
-        return inst?.mmdModel?.runtimeBones ?? [];
-    }, scene);
-
-    // [doc:adr-116] 9. Motion Override Modules 注册（主初始化路径）
-    // 必须在 focusModel 可能被调用之前完成；registry 内 setTargetModel/createModule 也有幂等兜底
-    const { initMotionModules } = await import('./motion/motion-modules/registry');
-    initMotionModules();
-
-    // [ADR-159 P3-A] 注入渲染桥接：单向依赖 scene → performance，
-    // 消除 performance.ts 对 scene.ts 的静态 import（测试可独立 mock bridge）。
-    // 须在首帧 updatePerformance() 前注册；HMR 重入时 engine 已重建，此处重新注入最新引用。
-    registerRenderBridge({ engine, setLightState, setRenderState, getLightState, getRenderState });
-
-    // 标记首次初始化完成，HMR 重入时触发 disposeScene() + 重建路径
-    _sceneInitialized = true;
-
-    setTriggerAutoSave(triggerAutoSaveImpl);
+    return runtime;
 }
 
 // ======== 快捷 getter ========

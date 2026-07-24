@@ -78,19 +78,12 @@ function rewriteRefsForBundle(scene: SceneFile, _libraryRoot: string): SceneFile
         filePath: string | undefined | null,
         libraryRef: string | undefined
     ): string | undefined {
-        if (!filePath && !libraryRef) {
+        const resolved = resolvePathFromRef(filePath ?? '', libraryRef);
+        if (!resolved) {
             return undefined;
         }
-
-        // 尝试解析绝对路径
-        const abs = resolvePathFromRef(filePath ?? '', libraryRef);
-        if (!abs) {
-            return undefined;
-        }
-
-        // 计算在 bundle assets/ 内的相对路径；库外文件回退为文件名（保留原 _bundleInternalPath 语义）
-        const ref = computeLibraryRef(abs);
-        return ref ?? getBaseName(abs);
+        const ref = computeLibraryRef(resolved);
+        return ref ?? getBaseName(resolved);
     }
 
     // Models

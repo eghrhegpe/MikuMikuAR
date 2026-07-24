@@ -133,7 +133,11 @@ public class MainActivity extends AppCompatActivity {
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
         settings.setMediaPlaybackRequiresUserGesture(false);
-        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        // [doc:adr-017] A0-01 技术债根治：模型文件已改经 readFileBytes + Blob URL 加载
+        // （见 frontend/src/core/fileservice.ts），不再存在 http:// 子资源，故移除
+        // 全局 MIXED_CONTENT_ALWAYS_ALLOW，避免任何 http:// 子资源被放行。
+        // 若实测发现仍有 http:// 子资源被拦截，临时恢复此行即可回滚：
+        // settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
 
         // Enable debugging in debug builds
         if (DEBUG) {
