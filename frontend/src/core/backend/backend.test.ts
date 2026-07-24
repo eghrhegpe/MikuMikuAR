@@ -57,6 +57,7 @@ function setWindow(w: unknown): void {
 }
 function clearWebFlag(): void {
     (globalThis as { __MMKU_WEB__?: boolean }).__MMKU_WEB__ = false;
+    delete (globalThis as { __MMKU_BACKEND__?: string }).__MMKU_BACKEND__;
 }
 
 describe('browserAdapter 能力矩阵', () => {
@@ -439,6 +440,24 @@ describe('resolveBackend 三路径（异步选型，Android 冷启动竞态防�
         const { resolveBackend } = await import('./index');
         const b = await resolveBackend();
         expect(b.kind).toBe('browser');
+    });
+
+    it('Tier0 显式 __MMKU_BACKEND__=browser 即便 window.wails 存在仍走 browserAdapter', async () => {
+        vi.resetModules();
+        (globalThis as { __MMKU_BACKEND__?: string }).__MMKU_BACKEND__ = 'browser';
+        setWindow({ wails: { platform: () => 'desktop' } });
+        const { resolveBackend } = await import('./index');
+        const b = await resolveBackend();
+        expect(b.kind).toBe('browser');
+    });
+
+    it('Tier0 显式 __MMKU_BACKEND__=go 且 wails 就绪 → goAdapter', async () => {
+        vi.resetModules();
+        (globalThis as { __MMKU_BACKEND__?: string }).__MMKU_BACKEND__ = 'go';
+        setWindow({ wails: { platform: () => 'desktop' } });
+        const { resolveBackend } = await import('./index');
+        const b = await resolveBackend();
+        expect(b.kind).toBe('go');
     });
 
     it('window.wails 存在 → goAdapter', async () => {

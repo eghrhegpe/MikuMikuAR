@@ -16,7 +16,8 @@
     <title>MikuMikuAR — Spike</title>
     <link rel="icon" href="data:,">
     <script>
-        // ADR-177 Phase 0：必须在所有业务 import 之前设置
+        // ADR-177 Phase 0：必须在所有业务 import 之前声明后端身份 + 短路标记
+        globalThis.__MMKU_BACKEND__ = 'browser';
         globalThis.__MMKU_WEB__ = true;
     </script>
 </head>

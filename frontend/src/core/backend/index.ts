@@ -1,12 +1,18 @@
-// [doc:architecture] Backend 选型单例 — ADR-176
+// [doc:architecture] Backend 选型单例 — ADR-176 / 修订（Tier 分层判定）
 //
-// resolveBackend(): Promise<BackendService>
-// - 先 await awaitWailsBridge()（ADR-017/159 桥接注入范式）消除 Android 冷启动竞态，
-//   再判定 window.wails 是否存在注入 goAdapter / browserAdapter（惰性单例）。
-// - ❌ 禁止模块顶层同步 `export const backend = detectBackend()`：Android 冷启动
-//   window.wails 尚未注入会被误固化成 browser → 误降级。
-// - Web 入口置 globalThis.__MMKU_WEB__ = true（或 import.meta.env.MODE === 'web'）
-//   短路 awaitWailsBridge 的 3s 超时等待，直接返回 browserAdapter。
+// resolveBackend(): Promise<BackendService>（惰性单例，禁止模块顶层同步求值——
+// Android 冷启动 window.wails 尚未注入会被误固化成 browser → 误降级）。
+//
+// 判定按优先级分三层（详见 resolveBackend）：
+//   Tier 0  入口 HTML 显式声明 globalThis.__MMKU_BACKEND__（'go' | 'browser'）
+//          —— 权威信号。web 构建置 'browser' 后即便嵌进 Wails webview 也走
+//             browserAdapter，消除「网页构建参杂 Go 逻辑」误判；桌面构建不声明，
+//             因同一 bundle 在纯浏览器 dev 与 Wails 间共享，需靠运行时探测。
+//   Tier 1  旧 web 短路标记 __MMKU_WEB__ === true 或 import.meta.env.MODE === 'web'
+//          —— 兜底可读信号。
+//   Tier 2  运行时能力探测 awaitWailsBridge()：桌面入口等 window.wails 注入。
+//          纯浏览器 dev 下 window.wails 永不存在，等待缩到 500ms（消除 3s 白等）；
+//          生产 Wails/Android 保留 3000ms 消化冷启动桥接延迟。
 
 import type { BackendService, BackendCapabilities } from './types';
 import { browserAdapter } from './browser-adapter';
@@ -33,20 +39,47 @@ function _isWebEntry(): boolean {
     return meta.env?.MODE === 'web';
 }
 
+/** Tier 0：入口 HTML 显式声明的后端身份（权威、不可被 window.wails 存在性覆盖）。 */
+function _declaredBackend(): 'go' | 'browser' | undefined {
+    const v = (globalThis as { __MMKU_BACKEND__?: unknown }).__MMKU_BACKEND__;
+    return v === 'go' || v === 'browser' ? v : undefined;
+}
+
 export function resolveBackend(): Promise<BackendService> {
     if (_resolved) return Promise.resolve(_resolved);
     if (_resolving) return _resolving;
 
     _resolving = (async (): Promise<BackendService> => {
-        if (!_isWebEntry()) {
-            const ready = await awaitWailsBridge(3000);
-            if (ready && typeof window.wails === 'object') {
-                _resolved = await _getGoAdapter();
-                return _resolved;
-            }
+        // Tier 0 — 入口显式声明（最高优先级）。
+        const declared = _declaredBackend();
+        if (declared === 'browser') {
+            _resolved = browserAdapter;
+            return _resolved;
         }
-        _resolved = browserAdapter;
-        return browserAdapter;
+        if (declared === 'go') {
+            const ready = await awaitWailsBridge(3000);
+            _resolved = ready && typeof window.wails === 'object' ? await _getGoAdapter() : browserAdapter;
+            return _resolved;
+        }
+
+        // Tier 1 — 旧 web 短路标记 / 构建模式。
+        if (_isWebEntry()) {
+            _resolved = browserAdapter;
+            return _resolved;
+        }
+
+        // Tier 2 — 桌面入口（dev 浏览器 / Wails / Android 共享同一 bundle）。
+        // 纯浏览器 dev 下 window.wails 永不存在，缩短探测避免 3s 白等；
+        // 生产 Wails/Android 保留 3000ms 以消化冷启动桥接延迟。
+        const dev = (import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV === true;
+        const timeout = dev && typeof window.wails === 'undefined' ? 500 : 3000;
+        const ready = await awaitWailsBridge(timeout);
+        if (ready && typeof window.wails === 'object') {
+            _resolved = await _getGoAdapter();
+        } else {
+            _resolved = browserAdapter;
+        }
+        return _resolved;
     })();
 
     return _resolving;

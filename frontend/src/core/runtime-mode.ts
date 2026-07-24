@@ -56,13 +56,38 @@ function badgeColor(mode: RuntimeMode): string {
     return 'rgba(255,255,255,0.35)'; // 灰：单线程
 }
 
+// [doc:adr-176] 追加显示实际选中的后端（go / browser），与 MPR/SPR 徽标合成，
+// 消除「网页壳参杂 Go 逻辑」的歧义。模块级缓存最近一次 RuntimeMode + 后端 kind，
+// 任一方更新都重绘，互不覆盖。
+let _lastMode: RuntimeMode | null = null;
+let _backendKind: string | null = null;
+
+function _composeText(mode: RuntimeMode): string {
+    const base = badgeText(mode);
+    return _backendKind ? `${base} · ${_backendKind}` : base;
+}
+function _composeTitle(mode: RuntimeMode): string {
+    const base = `MPR构建=${mode.mprBuild} COI=${mode.coi} SAB=${mode.sab} 并行度=${mode.threads}`;
+    return _backendKind ? `${base} · backend=${_backendKind}` : base;
+}
+
 export function renderRuntimeBadge(mode: RuntimeMode): void {
+    _lastMode = mode;
     if (!dom.runtimeBadge) {
         return;
     }
-    dom.runtimeBadge.textContent = badgeText(mode);
+    dom.runtimeBadge.textContent = _composeText(mode);
     dom.runtimeBadge.style.color = badgeColor(mode);
-    dom.runtimeBadge.title = `MPR构建=${mode.mprBuild} COI=${mode.coi} SAB=${mode.sab} 并行度=${mode.threads}`;
+    dom.runtimeBadge.title = _composeTitle(mode);
+}
+
+/** 渲染实际选中的后端（go / browser）到运行时徽标，与 MPR/SPR 状态合成显示 */
+export function setBackendBadge(kind: string): void {
+    _backendKind = kind;
+    if (_lastMode && dom.runtimeBadge) {
+        dom.runtimeBadge.textContent = _composeText(_lastMode);
+        dom.runtimeBadge.title = _composeTitle(_lastMode);
+    }
 }
 
 /** bootstrap 早期调用：立即渲染上次持久化的模式，刷新后不丢失 */
