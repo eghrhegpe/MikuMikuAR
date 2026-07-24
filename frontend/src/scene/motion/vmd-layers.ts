@@ -669,6 +669,13 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
                             '[MotionLayers] WASM blender failed, falling back to single layer',
                             err
                         );
+                        // P3-fix: 明确告知用户多图层混合失败已降级，而非静默回退
+                        setStatus(
+                            t('scene.vmd.layersBlendFailedFallback', {
+                                reason: err instanceof Error ? err.message : String(err),
+                            }),
+                            false
+                        );
                     }
                 }
             }

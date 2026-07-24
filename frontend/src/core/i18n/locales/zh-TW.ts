@@ -994,6 +994,7 @@ export const zhTW: Record<string, string> = {
     'scene.vmd.wasmSingleLayer': '⚠ WASM 僅支援單圖層，已載入：{name}',
     'scene.vmd.layersBlended': '✓ 圖層已混合：{names}',
     'scene.vmd.blendFailed': '✗ 圖層混合失敗',
+    'scene.vmd.layersBlendFailedFallback': '⚠ 多圖層混合失敗，已降級為單圖層。原因：{reason}',
 
     // —— Scene Camera ——
     'scene.camera.arFailed': '✗ AR 相機啟動失敗，已還原',

@@ -98,6 +98,12 @@ export function createCanvasTexture(opts: CanvasTextureOptions): Texture {
 const _texCache = new Map<string, Texture>();
 
 /**
+ * P3-fix: 缓存上限。用户频繁切换地面纹理类型时，缓存只增不减会累积大量 Texture 对象。
+ * Map 的迭代顺序按插入顺序，淘汰最旧 key 即 LRU 近似实现。
+ */
+const MAX_TEXTURE_CACHE_SIZE = 32;
+
+/**
  * 缓存所有权标记：凡经 getOrCreateCanvasTexture 创建的贴图均归缓存所有，
  * 统一由 disposeTextureCache 释放。材质释放路径（disposeGroundMaterial 等）
  * 须先经 isCacheOwnedTexture 判断并跳过缓存贴图，避免提前 dispose 后
@@ -117,6 +123,18 @@ export function getOrCreateCanvasTexture(key: string, opts: CanvasTextureOptions
     const tex = createCanvasTexture(opts);
     _cacheOwned.add(tex);
     _texCache.set(key, tex);
+    // P3-fix: LRU 淘汰 — 超过上限时释放最旧的 Texture
+    if (_texCache.size > MAX_TEXTURE_CACHE_SIZE) {
+        const oldestKey = _texCache.keys().next().value;
+        if (oldestKey !== undefined) {
+            const oldest = _texCache.get(oldestKey);
+            if (oldest) {
+                oldest.dispose();
+                _cacheOwned.delete(oldest);
+            }
+            _texCache.delete(oldestKey);
+        }
+    }
     return tex;
 }
 
