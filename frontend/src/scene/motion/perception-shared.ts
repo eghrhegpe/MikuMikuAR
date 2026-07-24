@@ -450,9 +450,6 @@ export class PerceptionPerfMonitor {
 let _gazeLogFrame = 0;
 let _gazeLogEnabled = false;
 
-export function _enableGazeLog(enabled: boolean): void {
-    _gazeLogEnabled = enabled;
-}
 export function _incGazeLogFrame(): void {
     _gazeLogFrame++;
 }

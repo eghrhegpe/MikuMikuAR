@@ -83,45 +83,7 @@ export async function resolveModelDir(filePath: string): Promise<string> {
     return IsolateModelDir(normalized);
 }
 
-/**
- * 通过文件服务解析 URL 并拉取文件内容为 ArrayBuffer。
- * 统一封装 `resolveFileUrl → fetch → HTTP 状态校验 → arrayBuffer` 序列，
- * 避免各加载器重复实现导致"改一处漏一处"（ADR-096 复用收敛）。
- *
- * @param filePath 模型/动作文件路径（支持正斜杠或反斜杠）
- * @returns 解析出的 HTTP URL 与二进制内容
- * @throws 当 HTTP 响应非 2xx 时抛出 `Error('HTTP <status>')`
- */
-export async function fetchArrayBuffer(
-    filePath: string,
-    signal?: AbortSignal
-): Promise<{ url: string; data: ArrayBuffer }> {
-    if (signal?.aborted) {
-        throw new DOMException('Aborted', 'AbortError');
-    }
-    const { url } = await resolveFileUrl(filePath);
-    const resp = await fetch(url, { signal });
-    if (!resp.ok) {
-        throw new Error(`HTTP ${resp.status}`);
-    }
-    const data = await resp.arrayBuffer();
-    return { url, data };
-}
-
 // ======== normPath 缓存（buildLevel 每模型调用一次，缓存避免重复正则） ========
-
-/**
- * Wails v3 将 Go []byte 序列化为 JSON base64 字符串，此函数将其解码为 Uint8Array。
- * 所有 ReadFileBytes 调用方必须经过此解码步骤。
- */
-export function decodeBase64(b64: string): Uint8Array {
-    const bin = atob(b64);
-    const bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) {
-        bytes[i] = bin.charCodeAt(i);
-    }
-    return bytes;
-}
 
 const _normPathCache = new Map<string, string>();
 const NORM_PATH_CACHE_MAX = 5000;

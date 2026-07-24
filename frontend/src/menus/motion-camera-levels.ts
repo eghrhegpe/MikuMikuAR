@@ -42,7 +42,6 @@ import {
     setBoneLockDamping,
     getBoneLockDamping,
     getFocusedModelBoneNames,
-    type CameraMode,
     type CameraControl,
     type CameraBehavior,
 } from '../scene/camera/camera';
@@ -331,37 +330,6 @@ export function buildCameraLevel(): PopupLevel {
         items: [],
         renderCustom: (container) => {
             return renderMenu(buildCameraSchema(), container);
-        },
-    };
-}
-
-/** Build a parameter editing submenu for the given camera mode. */
-export function buildCameraParamsLevel(mode: CameraMode): PopupLevel {
-    return {
-        label:
-            mode === 'orbit'
-                ? t('motion.camOrbitSettings')
-                : mode === 'freefly'
-                  ? t('motion.camFreeflySettings')
-                  : mode === 'concert'
-                    ? t('motion.camConcertSettings')
-                    : mode === 'surround'
-                      ? t('motion.camSurroundSettings')
-                      : t('motion.cameraSettings'),
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            cardContainer(container, (c) => {
-                if (mode === 'orbit') {
-                    renderOrbitParams(c);
-                } else if (mode === 'freefly') {
-                    renderFreeflyParams(c);
-                } else if (mode === 'concert') {
-                    renderConcertParams(c);
-                } else if (mode === 'surround') {
-                    renderSurroundParams(c);
-                }
-            });
         },
     };
 }

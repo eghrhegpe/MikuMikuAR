@@ -149,51 +149,7 @@ export const TIME_OF_DAY_PRESETS: Record<string, EnvPreset & DerivedLighting> = 
     },
 };
 
-/** 将当前 EnvPreset 序列化为 JSON 字符串（.env 格式）。 */
-export function exportEnvPreset(p: EnvPreset): string {
-    return JSON.stringify(
-        {
-            version: 2,
-            label: p.label,
-            skyColorTop: p.skyColorTop,
-            skyColorBot: p.skyColorBot,
-            sunAngle: p.sunAngle,
-            azimuth: p.azimuth ?? DEFAULT_AZIMUTH_DEG,
-        },
-        null,
-        2
-    );
-}
-
-/** 从 .env JSON 字符串反序列化 EnvPreset，失败返回 null。 */
-export function importEnvPreset(json: string): (EnvPreset & DerivedLighting) | null {
-    try {
-        const raw = JSON.parse(json);
-        if (
-            !raw.label ||
-            !raw.skyColorTop ||
-            !raw.skyColorBot ||
-            typeof raw.sunAngle !== 'number'
-        ) {
-            return null;
-        }
-        const azimuth = typeof raw.azimuth === 'number' ? raw.azimuth : DEFAULT_AZIMUTH_DEG;
-        return {
-            label: raw.label,
-            skyColorTop: raw.skyColorTop,
-            skyColorBot: raw.skyColorBot,
-            sunAngle: raw.sunAngle,
-            azimuth,
-            ...deriveLighting(raw.skyColorTop, raw.sunAngle, azimuth),
-        };
-    } catch {
-        return null;
-    }
-}
-
 // ======== 分类预设（ADR-120） ========
-// 旧版 EnvPreset（version 2）只存天空 5 字段；新版（version 3）按 4 类保存字段子集。
-// 旧版 API（EnvPreset / exportEnvPreset / importEnvPreset）保留供 TIME_OF_DAY_PRESETS 使用。
 
 /** 环境预设分类：天空/地面/水面/大气。 */
 export type EnvPresetCategory = 'sky' | 'ground' | 'water' | 'atmosphere';

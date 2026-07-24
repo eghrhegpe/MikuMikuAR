@@ -18,7 +18,6 @@ import { Quaternion } from '@babylonjs/core/Maths/math.vector';
 import { resetModelTransform, removeModel } from '../scene/manager/model-ops';
 import { removeProp } from '../scene/scene';
 import { attachPropToBone, detachPropFromBone } from '../scene/env/accessory';
-import { getStageLightState } from '../scene/render/lighting';
 import {
     attachGizmoForKind,
     getTransformAdapter,
@@ -289,30 +288,6 @@ export function buildDangerCard(
             }
         );
     });
-}
-
-/** 派发到对应 registry 查 ResourceHandle（供 UI 层从 id+kind 构造 handle） */
-export function getResourceHandle(id: string, kind: ResourceKind): ResourceHandle | null {
-    if (kind === 'actor' || kind === 'stage') {
-        const inst = modelRegistry.get(id);
-        if (!inst) {
-            return null;
-        }
-        return { id, kind, name: inst.name };
-    }
-    if (kind === 'prop') {
-        const p = propRegistry.get(id);
-        if (!p) {
-            return null;
-        }
-        return { id, kind, name: p.name };
-    }
-    // light 不在 registry 中，走 lighting.ts 查询
-    if (kind === 'light') {
-        const st = getStageLightState(id);
-        return { id, kind, name: st?.name ?? id };
-    }
-    return null;
 }
 
 /** 骨骼挂载卡片：将道具挂载到指定模型骨骼上，支持偏移/旋转微调

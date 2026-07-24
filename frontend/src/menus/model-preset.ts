@@ -23,10 +23,6 @@ import {
     MaterialCategoryParams,
 } from '../scene/scene';
 import {
-    SelectPresetSaveFile,
-    SelectPresetOpenFile,
-    SaveModelPreset,
-    LoadModelPreset,
     GetModelPresets,
     SaveModelPresetToLibAuto,
     LoadModelPresetFromLib,
@@ -205,26 +201,6 @@ export async function applyModelPreset(id: string, jsonStr: string): Promise<voi
     setStatus(t('model-preset.applied'), true);
 }
 
-export async function selectAndSavePreset(id: string): Promise<void> {
-    const path = await SelectPresetSaveFile();
-    if (!path) {
-        return;
-    }
-    const json = serializeModelPreset(id);
-    if (!json) {
-        setStatus(t('model-preset.serializeFailed'), false);
-        return;
-    }
-    const _r0 = await tryCatchStatus(
-        () => SaveModelPreset(json, path),
-        t('model-preset.saveFailed'),
-        (err) => showErrorToast(t('model-preset.saveErrorToast'), translateGoError(err))
-    );
-    if (_r0 !== undefined) {
-        setStatus(t('model-preset.saved'), true);
-    }
-}
-
 const _presetUndoStack = new Map<string, string>();
 // 防止 tryAutoApplyPreset 重入：同一 id 正在自动应用时跳过后续触发
 const _autoApplying = new Set<string>();
@@ -308,17 +284,6 @@ async function tryAutoApplyPresetImpl(id: string): Promise<void> {
             setStatus(t('model-preset.undoApplied'), true);
         }
     );
-}
-
-export async function selectAndLoadPreset(id: string): Promise<void> {
-    const path = await SelectPresetOpenFile();
-    if (!path) {
-        return;
-    }
-    await tryCatchStatus(async () => {
-        const json = await LoadModelPreset(path);
-        await applyModelPreset(id, json);
-    }, t('model-preset.loadFailed'));
 }
 
 export async function applyPresetFromLib(

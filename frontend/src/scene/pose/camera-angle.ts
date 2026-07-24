@@ -86,9 +86,3 @@ export function getAllPresets(): CameraAnglePreset[] {
     return [...CAMERA_PRESETS];
 }
 
-/**
- * 按索引获取预设。
- */
-export function getPreset(index: number): CameraAnglePreset | undefined {
-    return CAMERA_PRESETS[index];
-}

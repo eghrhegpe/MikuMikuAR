@@ -54,17 +54,6 @@ function _notifyARModeChange(active: boolean): void {
     }
 }
 
-/** 订阅 AR 模式切换事件，返回取消订阅函数。 */
-export function addARModeChangeListener(fn: ARModeChangeListener): () => void {
-    _listeners.push(fn);
-    return () => {
-        const i = _listeners.indexOf(fn);
-        if (i >= 0) {
-            _listeners.splice(i, 1);
-        }
-    };
-}
-
 // ======== Video Element ========
 function getVideoEl(): HTMLVideoElement {
     if (_videoEl) {
@@ -96,10 +85,6 @@ export function isARActive(): boolean {
 
 export function getARFacing(): CameraFacing {
     return _facing;
-}
-
-export function getARVideoEl(): HTMLVideoElement | null {
-    return _videoEl;
 }
 
 /**

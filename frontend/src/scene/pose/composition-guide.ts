@@ -20,20 +20,6 @@ export function setGuideMode(mode: 'off' | 'ruleOfThirds' | 'goldenRatio' | 'dia
     _refresh();
 }
 
-/** 切换当前辅助线模式（off → ruleOfThirds → goldenRatio → diagonal → off） */
-export function cycleGuideMode(): string {
-    const modes: Array<'off' | 'ruleOfThirds' | 'goldenRatio' | 'diagonal'> = [
-        'off',
-        'ruleOfThirds',
-        'goldenRatio',
-        'diagonal',
-    ];
-    const idx = modes.indexOf(_currentMode);
-    const next = modes[(idx + 1) % modes.length];
-    setGuideMode(next);
-    return next;
-}
-
 /** 创建或重建辅助线叠加层。 */
 function _refresh(): void {
     _dispose();
@@ -122,8 +108,3 @@ function _dispose(): void {
     _overlayEl = null;
 }
 
-/** 全局销毁（页面卸载时调用）。 */
-export function disposeGuides(): void {
-    _currentMode = 'off';
-    _dispose();
-}

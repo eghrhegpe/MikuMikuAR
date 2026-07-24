@@ -14,7 +14,7 @@ import {
 } from '../scene/scene';
 import { setProcMotionBoneToggle } from '../scene/motion/proc-motion-bridge';
 import { getProcMotionBoneCategories } from '../motion-algos/procedural-motion';
-import type { ProcMotionMode, ProcMotionState } from '../motion-algos/procedural-motion';
+import type { ProcMotionState } from '../motion-algos/procedural-motion';
 import { DEFAULT_PROC_STATE } from '../motion-algos/procedural-motion';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
 import { renderMenu } from './render-menu';
@@ -301,29 +301,3 @@ export function buildProcMotionLevel(modelId?: string): PopupLevel {
     };
 }
 
-export function buildProcMotionModeLevel(): PopupLevel {
-    const st = getProcMotionState();
-    const modes: { mode: ProcMotionMode; label: string; icon: string }[] = [
-        { mode: 'off', label: t('motion.modeOff'), icon: st.mode === 'off' ? 'check' : 'circle' },
-        {
-            mode: 'idle',
-            label: t('motion.modeIdle'),
-            icon: st.mode === 'idle' ? 'check' : 'circle',
-        },
-        {
-            mode: 'autodance',
-            label: t('motion.modeAutodance'),
-            icon: st.mode === 'autodance' ? 'check' : 'circle',
-        },
-    ];
-    return {
-        label: t('motion.procMotionMode'),
-        dir: '',
-        items: modes.map((m) => ({
-            kind: 'action' as const,
-            label: m.label,
-            icon: m.icon,
-            target: `procmotion:set-mode:${m.mode}`,
-        })),
-    };
-}
