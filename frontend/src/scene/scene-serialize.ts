@@ -1422,8 +1422,11 @@ function cleanupAndFlushSave(): void {
     console.info('[auto-save] cleanupAndFlushSave() — visibilitychange/beforeunload triggered');
     // Clear any pending debounced save — we're about to flush immediately
     _autoSaveDebounced.cancel();
-    flushEnvState();
-    flushUIState();
+    // flushEnvState/flushUIState 是 async，但此处是 visibilitychange/beforeunload 回调，
+    // 不能 await（浏览器不等待 Promise）。用 void 标记 fire-and-forget，
+    // 函数内部已有 try/catch + setStatus，不会产生 unhandled rejection。
+    void flushEnvState();
+    void flushUIState();
     swallowError(saveSceneImmediate(true));
 }
 

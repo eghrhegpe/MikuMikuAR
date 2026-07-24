@@ -14,6 +14,7 @@ const {
     MmdWasmRuntimeMock,
     // — hoisted vi.fn() mocks (shared with vi.mock factories) —
     mockSetEnvState,
+    mockSetUIState,
     mockSetLightState,
     mockGetLightState,
     mockSetSkipLightAutoSave,
@@ -154,6 +155,7 @@ const {
     return {
         MmdWasmRuntimeMock: _MmdWasmRuntime,
         mockSetEnvState: vi.fn().mockResolvedValue(undefined),
+        mockSetUIState: vi.fn().mockResolvedValue(undefined),
         mockSetLightState: vi.fn(),
         mockGetLightState: vi.fn(() => ({ ...defaultLightState })),
         mockSetSkipLightAutoSave: vi.fn(),
@@ -195,8 +197,14 @@ vi.mock('babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime', () => ({
     MmdWasmRuntime: MmdWasmRuntimeMock,
 }));
 
-vi.mock('../core/wails-bindings', () => ({
-    SetEnvState: mockSetEnvState,
+// [ADR-176] env-bridge 经 resolveBackend() 路由调用 SetEnvState/SetUIState，
+// 不再直连 wails-bindings。mock 一个最小 BackendService 即可。
+vi.mock('../core/backend', () => ({
+    resolveBackend: () =>
+        Promise.resolve({
+            SetEnvState: mockSetEnvState,
+            SetUIState: mockSetUIState,
+        }),
 }));
 
 vi.mock('@babylonjs/core/Maths/math.vector', () => {
@@ -971,11 +979,14 @@ describe('setEnvState', () => {
         expect((setTimeout as any).mock.calls.length).toBe(2);
     });
 
-    it('fires SetEnvState via timer callback', () => {
+    it('fires SetEnvState via timer callback', async () => {
         setEnvState({ sunAngle: 50 });
         const callback = (setTimeout as any).mock.calls[0][0];
         expect(callback).toBeInstanceOf(Function);
         callback();
+        // [ADR-176] persistEnvState 内部 await resolveBackend() 后才调用 SetEnvState，
+        // 需 flush microtask 让 Promise 链 settle。
+        await new Promise((r) => setTimeout(r, 0));
         expect(mockSetEnvState).toHaveBeenCalled();
     });
 
@@ -1081,11 +1092,14 @@ describe('Time of Day', () => {
             expect(unregister).toHaveBeenCalled();
         });
 
-        it('calls SetEnvState to persist', () => {
+        it('calls SetEnvState to persist', async () => {
             vi.spyOn(globalThis, 'setTimeout');
             startTimeOfDay();
             mockSetEnvState.mockClear();
             stopTimeOfDay();
+            // [ADR-176] stopTimeOfDay 内部 fire-and-forget persistEnvState（async），
+            // 需 flush microtask 让 Promise 链 settle 后再断言。
+            await new Promise((r) => setTimeout(r, 0));
             expect(mockSetEnvState).toHaveBeenCalled();
         });
     });
