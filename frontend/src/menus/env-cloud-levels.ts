@@ -5,7 +5,7 @@ import type { PopupLevel } from '../core/config';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
-import { _buildLevel } from './env-level-helpers';
+import { buildLevel } from './env-level-helpers';
 
 export function buildCloudLevel(): PopupLevel {
     return buildLevel(t('env.cloud'), (c) => {

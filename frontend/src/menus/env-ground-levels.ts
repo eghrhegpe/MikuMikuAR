@@ -9,7 +9,7 @@ import { t } from '../core/i18n/t';
 import { GROUND_PRESETS, buildGroundPresetEnvState } from '../scene/env/env-ground';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
-import { _buildLevel, _openTexturePicker } from './env-level-helpers';
+import { buildLevel, openTexturePicker } from './env-level-helpers';
 import { getEnvMenu } from './env-menu-state';
 import { getSceneMenu } from './scene-menu-state';
 

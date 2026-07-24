@@ -11,7 +11,7 @@ import { applyEnvPreset } from '../scene/env/env-bridge';
 import { activeTimeOfDayPreset, setActiveTimeOfDayPreset } from '../core/state';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
-import { _buildLevel, _openTexturePicker } from './env-level-helpers';
+import { buildLevel, openTexturePicker } from './env-level-helpers';
 
 export function buildSkyLevel(): PopupLevel {
     return buildLevel(t('env.sky'), (c) => {
