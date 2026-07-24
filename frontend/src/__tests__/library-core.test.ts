@@ -184,8 +184,6 @@ function makeModel(overrides: Record<string, any> = {}): any {
     return {
         dir: '/test/root/models',
         file_path: '/test/root/models/model.pmx',
-        name_jp: '',
-        name_en: '',
         comment: '',
         has_thumb: false,
         type: 'actor',
@@ -240,7 +238,7 @@ describe('modelToRow', () => {
         });
     });
 
-    describe('label — displayNamePriority = filename', () => {
+    describe('label — always filename', () => {
         beforeEach(() => {
             mockState.displayNamePriority = 'filename';
         });
@@ -269,76 +267,6 @@ describe('modelToRow', () => {
             const m = makeModel({ file_path: '' });
             const row = modelToRow(m);
             expect(row.label).toBe('未知');
-        });
-    });
-
-    describe('label — displayNamePriority = name_en', () => {
-        beforeEach(() => {
-            mockState.displayNamePriority = 'name_en';
-        });
-
-        it('uses name_en from model entry', () => {
-            const m = makeModel({ file_path: '/r/miku.pmx', name_en: 'Hatsune Miku' });
-            const row = modelToRow(m);
-            expect(row.label).toBe('Hatsune Miku');
-        });
-
-        it('falls back to name_jp when name_en empty', () => {
-            const m = makeModel({ file_path: '/r/miku.pmx', name_en: '', name_jp: '初音ミク' });
-            const row = modelToRow(m);
-            expect(row.label).toBe('初音ミク');
-        });
-
-        it('falls back to filename when both names empty', () => {
-            const m = makeModel({ file_path: '/r/miku.pmx', name_en: '', name_jp: '' });
-            const row = modelToRow(m);
-            expect(row.label).toBe('miku.pmx');
-        });
-
-        it('uses cached name_en when available', () => {
-            mockState.modelMetaCache.set('/r/miku.pmx', {
-                name_en: 'Cached EN',
-                name_jp: 'Cached JP',
-                comment: '',
-            });
-            const m = makeModel({ file_path: '/r/miku.pmx', name_en: 'Uncached' });
-            const row = modelToRow(m);
-            expect(row.label).toBe('Cached EN');
-        });
-    });
-
-    describe('label — displayNamePriority = name_jp', () => {
-        beforeEach(() => {
-            mockState.displayNamePriority = 'name_jp';
-        });
-
-        it('uses name_jp from model entry', () => {
-            const m = makeModel({ file_path: '/r/miku.pmx', name_jp: '初音ミク' });
-            const row = modelToRow(m);
-            expect(row.label).toBe('初音ミク');
-        });
-
-        it('falls back to name_en when name_jp empty', () => {
-            const m = makeModel({ file_path: '/r/miku.pmx', name_jp: '', name_en: 'Miku' });
-            const row = modelToRow(m);
-            expect(row.label).toBe('Miku');
-        });
-
-        it('falls back to filename when both names empty', () => {
-            const m = makeModel({ file_path: '/r/miku.pmx', name_jp: '', name_en: '' });
-            const row = modelToRow(m);
-            expect(row.label).toBe('miku.pmx');
-        });
-
-        it('uses cached name_jp when available', () => {
-            mockState.modelMetaCache.set('/r/miku.pmx', {
-                name_en: 'EN',
-                name_jp: '初音ミク(キャッシュ)',
-                comment: '',
-            });
-            const m = makeModel({ file_path: '/r/miku.pmx' });
-            const row = modelToRow(m);
-            expect(row.label).toBe('初音ミク(キャッシュ)');
         });
     });
 
@@ -1076,8 +1004,6 @@ describe('modelToResourceItem', () => {
         const model = makeModel({
             file_path: '/test/a.pmx',
             dir: '/test',
-            name_jp: '',
-            name_en: '',
         });
         const item = modelToResourceItem(model);
         expect(item.id).toBe('/test/a.pmx');
@@ -1129,28 +1055,24 @@ describe('modelToResourceItem', () => {
         expect(item.icon).toBe('user');
     });
 
-    it('uses name_en when displayNamePriority is name_en', () => {
+    it('always uses filename as label regardless of displayNamePriority', () => {
         mockState.displayNamePriority = 'name_en';
         const model = makeModel({
             file_path: '/test/a.pmx',
             dir: '/test',
-            name_en: 'English Name',
-            name_jp: '日本語名',
         });
         const item = modelToResourceItem(model);
-        expect(item.label).toBe('English Name');
+        expect(item.label).toBe('a.pmx');
     });
 
-    it('uses name_jp when displayNamePriority is name_jp', () => {
+    it('always uses filename when displayNamePriority is name_jp', () => {
         mockState.displayNamePriority = 'name_jp';
         const model = makeModel({
             file_path: '/test/a.pmx',
             dir: '/test',
-            name_en: 'English Name',
-            name_jp: '日本語名',
         });
         const item = modelToResourceItem(model);
-        expect(item.label).toBe('日本語名');
+        expect(item.label).toBe('a.pmx');
     });
 
     it('falls back to cached metadata when available', () => {
@@ -1163,12 +1085,10 @@ describe('modelToResourceItem', () => {
         const model = makeModel({
             file_path: '/test/a.pmx',
             dir: '/test',
-            name_en: 'Original English',
-            name_jp: '',
             comment: '',
         });
         const item = modelToResourceItem(model);
-        expect(item.label).toBe('Cached English');
+        expect(item.label).toBe('a.pmx');
         expect(item.sublabel).toBe('Cached comment');
     });
 

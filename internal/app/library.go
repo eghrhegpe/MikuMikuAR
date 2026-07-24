@@ -207,7 +207,6 @@ func (a *App) expandZipEntries(zipPath, category, source, typeOverride string) [
 		default:
 			continue
 		}
-		innerName := filepath.Base(entryName)
 		entryType := innerType
 		if typeOverride != "" && typeOverride != "other" {
 			entryType = typeOverride
@@ -224,7 +223,6 @@ func (a *App) expandZipEntries(zipPath, category, source, typeOverride string) [
 			Format:    innerFormat,
 			Container: "zip",
 			ZipInner:  entryName,
-			NameEn:    strings.TrimSuffix(innerName, filepath.Ext(innerName)),
 			Type:      entryType,
 			Category:  category,
 			Source:    source,
@@ -267,7 +265,6 @@ func (a *App) scanDirByExt(dir, category string, exts []string, source string) (
 		models = append(models, ModelEntry{
 			Dir:       filepath.Dir(fullPath),
 			PMXPath:   fullPath,
-			NameEn:    strings.TrimSuffix(d.Name(), filepath.Ext(d.Name())),
 			Type:      category,
 			Format:    formatByCategory(ext, category),
 			Container: "file",
@@ -281,7 +278,7 @@ func (a *App) scanDirByExt(dir, category string, exts []string, source string) (
 	return models, nil
 }
 
-// GetModelMeta parses the PMX header for a single PMX file and returns its metadata.
+// GetModelMeta parses the PMX header for a single PMX file and returns its comment.
 // Returns empty meta on error (non-fatal), logs real errors.
 func (a *App) GetModelMeta(pmxPath string) (ModelMeta, error) {
 	meta, err := util.ParsePMXHeader(pmxPath)
@@ -293,13 +290,7 @@ func (a *App) GetModelMeta(pmxPath string) (ModelMeta, error) {
 		return ModelMeta{}, nil
 	}
 	m := ModelMeta{}
-	if !isGarbageModelName(meta.NameJp) {
-		m.NameJp = meta.NameJp
-	}
-	if !isGarbageModelName(meta.NameEn) {
-		m.NameEn = meta.NameEn
-	}
-	m.Comment = truncate(meta.CommentJp, 200)
+	m.Comment = meta.CommentJp
 	return m, nil
 }
 

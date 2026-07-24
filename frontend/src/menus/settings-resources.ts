@@ -19,10 +19,7 @@ import {
     setUIState,
     librarySortMode,
     setLibrarySortMode,
-    displayNamePriority,
-    setDisplayNamePriority,
     type PopupLevel,
-    type DisplayNamePriority,
 } from '../core/config';
 import {
     slideRow,
@@ -46,9 +43,6 @@ import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 import {
     truncatePath,
-    NAME_PRIORITY_LABELS,
-    NAME_PRIORITY_INDEX,
-    PRIORITY_TO_INDEX,
     getDownloadWatchEnabledCached,
     setDownloadWatchEnabledCached,
     getAutoImportCached,
@@ -81,14 +75,6 @@ function getValidMaterialCategories(): Set<string> {
         }
     }
     return _validMaterialCategories;
-}
-
-// ======== 模型库：显示名优先级持久化 ========
-function applyDisplayNamePriority(priority: DisplayNamePriority): void {
-    setDisplayNamePriority(priority);
-    import('../core/wails-bindings')
-        .then((m) => m.SetDisplayNamePriority(priority))
-        .catch(() => setStatus(t('settings.saveFailed'), false));
 }
 
 // ======== 卡片 1：存储位置（桌面=资源根目录；Android=私有/共享存储） ========
@@ -217,7 +203,7 @@ function buildStorageSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode
     ];
 }
 
-// ======== 卡片 2：模型库（排序 / 显示名优先级 / 材质分类映射） ========
+// ======== 卡片 2：模型库（排序 / 材质分类映射） ========
 function buildLibrarySchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
     return [
         {
@@ -250,41 +236,6 @@ function buildLibrarySchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode
                             });
                         }
                     }
-                });
-            },
-        },
-        {
-            id: 'resources:library-priority',
-            kind: 'custom',
-            renderCustom: (c) => {
-                const priorityIndex = PRIORITY_TO_INDEX[displayNamePriority] ?? 0;
-                cardContainer(c, (inner) => {
-                    addSectionTitle(inner, t('settings.library.namePriority'));
-                    addSliderRow(
-                        inner,
-                        t('settings.library.namePriority'),
-                        priorityIndex,
-                        0,
-                        2,
-                        1,
-                        (v) => {
-                            applyDisplayNamePriority(NAME_PRIORITY_INDEX[v]);
-                            getSettingsMenu()?.updateControls();
-                        },
-                        'lucide:type',
-                        undefined,
-                        {
-                            bind: () => PRIORITY_TO_INDEX[displayNamePriority] ?? 2,
-                            onUpdate: (el) => {
-                                const valEl = el.querySelector('.cs-value');
-                                if (valEl) {
-                                    valEl.textContent = t(
-                                        NAME_PRIORITY_LABELS[displayNamePriority]
-                                    );
-                                }
-                            },
-                        }
-                    );
                 });
             },
         },

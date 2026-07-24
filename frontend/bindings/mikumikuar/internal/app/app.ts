@@ -259,7 +259,7 @@ export function GetLibraryIndex(): $CancellablePromise<$models.ModelEntry[] | nu
 }
 
 /**
- * GetModelMeta parses the PMX header for a single PMX file and returns its metadata.
+ * GetModelMeta parses the PMX header for a single PMX file and returns its comment.
  * Returns empty meta on error (non-fatal), logs real errors.
  */
 export function GetModelMeta(pmxPath: string): $CancellablePromise<$models.ModelMeta> {

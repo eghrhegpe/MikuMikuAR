@@ -17,8 +17,6 @@ function libModel(over: Partial<LibraryModel>): LibraryModel {
     return {
         dir: '',
         file_path: '',
-        name_jp: '',
-        name_en: '',
         comment: '',
         has_thumb: false,
         type: 'actor',

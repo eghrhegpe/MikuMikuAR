@@ -315,8 +315,6 @@ export type OutfitFile = {
 export type LibraryModel = {
     dir: string;
     file_path: string;
-    name_jp: string;
-    name_en: string;
     comment: string;
     has_thumb: boolean;
     type: string;

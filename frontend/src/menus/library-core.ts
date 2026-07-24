@@ -10,7 +10,6 @@ import {
     thumbnailCache,
     modelMetaCache,
     setModelMetaCache,
-    displayNamePriority,
     uiState,
     modelRegistry,
     focusedModelId,
@@ -338,16 +337,7 @@ function resolveModelLabel(m: LibraryModel, filenameFallback: string): string {
         m.container === 'zip' && m.zip_inner
             ? getBaseName(m.zip_inner) || filenameFallback
             : getBaseName(fp) || filenameFallback;
-    const cached = modelMetaCache.get(fp);
-    switch (displayNamePriority) {
-        case 'filename':
-            return filename;
-        case 'name_en':
-            return cached?.name_en || m.name_en || cached?.name_jp || m.name_jp || filename;
-        case 'name_jp':
-        default:
-            return cached?.name_jp || m.name_jp || cached?.name_en || m.name_en || filename;
-    }
+    return filename;
 }
 
 export function modelToRow(m: LibraryModel): PopupRow {
@@ -514,7 +504,7 @@ function renderItemsWithRAF(
             // [doc:adr-131] 连续预览：加载后保持浏览器打开，不收起 overlay
             if (item.model.format === 'vmd' && outcome.mode === 'stay') {
                 if (outcome.onVmdPick) {
-                    const name = item.model.name_jp || item.model.name_en || '';
+                    const name = getBaseName(item.model.file_path).replace(/\.\w+$/, '');
                     outcome.onVmdPick(item.model.file_path, name);
                     return;
                 }
@@ -548,7 +538,7 @@ function renderItemsWithRAF(
             const stack = targetStack || stackRegistry.modelStack;
             const outcome = stack?.currentLevel?.outcome ?? { mode: 'close' as const };
             if (outcome.mode === 'stay' && outcome.onVmdReplace) {
-                const name = item.model.name_jp || item.model.name_en || '';
+                const name = getBaseName(item.model.file_path).replace(/\.\w+$/, '');
                 outcome.onVmdReplace(item.model.file_path, name);
                 return;
             }

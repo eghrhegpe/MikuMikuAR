@@ -18,9 +18,9 @@ export const ko: Record<string, string> = {
     'settings.theme.sunsetOrange': '선셋 오렌지',
     'settings.theme.nightPurple': '나이트 퍼플',
     'settings.theme.minimalGray': '미니멀 그레이',
-    'settings.namePriority.jp': '일본어 이름',
-    'settings.namePriority.en': '영어 이름',
-    'settings.namePriority.filename': '파일 이름',
+
+
+
     'settings.slideAnimation': '슬라이드 애니메이션',
     'settings.animation': '애니메이션',
     'settings.bgBlur': '배경 흐림',
@@ -66,7 +66,7 @@ export const ko: Record<string, string> = {
     'settings.library.sortMode': '정렬 방식',
     'settings.library.sortByName': '이름순 정렬',
     'settings.library.sortByDefault': '기본 순서',
-    'settings.library.namePriority': '표시 이름 우선순위',
+
     'settings.library.materialMap': '재질 분류 매핑',
     'settings.library.addMaterialMap': '매핑 추가',
     'settings.library.patternLabel': '패턴',
@@ -260,8 +260,8 @@ export const ko: Record<string, string> = {
     'model-detail.fMaterials': '재질 수',
     'model-detail.fBones': '뼈대 수',
     'model-detail.fMorphs': '모프 수',
-    'model-detail.fNameJp': '일본어 이름',
-    'model-detail.fNameEn': '영어 이름',
+
+
     'model-detail.fComment': '비고',
     'model-detail.none': '없음',
     'model-detail.tagsTitle': '모델 태그',

@@ -7,7 +7,6 @@ import type {
     OverridePaths,
     LibraryModel,
     RecentMotion,
-    DisplayNamePriority,
     LibrarySortMode,
 } from './types';
 
@@ -65,11 +64,12 @@ export function setRecentModels(r: string[]): void {
     recentModels = r;
 }
 
-// ======== Display Name Priority ========
+// ======== Display Name Priority（Deprecated：始终显示文件名）========
 
-export let displayNamePriority: DisplayNamePriority = 'filename';
-export function setDisplayNamePriority(p: DisplayNamePriority): void {
-    displayNamePriority = p;
+/** @deprecated 始终显示文件名，保留以防外部引用 */
+export let displayNamePriority = 'filename' as const;
+export function setDisplayNamePriority(_p: string): void {
+    // no-op: 始终使用文件名
 }
 
 // ======== Library Sort Mode ========
@@ -100,10 +100,10 @@ export function getRecentMotions(): readonly RecentMotion[] {
 
 export let modelMetaCache = new Map<
     string,
-    { name_jp: string; name_en: string; comment: string }
+    { comment: string }
 >();
 export function setModelMetaCache(
-    m: Map<string, { name_jp: string; name_en: string; comment: string }>
+    m: Map<string, { comment: string }>
 ): void {
     modelMetaCache = m;
 }

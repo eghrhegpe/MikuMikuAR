@@ -18,9 +18,9 @@ export const en: Record<string, string> = {
     'settings.theme.sunsetOrange': 'Sunset Orange',
     'settings.theme.nightPurple': 'Night Purple',
     'settings.theme.minimalGray': 'Minimal Gray',
-    'settings.namePriority.jp': 'Japanese Name',
-    'settings.namePriority.en': 'English Name',
-    'settings.namePriority.filename': 'Filename',
+
+
+
     'settings.slideAnimation': 'Slide Animation',
     'settings.animation': 'Animation',
     'settings.bgBlur': 'Background Blur',
@@ -66,7 +66,7 @@ export const en: Record<string, string> = {
     'settings.library.sortMode': 'Sort Mode',
     'settings.library.sortByName': 'Sort by Name',
     'settings.library.sortByDefault': 'Default Order',
-    'settings.library.namePriority': 'Display Name Priority',
+
     'settings.library.materialMap': 'Material Category Map',
     'settings.library.addMaterialMap': 'Add Mapping',
     'settings.library.patternLabel': 'Pattern',
@@ -184,8 +184,8 @@ export const en: Record<string, string> = {
     'model-detail.fMaterials': 'Materials',
     'model-detail.fBones': 'Bones',
     'model-detail.fMorphs': 'Morphs',
-    'model-detail.fNameJp': 'Japanese Name',
-    'model-detail.fNameEn': 'English Name',
+
+
     'model-detail.fComment': 'Comment',
     'model-detail.none': 'None',
     'model-detail.tagsTitle': 'Model Tags',
