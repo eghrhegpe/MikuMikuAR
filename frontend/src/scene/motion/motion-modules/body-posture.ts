@@ -1,6 +1,5 @@
 // [doc:adr-116] Body Posture Module — 身体姿态模块
 // 职责: 将语义参数（倾斜/弯曲/扭曲）烘焙为上半身骨骼旋转覆盖
-// P2 位置覆盖已拆分为独立 position-offset 模块
 
 import type { ParamValue } from '@/core/types';
 import { setBoneOverride } from '../bone-override';
@@ -44,7 +43,6 @@ function bake(modelId: string): void {
     if (claimed.includes('上半身2')) {
         setBoneOverride('上半身2', [0, twist, 0], 1, true, modelId);
     }
-    // 注：センター位置偏移已拆分到独立 position-offset 模块
 }
 
 /** 创建身体姿态模块实例 */

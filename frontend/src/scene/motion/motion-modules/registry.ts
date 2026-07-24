@@ -12,12 +12,9 @@ import type { MotionOverrideModule, ModuleFactory, ModuleMeta } from './types';
 import { getBoneOverrideStore } from '../bone-override-store';
 import type { ModuleDef } from './types';
 import { BODY_POSTURE_DEF } from './body-posture';
-import { HAND_SYMMETRY_DEF } from './hand-symmetry';
-import { SWAY_MOTION_DEF } from './sway-motion';
-import { FINGER_POSE_DEF } from './finger-pose';
+import { LEFT_HAND_DEF, RIGHT_HAND_DEF } from './hand-modules';
 import { RIDING_MODEL_DEF } from './riding-model';
-import { POSITION_OFFSET_DEF } from './position-offset';
-import { FEET_ADJUSTMENT_DEF } from './feet-adjustment-module';
+import { LEFT_FOOT_DEF, RIGHT_FOOT_DEF } from './foot-modules';
 
 // ── 注册表 ──
 
@@ -298,18 +295,17 @@ let _initialized = false;
  * 使用惰性求值函数而非顶层数组字面量：registry 与工厂模块存在循环依赖
  * （工厂 import registry 取 getModuleState/claimBones，registry import 工厂取 DEF），
  * 若顶层字面量在模块求值期捕获 DEF 值，当某工厂被先于 registry 求值时会出现 TDZ
- * （典型：测试先 import sway-motion 再 import registry → SWAY_MOTION_DEF 为 undefined）。
+ * （典型：测试先 import hand-modules 再 import registry → LEFT_HAND_DEF 为 undefined）。
  * 改为在 initMotionModules 调用时（所有模块已加载完成）读取绑定，规避求值顺序问题。
  */
 export function getBuiltinModuleDefs(): ModuleDef[] {
     return [
         BODY_POSTURE_DEF,
-        HAND_SYMMETRY_DEF,
-        SWAY_MOTION_DEF,
-        FINGER_POSE_DEF,
+        LEFT_HAND_DEF,
+        RIGHT_HAND_DEF,
         RIDING_MODEL_DEF,
-        POSITION_OFFSET_DEF,
-        FEET_ADJUSTMENT_DEF,
+        LEFT_FOOT_DEF,
+        RIGHT_FOOT_DEF,
     ];
 }
 

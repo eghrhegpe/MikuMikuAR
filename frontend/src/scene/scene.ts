@@ -44,7 +44,7 @@ import { MmdRuntime } from 'babylon-mmd/esm/Runtime/mmdRuntime';
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 import type { FeetState } from '@/core/types';
-import { getFeetStateForModel } from './motion/motion-modules/feet-adjustment-module';
+import { createDefaultFeetState } from '@/core/scene-state';
 import 'babylon-mmd/esm/Runtime/Animation/mmdRuntimeModelAnimation';
 import 'babylon-mmd/esm/Loader/mmdModelLoader.default';
 import '@babylonjs/core/Materials/Textures/Loaders/tgaTextureLoader';
@@ -506,8 +506,9 @@ function _injectModelCallbacks(modelManager: ModelManager, runtime: IMmdRuntime)
 
 /** 启动运动子系统（脚部跟随 / 脚步声 / 骨骼覆盖 / 程序化动作）。 */
 async function _initMotionSubsystems(scene: Scene, modelManager: ModelManager): Promise<void> {
-    // 7. 脚部调整系统启动（ADR-085）
-    // 注册为 Pipeline bone-override 层（order=5），在帧钩子（RIDING=10）之前执行
+    // 7. 脚部地面跟随系统启动（ADR-085）
+    // [doc:adr-116 重构] 地面跟随降为 always-on 基础设施，不再由动作覆盖模块控制。
+    // 使用默认 FeetState（enabled=true, intensity=1），始终贴地修正。
     const { startFeetAdjustment } = await import('./motion/feet-adjustment');
     startFeetAdjustment(
         (): { id: string; feet: FeetState; runtimeBones: readonly IMmdRuntimeBone[] }[] => {
@@ -516,11 +517,10 @@ async function _initMotionSubsystems(scene: Scene, modelManager: ModelManager): 
             for (const inst of modelRegistry.values()) {
                 const bones = inst.mmdModel?.runtimeBones;
                 if (bones && bones.length > 0) {
-                    // [doc:adr-085/129] 脚部状态从动作覆盖模块读取（随动作走），
-                    // 不再依赖 inst.feet（per-model）作为引擎输入
+                    // [doc:adr-116 重构] 地面跟随 always-on：enabled=true, intensity=1
                     out.push({
                         id: inst.id,
-                        feet: getFeetStateForModel(inst.id),
+                        feet: { ...createDefaultFeetState(), enabled: true },
                         runtimeBones: bones,
                     });
                 }

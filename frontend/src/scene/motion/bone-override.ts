@@ -57,7 +57,9 @@ let _observerHandle: (() => void) | null = null; // 已注册层的 unregister �
 let _driverHandle: ObserverHandle | null = null; // 单一驱动 observer 句柄
 let _driverScene: import('@babylonjs/core/scene').Scene | null = null; // 驱动所绑定的 scene（随重建更新）
 const _overrideMaps = new Map<string, Map<string, _OverrideSlot>>();
-/** [doc:adr-116 P3] 每帧钩子条目：由时间驱动模块（sway/riding/hand-symmetry）注册，渲染回调每帧调用。
+/** 运行时骨骼查询回调（由 startBoneOverride 注入，供 dumpBoneHierarchy 使用） */
+let _getRuntimeBones: (() => readonly IMmdRuntimeBone[]) | null = null;
+/** [doc:adr-116 P3] 每帧钩子条目：由时间驱动模块（riding/left-hand/right-hand）注册，渲染回调每帧调用。
  *  原实现用 Set 按插入序遍历，钩子间同骨获胜者依赖模块注册次序（隐式定序，R2 病灶）。
  *  改为带 order 的数组并按 order 升序执行，顺序由声明决定，与注册时序解耦。 */
 interface _FrameHookEntry {
@@ -68,6 +70,9 @@ const _frameHooks: _FrameHookEntry[] = [];
 let _frameHooksSorted = false;
 const _qPool = [new Quaternion(), new Quaternion(), new Quaternion(), new Quaternion()];
 let _qIdx = 0;
+
+// JS 路径弃用标志：每个 session 最多 warn 一次，避免每帧 flood 控制台
+let _jsPathWarned = false;
 function _q(): Quaternion {
     return _qPool[_qIdx++ % _qPool.length];
 }
@@ -384,7 +389,7 @@ export function clearAllOverrides(modelId?: string): void {
 
 /**
  * [doc:adr-116 P3] 注册每帧渲染钩子。
- * 时间驱动模块（sway/riding/hand-symmetry）用以逐帧更新自身骨骼覆盖（如正弦摇摆、踏板循环、手部对称）。
+ * 时间驱动模块（riding/left-hand/right-hand）用以逐帧更新自身骨骼覆盖（如踏板循环、手臂位置偏移）。
  * 钩子签名 (timeSec, modelId)：timeSec 为 performance.now()/1000（秒）。
  * 返回注销函数，模块 disable/卸载时必须调用以避免泄漏。
  *
@@ -496,7 +501,13 @@ function _applyWasmOverride(slot: _OverrideSlot, rb: IMmdRuntimeBone): void {
     _propagateChildrenWasm(rb, oldMat, newMat);
 }
 
-/** JS 单骨覆盖：写 linkedBone rotationQuaternion / position */
+/**
+ * JS 单骨覆盖：写 linkedBone rotationQuaternion / position。
+ * @deprecated 自 2026-07-25 弃用。JS 路径不递归传播子骨骼（子骨骼 worldMatrix 不跟随），
+ *   且在现代运行环境中 WASM 覆盖率接近 100%。保留此函数仅作极端兜底，
+ *   任何新开发工作应使用 WASM 路径（`_applyWasmOverride`）。
+ *   调试骨骼状态请改用 `dumpBoneHierarchy()` 或控制台 `await window.__dumpBones()`。
+ */
 function _applyJsOverride(slot: _OverrideSlot, rb: IMmdRuntimeBone): void {
     // IMmdRuntimeBone.linkedBone 已声明为 IMmdRuntimeLinkedBone (duck-typed abstraction)，
     // 但运行时 babylon-mmd MmdRuntimeBone 的 linkedBone 是完整的 Babylon.js Bone 实例。
@@ -549,6 +560,9 @@ export function startBoneOverride(
         return;
     } // 已启动
 
+    // 保存回调供 dumpBoneHierarchy 使用
+    _getRuntimeBones = getRuntimeBones;
+
     const callback = () => {
         // 帧首重置 Matrix/Vector3 池（WASM 路径复用，避免每帧分配）
         _mReset();
@@ -577,6 +591,16 @@ export function startBoneOverride(
             boneMap.set(b.name, b);
         }
         const isWasm = isWasmRuntime(bones[0]);
+
+        // 非 WASM 运行时：一次性弃用警告 + 替代调试路径提示
+        if (!isWasm && !_jsPathWarned) {
+            _jsPathWarned = true;
+            console.warn(
+                '[bone-override] JS 骨骼覆盖路径已弃用，当前运行在非 WASM 模式下。' +
+                'JS 路径不递归传播子骨骼，可能导致骨骼链断裂。' +
+                '调试骨骼状态请使用控制台：await window.__dumpBones()'
+            );
+        }
 
         for (const [boneName, slot] of overrideMap) {
             if (!slot.enabled) {
@@ -622,5 +646,93 @@ export function stopBoneOverride(): void {
     _driverScene = null;
     _frameHooks.length = 0;
     _frameHooksSorted = false;
+    _jsPathWarned = false;
+    _getRuntimeBones = null;
     clearAllOverrides();
+}
+
+// ── 调试工具 ──
+
+/** 单根骨骼的层级与覆盖状态（dumpBoneHierarchy 输出元素） */
+export interface BoneHierarchyNode {
+    /** 骨骼在 runtimeBones 数组中的索引 */
+    index: number;
+    /** 骨骼名称 */
+    name: string;
+    /** 父骨骼的索引，-1 表示根骨骼 */
+    parentIndex: number;
+    /** 子骨骼数量 */
+    childCount: number;
+    /** 是否挂载 IK 求解器 */
+    hasIkSolver: boolean;
+    /** 是否受物理驱动（transformAfterPhysics） */
+    afterPhysics: boolean;
+    /** 当前是否被覆盖 */
+    isOverridden: boolean;
+    /** 当前覆盖条目（仅 isOverridden 时存在） */
+    overrideEntry?: BoneOverrideEntry;
+}
+
+/** 骨骼层级导出结果 */
+export interface BoneHierarchyDump {
+    modelId: string;
+    timestamp: string;
+    totalBones: number;
+    totalOverridden: number;
+    bones: BoneHierarchyNode[];
+}
+
+/**
+ * 导出当前聚焦模型的骨骼层级与覆盖状态。
+ * 用于开发调试、用户 issue 提交、模块开发时确认骨骼命名。
+ *
+ * @param modelId 目标模型 ID（可选，默认聚焦模型）
+ * @returns 骨骼层级导出结果，模型不存在时返回 null
+ */
+export function dumpBoneHierarchy(modelId?: string): BoneHierarchyDump | null {
+    const mid = _resolveModelId(modelId);
+    if (!mid) {
+        return null;
+    }
+    const bones = _getRuntimeBones?.() ?? [];
+    if (bones.length === 0) {
+        return null;
+    }
+    const overrideMap = _overrideMaps.get(mid);
+
+    // 构建 name → index 映射（O(1) 查找父骨骼索引）
+    const indexMap = new Map<string, number>();
+    for (let i = 0; i < bones.length; i++) {
+        indexMap.set(bones[i].name, i);
+    }
+
+    const result: BoneHierarchyNode[] = [];
+    let totalOverridden = 0;
+    for (let i = 0; i < bones.length; i++) {
+        const b = bones[i];
+        const parentIndex = b.parentBone ? indexMap.get(b.parentBone.name) ?? -1 : -1;
+        const slot = overrideMap?.get(b.name);
+        const isOverridden = slot?.enabled ?? false;
+        if (isOverridden) {
+            totalOverridden++;
+        }
+        result.push({
+            index: i,
+            name: b.name,
+            parentIndex,
+            childCount: b.childBones.length,
+            hasIkSolver: !!(b as MmdRuntimeBoneExtended).ikSolver,
+            afterPhysics: b.transformAfterPhysics,
+            isOverridden,
+            overrideEntry: isOverridden && slot ? _slotToEntry(b.name, slot) : undefined,
+        });
+    }
+
+    return {
+        modelId: mid,
+        timestamp: new Date().toISOString(),
+        totalBones: bones.length,
+        totalOverridden,
+        bones: result,
+    };
 }
