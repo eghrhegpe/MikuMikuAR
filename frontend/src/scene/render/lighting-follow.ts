@@ -64,7 +64,9 @@ const _tmpPos = Vector3.Zero();
 const WAIST_CANDIDATES = ['Waist', 'センター', 'Center', '腰', '上半身'];
 
 export const DEFAULT_PERSONAL_LIGHT: PersonalLightSettings = {
-    enabled: true,
+    // P2-fix: 默认关闭，避免多角色场景 N 模型 = N 盏自动灯导致光照过度
+    // 由预设或用户在舞台灯光面板主动启用
+    enabled: false,
     intensity: 1.2,
     color: [1, 1, 1],
     angle: 0.7,

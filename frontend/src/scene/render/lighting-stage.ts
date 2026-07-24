@@ -299,6 +299,12 @@ export function addStageLight(
     type: StageLightType = 'spot',
     preset?: Partial<StageLightState>
 ): string {
+    // P2-fix: 光源数量上限保护（Babylon StandardMaterial 默认 maxSimultaneousLights=4，
+    // 超出会静默不渲染部分灯；主光+半球光已占 2 槽，故舞台灯上限 6 留余量）
+    const MAX_STAGE_LIGHTS = 6;
+    if (lightingState.stageLights.size >= MAX_STAGE_LIGHTS) {
+        return '';
+    }
     lightingState.stageLightCounter++;
     const id = `light-${lightingState.stageLightCounter}`;
     const defaultNames: Record<StageLightType, string> = {

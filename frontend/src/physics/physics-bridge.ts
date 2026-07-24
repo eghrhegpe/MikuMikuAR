@@ -120,8 +120,16 @@ export type FrameUpdateFn = (dtSeconds: number) => void;
 export class PerFrameUpdateRegistry {
     private observer: ObserverHandle | null = null;
     private readonly fns = new Map<string, FrameUpdateFn>();
+    private _disposeHandle: ObserverHandle | null = null;
 
-    constructor(private readonly scene: Scene) {}
+    constructor(private readonly scene: Scene) {
+        // P2-fix: 绑定 scene.onDisposeObservable，scene 销毁时自动清理，
+        // 避免 HMR 重建场景时旧注册表残留 observer 挂在已销毁 scene 上
+        // 防御：部分 mock scene（单测）无 onDisposeObservable，容忍跳过
+        if (this.scene.onDisposeObservable) {
+            this._disposeHandle = observe(this.scene.onDisposeObservable, () => this.dispose());
+        }
+    }
 
     register(key: string, fn: FrameUpdateFn): void {
         this.fns.set(key, fn);
@@ -158,6 +166,10 @@ export class PerFrameUpdateRegistry {
         if (this.observer) {
             this.observer.dispose();
             this.observer = null;
+        }
+        if (this._disposeHandle) {
+            this._disposeHandle.dispose();
+            this._disposeHandle = null;
         }
         this.fns.clear();
     }

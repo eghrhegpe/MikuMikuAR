@@ -12,6 +12,7 @@ import { Material } from '@babylonjs/core/Materials/material';
 import { scene } from '../scene';
 import { _envSys } from '../env/env-impl';
 import { setReflectionARSuspended } from '../env/env-reflection';
+import { getRenderState, setRenderState } from '../render/renderer';
 import { startARCamera, stopARCamera, captureARScreenshot, isARActive } from './ar-camera';
 import type { CameraFacing } from './ar-camera';
 import {
@@ -29,6 +30,8 @@ import { safeDispose } from '@/core/dispose-helpers';
 let _originalClearColor: Color4 | null = null;
 let _skyHidden = false;
 let _prevGazeState: { eye: boolean; head: boolean } | null = null;
+/** P2-fix: AR 模式下挂起的后处理状态，退出 AR 时恢复 */
+let _prevPostProcess: { ssao: boolean; dof: boolean; bloom: boolean } | null = null;
 let _contactShadow: Mesh | null = null;
 /** 阴影创建时的基准半径，用于每帧按当前 AABB 等比缩放，避免重建 mesh。 */
 let _contactShadowBaseRadius = 1;
@@ -188,6 +191,14 @@ export async function setARMode(enabled: boolean): Promise<boolean> {
         }
         // AR 场景无背景平面：挂起全部反射（退出 AR 时恢复）
         setReflectionARSuspended(true);
+        // P2-fix: AR 模式下 SSAO/DOF/Bloom 与视频背景语义冲突且 GPU 负担重，挂起
+        const rs = getRenderState();
+        _prevPostProcess = {
+            ssao: rs.ssaoEnabled,
+            dof: rs.dofEnabled,
+            bloom: rs.bloomEnabled,
+        };
+        setRenderState({ ssaoEnabled: false, dofEnabled: false, bloomEnabled: false });
         return true;
     } else {
         stopARCamera();
@@ -208,6 +219,15 @@ export async function setARMode(enabled: boolean): Promise<boolean> {
         }
         // 退出 AR：恢复用户 reflectionMode（纯派生覆盖解除）
         setReflectionARSuspended(false);
+        // P2-fix: 恢复 AR 模式前挂起的后处理状态
+        if (_prevPostProcess) {
+            setRenderState({
+                ssaoEnabled: _prevPostProcess.ssao,
+                dofEnabled: _prevPostProcess.dof,
+                bloomEnabled: _prevPostProcess.bloom,
+            });
+            _prevPostProcess = null;
+        }
         return true;
     }
 }

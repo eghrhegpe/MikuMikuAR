@@ -92,8 +92,13 @@ export function _ensureStageShadow(id: string): void {
     }
 
     const gen = new ShadowGenerator(state.shadowResolution, light);
-    gen.useBlurExponentialShadowMap = state.shadowType !== 'hard';
-    gen.useKernelBlur = state.shadowType === 'pcf';
+    // P2-fix: 与主光 CSM 语义统一 — 'pcf' 走真 PCF，'soft' 走 ESM+KernelBlur，'hard' 关模糊
+    if (state.shadowType === 'pcf') {
+        gen.usePercentageCloserFiltering = true;
+    } else {
+        gen.useBlurExponentialShadowMap = state.shadowType === 'soft';
+        gen.useKernelBlur = state.shadowType === 'soft';
+    }
     gen.bias = state.shadowBias;
 
     _addAllMeshesToShadow(gen);
