@@ -510,7 +510,7 @@ function replaceMotion(m: LibraryModel): void {
     }
     closeAllOverlays();
     const targetId = focusedModelId;
-    const motionName = m.name_jp || m.name_en || getBaseName(m.file_path).replace(/\.vmd$/i, '');
+    const motionName = getBaseName(m.file_path).replace(/\.vmd$/i, '');
     const doLoad = async (path: string): Promise<void> => {
         // [adr-169] 原位替换默认动作是破坏性操作（旧默认被移除）：操作前快照，成功后提供撤销
         const snap = pushUndoSnapshot();

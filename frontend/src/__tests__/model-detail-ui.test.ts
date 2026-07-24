@@ -452,8 +452,6 @@ describe('buildModelInfoLevel', () => {
         });
         // Pre-populate modelMetaCache so buildModelInfoLevel can read metadata
         modelMetaCache.set('D:/models/test.pmx', {
-            name_jp: '初音ミク',
-            name_en: 'Hatsune Miku',
             comment: 'test model',
         });
         const level = buildModelInfoLevel('m1');

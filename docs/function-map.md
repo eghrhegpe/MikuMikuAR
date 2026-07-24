@@ -1,7 +1,7 @@
 # 函数映射表
 
 > AI 找代码用。改前端功能时先 grep 此表定位文件。
-> **自动生成**（2026-07-23）— 由 `scripts/gen-funcmap.mjs` 生成。
+> **自动生成**（2026-07-24）— 由 `scripts/gen-funcmap.mjs` 生成。
 
 ## 总览
 
@@ -9,7 +9,7 @@
 |------|--------|-----------|
 | 核心基础设施 | 65 | 504 |
 | 3D 场景 | 98 | 1057 |
-| 菜单 & UI | 65 | 340 |
+| 菜单 & UI | 65 | 337 |
 | 换装 & 音频 | 3 | 38 |
 | 动作算法 | 17 | 129 |
 | 物理系统 | 2 | 14 |
@@ -1887,9 +1887,6 @@
 | `buildSettingsMediaLevel()` | `menus/settings-media` | — |
 | `buildSettingsResourcesLevel()` | `menus/settings-resources` | — |
 | `FONT_MAP()` | `menus/settings-shared` | — |
-| `NAME_PRIORITY_INDEX()` | `menus/settings-shared` | — |
-| `NAME_PRIORITY_LABELS()` | `menus/settings-shared` | — |
-| `PRIORITY_TO_INDEX()` | `menus/settings-shared` | — |
 | `SETTINGS_FONT_RESTORE()` | `menus/settings-shared` | — |
 | `SettingsMenuHandle()` | `menus/settings-shared` | — |
 | `THEME_PRESETS()` | `menus/settings-shared` | — |
@@ -2128,5 +2125,5 @@
 
 ---
 
-> 共 252 个文件，2095 个导出符号。
+> 共 252 个文件，2092 个导出符号。
 > 说明列（—）待知识库或人工补充。

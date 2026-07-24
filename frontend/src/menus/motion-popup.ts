@@ -157,7 +157,7 @@ function motionOnItemClick(row: PopupRow): void {
         if (row.model.format === 'vmd') {
             addSceneMotion({
                 vmdPath: row.model.file_path,
-                vmdName: row.model.name_jp || row.model.name_en || '',
+                vmdName: row.model.file_path.split(/[/\\]/).pop()?.replace(/\.\w+$/, '') || '',
                 vmdLayers: [],
                 source: 'vmd',
             });

@@ -7,6 +7,7 @@ import {
     setStatus,
     PopupLevel,
     modelMetaCache,
+    setModelMetaCache,
     computeLibraryRef,
     dom,
     stackRegistry,
@@ -45,8 +46,9 @@ import {
 } from '../core/wails-bindings';
 import type { SoftwareEntry } from '../core/wails-bindings';
 import { tryCatchStatus } from '../core/utils';
-import { logWarn } from '../core/logger';
 import { safeCallAsync } from '../core/safe-call';
+import { logWarn } from '../core/logger';
+import { GetModelMetaBatch } from '../core/wails-bindings';
 import { pushUndoSnapshot, offerSceneUndo } from '../scene/scene';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
 import { renderMenu } from './render-menu';
@@ -729,6 +731,19 @@ function buildModelInfoSchema(id: string): MenuNode[] {
     if (!inst) {
         return [] satisfies MenuNode[];
     }
+    // 主动确保 PMX 元数据（comment）已加载
+    const metaKey = inst.libraryPath ?? inst.filePath;
+    if (metaKey && !modelMetaCache.has(metaKey)) {
+        GetModelMetaBatch([metaKey])
+            .then((batch) => {
+                if (batch?.[metaKey]) {
+                    const merged = new Map(modelMetaCache);
+                    merged.set(metaKey, batch[metaKey]);
+                    setModelMetaCache(merged);
+                }
+            })
+            .catch((err) => logWarn('model-detail', 'GetModelMetaBatch:', err));
+    }
     return [
         {
             id: 'model-info:root',
@@ -755,7 +770,7 @@ function buildModelInfoSchema(id: string): MenuNode[] {
                     return n + (mm.materials?.length ?? (m.material ? 1 : 0));
                 }, 0);
                 const fileName = inst.filePath.split(/[/\\]/).pop() || inst.filePath;
-                const comment = meta?.comment ? meta.comment.substring(0, 80) : '';
+                const comment = meta?.comment ? meta.comment : '';
                 const fields: Array<{
                     label: string;
                     value: string;
@@ -794,8 +809,6 @@ function buildModelInfoSchema(id: string): MenuNode[] {
                                 ? morphCount.toLocaleString()
                                 : t('model-detail.na'),
                     },
-                    { label: t('model-detail.fNameJp'), value: meta?.name_jp || '—' },
-                    { label: t('model-detail.fNameEn'), value: meta?.name_en || '—' },
                     ...(comment
                         ? [{ label: t('model-detail.fComment'), value: comment, wide: true }]
                         : []),

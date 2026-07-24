@@ -18,9 +18,7 @@ export const zhCN: Record<string, string> = {
     'settings.theme.sunsetOrange': '日落橙',
     'settings.theme.nightPurple': '暗夜紫',
     'settings.theme.minimalGray': '极简灰',
-    'settings.namePriority.jp': '日语名',
-    'settings.namePriority.en': '英语名',
-    'settings.namePriority.filename': '文件名',
+
     'settings.slideAnimation': '滑动动画',
     'settings.animation': '动效',
     'settings.bgBlur': '背景模糊',
@@ -66,7 +64,7 @@ export const zhCN: Record<string, string> = {
     'settings.library.sortMode': '排序方式',
     'settings.library.sortByName': '按名称排序',
     'settings.library.sortByDefault': '按默认顺序',
-    'settings.library.namePriority': '显示名优先级',
+
     'settings.library.materialMap': '材质分类映射',
     'settings.library.addMaterialMap': '添加映射',
     'settings.library.patternLabel': '匹配规则',
@@ -183,8 +181,7 @@ export const zhCN: Record<string, string> = {
     'model-detail.fMaterials': '材质数',
     'model-detail.fBones': '骨骼数',
     'model-detail.fMorphs': '表情数',
-    'model-detail.fNameJp': '日文名',
-    'model-detail.fNameEn': '英文名',
+
     'model-detail.fComment': '备注',
     'model-detail.none': '无',
     'model-detail.tagsTitle': '模型标签',

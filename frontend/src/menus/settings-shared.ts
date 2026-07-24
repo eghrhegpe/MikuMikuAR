@@ -151,32 +151,7 @@ export const THEME_PRESETS: Array<{ labelKey: string; color: string }> = [
     { labelKey: 'settings.theme.minimalGray', color: '#888888' },
 ];
 
-// ======== Display name priority ========
-
-import type { DisplayNamePriority } from '../core/config';
-
-/** displayNamePriority → 显示名 i18n key（渲染时用 t() 解析，避免硬编码中文） */
-export const NAME_PRIORITY_LABELS: Record<DisplayNamePriority, string> = {
-    name_jp: 'settings.namePriority.jp',
-    name_en: 'settings.namePriority.en',
-    filename: 'settings.namePriority.filename',
-};
-
-export const NAME_PRIORITY_INDEX: Record<number, DisplayNamePriority> = {
-    0: 'name_jp',
-    1: 'name_en',
-    2: 'filename',
-};
-
-/** displayNamePriority → slider index (0/1/2)，消除 settings-filename.ts 中的隐式重复映射 */
-export const PRIORITY_TO_INDEX: Record<DisplayNamePriority, number> = {
-    name_jp: 0,
-    name_en: 1,
-    filename: 2,
-};
-
 // ======== Appearance restore (for import/reset) ========
-
 export function applyUIAppearanceDom(s: UIState): void {
     const root = document.documentElement;
     if (s.scale) {
