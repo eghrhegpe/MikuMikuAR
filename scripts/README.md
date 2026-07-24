@@ -139,16 +139,17 @@ node scripts/gen-icon-bundle.mjs
 
 ---
 
-## pre-commit 钩子（左移校验）
+## pre-push 钩子（推送前校验）
 
-版本化钩子位于 `.githooks/pre-commit`，提交前秒级跑 `check:status` + `check:funcmap`，把文档漂移拦在本地而非 CI。
+版本化钩子位于 `.githooks/pre-push`，推送前秒级跑 `check:status` + `check:funcmap`，把文档漂移拦在本地而非 CI。
+选用 **pre-push 而非 pre-commit**：commit 是本地高频操作，拦 commit 有中断心流、丢失进行中改动的风险；push 是对外发布的边界，在此把关既不打扰本地迭代，又能确保推上去的内容文档同步。
 
 ```bash
 # 一次性启用（每个 clone 都需执行）
 git config core.hooksPath .githooks
 ```
 
-钩子失败时按提示运行 `npm run gen:status` / `npm run gen:funcmap` 并 `git add` 生成文件即可。
+钩子失败时按提示运行 `npm run gen:status` / `npm run gen:funcmap` 并 `git add` 生成文件即可；紧急放行用 `git push --no-verify`（不推荐）。
 
 ## 新人上手建议
 
