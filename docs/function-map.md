@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 67 | 530 |
+| 核心基础设施 | 67 | 532 |
 | 3D 场景 | 98 | 1058 |
 | 菜单 & UI | 65 | 337 |
 | 换装 & 音频 | 3 | 38 |
@@ -386,6 +386,7 @@
 | `DebouncedTimer()` | `core/utils` | — |
 | `LoadingGuard()` | `core/utils` | — |
 | `allSettledFilter()` | `core/utils` | — |
+| `canvasToBase64()` | `core/utils` | — |
 | `cardContainer()` | `core/utils` | — |
 | `clamp()` | `core/utils` | — |
 | `clamp01()` | `core/utils` | — |
@@ -408,6 +409,7 @@
 | `formatError()` | `core/utils` | — |
 | `formatTime()` | `core/utils` | — |
 | `formatTimestamp()` | `core/utils` | — |
+| `generateUuid()` | `core/utils` | — |
 | `getBaseName()` | `core/utils` | — |
 | `getBrowseDir()` | `core/utils` | — |
 | `getDirPath()` | `core/utils` | — |
@@ -2152,5 +2154,5 @@
 
 ---
 
-> 共 254 个文件，2118 个导出符号。
+> 共 254 个文件，2120 个导出符号。
 > 说明列（—）待知识库或人工补充。

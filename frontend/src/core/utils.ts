@@ -133,6 +133,46 @@ export function toBase64(s: string): string {
     return btoa(binary);
 }
 
+export function canvasToBase64(
+    canvas: HTMLCanvasElement,
+    format: string,
+    quality: number
+): Promise<string> {
+    return new Promise((resolve) => {
+        canvas.toBlob(
+            (blob) => {
+                if (!blob) {
+                    resolve(canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, ''));
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const result = reader.result;
+                    if (typeof result === 'string') {
+                        resolve(result.replace(/^data:image\/\w+;base64,/, ''));
+                    } else {
+                        resolve(canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, ''));
+                    }
+                };
+                reader.onerror = () => {
+                    resolve(canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, ''));
+                };
+                reader.readAsDataURL(blob);
+            },
+            format,
+            quality
+        );
+    });
+}
+
+export function generateUuid(): string {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+        const r = (Math.random() * 16) | 0;
+        const v = c === 'x' ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+    });
+}
+
 export function escapeHtml(s: string): string {
     return s
         .replace(/&/g, '&amp;')

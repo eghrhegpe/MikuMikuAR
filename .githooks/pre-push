@@ -1,7 +1,7 @@
 #!/bin/sh
-# MikuMikuAR pre-commit — 文档漂移左移校验（秒级）
+# MikuMikuAR pre-push — 文档漂移推送前校验（秒级）
 # 安装方式: git config core.hooksPath .githooks
-# 跳过一次: git commit --no-verify（不推荐）
+# 跳过一次: git push --no-verify（不推荐）
 
 set -e
 ROOT="$(git rev-parse --show-toplevel)"

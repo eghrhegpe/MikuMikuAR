@@ -7,6 +7,7 @@ import { dom, setStatus } from '@/core/config';
 import { t } from '@/core/i18n/t';
 import { isAndroidPlatform } from '@/core/platform';
 import { logWarn } from '@/core/logger';
+import { canvasToBase64 } from '@/core/utils';
 
 // ======== Types ========
 export type CameraFacing = 'user' | 'environment';
@@ -259,7 +260,7 @@ export function captureARScreenshot(
     format: string = 'image/png',
     quality: number = 0.9
 ): Promise<string> {
-    return _canvasToBase64(dom.canvas, format, quality).then((fallbackBase64) => {
+    return canvasToBase64(dom.canvas, format, quality).then((fallbackBase64) => {
         if (!_active || !_videoEl) {
             return fallbackBase64;
         }
@@ -299,54 +300,7 @@ export function captureARScreenshot(
         }
 
         ctx.drawImage(dom.canvas, 0, 0, cw, ch);
-        return _canvasToBase64(out, format, quality);
-    });
-}
-
-/**
- * canvas → base64 异步编码（替代同步 toDataURL）。
- * toBlob 将 PNG/JPEG 编码移至后台线程（Chrome Skia encoder），不阻塞主线程，
- * 内存峰值显著低于 toDataURL（后者一次性生成完整 data URL 字符串）。
- * 回退路径：toBlob 不可用或返回 null 时降级 toDataURL（受约束环境兼容）。
- */
-function _canvasToBase64(
-    canvas: HTMLCanvasElement,
-    format: string,
-    quality: number
-): Promise<string> {
-    return new Promise((resolve) => {
-        canvas.toBlob(
-            (blob) => {
-                if (!blob) {
-                    // toBlob 返回 null（受约束环境或编码失败）→ 降级 toDataURL
-                    resolve(
-                        canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, '')
-                    );
-                    return;
-                }
-                const reader = new FileReader();
-                reader.onload = () => {
-                    const result = reader.result;
-                    if (typeof result === 'string') {
-                        resolve(result.replace(/^data:image\/\w+;base64,/, ''));
-                    } else {
-                        resolve(
-                            canvas
-                                .toDataURL(format, quality)
-                                .replace(/^data:image\/\w+;base64,/, '')
-                        );
-                    }
-                };
-                reader.onerror = () => {
-                    resolve(
-                        canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, '')
-                    );
-                };
-                reader.readAsDataURL(blob);
-            },
-            format,
-            quality
-        );
+        return canvasToBase64(out, format, quality);
     });
 }
 
