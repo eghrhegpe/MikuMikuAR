@@ -8,9 +8,10 @@ source_files:
   - frontend/src/scene/render/lighting-presets.ts
 adr: []
 symbols:
+  - LightingPresetLight
   - LightingPreset
   - LIGHTING_PRESETS
-  - applyLightingPreset
+  - PRESET_NAMES
 invariants:
   - 预设参数在合理范围内
 tests: []

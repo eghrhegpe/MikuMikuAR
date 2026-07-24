@@ -8,10 +8,12 @@ source_files:
   - frontend/src/scene/pose/composition-guide.ts
 adr: []
 symbols:
-  - CompositionGuide
-  - applyCompositionGuide
+  - getGuideMode
+  - setGuideMode
+  - cycleGuideMode
+  - disposeGuides
 invariants:
-  - 构图规则基于三分法则
+  - 构图模式在 off/ruleOfThirds/goldenRatio/diagonal 之间切换
 tests: []
 use_when:
   - 构图指南

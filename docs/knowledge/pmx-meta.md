@@ -8,8 +8,8 @@ source_files:
   - frontend/src/core/pmx-meta.ts
 adr: []
 symbols:
-  - PMXMeta
-  - extractPMXMeta
+  - PmxMeta
+  - parsePmxComment
 invariants:
   - 元数据提取不解析完整 PMX
 tests: []

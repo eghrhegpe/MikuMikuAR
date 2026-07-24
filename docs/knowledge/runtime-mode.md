@@ -9,7 +9,10 @@ source_files:
 adr: []
 symbols:
   - RuntimeMode
-  - getRuntimeMode
+  - detectRuntimeMode
+  - persistRuntimeMode
+  - loadPersistedRuntimeMode
+  - renderRuntimeBadge
 invariants:
   - 运行模式在启动时确定
 tests: []

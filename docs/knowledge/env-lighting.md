@@ -8,10 +8,15 @@ source_files:
   - frontend/src/scene/env/env-lighting.ts
 adr: []
 symbols:
-  - initEnvLighting
-  - disposeEnvLighting
+  - EnvPreset
+  - DerivedLighting
+  - calcLuminance
+  - deriveLighting
+  - TIME_OF_DAY_PRESETS
+  - exportEnvPreset
+  - importEnvPreset
 invariants:
-  - 灯光对象在 dispose 时释放
+  - 灯光预设参数在合理范围内
 tests: []
 use_when:
   - 环境灯光

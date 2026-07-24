@@ -8,11 +8,10 @@ source_files:
   - frontend/src/scene/motion/motion-modules/riding-model.ts
 adr: []
 symbols:
-  - RidingModelModule
-  - applyRidingModel
+  - createRidingModelModule
+  - RIDING_MODEL_DEF
 invariants:
   - 骑乘模型骨骼需与主模型骨骼匹配
-  - 骑乘动作优先级高
 tests: []
 use_when:
   - 骑乘模型

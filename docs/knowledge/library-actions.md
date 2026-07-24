@@ -8,10 +8,12 @@ source_files:
   - frontend/src/menus/library-actions.ts
 adr: []
 symbols:
-  - LibraryActions
-  - executeLibraryAction
+  - loadThumbnailsForLevel
+  - ensureModelMeta
+  - prepareModelRestore
+  - importFile
 invariants:
-  - 操作前检查权限
+  - 缩略图异步加载，不阻塞 UI
 tests: []
 use_when:
   - 资源库操作

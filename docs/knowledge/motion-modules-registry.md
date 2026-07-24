@@ -8,11 +8,11 @@ source_files:
   - frontend/src/scene/motion/motion-modules/registry.ts
 adr: []
 symbols:
-  - MotionModule
-  - MotionModuleRegistry
-  - registerMotionModule
-  - unregisterMotionModule
-  - getMotionModules
+  - registerModule
+  - unregisterModule
+  - getRegisteredModules
+  - createModule
+  - getModuleState
 invariants:
   - 模块注册后按 priority 排序执行
   - 每个模块有唯一 name 标识

@@ -8,11 +8,13 @@ source_files:
   - frontend/src/scene/motion/lipsync-bridge.ts
 adr: []
 symbols:
-  - LipsyncBridge
-  - applyLipsync
+  - initLipSync
+  - setLipSyncEnabled
+  - setLipSyncSensitivity
+  - setLipSyncIntensity
+  - setLipSyncMultiMorphEnabled
 invariants:
-  - 口型参数由音频信号驱动
-  - 与 perception-lipsync 协作
+  - 口型同步开关可运行时切换
 tests: []
 use_when:
   - 口型同步

@@ -8,11 +8,11 @@ source_files:
   - frontend/src/scene/motion/motion-modules/feet-adjustment-module.ts
 adr: []
 symbols:
-  - FeetAdjustmentModule
-  - applyFeetAdjustment
+  - getFeetStateForModel
+  - createFeetAdjustmentModule
+  - FEET_ADJUSTMENT_DEF
 invariants:
   - 依赖 feet-adjustment 引擎已初始化
-  - 每帧调用 solveFootTarget 计算脚部位置
 tests: []
 use_when:
   - 脚部调整模块
