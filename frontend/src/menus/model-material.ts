@@ -21,7 +21,13 @@ import {
     applyUnlitFallback,
 } from '../scene/scene';
 import { createIconifyIcon } from '../core/icons';
-import { slideRow, addSliderRow, addCollapsible, addSectionTitle, createHeaderToggle } from '../core/ui-helpers';
+import {
+    slideRow,
+    addSliderRow,
+    addCollapsible,
+    addSectionTitle,
+    createHeaderToggle,
+} from '../core/ui-helpers';
 import type { SlideMenu } from './menu';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
@@ -139,7 +145,9 @@ function buildMatToggle(
             setMatEnabled(id, index, newState);
             row.classList.toggle('mat-disabled', !newState);
             setStatus(
-                newState ? t('model-material.shown', { name }) : t('model-material.hidden', { name }),
+                newState
+                    ? t('model-material.shown', { name })
+                    : t('model-material.hidden', { name }),
                 true
             );
         },

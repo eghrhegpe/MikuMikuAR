@@ -112,8 +112,9 @@ export function attachPersonalLight(
     const waistName = settings.boneName
         ? settings.boneName
         : model.mmdModel
-          ? (WAIST_CANDIDATES.find((n) => model.mmdModel!.runtimeBones?.some((b) => b.name === n)) ??
-            null)
+          ? (WAIST_CANDIDATES.find((n) =>
+                model.mmdModel!.runtimeBones?.some((b) => b.name === n)
+            ) ?? null)
           : null;
     const basePos = _getLightBasePos(model, waistName);
     const startPos = new Vector3(
@@ -342,7 +343,10 @@ export interface SerializedPersonalLight {
 }
 
 /** 导出所有个人灯状态（仅非默认值差异落盘由调用方决定） */
-export function getAllPersonalLights(): Array<{ modelId: string; settings: PersonalLightSettings }> {
+export function getAllPersonalLights(): Array<{
+    modelId: string;
+    settings: PersonalLightSettings;
+}> {
     const result: Array<{ modelId: string; settings: PersonalLightSettings }> = [];
     for (const [modelId, entry] of _entries) {
         result.push({ modelId, settings: { ...entry.settings } });
@@ -413,14 +417,15 @@ export function tickStageLightFollow(): void {
             if (ft.cachedWaistBone) {
                 boneName = ft.cachedWaistBone;
             } else if (model.mmdModel) {
-                const matched = WAIST_CANDIDATES.find((n) =>
-                    model.mmdModel!.runtimeBones?.some((b) => b.name === n)
-                ) ?? null;
+                const matched =
+                    WAIST_CANDIDATES.find((n) =>
+                        model.mmdModel!.runtimeBones?.some((b) => b.name === n)
+                    ) ?? null;
                 ft.cachedWaistBone = matched;
                 boneName = matched;
             }
         }
-        
+
         const basePos = _getLightBasePos(model, boneName);
         _stageTmpTarget.set(
             basePos.x + ft.offset[0],
@@ -462,4 +467,3 @@ export function tickStageLightFollow(): void {
         }
     }
 }
-

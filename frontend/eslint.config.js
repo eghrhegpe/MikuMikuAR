@@ -81,6 +81,13 @@ export default [
       'brace-style': ['warn', '1tbs'],
       quotes: ['warn', 'single', { avoidEscape: true }],
       semi: ['warn', 'always'],
+      // 代码质量度量：自动拦截超限函数（审计 250LOC 红线 + 圈复杂度）
+      'max-lines': ['warn', { max: 500, skipBlankLines: true, skipComments: true }],
+      'max-lines-per-function': [
+        'warn',
+        { max: 250, skipBlankLines: true, skipComments: true },
+      ],
+      complexity: ['warn', 20],
       'no-restricted-imports': [
         'error',
         {
@@ -94,7 +101,8 @@ export default [
         },
       ],
       indent: 'off',
-      'linebreak-style': ['warn', 'unix'],
+      // Windows 开发环境关掉 linebreak 检查（Git autocrlf 导致大量 CRLF 噪声）
+      'linebreak-style': 'off',
       'prettier/prettier': [
         'warn',
         {

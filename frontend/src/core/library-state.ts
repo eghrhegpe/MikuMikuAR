@@ -3,12 +3,7 @@
  * 状态访问规约见 scene-state.ts 头部注释（单一写入点 + 禁止直接赋值 export let）。
  */
 
-import type {
-    OverridePaths,
-    LibraryModel,
-    RecentMotion,
-    LibrarySortMode,
-} from './types';
+import type { OverridePaths, LibraryModel, RecentMotion, LibrarySortMode } from './types';
 
 // ======== Library Paths ========
 
@@ -98,13 +93,8 @@ export function getRecentMotions(): readonly RecentMotion[] {
 
 // ======== Model Metadata Cache ========
 
-export let modelMetaCache = new Map<
-    string,
-    { comment: string }
->();
-export function setModelMetaCache(
-    m: Map<string, { comment: string }>
-): void {
+export let modelMetaCache = new Map<string, { comment: string }>();
+export function setModelMetaCache(m: Map<string, { comment: string }>): void {
     modelMetaCache = m;
 }
 

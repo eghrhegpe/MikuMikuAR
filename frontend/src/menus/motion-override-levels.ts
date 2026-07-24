@@ -440,7 +440,11 @@ function updateConflictBanner(el: HTMLElement, modelId: string | null): void {
         return a.conflicts.map((c) => {
             const winnerMeta = getRegisteredModules().find((m) => m.id === c.byModule)?.meta;
             const winnerName = winnerMeta ? t(winnerMeta.labelKey) : c.byModule;
-            return t('motion.boneConflict.line', { bone: c.bone, winner: winnerName, loser: loserName });
+            return t('motion.boneConflict.line', {
+                bone: c.bone,
+                winner: winnerName,
+                loser: loserName,
+            });
         });
     });
     el.style.display = '';
@@ -530,7 +534,14 @@ function buildBoneOverrideSchema(): MenuNode[] {
     // 提升到模块级 _overrideFormStates Map，避免 reRender 时丢失
     let formState = _overrideFormStates.get(modelId);
     if (!formState) {
-        formState = { boneName: bones[0]?.name ?? '', pitch: 0, yaw: 0, roll: 0, weight: 1, absolute: true };
+        formState = {
+            boneName: bones[0]?.name ?? '',
+            pitch: 0,
+            yaw: 0,
+            roll: 0,
+            weight: 1,
+            absolute: true,
+        };
         _overrideFormStates.set(modelId, formState);
     }
 
@@ -772,7 +783,9 @@ function buildBoneOverrideSchema(): MenuNode[] {
                         () => {
                             // [doc:adr-116 P3] 破坏性操作：先确认（仍可事后撤销）
                             void (async () => {
-                                if (!(await showConfirm(t('motion.boneOverride.clearAllConfirm')))) {
+                                if (
+                                    !(await showConfirm(t('motion.boneOverride.clearAllConfirm')))
+                                ) {
                                     return;
                                 }
                                 const snap = pushUndoSnapshot();

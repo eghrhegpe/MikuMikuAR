@@ -6,8 +6,7 @@
 // 浏览器端回退到 readFileBytes + Blob URL（browser-adapter 签名已对齐 ADR-176 Phase 2）。
 
 import { IsolateModelDir, StartFileServer } from './wails-bindings';
-import { resolveBackend } from './backend';
-import { isAndroidPlatform } from './platform';
+import { resolveBackend, getCachedCapabilities } from './backend';
 import type { BackendService } from './backend/types';
 
 let _cachedBackend: Promise<BackendService> | null = null;
@@ -56,14 +55,18 @@ export async function resolveFileUrl(
     // [doc:adr-176] 浏览器端 StartFileServer 抛 NotSupportedError，
     // 此时回退到 readFileBytes + Blob URL，构造 chrome-extension:// 或 blob: 前缀。
     const backend = await getBackend();
-    // [doc:adr-017][doc:adr-176] 浏览器端与 Android 均不使用 127.0.0.1 HTTP 文件服务：
-    // 改用 readFileBytes + Blob URL，彻底消除 http:// 子资源，从而可移除
+    // [doc:adr-017][doc:adr-176][doc:adr-178] 浏览器端、Android 应用或无 crossOriginIsolated（单线程物理）宿主
+    // 均不使用 127.0.0.1 HTTP 文件服务：改用 readFileBytes + Blob URL，彻底消除 http:// 子资源，从而可移除
     // MainActivity 的 MIXED_CONTENT_ALWAYS_ALLOW（A0-01 技术债根治，ADR-017 §六）。
-    // 桌面端仍走 StartFileServer（localhost HTTP）以维持既有流式性能与行为。
-    if (backend.kind === 'browser' || isAndroidPlatform()) {
+    // 桌面端（crossOriginIsolated=true）仍走 StartFileServer（localhost HTTP）以维持既有流式性能与行为。
+    // `backend.kind === 'browser'` 为保底：避免带 COOP/COEP 的网页部署误判 crossOriginIsolated=true 而走 http 崩溃。
+    if (backend.kind === 'browser' || !getCachedCapabilities().crossOriginIsolated) {
         const bytes = await backend.readFileBytes(safeDir + '/' + fileName);
-        if (!bytes) throw new Error(`[fileservice] readFileBytes failed for ${safeDir}/${fileName}`);
-        const blobUrl = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/octet-stream' }));
+        if (!bytes)
+            throw new Error(`[fileservice] readFileBytes failed for ${safeDir}/${fileName}`);
+        const blobUrl = URL.createObjectURL(
+            new Blob([bytes as BlobPart], { type: 'application/octet-stream' })
+        );
         return { url: blobUrl, port: -1, dir: safeDir };
     }
     const port = await StartFileServer(safeDir);

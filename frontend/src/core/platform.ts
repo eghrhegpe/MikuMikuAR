@@ -26,7 +26,10 @@ export function isAndroidPlatform(): boolean {
  * 必须用 `await resolveBackend()`（异步 + awaitWailsBridge），见 ADR-176。
  */
 export function isWebPlatform(): boolean {
-    return typeof window !== 'undefined' && typeof (window as { wails?: unknown }).wails === 'undefined';
+    return (
+        typeof window !== 'undefined' &&
+        typeof (window as { wails?: unknown }).wails === 'undefined'
+    );
 }
 
 /**
@@ -44,7 +47,11 @@ export async function awaitWailsBridge(timeout = 3000): Promise<boolean> {
         if (settled) {
             return;
         } // [audit:P2] 超时后停止轮询，防定时器泄漏
-        if (typeof window !== 'undefined' && typeof (window as { wails?: unknown }).wails === 'object' && (window as { wails?: unknown }).wails !== null) {
+        if (
+            typeof window !== 'undefined' &&
+            typeof (window as { wails?: unknown }).wails === 'object' &&
+            (window as { wails?: unknown }).wails !== null
+        ) {
             settled = true;
             resolve(true);
         } else {

@@ -19,8 +19,6 @@ export const ko: Record<string, string> = {
     'settings.theme.nightPurple': '나이트 퍼플',
     'settings.theme.minimalGray': '미니멀 그레이',
 
-
-
     'settings.slideAnimation': '슬라이드 애니메이션',
     'settings.animation': '애니메이션',
     'settings.bgBlur': '배경 흐림',
@@ -260,7 +258,6 @@ export const ko: Record<string, string> = {
     'model-detail.fMaterials': '재질 수',
     'model-detail.fBones': '뼈대 수',
     'model-detail.fMorphs': '모프 수',
-
 
     'model-detail.fComment': '리드미（readme）',
     'model-detail.fCommentLoading': '리드미（readme）',
@@ -1004,7 +1001,8 @@ export const ko: Record<string, string> = {
     'scene.vmd.wasmSingleLayer': '⚠ WASM은 단일 레이어만 지원, 로드됨: {name}',
     'scene.vmd.layersBlended': '✓ 레이어 블렌드됨: {names}',
     'scene.vmd.blendFailed': '✗ 레이어 블렌드 실패',
-    'scene.vmd.layersBlendFailedFallback': '⚠ 다중 레이어 블렌드 실패, 단일 레이어로 다운그레이드됨. 이유: {reason}',
+    'scene.vmd.layersBlendFailedFallback':
+        '⚠ 다중 레이어 블렌드 실패, 단일 레이어로 다운그레이드됨. 이유: {reason}',
 
     // —— Scene Camera ——
     'scene.camera.arFailed': '✗ AR 카메라 시작 실패, 원래대로 되돌림',
@@ -1662,7 +1660,8 @@ export const ko: Record<string, string> = {
     'motion.boneOverride.roll': '롤 (Z)',
     'motion.boneOverride.weight': '가중치',
     'motion.boneOverride.axisHint': 'P:피치 Y:요 R:롤 W:가중치',
-    'motion.boneOverride.clearAllConfirm': '모든 본 오버라이드를 삭제할까요? 실행 취소할 수 있습니다.',
+    'motion.boneOverride.clearAllConfirm':
+        '모든 본 오버라이드를 삭제할까요? 실행 취소할 수 있습니다.',
     // [doc:adr-116] 모션 오버라이드 모듈 UI
     'motion.override.title': '모션 오버라이드',
     'motion.override.enabled': '✓ 모듈 활성화됨',

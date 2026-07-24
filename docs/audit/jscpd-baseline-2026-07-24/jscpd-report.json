@@ -1,0 +1,345 @@
+{
+  "duplicates": [
+    {
+      "firstFile": {
+        "end": 43,
+        "endLoc": {
+          "column": 28,
+          "line": 43,
+          "position": 1684
+        },
+        "name": "core\\backend\\go-adapter.ts",
+        "start": 27,
+        "startLoc": {
+          "column": 46,
+          "line": 27,
+          "position": 1020
+        }
+      },
+      "format": "typescript",
+      "fragment": "",
+      "lines": 17,
+      "secondFile": {
+        "end": 110,
+        "endLoc": {
+          "column": 24,
+          "line": 110,
+          "position": 4946
+        },
+        "name": "core\\backend\\index.ts",
+        "start": 95,
+        "startLoc": {
+          "column": 43,
+          "line": 95,
+          "position": 4519
+        }
+      },
+      "tokens": 55
+    },
+    {
+      "firstFile": {
+        "end": 45,
+        "endLoc": {
+          "column": 6,
+          "line": 45,
+          "position": 1867
+        },
+        "name": "menus\\menu-factory.ts",
+        "start": 21,
+        "startLoc": {
+          "column": 4,
+          "line": 21,
+          "position": 1029
+        }
+      },
+      "format": "typescript",
+      "fragment": "",
+      "lines": 25,
+      "secondFile": {
+        "end": 158,
+        "endLoc": {
+          "column": 6,
+          "line": 158,
+          "position": 5728
+        },
+        "name": "menus\\menu-factory.ts",
+        "start": 147,
+        "startLoc": {
+          "column": 4,
+          "line": 147,
+          "position": 5396
+        }
+      },
+      "tokens": 55
+    },
+    {
+      "firstFile": {
+        "end": 313,
+        "endLoc": {
+          "column": 15,
+          "line": 313,
+          "position": 11963
+        },
+        "name": "menus\\settings-media.ts",
+        "start": 295,
+        "startLoc": {
+          "column": 62,
+          "line": 295,
+          "position": 11226
+        }
+      },
+      "format": "typescript",
+      "fragment": "",
+      "lines": 19,
+      "secondFile": {
+        "end": 395,
+        "endLoc": {
+          "column": 15,
+          "line": 395,
+          "position": 15820
+        },
+        "name": "menus\\settings-media.ts",
+        "start": 377,
+        "startLoc": {
+          "column": 66,
+          "line": 377,
+          "position": 15083
+        }
+      },
+      "tokens": 71
+    },
+    {
+      "firstFile": {
+        "end": 133,
+        "endLoc": {
+          "column": 10,
+          "line": 133,
+          "position": 4611
+        },
+        "name": "motion-algos\\vmd-evaluator.ts",
+        "start": 104,
+        "startLoc": {
+          "column": 39,
+          "line": 104,
+          "position": 3635
+        }
+      },
+      "format": "typescript",
+      "fragment": "",
+      "lines": 30,
+      "secondFile": {
+        "end": 185,
+        "endLoc": {
+          "column": 10,
+          "line": 185,
+          "position": 6367
+        },
+        "name": "motion-algos\\vmd-evaluator.ts",
+        "start": 155,
+        "startLoc": {
+          "column": 42,
+          "line": 155,
+          "position": 5343
+        }
+      },
+      "tokens": 202
+    },
+    {
+      "firstFile": {
+        "end": 252,
+        "endLoc": {
+          "column": 9,
+          "line": 252,
+          "position": 8248
+        },
+        "name": "scene\\env\\env-sky.ts",
+        "start": 236,
+        "startLoc": {
+          "column": 31,
+          "line": 236,
+          "position": 7801
+        }
+      },
+      "format": "typescript",
+      "fragment": "",
+      "lines": 17,
+      "secondFile": {
+        "end": 377,
+        "endLoc": {
+          "column": 1,
+          "line": 377,
+          "position": 13262
+        },
+        "name": "scene\\env\\env-sky.ts",
+        "start": 363,
+        "startLoc": {
+          "column": 30,
+          "line": 363,
+          "position": 12825
+        }
+      },
+      "tokens": 76
+    },
+    {
+      "firstFile": {
+        "end": 66,
+        "endLoc": {
+          "column": 6,
+          "line": 66,
+          "position": 2631
+        },
+        "name": "scene\\motion\\perception-gaze-js.ts",
+        "start": 50,
+        "startLoc": {
+          "column": 4,
+          "line": 50,
+          "position": 2046
+        }
+      },
+      "format": "typescript",
+      "fragment": "",
+      "lines": 17,
+      "secondFile": {
+        "end": 78,
+        "endLoc": {
+          "column": 6,
+          "line": 78,
+          "position": 2638
+        },
+        "name": "scene\\motion\\perception-gaze-wasm.ts",
+        "start": 62,
+        "startLoc": {
+          "column": 4,
+          "line": 62,
+          "position": 2053
+        }
+      },
+      "tokens": 114
+    },
+    {
+      "firstFile": {
+        "end": 109,
+        "endLoc": {
+          "column": 100,
+          "line": 109,
+          "position": 3867
+        },
+        "name": "scene\\motion\\perception-gaze-js.ts",
+        "start": 87,
+        "startLoc": {
+          "column": 31,
+          "line": 87,
+          "position": 3128
+        }
+      },
+      "format": "typescript",
+      "fragment": "",
+      "lines": 23,
+      "secondFile": {
+        "end": 116,
+        "endLoc": {
+          "column": 100,
+          "line": 116,
+          "position": 3804
+        },
+        "name": "scene\\motion\\perception-gaze-wasm.ts",
+        "start": 94,
+        "startLoc": {
+          "column": 33,
+          "line": 94,
+          "position": 3065
+        }
+      },
+      "tokens": 143
+    },
+    {
+      "firstFile": {
+        "end": 66,
+        "endLoc": {
+          "column": 25,
+          "line": 66,
+          "position": 2316
+        },
+        "name": "scene\\motion\\perception-lipsync.ts",
+        "start": 51,
+        "startLoc": {
+          "column": 19,
+          "line": 51,
+          "position": 1775
+        }
+      },
+      "format": "typescript",
+      "fragment": "",
+      "lines": 16,
+      "secondFile": {
+        "end": 107,
+        "endLoc": {
+          "column": 18,
+          "line": 107,
+          "position": 3710
+        },
+        "name": "scene\\motion\\perception-lipsync.ts",
+        "start": 93,
+        "startLoc": {
+          "column": 25,
+          "line": 93,
+          "position": 3217
+        }
+      },
+      "tokens": 66
+    }
+  ],
+  "statistics": {
+    "detectionDate": "2026-07-24T15:32:45.150Z",
+    "formats": {
+      "css": {
+        "clones": 0,
+        "duplicatedLines": 0,
+        "duplicatedTokens": 0,
+        "lines": 240,
+        "newClones": 0,
+        "newDuplicatedLines": 0,
+        "percentage": 0.0,
+        "percentageTokens": 0.0,
+        "sources": 1,
+        "tokens": 1705
+      },
+      "txt": {
+        "clones": 0,
+        "duplicatedLines": 0,
+        "duplicatedTokens": 0,
+        "lines": 93,
+        "newClones": 0,
+        "newDuplicatedLines": 0,
+        "percentage": 0.0,
+        "percentageTokens": 0.0,
+        "sources": 1,
+        "tokens": 1512
+      },
+      "typescript": {
+        "clones": 8,
+        "duplicatedLines": 156,
+        "duplicatedTokens": 782,
+        "lines": 37205,
+        "newClones": 0,
+        "newDuplicatedLines": 0,
+        "percentage": 0.41929848138691034,
+        "percentageTokens": 0.4326968300253974,
+        "sources": 196,
+        "tokens": 180727
+      }
+    },
+    "total": {
+      "clones": 8,
+      "duplicatedLines": 156,
+      "duplicatedTokens": 782,
+      "lines": 37538,
+      "newClones": 0,
+      "newDuplicatedLines": 0,
+      "percentage": 0.41557888006819754,
+      "percentageTokens": 0.4251293872048014,
+      "sources": 198,
+      "tokens": 183944
+    }
+  }
+}

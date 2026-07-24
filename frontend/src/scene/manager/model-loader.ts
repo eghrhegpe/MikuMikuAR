@@ -468,36 +468,36 @@ export async function loadPMXFile(
             physicsEnabled: uiState.defaultPhysicsEnabled !== false,
             scaling: 1.0,
             rotationY: 0,
-                rotation: [0, 0, 0],
-                boneOverrides: [],
-            };
-            // 从 PMX 字节中提取 comment 写入 modelMetaCache
-            const metaComment = parsePmxComment(pmxBytes);
-            if (metaComment || libraryPath) {
-                const { setModelMetaCache, modelMetaCache } = await import('@/core/config');
-                const cacheKey = libraryPath || filePath;
-                if (!modelMetaCache.has(cacheKey) || metaComment) {
-                    const merged = new Map(modelMetaCache);
-                    const existing = merged.get(cacheKey);
-                    merged.set(cacheKey, { comment: metaComment || existing?.comment || '' });
-                    setModelMetaCache(merged);
-                    // 如果详情面板正显示该模型的 comment card，更新其内容
-                    const commentCard = document.querySelector('[data-comment-card]');
-                    if (commentCard) {
-                        const valEl = commentCard.querySelector('.info-card-value');
-                        const labelEl = commentCard.querySelector('.info-card-label');
-                        if (labelEl) {
-                            const { t } = await import('@/core/i18n/t');
-                            labelEl.textContent = t('model-detail.fComment');
-                        }
-                        if (valEl) {
-                            valEl.textContent = metaComment || '—';
-                            (valEl as HTMLElement).style.whiteSpace = 'pre-wrap';
-                        }
+            rotation: [0, 0, 0],
+            boneOverrides: [],
+        };
+        // 从 PMX 字节中提取 comment 写入 modelMetaCache
+        const metaComment = parsePmxComment(pmxBytes);
+        if (metaComment || libraryPath) {
+            const { setModelMetaCache, modelMetaCache } = await import('@/core/config');
+            const cacheKey = libraryPath || filePath;
+            if (!modelMetaCache.has(cacheKey) || metaComment) {
+                const merged = new Map(modelMetaCache);
+                const existing = merged.get(cacheKey);
+                merged.set(cacheKey, { comment: metaComment || existing?.comment || '' });
+                setModelMetaCache(merged);
+                // 如果详情面板正显示该模型的 comment card，更新其内容
+                const commentCard = document.querySelector('[data-comment-card]');
+                if (commentCard) {
+                    const valEl = commentCard.querySelector('.info-card-value');
+                    const labelEl = commentCard.querySelector('.info-card-label');
+                    if (labelEl) {
+                        const { t } = await import('@/core/i18n/t');
+                        labelEl.textContent = t('model-detail.fComment');
+                    }
+                    if (valEl) {
+                        valEl.textContent = metaComment || '—';
+                        (valEl as HTMLElement).style.whiteSpace = 'pre-wrap';
                     }
                 }
             }
-            // 默认模型自动缩放：按统一目标高度归一化（仅 actor）
+        }
+        // 默认模型自动缩放：按统一目标高度归一化（仅 actor）
         if (uiState.autoScaleModel) {
             const bb = rootMesh.getHierarchyBoundingVectors(true);
             const h = bb.max.y - bb.min.y;

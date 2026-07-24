@@ -51,6 +51,7 @@ function _parsePmxCommentUnsafe(bytes: Uint8Array): string {
             // CommentJp
             const raw = bytes.subarray(offset, offset + textLen);
             const text = encoding === 0 ? decodeUTF16LE(raw) : new TextDecoder().decode(raw);
+            // eslint-disable-next-line no-control-regex -- PMX 二进制空字节必须用 \x00 匹配
             return text.replace(/\x00+$/, '').trim();
         }
         offset += textLen;

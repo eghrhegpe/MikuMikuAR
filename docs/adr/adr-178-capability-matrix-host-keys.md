@@ -1,6 +1,6 @@
 # ADR-178: 能力矩阵补全宿主级键（四端统一收口）
 
-> **状态**: Proposed（草案，待架构审核）
+> **状态**: 实施中（Phase 1 已落地 2026-07-24；阶段 2/3 待排期）
 > **日期**: 2026-07-24
 > **关联**: ADR-176（前端 Backend 适配器双实现）、ADR-177（Web Loader 与主应用统一路径）、ADR-017（安卓适配，platform 探测范式）、ADR-133（安卓 MPR 物理缺口）、ADR-093（声明式菜单 Schema）
 > **前置**: ADR-176/177 已落地（`BackendService` 双适配器 + `getCapabilities()`/`getCachedCapabilities()` 能力缓存）
@@ -22,7 +22,7 @@
 1. **`BackendCapabilities`（13 键）只覆盖后端原生能力**，缺宿主运行时能力。安卓应用 vs 桌面应用、网页模式 vs 网页模式安卓之间的真正差异是三位宿主级标志，矩阵里完全没有：
    - `crossOriginIsolated` —— MPR 多线程物理（ADR-133）的唯一功能性断点：仅网页模式与桌面应用为 `true`，**安卓应用 WebView 恒 `false`**。
    - `clipboardReliable` —— 安卓应用 WebView 与部分安卓浏览器剪贴板 API 可能缺失（即 ADR-017 A2-06 根因）。
-   - `arScope` —— 矩阵现有 `ar: boolean` 只标"原生独占"，但实际只有**安卓应用**（ARCore）能跑；网页模式安卓（WebXR）未接通，桌面/网页模式也应有别。
+   - `arScope` —— 矩阵现有 `ar: boolean` 标"AR 相机透视"（getUserMedia camera passthrough，**桌面/安卓应用均可用**，由 `motion-camera-levels.ts:96`/`ar-camera.ts` 实际消费）；而**原生 AR 路由作用域**缺位：`arScope` 才是 ARCore/Vuforia/WebXR 原生独占标记，仅安卓应用为 `android-app`。（审核修正：原草案误将 `ar` 当"原生独占"，已纠正——`ar` 保持 `true` 正确）
 2. **散落 `isAndroidPlatform()` 直接判定 11+ 处**（已核实）：`fileservice.ts:63`、`virtual-skirt.ts:238`、`ar-camera.ts:151`、`settings-appearance.ts:476`、`settings-resources.ts:162/412`、`library-setup.ts:96/119/138`、`plaza-browser.ts:695`、`platform.ts:72/92`、`init.ts:328/464` 等。其中与"能力"相关的应改走 `getCachedCapabilities()`，否则能力矩阵形同虚设。
 
 ## 决策
@@ -60,16 +60,19 @@ import { isAndroidPlatform } from '../platform';
         arScope: isAndroidPlatform() ? 'android-app' : 'none', // 桌面无 AR；安卓应用走 ARCore
 ```
 
-### ③ `frontend/src/core/backend/browser-adapter.ts` —— `_cap()`（当前 79-99 行）
+### ③ `frontend/src/core/backend/browser-adapter.ts` —— `_cap()`（已落地，79-99 行）
 
 返回对象末尾追加（browser-adapter 同时服务网页模式桌面与网页模式安卓，两者宿主运行时一致）：
 ```ts
         modelScan: fsAccess,
         // [doc:adr-178] 宿主运行时键：browser-adapter 服务网页模式（桌面+安卓浏览器）
-        crossOriginIsolated: typeof window !== 'undefined' && window.crossOriginIsolated === true,
-        clipboardReliable: true, // 标准浏览器 API 存在（手势由调用点保证，A2-06 已兜底静默 catch）
-        arScope: 'none', // 网页模式安卓 WebXR 未接通；接通后改 'webxr'（不阻塞）
+        crossOriginIsolated:
+            typeof window !== 'undefined' &&
+            (window as { crossOriginIsolated?: boolean }).crossOriginIsolated === true,
+        clipboardReliable: typeof navigator !== 'undefined' && !!navigator.clipboard,
+        arScope: typeof navigator !== 'undefined' && 'xr' in navigator ? 'webxr' : 'none',
 ```
+> 落地偏差（相对草案）：`clipboardReliable` 由硬编码 `true` 改为运行时检测 `!!navigator.clipboard`（更诚实，不依赖调用点手势假设）；`arScope` 由硬编码 `'none'` 改为 `navigator.xr` 检测（WebXR 可用即 `webxr`）。二者均属能力如实自报，且 `arScope` 当前无 UI 消费（阶段 2 才接入），不引发行为变化。
 
 ### ④ `frontend/src/core/backend/backend.test.ts` —— 同步 mock 与断言
 
@@ -97,7 +100,7 @@ import { isAndroidPlatform } from '../platform';
 | crossOriginIsolated | `window` 值（true） | `window` 值（**false**） | `window` 值（true） |
 | clipboardReliable | true | **false** | true |
 | arScope | none | **android-app** | none |
-| ar（原生独占） | false | true | false |
+| ar（相机透视 getUserMedia，非原生 ARCore 独占） | true | true | false |
 | externalApps | true | false | false |
 | fsAccess | false | false | 检测 FSA |
 | storageMode | true | true | FSA 检测 |
@@ -123,6 +126,18 @@ import { isAndroidPlatform } from '../platform';
 | 🟡 P3 | `arScope` 在网页模式安卓当前 `none` | WebXR 未接通，标 `none` 不阻塞；接通后改 `'webxr'` |
 | 🟢 P4 | `clipboardReliable` 在安卓应用标 `false` 偏保守 | 仅用于调用点兜底提示（A2-06 已补 toast），不影响复制成功路径 |
 | ⚪ 架构红线 | 不引入第四种代码路径 | 四端共用 `frontend/`，差异只经 `BackendService` + 能力矩阵表达 |
+
+## Phase 1 落地记录（2026-07-24）
+
+- **代码改动（4 文件 + test mock，均已落盘）**：
+  - `types.ts`：`BackendCapabilities` 追加 `crossOriginIsolated` / `clipboardReliable` / `arScope` 三键；`ar` 注释纠正为"相机透视（getUserMedia），桌面/安卓可用，与 arScope 正交"。
+  - `go-adapter.ts`：导入 `isAndroidPlatform`；`capabilities()` 三键运行时自报（`crossOriginIsolated` 读 `window.crossOriginIsolated`、`clipboardReliable=!isAndroidPlatform()`、`arScope=isAndroidPlatform()?'android-app':'none'`）；`ar` 保持 `true`。
+  - `browser-adapter.ts`：`_cap()` 三键运行时自报（`arScope` 按 `navigator.xr` 检测）。
+  - `index.ts`：`ALL_TRUE_CAPS` 兜底补三键（`crossOriginIsolated`/`clipboardReliable=true`、`arScope='none'`）。
+  - `backend.test.ts`：go mock 补三键。
+- **验证**：`tsc --noEmit` 全项目 **0 错误**；`backend.test.ts` **57/57 通过**；契约 139 函数不受影响。
+- **审核修正已采纳**：`ar` 键语义非"原生独占"（草案误判），保持 `true`；真正不一致在文档，已在 `targets.md` + 本 ADR 纠正。
+- **未做（阶段 2/3）**：散落 `isAndroidPlatform()` 迁移、CI 四端制品矩阵。
 
 ## 测试
 

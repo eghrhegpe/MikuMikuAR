@@ -244,21 +244,29 @@ export function applyLightingPresetFromEnv(presetName: string | null): void {
                 const from = settings.intensity;
                 const to = plOverride.intensity;
                 pendingTweens++;
-                _tweenValue(from, to, 300, (v) => {
-                    setPersonalLightState(modelId, { intensity: v });
-                }, onTweenDone);
+                _tweenValue(
+                    from,
+                    to,
+                    300,
+                    (v) => {
+                        setPersonalLightState(modelId, { intensity: v });
+                    },
+                    onTweenDone
+                );
             }
             if (plOverride.color !== undefined) {
-                const from = new Color3(
-                    settings.color[0],
-                    settings.color[1],
-                    settings.color[2]
-                );
+                const from = new Color3(settings.color[0], settings.color[1], settings.color[2]);
                 const to = col3FromTriple(plOverride.color);
                 pendingTweens++;
-                _tweenColor3(from, to, 300, (c) => {
-                    setPersonalLightState(modelId, { color: [c.r, c.g, c.b] });
-                }, onTweenDone);
+                _tweenColor3(
+                    from,
+                    to,
+                    300,
+                    (c) => {
+                        setPersonalLightState(modelId, { color: [c.r, c.g, c.b] });
+                    },
+                    onTweenDone
+                );
             }
             if (plOverride.angle !== undefined) {
                 setPersonalLightState(modelId, { angle: plOverride.angle });

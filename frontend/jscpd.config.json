@@ -1,0 +1,18 @@
+{
+  "minLines": 15,
+  "maxLines": 500,
+  "minTokens": 50,
+  "threshold": 3,
+  "ignore": [
+    "src/__tests__/**",
+    "bindings/**",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/*.d.ts",
+    "knip.config.ts"
+  ],
+  "mode": "strict",
+  "gitignore": true,
+  "blame": false,
+  "reporters": ["console", "json"]
+}

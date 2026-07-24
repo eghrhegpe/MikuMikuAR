@@ -28,7 +28,11 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,css,json,md}\"",
     "generate:bindings": "cd .. && wails3 generate bindings -ts -i -d frontend/bindings ./...",
     "audit": "npm audit --audit-level=high",
-    "outdated": "npm outdated"
+    "outdated": "npm outdated",
+    "deadcode": "knip",
+    "deadcode:strict": "knip --production",
+    "duplicate": "jscpd --config jscpd.config.json src",
+    "duplicate:html": "jscpd --config jscpd.config.json --output jscpd-report --reporters jscpd-html-reporter src"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
@@ -42,6 +46,9 @@
     "eslint-plugin-prettier": "^5.5.6",
     "globals": "^17.7.0",
     "happy-dom": "^20.10.6",
+    "jscpd": "^5.0.12",
+    "jscpd-html-reporter": "^2.0.1",
+    "knip": "^6.29.0",
     "playwright": "^1.61.1",
     "prettier": "^3.9.4",
     "rollup-plugin-visualizer": "^5.13.1",

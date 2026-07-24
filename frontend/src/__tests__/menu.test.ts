@@ -1528,7 +1528,9 @@ describe('SlideMenu — 触屏手势守卫与平台适配', () => {
         expect((menu as any)._swipeActive).toBe(true);
 
         const touchEnd = new TouchEvent('touchend', { bubbles: true });
-        Object.defineProperty(touchEnd, 'changedTouches', { value: [{ clientX: 100, clientY: 0 }] });
+        Object.defineProperty(touchEnd, 'changedTouches', {
+            value: [{ clientX: 100, clientY: 0 }],
+        });
         container.dispatchEvent(touchEnd);
 
         expect(menu.levelCount).toBe(before - 1);
@@ -1542,13 +1544,18 @@ describe('SlideMenu — 触屏手势守卫与平台适配', () => {
 
         const touchStart = new TouchEvent('touchstart', { bubbles: true });
         Object.defineProperty(touchStart, 'touches', {
-            value: [{ clientX: 0, clientY: 0 }, { clientX: 10, clientY: 10 }],
+            value: [
+                { clientX: 0, clientY: 0 },
+                { clientX: 10, clientY: 10 },
+            ],
         });
         container.dispatchEvent(touchStart);
         expect((menu as any)._swipeActive).toBe(false);
 
         const touchEnd = new TouchEvent('touchend', { bubbles: true });
-        Object.defineProperty(touchEnd, 'changedTouches', { value: [{ clientX: 200, clientY: 0 }] });
+        Object.defineProperty(touchEnd, 'changedTouches', {
+            value: [{ clientX: 200, clientY: 0 }],
+        });
         container.dispatchEvent(touchEnd);
 
         expect(menu.levelCount).toBe(before);
@@ -1573,9 +1580,9 @@ describe('SlideMenu — 触屏手势守卫与平台适配', () => {
 
     it('isVisible 在 close 后为 false，即便容器有布局尺寸（_isOpen 短路，不误判）', () => {
         // 模拟旧实现会误判为可见的场景：容器有布局尺寸
-        vi.spyOn(container, 'getClientRects').mockReturnValue(
-            [{} as DOMRect] as unknown as DOMRectList
-        );
+        vi.spyOn(container, 'getClientRects').mockReturnValue([
+            {} as DOMRect,
+        ] as unknown as DOMRectList);
         expect(container.getClientRects().length).toBeGreaterThan(0);
         menu.close();
         expect(menu.isVisible).toBe(false);

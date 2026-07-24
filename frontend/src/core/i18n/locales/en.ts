@@ -19,8 +19,6 @@ export const en: Record<string, string> = {
     'settings.theme.nightPurple': 'Night Purple',
     'settings.theme.minimalGray': 'Minimal Gray',
 
-
-
     'settings.slideAnimation': 'Slide Animation',
     'settings.animation': 'Animation',
     'settings.bgBlur': 'Background Blur',
@@ -184,7 +182,6 @@ export const en: Record<string, string> = {
     'model-detail.fMaterials': 'Materials',
     'model-detail.fBones': 'Bones',
     'model-detail.fMorphs': 'Morphs',
-
 
     'model-detail.fComment': 'Readme（readme）',
     'model-detail.fCommentLoading': 'Readme（readme）',
@@ -1065,7 +1062,8 @@ export const en: Record<string, string> = {
     'scene.vmd.wasmSingleLayer': '⚠ WASM supports single layer only, loaded: {name}',
     'scene.vmd.layersBlended': '✓ Layers blended: {names}',
     'scene.vmd.blendFailed': '✗ Layer blend failed',
-    'scene.vmd.layersBlendFailedFallback': '⚠ Multi-layer blend failed, downgraded to single layer. Reason: {reason}',
+    'scene.vmd.layersBlendFailedFallback':
+        '⚠ Multi-layer blend failed, downgraded to single layer. Reason: {reason}',
 
     // scene.camera — camera mode switch status
     'scene.camera.arFailed': '✗ AR camera failed to start, reverted',

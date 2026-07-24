@@ -518,7 +518,11 @@ async function _initMotionSubsystems(scene: Scene, modelManager: ModelManager): 
                 if (bones && bones.length > 0) {
                     // [doc:adr-085/129] 脚部状态从动作覆盖模块读取（随动作走），
                     // 不再依赖 inst.feet（per-model）作为引擎输入
-                    out.push({ id: inst.id, feet: getFeetStateForModel(inst.id), runtimeBones: bones });
+                    out.push({
+                        id: inst.id,
+                        feet: getFeetStateForModel(inst.id),
+                        runtimeBones: bones,
+                    });
                 }
             }
             return out;
@@ -550,7 +554,6 @@ async function _initMotionSubsystems(scene: Scene, modelManager: ModelManager): 
 
 /** 初始化 MMD 运行时（WASM 主路径 / JS 调试路径）。 */
 async function _initMmdRuntime(): Promise<IMmdRuntime> {
-
     // 1. MMD 运行时初始化
     RegisterMmdModelLoaders();
     RegisterDxBmpTextureLoader();

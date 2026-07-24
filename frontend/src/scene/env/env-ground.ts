@@ -64,9 +64,7 @@ function _saveGroundMatOriginal(mat: StandardMaterial): void {
 function _restoreGroundMatOriginal(mat: StandardMaterial): void {
     const snap = _groundMatSnapshots.get(mat);
     if (snap) {
-        mat.reflectionFresnelParameters = snap.fresnel
-            ? new FresnelParameters(snap.fresnel)
-            : null;
+        mat.reflectionFresnelParameters = snap.fresnel ? new FresnelParameters(snap.fresnel) : null;
         if (snap.specular) {
             mat.specularColor = snap.specular.clone();
         }

@@ -85,28 +85,27 @@ class WailsRuntimeBridge implements RuntimeBridge {
     private async _load(): Promise<void> {
         if (this._events) return;
         const rt = await import('@wailsio/runtime');
-        const self = this;
         this._events = {
-            on(name: string, cb: EventCallback): Unsubscribe {
+            on: (name: string, cb: EventCallback): Unsubscribe => {
                 const unsub = rt.Events.On(name, cb);
-                self._unsubscribers.push(unsub);
+                this._unsubscribers.push(unsub);
                 return unsub;
             },
-            once(name: string, cb: EventCallback): Unsubscribe {
+            once: (name: string, cb: EventCallback): Unsubscribe => {
                 const unsub = rt.Events.Once(name, cb);
-                self._unsubscribers.push(unsub);
+                this._unsubscribers.push(unsub);
                 return unsub;
             },
-            off(...names: string[]): void {
+            off: (...names: string[]): void => {
                 if (names.length > 0) {
                     // Wails v3 Off 签名要求 [WailsEventName, ...WailsEventName[]] 非空元组
                     rt.Events.Off(...(names as [string, ...string[]]));
                 }
             },
-            offAll(): void {
+            offAll: (): void => {
                 rt.Events.OffAll();
             },
-            emit(name: string, data?: unknown): Promise<boolean> {
+            emit: (name: string, data?: unknown): Promise<boolean> => {
                 return rt.Events.Emit(name, data);
             },
         };

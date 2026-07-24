@@ -29,7 +29,7 @@ import {
 import { MotionType } from 'babylon-mmd/esm/Runtime/Optimized/Physics/Bind/motionType';
 import { analyzeSkirt } from './skirt-analyzer';
 import { PerFrameUpdateRegistry, getBoneWorldPosition } from '../../physics/physics-bridge';
-import { isAndroidPlatform } from '../../core/platform';
+import { getCachedCapabilities } from '../../core/backend';
 import { logWarn } from '../../core/logger';
 
 // ============================================================================
@@ -39,7 +39,7 @@ import { logWarn } from '../../core/logger';
 export interface VirtualSkirtConfig {
     /** 开关 */
     enabled: boolean;
-    /** 质量档位（auto 在 Android 上自动降为 low，桌面为 high） */
+    /** 质量档位（auto 在无 crossOriginIsolated（单线程物理）时自动降为 low，多线程时 high） */
     quality: VirtualSkirtQuality;
     /** 链数（4-32） */
     chains: number;
@@ -87,10 +87,10 @@ export const QUALITY_PRESETS: Record<Exclude<VirtualSkirtQuality, 'auto'>, Quali
  */
 export function resolveVirtualSkirtQuality(
     quality: VirtualSkirtQuality,
-    isAndroid: boolean
+    singleThread: boolean
 ): Exclude<VirtualSkirtQuality, 'auto'> {
     if (quality === 'auto') {
-        return isAndroid ? 'low' : 'high';
+        return singleThread ? 'low' : 'high';
     }
     return quality;
 }
@@ -235,7 +235,11 @@ export class VirtualSkirtController {
         }
 
         // Phase 5: 质量档位解析 → LOD 上限 + 降频步长 + 顶点硬上限
-        const effQuality = resolveVirtualSkirtQuality(this.config.quality, isAndroidPlatform());
+        // [doc:adr-178] 走能力层：无 crossOriginIsolated（安卓应用 / 网页模式无 MPR）即单线程物理，自动降品质
+        const effQuality = resolveVirtualSkirtQuality(
+            this.config.quality,
+            !getCachedCapabilities().crossOriginIsolated
+        );
         const preset = QUALITY_PRESETS[effQuality];
         this._effectiveQuality = effQuality;
         this._throttleEvery = preset.throttleEvery;

@@ -34,6 +34,28 @@ vi.mock('babylon-mmd/esm/Runtime/Optimized/Physics/mmdWasmPhysicsRuntimeImpl', (
     },
 }));
 
+// [doc:adr-178] virtual-skirt 现依赖能力层 getCachedCapabilities；隔离 backend 避免测试中拉起 adapter 链
+vi.mock('../../core/backend', () => ({
+    getCachedCapabilities: () => ({
+        crossOriginIsolated: true,
+        clipboardReliable: true,
+        arScope: 'none' as const,
+        ar: true,
+        externalApps: true,
+        plazaWindow: true,
+        fsAccess: false,
+        watchDir: true,
+        proxyServer: true,
+        fileServer: true,
+        systemDirOpen: true,
+        storageMode: true,
+        screenshotSave: true,
+        cacheManage: true,
+        configPersist: true,
+        modelScan: true,
+    }),
+}));
+
 vi.mock('babylon-mmd/esm/Runtime/Optimized/Physics/Bind/rigidBody', () => ({
     RigidBody: class {
         isDynamic = true;

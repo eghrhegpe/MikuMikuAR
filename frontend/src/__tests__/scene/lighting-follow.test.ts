@@ -67,9 +67,18 @@ describe('PersonalLightSettings 默认值', () => {
 
     it('DEFAULT_PERSONAL_LIGHT 包含所有必要字段', () => {
         const keys: (keyof PersonalLightSettings)[] = [
-            'enabled', 'intensity', 'color', 'angle', 'height',
-            'offsetX', 'offsetZ', 'coneEnabled', 'coneIntensity',
-            'coneLength', 'coneSoftness', 'boneName',
+            'enabled',
+            'intensity',
+            'color',
+            'angle',
+            'height',
+            'offsetX',
+            'offsetZ',
+            'coneEnabled',
+            'coneIntensity',
+            'coneLength',
+            'coneSoftness',
+            'boneName',
         ];
         for (const k of keys) {
             expect(DEFAULT_PERSONAL_LIGHT).toHaveProperty(k);
@@ -101,9 +110,7 @@ describe('getAllPersonalLights / restorePersonalLights', () => {
     it('restorePersonalLights 对不存在的 modelId 静默跳过', () => {
         // 不应抛异常
         expect(() => {
-            restorePersonalLights([
-                { modelId: 'nonexistent', settings: { intensity: 2 } },
-            ]);
+            restorePersonalLights([{ modelId: 'nonexistent', settings: { intensity: 2 } }]);
         }).not.toThrow();
     });
 });

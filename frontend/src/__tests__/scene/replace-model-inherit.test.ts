@@ -44,9 +44,14 @@ vi.mock('../../core/config', () => ({
 }));
 vi.mock('@/core/state', () => ({
     createDefaultFeetState: vi.fn(() => ({
-        enabled: false, intensity: 0, soleHeight: 0,
-        jumpThreshold: 0.5, bodySmooth: 0.5, footSmooth: 0.5,
-        maxAngle: 30, reachAngle: 15,
+        enabled: false,
+        intensity: 0,
+        soleHeight: 0,
+        jumpThreshold: 0.5,
+        bodySmooth: 0.5,
+        footSmooth: 0.5,
+        maxAngle: 30,
+        reachAngle: 15,
     })),
 }));
 vi.mock('../../core/i18n/t', () => ({ t: (k: string) => k }));
@@ -57,10 +62,12 @@ vi.mock('../../scene/motion/playback', () => ({ updatePlaybackUI: vi.fn() }));
 vi.mock('../../outfit/audio', () => ({ disposeAudio: vi.fn() }));
 vi.mock('../../scene/motion/motion-modules/registry', () => ({ setTargetModel: vi.fn() }));
 vi.mock('../../scene/manager/model-manager', () => ({
-    getFormationLabels: vi.fn(() => ({} as any)),
+    getFormationLabels: vi.fn(() => ({}) as any),
 }));
 vi.mock('../../scene/transform/transform-adapter', () => ({ registerTransformAdapter: vi.fn() }));
-vi.mock('../../scene/motion/bone-override', () => ({ setBoneOverride: boneOverrideState.setBoneOverride }));
+vi.mock('../../scene/motion/bone-override', () => ({
+    setBoneOverride: boneOverrideState.setBoneOverride,
+}));
 
 import { captureInheritedState, applyInheritedState } from '../../scene/manager/model-ops';
 import type { ReplaceSnapshot } from '../../scene/manager/model-ops';
@@ -77,9 +84,11 @@ function makeMockInst(overrides: Partial<ModelInstance> = {}): ModelInstance {
         name: 'Old',
         filePath: '/old.pmx',
         modelDir: '/',
-        meshes: [{
-            position: { x: 1, y: 2, z: 3 },
-        } as any],
+        meshes: [
+            {
+                position: { x: 1, y: 2, z: 3 },
+            } as any,
+        ],
         rootMesh: {} as any,
         vmdData: null,
         vmdName: '',
@@ -96,30 +105,51 @@ function makeMockInst(overrides: Partial<ModelInstance> = {}): ModelInstance {
         scaling: 1.5,
         rotationY: 30,
         rotation: [0.1, 0.523, 0],
-        boneOverrides: [
-            { boneName: '上半身', euler: [5, 0, 0], weight: 1, enabled: true },
-        ],
+        boneOverrides: [{ boneName: '上半身', euler: [5, 0, 0], weight: 1, enabled: true }],
         feet: {
-            enabled: true, intensity: 0.6, soleHeight: 0.05,
-            jumpThreshold: 0.5, bodySmooth: 0.5, footSmooth: 0.5,
-            maxAngle: 30, reachAngle: 15,
+            enabled: true,
+            intensity: 0.6,
+            soleHeight: 0.05,
+            jumpThreshold: 0.5,
+            bodySmooth: 0.5,
+            footSmooth: 0.5,
+            maxAngle: 30,
+            reachAngle: 15,
         },
         positionMode: 'orbit',
         orbitAzimuth: 45,
         orbitElevation: -10,
         orbitDistance: 8,
-        motionSlots: { primary: { source: 'inherit', status: 'compatible', sceneMotionId: 'motion-xyz' } },
+        motionSlots: {
+            primary: { source: 'inherit', status: 'compatible', sceneMotionId: 'motion-xyz' },
+        },
         ...overrides,
     } as unknown as ModelInstance;
 }
 
 function makeBaseSnap(overrides: Partial<ReplaceSnapshot> = {}): ReplaceSnapshot {
     return {
-        visible: true, opacity: 1, wireframe: false,
-        showBoneLines: false, showBoneJoints: false, physicsEnabled: true,
-        scaling: 1, rotation: [0, 0, 0], positionMode: 'cartesian',
-        position: [0, 0, 0], boneOverrides: [],
-        feet: { enabled: false, intensity: 0, soleHeight: 0, jumpThreshold: 0.5, bodySmooth: 0.5, footSmooth: 0.5, maxAngle: 30, reachAngle: 15 },
+        visible: true,
+        opacity: 1,
+        wireframe: false,
+        showBoneLines: false,
+        showBoneJoints: false,
+        physicsEnabled: true,
+        scaling: 1,
+        rotation: [0, 0, 0],
+        positionMode: 'cartesian',
+        position: [0, 0, 0],
+        boneOverrides: [],
+        feet: {
+            enabled: false,
+            intensity: 0,
+            soleHeight: 0,
+            jumpThreshold: 0.5,
+            bodySmooth: 0.5,
+            footSmooth: 0.5,
+            maxAngle: 30,
+            reachAngle: 15,
+        },
         ...overrides,
     };
 }
@@ -172,13 +202,21 @@ describe('captureInheritedState', () => {
 describe('applyInheritedState', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        (modelRegistry as Map<string, unknown>).set('new-1', { id: 'new-1', feet: {}, motionSlots: undefined });
+        (modelRegistry as Map<string, unknown>).set('new-1', {
+            id: 'new-1',
+            feet: {},
+            motionSlots: undefined,
+        });
     });
 
     it('调用 modelManager setter 应用基础状态', () => {
         const snap = makeBaseSnap({
-            visible: false, opacity: 0.5, wireframe: true,
-            showBoneLines: true, physicsEnabled: false, scaling: 2.0,
+            visible: false,
+            opacity: 0.5,
+            wireframe: true,
+            showBoneLines: true,
+            physicsEnabled: false,
+            scaling: 2.0,
             position: [1, 2, 3],
         });
         applyInheritedState('new-1', snap);
@@ -193,7 +231,9 @@ describe('applyInheritedState', () => {
     it('positionMode=orbit 时调用 setOrbit 而非 setPosition', () => {
         const snap = makeBaseSnap({
             positionMode: 'orbit',
-            orbitAzimuth: 30, orbitElevation: -5, orbitDistance: 10,
+            orbitAzimuth: 30,
+            orbitElevation: -5,
+            orbitDistance: 10,
         });
         applyInheritedState('new-1', snap);
         expect(modelManager.setOrbit).toHaveBeenCalledWith('new-1', 30, -5, 10);
@@ -209,7 +249,14 @@ describe('applyInheritedState', () => {
         });
         applyInheritedState('new-1', snap);
         expect(setBoneOverride).toHaveBeenCalledTimes(1);
-        expect(setBoneOverride).toHaveBeenCalledWith('上半身', [5, 0, 0], 1, true, 'new-1', undefined);
+        expect(setBoneOverride).toHaveBeenCalledWith(
+            '上半身',
+            [5, 0, 0],
+            1,
+            true,
+            'new-1',
+            undefined
+        );
     });
 
     it('boneLockBoneName 在新模型存在时调用 setOrbitBoneLock(true)', () => {
@@ -235,7 +282,16 @@ describe('applyInheritedState', () => {
 
     it('feet 状态深拷贝到新模型', () => {
         const snap = makeBaseSnap({
-            feet: { enabled: true, intensity: 0.7, soleHeight: 0.1, jumpThreshold: 0.6, bodySmooth: 0.4, footSmooth: 0.5, maxAngle: 25, reachAngle: 12 },
+            feet: {
+                enabled: true,
+                intensity: 0.7,
+                soleHeight: 0.1,
+                jumpThreshold: 0.6,
+                bodySmooth: 0.4,
+                footSmooth: 0.5,
+                maxAngle: 25,
+                reachAngle: 12,
+            },
         });
         const newInst = modelRegistry.get('new-1') as any;
         applyInheritedState('new-1', snap);

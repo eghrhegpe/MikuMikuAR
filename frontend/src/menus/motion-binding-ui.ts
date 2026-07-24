@@ -290,8 +290,7 @@ function buildActionBindingSchema(id: string): MenuNode[] {
 
                     if (isIncompatible) {
                         const warn = document.createElement('div');
-                        warn.style.cssText =
-                            'color:var(--warn);padding:4px 0;font-size:12px;';
+                        warn.style.cssText = 'color:var(--warn);padding:4px 0;font-size:12px;';
                         warn.textContent = t('motion.intent.incompatible');
                         inner.appendChild(warn);
                     }

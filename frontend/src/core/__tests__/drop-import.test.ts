@@ -7,14 +7,15 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // —— mock 依赖（vi.hoisted 保证 mock 对象在 vi.mock 工厂执行前已初始化）——
-const { loadManagerMock, ImportZipMock, ExtractZipMock, idbSetMock, saveModelMock } =
-    vi.hoisted(() => ({
+const { loadManagerMock, ImportZipMock, ExtractZipMock, idbSetMock, saveModelMock } = vi.hoisted(
+    () => ({
         loadManagerMock: { load: vi.fn(async () => null) },
         ImportZipMock: vi.fn(async () => undefined),
         ExtractZipMock: vi.fn(async () => ({ file_path: 'Miku.pmx' })),
         idbSetMock: vi.fn(async () => {}),
         saveModelMock: vi.fn(async () => {}),
-    }));
+    })
+);
 
 vi.mock('../load-manager', () => ({ loadManager: loadManagerMock }));
 
@@ -39,7 +40,6 @@ vi.mock('../safe-call', () => ({
 vi.mock('../../menus/library', () => ({
     refreshLibrary: vi.fn(async () => {}),
 }));
-
 
 import { handleDroppedFile, handleDropFile } from '../drop-import';
 
