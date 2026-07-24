@@ -20,7 +20,11 @@ export {
     addActionRow,
     addDisabledRow,
     addInlineToggleRow,
+    addBoneSelectRow,
+    isIkBone,
+    buildBoneGroups,
 } from './ui-rows';
+export type { BoneSelectOptions } from './ui-rows';
 export { addColorSliderRow, addModeSlider, addVector3SliderRow } from './ui-advanced-rows';
 export { addCollapsible, addSectionTitle, addPresetChip } from './ui-collapsible';
 export { buildPresetChipGroup, addClearRow } from './ui-preset';

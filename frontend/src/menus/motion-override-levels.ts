@@ -11,7 +11,7 @@ import {
     focusedModelId,
 } from '../core/config';
 import { addEmptyRow, slideRow, addPresetChip } from '../core/ui-helpers';
-import { addSliderRow } from '../core/ui-helpers';
+import { addSliderRow, addBoneSelectRow, isIkBone } from '../core/ui-helpers';
 import { createTrailingBtn } from '../core/ui-slide-row';
 import { createIconifyIcon } from '../core/icons';
 import { getMotionMenu, renderModuleToggleList } from './motion-popup';
@@ -578,47 +578,17 @@ function buildBoneOverrideSchema(): MenuNode[] {
                     title.textContent = t('motion.boneOverride.addOverride');
                     inner.appendChild(title);
 
-                    const boneSelect = document.createElement('select');
-                    boneSelect.className = 'setting-select';
-                    boneSelect.style.width = '100%';
-                    boneSelect.style.margin = '6px 0';
-
-                    const optGroups = _buildBoneOptions(bones);
-                    for (const [groupLabel, boneNames] of optGroups) {
-                        const optGroup = document.createElement('optgroup');
-                        optGroup.label = groupLabel;
-                        for (const bn of boneNames) {
-                            const opt = document.createElement('option');
-                            opt.value = bn;
-                            // [doc:adr-122 P3] IK 骨骼附加标记
-                            opt.textContent = _isIkBone(bn) ? `${bn} ${t('motion.ikTag')}` : bn;
-                            optGroup.appendChild(opt);
+                    // [doc:adr-122 P3] 骨骼选择复用 addBoneSelectRow（分组+搜索+IK标记），
+                    // 替代内联 select+search 重复实现
+                    addBoneSelectRow(
+                        inner,
+                        '',
+                        bones.map((b) => b.name),
+                        formState.boneName,
+                        (name) => {
+                            formState.boneName = name;
                         }
-                        boneSelect.appendChild(optGroup);
-                    }
-                    boneSelect.value = formState.boneName;
-                    boneSelect.addEventListener('change', () => {
-                        formState.boneName = boneSelect.value;
-                    });
-                    // [doc:adr-116 P4] 骨骼搜索框：原生 select 不支持搜索，附加过滤输入框
-                    const boneSearch = document.createElement('input');
-                    boneSearch.type = 'text';
-                    boneSearch.placeholder = t('motion.boneOverride.search');
-                    boneSearch.style.cssText = 'width:100%;margin:6px 0;box-sizing:border-box;';
-                    boneSearch.addEventListener('input', () => {
-                        const q = boneSearch.value.trim().toLowerCase();
-                        for (const g of Array.from(boneSelect.querySelectorAll('optgroup'))) {
-                            let visible = 0;
-                            for (const opt of Array.from(g.querySelectorAll('option'))) {
-                                const hit = !q || (opt.textContent ?? '').toLowerCase().includes(q);
-                                (opt as HTMLElement).style.display = hit ? '' : 'none';
-                                if (hit) visible++;
-                            }
-                            (g as HTMLElement).style.display = visible > 0 ? '' : 'none';
-                        }
-                    });
-                    inner.appendChild(boneSearch);
-                    inner.appendChild(boneSelect);
+                    );
 
                     addSliderRow(
                         inner,
@@ -765,7 +735,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
                         info.style.fontSize = '11px';
                         info.style.opacity = ov.enabled ? '1' : '0.35';
                         // [doc:adr-122 P3] IK 骨骼附加标记
-                        const ikTag = _isIkBone(ov.boneName) ? ` ${t('motion.ikTag')}` : '';
+                        const ikTag = isIkBone(ov.boneName) ? ` ${t('motion.ikTag')}` : '';
                         info.textContent = `${ov.boneName}${ikTag}  P:${ov.euler[0].toFixed(0)} Y:${ov.euler[1].toFixed(0)} R:${ov.euler[2].toFixed(0)}  W:${ov.weight.toFixed(2)}`;
                         // [doc:adr-116 P4] P/Y/R/W 缩写对非专业用户不语义化，补充 tooltip 解释
                         info.title = t('motion.boneOverride.axisHint');
@@ -879,85 +849,6 @@ export function buildAdvancedBoneOverrideLevel(): PopupLevel {
 }
 
 // ======== 内部工具 ========
-
-/** [doc:adr-122 P3] 已知 IK 骨骼名集合（含 IK 目标骨 + 链骨） */
-const IK_BONE_NAMES = new Set([
-    '左足IK',
-    '右足IK',
-    '左腕IK',
-    '右腕IK',
-    '左足首',
-    '右足首',
-    '左ひざ',
-    '右ひざ',
-    '左ひじ',
-    '右ひじ',
-]);
-
-/** [doc:adr-122 P3] 判断骨骼是否为 IK 相关骨骼 */
-function _isIkBone(boneName: string): boolean {
-    return IK_BONE_NAMES.has(boneName) || boneName.endsWith('IK');
-}
-
-/** 按类别分组骨骼选项 */
-function _buildBoneOptions(
-    bones: readonly { name: string; parentBone?: { name?: string } }[]
-): [string, string[]][] {
-    // 常见 MMD 骨骼分组
-    const knownGroups: Record<string, string[]> = {
-        'センター/腰部': ['センター', 'グルーブ', '腰'],
-        '上半身': ['上半身', '上半身2', '胸', '首', '頭'],
-        '下半身': [
-            '下半身',
-            '左足',
-            '右足',
-            '左ひざ',
-            '右ひざ',
-            '左足首',
-            '右足首',
-            '左足IK',
-            '右足IK',
-        ],
-        '左腕': ['左肩', '左腕', '左ひじ', '左手首'],
-        '右腕': ['右肩', '右腕', '右ひじ', '右手首'],
-        '左手': ['左親指', '左人指', '左中指', '左薬指', '左小指'],
-        '右手': ['右親指', '右人指', '右中指', '右薬指', '右小指'],
-        'その他': [],
-    };
-
-    const groups: Map<string, string[]> = new Map();
-    for (const [key] of Object.entries(knownGroups)) {
-        groups.set(key, []);
-    }
-    groups.set('その他', []);
-    const allBoneNames = bones.map((b) => b.name);
-
-    for (const name of allBoneNames) {
-        let placed = false;
-        for (const [groupName, prefixes] of Object.entries(knownGroups)) {
-            if (groupName === 'その他') {
-                continue;
-            }
-            if (prefixes.some((p) => name === p || name.startsWith(p))) {
-                groups.get(groupName)!.push(name);
-                placed = true;
-                break;
-            }
-        }
-        if (!placed) {
-            groups.get('その他')!.push(name);
-        }
-    }
-
-    const result: [string, string[]][] = [];
-    for (const [groupName, boneList] of groups) {
-        if (boneList.length > 0) {
-            boneList.sort();
-            result.push([groupName, boneList]);
-        }
-    }
-    return result;
-}
 
 /** 将 bone-override.ts 的运行时状态同步回 ModelInstance.boneOverrides 用于持久化 */
 export function _syncOverrideToInstance(modelId: string): void {
