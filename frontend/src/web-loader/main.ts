@@ -334,7 +334,11 @@ async function parseZip(
 }
 
 /** 加载成功后异步入库（失败不阻断展示，仅提示）。 */
-async function persistToLibrary(fileName: string, bytes: Uint8Array, kind: 'pmx' | 'zip'): Promise<void> {
+async function persistToLibrary(
+    fileName: string,
+    bytes: Uint8Array,
+    kind: 'pmx' | 'zip'
+): Promise<void> {
     try {
         const entry = await saveModel(fileName, bytes, kind);
         await setLastModel(entry.name);
@@ -395,7 +399,10 @@ async function loadFromLibrary(name: string): Promise<void> {
         ok = await loadModel(parsed.pmxBuffer, parsed.textures, parsed.pmxName);
     } else {
         // Uint8Array 可能是大 buffer 的视图，切出精确段
-        const buf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+        const buf = bytes.buffer.slice(
+            bytes.byteOffset,
+            bytes.byteOffset + bytes.byteLength
+        ) as ArrayBuffer;
         ok = await loadModel(buf, [], entry.fileName);
     }
     if (ok) {
@@ -442,7 +449,11 @@ async function refreshLibraryPanel(): Promise<void> {
         delBtn.addEventListener('click', async (e) => {
             e.stopPropagation();
             // 破坏性操作防呆：二次确认
-            if (!window.confirm(`确定从模型库删除「${m.name}」？（${formatSize(m.size)}，不可撤销）`)) {
+            if (
+                !window.confirm(
+                    `确定从模型库删除「${m.name}」？（${formatSize(m.size)}，不可撤销）`
+                )
+            ) {
                 return;
             }
             await deleteModel(m.name);

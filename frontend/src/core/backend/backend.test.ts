@@ -19,6 +19,9 @@ vi.mock('./go-adapter', () => ({
             cacheManage: true,
             configPersist: true,
             modelScan: true,
+            crossOriginIsolated: true,
+            clipboardReliable: true,
+            arScope: 'none',
         }),
     },
 }));
@@ -326,9 +329,9 @@ describe('ADR-177 Phase 2 A4 p2-5：虚拟目录 + 伴生文件加载', () => {
             expect(await browserAdapter.IsolateModelDir('file:Miku')).toBe('web://model/Miku');
         });
         it('web://selected-dir/ 路径 → 剥离类别段 web://model/<relIdStem>', async () => {
-            expect(await browserAdapter.IsolateModelDir('web://selected-dir/PMX/分类1/miku.pmx')).toBe(
-                'web://model/分类1/miku'
-            );
+            expect(
+                await browserAdapter.IsolateModelDir('web://selected-dir/PMX/分类1/miku.pmx')
+            ).toBe('web://model/分类1/miku');
         });
     });
 
@@ -611,9 +614,9 @@ describe('FSA 目录扫描嵌套结构（保留目录层级 + 同名不覆盖）
         expect(m1).not.toBe(m2);
 
         // readFileBytes 经类别段剥离正确命中各自字节
-        expect(
-            await browserAdapter.readFileBytes('web://selected-dir/PMX/分类1/miku.pmx')
-        ).toEqual(new Uint8Array([3, 4]));
+        expect(await browserAdapter.readFileBytes('web://selected-dir/PMX/分类1/miku.pmx')).toEqual(
+            new Uint8Array([3, 4])
+        );
         expect(
             await browserAdapter.readFileBytes('web://selected-dir/PMX/分类1/sub/miku.pmx')
         ).toEqual(new Uint8Array([5, 6]));
@@ -633,7 +636,9 @@ describe('FSA 目录扫描嵌套结构（保留目录层级 + 同名不覆盖）
                         {
                             kind: 'directory',
                             name: 'tex',
-                            children: [{ kind: 'file', name: 'face.png', bytes: new Uint8Array([2, 2]) }],
+                            children: [
+                                { kind: 'file', name: 'face.png', bytes: new Uint8Array([2, 2]) },
+                            ],
                         },
                     ],
                 },
@@ -650,11 +655,11 @@ describe('FSA 目录扫描嵌套结构（保留目录层级 + 同名不覆盖）
         expect(_idbStore.get('dir:miku:face.png')).toBeUndefined();
 
         // 读取侧：web://model/<stem>/<relPath> 精确路由到 dir:<stem>:<relPath>
-        expect(
-            await browserAdapter.readFileBytes('web://model/miku/tex/face.png')
-        ).toEqual(new Uint8Array([2, 2]));
-        expect(
-            await browserAdapter.readFileBytes('web://model/miku/toon.png')
-        ).toEqual(new Uint8Array([1, 1]));
+        expect(await browserAdapter.readFileBytes('web://model/miku/tex/face.png')).toEqual(
+            new Uint8Array([2, 2])
+        );
+        expect(await browserAdapter.readFileBytes('web://model/miku/toon.png')).toEqual(
+            new Uint8Array([1, 1])
+        );
     });
 });

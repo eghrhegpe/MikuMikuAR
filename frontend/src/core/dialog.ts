@@ -182,7 +182,11 @@ function _showDialogInner(opts: DialogOptions): Promise<string | boolean | null>
             overlay.removeEventListener('click', onBackdropClick);
 
             // 恢复焦点到之前的元素
-            if (previousFocus && previousFocus.isConnected && typeof previousFocus.focus === 'function') {
+            if (
+                previousFocus &&
+                previousFocus.isConnected &&
+                typeof previousFocus.focus === 'function'
+            ) {
                 previousFocus.focus();
             }
 
@@ -455,7 +459,11 @@ export function showPrompt2(opts: Prompt2Options): Promise<[string, string] | nu
             overlay.removeEventListener('click', onBackdropClick);
 
             // 恢复焦点到之前的元素
-            if (previousFocus && previousFocus.isConnected && typeof previousFocus.focus === 'function') {
+            if (
+                previousFocus &&
+                previousFocus.isConnected &&
+                typeof previousFocus.focus === 'function'
+            ) {
                 previousFocus.focus();
             }
 

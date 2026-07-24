@@ -362,9 +362,11 @@ function _resolveVariant<T>(
     access: (slot: OutfitSlot | undefined) => T | undefined
 ): T | undefined {
     if (!variant) return undefined;
-    return access(variant.byMaterial?.[smName])
-        ?? access(variant.byCategory?.[cat])
-        ?? access(variant.all);
+    return (
+        access(variant.byMaterial?.[smName]) ??
+        access(variant.byCategory?.[cat]) ??
+        access(variant.all)
+    );
 }
 
 /** 按 slot key 回退纹理路径 */
@@ -374,7 +376,14 @@ function _getSlotFor(
     cat: string,
     slotKey: OutfitTextureSlot
 ): string | null {
-    return _resolveVariant(variant, smName, cat, (slot) => slot?.[slotKey as keyof OutfitSlot] as string | undefined) ?? null;
+    return (
+        _resolveVariant(
+            variant,
+            smName,
+            cat,
+            (slot) => slot?.[slotKey as keyof OutfitSlot] as string | undefined
+        ) ?? null
+    );
 }
 
 /** 按材质/分类/全局回退参数块 */

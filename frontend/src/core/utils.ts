@@ -142,7 +142,9 @@ export function canvasToBase64(
         canvas.toBlob(
             (blob) => {
                 if (!blob) {
-                    resolve(canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, ''));
+                    resolve(
+                        canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, '')
+                    );
                     return;
                 }
                 const reader = new FileReader();
@@ -151,11 +153,17 @@ export function canvasToBase64(
                     if (typeof result === 'string') {
                         resolve(result.replace(/^data:image\/\w+;base64,/, ''));
                     } else {
-                        resolve(canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, ''));
+                        resolve(
+                            canvas
+                                .toDataURL(format, quality)
+                                .replace(/^data:image\/\w+;base64,/, '')
+                        );
                     }
                 };
                 reader.onerror = () => {
-                    resolve(canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, ''));
+                    resolve(
+                        canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, '')
+                    );
                 };
                 reader.readAsDataURL(blob);
             },

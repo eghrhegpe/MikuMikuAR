@@ -23,7 +23,11 @@ import { _createStageLight, _updateIndicator, _disposeStageLightEntry } from './
 import { _ensureShadow } from './lighting-shadow';
 import { _updateSunDisc, _disposeSunDisc } from './lighting-sun';
 import { _cancelAllLightingTweens } from './lighting-tween';
-import { tickPersonalLights, disposeAllPersonalLights, tickStageLightFollow } from './lighting-follow';
+import {
+    tickPersonalLights,
+    disposeAllPersonalLights,
+    tickStageLightFollow,
+} from './lighting-follow';
 
 // ======== Light State ========
 

@@ -748,7 +748,9 @@ function buildModelInfoSchema(id: string): MenuNode[] {
                         .then((batch) => {
                             // 优先用 batch 返回的数据，否则回退查已有缓存（可能被 loadActor 先写入）
                             const commentText =
-                                batch?.[metaKey]?.comment || modelMetaCache.get(metaKey)?.comment || '';
+                                batch?.[metaKey]?.comment ||
+                                modelMetaCache.get(metaKey)?.comment ||
+                                '';
                             if (batch?.[metaKey] || commentText) {
                                 const merged = new Map(modelMetaCache);
                                 if (batch?.[metaKey]) {
@@ -763,7 +765,8 @@ function buildModelInfoSchema(id: string): MenuNode[] {
                                 const valEl = el.querySelector('.info-card-value');
                                 if (labelEl) labelEl.textContent = t('model-detail.fComment');
                                 if (valEl) {
-                                    valEl.textContent = commentText || t('model-detail.fCommentEmpty');
+                                    valEl.textContent =
+                                        commentText || t('model-detail.fCommentEmpty');
                                     (valEl as HTMLElement).style.whiteSpace = 'pre-wrap';
                                 }
                             }
@@ -787,7 +790,12 @@ function buildModelInfoSchema(id: string): MenuNode[] {
                 }, 0);
                 const fileName = inst.filePath.split(/[/\\]/).pop() || inst.filePath;
                 // comment 状态：undef=无缓存(加载中), ''=后端返回空, string=内容
-                const metaStatus = metaKey && !modelMetaCache.has(metaKey) ? 'loading' : (meta?.comment ? 'ok' : 'empty');
+                const metaStatus =
+                    metaKey && !modelMetaCache.has(metaKey)
+                        ? 'loading'
+                        : meta?.comment
+                          ? 'ok'
+                          : 'empty';
                 const comment = meta?.comment ?? '';
                 const commentLabel =
                     metaStatus === 'loading'
@@ -851,7 +859,10 @@ function buildModelInfoSchema(id: string): MenuNode[] {
                             f.wide ? { wide: true, sub: f.sub } : f.sub ? { sub: f.sub } : undefined
                         );
                         // 为 comment 卡片标记 data-comment-card 供异步更新
-                        if (f.label === t('model-detail.fComment') || f.label === t('model-detail.fCommentLoading')) {
+                        if (
+                            f.label === t('model-detail.fComment') ||
+                            f.label === t('model-detail.fCommentLoading')
+                        ) {
                             cardEl.setAttribute('data-comment-card', '');
                             const valEl = cardEl.querySelector('.info-card-value');
                             if (valEl) (valEl as HTMLElement).style.whiteSpace = 'pre-wrap';

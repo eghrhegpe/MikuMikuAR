@@ -17,7 +17,9 @@ export type GoApp = typeof GoAppNS;
  * capabilities() 如实反映，UI 屏蔽规则据此生成，避免「幽灵入口」。
  */
 export interface BackendCapabilities {
-    ar: boolean; // AR（ARCore/Vuforia）—— 原生独占
+    // [doc:adr-178] ar = AR 相机透视（getUserMedia camera passthrough），桌面/安卓可用；
+    //   与 arScope（原生 AR 路由）是**两个正交轴**，勿混淆（详见 adr-178）。
+    ar: boolean;
     externalApps: boolean; // 外部程序（Blender/MMD/LaunchSoftware）
     plazaWindow: boolean; // 模型广场窗口控制（Navigate/Close/Fetch/Download）
     fsAccess: boolean; // File System Access API（showDirectoryPicker 等）
@@ -30,6 +32,10 @@ export interface BackendCapabilities {
     cacheManage: boolean; // 缓存清理（IndexedDB）
     configPersist: boolean; // 配置持久化（IndexedDB）
     modelScan: boolean; // 模型库扫描（FSA 授权目录替代）
+    // —— 宿主级运行时能力键（ADR-178，补完四端 2×2 矩阵）——
+    crossOriginIsolated: boolean; // SharedArrayBuffer 可用 → 多线程 MPR 物理（ADR-133）；安卓应用 WebView 恒 false
+    clipboardReliable: boolean; // 剪贴板 API 可靠（手势/无限制）；安卓应用 WebView 部分版本 false（A2-06 根因）
+    arScope: 'none' | 'android-app' | 'webxr'; // 原生 AR 路由作用域（与 ar 透视分离）：none=无 / android-app=ARCore / webxr=WebXR
 }
 
 // ④ 零业务调用函数（ADR-176 实证章节清单）—— 从 BackendService 接口排除。

@@ -71,8 +71,9 @@ if (
     typeof window !== 'undefined' &&
     typeof (window as { addEventListener?: unknown }).addEventListener === 'function'
 ) {
-    (window as { addEventListener: (t: string, fn: () => void) => void }).addEventListener('beforeunload', () =>
-        closeIDB()
+    (window as { addEventListener: (t: string, fn: () => void) => void }).addEventListener(
+        'beforeunload',
+        () => closeIDB()
     );
 }
 
@@ -95,6 +96,12 @@ function _cap(): BackendCapabilities {
         cacheManage: true,
         configPersist: true,
         modelScan: fsAccess,
+        // [doc:adr-178] 宿主级运行时键（与 go-adapter 同语义，读真实运行时）
+        crossOriginIsolated:
+            typeof window !== 'undefined' &&
+            (window as { crossOriginIsolated?: boolean }).crossOriginIsolated === true,
+        clipboardReliable: typeof navigator !== 'undefined' && !!navigator.clipboard,
+        arScope: typeof navigator !== 'undefined' && 'xr' in navigator ? 'webxr' : 'none',
     };
 }
 
@@ -154,12 +161,12 @@ function _defaultConfig(): Config {
  * 不再重复写 5 个 if 分支。判定顺序与原 _resolveIdbKey 一致，保持行为兼容。
  */
 type _PathInfo =
-    | { kind: 'model-dir'; stem: string; rest: string }   // web://model/<stem>/<relPath>（有 relPath）
-    | { kind: 'model-stem'; stem: string }                // web://model/<stem>（无 relPath）
-    | { kind: 'selected-dir'; stem: string }              // web://selected-dir/<catRelPath>
-    | { kind: 'idb-key' }                                 // 已是 file:/entry:/recent/dir:/outfit: 前缀
-    | { kind: 'virtual-uri' }                             // content:// 或其他 web://（Android SAF 等）
-    | { kind: 'absolute'; stem: string };                 // 绝对路径 → baseName 去扩展名
+    | { kind: 'model-dir'; stem: string; rest: string } // web://model/<stem>/<relPath>（有 relPath）
+    | { kind: 'model-stem'; stem: string } // web://model/<stem>（无 relPath）
+    | { kind: 'selected-dir'; stem: string } // web://selected-dir/<catRelPath>
+    | { kind: 'idb-key' } // 已是 file:/entry:/recent/dir:/outfit: 前缀
+    | { kind: 'virtual-uri' } // content:// 或其他 web://（Android SAF 等）
+    | { kind: 'absolute'; stem: string }; // 绝对路径 → baseName 去扩展名
 
 function _classifyPath(path: string): _PathInfo {
     // 1. 虚拟目录资源：web://model/<stem>/...（relPath 可选，决定 model-dir vs model-stem）
@@ -236,7 +243,9 @@ async function _listModels(): Promise<ModelEntry[]> {
     // 仅列 entry: 前缀，避免把原档字节 / recent 数组误当 ModelEntry 返回。
     const allKeys = await idbKeys('models');
     const keys = allKeys.filter((k) => k.startsWith('entry:'));
-    console.info(`[web-scan] _listModels: IDB 共 ${allKeys.length} 个键, 其中 entry: ${keys.length} 个`);
+    console.info(
+        `[web-scan] _listModels: IDB 共 ${allKeys.length} 个键, 其中 entry: ${keys.length} 个`
+    );
     const out: ModelEntry[] = [];
     for (const k of keys) {
         const m = await idbGet<ModelEntry>('models', k);
@@ -249,28 +258,46 @@ async function _listModels(): Promise<ModelEntry[]> {
 
 // —— File System Access 对话框（②）——
 /** 一次选多个文件（.pmx + 伴生纹理）。返回 FileSystemFileHandle 数组。 */
-async function _pickFilesMultiple(
-    acceptPmx: boolean
-): Promise<FileSystemFileHandle[] | null> {
-    const picker = (window as { showOpenFilePicker?: (o?: unknown) => Promise<FileSystemFileHandle[]> }).showOpenFilePicker;
+async function _pickFilesMultiple(acceptPmx: boolean): Promise<FileSystemFileHandle[] | null> {
+    const picker = (
+        window as { showOpenFilePicker?: (o?: unknown) => Promise<FileSystemFileHandle[]> }
+    ).showOpenFilePicker;
     if (typeof picker !== 'function') return null;
     // .pmx 场景：多选模式让用户 Ctrl+选同目录的纹理
     // 需要同时支持 pmx + 纹理扩展名，但 FSA showOpenFilePicker 的 accept 是"或"语义，
     // 用 application/octet-stream 兜底接收所有文件，靠后缀在 SelectImportFile 内部分流
     const opts: Record<string, unknown> = { multiple: true };
     if (acceptPmx) {
-        opts.types = [{
-            description: 'Model files',
-            accept: { 'application/octet-stream': ['.pmx', '.png', '.jpg', '.jpeg', '.bmp', '.tga', '.dds', '.tif', '.tiff'] }
-        }];
+        opts.types = [
+            {
+                description: 'Model files',
+                accept: {
+                    'application/octet-stream': [
+                        '.pmx',
+                        '.png',
+                        '.jpg',
+                        '.jpeg',
+                        '.bmp',
+                        '.tga',
+                        '.dds',
+                        '.tif',
+                        '.tiff',
+                    ],
+                },
+            },
+        ];
     }
-    return await picker(opts) ?? null;
+    return (await picker(opts)) ?? null;
 }
 
 async function _pickFile(accept?: string): Promise<FileSystemFileHandle | null> {
-    const picker = (window as { showOpenFilePicker?: (o?: unknown) => Promise<FileSystemFileHandle[]> }).showOpenFilePicker;
+    const picker = (
+        window as { showOpenFilePicker?: (o?: unknown) => Promise<FileSystemFileHandle[]> }
+    ).showOpenFilePicker;
     if (typeof picker !== 'function') return null;
-    const handles = await picker(accept ? { types: [{ accept: { 'application/octet-stream': [accept] } }] } : undefined);
+    const handles = await picker(
+        accept ? { types: [{ accept: { 'application/octet-stream': [accept] } }] } : undefined
+    );
     return handles[0] ?? null;
 }
 
@@ -282,13 +309,19 @@ async function _writeModelFile(file: File): Promise<string> {
     await idbSet('models', `file:${stem}`, bytes);
     if (lower.endsWith('.pmx')) {
         await idbSet('models', `entry:${stem}`, {
-            name: stem, fileName: file.name, kind: 'pmx',
-            size: bytes.byteLength, savedAt: Date.now(),
+            name: stem,
+            fileName: file.name,
+            kind: 'pmx',
+            size: bytes.byteLength,
+            savedAt: Date.now(),
         });
     } else if (lower.endsWith('.zip')) {
         await idbSet('models', `entry:${stem}`, {
-            name: stem, fileName: file.name, kind: 'zip',
-            size: bytes.byteLength, savedAt: Date.now(),
+            name: stem,
+            fileName: file.name,
+            kind: 'zip',
+            size: bytes.byteLength,
+            savedAt: Date.now(),
         });
     }
     return file.name;
@@ -309,8 +342,11 @@ async function _writeModelWithTextures(
     const pmxBytes = new Uint8Array(await pmxFile.arrayBuffer());
     await idbSet('models', `file:${pmxStem}`, pmxBytes);
     await idbSet('models', `entry:${pmxStem}`, {
-        name: pmxStem, fileName: pmxFile.name, kind: 'pmx',
-        size: pmxBytes.byteLength, savedAt: Date.now(),
+        name: pmxStem,
+        fileName: pmxFile.name,
+        kind: 'pmx',
+        size: pmxBytes.byteLength,
+        savedAt: Date.now(),
     });
     // 写纹理文件到 dir:<stem>:<filename>
     for (const handle of allHandles) {
@@ -346,28 +382,28 @@ interface FsaDirHandle extends FileSystemDirectoryHandle {
 
 /** 桌面端目录约定（对齐 Go 端 GetPath catDef，键为小写目录名）*/
 const _CATEGORY_BY_DIR: Record<string, { type: string; format: string }> = {
-    'pmx':         { type: 'actor',       format: 'pmx' },
-    'vmd':         { type: 'motion',      format: 'vmd' },
-    'audio':       { type: 'audio',       format: 'audio' },
-    'prop':        { type: 'prop',        format: 'pmx' },
-    'stage':       { type: 'stage',       format: 'pmx' },
+    'pmx': { type: 'actor', format: 'pmx' },
+    'vmd': { type: 'motion', format: 'vmd' },
+    'audio': { type: 'audio', format: 'audio' },
+    'prop': { type: 'prop', format: 'pmx' },
+    'stage': { type: 'stage', format: 'pmx' },
     'environment': { type: 'environment', format: 'environment' },
-    'md-dress':    { type: 'outfit',      format: 'pmx' },
-    'setting':     { type: 'setting',     format: 'setting' },
+    'md-dress': { type: 'outfit', format: 'pmx' },
+    'setting': { type: 'setting', format: 'setting' },
 };
 
 /** 扩展名兜底分类 + 虚拟子目录映射（扁平目录用，子目录名对齐 CATEGORY_DIR）*/
 const _CATEGORY_BY_EXT: Record<string, { subdir: string; type: string; format: string }> = {
-    'pmx':  { subdir: 'PMX',   type: 'actor',  format: 'pmx' },
-    'vmd':  { subdir: 'VMD',   type: 'motion', format: 'vmd' },
-    'mp3':  { subdir: 'audio', type: 'audio',  format: 'audio' },
-    'wav':  { subdir: 'audio', type: 'audio',  format: 'audio' },
-    'ogg':  { subdir: 'audio', type: 'audio',  format: 'audio' },
-    'flac': { subdir: 'audio', type: 'audio',  format: 'audio' },
-    'wma':  { subdir: 'audio', type: 'audio',  format: 'audio' },
-    'x':    { subdir: 'stage', type: 'stage',  format: 'pmx' },
-    'vpd':  { subdir: 'PMX',   type: 'pose',   format: 'vpd' },
-    'zip':  { subdir: 'PMX',   type: 'actor',  format: 'zip' },
+    pmx: { subdir: 'PMX', type: 'actor', format: 'pmx' },
+    vmd: { subdir: 'VMD', type: 'motion', format: 'vmd' },
+    mp3: { subdir: 'audio', type: 'audio', format: 'audio' },
+    wav: { subdir: 'audio', type: 'audio', format: 'audio' },
+    ogg: { subdir: 'audio', type: 'audio', format: 'audio' },
+    flac: { subdir: 'audio', type: 'audio', format: 'audio' },
+    wma: { subdir: 'audio', type: 'audio', format: 'audio' },
+    x: { subdir: 'stage', type: 'stage', format: 'pmx' },
+    vpd: { subdir: 'PMX', type: 'pose', format: 'vpd' },
+    zip: { subdir: 'PMX', type: 'actor', format: 'zip' },
 };
 
 /** 所有类别子目录名（小写），用于 _stripCategorySeg 的 O(1) 判定 */
@@ -483,7 +519,9 @@ async function _scanDirIntoIDB(
                     const relToPmx = _relPathFrom(texRelIdCategory, pmx.relPath);
                     // bare stem 统一：剥离类别前缀，使 ListDirRecursive / readFileBytes 查询路径一致
                     const bareStem = pmx.stem.includes('/') ? pmx.stem.split('/').pop()! : pmx.stem;
-                    const key = relToPmx ? `dir:${bareStem}:${relToPmx}/${name}` : `dir:${bareStem}:${name}`;
+                    const key = relToPmx
+                        ? `dir:${bareStem}:${relToPmx}/${name}`
+                        : `dir:${bareStem}:${name}`;
                     await idbSet('models', key, texBytes);
                 }
                 texLinkedCount++;
@@ -536,57 +574,101 @@ async function _scanDirIntoIDB(
                         await idbSet('models', `entry:${entryKey}`, {
                             dir: zipDir,
                             file_path: `${virtualDir}/${name}`,
-                            name_jp: innerStem, name_en: innerStem,
-                            comment: '', has_thumb: false,
-                            type: innerType, format: innerFormat,
-                            container: 'zip', zip_inner: innerPath, category: '', source: '',
-                            name: innerStem, fileName: innerBase, kind: innerFormat,
-                            size: 0, savedAt: Date.now(),
+                            name_jp: innerStem,
+                            name_en: innerStem,
+                            comment: '',
+                            has_thumb: false,
+                            type: innerType,
+                            format: innerFormat,
+                            container: 'zip',
+                            zip_inner: innerPath,
+                            category: '',
+                            source: '',
+                            name: innerStem,
+                            fileName: innerBase,
+                            kind: innerFormat,
+                            size: 0,
+                            savedAt: Date.now(),
                         });
-                        console.info(`[web-scan]   展开 zip entry:${entryKey} → dir=${zipDir} inner=${innerPath} format=${innerFormat}`);
+                        console.info(
+                            `[web-scan]   展开 zip entry:${entryKey} → dir=${zipDir} inner=${innerPath} format=${innerFormat}`
+                        );
                     }
-            } else {
-                // zip 内无识别资源，作为整体 entry 保留
-                await idbSet('models', `entry:${relIdStem}`, {
-                    dir: virtualDir, file_path: `${virtualDir}/${name}`,
-                        name_jp: stem, name_en: stem,
-                        comment: '', has_thumb: false,
-                        type, format: 'zip',
-                        container: 'zip', zip_inner: '', category: '', source: '',
-                        name: stem, fileName: name, kind: 'zip',
-                        size: bytes.byteLength, savedAt: Date.now(),
+                } else {
+                    // zip 内无识别资源，作为整体 entry 保留
+                    await idbSet('models', `entry:${relIdStem}`, {
+                        dir: virtualDir,
+                        file_path: `${virtualDir}/${name}`,
+                        name_jp: stem,
+                        name_en: stem,
+                        comment: '',
+                        has_thumb: false,
+                        type,
+                        format: 'zip',
+                        container: 'zip',
+                        zip_inner: '',
+                        category: '',
+                        source: '',
+                        name: stem,
+                        fileName: name,
+                        kind: 'zip',
+                        size: bytes.byteLength,
+                        savedAt: Date.now(),
                     });
                 }
             } catch (zipErr) {
                 // zip 解析失败（损坏/加密），作为整体 entry 保留
                 console.warn(`[web-scan]   zip 解析失败: ${name}`, zipErr);
                 await idbSet('models', `entry:${relIdStem}`, {
-                    dir: virtualDir, file_path: `${virtualDir}/${name}`,
-                    name_jp: stem, name_en: stem,
-                    comment: '', has_thumb: false,
-                    type, format: 'zip',
-                    container: 'zip', zip_inner: '', category: '', source: '',
-                    name: stem, fileName: name, kind: 'zip',
-                    size: bytes.byteLength, savedAt: Date.now(),
+                    dir: virtualDir,
+                    file_path: `${virtualDir}/${name}`,
+                    name_jp: stem,
+                    name_en: stem,
+                    comment: '',
+                    has_thumb: false,
+                    type,
+                    format: 'zip',
+                    container: 'zip',
+                    zip_inner: '',
+                    category: '',
+                    source: '',
+                    name: stem,
+                    fileName: name,
+                    kind: 'zip',
+                    size: bytes.byteLength,
+                    savedAt: Date.now(),
                 });
             }
         } else {
             await idbSet('models', `entry:${relIdStem}`, {
                 dir: virtualDir,
                 file_path: `${virtualDir}/${name}`,
-                name_jp: stem, name_en: stem,
-                comment: '', has_thumb: false,
-                type, format,
-                container: 'file', zip_inner: '', category: '', source: '',
-                name: stem, fileName: name, kind: format,
-                size: bytes.byteLength, savedAt: Date.now(),
+                name_jp: stem,
+                name_en: stem,
+                comment: '',
+                has_thumb: false,
+                type,
+                format,
+                container: 'file',
+                zip_inner: '',
+                category: '',
+                source: '',
+                name: stem,
+                fileName: name,
+                kind: format,
+                size: bytes.byteLength,
+                savedAt: Date.now(),
             });
-            console.info(`[web-scan]   写入 entry:${relIdStem} → dir=${virtualDir} type=${type} format=${format}`);
+            console.info(
+                `[web-scan]   写入 entry:${relIdStem} → dir=${virtualDir} type=${type} format=${format}`
+            );
         }
     }
 
     if (texLinkedCount > 0) {
-        console.info(`[web-scan]   纹理关联: ${texLinkedCount} 个纹理 → PMX [${effectivePmx.map((p) => _baseName(p.stem)).join(', ')}]`);
+        console.info(
+            `[web-scan]   纹理关联: ${texLinkedCount} 个纹理 → PMX [${effectivePmx.map((p) => _baseName(p.stem)).join(', ')}]`
+        );
     }
 
     // 递归子目录（传递本层 PMX，使子目录纹理能按相对 PMX 路径关联祖先）
@@ -704,7 +786,9 @@ export const browserAdapter: BackendService = {
         let mainPmxStem = '';
         if (_innerPath) {
             // [bugfix:zip-innerpath] 多文件 zip 点击特定内部文件时，按 innerPath 定位
-            const target = fileNames.find((n) => n === _innerPath || n.replace(/\\/g, '/') === _innerPath);
+            const target = fileNames.find(
+                (n) => n === _innerPath || n.replace(/\\/g, '/') === _innerPath
+            );
             if (target) {
                 mainPmxName = _baseName(target);
                 mainPmxStem = _stripExt(mainPmxName);
@@ -838,13 +922,21 @@ export const browserAdapter: BackendService = {
     // [doc:adr-176] 对齐 Go 签名：RemoveTag(libraryRef, tag)。
     async RemoveTag(libraryRef: string, tag: string): Promise<void> {
         const modelTags = (await idbGet<string[]>('tags', `model:${libraryRef}`)) ?? [];
-        await idbSet('tags', `model:${libraryRef}`, modelTags.filter((t) => t !== tag));
+        await idbSet(
+            'tags',
+            `model:${libraryRef}`,
+            modelTags.filter((t) => t !== tag)
+        );
         const tagModels = (await idbGet<string[]>('tags', `tag:${tag}`)) ?? [];
         const newTagModels = tagModels.filter((r) => r !== libraryRef);
         if (newTagModels.length === 0) {
             await idbDelete('tags', `tag:${tag}`);
             const all = (await idbGet<string[]>('tags', 'all')) ?? [];
-            await idbSet('tags', 'all', all.filter((t) => t !== tag));
+            await idbSet(
+                'tags',
+                'all',
+                all.filter((t) => t !== tag)
+            );
         } else {
             await idbSet('tags', `tag:${tag}`, newTagModels);
         }
@@ -882,7 +974,9 @@ export const browserAdapter: BackendService = {
         await idbSet('presets', `model:${name}`, jsonStr);
     },
     async GetModelPresets(): Promise<string[]> {
-        return (await idbKeys('presets')).filter((k) => k.startsWith('model:')).map((k) => k.slice(6));
+        return (await idbKeys('presets'))
+            .filter((k) => k.startsWith('model:'))
+            .map((k) => k.slice(6));
     },
     // [doc:adr-176] 对齐 Go 签名：LoadModelPreset(path): string。
     // path 推导 name，返回 JSON string。不存在返回空串（对齐 Go）。
@@ -900,7 +994,9 @@ export const browserAdapter: BackendService = {
         try {
             const parsed = JSON.parse(jsonStr) as { name?: string };
             if (parsed.name) name = parsed.name;
-        } catch { /* 解析失败用默认名 */ }
+        } catch {
+            /* 解析失败用默认名 */
+        }
         await idbSet('presets', `model:${name}`, jsonStr);
         return name;
     },
@@ -924,12 +1020,16 @@ export const browserAdapter: BackendService = {
         try {
             const parsed = JSON.parse(jsonStr) as { name?: string };
             if (parsed.name) name = parsed.name;
-        } catch { /* 解析失败用默认名 */ }
+        } catch {
+            /* 解析失败用默认名 */
+        }
         await idbSet('presets', `scene:${name}`, jsonStr);
         return name;
     },
     async GetPresetScenes(): Promise<string[]> {
-        return (await idbKeys('presets')).filter((k) => k.startsWith('scene:')).map((k) => k.slice(6));
+        return (await idbKeys('presets'))
+            .filter((k) => k.startsWith('scene:'))
+            .map((k) => k.slice(6));
     },
     async GetPresetScenesDir(): Promise<string> {
         return 'web://presets/scenes';
@@ -940,7 +1040,9 @@ export const browserAdapter: BackendService = {
         try {
             const parsed = JSON.parse(jsonStr) as { name?: string };
             if (parsed.name) name = parsed.name;
-        } catch { /* 解析失败用默认名 */ }
+        } catch {
+            /* 解析失败用默认名 */
+        }
         await idbSet('presets', `env:${name}`, jsonStr);
         return name;
     },
@@ -948,7 +1050,9 @@ export const browserAdapter: BackendService = {
         return (await idbGet<string>('presets', `env:${name}`)) ?? '';
     },
     async ListEnvPresets(): Promise<string[]> {
-        return (await idbKeys('presets')).filter((k) => k.startsWith('env:')).map((k) => k.slice(4));
+        return (await idbKeys('presets'))
+            .filter((k) => k.startsWith('env:'))
+            .map((k) => k.slice(4));
     },
     async FileExists(path: string): Promise<boolean> {
         // [doc:adr-177] 经 _resolveIdbKey 映射，对齐 readFileBytes 路径语义
@@ -1090,7 +1194,11 @@ export const browserAdapter: BackendService = {
 
     // [doc:adr-176] 对齐 Go 签名：BundleScene(targetPath, sceneJSON, assetPaths): void。
     // 浏览器侧：用 JSZip 打包 scene.json + 资源字节，触发下载到 targetPath。
-    async BundleScene(_targetPath: string, sceneJSON: string, assetPaths: string[] | null): Promise<void> {
+    async BundleScene(
+        _targetPath: string,
+        sceneJSON: string,
+        assetPaths: string[] | null
+    ): Promise<void> {
         const zip = new JSZip();
         zip.file('scene.json', sceneJSON);
         if (assetPaths) {
@@ -1191,7 +1299,9 @@ export const browserAdapter: BackendService = {
     // 调用 showDirectoryPicker 获取句柄 → 保存到 _fsaRootHandle → 递归扫描写 IndexedDB。
     // 返回 'web://selected-dir' 作为虚拟根路径，供 SetResourceRoot 持久化。
     async SelectDir(): Promise<string> {
-        const picker = (window as { showDirectoryPicker?: () => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker;
+        const picker = (
+            window as { showDirectoryPicker?: () => Promise<FileSystemDirectoryHandle> }
+        ).showDirectoryPicker;
         if (typeof picker !== 'function') throw new NotSupportedError('SelectDir');
         _fsaRootHandle = await picker();
         console.info(`[web-scan] SelectDir: 用户选择目录 "${_fsaRootHandle.name}"，开始扫描...`);
@@ -1236,7 +1346,8 @@ export const browserAdapter: BackendService = {
         return singleFile.name;
     },
     async SelectBundleSaveFile(): Promise<string> {
-        const picker = (window as { showSaveFilePicker?: () => Promise<FileSystemFileHandle> }).showSaveFilePicker;
+        const picker = (window as { showSaveFilePicker?: () => Promise<FileSystemFileHandle> })
+            .showSaveFilePicker;
         if (typeof picker !== 'function') throw new NotSupportedError('SelectBundleSaveFile');
         await picker();
         return 'web://save';
@@ -1250,7 +1361,8 @@ export const browserAdapter: BackendService = {
         return h ? 'web://preset' : '';
     },
     async SelectPresetSaveFile(): Promise<string> {
-        const picker = (window as { showSaveFilePicker?: () => Promise<FileSystemFileHandle> }).showSaveFilePicker;
+        const picker = (window as { showSaveFilePicker?: () => Promise<FileSystemFileHandle> })
+            .showSaveFilePicker;
         if (typeof picker !== 'function') throw new NotSupportedError('SelectPresetSaveFile');
         await picker();
         return 'web://preset-save';
@@ -1271,7 +1383,10 @@ export const browserAdapter: BackendService = {
     async ClosePlazaWindow(): Promise<void> {
         throw new NotSupportedError('ClosePlazaWindow');
     },
-    async DownloadFromPlaza(_fileURL: string, _fileName: string): Promise<PlazaDownloadResult | null> {
+    async DownloadFromPlaza(
+        _fileURL: string,
+        _fileName: string
+    ): Promise<PlazaDownloadResult | null> {
         throw new NotSupportedError('DownloadFromPlaza');
     },
     async FetchPlazaConfig(): Promise<[string, string]> {
@@ -1292,7 +1407,11 @@ export const browserAdapter: BackendService = {
     async OpenScreenshotDir(): Promise<void> {
         throw new NotSupportedError('OpenScreenshotDir');
     },
-    async OpenWithSoftware(_modelPath: string, _softwarePath: string, _args: string): Promise<void> {
+    async OpenWithSoftware(
+        _modelPath: string,
+        _softwarePath: string,
+        _args: string
+    ): Promise<void> {
         throw new NotSupportedError('OpenWithSoftware');
     },
     async RemoveCustomSoftware(_path: string): Promise<void> {

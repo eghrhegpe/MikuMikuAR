@@ -286,7 +286,9 @@ function startReplaceModel(m: LibraryModel, replaceId: string): void {
                     // model-loader 已按新模型默认 motionSlots 加载了 VMD，
                     // 若继承的 sceneMotionId 对应不同动作，需通过 applyIntentToModel 重新应用
                     if (snapshot.sceneMotionId) {
-                        const intent = getSceneMotions().find((m) => m.id === snapshot.sceneMotionId);
+                        const intent = getSceneMotions().find(
+                            (m) => m.id === snapshot.sceneMotionId
+                        );
                         if (intent) {
                             applyIntentToModel(handle.id, intent, getMotionGen());
                         }
@@ -294,10 +296,8 @@ function startReplaceModel(m: LibraryModel, replaceId: string): void {
                 }
                 removeModel(replaceId);
                 // [doc:adr-127] 破坏性操作场景级撤销保护
-                offerSceneUndoAndRefresh(
-                    t('model-detail.replaced'),
-                    undoSnap,
-                    () => stackRegistry.modelStack?.reRender()
+                offerSceneUndoAndRefresh(t('model-detail.replaced'), undoSnap, () =>
+                    stackRegistry.modelStack?.reRender()
                 );
                 try {
                     stackRegistry.modelStack?.resetToRoot();

@@ -492,16 +492,27 @@ export function initDropHandler(): void {
     let dragOverLogged = 0;
     console.info('[drop-diag] initDropHandler registered on window');
     // 同时在 document 和 window 上注册 dragover，对比哪个先收到 / 是否被拦截
-    document.addEventListener('dragover', (e) => {
-        docDragOverCount++;
-        if (dragOverLogged < 2) {
-            dragOverLogged++;
-            console.info('[drop-diag] doc dragover #' + docDragOverCount, 'target:', (e.target as HTMLElement)?.tagName,
-                'dropEffect:', e.dataTransfer?.dropEffect,
-                'effectAllowed:', e.dataTransfer?.effectAllowed,
-                'defaultPrevented:', e.defaultPrevented);
-        }
-    }, true); // capture 阶段，最早收到
+    document.addEventListener(
+        'dragover',
+        (e) => {
+            docDragOverCount++;
+            if (dragOverLogged < 2) {
+                dragOverLogged++;
+                console.info(
+                    '[drop-diag] doc dragover #' + docDragOverCount,
+                    'target:',
+                    (e.target as HTMLElement)?.tagName,
+                    'dropEffect:',
+                    e.dataTransfer?.dropEffect,
+                    'effectAllowed:',
+                    e.dataTransfer?.effectAllowed,
+                    'defaultPrevented:',
+                    e.defaultPrevented
+                );
+            }
+        },
+        true
+    ); // capture 阶段，最早收到
     _reg(window, 'dragenter', (e) => {
         e.preventDefault();
         // 显式设置 dropEffect，避免浏览器默认 'none' 导致禁止图标
@@ -510,10 +521,18 @@ export function initDropHandler(): void {
         }
         dragCounter++;
         const loading = document.getElementById('loading');
-        console.info('[drop-diag] dragenter', dragCounter, 'target:', e.target?.tagName,
-            'loading.display:', loading?.style.display,
-            'loading.pe:', loading ? window.getComputedStyle(loading).pointerEvents : 'N/A',
-            'dropEffect:', e.dataTransfer?.dropEffect);
+        console.info(
+            '[drop-diag] dragenter',
+            dragCounter,
+            'target:',
+            e.target?.tagName,
+            'loading.display:',
+            loading?.style.display,
+            'loading.pe:',
+            loading ? window.getComputedStyle(loading).pointerEvents : 'N/A',
+            'dropEffect:',
+            e.dataTransfer?.dropEffect
+        );
         if (dragCounter === 1) {
             document.getElementById('dropOverlay')!.classList.add('visible');
         }
@@ -521,8 +540,14 @@ export function initDropHandler(): void {
     _reg(window, 'dragleave', (e) => {
         e.preventDefault();
         dragCounter--;
-        console.info('[drop-diag] dragleave', dragCounter,
-            'docDragOver:', docDragOverCount, 'winDragOver:', winDragOverCount);
+        console.info(
+            '[drop-diag] dragleave',
+            dragCounter,
+            'docDragOver:',
+            docDragOverCount,
+            'winDragOver:',
+            winDragOverCount
+        );
         if (dragCounter <= 0) {
             dragCounter = 0;
             hideDropOverlay();
@@ -535,12 +560,22 @@ export function initDropHandler(): void {
         }
         winDragOverCount++;
         if (winDragOverCount <= 2) {
-            console.info('[drop-diag] win dragover #' + winDragOverCount, 'preventDefault+dropEffect=copy OK, target:', e.target?.tagName);
+            console.info(
+                '[drop-diag] win dragover #' + winDragOverCount,
+                'preventDefault+dropEffect=copy OK, target:',
+                e.target?.tagName
+            );
         }
     });
     _reg(window, 'drop', async (e) => {
-        console.info('[drop-diag] drop fired! files:', e.dataTransfer?.files?.length ?? 0,
-            'docDragOver:', docDragOverCount, 'winDragOver:', winDragOverCount);
+        console.info(
+            '[drop-diag] drop fired! files:',
+            e.dataTransfer?.files?.length ?? 0,
+            'docDragOver:',
+            docDragOverCount,
+            'winDragOver:',
+            winDragOverCount
+        );
         e.preventDefault();
         hideDropOverlay();
         if (!e.dataTransfer?.files) {

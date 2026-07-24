@@ -56,8 +56,7 @@ export function getFeetStateForModel(modelId: string): FeetState {
     }
     // 参数类型安全收敛：schema 仅写入 number，但若存档/反序列化误带非 number 值，
     // 退回默认值而非静默误用（NaN/string）。不使用 `Number(v) ?? def`，因 Number(undefined) 为 NaN 且 ?? 不兜底。
-    const num = (v: ParamValue | undefined, d: number): number =>
-        typeof v === 'number' ? v : d;
+    const num = (v: ParamValue | undefined, d: number): number => (typeof v === 'number' ? v : d);
     return {
         enabled: entry.enabled,
         intensity: num(entry.params.intensity, def.intensity),

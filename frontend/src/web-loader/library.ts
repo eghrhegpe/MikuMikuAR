@@ -12,7 +12,10 @@
 // 模型库函数已迁移到 core/backend/idb，此处全部转发以保持向后兼容。
 
 import {
-    idbGet, idbSet, idbDelete, idbKeys,
+    idbGet,
+    idbSet,
+    idbDelete,
+    idbKeys,
     saveModel as _saveModel,
     listModels as _listModels,
     loadModelBytes as _loadModelBytes,

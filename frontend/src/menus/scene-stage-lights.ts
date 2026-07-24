@@ -583,7 +583,7 @@ function buildStageLightSchema(): MenuNode[] {
                             noneOpt.value = '';
                             noneOpt.textContent = t('scene.followNone');
                             modelSelect.appendChild(noneOpt);
-                            
+
                             const models = Array.from(modelRegistry.values());
                             for (const m of models) {
                                 const opt = document.createElement('option');
@@ -608,7 +608,7 @@ function buildStageLightSchema(): MenuNode[] {
                                 autoOpt.value = '';
                                 autoOpt.textContent = t('scene.followBoneAuto');
                                 boneSelect.appendChild(autoOpt);
-                                
+
                                 const model = modelRegistry.get(modelId);
                                 if (model?.mmdModel?.runtimeBones?.length) {
                                     for (const b of model.mmdModel.runtimeBones) {
@@ -694,7 +694,8 @@ function buildStageLightSchema(): MenuNode[] {
 
                             // 灯随动开关
                             const moveToggle = document.createElement('label');
-                            moveToggle.style.cssText = 'display:flex;align-items:center;gap:8px;margin:8px 0;';
+                            moveToggle.style.cssText =
+                                'display:flex;align-items:center;gap:8px;margin:8px 0;';
                             const checkbox = document.createElement('input');
                             checkbox.type = 'checkbox';
                             checkbox.checked = state.followTarget?.moveWithTarget ?? false;

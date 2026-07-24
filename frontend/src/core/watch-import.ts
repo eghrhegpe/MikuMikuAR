@@ -26,7 +26,8 @@ export async function importToLibrary(path: string, displayName: string): Promis
 
 events.on('watch:newfile', (ev: unknown) => {
     // Wails 事件对象：data 字段承载 Go 端 EventsEmit 的 payload
-    const payload = (ev as { data?: { path: string; name: string; type: string } } | null)?.data ?? {
+    const payload = (ev as { data?: { path: string; name: string; type: string } } | null)
+        ?.data ?? {
         path: '',
         name: '',
         type: '',

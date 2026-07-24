@@ -16,7 +16,9 @@ vi.mock('../core/backend/idb', () => ({
         mem.delete(mk(store, key));
     }),
     idbKeys: vi.fn(async (store: string) =>
-        [...mem.keys()].filter((k) => k.startsWith(`${store}/`)).map((k) => k.slice(store.length + 1))
+        [...mem.keys()]
+            .filter((k) => k.startsWith(`${store}/`))
+            .map((k) => k.slice(store.length + 1))
     ),
     closeIDB: vi.fn(),
 
@@ -39,11 +41,11 @@ vi.mock('../core/backend/idb', () => ({
         }
         return out.sort((a: any, b: any) => b.savedAt - a.savedAt);
     }),
-    loadModelBytes: vi.fn(async (name: string) =>
-        (mem.get(mk('models', `file:${name}`)) as Uint8Array) ?? null
+    loadModelBytes: vi.fn(
+        async (name: string) => (mem.get(mk('models', `file:${name}`)) as Uint8Array) ?? null
     ),
-    getModelEntry: vi.fn(async (name: string) =>
-        (mem.get(mk('models', `entry:${name}`)) as any) ?? null
+    getModelEntry: vi.fn(
+        async (name: string) => (mem.get(mk('models', `entry:${name}`)) as any) ?? null
     ),
     deleteModel: vi.fn(async (name: string) => {
         mem.delete(mk('models', `entry:${name}`));
@@ -55,9 +57,7 @@ vi.mock('../core/backend/idb', () => ({
         if (name === null) mem.delete('meta/web-loader.lastModel');
         else mem.set('meta/web-loader.lastModel', name);
     }),
-    getLastModel: vi.fn(async () =>
-        (mem.get('meta/web-loader.lastModel') as string) ?? null
-    ),
+    getLastModel: vi.fn(async () => (mem.get('meta/web-loader.lastModel') as string) ?? null),
     formatSize: vi.fn((bytes: number) => {
         if (bytes < 1024) return `${bytes} B`;
         if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;

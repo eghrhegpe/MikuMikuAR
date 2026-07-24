@@ -434,7 +434,7 @@ function _presetAnimLoop(ctx: PresetAnimCtx, handle: ObserverHandle): void {
         });
         triggerAutoSave();
     }
-};
+}
 
 /** 应用任意 EnvPreset 对象（支持用户自定义预设）。 */
 export function applyEnvPresetObject(preset: {

@@ -58,7 +58,8 @@ export function resolveBackend(): Promise<BackendService> {
         }
         if (declared === 'go') {
             const ready = await awaitWailsBridge(3000);
-            _resolved = ready && typeof window.wails === 'object' ? await _getGoAdapter() : browserAdapter;
+            _resolved =
+                ready && typeof window.wails === 'object' ? await _getGoAdapter() : browserAdapter;
             return _resolved;
         }
 
@@ -105,6 +106,10 @@ const ALL_TRUE_CAPS: BackendCapabilities = {
     cacheManage: true,
     configPersist: true,
     modelScan: true,
+    // [doc:adr-178] 兜底默认：假设桌面全开（含 MPR 多线程）；解析后由真实后端覆盖
+    crossOriginIsolated: true,
+    clipboardReliable: true,
+    arScope: 'none',
 };
 
 export async function getCapabilities(): Promise<BackendCapabilities> {

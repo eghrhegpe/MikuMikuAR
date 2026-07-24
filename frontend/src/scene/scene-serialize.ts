@@ -353,8 +353,6 @@ export interface SceneFile {
 
 // ======== Serialization ========
 
-
-
 // Map runtime instance ID → persistent UUID, maintained by serialize/deserialize.
 const modelUuidMap = new Map<string, string>();
 const propUuidMap = new Map<string, string>();

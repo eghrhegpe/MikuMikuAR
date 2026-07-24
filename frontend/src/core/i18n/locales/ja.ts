@@ -1002,7 +1002,8 @@ export const ja: Record<string, string> = {
     'scene.vmd.wasmSingleLayer': '⚠ WASM は単一レイヤーのみ対応しています、読み込みました: {name}',
     'scene.vmd.layersBlended': '✓ レイヤーをブレンドしました: {names}',
     'scene.vmd.blendFailed': '✗ レイヤーのブレンドに失敗しました',
-    'scene.vmd.layersBlendFailedFallback': '⚠ 多層ブレンド失敗、単一レイヤーにダウングレードしました。理由：{reason}',
+    'scene.vmd.layersBlendFailedFallback':
+        '⚠ 多層ブレンド失敗、単一レイヤーにダウングレードしました。理由：{reason}',
 
     // —— Scene Camera ——
     'scene.camera.arFailed': '✗ AR カメラの起動に失敗しました、元に戻しました',
@@ -1663,7 +1664,8 @@ export const ja: Record<string, string> = {
     'motion.boneOverride.roll': 'ロール (Z)',
     'motion.boneOverride.weight': 'ウェイト',
     'motion.boneOverride.axisHint': 'P:ピッチ Y:ヨー R:ロール W:ウェイト',
-    'motion.boneOverride.clearAllConfirm': 'すべてのボーンオーバーライドを削除しますか？元に戻せます。',
+    'motion.boneOverride.clearAllConfirm':
+        'すべてのボーンオーバーライドを削除しますか？元に戻せます。',
     // [doc:adr-116] モーションオーバーライド モジュールUI
     'motion.override.title': 'モーションオーバーライド',
     'motion.override.enabled': '✓ モジュール有効',
