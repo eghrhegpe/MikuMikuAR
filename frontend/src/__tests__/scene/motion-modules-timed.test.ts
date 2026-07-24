@@ -1,5 +1,4 @@
-// [doc:adr-116 P3] 时间驱动模块接线单测 — 验证 sway/riding 的每帧钩子真正写入骨骼覆盖，
-// 且 sway 在 position-offset 占用 センター 时正确让位（不争抢、无 warn 副作用）。
+// [doc:adr-116 P3] 时间驱动模块接线单测 — 验证 riding 的每帧钩子真正写入骨骼覆盖。
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
@@ -63,9 +62,7 @@ vi.mock('@/scene/motion/motion-intent', async (importOriginal) => {
     };
 });
 
-import { createSwayMotionModule } from '@/scene/motion/motion-modules/sway-motion';
 import { createRidingModelModule } from '@/scene/motion/motion-modules/riding-model';
-import { createPositionOffsetModule } from '@/scene/motion/motion-modules/position-offset';
 import { setTargetModel } from '@/scene/motion/motion-modules/registry';
 
 function makeModel(id: string): any {
@@ -87,73 +84,6 @@ function resetAll(): void {
     };
     setTargetModel(null);
 }
-
-describe('sway-motion 每帧钩子', () => {
-    beforeEach(resetAll);
-
-    it('enable 后注册帧钩子；quarter 周期写入峰值 yaw', () => {
-        const m = makeModel('sway-q');
-        data.mockModelRegistry.set('sway-q', m);
-        const sway = createSwayMotionModule('sway-q');
-        sway.enable();
-
-        // 钩子已注册
-        expect(data.registerFrameHookSpy).toHaveBeenCalledTimes(1);
-        // bake 初始写入静态峰值（amplitude=5），清空后单独验证钩子效果
-        data.setBoneOverrideSpy.mockClear();
-
-        const hook = data.frameHooks[0];
-        const freq = 0.5;
-        const t = 0.25 / freq; // quarter 周期 → sin=1
-        hook(t, 'sway-q');
-
-        // yaw = 5*(1-0.3)*1 = 3.5
-        expect(data.setBoneOverrideSpy).toHaveBeenCalledWith(
-            'センター',
-            [0, 3.5, 0],
-            1,
-            true,
-            'sway-q'
-        );
-    });
-
-    it('frequency/decay 改变由钩子实时反映（t=0 → yaw=0）', () => {
-        const m = makeModel('sway-t0');
-        data.mockModelRegistry.set('sway-t0', m);
-        const sway = createSwayMotionModule('sway-t0');
-        sway.enable();
-        data.setBoneOverrideSpy.mockClear();
-
-        data.frameHooks[0](0, 'sway-t0');
-        expect(data.setBoneOverrideSpy).toHaveBeenCalledWith(
-            'センター',
-            [0, 0, 0],
-            1,
-            true,
-            'sway-t0'
-        );
-    });
-
-    it('position-offset 占用 センター 时 sway 让位（钩子不写入，不争抢）', () => {
-        const m = makeModel('sway-yield');
-        data.mockModelRegistry.set('sway-yield', m);
-        // 先启用 position-offset（优先级 1，抢占 センター）
-        const pos = createPositionOffsetModule('sway-yield');
-        pos.enable();
-        data.frameHooks.length = 0; // 清掉无关钩子（position-offset 无钩子，本就空）
-
-        const sway = createSwayMotionModule('sway-yield');
-        sway.enable(); // 仍会注册钩子，但 should yield
-        data.setBoneOverrideSpy.mockClear();
-
-        // 调用 sway 钩子，应让位（isBoneOwnedByOther 命中）
-        data.frameHooks[0](0.5, 'sway-yield');
-
-        // 不应写入 センター（让位）
-        const wroteCenter = data.setBoneOverrideSpy.mock.calls.some((c) => c[0] === 'センター');
-        expect(wroteCenter).toBe(false);
-    });
-});
 
 describe('riding-model 自动踏板', () => {
     beforeEach(resetAll);

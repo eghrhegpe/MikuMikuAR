@@ -113,14 +113,15 @@ describe('initMotionModules', () => {
         initMotionModules();
         const count2 = getRegisteredModules().length;
         expect(count2).toBe(count1);
-        expect(count1).toBeGreaterThanOrEqual(2); // body-posture + hand-symmetry
+        expect(count1).toBeGreaterThanOrEqual(2); // body-posture + left-hand + right-hand + riding-model + left-foot + right-foot
     });
 
-    it('注册 body-posture 和 hand-symmetry 两个内置模块', () => {
+    it('注册 body-posture、left-hand、right-hand 等内置模块', () => {
         initMotionModules();
         const ids = getRegisteredModules().map((m) => m.id);
         expect(ids).toContain('body-posture');
-        expect(ids).toContain('hand-symmetry');
+        expect(ids).toContain('left-hand');
+        expect(ids).toContain('right-hand');
     });
 });
 
@@ -290,13 +291,13 @@ describe('getState / setState 对称', () => {
         initMotionModules();
         setActiveMotionWithModules();
         const bp = createModule('body-posture', 'm1')!;
-        const hs = createModule('hand-symmetry', 'm1')!;
+        const lh = createModule('left-hand', 'm1')!;
 
-        setModuleParam('m1', 'hand-symmetry', 'pitch', 30);
+        setModuleParam('m1', 'left-hand', 'pitch', 30);
         bp.setState({ id: 'body-posture', enabled: true, params: { tilt: 1, bend: 2, twist: 3 } });
 
-        const hsState = hs.getState();
-        expect(hsState.params.pitch).toBe(30); // 未被影响
+        const lhState = lh.getState();
+        expect(lhState.params.pitch).toBe(30); // 未被影响
     });
 });
 
@@ -320,7 +321,7 @@ describe('ownedBones 冲突仲裁', () => {
         initMotionModules();
         const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
         claimBones('m1', 'body-posture', ['上半身']);
-        const claimed = claimBones('m1', 'hand-symmetry', ['上半身', '左手首']);
+        const claimed = claimBones('m1', 'left-hand', ['上半身', '左手首']);
         expect(claimed).toEqual(['左手首']); // 上半身 被跳过
         expect(warnSpy).toHaveBeenCalled();
         warnSpy.mockRestore();
@@ -357,8 +358,8 @@ describe('ownedBones 冲突仲裁', () => {
         claimBones(testModel, 'test-low-priority', ['センター']);
         expect(getOwnedBones(testModel, 'test-low-priority').has('センター')).toBe(true);
 
-        // 高优先级（position-offset, priority=1）抢占
-        const claimed = claimBones(testModel, 'position-offset', ['センター']);
+        // 高优先级（left-hand, priority=1）抢占
+        const claimed = claimBones(testModel, 'left-hand', ['センター']);
         expect(claimed).toEqual(['センター']);
 
         // 验证：低优先级的 owned 被清除，引擎 slot 被清除
@@ -390,23 +391,23 @@ describe('ownedBones 冲突仲裁', () => {
     it('[conflict-visibility] 落败模块记录被抢占骨骼', () => {
         initMotionModules();
         vi.spyOn(console, 'warn').mockImplementation(() => {});
-        // body-posture 先占 上半身；hand-symmetry 落败（上半身被跳过）
+        // body-posture 先占 上半身；left-hand 落败（上半身被跳过）
         claimBones('m1', 'body-posture', ['上半身']);
-        claimBones('m1', 'hand-symmetry', ['上半身', '左手首']);
+        claimBones('m1', 'left-hand', ['上半身', '左手首']);
 
-        const conflicts = getModuleConflicts('m1', 'hand-symmetry');
+        const conflicts = getModuleConflicts('m1', 'left-hand');
         expect(conflicts).toEqual([{ bone: '上半身', byModule: 'body-posture' }]);
         expect(getConflictCount('m1')).toBe(1);
         // 全部模型冲突快照
         expect(getAllConflicts('m1')).toEqual([
             {
-                moduleId: 'hand-symmetry',
+                moduleId: 'left-hand',
                 conflicts: [{ bone: '上半身', byModule: 'body-posture' }],
             },
         ]);
 
         releaseOwnedBones('m1', 'body-posture');
-        releaseOwnedBones('m1', 'hand-symmetry');
+        releaseOwnedBones('m1', 'left-hand');
         vi.restoreAllMocks();
     });
 
@@ -433,17 +434,17 @@ describe('ownedBones 冲突仲裁', () => {
         );
         const testModel = 'm-conflict-test';
         claimBones(testModel, 'test-low-priority', ['センター']);
-        claimBones(testModel, 'position-offset', ['センター']);
+        claimBones(testModel, 'left-hand', ['センター']);
 
-        // 落败方 test-low-priority 记录被 position-offset 抢占
+        // 落败方 test-low-priority 记录被 left-hand 抢占
         expect(getModuleConflicts(testModel, 'test-low-priority')).toEqual([
-            { bone: 'センター', byModule: 'position-offset' },
+            { bone: 'センター', byModule: 'left-hand' },
         ]);
-        // 抢占方 position-offset 自身无冲突记录
-        expect(getModuleConflicts(testModel, 'position-offset')).toEqual([]);
+        // 抢占方 left-hand 自身无冲突记录
+        expect(getModuleConflicts(testModel, 'left-hand')).toEqual([]);
 
         unregisterModule('test-low-priority');
-        releaseOwnedBones(testModel, 'position-offset');
+        releaseOwnedBones(testModel, 'left-hand');
         releaseOwnedBones(testModel, 'test-low-priority');
         vi.restoreAllMocks();
     });
@@ -469,7 +470,7 @@ describe('disable 精确清除（P2-1）', () => {
         // 这里验证 disable 调用 clearBoneOverride 的骨骼集合 = ownedBones
         mod.disable();
 
-        // disable 应调用 clearBoneOverride 2 次（上半身/上半身2 — 腰已移除，センター已拆分归 position-offset）
+        // disable 应调用 clearBoneOverride 2 次（上半身/上半身2 — 腰已移除，センター 不在 body-posture 管理范围）
         expect(clearBoneOverrideSpy).toHaveBeenCalledTimes(2);
         const clearedBones = clearBoneOverrideSpy.mock.calls.map((c) => c[0]);
         expect(clearedBones).toContain('上半身');
@@ -576,8 +577,8 @@ describe('applyModuleSnapshot', () => {
         initMotionModules();
         setActiveMotionWithModules();
 
-        // 先启用 hand-symmetry
-        setModuleEnabled('m1', 'hand-symmetry', true);
+        // 先启用 left-hand
+        setModuleEnabled('m1', 'left-hand', true);
 
         // 应用只含 body-posture 的快照
         applyModuleSnapshot('m1', {
@@ -586,8 +587,8 @@ describe('applyModuleSnapshot', () => {
 
         // body-posture 应被禁用
         expect(getModuleState('m1', 'body-posture').enabled).toBe(false);
-        // hand-symmetry 应被禁用（不在快照中）
-        expect(getModuleState('m1', 'hand-symmetry').enabled).toBe(false);
+        // left-hand 应被禁用（不在快照中）
+        expect(getModuleState('m1', 'left-hand').enabled).toBe(false);
     });
 });
 
