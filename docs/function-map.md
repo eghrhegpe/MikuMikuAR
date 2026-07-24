@@ -7,9 +7,9 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 67 | 532 |
-| 3D 场景 | 98 | 1058 |
-| 菜单 & UI | 65 | 337 |
+| 核心基础设施 | 66 | 528 |
+| 3D 场景 | 94 | 1034 |
+| 菜单 & UI | 65 | 305 |
 | 换装 & 音频 | 3 | 38 |
 | 动作算法 | 17 | 129 |
 | 物理系统 | 2 | 14 |
@@ -65,7 +65,6 @@
 | `Prompt2Options()` | `core/dialog` | — |
 | `disposeOverlay2()` | `core/dialog` | — |
 | `showConfirm()` | `core/dialog` | — |
-| `showErrorAction()` | `core/dialog` | — |
 | `showPrompt()` | `core/dialog` | — |
 | `showPrompt2()` | `core/dialog` | — |
 | `safeDispose()` | `core/dispose-helpers` | — |
@@ -87,9 +86,7 @@
 | `registerEventHandlers()` | `core/events` | — |
 | `showUpdateToast()` | `core/events` | — |
 | `toggleOverlay()` | `core/events` | — |
-| `decodeBase64()` | `core/fileservice` | — |
 | `encodeFileRef()` | `core/fileservice` | — |
-| `fetchArrayBuffer()` | `core/fileservice` | — |
 | `normPath()` | `core/fileservice` | — |
 | `resolveFileUrl()` | `core/fileservice` | — |
 | `resolveModelDir()` | `core/fileservice` | — |
@@ -546,7 +543,6 @@
 | `StopProxy()` | `core/wails-bindings` | — |
 | `UpdateCustomSoftware()` | `core/wails-bindings` | — |
 | `readFileBytes()` | `core/wails-bindings` | — |
-| `importToLibrary()` | `core/watch-import` | — |
 | `getWindStrength()` | `core/wind-utils` | — |
 | `getWindVector()` | `core/wind-utils` | — |
 | `isWindActive()` | `core/wind-utils` | — |
@@ -557,10 +553,8 @@
 |------|------|------|
 | `ARCameraState()` | `scene/ar/ar-camera` | — |
 | `CameraFacing()` | `scene/ar/ar-camera` | — |
-| `addARModeChangeListener()` | `scene/ar/ar-camera` | — |
 | `captureARScreenshot()` | `scene/ar/ar-camera` | — |
 | `getARFacing()` | `scene/ar/ar-camera` | — |
-| `getARVideoEl()` | `scene/ar/ar-camera` | — |
 | `isARActive()` | `scene/ar/ar-camera` | — |
 | `isARMirrored()` | `scene/ar/ar-camera` | — |
 | `setARMirror()` | `scene/ar/ar-camera` | — |
@@ -792,9 +786,7 @@
 | `calcLuminance()` | `scene/env/env-lighting` | — |
 | `deriveLighting()` | `scene/env/env-lighting` | — |
 | `exportCategorizedEnvPreset()` | `scene/env/env-lighting` | — |
-| `exportEnvPreset()` | `scene/env/env-lighting` | — |
 | `importCategorizedEnvPreset()` | `scene/env/env-lighting` | — |
-| `importEnvPreset()` | `scene/env/env-lighting` | — |
 | `snapshotEnvPresetByCategory()` | `scene/env/env-lighting` | — |
 | `applyWetnessToInst()` | `scene/env/env-particles` | — |
 | `applyWindToParticles()` | `scene/env/env-particles` | — |
@@ -812,15 +804,11 @@
 | `applyReflection()` | `scene/env/env-reflection` | — |
 | `bindProbeToMeshes()` | `scene/env/env-reflection` | — |
 | `disposeReflection()` | `scene/env/env-reflection` | — |
-| `getCurrentReflectionMode()` | `scene/env/env-reflection` | — |
 | `getPlanarQualityOverride()` | `scene/env/env-reflection` | — |
 | `getQualityPreset()` | `scene/env/env-reflection` | — |
-| `isReflectionProbeActive()` | `scene/env/env-reflection` | — |
 | `onModelMeshesReady()` | `scene/env/env-reflection` | — |
 | `resolveReflectionMode()` | `scene/env/env-reflection` | — |
 | `setReflectionARSuspended()` | `scene/env/env-reflection` | — |
-| `_getStarsTexCache()` | `scene/env/env-sky` | — |
-| `_setStarsTexCache()` | `scene/env/env-sky` | — |
 | `applySky()` | `scene/env/env-sky` | — |
 | `clearStarsTexCache()` | `scene/env/env-sky` | — |
 | `disposeSky()` | `scene/env/env-sky` | — |
@@ -839,8 +827,6 @@
 | `FrozenCamera()` | `scene/env/env-type-helpers` | — |
 | `REFRESHRATE_RENDER_ONCE()` | `scene/env/env-type-helpers` | — |
 | `getCanvasCtx()` | `scene/env/env-type-helpers` | — |
-| `isWorldMatrixFrozen()` | `scene/env/env-type-helpers` | — |
-| `setPostProcessEnabled()` | `scene/env/env-type-helpers` | — |
 | `WATER_PRESETS()` | `scene/env/env-water` | — |
 | `WaterPreset()` | `scene/env/env-water` | — |
 | `_applyWaterLOD()` | `scene/env/env-water` | — |
@@ -856,7 +842,6 @@
 | `disposeWater()` | `scene/env/env-water` | — |
 | `getGroundRippleTexture()` | `scene/env/env-water` | — |
 | `getWaterPhase()` | `scene/env/env-water` | — |
-| `getWaterWaveSpeed()` | `scene/env/env-water` | — |
 | `hasActiveGroundRipples()` | `scene/env/env-water` | — |
 | `isUnderwaterActive()` | `scene/env/env-water` | — |
 | `refreshWaterRenderList()` | `scene/env/env-water` | — |
@@ -921,10 +906,6 @@
 | `ReflectionMode()` | `scene/env/planar-reflection` | — |
 | `registerReflectionSurface()` | `scene/env/planar-reflection` | — |
 | `resetReflectionSurfaces()` | `scene/env/planar-reflection` | — |
-| `PresetEntry()` | `scene/env/preset-manager` | — |
-| `PresetManager()` | `scene/env/preset-manager` | — |
-| `PresetMeta()` | `scene/env/preset-manager` | — |
-| `envPresetManager()` | `scene/env/preset-manager` | — |
 | `getPropList()` | `scene/env/props` | — |
 | `getPropOrbit()` | `scene/env/props` | — |
 | `getPropPositionMode()` | `scene/env/props` | — |
@@ -1041,6 +1022,8 @@
 | `OverrideSlot()` | `scene/motion/bone-override-store` | — |
 | `ReleaseListener()` | `scene/motion/bone-override-store` | — |
 | `getBoneOverrideStore()` | `scene/motion/bone-override-store` | — |
+| `BoneHierarchyDump()` | `scene/motion/bone-override` | — |
+| `BoneHierarchyNode()` | `scene/motion/bone-override` | — |
 | `BoneOverrideEntry()` | `scene/motion/bone-override` | — |
 | `FRAME_HOOK_ORDER()` | `scene/motion/bone-override` | — |
 | `OverrideSlotLike()` | `scene/motion/bone-override` | — |
@@ -1048,6 +1031,7 @@
 | `clearAllOverrides()` | `scene/motion/bone-override` | — |
 | `clearBoneOverride()` | `scene/motion/bone-override` | — |
 | `computeOverride()` | `scene/motion/bone-override` | — |
+| `dumpBoneHierarchy()` | `scene/motion/bone-override` | — |
 | `getAllOverrides()` | `scene/motion/bone-override` | — |
 | `getOverride()` | `scene/motion/bone-override` | — |
 | `registerBoneOverrideFrameHook()` | `scene/motion/bone-override` | — |
@@ -1092,14 +1076,10 @@
 | `updateSceneMotion()` | `scene/motion/motion-intent` | — |
 | `BODY_POSTURE_DEF()` | `scene/motion/motion-modules/body-posture` | — |
 | `createBodyPostureModule()` | `scene/motion/motion-modules/body-posture` | — |
-| `FEET_ADJUSTMENT_DEF()` | `scene/motion/motion-modules/feet-adjustment-module` | — |
-| `createFeetAdjustmentModule()` | `scene/motion/motion-modules/feet-adjustment-module` | — |
-| `getFeetStateForModel()` | `scene/motion/motion-modules/feet-adjustment-module` | — |
-| `FINGER_POSE_DEF()` | `scene/motion/motion-modules/finger-pose` | — |
-| `createFingerPoseModule()` | `scene/motion/motion-modules/finger-pose` | — |
-| `HAND_SYMMETRY_DEF()` | `scene/motion/motion-modules/hand-symmetry` | — |
-| `bakeHandSymmetry()` | `scene/motion/motion-modules/hand-symmetry` | — |
-| `createHandSymmetryModule()` | `scene/motion/motion-modules/hand-symmetry` | — |
+| `LEFT_FOOT_DEF()` | `scene/motion/motion-modules/foot-modules` | — |
+| `RIGHT_FOOT_DEF()` | `scene/motion/motion-modules/foot-modules` | — |
+| `LEFT_HAND_DEF()` | `scene/motion/motion-modules/hand-modules` | — |
+| `RIGHT_HAND_DEF()` | `scene/motion/motion-modules/hand-modules` | — |
 | `ModuleBaseMethods()` | `scene/motion/motion-modules/module-base` | — |
 | `ModuleBaseOverrides()` | `scene/motion/motion-modules/module-base` | — |
 | `ModuleShellConfig()` | `scene/motion/motion-modules/module-base` | — |
@@ -1124,8 +1104,6 @@
 | `computeFootPitch()` | `scene/motion/motion-modules/motion-math` | — |
 | `computePedalPhase()` | `scene/motion/motion-modules/motion-math` | — |
 | `computeSwayYaw()` | `scene/motion/motion-modules/motion-math` | — |
-| `POSITION_OFFSET_DEF()` | `scene/motion/motion-modules/position-offset` | — |
-| `createPositionOffsetModule()` | `scene/motion/motion-modules/position-offset` | — |
 | `MotionPresetFile()` | `scene/motion/motion-modules/preset-types` | — |
 | `applyMotionPreset()` | `scene/motion/motion-modules/preset-types` | — |
 | `generatePresetId()` | `scene/motion/motion-modules/preset-types` | — |
@@ -1154,8 +1132,6 @@
 | `unregisterModule()` | `scene/motion/motion-modules/registry` | — |
 | `RIDING_MODEL_DEF()` | `scene/motion/motion-modules/riding-model` | — |
 | `createRidingModelModule()` | `scene/motion/motion-modules/riding-model` | — |
-| `SWAY_MOTION_DEF()` | `scene/motion/motion-modules/sway-motion` | — |
-| `createSwayMotionModule()` | `scene/motion/motion-modules/sway-motion` | — |
 | `ModuleDef()` | `scene/motion/motion-modules/types` | — |
 | `ModuleFactory()` | `scene/motion/motion-modules/types` | — |
 | `ModuleMeta()` | `scene/motion/motion-modules/types` | — |
@@ -1204,7 +1180,6 @@
 | `PerceptionState()` | `scene/motion/perception-shared` | — |
 | `PerceptionTier()` | `scene/motion/perception-shared` | — |
 | `_createPerceptionPool()` | `scene/motion/perception-shared` | — |
-| `_enableGazeLog()` | `scene/motion/perception-shared` | — |
 | `_gazeAlpha()` | `scene/motion/perception-shared` | — |
 | `_gazeLog()` | `scene/motion/perception-shared` | — |
 | `_incGazeLogFrame()` | `scene/motion/perception-shared` | — |
@@ -1347,10 +1322,7 @@
 | `CameraAnglePreset()` | `scene/pose/camera-angle` | — |
 | `applyCameraPreset()` | `scene/pose/camera-angle` | — |
 | `getAllPresets()` | `scene/pose/camera-angle` | — |
-| `getPreset()` | `scene/pose/camera-angle` | — |
 | `presetCameraAlpha()` | `scene/pose/camera-angle` | — |
-| `cycleGuideMode()` | `scene/pose/composition-guide` | — |
-| `disposeGuides()` | `scene/pose/composition-guide` | — |
 | `getGuideMode()` | `scene/pose/composition-guide` | — |
 | `setGuideMode()` | `scene/pose/composition-guide` | — |
 | `DEFAULT_WATERMARK()` | `scene/pose/watermark` | — |
@@ -1630,22 +1602,12 @@
 | `getEnvTextureBindingTarget()` | `menus/env-menu-state` | — |
 | `setEnvMenu()` | `menus/env-menu-state` | — |
 | `setEnvTextureBindingTarget()` | `menus/env-menu-state` | — |
-| `SCENE_PRESETS()` | `menus/env-menu` | — |
-| `buildCloudLevel()` | `menus/env-menu` | — |
 | `buildEnvLevel()` | `menus/env-menu` | — |
-| `buildExperimentalLevel()` | `menus/env-menu` | — |
-| `buildFogLevel()` | `menus/env-menu` | — |
 | `buildParticleLevel()` | `menus/env-menu` | — |
-| `buildPresetLevel()` | `menus/env-menu` | — |
-| `buildShadowLevel()` | `menus/env-menu` | — |
-| `buildSkyLevel()` | `menus/env-menu` | — |
-| `buildWindLevel()` | `menus/env-menu` | — |
 | `clearEnvTextureBindingTarget()` | `menus/env-menu` | — |
-| `disposeEnvMenuListeners()` | `menus/env-menu` | — |
 | `getEnvMenu()` | `menus/env-menu` | — |
 | `getEnvTextureBindingTarget()` | `menus/env-menu` | — |
 | `refreshEnvRoot()` | `menus/env-menu` | — |
-| `setEnvTextureBindingTarget()` | `menus/env-menu` | — |
 | `showEnvMenu()` | `menus/env-menu` | — |
 | `SCENE_PRESETS()` | `menus/env-preset-levels` | — |
 | `buildPresetLevel()` | `menus/env-preset-levels` | — |
@@ -1655,10 +1617,8 @@
 | `buildWindLevel()` | `menus/env-wind-levels` | — |
 | `buildTagDetailLevel()` | `menus/library-actions` | — |
 | `buildTagsOverviewLevel()` | `menus/library-actions` | — |
-| `ensureModelMeta()` | `menus/library-actions` | — |
 | `highlightRow()` | `menus/library-actions` | — |
 | `importFile()` | `menus/library-actions` | — |
-| `loadThumbnailsForLevel()` | `menus/library-actions` | — |
 | `onModelRowClick()` | `menus/library-actions` | — |
 | `prepareModelRestore()` | `menus/library-actions` | — |
 | `replaceModel()` | `menus/library-actions` | — |
@@ -1740,8 +1700,6 @@
 | `buildMotionSlotLevel()` | `menus/model-detail` | — |
 | `buildOpenWithLevel()` | `menus/model-detail` | — |
 | `buildPersonalLightLevel()` | `menus/model-detail` | — |
-| `buildMatBatchLevel()` | `menus/model-material` | — |
-| `buildMatListLevel()` | `menus/model-material` | — |
 | `buildMatRootLevel()` | `menus/model-material` | — |
 | `buildPerMatLevel()` | `menus/model-material` | — |
 | `ModelPresetEntry()` | `menus/model-preset` | — |
@@ -1750,8 +1708,6 @@
 | `applyPresetFromLib()` | `menus/model-preset` | — |
 | `buildPresetListLevel()` | `menus/model-preset` | — |
 | `savePresetToLibDialog()` | `menus/model-preset` | — |
-| `selectAndLoadPreset()` | `menus/model-preset` | — |
-| `selectAndSavePreset()` | `menus/model-preset` | — |
 | `serializeModelPreset()` | `menus/model-preset` | — |
 | `tryAutoApplyPreset()` | `menus/model-preset` | — |
 | `DEFAULT_MOTION_SLOTS()` | `menus/motion-binding-ui` | — |
@@ -1763,7 +1719,6 @@
 | `renderModuleToggleList()` | `menus/motion-binding-ui` | — |
 | `resetFocusedLayerId()` | `menus/motion-binding-ui` | — |
 | `buildCameraLevel()` | `menus/motion-camera-levels` | — |
-| `buildCameraParamsLevel()` | `menus/motion-camera-levels` | — |
 | `buildVirtualSkirtLevel()` | `menus/motion-cloth-levels` | — |
 | `disposeAllVirtualSkirts()` | `menus/motion-cloth-levels` | — |
 | `disposeVirtualSkirtForModel()` | `menus/motion-cloth-levels` | — |
@@ -1792,7 +1747,6 @@
 | `syncPlaybackSpeedToRuntime()` | `menus/motion-popup` | — |
 | `buildPoseStudioLevel()` | `menus/motion-pose-levels` | — |
 | `buildProcMotionLevel()` | `menus/motion-procmotion-levels` | — |
-| `buildProcMotionModeLevel()` | `menus/motion-procmotion-levels` | — |
 | `buildMotionRootItems()` | `menus/motion-root-ui` | — |
 | `buildMotionRootLevel()` | `menus/motion-root-ui` | — |
 | `buildRetargetLevel()` | `menus/motion-root-ui` | — |
@@ -1853,7 +1807,6 @@
 | `setCurrentSiteId()` | `menus/plaza-state` | — |
 | `setDownloadListenerInstalled()` | `menus/plaza-state` | — |
 | `setEventListenersInstalled()` | `menus/plaza-state` | — |
-| `setLayer()` | `menus/plaza-state` | — |
 | `setObserver()` | `menus/plaza-state` | — |
 | `setPlazaIframe()` | `menus/plaza-state` | — |
 | `setPlazaProxyActive()` | `menus/plaza-state` | — |
@@ -1874,19 +1827,14 @@
 | `buildMaterialCard()` | `menus/resource-detail-helpers` | — |
 | `buildSnapSettings()` | `menus/resource-detail-helpers` | — |
 | `buildTransformCard()` | `menus/resource-detail-helpers` | — |
-| `getResourceHandle()` | `menus/resource-detail-helpers` | — |
 | `buildDragModeLevel()` | `menus/scene-drag-levels` | — |
 | `getSceneMenu()` | `menus/scene-menu-state` | — |
 | `reRenderSceneMenu()` | `menus/scene-menu-state` | — |
 | `refreshSceneRoot()` | `menus/scene-menu-state` | — |
 | `setRefreshSceneRoot()` | `menus/scene-menu-state` | — |
 | `setSceneMenu()` | `menus/scene-menu-state` | — |
-| `buildPresetScenesLevel()` | `menus/scene-menu` | — |
-| `buildPropDetailLevel()` | `menus/scene-menu` | — |
-| `buildStageLevel()` | `menus/scene-menu` | — |
 | `buildStageTransformLevel()` | `menus/scene-menu` | — |
 | `getSceneMenu()` | `menus/scene-menu` | — |
-| `reRenderSceneMenu()` | `menus/scene-menu` | — |
 | `refreshSceneRoot()` | `menus/scene-menu` | — |
 | `screenshotCurrent()` | `menus/scene-menu` | — |
 | `showSceneMenu()` | `menus/scene-menu` | — |
@@ -1900,8 +1848,6 @@
 | `USER_FILTER_PRESETS()` | `menus/scene-render-presets` | — |
 | `buildPresetsLevel()` | `menus/scene-render-presets` | — |
 | `getFilterPreset()` | `menus/scene-render-presets` | — |
-| `getFilterPresetName()` | `menus/scene-render-presets` | — |
-| `loadUserPresets()` | `menus/scene-render-presets` | — |
 | `showPresetSaveDialog()` | `menus/scene-render-presets` | — |
 | `buildStageLevel()` | `menus/scene-stage-levels` | — |
 | `buildStageTransformLevel()` | `menus/scene-stage-levels` | — |
@@ -1923,12 +1869,9 @@
 | `formatBytes()` | `menus/settings-shared` | — |
 | `generateTextColors()` | `menus/settings-shared` | — |
 | `getAutoImportCached()` | `menus/settings-shared` | — |
-| `getAutoLoadCompanionAudio()` | `menus/settings-shared` | — |
 | `getDownloadWatchEnabledCached()` | `menus/settings-shared` | — |
-| `hexToRgb()` | `menus/settings-shared` | — |
 | `preloadAutoImportState()` | `menus/settings-shared` | — |
 | `preloadDownloadWatchState()` | `menus/settings-shared` | — |
-| `rgbToString()` | `menus/settings-shared` | — |
 | `setAutoImportCached()` | `menus/settings-shared` | — |
 | `setAutoLoadCompanionAudio()` | `menus/settings-shared` | — |
 | `setDownloadWatchEnabledCached()` | `menus/settings-shared` | — |
@@ -1948,12 +1891,9 @@
 | `SettingsTarget()` | `menus/settings-targets` | — |
 | `generateTextColors()` | `menus/settings` | — |
 | `getSettingsMenu()` | `menus/settings` | — |
-| `isAutoLoadCompanionAudioEnabled()` | `menus/settings` | — |
 | `preloadAutoImportState()` | `menus/settings` | — |
 | `preloadDownloadWatchState()` | `menus/settings` | — |
-| `refreshLibrary()` | `menus/settings` | — |
 | `refreshSettingsRoot()` | `menus/settings` | — |
-| `setAutoLoadCompanionAudio()` | `menus/settings` | — |
 | `showSettings()` | `menus/settings` | — |
 
 ## 换装 & 音频
@@ -2154,5 +2094,5 @@
 
 ---
 
-> 共 254 个文件，2120 个导出符号。
+> 共 249 个文件，2060 个导出符号。
 > 说明列（—）待知识库或人工补充。

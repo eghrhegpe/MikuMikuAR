@@ -19,7 +19,7 @@ symbols:
   - createModuleShell
   - prepareBake
 invariants:
-  - 被 body-posture/feet-adjustment/finger-pose/hand-symmetry/riding/sway 等 8+ 模块引用
+  - 被 body-posture/hand-modules/foot-modules/riding-model 等 6 模块引用
   - 提供骨架代码，子模块通过覆写实现自定义行为
 tests: []
 use_when:
@@ -32,7 +32,7 @@ use_when:
 
 ## 系统概览
 **动作模块基类**（ADR-116/126）。提供所有 motion-module 的骨架代码，包括模块创建、
-状态管理、帧钩子注册、烘焙准备等。子模块（body-posture/feet-adjustment/finger-pose/hand-symmetry/riding/sway/position-offset）
+状态管理、帧钩子注册、烘焙准备等。子模块（body-posture/hand-modules/foot-modules/riding-model）
 通过覆写基类方法实现自定义行为。
 
 ## 核心职责
@@ -48,7 +48,7 @@ use_when:
 - `prepareBake(modelId, moduleId)` — 准备烘焙。
 
 ## 与其他子系统关系
-- 被 body-posture/feet-adjustment/finger-pose/hand-symmetry/riding/sway/position-offset 全部引用。
+- 被 body-posture/hand-modules/foot-modules/riding-model 全部引用。
 - 骨骼覆盖：`../bone-override.ts`。
 - 注册表：`./registry.ts`。
 

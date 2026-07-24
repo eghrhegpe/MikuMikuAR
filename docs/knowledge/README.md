@@ -202,9 +202,8 @@ use_when:
 | [脚步声控制器](./motion-footstep.md) | `scene/motion/footstep.ts` | ADR-088 |
 | [口型同步桥](./lipsync-bridge.md) | `scene/motion/lipsync-bridge.ts` | — |
 | [动作模块注册表](./motion-modules-registry.md) | `scene/motion/motion-modules/registry.ts` | — |
-| [动作模块 — 脚部调整](./motion-modules-feet.md) | `scene/motion/motion-modules/feet-adjustment-module.ts` | — |
-| [动作模块 — 手指姿态](./motion-modules-finger.md) | `scene/motion/motion-modules/finger-pose.ts` | — |
-| [动作模块 — 身体摇摆](./motion-modules-sway.md) | `scene/motion/motion-modules/sway-motion.ts` | — |
+| [脚部独立控制模块（左脚/右脚）](./motion-modules-feet.md) | `scene/motion/motion-modules/foot-modules.ts` | ADR-116 |
+| [手部独立控制模块（左手/右手）](./hand-symmetry.md) | `scene/motion/motion-modules/hand-modules.ts` | ADR-116 |
 | [动作模块 — 身体姿势](./motion-modules-body-posture.md) | `scene/motion/motion-modules/body-posture.ts` | — |
 | [动作模块 — 骑乘模型](./motion-modules-riding.md) | `scene/motion/motion-modules/riding-model.ts` | — |
 

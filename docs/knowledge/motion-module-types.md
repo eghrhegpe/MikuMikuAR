@@ -40,7 +40,7 @@ use_when:
 - `type ModuleParam` — 模块参数类型。
 
 ## 与其他子系统关系
-- 被 body-posture/feet-adjustment/finger-pose/hand-symmetry/riding/sway/position-offset 全部引用。
+- 被 body-posture/hand-modules/foot-modules/riding-model 全部引用。
 - 注册表：`./registry.ts` 使用 ModuleDef。
 - 类型定义：`../../core/types.ts`（MotionModuleState）。
 

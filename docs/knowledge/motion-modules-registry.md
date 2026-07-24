@@ -42,7 +42,7 @@ use_when:
 
 ## 与其他子系统关系
 - 被 `motion-pipeline.ts` 调用，逐帧执行各模块。
-- 下游模块：`feet-adjustment-module`、`finger-pose`、`body-posture`、`sway-motion` 等。
+- 下游模块：`body-posture`、`hand-modules`、`foot-modules`、`riding-model` 等。
 
 ## 不变量
 - 模块按 priority 升序执行，相同 priority 按注册顺序。
