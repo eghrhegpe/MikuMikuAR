@@ -354,48 +354,45 @@ async function _applySlot(
     }
 }
 
+/** 三级回退：byMaterial → byCategory → all，泛型访问器 */
+function _resolveVariant<T>(
+    variant: OutfitVariant | undefined,
+    smName: string,
+    cat: string,
+    access: (slot: OutfitSlot | undefined) => T | undefined
+): T | undefined {
+    if (!variant) return undefined;
+    return access(variant.byMaterial?.[smName])
+        ?? access(variant.byCategory?.[cat])
+        ?? access(variant.all);
+}
+
+/** 按 slot key 回退纹理路径 */
 function _getSlotFor(
     variant: OutfitVariant | undefined,
     smName: string,
     cat: string,
     slotKey: OutfitTextureSlot
 ): string | null {
-    if (!variant) {
-        return null;
-    }
-    const v =
-        variant.byMaterial?.[smName]?.[slotKey] ??
-        variant.byCategory?.[cat]?.[slotKey] ??
-        variant.all?.[slotKey];
-    return v ?? null;
+    return _resolveVariant(variant, smName, cat, (slot) => slot?.[slotKey as keyof OutfitSlot] as string | undefined) ?? null;
 }
 
+/** 按材质/分类/全局回退参数块 */
 function _getParamsFor(
     variant: OutfitVariant | undefined,
     smName: string,
     cat: string
 ): OutfitSlot['params'] | undefined {
-    if (!variant) {
-        return undefined;
-    }
-    return (
-        variant.byMaterial?.[smName]?.params ??
-        variant.byCategory?.[cat]?.params ??
-        variant.all?.params
-    );
+    return _resolveVariant(variant, smName, cat, (s) => s?.params);
 }
 
+/** 按材质/分类/全局回退 tint */
 function _getTintFor(
     variant: OutfitVariant | undefined,
     smName: string,
     cat: string
 ): [number, number, number] | undefined {
-    if (!variant) {
-        return undefined;
-    }
-    const t =
-        variant.byMaterial?.[smName]?.tint ?? variant.byCategory?.[cat]?.tint ?? variant.all?.tint;
-    return t;
+    return _resolveVariant(variant, smName, cat, (s) => s?.tint);
 }
 
 function _applyOutfitParams(
