@@ -3271,6 +3271,7 @@ textarea,
 /* 按钮组 */
 .btn-group {
     display: flex;
+    flex-wrap: wrap;
     gap: 4px;
     padding: 4px 14px 8px;
 }

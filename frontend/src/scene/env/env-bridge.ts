@@ -3,7 +3,8 @@
 // 职责: envAutoLink、太阳角、时间流转、环境预设、setEnvState、重力控制
 // 注意: 从 scene.ts 静态导入但仅在函数体内访问，ES module live binding 保证安全。
 
-import { SetEnvState, SetUIState, type UIState } from '@/core/wails-bindings';
+import { resolveBackend } from '@/core/backend';
+import type { UIState } from '@/core/wails-bindings';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
@@ -198,12 +199,11 @@ export function getGroundCollisionEnabled(): boolean {
 
 // ======== Helpers (ADR-143 主题 3) ========
 
-/** 持久化 envState 到后端，统一错误上报。收敛 env-bridge.ts 内 4 处重复 .catch。 */
-function persistEnvState(payload: EnvState): void {
-    SetEnvState(payload).catch((err) => {
-        logWarn('persistEnvState', 'persist failed', err);
-        setStatus(t_i18n('env.persistFailed'), false);
-    });
+/** 持久化 envState 到后端（ADR-176 第 2 步：经 resolveBackend 路由）。
+ * 上抛错误——调用方（防抖回调/flush）负责 catch + setStatus 提示。 */
+async function persistEnvState(payload: EnvState): Promise<void> {
+    const backend = await resolveBackend();
+    await backend.SetEnvState(payload);
 }
 
 // ======== Environment Sun Angle ========
@@ -596,7 +596,10 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
         if (import.meta.env.DEV) {
             console.info('[env-persist] debounce fired → SetEnvState()');
         }
-        persistEnvState({ ...envState });
+        void persistEnvState({ ...envState }).catch((err) => {
+            logWarn('persistEnvState', 'persist failed', err);
+            setStatus(t_i18n('env.persistFailed'), false);
+        });
     }, 500);
 
     if (!skipAutoSave) {
@@ -737,14 +740,20 @@ registerCelGroundCoupling((celActive: boolean) => {
     }
 });
 
-/** 立即刷写 env state 到后端（无防抖）。关闭/隐藏页面时调用。 */
-export function flushEnvState(): void {
+/** 立即刷写 env state 到后端（无防抖）。关闭/隐藏页面时调用。
+ * 返回 Promise 供调用方可选 await（如显式等待持久化完成）。 */
+export async function flushEnvState(): Promise<void> {
     if (import.meta.env.DEV) {
         console.info('[env-persist] flushEnvState() — immediate flush');
     }
     _envPersistTimer.cancel();
     // 传普通对象副本（非 reactive Proxy）
-    persistEnvState({ ...envState });
+    try {
+        await persistEnvState({ ...envState });
+    } catch (err) {
+        logWarn('flushEnvState', 'persist failed', err);
+        setStatus(t_i18n('env.persistFailed'), false);
+    }
 }
 
 /** 取消挂起的 env state 防抖持久化定时器（HMR 重入清理用，见 ADR-106 D3）。 */
@@ -773,24 +782,24 @@ function _buildUIStatePayload(): Record<string, unknown> {
 
 /** 防抖调度 UIState 持久化。修改 uiState 后调用此函数。 */
 export function schedulePersistUI(): void {
-    _uiPersistTimer.schedule(() => flushUIState(), 500);
+    _uiPersistTimer.schedule(() => void flushUIState(), 500);
 }
 
-/** 与 persistEnvState 对称：持久化 UI state，统一错误上报。收敛 flushUIState 内裸 .catch。
+/** 与 persistEnvState 对称：持久化 UI state（ADR-176 第 2 步：经 resolveBackend 路由）。
  *
  * Go 端 SetUIState 语义是 json.Unmarshal 合并（缺省字段保留原值），
  * 但类型声明是完整 UIState。payload 用 Partial<UIState> 表达部分字段，
  * 强转后传入是安全的。
+ * 上抛错误——调用方（防抖回调/flush）负责 catch + setStatus 提示。
  */
-function persistUIState(payload: Partial<UIState>): void {
-    SetUIState(payload as unknown as UIState).catch((err) => {
-        logWarn('persistUIState', 'persist failed', err);
-        setStatus(t_i18n('env.persistFailed'), false);
-    });
+async function persistUIState(payload: Partial<UIState>): Promise<void> {
+    const backend = await resolveBackend();
+    await backend.SetUIState(payload as unknown as UIState);
 }
 
-/** 立即刷写 UI state 到后端（无防抖）。关闭/隐藏页面时调用。 */
-export function flushUIState(): void {
+/** 立即刷写 UI state 到后端（无防抖）。关闭/隐藏页面时调用。
+ * 返回 Promise 供调用方可选 await（如显式等待持久化完成）。 */
+export async function flushUIState(): Promise<void> {
     if (import.meta.env.DEV) {
         console.info('[ui-persist] flushUIState() — immediate flush');
     }
@@ -799,7 +808,12 @@ export function flushUIState(): void {
     if (Object.keys(payload).length === 0) {
         return;
     } // nothing to persist
-    persistUIState(payload);
+    try {
+        await persistUIState(payload);
+    } catch (err) {
+        logWarn('flushUIState', 'persist failed', err);
+        setStatus(t_i18n('env.persistFailed'), false);
+    }
 }
 
 // 注册持久化回调（state.ts → 本模块，避免循环依赖）
