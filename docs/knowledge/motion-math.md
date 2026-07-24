@@ -12,7 +12,7 @@ symbols:
   - computePedalPhase
   - computeFootPitch
 invariants:
-  - 被 hand-symmetry/feet-adjustment 等模块引用
+  - 被 riding-model/foot-modules 等模块引用
 tests: []
 use_when:
   - 动作数学
@@ -24,7 +24,7 @@ use_when:
 
 ## 系统概览
 **动作数学工具**。提供四元数/欧拉角插值、角度转换等数学工具，
-被 hand-symmetry/feet-adjustment 等模块引用。
+被 riding-model/foot-modules 等模块引用。
 
 ## 核心职责
 - `motion-math.ts` — 四元数/欧拉角插值、角度转换。
@@ -35,8 +35,8 @@ use_when:
 - `computeFootPitch(phaseDeg, isLeftFoot)` — 计算脚部俯仰角度。
 
 ## 与其他子系统关系
-- 手部对称：`./hand-symmetry.ts`（镜像计算）。
-- 脚部调整：`./feet-adjustment-module.ts`（脚部位置计算）。
+- 骑乘模型：`./riding-model.ts`（踏板相位计算）。
+- 脚部控制：`./foot-modules.ts`（足部旋转）。
 
 ## 不变量
 - 插值使用四元数避免万向锁。

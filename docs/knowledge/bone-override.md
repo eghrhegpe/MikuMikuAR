@@ -51,7 +51,7 @@ use_when:
 
 ## 与其他子系统关系
 - 所有权仲裁：`bone-override-store`（ADR-084）。
-- 被 motion-modules 子模块引用（body-posture/feet-adjustment/finger-pose 等）。
+- 被 motion-modules 子模块引用（body-posture/hand-modules/foot-modules/riding-model 等）。
 - UI 编辑：`menus/model-detail.ts` / `model-material.ts`。
 - 类型定义：`../core/types.ts`（BoneOverrideEntry）。
 

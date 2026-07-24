@@ -51,7 +51,8 @@ frontend/src/menus/
 │   ├── motion-override-levels.ts #  骨骼覆盖
 │   ├── motion-pose-levels.ts    #   姿态工作室
 │   ├── motion-cloth-levels.ts   #   布料参数面板
-│   ├── motion-modules/feet-adjustment-module.ts  #   脚 IK 地面跟随（已并入动作覆盖模块）
+│   ├── motion-modules/hand-modules.ts  #   左手/右手独立控制（手腕旋转+手臂位置+手指预设）
+│   ├── motion-modules/foot-modules.ts  #   左脚/右脚独立控制（旋转+位置偏移）
 │   └── motion-gaze-levels.ts    #   视线追踪/感知层
 │
 ├── settings.ts                  # 设置页（SlideMenu）
