@@ -282,20 +282,20 @@ describe('env-feature-levels 导出契约', () => {
     });
 
     describe('公共辅助函数存在性', () => {
-        it('_buildLevel 是函数', () => {
-            expect(typeof mod._buildLevel).toBe('function');
+        it('buildLevel 是函数', () => {
+            expect(typeof mod.buildLevel).toBe('function');
         });
 
-        it('_buildLevel 返回 PopupLevel', () => {
-            const level = (mod._buildLevel as any)('test', () => {});
+        it('buildLevel 返回 PopupLevel', () => {
+            const level = (mod.buildLevel as any)('test', () => {});
             expect(level).toHaveProperty('label', 'test');
             expect(level).toHaveProperty('dir');
             expect(level).toHaveProperty('items');
             expect(level).toHaveProperty('renderCustom');
         });
 
-        it('_openTexturePicker 是函数', () => {
-            expect(typeof mod._openTexturePicker).toBe('function');
+        it('openTexturePicker 是函数', () => {
+            expect(typeof mod.openTexturePicker).toBe('function');
         });
     });
 });
