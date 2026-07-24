@@ -1,8 +1,20 @@
 // fileservice.ts — 统一文件服务层
 // 所有需要通过 HTTP 加载模型/动作文件的函数都使用此模块。
 // 集中一处 URL 构造逻辑，避免重复实现导致"改一处漏一处"。
+//
+// [doc:adr-176] 双环境适配：桌面端走 StartFileServer HTTP 服务；
+// 浏览器端回退到 readFileBytes + Blob URL（browser-adapter 签名已对齐 ADR-176 Phase 2）。
 
-import { StartFileServer, IsolateModelDir } from './wails-bindings';
+import { IsolateModelDir, StartFileServer } from './wails-bindings';
+import { resolveBackend } from './backend';
+import type { BackendService } from './backend/types';
+
+let _cachedBackend: Promise<BackendService> | null = null;
+/** 惰性缓存 resolveBackend 结果（避免每请求重路由）。 */
+function getBackend(): Promise<BackendService> {
+    if (!_cachedBackend) _cachedBackend = resolveBackend();
+    return _cachedBackend;
+}
 
 // [doc:adr-057] base64url（无填充）编码文件名，用于查询参数 ?f=
 // 绕开 URL 路径段编码语义，避免 U+FFFD 被编码为 %EF%BF%BD 后与 Go 侧 d.Name() 不匹配。
@@ -40,6 +52,15 @@ export async function resolveFileUrl(
     const normalized = normPath(filePath);
     const safeDir = await IsolateModelDir(normalized);
     const fileName = normalized.substring(normalized.lastIndexOf('/') + 1);
+    // [doc:adr-176] 浏览器端 StartFileServer 抛 NotSupportedError，
+    // 此时回退到 readFileBytes + Blob URL，构造 chrome-extension:// 或 blob: 前缀。
+    const backend = await getBackend();
+    if (backend.kind === 'browser') {
+        const bytes = await backend.readFileBytes(safeDir + '/' + fileName);
+        if (!bytes) throw new Error(`[fileservice] readFileBytes failed for ${safeDir}/${fileName}`);
+        const blobUrl = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/octet-stream' }));
+        return { url: blobUrl, port: -1, dir: safeDir };
+    }
     const port = await StartFileServer(safeDir);
     const url = `http://127.0.0.1:${port}/?f=${encodeFileRef(fileName)}`;
     return { url, port, dir: safeDir };
