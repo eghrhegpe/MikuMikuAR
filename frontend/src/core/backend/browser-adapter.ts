@@ -32,10 +32,11 @@ import type {
     RenderPreset,
     SoftwareEntry,
     PlazaDownloadResult,
+    CacheStats,
 } from '@bindings/mikumikuar/internal/app/models';
 import { NotSupportedError } from './types';
 import type { BackendService, BackendCapabilities } from './types';
-import { idbGet, idbSet, idbDelete, idbKeys, closeIDB } from './idb';
+import { idbGet, idbSet, idbDelete, idbKeys, closeIDB, type Store } from './idb';
 
 // —— 路径工具函数（消除 6 处 "split + pop + replace" 重复）——
 
@@ -47,6 +48,21 @@ function _baseName(path: string): string {
 /** 去掉文件名最后一个扩展名段（如 `a.pmx` → `a`，`b.tar.gz` → `b.tar`） */
 function _stripExt(name: string): string {
     return name.replace(/\.[^.]+$/, '');
+}
+
+/**
+ * [doc:adr-177] 将模型 stem（可能含 `/`，如 `A/miku`）编码为 URL/键安全的单 token。
+ *
+ * 不同目录下同名 PMX（如 `A/miku.pmx` 与 `B/miku.pmx`）在 FSA 扫描时会产生
+ * **相同裸文件名 stem**，若直接用作 `dir:<stem>:` 纹理键前缀则相互覆盖（静默错渲染）。
+ * 编码后 `web://model/A%2Fmiku` 与 `web://model/B%2Fmiku` 得到互不碰撞的命名空间，
+ * 纹理键 `dir:A%2Fmiku:tex/face.png` / `dir:B%2Fmiku:tex/face.png` 各自独立。
+ *
+ * 解析侧（_classifyPath / _resolveIdbKey / ListDirRecursive / readFileBytes）按单 token
+ * 直接透传该编码串，无需解码，故与既有 bare-stem 键（`A/miku` 编码==`A/miku`）完全兼容。
+ */
+function _encModelStem(stem: string): string {
+    return encodeURIComponent(stem);
 }
 
 // —— base64 工具（对齐 Go 侧 string ↔ bytes 转换）——
@@ -557,11 +573,12 @@ async function _scanDirIntoIDB(
                 const texBytes = new Uint8Array(await file.arrayBuffer());
                 for (const pmx of effectivePmx) {
                     const relToPmx = _relPathFrom(texRelIdCategory, pmx.relPath);
-                    // bare stem 统一：剥离类别前缀，使 ListDirRecursive / readFileBytes 查询路径一致
-                    const bareStem = pmx.stem.includes('/') ? pmx.stem.split('/').pop()! : pmx.stem;
+                    // [bugfix:tex-stem-collision] 用含路径的 pmx.stem 编码键，杜绝不同目录同名 PMX
+                    // （如 A/miku.pmx 与 B/miku.pmx）纹理键互相覆盖；解析侧 IsolateModelDir 产出
+                    // 同一编码 stem，ListDirRecursive / readFileBytes 精确命中。
                     const key = relToPmx
-                        ? `dir:${bareStem}:${relToPmx}/${name}`
-                        : `dir:${bareStem}:${name}`;
+                        ? `dir:${_encModelStem(pmx.stem)}:${relToPmx}/${name}`
+                        : `dir:${_encModelStem(pmx.stem)}:${name}`;
                     await idbSet('models', key, texBytes);
                 }
                 texLinkedCount++;
@@ -916,9 +933,43 @@ export const browserAdapter: BackendService = {
     async LoadLastScene(): Promise<string> {
         return (await idbGet<string>('scenes', 'last_scene')) ?? '';
     },
-    async GetCacheStats(): Promise<{ count: number; size: number }> {
-        const keys = await idbKeys('caches');
-        return { count: keys.length, size: 0 };
+    async GetCacheStats(): Promise<CacheStats> {
+        // [doc:adr-177] 对齐 Go CacheStats 9 字段结构（settings-system.ts 面板据此渲染）。
+        // 网页端无 serve/extracted 磁盘缓存目录，映射：
+        //   resourceBytes ← models store（PMX/zip 原档 + dir: 纹理字节，占用量主体）
+        //   thumbnailBytes ← thumbnails store
+        //   extractedBytes ← caches store（ExtractZip 解压缓存，网页端通常为空）
+        //   serveBytes     ← 0（网页端无静态服务目录）
+        // 旧实现硬编码 size:0 且字段形状不符，导致面板显示 undefined。
+        const scanStore = async (store: Store): Promise<{ bytes: number; count: number }> => {
+            const keys = await idbKeys(store);
+            let bytes = 0;
+            let count = 0;
+            for (const k of keys) {
+                const v = await idbGet<unknown>(store, k);
+                if (v instanceof Uint8Array) {
+                    bytes += v.byteLength;
+                    count++;
+                }
+            }
+            return { bytes, count };
+        };
+        const [resource, thumb, extracted] = await Promise.all([
+            scanStore('models'),
+            scanStore('thumbnails'),
+            scanStore('caches'),
+        ]);
+        return {
+            extractedBytes: extracted.bytes,
+            extractedCount: extracted.count,
+            thumbnailBytes: thumb.bytes,
+            thumbnailCount: thumb.count,
+            serveBytes: 0,
+            serveCount: 0,
+            resourceBytes: resource.bytes,
+            resourceCount: resource.count,
+            totalBytes: resource.bytes + extracted.bytes + thumb.bytes,
+        };
     },
     async ClearAllCaches(): Promise<void> {
         for (const k of await idbKeys('caches')) await idbDelete('caches', k);
@@ -1266,9 +1317,11 @@ export const browserAdapter: BackendService = {
         await idbDelete('presets', `scene:${name}`);
     },
     async IsolateModelDir(pmxPath: string): Promise<string> {
-        // [doc:adr-177] 浏览器侧无真实目录，返回虚拟目录 web://model/<stem>，
-        // 供 ListDirRecursive 扫描 dir:<stem>: 前缀 + readFileBytes 透明路由
-        return `web://model/${_extractStem(pmxPath)}`;
+        // [doc:adr-177] 浏览器侧无真实目录，返回虚拟目录 web://model/<encStem>，
+        // 供 ListDirRecursive 扫描 dir:<encStem>: 前缀 + readFileBytes 透明路由。
+        // encStem = encodeURIComponent(stem)，使不同目录同名 PMX 的纹理键互不碰撞
+        // （[bugfix:tex-stem-collision]）。
+        return `web://model/${_encModelStem(_extractStem(pmxPath))}`;
     },
     async ListDirRecursive(dirPath: string): Promise<FileInfo[]> {
         // [doc:adr-177] 浏览器侧：从虚拟目录 web://model/<stem> 提取 stem，

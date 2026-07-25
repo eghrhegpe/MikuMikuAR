@@ -328,10 +328,12 @@ describe('ADR-177 Phase 2 A4 p2-5：虚拟目录 + 伴生文件加载', () => {
         it('file: 前缀 → web://model/<stem>', async () => {
             expect(await browserAdapter.IsolateModelDir('file:Miku')).toBe('web://model/Miku');
         });
-        it('web://selected-dir/ 路径 → 剥离类别段 web://model/<relIdStem>', async () => {
+        it('web://selected-dir/ 路径 → 剥离类别段并编码 web://model/<encRelIdStem>', async () => {
+            // [bugfix:tex-stem-collision] stem 含路径维度须 encodeURIComponent，
+            // 否则不同目录同名 PMX 的 dir: 纹理键会互相覆盖。
             expect(
                 await browserAdapter.IsolateModelDir('web://selected-dir/PMX/分类1/miku.pmx')
-            ).toBe('web://model/分类1/miku');
+            ).toBe(`web://model/${encodeURIComponent('分类1/miku')}`);
         });
     });
 
