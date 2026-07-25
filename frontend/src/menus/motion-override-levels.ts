@@ -4,12 +4,12 @@
 // 入口: motion-detail-ui.ts → buildMotionDetailSchema（原死路由 motion:boneOverride 已移除）
 
 import {
-    setStatus,
     PopupLevel,
     cardContainer,
     modelRegistry,
     focusedModelId,
 } from '../core/config';
+import { feedbackInfo } from '../core/feedback';
 import { addEmptyRow, slideRow, addPresetChip, addCardTitle } from '../core/ui-helpers';
 import { addSliderRow, addBoneSelectRow, isIkBone } from '../core/ui-helpers';
 import { createTrailingBtn } from '../core/ui-slide-row';
@@ -94,7 +94,7 @@ export function renderPresetCard(container: HTMLElement, modelId: string): void 
             }
             // 检查数量限制
             if (presets.length >= 10) {
-                setStatus(t('motion-preset.tooManyPresets'), true);
+                feedbackInfo('motion-preset.tooManyPresets', undefined);
                 return;
             }
             const modules = getRegisteredModules();
@@ -112,7 +112,7 @@ export function renderPresetCard(container: HTMLElement, modelId: string): void 
                 inst.motionPresets = [];
             }
             inst.motionPresets.push(newPreset);
-            setStatus(t('motion-preset.saved'), true);
+            feedbackInfo('motion-preset.saved', undefined);
             menuRefForPreset?.reRender();
         });
         titleBar.appendChild(saveBtn);
@@ -150,7 +150,7 @@ export function renderPresetCard(container: HTMLElement, modelId: string): void 
                     }
                     const snap = pushUndoSnapshot();
                     applyMotionPreset(modelId, preset);
-                    setStatus(t('motion-preset.applied'), true);
+                    feedbackInfo('motion-preset.applied', preset.name);
                     if (snap) {
                         offerSceneUndoAndRefresh(
                             t('motion.undo.appliedPreset', { name: preset.name }),
@@ -179,7 +179,7 @@ export function renderPresetCard(container: HTMLElement, modelId: string): void 
                     if (idx !== -1) {
                         inst.motionPresets.splice(idx, 1);
                     }
-                    setStatus(t('motion-preset.deleted'), true);
+                    feedbackInfo('motion-preset.deleted', preset.name);
                     menuRefForPreset?.reRender();
                 });
                 row.appendChild(delBtn);
@@ -232,7 +232,7 @@ export function renderOverrideCard(
                 applyModuleSnapshot(modelId, snap);
             };
             undo(modelId, applier);
-            setStatus(t('motion.undoApplied'), true);
+            feedbackInfo('motion.undoApplied', undefined);
             updateUndoState();
             updateRedoState();
             getMotionMenu()?.reRender();
@@ -260,7 +260,7 @@ export function renderOverrideCard(
                 applyModuleSnapshot(modelId, snap);
             };
             redo(modelId, applier);
-            setStatus(t('motion.override.redoApplied'), true);
+            feedbackInfo('motion.override.redoApplied', undefined);
             updateUndoState();
             updateRedoState();
             getMotionMenu()?.reRender();
@@ -533,11 +533,11 @@ function buildBoneOverrideSchema(): MenuNode[] {
     const finalizeOverride = (boneName: string, enabled: boolean): void => {
         syncOverrideToInstance(modelId);
         triggerAutoSave();
-        setStatus(
+        feedbackInfo(
             enabled
                 ? t('motion.boneOverride.applied', { bone: boneName })
                 : t('motion.boneOverride.removed', { bone: boneName }),
-            true
+            boneName
         );
         menu?.reRender();
     };
@@ -779,13 +779,8 @@ function buildBoneOverrideSchema(): MenuNode[] {
                                     formState.weight = live.weight;
                                     // [doc:adr-116 P3] 回填绝对/复合语义，避免编辑复合覆盖时被静默翻转为绝对
                                     formState.absolute = live.absolute ?? true;
-                                    setStatus(
-                                        t('motion.boneOverride.editLoaded', {
-                                            bone: ov.boneName,
-                                        }),
-                                        true
-                                    );
-                                    menu?.reRender();
+                                feedbackInfo('motion.boneOverride.editLoaded', ov.boneName);
+                                menu?.reRender();
                                 },
                             })
                         );
@@ -796,23 +791,20 @@ function buildBoneOverrideSchema(): MenuNode[] {
                                 danger: true,
                                 onClick: () => {
                                     const snap = pushUndoSnapshot();
-                                    clearBoneOverride(ov.boneName);
-                                    inst.boneOverrides = inst.boneOverrides.filter(
-                                        (b) => b.boneName !== ov.boneName
-                                    );
-                                    triggerAutoSave();
-                                    setStatus(
-                                        t('motion.boneOverride.removed', { bone: ov.boneName }),
-                                        true
-                                    );
-                                    menu?.reRender();
-                                    offerSceneUndoAndRefresh(
-                                        t('motion.boneOverride.removed', { bone: ov.boneName }),
-                                        snap,
-                                        () => {
-                                            menu?.reRender();
-                                        }
-                                    );
+                                clearBoneOverride(ov.boneName);
+                                inst.boneOverrides = inst.boneOverrides.filter(
+                                    (b) => b.boneName !== ov.boneName
+                                );
+                                triggerAutoSave();
+                                feedbackInfo('motion.boneOverride.removed', ov.boneName);
+                                menu?.reRender();
+                                offerSceneUndoAndRefresh(
+                                    t('motion.boneOverride.removed', { bone: ov.boneName }),
+                                    snap,
+                                    () => {
+                                        menu?.reRender();
+                                    }
+                                );
                                 },
                             })
                         );
@@ -844,7 +836,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
                                 clearAllOverrides();
                                 inst.boneOverrides = [];
                                 triggerAutoSave();
-                                setStatus(t('motion.boneOverride.allCleared'), true);
+                                feedbackInfo('motion.boneOverride.allCleared', undefined);
                                 menu?.reRender();
                                 offerSceneUndoAndRefresh(
                                     t('motion.boneOverride.allCleared'),
@@ -873,22 +865,16 @@ function buildBoneOverrideSchema(): MenuNode[] {
                         () => {
                             const dump = dumpBoneHierarchy(modelId);
                             if (!dump) {
-                                setStatus(t('motion.boneOverride.exportFailed'), true);
+                                feedbackInfo('motion.boneOverride.exportFailed', undefined);
                                 return;
                             }
                             const json = JSON.stringify(dump, null, 2);
                             void navigator.clipboard.writeText(json).then(() => {
-                                setStatus(
-                                    t('motion.boneOverride.exportCopied'),
-                                    true
-                                );
+                                feedbackInfo('motion.boneOverride.exportCopied', undefined);
                             }).catch(() => {
                                 // 剪贴板不可用时降级为 console 输出
                                 console.log('[Bone Hierarchy Export]', json);
-                                setStatus(
-                                    t('motion.boneOverride.exportCopied'),
-                                    true
-                                );
+                                feedbackInfo('motion.boneOverride.exportCopied', undefined);
                             });
                         }
                     );

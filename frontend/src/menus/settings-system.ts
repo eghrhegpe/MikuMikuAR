@@ -27,6 +27,7 @@ import { showConfirm, showPrompt } from '../core/dialog';
 import { addDisposableListener, type Disposable } from '../core/dom';
 import { softwareKindIcon } from '../core/icons';
 import { tryCatchStatus, swallowError, jsonStringify } from '../core/utils';
+import { feedbackError, feedbackInfo } from '../core/feedback';
 import { safeCallAsync } from '../core/safe-call';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
@@ -168,6 +169,7 @@ function importSettings(): void {
         if (!file) {
             return;
         }
+        const fileName = getBaseName(file.name);
         const reader = new FileReader();
         reader.onload = () => {
             try {
@@ -180,12 +182,12 @@ function importSettings(): void {
                 Object.assign(uiState, clean);
                 schedulePersistUI();
                 reapplyImportedSettings();
-                setStatus(t('settings.imported'), true);
+                feedbackInfo('feedback.restoredSuccess', fileName);
             } catch (e) {
-                setStatus(t('settings.importFailed') + translateGoError(e), true);
+                feedbackError('settings.import', fileName, e);
             }
         };
-        reader.onerror = () => setStatus(t('settings.readFailed'), true);
+        reader.onerror = () => feedbackError('settings.readFile', fileName);
         reader.readAsText(file);
     };
     input.click();

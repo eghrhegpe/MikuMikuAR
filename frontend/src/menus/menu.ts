@@ -512,6 +512,8 @@ export class SlideMenu {
             this.onAfterRender?.(level, this);
         };
 
+        const safeFinalize = () => safeCallAsync('menu', 'finalize failed:', () => { finalize(); return Promise.resolve(); });
+
         if (level.reRenderCustom) {
             // === 增量路径：patch items（非空时）+ reRenderCustom ===
             const list = this.panel.querySelector('.slide-list');
@@ -525,17 +527,17 @@ export class SlideMenu {
             }
             // 没有旧 DOM → 退化为全量重建
             safeCallAsync('menu', 'buildPanel failed:', () =>
-                this.buildPanel(level).then(finalize)
+                this.buildPanel(level).then(safeFinalize)
             );
         } else if (level.renderCustom || level.items.length === 0) {
             // === 自定义渲染 / 空列表 → 全量重建 ===
             safeCallAsync('menu', 'buildPanel failed:', () =>
-                this.buildPanel(level).then(finalize)
+                this.buildPanel(level).then(safeFinalize)
             );
         } else {
             // === 纯 items → 全量重建（card-per-divider 结构不支持增量 patch） ===
             safeCallAsync('menu', 'buildPanel failed:', () =>
-                this.buildPanel(level).then(finalize)
+                this.buildPanel(level).then(safeFinalize)
             );
             finalize();
         }

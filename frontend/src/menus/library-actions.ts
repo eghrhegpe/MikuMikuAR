@@ -43,6 +43,7 @@ import {
 } from '../core/wails-bindings';
 import {
     withLoadingStatus,
+    withLoadingStatusTargeted,
     getBrowseDir,
     isUnderRoot,
     getBaseName,
@@ -60,6 +61,7 @@ import {
     resolveDisplayBrowseDir,
 } from './library-core';
 import { librarySessionStore } from './library-session-store';
+import { feedbackStatus, feedbackError, feedbackInfo } from '../core/feedback';
 
 // ======== 模块级状态 ========
 // [doc:adr-135] 加载守卫状态已迁入 LibrarySessionStore 单例。
@@ -206,7 +208,7 @@ function startReplaceModel(m: LibraryModel, replaceId: string): void {
         const oldInst = modelRegistry.get(replaceId);
         const snapshot = oldInst ? captureInheritedState(oldInst) : null;
         const undoSnap = pushUndoSnapshot();
-        setStatus(t('library.loadingModel'), false);
+        feedbackStatus('library.loadingModel', getBaseName(m.file_path));
         let browseCategory: 'pmx' | 'stage' | 'prop' = 'pmx';
         let loadKind: 'actor' | 'stage' | 'prop' = 'actor';
         let filter: (model: LibraryModel) => boolean = (model) => model.format === 'pmx';
@@ -225,7 +227,7 @@ function startReplaceModel(m: LibraryModel, replaceId: string): void {
             .then(async (handle) => {
                 if (!handle?.id) {
                     stackRegistry.modelStack?.reRender();
-                    setStatus(t('library.modelLoadFailed'), false);
+                    feedbackError('library.modelLoadFailed', getBaseName(m.file_path));
                     return;
                 }
                 // [doc:adr-150] 在 removeModel 旧模型之前应用继承状态（此时新模型已注册，
@@ -274,11 +276,11 @@ function startReplaceModel(m: LibraryModel, replaceId: string): void {
                     setStatus(t('status.done'), true);
                 } catch (uiErr) {
                     logWarn('library-actions', 'replace UI navigation failed', uiErr);
-                    setStatus(t('status.done'), true);
+                    feedbackInfo('status.done', getBaseName(m.file_path));
                 }
             })
             .catch((err) => {
-                setStatus(t('library.modelLoadFailed') + formatError(err), false);
+                feedbackError('library.modelLoadFailed', getBaseName(m.file_path), err);
                 stackRegistry.modelStack?.reRender();
             })
             .finally(() => {
@@ -290,16 +292,16 @@ function startReplaceModel(m: LibraryModel, replaceId: string): void {
     };
 
     if (m.container === 'zip') {
-        setStatus(t('library.extractingZip'), false);
+        feedbackStatus('library.extractingZip', getBaseName(m.file_path));
         librarySessionStore.setExtracting(m.file_path);
         ExtractZip(m.file_path, m.zip_inner)
             .then((result) => {
-                setStatus(result.cached ? t('library.cacheHit') : t('library.extracted'), true);
+                feedbackInfo(result.cached ? 'library.cacheHit' : 'library.extracted', getBaseName(m.file_path));
                 doReplace(result.file_path, m.file_path, m.zip_inner);
             })
             .catch((err) => {
                 librarySessionStore.setReplaceLoading(false);
-                setStatus(t('library.extractFailed') + formatError(err), false);
+                feedbackError('library.extractFailed', getBaseName(m.file_path), err);
             })
             .finally(() => {
                 librarySessionStore.clearExtracting(m.file_path);
@@ -325,16 +327,16 @@ function loadModelNormal(m: LibraryModel, isStage: boolean): void {
 
     if (m.container === 'zip') {
         closeAllOverlays();
-        setStatus(t('library.extractingZip'), false);
+        feedbackStatus('library.extractingZip', getBaseName(m.file_path));
         librarySessionStore.setExtracting(m.file_path);
         ExtractZip(m.file_path, m.zip_inner)
             .then((result) => {
-                setStatus(result.cached ? t('library.cacheHit') : t('library.extracted'), true);
+                feedbackInfo(result.cached ? 'library.cacheHit' : 'library.extracted', getBaseName(m.file_path));
                 if (m.format === 'vmd') {
                     loadManager
                         .load({ kind: 'vmd', path: result.file_path }, signal)
                         .catch((err) =>
-                            setStatus(t('library.modelLoadFailed') + formatError(err), false)
+                            feedbackError('library.modelLoadFailed', getBaseName(m.file_path), err)
                         );
                 } else {
                     loadManager
@@ -349,16 +351,16 @@ function loadModelNormal(m: LibraryModel, isStage: boolean): void {
                         )
                         .then((handle) => {
                             if (!handle) {
-                                setStatus(t('library.modelLoadFailed'), false);
+                                feedbackError('library.modelLoadFailed', getBaseName(m.file_path));
                             }
                         })
                         .catch((err) => {
-                            setStatus(t('library.modelLoadFailed') + formatError(err), false);
+                            feedbackError('library.modelLoadFailed', getBaseName(m.file_path), err);
                         });
                 }
             })
             .catch((err) => {
-                setStatus(t('library.extractFailed') + formatError(err), false);
+                feedbackError('library.extractFailed', getBaseName(m.file_path), err);
             })
             .finally(() => {
                 librarySessionStore.clearExtracting(m.file_path);
@@ -375,28 +377,28 @@ function loadModelNormal(m: LibraryModel, isStage: boolean): void {
             .load({ kind: isStage ? 'stage' : 'actor', path: m.file_path }, signal)
             .then((handle) => {
                 if (!handle) {
-                    setStatus(t('library.modelLoadFailed'), false);
+                    feedbackError('library.modelLoadFailed', getBaseName(m.file_path));
                 }
             })
-            .catch((err) => setStatus(t('library.modelLoadFailed') + formatError(err), false));
+            .catch((err) => feedbackError('library.modelLoadFailed', getBaseName(m.file_path), err));
     } else if (m.format === 'vmd') {
         loadManager
             .load({ kind: 'vmd', path: m.file_path }, signal)
             .then((handle) => {
                 if (!handle) {
-                    setStatus(t('library.modelLoadFailed'), false);
+                    feedbackError('library.modelLoadFailed', getBaseName(m.file_path));
                 }
             })
-            .catch((err) => setStatus(t('library.modelLoadFailed') + formatError(err), false));
+            .catch((err) => feedbackError('library.modelLoadFailed', getBaseName(m.file_path), err));
     } else if (m.format === 'audio') {
         loadManager
             .load({ kind: 'audio', path: m.file_path }, signal)
             .then((handle) => {
                 if (!handle) {
-                    setStatus(t('library.modelLoadFailed'), false);
+                    feedbackError('library.modelLoadFailed', getBaseName(m.file_path));
                 }
             })
-            .catch((err) => setStatus(t('library.modelLoadFailed') + formatError(err), false));
+            .catch((err) => feedbackError('library.modelLoadFailed', getBaseName(m.file_path), err));
     } else if (m.format === 'vpd') {
         loadVPDPose(m.file_path);
     }
@@ -405,11 +407,11 @@ function loadModelNormal(m: LibraryModel, isStage: boolean): void {
 function onModelRowClick(m: LibraryModel, jumpToDirModelId?: string): void {
     // [doc:adr-135] P1.2: per-model 守卫。zip A 解压时 pmx B 直接放行，不再被一刀切阻塞。
     if (librarySessionStore.isExtracting(m.file_path)) {
-        setStatus(t('library.extracting'), false);
+        feedbackStatus('library.extracting', getBaseName(m.file_path));
         return;
     }
     if (librarySessionStore.isReplaceLoading()) {
-        setStatus(t('library.loadingModel'), false);
+        feedbackStatus('library.loadingModel', getBaseName(m.file_path));
         return;
     }
     // [doc:adr-131] 由 replaceModel 传参取代 mutation of currentLevel.outcome
@@ -474,7 +476,7 @@ function replaceMotion(m: LibraryModel): void {
     };
     if (m.container === 'zip') {
         librarySessionStore.setExtracting(m.file_path);
-        withLoadingStatus('library.extractingZip', 'library.extracted', () =>
+        withLoadingStatusTargeted('library.extractingZip', 'feedback.extractionSuccess', getBaseName(m.file_path), () =>
             ExtractZip(m.file_path, m.zip_inner)
         )
             .then(async (result) => {
@@ -484,7 +486,7 @@ function replaceMotion(m: LibraryModel): void {
                 await doLoad(result.file_path);
             })
             .catch((err) => {
-                setStatus(t('library.extractFailed') + formatError(err), false);
+                feedbackError('library.extractFailed', getBaseName(m.file_path), err);
             })
             .finally(() => {
                 librarySessionStore.clearExtracting(m.file_path);
@@ -624,7 +626,7 @@ export async function importFile(): Promise<void> {
         if (/cancelled by user/i.test(msg)) {
             return;
         }
-        setStatus(t('library.selectFileFailed') + formatError(err), false);
+        feedbackError('library.selectFileFailed', undefined, err);
         return;
     }
     if (!path) {
@@ -632,9 +634,10 @@ export async function importFile(): Promise<void> {
     }
     const lower = path.toLowerCase();
     if (lower.endsWith('.zip')) {
-        const imported = await withLoadingStatus(
+        const imported = await withLoadingStatusTargeted(
             'library.importingZip',
-            'library.zipImported',
+            'feedback.extractionSuccess',
+            getBaseName(path),
             () => ImportZip(path)
         );
         if (!imported) {
@@ -642,22 +645,25 @@ export async function importFile(): Promise<void> {
         }
         // [fix:import-file-web] zip 解压后自动加载主 PMX 到场景（拖放导入已有此行为）
         if (imported.file_path) {
-            await withLoadingStatus('library.loadingModel', 'status.done', () =>
-                loadManager.load({ kind: 'actor', path: imported.file_path })
+            await withLoadingStatusTargeted(
+                'library.loadingModel',
+                'feedback.loadedSuccess',
+                getBaseName(imported.file_path),
+                () => loadManager.load({ kind: 'actor', path: imported.file_path })
             );
         }
         const { refreshLibrary } = await import('./library-setup');
         await safeCallAsync('library-actions', 'refresh after zip import:', () => refreshLibrary());
     } else if (lower.endsWith('.pmx')) {
-        await withLoadingStatus('library.loadingModel', 'status.done', () =>
+        await withLoadingStatusTargeted('library.loadingModel', 'feedback.loadedSuccess', getBaseName(path), () =>
             loadManager.load({ kind: 'actor', path })
         );
     } else if (lower.endsWith('.vmd')) {
-        await withLoadingStatus('library.loadingMotion', 'status.done', () =>
+        await withLoadingStatusTargeted('library.loadingMotion', 'feedback.loadedSuccess', getBaseName(path), () =>
             loadManager.load({ kind: 'vmd', path })
         );
     } else {
-        setStatus(t('library.unsupportedFormat'), false);
+        feedbackStatus('library.unsupportedFormat', getBaseName(path));
     }
 }
 

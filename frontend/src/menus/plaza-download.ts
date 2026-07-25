@@ -6,6 +6,7 @@ import { setStatus } from '../core/status-bar';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
 import { showErrorToast } from '../core/toast';
+import { feedbackError, feedbackStatus, feedbackInfo } from '../core/feedback';
 import { refreshLibrary } from './library';
 import { registerShortcuts } from '../core/shortcut-registry';
 import { swallowError } from '../core/utils';
@@ -83,12 +84,9 @@ export async function handlePlazaDownload(
         if (effectiveSignal.aborted) {
             return;
         }
-        setStatus(
-            t('plaza.downloaded', { name: result.fileName, size: (result.size / 1024).toFixed(1) }),
-            true
-        );
+        feedbackStatus('feedback.loadedSuccess', result.fileName, true);
     } catch (e) {
-        setStatus(t('plaza.downloadFail', { err: translateGoError(e) }), true);
+        feedbackError('plaza.downloadFail', filename, e);
     } finally {
         abortCtrl?.abort();
     }

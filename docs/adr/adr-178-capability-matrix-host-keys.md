@@ -1,6 +1,6 @@
 # ADR-178: 能力矩阵补全宿主级键（四端统一收口）
 
-> **状态**: 实施中（Phase 1 已落地 2026-07-24；阶段 2/3 待排期）
+> **状态**: 实施中（Phase 1 已落地 2026-07-24；Phase 2 分析完成 2026-07-25——virtual-skirt.ts/fileservice.ts 已迁移至能力层，settings-resources.ts:412 待迁移至 watchDir，其余 5 处判定为平台特有逻辑保留不动；Phase 3 待排期）
 > **日期**: 2026-07-24
 > **关联**: ADR-176（前端 Backend 适配器双实现）、ADR-177（Web Loader 与主应用统一路径）、ADR-017（安卓适配，platform 探测范式）、ADR-133（安卓 MPR 物理缺口）、ADR-093（声明式菜单 Schema）
 > **前置**: ADR-176/177 已落地（`BackendService` 双适配器 + `getCapabilities()`/`getCachedCapabilities()` 能力缓存）
@@ -112,10 +112,18 @@ import { isAndroidPlatform } from '../platform';
 
 - **阶段 1（本 ADR 范围）**：加 3 键 + 两 adapter `capabilities()` 自报 + 单测。编译通过、契约测试 139 函数不受影响。
 - **阶段 2（后续，可独立提交）**：散落 `isAndroidPlatform()` 中与"能力"相关的改走 `getCachedCapabilities()`：
-  - `virtual-skirt.ts:238` 品质降级 → 读 `crossOriginIsolated`（安卓应用自动降单线程物理，与 ADR-133 一致）；
-  - `fileservice.ts:63` 已可用 `backend.kind === 'browser' || isAndroidPlatform()` 表达，后续统一为 `!crossOriginIsolated` 语义更准；
-  - `ar-camera.ts:151` 的 `isAndroidPlatform()` **保留**（那是相机权限判定，非能力，不应并入能力层）；
-  - `settings-*` / `library-setup.ts` 中"仅安卓显示某 UI"的，若属能力差异则改能力层，若属布局/权限则保留。
+  - ✅ `virtual-skirt.ts:238` 品质降级 → 已迁移至 `!getCachedCapabilities().crossOriginIsolated`（2026-07-25）
+  - ✅ `fileservice.ts:63` → 已迁移至 `backend.kind === 'browser' || !getCachedCapabilities().crossOriginIsolated`（2026-07-25）
+  - `ar-camera.ts:136` 的 `isAndroidPlatform()` **保留**（那是相机权限判定，非能力，不应并入能力层）；
+  - 其余 6 处逐项判定结果（2026-07-25）：
+    - `library-setup.ts:96/119` — **保留**（`selectResourceRoot`/`selectOverridePath` 依赖 `SelectDir` Go 桥，安卓无此桥，属平台特有 UI 限制）
+    - `library-setup.ts:138` — **保留**（`switchStorageMode` 仅安卓有 private/shared 存储概念，桌面无此区分）
+    - `settings-appearance.ts:476` — **保留**（屏幕常亮 `setKeepAwake` 是安卓桥函数，桌面无此功能）
+    - `settings-resources.ts:162` — **保留**（`buildStorageSchema` 中安卓用 `GetStorageMode`+自定义渲染，非安卓用 `SelectDir` 路径选择器，属平台特有 UI 差异）
+    - `settings-resources.ts:412` — **待迁移至 `getCachedCapabilities().watchDir`**（下载监听 `visibleWhen` 门控，`watchDir` 能力键已存在于 `BackendCapabilities`，可直接替换）
+    - `plaza-browser.ts:695` — **保留**（打开模式选项差异：安卓仅"系统浏览器"，桌面有"内嵌页"+"独立窗口"；`plazaWindow` 能力已独立表达，此处属布局差异）
+    - `init.ts:328` — **保留**（默认性能模式：安卓 `balanced`，桌面 `auto`，属平台默认配置策略）
+    - `init.ts:464` — **保留**（`checkAndroidStoragePermission` 安卓存储权限弹窗，仅安卓需要）
 - **阶段 3（另立或并入 CI）**：`docs/targets.md` 固化为唯一真相源；CI 增四端制品矩阵（桌面三平台 + 安卓 APK + GitHub Pages 网页）各跑对应 smoke。
 
 ## 风险与边界
@@ -137,7 +145,10 @@ import { isAndroidPlatform } from '../platform';
   - `backend.test.ts`：go mock 补三键。
 - **验证**：`tsc --noEmit` 全项目 **0 错误**；`backend.test.ts` **57/57 通过**；契约 139 函数不受影响。
 - **审核修正已采纳**：`ar` 键语义非"原生独占"（草案误判），保持 `true`；真正不一致在文档，已在 `targets.md` + 本 ADR 纠正。
-- **未做（阶段 2/3）**：散落 `isAndroidPlatform()` 迁移、CI 四端制品矩阵。
+- **进度（2026-07-25）**：
+  - Phase 2 已迁移 2/8 处：`virtual-skirt.ts`（`crossOriginIsolated`）、`fileservice.ts`（`crossOriginIsolated`）
+  - Phase 2 判定完成 6 处：5 处保留（平台特有逻辑），1 处待迁移（`settings-resources.ts:412` → `watchDir`）
+  - Phase 3（CI 四端矩阵）未启动
 
 ## 测试
 

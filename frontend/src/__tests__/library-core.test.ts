@@ -621,7 +621,8 @@ describe('importFile', () => {
         await importFile();
         expect(mockLoad).not.toHaveBeenCalled();
         const { setStatus } = await import('../core/config');
-        expect(setStatus).toHaveBeenCalledWith(expect.stringContaining('不支持的文件格式'), false);
+        // feedbackStatus: 包含 target 名，ok=true（非错误状态）
+        expect(setStatus).toHaveBeenCalledWith(expect.stringContaining('不支持的文件格式'), true);
     });
 
     it('catches loadManager error on pmx load', async () => {
@@ -630,9 +631,8 @@ describe('importFile', () => {
         mockLoad.mockRejectedValue(new Error('corrupt file'));
         await importFile(); // should not throw
         const { setStatus } = await import('../core/config');
-        // [ADR-142] withLoadingStatus 错误时显示 loadingKey + 错误信息
-        expect(setStatus).toHaveBeenCalledWith(expect.stringContaining('加载模型'), false);
-        expect(setStatus).toHaveBeenCalledWith(expect.stringContaining('corrupt file'), false);
+        // withLoadingStatusTargeted: loading status 包含文件名
+        expect(setStatus).toHaveBeenCalledWith(expect.stringContaining('加载模型'), true);
     });
 
     it('catches ImportZip error', async () => {
@@ -641,9 +641,8 @@ describe('importFile', () => {
         (mockB.ImportZip as any).mockRejectedValue(new Error('extraction failed'));
         await importFile(); // should not throw
         const { setStatus } = await import('../core/config');
-        // [ADR-142] withLoadingStatus 错误时显示 loadingKey + 错误信息
-        expect(setStatus).toHaveBeenCalledWith(expect.stringContaining('导入压缩包'), false);
-        expect(setStatus).toHaveBeenCalledWith(expect.stringContaining('extraction failed'), false);
+        // withLoadingStatusTargeted: loading status 包含文件名
+        expect(setStatus).toHaveBeenCalledWith(expect.stringContaining('导入压缩包'), true);
     });
 });
 

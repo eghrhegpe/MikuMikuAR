@@ -181,7 +181,7 @@ const migrators: Migrator[] = [
 | Phase 2.1 EnvState 单一源 | P2 | 大 | 无 | ✅ 完成（ADR-137，schema 派生 + Go 字段补齐） |
 | Phase 2.2 迁移注册表化 | P2 | 中 | 无 | ✅ 完成（scene-serialize.ts 注册表化） |
 | Phase 2.3 性能降级统一 | P2 | 中 | ADR-118 | ✅ 完成（qualityProfile 全链路 + Go 已补齐） |
-| Phase 2.4 SetEnvState partial | P2 | 中 | Phase 2.1 | 待推进 |
+| Phase 2.4 SetEnvState partial | P2 | 中 | Phase 2.1 | ✅ 已完成（2026-07-25，双端实现：前端 env-bridge.ts:589 Proxy 局部更新 + Go config.go:277 JSON merge；无需 `map[string]any`/field mask） |
 | Phase 2.5 菜单扁平化 | P2 | 小 | 决策岔路 3 | 待推进 |
 | Phase 2.6 交互模式统一 | P2 | 中 | 无 | 待推进 |
 | Phase 2.7 预设系统统一 | P2 | 大 | 决策岔路 2 | 待推进 |

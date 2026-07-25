@@ -20,6 +20,7 @@ import {
     setStatus,
 } from '../core/config';
 import { showInfoToast } from '../core/toast';
+import { feedbackError, feedbackInfo } from '../core/feedback';
 import { debounce, generateUuid, swallowError } from '../core/utils';
 import { logWarn } from '../core/logger';
 import {
@@ -1403,7 +1404,7 @@ export async function saveSceneImmediate(suppressToast = false): Promise<void> {
     } catch (_err) {
         console.warn('[auto-save] SaveLastScene FAILED:', _err);
         if (!suppressToast) {
-            showErrorToast(t('scene.serialize.autosaveFailed'), translateGoError(_err));
+            feedbackError('scene.serialize.autosaveFailed', undefined, _err);
         }
     }
 }
@@ -1534,7 +1535,7 @@ export async function tryRestoreLastScene(): Promise<void> {
                 'scene-serialize',
                 `场景恢复失败: ${errorCount}/${modelCount} 个模型均无法加载，回滚到空场景`
             );
-            showErrorToast(t('scene.serialize.restoreFailed'));
+            feedbackError('scene.serialize.restoreFailed', undefined);
             try {
                 const raw = JSON.parse(preSnap);
                 await deserializeScene(raw as unknown as SceneFile, true);
