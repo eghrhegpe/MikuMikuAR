@@ -41,7 +41,6 @@ import {
     replaceDefaultMotion,
 } from '../scene/motion/motion-intent';
 import { logWarn } from '../core/logger';
-import { addDisposableListener } from '../core/dom';
 
 // ── 子文件导入 ──
 import {
