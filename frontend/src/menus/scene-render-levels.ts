@@ -2,7 +2,9 @@
 // 从 scene-render-levels.ts 拆分
 // 子文件: scene-stage-lights.ts, scene-stage-levels.ts, scene-render-presets.ts
 
-import { setStatus, cardContainer } from '../core/config';
+import { cardContainer } from '../core/config';
+import { feedbackInfo, feedbackStatus } from '../core/feedback';
+import { showInfoToast } from '../core/toast';
 import type { PopupLevel } from '../core/config';
 import type { RenderState } from '../scene/scene';
 import { tryCatchStatus, swallowError, showErrorToast } from '../core/utils';
@@ -61,7 +63,7 @@ function _renderFilterPresetChips(container: HTMLElement): void {
                 if (preset) {
                     transitionRenderState({ ...defaultRenderState(), ...preset }, 2000);
                 }
-                setStatus(t('scene.statusFilter', { label: t(label) }), true);
+                showInfoToast(t('scene.statusFilter', { label: t(label) }));
             });
         }
         c.appendChild(chipGroup);
@@ -76,7 +78,7 @@ function _renderScenePresetList(container: HTMLElement, scenes: string[]): void 
             getLabel: (s: string) => s,
             onApply: async (name) => {
                 if (await _loadPresetScene(name)) {
-                    setStatus(t('scene.statusLoaded', { name }), true);
+                    showInfoToast(t('scene.statusLoaded', { name }));
                 }
             },
             onDelete: async (name) => {
@@ -87,7 +89,7 @@ function _renderScenePresetList(container: HTMLElement, scenes: string[]): void 
                 if (r === undefined) {
                     throw Error('delete failed');
                 }
-                setStatus(t('scene.statusDeleted', { name }), true);
+                showInfoToast(t('scene.statusDeleted', { name }));
             },
             deleteConfirmText: (name) => t('scene.confirmDeletePreset', { name }),
             emptyText: t('scene.noPresetScenes'),
@@ -122,12 +124,12 @@ export function buildPresetScenesLevel(): PopupLevel {
                 slideRow(c, 'lucide:undo-2', t('scene.undo'), false, () => {
                     const snap = popUndoSnapshot();
                     if (!snap) {
-                        setStatus(t('scene.statusNoUndo'), false);
+                        feedbackStatus('scene.statusNoUndo', undefined, false);
                         return;
                     }
                     void restoreUndoSnapshot(snap).then((ok) => {
                         if (ok) {
-                            setStatus(t('scene.undoApplied'), true);
+                            feedbackInfo('scene.undoApplied', undefined);
                         }
                     });
                 });
@@ -137,14 +139,14 @@ export function buildPresetScenesLevel(): PopupLevel {
                         const filename = await SaveScenePreset(json);
                         try {
                             await navigator.clipboard.writeText(json);
-                            setStatus(t('scene.statusSceneSavedClipboard', { filename }), true);
+                            showInfoToast(t('scene.statusSceneSavedClipboard', { filename }));
                         } catch {
-                            setStatus(t('scene.statusSceneSaved', { filename }), true);
+                            showInfoToast(t('scene.statusSceneSaved', { filename }));
                         }
                         reRenderSceneMenu();
                     } catch (err) {
                         const msg = translateGoError(err);
-                        setStatus(t('scene.statusSaveFailed'), false);
+                        feedbackStatus('scene.statusSaveFailed', undefined, false);
                         showErrorToast(t('scene.toastSaveSceneFailed'), msg);
                     }
                 });

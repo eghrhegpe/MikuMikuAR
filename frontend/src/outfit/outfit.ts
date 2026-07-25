@@ -7,12 +7,12 @@ import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { LoadOutfitFile, ListSubDirs, readFileBytes, FileExists } from '../core/wails-bindings';
 import {
     modelRegistry,
-    setStatus,
     OutfitFile,
     OutfitVariant,
     OutfitSlot,
     ModelInstance,
 } from '../core/config';
+import { showInfoToast } from '../core/toast';
 import type { Scene } from '@babylonjs/core/scene';
 import { getBaseName, normPath, getDirPath, delay, LoadingGuard } from '@/core/utils';
 import { logWarn } from '@/core/logger';
@@ -660,7 +660,7 @@ async function _applyOutfitVariantCore(id: string, variantName: string): Promise
 
     await Promise.all(promises);
     inst.activeVariant = variantName;
-    setStatus(t('outfit.switched', { name: variantName }), true);
+    showInfoToast(t('outfit.switched', { name: variantName }));
     triggerAutoSave();
 }
 

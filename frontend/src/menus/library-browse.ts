@@ -17,6 +17,8 @@ import {
     libraryRoot,
     isUnderRoot,
 } from '../core/config';
+import { feedbackInfo } from '../core/feedback';
+import { showInfoToast } from '../core/toast';
 import { loadManager } from '../core/load-manager';
 import { SlideMenu } from './menu';
 import { t } from '../core/i18n/t';
@@ -113,7 +115,7 @@ function deferRestore(menu: SlideMenu, dir: string, seg: string): void {
         );
         // [doc:adr-135] P0.3: 标记 ready，UI 显示「已展开 X」（短暂提示，2 秒自动消失）
         librarySessionStore.markRestoreReady();
-        setStatus(t('library.expanded', { dir: seg }), true);
+        showInfoToast(t('library.expanded', { dir: seg }));
     };
     librarySessionStore.setRestoreTimer(setTimeout(tick, 150));
 }
@@ -245,7 +247,7 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
             if (row.target && row.target.startsWith('formation:set:')) {
                 const type = row.target.replace('formation:set:', '');
                 setModelFormation(type as FormationType);
-                setStatus(t('scene.formationStatus.' + type), true);
+                feedbackInfo('scene.formationStatus.' + type, undefined);
                 return;
             }
         },

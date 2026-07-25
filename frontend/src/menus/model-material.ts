@@ -1,7 +1,9 @@
 // [doc:architecture] Model Material — 材质调节 UI 层（batch/per-mat/root/list）
 
 import { Material } from '@babylonjs/core/Materials/material';
-import { cardContainer, setStatus, PopupLevel, stackRegistry } from '../core/config';
+import { cardContainer, PopupLevel, stackRegistry } from '../core/config';
+import { feedbackInfo } from '../core/feedback';
+import { showInfoToast } from '../core/toast';
 import {
     getMatCatGroups,
     getMatCatParams,
@@ -141,11 +143,10 @@ function buildMatToggle(
             // 业务定制：读实时状态 + 同步 UI + setStatus 提示
             setMatEnabled(id, index, newState);
             row.classList.toggle('mat-disabled', !newState);
-            setStatus(
+            showInfoToast(
                 newState
                     ? t('model-material.shown', { name })
-                    : t('model-material.hidden', { name }),
-                true
+                    : t('model-material.hidden', { name })
             );
         },
     });
@@ -192,7 +193,7 @@ function buildPerMatSchema(
                             () => {
                                 resetSingleMatParams(id, matIndex);
                                 (targetStack ?? stackRegistry.modelStack)?.reRender();
-                                setStatus(t('model-material.resetDone', { name: matName }), true);
+                                showInfoToast(t('model-material.resetDone', { name: matName }));
                             }
                         );
                     }
@@ -359,7 +360,7 @@ function buildMatRootSchema(
                             applyUnlitFallback(id);
                             _selectedMat = null;
                             (targetStack ?? stackRegistry.modelStack)?.reRender();
-                            setStatus(t('model-material.unlitFallbackDone'), true);
+                            feedbackInfo('model-material.unlitFallbackDone', undefined);
                         }
                     );
                 });
@@ -380,7 +381,7 @@ function buildMatRootSchema(
                             resetMatCatParams(id);
                             _selectedMat = null;
                             (targetStack ?? stackRegistry.modelStack)?.reRender();
-                            setStatus(t('model-material.resetAllDone'), true);
+                            feedbackInfo('model-material.resetAllDone', undefined);
                         }
                     );
                 });
@@ -449,7 +450,7 @@ function _renderParamCard(
                     resetSingleMatParams(id, index);
                     _selectedMat = null;
                     (targetStack ?? stackRegistry.modelStack)?.reRender();
-                    setStatus(t('model.materialReset', { name: matName }), true);
+                    showInfoToast(t('model.materialReset', { name: matName }));
                 });
             }
         },

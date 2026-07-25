@@ -3,6 +3,8 @@
 
 import { setStatus, cardContainer, stackRegistry } from '../core/config';
 import type { PopupLevel } from '../core/config';
+import { feedbackInfo, feedbackStatus } from '../core/feedback';
+import { showInfoToast } from '../core/toast';
 import {
     slideRow,
     addCardTitle,
@@ -225,7 +227,7 @@ function buildCameraSchema(): MenuNode[] {
                             clearCameraVmd();
                             triggerAutoSave();
                             refreshCameraLevel();
-                            setStatus(t('motion.camVmdCleared'), true);
+                            feedbackInfo('motion.camVmdCleared', undefined);
                             offerSceneUndoAndRefresh(t('motion.camVmdCleared'), snap, () => {
                                 refreshCameraLevel();
                             });
@@ -702,7 +704,7 @@ function renderWebXRProbeSection(container: HTMLElement): void {
             setStatus(_verdictText(_probeResult.verdict), _probeResult.verdict !== 'none');
         } catch {
             // [fix] 不在错误消息中暴露 String(e)，仅用固定 i18n key
-            setStatus(t('motion.webxrDeepProbeError'), false);
+            feedbackStatus('motion.webxrDeepProbeError', undefined, false);
         }
         _probing = false;
         refreshCameraLevel();
@@ -801,17 +803,17 @@ function renderARCoreProbeSection(container: HTMLElement): void {
                     error: string | null;
                 };
                 if (r.success) {
-                    setStatus(t('scene.ar.arcoreSuccess'), true);
+                    feedbackInfo('scene.ar.arcoreSuccess', undefined);
                 } else {
                     setStatus(`${t('scene.ar.arcoreFailed')}: ${r.error || 'unknown'}`, false);
                 }
             } catch {
-                setStatus(t('scene.ar.arcoreFailed'), false);
+                feedbackStatus('scene.ar.arcoreFailed', undefined, false);
             }
             refreshCameraLevel();
         };
         w.launchARCoreProbe!();
-        setStatus(t('scene.ar.arcoreLaunching'), true);
+        feedbackInfo('scene.ar.arcoreLaunching', undefined);
     });
 
     // 显示上次探针结果
@@ -869,17 +871,17 @@ function renderVuforiaProbeSection(container: HTMLElement): void {
                     error: string | null;
                 };
                 if (r.success) {
-                    setStatus(t('scene.ar.vuforiaSuccess'), true);
+                    feedbackInfo('scene.ar.vuforiaSuccess', undefined);
                 } else {
                     setStatus(`${t('scene.ar.vuforiaFailed')}: ${r.error || 'unknown'}`, false);
                 }
             } catch {
-                setStatus(t('scene.ar.vuforiaFailed'), false);
+                feedbackStatus('scene.ar.vuforiaFailed', undefined, false);
             }
             refreshCameraLevel();
         };
         w.launchVuforiaProbe!();
-        setStatus(t('scene.ar.vuforiaLaunching'), true);
+        feedbackInfo('scene.ar.vuforiaLaunching', undefined);
     });
 
     if (_vuforiaProbeResult) {

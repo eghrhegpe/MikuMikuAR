@@ -2,12 +2,13 @@
 // 从 env-menu.ts 拆分
 // 4 类预设：sky/ground/water/atmosphere，各类独立保存/加载，互不覆盖
 
-import { envState, cardContainer, setStatus } from '../core/config';
+import { envState, cardContainer } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { addSectionTitle, addPresetChip } from '../core/ui-helpers';
 import { addActionRow } from '../core/ui-helpers';
 import { tryCatchStatus, showErrorToast, getBaseName } from '../core/utils';
 import { safeCallAsync } from '../core/safe-call';
+import { showInfoToast } from '../core/toast';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
 import { feedbackError, feedbackInfo, feedbackStatus } from '../core/feedback';
@@ -84,16 +85,16 @@ function renderCategorizedPresets(
                     const json = await LoadEnvPreset(e.name);
                     const preset = importCategorizedEnvPreset(json);
                     if (!preset) {
-                        setStatus(t('env-preset.formatError'), false);
+                        feedbackStatus('env-preset.formatError', undefined, false);
                         return;
                     }
                     applyEnvPresetByCategory(preset);
                     getEnvMenu()?.reRender();
-                    setStatus(t('env-preset.applied', { label: preset.label }), true);
+                    showInfoToast(t('env-preset.applied', { label: preset.label }));
                 },
                 onDelete: async (e) => {
                     await DeleteEnvPreset(e.name);
-                    setStatus(t('env-preset.deleted', { label: e.label }), true);
+                    showInfoToast(t('env-preset.deleted', { label: e.label }));
                     reRender();
                 },
                 deleteConfirmText: (e) =>

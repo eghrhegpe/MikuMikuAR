@@ -11,7 +11,7 @@ import { observe, type ObserverHandle } from '@/core/observer-handle';
 
 import { envState, EnvState, triggerAutoSave, mmdRuntime } from '@/core/config';
 import { uiState, setUIPersistCallback } from '@/core/state';
-import { setStatus } from '@/core/status-bar';
+import { feedbackStatus } from '@/core/feedback';
 import { t as t_i18n } from '@/core/i18n/t';
 import {
     lerp as lerpUtil,
@@ -304,7 +304,7 @@ export function stopTimeOfDay(): void {
     _envPersistTimer.cancel();
     void persistEnvState({ ...envState }).catch((err) => {
         logWarn('stopTimeOfDay', 'persist failed', err);
-        setStatus(t_i18n('env.persistFailed'), false);
+        feedbackStatus('env.persistFailed', undefined, false);
     });
 }
 
@@ -430,7 +430,7 @@ function _presetAnimLoop(ctx: PresetAnimCtx, handle: ObserverHandle): void {
         _envPersistTimer.cancel();
         void persistEnvState({ ...envState }).catch((err) => {
             logWarn('presetAnim', 'persist failed', err);
-            setStatus(t_i18n('env.persistFailed'), false);
+            feedbackStatus('env.persistFailed', undefined, false);
         });
         triggerAutoSave();
     }
@@ -611,7 +611,7 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
         }
         void persistEnvState({ ...envState }).catch((err) => {
             logWarn('persistEnvState', 'persist failed', err);
-            setStatus(t_i18n('env.persistFailed'), false);
+            feedbackStatus('env.persistFailed', undefined, false);
         });
     }, 500);
 
@@ -765,7 +765,7 @@ export async function flushEnvState(): Promise<void> {
         await persistEnvState({ ...envState });
     } catch (err) {
         logWarn('flushEnvState', 'persist failed', err);
-        setStatus(t_i18n('env.persistFailed'), false);
+        feedbackStatus('env.persistFailed', undefined, false);
     }
 }
 
@@ -825,7 +825,7 @@ export async function flushUIState(): Promise<void> {
         await persistUIState(payload);
     } catch (err) {
         logWarn('flushUIState', 'persist failed', err);
-        setStatus(t_i18n('env.persistFailed'), false);
+        feedbackStatus('env.persistFailed', undefined, false);
     }
 }
 

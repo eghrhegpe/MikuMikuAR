@@ -2,9 +2,10 @@
 // 设置导入/导出/重置已迁移至 settings-system.ts；快捷键只读副本已删除（可编辑版在操控页）。
 
 import { GetBuildInfo, CheckForUpdate, SetUIAutoUpdate } from '../core/wails-bindings';
-import { setStatus, uiState, setUIState, cardContainer } from '../core/config';
+import { uiState, setUIState, cardContainer } from '../core/config';
 import { slideRow, addToggleRow, addSectionTitle } from '../core/ui-helpers';
 import { browser } from '../core/runtime-bridge';
+import { showInfoToast } from '../core/toast';
 import { t } from '../core/i18n/t';
 import { openExternalURL } from '../core/platform';
 import { renderMenu } from './render-menu';
@@ -110,11 +111,10 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                         (v) => {
                             setUIState({ autoUpdateEnabled: v });
                             void SetUIAutoUpdate(v);
-                            setStatus(
+                            showInfoToast(
                                 t('settings.autoUpdate', {
                                     state: v ? t('common.on') : t('common.off'),
-                                }),
-                                true
+                                })
                             );
                         }
                     );

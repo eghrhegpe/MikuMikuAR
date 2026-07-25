@@ -3,6 +3,8 @@
 // 依赖: scene-serialize.ts + config.ts + wails bindings
 
 import { libraryRoot, setStatus, setLibraryRoot } from '../core/config';
+import { feedbackInfo, feedbackStatus } from '../core/feedback';
+import { showInfoToast } from '../core/toast';
 import { t } from '../core/i18n/t';
 import { computeLibraryRef, getBaseName, normPath, deepClone } from '../core/utils';
 import {
@@ -149,7 +151,7 @@ function rewriteRefsForBundle(scene: SceneFile, _libraryRoot: string): SceneFile
 
 /** 导出场景为 bundle zip 文件。 */
 export async function exportSceneBundle(): Promise<void> {
-    setStatus(t('scene.bundle.collecting'), true);
+    feedbackInfo('scene.bundle.collecting', undefined);
 
     const scene = serializeScene();
     const assetPaths = collectSceneAssets(scene);
@@ -164,13 +166,13 @@ export async function exportSceneBundle(): Promise<void> {
         return;
     }
 
-    setStatus(t('scene.bundle.packing'), true);
+    feedbackInfo('scene.bundle.packing', undefined);
     try {
         await BundleScene(targetPath, JSON.stringify(rewritten), assetPaths);
-        setStatus(t('scene.bundle.exported', { name: getBaseName(targetPath) }), true);
+        showInfoToast(t('scene.bundle.exported', { name: getBaseName(targetPath) }));
     } catch (err) {
         console.error('exportSceneBundle:', err);
-        setStatus(t('scene.bundle.exportFailed'), false);
+        feedbackStatus('scene.bundle.exportFailed', undefined, false);
     }
 }
 
@@ -183,12 +185,12 @@ export async function importSceneBundle(): Promise<void> {
         return;
     }
 
-    setStatus(t('scene.bundle.importing'), true);
+    feedbackInfo('scene.bundle.importing', undefined);
     try {
         // 解压到缓存目录
         const result = await ExtractZip(zipPath, '');
         if (!result || !result.dir) {
-            setStatus(t('scene.bundle.unzipFailed'), false);
+            feedbackStatus('scene.bundle.unzipFailed', undefined, false);
             return;
         }
 
@@ -198,7 +200,7 @@ export async function importSceneBundle(): Promise<void> {
         const sceneJsonPath = normPath(`${extractDir}/scene.json`);
         const sceneJson = await LoadSceneFile(sceneJsonPath);
         if (!sceneJson) {
-            setStatus(t('scene.bundle.noSceneJson'), false);
+            feedbackStatus('scene.bundle.noSceneJson', undefined, false);
             return;
         }
 
@@ -214,13 +216,13 @@ export async function importSceneBundle(): Promise<void> {
 
         try {
             await deserializeScene(sceneData);
-            setStatus(t('scene.bundle.imported'), true);
+            feedbackInfo('scene.bundle.imported', undefined);
         } finally {
             // 恢复 libraryRoot
             setLibraryRoot(origRoot);
         }
     } catch (err) {
         console.error('importSceneBundle:', err);
-        setStatus(t('scene.bundle.importFailed'), false);
+        feedbackStatus('scene.bundle.importFailed', undefined, false);
     }
 }

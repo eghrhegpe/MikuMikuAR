@@ -6,7 +6,6 @@
 
 import {
     dom,
-    setStatus,
     PopupRow,
     PopupLevel,
     modelRegistry,
@@ -15,6 +14,8 @@ import {
     uiState,
     setUIState,
 } from '../core/config';
+import { feedbackInfo, feedbackStatus } from '../core/feedback';
+import { showInfoToast } from '../core/toast';
 import { registerPopupMenu } from './menu-factory';
 import {
     serializeScene,
@@ -221,7 +222,7 @@ function buildSceneRootItems(): PopupRow[] {
                 setDragModeEnabled(v);
                 if (v) {
                     closeAllOverlays();
-                    setStatus(t('scene.dragModeHint'), false);
+                    feedbackStatus('scene.dragModeHint', undefined, false);
                     const id = focusedModelId;
                     const inst = id ? modelRegistry.get(id) : undefined;
                     if (inst) {
@@ -229,7 +230,7 @@ function buildSceneRootItems(): PopupRow[] {
                     }
                 } else {
                     detachGizmo();
-                    setStatus(t('scene.statusExitDrag'), false);
+                    feedbackStatus('scene.statusExitDrag', undefined, false);
                 }
             },
             bind: () => isDragModeEnabled(),
@@ -346,12 +347,12 @@ function sceneOnFolderEnter(row: PopupRow): PopupLevel | null {
 export async function screenshotCurrent(): Promise<void> {
     const id = focusedModelId;
     if (!id) {
-        setStatus(t('scene.statusNoFocusModel'), false);
+        feedbackStatus('scene.statusNoFocusModel', undefined, false);
         return;
     }
     const inst = modelRegistry.get(id);
     if (!inst) {
-        setStatus(t('scene.statusModelNotFound'), false);
+        feedbackStatus('scene.statusModelNotFound', undefined, false);
         return;
     }
     let dir = uiState.screenshotDir;
@@ -387,14 +388,14 @@ export async function screenshotCurrent(): Promise<void> {
         return true;
     }, t('scene.statusScreenshotFailed'));
     if (r) {
-        setStatus(t('scene.statusScreenshotSaved', { filename }), true);
+        showInfoToast(t('scene.statusScreenshotSaved', { filename }));
     }
 }
 
 /** 批量截图所有已加载模型 */
 async function screenshotBatch(): Promise<void> {
     if (modelRegistry.size === 0) {
-        setStatus(t('scene.statusNoModels'), false);
+        feedbackStatus('scene.statusNoModels', undefined, false);
         return;
     }
     let dir = uiState.screenshotDir;
@@ -435,7 +436,7 @@ async function screenshotBatch(): Promise<void> {
             const filename = `${inst.name.replace(/[\\/:*?"<>|]/g, '_')}_${ts}.${ext}`;
             await SaveScreenshot(dir, filename, base64);
             saved++;
-            setStatus(t('scene.statusScreenshotting', { saved, total: modelRegistry.size }), true);
+            showInfoToast(t('scene.statusScreenshotting', { saved, total: modelRegistry.size }));
         }
         if (prevFocused) {
             setFocusedModelId(prevFocused);
@@ -444,7 +445,7 @@ async function screenshotBatch(): Promise<void> {
         return true;
     }, t('scene.statusBatchScreenshotFailed'));
     if (batchOk) {
-        setStatus(t('scene.statusBatchScreenshotDone', { saved }), true);
+        showInfoToast(t('scene.statusBatchScreenshotDone', { saved }));
     }
 }
 
@@ -455,14 +456,14 @@ async function saveScene(): Promise<void> {
         const filename = await SaveScenePreset(json);
         try {
             await navigator.clipboard.writeText(json);
-            setStatus(t('scene.statusSceneSavedClipboard', { filename }), true);
+            showInfoToast(t('scene.statusSceneSavedClipboard', { filename }));
         } catch {
-            setStatus(t('scene.statusSceneSaved', { filename }), true);
+            showInfoToast(t('scene.statusSceneSaved', { filename }));
         }
         reRenderSceneMenu();
     } catch (err) {
         const msg = translateGoError(err);
-        setStatus(t('scene.statusSaveFailed'), false);
+        feedbackStatus('scene.statusSaveFailed', undefined, false);
         showErrorToast(t('scene.toastSaveSceneFailed'), msg);
     }
 }
@@ -481,12 +482,12 @@ const SCENE_ACTIONS: Record<string, () => void> = {
     'scene:undo': () => {
         const snap = popUndoSnapshot();
         if (!snap) {
-            setStatus(t('scene.statusNoUndo'), false);
+            feedbackStatus('scene.statusNoUndo', undefined, false);
             return;
         }
         void restoreUndoSnapshot(snap).then((ok) => {
             if (ok) {
-                setStatus(t('scene.undoApplied'), true);
+                feedbackInfo('scene.undoApplied', undefined);
             }
         });
     },

@@ -11,9 +11,10 @@ import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Scene } from '@babylonjs/core/scene';
 import { MmdCamera } from 'babylon-mmd/esm/Runtime/mmdCamera';
 import type { MmdAnimation } from 'babylon-mmd/esm/Loader/Animation/mmdAnimation';
-import { focusedModelId, modelRegistry, triggerAutoSave, uiState, setStatus } from '@/core/config';
+import { focusedModelId, modelRegistry, triggerAutoSave, uiState } from '@/core/config';
 import { schedulePersistUI } from '../env/env-bridge';
 import { freeflyInput } from '@/core/freefly-state';
+import { feedbackStatus } from '@/core/feedback';
 import { clamp, debounce, deepClone } from '@/core/utils';
 import { logWarn } from '@/core/logger';
 import { safeCallAsync } from '@/core/safe-call';
@@ -582,7 +583,7 @@ export function switchCameraMode(mode: CameraMode): void {
                 if (!ok) {
                     // 失败：若后续切换尚未把模式改走（仍在 ar），才提示并还原标记。
                     if (getCameraMode() === 'ar') {
-                        setStatus(t('scene.camera.arFailed'), false);
+                        feedbackStatus('scene.camera.arFailed', undefined, false);
                     }
                     setCameraMode(_previousMode);
                     _syncAxesFromMode(_previousMode);

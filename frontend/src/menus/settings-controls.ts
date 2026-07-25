@@ -2,7 +2,9 @@
 // 相机灵敏度/Y轴反转/自动居中 来自原 settings-performance；快捷键重绑来自原 settings-shortcuts。
 
 import { t } from '../core/i18n/t';
-import { setStatus, uiState, setUIState, cardContainer } from '../core/config';
+import { uiState, setUIState, cardContainer } from '../core/config';
+import { feedbackInfo } from '../core/feedback';
+import { showInfoToast } from '../core/toast';
 import { slideRow, addSectionTitle } from '../core/ui-helpers';
 import { refreshCameraUserSettings } from '../scene/camera/camera';
 import {
@@ -39,7 +41,7 @@ function buildCameraSchema(): MenuNode[] {
                 set: (v) => Math.round((v as number) * 10) / 10,
                 onChange: (v) => {
                     refreshCameraUserSettings();
-                    setStatus(t('settings.camSens', { x: v as number }), true);
+                    showInfoToast(t('settings.camSens', { x: v as number }));
                 },
             },
             icon: 'lucide:move',
@@ -64,9 +66,8 @@ function buildCameraSchema(): MenuNode[] {
                 set: (v) => v,
                 onChange: (v) => {
                     refreshCameraUserSettings();
-                    setStatus(
-                        t('settings.invertY', { state: v ? t('common.on') : t('common.off') }),
-                        true
+                    showInfoToast(
+                        t('settings.invertY', { state: v ? t('common.on') : t('common.off') })
                     );
                 },
             },
@@ -91,11 +92,10 @@ function buildCameraSchema(): MenuNode[] {
                 get: (v) => v !== false,
                 set: (v) => v,
                 onChange: (v) => {
-                    setStatus(
+                    showInfoToast(
                         t('settings.perf.autoCenterState', {
                             state: v ? t('common.on') : t('common.off'),
-                        }),
-                        true
+                        })
                     );
                 },
             },
@@ -296,7 +296,7 @@ function buildShortcutsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
                         resetAllKeyBindings();
                         setUIState({ keyBindings: exportKeyBindings() });
                         getSettingsMenu()?.reRender();
-                        setStatus(t('settings.shortcutsReset'), true);
+                        feedbackInfo('settings.shortcutsReset', undefined);
                     });
                 });
             },

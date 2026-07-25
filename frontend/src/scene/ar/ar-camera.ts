@@ -3,7 +3,8 @@
 // 职责: 管理摄像头视频流, 提供 start/stop/switchFacing 接口, 维护 <video> 元素
 // 渲染合成策略: 透明 canvas + CSS <video> 底层 (S2 方案, 性能最优)
 
-import { dom, setStatus } from '@/core/config';
+import { dom } from '@/core/config';
+import { feedbackInfo, feedbackStatus } from '@/core/feedback';
 import { t } from '@/core/i18n/t';
 import { isAndroidPlatform } from '@/core/platform';
 import { logWarn } from '@/core/logger';
@@ -125,7 +126,7 @@ export async function startARCamera(facing: CameraFacing = 'user'): Promise<bool
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         _active = false;
         _hideVideo();
-        setStatus(t('scene.ar.cameraUnavailable'), false);
+        feedbackStatus('scene.ar.cameraUnavailable', undefined, false);
         _starting = false;
         return false;
     }
@@ -136,7 +137,7 @@ export async function startARCamera(facing: CameraFacing = 'user'): Promise<bool
     if (isAndroidPlatform() && !(await ensureAndroidCameraPermission())) {
         _active = false;
         _hideVideo();
-        setStatus(t('scene.ar.cameraDenied'), false);
+        feedbackStatus('scene.ar.cameraDenied', undefined, false);
         _starting = false;
         return false;
     }
@@ -170,7 +171,7 @@ export async function startARCamera(facing: CameraFacing = 'user'): Promise<bool
         _active = true;
         _showVideo();
 
-        setStatus(t('scene.ar.enabled'), true);
+        feedbackInfo('scene.ar.enabled', undefined);
         _notifyARModeChange(true);
         _starting = false;
         return true;
@@ -182,7 +183,7 @@ export async function startARCamera(facing: CameraFacing = 'user'): Promise<bool
         }
         _active = false;
         _hideVideo();
-        setStatus(t('scene.ar.cameraDenied'), false);
+        feedbackStatus('scene.ar.cameraDenied', undefined, false);
         _starting = false;
         return false;
     }
@@ -212,9 +213,9 @@ export async function switchARCameraFacing(): Promise<boolean> {
     const nextFacing: CameraFacing = _facing === 'user' ? 'environment' : 'user';
     const ok = await startARCamera(nextFacing);
     if (ok) {
-        setStatus(
-            nextFacing === 'user' ? t('scene.ar.switchedUser') : t('scene.ar.switchedEnv'),
-            true
+        feedbackInfo(
+            nextFacing === 'user' ? 'scene.ar.switchedUser' : 'scene.ar.switchedEnv',
+            undefined
         );
     }
     return ok;

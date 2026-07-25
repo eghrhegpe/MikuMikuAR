@@ -3,7 +3,6 @@
 // 路由: motion-popup.ts → motionOnFolderEnter → 'motion:poseStudio'
 
 import {
-    setStatus,
     PopupLevel,
     cardContainer,
     modelRegistry,
@@ -15,6 +14,8 @@ import {
     isPlaying,
     setIsPlaying,
 } from '../core/config';
+import { feedbackInfo, feedbackStatus } from '../core/feedback';
+import { showInfoToast } from '../core/toast';
 import {
     addToggleRow,
     addSliderRow,
@@ -118,7 +119,7 @@ function buildPoseStudioSchema(): MenuNode[] {
                         addPresetChip(btnGroup, pt.label, false, async () => {
                             if (pt.key === 'rest') {
                                 stopVMD(modelId);
-                                setStatus(t('motion.poseStudio.restApplied'), true);
+                                feedbackInfo('motion.poseStudio.restApplied', undefined);
                                 return;
                             }
                             const vmdData = generatePoseVmd(pt.key);
@@ -133,13 +134,10 @@ function buildPoseStudioSchema(): MenuNode[] {
                                     mmdRuntime.pauseAnimation();
                                     setIsPlaying(false);
                                 }
-                                setStatus(
-                                    t('motion.poseStudio.poseApplied', { pose: pt.label }),
-                                    true
-                                );
+                                showInfoToast(t('motion.poseStudio.poseApplied', { pose: pt.label }));
                             } catch (err) {
                                 logWarn('pose', 'apply preset failed:', err);
-                                setStatus(t('motion.poseStudio.poseFailed'), false);
+                                feedbackStatus('motion.poseStudio.poseFailed', undefined, false);
                             }
                         });
                     }
@@ -203,10 +201,7 @@ function buildPoseStudioSchema(): MenuNode[] {
                             false,
                             () => {
                                 applyCameraPreset(preset);
-                                setStatus(
-                                    t('motion.poseStudio.cameraApplied', { name: preset.name }),
-                                    true
-                                );
+                                showInfoToast(t('motion.poseStudio.cameraApplied', { name: preset.name }));
                                 menu?.reRender();
                             },
                             { title: preset.description }
@@ -408,7 +403,7 @@ async function _batchScreenshot(presets: CameraAnglePreset[], modelId: string): 
         if (cam instanceof ArcRotateCamera) {
             cam.alpha = origAlpha;
         }
-        setStatus(t('motion.poseStudio.batchDone', { saved }), true);
+        showInfoToast(t('motion.poseStudio.batchDone', { saved }));
     } finally {
         if (progressEl) {
             progressEl.style.display = 'none';

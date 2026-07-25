@@ -5,6 +5,8 @@
 
 import type { PopupLevel } from '../core/config';
 import { setStatus, cardContainer, focusedModelId } from '../core/config';
+import { feedbackStatus } from '../core/feedback';
+import { showInfoToast } from '../core/toast';
 import { addSliderRow, addToggleRow, addModeRow } from '../core/ui-helpers';
 import { scene, modelManager } from '../scene/scene';
 import { mmdRuntime } from '../core/state';
@@ -141,7 +143,7 @@ async function rebuildAll(): Promise<void> {
             false
         );
     } else {
-        setStatus(t('cloth.skippedAll'), false);
+        feedbackStatus('cloth.skippedAll', undefined, false);
     }
     refreshClothLevel();
 }

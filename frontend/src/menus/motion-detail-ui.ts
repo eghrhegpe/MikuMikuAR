@@ -3,7 +3,6 @@
 // buildMotionDetailLevel / 播放速度 / buildPlaybackSpeedLevel
 
 import {
-    setStatus,
     mmdRuntime,
     cardContainer,
     focusedModelId,
@@ -25,6 +24,7 @@ import {
     removeVmdLayer,
 } from '../scene/motion/vmd-layers';
 import { getActiveMotion, getSceneMotions, removeSceneMotion } from '../scene/motion/motion-intent';
+import { showInfoToast } from '../core/toast';
 import { t } from '../core/i18n/t';
 import type { MenuNode } from './menu-schema';
 import { renderMenu } from './render-menu';
@@ -314,7 +314,7 @@ export function buildMotionToolsLevel(sceneMotionId: string): PopupLevel {
                         getMotionMenu()?.pop();
                         getMotionMenu()?.reRender();
                         triggerAutoSave();
-                        setStatus(t('motion.motionRemoved', { name: removedName }), true);
+                        showInfoToast(t('motion.motionRemoved', { name: removedName }));
                         offerSceneUndoAndRefresh(
                             t('motion.motionRemoved', { name: removedName }),
                             snap,

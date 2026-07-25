@@ -2,12 +2,13 @@
 // 从 scene-render-levels.ts 拆分
 
 import {
-    setStatus,
     cardContainer,
     modelRegistry,
     overridePaths,
     libraryRoot,
 } from '../core/config';
+import { feedbackInfo, feedbackStatus } from '../core/feedback';
+import { showInfoToast } from '../core/toast';
 import type { PopupLevel } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow, addSectionTitle, addCollapsible } from '../core/ui-helpers';
@@ -66,7 +67,7 @@ function buildStageSchema(): MenuNode[] {
                                 const { getBrowseDir } = await import('../core/utils');
                                 const browseDir = getBrowseDir('stage');
                                 if (!browseDir) {
-                                    setStatus(t('scene.statusNoModelLib'), false);
+                                    feedbackStatus('scene.statusNoModelLib', undefined, false);
                                     return;
                                 }
                                 const { buildLevel } = await import('./library-core');
@@ -82,7 +83,7 @@ function buildStageSchema(): MenuNode[] {
                                 );
                                 sm.push(level);
                             } catch (err) {
-                                setStatus(t('scene.statusOpenStageLibFailed'), false);
+                                feedbackStatus('scene.statusOpenStageLibFailed', undefined, false);
                                 console.error('Stage library error:', err);
                             }
                         })();
@@ -104,7 +105,7 @@ function buildStageSchema(): MenuNode[] {
                                 const { getBrowseDir } = await import('../core/utils');
                                 const browseDir = getBrowseDir('prop');
                                 if (!browseDir) {
-                                    setStatus(t('scene.statusNoPropLib'), false);
+                                    feedbackStatus('scene.statusNoPropLib', undefined, false);
                                     return;
                                 }
                                 const { buildLevel } = await import('./library-core');
@@ -120,7 +121,7 @@ function buildStageSchema(): MenuNode[] {
                                 );
                                 sm.push(level);
                             } catch (err) {
-                                setStatus(t('scene.statusOpenPropLibFailed'), false);
+                                feedbackStatus('scene.statusOpenPropLibFailed', undefined, false);
                                 console.error('Prop library error:', err);
                             }
                         })();
@@ -179,9 +180,9 @@ function buildStageSchema(): MenuNode[] {
                                         const newVis = !inst.visible;
                                         setModelVisibility(id, newVis);
                                         reRenderSceneMenu();
-                                        setStatus(
-                                            newVis ? t('scene.stageShown') : t('scene.stageHidden'),
-                                            true
+                                        feedbackInfo(
+                                            newVis ? 'scene.stageShown' : 'scene.stageHidden',
+                                            undefined
                                         );
                                     },
                                 },
@@ -192,7 +193,7 @@ function buildStageSchema(): MenuNode[] {
                                         e.stopPropagation();
                                         removeModel(id);
                                         reRenderSceneMenu();
-                                        setStatus(t('scene.unloaded', { name: inst.name }), true);
+                                        showInfoToast(t('scene.unloaded', { name: inst.name }));
                                     },
                                 },
                             }

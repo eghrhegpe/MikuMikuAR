@@ -10,6 +10,8 @@ import type { ISceneLoaderAsyncResult } from '@babylonjs/core/Loading/sceneLoade
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 
 import { propRegistry, setStatus, triggerAutoSave, dom, PropInstance } from '@/core/config';
+import { feedbackStatus } from '@/core/feedback';
+import { showInfoToast } from '@/core/toast';
 import { readFileBytes } from '@/core/wails-bindings';
 import { orbitToCartesian, cartesianToOrbit, normalizeOrbit } from '@/core/orbit';
 import { scene } from '../scene';
@@ -80,7 +82,7 @@ export async function loadProp(filePath: string, signal?: AbortSignal): Promise<
             return null;
         }
         const fileName = getBaseName(filePath) || '';
-        setStatus(t('props.loading'), false);
+        feedbackStatus('props.loading', undefined, false);
 
         const result = await importMeshFromBytes(pmxBytes, scene, {
             pluginExtension: '.pmx',
@@ -110,7 +112,7 @@ export async function loadProp(filePath: string, signal?: AbortSignal): Promise<
         loadedMeshes = result.meshes.filter((m) => m instanceof Mesh) as Mesh[];
 
         if (loadedMeshes.length === 0) {
-            setStatus(t('props.noMesh'), false);
+            feedbackStatus('props.noMesh', undefined, false);
             return null;
         }
 
@@ -149,7 +151,7 @@ export async function loadProp(filePath: string, signal?: AbortSignal): Promise<
             }
         }
 
-        setStatus(t('env.propAdded', { name: displayName }), true);
+        showInfoToast(t('env.propAdded', { name: displayName }));
         triggerAutoSave();
         console.info('[props] load complete:', id, displayName);
 
@@ -179,7 +181,7 @@ export async function loadProp(filePath: string, signal?: AbortSignal): Promise<
                 // Intentionally empty — 回滚阶段单个 mesh dispose 失败不影响整体清理
             }
         });
-        setStatus(t('props.loadFailed'), false);
+        feedbackStatus('props.loadFailed', undefined, false);
         return null;
     } finally {
         abortCtrl?.abort(); // 清理内部 AbortController
@@ -224,7 +226,7 @@ export function removeProp(id: string): void {
     unregisterMaterialTarget(id);
 
     propRegistry.delete(id);
-    setStatus(t('env.propRemoved', { name: inst.name }), true);
+    showInfoToast(t('env.propRemoved', { name: inst.name }));
     triggerAutoSave();
 }
 

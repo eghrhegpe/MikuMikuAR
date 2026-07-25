@@ -2,7 +2,7 @@
 // 从 env-feature-levels.ts 拆分
 
 import { createIconifyIcon } from '../core/icons';
-import { setStatus } from '../core/config';
+import { feedbackInfo } from '../core/feedback';
 import type { PopupLevel } from '../core/config';
 import { slideRow, buildPresetChipGroup } from '../core/ui-helpers';
 import { t } from '../core/i18n/t';
@@ -111,7 +111,7 @@ export function buildShadowLevel(): PopupLevel {
                         t('env.stageLightShadow'),
                         false,
                         () => {
-                            setStatus(t('env.shadowHint'), true);
+                            feedbackInfo('env.shadowHint', undefined);
                         },
                         '→ ' + t('env.sceneMenu')
                     );

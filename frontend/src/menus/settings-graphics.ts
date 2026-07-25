@@ -3,7 +3,9 @@
 
 import { SetPerformanceMode } from '../core/wails-bindings';
 import { t } from '../core/i18n/t';
-import { setStatus, uiState, cardContainer, applyHudVisibility } from '../core/config';
+import { uiState, cardContainer, applyHudVisibility } from '../core/config';
+import { feedbackInfo } from '../core/feedback';
+import { showInfoToast } from '../core/toast';
 import { slideRow, addSectionTitle, addInlineToggleRow } from '../core/ui-helpers';
 import { swallowError } from '../core/utils';
 import { getCurrentRenderingMenu } from './menu';
@@ -61,7 +63,7 @@ function buildPresetSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                             } else {
                                 getSettingsMenu()?.updateControls();
                             }
-                            setStatus(t('settings.perfModeSet', { label: t(m.labelKey) }), true);
+                            showInfoToast(t('settings.perfModeSet', { label: t(m.labelKey) }));
                         },
                         t(m.descKey),
                         undefined,
@@ -105,11 +107,10 @@ function buildFrameQualitySchema(): MenuNode[] {
                 set: (v) => v,
                 onChange: (v) => {
                     applyFrameControl();
-                    setStatus(
+                    showInfoToast(
                         t('settings.perfVsync', {
                             state: v ? t('common.on') : t('common.off'),
-                        }),
-                        true
+                        })
                     );
                 },
             },
@@ -141,11 +142,10 @@ function buildFrameQualitySchema(): MenuNode[] {
                 onChange: (v) => {
                     const limit = Math.round(v as number);
                     applyFrameControl();
-                    setStatus(
+                    showInfoToast(
                         limit === 0
                             ? t('settings.perfFpsUnlimited')
-                            : t('settings.perfFpsLimit', { limit }),
-                        true
+                            : t('settings.perfFpsLimit', { limit })
                     );
                 },
             },
@@ -176,9 +176,8 @@ function buildFrameQualitySchema(): MenuNode[] {
                     engine.setHardwareScalingLevel(
                         calcHardwareScaling(window.devicePixelRatio || 1, v as number)
                     );
-                    setStatus(
-                        t('settings.renderScale', { pct: Math.round((v as number) * 100) }),
-                        true
+                    showInfoToast(
+                        t('settings.renderScale', { pct: Math.round((v as number) * 100) })
                     );
                 },
             },
@@ -210,12 +209,11 @@ function buildEffectsSchema(): MenuNode[] {
                 const toggle = (label: string, value: boolean, apply: (v: boolean) => void) => {
                     addInlineToggleRow(c, label, value, (v) => {
                         apply(v);
-                        setStatus(
+                        showInfoToast(
                             t('settings.toggleState', {
                                 label,
                                 state: v ? t('common.on') : t('common.off'),
-                            }),
-                            true
+                            })
                         );
                     });
                 };
@@ -278,7 +276,7 @@ function buildPhysicsHudSchema(): MenuNode[] {
                     for (const inst of allModels) {
                         setModelPhysics(inst.id, enabled);
                     }
-                    setStatus(enabled ? t('settings.physOn') : t('settings.physOff'), true);
+                    feedbackInfo(enabled ? 'settings.physOn' : 'settings.physOff', undefined);
                 },
             },
             icon: 'lucide:atom',
@@ -303,12 +301,11 @@ function buildPhysicsHudSchema(): MenuNode[] {
                 set: (v) => v,
                 onChange: (v) => {
                     applyHudVisibility();
-                    setStatus(
+                    showInfoToast(
                         t('settings.toggleState', {
                             label: t('settings.perf.showFpsClock'),
                             state: v ? t('common.on') : t('common.off'),
-                        }),
-                        true
+                        })
                     );
                 },
             },
@@ -324,12 +321,11 @@ function buildPhysicsHudSchema(): MenuNode[] {
                 set: (v) => v,
                 onChange: (v) => {
                     applyHudVisibility();
-                    setStatus(
+                    showInfoToast(
                         t('settings.toggleState', {
                             label: t('settings.perf.showRuntimeBadge'),
                             state: v ? t('common.on') : t('common.off'),
-                        }),
-                        true
+                        })
                     );
                 },
             },

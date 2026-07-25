@@ -1,7 +1,7 @@
 // [doc:architecture] Scene Render Presets — 渲染预设弹窗层级
 // 从 scene-render-levels.ts 拆分
 
-import { setStatus } from '../core/config';
+import { showInfoToast } from '../core/toast';
 import type { PopupLevel } from '../core/config';
 import type { RenderState } from '../scene/scene';
 import { showPrompt } from '../core/dialog';
@@ -189,10 +189,7 @@ function buildPresetsSchema(): MenuNode[] {
                         if (preset) {
                             transitionRenderState({ ...defaultRenderState(), ...preset }, 2000);
                         }
-                        setStatus(
-                            t('scene.statusPresetApplied', { name: t(FILTER_PRESET_LABELS[key]) }),
-                            true
-                        );
+                        showInfoToast(t('scene.statusPresetApplied', { name: t(FILTER_PRESET_LABELS[key]) }));
                     });
 
                     const desc = document.createElement('span');
@@ -239,7 +236,7 @@ function buildPresetsSchema(): MenuNode[] {
                             loadItems: async () => Object.entries(USER_FILTER_PRESETS),
                             onApply: async ([name, state]) => {
                                 setRenderState(state);
-                                setStatus(t('scene.statusPresetApplied', { name }), true);
+                                showInfoToast(t('scene.statusPresetApplied', { name }));
                             },
                             emptyText: t('scene.noPresets'),
                         },
@@ -281,7 +278,7 @@ export async function showPresetSaveDialog(): Promise<void> {
     );
     if (r) {
         USER_FILTER_PRESETS[trimmed] = state;
-        setStatus(t('scene.statusPresetSaved', { trimmed }), true);
+        showInfoToast(t('scene.statusPresetSaved', { trimmed }));
         const menu = getSceneMenu();
         if (menu) {
             menu.setLevel(menu.levelCount - 1, buildPresetsLevel());

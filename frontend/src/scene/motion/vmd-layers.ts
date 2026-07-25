@@ -19,6 +19,8 @@ import {
     autoLoop,
     setIsPlaying,
 } from '@/core/config';
+import { feedbackInfo, feedbackStatus } from '@/core/feedback';
+import { showInfoToast } from '@/core/toast';
 import { readFileBytes } from '@/core/wails-bindings';
 import { getBaseName, clamp01 } from '@/core/utils';
 import { logWarn } from '@/core/logger';
@@ -124,12 +126,12 @@ export async function addVmdLayer(
 ): Promise<VmdLayer | null> {
     const targetId = targetModelId || focusedModelId;
     if (!targetId) {
-        setStatus(t('scene.vmd.noTargetModel'), false);
+        feedbackStatus('scene.vmd.noTargetModel', undefined, false);
         return null;
     }
     const inst = modelRegistry.get(targetId);
     if (!inst?.mmdModel) {
-        setStatus(t('scene.vmd.modelNoLayers'), false);
+        feedbackStatus('scene.vmd.modelNoLayers', undefined, false);
         return null;
     }
 
@@ -156,7 +158,7 @@ export async function addVmdLayer(
 
     inst.vmdLayers.push(layer);
     await _rebuildCompositeAnimation(inst.id);
-    setStatus(t('scene.vmd.layerAdded', { name }), true);
+    showInfoToast(t('scene.vmd.layerAdded', { name }));
     triggerAutoSave();
     return layer;
 }
@@ -170,7 +172,7 @@ export async function addVmdLayerFromPath(
 ): Promise<VmdLayer | null> {
     const targetId = targetModelId || focusedModelId;
     if (!targetId) {
-        setStatus(t('scene.vmd.noTargetModel'), false);
+        feedbackStatus('scene.vmd.noTargetModel', undefined, false);
         return null;
     }
     const inst = modelRegistry.get(targetId);
@@ -199,7 +201,7 @@ export async function addVmdLayerFromPath(
         return layer;
     } catch (err) {
         console.error('addVmdLayerFromPath:', err);
-        setStatus(t('scene.vmd.layerLoadFailed'), false);
+        feedbackStatus('scene.vmd.layerLoadFailed', undefined, false);
         return null;
     }
 }
@@ -274,7 +276,7 @@ export async function addVmdLayersFromPaths(
     }
 
     await _rebuildCompositeAnimation(targetId);
-    setStatus(t('scene.vmd.layersRestored', { count: addedCount }), true);
+    showInfoToast(t('scene.vmd.layersRestored', { count: addedCount }));
     return addedCount;
 }
 
@@ -291,12 +293,12 @@ export async function addGazeLayer(
 ): Promise<VmdLayer | null> {
     const inst = modelRegistry.get(modelId);
     if (!inst) {
-        setStatus(t('scene.vmd.modelNotFound'), false);
+        feedbackStatus('scene.vmd.modelNotFound', undefined, false);
         return null;
     }
 
     if (inst.vmdLayers.some((l) => l.kind === 'gaze')) {
-        setStatus(t('scene.vmd.gazeExists'), false);
+        feedbackStatus('scene.vmd.gazeExists', undefined, false);
         return null;
     }
 
@@ -341,7 +343,7 @@ export async function removeVmdLayer(layerId: string, targetModelId?: string): P
     } else {
         await _rebuildCompositeAnimation(inst.id);
     }
-    setStatus(t('scene.vmd.layerRemoved', { name: removed.name }), true);
+    showInfoToast(t('scene.vmd.layerRemoved', { name: removed.name }));
     triggerAutoSave();
 }
 
@@ -429,17 +431,17 @@ export async function replaceVmdLayerVmd(
 ): Promise<VmdLayer | null> {
     const targetId = targetModelId || focusedModelId;
     if (!targetId) {
-        setStatus(t('scene.vmd.noTargetModel'), false);
+        feedbackStatus('scene.vmd.noTargetModel', undefined, false);
         return null;
     }
     const inst = modelRegistry.get(targetId);
     if (!inst?.mmdModel) {
-        setStatus(t('scene.vmd.modelNoLayers'), false);
+        feedbackStatus('scene.vmd.modelNoLayers', undefined, false);
         return null;
     }
     const layer = inst.vmdLayers.find((l) => l.id === layerId);
     if (!layer) {
-        setStatus(t('scene.vmd.layerLoadFailed'), false);
+        feedbackStatus('scene.vmd.layerLoadFailed', undefined, false);
         return null;
     }
     try {
@@ -458,12 +460,12 @@ export async function replaceVmdLayerVmd(
         } else {
             await _rebuildCompositeAnimation(inst.id);
         }
-        setStatus(t('scene.vmd.layerAdded', { name: layer.name }), true);
+        showInfoToast(t('scene.vmd.layerAdded', { name: layer.name }));
         triggerAutoSave();
         return layer;
     } catch (err) {
         console.error('replaceVmdLayerVmd:', err);
-        setStatus(t('scene.vmd.layerLoadFailed'), false);
+        feedbackStatus('scene.vmd.layerLoadFailed', undefined, false);
         return null;
     }
 }
@@ -659,9 +661,8 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
 
                         inst.animationDuration = maxEndFrame / 30;
                         const compositeName = sources.map((s) => s.name).join(' + ');
-                        setStatus(
-                            t('scene.vmd.layersBlendedBlender', { names: compositeName }),
-                            true
+                        showInfoToast(
+                            t('scene.vmd.layersBlendedBlender', { names: compositeName })
                         );
                         triggerAutoSave();
                         return;
@@ -735,11 +736,11 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
         inst.animationDuration = maxEndFrame / 30;
         const compositeName = sources.map((s) => s.name).join(' + ');
 
-        setStatus(t('scene.vmd.layersBlended', { names: compositeName }), true);
+        showInfoToast(t('scene.vmd.layersBlended', { names: compositeName }));
         triggerAutoSave();
     } catch (err) {
         console.error('Motion Layers rebuild failed:', err);
-        setStatus(t('scene.vmd.blendFailed'), false);
+        feedbackStatus('scene.vmd.blendFailed', undefined, false);
     }
 }
 

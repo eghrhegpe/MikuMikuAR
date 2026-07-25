@@ -12,7 +12,6 @@ import {
     isPlaying,
     autoLoop,
     setIsPlaying,
-    setStatus,
     triggerAutoSave,
     addRecentMotion,
 } from '@/core/config';
@@ -21,6 +20,8 @@ import { logWarn } from '@/core/logger';
 import { encodeFileRef } from '@/core/fileservice';
 import { readFileBytes } from '@/core/wails-bindings';
 import { t } from '@/core/i18n/t';
+import { feedbackInfo, feedbackStatus } from '@/core/feedback';
+import { showInfoToast } from '@/core/toast';
 import { replaceDefaultMotion, getActiveMotion } from './motion-intent';
 import { loadCameraVmd } from '../camera/camera';
 import { loadAudioFile } from '@/outfit/audio';
@@ -64,7 +65,7 @@ export async function loadVMDMotion(
         throw new DOMException('Aborted', 'AbortError');
     }
     if (!isValidVmd(data)) {
-        setStatus(t('scene.vmd.loadFailed'), false);
+        feedbackStatus('scene.vmd.loadFailed', undefined, false);
         logWarn('vmd-loader', 'Invalid VMD signature, rejected:', name);
         return;
     }
@@ -80,17 +81,17 @@ export async function loadVMDMotion(
     }
     if (!mmdRuntime) {
         // [doc:adr-169] 运行时未就绪，不污染场景库；仅提示用户等待
-        setStatus(t('scene.vmd.cachedWaiting'), false);
+        feedbackStatus('scene.vmd.cachedWaiting', undefined, false);
         return;
     }
     const targetId = targetModelId || focusedModelId;
     if (!targetId) {
-        setStatus(t('scene.vmd.noTargetModel'), false);
+        feedbackStatus('scene.vmd.noTargetModel', undefined, false);
         return;
     }
     const inst = modelRegistry.get(targetId);
     if (!inst) {
-        setStatus(t('scene.vmd.targetNotFound'), false);
+        feedbackStatus('scene.vmd.targetNotFound', undefined, false);
         return;
     }
     const prevGen = _vmdLoadGenMap.get(targetId) ?? 0;
@@ -106,7 +107,7 @@ export async function loadVMDMotion(
         // 检查是否在 await 期间有新的 loadVMDMotion 调用（同模型），过期则丢弃
         if (_vmdLoadGenMap.get(targetId) !== capturedGen) {
             logWarn('vmd-loader', 'Stale loadVMDMotion result discarded:', name);
-            setStatus(t('scene.vmd.loadFailed'), false);
+            feedbackStatus('scene.vmd.loadFailed', undefined, false);
             return;
         }
 
@@ -136,7 +137,7 @@ export async function loadVMDMotion(
                     // Intentionally empty — 舞台模型动画句柄清理失败不影响后续流程
                 }
             }
-            setStatus(t('scene.vmd.stageNoVmd'), false);
+            feedbackStatus('scene.vmd.stageNoVmd', undefined, false);
             return;
         }
         // 释放旧动画句柄，防止切换 VMD 时 WASM 内存泄漏
@@ -187,11 +188,11 @@ export async function loadVMDMotion(
             await mmdRuntime.playAnimation();
             setIsPlaying(true);
         }
-        setStatus(t('scene.vmd.loaded', { name }), true);
+        showInfoToast(t('scene.vmd.loaded', { name }));
         triggerAutoSave();
     } catch (err) {
         console.error('VMD load failed:', err);
-        setStatus(t('scene.vmd.loadFailed'), false);
+        feedbackStatus('scene.vmd.loadFailed', undefined, false);
     }
 }
 
@@ -247,7 +248,7 @@ export async function loadVMDFromPath(
                     vmdLayers: [],
                     source: 'vmd',
                 });
-                setStatus(t('scene.vmd.cachedAutoApply'), false);
+                feedbackStatus('scene.vmd.cachedAutoApply', undefined, false);
             }
 
             // 记录最近使用动作
@@ -263,7 +264,7 @@ export async function loadVMDFromPath(
                 return;
             }
             console.error('loadVMDFromPath:', err);
-            setStatus(t('scene.vmd.loadFailed'), false);
+            feedbackStatus('scene.vmd.loadFailed', undefined, false);
         }
     });
 }
@@ -315,7 +316,7 @@ async function _tryLoadCompanionAudio(
 
         await loadAudioFile(audioPath);
         _companionAudioCache.add(basePath);
-        setStatus(t('scene.vmd.loadedWithAudio', { name: audioName }), true);
+        showInfoToast(t('scene.vmd.loadedWithAudio', { name: audioName }));
         // 确保播放栏可见
         const { updatePlaybackUI } = await import('./playback');
         updatePlaybackUI();
@@ -339,11 +340,11 @@ export async function loadCameraVmdFromPath(path: string, _signal?: AbortSignal)
             const mmdAnimation = await vmdLoader.loadFromBufferAsync(vmdName, vmdData);
             // VmdLoader 无实例状态需释放（解析结果已转移到 mmdAnimation），GC 自动回收
             loadCameraVmd(mmdAnimation, path, vmdName.replace(/\.vmd$/i, ''));
-            setStatus(t('scene.vmd.cameraLoaded', { name: vmdName }), true);
+            showInfoToast(t('scene.vmd.cameraLoaded', { name: vmdName }));
             triggerAutoSave();
         } catch (err) {
             console.error('loadCameraVmdFromPath:', err);
-            setStatus(t('scene.vmd.cameraLoadFailed'), false);
+            feedbackStatus('scene.vmd.cameraLoadFailed', undefined, false);
         }
     });
 }
@@ -375,7 +376,7 @@ export async function loadVPDPose(
             const pose = parseVPDText(text);
             const id = targetModelId || focusedModelId;
             if (!id) {
-                setStatus(t('scene.vmd.loadModelFirst'), true);
+                feedbackInfo('scene.vmd.loadModelFirst', undefined);
                 return;
             }
             applyVPDPose(id, pose.bones, pose.morphs);
@@ -384,10 +385,10 @@ export async function loadVPDPose(
             if (foc) {
                 foc.vmdPath = path; // 记录姿势文件路径
             }
-            setStatus(t('scene.vmd.poseLoaded', { name: poseName }), true);
+            showInfoToast(t('scene.vmd.poseLoaded', { name: poseName }));
         } catch (err) {
             console.error('loadVPDPose:', err);
-            setStatus(t('scene.vmd.poseFailed'), false);
+            feedbackStatus('scene.vmd.poseFailed', undefined, false);
         }
     });
 }

@@ -3,7 +3,9 @@
 // 职责: 抽离 actor/stage/prop 详情面板的公共区块（变换/材质/危险）
 // 现状: stage/prop 详情面板改为薄壳调用本模块；model-detail 因结构差异大保持现状
 
-import { cardContainer, setStatus, modelRegistry, propRegistry } from '../core/config';
+import { cardContainer, modelRegistry, propRegistry } from '../core/config';
+import { feedbackInfo, feedbackStatus } from '../core/feedback';
+import { showInfoToast } from '../core/toast';
 import { t } from '../core/i18n/t';
 import {
     slideRow,
@@ -136,10 +138,10 @@ export function buildTransformCard(container: HTMLElement, handle: ResourceHandl
                         detachGizmo();
                         _activeDragObs?.remove();
                         _activeDragObs = null;
-                        setStatus(t('scene.statusExitDrag'), true);
+                        feedbackInfo('scene.statusExitDrag', undefined);
                     } else {
                         attachGizmoForKind(kind, id);
-                        setStatus(t('scene.statusDragHint'), false);
+                        feedbackStatus('scene.statusDragHint', undefined, false);
                     }
                     render();
                 }
@@ -151,7 +153,7 @@ export function buildTransformCard(container: HTMLElement, handle: ResourceHandl
                 false,
                 () => {
                     resetModelTransform(id);
-                    setStatus(t('settings.transformReset', { kind: t('common.model') }), true);
+                    showInfoToast(t('settings.transformReset', { kind: t('common.model') }));
                 }
             );
 
@@ -255,11 +257,10 @@ export function buildDangerCard(
                 false,
                 () => {
                     resetModelTransform(id);
-                    setStatus(
+                    showInfoToast(
                         t('settings.transformReset', {
                             kind: kind === 'stage' ? t('common.stage') : t('common.model'),
-                        }),
-                        true
+                        })
                     );
                     onRemoved?.();
                 }
@@ -284,7 +285,7 @@ export function buildDangerCard(
                     removeModel(id);
                 }
                 onRemoved?.();
-                setStatus(t('settings.unloaded', { name }), true);
+                showInfoToast(t('settings.unloaded', { name }));
             }
         );
     });

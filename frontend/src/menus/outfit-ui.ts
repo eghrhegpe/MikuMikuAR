@@ -1,7 +1,8 @@
 // [doc:architecture] Outfit UI — 替换纹理子菜单
 // 职责: 替换纹理 UI 层级构建（从 model-detail.ts 提取）
 
-import { modelRegistry, cardContainer, PopupLevel, setStatus } from '../core/config';
+import { modelRegistry, cardContainer, PopupLevel } from '../core/config';
+import { feedbackInfo } from '../core/feedback';
 import type { OutfitFile } from '../core/config';
 import { loadOutfits, applyOutfitVariant, resetOutfit } from '../outfit/outfit';
 import { createIconifyIcon } from '../core/icons';
@@ -63,13 +64,13 @@ function buildOutfitSchema(id: string): MenuNode[] {
                                 if (!_loadingGuard.tryEnter()) {
                                     return;
                                 }
-                                setStatus(t('outfit.switching'), true);
+                                feedbackInfo('outfit.switching', undefined);
                                 const _r = await tryCatchStatus(
                                     () => applyOutfitVariant(id, '默认'),
                                     t('outfit.switchFailed')
                                 );
                                 if (_r !== undefined) {
-                                    setStatus(t('outfit.switched'), true);
+                                    feedbackInfo('outfit.switched', undefined);
                                 }
                                 _loadingGuard.leave();
                                 await _render();
@@ -100,13 +101,13 @@ function buildOutfitSchema(id: string): MenuNode[] {
                                     if (!_loadingGuard.tryEnter()) {
                                         return;
                                     }
-                                    setStatus(t('outfit.switching'), true);
+                                    feedbackInfo('outfit.switching', undefined);
                                     const _r = await tryCatchStatus(
                                         () => applyOutfitVariant(id, v.name),
                                         t('outfit.switchFailed')
                                     );
                                     if (_r !== undefined) {
-                                        setStatus(t('outfit.switched'), true);
+                                        feedbackInfo('outfit.switched', undefined);
                                     }
                                     _loadingGuard.leave();
                                     await _render();
@@ -134,12 +135,12 @@ function buildOutfitSchema(id: string): MenuNode[] {
                             if (!_loadingGuard.tryEnter()) {
                                 return;
                             }
-                            setStatus(t('outfit.resetting'), true);
+                            feedbackInfo('outfit.resetting', undefined);
                             const _r = await tryCatchStatus(async () => {
                                 await resetOutfit(id);
                             }, t('outfit.resetFailed'));
                             if (_r !== undefined) {
-                                setStatus(t('outfit.resetDone'), true);
+                                feedbackInfo('outfit.resetDone', undefined);
                             }
                             _loadingGuard.leave();
                             await _render();

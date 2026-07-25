@@ -2,7 +2,8 @@
 // 从 settings.ts 拆出，供各 settings-* 子模块引用。
 
 import { SetUIAccent } from '../core/wails-bindings';
-import { setStatus, UIState } from '../core/config';
+import { UIState } from '../core/config';
+import { showInfoToast } from '../core/toast';
 import { tryCatchStatus, clamp01 } from '../core/utils';
 import { hexToRgb, rgbToString } from '../core/color-helpers';
 import { t } from '../core/i18n/t';
@@ -110,7 +111,7 @@ export async function setTheme(
     root.style.setProperty('--text-dim', textColors.dim);
     root.style.setProperty('--text-muted', textColors.muted);
 
-    setStatus(t('settings.themeColorSet', { hex }), true);
+    showInfoToast(t('settings.themeColorSet', { hex }));
     getSettingsMenu()?.updateControls();
 }
 

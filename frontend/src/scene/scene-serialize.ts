@@ -17,7 +17,6 @@ import {
     modelRegistry,
     propRegistry,
     showErrorToast,
-    setStatus,
 } from '../core/config';
 import { showInfoToast } from '../core/toast';
 import { feedbackError, feedbackInfo } from '../core/feedback';
@@ -1375,7 +1374,7 @@ export function offerSceneUndoAndRefresh(
 ): void {
     offerSceneUndo(message, snap, () => {
         reRender();
-        setStatus(t('motion.undoApplied'), true);
+        feedbackInfo('motion.undoApplied', undefined);
     });
 }
 
