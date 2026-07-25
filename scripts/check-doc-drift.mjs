@@ -528,6 +528,18 @@ function main() {
   if (infoWarnings.length) {
     console.log('⚠ INFO 基线变更（仅参考，不阻断）:');
     infoWarnings.forEach((w) => console.log('   ⚠ ' + w));
+    // 显示具体新增未覆盖文件，让 AI/人知道变了什么
+    if (rev.total && rev.files?.length) {
+      console.log('   新增未覆盖源文件:');
+      for (const f of rev.files.slice(0, 20)) console.log('      ' + f);
+      if (rev.files.length > 20) console.log(`      ...及其他 ${rev.files.length - 20} 个`);
+    }
+    if (cov.undocumented && cov.undocumentedByDir) {
+      const parts = Object.entries(cov.undocumentedByDir)
+        .sort((a, b) => b[1] - a[1])
+        .map(([d, n]) => `${d}: ${n}`);
+      console.log('   符号覆盖率缺口按目录: ' + parts.join('，'));
+    }
     console.log('   更新基线: node scripts/check-doc-drift.mjs --baseline-update');
   }
 
