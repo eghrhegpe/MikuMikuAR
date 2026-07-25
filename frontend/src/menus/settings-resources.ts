@@ -409,7 +409,7 @@ function buildWatchSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
         {
             id: 'resources:watch',
             kind: 'custom',
-            visibleWhen: () => !isAndroidPlatform(),
+            visibleWhen: () => getCachedCapabilities().watchDir,
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
                     addSectionTitle(inner, t('settings.paths.downloadWatch'));

@@ -30,7 +30,7 @@ export const goAdapter: BackendService = {
         externalApps: true,
         plazaWindow: true,
         fsAccess: false, // 原生对话框，非 FSA
-        watchDir: true,
+        watchDir: !isAndroidPlatform(), // 桌面应用可监听目录；安卓应用 WebView 无此能力（与历史 !isAndroidPlatform() 门控一致）
         proxyServer: true,
         fileServer: true,
         systemDirOpen: true,
