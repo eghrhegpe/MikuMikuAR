@@ -30,7 +30,7 @@ export function openDB(): Promise<IDBDatabase> {
         const req = indexedDB.open(DB_NAME, DB_VERSION);
         req.onupgradeneeded = (event) => {
             // [doc:adr-177] Phase 4 IndexedDB 迁移框架
-            // v1：旧 web-loader 与新主应用共享同一 schema，键规约一致（file:<name>），无需迁移。
+            // v1：历史 web-loader（已删除）与主应用共享同一 schema，键规约一致（file:<name>），无需迁移。
             // 未来 schema 变更在此追加 if (oldVersion < N) { ... } 分支。
             const db = req.result;
             const oldVersion = event.oldVersion;
@@ -95,7 +95,7 @@ export function closeIDB(): void {
     }
 }
 
-// ── 模型库（web-loader 与 drop-import 共享） ──────────────────
+// ── 模型库（browser-adapter 与 drop-import 共享） ──────────────────
 
 export interface WebModelEntry {
     /** 库内唯一名（去扩展名的文件名） */
@@ -111,6 +111,7 @@ export interface WebModelEntry {
 
 const _entryKey = (name: string): string => `entry:${name}`;
 const _fileKey = (name: string): string => `file:${name}`;
+// 历史键名（源自已删除的 web-loader），改值会丢用户已存的「上次模型」记录 — 保持不变
 const _LAST_MODEL_KEY = 'web-loader.lastModel';
 
 /** 存入模型库（同名覆盖）。返回写入的元数据。 */

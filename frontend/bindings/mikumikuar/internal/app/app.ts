@@ -1083,7 +1083,8 @@ export function StopFileServer(dirPath: string): $CancellablePromise<void> {
 /**
  * StopProxy shuts down the model-plaza reverse proxy started by StartProxy.
  * It is idempotent: calling it when no proxy is running is a no-op.
- * Also clears the cookie jar (ADR-077).
+ * Also marks the session obsolete so in-flight downloads abort and clean up
+ * their partial files, and clears the cookie jar (ADR-077).
  */
 export function StopProxy(): $CancellablePromise<void> {
     return $Call.ByID(1345891689);

@@ -71,7 +71,7 @@ export async function handleDropFile(path: string, zipBytes?: Uint8Array): Promi
  * [doc:adr-177] 单个拖入文件落地：桌面走原生 path，浏览器读字节写 IndexedDB。
  *
  * 浏览器侧 File 对象无 path 属性（Wails desktop 才注入），故读 file.arrayBuffer()
- * 写入 models store 的 file:<name>；pmx/zip 额外写 entry:<name> 让 web-loader
+ * 写入 models store 的 file:<name>；pmx/zip 额外写 entry:<name> 让 browser-adapter
  * 模型库可见，vmd 不进模型库（动作文件非库条目）。
  */
 export async function handleDroppedFile(file: File): Promise<void> {

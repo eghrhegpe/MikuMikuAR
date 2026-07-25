@@ -26,7 +26,7 @@ vi.mock('./idb', () => ({
     closeIDB: () => {},
 }));
 
-import { browserAdapter, getFsaAuthState, isFsaAuthPromptDismissed, dismissFsaAuthPrompt } from './browser-adapter';
+import { browserAdapter, getFsaAuthState, isFsaAuthPromptDismissed, dismissFsaAuthPrompt, reauthorizeFsaRoot } from './browser-adapter';
 
 function setStore(store: string, entries: Record<string, unknown>): void {
     mem.set(store, new Map(Object.entries(entries)));
@@ -197,5 +197,45 @@ describe('fsaAuthPrompt dismissed 标志（adr-177 跳过不再弹）', () => {
         expect(await isFsaAuthPromptDismissed()).toBe(false);
         await dismissFsaAuthPrompt();
         expect(await isFsaAuthPromptDismissed()).toBe(true);
+    });
+});
+
+// ======== reauthorizeFsaRoot：对已有句柄重新授权（不重选目录） ========
+describe('reauthorizeFsaRoot', () => {
+    beforeEach(() => {
+        mem.clear();
+    });
+
+    it('无持久化句柄 → 返回 false（不弹权限）', async () => {
+        expect(await reauthorizeFsaRoot()).toBe(false);
+    });
+
+    it('句柄存在且 requestPermission 返回 granted → 返回 true', async () => {
+        const handle = {
+            name: 'models',
+            queryPermission: async () => 'granted' as PermissionState,
+            requestPermission: async () => 'granted' as PermissionState,
+        } as unknown as FileSystemDirectoryHandle;
+        setStore('config', { fsaRootHandle: handle });
+        expect(await reauthorizeFsaRoot()).toBe(true);
+    });
+
+    it('requestPermission 返回 prompt（用户拒绝）→ 返回 false', async () => {
+        const handle = {
+            name: 'models',
+            queryPermission: async () => 'granted' as PermissionState,
+            requestPermission: async () => 'prompt' as PermissionState,
+        } as unknown as FileSystemDirectoryHandle;
+        setStore('config', { fsaRootHandle: handle });
+        expect(await reauthorizeFsaRoot()).toBe(false);
+    });
+
+    it('句柄无 requestPermission 方法 → 返回 false（不抛错）', async () => {
+        const handle = {
+            name: 'models',
+            queryPermission: async () => 'granted' as PermissionState,
+        } as unknown as FileSystemDirectoryHandle;
+        setStore('config', { fsaRootHandle: handle });
+        expect(await reauthorizeFsaRoot()).toBe(false);
     });
 });
