@@ -67,8 +67,15 @@ export function feedbackInfo(actionKey: string, target: string | undefined): voi
  *   feedbackStatus('library.modelLoadFailed', 'model.pmx')            // 目标名，红色
  *   feedbackStatus('library.modelLoaded', 'model.pmx', true)          // 显式成功
  */
-export function feedbackStatus(statusKey: string, target?: string, explicitOk?: boolean): void {
-    const baseText = t(statusKey);
+export function feedbackStatus(
+    statusKey: string,
+    target?: string,
+    explicitOk?: boolean,
+    params?: Record<string, string | number>
+): void {
+    // params 用于带占位符的 i18n key（如 'scene.vmd.loaded' = '✓ VMD: {name}'），
+    // 此时 target 应为 undefined，避免与占位符替换叠加产生无分隔符拼接。
+    const baseText = params ? t(statusKey, params) : t(statusKey);
     const fullText = target ? `${baseText}${target}` : baseText;
     const ok = explicitOk ?? !baseText.startsWith('\u2717'); // ✗ = 失败
     setStatus(fullText, ok);

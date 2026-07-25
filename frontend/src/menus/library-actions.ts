@@ -60,7 +60,7 @@ import {
     resolveDisplayBrowseDir,
 } from './library-core';
 import { librarySessionStore } from './library-session-store';
-import { feedbackStatus, feedbackError, feedbackInfo } from '../core/feedback';
+import { feedbackStatus, feedbackError } from '../core/feedback';
 
 // ======== 模块级状态 ========
 // [doc:adr-135] 加载守卫状态已迁入 LibrarySessionStore 单例。
@@ -272,10 +272,12 @@ function startReplaceModel(m: LibraryModel, replaceId: string): void {
                             { mode: 'jumpToDir', modelId: handle.id }
                         )
                     );
-                    feedbackInfo('status.done', getBaseName(m.file_path));
+                    // [doc:adr-feedback] 最终态已由 offerSceneUndoAndRefresh 给出带撤销的 toast，
+                    // 这里不再补一条 "完成" toast，避免重复反馈。
                 } catch (uiErr) {
                     logWarn('library-actions', 'replace UI navigation failed', uiErr);
-                    feedbackInfo('status.done', getBaseName(m.file_path));
+                    // UI 导航失败但模型已加载成功，走状态栏兜底（不弹 toast，避免与"模型已替换"叠加）
+                    feedbackStatus('status.done', getBaseName(m.file_path));
                 }
             })
             .catch((err) => {
@@ -295,7 +297,8 @@ function startReplaceModel(m: LibraryModel, replaceId: string): void {
         librarySessionStore.setExtracting(m.file_path);
         ExtractZip(m.file_path, m.zip_inner)
             .then((result) => {
-                feedbackInfo(
+                // [doc:adr-feedback] 中间步骤走状态栏，避免与后续"模型已替换"toast 叠加
+                feedbackStatus(
                     result.cached ? 'library.cacheHit' : 'library.extracted',
                     getBaseName(m.file_path)
                 );
@@ -333,7 +336,8 @@ function loadModelNormal(m: LibraryModel, isStage: boolean): void {
         librarySessionStore.setExtracting(m.file_path);
         ExtractZip(m.file_path, m.zip_inner)
             .then((result) => {
-                feedbackInfo(
+                // [doc:adr-feedback] 中间步骤走状态栏，避免与后续 VMD/模型加载 toast 叠加
+                feedbackStatus(
                     result.cached ? 'library.cacheHit' : 'library.extracted',
                     getBaseName(m.file_path)
                 );

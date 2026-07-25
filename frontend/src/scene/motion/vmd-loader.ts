@@ -188,7 +188,9 @@ export async function loadVMDMotion(
             await mmdRuntime.playAnimation();
             setIsPlaying(true);
         }
-        showInfoToast(t('scene.vmd.loaded', { name }));
+        // [doc:adr-feedback] VMD 加载是中间步骤，走状态栏；若为模型替换流程的伴音 VMD，
+        // 后续 loadCompanionAudio 完成时仍由状态栏汇总反馈，避免与"模型已替换"toast 叠加。
+        feedbackStatus('scene.vmd.loaded', undefined, undefined, { name });
         triggerAutoSave();
     } catch (err) {
         console.error('VMD load failed:', err);
@@ -316,7 +318,8 @@ async function _tryLoadCompanionAudio(
 
         await loadAudioFile(audioPath);
         _companionAudioCache.add(basePath);
-        showInfoToast(t('scene.vmd.loadedWithAudio', { name: audioName }));
+        // [doc:adr-feedback] 伴音加载是中间步骤，走状态栏；模型替换的最终态由"模型已替换"toast 承担。
+        feedbackStatus('scene.vmd.loadedWithAudio', undefined, undefined, { name: audioName });
         // 确保播放栏可见
         const { updatePlaybackUI } = await import('./playback');
         updatePlaybackUI();
