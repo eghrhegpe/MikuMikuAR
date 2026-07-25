@@ -93,6 +93,9 @@ if (!slowOnly) {
     SECTION.fast("代码质量基线");
     runFrontend("死代码基线", "deadcode:baseline") && passed++;
 
+    SECTION.fast("安全扫描");
+    runFrontend("npm audit", "audit") && passed++;
+
     SECTION.fast("文档漂移");
     runTask("文档检查", "check-doc-drift.mjs") && passed++;
 }
