@@ -30,7 +30,7 @@ Wails 原生      桌面应用 (go)          安卓应用 (go)        ← go-ada
 | `externalApps` | ✅ | ❌ | ❌ | Blender/MMD 等外部程序（guardExternalAction 同挡安卓+Web） |
 | `plazaWindow` | ✅ | ✅ | ❌ | 模型广场窗口控制 |
 | `fsAccess` | ❌ | ❌ | 🔍 | File System Access API（showDirectoryPicker） |
-| `watchDir` | ✅ | ✅ | ❌ | 目录监听 |
+| `watchDir` | ✅ | ❌ | ❌ | 目录监听（安卓应用 WebView 无此能力，与历史 `!isAndroidPlatform()` 门控一致；go-adapter 现按 `!isAndroidPlatform()` 自报） |
 | `proxyServer` | ✅ | ✅ | ❌ | 代理服务 |
 | `fileServer` | ✅ | ✅ | ❌ | 静态文件服务（注：A0-01 后模型走 Blob URL，不再依赖 127.0.0.1） |
 | `systemDirOpen` | ✅ | ✅ | ❌ | 系统文件管理器打开 |
@@ -49,6 +49,7 @@ Wails 原生      桌面应用 (go)          安卓应用 (go)        ← go-ada
 | `arScope` | `none` | `android-app` | 🔍(`webxr`/`none`) | AR 原生路由作用域：无 / 安卓应用 ARCore / 网页 WebXR（按 `navigator.xr` 检测；当前无 UI 消费） |
 
 > ⚠️ `crossOriginIsolated` 在 go-adapter 中**必须读 `window.crossOriginIsolated` 运行时**，不得硬编码 true——否则安卓应用误报可开 MPR（ADR-133 根因重现）。
+> ⚠️ `watchDir` 在 go-adapter 中**必须按 `!isAndroidPlatform()` 自报**，不得硬编码 true——否则安卓应用误报可监听目录（与历史 `!isAndroidPlatform()` 门控一致，ADR-178 Phase 2 修正）。
 
 ## 三、四端差异要点（TL;DR）
 

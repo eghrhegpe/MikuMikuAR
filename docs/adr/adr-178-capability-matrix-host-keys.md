@@ -1,6 +1,6 @@
 # ADR-178: 能力矩阵补全宿主级键（四端统一收口）
 
-> **状态**: 实施中（Phase 1 已落地 2026-07-24；Phase 2 分析完成 2026-07-25——virtual-skirt.ts/fileservice.ts 已迁移至能力层，settings-resources.ts:412 待迁移至 watchDir，其余 5 处判定为平台特有逻辑保留不动；Phase 3 待排期）
+> **状态**: 实施中（Phase 1 已落地 2026-07-24；Phase 2 已落地 2026-07-25——virtual-skirt.ts/fileservice.ts/settings-resources.ts:412 三处已迁移至能力层，其中 settings-resources.ts:412 配套修正 go-adapter `watchDir` 改为 `!isAndroidPlatform()` 自报（修复 ADR 草案宿主盲点）；其余 5 处判定为平台特有逻辑保留不动；Phase 3 待排期）
 > **日期**: 2026-07-24
 > **关联**: ADR-176（前端 Backend 适配器双实现）、ADR-177（Web Loader 与主应用统一路径）、ADR-017（安卓适配，platform 探测范式）、ADR-133（安卓 MPR 物理缺口）、ADR-093（声明式菜单 Schema）
 > **前置**: ADR-176/177 已落地（`BackendService` 双适配器 + `getCapabilities()`/`getCachedCapabilities()` 能力缓存）
@@ -120,7 +120,7 @@ import { isAndroidPlatform } from '../platform';
     - `library-setup.ts:138` — **保留**（`switchStorageMode` 仅安卓有 private/shared 存储概念，桌面无此区分）
     - `settings-appearance.ts:476` — **保留**（屏幕常亮 `setKeepAwake` 是安卓桥函数，桌面无此功能）
     - `settings-resources.ts:162` — **保留**（`buildStorageSchema` 中安卓用 `GetStorageMode`+自定义渲染，非安卓用 `SelectDir` 路径选择器，属平台特有 UI 差异）
-    - `settings-resources.ts:412` — **待迁移至 `getCachedCapabilities().watchDir`**（下载监听 `visibleWhen` 门控，`watchDir` 能力键已存在于 `BackendCapabilities`，可直接替换）
+    - `settings-resources.ts:412` — ✅ **已迁移至 `getCachedCapabilities().watchDir`**（2026-07-25）。配套修正：go-adapter 原 `watchDir: true` 硬编码对桌面/安卓应用统一返回 true，导致安卓应用误报可监听目录；改为 `watchDir: !isAndroidPlatform()` 自报，使下载监听卡片在安卓应用继续正确隐藏。此为 ADR 草案迁移判断的宿主盲点修正。
     - `plaza-browser.ts:695` — **保留**（打开模式选项差异：安卓仅"系统浏览器"，桌面有"内嵌页"+"独立窗口"；`plazaWindow` 能力已独立表达，此处属布局差异）
     - `init.ts:328` — **保留**（默认性能模式：安卓 `balanced`，桌面 `auto`，属平台默认配置策略）
     - `init.ts:464` — **保留**（`checkAndroidStoragePermission` 安卓存储权限弹窗，仅安卓需要）
@@ -146,8 +146,9 @@ import { isAndroidPlatform } from '../platform';
 - **验证**：`tsc --noEmit` 全项目 **0 错误**；`backend.test.ts` **57/57 通过**；契约 139 函数不受影响。
 - **审核修正已采纳**：`ar` 键语义非"原生独占"（草案误判），保持 `true`；真正不一致在文档，已在 `targets.md` + 本 ADR 纠正。
 - **进度（2026-07-25）**：
-  - Phase 2 已迁移 2/8 处：`virtual-skirt.ts`（`crossOriginIsolated`）、`fileservice.ts`（`crossOriginIsolated`）
-  - Phase 2 判定完成 6 处：5 处保留（平台特有逻辑），1 处待迁移（`settings-resources.ts:412` → `watchDir`）
+  - Phase 2 已迁移 3/8 处：`virtual-skirt.ts`（`crossOriginIsolated`）、`fileservice.ts`（`crossOriginIsolated`）、`settings-resources.ts:412`（`watchDir`，配套修正 go-adapter `watchDir: !isAndroidPlatform()` 自报以修复宿主盲点）
+  - Phase 2 判定完成 5 处：均保留（平台特有逻辑：library-setup.ts:96/119/138、settings-appearance.ts:476、plaza-browser.ts:695、init.ts:328/464、settings-resources.ts:162）
+  - Phase 2 结论：**散落 `isAndroidPlatform()` 中与"能力"相关的已全部收口至能力层；其余属平台特有 UI/权限逻辑，明文裁定保留**
   - Phase 3（CI 四端矩阵）未启动
 
 ## 测试
