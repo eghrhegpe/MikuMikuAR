@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 69 | 540 |
-| 3D 场景 | 94 | 999 |
+| 3D 场景 | 94 | 1002 |
 | 菜单 & UI | 65 | 301 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 123 |
@@ -33,9 +33,9 @@
 | `FsaAuthState()` | `core/backend/browser-adapter` | — |
 | `browserAdapter()` | `core/backend/browser-adapter` | — |
 | `dismissFsaAuthPrompt()` | `core/backend/browser-adapter` | — |
-| `getFsaAuthState()` | `core/backend/browser-adapter` | [doc:adr-177] 查询 FSA 根目录授权状态，供 UI 启动引导（不触发任何权限弹窗）。 |
-| `isFsaAuthPromptDismissed()` | `core/backend/browser-adapter` | [doc:adr-177] 用户跳过启动授权引导后写入「已跳过」标志，避免纯导入用户每次启动被弹窗骚扰。 |
-| `reauthorizeFsaRoot()` | `core/backend/browser-adapter` | [doc:adr-180] 对持久化的 FSA 句柄重新请求授权（不重选目录）。 |
+| `getFsaAuthState()` | `core/backend/browser-adapter` | [doc:adr-183] 查询 FSA 根目录授权状态，供 UI 启动引导（不触发任何权限弹窗）。 |
+| `isFsaAuthPromptDismissed()` | `core/backend/browser-adapter` | [doc:adr-183] 用户跳过启动授权引导后写入「已跳过」标志，避免纯导入用户每次启动被弹窗骚扰。 |
+| `reauthorizeFsaRoot()` | `core/backend/browser-adapter` | [doc:adr-183] 对持久化的 FSA 句柄重新请求授权（不重选目录）。 |
 | `goAdapter()` | `core/backend/go-adapter` | — |
 | `STORES()` | `core/backend/idb` | — |
 | `Store()` | `core/backend/idb` | — |
@@ -1323,8 +1323,11 @@
 | `detachPersonalLight()` | `scene/render/lighting-follow` | — |
 | `disposeAllPersonalLights()` | `scene/render/lighting-follow` | — |
 | `getAllPersonalLights()` | `scene/render/lighting-follow` | 导出所有个人灯状态（仅非默认值差异落盘由调用方决定） |
+| `getPersonalLightDefault()` | `scene/render/lighting-follow` | 获取用户保存的个人灯默认值，无则返回 null。 |
 | `getPersonalLightState()` | `scene/render/lighting-follow` | — |
+| `resetPersonalLightDefault()` | `scene/render/lighting-follow` | 重置用户默认值回出厂硬编码值。 |
 | `restorePersonalLights()` | `scene/render/lighting-follow` | 场景反序列化后，按 modelId 恢复个人灯设置（attach 已由 onModelLoaded 触发，此处仅覆盖参数） |
+| `setPersonalLightDefault()` | `scene/render/lighting-follow` | 将当前个人灯参数保存为用户默认值。 |
 | `setPersonalLightState()` | `scene/render/lighting-follow` | — |
 | `tickPersonalLights()` | `scene/render/lighting-follow` | — |
 | `tickStageLightFollow()` | `scene/render/lighting-follow` | 舞台灯追光 tick：更新所有绑定了 followTarget 的舞台灯 |
@@ -2055,5 +2058,5 @@
 
 ---
 
-> 共 250 个文件，2009 个导出符号。
+> 共 250 个文件，2012 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。
