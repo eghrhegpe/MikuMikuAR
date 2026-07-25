@@ -382,6 +382,14 @@ export async function loadPMXFile(
         }
         loadedMeshes = result.meshes.filter((m) => m instanceof Mesh) as Mesh[];
 
+        // [fix:gpu-texture-leak] 释放纹理文件引用，让 GC 尽早回收 ArrayBuffer（可达数百 MB）。
+        // textureFiles 在闭包中存活直到 loadPMXFile 返回；后续 VMD 加载 + 缩略图渲染耗时较长，
+        // 尽早释放引用可让 GC 在异步间隙回收 RAM，避免多模型加载/替换时内存峰值叠加。
+        for (let i = 0; i < textureFiles.length; i++) {
+            (textureFiles[i] as { data: ArrayBuffer | null }).data = null;
+        }
+        textureFiles.length = 0;
+
         dom.loadingEl.style.display = 'none';
 
         const meshes = loadedMeshes;
