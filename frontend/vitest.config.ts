@@ -35,12 +35,13 @@ export default defineConfig({
                 "src/wailsjs/**",
             ],
             thresholds: {
-                // 基线 31.87/24.75/27.55/31.94（2026-07-24，6 个测试文件因 mock 问题排除）
-                // 逐步上调防止回退
-                lines: 31,
-                branches: 24,
-                functions: 27,
-                statements: 31,
+                // 诚实基线 35.59/28.37/30.91/35.51（2026-07-25；6 个测试文件已恢复计入覆盖率）
+                // 旧基线 31.87/24.75/27.55/31.94 因排除 223 用例失真，已作废。
+                // 该阈值仅防止「整体覆盖率回退」，不保护「新代码有测试」——新代码保护见 scripts/check-diff-coverage.mjs（P8-A）。
+                lines: 35,
+                branches: 28,
+                functions: 30,
+                statements: 35,
             },
         },
     },

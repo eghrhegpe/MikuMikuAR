@@ -56,6 +56,12 @@ tasks:
       - cmd: node scripts/check-doc-drift.mjs
         silent: true
 
+  diff-coverage:
+    summary: P8-A diff-coverage 门禁（改动源码 <60% 行覆盖率即阻塞）
+    cmds:
+      - cmd: cd frontend && npm run test:diff-coverage
+        silent: true
+
   setup:docker:
     summary: Builds Docker image for cross-compilation (~800MB download)
     cmds:

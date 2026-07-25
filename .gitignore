@@ -40,6 +40,11 @@ reasonix.toml
 
 # Test coverage output
 coverage/
+# Coverage ad-hoc 残留（跑覆盖率时的临时产物）
+coverage-fresh/
+coverage-tmp/
+coverage-run.log
+vitest.coverage.tmp.config.ts
 
 # Binary / executable artifacts
 *.exe

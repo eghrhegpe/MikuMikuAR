@@ -7,20 +7,20 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // ---- Module Mocks (hoisted by vitest before all imports) ----
 
-vi.mock('@babylonjs/core/scene', () => {
-    const m = require('./mocks/babylon-classes.ts');
+vi.mock('@babylonjs/core/scene', async () => {
+    const m = await vi.importActual('./mocks/babylon-classes.ts');
     return { Scene: m.MockScene };
 });
 
-vi.mock('@babylonjs/core/Meshes/mesh', () => {
-    const m = require('./mocks/babylon-classes.ts');
+vi.mock('@babylonjs/core/Meshes/mesh', async () => {
+    const m = await vi.importActual('./mocks/babylon-classes.ts');
     const MeshCls = m.MockMesh;
     MeshCls.MergeMeshes = vi.fn(() => null);
     return { Mesh: MeshCls };
 });
 
-vi.mock('@babylonjs/core/Meshes/meshBuilder', () => {
-    const m = require('./mocks/babylon-classes.ts');
+vi.mock('@babylonjs/core/Meshes/meshBuilder', async () => {
+    const m = await vi.importActual('./mocks/babylon-classes.ts');
     const MockMeshCls = m.MockMesh;
     return {
         MeshBuilder: {
@@ -62,8 +62,8 @@ vi.mock('@babylonjs/core/Misc/observable', () => ({
     Observer: class {},
 }));
 
-vi.mock('@babylonjs/core/Maths/math.vector', () => {
-    const m = require('./mocks/babylon-classes.ts');
+vi.mock('@babylonjs/core/Maths/math.vector', async () => {
+    const m = await vi.importActual('./mocks/babylon-classes.ts');
     const V3 = m.MockVector3;
     V3.prototype.minimizeInPlace = function (v) {
         this.x = Math.min(this.x, v.x);
@@ -83,13 +83,13 @@ vi.mock('@babylonjs/core/Maths/math.vector', () => {
     return { Vector3: V3, Quaternion: m.MockQuaternion, Matrix: m.MockMatrix };
 });
 
-vi.mock('@babylonjs/core/Maths/math.color', () => {
-    const m = require('./mocks/babylon-classes.ts');
+vi.mock('@babylonjs/core/Maths/math.color', async () => {
+    const m = await vi.importActual('./mocks/babylon-classes.ts');
     return { Color3: m.MockColor3 };
 });
 
-vi.mock('@babylonjs/core/Materials/standardMaterial', () => {
-    const m = require('./mocks/babylon-classes.ts');
+vi.mock('@babylonjs/core/Materials/standardMaterial', async () => {
+    const m = await vi.importActual('./mocks/babylon-classes.ts');
     return { StandardMaterial: m.MockStandardMaterial };
 });
 
