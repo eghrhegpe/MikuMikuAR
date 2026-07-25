@@ -107,4 +107,3 @@ function _dispose(): void {
     }
     _overlayEl = null;
 }
-

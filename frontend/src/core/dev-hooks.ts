@@ -5,6 +5,7 @@
 // layer's hot import graph.
 import { scene, engine, focusedModel } from '../scene/scene';
 import { loadOutfits, applyOutfitVariant } from '../outfit/outfit';
+import { logInfo } from './logger';
 
 export function setupE2ECapture(): void {
     // [doc:e2e] 生产构建下默认不注入 E2E 钩子（DEV 为 false），
@@ -24,8 +25,11 @@ export function setupE2ECapture(): void {
                 console.warn('[__dumpBones] 无可用模型或骨骼未初始化');
                 return null;
             }
-            console.log(`[__dumpBones] 导出完成：${dump.totalBones} 根骨骼，${dump.totalOverridden} 根被覆盖`);
-            console.log('[__dumpBones] 返回值已复制到剪贴板（如可用）');
+            logInfo(
+                '__dumpBones',
+                `导出完成：${dump.totalBones} 根骨骼，${dump.totalOverridden} 根被覆盖`
+            );
+            logInfo('__dumpBones', '返回值已复制到剪贴板（如可用）');
             // 尝试复制到剪贴板
             try {
                 const json = JSON.stringify(dump, null, 2);

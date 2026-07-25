@@ -23,6 +23,7 @@ import { readFileBytes } from '@/core/wails-bindings';
 import { getBaseName, clamp01 } from '@/core/utils';
 import { logWarn } from '@/core/logger';
 import { t } from '@/core/i18n/t';
+import { translateGoError } from '@/core/i18n/goerr';
 import Encoding from 'encoding-japanese';
 
 function getScene() {
@@ -672,7 +673,7 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
                         // P3-fix: 明确告知用户多图层混合失败已降级，而非静默回退
                         setStatus(
                             t('scene.vmd.layersBlendFailedFallback', {
-                                reason: err instanceof Error ? err.message : String(err),
+                                reason: err instanceof Error ? translateGoError(err) : String(err),
                             }),
                             false
                         );

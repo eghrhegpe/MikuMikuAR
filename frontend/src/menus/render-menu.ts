@@ -294,10 +294,7 @@ function renderSectionTitle(node: MenuNode, container: HTMLElement): void {
  * @param labelKey 标题 i18n key
  * @param schemaBuilder schema 构建函数（每次调用返回新节点，含 t() 求值）
  */
-export function buildSchemaLevel(
-    labelKey: string,
-    schemaBuilder: () => MenuNode[]
-): PopupLevel {
+export function buildSchemaLevel(labelKey: string, schemaBuilder: () => MenuNode[]): PopupLevel {
     const containerRef: HTMLElement[] = [];
     return {
         label: t(labelKey),

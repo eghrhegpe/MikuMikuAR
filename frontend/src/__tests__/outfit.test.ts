@@ -45,10 +45,13 @@ vi.mock('@babylonjs/core/Cameras/camera', async () => {
     return { Camera: m.MockCamera };
 });
 
-vi.mock('@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline', async () => {
-    const m = await vi.importActual('./mocks/babylon-classes.ts');
-    return { DefaultRenderingPipeline: m.MockDefaultRenderingPipeline };
-});
+vi.mock(
+    '@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline',
+    async () => {
+        const m = await vi.importActual('./mocks/babylon-classes.ts');
+        return { DefaultRenderingPipeline: m.MockDefaultRenderingPipeline };
+    }
+);
 
 vi.mock('babylon-mmd/esm/Runtime/mmdCamera', async () => {
     const m = await vi.importActual('./mocks/babylon-mmd-mocks.ts');

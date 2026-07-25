@@ -5,10 +5,19 @@
 // 帧管线顺序: 帧钩子(order=0) 先写偏移 → feet-adjustment(order=5) 再修正位置+重解 IK。
 
 import type { ParamValue } from '@/core/types';
-import { setBoneOverride, setBoneOverridePosition, registerBoneOverrideFrameHook } from '../bone-override';
+import {
+    setBoneOverride,
+    setBoneOverridePosition,
+    registerBoneOverrideFrameHook,
+} from '../bone-override';
 import { getModuleState } from './registry';
 import type { MotionOverrideModule, ModuleMeta, ModuleDef } from './types';
-import { createModuleBase, createModuleShell, prepareBake, createFrameHookManager } from './module-base';
+import {
+    createModuleBase,
+    createModuleShell,
+    prepareBake,
+    createFrameHookManager,
+} from './module-base';
 
 // ── 共享帧钩子管理器（左右脚共用一个 Map，按 modelId 注册一次）──
 

@@ -218,18 +218,18 @@
     },
     {
       "firstFile": {
-        "end": 52,
+        "end": 61,
         "endLoc": {
           "column": 14,
-          "line": 52,
-          "position": 1982
+          "line": 61,
+          "position": 2012
         },
         "name": "scene\\motion\\motion-modules\\foot-modules.ts",
-        "start": 37,
+        "start": 46,
         "startLoc": {
           "column": 23,
-          "line": 37,
-          "position": 1553
+          "line": 46,
+          "position": 1583
         }
       },
       "format": "typescript",
@@ -251,6 +251,42 @@
         }
       },
       "tokens": 67
+    },
+    {
+      "firstFile": {
+        "end": 391,
+        "endLoc": {
+          "column": 13,
+          "line": 391,
+          "position": 14777
+        },
+        "name": "scene\\motion\\motion-modules\\hand-modules.ts",
+        "start": 376,
+        "startLoc": {
+          "column": 51,
+          "line": 376,
+          "position": 14434
+        }
+      },
+      "format": "typescript",
+      "fragment": "",
+      "lines": 16,
+      "secondFile": {
+        "end": 419,
+        "endLoc": {
+          "column": 13,
+          "line": 419,
+          "position": 15473
+        },
+        "name": "scene\\motion\\motion-modules\\hand-modules.ts",
+        "start": 404,
+        "startLoc": {
+          "column": 52,
+          "line": 404,
+          "position": 15130
+        }
+      },
+      "tokens": 55
     },
     {
       "firstFile": {
@@ -362,7 +398,7 @@
     }
   ],
   "statistics": {
-    "detectionDate": "2026-07-25T09:24:37.843Z",
+    "detectionDate": "2026-07-25T09:37:35.862Z",
     "formats": {
       "css": {
         "clones": 0,
@@ -389,29 +425,29 @@
         "tokens": 1512
       },
       "typescript": {
-        "clones": 10,
-        "duplicatedLines": 193,
-        "duplicatedTokens": 941,
-        "lines": 37452,
+        "clones": 11,
+        "duplicatedLines": 208,
+        "duplicatedTokens": 996,
+        "lines": 37478,
         "newClones": 0,
         "newDuplicatedLines": 0,
-        "percentage": 0.5153262843105842,
-        "percentageTokens": 0.5170443306446295,
+        "percentage": 0.5549922621271145,
+        "percentageTokens": 0.547231699879675,
         "sources": 195,
-        "tokens": 181996
+        "tokens": 182007
       }
     },
     "total": {
-      "clones": 10,
-      "duplicatedLines": 193,
-      "duplicatedTokens": 941,
-      "lines": 37785,
+      "clones": 11,
+      "duplicatedLines": 208,
+      "duplicatedTokens": 996,
+      "lines": 37811,
       "newClones": 0,
       "newDuplicatedLines": 0,
-      "percentage": 0.5107847029244409,
-      "percentageTokens": 0.5080636888339372,
+      "percentage": 0.550104466954061,
+      "percentageTokens": 0.5377272923595214,
       "sources": 197,
-      "tokens": 185213
+      "tokens": 185224
     }
   }
 }

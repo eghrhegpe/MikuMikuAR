@@ -834,9 +834,9 @@ export class ModelManager {
                 both: new StandardMaterial('bone_ov_both', this.scene),
             };
             this._ovMaterials.default.diffuseColor = new Color3(1, 1, 1);
-            this._ovMaterials.rotation.diffuseColor = new Color3(1, 0.2, 0.2);   // 红 — 旋转覆盖
-            this._ovMaterials.position.diffuseColor = new Color3(0.2, 0.5, 1);   // 蓝 — 位置覆盖
-            this._ovMaterials.both.diffuseColor = new Color3(1, 0.3, 1);         // 紫 — 旋转 + 位置
+            this._ovMaterials.rotation.diffuseColor = new Color3(1, 0.2, 0.2); // 红 — 旋转覆盖
+            this._ovMaterials.position.diffuseColor = new Color3(0.2, 0.5, 1); // 蓝 — 位置覆盖
+            this._ovMaterials.both.diffuseColor = new Color3(1, 0.3, 1); // 紫 — 旋转 + 位置
         }
         const ovMat = this._ovMaterials;
 
@@ -936,10 +936,13 @@ export class ModelManager {
                 }
 
                 // [doc:bone-override] 覆盖线段着色
-                const ovLineColors: Record<NonNullable<ReturnType<typeof getOverrideType>>, Color3> = {
-                    rotation: new Color3(1, 0.3, 0.3),   // 红
-                    position: new Color3(0.3, 0.5, 1),   // 蓝
-                    both: new Color3(1, 0.3, 1),         // 紫
+                const ovLineColors: Record<
+                    NonNullable<ReturnType<typeof getOverrideType>>,
+                    Color3
+                > = {
+                    rotation: new Color3(1, 0.3, 0.3), // 红
+                    position: new Color3(0.3, 0.5, 1), // 蓝
+                    both: new Color3(1, 0.3, 1), // 紫
                 };
                 for (let i = 0; i < lineData.length; i++) {
                     const ld = lineData[i];

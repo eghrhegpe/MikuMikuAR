@@ -508,7 +508,10 @@ export function buildGazeTrackingLevel(): PopupLevel {
         },
         onLangChange: () => {
             const c = containerRef[0];
-            if (c) { c.innerHTML = ''; renderMenu(gazeSchema, c); }
+            if (c) {
+                c.innerHTML = '';
+                renderMenu(gazeSchema, c);
+            }
         },
     };
 }

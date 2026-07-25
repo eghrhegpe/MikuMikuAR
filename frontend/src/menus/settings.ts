@@ -10,7 +10,11 @@ import { PopupRow, PopupLevel } from '../core/config';
 import { SETTINGS, SOFTWARE_DETAIL_PREFIX, type SettingsFolderTarget } from './settings-targets';
 
 // ======== Re-exports for backward compatibility ========
-export { preloadAutoImportState, preloadDownloadWatchState, generateTextColors } from './settings-shared';
+export {
+    preloadAutoImportState,
+    preloadDownloadWatchState,
+    generateTextColors,
+} from './settings-shared';
 export { getSettingsMenu, refreshSettingsRoot, showSettings };
 
 // ======== Sub-module imports ========
