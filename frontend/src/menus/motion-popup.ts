@@ -14,7 +14,7 @@ import {
 } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
 import { loadManager } from '../core/load-manager';
-import { registerLoadRefreshHook } from '../core/load-refresh-registry';
+import { registerLoadRefreshHook, registerLibraryScannedHook } from '../core/load-refresh-registry';
 import {
     updatePlaybackUI,
     loadVPDPose,
@@ -95,19 +95,11 @@ export { getMotionMenu, refreshMotionRoot, showMotionPopup };
 // [doc:P4] 加载模型后刷新根菜单 items（使动作列表等即时更新）
 registerLoadRefreshHook(() => { if (getMotionMenu()) refreshMotionRoot(); });
 
-// 当库扫描完成时，如果动作菜单已打开则 reRender
-const _onLibraryScanned = (): void => {
-    getMotionMenu()?.reRender();
-};
-const _libraryScannedDisp = addDisposableListener(
-    window,
-    'mmar:library-scanned',
-    _onLibraryScanned
-);
+// 库扫描完成时刷新菜单（通过注册表统一监听，替代独立 addDisposableListener）
+registerLibraryScannedHook(() => getMotionMenu()?.reRender());
 
 /** 释放 motion-popup 模块资源（HMR/清理时调用） */
 export function disposeMotionPopup(): void {
-    _libraryScannedDisp.dispose();
 }
 
 // ═══════════════════════════════════════════════════════════

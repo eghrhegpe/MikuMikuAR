@@ -427,6 +427,13 @@ export type PopupLevel = {
      * activateItem / onModelRowClick 据此派发选中后行为，取代全局绑定标志位反推。
      */
     outcome?: BrowseOutcome;
+    /**
+     * [doc:P6] 语言切换时的增量 i18n 刷新回调。
+     * 提供后，语言切换时不再全量 reRender（丢失折叠/滚动状态），
+     * 而是调用此回调进行增量文本更新。
+     * 仅对含 renderCustom 的层级有意义；纯 items 层级由 itemBuilder 自动处理。
+     */
+    onLangChange?: () => void;
 };
 
 // ======== UI State ========

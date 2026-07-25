@@ -15,8 +15,8 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
-| ADR-181 | 下载管理面板（扫描→解压→入库→processed 标记） | 规划中（首版草案，待批准）（2026-07-25） |
-| ADR-180 | Web 资源库 FSA 句柄持久化与启动自动重扫 | 实施中（代码已落地，待 CI 回归 + 单测验证）（2026-07-25） |
+| ADR-181 | 下载管理面板（扫描→解压→入库→processed 标记） | 已批准（规划中 → 批准；落地前修正 3 处：P3 拆分 importFileByPath / P3 注册点行号 settings.ts:127 / P4 网页清单改存 IndexedDB）（2026-07-25） |
+| ADR-180 | Web 资源库 FSA 句柄持久化与启动自动重扫 | 已完成（代码已落地 + P1 回归已修复，2026-07-25） |
 | ADR-179 | 更新安装拉起（按平台分级） | 规划中（首版草案，待批准）（2026-07-25） |
 | ADR-178 | 能力矩阵补全宿主级键（四端统一收口） | 实施中（Phase 1 已落地 2026-07-24；Phase 2 已落地 2026-07-25——virtual-skirt.ts/fileservice.ts/settings-resources.ts:412 三处已迁移至能力层，其中 settings-resources.ts:412 配套修正 go-adapter `watchDir` 改为 `!isAndroidPlatform()` 自报（修复 ADR 草案宿主盲点）；其余 5 处判定为平台特有逻辑保留不动；Phase 3 待排期） |
 | ADR-177 | Web Loader 与主应用统一路径 | 部分实现 — Phase 0-4 本地实施完成（2026-07-23；Playwright 双 webServer——5173 桌面 dev + 4174 web preview（vite build + vite preview --config vite.web.config.ts）；web-smoke.spec.ts 5 项——首屏渲染 + 6 nav 按钮 + 菜单导航 + 能力门控验证（AR/广场窗口隐藏）；web-resources.spec.ts 4 项——PMX/ZIP/VMD fetch+IndexedDB 注入加载闭环 + IndexedDB CRUD；fixtures sample.pmx 834KB + sample.vmd 19KB + sample.zip 854KB（page.route 注入不打进 bundle）；IndexedDB 迁移框架——onupgradeneeded 补 oldVersion 分支钩子，v1 无需迁移（旧 web-loader 与新主应用共享 schema + 键规约一致）；package.json 新增 test:e2e:web 脚本 + e2e README @web 章节。tsc 0 错误，2029 单测全绿，文档无漂移）。剩余：① GitHub Pages 线上 smoke + 连续两次发布无回归（Pages 站点已上线，待 CI 集成自动回归）；② browserAdapter 签名对齐已完成（2026-07-24，34 处参数/类型不匹配修复，见 ADR-176「签名对齐」章节）；③ ListDirRecursive/LoadOutfitFile/LoadSceneFile 浏览器侧实现已完成（IndexedDB dir:*: 前缀扫描、outfit:*: IDB 读、web://bundle/web://presets/scenes 三路路由），待 E2E 端到端验证实际功能正确 |

@@ -6,6 +6,7 @@
 // 后续: 为 LoadManager 补并发排队/反序列化恢复（跳过队列）的单元测试覆盖（当前仅靠手动验证）。
 
 import { translateGoError } from './i18n/goerr';
+import { runLoadRefreshHooks } from './load-refresh-registry';
 
 export type ResourceKind =
     'actor' | 'stage' | 'prop' | 'vmd' | 'audio' | 'camera-vmd' | 'light' | 'personalLight';
@@ -248,7 +249,6 @@ class LoadManager {
 
     /** 模型加载成功后刷新依赖模型列表的菜单（通过注册表，不再硬编码 import）。 */
     private _refreshMenus(): void {
-        const { runLoadRefreshHooks } = require('./load-refresh-registry');
         runLoadRefreshHooks();
     }
 }

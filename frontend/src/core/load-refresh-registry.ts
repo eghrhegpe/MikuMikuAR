@@ -1,10 +1,12 @@
-// [doc:architecture] Load-Refresh Registry — 模型加载完成后菜单刷新注册表
-// 替代 load-manager.ts 中硬编码的动态 import 列表。
-// 各菜单在模块级注册自己的刷新回调，load-manager.load() 完成后统一触发。
+// [doc:architecture] Load-Refresh Registry — 模型加载/库扫描完成后菜单刷新注册表
+// 替代：
+// 1. load-manager.ts 中硬编码的动态 import 列表（由 runLoadRefreshHooks 驱动）
+// 2. 各菜单文件独立注册的 mmar:library-scanned 监听器（由 registerLibraryScannedHook 驱动）
 //
 // 用法：
-//   import { registerLoadRefreshHook } from '@/core/load-refresh-registry';
+//   import { registerLoadRefreshHook, registerLibraryScannedHook } from '@/core/load-refresh-registry';
 //   registerLoadRefreshHook(() => { if (getEnvMenu()) refreshEnvRoot(); });
+//   registerLibraryScannedHook(() => { if (getEnvMenu()) getEnvMenu()?.reRender(); });
 
 /** 所有注册的加载后刷新回调 */
 const _hooks = new Set<() => void>();
@@ -32,4 +34,37 @@ export function runLoadRefreshHooks(): void {
             console.error('[load-refresh] hook error:', e);
         }
     }
+}
+
+// ======== 库扫描完成钩子（替代各菜单独立的 window event listener） ========
+
+/** 注册的 mmar:library-scanned 回调 */
+const _scannedHooks = new Set<() => void>();
+
+/** 统一的 mmar:library-scanned 监听器（只注册一次） */
+let _scannedListenerInstalled = false;
+
+/**
+ * 注册一个「库扫描完成」钩子。
+ * 库扫描完成时（library-setup 扫描 allModels 完毕），统一触发所有已注册的钩子。
+ * 替代各菜单文件各自添加 addDisposableListener(window, 'mmar:library-scanned', ...) 的重复模式。
+ * 返回取消注册函数。
+ */
+export function registerLibraryScannedHook(hook: () => void): () => void {
+    _scannedHooks.add(hook);
+    if (!_scannedListenerInstalled) {
+        _scannedListenerInstalled = true;
+        import('./dom').then(({ addDisposableListener }) => {
+            addDisposableListener(window, 'mmar:library-scanned', () => {
+                for (const h of _scannedHooks) {
+                    try {
+                        h();
+                    } catch (e) {
+                        console.error('[load-refresh] scanned hook error:', e);
+                    }
+                }
+            });
+        });
+    }
+    return () => { _scannedHooks.delete(hook); };
 }

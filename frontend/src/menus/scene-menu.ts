@@ -33,7 +33,7 @@ import {
     cardContainer,
 } from '../core/utils';
 import { addDisposableListener } from '../core/dom';
-import { registerLoadRefreshHook } from '../core/load-refresh-registry';
+import { registerLoadRefreshHook, registerLibraryScannedHook } from '../core/load-refresh-registry';
 import { focusModel } from '../scene/scene';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
@@ -131,11 +131,8 @@ registerLoadRefreshHook(() => { if (getSceneMenu()) refreshSceneRoot(); });
 // 从 scene-menu-state.ts 再导出，切断子文件与 scene-menu 的直接 import 路径
 export { refreshSceneRoot } from './scene-menu-state';
 
-// 当库扫描完成时，如果场景菜单已打开则 reRender，
-// 使道具面板等依赖 allModels 的 renderCustom 回调拿到最新数据。
-const _libraryScannedDisp = addDisposableListener(window, 'mmar:library-scanned', () => {
-    reRenderSceneMenu();
-});
+// 库扫描完成时刷新菜单（通过注册表统一监听，替代独立 addDisposableListener）
+registerLibraryScannedHook(() => reRenderSceneMenu());
 
 // ======== Mirror Level ========
 

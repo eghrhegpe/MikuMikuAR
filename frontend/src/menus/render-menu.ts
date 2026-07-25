@@ -285,3 +285,33 @@ function renderSectionTitle(node: MenuNode, container: HTMLElement): void {
     }
     addSectionTitle(container, t(node.label), node.id);
 }
+
+/**
+ * [doc:P6] 构建一个含增量 i18n 刷新的 schema 层级。
+ * renderCustom + onLangChange 预绑，语言切换时原地重建 schema DOM，
+ * 保留外层 panel 结构/滚动/折叠状态，避免全量 reRender。
+ * @param labelKey 标题 i18n key
+ * @param schemaBuilder schema 构建函数（每次调用返回新节点，含 t() 求值）
+ */
+export function buildSchemaLevel(
+    labelKey: string,
+    schemaBuilder: () => MenuNode[]
+): PopupLevel {
+    const containerRef: HTMLElement[] = [];
+    return {
+        label: t(labelKey),
+        dir: '',
+        items: [],
+        renderCustom: (container) => {
+            containerRef[0] = container;
+            return renderMenu(schemaBuilder(), container);
+        },
+        onLangChange: () => {
+            const c = containerRef[0];
+            if (c) {
+                c.innerHTML = '';
+                renderMenu(schemaBuilder(), c);
+            }
+        },
+    };
+}
