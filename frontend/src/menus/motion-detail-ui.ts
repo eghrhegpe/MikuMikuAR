@@ -2,7 +2,7 @@
 // 从 motion-popup.ts 拆出：buildLayerLevel / buildMotionDetailSchema /
 // buildMotionDetailLevel / 播放速度 / buildPlaybackSpeedLevel
 
-import { setStatus, mmdRuntime, cardContainer, focusedModelId } from '../core/config';
+import { setStatus, mmdRuntime, cardContainer, focusedModelId, stackRegistry } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { slideRow, addToggleRow, addSliderRow, addSectionTitle } from '../core/ui-helpers';
 import {
@@ -302,6 +302,8 @@ export function buildMotionToolsLevel(sceneMotionId: string): PopupLevel {
                         const snap = pushUndoSnapshot();
                         const removedName = motion.vmdName;
                         removeSceneMotion(motion.id!);
+                        // [fix] 重绘模型详情栈：使「动作根」卡片翻成「无动作」（数据已清空，仅缺 UI 刷新）
+                        stackRegistry.modelStack?.reRender();
                         updatePlaybackUI();
                         getMotionMenu()?.pop();
                         getMotionMenu()?.reRender();

@@ -1,27 +1,38 @@
 // [doc:architecture] Reactivity — 轻量响应式系统
-// Proxy 拦截 set → RAF 去抖 → 通知所有订阅者
+// Proxy 拦截 set → RAF 去抖 → 通知所有订阅者（携带变更键信息）
 // 订阅者通常是 SlideMenu.updateControls()
+//
+// [doc:PACU] 订阅者签名 v2：接收变更键集合，实现精确增量刷新。
+// 旧签名 `() => void` 仍受支持（JS 忽略多余参数）。
 
 /** 所有活跃的刷新订阅者 */
-const _subscribers = new Set<() => void>();
+const _subscribers = new Set<(changedKeys: Set<string>) => void>();
 
 /** RAF 去抖标志 */
 let _refreshScheduled = false;
 
 /**
+ * [doc:PACU] 当前帧内被修改过的 state key 集合。
+ * 由 reactive Proxy set handler 收集，scheduleRefresh 执行时快照并清空。
+ */
+const _changedKeys = new Set<string>();
+
+/**
  * 安排一次刷新（RAF 去抖）。
  * 同帧内多次调用只触发一次刷新。
+ * 通知时携带本帧内所有被修改过的 state key 集合。
  */
 export function scheduleRefresh(): void {
     if (_refreshScheduled) {
         return;
     }
     _refreshScheduled = true;
+    const keys = new Set(_changedKeys);
     requestAnimationFrame(() => {
         _refreshScheduled = false;
         for (const fn of _subscribers) {
             try {
-                fn();
+                fn(keys);
             } catch (e) {
                 console.error('[reactivity] subscriber error:', e);
             }
@@ -32,8 +43,10 @@ export function scheduleRefresh(): void {
 /**
  * 注册一个刷新订阅者。返回取消订阅函数。
  * 订阅者会在 scheduleRefresh() 触发时被调用。
+ * @param fn 接收 `changedKeys` Set，内含本帧变更的顶层 state key 名。
+ *   纯 `() => void` 签名在 JS 层面也兼容（多余参数被忽略）。
  */
-export function subscribe(fn: () => void): () => void {
+export function subscribe(fn: (changedKeys: Set<string>) => void): () => void {
     _subscribers.add(fn);
     return () => {
         _subscribers.delete(fn);
@@ -86,6 +99,10 @@ export function reactive<T extends object>(obj: T): T {
                 return true;
             } // [audit:P3] 同值短路，避免不必要刷新
             const result = Reflect.set(target, key, value, receiver);
+            // [doc:PACU] 记录被修改的顶层 key，供 scheduleRefresh 传递给订阅者
+            if (typeof key === 'string') {
+                _changedKeys.add(key);
+            }
             scheduleRefresh();
             return result;
         },

@@ -431,6 +431,8 @@ export async function handleModelAction(action: string, id: string): Promise<voi
                 if (getMotionMenu()) {
                     getMotionMenu()?.reRender();
                 }
+                // [fix] 同步刷新模型详情栈：「动作根」卡片翻成「无动作」
+                stackRegistry.modelStack?.reRender();
                 setStatus(t('motion.motionReset'), true);
             }
             break;

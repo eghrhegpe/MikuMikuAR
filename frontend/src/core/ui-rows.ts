@@ -131,7 +131,7 @@ export function initControl<T>(
             cached = v;
         }
     };
-    getCurrentRenderingMenu()?.registerControl(update);
+    getCurrentRenderingMenu()?.registerControl(update, opts.pathHint);
     update();
 }
 

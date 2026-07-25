@@ -65,8 +65,12 @@ export class SlideMenu {
     private _keydownDisp: Disposable | null = null;
     private _swipeTouchStartDisp: Disposable | null = null;
     private _swipeTouchEndDisp: Disposable | null = null;
-    /** 自更新控件注册表 — 每个元素有 update() 方法，由 updateControls() 统一调用 */
-    private _controls: Array<{ update: () => void }> = [];
+    /**
+     * 自更新控件注册表 — 每个元素有 update() 方法 + 可选的 pathHint 键路径提示。
+     * [doc:PACU] pathHint 不为 undefined 时，仅当该 key 在本帧发生过 set 变更才调用 update。
+     * pathHint === undefined 保持旧行为（每帧都更新，保守兼容）。
+     */
+    private _controls: Array<{ update: () => void; pathHint?: string }> = [];
     /** renderCustom 返回的清理函数，在 buildPanel 重建或 dispose 时调用 */
     private _customDispose: (() => void) | null = null;
     /** 响应式订阅取消函数 — dispose 时调用 */
@@ -424,16 +428,36 @@ export class SlideMenu {
         });
     }
 
-    /** 注册一个自更新控件，由 updateControls() 统一驱动刷新 */
-    registerControl(update: () => void): void {
-        this._controls.push({ update });
+    /**
+     * 注册一个自更新控件，由 updateControls() 统一驱动刷新。
+     * @param update 更新函数
+     * @param pathHint [doc:PACU] 可选的状态 key 提示。
+     *   提供后，仅当该 key 在本帧发生过 set 变更时才调用 update。
+     *   不提供则保持旧行为（每帧 updateControls 都更新）。
+     */
+    registerControl(update: () => void, pathHint?: string): void {
+        this._controls.push({ update, pathHint });
     }
 
-    /** 增量刷新所有已注册的自更新控件（不重建 DOM） */
-    updateControls(): void {
+    /**
+     * 增量刷新所有已注册的自更新控件（不重建 DOM）。
+     * [doc:PACU] 接收 changedKeys 集合，仅更新 pathHint 匹配的控件。
+     * @param changedKeys 本帧变更的 state key 集合，从 reactive layer 传入。
+     */
+    updateControls(changedKeys?: Set<string>): void {
         const _start = performance.now();
-        for (const c of this._controls) {
-            c.update();
+        if (changedKeys && changedKeys.size > 0) {
+            // [doc:PACU] 有精确路径信息 → 只用匹配的控件
+            for (const c of this._controls) {
+                if (c.pathHint === undefined || changedKeys.has(c.pathHint)) {
+                    c.update();
+                }
+            }
+        } else {
+            // 无路径信息 → 全量遍历（保守兼容）
+            for (const c of this._controls) {
+                c.update();
+            }
         }
         const level = this.currentLevel;
         // [doc:adr-065] i18n 热切换：语言变化时，renderCustom 层级的 schema 标签与自定义 DOM

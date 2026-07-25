@@ -4,4 +4,10 @@ export interface ControlOptions<T = number | boolean | string> {
     bind?: () => T;
     /** 自定义更新逻辑，优先级高于 bind */
     onUpdate?: (el: HTMLElement) => void;
+    /**
+     * [doc:PACU] 状态路径提示，用于精确增量刷新。
+     * 提供后，仅当该 key 在本帧发生过 set 变更时才触发 update。
+     * 不提供则保持旧行为（每次 updateControls 都更新）。
+     */
+    pathHint?: string;
 }

@@ -116,7 +116,9 @@ export function removeSceneMotion(id: string): void {
     _sceneMotions = _sceneMotions.filter((m) => m.id !== id);
 
     if (_activeMotionId === id) {
-        _activeMotionId = _sceneMotions.length > 0 ? (_sceneMotions[0].id ?? null) : null;
+        // [fix] 删除基础/默认动作 → 直接清空为无动作，不再静默顶替列表第一项。
+        // 否则模型详情「动作根」卡片会显示其他动作名，永远到不了「无动作」。
+        _activeMotionId = null;
     }
 
     _motionGen++;
