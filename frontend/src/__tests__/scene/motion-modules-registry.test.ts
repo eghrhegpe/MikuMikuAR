@@ -7,11 +7,12 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 // vi.mock 工厂在文件顶部执行，此时顶层 const 尚未初始化，
 // 因此必须用 vi.hoisted 把变量提升到与 vi.mock 同一阶段。
 
-const { mockModelRegistry, setBoneOverrideSpy, clearBoneOverrideSpy, mockActiveMotion } =
+const { mockModelRegistry, setBoneOverrideSpy, clearBoneOverrideSpy, mockActiveMotion, protectIkPositionSpy } =
     vi.hoisted(() => ({
         mockModelRegistry: new Map<string, any>(),
         setBoneOverrideSpy: vi.fn(),
         clearBoneOverrideSpy: vi.fn(),
+        protectIkPositionSpy: vi.fn(),
         mockActiveMotion: { value: null as any },
     }));
 
@@ -24,8 +25,9 @@ vi.mock('@/scene/motion/bone-override', () => ({
     setBoneOverride: setBoneOverrideSpy,
     clearBoneOverride: clearBoneOverrideSpy,
     setBoneOverridePosition: vi.fn(),
+    protectIkPosition: protectIkPositionSpy,
     registerBoneOverrideFrameHook: vi.fn(() => () => {}),
-    FRAME_HOOK_ORDER: { RIDING: 10, SWAY: 20, HAND_SYMMETRY: 30 },
+    FRAME_HOOK_ORDER: { BODY_POSITION: 5, RIDING: 10, SWAY: 20, HAND_SYMMETRY: 30 },
 }));
 
 vi.mock('@/scene/motion/perception', () => ({
@@ -639,5 +641,88 @@ describe('setParam → pushHistory 集成', () => {
         mod.setParam('tilt', 0); // 默认值
 
         expect(pushHistorySpy).not.toHaveBeenCalled();
+    });
+});
+
+describe('body-posture IK 位置保护', () => {
+    beforeEach(() => {
+        resetAll();
+        protectIkPositionSpy.mockClear();
+    });
+
+    /** 带骨骼运行时信息的模型（含 IK 目标骨） */
+    function makeModelWithBones(id: string): any {
+        return {
+            ...makeModel(id),
+            mmdModel: {
+                runtimeBones: [
+                    { name: 'センター' },
+                    { name: '上半身' },
+                    { name: '上半身2' },
+                    { name: '左足IK' },
+                    { name: '右足IK' },
+                ],
+            },
+        };
+    }
+
+    it('帧钩子 bodyHeight≠0 时注册左右足 IK 保护', async () => {
+        mockModelRegistry.set('m1', makeModelWithBones('m1'));
+        initMotionModules();
+        setActiveMotionWithModules();
+
+        const mod = createModule('body-posture', 'm1')!;
+        mod.setParam('bodyHeight', -2);
+        mod.enable();
+
+        // 从 mock 中捕获注册的帧钩子
+        const { registerBoneOverrideFrameHook } = await import(
+            '@/scene/motion/bone-override'
+        );
+        const hookCalls = (
+            registerBoneOverrideFrameHook as ReturnType<typeof vi.fn>
+        ).mock.calls;
+        const bodyHook = hookCalls.find(
+            (c: any[]) => c[1] === 5 // FRAME_HOOK_ORDER.BODY_POSITION
+        );
+        expect(bodyHook).toBeTruthy();
+        const hookFn = bodyHook[0] as (t: number, mid: string) => void;
+
+        // 模拟帧回调触发
+        hookFn(0, 'm1');
+
+        // 应注册左右足 IK 保护
+        expect(protectIkPositionSpy).toHaveBeenCalledTimes(2);
+        const protectedBones = protectIkPositionSpy.mock.calls.map(
+            (c: any[]) => c[0]
+        );
+        expect(protectedBones).toContain('左足IK');
+        expect(protectedBones).toContain('右足IK');
+    });
+
+    it('bodyHeight=0 且 bodyDepth=0 时不注册 IK 保护（无偏移无需保护）', async () => {
+        mockModelRegistry.set('m1', makeModelWithBones('m1'));
+        initMotionModules();
+        setActiveMotionWithModules();
+
+        const mod = createModule('body-posture', 'm1')!;
+        // 保持默认值 bodyHeight=0, bodyDepth=0
+        mod.enable();
+
+        const { registerBoneOverrideFrameHook } = await import(
+            '@/scene/motion/bone-override'
+        );
+        const hookCalls = (
+            registerBoneOverrideFrameHook as ReturnType<typeof vi.fn>
+        ).mock.calls;
+        const bodyHook = hookCalls.find(
+            (c: any[]) => c[1] === 5
+        );
+        const hookFn = bodyHook[0] as (t: number, mid: string) => void;
+
+        hookFn(0, 'm1');
+
+        // 偏移为零时不应注册保护
+        expect(protectIkPositionSpy).not.toHaveBeenCalled();
     });
 });

@@ -474,6 +474,56 @@ export function clearAllOverrides(modelId?: string): void {
     _getOverrideMap(mid).clear();
 }
 
+// ── IK 位置保护：防止父骨传播覆盖 IK 目标的世界坐标 ──
+
+/**
+ * 受保护的骨骼名称集合（每帧重置）。
+ * 帧钩子在 _runFrameHooks 期间注册，主循环传播后恢复。
+ */
+const _protectedIkBoneNames = new Set<string>();
+
+/**
+ * 注册骨骼位置保护（帧钩子内调用）。
+ * 主循环完成传播后，被保护骨骼的 worldMatrix 将恢复到覆盖前的值。
+ * 用于 body-posture 移动センター时防止足 IK 目标跟随平移。
+ */
+export function protectIkPosition(boneName: string): void {
+    _protectedIkBoneNames.add(boneName);
+}
+
+/** 快照受保护骨骼的当前 worldMatrix（帧钩子后、覆盖循环前调用） */
+function _snapshotProtectedPositions(
+    boneMap: Map<string, IMmdRuntimeBone>
+): Map<string, Float32Array> {
+    const snapshots = new Map<string, Float32Array>();
+    for (const boneName of _protectedIkBoneNames) {
+        const rb = boneMap.get(boneName);
+        if (!rb) continue;
+        const buf = (rb as MmdRuntimeBoneExtended).worldMatrix;
+        if (buf) {
+            const snap = new Float32Array(16);
+            snap.set(buf.subarray(0, 16));
+            snapshots.set(boneName, snap);
+        }
+    }
+    return snapshots;
+}
+
+/** 恢复受保护骨骼的 worldMatrix（覆盖循环后调用） */
+function _restoreProtectedPositions(
+    boneMap: Map<string, IMmdRuntimeBone>,
+    snapshots: Map<string, Float32Array>
+): void {
+    for (const [boneName, snap] of snapshots) {
+        const rb = boneMap.get(boneName);
+        if (!rb) continue;
+        const buf = (rb as MmdRuntimeBoneExtended).worldMatrix;
+        if (buf) {
+            buf.set(snap);
+        }
+    }
+}
+
 /**
  * [doc:adr-116 P3] 注册每帧渲染钩子。
  * 时间驱动模块（riding/left-hand/right-hand）用以逐帧更新自身骨骼覆盖（如踏板循环、手臂位置偏移）。
@@ -692,6 +742,11 @@ export function startBoneOverride(
             );
         }
 
+        // IK 位置保护：快照受保护骨骼的原始 worldMatrix（帧钩子已注册保护集合）
+        const ikSnapshots = isWasm
+            ? _snapshotProtectedPositions(boneMap)
+            : null;
+
         for (const [boneName, slot] of overrideMap) {
             if (!slot.enabled) {
                 continue;
@@ -706,6 +761,12 @@ export function startBoneOverride(
                 _applyJsOverride(slot, rb);
             }
         }
+
+        // IK 位置保护：恢复受保护骨骼的 worldMatrix（撤销传播造成的偏移）
+        if (ikSnapshots && ikSnapshots.size > 0) {
+            _restoreProtectedPositions(boneMap, ikSnapshots);
+        }
+        _protectedIkBoneNames.clear();
     };
 
     // 单一驱动 observer：每帧按 (stage, order) 显式调度所有骨骼写入层，

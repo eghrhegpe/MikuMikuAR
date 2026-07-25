@@ -2,10 +2,12 @@
 // 职责: 将语义参数烘焙为骨骼覆盖
 //   - 倾斜/弯曲/扭曲 → 上半身/上半身2 旋转覆盖（静态 bake）
 //   - 身体高度/身体前后 → センター 位置偏移（帧钩子每帧驱动，世界空间）
-// 脚不动机制: 脚 IK 目标（左足IK/右足IK）由 feet-adjustment 引擎每帧钉死在地面（世界坐标），
-//   センター 是「脚 IK 目标之上、整个躯干+髋部之父」，平移它 → 髋部/躯干移动而脚原地，
-//   腿部 IK 自动重解弯曲 → 下蹲（高度↓）/ 跪姿·后躺（前后）。位置覆盖不写旋转，
-//   故无 WASM 旋转传播带动腿骨之虞（与原「不加 腰」注释针对的旋转场景不同）。
+// 脚不动机制: センター 位置偏移通过 _propagateChildrenWasm 传播到所有子骨骼，
+//   部分 MMD 模型中 左足IK/右足IK 的 parentBone 是 センター，传播会平移 IK 目标，
+//   导致 feet-adjustment 钉住偏移后的位置 → 脚滑。
+//   修复: 帧钩子通过 protectIkPosition() 注册足 IK 目标为「受保护骨骼」，
+//   bone-override 主循环在传播后恢复其原始 worldMatrix，确保 IK 目标世界坐标不变，
+//   feet-adjustment 钉住原始位置 → 腿部 IK 重解 → 下蹲/跪姿/后躺。
 
 import type { ParamValue } from '@/core/types';
 import { modelRegistry } from '@/core/state';
@@ -13,9 +15,15 @@ import {
     setBoneOverride,
     setBoneOverridePosition,
     registerBoneOverrideFrameHook,
+    protectIkPosition,
     FRAME_HOOK_ORDER,
 } from '../bone-override';
-import { matchBone, BONE_CENTER_CANDIDATES } from '@/motion-algos/proc-motion-shared';
+import {
+    matchBone,
+    BONE_CENTER_CANDIDATES,
+    BONE_LEG_IK_L_CANDIDATES,
+    BONE_LEG_IK_R_CANDIDATES,
+} from '@/motion-algos/proc-motion-shared';
 import { getModuleState } from './registry';
 import type { MotionOverrideModule, ModuleMeta, ModuleDef } from './types';
 import {
@@ -54,6 +62,7 @@ const MANAGED_BONES = ['上半身', '上半身2', 'センター'];
 
 const _bodyFrameHooks = createFrameHookManager();
 const _centerBoneCache = new Map<string, string | null>();
+const _ikBoneCache = new Map<string, { l: string | null; r: string | null }>();
 
 /** 烘焙：将旋转语义参数写入引擎（仅 enabled 时生效，通过 claimBones 仲裁冲突） */
 function bake(modelId: string): void {
@@ -93,6 +102,22 @@ function _resolveCenterBone(modelId: string): string | null {
     return name;
 }
 
+/** 解析并缓存模型的左右足 IK 骨名（首次惰性匹配） */
+function _resolveIkBones(modelId: string): { l: string | null; r: string | null } {
+    const cached = _ikBoneCache.get(modelId);
+    if (cached) {
+        return cached;
+    }
+    const inst = modelRegistry.get(modelId);
+    const boneNames = inst?.mmdModel?.runtimeBones?.map((b) => b.name) ?? [];
+    const result = {
+        l: matchBone(boneNames, BONE_LEG_IK_L_CANDIDATES),
+        r: matchBone(boneNames, BONE_LEG_IK_R_CANDIDATES),
+    };
+    _ikBoneCache.set(modelId, result);
+    return result;
+}
+
 /** 启用时注册帧钩子，每帧写入 センター 位置偏移（在 feet-adjustment 之前执行） */
 function ensureActive(modelId: string): void {
     if (_bodyFrameHooks.has(modelId)) {
@@ -119,6 +144,17 @@ function ensureActive(modelId: string): void {
         }
         // 世界空间偏移：X 不动，Y=高度，Z=前后
         setBoneOverridePosition(centerName, [0, height, depth], 1, true, modelId);
+
+        // IK 位置保护：注册左右足 IK 目标，防止センター传播平移带动 IK 目标
+        // （部分 MMD 模型中 左足IK/右足IK 的 parentBone 是 センター，
+        //   传播会导致 IK 目标世界坐标偏移，feet-adjustment 钉住偏移后的位置 → 脚滑）
+        const ik = _resolveIkBones(modelId);
+        if (ik.l) {
+            protectIkPosition(ik.l);
+        }
+        if (ik.r) {
+            protectIkPosition(ik.r);
+        }
     }, FRAME_HOOK_ORDER.BODY_POSITION);
     _bodyFrameHooks.set(modelId, unregister);
 }
