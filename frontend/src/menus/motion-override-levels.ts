@@ -426,7 +426,18 @@ function updateConflictBanner(el: HTMLElement, modelId: string | null): void {
         el.style.display = 'none';
         return;
     }
-    const all = getAllConflicts(modelId).filter((a) => a.conflicts.length > 0);
+    // [doc:timing P1 fix] 过滤感知层内部子模块冲突（perception.* vs perception.*），
+    // 这些冲突对用户无意义——感知层是管线最后阶段、同一优先级(100)，互相覆盖是内部调度细节。
+    // 保留跨层冲突（如模块层 vs 感知层）仍显示。
+    const raw = getAllConflicts(modelId);
+    const all = raw
+        .map((a) => ({
+            moduleId: a.moduleId,
+            conflicts: a.conflicts.filter(
+                (c) => !(a.moduleId.startsWith('perception.') && c.byModule.startsWith('perception.'))
+            ),
+        }))
+        .filter((a) => a.conflicts.length > 0);
     if (all.length === 0) {
         el.textContent = '';
         el.style.display = 'none';
@@ -444,7 +455,9 @@ function updateConflictBanner(el: HTMLElement, modelId: string | null): void {
             return t('motion.boneConflict.line', {
                 bone: c.bone,
                 winner: winnerName,
+                winnerPrio: c.winnerPriority,
                 loser: loserName,
+                loserPrio: c.loserPriority,
             });
         });
     });

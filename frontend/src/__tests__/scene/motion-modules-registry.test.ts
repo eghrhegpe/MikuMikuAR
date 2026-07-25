@@ -398,13 +398,13 @@ describe('ownedBones 冲突仲裁', () => {
         claimBones('m1', 'left-hand', ['上半身', '左手首']);
 
         const conflicts = getModuleConflicts('m1', 'left-hand');
-        expect(conflicts).toEqual([{ bone: '上半身', byModule: 'body-posture' }]);
+        expect(conflicts).toEqual([{ bone: '上半身', byModule: 'body-posture', winnerPriority: 1, loserPriority: 1 }]);
         expect(getConflictCount('m1')).toBe(1);
         // 全部模型冲突快照
         expect(getAllConflicts('m1')).toEqual([
             {
                 moduleId: 'left-hand',
-                conflicts: [{ bone: '上半身', byModule: 'body-posture' }],
+                conflicts: [{ bone: '上半身', byModule: 'body-posture', winnerPriority: 1, loserPriority: 1 }],
             },
         ]);
 
@@ -440,7 +440,7 @@ describe('ownedBones 冲突仲裁', () => {
 
         // 落败方 test-low-priority 记录被 left-hand 抢占
         expect(getModuleConflicts(testModel, 'test-low-priority')).toEqual([
-            { bone: 'センター', byModule: 'left-hand' },
+            { bone: 'センター', byModule: 'left-hand', winnerPriority: 1, loserPriority: 3 },
         ]);
         // 抢占方 left-hand 自身无冲突记录
         expect(getModuleConflicts(testModel, 'left-hand')).toEqual([]);

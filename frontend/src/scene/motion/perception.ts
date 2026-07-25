@@ -174,12 +174,12 @@ function _claimPerceptionBones(modelId: string): void {
     const headClaimed = store.claimBones(
         modelId,
         'perception.gaze.head',
-        100,
+        92,
         HEAD_BONE_CANDIDATES
     );
     perModel.set('perception.gaze.head', headClaimed);
 
-    const eyeClaimed = store.claimBones(modelId, 'perception.gaze.eye', 100, EYE_BONE_CANDIDATES);
+    const eyeClaimed = store.claimBones(modelId, 'perception.gaze.eye', 91, EYE_BONE_CANDIDATES);
     perModel.set('perception.gaze.eye', eyeClaimed);
 
     const breathBones = [
@@ -187,17 +187,17 @@ function _claimPerceptionBones(modelId: string): void {
         ...BONE_NECK_CANDIDATES,
         ...BONE_HEAD_CANDIDATES,
     ];
-    const breathClaimed = store.claimBones(modelId, 'perception.breath', 100, breathBones);
+    const breathClaimed = store.claimBones(modelId, 'perception.breath', 93, breathBones);
     perModel.set('perception.breath', breathClaimed);
 
     const centerBones = [...BONE_CENTER_CANDIDATES, ...BONE_ALLPARENT_CANDIDATES];
-    const centerClaimed = store.claimBones(modelId, 'perception.balance.center', 100, centerBones);
+    const centerClaimed = store.claimBones(modelId, 'perception.balance.center', 94, centerBones);
     perModel.set('perception.balance.center', centerClaimed);
 
     const upperClaimed = store.claimBones(
         modelId,
         'perception.balance.upper',
-        100,
+        95,
         BONE_UPPER2_CANDIDATES
     );
     perModel.set('perception.balance.upper', upperClaimed);
@@ -205,7 +205,7 @@ function _claimPerceptionBones(modelId: string): void {
     const waistClaimed = store.claimBones(
         modelId,
         'perception.balance.waist',
-        100,
+        96,
         BONE_WAIST_CANDIDATES
     );
     perModel.set('perception.balance.waist', waistClaimed);
