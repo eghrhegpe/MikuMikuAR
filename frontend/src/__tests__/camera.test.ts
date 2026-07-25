@@ -349,6 +349,8 @@ vi.mock('../scene/camera/camera', () => ({
 // will resolve to our mock (no circular dependency issue).
 
 let cameraModule: {
+    defaultCameraPreset: () => any;
+    setCameraPreset: (p: any) => void;
     getOrbitParams: () => any;
     getFreeflyParams: () => any;
     getConcertParams: () => any;
@@ -403,6 +405,60 @@ beforeEach(() => {
 // ════════════════════════════════════════════════════════════
 // Tests
 // ════════════════════════════════════════════════════════════
+
+describe('defaultCameraPreset', () => {
+    it('returns an object with the correct structure', () => {
+        const p = cameraModule.defaultCameraPreset();
+        expect(p).toHaveProperty('mode');
+        expect(p).toHaveProperty('orbit');
+        expect(p).toHaveProperty('freefly');
+        expect(p).toHaveProperty('concert');
+        expect(p).toHaveProperty('surround');
+        expect(p.orbit).toHaveProperty('targetHeight');
+        expect(p.orbit).toHaveProperty('distance');
+        expect(p.orbit).toHaveProperty('beta');
+        expect(p.freefly).toHaveProperty('speed');
+        expect(p.freefly).toHaveProperty('angularSensibility');
+        expect(p.concert).toHaveProperty('radius');
+        expect(p.concert).toHaveProperty('height');
+        expect(p.concert).toHaveProperty('sweepAngle');
+        expect(p.concert).toHaveProperty('sweepSpeed');
+        expect(p.concert).toHaveProperty('baseBeta');
+        expect(p.concert).toHaveProperty('bobAmplitude');
+        expect(p.concert).toHaveProperty('bobSpeed');
+        expect(p.surround).toHaveProperty('radius');
+        expect(p.surround).toHaveProperty('height');
+        expect(p.surround).toHaveProperty('speed');
+    });
+
+    it('has the documented default values', () => {
+        const p = cameraModule.defaultCameraPreset();
+        expect(p.mode).toBe('orbit');
+        expect(p.orbit.targetHeight).toBe(0);
+        expect(p.orbit.distance).toBe(16);
+        expect(p.orbit.beta).toBeCloseTo(Math.PI / 3, 6);
+        expect(p.freefly.speed).toBe(0.5);
+        expect(p.freefly.angularSensibility).toBe(2000);
+        expect(p.concert.radius).toBe(12);
+        expect(p.concert.height).toBe(8);
+        expect(p.concert.sweepAngle).toBe(120);
+        expect(p.concert.sweepSpeed).toBeCloseTo(0.6, 6);
+        expect(p.concert.baseBeta).toBeCloseTo(Math.PI / 3, 6);
+        expect(p.concert.bobAmplitude).toBe(12);
+        expect(p.concert.bobSpeed).toBeCloseTo(0.7, 6);
+        expect(p.surround.radius).toBe(12);
+        expect(p.surround.height).toBe(8);
+        expect(p.surround.speed).toBe(0.3);
+    });
+
+    it('returns a new object on each call (no shared reference)', () => {
+        const a = cameraModule.defaultCameraPreset();
+        const b = cameraModule.defaultCameraPreset();
+        expect(a).not.toBe(b);
+        a.orbit.targetHeight = 99;
+        expect(b.orbit.targetHeight).toBe(0);
+    });
+});
 
 describe('setOrbitParams', () => {
     it('updates the preset with partial params', () => {

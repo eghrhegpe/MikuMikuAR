@@ -1156,6 +1156,7 @@
 | `_gazeAlpha()` | `scene/motion/perception-shared` | 计算 gaze Slerp alpha（基于 deltaTime 的指数衰减，帧率无关） |
 | `_gazeLog()` | `scene/motion/perception-shared` | — |
 | `_incGazeLogFrame()` | `scene/motion/perception-shared` | — |
+| `_isWasmRuntime()` | `scene/motion/perception-shared` | — |
 | `_m()` | `scene/motion/perception-shared` | — |
 | `_propagateChildrenWasm()` | `scene/motion/perception-shared` | 递归传播子骨骼 worldMatrix |
 | `_q()` | `scene/motion/perception-shared` | — |
@@ -1474,7 +1475,6 @@
 | `getMatDetailList()` | `scene/scene` | — |
 | `getMatParams()` | `scene/scene` | — |
 | `getMatState()` | `scene/scene` | — |
-| `getMaterialMeshes()` | `scene/scene` | — |
 | `getScene()` | `scene/scene` | — |
 | `hasCameraVmd()` | `scene/scene` | — |
 | `initCameraSystem()` | `scene/scene` | — |

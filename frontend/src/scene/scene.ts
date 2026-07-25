@@ -118,7 +118,6 @@ export {
     applyMatState,
     registerMaterialTarget,
     unregisterMaterialTarget,
-    getMaterialMeshes,
     isMatCategoryAllEnabled,
     setMatCategoryEnabled,
     DEFAULT_MAT_PARAMS,
