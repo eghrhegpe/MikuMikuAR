@@ -129,6 +129,9 @@ vi.mock('../scene/scene', () => ({ scene: {} }));
 // 拦截 outfit.ts 内 `await import('../core/i18n/t')`，避免加载 i18n 资源
 vi.mock('../core/i18n/t', () => ({ t: (key: string) => key }));
 
+// 拦截 toast 模块，避免 DOM 操作在测试中卡住
+vi.mock('../core/toast', () => ({ showInfoToast: vi.fn() }));
+
 import { modelRegistry, setLibraryRoot } from '../core/config';
 
 function makeColor(r: number, g: number, b: number) {

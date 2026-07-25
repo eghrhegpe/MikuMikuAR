@@ -18,6 +18,10 @@ export default defineConfig({
     test: {
         environment: "happy-dom",
         globals: true,
+        // 兜底防卡死：漏挂 mock / 永不 resolve 的 Promise 最多挂 10s 后报超时失败，
+        // 而不是让整个 vitest run 永久挂着。需要更长耗时的用例在 test() 第三参覆盖。
+        testTimeout: 10000,
+        hookTimeout: 15000,
         exclude: [
             "e2e/**",
             "node_modules/**",

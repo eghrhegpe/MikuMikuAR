@@ -175,6 +175,9 @@ vi.mock('babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.vertex', () => ({}))
 
 vi.mock('babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.fragment', () => ({}));
 
+// 拦截 toast 模块，避免 DOM 操作在测试中卡住
+vi.mock('../core/toast', () => ({ showInfoToast: vi.fn() }));
+
 import { describe, it, expect, beforeEach, vi, beforeAll } from 'vitest';
 import { serializeModelPreset, applyModelPreset, ModelPresetFile } from '../menus/library';
 import {
