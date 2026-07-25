@@ -15,14 +15,15 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
+| ADR-186 | bone-override 帧内时序图 | accepted |
 | ADR-185 | 网页端 ZIP 内子目录 PMX 贴图路径维度对齐 | 已完成（2026-07-26） |
 | ADR-184 | 网页端 ZIP 嵌套识别能力补齐（多编码检测 + 炸弹防护对齐 Go 端） | 已完成（2026-07-26） |
 | ADR-183 | 网页端 FSA 根目录授权引导（四态探针 + 重授权兜底） | 已完成（代码已落地 + 单测 14/14，2026-07-26） |
 | ADR-182 | 网页端 ZIP 导入键规约命名空间化（消除同名 PMX 纹理碰撞） | 已批准（2026-07-25） |
 | ADR-181 | 下载管理面板（扫描→解压→入库→processed 标记） | 已批准（规划中 → 批准；落地前修正 3 处：P3 拆分 importFileByPath / P3 注册点行号 settings.ts:127 / P4 网页清单改存 IndexedDB）（2026-07-25） |
 | ADR-180 | Web 资源库 FSA 句柄持久化与启动自动重扫 | 已完成（代码已落地 + P1 回归已修复，2026-07-25） |
-| ADR-179 | 更新安装拉起（按平台分级） | 规划中（首版草案，待批准）（2026-07-25） |
-| ADR-178 | 能力矩阵补全宿主级键（四端统一收口） | 实施中（Phase 1 已落地 2026-07-24；Phase 2 已落地 2026-07-25——virtual-skirt.ts/fileservice.ts/settings-resources.ts:412 三处已迁移至能力层，其中 settings-resources.ts:412 配套修正 go-adapter `watchDir` 改为 `!isAndroidPlatform()` 自报（修复 ADR 草案宿主盲点）；其余 5 处判定为平台特有逻辑保留不动；Phase 3 待排期） |
+| ADR-179 | 更新安装拉起（按平台分级） | 实施中（阶段 1）（2026-07-25） |
+| ADR-178 | 能力矩阵补全宿主级键（四端统一收口） | 实施中（Phase 1 已落地 2026-07-24；Phase 2 已落地 2026-07-25——virtual-skirt.ts/fileservice.ts/settings-resources.ts:412 三处已迁移至能力层，其中 settings-resources.ts:412 配套修正 go-adapter `watchDir` 改为 `!isAndroidPlatform()` 自报（修复 ADR 草案宿主盲点）；其余 5 处判定为平台特有逻辑保留不动；Phase 3 已落地 2026-07-26——CI 四端制品矩阵固化：e2e-web-smoke job 跑 @web smoke（web-smoke.spec.ts + web-resources.spec.ts），验证浏览器能力门控、PMX/ZIP/VMD 加载闭环；桌面/安卓构建保留在 release.yml；网页部署由 web-pages.yml 自动触发） |
 | ADR-177 | Web Loader 与主应用统一路径 | 已完成 — Phase 0-3 落地 + Phase 4 终态于 2026-07-25 提前执行（用户裁决删除 web-loader，主应用 web 入口为唯一 Pages 入口，详见「Phase 4 终态执行记录」）。剩余跟踪项（不再阻塞本 ADR，并入日常回归）：① GitHub Pages 线上 smoke CI 自动回归；② browser 侧 ListDirRecursive/LoadOutfitFile/LoadSceneFile E2E 端到端功能验证。历史进度存档：Phase 0-4 本地实施完成（2026-07-23；Playwright 双 webServer——5173 桌面 dev + 4174 web preview（vite build + vite preview --config vite.web.config.ts）；web-smoke.spec.ts 5 项——首屏渲染 + 6 nav 按钮 + 菜单导航 + 能力门控验证（AR/广场窗口隐藏）；web-resources.spec.ts 4 项——PMX/ZIP/VMD fetch+IndexedDB 注入加载闭环 + IndexedDB CRUD；fixtures sample.pmx 834KB + sample.vmd 19KB + sample.zip 854KB（page.route 注入不打进 bundle）；IndexedDB 迁移框架——onupgradeneeded 补 oldVersion 分支钩子，v1 无需迁移（旧 web-loader 与新主应用共享 schema + 键规约一致）；package.json 新增 test:e2e:web 脚本 + e2e README @web 章节。tsc 0 错误，2029 单测全绿，文档无漂移）。剩余：① GitHub Pages 线上 smoke + 连续两次发布无回归（Pages 站点已上线，待 CI 集成自动回归）；② browserAdapter 签名对齐已完成（2026-07-24，34 处参数/类型不匹配修复，见 ADR-176「签名对齐」章节）；③ ListDirRecursive/LoadOutfitFile/LoadSceneFile 浏览器侧实现已完成（IndexedDB dir:*: 前缀扫描、outfit:*: IDB 读、web://bundle/web://presets/scenes 三路路由），待 E2E 端到端验证实际功能正确 |
 | ADR-176 | 前端 Backend 适配器双实现（Web/Desktop 通杀） | 已完成（2026-07-23；Phase 1-3 全部落地。Phase 3 已完成 web-loader 准完整网页入口、IndexedDB 模型库、能力徽章、lastModel 恢复引导和库面板；验证：tsc 0 错、backend 16/16、契约 17/17、全量回归绿） |
 | ADR-175 | 光照强度多入口设计意图裁决 | ✅ 已裁决（裁决为「保留多入口，不收敛为单入口」；无代码改动，仅固化契约）（2026-07-22） |

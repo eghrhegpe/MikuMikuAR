@@ -545,6 +545,8 @@ public class WailsBridge {
                 java.io.File f = new java.io.File(path);
                 if (!f.exists()) {
                     Log.e(TAG, "installApk: file not found: " + path);
+                    emitEvent("update:installFailed",
+                            "{\"error\":\"file not found\"}");
                     return;
                 }
                 Uri uri = androidx.core.content.FileProvider.getUriForFile(
@@ -558,6 +560,10 @@ public class WailsBridge {
                 activity.startActivity(intent);
             } catch (Exception e) {
                 Log.e(TAG, "installApk failed", e);
+                String msg = e.getMessage() != null
+                        ? e.getMessage().replace("\"", "\\\"") : "unknown";
+                emitEvent("update:installFailed",
+                        "{\"error\":\"" + msg + "\"}");
             }
         });
     }

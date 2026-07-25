@@ -57,13 +57,13 @@ Wails 原生      桌面应用 (go)          安卓应用 (go)        ← go-ada
 2. **网页模式 vs 网页模式安卓**：共享 browser-adapter，宿主键取值一致；差异仅在于安卓浏览器的个别怪癖（如 A2-06 个别版本），由 `clipboardReliable` + 调用点兜底覆盖，**无需独立分支**。
 3. **原生 vs 网页的本质断点**：`externalApps`/`plazaWindow`/`watchDir`/`proxyServer`/`fileServer`/`systemDirOpen` 为原生独占；`fsAccess`/`storageMode`/`modelScan` 网页模式依赖 FSA 检测。
 
-## 四、CI 制品矩阵（待立，见 ADR-178 阶段 3）
+## 四、CI 制品矩阵（✅ ADR-178 Phase 3 已落地 2026-07-26）
 
-| 制品 | 构建入口 | smoke 验收 |
-|------|----------|-----------|
-| 桌面应用（Win/macOS/Linux） | `wails build` | 现有 E2E（Playwright 5222） |
-| 安卓应用（arm64 APK） | `build-android.ps1` | 安装自检 + MPR 单线程降级观测 |
-| 网页模式 | `vite build --config vite.web.config.ts` → GitHub Pages | `web-smoke.spec.ts` / `web-resources.spec.ts` |
+| 制品 | 构建入口 | CI job | smoke 验收 |
+|------|----------|--------|-----------|
+| 桌面应用（Win/macOS/Linux） | `wails build` | 发布触发 | 现有 E2E（Playwright 5222） |
+| 安卓应用（arm64 APK） | `build-android.ps1` | 发布触发 | 安装自检 + MPR 单线程降级观测 |
+| 网页模式 | `vite build --config vite.web.config.ts` → GitHub Pages | push main 自动 | `web-smoke.spec.ts` / `web-resources.spec.ts` |
 
 ## 五、与 ADR 的映射
 
