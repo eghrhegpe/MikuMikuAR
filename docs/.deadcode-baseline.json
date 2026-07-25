@@ -1,0 +1,10 @@
+{
+  "unusedExports": 61,
+  "unusedTypes": 8,
+  "duplicateExports": 2,
+  "unusedDevDeps": 0,
+  "unlistedDeps": 1,
+  "clones": 11,
+  "duplicatedLines": 209,
+  "updatedAt": "2026-07-25"
+}

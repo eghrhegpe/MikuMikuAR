@@ -56,8 +56,6 @@ export type MaterialCategoryParams = {
 
 const CATEGORIES = ['皮肤', '头发', '眼睛', '服装', '配件', '道具'] as const;
 export type MaterialCategory = (typeof CATEGORIES)[number];
-/** 导出 CATEGORIES 供 UI 层遍历分类（如 applyUnlitFallback 全分类批量应用） */
-export const MATERIAL_CATEGORIES: readonly MaterialCategory[] = CATEGORIES;
 const CATEGORY_SET = new Set<string>(CATEGORIES);
 
 interface _OrigMat {

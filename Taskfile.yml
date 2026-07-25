@@ -62,6 +62,12 @@ tasks:
       - cmd: cd frontend && npm run test:diff-coverage
         silent: true
 
+  deadcode:baseline:
+    summary: knip + jscpd 死代码/重复代码基线治理（回退则阻塞）
+    cmds:
+      - cmd: cd frontend && npm run deadcode:baseline
+        silent: true
+
   setup:docker:
     summary: Builds Docker image for cross-compilation (~800MB download)
     cmds:
