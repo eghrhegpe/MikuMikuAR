@@ -830,7 +830,7 @@ export class SlideMenu {
 
     /**
      * [doc:adr-065] 原地刷新单行可见文本（语言热切换用）。
-     * 仅更新 folder/action/model 行的 label / data-hint，不重建 DOM、不丢焦点与监听器。
+     * 更新 folder/action/model 行的 label / data-hint / trailing 标题，不重建 DOM、不丢焦点与监听器。
      * 控件行（slider/toggle/modeSlider/chips）由 registerControl 管理，此处跳过。
      */
     private refreshRowText(el: HTMLElement, row: PopupRow): void {
@@ -853,6 +853,13 @@ export class SlideMenu {
         }
         const hint = row.sublabel || (row.model ? t('menu.noDesc') : t('menu.noHint'));
         el.setAttribute('data-hint', hint);
+        // [doc:P8] 刷新 trailing 按钮的 title 文本（图标不换 — lucide icon 名不变）
+        if (row.trailing) {
+            const trailingBtn = el.querySelector('.slide-trailing-btn') as HTMLElement | null;
+            if (trailingBtn) {
+                trailingBtn.title = row.trailing.title ?? '';
+            }
+        }
     }
 
     private async buildPanel(level: PopupLevel): Promise<void> {
