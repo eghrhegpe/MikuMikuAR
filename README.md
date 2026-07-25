@@ -2,22 +2,41 @@
 
 > 不只是 MMD 查看器——从模型浏览、动作播放到 AR 实拍合成，MMD 创作的全链路桌面工作站。
 
-[![CI](https://img.shields.io/github/actions/workflow/status/eghrhegpe/MikuMikuAR/ci.yml?logo=github)](https://github.com/eghrhegpe/MikuMikuAR/actions)
-[![Release](https://img.shields.io/github/v/release/eghrhegpe/MikuMikuAR?logo=github)](https://github.com/eghrhegpe/MikuMikuAR/releases)
-[![Go](https://img.shields.io/badge/Go-1.25-00ADD8?logo=go)](https://go.dev/)
-[![Wails](https://img.shields.io/badge/Wails-v3-DF0000?logo=wails)](https://wails.io)
-[![Babylon.js](https://img.shields.io/badge/Babylon.js-9.16-AD1F23?logo=babylondotjs)](https://babylonjs.com/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript)](https://www.typescriptlang.org/)
-[![Vite](https://img.shields.io/badge/Vite-6.4-646CFF?logo=vite)](https://vitejs.dev/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+![CI](https://img.shields.io/github/actions/workflow/status/eghrhegpe/MikuMikuAR/ci.yml?logo=github)
 
-| 平台 | 状态 |
-|------|------|
-| 🪟 Windows | ✅ 已验证 |
-| 🤖 Android | ✅ 已验证（c-shared + WebView） |
+
+
+![Release](https://img.shields.io/github/v/release/eghrhegpe/MikuMikuAR?logo=github)
+
+![Go](https://img.shields.io/badge/Go-1.25-00ADD8?logo=go)
+
+![Wails](https://img.shields.io/badge/Wails-v3-DF0000?logo=wails)
+
+![Babylon.js](https://img.shields.io/badge/Babylon.js-9.16-AD1F23?logo=babylondotjs)
+
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript)
+
+![Vite](https://img.shields.io/badge/Vite-6.4-646CFF?logo=vite)
+
+![License: MIT](https://img.shields.io/badge/license-MIT-blue)
+
+| 平台                | 状态                          |
+| ----------------- | --------------------------- |
+| 🪟 Windows        | ✅ 已验证                       |
+| 🤖 Android        | ✅ 已验证（c-shared + WebView）   |
 | 🍎 iOS / 🐧 Linux | 🟡 理论兼容（Wails v3 任务已配置，未实测） |
 
 [简体中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · [繁體中文](README.zh-TW.md)
+
+---
+
+## 🌐 网页版 & 🖥️ 桌面版
+
+- **🌐 网页版** — 无需安装，浏览器直接打开 **[https://eghrhegpe.github.io/MikuMikuAR/](https://eghrhegpe.github.io/MikuMikuAR/)**。
+  支持任意现代浏览器（含 iOS / Linux），模型通过拖拽 zip 或文件选择器导入。
+- **🖥️ 桌面版（Wails v3）** — Windows / Android，原生安装运行。
+
+同一套 TypeScript + Babylon.js 9.16 代码，两种运行形态，功能一致。
 
 ---
 
@@ -88,7 +107,7 @@
 - **模型广场浏览器** — 多站点聚合（Bowlroll/DeviantArt 等），内嵌浏览 + 下载代理 + 创作者模式
 - **zip 容器** — 不解压直接加载，SHA-256 cache 复用
 - **Scene Bundle** — 场景打包为 zip，跨设备导入/导出
-- **Blender 唤起** — 需 [mmd_tools](https://github.com/powroupi/blender_mmd_tools) 插件
+- **Blender 唤起** — 需 [mmd\_tools](https://github.com/powroupi/blender_mmd_tools) 插件
 
 ### 🌐 国际化
 
@@ -103,13 +122,13 @@
 
 ## ⌨️ 快捷键
 
-| 快捷键 | 行为 |
-|--------|------|
+| 快捷键      | 行为                       |
+| -------- | ------------------------ |
 | Ctrl+1~5 | 切换底部导航弹窗（模型/动作/场景/环境/设置） |
-| Ctrl+6 | 切换 AR 相机模式 |
-| Space | 播放/暂停 |
-| ←/→ | seek ±5s |
-| WASD | 自由飞行相机（需开启 Freefly） |
+| Ctrl+6   | 切换 AR 相机模式               |
+| Space    | 播放/暂停                    |
+| ←/→      | seek ±5s                 |
+| WASD     | 自由飞行相机（需开启 Freefly）      |
 
 ---
 
@@ -117,21 +136,23 @@
 
 ### 前置依赖
 
-| 依赖 | 版本 | 说明 | 安装检查 |
-|------|------|------|---------|
-| **Go** | 1.25+ | 后端编译 | `go version` |
-| **Node.js** | 24+ | 前端构建 | `node --version` |
-| **npm** | 11+ | 包管理 | `npm --version` |
-| **Wails v3 CLI** | 最新 | 热重载开发必需 | `wails3 version` → `go install github.com/wailsapp/wails/v3/cmd/wails3@latest` |
-| **PowerShell 7** | — | Windows 构建脚本（可选） | `pwsh --version` |
-| **GitHub CLI** | — | 发版流程（可选） | `gh --version` |
+| 依赖               | 版本    | 说明               | 安装检查                                                                           |
+| ---------------- | ----- | ---------------- | ------------------------------------------------------------------------------ |
+| **Go**           | 1.25+ | 后端编译             | `go version`                                                                   |
+| **Node.js**      | 24+   | 前端构建             | `node --version`                                                               |
+| **npm**          | 11+   | 包管理              | `npm --version`                                                                |
+| **Wails v3 CLI** | 最新    | 热重载开发必需          | `wails3 version` → `go install github.com/wailsapp/wails/v3/cmd/wails3@latest` |
+| **PowerShell 7** | —     | Windows 构建脚本（可选） | `pwsh --version`                                                               |
+| **GitHub CLI**   | —     | 发版流程（可选）         | `gh --version`                                                                 |
 
 > **E2E 测试额外依赖：** Playwright 浏览器
+>
 > ```bash
 > cd frontend && npx playwright install chromium
 > ```
 >
 > **WASM Bullet 物理引擎（可选）：** 如需本地编译，安装 [Rust](https://rustup.rs/)
+>
 > ```bash
 > rustc --version   # 查看是否已安装
 > ```
@@ -144,6 +165,7 @@ wails3 dev -config ./build/config.yml -port 9245
 ```
 
 <details>
+
 <summary>进阶：前后端拆分运行（最大控制力）</summary>
 
 ```bash
@@ -176,6 +198,7 @@ bash scripts/build-linux.sh --production
 ```
 
 <details>
+
 <summary>Linux 额外依赖</summary>
 
 ```bash
@@ -190,14 +213,14 @@ sudo apt-get install -y libgtk-4-dev libwebkitgtk-6.0-dev libglib2.0-dev \
 
 ## 📖 文档
 
-| 文档 | 内容 |
-|------|------|
-| [架构方案](docs/architecture.md) | 全功能汇总与技术细节 |
-| [设计决策](docs/adr/) | 160+ ADR 技术决策记录 |
-| [竞品分析](docs/competitive-analysis.md) | 23 个项目调研对比 |
-| [项目现状](docs/status.md) | 当前状态 + 已完成功能 |
-| [菜单指南](docs/menu-how-to.md) | 声明式菜单 Schema 开发手册 |
-| [编码奇谭](novel/README.md) | 代码演化叙事 |
+| 文档                                   | 内容                |
+| ------------------------------------ | ----------------- |
+| [架构方案](docs/architecture.md)         | 全功能汇总与技术细节        |
+| [设计决策](docs/adr/)                    | 160+ ADR 技术决策记录   |
+| [竞品分析](docs/competitive-analysis.md) | 23 个项目调研对比        |
+| [项目现状](docs/status.md)               | 当前状态 + 已完成功能      |
+| [菜单指南](docs/menu-how-to.md)          | 声明式菜单 Schema 开发手册 |
+| [编码奇谭](novel/README.md)              | 代码演化叙事            |
 
 ---
 
@@ -224,7 +247,7 @@ MikuMikuAR/
 ## ⚠️ 已知限制
 
 - **贴图兼容性** — 部分 PMX 贴图路径不标准，`basenameFallbackFS` 兜底但不保证 100%
-- **Blender 编辑** — 需用户自行安装 [mmd_tools](https://github.com/powroupi/blender_mmd_tools) 插件
+- **Blender 编辑** — 需用户自行安装 [mmd\_tools](https://github.com/powroupi/blender_mmd_tools) 插件
 - **Android 渲染性能** — 移动 GPU 算力/带宽客观差距，大模型场景 FPS 低于桌面
 - **SSS 次表面散射** — 依赖 babylon-mmd PBR 支持，上游阻塞中
 - **VMD 图层混合** — WASM 运行时仅支持单图层，多图层需 JS 运行时
