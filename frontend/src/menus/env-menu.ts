@@ -13,7 +13,6 @@ import { getLightState, setLightState as setLightingState } from '../scene/rende
 import { closeAllOverlays } from '../core/utils';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
-import { addDisposableListener } from '../core/dom';
 import { registerLoadRefreshHook, registerLibraryScannedHook } from '../core/load-refresh-registry';
 import type { MenuNode } from './menu-schema';
 // ======== 从子文件导入 ========

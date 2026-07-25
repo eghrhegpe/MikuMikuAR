@@ -28,6 +28,7 @@ export function scheduleRefresh(): void {
     }
     _refreshScheduled = true;
     const keys = new Set(_changedKeys);
+    _changedKeys.clear();
     requestAnimationFrame(() => {
         _refreshScheduled = false;
         for (const fn of _subscribers) {

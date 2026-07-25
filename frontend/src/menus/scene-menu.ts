@@ -32,7 +32,6 @@ import {
     closeAllOverlays,
     cardContainer,
 } from '../core/utils';
-import { addDisposableListener } from '../core/dom';
 import { registerLoadRefreshHook, registerLibraryScannedHook } from '../core/load-refresh-registry';
 import { focusModel } from '../scene/scene';
 import { t } from '../core/i18n/t';
