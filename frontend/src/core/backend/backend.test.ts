@@ -713,4 +713,37 @@ describe('FSA 目录扫描嵌套结构（保留目录层级 + 同名不覆盖）
         const byPath = new Map(models.map((m) => [m.file_path, m]));
         expect(byPath.get('web://selected-dir/PMX/miku.pmx')?.dir).toBe('web://selected-dir/PMX');
     });
+
+    it('[adr-180] 根重扫不误删用户导入模型（无 dir 的 import entry 与 file:/dir: 保留）', async () => {
+        const root = buildFakeTree({
+            name: 'models',
+            kind: 'directory',
+            children: [{ kind: 'file', name: 'm.pmx', bytes: new Uint8Array([1]) }],
+        });
+        setWindow({ showDirectoryPicker: async () => root });
+        // 预置用户导入模型（SelectImportFile 写入：entry 无 dir，file:/dir: 与扫描同命名空间）。
+        _idbStore.set('entry:importedMiku', {
+            file_path: 'web://import/importedMiku.pmx',
+            name: 'importedMiku',
+            fileName: 'importedMiku.pmx',
+            type: 'actor',
+            format: 'pmx',
+            container: 'file',
+            kind: 'pmx',
+            size: 2,
+            savedAt: Date.now(),
+        });
+        _idbStore.set('file:importedMiku', new Uint8Array([7, 7]));
+        _idbStore.set('dir:importedMiku:toon.png', new Uint8Array([8, 8]));
+
+        await browserAdapter.SelectDir(); // 触发根重扫（清旧）
+
+        // 导入模型索引 entry 必须保留（无 dir → 不被 _clearScannedEntries 命中）
+        expect(_idbStore.get('entry:importedMiku')).toBeDefined();
+        // 导入模型字节与纹理保留
+        expect(_idbStore.get('file:importedMiku')).toEqual(new Uint8Array([7, 7]));
+        expect(_idbStore.get('dir:importedMiku:toon.png')).toEqual(new Uint8Array([8, 8]));
+        // FSA 扫描写入的新 entry 同时存在
+        expect(_idbStore.get('entry:m')).toBeDefined();
+    });
 });
