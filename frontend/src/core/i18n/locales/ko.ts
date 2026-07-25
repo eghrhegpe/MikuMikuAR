@@ -1055,6 +1055,11 @@ export const ko: Record<string, string> = {
     'library.modelTools': '모델 도구',
     'library.firstUseHint':
         '📦 처음 사용하시나요? 여기서 라이브러리를 열어 → 모델을 로드하세요. ⚙ 설정에서 라이브러리 디렉터리를 지정할 수 있습니다',
+    'library.fsaAuthTitle': '모델 루트 디렉터리 인가',
+    'library.fsaAuthPrompt':
+        '데스크톱 앱처럼 모델을 자동 스캔·로드하려면 브라우저에서 모델 폴더를 선택하세요. 지금 인가할까요?',
+    'library.fsaRevokedHint':
+        '모델 루트 디렉터리 인가가 만료되어 일부 모델을 로드하지 못할 수 있습니다. 루트 디렉터리를 다시 설정하세요.',
     'library.browseHint2':
         '📦 클릭하여 모델 찾기 · 💃 클릭하여 모션 로드 · 드래그로 회전 · 스크롤로 확대/축소',
     'library.loadLibraryFailed': '✗ 라이브러리 로드 실패: ',

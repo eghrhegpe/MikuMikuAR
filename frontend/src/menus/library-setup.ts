@@ -34,6 +34,7 @@ import { tryCatchStatus, isUnderRoot } from '../core/utils';
 import { logWarn } from '../core/logger';
 import { safeCallAsync } from '../core/safe-call';
 import { showConfirm } from '../core/dialog';
+import { getFsaAuthState, isFsaAuthPromptDismissed, dismissFsaAuthPrompt } from '../core/backend/browser-adapter';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
 import { buildLevel, setResourceViewMode } from './library-core';
@@ -44,10 +45,30 @@ import { showModelPopup } from './library-browse';
 export async function initLibrary(): Promise<void> {
     try {
         const cfg = await GetConfig();
-        const cfgRoot = cfg.resource_root || cfg.library_root || cfg.override_paths?.pmx || '';
+        let cfgRoot = cfg.resource_root || cfg.library_root || cfg.override_paths?.pmx || '';
         if (!cfgRoot) {
-            feedbackStatus('library.firstUseHint', undefined, false);
-            return;
+            const state = await getFsaAuthState();
+            if (state === 'unsupported') {
+                // 非 FSA 浏览器（桌面端/旧浏览器）：无目录授权能力，维持原轻提示
+                feedbackStatus('library.firstUseHint', undefined, false);
+                return;
+            }
+            if (state === 'granted') {
+                // 持久化句柄仍有效但 config 未记录根路径：补上后走正常 rescan 自愈，不弹 picker
+                cfgRoot = 'web://selected-dir';
+            } else {
+                // 'none' | 'revoked'：对齐安卓，弹确认框引导授权；跳过则记住不再弹，避免纯导入用户被骚扰
+                if (!(await isFsaAuthPromptDismissed())) {
+                    const ok = await showConfirm(t('library.fsaAuthPrompt'), t('library.fsaAuthTitle'));
+                    if (ok) {
+                        await selectResourceRoot(false);
+                        return;
+                    }
+                    await dismissFsaAuthPrompt();
+                }
+                feedbackStatus('library.firstUseHint', undefined, false);
+                return;
+            }
         }
         setLibraryRoot(cfgRoot);
         setResourceRoot(cfgRoot);
@@ -84,6 +105,10 @@ export async function initLibrary(): Promise<void> {
         } catch (err) {
             logWarn('library-setup', 'ScanModelDir refresh:', err);
         }
+        // [doc:adr-177] 曾授权但句柄失效（revoked）：库显示缓存不阻塞，仅轻提示引导重设根目录
+        if ((await getFsaAuthState()) === 'revoked') {
+            feedbackStatus('library.fsaRevokedHint', undefined, false);
+        }
         safeCallAsync('library-setup', 'CleanOrphanCache:', () => CleanOrphanCache());
         feedbackStatus('library.browseHint2', undefined, false);
     } catch (err) {
@@ -94,14 +119,16 @@ export async function initLibrary(): Promise<void> {
 
 // ======== 配置 ========
 
-export async function selectResourceRoot(): Promise<void> {
+export async function selectResourceRoot(requireConfirm = true): Promise<void> {
     if (isAndroidPlatform()) {
         feedbackStatus('library.androidDirNotSupported', undefined, false);
         return;
     }
-    const ok = await showConfirm(t('library.confirmRescan'), t('library.confirmRescanTitle'));
-    if (!ok) {
-        return;
+    if (requireConfirm) {
+        const ok = await showConfirm(t('library.confirmRescan'), t('library.confirmRescanTitle'));
+        if (!ok) {
+            return;
+        }
     }
     const dir = await tryCatchStatus(async () => {
         const d = await SelectDir();

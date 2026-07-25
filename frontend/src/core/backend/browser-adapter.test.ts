@@ -5,7 +5,7 @@
 //
 // 通过 vi.mock('./idb') 注入内存 store，绕过 IndexedDB，纯逻辑验证键命名空间与统计聚合。
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const { mem } = vi.hoisted(() => {
     const mem = new Map<string, Map<string, unknown>>();
@@ -26,7 +26,7 @@ vi.mock('./idb', () => ({
     closeIDB: () => {},
 }));
 
-import { browserAdapter } from './browser-adapter';
+import { browserAdapter, getFsaAuthState, isFsaAuthPromptDismissed, dismissFsaAuthPrompt } from './browser-adapter';
 
 function setStore(store: string, entries: Record<string, unknown>): void {
     mem.set(store, new Map(Object.entries(entries)));
@@ -133,5 +133,69 @@ describe('GetCacheStats 真实结构（修复面板 undefined）', () => {
         expect(stats.resourceCount).toBe(0);
         expect(stats.thumbnailCount).toBe(0);
         expect(stats.extractedCount).toBe(0);
+    });
+});
+
+describe('getFsaAuthState 四态（adr-177 启动引导）', () => {
+    const realWindow = (globalThis as { window?: unknown }).window;
+    beforeEach(() => {
+        mem.clear();
+    });
+    afterEach(() => {
+        // 还原 window，避免污染其他测试
+        if (realWindow === undefined) delete (globalThis as { window?: unknown }).window;
+        else (globalThis as { window?: unknown }).window = realWindow;
+    });
+
+    it('unsupported: 有 window 但不暴露 FSA API → 不引导', async () => {
+        // 真实环境（旧浏览器/桌面 WebView2 不暴露 FSA）总有 window，仅缺 FSA 方法
+        (globalThis as { window?: unknown }).window = { addEventListener: () => {} };
+        expect(await getFsaAuthState()).toBe('unsupported');
+    });
+
+    it('none: 有 FSA API 且无持久化句柄 → 应引导', async () => {
+        (globalThis as { window?: unknown }).window = {
+            showDirectoryPicker: () => {},
+            showOpenFilePicker: () => {},
+        };
+        expect(await getFsaAuthState()).toBe('none');
+    });
+
+    it('granted: 句柄 queryPermission 返回 granted → 不引导', async () => {
+        (globalThis as { window?: unknown }).window = {
+            showDirectoryPicker: () => {},
+            showOpenFilePicker: () => {},
+        };
+        setStore('config', { fsaRootHandle: { queryPermission: async () => 'granted' } });
+        expect(await getFsaAuthState()).toBe('granted');
+    });
+
+    it('revoked: 句柄 queryPermission 返回 prompt → 应提示重设', async () => {
+        (globalThis as { window?: unknown }).window = {
+            showDirectoryPicker: () => {},
+            showOpenFilePicker: () => {},
+        };
+        setStore('config', { fsaRootHandle: { queryPermission: async () => 'prompt' } });
+        expect(await getFsaAuthState()).toBe('revoked');
+    });
+
+    it('revoked: 老实现无 queryPermission → 保守视为需重选', async () => {
+        (globalThis as { window?: unknown }).window = {
+            showDirectoryPicker: () => {},
+            showOpenFilePicker: () => {},
+        };
+        setStore('config', { fsaRootHandle: {} });
+        expect(await getFsaAuthState()).toBe('revoked');
+    });
+});
+
+describe('fsaAuthPrompt dismissed 标志（adr-177 跳过不再弹）', () => {
+    beforeEach(() => {
+        mem.clear();
+    });
+    it('默认未跳过；dismiss 后记为已跳过', async () => {
+        expect(await isFsaAuthPromptDismissed()).toBe(false);
+        await dismissFsaAuthPrompt();
+        expect(await isFsaAuthPromptDismissed()).toBe(true);
     });
 });
