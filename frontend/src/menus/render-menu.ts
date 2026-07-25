@@ -3,6 +3,7 @@
 
 import type { MenuNode } from './menu-schema';
 import { getStateValue, setStateValue, getBindFn } from './menu-schema';
+import type { PopupLevel } from '../core/config';
 import {
     addSliderRow,
     addColorSliderRow,

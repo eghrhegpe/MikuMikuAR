@@ -62,7 +62,7 @@ import {
     type WebXRProbeResult,
 } from '../scene/ar/ar-webxr-probe';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
-import { renderMenu } from './render-menu';
+import { renderMenu, buildSchemaLevel } from './render-menu';
 import { addDisabledRow } from '../core/ui-helpers';
 import { getCachedCapabilities } from '../core/backend';
 import type { MenuNode } from './menu-schema';
@@ -324,14 +324,7 @@ function buildCameraSchema(): MenuNode[] {
 }
 
 export function buildCameraLevel(): PopupLevel {
-    return {
-        label: t('motion.cameraMode'),
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            return renderMenu(buildCameraSchema(), container);
-        },
-    };
+    return buildSchemaLevel('motion.camera', buildCameraSchema);
 }
 
 function renderOrbitParams(container: HTMLElement): void {

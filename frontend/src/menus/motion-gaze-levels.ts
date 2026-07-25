@@ -491,11 +491,13 @@ export function renderPerceptionConflictBanners(container: HTMLElement): void {
 }
 
 export function buildGazeTrackingLevel(): PopupLevel {
+    const containerRef: HTMLElement[] = [];
     return {
         label: t('motion.gazeTracking'),
         dir: '',
         items: [],
         renderCustom: (container) => {
+            containerRef[0] = container;
             return cardContainer(container, (c) => {
                 const banner = document.createElement('div');
                 banner.className = 'conflict-banner';
@@ -503,6 +505,10 @@ export function buildGazeTrackingLevel(): PopupLevel {
                 c.appendChild(banner);
                 return renderMenu(gazeSchema, c);
             });
+        },
+        onLangChange: () => {
+            const c = containerRef[0];
+            if (c) { c.innerHTML = ''; renderMenu(gazeSchema, c); }
         },
     };
 }

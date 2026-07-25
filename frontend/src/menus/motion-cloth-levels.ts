@@ -13,7 +13,7 @@ import type { VirtualSkirtConfig } from '../scene/physics/virtual-skirt';
 import { getMotionMenu } from './motion-popup';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
-import { renderMenu } from './render-menu';
+import { renderMenu, buildSchemaLevel } from './render-menu';
 import type { MenuNode } from './menu-schema';
 import { DebouncedTimer } from '../core/utils';
 import { logWarn } from '../core/logger';
@@ -339,12 +339,5 @@ function buildVirtualSkirtSchema(): MenuNode[] {
 }
 
 export function buildVirtualSkirtLevel(): PopupLevel {
-    return {
-        label: t('cloth.title'),
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            return renderMenu(buildVirtualSkirtSchema(), container);
-        },
-    };
+    return buildSchemaLevel('cloth.title', buildVirtualSkirtSchema);
 }
