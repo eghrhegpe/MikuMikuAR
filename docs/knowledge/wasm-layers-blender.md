@@ -4,8 +4,10 @@ name: WASM 图层混合器
 category: motion
 scope:
   - frontend/src/scene/motion/wasm-layers-blender.ts
+  - frontend/src/scene/motion/wasm-layers-config.ts
 source_files:
   - frontend/src/scene/motion/wasm-layers-blender.ts
+  - frontend/src/scene/motion/wasm-layers-config.ts
 adr: []
 symbols:
   - setupWasmLayersBlender

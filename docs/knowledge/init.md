@@ -6,6 +6,7 @@ scope:
   - frontend/src/core/**
 source_files:
   - frontend/src/core/init.ts
+  - frontend/src/core/main.ts
 adr: []
 ---
 
