@@ -236,10 +236,15 @@ async function _renderThumbnailImpl(
             const rowBytes = rtW * 4;
             const flipped = new Uint8Array(arr.length);
             for (let y = 0; y < rtH; y++) {
-                flipped.set(
-                    arr.subarray(y * rowBytes, y * rowBytes + rowBytes),
-                    (rtH - 1 - y) * rowBytes
-                );
+                try {
+                    flipped.set(
+                        arr.subarray(y * rowBytes, y * rowBytes + rowBytes),
+                        (rtH - 1 - y) * rowBytes
+                    );
+                } catch {
+                    // readPixels 返回的 buffer 可能被 detach（WebGL 竞态），跳过此行不崩
+                    continue;
+                }
             }
             imageData.data.set(flipped);
             ctx.putImageData(imageData, 0, 0);
