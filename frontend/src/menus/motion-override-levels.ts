@@ -535,13 +535,16 @@ function buildBoneOverrideSchema(): MenuNode[] {
     // 提升到模块级 _overrideFormStates Map，避免 reRender 时丢失
     let formState = _overrideFormStates.get(modelId);
     if (!formState) {
+        const firstBone = bones[0]?.name ?? '';
+        // [doc:timing T2 fix] 初始化时从引擎读取该骨骼已有覆盖值，避免第一次打开时滑块显示 0 但实际有覆盖
+        const existing = firstBone ? getOverride(firstBone, modelId) : undefined;
         formState = {
-            boneName: bones[0]?.name ?? '',
-            pitch: 0,
-            yaw: 0,
-            roll: 0,
-            weight: 1,
-            absolute: true,
+            boneName: firstBone,
+            pitch: existing?.euler[0] ?? 0,
+            yaw: existing?.euler[1] ?? 0,
+            roll: existing?.euler[2] ?? 0,
+            weight: existing?.weight ?? 1,
+            absolute: existing?.absolute ?? true,
         };
         _overrideFormStates.set(modelId, formState);
     }
@@ -567,6 +570,20 @@ function buildBoneOverrideSchema(): MenuNode[] {
                         }
                     );
 
+                    // [doc:timing T1 fix] 实时预览：拖拽滑块时立即写入 _overrideMaps，下一帧 3D 反映。
+                    // 不在此触发 autoSave/sync（由 Apply 按钮统一收尾），避免每帧磁盘写入。
+                    const _livePreview = (): void => {
+                        if (!formState.boneName) return;
+                        setBoneOverride(
+                            formState.boneName,
+                            [formState.pitch, formState.yaw, formState.roll],
+                            formState.weight,
+                            true,
+                            undefined,
+                            formState.absolute
+                        );
+                    };
+
                     addSliderRow(
                         inner,
                         t('motion.boneOverride.pitch'),
@@ -576,6 +593,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
                         1,
                         (v) => {
                             formState.pitch = v;
+                            _livePreview();
                         },
                         undefined,
                         undefined,
@@ -590,6 +608,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
                         1,
                         (v) => {
                             formState.yaw = v;
+                            _livePreview();
                         },
                         undefined,
                         undefined,
@@ -604,6 +623,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
                         1,
                         (v) => {
                             formState.roll = v;
+                            _livePreview();
                         },
                         undefined,
                         undefined,
@@ -618,6 +638,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
                         0.05,
                         (v) => {
                             formState.weight = v;
+                            _livePreview();
                         },
                         undefined,
                         undefined,

@@ -406,6 +406,9 @@ export function deactivatePerception(): void {
     if (!hasPinned && perceptionObserver) {
         perceptionObserver();
         perceptionObserver = null;
+        // [doc:adr-166 P2-1] 无 observer 时一并清理 reclaim listener，保持对称（审计 P4 fix）
+        getBoneOverrideStore().removeReleaseListener(_onBoneOverrideRelease);
+        _reclaimListenerAdded = false;
     }
     _resetGazeState(); // 重置 gaze 状态，避免关闭后重新开启出现跳跃
 
