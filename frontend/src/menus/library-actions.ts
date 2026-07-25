@@ -2,7 +2,6 @@
 // 从 library-core.ts 拆分
 
 import {
-    setStatus,
     allModels,
     LibraryModel,
     PopupLevel,
@@ -273,7 +272,7 @@ function startReplaceModel(m: LibraryModel, replaceId: string): void {
                             { mode: 'jumpToDir', modelId: handle.id }
                         )
                     );
-                    setStatus(t('status.done'), true);
+                    feedbackInfo('status.done', getBaseName(m.file_path));
                 } catch (uiErr) {
                     logWarn('library-actions', 'replace UI navigation failed', uiErr);
                     feedbackInfo('status.done', getBaseName(m.file_path));
@@ -457,7 +456,7 @@ function replaceMotion(m: LibraryModel): void {
         return;
     }
     if (librarySessionStore.isReplaceLoading()) {
-        setStatus(t('library.loadingModel'), false);
+        feedbackStatus('library.loadingModel', undefined, false);
         return;
     }
     closeAllOverlays();
@@ -552,7 +551,7 @@ function buildTagsOverviewLevel(): PopupLevel {
                 });
                 cardContainer(container, (c) => {
                     slideRow(c, 'lucide:plus', t('library.newTag'), false, () => {
-                        setStatus(t('library.addTagHint'), false);
+                        feedbackStatus('library.addTagHint', undefined, false);
                         stackRegistry.modelStack.pop();
                     });
                 });

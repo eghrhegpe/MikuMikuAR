@@ -26,7 +26,7 @@ import { slideRow, addSectionTitle, addDangerRow, addFieldRow } from '../core/ui
 import { showConfirm, showPrompt } from '../core/dialog';
 import { addDisposableListener, type Disposable } from '../core/dom';
 import { softwareKindIcon } from '../core/icons';
-import { tryCatchStatus, swallowError, jsonStringify } from '../core/utils';
+import { tryCatchStatus, swallowError, jsonStringify, getBaseName } from '../core/utils';
 import { feedbackError, feedbackInfo } from '../core/feedback';
 import { safeCallAsync } from '../core/safe-call';
 import { t } from '../core/i18n/t';

@@ -3,7 +3,6 @@
 // 动作绑定面板（姿势库·pin/unpin·物理开关）/ per-model 播放控制
 
 import {
-    setStatus,
     mmdRuntime,
     isPlaying,
     setIsPlaying,
@@ -13,6 +12,8 @@ import {
     getBrowseDir,
     cardContainer,
 } from '../core/config';
+import { feedbackInfo } from '../core/feedback';
+import { showInfoToast } from '../core/toast';
 import { slideRow, addToggleRow, addEmptyRow, addPresetChip } from '../core/ui-helpers';
 import { loadManager } from '../core/load-manager';
 import {
@@ -90,9 +91,9 @@ export function renderModuleToggleList(
                     } else {
                         inst?.disable();
                     }
-                    setStatus(
-                        v ? t('motion.override.enabled') : t('motion.override.disabled'),
-                        true
+                    feedbackInfo(
+                        v ? 'motion.override.enabled' : 'motion.override.disabled',
+                        t(mod.meta.labelKey)
                     );
                     getMotionMenu()?.reRender();
                 },
@@ -306,7 +307,7 @@ function buildActionBindingSchema(id: string): MenuNode[] {
                                     applyIntentToModel(id, active, getMotionGen());
                                 }
                                 getMotionMenu()?.reRender();
-                                setStatus(t('motion.override.redoApplied'), true);
+                                feedbackInfo('motion.override.redoApplied', undefined);
                             });
                         } else {
                             addPresetChip(inner, t('motion.context.pinMotion'), false, () => {
@@ -317,7 +318,7 @@ function buildActionBindingSchema(id: string): MenuNode[] {
                                         status: 'overridden',
                                     };
                                     getMotionMenu()?.reRender();
-                                    setStatus(t('motion.override.redoApplied'), true);
+                                    feedbackInfo('motion.override.redoApplied', undefined);
                                 }
                             });
                         }
@@ -351,11 +352,10 @@ function buildActionBindingSchema(id: string): MenuNode[] {
                                 setPhysicsCategory(id, cat, v);
                                 getMotionMenu()?.updateControls();
                                 const catLabel = t(CAT_KEYS[cat] || cat);
-                                setStatus(
+                                showInfoToast(
                                     v
                                         ? t('motion.catEnabled', { cat: catLabel })
-                                        : t('motion.catDisabled', { cat: catLabel }),
-                                    true
+                                        : t('motion.catDisabled', { cat: catLabel })
                                 );
                             },
                             'lucide:settings',
@@ -433,7 +433,7 @@ export async function handleModelAction(action: string, id: string): Promise<voi
                 }
                 // [fix] 同步刷新模型详情栈：「动作根」卡片翻成「无动作」
                 stackRegistry.modelStack?.reRender();
-                setStatus(t('motion.motionReset'), true);
+                feedbackInfo('motion.motionReset', undefined);
             }
             break;
         case 'pose':
@@ -453,9 +453,8 @@ export async function handleModelAction(action: string, id: string): Promise<voi
         case 'loop':
             setAutoLoop(!autoLoop);
             getMotionMenu()?.reRender();
-            setStatus(
-                t('motion.loopState', { state: autoLoop ? t('motion.on') : t('motion.off') }),
-                true
+            showInfoToast(
+                t('motion.loopState', { state: autoLoop ? t('motion.on') : t('motion.off') })
             );
             break;
     }
