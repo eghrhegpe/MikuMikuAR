@@ -29,13 +29,14 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,css,json,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,css,json,md}\"",
     "generate:bindings": "cd .. && wails3 generate bindings -ts -i -d frontend/bindings ./...",
-    "audit": "npm audit --audit-level=high",
+    "audit": "npm audit --audit-level=high --registry=https://registry.npmjs.org",
     "outdated": "npm outdated",
     "deadcode": "knip",
     "deadcode:strict": "knip --production",
     "deadcode:baseline": "node ../scripts/check-deadcode-baseline.mjs",
     "duplicate": "jscpd --config jscpd.config.json src",
-    "duplicate:html": "jscpd --config jscpd.config.json --output jscpd-report --reporters jscpd-html-reporter src"
+    "duplicate:html": "jscpd --config jscpd.config.json --output jscpd-report --reporters jscpd-html-reporter src",
+    "analyze:bundle": "vite build --mode production"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
