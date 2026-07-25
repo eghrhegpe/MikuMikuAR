@@ -6,6 +6,7 @@
 ## 硬约束
 
 > 500 行文件先 grep 定位再读。
+> 按需读取 `docs/knowledge/README.md` 索引 + grep 卡正文定位功能作用，充实上下文。
 > Grep `> \*\*状态\*\*:.*(规划|实施中|部分实现)` in docs\adr，看是否已有类似实现。
 > 编号只允许给 ADR、novel 写。
 > 信任本机改动，提交代码：git add <通过测试的路径...> && git commit.会有GitHub PR review 审核，别怕错误。
