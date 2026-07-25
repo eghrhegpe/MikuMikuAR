@@ -118,8 +118,8 @@ fi
 # ── check:docs（跳过纯文档变更） ──
 if [ "$DOCS_ONLY" = "false" ]; then
   echo "[pre-push] check:docs"
-  cd "$ROOT" && node scripts/check-doc-drift.mjs || {
-    echo "❌ 文档漂移。修复后用 'npm run check:docs' 复验。"
+  cd "$ROOT" && node scripts/check-doc-drift.mjs --baseline || {
+    echo "❌ 文档漂移或 INFO 基线恶化。修复后用 'npm run check:docs -- --baseline-update' 确认新基线"
     exit 1
   }
 else

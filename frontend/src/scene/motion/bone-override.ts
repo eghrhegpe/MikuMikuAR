@@ -119,6 +119,12 @@ function _getOverrideMap(modelId: string): Map<string, _OverrideSlot> {
     if (!map) {
         map = new Map();
         _overrideMaps.set(modelId, map);
+        console.log('[bone-override] _getOverrideMap 首次为模型创建覆盖索引', JSON.stringify({
+            modelId,
+            existingModels: Array.from(_overrideMaps.keys()),
+        }));
+        // 重置诊断标志，允许 getOverrideType 在写入后重新输出诊断信息
+        _overrideTypeDiagnosed = false;
     }
     return map;
 }
@@ -403,25 +409,28 @@ export function getOverrideType(boneName: string, modelId?: string): OverrideTyp
     const map = _overrideMaps.get(mid);
     const slot = map?.get(boneName);
 
-    // 诊断：首次调用时输出完整状态，定位着色失效根因
+    // 诊断：首次调用时输出完整状态，定位着色失效根因。
+    // 重置后（覆盖写入触发）允许再次输出，以捕获写入前后的状态差异。
     if (!_overrideTypeDiagnosed) {
         _overrideTypeDiagnosed = true;
         const modelKeys = Array.from(_overrideMaps.keys());
         const entryCount = map?.size ?? 0;
-        const entries = map
-            ? Array.from(map.entries()).map(([k, s]) => `${k}(enabled=${s.enabled},rot=${s.overrideRotation},pos=${!!s.pos})`)
+        const entrySample = map
+            ? Array.from(map.entries()).slice(0, 5).map(([k, s]) => `${k}(enabled=${s.enabled},rot=${s.overrideRotation},pos=${!!s.pos})`)
             : [];
         console.log(
             '[bone-override] getOverrideType 诊断',
             JSON.stringify({
                 queryModelId: mid,
                 queryBone: boneName,
-                overrideMapModelKeys: modelKeys,
+                allMapKeys: modelKeys,
                 modelKeyMatch: modelKeys.includes(mid),
                 entriesInMap: entryCount,
-                entryNames: entries,
+                entrySample,
                 slotFound: !!slot,
                 slotEnabled: slot?.enabled,
+                slotRot: slot?.overrideRotation,
+                slotPos: !!slot?.pos,
             }, null, 2)
         );
     }

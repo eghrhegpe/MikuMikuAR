@@ -379,10 +379,52 @@ function checkAgentsNoHandcraftedIndex() {
   return warns;
 }
 
+// ── INFO 基线 ──
+
+const BASELINE_FILE = path.join(ROOT, 'docs', '.doc-check-baseline.json');
+
+function readBaseline() {
+  try { return JSON.parse(fs.readFileSync(BASELINE_FILE, 'utf8')); } catch { return null; }
+}
+
+function writeBaseline(counts) {
+  const data = { ...counts, updatedAt: new Date().toISOString().slice(0, 10) };
+  fs.writeFileSync(BASELINE_FILE, JSON.stringify(data, null, 2) + '\n');
+}
+
+const BASELINE_TRACKED = [
+  ['undocumentedModules', '符号 0% 未文档化模块'],
+  ['uncoveredSourceFiles', '知识卡未覆盖源文件'],
+  ['apiSymbolFlaggedCards', '知识卡 API 符号可疑卡'],
+];
+
+function getInfoCounts(cov, rev, apiSym) {
+  return {
+    undocumentedModules: cov.undocumented,
+    uncoveredSourceFiles: rev.total,
+    apiSymbolFlaggedCards: apiSym.flagged.length,
+  };
+}
+
 // ---------- 主流程 ----------
 function main() {
   const json = process.argv.includes('--json');
+  const baselineMode = process.argv.includes('--baseline');
+  const baselineUpdate = process.argv.includes('--baseline-update');
   const errors = [];
+
+  // --baseline-update：手动确认当前基线
+  if (baselineUpdate) {
+    // 先跑一遍检查获取最新数据
+    const cov = checkSymbolCoverage();
+    const rev = checkKnowledgeCoverage();
+    const globalIndex = buildGlobalExportIndex();
+    const apiSym = checkCardApiSymbols(globalIndex);
+    const counts = getInfoCounts(cov, rev, apiSym);
+    writeBaseline(counts);
+    console.log(`✅ 基线已更新: ${JSON.stringify(counts)}`);
+    process.exit(0);
+  }
 
   const stale = checkTreeIntegrity();
   for (const s of stale) {
@@ -410,6 +452,34 @@ function main() {
   const agentsWarns = checkAgentsNoHandcraftedIndex();
   if (generatedStatusError) {
     errors.push(`status.md ADR 生成区未同步：${generatedStatusError}`);
+  }
+
+  // ── INFO 基线对比 ──
+  const infoCounts = getInfoCounts(cov, rev, apiSym);
+  const baseline = readBaseline();
+  let baselineChanged = false;
+
+  if (baseline) {
+    for (const [key, label] of BASELINE_TRACKED) {
+      if (infoCounts[key] > baseline[key]) {
+        errors.push(`INFO 基线恶化: ${label} 从 ${baseline[key]} 增至 ${infoCounts[key]}。`);
+        errors.push(`  运行 npm run check:docs -- --baseline-update 确认新基线`);
+      }
+      if (infoCounts[key] !== baseline[key]) {
+        baselineChanged = true;
+      }
+    }
+
+    // 自动更新基线（只在指标改善时，且非 --baseline 只读模式）
+    if (!baselineMode && !errors.length && baselineChanged) {
+      const improved = BASELINE_TRACKED.some(([k]) => infoCounts[k] < baseline[k]);
+      if (improved) {
+        writeBaseline(infoCounts);
+      }
+    }
+  } else if (!baselineMode) {
+    // 首次运行，创建基线
+    writeBaseline(infoCounts);
   }
 
   if (json) {
@@ -452,6 +522,18 @@ function main() {
     console.log(`⚠ AGENTS.md 手写事实索引（WARN，不阻断）: ${agentsWarns.length} 项`);
     agentsWarns.forEach((w) => console.log('   ⚠ ' + w));
   }
+
+  // 基线状态行
+  if (baseline) {
+    const status = errors.some((e) => e.startsWith('INFO 基线恶化'))
+      ? '❌ 基线恶化'
+      : baselineChanged && infoCounts.undocumentedModules <= baseline.undocumentedModules
+        ? '✅ 基线改善'
+        : '✅ 基线清洁';
+    const brief = `${cov.undocumented}/${rev.total}/${apiSym.flagged.length}`;
+    console.log(`📊 INFO 基线: ${brief}（${status}）`);
+  }
+
   if (errors.length) {
     console.log('❌ ERROR:');
     errors.forEach((e) => console.log('   ' + e));

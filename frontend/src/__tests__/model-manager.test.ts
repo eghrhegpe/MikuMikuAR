@@ -43,6 +43,17 @@ vi.mock('@babylonjs/core/Meshes/meshBuilder', () => {
                 dispose: vi.fn(),
                 getClassName: () => 'LinesMesh',
             })),
+            CreateLines: vi.fn(() => ({
+                name: 'bone_ov_line',
+                color: { r: 1, g: 1, b: 1 },
+                isPickable: false,
+                setEnabled: vi.fn(),
+                isEnabled: vi.fn(() => true),
+                getVerticesData: vi.fn(() => null),
+                updateVerticesData: vi.fn(),
+                dispose: vi.fn(),
+                getClassName: () => 'LinesMesh',
+            })),
         },
     };
 });
