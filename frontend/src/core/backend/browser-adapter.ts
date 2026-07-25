@@ -1336,10 +1336,11 @@ export const browserAdapter: BackendService = {
         // encStem = encodeURIComponent(stem)，使不同目录同名 PMX 的纹理键互不碰撞
         // （[bugfix:tex-stem-collision]）。
         //
-        // [doc:adr-182] 幂等：输入若已是 web://model/<encStem>（model-stem，无 relPath），
-        // stem 已编码，直接原样返回，避免二次 encodeURIComponent 造成双重编码
-        // （A%2Fmiku → A%252Fmiku），使 ExtractZip 返回的 web://model/<enc> 加载路径自洽。
-        const already = pmxPath.match(/^web:\/\/model\/([^/?#]+)$/);
+        // [doc:adr-182] 幂等：输入若已是 web://model/<encStem>（model-stem 或 model-dir，
+        // 可能带 relPath），stem 已编码，直接原样返回，避免二次 encodeURIComponent 造成
+        // 双重编码（A%2Fmiku → A%252Fmiku）或 model-dir 全路径二次编码致 ListDirRecursive
+        // 前缀失配。正则捕获整段 path（含可选 /rest），匹配即视为已编码、原样返回。
+        const already = pmxPath.match(/^web:\/\/model\/([^/?#]+)(?:\/(.+))?$/);
         if (already) return pmxPath;
         return `web://model/${_encModelStem(_extractStem(pmxPath))}`;
     },
