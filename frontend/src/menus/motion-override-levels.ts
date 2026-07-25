@@ -567,6 +567,23 @@ function buildBoneOverrideSchema(): MenuNode[] {
                         formState.boneName,
                         (name) => {
                             formState.boneName = name;
+                            // [doc:timing T2 fix] 切换骨骼时从引擎读取该骨的已有覆盖值并回填滑块，
+                            // 避免用户选择已有覆盖的骨后滑块仍显示上次编辑的值
+                            const ov = getOverride(name, modelId);
+                            if (ov) {
+                                formState.pitch = ov.euler[0];
+                                formState.yaw = ov.euler[1];
+                                formState.roll = ov.euler[2];
+                                formState.weight = ov.weight;
+                                formState.absolute = ov.absolute ?? true;
+                            } else {
+                                // 无已有覆盖时重置为默认值
+                                formState.pitch = 0;
+                                formState.yaw = 0;
+                                formState.roll = 0;
+                                formState.weight = 1;
+                                formState.absolute = true;
+                            }
                         }
                     );
 

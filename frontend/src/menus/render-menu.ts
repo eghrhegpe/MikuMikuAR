@@ -150,6 +150,7 @@ function renderSlider(node: MenuNode, container: HTMLElement): void {
                 ctrl.get
                     ? (ctrl.get(getBindFn(ctrl.bind)()) as number)
                     : (getBindFn(ctrl.bind)() as number),
+            pathHint: ctrl.bind.split('.').pop()!,
         },
         node.id
     );
@@ -192,6 +193,7 @@ function renderColorSlider(node: MenuNode, container: HTMLElement): void {
         onChange,
         {
             bind: () => getBindFn(ctrl.bind)() as [number, number, number],
+            pathHint: ctrl.bind.split('.').pop()!,
         },
         node.id
     );
@@ -223,6 +225,7 @@ function renderToggle(node: MenuNode, container: HTMLElement): void {
                 const r = getBindFn(ctrl.bind)();
                 return ctrl.get ? (ctrl.get(r) as boolean) : (r as boolean);
             },
+            pathHint: ctrl.bind.split('.').pop()!,
         },
         node.id
     );
@@ -251,7 +254,7 @@ function renderModeSlider(node: MenuNode, container: HTMLElement): void {
         onChange,
         node.icon ?? ctrl.icon,
         undefined,
-        { bind: () => getBindFn(ctrl.bind)() as string },
+        { bind: () => getBindFn(ctrl.bind)() as string, pathHint: ctrl.bind.split('.').pop()! },
         node.id
     );
 }
