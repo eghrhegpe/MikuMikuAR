@@ -1833,4 +1833,14 @@ export const ko: Record<string, string> = {
     'goerr.watch.addWatchFailed': '감시 폴더 추가에 실패했습니다.',
     'goerr.zip.tooManyEntries':
         '{op}: 압축 파일 내 파일 수가 {count}개로, 상한 {max}개를 초과했습니다.',
+    // ===== [doc:adr-feedback] 구조화된 피드백 모듈 key =====
+    'feedback.loading': '로딩 중...',
+    'feedback.savedSuccess': '✓ 저장 완료',
+    'feedback.savedFailed': '✗ 저장 실패',
+    'feedback.loadedSuccess': '✓ 로드 완료',
+    'feedback.loadedFailed': '✗ 로드 실패',
+    'feedback.extractionSuccess': '✓ 가져오기 완료',
+    'feedback.extractionFailed': '✗ 가져오기 실패',
+    'feedback.restoredSuccess': '✓ 복원 완료',
+    'feedback.restoredFailed': '✗ 복원 실패',
 };
