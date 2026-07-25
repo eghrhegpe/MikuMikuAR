@@ -350,6 +350,35 @@ function checkCardApiSymbols(globalIndex) {
   return { checked, flagged };
 }
 
+// ---------- 检查 7：AGENTS.md 不应手列事实索引（WARN） ----------
+// 设计：根 AGENTS.md 与 frontend/AGENTS.md 只承载「命令 + 约定 + 指针」，
+// 不手列目录树 / ADR 状态表等事实索引（易漂移，且已被 gen:funcmap / gen:status 覆盖）。
+// 命中以下任一特征 → WARN（不进 errors，不阻断 EXIT）：
+//   (a) 手工目录树：含 box-drawing 缩进树（├── / └──）
+//   (b) 手工 ADR 状态表：行首 `| ADR-<n> |`（区别于 `docs/adr/adr-<n>-*.md` 链接引用）
+function checkAgentsNoHandcraftedIndex() {
+  const targets = ['AGENTS.md', 'frontend/AGENTS.md'];
+  const warns = [];
+  for (const rel of targets) {
+    const text = read(rel);
+    if (!text) continue;
+    const lines = text.split('\n');
+    let treeHits = 0;
+    let adrTableHits = 0;
+    for (const line of lines) {
+      if (/^[│├└]\s*[├└]──\s/.test(line) || /^\s*├──\s/.test(line) || /^\s*└──\s/.test(line)) {
+        treeHits++;
+      }
+      if (/^\|\s*ADR-\d+\s*\|/.test(line)) {
+        adrTableHits++;
+      }
+    }
+    if (treeHits > 0) warns.push(`${rel} 含手工目录树特征（${treeHits} 行 ├──/└──），应改为指针指向 gen:funcmap`);
+    if (adrTableHits > 0) warns.push(`${rel} 含手工 ADR 状态表（${adrTableHits} 行 | ADR-xxx |），应改为指针指向 gen:status`);
+  }
+  return warns;
+}
+
 // ---------- 主流程 ----------
 function main() {
   const json = process.argv.includes('--json');
@@ -378,13 +407,14 @@ function main() {
   const apiSym = checkCardApiSymbols(globalIndex);
 
   const generatedStatusError = checkGeneratedStatus();
+  const agentsWarns = checkAgentsNoHandcraftedIndex();
   if (generatedStatusError) {
     errors.push(`status.md ADR 生成区未同步：${generatedStatusError}`);
   }
 
   if (json) {
     console.log(
-      JSON.stringify({ adr, stale, coverage: cov, knowledge: kc, reverse: rev, apiSymbols: apiSym, errors }, null, 2)
+      JSON.stringify({ adr, stale, coverage: cov, knowledge: kc, reverse: rev, apiSymbols: apiSym, agentsWarns, errors }, null, 2)
     );
     process.exit(errors.length ? 1 : 0);
   }
@@ -418,6 +448,10 @@ function main() {
     console.log('   按目录: ' + parts.join('，'));
   }
   console.log('────────────────────────────────────────────');
+  if (agentsWarns.length) {
+    console.log(`⚠ AGENTS.md 手写事实索引（WARN，不阻断）: ${agentsWarns.length} 项`);
+    agentsWarns.forEach((w) => console.log('   ⚠ ' + w));
+  }
   if (errors.length) {
     console.log('❌ ERROR:');
     errors.forEach((e) => console.log('   ' + e));
