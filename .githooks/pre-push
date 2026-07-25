@@ -98,7 +98,7 @@ fi
 
 # ── test:coverage（跳过纯文档/纯 Go 变更） ──
 if [ "$DOCS_ONLY" = "false" ]; then
-  echo "[pre-push] test:coverage（门禁: lines≥31% functions≥27%）"
+  echo "[pre-push] test:coverage（门禁: lines≥35% functions≥30%）"
   cd "$ROOT/frontend" && npm run test:coverage || {
     echo "❌ 测试失败或覆盖率低于阈值。修复: npm run test:coverage 查看详情"
     exit 1
@@ -107,11 +107,14 @@ else
   echo "[pre-push] test:coverage（跳过：纯文档/纯 Go 变更）"
 fi
 
-# ── P7: deadcode 检查（仅 TS 变更时，warning 不阻断） ──
+# ── P7: deadcode 基线治理（仅 TS 变更时，回退则阻断） ──
 if [ "$TS_CHANGED" = "true" ]; then
-  echo "[pre-push] deadcode"
-  cd "$ROOT/frontend" && npm run deadcode 2>&1 || {
-    echo "⚠️  Knip 检出了死代码（不阻断）。修复: npm run deadcode 查看详情"
+  echo "[pre-push] deadcode（基线治理：knip + jscpd）"
+  cd "$ROOT/frontend" && node ../scripts/check-deadcode-baseline.mjs || {
+    echo "❌ 死代码/重复代码回退（超过基线）。"
+    echo "   清理新增死代码后重试，或确认无碍后更新基线："
+    echo "   cd frontend && node ../scripts/check-deadcode-baseline.mjs --update"
+    exit 1
   }
 fi
 

@@ -11,6 +11,7 @@ const config: KnipConfig = {
     'vitest.perf.config.ts',
     'scripts/**/*.ts',
     'scripts/**/*.mjs',
+    '../scripts/**/*.mjs',           // 根目录脚本（codemod.mjs 使用 ts-morph）
   ],
   ignore: [
     'bindings/**',
@@ -29,6 +30,8 @@ const config: KnipConfig = {
     '@iconify/iconify',        // Used by icon system
     '@preact/signals-core',    // Used by reactivity system
     '@iconify/icons-lucide',   // Dev: icon generation
+    'jscpd-html-reporter',     // Used by `duplicate:html` npm script (--reporters flag)
+    'ts-morph',                // Used by root scripts/codemod.mjs (knip can't trace ../scripts)
   ],
   rules: {
     files: 'warn',
