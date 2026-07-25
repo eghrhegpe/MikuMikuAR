@@ -20,6 +20,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -43,6 +45,11 @@ jobs:
         with:
           name: frontend-coverage
           path: frontend/coverage/
+
+      - name: Diff-coverage gate (new code must be tested)
+        # P8-A：仅检查本次改动的非测试源码，行覆盖率 <60% 即阻塞。
+        # 解决「整体覆盖率阈值只防回退、不保护新代码有测试」的假安全感。
+        run: node ../scripts/check-diff-coverage.mjs
 
       - name: Lint
         run: npm run lint

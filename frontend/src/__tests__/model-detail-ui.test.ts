@@ -1,45 +1,45 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { modelRegistry } from '../core/config';
 
-vi.mock('@babylonjs/core/Engines/engine', () => {
-    const m = require('./mocks/babylon-classes.ts');
+vi.mock('@babylonjs/core/Engines/engine', async () => {
+    const m = await vi.importActual('./mocks/babylon-classes.ts');
     return { Engine: m.MockEngine };
 });
 
-vi.mock('@babylonjs/core/scene', () => {
-    const m = require('./mocks/babylon-classes.ts');
+vi.mock('@babylonjs/core/scene', async () => {
+    const m = await vi.importActual('./mocks/babylon-classes.ts');
     return { Scene: m.MockScene };
 });
 
-vi.mock('@babylonjs/core/Lights/hemisphericLight', () => {
-    const m = require('./mocks/babylon-classes.ts');
+vi.mock('@babylonjs/core/Lights/hemisphericLight', async () => {
+    const m = await vi.importActual('./mocks/babylon-classes.ts');
     return { HemisphericLight: m.MockHemisphericLight };
 });
 
-vi.mock('@babylonjs/core/Lights/directionalLight', () => {
-    const m = require('./mocks/babylon-classes.ts');
+vi.mock('@babylonjs/core/Lights/directionalLight', async () => {
+    const m = await vi.importActual('./mocks/babylon-classes.ts');
     return { DirectionalLight: m.MockDirectionalLight };
 });
 
 vi.mock('@babylonjs/core/Physics/v2/physicsEngineComponent', () => ({}));
 
-vi.mock('@babylonjs/core/Cameras/arcRotateCamera', () => {
-    const m = require('./mocks/babylon-classes.ts');
+vi.mock('@babylonjs/core/Cameras/arcRotateCamera', async () => {
+    const m = await vi.importActual('./mocks/babylon-classes.ts');
     return { ArcRotateCamera: m.MockArcRotateCamera };
 });
 
-vi.mock('@babylonjs/core/Cameras/camera', () => {
-    const m = require('./mocks/babylon-classes.ts');
+vi.mock('@babylonjs/core/Cameras/camera', async () => {
+    const m = await vi.importActual('./mocks/babylon-classes.ts');
     return { Camera: m.MockCamera };
 });
 
-vi.mock('@babylonjs/core/Maths/math.color', () => {
-    const m = require('./mocks/babylon-classes.ts');
+vi.mock('@babylonjs/core/Maths/math.color', async () => {
+    const m = await vi.importActual('./mocks/babylon-classes.ts');
     return { Color3: m.MockColor3, Color4: m.MockColor4 };
 });
 
-vi.mock('@babylonjs/core/Maths/math.vector', () => {
-    const m = require('./mocks/babylon-classes.ts');
+vi.mock('@babylonjs/core/Maths/math.vector', async () => {
+    const m = await vi.importActual('./mocks/babylon-classes.ts');
     return {
         Vector3: m.MockVector3,
         Matrix: m.MockMatrix,
@@ -48,75 +48,75 @@ vi.mock('@babylonjs/core/Maths/math.vector', () => {
     };
 });
 
-vi.mock('@babylonjs/core/Materials/standardMaterial', () => {
-    const m = require('./mocks/babylon-classes.ts');
+vi.mock('@babylonjs/core/Materials/standardMaterial', async () => {
+    const m = await vi.importActual('./mocks/babylon-classes.ts');
     return { StandardMaterial: m.MockStandardMaterial };
 });
 
-vi.mock('@babylonjs/core/Materials/material', () => {
-    const m = require('./mocks/babylon-classes.ts');
+vi.mock('@babylonjs/core/Materials/material', async () => {
+    const m = await vi.importActual('./mocks/babylon-classes.ts');
     return { Material: m.MockMaterial };
 });
 
-vi.mock('@babylonjs/core/Meshes/mesh', () => {
-    const m = require('./mocks/babylon-classes.ts');
+vi.mock('@babylonjs/core/Meshes/mesh', async () => {
+    const m = await vi.importActual('./mocks/babylon-classes.ts');
     return { AbstractMesh: m.MockAbstractMesh, Mesh: m.MockMesh };
 });
 
-vi.mock('@babylonjs/core/Lights/Shadows/shadowGenerator', () => {
-    const m = require('./mocks/babylon-classes.ts');
+vi.mock('@babylonjs/core/Lights/Shadows/shadowGenerator', async () => {
+    const m = await vi.importActual('./mocks/babylon-classes.ts');
     return { ShadowGenerator: m.MockShadowGenerator };
 });
 
-vi.mock('@babylonjs/core/Loading/sceneLoader', () => {
-    const m = require('./mocks/babylon-classes.ts');
+vi.mock('@babylonjs/core/Loading/sceneLoader', async () => {
+    const m = await vi.importActual('./mocks/babylon-classes.ts');
     return { ImportMeshAsync: m.MockImportMeshAsync };
 });
 
-vi.mock('@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline', () => {
-    const m = require('./mocks/babylon-classes.ts');
+vi.mock('@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline', async () => {
+    const m = await vi.importActual('./mocks/babylon-classes.ts');
     return { DefaultRenderingPipeline: m.MockDefaultRenderingPipeline };
 });
 
-vi.mock('@babylonjs/core/Particles/gpuParticleSystem', () => {
-    const m = require('./mocks/babylon-classes.ts');
+vi.mock('@babylonjs/core/Particles/gpuParticleSystem', async () => {
+    const m = await vi.importActual('./mocks/babylon-classes.ts');
     return { GPUParticleSystem: m.MockGPUParticleSystem };
 });
 
-vi.mock('@babylonjs/core/Particles/particleSystem', () => {
-    const m = require('./mocks/babylon-classes.ts');
+vi.mock('@babylonjs/core/Particles/particleSystem', async () => {
+    const m = await vi.importActual('./mocks/babylon-classes.ts');
     return { ParticleSystem: m.MockParticleSystem };
 });
 
 vi.mock('@babylonjs/core/Particles/webgl2ParticleSystem', () => ({}));
 
-vi.mock('@babylonjs/materials/grid/gridMaterial', () => {
-    const m = require('./mocks/babylon-classes.ts');
+vi.mock('@babylonjs/materials/grid/gridMaterial', async () => {
+    const m = await vi.importActual('./mocks/babylon-classes.ts');
     return { GridMaterial: m.MockGridMaterial };
 });
 
-vi.mock('@babylonjs/core/Materials/Textures/baseTexture', () => {
-    const m = require('./mocks/babylon-classes.ts');
+vi.mock('@babylonjs/core/Materials/Textures/baseTexture', async () => {
+    const m = await vi.importActual('./mocks/babylon-classes.ts');
     return { BaseTexture: m.MockBaseTexture };
 });
 
-vi.mock('@babylonjs/core/Materials/Textures/texture', () => {
-    const m = require('./mocks/babylon-classes.ts');
+vi.mock('@babylonjs/core/Materials/Textures/texture', async () => {
+    const m = await vi.importActual('./mocks/babylon-classes.ts');
     return { Texture: m.MockTexture };
 });
 
-vi.mock('@babylonjs/core/Materials/Textures/cubeTexture', () => {
-    const m = require('./mocks/babylon-classes.ts');
+vi.mock('@babylonjs/core/Materials/Textures/cubeTexture', async () => {
+    const m = await vi.importActual('./mocks/babylon-classes.ts');
     return { CubeTexture: m.MockCubeTexture };
 });
 
-vi.mock('babylon-mmd/esm/Runtime/mmdStandardMaterialProxy', () => {
-    const m = require('./mocks/babylon-mmd-mocks.ts');
+vi.mock('babylon-mmd/esm/Runtime/mmdStandardMaterialProxy', async () => {
+    const m = await vi.importActual('./mocks/babylon-mmd-mocks.ts');
     return { MmdStandardMaterialProxy: m.MockMmdStandardMaterialProxy };
 });
 
-vi.mock('babylon-mmd/esm/Runtime/mmdRuntimeShared', () => {
-    const m = require('./mocks/babylon-mmd-mocks.ts');
+vi.mock('babylon-mmd/esm/Runtime/mmdRuntimeShared', async () => {
+    const m = await vi.importActual('./mocks/babylon-mmd-mocks.ts');
     return { MmdRuntimeShared: m.MockMmdRuntimeShared };
 });
 
@@ -246,30 +246,30 @@ vi.mock('../audio', () => ({
 }));
 
 // Mock babylon-mmd side-effect imports
-vi.mock('babylon-mmd/esm/Loader/dynamic', () => {
-    const m = require('./mocks/babylon-mmd-mocks.ts');
+vi.mock('babylon-mmd/esm/Loader/dynamic', async () => {
+    const m = await vi.importActual('./mocks/babylon-mmd-mocks.ts');
     return { RegisterMmdModelLoaders: m.MockRegisterMmdModelLoaders };
 });
-vi.mock('babylon-mmd/esm/Loader/registerDxBmpTextureLoader', () => {
-    const m = require('./mocks/babylon-mmd-mocks.ts');
+vi.mock('babylon-mmd/esm/Loader/registerDxBmpTextureLoader', async () => {
+    const m = await vi.importActual('./mocks/babylon-mmd-mocks.ts');
     return { RegisterDxBmpTextureLoader: m.MockRegisterDxBmpTextureLoader };
 });
-vi.mock('babylon-mmd/esm/Runtime/Optimized/mmdWasmInstance', () => {
-    const m = require('./mocks/babylon-mmd-mocks.ts');
+vi.mock('babylon-mmd/esm/Runtime/Optimized/mmdWasmInstance', async () => {
+    const m = await vi.importActual('./mocks/babylon-mmd-mocks.ts');
     return { GetMmdWasmInstance: m.MockGetMmdWasmInstance };
 });
 vi.mock('babylon-mmd/esm/Runtime/Optimized/InstanceType/singlePhysicsRelease', () => ({}));
-vi.mock('babylon-mmd/esm/Loader/vmdLoader', () => {
-    const m = require('./mocks/babylon-mmd-mocks.ts');
+vi.mock('babylon-mmd/esm/Loader/vmdLoader', async () => {
+    const m = await vi.importActual('./mocks/babylon-mmd-mocks.ts');
     return { VmdLoader: m.MockVmdLoader };
 });
-vi.mock('babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmAnimation', () => {
-    const m = require('./mocks/babylon-mmd-mocks.ts');
+vi.mock('babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmAnimation', async () => {
+    const m = await vi.importActual('./mocks/babylon-mmd-mocks.ts');
     return { MmdWasmAnimation: m.MockMmdWasmAnimation };
 });
 vi.mock('babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmRuntimeModelAnimation', () => ({}));
-vi.mock('babylon-mmd/esm/Runtime/mmdRuntimeShared', () => {
-    const m = require('./mocks/babylon-mmd-mocks.ts');
+vi.mock('babylon-mmd/esm/Runtime/mmdRuntimeShared', async () => {
+    const m = await vi.importActual('./mocks/babylon-mmd-mocks.ts');
     return { MmdRuntimeShared: m.MockMmdRuntimeShared };
 });
 vi.mock('babylon-mmd/esm/Loader/mmdModelLoader.default', () => ({}));

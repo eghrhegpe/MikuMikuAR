@@ -17,6 +17,7 @@
     "test:warm": "vitest run src/__tests__/goerr.test.ts --no-color",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:diff-coverage": "node ../scripts/check-diff-coverage.mjs",
     "test:e2e": "playwright test",
     "test:e2e:dom": "playwright test --grep @dom",
     "test:e2e:webgl": "playwright test --grep @webgl",

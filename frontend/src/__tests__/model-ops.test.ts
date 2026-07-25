@@ -98,8 +98,8 @@ vi.mock('../outfit/audio', () => ({
     disposeAudio: vi.fn(),
 }));
 
-vi.mock('@babylonjs/core/Maths/math.vector', () => {
-    const m = require('./mocks/babylon-classes.ts');
+vi.mock('@babylonjs/core/Maths/math.vector', async () => {
+    const m = await vi.importActual('./mocks/babylon-classes.ts');
     return {
         Vector3: m.MockVector3,
         Quaternion: m.MockQuaternion,
