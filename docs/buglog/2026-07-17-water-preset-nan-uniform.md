@@ -1,3 +1,11 @@
+> **状态**: 🟢 已修复
+>
+> **日期**: 2026-07-17
+> **严重程度**: 🔴 P1
+> **影响范围**: `frontend/src/scene/env/env-water.ts`
+> **发现方式**: 用户反馈
+> **修复方案**: 3 处加 ?? 0 兜底——源头 buildWaterPresetEnvState + 两处 _syncWaterUniforms setFloat
+
 # 水面预设点击后水面消失且开关/滑条不可逆（NaN uniform 污染）
 
 **日期**: 2026-07-17

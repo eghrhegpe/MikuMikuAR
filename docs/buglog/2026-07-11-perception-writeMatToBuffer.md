@@ -1,3 +1,11 @@
+> **状态**: 🟢 已修复
+>
+> **日期**: 2026-07-11
+> **严重程度**: 🟡 P3
+> **影响范围**: `frontend/src/scene/perception.ts`
+> **发现方式**: 代码审核（第⑥轮）
+> **修复方案**: 热路径 _writeMatToBuffer for 循环逐元素拷贝改为 Float32Array.set() 单次 memcpy
+
 # 第⑥轮审核 — perception.ts _writeMatToBuffer 优化
 
 **日期**: 2026-07-11

@@ -1,5 +1,13 @@
 ## PMX 加载失败：`is not pmx file`
 
+> **状态**: 🟢 已修复
+
+**日期**: 2026-07-09
+**严重程度**: 🔴 P1（功能破坏，PMX 文件无法加载）
+**影响范围**: Wails v2 Go → 前端二进制桥接
+**发现方式**: 用户反馈
+**修复方案**: 改用 Go HTTP 文件服务器 + `ImportMeshAsync(url)`，不走桥接传递二进制
+
 ### 错误信息
 ```
 ✗ 加载失败: Unable to load from binary data: is not pmx file

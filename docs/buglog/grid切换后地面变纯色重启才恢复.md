@@ -1,9 +1,12 @@
 # grid 切换后地面变纯色，重启才恢复
 
+> **状态**: 🟢 已修复
+
 **日期**: 2026-07-12
-**严重程度**: P1（渲染错误，用户可见）
-**影响范围**: `env-impl.ts`（地面网格样式）
+**严重程度**: 🔴 P1（渲染错误，用户可见）
+**影响范围**: `frontend/src/scene/env/env-impl.ts`（地面网格样式）
 **发现方式**: 用户测试
+**修复方案**: ADR-091 地面纹理统一，删除 `GridMaterial` 依赖，所有 flat 样式统一用 `canvas → StandardMaterial.diffuseTexture`
 
 ---
 

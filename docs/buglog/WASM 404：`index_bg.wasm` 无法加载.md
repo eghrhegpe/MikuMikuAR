@@ -1,5 +1,13 @@
 ## WASM 404：`index_bg.wasm` 无法加载
 
+> **状态**: 🟢 已修复
+
+**日期**: 2026-07-09
+**严重程度**: 🔴 P1（启动失败，WASM 运行时无法加载）
+**影响范围**: `frontend/vite.config.ts`（Vite 预打包配置）
+**发现方式**: 开发发现
+**修复方案**: `vite.config.ts` 添加 `optimizeDeps.exclude: ['babylon-mmd']`
+
 ### 错误信息
 ```
 Failed to load resource: the server responded with a status of 404 (Not Found)

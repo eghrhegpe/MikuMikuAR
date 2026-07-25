@@ -1,3 +1,11 @@
+> **状态**: 🟢 已修复
+>
+> **日期**: 2026-07-17
+> **严重程度**: 🔴 P1
+> **影响范围**: `frontend/src/scene/bone-override.ts`, `frontend/src/motion-modules/body-posture.ts`, `frontend/src/motion-modules/hand-symmetry.ts`, `frontend/src/motion-modules/sway-motion.ts`
+> **发现方式**: 用户反馈
+> **修复方案**: _computeOverride weight≥1 改为 oldRotation.multiply(slot.quat) 复合模式，保留父骨传播旋转
+
 # 骨骼覆盖父子骨冲突：`_computeOverride` weight≥1 丢弃父骨传播旋转
 
 **发现日期**：2026-07-17

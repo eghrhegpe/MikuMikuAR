@@ -1,3 +1,11 @@
+> **状态**: 🟢 已修复
+>
+> **日期**: 2026-07-16
+> **严重程度**: 🔴 P1
+> **影响范围**: `frontend/src/thumbnail-capture.ts`, `frontend/src/library-core.ts`, `frontend/src/ui-resource-panel.ts`
+> **发现方式**: 用户反馈
+> **修复方案**: 5 处修复——独立 THUMB_FOV / 缓存键加分辨率与宽高比 / 手动冻结投影矩阵 / 场景缩略图复用主相机 / 舞台卡片跨两列
+
 # 缩略图宽高比连环坑：从FOV误解、投影矩阵时序到UI网格自适应
 
 **日期**: 2026-07-16

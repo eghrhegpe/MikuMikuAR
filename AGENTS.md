@@ -64,9 +64,10 @@
 1. 先判断用户意图与所属模块；可先查 `docs/knowledge/routes.md`。
 2. 阅读 `docs/knowledge/README.md`，定位相关知识卡，再按卡片的 `source_files` 跳转源码。
 3. 用 `grep docs/adr/` 查找相关决策、状态和历史坑点；ADR 是决策真相源。
-4. 以当前源码为最终事实来源，核对知识卡中的 API、依赖、不变量和资源生命周期。
-5. 修改后运行最小相关测试；若模块职责、公共 API、状态流、依赖或不变量变化，同步更新知识卡。
-6. 文档变更后运行 `npm run check:docs`（根目录）；函数签名变化后运行 `npm run check:funcmap`。
+4. **修 bug 或排查问题时**：先查 `docs/buglog/README.md` 了解格式，再用 `ls docs/buglog/` 列出相关 bug，读取对应文件查看状态（🟢已修复/🔴未修复/🟡搁置/⚪已确认不修）。只读状态为 🔴 未修复 或 🟡 搁置 的 bug 内容。
+5. 以当前源码为最终事实来源，核对知识卡中的 API、依赖、不变量和资源生命周期。
+6. 修改后运行最小相关测试；若模块职责、公共 API、状态流、依赖或不变量变化，同步更新知识卡。
+7. 文档变更后运行 `npm run check:docs`（根目录）；函数签名变化后运行 `npm run check:funcmap`。
 
 知识来源优先级：当前源码 > `docs/adr/` > `docs/knowledge/` > `docs/architecture.md` / `docs/function-map.md` > `docs/research/`。
 若知识卡与源码不一致，报告文档漂移并以源码为准，不得静默假定卡片正确。

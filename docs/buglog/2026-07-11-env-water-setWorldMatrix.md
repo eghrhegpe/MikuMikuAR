@@ -1,3 +1,11 @@
+> **状态**: 🟢 已修复
+>
+> **日期**: 2026-07-11
+> **严重程度**: 🟠 P2
+> **影响范围**: `frontend/src/scene/env/env-water.ts`, `frontend/src/scene/env/env-impl.ts`
+> **发现方式**: 代码审核
+> **修复方案**: 绕过 FreeCamera 不存在的 setWorldMatrix/freezeWorldMatrix，直接设置 Node._worldMatrix + _isWorldMatrixFrozen 内部属性
+
 # env-water: setWorldMatrix / freezeWorldMatrix 运行时不存在于 FreeCamera
 
 **日期**: 2026-07-11

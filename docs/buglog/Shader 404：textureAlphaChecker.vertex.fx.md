@@ -1,6 +1,14 @@
 ## Shader 404：`textureAlphaChecker.vertex.fx` / `.fragment.fx`
 
-**日期**：2025-07-16
+> **状态**: 🟢 已修复
+
+**日期**: 2025-07-16
+**严重程度**: 🔴 P1（材质构建链中断，模型全白）
+**影响范围**: `frontend/vite.config.ts`（Vite 预打包配置）+ `main.ts`
+**发现方式**: 开发发现
+**修复方案**: `optimizeDeps.exclude` 同时排除 `babylon-mmd` 和 `@babylonjs/core`，保证单模块图
+
+---
 
 ### 错误信息
 ```

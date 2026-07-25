@@ -1,3 +1,11 @@
+> **状态**: 🟢 已修复
+>
+> **日期**: 2026-07-15
+> **严重程度**: 🟠 P2
+> **影响范围**: `internal/app/app.go`, `internal/app/zipextract.go`, `internal/app/proxy.go`, `internal/app/integration.go`
+> **发现方式**: 用户反馈
+> **修复方案**: 统一路径解析入口 GetPath，5 处函数（settingDir / ensureResourceDirs / GetCacheStats / DownloadFromPlaza / BundleScene）修复后全部复用覆写逻辑
+
 # 路径覆写失效：多个函数绕过 OverridePaths 导致幽灵目录与统计数据不准
 
 **发现日期**：2026-07-15

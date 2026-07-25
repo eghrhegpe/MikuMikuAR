@@ -1,3 +1,11 @@
+> **状态**: 🟢 已修复
+>
+> **日期**: 2026-07-20
+> **严重程度**: 🔴 P1
+> **影响范围**: `frontend/src/scene/env/env-water.ts`（`disposeWater` / 水面 mount 回调）
+> **发现方式**: 代码审核
+> **修复方案**: 路径1 disposeWater 三步安全撤离（解绑→释放材质→释放mesh）；路径2 水面 mount(null) 改用 removeTexture 替代 setTexture
+
 # GroundMesh.render 崩溃：ShaderMaterial._effect 为 null
 
 **日期**: 2026-07-20

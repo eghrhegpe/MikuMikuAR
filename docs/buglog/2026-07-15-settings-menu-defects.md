@@ -1,3 +1,11 @@
+> **状态**: 🟢 已修复
+>
+> **日期**: 2026-07-15
+> **严重程度**: 🟠 P2
+> **影响范围**: `frontend/src/menus/settings-software.ts`, `frontend/src/menus/settings-about.ts`
+> **发现方式**: 开发发现
+> **修复方案**: Bug1 LaunchSoftware 补传 entry.args；Bug2 slideRow 改用 inner 容器变量；同期完成路径截断统一、快捷键动态化、格式化函数迁移
+
 # 设置菜单两处功能缺陷（2026-07-15）
 
 **发现日期**：2026-07-15  

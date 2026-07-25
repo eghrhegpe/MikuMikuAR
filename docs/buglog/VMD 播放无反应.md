@@ -1,5 +1,12 @@
 ## VMD 播放无反应
 
+> **状态**: 🟢 已修复
+
+**日期**: 2026-07-10
+**严重程度**: 🔴 P1（功能破坏，VMD 完全无法播放）
+**影响范围**: `frontend/src/scene/motion/vmd-loader.ts` → `scene/scene.ts` 播放管线
+**发现方式**: 用户反馈
+
 ### 当前状态
 ✅ 已修复。链路：`VmdLoader.loadFromBufferAsync()` → `MmdWasmAnimation` → `createRuntimeAnimation()` → `setRuntimeAnimation()` → `seekAnimation()` → `playAnimation()`。
 

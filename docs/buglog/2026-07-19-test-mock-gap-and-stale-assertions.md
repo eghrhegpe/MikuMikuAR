@@ -1,3 +1,11 @@
+> **状态**: 🟢 已修复
+>
+> **日期**: 2026-07-19
+> **严重程度**: 🟡 P3
+> **影响范围**: `frontend/src/__tests__/scene/env-water.test.ts`, `frontend/src/__tests__/scene/env-particles.test.ts`, `frontend/src/__tests__/scene/water-preset-repro.test.ts`, `frontend/src/__tests__/scene/scene-stage.test.ts`, `frontend/src/__tests__/scene/model-detail-ui.test.ts`, `frontend/src/__tests__/bindings/app.contract.test.ts`
+> **发现方式**: 测试发现
+> **修复方案**: env-context mock 缺口修复 / scene-stage 断言重写 / foamTransitionRange 过时断言移除 / collapsible-wrapper 过时断言移除
+
 # 测试修复：env-context mock 缺失 + 测试断言过时
 
 **日期**: 2026-07-19
