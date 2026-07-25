@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 69 | 540 |
+| 核心基础设施 | 69 | 541 |
 | 3D 场景 | 94 | 1002 |
 | 菜单 & UI | 65 | 301 |
 | 换装 & 音频 | 3 | 33 |
@@ -461,6 +461,7 @@
 | `DeleteEnvPreset()` | `core/wails-bindings` | — |
 | `DeleteModelPreset()` | `core/wails-bindings` | — |
 | `DeletePresetScene()` | `core/wails-bindings` | — |
+| `DownloadApk()` | `core/wails-bindings` | — |
 | `DownloadFromPlaza()` | `core/wails-bindings` | — |
 | `Events()` | `core/wails-bindings` | — |
 | `ExtractZip()` | `core/wails-bindings` | — |
@@ -2058,5 +2059,5 @@
 
 ---
 
-> 共 250 个文件，2012 个导出符号。
+> 共 250 个文件，2013 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。
