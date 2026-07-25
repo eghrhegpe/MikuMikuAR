@@ -7,8 +7,8 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 68 | 536 |
-| 3D 场景 | 94 | 998 |
+| 核心基础设施 | 69 | 540 |
+| 3D 场景 | 94 | 999 |
 | 菜单 & UI | 65 | 301 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 123 |
@@ -35,6 +35,7 @@
 | `dismissFsaAuthPrompt()` | `core/backend/browser-adapter` | — |
 | `getFsaAuthState()` | `core/backend/browser-adapter` | [doc:adr-177] 查询 FSA 根目录授权状态，供 UI 启动引导（不触发任何权限弹窗）。 |
 | `isFsaAuthPromptDismissed()` | `core/backend/browser-adapter` | [doc:adr-177] 用户跳过启动授权引导后写入「已跳过」标志，避免纯导入用户每次启动被弹窗骚扰。 |
+| `reauthorizeFsaRoot()` | `core/backend/browser-adapter` | [doc:adr-180] 对持久化的 FSA 句柄重新请求授权（不重选目录）。 |
 | `goAdapter()` | `core/backend/go-adapter` | — |
 | `STORES()` | `core/backend/idb` | — |
 | `Store()` | `core/backend/idb` | — |
@@ -60,7 +61,6 @@
 | `BackendService()` | `core/backend/types` | 统一后端抽象。go-adapter 透传 Go 全量（含契约测试 139 函数）， browser-adapter 实现 106（81 真实 + 8 FSA + 17 降级）。 |
 | `GoApp()` | `core/backend/types` | Go 生成绑定的值类型（函数签名源）。 |
 | `NotSupportedError()` | `core/backend/types` | 浏览器侧原生独占能力的统一错误。调用方据 capabilities() 预判或 catch 此错误。 |
-| `StagingAccessResult()` | `core/backend/types` | [doc:adr-181] 暂存目录授权结果 —— 桥接「哪个平台发哪个平台的授权请求」。 |
 | `col3FromTriple()` | `core/color-helpers` | 从 `[r, g, b]` 三元组构造 Color3。 |
 | `hexToRgb()` | `core/color-helpers` | 将 #rrggbb 解析为 {r,g,b}（0–255）。非法输入回退主题默认 74,108,247。 |
 | `rgbString()` | `core/color-helpers` | 将 Color3 转为 CSS `rgb(r, g, b)` 字符串（0–255 整数）。 |
@@ -197,6 +197,10 @@
 | `persistRuntimeMode()` | `core/runtime-mode` | — |
 | `renderRuntimeBadge()` | `core/runtime-mode` | — |
 | `setBackendBadge()` | `core/runtime-mode` | 渲染实际选中的后端（go / browser）到运行时徽标，与 MPR/SPR 状态合成显示 |
+| `Browser()` | `core/runtime-stub` | — |
+| `Call()` | `core/runtime-stub` | — |
+| `CancellablePromise()` | `core/runtime-stub` | — |
+| `Events()` | `core/runtime-stub` | — |
 | `safeCall()` | `core/safe-call` | 安全执行同步函数；异常时记录 logWarn(tag, msg, err) 并返回 undefined。 |
 | `safeCallAsync()` | `core/safe-call` | 安全执行异步函数；异常时记录 logWarn(tag, msg, err)，返回的 Promise 解析为 undefined（不 reject），等价于 `promise.cat |
 | `safeCallVoid()` | `core/safe-call` | 同 safeCall，但 fn 无返回值。 |
@@ -1018,6 +1022,7 @@
 | `getAllOverrides()` | `scene/motion/bone-override` | 获取当前所有覆盖的条目列表（用于持久化/UI 展示）。 |
 | `getOverride()` | `scene/motion/bone-override` | [doc:adr-116] 读取单条骨骼的覆盖条目（用于 UI 回填）。不存在返回 undefined。 |
 | `getOverrideType()` | `scene/motion/bone-override` | 查询骨骼覆盖类型（零分配）。 |
+| `protectIkPosition()` | `scene/motion/bone-override` | 注册骨骼位置保护（帧钩子内调用）。 |
 | `registerBoneOverrideFrameHook()` | `scene/motion/bone-override` | — |
 | `restoreOverrides()` | `scene/motion/bone-override` | 从持久化的条目列表批量恢复覆盖。 |
 | `setBoneOverride()` | `scene/motion/bone-override` | 设置单条骨骼覆盖。 |
@@ -2050,5 +2055,5 @@
 
 ---
 
-> 共 251 个文件，2016 个导出符号。
+> 共 250 个文件，2009 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。
