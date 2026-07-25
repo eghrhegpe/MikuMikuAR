@@ -80,6 +80,60 @@ export const DEFAULT_PERSONAL_LIGHT: PersonalLightSettings = {
     boneName: null,
 };
 
+// ======== 用户个人灯默认值（localStorage 持久化） ========
+
+const PERSONAL_LIGHT_DEFAULT_KEY = 'miku.personalLightDefault';
+
+let _userPersonalLightDefault: PersonalLightSettings | null = null;
+
+function _loadPersonalLightDefault(): PersonalLightSettings | null {
+    try {
+        const raw = localStorage.getItem(PERSONAL_LIGHT_DEFAULT_KEY);
+        if (raw) {
+            return JSON.parse(raw) as PersonalLightSettings;
+        }
+    } catch {
+        /* ignore */
+    }
+    return null;
+}
+
+// 模块加载时即恢复
+_userPersonalLightDefault = _loadPersonalLightDefault();
+
+/**
+ * 将当前个人灯参数保存为用户默认值。
+ * 后续新加载的模型将以此值为初始值。
+ */
+export function setPersonalLightDefault(settings: PersonalLightSettings): void {
+    _userPersonalLightDefault = { ...settings };
+    try {
+        localStorage.setItem(PERSONAL_LIGHT_DEFAULT_KEY, JSON.stringify(_userPersonalLightDefault));
+    } catch {
+        /* ignore */
+    }
+}
+
+/** 获取用户保存的个人灯默认值，无则返回 null。 */
+export function getPersonalLightDefault(): PersonalLightSettings | null {
+    return _userPersonalLightDefault ? { ..._userPersonalLightDefault } : null;
+}
+
+/** 重置用户默认值回出厂硬编码值。 */
+export function resetPersonalLightDefault(): void {
+    _userPersonalLightDefault = null;
+    try {
+        localStorage.removeItem(PERSONAL_LIGHT_DEFAULT_KEY);
+    } catch {
+        /* ignore */
+    }
+}
+
+/** 返回实际生效的默认值：用户覆盖 > 硬编码。 */
+function _effectivePersonalLightDefault(): PersonalLightSettings {
+    return _userPersonalLightDefault ? { ..._userPersonalLightDefault } : { ...DEFAULT_PERSONAL_LIGHT };
+}
+
 /** 取个人灯跟随基准点：用户指定骨骼 → 腰骨候选 → 根节点（兜底） */
 function _getLightBasePos(model: ModelInstance, waistName: string | null): Vector3 {
     if (waistName && model.mmdModel) {
@@ -103,7 +157,7 @@ export function attachPersonalLight(
         return;
     }
 
-    const settings: PersonalLightSettings = { ...DEFAULT_PERSONAL_LIGHT, ...overrides };
+    const settings: PersonalLightSettings = { ..._effectivePersonalLightDefault(), ...overrides };
     const model = modelRegistry.get(modelId);
     if (!model) {
         return;

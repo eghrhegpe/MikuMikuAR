@@ -305,7 +305,7 @@ function restoreBrowsePath(pathDirs: string[]): void {
 
 export async function refreshLibrary(): Promise<void> {
     const prevPath = getCurrentBrowsePath();
-    // [doc:adr-177] 手动重扫 = 用户手势，可作授权过期兜底：revoked 时先重授权再真扫，
+    // [doc:adr-183] 手动重扫 = 用户手势，可作授权过期兜底：revoked 时先重授权再真扫，
     // 对齐 initLibrary 启动引导；成功则下方 rescanAndSync 真扫，失败降级读缓存 + 提示。
     if ((await getFsaAuthState()) === 'revoked') {
         const reauthOk = await promptReauthorize();

@@ -1,6 +1,6 @@
 # ADR-177: Web Loader 与主应用统一路径
 
-> **状态**: 部分实现 — Phase 0-4 本地实施完成（2026-07-23；Playwright 双 webServer——5173 桌面 dev + 4174 web preview（vite build + vite preview --config vite.web.config.ts）；web-smoke.spec.ts 5 项——首屏渲染 + 6 nav 按钮 + 菜单导航 + 能力门控验证（AR/广场窗口隐藏）；web-resources.spec.ts 4 项——PMX/ZIP/VMD fetch+IndexedDB 注入加载闭环 + IndexedDB CRUD；fixtures sample.pmx 834KB + sample.vmd 19KB + sample.zip 854KB（page.route 注入不打进 bundle）；IndexedDB 迁移框架——onupgradeneeded 补 oldVersion 分支钩子，v1 无需迁移（旧 web-loader 与新主应用共享 schema + 键规约一致）；package.json 新增 test:e2e:web 脚本 + e2e README @web 章节。tsc 0 错误，2029 单测全绿，文档无漂移）。剩余：① GitHub Pages 线上 smoke + 连续两次发布无回归（Pages 站点已上线，待 CI 集成自动回归）；② browserAdapter 签名对齐已完成（2026-07-24，34 处参数/类型不匹配修复，见 ADR-176「签名对齐」章节）；③ ListDirRecursive/LoadOutfitFile/LoadSceneFile 浏览器侧实现已完成（IndexedDB dir:*: 前缀扫描、outfit:*: IDB 读、web://bundle/web://presets/scenes 三路路由），待 E2E 端到端验证实际功能正确
+> **状态**: 已完成 — Phase 0-3 落地 + Phase 4 终态于 2026-07-25 提前执行（用户裁决删除 web-loader，主应用 web 入口为唯一 Pages 入口，详见「Phase 4 终态执行记录」）。剩余跟踪项（不再阻塞本 ADR，并入日常回归）：① GitHub Pages 线上 smoke CI 自动回归；② browser 侧 ListDirRecursive/LoadOutfitFile/LoadSceneFile E2E 端到端功能验证。历史进度存档：Phase 0-4 本地实施完成（2026-07-23；Playwright 双 webServer——5173 桌面 dev + 4174 web preview（vite build + vite preview --config vite.web.config.ts）；web-smoke.spec.ts 5 项——首屏渲染 + 6 nav 按钮 + 菜单导航 + 能力门控验证（AR/广场窗口隐藏）；web-resources.spec.ts 4 项——PMX/ZIP/VMD fetch+IndexedDB 注入加载闭环 + IndexedDB CRUD；fixtures sample.pmx 834KB + sample.vmd 19KB + sample.zip 854KB（page.route 注入不打进 bundle）；IndexedDB 迁移框架——onupgradeneeded 补 oldVersion 分支钩子，v1 无需迁移（旧 web-loader 与新主应用共享 schema + 键规约一致）；package.json 新增 test:e2e:web 脚本 + e2e README @web 章节。tsc 0 错误，2029 单测全绿，文档无漂移）。剩余：① GitHub Pages 线上 smoke + 连续两次发布无回归（Pages 站点已上线，待 CI 集成自动回归）；② browserAdapter 签名对齐已完成（2026-07-24，34 处参数/类型不匹配修复，见 ADR-176「签名对齐」章节）；③ ListDirRecursive/LoadOutfitFile/LoadSceneFile 浏览器侧实现已完成（IndexedDB dir:*: 前缀扫描、outfit:*: IDB 读、web://bundle/web://presets/scenes 三路路由），待 E2E 端到端验证实际功能正确
 > **日期**: 2026-07-23
 > **关联**: ADR-176（前端 Backend 适配器双实现）、ADR-017（安卓适配，platform 探测范式）、ADR-159（桥接注入范式）、ADR-093（声明式菜单 Schema）
 > **前置**: ADR-176 Phase 1-3 已落地（backend 适配器层、wails-bindings 106 函数全代理化、web-loader 网页原型已上线 GitHub Pages）
@@ -428,6 +428,24 @@ src/core/runtime-bridge.ts:112  (Wails 侧 wrapper，合法)
 
 > 满足后可选择废弃 web-loader 或保留为轻量入口（仅拖拽加载，无菜单），作为「快速预览」入口。
 
+### Phase 4 终态执行记录（2026-07-25，用户裁决提前废弃）
+
+**裁决**：用户拍板直接删除 web-loader（理由：页面已不展示该入口，保留会浪费 AI 上下文/思考轮次）。原验收条件「连续两次发布无回归」未走满即执行终态——**风险自担点已明示**：若主应用 web 入口出现严重回归，无回退入口，需 git revert 恢复。
+
+**删除清单**：
+
+| 动作 | 路径 |
+|------|------|
+| 删除 | `frontend/src/web-loader/{main.ts, library.ts, library.test.ts, web-loader.css}` |
+| 删除 | `frontend/web-loader.html`、`frontend/vite.web-loader.config.ts` |
+| 迁移 | `src/web-loader/wails-runtime-stub.ts` → `src/core/runtime-stub.ts`（通用桩，被 `vite.web.config.ts` 与 `vite.spike.config.ts` 共用） |
+| 改名 | `.github/workflows/web-loader-pages.yml` → `web-pages.yml`（内容早已部署主应用 web 入口，仅名称遗留） |
+| 引用清理 | `vite.web.config.ts` / `vite.spike.config.ts` / `knip.config.ts` / `web-pages.yml` 自引用 |
+
+**审核结论**（同日）：通过。🔴 P1（`vite.spike.config.ts:27` 别名悬挂指向已删 stub 旧路径）当场修复；P4 注释卫生全清（browser-adapter/drop-import/idb/runtime-stub 4 文件）。web 构建 3452 模块转译 0 错误；backend/browser-adapter/drop-import 单测 85/85 绿。
+
+**数据兼容**：IndexedDB 键规约早已与 browser-adapter/idb.ts 统一（`file:<stem>` / `entry:<stem>`），用户库数据零迁移。`idb.ts` 的 `_LAST_MODEL_KEY = 'web-loader.lastModel'` 为持久化键值**故意保留**（改名会丢用户「上次模型」记录），已加注释钉死。
+
 ## 首屏数据链未决问题清单（审核新增，A4 核心风险）
 
 > ADR-176 已验证 web-loader 能加载模型，但**这不等于主应用全量 bootstrap 已验证**。以下问题需在 Phase 0/Phase 2 回答。
@@ -462,7 +480,7 @@ src/core/runtime-bridge.ts:112  (Wails 侧 wrapper，合法)
 - **持久化语义差异**：Go 侧为单机文件，浏览器侧为 IndexedDB（同源隔离），跨设备不互通——文档需明示。
 - **`@wailsio/runtime` 隔离**：web 构建用 stub 替换（ADR-176 web-loader 已验证），主应用 `vite.config.ts` 不受扰动；Phase 1 Runtime Bridge 后生产代码白名单验证。
 - **菜单 Schema 复用**：ADR-093 声明式菜单 Schema 是数据驱动，同一套 Schema 在浏览器侧直接渲染，无需复制菜单代码。
-- **web-loader 保留**：Phase 4 不立即废弃，作为回退入口直到验收条件满足。
+- ~~**web-loader 保留**：Phase 4 不立即废弃，作为回退入口直到验收条件满足。~~ **已失效（2026-07-25）**：用户裁决提前执行终态，web-loader 已整体删除，见「Phase 4 终态执行记录」。
 
 ## 与现有架构的关系
 

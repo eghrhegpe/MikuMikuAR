@@ -570,7 +570,7 @@ async function restoreFsaRootHandle(): Promise<FileSystemDirectoryHandle | null>
 
 export type FsaAuthState = 'unsupported' | 'none' | 'granted' | 'revoked';
 
-/** [doc:adr-177] 查询 FSA 根目录授权状态，供 UI 启动引导（不触发任何权限弹窗）。
+/** [doc:adr-183] 查询 FSA 根目录授权状态，供 UI 启动引导（不触发任何权限弹窗）。
  *  - unsupported: 浏览器无 FSA API（桌面端/旧浏览器）→ 不引导
  *  - none: 从未授权过 → 首启动应引导
  *  - granted: 持久化句柄仍有效 → 启动自愈，不引导
@@ -594,7 +594,7 @@ export async function getFsaAuthState(): Promise<FsaAuthState> {
     return 'revoked'; // 老实现不支持 queryPermission，保守视为需重选
 }
 
-/** [doc:adr-177] 用户跳过启动授权引导后写入「已跳过」标志，避免纯导入用户每次启动被弹窗骚扰。
+/** [doc:adr-183] 用户跳过启动授权引导后写入「已跳过」标志，避免纯导入用户每次启动被弹窗骚扰。
  * 想重新触发引导只需手动点「设置根目录」。 */
 export async function isFsaAuthPromptDismissed(): Promise<boolean> {
     return (await idbGet<boolean>('config', 'fsaAuthPromptDismissed')) === true;
@@ -604,7 +604,7 @@ export async function dismissFsaAuthPrompt(): Promise<void> {
     await idbSet('config', 'fsaAuthPromptDismissed', true);
 }
 
-/** [doc:adr-180] 对持久化的 FSA 句柄重新请求授权（不重选目录）。
+/** [doc:adr-183] 对持久化的 FSA 句柄重新请求授权（不重选目录）。
  * 须在用户手势上下文中调用（如 confirm 框点击），否则 requestPermission 会被浏览器拦截。
  * 成功写入内存句柄并返回 true；无句柄 / 用户拒绝 / 句柄失效返回 false。
  * 与 restoreFsaRootHandle 的区别：后者仅 queryPermission（无手势），本函数主动 requestPermission（需手势）。 */
