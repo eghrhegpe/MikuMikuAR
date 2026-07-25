@@ -528,6 +528,123 @@ describe('ADR-177 Phase 2 A4 p2-5：虚拟目录 + 伴生文件加载', () => {
             expect(_idbStore.has('dir::tex/face.png')).toBe(false);
             expect(_idbStore.get('file:face')).toEqual(tex);
         });
+
+        it('[bugfix:zip-pmx-subdir] PMX 在 zip 子目录时贴图能被正确读取（relPath 相对 PMX）', async () => {
+            // 复现：zip 内 `char/Miku.pmx` + `char/tex/face.png` + `char/tex/body.png`。
+            // 旧实现写 `dir:<ns>:char/tex/face.png`（zip 内完整路径），
+            // babylon-mmd 拼 `web://model/<ns>/tex/face.png`（相对 PMX）→ 维度失配 → 贴图读不到。
+            // 修复后写 `dir:<ns>:tex/face.png`（剥掉 PMX 目录前缀），与读取维度一致。
+            const pmx = new Uint8Array([1, 2, 3]);
+            const faceTex = new Uint8Array([10, 20]);
+            const bodyTex = new Uint8Array([30, 40, 50]);
+            const zipBytes = await makeZip({
+                'char/Miku.pmx': pmx,
+                'char/tex/face.png': faceTex,
+                'char/tex/body.png': bodyTex,
+            });
+            _idbStore.set('file:CharPack', zipBytes);
+
+            const result = await browserAdapter.ExtractZip('CharPack.zip', '');
+
+            const ns = encodeURIComponent('CharPack/Miku');
+            expect(result?.file_path).toBe(`web://model/${ns}`);
+
+            // 写入键的 relPath 已剥掉 PMX 子目录前缀 `char/`
+            expect(_idbStore.get(`dir:${ns}:tex/face.png`)).toEqual(faceTex);
+            expect(_idbStore.get(`dir:${ns}:tex/body.png`)).toEqual(bodyTex);
+            // 不应残留带子目录前缀的旧键（旧实现的 bug 形态）
+            expect(_idbStore.has(`dir:${ns}:char/tex/face.png`)).toBe(false);
+
+            // 全链路：IsolateModelDir + ListDirRecursive + readFileBytes 都能取到正确字节
+            const dir = await browserAdapter.IsolateModelDir(result!.file_path);
+            const entries = await browserAdapter.ListDirRecursive(dir);
+            const relPaths = entries.map((e) => e.relativePath);
+            expect(relPaths).toContain('tex/face.png');
+            expect(relPaths).toContain('tex/body.png');
+            expect(relPaths).not.toContain('char/tex/face.png'); // 旧 bug 形态
+            // babylon-mmd 拼接路径形态（web://model/<ns>/tex/face.png）能命中
+            expect(await browserAdapter.readFileBytes(`${dir}/tex/face.png`)).toEqual(faceTex);
+            expect(await browserAdapter.readFileBytes(`${dir}/tex/body.png`)).toEqual(bodyTex);
+        });
+
+        it('[bugfix:zip-pmx-subdir] zip 内多个 PMX 在不同子目录，加载指定 PMX 只读对应子目录贴图', async () => {
+            // 多 PMX zip：`A/Miku.pmx` + `A/tex/face.png` + `B/Miku.pmx` + `B/tex/face.png`。
+            // 通过 innerPath 定位 B/Miku.pmx，期望 B 的贴图被读、A 的贴图不污染命名空间。
+            const pmxA = new Uint8Array([0xa1]);
+            const texA = new Uint8Array([0xa2]);
+            const pmxB = new Uint8Array([0xb1]);
+            const texB = new Uint8Array([0xb2]);
+            const zipBytes = await makeZip({
+                'A/Miku.pmx': pmxA,
+                'A/tex/face.png': texA,
+                'B/Miku.pmx': pmxB,
+                'B/tex/face.png': texB,
+            });
+            _idbStore.set('file:MultiPack', zipBytes);
+
+            // 加载 B 子目录的 Miku.pmx
+            const result = await browserAdapter.ExtractZip('MultiPack.zip', 'B/Miku.pmx');
+
+            const ns = encodeURIComponent('MultiPack/Miku');
+            expect(result?.file_path).toBe(`web://model/${ns}`);
+
+            // B 子目录的贴图写入命名空间，且 relPath 剥掉 B/ 前缀
+            expect(_idbStore.get(`dir:${ns}:tex/face.png`)).toEqual(texB);
+            // A 子目录的贴图不应污染命名空间（旧实现会写入 dir:<ns>:A/tex/face.png 覆盖 B 的同 relPath 键）
+            expect(_idbStore.has(`dir:${ns}:A/tex/face.png`)).toBe(false);
+
+            // 全链路：加载 B 路径，读到 B 的贴图（非 A 的）
+            const dir = await browserAdapter.IsolateModelDir(result!.file_path);
+            const got = await browserAdapter.readFileBytes(`${dir}/tex/face.png`);
+            expect(got).toEqual(texB);
+            expect(got).not.toEqual(texA);
+
+            // 反向验证：加载 A 子目录的 Miku.pmx，读到 A 的贴图
+            _idbStore.clear();
+            _idbStore.set('file:MultiPack', zipBytes);
+            const rA = await browserAdapter.ExtractZip('MultiPack.zip', 'A/Miku.pmx');
+            const dirA = await browserAdapter.IsolateModelDir(rA!.file_path);
+            const gotA = await browserAdapter.readFileBytes(`${dirA}/tex/face.png`);
+            expect(gotA).toEqual(texA);
+            expect(gotA).not.toEqual(texB);
+        });
+
+        it('[bugfix:zip-pmx-subdir] outfits.json 仅与 PMX 同子目录时写入命名空间', async () => {
+            // zip 内：`char/Miku.pmx` + `char/outfits.json` + `other/outfits.json`。
+            // 期望：仅 char/outfits.json 写入 outfit:<ns>，other/ 不污染。
+            const pmx = new Uint8Array([1]);
+            const charOutfit = new TextEncoder().encode('{"version":1,"tag":"char"}');
+            const otherOutfit = new TextEncoder().encode('{"version":1,"tag":"other"}');
+            const zipBytes = await makeZip({
+                'char/Miku.pmx': pmx,
+                'char/outfits.json': charOutfit,
+                'other/outfits.json': otherOutfit,
+            });
+            _idbStore.set('file:OutfitPack', zipBytes);
+
+            const result = await browserAdapter.ExtractZip('OutfitPack.zip', '');
+            const ns = encodeURIComponent('OutfitPack/Miku');
+
+            // 仅 char/outfits.json 写入命名空间
+            expect(_idbStore.get(`outfit:${ns}`)).toEqual(charOutfit);
+            expect(_idbStore.get(`outfit:${ns}`)).not.toEqual(otherOutfit);
+        });
+
+        it('[bugfix:zip-pmx-subdir] innerPath 用反斜杠分隔时同样能定位 PMX', async () => {
+            // 兼容 Windows 反斜杠：调用方可能传 'char\\Miku.pmx'。
+            const pmx = new Uint8Array([1]);
+            const tex = new Uint8Array([2]);
+            const zipBytes = await makeZip({
+                'char/Miku.pmx': pmx,
+                'char/tex/face.png': tex,
+            });
+            _idbStore.set('file:BackslashPack', zipBytes);
+
+            const result = await browserAdapter.ExtractZip('BackslashPack.zip', 'char\\Miku.pmx');
+            const ns = encodeURIComponent('BackslashPack/Miku');
+            expect(result?.file_path).toBe(`web://model/${ns}`);
+            expect(_idbStore.get(`dir:${ns}:tex/face.png`)).toEqual(tex);
+        });
     });
 });
 

@@ -82,6 +82,59 @@ function _bytesToBase64(bytes: Uint8Array): string {
     return btoa(bin);
 }
 
+// —— zip 条目名多编码检测（对齐 Go 端 bestDecode，adr-006）——
+
+/**
+ * [doc:adr-006] 对齐 Go 端 bestDecode（zipextract.go:428-496）：对非 UTF-8 的 zip 条目名，
+ * 同时尝试 Shift-JIS / GBK / Big5 三种编码，按评分挑选（+10 无替换字符 / +3 SJIS 偏置 /
+ * +2 CJK 汉字 / +1 假名·标点 / -5 U+FFFD / -1 全角半角）。
+ *
+ * 解决 MMD 圈 zip 条目名常用 SJIS（日文）/ GBK（中文 Windows）编码，JSZip 默认 UTF-8
+ * 解码会乱码，导致 .pmx 扩展名字节被破坏、扫描期 zip 展开失败（模型嵌套识别不足）。
+ */
+function bestDecodeZipName(bytes: Uint8Array): string {
+    const encodings = ['shift_jis', 'gbk', 'big5'] as const;
+    let best = '';
+    let bestScore = -Infinity;
+    for (const enc of encodings) {
+        let decoded: string;
+        try {
+            decoded = new TextDecoder(enc, { fatal: false }).decode(bytes);
+        } catch {
+            continue; // 浏览器不支持该编码（罕见），跳过
+        }
+        let score = 0;
+        let ffiCount = 0;
+        for (let i = 0; i < decoded.length; i++) {
+            const cp = decoded.codePointAt(i)!;
+            if (cp === 0xfffd) {
+                ffiCount++;
+                score -= 5; // 替换字符（对齐 Go 的 RuneError -5）
+            } else if (cp >= 0x4e00 && cp <= 0x9fff) {
+                score += 2; // CJK 统一汉字
+            } else if (cp >= 0x3040 && cp <= 0x30ff) {
+                score += 1; // 平假名/片假名
+            } else if (cp >= 0x3000 && cp <= 0x303f) {
+                score += 1; // CJK 标点
+            } else if (cp >= 0xff00 && cp <= 0xffef) {
+                score -= 1; // 全角/半角（疑似损坏）
+            }
+        }
+        if (ffiCount === 0) score += 10; // 无替换字符（对齐 Go 的 err==nil +10）
+        if (enc === 'shift_jis') score += 3; // SJIS 偏置（MMD 主流编码）
+        if (score > bestScore) {
+            bestScore = score;
+            best = decoded;
+        }
+    }
+    return best || new TextDecoder('utf-8').decode(bytes);
+}
+
+// —— ZIP 炸弹防护阈值（对齐 Go 端 expandZipEntries，library.go:139-153）——
+const MAX_ZIP_FILE_SIZE = 500 * 1024 * 1024; // 500 MB — 单 zip 文件大小上限
+const MAX_ZIP_ENTRY_COUNT = 10000; // 条目数上限
+const MAX_ZIP_TOTAL_BYTES = 2 * 1024 * 1024 * 1024; // 2 GB — 总未压缩大小上限
+
 // —— 资源配对（P4）——
 if (
     typeof window !== 'undefined' &&
@@ -254,7 +307,7 @@ function _extractStem(path: string): string {
 }
 
 async function _listModels(): Promise<ModelEntry[]> {
-    // 键规约（ADR-176 Phase 3，与 web-loader/library.ts 共享）：
+    // 键规约（ADR-176 Phase 3，与 idb.ts saveModel 共享）：
     //   `entry:<name>` = 模型元数据；`file:<name>` = 原档字节；`recent` = 最近列表。
     // 仅列 entry: 前缀，避免把原档字节 / recent 数组误当 ModelEntry 返回。
     const allKeys = await idbKeys('models');
@@ -377,7 +430,7 @@ async function _writeModelWithTextures(
 }
 
 // [doc:adr-177] FSA 目录扫描：递归遍历 directory handle，将 .pmx/.zip 文件写入 IndexedDB。
-// 键规约与 web-loader/library.ts saveModel 一致：file:<stem> + entry:<stem>
+// 键规约与 idb.ts saveModel 一致：file:<stem> + entry:<stem>
 let _fsaRootHandle: FileSystemDirectoryHandle | null = null;
 
 // [doc:adr-177] FSA 目录句柄的异步迭代器接口（TS DOM lib 未含 values()，手动断言）
@@ -551,6 +604,29 @@ export async function dismissFsaAuthPrompt(): Promise<void> {
     await idbSet('config', 'fsaAuthPromptDismissed', true);
 }
 
+/** [doc:adr-180] 对持久化的 FSA 句柄重新请求授权（不重选目录）。
+ * 须在用户手势上下文中调用（如 confirm 框点击），否则 requestPermission 会被浏览器拦截。
+ * 成功写入内存句柄并返回 true；无句柄 / 用户拒绝 / 句柄失效返回 false。
+ * 与 restoreFsaRootHandle 的区别：后者仅 queryPermission（无手势），本函数主动 requestPermission（需手势）。 */
+export async function reauthorizeFsaRoot(): Promise<boolean> {
+    const h = await idbGet<FileSystemDirectoryHandle>('config', 'fsaRootHandle');
+    if (!h) return false;
+    const permHandle = h as FileSystemDirectoryHandle & {
+        requestPermission?: (o: { mode: 'readwrite' }) => Promise<PermissionState>;
+    };
+    if (typeof permHandle.requestPermission !== 'function') return false;
+    try {
+        const perm = await permHandle.requestPermission({ mode: 'readwrite' });
+        if (perm === 'granted') {
+            _fsaRootHandle = h;
+            return true;
+        }
+    } catch {
+        /* 用户拒绝 / 句柄失效 → 降级为手动 SelectDir */
+    }
+    return false;
+}
+
 /** FSA 目录递归扫描：保留目录结构，按目录约定分类（对齐桌面端） */
 async function _scanDirIntoIDB(
     dirHandle: FileSystemDirectoryHandle,
@@ -647,10 +723,45 @@ async function _scanDirIntoIDB(
         // 每个识别文件（pmx/vmd/audio/vpd）生成独立 entry，dir = virtualDir/zipStem（虚拟文件夹），
         // container='zip' + zip_inner=内部路径。UI 层 buildLevel 按 dir 分组自然形成文件夹层级。
         if (ext === 'zip') {
+            // [doc:adr-006] ZIP 炸弹防护 1：文件大小预判（对齐 Go 端 maxZipEntryFileSize）
+            if (bytes.byteLength > MAX_ZIP_FILE_SIZE) {
+                console.warn(
+                    `[web-scan] 跳过过大 zip (${(bytes.byteLength / 1024 / 1024).toFixed(1)} MB): ${name}`
+                );
+                continue;
+            }
             try {
-                const zip = await JSZip.loadAsync(bytes);
+                // [doc:adr-006] 传入 decodeFileName：对非 UTF-8 条目名做 SJIS/GBK/Big5 评分检测，
+                // 避免乱码导致 .pmx 扩展名字节被破坏、zip 展开失败（模型嵌套识别不足）
+                const zip = await JSZip.loadAsync(bytes, { decodeFileName: bestDecodeZipName });
+                const allEntries = Object.keys(zip.files);
+                // [doc:adr-006] ZIP 炸弹防护 2：条目数（对齐 Go 端 maxZipEntryCount）
+                if (allEntries.length > MAX_ZIP_ENTRY_COUNT) {
+                    console.warn(
+                        `[web-scan] zip ${name} 条目数 ${allEntries.length} 超限，疑似 zip 炸弹`
+                    );
+                    continue;
+                }
+                // [doc:adr-006] ZIP 炸弹防护 3：总未压缩大小（对齐 Go 端 maxZipTotalBytes）
+                // JSZip 类型未暴露 _data.uncompressedSize，用 as 访问内部字段（安全防护必需）
+                let totalUncompressed = 0;
+                for (const n of allEntries) {
+                    const zf = zip.files[n] as unknown as {
+                        _data?: { uncompressedSize?: number };
+                    };
+                    if (typeof zf._data?.uncompressedSize === 'number') {
+                        totalUncompressed += zf._data.uncompressedSize;
+                    }
+                    if (totalUncompressed > MAX_ZIP_TOTAL_BYTES) break;
+                }
+                if (totalUncompressed > MAX_ZIP_TOTAL_BYTES) {
+                    console.warn(
+                        `[web-scan] zip ${name} 总未压缩大小超限，疑似 zip 炸弹`
+                    );
+                    continue;
+                }
                 const INNER_RE = /\.(pmx|vmd|mp3|wav|ogg|flac|wma|vpd)$/i;
-                const innerFiles = Object.keys(zip.files).filter(
+                const innerFiles = allEntries.filter(
                     (n) => !zip.files[n].dir && INNER_RE.test(n)
                 );
                 if (innerFiles.length > 0) {
@@ -869,20 +980,30 @@ export const browserAdapter: BackendService = {
         //   dir:<pmxStem>:<relPath>—— 带目录结构存（ListDirRecursive 扫描 + readFileBytes 路由）
         //   outfit:<pmxStem>       —— outfits.json（LoadOutfitFile 读取）
         //   scenes store bundle:<zipStem> —— scene.json（LoadSceneFile bundle 路径）
+        //
+        // [bugfix:zip-pmx-subdir] PMX 在 zip 内子目录时（如 `subdir/Miku.pmx` + `subdir/tex/face.png`），
+        // babylon-mmd 拼 `<modelDir>/<PMX 内嵌相对路径>` = `web://model/<nsStem>/tex/face.png`
+        // （不带子目录前缀），故 dir: 键的 relPath 必须是「相对 PMX 的路径」而非「zip 内完整路径」。
+        // 否则写入 `dir:<nsStem>:subdir/tex/face.png` 与读取 `dir:<nsStem>:tex/face.png` 维度失配 → 贴图读不到。
+        // 多 PMX 场景下还需仅处理 mainPmx 同子目录的文件，避免其他 PMX 子目录的贴图污染命名空间。
         const buf = await this.readFileBytes(zipPath);
         if (!buf) return null;
-        const zip = await JSZip.loadAsync(buf);
+        // [doc:adr-006] 传入 decodeFileName：与扫描期 _scanDirIntoIDB 一致的条目名解码，
+        // 保证 n === _inner_path 比较两端解码一致（避免扫描期乱码、解压期又乱码导致找不到目标 pmx）
+        const zip = await JSZip.loadAsync(buf, { decodeFileName: bestDecodeZipName });
         const ASSET_RE = /\.(pmx|vmd|vpd|png|jpg|jpeg|bmp|tga|dds|tif|tiff|wav|mp3|ogg|flac|glb)$/i;
         const fileNames = Object.keys(zip.files).filter((n) => !zip.files[n].dir);
         // 第一遍：确定目标文件（优先使用 innerPath，兜底找第一个 PMX）
         let mainPmxName = '';
         let mainPmxStem = '';
+        let mainPmxFullPath = ''; // [bugfix:zip-pmx-subdir] 记录 PMX 在 zip 内的完整路径，用于推算目录前缀
         if (_innerPath) {
             // [bugfix:zip-innerpath] 多文件 zip 点击特定内部文件时，按 innerPath 定位
             const target = fileNames.find(
                 (n) => n === _innerPath || n.replace(/\\/g, '/') === _innerPath
             );
             if (target) {
+                mainPmxFullPath = target.replace(/\\/g, '/');
                 mainPmxName = _baseName(target);
                 mainPmxStem = _stripExt(mainPmxName);
             }
@@ -891,12 +1012,18 @@ export const browserAdapter: BackendService = {
             for (const name of fileNames) {
                 const baseName = _baseName(name);
                 if (/\.pmx$/i.test(baseName)) {
+                    mainPmxFullPath = name.replace(/\\/g, '/');
                     mainPmxName = baseName;
                     mainPmxStem = _stripExt(baseName);
                     break;
                 }
             }
         }
+        // [bugfix:zip-pmx-subdir] PMX 在 zip 内的目录前缀（含尾斜杠）。
+        // 根目录 PMX 时为 ''，子目录 PMX（如 `subdir/Miku.pmx`）时为 'subdir/'。
+        const pmxPrefix = mainPmxFullPath.includes('/')
+            ? mainPmxFullPath.slice(0, mainPmxFullPath.lastIndexOf('/') + 1)
+            : '';
         const zipStem = _extractStem(zipPath);
         // [doc:adr-182] 命名空间 stem = zipStem/pmxStem，经 _encModelStem 编码为单 token，
         // 使不同 zip 内同名 PMX 的 dir:/outfit: 键互不碰撞（消除静默错渲染）。
@@ -916,21 +1043,32 @@ export const browserAdapter: BackendService = {
                     // file:<裸stem> 扁平键：保留（向后兼容 + readFileBytes 兜底2 + 跨模型共享）
                     await idbSet('models', `file:${stem}`, bytes);
                     if (nsStem) {
-                        // dir:<enc(zipStem/pmxStem)>:<relPath> 命名空间纹理组（隔离，核心修复）
-                        await idbSet('models', `dir:${nsStem}:${relPath}`, bytes);
-                        // [doc:adr-182] PMX 主文件额外写命名空间扁平键 file:<nsStem>，
-                        // 使返回的 web://model/<nsStem> 加载路径经 readFileBytes 兜底2 命中正确字节。
-                        if (baseName === mainPmxName) {
-                            await idbSet('models', `file:${nsStem}`, bytes);
+                        // [bugfix:zip-pmx-subdir] 仅写属于 mainPmx 同子目录下的资源到命名空间，
+                        // 避免多 PMX zip 中其他子目录的贴图污染 mainPmx 的命名空间。
+                        // relPath 剥掉 pmxPrefix 使其相对 PMX 文件，与 babylon-mmd 拼接的 URL 维度一致。
+                        if (!pmxPrefix || relPath.startsWith(pmxPrefix)) {
+                            const relToPmx = pmxPrefix ? relPath.slice(pmxPrefix.length) : relPath;
+                            await idbSet('models', `dir:${nsStem}:${relToPmx}`, bytes);
+                            // [doc:adr-182] PMX 主文件额外写命名空间扁平键 file:<nsStem>，
+                            // 使返回的 web://model/<nsStem> 加载路径经 readFileBytes 兜底2 命中正确字节。
+                            if (baseName === mainPmxName) {
+                                await idbSet('models', `file:${nsStem}`, bytes);
+                            }
                         }
+                        // 不属于 mainPmx 子目录的文件（如其他 PMX 子目录的贴图）：
+                        // 仅写 file:<裸stem> 扁平键（跨模型兜底），不写 dir: 命名空间键避免污染。
                     }
                     baseNames.push(baseName);
                 }
                 // outfits.json → outfit:<enc(zipStem/pmxStem)>（伴生换装配置）
+                // [bugfix:zip-pmx-subdir] 仅当与 PMX 同子目录时写入，避免其他 PMX 子目录的 outfits.json 污染。
                 if (baseName.toLowerCase() === 'outfits.json' && nsStem) {
-                    await idbSet('models', `outfit:${nsStem}`, bytes);
+                    if (!pmxPrefix || relPath.startsWith(pmxPrefix)) {
+                        await idbSet('models', `outfit:${nsStem}`, bytes);
+                    }
                 }
                 // scene.json → scenes store bundle:<zipStem>（LoadSceneFile bundle 路径）
+                // scene.json 是 zip 级别的元数据，与 PMX 子目录无关，保持原逻辑全量写。
                 if (baseName.toLowerCase() === 'scene.json' && zipStem) {
                     await idbSet('scenes', `bundle:${zipStem}`, bytes);
                 }

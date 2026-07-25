@@ -34,7 +34,7 @@ import { tryCatchStatus, isUnderRoot } from '../core/utils';
 import { logWarn } from '../core/logger';
 import { safeCallAsync } from '../core/safe-call';
 import { showConfirm } from '../core/dialog';
-import { getFsaAuthState, isFsaAuthPromptDismissed, dismissFsaAuthPrompt } from '../core/backend/browser-adapter';
+import { getFsaAuthState, isFsaAuthPromptDismissed, dismissFsaAuthPrompt, reauthorizeFsaRoot } from '../core/backend/browser-adapter';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
 import { buildLevel, setResourceViewMode } from './library-core';
@@ -42,26 +42,40 @@ import { showModelPopup } from './library-browse';
 
 // ======== 初始化 ========
 
+/** [doc:adr-180] 启动授权引导：弹确认框（用户手势）→ 对已有句柄 requestPermission 重新授权（不重选目录）。
+ * 返回 true 表示 _fsaRootHandle 已有效、可继续真扫；false 表示用户跳过/拒绝/无句柄。 */
+async function promptReauthorize(): Promise<boolean> {
+    if (await isFsaAuthPromptDismissed()) return false;
+    const ok = await showConfirm(t('library.fsaAuthPrompt'), t('library.fsaAuthTitle'));
+    if (!ok) {
+        await dismissFsaAuthPrompt();
+        return false;
+    }
+    const granted = await reauthorizeFsaRoot();
+    if (!granted) {
+        feedbackStatus('library.fsaRevokedHint', undefined, false);
+    }
+    return granted;
+}
+
 export async function initLibrary(): Promise<void> {
     try {
         const cfg = await GetConfig();
         let cfgRoot = cfg.resource_root || cfg.library_root || cfg.override_paths?.pmx || '';
+        const state = await getFsaAuthState();
+
         if (!cfgRoot) {
-            const state = await getFsaAuthState();
             if (state === 'unsupported') {
                 // 非 FSA 浏览器（桌面端/旧浏览器）：无目录授权能力，维持原轻提示
                 feedbackStatus('library.firstUseHint', undefined, false);
                 return;
             }
-            if (state === 'granted') {
-                // 持久化句柄仍有效但 config 未记录根路径：补上后走正常 rescan 自愈，不弹 picker
-                cfgRoot = 'web://selected-dir';
-            } else {
-                // 'none' | 'revoked'：对齐安卓，弹确认框引导授权；跳过则记住不再弹，避免纯导入用户被骚扰
+            if (state === 'none') {
+                // 从未授权 → 首次选目录（showDirectoryPicker）
                 if (!(await isFsaAuthPromptDismissed())) {
                     const ok = await showConfirm(t('library.fsaAuthPrompt'), t('library.fsaAuthTitle'));
                     if (ok) {
-                        await selectResourceRoot(false);
+                        await selectResourceRoot(false); // 内部 showDirectoryPicker + 扫描
                         return;
                     }
                     await dismissFsaAuthPrompt();
@@ -69,7 +83,23 @@ export async function initLibrary(): Promise<void> {
                 feedbackStatus('library.firstUseHint', undefined, false);
                 return;
             }
+            // 'granted' | 'revoked'：句柄已存在（granted 有效 / revoked 需重授）
+            if (state === 'revoked') {
+                const reauthOk = await promptReauthorize();
+                if (!reauthOk) {
+                    feedbackStatus('library.firstUseHint', undefined, false);
+                    return;
+                }
+            }
+            cfgRoot = 'web://selected-dir';
+        } else {
+            // 已配置根目录：句柄失效（revoked）则重授权后再真扫；失败降级读缓存不阻塞
+            if (state === 'revoked') {
+                await promptReauthorize();
+            }
         }
+
+        // ===== 通用初始化路径 =====
         setLibraryRoot(cfgRoot);
         setResourceRoot(cfgRoot);
         setOverridePaths(cfg.override_paths || {});
@@ -104,10 +134,6 @@ export async function initLibrary(): Promise<void> {
             await rescanAndSync();
         } catch (err) {
             logWarn('library-setup', 'ScanModelDir refresh:', err);
-        }
-        // [doc:adr-177] 曾授权但句柄失效（revoked）：库显示缓存不阻塞，仅轻提示引导重设根目录
-        if ((await getFsaAuthState()) === 'revoked') {
-            feedbackStatus('library.fsaRevokedHint', undefined, false);
         }
         safeCallAsync('library-setup', 'CleanOrphanCache:', () => CleanOrphanCache());
         feedbackStatus('library.browseHint2', undefined, false);
@@ -287,6 +313,11 @@ export async function refreshLibrary(): Promise<void> {
         return;
     }
     showInfoToast(t('library.entriesCount', { n: (models || []).length }));
+    // [doc:adr-177] 手动重扫但授权已失效（revoked）：库仅为缓存快照，
+    // 不阻塞但提示重新授权，对齐 initLibrary 启动引导，避免「扫描中…发现 N 个」造成已重扫假象
+    if ((await getFsaAuthState()) === 'revoked') {
+        feedbackStatus('library.fsaRevokedHint', undefined, false);
+    }
     CleanOrphanCache().catch((err) =>
         logWarn('library-setup', 'CleanOrphanCache (background):', err)
     );
