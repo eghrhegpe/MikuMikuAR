@@ -662,4 +662,55 @@ describe('FSA 目录扫描嵌套结构（保留目录层级 + 同名不覆盖）
             new Uint8Array([1, 1])
         );
     });
+
+    it('[adr-180] SelectDir 后持久化 fsaRootHandle 到 IndexedDB', async () => {
+        const root = buildFakeTree({
+            name: 'models',
+            kind: 'directory',
+            children: [{ kind: 'file', name: 'm.pmx', bytes: new Uint8Array([1]) }],
+        });
+        setWindow({ showDirectoryPicker: async () => root });
+        await browserAdapter.SelectDir();
+        expect(_idbStore.get('fsaRootHandle')).toBe(root);
+    });
+
+    it('[adr-180] ScanModelDir 从持久化句柄自动重扫，覆盖旧塌缩 entry', async () => {
+        // 隔离模块状态：fresh import 使 _fsaRootHandle 重置为 null，专测「恢复」路径。
+        vi.resetModules();
+        const { browserAdapter: fresh } = await import('./browser-adapter');
+        const root = buildFakeTree({
+            name: 'models',
+            kind: 'directory',
+            children: [
+                {
+                    kind: 'directory',
+                    name: 'PMX',
+                    children: [{ kind: 'file', name: 'miku.pmx', bytes: new Uint8Array([9, 9]) }],
+                },
+            ],
+        }) as FileSystemDirectoryHandle & {
+            queryPermission: (o: { mode: string }) => Promise<string>;
+        };
+        root.queryPermission = async () => 'granted';
+        // 预置持久化句柄 + 一个旧版塌缩 entry（平铺、字段齐全，_listModels 过滤不掉）。
+        _idbStore.set('fsaRootHandle', root);
+        _idbStore.set('entry:foo', {
+            dir: 'web://selected-dir/PMX',
+            file_path: 'web://selected-dir/PMX/foo.pmx',
+            name: 'foo',
+            fileName: 'foo.pmx',
+            type: 'actor',
+            format: 'pmx',
+            container: 'file',
+            kind: 'pmx',
+            size: 1,
+            savedAt: Date.now(),
+        });
+        const models = await fresh.ScanModelDir();
+        // 根重扫先清旧：旧平铺 entry 必须消失
+        expect(_idbStore.get('entry:foo')).toBeUndefined();
+        // 新嵌套 entry 来自重扫
+        const byPath = new Map(models.map((m) => [m.file_path, m]));
+        expect(byPath.get('web://selected-dir/PMX/miku.pmx')?.dir).toBe('web://selected-dir/PMX');
+    });
 });
