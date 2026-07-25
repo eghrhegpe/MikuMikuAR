@@ -4,9 +4,7 @@ const config: KnipConfig = {
   // Alternate build configs & helper scripts are valid entry points
   // (knip auto-detects main.ts, vite.config.ts, vitest.config.ts, eslint.config.js, playwright.config.ts)
   entry: [
-    'src/web-loader/main.ts',
     'vite.web.config.ts',
-    'vite.web-loader.config.ts',
     'vite.spike.config.ts',
     'vitest.perf.config.ts',
     'scripts/**/*.ts',
@@ -19,7 +17,7 @@ const config: KnipConfig = {
     'e2e/**',
     'public/**',
     'src/config.ts',                    // Type barrel re-export (knip can't trace)
-    'src/web-loader/wails-runtime-stub.ts', // Used via Vite alias in web-loader config
+    'src/core/runtime-stub.ts', // Used via Vite alias in vite.web.config.ts
   ],
   // Suppress exports used within the same file (factory pattern in motion-modules)
   ignoreExportsUsedInFile: true,

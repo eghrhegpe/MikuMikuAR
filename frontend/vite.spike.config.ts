@@ -12,7 +12,7 @@
 // 预览：npx vite preview --config vite.spike.config.ts --port 4174
 // Dev： npx vite --config vite.spike.config.ts
 //
-// ⚠️ Spike 产物：本文件 + index.spike.html + wails-runtime-stub.ts（已扩展）
+// ⚠️ Spike 产物：本文件 + index.spike.html + runtime-stub.ts（已扩展，位于 src/core/）
 // Phase 0 通过后保留作为复现凭证。
 
 import { defineConfig } from 'vite';
@@ -24,7 +24,7 @@ export default defineConfig({
         alias: {
             '@': path.resolve(__dirname, 'src'),
             '@bindings': path.resolve(__dirname, 'bindings'),
-            '@wailsio/runtime': path.resolve(__dirname, 'src/web-loader/wails-runtime-stub.ts'),
+            '@wailsio/runtime': path.resolve(__dirname, 'src/core/runtime-stub.ts'),
         },
     },
     server: {
