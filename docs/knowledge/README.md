@@ -92,7 +92,7 @@ use_when:
 
 跑法：`node scripts/check-doc-drift.mjs`（或 `--json`）。可接 CI 卡点。
 
-## 卡片索引（164 张，按 category 分组）
+## 卡片索引（189 张，按 category 分组）
 
 ### 环境系统（env）
 
@@ -289,3 +289,6 @@ use_when:
 | [图标聚合](./icons-bundle.md) | `core/icons.ts` | — |
 | [PMX 元数据提取](./pmx-meta.md) | `core/pmx-meta.ts` | — |
 | [运行模式检测](./runtime-mode.md) | `core/runtime-mode.ts` | — |
+| [结构化反馈 API](./feedback.md) | `core/feedback.ts` | — |
+| [模型加载/库扫描完成后菜单刷新注册表](./load-refresh-registry.md) | `core/load-refresh-registry.ts` | — |
+| [@wailsio/runtime 浏览器桩](./runtime-stub.md) | `core/runtime-stub.ts` | ADR-176/177 |

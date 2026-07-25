@@ -299,6 +299,17 @@ export class ModelManager {
         // 因为外部回调需要通过 modelRegistry.get(id) 获取模型实例。
         this.onRemoveModel?.(id);
 
+        // [fix:gpu-texture-leak] 显式释放材质及其纹理（mesh.dispose 只释放几何体，不释放材质）。
+        // restoreMaterials 已将原始材质恢复到 mesh 上，此处统一 dispose 防止 GPU 纹理泄漏。
+        // 用 Set 去重：多个 mesh 可能共享同一材质实例。
+        const disposedMats = new Set<import('@babylonjs/core/Materials/material').Material>();
+        for (const m of inst.meshes) {
+            if (m instanceof Mesh && m.material && !disposedMats.has(m.material)) {
+                disposedMats.add(m.material);
+                m.material.dispose(false, true); // disposeTextures=true 级联释放贴图
+            }
+        }
+
         for (const m of inst.meshes) {
             if (m instanceof Mesh) {
                 m.dispose();
