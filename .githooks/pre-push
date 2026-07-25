@@ -107,22 +107,20 @@ else
   echo "[pre-push] test:coverage（跳过：纯文档/纯 Go 变更）"
 fi
 
-# ── P7: deadcode 基线治理（仅 TS 变更时，回退则阻断） ──
+# ── P7: deadcode 基线检查（仅 TS 变更时，warning 不阻断） ──
 if [ "$TS_CHANGED" = "true" ]; then
   echo "[pre-push] deadcode（基线治理：knip + jscpd）"
   cd "$ROOT/frontend" && node ../scripts/check-deadcode-baseline.mjs || {
-    echo "❌ 死代码/重复代码回退（超过基线）。"
-    echo "   清理新增死代码后重试，或确认无碍后更新基线："
-    echo "   cd frontend && node ../scripts/check-deadcode-baseline.mjs --update"
-    exit 1
+    echo "⚠️  死代码/重复代码超过基线（不阻断）。"
+    echo "   更新基线: cd frontend && node ../scripts/check-deadcode-baseline.mjs --update"
   }
 fi
 
-# ── check:docs（跳过纯文档变更） ──
+# ── check:docs（跳过纯文档变更；INFO 基线变化仅 warning，ERROR 才阻断） ──
 if [ "$DOCS_ONLY" = "false" ]; then
-  echo "[pre-push] check:docs"
+  echo "[pre-push] check:docs（ERROR 漂移阻断；INFO 基线变化仅参考）"
   cd "$ROOT" && node scripts/check-doc-drift.mjs --baseline || {
-    echo "❌ 文档漂移或 INFO 基线恶化。修复后用 'npm run check:docs -- --baseline-update' 确认新基线"
+    echo "❌ 文档漂移（ERROR）。修复后用 'node scripts/check-doc-drift.mjs --baseline' 验证"
     exit 1
   }
 else

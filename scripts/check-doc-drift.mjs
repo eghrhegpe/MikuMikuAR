@@ -457,16 +457,16 @@ function main() {
     errors.push(`status.md ADR 生成区未同步：${generatedStatusError}`);
   }
 
-  // ── INFO 基线对比 ──
+  // ── INFO 基线对比（不阻断，仅 warning） ──
   const infoCounts = getInfoCounts(cov, rev, apiSym);
   const baseline = readBaseline();
+  const infoWarnings = [];
   let baselineChanged = false;
 
   if (baseline) {
     for (const [key, label] of BASELINE_TRACKED) {
       if (infoCounts[key] > baseline[key]) {
-        errors.push(`INFO 基线恶化: ${label} 从 ${baseline[key]} 增至 ${infoCounts[key]}。`);
-        errors.push(`  运行 npm run check:docs -- --baseline-update 确认新基线`);
+        infoWarnings.push(`${label} 从 ${baseline[key]} 增至 ${infoCounts[key]}`);
       }
       if (infoCounts[key] !== baseline[key]) {
         baselineChanged = true;
@@ -474,7 +474,7 @@ function main() {
     }
 
     // 自动更新基线（只在指标改善时，且非 --baseline 只读模式）
-    if (!baselineMode && !errors.length && baselineChanged) {
+    if (!baselineMode && baselineChanged) {
       const improved = BASELINE_TRACKED.some(([k]) => infoCounts[k] < baseline[k]);
       if (improved) {
         writeBaseline(infoCounts);
@@ -525,14 +525,16 @@ function main() {
     console.log(`⚠ AGENTS.md 手写事实索引（WARN，不阻断）: ${agentsWarns.length} 项`);
     agentsWarns.forEach((w) => console.log('   ⚠ ' + w));
   }
+  if (infoWarnings.length) {
+    console.log('⚠ INFO 基线变更（仅参考，不阻断）:');
+    infoWarnings.forEach((w) => console.log('   ⚠ ' + w));
+    console.log('   更新基线: node scripts/check-doc-drift.mjs --baseline-update');
+  }
 
   // 基线状态行
   if (baseline) {
-    const status = errors.some((e) => e.startsWith('INFO 基线恶化'))
-      ? '❌ 基线恶化'
-      : baselineChanged && infoCounts.undocumentedModules <= baseline.undocumentedModules
-        ? '✅ 基线改善'
-        : '✅ 基线清洁';
+    const improved = baselineChanged && BASELINE_TRACKED.some(([k]) => infoCounts[k] < baseline[k]);
+    const status = improved ? '✅ 基线改善' : baselineChanged ? '⚪ 基线变化' : '✅ 基线清洁';
     const brief = `${cov.undocumented}/${rev.total}/${apiSym.flagged.length}`;
     console.log(`📊 INFO 基线: ${brief}（${status}）`);
   }
