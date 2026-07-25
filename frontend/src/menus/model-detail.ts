@@ -36,7 +36,13 @@ import { buildOutfitLevel } from './outfit-ui';
 import { savePresetToLibDialog, buildPresetListLevel } from './model-preset';
 import { buildVirtualSkirtLevel } from './motion-cloth-levels';
 import { buildPhysicsDebugLevel } from './scene-physics-levels';
-import { getPersonalLightState, setPersonalLightState } from '../scene/render/lighting-follow';
+import {
+    getPersonalLightState,
+    setPersonalLightState,
+    setPersonalLightDefault,
+    getPersonalLightDefault,
+    resetPersonalLightDefault,
+} from '../scene/render/lighting-follow';
 import {
     GetTagsByModel,
     AddTag,
@@ -1320,6 +1326,32 @@ export function buildPersonalLightLevel(id: string): PopupLevel {
                         'lucide:haze'
                     );
                 }
+                // 设为默认 / 重置默认按钮行
+                const defaultRow = document.createElement('div');
+                defaultRow.style.cssText =
+                    'display:flex;gap:8px;margin-top:8px;';
+                const setDefBtn = document.createElement('button');
+                setDefBtn.className = 'preset-chip';
+                setDefBtn.textContent = t('model-detail.personalLightSetDefault');
+                setDefBtn.addEventListener('click', () => {
+                    const current = getPersonalLightState(id);
+                    if (current) {
+                        setPersonalLightDefault(current);
+                        feedbackInfo('model-detail.personalLightDefaultSaved', undefined);
+                    }
+                });
+                defaultRow.appendChild(setDefBtn);
+                if (getPersonalLightDefault()) {
+                    const resetDefBtn = document.createElement('button');
+                    resetDefBtn.className = 'preset-chip';
+                    resetDefBtn.textContent = t('model-detail.personalLightResetDefault');
+                    resetDefBtn.addEventListener('click', () => {
+                        resetPersonalLightDefault();
+                        feedbackInfo('model-detail.personalLightDefaultReset', undefined);
+                    });
+                    defaultRow.appendChild(resetDefBtn);
+                }
+                inner.appendChild(defaultRow);
             });
         },
     };
