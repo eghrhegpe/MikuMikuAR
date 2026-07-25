@@ -218,6 +218,19 @@ public class WailsJSBridge {
     }
 
     /**
+     * Launch the system package installer for a local APK file (ADR-179).
+     * The APK must already exist on the device (downloaded via Go's DownloadApk
+     * binding). Delegates to WailsBridge.installApk which uses FileProvider +
+     * ACTION_VIEW to hand the file to the system installer.
+     *
+     * Called from JavaScript: wails.installApk("/data/data/.../updates/app.apk")
+     */
+    @JavascriptInterface
+    public void installApk(final String path) {
+        bridge.installApk(path);
+    }
+
+    /**
      * Set the requested screen orientation (ADR-017 A1-05).
      * "portrait" locks portrait, "landscape" locks landscape, anything else
      * ("auto") resets to the default policy, which follows the user's system

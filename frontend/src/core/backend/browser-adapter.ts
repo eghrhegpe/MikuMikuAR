@@ -28,6 +28,7 @@ import type {
     ModelMeta,
     ExtractResult,
     FileInfo,
+    InstallResult,
     UpdateCheckResult,
     RenderPreset,
     SoftwareEntry,
@@ -968,7 +969,13 @@ export const browserAdapter: BackendService = {
             latestVersion: 'web',
             notes: '',
             url: '',
+            downloadUrl: '',
+            assetName: '',
+            size: 0,
         } as unknown as UpdateCheckResult;
+    },
+    async DownloadApk(): Promise<InstallResult | null> {
+        return { localPath: '', success: false, error: 'not supported on web' };
     },
     async ExtractZip(zipPath: string, _innerPath: string): Promise<ExtractResult | null> {
         // [doc:adr-177] 浏览器侧：调用方先将 zip 字节写入 IndexedDB file:<zipStem>，

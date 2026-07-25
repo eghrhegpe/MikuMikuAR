@@ -35,7 +35,7 @@ export function setupE2ECapture(): void {
                 const json = JSON.stringify(dump, null, 2);
                 void navigator.clipboard.writeText(json);
             } catch {
-                // 剪贴板不可用时静默降级
+                /* expected failure when clipboard is unavailable */
             }
             return dump;
         });

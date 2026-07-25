@@ -534,6 +534,35 @@ public class WailsBridge {
     }
 
     /**
+     * Launch the system package installer for a local APK file (ADR-179).
+     * Uses FileProvider to generate a content:// URI so the installer can
+     * read the file without requiring broad storage permissions.
+     * Called from Go via JNI or from WailsJSBridge.installApk.
+     */
+    public void installApk(final String path) {
+        mainHandler.post(() -> {
+            try {
+                java.io.File f = new java.io.File(path);
+                if (!f.exists()) {
+                    Log.e(TAG, "installApk: file not found: " + path);
+                    return;
+                }
+                Uri uri = androidx.core.content.FileProvider.getUriForFile(
+                        activity,
+                        activity.getPackageName() + ".fileprovider",
+                        f);
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.setDataAndType(uri, "application/vnd.android.package-archive");
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                        | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                activity.startActivity(intent);
+            } catch (Exception e) {
+                Log.e(TAG, "installApk failed", e);
+            }
+        });
+    }
+
+    /**
      * Keep the screen on (1) or release the hold (0) via FLAG_KEEP_SCREEN_ON.
      */
     public void setKeepAwake(final int enabled) {

@@ -17,6 +17,7 @@ export type {
     EnvState,
     ExtractResult,
     FileInfo,
+    InstallResult,
     ModelEntry,
     ModelMeta,
     ModelPresetEntry,
@@ -59,6 +60,7 @@ export const ClosePlazaWindow = _p('ClosePlazaWindow');
 export const DeleteEnvPreset = _p('DeleteEnvPreset');
 export const DeleteModelPreset = _p('DeleteModelPreset');
 export const DeletePresetScene = _p('DeletePresetScene');
+export const DownloadApk = _p('DownloadApk');
 export const DownloadFromPlaza = _p('DownloadFromPlaza');
 export const ExtractZip = _p('ExtractZip');
 export const FetchPlazaConfig = _p('FetchPlazaConfig');

@@ -134,14 +134,14 @@ class WailsRuntimeBridge implements RuntimeBridge {
             try {
                 unsub();
             } catch {
-                /* ignore */
+                /* cleanup, ignore errors */
             }
         }
         this._unsubscribers.length = 0;
         try {
             this._events?.offAll();
         } catch {
-            /* ignore */
+            /* cleanup, ignore errors */
         }
     }
 

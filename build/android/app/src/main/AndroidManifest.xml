@@ -16,6 +16,9 @@
     <uses-feature android:name="android.hardware.camera.ar" android:required="false" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <!-- [doc:adr-179] Allow the app to request installation of downloaded APK files.
+         Without this, Android 8+ blocks ACTION_VIEW for package archives. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <!-- External storage access for model library (/sdcard/MMD).
          On Android 13+ READ_EXTERNAL_STORAGE is deprecated; MANAGE_EXTERNAL_STORAGE

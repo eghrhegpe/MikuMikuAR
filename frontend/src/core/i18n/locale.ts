@@ -50,7 +50,7 @@ export function setLang(lang: LangCode): void {
     try {
         localStorage.setItem(LANG_KEY, lang);
     } catch {
-        /* 忽略 localStorage 写入失败 */
+        /* expected failure when localStorage is unavailable */
     }
     applyHtmlLang();
     scheduleRefresh();
@@ -60,7 +60,7 @@ function applyHtmlLang(): void {
     try {
         document.documentElement.lang = state.lang;
     } catch {
-        /* ignore */
+        /* expected failure when document.documentElement is inaccessible */
     }
 }
 

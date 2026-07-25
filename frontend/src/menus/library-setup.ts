@@ -127,8 +127,8 @@ export async function initLibrary(): Promise<void> {
             if (validCached.length > 0) {
                 setAllModels(validCached);
             }
-        } catch {
-            /* no cache */
+        } catch (e) {
+            logWarn('library-setup', 'GetLibraryIndex failed', e);
         }
         try {
             await rescanAndSync();

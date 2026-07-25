@@ -745,11 +745,27 @@ export interface UpdateCheckResult {
     "available": boolean;
     "url": string;
     "checkedAt": number;
+    /**
+     * [doc:adr-179] Asset direct-link for download-and-install flow.
+     * Empty when no platform-matching asset was found; the UI falls back to url.
+     */
+    "downloadUrl": string;
+    "assetName": string;
+    "size": number;
 
     /**
      * Error carries network/parse failures. A non-empty Error means the check
      * could not be completed; the UI degrades gracefully rather than treating
      * this as a hard failure.
      */
+    "error"?: string;
+}
+
+/**
+ * InstallResult is returned by DownloadApk / DownloadAndRunInstaller.
+ */
+export interface InstallResult {
+    "localPath": string;
+    "success": boolean;
     "error"?: string;
 }

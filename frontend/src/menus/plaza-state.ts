@@ -7,6 +7,7 @@ import { closeAllOverlays } from '../core/utils';
 import { swallowError } from '../core/utils';
 import { StopProxy } from '../core/wails-bindings';
 import { getCachedCapabilities } from '../core/backend';
+import { logWarn } from '../core/logger';
 
 // ======== 常量 ========
 
@@ -117,8 +118,8 @@ export function loadGlobalMode(): OpenMode | null {
         if (v === 'embed' || v === 'external' || v === 'window') {
             return v;
         }
-    } catch {
-        /* ignore */
+    } catch (e) {
+        logWarn('plaza-state', 'loadGlobalMode failed', e);
     }
     return null;
 }
@@ -126,8 +127,8 @@ export function loadGlobalMode(): OpenMode | null {
 export function saveGlobalMode(mode: OpenMode): void {
     try {
         localStorage.setItem(GLOBAL_MODE_KEY, mode);
-    } catch {
-        /* ignore */
+    } catch (e) {
+        logWarn('plaza-state', 'saveGlobalMode failed', e);
     }
 }
 
@@ -143,8 +144,8 @@ export function effectiveMode(site: PlazaSite): OpenMode {
             }
             return saved;
         }
-    } catch {
-        /* ignore */
+    } catch (e) {
+        logWarn('plaza-state', 'effectiveMode failed', e);
     }
     const global = loadGlobalMode();
     if (global) {
