@@ -68,6 +68,30 @@ tasks:
       - cmd: cd frontend && npm run deadcode:baseline
         silent: true
 
+  diagnose:
+    summary: 全量项目诊断（由快到慢，覆盖所有质量维度）
+    cmds:
+      # ── 秒级 ──
+      - task: check:status
+      - cmd: npm run check:funcmap
+        silent: true
+      - cmd: cd frontend && npm run lint
+        silent: true
+      - task: check:goerr
+      - cmd: cd frontend && npm run check:i18n
+        silent: true
+      - cmd: cd frontend && npm run check:icons
+        silent: true
+      - cmd: cd frontend && npm run format:check
+        silent: true
+      - cmd: npm run check:circular
+        silent: true
+      - task: deadcode:baseline
+      - task: check:docs
+      # ── 分钟级 ──
+      - cmd: cd frontend && npm test
+        silent: true
+
   setup:docker:
     summary: Builds Docker image for cross-compilation (~800MB download)
     cmds:
