@@ -5,7 +5,7 @@
 > **严重程度**: 🔴 P1
 > **影响范围**: `frontend/src/core/backend/browser-adapter.ts`
 > **发现方式**: 开发发现（代码审查）
-> **修复提交**: 待提交（local）
+> **修复提交**: `714e8508`（FSA 目录扫描路径）+ ADR-182 实现（ZIP 解压路径，本提交批次）
 
 ---
 
@@ -40,6 +40,7 @@
    - 根级（裸文件名）模型编码后形态不变（`encodeURIComponent('miku')==='miku'`），向后兼容。
 2. **GetCacheStats 真实结构**：返回对齐 Go 的 `CacheStats`（9 字段），遍历 `models`/`thumbnails`/`caches` store 累加 `Uint8Array.byteLength` 作为 `resourceBytes`/`thumbnailBytes`/`extractedBytes`，`serveBytes` 网页端恒 0，`totalBytes` 为三者之和。
 3. 回归测试 `browser-adapter.test.ts`（4 项）+ 更新 `backend.test.ts` 过时断言（`IsolateModelDir` 现返回编码 stem）。
+4. **ZIP 解压入口的同源碰撞**（`ExtractZip` 用裸 `mainPmxStem` 写 `file:`/`dir:`/`outfit:` 键，未覆盖上一轮修复）由 **ADR-182** 以 `zipStem/pmxStem` 命名空间 + `_encModelStem` 编码全链路解决：`dir:<enc(zipStem/miku)>:tex/face.png` 使不同 zip 内同名 PMX 互不碰撞，并配套 `IsolateModelDir` 幂等化。详见 `docs/adr/adr-182-web-zip-keyspace-namespacing.md`。
 
 ## 教训
 

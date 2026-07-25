@@ -862,6 +862,12 @@ export const browserAdapter: BackendService = {
             }
         }
         const zipStem = _extractStem(zipPath);
+        // [doc:adr-182] 命名空间 stem = zipStem/pmxStem，经 _encModelStem 编码为单 token，
+        // 使不同 zip 内同名 PMX 的 dir:/outfit: 键互不碰撞（消除静默错渲染）。
+        // zipStem 兜底：极端情况 zipPath 无 stem 时退回裸 mainPmxStem（保持旧行为，不新增碰撞）。
+        const nsStem = mainPmxStem
+            ? _encModelStem(zipStem ? `${zipStem}/${mainPmxStem}` : mainPmxStem)
+            : '';
         // 第二遍：并发存资源（含 dir: / outfit: / bundle: 分类）
         const baseNames: string[] = [];
         await Promise.all(
@@ -871,16 +877,22 @@ export const browserAdapter: BackendService = {
                 const stem = _stripExt(baseName);
                 const relPath = name.replace(/\\/g, '/');
                 if (ASSET_RE.test(baseName)) {
+                    // file:<裸stem> 扁平键：保留（向后兼容 + readFileBytes 兜底2 + 跨模型共享）
                     await idbSet('models', `file:${stem}`, bytes);
-                    // 按主 PMX stem 存带目录结构的纹理（ListDirRecursive + readFileBytes 路由）
-                    if (mainPmxStem) {
-                        await idbSet('models', `dir:${mainPmxStem}:${relPath}`, bytes);
+                    if (nsStem) {
+                        // dir:<enc(zipStem/pmxStem)>:<relPath> 命名空间纹理组（隔离，核心修复）
+                        await idbSet('models', `dir:${nsStem}:${relPath}`, bytes);
+                        // [doc:adr-182] PMX 主文件额外写命名空间扁平键 file:<nsStem>，
+                        // 使返回的 web://model/<nsStem> 加载路径经 readFileBytes 兜底2 命中正确字节。
+                        if (baseName === mainPmxName) {
+                            await idbSet('models', `file:${nsStem}`, bytes);
+                        }
                     }
                     baseNames.push(baseName);
                 }
-                // outfits.json → outfit:<pmxStem>（伴生换装配置）
-                if (baseName.toLowerCase() === 'outfits.json' && mainPmxStem) {
-                    await idbSet('models', `outfit:${mainPmxStem}`, bytes);
+                // outfits.json → outfit:<enc(zipStem/pmxStem)>（伴生换装配置）
+                if (baseName.toLowerCase() === 'outfits.json' && nsStem) {
+                    await idbSet('models', `outfit:${nsStem}`, bytes);
                 }
                 // scene.json → scenes store bundle:<zipStem>（LoadSceneFile bundle 路径）
                 if (baseName.toLowerCase() === 'scene.json' && zipStem) {
@@ -888,9 +900,11 @@ export const browserAdapter: BackendService = {
                 }
             })
         );
-        // 返回主 PMX + 虚拟 dir（LoadSceneFile bundle 路径 web://bundle/<zipStem>/scene.json）
+        // [doc:adr-182] 返回 web://model/<nsStem> 而非裸 mainPmxName：
+        // 裸名会落 _classifyPath 的 absolute 分支被 _baseName 吃掉命名空间前缀；
+        // web://model/ 形式经 model-stem 分支透传，IsolateModelDir 幂等不再二次编码。
         return {
-            file_path: mainPmxName,
+            file_path: nsStem ? `web://model/${nsStem}` : mainPmxName,
             dir: zipStem ? `web://bundle/${zipStem}` : '',
             cached: false,
         } as unknown as ExtractResult;
@@ -1321,6 +1335,12 @@ export const browserAdapter: BackendService = {
         // 供 ListDirRecursive 扫描 dir:<encStem>: 前缀 + readFileBytes 透明路由。
         // encStem = encodeURIComponent(stem)，使不同目录同名 PMX 的纹理键互不碰撞
         // （[bugfix:tex-stem-collision]）。
+        //
+        // [doc:adr-182] 幂等：输入若已是 web://model/<encStem>（model-stem，无 relPath），
+        // stem 已编码，直接原样返回，避免二次 encodeURIComponent 造成双重编码
+        // （A%2Fmiku → A%252Fmiku），使 ExtractZip 返回的 web://model/<enc> 加载路径自洽。
+        const already = pmxPath.match(/^web:\/\/model\/([^/?#]+)$/);
+        if (already) return pmxPath;
         return `web://model/${_encModelStem(_extractStem(pmxPath))}`;
     },
     async ListDirRecursive(dirPath: string): Promise<FileInfo[]> {

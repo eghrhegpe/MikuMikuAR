@@ -442,7 +442,7 @@ describe('ADR-177 Phase 2 A4 p2-5：虚拟目录 + 伴生文件加载', () => {
     });
 
     describe('ExtractZip 解压分类落地', () => {
-        it('按主 PMX stem 存 dir:/outfit: + scene.json 存 bundle:', async () => {
+        it('[adr-182] 命名空间 zipStem/pmxStem 存 dir:/outfit: + scene.json 存 bundle:', async () => {
             const pmx = new Uint8Array([1, 2, 3]);
             const tex = new Uint8Array([4, 5]);
             const outfit = new TextEncoder().encode('{"version":1,"variants":[]}');
@@ -458,16 +458,65 @@ describe('ADR-177 Phase 2 A4 p2-5：虚拟目录 + 伴生文件加载', () => {
 
             const result = await browserAdapter.ExtractZip('MikuPack.zip', '');
 
-            expect(result?.file_path).toBe('Miku.pmx');
+            // [adr-182] nsStem = enc(zipStem/pmxStem)，返回 web://model/<nsStem>（非裸 Miku.pmx）
+            const ns = encodeURIComponent('MikuPack/Miku');
+            expect(result?.file_path).toBe(`web://model/${ns}`);
             expect(result?.dir).toBe('web://bundle/MikuPack');
-            // dir: 带目录结构（按主 PMX stem 分组）
-            expect(_idbStore.get('dir:Miku:tex/face.png')).toEqual(tex);
-            // outfit: 伴生配置
-            expect(_idbStore.get('outfit:Miku')).toEqual(outfit);
+            // dir: 命名空间纹理组（隔离核心修复）
+            expect(_idbStore.get(`dir:${ns}:tex/face.png`)).toEqual(tex);
+            // outfit: 命名空间伴生配置
+            expect(_idbStore.get(`outfit:${ns}`)).toEqual(outfit);
+            // file:<nsStem> PMX 命名空间扁平键（供 readFileBytes 兜底2 命中）
+            expect(_idbStore.get(`file:${ns}`)).toEqual(pmx);
             // bundle: scene.json（scenes store，_idbStore 单 Map 忽略 store 维度）
             expect(_idbStore.get('bundle:MikuPack')).toEqual(scene);
-            // file: 扁平兜底
+            // file:<裸stem> 扁平兜底保留（向后兼容 + 跨模型共享）
             expect(_idbStore.get('file:face')).toEqual(tex);
+        });
+
+        it('[adr-182] 不同 zip 内同名 PMX+纹理 → dir: 键互不碰撞，各自精确解析', async () => {
+            // 核心回归：packA.zip 与 packB.zip 都含 Miku.pmx + tex/face.png，
+            // 旧实现 dir:Miku:tex/face.png 会互相覆盖 → 加载 A 却贴 B 的纹理（静默错渲染）。
+            const pmxA = new Uint8Array([0xa1]);
+            const texA = new Uint8Array([0xa2]);
+            const pmxB = new Uint8Array([0xb1]);
+            const texB = new Uint8Array([0xb2]);
+            _idbStore.set(
+                'file:packA',
+                await makeZip({ 'Miku.pmx': pmxA, 'tex/face.png': texA })
+            );
+            _idbStore.set(
+                'file:packB',
+                await makeZip({ 'Miku.pmx': pmxB, 'tex/face.png': texB })
+            );
+
+            const rA = await browserAdapter.ExtractZip('packA.zip', '');
+            const rB = await browserAdapter.ExtractZip('packB.zip', '');
+
+            const nsA = encodeURIComponent('packA/Miku');
+            const nsB = encodeURIComponent('packB/Miku');
+            expect(rA?.file_path).toBe(`web://model/${nsA}`);
+            expect(rB?.file_path).toBe(`web://model/${nsB}`);
+            // 纹理键互不碰撞，字节各自正确
+            expect(_idbStore.get(`dir:${nsA}:tex/face.png`)).toEqual(texA);
+            expect(_idbStore.get(`dir:${nsB}:tex/face.png`)).toEqual(texB);
+
+            // 全链路解析：加载 A 的返回路径 → readFileBytes 取回 A 的 PMX + 纹理（非 B）
+            expect(await browserAdapter.readFileBytes(rA!.file_path)).toEqual(pmxA);
+            const dirA = await browserAdapter.IsolateModelDir(rA!.file_path);
+            expect(dirA).toBe(`web://model/${nsA}`); // 幂等，不双重编码
+            expect(await browserAdapter.readFileBytes(`${dirA}/tex/face.png`)).toEqual(texA);
+            // 对称验证 B
+            expect(await browserAdapter.readFileBytes(rB!.file_path)).toEqual(pmxB);
+            const dirB = await browserAdapter.IsolateModelDir(rB!.file_path);
+            expect(await browserAdapter.readFileBytes(`${dirB}/tex/face.png`)).toEqual(texB);
+        });
+
+        it('[adr-182] IsolateModelDir 幂等：web://model/<enc> 输入不二次编码', async () => {
+            const enc = encodeURIComponent('packA/Miku'); // packA%2FMiku
+            expect(await browserAdapter.IsolateModelDir(`web://model/${enc}`)).toBe(
+                `web://model/${enc}`
+            );
         });
 
         it('无 PMX 时 mainPmx 为空，dir: 不写', async () => {

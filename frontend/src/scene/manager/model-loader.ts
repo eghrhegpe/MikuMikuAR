@@ -52,6 +52,25 @@ const importMeshFromBytes = ImportMeshAsync as unknown as (
     options: Record<string, unknown>
 ) => Promise<ISceneLoaderAsyncResult>;
 
+/**
+ * [doc:adr-182] 从 filePath 的 basename 推导人类可读显示名。
+ * 网页 ZIP 加载路径为编码命名空间（web://model/<enc(zipStem/pmxStem)>），
+ * getBaseName 会得到 `packA%2Fmiku` —— 需安全解码 + 取末段还原为 `miku`。
+ * 桌面端真实路径无 `%`、无内嵌 `/`，此函数等价于原 `fileName.replace(/\.pmx$/i,'')`，零影响。
+ */
+function _displayNameFromBase(fileName: string): string {
+    let name = fileName;
+    if (name.includes('%')) {
+        try {
+            name = decodeURIComponent(name);
+        } catch {
+            /* 非法百分号编码（如真实文件名 "50%off"）→ 保持原样 */
+        }
+    }
+    if (name.includes('/')) name = name.split('/').pop() ?? name;
+    return name.replace(/\.pmx$/i, '');
+}
+
 // ======== Loader Dependencies ========
 
 let _scene: import('@babylonjs/core/scene').Scene | null = null;
@@ -267,6 +286,7 @@ async function collectTextureFiles(modelDir: string): Promise<TextureFile[]> {
     }
     // basename fallback: 为带目录前缀的贴图注册裸文件名副本，
     // 这样 PMX 引用 "face.png" 也能匹配到 "tex/face.png"
+    // 使用 slice(0) 复制 ArrayBuffer，避免 babylon-mmd 读取后 detach 原 buffer
     const hasBasename = new Set<string>();
     const fallbacks: TextureFile[] = [];
     for (const tf of files) {
@@ -276,7 +296,7 @@ async function collectTextureFiles(modelDir: string): Promise<TextureFile[]> {
             continue;
         }
         hasBasename.add(base);
-        fallbacks.push({ ...tf, relativePath: base });
+        fallbacks.push({ ...tf, relativePath: base, data: tf.data.slice(0) });
     }
     files.push(...fallbacks);
     return files;
@@ -370,7 +390,7 @@ export async function loadPMXFile(
         }
 
         const id = `model_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-        const displayName = fileName.replace(/\.pmx$/i, '');
+        const displayName = _displayNameFromBase(fileName);
 
         if (asStage) {
             // Stage: pure static mesh, no MMD runtime, no physics
