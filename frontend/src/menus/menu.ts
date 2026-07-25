@@ -267,7 +267,18 @@ export class SlideMenu {
         );
     }
 
-    push(level: PopupLevel): void {
+    /**
+     * 推入新层级（含入场动画）。
+     * @param level 层级对象
+     * @param buildItems [doc:P2] 可选 items 重建工厂。
+     *   提供时自动挂为 level.itemBuilder，使语言切换后也能增量更新标签。
+     *   适用于 `buildXxxLevel(id)` + `push` 的模式：
+     *   `push(buildXxx(id), () => buildXxx(id).items)`
+     */
+    push(level: PopupLevel, buildItems?: () => PopupRow[]): void {
+        if (buildItems && !level.itemBuilder && !level.renderCustom) {
+            level.itemBuilder = buildItems;
+        }
         if (this.transitioning) {
             return;
         }

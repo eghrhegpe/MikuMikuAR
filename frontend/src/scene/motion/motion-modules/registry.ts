@@ -158,6 +158,10 @@ export interface BoneConflict {
     bone: string;
     /** 抢占方模块 id */
     byModule: string;
+    /** [doc:timing P1 fix] 抢占方优先级（数值越小优先级越高），用于 UI 显示覆盖者优先级编号 */
+    winnerPriority: number;
+    /** [doc:timing P1 fix] 落败方优先级 */
+    loserPriority: number;
 }
 
 /** 获取某模块被其他模块抢占的骨骼明细（loser 视角：本模块想要但被谁抢） */
@@ -165,7 +169,12 @@ export function getModuleConflicts(modelId: string, moduleId: string): BoneConfl
     return getBoneOverrideStore()
         .getConflicts(modelId)
         .filter((c) => c.loserModuleId === moduleId)
-        .map((c) => ({ bone: c.bone, byModule: c.winnerModuleId }));
+        .map((c) => ({
+            bone: c.bone,
+            byModule: c.winnerModuleId,
+            winnerPriority: c.winnerPriority,
+            loserPriority: c.loserPriority,
+        }));
 }
 
 /** 获取某模型全部模块的冲突明细（按 loser 模块分组） */
@@ -174,7 +183,12 @@ export function getAllConflicts(
 ): Array<{ moduleId: string; conflicts: BoneConflict[] }> {
     const byLoser = new Map<string, BoneConflict[]>();
     for (const c of getBoneOverrideStore().getConflicts(modelId)) {
-        const entry: BoneConflict = { bone: c.bone, byModule: c.winnerModuleId };
+        const entry: BoneConflict = {
+            bone: c.bone,
+            byModule: c.winnerModuleId,
+            winnerPriority: c.winnerPriority,
+            loserPriority: c.loserPriority,
+        };
         const list = byLoser.get(c.loserModuleId);
         if (list) {
             list.push(entry);

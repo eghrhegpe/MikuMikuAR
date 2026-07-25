@@ -878,6 +878,13 @@ export function buildModelFormationLevel(): PopupLevel {
             icon: icons[f],
             target: `formation:set:${f}`,
         })),
+        itemBuilder: () =>
+            formations.map((f) => ({
+                kind: 'action' as const,
+                label: t(FORMATION_KEYS[f]),
+                icon: icons[f],
+                target: `formation:set:${f}`,
+            })),
     };
 }
 

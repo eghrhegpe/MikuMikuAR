@@ -652,7 +652,7 @@ export const ja: Record<string, string> = {
     'motion.behaviorNone': '静止（手動）',
     'motion.behaviorNA': '軌道カメラのみ',
     'motion.boneConflictCount': 'ボーン競合 ({total})',
-    'motion.boneConflict.line': '{bone} は「{winner}」が現在反映中、元「{loser}」は上書き',
+    'motion.boneConflict.line': '{bone} は「{winner}(優先度{winnerPrio})」が現在反映中、元「{loser}(優先度{loserPrio})」は上書き',
     'motion.boneOverride.search': 'ボーン検索…',
     'motion.ikTag': '(IK)',
     'motion.webxrProbeError': 'WebXR probe error: {e}',
