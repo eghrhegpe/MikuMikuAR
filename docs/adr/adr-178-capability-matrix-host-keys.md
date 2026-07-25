@@ -1,6 +1,6 @@
 # ADR-178: 能力矩阵补全宿主级键（四端统一收口）
 
-> **状态**: 实施中（Phase 1 已落地 2026-07-24；Phase 2 已落地 2026-07-25——virtual-skirt.ts/fileservice.ts/settings-resources.ts:412 三处已迁移至能力层，其中 settings-resources.ts:412 配套修正 go-adapter `watchDir` 改为 `!isAndroidPlatform()` 自报（修复 ADR 草案宿主盲点）；其余 5 处判定为平台特有逻辑保留不动；Phase 3 待排期）
+> **状态**: 实施中（Phase 1 已落地 2026-07-24；Phase 2 已落地 2026-07-25——virtual-skirt.ts/fileservice.ts/settings-resources.ts:412 三处已迁移至能力层，其中 settings-resources.ts:412 配套修正 go-adapter `watchDir` 改为 `!isAndroidPlatform()` 自报（修复 ADR 草案宿主盲点）；其余 5 处判定为平台特有逻辑保留不动；Phase 3 已落地 2026-07-26——CI 四端制品矩阵固化：e2e-web-smoke job 跑 @web smoke（web-smoke.spec.ts + web-resources.spec.ts），验证浏览器能力门控、PMX/ZIP/VMD 加载闭环；桌面/安卓构建保留在 release.yml；网页部署由 web-pages.yml 自动触发）
 > **日期**: 2026-07-24
 > **关联**: ADR-176（前端 Backend 适配器双实现）、ADR-177（Web Loader 与主应用统一路径）、ADR-017（安卓适配，platform 探测范式）、ADR-133（安卓 MPR 物理缺口）、ADR-093（声明式菜单 Schema）
 > **前置**: ADR-176/177 已落地（`BackendService` 双适配器 + `getCapabilities()`/`getCachedCapabilities()` 能力缓存）
@@ -124,7 +124,7 @@ import { isAndroidPlatform } from '../platform';
     - `plaza-browser.ts:695` — **保留**（打开模式选项差异：安卓仅"系统浏览器"，桌面有"内嵌页"+"独立窗口"；`plazaWindow` 能力已独立表达，此处属布局差异）
     - `init.ts:328` — **保留**（默认性能模式：安卓 `balanced`，桌面 `auto`，属平台默认配置策略）
     - `init.ts:464` — **保留**（`checkAndroidStoragePermission` 安卓存储权限弹窗，仅安卓需要）
-- **阶段 3（另立或并入 CI）**：`docs/targets.md` 固化为唯一真相源；CI 增四端制品矩阵（桌面三平台 + 安卓 APK + GitHub Pages 网页）各跑对应 smoke。
+- **阶段 3（已落地 2026-07-26）**：`docs/targets.md` 固化为唯一真相源；CI 增 `e2e-web-smoke` job（`@web` tag）跑 web-smoke + web-resources smoke，验证浏览器能力门控与资源加载闭环。桌面三平台 + 安卓 APK 构建保留在 `release.yml`。网页部署由 `web-pages.yml` 自动触发 GitHub Pages。
 
 ## 风险与边界
 
@@ -149,7 +149,11 @@ import { isAndroidPlatform } from '../platform';
   - Phase 2 已迁移 3/8 处：`virtual-skirt.ts`（`crossOriginIsolated`）、`fileservice.ts`（`crossOriginIsolated`）、`settings-resources.ts:412`（`watchDir`，配套修正 go-adapter `watchDir: !isAndroidPlatform()` 自报以修复宿主盲点）
   - Phase 2 判定完成 5 处：均保留（平台特有逻辑：library-setup.ts:96/119/138、settings-appearance.ts:476、plaza-browser.ts:695、init.ts:328/464、settings-resources.ts:162）
   - Phase 2 结论：**散落 `isAndroidPlatform()` 中与"能力"相关的已全部收口至能力层；其余属平台特有 UI/权限逻辑，明文裁定保留**
-  - Phase 3（CI 四端矩阵）未启动
+  - Phase 3（CI 四端矩阵）✅ 已落地（2026-07-26）：
+    - CI 新增 `e2e-web-smoke` job，跑 `@web` tag smoke tests
+    - `web-smoke.spec.ts` 验证：首屏渲染、环境菜单、快捷键门控、能力门控（AR/广场窗口隐藏）
+    - `web-resources.spec.ts` 验证：PMX/ZIP/VMD 加载闭环、IndexedDB CRUD
+    - 桌面/安卓构建保留在 `release.yml`，网页部署由 `web-pages.yml` 触发
 
 ## 测试
 

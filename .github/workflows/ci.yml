@@ -323,6 +323,62 @@ jobs:
             echo '::notice title=@webgl report::test-results not found (all passed?)'
           fi
 
+  # ============================================================
+  # E2E — Web Entry Smoke (@web, vite preview 4174)
+  # Validates web entry (index.web.html → dist-web/) capability gates:
+  #   - browser-adapter capabilities() correctness
+  #   - AR camera option hidden (capabilities.ar=false)
+  #   - Plaza window mode hidden (capabilities.plazaWindow=false)
+  # @see docs/adr/adr-178 Phase 3 / adr-177 Phase 4
+  # ============================================================
+  e2e-web-smoke:
+    name: E2E — Web Entry Smoke (@web, vite preview)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build web entry + start preview server
+        run: |
+          npx vite build --config vite.web.config.ts
+          npx vite preview --config vite.web.config.ts --port 4174 --strictPort &
+          for i in $(seq 1 30); do
+            if curl -s http://127.0.0.1:4174/MikuMikuAR/ >/dev/null; then
+              echo "Web preview server is up"; break
+            fi
+            sleep 2
+          done
+
+      - name: Run @web E2E smoke
+        run: |
+          npx playwright test --grep "@web" --reporter=line
+          TEST_EXIT=$?
+          # Kill preview server (non-blocking)
+          pkill -f "vite preview" || true
+          exit $TEST_EXIT
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: playwright-web-report
+          path: frontend/playwright-report/
+
   ai-mistake-report:
     name: AI — Mistake Tracker Report
     runs-on: ubuntu-latest

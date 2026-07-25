@@ -577,6 +577,13 @@ events.on('android:ThemeChanged', (_ev: unknown) => {
     // no-op: 预留扩展点
 });
 
+// [doc:adr-179] APK 安装失败回传（Java installApk → emitEvent）
+// payload: {"error":"..."}
+events.on('update:installFailed', (ev: unknown) => {
+    const data = (ev as { data?: { error?: string } } | null)?.data;
+    showInfoToast(data?.error || t('settings.about.update.downloadFailed'));
+});
+
 // ======== Bootstrap ========
 // Wires dev-hooks / render-loop / events modules and starts the app.
 export function bootstrap(): void {

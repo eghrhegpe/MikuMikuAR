@@ -491,9 +491,14 @@ export function showUpdateToast(latest: string, url: string, downloadUrl?: strin
                     btn.disabled = false;
                 }
             }
-            toast.classList.remove('visible');
-            toast.setAttribute('inert', '');
-            toast.setAttribute('aria-hidden', 'true');
+            // Only auto-hide for the simple "open URL" path.
+            // Direct-install path keeps the toast visible for feedback;
+            // the ignore button or next toast invocation will dismiss it.
+            if (!hasDirectInstall) {
+                toast.classList.remove('visible');
+                toast.setAttribute('inert', '');
+                toast.setAttribute('aria-hidden', 'true');
+            }
         };
     }
     const ignoreBtn = toast.querySelector<HTMLButtonElement>('.toast-ignore-btn');

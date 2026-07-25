@@ -212,9 +212,17 @@ func downloadFile(url, destPath string) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		f.Close()
+		// [doc:adr-179] On failure, remove the incomplete file to avoid
+		// wasting cache space. A stale partial download is useless and
+		// the next attempt will re-create the file anyway.
+		if err != nil {
+			os.Remove(destPath)
+		}
+	}()
 
-	if _, err := io.Copy(f, resp.Body); err != nil {
+	if _, err = io.Copy(f, resp.Body); err != nil {
 		return err
 	}
 	return nil
