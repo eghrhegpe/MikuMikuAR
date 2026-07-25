@@ -223,7 +223,7 @@ interface TextureFile {
     readonly data: ArrayBuffer;
 }
 
-const TEXTURE_EXTS = /\.(png|jpg|jpeg|bmp|tga|dds|tif|tiff)$/i;
+const TEXTURE_EXTS = /\.(png|jpg|jpeg|bmp|tga|dds|tif|tiff|sph|spa|toon)$/i;
 
 function getMimeType(name: string): string {
     const ext = name.split('.').pop()?.toLowerCase();
