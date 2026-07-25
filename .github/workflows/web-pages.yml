@@ -17,7 +17,7 @@ on:
       - 'frontend/vite.web.config.ts'
       - 'frontend/src/**'
       - 'frontend/bindings/**'
-      - '.github/workflows/web-loader-pages.yml'
+      - '.github/workflows/web-pages.yml'
   workflow_dispatch: # 允许手动触发
 
 permissions:
@@ -27,7 +27,7 @@ permissions:
 
 # 同一时间只允许一个部署，新部署取消旧的
 concurrency:
-  group: web-loader-pages
+  group: web-pages
   cancel-in-progress: true
 
 jobs:
