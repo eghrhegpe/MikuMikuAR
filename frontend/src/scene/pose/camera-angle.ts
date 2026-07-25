@@ -85,4 +85,3 @@ export function applyCameraPreset(preset: CameraAnglePreset): void {
 export function getAllPresets(): CameraAnglePreset[] {
     return [...CAMERA_PRESETS];
 }
-

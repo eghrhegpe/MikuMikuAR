@@ -171,12 +171,7 @@ function _claimPerceptionBones(modelId: string): void {
     const perModel = new Map<string, string[]>();
     _perceptionOwnedBones.set(modelId, perModel);
 
-    const headClaimed = store.claimBones(
-        modelId,
-        'perception.gaze.head',
-        92,
-        HEAD_BONE_CANDIDATES
-    );
+    const headClaimed = store.claimBones(modelId, 'perception.gaze.head', 92, HEAD_BONE_CANDIDATES);
     perModel.set('perception.gaze.head', headClaimed);
 
     const eyeClaimed = store.claimBones(modelId, 'perception.gaze.eye', 91, EYE_BONE_CANDIDATES);

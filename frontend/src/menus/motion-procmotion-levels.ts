@@ -300,4 +300,3 @@ export function buildProcMotionLevel(modelId?: string): PopupLevel {
         },
     };
 }
-

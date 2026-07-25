@@ -12,6 +12,7 @@ import { safeDispose } from '@/core/dispose-helpers';
 import { getMotionPipeline } from './motion-pipeline';
 import { focusedModelId } from '@/core/state';
 import { isWasmRuntime } from './perception-shared';
+import { logInfo } from '@/core/logger';
 
 /** 持久化的单条骨骼覆盖配置 */
 export type BoneOverrideEntry = {
@@ -119,10 +120,14 @@ function _getOverrideMap(modelId: string): Map<string, _OverrideSlot> {
     if (!map) {
         map = new Map();
         _overrideMaps.set(modelId, map);
-        console.log('[bone-override] _getOverrideMap 首次为模型创建覆盖索引', JSON.stringify({
-            modelId,
-            existingModels: Array.from(_overrideMaps.keys()),
-        }));
+        logInfo(
+            'bone-override',
+            '_getOverrideMap 首次为模型创建覆盖索引',
+            JSON.stringify({
+                modelId,
+                existingModels: Array.from(_overrideMaps.keys()),
+            })
+        );
         // 重置诊断标志，允许 getOverrideType 在写入后重新输出诊断信息
         _overrideTypeDiagnosed = false;
     }
@@ -416,22 +421,32 @@ export function getOverrideType(boneName: string, modelId?: string): OverrideTyp
         const modelKeys = Array.from(_overrideMaps.keys());
         const entryCount = map?.size ?? 0;
         const entrySample = map
-            ? Array.from(map.entries()).slice(0, 5).map(([k, s]) => `${k}(enabled=${s.enabled},rot=${s.overrideRotation},pos=${!!s.pos})`)
+            ? Array.from(map.entries())
+                  .slice(0, 5)
+                  .map(
+                      ([k, s]) =>
+                          `${k}(enabled=${s.enabled},rot=${s.overrideRotation},pos=${!!s.pos})`
+                  )
             : [];
-        console.log(
-            '[bone-override] getOverrideType 诊断',
-            JSON.stringify({
-                queryModelId: mid,
-                queryBone: boneName,
-                allMapKeys: modelKeys,
-                modelKeyMatch: modelKeys.includes(mid),
-                entriesInMap: entryCount,
-                entrySample,
-                slotFound: !!slot,
-                slotEnabled: slot?.enabled,
-                slotRot: slot?.overrideRotation,
-                slotPos: !!slot?.pos,
-            }, null, 2)
+        logInfo(
+            'bone-override',
+            'getOverrideType 诊断',
+            JSON.stringify(
+                {
+                    queryModelId: mid,
+                    queryBone: boneName,
+                    allMapKeys: modelKeys,
+                    modelKeyMatch: modelKeys.includes(mid),
+                    entriesInMap: entryCount,
+                    entrySample,
+                    slotFound: !!slot,
+                    slotEnabled: slot?.enabled,
+                    slotRot: slot?.overrideRotation,
+                    slotPos: !!slot?.pos,
+                },
+                null,
+                2
+            )
         );
     }
 
@@ -672,8 +687,8 @@ export function startBoneOverride(
             _jsPathWarned = true;
             console.warn(
                 '[bone-override] JS 骨骼覆盖路径已弃用，当前运行在非 WASM 模式下。' +
-                'JS 路径不递归传播子骨骼，可能导致骨骼链断裂。' +
-                '调试骨骼状态请使用控制台：await window.__dumpBones()'
+                    'JS 路径不递归传播子骨骼，可能导致骨骼链断裂。' +
+                    '调试骨骼状态请使用控制台：await window.__dumpBones()'
             );
         }
 
@@ -788,7 +803,7 @@ export function dumpBoneHierarchy(modelId?: string): BoneHierarchyDump | null {
     let totalOverridden = 0;
     for (let i = 0; i < bones.length; i++) {
         const b = bones[i];
-        const parentIndex = b.parentBone ? indexMap.get(b.parentBone.name) ?? -1 : -1;
+        const parentIndex = b.parentBone ? (indexMap.get(b.parentBone.name) ?? -1) : -1;
         const slot = overrideMap?.get(b.name);
         const isOverridden = slot?.enabled ?? false;
         if (isOverridden) {

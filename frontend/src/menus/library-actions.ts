@@ -295,7 +295,10 @@ function startReplaceModel(m: LibraryModel, replaceId: string): void {
         librarySessionStore.setExtracting(m.file_path);
         ExtractZip(m.file_path, m.zip_inner)
             .then((result) => {
-                feedbackInfo(result.cached ? 'library.cacheHit' : 'library.extracted', getBaseName(m.file_path));
+                feedbackInfo(
+                    result.cached ? 'library.cacheHit' : 'library.extracted',
+                    getBaseName(m.file_path)
+                );
                 doReplace(result.file_path, m.file_path, m.zip_inner);
             })
             .catch((err) => {
@@ -330,7 +333,10 @@ function loadModelNormal(m: LibraryModel, isStage: boolean): void {
         librarySessionStore.setExtracting(m.file_path);
         ExtractZip(m.file_path, m.zip_inner)
             .then((result) => {
-                feedbackInfo(result.cached ? 'library.cacheHit' : 'library.extracted', getBaseName(m.file_path));
+                feedbackInfo(
+                    result.cached ? 'library.cacheHit' : 'library.extracted',
+                    getBaseName(m.file_path)
+                );
                 if (m.format === 'vmd') {
                     loadManager
                         .load({ kind: 'vmd', path: result.file_path }, signal)
@@ -379,7 +385,9 @@ function loadModelNormal(m: LibraryModel, isStage: boolean): void {
                     feedbackError('library.modelLoadFailed', getBaseName(m.file_path));
                 }
             })
-            .catch((err) => feedbackError('library.modelLoadFailed', getBaseName(m.file_path), err));
+            .catch((err) =>
+                feedbackError('library.modelLoadFailed', getBaseName(m.file_path), err)
+            );
     } else if (m.format === 'vmd') {
         loadManager
             .load({ kind: 'vmd', path: m.file_path }, signal)
@@ -388,7 +396,9 @@ function loadModelNormal(m: LibraryModel, isStage: boolean): void {
                     feedbackError('library.modelLoadFailed', getBaseName(m.file_path));
                 }
             })
-            .catch((err) => feedbackError('library.modelLoadFailed', getBaseName(m.file_path), err));
+            .catch((err) =>
+                feedbackError('library.modelLoadFailed', getBaseName(m.file_path), err)
+            );
     } else if (m.format === 'audio') {
         loadManager
             .load({ kind: 'audio', path: m.file_path }, signal)
@@ -397,7 +407,9 @@ function loadModelNormal(m: LibraryModel, isStage: boolean): void {
                     feedbackError('library.modelLoadFailed', getBaseName(m.file_path));
                 }
             })
-            .catch((err) => feedbackError('library.modelLoadFailed', getBaseName(m.file_path), err));
+            .catch((err) =>
+                feedbackError('library.modelLoadFailed', getBaseName(m.file_path), err)
+            );
     } else if (m.format === 'vpd') {
         loadVPDPose(m.file_path);
     }
@@ -475,8 +487,11 @@ function replaceMotion(m: LibraryModel): void {
     };
     if (m.container === 'zip') {
         librarySessionStore.setExtracting(m.file_path);
-        withLoadingStatusTargeted('library.extractingZip', 'feedback.extractionSuccess', getBaseName(m.file_path), () =>
-            ExtractZip(m.file_path, m.zip_inner)
+        withLoadingStatusTargeted(
+            'library.extractingZip',
+            'feedback.extractionSuccess',
+            getBaseName(m.file_path),
+            () => ExtractZip(m.file_path, m.zip_inner)
         )
             .then(async (result) => {
                 if (!result) {
@@ -654,12 +669,18 @@ export async function importFile(): Promise<void> {
         const { refreshLibrary } = await import('./library-setup');
         await safeCallAsync('library-actions', 'refresh after zip import:', () => refreshLibrary());
     } else if (lower.endsWith('.pmx')) {
-        await withLoadingStatusTargeted('library.loadingModel', 'feedback.loadedSuccess', getBaseName(path), () =>
-            loadManager.load({ kind: 'actor', path })
+        await withLoadingStatusTargeted(
+            'library.loadingModel',
+            'feedback.loadedSuccess',
+            getBaseName(path),
+            () => loadManager.load({ kind: 'actor', path })
         );
     } else if (lower.endsWith('.vmd')) {
-        await withLoadingStatusTargeted('library.loadingMotion', 'feedback.loadedSuccess', getBaseName(path), () =>
-            loadManager.load({ kind: 'vmd', path })
+        await withLoadingStatusTargeted(
+            'library.loadingMotion',
+            'feedback.loadedSuccess',
+            getBaseName(path),
+            () => loadManager.load({ kind: 'vmd', path })
         );
     } else {
         feedbackStatus('library.unsupportedFormat', getBaseName(path));

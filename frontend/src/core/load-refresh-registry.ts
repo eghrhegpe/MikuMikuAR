@@ -18,7 +18,9 @@ const _hooks = new Set<() => void>();
  */
 export function registerLoadRefreshHook(hook: () => void): () => void {
     _hooks.add(hook);
-    return () => { _hooks.delete(hook); };
+    return () => {
+        _hooks.delete(hook);
+    };
 }
 
 /**
@@ -66,5 +68,7 @@ export function registerLibraryScannedHook(hook: () => void): () => void {
             });
         });
     }
-    return () => { _scannedHooks.delete(hook); };
+    return () => {
+        _scannedHooks.delete(hook);
+    };
 }

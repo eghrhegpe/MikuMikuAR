@@ -3,14 +3,10 @@
 //       + 模块参数子页 + 高级骨骼覆盖子页
 // 入口: motion-detail-ui.ts → buildMotionDetailSchema（原死路由 motion:boneOverride 已移除）
 
-import {
-    PopupLevel,
-    cardContainer,
-    modelRegistry,
-    focusedModelId,
-} from '../core/config';
+import { PopupLevel, cardContainer, modelRegistry, focusedModelId } from '../core/config';
 import { feedbackInfo } from '../core/feedback';
 import { showInfoToast } from '../core/toast';
+import { logInfo } from '../core/logger';
 import { addEmptyRow, slideRow, addPresetChip, addCardTitle } from '../core/ui-helpers';
 import { addSliderRow, addBoneSelectRow, isIkBone } from '../core/ui-helpers';
 import { createTrailingBtn } from '../core/ui-slide-row';
@@ -435,7 +431,8 @@ function updateConflictBanner(el: HTMLElement, modelId: string | null): void {
         .map((a) => ({
             moduleId: a.moduleId,
             conflicts: a.conflicts.filter(
-                (c) => !(a.moduleId.startsWith('perception.') && c.byModule.startsWith('perception.'))
+                (c) =>
+                    !(a.moduleId.startsWith('perception.') && c.byModule.startsWith('perception.'))
             ),
         }))
         .filter((a) => a.conflicts.length > 0);
@@ -779,8 +776,10 @@ function buildBoneOverrideSchema(): MenuNode[] {
                                     formState.weight = live.weight;
                                     // [doc:adr-116 P3] 回填绝对/复合语义，避免编辑复合覆盖时被静默翻转为绝对
                                     formState.absolute = live.absolute ?? true;
-                                showInfoToast(t('motion.boneOverride.editLoaded', { bone: ov.boneName }));
-                                menu?.reRender();
+                                    showInfoToast(
+                                        t('motion.boneOverride.editLoaded', { bone: ov.boneName })
+                                    );
+                                    menu?.reRender();
                                 },
                             })
                         );
@@ -791,20 +790,22 @@ function buildBoneOverrideSchema(): MenuNode[] {
                                 danger: true,
                                 onClick: () => {
                                     const snap = pushUndoSnapshot();
-                                clearBoneOverride(ov.boneName);
-                                inst.boneOverrides = inst.boneOverrides.filter(
-                                    (b) => b.boneName !== ov.boneName
-                                );
-                                triggerAutoSave();
-                                showInfoToast(t('motion.boneOverride.removed', { bone: ov.boneName }));
-                                menu?.reRender();
-                                offerSceneUndoAndRefresh(
-                                    t('motion.boneOverride.removed', { bone: ov.boneName }),
-                                    snap,
-                                    () => {
-                                        menu?.reRender();
-                                    }
-                                );
+                                    clearBoneOverride(ov.boneName);
+                                    inst.boneOverrides = inst.boneOverrides.filter(
+                                        (b) => b.boneName !== ov.boneName
+                                    );
+                                    triggerAutoSave();
+                                    showInfoToast(
+                                        t('motion.boneOverride.removed', { bone: ov.boneName })
+                                    );
+                                    menu?.reRender();
+                                    offerSceneUndoAndRefresh(
+                                        t('motion.boneOverride.removed', { bone: ov.boneName }),
+                                        snap,
+                                        () => {
+                                            menu?.reRender();
+                                        }
+                                    );
                                 },
                             })
                         );
@@ -858,26 +859,24 @@ function buildBoneOverrideSchema(): MenuNode[] {
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    addPresetChip(
-                        inner,
-                        t('motion.boneOverride.exportHierarchy'),
-                        false,
-                        () => {
-                            const dump = dumpBoneHierarchy(modelId);
-                            if (!dump) {
-                                feedbackInfo('motion.boneOverride.exportFailed', undefined);
-                                return;
-                            }
-                            const json = JSON.stringify(dump, null, 2);
-                            void navigator.clipboard.writeText(json).then(() => {
+                    addPresetChip(inner, t('motion.boneOverride.exportHierarchy'), false, () => {
+                        const dump = dumpBoneHierarchy(modelId);
+                        if (!dump) {
+                            feedbackInfo('motion.boneOverride.exportFailed', undefined);
+                            return;
+                        }
+                        const json = JSON.stringify(dump, null, 2);
+                        void navigator.clipboard
+                            .writeText(json)
+                            .then(() => {
                                 feedbackInfo('motion.boneOverride.exportCopied', undefined);
-                            }).catch(() => {
-                                // 剪贴板不可用时降级为 console 输出
-                                console.log('[Bone Hierarchy Export]', json);
+                            })
+                            .catch(() => {
+                                // 剪贴板不可用时降级为 logger 输出
+                                logInfo('BoneHierarchyExport', json);
                                 feedbackInfo('motion.boneOverride.exportCopied', undefined);
                             });
-                        }
-                    );
+                    });
                 });
             },
         },

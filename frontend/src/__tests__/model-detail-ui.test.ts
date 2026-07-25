@@ -73,10 +73,13 @@ vi.mock('@babylonjs/core/Loading/sceneLoader', async () => {
     return { ImportMeshAsync: m.MockImportMeshAsync };
 });
 
-vi.mock('@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline', async () => {
-    const m = await vi.importActual('./mocks/babylon-classes.ts');
-    return { DefaultRenderingPipeline: m.MockDefaultRenderingPipeline };
-});
+vi.mock(
+    '@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline',
+    async () => {
+        const m = await vi.importActual('./mocks/babylon-classes.ts');
+        return { DefaultRenderingPipeline: m.MockDefaultRenderingPipeline };
+    }
+);
 
 vi.mock('@babylonjs/core/Particles/gpuParticleSystem', async () => {
     const m = await vi.importActual('./mocks/babylon-classes.ts');

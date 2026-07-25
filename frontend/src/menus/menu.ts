@@ -515,7 +515,11 @@ export class SlideMenu {
             this.onAfterRender?.(level, this);
         };
 
-        const safeFinalize = () => safeCallAsync('menu', 'finalize failed:', () => { finalize(); return Promise.resolve(); });
+        const safeFinalize = () =>
+            safeCallAsync('menu', 'finalize failed:', () => {
+                finalize();
+                return Promise.resolve();
+            });
 
         if (level.reRenderCustom) {
             // === 增量路径：patch items（非空时）+ reRenderCustom ===

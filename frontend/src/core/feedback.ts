@@ -37,11 +37,7 @@ import { showErrorToast, showInfoToast } from './toast';
  *   feedbackError('library.load', 'miku.pmx', err)           // 有目标名
  *   feedbackError('env-preset.save', autoLabel, err)         // 动态目标
  */
-export function feedbackError(
-    actionKey: string,
-    target: string | undefined,
-    err?: unknown
-): void {
+export function feedbackError(actionKey: string, target: string | undefined, err?: unknown): void {
     const titleTarget = target ? ` — ${target}` : '';
     const detail = err != null ? translateGoError(err) : undefined;
     showErrorToast(t(actionKey) + titleTarget, detail);
@@ -54,10 +50,7 @@ export function feedbackError(
  *   feedbackInfo('scene.saved', undefined)        // 只提示操作完成
  *   feedbackInfo('modelLoaded', 'hatsune.mmd')    // 告知具体哪个模型
  */
-export function feedbackInfo(
-    actionKey: string,
-    target: string | undefined
-): void {
+export function feedbackInfo(actionKey: string, target: string | undefined): void {
     const titleTarget = target ? ` — ${target}` : '';
     showInfoToast(t(actionKey) + titleTarget);
 }
@@ -74,11 +67,7 @@ export function feedbackInfo(
  *   feedbackStatus('library.modelLoadFailed', 'model.pmx')            // 目标名，红色
  *   feedbackStatus('library.modelLoaded', 'model.pmx', true)          // 显式成功
  */
-export function feedbackStatus(
-    statusKey: string,
-    target?: string,
-    explicitOk?: boolean
-): void {
+export function feedbackStatus(statusKey: string, target?: string, explicitOk?: boolean): void {
     const baseText = t(statusKey);
     const fullText = target ? `${baseText}${target}` : baseText;
     const ok = explicitOk ?? !baseText.startsWith('\u2717'); // ✗ = 失败
