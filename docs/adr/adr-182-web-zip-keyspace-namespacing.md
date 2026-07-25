@@ -71,6 +71,8 @@ ADR-177 为网页端确立的 IndexedDB 键规约以「stem 全局唯一」为**
 
 **FSA 多文件选择（`_writeModelWithTextures:352`）** 无天然来源标识——用户一批多选的 handle 无目录信息（FSA 安全限制），加载 filePath 是裸名，系统无处记录"哪批选择"。强行命名空间化会使 `IsolateModelDir` 从裸 filePath 推不出前缀而失配。且该路径的 `entry` 未写 `dir`/`file_path` 字段，会被 `_listModels:269` 守卫过滤，本身即半成品。故 FSA 多选同名碰撞记为**已知限制**，待其 entry 链路完善后单独评估（建议方向：导入期同名 `entry` 冲突检测 + 序号后缀）。
 
+**同名 ZIP 文件名（补充已知限制）** `nsStem` 来源为 zip **文件名**（`_extractStem(zipPath)` 裸名，见 `ExtractZip:864`），不同目录下的同名 zip（如 `A/MikuPack.zip` 与 `B/MikuPack.zip`）在 `nsStem` 维度仍会撞车。该撞车与既有 `file:<zipStem>` 裸名存储同源——zip 层即已无目录维度——**非本 ADR 引入的回归**，记已知限制。彻底消除需引入"导入批次 ID"作为额外命名空间维度，超出本 ADR 地基级修复范围，留待后续评估。
+
 ## 回归策略
 
 新增 `browser-adapter.test.ts` 用例：
