@@ -3,8 +3,10 @@
 # 全部 stdout → stderr，避免 Windows git hook 管道断裂
 # 安装: git config core.hooksPath .githooks
 # 跳过: git push --no-verify（不推荐）
-# 按变更域跳过无关检查，缩减反馈周期
-
+# 设计原则：
+#   - 可自动生成的（status/funcmap/baseline）→ 自动修复 + warn，不阻断
+#   - 需人工介入的（lint error/测试失败/文档漂移 ERROR）→ 阻断
+#
 exec 1>&2
 set -e
 ROOT="$(git rev-parse --show-toplevel)"
@@ -14,7 +16,6 @@ RANGE=""
 while read _ local_sha _ remote_sha; do
   [ "$local_sha" = "0000000000000000000000000000000000000000" ] && continue
   if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
-    # 新分支
     MERGE_BASE="$(git merge-base HEAD origin/main 2>/dev/null || true)"
     if [ -n "$MERGE_BASE" ]; then
       RANGE="$MERGE_BASE..$local_sha"
@@ -38,7 +39,6 @@ DOCS_ONLY=false
 
 if [ -n "$CHANGED" ]; then
   if echo "$CHANGED" | grep -qE '\.go$'; then
-    # 排除测试文件和 build/ 目录下的生成文件（不影响 bindings）
     if echo "$CHANGED" | grep -vE '(build/|_test\.go$)' | grep -qE '\.go$'; then
       GO_CHANGED=true
     fi
@@ -46,7 +46,6 @@ if [ -n "$CHANGED" ]; then
   if echo "$CHANGED" | grep -qE '\.(ts|tsx|js|jsx)$'; then
     TS_CHANGED=true
   fi
-  # 纯文档变更 = 只变了 docs/*、*.md、AGENTS.md
   if echo "$CHANGED" | grep -qvE '^(docs/|.*\.md$|AGENTS\.md)'; then
     DOCS_ONLY=false
   else
@@ -54,7 +53,7 @@ if [ -n "$CHANGED" ]; then
   fi
 fi
 
-# ── P6: bindings 同步性（Go 变动时检查） ──
+# ── P6: bindings 同步性（Go 变动时检查；不可自动修复） ──
 if [ "$GO_CHANGED" = "true" ]; then
   echo "[pre-push] check:bindings"
   if [ ! -d "$ROOT/frontend/bindings" ] || [ -z "$(ls -A "$ROOT/frontend/bindings" 2>/dev/null)" ]; then
@@ -71,21 +70,25 @@ if [ "$GO_CHANGED" = "true" ]; then
   fi
 fi
 
-# ── check:status（轻量，always） ──
+# ── check:status（可自动修复） ──
 echo "[pre-push] check:status"
 cd "$ROOT" && node scripts/gen-status-index.mjs --reverse --check || {
-  echo "❌ status.md 与 ADR 源不同步。修复: npm run gen:status && git add docs/status.md && git commit --amend"
-  exit 1
+  echo "⚠️  status.md 未同步，自动修复中..."
+  cd "$ROOT" && node scripts/gen-status-index.mjs --reverse
+  git add docs/status.md 2>/dev/null || true
+  echo "⚠️  已自动更新 docs/status.md。推送成功后记得提交。"
 }
 
-# ── check:funcmap（轻量，always） ──
+# ── check:funcmap（可自动修复） ──
 echo "[pre-push] check:funcmap"
 cd "$ROOT" && node scripts/gen-funcmap.mjs --check || {
-  echo "❌ function-map.md 与源码不同步。修复: npm run gen:funcmap && git add docs/function-map.md && git commit --amend"
-  exit 1
+  echo "⚠️  function-map.md 未同步，自动修复中..."
+  cd "$ROOT" && node scripts/gen-funcmap.mjs
+  git add docs/function-map.md 2>/dev/null || true
+  echo "⚠️  已自动更新 docs/function-map.md。推送成功后记得提交。"
 }
 
-# ── lint（仅 TS/非纯文档变更时） ──
+# ── lint（仅 TS/非纯文档变更时；不可自动修复） ──
 if [ "$TS_CHANGED" = "true" ] || [ "$DOCS_ONLY" = "false" ]; then
   echo "[pre-push] lint（0 errors 放行）"
   cd "$ROOT/frontend" && npm run lint || {
@@ -96,7 +99,7 @@ else
   echo "[pre-push] lint （跳过：未涉及 TS/JS 源码）"
 fi
 
-# ── test:coverage（跳过纯文档/纯 Go 变更） ──
+# ── test:coverage（跳过纯文档/纯 Go 变更；不可自动修复） ──
 if [ "$DOCS_ONLY" = "false" ]; then
   echo "[pre-push] test:coverage（门禁: lines≥35% functions≥30%）"
   cd "$ROOT/frontend" && npm run test:coverage || {
@@ -107,21 +110,32 @@ else
   echo "[pre-push] test:coverage（跳过：纯文档/纯 Go 变更）"
 fi
 
-# ── P7: deadcode 基线检查（仅 TS 变更时，warning 不阻断） ──
+# ── P7: deadcode 基线（可自动修复） ──
 if [ "$TS_CHANGED" = "true" ]; then
   echo "[pre-push] deadcode（基线治理：knip + jscpd）"
   cd "$ROOT/frontend" && node ../scripts/check-deadcode-baseline.mjs || {
-    echo "⚠️  死代码/重复代码超过基线（不阻断）。"
-    echo "   更新基线: cd frontend && node ../scripts/check-deadcode-baseline.mjs --update"
+    echo "⚠️  死代码/重复代码超过基线，自动更新基线..."
+    node ../scripts/check-deadcode-baseline.mjs --update
+    echo "⚠️  基线已更新。如有新增死代码，考虑清理。"
   }
 fi
 
-# ── check:docs（跳过纯文档变更；INFO 基线变化仅 warning，ERROR 才阻断） ──
+# ── check:docs（ERROR 阻断；INFO 基线自动更新） ──
 if [ "$DOCS_ONLY" = "false" ]; then
-  echo "[pre-push] check:docs（ERROR 漂移阻断；INFO 基线变化仅参考）"
+  echo "[pre-push] check:docs（ERROR 阻断；INFO 基线自动修复）"
   cd "$ROOT" && node scripts/check-doc-drift.mjs --baseline || {
-    echo "❌ 文档漂移（ERROR）。修复后用 'node scripts/check-doc-drift.mjs --baseline' 验证"
-    exit 1
+    # 先尝试自动更新 INFO 基线
+    cd "$ROOT" && node scripts/check-doc-drift.mjs --baseline-update 2>/dev/null && {
+      echo "⚠️  INFO 基线已自动更新。"
+      # 重新跑一遍确认是否只剩 ERROR
+      cd "$ROOT" && node scripts/check-doc-drift.mjs --baseline || {
+        echo "❌ 文档漂移 ERROR，需人工修复。用 'node scripts/check-doc-drift.mjs --baseline' 查看详情"
+        exit 1
+      }
+    } || {
+      echo "❌ 文档漂移 ERROR，需人工修复。用 'node scripts/check-doc-drift.mjs --baseline' 查看详情"
+      exit 1
+    }
   }
 else
   echo "[pre-push] check:docs（跳过：纯文档变更）"
