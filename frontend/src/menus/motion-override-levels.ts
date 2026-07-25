@@ -10,6 +10,7 @@ import {
     focusedModelId,
 } from '../core/config';
 import { feedbackInfo } from '../core/feedback';
+import { showInfoToast } from '../core/toast';
 import { addEmptyRow, slideRow, addPresetChip, addCardTitle } from '../core/ui-helpers';
 import { addSliderRow, addBoneSelectRow, isIkBone } from '../core/ui-helpers';
 import { createTrailingBtn } from '../core/ui-slide-row';
@@ -533,11 +534,10 @@ function buildBoneOverrideSchema(): MenuNode[] {
     const finalizeOverride = (boneName: string, enabled: boolean): void => {
         syncOverrideToInstance(modelId);
         triggerAutoSave();
-        feedbackInfo(
+        showInfoToast(
             enabled
                 ? t('motion.boneOverride.applied', { bone: boneName })
-                : t('motion.boneOverride.removed', { bone: boneName }),
-            boneName
+                : t('motion.boneOverride.removed', { bone: boneName })
         );
         menu?.reRender();
     };
@@ -779,7 +779,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
                                     formState.weight = live.weight;
                                     // [doc:adr-116 P3] 回填绝对/复合语义，避免编辑复合覆盖时被静默翻转为绝对
                                     formState.absolute = live.absolute ?? true;
-                                feedbackInfo('motion.boneOverride.editLoaded', ov.boneName);
+                                showInfoToast(t('motion.boneOverride.editLoaded', { bone: ov.boneName }));
                                 menu?.reRender();
                                 },
                             })
@@ -796,7 +796,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
                                     (b) => b.boneName !== ov.boneName
                                 );
                                 triggerAutoSave();
-                                feedbackInfo('motion.boneOverride.removed', ov.boneName);
+                                showInfoToast(t('motion.boneOverride.removed', { bone: ov.boneName }));
                                 menu?.reRender();
                                 offerSceneUndoAndRefresh(
                                     t('motion.boneOverride.removed', { bone: ov.boneName }),
