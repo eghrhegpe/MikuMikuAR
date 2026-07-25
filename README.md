@@ -4,8 +4,6 @@
 
 ![CI](https://img.shields.io/github/actions/workflow/status/eghrhegpe/MikuMikuAR/ci.yml?logo=github)
 
-
-
 ![Release](https://img.shields.io/github/v/release/eghrhegpe/MikuMikuAR?logo=github)
 
 ![Go](https://img.shields.io/badge/Go-1.25-00ADD8?logo=go)
@@ -22,7 +20,7 @@
 
 | 平台                | 状态                          |
 | ----------------- | --------------------------- |
-| 🪟 Windows        | ✅ 已验证                       |
+| 🪟 Windows + 浏览器       | ✅ 已验证                       |
 | 🤖 Android        | ✅ 已验证（c-shared + WebView）   |
 | 🍎 iOS / 🐧 Linux | 🟡 理论兼容（Wails v3 任务已配置，未实测） |
 
@@ -33,10 +31,10 @@
 ## 🌐 网页版 & 🖥️ 桌面版
 
 - **🌐 网页版** — 无需安装，浏览器直接打开 **[https://eghrhegpe.github.io/MikuMikuAR/](https://eghrhegpe.github.io/MikuMikuAR/)**。
-  支持任意现代浏览器（含 iOS / Linux），模型通过拖拽 zip 或文件选择器导入。
 - **🖥️ 桌面版（Wails v3）** — Windows / Android，原生安装运行。
 
 同一套 TypeScript + Babylon.js 9.16 代码，两种运行形态，功能一致。
+已解决授权问题，可读取您存储的模型。
 
 ---
 
@@ -44,10 +42,10 @@
 
 大多数 MMD 工具要么是单一查看器（只能看），要么是重型 DCC 插件（必须会 Blender）。MikuMikuAR 填补了中间地带：
 
-- **零门槛上手** — 不解压 zip 直接加载 PMX/VMD，拖进去就能看、就能播
-- **程序化生命力** — 无需 VMD 也能让模型"活起来"：呼吸、眨眼、视线追踪、节拍驱动律动
-- **AR 实拍合成** — 摄像头画面叠加 3D 模型，一键截图，手机也能用
-- **跨平台** — Windows 桌面 + Android 移动，同一套代码
+- **零门槛上手** — 不解压 zip 直接加载 PMX/VMD，拖进去就能看、就能播。
+- **程序化生命力** — 呼吸、眨眼、视线追踪、节拍驱动律动（动作覆盖还在修）
+- **AR 实拍合成** — 摄像头画面叠加 3D 模型，一键截图，手机也能用（大概）
+- **跨平台** — Windows 桌面 + Android 移动 + 浏览器，同一套代码，统一桥接读取路径。
 
 ---
 

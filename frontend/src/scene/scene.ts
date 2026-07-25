@@ -282,7 +282,7 @@ export async function initScene(): Promise<void> {
         modelManager,
         refreshWaterRenderList,
         presetMod.tryAutoApplyPreset,
-        (id: string) => outfitMod.loadOutfits(id).then(() => {}),
+        (id: string) => outfitMod.loadOutfits(id).then(() => {}).catch(() => {/* loadOutfits 仅用于换装，失败不阻断流程 */}),
         rebuildOutlineState
     );
     _disposePlaybackObservables = initPlaybackObservables(

@@ -305,6 +305,14 @@ function restoreBrowsePath(pathDirs: string[]): void {
 
 export async function refreshLibrary(): Promise<void> {
     const prevPath = getCurrentBrowsePath();
+    // [doc:adr-177] 手动重扫 = 用户手势，可作授权过期兜底：revoked 时先重授权再真扫，
+    // 对齐 initLibrary 启动引导；成功则下方 rescanAndSync 真扫，失败降级读缓存 + 提示。
+    if ((await getFsaAuthState()) === 'revoked') {
+        const reauthOk = await promptReauthorize();
+        if (!reauthOk) {
+            feedbackStatus('library.fsaRevokedHint', undefined, false);
+        }
+    }
     feedbackStatus('library.scanning', undefined, false);
     const models = await tryCatchStatus(async () => {
         return await rescanAndSync();
@@ -313,11 +321,6 @@ export async function refreshLibrary(): Promise<void> {
         return;
     }
     showInfoToast(t('library.entriesCount', { n: (models || []).length }));
-    // [doc:adr-177] 手动重扫但授权已失效（revoked）：库仅为缓存快照，
-    // 不阻塞但提示重新授权，对齐 initLibrary 启动引导，避免「扫描中…发现 N 个」造成已重扫假象
-    if ((await getFsaAuthState()) === 'revoked') {
-        feedbackStatus('library.fsaRevokedHint', undefined, false);
-    }
     CleanOrphanCache().catch((err) =>
         logWarn('library-setup', 'CleanOrphanCache (background):', err)
     );
