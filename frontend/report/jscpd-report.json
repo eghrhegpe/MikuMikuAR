@@ -38,6 +38,78 @@
     },
     {
       "firstFile": {
+        "end": 196,
+        "endLoc": {
+          "column": 31,
+          "line": 196,
+          "position": 6918
+        },
+        "name": "core\\dialog.ts",
+        "start": 179,
+        "startLoc": {
+          "column": 44,
+          "line": 179,
+          "position": 6356
+        }
+      },
+      "format": "typescript",
+      "fragment": "",
+      "lines": 18,
+      "secondFile": {
+        "end": 387,
+        "endLoc": {
+          "column": 31,
+          "line": 387,
+          "position": 13638
+        },
+        "name": "core\\dialog.ts",
+        "start": 370,
+        "startLoc": {
+          "column": 58,
+          "line": 370,
+          "position": 13076
+        }
+      },
+      "tokens": 55
+    },
+    {
+      "firstFile": {
+        "end": 234,
+        "endLoc": {
+          "column": 34,
+          "line": 234,
+          "position": 8226
+        },
+        "name": "core\\dialog.ts",
+        "start": 213,
+        "startLoc": {
+          "column": 47,
+          "line": 213,
+          "position": 7363
+        }
+      },
+      "format": "typescript",
+      "fragment": "",
+      "lines": 22,
+      "secondFile": {
+        "end": 413,
+        "endLoc": {
+          "column": 34,
+          "line": 413,
+          "position": 14602
+        },
+        "name": "core\\dialog.ts",
+        "start": 395,
+        "startLoc": {
+          "column": 33,
+          "line": 395,
+          "position": 13918
+        }
+      },
+      "tokens": 92
+    },
+    {
+      "firstFile": {
         "end": 45,
         "endLoc": {
           "column": 6,
@@ -146,39 +218,75 @@
     },
     {
       "firstFile": {
-        "end": 252,
+        "end": 242,
         "endLoc": {
           "column": 9,
-          "line": 252,
-          "position": 8248
+          "line": 242,
+          "position": 7934
         },
         "name": "scene\\env\\env-sky.ts",
-        "start": 236,
+        "start": 226,
         "startLoc": {
           "column": 31,
-          "line": 236,
-          "position": 7801
+          "line": 226,
+          "position": 7487
         }
       },
       "format": "typescript",
       "fragment": "",
       "lines": 17,
       "secondFile": {
-        "end": 377,
+        "end": 367,
         "endLoc": {
           "column": 1,
-          "line": 377,
-          "position": 13262
+          "line": 367,
+          "position": 12948
         },
         "name": "scene\\env\\env-sky.ts",
-        "start": 363,
+        "start": 353,
         "startLoc": {
           "column": 30,
-          "line": 363,
-          "position": 12825
+          "line": 353,
+          "position": 12511
         }
       },
       "tokens": 76
+    },
+    {
+      "firstFile": {
+        "end": 52,
+        "endLoc": {
+          "column": 14,
+          "line": 52,
+          "position": 1982
+        },
+        "name": "scene\\motion\\motion-modules\\foot-modules.ts",
+        "start": 37,
+        "startLoc": {
+          "column": 23,
+          "line": 37,
+          "position": 1553
+        }
+      },
+      "format": "typescript",
+      "fragment": "",
+      "lines": 16,
+      "secondFile": {
+        "end": 126,
+        "endLoc": {
+          "column": 17,
+          "line": 126,
+          "position": 4039
+        },
+        "name": "scene\\motion\\motion-modules\\hand-modules.ts",
+        "start": 110,
+        "startLoc": {
+          "column": 30,
+          "line": 110,
+          "position": 3578
+        }
+      },
+      "tokens": 67
     },
     {
       "firstFile": {
@@ -290,7 +398,7 @@
     }
   ],
   "statistics": {
-    "detectionDate": "2026-07-24T15:32:22.351Z",
+    "detectionDate": "2026-07-25T02:43:49.042Z",
     "formats": {
       "css": {
         "clones": 0,
@@ -317,29 +425,29 @@
         "tokens": 1512
       },
       "typescript": {
-        "clones": 8,
-        "duplicatedLines": 156,
-        "duplicatedTokens": 782,
-        "lines": 37205,
+        "clones": 11,
+        "duplicatedLines": 209,
+        "duplicatedTokens": 996,
+        "lines": 37251,
         "newClones": 0,
         "newDuplicatedLines": 0,
-        "percentage": 0.41929848138691034,
-        "percentageTokens": 0.4326968300253974,
-        "sources": 196,
-        "tokens": 180727
+        "percentage": 0.5610587635231269,
+        "percentageTokens": 0.5490446842993065,
+        "sources": 193,
+        "tokens": 181406
       }
     },
     "total": {
-      "clones": 8,
-      "duplicatedLines": 156,
-      "duplicatedTokens": 782,
-      "lines": 37538,
+      "clones": 11,
+      "duplicatedLines": 209,
+      "duplicatedTokens": 996,
+      "lines": 37584,
       "newClones": 0,
       "newDuplicatedLines": 0,
-      "percentage": 0.41557888006819754,
-      "percentageTokens": 0.4251293872048014,
-      "sources": 198,
-      "tokens": 183944
+      "percentage": 0.5560876968922945,
+      "percentageTokens": 0.5394777465429551,
+      "sources": 195,
+      "tokens": 184623
     }
   }
 }
