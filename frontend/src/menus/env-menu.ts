@@ -14,7 +14,7 @@ import { closeAllOverlays } from '../core/utils';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import { addDisposableListener } from '../core/dom';
-import { registerLoadRefreshHook } from '../core/load-refresh-registry';
+import { registerLoadRefreshHook, registerLibraryScannedHook } from '../core/load-refresh-registry';
 import type { MenuNode } from './menu-schema';
 // ======== 从子文件导入 ========
 import { buildSkyLevel } from './env-sky-levels';
@@ -62,16 +62,8 @@ export { getEnvMenu, refreshEnvRoot, showEnvMenu };
 // [doc:P4] 加载模型后刷新根菜单 items（使模型依赖列表、纹理库等即时更新）
 registerLoadRefreshHook(() => { if (getEnvMenu()) refreshEnvRoot(); });
 
-// 当库扫描完成时，如果环境菜单已打开则 reRender，
-// 使自定义纹理库等依赖 allModels 的 renderCustom 回调拿到最新数据。
-const _onLibraryScanned = (): void => {
-    getEnvMenu()?.reRender();
-};
-const _libraryScannedDisp = addDisposableListener(
-    window,
-    'mmar:library-scanned',
-    _onLibraryScanned
-);
+// 库扫描完成时刷新菜单（通过注册表统一监听，替代独立 addDisposableListener）
+registerLibraryScannedHook(() => getEnvMenu()?.reRender());
 
 /** 环境弹窗根级 items 构建器——动态反映 envState 各 toggle 状态。 */
 function buildEnvRootItems(): PopupRow[] {

@@ -473,10 +473,13 @@ export class SlideMenu {
         const level = this.currentLevel;
         // [doc:adr-065] i18n 热切换：语言变化时，renderCustom 层级的 schema 标签与自定义 DOM
         // 均在渲染期经 t() 求值，须全量重建当前层才能刷新（纯 items 层由下方 itemBuilder patch 覆盖）。
+        // [doc:P6] 层级提供 onLangChange 时优先走增量刷新，避免全量 reRender 丢失折叠/滚动状态。
         const lang = getLang();
         if (lang !== this._lastLang) {
             this._lastLang = lang;
-            if (level?.renderCustom && this.panel.querySelector('.slide-list')) {
+            if (level?.onLangChange) {
+                level.onLangChange();
+            } else if (level?.renderCustom && this.panel.querySelector('.slide-list')) {
                 this.reRender({ preserveFocus: true });
             }
         }

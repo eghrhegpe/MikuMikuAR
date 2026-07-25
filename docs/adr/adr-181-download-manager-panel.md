@@ -1,10 +1,13 @@
 # ADR-181: 下载管理面板（扫描→解压→入库→processed 标记）
 
-> **状态**: 规划中（首版草案，待批准）
+> **状态**: 已批准（规划中 → 批准；落地前修正 3 处：P3 拆分 importFileByPath / P3 注册点行号 settings.ts:127 / P4 网页清单改存 IndexedDB）
 > **日期**: 2026-07-25
 > **关联**: ADR-176（前端 Backend 适配器双实现）、ADR-177（Web Loader 与主应用统一路径）、ADR-178（能力矩阵宿主键 —— 本 ADR 实施后 `watchDir` 键随之废弃）、ADR-179（更新安装拉起，平台分级）、ADR-180（FSA 句柄持久化 —— 本面板网页/安卓端 staging 持久化直接复用其句柄恢复机制）、ADR-017（安卓适配，platform 探测范式）、ADR-018（pathmgr 抽象）
 > **前置**: zip 解压管线已具备（网页 `browser-adapter.ts` JSZip / Go `ExtractZip`）；资源库写入已具备（IndexedDB `dir:/outfit:` 路由 / Go 落盘）；fsnotify watch 现状（`internal/app/watch.go`）；ADR-180（FSA 句柄持久化）已落地，提供网页/安卓端 staging 句柄持久化能力
-> **审核记录**: 无（首版草案）
+> **审核记录**: 2026-07-25 首轮审核通过（草案可批准），落地前修正 3 处：
+>   ① P3 —— `importFile()` 无参数（`library-actions.ts:614` 定义为 `importFile(): Promise<void>`），面板批量导入需新增 `importFileByPath(path)` 拆分版（抽取 L634–666 路由块，绕过 `SelectImportFile()` 弹窗）；
+>   ② P3 —— 注册点已定位 `settings.ts:127`（`[SETTINGS.RESOURCES]: () => buildSettingsResourcesLevel(...)`），补全行号；
+>   ③ P4 —— 网页只读 FSA 句柄无法向 staging 写 `.imported.json`，清单改存 IndexedDB（key = staging 句柄 id + 文件 hash）。
 
 ## 背景
 
@@ -27,7 +30,7 @@
 
 1. **扫描（scan）**：枚举暂存目录（staging）下的文件，按现有扩展名过滤（`ExtractZip` 内部已按 PMX stem 分组、`dir:/outfit:` / `bundle:` 路由，见 `browser-adapter.ts:20/:739`，面板无需新写分类器）。
 2. **解压（decompress）**：遇到 `.zip` → 复用 `ExtractZip`（`browser-adapter.ts:802–845` 网页 JSZip / Go `ExtractZip`）；非 zip 资源直接进第 3 步。
-3. **入库（import）**：解压产物 / 裸资源写入对应资源库——网页落 IndexedDB `dir:/outfit:` 等键，桌面/安卓经 Go 扫描落盘；复用 `library-actions.ts:614 importFile()` 的路由语义。
+3. **入库（import）**：解压产物 / 裸资源写入对应资源库——网页落 IndexedDB `dir:/outfit:` 等键，桌面/安卓经 Go 扫描落盘；复用 `library-actions.ts:614 importFile()` 抽出的路由函数 `importFileByPath(path)`（见 §精确改法②，避免 `importFile()` 内部 `SelectImportFile()` 弹窗）。
 4. **标记已处理（mark processed）**：写入成功的源文件移入 `<staging>/_imported/`（非系统级回收站，仅 staging 内子目录），并追加 `.imported.json` 清单（已处理文件 hash/相对路径），防重复导入。
 
 **跨端暂存目录获取（复用 ADR-180 句柄持久化，不再单列子能力）：**
@@ -59,7 +62,7 @@ export function buildSettingsDownloadsLevel(
 }
 ```
 
-注册点：与 `buildSettingsResourcesLevel`（`settings-resources.ts:491`）同级，在 settings 顶层注册表新增入口（注册表位置待定位：`grep` `buildSettingsResourcesLevel` 调用点）。i18n 需在 `frontend/src/core/i18n/locales/*.ts` 补 `settings.downloads` 等键（参照 `settings.paths.resourceRoot` 既有键位 `zh-CN.ts:1727`）。
+注册点：在 `settings.ts:127` 的 `SETTINGS_FOLDER_ROUTES` 注册表新增 `[SETTINGS.DOWNLOADS]: () => buildSettingsDownloadsLevel(getSettingsMenu)`（紧邻 `[SETTINGS.RESOURCES]: () => buildSettingsResourcesLevel(getSettingsMenu)` 行）。i18n 需在 `frontend/src/core/i18n/locales/*.ts` 补 `settings.downloads` 等键（参照 `settings.paths.resourceRoot` 既有键位 `zh-CN.ts:1727`）。
 
 ### ② 复用现有管线（不新写引擎）
 
@@ -68,7 +71,7 @@ export function buildSettingsDownloadsLevel(
 | zip 解压（网页） | `ExtractZip` 内 `JSZip.loadAsync` + `dir:/outfit:` 路由 | `browser-adapter.ts:814/:845` |
 | zip 解压（桌面/安卓） | Go `ExtractZip`（与网页语义对齐） | `browser-adapter.ts:4` 注释确认 |
 | FSA 目录扫描 | `_scanDirIntoIDB` | `browser-adapter.ts:496`（调用点 `:1335/:1352`） |
-| 资源入库路由 | `importFile()` | `library-actions.ts:614` |
+| 资源入库路由（拆分） | `importFileByPath(path)`；原 `importFile()` 改为 `const p = await SelectImportFile(); if (p) await importFileByPath(p)` | `library-actions.ts:614` 抽取 L634–666 扩展名路由块 |
 | 单根资源库 | `resourceRoot`（`library-state.ts:15`）/ `cfg.resource_root`（`library-setup.ts:45/:176`） | 见 §风险④ |
 
 ### ③ 扫描与标记实现要点
@@ -76,22 +79,23 @@ export function buildSettingsDownloadsLevel(
 ```ts
 // [doc:adr-181] 扫描 → 入库 → 标记 主循环（伪代码，待落地）
 async function runDownloadManager(staging: string) {
-  const manifest = await readManifest(staging);          // .imported.json（幂等防重）
+  const manifest = await readManifest(staging);          // 桌面：<staging>/.imported.json；网页：IndexedDB（key = staging 句柄 id + 文件 hash）；安卓：SAF 等价持久化（P4 修正）
   for (const f of await listFiles(staging)) {
     if (manifest.has(hash(f)) || f.name === '_imported' || f.name === '.imported.json') continue;
     const ok = f.name.endsWith('.zip')
       ? await ExtractZip(f.path, '')            // 复用到资源库
-      : await importFile(f.path);              // 复用裸资源路由
+      : await importFileByPath(f.path);         // 复用 library-actions.ts:614 抽出的路由函数（无弹窗）
     if (ok) {
-      await moveToImported(staging, f);         // 物理移到 <staging>/_imported/
+      const moved = await moveToImported(staging, f);    // 桌面 os.Rename；网页/安卓无写权限时跳过重命名
       manifest.add(hash(f));                    // 双保险：清单兜底（移动因权限失败也不重复）
+      if (!moved) await persistManifest(staging, manifest); // 移动失败也落盘清单，防重
     }
   }
   await writeManifest(staging, manifest);
 }
 ```
 
-`moveToImported` 桌面用 `os.Rename`；网页/安卓在仅持读权限时**跳过物理移动、仅靠 `.imported.json` 防重**（与 §决策④ 双保险一致）。
+`moveToImported` 桌面用 `os.Rename`（可写）；**网页只读 FSA 句柄无法向 staging 写 `.imported.json`**，故网页侧清单改存 IndexedDB（key = staging 句柄 id + 文件 hash），`moveToImported` 无写权限时跳过重命名、仅依赖 IndexedDB 清单防重；安卓 SAF 视授权写权限同理（P4 修正）。
 
 ### ④ 废弃 fsnotify watch
 
@@ -111,7 +115,7 @@ async function runDownloadManager(staging: string) {
 |------|----|------|
 | 🟠 P2 | 安卓/网页无法静默枚举 OS 下载目录，首次需用户手势授权暂存目录 | 复用 ADR-180 FSA / 安卓 SAF 范式；授权后持久化句柄，后续自动；UX 文案明示「选一个存放下载模型的文件夹」 |
 | 🟠 P2 | 网页 `JSZip` 全量载入内存，超大 zip（>数百 MB）可能 OOM | 限制单次扫描 zip 体积阈值 + 失败回退手动导入；桌面走 Go 流式解压不受影响 |
-| 🟡 P3 | 物理移动原文件可能因权限失败（网页只读句柄） | 双保险：`.imported.json` 清单独立于移动，保证防重；移动失败不阻断入库 |
+| 🟡 P3 | 物理移动原文件可能因权限失败（网页/安卓只读句柄） | 双保险：网页清单存 IndexedDB（staging 句柄 id + 文件 hash）、桌面写 `<staging>/.imported.json`，独立于移动保证防重；移动失败不阻断入库 |
 | 🟡 P3 | 资源库当前为**单根**（`library-state.ts:15` `resourceRoot` 单值，`library-setup.ts:45/:176` 单字段） | staging 入库复用现有单根写入；若未来需「下载」独立库，应在 ADR 外另立存储模型演进（不在本 ADR 范围） |
 | 🟢 P4 | 移除 `watchDir` 键影响 `settings-resources.ts:412` 已迁调用 | 该卡片随 watch 整体移除，无残留引用；ADR-178 同步标注键废弃 |
 | ⚪ 架构红线 | 不推翻四端统一范式 | staging 抽象屏蔽平台差异；入库走既有 `ExtractZip`/`importFile`，不新增引擎 |
