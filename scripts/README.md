@@ -151,6 +151,41 @@ git config core.hooksPath .githooks
 
 钩子失败时按提示运行 `npm run gen:status` / `npm run gen:funcmap` / `npm run check:docs` 并 `git add` 生成文件即可；紧急放行用 `git push --no-verify`（不推荐）。
 
+### `codemod.mjs` — AST 感知的批量重构
+
+基于 ts-morph（TypeScript 编译器 API 封装）进行代码批量改写，精确到 AST 节点级别，**不会误伤字符串/注释里同名符号**。
+
+```bash
+# 重命名导出函数（自动更新所有引用）
+node scripts/codemod.mjs rename-function oldFoo newFoo
+
+# 将函数移到另一个文件
+node scripts/codemod.mjs move-function parseName src/core/utils.ts
+
+# 给函数加参数（无默认值时自动补 undefined）
+node scripts/codemod.mjs add-param buildTree 'opts: Options' '{}'
+
+# 显示帮助
+node scripts/codemod.mjs help
+```
+
+> 改完后必须跑 `npm run check && npm run test` 验证。对结果有疑虑用 `git diff` 逐块审查。
+
+---
+
+## 代码修改规范（AI 与人类通用）
+
+| 场景 | 正确工具 | 错误做法 |
+|------|---------|---------|
+| 改函数签名/重命名 | `codemod.mjs`（AST） | Python re.sub / sed |
+| 跨文件改引用 | `codemod.mjs rename-function` | 全局字符串替换 |
+| 一段逻辑移出去 | `codemod.mjs move-function` | 手动 copy-paste |
+| 批量加参数 | `codemod.mjs add-param` | 手动逐个改 |
+| 简单行内替换 | `SearchReplace` 工具 | Python 脚本 |
+| 统计/分析代码 | ✅ Python grep 增强版 | — |
+
+**永远不要在 Python 脚本中做 `file.write(re.sub(...))` 改写代码**。AST 工具或 SearchReplace 在 diff 审查下更安全。
+
 ## 新人上手建议
 
 ```bash

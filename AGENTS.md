@@ -30,6 +30,11 @@
 | 加 菜单 | `docs/menu-how-to.md` |
 | 加 按钮 组件 | `docs/design.md`（唯一规范） |
 | 改前端子模块 | `frontend/AGENTS.md` |
+| 批量重构代码（重命名/移函数/加参数） | `npm run codemod help`（AST 感知，基于 ts-morph），禁止 Python re.sub 改写 |
+| 改函数签名/跨文件引用 | `npm run codemod rename-function <旧> <新>` |
+| 将函数移到另一文件 | `npm run codemod move-function <函数名> <目标相对路径>` |
+| 给函数批量加参数 | `npm run codemod add-param <函数名> '<参数签名>' [默认值]` |
+| 简单行内替换 | 用 `SearchReplace` 工具，改完 `npm run check` |
 | 改 Go 后端 | `internal/AGENTS.md` |
 | 写/维护 E2E 测试 | `frontend/e2e/` + `frontend/e2e/README.md`(运行手册) + `frontend/playwright.config.ts` |
 | 修 Bug 查历史 | `docs/buglog` |
