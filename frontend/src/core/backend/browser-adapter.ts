@@ -463,12 +463,45 @@ function _relPathFrom(childRelIdCategory: string, pmxRelPath: string): string {
     return childRelIdCategory;
 }
 
+/** [doc:adr-180] 清掉上一次 FSA 扫描写入的库数据（entry:/file:/dir: 前缀），根目录重扫前调用，保证层级彻底自愈。 */
+async function _clearScannedEntries(): Promise<void> {
+    const keys = (await idbKeys('models')).filter(
+        (k) => k.startsWith('entry:') || k.startsWith('file:') || k.startsWith('dir:')
+    );
+    for (const k of keys) await idbDelete('models', k);
+}
+
+/** [doc:adr-180] 从 IndexedDB 恢复持久化的 FSA 目录句柄（供 ScanModelDir 启动自愈调用）。
+ * 仅 queryPermission 恢复授权，绝不 requestPermission（后者须用户手势，启动期无手势会被浏览器拦截）。
+ * 未授权 / 无句柄 / 句柄失效返回 null，调用方降级为手动 SelectDir。 */
+async function restoreFsaRootHandle(): Promise<FileSystemDirectoryHandle | null> {
+    const h = await idbGet<FileSystemDirectoryHandle>('config', 'fsaRootHandle');
+    if (!h) return null;
+    const permHandle = h as FileSystemDirectoryHandle & {
+        queryPermission?: (o: { mode: 'readwrite' }) => Promise<PermissionState>;
+    };
+    if (typeof permHandle.queryPermission === 'function') {
+        try {
+            const perm = await permHandle.queryPermission({ mode: 'readwrite' });
+            if (perm === 'granted') return h;
+        } catch {
+            /* 句柄失效（权限撤销 / 隐私模式）→ 降级为手动 SelectDir */
+        }
+    }
+    // 不支持 queryPermission 的旧实现：保守不自动恢复，避免静默失败。
+    return null;
+}
+
 /** FSA 目录递归扫描：保留目录结构，按目录约定分类（对齐桌面端） */
 async function _scanDirIntoIDB(
     dirHandle: FileSystemDirectoryHandle,
     relPath = '',
     parentPmx: { stem: string; relPath: string }[] = []
 ): Promise<void> {
+    // [doc:adr-180] 根目录重扫：先清旧，避免旧版塌缩 entry 残留导致自愈不彻底。
+    if (relPath === '') {
+        await _clearScannedEntries();
+    }
     const dir = dirHandle as FsaDirHandle;
     // 第一遍：收集本层所有文件信息（FileSystemDirectoryHandle 的 values() 是有状态的，一次读完）
     const files: { name: string; handle: FileSystemFileHandle }[] = [];
@@ -1291,6 +1324,15 @@ export const browserAdapter: BackendService = {
         return bytes ? new TextDecoder().decode(bytes) : '';
     },
     async ScanModelDir(): Promise<ModelEntry[]> {
+        // [doc:adr-180] 无内存句柄时尝试从 IndexedDB 恢复持久化句柄并自动重扫，
+        // 使「已授权源」启动即自愈，无需用户手动重选目录。未授权 / 无句柄降级为只读现有 entry。
+        if (!_fsaRootHandle) {
+            const restored = await restoreFsaRootHandle();
+            if (!restored) return _listModels();
+            _fsaRootHandle = restored;
+            console.info('[web-scan] ScanModelDir: 自动恢复持久化句柄并重扫');
+        }
+        await _scanDirIntoIDB(_fsaRootHandle);
         return _listModels();
     },
 
@@ -1304,6 +1346,8 @@ export const browserAdapter: BackendService = {
         ).showDirectoryPicker;
         if (typeof picker !== 'function') throw new NotSupportedError('SelectDir');
         _fsaRootHandle = await picker();
+        // [doc:adr-180] 持久化句柄，供下次启动无手势自动恢复（结构化克隆，IndexedDB 原生支持）。
+        await idbSet('config', 'fsaRootHandle', _fsaRootHandle);
         console.info(`[web-scan] SelectDir: 用户选择目录 "${_fsaRootHandle.name}"，开始扫描...`);
         await _scanDirIntoIDB(_fsaRootHandle);
         console.info('[web-scan] SelectDir: 扫描完成');
