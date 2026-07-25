@@ -113,7 +113,7 @@ export {
     getMatParams,
     setMatParams,
     resetSingleMatParams,
-    resetAllMatParams,
+    resetPerMaterialParams,
     getMatState,
     applyMatState,
     registerMaterialTarget,

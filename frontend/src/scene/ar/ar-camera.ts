@@ -21,7 +21,7 @@ declare global {
     }
 }
 
-export interface ARCameraState {
+interface ARCameraState {
     active: boolean;
     facing: CameraFacing;
     streamId: string | null;

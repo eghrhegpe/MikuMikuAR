@@ -17,6 +17,6 @@ export function setDragModeEnabled(enabled: boolean): void {
     scheduleRefresh();
 }
 
-export function toggleDragMode(): void {
+function toggleDragMode(): void {
     setDragModeEnabled(!_dragModeEnabled);
 }

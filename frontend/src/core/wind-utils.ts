@@ -31,13 +31,6 @@ export function getWindVector(): Vector3 {
 }
 
 /**
- * 返回当前风速标量（windEnabled=false 返回 0）。
- */
-export function getWindStrength(): number {
-    return envState.windEnabled ? envState.windSpeed : 0;
-}
-
-/**
  * 风向是否生效（快捷判空，避免 Vector3.Zero() 比较开销）。
  */
 export function isWindActive(): boolean {

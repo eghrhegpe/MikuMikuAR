@@ -6,7 +6,7 @@ import type { MotionModuleState, MotionPreset } from '@/core/types';
 import { setModuleEnabled, setModuleParam, createModule } from './registry';
 
 /** 序列化格式（含版本号，用于文件/库存储） */
-export interface MotionPresetFile {
+interface MotionPresetFile {
     version: 1;
     presetName?: string;
     preset: MotionPreset;
@@ -22,7 +22,7 @@ export function modulesToPresetMap(states: MotionModuleState[]): MotionPreset['m
 }
 
 /** MotionPreset['modules'] → MotionModuleState[] */
-export function presetMapToModules(map: MotionPreset['modules']): MotionModuleState[] {
+function presetMapToModules(map: MotionPreset['modules']): MotionModuleState[] {
     return Object.entries(map).map(([id, state]) => ({
         id,
         enabled: state.enabled,

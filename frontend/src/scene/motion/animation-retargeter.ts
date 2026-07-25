@@ -67,7 +67,7 @@ const PRESET_BONE_MAPS: Record<Exclude<BoneMapPreset, 'custom'>, Record<string, 
 };
 
 /** 获取可用骨骼映射预设列表。 */
-export function getBoneMapPresets(): Array<{ id: string; label: string }> {
+function getBoneMapPresets(): Array<{ id: string; label: string }> {
     return [
         { id: 'mixamo', label: 'Mixamo' },
         { id: 'vrm', label: 'VRM' },

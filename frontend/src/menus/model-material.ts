@@ -203,7 +203,7 @@ function buildPerMatSchema(
     ];
 }
 
-export function buildPerMatLevel(
+function buildPerMatLevel(
     id: string,
     modelName: string,
     matName: string,

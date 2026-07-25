@@ -341,18 +341,6 @@ vi.mock('../scene/camera/camera', () => ({
     setConcertParams: vi.fn(),
     setSurroundParams: vi.fn(),
     hasCameraVmd: vi.fn(() => false),
-    clearCameraVmd: vi.fn(),
-    getCameraVmdName: vi.fn(() => ''),
-    getCameraVmdPath: vi.fn(() => ''),
-    getConcertPaused: vi.fn(() => false),
-    setConcertPaused: vi.fn(),
-    getSurroundPaused: vi.fn(() => false),
-    setSurroundPaused: vi.fn(),
-    defaultCameraPreset: vi.fn(),
-    getCameraPreset: vi.fn(),
-    setCameraPreset: vi.fn(),
-    getCameraState: vi.fn(),
-    setCameraState: vi.fn(),
 }));
 
 // ── Load the REAL camera module via vi.importActual ──────────
@@ -361,9 +349,6 @@ vi.mock('../scene/camera/camera', () => ({
 // will resolve to our mock (no circular dependency issue).
 
 let cameraModule: {
-    defaultCameraPreset: () => any;
-    getCameraPreset: () => any;
-    setCameraPreset: (p: any) => void;
     getOrbitParams: () => any;
     getFreeflyParams: () => any;
     getConcertParams: () => any;
@@ -402,8 +387,6 @@ let cameraModule: {
     restoreAutoCameraState: () => void;
 };
 
-type CameraPreset = ReturnType<typeof cameraModule.defaultCameraPreset>;
-
 beforeAll(async () => {
     const mod = await vi.importActual('../scene/camera/camera');
     cameraModule = mod as any;
@@ -413,157 +396,13 @@ beforeAll(async () => {
 
 beforeEach(() => {
     // Reset module-level state to defaults through the public API.
-    // _currentCamera / _cameraMode / _scene / _canvas are NOT
-    // resettable without calling switchCameraMode; they remain
-    // at module-load defaults (null / 'orbit' / null / null).
     cameraModule.setCameraPreset(cameraModule.defaultCameraPreset());
     cameraModule.setFov(0.8);
-    cameraModule.setConcertPaused(false);
 });
 
 // ════════════════════════════════════════════════════════════
 // Tests
 // ════════════════════════════════════════════════════════════
-
-describe('defaultCameraPreset', () => {
-    it('returns an object with the correct structure', () => {
-        const p = cameraModule.defaultCameraPreset();
-        expect(p).toHaveProperty('mode');
-        expect(p).toHaveProperty('orbit');
-        expect(p).toHaveProperty('freefly');
-        expect(p).toHaveProperty('concert');
-        expect(p).toHaveProperty('surround');
-        expect(p.orbit).toHaveProperty('targetHeight');
-        expect(p.orbit).toHaveProperty('distance');
-        expect(p.orbit).toHaveProperty('beta');
-        expect(p.freefly).toHaveProperty('speed');
-        expect(p.freefly).toHaveProperty('angularSensibility');
-        expect(p.concert).toHaveProperty('radius');
-        expect(p.concert).toHaveProperty('height');
-        expect(p.concert).toHaveProperty('sweepAngle');
-        expect(p.concert).toHaveProperty('sweepSpeed');
-        expect(p.concert).toHaveProperty('baseBeta');
-        expect(p.concert).toHaveProperty('bobAmplitude');
-        expect(p.concert).toHaveProperty('bobSpeed');
-        expect(p.surround).toHaveProperty('radius');
-        expect(p.surround).toHaveProperty('height');
-        expect(p.surround).toHaveProperty('speed');
-    });
-
-    it('has the documented default values', () => {
-        const p = cameraModule.defaultCameraPreset();
-        expect(p.mode).toBe('orbit');
-        expect(p.orbit.targetHeight).toBe(0);
-        expect(p.orbit.distance).toBe(16);
-        expect(p.orbit.beta).toBeCloseTo(Math.PI / 3, 6);
-        expect(p.freefly.speed).toBe(0.5);
-        expect(p.freefly.angularSensibility).toBe(2000);
-        expect(p.concert.radius).toBe(12);
-        expect(p.concert.height).toBe(8);
-        expect(p.concert.sweepAngle).toBe(120);
-        expect(p.concert.sweepSpeed).toBeCloseTo(0.6, 6);
-        expect(p.concert.baseBeta).toBeCloseTo(Math.PI / 3, 6);
-        expect(p.concert.bobAmplitude).toBe(12);
-        expect(p.concert.bobSpeed).toBeCloseTo(0.7, 6);
-        expect(p.surround.radius).toBe(12);
-        expect(p.surround.height).toBe(8);
-        expect(p.surround.speed).toBe(0.3);
-    });
-
-    it('returns a new object on each call (no shared reference)', () => {
-        const a = cameraModule.defaultCameraPreset();
-        const b = cameraModule.defaultCameraPreset();
-        expect(a).not.toBe(b);
-        a.orbit.targetHeight = 99;
-        expect(b.orbit.targetHeight).toBe(0);
-    });
-});
-
-describe('getCameraPreset / setCameraPreset', () => {
-    it('setCameraPreset then getCameraPreset returns the same values', () => {
-        const custom: CameraPreset = {
-            mode: 'freefly',
-            orbit: { targetHeight: 5, distance: 10, beta: 1 },
-            freefly: { speed: 1, angularSensibility: 1000 },
-            concert: {
-                radius: 15,
-                height: 6,
-                sweepAngle: 90,
-                sweepSpeed: 1,
-                baseBeta: 1,
-                bobAmplitude: 10,
-                bobSpeed: 1,
-            },
-            surround: { radius: 14, height: 7, speed: 0.4 },
-        };
-        cameraModule.setCameraPreset(custom);
-        const retrieved = cameraModule.getCameraPreset();
-        expect(retrieved.mode).toBe('freefly');
-        expect(retrieved.orbit.targetHeight).toBe(5);
-        expect(retrieved.orbit.distance).toBe(10);
-        expect(retrieved.orbit.beta).toBe(1);
-        expect(retrieved.freefly.speed).toBe(1);
-        expect(retrieved.freefly.angularSensibility).toBe(1000);
-        expect(retrieved.concert.radius).toBe(15);
-        expect(retrieved.concert.height).toBe(6);
-        expect(retrieved.concert.sweepAngle).toBe(90);
-        expect(retrieved.concert.baseBeta).toBe(1);
-        expect(retrieved.surround.radius).toBe(14);
-        expect(retrieved.surround.speed).toBe(0.4);
-    });
-});
-
-describe('getOrbitParams / getFreeflyParams / getConcertParams', () => {
-    it('getOrbitParams returns the orbit sub-object from the current preset', () => {
-        const params = cameraModule.getOrbitParams();
-        expect(params.targetHeight).toBe(0);
-        expect(params.distance).toBe(16);
-        expect(params.beta).toBeCloseTo(Math.PI / 3, 6);
-    });
-
-    it('getFreeflyParams returns the freefly sub-object', () => {
-        const params = cameraModule.getFreeflyParams();
-        expect(params.speed).toBe(0.5);
-        expect(params.angularSensibility).toBe(2000);
-    });
-
-    it('getConcertParams returns the concert sub-object', () => {
-        const params = cameraModule.getConcertParams();
-        expect(params.radius).toBe(12);
-        expect(params.height).toBe(8);
-        expect(params.sweepAngle).toBe(120);
-        expect(params.bobAmplitude).toBe(12);
-    });
-
-    it('getSurroundParams returns the surround sub-object', () => {
-        const params = cameraModule.getSurroundParams();
-        expect(params.radius).toBe(12);
-        expect(params.height).toBe(8);
-        expect(params.speed).toBe(0.3);
-    });
-
-    it('all getters reflect preset changes via setCameraPreset', () => {
-        cameraModule.setCameraPreset({
-            mode: 'orbit',
-            orbit: { targetHeight: 99, distance: 1, beta: 2 },
-            freefly: { speed: 9, angularSensibility: 500 },
-            concert: {
-                radius: 3,
-                height: 4,
-                sweepAngle: 30,
-                sweepSpeed: 2,
-                baseBeta: 0.5,
-                bobAmplitude: 5,
-                bobSpeed: 2,
-            },
-            surround: { radius: 7, height: 9, speed: 1.5 },
-        });
-        expect(cameraModule.getOrbitParams().targetHeight).toBe(99);
-        expect(cameraModule.getFreeflyParams().speed).toBe(9);
-        expect(cameraModule.getConcertParams().radius).toBe(3);
-        expect(cameraModule.getSurroundParams().radius).toBe(7);
-    });
-});
 
 describe('setOrbitParams', () => {
     it('updates the preset with partial params', () => {

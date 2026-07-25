@@ -337,7 +337,7 @@ export function disposeAllPersonalLights(): void {
 
 // ======== Serialization (ADR-168) ========
 
-export interface SerializedPersonalLight {
+interface SerializedPersonalLight {
     modelUuid: string;
     settings: PersonalLightSettings;
 }

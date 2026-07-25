@@ -34,7 +34,6 @@ import {
 
 // ======== Env Texture Binding Target ========
 // 已迁移到 env-menu-state.ts，此处保留 re-export 保持向后兼容
-export type { EnvTextureBindingTarget } from './env-menu-state';
 export { clearEnvTextureBindingTarget, getEnvTextureBindingTarget } from './env-menu-state';
 
 // ======== Env Menu State ========

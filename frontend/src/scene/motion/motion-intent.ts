@@ -130,7 +130,7 @@ export function removeSceneMotion(id: string): void {
  * - 保留原 id 不变
  * - 触发广播：引用该 id 的角色重建 composite animation
  */
-export function updateSceneMotion(id: string, patch: Partial<SceneMotionIntent>): void {
+function updateSceneMotion(id: string, patch: Partial<SceneMotionIntent>): void {
     const idx = _sceneMotions.findIndex((m) => m.id === id);
     if (idx < 0) {
         return;

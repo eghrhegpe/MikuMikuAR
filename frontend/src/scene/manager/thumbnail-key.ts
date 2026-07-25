@@ -59,7 +59,7 @@ export function buildThumbnailKey(input: ThumbnailKeyInput): string {
 }
 
 /** 便捷：由 kind/type 字符串直接构造完整 key（isStage 判定仍走统一 isStageLike）。 */
-export function thumbnailKeyForKind(input: {
+function thumbnailKeyForKind(input: {
     libraryPath?: string;
     filePath: string;
     innerPath?: string;

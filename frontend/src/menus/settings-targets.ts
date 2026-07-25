@@ -38,4 +38,4 @@ export type SettingsFolderTarget = (typeof SETTINGS)[keyof typeof SETTINGS];
 export type SettingsActionTarget = (typeof SETTINGS_ACTION)[keyof typeof SETTINGS_ACTION];
 
 /** 所有（静态）settings target 的联合类型 */
-export type SettingsTarget = SettingsFolderTarget | SettingsActionTarget;
+type SettingsTarget = SettingsFolderTarget | SettingsActionTarget;

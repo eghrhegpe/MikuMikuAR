@@ -28,7 +28,7 @@ export function getMediumMaxOthers(): number {
 }
 
 /** 设置 medium 档非焦点模型上限（最小 1） */
-export function setMediumMaxOthers(v: number): void {
+function setMediumMaxOthers(v: number): void {
     _mediumMaxOthers = Math.max(1, v);
 }
 

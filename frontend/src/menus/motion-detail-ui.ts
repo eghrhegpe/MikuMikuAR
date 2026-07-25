@@ -2,12 +2,7 @@
 // 从 motion-popup.ts 拆出：buildLayerLevel / buildMotionDetailSchema /
 // buildMotionDetailLevel / 播放速度 / buildPlaybackSpeedLevel
 
-import {
-    mmdRuntime,
-    cardContainer,
-    focusedModelId,
-    stackRegistry,
-} from '../core/config';
+import { mmdRuntime, cardContainer, focusedModelId, stackRegistry } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { slideRow, addToggleRow, addSliderRow, addSectionTitle } from '../core/ui-helpers';
 import {

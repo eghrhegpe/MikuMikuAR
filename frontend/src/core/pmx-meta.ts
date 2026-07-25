@@ -4,7 +4,7 @@
  * 只读前 8KB，足够覆盖头部四个文本段（name_jp/name_en/comment_jp/comment_en）。
  */
 
-export interface PmxMeta {
+interface PmxMeta {
     comment: string;
 }
 

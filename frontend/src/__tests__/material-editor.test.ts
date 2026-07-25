@@ -161,7 +161,7 @@ import {
     getMatParams,
     setMatParams,
     resetSingleMatParams,
-    resetAllMatParams,
+    resetPerMaterialParams,
     getMatCatParams,
     setMatCatParams,
     getMatDetailList,
@@ -387,13 +387,13 @@ describe('per-material parameter state management', () => {
         });
     });
 
-    describe('resetAllMatParams', () => {
+    describe('resetPerMaterialParams', () => {
         it('clears all per-material params for a model', () => {
             setMatParams('model1', 0, { diffuseMul: 0.5 });
             setMatParams('model1', 1, { shininess: 80 });
             setMatParams('model1', 2, { ambientMul: 0.3 });
 
-            resetAllMatParams('model1');
+            resetPerMaterialParams('model1');
             expect(getMatParams('model1', 0)).toBeNull();
             expect(getMatParams('model1', 1)).toBeNull();
             expect(getMatParams('model1', 2)).toBeNull();
@@ -403,7 +403,7 @@ describe('per-material parameter state management', () => {
             setMatParams('model1', 0, { diffuseMul: 0.5 });
             setMatParams('model2', 0, { diffuseMul: 0.7 });
 
-            resetAllMatParams('model1');
+            resetPerMaterialParams('model1');
             expect(getMatParams('model2', 0)).not.toBeNull();
         });
     });

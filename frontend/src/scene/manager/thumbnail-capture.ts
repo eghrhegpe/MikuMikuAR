@@ -38,8 +38,6 @@ export interface ThumbnailSource {
 let _thumbMutex: Promise<unknown> = Promise.resolve();
 
 // [doc:adr-dep-graph] thumbDataUrl 已迁移到 core/utils.ts，此处 re-export 保持向后兼容
-export { thumbDataUrl } from '@/core/utils';
-
 /**
  * 用离屏 RenderTargetTexture 渲染指定模型实例的「当前骨骼姿态」并保存为缩略图。
  *

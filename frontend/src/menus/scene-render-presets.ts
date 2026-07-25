@@ -189,7 +189,9 @@ function buildPresetsSchema(): MenuNode[] {
                         if (preset) {
                             transitionRenderState({ ...defaultRenderState(), ...preset }, 2000);
                         }
-                        showInfoToast(t('scene.statusPresetApplied', { name: t(FILTER_PRESET_LABELS[key]) }));
+                        showInfoToast(
+                            t('scene.statusPresetApplied', { name: t(FILTER_PRESET_LABELS[key]) })
+                        );
                     });
 
                     const desc = document.createElement('span');

@@ -209,7 +209,7 @@ export function getConflictCount(modelId: string): number {
  * 用于时间驱动模块（sway/riding）的帧钩子做让位判定：
  * 若被高优先级模块占用则让位，否则可安全重新认领。区别于 claimBones（会触发 warn / 抢占副作用）。
  */
-export function isBoneOwnedByOther(modelId: string, moduleId: string, bone: string): boolean {
+function isBoneOwnedByOther(modelId: string, moduleId: string, bone: string): boolean {
     const owner = getBoneOverrideStore().getBoneOwnerModule(modelId, bone);
     return owner !== null && owner !== moduleId;
 }

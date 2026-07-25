@@ -37,7 +37,7 @@ function _getMeshesById(id: string): Mesh[] | undefined {
 }
 
 /** 供 UI 层（model-material.ts）按 id 拿 meshes，不依赖 modelRegistry。 */
-export function getMaterialMeshes(id: string): Mesh[] | undefined {
+function getMaterialMeshes(id: string): Mesh[] | undefined {
     return _getMeshesById(id);
 }
 
@@ -192,7 +192,7 @@ export const _matState = _stateMgr.matState;
 /** @internal 直接访问底层 Map（仅用于兼容存量代码和测试）。 */
 export const _matEnabled = _stateMgr.matEnabled;
 /** @internal exported for testing — 可注入 mock 实例 */
-export const _materialStateManager = _stateMgr;
+const _materialStateManager = _stateMgr;
 
 /** 材质分类关键词表（按优先级排序）。
  *  用户可通过 uiState.materialCategoryMap 覆盖默认规则。
@@ -808,9 +808,6 @@ export function resetPerMaterialParams(id: string): void {
     _applyAll(id);
     triggerAutoSave();
 }
-
-/** @deprecated 使用 resetPerMaterialParams */
-export const resetAllMatParams = resetPerMaterialParams;
 
 export function getMatState(id: string): {
     categories: Record<string, MaterialCategoryParams>;
