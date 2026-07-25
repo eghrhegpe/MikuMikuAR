@@ -132,6 +132,53 @@ function writeBaseline(counts) {
     writeFileSync(BASELINE_FILE, JSON.stringify(data, null, 2) + "\n");
 }
 
+/** 显示 knip 详细报告（文件 + 符号 + 行号），让 AI/人知道具体在报什么 */
+function showKnipDetails(knipJson) {
+    if (!knipJson || !knipJson.issues) return;
+    let any = false;
+    for (const file of knipJson.issues) {
+        const rows = [];
+        if (file.exports?.length) {
+            for (const e of file.exports) rows.push(`  export  ${(e.name || "").padEnd(32)} ${e.line ? `:${e.line}` : ""}`);
+        }
+        if (file.types?.length) {
+            for (const t of file.types) rows.push(`  type    ${(t.name || "").padEnd(32)} ${t.line ? `:${t.line}` : ""}`);
+        }
+        if (file.duplicates?.length) {
+            for (const d of file.duplicates) rows.push(`  dup     ${(d.name || "").padEnd(32)} ${d.line ? `:${d.line}` : ""}`);
+        }
+        if (file.devDependencies?.length) {
+            for (const d of file.devDependencies) rows.push(`  devDep  ${(d.name || "").padEnd(32)} ${d.line ? `:${d.line}` : ""}`);
+        }
+        if (file.unlisted?.length) {
+            for (const u of file.unlisted) rows.push(`  unlist  ${(u.name || "").padEnd(32)} ${u.line ? `:${u.line}` : ""}`);
+        }
+        if (rows.length) {
+            any = true;
+            console.log(`  ${file.file.replace(/\\/g, "/")}:`);
+            for (const r of rows) console.log(r);
+        }
+    }
+    if (!any) console.log("  （无）");
+}
+
+/** 显示 jscpd 重复代码详情 */
+function showJscpdDetails(jscpdJson) {
+    if (!jscpdJson?.statistics?.clones?.length) {
+        console.log("  （无）");
+        return;
+    }
+    const short = (f) => f.replace(/^.*?src[\\/]?/, "src/").replace(/\\/g, "/");
+    for (const clone of jscpdJson.statistics.clones.slice(0, 10)) {
+        const a = clone.duplicationA;
+        const b = clone.duplicationB;
+        if (a && b) {
+            console.log(`  clone  ${short(a.name)}:${a.start?.line || ""}`);
+            console.log(`         └ ${short(b.name)}:${b.start?.line || ""}`);
+        }
+    }
+}
+
 function main() {
     const args = process.argv.slice(2);
     const doUpdate = args.includes("--update");
@@ -176,7 +223,22 @@ function main() {
     }
 
     if (regressed) {
-        console.error("\n[deadcode] ❌ 回退：部分指标超过基线。请清理新增死代码或更新基线（--update）。");
+        console.error("\n[deadcode] ❌ 回退：以下项超过基线——");
+        for (const [key, label] of BASELINE_TRACKED) {
+            const base = baseline[key] ?? 0;
+            const curr = counts[key] ?? 0;
+            if (curr > base) {
+                console.error(`   ${label}: ${base} → ${curr}（+${curr - base}）`);
+            }
+        }
+        console.log("\n  ── knip 当前报告（将被纳入基线）:");
+        showKnipDetails(knipJson);
+        if (jscpdCounts.clones) {
+            console.log("\n  ── jscpd 重复代码（将被纳入基线）:");
+            showJscpdDetails(jscpdJson);
+        }
+        console.error("\n  清理新增死代码后重试，或确认无碍后更新基线：");
+        console.error("  cd frontend && node ../scripts/check-deadcode-baseline.mjs --update");
         process.exit(REGRESSION);
     }
 

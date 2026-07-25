@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 68 | 531 |
+| 核心基础设施 | 68 | 535 |
 | 3D 场景 | 94 | 998 |
 | 菜单 & UI | 65 | 301 |
 | 换装 & 音频 | 3 | 33 |
@@ -30,7 +30,11 @@
 | `setFootstepVolume()` | `core/audio-bus` | — |
 | `setSfxEnabled()` | `core/audio-bus` | — |
 | `setSfxVolume()` | `core/audio-bus` | — |
+| `FsaAuthState()` | `core/backend/browser-adapter` | — |
 | `browserAdapter()` | `core/backend/browser-adapter` | — |
+| `dismissFsaAuthPrompt()` | `core/backend/browser-adapter` | — |
+| `getFsaAuthState()` | `core/backend/browser-adapter` | [doc:adr-177] 查询 FSA 根目录授权状态，供 UI 启动引导（不触发任何权限弹窗）。 |
+| `isFsaAuthPromptDismissed()` | `core/backend/browser-adapter` | [doc:adr-177] 用户跳过启动授权引导后写入「已跳过」标志，避免纯导入用户每次启动被弹窗骚扰。 |
 | `goAdapter()` | `core/backend/go-adapter` | — |
 | `STORES()` | `core/backend/idb` | — |
 | `Store()` | `core/backend/idb` | — |
@@ -2045,5 +2049,5 @@
 
 ---
 
-> 共 251 个文件，2011 个导出符号。
+> 共 251 个文件，2015 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。
