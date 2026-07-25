@@ -1,12 +1,7 @@
 // [doc:architecture] Scene Stage Levels — 舞台管理/舞台变换弹窗层级
 // 从 scene-render-levels.ts 拆分
 
-import {
-    cardContainer,
-    modelRegistry,
-    overridePaths,
-    libraryRoot,
-} from '../core/config';
+import { cardContainer, modelRegistry, overridePaths, libraryRoot } from '../core/config';
 import { feedbackInfo, feedbackStatus } from '../core/feedback';
 import { showInfoToast } from '../core/toast';
 import type { PopupLevel } from '../core/config';

@@ -287,13 +287,13 @@ export async function loadAudioFile(filePath: string, signal?: AbortSignal): Pro
 // ======== Phase C: 播放列表控制 ========
 
 /** 设置播放列表（替换当前列表，重置索引）。 */
-export function setPlaylist(urls: string[]): void {
+function setPlaylist(urls: string[]): void {
     _playlist = [...urls];
     _playlistIndex = _playlist.length > 0 ? 0 : -1;
 }
 
 /** 追加到播放列表末尾。 */
-export function addToPlaylist(url: string): void {
+function addToPlaylist(url: string): void {
     _playlist.push(url);
     if (_playlistIndex < 0) {
         _playlistIndex = 0;
@@ -301,12 +301,12 @@ export function addToPlaylist(url: string): void {
 }
 
 /** 获取当前播放列表。 */
-export function getPlaylist(): string[] {
+function getPlaylist(): string[] {
     return [..._playlist];
 }
 
 /** 获取当前播放列表索引（-1 = 无）。 */
-export function getPlaylistIndex(): number {
+function getPlaylistIndex(): number {
     return _playlistIndex;
 }
 
@@ -320,7 +320,7 @@ export async function nextTrack(): Promise<void> {
 }
 
 /** 切换到上一曲。 */
-export async function prevTrack(): Promise<void> {
+async function prevTrack(): Promise<void> {
     const idx = _prevIndex();
     if (idx < 0) {
         return;

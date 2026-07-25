@@ -146,9 +146,3 @@ export function generateAutoDanceVmd(
 }
 
 // 保持向后兼容的导出（供 proc-motion-bridge.ts 等调用方使用）
-export { buildTrigCache, resolveBones } from './proc-motion-autodance-bones';
-export {
-    scoreMorph,
-    findBestEmotionMorphs,
-    EMOTION_CANDIDATES,
-} from './proc-motion-autodance-emotion';

@@ -160,7 +160,7 @@ export function disposeWindPhysics(): void {
  * 当前运行时是否实际启用了风力物理（WASM Bullet）。
  * 供 UI 层判断是否需要显示"JS 运行时下 Bullet 物理不受风影响"的提示。
  */
-export function isWindPhysicsActive(): boolean {
+function isWindPhysicsActive(): boolean {
     for (const sub of _subs.values()) {
         if (sub.observer) {
             return true;

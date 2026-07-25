@@ -166,18 +166,6 @@ export function getRuntimeBridge(): RuntimeBridge {
     return _bridge;
 }
 
-/**
- * Wails 侧初始化——在 bootstrap 桥接注入后调用，加载真实 @wailsio/runtime。
- * Web 侧调用无副作用（短路）。
- */
-export async function initRuntimeBridge(): Promise<void> {
-    if (isWebPlatform()) return;
-    const b = getRuntimeBridge();
-    if (b instanceof WailsRuntimeBridge) {
-        await b.init();
-    }
-}
-
 // ======== 便捷导出（业务侧直接消费，无需每次 getRuntimeBridge()） ========
 export const events: RuntimeEvents = new Proxy({} as RuntimeEvents, {
     get(_target, prop: string) {

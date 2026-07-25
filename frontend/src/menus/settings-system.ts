@@ -627,9 +627,7 @@ function buildSoftwareDetailManagedSchema(
                                 cachedSoftwareEntries = (cachedSoftwareEntries || []).filter(
                                     (e) => e.path !== entry.path
                                 );
-                                showInfoToast(
-                                    t('settings.softwareDeleted', { name: entry.name })
-                                );
+                                showInfoToast(t('settings.softwareDeleted', { name: entry.name }));
                                 const menu = getSettingsMenu();
                                 menu?.pop();
                                 menu?.reRender();
@@ -700,9 +698,7 @@ function buildSoftwareDetailAutoSchema(
                             }, t('settings.software.convertFailed'));
                             if (r) {
                                 cachedSoftwareEntries = await ScanSoftwareDir();
-                                showInfoToast(
-                                    t('settings.softwareToCustom', { name: entry.name })
-                                );
+                                showInfoToast(t('settings.softwareToCustom', { name: entry.name }));
                                 const menu = getSettingsMenu();
                                 menu?.pop();
                                 menu?.reRender();

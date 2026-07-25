@@ -25,8 +25,6 @@ import {
     getLastModel as _getLastModel,
     formatSize as _formatSize,
 } from '../core/backend/idb';
-export type { WebModelEntry } from '../core/backend/idb';
-
 /** @deprecated 请从 '../core/backend/idb' 直接导入 saveModel */
 export const saveModel = _saveModel;
 /** @deprecated 请从 '../core/backend/idb' 直接导入 listModels */

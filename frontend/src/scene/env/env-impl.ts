@@ -14,7 +14,7 @@ import { _envSys, getScene, getPipeline, isInitialized } from './env-context';
 import { clearSceneTickCallbacks, runSceneTickCallbacks } from './env-dispatcher';
 
 // Re-export shared context for backward compatibility
-export { _envSys, getScene, getPipeline, resolveStaticAsset, isInitialized } from './env-context';
+export { _envSys, getScene } from './env-context';
 
 // ======== Re-exports: Water / Clouds / MirrorDebug ========
 export {
@@ -25,19 +25,10 @@ export {
     clearRipples,
     addGroundRipple,
     clearGroundRipples,
-    getGroundRippleTexture,
-    updateGroundRipples,
     updateWaterAnimSpeed,
-    isUnderwaterActive,
 } from './env-water';
 import { updateUnderwaterTransition, resetUnderwaterState, updateGroundRipples } from './env-water';
 export { createClouds, disposeClouds } from './env-clouds';
-export {
-    createMirror,
-    disposeMirror,
-    isMirrorActive,
-    updateMirrorClearColor,
-} from './mirror-debug';
 import {
     createMirror,
     disposeMirror,
@@ -46,7 +37,7 @@ import {
 } from './mirror-debug';
 
 // ======== Re-exports: Sky ========
-export { applySky, disposeSky } from './env-sky';
+export { applySky } from './env-sky';
 import { applySky } from './env-sky';
 
 // ======== Re-exports: Ground ========
@@ -55,7 +46,6 @@ export {
     getGroundHeightAt,
     setOnTerrainReady,
     setOnGroundChanged,
-    disposeGround,
 } from './env-ground';
 import { applyGround, tickGround } from './env-ground';
 
@@ -73,11 +63,7 @@ import {
 export { createParticleEmitter, disposeParticles, updateParticleWind, updateParticleTexture };
 
 // ======== Scene Tick Callback Registry (re-export from env-dispatcher) ========
-export {
-    registerSceneTickCallback,
-    clearSceneTickCallbacks,
-    runSceneTickCallbacks,
-} from './env-dispatcher';
+export { registerSceneTickCallback } from './env-dispatcher';
 
 // ======== initEnvImpl (re-export from env-context) ========
 export { initEnvImpl } from './env-context';

@@ -164,7 +164,7 @@ export async function addVmdLayer(
 }
 
 /** 从路径加载并添加 VMD 图层 */
-export async function addVmdLayerFromPath(
+async function addVmdLayerFromPath(
     path: string,
     targetModelId?: string,
     weight = 1.0,
@@ -402,7 +402,7 @@ export async function setVmdLayerWeight(
 }
 
 /** 清除所有图层 */
-export async function clearVmdLayers(targetModelId?: string): Promise<void> {
+async function clearVmdLayers(targetModelId?: string): Promise<void> {
     const targetId = targetModelId || focusedModelId;
     if (!targetId) {
         return;
@@ -424,7 +424,7 @@ export async function clearVmdLayers(targetModelId?: string): Promise<void> {
  * @param path 新 VMD 路径
  * @param targetModelId 目标模型 ID
  */
-export async function replaceVmdLayerVmd(
+async function replaceVmdLayerVmd(
     layerId: string,
     path: string,
     targetModelId?: string

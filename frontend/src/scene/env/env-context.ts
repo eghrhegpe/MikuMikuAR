@@ -49,12 +49,6 @@ export function resolveStaticAsset(path: string): string {
 
 // ======== Scene Tick Callback Registry (re-export from env-dispatcher) ========
 // 迁入 env-dispatcher 使 env-bridge 无需 import env-impl。
-export {
-    registerSceneTickCallback,
-    clearSceneTickCallbacks,
-    runSceneTickCallbacks,
-} from './env-dispatcher';
-
 // ======== _envSys ========
 interface EnvSkyResources {
     skyMesh: Mesh | null;

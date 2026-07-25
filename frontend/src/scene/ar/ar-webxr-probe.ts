@@ -344,7 +344,7 @@ export async function probeWebXRFeatures(): Promise<WebXRProbeResult> {
 }
 
 /** 清除缓存的探针结果（用于重新探测）。 */
-export function resetProbeCache(): void {
+function resetProbeCache(): void {
     _cachedResult = null;
 }
 

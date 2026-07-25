@@ -7,12 +7,12 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 68 | 536 |
-| 3D 场景 | 94 | 1035 |
-| 菜单 & UI | 65 | 306 |
-| 换装 & 音频 | 3 | 38 |
-| 动作算法 | 17 | 129 |
-| 物理系统 | 2 | 14 |
+| 核心基础设施 | 68 | 531 |
+| 3D 场景 | 94 | 998 |
+| 菜单 & UI | 65 | 301 |
+| 换装 & 音频 | 3 | 33 |
+| 动作算法 | 17 | 123 |
+| 物理系统 | 2 | 13 |
 
 ## 核心基础设施
 
@@ -89,7 +89,6 @@
 | `feedbackError()` | `core/feedback` | 错误级 toast 反馈。标题 =「动作 + 目标」，detail 自动从 error 翻译。 |
 | `feedbackInfo()` | `core/feedback` | Info 级 toast 反馈。标题 =「动作 + 目标」。 |
 | `feedbackStatus()` | `core/feedback` | 通用状态栏反馈。auto-detect 成功与否：title 以 ✗ 开头则为失败。 |
-| `withFeedback()` | `core/feedback` | 包装一个 async 操作，自动管理 loading → success → error 状态 + toast。 |
 | `encodeFileRef()` | `core/fileservice` | 编码文件名为查询参数值（base64url 无填充）。 |
 | `normPath()` | `core/fileservice` | 标准化路径：反斜杠 → 正斜杠，去掉尾部斜杠。 |
 | `resolveFileUrl()` | `core/fileservice` | 从文件路径解析出 HTTP URL 及对应服务器信息。 |
@@ -169,7 +168,6 @@
 | `setAutoLoop()` | `core/playback-state` | — |
 | `setIsPlaying()` | `core/playback-state` | — |
 | `setSeekDragging()` | `core/playback-state` | — |
-| `PmxMeta()` | `core/pmx-meta` | 纯前端 PMX 头部元数据解析（comment 提取）。 |
 | `parsePmxComment()` | `core/pmx-meta` | 从 PMX 文件的 Uint8Array 中提取 comment（日本语说明/使用规约）。 |
 | `reactive()` | `core/reactivity` | — |
 | `readonly()` | `core/reactivity` | Passthrough readonly — store 层通过约定保证不可变，不做深冻结。 |
@@ -187,7 +185,6 @@
 | `browser()` | `core/runtime-bridge` | — |
 | `events()` | `core/runtime-bridge` | — |
 | `getRuntimeBridge()` | `core/runtime-bridge` | — |
-| `initRuntimeBridge()` | `core/runtime-bridge` | Wails 侧初始化——在 bootstrap 桥接注入后调用，加载真实 @wailsio/runtime。 |
 | `RuntimeMode()` | `core/runtime-mode` | — |
 | `detectRuntimeMode()` | `core/runtime-mode` | — |
 | `initRuntimeBadge()` | `core/runtime-mode` | bootstrap 早期调用：立即渲染上次持久化的模式，刷新后不丢失 |
@@ -288,7 +285,6 @@
 | `SCENE_EVENTS()` | `core/ui-constants` | 场景级事件字面量。使用此枚举替代散落的 'scene:xxx' 字面量。 |
 | `SLIDER_QUARTER_LARGE_STEP()` | `core/ui-constants` | 左区大幅减步进：全范围 15% |
 | `SLIDER_QUARTER_SMALL_STEP()` | `core/ui-constants` | 中左/中右微调步进：全范围 5% |
-| `SceneEventKey()` | `core/ui-constants` | SCENE_EVENTS 各取值的联合类型 |
 | `createFocusTrap()` | `core/ui-focus-trap` | — |
 | `FullscreenOverlayHandle()` | `core/ui-fullscreen-overlay` | — |
 | `FullscreenOverlayOptions()` | `core/ui-fullscreen-overlay` | — |
@@ -551,7 +547,6 @@
 | `StopProxy()` | `core/wails-bindings` | — |
 | `UpdateCustomSoftware()` | `core/wails-bindings` | — |
 | `readFileBytes()` | `core/wails-bindings` | 读取文件为 Uint8Array（go：自动解码 Wails v3 base64；browser：IndexedDB/FSA 直读）。 |
-| `getWindStrength()` | `core/wind-utils` | 返回当前风速标量（windEnabled=false 返回 0）。 |
 | `getWindVector()` | `core/wind-utils` | 返回当前风矢量（方向 × 速度），windEnabled=false 时返回零向量。 |
 | `isWindActive()` | `core/wind-utils` | 风向是否生效（快捷判空，避免 Vector3.Zero() 比较开销）。 |
 
@@ -559,7 +554,6 @@
 
 | 符号 | 文件 | 说明 |
 |------|------|------|
-| `ARCameraState()` | `scene/ar/ar-camera` | — |
 | `CameraFacing()` | `scene/ar/ar-camera` | — |
 | `captureARScreenshot()` | `scene/ar/ar-camera` | 截取 AR 合成画面（视频底 + 3D 模型层）。 |
 | `getARFacing()` | `scene/ar/ar-camera` | — |
@@ -576,7 +570,6 @@
 | `formatProbeReport()` | `scene/ar/ar-webxr-probe` | 格式化探针结果为人类可读的多行文本（用于 UI 展示或复制到剪贴板）。 |
 | `probeWebXR()` | `scene/ar/ar-webxr-probe` | 执行 WebXR 支持度探针（非侵入式，不请求 session）。 |
 | `probeWebXRFeatures()` | `scene/ar/ar-webxr-probe` | 深度探针：实际创建 immersive-ar session 验证特性可用性。 |
-| `resetProbeCache()` | `scene/ar/ar-webxr-probe` | 清除缓存的探针结果（用于重新探测）。 |
 | `CameraBehavior()` | `scene/camera/camera-state` | ADR-100 轴 B — 运动行为（仅对 orbit/ArcRotate 生效，初版互斥）。双写于 `core/types.ts`。 |
 | `CameraControl()` | `scene/camera/camera-state` | ADR-100 轴 A — 控制方案（相机类 + 输入）。双写于 `core/types.ts`。 |
 | `CameraMode()` | `scene/camera/camera-state` | 新代码请用 {@link CameraControl} × {@link CameraBehavior}。双写于 `core/types.ts`。 |
@@ -717,14 +710,11 @@
 | `disposeClouds()` | `scene/env/env-clouds` | — |
 | `resolveCloudShaderParams()` | `scene/env/env-clouds` | 按质量档派生 shader 注入参数： - high: 200 步主 march + 2 步光照 march + blue-noise jitter - standard: 96 |
 | `_envSys()` | `scene/env/env-context` | — |
-| `clearSceneTickCallbacks()` | `scene/env/env-context` | — |
 | `getPipeline()` | `scene/env/env-context` | — |
 | `getScene()` | `scene/env/env-context` | — |
 | `initEnvImpl()` | `scene/env/env-context` | — |
 | `isInitialized()` | `scene/env/env-context` | — |
-| `registerSceneTickCallback()` | `scene/env/env-context` | — |
 | `resolveStaticAsset()` | `scene/env/env-context` | — |
-| `runSceneTickCallbacks()` | `scene/env/env-context` | — |
 | `clearAllEnvCallbacks()` | `scene/env/env-dispatcher` | 清空所有已注册的 env 回调（场景销毁 / HMR 重入时兜底清理）。 |
 | `clearSceneTickCallbacks()` | `scene/env/env-dispatcher` | 清空所有场景 tick 回调（场景销毁 / HMR 重入时清理）。 |
 | `dispatchEnvChange()` | `scene/env/env-dispatcher` | setEnvState 调用此函数分发变化。 |
@@ -753,35 +743,21 @@
 | `applySky()` | `scene/env/env-impl` | — |
 | `clearGroundRipples()` | `scene/env/env-impl` | — |
 | `clearRipples()` | `scene/env/env-impl` | — |
-| `clearSceneTickCallbacks()` | `scene/env/env-impl` | — |
 | `createClouds()` | `scene/env/env-impl` | — |
-| `createMirror()` | `scene/env/env-impl` | — |
 | `createParticleEmitter()` | `scene/env/env-impl` | — |
 | `createWater()` | `scene/env/env-impl` | — |
 | `disposeClouds()` | `scene/env/env-impl` | — |
 | `disposeEnvUpdateObserver()` | `scene/env/env-impl` | — |
-| `disposeGround()` | `scene/env/env-impl` | — |
-| `disposeMirror()` | `scene/env/env-impl` | — |
 | `disposeParticles()` | `scene/env/env-impl` | — |
-| `disposeSky()` | `scene/env/env-impl` | — |
 | `disposeWater()` | `scene/env/env-impl` | — |
 | `ensureEnvUpdateObserver()` | `scene/env/env-impl` | — |
 | `getGroundHeightAt()` | `scene/env/env-impl` | — |
-| `getGroundRippleTexture()` | `scene/env/env-impl` | — |
-| `getPipeline()` | `scene/env/env-impl` | — |
 | `getScene()` | `scene/env/env-impl` | — |
 | `initEnvImpl()` | `scene/env/env-impl` | — |
-| `isInitialized()` | `scene/env/env-impl` | — |
-| `isMirrorActive()` | `scene/env/env-impl` | — |
-| `isUnderwaterActive()` | `scene/env/env-impl` | — |
 | `refreshWaterRenderList()` | `scene/env/env-impl` | — |
 | `registerSceneTickCallback()` | `scene/env/env-impl` | — |
-| `resolveStaticAsset()` | `scene/env/env-impl` | — |
-| `runSceneTickCallbacks()` | `scene/env/env-impl` | — |
 | `setOnGroundChanged()` | `scene/env/env-impl` | — |
 | `setOnTerrainReady()` | `scene/env/env-impl` | — |
-| `updateGroundRipples()` | `scene/env/env-impl` | — |
-| `updateMirrorClearColor()` | `scene/env/env-impl` | — |
 | `updateParticleTexture()` | `scene/env/env-impl` | — |
 | `updateParticleWind()` | `scene/env/env-impl` | — |
 | `updateWaterAnimSpeed()` | `scene/env/env-impl` | — |
@@ -932,7 +908,6 @@
 | `_catState()` | `scene/manager/material` | 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 |
 | `_matEnabled()` | `scene/manager/material` | 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 |
 | `_matState()` | `scene/manager/material` | 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 |
-| `_materialStateManager()` | `scene/manager/material` | 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 |
 | `applyMatState()` | `scene/manager/material` | — |
 | `applyUnlitFallback()` | `scene/manager/material` | 光照兜底预设：让模型呈现"伪 unlit"状态，不依赖方向光即可正常显示。 |
 | `disposeModelMaterialState()` | `scene/manager/material` | 清理指定模型的全部材质状态（分类 + 逐材质 + 启用标记）。 |
@@ -941,11 +916,9 @@
 | `getMatDetailList()` | `scene/manager/material` | — |
 | `getMatParams()` | `scene/manager/material` | — |
 | `getMatState()` | `scene/manager/material` | — |
-| `getMaterialMeshes()` | `scene/manager/material` | 供 UI 层（model-material.ts）按 id 拿 meshes，不依赖 modelRegistry。 |
 | `isMatCategoryAllEnabled()` | `scene/manager/material` | 检查指定分类的全部材质是否都已启用。 |
 | `isMatEnabled()` | `scene/manager/material` | — |
 | `registerMaterialTarget()` | `scene/manager/material` | 注册外部 meshes（如 prop）到材质系统，使其可用 id 调用所有材质 API。 |
-| `resetAllMatParams()` | `scene/manager/material` | 重置所有逐材质覆盖（per-material），保留分类调整（皮肤/头发等）。 |
 | `resetMatCatParams()` | `scene/manager/material` | — |
 | `resetPerMaterialParams()` | `scene/manager/material` | 重置所有逐材质覆盖（per-material），保留分类调整（皮肤/头发等）。 |
 | `resetSingleMatParams()` | `scene/manager/material` | — |
@@ -1004,17 +977,14 @@
 | `ThumbnailSource()` | `scene/manager/thumbnail-capture` | — |
 | `renderInstanceThumbnail()` | `scene/manager/thumbnail-capture` | 用离屏 RenderTargetTexture 渲染指定模型实例的「当前骨骼姿态」并保存为缩略图。 |
 | `renderPropThumbnail()` | `scene/manager/thumbnail-capture` | 道具缩略图捕获（补闭环）：复用同一离屏 RT 渲染逻辑。 |
-| `thumbDataUrl()` | `scene/manager/thumbnail-capture` | — |
 | `ThumbnailBaseKeyInput()` | `scene/manager/thumbnail-key` | — |
 | `ThumbnailKeyInput()` | `scene/manager/thumbnail-key` | — |
 | `buildThumbnailKey()` | `scene/manager/thumbnail-key` | 唯一缓存 key 构造：`<baseKey>::<resolution>::<aspect>`。 |
 | `libraryModelBaseKey()` | `scene/manager/thumbnail-key` | 由 LibraryModel 推导 baseKey（读侧专用适配器）。 |
 | `thumbnailBaseKey()` | `scene/manager/thumbnail-key` | 由库引用路径 + 内部路径推导 baseKey。 |
-| `thumbnailKeyForKind()` | `scene/manager/thumbnail-key` | 便捷：由 kind/type 字符串直接构造完整 key（isStage 判定仍走统一 isStageLike）。 |
 | `BoneMapPreset()` | `scene/motion/animation-retargeter` | — |
 | `RetargetPlayState()` | `scene/motion/animation-retargeter` | 当前活跃的 retarget 动画状态（用于场景序列化）。 |
 | `RetargetResult()` | `scene/motion/animation-retargeter` | — |
-| `getBoneMapPresets()` | `scene/motion/animation-retargeter` | 获取可用骨骼映射预设列表。 |
 | `getRetargetPlayState()` | `scene/motion/animation-retargeter` | 获取当前活跃的 retarget 动画播放状态，用于场景序列化。 |
 | `loadAndRetargetAnimation()` | `scene/motion/animation-retargeter` | 从外部动画文件加载并重定向到 MMD 骨骼。 |
 | `playRetargetedAnimation()` | `scene/motion/animation-retargeter` | 播放重定向后的动画（additive 模式，叠加在 VMD 之上）。 |
@@ -1082,7 +1052,6 @@
 | `resolveCompatibility()` | `scene/motion/motion-intent` | 兼容性解析：判断指定模型的骨骼列表是否兼容某 VMD 动作。 |
 | `setBroadcastCallback()` | `scene/motion/motion-intent` | 测试用例间需 setBroadcastCallback(null) 隔离回调，而 initMotionIntent 的幂等守卫不允许置空。 |
 | `setDefaultMotion()` | `scene/motion/motion-intent` | 设置默认动作 id。 |
-| `updateSceneMotion()` | `scene/motion/motion-intent` | 更新场景库中某个主动作的数据（如改其 vmdLayers）。 |
 | `BODY_POSTURE_DEF()` | `scene/motion/motion-modules/body-posture` | 身体姿态模块注册定义（供 registry BUILTIN_MODULE_DEFS 批量注册） |
 | `createBodyPostureModule()` | `scene/motion/motion-modules/body-posture` | 创建身体姿态模块实例 |
 | `LEFT_FOOT_DEF()` | `scene/motion/motion-modules/foot-modules` | — |
@@ -1092,7 +1061,6 @@
 | `ModuleBaseMethods()` | `scene/motion/motion-modules/module-base` | createModuleBase 返回的方法子集（与 MotionOverrideModule 对应方法签名一致） |
 | `ModuleBaseOverrides()` | `scene/motion/motion-modules/module-base` | 模块基础行为覆盖 |
 | `ModuleShellConfig()` | `scene/motion/motion-modules/module-base` | [doc:adr-146 P3 主题12] 模块实例外壳 — 消除 6 个工厂末尾重复的 `id/meta/priority/managedBones/buildSchema + |
-| `applyBoneOverrideIK()` | `scene/motion/motion-modules/module-base` | — |
 | `applyModuleSnapshot()` | `scene/motion/motion-modules/module-base` | [doc:adr-125] 将快照应用到指定模型的所有模块。 |
 | `createFrameHookManager()` | `scene/motion/motion-modules/module-base` | [doc:adr-116 P3] 帧钩子管理器 — 消除 sway/riding 的 _xxxFrameHooks Map 重复模式。 |
 | `createModuleBase()` | `scene/motion/motion-modules/module-base` | 创建模块通用方法，减少 7 个模块间 ~105 行重复 boilerplate。 |
@@ -1113,11 +1081,9 @@
 | `computeFootPitch()` | `scene/motion/motion-modules/motion-math` | 单足俯仰角（度）。 |
 | `computePedalPhase()` | `scene/motion/motion-modules/motion-math` | 踏板相位（度，0-360 自然循环）。 |
 | `computeSwayYaw()` | `scene/motion/motion-modules/motion-math` | 摇摆正弦 yaw（度）。 |
-| `MotionPresetFile()` | `scene/motion/motion-modules/preset-types` | 序列化格式（含版本号，用于文件/库存储） |
 | `applyMotionPreset()` | `scene/motion/motion-modules/preset-types` | 应用预设到指定模型。 |
 | `generatePresetId()` | `scene/motion/motion-modules/preset-types` | — |
 | `modulesToPresetMap()` | `scene/motion/motion-modules/preset-types` | MotionModuleState[] → MotionPreset['modules'] |
-| `presetMapToModules()` | `scene/motion/motion-modules/preset-types` | MotionPreset['modules'] → MotionModuleState[] |
 | `BoneConflict()` | `scene/motion/motion-modules/registry` | — |
 | `applyMotionModulesToModel()` | `scene/motion/motion-modules/registry` | [doc:adr-129] 将场景级模块配置应用到指定模型 用于动作广播时应用配置到所有 inherit 模型 |
 | `claimBones()` | `scene/motion/motion-modules/registry` | 为模块声明对一组骨骼的所有权（bake 前调用）。 |
@@ -1132,7 +1098,6 @@
 | `getOwnedBones()` | `scene/motion/motion-modules/registry` | 获取模块当前 owned 的骨骼（disable 时用于精确清除） |
 | `getRegisteredModules()` | `scene/motion/motion-modules/registry` | 获取所有已注册模块的元信息（按优先级排序） |
 | `initMotionModules()` | `scene/motion/motion-modules/registry` | 注册所有内置模块（幂等，重复调用安全） |
-| `isBoneOwnedByOther()` | `scene/motion/motion-modules/registry` | [doc:adr-116 P3] 判定指定骨骼是否被「其他模块」占用（无副作用、不 warn）。 |
 | `registerModule()` | `scene/motion/motion-modules/registry` | 注册一个动作覆盖模块 |
 | `releaseOwnedBones()` | `scene/motion/motion-modules/registry` | 释放模块的 ownedBones 记录并级联清引擎槽（由 store.releaseBones 负责清除） |
 | `setModuleEnabled()` | `scene/motion/motion-modules/registry` | 设置模块启用/禁用状态到场景动作意图 |
@@ -1175,7 +1140,6 @@
 | `_applyPerceptionForContext()` | `scene/motion/perception-observer` | 对单个 context 应用完整感知管线 |
 | `_getActiveContextsByTier()` | `scene/motion/perception-observer` | [doc:adr-164] 根据 tier 返回应激活的 context 列表 |
 | `getMediumMaxOthers()` | `scene/motion/perception-observer` | 获取 medium 档非焦点模型上限 |
-| `setMediumMaxOthers()` | `scene/motion/perception-observer` | 设置 medium 档非焦点模型上限（最小 1） |
 | `BalanceSwayState()` | `scene/motion/perception-shared` | 重心微动增量状态（供 PerceptionContext.lastOffsets.balance 使用） |
 | `DEFAULT_PERCEPTION_STATE()` | `scene/motion/perception-shared` | — |
 | `Emotion()` | `scene/motion/perception-shared` | 情绪类型（微表情驱动） |
@@ -1192,7 +1156,6 @@
 | `_gazeAlpha()` | `scene/motion/perception-shared` | 计算 gaze Slerp alpha（基于 deltaTime 的指数衰减，帧率无关） |
 | `_gazeLog()` | `scene/motion/perception-shared` | — |
 | `_incGazeLogFrame()` | `scene/motion/perception-shared` | — |
-| `_isWasmRuntime()` | `scene/motion/perception-shared` | — |
 | `_m()` | `scene/motion/perception-shared` | — |
 | `_propagateChildrenWasm()` | `scene/motion/perception-shared` | 递归传播子骨骼 worldMatrix |
 | `_q()` | `scene/motion/perception-shared` | — |
@@ -1287,13 +1250,10 @@
 | `_filterVmdBones()` | `scene/motion/vmd-layers` | 过滤 VMD 二进制数据，只保留指定骨骼的关键帧。 |
 | `addGazeLayer()` | `scene/motion/vmd-layers` | 添加一个视线追踪（gaze）图层。 |
 | `addVmdLayer()` | `scene/motion/vmd-layers` | 添加一个 VMD 图层到模型。 |
-| `addVmdLayerFromPath()` | `scene/motion/vmd-layers` | 从路径加载并添加 VMD 图层 |
 | `addVmdLayersFromPaths()` | `scene/motion/vmd-layers` | 批量添加 VMD 图层（场景恢复用）。 |
-| `clearVmdLayers()` | `scene/motion/vmd-layers` | 清除所有图层 |
 | `getVmdLayers()` | `scene/motion/vmd-layers` | 获取模型的图层列表 |
 | `rebuildCompositeAnimation()` | `scene/motion/vmd-layers` | 触发复合动画重建（程序化/外部修改 vmdData/vmdLayers 后调用）。 |
 | `removeVmdLayer()` | `scene/motion/vmd-layers` | 移除一个 VMD 图层 |
-| `replaceVmdLayerVmd()` | `scene/motion/vmd-layers` | 替换指定图层的 VMD（保留层 id / 权重 / 启用 / boneFilter，仅换动画数据）。 |
 | `setVmdLayerWeight()` | `scene/motion/vmd-layers` | 设置图层权重 |
 | `toggleVmdLayer()` | `scene/motion/vmd-layers` | 切换图层启用/禁用 |
 | `loadCameraVmdFromPath()` | `scene/motion/vmd-loader` | — |
@@ -1348,7 +1308,6 @@
 | `updateLightConeUniforms()` | `scene/render/light-cone` | 更新光锥的 shader uniforms（颜色/亮度/柔和度） |
 | `DEFAULT_PERSONAL_LIGHT()` | `scene/render/lighting-follow` | — |
 | `PersonalLightSettings()` | `scene/render/lighting-follow` | — |
-| `SerializedPersonalLight()` | `scene/render/lighting-follow` | — |
 | `attachPersonalLight()` | `scene/render/lighting-follow` | — |
 | `detachPersonalLight()` | `scene/render/lighting-follow` | — |
 | `disposeAllPersonalLights()` | `scene/render/lighting-follow` | — |
@@ -1544,8 +1503,8 @@
 | `propRegistry()` | `scene/scene` | — |
 | `pushUndoSnapshot()` | `scene/scene` | — |
 | `registerMaterialTarget()` | `scene/scene` | — |
-| `resetAllMatParams()` | `scene/scene` | — |
 | `resetMatCatParams()` | `scene/scene` | — |
+| `resetPerMaterialParams()` | `scene/scene` | — |
 | `resetSingleMatParams()` | `scene/scene` | — |
 | `resolveFileUrl()` | `scene/scene` | — |
 | `restoreUndoSnapshot()` | `scene/scene` | — |
@@ -1588,7 +1547,6 @@
 | `setGizmoSnapDistance()` | `scene/transform/transform-adapter` | — |
 | `isDragModeEnabled()` | `scene/transform/transform-mode` | — |
 | `setDragModeEnabled()` | `scene/transform/transform-mode` | — |
-| `toggleDragMode()` | `scene/transform/transform-mode` | — |
 | `TransformPickResult()` | `scene/transform/transform-pick` | — |
 | `getTransformMetadata()` | `scene/transform/transform-pick` | — |
 | `pickTransformTarget()` | `scene/transform/transform-pick` | — |
@@ -1676,11 +1634,8 @@
 | `selectResourceRoot()` | `menus/library-setup` | — |
 | `switchStorageMode()` | `menus/library-setup` | — |
 | `applyModelPreset()` | `menus/library` | — |
-| `hideMotionPopup()` | `menus/library` | — |
 | `initLibrary()` | `menus/library` | — |
 | `refreshLibrary()` | `menus/library` | — |
-| `reloadConfig()` | `menus/library` | — |
-| `rescanAndSync()` | `menus/library` | — |
 | `serializeModelPreset()` | `menus/library` | — |
 | `showModelPopup()` | `menus/library` | — |
 | `showMotionPopup()` | `menus/library` | — |
@@ -1710,7 +1665,6 @@
 | `buildOpenWithLevel()` | `menus/model-detail` | — |
 | `buildPersonalLightLevel()` | `menus/model-detail` | — |
 | `buildMatRootLevel()` | `menus/model-material` | — |
-| `buildPerMatLevel()` | `menus/model-material` | — |
 | `ModelPresetEntry()` | `menus/model-preset` | — |
 | `ModelPresetFile()` | `menus/model-preset` | — |
 | `applyModelPreset()` | `menus/model-preset` | — |
@@ -1898,7 +1852,6 @@
 | `SOFTWARE_DETAIL_PREFIX()` | `menus/settings-targets` | 动态 target 前缀 —— 用于 `settings:software-detail:<path>` 模式 |
 | `SettingsActionTarget()` | `menus/settings-targets` | 所有动作 target 的联合类型 |
 | `SettingsFolderTarget()` | `menus/settings-targets` | 所有文件夹 target 的联合类型 |
-| `SettingsTarget()` | `menus/settings-targets` | 所有（静态）settings target 的联合类型 |
 | `generateTextColors()` | `menus/settings` | — |
 | `getSettingsMenu()` | `menus/settings` | — |
 | `preloadAutoImportState()` | `menus/settings` | — |
@@ -1910,7 +1863,6 @@
 
 | 符号 | 文件 | 说明 |
 |------|------|------|
-| `addToPlaylist()` | `outfit/audio` | 追加到播放列表末尾。 |
 | `applyGain()` | `outfit/audio` | — |
 | `attachBeatDetector()` | `outfit/audio` | — |
 | `clearAudio()` | `outfit/audio` | — |
@@ -1920,8 +1872,6 @@
 | `getAudioPath()` | `outfit/audio` | — |
 | `getCurrentTime()` | `outfit/audio` | — |
 | `getDuration()` | `outfit/audio` | — |
-| `getPlaylist()` | `outfit/audio` | 获取当前播放列表。 |
-| `getPlaylistIndex()` | `outfit/audio` | 获取当前播放列表索引（-1 = 无）。 |
 | `getRepeatModeStr()` | `outfit/audio` | 获取当前重复模式。 |
 | `getStreamPlayer()` | `outfit/audio` | 暴露内部 StreamAudioPlayer 供 scene.ts 调用 MmdRuntime.setAudioPlayer()。 |
 | `getVolume()` | `outfit/audio` | — |
@@ -1931,11 +1881,9 @@
 | `notifyBeatDetectorReset()` | `outfit/audio` | — |
 | `pauseAudio()` | `outfit/audio` | — |
 | `playAudio()` | `outfit/audio` | — |
-| `prevTrack()` | `outfit/audio` | 切换到上一曲。 |
 | `resumeAudio()` | `outfit/audio` | — |
 | `seekAudio()` | `outfit/audio` | — |
 | `setAudioOffset()` | `outfit/audio` | — |
-| `setPlaylist()` | `outfit/audio` | 设置播放列表（替换当前列表，重置索引）。 |
 | `setRepeatMode()` | `outfit/audio` | 设置重复模式（持久化）。 |
 | `setVolume()` | `outfit/audio` | — |
 | `stopAudio()` | `outfit/audio` | — |
@@ -2011,12 +1959,7 @@
 | `genShyMorph()` | `motion-algos/proc-motion-autodance-emotion` | 生成害羞 morph（仅当存在时） |
 | `generateEmotionMorphs()` | `motion-algos/proc-motion-autodance-emotion` | 生成全部情绪 morph 帧 |
 | `scoreMorph()` | `motion-algos/proc-motion-autodance-emotion` | 计算 morph 名称对一组关键词的匹配得分 - 含关键词 +10 分（大小写不敏感） - 含黑名单模式 -10 分 ⚠️ P3: 使用字符串包含匹配精度较低，建议后续用正则或语义 |
-| `EMOTION_CANDIDATES()` | `motion-algos/proc-motion-autodance` | — |
-| `buildTrigCache()` | `motion-algos/proc-motion-autodance` | — |
-| `findBestEmotionMorphs()` | `motion-algos/proc-motion-autodance` | — |
 | `generateAutoDanceVmd()` | `motion-algos/proc-motion-autodance` | 生成 AutoDance VMD |
-| `resolveBones()` | `motion-algos/proc-motion-autodance` | — |
-| `scoreMorph()` | `motion-algos/proc-motion-autodance` | — |
 | `generateIdleVmd()` | `motion-algos/proc-motion-idle` | — |
 | `BONE_ALLPARENT_CANDIDATES()` | `motion-algos/proc-motion-shared` | — |
 | `BONE_ARM_IK_L_CANDIDATES()` | `motion-algos/proc-motion-shared` | — |
@@ -2063,7 +2006,6 @@
 | `shutdownVmdEvaluator()` | `motion-algos/vmd-evaluator` | 释放共享 Scene 资源。 |
 | `BONE_FRAME_SIZE()` | `motion-algos/vmd-writer` | — |
 | `BoneKeyFrame()` | `motion-algos/vmd-writer` | — |
-| `INTERP_EASE_IN()` | `motion-algos/vmd-writer` | — |
 | `INTERP_EASE_IN_OUT()` | `motion-algos/vmd-writer` | — |
 | `INTERP_EASE_OUT()` | `motion-algos/vmd-writer` | — |
 | `INTERP_LINEAR()` | `motion-algos/vmd-writer` | — |
@@ -2099,10 +2041,9 @@
 | `_getBundles()` | `physics/wind-physics` | 从 PhysicsRuntimeImpl 获取所有 RigidBodyBundle。 |
 | `disposeWindPhysics()` | `physics/wind-physics` | 销毁风力物理注入。 |
 | `initWindPhysics()` | `physics/wind-physics` | 初始化风力物理注入。 |
-| `isWindPhysicsActive()` | `physics/wind-physics` | 当前运行时是否实际启用了风力物理（WASM Bullet）。 |
 | `retryWindPhysicsSubscription()` | `physics/wind-physics` | [adr-104] 模型加载成功后由 model-loader 显式调用，重试订阅 physics impl （此时 physics impl 已就绪）。替代原 monkey-pa |
 
 ---
 
-> 共 251 个文件，2070 个导出符号。
+> 共 251 个文件，2011 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。

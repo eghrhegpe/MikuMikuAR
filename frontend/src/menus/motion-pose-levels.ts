@@ -134,7 +134,9 @@ function buildPoseStudioSchema(): MenuNode[] {
                                     mmdRuntime.pauseAnimation();
                                     setIsPlaying(false);
                                 }
-                                showInfoToast(t('motion.poseStudio.poseApplied', { pose: pt.label }));
+                                showInfoToast(
+                                    t('motion.poseStudio.poseApplied', { pose: pt.label })
+                                );
                             } catch (err) {
                                 logWarn('pose', 'apply preset failed:', err);
                                 feedbackStatus('motion.poseStudio.poseFailed', undefined, false);
@@ -201,7 +203,9 @@ function buildPoseStudioSchema(): MenuNode[] {
                             false,
                             () => {
                                 applyCameraPreset(preset);
-                                showInfoToast(t('motion.poseStudio.cameraApplied', { name: preset.name }));
+                                showInfoToast(
+                                    t('motion.poseStudio.cameraApplied', { name: preset.name })
+                                );
                                 menu?.reRender();
                             },
                             { title: preset.description }
