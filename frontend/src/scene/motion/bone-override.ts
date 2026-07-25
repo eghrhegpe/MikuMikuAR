@@ -6,7 +6,7 @@
 import { Quaternion, Matrix, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 import type { MmdRuntimeBoneExtended } from '@/core/types';
-import { clamp01 } from '@/core/utils';
+import { clamp01, triggerAutoSave } from '@/core/utils';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { safeDispose } from '@/core/dispose-helpers';
 import { getMotionPipeline } from './motion-pipeline';
@@ -47,6 +47,11 @@ interface _OverrideSlot {
      * - true：weight≥1 时完全替换 oldRotation（不复合父骨传播）
      * - false/undefined：复合模式（默认，oldRotation × slot.quat）
      * 仅 weight≥1 时生效；weight<1 时始终走 Slerp。
+     *
+     * ⚠️ 警告：absolute=true 会丢弃父骨传播的旋转变换，若用于**中间层级骨骼**
+     * （如「上半身」「左肩」），子骨（腕、手）的传播可能产生视觉跳跃。
+     * 建议仅对**叶骨**（如「左腕」「左目」）使用 absolute 模式，中间骨保持
+     * 复合模式（absolute=false/undefined）以确保骨骼链完整。（审计 P2 风险）
      */
     absolute?: boolean;
 }
@@ -600,8 +605,9 @@ function _applyJsOverride(slot: _OverrideSlot, rb: IMmdRuntimeBone): void {
         bone.setPosition(curPos);
     }
 
-    // 更新骨骼世界矩阵
-    (rb as MmdRuntimeBoneExtended).updateWorldMatrix?.(false, false);
+    // 更新骨骼世界矩阵并递归传播子骨骼（与 WASM 路径 _propagateChildrenWasm 等效）
+    // force = true 强制父骨变换传播给子骨，避免 JS 路径骨骼链断裂（审计 P3 fix）
+    (rb as MmdRuntimeBoneExtended).updateWorldMatrix?.(true, false);
 
     // 标记脏标记
     const skeleton = bone.getSkeleton();
@@ -709,6 +715,8 @@ export function stopBoneOverride(): void {
     _jsPathWarned = false;
     _overrideTypeDiagnosed = false;
     _getRuntimeBones = null;
+    // 清空前自动保存当前覆盖配置，避免场景重建时丢失未存盘的覆盖修改（审计 P3 fix）
+    triggerAutoSave();
     clearAllOverrides();
 }
 
