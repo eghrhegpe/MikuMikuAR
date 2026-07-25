@@ -90,3 +90,4 @@ build/android/*.apk
 setting/
 nul
 docs/_writetest.txt
+frontend/report/jscpd-report.json
