@@ -43,6 +43,7 @@ import { NavigatePlazaWindow } from '@bindings/mikumikuar/internal/app/app';
 import { getCachedCapabilities } from '../core/backend';
 import { isAndroidPlatform, openExternalURL } from '../core/platform';
 import { swallowError, escapeHtml } from '../core/utils';
+import { logWarn } from '../core/logger';
 import { safeCallAsync } from '../core/safe-call';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
@@ -188,8 +189,8 @@ export async function loadCachedConfig(): Promise<void> {
                 );
             }
         }
-    } catch {
-        /* ignore */
+    } catch (e) {
+        logWarn('plaza-browser', 'loadCachedConfig failed', e);
     }
 }
 
@@ -246,8 +247,8 @@ export function getCustomPresets(siteId: string): { label: string; q: string }[]
 export function saveCustomPresets(siteId: string, presets: { label: string; q: string }[]): void {
     try {
         localStorage.setItem(`miku.plaza.presets.${siteId}`, JSON.stringify(presets));
-    } catch {
-        /* ignore */
+    } catch (e) {
+        logWarn('plaza-browser', 'saveCustomPresets failed', e);
     }
 }
 
@@ -712,8 +713,8 @@ export function showActionsMenu(site: PlazaSite, anchor: HTMLElement): void {
             if (o.key === 'auto') {
                 try {
                     localStorage.removeItem(GLOBAL_MODE_KEY);
-                } catch {
-                    /* ignore */
+                } catch (e) {
+                    logWarn('plaza-browser', 'removeItem GLOBAL_MODE_KEY failed', e);
                 }
             } else {
                 saveGlobalMode(o.key);

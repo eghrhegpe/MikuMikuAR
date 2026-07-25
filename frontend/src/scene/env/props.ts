@@ -103,7 +103,7 @@ export async function loadProp(filePath: string, signal?: AbortSignal): Promise<
                 try {
                     m.dispose();
                 } catch {
-                    // ignore
+                    /* cleanup, ignore errors */
                 }
             });
             return null;

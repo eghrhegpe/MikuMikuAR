@@ -153,7 +153,7 @@ export function playSfx(buffer: AudioBuffer, opts: PlaySfxOptions = {}): void {
             try {
                 n.disconnect();
             } catch {
-                /* noop */
+                /* cleanup, ignore errors */
             }
         }
     };

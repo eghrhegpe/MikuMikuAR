@@ -174,7 +174,7 @@ function retargetSkeleton(inst: ModelInstance, fbxMeshes: Mesh[]): boolean {
         try {
             fbxSkeleton.dispose();
         } catch {
-            // ignore disposal errors
+            /* cleanup, ignore errors */
         }
     } else {
         logWarn(
@@ -242,7 +242,7 @@ export async function loadOverlay(
                 try {
                     m.dispose();
                 } catch {
-                    /* ignore */
+                    /* cleanup, ignore errors */
                 }
             }
             return { meshes: [], retargetOk: false };
@@ -260,7 +260,7 @@ export async function loadOverlay(
                 try {
                     m.dispose();
                 } catch {
-                    /* ignore */
+                    /* cleanup, ignore errors */
                 }
             }
             throw new Error('outfit-overlay: 骨骼重定向匹配率过低，无法叠加');
@@ -280,7 +280,7 @@ export async function loadOverlay(
             try {
                 m.dispose();
             } catch {
-                /* ignore */
+                /* cleanup, ignore errors */
             }
         }
         return { meshes: [], retargetOk: false };

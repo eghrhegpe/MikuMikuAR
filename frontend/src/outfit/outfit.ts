@@ -143,7 +143,7 @@ export async function loadOutfits(id: string, signal?: AbortSignal): Promise<Out
                 }
             }
         } catch {
-            /* fall through */
+            /* expected failure when outfit file is invalid */
         }
 
         if (effectiveSignal.aborted) {
@@ -570,7 +570,7 @@ async function _applyOutfitVariantCore(id: string, variantName: string): Promise
                         try {
                             m.dispose();
                         } catch {
-                            // ignore
+                            /* cleanup, ignore errors */
                         }
                     }
                     return;

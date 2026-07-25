@@ -193,16 +193,18 @@ export function initLighting(
         }
     });
 
-    // [doc:adr-168] 个人灯 tick：骨骼动画求值后再更新灯位置，避免延迟一帧
+    // [doc:adr-168] 个人灯 tick：onBeforeRender 而非 onAfterAnimations，
+    // 因为 babylon-mmd 的骨骼 worldMatrix 是在 onBeforeRenderObservable 中更新的，
+    // 而 onAfterAnimationsObservable 在此之『前』触发，读到的 worldMatrix 是上一帧旧值。
     lightingState.personalLightTickHandle = observe(
-        lightingState.scene.onAfterAnimationsObservable,
+        lightingState.scene.onBeforeRenderObservable,
         tickPersonalLights
     );
 
     // [doc:adr-168] 舞台灯追光 tick：更新绑定了 followTarget 的舞台灯
     // P1-fix: 保存句柄，disposeLighting 时显式释放（原 observe 返回值被丢弃导致泄漏）
     lightingState.stageFollowTickHandle = observe(
-        lightingState.scene.onAfterAnimationsObservable,
+        lightingState.scene.onBeforeRenderObservable,
         tickStageLightFollow
     );
 }

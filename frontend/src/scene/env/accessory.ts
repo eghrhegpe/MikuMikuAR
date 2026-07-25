@@ -133,7 +133,7 @@ export function reattachAllAccessories(): void {
             try {
                 target.detachFromBone();
             } catch {
-                /* ignore */
+                /* cleanup, ignore errors */
             }
 
             attachPropToBone(

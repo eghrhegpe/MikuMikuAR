@@ -203,7 +203,7 @@ async function init(): Promise<void> {
         if (uiState.autoUpdateEnabled) {
             safeCallAsync('init', '', () => CheckForUpdate()).then((r) => {
                 if (r && r.available && r.url) {
-                    showUpdateToast(r.latest, r.url);
+                    showUpdateToast(r.latest, r.url, r.downloadUrl || undefined);
                 }
             });
         }
@@ -453,6 +453,7 @@ declare global {
             exitApp?: () => void;
             setKeepAwake?: (on: boolean) => void;
             setScreenOrientation?: (mode: string) => void;
+            installApk?: (path: string) => void;
         };
     }
 }

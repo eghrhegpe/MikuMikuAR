@@ -1,13 +1,13 @@
 // settings-about.ts — 关于页面（ADR-157 瘦身：仅版本信息 / 链接 / 更新）
 // 设置导入/导出/重置已迁移至 settings-system.ts；快捷键只读副本已删除（可编辑版在操控页）。
 
-import { GetBuildInfo, CheckForUpdate, SetUIAutoUpdate } from '../core/wails-bindings';
+import { GetBuildInfo, CheckForUpdate, SetUIAutoUpdate, DownloadApk } from '../core/wails-bindings';
 import { uiState, setUIState, cardContainer } from '../core/config';
 import { slideRow, addToggleRow, addSectionTitle } from '../core/ui-helpers';
 import { browser } from '../core/runtime-bridge';
 import { showInfoToast } from '../core/toast';
 import { t } from '../core/i18n/t';
-import { openExternalURL } from '../core/platform';
+import { openExternalURL, isAndroidPlatform } from '../core/platform';
 import { renderMenu } from './render-menu';
 import type { PopupLevel } from '../core/config';
 import type { MenuNode } from './menu-schema';
@@ -166,10 +166,43 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                                     : t('settings.about.update.latest', { current: r.current });
                                 if (r.available && r.url) {
                                     updateLink.style.display = 'inline';
-                                    updateLink.onclick = (e) => {
+                                    // [doc:adr-179] Android + direct APK link → "Download & Install"
+                                    const hasDirectInstall = !!r.downloadUrl && isAndroidPlatform();
+                                    updateLink.textContent = hasDirectInstall
+                                        ? t('settings.about.update.downloadInstall')
+                                        : t('settings.about.update.goDownload');
+                                    updateLink.onclick = async (e) => {
                                         e.preventDefault();
-                                        if (!openExternalURL(r.url)) {
-                                            void browser.openURL(r.url);
+                                        if (!hasDirectInstall) {
+                                            if (!openExternalURL(r.url)) {
+                                                void browser.openURL(r.url);
+                                            }
+                                            return;
+                                        }
+                                        // Android: download APK then launch installer
+                                        updateLink.textContent = t('settings.about.update.downloading');
+                                        updateLink.style.pointerEvents = 'none';
+                                        try {
+                                            const result = await DownloadApk();
+                                            if (result && result.success && result.localPath) {
+                                                window.wails?.installApk?.(result.localPath);
+                                                updateLink.textContent = t('settings.about.update.installLaunched');
+                                            } else {
+                                                const errMsg = result?.error || '';
+                                                updateLink.textContent = t('settings.about.update.downloadFailed');
+                                                showInfoToast(errMsg || t('settings.about.update.failed'));
+                                                // Fallback: open release page
+                                                if (!openExternalURL(r.url)) {
+                                                    void browser.openURL(r.url);
+                                                }
+                                            }
+                                        } catch {
+                                            updateLink.textContent = t('settings.about.update.downloadFailed');
+                                            if (!openExternalURL(r.url)) {
+                                                void browser.openURL(r.url);
+                                            }
+                                        } finally {
+                                            updateLink.style.pointerEvents = '';
                                         }
                                     };
                                 }

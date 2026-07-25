@@ -22,7 +22,7 @@ import { updatePlaybackUI, seekFromEvent, focusedMmdModel } from '../scene/scene
 import { freeflyInput } from './freefly-state';
 import { getCameraMode } from '../scene/camera/camera';
 import { t } from './i18n/t';
-import { openExternalURL } from './platform';
+import { openExternalURL, isAndroidPlatform } from './platform';
 import { addDisposableListener } from './dom';
 
 // [adr:audit] 统一收集 app 级事件监听，支持幂等清理（防 HMR 重复绑定）。
@@ -445,7 +445,7 @@ export function buildNavMaps(): void {
 }
 
 // ======== Update Notification ========
-export function showUpdateToast(latest: string, url: string): void {
+export function showUpdateToast(latest: string, url: string, downloadUrl?: string): void {
     const toast = document.getElementById('updateToast');
     if (!toast) {
         return;
@@ -456,9 +456,40 @@ export function showUpdateToast(latest: string, url: string): void {
     }
     const btn = toast.querySelector<HTMLButtonElement>('.toast-import-btn');
     if (btn) {
-        btn.onclick = () => {
-            if (!openExternalURL(url)) {
-                void browser.openURL(url);
+        // [doc:adr-179] Android + direct APK link → download & install
+        const hasDirectInstall = !!downloadUrl && isAndroidPlatform();
+        if (hasDirectInstall) {
+            btn.textContent = t('settings.about.update.downloadInstall');
+        }
+        btn.onclick = async () => {
+            if (!hasDirectInstall) {
+                if (!openExternalURL(url)) {
+                    void browser.openURL(url);
+                }
+            } else {
+                // Download APK and launch installer
+                btn.disabled = true;
+                btn.textContent = t('settings.about.update.downloading');
+                try {
+                    const { DownloadApk } = await import('../core/wails-bindings');
+                    const result = await DownloadApk();
+                    if (result && result.success && result.localPath) {
+                        window.wails?.installApk?.(result.localPath);
+                        btn.textContent = t('settings.about.update.installLaunched');
+                    } else {
+                        btn.textContent = t('settings.about.update.downloadFailed');
+                        if (!openExternalURL(url)) {
+                            void browser.openURL(url);
+                        }
+                    }
+                } catch {
+                    btn.textContent = t('settings.about.update.downloadFailed');
+                    if (!openExternalURL(url)) {
+                        void browser.openURL(url);
+                    }
+                } finally {
+                    btn.disabled = false;
+                }
             }
             toast.classList.remove('visible');
             toast.setAttribute('inert', '');

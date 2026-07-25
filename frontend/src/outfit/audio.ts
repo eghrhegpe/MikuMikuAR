@@ -404,7 +404,7 @@ export function disposeAudio(): void {
         try {
             _fadeGain.disconnect();
         } catch {
-            /* noop */
+            /* cleanup, ignore errors */
         }
         _fadeGain = null;
     }
