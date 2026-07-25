@@ -1,7 +1,7 @@
 {
-  "unusedExports": 12,
+  "unusedExports": 11,
   "unusedTypes": 0,
-  "duplicateExports": 0,
+  "duplicateExports": 1,
   "unusedDevDeps": 0,
   "unlistedDeps": 0,
   "clones": 11,
