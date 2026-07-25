@@ -1784,6 +1784,7 @@ export const zhTW: Record<string, string> = {
     'settings.unloaded': '✓ 已卸載: {name}',
     'status.loop': '循環: {state}',
     'status.error': '錯誤：{message}',
+    'status.done': '✓ 完成',
     'toast.undo': '撤銷',
     // ===== i18n 審計修復 2026-07-13 =====
     'boot.engineReady': '✅ 引擎就緒',
