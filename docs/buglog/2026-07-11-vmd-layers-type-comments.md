@@ -1,3 +1,11 @@
+> **状态**: 🟢 已修复
+>
+> **日期**: 2026-07-11
+> **严重程度**: 🟢 P4
+> **影响范围**: `frontend/src/scene/vmd-loader.ts`, `frontend/src/scene/vmd-layers.ts`, `frontend/src/scene/wasm-layers-blender.ts`
+> **发现方式**: 代码审核（第⑤轮）
+> **修复方案**: 为 5 处双重 cast 添加业务理由注释（VmdLoader dispose / currentAnimation / MmdCompositeAnimation / has() 守卫 / MmdRuntimeBoneExtended）
+
 # 第⑤轮审核 — VMD 加载 + 图层类型安全修复
 
 **日期**: 2026-07-11

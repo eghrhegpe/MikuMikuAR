@@ -1,3 +1,11 @@
+> **状态**: 🟢 已修复
+>
+> **日期**: 2026-07-21
+> **严重程度**: 🟠 P2
+> **影响范围**: `frontend/src/scene/scene-serialize.ts`（`cleanupAndFlushSave`）
+> **发现方式**: 用户反馈
+> **修复方案**: visibilitychange→hidden 仅刷盘存档，disposeScene 移至 beforeunload（commit 36b529b0）
+
 # 切后台回来渲染器冻结：visibilitychange 误 disposeScene
 
 **日期**: 2026-07-21

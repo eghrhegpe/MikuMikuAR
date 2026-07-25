@@ -1,9 +1,12 @@
 # Ctrl+Space 被三个模块同时注册，静默覆盖
 
+> **状态**: 🟢 已修复
+
 **日期**: 2026-07-10
-**严重程度**: P1（功能静默失效，用户无法通过快捷键访问功能）
-**影响范围**: `main.ts` + `scene.ts` + `outfit.ts`
+**严重程度**: 🔴 P1（功能静默失效，用户无法通过快捷键访问功能）
+**影响范围**: `frontend/src/core/main.ts` + `scene.ts` + `outfit.ts`
 **发现方式**: 代码搜索（手动审计）
+**修复方案**: `shortcut-registry.ts` → `ShortcutRegistry` 类，注册时检查冲突，先注册的生效
 
 ---
 

@@ -1,3 +1,11 @@
+> **状态**: 🟢 已修复
+>
+> **日期**: 2026-07-11
+> **严重程度**: 🟢 P4
+> **影响范围**: `frontend/src/scene/perception.ts`, `frontend/src/scene/bone-override.ts`, `frontend/src/scene/wasm-layers-blender.ts`, `frontend/src/core/types.ts`
+> **发现方式**: 代码审核（第⑦轮）
+> **修复方案**: 将 MmdRuntimeBoneExtended 接口从 perception.ts 和 bone-override.ts 提取到 core/types.ts 统一导入
+
 # 第⑦轮审核 — MmdRuntimeBoneExtended 接口去重
 
 **日期**: 2026-07-11

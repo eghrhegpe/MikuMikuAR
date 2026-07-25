@@ -1,3 +1,11 @@
+> **状态**: 🟢 已修复
+>
+> **日期**: 2026-07-16
+> **严重程度**: 🔴 P1
+> **影响范围**: `frontend/src/model-loader.ts`, `frontend/src/library-actions.ts`, `frontend/src/thumbnail-capture.ts`, `frontend/src/ui-resource-panel.ts`
+> **发现方式**: 测试发现
+> **修复方案**: BUG-001 actor 分支补传 inst；BUG-002 replace 分支补传 innerPath 全链路（commit 52ba99a + 6fe8007）
+
 # 缩略图缓存 miss（网格不认图）BUG 追踪
 
 **日期**: 2026-07-16

@@ -1,3 +1,11 @@
+> **状态**: 🟢 已修复
+>
+> **日期**: 2026-07-17
+> **严重程度**: 🔴 P1
+> **影响范围**: `frontend/src/model-loader.ts`, `frontend/src/vmd-loader.ts`, `frontend/src/audio.ts`, `frontend/src/props.ts`, `frontend/src/outfit-overlay.ts`, `frontend/src/vmd-layers.ts`, `internal/app/`
+> **发现方式**: 开发发现（ADR-124 迁移中）
+> **修复方案**: 5 项修复——[]byte base64 解码 / 新增 ListDirRecursive / ImportMeshAsync 语义修正 / 新增 FileExists / resource_root 隔离
+
 # ADR-124 文件系统迁移踩坑记录
 
 **日期**：2026-07-17

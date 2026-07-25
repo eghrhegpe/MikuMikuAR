@@ -1,3 +1,11 @@
+> **状态**: 🟢 已修复
+>
+> **日期**: 2026-07-11
+> **严重程度**: 🔴 P1
+> **影响范围**: `frontend/src/scene/lighting.ts`
+> **发现方式**: 代码审核（第④轮）
+> **修复方案**: 注册 animLoop 到 onBeforeRenderObservable / _tweenValue tick 自调度 / 新增 disposeLighting()
+
 # 第④轮审核 — 光照模块 tween 功能 BUG + 资源管理
 
 **日期**: 2026-07-11

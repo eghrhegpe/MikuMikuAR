@@ -1,3 +1,11 @@
+> **状态**: 🟢 已修复
+>
+> **日期**: 2026-07-16
+> **严重程度**: 🔴 P1
+> **影响范围**: `frontend/src/core/init.ts`, `frontend/src/scene/scene-serialize.ts`, `frontend/src/scene/env/env-bridge.ts`
+> **发现方式**: 用户反馈
+> **修复方案**: 三级修复——抑制级联 auto-save / restoreEnvState 改调 setEnvState / tryRestoreLastScene 覆盖 env 状态
+
 # 环境状态恢复失败：config.json 写入时机不可靠 + 场景文件 env 被 skipEnv 跳过
 
 **日期**: 2026-07-16
