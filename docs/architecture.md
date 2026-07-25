@@ -337,34 +337,40 @@ MikuMikuAR/
 └── frontend/
     └── src/
         ├── core/                     # ★ 基础设施
-        │   ├── main.ts               # 应用入口（事件绑定 + 快捷键 + 初始化）
-        │   ├── config.ts             # barrel re-export → types.ts / state.ts / dom.ts / utils.ts
-        │   ├── types.ts              # 全局类型定义
-        │   ├── state.ts              # UI/环境状态管理
-        │   ├── env-state-schema.ts   # EnvState 单一源 Schema（ADR-137）
-        │   ├── fileservice.ts        # resolveFileUrl 统一文件 URL 解析
-        │   ├── dialog.ts             # 通用对话框
-        │   ├── reactivity.ts         # 简易响应式（signal / effect）
-        │   ├── wails-bindings.ts     # Wails Go binding 类型封装（手维护）
         │   ├── audio-bus.ts          # 音效总线（ADR-088）
+        │   ├── backend/              # Wails 后端适配器（ADR-177 Web/Desktop 统一）
+        │   │   ├── browser-adapter.ts
+        │   │   ├── go-adapter.ts
+        │   │   ├── idb.ts
+        │   │   └── types.ts
+        │   ├── config.ts             # barrel re-export → types.ts / state.ts / dom.ts / utils.ts
+        │   ├── dialog.ts             # 通用对话框
+        │   ├── events.ts             # 应用事件总线
+        │   ├── fileservice.ts        # resolveFileUrl 统一文件 URL 解析
+        │   ├── feedback.ts           # 用户反馈/错误上报
+        │   ├── i18n/                 # 国际化（5 语言：zh-CN/zh-TW/ja/en/ko）
+        │   ├── init.ts               # 初始化编排
+        │   ├── library-state.ts      # 模型库状态（ADR-149 解耦）
         │   ├── load-manager.ts       # 资源加载管理器
+        │   ├── main.ts               # 应用入口（事件绑定 + 快捷键 + 初始化）
+        │   ├── observer-handle.ts    # Observer 安全句柄（ADR-078）
+        │   ├── playback-state.ts     # 播放状态（ADR-149 解耦）
+        │   ├── platform.ts           # 平台判断（桌面 vs Android）
+        │   ├── reactivity.ts         # 简易响应式（signal / effect）
+        │   ├── render-loop.ts        # 渲染循环控制
+        │   ├── runtime-bridge.ts     # 运行时桥接
+        │   ├── safe-call.ts          # 安全调用包装
+        │   ├── scene-state.ts        # 场景状态（ADR-149 解耦）
         │   ├── shortcut-registry.ts  # 快捷键注册表
         │   ├── status-bar.ts         # 状态栏组件
+        │   ├── state.ts              # UI/环境状态管理（旧，逐步迁移至子模块）
         │   ├── toast.ts              # Toast 提示
-        │   ├── platform.ts           # 平台判断（桌面 vs Android）
-        │   ├── icons.ts              # Iconify 图标创建
-        │   ├── icons-bundle.ts       # 本地图标包
-        │   ├── orbit.ts              # 轨道控制
+        │   ├── types.ts              # 全局类型定义
         │   ├── ui-helpers.ts         # DOM 构建工具（slideRow / addToggleRow 等）
-        │   ├── ui-types.ts           # UI 组件类型定义
-        │   ├── ui-rows.ts            # 通用行组件
-        │   ├── ui-slide-row.ts       # 滑块行
-        │   ├── ui-advanced-rows.ts   # 高级行组件
-        │   ├── ui-collapsible.ts     # 可折叠面板
-        │   ├── ui-fullscreen-overlay.ts # 全屏覆盖层
-        │   ├── ui-virtual-grid.ts    # 虚拟网格
         │   ├── ui-resource-panel.ts  # 资源面板（目录记忆，ADR-090）
-        │   └── i18n/                 # 国际化（5 语言：zh-CN/zh-TW/ja/en/ko）
+        │   ├── utils.ts              # 工具函数
+        │   ├── wails-bindings.ts     # Wails Go binding 类型封装
+        │   └── __tests__/            # 单元测试
         │
         ├── scene/                    # 3D 场景（Babylon.js）
         │   ├── scene.ts              # ★ 场景编排入口（ADR-127 破坏性操作撤销）
