@@ -11,6 +11,7 @@ adr:
   - ADR-116
   - ADR-123
   - ADR-126
+  - ADR-186
 symbols:
   - BoneOverrideEntry
   - computeOverride
@@ -19,6 +20,9 @@ symbols:
   - clearBoneOverride
   - getOverride
   - clearAllOverrides
+  - protectIkPosition
+  - FRAME_HOOK_ORDER
+  - registerBoneOverrideFrameHook
 invariants:
   - 被 6 个 motion-modules 子模块引用
   - 与 bone-override-store 协作（所有权仲裁）
@@ -58,3 +62,13 @@ use_when:
 ## 不变量
 - 覆盖数据按模型 ID 隔离。
 - 应用覆盖时不改变骨骼原始值，使用 `setOverride` 机制。
+
+## 帧内时序（ADR-186）
+bone-override stage 内部按以下顺序执行：
+1. `_runFrameHooks()` — 帧钩子按 order 升序写入 overrideMap（foot-modules:0 → body-posture:5 → riding:10 → sway:20 → hand-symmetry:30）
+2. 构建 boneMap + IK 保护快照（`_snapshotProtectedPositions`）
+3. 覆盖循环 — 逐骨 `_applyWasmOverride`，每骨处理后立即 `_propagateChildrenWasm` 传播
+4. IK 保护恢复（`_restoreProtectedPositions`）— 撤销传播对 IK 目标的偏移，保留自身 slot 覆盖
+5. feet-adjustment 层（order=5，独立层）读取修复后的 IK 目标位置
+
+> ⚠️ 传播是「每骨立即」而非「批量」。新增帧钩子若写入会被传播到 IK 目标的骨骼，需调用 `protectIkPosition()` 注册保护。
