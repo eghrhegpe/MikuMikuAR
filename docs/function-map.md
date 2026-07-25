@@ -7,9 +7,9 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 66 | 528 |
+| 核心基础设施 | 68 | 536 |
 | 3D 场景 | 94 | 1035 |
-| 菜单 & UI | 65 | 305 |
+| 菜单 & UI | 65 | 306 |
 | 换装 & 音频 | 3 | 38 |
 | 动作算法 | 17 | 129 |
 | 物理系统 | 2 | 14 |
@@ -86,6 +86,10 @@
 | `registerEventHandlers()` | `core/events` | — |
 | `showUpdateToast()` | `core/events` | — |
 | `toggleOverlay()` | `core/events` | — |
+| `feedbackError()` | `core/feedback` | 错误级 toast 反馈。标题 =「动作 + 目标」，detail 自动从 error 翻译。 |
+| `feedbackInfo()` | `core/feedback` | Info 级 toast 反馈。标题 =「动作 + 目标」。 |
+| `feedbackStatus()` | `core/feedback` | 通用状态栏反馈。auto-detect 成功与否：title 以 ✗ 开头则为失败。 |
+| `withFeedback()` | `core/feedback` | 包装一个 async 操作，自动管理 loading → success → error 状态 + toast。 |
 | `encodeFileRef()` | `core/fileservice` | 编码文件名为查询参数值（base64url 无填充）。 |
 | `normPath()` | `core/fileservice` | 标准化路径：反斜杠 → 正斜杠，去掉尾部斜杠。 |
 | `resolveFileUrl()` | `core/fileservice` | 从文件路径解析出 HTTP URL 及对应服务器信息。 |
@@ -139,6 +143,9 @@
 | `ResourceHandle()` | `core/load-manager` | — |
 | `ResourceKind()` | `core/load-manager` | — |
 | `loadManager()` | `core/load-manager` | 单例。 |
+| `registerLibraryScannedHook()` | `core/load-refresh-registry` | 注册一个「库扫描完成」钩子。 |
+| `registerLoadRefreshHook()` | `core/load-refresh-registry` | 注册一个「模型加载后刷新」钩子。 |
+| `runLoadRefreshHooks()` | `core/load-refresh-registry` | 执行所有已注册的加载后刷新钩子。 |
 | `logError()` | `core/logger` | 统一标签格式的 error 日志（走 console.error）。 |
 | `logInfo()` | `core/logger` | 统一标签格式的 info 日志（走 console.info）。 |
 | `logWarn()` | `core/logger` | 统一标签格式的 warn 日志。message 为空时省略中间空格；err 为空时不传第二个参数。 |
@@ -435,6 +442,7 @@
 | `waitForFrame()` | `core/utils` | Promise 包装的等待下一帧。 |
 | `withLoadingIndicator()` | `core/utils` | 加载指示器包裹器：显示 loading 遮罩 → 执行 fn → `finally` 隐藏。 |
 | `withLoadingStatus()` | `core/utils` | 包装一个异步操作，自动管理 loading → success → error 三态状态栏。 |
+| `withLoadingStatusTargeted()` | `core/utils` | 包装异步操作并附带目标名（target-aware 版本）。 |
 | `AddCustomSoftware()` | `core/wails-bindings` | — |
 | `AddRecentModel()` | `core/wails-bindings` | — |
 | `AddTag()` | `core/wails-bindings` | — |
@@ -1821,6 +1829,7 @@
 | `PresetListViewerConfig()` | `menus/preset-list-viewer` | — |
 | `buildPresetListLevel()` | `menus/preset-list-viewer` | 构建完整 PopupLevel（适用于纯预设列表场景，如模型预设） |
 | `presetListContent()` | `menus/preset-list-viewer` | 渲染预设列表内容到现有 container 中。用于混合内容的 PopupLevel（场景预设） |
+| `buildSchemaLevel()` | `menus/render-menu` | [doc:P6] 构建一个含增量 i18n 刷新的 schema 层级。 |
 | `renderMenu()` | `menus/render-menu` | 渲染一个 MenuNode 树到 container 中。返回 dispose 函数，调用时级联释放所有 renderCustom 资源 |
 | `ResourceHandle()` | `menus/resource-detail-helpers` | — |
 | `buildBoneAttachCard()` | `menus/resource-detail-helpers` | 骨骼挂载卡片：将道具挂载到指定模型骨骼上，支持偏移/旋转微调 仅 prop 类型有效；actor/stage/light 返回空。 |
@@ -2095,5 +2104,5 @@
 
 ---
 
-> 共 249 个文件，2061 个导出符号。
+> 共 251 个文件，2070 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。
