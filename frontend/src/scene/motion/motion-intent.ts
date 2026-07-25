@@ -108,7 +108,7 @@ export function addSceneMotion(intent: SceneMotionIntent): string {
 
 /**
  * 移除场景库中的某个主动作。
- * - 若移除的是默认动作，自动选列表第一项为新默认（无则 null）
+ * - 若移除的是当前默认动作：_activeMotionId 直接置 null（不再回退到列表第一项），全部 inherit 模型随之变「无动作」。
  * - 引用该 id 的角色由调用方（broadcastMotion）处理回退（置 sceneMotionId=undefined）
  */
 export function removeSceneMotion(id: string): void {

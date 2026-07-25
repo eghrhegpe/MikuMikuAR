@@ -18,6 +18,61 @@ import { fileURLToPath } from 'node:url';
 import { walkSourceFiles, getExportedSymbols } from './_lib/source-graph.mjs';
 import { parseArgs } from './_lib/parse-args.mjs';
 
+// ── JSDoc 摘要提取（零侵入增强，不碰共用的 getExportedSymbols） ──
+function escapeRe(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * 提取紧邻某导出符号「本文件内定义行」上方 JSDoc 块的首句摘要。
+ * 仅对本文件定义型符号有效（export function/const/class/... <sym>）；
+ * 对 export { a, b } 聚合型（定义在他处）自然返回 ''，说明列留 —。
+ */
+function extractDocSummary(filePath, sym) {
+  let text;
+  try {
+    text = fs.readFileSync(filePath, 'utf8');
+  } catch {
+    return '';
+  }
+  const lines = text.split('\n');
+  const defRe = new RegExp(
+    '^(?:export\\s+(?:default\\s+)?(?:async\\s+)?)?' +
+    '(?:function|const|let|class|interface|type|enum)\\s+' + escapeRe(sym) + '\\b'
+  );
+  let defIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (defRe.test(lines[i])) { defIdx = i; break; }
+  }
+  if (defIdx <= 0) return '';
+
+  let i = defIdx - 1;
+  while (i >= 0 && /^\s*(?:\/\/.*)?$/.test(lines[i])) i--;
+  if (i < 0) return '';
+
+  const docLines = [];
+  if (/\*\/\s*$/.test(lines[i])) {
+    // 紧贴 export 的是多行 JSDoc 的结束行 */：向上收集到 /** 或 /*
+    while (i >= 0) {
+      const raw = lines[i];
+      const cleaned = raw.replace(/^\s*\/?\*+\/?\s?/, '').trim();
+      if (cleaned.startsWith('@')) { i--; continue; }
+      if (cleaned) docLines.unshift(cleaned);
+      if (/^\s*\/\*\*/.test(raw) || /^\s*\/\*/.test(raw)) break;
+      i--;
+    }
+  } else if (/^\s*\/\*\*/.test(lines[i]) || /^\s*\/\*/.test(lines[i])) {
+    // 单行 JSDoc：/** ... */ 与 export 同行或紧邻上一行
+    const cleaned = lines[i].replace(/^\s*\/?\*+\/?\s?/, '').trim();
+    if (!cleaned.startsWith('@') && cleaned) docLines.push(cleaned);
+  }
+  if (docLines.length === 0) return '';
+
+  const joined = docLines.join(' ');
+  const firstSentence = joined.split(/(?<=[。.])\s/)[0] || joined;
+  return firstSentence.slice(0, 90).trim();
+}
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const SRC_DIR = path.join(ROOT, 'frontend', 'src');
@@ -32,13 +87,13 @@ function groupByModule(entries) {
   // 将文件按顶层目录分组
   const groups = new Map(); // groupName → { files: [{rel, syms}], description: '' }
 
-  for (const { rel, syms } of entries) {
+  for (const { rel, file, syms } of entries) {
     if (syms.length === 0) continue;
     const top = rel.split('/')[0];
     if (!groups.has(top)) {
       groups.set(top, { files: [] });
     }
-    groups.get(top).files.push({ rel, syms });
+    groups.get(top).files.push({ rel, file, syms });
   }
 
   return groups;
@@ -101,7 +156,8 @@ function renderMarkdown(groups, entries, scope) {
     for (const file of sortedFiles) {
       const displayPath = file.rel.replace(/\.ts$/, '');
       for (const sym of file.syms) {
-        lines.push(`| \`${sym}()\` | \`${displayPath}\` | — |`);
+        const doc = extractDocSummary(file.file, sym);
+        lines.push(`| \`${sym}()\` | \`${displayPath}\` | ${doc || '—'} |`);
       }
     }
     lines.push(``);
@@ -110,7 +166,7 @@ function renderMarkdown(groups, entries, scope) {
   lines.push(`---`);
   lines.push(``);
   lines.push(`> 共 ${entries.length} 个文件，${entries.reduce((s, e) => s + e.syms.length, 0)} 个导出符号。`);
-  lines.push(`> 说明列（—）待知识库或人工补充。`);
+  lines.push(`> 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。`);
 
   return lines.join('\n');
 }
@@ -139,7 +195,7 @@ function main() {
   for (const f of files) {
     const syms = getExportedSymbols(f.file);
     if (syms.length > 0) {
-      entries.push({ rel: f.rel, syms });
+      entries.push({ rel: f.rel, file: f.file, syms });
     }
   }
 
