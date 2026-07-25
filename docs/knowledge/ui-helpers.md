@@ -14,6 +14,14 @@ scope:
   - frontend/src/core/ui-virtual-grid.ts
 source_files:
   - frontend/src/core/ui-helpers.ts
+  - frontend/src/core/ui-rows.ts
+  - frontend/src/core/ui-advanced-rows.ts
+  - frontend/src/core/ui-slide-row.ts
+  - frontend/src/core/ui-collapsible.ts
+  - frontend/src/core/ui-types.ts
+  - frontend/src/core/ui-fullscreen-overlay.ts
+  - frontend/src/core/ui-resource-panel.ts
+  - frontend/src/core/ui-virtual-grid.ts
 adr: []
 symbols:
   - slideRow

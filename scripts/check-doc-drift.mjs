@@ -48,6 +48,7 @@ const CONFIG = {
   symbolExclude: [
     /\.test\.ts$/, /\.spec\.ts$/, /\.gen\.ts$/, /\.d\.ts$/,
     /wailsjs\//, /__tests__\//, /__mocks__\//, /node_modules\//,
+    /i18n\/locales\//,  // 翻译数据文件（非逻辑模块，无需知识卡覆盖）
   ],
   // 全仓库磁盘扫描排除（仅用于「文件是否还存在」判定）
   repoExclude: [/\/node_modules\//, /\/\.git\//, /\/dist\//, /\/build\//],
@@ -240,7 +241,7 @@ function checkKnowledgeCards() {
 function checkKnowledgeCoverage() {
   const dir = path.join(ROOT, CONFIG.knowledgeDir);
   if (!fs.existsSync(dir)) {
-    return { total: 0, byDir: {} };
+    return { total: 0, byDir: {}, files: [] };
   }
   const cardFiles = fs
     .readdirSync(dir)
@@ -253,17 +254,19 @@ function checkKnowledgeCoverage() {
     }
   }
   const byDir = {};
+  const files = [];
   let total = 0;
   for (const root of CONFIG.sourceRoots) {
     for (const f of walk(path.join(ROOT, root))) {
       const rel = asPosix(f).replace(asPosix(ROOT) + '/', '');
       if (referenced.has(rel)) continue;
       total++;
+      files.push(rel);
       const top = rel.split('/').slice(1, 3).join('/'); // frontend/src/<a>/<b>
       byDir[top] = (byDir[top] || 0) + 1;
     }
   }
-  return { total, byDir };
+  return { total, byDir, files };
 }
 
 // ---------- 检查 5：status.md 生成区是否同步（ERROR） ----------
