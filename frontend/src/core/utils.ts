@@ -12,6 +12,7 @@ import { t } from './i18n/t';
 import { translateGoError } from './i18n/goerr';
 export { showErrorToast } from './toast';
 export type { ToastAction } from './toast';
+import { feedbackStatus, feedbackError, feedbackInfo } from './feedback';
 import type { SlideMenu } from '../menus/menu';
 
 export { normPath };
@@ -600,6 +601,37 @@ export async function withLoadingStatus<T>(
             return undefined;
         }
         setStatus(`${t(loadingKey)}: ${msg}`, false);
+        logWarn(loadingKey, '', err);
+        return undefined;
+    }
+}
+
+/**
+ * 包装异步操作并附带目标名（target-aware 版本）。
+ * 标题自动附加「— {target}」，让用户明确知道是哪个文件/模型。
+ *
+ * @param loadingKey   — 加载时的 i18n key
+ * @param successKey   — 成功时的 i18n key
+ * @param target       — 目标名（文件名/路径），undefined 则不附加
+ * @param fn           — 实际操作函数
+ */
+export async function withLoadingStatusTargeted<T>(
+    loadingKey: string,
+    successKey: string,
+    target: string | undefined,
+    fn: () => T | Promise<T>
+): Promise<T | undefined> {
+    feedbackStatus(loadingKey, target);
+    try {
+        const result = await fn();
+        feedbackInfo(successKey, target);
+        return result;
+    } catch (err) {
+        const msg = translateGoError(err);
+        if (/cancelled by user/i.test(msg)) {
+            return undefined;
+        }
+        feedbackError(loadingKey + 'Failed', target, err);
         logWarn(loadingKey, '', err);
         return undefined;
     }

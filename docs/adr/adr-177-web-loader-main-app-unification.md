@@ -371,8 +371,9 @@ src/core/runtime-bridge.ts:112  (Wails 侧 wrapper，合法)
 **Q4/Q5 验收结论**：✅ 已解决。拖入 PMX/ZIP/VMD 后字节落地 IndexedDB `file:<name>`，主应用 readFileBytes 经 `_resolveIdbKey` 透明映射命中，loadManager.load 触发加载，refreshLibrary 刷新模型库。
 
 **A4 剩余项**：
-- ⚠️ `ListDirRecursive()` 仍返回 `[]`——资源纹理扫描、VMD 同包加载需改为 IndexedDB 索引遍历（p2-5）
-- ⚠️ `LoadOutfitFile()` / `LoadSceneFile()` 返回 `null`——服装/场景加载链未补（p2-5）
+- ⚠️ `ListDirRecursive()` 已实现（IndexedDB `dir:<stem>:` 前缀扫描，含 bare stem fallback；见 browser-adapter.ts:1233），待 E2E 端到端验证实际功能正确
+- ⚠️ `LoadOutfitFile()` 已实现（outfit 自动发现 `outfit:<stem>` IDB 读取；见 browser-adapter.ts:1267），待 E2E 端到端验证实际功能正确
+- ⚠️ `LoadSceneFile()` 已实现（三路路由：`web://presets/scenes/`、`web://bundle/`、`_resolveIdbKey` 兜底；见 browser-adapter.ts:1274），待 E2E 端到端验证实际功能正确
 - ⚠️ drop 闭环仅单测覆盖，未做浏览器端到端 smoke（Phase 4）
 
 **A5 能力门控（非机械）**——生产菜单实际调用清单：
