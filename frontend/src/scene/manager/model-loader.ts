@@ -273,6 +273,7 @@ async function collectTextureFiles(modelDir: string): Promise<TextureFile[]> {
             }
             const data = await readFileBytes(modelDir + '/' + entry.relativePath);
             if (!data) {
+                logWarn('model-loader', 'texture read failed, skipped:', entry.relativePath);
                 continue;
             }
             files.push({

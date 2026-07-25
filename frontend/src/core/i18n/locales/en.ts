@@ -944,6 +944,11 @@ export const en: Record<string, string> = {
     'library.modelTools': 'Model tools',
     'library.firstUseHint':
         '📦 First time? Open the library here → load a model. Set the library dir in ⚙ Settings',
+    'library.fsaAuthTitle': 'Authorize model root directory',
+    'library.fsaAuthPrompt':
+        'To auto-scan and load models like the desktop app, choose your model folder in the browser. Authorize now?',
+    'library.fsaRevokedHint':
+        'Model root directory authorization expired; some models may fail to load. Please re-set the root directory.',
     'library.browseHint2':
         '📦 Click here to browse models · 💃 here to load motion · drag to rotate · scroll to zoom',
     'library.loadLibraryFailed': '✗ Library load failed: ',

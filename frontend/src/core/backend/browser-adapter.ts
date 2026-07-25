@@ -515,6 +515,42 @@ async function restoreFsaRootHandle(): Promise<FileSystemDirectoryHandle | null>
     return null;
 }
 
+export type FsaAuthState = 'unsupported' | 'none' | 'granted' | 'revoked';
+
+/** [doc:adr-177] 查询 FSA 根目录授权状态，供 UI 启动引导（不触发任何权限弹窗）。
+ *  - unsupported: 浏览器无 FSA API（桌面端/旧浏览器）→ 不引导
+ *  - none: 从未授权过 → 首启动应引导
+ *  - granted: 持久化句柄仍有效 → 启动自愈，不引导
+ *  - revoked: 曾授权但失效（权限撤销/隐私模式/句柄损坏）→ 应提示重新授权 */
+export async function getFsaAuthState(): Promise<FsaAuthState> {
+    if (!_cap().fsAccess) return 'unsupported';
+    const h = await idbGet<FileSystemDirectoryHandle>('config', 'fsaRootHandle');
+    if (!h) return 'none';
+    const permHandle = h as FileSystemDirectoryHandle & {
+        queryPermission?: (o: { mode: 'readwrite' }) => Promise<PermissionState>;
+    };
+    if (typeof permHandle.queryPermission === 'function') {
+        try {
+            return (await permHandle.queryPermission({ mode: 'readwrite' })) === 'granted'
+                ? 'granted'
+                : 'revoked';
+        } catch {
+            return 'revoked';
+        }
+    }
+    return 'revoked'; // 老实现不支持 queryPermission，保守视为需重选
+}
+
+/** [doc:adr-177] 用户跳过启动授权引导后写入「已跳过」标志，避免纯导入用户每次启动被弹窗骚扰。
+ * 想重新触发引导只需手动点「设置根目录」。 */
+export async function isFsaAuthPromptDismissed(): Promise<boolean> {
+    return (await idbGet<boolean>('config', 'fsaAuthPromptDismissed')) === true;
+}
+
+export async function dismissFsaAuthPrompt(): Promise<void> {
+    await idbSet('config', 'fsaAuthPromptDismissed', true);
+}
+
 /** FSA 目录递归扫描：保留目录结构，按目录约定分类（对齐桌面端） */
 async function _scanDirIntoIDB(
     dirHandle: FileSystemDirectoryHandle,

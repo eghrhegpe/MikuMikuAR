@@ -1057,6 +1057,11 @@ export const ja: Record<string, string> = {
     'library.modelTools': 'モデルツール',
     'library.firstUseHint':
         '📦 初めてですか？ここでライブラリを開いて→モデルを読み込んでください。モデルディレクトリは ⚙ 設定で変更できます',
+    'library.fsaAuthTitle': 'モデルルートディレクトリの認可',
+    'library.fsaAuthPrompt':
+        'デスクトップ版と同様にモデルを自動スキャン・読み込みするには、ブラウザでモデルフォルダを選択してください。今すぐ認可しますか？',
+    'library.fsaRevokedHint':
+        'モデルルートディレクトリの認可が失効しました。一部のモデルが読み込めない可能性があります。ルートディレクトリを再設定してください。',
     'library.browseHint2':
         '📦 クリックでモデルを閲覧 · 💃 クリックでモーションを読み込み · ドラッグで回転 · スクロールで拡大縮小',
     'library.loadLibraryFailed': '✗ ライブラリの読み込みに失敗: ',
