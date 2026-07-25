@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 66 | 528 |
-| 3D 场景 | 94 | 1036 |
+| 3D 场景 | 94 | 1035 |
 | 菜单 & UI | 65 | 305 |
 | 换装 & 音频 | 3 | 38 |
 | 动作算法 | 17 | 129 |
@@ -915,7 +915,6 @@
 | `setPropPositionMode()` | `scene/env/props` | 切换坐标模式。切到 orbit 时从当前笛卡尔位置反推球面参数（无跳变）；切回 cartesian 保留当前位置。 |
 | `setPropTransform()` | `scene/env/props` | — |
 | `DEFAULT_MAT_PARAMS()` | `scene/manager/material` | 材质参数默认值 — 所有新增字段在此维护，消除散落硬编码。 |
-| `MATERIAL_CATEGORIES()` | `scene/manager/material` | 导出 CATEGORIES 供 UI 层遍历分类（如 applyUnlitFallback 全分类批量应用） |
 | `MaterialCategory()` | `scene/manager/material` | — |
 | `MaterialCategoryParams()` | `scene/manager/material` | — |
 | `MaterialStateManager()` | `scene/manager/material` | 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 |
@@ -2096,5 +2095,5 @@
 
 ---
 
-> 共 249 个文件，2062 个导出符号。
+> 共 249 个文件，2061 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。
