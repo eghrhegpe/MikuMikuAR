@@ -99,7 +99,7 @@ function cmdRenameFunction(oldName, newName) {
 
   console.log(`📍 定义位置: ${target.sourceFile.getFilePath()} （${target.kind}）`);
   target.node.rename(newName);
-  target.sourceFile.saveSync();
+  project.saveSync();
 
   console.log(`✅ 重命名完成: "${oldName}" → "${newName}"`);
   console.log('   ts-morph 已自动更新所有引用');
@@ -183,7 +183,7 @@ function cmdAddParam(funcName, paramSignature, defaultValue) {
     }
   }
 
-  sf.saveSync();
+  project.saveSync();
   console.log(`✅ 参数已添加: "${funcName}" 现在接受 "${paramSignature}"`);
   if (defaultValue) {
     console.log(`   有默认值 ${defaultValue}，调用方未修改`);
