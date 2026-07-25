@@ -800,7 +800,11 @@ export function renderEmbed(site: PlazaSite): void {
     body.appendChild(spinner);
     const iframe = document.createElement('iframe');
     iframe.className = 'plaza-iframe';
-    iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-popups');
+    // [ADR-077] allow-same-origin 必需：sandbox 缺此标记时 iframe origin 被强制为 null
+    // (opaque origin)，登录站 SPA 的 fetch/XHR 跨域到 http://127.0.0.1:PORT 会被
+    // 浏览器 CORS 拦截，登录态中继失效。父窗口与 iframe origin 本就不同源
+    // (wails:// vs 127.0.0.1)，补此标记不会让 iframe 反向访问父窗口。
+    iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-popups allow-same-origin');
     iframe.onload = () => spinner.classList.add('is-hidden');
     iframe.addEventListener('dragover', (e) => e.preventDefault());
     iframe.addEventListener('drop', (e) => e.preventDefault());

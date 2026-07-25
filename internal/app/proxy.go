@@ -459,7 +459,8 @@ func (a *App) StartProxy(target, mode string) (string, error) {
 
 // StopProxy shuts down the model-plaza reverse proxy started by StartProxy.
 // It is idempotent: calling it when no proxy is running is a no-op.
-// Also clears the cookie jar (ADR-077).
+// Also marks the session obsolete so in-flight downloads abort and clean up
+// their partial files, and clears the cookie jar (ADR-077).
 func (a *App) StopProxy() error {
 	return util.SafeCallVoid(func() error {
 		a.httpSrvMu.Lock()
@@ -467,6 +468,20 @@ func (a *App) StopProxy() error {
 		if !ok {
 			a.httpSrvMu.Unlock()
 			return nil
+		}
+		// [ADR-077] 标记 session 废弃，让 in-flight 下载的 progressReader 在
+		// 下次 Read 时感知并清理残片（与 target 切换路径一致，见 StartProxy）。
+		// 同时显式清空 jar 的 cookies，与 ADR-077 文档声明对齐（StopProxy
+		// 调用 jar.SetCookies 清空），不依赖 GC 回收。
+		if sess, hasSess := proxySessions[proxyServerKey]; hasSess {
+			sess.mu.Lock()
+			sess.obsolete = true
+			if currentProxyTarget != "" {
+				if tu, perr := url.Parse(currentProxyTarget); perr == nil {
+					sess.jar.SetCookies(tu, nil) // 清空该 URL 的 cookies
+				}
+			}
+			sess.mu.Unlock()
 		}
 		delete(a.httpServers, proxyServerKey)
 		delete(proxySessions, proxyServerKey)
