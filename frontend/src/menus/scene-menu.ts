@@ -33,6 +33,7 @@ import {
     cardContainer,
 } from '../core/utils';
 import { addDisposableListener } from '../core/dom';
+import { registerLoadRefreshHook } from '../core/load-refresh-registry';
 import { focusModel } from '../scene/scene';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
@@ -123,6 +124,9 @@ const {
 export { getSceneMenu, showSceneMenu };
 
 setRefreshSceneRoot(refreshSceneRoot);
+
+// [doc:P4] 加载模型后刷新根菜单 items（使道具列表等即时更新）
+registerLoadRefreshHook(() => { if (getSceneMenu()) refreshSceneRoot(); });
 
 // 从 scene-menu-state.ts 再导出，切断子文件与 scene-menu 的直接 import 路径
 export { refreshSceneRoot } from './scene-menu-state';

@@ -14,6 +14,7 @@ import { closeAllOverlays } from '../core/utils';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import { addDisposableListener } from '../core/dom';
+import { registerLoadRefreshHook } from '../core/load-refresh-registry';
 import type { MenuNode } from './menu-schema';
 // ======== 从子文件导入 ========
 import { buildSkyLevel } from './env-sky-levels';
@@ -57,6 +58,9 @@ const {
 });
 
 export { getEnvMenu, refreshEnvRoot, showEnvMenu };
+
+// [doc:P4] 加载模型后刷新根菜单 items（使模型依赖列表、纹理库等即时更新）
+registerLoadRefreshHook(() => { if (getEnvMenu()) refreshEnvRoot(); });
 
 // 当库扫描完成时，如果环境菜单已打开则 reRender，
 // 使自定义纹理库等依赖 allModels 的 renderCustom 回调拿到最新数据。
