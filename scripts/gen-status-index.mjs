@@ -57,18 +57,19 @@ function parseAdr(filePath) {
     }
 
     // 兼容历史 ADR 首部：blockquote / 无序列表 / 表格字段。
-    const mStatus = line.match(/^>\s*\*\*状态\*\*[：:]\s*(.+)/)
-      || line.match(/^[-*]\s*\*\*状态\*\*[：:]\s*(.+)/)
-      || line.match(/^\s*\*\*状态\*\*[：:]\s*(.+)/)
+    // [：:] 前加 \s* 以兼容 **状态** ：xxx 等带空格的写法
+    const mStatus = line.match(/^>\s*\*\*状态\*\*\s*[：:]\s*(.+)/)
+      || line.match(/^[-*]\s*\*\*状态\*\*\s*[：:]\s*(.+)/)
+      || line.match(/^\s*\*\*状态\*\*\s*[：:]\s*(.+)/)
       || line.match(/^\|\s*\*\*状态\*\*\s*\|\s*(.+?)\s*\|\s*$/);
     if (mStatus) {
       status = mStatus[1].trim();
       continue;
     }
 
-    const mDate = line.match(/^>\s*\*\*日期\*\*[：:]\s*(.+)/)
-      || line.match(/^[-*]\s*\*\*日期\*\*[：:]\s*(.+)/)
-      || line.match(/^\s*\*\*日期\*\*[：:]\s*(.+)/)
+    const mDate = line.match(/^>\s*\*\*日期\*\*\s*[：:]\s*(.+)/)
+      || line.match(/^[-*]\s*\*\*日期\*\*\s*[：:]\s*(.+)/)
+      || line.match(/^\s*\*\*日期\*\*\s*[：:]\s*(.+)/)
       || line.match(/^\|\s*\*\*日期\*\*\s*\|\s*(.+?)\s*\|\s*$/);
     if (mDate) {
       date = mDate[1].trim();

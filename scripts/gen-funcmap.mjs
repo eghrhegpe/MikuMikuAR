@@ -55,7 +55,7 @@ function extractDocSummary(filePath, sym) {
     // 紧贴 export 的是多行 JSDoc 的结束行 */：向上收集到 /** 或 /*
     while (i >= 0) {
       const raw = lines[i];
-      const cleaned = raw.replace(/^\s*\/?\*+\/?\s?/, '').trim();
+      let cleaned = raw.replace(/^\s*\/?\*+\/?\s?/, '').replace(/\*\/\s*$/, '').trim();
       if (cleaned.startsWith('@')) { i--; continue; }
       if (cleaned) docLines.unshift(cleaned);
       if (/^\s*\/\*\*/.test(raw) || /^\s*\/\*/.test(raw)) break;
@@ -63,7 +63,7 @@ function extractDocSummary(filePath, sym) {
     }
   } else if (/^\s*\/\*\*/.test(lines[i]) || /^\s*\/\*/.test(lines[i])) {
     // 单行 JSDoc：/** ... */ 与 export 同行或紧邻上一行
-    const cleaned = lines[i].replace(/^\s*\/?\*+\/?\s?/, '').trim();
+    let cleaned = lines[i].replace(/^\s*\/?\*+\/?\s?/, '').replace(/\*\/\s*$/, '').trim();
     if (!cleaned.startsWith('@') && cleaned) docLines.push(cleaned);
   }
   if (docLines.length === 0) return '';

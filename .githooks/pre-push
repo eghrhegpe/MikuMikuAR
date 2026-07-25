@@ -3,44 +3,127 @@
 # 全部 stdout → stderr，避免 Windows git hook 管道断裂
 # 安装: git config core.hooksPath .githooks
 # 跳过: git push --no-verify（不推荐）
+# 按变更域跳过无关检查，缩减反馈周期
 
 exec 1>&2
 set -e
 ROOT="$(git rev-parse --show-toplevel)"
 
-echo "[pre-push] lint（0 errors 放行）"
-cd "$ROOT/frontend" && npm run lint || {
-  echo ""
-  echo "❌ ESLint 检出 error。修复: npm run lint 查看详情"
-  exit 1
-}
+# ── 解析推送范围（从 stdin 读取 pre-push refs） ──
+RANGE=""
+while read _ local_sha _ remote_sha; do
+  [ "$local_sha" = "0000000000000000000000000000000000000000" ] && continue
+  if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+    # 新分支
+    MERGE_BASE="$(git merge-base HEAD origin/main 2>/dev/null || true)"
+    if [ -n "$MERGE_BASE" ]; then
+      RANGE="$MERGE_BASE..$local_sha"
+    fi
+  else
+    RANGE="$remote_sha..$local_sha"
+  fi
+  break
+done
 
-echo "[pre-push] test:coverage（门禁: lines≥31% functions≥27%）"
-cd "$ROOT/frontend" && npm run test:coverage || {
-  echo ""
-  echo "❌ 测试失败或覆盖率低于阈值。修复: npm run test:coverage 查看详情"
-  exit 1
-}
+# ── 获取变更文件清单 ──
+CHANGED=""
+if [ -n "$RANGE" ]; then
+  CHANGED="$(git diff --name-only "$RANGE" 2>/dev/null || true)"
+fi
 
+# ── 判断变更域 ──
+GO_CHANGED=false
+TS_CHANGED=false
+DOCS_ONLY=false
+
+if [ -n "$CHANGED" ]; then
+  if echo "$CHANGED" | grep -qE '\.go$'; then
+    # 排除测试文件和 build/ 目录下的生成文件（不影响 bindings）
+    if echo "$CHANGED" | grep -vE '(build/|_test\.go$)' | grep -qE '\.go$'; then
+      GO_CHANGED=true
+    fi
+  fi
+  if echo "$CHANGED" | grep -qE '\.(ts|tsx|js|jsx)$'; then
+    TS_CHANGED=true
+  fi
+  # 纯文档变更 = 只变了 docs/*、*.md、AGENTS.md
+  if echo "$CHANGED" | grep -qvE '^(docs/|.*\.md$|AGENTS\.md)'; then
+    DOCS_ONLY=false
+  else
+    DOCS_ONLY=true
+  fi
+fi
+
+# ── P6: bindings 同步性（Go 变动时检查） ──
+if [ "$GO_CHANGED" = "true" ]; then
+  echo "[pre-push] check:bindings"
+  if [ ! -d "$ROOT/frontend/bindings" ] || [ -z "$(ls -A "$ROOT/frontend/bindings" 2>/dev/null)" ]; then
+    echo "❌ frontend/bindings/ 为空。请运行: npm run generate:bindings"
+    exit 1
+  fi
+  if [ -n "$CHANGED" ]; then
+    if ! echo "$CHANGED" | grep -q '^frontend/bindings/'; then
+      echo "❌ Go 文件已变更但 frontend/bindings/ 未同步。"
+      echo "   请运行: cd frontend && npm run generate:bindings"
+      echo "   然后 git add frontend/bindings/ && git commit --amend"
+      exit 1
+    fi
+  fi
+fi
+
+# ── check:status（轻量，always） ──
 echo "[pre-push] check:status"
 cd "$ROOT" && node scripts/gen-status-index.mjs --reverse --check || {
-  echo ""
-  echo "❌ status.md 与 ADR 源不同步。修复: npm run gen:status && git add docs/status.md"
+  echo "❌ status.md 与 ADR 源不同步。修复: npm run gen:status && git add docs/status.md && git commit --amend"
   exit 1
 }
 
+# ── check:funcmap（轻量，always） ──
 echo "[pre-push] check:funcmap"
 cd "$ROOT" && node scripts/gen-funcmap.mjs --check || {
-  echo ""
-  echo "❌ function-map.md 与源码不同步。修复: npm run gen:funcmap && git add docs/function-map.md"
+  echo "❌ function-map.md 与源码不同步。修复: npm run gen:funcmap && git add docs/function-map.md && git commit --amend"
   exit 1
 }
 
-echo "[pre-push] check:docs"
-cd "$ROOT" && node scripts/check-doc-drift.mjs || {
-  echo ""
-  echo "❌ 文档漂移，修复后用 'npm run check:docs' 复验。"
-  exit 1
-}
+# ── lint（仅 TS/非纯文档变更时） ──
+if [ "$TS_CHANGED" = "true" ] || [ "$DOCS_ONLY" = "false" ]; then
+  echo "[pre-push] lint（0 errors 放行）"
+  cd "$ROOT/frontend" && npm run lint || {
+    echo "❌ ESLint 检出 error。修复: npm run lint 查看详情"
+    exit 1
+  }
+else
+  echo "[pre-push] lint （跳过：未涉及 TS/JS 源码）"
+fi
+
+# ── test:coverage（跳过纯文档/纯 Go 变更） ──
+if [ "$DOCS_ONLY" = "false" ]; then
+  echo "[pre-push] test:coverage（门禁: lines≥31% functions≥27%）"
+  cd "$ROOT/frontend" && npm run test:coverage || {
+    echo "❌ 测试失败或覆盖率低于阈值。修复: npm run test:coverage 查看详情"
+    exit 1
+  }
+else
+  echo "[pre-push] test:coverage（跳过：纯文档/纯 Go 变更）"
+fi
+
+# ── P7: deadcode 检查（仅 TS 变更时，warning 不阻断） ──
+if [ "$TS_CHANGED" = "true" ]; then
+  echo "[pre-push] deadcode"
+  cd "$ROOT/frontend" && npm run deadcode 2>&1 || {
+    echo "⚠️  Knip 检出了死代码（不阻断）。修复: npm run deadcode 查看详情"
+  }
+fi
+
+# ── check:docs（跳过纯文档变更） ──
+if [ "$DOCS_ONLY" = "false" ]; then
+  echo "[pre-push] check:docs"
+  cd "$ROOT" && node scripts/check-doc-drift.mjs || {
+    echo "❌ 文档漂移。修复后用 'npm run check:docs' 复验。"
+    exit 1
+  }
+else
+  echo "[pre-push] check:docs（跳过：纯文档变更）"
+fi
 
 echo "[pre-push] ✅ 全部通过"
