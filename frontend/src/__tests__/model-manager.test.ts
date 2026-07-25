@@ -69,7 +69,7 @@ vi.mock('@babylonjs/core/Maths/math.vector', () => {
     V3.prototype.subtract = function (v) {
         return new V3(this.x - v.x, this.y - v.y, this.z - v.z);
     };
-    return { Vector3: V3 };
+    return { Vector3: V3, Quaternion: m.MockQuaternion, Matrix: m.MockMatrix };
 });
 
 vi.mock('@babylonjs/core/Maths/math.color', () => {
