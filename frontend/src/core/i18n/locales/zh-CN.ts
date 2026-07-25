@@ -1785,6 +1785,17 @@ export const zhCN: Record<string, string> = {
     'settings.audio.offsetHint': '正=音频先播，负=音频后播（对所有音乐全局生效）',
     'props.loadingProgress': '加载道具 {pct}%',
 
+    // ===== [doc:adr-feedback] 结构化反馈模块 key =====
+    'feedback.loading': '加载中',
+    'feedback.savedSuccess': '✓ 保存成功',
+    'feedback.savedFailed': '✗ 保存失败',
+    'feedback.loadedSuccess': '✓ 加载成功',
+    'feedback.loadedFailed': '✗ 加载失败',
+    'feedback.extractionSuccess': '✓ 导入成功',
+    'feedback.extractionFailed': '✗ 导入失败',
+    'feedback.restoredSuccess': '✓ 恢复成功',
+    'feedback.restoredFailed': '✗ 恢复失败',
+
     // ===== [doc:adr-117] Go 端用户可见错误（i18n 化） =====
     'goerr.software.notFound': '未找到 {name}，请在设置中配置路径',
     'goerr.software.launchFailed': '启动 {name} 失败',

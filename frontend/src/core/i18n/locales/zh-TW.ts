@@ -1803,4 +1803,14 @@ export const zhTW: Record<string, string> = {
     'goerr.watch.createWatcherFailed': '建立檔案監聽器失敗',
     'goerr.watch.addWatchFailed': '加入監聽目錄失敗',
     'goerr.zip.tooManyEntries': '{op}：壓縮包內檔案數 {count} 超過上限 {max}',
+    // ===== [doc:adr-feedback] 結構化回饋模組 key =====
+    'feedback.loading': '載入中…',
+    'feedback.savedSuccess': '✓ 儲存成功',
+    'feedback.savedFailed': '✗ 儲存失敗',
+    'feedback.loadedSuccess': '✓ 載入成功',
+    'feedback.loadedFailed': '✗ 載入失敗',
+    'feedback.extractionSuccess': '✓ 匯入成功',
+    'feedback.extractionFailed': '✗ 匯入失敗',
+    'feedback.restoredSuccess': '✓ 還原成功',
+    'feedback.restoredFailed': '✗ 還原失敗',
 };

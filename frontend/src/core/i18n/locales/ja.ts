@@ -1838,4 +1838,14 @@ export const ja: Record<string, string> = {
     'goerr.watch.addWatchFailed': '監視ディレクトリの追加に失敗しました。',
     'goerr.zip.tooManyEntries':
         '{op}: アーカイブ内のファイル数が {count} 件で、上限の {max} 件を超えています。',
+    // ===== [doc:adr-feedback] 構造化フィードバック モジュール key =====
+    'feedback.loading': '読み込み中...',
+    'feedback.savedSuccess': '✓ 保存完了',
+    'feedback.savedFailed': '✗ 保存失敗',
+    'feedback.loadedSuccess': '✓ 読み込み完了',
+    'feedback.loadedFailed': '✗ 読み込み失敗',
+    'feedback.extractionSuccess': '✓ インポート完了',
+    'feedback.extractionFailed': '✗ インポート失敗',
+    'feedback.restoredSuccess': '✓ 復元完了',
+    'feedback.restoredFailed': '✗ 復元失敗',
 };

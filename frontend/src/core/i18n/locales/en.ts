@@ -1826,4 +1826,15 @@ export const en: Record<string, string> = {
     'goerr.watch.addWatchFailed': 'Failed to add directory to watcher.',
     'goerr.zip.tooManyEntries':
         '{op}: the archive contains {count} files, exceeding the limit of {max}.',
+
+    // ===== [doc:adr-feedback] Structured feedback module keys =====
+    'feedback.loading': 'Loading',
+    'feedback.savedSuccess': '✓ Saved successfully',
+    'feedback.savedFailed': '✗ Save failed',
+    'feedback.loadedSuccess': '✓ Loaded successfully',
+    'feedback.loadedFailed': '✗ Load failed',
+    'feedback.extractionSuccess': '✓ Imported successfully',
+    'feedback.extractionFailed': '✗ Import failed',
+    'feedback.restoredSuccess': '✓ Restored successfully',
+    'feedback.restoredFailed': '✗ Restore failed',
 };
