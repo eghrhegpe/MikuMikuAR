@@ -21,13 +21,14 @@ import {
     SetMMDPath,
     SelectExeFile,
 } from '../core/wails-bindings';
-import { setStatus, uiState, cardContainer, escapeHtml, type PopupLevel } from '../core/config';
+import { uiState, cardContainer, escapeHtml, type PopupLevel } from '../core/config';
 import { slideRow, addSectionTitle, addDangerRow, addFieldRow } from '../core/ui-helpers';
 import { showConfirm, showPrompt } from '../core/dialog';
 import { addDisposableListener, type Disposable } from '../core/dom';
 import { softwareKindIcon } from '../core/icons';
 import { tryCatchStatus, swallowError, jsonStringify, getBaseName } from '../core/utils';
 import { feedbackError, feedbackInfo } from '../core/feedback';
+import { showInfoToast } from '../core/toast';
 import { safeCallAsync } from '../core/safe-call';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
@@ -131,7 +132,7 @@ function exportSettings(): void {
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-    setStatus(t('settings.exported'), true);
+    feedbackInfo('settings.exported', undefined);
 }
 
 function reapplyImportedSettings(): void {
@@ -200,7 +201,7 @@ function resetAllSettings(getSettingsMenu: () => SlideMenu | null): void {
     schedulePersistUI();
     reapplyImportedSettings();
     getSettingsMenu()?.reRender();
-    setStatus(t('settings.resetToDefault'), true);
+    feedbackInfo('settings.resetToDefault', undefined);
 }
 
 function buildSettingsMgmtSchema(getSettingsMenu: () => SlideMenu | null): MenuNode[] {
@@ -317,7 +318,7 @@ function buildCacheSchema(): MenuNode[] {
                                         typeof err === 'object' && err !== null && 'message' in err
                                             ? String((err as { message: unknown }).message)
                                             : String(err);
-                                    setStatus(t('settings.error', { message: msg }), false);
+                                    showInfoToast(t('settings.error', { message: msg }));
                                 });
                             }
                         );
@@ -341,7 +342,7 @@ function buildCacheSchema(): MenuNode[] {
                                         typeof err === 'object' && err !== null && 'message' in err
                                             ? String((err as { message: unknown }).message)
                                             : String(err);
-                                    setStatus(t('settings.error', { message: msg }), false);
+                                    showInfoToast(t('settings.error', { message: msg }));
                                 });
                             }
                         );
@@ -386,7 +387,7 @@ export async function setBlenderPath(): Promise<void> {
         return true;
     }, t('settings.software.setFailed'));
     if (r) {
-        setStatus(t('settings.software.blenderSet'), true);
+        feedbackInfo('settings.software.blenderSet', undefined);
     }
 }
 
@@ -400,7 +401,7 @@ export async function setMMDPath(): Promise<void> {
         return true;
     }, t('settings.software.setFailed'));
     if (r) {
-        setStatus(t('settings.software.mmdSet'), true);
+        feedbackInfo('settings.software.mmdSet', undefined);
     }
 }
 
@@ -424,7 +425,7 @@ export async function addCustomSoftware(): Promise<boolean> {
     }, t('settings.software.addFailed'));
     if (r) {
         await scanSoftwareDir();
-        setStatus(t('settings.softwareAdded', { name }), true);
+        showInfoToast(t('settings.softwareAdded', { name }));
         return true;
     }
     return false;
@@ -488,11 +489,10 @@ function buildSoftwareListSchema(getSettingsMenu: () => SlideMenu | null): MenuN
                                                     })
                                                 );
                                                 if (r !== undefined) {
-                                                    setStatus(
+                                                    showInfoToast(
                                                         t('settings.softwareStarted', {
                                                             name: entry.name,
-                                                        }),
-                                                        true
+                                                        })
                                                     );
                                                 }
                                             },
@@ -582,7 +582,7 @@ function buildSoftwareDetailManagedSchema(
                         }, t('settings.software.updateFailed'));
                         if (r) {
                             entry.args = input.value;
-                            setStatus(t('settings.software.paramsUpdated'), true);
+                            feedbackInfo('settings.software.paramsUpdated', undefined);
                         }
                     });
                     val.appendChild(input);
@@ -600,14 +600,13 @@ function buildSoftwareDetailManagedSchema(
                     slideRow(inner, 'lucide:play', t('settings.software.launch'), false, () => {
                         LaunchSoftware(entry.path, entry.args || '')
                             .then(() =>
-                                setStatus(t('settings.softwareStarted', { name: entry.name }), true)
+                                showInfoToast(t('settings.softwareStarted', { name: entry.name }))
                             )
                             .catch((err: unknown) =>
-                                setStatus(
+                                showInfoToast(
                                     t('status.error', {
                                         message: translateGoError(err),
-                                    }),
-                                    false
+                                    })
                                 )
                             );
                     });
@@ -628,9 +627,8 @@ function buildSoftwareDetailManagedSchema(
                                 cachedSoftwareEntries = (cachedSoftwareEntries || []).filter(
                                     (e) => e.path !== entry.path
                                 );
-                                setStatus(
-                                    t('settings.softwareDeleted', { name: entry.name }),
-                                    true
+                                showInfoToast(
+                                    t('settings.softwareDeleted', { name: entry.name })
                                 );
                                 const menu = getSettingsMenu();
                                 menu?.pop();
@@ -675,14 +673,13 @@ function buildSoftwareDetailAutoSchema(
                     slideRow(inner, 'lucide:play', t('settings.software.launch'), false, () => {
                         LaunchSoftware(entry.path, entry.args)
                             .then(() =>
-                                setStatus(t('settings.softwareStarted', { name: entry.name }), true)
+                                showInfoToast(t('settings.softwareStarted', { name: entry.name }))
                             )
                             .catch((err: unknown) =>
-                                setStatus(
+                                showInfoToast(
                                     t('status.error', {
                                         message: translateGoError(err),
-                                    }),
-                                    false
+                                    })
                                 )
                             );
                     });
@@ -703,9 +700,8 @@ function buildSoftwareDetailAutoSchema(
                             }, t('settings.software.convertFailed'));
                             if (r) {
                                 cachedSoftwareEntries = await ScanSoftwareDir();
-                                setStatus(
-                                    t('settings.softwareToCustom', { name: entry.name }),
-                                    true
+                                showInfoToast(
+                                    t('settings.softwareToCustom', { name: entry.name })
                                 );
                                 const menu = getSettingsMenu();
                                 menu?.pop();

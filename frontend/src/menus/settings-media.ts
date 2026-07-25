@@ -1,7 +1,9 @@
 // settings-media.ts — 媒体设置子菜单（ADR-157：合并原 audio + screenshot）
 // 音频/音效来自原 settings-audio；截图来自原 settings-screenshot（裸中文已 i18n 化）。
 
-import { setStatus, uiState, setUIState, cardContainer } from '../core/config';
+import { uiState, setUIState, cardContainer } from '../core/config';
+import { feedbackInfo } from '../core/feedback';
+import { showInfoToast } from '../core/toast';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
 import { slideRow, addSectionTitle } from '../core/ui-helpers';
@@ -102,7 +104,7 @@ function buildAudioCoreSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
                 onChange: (v) => {
                     setBpmQuantizeEnabled(v as boolean);
                     refresh();
-                    setStatus(v ? t('settings.bpmQuantOn') : t('settings.bpmQuantOff'), true);
+                    feedbackInfo(v ? 'settings.bpmQuantOn' : 'settings.bpmQuantOff', undefined);
                 },
             },
         },
@@ -118,7 +120,7 @@ function buildAudioCoreSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
                 onChange: (v) => {
                     setAutoLoadCompanionAudio(v as boolean);
                     refresh();
-                    setStatus(v ? t('settings.companionOn') : t('settings.companionOff'), true);
+                    feedbackInfo(v ? 'settings.companionOn' : 'settings.companionOff', undefined);
                 },
             },
         },
@@ -166,7 +168,7 @@ function buildAudioCoreSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
                     const next = modes[(idx + 1) % modes.length];
                     setRepeatMode(next);
                     updateLabel();
-                    setStatus(t('settings.audio.repeatModeSet', { mode: modeLabels[next] }), true);
+                    showInfoToast(t('settings.audio.repeatModeSet', { mode: modeLabels[next] }));
                     refresh();
                 });
                 c.appendChild(row);
@@ -277,9 +279,8 @@ function buildScreenshotSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
                             () => {
                                 setUIState({ screenshotFormat: f.key });
                                 getSettingsMenu()?.updateControls();
-                                setStatus(
-                                    t('settings.screenshotFormatSet', { label: f.label }),
-                                    true
+                                showInfoToast(
+                                    t('settings.screenshotFormatSet', { label: f.label })
                                 );
                             },
                             undefined,
@@ -359,9 +360,8 @@ function buildScreenshotSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
                             () => {
                                 setUIState({ thumbnailResolution: r.key });
                                 getSettingsMenu()?.updateControls();
-                                setStatus(
-                                    t('settings.screenshot.thumbResSet', { label: r.label }),
-                                    true
+                                showInfoToast(
+                                    t('settings.screenshot.thumbResSet', { label: r.label })
                                 );
                             },
                             undefined,
@@ -412,7 +412,7 @@ function buildScreenshotSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
                             }
                             setUIState({ screenshotDir: d });
                             getSettingsMenu()?.reRender();
-                            setStatus(t('settings.screenshotDirSet', { dir: d }), true);
+                            showInfoToast(t('settings.screenshotDirSet', { dir: d }));
                         },
                         dirSub
                     );
@@ -426,7 +426,7 @@ function buildScreenshotSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
                             () => {
                                 OpenScreenshotDir().catch((err: unknown) => {
                                     const msg = translateGoError(err);
-                                    setStatus(t('settings.error', { message: msg }), false);
+                                    showInfoToast(t('settings.error', { message: msg }));
                                 });
                             }
                         );

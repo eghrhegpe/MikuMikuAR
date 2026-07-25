@@ -9,7 +9,9 @@ import {
     SetUIBlurBg,
     SetUIAccent,
 } from '../core/wails-bindings';
-import { setStatus, cardContainer } from '../core/config';
+import { cardContainer } from '../core/config';
+import { feedbackInfo, feedbackStatus } from '../core/feedback';
+import { showInfoToast } from '../core/toast';
 import { slideRow, addToggleRow, addSliderRow, addSectionTitle } from '../core/ui-helpers';
 import { swallowError } from '../core/utils';
 import { getCurrentRenderingMenu } from './menu';
@@ -154,7 +156,7 @@ function _renderThemeColorInput(
         if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
             setTheme(hex, getSettingsMenu);
         } else if (input.value.trim() !== '') {
-            setStatus(t('settings.invalidColorFormat'), false);
+            feedbackStatus('settings.invalidColorFormat', undefined, false);
         }
     });
     card.appendChild(input);
@@ -188,7 +190,7 @@ function _renderFontControls(
                 document.documentElement.style.setProperty('--font', f.css);
                 swallowError(SetUIFontFamily(key));
                 getSettingsMenu()?.updateControls();
-                setStatus(t('settings.fontSet', { label: t(f.labelKey) }), true);
+                showInfoToast(t('settings.fontSet', { label: t(f.labelKey) }));
             },
             undefined,
             undefined,
@@ -354,7 +356,7 @@ function _renderResetButton(
         swallowError(SetUIAnimations(true));
         swallowError(SetUIBlurBg(false));
         getSettingsMenu()?.updateControls();
-        setStatus(t('settings.appearanceReset'), true);
+        feedbackInfo('settings.appearanceReset', undefined);
     });
 }
 

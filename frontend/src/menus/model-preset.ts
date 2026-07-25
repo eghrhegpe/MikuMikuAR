@@ -2,13 +2,13 @@
 
 import {
     modelRegistry,
-    setStatus,
     PopupLevel,
     computeLibraryRef,
     stackRegistry,
     escapeHtml,
     isPlaying,
 } from '../core/config';
+import { feedbackInfo, feedbackStatus } from '../core/feedback';
 import { loadManager } from '../core/load-manager';
 import {
     setModelPosition,
@@ -172,7 +172,7 @@ export async function applyModelPreset(id: string, jsonStr: string): Promise<voi
                     skipSceneIntent: true,
                 });
             } catch (vmdErr) {
-                setStatus(t('model-preset.vmdLoadFailed'), false);
+                feedbackStatus('model-preset.vmdLoadFailed', undefined, false);
                 logWarn('model-preset', 'applyModelPreset: vmd load failed', vmdErr);
             }
         } else {
@@ -198,7 +198,7 @@ export async function applyModelPreset(id: string, jsonStr: string): Promise<voi
             );
         }
     }
-    setStatus(t('model-preset.applied'), true);
+    feedbackInfo('model-preset.applied', undefined);
 }
 
 const _presetUndoStack = new Map<string, string>();
@@ -231,7 +231,7 @@ async function tryAutoApplyPresetImpl(id: string): Promise<void> {
     if (!inst) {
         return;
     }
-    setStatus(t('model-preset.loadingLib'), false);
+    feedbackStatus('model-preset.loadingLib', undefined, false);
     const entries: ModelPresetEntry[] = (await GetModelPresets()) || [];
     if (entries.length === 0) {
         return;
@@ -281,7 +281,7 @@ async function tryAutoApplyPresetImpl(id: string): Promise<void> {
             if (snap) {
                 await applyModelPreset(id, snap);
             }
-            setStatus(t('model-preset.undoApplied'), true);
+            feedbackInfo('model-preset.undoApplied', undefined);
         }
     );
 }
@@ -323,7 +323,7 @@ export async function applyPresetFromLib(
                 if (handle) {
                     await applyModelPreset(handle.id, json);
                 } else {
-                    setStatus(t('model-preset.modelLoadFailed'), false);
+                    feedbackStatus('model-preset.modelLoadFailed', undefined, false);
                 }
             }
         }
@@ -333,7 +333,7 @@ export async function applyPresetFromLib(
 export async function savePresetToLibDialog(id: string): Promise<void> {
     const json = serializeModelPreset(id);
     if (!json) {
-        setStatus(t('model-preset.serializeFailed'), false);
+        feedbackStatus('model-preset.serializeFailed', undefined, false);
         return;
     }
     const filename = await tryCatchStatus(
@@ -342,7 +342,7 @@ export async function savePresetToLibDialog(id: string): Promise<void> {
         (err) => showErrorToast(t('model-preset.saveErrorToast'), translateGoError(err))
     );
     if (filename !== undefined) {
-        setStatus(t('model-preset.savedToLib'), true);
+        feedbackInfo('model-preset.savedToLib', undefined);
     }
 }
 
@@ -364,7 +364,7 @@ export function buildPresetListLevel(id: string | null): PopupLevel {
                 if (r === undefined) {
                     throw new Error('delete failed');
                 }
-                setStatus(t('model-preset.deleted'), true);
+                feedbackInfo('model-preset.deleted', undefined);
             },
             deleteConfirmText: (e) =>
                 t('model-preset.confirmDelete', { name: e.presetName || e.name }),

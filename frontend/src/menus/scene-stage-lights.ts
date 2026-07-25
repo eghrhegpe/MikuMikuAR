@@ -1,7 +1,8 @@
 // [doc:architecture] Scene Stage Lights — 舞台灯光弹窗层级
 // 从 scene-render-levels.ts 拆分
 
-import { setStatus, cardContainer, envState, modelRegistry } from '../core/config';
+import { cardContainer, envState, modelRegistry } from '../core/config';
+import { feedbackInfo } from '../core/feedback';
 import type { PopupLevel } from '../core/config';
 import { showConfirm } from '../core/dialog';
 import {
@@ -773,7 +774,7 @@ function buildStageLightSchema(): MenuNode[] {
                             }
                             removeStageLight(state.id);
                             reRenderSceneMenu();
-                            setStatus(t('scene.statusLightDeleted'), true);
+                            feedbackInfo('scene.statusLightDeleted', undefined);
                         }
                     );
                 });

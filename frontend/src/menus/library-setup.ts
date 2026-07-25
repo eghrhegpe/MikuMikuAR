@@ -28,6 +28,8 @@ import {
     DisplayNamePriority,
     stackRegistry,
 } from '../core/config';
+import { feedbackStatus } from '../core/feedback';
+import { showInfoToast } from '../core/toast';
 import { tryCatchStatus, isUnderRoot } from '../core/utils';
 import { logWarn } from '../core/logger';
 import { safeCallAsync } from '../core/safe-call';
@@ -44,7 +46,7 @@ export async function initLibrary(): Promise<void> {
         const cfg = await GetConfig();
         const cfgRoot = cfg.resource_root || cfg.library_root || cfg.override_paths?.pmx || '';
         if (!cfgRoot) {
-            setStatus(t('library.firstUseHint'), false);
+            feedbackStatus('library.firstUseHint', undefined, false);
             return;
         }
         setLibraryRoot(cfgRoot);
@@ -83,7 +85,7 @@ export async function initLibrary(): Promise<void> {
             logWarn('library-setup', 'ScanModelDir refresh:', err);
         }
         safeCallAsync('library-setup', 'CleanOrphanCache:', () => CleanOrphanCache());
-        setStatus(t('library.browseHint2'), false);
+        feedbackStatus('library.browseHint2', undefined, false);
     } catch (err) {
         logWarn('library-setup', 'initLibrary:', err);
         setStatus(t('library.loadLibraryFailed') + translateGoError(err), false);
@@ -94,7 +96,7 @@ export async function initLibrary(): Promise<void> {
 
 export async function selectResourceRoot(): Promise<void> {
     if (isAndroidPlatform()) {
-        setStatus(t('library.androidDirNotSupported'), false);
+        feedbackStatus('library.androidDirNotSupported', undefined, false);
         return;
     }
     const ok = await showConfirm(t('library.confirmRescan'), t('library.confirmRescanTitle'));
@@ -117,7 +119,7 @@ export async function selectResourceRoot(): Promise<void> {
 
 export async function selectOverridePath(category: string): Promise<void> {
     if (isAndroidPlatform()) {
-        setStatus(t('library.androidDirNotSupported'), false);
+        feedbackStatus('library.androidDirNotSupported', undefined, false);
         return;
     }
     const dir = await tryCatchStatus(async () => {
@@ -250,14 +252,14 @@ function restoreBrowsePath(pathDirs: string[]): void {
 
 export async function refreshLibrary(): Promise<void> {
     const prevPath = getCurrentBrowsePath();
-    setStatus(t('library.scanning'), false);
+    feedbackStatus('library.scanning', undefined, false);
     const models = await tryCatchStatus(async () => {
         return await rescanAndSync();
     }, t('library.scanFailed'));
     if (models === undefined) {
         return;
     }
-    setStatus(t('library.entriesCount', { n: (models || []).length }), true);
+    showInfoToast(t('library.entriesCount', { n: (models || []).length }));
     CleanOrphanCache().catch((err) =>
         logWarn('library-setup', 'CleanOrphanCache (background):', err)
     );

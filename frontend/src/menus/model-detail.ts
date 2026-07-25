@@ -4,7 +4,6 @@
 import {
     escapeHtml,
     cardContainer,
-    setStatus,
     PopupLevel,
     modelMetaCache,
     setModelMetaCache,
@@ -12,6 +11,8 @@ import {
     dom,
     stackRegistry,
 } from '../core/config';
+import { feedbackInfo, feedbackStatus } from '../core/feedback';
+import { showInfoToast } from '../core/toast';
 import { modelManager } from '../scene/scene';
 import { getModelMorphs, setModelMorphWeight, resetModelMorphs } from '../scene/manager/model-ops';
 import { removeModel } from '../scene/manager/model-ops';
@@ -207,7 +208,7 @@ function buildOpenWithSchema(id: string): MenuNode[] {
                             slideRow(c, softwareKindIcon(sw.kind), sw.name, false, async () => {
                                 const inst = modelManager.get(id);
                                 if (!inst.filePath) {
-                                    setStatus(t('model-detail.noFilePath'), false);
+                                    feedbackStatus('model-detail.noFilePath', undefined, false);
                                     return;
                                 }
                                 const _r = await tryCatchStatus(
@@ -215,7 +216,7 @@ function buildOpenWithSchema(id: string): MenuNode[] {
                                     t('model-detail.launchFailed')
                                 );
                                 if (_r !== undefined) {
-                                    setStatus(t('model-detail.launched', { name: sw.name }), true);
+                                    showInfoToast(t('model-detail.launched', { name: sw.name }));
                                 }
                             });
                         }
@@ -510,7 +511,7 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
                         if (active) {
                             applyIntentToModel(id, active, getMotionGen());
                         }
-                        setStatus(t('motion.override.redoApplied'), true);
+                        feedbackInfo('motion.override.redoApplied', undefined);
                         stackRegistry.modelStack?.reRender();
                     });
                 }
@@ -618,7 +619,7 @@ export function buildModelToolsLevel(id: string): PopupLevel {
                             });
                             stackRegistry.modelStack?.reRender();
                         });
-                        setStatus(t('motion.undoApplied'), true);
+                        feedbackInfo('motion.undoApplied', undefined);
                     });
                     if (stackRegistry.modelStack) {
                         stackRegistry.modelStack.popTo(0);
@@ -924,10 +925,10 @@ function buildModelTagsSchema(id: string): MenuNode[] {
                             await tryCatchStatus(async () => {
                                 if (isFav) {
                                     await RemoveTag(libRef, '收藏');
-                                    setStatus(t('model-detail.unfaved'), true);
+                                    feedbackInfo('model-detail.unfaved', undefined);
                                 } else {
                                     await AddTag(libRef, '收藏');
-                                    setStatus(t('model-detail.favedStatus'), true);
+                                    feedbackInfo('model-detail.favedStatus', undefined);
                                 }
                                 refreshFav();
                             }, t('model-detail.favFailed'));
@@ -977,7 +978,7 @@ function buildModelTagsSchema(id: string): MenuNode[] {
                                         }, t('model-detail.favFailed'));
                                         if (r) {
                                             refreshTags();
-                                            setStatus(t('model-detail.tagRemoved', { tag }), true);
+                                            showInfoToast(t('model-detail.tagRemoved', { tag }));
                                         }
                                     });
                                     tagContainer.appendChild(chip);
@@ -1125,7 +1126,7 @@ function buildMorphPreviewSchema(id: string): MenuNode[] {
                                 valLabel.textContent = '0.00';
                             }
                         });
-                        setStatus(t('model-detail.morphsReset'), true);
+                        feedbackInfo('model-detail.morphsReset', undefined);
                     });
                     c.appendChild(resetBtn);
 

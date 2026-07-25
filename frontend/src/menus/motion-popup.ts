@@ -3,7 +3,6 @@
 // 子文件: motion-binding-ui / motion-detail-ui / motion-root-ui
 
 import {
-    setStatus,
     PopupLevel,
     PopupRow,
     getBrowseDir,
@@ -12,6 +11,8 @@ import {
     mmdRuntime,
     stackRegistry,
 } from '../core/config';
+import { feedbackInfo, feedbackStatus } from '../core/feedback';
+import { showInfoToast } from '../core/toast';
 import { registerPopupMenu } from './menu-factory';
 import { loadManager } from '../core/load-manager';
 import { registerLoadRefreshHook, registerLibraryScannedHook } from '../core/load-refresh-registry';
@@ -145,7 +146,7 @@ function motionOnItemClick(row: PopupRow): void {
                 })
                 .catch((err) => {
                     logWarn('motion-popup', 'Load camera VMD failed:', err);
-                    setStatus(t('motion.loadFailed'), false);
+                    feedbackStatus('motion.loadFailed', undefined, false);
                 });
             return;
         }
@@ -174,7 +175,7 @@ function motionOnItemClick(row: PopupRow): void {
         hideMotionPopup();
         if (row.model.format === 'audio') {
             loadManager.load({ kind: 'audio', path: row.model.file_path });
-            setStatus(t('motion.musicLoaded', { name: getAudioName() }), true);
+            showInfoToast(t('motion.musicLoaded', { name: getAudioName() }));
             if (getMotionMenu()) {
                 getMotionMenu()?.reRender();
             }
@@ -299,7 +300,7 @@ function motionOnItemClick(row: PopupRow): void {
         updatePlaybackUI();
         refreshMotionRoot();
         triggerAutoSave();
-        setStatus(t('motion.motionCleared'), true);
+        feedbackInfo('motion.motionCleared', undefined);
         offerSceneUndoAndRefresh(t('motion.motionCleared'), snap, () => {
             refreshMotionRoot();
         });

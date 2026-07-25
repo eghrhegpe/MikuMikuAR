@@ -17,7 +17,8 @@ import type { AnimationGroup } from '@babylonjs/core/Animations/animationGroup';
 import { Scene } from '@babylonjs/core/scene';
 import { ImportMeshAsync } from '@babylonjs/core/Loading/sceneLoader';
 import { Skeleton } from '@babylonjs/core/Bones/skeleton';
-import { setStatus, modelRegistry } from '@/core/config';
+import { modelRegistry } from '@/core/config';
+import { feedbackInfo, feedbackStatus } from '@/core/feedback';
 import { logWarn } from '@/core/logger';
 import { t } from '@/core/i18n/t';
 
@@ -92,7 +93,7 @@ export async function loadAndRetargetAnimation(
     customBoneMap?: Record<string, string>
 ): Promise<RetargetResult | null> {
     // 1. 加载外部动画文件
-    setStatus(t('motion.retarget.loading'), false);
+    feedbackStatus('motion.retarget.loading', undefined, false);
     let result: {
         meshes: import('@babylonjs/core/Meshes/abstractMesh').AbstractMesh[];
         animationGroups: AnimationGroup[];
@@ -107,7 +108,7 @@ export async function loadAndRetargetAnimation(
         });
     } catch (err) {
         logWarn('retarget', 'load animation failed:', err);
-        setStatus(t('motion.retarget.loadFailed'), false);
+        feedbackStatus('motion.retarget.loadFailed', undefined, false);
         return null;
     }
 
@@ -115,7 +116,7 @@ export async function loadAndRetargetAnimation(
     const animationGroups = result.animationGroups;
     if (!animationGroups || animationGroups.length === 0) {
         logWarn('retarget', 'no animation groups found');
-        setStatus(t('motion.retarget.noAnimation'), false);
+        feedbackStatus('motion.retarget.noAnimation', undefined, false);
         _cleanupTempMeshes(result.meshes);
         return null;
     }
@@ -131,7 +132,7 @@ export async function loadAndRetargetAnimation(
     }
     if (!sourceSkeleton) {
         logWarn('retarget', 'no skeleton found in loaded file');
-        setStatus(t('motion.retarget.noSkeleton'), false);
+        feedbackStatus('motion.retarget.noSkeleton', undefined, false);
         _cleanupTempMeshes(result.meshes);
         return null;
     }
@@ -145,7 +146,7 @@ export async function loadAndRetargetAnimation(
     }
 
     // 4. 执行重定向
-    setStatus(t('motion.retarget.retargeting'), false);
+    feedbackStatus('motion.retarget.retargeting', undefined, false);
     try {
         const retargeter = new AnimationRetargeter();
         retargeter.setBoneMap(boneNameMap);
@@ -157,11 +158,11 @@ export async function loadAndRetargetAnimation(
         });
         if (!retargeted) {
             logWarn('retarget', 'retargetAnimation returned null');
-            setStatus(t('motion.retarget.failed'), false);
+            feedbackStatus('motion.retarget.failed', undefined, false);
             _cleanupTempMeshes(result.meshes);
             return null;
         }
-        setStatus(t('motion.retarget.success'), true);
+        feedbackInfo('motion.retarget.success', undefined);
         // retarget 成功且 cloneAnimation:true 后，源 mesh 不再需要（动画已克隆到目标骨骼）
         _cleanupTempMeshes(result.meshes);
         return {
@@ -171,7 +172,7 @@ export async function loadAndRetargetAnimation(
         };
     } catch (err) {
         logWarn('retarget', 'retargetAnimation failed:', err);
-        setStatus(t('motion.retarget.failed'), false);
+        feedbackStatus('motion.retarget.failed', undefined, false);
         _cleanupTempMeshes(result.meshes);
         return null;
     }

@@ -21,6 +21,8 @@ import {
     setLibrarySortMode,
     type PopupLevel,
 } from '../core/config';
+import { feedbackInfo, feedbackStatus } from '../core/feedback';
+import { showInfoToast } from '../core/toast';
 import {
     slideRow,
     addModeRow,
@@ -113,7 +115,7 @@ function renderAndroidStorage(
                     })
                     .catch((err) => {
                         console.error('[resources] switchStorageMode failed:', err);
-                        setStatus(t('settings.storageModeFail', { err }), true);
+                        showInfoToast(t('settings.storageModeFail', { err }));
                     });
             }
         );
@@ -303,11 +305,11 @@ function buildLibrarySchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode
                             try {
                                 new RegExp(pattern);
                             } catch {
-                                setStatus(t('settings.invalidRegex'), false);
+                                feedbackStatus('settings.invalidRegex', undefined, false);
                                 return;
                             }
                             if (!getValidMaterialCategories().has(category)) {
-                                setStatus(t('settings.invalidCategory'), false);
+                                feedbackStatus('settings.invalidCategory', undefined, false);
                                 return;
                             }
                             if (!uiState.materialCategoryMap) {
@@ -423,7 +425,7 @@ function buildWatchSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                                 logWarn('watch', 'SetDownloadWatchEnabled failed', err)
                             );
                             getSettingsMenu()?.updateControls();
-                            setStatus(v ? t('settings.watchOn') : t('settings.watchOff'), true);
+                            feedbackInfo(v ? 'settings.watchOn' : 'settings.watchOff', undefined);
                         },
                         'lucide:folder-search',
                         { bind: () => getDownloadWatchEnabledCached() }
@@ -447,10 +449,10 @@ function buildWatchSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                                 await SetDownloadWatchDir(dir);
                                 setDownloadWatchEnabledCached(true);
                                 getSettingsMenu()?.updateControls();
-                                setStatus(t('settings.watchDirSet', { dir }), true);
+                                showInfoToast(t('settings.watchDirSet', { dir }));
                             } catch (err) {
                                 logWarn('watch', 'SetDownloadWatchDir failed', err);
-                                setStatus(t('settings.watchDirFail', { err }), true);
+                                showInfoToast(t('settings.watchDirFail', { err }));
                             }
                             return dir;
                         }
@@ -465,9 +467,9 @@ function buildWatchSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                                 logWarn('watch', 'SetDownloadAutoImport failed', err)
                             );
                             getSettingsMenu()?.updateControls();
-                            setStatus(
-                                v ? t('settings.autoImportOn') : t('settings.autoImportOff'),
-                                true
+                            feedbackInfo(
+                                v ? 'settings.autoImportOn' : 'settings.autoImportOff',
+                                undefined
                             );
                         },
                         'lucide:download',

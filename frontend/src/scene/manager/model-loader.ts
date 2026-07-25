@@ -21,6 +21,8 @@ import {
     uiState,
     type RuntimeModel,
 } from '@/core/config';
+import { feedbackStatus } from '@/core/feedback';
+import { showInfoToast } from '@/core/toast';
 import type { ModelMotionSlots } from '@/core/types';
 import { getBaseName, swallowError, isUnderRoot } from '@/core/utils';
 import { logWarn } from '@/core/logger';
@@ -310,7 +312,7 @@ export async function loadPMXFile(
         if (existing) {
             setFocusedModelId(existing.id);
             _modelManager?.focus(existing.id, uiState.autoCenterModel);
-            setStatus(t('scene.loader.switched', { name: existing.name }), true);
+            showInfoToast(t('scene.loader.switched', { name: existing.name }));
             dom.canvas.setAttribute('aria-label', `${t('menu.canvasLabel')}：${existing.name}`);
             return existing.id;
         }
@@ -318,7 +320,7 @@ export async function loadPMXFile(
         const modelDir = await resolveModelDir(filePath);
         const fileName = getBaseName(filePath) || '';
 
-        setStatus(t('scene.loader.loading'), false);
+        feedbackStatus('scene.loader.loading', undefined, false);
         dom.loadingEl.style.display = 'block';
         dom.loadingText.textContent = t('scene.loader.loadingZero');
 
@@ -363,7 +365,7 @@ export async function loadPMXFile(
 
         const meshes = loadedMeshes;
         if (meshes.length === 0) {
-            setStatus(t('scene.loader.noMeshes'), false);
+            feedbackStatus('scene.loader.noMeshes', undefined, false);
             return null;
         }
 
@@ -415,7 +417,7 @@ export async function loadPMXFile(
                     // Intentionally empty — renderer 未初始化时忽略
                 }
             }
-            setStatus(t('scene.loader.stageLoaded', { name: displayName }), true);
+            showInfoToast(t('scene.loader.stageLoaded', { name: displayName }));
             dom.canvas.setAttribute('aria-label', `${t('menu.canvasLabel')}：${displayName}`);
             _modelManager.arrange();
             _refreshWaterRenderList();
@@ -681,11 +683,10 @@ export async function loadPMXFile(
         }
 
         _modelManager.focus(id, uiState.autoCenterModel);
-        setStatus(
+        showInfoToast(
             appliedVmd
                 ? t('scene.loader.actorLoadedWithVmd', { name: displayName, vmd: appliedVmd })
-                : t('scene.loader.actorLoaded', { name: displayName }),
-            true
+                : t('scene.loader.actorLoaded', { name: displayName })
         );
         dom.canvas.setAttribute('aria-label', `${t('menu.canvasLabel')}：${displayName}`);
         _modelManager.arrange();

@@ -3,7 +3,8 @@
 // 不再构造假 PopupRow 套娃；settings.ts 的 onItemClick 仍经 handleSettingsAction 分发。
 
 import { ClearExtractCache, ClearThumbnailCache, ClearAllCaches } from '../core/wails-bindings';
-import { setStatus, type PopupRow } from '../core/config';
+import { type PopupRow } from '../core/config';
+import { feedbackInfo } from '../core/feedback';
 import { showConfirm } from '../core/dialog';
 import { selectResourceRoot, selectOverridePath } from './library-core';
 import { t } from '../core/i18n/t';
@@ -18,7 +19,7 @@ export const SETTINGS_ACTIONS: Record<string, (row?: PopupRow) => void> = {
     [SETTINGS_ACTION.CLEAR_EXTRACT_CACHE]: () => {
         safeCallAsync('paths', '', () =>
             ClearExtractCache().then(() => {
-                setStatus(t('settings.extractCacheCleared'), true);
+                feedbackInfo('settings.extractCacheCleared', undefined);
                 window.dispatchEvent(new CustomEvent('mmar:cache-cleared'));
             })
         );
@@ -28,7 +29,7 @@ export const SETTINGS_ACTIONS: Record<string, (row?: PopupRow) => void> = {
             if (await showConfirm(t('settings.paths.clearThumbConfirm'))) {
                 safeCallAsync('paths', '', () =>
                     ClearThumbnailCache().then(() => {
-                        setStatus(t('settings.thumbnailCacheCleared'), true);
+                        feedbackInfo('settings.thumbnailCacheCleared', undefined);
                         window.dispatchEvent(new CustomEvent('mmar:cache-cleared'));
                     })
                 );
@@ -40,7 +41,7 @@ export const SETTINGS_ACTIONS: Record<string, (row?: PopupRow) => void> = {
             if (await showConfirm(t('settings.paths.clearAllConfirm'))) {
                 safeCallAsync('paths', '', () =>
                     ClearAllCaches().then(() => {
-                        setStatus(t('settings.allCacheCleared'), true);
+                        feedbackInfo('settings.allCacheCleared', undefined);
                         window.dispatchEvent(new CustomEvent('mmar:cache-cleared'));
                     })
                 );

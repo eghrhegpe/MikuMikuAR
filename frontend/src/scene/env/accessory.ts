@@ -5,6 +5,8 @@
 import { Quaternion } from '@babylonjs/core/Maths/math.vector';
 import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import { propRegistry, modelRegistry, setStatus, triggerAutoSave } from '../../core/config';
+import { feedbackStatus } from '../../core/feedback';
+import { showInfoToast } from '../../core/toast';
 import { t } from '../../core/i18n/t';
 import { logWarn } from '../../core/logger';
 
@@ -50,7 +52,7 @@ export function attachPropToBone(
         .linkedBone;
     if (!linkedBone) {
         logWarn('accessory', 'bone has no linkedBone (HumanoidMmd path untested):', boneName);
-        setStatus(t('scene.accessory.boneNoLink'), false);
+        feedbackStatus('scene.accessory.boneNoLink', undefined, false);
         return false;
     }
 
@@ -83,7 +85,7 @@ export function attachPropToBone(
     // Babylon 原生 attachToBone — POC 已验证通过
     target.attachToBone(linkedBone, inst.rootMesh);
 
-    setStatus(t('scene.accessory.attached', { name: prop.name, bone: boneName }), true);
+    showInfoToast(t('scene.accessory.attached', { name: prop.name, bone: boneName }));
     triggerAutoSave();
     return true;
 }
@@ -115,7 +117,7 @@ export function detachPropFromBone(propId: string): void {
     target.position = worldMat.getTranslation();
     target.rotationQuaternion = Quaternion.FromRotationMatrix(worldMat.getRotationMatrix());
 
-    setStatus(t('scene.accessory.detached', { name: prop.name }), true);
+    showInfoToast(t('scene.accessory.detached', { name: prop.name }));
     triggerAutoSave();
 }
 

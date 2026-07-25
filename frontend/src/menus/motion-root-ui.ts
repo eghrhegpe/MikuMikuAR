@@ -2,8 +2,10 @@
 // 从 motion-popup.ts 拆出：buildMotionRootItems / buildMotionRootLevel /
 // buildRetargetLevel / _importExternalAnimation
 
-import { setStatus, closeAllOverlays } from '../core/config';
+import { closeAllOverlays } from '../core/config';
 import type { PopupLevel, PopupRow } from '../core/config';
+import { feedbackInfo, feedbackStatus } from '../core/feedback';
+import { showInfoToast } from '../core/toast';
 import {
     modelManager,
     triggerAutoSave,
@@ -75,7 +77,7 @@ export function buildMotionRootItems(): PopupRow[] {
                         setDefaultMotion(motion.id);
                         getMotionMenu()?.reRender();
                         triggerAutoSave();
-                        setStatus(t('motion.defaultMotionSet', { name: motion.vmdName }), true);
+                        showInfoToast(t('motion.defaultMotionSet', { name: motion.vmdName }));
                         offerSceneUndoAndRefresh(
                             t('motion.defaultMotionSet', { name: motion.vmdName }),
                             snap,
@@ -121,7 +123,7 @@ export function buildMotionRootItems(): PopupRow[] {
                       const snap = pushUndoSnapshot();
                       clearAudio();
                       getMotionMenu()?.reRender();
-                      setStatus(t('motion.musicRemoved'), true);
+                      feedbackInfo('motion.musicRemoved', undefined);
                       offerSceneUndoAndRefresh(t('motion.musicRemoved'), snap, () => {
                           getMotionMenu()?.reRender();
                       });
@@ -244,13 +246,13 @@ export async function importExternalAnimation(
 
     const foc = modelManager.focused();
     if (!foc || !foc.mmdModel) {
-        setStatus(t('motion.retarget.noModel'), false);
+        feedbackStatus('motion.retarget.noModel', undefined, false);
         return;
     }
 
     const mesh = foc.mmdModel.mesh;
     if (!mesh || !mesh.skeleton) {
-        setStatus(t('motion.retarget.noBones'), false);
+        feedbackStatus('motion.retarget.noBones', undefined, false);
         return;
     }
 
@@ -262,5 +264,5 @@ export async function importExternalAnimation(
 
     closeAllOverlays();
     playRetargetedAnimation(scene, result, path);
-    setStatus(t('motion.retarget.loaded', { preset }), true);
+    showInfoToast(t('motion.retarget.loaded', { preset }));
 }
