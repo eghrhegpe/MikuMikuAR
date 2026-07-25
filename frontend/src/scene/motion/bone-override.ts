@@ -512,13 +512,40 @@ function _snapshotProtectedPositions(
 /** 恢复受保护骨骼的 worldMatrix（覆盖循环后调用） */
 function _restoreProtectedPositions(
     boneMap: Map<string, IMmdRuntimeBone>,
-    snapshots: Map<string, Float32Array>
+    snapshots: Map<string, Float32Array>,
+    overrideMap: Map<string, _OverrideSlot>
 ): void {
     for (const [boneName, snap] of snapshots) {
         const rb = boneMap.get(boneName);
         if (!rb) continue;
         const buf = (rb as MmdRuntimeBoneExtended).worldMatrix;
-        if (buf) {
+        if (!buf) continue;
+
+        const slot = overrideMap.get(boneName);
+        if (slot?.enabled && slot.pos) {
+            // 受保护骨骼自身有位置覆盖（如 foot-modules 的 footPosX/Y/Z）。
+            // slot.pos 是世界空间偏移量，覆盖循环把它加到了「传播后位置」上，
+            // 但我们需要的是「动画位置 + slot.pos」。
+            // 当前 buf 已是 propagated_pos + slot.pos（覆盖循环的结果），
+            // 减去传播增量 (propagated - snapshot) 即得正确值：
+            //   final = (propagated + slot.pos) - (propagated - snapshot) = snapshot + slot.pos
+            const propagatedT = _v();
+            Matrix.FromArrayToRef(buf, 0, _m()).getTranslationToRef(propagatedT);
+            const snapshotT = _v();
+            Matrix.FromArrayToRef(snap, 0, _m()).getTranslationToRef(snapshotT);
+            // adjustment = snapshot - propagated（传播增量的反量）
+            const adjustment = snapshotT.subtract(propagatedT);
+            // 将调整量叠加到当前世界位置（= propagated + slot.pos + adjustment = snapshot + slot.pos）
+            propagatedT.addInPlace(adjustment);
+            const rotMat = _m();
+            Matrix.FromArrayToRef(snap, 0, _m()).getRotationMatrixToRef(rotMat);
+            const oldQ = _q();
+            Quaternion.FromRotationMatrixToRef(rotMat, oldQ);
+            const newMat = _m();
+            Matrix.ComposeToRef(_ONE, oldQ, propagatedT, newMat);
+            newMat.copyToArray(buf, 0);
+        } else {
+            // 无自身覆盖：直接恢复到动画位置（完全撤销传播）
             buf.set(snap);
         }
     }
@@ -764,7 +791,7 @@ export function startBoneOverride(
 
         // IK 位置保护：恢复受保护骨骼的 worldMatrix（撤销传播造成的偏移）
         if (ikSnapshots && ikSnapshots.size > 0) {
-            _restoreProtectedPositions(boneMap, ikSnapshots);
+            _restoreProtectedPositions(boneMap, ikSnapshots, overrideMap);
         }
         _protectedIkBoneNames.clear();
     };
