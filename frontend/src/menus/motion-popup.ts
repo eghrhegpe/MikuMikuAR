@@ -14,6 +14,7 @@ import {
 } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
 import { loadManager } from '../core/load-manager';
+import { registerLoadRefreshHook } from '../core/load-refresh-registry';
 import {
     updatePlaybackUI,
     loadVPDPose,
@@ -90,6 +91,9 @@ const {
 });
 
 export { getMotionMenu, refreshMotionRoot, showMotionPopup };
+
+// [doc:P4] 加载模型后刷新根菜单 items（使动作列表等即时更新）
+registerLoadRefreshHook(() => { if (getMotionMenu()) refreshMotionRoot(); });
 
 // 当库扫描完成时，如果动作菜单已打开则 reRender
 const _onLibraryScanned = (): void => {

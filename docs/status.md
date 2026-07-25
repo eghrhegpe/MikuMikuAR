@@ -15,6 +15,7 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
+| ADR-181 | 下载管理面板（扫描→解压→入库→processed 标记） | 规划中（首版草案，待批准）（2026-07-25） |
 | ADR-180 | Web 资源库 FSA 句柄持久化与启动自动重扫 | 实施中（代码已落地，待 CI 回归 + 单测验证）（2026-07-25） |
 | ADR-179 | 更新安装拉起（按平台分级） | 规划中（首版草案，待批准）（2026-07-25） |
 | ADR-178 | 能力矩阵补全宿主级键（四端统一收口） | 实施中（Phase 1 已落地 2026-07-24；Phase 2 已落地 2026-07-25——virtual-skirt.ts/fileservice.ts/settings-resources.ts:412 三处已迁移至能力层，其中 settings-resources.ts:412 配套修正 go-adapter `watchDir` 改为 `!isAndroidPlatform()` 自报（修复 ADR 草案宿主盲点）；其余 5 处判定为平台特有逻辑保留不动；Phase 3 待排期） |
