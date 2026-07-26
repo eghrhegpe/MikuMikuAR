@@ -1,7 +1,7 @@
 # ADR-130: 场景 UI 整体设计与前后端发展方向路线图
 
 > **日期**: 2026-07-18
-> **状态**: 规划中（Phase 1 技术债 ✅1.1 已完成（实质达成，载体 ADR-138 + env 子系统大拆分；env-impl.ts 227 行、edgeFade 纹理独立接入 dispose、循环依赖破除、env 子系统 8 个测试文件 70+ it），1.2/1.3 已解决；Phase 2 ✅2.1/2.2/2.3 已完成，✅2.4 已完成，✅2.7 已完成，2.5/2.6 待推进；Phase 3 能力扩展待推进）
+> **状态**: 规划中（Phase 1 技术债 ✅1.1 已完成（实质达成，载体 ADR-138 + env 子系统大拆分；env-impl.ts 227 行、edgeFade 纹理独立接入 dispose、循环依赖破除、env 子系统 8 个测试文件 70+ it），✅1.2 已完成（popUndoSnapshot 已实现 + Ctrl+Z + 菜单撤销按钮接入 + 测试覆盖），✅1.3 已完成（ADR-128 首部 2026-07-20 标注 5 语种无残留）；Phase 2 ✅2.1/2.2/2.3 已完成，✅2.4 已完成，✅2.7 已完成，2.5/2.6 待推进；Phase 3 能力扩展待推进）
 
 ## 背景
 
@@ -44,15 +44,15 @@
 
 ### 已识别技术债
 
-| 优先级 | 来源 | 问题 |
-|--------|------|------|
-| 🔴 P1 | audit round-3-facade-terrain | `env-impl.ts` 1065 行无直接单测 + `_edgeFadeTexCache` 无 dispose（~25MB 泄漏上限）+ env-impl ↔ env-water 循环依赖 |
-| 🟠 P2 | audit water-reflection-boundary | 水面 RT 分辨率 high=512（建议 1024） |
-| 🟠 P2 | ADR-127 | `_undoStack`/`canUndo` 死代码遗留（栈只 push 不 pop） |
-| 🟡 P3 | ADR-093 | P3 收尾待推进 |
-| 🟡 P3 | ADR-120 | 分类预设导入/导出待定；待真机验证 |
-| 🟡 P3 | audit env-review-triage | 3 处 `createCanvasTexture` 直调绕过缓存 |
-| 🟡 P3 | env-bridge.ts:421/543/700/716 | `SetEnvState({ ...envState })` 全量覆盖，无 partial update |
+| 优先级 | 来源 | 问题 | 状态 |
+|--------|------|------|------|
+| 🔴 P1 | audit round-3-facade-terrain | `env-impl.ts` 1065 行无直接单测 + `_edgeFadeTexCache` 无 dispose（~25MB 泄漏上限）+ env-impl ↔ env-water 循环依赖 | ✅ 已解决（Phase 1.1，载体 ADR-138 + env 子系统大拆分） |
+| 🟠 P2 | audit water-reflection-boundary | 水面 RT 分辨率 high=512（建议 1024） | ✅ 已超出建议（env-water.ts:148 当前 high=2048, medium=1024, low=512） |
+| 🟠 P2 | ADR-127 | `_undoStack`/`canUndo` 死代码遗留（栈只 push 不 pop） | ✅ 已解决（Phase 1.2，`popUndoSnapshot` 已实现 + Ctrl+Z + 撤销按钮接入 + 测试覆盖） |
+| 🟡 P3 | ADR-093 | P3 收尾待推进 | ⚠️ 仍待推进（移除死 builder、删 barrel re-export、全量类型化） |
+| 🟡 P3 | ADR-120 | 分类预设导入/导出待定；待真机验证 | ✅ 导入/导出已完成（env-lighting.ts:308-325 `exportCategorizedEnvPreset`/`importCategorizedEnvPreset` + env-lighting.test.ts 往返/v2 兼容/异常测试）；⚠️ 真机验证仍待推进 |
+| 🟡 P3 | audit env-review-triage | 3 处 `createCanvasTexture` 直调绕过缓存 | ✅ 已不构成问题（4 处直调均有合理设计理由：env-particles 模块自管缓存、env-water 单实例+safeDispose、env-ground `_updateGroundTexture` dispose-then-replace 模式） |
+| 🟡 P3 | env-bridge.ts:421/543/700/716 | `SetEnvState({ ...envState })` 全量覆盖，无 partial update | ✅ 已解决（Phase 2.4，双端 partial update：前端 env-bridge.ts:589 Proxy 局部更新 + Go config.go:277 JSON merge） |
 
 ## 决策
 
@@ -176,8 +176,8 @@ const migrators: Migrator[] = [
 | Phase | 优先级 | 工作量 | 依赖 | 状态 |
 |-------|--------|--------|------|------|
 | Phase 1.1 env-impl 拆分 + 单测 | P1 | 中 | 无 | ✅ 完成（实质达成：env-impl.ts 227 行、edgeFade 纹理已独立并接入 dispose、循环依赖通过 ADR-138 破除、env 子系统 8 个测试文件 70+ it。形式上未改名 env-facade.ts / 未单独建 env-terrain-cache.ts，但 P1 风险已全部消除） |
-| Phase 1.2 ADR-127 死代码处理 | P1 | 小 | 决策岔路 1 | 待推进 |
-| Phase 1.3 ADR-128 验证 | P1 | 小 | ADR-128 已完成 | 待推进 |
+| Phase 1.2 ADR-127 死代码处理 | P1 | 小 | 决策岔路 1 | ✅ 完成（采纳选项 A：`popUndoSnapshot` 已实现 + Ctrl+Z 快捷键接入 + scene-menu/scene-render-levels 撤销按钮接入 + scene-serialize-undo.test.ts 测试覆盖） |
+| Phase 1.3 ADR-128 验证 | P1 | 小 | ADR-128 已完成 | ✅ 完成（ADR-128 首部 2026-07-20 标注：全部 debugMirror 重命名已迁移，i18n 5 语种无残留） |
 | Phase 2.1 EnvState 单一源 | P2 | 大 | 无 | ✅ 完成（ADR-137，schema 派生 + Go 字段补齐） |
 | Phase 2.2 迁移注册表化 | P2 | 中 | 无 | ✅ 完成（scene-serialize.ts 注册表化） |
 | Phase 2.3 性能降级统一 | P2 | 中 | ADR-118 | ✅ 完成（qualityProfile 全链路 + Go 已补齐） |
