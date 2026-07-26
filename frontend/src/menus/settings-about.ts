@@ -1,13 +1,13 @@
 // settings-about.ts — 关于页面（ADR-157 瘦身：仅版本信息 / 链接 / 更新）
 // 设置导入/导出/重置已迁移至 settings-system.ts；快捷键只读副本已删除（可编辑版在操控页）。
 
-import { GetBuildInfo, CheckForUpdate, SetUIAutoUpdate, DownloadApk } from '../core/wails-bindings';
+import { GetBuildInfo, CheckForUpdate, SetUIAutoUpdate, DownloadApk, DownloadAndRunInstaller } from '../core/wails-bindings';
 import { uiState, setUIState, cardContainer } from '../core/config';
 import { slideRow, addToggleRow, addSectionTitle } from '../core/ui-helpers';
 import { browser } from '../core/runtime-bridge';
 import { showInfoToast } from '../core/toast';
 import { t } from '../core/i18n/t';
-import { openExternalURL, isAndroidPlatform } from '../core/platform';
+import { openExternalURL, isAndroidPlatform, isWebPlatform } from '../core/platform';
 import { renderMenu } from './render-menu';
 import type { PopupLevel } from '../core/config';
 import type { MenuNode } from './menu-schema';
@@ -167,7 +167,9 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                                 if (r.available && r.url) {
                                     updateLink.style.display = 'inline';
                                     // [doc:adr-179] Android + direct APK link → "Download & Install"
-                                    const hasDirectInstall = !!r.downloadUrl && isAndroidPlatform();
+                                    // [doc:adr-179] Desktop/Android: direct install when downloadUrl is available
+                                    const hasDirectInstall = !!r.downloadUrl && (isAndroidPlatform() || !isWebPlatform());
+                                    const isDesktopInstall = hasDirectInstall && !isAndroidPlatform();
                                     updateLink.textContent = hasDirectInstall
                                         ? t('settings.about.update.downloadInstall')
                                         : t('settings.about.update.goDownload');
@@ -179,12 +181,26 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                                             }
                                             return;
                                         }
-                                        // Android: download APK then launch installer
                                         updateLink.textContent = t('settings.about.update.downloading');
                                         updateLink.style.pointerEvents = 'none';
                                         try {
-                                            const result = await DownloadApk();
-                                            if (result && result.success && result.localPath) {
+                                            if (isDesktopInstall) {
+                                                // Desktop: download installer + launch (user clicks through OS wizard)
+                                                const result = await DownloadAndRunInstaller();
+                                                if (result && result.success) {
+                                                    updateLink.textContent = t('settings.about.update.installLaunched');
+                                                } else {
+                                                    const errMsg = result?.error || '';
+                                                    updateLink.textContent = t('settings.about.update.downloadFailed');
+                                                    showInfoToast(errMsg || t('settings.about.update.failed'));
+                                                    if (!openExternalURL(r.url)) {
+                                                        void browser.openURL(r.url);
+                                                    }
+                                                }
+                                            } else {
+                                                // Android: download APK then launch installer
+                                                const result = await DownloadApk();
+                                                if (result && result.success && result.localPath) {
                                                 // [doc:adr-179] Register one-shot listener for install failures.
                                                 const onInstallFailed = () => {
                                                     updateLink.textContent = t('settings.about.update.downloadFailed');
@@ -208,6 +224,7 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                                                     void browser.openURL(r.url);
                                                 }
                                             }
+                                            } // close Android else (isDesktopInstall)
                                         } catch {
                                             updateLink.textContent = t('settings.about.update.downloadFailed');
                                             if (!openExternalURL(r.url)) {
