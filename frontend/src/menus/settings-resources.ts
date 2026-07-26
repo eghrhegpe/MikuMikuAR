@@ -154,6 +154,36 @@ function renderAndroidStorage(
         countRow.textContent = t('settings.paths.modelCount') + allModels.length;
         diag.appendChild(countRow);
 
+        // [doc:adr-017] 权限状态行：shared 模式下用户需知道是否已授权，
+        // 否则 count=0 + root=/sdcard/MMD 会让用户困惑为何扫不到模型。
+        // 未授权时整行可点击重新拉起系统授权页（与 switchStorageMode 路径一致）。
+        const w = window.wails;
+        const granted = !!(
+            w &&
+            typeof w.hasStoragePermission === 'function' &&
+            w.hasStoragePermission()
+        );
+        const permRow = document.createElement('div');
+        permRow.textContent = t('settings.storagePermission') + '：';
+        const permSpan = document.createElement('span');
+        if (granted) {
+            permSpan.style.color = 'var(--success, #4caf50)';
+            permSpan.textContent = t('settings.storagePermissionGranted');
+        } else {
+            permSpan.style.color = 'var(--danger)';
+            permSpan.textContent = t('settings.storagePermissionMissing');
+            if (w && typeof w.requestStoragePermission === 'function') {
+                permRow.style.cursor = 'pointer';
+                permRow.title = t('main.needFileAccess');
+                permRow.onclick = () => {
+                    setStatus(t('main.needFileAccess'), true);
+                    w.requestStoragePermission!();
+                };
+            }
+        }
+        permRow.appendChild(permSpan);
+        diag.appendChild(permRow);
+
         inner.appendChild(diag);
     });
 }

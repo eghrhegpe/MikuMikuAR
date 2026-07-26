@@ -124,6 +124,9 @@ export const ja: Record<string, string> = {
     'settings.storageShared': '共有',
     'settings.storageModeDesc':
         'プライベートディレクトリはアンインストール時に削除；共有ディレクトリ(/sdcard/MMD)はストレージ権限が必要でファイルマネージャーからアクセス可',
+    'settings.storagePermission': 'ファイル権限',
+    'settings.storagePermissionGranted': '許可済み',
+    'settings.storagePermissionMissing': '未許可（クリックで要求）',
     'settings.exported': '✓ 設定をエクスポートしました',
     'settings.imported': '✓ 設定をインポートしました',
     'settings.importFailed': '✗ インポート失敗: ',

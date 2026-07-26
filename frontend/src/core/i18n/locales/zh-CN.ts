@@ -1228,6 +1228,9 @@ export const zhCN: Record<string, string> = {
     'settings.storageShared': '授权目录',
     'settings.storageModeDesc':
         '私有目录随应用卸载清除；授权目录(/sdcard/MMD)需存储权限，可通过文件管理器访问',
+    'settings.storagePermission': '文件权限',
+    'settings.storagePermissionGranted': '已授权',
+    'settings.storagePermissionMissing': '未授权（点击请求）',
     'settings.exported': '✓ 设置已导出',
     'settings.imported': '✓ 设置已导入',
     'settings.importFailed': '✗ 导入失败',

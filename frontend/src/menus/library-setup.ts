@@ -200,6 +200,24 @@ export async function switchStorageMode(mode: 'private' | 'shared'): Promise<voi
     if (!ok) {
         return;
     }
+    // [doc:adr-017] shared 模式需 MANAGE_EXTERNAL_STORAGE 权限。
+    // 启动期 checkAndroidStoragePermission() 只弹一次（androidStoragePromptShown 守卫），
+    // 用户在设置页主动切换 shared 时必须主动请求权限，否则授权链路断裂——
+    // Go 端 SetStorageMode 只写 config.root=/sdcard/MMD，不触发任何权限请求。
+    // 未授权时仍写 config，用户授权后 storage:permissionGranted 事件触发
+    // init.ts 的 refreshLibrary 自动扫出模型（ADR-017 §四授权链路）。
+    if (mode === 'shared') {
+        const w = window.wails;
+        if (
+            w &&
+            typeof w.hasStoragePermission === 'function' &&
+            typeof w.requestStoragePermission === 'function' &&
+            !w.hasStoragePermission()
+        ) {
+            setStatus(t('main.needFileAccess'), true);
+            w.requestStoragePermission();
+        }
+    }
     try {
         await SetStorageMode(mode);
         await reloadConfig();
