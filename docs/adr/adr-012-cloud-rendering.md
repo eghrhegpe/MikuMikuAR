@@ -1,7 +1,7 @@
 # ADR-012: 云渲染改进 — Perlin 噪声 + 双分层
 
 > **日期**: 2026-06-27
-> **状态**: 已完成 — env-clouds.ts Perlin FBM 噪声 + 双分层云 + 风漂移视差
+> **状态**: ⚠️ 已过时 — 被 **[ADR-113](adr-113-horizon-volumetric-clouds.md)（体积云 Ray Marching）** 取代；下方 env-clouds.ts Perlin FBM 双分层云方案已退役（其「否决 GPU 着色器云」理由亦被 [ADR-113](adr-113-horizon-volumetric-clouds.md) 推翻）
 
 ---
 

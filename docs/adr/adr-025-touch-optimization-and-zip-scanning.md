@@ -30,13 +30,13 @@ Android 端进入发版测试阶段后暴露两大类问题：
 |------|------|------|
 | ArcRotateCamera 触屏参数 | `camera.ts` | 新增 `isTouchDevice()` 工具函数（`ontouchstart` + `maxTouchPoints` + `matchMedia`），触屏时 `pinchPrecision=32`（灵敏缩放）、`panningSensibility=20`（易拖动）、`multiTouchPanAndZoom=true` |
 | Freefly 双指操控 | `camera.ts` | 新增 `initFreeflyTouch`/`stopFreeflyTouch`：双指捏合 = 前进/后退，双指滑动 = 上下/左右移动，松手自动停止；仅在 freefly 模式激活 |
-| 长按弹详情 | `main.ts` | `pointerdown` 启动 500ms 定时器 → 超时且移动 < 10px → `showModelPopup()` + `buildModelDetailLevel(id)`；`pointermove` 超 10px 取消，`pointerup` 清除 |
+| 长按弹详情 | `main.ts`（ADR-102 拆分后已迁出；`showModelPopup` 现位于 `menus/library-browse.ts`） | `pointerdown` 启动 500ms 定时器 → 超时且移动 < 10px → `showModelPopup()` + `buildModelDetailLevel(id)`；`pointermove` 超 10px 取消，`pointerup` 清除 |
 
 ### P2 — 锦上添花
 
 | 改动 | 文件 | 方案 |
 |------|------|------|
-| 双击聚焦 | `main.ts` | 300ms 内两次 tap 同一位置 → `focusModel(focusedModelId)` 自动构图 |
+| 双击聚焦 | `main.ts`（ADR-102 拆分后已迁出；`focusModel` 现位于 `scene/manager/model-ops.ts`） | 300ms 内两次 tap 同一位置 → `focusModel(focusedModelId)` 自动构图 |
 | 右滑返回 | `menu.ts` | SlideMenu 新增 `touchstart/touchend` 监听：水平滑动 > 60px 且垂直偏移 < 40px → `pop()` 返回上层 |
 | Safe area 适配 | `index.html` + `app.css` | viewport 加 `viewport-fit=cover`；`#bottomNav`/`#statusBar` 加 `padding-bottom: env(safe-area-inset-bottom)` |
 

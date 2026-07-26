@@ -45,6 +45,7 @@ use_when:
 - actionKey 必须是 i18n 短 key（如 'scene.saveSuccess'），不含 {target}。
 - target 是目标名称（如文件名/模型名/预设名），可为 undefined（静默回退）。
 - 当 target 为 string 时，feedback 内部将 t(key, { target }) 拼接为完整文本。
+- `feedbackStatus` 的 `params` 参数用于带占位符的 i18n key（如 `{name}`），此时 target 应为 undefined，避免与占位符替换叠加产生无分隔符拼接。
 
 ## 验证入口
 - 测试：当前主要由 UI 调用链间接覆盖。

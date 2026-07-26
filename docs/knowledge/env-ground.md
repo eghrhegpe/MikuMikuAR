@@ -6,25 +6,27 @@ scope:
   - frontend/src/scene/env/**
 source_files:
   - frontend/src/scene/env/env-ground.ts
+  - frontend/src/scene/env/env-ground-presets.ts
 adr:
   - ADR-114
 ---
 
 ## 系统概览
-地面子系统的完整实现：纯色/纹理/程序化纹理三种地面模式，支持 PBR 材质（ADR-114）、边缘淡出、UV 滚动动画、地面涟漪（与水系统联动）、高度查询（含倾斜平面插值）。程序化纹理含 6 种预设（木材/大理石/混凝土/瓷砖/地毯/金属），每类含 albedo、roughness、normal 三通道生成器。
+地面子系统的完整实现：纯色/纹理/程序化纹理三种地面模式，支持 PBR 材质（ADR-114）、边缘淡出、UV 滚动动画、地面涟漪（与水系统联动）、程序化纹理含 6 种预设（木材/大理石/混凝土/瓷砖/地毯/金属），每类含 albedo、roughness、normal 三通道生成器。预设数据已拆分至独立文件。
 
 ## 核心职责
-- `env-ground.ts` — 地面材质创建/切换、程序化纹理生成、涟漪同步、高度查询、预设管理。
+- `env-ground.ts` — 地面材质创建/切换、程序化纹理生成器注册表、涟漪同步、高度查询。
+- `env-ground-presets.ts` — 地面预设类型定义（`GroundPreset`）、7 套内置预设（`GROUND_PRESETS`）、`buildGroundPresetEnvState` 映射函数。经 `env-ground.ts` barrel re-export 保持向后兼容。
 
 ## 对外 API（节选）
-- `GroundProceduralKind` — 6 种程序化纹理枚举类型。
-- `GroundPreset` / `GROUND_PRESETS` — 地面预设接口与内置预设集合。
+- `GroundProceduralKind` — 6 种程序化纹理枚举类型（定义位于 `env-ground-presets.ts`）。
+- `GroundPreset` / `GROUND_PRESETS` — 地面预设接口与内置预设集合（定义位于 `env-ground-presets.ts`，经 `env-ground.ts` re-export）。
 - `applyGround(state)` — 根据 EnvState 应用地面材质/纹理/模式（204 行核心调度）。
 - `tickGround(dt)` — 每帧更新地面 UV 滚动动画。
 - `getGroundHeightAt(x, z)` — 查询地面高度（含倾斜平面插值，供模型/摄像机站立）。
 - `clearGroundTexCache()` — 清理程序化纹理缓存。
 - `setOnTerrainReady(cb)` / `setOnGroundChanged(cb)` — 地形就绪/地面变化回调。
-- `buildGroundPresetEnvState(preset)` — 从预设构建部分 EnvState。
+- `buildGroundPresetEnvState(preset)` — 从预设构建部分 EnvState（定义位于 `env-ground-presets.ts`，经 `env-ground.ts` re-export）。
 - `disposeGround()` — 释放地面材质、网格、反射与涟漪资源。
 - `_effectiveRoughness(state)` / `_effectiveBumpLevel(state)` — 根据状态计算有效粗糙度/凹凸强度。
 - `_disableGroundRippleTexture(mat)` — 禁用地面涟漪贴图。
