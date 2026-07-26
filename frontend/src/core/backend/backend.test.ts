@@ -78,6 +78,15 @@ describe('browserAdapter 能力矩阵', () => {
         expect(c.cacheManage).toBe(true);
         expect(c.configPersist).toBe(true);
     });
+    it('[adr-190] 安装/更新能力键：浏览器侧固定 false（fsSelectDir 跟随 fsAccess）', () => {
+        const c = browserAdapter.capabilities();
+        expect(c.installApk).toBe(false);
+        expect(c.installLocal).toBe(false);
+        expect(c.inAppBrowser).toBe(false);
+        expect(c.localStaging).toBe(false);
+        expect(c.androidStorageMode).toBe(false);
+        expect(c.fsSelectDir).toBe(c.fsAccess);
+    });
     it('readFileBytes 返回 Uint8Array | null 契约', async () => {
         const r = await browserAdapter.readFileBytes('nope');
         expect(r).toBeNull();

@@ -39,7 +39,6 @@ import { CATEGORY_DIR } from '../core/utils';
 import { logWarn } from '../core/logger';
 import { SETTINGS_ACTION } from './settings-targets';
 import { SETTINGS_ACTIONS } from './settings-actions';
-import { isAndroidPlatform } from '../core/platform';
 import { getCachedCapabilities } from '../core/backend';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
@@ -191,7 +190,7 @@ function renderAndroidStorage(
 function buildStorageSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
     const root = resourceRoot;
     const rootSub = root ? truncatePath(root) : t('settings.paths.notSet');
-    const isAndroid = isAndroidPlatform();
+    const showNativePath = getCachedCapabilities().fsSelectDir;
 
     return [
         {
@@ -200,7 +199,7 @@ function buildStorageSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode
             // [doc:adr-177] A5 能力门控：storageMode===false 时隐藏存储模式卡片（浏览器固定 web 模式）
             visibleWhen: () => getCachedCapabilities().storageMode,
             renderCustom: (c) => {
-                if (!isAndroid) {
+                if (showNativePath) {
                     cardContainer(c, (inner) => {
                         addSectionTitle(inner, t('settings.paths.storage'));
                         slideRow(

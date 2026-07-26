@@ -39,6 +39,13 @@ export interface BackendCapabilities {
     // [doc:adr-189] GPU 压缩纹理能力（运行时探测，非后端能力）
     ktx2Supported: boolean; // GPU 支持 KTX2 压缩纹理（ASTC/BC7/ETC2 任一）
     ktx2PreferredFormat: 'astc' | 'bc7' | 'etc2' | null; // 推荐转码目标格式；null 表示不支持
+    // —— 安装/更新能力键（ADR-190：声明式收口，淘汰散落 isAndroidPlatform() 分支）——
+    installApk: boolean; // 可直接安装 APK（安卓原生下载后拉起安装器）
+    installLocal: boolean; // 有本地安装器路径（桌面/安卓可直装，网页跳转外链）
+    inAppBrowser: boolean; // 可内嵌窗口/独立窗口浏览广场（桌面 Wails 原生窗口；网页/安卓走系统浏览器）
+    fsSelectDir: boolean; // 能原生或 FSA 选择目录（桌面原生对话框 + 网页 FSA；安卓 WebView 不可）
+    localStaging: boolean; // 桌面级暂存目录可用（_desktopStagingPath 写盘；网页走 IndexedDB 路径）
+    androidStorageMode: boolean; // 安卓专属存储模式切换（private/shared 作用域）
 }
 
 // ④ 零业务调用函数（ADR-176 实证章节清单）—— 从 BackendService 接口排除。

@@ -113,6 +113,13 @@ const ALL_TRUE_CAPS: BackendCapabilities = {
     // [doc:adr-189] 保守默认：不支持 KTX2；解析后由 detectKtx2Support() 覆盖
     ktx2Supported: false,
     ktx2PreferredFormat: null,
+    // [doc:adr-190] 兜底默认：假设桌面全开（解析后由真实后端覆盖）
+    installApk: false, // 仅安卓原生可直装 APK
+    installLocal: true, // 桌面有本地安装器路径
+    inAppBrowser: true, // 桌面可内嵌/独立窗口
+    fsSelectDir: true, // 桌面原生目录选择
+    localStaging: true, // 桌面级暂存目录
+    androidStorageMode: false, // 仅安卓专属
 };
 
 export async function getCapabilities(): Promise<BackendCapabilities> {

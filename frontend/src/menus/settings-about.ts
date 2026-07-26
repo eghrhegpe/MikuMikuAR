@@ -7,7 +7,8 @@ import { slideRow, addToggleRow, addSectionTitle } from '../core/ui-helpers';
 import { browser } from '../core/runtime-bridge';
 import { showInfoToast } from '../core/toast';
 import { t } from '../core/i18n/t';
-import { openExternalURL, isAndroidPlatform, isWebPlatform } from '../core/platform';
+import { openExternalURL } from '../core/platform';
+import { getCachedCapabilities } from '../core/backend';
 import { renderMenu } from './render-menu';
 import type { PopupLevel } from '../core/config';
 import type { MenuNode } from './menu-schema';
@@ -168,8 +169,8 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                                     updateLink.style.display = 'inline';
                                     // [doc:adr-179] Android + direct APK link → "Download & Install"
                                     // [doc:adr-179] Desktop/Android: direct install when downloadUrl is available
-                                    const hasDirectInstall = !!r.downloadUrl && (isAndroidPlatform() || !isWebPlatform());
-                                    const isDesktopInstall = hasDirectInstall && !isAndroidPlatform();
+                                    const hasDirectInstall = !!r.downloadUrl && getCachedCapabilities().installLocal;
+                                    const isDesktopInstall = hasDirectInstall && !getCachedCapabilities().installApk;
                                     updateLink.textContent = hasDirectInstall
                                         ? t('settings.about.update.downloadInstall')
                                         : t('settings.about.update.goDownload');

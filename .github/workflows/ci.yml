@@ -84,7 +84,7 @@ jobs:
 
   test-backend:
     name: Backend — Go Test & Build
-    needs: test-frontend
+    needs: [test-frontend, e2e]
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -241,8 +241,7 @@ jobs:
   e2e-wails:
     name: E2E — Full Integration (@webgl, wailsPage)
     runs-on: windows-latest
-    needs: e2e
-    continue-on-error: true
+    needs: [test-frontend, e2e]
     defaults:
       run:
         shell: bash
@@ -378,6 +377,91 @@ jobs:
         with:
           name: playwright-web-report
           path: frontend/playwright-report/
+
+  # ============================================================
+  # E2E — Web Full Integration (@web, full suite)
+  # Runs ALL @web tagged tests including smoke, resource loading,
+  # FSA auth flow, download panel, and capabilities verification.
+  # This is a BLOCKING gate — merge is blocked on failure.
+  # @see docs/adr/adr-176/177/178/180/181/182/183
+  # ============================================================
+  e2e-web-full:
+    name: E2E — Web Full Suite (@web, all specs)
+    runs-on: ubuntu-latest
+    needs: [test-frontend, e2e]
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build web entry + start preview server
+        run: |
+          npx vite build --config vite.web.config.ts
+          npx vite preview --config vite.web.config.ts --port 4174 --strictPort &
+          for i in $(seq 1 30); do
+            if curl -s http://127.0.0.1:4174/MikuMikuAR/ >/dev/null; then
+              echo "Web preview server is up"; break
+            fi
+            sleep 2
+          done
+
+      - name: Run all @web E2E tests
+        run: |
+          npx playwright test --grep "@web" --reporter=line
+          TEST_EXIT=$?
+          pkill -f "vite preview" || true
+          exit $TEST_EXIT
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: playwright-web-full-report
+          path: frontend/playwright-report/
+
+  # ============================================================
+  # E2E — Merge Gate (ALL platforms must pass)
+  # This job is the single merge gate for all E2E tests.
+  # If any @dom / @webgl / @web job fails, this job fails and
+  # blocks the merge. Configure in branch protection rules as
+  # the required status check.
+  # ============================================================
+  e2e-gate:
+    name: E2E — Merge Gate (all platforms)
+    runs-on: ubuntu-latest
+    needs: [e2e, e2e-wails, e2e-web-smoke, e2e-web-full]
+    if: always()
+    steps:
+      - name: Check E2E results
+        run: |
+          echo "Checking E2E merge gate..."
+          FAILED=""
+          for job in e2e e2e-wails e2e-web-smoke e2e-web-full; do
+            RESULT="${{ needs.$job.result }}"
+            echo "  $job: $RESULT"
+            if [ "$RESULT" != "success" ] && [ "$RESULT" != "skipped" ]; then
+              FAILED="$FAILED $job"
+            fi
+          done
+          if [ -n "$FAILED" ]; then
+            echo "::error::E2E gate FAILED — the following jobs did not pass:$FAILED"
+            exit 1
+          fi
+          echo "::notice::E2E merge gate PASSED — all platform tests green"
 
   ai-mistake-report:
     name: AI — Mistake Tracker Report
