@@ -1,6 +1,6 @@
 # ADR-110: IMmdModel 接口类型补全 — 上游 PR 计划
 
-> **状态**: 草案 · 待立项（作为「babylon-mmd 上游贡献登记册」总入口；条目 1 = IMmdModel 接口补全已立项，条目 2–10 = 跨 ADR 候选 / 已否决 / 已延期，统一归集避免散落）
+> **状态**: 草案 · 待立项（作为「babylon-mmd 上游贡献登记册」总入口；条目 1 = IMmdModel 接口补全已立项，条目 2–11 = 跨 ADR / 研究候选 / 已否决 / 已延期，统一归集避免散落）
 
 **决策者**: Riku（联邦首席架构师 AI）、Jieling（人类侧首席架构师）
 
@@ -17,6 +17,7 @@
 ## 上游贡献候选登记册（跨 ADR 汇总）
 
 > 本 ADR 同时作为「向 `noname0310/babylon-mmd` 提 PR 的单一权威登记册」。各源 ADR 正文中的「提上游 PR / 推动上游 / fork」表述均归集于此，避免散落、口径不一。
+> 导航入口见 [`docs/upstream/README.md`](../../upstream/README.md)（上游贡献文档区统一安放点）。
 > 决策语义：`✅ 已立项` = 采用提 PR；`⏸ 延期/评估` = 本地已替代，远期可重议；`❌ 已否决` = 本地方案更优或维护成本不可控；`⛔ 上游阻塞` = 依赖上游自身路线图，非本项目范畴。
 
 | # | 来源 ADR | 建议的上游 PR / 贡献内容 | 决策 | 上游价值 | 落地难度 |
@@ -31,11 +32,12 @@
 | 8 | ADR-016 | 暴露 `beforePhysics` / `afterPhysics` 钩子供手动计时（gaze 优化项） | ⏸ 优化项（当前 WASM frontBuffer 直写 + JS linkedBone 双路径已落地） | 低 | 中 |
 | 9 | ADR-085 | fork 暴露 `ikSolver` 字段及 `solve()`（脚部 IK 统一 JS/WASM 路径） | ⏸ 长期（方案 C WASM 手动 IK 已于 2026-07-26 落地，方案 A 降级） | 中 | 高（fork） |
 | 10 | ADR-188 / ADR-187 | `PBRMaterialBuilder` 落地（morph 兼容 PBR，根治 ADR-024 阻塞） | 📋 草案（P1 长期规划，独立专项 ADR-188） | 高（材质升级） | 大 |
+| 11 | 研究 `wind-affect-wasm-physics.md` | fork babylon-mmd 在 `MmdWasmPhysics` 加 `setWind(windForce: Vector3)`（WASM Bullet 刚体受风） | ❌ 不追（本地方案 A+C：runtime 反射 + `onBeforeRenderObservable` 已覆盖；fork/PR 仅作兜底，与条目 4/5 同桶） | 低（边际收益，仅 MMD 骨髁物理受风） | 高（fork + WASM 内存） |
 
 ### 登记册治理规则
 
 - **唯一入口**：任何 ADR 出现「向 babylon-mmd 提 PR」类建议，必须在此登记册追加一行并回链源 ADR，不得在源 ADR 内自成体系。
-- **决策冻结点**：条目 1 已采纳；条目 3/4/5 已否决/封存（本地替代方案已闭环，不再追溯）；条目 2/8/9 为远期可重议；条目 6/7/10 受上游路线图或专项 ADR 约束。
+- **决策冻结点**：条目 1 已采纳；条目 3/4/5/11 已否决/封存（本地替代方案已闭环，不再追溯）；条目 2/8/9 为远期可重议；条目 6/7/10 受上游路线图或专项 ADR 约束。
 - **验收后清理**：条目 1 上游合并后，按本文「步骤四」移除 `core/types.ts` augmentation；其余条目若未来启动 PR，从本登记册升级为独立实现计划。
 
 ---

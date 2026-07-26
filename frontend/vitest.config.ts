@@ -18,10 +18,14 @@ export default defineConfig({
     test: {
         environment: "happy-dom",
         globals: true,
-        // 兜底防卡死：漏挂 mock / 永不 resolve 的 Promise 最多挂 10s 后报超时失败，
-        // 而不是让整个 vitest run 永久挂着。需要更长耗时的用例在 test() 第三参覆盖。
+        // 兜底防卡死：
+        // 1) testTimeout/hookTimeout 管「用例/钩子本身卡死」——漏挂 mock 或永不 resolve 的
+        //    Promise 最多挂 10s/15s 后报超时失败，不拖垮整个 vitest run。
+        // 2) forceExit 管「用例全过但进程不退」——如整桶 import 触发 pending 微任务导致
+        //    fork worker 回收失败（virtual-skirt 历史 hang 即此形态）。开它可保证 run 终会退出。
         testTimeout: 10000,
         hookTimeout: 15000,
+        forceExit: true,
         exclude: [
             "e2e/**",
             "node_modules/**",

@@ -96,7 +96,7 @@
 | ADR-113 | 体积云延展地平线与画质/性能升级 | 完成（前置渲染分层 + Phase A slab-uniform 步长/地平线延展/地面交界/距离雾 + Phase B Weather Map/Erosion + Phase C 双瓣散射/Powder/高度梯度日落着色 + Phase D1 Blue-noise dither 全部落地） |
 | ADR-112 | SdefInjector + SdefMesh 接入 — SDEF 球面变形 | 已完成（2026-07-14 决策；2026-07-22 修正实现 — 由空操作 side-effect import 改为显式 `OverrideEngineCreateEffect(engine)` 调用，SDEF 方真正生效） |
 | ADR-111 | 场景/环境菜单按用户直觉重新划分 | 已实施 |
-| ADR-110 | IMmdModel 接口类型补全 — 上游 PR 计划 | 草案 · 待立项（作为「babylon-mmd 上游贡献登记册」总入口；条目 1 = IMmdModel 接口补全已立项，条目 2–10 = 跨 ADR 候选 / 已否决 / 已延期，统一归集避免散落） |
+| ADR-110 | IMmdModel 接口类型补全 — 上游 PR 计划 | 草案 · 待立项（作为「babylon-mmd 上游贡献登记册」总入口；条目 1 = IMmdModel 接口补全已立项，条目 2–11 = 跨 ADR / 研究候选 / 已否决 / 已延期，统一归集避免散落） |
 | ADR-109 | AR 模块审查结论与遗留项排期 | `部分实现`（2026-07-14） |
 | ADR-108 | AnimationRetargeter + HumanoidMmd 接入 — 扩展动作来源 | 已落地（2026-07-14 — 桥接模块 + UI 入口；2026-07-22 — 文件格式过滤 + 场景序列化 + 状态管理完整落地；2026-07-26 — additive 模式兼容性风险审查） |
 | ADR-107 | StreamAudioPlayer 接入 — 替换自建音频管线 | 已完成（2026-07-14 落地 — 全 3 阶段：内部实现替换 + 测试适配 + MmdRuntime 集成） |
