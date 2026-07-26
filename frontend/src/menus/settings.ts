@@ -22,6 +22,7 @@ import { buildSettingsAppearanceLevel } from './settings-appearance';
 import { buildSettingsGraphicsLevel } from './settings-graphics';
 import { buildSettingsControlsLevel } from './settings-controls';
 import { buildSettingsResourcesLevel } from './settings-resources';
+import { buildSettingsDownloadsLevel } from './settings-downloads';
 import { buildSettingsMediaLevel } from './settings-media';
 import { buildSettingsSystemLevel, buildSoftwareDetailLevel } from './settings-system';
 import { buildSettingsAboutLevel } from './settings-about';
@@ -72,6 +73,12 @@ function buildSettingsRootItems(): PopupRow[] {
         label: t('settings.resources'),
         icon: 'lucide:folder-tree',
         target: SETTINGS.RESOURCES,
+    });
+    items.push({
+        kind: 'folder',
+        label: t('settings.downloads'),
+        icon: 'lucide:download',
+        target: SETTINGS.DOWNLOADS,
     });
     items.push({
         kind: 'folder',
@@ -129,6 +136,7 @@ const SETTINGS_FOLDER_ROUTES: Record<SettingsFolderTarget, () => PopupLevel> = {
     [SETTINGS.GRAPHICS]: () => buildSettingsGraphicsLevel(getSettingsMenu),
     [SETTINGS.CONTROLS]: () => buildSettingsControlsLevel(getSettingsMenu),
     [SETTINGS.RESOURCES]: () => buildSettingsResourcesLevel(getSettingsMenu),
+    [SETTINGS.DOWNLOADS]: () => buildSettingsDownloadsLevel(getSettingsMenu),
     [SETTINGS.MEDIA]: () => buildSettingsMediaLevel(getSettingsMenu),
     [SETTINGS.SYSTEM]: () => buildSettingsSystemLevel(getSettingsMenu),
     [SETTINGS.ABOUT]: () => buildSettingsAboutLevel(getSettingsMenu),

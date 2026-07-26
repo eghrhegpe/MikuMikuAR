@@ -45,6 +45,7 @@ export const en: Record<string, string> = {
     'settings.graphics': 'Graphics',
     'settings.controls': 'Controls',
     'settings.resources': 'Resources',
+    'settings.downloads': 'Downloads',
     'settings.media': 'Media',
     'settings.system': 'System',
 
@@ -1820,6 +1821,27 @@ export const en: Record<string, string> = {
     'shortcuts.resetAll': 'Reset Default Shortcuts',
     'shortcuts.custom': 'Custom',
     'settings.paths.watchDirPlaceholder': 'Select watch directory...',
+
+    // ===== [doc:adr-181] 下载管理 panel =====
+    'downloads.stagingDir': 'Staging Directory',
+    'downloads.stagingSet': 'Set: {dir}',
+    'downloads.stagingNotSet': 'Staging directory not set',
+    'downloads.androidStagingHint': 'Android: SAF authorization required (TBD)',
+    'downloads.pickStagingDir': 'Choose Staging Directory',
+    'downloads.scanImport': 'Scan & Import',
+    'downloads.scanAndImport': 'Scan & Import',
+    'downloads.running': 'Running...',
+    'downloads.scanning': 'Scanning...',
+    'downloads.importingN': 'Importing {count} files...',
+    'downloads.importingProgress': 'Imported {ok}/{total}, {fail} failed',
+    'downloads.done': 'Done: {ok} succeeded, {fail} failed',
+    'downloads.noNewFiles': 'No new files found',
+    'downloads.manageImported': 'Imported Files',
+    'downloads.clearImported': 'Clear Imported Records',
+    'downloads.clearConfirm': 'Clear all imported records? Actual files will not be deleted.',
+    'downloads.androidNotReady': 'Android not yet supported (SAF integration pending)',
+    'downloads.permissionNeeded': 'Permission to read staging directory is required',
+
     // ===== i18n audit fixes 2026-07-13 =====
     'boot.engineReady': '✅ Engine ready',
     'boot.readyHint': '✨ Ready · Click "Model" to import PMX',

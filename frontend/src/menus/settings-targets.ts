@@ -7,6 +7,7 @@ export const SETTINGS = {
     GRAPHICS: 'settings:graphics',
     CONTROLS: 'settings:controls',
     RESOURCES: 'settings:resources',
+    DOWNLOADS: 'settings:downloads',
     MEDIA: 'settings:media',
     SYSTEM: 'settings:system',
     ABOUT: 'settings:about',
