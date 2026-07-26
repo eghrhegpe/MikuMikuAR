@@ -55,7 +55,7 @@ scene-menu.ts → env-feature-levels.ts: import { buildGroundLevel, buildWaterLe
 | 1 | env-feature-levels.ts | 按子系统拆 `env-sky/ground/water/wind/cloud/fog/shadow/experimental-levels.ts`（8 文件）+ 抽公共助手 `_buildLevel`/`_openTexturePicker` 到 `env-level-helpers.ts` | 🟢 低 | 阶段 1 | ✅ 2026-07-20（`7bfeaae5`） |
 | 2 | plaza.ts | 拆 `plaza-browser.ts` / `plaza-download.ts` / `plaza-thumbnail.ts`；先提取模块级状态（`_plazaBtn`/`_plazaSectionHeader` 等）到 `plaza-state.ts` 或改传参 | 🟠 中（模块级状态） | 阶段 2 | ✅ 2026-07-20（`d39afbaa` + `6a91e9d9`） |
 | 3 | camera.ts（状态部分） | 先拆纯函数（`getCameraPreset`/`setCameraPreset`/`getOrbitParams` 等）到 `camera-state.ts`；不动依赖 scene.ts 的行为部分 | 🟠 中（循环依赖） | 阶段 3 | ✅ 达标（状态抽离 `383bb3f9`；行为部分续拆为 5 子模块，行数 715 ≤1000，见验收） |
-| 4 | scene-serialize.ts（迁移函数） | 抽 `migratePerceptionFromProcMotion`/`migrateLipSyncFromOldState` 等纯函数到 `scene-migrate.ts`；`serializeScene`/`deserializeScene` 留作后续 | 🟢 低 | 阶段 4 | ✅ 部分达成（迁移函数抽离；行数目标未达，见验收） |
+| 4 | scene-serialize.ts（迁移函数） | 抽 `migratePerceptionFromProcMotion`/`migrateLipSyncFromOldState` 等纯函数到 `scene-migrate.ts`；`serializeScene`/`deserializeScene` 留作后续 | 🟢 低 | 阶段 4 | ✅ 决策关闭（迁移函数已抽离；主体保留有理由，见验收） |
 | 5 | motion-popup.ts | 暂缓，等 `motion-camera-levels.ts`/`motion-override-levels.ts`/`motion-cloth-levels.ts` 等子面板稳定后，剩下的入口 + 播放控制核心约 500 行再剥离 | 🔴 高 | 阶段 5 | ✅ 提前执行 2026-07-21（`492a8c52`） |
 
 ### 循环依赖处理策略
@@ -145,10 +145,14 @@ scene-menu.ts → env-feature-levels.ts: import { buildGroundLevel, buildWaterLe
 - ✅ 循环依赖切断：camera.ts 通过回调注入（`setSwitchCameraModeCallback` / `setSchedulePersistCallback` / `setSyncAxesCallback`）让子模块单向依赖 camera-state，不再回引 camera.ts
 - ✅ 向后兼容：camera.ts 作为 barrel 入口 re-export 全部公开符号，下游消费者无需改 import 路径
 
-### 阶段 4（scene-serialize.ts 迁移函数）— ⚠️ 部分达成
+### 阶段 4（scene-serialize.ts 迁移函数）— ✅ 决策关闭（主体保留）
 - ✅ `migrateLipSyncFromOldState` + `migratePerceptionFromProcMotion` 迁移到 `scene-migrate.ts`(74 行，纯函数无 scene 依赖)
 - ✅ `perception.test.ts` 仍绿
-- ⚠️ **偏离**：`scene-serialize.ts` 行数 **1414**（目标「行数减少」未达，反而增大）。根因：`serializeScene`/`deserializeScene` 主体未动，且运行中持续吸纳新序列化字段，迁移函数抽离仅带走 74 行，净效果为负。
+- **2026-07-26 决策**：`scene-serialize.ts` 主体（1503 行）保留，不再拆分。理由：
+  1. `serializeScene`（240 行）+ `deserializeScene`（370 行）共享大量私有 helper（`deserializeModels` 等）+ 共享 `_suppressAutoSave` 模块级状态，抽离后必须暴露大量内部 helper，反而增加耦合面
+  2. 当前虽超 1000 行目标，但**单文件单一职责清晰**（仅序列化），与 camera.ts 的多职责混合不同，非真正"过载"
+  3. 强行拆分仅为行数达标，收益低于风险
+- 状态由「部分达成（行数目标未达）」升级为「决策关闭（主体保留有理由）」
 
 ### 阶段 5（motion-popup.ts）— ✅ 提前执行
 - ✅ 未遵循「暂缓」原定，于 2026-07-21 提前拆分（`492a8c52`）
@@ -158,6 +162,18 @@ scene-menu.ts → env-feature-levels.ts: import { buildGroundLevel, buildWaterLe
 ---
 
 ## 修订记录
+
+### 2026-07-26 阶段 4 决策关闭（主体保留）
+
+- `scene-serialize.ts` 当前 1503 行，超过 ≤1000 行目标
+- **决策**：主体（`serializeScene` + `deserializeScene`）保留，不再拆分
+- **理由**：
+  1. `serializeScene`（240 行）+ `deserializeScene`（370 行）共享大量私有 helper（`deserializeModels` 等）+ 共享 `_suppressAutoSave` 模块级状态，抽离后必须暴露大量内部 helper，反而增加耦合面
+  2. 单文件单一职责清晰（仅序列化），与 camera.ts 的多职责混合不同，非真正"过载"
+  3. 强行拆分仅为行数达标，收益低于风险
+- 迁移函数（`migrateLipSyncFromOldState` / `migratePerceptionFromProcMotion`）已于早期抽离到 `scene-migrate.ts`
+- 状态：阶段 4 由「部分达成（行数目标未达）」升级为「决策关闭（主体保留有理由）」
+- ADR-148 工程全部 5 阶段收口完成
 
 ### 2026-07-26 阶段 3 行数目标达标（行为部分续拆）
 
