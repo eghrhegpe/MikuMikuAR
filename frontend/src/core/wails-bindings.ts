@@ -110,6 +110,7 @@ export const PlazaZoomIn = _p('PlazaZoomIn');
 export const PlazaZoomOut = _p('PlazaZoomOut');
 export const PlazaZoomReset = _p('PlazaZoomReset');
 export const ReadTextFile = _p('ReadTextFile');
+export const WriteTextFile = _p('WriteTextFile');
 export const RemoveCustomSoftware = _p('RemoveCustomSoftware');
 export const RemoveTag = _p('RemoveTag');
 export const SaveEnvPresetAuto = _p('SaveEnvPresetAuto');

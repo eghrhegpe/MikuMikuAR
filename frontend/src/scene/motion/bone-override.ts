@@ -527,25 +527,22 @@ function _restoreProtectedPositions(
         const slot = overrideMap.get(boneName);
         if (slot?.enabled && slot.pos) {
             // 受保护骨骼自身有位置覆盖（如 foot-modules 的 footPosX/Y/Z）。
-            // slot.pos 是世界空间偏移量，覆盖循环把它加到了「传播后位置」上，
-            // 但我们需要的是「动画位置 + slot.pos」。
-            // 当前 buf 已是 propagated_pos + slot.pos（覆盖循环的结果），
-            // 减去传播增量 (propagated - snapshot) 即得正确值：
-            //   final = (propagated + slot.pos) - (propagated - snapshot) = snapshot + slot.pos
-            const propagatedT = _v();
-            Matrix.FromArrayToRef(buf, 0, _m()).getTranslationToRef(propagatedT);
+            // 需要的结果是「动画位置 + slot.pos」：
+            // snapshotT = 覆盖前的位置（= 动画位置）
+            // finalT = snapshotT + slot.pos
+            // 旋转保持快照值。
             const snapshotT = _v();
             Matrix.FromArrayToRef(snap, 0, _m()).getTranslationToRef(snapshotT);
-            // adjustment = snapshot - propagated（传播增量的反量）
-            const adjustment = snapshotT.subtract(propagatedT);
-            // 将调整量叠加到当前世界位置（= propagated + slot.pos + adjustment = snapshot + slot.pos）
-            propagatedT.addInPlace(adjustment);
+            const finalT = snapshotT.add(slot.pos);
+            buf[12] = finalT.x;
+            buf[13] = finalT.y;
+            buf[14] = finalT.z;
             const rotMat = _m();
             Matrix.FromArrayToRef(snap, 0, _m()).getRotationMatrixToRef(rotMat);
             const oldQ = _q();
             Quaternion.FromRotationMatrixToRef(rotMat, oldQ);
             const newMat = _m();
-            Matrix.ComposeToRef(_ONE, oldQ, propagatedT, newMat);
+            Matrix.ComposeToRef(_ONE, oldQ, finalT, newMat);
             newMat.copyToArray(buf, 0);
         } else {
             // 无自身覆盖：直接恢复到动画位置（完全撤销传播）

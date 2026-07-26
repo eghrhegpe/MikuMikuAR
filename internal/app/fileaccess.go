@@ -59,6 +59,14 @@ func (a *App) ReadTextFile(path string) (string, error) {
 	return string(data), nil
 }
 
+// WriteTextFile writes content to the file at path, creating or truncating it.
+// Counterpart to ReadTextFile; used by the frontend to persist fetched plaza
+// config (sites + creators) locally so it survives restarts without depending
+// on the hardcoded PLAZA_SITES fallback.
+func (a *App) WriteTextFile(path string, content string) error {
+	return os.WriteFile(path, []byte(content), 0644)
+}
+
 // ReadFileBytes reads the entire contents of the file at path and returns it
 // as a byte slice. Wails v3 automatically maps []byte to Uint8Array on the
 // frontend side. This is the binary counterpart of ReadTextFile, used by the

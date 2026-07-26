@@ -1119,3 +1119,13 @@ export function ToggleFavorite(libraryRef: string): $CancellablePromise<void> {
 export function UpdateCustomSoftware(path: string, name: string, args: string): $CancellablePromise<void> {
     return $Call.ByID(1840334952, path, name, args);
 }
+
+/**
+ * WriteTextFile writes content to the file at path, creating or truncating it.
+ * Counterpart to ReadTextFile; used by the frontend to persist fetched plaza
+ * config (sites + creators) locally so it survives restarts without depending
+ * on the hardcoded PLAZA_SITES fallback.
+ */
+export function WriteTextFile(path: string, content: string): $CancellablePromise<void> {
+    return $Call.ByID(2174915943, path, content);
+}
