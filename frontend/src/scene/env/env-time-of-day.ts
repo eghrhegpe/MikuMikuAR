@@ -9,6 +9,8 @@ import { feedbackStatus } from '@/core/feedback';
 import {
     lerp as lerpUtil,
     lerpArray,
+} from '@/core/clamp';
+import {
     formatTimestamp,
     logWarn,
     setKey,

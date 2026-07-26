@@ -4,7 +4,7 @@
 import { createIconifyIcon } from './icons';
 import { ControlOptions } from './ui-types';
 import { initControl } from './ui-rows';
-import { clampPct } from '@/core/utils';
+import { clampPct } from '@/core/clamp';
 import { col3FromTriple, rgbString } from './color-helpers';
 import { DragSliderController } from './ui-slider-controller';
 

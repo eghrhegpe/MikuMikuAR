@@ -6,7 +6,8 @@ import { getCurrentRenderingMenu } from '../menus/menu';
 import { ControlOptions } from './ui-types';
 import { slideRow } from './ui-slide-row';
 import { t } from './i18n/t';
-import { clamp01, clampPct, swallowError } from '@/core/utils';
+import { clamp01, clampPct } from '@/core/clamp';
+import { swallowError } from '@/core/async';
 import { DragSliderController } from './ui-slider-controller';
 import { SLIDER_QUARTER_LARGE_STEP, SLIDER_QUARTER_SMALL_STEP } from './ui-constants';
 

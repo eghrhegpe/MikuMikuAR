@@ -6,7 +6,8 @@
 import { Quaternion, Matrix, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 import type { MmdRuntimeBoneExtended } from '@/core/types';
-import { clamp01, triggerAutoSave } from '@/core/utils';
+import { clamp01 } from '@/core/clamp';
+import { triggerAutoSave } from '@/core/utils';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { safeDispose } from '@/core/dispose-helpers';
 import { getMotionPipeline } from './motion-pipeline';

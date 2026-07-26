@@ -24,7 +24,7 @@ import { feedbackStatus } from '@/core/feedback';
 import { showInfoToast } from '@/core/toast';
 import type { ModelMotionSlots } from '@/core/types';
 import { getBaseName, isUnderRoot } from '@/core/path';
-import { swallowError } from '@/core/utils';
+import { swallowError } from '@/core/async';
 import { logWarn } from '@/core/logger';
 import { parsePmxComment } from '@/core/pmx-meta';
 import {

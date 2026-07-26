@@ -1,0 +1,130 @@
+// 零依赖叶（仅引轻量 ./logger）：纯异步工具与生命周期守卫。
+// 下沉自 @/core/utils（god barrel）；去桶化纪律与根因见 ADR-191。
+// 注意：本叶不引入 dom/state/fileservice/status-bar/i18n/feedback/menus 等应用层，
+// 故纯模块可安全引用而无需拖起应用层（对比 @/core/utils 桶）。
+
+import { logWarn } from './logger';
+
+/**
+ * 吞掉 promise 的异常并记录日志（比空 `.catch(() => {})` 可调试）。
+ * 不返回值——用于 fire-and-forget 场景。内部调用 logWarn，确保错误不沉默。
+ */
+export function swallowError<T>(promise: Promise<T>): void {
+    promise.catch((err) => logWarn('swallow', '', err));
+}
+
+/** 启动一个异步操作但不等待，异常由 swallowError 兜底。 */
+export function fireAndForget(fn: () => Promise<void>): void {
+    swallowError(fn());
+}
+
+/** Promise 包装的延迟。 */
+export function delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Promise 包装的等待下一帧。 */
+export function waitForFrame(): Promise<void> {
+    // 用箭头函数显式忽略 rAF 的 time 参数，避免 resolve (void) 与 FrameRequestCallback (number) 类型冲突
+    return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+}
+
+// ======== Lifecycle Guards ========
+
+/**
+ * 并发加载守卫——防止同一 key 的异步操作重复触发。
+ * 覆盖两种模式：
+ * - Set 模式：`tryEnter('modelId')` / `leave('modelId')`，多 key 并发去重
+ * - Boolean 模式：`tryEnter()` / `leave()` 无参，单实例锁定
+ */
+export class LoadingGuard {
+    private _loading = new Set<string>();
+
+    /** 尝试进入加载状态。返回 true 表示获准进入，false 表示已有同 key 操作进行中。 */
+    tryEnter(key: string = '__default__'): boolean {
+        if (this._loading.has(key)) {
+            return false;
+        }
+        this._loading.add(key);
+        return true;
+    }
+
+    /** 退出加载状态，释放 key 占用。 */
+    leave(key: string = '__default__'): void {
+        this._loading.delete(key);
+    }
+
+    /** 查询指定 key 是否正在加载中。 */
+    isLoading(key: string = '__default__'): boolean {
+        return this._loading.has(key);
+    }
+
+    /** 清除所有加载状态（异常恢复用）。 */
+    clear(): void {
+        this._loading.clear();
+    }
+}
+
+/**
+ * 防抖定时器——封装 setTimeout 的 schedule/cancel 样板。
+ * 重复调用 schedule 会取消前一个定时器，仅最后一个生效。
+ */
+export class DebouncedTimer {
+    private _timer: ReturnType<typeof setTimeout> | null = null;
+
+    /** 调度延迟执行。若已有待执行定时器，先取消再重设。 */
+    schedule(fn: () => void, ms: number): void {
+        this.cancel();
+        this._timer = setTimeout(() => {
+            this._timer = null;
+            fn();
+        }, ms);
+    }
+
+    /** 取消待执行的定时器。 */
+    cancel(): void {
+        if (this._timer !== null) {
+            clearTimeout(this._timer);
+            this._timer = null;
+        }
+    }
+
+    /** 是否有待执行的定时器。 */
+    get isPending(): boolean {
+        return this._timer !== null;
+    }
+
+    /** 释放资源（等同 cancel）。 */
+    dispose(): void {
+        this.cancel();
+    }
+}
+
+/**
+ * 可复用的 AbortController 封装——abort 后自动重置，使对象可重复使用。
+ * 避免每次 abort 后都要手动 `new AbortController()` 的样板。
+ */
+export class Abortable {
+    private _controller: AbortController = new AbortController();
+
+    /** 获取当前 controller（一般用 signal 即可）。 */
+    get controller(): AbortController {
+        return this._controller;
+    }
+
+    /** 获取当前 signal，传给 fetch / API 调用。 */
+    get signal(): AbortSignal {
+        return this._controller.signal;
+    }
+
+    /** 中止当前 signal，然后自动重置为新 controller，使对象可复用。 */
+    abort(): void {
+        this._controller.abort();
+        this._controller = new AbortController();
+    }
+
+    /** 释放资源（abort 后不重置，因为对象不再使用）。 */
+    dispose(): void {
+        this._controller.abort();
+    }
+}
