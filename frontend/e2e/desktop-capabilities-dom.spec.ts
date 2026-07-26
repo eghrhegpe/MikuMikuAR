@@ -14,6 +14,23 @@
  */
 import { test, expect } from "./wails-fixture";
 
+/**
+ * vite-only 模式下 init() 可能失败并显示 #mmd-dialog-overlay，该 dialog
+ * 拦截所有 pointer events。关闭它以便 nav 按钮可点击。
+ */
+async function dismissErrorDialog(page: any): Promise<void> {
+    const dialogVisible = await page.evaluate(() => {
+        const el = document.getElementById("mmd-dialog-overlay");
+        return el?.classList.contains("mmd-dialog-visible") ?? false;
+    });
+    if (dialogVisible) {
+        await page.evaluate(() => {
+            const el = document.getElementById("mmd-dialog-overlay");
+            if (el) el.classList.remove("mmd-dialog-visible");
+        });
+    }
+}
+
 test.describe("Desktop Capabilities — DOM 入口 (@dom)", { tag: ["@dom"] }, () => {
     test("nav 按钮全集: 模型/动作/场景/环境/设置/广场 均可见", async ({ vitePage: page }) => {
         await expect(page.locator("#btnMainAction")).toBeVisible();
@@ -21,44 +38,44 @@ test.describe("Desktop Capabilities — DOM 入口 (@dom)", { tag: ["@dom"] }, (
         await expect(page.locator("#btnScene")).toBeVisible();
         await expect(page.locator("#btnEnv")).toBeVisible();
         await expect(page.locator("#btnSettings")).toBeVisible();
-        // 桌面端广场按钮始终可见
         await expect(page.locator("#btnPlaza")).toBeVisible();
     });
 
-    test("场景面板包含相机区段（桌面端 AR 功能入口）", async ({ vitePage: page }) => {
+    test("场景面板包含舞台区段（桌面端场景控制入口）", async ({ vitePage: page }) => {
+        await dismissErrorDialog(page);
         await page.click("#btnScene");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
 
-        // 相机控制区段在桌面端场景面板中可见
-        // 注：具体 testId 因菜单重构可能变化，核心验证是场景面板含相机相关控制
+        // 舞台区段在场景面板中可见
         await expect(page.getByTestId("folder:scene:render:stage")).toBeVisible();
     });
 
     test("模型库: 导入文件入口可见（桌面端有文件系统访问）", async ({ vitePage: page }) => {
+        await dismissErrorDialog(page);
         await page.click("#btnMainAction");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
 
-        // 导入文件按钮在桌面端始终可见
         await expect(page.getByTestId("action:models:import-file")).toBeVisible();
     });
 
     test("模型库: 重扫按钮可见", async ({ vitePage: page }) => {
+        await dismissErrorDialog(page);
         await page.click("#btnMainAction");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
 
-        // 重扫按钮在桌面端始终可见（watchDir/walkDir 是桌面能力）
         await expect(page.getByTestId("action:models:rescan")).toBeVisible();
     });
 
     test("设置面板: 模型库路径区段可见", async ({ vitePage: page }) => {
+        await dismissErrorDialog(page);
         await page.click("#btnSettings");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
 
-        // 模型库路径配置仅在桌面端生效（浏览器端走 FSA）
         await expect(page.getByTestId("folder:settings:library")).toBeVisible();
     });
 
-    test("设置面板: 路径区段可见（桌面端的 resource_root 等路径配置）", async ({ vitePage: page }) => {
+    test("设置面板: 路径区段可见", async ({ vitePage: page }) => {
+        await dismissErrorDialog(page);
         await page.click("#btnSettings");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
 
