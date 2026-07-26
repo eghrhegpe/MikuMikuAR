@@ -92,7 +92,7 @@ use_when:
 
 跑法：`node scripts/check-doc-drift.mjs`（或 `--json`）。可接 CI 卡点。
 
-## 卡片索引（189 张，按 category 分组）
+## 卡片索引（192 张，按 category 分组）
 
 ### 环境系统（env）
 
@@ -112,7 +112,10 @@ use_when:
 | [道具系统](./props.md) | `scene/env/props.ts` | — |
 | [环境系统门面](./env.md) | `scene/env/env.ts` | — |
 | [环境系统实现核心](./env-impl.md) | `scene/env/env-impl.ts` | — |
-| [环境系统桥接层](./env-bridge.md) | `scene/env/env-bridge.ts` | — |
+| [环境系统核心调度与 facade](./env-bridge.md) | `scene/env/env-bridge.ts` | ADR-138/148 |
+| [环境重力与碰撞开关](./env-gravity.md) | `scene/env/env-gravity.ts` | ADR-148 |
+| [环境与 UI 状态防抖持久化](./env-persist.md) | `scene/env/env-persist.ts` | ADR-148/176 |
+| [时间流转与环境预设动画](./env-time-of-day.md) | `scene/env/env-time-of-day.ts` | ADR-120/148 |
 | [统一预设系统接口](./preset-manager.md) | `scene/env/preset-manager.ts` | ADR-130 |
 | [统一平面反射引擎](./planar-reflection.md) | `scene/env/planar-reflection.ts` | ADR-092 |
 | [云层系统](./env-clouds.md) | `scene/env/env-clouds.ts` | — |
