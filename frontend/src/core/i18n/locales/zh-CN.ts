@@ -45,6 +45,7 @@ export const zhCN: Record<string, string> = {
     'settings.graphics': '画面',
     'settings.controls': '操控',
     'settings.resources': '资源',
+    'settings.downloads': '下载',
     'settings.media': '媒体',
     'settings.system': '系统',
 
@@ -1800,6 +1801,27 @@ export const zhCN: Record<string, string> = {
     'shortcuts.resetAll': '恢复默认快捷键',
     'shortcuts.custom': '自定义',
     'settings.paths.watchDirPlaceholder': '选择监听目录...',
+
+    // ===== [doc:adr-181] 下载管理面板 =====
+    'downloads.stagingDir': '暂存目录',
+    'downloads.stagingSet': '已设置: {dir}',
+    'downloads.stagingNotSet': '未设置暂存目录',
+    'downloads.androidStagingHint': 'Android：需 SAF 授权暂存目录（待实现）',
+    'downloads.pickStagingDir': '选择暂存目录',
+    'downloads.scanImport': '扫描导入',
+    'downloads.scanAndImport': '扫描并导入',
+    'downloads.running': '运行中...',
+    'downloads.scanning': '正在扫描...',
+    'downloads.importingN': '正在导入 {count} 个文件...',
+    'downloads.importingProgress': '已导入 {ok}/{total}，失败 {fail}',
+    'downloads.done': '完成：{ok} 成功，{fail} 失败',
+    'downloads.noNewFiles': '没有新文件',
+    'downloads.manageImported': '已处理文件',
+    'downloads.clearImported': '清理已处理记录',
+    'downloads.clearConfirm': '确定要清理所有已导入记录吗？这不会删除实际文件。',
+    'downloads.androidNotReady': 'Android 暂未支持（待 SAF 接入）',
+    'downloads.permissionNeeded': '需要读取暂存目录权限',
+
     // ===== i18n 审计修复 2026-07-13（硬编码串国际化）=====
     'boot.engineReady': '✅ 引擎就绪',
     'boot.readyHint': '✨ 准备就绪 · 点击"模型"导入 PMX',

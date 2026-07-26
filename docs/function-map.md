@@ -9,7 +9,7 @@
 |------|--------|-----------|
 | 核心基础设施 | 70 | 540 |
 | 3D 场景 | 103 | 1053 |
-| 菜单 & UI | 65 | 307 |
+| 菜单 & UI | 66 | 308 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 18 | 131 |
 | 物理系统 | 2 | 13 |
@@ -1891,6 +1891,7 @@
 | `handleSettingsAction()` | `menus/settings-actions` | 全局设置项点击分发：语言切换 + 动作表。settings.ts 的 onItemClick 使用。 |
 | `buildSettingsAppearanceLevel()` | `menus/settings-appearance` | — |
 | `buildSettingsControlsLevel()` | `menus/settings-controls` | — |
+| `buildSettingsDownloadsLevel()` | `menus/settings-downloads` | — |
 | `buildSettingsGraphicsLevel()` | `menus/settings-graphics` | — |
 | `buildSettingsLanguageLevel()` | `menus/settings-language` | — |
 | `buildSettingsMediaLevel()` | `menus/settings-media` | — |
@@ -2123,5 +2124,5 @@
 
 ---
 
-> 共 261 个文件，2077 个导出符号。
+> 共 262 个文件，2078 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。
