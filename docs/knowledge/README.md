@@ -197,7 +197,8 @@ use_when:
 | [感知层主控](./perception.md) | `scene/motion/perception.ts` | ADR-071/162/166 |
 | [感知层共享类型](./perception-shared.md) | `scene/motion/perception-shared.ts` | ADR-071/162 |
 | [视线追踪主模块](./perception-gaze.md) | `scene/motion/perception-gaze.ts` | ADR-071/162/166 |
-| [骨骼覆盖核心 API](./bone-override.md) | `scene/motion/bone-override.ts` | ADR-061/116/123/126 |
+| [骨骼覆盖核心 API](./bone-override.md) | `scene/motion/bone-override.ts` | ADR-061/116/123/126/186 |
+| [动作覆盖 UI 层级](./motion-override-levels.md) | `menus/motion-override-levels.ts` | ADR-061/116/145/186 |
 | [动作播放控制](./motion-playback.md) | `scene/motion/playback.ts` | — |
 | [外部动作重定向桥](./animation-retargeter.md) | `scene/motion/animation-retargeter.ts` | — |
 | [多 VMD 叠加系统](./vmd-layers.md) | `scene/motion/vmd-layers.ts` | — |
