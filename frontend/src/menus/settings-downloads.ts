@@ -6,7 +6,8 @@ import { addSectionTitle, slideRow } from '../core/ui-helpers';
 import { t } from '../core/i18n/t';
 import { ImportZip, ListDirRecursive, SelectDir, ReadTextFile, WriteTextFile } from '../core/wails-bindings';
 import { importFileByPath } from './library-actions';
-import { isWebPlatform, isAndroidPlatform } from '../core/platform';
+import { isWebPlatform } from '../core/platform';
+import { getCachedCapabilities } from '../core/backend';
 import { idbGet, idbSet, idbDelete, idbKeys } from '../core/backend/idb';
 import type { PopupLevel } from '../core/config';
 import { renderMenu } from './render-menu';
@@ -134,7 +135,7 @@ async function runDownloadManager(
 ): Promise<void> {
     if (isWebPlatform()) {
         await runDownloadManagerWeb(getSettingsMenu, onProgress);
-    } else if (!isAndroidPlatform()) {
+    } else if (getCachedCapabilities().localStaging) {
         await runDownloadManagerDesktop(getSettingsMenu, onProgress);
     } else {
         onProgress(t('downloads.androidNotReady'));
@@ -289,7 +290,7 @@ async function clearImported(
                 await idbDelete('config', k);
             }
         }
-    } else if (!isAndroidPlatform() && _desktopStagingPath) {
+    } else if (getCachedCapabilities().localStaging && _desktopStagingPath) {
         try {
             await WriteTextFile(`${_desktopStagingPath}/.imported.json`, '{}');
         } catch {
@@ -319,7 +320,7 @@ function buildDownloadSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
                             statusEl.textContent = name
                                 ? t('downloads.stagingSet', { dir: name })
                                 : t('downloads.stagingNotSet');
-                        } else if (!isAndroidPlatform()) {
+                        } else if (getCachedCapabilities().localStaging) {
                             const path = await getStagingDirDesktop();
                             statusEl.textContent = path
                                 ? t('downloads.stagingSet', { dir: path })
@@ -339,7 +340,7 @@ function buildDownloadSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
                             let picked: string | null = null;
                             if (isWebPlatform()) {
                                 picked = await pickStagingDirWeb();
-                            } else if (!isAndroidPlatform()) {
+                            } else if (getCachedCapabilities().localStaging) {
                                 picked = await pickStagingDirDesktop();
                             }
                             if (picked) updateStatus();

@@ -144,17 +144,64 @@ npm run test                   # 或 npx vitest run
 
 | Job | Runner | 性质 | 命令 | 覆盖 |
 |-----|--------|------|------|------|
-| `e2e` | ubuntu-latest | **阻塞门禁** | 起 Vite → `npx playwright test --grep "@dom"` | `@dom` ×5 |
-| `e2e-wails` | windows-latest | `continue-on-error` | 起 `wails3 dev`(带 9222) → `npx playwright test --grep "@webgl"` | `@webgl` ×7 |
-| `e2e-web` | ubuntu-latest | **阻塞门禁** | build + preview dist-web → `npx playwright test --grep "@web"` | `@web` ×9（smoke + 资源加载） |
+| `e2e` | ubuntu-latest | **阻塞门禁** | 起 Vite → `npx playwright test --grep "@dom"` | `@dom` ×25（smoke + 面板全覆盖 + 能力门控） |
+| `e2e-wails` | windows-latest | **阻塞门禁** | 起 `wails3 dev`(带 9222) → `npx playwright test --grep "@webgl"` | `@webgl` ×10（模型生命周期 + 动作/换装 + 截图） |
+| `e2e-web-smoke` | ubuntu-latest | **阻塞门禁** | build + preview dist-web → `npx playwright test --grep "@web"` smoke only | `@web` ×9（首屏 + 能力门控 + 资源加载 + IDB CRUD） |
+| `e2e-web-full` | ubuntu-latest | **阻塞门禁** | build + preview dist-web → `npx playwright test --grep "@web"` (全量) | `@web` ×23（含 FSA 授权流 + 下载面板 + 能力声明） |
+| `e2e-gate` | ubuntu-latest | **合并门禁** | 聚合上述 4 个 job 结果 | 任何 E2E 失败 → 阻断合并 |
+
+> **合并门禁**：`e2e-gate` 是唯一的合并阻塞 job。在仓库 Settings → Branches → Branch protection rules → main 分支中，勾选 "Require status checks to pass before merging"，搜索并选中 `E2E — Merge Gate (all platforms)` 作为 required check。所有平台 E2E 绿了才能合并。
 
 本地复刻 CI 行为即上述「1 / 2」两套命令。本地 `wails3 dev` 就绪时直接套用「3」一次跑全量，最接近 CI 的 `e2e + e2e-wails` 合并结果。
 
 ---
 
-## 3.5. Web 入口测试（@web，ADR-177 Phase 4）
+## 7.5. 测试覆盖全景（2026-07-26）
 
-主应用 web 入口（`index.web.html` → `vite.web.config.ts`）的 smoke + 资源加载测试，不依赖 Wails runtime。
+### @dom — 桌面 DOM 层（vitePage, 25 tests）
+
+| Spec 文件 | 测试数 | 覆盖内容 |
+|-----------|--------|---------|
+| `smoke.spec.ts` | 3 | 首屏 canvas + nav 按钮 + Ctrl+1~5 快捷键切��� |
+| `a11y.spec.ts` | 1 | axe-core WCAG 无障碍扫描 |
+| `library-panel-dom.spec.ts` | 3 | 模型库按钮渲染 + 首次提示 + 关闭重开 |
+| `motion-panel-dom.spec.ts` | 3 | 动作弹窗标题/区段 + 相机模式交互 + 返回 |
+| `motion-playback-dom.spec.ts` | 2 | 底部播放栏 DOM + 空态引导 |
+| `scene-panel-dom.spec.ts` | 3 | 场景区段 + 后处理迁移 + 舞台灯光 |
+| `scene-water-dom.spec.ts` | 2 | 水面预设 + 参数滑块 |
+| `scene-ground-dom.spec.ts` | 2 | 地面基本设置 + 折叠区段 |
+| `settings-panel-dom.spec.ts` | 4 | 设置区段 + 快捷键 + 外观 + 关闭重开 |
+| `shortcuts-dom.spec.ts` | 3 | 快捷键面板 + Ctrl+1~5 + 空格键 |
+| `env-sky.spec.ts` (DOM 部分) | 1 | 天空统一层级模式/预设/光照控制 |
+| `env-cloud-dom.spec.ts` | 2 | 体积云参数滑块 + 光照区段 |
+| `settings-theme-lang-dom.spec.ts` | 7 | 主题/外观 + 路径 + 性能 + 渲染 + 音频 + 完整性 |
+| `desktop-capabilities-dom.spec.ts` | 6 | nav 全集 + 相机入口 + 导入/重扫 + library/paths 区段 |
+
+### @webgl — 桌面 3D 集成（wailsPage/CDP, 10 tests）
+
+| Spec 文件 | 测试数 | 覆盖内容 |
+|-----------|--------|---------|
+| `model-load.spec.ts` | 3 | meshCount + 确定性加载 + seed model |
+| `action-play.spec.ts` | 2 | 动作切换 + 换装变体 |
+| `export-screenshot.spec.ts` | 2 | 截图 dataURL + 菜单入口 |
+| `env-sky.spec.ts` (WebGL 部分) | 2 | 夜景预设 + 截图基线 |
+| `model-lifecycle-webgl.spec.ts` | 3 | 加载→删除→重加载完整生命周期 |
+
+### @web — 网页端全量（vite preview 4174, 23 tests）
+
+| Spec 文件 | 测试数 | 覆盖内容 |
+|-----------|--------|---------|
+| `web-smoke.spec.ts` | 5 | 首屏 + 环境菜单 + Ctrl 快捷键 + AR/广场门控 |
+| `web-resources.spec.ts` | 4 | PMX/VMD/ZIP 加载闭环 + IndexedDB CRUD |
+| `web-capabilities.spec.ts` | 7 | ar/plazaWindow/watchDir/windowsCopy 声明 + 完整清单 |
+| `web-fsa-auth.spec.ts` | 5 | FSA 授权状态探针 + dismissed 标志 + 导入/重扫入口 |
+| `web-download-panel.spec.ts` | 5 | 下载入口 + 浏览区段 + 打开/关闭稳定性 |
+
+---
+
+## 3.5. Web 入口测试（@web，ADR-177 Phase 4 + ADR-176~183）
+
+主应用 web 入口（`index.web.html` → `vite.web.config.ts`）的全量测试，不依赖 Wails runtime。
 
 ```bash
 cd frontend
@@ -167,7 +214,7 @@ npx playwright test --grep "@web"
 
 - **webServer**：`playwright.config.ts` 自动 `vite build + vite preview`（4174 端口，`/MikuMikuAR/` base path）
 - **fixtures**：`frontend/e2e/fixtures/`（sample.pmx 834KB + sample.vmd 19KB + sample.zip 854KB），通过 `page.route()` 注入，不打进 bundle
-- **覆盖项**：首屏渲染、6 nav 按钮、菜单导航、能力门控（AR/广场窗口隐藏）、PMX/ZIP/VMD 加载闭环、IndexedDB CRUD
+- **覆盖项**：首屏渲染、6+1 nav 按钮、菜单导航、能力门控（AR/广场窗口隐藏 + watchDir/windowsCopy 声明）、PMX/ZIP/VMD 加载闭环、IndexedDB CRUD、FSA 授权流程（四态探针 + dismissed 标志 + initLibrary 引导）、下载管理面板、模型库打开/关闭稳定性
 
 ---
 

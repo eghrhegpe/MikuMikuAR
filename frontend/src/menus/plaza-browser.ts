@@ -42,7 +42,7 @@ import {
 } from '../core/wails-bindings';
 import { NavigatePlazaWindow } from '@bindings/mikumikuar/internal/app/app';
 import { getCachedCapabilities } from '../core/backend';
-import { isAndroidPlatform, isWebPlatform, openExternalURL } from '../core/platform';
+import { openExternalURL } from '../core/platform';
 import { browser } from '../core/runtime-bridge';
 import { swallowError, escapeHtml } from '../core/utils';
 import { logWarn } from '../core/logger';
@@ -280,7 +280,7 @@ export async function ensureSitesLoaded(): Promise<void> {
 
 export function openSiteByMode(site: PlazaSite, url?: string): void {
     // 网页端无 Wails 后端；安卓端触屏操作优先走系统浏览器（Edog 等）
-    const mode = isWebPlatform() || isAndroidPlatform() ? 'external' : effectiveMode(site);
+    const mode = getCachedCapabilities().inAppBrowser ? effectiveMode(site) : 'external';
     switch (mode) {
         case 'embed':
             renderEmbed(site);
@@ -781,7 +781,7 @@ export function showActionsMenu(site: PlazaSite, anchor: HTMLElement): void {
     modes.className = 'plaza-actions-menu-modes';
     const opts: { key: OpenMode | 'auto'; label: string }[] = [
         { key: 'auto', label: '自动' },
-        ...(isAndroidPlatform()
+        ...(getCachedCapabilities().inAppBrowser
             ? [{ key: 'external' as const, label: '系统浏览器' }]
             : [
                   { key: 'embed' as const, label: '内嵌页' },

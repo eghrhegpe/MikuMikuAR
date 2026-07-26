@@ -240,6 +240,13 @@ function _cap(): BackendCapabilities {
         // [doc:adr-189] GPU 压缩纹理能力探测（运行时，与后端无关）
         ktx2Supported: ktx2.supported,
         ktx2PreferredFormat: ktx2.preferredFormat,
+        // [doc:adr-190] 浏览器侧固定能力（无原生安装/窗口/暂存目录）
+        installApk: false, // 网页无 APK 安装
+        installLocal: false, // 网页跳转外链而非本地安装
+        inAppBrowser: false, // 网页/安卓均走系统浏览器
+        fsSelectDir: fsAccess, // 网页仅在有 FSA 时可选择目录
+        localStaging: false, // 网页暂存走 IndexedDB 路径而非桌面目录
+        androidStorageMode: false, // 网页无安卓专属存储模式
     };
 }
 
@@ -439,21 +446,60 @@ async function _pickFile(accept?: string): Promise<FileSystemFileHandle | null> 
     return handles[0] ?? null;
 }
 
-/** 写入单个模型/动作文件到 IndexedDB，返回文件名。 */
+/**
+ * [doc:adr-182] 检查 entry:<stem> 是否已存在，若冲突则追加序号后缀 "(2)", "(3)"...
+ *
+ * FSA 多文件选择无天然来源标识——不同目录的同名 PMX 在导入时共用裸文件名为 stem，
+ * 后缀机制防止 file:/entry:/dir: 键互相覆盖。与 _encModelStem 协同：先解析唯一 stem，
+ * 再编码为键安全 token。
+ */
+async function _resolveUniqueStem(baseStem: string): Promise<string> {
+    let stem = baseStem;
+    let n = 1;
+    while ((await idbGet('models', `entry:${_encModelStem(stem)}`)) !== undefined) {
+        n++;
+        stem = `${baseStem} (${n})`;
+    }
+    return stem;
+}
+
+/** 写入单个模型/动作文件到 IndexedDB，返回加载路径。 */
 async function _writeModelFile(file: File): Promise<string> {
     const lower = file.name.toLowerCase();
     const bytes = new Uint8Array(await file.arrayBuffer());
-    const stem = _stripExt(file.name);
-    await idbSet('models', `file:${stem}`, bytes);
+    const baseStem = _stripExt(file.name);
     if (lower.endsWith('.pmx')) {
-        await idbSet('models', `entry:${stem}`, {
-            name: stem,
+        // [doc:adr-182] 同名冲突检测 + 序号后缀，防止 FSA 多选同名 PMX 覆盖
+        const pmxStem = await _resolveUniqueStem(baseStem);
+        const encStem = _encModelStem(pmxStem);
+        await idbSet('models', `file:${encStem}`, bytes);
+        const modelDir = 'web://model';
+        const filePath = `${modelDir}/${encStem}`;
+        await idbSet('models', `entry:${encStem}`, {
+            dir: modelDir,
+            file_path: filePath,
+            name_jp: pmxStem,
+            name_en: pmxStem,
+            comment: '',
+            has_thumb: false,
+            type: 'actor',
+            format: 'pmx',
+            container: 'file',
+            zip_inner: '',
+            category: '',
+            source: '',
+            name: pmxStem,
             fileName: file.name,
             kind: 'pmx',
             size: bytes.byteLength,
             savedAt: Date.now(),
         });
-    } else if (lower.endsWith('.zip')) {
+        return filePath;
+    }
+    // zip / vmd 保持原有裸 stem 行为（无冲突检测，由上层 ExtractZip/drop-import 管理）
+    const stem = baseStem;
+    await idbSet('models', `file:${stem}`, bytes);
+    if (lower.endsWith('.zip')) {
         await idbSet('models', `entry:${stem}`, {
             name: stem,
             fileName: file.name,
@@ -468,34 +514,54 @@ async function _writeModelFile(file: File): Promise<string> {
 const TEXTURE_EXTS_RE = /\.(png|jpg|jpeg|bmp|tga|dds|tif|tiff)$/i;
 
 /** 写入 .pmx + 伴生纹理文件到 IndexedDB。
- *  PMX → file:<stem> + entry:<stem>
- *  纹理 → dir:<stem>:<filename>（供 collectTextureFiles / ListDirRecursive 扫描）
- */
+ *  PMX → file:<encStem> + entry:<encStem>（含 dir/file_path，模型库可见）
+ *  纹理 → dir:<encStem>:<filename>（供 collectTextureFiles / ListDirRecursive 扫描）
+ *  返回 web://model/<encStem> 加载路径，对齐 ADR-182 ExtractZip 约定。
+ *
+ *  [doc:adr-182] 同名冲突检测：FSA 多文件选择无天然来源标识，
+ *  写入前检查 entry:<encStem> 是否已存在，冲突时追加序号后缀 "(2)", "(3)"... */
 async function _writeModelWithTextures(
     pmxFile: File,
     allHandles: FileSystemFileHandle[]
 ): Promise<string> {
-    const pmxStem = _stripExt(pmxFile.name);
+    const baseStem = _stripExt(pmxFile.name);
+    // [doc:adr-182] 同名冲突检测 + 序号后缀
+    const pmxStem = await _resolveUniqueStem(baseStem);
+    const encStem = _encModelStem(pmxStem);
     // 先写 PMX
     const pmxBytes = new Uint8Array(await pmxFile.arrayBuffer());
-    await idbSet('models', `file:${pmxStem}`, pmxBytes);
-    await idbSet('models', `entry:${pmxStem}`, {
+    await idbSet('models', `file:${encStem}`, pmxBytes);
+    const modelDir = 'web://model';
+    const filePath = `${modelDir}/${encStem}`;
+    await idbSet('models', `entry:${encStem}`, {
+        dir: modelDir,
+        file_path: filePath,
+        name_jp: pmxStem,
+        name_en: pmxStem,
+        comment: '',
+        has_thumb: false,
+        type: 'actor',
+        format: 'pmx',
+        container: 'file',
+        zip_inner: '',
+        category: '',
+        source: '',
         name: pmxStem,
         fileName: pmxFile.name,
         kind: 'pmx',
         size: pmxBytes.byteLength,
         savedAt: Date.now(),
     });
-    // 写纹理文件到 dir:<stem>:<filename>
+    // 写纹理文件到 dir:<encStem>:<filename>
     for (const handle of allHandles) {
         const f = await handle.getFile();
         if (!TEXTURE_EXTS_RE.test(f.name.toLowerCase())) continue;
         if (f.name === pmxFile.name) continue; // 跳过 PMX 本身
         const texBytes = new Uint8Array(await f.arrayBuffer());
-        const dirKey = `dir:${pmxStem}:${f.name}`;
+        const dirKey = `dir:${encStem}:${f.name}`;
         await idbSet('models', dirKey, texBytes);
     }
-    return pmxFile.name;
+    return filePath;
 }
 
 // [doc:adr-177] FSA 目录扫描：递归遍历 directory handle，将 .pmx/.zip 文件写入 IndexedDB。
@@ -624,7 +690,7 @@ function _relPathFrom(childRelIdCategory: string, pmxRelPath: string): string {
 /** [doc:adr-180] 清掉上一次 FSA 扫描写入的模型库 entry（dir 以 web://selected-dir 开头），根目录重扫前调用，
  * 保证层级彻底自愈且旧塌缩 entry 被清除。设计可靠性：
  * - 扫描器(_scanDirIntoIDB)写入的 entry 含 dir 字段，值为 'web://selected-dir/...'。
- * - 手动导入(SelectImportFile/_writeModelFile)写入的 entry 无 dir 字段，得以保留。
+ * - 手动导入(SelectImportFile/_writeModelFile)写入的 entry dir 为 'web://model'（[doc:adr-182] 补齐），不匹配前缀，得以保留。
  * - bundle entry 的 dir 为 'web://bundle/...'，不匹配前缀，得以保留。 */
 async function _clearScannedEntries(): Promise<void> {
     const keys = (await idbKeys('models')).filter((k) => k.startsWith('entry:'));

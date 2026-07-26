@@ -22,7 +22,8 @@ import { updatePlaybackUI, seekFromEvent, focusedMmdModel } from '../scene/scene
 import { freeflyInput } from './freefly-state';
 import { getCameraMode } from '../scene/camera/camera';
 import { t } from './i18n/t';
-import { openExternalURL, isAndroidPlatform } from './platform';
+import { openExternalURL } from './platform';
+import { getCachedCapabilities } from './backend';
 import { addDisposableListener } from './dom';
 
 // [adr:audit] 统一收集 app 级事件监听，支持幂等清理（防 HMR 重复绑定）。
@@ -457,7 +458,7 @@ export function showUpdateToast(latest: string, url: string, downloadUrl?: strin
     const btn = toast.querySelector<HTMLButtonElement>('.toast-import-btn');
     if (btn) {
         // [doc:adr-179] Android + direct APK link → download & install
-        const hasDirectInstall = !!downloadUrl && isAndroidPlatform();
+        const hasDirectInstall = !!downloadUrl && getCachedCapabilities().installApk;
         if (hasDirectInstall) {
             btn.textContent = t('settings.about.update.downloadInstall');
         }

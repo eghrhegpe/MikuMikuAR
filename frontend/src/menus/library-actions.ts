@@ -632,6 +632,9 @@ function buildTagDetailLevel(tagName: string): PopupLevel {
 
 export async function importFileByPath(path: string): Promise<void> {
     const lower = path.toLowerCase();
+    // [doc:adr-182] web://model/<encStem> 是 FSA 手动导入 PMX 的返回路径（含序号后缀），
+    // 不以 .pmx 结尾但语义为 PMX 加载，需与 .pmx 裸路径一视同仁。
+    const isWebModel = path.startsWith('web://model/');
     if (lower.endsWith('.zip')) {
         const imported = await withLoadingStatusTargeted(
             'library.importingZip',
@@ -653,7 +656,7 @@ export async function importFileByPath(path: string): Promise<void> {
         }
         const { refreshLibrary } = await import('./library-setup');
         await safeCallAsync('library-actions', 'refresh after zip import:', () => refreshLibrary());
-    } else if (lower.endsWith('.pmx')) {
+    } else if (lower.endsWith('.pmx') || isWebModel) {
         await withLoadingStatusTargeted(
             'library.loadingModel',
             'feedback.loadedSuccess',

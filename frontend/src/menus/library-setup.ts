@@ -1,7 +1,7 @@
 // [doc:architecture] Library Setup — 模型库初始化/配置/扫描/刷新
 // 从 library-core.ts 拆分
 
-import { isAndroidPlatform } from '../core/platform';
+import { getCachedCapabilities } from '../core/backend';
 import {
     GetConfig,
     SetResourceRoot,
@@ -146,7 +146,7 @@ export async function initLibrary(): Promise<void> {
 // ======== 配置 ========
 
 export async function selectResourceRoot(requireConfirm = true): Promise<void> {
-    if (isAndroidPlatform()) {
+    if (!getCachedCapabilities().fsSelectDir) {
         feedbackStatus('library.androidDirNotSupported', undefined, false);
         return;
     }
@@ -171,7 +171,7 @@ export async function selectResourceRoot(requireConfirm = true): Promise<void> {
 }
 
 export async function selectOverridePath(category: string): Promise<void> {
-    if (isAndroidPlatform()) {
+    if (!getCachedCapabilities().fsSelectDir) {
         feedbackStatus('library.androidDirNotSupported', undefined, false);
         return;
     }
@@ -190,7 +190,7 @@ export async function selectOverridePath(category: string): Promise<void> {
 }
 
 export async function switchStorageMode(mode: 'private' | 'shared'): Promise<void> {
-    if (!isAndroidPlatform()) {
+    if (!getCachedCapabilities().androidStorageMode) {
         return;
     }
     const ok = await showConfirm(

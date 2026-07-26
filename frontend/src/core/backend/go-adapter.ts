@@ -51,6 +51,13 @@ export const goAdapter: BackendService = {
             // [doc:adr-189] GPU 压缩纹理能力探测（运行时，与后端无关）
             ktx2Supported: ktx2.supported,
             ktx2PreferredFormat: ktx2.preferredFormat,
+            // [doc:adr-190] 安装/更新能力键：桌面/安卓非对称，集中翻译（唯一 isAndroidPlatform 桥接点）
+            installApk: isAndroidPlatform(), // 仅安卓原生下载后拉起 APK
+            installLocal: true, // 桌面/安卓均有本地安装器路径
+            inAppBrowser: !isAndroidPlatform(), // 桌面 Wails 原生窗口可内嵌；安卓走系统浏览器
+            fsSelectDir: !isAndroidPlatform(), // 桌面原生对话框；安卓 WebView 无目录选择
+            localStaging: !isAndroidPlatform(), // 桌面级暂存目录；安卓走文档沙箱
+            androidStorageMode: isAndroidPlatform(), // 仅安卓专属存储模式切换
         };
     },
 } as unknown as BackendService;

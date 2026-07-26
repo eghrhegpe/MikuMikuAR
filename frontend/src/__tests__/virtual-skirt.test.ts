@@ -53,6 +53,12 @@ vi.mock('../../core/backend', () => ({
         cacheManage: true,
         configPersist: true,
         modelScan: true,
+        installApk: false,
+        installLocal: false,
+        inAppBrowser: false,
+        fsSelectDir: false,
+        localStaging: false,
+        androidStorageMode: false,
     }),
 }));
 
