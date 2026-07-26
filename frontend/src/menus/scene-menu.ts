@@ -126,7 +126,7 @@ export { getSceneMenu, showSceneMenu };
 setRefreshSceneRoot(refreshSceneRoot);
 
 // [doc:P4] 加载模型后刷新根菜单 items（使道具列表等即时更新）
-registerLoadRefreshHook(() => {
+const _unregisterLoadRefresh = registerLoadRefreshHook(() => {
     if (getSceneMenu()) refreshSceneRoot();
 });
 
@@ -134,7 +134,13 @@ registerLoadRefreshHook(() => {
 export { refreshSceneRoot } from './scene-menu-state';
 
 // 库扫描完成时刷新菜单（通过注册表统一监听，替代独立 addDisposableListener）
-registerLibraryScannedHook(() => reRenderSceneMenu());
+const _unregisterLibraryScanned = registerLibraryScannedHook(() => reRenderSceneMenu());
+
+/** 释放 scene-menu 模块资源（取消注册 hooks + HMR/清理时调用） */
+export function disposeSceneMenu(): void {
+    _unregisterLoadRefresh();
+    _unregisterLibraryScanned();
+}
 
 // ======== Mirror Level ========
 
