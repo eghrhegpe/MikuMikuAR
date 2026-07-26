@@ -15,7 +15,7 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
-| ADR-189 | 纹理加载路径优化（并行读取 + basename 共享 + LRU + KTX2 基础设施） | 实施中（Phase 0 代码已落地，3 项运行时验证随 Phase 1 完成；Phase 1 — 纹理加载路径优化 规划中）（2026-07-26（初版）/ 2026-07-26（修订 — 方向调整）/ 2026-07-26（审核修订 — AbortSignal/LRU/数值一致性）） |
+| ADR-189 | 纹理加载路径优化（并行读取 + basename 共享 + LRU + KTX2 基础设施） | 实施中（Phase 0 代码已落地，3 项运行时验证随 Phase 1 完成；Phase 1 代码已落地 2026-07-26 — 并行读取 + basename 共享 + LRU，全量测试 2100/2100）（2026-07-26（初版）/ 2026-07-26（修订 — 方向调整）/ 2026-07-26（审核修订 — AbortSignal/LRU/数值一致性）） |
 | ADR-188 | PBRMaterialBuilder 材质系统迁移 — PBR 渲染升级 | 草案 · 待立项（P1 长期规划） |
 | ADR-187 | babylon-mmd 剩余高价值功能综合分析 | 草案 · 待立项（2026-07-26 — 系统性调研 + 落地优先级评估） |
 | ADR-186 | bone-override 帧内时序图 | accepted |
@@ -55,7 +55,7 @@
 | ADR-153 | 无障碍（a11y）支持总体方案 | ✅ 全部完成（2026-07-21）— 三阶段全部落地：焦点环、`aria-live`、focus trap/restore、canvas ARIA（P1）；`prefers-*` 媒体查询、Android 返回键、3D 键盘轨道控制、模型 alt（P2）；aria-label 补全、`aria-keyshortcuts`、axe E2E 扫描、`ui-keyboard-nav.ts` 公共工具、Go 系统主题桥接（P3）。（2026-07-20） |
 | ADR-152 | 舞台灯光光锥（Light Cone） | ✅ 已实施（v2 — 真实光锥网格）（2026-07-20） |
 | ADR-151 | 反射系统统一架构（SSR/Probe 统一入口 + Planar 协调） | ✅ 已实施（2026-07-20） |
-| ADR-150 | 模型替换原子操作契约（Model Replace Contract） | 🔄 实施中（2026-07-22 重构方案，决策二已落地）（2026-07-20） |
+| ADR-150 | 模型替换原子操作契约（Model Replace Contract） | ✅ 已完成（决策二完整落地：`captureInheritedState` + `applyInheritedState` + `startReplaceModel` 集成 + undo 保护 + toast 治理；2026-07-26 审核通过）（2026-07-20） |
 | ADR-149 | 材质系统 × 换装系统基线冲突登记 | 搁置登记（架构性风险，未修复）（2026-07-20） |
 | ADR-148 | 过载文件拆分工程 | ✅ 已完成（5/5 阶段全部落地，2026-07-21 收口）（2026-07-20（收口 2026-07-21）） |
 | ADR-147 | 动作管线显式调度器 + 集中骨骼覆盖状态 | 已完成（Phase 1 + Phase 2 运行时接入全部落地，R1/R2/R3/R4 根治；Phase 3 在 motion 子系统范围内已完成，见 §八 说明） |

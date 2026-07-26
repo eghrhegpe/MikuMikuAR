@@ -1,7 +1,7 @@
-# ADR-189: 纹理加载优化（KTX2 探测 + 加载路径优化）
+# ADR-189: 纹理加载路径优化（并行读取 + basename 共享 + LRU + KTX2 基础设施）
 
-> **状态**: 实施中（Phase 0 已落地；Phase 1 — 纹理加载路径优化 规划中）
-> **日期**: 2026-07-26（初版）/ 2026-07-26（修订 — 方向调整）
+> **状态**: 实施中（Phase 0 代码已落地，3 项运行时验证随 Phase 1 完成；Phase 1 代码已落地 2026-07-26 — 并行读取 + basename 共享 + LRU，全量测试 2100/2100）
+> **日期**: 2026-07-26（初版）/ 2026-07-26（修订 — 方向调整）/ 2026-07-26（审核修订 — AbortSignal/LRU/数值一致性）
 > **关联**: ADR-187（babylon-mmd 剩余 API 分析 — BpmxConverter/BvmdConverter P2 维持，本 ADR 提供触发判据数据源）、ADR-124（filesystem-architecture — referenceFiles 直传路径，§2.4 已记全量读入风险，本 ADR Phase 1 修复）、ADR-176（Backend 适配器双实现）、ADR-182/185（ZIP 命名空间化 + 子目录路径对齐）
 > **来源**: ADR-187 调研结论「BPMX/BVMD 当前模型库规模未达启动临界点，真瓶颈在贴图加载而非 PMX/VMD 解析」；2026-07-26 修订源自对 `collectTextureFiles` 的瓶颈审计（串行读取 + basename 复制 + 无 LRU）
 
@@ -49,11 +49,11 @@ KTX2 转码在当前规模下收益感知不到（P90 PMX 5.37MB，全转 KTX2 �
 
 | 子决策 | 选择 | 理由 |
 |--------|------|------|
-| 串行 → 并行 | `Promise.all` 替代 `for + await` | 20 纹理并发读取，~600ms → ~50ms |
+| 串行 → 并行 | `Promise.all` 替代 `for + await` | 20 纹理并发读取（8 并发上限），~600ms → ~80ms |
 | basename 不复制 | URL 重写（referenceFiles 组装时改 `name`） | 共享同一 ArrayBuffer，显存峰值减半 |
-| 纹理 LRU | 按 `<modelDir>:<relativePath>` 键缓存 ArrayBuffer，LRU 上限 5 个模型 | 切换模型 -300ms，共享贴图零重复读 |
+| 纹理 LRU | 按 `modelDir + '\x00' + relativePath` 键缓存 ArrayBuffer，LRU 上限 5 个模型 | 切换模型 -300ms，共享贴图零重复读 |
 
-### 2. 辅决策 — KTX2 基础设施（Phase 0，已落地）
+### 2. 辅决策 — KTX2 基础设施（Phase 0，代码已落地，运行时验证随 Phase 1 完成）
 
 保留以下已落地能力，作为未来 KTX2 升级的零成本入口：
 
@@ -100,7 +100,7 @@ KTX2 转码路线图保留，但暂缓实施。触发条件：
 
 ## 实施路线图
 
-### Phase 0 — KTX2 基础设施（已落地，无功能改动）
+### Phase 0 — KTX2 基础设施（代码已落地，运行时验证随 Phase 1 完成）
 
 1. **能力探测**：扩展 `getCachedCapabilities()`（[backend/index.ts:122](file:///c:/Users/zhujieling11/MikuMikuAR/frontend/src/core/backend/index.ts)），新增 `ktx2Supported` / `ktx2PreferredFormat` 字段。探测项：
    - WebGL2: `gl.getExtension('WEBGL_compressed_texture_astc')` / `('EXT_texture_compression_bptc')` / `('WEBGL_compressed_texture_etc')`
@@ -113,21 +113,40 @@ KTX2 转码路线图保留，但暂缓实施。触发条件：
 
 #### 1.1 串行 → 并行读取
 
-[model-loader.ts:269-283](file:///c:/Users/zhujieling11/MikuMikuAR/frontend/src/scene/manager/model-loader.ts#L269-L283) 的 `for + await` 改为 `Promise.all`：
+[model-loader.ts:269-283](file:///c:/Users/zhujieling11/MikuMikuAR/frontend/src/scene/manager/model-loader.ts#L269-L283) 的 `for + await` 改为手写 semaphore + `Promise.all`。`collectTextureFiles` 新增 `signal: AbortSignal` 参数（调用方 `loadPMXFile` 已有 `effectiveSignal`），传入并行读取和 LRU 写入点：
 
 ```typescript
-const tasks = entries
-    .filter(e => TEXTURE_EXTS.test(e.name))
-    .map(async entry => {
-        const data = await readFileBytes(modelDir + '/' + entry.relativePath);
-        if (!data) { logWarn(...); return null; }
-        return { relativePath: entry.relativePath, mimeType: getMimeType(entry.name), data: data.buffer as ArrayBuffer };
-    });
-const results = await Promise.all(tasks);
-const files = results.filter((r): r is TextureFile => r !== null);
+async function collectTextureFiles(modelDir: string, signal: AbortSignal): Promise<TextureFile[]> {
+    // ...ListDirRecursive 同上...
+    if (signal.aborted) return [];
+
+    const concurrency = 8;
+    let running = 0;
+    const tasks = entries
+        .filter(e => TEXTURE_EXTS.test(e.name))
+        .map(async entry => {
+            while (running >= concurrency) {
+                await new Promise(r => setTimeout(r, 0)); // yield
+            }
+            running++;
+            try {
+                if (signal.aborted) return null;
+                // readFileBytes 返回 Uint8Array | null，.buffer 即为 ArrayBuffer
+                const data = await readFileBytes(modelDir + '/' + entry.relativePath);
+                if (!data) { logWarn(...); return null; }
+                return { relativePath: entry.relativePath, mimeType: getMimeType(entry.name), data: data.buffer as ArrayBuffer };
+            } finally {
+                running--;
+            }
+        });
+    const results = await Promise.all(tasks);
+    if (signal.aborted) return []; // 提前退出，避免浪费 basename fallback 计算
+    const files = results.filter((r): r is TextureFile => r !== null);
+    // ...basename fallback 同现有逻辑（1.2 改造后跳过 .slice(0)）...
+}
 ```
 
-**并发上限**：用 `p-limit` 或手写 semaphore 限制 8 并发，避免一次性触发 50+ `readFileBytes` 撑爆 Go 后端 base64 编码缓冲区。
+**并发上限**：手写 semaphore（3 行，复用 `outfit.ts:193` 的成熟模式），限制 8 并发。不引入 `p-limit` 等第三方依赖（`p-limit` 仅作为 `p-locate` 的间接依赖存在于 node_modules，非项目直接依赖）。
 
 **预期收益**：~600ms → ~80ms（20 纹理 / 8 并发 / 单次 ~30ms）
 
@@ -154,34 +173,65 @@ const files = results.filter((r): r is TextureFile => r !== null);
 
 ```typescript
 interface TextureCacheEntry { data: ArrayBuffer; lastUsed: number; }
-const _textureLRU = new Map<string, TextureCacheEntry>(); // key: <modelDir>:<relativePath>
-const TEXTURE_LRU_MAX_ENTRIES = 5 * 30; // 5 个模型 × 平均 30 纹理
+// key 使用 \x00（null char）分隔 modelDir 和 relativePath，避免路径中的冒号导致 key 解析歧义
+// （vfs 路径如 "web://model" 不含 \x00，安全无碰撞）
+const _textureLRU = new Map<string, TextureCacheEntry>();
+const TEXTURE_LRU_MAX_ENTRIES = 5 * 30; // 5 个模型 × 平均 30 纹理；实际模型纹理数待 Phase 1 验证时统计
 
-export async function readTextureWithLRU(modelDir: string, relativePath: string): Promise<ArrayBuffer | null> {
-    const key = `${modelDir}:${relativePath}`;
+function evictOldest(): void {
+    // Map 保持插入顺序 → entries().next() 即为最旧的插入项 → 近似 LRU（命中时重新 set 更新顺序）
+    if (_textureLRU.size === 0) return;
+    _textureLRU.delete(_textureLRU.keys().next().value!);
+}
+
+export async function readTextureWithLRU(
+    modelDir: string,
+    relativePath: string,
+    signal?: AbortSignal,
+): Promise<ArrayBuffer | null> {
+    const key = `${modelDir}\x00${relativePath}`;
     const cached = _textureLRU.get(key);
-    if (cached) { cached.lastUsed = Date.now(); return cached.data; }
+    if (cached) {
+        // 命中：更新访问时间 + 重新 set 以更新 Map 插入顺序（最近使用排在最后）
+        cached.lastUsed = Date.now();
+        _textureLRU.delete(key);
+        _textureLRU.set(key, cached);
+        return cached.data;
+    }
+    if (signal?.aborted) return null;
     const data = await readFileBytes(modelDir + '/' + relativePath);
-    if (!data) return null;
+    if (!data || signal?.aborted) return null;
     if (_textureLRU.size >= TEXTURE_LRU_MAX_ENTRIES) evictOldest();
-    _textureLRU.set(key, { data: data.buffer as ArrayBuffer, lastUsed: Date.now() });
-    return data.buffer as ArrayBuffer;
+    const entry: TextureCacheEntry = { data: data.buffer as ArrayBuffer, lastUsed: Date.now() };
+    _textureLRU.set(key, entry);
+    return entry.data;
+}
+
+/** 清空 LRU 缓存（在 scene.ts 的 disposeRenderer() 中调用）。 */
+export function clearTextureLRU(): void {
+    _textureLRU.clear();
 }
 ```
 
 - **命中场景**：切换回上一个模型（瞬时）、多个模型共享 `toon.tga`（零重复读）
 - **失效场景**：模型目录文件被修改（暂不处理，用户手动清缓存即可）
-- **释放**：`disposeRenderer` 时 `_textureLRU.clear()`
+- **释放**：`scene.ts` 的 `disposeRenderer()` 中 `import { clearTextureLRU } from './manager/texture-lru'` 调用 `clearTextureLRU()`，与现有纹理释放逻辑（`textureFiles[i].data = null`）对齐
+- **驱逐策略**：基于 Map 插入顺序的近似 LRU——每次命中时 `delete` + `set` 重新排到最后；溢出时 `delete(keys().next().value)` 淘汰最旧插入项。O(1) 驱逐，无需双向链表。语义等同于真正的 LRU（因为每次命中都会"renew"），仅当同一 key 被多次连续命中时多一次 delete+set 开销（微乎其微）
 
 **预期收益**：切换回模型 -300ms；共享贴图零重复读
 
 #### 1.4 验证标准
 
-- `npx tsc --noEmit` 0 错
-- `npm run test` 全量通过（含新增 `texture-lru.test.ts` 单测）
-- 手动测试：加载 5 个模型依次切换，第 6 次切回第 1 个，确认 LRU 命中（控制台日志）
-- 手动测试：加载含 `tex/face.png` 的模型，确认 basename fallback 仍正常工作
-- 性能基准（可选）：加载 20 纹理模型，串行 vs 并行耗时对比
+- [x] `npx tsc --noEmit` 0 错（2026-07-26 通过）
+- [x] `npm run test` 全量 2100/2100 通过（含 `texture-lru.test.ts` 9 测试）
+- [x] 单元测试：`collectTextureFiles` 传入已 abort 的 signal，验证立即返回空数组（不触发任何 `readFileBytes`）
+- [x] 单元测试：共享引用路径的正本和 fallback 项的 `.data` 指向同一 ArrayBuffer（`toBe()` 相同对象引用）
+- [ ] 手动测试：加载含 `tex/face.png` 的模型，确认 basename fallback 仍正常工作
+- [ ] 手动测试：加载 5 个模型依次切换，第 6 次切回第 1 个，控制台日志显示 LRU 命中
+- [ ] 手动测试：快速连点加载 3 个不同模型，确认旧请求被 abort（并发读取不堆积），最新模型正确加载
+- [ ] 性能基准（可选）：加载 20 纹理模型，串行 vs 并行耗时对比
+- [ ] 运行时验证（继承自 Phase 0）：确认 KTX2 loader 无错误、`ktx2Supported` 返回 true、`pmx_scan` 日志输出
+- [ ] 运行时验证：`disposeRenderer` 后 `_textureLRU.size === 0`（无泄漏）
 
 ### Phase 2 — 异步解码（可选，延后）
 
@@ -226,7 +276,8 @@ babylon-mmd 内部走 Babylon.js `Texture` 同步解码路径，4K 纹理 ~50-10
 
 | 风险 | 影响 | 缓解 |
 |------|------|------|
-| 并发读取撑爆 Go 后端 base64 缓冲区 | OOM 或 GC 压力 | 限制 8 并发（`p-limit` 或手写 semaphore） |
+| 并发读取撑爆 Go 后端 base64 缓冲区 | OOM 或 GC 压力 | 手写 semaphore 限制 8 并发（复用 `outfit.ts:193` 模式） |
+| 模型切换时并发读取无法取消 | 旧请求白跑 + LRU 竞态写入 + 内存浪费 | `collectTextureFiles` 接受 `AbortSignal`；并行 map 内每项 `readFileBytes` 前检查 `signal.aborted`；LRU 写入前检查 signal；aborted 则不入缓存 |
 | babylon-mmd 实际会 detach ArrayBuffer | basename 共享引用后贴图损坏 | 改造前先用 `__textureDebug.value` 监控 detach 行为；若确实 detach，回退到 `slice(0)` 但仅对 fallback 项复制 |
 | LRU 缓存过期策略不当 | 内存常驻 5×30 纹理 ≈ 600MB | 上限按模型数 × 平均纹理数估算；`disposeRenderer` 强制清空 |
 | LRU 缓存陈旧数据 | 模型文件被替换后显示旧贴图 | 暂不处理（用户手动清缓存），文档说明；未来可加 `mtime` 校验 |
@@ -246,22 +297,26 @@ babylon-mmd 内部走 Babylon.js `Texture` 同步解码路径，4K 纹理 ~50-10
 
 ## 验证
 
-### Phase 0 验证清单（已通过）
+### Phase 0 验证清单（代码构建部分已通过，运行时验证随 Phase 1 完成）
 
 - [x] `cd frontend && npx tsc --noEmit` 通过（0 错）
 - [x] `cd frontend && npm run test` 2090/2090 通过
 - [x] `go build ./...` 通过
 - [x] `npm run check:docs` 无 ERROR 级漂移（status.md 自动同步 ADR-189）
 - [x] `npm run gen:funcmap` 同步（新增 gpu-capabilities.ts 的 3 个导出符号）
-- [ ] 启动应用后控制台无 KTX2 loader 相关错误（待运行时验证）
-- [ ] `getCachedCapabilities().ktx2Supported` 在桌面浏览器返回 true（待运行时验证）
-- [ ] PMX 入库时控制台输出 `pmx_scan: ...` 日志（待运行时验证）
+- [ ] 启动应用后控制台无 KTX2 loader 相关错误（随 Phase 1 运行时验证 — Phase 1 需要启动应用测试 LRU）
+- [ ] `getCachedCapabilities().ktx2Supported` 在桌面浏览器返回 true（随 Phase 1）
+- [ ] PMX 入库时控制台输出 `pmx_scan: ...` 日志（随 Phase 1）
 
-### Phase 1 验证清单（待落地）
+### Phase 1 验证清单（代码已落地，运行时待验证）
 
-- [ ] `cd frontend && npx tsc --noEmit` 通过（0 错）
-- [ ] `cd frontend && npm run test` 全量通过，含新增 `texture-lru.test.ts`
+- [x] `cd frontend && npx tsc --noEmit` 通过（0 错）
+- [x] `cd frontend && npm run test` 全量 2100/2100 通过，含 `texture-lru.test.ts`（9 测试）
+- [x] 单元测试：`collectTextureFiles` 传入已 abort 的 signal，立即返回空数组
+- [x] 单元测试：正本和 fallback 项的 `.data` 指向同一 ArrayBuffer
 - [ ] 加载含 `tex/face.png` 的模型，basename fallback 正常（贴图不缺失）
 - [ ] 加载 5 个模型依次切换，第 6 次切回第 1 个，控制台日志显示 LRU 命中
+- [ ] 快速连点加载 3 个不同模型，旧请求被 abort（并发不堆积），最新模型正确加载
 - [ ] 加载 20 纹理模型，并行读取耗时显著低于串行（性能基准对比）
 - [ ] `disposeRenderer` 后 `_textureLRU.size === 0`（无泄漏）
+- [ ] Phase 0 运行时验证项（KTX2 loader / `ktx2Supported` / `pmx_scan`）一并确认
