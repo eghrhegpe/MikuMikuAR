@@ -30,6 +30,7 @@ import {
     FetchPlazaConfig,
     GetCachedPlazaConfig,
     ReadTextFile,
+    WriteTextFile,
     StartProxy,
     ClosePlazaWindow,
     PlazaGoBack,
@@ -153,6 +154,60 @@ export async function loadCustomSites(): Promise<PlazaSite[]> {
     }
 }
 
+// ── 本地缓存（plaza_cache.json）：拉取后持久化，启动时优先读取 ──
+
+const PLAZA_CACHE_PATH = 'plaza_cache.json';
+
+interface PlazaCache {
+    sites: RawSiteInput[];
+    creators: RawCreatorInput[];
+}
+
+/** 从本地缓存文件读取站点 + 创作者。缓存不存在时返回 null。 */
+export async function loadPlazaCache(): Promise<{ sites: PlazaSite[]; creators: PlazaCreator[] } | null> {
+    try {
+        const raw = await ReadTextFile(PLAZA_CACHE_PATH);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw) as PlazaCache;
+        if (!parsed.sites?.length && !parsed.creators?.length) return null;
+        return {
+            sites: parsed.sites?.map(normalizeSite).filter(Boolean) as PlazaSite[] ?? [],
+            creators: parsed.creators?.map(normalizeCreator).filter(Boolean) as PlazaCreator[] ?? [],
+        };
+    } catch {
+        return null;
+    }
+}
+
+/** 将当前站点 + 创作者写入本地缓存文件。 */
+export async function savePlazaCache(): Promise<void> {
+    try {
+        const data: PlazaCache = {
+            sites: allSites.map((s) => ({
+                id: s.id,
+                name: s.name,
+                url: s.url,
+                mode: s.mode,
+                icon: s.icon,
+                desc: s.desc,
+                group: s.group,
+                searchUrl: s.searchUrl,
+                presetSearches: s.presetSearches,
+            })),
+            creators: allCreators.map((c) => ({
+                name: c.name,
+                site: c.site,
+                tag: c.tag,
+                desc: c.desc,
+                tier: c.tier,
+            })),
+        };
+        await WriteTextFile(PLAZA_CACHE_PATH, JSON.stringify(data, null, 2));
+    } catch (e) {
+        logWarn('plaza-browser', 'savePlazaCache failed', e);
+    }
+}
+
 export function mergeSites(base: PlazaSite[], extras: PlazaSite[]): PlazaSite[] {
     const map = new Map(base.map((s) => [s.id, s]));
     for (const s of extras) {
@@ -199,10 +254,23 @@ export async function ensureSitesLoaded(): Promise<void> {
     if (allSites.length > 0) {
         return;
     }
-    await loadCachedConfig();
-    if (allSites.length > 0) {
+    // 1) 优先读本地缓存（plaza_cache.json，由更新配置写出）
+    const cached = await loadPlazaCache();
+    if (cached && cached.sites.length > 0) {
+        setAllSites(cached.sites);
+        if (cached.creators.length > 0) {
+            setAllCreators(cached.creators);
+        }
         return;
     }
+    // 2) 读 Go 缓存（plaza-cache/，由 FetchPlazaConfig 远程拉取后缓存）
+    await loadCachedConfig();
+    if (allSites.length > 0) {
+        // Go 缓存命中 → 顺便写一份本地缓存供下次冷启动使用
+        savePlazaCache();
+        return;
+    }
+    // 3) 冷启动兜底：硬编码站点 + 自定义 + 空创作者
     const custom = await loadCustomSites();
     setAllSites(mergeSites(PLAZA_SITES, custom));
     setAllCreators([...PLAZA_CREATORS]);
@@ -498,6 +566,8 @@ export function renderSiteContent(site: PlazaSite): HTMLElement {
             if (!allSites.some((s) => s.id === currentSiteId)) {
                 setCurrentSiteId(allSites[0]?.id || '');
             }
+            // 持久化到本地缓存，下次启动直接读
+            await savePlazaCache();
             renderHome();
         } catch (e) {
             showErrorToast(`更新失败: ${translateGoError(e)}`);
