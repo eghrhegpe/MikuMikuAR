@@ -136,12 +136,9 @@ async function rebuildAll(): Promise<void> {
             false
         );
     } else if (failed > 0) {
-        setStatus(
-            t('cloth.buildFailed', {
-                err: translateGoError(firstError),
-            }),
-            false
-        );
+        feedbackStatus('cloth.buildFailed', undefined, false, {
+            err: translateGoError(firstError),
+        });
     } else {
         feedbackStatus('cloth.skippedAll', undefined, false);
     }

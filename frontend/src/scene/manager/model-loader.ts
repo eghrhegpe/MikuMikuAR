@@ -10,7 +10,6 @@ import { renderInstanceThumbnail } from './thumbnail-capture';
 import { thumbnailBaseKey } from './thumbnail-key';
 import {
     dom,
-    setStatus,
     setFocusedModelId,
     ModelInstance,
     propRegistry,
@@ -677,9 +676,11 @@ export async function loadPMXFile(
                         } else {
                             logWarn('model-loader', 'VMD 加载失败，模型已保留:', vmdErr);
                             appliedVmd = '';
-                            setStatus(
-                                t('scene.loader.vmdFailedModelLoaded', { name: displayName }),
-                                false
+                            feedbackStatus(
+                                'scene.loader.vmdFailedModelLoaded',
+                                undefined,
+                                false,
+                                { name: displayName }
                             );
                             inst.motionSlots = {
                                 primary: {
@@ -779,7 +780,7 @@ export async function loadPMXFile(
         }
         dom.loadingEl.style.display = 'none';
         console.error('loadPMXFile:', err);
-        setStatus(t('scene.loader.loadFailed', { error: formatError(err) }), false);
+        feedbackStatus('scene.loader.loadFailed', undefined, false, { error: formatError(err) });
         return null;
     } finally {
         dom.loadingEl.style.display = 'none';

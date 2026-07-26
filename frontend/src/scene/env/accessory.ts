@@ -4,7 +4,7 @@
 
 import { Quaternion } from '@babylonjs/core/Maths/math.vector';
 import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
-import { propRegistry, modelRegistry, setStatus, triggerAutoSave } from '../../core/config';
+import { propRegistry, modelRegistry, triggerAutoSave } from '../../core/config';
 import { feedbackStatus } from '../../core/feedback';
 import { showInfoToast } from '../../core/toast';
 import { t } from '../../core/i18n/t';
@@ -42,7 +42,7 @@ export function attachPropToBone(
     const rb = inst.mmdModel.runtimeBones.find((b) => b.name === boneName);
     if (!rb) {
         logWarn('accessory', 'bone not found:', boneName);
-        setStatus(t('scene.accessory.boneNotFound', { bone: boneName }), false);
+        feedbackStatus('scene.accessory.boneNotFound', undefined, false, { bone: boneName });
         return false;
     }
 

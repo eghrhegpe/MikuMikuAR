@@ -90,18 +90,21 @@ const {
     },
 });
 
-export { getMotionMenu, refreshMotionRoot, showMotionPopup };
-
 // [doc:P4] 加载模型后刷新根菜单 items（使动作列表等即时更新）
-registerLoadRefreshHook(() => {
+const _unregisterLoadRefresh = registerLoadRefreshHook(() => {
     if (getMotionMenu()) refreshMotionRoot();
 });
 
 // 库扫描完成时刷新菜单（通过注册表统一监听，替代独立 addDisposableListener）
-registerLibraryScannedHook(() => getMotionMenu()?.reRender());
+const _unregisterLibraryScanned = registerLibraryScannedHook(() => getMotionMenu()?.reRender());
 
-/** 释放 motion-popup 模块资源（HMR/清理时调用） */
-export function disposeMotionPopup(): void {}
+export { getMotionMenu, refreshMotionRoot, showMotionPopup };
+
+/** 释放 motion-popup 模块资源（取消注册 hooks + HMR/清理时调用） */
+export function disposeMotionPopup(): void {
+    _unregisterLoadRefresh();
+    _unregisterLibraryScanned();
+}
 
 // ═══════════════════════════════════════════════════════════
 // 子层路由表（ADR-065）

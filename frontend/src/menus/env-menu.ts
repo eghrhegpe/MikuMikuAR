@@ -58,12 +58,18 @@ const {
 export { getEnvMenu, refreshEnvRoot, showEnvMenu };
 
 // [doc:P4] 加载模型后刷新根菜单 items（使模型依赖列表、纹理库等即时更新）
-registerLoadRefreshHook(() => {
+const _unregisterLoadRefresh = registerLoadRefreshHook(() => {
     if (getEnvMenu()) refreshEnvRoot();
 });
 
 // 库扫描完成时刷新菜单（通过注册表统一监听，替代独立 addDisposableListener）
-registerLibraryScannedHook(() => getEnvMenu()?.reRender());
+const _unregisterLibraryScanned = registerLibraryScannedHook(() => getEnvMenu()?.reRender());
+
+/** 释放 env-menu 模块资源（取消注册 hooks + HMR/清理时调用） */
+export function disposeEnvMenu(): void {
+    _unregisterLoadRefresh();
+    _unregisterLibraryScanned();
+}
 
 /** 环境弹窗根级 items 构建器——动态反映 envState 各 toggle 状态。 */
 function buildEnvRootItems(): PopupRow[] {
