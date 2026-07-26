@@ -9,7 +9,7 @@
 |------|--------|-----------|
 | 核心基础设施 | 70 | 540 |
 | 3D 场景 | 103 | 1053 |
-| 菜单 & UI | 65 | 306 |
+| 菜单 & UI | 65 | 307 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 18 | 131 |
 | 物理系统 | 2 | 13 |
@@ -1651,6 +1651,7 @@
 | `buildTagsOverviewLevel()` | `menus/library-actions` | — |
 | `highlightRow()` | `menus/library-actions` | — |
 | `importFile()` | `menus/library-actions` | — |
+| `importFileByPath()` | `menus/library-actions` | — |
 | `onModelRowClick()` | `menus/library-actions` | — |
 | `prepareModelRestore()` | `menus/library-actions` | — |
 | `replaceModel()` | `menus/library-actions` | — |
@@ -2122,5 +2123,5 @@
 
 ---
 
-> 共 261 个文件，2076 个导出符号。
+> 共 261 个文件，2077 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。
