@@ -101,6 +101,23 @@ export const test = base.extend<WailsFixtures>({
                 attributeFilter: ["style"],
             });
         });
+        // [doc:e2e] vite-only 模式下 init() 失败后可能弹出 #mmd-dialog-overlay
+        // 错误对话框，该 dialog 的 class mmd-dialog-visible 覆盖全屏拦截所有 click。
+        // 强制隐藏它以让 nav 按钮可点击。
+        await page.evaluate(() => {
+            const dialog = document.getElementById("mmd-dialog-overlay");
+            if (!dialog) return;
+            const forceHidden = () => {
+                if (dialog.classList.contains("mmd-dialog-visible")) {
+                    dialog.classList.remove("mmd-dialog-visible");
+                }
+            };
+            forceHidden();
+            new MutationObserver(forceHidden).observe(dialog, {
+                attributes: true,
+                attributeFilter: ["class"],
+            });
+        });
         await use(page);
         await browser.close();
     },

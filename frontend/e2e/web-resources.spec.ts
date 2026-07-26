@@ -13,8 +13,11 @@
 import { test, expect, type Page } from "@playwright/test";
 import * as fs from "fs";
 import * as path from "path";
+import { fileURLToPath } from "url";
 
 const WEB_URL = process.env.WEB_URL || "http://localhost:4174/MikuMikuAR/";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const FIXTURES_DIR = path.resolve(__dirname, "fixtures");
 
 /**
