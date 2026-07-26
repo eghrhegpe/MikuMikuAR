@@ -138,7 +138,6 @@ export function DeleteRenderPreset(name: string): $CancellablePromise<void> {
 /**
  * DownloadApk downloads the latest APK to the app cache directory (Android only).
  * Returns the local file path for the caller to trigger installation.
- * [doc:adr-179]
  */
 export function DownloadApk(): $CancellablePromise<$models.InstallResult | null> {
     return $Call.ByID(2591539867);

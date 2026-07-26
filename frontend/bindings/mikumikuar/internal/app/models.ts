@@ -341,6 +341,18 @@ export interface FileInfo {
 }
 
 /**
+ * InstallResult is returned by DownloadApk / DownloadAndRunInstaller.
+ */
+export interface InstallResult {
+    /**
+     * downloaded file path
+     */
+    "localPath": string;
+    "success": boolean;
+    "error"?: string;
+}
+
+/**
  * KeyBindingOverride stores a single custom key binding override.
  */
 export interface KeyBindingOverride {
@@ -745,12 +757,21 @@ export interface UpdateCheckResult {
     "available": boolean;
     "url": string;
     "checkedAt": number;
+
     /**
      * [doc:adr-179] Asset direct-link for download-and-install flow.
-     * Empty when no platform-matching asset was found; the UI falls back to url.
+     * Empty when no platform-matching asset was found; the UI falls back to URL.
      */
     "downloadUrl": string;
+
+    /**
+     * e.g. MikuMikuAR.apk
+     */
     "assetName": string;
+
+    /**
+     * bytes, for progress display
+     */
     "size": number;
 
     /**
@@ -758,14 +779,5 @@ export interface UpdateCheckResult {
      * could not be completed; the UI degrades gracefully rather than treating
      * this as a hard failure.
      */
-    "error"?: string;
-}
-
-/**
- * InstallResult is returned by DownloadApk / DownloadAndRunInstaller.
- */
-export interface InstallResult {
-    "localPath": string;
-    "success": boolean;
     "error"?: string;
 }

@@ -14,6 +14,7 @@ export type {
     EnvState,
     ExtractResult,
     FileInfo,
+    InstallResult,
     KeyBindingOverride,
     ModelEntry,
     ModelMeta,
