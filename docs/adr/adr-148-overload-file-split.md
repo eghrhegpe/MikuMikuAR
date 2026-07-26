@@ -54,7 +54,7 @@ scene-menu.ts → env-feature-levels.ts: import { buildGroundLevel, buildWaterLe
 |------|------|----------|------|------|----------|
 | 1 | env-feature-levels.ts | 按子系统拆 `env-sky/ground/water/wind/cloud/fog/shadow/experimental-levels.ts`（8 文件）+ 抽公共助手 `_buildLevel`/`_openTexturePicker` 到 `env-level-helpers.ts` | 🟢 低 | 阶段 1 | ✅ 2026-07-20（`7bfeaae5`） |
 | 2 | plaza.ts | 拆 `plaza-browser.ts` / `plaza-download.ts` / `plaza-thumbnail.ts`；先提取模块级状态（`_plazaBtn`/`_plazaSectionHeader` 等）到 `plaza-state.ts` 或改传参 | 🟠 中（模块级状态） | 阶段 2 | ✅ 2026-07-20（`d39afbaa` + `6a91e9d9`） |
-| 3 | camera.ts（状态部分） | 先拆纯函数（`getCameraPreset`/`setCameraPreset`/`getOrbitParams` 等）到 `camera-state.ts`；不动依赖 scene.ts 的行为部分 | 🟠 中（循环依赖） | 阶段 3 | ✅ 部分达成（状态抽离 `383bb3f9`；行数目标未达，见验收） |
+| 3 | camera.ts（状态部分） | 先拆纯函数（`getCameraPreset`/`setCameraPreset`/`getOrbitParams` 等）到 `camera-state.ts`；不动依赖 scene.ts 的行为部分 | 🟠 中（循环依赖） | 阶段 3 | ✅ 达标（状态抽离 `383bb3f9`；行为部分续拆为 5 子模块，行数 715 ≤1000，见验收） |
 | 4 | scene-serialize.ts（迁移函数） | 抽 `migratePerceptionFromProcMotion`/`migrateLipSyncFromOldState` 等纯函数到 `scene-migrate.ts`；`serializeScene`/`deserializeScene` 留作后续 | 🟢 低 | 阶段 4 | ✅ 部分达成（迁移函数抽离；行数目标未达，见验收） |
 | 5 | motion-popup.ts | 暂缓，等 `motion-camera-levels.ts`/`motion-override-levels.ts`/`motion-cloth-levels.ts` 等子面板稳定后，剩下的入口 + 播放控制核心约 500 行再剥离 | 🔴 高 | 阶段 5 | ✅ 提前执行 2026-07-21（`492a8c52`） |
 
@@ -81,7 +81,7 @@ scene-menu.ts → env-feature-levels.ts: import { buildGroundLevel, buildWaterLe
 - **新增**:
   - 阶段 1: `menus/env-sky-levels.ts`、`menus/env-ground-levels.ts`、`menus/env-water-levels.ts`、`menus/env-wind-levels.ts`、`menus/env-cloud-levels.ts`、`menus/env-fog-levels.ts`、`menus/env-shadow-levels.ts`、`menus/env-experimental-levels.ts`、`menus/env-level-helpers.ts`、`menus/env-menu-state.ts`（状态下沉）
   - 阶段 2: `menus/plaza-browser.ts`、`menus/plaza-download.ts`、`menus/plaza-thumbnail.ts`、`menus/plaza-state.ts`
-  - 阶段 3: `scene/camera/camera-state.ts`
+  - 阶段 3: `scene/camera/camera-state.ts`、`scene/camera/camera-vmd.ts`、`scene/camera/camera-factory.ts`、`scene/camera/camera-behaviors.ts`、`scene/camera/camera-bone-lock.ts`、`scene/camera/camera-auto.ts`
   - 阶段 4: `scene/scene-migrate.ts`
 - **修改**: `menus/env-menu.ts`（import 路径批量更新）、`menus/scene-menu.ts`、`scene/camera/camera.ts`（拆分后瘦身）、`scene/scene-serialize.ts`（拆分后瘦身）
 - **删除**: 阶段 1 完成后删除 `menus/env-feature-levels.ts`；阶段 2 完成后删除 `menus/plaza.ts`
@@ -133,11 +133,17 @@ scene-menu.ts → env-feature-levels.ts: import { buildGroundLevel, buildWaterLe
 - ✅ 模块级状态提取到 `plaza-state.ts`(118)
 - ✅ 契约测试 `plaza.contract.test.ts` 补建；`npm run test` 全绿
 
-### 阶段 3（camera.ts 状态部分）— ⚠️ 部分达成
-- ✅ `camera-state.ts`(292 行) 落地纯函数状态管理（`getCameraPreset`/`setCameraPreset`/`getOrbitParams`/`getCurrentCamera`/`getFovState`/`getFocusCenterY` 等）
-- ⚠️ **偏离**：`camera.ts` 行数 **1373**（目标 ≤1000 未达）。`383bb3f9` 抽状态 + `cb134ac3` 删死变量 + `b9752bc5` 私有变量改 getter 后，行为部分（依赖 `scene.ts` 的 orbit/behavior 装配）仍留原文件，单文件未降到 1000 内。
-- ✅ 现有 `camera.test.ts`（原 1117 行级覆盖）不破坏
-- ✅ 循环依赖不扩大（`camera-state.ts` 单向依赖，不 import `scene.ts`）
+### 阶段 3（camera.ts 状态部分）— ✅ 全部达标
+- ✅ `camera-state.ts`(262 行) 落地纯函数状态管理（`getCameraPreset`/`setCameraPreset`/`getOrbitParams`/`getCurrentCamera`/`getFovState`/`getFocusCenterY` 等）+ 运行时上下文（scene/canvas 引用、`_viewMatrixHandle` 等共享句柄）
+- ✅ **行数达标**：`camera.ts` 从 1373 行降至 **715 行**（目标 ≤1000 ✅）。行为部分继续拆为 5 个聚焦子模块：
+  - `camera-vmd.ts`(80) — VMD 相机动画
+  - `camera-factory.ts`(198) — 相机工厂 + 用户输入
+  - `camera-behaviors.ts`(231) — freefly/surround/concert 行为循环
+  - `camera-bone-lock.ts`(130) — 骨骼锁定
+  - `camera-auto.ts`(166) — 节拍驱动 beatcut
+- ✅ 现有 `camera.test.ts`（63 用例）全绿
+- ✅ 循环依赖切断：camera.ts 通过回调注入（`setSwitchCameraModeCallback` / `setSchedulePersistCallback` / `setSyncAxesCallback`）让子模块单向依赖 camera-state，不再回引 camera.ts
+- ✅ 向后兼容：camera.ts 作为 barrel 入口 re-export 全部公开符号，下游消费者无需改 import 路径
 
 ### 阶段 4（scene-serialize.ts 迁移函数）— ⚠️ 部分达成
 - ✅ `migrateLipSyncFromOldState` + `migratePerceptionFromProcMotion` 迁移到 `scene-migrate.ts`(74 行，纯函数无 scene 依赖)
@@ -152,6 +158,20 @@ scene-menu.ts → env-feature-levels.ts: import { buildGroundLevel, buildWaterLe
 ---
 
 ## 修订记录
+
+### 2026-07-26 阶段 3 行数目标达标（行为部分续拆）
+
+- `camera.ts` 从 1373 行降至 **715 行**（目标 ≤1000 ✅）
+- 续拆 5 个聚焦子模块（均 <250 行）：
+  - `camera-vmd.ts`(80) — VMD 相机动画：`loadCameraVmd` / `clearCameraVmd` / `animateCameraVmd` / `createVmdCamera` / `hasCameraAnimationHandle`
+  - `camera-factory.ts`(198) — 相机工厂：`createOrbitCamera` / `createFreeflyCamera` / `createSurroundCamera` / `createConcertCamera` / `createOneshotCamera` / `applyCameraUserSettings` / `refreshCameraUserSettings`
+  - `camera-behaviors.ts`(231) — 行为循环：`initFreeflyUpdate` / `initFreeflyTouch` / `stopFreefly` / `startSurround` / `stopSurround` / `startConcert` / `stopConcert`
+  - `camera-bone-lock.ts`(130) — 骨骼锁定：`setOrbitBoneLock` / `getOrbitBoneLock` / `setBoneLockDamping` / `getBoneLockDamping` / `getFocusedModelBoneNames`
+  - `camera-auto.ts`(166) — 节拍 beatcut：`setAutoCameraEnabled` / `isAutoCameraEnabled` / `setAutoCameraBeatsPerSwitch` / `getAutoCameraBeatsPerSwitch` / `restoreAutoCameraState`
+- **循环依赖切断**：通过回调注入模式（`setSwitchCameraModeCallback` / `setSchedulePersistCallback` / `setSyncAxesCallback`）让子模块单向依赖 camera-state，不再回引 camera.ts
+- **向后兼容**：camera.ts 作为 barrel 入口 re-export 全部公开符号，下游消费者（`scene.ts` / `motion-camera-levels.ts` / `model-ops.ts` / `playback.ts` / `vmd-loader.ts` / `settings-controls.ts` / `settings-system.ts` / `init.ts`）无需改 import 路径
+- 测试：`camera.test.ts` 63/63 全绿；全量 2075/2075 全绿；`tsc --noEmit` 0 错误；`check:docs` 无漂移；`check:funcmap` 同步
+- 状态：阶段 3 由「部分达成」升级为「全部达标」
 
 ### 2026-07-21 阶段 5 提前执行完成
 - `motion-popup.ts` 拆 `motion-binding-ui.ts`(425) / `motion-detail-ui.ts`(398) / `motion-root-ui.ts`(290) 三子面板 + `motion-popup.ts`(303) 退化为 barrel（注册 / `MOTION_FOLDER_ROUTES` / `motionOnItemClick` 路由）

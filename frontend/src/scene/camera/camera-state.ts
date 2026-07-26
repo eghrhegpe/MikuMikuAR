@@ -1,8 +1,12 @@
-// camera-state.ts — 相机纯状态管理（getter/setter，无 scene 依赖）
+// camera-state.ts — 相机纯状态管理 + 运行时上下文（getter/setter）
 // 从 camera.ts 拆分，切断 camera ↔ scene 循环依赖
-// 本模块只读写模块级变量，不涉及 Babylon.js 相机对象或 scene 操作
+// 本模块管理：纯状态变量 + scene/canvas 引用 + 跨子模块共享的运行时句柄
+// 注意：scene/canvas 引用属于运行时上下文，不是"纯状态"；放在此处是为了让所有 camera-*.ts
+// 子模块单向依赖 camera-state，避免循环依赖。
 
 import type { Camera } from '@babylonjs/core/Cameras/camera';
+import type { Scene } from '@babylonjs/core/scene';
+import type { ObserverHandle } from '@/core/observer-handle';
 
 // ======== Types (单源定义，camera.ts 通过 re-export 复用) ========
 
@@ -290,4 +294,45 @@ export function isTouchDevice(): boolean {
         navigator.maxTouchPoints > 0 ||
         window.matchMedia('(pointer: coarse)').matches
     );
+}
+
+// ======== Runtime Context（scene/canvas 引用 + 共享句柄）========
+// 这些引用被多个 camera-*.ts 子模块共享，下沉到此处避免循环依赖。
+// 注：Babylon Scene/Canvas 不属于"纯状态"，但放在此处作为运行时上下文是务实选择。
+
+let _scene: Scene | null = null;
+let _canvas: HTMLCanvasElement | null = null;
+let _previousMode: CameraMode = 'orbit';
+let _viewMatrixHandle: ObserverHandle | null = null;
+
+export function getCameraScene(): Scene | null {
+    return _scene;
+}
+
+export function setCameraScene(scene: Scene | null): void {
+    _scene = scene;
+}
+
+export function getCameraCanvas(): HTMLCanvasElement | null {
+    return _canvas;
+}
+
+export function setCameraCanvas(canvas: HTMLCanvasElement | null): void {
+    _canvas = canvas;
+}
+
+export function getPreviousMode(): CameraMode {
+    return _previousMode;
+}
+
+export function setPreviousMode(mode: CameraMode): void {
+    _previousMode = mode;
+}
+
+export function getViewMatrixHandle(): ObserverHandle | null {
+    return _viewMatrixHandle;
+}
+
+export function setViewMatrixHandle(handle: ObserverHandle | null): void {
+    _viewMatrixHandle = handle;
 }
