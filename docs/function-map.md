@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 69 | 541 |
-| 3D 场景 | 98 | 1016 |
+| 3D 场景 | 103 | 1061 |
 | 菜单 & UI | 65 | 303 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 123 |
@@ -580,6 +580,34 @@
 | `formatProbeReport()` | `scene/ar/ar-webxr-probe` | 格式化探针结果为人类可读的多行文本（用于 UI 展示或复制到剪贴板）。 |
 | `probeWebXR()` | `scene/ar/ar-webxr-probe` | 执行 WebXR 支持度探针（非侵入式，不请求 session）。 |
 | `probeWebXRFeatures()` | `scene/ar/ar-webxr-probe` | 深度探针：实际创建 immersive-ar session 验证特性可用性。 |
+| `getAutoCameraBeatsPerSwitch()` | `scene/camera/camera-auto` | — |
+| `isAutoCameraEnabled()` | `scene/camera/camera-auto` | — |
+| `restoreAutoCameraState()` | `scene/camera/camera-auto` | 从 UIState 恢复自动机位状态。ADR-100 P2：恢复时集中订阅并派生 beatcut 行为，修复饥饿。 |
+| `setAutoCameraBeatsPerSwitch()` | `scene/camera/camera-auto` | 设置每多少拍切换一次镜头。 |
+| `setAutoCameraEnabled()` | `scene/camera/camera-auto` | 设置 Auto Camera（beatcut）开关。ADR-100 P2：启用时集中订阅 beat、派生 beatcut 行为； 禁用时移除订阅并回落基底行为。beatDetect |
+| `setSyncAxesCallback()` | `scene/camera/camera-auto` | camera.ts 启动时注入 _syncAxesFromMode 回调。 |
+| `initFreeflyTouch()` | `scene/camera/camera-behaviors` | — |
+| `initFreeflyUpdate()` | `scene/camera/camera-behaviors` | — |
+| `startConcert()` | `scene/camera/camera-behaviors` | — |
+| `startSurround()` | `scene/camera/camera-behaviors` | — |
+| `stopConcert()` | `scene/camera/camera-behaviors` | — |
+| `stopFreefly()` | `scene/camera/camera-behaviors` | — |
+| `stopSurround()` | `scene/camera/camera-behaviors` | — |
+| `getBoneLockDamping()` | `scene/camera/camera-bone-lock` | 获取骨骼锁定跟随阻尼（0 = 刚性，越大越平滑）。 |
+| `getFocusedModelBoneNames()` | `scene/camera/camera-bone-lock` | 获取当前焦点模型的所有骨骼名称列表。 |
+| `getOrbitBoneLock()` | `scene/camera/camera-bone-lock` | 获取当前骨骼锁定状态。 |
+| `setBoneLockDamping()` | `scene/camera/camera-bone-lock` | 设置骨骼锁定跟随阻尼，范围 [0, 0.95]。 |
+| `setOrbitBoneLock()` | `scene/camera/camera-bone-lock` | 启用/禁用轨道相机骨骼锁定。启用后相机 target 每帧锁定到指定骨骼的世界位置。 |
+| `stopBoneLock()` | `scene/camera/camera-bone-lock` | 供 camera.ts switchCameraMode 切出 orbit 时调用，强制停止骨骼锁定。 |
+| `applyCameraUserSettings()` | `scene/camera/camera-factory` | 将用户灵敏度设置应用到相机实例（orbit/oneshot: ArcRotate；freefly: Universal） |
+| `createConcertCamera()` | `scene/camera/camera-factory` | Concert (fan-cam): limited horizontal sweep + sinusoidal vertical bob around the target. |
+| `createFreeflyCamera()` | `scene/camera/camera-factory` | — |
+| `createOneshotCamera()` | `scene/camera/camera-factory` | — |
+| `createOrbitCamera()` | `scene/camera/camera-factory` | — |
+| `createSurroundCamera()` | `scene/camera/camera-factory` | — |
+| `disposeViewMatrixHandle()` | `scene/camera/camera-factory` | 显式 dispose 当前 viewMatrix observer（switchCameraMode 切换相机时调用）。 |
+| `refreshCameraUserSettings()` | `scene/camera/camera-factory` | 设置变更后重新应用到当前活动相机 |
+| `setSchedulePersistCallback()` | `scene/camera/camera-factory` | camera.ts 启动时注入 scheduleCameraPersist 回调。 |
 | `CameraBehavior()` | `scene/camera/camera-state` | ADR-100 轴 B — 运动行为（仅对 orbit/ArcRotate 生效，初版互斥）。双写于 `core/types.ts`。 |
 | `CameraControl()` | `scene/camera/camera-state` | ADR-100 轴 A — 控制方案（相机类 + 输入）。双写于 `core/types.ts`。 |
 | `CameraMode()` | `scene/camera/camera-state` | 新代码请用 {@link CameraControl} × {@link CameraBehavior}。双写于 `core/types.ts`。 |
@@ -594,9 +622,11 @@
 | `getAutoCameraBeatCount()` | `scene/camera/camera-state` | — |
 | `getAutoCameraPresetIdx()` | `scene/camera/camera-state` | — |
 | `getCameraBehavior()` | `scene/camera/camera-state` | — |
+| `getCameraCanvas()` | `scene/camera/camera-state` | — |
 | `getCameraControl()` | `scene/camera/camera-state` | — |
 | `getCameraMode()` | `scene/camera/camera-state` | — |
 | `getCameraPreset()` | `scene/camera/camera-state` | — |
+| `getCameraScene()` | `scene/camera/camera-state` | — |
 | `getCameraVmdName()` | `scene/camera/camera-state` | — |
 | `getCameraVmdPath()` | `scene/camera/camera-state` | — |
 | `getConcertParams()` | `scene/camera/camera-state` | — |
@@ -606,9 +636,11 @@
 | `getFov()` | `scene/camera/camera-state` | — |
 | `getFreeflyParams()` | `scene/camera/camera-state` | — |
 | `getOrbitParams()` | `scene/camera/camera-state` | — |
+| `getPreviousMode()` | `scene/camera/camera-state` | — |
 | `getScriptedSubMode()` | `scene/camera/camera-state` | — |
 | `getSurroundParams()` | `scene/camera/camera-state` | — |
 | `getSurroundPaused()` | `scene/camera/camera-state` | — |
+| `getViewMatrixHandle()` | `scene/camera/camera-state` | — |
 | `hasCameraVmd()` | `scene/camera/camera-state` | — |
 | `isAutoCameraEnabled()` | `scene/camera/camera-state` | — |
 | `isTouchDevice()` | `scene/camera/camera-state` | — |
@@ -616,9 +648,11 @@
 | `setAutoCameraEnabledFlag()` | `scene/camera/camera-state` | — |
 | `setAutoCameraPresetIdx()` | `scene/camera/camera-state` | — |
 | `setCameraBehavior()` | `scene/camera/camera-state` | — |
+| `setCameraCanvas()` | `scene/camera/camera-state` | — |
 | `setCameraControl()` | `scene/camera/camera-state` | — |
 | `setCameraMode()` | `scene/camera/camera-state` | — |
 | `setCameraPreset()` | `scene/camera/camera-state` | — |
+| `setCameraScene()` | `scene/camera/camera-state` | — |
 | `setCameraVmdState()` | `scene/camera/camera-state` | — |
 | `setConcertParams()` | `scene/camera/camera-state` | — |
 | `setConcertPaused()` | `scene/camera/camera-state` | — |
@@ -627,19 +661,29 @@
 | `setFov()` | `scene/camera/camera-state` | — |
 | `setFreeflyParams()` | `scene/camera/camera-state` | — |
 | `setOrbitParams()` | `scene/camera/camera-state` | — |
+| `setPreviousMode()` | `scene/camera/camera-state` | — |
 | `setScriptedSubMode()` | `scene/camera/camera-state` | — |
 | `setSurroundParams()` | `scene/camera/camera-state` | — |
 | `setSurroundPaused()` | `scene/camera/camera-state` | — |
+| `setViewMatrixHandle()` | `scene/camera/camera-state` | — |
+| `animateCameraVmd()` | `scene/camera/camera-vmd` | Animate the VMD camera to a given 30fps frame time. |
+| `clearCameraVmd()` | `scene/camera/camera-vmd` | — |
+| `createVmdCamera()` | `scene/camera/camera-vmd` | 创建 VMD 相机（若已存在则复用）。供 camera.ts switchCameraMode 在 vmd 分支使用。 |
+| `getMmdCamera()` | `scene/camera/camera-vmd` | 获取当前 VMD 相机实例（供 camera.ts switchCameraMode 在 vmd 分支使用）。 |
+| `hasCameraAnimationHandle()` | `scene/camera/camera-vmd` | VMD 相机动画句柄是否就绪（switchCameraMode 在 vmd 分支前置检查）。 |
+| `loadCameraVmd()` | `scene/camera/camera-vmd` | Load camera animation from a VMD (MmdAnimation) and create an MmdCamera. |
+| `setSwitchCameraModeCallback()` | `scene/camera/camera-vmd` | camera.ts 启动时注入 switchCameraMode 回调。 |
 | `CameraState()` | `scene/camera/camera` | — |
 | `LEGACY_MODE_MAP()` | `scene/camera/camera` | ADR-100 §6.1 — 旧模式 → 双轴映射（迁移 / shim 共用）。 |
-| `animateCameraVmd()` | `scene/camera/camera` | Animate the VMD camera to a given 30fps frame time. |
-| `applyCameraUserSettings()` | `scene/camera/camera` | 将用户灵敏度设置应用到相机实例（orbit/oneshot: ArcRotate；freefly: Universal） |
+| `_syncAxesFromMode()` | `scene/camera/camera` | ADR-100：由旧 mode 派生双轴状态。switchCameraMode 提交 _cameraMode 时同步调用，作为唯一写入点。 |
+| `animateCameraVmd()` | `scene/camera/camera` | — |
+| `applyCameraUserSettings()` | `scene/camera/camera` | — |
 | `autoFrame()` | `scene/camera/camera` | Auto-frame the camera to centre on a bounding box. |
 | `clearCameraVmd()` | `scene/camera/camera` | — |
 | `defaultCameraPreset()` | `scene/camera/camera` | — |
 | `deriveLegacyMode()` | `scene/camera/camera` | ADR-100 §6.2 — 双轴 → 旧模式反查（getCameraState 降级双写 / shim 内部路由）。 |
 | `getAutoCameraBeatsPerSwitch()` | `scene/camera/camera` | — |
-| `getBoneLockDamping()` | `scene/camera/camera` | 获取骨骼锁定跟随阻尼（0 = 刚性，越大越平滑）。 |
+| `getBoneLockDamping()` | `scene/camera/camera` | — |
 | `getCameraBehavior()` | `scene/camera/camera` | — |
 | `getCameraControl()` | `scene/camera/camera` | — |
 | `getCameraMode()` | `scene/camera/camera` | — |
@@ -651,10 +695,10 @@
 | `getConcertPaused()` | `scene/camera/camera` | — |
 | `getCurrentCamera()` | `scene/camera/camera` | — |
 | `getFocusCenterY()` | `scene/camera/camera` | — |
-| `getFocusedModelBoneNames()` | `scene/camera/camera` | 获取当前焦点模型的所有骨骼名称列表。 |
+| `getFocusedModelBoneNames()` | `scene/camera/camera` | — |
 | `getFov()` | `scene/camera/camera` | — |
 | `getFreeflyParams()` | `scene/camera/camera` | — |
-| `getOrbitBoneLock()` | `scene/camera/camera` | 获取当前骨骼锁定状态。 |
+| `getOrbitBoneLock()` | `scene/camera/camera` | — |
 | `getOrbitParams()` | `scene/camera/camera` | — |
 | `getScriptedSubMode()` | `scene/camera/camera` | — |
 | `getSurroundParams()` | `scene/camera/camera` | — |
@@ -663,13 +707,13 @@
 | `initCameraSystem()` | `scene/camera/camera` | Initialise the camera system and create the default Orbit camera. |
 | `isAutoCameraEnabled()` | `scene/camera/camera` | — |
 | `isTouchDevice()` | `scene/camera/camera` | — |
-| `loadCameraVmd()` | `scene/camera/camera` | Load camera animation from a VMD (MmdAnimation) and create an MmdCamera. |
+| `loadCameraVmd()` | `scene/camera/camera` | — |
 | `logCameraAlpha()` | `scene/camera/camera` | Log current camera alpha for diagnostics. |
-| `refreshCameraUserSettings()` | `scene/camera/camera` | 设置变更后重新应用到当前活动相机 |
-| `restoreAutoCameraState()` | `scene/camera/camera` | 从 UIState 恢复自动机位状态。ADR-100 P2：恢复时集中订阅并派生 beatcut 行为，修复饥饿。 |
-| `setAutoCameraBeatsPerSwitch()` | `scene/camera/camera` | 设置每多少拍切换一次镜头。 |
-| `setAutoCameraEnabled()` | `scene/camera/camera` | 设置 Auto Camera（beatcut）开关。ADR-100 P2：启用时集中订阅 beat、派生 beatcut 行为； 禁用时移除订阅并回落基底行为。beatDetect |
-| `setBoneLockDamping()` | `scene/camera/camera` | 设置骨骼锁定跟随阻尼，范围 [0, 0.95]。 |
+| `refreshCameraUserSettings()` | `scene/camera/camera` | — |
+| `restoreAutoCameraState()` | `scene/camera/camera` | — |
+| `setAutoCameraBeatsPerSwitch()` | `scene/camera/camera` | — |
+| `setAutoCameraEnabled()` | `scene/camera/camera` | — |
+| `setBoneLockDamping()` | `scene/camera/camera` | — |
 | `setCameraBehavior()` | `scene/camera/camera` | ADR-100 P4 — 直接设置运动行为轴（轴 B，仅 orbit 有效）。 |
 | `setCameraControl()` | `scene/camera/camera` | ADR-100 P4 — 直接设置控制方案轴（轴 A）。 |
 | `setCameraPreset()` | `scene/camera/camera` | — |
@@ -680,10 +724,11 @@
 | `setFocusCenterY()` | `scene/camera/camera` | — |
 | `setFov()` | `scene/camera/camera` | — |
 | `setFreeflyParams()` | `scene/camera/camera` | — |
-| `setOrbitBoneLock()` | `scene/camera/camera` | 启用/禁用轨道相机骨骼锁定。启用后相机 target 每帧锁定到指定骨骼的世界位置。 |
+| `setOrbitBoneLock()` | `scene/camera/camera` | — |
 | `setOrbitParams()` | `scene/camera/camera` | — |
 | `setSurroundParams()` | `scene/camera/camera` | — |
 | `setSurroundPaused()` | `scene/camera/camera` | — |
+| `setSyncAxesCallback()` | `scene/camera/camera` | — |
 | `switchCameraMode()` | `scene/camera/camera` | Switch to a different camera mode, preserving position as much as possible. |
 | `InvertableArcRotateCameraPointersInput()` | `scene/camera/invertablePointersInput` | 可反转 Y 轴的 ArcRotate 相机指针输入。 |
 | `attachPropToBone()` | `scene/env/accessory` | 将道具挂载到指定模型的骨骼上。 |
@@ -2075,5 +2120,5 @@
 
 ---
 
-> 共 254 个文件，2029 个导出符号。
+> 共 259 个文件，2074 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。

@@ -392,6 +392,11 @@ let cameraModule: {
 beforeAll(async () => {
     const mod = await vi.importActual('../scene/camera/camera');
     cameraModule = mod as any;
+    // 注入双轴派生回调（生产环境由 initCameraSystem 注入；测试不调用 initCameraSystem，
+    // 故手动注入以让 setAutoCameraEnabled / restoreAutoCameraState 能正确派生 beatcut 行为轴）。
+    cameraModule.setSyncAxesCallback(() =>
+        cameraModule._syncAxesFromMode(cameraModule.getCameraMode())
+    );
 });
 
 // ── beforeEach: reset shareable state ────────────────────────

@@ -92,7 +92,7 @@ use_when:
 
 跑法：`node scripts/check-doc-drift.mjs`（或 `--json`）。可接 CI 卡点。
 
-## 卡片索引（192 张，按 category 分组）
+## 卡片索引（194 张，按 category 分组）
 
 ### 环境系统（env）
 
@@ -146,6 +146,11 @@ use_when:
 | [AR 模式场景级协调](./ar-scene.md) | `scene/ar/ar-scene.ts` | ADR-055 |
 | [拖拽变换模式开关](./transform-mode.md) | `scene/transform/transform-mode.ts` | — |
 | [相机状态管理](./camera-state.md) | `scene/camera/camera-state.ts` | — |
+| [相机创建工厂](./camera-factory.md) | `scene/camera/camera-factory.ts` | ADR-148 |
+| [VMD 相机动画](./camera-vmd.md) | `scene/camera/camera-vmd.ts` | ADR-148 |
+| [节拍驱动自动运镜](./camera-auto.md) | `scene/camera/camera-auto.ts` | ADR-148 |
+| [相机行为（Freefly/Surround/Concert）](./camera-behaviors.md) | `scene/camera/camera-behaviors.ts` | ADR-148 |
+| [轨道相机骨骼锁定](./camera-bone-lock.md) | `scene/camera/camera-bone-lock.ts` | ADR-148 |
 | [构图指南](./composition-guide.md) | `scene/pose/composition-guide.ts` | — |
 | [水印系统](./watermark.md) | `scene/pose/watermark.ts` | — |
 
@@ -190,8 +195,6 @@ use_when:
 | [骨骼覆盖存储（多模块仲裁）](./bone-override-store.md) | `scene/motion/bone-override-store.ts` | ADR-084 |
 | [动作管线（逐帧合成）](./motion-pipeline.md) | `scene/motion/motion-pipeline.ts` | ADR-129 |
 | [感知层主控](./perception.md) | `scene/motion/perception.ts` | ADR-071/162/166 |
-| [感知层共享类型](./perception-shared.md) | `scene/motion/perception-shared.ts` | ADR-071/162 |
-| [视线追踪主模块](./perception-gaze.md) | `scene/motion/perception-gaze.ts` | ADR-071/162/166 |
 | [感知层共享类型](./perception-shared.md) | `scene/motion/perception-shared.ts` | ADR-071/162 |
 | [视线追踪主模块](./perception-gaze.md) | `scene/motion/perception-gaze.ts` | ADR-071/162/166 |
 | [骨骼覆盖核心 API](./bone-override.md) | `scene/motion/bone-override.ts` | ADR-061/116/123/126 |
