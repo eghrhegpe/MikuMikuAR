@@ -214,7 +214,8 @@ function buildMotionDetailSchema(sceneMotionId?: string): MenuNode[] {
     }
 
     // ── 卡片 3：动作覆盖（核心）+ 卡片 4：动作预设 ──
-    if (motion && modelId) {
+    // [doc:pose-debug] 无 VMD 时仍显示覆盖/预设面板，用于姿势调整和骨骼调试
+    if (modelId) {
         nodes.push({
             id: 'detail:override',
             kind: 'custom',

@@ -7,13 +7,12 @@ scope:
 source_files:
   - frontend/src/scene/motion/motion-pipeline.ts
 adr:
-  - ADR-129
+  - ADR-147
+  - ADR-116
 ---
 
 ## 系统概览
-动作系统的**逐帧合成管线**。将 VMD 播放、程序化动作、感知修正等多路来源，按分层
-（`PipelineLayer`）与阶段（`PipelineStage`）统一合成为每帧的骨骼姿态。是 ADR-129 程序化动作架构的
-核心调度器。
+动作系统的**显式管线调度器**（ADR-147）。治理根因：骨骼写入层顺序靠 `import` 顺序 + `await` 顺序 + `onBeforeRenderObservable` 注册时序三层隐式耦合。本调度器按 `(stageIndex, order)` 升序统一执行，与注册时序彻底解耦。阶段常量（`vmd-base` / `vmd-layers` / `proc-motion` / `bone-override` / `perception`）来源 ADR-116 §一的 6 层动作管线（Ragdoll 已永久移除）。
 
 ## 核心职责
 - `motion-pipeline.ts` — 管线定义、层注册、逐帧推进与合成。

@@ -36,7 +36,9 @@ use_when:
 - `type GroundSfxKind` — 地面音色类型（concrete/grass/wood/water/default）。
 - `interface SynthCfg` — 合成参数（cutoff/noiseAmt/thump）。
 - `SYNTH_CFG` — 各地面材质的合成配置表。
-- `startFallbackDetection()` / `stopFallbackDetection()` — 未开脚部跟随时降级检测。
+- `startFootstep(scene)` — 启动脚步声系统，消费 feet-adjustment 落地事件。
+- `stopFootstep()` — 停止脚步声系统。
+- `resolveGroundSfxKind()` — 从当前 envState 解析地面音色类型。
 
 ## 与其他子系统关系
 - 落地事件来源：`./feet-adjustment.setOnFootLand`。

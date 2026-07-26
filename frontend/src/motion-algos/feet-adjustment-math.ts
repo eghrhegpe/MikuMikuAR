@@ -14,6 +14,8 @@ export interface SolveFootInput {
     hipToFootDist: number;
     /** 髋→踝静止腿长 L1+L2（估算，用作 maxAngle/reachAngle 缩放基准） */
     legLength: number;
+    /** 模型中心骨骼（センター）世界 Y，用于推算模型自然脚高 = centerY - legLength */
+    centerY: number;
     /** 上一帧平滑目标 Y（首帧为 null） */
     prevTargetY: number | null;
     /** 脚部调整状态 */
@@ -42,11 +44,13 @@ export interface SolveFootOutput {
  *  - intensity: <1 时部分保留动画位置
  */
 export function solveFootTarget(input: SolveFootInput): SolveFootOutput {
-    const { footY, groundY, feet, prevTargetY, hipToFootDist, legLength } = input;
+    const { footY, groundY, feet, prevTargetY, hipToFootDist, legLength, centerY } = input;
 
-    // 相对地面高度判定：脚离地超过 jumpThreshold 视为有意抬脚/跳跃，跳过校正。
-    // 用 footY - groundY 而非绝对 footY，避免高地形/高平台上脚被误判为"抬脚"而失效。
-    if (footY - groundY > feet.jumpThreshold) {
+    // 模型自然脚高（站直时脚 IK 的预期世界 Y）= centerY - legLength
+    // 与 groundY 取高者作为基准面：groundY 处理地形起伏，modelGround 处理模型偏移
+    // 脚离基准面超过 jumpThreshold 视为有意抬脚/跳跃，跳过校正。
+    const modelGroundY = Math.max(groundY, centerY - legLength);
+    if (footY - modelGroundY > feet.jumpThreshold) {
         return { skip: true, targetY: footY, grounded: false };
     }
 

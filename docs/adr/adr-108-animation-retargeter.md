@@ -1,6 +1,6 @@
 # ADR-108: AnimationRetargeter + HumanoidMmd 接入 — 扩展动作来源
 
-> **状态**: 已落地（2026-07-14 — 桥接模块 + UI 入口；2026-07-22 — 文件格式过滤 + 场景序列化 + 状态管理完整落地）
+> **状态**: 已落地（2026-07-14 — 桥接模块 + UI 入口；2026-07-22 — 文件格式过滤 + 场景序列化 + 状态管理完整落地；2026-07-26 — additive 模式兼容性风险审查）
 
 **决策者**: Riku（联邦首席架构师 AI）、Jieling（人类侧首席架构师）
 
@@ -158,3 +158,63 @@ ADR-061 规划了「统一骨骼名映射模块（MMD / VRM / 自定义）」，
 3. 运行时：`MmdRuntime.createMmdModel()` 需要支持 Humanoid rig
 
 在当前项目以 PMX 模型为主的阶段，此能力优先级较低，列为远期。
+
+---
+
+## 2026-07-26 — additive 模式兼容性风险审查
+
+> **审查者**: Riku（联邦首席架构师 AI）
+> **触发原因**: ADR-108 实现完成后的系统性审查
+
+### 问题：additive 模式在 WASM 运行时下可能被双缓冲覆盖
+
+**核心机制冲突：**
+
+MikuMikuAR 的骨骼变换更新每帧按以下顺序执行：
+
+```
+每帧 onBeforeRenderObservable 调用顺序：
+┌──────────────────────────────────────────────────┐
+│ ① MMD Runtime 动画应用                           │
+│    ├── WASM: VMD 驱动 → 写 worldMatrix frontBuffer    │
+│    └── JS:  AnimationGroup/VMD → 直接操作骨骼        │
+│                                                   │
+│ ② Babylon.js AnimationGroup 自动更新              │
+│    ├── retargeted AnimationGroup (additive)       │
+│    └── 其他非 MMD 动画                             │
+│                                                   │
+│ ③ Motion Pipeline（bone-override + perception）   │
+│    ├── bone-override（用户手动覆盖）              │
+│    ├── gaze-tracking / breathing / blink（感知层）│
+│    └── wasm-layers-blender（多层 VMD 混合）       │
+│                                                   │
+│ ④ WASM Bullet 物理推进                            │
+│    └── rigid body 状态更新                         │
+└──────────────────────────────────────────────────┘
+```
+
+WASM 运行时使用**双缓冲策略**，WASM tick 在 `onAnimationTickObservable` 中计算骨骼变换并写入 `worldMatrix` frontBuffer，会覆盖 Babylon.js AnimationGroup 的 additive 叠加结果。
+
+### 风险评估矩阵
+
+| 场景 | 风险等级 | 说明 |
+|------|----------|------|
+| WASM 运行时（SPR/MPR 默认） | 🔴 极高 P1 | additive 效果大概率被覆盖，retarget 动画不可见 |
+| JS 运行时（调试专用） | 🟢 低 P4 | 无双缓冲，additive 叠加可能正常工作 |
+| 标准 T-pose Mixamo | 🟢 低（若 additive 生效） | 骨骼映射表覆盖完整 |
+| 非标准姿势 Mixamo | 🟡 中 P3 | 部分骨骼无对应映射，局部缺失 |
+| Blender 自定义骨架 | 🔴 极高 | 无预设映射，需手动配置 |
+
+### 修复方案比较
+
+| 方案 | 描述 | 工作量 | 风险 | 收益 |
+|------|------|--------|------|------|
+| **A. VMD 转换（推荐）** | 将 retargeted AnimationGroup 逐帧采样为 VMD Binary，通过 `loadVMDMotion()` 注入 | 中 | 中 | ✅ 全运行时兼容，根本性解决 |
+| **B. JS 运行时守卫** | 播放前检测运行时类型，WASM 下提示用户切换或降级 | 小 | 低 | ⚠️ 用户体验割裂 |
+| **C. 真机验证** | 先不做修改，在实际场景中测试 retarget 表现 | 极小 | 极低 | 验证理论推演的准确性 |
+
+### 后续行动
+
+1. **P0**: 先做方案 C（真机验证），确认 WASM tick 是否真的覆盖 AnimationGroup
+2. **P1**: 如果验证存在覆盖 → 实现方案 A（VMD 转换通道）
+3. **P1**: 如果验证不存在覆盖 → 补充测试用例，记录为已知可行

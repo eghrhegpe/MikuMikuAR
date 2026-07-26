@@ -47,7 +47,7 @@ export function buildMotionRootItems(): PopupRow[] {
             kind: 'action',
             label: t('motion.noMotionHint'),
             icon: 'lucide:circle-slash',
-            target: '',
+            target: '__motion_detail__:',
             sublabel: t('motion.browseMotionLibrary'),
             wrapLabel: true,
         });

@@ -41,7 +41,8 @@ import {
 } from '../core/wails-bindings';
 import { NavigatePlazaWindow } from '@bindings/mikumikuar/internal/app/app';
 import { getCachedCapabilities } from '../core/backend';
-import { isAndroidPlatform, openExternalURL } from '../core/platform';
+import { isAndroidPlatform, isWebPlatform, openExternalURL } from '../core/platform';
+import { browser } from '../core/runtime-bridge';
 import { swallowError, escapeHtml } from '../core/utils';
 import { logWarn } from '../core/logger';
 import { safeCallAsync } from '../core/safe-call';
@@ -210,7 +211,8 @@ export async function ensureSitesLoaded(): Promise<void> {
 // ======== 站点浏览 ========
 
 export function openSiteByMode(site: PlazaSite, url?: string): void {
-    const mode = effectiveMode(site);
+    // 网页端无 Wails 后端；安卓端触屏操作优先走系统浏览器（Edog 等）
+    const mode = isWebPlatform() || isAndroidPlatform() ? 'external' : effectiveMode(site);
     switch (mode) {
         case 'embed':
             renderEmbed(site);
@@ -221,11 +223,27 @@ export function openSiteByMode(site: PlazaSite, url?: string): void {
         case 'window':
             openInWindow(site, url);
             break;
+        case 'browser':
+            openInSystemBrowser(site, url);
+            break;
     }
 }
 
 export function openExternal(site: PlazaSite, url?: string): void {
-    openExternalURL(url ?? site.url);
+    const target = url ?? site.url;
+    if (!openExternalURL(target)) {
+        // 网页端（非 Android）：openExternalURL 返回 false 时自己用 window.open
+        const win = window.open(target, '_blank', 'noopener,noreferrer');
+        if (!win) {
+            logWarn('plaza-browser', 'openExternal: popup blocked for', target);
+        }
+    }
+}
+
+/** 调用操作系统的默认浏览器打开站点（Browser.OpenURL 或 window.open）。 */
+export function openInSystemBrowser(site: PlazaSite, url?: string): void {
+    const target = url ?? site.url;
+    swallowError(browser.openURL(target));
 }
 
 export function openInWindow(site: PlazaSite, url?: string): void {
@@ -697,11 +715,12 @@ export function showActionsMenu(site: PlazaSite, anchor: HTMLElement): void {
             ? [{ key: 'external' as const, label: '系统浏览器' }]
             : [
                   { key: 'embed' as const, label: '内嵌页' },
-                  { key: 'external' as const, label: '系统浏览器' },
                   // [doc:adr-177] A5 能力门控：plazaWindow===false 时隐藏「独立窗口」选项
                   ...(getCachedCapabilities().plazaWindow
                       ? [{ key: 'window' as const, label: '独立窗口' }]
                       : []),
+                  { key: 'external' as const, label: '第二窗口浏览器' },
+                  { key: 'browser' as const, label: '直接打开浏览器' },
               ]),
     ];
     const current = loadGlobalMode() ?? 'auto';
