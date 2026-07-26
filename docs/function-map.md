@@ -7,11 +7,11 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 69 | 534 |
-| 3D 场景 | 103 | 1052 |
-| 菜单 & UI | 65 | 304 |
+| 核心基础设施 | 70 | 540 |
+| 3D 场景 | 103 | 1053 |
+| 菜单 & UI | 65 | 306 |
 | 换装 & 音频 | 3 | 33 |
-| 动作算法 | 17 | 123 |
+| 动作算法 | 18 | 131 |
 | 物理系统 | 2 | 13 |
 
 ## 核心基础设施
@@ -36,6 +36,7 @@
 | `getFsaAuthState()` | `core/backend/browser-adapter` | [doc:adr-183] 查询 FSA 根目录授权状态，供 UI 启动引导（不触发任何权限弹窗）。 |
 | `isFsaAuthPromptDismissed()` | `core/backend/browser-adapter` | [doc:adr-183] 用户跳过启动授权引导后写入「已跳过」标志，避免纯导入用户每次启动被弹窗骚扰。 |
 | `reauthorizeFsaRoot()` | `core/backend/browser-adapter` | [doc:adr-183] 对持久化的 FSA 句柄重新请求授权（不重选目录）。 |
+| `setScanProgressCallback()` | `core/backend/browser-adapter` | [doc:adr-183] 注册扫描进度回调，供 UI 层节流增量刷新。 |
 | `goAdapter()` | `core/backend/go-adapter` | — |
 | `STORES()` | `core/backend/idb` | — |
 | `Store()` | `core/backend/idb` | — |
@@ -92,6 +93,10 @@
 | `resolveFileUrl()` | `core/fileservice` | 从文件路径解析出 HTTP URL 及对应服务器信息。 |
 | `resolveModelDir()` | `core/fileservice` | 从文件路径解析出隔离后的目录路径（不启动 HTTP 服务器）。 |
 | `freeflyInput()` | `core/freefly-state` | — |
+| `Ktx2Capability()` | `core/gpu-capabilities` | — |
+| `Ktx2PreferredFormat()` | `core/gpu-capabilities` | — |
+| `_resetKtx2CacheForTest()` | `core/gpu-capabilities` | 仅供测试使用：重置缓存。 |
+| `detectKtx2Support()` | `core/gpu-capabilities` | 探测 GPU 对 KTX2 压缩纹理的支持。 |
 | `translateGoError()` | `core/i18n/goerr` | [doc:adr-117] 将 Go 端返回的 error 翻译为当前语言。 |
 | `LangCode()` | `core/i18n/locale` | — |
 | `SUPPORTED_LANGS()` | `core/i18n/locale` | 规划支持的语言清单（与竞品 DanceXR 对齐：简/繁中、英、日、韩）。 |
@@ -549,6 +554,7 @@
 | `StartProxy()` | `core/wails-bindings` | — |
 | `StopProxy()` | `core/wails-bindings` | — |
 | `UpdateCustomSoftware()` | `core/wails-bindings` | — |
+| `WriteTextFile()` | `core/wails-bindings` | — |
 | `readFileBytes()` | `core/wails-bindings` | 读取文件为 Uint8Array（go：自动解码 Wails v3 base64；browser：IndexedDB/FSA 直读）。 |
 | `getWindVector()` | `core/wind-utils` | 返回当前风矢量（方向 × 速度），windEnabled=false 时返回零向量。 |
 | `isWindActive()` | `core/wind-utils` | 风向是否生效（快捷判空，避免 Vector3.Zero() 比较开销）。 |
@@ -1061,6 +1067,7 @@
 | `getFrameHooksSnapshot()` | `scene/motion/bone-override` | 按 order 升序返回当前注册的所有帧钩子快照（不含 hook 函数本身）。 |
 | `getOverride()` | `scene/motion/bone-override` | [doc:adr-116] 读取单条骨骼的覆盖条目（用于 UI 回填）。不存在返回 undefined。 |
 | `getOverrideType()` | `scene/motion/bone-override` | 查询骨骼覆盖类型（零分配）。 |
+| `invalidateLegChainCache()` | `scene/motion/bone-override` | 缓存失效：模型卸载或骨骼重建时调用 |
 | `protectIkPosition()` | `scene/motion/bone-override` | 注册骨骼位置保护（帧钩子内调用）。 |
 | `registerBoneOverrideFrameHook()` | `scene/motion/bone-override` | — |
 | `restoreOverrides()` | `scene/motion/bone-override` | 从持久化的条目列表批量恢复覆盖。 |
@@ -1780,6 +1787,7 @@
 | `getCustomPresets()` | `menus/plaza-browser` | — |
 | `loadCachedConfig()` | `menus/plaza-browser` | — |
 | `loadCustomSites()` | `menus/plaza-browser` | — |
+| `loadPlazaCache()` | `menus/plaza-browser` | 从本地缓存文件读取站点 + 创作者。缓存不存在时返回 null。 |
 | `mergeSites()` | `menus/plaza-browser` | — |
 | `normalizeCreator()` | `menus/plaza-browser` | — |
 | `normalizeSite()` | `menus/plaza-browser` | — |
@@ -1792,6 +1800,7 @@
 | `renderRemote()` | `menus/plaza-browser` | — |
 | `renderSiteContent()` | `menus/plaza-browser` | — |
 | `saveCustomPresets()` | `menus/plaza-browser` | — |
+| `savePlazaCache()` | `menus/plaza-browser` | 将当前站点 + 创作者写入本地缓存文件。 |
 | `showActionsMenu()` | `menus/plaza-browser` | — |
 | `showPlaza()` | `menus/plaza-browser` | — |
 | `PLAZA_CREATORS()` | `menus/plaza-creators` | — |
@@ -2029,6 +2038,8 @@
 | `BONE_ELBOW_R_CANDIDATES()` | `motion-algos/proc-motion-shared` | — |
 | `BONE_GROOVE_CANDIDATES()` | `motion-algos/proc-motion-shared` | — |
 | `BONE_HEAD_CANDIDATES()` | `motion-algos/proc-motion-shared` | — |
+| `BONE_KNEE_L_CANDIDATES()` | `motion-algos/proc-motion-shared` | — |
+| `BONE_KNEE_R_CANDIDATES()` | `motion-algos/proc-motion-shared` | — |
 | `BONE_LARM_CANDIDATES()` | `motion-algos/proc-motion-shared` | — |
 | `BONE_LEG_IK_L_CANDIDATES()` | `motion-algos/proc-motion-shared` | — |
 | `BONE_LEG_IK_R_CANDIDATES()` | `motion-algos/proc-motion-shared` | — |
@@ -2036,6 +2047,8 @@
 | `BONE_RARM_CANDIDATES()` | `motion-algos/proc-motion-shared` | — |
 | `BONE_SHOULDER_L_CANDIDATES()` | `motion-algos/proc-motion-shared` | — |
 | `BONE_SHOULDER_R_CANDIDATES()` | `motion-algos/proc-motion-shared` | — |
+| `BONE_THIGH_L_CANDIDATES()` | `motion-algos/proc-motion-shared` | — |
+| `BONE_THIGH_R_CANDIDATES()` | `motion-algos/proc-motion-shared` | — |
 | `BONE_UPPER2_CANDIDATES()` | `motion-algos/proc-motion-shared` | — |
 | `BONE_UPPER_CANDIDATES()` | `motion-algos/proc-motion-shared` | — |
 | `BONE_WAIST_CANDIDATES()` | `motion-algos/proc-motion-shared` | — |
@@ -2060,6 +2073,10 @@
 | `generateIdleVmd()` | `motion-algos/procedural-motion` | — |
 | `shouldAutoDance()` | `motion-algos/procedural-motion` | — |
 | `shouldIdle()` | `motion-algos/procedural-motion` | — |
+| `SolveTwoBoneIKInput()` | `motion-algos/two-bone-ik` | 两骨骼 IK 求解输入（所有位置为世界空间） |
+| `SolveTwoBoneIKResult()` | `motion-algos/two-bone-ik` | 两骨骼 IK 求解结果 |
+| `applyRotationToWorldMatrix()` | `motion-algos/two-bone-ik` | 将增量旋转应用到 worldMatrix buffer（保持 translation 不变，仅替换旋转部分）。 |
+| `solveTwoBoneIK()` | `motion-algos/two-bone-ik` | 求解两骨骼 IK，返回髋、膝的世界空间增量旋转。 |
 | `VmdBoneFrame()` | `motion-algos/vmd-evaluator` | — |
 | `VmdEvaluator()` | `motion-algos/vmd-evaluator` | — |
 | `createVmdEvaluator()` | `motion-algos/vmd-evaluator` | — |
@@ -2105,5 +2122,5 @@
 
 ---
 
-> 共 259 个文件，2059 个导出符号。
+> 共 261 个文件，2076 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。

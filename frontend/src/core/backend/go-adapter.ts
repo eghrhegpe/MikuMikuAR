@@ -7,6 +7,7 @@
 import * as goApp from '@bindings/mikumikuar/internal/app/app';
 import type { BackendService, BackendCapabilities } from './types';
 import { isAndroidPlatform } from '../platform';
+import { detectKtx2Support } from '../gpu-capabilities';
 
 function _decodeBase64(b64: string): Uint8Array {
     const bin = atob(b64);
@@ -24,26 +25,32 @@ export const goAdapter: BackendService = {
         const b64 = await goApp.ReadFileBytes(path);
         return b64 ? _decodeBase64(b64) : null;
     },
-    capabilities: (): BackendCapabilities => ({
-        // [doc:adr-178] ar = AR 相机透视（getUserMedia），桌面/安卓均可用；保持 true（非原生 ARCore 独占）
-        ar: true,
-        externalApps: true,
-        plazaWindow: true,
-        fsAccess: false, // 原生对话框，非 FSA
-        watchDir: !isAndroidPlatform(), // 桌面应用可监听目录；安卓应用 WebView 无此能力（与历史 !isAndroidPlatform() 门控一致）
-        proxyServer: true,
-        fileServer: true,
-        systemDirOpen: true,
-        storageMode: true,
-        screenshotSave: true,
-        cacheManage: true,
-        configPersist: true,
-        modelScan: true,
-        // [doc:adr-178] 宿主级运行时键：读运行时自报，禁硬编码（安卓应用 crossOriginIsolated 恒 false）
-        crossOriginIsolated:
-            typeof window !== 'undefined' &&
-            (window as { crossOriginIsolated?: boolean }).crossOriginIsolated === true,
-        clipboardReliable: !isAndroidPlatform(), // 安卓 WebView 部分版本需手势/API 缺失（A2-06 根因）
-        arScope: isAndroidPlatform() ? 'android-app' : 'none', // 仅安卓应用走 ARCore 原生路由
-    }),
+    capabilities: (): BackendCapabilities => {
+        const ktx2 = detectKtx2Support();
+        return {
+            // [doc:adr-178] ar = AR 相机透视（getUserMedia），桌面/安卓均可用；保持 true（非原生 ARCore 独占）
+            ar: true,
+            externalApps: true,
+            plazaWindow: true,
+            fsAccess: false, // 原生对话框，非 FSA
+            watchDir: !isAndroidPlatform(), // 桌面应用可监听目录；安卓应用 WebView 无此能力（与历史 !isAndroidPlatform() 门控一致）
+            proxyServer: true,
+            fileServer: true,
+            systemDirOpen: true,
+            storageMode: true,
+            screenshotSave: true,
+            cacheManage: true,
+            configPersist: true,
+            modelScan: true,
+            // [doc:adr-178] 宿主级运行时键：读运行时自报，禁硬编码（安卓应用 crossOriginIsolated 恒 false）
+            crossOriginIsolated:
+                typeof window !== 'undefined' &&
+                (window as { crossOriginIsolated?: boolean }).crossOriginIsolated === true,
+            clipboardReliable: !isAndroidPlatform(), // 安卓 WebView 部分版本需手势/API 缺失（A2-06 根因）
+            arScope: isAndroidPlatform() ? 'android-app' : 'none', // 仅安卓应用走 ARCore 原生路由
+            // [doc:adr-189] GPU 压缩纹理能力探测（运行时，与后端无关）
+            ktx2Supported: ktx2.supported,
+            ktx2PreferredFormat: ktx2.preferredFormat,
+        };
+    },
 } as unknown as BackendService;

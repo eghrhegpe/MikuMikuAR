@@ -14,6 +14,8 @@ type PMXMeta struct {
 	NameEn    string // 模型名（通用）
 	CommentJp string // 说明（本地）
 	CommentEn string // 说明（通用）
+	// [doc:adr-189] Phase 0 体积埋点：文件大小用于 ADR-187 触发判据（P90 PMX 体积直方图）
+	FileSize int64 // 文件字节数（os.Stat 获取，零额外 IO 成本）
 }
 
 // ParsePMXHeader reads the PMX binary header (first ~1.5KB) and extracts
@@ -33,13 +35,20 @@ func parsePMXHeaderUnsafe(path string) (*PMXMeta, error) {
 	}
 	defer f.Close()
 
+	// [doc:adr-189] 文件大小用于体积直方图埋点（ADR-187 触发判据数据源）
+	fi, statErr := f.Stat()
+
 	// Read first 8192 bytes — enough for the header area including long comments
 	buf := make([]byte, 8192)
 	n, err := f.Read(buf)
 	if err != nil {
 		return nil, WrapError(op, fmt.Errorf("read header: %w", err))
 	}
-	return parsePMXHeaderBytes(buf[:n]), nil
+	meta := parsePMXHeaderBytes(buf[:n])
+	if meta != nil && statErr == nil {
+		meta.FileSize = fi.Size()
+	}
+	return meta, nil
 }
 
 // parsePMXHeaderBytes parses PMX header metadata from raw bytes

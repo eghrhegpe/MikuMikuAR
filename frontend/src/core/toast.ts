@@ -233,7 +233,7 @@ export function showInfoToast(
     title: string,
     detail?: string,
     actions?: ToastAction[],
-    duration = 8000
+    duration = 3000
 ): void {
     showToast(title, detail, actions, duration, 'info');
 }

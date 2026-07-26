@@ -36,6 +36,9 @@ export interface BackendCapabilities {
     crossOriginIsolated: boolean; // SharedArrayBuffer 可用 → 多线程 MPR 物理（ADR-133）；安卓应用 WebView 恒 false
     clipboardReliable: boolean; // 剪贴板 API 可靠（手势/无限制）；安卓应用 WebView 部分版本 false（A2-06 根因）
     arScope: 'none' | 'android-app' | 'webxr'; // 原生 AR 路由作用域（与 ar 透视分离）：none=无 / android-app=ARCore / webxr=WebXR
+    // [doc:adr-189] GPU 压缩纹理能力（运行时探测，非后端能力）
+    ktx2Supported: boolean; // GPU 支持 KTX2 压缩纹理（ASTC/BC7/ETC2 任一）
+    ktx2PreferredFormat: 'astc' | 'bc7' | 'etc2' | null; // 推荐转码目标格式；null 表示不支持
 }
 
 // ④ 零业务调用函数（ADR-176 实证章节清单）—— 从 BackendService 接口排除。

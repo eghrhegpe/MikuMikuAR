@@ -1,7 +1,9 @@
 # ADR-085: 脚部地面跟随（Feet Adjustment）
 
 > **日期**: 2026-07-11
-> **状态**: Phase A 已完成；Phase B/C 降级搁置（2026-07-19）· 已纳入代码审核 4 项修正（纯文档，无代码变更）
+> **状态**: Phase A 已完成；Phase B/C 降级搁置（2026-07-19）· 已纳入代码审核 4 项修正（纯文档，无代码变更）· 方案C（WASM 手动 IK）已实施（2026-07-26）
+>
+> **方案C补充（2026-07-26）**：发现 babylon-mmd WASM 运行时不暴露 `ikSolver` 字段（始终为 null），导致 WASM 模式下 IK 链不会在动画解算后重解。脚部位置偏移（foot-modules 的 footPosX/Y/Z）写入 IK 目标骨后，髋、膝旋转不跟随，偏移完全失效。短期采用方案C（纯 JS 余弦定理两骨骼 IK）作为临时替代，长期走方案A（fork babylon-mmd 暴露 ikSolver API）。详见下方「WASM 模式补充（方案C）」节。
 >
 > **降级说明（2026-07-19）**：长期挂「部分实现」黄灯。逐项复核后判定 Phase B/C 不立项收尾，正式降级为搁置：
 > - **Phase B（防滑 + 高跟 + 脚角偏移）**：核心贴地（Phase A）已覆盖舞蹈/演出场景的主要痛点（穿地/悬空/滑冰）。Phase B 三项均为锦上添花型小参数：
@@ -92,6 +94,33 @@ VMD 动画解算 → (WASM Bullet 物理) → [Feet Adjustment: 驱动足IK骨�
 > ❌ **否决原始方案**（手动两骨骼余弦定理 IK + 写大腿/小腿旋转）：会被下一帧 VMD 动画（通常含 `左足IK` 关键帧）覆盖，且绕过引擎膝关节约束（`limitAngle`/`rotationConstraint`），与 babylon-mmd 求解器打架。
 
 > ✅ **采用 MMD-native 方案**：直接驱动 IK 目标骨骼的**世界坐标**（`IMmdRuntimeBone.setWorldTranslation`，WASM/JS 通用），再调用该骨骼的 `ikSolver.solve(false)` 重解该腿 IK。复用引擎膝关节约束，零自研运动学，且与动画每帧「覆盖→重解」的既有模式一致（同 `bone-override` 的逐帧后处理范式）。
+
+> ⚠️ **WASM 模式限制（2026-07-26 发现）**：上述 MMD-native 方案依赖 `ikSolver.solve(false)`，但 babylon-mmd 的 WASM 运行时（`MmdWasmRuntime`）不暴露 `ikSolver` 字段——`MmdRuntimeBoneExtended.ikSolver` 在 WASM 模式下始终为 null，仅有 `ikSolverIndex`（WASM 内部索引，JS 侧无法调用）。导致 WASM 模式下 `setWorldTranslation` 写入 IK 目标骨后，髋、膝旋转不跟随，脚部位置偏移完全失效。短期采用下方「方案C」临时替代。
+
+### WASM 模式补充（方案C）
+
+**触发条件**：`isWasmRuntime(bones[0])` 为 true 且 IK 目标骨有启用的 `slot.pos`。
+
+**算法**（纯 JS 余弦定理两骨骼 IK）：
+1. 读取髋（大腿根）、膝、IK 目标骨的 worldMatrix translation
+2. `targetPos = IK 目标骨 translation`（= 动画位置 + slot.pos，由 ADR-186 步骤⑤写入）
+3. `endEffectorPos = targetPos - slot.pos`（反推动画位置）
+4. 余弦定理求当前/目标膝角、髋角，增量角 = 目标 - 当前
+5. 旋转轴：默认 `curDir × targetDir`；共线回退到腿平面法线 `(knee-hip) × (endEffector-hip)`
+6. 应用 `hipDelta` 到大腿 worldMatrix + `_propagateChildrenWasm` 传播子骨骼（含膝、踝、趾）
+7. 应用 `kneeDelta` 到膝盖 worldMatrix + `_propagateChildrenWasm` 传播子骨骼（含踝、趾）
+
+**纯函数实现**：`motion-algos/two-bone-ik.ts`（仅依赖 Babylon 数学库，无运行时依赖，可单测）。
+**引擎集成**：`scene/motion/bone-override.ts:_solveManualLegIK`，在 ADR-186 步骤⑥执行。
+**单测**：`__tests__/two-bone-ik.test.ts`，15 例覆盖退化场景、正常偏移、对称性、可达范围 clamp、矩阵旋转应用。
+
+**已知限制**（待方案A解决）：
+- 不处理 IK 链角度约束（MMD 膝关节只能沿单轴弯曲，本算法无约束）
+- 不迭代（一次求解，非收敛）
+- 不处理物理（与 `canSkipWhenPhysicsEnabled` 无关）
+- 适用于脚部位置偏移等小偏移场景；大偏移可能产生不自然姿态
+
+**方案A（长期）**：fork babylon-mmd，在 WASM 运行时暴露 `ikSolver` 字段及 `solve()` 方法，使 JS 路径与 WASM 路径统一走原版 IK 求解器。落地后删除方案C。
 
 ### 脚部 IK 解算算法（MMD-native）
 

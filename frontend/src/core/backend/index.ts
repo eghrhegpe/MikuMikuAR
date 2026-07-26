@@ -110,6 +110,9 @@ const ALL_TRUE_CAPS: BackendCapabilities = {
     crossOriginIsolated: true,
     clipboardReliable: true,
     arScope: 'none',
+    // [doc:adr-189] 保守默认：不支持 KTX2；解析后由 detectKtx2Support() 覆盖
+    ktx2Supported: false,
+    ktx2PreferredFormat: null,
 };
 
 export async function getCapabilities(): Promise<BackendCapabilities> {
