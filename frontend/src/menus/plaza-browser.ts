@@ -737,6 +737,12 @@ export function showActionsMenu(site: PlazaSite, anchor: HTMLElement): void {
                 }
             } else {
                 saveGlobalMode(o.key);
+                // 清除站点级模式，让全局模式优先（否则 effectiveMode 先命中站点级会忽略全局）
+                try {
+                    localStorage.removeItem(`miku.plaza.mode.${site.name}`);
+                } catch (e) {
+                    logWarn('plaza-browser', 'removeItem site mode failed', e);
+                }
             }
             menu.remove();
         };

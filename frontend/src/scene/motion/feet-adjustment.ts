@@ -131,9 +131,17 @@ export function isFeetAdjustmentRunning(): boolean {
     return _unregisterHandle !== null;
 }
 
-/** 沿 parentBone 向上找大腿根骨骼（用于估算髋世界坐标与腿长） */
-function _findHip(ik: IMmdRuntimeBone, side: 'L' | 'R'): IMmdRuntimeBone | null {
+/** 找大腿根骨骼（用于估算髋世界坐标与腿长）。
+ *  优先沿 IK 骨 parent 链向上找（兼容非标准层级）；
+ *  降级到全量 bone list 按名匹配（标准 MMD：IK 骨 direct child of 全ての親）。 */
+function _findHip(
+    ik: IMmdRuntimeBone,
+    allBones: readonly IMmdRuntimeBone[],
+    side: 'L' | 'R'
+): IMmdRuntimeBone | null {
     const cands = side === 'L' ? BONE_THIGH_L : BONE_THIGH_R;
+
+    // 1) 沿 IK 骨 parent 链向上
     let cur: IMmdRuntimeBone | null = ik.parentBone;
     let depth = 0;
     while (cur && depth < 6) {
@@ -143,7 +151,15 @@ function _findHip(ik: IMmdRuntimeBone, side: 'L' | 'R'): IMmdRuntimeBone | null 
         cur = cur.parentBone;
         depth++;
     }
-    // 回退：取 ik 上方第 3 级父（典型大腿根）
+
+    // 2) 全量搜索——标准 MMD 中左足ＩＫ的 parent 是全ての親，不是左足
+    for (const b of allBones) {
+        if (cands.includes(b.name)) {
+            return b;
+        }
+    }
+
+    // 3) 回退：取 ik 上方第 3 级父
     cur = ik.parentBone;
     for (let i = 0; i < 2 && cur; i++) {
         cur = cur.parentBone;
@@ -176,7 +192,7 @@ function _adjustFoot(
     let legLength = 1;
     let hip: IMmdRuntimeBone | null = null;
     {
-        const h = _findHip(ik, side);
+        const h = _findHip(ik, bones, side);
         if (h) {
             h.getWorldTranslationToRef(_vHip);
             hipToFootDist = Vector3.Distance(_vFoot, _vHip);
@@ -248,6 +264,7 @@ function _adjustFoot(
                 `skip=${res.skip} ` +
                 `solver=${solver ? 'present' : 'null'} ` +
                 `hip=${hip ? hip.name : 'null<-fallback'} ` +
+                `centerY=${cache.centerY !== null ? cache.centerY.toFixed(3) : '?'} ` +
                 `legLen=${legLength.toFixed(3)}`
         );
     }
