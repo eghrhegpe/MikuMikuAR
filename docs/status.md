@@ -72,7 +72,7 @@
 | ADR-133 | Android MPR 多线程物理缺失——构建门控与架构障碍 | 部分落地（构建门控已补）、架构障碍延期（2026-07-18） |
 | ADR-132 | 环境亮度统一标量（EnvBrightness Unification） | 已实施（2026-07-21 UI/i18n/预设层补齐闭环）（2026-07-18） |
 | ADR-131 | 资源浏览选中结果统一契约（BrowseOutcome） | ✅ 已完成（2026-07-20 代码核查确认：BrowseOutcome 类型定义、`activateItem` 派发（stay/jumpToDir/close）、grid 模式适配、`buildLevel` outcome 参数均已落地；旧全局标志位 `modelReplaceTargetId`/`layerBindingTargetId`/`motionBindingTargetId` 已移除）（2026-07-18） |
-| ADR-130 | 场景 UI 整体设计与前后端发展方向路线图 | 规划中（Phase 1 技术债 ✅1.1 部分完成（外观收口），1.2/1.3 已解决；Phase 2 ✅2.1/2.2/2.3 已完成，✅2.4 已完成，✅2.7 已完成，2.5/2.6 待推进；Phase 3 能力扩展待推进）（2026-07-18） |
+| ADR-130 | 场景 UI 整体设计与前后端发展方向路线图 | 规划中（Phase 1 技术债 ✅1.1 已完成（实质达成，载体 ADR-138 + env 子系统大拆分；env-impl.ts 227 行、edgeFade 纹理独立接入 dispose、循环依赖破除、env 子系统 8 个测试文件 70+ it），1.2/1.3 已解决；Phase 2 ✅2.1/2.2/2.3 已完成，✅2.4 已完成，✅2.7 已完成，2.5/2.6 待推进；Phase 3 能力扩展待推进）（2026-07-18） |
 | ADR-129 | 动作菜单场景级重设计（Scene-level Motion UI） | 已完成—最终实现偏离设计（2026-07-18） |
 | ADR-128 | 镜面道具化重命名（debugMirror → mirror） | ✅ 已完成（2026-07-20 代码核查确认：全部 debugMirror 重命名已迁移，仅 env-bridge.ts 迁移代码维持旧字段兼容引用；i18n 5 语种无残留） |
 | ADR-127 | 场景级破坏性操作撤销 — Memento 快照 + 撤销 Toast | 已实现（2026-07-18） |
