@@ -1244,6 +1244,9 @@ export const en: Record<string, string> = {
     'settings.storageShared': 'Shared',
     'settings.storageModeDesc':
         'Private dir cleared on uninstall; shared dir (/sdcard/MMD) needs storage permission, accessible via file manager',
+    'settings.storagePermission': 'File Permission',
+    'settings.storagePermissionGranted': 'Granted',
+    'settings.storagePermissionMissing': 'Missing (click to request)',
     'settings.exported': '✓ Settings exported',
     'settings.imported': '✓ Settings imported',
     'settings.importFailed': '✗ Import failed',

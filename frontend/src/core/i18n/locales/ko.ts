@@ -126,6 +126,9 @@ export const ko: Record<string, string> = {
     'settings.storageShared': '공유',
     'settings.storageModeDesc':
         '개인 디렉터리는 앱 제거 시 삭제되며, 공유 디렉터리(/sdcard/MMD)는 저장 권한이 필요하고 파일 관리자로 접근 가능합니다',
+    'settings.storagePermission': '파일 권한',
+    'settings.storagePermissionGranted': '허용됨',
+    'settings.storagePermissionMissing': '미허용(클릭하여 요청)',
     'settings.exported': '✓ 설정 내보내기 완료',
     'settings.imported': '✓ 설정 가져오기 완료',
     'settings.importFailed': '✗ 가져오기 실패: ',

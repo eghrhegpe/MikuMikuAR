@@ -124,6 +124,9 @@ export const zhTW: Record<string, string> = {
     'settings.storageShared': '授權目錄',
     'settings.storageModeDesc':
         '私有目錄隨應用解除安裝清除；授權目錄(/sdcard/MMD)需儲存權限，可透過檔案管理員存取',
+    'settings.storagePermission': '檔案權限',
+    'settings.storagePermissionGranted': '已授權',
+    'settings.storagePermissionMissing': '未授權（點擊請求）',
     'settings.exported': '✓ 設定已匯出',
     'settings.imported': '✓ 設定已匯入',
     'settings.importFailed': '✗ 匯入失敗：',
