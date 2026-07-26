@@ -53,6 +53,10 @@ import 'babylon-mmd/esm/Loader/mmdModelLoader.default';
 import '@babylonjs/core/Materials/Textures/Loaders/tgaTextureLoader';
 import '@babylonjs/core/Materials/Textures/Loaders/hdrTextureLoader';
 import '@babylonjs/core/Materials/Textures/Loaders/exrTextureLoader';
+// [doc:adr-189] KTX/KTX2 压缩纹理加载器：Babylon.js 9.16 中 _KTXTextureLoader 同时处理 KTX1 和 KTX2，
+// 通过 KhronosTextureContainer2.IsValid() 自动分发。Phase 0 仅注册 loader，无代码路径触发 KTX2 加载；
+// Phase 1 落地 Go 端 toktx 转码后由 model-loader 透明接入。
+import '@babylonjs/core/Materials/Textures/Loaders/ktxTextureLoader';
 import 'babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.vertex';
 import 'babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.fragment';
 

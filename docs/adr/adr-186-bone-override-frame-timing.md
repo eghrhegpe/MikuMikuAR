@@ -73,9 +73,12 @@ sequenceDiagram
     Loop->>Prop: _propagateChildrenWasm(左足IK, ...)
 
     Pipeline->>IK: ⑤ _restoreProtectedPositions(boneMap, snapshots, overrideMap)
-    Note over IK: 对每个受保护骨骼：<br/>• 无自身覆盖 → 直接恢复到快照（动画位置）<br/>• 有自身覆盖 → 计算传播增量 adjustment = snapshot - propagated<br/>  叠加到当前位置：final = snapshot + slot.pos
+    Note over IK: 对每个受保护骨骼：<br/>• 无自身覆盖 → 直接恢复到快照（动画位置）<br/>• 有自身覆盖 → finalT = snapshotT + slot.pos<br/>  （直接计算动画位置 + 用户偏移，旋转保持快照值）
 
-    Pipeline->>Feet: ⑥ feet-adjustment 层执行（stage 内 order=5）
+    Pipeline->>IK: ⑥ [doc:adr-085 方案C] _solveManualLegIK(boneMap, overrideMap)
+    Note over IK: 仅 WASM 模式触发：babylon-mmd WASM 运行时<br/>IkSolver 字段为 null，IK 链不会重解。<br/>本步骤用余弦定理手动求解髋、膝增量旋转：<br/>• targetPos = IK 目标骨当前 translation（= snapshotT + slot.pos）<br/>• endEffectorPos = targetPos - slot.pos（动画位置）<br/>• 应用 hipDelta 到大腿 worldMatrix + _propagateChildrenWasm<br/>• 应用 kneeDelta 到膝盖 worldMatrix + _propagateChildrenWasm<br/>JS 运行时由原版 IkSolver.solve() 处理，跳过本步骤。
+
+    Pipeline->>Feet: ⑦ feet-adjustment 层执行（stage 内 order=5）
     Note over Feet: 读取 IK 目标世界坐标<br/>（已恢复正确：动画位置 + 用户偏移）<br/>钉住 XZ，调整 Y 到地面，重解腿部 IK
 ```
 
@@ -97,18 +100,32 @@ sequenceDiagram
 
 ### C4: IK 保护恢复必须考虑自身覆盖
 
-步骤⑤中，如果受保护骨骼在 overrideMap 中有自己的 position slot（如 foot-modules 的 footPosX/Y/Z），恢复时不能直接覆盖为快照值，必须计算传播增量后叠加 slot 偏移：
-
-```
-final_pos = snapshot_pos + slot.pos
-         = (propagated_pos + slot.pos) + (snapshot_pos - propagated_pos)
-```
-
-当前实现从覆盖循环后的 worldMatrix（= `propagated_pos + slot.pos`）出发，减去传播增量 `propagated_pos - snapshot_pos`，得到正确值。
+步骤⑤中，如果受保护骨骼在 overrideMap 中有自己的 position slot（如 foot-modules 的 footPosX/Y/Z），恢复时不能直接覆盖为快照值，必须计算 `finalT = snapshotT + slot.pos`（动画位置 + 用户偏移，旋转保持快照值）。当前实现直接从快照矩阵提取 translation，加上 slot.pos 写回 worldMatrix buffer。
 
 ### C5: feet-adjustment 在 bone-override 主回调之后
 
 feet-adjustment 注册为同 stage 内 order=5 的独立层，读取的 IK 目标世界坐标已经是步骤⑤修复后的值。任何改变 IK 目标位置的机制必须在 order ≤ 5 内完成。
+
+### C6: [doc:adr-085 方案C] 手动两骨骼 IK 仅 WASM 模式触发
+
+步骤⑥的 `_solveManualLegIK` 仅在 WASM 运行时执行（`isWasmRuntime(bones[0])` 为 true）。原因：babylon-mmd 的 WASM 实现不暴露 `ikSolver` 字段（始终为 null），IK 链不会在动画解算后重解。JS 运行时由 babylon-mmd 原版 `IkSolver.solve()` 处理，无需手动求解。
+
+求解算法（余弦定理）：
+- 输入：hipPos / kneePos / endEffectorPos（动画位置）/ targetPos（动画位置 + slot.pos）
+- 旋转轴：默认 `curDir × targetDir`；共线回退到腿平面法线 `(knee-hip) × (endEffector-hip)`
+- 退化场景：腿完全伸直且三点共线 → changed=false（无旋转轴可用）
+- 纯函数实现：`motion-algos/two-bone-ik.ts`，单测覆盖 15 例
+- 引擎集成：`bone-override.ts:_solveManualLegIK`，复用 `_propagateChildrenWasm` 传播子骨骼
+
+### C7: 方案C是临时替代，长期走方案A（fork babylon-mmd）
+
+方案C的已知限制（待方案A解决）：
+- 不处理 IK 链角度约束（MMD 膝关节只能沿单轴弯曲）
+- 不迭代（一次求解，非收敛）
+- 不处理物理（与 `canSkipWhenPhysicsEnabled` 无关）
+- 适用于脚部位置偏移等小偏移场景；大偏移可能产生不自然姿态
+
+方案A（长期）：fork babylon-mmd，在 WASM 运行时暴露 `ikSolver` 字段及 `solve()` 方法，使 JS 路径与 WASM 路径统一走原版 IK 求解器。落地后删除方案C。
 
 ---
 

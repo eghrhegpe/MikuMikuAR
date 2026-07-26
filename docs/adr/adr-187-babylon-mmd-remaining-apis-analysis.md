@@ -258,7 +258,7 @@ MMD 格式的 `.pmx` / `.vmd` 是**人类可读的文本/半结构化格式**，
 | ~~AnimationRetargeter~~ | — | — | — | ✅ 已完成 | ADR-108 |
 | ~~SdefInjector~~ | — | — | — | ✅ 已完成 | ADR-112 |
 | **SharedToonTextures** | 极小 | 极低 | 小 | 🟢 **立即** | 合并到现有 ADR |
-| **PBRMaterialBuilder** | 大 | 高 | **大** | 🟡 **P1 长期** | 独立专项 ADR |
+| **PBRMaterialBuilder** | 大 | 高 | **大** | 🟡 **P1 长期** | 独立专项 ADR（ADR-188） |
 | **Bpmx/Bvmd Converter** | 大 | 中 | 中 | 🟠 **P2 中期** | 视模型库规模决定 |
 | StandardMaterialBuilder | 中 | 中 | 低 | 🔴 **否决** | 无差异化收益 |
 | MmdPlayerControl | 小 | 低 | 零 | 🔴 **否决** | 调试用途，UI 冲突 |

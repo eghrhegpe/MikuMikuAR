@@ -38,6 +38,7 @@ import type {
 import { NotSupportedError } from './types';
 import type { BackendService, BackendCapabilities } from './types';
 import { idbGet, idbSet, idbDelete, idbKeys, closeIDB, type Store } from './idb';
+import { detectKtx2Support } from '../gpu-capabilities';
 
 // —— 路径工具函数（消除 6 处 "split + pop + replace" 重复）——
 
@@ -214,6 +215,7 @@ function _cap(): BackendCapabilities {
     const fsAccess =
         typeof (window as { showOpenFilePicker?: unknown }).showOpenFilePicker === 'function' ||
         typeof (window as { showDirectoryPicker?: unknown }).showDirectoryPicker === 'function';
+    const ktx2 = detectKtx2Support();
     return {
         ar: false,
         externalApps: false,
@@ -235,6 +237,9 @@ function _cap(): BackendCapabilities {
             (window as { crossOriginIsolated?: boolean }).crossOriginIsolated === true,
         clipboardReliable: typeof navigator !== 'undefined' && !!navigator.clipboard,
         arScope: typeof navigator !== 'undefined' && 'xr' in navigator ? 'webxr' : 'none',
+        // [doc:adr-189] GPU 压缩纹理能力探测（运行时，与后端无关）
+        ktx2Supported: ktx2.supported,
+        ktx2PreferredFormat: ktx2.preferredFormat,
     };
 }
 

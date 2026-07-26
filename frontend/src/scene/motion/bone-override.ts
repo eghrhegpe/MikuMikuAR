@@ -13,6 +13,16 @@ import { getMotionPipeline } from './motion-pipeline';
 import { focusedModelId } from '@/core/state';
 import { isWasmRuntime } from './perception-shared';
 import { logInfo } from '@/core/logger';
+import { solveTwoBoneIK, applyRotationToWorldMatrix } from '@/motion-algos/two-bone-ik';
+import {
+    matchBone,
+    BONE_LEG_IK_L_CANDIDATES,
+    BONE_LEG_IK_R_CANDIDATES,
+    BONE_THIGH_L_CANDIDATES,
+    BONE_THIGH_R_CANDIDATES,
+    BONE_KNEE_L_CANDIDATES,
+    BONE_KNEE_R_CANDIDATES,
+} from '@/motion-algos/proc-motion-shared';
 
 /** 持久化的单条骨骼覆盖配置 */
 export type BoneOverrideEntry = {
@@ -551,6 +561,144 @@ function _restoreProtectedPositions(
     }
 }
 
+// ── [doc:adr-085 方案C] WASM 手动两骨骼 IK ──
+// WASM 模式下 babylon-mmd 的 IkSolver 不可用（ikSolver 字段为 null），
+// 脚部位置偏移写入 IK 目标骨后，髋、膝旋转不会跟随重解。
+// 本函数在主循环 _restoreProtectedPositions 之后调用：
+//   1. IK 目标骨位置已确定为「动画位置 + slot.pos」
+//   2. 读取髋、膝、IK 目标骨的 worldMatrix，用余弦定理求解髋、膝增量旋转
+//   3. 应用旋转到髋 worldMatrix，递归传播子骨骼（含膝）
+//   4. 应用旋转到膝 worldMatrix，递归传播子骨骼（含脚踝）
+// 这样腿链末端（脚踝）会跟随 IK 目标骨的偏移移动，达到 IK 求解效果。
+
+/** 腿部 IK 链配置：IK 目标骨候选 → (大腿候选, 膝候选) */
+const LEG_IK_CHAIN_CONFIG: ReadonlyArray<{
+    ikCandidates: readonly string[];
+    thighCandidates: readonly string[];
+    kneeCandidates: readonly string[];
+}> = [
+    {
+        ikCandidates: BONE_LEG_IK_L_CANDIDATES,
+        thighCandidates: BONE_THIGH_L_CANDIDATES,
+        kneeCandidates: BONE_KNEE_L_CANDIDATES,
+    },
+    {
+        ikCandidates: BONE_LEG_IK_R_CANDIDATES,
+        thighCandidates: BONE_THIGH_R_CANDIDATES,
+        kneeCandidates: BONE_KNEE_R_CANDIDATES,
+    },
+];
+
+/** 缓存：模型骨名列表 → IK 链解析结果（避免每帧 matchBone 扫描） */
+interface _ResolvedLegChain {
+    ikBoneName: string;
+    thighBoneName: string;
+    kneeBoneName: string;
+}
+const _legChainCache = new Map<string, _ResolvedLegChain[]>();
+
+/** 解析模型的所有腿部 IK 链（带缓存，骨骼列表变化时清空） */
+function _resolveLegChains(boneNames: string[]): _ResolvedLegChain[] {
+    const cacheKey = boneNames.join('|');
+    const cached = _legChainCache.get(cacheKey);
+    if (cached) return cached;
+
+    const resolved: _ResolvedLegChain[] = [];
+    for (const cfg of LEG_IK_CHAIN_CONFIG) {
+        const ikBoneName = matchBone(boneNames, cfg.ikCandidates as string[]);
+        const thighBoneName = matchBone(boneNames, cfg.thighCandidates as string[]);
+        const kneeBoneName = matchBone(boneNames, cfg.kneeCandidates as string[]);
+        if (ikBoneName && thighBoneName && kneeBoneName) {
+            resolved.push({ ikBoneName, thighBoneName, kneeBoneName });
+        }
+    }
+
+    // 缓存上限：避免骨名组合爆炸（虽然实际不会发生）
+    if (_legChainCache.size > 16) _legChainCache.clear();
+    _legChainCache.set(cacheKey, resolved);
+    return resolved;
+}
+
+/** 缓存失效：模型卸载或骨骼重建时调用 */
+export function invalidateLegChainCache(): void {
+    _legChainCache.clear();
+}
+
+/**
+ * [doc:adr-085 方案C] WASM 手动两骨骼 IK 求解。
+ *
+ * 触发条件：isWasm && 腿部 IK 目标骨有启用的 slot.pos。
+ * 非触发：JS 运行时（有原版 IkSolver）、仅旋转覆盖、非腿部 IK 目标骨。
+ *
+ * 求解流程（每条腿）：
+ *   1. 读 hipMat / kneeMat / ankleMat（ankleMat 已含 slot.pos）
+ *   2. solveTwoBoneIK → hipDelta, kneeDelta
+ *   3. 应用 hipDelta 到 hipMat，_propagateChildrenWasm 传播（含 knee）
+ *   4. 读传播后的 kneeMat，应用 kneeDelta，_propagateChildrenWasm 传播（含脚踝）
+ *
+ * 性能：每条腿 2 次 _propagateChildrenWasm（递归子骨骼），腿链深度通常 ≤4（髋→膝→踝→趾）。
+ */
+function _solveManualLegIK(
+    boneMap: Map<string, IMmdRuntimeBone>,
+    overrideMap: Map<string, _OverrideSlot>
+): void {
+    const boneNames = Array.from(boneMap.keys());
+    const chains = _resolveLegChains(boneNames);
+    if (chains.length === 0) return;
+
+    for (const chain of chains) {
+        const slot = overrideMap.get(chain.ikBoneName);
+        // 仅在 IK 目标骨有启用的位置覆盖时求解（纯旋转覆盖不触发）
+        if (!slot?.enabled || !slot.pos) continue;
+
+        const ikBone = boneMap.get(chain.ikBoneName);
+        const thighBone = boneMap.get(chain.thighBoneName);
+        const kneeBone = boneMap.get(chain.kneeBoneName);
+        if (!ikBone || !thighBone || !kneeBone) continue;
+
+        const hipMat = (thighBone as MmdRuntimeBoneExtended).worldMatrix;
+        const kneeMat = (kneeBone as MmdRuntimeBoneExtended).worldMatrix;
+        const ankleMat = (ikBone as MmdRuntimeBoneExtended).worldMatrix;
+        if (!hipMat || !kneeMat || !ankleMat) continue;
+
+        // 提取 translation 作为 IK 输入位置（列主序：m[12..14] = translation）
+        // - hipPos / kneePos：动画驱动位置（未受 IK 偏移影响，因为 hip/knee 是 IK 目标骨的祖先）
+        // - targetPos：IK 目标骨当前位置 = 动画位置 + slot.pos（_restoreProtectedPositions 已写入）
+        // - endEffectorPos：腿链末端动画位置（未偏移）= targetPos - slot.pos
+        const hipPos = _v().set(hipMat[12], hipMat[13], hipMat[14]);
+        const kneePos = _v().set(kneeMat[12], kneeMat[13], kneeMat[14]);
+        const targetPos = _v().set(ankleMat[12], ankleMat[13], ankleMat[14]);
+        const endEffectorPos = _v().copyFrom(targetPos).subtractInPlace(slot.pos);
+
+        const result = solveTwoBoneIK({ hipPos, kneePos, endEffectorPos, targetPos });
+        if (!result.changed) continue;
+
+        // —— 应用 hipDelta 并传播 ——
+        // 快照 hipOldMat（用于 _propagateChildrenWasm 的相对变换计算）
+        const hipOldMat = _m();
+        Matrix.FromArrayToRef(hipMat, 0, hipOldMat);
+        // 应用 hipDelta 到 hipMat buffer（就地修改）
+        applyRotationToWorldMatrix(hipMat, result.hipDelta);
+        // 构造 hipNewMat（用于传播）
+        const hipNewMat = _m();
+        Matrix.FromArrayToRef(hipMat, 0, hipNewMat);
+        // 递归传播 hip 的子骨骼（含 knee、脚踝、脚趾）
+        _propagateChildrenWasm(thighBone, hipOldMat, hipNewMat);
+
+        // —— 应用 kneeDelta 并传播 ——
+        // 此时 kneeMat 已被 hip 传播更新为 kneeLocalMat × hipNewMat
+        const kneeNewMat = _m();
+        Matrix.FromArrayToRef(kneeMat, 0, kneeNewMat);
+        // 应用 kneeDelta 到 kneeMat buffer（就地修改）
+        applyRotationToWorldMatrix(kneeMat, result.kneeDelta);
+        // 构造 kneeFinalMat（用于传播）
+        const kneeFinalMat = _m();
+        Matrix.FromArrayToRef(kneeMat, 0, kneeFinalMat);
+        // 递归传播 knee 的子骨骼（含脚踝、脚趾）
+        _propagateChildrenWasm(kneeBone, kneeNewMat, kneeFinalMat);
+    }
+}
+
 /**
  * [doc:adr-116 P3] 注册每帧渲染钩子。
  * 时间驱动模块（riding/left-hand/right-hand）用以逐帧更新自身骨骼覆盖（如踏板循环、手臂位置偏移）。
@@ -811,6 +959,15 @@ export function startBoneOverride(
         if (ikSnapshots && ikSnapshots.size > 0) {
             _restoreProtectedPositions(boneMap, ikSnapshots, overrideMap);
         }
+
+        // [doc:adr-085 方案C] WASM 手动两骨骼 IK：
+        // IK 目标骨位置已确定（动画位置 + slot.pos），但 WASM 内部 IK 不会重解。
+        // 此处用余弦定理手动求解髋、膝旋转，让腿链跟随 IK 目标骨偏移。
+        // JS 运行时由原版 IkSolver.solve() 处理，无需手动求解。
+        if (isWasm) {
+            _solveManualLegIK(boneMap, overrideMap);
+        }
+
         _protectedIkBoneNames.clear();
     };
 

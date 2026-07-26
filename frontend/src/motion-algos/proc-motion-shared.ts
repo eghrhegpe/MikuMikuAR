@@ -146,6 +146,46 @@ export const BONE_LEG_IK_R_CANDIDATES = [
     'RightFootIK',
 ];
 
+// [doc:adr-085 方案C] 大腿骨候选（两骨骼 IK 的 hip 端）
+// 注意：MMD 命名「足」=大腿（thigh），「足首」=脚踝（ankle），「ひざ」=膝（knee）。
+// 英文变体中 "leg" 通常指整条腿，但 PMX 导出常将大腿直接命名为 "leg"/"Leg"，故保留。
+export const BONE_THIGH_L_CANDIDATES = [
+    '左足',
+    '左太もも',
+    'left thigh',
+    'LeftThigh',
+    'left leg',
+    'LeftLeg',
+    'L_Thigh',
+];
+export const BONE_THIGH_R_CANDIDATES = [
+    '右足',
+    '右太もも',
+    'right thigh',
+    'RightThigh',
+    'right leg',
+    'RightLeg',
+    'R_Thigh',
+];
+
+// [doc:adr-085 方案C] 膝盖骨候选（两骨骼 IK 的 knee 端）
+export const BONE_KNEE_L_CANDIDATES = [
+    '左ひざ',
+    '左膝',
+    'left knee',
+    'LeftKnee',
+    'L_Knee',
+    '左ひざＩＫ', // 极少出现，但兼容
+];
+export const BONE_KNEE_R_CANDIDATES = [
+    '右ひざ',
+    '右膝',
+    'right knee',
+    'RightKnee',
+    'R_Knee',
+    '右ひざＩＫ',
+];
+
 // 手臂 IK 候选（与腿部同构）：左腕IK/右腕IK 是手臂 IK 目标骨。
 // 移动它并 solve 可让整条手臂（上腕→ひじ→手首）跟随，符合 IK 直觉
 // （ADR-116 手部位置偏移：直接偏移手腕骨只浮起手，偏移 IK 目标骨才带动整臂）。
