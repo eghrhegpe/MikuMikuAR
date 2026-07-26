@@ -1,7 +1,7 @@
 # ADR-189: 纹理加载路径优化（并行读取 + basename 共享 + LRU + KTX2 基础设施）
 
-> **状态**: 实施中（Phase 0 代码已落地，3 项运行时验证随 Phase 1 完成；Phase 1 代码已落地 2026-07-26 — 并行读取 + basename 共享 + LRU，全量测试 2100/2100）
-> **日期**: 2026-07-26（初版）/ 2026-07-26（修订 — 方向调整）/ 2026-07-26（审核修订 — AbortSignal/LRU/数值一致性）
+> **状态**: 实施中（Phase 0 代码已落地，3 项运行时验证随 Phase 1 完成；Phase 1 代码已落地 2026-07-26 — 并行读取 + basename 共享 + LRU 接线，全量 2133/2133）
+> **日期**: 2026-07-26（初版）/ 2026-07-26（修订 — 方向调整）/ 2026-07-26（审核修订 — AbortSignal/LRU/数值一致性）/ 2026-07-26（修复 — LRU 接入 collectTextureFiles）
 > **关联**: ADR-187（babylon-mmd 剩余 API 分析 — BpmxConverter/BvmdConverter P2 维持，本 ADR 提供触发判据数据源）、ADR-124（filesystem-architecture — referenceFiles 直传路径，§2.4 已记全量读入风险，本 ADR Phase 1 修复）、ADR-176（Backend 适配器双实现）、ADR-182/185（ZIP 命名空间化 + 子目录路径对齐）
 > **来源**: ADR-187 调研结论「BPMX/BVMD 当前模型库规模未达启动临界点，真瓶颈在贴图加载而非 PMX/VMD 解析」；2026-07-26 修订源自对 `collectTextureFiles` 的瓶颈审计（串行读取 + basename 复制 + 无 LRU）
 
@@ -320,3 +320,30 @@ babylon-mmd 内部走 Babylon.js `Texture` 同步解码路径，4K 纹理 ~50-10
 - [ ] 加载 20 纹理模型，并行读取耗时显著低于串行（性能基准对比）
 - [ ] `disposeRenderer` 后 `_textureLRU.size === 0`（无泄漏）
 - [ ] Phase 0 运行时验证项（KTX2 loader / `ktx2Supported` / `pmx_scan`）一并确认
+
+---
+
+## 实施审计记录（2026-07-26）
+
+**审核结论：条件通过 → P1 缺陷已修复。**
+
+### 发现
+
+| 级别 | 位置 | 问题 | 处理 |
+|------|------|------|------|
+| 🔴 P1 | `model-loader.ts` | `readTextureWithLRU` 已创建+测试，但 `collectTextureFiles` 并行循环中仍直接调 `readFileBytes`，LRU 未接入生产路径 → "切换回模型 -300ms" 收益为零 | ✅ **已修复**：并行循环中 `readFileBytes` → `readTextureWithLRU(modelDir, entry.relativePath, signal)` |
+| 🟠 P2 | `model-loader.ts:279-281` | Semaphore spin-wait 使用 `setTimeout(r,0)`，与 `outfit.ts` 一致，属已有模式 | 可接受 |
+| 🟢 P4 | `texture-lru.ts:20` | `TEXTURE_LRU_MAX_ENTRIES=150` 为硬编码估算，待运行时校准 | 可接受 |
+
+### 亮点
+
+- Semaphore + `Promise.all` 复用 `outfit.ts` 成熟模式，无第三方依赖
+- `\x00` 分隔 key 避免 vfs 路径中冒号碰撞
+- AbortSignal 链从 `loadPMXFile` → `collectTextureFiles` → `readTextureWithLRU` 完整可取消
+- `evictOldest()` 基于 `Map.keys().next()` 的 O(1) 近似 LRU，无需双向链表
+
+### 验证
+
+- `npx tsc --noEmit`：0 错（除 `ModelEntry.name` 为绑定再生副作用，非本次引入）
+- `npx vitest run`：2133/2133 全绿
+- `go build ./...`：通过
