@@ -684,12 +684,12 @@ async function _scanDirIntoIDB(
     // 第二遍：逐个文件写入（纹理关联 + 资源写入合并为单遍，避免 files 数组二次迭代）
     for (const { name, handle } of files) {
         const lower = name.toLowerCase();
-
-        // 纹理分支：关联到 effectivePmx（含子目录纹理，[p2b] 相对 PMX 路径）
-        if (TEXTURE_EXTS_RE.test(lower)) {
-            if (effectivePmx.length > 0) {
-                const file = await handle.getFile();
-                const texBytes = new Uint8Array(await file.arrayBuffer());
+        try {
+            // 纹理分支：关联到 effectivePmx（含子目录纹理，[p2b] 相对 PMX 路径）
+            if (TEXTURE_EXTS_RE.test(lower)) {
+                if (effectivePmx.length > 0) {
+                    const file = await handle.getFile();
+                    const texBytes = new Uint8Array(await file.arrayBuffer());
                 for (const pmx of effectivePmx) {
                     const relToPmx = _relPathFrom(texRelIdCategory, pmx.relPath);
                     // [bugfix:tex-stem-collision] 用含路径的 pmx.stem 编码键，杜绝不同目录同名 PMX
@@ -874,6 +874,14 @@ async function _scanDirIntoIDB(
                 `[web-scan]   写入 entry:${relIdStem} → dir=${virtualDir} type=${type} format=${format}`
             );
         }
+        } catch (e) {
+            // [doc:adr-183] 单文件读取/写入失败（权限拒访/文件损坏/编码异常）不应中断
+            // 整个目录扫描。原实现无 try/catch，handle.getFile() 或 arrayBuffer() 抛错会让
+            // _scanDirIntoIDB 在此处断裂，已扫到的兄弟文件已写入 IDB，后续文件全部消失。
+            // 守卫后 continue 让兄弟文件继续扫描，与 Go 端 WalkDir err 后 return nil 一致。
+            console.warn(`[web-scan] 文件处理失败: "${name}" (relPath=${relPath || '(根)'})`, e);
+            continue;
+        }
     }
 
     if (texLinkedCount > 0) {
@@ -884,7 +892,18 @@ async function _scanDirIntoIDB(
 
     // 递归子目录（传递本层 PMX，使子目录纹理能按相对 PMX 路径关联祖先）
     for (const dirName of subDirs) {
-        const subHandle = await dir.getDirectoryHandle(dirName);
+        let subHandle: FileSystemDirectoryHandle;
+        try {
+            subHandle = await dir.getDirectoryHandle(dirName);
+        } catch (e) {
+            // [doc:adr-183] Android Chrome WebView 对部分中文目录名可能因编码/权限边界
+            // 抛错（NotSupportedError / SecurityError）。原实现无 try/catch，整个 _scanDirIntoIDB
+            // 异步链在此断裂——已扫到的 entry 已写入 IDB，后续兄弟目录全部消失。
+            // 用户表现：「只扫到一个文件夹」（首个目录扫到后，第二个目录失败导致链路断裂）。
+            // 守卫后 continue 让兄弟目录继续扫描，与 Go 端 WalkDir err 后 return nil 一致。
+            console.warn(`[web-scan] getDirectoryHandle 失败: "${dirName}" (relPath=${relPath || '(根)'})`, e);
+            continue;
+        }
         const subRelPath = relPath ? `${relPath}/${dirName}` : dirName;
         await _scanDirIntoIDB(subHandle, subRelPath, effectivePmx, depth + 1);
     }
