@@ -8,6 +8,7 @@
 import { IsolateModelDir, StartFileServer } from './wails-bindings';
 import { resolveBackend, getCachedCapabilities } from './backend';
 import type { BackendService } from './backend/types';
+import { normPath } from './path';
 
 let _cachedBackend: Promise<BackendService> | null = null;
 /** 惰性缓存 resolveBackend 结果（避免每请求重路由）。 */
@@ -83,36 +84,6 @@ export async function resolveModelDir(filePath: string): Promise<string> {
     return IsolateModelDir(normalized);
 }
 
-// ======== normPath 缓存（buildLevel 每模型调用一次，缓存避免重复正则） ========
-
-const _normPathCache = new Map<string, string>();
-const NORM_PATH_CACHE_MAX = 5000;
-
-/** 标准化路径：反斜杠 → 正斜杠，去掉尾部斜杠。
- *  注意：Android SAF URI（content://...）原样返回，不做转换。
- *  结果缓存，避免 buildLevel 遍历千级模型时重复正则替换。
- *  缓存键使用小写化路径，确保大小写不敏感系统（Windows/macOS）上同一文件只缓存一次。 */
-export function normPath(p: string): string {
-    const cacheKey = p.toLowerCase();
-    const cached = _normPathCache.get(cacheKey);
-    if (cached !== undefined) {
-        return cached;
-    }
-
-    let result: string;
-    if (p.startsWith('content://')) {
-        result = p.replace(/\/+$/, '');
-    } else {
-        result = p.replace(/\\/g, '/').replace(/\/+$/, '');
-        result = result
-            .replace(/\/\.\//g, '/')
-            .replace(/^\.\//, '')
-            .replace(/\/\.$/, '');
-    }
-
-    if (_normPathCache.size >= NORM_PATH_CACHE_MAX) {
-        _normPathCache.clear();
-    }
-    _normPathCache.set(cacheKey, result);
-    return result;
-}
+// normPath 已下沉至零依赖叶 @/core/path（ADR-191）；此处仅 re-export 以维持
+// `from '../core/fileservice'` 的既有外部引用（scene.ts / 测试）不变。
+export { normPath } from './path';

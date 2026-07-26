@@ -9,7 +9,7 @@
 //   - resolution：缩略图长边像素（默认 512，运行时取 uiState.thumbnailResolution）。
 //   - aspect：'16/9'（舞台/场景/道具横屏）或 '2/3'（角色竖屏），由 isStageLike 决定。
 
-import { isStageLike } from '@/core/utils';
+import { isStageLike } from '@/core/path';
 import type { LibraryModel } from '@/core/types';
 
 export interface ThumbnailBaseKeyInput {

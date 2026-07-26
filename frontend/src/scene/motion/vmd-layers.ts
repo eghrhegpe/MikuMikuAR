@@ -22,7 +22,8 @@ import {
 import { feedbackInfo, feedbackStatus } from '@/core/feedback';
 import { showInfoToast } from '@/core/toast';
 import { readFileBytes } from '@/core/wails-bindings';
-import { getBaseName, clamp01 } from '@/core/utils';
+import { getBaseName } from '@/core/path';
+import { clamp01 } from '@/core/clamp';
 import { logWarn } from '@/core/logger';
 import { t } from '@/core/i18n/t';
 import { translateGoError } from '@/core/i18n/goerr';
