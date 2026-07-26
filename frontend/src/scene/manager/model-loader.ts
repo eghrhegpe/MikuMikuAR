@@ -34,6 +34,7 @@ import {
 } from '../motion/motion-intent';
 import { resolveModelDir } from '@/core/fileservice';
 import { readFileBytes, ListDirRecursive } from '@/core/wails-bindings';
+import { readTextureWithLRU } from './texture-lru';
 import { t } from '@/core/i18n/t';
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
@@ -282,8 +283,8 @@ async function collectTextureFiles(modelDir: string, signal?: AbortSignal): Prom
                 running++;
                 try {
                     if (signal?.aborted) return null;
-                    // readFileBytes 返回 Uint8Array | null，.buffer 即为 ArrayBuffer
-                    const data = await readFileBytes(modelDir + '/' + entry.relativePath);
+                    // [doc:adr-189] LRU 缓存命中直接返回，未命中则 readFileBytes + 缓存
+                    const data = await readTextureWithLRU(modelDir, entry.relativePath, signal);
                     if (!data) {
                         logWarn('model-loader', 'texture read failed, skipped:', entry.relativePath);
                         return null;
@@ -291,7 +292,7 @@ async function collectTextureFiles(modelDir: string, signal?: AbortSignal): Prom
                     return {
                         relativePath: entry.relativePath,
                         mimeType: getMimeType(entry.name),
-                        data: data.buffer as ArrayBuffer,
+                        data: data, // readTextureWithLRU 已返回 ArrayBuffer
                     };
                 } finally {
                     running--;
