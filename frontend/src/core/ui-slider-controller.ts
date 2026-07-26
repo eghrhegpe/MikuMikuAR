@@ -3,7 +3,7 @@
 // 供 addSliderRow / addColorSliderRow / addVector3SliderRow / addModeSlider 共用。
 
 import { addDisposableListener, type Disposable } from './dom';
-import { clamp01 } from '@/core/utils';
+import { clamp01 } from '@/core/clamp';
 
 export interface DragSliderOptions {
     /** 当前值（内部可变） */

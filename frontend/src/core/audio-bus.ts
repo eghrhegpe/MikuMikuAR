@@ -8,7 +8,7 @@
 // ctx.state === 'suspended' 并尝试 resume；若仍 suspended 则静默跳过（不报错、不抛异常）。
 
 import { uiState, setUIState } from '@/core/state';
-import { clamp01 } from '@/core/utils';
+import { clamp01 } from '@/core/clamp';
 
 let _ctx: AudioContext | null = null;
 let _master: GainNode | null = null;

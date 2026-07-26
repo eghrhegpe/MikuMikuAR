@@ -2,7 +2,7 @@
 // [doc:architecture] 环境光照统一方案
 // skyColor → dirDiffuse + dirDirection + hemiIntensity + dirIntensity + exposure
 
-import { clamp01 } from '@/core/utils';
+import { clamp01 } from '@/core/clamp';
 import type { EnvState } from '@/core/types';
 
 // ======== deriveLighting 系数常量 ========
