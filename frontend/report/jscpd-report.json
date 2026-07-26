@@ -326,18 +326,18 @@
     },
     {
       "firstFile": {
-        "end": 61,
+        "end": 62,
         "endLoc": {
           "column": 14,
-          "line": 61,
-          "position": 2012
+          "line": 62,
+          "position": 2034
         },
         "name": "scene\\motion\\motion-modules\\foot-modules.ts",
-        "start": 46,
+        "start": 47,
         "startLoc": {
           "column": 23,
-          "line": 46,
-          "position": 1583
+          "line": 47,
+          "position": 1605
         }
       },
       "format": "typescript",
@@ -434,7 +434,7 @@
     }
   ],
   "statistics": {
-    "detectionDate": "2026-07-26T06:55:15.951Z",
+    "detectionDate": "2026-07-26T08:49:00.575Z",
     "formats": {
       "txt": {
         "clones": 0,
@@ -452,26 +452,26 @@
         "clones": 12,
         "duplicatedLines": 224,
         "duplicatedTokens": 993,
-        "lines": 38121,
+        "lines": 38182,
         "newClones": 0,
         "newDuplicatedLines": 0,
-        "percentage": 0.5876026337189475,
-        "percentageTokens": 0.5378295085873986,
+        "percentage": 0.5866638730291761,
+        "percentageTokens": 0.5368670321471437,
         "sources": 201,
-        "tokens": 184631
+        "tokens": 184962
       }
     },
     "total": {
       "clones": 12,
       "duplicatedLines": 224,
       "duplicatedTokens": 993,
-      "lines": 38214,
+      "lines": 38275,
       "newClones": 0,
       "newDuplicatedLines": 0,
-      "percentage": 0.5861726068979954,
-      "percentageTokens": 0.5334608338750315,
+      "percentage": 0.5852384062704115,
+      "percentageTokens": 0.5325139161491682,
       "sources": 202,
-      "tokens": 186143
+      "tokens": 186474
     }
   }
 }
