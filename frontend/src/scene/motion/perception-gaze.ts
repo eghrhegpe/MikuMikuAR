@@ -6,6 +6,7 @@ import { Quaternion, Vector3, Matrix } from '@babylonjs/core/Maths/math.vector';
 import { Camera } from '@babylonjs/core/Cameras/camera';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 
+import type { MmdRuntimeBoneExtended } from '@/core/types';
 import { isARActive } from '../ar/ar-camera';
 import type {
     MeshMetadata,
@@ -195,6 +196,194 @@ export function _clampEyeGazeTarget(
         getEyeGazeMaxYaw(),
         getEyeGazeMaxPitch()
     );
+}
+
+// ── Gaze 共用骨架（[doc:adr-071] JS/WASM 双路径收敛） ──
+// JS 路径和 WASM 路径共享的 lookDir 计算、targetWorldQ、clamp、Slerp、cache 维护逻辑。
+// 写入策略通过 strategy 参数注入，避免代码重复（净减 ~150 行）。
+
+/** 头部跟随写入策略（JS/WASM 各自实现） */
+export interface HeadGazeWriteStrategy {
+    /**
+     * 写入头部最终旋转 + 传播子骨骼
+     * @param headRuntime 头部骨骼
+     * @param finalQ 最终世界旋转（已 clamp + Slerp）
+     * @param headPos 头部世界位置
+     * @param oldHeadMat 调用前的头部世界矩阵
+     * @param parentWorldQ 父骨骼世界旋转
+     */
+    writeHead(
+        headRuntime: IMmdRuntimeBone,
+        finalQ: Quaternion,
+        headPos: Vector3,
+        oldHeadMat: Matrix,
+        parentWorldQ: Quaternion
+    ): void;
+}
+
+/** 眼部跟随写入策略（JS/WASM 各自实现） */
+export interface EyeGazeWriteStrategy {
+    /**
+     * 写入单个眼球最终旋转 + 传播子骨骼
+     * @param eyeRb 眼球骨骼
+     * @param finalEyeQ 最终世界旋转
+     * @param localQ 最终本地旋转（相对父骨骼，cache 也存此值）
+     * @param eyeMat 调用前的眼球世界矩阵
+     * @param parentWorldQ 父骨骼世界旋转
+     */
+    writeEye(
+        eyeRb: IMmdRuntimeBone,
+        finalEyeQ: Quaternion,
+        localQ: Quaternion,
+        eyeMat: Matrix,
+        parentWorldQ: Quaternion
+    ): void;
+}
+
+/** 头部跟随共用骨架（lookDir → targetWorldQ → clamp → Slerp → cache → strategy.writeHead） */
+export function _applyHeadGazeCore(
+    headRuntime: IMmdRuntimeBone,
+    gazeTarget: Vector3,
+    dt: number,
+    cache: GazeCache | undefined,
+    strategy: HeadGazeWriteStrategy
+): void {
+    const oldHeadMat = _m().copyFrom(Matrix.FromArray(headRuntime.worldMatrix));
+    const headPos = oldHeadMat.getTranslation();
+    const oldHeadRotQ =
+        cache?.headWorldQ ??
+        _q().copyFrom(Quaternion.FromRotationMatrix(oldHeadMat.getRotationMatrix()));
+
+    // lookDir = bonePos - camPos（已踩坑 3 次，与直觉相反：远离相机方向）
+    const lookDir = headPos.subtractToRef(gazeTarget, _v3());
+    if (lookDir.lengthSquared() < 0.0001) {
+        return;
+    }
+    lookDir.normalize();
+    // 注意：Babylon.js FromLookDirectionRH 实际让 +Z 对齐 lookDir（非 -Z，源码历史注释有误）
+    const targetWorldQ = _q().copyFrom(Quaternion.FromLookDirectionRH(lookDir, Vector3.UpReadOnly));
+
+    // parentWorldQ：从 parentBone.worldMatrix 提取旋转（JS/WASM 等价实现）
+    const parentWorldQ = _q();
+    const parentBone = headRuntime.parentBone;
+    if (parentBone) {
+        const parentMat = _m().copyFrom(Matrix.FromArray(parentBone.worldMatrix));
+        Quaternion.FromRotationMatrixToRef(parentMat.getRotationMatrix(), parentWorldQ);
+    } else {
+        parentWorldQ.copyFrom(Quaternion.Identity());
+    }
+
+    const clampedTarget = _clampHeadGazeTarget(oldHeadRotQ, targetWorldQ, parentWorldQ);
+    const alpha = _gazeAlpha(0.7, dt);
+    const finalQ = _q().copyFrom(Quaternion.Slerp(oldHeadRotQ, clampedTarget, alpha));
+    _gazeLog(
+        'HEAD',
+        headRuntime.linkedBone?.name,
+        'dt',
+        dt.toFixed(4),
+        'α',
+        alpha.toFixed(4),
+        'err→',
+        _qAngleDeg(oldHeadRotQ, targetWorldQ).toFixed(1),
+        'clamp',
+        _qAngleDeg(clampedTarget, targetWorldQ).toFixed(1),
+        'err←',
+        _qAngleDeg(finalQ, targetWorldQ).toFixed(1)
+    );
+
+    if (cache) {
+        if (!cache.headWorldQ) {
+            cache.headWorldQ = new Quaternion();
+        }
+        cache.headWorldQ.copyFrom(finalQ);
+    }
+
+    strategy.writeHead(headRuntime, finalQ, headPos, oldHeadMat, parentWorldQ);
+}
+
+/** 眼部跟随共用骨架（eyeCenter → lookDir → targetWorldQ → 每眼 clamp/Slerp/cache → strategy.writeEye） */
+export function _applyEyeGazeCore(
+    eyeRuntimes: IMmdRuntimeBone[],
+    gazeTarget: Vector3,
+    dt: number,
+    cache: GazeCache | undefined,
+    strategy: EyeGazeWriteStrategy
+): void {
+    const eyeCenter = _v3();
+    for (const eyeRb of eyeRuntimes) {
+        const eb = (eyeRb as MmdRuntimeBoneExtended).worldMatrix;
+        eyeCenter.x += eb[12];
+        eyeCenter.y += eb[13];
+        eyeCenter.z += eb[14];
+    }
+    eyeCenter.scaleInPlace(1 / eyeRuntimes.length);
+
+    // lookDir = bonePos - camPos（理由同 head 注释）
+    const lookDir = eyeCenter.subtractToRef(gazeTarget, _v3());
+    if (lookDir.lengthSquared() < 0.0001) {
+        return;
+    }
+    lookDir.normalize();
+    const targetWorldQ = _q().copyFrom(Quaternion.FromLookDirectionRH(lookDir, Vector3.UpReadOnly));
+
+    // parentWorldQ：所有 eye 共享父骨骼，循环外算一次（原 JS 路径在循环内冗余重算）
+    const parentWorldQ = _q();
+    const eyeParentBone = eyeRuntimes[0].parentBone;
+    if (eyeParentBone) {
+        const pMat = _m().copyFrom(Matrix.FromArray(eyeParentBone.worldMatrix));
+        Quaternion.FromRotationMatrixToRef(pMat.getRotationMatrix(), parentWorldQ);
+    } else {
+        parentWorldQ.copyFrom(Quaternion.Identity());
+    }
+
+    for (const eyeRb of eyeRuntimes) {
+        const eyeMat = _m().copyFrom(Matrix.FromArray((eyeRb as MmdRuntimeBoneExtended).worldMatrix));
+        const boneName = eyeRb.linkedBone?.name ?? '';
+
+        const cachedLocal = cache?.eyeLocalQ.get(boneName);
+        const curEyeQ = cachedLocal
+            ? _q().copyFrom(parentWorldQ).multiplyInPlace(cachedLocal)
+            : _q().copyFrom(Quaternion.FromRotationMatrix(eyeMat.getRotationMatrix()));
+
+        const clampedTarget = _clampGazeTargetInParentFrame(
+            curEyeQ,
+            targetWorldQ,
+            parentWorldQ,
+            getEyeGazeMaxYaw(),
+            getEyeGazeMaxPitch()
+        );
+        const alpha = _gazeAlpha(getEyeGazeSmooth(), dt);
+        const finalEyeQ = _q().copyFrom(Quaternion.Slerp(curEyeQ, clampedTarget, alpha));
+        _gazeLog(
+            'EYE',
+            boneName,
+            'dt',
+            dt.toFixed(4),
+            'α',
+            alpha.toFixed(4),
+            'err→',
+            _qAngleDeg(curEyeQ, targetWorldQ).toFixed(1),
+            'clamp',
+            _qAngleDeg(clampedTarget, targetWorldQ).toFixed(1),
+            'err←',
+            _qAngleDeg(finalEyeQ, targetWorldQ).toFixed(1)
+        );
+
+        // localQ = invParentQ × finalEyeQ（供 cache 维护和 JS 写入）
+        const invParentQ = _q().copyFrom(parentWorldQ).invert();
+        const localQ = _q().copyFrom(invParentQ).multiplyInPlace(finalEyeQ);
+
+        if (cache) {
+            let cached = cache.eyeLocalQ.get(boneName);
+            if (!cached) {
+                cached = new Quaternion();
+                cache.eyeLocalQ.set(boneName, cached);
+            }
+            cached.copyFrom(localQ);
+        }
+
+        strategy.writeEye(eyeRb, finalEyeQ, localQ, eyeMat, parentWorldQ);
+    }
 }
 
 /** 统一调度入口（perception.ts observer 调用） */

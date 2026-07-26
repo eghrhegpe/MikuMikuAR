@@ -91,7 +91,7 @@
 | 文件 | 改动 |
 |------|------|
 | `scene.ts` | ① 删 `import { loadOutfits } from '../outfit/outfit'`（:56）；② 删 `import { tryAutoApplyPreset } from '../menus/model-preset'`（:64）；③ 删静态 re-export `export { loadOutfits, applyOutfitVariant, resetOutfit } from '../outfit/outfit'`（:418）；④ `initScene` 内 `initLoader` 前 `const outfitMod = await import('../outfit/outfit'); const presetMod = await import('../menus/model-preset');`；⑤ `initLoader` 第 5 实参 `presetMod.tryAutoApplyPreset`、第 6 实参 `(id) => outfitMod.loadOutfits(id).then(() => {})` |
-| `core/main.ts` | `applyOutfitVariant, loadOutfits` 的 import 源由 `../scene/scene` 改 `../outfit/outfit`（:46-47） |
+| `core/main.ts`（ADR-102 拆分后不再持有；换装符号现由 `outfit/outfit.ts` 暴露） | `applyOutfitVariant, loadOutfits` 的 import 源由 `../scene/scene` 改 `../outfit/outfit`（:46-47，ADR-064 当时；后续 ADR-102 拆分移除） |
 | `outfit/outfit.ts` | `_catOf` 改从 `../scene/manager/material`（:224）直取，去掉经 scene.ts 的传递边（卫生项；`scene` 仍单向 import，符合 ADR-063 §4.3 既定模式） |
 
 **残留说明**：outfit.ts 仍单向 `import { scene } from '../scene/scene'`，属 ADR-063 §4.3 接受的“子模块从 scene 取核心实例”模式，不构成环。彻底解耦（将 `scene` 单例迁 `core/config`）属更大重构，不在本轮范围。

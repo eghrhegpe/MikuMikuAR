@@ -1,6 +1,6 @@
 # ADR-179: 更新安装拉起（按平台分级）
 
-> **状态**: 实施中（阶段 1）
+> **状态**: 实施中（阶段 1 已落地：含安卓优先完整拉起 DownloadApk+installApk 全链路；阶段 2 桌面下载器 DownloadAndRunInstaller 待排期）
 > **日期**: 2026-07-25
 > **关联**: ADR-157（关于页瘦身：仅版本/链接/更新）、ADR-176（前端 Backend 适配器双实现）、ADR-177（Web Loader 与主应用统一路径）、ADR-178（能力矩阵宿主键）、ADR-017（安卓适配，platform 探测范式）
 > **前置**: ADR-176/177 已落地（`BackendService` 双适配器 + 能力缓存）；`CheckForUpdate` 契约现状（`internal/app/update.go`）

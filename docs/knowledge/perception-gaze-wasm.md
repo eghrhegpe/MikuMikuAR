@@ -39,5 +39,7 @@ use_when:
 - 骨骼候选：`BONE_GAZE_CANDIDATES`。
 
 ## 不变量
-- WASM 模式与 JS 模式互斥，由 perception-gaze 调度。
-- WASM 模式性能优于 JS 模式。
+- WASM 模式与 JS 模式互斥，由 `perception-gaze.ts:_applyGaze` 通过 `_isWasmRuntime()` 自动分支。
+- **生产默认路径**（`VITE_MMD_RUNTIME` 未设或非 `js`）。
+- 写入策略：**直写 frontBuffer**（`_writeMatToBuffer`）+ `_propagateChildrenWasm` 递归传播子骨骼，绕过双缓冲覆盖（与 JS 路径写 `linkedBone` 不同）。
+- 无需 `skeleton._markAsDirty()`（直写 frontBuffer 即生效）。

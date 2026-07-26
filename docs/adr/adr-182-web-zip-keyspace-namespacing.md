@@ -1,6 +1,6 @@
 # ADR-182: 网页端 ZIP 导入键规约命名空间化（消除同名 PMX 纹理碰撞）
 
-> **状态**: 已批准
+> **状态**: 已完成（代码+测试 2026-07-25 已落地：_encModelStem 命名空间 + IsolateModelDir 幂等 + 契约/单测覆盖）
 > **日期**: 2026-07-25
 > **关联**: ADR-176（前端 Backend 适配器双实现）、ADR-177（Web Loader 与主应用统一路径 —— 确立 `file:`/`entry:`/`dir:`/`outfit:` 键规约地基）、ADR-180（FSA 句柄持久化）
 > **前置**: 2026-07-25 上轮已修 `_scanDirIntoIDB`（FSA 目录扫描）纹理键碰撞（引入 `_encModelStem` + `IsolateModelDir` 编码 stem），见 `docs/buglog/2026-07-25-web-texture-stem-collision.md`。本 ADR 处理该修复未覆盖的 **ZIP 解压路径** 残留碰撞。

@@ -2,7 +2,7 @@
 
 > **日期**: 2026-07-13
 > **状态**: 已完成（批次 1–5 全落地，2026-07-13）
-> **关联**: ADR-090（路径边界判定）、ADR-018（Path Manager + 文件 I/O 审计）、ADR-045（统一加载与资源管理）、ADR-023（Android SAF 文件访问）
+> **关联**: ADR-090（路径边界判定）、ADR-018（Path Manager + 文件 I/O 审计）、ADR-045（统一加载与资源管理）、ADR-017（原 ADR-023 已并入 ADR-017 安卓适配，Android SAF 文件访问）
 > **影响面**: `frontend/src/core/fileservice.ts`(normPath，已增强)、`frontend/src/core/utils.ts`(isUnderRoot / computeLibraryRef / normPath re-export)、`frontend/src/menus/library-core.ts`、`frontend/src/scene/scene-bundle.ts`
 > **与资源库恢复关联**: 见 ADR-097（前端 `GetLastBrowseDir` 返回单字符串被误解构为 `'C'` 的 bug 已修，属本 ADR 路径规范化背景下的前端问题）
 
@@ -69,7 +69,7 @@
 
 ## 约束
 
-- `content://` 协议路径必须保持特例（Android SAF，ADR-023）。
+- `content://` 协议路径必须保持特例（Android SAF，ADR-017，原 ADR-023 已并入）。
 - 归一化合并（批次 5）属高风险跨模块改动，需独立 PR + 全量构建 / E2E 回归，不在本 ADR 实施期强制执行。→ **已于 2026-07-13 完成**（随 helper 收敛批落地，全量回归通过）。
 - 任何批次不得改变既有对外行为：构建必须通过，且 `GetLastBrowseDir` / `SetLastBrowseDir` 持久化语义不变。
 

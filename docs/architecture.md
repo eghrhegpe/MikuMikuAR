@@ -562,16 +562,18 @@ MikuMikuAR/
 
 | 值 | 运行时 | 物理 | 视线追踪 |
 |----|--------|------|---------|
-| 未设或非 `js` | `MmdWasmRuntime` | WASM Bullet | 不可用（双缓冲覆盖写入） |
-| `js` | `MmdRuntime` | 无 | 可用 |
+| 未设或非 `js`（生产默认） | `MmdWasmRuntime` | WASM Bullet | ✅ frontBuffer 直写绕过双缓冲 |
+| `js`（调试专用，无物理） | `MmdRuntime` | 无 | ✅ 写 `linkedBone` + `updateWorldMatrix` |
 
-原因：WASM 版 `worldTransformMatrices` 采用双缓冲，`mmdRuntime.update()` 后任意写入都会在下一帧被还原。JS 版无此机制，写入可生效。切换点在 `scene/scene.ts:initScene`。
+原因：WASM 版 `worldTransformMatrices` 采用双缓冲，但 gaze WASM 路径**直接写 frontBuffer**（`_writeMatToBuffer`）并递归 `_propagateChildrenWasm` 同步传播子骨骼，绕过双缓冲覆盖。JS 调试模式通过写 `linkedBone.rotationQuaternion` + `_updateBoneChain` + `skeleton._markAsDirty` 触发重算。两路径在 `perception-gaze.ts:_applyGaze` 通过 `_isWasmRuntime()` 自动分支。切换点在 `scene/scene.ts:_initMmdRuntime`。
 
-#### 变换覆写机制
+> ⚠️ 历史描述（已废弃）：早期版本曾认为「WASM 模式下 gaze 不可用」——该判断已在 ADR-016 双路径方案落地后被推翻。`scene.ts` 注释明令「JS 版保留作为 gaze 行为对比排查与 WASM 兼容性回退，勿删除」。
+
+#### 变换覆写机制（JS 调试路径）
 
 直接写 `runtimeBone.worldMatrix` 无效——它是 `worldTransformMatrices` 的切片视图，但渲染管线读的是 `_computeTransformMatrices` 输出的 `targetMatrix`，且该函数在 `mmdRuntime.update()` 末尾的 `_markAsDirty` 时已经执行完毕，之后不会再跑。
 
-正确做法是修改 `linkedBone.rotationQuaternion`（局部旋转），然后手动触发骨骼链重算：
+JS 路径正确做法是修改 `linkedBone.rotationQuaternion`（局部旋转），然后手动触发骨骼链重算：
 
 ```typescript
 // 1. 计算目标世界旋转（头部朝向相机）
@@ -598,33 +600,53 @@ updateBoneChain(headRuntime);
 (mmdModel.mesh.metadata as any).skeleton?._markAsDirty?.();
 ```
 
+#### 变换覆写机制（WASM 生产路径）
+
+WASM 路径不写 `linkedBone`（会被双缓冲还原），而是**直接写 frontBuffer** 并递归传播子骨骼：
+
+```typescript
+// 1. 同 JS 路径计算 targetWorldQ + clamp + Slerp（共用骨架）
+// 2. 构造新世界矩阵
+const newHeadMat = Matrix.Compose(Vector3.One(), finalQ, headPos);
+// 3. 直写 worldMatrix 缓冲区（绕过双缓冲）
+_writeMatToBuffer(headBuf, newHeadMat);
+// 4. 递归传播给子骨骼（手动同步父子关系）
+_propagateChildrenWasm(headRuntime, oldHeadMat, newHeadMat);
+```
+
+WASM 路径无需 `skeleton._markAsDirty()`（直写 frontBuffer 即生效）。两路径共用 `_applyGaze` 入口的 `targetWorldQ`/`clamp`/`Slerp`/`cache` 骨架逻辑，仅写入策略不同。
+
 #### 执行时序
 
 ```
 onBeforeRenderObservable
   ├─ mmdRuntime.update()          // VMD 求解，写 worldTransformMatrices
-  │   └─ skeleton._markAsDirty()  // 触发 _computeTransformMatrices（读旧值）
-  └─ gaze observer（本子系统）    // 改 linkedBone → updateWorldMatrix → _markAsDirty
-      └─ skeleton._markAsDirty()  // 再次触发 _computeTransformMatrices（读新值）
+  │   └─ skeleton._markAsDirty()  // 触发 _computeTransformMatrices
+  └─ gaze observer（perception-observer.ts）
+      ├─ WASM 路径: _writeMatToBuffer + _propagateChildrenWasm（直写 frontBuffer）
+      └─ JS 路径:   改 linkedBone → updateWorldMatrix → skeleton._markAsDirty
 ```
 
-gaze observer 必须在 `mmdRuntime.update()` 之后注册，确保覆盖 VMD 写入的 `linkedBone.rotationQuaternion`。
+gaze observer 必须在 `mmdRuntime.update()` 之后注册，确保覆盖 VMD 写入。
 
 #### 关键陷阱
 
 | 陷阱 | 现象 | 原因 |
 |------|------|------|
-| 直接写 `worldMatrix` | 子骨骼位置留在原地 | 绕过骨骼层级，子骨骼 worldMatrix 不会基于新父骨骼值重算 |
+| 直接写 `worldMatrix`（JS 路径） | 子骨骼位置留在原地 | 绕过骨骼层级，子骨骼 worldMatrix 不会基于新父骨骼值重算 |
 | 四元数乘法顺序反 | 头部朝固定错误方向 | `blended × parentInv` ≠ `parentInv × blended`，后者才正确 |
 | `lookDir` 方向反 | 头部背对相机 | `FromLookDirectionRH` 的 forward 是相机朝向，取 `headPos - camPos` 让物体朝相机看 |
-| WASM 版写入 | 写入后被还原 | 双缓冲机制，`mmdRuntime.update()` 用后缓冲覆盖前缓冲 |
+| WASM 模式下写 `linkedBone` | 写入后被还原 | 双缓冲机制；WASM 模式须直写 frontBuffer，详见 `perception-gaze-wasm.ts` |
 
 #### 涉及文件
 
 | 文件 | 角色 |
 |------|------|
-| `scene/scene.ts` | 运行时切换（`VITE_MMD_RUNTIME`） |
-| `scene/motion/proc-motion-bridge.ts` | gaze observer 实现 |
+| `scene/scene.ts` | 运行时切换（`VITE_MMD_RUNTIME`），切换点 `_initMmdRuntime` |
+| `scene/motion/perception-gaze.ts` | gaze 调度入口 `_applyGaze` / `applyGazeWasm`，按 `_isWasmRuntime()` 分支 |
+| `scene/motion/perception-gaze-js.ts` | JS 调试路径实现（写 `linkedBone` + `updateWorldMatrix`） |
+| `scene/motion/perception-gaze-wasm.ts` | WASM 生产路径实现（直写 frontBuffer + `_propagateChildrenWasm`） |
+| `scene/motion/perception-observer.ts` | gaze observer 注册，每帧调用 `_applyGaze` |
 | `core/types.ts` | `RuntimeModel` 扩展类型（`IMmdModel` + `setRuntimeAnimation`/`createRuntimeAnimation`） |
 
 ### 15. 模块依赖关系

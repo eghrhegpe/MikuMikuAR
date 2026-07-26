@@ -1,6 +1,6 @@
 # ADR-178: 能力矩阵补全宿主级键（四端统一收口）
 
-> **状态**: 实施中（Phase 1 已落地 2026-07-24；Phase 2 已落地 2026-07-25——virtual-skirt.ts/fileservice.ts/settings-resources.ts:412 三处已迁移至能力层，其中 settings-resources.ts:412 配套修正 go-adapter `watchDir` 改为 `!isAndroidPlatform()` 自报（修复 ADR 草案宿主盲点）；其余 5 处判定为平台特有逻辑保留不动；Phase 3 已落地 2026-07-26——CI 四端制品矩阵固化：e2e-web-smoke job 跑 @web smoke（web-smoke.spec.ts + web-resources.spec.ts），验证浏览器能力门控、PMX/ZIP/VMD 加载闭环；桌面/安卓构建保留在 release.yml；网页部署由 web-pages.yml 自动触发）
+> **状态**: 已完成（Phase 1-3 全部落地 2026-07-24/07-25——virtual-skirt.ts/fileservice.ts/settings-resources.ts:412 三处已迁移至能力层，其中 settings-resources.ts:412 配套修正 go-adapter `watchDir` 改为 `!isAndroidPlatform()` 自报（修复 ADR 草案宿主盲点）；其余 5 处判定为平台特有逻辑保留不动；Phase 3 已落地 2026-07-26——CI 四端制品矩阵固化：e2e-web-smoke job 跑 @web smoke（web-smoke.spec.ts + web-resources.spec.ts），验证浏览器能力门控、PMX/ZIP/VMD 加载闭环；桌面/安卓构建保留在 release.yml；网页部署由 web-pages.yml 自动触发）
 > **日期**: 2026-07-24
 > **关联**: ADR-176（前端 Backend 适配器双实现）、ADR-177（Web Loader 与主应用统一路径）、ADR-017（安卓适配，platform 探测范式）、ADR-133（安卓 MPR 物理缺口）、ADR-093（声明式菜单 Schema）
 > **前置**: ADR-176/177 已落地（`BackendService` 双适配器 + `getCapabilities()`/`getCachedCapabilities()` 能力缓存）
