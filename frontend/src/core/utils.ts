@@ -6,7 +6,8 @@
 
 import { dom } from './dom';
 import { libraryRoot, overridePaths, setPopupOpen } from './state';
-import { normPath } from './fileservice';
+import { normPath, getBaseName, getDirPath, isUnderRoot, isStageLike } from './path';
+export { getBaseName, getDirPath, isUnderRoot, isStageLike, normPath };
 import { setStatus } from './status-bar';
 import { t } from './i18n/t';
 import { translateGoError } from './i18n/goerr';
@@ -15,33 +16,11 @@ export type { ToastAction } from './toast';
 import { feedbackStatus, feedbackError, feedbackInfo } from './feedback';
 import type { SlideMenu } from '../menus/menu';
 
-export { normPath };
 import { logWarn, logError } from './logger';
 // Re-export for external consumers (utils still serves as a barrel)
 export { logWarn, logError };
 
 // ======== Path Helpers ========
-
-/**
- * 跨平台取路径末段文件名。
- * 基于 `normPath`（反斜杠→正斜杠、去尾斜杠、折叠 `.`、content:// 透传），
- * 避免各模块重复手搓 `p.replace(/\\/g, '/').split('/').pop()`。
- */
-export function getBaseName(p: string): string {
-    const norm = normPath(p);
-    const segs = norm.split('/').filter(Boolean);
-    return segs.length ? segs[segs.length - 1] : norm;
-}
-
-/**
- * 跨平台取父目录路径。根目录（无 `/`）返回空字符串。
- * 基于 `normPath`，是 `p.replace(/\\/g, '/').replace(/\/[^/]*$/, '')` 的归一化替代。
- */
-export function getDirPath(p: string): string {
-    const norm = normPath(p);
-    const idx = norm.lastIndexOf('/');
-    return idx >= 0 ? norm.substring(0, idx) : '';
-}
 
 // ======== Card Container ========
 
@@ -407,34 +386,6 @@ export function computeLibraryRef(filePath: string): string | null {
         }
     }
     return null;
-}
-
-/**
- * [doc:adr-090][doc:adr-095] 路径归属判定（唯一实现，基于 normPath）。
- * 判定 child 是否位于 base 之下：精确相等（忽略大小写），或前缀相等且紧随字符为 '/'。
- * 禁止裸字符串前缀（如 ".../PMX" 误命中 ".../PMXSub" → 伪文件夹）。
- * 含 `..` 的路径直接拒绝（目录边界判定场景，越界到 base 之外属非法输入；
- * 与 resolveLibraryRef 的 `..` 字符串层拦截形成对称防护）。
- */
-export function isUnderRoot(base: string, child: string): boolean {
-    const b = normPath(base).toLowerCase();
-    const c = normPath(child).toLowerCase();
-    // 拒绝 '..' 逃逸段：含 '..' 的路径不是已解析绝对路径，跨目录误判且会渲染成 '..' 文件夹。
-    // 修复 P2 场景1（如 C:/text-model/PMX/../VMD 不应判为在 PMX 之下）
-    if (c === '..' || c.startsWith('../') || c.endsWith('/..') || c.includes('/../')) {
-        return false;
-    }
-    return c === b || c.startsWith(b + '/');
-}
-
-/**
- * 判断给定 kind/type 是否为「舞台类」（缩略图使用横屏 16:9 宽高比）。
- * 写侧（thumbnail-capture.ts，基于 inst.kind）与读侧（library-core.ts / library-actions.ts，
- * 基于 m.type）共用此谓词，消除宽高比缓存键的双重定义导致的潜在不一致。
- * 涵盖：stage（舞台）、scene（场景）、prop（道具）。
- */
-export function isStageLike(kind: string): boolean {
-    return kind === 'stage' || kind === 'scene' || kind === 'prop';
 }
 
 export function resolveLibraryRef(libraryRef: string): string | null {

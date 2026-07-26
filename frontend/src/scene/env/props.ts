@@ -18,7 +18,7 @@ import { scene } from '../scene';
 import { _envSys } from './env';
 import { registerMaterialTarget, unregisterMaterialTarget } from '../manager/material';
 import { t } from '@/core/i18n/t';
-import { getBaseName } from '@/core/utils';
+import { getBaseName } from '@/core/path';
 import { logWarn, logError } from '@/core/logger';
 import { renderPropThumbnail } from '../manager/thumbnail-capture';
 import { setTransformMetadata } from '../transform/transform-pick';
