@@ -19,11 +19,11 @@
 | ADR-185 | 网页端 ZIP 内子目录 PMX 贴图路径维度对齐 | 已完成（2026-07-26） |
 | ADR-184 | 网页端 ZIP 嵌套识别能力补齐（多编码检测 + 炸弹防护对齐 Go 端） | 已完成（2026-07-26） |
 | ADR-183 | 网页端 FSA 根目录授权引导（四态探针 + 重授权兜底） | 已完成（代码已落地 + 单测 14/14，2026-07-26） |
-| ADR-182 | 网页端 ZIP 导入键规约命名空间化（消除同名 PMX 纹理碰撞） | 已批准（2026-07-25） |
+| ADR-182 | 网页端 ZIP 导入键规约命名空间化（消除同名 PMX 纹理碰撞） | 已完成（代码+测试 2026-07-25 已落地：_encModelStem 命名空间 + IsolateModelDir 幂等 + 契约/单测覆盖） |
 | ADR-181 | 下载管理面板（扫描→解压→入库→processed 标记） | 已批准（规划中 → 批准；落地前修正 3 处：P3 拆分 importFileByPath / P3 注册点行号 settings.ts:127 / P4 网页清单改存 IndexedDB）（2026-07-25） |
 | ADR-180 | Web 资源库 FSA 句柄持久化与启动自动重扫 | 已完成（代码已落地 + P1 回归已修复，2026-07-25） |
-| ADR-179 | 更新安装拉起（按平台分级） | 实施中（阶段 1）（2026-07-25） |
-| ADR-178 | 能力矩阵补全宿主级键（四端统一收口） | 实施中（Phase 1 已落地 2026-07-24；Phase 2 已落地 2026-07-25——virtual-skirt.ts/fileservice.ts/settings-resources.ts:412 三处已迁移至能力层，其中 settings-resources.ts:412 配套修正 go-adapter `watchDir` 改为 `!isAndroidPlatform()` 自报（修复 ADR 草案宿主盲点）；其余 5 处判定为平台特有逻辑保留不动；Phase 3 已落地 2026-07-26——CI 四端制品矩阵固化：e2e-web-smoke job 跑 @web smoke（web-smoke.spec.ts + web-resources.spec.ts），验证浏览器能力门控、PMX/ZIP/VMD 加载闭环；桌面/安卓构建保留在 release.yml；网页部署由 web-pages.yml 自动触发） |
+| ADR-179 | 更新安装拉起（按平台分级） | 实施中（阶段 1 已落地：含安卓优先完整拉起 DownloadApk+installApk 全链路；阶段 2 桌面下载器 DownloadAndRunInstaller 待排期）（2026-07-25） |
+| ADR-178 | 能力矩阵补全宿主级键（四端统一收口） | 已完成（Phase 1-3 全部落地 2026-07-24/07-25——virtual-skirt.ts/fileservice.ts/settings-resources.ts:412 三处已迁移至能力层，其中 settings-resources.ts:412 配套修正 go-adapter `watchDir` 改为 `!isAndroidPlatform()` 自报（修复 ADR 草案宿主盲点）；其余 5 处判定为平台特有逻辑保留不动；Phase 3 已落地 2026-07-26——CI 四端制品矩阵固化：e2e-web-smoke job 跑 @web smoke（web-smoke.spec.ts + web-resources.spec.ts），验证浏览器能力门控、PMX/ZIP/VMD 加载闭环；桌面/安卓构建保留在 release.yml；网页部署由 web-pages.yml 自动触发） |
 | ADR-177 | Web Loader 与主应用统一路径 | 已完成 — Phase 0-3 落地 + Phase 4 终态于 2026-07-25 提前执行（用户裁决删除 web-loader，主应用 web 入口为唯一 Pages 入口，详见「Phase 4 终态执行记录」）。剩余跟踪项（不再阻塞本 ADR，并入日常回归）：① GitHub Pages 线上 smoke CI 自动回归；② browser 侧 ListDirRecursive/LoadOutfitFile/LoadSceneFile E2E 端到端功能验证。历史进度存档：Phase 0-4 本地实施完成（2026-07-23；Playwright 双 webServer——5173 桌面 dev + 4174 web preview（vite build + vite preview --config vite.web.config.ts）；web-smoke.spec.ts 5 项——首屏渲染 + 6 nav 按钮 + 菜单导航 + 能力门控验证（AR/广场窗口隐藏）；web-resources.spec.ts 4 项——PMX/ZIP/VMD fetch+IndexedDB 注入加载闭环 + IndexedDB CRUD；fixtures sample.pmx 834KB + sample.vmd 19KB + sample.zip 854KB（page.route 注入不打进 bundle）；IndexedDB 迁移框架——onupgradeneeded 补 oldVersion 分支钩子，v1 无需迁移（旧 web-loader 与新主应用共享 schema + 键规约一致）；package.json 新增 test:e2e:web 脚本 + e2e README @web 章节。tsc 0 错误，2029 单测全绿，文档无漂移）。剩余：① GitHub Pages 线上 smoke + 连续两次发布无回归（Pages 站点已上线，待 CI 集成自动回归）；② browserAdapter 签名对齐已完成（2026-07-24，34 处参数/类型不匹配修复，见 ADR-176「签名对齐」章节）；③ ListDirRecursive/LoadOutfitFile/LoadSceneFile 浏览器侧实现已完成（IndexedDB dir:*: 前缀扫描、outfit:*: IDB 读、web://bundle/web://presets/scenes 三路路由），待 E2E 端到端验证实际功能正确 |
 | ADR-176 | 前端 Backend 适配器双实现（Web/Desktop 通杀） | 已完成（2026-07-23；Phase 1-3 全部落地。Phase 3 已完成 web-loader 准完整网页入口、IndexedDB 模型库、能力徽章、lastModel 恢复引导和库面板；验证：tsc 0 错、backend 16/16、契约 17/17、全量回归绿） |
 | ADR-175 | 光照强度多入口设计意图裁决 | ✅ 已裁决（裁决为「保留多入口，不收敛为单入口」；无代码改动，仅固化契约）（2026-07-22） |
@@ -131,7 +131,7 @@
 | ADR-74 | 动态 Cubemap RT 球面反射 | 🗑️ 已放弃（2026-07-19，stash 内容已清理。Stash 中的 cubemap 代码与当前 HEAD 架构冲突——水反射已改用统一 `PlanarReflection` 引擎（ADR-092），model-loader 传参方式也不同（二进制 vs URL）。材料诊断工具等附属代码一并移除。后续若重新评估此方案，需基于当前 HEAD 重写。） |
 | ADR-73 | AR 地形识别 —— 原生 ARCore / ARKit 桥接 | 提案（Proposed）—— ADR-055 §3.1 方案 C「平台原生 ARCore / ARKit 桥接」的细化，远期可 reconsider（2026-07-09） |
 | ADR-72 | AR 平面检测 —— WebXR hit-test + plane detection | 提案（Proposed）—— ADR-055 Phase 3「WebXR 升级」的细化，待 P1 探针结果后批准（2026-07-09） |
-| ADR-71 | 程序化动作与角色感知边界重构 | 已实施（方案 B 全部落地；2026-07-09 创建，2026-07-10 核实代码已落地） |
+| ADR-71 | 程序化动作与角色感知边界重构 | 已实施（方案 B 全部落地；2026-07-09 创建，2026-07-10 核实代码已落地） ⚠️ **部分被 ADR-079 推翻**（lifelike/idle 保留定位） |
 | ADR-70 | 相机模式「演唱会」语义重构（拆分出「环绕」模式） | 已实施 |
 | ADR-69 | 材质面板纹理支持审计与推进路线 | 调研落档 — 材质面板当前仅支持 4 标量乘率，贴图槽位归 outfit，PBR 流延续 ADR-024 决策延期（2026-07-09） |
 | ADR-67 | UI 重复率审计与重构 | 已完成（2026-07-05 执行两轮重构） |
@@ -180,7 +180,7 @@
 | ADR-22 | 预设治理 — 统一管理范围与分级架构 | 已实现 — 8 项改动全完成：EnvPreset 精简 + L2 环境预设扩展 + 用户预设快照迁移（2026-07-04） |
 | ADR-21 | 程序化动作系统（Idle/Auto Dance + LipSync + 视线追踪） | 已完成 — Idle/AutoDance/LipSync/VPD/VMD-writer 5 套测试全通过（2026-07-03） |
 | ADR-20 | 换装系统（服装变体/纹理替换） | 已完成 — Phase 8 完成，outfit.ts 加载/应用/重置 + 自动发现 + 序列化（2026-06-28） |
-| ADR-19 | XPBD 布料模拟引擎选型与架构 | 已完成 — xpbd-solver/collider/cloth/renderer + 20 tests 全通过（2026-06-28） |
+| ADR-19 | XPBD 布料模拟引擎选型与架构 | 已完成 — xpbd-solver/collider/cloth/renderer + 20 tests 全通过 ⚠️ **已废弃**（XPBD 全栈移除，见 ADR-081；源码 xpbd-solver/collider/cloth 等已删）（2026-06-28） |
 | ADR-18 | PathManager 平台抽象层 + 文件 I/O 审计 | 已完成 — PathManager 接口 + trustedRoots 修复 + copyDir 流式复制 + zipextract 句柄关闭修正（2026-07-04） |
 | ADR-17 | Android 平台适配（精简版） | 主体已完成（Phase A/B/C ✅）；P0(A0-01/A0-02) 与 P1(A1-01~05) ✅ 全部已实施；P2 七项 ✅ 全部已落地（A2-04 于 2026-07-22 完成全路径 `toBlob` 迁移）；P3 四项 ✅ 全部已修复（A3-01/04 于 2026-07-22 完成事件总线消费）。A0-01 已于 2026-07-24 根治：模型文件改经 `readFileBytes` + Blob URL 加载（复用 ADR-176 浏览器端路径，见 frontend/src/core/fileservice.ts `resolveFileUrl`），移除 `MainActivity.java` 的 `MIXED_CONTENT_ALWAYS_ALLOW`；不再依赖 PathHandler 代理方案（ADR-133 方案 B 不再必要）。§四 SAF 目录选择方案已放弃，改用 `MANAGE_EXTERNAL_STORAGE` 授权 `/sdcard/MMD`（2026-07-22 核对）。 |
 | ADR-16 | 视线追踪子系统架构 | 已完成 — 双路径方案已实施（WASM frontBuffer 直写 + JS linkedBone + updateWorldMatrix），手动计时方案（方案 A）为优化项，需上游 babylon-mmd 暴露 beforePhysics/afterPhysics API（2026-07-03） |

@@ -71,13 +71,14 @@ Vector3.TransformCoordinatesToRef(target, invRoot, target);
 
 ### 运行时约束
 
-当前实现使用 JS 运行时（`VITE_MMD_RUNTIME=js`）配合 WASM Bullet 物理：
+双路径方案已落地（2026-07-26 核对）：WASM 路径通过 `_writeMatToBuffer` 直写 frontBuffer + `_propagateChildrenWasm` 递归传播，绕过双缓冲覆盖；JS 路径用于 `VITE_MMD_RUNTIME=js` 调试模式。
 
-| 组件 | 运行时 | 物理 | gaze |
-|------|--------|------|------|
-| MmdWasmRuntime | WASM | ✅ | ❌（双缓冲覆盖） |
-| MmdRuntime | JS | ❌ | ✅ |
-| 当前方案 | JS + WASM Bullet | ✅ | ✅ |
+| 组件 | 运行时 | 物理 | gaze | 写入策略 |
+|------|--------|------|------|---------|
+| MmdWasmRuntime（生产默认） | WASM | ✅ | ✅ | 直写 frontBuffer + 递归传播 |
+| MmdRuntime（调试专用） | JS | ❌ | ✅ | `linkedBone` + `updateWorldMatrix` + `_markAsDirty` |
+
+> ⚠️ 历史描述「MmdWasmRuntime gaze ❌（双缓冲覆盖）」已废弃——双路径方案已绕过此约束。`scene.ts:561` 注释明令「JS 版保留作为 gaze 行为对比排查与 WASM 兼容性回退，勿删除」。
 
 **关键发现**：babylon-mmd 的 `IMmdRuntime` 暴露了 `beforePhysics/afterPhysics`，注释明确支持手动调用。这意味着未来可以不调 `mmdRuntime.register(scene)`，手动控制时序，在 `afterPhysics` 之后执行 gaze 覆写，从而保留 WASM 物理。
 

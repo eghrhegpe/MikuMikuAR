@@ -2,7 +2,7 @@
 
 > **日期**: 2026-07-11 / 2026-07-12（双端重构 + 浏览器扩展）
 > **状态**: 已完成（2026-07-12）
-> **关联**: ADR-045（统一加载与资源管理）、ADR-018（PathManager + 文件 I/O 审计）、ADR-023（Android SAF 文件访问）、ADR-064（`*Dir` 包装维持现状）
+> **关联**: ADR-045（统一加载与资源管理）、ADR-018（PathManager + 文件 I/O 审计）、ADR-017（原 ADR-023 已并入 ADR-017 安卓适配，Android SAF 文件访问）、ADR-064（`*Dir` 包装维持现状）
 > **影响面**: `internal/dialogs/file_dialog.go`、`internal/app/app.go`（Config）、`internal/app/` 各 `Select*` 包装函数、`frontend/src/menus/menu.ts`、`frontend/src/menus/library-core.ts`
 > **恢复行为上层汇总**: 见 ADR-097（本 ADR 的文件夹记忆作为恢复优先级 2，模型记忆 RecentModels 为优先级 1）
 
@@ -121,7 +121,7 @@ LastDirs[cat] 为空
 4. **伴音自动加载（ADR-045 §2D）不串扰**
    伴音按 VMD 同目录发现、不经对话框；`LastDirs["audio"]` 与 `LastDirs["motion"]` 独立存储，互不影响。
 
-5. **Android 端生效（与 ADR-023 兼容）**
+5. **Android 端生效（与 ADR-017 兼容，原 ADR-023 已并入 ADR-017 安卓适配）**
    Android 的 SAF 选择器（`fileaccess_android.go`）由 Wails v3 处理，选定后返回真实文件系统路径（复制到缓存目录）。由于：
    - `ResourceRoot` 是固定的（private: `/storage/emulated/0/Android/data/...` / shared: `/sdcard/MMD`）
    - 相对路径拼接后指向正确位置

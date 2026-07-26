@@ -36,7 +36,7 @@
 | 2 | 滑块输入三处重写 | 拖拽/键盘逻辑复制 3~4 份，语义已漂移 | 🔴 高 | 无 |
 | 3 | state.ts 拆分 | 438 行 God Module，20+ export let，混合运行时/库/缓存/UI/播放 | 🔴 P1 | #0 |
 | 4 | 亮度统一标量 | 5 套独立旋钮（sky/env/dir/hemi/cloud），昼夜割裂，云层脱离环境 | 🟠 P2 | #3 |
-| 5 | WASM/JS 双模式 | `VITE_MMD_RUNTIME` 切换 → gaze-js/gaze-wasm 双份实现 | 🔴 P1 | 无 |
+| 5 | WASM/JS 双模式 | ~~`VITE_MMD_RUNTIME` 切换 → gaze-js/gaze-wasm 双份实现~~ ✅ **双路径已落地**（WASM frontBuffer 直写 + JS linkedBone，ADR-016），后续仅做骨架抽取 | ✅ 已落地 | 无 |
 | 6 | 加载状态机样板 | `setStatus→await→setStatus` 31 处重复 | 🟠 中 | 无 |
 | 7 | 持久化错误 5 连 | `SetEnvState().catch()` 5 处相同 | 🟡 低 | #0 |
 | 8 | 空 catch 70+ | 真实错误被吞，无统一上报 | 🟡 低 | 无 |
@@ -145,25 +145,29 @@ core/state.ts (438 行)
 
 ---
 
-### 阶段 4：消灭 WASM/JS 双模式
+### 阶段 4：~~消灭 WASM/JS 双模式~~ 双路径方案已落地（重新定位为骨架抽取）
 
-**目标**: 删除 `perception-gaze-js.ts` + `perception-gaze-wasm.ts` → 单一 `perception-gaze.ts`
+> **2026-07-26 更新**：原方案前提已失效。代码事实核对发现：
+> - WASM 路径已通过 `_writeMatToBuffer` 直写 frontBuffer + `_propagateChildrenWasm` 递归传播，**绕过双缓冲覆盖**，gaze 在 WASM 模式下完全可用（[perception-gaze-wasm.ts:1](../frontend/src/scene/motion/perception-gaze-wasm.ts#L1)）
+> - `wasm-layers-blender` 注释明确"本模块不再涉及 gaze"（[wasm-layers-blender.ts:5](../frontend/src/scene/motion/wasm-layers-blender.ts#L5)），原方案「确认 wasm-layers-blender 调度 gaze」无意义
+> - `scene.ts:561` 注释明令「JS 版保留作为 gaze 行为对比排查与 WASM 兼容性回退，勿删除」
 
-**根因**:
-- WASM 双缓冲覆盖写入 → gaze 无法直接修改 `linkedBone`
-- 实际解：`wasm-layers-blender` 已在 WASM 模式下调度 gaze，**无需切 JS**
+**原根因（已废弃）**:
+- ~~WASM 双缓冲覆盖写入 → gaze 无法直接修改 `linkedBone`~~
+- ~~实际解：`wasm-layers-blender` 已在 WASM 模式下调度 gaze，无需切 JS~~
+
+**重新定位的目标**: 不再删除任何路径，改为**提取共用骨架**降低维护成本
 
 **执行**:
-1. 确认 `wasm-layers-blender` 在 WASM 模式下 gaze 行为完整
-2. 删除 `perception-gaze-js.ts`（JS 专用实现）
-3. `perception-gaze-wasm.ts` → 重命名为 `perception-gaze.ts`（唯一实现）
-4. 移除 `VITE_MMD_RUNTIME=js` 相关分支（保留 `wasm` 作为默认）
-5. 清理 `scene.ts` 中 `getMmdRuntimeType()` 切换逻辑
+1. 提取 `targetWorldQ` 计算 / `_clampHeadGazeTarget` / `Slerp` / `cache` 维护逻辑到 `perception-gaze.ts`（共用骨架）
+2. `perception-gaze-js.ts` 仅保留「写 `linkedBone` + `_updateBoneChain`」写入策略
+3. `perception-gaze-wasm.ts` 仅保留「直写 frontBuffer + `_propagateChildrenWasm`」写入策略
+4. 保留 `VITE_MMD_RUNTIME=js` 调试模式分支（gaze 行为对比排查 + WASM 兼容性回退）
 
 **预期收益**:
-- 维护成本减半
-- gaze 行为一致性保证
-- 删除 ~300 行条件分支代码
+- 净减 ~150 行重复代码（共用骨架只写一次）
+- 两路径职责边界清晰：调度层 vs 写入策略
+- 保留 JS 调试模式作为 WASM 出 bug 时的回退路径
 
 ---
 
@@ -283,7 +287,7 @@ Week 3 (2026-08-02 ~ 2026-08-08) — 环境系统 + 加载 + 收尾
 | 1 | Observer | add/remove 100% 配对；metadata 0 observer |
 | 2 | 滑块 | 4 builder 行为一致；单测覆盖 |
 | 3 | state.ts 拆分 | `core/state.ts` ≤ 80 行；4 个新 store 文件各 ≤ 120 行 |
-| 4 | 消灭双模式 | `perception-gaze-js.ts` 不存在；`VITE_MMD_RUNTIME=js` 分支全删；gaze 单测全绿 |
+| 4 | gaze 双路径骨架抽取 | 共用骨架提取到 `perception-gaze.ts`；JS/WASM 子文件仅保留写入策略；净减 ~150 行重复；gaze 单测全绿；JS 调试模式保留作为回退路径 |
 | 5 | env-bridge 瘦身 | `env-bridge.ts` ≤ 250 行；3 个新文件各 ≤ 250 行；循环依赖解除 |
 | 6 | 亮度统一 | 5 个消费点统一乘 `EB`；UI 主滑块生效；默认观感零变化 |
 | 7 | 加载 | withStatus 单一入口；错误文案统一 |

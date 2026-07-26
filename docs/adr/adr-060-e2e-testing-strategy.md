@@ -17,7 +17,7 @@
 | 开发地址 | Vite `localhost:5173`（DOM-only）、WebView2 调试端口 `9222`（全量） | `frontend/playwright.config.ts`、`e2e/wails-fixture.ts` |
 | E2E 框架 | **Playwright 已接入**，含双模式 fixture：`vitePage`（Chromium 打 5173，不依赖 Wails）+ `wailsPage`（`connectOverCDP` 连 9222，真·Wails 运行时） | `frontend/e2e/wails-fixture.ts` |
 | 单元/集成 | **33 个 Vitest spec**，覆盖 xpbd/vmd/procedural-motion/beat/audio/env/material/model/outfit/bindings/shortcut 等 | `frontend/src/__tests__/` |
-| 既有截图钩子 | `window.__capture()` 已存在于 `core/main.ts:875`（DEV 块内，基于 Babylon `CreateScreenshotAsync`） | `frontend/src/core/main.ts` |
+| 既有截图钩子 | `window.__capture()` 已存在于 `core/dev-hooks.ts:44`（DEV 块内，基于 Babylon `CreateScreenshotAsync`；ADR-102 拆分后由 main.ts 迁出） | `frontend/src/core/dev-hooks.ts` |
 | 文档纪律 | `tests/*.py`（AI 犯错追踪 + 链接校验，ADR-041 范畴） | `tests/` |
 | 测试入口文档 | AGENTS.md 构建块已补 `npm run test:e2e`；路由表已加「写/维护 E2E 测试 → frontend/e2e/ + playwright.config.ts」 | `AGENTS.md`（2026-07-07 增补） |
 
@@ -49,7 +49,7 @@
 
 ### 2.2 `window.__scene` 数值钩子（Phase 0，已实现）
 
-挂载于 `frontend/src/core/main.ts` 的 `if (import.meta.env.DEV)` 块内，复用已导入的 `engine`/`scene` 与已增补导入的 `modelManager`/`focusedModel`/`applyOutfitVariant`/`loadOutfits`：
+挂载于 `frontend/src/core/dev-hooks.ts` 的 `if (import.meta.env.DEV)` 块内（ADR-102 拆分后由 main.ts 迁出；原 main.ts），复用已导入的 `engine`/`scene` 与已增补导入的 `modelManager`/`focusedModel`/`applyOutfitVariant`/`loadOutfits`：
 
 ```ts
 (window as any).__scene = {
@@ -113,7 +113,7 @@
 | `applyOutfitVariant` / `loadOutfits` | `frontend/src/scene/scene.ts` 再导出自 `frontend/src/outfit/outfit.ts` |
 | `XpbdSolver.constraints` / `.particles` | `frontend/src/physics/xpbd-solver.ts` |
 | `ClothInstance.solver` | `frontend/src/physics/cloth-manager.ts` |
-| `window.__capture` | `frontend/src/core/main.ts:875` |
+| `window.__capture` | `frontend/src/core/dev-hooks.ts:44`（ADR-102 拆分后；原 main.ts:875） |
 
 ---
 
@@ -121,7 +121,7 @@
 
 ### Phase 0 — 场景数值钩子（✅ 已完成 2026-07-07）
 
-- [x] `core/main.ts` 新增 `window.__scene`（fps / meshCount / particleCount / constraintCount / currentAnimation / capture / fingerprint / outfitVariants / applyOutfit）
+- [x] `core/dev-hooks.ts` 新增 `window.__scene`（fps / meshCount / particleCount / constraintCount / currentAnimation / capture / fingerprint / outfitVariants / applyOutfit；ADR-102 拆分后由 main.ts 迁出）
 - [x] 复用既有 `window.__capture`，**不创建 2D-canvas 哈希**（WebGL canvas `getContext('2d')` 返回 `null`）
 - [x] `../scene/scene` 导入补 `modelManager`
 - [x] `npm run check` 通过（tsc --noEmit exit 0）
@@ -155,7 +155,7 @@
 
 采用 **粗粒度指纹基线** 取代原始「golden PNG + 像素 diff」：
 
-- [x] `window.__scene.fingerprint()`（与 Phase 0 钩子同期落地于 `main.ts`，非独立扩展）：`Image.decode` 解码 Babylon 截图 → 缩到 16×16 → 取每像素亮度阈值生成 256 位 `0/1` 字符串。避开的是**对 WebGL canvas 调 `getContext('2d')`**（返回 null）的陷阱；PNG 经解码后在新 canvas 上取 2D context 读像素。
+- [x] `window.__scene.fingerprint()`（与 Phase 0 钩子同期落地于 `core/dev-hooks.ts`，ADR-102 拆分后由 main.ts 迁出；非独立扩展）：`Image.decode` 解码 Babylon 截图 → 缩到 16×16 → 取每像素亮度阈值生成 256 位 `0/1` 字符串。避开的是**对 WebGL canvas 调 `getContext('2d')`**（返回 null）的陷阱；PNG 经解码后在新 canvas 上取 2D context 读像素。
 - [x] `helpers.ts`：`compareToBaseline(name, hash, tolerance=0.08)` 用汉明距离比对；**首次运行无基线自动生成**（generator mode，CI seed 用），已存在则比对。
 - [x] `e2e/__baselines__/`（含 `README.md`）：基线 JSON 落盘处；删除对应 `.json` 即可重算。
 - [x] `env-sky.spec.ts`「纯色纯白截图」升级为：校验 `capture()` 管线 + `fingerprint()` 与基线比对（容忍 0.08）。

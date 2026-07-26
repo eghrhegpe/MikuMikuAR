@@ -39,7 +39,7 @@ UI 层面同步重组：地面面板引入顶层「地面类型」(平面/地形
 - 若入参含 `groundMode` 且尚无 `groundType` → 映射：`heightmap` → `groundType:'terrain'`；其余 → `groundType:'flat'` + `groundStyle:<原值>`；随后删除 `groundMode`。
 - 补齐默认：`groundType` 缺省为 `'flat'`，`flat` 下 `groundStyle` 缺省为 `'solid'`。
 
-集中迁移覆盖所有 hydrate 路径（`core/main.ts`、`scene/scene-serialize.ts`、预设应用等），对 UI `onChange` 调用（传入新字段）无副作用。
+集中迁移覆盖所有 hydrate 路径（`core/init.ts` 的 `migrateEnvState`，ADR-102 拆分后；原 `core/main.ts`）、`scene/scene-serialize.ts`、预设应用等），对 UI `onChange` 调用（传入新字段）无副作用。
 
 `groundKeys` 数组同步将 `'groundMode'` 替换为 `'groundType', 'groundStyle'`。
 
