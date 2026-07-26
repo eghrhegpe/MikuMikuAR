@@ -636,7 +636,7 @@ function renderARParams(container: HTMLElement): void {
             try {
                 await switchARCameraFacing();
             } catch {
-                setStatus(t('motion.arSwitchFailed'), false);
+                feedbackStatus('motion.arSwitchFailed', undefined, false);
             }
             refreshCameraLevel();
         }

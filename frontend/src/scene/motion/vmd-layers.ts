@@ -141,7 +141,7 @@ export async function addVmdLayer(
         (l) => l.kind === 'vmd' && l.name === name && l.data.byteLength === data.byteLength
     );
     if (dup) {
-        setStatus(t('scene.vmd.layerExists', { name }), false);
+        feedbackStatus('scene.vmd.layerExists', undefined, false, { name });
         return null;
     }
 
@@ -685,7 +685,7 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
             const primarySrc = sources[0];
             const { loadVMDMotion } = await import('./vmd-loader');
             await loadVMDMotion(primarySrc.data, primarySrc.name, modelId);
-            setStatus(t('scene.vmd.wasmSingleLayer', { name: primarySrc.name }), false);
+            feedbackStatus('scene.vmd.wasmSingleLayer', undefined, false, { name: primarySrc.name });
             return;
         }
 

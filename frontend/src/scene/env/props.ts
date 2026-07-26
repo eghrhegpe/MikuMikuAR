@@ -72,7 +72,7 @@ export async function loadProp(filePath: string, signal?: AbortSignal): Promise<
         // 检查是否已加载
         for (const [, inst] of propRegistry) {
             if (inst.filePath === filePath) {
-                setStatus(t('env.propExists', { name: inst.name }), false);
+                feedbackStatus('env.propExists', undefined, false, { name: inst.name });
                 return inst.id;
             }
         }
