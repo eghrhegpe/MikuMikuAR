@@ -94,7 +94,7 @@ go build ./...                    # Go
 cd frontend && npm run build      # 前端
 cd frontend && npm run test       # 单元测试 (Vitest)
 cd frontend && npm run test:e2e   # E2E (Playwright; 需 wails dev 或 5173+9222)
-cd frontend && npm run test -- src/__tests__/bindings/app.contract.test.ts` # （校验 116 个函数存在性 + FNV-1a method ID）
+cd frontend && npm run test -- src/__tests__/bindings/app.contract.test.ts  # 运行此命令校验绑定契约；函数数随契约演进，以测试运行时报告为准
 ```
 
 ```html

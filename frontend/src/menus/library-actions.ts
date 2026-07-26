@@ -630,26 +630,7 @@ function buildTagDetailLevel(tagName: string): PopupLevel {
 
 // ======== 导入文件 ========
 
-export async function importFile(): Promise<void> {
-    let path: string;
-    try {
-        path = await SelectImportFile();
-    } catch (err) {
-        const msg =
-            err instanceof Error
-                ? err.message
-                : err && typeof err === 'object' && 'message' in err
-                  ? String((err as { message: unknown }).message)
-                  : String(err);
-        if (/cancelled by user/i.test(msg)) {
-            return;
-        }
-        feedbackError('library.selectFileFailed', undefined, err);
-        return;
-    }
-    if (!path) {
-        return;
-    }
+export async function importFileByPath(path: string): Promise<void> {
     const lower = path.toLowerCase();
     if (lower.endsWith('.zip')) {
         const imported = await withLoadingStatusTargeted(
@@ -689,6 +670,29 @@ export async function importFile(): Promise<void> {
     } else {
         feedbackStatus('library.unsupportedFormat', getBaseName(path));
     }
+}
+
+export async function importFile(): Promise<void> {
+    let path: string;
+    try {
+        path = await SelectImportFile();
+    } catch (err) {
+        const msg =
+            err instanceof Error
+                ? err.message
+                : err && typeof err === 'object' && 'message' in err
+                  ? String((err as { message: unknown }).message)
+                  : String(err);
+        if (/cancelled by user/i.test(msg)) {
+            return;
+        }
+        feedbackError('library.selectFileFailed', undefined, err);
+        return;
+    }
+    if (!path) {
+        return;
+    }
+    await importFileByPath(path);
 }
 
 // ======== 供 library-browse 使用的内部函数 ========
