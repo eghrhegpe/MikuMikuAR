@@ -687,10 +687,15 @@ async function _scanDirIntoIDB(
     const texRelIdCategory = _stripCategorySeg(relPath);
     let texLinkedCount = 0; // 本层已关联纹理计数（用于汇总日志）
 
-    // 第二遍：逐个文件写入（纹理关联 + 资源写入合并为单遍，避免 files 数组二次迭代）
-    for (const { name, handle } of files) {
-        const lower = name.toLowerCase();
-        try {
+    // 第二遍：并发写入（纹理关联 + 资源写入，[doc:adr-183] 性能优化）
+    // 原串行 for-of 每个 zip 都 await getFile()+arrayBuffer()+JSZip.loadAsync()，
+    // Android FUSE 单文件 500ms + JSZip 200ms = 700ms/zip，1秒扫 2 个。
+    // 改 Promise.all 并发：IO + CPU 重叠，同层 N 个文件总耗时 ≈ max(单文件) 而非 sum。
+    // IDB 写入经事务串行化保证安全；texLinkedCount ++ 在 JS 单线程 async 交错下安全。
+    await Promise.all(
+        files.map(async ({ name, handle }) => {
+            const lower = name.toLowerCase();
+            try {
             // 纹理分支：关联到 effectivePmx（含子目录纹理，[p2b] 相对 PMX 路径）
             if (TEXTURE_EXTS_RE.test(lower)) {
                 if (effectivePmx.length > 0) {
@@ -708,9 +713,9 @@ async function _scanDirIntoIDB(
                 }
                 texLinkedCount++;
             }
-            continue;
+            return;
         }
-        if (!_SUPPORTED_EXTS_RE.test(lower)) continue;
+        if (!_SUPPORTED_EXTS_RE.test(lower)) return;
         const file = await handle.getFile();
         const bytes = new Uint8Array(await file.arrayBuffer());
         const stem = _stripExt(name);
@@ -741,7 +746,7 @@ async function _scanDirIntoIDB(
                 console.warn(
                     `[web-scan] 跳过过大 zip (${(bytes.byteLength / 1024 / 1024).toFixed(1)} MB): ${name}`
                 );
-                continue;
+                return;
             }
             try {
                 // [doc:adr-006] 传入 decodeFileName：对非 UTF-8 条目名做 SJIS/GBK/Big5 评分检测，
@@ -753,7 +758,7 @@ async function _scanDirIntoIDB(
                     console.warn(
                         `[web-scan] zip ${name} 条目数 ${allEntries.length} 超限，疑似 zip 炸弹`
                     );
-                    continue;
+                    return;
                 }
                 // [doc:adr-006] ZIP 炸弹防护 3：总未压缩大小（对齐 Go 端 maxZipTotalBytes）
                 // JSZip 类型未暴露 _data.uncompressedSize，用 as 访问内部字段（安全防护必需）
@@ -771,7 +776,7 @@ async function _scanDirIntoIDB(
                     console.warn(
                         `[web-scan] zip ${name} 总未压缩大小超限，疑似 zip 炸弹`
                     );
-                    continue;
+                    return;
                 }
                 const INNER_RE = /\.(pmx|vmd|mp3|wav|ogg|flac|wma|vpd)$/i;
                 const innerFiles = allEntries.filter(
@@ -884,11 +889,11 @@ async function _scanDirIntoIDB(
             // [doc:adr-183] 单文件读取/写入失败（权限拒访/文件损坏/编码异常）不应中断
             // 整个目录扫描。原实现无 try/catch，handle.getFile() 或 arrayBuffer() 抛错会让
             // _scanDirIntoIDB 在此处断裂，已扫到的兄弟文件已写入 IDB，后续文件全部消失。
-            // 守卫后 continue 让兄弟文件继续扫描，与 Go 端 WalkDir err 后 return nil 一致。
+            // 守卫后 return 让兄弟文件继续扫描（Promise.all 不中断），与 Go 端 WalkDir err 后 return nil 一致。
             console.warn(`[web-scan] 文件处理失败: "${name}" (relPath=${relPath || '(根)'})`, e);
-            continue;
         }
-    }
+        })
+    );
 
     if (texLinkedCount > 0) {
         console.info(
@@ -896,23 +901,27 @@ async function _scanDirIntoIDB(
         );
     }
 
-    // 递归子目录（传递本层 PMX，使子目录纹理能按相对 PMX 路径关联祖先）
-    for (const dirName of subDirs) {
-        let subHandle: FileSystemDirectoryHandle;
-        try {
-            subHandle = await dir.getDirectoryHandle(dirName);
-        } catch (e) {
-            // [doc:adr-183] Android Chrome WebView 对部分中文目录名可能因编码/权限边界
-            // 抛错（NotSupportedError / SecurityError）。原实现无 try/catch，整个 _scanDirIntoIDB
-            // 异步链在此断裂——已扫到的 entry 已写入 IDB，后续兄弟目录全部消失。
-            // 用户表现：「只扫到一个文件夹」（首个目录扫到后，第二个目录失败导致链路断裂）。
-            // 守卫后 continue 让兄弟目录继续扫描，与 Go 端 WalkDir err 后 return nil 一致。
-            console.warn(`[web-scan] getDirectoryHandle 失败: "${dirName}" (relPath=${relPath || '(根)'})`, e);
-            continue;
-        }
-        const subRelPath = relPath ? `${relPath}/${dirName}` : dirName;
-        await _scanDirIntoIDB(subHandle, subRelPath, effectivePmx, depth + 1);
-    }
+    // 递归子目录（并发，传递本层 PMX 使子目录纹理关联祖先）
+    // [doc:adr-183] 原串行 await，子目录多时累积延迟。改 Promise.all 并发递归，
+    // 同层 N 个子目录总耗时 ≈ max(单子树) 而非 sum。
+    await Promise.all(
+        subDirs.map(async (dirName) => {
+            let subHandle: FileSystemDirectoryHandle;
+            try {
+                subHandle = await dir.getDirectoryHandle(dirName);
+            } catch (e) {
+                // [doc:adr-183] Android Chrome WebView 对部分中文目录名可能因编码/权限边界
+                // 抛错（NotSupportedError / SecurityError）。原实现无 try/catch，整个 _scanDirIntoIDB
+                // 异步链在此断裂——已扫到的 entry 已写入 IDB，后续兄弟目录全部消失。
+                // 用户表现：「只扫到一个文件夹」（首个目录扫到后，第二个目录失败导致链路断裂）。
+                // 守卫后 return 让兄弟目录继续扫描，与 Go 端 WalkDir err 后 return nil 一致。
+                console.warn(`[web-scan] getDirectoryHandle 失败: "${dirName}" (relPath=${relPath || '(根)'})`, e);
+                return;
+            }
+            const subRelPath = relPath ? `${relPath}/${dirName}` : dirName;
+            await _scanDirIntoIDB(subHandle, subRelPath, effectivePmx, depth + 1);
+        })
+    );
 }
 
 /**
@@ -1500,6 +1509,10 @@ export const browserAdapter: BackendService = {
             if (alt) return new TextDecoder().decode(alt);
         }
         return null;
+    },
+    async WriteTextFile(path: string, content: string): Promise<void> {
+        const key = _resolveIdbKey(path);
+        await idbSet('models', key, new TextEncoder().encode(content));
     },
     // [doc:adr-176] 对齐 Go 签名：ImportLocalFile(path): ExtractResult | null。
     // 浏览器侧：path 是已写入 IDB 的文件路径，委托 ExtractZip 处理 zip/资源。
