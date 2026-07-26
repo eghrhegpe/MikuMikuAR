@@ -83,14 +83,10 @@ import {
 } from './scene';
 import type { MaterialCategoryParams } from './manager/material';
 import { removeProp, loadProp, setPropTransform, setPropOrbit } from './env/props';
-import {
-    setEnvState,
-    setEnvSunAngle,
-    flushEnvState,
-    flushUIState,
-    cancelEnvPersistTimer,
-} from './env/env-bridge';
-import { setGravityStrength, getGravityStrength } from './env/env-bridge';
+import { setEnvState } from './env/env-bridge';
+import { setEnvSunAngle } from './env/env-time-of-day';
+import { flushEnvState, flushUIState, cancelEnvPersistTimer } from './env/env-persist';
+import { setGravityStrength, getGravityStrength } from './env/env-gravity';
 import { applyGroundCollision } from './physics/ground-collision';
 import {
     regenerateProcMotion,

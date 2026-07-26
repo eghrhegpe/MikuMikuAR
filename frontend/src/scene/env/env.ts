@@ -14,14 +14,14 @@ export { ensureEnvUpdateObserver } from './env-impl';
 // Re-export observer dispose for scene cleanup
 export { disposeEnvUpdateObserver } from './env-impl';
 
-// Time-of-Day 使用 bridge.ts 的实现（统一的 scene observer）
+// Time-of-Day 使用 env-time-of-day.ts 的实现（统一的 scene observer）
 import {
     startTimeOfDay as bridgeStartTimeOfDay,
     stopTimeOfDay as bridgeStopTimeOfDay,
     isTimeOfDayActive as bridgeIsTimeOfDayActive,
     getTimeOfDaySpeed as bridgeGetTimeOfDaySpeed,
     setTimeOfDaySpeed as bridgeSetTimeOfDaySpeed,
-} from './env-bridge';
+} from './env-time-of-day';
 import { Scene } from '@babylonjs/core/scene';
 import { DefaultRenderingPipeline } from '@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';

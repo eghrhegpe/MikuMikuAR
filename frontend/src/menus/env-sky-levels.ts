@@ -7,7 +7,7 @@ import { slideRow, addSliderRow, buildPresetChipGroup, addClearRow } from '../co
 import { setEnvState } from '../scene/scene';
 import { t } from '../core/i18n/t';
 import { TIME_OF_DAY_PRESETS } from '../scene/env/env-lighting';
-import { applyEnvPreset } from '../scene/env/env-bridge';
+import { applyEnvPreset } from '../scene/env/env-time-of-day';
 import { activeTimeOfDayPreset, setActiveTimeOfDayPreset } from '../core/state';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';

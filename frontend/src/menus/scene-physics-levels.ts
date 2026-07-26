@@ -8,7 +8,7 @@ import {
     setGravityStrength,
     getGroundCollisionEnabled,
     setGroundCollisionEnabled,
-} from '../scene/env/env-bridge';
+} from '../scene/env/env-gravity';
 import {
     modelManager,
     setModelWireframe,

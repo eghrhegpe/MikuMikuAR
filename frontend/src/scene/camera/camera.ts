@@ -12,7 +12,7 @@ import { Scene } from '@babylonjs/core/scene';
 import { MmdCamera } from 'babylon-mmd/esm/Runtime/mmdCamera';
 import type { MmdAnimation } from 'babylon-mmd/esm/Loader/Animation/mmdAnimation';
 import { focusedModelId, modelRegistry, triggerAutoSave, uiState } from '@/core/config';
-import { schedulePersistUI } from '../env/env-bridge';
+import { schedulePersistUI } from '../env/env-persist';
 import { freeflyInput } from '@/core/freefly-state';
 import { feedbackStatus } from '@/core/feedback';
 import { clamp, debounce, deepClone } from '@/core/utils';

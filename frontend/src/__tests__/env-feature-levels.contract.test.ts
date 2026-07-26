@@ -43,8 +43,8 @@ vi.mock('../scene/env/env-lighting', () => ({
     TIME_OF_DAY_PRESETS: {},
 }));
 
-// env-sky-levels.ts → scene/env/env-bridge
-vi.mock('../scene/env/env-bridge', () => ({
+// env-sky-levels.ts → scene/env/env-time-of-day
+vi.mock('../scene/env/env-time-of-day', () => ({
     applyEnvPreset: vi.fn(),
 }));
 

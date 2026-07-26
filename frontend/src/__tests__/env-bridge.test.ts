@@ -562,9 +562,9 @@ import {
 import { getHemiLight as mockGetHemiLight } from '../scene/render/lighting';
 import { scene as mockSceneInstance } from '../scene/scene';
 
+import { setEnvState } from '../scene/env/env-bridge';
+import { setGravityStrength, getGravityStrength } from '../scene/env/env-gravity';
 import {
-    setGravityStrength,
-    getGravityStrength,
     setEnvSunAngle,
     getEnvSunAngle,
     startTimeOfDay,
@@ -574,8 +574,7 @@ import {
     setTimeOfDaySpeed,
     applyEnvPreset,
     applyEnvPresetObject,
-    setEnvState,
-} from '../scene/env/env-bridge';
+} from '../scene/env/env-time-of-day';
 
 // ====================================================================
 // 4. 测试用例

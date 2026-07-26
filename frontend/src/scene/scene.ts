@@ -322,7 +322,7 @@ async function _reinitSceneForHMR(): Promise<void> {
     (await import('./motion/footstep')).stopFootstep();
     (await import('../core/audio-bus')).disposeAudioBus();
     (await import('../core/reactivity')).unsubscribeAll();
-    (await import('./env/env-bridge')).cancelEnvPersistTimer();
+    (await import('./env/env-persist')).cancelEnvPersistTimer();
     (await import('./env/env')).stopTimeOfDay();
 }
 
@@ -673,6 +673,9 @@ export * from './motion/lipsync-bridge';
 export * from './env/props';
 export * from './scene-serialize';
 export * from './env/env-bridge';
+export * from './env/env-gravity';
+export * from './env/env-persist';
+export * from './env/env-time-of-day';
 export * from './render/lighting';
 export * from './render/renderer';
 export * from './manager/model-ops';

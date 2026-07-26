@@ -43,7 +43,7 @@ import { initLibrary, showModelPopup, showMotionPopup, refreshLibrary } from '..
 import { showPlaza } from '../menus/plaza-browser';
 import { closePlaza } from '../menus/plaza-state';
 import { restoreAutoCameraState } from '../scene/camera/camera';
-import { syncTimeOfDayFromEnv } from '../scene/env/env-bridge';
+import { syncTimeOfDayFromEnv } from '../scene/env/env-time-of-day';
 import { initShortcutDispatcher, loadKeyBindings } from './shortcut-registry';
 import { setupE2ECapture } from './dev-hooks';
 import { startRenderLoop } from './render-loop';

@@ -317,7 +317,7 @@ vi.mock('@/scene/scene', () => ({
 // camera.ts imports schedulePersistUI from env-bridge,
 // which would pull in env-impl.ts (1377 lines, @babylonjs/core barrel import)
 // and lighting.ts (1282 lines, multiple Babylon sub-modules).
-vi.mock('../scene/env/env-bridge', () => ({
+vi.mock('../scene/env/env-persist', () => ({
     schedulePersistUI: vi.fn(),
 }));
 

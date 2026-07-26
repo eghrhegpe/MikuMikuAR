@@ -54,7 +54,12 @@ vi.mock('../../outfit/outfit', () => ({}));
 vi.mock('../../scene/scene', () => ({}));
 vi.mock('../../scene/manager/material', () => ({}));
 vi.mock('../../scene/env/props', () => ({}));
-vi.mock('../../scene/env/env-bridge', () => ({}));
+vi.mock('../../scene/env/env-bridge', () => ({
+    registerEnvStateMiddleware: vi.fn(),
+    setPresetAnimActive: vi.fn(),
+    applyEnvStateFacade: vi.fn(),
+    setEnvState: vi.fn(),
+}));
 vi.mock('../../scene/physics/ground-collision', () => ({}));
 vi.mock('../../scene/motion/proc-motion-bridge', () => ({}));
 vi.mock('../../scene/motion/lipsync-bridge', () => ({}));
