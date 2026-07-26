@@ -1,5 +1,5 @@
 /**
- * [doc:adr-177] Phase 4 — Web 入口 smoke 测试
+ * [doc:adr-178] Phase 3 — Web 入口 smoke 测试
  *
  * 验证主应用 web 入口（index.web.html → vite preview 4174）首屏渲染 + 基础导航。
  * 不依赖 Wails runtime（__MMKU_WEB__=true 短路 browser-adapter）。

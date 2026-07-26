@@ -92,7 +92,7 @@ async function rebuildAll(): Promise<void> {
     disposeAllVirtualSkirts();
     const rt = getRuntime();
     if (!rt || !rt.physics) {
-        setStatus(t('cloth.noRuntime'), false);
+        feedbackStatus('cloth.noRuntime', undefined, false);
         return;
     }
     const { VirtualSkirtController } = await import('../scene/physics/virtual-skirt');
@@ -125,7 +125,7 @@ async function rebuildAll(): Promise<void> {
     }
 
     if (injected > 0 && failed === 0) {
-        setStatus(t('cloth.applied', { n: injected }), true);
+        showInfoToast(t('cloth.applied', { n: injected }));
     } else if (injected > 0 && failed > 0) {
         setStatus(
             t('cloth.applied', { n: injected }) +
