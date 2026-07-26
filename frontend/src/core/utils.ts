@@ -193,17 +193,9 @@ export function escapeHtml(s: string): string {
 
 // ======== Math Helpers ========
 
-export function clamp(v: number, lo: number, hi: number): number {
-    return Math.min(hi, Math.max(lo, v));
-}
-
-export function clampInt(v: number, lo: number, hi: number): number {
-    return Math.round(clamp(v, lo, hi));
-}
-
-export function clamp01(v: number): number {
-    return clamp(v, 0, 1);
-}
+// [doc:adr-190-followup] 数学钳制收敛至零依赖叶子 clamp.ts，避免纯模块拖入整桶 @/core/utils
+import { clamp, clampInt, clamp01 } from './clamp';
+export { clamp, clampInt, clamp01 };
 
 export function lerp(a: number, b: number, t: number): number {
     return a + (b - a) * t;

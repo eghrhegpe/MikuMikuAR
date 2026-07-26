@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 70 | 540 |
+| 核心基础设施 | 71 | 544 |
 | 3D 场景 | 104 | 1057 |
 | 菜单 & UI | 66 | 308 |
 | 换装 & 音频 | 3 | 33 |
@@ -55,6 +55,9 @@
 | `BackendService()` | `core/backend/types` | 统一后端抽象。go-adapter 透传 Go 全量（含契约测试 139 函数）， browser-adapter 实现 106（81 真实 + 8 FSA + 17 降级）。 |
 | `GoApp()` | `core/backend/types` | Go 生成绑定的值类型（函数签名源）。 |
 | `NotSupportedError()` | `core/backend/types` | 浏览器侧原生独占能力的统一错误。调用方据 capabilities() 预判或 catch 此错误。 |
+| `clamp()` | `core/clamp` | — |
+| `clamp01()` | `core/clamp` | — |
+| `clampInt()` | `core/clamp` | — |
 | `col3FromTriple()` | `core/color-helpers` | 从 `[r, g, b]` 三元组构造 Color3。 |
 | `hexToRgb()` | `core/color-helpers` | 将 #rrggbb 解析为 {r,g,b}（0–255）。非法输入回退主题默认 74,108,247。 |
 | `rgbString()` | `core/color-helpers` | 将 Color3 转为 CSS `rgb(r, g, b)` 字符串（0–255 整数）。 |
@@ -459,6 +462,7 @@
 | `DeleteEnvPreset()` | `core/wails-bindings` | — |
 | `DeleteModelPreset()` | `core/wails-bindings` | — |
 | `DeletePresetScene()` | `core/wails-bindings` | — |
+| `DownloadAndRunInstaller()` | `core/wails-bindings` | — |
 | `DownloadApk()` | `core/wails-bindings` | — |
 | `DownloadFromPlaza()` | `core/wails-bindings` | — |
 | `Events()` | `core/wails-bindings` | — |
@@ -2128,5 +2132,5 @@
 
 ---
 
-> 共 263 个文件，2082 个导出符号。
+> 共 264 个文件，2086 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。

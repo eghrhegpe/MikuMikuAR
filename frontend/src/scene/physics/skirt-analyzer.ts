@@ -15,7 +15,7 @@
  * 关联: ADR-084, ADR-081 (physics-bridge 复用)
  */
 
-import { clampInt } from '@/core/utils';
+import { clampInt } from '@/core/clamp';
 
 // ============================================================================
 // 类型定义

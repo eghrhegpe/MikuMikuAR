@@ -15,7 +15,8 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
-| ADR-189 | 纹理加载路径优化（并行读取 + basename 共享 + LRU + KTX2 基础设施） | 实施中（Phase 0 代码已落地，3 项运行时验证随 Phase 1 完成；Phase 1 代码已落地 2026-07-26 — 并行读取 + basename 共享 + LRU，全量测试 2100/2100）（2026-07-26（初版）/ 2026-07-26（修订 — 方向调整）/ 2026-07-26（审核修订 — AbortSignal/LRU/数值一致性）） |
+| ADR-190 | 端能力声明式收口（淘汰散落 isAndroidPlatform 分支） | 已完成（代码 + 测试 2026-07-26 落地；tsc --noEmit + vitest 全绿）（2026-07-26（初版）） |
+| ADR-189 | 纹理加载路径优化（并行读取 + basename 共享 + LRU + KTX2 基础设施） | 实施中（Phase 0 代码已落地，3 项运行时验证随 Phase 1 完成；Phase 1 代码已落地 2026-07-26 — 并行读取 + basename 共享 + LRU 接线，全量 2133/2133）（2026-07-26（初版）/ 2026-07-26（修订 — 方向调整）/ 2026-07-26（审核修订 — AbortSignal/LRU/数值一致性）/ 2026-07-26（修复 — LRU 接入 collectTextureFiles）） |
 | ADR-188 | PBRMaterialBuilder 材质系统迁移 — PBR 渲染升级 | 草案 · 待立项（P1 长期规划） |
 | ADR-187 | babylon-mmd 剩余高价值功能综合分析 | 草案 · 待立项（2026-07-26 — 系统性调研 + 落地优先级评估） |
 | ADR-186 | bone-override 帧内时序图 | accepted |
