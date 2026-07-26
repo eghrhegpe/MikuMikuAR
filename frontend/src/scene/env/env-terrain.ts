@@ -11,7 +11,7 @@ import {
 } from '@babylonjs/core';
 import { EnvState } from '@/core/config';
 import { createCanvasDataURL, isCacheOwnedTexture } from './env-texture';
-import { clamp01 } from '@/core/utils';
+import { clamp01 } from '@/core/clamp';
 import { _effectiveBumpLevel } from './env-ground';
 
 // ======== 确定性值噪声（FBM）========

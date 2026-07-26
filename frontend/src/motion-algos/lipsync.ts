@@ -5,7 +5,7 @@
 // setModelMorphWeight 直写焦点模型的「あ」morph。
 // 与 procedural motion 不冲突：前者只控「まばたき」(VMD 帧)，本模块只控「あ」(实时直写)。
 
-import { clamp01 } from '@/core/utils';
+import { clamp01 } from '@/core/clamp';
 
 export interface LipSyncState {
     enabled: boolean;

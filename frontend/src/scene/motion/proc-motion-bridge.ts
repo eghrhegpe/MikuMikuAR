@@ -31,7 +31,7 @@ import { triggerAutoSave, focusedModelId, setUIState } from '@/core/config';
 import { isAudioPlaying } from '@/outfit/audio';
 import { modelManager, focusedMmdModel, focusedModel } from '../scene';
 import { setGazeConfig, onPerceptionModelRemoved, activatePerception } from './perception';
-import { clamp01 } from '@/core/utils';
+import { clamp01 } from '@/core/clamp';
 import { logWarn } from '@/core/logger';
 import { safeDispose } from '@/core/dispose-helpers';
 import { getActiveMotion } from './motion-intent';

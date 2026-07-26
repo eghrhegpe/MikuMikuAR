@@ -23,7 +23,7 @@ import {
 } from '@/motion-algos/vmd-evaluator';
 import { DEFAULT_LAYER_BONE_FILTER } from './wasm-layers-config';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
-import { clamp01 } from '@/core/utils';
+import { clamp01 } from '@/core/clamp';
 import { getMotionPipeline } from './motion-pipeline';
 import type { ModelManager } from '../manager/model-manager';
 

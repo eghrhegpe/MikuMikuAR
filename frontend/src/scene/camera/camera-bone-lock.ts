@@ -6,7 +6,7 @@
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 
-import { clamp } from '@/core/utils';
+import { clamp } from '@/core/clamp';
 import { focusedModelId, modelRegistry } from '@/core/config';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { safeDispose } from '@/core/dispose-helpers';

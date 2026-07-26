@@ -46,7 +46,7 @@ import {
     BONE_WAIST_CANDIDATES,
     BONE_ALLPARENT_CANDIDATES,
 } from '../../motion-algos/proc-motion-shared';
-import { clamp01 } from '@/core/utils';
+import { clamp01 } from '@/core/clamp';
 import { logWarn } from '@/core/logger';
 import { getBoneOverrideStore } from './bone-override-store';
 import { releaseOwnedBones } from './motion-modules/registry';

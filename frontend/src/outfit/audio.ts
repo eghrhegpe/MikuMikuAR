@@ -10,7 +10,7 @@
 import { StreamAudioPlayer } from 'babylon-mmd/esm/Runtime/Audio/streamAudioPlayer';
 import { readFileBytes } from '../core/wails-bindings';
 import { triggerAutoSave, setUIState } from '../core/config';
-import { clamp01 } from '@/core/utils';
+import { clamp01 } from '@/core/clamp';
 import { logWarn } from '@/core/logger';
 import { safeCallAsync } from '@/core/safe-call';
 import { safeDispose } from '@/core/dispose-helpers';

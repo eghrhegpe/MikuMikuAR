@@ -23,7 +23,7 @@ import { getPlanarQualityOverride } from './env-reflection';
 import { createCanvasTexture } from './env-texture';
 import { registerEnvCallback } from './env-dispatcher';
 import { getEnvKeys } from '@/core/env-state-schema';
-import { clamp01 } from '@/core/utils';
+import { clamp01 } from '@/core/clamp';
 import { logWarn } from '@/core/logger';
 
 import WATER_VERT_SRC from './shaders/water.vert.glsl?raw';
