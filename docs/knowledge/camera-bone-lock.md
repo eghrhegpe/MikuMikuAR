@@ -15,8 +15,10 @@ symbols:
   - getBoneLockDamping
   - getFocusedModelBoneNames
   - stopBoneLock
+  - restoreBoneLockIfEnabled
 invariants:
-  - 骨骼锁仅在 orbit 模式下生效，切换到其他模式时显式 stopBoneLock
+  - 骨骼锁仅在 orbit 模式下生效，切换到其他模式时显式 stopBoneLock（仅 dispose observer，保留启用状态）
+  - 切回 orbit 时由 camera.ts 调用 restoreBoneLockIfEnabled 重启 observer，避免假启用
   - 启用时保存并禁用 panning + 关闭 inertia，避免与每帧 target 跟随冲突
   - 每帧通过 bone absolute position 计算 target，cam.setTarget 跟随
 tests:
@@ -31,12 +33,13 @@ use_when:
 **相机骨骼锁定模块**（ADR-148 阶段 3 续拆，2026-07-26）。从 camera.ts 抽出 orbit 模式下的骨骼锁逻辑：相机 target 每帧跟随指定骨骼的世界坐标，常用于"眼部追踪"或"上半身跟随"。
 
 ## 核心职责
-- `setOrbitBoneLock(enabled, boneName?)` — 启用/禁用骨骼锁；启用时记录骨骼名 + 模型 ID，启动每帧跟随
+- `setOrbitBoneLock(enabled, boneName?)` — 启用/禁用骨骼锁；启用时记录骨骼名 + 模型 ID，启动每帧跟随；禁用时清空状态 + 停止 observer
 - `getOrbitBoneLock()` — 查询当前骨骼锁状态（`{ enabled, boneName?, modelId? }`）
 - `setBoneLockDamping(v)` — 设置阻尼系数（控制相机跟随的平滑度）
 - `getBoneLockDamping()` — 查询阻尼系数
 - `getFocusedModelBoneNames()` — 获取当前聚焦模型的骨骼名列表（供 UI 下拉选择）
-- `stopBoneLock()` — 停止骨骼锁（dispose observer + 恢复 panning / inertia）
+- `stopBoneLock()` — 临时停止骨骼锁（dispose observer + 恢复 panning / inertia，**保留** `_boneLockEnabled` 状态供切回 orbit 时恢复）
+- `restoreBoneLockIfEnabled()` — 切回 orbit 时由 camera.ts switchCameraMode 调用：若 `_boneLockEnabled` 仍为 true，重启每帧跟随 observer
 
 ## 与其他子系统关系
 - 依赖 `camera-state.ts`（`getCurrentCamera` / `getCameraScene` / `focusedModelId` via `@/core/config`）

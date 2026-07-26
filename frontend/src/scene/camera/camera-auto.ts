@@ -44,6 +44,14 @@ const AUTO_CAMERA_PRESETS: AutoCameraPreset[] = [
 let _autoCameraBeatsPerSwitch = 4; // 每 4 拍切换一次
 let _autoCameraUnsub: (() => void) | null = null;
 
+/**
+ * 当前过渡动画的 observer 句柄。模块级追踪以支持显式释放：
+ * - 新 beat 触发时 dispose 旧过渡（避免多个过渡并行互相覆盖）
+ * - 关闭自动运镜 / 切换相机模式时 dispose 过渡（避免操作已释放的相机）
+ * - 过渡自然完成时由回调内部 dispose 并置 null
+ */
+let _transitionHandle: { dispose(): void } | null = null;
+
 /** camera.ts 注入：派生双轴状态的回调（_syncAxesFromMode）。 */
 let _syncAxesCallback: (() => void) | null = null;
 
@@ -71,6 +79,12 @@ function _unsubscribeAutoCameraBeat(): void {
     if (_autoCameraUnsub) {
         _autoCameraUnsub();
         _autoCameraUnsub = null;
+    }
+    // 同时释放进行中的过渡动画：退订后 beat 不再触发，
+    // 但已启动的过渡会继续修改 cam.alpha/beta/radius，可能操作已切换/释放的相机。
+    if (_transitionHandle) {
+        _transitionHandle.dispose();
+        _transitionHandle = null;
     }
 }
 
@@ -172,7 +186,12 @@ function _onAutoCameraBeat(): void {
         cam.radius = preset.radius;
         return;
     }
-    const handle = observe(scene.onBeforeRenderObservable, () => {
+    // 新过渡启动前 dispose 旧过渡，避免多个过渡并行互相覆盖。
+    if (_transitionHandle) {
+        _transitionHandle.dispose();
+        _transitionHandle = null;
+    }
+    _transitionHandle = observe(scene.onBeforeRenderObservable, () => {
         const elapsed = performance.now() - startTime;
         t = Math.min(1, elapsed / duration);
         const ease = t * t * (3 - 2 * t); // smoothstep
@@ -180,7 +199,8 @@ function _onAutoCameraBeat(): void {
         cam.beta = startBeta + (preset.beta - startBeta) * ease;
         cam.radius = startRadius + (preset.radius - startRadius) * ease;
         if (t >= 1) {
-            handle.dispose();
+            _transitionHandle?.dispose();
+            _transitionHandle = null;
         }
     });
 }
