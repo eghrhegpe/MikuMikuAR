@@ -1,15 +1,15 @@
 # 函数映射表
 
 > AI 找代码用。改前端功能时先 grep 此表定位文件。
-> **自动生成**（2026-07-25）— 由 `scripts/gen-funcmap.mjs` 生成。
+> **自动生成**（2026-07-26）— 由 `scripts/gen-funcmap.mjs` 生成。
 
 ## 总览
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 69 | 541 |
-| 3D 场景 | 94 | 1002 |
-| 菜单 & UI | 65 | 301 |
+| 3D 场景 | 95 | 1004 |
+| 菜单 & UI | 65 | 303 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 123 |
 | 物理系统 | 2 | 13 |
@@ -731,14 +731,16 @@
 | `registerEnvCallback()` | `scene/env/env-dispatcher` | 子系统注册响应回调（延迟绑定，避免循环导入）。 |
 | `registerSceneTickCallback()` | `scene/env/env-dispatcher` | 注册场景每帧 tick 回调。返回的清理函数在 dispose 时调用。 |
 | `runSceneTickCallbacks()` | `scene/env/env-dispatcher` | 执行所有已注册的场景 tick 回调（由 ensureEnvUpdateObserver 的 scene observer 每帧调用）。 |
+| `GROUND_PRESETS()` | `scene/env/env-ground-presets` | — |
+| `GroundPreset()` | `scene/env/env-ground-presets` | — |
+| `GroundProceduralKind()` | `scene/env/env-ground-presets` | 程序化地面纹理类型 |
+| `buildGroundPresetEnvState()` | `scene/env/env-ground-presets` | 预设 → EnvState 字段映射，供 UI chip handler 调用并持久化。 |
 | `GROUND_PRESETS()` | `scene/env/env-ground` | — |
-| `GroundPreset()` | `scene/env/env-ground` | — |
-| `GroundProceduralKind()` | `scene/env/env-ground` | 程序化地面纹理类型（单一来源：env-state-schema.ts 的 groundProceduralTexture 枚举） |
 | `_disableGroundRippleTexture()` | `scene/env/env-ground` | — |
 | `_effectiveBumpLevel()` | `scene/env/env-ground` | ADR-114 Phase 2: 法线扭曲映射到 bumpTexture.level 增强（distort=1 时额外 +2.0）；低质量模式自动关闭 |
 | `_effectiveRoughness()` | `scene/env/env-ground` | ADR-114 Phase 2: 反射模糊映射到 roughness 偏移（blur=1 最多增加 0.4）；低质量模式自动关闭 |
 | `applyGround()` | `scene/env/env-ground` | — |
-| `buildGroundPresetEnvState()` | `scene/env/env-ground` | 预设 → EnvState 字段映射，供 UI chip handler 调用并持久化。 |
+| `buildGroundPresetEnvState()` | `scene/env/env-ground` | — |
 | `clearGroundTexCache()` | `scene/env/env-ground` | — |
 | `disposeGround()` | `scene/env/env-ground` | — |
 | `getGroundHeightAt()` | `scene/env/env-ground` | — |
@@ -1586,6 +1588,7 @@
 | `buildEnvLevel()` | `menus/env-menu` | — |
 | `buildParticleLevel()` | `menus/env-menu` | — |
 | `clearEnvTextureBindingTarget()` | `menus/env-menu` | — |
+| `disposeEnvMenu()` | `menus/env-menu` | 释放 env-menu 模块资源（取消注册 hooks + HMR/清理时调用） |
 | `getEnvMenu()` | `menus/env-menu` | — |
 | `getEnvTextureBindingTarget()` | `menus/env-menu` | — |
 | `refreshEnvRoot()` | `menus/env-menu` | — |
@@ -1714,7 +1717,7 @@
 | `syncOverrideToInstance()` | `menus/motion-override-levels` | 将 bone-override.ts 的运行时状态同步回 ModelInstance.boneOverrides 用于持久化 |
 | `applyIntentToModel()` | `menus/motion-popup` | — |
 | `buildMotionRootItems()` | `menus/motion-popup` | — |
-| `disposeMotionPopup()` | `menus/motion-popup` | 释放 motion-popup 模块资源（HMR/清理时调用） |
+| `disposeMotionPopup()` | `menus/motion-popup` | 释放 motion-popup 模块资源（取消注册 hooks + HMR/清理时调用） |
 | `getMotionMenu()` | `menus/motion-popup` | — |
 | `hideMotionPopup()` | `menus/motion-popup` | — |
 | `initMotionBroadcast()` | `menus/motion-popup` | — |
@@ -1812,6 +1815,7 @@
 | `setRefreshSceneRoot()` | `menus/scene-menu-state` | — |
 | `setSceneMenu()` | `menus/scene-menu-state` | — |
 | `buildStageTransformLevel()` | `menus/scene-menu` | — |
+| `disposeSceneMenu()` | `menus/scene-menu` | 释放 scene-menu 模块资源（取消注册 hooks + HMR/清理时调用） |
 | `getSceneMenu()` | `menus/scene-menu` | — |
 | `refreshSceneRoot()` | `menus/scene-menu` | — |
 | `screenshotCurrent()` | `menus/scene-menu` | 截图当前焦点模型 |
@@ -2059,5 +2063,5 @@
 
 ---
 
-> 共 250 个文件，2013 个导出符号。
+> 共 251 个文件，2017 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。
