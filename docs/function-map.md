@@ -8,8 +8,8 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 69 | 534 |
-| 3D 场景 | 103 | 1051 |
-| 菜单 & UI | 65 | 303 |
+| 3D 场景 | 103 | 1052 |
+| 菜单 & UI | 65 | 304 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 123 |
 | 物理系统 | 2 | 13 |
@@ -1071,6 +1071,7 @@
 | `stopBoneOverride()` | `scene/motion/bone-override` | 停止覆盖系统。 |
 | `FeetModelProvider()` | `scene/motion/feet-adjustment` | 注入：返回需要处理脚部调整的模型及其 runtime bones |
 | `FootLandEvent()` | `scene/motion/feet-adjustment` | 落地事件：脚从空中接触地面的瞬间（ADR-088 供脚步声消费）。 |
+| `feetDebug()` | `scene/motion/feet-adjustment` | — |
 | `isFeetAdjustmentRunning()` | `scene/motion/feet-adjustment` | 查询脚部跟随系统是否正在运行（observer 已注册）。 |
 | `setOnFootLand()` | `scene/motion/feet-adjustment` | 注入落地事件回调（null 取消）。脚步声控制器调用。 |
 | `solveFootTarget()` | `scene/motion/feet-adjustment` | — |
@@ -1783,6 +1784,7 @@
 | `normalizeCreator()` | `menus/plaza-browser` | — |
 | `normalizeSite()` | `menus/plaza-browser` | — |
 | `openExternal()` | `menus/plaza-browser` | — |
+| `openInSystemBrowser()` | `menus/plaza-browser` | 调用操作系统的默认浏览器打开站点（Browser.OpenURL 或 window.open）。 |
 | `openInWindow()` | `menus/plaza-browser` | — |
 | `openSiteByMode()` | `menus/plaza-browser` | — |
 | `renderEmbed()` | `menus/plaza-browser` | — |
@@ -2103,5 +2105,5 @@
 
 ---
 
-> 共 259 个文件，2057 个导出符号。
+> 共 259 个文件，2059 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。
