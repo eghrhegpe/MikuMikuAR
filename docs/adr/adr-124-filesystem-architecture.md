@@ -2,7 +2,7 @@
 
 > **日期**: 2026-07-17
 > **状态**: 已完成（Phase 1-3 全部落地；HTTP 文件服务保留作 fallback）
-> **背景**: 现有桌面版模型加载依赖 Go `StartFileServer` 启动本地 HTTP 服务来喂文件。`web-loader/main.ts` 已验证 `IArrayBufferFile[]` 绕过 HTTP 走内存直传的可行性。本 ADR 审计现有文件服务架构，评估分阶段去除 HTTP 中转层的路径。
+> **背景**: 现有桌面版模型加载依赖 Go `StartFileServer` 启动本地 HTTP 服务来喂文件。`web-loader/main.ts`（⚠️ 已于 2026-07-26 随 ADR-177 终态整目录删除）曾验证 `IArrayBufferFile[]` 绕过 HTTP 走内存直传的可行性，该能力已并入主应用统一 web 入口（`index.web.html` + `vite.web.config.ts` + `src/core/runtime-stub.ts`）。本 ADR 审计现有文件服务架构，评估分阶段去除 HTTP 中转层的路径。
 
 ---
 
@@ -27,7 +27,7 @@
 | `httpserver.go` | internal/app/ | `IsolateModelDir`（安全隔离）+ `trustedRoots` |
 | `zipextract.go:799` | internal/app/ | `StartFileServer` / `StopFileServer` + `basenameFallbackFS` HTTP handler |
 | `fileaccess.go` | internal/app/ | `FileAccessor` 接口 + `ReadTextFile`（仅文本） |
-| `web-loader/main.ts` | frontend/src/ | POC：`IArrayBufferFile[]` 零 HTTP 加载路径 |
+| `web-loader/main.ts`（⚠️ 已删除，见 ADR-177） | frontend/src/ → 已迁 `index.web.html` + `vite.web.config.ts` + `src/core/runtime-stub.ts` | POC：`IArrayBufferFile[]` 零 HTTP 加载路径（能力并入主应用 web 入口） |
 
 ### 1.3 消费者矩阵
 

@@ -2,7 +2,7 @@
 
 > **状态**: 已完成（2026-07-23；Phase 1-3 全部落地。Phase 3 已完成 web-loader 准完整网页入口、IndexedDB 模型库、能力徽章、lastModel 恢复引导和库面板；验证：tsc 0 错、backend 16/16、契约 17/17、全量回归绿）
 > **日期**: 2026-07-23
-> **关联**: ADR-011（Wails 版本策略）、ADR-017（安卓适配，platform 探测范式）、ADR-159（桥接注入范式）、现有 `src/web-loader/`（纯浏览器 PMX 原型）
+> **关联**: ADR-011（Wails 版本策略）、ADR-017（安卓适配，platform 探测范式）、ADR-159（桥接注入范式）、`src/web-loader/`（⚠️ 纯浏览器 PMX 原型，已随 ADR-177 终态整目录删除，能力并入主应用统一 web 入口 `index.web.html` + `vite.web.config.ts` + `src/core/runtime-stub.ts`）
 > **审核记录**: 2026-07-23 架构审核（数据流/生命周期/降级契约）— 有条件通过，**全部 P1×2 + P2×3 已回填修订并同步至蓝图**：P1① 调用集实证见文末章节（业务真实调用 106/139）；P1② `resolveBackend()` async + 桥接短路；P2① 接入点改造第 0 步首屏链；P2② 新建 `isWebPlatform()` + 扩展 `guardExternalAction`；P2③ 三态能力矩阵节。**状态可由「规划」推进至「待实施」。** 详见「审核发现」。
 
 ## 背景
@@ -14,7 +14,7 @@ MikuMikuAR 当前是 Wails v3 桌面/安卓应用，前端通过 `src/core/wails
 **关键量化发现**（2026-07-23 核查）：
 - 直接 `import '@bindings/'` 的文件**仅 2 个**：`wails-bindings.ts`（聚合层）与 `plaza-browser.ts`（模型广场代理，独立页面）。
 - 业务代码对 Go 的调用高度收敛在聚合层，且已大量使用 `window.wails?.xxx?.()` 可选链兜底。
-- `src/web-loader/main.ts` 已证明：PMX 加载 + JSZip 解压 + babylon-mmd 在**零后端**下完全可用。
+- `src/web-loader/main.ts`（⚠️ 已随 ADR-177 终态删除）曾证明：PMX 加载 + JSZip 解压 + babylon-mmd 在**零后端**下完全可用（该验证结论已支撑本 ADR 双环境通杀决策）。
 
 结论：耦合面窄、浏览器侧最难一环已有验证，引入适配器层实现双环境通杀**工程可行且改造量小**。
 
@@ -185,7 +185,7 @@ export interface BackendService {
 > 目的：核验 P1①「改造量小」假设。方法：从 `app.contract.test.ts` 解析契约测试锁定的全量 Go 绑定函数，在业务源码中 grep 真实调用，按浏览器侧可行性分类。
 
 **测量口径**
-- 扫描范围：`frontend/src` 下全部 `.ts`，排除 `bindings/`（生成物）、`__tests__/`（测试）、`web-loader/`（独立另起炉灶实现）、`wails-bindings.ts`（聚合层自身）。
+- 扫描范围：`frontend/src` 下全部 `.ts`，排除 `bindings/`（生成物）、`__tests__/`（测试）、`web-loader/`（⚠️ 已随 ADR-177 删除，原独立另起炉灶实现）、`wails-bindings.ts`（聚合层自身）。
 - 业务文件数：**247**。
 - 契约测试基准集：**139** 函数（注释称 122、AGENTS 文档称 116，均已过时 —— 建议同步修正文档）。
 
