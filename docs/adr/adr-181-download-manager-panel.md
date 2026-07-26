@@ -1,13 +1,14 @@
 # ADR-181: 下载管理面板（扫描→解压→入库→processed 标记）
 
-> **状态**: 已批准（规划中 → 批准；落地前修正 3 处：P3 拆分 importFileByPath / P3 注册点行号 settings.ts:127 / P4 网页清单改存 IndexedDB）
+> **状态**: 已完成（代码+测试 2026-07-26 全部落地；settings-downloads.ts 422 行 + download-manager.test.ts 25 测试 + 全量 2100+ 通过）
 > **日期**: 2026-07-25
 > **关联**: ADR-176（前端 Backend 适配器双实现）、ADR-177（Web Loader 与主应用统一路径）、ADR-178（能力矩阵宿主键 —— 本 ADR 实施后 `watchDir` 键随之废弃）、ADR-179（更新安装拉起，平台分级）、ADR-180（FSA 句柄持久化 —— 本面板网页/安卓端 staging 持久化直接复用其句柄恢复机制）、ADR-017（安卓适配，platform 探测范式）、ADR-018（pathmgr 抽象）
 > **前置**: zip 解压管线已具备（网页 `browser-adapter.ts` JSZip / Go `ExtractZip`）；资源库写入已具备（IndexedDB `dir:/outfit:` 路由 / Go 落盘）；fsnotify watch 现状（`internal/app/watch.go`）；ADR-180（FSA 句柄持久化）已落地，提供网页/安卓端 staging 句柄持久化能力
 > **审核记录**: 2026-07-25 首轮审核通过（草案可批准），落地前修正 3 处：
->   ① P3 —— `importFile()` 无参数（`library-actions.ts:614` 定义为 `importFile(): Promise<void>`），面板批量导入需新增 `importFileByPath(path)` 拆分版（抽取 L634–666 路由块，绕过 `SelectImportFile()` 弹窗）；
->   ② P3 —— 注册点已定位 `settings.ts:127`（`[SETTINGS.RESOURCES]: () => buildSettingsResourcesLevel(...)`），补全行号；
->   ③ P4 —— 网页只读 FSA 句柄无法向 staging 写 `.imported.json`，清单改存 IndexedDB（key = staging 句柄 id + 文件 hash）。
+>   ① P3 —— `importFile()` 无参数 → `importFileByPath(path)` 已抽取为独立导出函数（`library-actions.ts:633`）；
+>   ② P3 —— 注册点已定位 `settings.ts:139`（`[SETTINGS.DOWNLOADS]: () => buildSettingsDownloadsLevel(...)`）；
+>   ③ P4 —— 网页侧清单改存 IndexedDB（`webMarkImported`/`webIsImported`，key = `imported:<handleId>:<hash>`）。
+>   2026-07-26 实施：panel 422 行全链路落地 + i18n 18 键 + `download-manager.test.ts` 25 测试。
 
 ## 背景
 
