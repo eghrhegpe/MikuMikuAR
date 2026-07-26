@@ -136,25 +136,10 @@ export function getSurroundParams(): SurroundParams {
     return _currentPreset.surround;
 }
 
-// ======== Sub-preset Setters (纯状态变更，持久化由 camera.ts 的 viewMatrix observer 驱动) ========
-
-export function setOrbitParams(p: Partial<OrbitParams>): void {
-    Object.assign(_currentPreset.orbit, p);
-}
-
-export function setFreeflyParams(p: Partial<FreeflyParams>): void {
-    Object.assign(_currentPreset.freefly, p);
-}
-
-export function setConcertParams(p: Partial<ConcertParams>): void {
-    Object.assign(_currentPreset.concert, p);
-}
-
-export function setSurroundParams(p: Partial<SurroundParams>): void {
-    Object.assign(_currentPreset.surround, p);
-}
-
 // ======== Mode getters/setters ========
+// 注：Sub-preset Setter (setOrbitParams/setFreeflyParams/setConcertParams/setSurroundParams)
+// 仅在 camera.ts 中实现（含 live camera 同步逻辑），camera-state.ts 不再重复定义。
+// 持久化由 camera.ts 的 viewMatrix observer 驱动。
 
 export function getCameraMode(): CameraMode {
     return _cameraMode;

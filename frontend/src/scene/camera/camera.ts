@@ -729,8 +729,9 @@ export function setCameraState(s: CameraState): void {
 }
 
 // ======== Re-exports (backward compat — barrel re-export for downstream consumers) ========
-// 各子模块拆分后，旧路径 `'../scene/camera/camera'` 仍是唯一对外入口，
-// 所有公开符号在此处统一 re-export，避免下游消费者改动 import 路径。
+// 各子模块拆分后，旧路径 `'../scene/camera/camera'` 仍是唯一对外入口。
+// 仅 re-export 下游消费者实际使用的公开符号；内部协调 API（如 restoreBoneLockIfEnabled、
+// setSyncAxesCallback）和仅 camera.ts 内部使用的符号不 re-export，避免 knip 未使用导出告警。
 export type {
     CameraMode,
     CameraControl,
@@ -743,7 +744,6 @@ export type {
     CameraPreset,
 } from './camera-state';
 export {
-    defaultCameraPreset,
     getCameraMode,
     getCameraControl,
     getCameraBehavior,
@@ -760,21 +760,16 @@ export {
     getCameraVmdPath,
     hasCameraVmd,
     getFov,
-    isTouchDevice,
-    getCameraPreset,
-    setCameraPreset,
     getCurrentCamera,
-    setCurrentCamera,
-    getFocusCenterY,
-    setFocusCenterY,
 } from './camera-state';
+// @knipkeep — 测试通过 vi.importActual 动态访问，knip 静态分析无法识别
+export { defaultCameraPreset, setCameraPreset } from './camera-state';
 export {
     loadCameraVmd,
     clearCameraVmd,
     animateCameraVmd,
 } from './camera-vmd';
 export {
-    applyCameraUserSettings,
     refreshCameraUserSettings,
 } from './camera-factory';
 export {
@@ -783,13 +778,12 @@ export {
     setBoneLockDamping,
     getBoneLockDamping,
     getFocusedModelBoneNames,
-    restoreBoneLockIfEnabled,
 } from './camera-bone-lock';
 export {
-    setAutoCameraEnabled,
-    isAutoCameraEnabled,
     setAutoCameraBeatsPerSwitch,
     getAutoCameraBeatsPerSwitch,
     restoreAutoCameraState,
-    setSyncAxesCallback,
 } from './camera-auto';
+// @knipkeep — 测试通过 vi.importActual 动态访问（setAutoCameraEnabled/isAutoCameraEnabled）；
+// setSyncAxesCallback 为内部协调 API，测试手动注入双轴派生回调
+export { setAutoCameraEnabled, isAutoCameraEnabled, setSyncAxesCallback } from './camera-auto';
