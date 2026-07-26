@@ -19,6 +19,7 @@ import { clamp, clamp01, lerp, lerpArray, setKey } from '@/core/utils';
 import { logWarn } from '@/core/logger';
 import type { EnvState } from '@/core/config';
 import { getDirLight } from './lighting';
+import { clearTextureLRU } from '../manager/texture-lru';
 
 // ======== Tone Mapping Modes ========
 
@@ -155,6 +156,8 @@ export function disposeRenderer(): void {
         pipeline.dispose();
         pipeline = undefined;
     }
+    // [doc:adr-189] Phase 1.3: 清空纹理 LRU 缓存，释放 ArrayBuffer 避免泄漏
+    clearTextureLRU();
     _scene = null;
     _modelRegistry = null;
     _triggerAutoSave = null;

@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 70 | 540 |
-| 3D 场景 | 103 | 1053 |
+| 3D 场景 | 104 | 1057 |
 | 菜单 & UI | 66 | 308 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 18 | 131 |
@@ -1026,6 +1026,10 @@
 | `setModelWireframe()` | `scene/manager/model-ops` | — |
 | `setPhysicsCategory()` | `scene/manager/model-ops` | — |
 | `stopVMD()` | `scene/manager/model-ops` | — |
+| `_resetTextureLRUForTest()` | `scene/manager/texture-lru` | 仅供测试：重置缓存状态。 |
+| `clearTextureLRU()` | `scene/manager/texture-lru` | 清空 LRU 缓存。在 disposeRenderer 中调用，释放所有缓存的纹理 ArrayBuffer。 |
+| `readTextureWithLRU()` | `scene/manager/texture-lru` | 带 LRU 缓存的纹理读取。命中直接返回 ArrayBuffer，未命中则 readFileBytes 后缓存。 |
+| `textureLRUSize()` | `scene/manager/texture-lru` | 返回当前缓存条目数（供测试使用）。 |
 | `ThumbnailSource()` | `scene/manager/thumbnail-capture` | — |
 | `renderInstanceThumbnail()` | `scene/manager/thumbnail-capture` | 用离屏 RenderTargetTexture 渲染指定模型实例的「当前骨骼姿态」并保存为缩略图。 |
 | `renderPropThumbnail()` | `scene/manager/thumbnail-capture` | 道具缩略图捕获（补闭环）：复用同一离屏 RT 渲染逻辑。 |
@@ -2124,5 +2128,5 @@
 
 ---
 
-> 共 262 个文件，2078 个导出符号。
+> 共 263 个文件，2082 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。
