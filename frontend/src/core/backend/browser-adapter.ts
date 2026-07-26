@@ -434,6 +434,12 @@ async function _writeModelWithTextures(
 // 键规约与 idb.ts saveModel 一致：file:<stem> + entry:<stem>
 let _fsaRootHandle: FileSystemDirectoryHandle | null = null;
 
+// [doc:adr-183] 扫描并发守护：防止用户反复点击「设置根目录」触发并发 _scanDirIntoIDB。
+// 无锁时第二次 SelectDir 的 _clearScannedEntries 会清空第一次扫描已写入的 entry，
+// 两次扫描的 entry 写入相互覆盖，用户表现「只显示一个文件夹」「扫描永远完不成」。
+// 锁存进行中的 Promise，并发调用直接 await 同一 Promise，避免重复扫描 + 数据竞争。
+let _scanningPromise: Promise<void> | null = null;
+
 // [doc:adr-177] FSA 目录句柄的异步迭代器接口（TS DOM lib 未含 values()，手动断言）
 interface FsaDirHandle extends FileSystemDirectoryHandle {
     values(): AsyncIterableIterator<FileSystemHandle>;
@@ -907,6 +913,28 @@ async function _scanDirIntoIDB(
         const subRelPath = relPath ? `${relPath}/${dirName}` : dirName;
         await _scanDirIntoIDB(subHandle, subRelPath, effectivePmx, depth + 1);
     }
+}
+
+/**
+ * [doc:adr-183] 带并发守护的扫描入口。
+ * 锁存进行中的扫描 Promise，并发调用（用户反复点击「设置根目录」/ ScanModelDir 自动恢复）
+ * 直接 await 同一 Promise，避免 _clearScannedEntries 清空正在进行的扫描写入导致数据竞争。
+ * 扫描完成后清锁，允许下一次主动重扫。
+ */
+async function _scanRootGuarded(): Promise<void> {
+    if (_scanningPromise) {
+        console.info('[web-scan] 扫描进行中，复用现有 Promise 避免并发清空');
+        return _scanningPromise;
+    }
+    if (!_fsaRootHandle) return;
+    _scanningPromise = (async () => {
+        try {
+            await _scanDirIntoIDB(_fsaRootHandle);
+        } finally {
+            _scanningPromise = null;
+        }
+    })();
+    return _scanningPromise;
 }
 
 export const browserAdapter: BackendService = {
@@ -1619,7 +1647,7 @@ export const browserAdapter: BackendService = {
             _fsaRootHandle = restored;
             console.info('[web-scan] ScanModelDir: 自动恢复持久化句柄并重扫');
         }
-        await _scanDirIntoIDB(_fsaRootHandle);
+        await _scanRootGuarded();
         return _listModels();
     },
 
@@ -1632,11 +1660,17 @@ export const browserAdapter: BackendService = {
             window as { showDirectoryPicker?: () => Promise<FileSystemDirectoryHandle> }
         ).showDirectoryPicker;
         if (typeof picker !== 'function') throw new NotSupportedError('SelectDir');
+        // [doc:adr-183] 若扫描进行中，等其完成再让用户重选——避免 _clearScannedEntries
+        // 清空正在进行的扫描写入。用户在 zip 展开慢时反复点击是常见误操作。
+        if (_scanningPromise) {
+            console.info('[web-scan] SelectDir: 等待当前扫描完成再允许重选');
+            await _scanningPromise;
+        }
         _fsaRootHandle = await picker();
         // [doc:adr-180] 持久化句柄，供下次启动无手势自动恢复（结构化克隆，IndexedDB 原生支持）。
         await idbSet('config', 'fsaRootHandle', _fsaRootHandle);
         console.info(`[web-scan] SelectDir: 用户选择目录 "${_fsaRootHandle.name}"，开始扫描...`);
-        await _scanDirIntoIDB(_fsaRootHandle);
+        await _scanRootGuarded();
         console.info('[web-scan] SelectDir: 扫描完成');
         return 'web://selected-dir';
     },
