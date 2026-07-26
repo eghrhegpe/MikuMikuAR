@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -66,6 +67,45 @@ func (a *App) CheckForUpdate() (*UpdateCheckResult, error) {
 		res.Size = size
 	}
 	return res, nil
+}
+
+// DownloadAndRunInstaller downloads the latest desktop installer to a temp
+// directory and launches it (never silent-installs). The user must interact
+// with the OS-level installer wizard (UAC on Windows, Finder on macOS, etc.).
+// Desktop-only; returns an error result on Android or failure.
+func (a *App) DownloadAndRunInstaller() (*InstallResult, error) {
+	if isAndroid {
+		return &InstallResult{Error: "DownloadAndRunInstaller is only supported on desktop"}, nil
+	}
+	_, _, assets, err := latestGitHubRelease(githubRepo)
+	if err != nil {
+		return &InstallResult{Error: err.Error()}, nil
+	}
+	dlURL, name, size := matchDesktopAsset(assets)
+	if dlURL == "" {
+		return &InstallResult{Error: "no desktop installer found in latest release"}, nil
+	}
+	dest := filepath.Join(os.TempDir(), name)
+	if dlErr := downloadFile(dlURL, dest, size); dlErr != nil {
+		return &InstallResult{Error: fmt.Sprintf("download: %v", dlErr)}, nil
+	}
+	// Launch the downloaded installer (never silent-install).
+	// The OS-level dialog (UAC / Gatekeeper / polkit) handles elevation.
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command(dest)
+	case "darwin":
+		cmd = exec.Command("open", dest)
+	case "linux":
+		cmd = exec.Command("xdg-open", dest)
+	default:
+		return &InstallResult{LocalPath: dest, Error: fmt.Sprintf("unsupported desktop OS: %s", runtime.GOOS)}, nil
+	}
+	if startErr := cmd.Start(); startErr != nil {
+		return &InstallResult{LocalPath: dest, Error: fmt.Sprintf("launch: %v", startErr)}, nil
+	}
+	return &InstallResult{LocalPath: dest, Success: true}, nil
 }
 
 // DownloadApk downloads the latest APK to the app cache directory (Android only).

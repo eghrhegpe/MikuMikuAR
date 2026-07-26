@@ -1132,6 +1132,9 @@ export const browserAdapter: BackendService = {
     async DownloadApk(): Promise<InstallResult | null> {
         return { localPath: '', success: false, error: 'not supported on web' };
     },
+    async DownloadAndRunInstaller(): Promise<InstallResult | null> {
+        return { localPath: '', success: false, error: 'not supported on web' };
+    },
     async ExtractZip(zipPath: string, _innerPath: string): Promise<ExtractResult | null> {
         // [doc:adr-177] 浏览器侧：调用方先将 zip 字节写入 IndexedDB file:<zipStem>，
         // 此处 readFileBytes 读回 → JSZip 解压 → 内部资源落地 → 返回主 PMX + 虚拟 dir。

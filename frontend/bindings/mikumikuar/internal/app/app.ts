@@ -136,6 +136,16 @@ export function DeleteRenderPreset(name: string): $CancellablePromise<void> {
 }
 
 /**
+ * DownloadAndRunInstaller downloads the latest desktop installer to a temp
+ * directory and launches it (never silent-installs). The user must interact
+ * with the OS-level installer wizard (UAC on Windows, Finder on macOS, etc.).
+ * Desktop-only; returns an error result on Android or failure.
+ */
+export function DownloadAndRunInstaller(): $CancellablePromise<$models.InstallResult | null> {
+    return $Call.ByID(2831303811);
+}
+
+/**
  * DownloadApk downloads the latest APK to the app cache directory (Android only).
  * Returns the local file path for the caller to trigger installation.
  */
