@@ -11,25 +11,40 @@ exec 1>&2
 set -e
 ROOT="$(git rev-parse --show-toplevel)"
 
-# ── 解析推送范围（从 stdin 读取 pre-push refs） ──
-RANGE=""
-while read _ local_sha _ remote_sha; do
+# ── 解析推送范围（从 stdin 读取 pre-push refs，支持多 ref 推送） ──
+# 输入格式：<local-ref> <local-sha> <remote-ref> <remote-sha>
+# 策略：对所有非删除 ref 取变更并集，RANGE 用空格分隔供后续 grep 遍历
+RANGES=""
+while read _local_ref local_sha _remote_ref remote_sha; do
+  # 跳过删除推送（local_sha 为零）
   [ "$local_sha" = "0000000000000000000000000000000000000000" ] && continue
   if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
-    MERGE_BASE="$(git merge-base HEAD origin/main 2>/dev/null || true)"
+    # 新分支推送：用 merge-base 取与对应远程分支的公共祖先
+    # 从 local_ref 解析分支名（refs/heads/<branch> → <branch>）
+    branch="${_local_ref#refs/heads/}"
+    remote_ref="origin/$branch"
+    MERGE_BASE="$(git merge-base HEAD "$remote_ref" 2>/dev/null || true)"
+    # 回退到 origin/main（兼容首次推送无远程分支的场景）
+    if [ -z "$MERGE_BASE" ]; then
+      MERGE_BASE="$(git merge-base HEAD origin/main 2>/dev/null || true)"
+    fi
     if [ -n "$MERGE_BASE" ]; then
-      RANGE="$MERGE_BASE..$local_sha"
+      RANGES="$RANGES $MERGE_BASE..$local_sha"
     fi
   else
-    RANGE="$remote_sha..$local_sha"
+    RANGES="$RANGES $remote_sha..$local_sha"
   fi
-  break
 done
 
-# ── 获取变更文件清单 ──
+# ── 获取变更文件清单（合并所有 RANGES） ──
 CHANGED=""
-if [ -n "$RANGE" ]; then
-  CHANGED="$(git diff --name-only "$RANGE" 2>/dev/null || true)"
+if [ -n "$RANGES" ]; then
+  for r in $RANGES; do
+    CHANGED="$CHANGED
+$(git diff --name-only "$r" 2>/dev/null || true)"
+  done
+  # 去重 + 去空行
+  CHANGED="$(echo "$CHANGED" | sort -u | sed '/^$/d')"
 fi
 
 # ── 判断变更域 ──
@@ -54,89 +69,105 @@ if [ -n "$CHANGED" ]; then
 fi
 
 # ── P6: bindings 同步性（Go 变动时检查；不可自动修复） ──
+# 实跑 generate:bindings 对比工作区：
+#   - 生成结果与当前一致（含"Go 改了但 bindings 内容恰好没变"的合法场景）→ 放行
+#   - 生成结果有 diff（bindings 过期）→ 阻断，提示用户 amend
 if [ "$GO_CHANGED" = "true" ]; then
-  echo "[pre-push] check:bindings"
+  echo "[pre-push] check:bindings（实跑 generate:bindings 验证同步性）"
   if [ ! -d "$ROOT/frontend/bindings" ] || [ -z "$(ls -A "$ROOT/frontend/bindings" 2>/dev/null)" ]; then
-    echo "❌ frontend/bindings/ 为空。请运行: npm run generate:bindings"
+    echo "❌ frontend/bindings/ 为空。请运行: cd frontend && npm run generate:bindings"
     exit 1
   fi
-  if [ -n "$CHANGED" ]; then
-    if ! echo "$CHANGED" | grep -q '^frontend/bindings/'; then
-      echo "❌ Go 文件已变更但 frontend/bindings/ 未同步。"
-      echo "   请运行: cd frontend && npm run generate:bindings"
-      echo "   然后 git add frontend/bindings/ && git commit --amend"
-      exit 1
-    fi
+  if ! (cd "$ROOT/frontend" && npm run generate:bindings >/dev/null 2>&1); then
+    echo "❌ generate:bindings 执行失败。请检查 Go 代码是否能编译。"
+    echo "   手动运行: cd frontend && npm run generate:bindings 查看错误"
+    exit 1
+  fi
+  if ! git diff --quiet -- frontend/bindings/ 2>/dev/null; then
+    echo "❌ Go 文件已变更但 frontend/bindings/ 未同步。"
+    echo "   hook 已运行 generate:bindings 生成最新版本，请检查 diff 后 amend："
+    echo "     git add frontend/bindings/ && git commit --amend --no-edit"
+    exit 1
   fi
 fi
 
-# ── check:status（可自动修复） ──
+# ── check:status（可自动修复，amend 进当前 commit） ──
 echo "[pre-push] check:status"
 cd "$ROOT" && node scripts/gen-status-index.mjs --reverse --check || {
   echo "⚠️  status.md 未同步，自动修复中..."
   cd "$ROOT" && node scripts/gen-status-index.mjs --reverse
   git add docs/status.md 2>/dev/null || true
-  echo "⚠️  已自动更新 docs/status.md。推送成功后记得提交。"
+  git commit --amend --no-edit 2>/dev/null && echo "⚠️  已自动更新 docs/status.md 并 amend 进当前 commit。" || echo "⚠️  已 stage docs/status.md（无 HEAD 可 amend，请手动 commit）。"
 }
 
-# ── check:funcmap（可自动修复） ──
+# ── check:funcmap（可自动修复，amend 进当前 commit） ──
 echo "[pre-push] check:funcmap"
 cd "$ROOT" && node scripts/gen-funcmap.mjs --check || {
   echo "⚠️  function-map.md 未同步，自动修复中..."
   cd "$ROOT" && node scripts/gen-funcmap.mjs
   git add docs/function-map.md 2>/dev/null || true
-  echo "⚠️  已自动更新 docs/function-map.md。推送成功后记得提交。"
+  git commit --amend --no-edit 2>/dev/null && echo "⚠️  已自动更新 docs/function-map.md 并 amend 进当前 commit。" || echo "⚠️  已 stage docs/function-map.md（无 HEAD 可 amend，请手动 commit）。"
 }
 
-# ── lint（仅 TS/非纯文档变更时；不可自动修复） ──
-if [ "$TS_CHANGED" = "true" ] || [ "$DOCS_ONLY" = "false" ]; then
+# ── lint（仅 TS/JS 变更时；不可自动修复） ──
+# 纯 Go / 纯文档变更不触发前端 lint（Go 有 go vet，文档无 lint 必要）
+if [ "$TS_CHANGED" = "true" ]; then
   echo "[pre-push] lint（0 errors 放行）"
   cd "$ROOT/frontend" && npm run lint || {
     echo "❌ ESLint 检出 error。修复: npm run lint 查看详情"
     exit 1
   }
 else
-  echo "[pre-push] lint （跳过：未涉及 TS/JS 源码）"
+  echo "[pre-push] lint（跳过：未涉及 TS/JS 源码）"
 fi
 
-# ── test:coverage（跳过纯文档/纯 Go 变更；不可自动修复） ──
-if [ "$DOCS_ONLY" = "false" ]; then
+# ── test:coverage（仅 TS/JS 变更时；不可自动修复） ──
+# 纯 Go 变更有 Go 测试覆盖，纯文档变更无逻辑可测，均跳过前端测试
+if [ "$TS_CHANGED" = "true" ]; then
   echo "[pre-push] test:coverage（门禁: lines≥35% functions≥30%）"
   cd "$ROOT/frontend" && npm run test:coverage || {
     echo "❌ 测试失败或覆盖率低于阈值。修复: npm run test:coverage 查看详情"
     exit 1
   }
 else
-  echo "[pre-push] test:coverage（跳过：纯文档/纯 Go 变更）"
+  echo "[pre-push] test:coverage（跳过：纯 Go / 纯文档变更）"
 fi
 
-# ── P7: deadcode 基线（可自动修复） ──
+# ── P7: deadcode 基线（可自动修复，amend 进当前 commit） ──
 if [ "$TS_CHANGED" = "true" ]; then
   echo "[pre-push] deadcode（基线治理：knip + jscpd）"
   cd "$ROOT/frontend" && node ../scripts/check-deadcode-baseline.mjs || {
     echo "⚠️  死代码/重复代码超过基线，自动更新基线..."
     node ../scripts/check-deadcode-baseline.mjs --update
-    echo "⚠️  基线已更新。如有新增死代码，考虑清理。"
+    git add ../docs/.deadcode-baseline.json 2>/dev/null || true
+    git commit --amend --no-edit 2>/dev/null && echo "⚠️  deadcode 基线已更新并 amend 进当前 commit。" || echo "⚠️  deadcode 基线已 stage（无 HEAD 可 amend，请手动 commit）。"
+    echo "⚠️  如有新增死代码，考虑后续清理。"
   }
 fi
 
-# ── check:docs（ERROR 阻断；INFO 基线自动更新） ──
+# ── check:docs（ERROR 阻断；INFO 基线自动修复 + amend） ──
+# 漂移分级：ERROR（架构树/ADR 失效等）必须人工修复；INFO（符号覆盖率缺口）可自动更新基线
+run_check_docs() {
+  cd "$ROOT" && node scripts/check-doc-drift.mjs --baseline
+}
 if [ "$DOCS_ONLY" = "false" ]; then
   echo "[pre-push] check:docs（ERROR 阻断；INFO 基线自动修复）"
-  cd "$ROOT" && node scripts/check-doc-drift.mjs --baseline || {
+  if ! run_check_docs; then
     # 先尝试自动更新 INFO 基线
-    cd "$ROOT" && node scripts/check-doc-drift.mjs --baseline-update 2>/dev/null && {
-      echo "⚠️  INFO 基线已自动更新。"
-      # 重新跑一遍确认是否只剩 ERROR
-      cd "$ROOT" && node scripts/check-doc-drift.mjs --baseline || {
+    if cd "$ROOT" && node scripts/check-doc-drift.mjs --baseline-update 2>/dev/null; then
+      echo "⚠️  INFO 基线已自动更新，amend 进当前 commit..."
+      git add docs/.doc-check-baseline.json 2>/dev/null || true
+      git commit --amend --no-edit 2>/dev/null && echo "⚠️  已 amend。" || echo "⚠️  已 stage（无 HEAD 可 amend）。"
+      # 重新跑确认是否只剩 ERROR
+      if ! run_check_docs; then
         echo "❌ 文档漂移 ERROR，需人工修复。用 'node scripts/check-doc-drift.mjs --baseline' 查看详情"
         exit 1
-      }
-    } || {
+      fi
+    else
       echo "❌ 文档漂移 ERROR，需人工修复。用 'node scripts/check-doc-drift.mjs --baseline' 查看详情"
       exit 1
-    }
-  }
+    fi
+  fi
 else
   echo "[pre-push] check:docs（跳过：纯文档变更）"
 fi
