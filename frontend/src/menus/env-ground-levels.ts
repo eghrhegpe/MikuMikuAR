@@ -6,7 +6,7 @@ import type { PopupLevel } from '../core/config';
 import { slideRow, addSliderRow, addClearRow, buildPresetChipGroup } from '../core/ui-helpers';
 import { setEnvState } from '../scene/scene';
 import { t } from '../core/i18n/t';
-import { GROUND_PRESETS, buildGroundPresetEnvState } from '../scene/env/env-ground';
+import { GROUND_PRESETS, buildGroundPresetEnvState } from '../scene/env/env-ground-presets';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 import { buildLevel, openTexturePicker } from './env-level-helpers';

@@ -534,10 +534,10 @@ function _relPathFrom(childRelIdCategory: string, pmxRelPath: string): string {
 }
 
 /** [doc:adr-180] 清掉上一次 FSA 扫描写入的模型库 entry（dir 以 web://selected-dir 开头），根目录重扫前调用，
- * 保证层级彻底自愈且旧塌缩 entry 被清除。仅清 FSA 扫描写入的 entry：
- * 用户导入的 entry 无 dir 字段、bundle 的 dir 以 web://bundle 开头，均不命中，得以保留。
- * 不再碰 file:/dir: 命名空间——扫描对现存资源重写相同 key 覆盖，移除文件的孤儿键无引用、无害，
- * 且避免误删 SelectImportFile 写入的导入模型字节 / 纹理。 */
+ * 保证层级彻底自愈且旧塌缩 entry 被清除。设计可靠性：
+ * - 扫描器(_scanDirIntoIDB)写入的 entry 含 dir 字段，值为 'web://selected-dir/...'。
+ * - 手动导入(SelectImportFile/_writeModelFile)写入的 entry 无 dir 字段，得以保留。
+ * - bundle entry 的 dir 为 'web://bundle/...'，不匹配前缀，得以保留。 */
 async function _clearScannedEntries(): Promise<void> {
     const keys = (await idbKeys('models')).filter((k) => k.startsWith('entry:'));
     for (const k of keys) {
