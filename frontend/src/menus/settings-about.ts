@@ -185,8 +185,20 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                                         try {
                                             const result = await DownloadApk();
                                             if (result && result.success && result.localPath) {
+                                                // [doc:adr-179] Register one-shot listener for install failures.
+                                                const onInstallFailed = () => {
+                                                    updateLink.textContent = t('settings.about.update.downloadFailed');
+                                                    updateLink.style.pointerEvents = '';
+                                                    if (!openExternalURL(r.url)) {
+                                                        void browser.openURL(r.url);
+                                                    }
+                                                };
+                                                window.addEventListener('update:installFailed', onInstallFailed);
                                                 window.wails?.installApk?.(result.localPath);
                                                 updateLink.textContent = t('settings.about.update.installLaunched');
+                                                setTimeout(() => {
+                                                    window.removeEventListener('update:installFailed', onInstallFailed);
+                                                }, 10000);
                                             } else {
                                                 const errMsg = result?.error || '';
                                                 updateLink.textContent = t('settings.about.update.downloadFailed');

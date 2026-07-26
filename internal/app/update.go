@@ -78,7 +78,7 @@ func (a *App) DownloadApk() (*InstallResult, error) {
 	if err != nil {
 		return &InstallResult{Error: err.Error()}, nil
 	}
-	dlURL, name, _ := matchAndroidAsset(assets)
+	dlURL, name, size := matchAndroidAsset(assets)
 	if dlURL == "" {
 		return &InstallResult{Error: "no APK asset found in latest release"}, nil
 	}
@@ -91,7 +91,7 @@ func (a *App) DownloadApk() (*InstallResult, error) {
 		return &InstallResult{Error: fmt.Sprintf("mkdir: %v", mkErr)}, nil
 	}
 	dest := filepath.Join(destDir, name)
-	if dlErr := downloadFile(dlURL, dest); dlErr != nil {
+	if dlErr := downloadFile(dlURL, dest, size); dlErr != nil {
 		return &InstallResult{Error: fmt.Sprintf("download: %v", dlErr)}, nil
 	}
 	return &InstallResult{LocalPath: dest, Success: true}, nil
@@ -187,7 +187,10 @@ func matchDesktopAsset(assets []releaseAsset) (string, string, int64) {
 }
 
 // downloadFile fetches url and writes the body to destPath.
-func downloadFile(url, destPath string) error {
+// expectedSize is the size declared by the release API asset metadata (bytes).
+// When non-zero, the written file size is verified against it; a mismatch
+// means a truncated or corrupted download and the incomplete file is removed.
+func downloadFile(url, destPath string, expectedSize int64) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
@@ -222,7 +225,21 @@ func downloadFile(url, destPath string) error {
 		}
 	}()
 
-	if _, err = io.Copy(f, resp.Body); err != nil {
+	written, err := io.Copy(f, resp.Body)
+	if err != nil {
+		return err
+	}
+
+	// [doc:adr-179] Integrity check: compare written bytes against the
+	// asset metadata size (primary) and the HTTP Content-Length header
+	// (secondary, when available). Either mismatch means the download is
+	// incomplete or corrupted.
+	if expectedSize > 0 && written != expectedSize {
+		err = fmt.Errorf("size mismatch: wrote %d bytes, expected %d", written, expectedSize)
+		return err
+	}
+	if resp.ContentLength > 0 && written != resp.ContentLength {
+		err = fmt.Errorf("size mismatch: wrote %d bytes, Content-Length %d", written, resp.ContentLength)
 		return err
 	}
 	return nil

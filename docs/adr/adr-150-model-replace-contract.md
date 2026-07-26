@@ -1,8 +1,8 @@
 # ADR-150: 模型替换原子操作契约（Model Replace Contract）
 
-- **状态**: 🔄 实施中（2026-07-22 重构方案，决策二已落地）
+- **状态**: ✅ 已完成（决策二完整落地：`captureInheritedState` + `applyInheritedState` + `startReplaceModel` 集成 + undo 保护 + toast 治理；2026-07-26 审核通过）
 - **日期**: 2026-07-20
-- **完成日期**: 2026-07-22（决策二状态继承落地）
+- **完成日期**: 2026-07-26
 - **相关**: ADR-131（BrowseOutcome 统一契约）、ADR-045（统一 LoadManager 队列）、ADR-121（全局动作意图）、ADR-124（文件系统架构）、ADR-167（场景级动作库）、ADR-127（场景级撤销）
 
 ## 方案裁剪说明（2026-07-22 重估）
@@ -68,52 +68,58 @@ LoadManager
 
 `replaceModel` 不再是"load + remove"的二元操作，而是一个单一事务（Transaction），在单条 Promise 链内完成全部继承逻辑。
 
-#### 执行序列
+#### 执行序列（实际实现，2026-07-26 终态）
 
 ```
-1. snapshot ← 保存旧模型的可继承状态
-   ├── vmdPath / vmdName（动作）
-   ├── boneLockBoneName（骨骼锁定）
-   ├── transform（position / rotation / scaling）
-   ├── orbit（alpha / beta / radius）
-   ├── visibility / wireframe / opacity
+1. snapshot ← captureInheritedState(oldInst)  — 捕获旧模型可继承状态（model-ops.ts:341）
+   ├── sceneMotionId（VMD 引用，通过 ADR-167 场景动作库）
+   ├── boneLockBoneName（骨骼锁定骨名）
+   ├── transform（position / rotation / scaling / positionMode）
+   ├── orbit（azimuth / elevation / distance）
+   ├── visibility / wireframe / opacity / showBoneLines / showBoneJoints
    ├── physicsEnabled
-   ├── gazeEnabled
-   └── morphWeights
-2. loadPMXFile(newPath)          — 新模型解析（通过 LoadManager.load）
-3. [子步骤] loadVMDInternal(snapshot.vmdPath)
-   — 折叠进原子操作，不走队列，不对外暴露
-   — 失败时静默回退（见下表），不阻断 replace
-4. [子步骤] applyBoneLock(snapshot.boneLockBoneName)
-   — 同名骨匹配，失败则静默解锁
-5. [子步骤] applyRemainingState(snapshot)
-   — transform / orbit / visibility / physics / gaze / morph
-6. removeModel(oldId)            — 旧模型销毁
-7. UI 导航（BrowseOutcome）
+   ├── boneOverrides（骨骼覆盖，含 euler/weight/enabled/absolute）
+   └── feet（脚部地面跟随状态）
+   ⚠️ 不含 outfit（重置）、morph（跨模型通道不通用）、perception pin（P2 后续）
+2. pushUndoSnapshot()               — 场景撤销快照（替换前状态）
+3. loadManager.load()               — 新模型解析（串行队列 + AbortController）
+4. applyInheritedState(newId, snap) — 状态继承（model-ops.ts:371）
+   ├── modelManager setter 写入基础状态
+   ├── boneOverrides 过滤（仅对新模型存在的骨骼应用）
+   ├── sceneMotionId 赋值 motionSlots
+   ├── feet 深拷贝
+   └── boneLock 同名骨匹配（失败静默解锁）
+5. applyIntentToModel(id, intent)   — sceneMotionId 不同时重新触发 VMD 应用
+6. removeModel(oldId)               — 旧模型销毁
+7. offerSceneUndoAndRefresh()       — 撤销 toast + reRender
+8. UI 导航（BrowseOutcome）
 ```
 
-#### 状态继承裁定表
+#### 状态继承裁定表（2026-07-26 终态，对齐实施计划）
 
-| 状态 | 继承 | 失败行为 |
-|------|------|---------|
-| Transform (position/rotation/scaling) | ✅ 继承 | — |
-| Orbit (alpha/beta/radius) | ✅ 继承 | — |
-| Bone Lock | ✅ 同名骨匹配 | 无同名骨 → 静默解锁，UI 开关同步关闭 |
-| VMD 动作 | ✅ 折叠进 replace | 见下方 VMD 失败边界表 |
-| 可见性 / 线框 / 透明度 | ✅ 继承 | — |
-| 物理开关 | ✅ 继承 | — |
-| 视线追踪 | ✅ 继承 | — |
-| Morph 权重 | ✅ 继承 | — |
-| **换装 Outfit** | ❌ **不继承**（重置） | — |
+| 状态 | 继承 | 应用方式 | 失败行为 |
+|------|------|---------|---------|
+| Transform (position/rotation/scaling) | ✅ 继承 | `modelManager.setPosition/setRotation/setScaling` | — |
+| Orbit (azimuth/elevation/distance) + positionMode | ✅ 继承 | `modelManager.setOrbit/setPositionMode` | — |
+| Visibility / Wireframe / Opacity | ✅ 继承 | `modelManager.setVisibility/setWireframe/setOpacity` | — |
+| Bone Lines / Bone Joints 可见性 | ✅ 继承 | `modelManager.setBoneLinesVis/setBoneJointsVis` | — |
+| Physics Enabled | ✅ 继承 | `modelManager.setPhysics` | — |
+| Bone Overrides（骨骼覆盖） | ✅ 同名骨匹配 | 遍历 `snap.boneOverrides`，`setBoneOverride` | 新模型无同名骨 → 静默跳过（不写入 store） |
+| Feet State（脚部地面跟随） | ✅ 继承 | 直接赋值 `inst.feet`（结构化克隆） | — |
+| VMD 动作（sceneMotionId） | ✅ 继承引用 + 手动 apply | 赋值 `inst.motionSlots.primary.sceneMotionId`，`applyIntentToModel` 重新广播 | 引用失效由 ADR-167 回退处理；intent 未命中静默跳过 |
+| Bone Lock | ✅ 同名骨匹配 | `setOrbitBoneLock(true, oldBoneName)` | 无同名骨 → 不调用 lock，日志提示 `[adr-150] bone lock cleared` |
+| Morph 权重 | ❌ **不继承** | — | morph 存于 `mmdModel.morph` 非 `ModelInstance`，跨模型 morph 通道名不通用，强行继承易错。留 P2 后续 |
+| 视线追踪（perception pin） | ❌ P2 后续 | — | 自动 `activatePerception(id)` 已够用，pin 状态跨模型无意义 |
+| **换装 Outfit** | ❌ **不继承**（重置） | — | — |
 
 #### VMD 继承失败边界
 
-VMD 继承在任何失败情况下**均不阻断 replaceModel 整体成功**。动画是尽力而为的附加值，非原子操作的一部分。
+VMD 继承通过 `sceneMotionId` 引用场景动作库（ADR-167），在任何失败情况下**均不阻断 replaceModel 整体成功**。动画是尽力而为的附加值，非原子操作的一部分。
 
 | 场景 | 行为 | 日志 |
 |------|------|------|
 | 骨骼错位（不完美） | ✅ 继续播，不干预 | — |
-| VMD 文件路径失效 | ✅ 静默回退 idle，新模型无动画 | `[replace] VMD path invalid, skipping inherit` |
+| sceneMotionId 引用的动作不存在 | ✅ 静默跳过，新模型保留 model-loader 默认 VMD | 无（intent 未命中，`if (intent)` 守卫跳过） |
 | VMD 解析异常 | ✅ catch，新模型无动画 | `[replace] VMD inherit failed: <error>` |
 
 #### Bone Lock 同名骨不存在的处理
@@ -128,14 +134,24 @@ VMD 继承在任何失败情况下**均不阻断 replaceModel 整体成功**。�
 
 用户感知：相机从锁定某块骨骼的逻辑，自然回退到自由环绕，无违和感。
 
-### 决策三（衍生效应）：VMD loadInternal
+#### 实施文件索引
 
-引入 `loadVMDInternal(path, targetModelId)` 供 replace 原子操作内部使用。其特性：
+| 文件 | 责任 |
+|------|------|
+| `frontend/src/scene/manager/model-ops.ts:312-435` | `ReplaceSnapshot` 类型 + `captureInheritedState` + `applyInheritedState` |
+| `frontend/src/menus/library-actions.ts:194-317` | `startReplaceModel` 编排：snapshot → load → apply → remove → undo |
+| `frontend/src/__tests__/scene/replace-model-inherit.test.ts` | 11 单测（capture 4 + apply 7） |
 
-- 复用 VMD 解析的底层能力（与 `loadVMDFromPath` 共享解析逻辑）
-- 不调用 `enqueue`，不走 LoadManager 调度器
-- 不产生独立 LoadManager trace（日志上标记为 `[replace] 子步骤`，而非独立 Task）
-- 不在 UI 上产生 loading 指示或错误弹窗
+### 决策三（衍生效应）：VMD loadInternal — **[已移除]**
+
+> 引入 `loadVMDInternal(path, targetModelId)` 供 replace 原子操作内部使用。其特性：
+> 
+> - 复用 VMD 解析的底层能力（与 `loadVMDFromPath` 共享解析逻辑）
+> - 不调用 `enqueue`，不走 LoadManager 调度器
+> - 不产生独立 LoadManager trace（日志上标记为 `[replace] 子步骤`，而非独立 Task）
+> - 不在 UI 上产生 loading 指示或错误弹窗
+>
+> **移除原因（2026-07-22）**：后 ADR-167 时代 VMD 通过 `sceneMotionId` 引用场景动作库，`model-loader.ts` 已有自动应用逻辑，无需半公开加载路径。实际实现中 VMD 继承走 `applyIntentToModel` 公共 API。详见方案裁剪说明。
 
 ## 替代方案
 
@@ -151,18 +167,22 @@ VMD 继承在任何失败情况下**均不阻断 replaceModel 整体成功**。�
 ### 正面
 
 - `replaceModel` 可预测：同一输入产生同一结果（状态继承使替换等价于"换模型但不换上下文"）
-- 反序列化获得 LoadManager 的队列保护和 trace 能力，便于调试场景崩溃
-- 统一 trace 链路：所有模型加载（用户触发 + 系统恢复）都在 LoadManager 可追溯
-- VMD 和 bone lock 继承的失败边界清晰，避免下游依赖误以为"替换一定带动作"
+- `captureInheritedState` / `applyInheritedState` 纯函数设计：11 单测覆盖，深拷贝隔离，零副作用
+- VMD 继承走 ADR-167 sceneMotionId 公共引用，不引入新的半公开加载路径
+- Bone Override / Bone Lock 继承有同名骨过滤，失败边界清晰，不堆积无效 store 条目
+- undo 保护复用 ADR-127/158 既有机制：替换前全量快照 → 替换后撤销 toast
+- toast 治理：替换 zip 含 VMD+音频时从 5 条堆叠降为 1 条（"模型已替换 + 撤销"）
 
 ### 负面
 
-- `loadVMDInternal` 引入一条"半公开"的加载路径，需在编码时明确标记其只供原子操作内部使用
-- restore 插队逻辑增加了调度器的复杂度，单队 priority 需要维护 invariant：「用户 load 不被 abort，restore 抱团不被插断」
-- 反序列化迁移到 restore() 需要改动 `scene-serialize.ts` 的模型恢复循环
+- ~~`loadVMDInternal` 引入一条"半公开"的加载路径~~ — 已移除（走 ADR-167 sceneMotionId + `applyIntentToModel` 公共 API）
+- ~~restore 插队逻辑增加调度器复杂度~~ — 决策一永久搁置，未引入
+- ~~反序列化迁移到 restore()~~ — 决策一永久搁置，未改动 `scene-serialize.ts`
+- `sceneMotionId` 继承后通过 `applyIntentToModel` 重新触发 VMD 加载，model-loader 可能已完成默认 VMD 加载，造成重复 I/O（首轮 VMD 解析无缓存时浪费）。P4 低优先级优化项。
 
 ### 兼容性
 
-- `loadPMXFile(path, asStage, skipAutoApply)` 签名不对外暴露，外部（库 / 拖放 / 反序列化）统一走 `load()` / `restore()`
-- 已有 `load()` 调用点无 API 变更
-- `scene-serialize.ts` 需从直接调用 `loadPMXFile` 迁移到 `LoadManager.restore()`，属于向后不兼容的内部重构
+- `captureInheritedState` / `applyInheritedState` 为纯函数，无副作用导入
+- 已有 `load()` 调用点无 API 变更；`replaceModel` 调用点对外接口不变（仍是 `replaceModel(m: LibraryModel): void`）
+- ~~`loadPMXFile` 签名内部化、`scene-serialize.ts` 迁移到 `LoadManager.restore()`~~ — 决策一永久搁置，未实施
+- undo 保护复用 ADR-127/158 既有 `pushUndoSnapshot` + `offerSceneUndoAndRefresh` 机制，无新增持久化格式
