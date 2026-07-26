@@ -24,7 +24,7 @@
 |------|---------|
 | 粒子落地溅射 | ADR-026 Phase B |
 | HTTP 目录隔离 | ADR-005 #1 |
-| ADR-023 SAF Spike | ADR-023 Phase C |
+| ADR-023 SAF Spike | ADR-017 Phase C（原 ADR-023 已并入 ADR-017 安卓适配） |
 | 风场广播注释 | ADR-028 |
 | ADR-025/016 核验确认 | ADR-025、ADR-016 |
 

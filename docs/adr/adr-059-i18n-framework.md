@@ -149,7 +149,7 @@ export const SETTINGS = {
 
 ### 3.1 首屏时序
 
-在 `main.ts` init 早期（菜单渲染前）调用 `initI18n()`：
+在 `core/init.ts` 早期（ADR-102 后 init 入口由 `main.ts` 迁出；菜单渲染前）调用 `initI18n()`：
 
 ```ts
 // [doc:adr-059] 菜单渲染前确定语言，避免首帧闪烁
@@ -208,7 +208,7 @@ locale bundle 为同步导入的 TS 对象（体积小、可 tree-shake），无
 - [x] 新建 `core/i18n/locales/zh-CN.ts` + `en.ts`（基准 bundle + 英语试点；`settings`/`lang` 命名空间）
 - [x] `menus/settings-targets.ts` 增 `SETTINGS.LANGUAGE`
 - [x] `menus/settings.ts` 增「语言」行（根级 folder）+ 子菜单 radio（`buildSettingsLanguageLevel`，`lang:` target → `setLang`）
-- [x] `main.ts` init 期 `initI18n()` 读取语言并同步 `<html lang>`
+- [x] `core/init.ts` 期（ADR-102 后由 `main.ts` 迁出）`initI18n()` 读取语言并同步 `<html lang>`
 - [x] 热切换试点：设置根级 9 项 + 语言子菜单均经 `t()` 化，点击语言即 `setLang` → `scheduleRefresh` 热刷新（注：原计划的 `library.ts` 试点改为设置页 pilot——`library.ts` 经核查无用户界面中文字符串，故以设置页为演示载体）
 - [x] 验证：`npm run check` ✅ / `npm run test` ✅（1099 passed）/ `npm run build` ✅
 
@@ -230,7 +230,7 @@ locale bundle 为同步导入的 TS 对象（体积小、可 tree-shake），无
 
 > 注：菜单域（含 `menus/scene-*.ts`、`menus/motion-*.ts`）内的 `setStatus`/toast 已在 Phase 2 一并 `t('scene.*'/'motion.*')` 化；本阶段仅剩**中央/非菜单**模块。
 
-- [x] `core/ui-*.ts`、`core/dialog.ts`、`core/state.ts` 状态消息（剩余缺口：main.ts 快捷键注册表 label/group、settings-shortcuts.ts 渲染、dialog.ts 默认按钮、ui-rows.ts 监听目录行 — 2026-07-10 收尾）
+- [x] `core/ui-*.ts`、`core/dialog.ts`、`core/state.ts` 状态消息（剩余缺口：core/shortcut-registry.ts 快捷键注册表 label/group（ADR-102/036 后由 `main.ts` 迁出）、settings-shortcuts.ts 渲染、dialog.ts 默认按钮、ui-rows.ts 监听目录行 — 2026-07-10 收尾）
 - [x] `physics/*`（cloth-manager 等）、`scene/*` 非菜单模块内 `setStatus`/toast 改为 `t('scene.*'/'physics.*', params)`（核查：scene 11 文件 + physics/ragdoll-manager/cloth-manager 均已 t() 化）
 - [x] `library-core.ts:434` collation 随语言切换（`localeCompare(b.label, getLang())`）
 

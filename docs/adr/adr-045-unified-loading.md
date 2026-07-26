@@ -1,7 +1,7 @@
 # ADR-045: 统一加载与资源管理（精简版）
 
 > **状态**: ✅ 已完成（Phase 1 + Phase 2 全部落地）
-> **关联**: ADR-023（Android 文件访问）、ADR-034（菜单统一）
+> **关联**: ADR-017（原 ADR-023 已并入 ADR-017 安卓适配，Android 文件访问）、ADR-034（菜单统一）
 > **来源**: ADR-045 + ADR-046 合并（2026-07-08）
 
 ---
@@ -68,7 +68,7 @@ class LoadManager {
 | P1 | 道具材质支持（MaterialTarget 抽象）| ✅ |
 | P1 | LoadManager 骨架 + 队列统一 | ✅ |
 | P2 | 统一详情面板骨架（resource-detail-helpers.ts）| ✅ |
-| P3 | Android SAF 桥接 | ✅ ADR-023 Wails Dialog 已解决，无需自建 |
+| P3 | Android SAF 桥接 | ✅ ADR-017（原 ADR-023 已并入 ADR-017 安卓适配）Wails Dialog 已解决，无需自建 |
 
 ---
 
@@ -82,7 +82,7 @@ class LoadManager {
 | `scene-prop-levels.ts` | `loadProp()` | `loadManager.load({kind:'prop',...})` |
 | `motion-popup.ts` | `loadVMDFromPath/loadCameraVmdFromPath/loadAudioFile()` | `loadManager.load(...)` |
 | `model-preset.ts` | `loadVMDFromPath/loadAudioFile()` | `loadManager.load(...)` |
-| `main.ts` (handleDropFile) | `loadVMDFromPath()` | `loadManager.load(...)` |
+| `core/drop-import.ts`（`handleDropFile`，ADR-102 后由 `main.ts` 迁出） | `loadVMDFromPath()` | `loadManager.load(...)` |
 | `scene-serialize.ts` | 直接调用 | **保留直接调用**（反序列化批量原子操作，不应被用户操作打断） |
 
 ### 2B：移除底层锁

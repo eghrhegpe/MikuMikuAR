@@ -187,7 +187,7 @@
 | ADR-15 | 材质编辑器 UI 重构 + 逐材质开关 | 已完成 — buildMatRootLevel/ListLevel/BatchLevel 三级面板 + _matEnabled 开关（2026-06-27） |
 | ADR-14 | 模型加载预设库（角色设置快照） | 已完成 — 保存/加载/库管理/自动匹配/tryAutoApplyPreset 全部实现（2026-06-27） |
 | ADR-13 | Skybox 贴图系统改进 | 已完成 — SelectEnvTextureFile binding + CubeTexture 统一加载 + 天空穹顶（2026-06-27） |
-| ADR-12 | 云渲染改进 — Perlin 噪声 + 双分层 | 已完成 — env-clouds.ts Perlin FBM 噪声 + 双分层云 + 风漂移视差（2026-06-27） |
+| ADR-12 | 云渲染改进 — Perlin 噪声 + 双分层 | ⚠️ 已过时 — 被 **ADR-113（体积云 Ray Marching）** 取代；下方 env-clouds.ts Perlin FBM 双分层云方案已退役（其「否决 GPU 着色器云」理由亦被 ADR-113 推翻）（2026-06-27） |
 | ADR-11 | Wails v3 迁移评估与决策 | 已完成 — 已迁至 Wails v3，项目当前运行于 v3 构建管线（2026-07-03（初版），2026-07-（迁移完成）） |
 | ADR-9 | 模型详情面板 — 运行时模型实例控制 | 已完成 — Phase 1-5 全部完成（动作绑定改为预设间接绑定）（2026-07-16） |
 | ADR-6 | 扫描简化 + 文件名多编码自动检测 | 已完成 — bestDecode/cleanModelName + modelMetaCache 全链路上线（2026-07-16） |

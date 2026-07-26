@@ -1,7 +1,7 @@
 # ADR-036: ShortcutRegistry — 可配置快捷键系统
 
 > **日期**: 2026-07-05
-> **状态**: 已完成 — ShortcutRegistry 核心 + main.ts 迁移 + 设置面板 UI 全部就位
+> **状态**: 已完成 — ShortcutRegistry 核心 + main.ts 迁移 + 设置面板 UI 全部就位（注：main.ts 后于 ADR-102 进一步拆分，已非编辑落点；快捷键注册现由 `core/shortcut-registry.ts` 承载）
 
 ---
 
@@ -11,7 +11,7 @@
 
 | 文件 | 作用域 | 快键键 | 行数 |
 |------|--------|--------|------|
-| `core/main.ts` | 全局 window | Ctrl+1~5(弹窗)、Space(播放)、Escape(关闭)、←→(seek) | ~70 |
+| `core/main.ts`（ADR-102 后已拆分，现由 `core/shortcut-registry.ts` 承载） | 全局 window | Ctrl+1~5(弹窗)、Space(播放)、Escape(关闭)、←→(seek) | ~70 |
 | `menus/menu.ts` | 菜单容器 | ↑↓(导航)、←(返回)、→/Enter(触发) | ~25 |
 | `core/dialog.ts` | 文档 | Escape(取消)、Enter(确认) | ~3 |
 | `core/ui-rows.ts` | slider 元素 | ←↓(减)、→↑(加)、Shift×10 | ~30 |
@@ -121,7 +121,7 @@ Settings > 快捷键（`buildSettingsShortcutsLevel()`）：
 |------|-----|
 | 新增文件 | `core/shortcut-registry.ts` (237行) |
 | 新增测试 | `core/__tests__/shortcut-registry.test.ts` (445行, 24 tests) |
-| 迁移文件 | `core/main.ts` (~70行减少→~30行) |
+| 迁移文件 | `core/main.ts`（ADR-102 后已进一步拆分，非编辑落点；~70行减少→~30行） |
 | 设置面板 | `menus/settings.ts` 追加 (~80行) |
 | 构建状态 | tsc 零错误, 982 tests 全绿, build 1.62s |
 
