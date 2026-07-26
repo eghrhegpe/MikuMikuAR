@@ -23,7 +23,7 @@
 | ADR-184 | 网页端 ZIP 嵌套识别能力补齐（多编码检测 + 炸弹防护对齐 Go 端） | 已完成（2026-07-26） |
 | ADR-183 | 网页端 FSA 根目录授权引导（四态探针 + 重授权兜底） | 已完成（代码已落地 + 单测 14/14，2026-07-26） |
 | ADR-182 | 网页端 ZIP 导入键规约命名空间化（消除同名 PMX 纹理碰撞） | 已完成（代码+测试 2026-07-25 已落地：_encModelStem 命名空间 + IsolateModelDir 幂等 + 契约/单测覆盖） |
-| ADR-181 | 下载管理面板（扫描→解压→入库→processed 标记） | 已批准（规划中 → 批准；落地前修正 3 处：P3 拆分 importFileByPath / P3 注册点行号 settings.ts:127 / P4 网页清单改存 IndexedDB）（2026-07-25） |
+| ADR-181 | 下载管理面板（扫描→解压→入库→processed 标记） | 已完成（代码+测试 2026-07-26 全部落地；settings-downloads.ts 422 行 + download-manager.test.ts 25 测试 + 全量 2100+ 通过）（2026-07-25） |
 | ADR-180 | Web 资源库 FSA 句柄持久化与启动自动重扫 | 已完成（代码已落地 + P1 回归已修复，2026-07-25） |
 | ADR-179 | 更新安装拉起（按平台分级） | 实施中（阶段 1 已落地：含安卓优先完整拉起 DownloadApk+installApk 全链路；阶段 2 桌面下载器 DownloadAndRunInstaller 待排期）（2026-07-25） |
 | ADR-178 | 能力矩阵补全宿主级键（四端统一收口） | 已完成（Phase 1-3 全部落地 2026-07-24/07-25——virtual-skirt.ts/fileservice.ts/settings-resources.ts:412 三处已迁移至能力层，其中 settings-resources.ts:412 配套修正 go-adapter `watchDir` 改为 `!isAndroidPlatform()` 自报（修复 ADR 草案宿主盲点）；其余 5 处判定为平台特有逻辑保留不动；Phase 3 已落地 2026-07-26——CI 四端制品矩阵固化：e2e-web-smoke job 跑 @web smoke（web-smoke.spec.ts + web-resources.spec.ts），验证浏览器能力门控、PMX/ZIP/VMD 加载闭环；桌面/安卓构建保留在 release.yml；网页部署由 web-pages.yml 自动触发） |
@@ -95,7 +95,7 @@
 | ADR-113 | 体积云延展地平线与画质/性能升级 | 完成（前置渲染分层 + Phase A slab-uniform 步长/地平线延展/地面交界/距离雾 + Phase B Weather Map/Erosion + Phase C 双瓣散射/Powder/高度梯度日落着色 + Phase D1 Blue-noise dither 全部落地） |
 | ADR-112 | SdefInjector + SdefMesh 接入 — SDEF 球面变形 | 已完成（2026-07-14 决策；2026-07-22 修正实现 — 由空操作 side-effect import 改为显式 `OverrideEngineCreateEffect(engine)` 调用，SDEF 方真正生效） |
 | ADR-111 | 场景/环境菜单按用户直觉重新划分 | 已实施 |
-| ADR-110 | IMmdModel 接口类型补全 — 上游 PR 计划 | 草案 · 待立项 |
+| ADR-110 | IMmdModel 接口类型补全 — 上游 PR 计划 | 草案 · 待立项（作为「babylon-mmd 上游贡献登记册」总入口；条目 1 = IMmdModel 接口补全已立项，条目 2–10 = 跨 ADR 候选 / 已否决 / 已延期，统一归集避免散落） |
 | ADR-109 | AR 模块审查结论与遗留项排期 | `部分实现`（2026-07-14） |
 | ADR-108 | AnimationRetargeter + HumanoidMmd 接入 — 扩展动作来源 | 已落地（2026-07-14 — 桥接模块 + UI 入口；2026-07-22 — 文件格式过滤 + 场景序列化 + 状态管理完整落地；2026-07-26 — additive 模式兼容性风险审查） |
 | ADR-107 | StreamAudioPlayer 接入 — 替换自建音频管线 | 已完成（2026-07-14 落地 — 全 3 阶段：内部实现替换 + 测试适配 + MmdRuntime 集成） |
