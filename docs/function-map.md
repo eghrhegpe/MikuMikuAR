@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 69 | 541 |
-| 3D 场景 | 103 | 1061 |
+| 3D 场景 | 103 | 1063 |
 | 菜单 & UI | 65 | 303 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 123 |
@@ -596,9 +596,10 @@
 | `getBoneLockDamping()` | `scene/camera/camera-bone-lock` | 获取骨骼锁定跟随阻尼（0 = 刚性，越大越平滑）。 |
 | `getFocusedModelBoneNames()` | `scene/camera/camera-bone-lock` | 获取当前焦点模型的所有骨骼名称列表。 |
 | `getOrbitBoneLock()` | `scene/camera/camera-bone-lock` | 获取当前骨骼锁定状态。 |
+| `restoreBoneLockIfEnabled()` | `scene/camera/camera-bone-lock` | 切回 orbit 时由 camera.ts switchCameraMode 调用：若骨骼锁仍处于启用状态， 重启每帧跟随 observer。修复"切出 orbit → stopB |
 | `setBoneLockDamping()` | `scene/camera/camera-bone-lock` | 设置骨骼锁定跟随阻尼，范围 [0, 0.95]。 |
 | `setOrbitBoneLock()` | `scene/camera/camera-bone-lock` | 启用/禁用轨道相机骨骼锁定。启用后相机 target 每帧锁定到指定骨骼的世界位置。 |
-| `stopBoneLock()` | `scene/camera/camera-bone-lock` | 供 camera.ts switchCameraMode 切出 orbit 时调用，强制停止骨骼锁定。 |
+| `stopBoneLock()` | `scene/camera/camera-bone-lock` | 供 camera.ts switchCameraMode 切出 orbit 时调用，强制停止骨骼锁定（保留启用状态供切回恢复）。 |
 | `applyCameraUserSettings()` | `scene/camera/camera-factory` | 将用户灵敏度设置应用到相机实例（orbit/oneshot: ArcRotate；freefly: Universal） |
 | `createConcertCamera()` | `scene/camera/camera-factory` | Concert (fan-cam): limited horizontal sweep + sinusoidal vertical bob around the target. |
 | `createFreeflyCamera()` | `scene/camera/camera-factory` | — |
@@ -711,6 +712,7 @@
 | `logCameraAlpha()` | `scene/camera/camera` | Log current camera alpha for diagnostics. |
 | `refreshCameraUserSettings()` | `scene/camera/camera` | — |
 | `restoreAutoCameraState()` | `scene/camera/camera` | — |
+| `restoreBoneLockIfEnabled()` | `scene/camera/camera` | — |
 | `setAutoCameraBeatsPerSwitch()` | `scene/camera/camera` | — |
 | `setAutoCameraEnabled()` | `scene/camera/camera` | — |
 | `setBoneLockDamping()` | `scene/camera/camera` | — |
@@ -2120,5 +2122,5 @@
 
 ---
 
-> 共 259 个文件，2074 个导出符号。
+> 共 259 个文件，2076 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。

@@ -36,7 +36,14 @@ export function loadCameraVmd(mmdAnimation: MmdAnimation, vmdPath: string, vmdNa
         return;
     }
 
+    // 重新加载 VMD 时，记录旧 MmdCamera 是否为 activeCamera。
+    // 若是，dispose 后需将 activeCamera 指向新 MmdCamera，否则渲染崩溃
+    // （scene.activeCamera 仍指向已 dispose 的旧相机实例）。
+    const wasActive = _mmdCamera !== null && scene.activeCamera === _mmdCamera;
+
     if (_mmdCamera) {
+        // 顺序：先 removeCamera（从 scene.cameras 数组移除 + 清除 activeCamera 引用），
+        // 再 dispose（释放 GPU 资源）。反之 dispose 后 removeCamera 仍能工作但语义不清。
         scene.removeCamera(_mmdCamera);
         _mmdCamera.dispose(); // 释放 GPU 资源（渲染目标、贴图等）
         _mmdCamera = null;
@@ -50,6 +57,12 @@ export function loadCameraVmd(mmdAnimation: MmdAnimation, vmdPath: string, vmdNa
     _mmdCamera = mmdCam;
     _cameraAnimationHandle = handle;
     setCameraVmdState(vmdName, vmdPath);
+
+    // 若旧 MmdCamera 是 activeCamera（vmd 模式下重新加载场景），切换到新 MmdCamera。
+    // 非激活场景（orbit 模式下预载 VMD）不影响 activeCamera。
+    if (wasActive) {
+        scene.activeCamera = mmdCam;
+    }
 }
 
 export function clearCameraVmd(): void {

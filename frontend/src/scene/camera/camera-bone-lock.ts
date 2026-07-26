@@ -72,9 +72,23 @@ export function getFocusedModelBoneNames(): string[] {
     return inst?.mmdModel?.runtimeBones.map((b) => b.name) ?? [];
 }
 
-/** 供 camera.ts switchCameraMode 切出 orbit 时调用，强制停止骨骼锁定。 */
+/** 供 camera.ts switchCameraMode 切出 orbit 时调用，强制停止骨骼锁定（保留启用状态供切回恢复）。 */
 export function stopBoneLock(): void {
     _stopBoneLock();
+}
+
+/**
+ * 切回 orbit 时由 camera.ts switchCameraMode 调用：若骨骼锁仍处于启用状态，
+ * 重启每帧跟随 observer。修复"切出 orbit → stopBoneLock dispose observer →
+ * 切回 orbit → observer 未重建导致假启用"的缺陷。
+ *
+ * 注意：仅重启 observer，不重新保存 panning/inertia（_startBoneLock 内部会处理）。
+ * 若用户显式 setOrbitBoneLock(false) 关闭，_boneLockEnabled 已被置 false，此函数为 no-op。
+ */
+export function restoreBoneLockIfEnabled(): void {
+    if (_boneLockEnabled && _boneLockBoneName && _boneLockModelId) {
+        _startBoneLock();
+    }
 }
 
 function _startBoneLock(): void {

@@ -21,7 +21,6 @@ import { focusedModelId, modelRegistry, triggerAutoSave, uiState } from '@/core/
 import { feedbackStatus } from '@/core/feedback';
 import { clamp, debounce, deepClone } from '@/core/utils';
 import { logWarn } from '@/core/logger';
-import { safeCallAsync } from '@/core/safe-call';
 import { focusModel, reattachPipeline, setARMode } from '../scene';
 
 import {
@@ -102,6 +101,7 @@ import {
     getBoneLockDamping,
     getFocusedModelBoneNames,
     stopBoneLock,
+    restoreBoneLockIfEnabled,
 } from './camera-bone-lock';
 import {
     setAutoCameraEnabled,
@@ -384,19 +384,43 @@ export function switchCameraMode(mode: CameraMode): void {
         _syncAxesFromMode('ar');
         getCameraPreset().mode = 'ar';
         const prevMode = getPreviousMode();
-        safeCallAsync('camera', 'setARMode failed:', () =>
-            setARMode(true).then((ok) => {
+        // 注意：不使用 safeCallAsync 包裹——reject 时需执行状态恢复副作用，
+        // safeCallAsync 仅 logWarn 不传播 rejection 但也不执行恢复逻辑。
+        // 显式 .then(ok) + .catch(err) 双路径处理：
+        //   - resolve(false)：摄像头拒绝授权，恢复模式标记
+        //   - reject：摄像头 API 抛错，同样恢复模式标记
+        //   - resolve(true) 但用户已切走：立即 setARMode(false) 释放摄像头流（竞态修复）
+        setARMode(true)
+            .then((ok) => {
                 if (!ok) {
-                    // 失败：若后续切换尚未把模式改走（仍在 ar），才提示并还原标记。
+                    // 显式失败：若模式仍在 ar，提示并还原标记。
                     if (getCameraMode() === 'ar') {
                         feedbackStatus('scene.camera.arFailed', undefined, false);
+                        setCameraMode(prevMode);
+                        _syncAxesFromMode(prevMode);
+                        getCameraPreset().mode = prevMode;
                     }
+                    return;
+                }
+                // 成功：但若 pending 期间用户已切走（_cameraMode 不再是 'ar'），
+                // 立即释放摄像头流避免泄漏（switchCameraMode 切走时已调用 setARMode(false)，
+                // 但此次 setARMode(true) 是后到的，会重新激活摄像头）。
+                if (getCameraMode() !== 'ar') {
+                    setARMode(false).catch((err) =>
+                        logWarn('camera', 'setARMode(false) cleanup after race:', err)
+                    );
+                }
+            })
+            .catch((err) => {
+                // reject（非 resolve false）：摄像头 API 抛错，恢复模式标记。
+                // safeCallAsync 原本会吞错但状态停留 'ar'，导致用户看到 AR 模式但摄像头未激活。
+                logWarn('camera', 'setARMode failed:', err);
+                if (getCameraMode() === 'ar') {
                     setCameraMode(prevMode);
                     _syncAxesFromMode(prevMode);
                     getCameraPreset().mode = prevMode;
                 }
-            })
-        );
+            });
         return;
     }
 
@@ -486,6 +510,12 @@ export function switchCameraMode(mode: CameraMode): void {
     }
     if (mode === 'surround') {
         startSurround(scene);
+    }
+    // 切回 orbit 时，若骨骼锁仍处于启用状态（用户未显式关闭），
+    // 重启每帧跟随 observer。修复"切出 orbit → stopBoneLock dispose observer →
+    // 切回 orbit → observer 未重建"导致的假启用缺陷。
+    if (mode === 'orbit') {
+        restoreBoneLockIfEnabled();
     }
 
     // Auto-frame on focused model when switching to orbit
@@ -753,6 +783,7 @@ export {
     setBoneLockDamping,
     getBoneLockDamping,
     getFocusedModelBoneNames,
+    restoreBoneLockIfEnabled,
 } from './camera-bone-lock';
 export {
     setAutoCameraEnabled,
