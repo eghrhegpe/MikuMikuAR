@@ -11,6 +11,26 @@ exec 1>&2
 set -e
 ROOT="$(git rev-parse --show-toplevel)"
 
+# ── 环境修正（Windows 多 git/node 环境兼容） ──
+# 问题：GitHub Desktop / TRAE 等会注入自己的 node 目录到 PATH 前，
+# 但其 bash 版 npm shim 依赖 sed/dirname 等 Unix 工具，hook 用的 sh 环境不全时失败。
+# 修复：把系统 Node + 系统 Git 的 Unix 工具放到 PATH 最前，确保 npm/node 正确解析。
+# 检测：若修正后 npm 仍不可用，warn 跳过 lint/test（环境问题不该阻断代码推送）。
+NPM_AVAILABLE=true
+command -v npm >/dev/null 2>&1 || {
+  # 尝试修正 PATH：系统 Node + 系统 Git Unix 工具
+  SYS_NODE="/c/Program Files/nodejs"
+  SYS_GIT_USR_BIN="/c/Program Files/Git/usr/bin"
+  [ -d "$SYS_NODE" ] && PATH="$SYS_NODE:$PATH"
+  [ -d "$SYS_GIT_USR_BIN" ] && PATH="$SYS_GIT_USR_BIN:$PATH"
+  export PATH
+  command -v npm >/dev/null 2>&1 || {
+    echo "⚠️  hook 环境中 npm 不可用（PATH 异常）。lint/test 将被跳过。"
+    echo "   手动推送: 用 PowerShell/CMD 运行 git push"
+    NPM_AVAILABLE=false
+  }
+}
+
 # ── 解析推送范围（从 stdin 读取 pre-push refs，支持多 ref 推送） ──
 # 输入格式：<local-ref> <local-sha> <remote-ref> <remote-sha>
 # 策略：对所有非删除 ref 取变更并集，RANGE 用空格分隔供后续 grep 遍历
@@ -111,30 +131,32 @@ cd "$ROOT" && node scripts/gen-funcmap.mjs --check || {
 
 # ── lint（仅 TS/JS 变更时；不可自动修复） ──
 # 纯 Go / 纯文档变更不触发前端 lint（Go 有 go vet，文档无 lint 必要）
-if [ "$TS_CHANGED" = "true" ]; then
+# npm 不可用时跳过（环境问题不该阻断代码推送）
+if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
   echo "[pre-push] lint（0 errors 放行）"
   cd "$ROOT/frontend" && npm run lint || {
     echo "❌ ESLint 检出 error。修复: npm run lint 查看详情"
     exit 1
   }
 else
-  echo "[pre-push] lint（跳过：未涉及 TS/JS 源码）"
+  echo "[pre-push] lint（跳过：未涉及 TS/JS 源码 或 npm 不可用）"
 fi
 
 # ── test:coverage（仅 TS/JS 变更时；不可自动修复） ──
 # 纯 Go 变更有 Go 测试覆盖，纯文档变更无逻辑可测，均跳过前端测试
-if [ "$TS_CHANGED" = "true" ]; then
+# npm 不可用时跳过
+if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
   echo "[pre-push] test:coverage（门禁: lines≥35% functions≥30%）"
   cd "$ROOT/frontend" && npm run test:coverage || {
     echo "❌ 测试失败或覆盖率低于阈值。修复: npm run test:coverage 查看详情"
     exit 1
   }
 else
-  echo "[pre-push] test:coverage（跳过：纯 Go / 纯文档变更）"
+  echo "[pre-push] test:coverage（跳过：纯 Go / 纯文档变更 / npm 不可用）"
 fi
 
 # ── P7: deadcode 基线（可自动修复，amend 进当前 commit） ──
-if [ "$TS_CHANGED" = "true" ]; then
+if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
   echo "[pre-push] deadcode（基线治理：knip + jscpd）"
   cd "$ROOT/frontend" && node ../scripts/check-deadcode-baseline.mjs || {
     echo "⚠️  死代码/重复代码超过基线，自动更新基线..."
@@ -143,6 +165,8 @@ if [ "$TS_CHANGED" = "true" ]; then
     git commit --amend --no-edit 2>/dev/null && echo "⚠️  deadcode 基线已更新并 amend 进当前 commit。" || echo "⚠️  deadcode 基线已 stage（无 HEAD 可 amend，请手动 commit）。"
     echo "⚠️  如有新增死代码，考虑后续清理。"
   }
+elif [ "$TS_CHANGED" = "true" ]; then
+  echo "[pre-push] deadcode（跳过：npm 不可用）"
 fi
 
 # ── check:docs（ERROR 阻断；INFO 基线自动修复 + amend） ──
