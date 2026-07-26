@@ -29,6 +29,12 @@ import { getMotionPipeline } from './motion-pipeline';
 export { solveFootTarget };
 export type { SolveFootInput, SolveFootOutput } from '@/motion-algos/feet-adjustment-math';
 
+// ======== WASM 调试开关 ========
+// 从控制台启用：__feetDebug.value = true （或 __feetDebug.value = false 关闭）
+// 本文件加载后自动挂到 window.__feetDebug
+export const feetDebug = { value: false };
+(window as unknown as Record<string, unknown>).__feetDebug = feetDebug;
+
 // ======== 引擎钩子 ========
 
 /** 注入：返回需要处理脚部调整的模型及其 runtime bones */
@@ -43,6 +49,8 @@ interface _ModelCache {
     rName: string | null;
     lTargetY: number | null;
     rTargetY: number | null;
+    /** 模型中心骨骼（センター）世界 Y，用于自然脚高推算 */
+    centerY: number | null;
     // 落地事件检测状态（ADR-088）：脚 IK 贴地上升沿 + 去抖
     lPrevGrounded: boolean;
     rPrevGrounded: boolean;
@@ -61,8 +69,6 @@ let _lastTickTime = 0;
 // 同脚两次落地最小间隔（ms），去抖防抖动误触发
 const FOOT_STEP_MIN_INTERVAL = 120;
 
-// 诊断日志开关（ADR-085 验证用，验证后已关闭）。改 true 可重新开启帧/落地诊断。
-const FEET_DEBUG = false;
 let _feetDbgFrame = 0;
 let _feetTick = 0;
 
@@ -91,6 +97,7 @@ function _getCache(id: string): _ModelCache {
             rName: '',
             lTargetY: null,
             rTargetY: null,
+            centerY: null,
             lPrevGrounded: false,
             rPrevGrounded: false,
             lFootYPrev: 0,
@@ -167,11 +174,15 @@ function _adjustFoot(
     // 估算髋世界坐标 + 腿长（用于 reachAngle / maxAngle）
     let hipToFootDist = 0;
     let legLength = 1;
-    const hip = _findHip(ik, side);
-    if (hip) {
-        hip.getWorldTranslationToRef(_vHip);
-        hipToFootDist = Vector3.Distance(_vFoot, _vHip);
-        legLength = Math.max(hipToFootDist, 1e-3);
+    let hip: IMmdRuntimeBone | null = null;
+    {
+        const h = _findHip(ik, side);
+        if (h) {
+            h.getWorldTranslationToRef(_vHip);
+            hipToFootDist = Vector3.Distance(_vFoot, _vHip);
+            legLength = Math.max(hipToFootDist, 1e-3);
+            hip = h;
+        }
     }
 
     const res = solveFootTarget({
@@ -179,6 +190,7 @@ function _adjustFoot(
         groundY,
         hipToFootDist,
         legLength,
+        centerY: cache.centerY ?? 0,
         prevTargetY: side === 'L' ? cache.lTargetY : cache.rTargetY,
         feet,
     });
@@ -224,11 +236,19 @@ function _adjustFoot(
         }
     }
 
-    if (FEET_DEBUG && _feetDbgFrame++ % 60 === 0) {
+    if (feetDebug.value && _feetDbgFrame++ % 60 === 0) {
+        const solver = (ik as MmdRuntimeBoneExtended).ikSolver;
         logWarn(
             'feet',
-            `${side} footY=${_vFoot.y.toFixed(3)} groundY=${groundY.toFixed(3)} ` +
-                `targetY=${res.targetY.toFixed(3)} skip=${res.skip} ik=${ikName}`
+            `[WASM] ${modelId} ${side} ` +
+                `ik=${ikName} ` +
+                `footY=${_vFoot.y.toFixed(3)} ` +
+                `groundY=${groundY.toFixed(3)} ` +
+                `targetY=${res.targetY.toFixed(3)} ` +
+                `skip=${res.skip} ` +
+                `solver=${solver ? 'present' : 'null'} ` +
+                `hip=${hip ? hip.name : 'null<-fallback'} ` +
+                `legLen=${legLength.toFixed(3)}`
         );
     }
 
@@ -246,6 +266,8 @@ function _adjustFoot(
     ik.setWorldTranslation(_vTarget);
 
     // 重解该腿 IK（solve 内部回写踝 + 链骨骼 worldMatrix）
+    // WASM 调试要点：solver 在 WASM 模式下为 null，此处不会重解 IK 链；
+    // setWorldTranslation 直接写入 WASM matrix buffer，渲染可见。
     const solver = (ik as MmdRuntimeBoneExtended).ikSolver;
     if (solver) {
         // 腿部链通常为 FollowBone（骨骼驱动刚体），usePhysics=false 即正确；
@@ -279,11 +301,11 @@ export function startFeetAdjustment(getModels: FeetModelProvider): void {
         const now = performance.now();
         const dt = _lastTickTime ? Math.min((now - _lastTickTime) / 1000, 0.1) : 1 / 60;
         _lastTickTime = now;
-        if (FEET_DEBUG && _feetTick++ % 90 === 0) {
+        if (feetDebug.value && _feetTick++ % 90 === 0) {
             const summary = [...getModels()]
                 .map((m) => `${m.id}:en=${m.feet.enabled},n=${m.runtimeBones.length}`)
                 .join(' ');
-            logWarn('feet', 'models', summary);
+            logWarn('feet', '[WASM] models', summary);
         }
         for (const m of getModels()) {
             const cache = _getCache(m.id);
@@ -303,13 +325,33 @@ export function startFeetAdjustment(getModels: FeetModelProvider): void {
                 const names = m.runtimeBones.map((b) => b.name);
                 cache.lName = matchBone(names, BONE_LEG_IK_L_CANDIDATES);
                 cache.rName = matchBone(names, BONE_LEG_IK_R_CANDIDATES);
-                if (FEET_DEBUG && (cache.lName === null || cache.rName === null)) {
+                // 缓存中心骨骼世界 Y（用于 solveFootTarget 推算自然脚高）
+                const centerBone = m.runtimeBones.find((b) => b.name === 'センター')
+                    ?? m.runtimeBones.find((b) => b.name === '全ての親');
+                if (centerBone) {
+                    const v = new Vector3();
+                    centerBone.getWorldTranslationToRef(v);
+                    cache.centerY = v.y;
+                } else {
+                    cache.centerY = null;
+                }
+                // 启动诊断：始终输出，不论 debug 开关
+                const lMatchResult = cache.lName ?? '<null>';
+                const rMatchResult = cache.rName ?? '<null>';
+                let centerYStr = cache.centerY !== null ? cache.centerY.toFixed(3) : '?';
+                logWarn(
+                    'feet',
+                    `[WASM] IK 匹配结果 for ${m.id}: L="${lMatchResult}" R="${rMatchResult}" ` +
+                        `(total bones=${names.length}) ` +
+                        `centerWorldY=${centerYStr}`
+                );
+                if (cache.lName === null || cache.rName === null) {
                     const hints = names
                         .filter((n) => /足|ＩＫ|IK|Leg|leg|Foot|foot/.test(n))
                         .slice(0, 16);
                     logWarn(
                         'feet',
-                        `IK bone not matched for ${m.id} (L=${cache.lName} R=${cache.rName}). leg/IK bones in model:`,
+                        `  模型中含"足/IK"的骨骼名：`,
                         hints
                     );
                 }

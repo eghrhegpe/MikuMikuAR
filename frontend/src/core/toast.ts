@@ -194,7 +194,8 @@ export function showToast(
     while (_activeToasts.length >= MAX_VISIBLE_TOASTS) {
         const oldest = _activeToasts[0];
         if (oldest) {
-            fadeAndRemoveToast(oldest.id, oldest.el, 150);
+            // 同步移除最旧 toast，避免 fadeAndRemoveToast 异步导致死循环
+            removeToast(oldest.id);
         } else {
             break;
         }

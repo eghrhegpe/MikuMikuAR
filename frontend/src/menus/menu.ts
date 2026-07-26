@@ -505,6 +505,11 @@ export class SlideMenu {
         }
         this._cachedExtraBtns = null;
 
+        // [doc:pose-debug] 用 itemBuilder 刷新 items，确保 reRender 使用最新数据（如删除动作后根菜单及时更新）
+        if (level.itemBuilder) {
+            level.items = level.itemBuilder();
+        }
+
         const finalize = () => {
             this.updateHeader(level);
             // reRenderCustom 路径是增量更新，不抢焦点

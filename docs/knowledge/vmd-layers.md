@@ -37,11 +37,11 @@ use_when:
 
 ## 对外 API（节选）
 - `interface VmdLayer` — 图层描述（id、filePath、priority、loop、speed 等）。
-- `addVmdLayer(layer, modelId?)` — 添加 VMD 图层。
-- `removeVmdLayer(layerId, modelId?)` — 移除图层。
+- `addVmdLayer(layer, modelId?)` — 异步添加 VMD 图层。
+- `removeVmdLayer(layerId, modelId?)` — 异步移除图层。
 - `rebuildCompositeAnimation(modelId?)` — 根据当前层重建复合动画。
 - `getVmdLayers(modelId?)` — 取当前图层列表。
-- `_decodeSjis(bytes)` — Shift-JIS 字节解码为 Unicode 字符串。
+- `_filterVmdBones(data, boneFilter)` — 按骨骼白名单过滤 VMD 字节。
 
 ## 与其他子系统关系
 - 使用 `babylon-mmd` 的 `MmdCompositeAnimation` / `MmdAnimationSpan`。

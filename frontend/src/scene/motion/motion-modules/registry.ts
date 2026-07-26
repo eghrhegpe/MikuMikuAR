@@ -24,6 +24,9 @@ interface RegistryEntry {
     priority: number;
 }
 
+/** [doc:pose-debug] 无 VMD 时的模块状态回退存储，确保覆盖/预设面板可用 */
+const _fallbackModuleStates = new Map<string, MotionModuleState>();
+
 const _registry = new Map<string, RegistryEntry>();
 
 /** 注册一个动作覆盖模块 */
@@ -71,9 +74,18 @@ export function getModuleState(_modelId: string, moduleId: string): MotionModule
     initMotionModules(); // 幂等兜底
     const intent = getActiveMotion();
 
-    // 无动作时返回临时默认状态（不写入 intent）
+    // [doc:pose-debug] 无 VMD 时使用回退存储，避免 enable/bake 读写不一致
     if (!intent) {
-        return { id: moduleId, enabled: false, params: {} };
+        let state = _fallbackModuleStates.get(moduleId);
+        if (!state) {
+            state = { id: moduleId, enabled: false, params: {} };
+            const entry = _registry.get(moduleId);
+            if (entry?.meta.defaults) {
+                state.params = { ...entry.meta.defaults };
+            }
+            _fallbackModuleStates.set(moduleId, state);
+        }
+        return state;
     }
 
     // 快速路径：已存在则直接返回

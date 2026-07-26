@@ -302,6 +302,105 @@ async function collectTextureFiles(modelDir: string): Promise<TextureFile[]> {
     return files;
 }
 
+/**
+ * Apply scene-level motion (VMD) to a newly loaded actor model.
+ * Uses sceneMotionId from motionSlots, falling back to getActiveMotion().
+ * Handles compatibility check, generation-based staleness guard, and abort signal.
+ * @returns { appliedVmd } on success, null if aborted (caller should return null).
+ */
+async function _applySceneMotion(
+    inst: ModelInstance,
+    mmdRuntime: IMmdRuntime | null,
+    effectiveSignal: AbortSignal,
+    registeredId: string | null
+): Promise<{ appliedVmd: string } | null> {
+    const slots: ModelMotionSlots = inst.motionSlots ?? {
+        primary: { source: 'inherit', status: 'idle' },
+    };
+    const pickedId = slots.primary.sceneMotionId;
+    const pickedMotion = pickedId
+        ? (getSceneMotions().find((m) => m.id === pickedId) ?? null)
+        : null;
+    const activeMotion = pickedMotion ?? getActiveMotion();
+    const loadGen = getMotionGen();
+    let appliedVmd = '';
+
+    if (activeMotion && activeMotion.vmdPath && mmdRuntime) {
+        if (slots.primary.source === 'inherit') {
+            // 兼容性检查
+            const bones =
+                inst.mmdModel?.runtimeBones?.map((b) => b.name) ??
+                inst.meshes[0]?.skeleton?.bones?.map((b) => b.name) ??
+                [];
+            // [doc:adr-121 P4-2] 宽松匹配：未传 vmdBoneNames，退回标准骨骼预筛（有意为之，见 motion-binding-ui.ts 注释）
+            const compat = resolveCompatibility(bones, activeMotion);
+            if (!compat.compatible) {
+                inst.motionSlots = {
+                    primary: { ...slots.primary, status: 'incompatible' },
+                };
+            } else {
+                appliedVmd = activeMotion.vmdName;
+                try {
+                    // 读取 VMD 文件数据，然后加载到模型
+                    // 读取后检查 generation：若已过期则丢弃，避免覆盖较新的广播结果
+                    const vmdData = await readFileBytes(activeMotion.vmdPath);
+                    if (getMotionGen() !== loadGen) {
+                        appliedVmd = '';
+                    } else {
+                        const { loadVMDMotion } = await import('../motion/vmd-loader');
+                        await loadVMDMotion(
+                            vmdData.buffer as ArrayBuffer,
+                            activeMotion.vmdName,
+                            inst.id
+                        );
+                        // [doc:adr-167] 保留 sceneMotionId（由 broadcast 设置）
+                        inst.motionSlots = {
+                            primary: {
+                                source: 'inherit',
+                                sceneMotionId: slots.primary.sceneMotionId,
+                                status: 'compatible',
+                            },
+                        };
+                    }
+                } catch (vmdErr) {
+                    if (getMotionGen() !== loadGen) {
+                        appliedVmd = '';
+                    } else {
+                        logWarn('model-loader', 'VMD 加载失败，模型已保留:', vmdErr);
+                        appliedVmd = '';
+                        feedbackStatus(
+                            'scene.loader.vmdFailedModelLoaded',
+                            undefined,
+                            false,
+                            { name: inst.name }
+                        );
+                        inst.motionSlots = {
+                            primary: {
+                                source: 'inherit',
+                                sceneMotionId: slots.primary.sceneMotionId,
+                                status: 'incompatible',
+                            },
+                        };
+                    }
+                }
+            }
+        }
+    }
+
+    if (effectiveSignal.aborted) {
+        try {
+            if (registeredId && _modelManager) {
+                _modelManager.remove(registeredId);
+            }
+        } catch (e) {
+            logWarn('model-loader', 'Cleanup after abort:', e);
+        }
+        return null;
+    }
+
+    return { appliedVmd };
+}
+
 export async function loadPMXFile(
     filePath: string,
     asStage?: boolean,
@@ -623,88 +722,11 @@ export async function loadPMXFile(
         }
 
         // [doc:adr-167] 应用场景级动作（按角色 sceneMotionId 解析；未指定则用默认动作）
-        let appliedVmd = '';
-        const slots: ModelMotionSlots = inst.motionSlots ?? {
-            primary: { source: 'inherit', status: 'idle' },
-        };
-        const pickedId = slots.primary.sceneMotionId;
-        const pickedMotion = pickedId
-            ? (getSceneMotions().find((m) => m.id === pickedId) ?? null)
-            : null;
-        const activeMotion = pickedMotion ?? getActiveMotion();
-        const loadGen = getMotionGen(); // 捕获当前 generation，防止异步加载过期
-        if (activeMotion && activeMotion.vmdPath && _mmdRuntime) {
-            if (slots.primary.source === 'inherit') {
-                // 兼容性检查
-                const bones =
-                    inst.mmdModel?.runtimeBones?.map((b) => b.name) ??
-                    inst.meshes[0]?.skeleton?.bones?.map((b) => b.name) ??
-                    [];
-                // [doc:adr-121 P4-2] 宽松匹配：未传 vmdBoneNames，退回标准骨骼预筛（有意为之，见 motion-binding-ui.ts 注释）
-                const compat = resolveCompatibility(bones, activeMotion);
-                if (!compat.compatible) {
-                    inst.motionSlots = {
-                        primary: { ...slots.primary, status: 'incompatible' },
-                    };
-                } else {
-                    appliedVmd = activeMotion.vmdName;
-                    try {
-                        // 读取 VMD 文件数据，然后加载到模型
-                        // 读取后检查 generation：若已过期则丢弃，避免覆盖较新的广播结果
-                        const vmdData = await readFileBytes(activeMotion.vmdPath);
-                        if (getMotionGen() !== loadGen) {
-                            appliedVmd = '';
-                        } else {
-                            const { loadVMDMotion } = await import('../motion/vmd-loader');
-                            await loadVMDMotion(
-                                vmdData.buffer as ArrayBuffer,
-                                activeMotion.vmdName,
-                                id
-                            );
-                            // [doc:adr-167] 保留 sceneMotionId（由 broadcast 设置）
-                            inst.motionSlots = {
-                                primary: {
-                                    source: 'inherit',
-                                    sceneMotionId: slots.primary.sceneMotionId,
-                                    status: 'compatible',
-                                },
-                            };
-                        }
-                    } catch (vmdErr) {
-                        if (getMotionGen() !== loadGen) {
-                            appliedVmd = '';
-                        } else {
-                            logWarn('model-loader', 'VMD 加载失败，模型已保留:', vmdErr);
-                            appliedVmd = '';
-                            feedbackStatus(
-                                'scene.loader.vmdFailedModelLoaded',
-                                undefined,
-                                false,
-                                { name: displayName }
-                            );
-                            inst.motionSlots = {
-                                primary: {
-                                    source: 'inherit',
-                                    sceneMotionId: slots.primary.sceneMotionId,
-                                    status: 'incompatible',
-                                },
-                            };
-                        }
-                    }
-                }
-            }
-        }
-        if (effectiveSignal.aborted) {
-            // 清理已注册的模型，避免泄漏。
-            // _modelManager.remove() 内 onRemoveModel 回调（scene.ts:375-394）
-            // 已调用 destroyMmdModel，此处不再重复销毁 wasmModel。
-            try {
-                _modelManager.remove(registeredId);
-            } catch (e) {
-                logWarn('model-loader', 'Cleanup after abort:', e);
-            }
+        const vmdResult = await _applySceneMotion(inst, _mmdRuntime, effectiveSignal, registeredId);
+        if (vmdResult === null) {
             return null;
         }
+        const appliedVmd = vmdResult.appliedVmd;
 
         // [fix] 感知层激活和角色个人灯附着必须在 VMD 继承完成后进行，
         // 避免 activatePerception 读到无 VMD 帧状态。

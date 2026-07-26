@@ -23,6 +23,7 @@ function input(overrides: Partial<SolveFootInput>): SolveFootInput {
         groundY: 0,
         hipToFootDist: 1,
         legLength: 1,
+        centerY: 1, // 默认 groundY=0, legLength=1, centerY=1 → modelGroundY = max(0, 0) = 0
         prevTargetY: null,
         feet: defaultFeet(),
         ...overrides,

@@ -10,12 +10,13 @@ source_files:
   - frontend/src/scene/motion/wasm-layers-config.ts
 adr: []
 symbols:
-  - setupWasmLayersBlender
-  - addWasmLayer
+  - initWasmLayersBlender
+  - teardownWasmLayersBlender
+  - isWasmLayersBlenderActive
   - removeWasmLayer
-  - updateWasmLayers
+  - updateWasmLayerWeight
+  - WasmLayerConfig
 invariants:
-  - 感知层核心混合引擎
   - 混合引擎
 tests: []
 use_when:
@@ -27,16 +28,18 @@ use_when:
 ---
 
 ## 系统概览
-**WASM 图层混合器**。将多个 WASM 动作图层按优先级混合，提供统一的混合引擎。
+**WASM 图层混合器**。将多个 WASM 动作图层按权重混合，提供 `BlenderDeps` 注入式的初始化与销毁。
 
 ## 核心职责
-- `wasm-layers-blender.ts` — WASM 图层注册、混合、更新。
+- `wasm-layers-blender.ts` — WASM 图层注册、权重更新、销毁。
+- `wasm-layers-config.ts` — 默认骨骼过滤列表（`DEFAULT_LAYER_BONE_FILTER`）。
 
 ## 对外 API（节选）
-- `setupWasmLayersBlender(runtime)` — 初始化 WASM 混合器。
-- `addWasmLayer(layerId, config)` — 添加 WASM 图层。
-- `removeWasmLayer(layerId)` — 移除 WASM 图层。
-- `updateWasmLayers(deltaTime)` — 更新图层混合。
+- `initWasmLayersBlender(deps)` — 注入 `BlenderDeps` 初始化混合器。
+- `teardownWasmLayersBlender(modelId)` — 销毁指定模型的混合器。
+- `isWasmLayersBlenderActive(modelId)` — 查询模型是否激活混合器。
+- `removeWasmLayer(modelId, layerId)` — 移除指定图层。
+- `updateWasmLayerWeight(modelId, layerId, weight)` — 更新图层权重。
 
 ## 与其他子系统关系
 - WASM 配置：`./wasm-layers-config.ts`。

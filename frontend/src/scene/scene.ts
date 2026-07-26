@@ -19,6 +19,9 @@ import { RegisterDxBmpTextureLoader } from 'babylon-mmd/esm/Loader/registerDxBmp
 // MMD 原生描边：side-effect import，把 getMmdOutlineRenderer() 补丁挂到 Scene.prototype。
 // 之后带描边(edge)标记的 PMX 材质在 renderOutline=true 时会惰性注册描边组件并渲染轮廓线。
 import 'babylon-mmd/esm/Loader/mmdOutlineRenderer';
+// SharedToonTextures：内建 toon 渐变纹理池（base64 常量），为无自定义 toon 贴图的模型提供默认渐变映射，
+// 减少外部文件依赖和显存占用（多模型共享同一纹理实例）。
+import 'babylon-mmd/esm/Loader/sharedToonTextures';
 // SDEF 球面变形：显式挂载 SdefInjector。sdefInjector 模块仅导出类、无顶层 side-effect，
 // 必须调用 OverrideEngineCreateEffect(engine) 改写 engine.createEffect，才能为含骨骼(mBones)
 // 的着色器注入球面变形顶点代码；网格含 SDEF 顶点时关节弯曲更自然。
