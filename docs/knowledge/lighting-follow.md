@@ -17,14 +17,18 @@ adr:
 - `lighting-follow.ts` — 个人灯光创建/销毁/参数调节/每帧跟随。
 
 ## 对外 API（节选）
-- `PersonalLightSettings` — 个人灯光参数接口（enabled / intensity / color / angle / height / coneEnabled / coneIntensity / coneLength / coneSoftness）。
+- `PersonalLightSettings` — 个人灯光参数接口。
 - `DEFAULT_PERSONAL_LIGHT` — 个人灯光默认参数。
+- `setPersonalLightDefault(settings)` / `getPersonalLightDefault()` / `resetPersonalLightDefault()` — 默认参数管理。
 - `attachPersonalLight(modelId, settings)` — 为模型附加个人灯光，自动跟随骨骼。
 - `detachPersonalLight(modelId)` — 移除模型的个人灯光。
 - `setPersonalLightState(modelId, partial)` — 更新个人灯光参数。
 - `getPersonalLightState(modelId)` — 获取个人灯光当前参数。
 - `tickPersonalLights()` — 每帧更新所有个人灯光位置（跟随骨骼）。
-- `disposeAllPersonalLights()` — 释放所有个人灯光（场景 dispose 时调用）。
+- `tickStageLightFollow()` — 每帧更新舞台灯光跟随（舞台目标骨骼跟随）。
+- `disposeAllPersonalLights()` — 释放所有个人灯光。
+- `getAllPersonalLights()` — 取所有个人灯光列表（序列化用）。
+- `restorePersonalLights(entries)` — 恢复个人灯光（反序列化用）。
 
 ## 内部协作
 - `_getLightBasePos(model, waistName)` — 获取灯光基准位置（腰部骨骼 / 模型中心）。

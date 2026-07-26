@@ -589,24 +589,12 @@ export function serializeScene(): SceneFile {
 // ======== Deserialization ========
 
 /**
- * Restore scene state from a SceneFile.
- *
- * Model loading uses a **two-phase** approach to avoid the race condition where
- * a failed model load leaves `focusedModel()` pointing to the wrong instance:
- *   1. Phase 1: Load all models sequentially, record runtime IDs on success.
- *   2. Phase 2: Apply VMD animations and outfit variants by looking up the
- *      recorded runtime IDs (never relying on global `focusedModel()`).
- *
- * @param data  The serialized scene data to restore.
- * @param skipEnv  If true, skip environment state restoration.
- *   Used during initial app startup because env state is restored separately
- *   from Go Config.Env to avoid double-application.
+ * Phase 1 + Phase 2: clear scene → load all models → apply post-load config.
+ * Both phases are kept as one function so the models array is traversed once,
+ * avoiding N-pass scanning that would occur with separate per-category functions.
+ * @returns [modelIds, errors] where modelIds[i] = runtime ID if loaded, null if failed.
  */
-export async function deserializeScene(data: SceneFile, skipEnv = false): Promise<number> {
-    // 抑制恢复过程中的 auto-save，防止 setCameraState/setLightState/setRenderState
-    // 等函数触发级联保存覆盖 last_scene.json。
-    _suppressAutoSave = true;
-
+async function deserializeModels(modelsData: SceneFile['models']): Promise<[Array<string | null>, string[]]> {
     // --- Clear existing scene ---
     for (const id of Array.from(modelRegistry.keys())) {
         removeModel(id);
@@ -618,12 +606,11 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
     propUuidMap.clear();
 
     // --- Phase 1: Load all models and record runtime IDs ---
-    // modelIds[i] = runtime instance ID if load succeeded, null if failed
     const modelIds: Array<string | null> = [];
     const errors: string[] = [];
 
-    for (let i = 0; i < data.models.length; i++) {
-        const m = data.models[i];
+    for (let i = 0; i < modelsData.length; i++) {
+        const m = modelsData[i];
         try {
             const resolvedPath = resolvePathFromRef(m.filePath, m.libraryRef);
             if (!resolvedPath) {
@@ -775,13 +762,13 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
     }
 
     // --- Phase 2: Apply VMD animations and outfit variants by recorded ID ---
-    for (let i = 0; i < data.models.length; i++) {
+    for (let i = 0; i < modelsData.length; i++) {
         const id = modelIds[i];
         if (!id) {
             continue;
         } // Model failed to load
 
-        const m = data.models[i];
+        const m = modelsData[i];
         if (m.vmdPath) {
             try {
                 const resolvedVmdPath = resolvePathFromRef(m.vmdPath, m.vmdLibraryRef);
@@ -890,6 +877,31 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
             }
         }
     }
+
+    return [modelIds, errors];
+}
+
+/**
+ * Restore scene state from a SceneFile.
+ *
+ * Model loading uses a **two-phase** approach to avoid the race condition where
+ * a failed model load leaves `focusedModel()` pointing to the wrong instance:
+ *   1. Phase 1: Load all models sequentially, record runtime IDs on success.
+ *   2. Phase 2: Apply VMD animations and outfit variants by looking up the
+ *      recorded runtime IDs (never relying on global `focusedModel()`).
+ *
+ * @param data  The serialized scene data to restore.
+ * @param skipEnv  If true, skip environment state restoration.
+ *   Used during initial app startup because env state is restored separately
+ *   from Go Config.Env to avoid double-application.
+ */
+export async function deserializeScene(data: SceneFile, skipEnv = false): Promise<number> {
+    // 抑制恢复过程中的 auto-save，防止 setCameraState/setLightState/setRenderState
+    // 等函数触发级联保存覆盖 last_scene.json。
+    _suppressAutoSave = true;
+
+    // --- Load all models and apply post-load config ---
+    const [modelIds, errors] = await deserializeModels(data.models);
 
     // --- Formation: re-apply if saved ---
     if (data.formation && modelManager) {

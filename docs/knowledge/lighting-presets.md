@@ -28,12 +28,10 @@ use_when:
 - `lighting-presets.ts` — 预设定义、参数应用、预设切换。
 
 ## 对外 API（节选）
-- `interface LightingPreset` — 灯光预设描述。
-- `LIGHTING_PRESETS` — 内置预设列表。
-- `interface LightingPresetLight` — 预设灯光描述。
-- `interface LightingPreset` — 灯光预设集合描述。
-- `LIGHTING_PRESETS` — 内置预设集合。
-- `PRESET_NAMES` — 预设名称列表。
+- `interface LightingPresetLight` — 单盏预设灯光描述（type / color / intensity / position / spotParams / shadow / follow）。
+- `interface LightingPreset` — 完整灯光预设集合（name / description / lights）。
+- `LIGHTING_PRESETS` — 内置预设集（Record<string, LightingPreset>），约 16 套方案。
+- `PRESET_NAMES` — 预设名称列表（`Object.keys(LIGHTING_PRESETS)`）。
 
 ## 与其他子系统关系
 - 被 `lighting-stage.ts` 调用。

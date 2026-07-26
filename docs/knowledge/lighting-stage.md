@@ -26,6 +26,7 @@ adr: []
 - `removeStageLight(id)` — 删除舞台灯光。
 - `loadStageLights(states)` — 批量加载灯光（场景恢复时调用）。
 - `rebuildStageLightShadows()` — 重建所有舞台灯光阴影。
+- `_disposeStageLightEntry(id, entry)` — 销毁灯光条目（含阴影/光锥/指示器）。
 
 ## 内部协作
 - `_getEntry(id?)` — 按 ID 或当前活跃 ID 获取灯光条目。
