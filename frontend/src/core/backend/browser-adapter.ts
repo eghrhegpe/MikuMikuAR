@@ -632,8 +632,14 @@ export async function reauthorizeFsaRoot(): Promise<boolean> {
 async function _scanDirIntoIDB(
     dirHandle: FileSystemDirectoryHandle,
     relPath = '',
-    parentPmx: { stem: string; relPath: string }[] = []
+    parentPmx: { stem: string; relPath: string }[] = [],
+    depth = 0
 ): Promise<void> {
+    const MAX_SCAN_DEPTH = 20;
+    if (depth > MAX_SCAN_DEPTH) {
+        console.warn(`[web-scan] 递归深度超限 (${depth})，跳过: ${relPath}`);
+        return;
+    }
     // [doc:adr-180] 根目录重扫：先清旧，避免旧版塌缩 entry 残留导致自愈不彻底。
     if (relPath === '') {
         await _clearScannedEntries();
@@ -880,7 +886,7 @@ async function _scanDirIntoIDB(
     for (const dirName of subDirs) {
         const subHandle = await dir.getDirectoryHandle(dirName);
         const subRelPath = relPath ? `${relPath}/${dirName}` : dirName;
-        await _scanDirIntoIDB(subHandle, subRelPath, effectivePmx);
+        await _scanDirIntoIDB(subHandle, subRelPath, effectivePmx, depth + 1);
     }
 }
 

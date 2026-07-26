@@ -401,7 +401,7 @@ function renderOrbitParams(container: HTMLElement): void {
             boneLock.boneName,
             (bn) => {
                 setOrbitBoneLock(true, bn);
-                setStatus(t('motion.boneLockApplied', { bone: bn }), true);
+                showInfoToast(t('motion.boneLockApplied', { bone: bn }));
                 refreshCameraLevel();
             }
         );
@@ -715,10 +715,10 @@ function renderWebXRProbeSection(container: HTMLElement): void {
         slideRow(container, 'lucide:copy', t('scene.ar.webxrCopyReport'), false, async () => {
             try {
                 await navigator.clipboard.writeText(formatProbeReport(_probeResult!));
-                setStatus(t('scene.ar.webxrCopied'), true);
+                feedbackInfo('scene.ar.webxrCopied', undefined);
             } catch {
                 // clipboard API 可能不可用（需用户手势）
-                setStatus(t('motion.clipboardUnavailable'), false);
+                feedbackStatus('motion.clipboardUnavailable', undefined, false);
             }
         });
 
