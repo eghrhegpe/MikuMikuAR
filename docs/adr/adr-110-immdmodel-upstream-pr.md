@@ -1,6 +1,6 @@
 # ADR-110: IMmdModel 接口类型补全 — 上游 PR 计划
 
-> **状态**: 草案 · 待立项
+> **状态**: 草案 · 待立项（作为「babylon-mmd 上游贡献登记册」总入口；条目 1 = IMmdModel 接口补全已立项，条目 2–10 = 跨 ADR 候选 / 已否决 / 已延期，统一归集避免散落）
 
 **决策者**: Riku（联邦首席架构师 AI）、Jieling（人类侧首席架构师）
 
@@ -8,9 +8,35 @@
 
 **来源**: `docs/research/babylon-mmd-api-analysis.md` §3.1 接口缺口 / §五 P0
 
-**关联**: ADR-064（IMmdModel 类型缺口即时止血，本地 module augmentation）、ADR-098（vmd-layers cast 消解，批次一）
+**关联**: ADR-064（IMmdModel 类型缺口即时止血，本地 module augmentation）、ADR-098（vmd-layers cast 消解，批次一）、ADR-187（babylon-mmd 剩余 API 调研）、ADR-188（PBR 材质构建器，草案）、ADR-056（WASM 运动层合成）、ADR-058（Shift-JIS 纹理解码）、ADR-029（WASM 物理调参）、ADR-083（碰撞摩擦/弹性）、ADR-024（SSS/ PBR 阻塞）、ADR-054（上游阻塞路线图）、ADR-016（gaze 手动计时）、ADR-085（脚部 IK 求解器暴露）
 
 **影响面**: `frontend/src/core/types.ts`（本地 augmentation 待移除）、babylon-mmd 上游仓库（`noname0310/babylon-mmd`）
+
+---
+
+## 上游贡献候选登记册（跨 ADR 汇总）
+
+> 本 ADR 同时作为「向 `noname0310/babylon-mmd` 提 PR 的单一权威登记册」。各源 ADR 正文中的「提上游 PR / 推动上游 / fork」表述均归集于此，避免散落、口径不一。
+> 决策语义：`✅ 已立项` = 采用提 PR；`⏸ 延期/评估` = 本地已替代，远期可重议；`❌ 已否决` = 本地方案更优或维护成本不可控；`⛔ 上游阻塞` = 依赖上游自身路线图，非本项目范畴。
+
+| # | 来源 ADR | 建议的上游 PR / 贡献内容 | 决策 | 上游价值 | 落地难度 |
+|---|----------|--------------------------|------|----------|----------|
+| **1** | **ADR-110** | `IMmdModel` 接口补全 `setRuntimeAnimation` / `createRuntimeAnimation` / `currentAnimation` | ✅ **已立项**（本文详述） | 高（消 3 处 cast，社区通用） | 低 |
+| 2 | ADR-056 | `MmdWasmRuntime` 原生支持 `MmdCompositeAnimation`（合成下沉 WASM） | ⏸ 留作远期（Option A 否决，本地 JS 帧流合成） | 中（去运行时开销） | 中 |
+| 3 | ADR-058 | PMX 纹理路径按 Shift-JIS 解码（修正 `U+FFFD` 乱码） | ❌ 已否决（本地「损坏映射」兜底，免维护 fork） | 中（根源修） | 中（需 fork） |
+| 4 | ADR-029 | 暴露 WASM 物理 `stiffness` / `damping` / `friction` 运行时 API | ❌ 不追（本地仅用 0/1 刚体开关，已覆盖 100% 可用 API） | 中 | 高（WASM 内存 hack） |
+| 5 | ADR-083 | 暴露碰撞体 `friction` / `restitution` 运行时 API | ❌ 封存（等上游或自行 hack WASM 内存） | 低 | 高 |
+| 6 | ADR-024 | PBR 材质 + morph 目标支持（SSS 次表面散射前置） | ⛔ 上游阻塞（非本项目范畴，待上游突破） | 高（解锁 SSS/PBR） | 极高 |
+| 7 | ADR-054 | 推动上游贡献（SSS / PBR 整体路线图） | ⏸ 评估中（只能等 / 推动上游） | 高 | 极高 |
+| 8 | ADR-016 | 暴露 `beforePhysics` / `afterPhysics` 钩子供手动计时（gaze 优化项） | ⏸ 优化项（当前 WASM frontBuffer 直写 + JS linkedBone 双路径已落地） | 低 | 中 |
+| 9 | ADR-085 | fork 暴露 `ikSolver` 字段及 `solve()`（脚部 IK 统一 JS/WASM 路径） | ⏸ 长期（方案 C WASM 手动 IK 已于 2026-07-26 落地，方案 A 降级） | 中 | 高（fork） |
+| 10 | ADR-188 / ADR-187 | `PBRMaterialBuilder` 落地（morph 兼容 PBR，根治 ADR-024 阻塞） | 📋 草案（P1 长期规划，独立专项 ADR-188） | 高（材质升级） | 大 |
+
+### 登记册治理规则
+
+- **唯一入口**：任何 ADR 出现「向 babylon-mmd 提 PR」类建议，必须在此登记册追加一行并回链源 ADR，不得在源 ADR 内自成体系。
+- **决策冻结点**：条目 1 已采纳；条目 3/4/5 已否决/封存（本地替代方案已闭环，不再追溯）；条目 2/8/9 为远期可重议；条目 6/7/10 受上游路线图或专项 ADR 约束。
+- **验收后清理**：条目 1 上游合并后，按本文「步骤四」移除 `core/types.ts` augmentation；其余条目若未来启动 PR，从本登记册升级为独立实现计划。
 
 ---
 

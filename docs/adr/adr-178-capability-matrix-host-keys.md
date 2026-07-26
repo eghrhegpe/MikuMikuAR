@@ -4,7 +4,7 @@
 > **日期**: 2026-07-24
 > **关联**: ADR-176（前端 Backend 适配器双实现）、ADR-177（Web Loader 与主应用统一路径）、ADR-017（安卓适配，platform 探测范式）、ADR-133（安卓 MPR 物理缺口）、ADR-093（声明式菜单 Schema）
 > **前置**: ADR-176/177 已落地（`BackendService` 双适配器 + `getCapabilities()`/`getCachedCapabilities()` 能力缓存）
-> **审核记录**: 无（首版草案）
+> **审核记录**: 2026-07-26 审核通过（66→67 单测）。补 browser-adapter 宿主键断言（P3，原草案 ④ 指定但未落地）；无其余风险项
 
 ## 背景
 

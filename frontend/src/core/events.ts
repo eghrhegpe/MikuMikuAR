@@ -474,8 +474,23 @@ export function showUpdateToast(latest: string, url: string, downloadUrl?: strin
                     const { DownloadApk } = await import('../core/wails-bindings');
                     const result = await DownloadApk();
                     if (result && result.success && result.localPath) {
+                        // [doc:adr-179] Register one-shot listener for install failures.
+                        // WailsBridge emits 'update:installFailed' via evalJavascript when the
+                        // system installer cannot be launched (e.g. FileProvider path error,
+                        // missing REQUEST_INSTALL_PACKAGES permission rejected).
+                        const onInstallFailed = () => {
+                            btn.textContent = t('settings.about.update.downloadFailed');
+                            if (!openExternalURL(url)) {
+                                void browser.openURL(url);
+                            }
+                        };
+                        window.addEventListener('update:installFailed', onInstallFailed);
                         window.wails?.installApk?.(result.localPath);
                         btn.textContent = t('settings.about.update.installLaunched');
+                        // Clean up listener after a generous window (Java→JS bridge is async).
+                        setTimeout(() => {
+                            window.removeEventListener('update:installFailed', onInstallFailed);
+                        }, 10000);
                     } else {
                         btn.textContent = t('settings.about.update.downloadFailed');
                         if (!openExternalURL(url)) {

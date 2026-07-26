@@ -82,6 +82,20 @@ describe('browserAdapter 能力矩阵', () => {
         const r = await browserAdapter.readFileBytes('nope');
         expect(r).toBeNull();
     });
+    it('[adr-178] 宿主运行时键：crossOriginIsolated / clipboardReliable / arScope 读运行时自报', () => {
+        // 与 browser-adapter `_cap()` 运行时判定完全对齐（不硬编码环境假设）。
+        const c = browserAdapter.capabilities();
+        const crossOriginIsolatedAtRuntime =
+            typeof window !== 'undefined' &&
+            (window as { crossOriginIsolated?: boolean }).crossOriginIsolated === true;
+        const clipboardReliableAtRuntime =
+            typeof navigator !== 'undefined' && !!navigator.clipboard;
+        const arScopeAtRuntime =
+            typeof navigator !== 'undefined' && 'xr' in navigator ? 'webxr' : 'none';
+        expect(c.crossOriginIsolated).toBe(crossOriginIsolatedAtRuntime);
+        expect(c.clipboardReliable).toBe(clipboardReliableAtRuntime);
+        expect(c.arScope).toBe(arScopeAtRuntime);
+    });
 });
 
 // [doc:adr-177] Phase 2 A4：path 映射 + 默认值 + Delete* + SetEnvState 单源
@@ -913,5 +927,35 @@ describe('FSA 目录扫描嵌套结构（保留目录层级 + 同名不覆盖）
         expect(_idbStore.get('dir:importedMiku:toon.png')).toEqual(new Uint8Array([8, 8]));
         // FSA 扫描写入的新 entry 同时存在
         expect(_idbStore.get('entry:m')).toBeDefined();
+    });
+});
+
+// [doc:adr-179] P3-2：适配器 CheckForUpdate / DownloadApk 返回值形状断言
+describe('ADR-179 更新安装 — browser-adapter 形状', () => {
+    it('CheckForUpdate 返回字段与 Go UpdateCheckResult 对齐', async () => {
+        const r = await browserAdapter.CheckForUpdate();
+        // 必含字段（字段名与 Go JSON tag 严格对齐）
+        expect(r).toHaveProperty('current');
+        expect(r).toHaveProperty('latest');
+        expect(r).toHaveProperty('available');
+        expect(r).toHaveProperty('url');
+        expect(r).toHaveProperty('checkedAt');
+        expect(r).toHaveProperty('downloadUrl');
+        expect(r).toHaveProperty('assetName');
+        expect(r).toHaveProperty('size');
+        expect(r).toHaveProperty('error');
+        // web 端恒定
+        expect(r.available).toBe(false);
+        expect(r.downloadUrl).toBe('');
+    });
+
+    it('DownloadApk 返回 InstallResult 形状', async () => {
+        const r = await browserAdapter.DownloadApk();
+        expect(r).not.toBeNull();
+        expect(r).toHaveProperty('localPath');
+        expect(r).toHaveProperty('success');
+        expect(r).toHaveProperty('error');
+        // web 端恒定不成功
+        expect(r!.success).toBe(false);
     });
 });

@@ -1118,15 +1118,16 @@ export const browserAdapter: BackendService = {
     },
     async CheckForUpdate(): Promise<UpdateCheckResult> {
         return {
+            current: 'web',
+            latest: 'web',
             available: false,
-            currentVersion: 'web',
-            latestVersion: 'web',
-            notes: '',
             url: '',
+            checkedAt: 0,
             downloadUrl: '',
             assetName: '',
             size: 0,
-        } as unknown as UpdateCheckResult;
+            error: '',
+        };
     },
     async DownloadApk(): Promise<InstallResult | null> {
         return { localPath: '', success: false, error: 'not supported on web' };
