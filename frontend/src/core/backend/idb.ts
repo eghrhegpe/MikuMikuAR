@@ -111,8 +111,6 @@ export interface WebModelEntry {
 
 const _entryKey = (name: string): string => `entry:${name}`;
 const _fileKey = (name: string): string => `file:${name}`;
-// 历史键名（源自已删除的 web-loader），改值会丢用户已存的「上次模型」记录 — 保持不变
-const _LAST_MODEL_KEY = 'web-loader.lastModel';
 
 /** 存入模型库（同名覆盖）。返回写入的元数据。 */
 export async function saveModel(
@@ -133,53 +131,6 @@ export async function saveModel(
     return entry;
 }
 
-/** 列出库内全部模型（按存入时间倒序）。 */
-export async function listModels(): Promise<WebModelEntry[]> {
-    const keys = (await idbKeys('models')).filter((k) => k.startsWith('entry:'));
-    const out: WebModelEntry[] = [];
-    for (const k of keys) {
-        const e = await idbGet<WebModelEntry>('models', k);
-        if (e) out.push(e);
-    }
-    return out.sort((a, b) => b.savedAt - a.savedAt);
-}
-
-/** 读取模型原档字节。 */
-export async function loadModelBytes(name: string): Promise<Uint8Array | null> {
-    return (await idbGet<Uint8Array>('models', _fileKey(name))) ?? null;
-}
-
-/** 读取模型元数据。 */
-export async function getModelEntry(name: string): Promise<WebModelEntry | null> {
-    return (await idbGet<WebModelEntry>('models', _entryKey(name))) ?? null;
-}
-
-/** 删除模型（元数据 + 原档配对删除；若为 lastModel 一并清除）。 */
-export async function deleteModel(name: string): Promise<void> {
-    await idbDelete('models', _entryKey(name));
-    await idbDelete('models', _fileKey(name));
-    if ((await getLastModel()) === name) {
-        await setLastModel(null);
-    }
-}
-
-/** 记录/清除上次加载的模型名。 */
-export async function setLastModel(name: string | null): Promise<void> {
-    if (name === null) {
-        await idbDelete('meta', _LAST_MODEL_KEY);
-    } else {
-        await idbSet('meta', _LAST_MODEL_KEY, name);
-    }
-}
-
-/** 取上次加载的模型名（无则 null）。 */
-export async function getLastModel(): Promise<string | null> {
-    return (await idbGet<string>('meta', _LAST_MODEL_KEY)) ?? null;
-}
-
-/** 人类可读字节数。 */
-export function formatSize(bytes: number): string {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
+// 注：listModels/loadModelBytes/getModelEntry/deleteModel/formatSize/setLastModel/getLastModel
+// 已删除（无外部消费者；browser-adapter.ts 内部使用 _listModels 等私有实现，不再走 idb.ts 公共 API）。
+// 列表/读取/删除等 CRUD 操作请使用 browser-adapter.ts 暴露的统一 backend 接口。

@@ -85,11 +85,6 @@ export function animateCameraVmd(frameTime: number): void {
     }
 }
 
-/** 获取当前 VMD 相机实例（供 camera.ts switchCameraMode 在 vmd 分支使用）。 */
-export function getMmdCamera(): MmdCamera | null {
-    return _mmdCamera;
-}
-
 /** 创建 VMD 相机（若已存在则复用）。供 camera.ts switchCameraMode 在 vmd 分支使用。 */
 export function createVmdCamera(): MmdCamera {
     const scene = getCameraScene();
