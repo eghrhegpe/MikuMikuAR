@@ -136,6 +136,69 @@ const MAX_ZIP_FILE_SIZE = 500 * 1024 * 1024; // 500 MB — 单 zip 文件大小�
 const MAX_ZIP_ENTRY_COUNT = 10000; // 条目数上限
 const MAX_ZIP_TOTAL_BYTES = 2 * 1024 * 1024 * 1024; // 2 GB — 总未压缩大小上限
 
+// —— Plaza 远程配置源（对齐 Go 端 plaza_config.go:43-47）——
+// 三源 fallback：raw.githubusercontent → cdn.jsdelivr.net → api.github.com
+// 三个域名均支持 CORS（Access-Control-Allow-Origin: *），网页端可直接 fetch
+const PLAZA_GH_OWNER = 'eghrhegpe';
+const PLAZA_GH_REPO = 'MikuMikuAR';
+const PLAZA_GH_BRANCH = 'main';
+const PLAZA_RAW_BASE = `https://raw.githubusercontent.com/${PLAZA_GH_OWNER}/${PLAZA_GH_REPO}/${PLAZA_GH_BRANCH}`;
+const PLAZA_JSD_BASE = `https://cdn.jsdelivr.net/gh/${PLAZA_GH_OWNER}/${PLAZA_GH_REPO}@${PLAZA_GH_BRANCH}`;
+const PLAZA_API_BASE = `https://api.github.com/repos/${PLAZA_GH_OWNER}/${PLAZA_GH_REPO}/contents`;
+const PLAZA_FETCH_TIMEOUT_MS = 10_000; // 对齐 Go 端 10s 超时
+const PLAZA_FETCH_MAX_BYTES = 2 << 20; // 2 MB — 对齐 Go 端 io.LimitReader
+
+/**
+ * [doc:adr-177] 网页端拉取单个 plaza 配置文件，对齐 Go 端 fetchPlazaRemote 的三源 fallback。
+ *
+ * 源序：raw.githubusercontent → cdn.jsdelivr.net → api.github.com（返回 base64 content）。
+ * 三个域名均带 CORS 头，网页端可直接 fetch；GitHub API 有 60/小时 未认证限速，故放最后。
+ * 失败时抛错，由调用方 catch 后走 toast 提示或兜底逻辑。
+ */
+async function _fetchPlazaFile(name: string): Promise<string> {
+    const sources = [
+        { url: `${PLAZA_RAW_BASE}/${name}`, isApi: false },
+        { url: `${PLAZA_JSD_BASE}/${name}`, isApi: false },
+        { url: `${PLAZA_API_BASE}/${name}`, isApi: true },
+    ];
+    let lastErr: unknown = null;
+    for (const s of sources) {
+        try {
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), PLAZA_FETCH_TIMEOUT_MS);
+            const resp = await fetch(s.url, {
+                signal: ctrl.signal,
+                headers: s.isApi ? { Accept: 'application/vnd.github.v3+json' } : undefined,
+            });
+            clearTimeout(timer);
+            if (!resp.ok) {
+                lastErr = new Error(`HTTP ${resp.status}`);
+                continue;
+            }
+            if (s.isApi) {
+                // GitHub API 返回 { content: "<base64>" }
+                const result = (await resp.json()) as { content?: string };
+                if (!result.content) {
+                    lastErr = new Error('GitHub API: missing content');
+                    continue;
+                }
+                const clean = result.content.replace(/[\s\r\n\t]/g, '');
+                return new TextDecoder().decode(_base64ToBytes(clean));
+            }
+            // raw / jsdelivr 直接返回文本
+            const text = await resp.text();
+            if (text.length > PLAZA_FETCH_MAX_BYTES) {
+                lastErr = new Error(`response too large: ${text.length}`);
+                continue;
+            }
+            return text;
+        } catch (e) {
+            lastErr = e;
+        }
+    }
+    throw new Error(`fetch ${name} failed: ${String(lastErr)}`);
+}
+
 // —— 资源配对（P4）——
 if (
     typeof window !== 'undefined' &&
@@ -439,6 +502,20 @@ let _fsaRootHandle: FileSystemDirectoryHandle | null = null;
 // 两次扫描的 entry 写入相互覆盖，用户表现「只显示一个文件夹」「扫描永远完不成」。
 // 锁存进行中的 Promise，并发调用直接 await 同一 Promise，避免重复扫描 + 数据竞争。
 let _scanningPromise: Promise<void> | null = null;
+
+// [doc:adr-183] 扫描进度回调（节流刷新 UI 用）。
+// 每扫完一个子目录调用一次，调用方据此节流 dispatch 事件增量刷新 UI，
+// 避免「扫描中 UI 不更新，扫完才一次性显示」的体感问题。
+type ScanProgressCallback = (scannedDirs: number) => void;
+let _scanProgressCb: ScanProgressCallback | null = null;
+
+/** [doc:adr-183] 注册扫描进度回调，供 UI 层节流增量刷新。 */
+export function setScanProgressCallback(cb: ScanProgressCallback | null): void {
+    _scanProgressCb = cb;
+}
+
+// [doc:adr-183] 扫描计数器，每次扫描开始前重置。子目录扫完递增，供进度回调读取。
+let _scannedDirCount = 0;
 
 // [doc:adr-177] FSA 目录句柄的异步迭代器接口（TS DOM lib 未含 values()，手动断言）
 interface FsaDirHandle extends FileSystemDirectoryHandle {
@@ -920,6 +997,15 @@ async function _scanDirIntoIDB(
             }
             const subRelPath = relPath ? `${relPath}/${dirName}` : dirName;
             await _scanDirIntoIDB(subHandle, subRelPath, effectivePmx, depth + 1);
+            // [doc:adr-183] 子目录扫完触发进度回调，UI 层节流增量刷新。
+            // 回调在 try 外部，子目录扫描失败已 return 不会到此处。
+            if (_scanProgressCb) {
+                try {
+                    _scanProgressCb(++_scannedDirCount);
+                } catch {
+                    /* 回调失败不影响扫描 */
+                }
+            }
         })
     );
 }
@@ -936,6 +1022,7 @@ async function _scanRootGuarded(): Promise<void> {
         return _scanningPromise;
     }
     if (!_fsaRootHandle) return;
+    _scannedDirCount = 0; // [doc:adr-183] 重置计数器
     _scanningPromise = (async () => {
         try {
             await _scanDirIntoIDB(_fsaRootHandle);
@@ -1767,11 +1854,19 @@ export const browserAdapter: BackendService = {
     ): Promise<PlazaDownloadResult | null> {
         throw new NotSupportedError('DownloadFromPlaza');
     },
+    // [doc:adr-177] 网页端实现：三源 fetch（raw → jsdelivr → GitHub API），对齐 Go 端 fetchPlazaRemote。
+    // 拉到后返回原始 JSON 字符串；前端 updateBtn.onclick 会调 savePlazaCache 写入 plaza_cache.json。
     async FetchPlazaConfig(): Promise<[string, string]> {
-        throw new NotSupportedError('FetchPlazaConfig');
+        const [creators, sites] = await Promise.all([
+            _fetchPlazaFile('creators.json'),
+            _fetchPlazaFile('workshop_sites.json'),
+        ]);
+        return [creators, sites];
     },
+    // [doc:adr-177] 网页端无 Go 风格 plaza-cache/ 目录；返回空串让 loadCachedConfig 跳过，
+    // 由 ensureSitesLoaded 走 plaza_cache.json（savePlazaCache 写出）或硬编码兜底。
     async GetCachedPlazaConfig(): Promise<[string, string]> {
-        throw new NotSupportedError('GetCachedPlazaConfig');
+        return ['', ''];
     },
     async LaunchSoftware(_path: string, _args: string): Promise<void> {
         throw new NotSupportedError('LaunchSoftware');
