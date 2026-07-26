@@ -3,12 +3,11 @@
 
 import { cardContainer, modelRegistry, overridePaths, libraryRoot } from '../core/config';
 import { feedbackInfo, feedbackStatus } from '../core/feedback';
-import { showInfoToast } from '../core/toast';
 import type { PopupLevel } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow, addSectionTitle, addCollapsible } from '../core/ui-helpers';
 import { removeModel, setModelVisibility } from '../scene/manager/model-ops';
-import { getPropList, removeProp, modelManager } from '../scene/scene';
+import { getPropList, removeProp, modelManager, pushUndoSnapshot, offerSceneUndo } from '../scene/scene';
 import { reRenderSceneMenu, getSceneMenu } from './scene-menu-state';
 import { buildTransformCard, buildMaterialCard, buildDangerCard } from './resource-detail-helpers';
 
@@ -186,9 +185,15 @@ function buildStageSchema(): MenuNode[] {
                                     title: t('scene.unloadStage'),
                                     onClick: (e) => {
                                         e.stopPropagation();
+                                        // [doc:adr-127] 场景级撤销保护：与其他 8 处破坏性操作一致
+                                        const snap = pushUndoSnapshot();
                                         removeModel(id);
                                         reRenderSceneMenu();
-                                        showInfoToast(t('scene.unloaded', { name: inst.name }));
+                                        offerSceneUndo(
+                                            t('scene.unloaded', { name: inst.name }),
+                                            snap,
+                                            () => reRenderSceneMenu()
+                                        );
                                     },
                                 },
                             }
@@ -239,12 +244,19 @@ function buildStageSchema(): MenuNode[] {
                                     title: t('scene.deleteProp'),
                                     onClick: (e) => {
                                         e.stopPropagation();
+                                        // [doc:adr-127] 场景级撤销保护：与其他 8 处破坏性操作一致
+                                        const snap = pushUndoSnapshot();
                                         if (item.fromPropRegistry) {
                                             removeProp(item.id);
                                         } else {
                                             removeModel(item.id);
                                         }
                                         reRenderSceneMenu();
+                                        offerSceneUndo(
+                                            t('scene.unloaded', { name: item.name }),
+                                            snap,
+                                            () => reRenderSceneMenu()
+                                        );
                                     },
                                 },
                             }
