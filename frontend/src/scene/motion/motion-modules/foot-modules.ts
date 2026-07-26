@@ -9,6 +9,7 @@ import {
     setBoneOverride,
     setBoneOverridePosition,
     registerBoneOverrideFrameHook,
+    FRAME_HOOK_ORDER,
 } from '../bone-override';
 import { getModuleState } from './registry';
 import type { MotionOverrideModule, ModuleMeta, ModuleDef } from './types';
@@ -82,7 +83,7 @@ function createFootModuleFactory(cfg: FootSideConfig) {
                 if (fx === 0 && fy === 0 && fz === 0) return;
 
                 setBoneOverridePosition(cfg.ikBone, [fx, fy, fz], 1, true, modelId);
-            }, 0, cfg.moduleId);
+            }, FRAME_HOOK_ORDER.FEET, cfg.moduleId);
             _footFrameHooks.set(modelId, unregister);
         }
 
