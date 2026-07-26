@@ -25,7 +25,8 @@ import {
 } from '@/core/config';
 import { orbitToCartesian, cartesianToOrbit, normalizeOrbit } from '@/core/orbit';
 import { disposeOverlay, restoreMaterials } from '@/outfit/outfit-overlay';
-import { clamp01, swallowError } from '@/core/utils';
+import { clamp01 } from '@/core/clamp';
+import { swallowError } from '@/core/async';
 import { logWarn } from '@/core/logger';
 import { disposeModelMaterialState } from './material';
 import { applyWetnessToInst } from '@/scene/env/env-wetness';

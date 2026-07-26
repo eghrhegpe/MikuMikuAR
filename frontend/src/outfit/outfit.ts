@@ -15,7 +15,7 @@ import {
 import { showInfoToast } from '../core/toast';
 import type { Scene } from '@babylonjs/core/scene';
 import { getBaseName, normPath, getDirPath } from '@/core/path';
-import { delay, LoadingGuard } from '@/core/utils';
+import { delay, LoadingGuard } from '@/core/async';
 import { logWarn } from '@/core/logger';
 import { col3FromTriple } from '@/core/color-helpers';
 import { _catOf } from '../scene/manager/material';

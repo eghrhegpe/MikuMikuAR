@@ -15,7 +15,8 @@ import { observe, observeOnce, type ObserverHandle } from '@/core/observer-handl
 import { safeDispose } from '@/core/dispose-helpers';
 import { scheduleRefresh } from '@/core/reactivity';
 import { resetPerformanceSnapshot, isSnapshotResetSuppressed } from './performance';
-import { clamp, clamp01, lerp, lerpArray, setKey } from '@/core/utils';
+import { clamp, clamp01, lerp, lerpArray } from '@/core/clamp';
+import { setKey } from '@/core/utils';
 import { logWarn } from '@/core/logger';
 import type { EnvState } from '@/core/config';
 import { getDirLight } from './lighting';

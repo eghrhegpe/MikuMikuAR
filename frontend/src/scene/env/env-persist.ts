@@ -8,7 +8,8 @@ import type { UIState } from '@/core/wails-bindings';
 import { envState, triggerAutoSave } from '@/core/config';
 import { uiState, setUIPersistCallback } from '@/core/state';
 import { feedbackStatus } from '@/core/feedback';
-import { logWarn, DebouncedTimer } from '@/core/utils';
+import { logWarn } from '@/core/utils';
+import { DebouncedTimer } from '@/core/async';
 
 // ======== EnvState Persist ========
 

@@ -1,6 +1,6 @@
 # ADR-191: 神桶 `@/core/utils` 去桶化（零依赖叶下沉）
 
-> **状态**: 实施中（A/B 档已完成 2026-07-27；C 档进行中）
+> **状态**: 实施中（A/B/C 档已完成 2026-07-27；D 档待议）
 > **日期**: 2026-07-27（初版）
 > **关联**: ADR-177（Web Loader 统一路径 — 测试 EXIT=124 根因）、cf264937（clamp 叶抽取地基）
 > **来源**: `virtual-skirt.test.ts`「一改就炸」根因调查——纯几何模块 `skirt-analyzer.ts` 从 `@/core/utils` 桶导入 `clampInt`，整桶 ESM 组合求值留下 pending 微任务，致 vitest fork worker 永不退（EXIT=124）。
@@ -29,7 +29,7 @@
 |----|------|------|
 | A 档 | 抽 `@/core/clamp` 叶（`clamp`/`clampInt`/`clamp01`），14 个纯模块改引叶 | ✅ 已完成（cf264937 地基 + 14 模块本提交） |
 | B 档 | 抽 `@/core/path` 叶（纯路径符号），迁移路径调用方 | ✅ 已完成（2026-07-27） |
-| C 档 | 抽 `@/core/async` 叶（纯异步符号）+ `clampPct`/`lerp`/`lerpArray` 并入 `clamp.ts`，迁移调用方 | 🔄 进行中 |
+| C 档 | 抽 `@/core/async` 叶（纯异步符号）+ `clampPct`/`lerp`/`lerpArray` 并入 `clamp.ts`，迁移调用方 | ✅ 已完成（2026-07-27） |
 | D 档 | 应用耦合符号（`triggerAutoSave`/`canvasToBase64`/`withLoadingIndicator`/`logWarn`/`deepClone`/`debounce`/`setKey`/`formatTimestamp`/`computeLibraryRef`/`resolveLibraryRef` 等）单独收口或留桶 | ⏳ 待议 |
 
 **A 档落地后，仍从桶导入的 21 个混引模块**（按符号分类）：

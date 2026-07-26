@@ -14,6 +14,7 @@
 > 保存、推送在完成更改后进行: 先测试，再 git status --short 抓取当前文件清单,按功能git add正常的文件/文件夹，git commit正常的更改。最后询问用户是否需要处理报错。git push --verbose 2>&1 | Select-Object -Last 50。
 > 翻译文件在此：frontend/src/core/i18n
 > 放弃低效的 `git stash`， `git stash pop`指令吧。
+> **禁止从 `@/core/utils` 神桶导入**——纯/叶子模块须引具体零依赖叶：`@/core/clamp`（clamp/clamp01/clampInt/lerp/lerpArray/clampPct）、`@/core/path`（normPath/getBaseName/getDirPath/isUnderRoot/isStageLike）、`@/core/async`（swallowError/fireAndForget/delay/waitForFrame/LoadingGuard/DebouncedTimer/Abortable）。整桶 import 会拖起 dom/state/fileservice 等应用层，致 vitest fork worker 挂死（见 ADR-191）。
 
 ## 去哪里查
 
