@@ -10,11 +10,15 @@ adr: []
 symbols:
   - EnvPreset
   - DerivedLighting
+  - EnvPresetCategory
+  - CategorizedEnvPreset
+  - ENV_PRESET_FIELDS
   - calcLuminance
   - deriveLighting
   - TIME_OF_DAY_PRESETS
-  - exportEnvPreset
-  - importEnvPreset
+  - snapshotEnvPresetByCategory
+  - exportCategorizedEnvPreset
+  - importCategorizedEnvPreset
 invariants:
   - 灯光预设参数在合理范围内
 tests: []
@@ -22,20 +26,25 @@ use_when:
   - 环境灯光
   - 灯光包装
   - 灯光与场景集成
+  - 时间预设
+  - 灯光派生
 ---
 
 ## 系统概览
-**环境灯光包装层**。将光照系统与场景环境集成，提供统一的灯光初始化和释放接口。
+**环境灯光派生层**。纯计算模块，将 envState 的 sky/ground/water/atmosphere 参数派生为
+`DerivedLighting`（方向光强度/颜色、半球光、阴影参数、groundColor），不直接操作任何
+Babylon 灯光对象。同时提供时间段预设（`TIME_OF_DAY_PRESETS`）与分类预设的导出/导入。
 
 ## 核心职责
-- `env-lighting.ts` — 场景灯光初始化、与 env 系统集成、资源释放。
+- `env-lighting.ts` — envState → DerivedLighting 纯函数派生、时间段预设库、分类预设序列化。
 
 ## 对外 API（节选）
-- `EnvPreset` / `DerivedLighting` — 环境灯光预设接口。
-- `calcLuminance(rgb)` — 计算亮度。
-- `deriveLighting(envState)` — 从 envState 派生灯光配置。
-- `TIME_OF_DAY_PRESETS` — 内置时间段预设集合。
-- `exportEnvPreset(p)` / `importEnvPreset(json)` — 预设导出/导入。
+- `deriveLighting(envState)` — 从 envState 派生 DerivedLighting（纯函数，无副作用）。
+- `calcLuminance(rgb)` — 计算 RGB 亮度。
+- `TIME_OF_DAY_PRESETS` — 内置时间段预设集（EnvPreset & DerivedLighting）。
+- `snapshotEnvPresetByCategory(envState)` — 按 category 分类快照预设。
+- `exportCategorizedEnvPreset(p)` / `importCategorizedEnvPreset(json)` — 分类预设序列化/反序列化。
+- `ENV_PRESET_FIELDS` — 各 category 对应的 envState key 白名单。
 
 ## 与其他子系统关系
 - 被 `env-impl.ts` 调用。
