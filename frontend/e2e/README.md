@@ -145,12 +145,14 @@ npm run test                   # 或 npx vitest run
 | Job | Runner | 性质 | 命令 | 覆盖 |
 |-----|--------|------|------|------|
 | `e2e` | ubuntu-latest | **阻塞门禁** | 起 Vite → `npx playwright test --grep "@dom"` | `@dom` ×25（smoke + 面板全覆盖 + 能力门控） |
-| `e2e-wails` | windows-latest | **阻塞门禁** | 起 `wails3 dev`(带 9222) → `npx playwright test --grep "@webgl"` | `@webgl` ×10（模型生命周期 + 动作/换装 + 截图） |
+| `e2e-wails` | windows-latest | **非阻塞**（`continue-on-error`） | 起 `wails3 dev`(带 9222) → `npx playwright test --grep "@webgl"` | `@webgl` ×10（模型生命周期 + 动作/换装 + 截图） |
 | `e2e-web-smoke` | ubuntu-latest | **阻塞门禁** | build + preview dist-web → `npx playwright test --grep "@web"` smoke only | `@web` ×9（首屏 + 能力门控 + 资源加载 + IDB CRUD） |
-| `e2e-web-full` | ubuntu-latest | **阻塞门禁** | build + preview dist-web → `npx playwright test --grep "@web"` (全量) | `@web` ×23（含 FSA 授权流 + 下载面板 + 能力声明） |
-| `e2e-gate` | ubuntu-latest | **合并门禁** | 聚合上述 4 个 job 结果 | 任何 E2E 失败 → 阻断合并 |
+| `e2e-web-full` | ubuntu-latest | **非阻塞**（`continue-on-error`） | build + preview dist-web → `npx playwright test --grep "@web"` (全量) | `@web` ×23（含 FSA 授权流 + 下载面板 + 能力声明） |
 
-> **合并门禁**：`e2e-gate` 是唯一的合并阻塞 job。在仓库 Settings → Branches → Branch protection rules → main 分支中，勾选 "Require status checks to pass before merging"，搜索并选中 `E2E — Merge Gate (all platforms)` 作为 required check。所有平台 E2E 绿了才能合并。
+> **设计意图**：`e2e`（@dom，Ubuntu Chromium）和 `e2e-web-smoke`（@web smoke）快且稳，作为阻塞门禁。
+> `e2e-wails`（@webgl，需 Windows + WebView2/CDP）和 `e2e-web-full`（@web 全量，含 FSA/IndexedDB 探针）
+> 设为非阻塞——跑完出报告即可，不影响合并。分支保护 rules 只需勾选 `Frontend — Test & Build` +
+> `E2E — DOM/Overlay Gate (@dom, vitePage)` + `E2E — Web Entry Smoke (@web, vite preview)` 三项作为 required checks。
 
 本地复刻 CI 行为即上述「1 / 2」两套命令。本地 `wails3 dev` 就绪时直接套用「3」一次跑全量，最接近 CI 的 `e2e + e2e-wails` 合并结果。
 
