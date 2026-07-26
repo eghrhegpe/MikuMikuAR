@@ -167,10 +167,6 @@ func (a *App) expandZipEntries(zipPath, category, source, typeOverride string) [
 
 	zr, err := zip.OpenReader(zipPath)
 	if err != nil {
-		// [doc:bug] 静默吞错会让用户看到「整个角色文件夹消失」却无线索——
-		// 前端 buildPopupRows 只显示有 pmx 内容的子目录，zip 解析失败 = 该文件夹在前端消失。
-		// 常见原因：zip 损坏 / 权限拒访 / Android FUSE 读取超时 / 加密 zip。
-		a.safeLogWarning("expandZipEntries: zip.OpenReader failed for %q: %v", zipPath, err)
 		return nil
 	}
 	defer zr.Close()
@@ -247,12 +243,7 @@ func (a *App) scanDirByExt(dir, category string, exts []string, source string) (
 
 	err := fileAccessor.WalkDir(dir, func(walkPath string, d os.DirEntry, err error) error {
 		if err != nil {
-			// [doc:bug] Android /sdcard FUSE 权限继承可能拒访部分子目录，
-			// 静默吞错会让用户看到「只扫到一个文件夹」却无任何线索。记日志
-			// 让 logcat 能定位被跳过的路径，仍 return nil 让 WalkDir 继续兄弟。
-			a.safeLogWarning("scanDirByExt: skip inaccessible path %q (category=%q): %v",
-				walkPath, category, err)
-			return nil
+			return nil // skip inaccessible paths
 		}
 		if d.IsDir() {
 			if strings.HasPrefix(d.Name(), ".") {
