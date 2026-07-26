@@ -7,8 +7,8 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 69 | 541 |
-| 3D 场景 | 103 | 1063 |
+| 核心基础设施 | 69 | 534 |
+| 3D 场景 | 103 | 1051 |
 | 菜单 & UI | 65 | 303 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 123 |
@@ -41,19 +41,12 @@
 | `Store()` | `core/backend/idb` | — |
 | `WebModelEntry()` | `core/backend/idb` | — |
 | `closeIDB()` | `core/backend/idb` | 释放连接（页面卸载/切换时调用），与联邦资源配对纪律对齐。 |
-| `deleteModel()` | `core/backend/idb` | 删除模型（元数据 + 原档配对删除；若为 lastModel 一并清除）。 |
-| `formatSize()` | `core/backend/idb` | 人类可读字节数。 |
-| `getLastModel()` | `core/backend/idb` | 取上次加载的模型名（无则 null）。 |
-| `getModelEntry()` | `core/backend/idb` | 读取模型元数据。 |
 | `idbDelete()` | `core/backend/idb` | — |
 | `idbGet()` | `core/backend/idb` | — |
 | `idbKeys()` | `core/backend/idb` | — |
 | `idbSet()` | `core/backend/idb` | — |
-| `listModels()` | `core/backend/idb` | 列出库内全部模型（按存入时间倒序）。 |
-| `loadModelBytes()` | `core/backend/idb` | 读取模型原档字节。 |
 | `openDB()` | `core/backend/idb` | — |
 | `saveModel()` | `core/backend/idb` | 存入模型库（同名覆盖）。返回写入的元数据。 |
-| `setLastModel()` | `core/backend/idb` | 记录/清除上次加载的模型名。 |
 | `getCachedCapabilities()` | `core/backend/index` | — |
 | `getCapabilities()` | `core/backend/index` | — |
 | `resolveBackend()` | `core/backend/index` | — |
@@ -655,22 +648,17 @@
 | `setCameraPreset()` | `scene/camera/camera-state` | — |
 | `setCameraScene()` | `scene/camera/camera-state` | — |
 | `setCameraVmdState()` | `scene/camera/camera-state` | — |
-| `setConcertParams()` | `scene/camera/camera-state` | — |
 | `setConcertPaused()` | `scene/camera/camera-state` | — |
 | `setCurrentCamera()` | `scene/camera/camera-state` | — |
 | `setFocusCenterY()` | `scene/camera/camera-state` | — |
 | `setFov()` | `scene/camera/camera-state` | — |
-| `setFreeflyParams()` | `scene/camera/camera-state` | — |
-| `setOrbitParams()` | `scene/camera/camera-state` | — |
 | `setPreviousMode()` | `scene/camera/camera-state` | — |
 | `setScriptedSubMode()` | `scene/camera/camera-state` | — |
-| `setSurroundParams()` | `scene/camera/camera-state` | — |
 | `setSurroundPaused()` | `scene/camera/camera-state` | — |
 | `setViewMatrixHandle()` | `scene/camera/camera-state` | — |
 | `animateCameraVmd()` | `scene/camera/camera-vmd` | Animate the VMD camera to a given 30fps frame time. |
 | `clearCameraVmd()` | `scene/camera/camera-vmd` | — |
 | `createVmdCamera()` | `scene/camera/camera-vmd` | 创建 VMD 相机（若已存在则复用）。供 camera.ts switchCameraMode 在 vmd 分支使用。 |
-| `getMmdCamera()` | `scene/camera/camera-vmd` | 获取当前 VMD 相机实例（供 camera.ts switchCameraMode 在 vmd 分支使用）。 |
 | `hasCameraAnimationHandle()` | `scene/camera/camera-vmd` | VMD 相机动画句柄是否就绪（switchCameraMode 在 vmd 分支前置检查）。 |
 | `loadCameraVmd()` | `scene/camera/camera-vmd` | Load camera animation from a VMD (MmdAnimation) and create an MmdCamera. |
 | `setSwitchCameraModeCallback()` | `scene/camera/camera-vmd` | camera.ts 启动时注入 switchCameraMode 回调。 |
@@ -678,7 +666,6 @@
 | `LEGACY_MODE_MAP()` | `scene/camera/camera` | ADR-100 §6.1 — 旧模式 → 双轴映射（迁移 / shim 共用）。 |
 | `_syncAxesFromMode()` | `scene/camera/camera` | ADR-100：由旧 mode 派生双轴状态。switchCameraMode 提交 _cameraMode 时同步调用，作为唯一写入点。 |
 | `animateCameraVmd()` | `scene/camera/camera` | — |
-| `applyCameraUserSettings()` | `scene/camera/camera` | — |
 | `autoFrame()` | `scene/camera/camera` | Auto-frame the camera to centre on a bounding box. |
 | `clearCameraVmd()` | `scene/camera/camera` | — |
 | `defaultCameraPreset()` | `scene/camera/camera` | — |
@@ -688,14 +675,12 @@
 | `getCameraBehavior()` | `scene/camera/camera` | — |
 | `getCameraControl()` | `scene/camera/camera` | — |
 | `getCameraMode()` | `scene/camera/camera` | — |
-| `getCameraPreset()` | `scene/camera/camera` | — |
 | `getCameraState()` | `scene/camera/camera` | — |
 | `getCameraVmdName()` | `scene/camera/camera` | — |
 | `getCameraVmdPath()` | `scene/camera/camera` | — |
 | `getConcertParams()` | `scene/camera/camera` | — |
 | `getConcertPaused()` | `scene/camera/camera` | — |
 | `getCurrentCamera()` | `scene/camera/camera` | — |
-| `getFocusCenterY()` | `scene/camera/camera` | — |
 | `getFocusedModelBoneNames()` | `scene/camera/camera` | — |
 | `getFov()` | `scene/camera/camera` | — |
 | `getFreeflyParams()` | `scene/camera/camera` | — |
@@ -707,12 +692,10 @@
 | `hasCameraVmd()` | `scene/camera/camera` | — |
 | `initCameraSystem()` | `scene/camera/camera` | Initialise the camera system and create the default Orbit camera. |
 | `isAutoCameraEnabled()` | `scene/camera/camera` | — |
-| `isTouchDevice()` | `scene/camera/camera` | — |
 | `loadCameraVmd()` | `scene/camera/camera` | — |
 | `logCameraAlpha()` | `scene/camera/camera` | Log current camera alpha for diagnostics. |
 | `refreshCameraUserSettings()` | `scene/camera/camera` | — |
 | `restoreAutoCameraState()` | `scene/camera/camera` | — |
-| `restoreBoneLockIfEnabled()` | `scene/camera/camera` | — |
 | `setAutoCameraBeatsPerSwitch()` | `scene/camera/camera` | — |
 | `setAutoCameraEnabled()` | `scene/camera/camera` | — |
 | `setBoneLockDamping()` | `scene/camera/camera` | — |
@@ -722,8 +705,6 @@
 | `setCameraState()` | `scene/camera/camera` | — |
 | `setConcertParams()` | `scene/camera/camera` | — |
 | `setConcertPaused()` | `scene/camera/camera` | — |
-| `setCurrentCamera()` | `scene/camera/camera` | — |
-| `setFocusCenterY()` | `scene/camera/camera` | — |
 | `setFov()` | `scene/camera/camera` | — |
 | `setFreeflyParams()` | `scene/camera/camera` | — |
 | `setOrbitBoneLock()` | `scene/camera/camera` | — |
@@ -2122,5 +2103,5 @@
 
 ---
 
-> 共 259 个文件，2076 个导出符号。
+> 共 259 个文件，2057 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。

@@ -47,8 +47,8 @@ sequenceDiagram
     Pipeline->>Hooks: ① _runFrameHooks(focusedId)
     Note over Hooks: 按 order 升序遍历（快照迭代）
 
-    Hooks->>FM: order=0: setBoneOverridePosition('左足IK', [fx,fy,fz])
-    Note over FM: 写入 overrideMap slot
+    Hooks->>FM: order=0(FEET): setBoneOverridePosition('左足IK', [fx,fy,fz])
+    Note over FM: 写入 overrideMap slot（通过 FRAME_HOOK_ORDER.FEET 常量）
 
     Hooks->>BP: order=5: setBoneOverridePosition('センター', [0,h,d])
     Hooks->>BP: protectIkPosition('左足IK')

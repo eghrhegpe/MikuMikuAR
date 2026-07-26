@@ -564,7 +564,9 @@ function _restoreProtectedPositions(
  *   使「同骨获胜者」由声明顺序决定，不依赖模块注册先后。建议从 {@link FRAME_HOOK_ORDER} 取值。
  */
 export const FRAME_HOOK_ORDER = {
-    /** 身体位置偏移（センター 平移）：最基础的身体变换，最先写入 */
+    /** 脚部位置偏移：脚部 IK 位置，最先写入（bake 写旋转后由帧钩子写位置） */
+    FEET: 0,
+    /** 身体位置偏移（センター 平移）：最基础的身体变换 */
     BODY_POSITION: 5,
     /** 下肢/骑行踏板：身体基础姿态 */
     RIDING: 10,
