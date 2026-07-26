@@ -82,7 +82,7 @@ function createFootModuleFactory(cfg: FootSideConfig) {
                 if (fx === 0 && fy === 0 && fz === 0) return;
 
                 setBoneOverridePosition(cfg.ikBone, [fx, fy, fz], 1, true, modelId);
-            });
+            }, 0, cfg.moduleId);
             _footFrameHooks.set(modelId, unregister);
         }
 

@@ -194,7 +194,7 @@ function createHandModuleFactory(cfg: HandSideConfig) {
 
                 const rootName = cache[rootKey] ?? cfg.shoulderBone;
                 _driveArm(bones, cache[ikKey], rootName, [hx, hy, hz], modelId);
-            }, FRAME_HOOK_ORDER.HAND_SYMMETRY);
+            }, FRAME_HOOK_ORDER.HAND_SYMMETRY, cfg.moduleId);
             _handFrameHooks.set(modelId, unregister);
         }
 
