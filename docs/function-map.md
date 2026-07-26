@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 69 | 541 |
-| 3D 场景 | 95 | 1004 |
+| 3D 场景 | 98 | 1016 |
 | 菜单 & UI | 65 | 303 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 123 |
@@ -690,30 +690,10 @@
 | `detachModelAccessories()` | `scene/env/accessory` | 移除指定模型的所有骨骼锚定道具（模型卸载时调用）。 |
 | `detachPropFromBone()` | `scene/env/accessory` | 从骨骼上解除道具挂载，回到场景坐标模式。 |
 | `reattachAllAccessories()` | `scene/env/accessory` | 重新挂载所有骨骼锚定的道具（场景恢复时调用）。 |
-| `applyEnvPreset()` | `scene/env/env-bridge` | — |
-| `applyEnvPresetByCategory()` | `scene/env/env-bridge` | [adr-120] 按类别应用用户自定义预设。 |
-| `applyEnvPresetObject()` | `scene/env/env-bridge` | 应用任意 EnvPreset 对象（支持用户自定义预设）。 |
-| `cancelEnvPersistTimer()` | `scene/env/env-bridge` | 取消挂起的 env state 防抖持久化定时器（HMR 重入清理用，见 ADR-106 D3）。 |
-| `flushEnvState()` | `scene/env/env-bridge` | 立即刷写 env state 到后端（无防抖）。关闭/隐藏页面时调用。 |
-| `flushUIState()` | `scene/env/env-bridge` | 立即刷写 UI state 到后端（无防抖）。关闭/隐藏页面时调用。 |
-| `getBodyCollisionEnabled()` | `scene/env/env-bridge` | — |
-| `getCollisionEnabled()` | `scene/env/env-bridge` | — |
-| `getEnvSunAngle()` | `scene/env/env-bridge` | — |
-| `getGravityStrength()` | `scene/env/env-bridge` | — |
-| `getGroundCollisionEnabled()` | `scene/env/env-bridge` | — |
-| `getTimeOfDaySpeed()` | `scene/env/env-bridge` | — |
-| `isTimeOfDayActive()` | `scene/env/env-bridge` | — |
-| `schedulePersistUI()` | `scene/env/env-bridge` | 防抖调度 UIState 持久化。修改 uiState 后调用此函数。 |
-| `setBodyCollisionEnabled()` | `scene/env/env-bridge` | — |
-| `setCollisionEnabled()` | `scene/env/env-bridge` | — |
+| `applyEnvStateFacade()` | `scene/env/env-bridge` | 等同于 scene-env.ts 的 applyEnvState，但避免循环依赖。 |
+| `registerEnvStateMiddleware()` | `scene/env/env-bridge` | 注册 setEnvState 中间件（供 env-time-of-day/env-gravity 等子模块调用） |
 | `setEnvState()` | `scene/env/env-bridge` | — |
-| `setEnvSunAngle()` | `scene/env/env-bridge` | — |
-| `setGravityStrength()` | `scene/env/env-bridge` | — |
-| `setGroundCollisionEnabled()` | `scene/env/env-bridge` | — |
-| `setTimeOfDaySpeed()` | `scene/env/env-bridge` | — |
-| `startTimeOfDay()` | `scene/env/env-bridge` | — |
-| `stopTimeOfDay()` | `scene/env/env-bridge` | — |
-| `syncTimeOfDayFromEnv()` | `scene/env/env-bridge` | 从持久化的 envState 恢复 time-of-day 模块变量（启动时调用） |
+| `setPresetAnimActive()` | `scene/env/env-bridge` | 标记预设动画是否运行中（供 _applyEnvStateFacade 跳过方向光同步） |
 | `FRAG_SRC()` | `scene/env/env-clouds` | — |
 | `buildJitterSource()` | `scene/env/env-clouds` | 根据 useBlueNoise 选择 jitter 代码路径（模板注入） |
 | `createClouds()` | `scene/env/env-clouds` | — |
@@ -731,6 +711,14 @@
 | `registerEnvCallback()` | `scene/env/env-dispatcher` | 子系统注册响应回调（延迟绑定，避免循环导入）。 |
 | `registerSceneTickCallback()` | `scene/env/env-dispatcher` | 注册场景每帧 tick 回调。返回的清理函数在 dispose 时调用。 |
 | `runSceneTickCallbacks()` | `scene/env/env-dispatcher` | 执行所有已注册的场景 tick 回调（由 ensureEnvUpdateObserver 的 scene observer 每帧调用）。 |
+| `getBodyCollisionEnabled()` | `scene/env/env-gravity` | — |
+| `getCollisionEnabled()` | `scene/env/env-gravity` | — |
+| `getGravityStrength()` | `scene/env/env-gravity` | — |
+| `getGroundCollisionEnabled()` | `scene/env/env-gravity` | — |
+| `setBodyCollisionEnabled()` | `scene/env/env-gravity` | — |
+| `setCollisionEnabled()` | `scene/env/env-gravity` | — |
+| `setGravityStrength()` | `scene/env/env-gravity` | — |
+| `setGroundCollisionEnabled()` | `scene/env/env-gravity` | — |
 | `GROUND_PRESETS()` | `scene/env/env-ground-presets` | — |
 | `GroundPreset()` | `scene/env/env-ground-presets` | — |
 | `GroundProceduralKind()` | `scene/env/env-ground-presets` | 程序化地面纹理类型 |
@@ -795,6 +783,13 @@
 | `updateParticleParams()` | `scene/env/env-particles` | 运行时更新粒子参数（密度/大小/速度），响应滑条变化 |
 | `updateParticleTexture()` | `scene/env/env-particles` | — |
 | `updateParticleWind()` | `scene/env/env-particles` | — |
+| `cancelEnvPersistTimer()` | `scene/env/env-persist` | 取消挂起的 env state 防抖持久化定时器（HMR 重入清理用，见 ADR-106 D3）。 |
+| `flushEnvState()` | `scene/env/env-persist` | 立即刷写 env state 到后端（无防抖）。关闭/隐藏页面时调用。 |
+| `flushUIState()` | `scene/env/env-persist` | 立即刷写 UI state 到后端（无防抖）。关闭/隐藏页面时调用。 |
+| `persistEnvState()` | `scene/env/env-persist` | 持久化 envState 到后端（ADR-176 第 2 步：经 resolveBackend 路由）。 |
+| `persistUIState()` | `scene/env/env-persist` | 与 persistEnvState 对称：持久化 UI state（ADR-176 第 2 步：经 resolveBackend 路由）。 |
+| `schedulePersistEnvState()` | `scene/env/env-persist` | 调度 env state 防抖持久化（500ms）。setEnvState 内部调用。 |
+| `schedulePersistUI()` | `scene/env/env-persist` | 防抖调度 UIState 持久化。修改 uiState 后调用此函数。 |
 | `ReflectionMode()` | `scene/env/env-reflection` | — |
 | `ResolvedReflectionMode()` | `scene/env/env-reflection` | — |
 | `applyReflection()` | `scene/env/env-reflection` | 反射子系统统一入口。参考 applySky 模式： 1. |
@@ -820,6 +815,17 @@
 | `disposeTextureCache()` | `scene/env/env-texture` | 释放全部缓存贴图（供 disposeEnv 统一清理）。 |
 | `getOrCreateCanvasTexture()` | `scene/env/env-texture` | 按 key 获取或创建 canvas 贴图。key 不变则复用；调用方不应手动 dispose 缓存贴图 （统一由 disposeTextureCache 在 disposeEnv |
 | `isCacheOwnedTexture()` | `scene/env/env-texture` | 判断贴图是否归缓存所有——是则调用方不得手动 dispose（由 disposeTextureCache 统一释放）。 |
+| `applyEnvPreset()` | `scene/env/env-time-of-day` | — |
+| `applyEnvPresetByCategory()` | `scene/env/env-time-of-day` | [adr-120] 按类别应用用户自定义预设。 |
+| `applyEnvPresetObject()` | `scene/env/env-time-of-day` | 应用任意 EnvPreset 对象（支持用户自定义预设）。 |
+| `getEnvSunAngle()` | `scene/env/env-time-of-day` | — |
+| `getTimeOfDaySpeed()` | `scene/env/env-time-of-day` | — |
+| `isTimeOfDayActive()` | `scene/env/env-time-of-day` | — |
+| `setEnvSunAngle()` | `scene/env/env-time-of-day` | — |
+| `setTimeOfDaySpeed()` | `scene/env/env-time-of-day` | — |
+| `startTimeOfDay()` | `scene/env/env-time-of-day` | — |
+| `stopTimeOfDay()` | `scene/env/env-time-of-day` | — |
+| `syncTimeOfDayFromEnv()` | `scene/env/env-time-of-day` | 从持久化的 envState 恢复 time-of-day 模块变量（启动时调用） |
 | `FrozenCamera()` | `scene/env/env-type-helpers` | — |
 | `REFRESHRATE_RENDER_ONCE()` | `scene/env/env-type-helpers` | — |
 | `getCanvasCtx()` | `scene/env/env-type-helpers` | — |
@@ -1015,6 +1021,7 @@
 | `BoneHierarchyNode()` | `scene/motion/bone-override` | 单根骨骼的层级与覆盖状态（dumpBoneHierarchy 输出元素） |
 | `BoneOverrideEntry()` | `scene/motion/bone-override` | 持久化的单条骨骼覆盖配置 |
 | `FRAME_HOOK_ORDER()` | `scene/motion/bone-override` | [doc:adr-116 P3] 注册每帧渲染钩子。 |
+| `FrameHookSnapshot()` | `scene/motion/bone-override` | 帧钩子快照（供 UI 查询管线时序一览） |
 | `OverrideSlotLike()` | `scene/motion/bone-override` | 覆盖槽的最小形态，供 _computeOverride 接收（与内部 _OverrideSlot 结构兼容） |
 | `OverrideType()` | `scene/motion/bone-override` | 骨骼覆盖类型（零分配，适合每帧查询） |
 | `applyBoneOverrideIK()` | `scene/motion/bone-override` | [doc:adr-122 P1] IK 感知的骨骼覆盖。 |
@@ -1023,6 +1030,7 @@
 | `computeOverride()` | `scene/motion/bone-override` | [doc:adr-116 P1] 计算单槽覆盖后的平移与旋转。 |
 | `dumpBoneHierarchy()` | `scene/motion/bone-override` | 导出当前聚焦模型的骨骼层级与覆盖状态。 |
 | `getAllOverrides()` | `scene/motion/bone-override` | 获取当前所有覆盖的条目列表（用于持久化/UI 展示）。 |
+| `getFrameHooksSnapshot()` | `scene/motion/bone-override` | 按 order 升序返回当前注册的所有帧钩子快照（不含 hook 函数本身）。 |
 | `getOverride()` | `scene/motion/bone-override` | [doc:adr-116] 读取单条骨骼的覆盖条目（用于 UI 回填）。不存在返回 undefined。 |
 | `getOverrideType()` | `scene/motion/bone-override` | 查询骨骼覆盖类型（零分配）。 |
 | `protectIkPosition()` | `scene/motion/bone-override` | 注册骨骼位置保护（帧钩子内调用）。 |
@@ -1134,13 +1142,17 @@
 | `_applyBreathing()` | `scene/motion/perception-breathing` | — |
 | `_updateBoneChain()` | `scene/motion/perception-breathing` | — |
 | `_applyMicroExpression()` | `scene/motion/perception-expression` | — |
-| `_applyEyeGazeJS()` | `scene/motion/perception-gaze-js` | JS 模式：眼部跟随 |
-| `_applyHeadGazeJS()` | `scene/motion/perception-gaze-js` | JS 模式：头部跟随 |
-| `_applyEyeGazeWasm()` | `scene/motion/perception-gaze-wasm` | WASM 模式：眼部跟随 |
-| `_applyHeadGazeWasm()` | `scene/motion/perception-gaze-wasm` | WASM 模式：头部跟随 |
+| `_applyEyeGazeJS()` | `scene/motion/perception-gaze-js` | JS 模式：眼部跟随（薄包装：调用 core + 注入 JS 写入策略） |
+| `_applyHeadGazeJS()` | `scene/motion/perception-gaze-js` | JS 模式：头部跟随（薄包装：调用 core + 注入 JS 写入策略） |
+| `_applyEyeGazeWasm()` | `scene/motion/perception-gaze-wasm` | WASM 模式：眼部跟随（薄包装：调用 core + 注入 WASM 写入策略） |
+| `_applyHeadGazeWasm()` | `scene/motion/perception-gaze-wasm` | WASM 模式：头部跟随（薄包装：调用 core + 注入 WASM 写入策略） |
 | `EYE_BONE_CANDIDATES()` | `scene/motion/perception-gaze` | 眼球骨骼候选名（JS/WASM 路径共用） |
+| `EyeGazeWriteStrategy()` | `scene/motion/perception-gaze` | 眼部跟随写入策略（JS/WASM 各自实现） |
 | `HEAD_BONE_CANDIDATES()` | `scene/motion/perception-gaze` | 头部骨骼候选名（JS/WASM 路径共用） |
+| `HeadGazeWriteStrategy()` | `scene/motion/perception-gaze` | 头部跟随写入策略（JS/WASM 各自实现） |
+| `_applyEyeGazeCore()` | `scene/motion/perception-gaze` | 眼部跟随共用骨架（eyeCenter → lookDir → targetWorldQ → 每眼 clamp/Slerp/cache → strategy.writeEye） |
 | `_applyGaze()` | `scene/motion/perception-gaze` | 统一调度入口（perception.ts observer 调用） |
+| `_applyHeadGazeCore()` | `scene/motion/perception-gaze` | 头部跟随共用骨架（lookDir → targetWorldQ → clamp → Slerp → cache → strategy.writeHead） |
 | `_clampEyeGazeTarget()` | `scene/motion/perception-gaze` | 眼球专用包装（相对头部坐标系，用更紧的生理锥形） |
 | `_clampGazeTargetInParentFrame()` | `scene/motion/perception-gaze` | 将"转向相机的目标世界旋转"钳制在相对父骨骼坐标系的 yaw/pitch 锥形内。 |
 | `_clampHeadGazeTarget()` | `scene/motion/perception-gaze` | 头部专用包装（维持已有回归测试签名不变） |
@@ -2063,5 +2075,5 @@
 
 ---
 
-> 共 251 个文件，2017 个导出符号。
+> 共 254 个文件，2029 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。
