@@ -164,7 +164,7 @@
 | ADR-39 | 文档体系精简 | 已完成（2026-07-05 执行） |
 | ADR-38 | 动作系统审计修复 + 雾系统增强 + 颜色滑块拖拽 | 已完成（2026-07-05） |
 | ADR-37 | P2 功能批量交付 — Lifelike / Formation / Auto Camera / Scene Bundle | 已完成（2026-07-05） |
-| ADR-36 | ShortcutRegistry — 可配置快捷键系统 | 已完成 — ShortcutRegistry 核心 + main.ts 迁移 + 设置面板 UI 全部就位（2026-07-05） |
+| ADR-36 | ShortcutRegistry — 可配置快捷键系统 | 已完成 — ShortcutRegistry 核心 + main.ts 迁移 + 设置面板 UI 全部就位（注：main.ts 后于 ADR-102 进一步拆分，已非编辑落点；快捷键注册现由 `core/shortcut-registry.ts` 承载）（2026-07-05） |
 | ADR-35 | 设置面板功能缺口评估 | 已完成 (Completed) — Phase A / B / C 全部落地（含 i18n 语言切换、自动更新开关、默认模型 auto-center），所有设置缺口均已补齐，见下方「实施进度」（2026-07-05） |
 | ADR-34 | 菜单体系大统一 — slideRow + cardContainer + lcard | 已完成 — 全量迁移完成，所有菜单面板统一为 slideRow/cardContainer 体系，CSS 变量集中管理（2026-07-05） |
 | ADR-33 | config.ts 四向分裂 + tryCatchStatus 泛化 + slideRow 收束 | 已完成 — config.ts 分裂、tryCatchStatus 替换 13 处、slideRow 替换 5 处，tsc + vite build 通过（2026-07-05） |
@@ -187,7 +187,7 @@
 | ADR-15 | 材质编辑器 UI 重构 + 逐材质开关 | 已完成 — buildMatRootLevel/ListLevel/BatchLevel 三级面板 + _matEnabled 开关（2026-06-27） |
 | ADR-14 | 模型加载预设库（角色设置快照） | 已完成 — 保存/加载/库管理/自动匹配/tryAutoApplyPreset 全部实现（2026-06-27） |
 | ADR-13 | Skybox 贴图系统改进 | 已完成 — SelectEnvTextureFile binding + CubeTexture 统一加载 + 天空穹顶（2026-06-27） |
-| ADR-12 | 云渲染改进 — Perlin 噪声 + 双分层 | ⚠️ 已过时 — 被 **ADR-113（体积云 Ray Marching）** 取代；下方 env-clouds.ts Perlin FBM 双分层云方案已退役（其「否决 GPU 着色器云」理由亦被 ADR-113 推翻）（2026-06-27） |
+| ADR-12 | 云渲染改进 — Perlin 噪声 + 双分层 | ⚠️ 已过时 — 被 **[ADR-113](adr-113-horizon-volumetric-clouds.md)（体积云 Ray Marching）** 取代；下方 env-clouds.ts Perlin FBM 双分层云方案已退役（其「否决 GPU 着色器云」理由亦被 [ADR-113](adr-113-horizon-volumetric-clouds.md) 推翻）（2026-06-27） |
 | ADR-11 | Wails v3 迁移评估与决策 | 已完成 — 已迁至 Wails v3，项目当前运行于 v3 构建管线（2026-07-03（初版），2026-07-（迁移完成）） |
 | ADR-9 | 模型详情面板 — 运行时模型实例控制 | 已完成 — Phase 1-5 全部完成（动作绑定改为预设间接绑定）（2026-07-16） |
 | ADR-6 | 扫描简化 + 文件名多编码自动检测 | 已完成 — bestDecode/cleanModelName + modelMetaCache 全链路上线（2026-07-16） |
