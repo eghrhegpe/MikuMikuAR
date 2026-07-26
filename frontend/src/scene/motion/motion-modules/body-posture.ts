@@ -155,7 +155,7 @@ function ensureActive(modelId: string): void {
         if (ik.r) {
             protectIkPosition(ik.r);
         }
-    }, FRAME_HOOK_ORDER.BODY_POSITION);
+    }, FRAME_HOOK_ORDER.BODY_POSITION, 'body-posture');
     _bodyFrameHooks.set(modelId, unregister);
 }
 

@@ -22,6 +22,7 @@ import {
     getAllOverrides,
     getOverride,
     dumpBoneHierarchy,
+    getFrameHooksSnapshot,
 } from '../scene/motion/bone-override';
 import {
     getRegisteredModules,
@@ -853,6 +854,67 @@ function buildBoneOverrideSchema(): MenuNode[] {
                 });
             },
         },
+        // 卡片 3：管线时序一览（只读展示当前注册的帧钩子顺序）
+        {
+            id: 'override:pipelineOrder',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    addCardTitle(inner, t('motion.boneOverride.pipelineOrder'));
+
+                    const hooks = getFrameHooksSnapshot();
+                    if (hooks.length === 0) {
+                        const empty = document.createElement('div');
+                        empty.style.cssText =
+                            'font-size:11px;color:var(--text-dim);padding:8px 4px;text-align:center;';
+                        empty.textContent = t('motion.boneOverride.pipelineEmpty');
+                        inner.appendChild(empty);
+                        return;
+                    }
+
+                    const list = document.createElement('div');
+                    list.style.cssText =
+                        'padding:6px 12px 8px;display:flex;flex-direction:column;gap:3px;';
+                    for (const hook of hooks) {
+                        const row = document.createElement('div');
+                        row.style.cssText =
+                            'display:flex;align-items:center;gap:8px;font-size:11px;';
+
+                        // order 标签
+                        const orderSpan = document.createElement('span');
+                        orderSpan.style.cssText =
+                            'flex:0 0 36px;font-family:var(--font-mono,monospace);' +
+                            'color:var(--accent);font-weight:bold;font-size:10px;';
+                        orderSpan.textContent = `序 ${hook.order}`;
+                        row.appendChild(orderSpan);
+
+                        // 来源模块名
+                        const sourceSpan = document.createElement('span');
+                        sourceSpan.style.cssText = 'color:var(--text);flex:1;';
+                        sourceSpan.textContent = hook.source;
+                        row.appendChild(sourceSpan);
+
+                        // 箭头指示执行方向
+                        const arrow = document.createElement('span');
+                        arrow.style.cssText = 'color:var(--text-dim);font-size:9px;';
+                        arrow.textContent = '→';
+                        row.appendChild(arrow);
+
+                        list.appendChild(row);
+                    }
+
+                    // 执行顺序说明
+                    const note = document.createElement('div');
+                    note.style.cssText =
+                        'font-size:10px;color:var(--text-dim);padding:4px 0 0 12px;line-height:1.4;';
+                    note.textContent = t('motion.boneOverride.pipelineNote');
+                    list.appendChild(note);
+
+                    inner.appendChild(list);
+                });
+            },
+        },
+
         // 卡片 4：导出骨骼层级（调试用）
         {
             id: 'override:exportHierarchy',

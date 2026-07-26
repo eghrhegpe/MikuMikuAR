@@ -509,6 +509,10 @@ export const zhCN: Record<string, string> = {
     'motion.boneOverride.exportHierarchy': '导出骨骼层级',
     'motion.boneOverride.exportCopied': '✓ 骨骼层级已复制到剪贴板',
     'motion.boneOverride.exportFailed': '✕ 导出失败：无可用模型或骨骼',
+    // [doc:adr-186] 管线时序一览 UI
+    'motion.boneOverride.pipelineOrder': '管线时序一览',
+    'motion.boneOverride.pipelineEmpty': '暂无帧钩子注册（启用模块后此处将显示执行顺序）',
+    'motion.boneOverride.pipelineNote': '数字越小越早执行；后执行层可覆盖前一层写入。顺序由声明决定，与注册先后无关。',
     // [doc:adr-116] 动作覆盖模块化 UI
     'motion.override.title': '动作覆盖',
     'motion.override.enabled': '✓ 已启用模块',

@@ -68,8 +68,11 @@ let _getRuntimeBones: (() => readonly IMmdRuntimeBone[]) | null = null;
 /** [doc:adr-116 P3] 每帧钩子条目：由时间驱动模块（riding/left-hand/right-hand）注册，渲染回调每帧调用。
  *  原实现用 Set 按插入序遍历，钩子间同骨获胜者依赖模块注册次序（隐式定序，R2 病灶）。
  *  改为带 order 的数组并按 order 升序执行，顺序由声明决定，与注册时序解耦。 */
+/** 帧钩子条目（含注册来源信息，供 UI 查询） */
 interface _FrameHookEntry {
     order: number;
+    /** 注册来源模块名（用于 UI 管线时序一览展示） */
+    source: string;
     hook: (timeSec: number, modelId: string) => void;
 }
 const _frameHooks: _FrameHookEntry[] = [];
@@ -573,9 +576,10 @@ export const FRAME_HOOK_ORDER = {
 
 export function registerBoneOverrideFrameHook(
     hook: (timeSec: number, modelId: string) => void,
-    order = 0
+    order = 0,
+    source = '(anonymous)'
 ): () => void {
-    const entry: _FrameHookEntry = { order, hook };
+    const entry: _FrameHookEntry = { order, source, hook };
     _frameHooks.push(entry);
     _frameHooksSorted = false;
     return () => {
@@ -584,6 +588,21 @@ export function registerBoneOverrideFrameHook(
             _frameHooks.splice(idx, 1);
         }
     };
+}
+
+/** 帧钩子快照（供 UI 查询管线时序一览） */
+export interface FrameHookSnapshot {
+    order: number;
+    source: string;
+}
+
+/** 按 order 升序返回当前注册的所有帧钩子快照（不含 hook 函数本身）。 */
+export function getFrameHooksSnapshot(): FrameHookSnapshot[] {
+    if (!_frameHooksSorted) {
+        _frameHooks.sort((a, b) => a.order - b.order);
+        _frameHooksSorted = true;
+    }
+    return _frameHooks.map((e) => ({ order: e.order, source: e.source }));
 }
 
 /** 获取当前所有覆盖的条目列表（用于持久化/UI 展示）。 */

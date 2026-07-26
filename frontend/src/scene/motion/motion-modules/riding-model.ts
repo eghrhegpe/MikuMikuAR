@@ -177,7 +177,7 @@ function ensureActive(modelId: string): void {
                     _getRuntimeBones(modelId)
                 );
             }
-        }, FRAME_HOOK_ORDER.RIDING);
+        }, FRAME_HOOK_ORDER.RIDING, 'riding-model');
         _ridingFrameHooks.set(modelId, unregister);
     } else if (!autoPedal && hasHook) {
         _ridingFrameHooks.unregister(modelId);
