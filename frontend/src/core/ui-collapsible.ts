@@ -97,6 +97,7 @@ export function addCollapsible(
         header.classList.toggle('open', open);
         arrow.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
         panel.style.maxHeight = open ? panel.scrollHeight + 'px' : '0';
+        panel.inert = !open; // 收起时从 Tab 顺序中移除，防止 AI 和键盘用户聚焦到不可见元素
     }
 
     header.addEventListener('click', () => {

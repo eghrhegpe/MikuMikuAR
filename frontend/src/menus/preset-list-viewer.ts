@@ -108,12 +108,13 @@ export async function presetListContent<T>(
 
             // Delete button
             if (config.onDelete) {
-                const delBtn = document.createElement('span');
+                const delBtn = document.createElement('button');
+                delBtn.type = 'button';
                 delBtn.textContent = '✕';
                 delBtn.setAttribute('aria-label', t('common.delete'));
                 delBtn.title = '删除';
                 delBtn.style.cssText =
-                    'font-size:10px;color:var(--text-dim);cursor:pointer;padding:2px 6px;';
+                    'font-size:10px;color:var(--text-dim);cursor:pointer;padding:2px 6px;background:none;border:none;';
                 delBtn.addEventListener('click', async (ev) => {
                     ev.stopPropagation();
                     const msg =

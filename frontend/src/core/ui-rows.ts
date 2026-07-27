@@ -513,8 +513,11 @@ export function addWatchDirRow(
         'flex:1;background:var(--white-08);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:6px 8px;font-size:12px;';
 
     const selectBtn = document.createElement('button');
+    selectBtn.type = 'button';
     selectBtn.textContent = '📁';
     selectBtn.className = 'mode-btn';
+    selectBtn.title = t('settings.paths.watchDirPlaceholder');
+    selectBtn.setAttribute('aria-label', t('settings.paths.watchDirPlaceholder'));
     selectBtn.addEventListener('click', async () => {
         const dir = await onSelectDir();
         if (!dir) {

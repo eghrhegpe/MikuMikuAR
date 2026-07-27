@@ -92,6 +92,19 @@ export default [
       'no-alert': 'warn',                    // 阻止 alert/confirm/prompt，统一走 dialog 系统
       'no-throw-literal': 'error',           // 强制 throw Error 对象，防止吞错
       radix: 'warn',                         // parseInt 必须带 radix，防止进制解析 bug
+      // 禁止 <span>/<div> 充当可交互元素（无 role="button" 时），防止 AI 无法发现
+      // 注意：此规则仅捕获链式调用（如 document.createElement('span').addEventListener('click', …)）。
+      // 跨语句模式（如 const el = document.createElement('span'); el.addEventListener('click', …)）
+      // 无法通过 AST 选择器表达，依赖 code review 和 "增交互元素优先用 <button> 标签" 的约定。
+      'no-restricted-syntax': [
+        'warn',
+        {
+          selector:
+            'CallExpression[callee.object.callee.property.name="createElement"][callee.property.name="addEventListener"]',
+          message:
+            'Use <button> element for interactive elements, or add role="button" + tabindex + keyboard handler. Span/div lacks native button semantics and AI cannot discover it.',
+        },
+      ],
       'no-restricted-imports': [
         'error',
         {
