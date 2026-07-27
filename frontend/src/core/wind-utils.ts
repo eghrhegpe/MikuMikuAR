@@ -20,14 +20,23 @@ const WIND_STRENGTH_SCALE = 1.0;
  */
 export function getWindVector(): Vector3 {
     if (!envState.windEnabled) {
+        console.warn('[wind] getWindVector: windEnabled=false, returning Zero');
         return Vector3.Zero();
     }
     const { windDirection, windSpeed } = envState;
-    return new Vector3(
+    const result = new Vector3(
         windDirection[0] * windSpeed * WIND_STRENGTH_SCALE,
         windDirection[1] * windSpeed * WIND_STRENGTH_SCALE,
         windDirection[2] * windSpeed * WIND_STRENGTH_SCALE
     );
+    if (result.lengthSquared() < 0.0001) {
+        console.warn('[wind] getWindVector: near-zero!', {
+            windDirection,
+            windSpeed,
+            WIND_STRENGTH_SCALE,
+        });
+    }
+    return result;
 }
 
 /**

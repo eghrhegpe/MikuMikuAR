@@ -10,6 +10,36 @@ import (
 	"mikumikuar/internal/util"
 )
 
+// plazaDirectBridgeJS is injected into the plaza window when it navigates
+// directly to a site's real origin (directNavigate=true, no proxy). SPA sites
+// such as aplaybox.com open in-app pages via window.open / target=_blank; the
+// WebView2 NewWindowRequested event is not exposed by Wails v3, so we intercept
+// at the JS layer: same-site navigations are redirected to location.href (same
+// WebView2 window, staying in-app), while cross-site ones (e.g. QQ login) fall
+// back to Wails' default (system browser). Idempotent via __plazaDirectBridge.
+const plazaDirectBridgeJS = `(function(){
+  if (window.__plazaDirectBridge) return;
+  window.__plazaDirectBridge = true;
+  var isSameSite = function(u){
+    try {
+      var a = new URL(u, location.href);
+      return a.origin === location.origin || a.hostname.endsWith('aplaybox.com');
+    } catch(e){ return false; }
+  };
+  window.open = function(u){
+    if (u && isSameSite(u)) { location.href = u; return null; }
+    return null;
+  };
+  document.addEventListener('click', function(e){
+    var el = e.target;
+    while (el && el.tagName !== 'A') { el = el.parentElement; }
+    if (el && el.href && el.target === '_blank' && isSameSite(el.href)) {
+      e.preventDefault();
+      location.href = el.href;
+    }
+  }, true);
+})();`
+
 // prewarmPlazaWindow creates a hidden WebView2 window at app startup so that
 // the expensive Chromium renderer process is already warm when the user first
 // opens a model-plaza site. Subsequent NavigatePlazaWindow calls reuse this
@@ -58,6 +88,11 @@ func (a *App) prewarmPlazaWindow() {
 	// Go 端 handler 取 lastForwardedTarget（真实站点 URL）合并后 Emit 给前端。
 	// 加 debounce 300ms 避免 SPA/iframe 切换高频触发。
 	win.OnWindowEvent(events.Windows.WebViewNavigationCompleted, func(event *application.WindowEvent) {
+		// [doc:plaza-spa] 直连模式下注入 window.open 拦截桥：同源链接改为同窗口
+		// 导航（in-app 连续浏览），跨站（如 QQ 登录）保持 Wails 默认（系统浏览器）。
+		if a.plazaDirectMode.Load() {
+			win.ExecJS(plazaDirectBridgeJS)
+		}
 		if time.Since(a.lastPlazaNavReport) < 300*time.Millisecond {
 			return
 		}
@@ -98,6 +133,8 @@ func (a *App) NavigatePlazaWindow(targetURL string, direct bool) error {
 	if targetURL == "" {
 		return fmt.Errorf("empty URL")
 	}
+
+	a.plazaDirectMode.Store(direct)
 
 	if direct {
 		// [doc:plaza-spa] 直连真实域名：修复独立 API 域 SPA 经代理后 origin

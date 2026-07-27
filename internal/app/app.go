@@ -11,6 +11,7 @@ import (
 	"strings"
 	stdruntime "runtime"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -68,6 +69,7 @@ type App struct {
 	plazaWinMu           sync.Mutex
 	plazaWinCloseHook    func()       // RegisterHook 返回的 unregister 函数，用于 ServiceShutdown 前置移除
 	lastPlazaNavReport   time.Time // [ADR-087 P3] debounce 300ms
+	plazaDirectMode      atomic.Bool // [doc:plaza-spa] window 模式是否直连真实域名（决定导航完成时注入 window.open 拦截桥）
 }
 
 type httpServerInfo struct {
