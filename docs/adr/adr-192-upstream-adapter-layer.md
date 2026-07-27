@@ -1,6 +1,6 @@
 # ADR-192: 上游适配层重构（MmdAdapter）
 
-> **状态**: 已立项 · Phase 0（2026-07-27 — 方案确认，尚未落代码）
+> **状态**: 已立项 · Phase 0 已完成（2026-07-27 — MmdAdapter 骨架 + 类型网关 + 契约测试落地）
 > **日期**: 2026-07-27（初版）
 > **关联**: ADR-110（上游差异登记册，已转为永久自治台账）、ADR-186（bone-override-frame-timing）、ADR-187（babylon-mmd 剩余 API 分析）、`docs/upstream/babylon-mmd-compatibility.md`（23 处应对清单 + 逆向审计）
 > **来源**: 上游 PR #94/#95/#96 全关后战略转「永久自治下游」；`compatibility.md` 逆向审计识别出 4 处仅缓解、未根治的应对
@@ -109,7 +109,7 @@ A 类 `as unknown as` cast 收敛到适配层边界的**类型网关**一处，�
 ## 后续行动
 
 1. **本次**：ADR-192 立项，更新 `docs/upstream/README.md` 关联索引、在 `compatibility.md` 标注 3/9/12/14 为「适配层根治中」。
-2. **Phase 0 启动**：建 `MmdAdapter` 骨架，先收敛散落 cast（最低风险、最快见效）。
+2. **Phase 0 启动**：✅ 已完成 — 建 `frontend/src/core/mmd-adapter.ts`（`getPhysicsImpl` / `getRigidBodyBundleMap` / `getStreamAudio` 类型网关 + `CapabilityProbe` 骨架 + `BoneFrameClock`/`PlaybackContract` 占位），迁移 wind-physics/audio 私有字段访问，新增 `mmd-adapter.contract.test.ts`；`npm run check` 零错误、受影响单测全绿。
 3. **Phase 1/2**：按上表分阶段推进，每阶段独立 commit + 单测回归。
 
 ---
