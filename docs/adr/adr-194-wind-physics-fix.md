@@ -120,7 +120,7 @@ if (type === 'rain') {
 | 文件 | 改动 |
 |------|------|
 | `frontend/src/scene/env/shaders/water.vert.glsl` | 新增 `uWindSpeed` uniform + `windAmp` 波幅度调制 |
-| `frontend/src/scene/env/env-water.ts` | `_syncWaterUniforms` 新增 `setFloat('uWindSpeed')`；`WATER_UNIFORMS` 注册 |
+| `frontend/src/scene/env/env-water.ts` | `_syncWaterUniforms` 新增 `setFloat('uWindSpeed')`；`WATER_UNIFORMS` 注册；**P2 修复**：`uWindSpeed` 受 `windEnabled` 守卫（`windEnabled ? state.windSpeed : 0`），对齐粒子/Bullet/云的开关行为 |
 | `frontend/src/scene/env/env-particles.ts` | `applyWindToParticles` 改为双重风场（direction + gravity）；新增 `_baseGravity` 惰性初始化；`disposeParticles` 兼容清理；`createParticleEmitter` 新增 rain 的 STRETCHED billboard |
 | `frontend/src/core/wind-utils.ts` | 无改动（统一入口已验证有效） |
 | `frontend/src/physics/wind-physics.ts` | `WIND_FORCE_SCALE` 0.15→1.0 |
@@ -144,9 +144,10 @@ envState (config.ts)
     │       │       │   └── gravity ← _baseGravity + wind×1.0            (持续飞行)
     │       │       └── rain: BILLBOARDMODE_STRETCHED (纹理顺风)
     │       │
-    │       ├── env-water.ts (水面波向 + 波幅)
+    │       ├── env-water.ts (水面波向 + 波幅) ──【例外：不经过 getWindVector()】
     │       │       ├── uWindDir ← computeWaveDirs(windDirection)
-    │       │       └── uWindSpeed ← windSpeed → windAmp 调制波幅度
+    │       │       └── uWindSpeed ← (windEnabled ? windSpeed : 0) → windAmp 调制波幅度
+    │       │           注：波幅是幅度调制而非力，量纲与 Bullet 不同，故水面特例直读
     │       │
     │       ├── wind-physics.ts (Bullet 刚体风力)
     │       │       └── onSync → applyCentralForce(getWindVector() × 1.0)
@@ -169,6 +170,7 @@ envState (config.ts)
 1. **粒子**：风速调至 10 → 雨/雪有明显斜飞角度，纹理顺风对齐
 2. **水面**：风速调至 0 → 近于平静；调至 10 → 涌浪幅度明显增大
 3. **Bullet 物理**：带头发/裙子动态刚体的模型 → 随风摆动
+4. **四系统一致性**：关闭 `windEnabled` → 粒子停飞、云停漂、裙停摆、**浪平息**（P2 修复验证）
 
 ---
 
