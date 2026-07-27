@@ -60,7 +60,10 @@ export class BrowserAiAdapter implements AiService {
                 return { ok: true, message: '连接成功' };
             }
             const errText = await response.text().catch(() => '');
-            return { ok: false, message: `HTTP ${response.status}: ${errText || response.statusText}` };
+            return {
+                ok: false,
+                message: `HTTP ${response.status}: ${errText || response.statusText}`,
+            };
         } catch (err) {
             return { ok: false, message: _friendlyError(err) };
         }

@@ -277,7 +277,12 @@ function _solveWasmLegIK(
     _vHipPos.set(hipBuf[12], hipBuf[13], hipBuf[14]);
     _vKneePos.set(kneeBuf[12], kneeBuf[13], kneeBuf[14]);
 
-    const result = solveTwoBoneIK({ hipPos: _vHipPos, kneePos: _vKneePos, endEffectorPos, targetPos });
+    const result = solveTwoBoneIK({
+        hipPos: _vHipPos,
+        kneePos: _vKneePos,
+        endEffectorPos,
+        targetPos,
+    });
     if (!result.changed) {
         return;
     }
@@ -476,8 +481,9 @@ export function startFeetAdjustment(getModels: FeetModelProvider): void {
                 cache.lName = matchBone(names, BONE_LEG_IK_L_CANDIDATES);
                 cache.rName = matchBone(names, BONE_LEG_IK_R_CANDIDATES);
                 // 缓存中心骨骼世界 Y（用于 solveFootTarget 推算自然脚高）
-                const centerBone = m.runtimeBones.find((b) => b.name === 'センター')
-                    ?? m.runtimeBones.find((b) => b.name === '全ての親');
+                const centerBone =
+                    m.runtimeBones.find((b) => b.name === 'センター') ??
+                    m.runtimeBones.find((b) => b.name === '全ての親');
                 if (centerBone) {
                     const v = new Vector3();
                     centerBone.getWorldTranslationToRef(v);
@@ -499,11 +505,7 @@ export function startFeetAdjustment(getModels: FeetModelProvider): void {
                     const hints = names
                         .filter((n) => /足|ＩＫ|IK|Leg|leg|Foot|foot/.test(n))
                         .slice(0, 16);
-                    logWarn(
-                        'feet',
-                        `  模型中含"足/IK"的骨骼名：`,
-                        hints
-                    );
+                    logWarn('feet', `  模型中含"足/IK"的骨骼名：`, hints);
                 }
             }
             _adjustFoot(m.runtimeBones, cache.lName, 'L', cache, feet, m.id, dt);

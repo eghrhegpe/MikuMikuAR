@@ -10,7 +10,7 @@ import type { ChatChunk } from './types';
  */
 export async function* parseSseStream(
     body: ReadableStream<Uint8Array> | null,
-    signal?: AbortSignal,
+    signal?: AbortSignal
 ): AsyncGenerator<ChatChunk> {
     if (!body) {
         yield { type: 'error', error: '响应体为空' };
@@ -50,10 +50,11 @@ export async function* parseSseStream(
                     try {
                         const parsed = JSON.parse(json);
                         // OpenAI 格式: { choices: [{ delta: { content: string } }] }
-                        const content = parsed?.choices?.[0]?.delta?.content
-                            ?? parsed?.choices?.[0]?.text
-                            ?? parsed?.response
-                            ?? parsed?.message?.content;
+                        const content =
+                            parsed?.choices?.[0]?.delta?.content ??
+                            parsed?.choices?.[0]?.text ??
+                            parsed?.response ??
+                            parsed?.message?.content;
                         if (content) {
                             yield { type: 'text', content };
                         }

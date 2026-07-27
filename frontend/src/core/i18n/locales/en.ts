@@ -1721,6 +1721,8 @@ export const en: Record<string, string> = {
     'settings.about.shortcuts.freefly': 'Freefly Camera',
     'settings.about.shortcuts.freeflyUpDown': 'Freefly Camera Down/Up',
     'settings.about.links': 'Links',
+    'settings.about.communityTools': 'Community Tools',
+    'about.nanoemCn': 'nanoem-cn (Chinese Edition)',
     'settings.about.cache': 'Cache Usage',
     'settings.about.cache.total': 'Total',
     'settings.about.cache.extracted': 'Decompress',
@@ -1836,7 +1838,8 @@ export const en: Record<string, string> = {
     'downloads.androidNotReady': 'Android: requires shared storage mode',
     'downloads.permissionNeeded': 'Permission to read the download folder is required',
     'downloads.supportedHint': 'Supports PMX / VMD / audio / ZIP; scans subfolders recursively',
-    'downloads.scanConfirm': 'About to import {count} files into the model library (not auto-loaded to scene). Continue?',
+    'downloads.scanConfirm':
+        'About to import {count} files into the model library (not auto-loaded to scene). Continue?',
     'downloads.canceled': 'Canceled',
     'downloads.androidNeedShared': 'Android needs shared storage mode to read the download folder',
 
@@ -1883,7 +1886,8 @@ export const en: Record<string, string> = {
     'feedback.restoredFailed': '✗ Restore failed',
 
     // ===== [doc:adr-196] AI Diagnostic Assistant =====
-    'ai.welcome': 'Hello! I am the AI Diagnostic Assistant. I can help you analyze errors and scene status. Describe the issue you are experiencing.',
+    'ai.welcome':
+        'Hello! I am the AI Diagnostic Assistant. I can help you analyze errors and scene status. Describe the issue you are experiencing.',
     'ai.context.title': 'Context Information',
     'ai.context.header': 'Current context:\n',
     'ai.context.errors': 'Captured errors:\n',
@@ -1907,17 +1911,23 @@ export const en: Record<string, string> = {
     'ai.errors.count': 'Captured errors: {count}',
     'ai.errors.clear': 'Clear Errors',
     'ai.errors.cleared': 'Error buffer cleared.',
-    'ai.errors.noEndpoint': 'AI endpoint not configured. Please set it in the configuration section below.',
+    'ai.errors.noEndpoint':
+        'AI endpoint not configured. Please set it in the configuration section below.',
     'ai.errors.apiError': 'API error: {msg}',
     'ai.snapshot.refresh': 'Refresh Snapshot',
-    'ai.system.role': 'You are the MikuMikuAR AI Diagnostic Assistant. Your role is to help users diagnose issues with the 3D scene, models, and application.',
-    'ai.system.format': 'Respond in the user\'s language. Start with a conclusion, then provide actionable suggestions. Mark confidence as high/medium/low.',
-    'ai.system.safety': 'You are in read-only diagnostic mode. You cannot modify the scene or files. Only provide analysis and advice.',
-    'ai.system.chat': 'You are a MikuMikuAR AI assistant. Chat freely with the user. Keep responses concise and helpful.',
+    'ai.system.role':
+        'You are the MikuMikuAR AI Diagnostic Assistant. Your role is to help users diagnose issues with the 3D scene, models, and application.',
+    'ai.system.format':
+        "Respond in the user's language. Start with a conclusion, then provide actionable suggestions. Mark confidence as high/medium/low.",
+    'ai.system.safety':
+        'You are in read-only diagnostic mode. You cannot modify the scene or files. Only provide analysis and advice.',
+    'ai.system.chat':
+        'You are a MikuMikuAR AI assistant. Chat freely with the user. Keep responses concise and helpful.',
     'ai.mode.title': 'Mode',
     'ai.mode.diagnostic': '🔍 Diagnostic',
     'ai.mode.chat': '💬 Chat',
-    'ai.config.corsWarning': '⚠ Remote endpoint may have CORS restrictions. For local Ollama, set OLLAMA_ORIGINS=* and restart.',
+    'ai.config.corsWarning':
+        '⚠ Remote endpoint may have CORS restrictions. For local Ollama, set OLLAMA_ORIGINS=* and restart.',
     'ai.chat.clear': 'Clear',
     'ai.errors.resolveFailed': 'AI service failed to initialize. Check console for details.',
     'ai.config.notResolved': 'AI service not ready yet, please wait...',

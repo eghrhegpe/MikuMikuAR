@@ -55,7 +55,9 @@ export function resolveAi(): Promise<AiService> {
         if (declared === 'go') {
             const ready = await awaitWailsBridge(3000);
             _resolved =
-                ready && typeof window.wails === 'object' ? await _getGoAdapter() : browserAiAdapter;
+                ready && typeof window.wails === 'object'
+                    ? await _getGoAdapter()
+                    : browserAiAdapter;
             return _resolved;
         }
 

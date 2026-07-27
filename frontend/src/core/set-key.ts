@@ -6,5 +6,5 @@
  * @param value 要设置的值
  */
 export function setKey<T extends object, K extends keyof T>(obj: T, key: K, value: T[K]): void {
-  obj[key] = value;
+    obj[key] = value;
 }

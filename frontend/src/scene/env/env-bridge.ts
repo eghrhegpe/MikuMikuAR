@@ -117,11 +117,7 @@ export function applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>
 
     // 方向光同步：预设动画期间跳过（applyEnvPresetObject 有自己的动画循环管理 dirLight）
     const _LIGHT_SYNC_KEYS = ['sunAngle', 'azimuth', 'skyColorTop', 'skyColorBot'];
-    if (
-        !_presetAnimActive &&
-        changed &&
-        [...changed].some((k) => _LIGHT_SYNC_KEYS.includes(k))
-    ) {
+    if (!_presetAnimActive && changed && [...changed].some((k) => _LIGHT_SYNC_KEYS.includes(k))) {
         const derived = deriveLighting(state.skyColorTop, state.sunAngle, state.azimuth ?? -45);
         setLightState({
             dirColor: derived.dirDiffuse,

@@ -7,5 +7,5 @@
  * @returns 深拷贝后的新对象
  */
 export function deepClone<T>(x: T): T {
-  return JSON.parse(JSON.stringify(x)) as T;
+    return JSON.parse(JSON.stringify(x)) as T;
 }

@@ -105,7 +105,7 @@ describe('texture-lru', () => {
         expect(mockReadFileBytes).toHaveBeenCalledTimes(3);
 
         // 填充到上限
-        const fillCount = (5 * 30) - 3;
+        const fillCount = 5 * 30 - 3;
         for (let i = 0; i < fillCount; i++) {
             mockReadFileBytes.mockResolvedValueOnce(new Uint8Array([i]));
             await readTextureWithLRU('web://model/a', `tex/fill${i}.png`);

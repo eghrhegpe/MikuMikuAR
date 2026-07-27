@@ -6,10 +6,7 @@
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { envState } from '@/core/config';
 import { feedbackStatus } from '@/core/feedback';
-import {
-    lerp as lerpUtil,
-    lerpArray,
-} from '@/core/clamp';
+import { lerp as lerpUtil, lerpArray } from '@/core/clamp';
 import { formatTimestamp } from '@/core/format-timestamp';
 import { logWarn } from '@/core/logger';
 import { setKey } from '@/core/set-key';

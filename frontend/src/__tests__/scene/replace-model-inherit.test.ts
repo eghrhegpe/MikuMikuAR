@@ -85,7 +85,11 @@ import type { ReplaceSnapshot } from '../../scene/manager/model-ops';
 import type { ModelInstance } from '@/core/types';
 import { modelRegistry } from '../../core/config';
 import { setBoneOverride } from '../../scene/motion/bone-override';
-import { getPersonalLightState, setPersonalLightState, attachPersonalLight } from '../../scene/render/lighting-follow';
+import {
+    getPersonalLightState,
+    setPersonalLightState,
+    attachPersonalLight,
+} from '../../scene/render/lighting-follow';
 import { setOrbitBoneLock } from '../../scene/camera/camera';
 import { modelManager } from '../../scene/scene';
 

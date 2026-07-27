@@ -270,7 +270,13 @@ describe('FSA 多选同名 PMX 冲突检测与序号后缀', () => {
      * 第一次导入 miku.pmx → stem=miku → encStem=miku
      * 第二次导入同名 miku.pmx → 冲突 → stem=miku (2) → encStem=miku%20(2)
      */
-    function writeSimulatedImport(baseName: string, suffixN: number, pmxBytes: Uint8Array, texBytes: Uint8Array, texName: string): string {
+    function writeSimulatedImport(
+        baseName: string,
+        suffixN: number,
+        pmxBytes: Uint8Array,
+        texBytes: Uint8Array,
+        texName: string
+    ): string {
         // 确保 models store 存在（idbSet mock 自动创建，但这里直接操作 mem 需手动初始化）
         if (!mem.has('models')) mem.set('models', new Map());
         const store = mem.get('models')!;
@@ -419,8 +425,7 @@ describe('[doc:adr-195] 下载文件夹统一摄入：ingestModelFile / ingestMo
         mem.clear();
     });
 
-    const mkFile = (name: string, bytes: number[]): File =>
-        new File([new Uint8Array(bytes)], name);
+    const mkFile = (name: string, bytes: number[]): File => new File([new Uint8Array(bytes)], name);
 
     it('ingestModelBytes(pmx) 写入 file:<encStem>+entry:<encStem>，且入库可见（不进场景）', async () => {
         const loadPath = await ingestModelBytes('miku.pmx', new Uint8Array([1, 2, 3]));
@@ -434,7 +439,11 @@ describe('[doc:adr-195] 下载文件夹统一摄入：ingestModelFile / ingestMo
         expect(Array.from(stored as Uint8Array)).toEqual([1, 2, 3]);
 
         // ③ entry:<encStem> 入库，dir/file_path 齐全 → 模型库可见
-        const entry = mem.get('models')?.get('entry:miku') as { dir: string; file_path: string; kind: string };
+        const entry = mem.get('models')?.get('entry:miku') as {
+            dir: string;
+            file_path: string;
+            kind: string;
+        };
         expect(entry).toBeDefined();
         expect(entry.dir).toBe('web://model');
         expect(entry.file_path).toBe('web://model/miku');

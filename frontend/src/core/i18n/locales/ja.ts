@@ -1562,6 +1562,8 @@ export const ja: Record<string, string> = {
     'settings.about.shortcuts.freefly': 'フリーフライカメラ',
     'settings.about.shortcuts.freeflyUpDown': 'フリーフライカメラ下降/上昇',
     'settings.about.links': 'リンク',
+    'settings.about.communityTools': 'コミュニティツール',
+    'about.nanoemCn': 'nanoem 中国語版 (nanoem-cn)',
     'settings.about.cache': 'キャッシュ使用量',
     'settings.about.cache.total': '合計',
     'settings.about.cache.extracted': '抽出',
@@ -1867,7 +1869,8 @@ export const ja: Record<string, string> = {
     'feedback.restoredFailed': '✗ 復元失敗',
 
     // ===== [doc:adr-196] AI診断アシスタント =====
-    'ai.welcome': 'こんにちは！AI診断アシスタントです。エラーやシーンの状態を分析します。問題を説明してください。',
+    'ai.welcome':
+        'こんにちは！AI診断アシスタントです。エラーやシーンの状態を分析します。問題を説明してください。',
     'ai.context.title': 'コンテキスト情報',
     'ai.context.header': '現在のコンテキスト：\n',
     'ai.context.errors': '捕捉されたエラー：\n',
@@ -1891,18 +1894,25 @@ export const ja: Record<string, string> = {
     'ai.errors.count': '捕捉されたエラー：{count}',
     'ai.errors.clear': 'エラーをクリア',
     'ai.errors.cleared': 'エラーバッファをクリアしました。',
-    'ai.errors.noEndpoint': 'AIエンドポイントが設定されていません。設定セクションで設定してください。',
+    'ai.errors.noEndpoint':
+        'AIエンドポイントが設定されていません。設定セクションで設定してください。',
     'ai.errors.apiError': 'APIエラー：{msg}',
     'ai.snapshot.refresh': 'スナップショットを更新',
-    'ai.system.role': 'あなたはMikuMikuAR AI診断アシスタントです。3Dシーン、モデル、アプリケーションの問題診断を支援します。',
-    'ai.system.format': '使用言語で応答してください。結論から述べ、実行可能な提案を提供してください。信頼度を高/中/低で示してください。',
-    'ai.system.safety': '読み取り専用の診断モードです。シーンやファイルを変更できません。分析とアドバイスのみ提供します。',
-    'ai.system.chat': 'あなたは MikuMikuAR AI アシスタントです。ユーザーと自由にチャットできます。日本語で簡潔に返答してください。',
+    'ai.system.role':
+        'あなたはMikuMikuAR AI診断アシスタントです。3Dシーン、モデル、アプリケーションの問題診断を支援します。',
+    'ai.system.format':
+        '使用言語で応答してください。結論から述べ、実行可能な提案を提供してください。信頼度を高/中/低で示してください。',
+    'ai.system.safety':
+        '読み取り専用の診断モードです。シーンやファイルを変更できません。分析とアドバイスのみ提供します。',
+    'ai.system.chat':
+        'あなたは MikuMikuAR AI アシスタントです。ユーザーと自由にチャットできます。日本語で簡潔に返答してください。',
     'ai.mode.title': 'モード',
     'ai.mode.diagnostic': '🔍 診断',
     'ai.mode.chat': '💬 チャット',
-    'ai.config.corsWarning': '⚠ リモートエンドポイントにCORS制限がある可能性があります。ローカルOllamaは OLLAMA_ORIGINS=* を設定して再起動してください。',
+    'ai.config.corsWarning':
+        '⚠ リモートエンドポイントにCORS制限がある可能性があります。ローカルOllamaは OLLAMA_ORIGINS=* を設定して再起動してください。',
     'ai.chat.clear': 'クリア',
-    'ai.errors.resolveFailed': 'AI サービスの初期化に失敗しました。詳細はコンソールを確認してください。',
+    'ai.errors.resolveFailed':
+        'AI サービスの初期化に失敗しました。詳細はコンソールを確認してください。',
     'ai.config.notResolved': 'AI サービスが準備できていません。お待ちください...',
 };

@@ -154,7 +154,13 @@ export function setupE2ECapture(): void {
         get rigidBodyBundleCount(): number {
             const rt = mmdRuntime;
             if (!rt) return 0;
-            const physics = (rt as unknown as { physics?: { impl?: { rigidBodyBundleReferenceCountMap?: ReadonlyMap<unknown, number> } } }).physics;
+            const physics = (
+                rt as unknown as {
+                    physics?: {
+                        impl?: { rigidBodyBundleReferenceCountMap?: ReadonlyMap<unknown, number> };
+                    };
+                }
+            ).physics;
             const impl = physics?.impl;
             return impl?.rigidBodyBundleReferenceCountMap?.size ?? 0;
         },
@@ -171,7 +177,9 @@ export function setupE2ECapture(): void {
         },
 
         /** 获取指定骨骼名的世界位置（用于验证物理是否真的动了骨骼） */
-        getBoneWorldPositions: (boneNames: string[]): Record<string, { x: number; y: number; z: number } | null> => {
+        getBoneWorldPositions: (
+            boneNames: string[]
+        ): Record<string, { x: number; y: number; z: number } | null> => {
             const inst = focusedModel();
             if (!inst?.mmdModel?.runtimeBones) return {};
             const bones = inst.mmdModel.runtimeBones;

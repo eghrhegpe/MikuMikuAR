@@ -10,43 +10,43 @@
 // 待确有跨类需求时再做，避免为抽象而抽象（见 ADR-130 修订说明）。
 
 import {
-  ListEnvPresets,
-  GetRenderPresets,
-  GetPresetScenes,
-  GetModelPresets,
+    ListEnvPresets,
+    GetRenderPresets,
+    GetPresetScenes,
+    GetModelPresets,
 } from '@/core/wails-bindings';
 import type { EnvPresetEntry, ModelPresetEntry } from '@/core/wails-bindings';
 
 export type PresetCategory = 'env' | 'render' | 'scene' | 'model';
 
 export interface PresetMeta {
-  /** 稳定主键：`${category}:${name}` */
-  id: string;
-  category: PresetCategory;
-  name: string;
-  /** 展示名；无显式 label 时回退 name */
-  label: string;
-  /** epoch ms；旧预设无此字段时为 undefined */
-  createdAt?: number;
-  tags?: string[];
-  version?: number;
+    /** 稳定主键：`${category}:${name}` */
+    id: string;
+    category: PresetCategory;
+    name: string;
+    /** 展示名；无显式 label 时回退 name */
+    label: string;
+    /** epoch ms；旧预设无此字段时为 undefined */
+    createdAt?: number;
+    tags?: string[];
+    version?: number;
 }
 
 /** 由单条记录构造 `PresetMeta`。`extra` 仅承载 envelope 字段，不触碰各系统原生 payload。 */
 export function toPresetMeta(
-  category: PresetCategory,
-  name: string,
-  extra?: Partial<Omit<PresetMeta, 'id' | 'category' | 'name'>>,
+    category: PresetCategory,
+    name: string,
+    extra?: Partial<Omit<PresetMeta, 'id' | 'category' | 'name'>>
 ): PresetMeta {
-  return {
-    id: `${category}:${name}`,
-    category,
-    name,
-    label: extra?.label ?? name,
-    createdAt: extra?.createdAt,
-    tags: extra?.tags,
-    version: extra?.version,
-  };
+    return {
+        id: `${category}:${name}`,
+        category,
+        name,
+        label: extra?.label ?? name,
+        createdAt: extra?.createdAt,
+        tags: extra?.tags,
+        version: extra?.version,
+    };
 }
 
 /**
@@ -56,39 +56,41 @@ export function toPresetMeta(
  * - 对 Go nullable 返回做 `?? []` 守卫，避免 NPE。
  */
 export async function listPresets(category?: PresetCategory): Promise<PresetMeta[]> {
-  const cats: PresetCategory[] = category ? [category] : ['env', 'render', 'scene', 'model'];
-  const out: PresetMeta[] = [];
+    const cats: PresetCategory[] = category ? [category] : ['env', 'render', 'scene', 'model'];
+    const out: PresetMeta[] = [];
 
-  for (const c of cats) {
-    switch (c) {
-      case 'env': {
-        // env 预设后端已自带 label/category/createdAt 信封，直接归一。
-        const entries = (await ListEnvPresets()) ?? [];
-        for (const e of entries) {
-          out.push(toPresetMeta('env', e.name, { label: e.label, createdAt: e.createdAt }));
+    for (const c of cats) {
+        switch (c) {
+            case 'env': {
+                // env 预设后端已自带 label/category/createdAt 信封，直接归一。
+                const entries = (await ListEnvPresets()) ?? [];
+                for (const e of entries) {
+                    out.push(
+                        toPresetMeta('env', e.name, { label: e.label, createdAt: e.createdAt })
+                    );
+                }
+                break;
+            }
+            case 'render': {
+                const presets = (await GetRenderPresets()) ?? [];
+                for (const p of presets) out.push(toPresetMeta('render', p.name));
+                break;
+            }
+            case 'scene': {
+                const names = (await GetPresetScenes()) ?? [];
+                for (const n of names) out.push(toPresetMeta('scene', n));
+                break;
+            }
+            case 'model': {
+                // model 预设后端给 updatedAt（无 createdAt），复用为时间字段。
+                const entries = (await GetModelPresets()) ?? [];
+                for (const m of entries) {
+                    out.push(toPresetMeta('model', m.name, { createdAt: m.updatedAt }));
+                }
+                break;
+            }
         }
-        break;
-      }
-      case 'render': {
-        const presets = (await GetRenderPresets()) ?? [];
-        for (const p of presets) out.push(toPresetMeta('render', p.name));
-        break;
-      }
-      case 'scene': {
-        const names = (await GetPresetScenes()) ?? [];
-        for (const n of names) out.push(toPresetMeta('scene', n));
-        break;
-      }
-      case 'model': {
-        // model 预设后端给 updatedAt（无 createdAt），复用为时间字段。
-        const entries = (await GetModelPresets()) ?? [];
-        for (const m of entries) {
-          out.push(toPresetMeta('model', m.name, { createdAt: m.updatedAt }));
-        }
-        break;
-      }
     }
-  }
 
-  return out;
+    return out;
 }

@@ -66,11 +66,7 @@ ensureMmar();
 
 // ======== 状态更新（由 setStatus / setLoadingStatus 内部串联） ========
 
-export function updateMmarStatus(
-    phase: MmarPhase,
-    text: string,
-    detail?: string,
-): void {
+export function updateMmarStatus(phase: MmarPhase, text: string, detail?: string): void {
     const g = ensureMmar();
     g.status = {
         phase,

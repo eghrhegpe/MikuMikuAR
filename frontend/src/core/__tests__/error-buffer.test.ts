@@ -104,9 +104,15 @@ describe('captureError 归一化', () => {
 
     it('类错误对象（含 message/name/stack）被归一化，但显式 message 仍优先', () => {
         const buf = new ErrorRingBuffer(5);
-        const entry = captureError('mod', 'msg', { name: 'Custom', message: 'hi', stack: 's1\ns2' }, 'log', {
-            buffer: buf,
-        });
+        const entry = captureError(
+            'mod',
+            'msg',
+            { name: 'Custom', message: 'hi', stack: 's1\ns2' },
+            'log',
+            {
+                buffer: buf,
+            }
+        );
         expect(entry.name).toBe('Custom');
         expect(entry.message).toBe('msg'); // 显式摘要优先于 err.message
         expect(entry.stack).toBe('s1\ns2');

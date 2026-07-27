@@ -415,15 +415,10 @@ function buildDownloadSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
                 cardContainer(c, (inner) => {
                     addSectionTitle(inner, t('downloads.manageImported'));
 
-                    slideRow(
-                        inner,
-                        'lucide:trash-2',
-                        t('downloads.clearImported'),
-                        false,
-                        () =>
-                            clearImported(getSettingsMenu, () => {
-                                getSettingsMenu()?.reRender();
-                            })
+                    slideRow(inner, 'lucide:trash-2', t('downloads.clearImported'), false, () =>
+                        clearImported(getSettingsMenu, () => {
+                            getSettingsMenu()?.reRender();
+                        })
                     );
                 });
             },
@@ -431,9 +426,7 @@ function buildDownloadSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
     ];
 }
 
-export function buildSettingsDownloadsLevel(
-    getSettingsMenu: () => SettingsMenuHandle
-): PopupLevel {
+export function buildSettingsDownloadsLevel(getSettingsMenu: () => SettingsMenuHandle): PopupLevel {
     return {
         label: t('settings.downloads'),
         dir: '',

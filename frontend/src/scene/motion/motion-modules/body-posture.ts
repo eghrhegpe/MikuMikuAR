@@ -125,37 +125,41 @@ function ensureActive(modelId: string): void {
     }
     bake(modelId);
 
-    const unregister = registerBoneOverrideFrameHook((_t, mid) => {
-        if (mid !== modelId) {
-            return;
-        }
-        const st = getModuleState(modelId, MODULE_ID);
-        if (!st.enabled) {
-            return;
-        }
-        const height = (st.params.bodyHeight as number) ?? 0;
-        const depth = (st.params.bodyDepth as number) ?? 0;
-        if (height === 0 && depth === 0) {
-            return;
-        }
-        const centerName = _resolveCenterBone(modelId);
-        if (!centerName) {
-            return;
-        }
-        // 世界空间偏移：X 不动，Y=高度，Z=前后
-        setBoneOverridePosition(centerName, [0, height, depth], 1, true, modelId);
+    const unregister = registerBoneOverrideFrameHook(
+        (_t, mid) => {
+            if (mid !== modelId) {
+                return;
+            }
+            const st = getModuleState(modelId, MODULE_ID);
+            if (!st.enabled) {
+                return;
+            }
+            const height = (st.params.bodyHeight as number) ?? 0;
+            const depth = (st.params.bodyDepth as number) ?? 0;
+            if (height === 0 && depth === 0) {
+                return;
+            }
+            const centerName = _resolveCenterBone(modelId);
+            if (!centerName) {
+                return;
+            }
+            // 世界空间偏移：X 不动，Y=高度，Z=前后
+            setBoneOverridePosition(centerName, [0, height, depth], 1, true, modelId);
 
-        // IK 位置保护：注册左右足 IK 目标，防止センター传播平移带动 IK 目标
-        // （部分 MMD 模型中 左足IK/右足IK 的 parentBone 是 センター，
-        //   传播会导致 IK 目标世界坐标偏移，feet-adjustment 钉住偏移后的位置 → 脚滑）
-        const ik = _resolveIkBones(modelId);
-        if (ik.l) {
-            protectIkPosition(ik.l);
-        }
-        if (ik.r) {
-            protectIkPosition(ik.r);
-        }
-    }, FRAME_HOOK_ORDER.BODY_POSITION, 'body-posture');
+            // IK 位置保护：注册左右足 IK 目标，防止センター传播平移带动 IK 目标
+            // （部分 MMD 模型中 左足IK/右足IK 的 parentBone 是 センター，
+            //   传播会导致 IK 目标世界坐标偏移，feet-adjustment 钉住偏移后的位置 → 脚滑）
+            const ik = _resolveIkBones(modelId);
+            if (ik.l) {
+                protectIkPosition(ik.l);
+            }
+            if (ik.r) {
+                protectIkPosition(ik.r);
+            }
+        },
+        FRAME_HOOK_ORDER.BODY_POSITION,
+        'body-posture'
+    );
     _bodyFrameHooks.set(modelId, unregister);
 }
 

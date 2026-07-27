@@ -84,7 +84,7 @@ export function captureError(
     message: string,
     err: unknown,
     kind: ErrorEntry['kind'] = 'log',
-    options?: { buffer?: ErrorRingBuffer; maxStack?: number },
+    options?: { buffer?: ErrorRingBuffer; maxStack?: number }
 ): ErrorEntry {
     const entry: ErrorEntry = {
         kind,
@@ -149,7 +149,10 @@ function _captureConsoleError(args: unknown[]): void {
     const m = /^\s*\[([^\]]+)\]\s*([\s\S]*)$/.exec(first);
     if (m) {
         tag = m[1];
-        const rest = bodyArgs.slice(1).map((a) => _stringifyArg(a)).join(' ');
+        const rest = bodyArgs
+            .slice(1)
+            .map((a) => _stringifyArg(a))
+            .join(' ');
         message = m[2] ? (rest ? `${m[2]} ${rest}` : m[2]) : rest;
     }
 
@@ -206,7 +209,7 @@ let _globalDisposer: (() => void) | null = null;
 
 export function installErrorCaptureOn(
     target: GlobalErrorTarget,
-    buffer: ErrorRingBuffer,
+    buffer: ErrorRingBuffer
 ): () => void {
     const onError = (ev: unknown) => {
         const event = ev as { message?: string; error?: unknown };
@@ -215,7 +218,7 @@ export function installErrorCaptureOn(
             event.message ?? '未知错误',
             event.error,
             'uncaught',
-            { buffer },
+            { buffer }
         );
     };
     const onRejection = (ev: unknown) => {
@@ -226,7 +229,7 @@ export function installErrorCaptureOn(
             reason instanceof Error ? reason.message : String(reason),
             reason,
             'unhandledrejection',
-            { buffer },
+            { buffer }
         );
     };
 
@@ -246,7 +249,7 @@ export function installGlobalErrorCapture(): () => void {
     if (typeof globalThis !== 'undefined') {
         originalDisposer = installErrorCaptureOn(
             globalThis as unknown as GlobalErrorTarget,
-            errorBuffer,
+            errorBuffer
         );
     } else {
         originalDisposer = () => {};

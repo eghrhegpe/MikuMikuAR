@@ -157,15 +157,19 @@ interface PlazaCache {
 }
 
 /** 从本地缓存文件读取站点 + 创作者。缓存不存在时返回 null。 */
-export async function loadPlazaCache(): Promise<{ sites: PlazaSite[]; creators: PlazaCreator[] } | null> {
+export async function loadPlazaCache(): Promise<{
+    sites: PlazaSite[];
+    creators: PlazaCreator[];
+} | null> {
     try {
         const raw = await ReadTextFile(PLAZA_CACHE_PATH);
         if (!raw) return null;
         const parsed = JSON.parse(raw) as PlazaCache;
         if (!parsed.sites?.length && !parsed.creators?.length) return null;
         return {
-            sites: parsed.sites?.map(normalizeSite).filter(Boolean) as PlazaSite[] ?? [],
-            creators: parsed.creators?.map(normalizeCreator).filter(Boolean) as PlazaCreator[] ?? [],
+            sites: (parsed.sites?.map(normalizeSite).filter(Boolean) as PlazaSite[]) ?? [],
+            creators:
+                (parsed.creators?.map(normalizeCreator).filter(Boolean) as PlazaCreator[]) ?? [],
         };
     } catch {
         return null;
@@ -243,7 +247,11 @@ export async function loadCachedConfig(): Promise<void> {
                 creators?: RawCreatorInput[];
             };
             if (parsed.sites?.length) {
-                setAllSites(preserveBuiltinRouting(parsed.sites.map(normalizeSite).filter(Boolean) as PlazaSite[]));
+                setAllSites(
+                    preserveBuiltinRouting(
+                        parsed.sites.map(normalizeSite).filter(Boolean) as PlazaSite[]
+                    )
+                );
             }
             if (parsed.creators?.length) {
                 setAllCreators(
@@ -948,7 +956,6 @@ export function renderEmbed(site: PlazaSite): void {
             body.appendChild(err);
         });
 }
-
 
 // ======== 入口函数 ========
 

@@ -610,7 +610,9 @@ export function serializeScene(): SceneFile {
  * avoiding N-pass scanning that would occur with separate per-category functions.
  * @returns [modelIds, errors] where modelIds[i] = runtime ID if loaded, null if failed.
  */
-async function deserializeModels(modelsData: SceneFile['models']): Promise<[Array<string | null>, string[]]> {
+async function deserializeModels(
+    modelsData: SceneFile['models']
+): Promise<[Array<string | null>, string[]]> {
     // --- Clear existing scene ---
     for (const id of Array.from(modelRegistry.keys())) {
         removeModel(id);

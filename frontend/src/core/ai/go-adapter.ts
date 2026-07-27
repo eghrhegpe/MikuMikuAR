@@ -131,7 +131,7 @@ class GoAiAdapter implements AiService {
         try {
             const llmReq: LLMChatRequest = {
                 model: req.model ?? '',
-                messages: req.messages.map(m => ({ role: m.role, content: m.content })),
+                messages: req.messages.map((m) => ({ role: m.role, content: m.content })),
                 temperature: req.temperature ?? 0.7,
                 max_tokens: req.maxTokens ?? 2048,
             };

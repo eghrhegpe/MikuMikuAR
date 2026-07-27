@@ -1,7 +1,13 @@
 // settings-about.ts — 关于页面（ADR-157 瘦身：仅版本信息 / 链接 / 更新）
 // 设置导入/导出/重置已迁移至 settings-system.ts；快捷键只读副本已删除（可编辑版在操控页）。
 
-import { GetBuildInfo, CheckForUpdate, SetUIAutoUpdate, DownloadApk, DownloadAndRunInstaller } from '../core/wails-bindings';
+import {
+    GetBuildInfo,
+    CheckForUpdate,
+    SetUIAutoUpdate,
+    DownloadApk,
+    DownloadAndRunInstaller,
+} from '../core/wails-bindings';
 import { uiState, setUIState, cardContainer } from '../core/config';
 import { slideRow, addToggleRow, addSectionTitle } from '../core/ui-helpers';
 import { browser } from '../core/runtime-bridge';
@@ -98,7 +104,22 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                 });
             },
         },
-        // 卡片 3：更新
+        // 卡片 3：社区工具
+        {
+            id: 'about:community-tools',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    addSectionTitle(inner, t('settings.about.communityTools'));
+                    slideRow(inner, 'lucide:github', t('about.nanoemCn'), false, () => {
+                        if (!openExternalURL('https://github.com/BesingBG/nanoem-cn')) {
+                            void browser.openURL('https://github.com/BesingBG/nanoem-cn');
+                        }
+                    });
+                });
+            },
+        },
+        // 卡片 4：更新
         {
             id: 'about:update',
             kind: 'custom',
@@ -169,8 +190,10 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                                     updateLink.style.display = 'inline';
                                     // [doc:adr-179] Android + direct APK link → "Download & Install"
                                     // [doc:adr-179] Desktop/Android: direct install when downloadUrl is available
-                                    const hasDirectInstall = !!r.downloadUrl && getCachedCapabilities().installLocal;
-                                    const isDesktopInstall = hasDirectInstall && !getCachedCapabilities().installApk;
+                                    const hasDirectInstall =
+                                        !!r.downloadUrl && getCachedCapabilities().installLocal;
+                                    const isDesktopInstall =
+                                        hasDirectInstall && !getCachedCapabilities().installApk;
                                     updateLink.textContent = hasDirectInstall
                                         ? t('settings.about.update.downloadInstall')
                                         : t('settings.about.update.goDownload');
@@ -182,18 +205,26 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                                             }
                                             return;
                                         }
-                                        updateLink.textContent = t('settings.about.update.downloading');
+                                        updateLink.textContent = t(
+                                            'settings.about.update.downloading'
+                                        );
                                         updateLink.style.pointerEvents = 'none';
                                         try {
                                             if (isDesktopInstall) {
                                                 // Desktop: download installer + launch (user clicks through OS wizard)
                                                 const result = await DownloadAndRunInstaller();
                                                 if (result && result.success) {
-                                                    updateLink.textContent = t('settings.about.update.installLaunched');
+                                                    updateLink.textContent = t(
+                                                        'settings.about.update.installLaunched'
+                                                    );
                                                 } else {
                                                     const errMsg = result?.error || '';
-                                                    updateLink.textContent = t('settings.about.update.downloadFailed');
-                                                    showInfoToast(errMsg || t('settings.about.update.failed'));
+                                                    updateLink.textContent = t(
+                                                        'settings.about.update.downloadFailed'
+                                                    );
+                                                    showInfoToast(
+                                                        errMsg || t('settings.about.update.failed')
+                                                    );
                                                     if (!openExternalURL(r.url)) {
                                                         void browser.openURL(r.url);
                                                     }
@@ -202,32 +233,48 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                                                 // Android: download APK then launch installer
                                                 const result = await DownloadApk();
                                                 if (result && result.success && result.localPath) {
-                                                // [doc:adr-179] Register one-shot listener for install failures.
-                                                const onInstallFailed = () => {
-                                                    updateLink.textContent = t('settings.about.update.downloadFailed');
-                                                    updateLink.style.pointerEvents = '';
+                                                    // [doc:adr-179] Register one-shot listener for install failures.
+                                                    const onInstallFailed = () => {
+                                                        updateLink.textContent = t(
+                                                            'settings.about.update.downloadFailed'
+                                                        );
+                                                        updateLink.style.pointerEvents = '';
+                                                        if (!openExternalURL(r.url)) {
+                                                            void browser.openURL(r.url);
+                                                        }
+                                                    };
+                                                    window.addEventListener(
+                                                        'update:installFailed',
+                                                        onInstallFailed
+                                                    );
+                                                    window.wails?.installApk?.(result.localPath);
+                                                    updateLink.textContent = t(
+                                                        'settings.about.update.installLaunched'
+                                                    );
+                                                    setTimeout(() => {
+                                                        window.removeEventListener(
+                                                            'update:installFailed',
+                                                            onInstallFailed
+                                                        );
+                                                    }, 10000);
+                                                } else {
+                                                    const errMsg = result?.error || '';
+                                                    updateLink.textContent = t(
+                                                        'settings.about.update.downloadFailed'
+                                                    );
+                                                    showInfoToast(
+                                                        errMsg || t('settings.about.update.failed')
+                                                    );
+                                                    // Fallback: open release page
                                                     if (!openExternalURL(r.url)) {
                                                         void browser.openURL(r.url);
                                                     }
-                                                };
-                                                window.addEventListener('update:installFailed', onInstallFailed);
-                                                window.wails?.installApk?.(result.localPath);
-                                                updateLink.textContent = t('settings.about.update.installLaunched');
-                                                setTimeout(() => {
-                                                    window.removeEventListener('update:installFailed', onInstallFailed);
-                                                }, 10000);
-                                            } else {
-                                                const errMsg = result?.error || '';
-                                                updateLink.textContent = t('settings.about.update.downloadFailed');
-                                                showInfoToast(errMsg || t('settings.about.update.failed'));
-                                                // Fallback: open release page
-                                                if (!openExternalURL(r.url)) {
-                                                    void browser.openURL(r.url);
                                                 }
-                                            }
                                             } // close Android else (isDesktopInstall)
                                         } catch {
-                                            updateLink.textContent = t('settings.about.update.downloadFailed');
+                                            updateLink.textContent = t(
+                                                'settings.about.update.downloadFailed'
+                                            );
                                             if (!openExternalURL(r.url)) {
                                                 void browser.openURL(r.url);
                                             }

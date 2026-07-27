@@ -36,7 +36,12 @@ import { tryCatchStatus, isUnderRoot } from '../core/utils';
 import { logWarn } from '../core/logger';
 import { safeCallAsync } from '../core/safe-call';
 import { showConfirm } from '../core/dialog';
-import { getFsaAuthState, isFsaAuthPromptDismissed, dismissFsaAuthPrompt, reauthorizeFsaRoot } from '../core/backend/browser-adapter';
+import {
+    getFsaAuthState,
+    isFsaAuthPromptDismissed,
+    dismissFsaAuthPrompt,
+    reauthorizeFsaRoot,
+} from '../core/backend/browser-adapter';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
 import { buildLevel, setResourceViewMode } from './library-core';
@@ -75,7 +80,10 @@ export async function initLibrary(): Promise<void> {
             if (state === 'none') {
                 // 从未授权 → 首次选目录（showDirectoryPicker）
                 if (!(await isFsaAuthPromptDismissed())) {
-                    const ok = await showConfirm(t('library.fsaAuthPrompt'), t('library.fsaAuthTitle'));
+                    const ok = await showConfirm(
+                        t('library.fsaAuthPrompt'),
+                        t('library.fsaAuthTitle')
+                    );
                     if (ok) {
                         await selectResourceRoot(false); // 内部 showDirectoryPicker + 扫描
                         return;
@@ -261,10 +269,13 @@ export async function rescanAndSync(): Promise<LibraryModel[]> {
                 // 节流窗口内，调度延迟刷新
                 if (!pendingFlush) {
                     pendingFlush = true;
-                    setTimeout(() => {
-                        lastFlushTs = Date.now();
-                        flush();
-                    }, 500 - (now - lastFlushTs));
+                    setTimeout(
+                        () => {
+                            lastFlushTs = Date.now();
+                            flush();
+                        },
+                        500 - (now - lastFlushTs)
+                    );
                 }
                 return;
             }

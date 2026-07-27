@@ -329,7 +329,9 @@ export function _applyEyeGazeCore(
     }
 
     for (const eyeRb of eyeRuntimes) {
-        const eyeMat = _m().copyFrom(Matrix.FromArray((eyeRb as MmdRuntimeBoneExtended).worldMatrix));
+        const eyeMat = _m().copyFrom(
+            Matrix.FromArray((eyeRb as MmdRuntimeBoneExtended).worldMatrix)
+        );
         const boneName = eyeRb.linkedBone?.name ?? '';
 
         const cachedLocal = cache?.eyeLocalQ.get(boneName);

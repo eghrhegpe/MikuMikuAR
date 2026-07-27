@@ -151,33 +151,37 @@ function ensureActive(modelId: string): void {
     const autoPedal = (st.params.autoPedal as boolean) ?? false;
     const hasHook = _ridingFrameHooks.has(modelId);
     if (autoPedal && !hasHook) {
-        const unregister = registerBoneOverrideFrameHook((t, mid) => {
-            if (mid !== modelId) {
-                return;
-            }
-            const s = getModuleState(modelId, MODULE_ID);
-            if (!s.enabled) {
-                return;
-            }
-            const feet = _ridingFeet.get(modelId) ?? [];
-            if (feet.length === 0) {
-                return;
-            }
-            const owned = getOwnedBones(modelId, MODULE_ID);
-            const pedalSpeed = (s.params.pedalSpeed as number) ?? 0.5;
-            // pedalAngle(t) = (t · pedalSpeed · 360)° ，自然循环
-            const phaseDeg = computePedalPhase(t, pedalSpeed);
-            for (const bone of feet) {
-                if (!owned.has(bone)) {
-                    continue; // 被抢占则跳过该足
+        const unregister = registerBoneOverrideFrameHook(
+            (t, mid) => {
+                if (mid !== modelId) {
+                    return;
                 }
-                const isLeft = bone.startsWith('左');
-                const pitch = computeFootPitch(phaseDeg, isLeft);
-                applyBoneOverrideIK(bone, [pitch, 0, 0], 1, true, modelId, () =>
-                    _getRuntimeBones(modelId)
-                );
-            }
-        }, FRAME_HOOK_ORDER.RIDING, 'riding-model');
+                const s = getModuleState(modelId, MODULE_ID);
+                if (!s.enabled) {
+                    return;
+                }
+                const feet = _ridingFeet.get(modelId) ?? [];
+                if (feet.length === 0) {
+                    return;
+                }
+                const owned = getOwnedBones(modelId, MODULE_ID);
+                const pedalSpeed = (s.params.pedalSpeed as number) ?? 0.5;
+                // pedalAngle(t) = (t · pedalSpeed · 360)° ，自然循环
+                const phaseDeg = computePedalPhase(t, pedalSpeed);
+                for (const bone of feet) {
+                    if (!owned.has(bone)) {
+                        continue; // 被抢占则跳过该足
+                    }
+                    const isLeft = bone.startsWith('左');
+                    const pitch = computeFootPitch(phaseDeg, isLeft);
+                    applyBoneOverrideIK(bone, [pitch, 0, 0], 1, true, modelId, () =>
+                        _getRuntimeBones(modelId)
+                    );
+                }
+            },
+            FRAME_HOOK_ORDER.RIDING,
+            'riding-model'
+        );
         _ridingFrameHooks.set(modelId, unregister);
     } else if (!autoPedal && hasHook) {
         _ridingFrameHooks.unregister(modelId);

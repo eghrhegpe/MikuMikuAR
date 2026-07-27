@@ -7,14 +7,19 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 // vi.mock 工厂在文件顶部执行，此时顶层 const 尚未初始化，
 // 因此必须用 vi.hoisted 把变量提升到与 vi.mock 同一阶段。
 
-const { mockModelRegistry, setBoneOverrideSpy, clearBoneOverrideSpy, mockActiveMotion, protectIkPositionSpy } =
-    vi.hoisted(() => ({
-        mockModelRegistry: new Map<string, any>(),
-        setBoneOverrideSpy: vi.fn(),
-        clearBoneOverrideSpy: vi.fn(),
-        protectIkPositionSpy: vi.fn(),
-        mockActiveMotion: { value: null as any },
-    }));
+const {
+    mockModelRegistry,
+    setBoneOverrideSpy,
+    clearBoneOverrideSpy,
+    mockActiveMotion,
+    protectIkPositionSpy,
+} = vi.hoisted(() => ({
+    mockModelRegistry: new Map<string, any>(),
+    setBoneOverrideSpy: vi.fn(),
+    clearBoneOverrideSpy: vi.fn(),
+    protectIkPositionSpy: vi.fn(),
+    mockActiveMotion: { value: null as any },
+}));
 
 vi.mock('@/core/state', () => ({
     modelRegistry: mockModelRegistry,
@@ -676,12 +681,8 @@ describe('body-posture IK 位置保护', () => {
         mod.enable();
 
         // 从 mock 中捕获注册的帧钩子
-        const { registerBoneOverrideFrameHook } = await import(
-            '@/scene/motion/bone-override'
-        );
-        const hookCalls = (
-            registerBoneOverrideFrameHook as ReturnType<typeof vi.fn>
-        ).mock.calls;
+        const { registerBoneOverrideFrameHook } = await import('@/scene/motion/bone-override');
+        const hookCalls = (registerBoneOverrideFrameHook as ReturnType<typeof vi.fn>).mock.calls;
         const bodyHook = hookCalls.find(
             (c: any[]) => c[1] === 5 // FRAME_HOOK_ORDER.BODY_POSITION
         );
@@ -693,9 +694,7 @@ describe('body-posture IK 位置保护', () => {
 
         // 应注册左右足 IK 保护
         expect(protectIkPositionSpy).toHaveBeenCalledTimes(2);
-        const protectedBones = protectIkPositionSpy.mock.calls.map(
-            (c: any[]) => c[0]
-        );
+        const protectedBones = protectIkPositionSpy.mock.calls.map((c: any[]) => c[0]);
         expect(protectedBones).toContain('左足IK');
         expect(protectedBones).toContain('右足IK');
     });
@@ -709,15 +708,9 @@ describe('body-posture IK 位置保护', () => {
         // 保持默认值 bodyHeight=0, bodyDepth=0
         mod.enable();
 
-        const { registerBoneOverrideFrameHook } = await import(
-            '@/scene/motion/bone-override'
-        );
-        const hookCalls = (
-            registerBoneOverrideFrameHook as ReturnType<typeof vi.fn>
-        ).mock.calls;
-        const bodyHook = hookCalls.find(
-            (c: any[]) => c[1] === 5
-        );
+        const { registerBoneOverrideFrameHook } = await import('@/scene/motion/bone-override');
+        const hookCalls = (registerBoneOverrideFrameHook as ReturnType<typeof vi.fn>).mock.calls;
+        const bodyHook = hookCalls.find((c: any[]) => c[1] === 5);
         const hookFn = bodyHook[0] as (t: number, mid: string) => void;
 
         hookFn(0, 'm1');
