@@ -7,8 +7,8 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 77 | 559 |
-| 3D 场景 | 104 | 1057 |
+| 核心基础设施 | 78 | 567 |
+| 3D 场景 | 105 | 1058 |
 | 菜单 & UI | 66 | 308 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 18 | 131 |
@@ -167,6 +167,14 @@
 | `logError()` | `core/logger` | 统一标签格式的 error 日志（走 console.error）。 |
 | `logInfo()` | `core/logger` | 统一标签格式的 info 日志（走 console.info）。 |
 | `logWarn()` | `core/logger` | 统一标签格式的 warn 日志。message 为空时省略中间空格；err 为空时不传第二个参数。 |
+| `CapabilityProbe()` | `core/mmd-adapter` | CapabilityProbe — 升级回归探测（ADR-192 Phase 2 守卫式反射）。 |
+| `getBoneWorldMatrix()` | `core/mmd-adapter` | 返回骨骼在世界坐标系下的 worldMatrix（固化自 adr-071 坐标系契约）。 |
+| `getPhysicsImpl()` | `core/mmd-adapter` | 从 IMmdRuntime 获取底层 MmdWasmPhysicsRuntimeImpl。 |
+| `getRigidBodyBundleMap()` | `core/mmd-adapter` | 返回所有 RigidBodyBundle 迭代器（条目 3 内化，ADR-192 Phase 2）。 |
+| `getStreamAudio()` | `core/mmd-adapter` | — |
+| `onBoneMatricesUpdated()` | `core/mmd-adapter` | 在骨骼 worldMatrix 已被 babylon-mmd 更新之后、渲染之前注册回调。 |
+| `switchAnimation()` | `core/mmd-adapter` | 切换模型当前动画到新动画，并归零运行时全局时钟到第 0 帧。 |
+| `transformWorldToRootLocal()` | `core/mmd-adapter` | 把世界坐标系下的点转换到 rootMesh 局部坐标系（固化自 perception-gaze.ts / adr-071）。 |
 | `ObserverHandle()` | `core/observer-handle` | 可释放的 Observer 句柄。 |
 | `ObserverRegistry()` | `core/observer-handle` | 管理器：收集多个 ObserverHandle，支持一次性 disposeAll()。 |
 | `observe()` | `core/observer-handle` | 订阅 Observable 并返回自动管理的句柄。 |
@@ -998,6 +1006,7 @@
 | `setMatEnabled()` | `scene/manager/material` | — |
 | `setMatParams()` | `scene/manager/material` | — |
 | `unregisterMaterialTarget()` | `scene/manager/material` | 注销外部材质目标（资源卸载时调用）。 |
+| `resolveModelId()` | `scene/manager/model-id` | 解析模型运行时 id：优先复用存档 uuid（preferredId，由恢复路径传入）， 否则生成稳定 uuid。替代旧实现 `model_${Date.now()}_${Math |
 | `captureThumbnail()` | `scene/manager/model-loader` | Captures a screenshot after model load for thumbnail cache. |
 | `initLoader()` | `scene/manager/model-loader` | — |
 | `loadPMXFile()` | `scene/manager/model-loader` | — |
@@ -2140,12 +2149,12 @@
 | `findRuntimeBone()` | `physics/physics-bridge` | 在模型 runtimeBones 中按名查找。WASM / JS runtime 都暴露 runtimeBones，故后端无关。 |
 | `getBoneWorldMatrix()` | `physics/physics-bridge` | 取骨骼世界矩阵（列主序 Float32Array[16]），用于挂件锚点跟随。 |
 | `getBoneWorldPosition()` | `physics/physics-bridge` | 从骨骼世界矩阵提取世界位置（米，场景单位）。 |
-| `_getBundles()` | `physics/wind-physics` | 从 PhysicsRuntimeImpl 获取所有 RigidBodyBundle。 |
+| `_getBundles()` | `physics/wind-physics` | — |
 | `disposeWindPhysics()` | `physics/wind-physics` | 销毁风力物理注入。 |
 | `initWindPhysics()` | `physics/wind-physics` | 初始化风力物理注入。 |
 | `retryWindPhysicsSubscription()` | `physics/wind-physics` | [adr-104] 模型加载成功后由 model-loader 显式调用，重试订阅 physics impl （此时 physics impl 已就绪）。替代原 monkey-pa |
 
 ---
 
-> 共 270 个文件，2101 个导出符号。
+> 共 272 个文件，2110 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。

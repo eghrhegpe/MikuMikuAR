@@ -350,20 +350,17 @@ export interface SceneFile {
 
 // ======== Serialization ========
 
-// Map runtime instance ID → persistent UUID, maintained by serialize/deserialize.
-const modelUuidMap = new Map<string, string>();
+// propUuidMap: runtime prop instance ID → persistent UUID（恢复 accessory 锚定时反查）。
+// 模型侧自 [doc:stable-identity] 起 runtime id 即稳定 uuid，不再需要中间映射。
 const propUuidMap = new Map<string, string>();
 
 export function serializeScene(): SceneFile {
     const procState = getProcMotionState();
     const lipState = getLipSyncState();
     const models = Array.from(modelRegistry.values()).map((inst) => {
-        // Persist UUID — reuse existing if known, generate if first time
-        let uuid = modelUuidMap.get(inst.id);
-        if (!uuid) {
-            uuid = generateUuid();
-            modelUuidMap.set(inst.id, uuid);
-        }
+        // [doc:stable-identity] runtime id 即稳定 uuid，直接持久化；恢复时以相同 uuid 重建实例，
+        // 使材质/outfit/个人灯等按此 id 落盘的状态可跨会话还原。
+        const uuid = inst.id;
         return {
             filePath: inst.filePath,
             libraryRef: computeLibraryRef(inst.filePath) || undefined,
@@ -535,7 +532,7 @@ export function serializeScene(): SceneFile {
                 orbitElevation: p.orbitElevation,
                 orbitDistance: p.orbitDistance,
                 boneName: p.boneName,
-                targetModelUuid: p.targetModelId ? modelUuidMap.get(p.targetModelId) : undefined,
+                targetModelUuid: p.targetModelId ?? undefined,
                 boneOffset: p.boneOffset,
                 boneRotation: p.boneRotation,
             };
@@ -600,7 +597,6 @@ async function deserializeModels(modelsData: SceneFile['models']): Promise<[Arra
     for (const id of Array.from(modelRegistry.keys())) {
         removeModel(id);
     }
-    modelUuidMap.clear();
     for (const id of Array.from(propRegistry.keys())) {
         removeProp(id);
     }
@@ -620,7 +616,16 @@ async function deserializeModels(modelsData: SceneFile['models']): Promise<[Arra
                 continue;
             }
             // D5: 直接用 loadPMXFile 返回的运行时 ID 查询，不依赖 focusedModel() 反查
-            const loadedId = await loadPMXFile(resolvedPath, m.kind === 'stage', true);
+            // [doc:stable-identity] 传入存档 uuid 作为 runtime id，确保恢复后材质/个人灯状态按同 id 还原
+            const loadedId = await loadPMXFile(
+                resolvedPath,
+                m.kind === 'stage',
+                true,
+                undefined,
+                undefined,
+                undefined,
+                m.uuid
+            );
             if (!loadedId) {
                 errors.push(t('scene.serialize.modelNoMesh', { name: m.name }));
                 modelIds.push(null);
@@ -633,10 +638,6 @@ async function deserializeModels(modelsData: SceneFile['models']): Promise<[Arra
                 continue;
             }
             modelIds.push(loadedId);
-            // Map the persisted UUID to the runtime ID
-            if (m.uuid) {
-                modelUuidMap.set(inst.id, m.uuid);
-            }
 
             // Apply immediate model properties (position, scale, visibility, etc.)
             if (
@@ -1096,15 +1097,9 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
             if (!p.boneName || !p.targetModelUuid) {
                 continue;
             }
-            // 通过 UUID 找到运行时的模型 ID
-            let targetModelId: string | undefined;
-            for (const [runtimeId, uuid] of modelUuidMap) {
-                if (uuid === p.targetModelUuid) {
-                    targetModelId = runtimeId;
-                    break;
-                }
-            }
-            if (!targetModelId) {
+            // [doc:stable-identity] runtime id 即稳定 uuid，targetModelUuid 直接等于目标模型运行 id
+            const targetModelId = p.targetModelUuid;
+            if (!targetModelId || !modelRegistry.has(targetModelId)) {
                 continue;
             }
             // 找到对应的 prop ID
