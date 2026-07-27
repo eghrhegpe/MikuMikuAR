@@ -123,6 +123,7 @@ export async function toggleOverlay(id: string, showFn: () => void): Promise<voi
             if (last === showFn) {
                 // Same button clicked again → toggle close
                 el.classList.remove('visible');
+                el.inert = true; // 关闭时从 Tab 顺序中移除
                 setPopupOpen(false);
                 syncNavAriaExpanded();
                 _lastOverlayFn.delete(id);
@@ -135,6 +136,7 @@ export async function toggleOverlay(id: string, showFn: () => void): Promise<voi
                 showFn();
                 document.body.classList.remove('ui-hidden');
                 el.classList.add('visible');
+                el.removeAttribute('inert');
             }
         } else {
             closeAllOverlays();
@@ -142,6 +144,7 @@ export async function toggleOverlay(id: string, showFn: () => void): Promise<voi
             document.body.classList.remove('ui-hidden');
             el.classList.remove('overlay-fade-out'); // 防御：确保残留动画类不影响显示
             el.classList.add('visible');
+            el.removeAttribute('inert'); // 打开时恢复 Tab 可达
         }
         if (el.classList.contains('visible')) {
             _lastOverlayFn.set(id, showFn);
