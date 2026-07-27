@@ -1280,6 +1280,8 @@ export const browserAdapter: BackendService = {
         const merged = { ...(cfg.env ?? {}), ...s } as EnvState;
         await this.SetConfig({ env: merged } as Partial<Config>);
     },
+    // [doc:adr-195] 网页端固定返回 'web' 模式（无 private/shared 切换）。
+    // 调用方应通过 `getCachedCapabilities().storageMode` 判断是否可切换存储模式，勿依赖 'private'/'shared' 枚举。
     async GetStorageMode(): Promise<string> {
         return 'web';
     },
@@ -1289,9 +1291,13 @@ export const browserAdapter: BackendService = {
     async GetSystemA11ySettings(): Promise<Record<string, unknown>> {
         return (await idbGet<Record<string, unknown>>('config', 'a11y')) ?? {};
     },
+    // [doc:adr-195] 网页端无真实构建信息：返回固定假值（version/commit='web'）。
+    // 调用方应用 `backend.kind === 'browser'` 判断是否为浏览器端，勿用此返回值做版本比较。
     async GetBuildInfo(): Promise<Record<string, string>> {
         return { version: 'web', commit: 'web', date: new Date().toISOString() };
     },
+    // [doc:adr-195] 网页端无版本更新检查能力：永远返回无更新（available:false，current/latest='web'）。
+    // 调用方应优先检查 backend.kind === 'browser' 判断是否应跳过升级提示；勿据此判断版本。
     async CheckForUpdate(): Promise<UpdateCheckResult> {
         return {
             current: 'web',
@@ -1923,6 +1929,9 @@ export const browserAdapter: BackendService = {
         const bytes = await idbGet<Uint8Array>('models', key);
         return bytes ? new TextDecoder().decode(bytes) : '';
     },
+    // [doc:adr-195] 网页端扫描 IndexedDB 模型库（_listModels 读 entry: 前缀），非文件系统。
+    // 返回的 entry.dir 为虚拟路径：扫描项 `web://selected-dir/...`，导入项 `web://model/...`。
+    // Go 端扫描文件系统目录，返回真实路径。调用方应通过 `backend.kind` 区分行为。
     async ScanModelDir(): Promise<ModelEntry[]> {
         // [doc:adr-180] 无内存句柄时尝试从 IndexedDB 恢复持久化句柄并自动重扫，
         // 使「已授权源」启动即自愈，无需用户手动重选目录。未授权 / 无句柄降级为只读现有 entry。
