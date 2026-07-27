@@ -442,6 +442,11 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
 
     _applyParticleConfig(ps, cfg, type);
 
+    // 雨的纹理是竖线条，用 STRETCHED billboard 沿速度方向拉伸，避免风吹时纹理方向与实际轨迹错位
+    if (type === 'rain') {
+        ps.billboardMode = ParticleSystem.BILLBOARDMODE_STRETCHED;
+    }
+
     _baseEmitRate = ps.emitRate;
     _baseMinSize = ps.minSize;
     _baseMaxSize = ps.maxSize;
@@ -818,30 +823,13 @@ function stopFireworkBursts(): void {
 // gravity 叠加后：风速变化实时响应，轨迹是真实弧线，风停后立即恢复竖直下落。
 export function applyWindToParticles(ps: ParticleSystem): void {
     if (!_initialDir1 || !_initialDir2) {
-        console.warn('[wind] applyWindToParticles: _initialDir null', {
-            _initialDir1,
-            _initialDir2,
-        });
         return;
     }
-    // 惰性初始化：HMR/冷启动后粒子已存在时，从现有系统读取基础重力（避免 createParticleEmitter 早返回不执行第 452 行）
+    // 惰性初始化：HMR/冷启动后粒子已存在时，从现有系统读取基础重力（避免 createParticleEmitter 早返回不执行赋值）
     if (!_baseGravity) {
         _baseGravity = ps.gravity.clone();
-        console.warn('[wind] applyWindToParticles: lazily init _baseGravity=', _baseGravity.asArray());
     }
     const wind = getWindVector();
-    console.warn(
-        '[wind] applyWindToParticles: wind=',
-        wind.asArray(),
-        ' baseGravity=',
-        _baseGravity.asArray(),
-        ' windEnabled=',
-        envState.windEnabled,
-        ' windSpeed=',
-        envState.windSpeed,
-        ' windDirection=',
-        envState.windDirection
-    );
     // 1. 发射瞬间初速度风偏（系数 0.2，避免与 gravity 叠加首帧过冲）
     const emitWind = wind.scale(0.2);
     ps.direction1 = _initialDir1.clone().add(emitWind);

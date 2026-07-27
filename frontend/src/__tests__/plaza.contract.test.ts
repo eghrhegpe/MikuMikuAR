@@ -71,4 +71,14 @@ describe('preserveBuiltinRouting（缓存不得丢弃内置站点路由标记）
         const s = normalizeSite({ id: 'a', name: 'A', url: 'https://a.test/', mode: 'external', directNavigate: true });
         expect(s?.directNavigate).toBe(true);
     });
+
+    it('normalizeSite 自定义站点缺省直连（directNavigate 默认 true）', () => {
+        const s = normalizeSite({ id: 'b', name: 'B', url: 'https://b.test/', mode: 'external' });
+        expect(s?.directNavigate).toBe(true);
+    });
+
+    it('normalizeSite 自定义站点可显式 false 回退代理（frame-hostile 站点兜底）', () => {
+        const s = normalizeSite({ id: 'c', name: 'C', url: 'https://c.test/', mode: 'embed', directNavigate: false });
+        expect(s?.directNavigate).toBe(false);
+    });
 });
