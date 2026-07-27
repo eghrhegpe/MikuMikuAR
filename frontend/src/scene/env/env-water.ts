@@ -763,6 +763,8 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     // ——— 波方向（风向联动）———
     const windDirs = computeWaveDirs(state.windDirection);
     mat.setArray2('uWindDir', windDirs);
+    // 风速调制波幅度（0 级风时 0.4 倍平静海面，10 级风时 1.4 倍汹涌涌浪）
+    mat.setFloat('uWindSpeed', state.windSpeed);
     // 细节法线滚动方向：取 Gerstner 主波（第一波）风向
     mat.setVector3('uDetailWindDir', new Vector3(windDirs[0], windDirs[1], 0));
 
@@ -883,6 +885,7 @@ const WATER_UNIFORMS = [
     'waterFogDensity',
     'waterFogOpacityInfluence',
     'uWindDir',
+    'uWindSpeed',
     'planarReflectBlend',
     // ADR-115 P1: 高频法线扰动 + Sun Glitter
     'uDetailNormalStrength',

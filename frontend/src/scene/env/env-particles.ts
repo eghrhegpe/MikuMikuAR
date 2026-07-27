@@ -36,6 +36,8 @@ export { isWetnessActive, applyWetnessToInst } from './env-wetness';
 // 保存粒子系统创建时的初始发射方向，风力基于此计算，避免叠加
 let _initialDir1: Vector3 | null = null;
 let _initialDir2: Vector3 | null = null;
+// 保存粒子系统创建时的初始重力（不含风），每帧 gravity = baseGravity + wind 实现持续风场
+let _baseGravity: Vector3 | null = null;
 
 // 保存基础参数值（未乘 multiplier 前的值），供运行时滑条更新使用
 let _baseEmitRate = 0;
@@ -506,6 +508,7 @@ export function disposeParticles(keepWetness = false): void {
     _particleTextures.clear();
     _initialDir1 = null;
     _initialDir2 = null;
+    _baseGravity = null;
     _baseEmitRate = 0;
     _baseMinSize = 0;
     _baseMaxSize = 0;
@@ -808,15 +811,22 @@ function stopFireworkBursts(): void {
 }
 
 // ======== Wind System ========
-// 基于初始方向计算风力，可安全多次调用（每帧调用也不会叠加）
+// 双重风场：
+//   1) 发射瞬间初速度带风偏（direction1/2 + wind × 0.2）
+//   2) 飞行中持续风加速度（gravity = baseGravity + wind × 1.0）——物理正确，所有活跃粒子响应
+// 单独只改 direction 是"假风"：粒子出生后只受 gravity，风停即无横向力，轨迹是直线平移。
+// gravity 叠加后：风速变化实时响应，轨迹是真实弧线，风停后立即恢复竖直下落。
 export function applyWindToParticles(ps: ParticleSystem): void {
-    if (!_initialDir1 || !_initialDir2) {
+    if (!_initialDir1 || !_initialDir2 || !_baseGravity) {
         return;
     }
-    // 粒子风响应系数 0.1（比布料小，粒子更轻但受发射方向约束）
-    const wind = getWindVector().scale(0.1);
-    ps.direction1 = _initialDir1.clone().add(wind);
-    ps.direction2 = _initialDir2.clone().add(wind);
+    const wind = getWindVector();
+    // 1. 发射瞬间初速度风偏（系数 0.2，避免与 gravity 叠加首帧过冲）
+    const emitWind = wind.scale(0.2);
+    ps.direction1 = _initialDir1.clone().add(emitWind);
+    ps.direction2 = _initialDir2.clone().add(emitWind);
+    // 2. 飞行中持续风加速度（系数 1.0，等价于把风场视为持续作用的重力分量）
+    ps.gravity.copyFrom(_baseGravity).addInPlace(wind);
 }
 
 // 运行时动态更新风力（由 ensureEnvUpdateObserver 每帧调用）

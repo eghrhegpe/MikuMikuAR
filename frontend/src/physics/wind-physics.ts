@@ -22,8 +22,11 @@ import { getPhysicsImpl, getRigidBodyBundleMap } from '@/core/mmd-adapter';
 // 薄转发：保留历史导出名 _getBundles，避免 wind-physics.test.ts 改动（ADR-192 双轨过渡）
 export { getRigidBodyBundleMap as _getBundles } from '@/core/mmd-adapter';
 
-/** 风力系数 — Bullet 刚体质量惯性大，需要比 XPBD 布料更大的系数 */
-const WIND_FORCE_SCALE = 0.15;
+/** 风力系数 — Bullet 刚体质量惯性大，需要比 XPBD 布料更大的系数。
+ *  0.15 过小（风速 10 时仅 1.5N，对 1kg 刚体加速度 1.5m/s²，肉眼难辨）；
+ *  1.0 时风速 10 产生 10N，头发/裙子等 Dynamic 刚体摆动明显。
+ *  Kinematic 刚体（骨骼跟随）Bullet 自动忽略，无需额外跳过。 */
+const WIND_FORCE_SCALE = 1.0;
 
 /** 临时向量，避免每帧分配 */
 const _tmpWind = new Vector3();
