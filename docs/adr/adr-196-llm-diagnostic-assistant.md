@@ -1,6 +1,6 @@
 # ADR-196: 内置 AI 诊断助手（LLM Diagnostic Assistant）
 
-- **状态**: 🔄 实施中（Phase 0 Batch A(P1) + Batch B(P2) + Batch C(面板 UI) + Batch D(Go 侧 LLM 客户端 + 绑定) 已落地；`go-adapter.ts` 从占位升级为真实实现，Wails bindings 自动生成）
+- **状态**: 🔄 实施中（Phase 0 Batch A-D 已落地；Phase 1 集成打通与体验打磨已落地）
 - **日期**: 2026-07-28
 - **相关**: ADR-154（聊天面板·推荐路线，传输层上游）、ADR-155（NL 控场景，未来应用入口）、ADR-156（角色台词，兄弟用例）、ADR-176（BackendService 双适配器，镜像模板）、ADR-192（上游适配层，适配器术语）、ADR-093（声明式菜单 Schema，面板挂载）、`docs/ai-new/ai-news-2026-07-27.md`（安全护栏情报）
 
@@ -193,3 +193,17 @@ LLM 能力已在 2026-07-20 经 ADR-154/155/156 决议，但**全部 0 代码落
 - `go-adapter.ts`：从占位升级为真实实现，订阅 `ai:*` 事件 + 调用 `AiStreamChat` binding，基于 Promise waiter 将 push 事件转换为 `AsyncIterable<ChatChunk>`
 - Wails bindings 自动生成（`frontend/bindings/mikumikuar/internal/app/llm/`）
 - 验证：`go build ./...` 通过；tsc --noEmit 0 错误
+
+### Phase 1 — 集成打通与体验打磨（2026-07-28）
+- **AiService 接口扩展**：`types.ts` 新增 `testConnection(): Promise<{ok, message}>` + 可选的 `refreshCapabilities?(): Promise<void>`
+- **browser-adapter**：实现 `testConnection()`（最小 POST 请求，`max_tokens:1, stream:false`，复用 `_friendlyError`）
+- **go-adapter**：实现 `testConnection()`（调用 `AiTestLLMConnection` binding）；移除 `as any` 强转，定义 `LLMChatRequest` 类型对齐 Go 侧 `ChatRequest` JSON tag；新增 `_capCache` + `refreshCapabilities()` 异步能力探测，调用 `AiGetLLMConfig()` 获取配置后更新 `corsRisk/provider/available`
+- **面板双适配器路径**（`settings-diagnostic.ts`）：移除 `browserAiAdapter` 硬编码，改用 `resolveAi()` 异步分发；`_testConnection()` 走 `_ai.testConnection()`；配置保存根据 `_ai.kind` 分流（browser→saveAiConfig / go→AiSetLLMConfig）
+- **诊断/闲聊模式切换**：面板顶部 `role="tablist"` 按钮组，诊断模式注入完整 system prompt（含错误+快照），闲聊模式仅角色+简短设定
+- **CORS 风险提示**：配置区顶部黄色提示条，`corsRisk!=='none'` 时可见
+- **清空对话按钮**：对话区底部新增「清空」按钮，重置 `_messages` 并恢复欢迎消息
+- **错误栈展开**：每条错误可点击展开/折叠 stack 前 5 行，含键盘交互（Enter/Space，角色 `button`，tabindex）
+- **历史截断**：只保留最近 10 轮（20 条 user+assistant），符合 ADR token 预算
+- **无障碍**：`aria-live="polite"` 对话区、输入框 `aria-label`、按钮 `aria-label`、模式按钮 `role="tablist"/"tab"/"aria-selected"`
+- **i18n 补全**：5 语言新增 `ai.mode.*` / `ai.system.chat` / `ai.config.corsWarning` / `ai.chat.clear` / `ai.errors.resolveFailed` / `ai.config.notResolved` 共 8 条/语言
+- **验证**：`tsc --noEmit` 0 错误；全量 2254 测试通过；`go build ./...` 通过；`check:docs` 无 ERROR；`grep as any` 在 `ai/` 目录 0 处

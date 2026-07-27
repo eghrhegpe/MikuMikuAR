@@ -1893,4 +1893,12 @@ export const ko: Record<string, string> = {
     'ai.system.role': '당신은 MikuMikuAR AI 진단 어시스턴트입니다. 3D 씬, 모델 및 애플리케이션 문제 진단을 지원합니다.',
     'ai.system.format': '사용자 언어로 응답하세요. 결론부터 말하고 실행 가능한 제안을 제공하세요. 신뢰도를 높음/중간/낮음으로 표시하세요.',
     'ai.system.safety': '읽기 전용 진단 모드입니다. 씬이나 파일을 수정할 수 없습니다. 분석 및 조언만 제공합니다.',
+    'ai.system.chat': '당신은 MikuMikuAR AI 어시스턴트입니다. 사용자와 자유롭게 대화하세요. 한국어로 간결하게 응답하세요.',
+    'ai.mode.title': '모드',
+    'ai.mode.diagnostic': '🔍 진단',
+    'ai.mode.chat': '💬 대화',
+    'ai.config.corsWarning': '⚠ 원격 엔드포인트에 CORS 제한이 있을 수 있습니다. 로컬 Ollama는 OLLAMA_ORIGINS=*를 설정하고 다시 시작하세요.',
+    'ai.chat.clear': '지우기',
+    'ai.errors.resolveFailed': 'AI 서비스 초기화에 실패했습니다. 자세한 내용은 콘솔을 확인하세요.',
+    'ai.config.notResolved': 'AI 서비스가 아직 준비되지 않았습니다. 잠시 기다려주세요...',
 };
