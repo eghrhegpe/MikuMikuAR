@@ -21,6 +21,7 @@ import {
     type RuntimeModel,
 } from '@/core/config';
 import { feedbackStatus } from '@/core/feedback';
+import { setStatus } from '@/core/status-bar';
 import { showInfoToast } from '@/core/toast';
 import type { ModelMotionSlots } from '@/core/types';
 import { getBaseName, isUnderRoot } from '@/core/path';
@@ -455,7 +456,9 @@ export async function loadPMXFile(
         if (existing) {
             setFocusedModelId(existing.id);
             _modelManager?.focus(existing.id, uiState.autoCenterModel);
-            showInfoToast(t('scene.loader.switched', { name: existing.name }));
+            const switchedMsg = t('scene.loader.switched', { name: existing.name });
+            showInfoToast(switchedMsg);
+            setStatus(switchedMsg, true, true);
             dom.canvas.setAttribute('aria-label', `${t('menu.canvasLabel')}：${existing.name}`);
             return existing.id;
         }

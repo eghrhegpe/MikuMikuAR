@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 79 | 579 |
+| 核心基础设施 | 79 | 580 |
 | 3D 场景 | 105 | 1058 |
 | 菜单 & UI | 66 | 303 |
 | 换装 & 音频 | 3 | 33 |
@@ -283,6 +283,7 @@
 | `ToastVariant()` | `core/toast` | — |
 | `showErrorToast()` | `core/toast` | — |
 | `showInfoToast()` | `core/toast` | — |
+| `showLoadingToast()` | `core/toast` | 显示一个持续旋转的 loading toast，不自动消失。 |
 | `showToast()` | `core/toast` | — |
 | `BoneOverrideEntry()` | `core/types` | [doc:adr-061] Motion Override — 持久化的单条骨骼覆盖配置 |
 | `BrowseOutcome()` | `core/types` | — |
@@ -2164,5 +2165,5 @@
 
 ---
 
-> 共 273 个文件，2118 个导出符号。
+> 共 273 个文件，2119 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。
