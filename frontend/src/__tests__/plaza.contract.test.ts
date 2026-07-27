@@ -31,7 +31,7 @@ vi.mock('../core/wails-bindings', () => ({
 vi.mock('@bindings/mikumikuar/internal/app/app', () => ({}));
 vi.mock('@wailsio/runtime', () => ({ Events: { On: vi.fn(), Off: vi.fn() } }));
 
-import { showPlaza } from '../menus/plaza-browser';
+import { showPlaza, preserveBuiltinRouting, normalizeSite } from '../menus/plaza-browser';
 import { closePlaza } from '../menus/plaza-state';
 
 describe('plaza 导出契约', () => {
@@ -43,5 +43,32 @@ describe('plaza 导出契约', () => {
 
     it('closePlaza 是函数', () => {
         expect(typeof closePlaza).toBe('function');
+    });
+});
+
+// [doc:plaza-spa] 锁定回归：缓存/远程配置丢失 directNavigate 时，内置站点必须仍以源码路由标记为准，
+// 否则会静默退回代理 origin → API CORS 白屏。
+describe('preserveBuiltinRouting（缓存不得丢弃内置站点路由标记）', () => {
+    it('缓存缺失 directNavigate 时，内置站点仍以源码 PLAZA_SITES 为准', () => {
+        const cached = [{ id: 'mzhouse', name: '模之屋', url: 'https://www.aplaybox.com/', mode: 'external' as const }];
+        const out = preserveBuiltinRouting(cached);
+        expect(out[0].directNavigate).toBe(true);
+    });
+
+    it('缓存显式 false 不覆盖内置 true（路由标记为代码级决策）', () => {
+        const cached = [{ id: 'mzhouse', name: '模之屋', url: 'https://www.aplaybox.com/', mode: 'external' as const, directNavigate: false }];
+        const out = preserveBuiltinRouting(cached);
+        expect(out[0].directNavigate).toBe(true);
+    });
+
+    it('自定义站点（无内置项）保留自身 directNavigate', () => {
+        const custom = [{ id: 'mysite', name: 'X', url: 'https://x.test/', mode: 'external' as const, directNavigate: true }];
+        const out = preserveBuiltinRouting(custom);
+        expect(out[0].directNavigate).toBe(true);
+    });
+
+    it('normalizeSite 圆整 directNavigate 字段', () => {
+        const s = normalizeSite({ id: 'a', name: 'A', url: 'https://a.test/', mode: 'external', directNavigate: true });
+        expect(s?.directNavigate).toBe(true);
     });
 });

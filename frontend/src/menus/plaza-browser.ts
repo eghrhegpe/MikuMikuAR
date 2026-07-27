@@ -76,6 +76,7 @@ interface RawSiteInput {
     group?: string;
     searchUrl?: string;
     presetSearches?: { label: string; q?: string }[];
+    directNavigate?: boolean;
 }
 
 /** JSON 解析后的原始创作者数据（未校验） */
@@ -113,6 +114,7 @@ export function normalizeSite(raw: RawSiteInput): PlazaSite | null {
         group: raw.group || 'search',
         searchUrl: raw.searchUrl,
         presetSearches: raw.presetSearches || [],
+        directNavigate: raw.directNavigate,
     };
 }
 
@@ -193,6 +195,7 @@ export async function savePlazaCache(): Promise<void> {
                 group: s.group,
                 searchUrl: s.searchUrl,
                 presetSearches: s.presetSearches,
+                directNavigate: s.directNavigate,
             })),
             creators: allCreators.map((c) => ({
                 name: c.name,
@@ -228,6 +231,18 @@ export function mergeSites(base: PlazaSite[], extras: PlazaSite[]): PlazaSite[] 
     return result;
 }
 
+// [doc:plaza-spa] 内置站点的路由标记（directNavigate）属代码级决策，缓存/远程配置不得覆盖或丢弃。
+// 缓存路径（plaza_cache.json / Go 缓存）会丢失该字段并以缓存为准提前返回，导致内置站点
+// 静默退回代理 origin → API CORS 白屏。此函数保证内置站点的路由标记始终以源码 PLAZA_SITES 为准，
+// 缓存只覆盖用户可编辑字段（mode/url 等）。
+const BUILTIN_ROUTING = new Map(PLAZA_SITES.map((s) => [s.id, s]));
+export function preserveBuiltinRouting(sites: PlazaSite[]): PlazaSite[] {
+    return sites.map((s) => {
+        const builtin = BUILTIN_ROUTING.get(s.id);
+        return builtin ? { ...s, directNavigate: builtin.directNavigate ?? s.directNavigate } : s;
+    });
+}
+
 export async function loadCachedConfig(): Promise<void> {
     try {
         const cached = await GetCachedPlazaConfig();
@@ -237,7 +252,7 @@ export async function loadCachedConfig(): Promise<void> {
                 creators?: RawCreatorInput[];
             };
             if (parsed.sites?.length) {
-                setAllSites(parsed.sites.map(normalizeSite).filter(Boolean) as PlazaSite[]);
+                setAllSites(preserveBuiltinRouting(parsed.sites.map(normalizeSite).filter(Boolean) as PlazaSite[]));
             }
             if (parsed.creators?.length) {
                 setAllCreators(
@@ -257,7 +272,7 @@ export async function ensureSitesLoaded(): Promise<void> {
     // 1) 优先读本地缓存（plaza_cache.json，由更新配置写出）
     const cached = await loadPlazaCache();
     if (cached && cached.sites.length > 0) {
-        setAllSites(cached.sites);
+        setAllSites(preserveBuiltinRouting(cached.sites));
         if (cached.creators.length > 0) {
             setAllCreators(cached.creators);
         }
@@ -272,7 +287,7 @@ export async function ensureSitesLoaded(): Promise<void> {
     }
     // 3) 冷启动兜底：硬编码站点 + 自定义 + 空创作者
     const custom = await loadCustomSites();
-    setAllSites(mergeSites(PLAZA_SITES, custom));
+    setAllSites(preserveBuiltinRouting(mergeSites(PLAZA_SITES, custom)));
     setAllCreators([...PLAZA_CREATORS]);
 }
 
