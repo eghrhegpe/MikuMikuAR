@@ -2,7 +2,7 @@ import { dom } from './dom';
 import { addDisposableListener } from './dom';
 import { uiState } from './state';
 import { t } from './i18n/t';
-import { updateMmarStatus } from './mmar-globals';
+import { updateMmarStatus, type MmarPhase } from './mmar-globals';
 
 let hintActive = false;
 let savedStatusText = '';
@@ -37,7 +37,7 @@ export function applyHudVisibility(): void {
     }
 }
 
-export function setStatus(text: string, ok: boolean, hold = false): void {
+export function setStatus(text: string, ok: boolean, hold = false, mmarPhase?: MmarPhase): void {
     if (!dom.statusText) {
         return;
     }
@@ -84,7 +84,7 @@ export function setStatus(text: string, ok: boolean, hold = false): void {
     }
 
     // 同步更新 __mmar.status（LLM 可读）
-    updateMmarStatus(ok ? 'idle' : 'error', text);
+    updateMmarStatus(mmarPhase ?? (ok ? 'idle' : 'error'), text);
 }
 
 export function showHint(text: string): void {
@@ -186,9 +186,8 @@ function _getOrCreateSpinner(): HTMLElement {
 export function setLoadingStatus(text: string, hold = true): void {
     const spinner = _getOrCreateSpinner();
     spinner.style.display = '';
-    setStatus(text, false, hold);
-    // 覆盖 phase：setStatus 中因 ok=false 被设为 'error'，但这里是加载中，不是错误
-    updateMmarStatus('scanning', text);
+    // 直接声明 loading 态为 scanning，避免 setStatus 因 ok=false 误写 error 后再覆盖的双写
+    setStatus(text, false, hold, 'scanning');
 }
 
 /**
