@@ -38,20 +38,26 @@ export function findRuntimeBone(
     return model.runtimeBones.find((b) => b.name === boneName) ?? null;
 }
 
-/** 取骨骼世界矩阵（列主序 Float32Array[16]），用于挂件锚点跟随。 */
-export function getBoneWorldMatrix(
+/**
+ * 取骨骼在 rootMesh **局部坐标系**下的矩阵（列主序 Float32Array[16]），用于挂件锚点跟随。
+ *
+ * 命名消歧：本函数返回 babylon-mmd 的 `bone.worldMatrix`（rootMesh 局部坐标系，
+ * 不含 rootMesh 的 scaling/rotation/translation），**不是世界坐标系矩阵**。
+ * 世界系矩阵请走 `@/core/mmd-adapter` 的 `getBoneWorldMatrix`（局部 × rootWorld），二者同名不同义。
+ */
+export function getBoneLocalMatrix(
     model: IMmdModel | null | undefined,
     boneName: string
 ): Float32Array | null {
     return findRuntimeBone(model, boneName)?.worldMatrix ?? null;
 }
 
-/** 从骨骼世界矩阵提取世界位置（米，场景单位）。 */
+/** 从骨骼局部矩阵提取世界位置（米，场景单位）。 */
 export function getBoneWorldPosition(
     model: IMmdModel | null | undefined,
     boneName: string
 ): Vector3 | null {
-    const m = getBoneWorldMatrix(model, boneName);
+    const m = getBoneLocalMatrix(model, boneName);
     if (!m) {
         return null;
     }

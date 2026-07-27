@@ -68,7 +68,7 @@ babylon-mmd（上游：最小接口 + 未文档化行为 + 已知 bug）
 
 ### 附带收益：散落 cast 收敛
 
-A 类 `as unknown as` cast 收敛到适配层边界的**类型网关**一处，内部统一用联邦富类型（RuntimeModel / BoneHandle），15+ 文件不再各自 cast。类型网关对外暴露 `toRuntimeModel()` / `toBoneHandle()` 等窄接口。
+A 类 `as unknown as` cast 收敛到适配层边界的**类型网关**一处（Phase 0 实测：`frontend/src` 中真正触及 babylon-mmd 私有字段的散落 cast 仅 **2 个生产文件**——`wind-physics.ts` / `outfit/audio.ts`，其余 `as unknown as` 多位于测试 mock 与联邦自身状态，与上游无关），内部统一用联邦富类型（RuntimeModel / BoneHandle）。类型网关对外暴露 `toRuntimeModel()` / `toBoneHandle()` 等窄接口。
 
 ### 探测式降级（条目 3/9 务实折中）
 
@@ -100,7 +100,7 @@ A 类 `as unknown as` cast 收敛到适配层边界的**类型网关**一处，�
 
 ## 验证
 
-- **Phase 0**：`tsc --noEmit` + 受影响模块单测全绿；确认 `frontend/src` 业务文件 `as unknown as` 计数从 15+ 降至适配层边界 1 处。
+- **Phase 0**：`tsc --noEmit` + 受影响模块单测全绿；确认 `frontend/src` 中真正触及 babylon-mmd 私有字段的散落 cast 仅 2 个生产文件（`wind-physics.ts` / `outfit/audio.ts`），已全部收口到适配层类型网关一处（其余 `as unknown as` 位于测试 mock / 联邦自身状态，与上游无关）。
 - **Phase 1**：骨骼矩阵读取统一经 `BoneFrameClock`，原散落时序注释清零；动画切换时钟重置统一经 `PlaybackContract`，`seekAnimation(0)` 散落调用点清零。
 - **Phase 2**：`CapabilityProbe` 探测失败时能走联邦自实现降级路径并打日志；wind-physics / 音频播放器不再直接读 `_rigidBodyBundleMap` / `_audio`。
 
@@ -140,7 +140,7 @@ A 类 `as unknown as` cast 收敛到适配层边界的**类型网关**一处，�
 
 ### 须追加的细化项（启动 Phase 0 前应落地）
 
-1. **BoneFrameClock 缓存策略（性能）**：`getBoneWorldMatrix(bone)` 在 `onBeforeRender` 热路径被 `perception-gaze` / `lighting` 每帧调用。适配层须内部缓存上次结果 + dirty 标记，仅在 `onBeforeRenderObservable` 触发时 invalidate，避免每次调用走坐标转换路径引入可测帧开销。
+1. **BoneFrameClock 缓存策略（性能）**：`getBoneWorldMatrix(bone)`（世界系版）若在 `onBeforeRender` 热路径每帧调用，适配层须内部缓存上次结果 + dirty 标记，仅在 `onBeforeRenderObservable` 触发时 invalidate，避免每次调用走坐标转换路径引入可测帧开销。**实测更新（2026-07-27 收尾核查）**：业务侧 `perception-gaze` 实际用反向版 `transformWorldToRootLocal`、`lighting` 用注册式 `onBoneMatricesUpdated`，均不每帧调 `getBoneWorldMatrix`；且 mmd-adapter 的世界系 `getBoneWorldMatrix` **当前无业务调用方、仅契约测试覆盖**。故缓存策略暂不落地，待该 API 被热路径采用时再补（同名局部系函数已在 `physics-bridge.ts` 更名为 `getBoneLocalMatrix` 以消除歧义）。
 2. **Phase 2 增加「守卫式反射」中间档（风险缓解）**：条目 3/9 的最终目标是能力内化，但应先做**守卫式反射**（`if (!field) { log + degrade }` + 单测覆盖）作为中间态，验证 `CapabilityProbe` 机制后再考虑完全内化。避免高工程量一步到位。
 3. **适配层契约测试策略（测试覆盖）**：每个出口（类型网关 / BoneFrameClock / PlaybackContract）提供 contract test，参照项目 `*.contract.test.ts` 模式，验证 cast 后类型签名稳定、降级路径可测。
 4. **PlaybackContract 范围界定（基于实测 5 处散落）**：只封装「`setRuntimeAnimation` + `seekAnimation(0)`」这一切换+重置组合（对应 `vmd-loader.ts:171` / `playback.ts:101` / `vmd-layers.ts:721` 的切换场景）；快进快退（`shortcut-app.ts:153/175`）、auto-loop、`seekTo(targetTime)`（`playback.ts:191`）属合法 seek，**不纳入** PlaybackContract，避免职责过载反模式。
