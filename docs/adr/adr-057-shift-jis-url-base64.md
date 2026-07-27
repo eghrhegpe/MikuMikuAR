@@ -13,7 +13,7 @@
 | 链路 | 入口 | 前端可控 | 乱码来源 | 后果 |
 |------|------|---------|---------|------|
 | **A. 主文件 URL** | `resolveFileUrl` + `outfit-overlay._encodePath` + `vmd-loader._tryLoadCompanionAudio` | ✅ 是 | UTF-8 字符串中的 U+FFFD 被 `encodeURIComponent` 编码为 `%EF%BF%BD` | PMX/VMD/音频 加载 404 |
-| **B. 纹理 URL** | Babylon.js `ImportMeshAsync` 内部自动 fetch | ❌ 否 | PMX header 中 Shift-JIS 纹理路径被 babylon-mmd 错误解析为 UTF-8，产生 U+FFFD | 模型加载后纹理全白/404 |
+| **B. 纹理 URL** | Babylon.js `ImportMeshAsync` 内部自动 fetch | ❌ 否 | PMX header 纹理路径按编码正确（UTF-8/UTF-16），但外层 ZIP 解压后的磁盘文件名为 Shift-JIS/GBK 字节，babylon-mmd 用正确路径请求时与磁盘名不匹配 → 404（`corruptIndex` 兜底，见 ADR-058） | 模型加载后纹理全白/404 |
 
 ### 1.2 链路 A 根因
 

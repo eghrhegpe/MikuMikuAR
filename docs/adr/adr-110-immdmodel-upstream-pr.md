@@ -24,7 +24,7 @@
 |---|----------|--------------------------|------|----------|----------|
 | **1** | **ADR-110** | `IMmdModel` 接口补全 `setRuntimeAnimation` / `createRuntimeAnimation` / `currentAnimation` | ✅ **已立项**（本文详述） | 高（消 3 处 cast，社区通用） | 低 |
 | 2 | ADR-056 | `MmdWasmRuntime` 原生支持 `MmdCompositeAnimation`（合成下沉 WASM） | ⏸ 留作远期（Option A 否决，本地 JS 帧流合成） | 中（去运行时开销） | 中 |
-| 3 | ADR-058 | PMX 纹理路径按 Shift-JIS 解码（修正 `U+FFFD` 乱码） | ❌ 已否决（本地「损坏映射」兜底，免维护 fork） | 中（根源修） | 中（需 fork） |
+| 3 | ADR-058 | 外层 zip/磁盘文件名 Shift-JIS/GBK 兜底（`corruptIndex` 修正 `U+FFFD` 乱码） | ❌ 已否决（本地「损坏映射」兜底，免维护 fork） | 中（根源修） | 中（需 fork） |
 | 4 | ADR-029 | 暴露 WASM 物理 `stiffness` / `damping` / `friction` 运行时 API | ❌ 不追（本地仅用 0/1 刚体开关，已覆盖 100% 可用 API） | 中 | 高（WASM 内存 hack） |
 | 5 | ADR-083 | 暴露碰撞体 `friction` / `restitution` 运行时 API | ❌ 封存（等上游或自行 hack WASM 内存） | 低 | 高 |
 | 6 | ADR-024 | PBR 材质 + morph 目标支持（SSS 次表面散射前置） | ⛔ 上游阻塞（非本项目范畴，待上游突破） | 高（解锁 SSS/PBR） | 极高 |

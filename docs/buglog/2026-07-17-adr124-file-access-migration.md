@@ -80,6 +80,6 @@ function decodeBase64(b64: string): Uint8Array {
 
 | 决策 | 原因 |
 |------|------|
-| 纹理保留 HTTP 加载 | `referenceFiles` 的 `relativePath` 需与 PMX 内部引用精确匹配（含 Shift-JIS），递归扫描 + basename fallback 成本高 |
+| 纹理保留 HTTP 加载 | `referenceFiles` 的 `relativePath` 需与 PMX 内部引用（按 header encoding UTF-8/UTF-16）精确匹配；磁盘文件名可能因 ZIP 解压为 Shift-JIS/GBK 字节而不匹配，递归扫描 + basename fallback 成本高 |
 | `resolveModelDir` 独立于 `resolveFileUrl` | `resolveFileUrl` 启动 HTTP 服务器有副作用，仅需目录路径时不应触发 |
 | `FileExists` 独立于 `ReadFileBytes` | 存在性检查不应读全部文件内容 |

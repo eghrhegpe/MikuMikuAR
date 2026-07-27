@@ -12,11 +12,13 @@
 
 | 层 | 行为 | 结果 |
 |----|------|------|
-| PMX 内部 | 纹理路径用 Shift-JIS 存储（如 `肌.png` → `0x8B 0x96 0x2E 0x70 0x6E 0x67`） | 原始字节是 Shift-JIS |
-| babylon-mmd | 按 **UTF-8** 解码这些字节 | 每个无效字节 → `U+FFFD`，`"肌.png"` → `"\uFFFD\uFFFD.png"` |
-| 浏览器 | 自动 URL 编码 | `%EF%BF%BD%EF%BF%BD.png` |
-| Go 侧 | `url.PathUnescape` 还原 | `"\uFFFD\uFFFD.png"` |
-| basenameFallbackFS | 查 index（`d.Name()` = `"肌.png"`） | **不匹配 → 404** |
+| PMX 内部 | 纹理路径按 header encoding（UTF-16LE / UTF-8）存储，babylon-mmd 解码**正确** | 原始字节正确（**PMX 内部从不用 Shift-JIS**，见 ADR-058 §5 校正） |
+| ZIP 条目名 / 磁盘文件名 | 压缩/解压工具按系统本地 codepage 写 `肌.png` 为 Shift-JIS/GBK 字节（`0x8B 0x96...`） | 磁盘名字节与 PMX header 中的正确路径不匹配 |
+| babylon-mmd fetch | 用 PMX header 中的正确路径 `肌.png` 请求磁盘文件 | 与 Shift-JIS/GBK 磁盘名不匹配 → 标准匹配失败 |
+| Go 侧 | `url.PathUnescape` 还原请求路径 | 仍指向正确 `肌.png`，与磁盘 Shift-JIS 名不匹配 |
+| basenameFallbackFS | 标准匹配失败后查 `corruptIndex`（磁盘 Shift-JIS 名 → 正确 relPath 的损坏映射） | **兜底命中 → 200** |
+
+> ⚠️ **2026-07-27 校正**：原表首行「PMX 内部纹理路径用 Shift-JIS 存储」措辞有误。PMX 规范要求纹理路径按 header `encoding` 字节（0=UTF-16LE / 1=UTF-8）解码，**不存在 Shift-JIS（encoding 无 2 值）**；该值仅见于旧 PMD 格式与 ZIP 条目名。本 ADR 的 `corruptIndex` 兜的是「PMX header 路径正确、但外层 zip 解压后的磁盘文件名为 Shift-JIS/GBK 字节」导致的请求-磁盘名不匹配，而非 PMX 内部编码错误。修正依据：上游 babylon-mmd PR #95 已被 maintainer 以「PMX 不使用 Shift-JIS」驳回（`Header.Encoding.ShiftJis = 2` 仅 `// for pmd compatibility`），联邦 `docs/research/pmx-header-layout.md` 同证。
 
 ### 1.2 与 ADR-057 的关系
 
@@ -53,8 +55,8 @@
 
 | 编码 | 适用场景 | 优先级 |
 |------|---------|--------|
-| **Shift-JIS** | 日文 PMX（主流） | P0 |
-| **GBK** | 中文 PMX | P1 |
+| **Shift-JIS** | 日文 Windows 压缩/解压的 zip 条目名 / 磁盘文件名（系统 codepage） | P0 |
+| **GBK** | 中文 Windows 压缩/解压的 zip 条目名 / 磁盘文件名 | P1 |
 | **UTF-8** | 已经是 UTF-8 的文件名（标准匹配，现有逻辑） | P0 |
 
 按优先级顺序尝试，命中即返回。
@@ -206,7 +208,7 @@ if !ok {
 | 方案 | 描述 | 优点 | 缺点 |
 |------|------|------|------|
 | **A. 损坏映射（本 ADR）** | 扫描时建立损坏→正确映射 | 纯 Go 侧，不依赖 fork，O(1) 匹配 | 需假设 babylon-mmd 的错误解码行为 |
-| B. 上游 PR babylon-mmd | 修正 PMX 纹理路径解码为 Shift-JIS | 根源解决 | 需维护 fork，时间线不可控 |
+| B. 上游 PR babylon-mmd | 在 pmxReader 补 Shift-JIS 分支（PR #95，已 Closed） | 改错层，非根源 | 需维护 fork，时间线不可控 |
 | C. 前端纹理拦截 | 在 Babylon.js 加载纹理前重写 URL | 前端可控 | 需深入 Babylon.js 纹理加载 hook，复杂度高 |
 
 **选 A**：与 ADR-057 同层（Go 侧兜底），工程边界清晰，不引入外部依赖风险，匹配 O(1) 对性能无影响。
@@ -228,7 +230,7 @@ if !ok {
 - [ ] 单元测试：`toCorruptString` 的编码转换正确性
 - [ ] 单元测试：损坏匹配在含 U+FFFD 的请求路径上命中
 - [ ] 单元测试：多编码优先级（Shift-JIS → GBK）
-- [ ] 端到端：加载含 Shift-JIS 纹理路径的 PMX，纹理正常显示
+- [ ] 端到端：加载磁盘文件名为 Shift-JIS/GBK 字节的 PMX（zip 解压产物），纹理经 corruptIndex 正常显示
 
 ### Phase 3: 文档闭环
 

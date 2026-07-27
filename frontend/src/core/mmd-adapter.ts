@@ -16,15 +16,11 @@ import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 import type { IMmdBindableModelAnimation } from 'babylon-mmd/esm/Runtime/Animation/IMmdBindableAnimation';
 import type { MmdWasmPhysicsRuntimeImpl } from 'babylon-mmd/esm/Runtime/Optimized/Physics/mmdWasmPhysicsRuntimeImpl';
+import type { RigidBodyBundle } from 'babylon-mmd/esm/Runtime/Optimized/Physics/Bind/rigidBodyBundle';
 import type { StreamAudioPlayer } from 'babylon-mmd/esm/Runtime/Audio/streamAudioPlayer';
 import type { RuntimeModel } from '@/core/types';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
-
-/** RigidBodyBundle 结构化类型（仅取 wind-physics 实际使用的字段）。 */
-export interface RigidBodyBundleLike {
-    count: number;
-    applyCentralForce(index: number, force: Vector3): void;
-}
+import { logWarn } from '@/core/logger';
 
 /**
  * 从 IMmdRuntime 获取底层 MmdWasmPhysicsRuntimeImpl。
@@ -42,41 +38,48 @@ export function getPhysicsImpl(runtime: IMmdRuntime): MmdWasmPhysicsRuntimeImpl 
 }
 
 /**
- * 从 MmdWasmPhysicsRuntimeImpl 取出所有 RigidBodyBundle 迭代器。
- * 反射访问上游私有字段 `_rigidBodyBundleMap`（Map<RigidBodyBundle, number>）。
- * 字段缺失 / 类型异常时抛错，作为升级回归护栏（绝不静默失效）。
+ * 返回所有 RigidBodyBundle 迭代器（条目 3 内化，ADR-192 Phase 2）。
+ *
+ * 使用上游公开属性 `rigidBodyBundleReferenceCountMap`（key 同为 RigidBodyBundle），
+ * 替代原对私有字段 `_rigidBodyBundleMap` 的反射——彻底脱离上游私有字段依赖。
+ * 返回类型从内部 `RigidBodyBundleLike` 提升为上游公开 `RigidBodyBundle`，
+ * wind-physics 直接调用其公开 `count` / `applyCentralForce`。
+ *
+ * 该属性是上游公开契约（mmdWasmPhysicsRuntimeImpl.d.ts:233），babylon-mmd 升级时稳定。
  */
-export function getRigidBodyBundleMap(impl: MmdWasmPhysicsRuntimeImpl): Iterable<RigidBodyBundleLike> {
-    const map = (impl as unknown as Record<string, unknown>)._rigidBodyBundleMap;
-    if (map instanceof Map) {
-        return map.keys();
-    }
-    if (map === undefined) {
-        throw new Error(
-            'mmd-adapter: _rigidBodyBundleMap 不存在（可能已被 babylon-mmd 重命名）。检查 babylon-mmd 版本兼容性'
-        );
-    }
-    throw new Error('mmd-adapter: _rigidBodyBundleMap 类型异常。检查 babylon-mmd 版本兼容性');
+export function getRigidBodyBundleMap(impl: MmdWasmPhysicsRuntimeImpl): Iterable<RigidBodyBundle> {
+    return impl.rigidBodyBundleReferenceCountMap.keys();
 }
 
 /**
  * 从 StreamAudioPlayer 取出内部 HTMLAudioElement（条目 9）。
- * `_audio` 不在公开接口（上游最小接口策略）。不存在时返回 null（降级）。
+ *
+ * [_audio 是上游私有字段，且 StreamAudioPlayer 构造不接收外部 audio 元素注入，
+ * 故 WebAudio 处理（fade GainNode / beatDetector.attach / ended 监听）必须反射 _audio。
+ * 属「守卫式反射」而非能力内化——上游不提供公开替代 API（经 Phase 2 调研确认）。]
+ *
+ * 若 _audio 缺失（上游重命名/移除），降级返回 null，且首次仅打一次 dev 警告，
+ * 使 babylon-mmd 升级回归立即可见（绝不静默失效）。
  */
+let _streamAudioMissingWarned = false;
 export function getStreamAudio(player: StreamAudioPlayer): HTMLAudioElement | null {
     const audio = (player as unknown as { _audio?: HTMLAudioElement })._audio;
+    if (audio === undefined && !_streamAudioMissingWarned) {
+        _streamAudioMissingWarned = true;
+        logWarn(
+            'mmd-adapter',
+            'StreamAudioPlayer._audio 缺失（可能已被 babylon-mmd 重命名）。音频 WebAudio 处理（fade/beat/ended）将降级。检查 babylon-mmd 版本兼容性'
+        );
+    }
     return audio ?? null;
 }
 
 /**
- * CapabilityProbe — 升级回归探测骨架（Phase 2 能力内化前使用）。
- * 探测上游私有字段是否存在：存在则用之，不存在则走联邦自实现降级路径，
- * 避免「无守卫反射」的静默失效。
+ * CapabilityProbe — 升级回归探测（ADR-192 Phase 2 守卫式反射）。
+ * 条目 3 已通过公开 API 内化，不再需要探测；
+ * 条目 9 仍依赖私有 _audio，探测用于在升级时确认字段存在。
  */
 export const CapabilityProbe = {
-    hasRigidBodyBundleMap(impl: MmdWasmPhysicsRuntimeImpl): boolean {
-        return (impl as unknown as Record<string, unknown>)._rigidBodyBundleMap !== undefined;
-    },
     hasStreamAudio(player: StreamAudioPlayer): boolean {
         return (player as unknown as { _audio?: HTMLAudioElement })._audio !== undefined;
     },
