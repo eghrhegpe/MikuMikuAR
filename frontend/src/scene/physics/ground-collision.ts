@@ -11,14 +11,15 @@
  * - 释放顺序：removeRigidBodyFromGlobal → rb.dispose → info.dispose → shape.dispose
  */
 import { Matrix, Vector3 } from '@babylonjs/core/Maths/math.vector';
-import { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
-import { MmdWasmPhysicsRuntimeImpl } from 'babylon-mmd/esm/Runtime/Optimized/Physics/mmdWasmPhysicsRuntimeImpl';
+import type { MmdWasmPhysicsRuntimeImpl } from 'babylon-mmd/esm/Runtime/Optimized/Physics/mmdWasmPhysicsRuntimeImpl';
 import { RigidBody } from 'babylon-mmd/esm/Runtime/Optimized/Physics/Bind/rigidBody';
 import { RigidBodyConstructionInfo } from 'babylon-mmd/esm/Runtime/Optimized/Physics/Bind/rigidBodyConstructionInfo';
 import { PhysicsBoxShape } from 'babylon-mmd/esm/Runtime/Optimized/Physics/Bind/physicsShape';
 import { MotionType } from 'babylon-mmd/esm/Runtime/Optimized/Physics/Bind/motionType';
 import { envState, mmdRuntime } from '@/core/config';
 import { safeDispose } from '@/core/dispose-helpers';
+import { getPhysicsImpl } from '@/core/mmd-adapter';
+import { logWarn } from '@/core/logger';
 
 /** 地板半尺寸（x/z 足够大以覆盖整个场景，y 为厚度一半） */
 const GROUND_HALF = new Vector3(2000, 1, 2000);
@@ -30,14 +31,13 @@ let _groundBody: RigidBody | null = null;
 let _groundInfo: RigidBodyConstructionInfo | null = null;
 let _groundShape: PhysicsBoxShape | null = null;
 
-/** 取物理 impl；非 WASM 运行时或 impl 不可用返回 null */
+/** 取物理 impl；非 WASM 运行时或 impl 不可用返回 null。
+ *  经 @/core/mmd-adapter 适配层统一访问，脱离散落私有字段反射（ADR-192）。 */
 function _getImpl(): MmdWasmPhysicsRuntimeImpl | null {
-    if (!(mmdRuntime instanceof MmdWasmRuntime)) {
+    if (!mmdRuntime) {
         return null;
     }
-    const physics = (mmdRuntime as unknown as { physics?: { impl?: MmdWasmPhysicsRuntimeImpl } })
-        .physics;
-    return physics?.impl ?? null;
+    return getPhysicsImpl(mmdRuntime);
 }
 
 /** 地面碰撞是否处于启用状态 */
@@ -81,16 +81,22 @@ export function enableGroundCollision(groundY: number = DEFAULT_GROUND_Y): void 
     _groundShape = shape;
 }
 
-/** 禁用地面碰撞：从所有世界移除并释放资源 */
+/** 禁用地面碰撞：从所有世界移除并释放资源。
+ *  remove 阶段失败（如 impl 已销毁）不阻断后续 dispose，避免资源泄漏。 */
 export function disableGroundCollision(): void {
     const impl = _getImpl();
     if (!impl || !_groundBody) {
         return;
     }
-    impl.removeRigidBodyFromGlobal(_groundBody);
-    _groundBody = safeDispose(_groundBody);
-    _groundInfo = safeDispose(_groundInfo);
-    _groundShape = safeDispose(_groundShape);
+    try {
+        impl.removeRigidBodyFromGlobal(_groundBody);
+    } catch (e) {
+        logWarn('ground-collision', 'removeRigidBodyFromGlobal failed', e);
+    } finally {
+        _groundBody = safeDispose(_groundBody);
+        _groundInfo = safeDispose(_groundInfo);
+        _groundShape = safeDispose(_groundShape);
+    }
 }
 
 /** 根据当前 envState 还原地面碰撞状态（运行时就绪 / 场景加载后调用） */

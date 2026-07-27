@@ -1311,6 +1311,8 @@ export const browserAdapter: BackendService = {
             error: '',
         };
     },
+    // [doc:adr-195] 网页端无安装能力：以下两个函数固定返回 error。桌面/安卓走真实安装路径。
+    // 调用方应检查 backend.kind、capabilities().installApk / installLocal 判断安装入口。
     async DownloadApk(): Promise<InstallResult | null> {
         return { localPath: '', success: false, error: 'not supported on web' };
     },
@@ -1588,6 +1590,8 @@ export const browserAdapter: BackendService = {
     async GetLibraryIndex(): Promise<ModelEntry[]> {
         return _listModels();
     },
+    // [doc:adr-195] 网页端无法解析 PMX 文件头，始终返回空对象 {}。
+    // 桌面端通过 Go 后端解析 PMX 二进制返回元数据。调用方不应依赖网页端返回非空。
     async GetModelMetaBatch(paths: string[]): Promise<Record<string, ModelMeta>> {
         // Web 模式下无法解析 PMX 文件头，返回空。
         // comment 由 loadActor 阶段通过 parsePmxComment 从 PMX 字节提取后填入缓存。
@@ -1657,6 +1661,8 @@ export const browserAdapter: BackendService = {
             .filter((k) => k.startsWith('scene:'))
             .map((k) => k.slice(6));
     },
+    // [doc:adr-195] 网页端返回虚拟路径 `web://presets/scenes`（LoadSceneFile 据此路由到 IDB key）。
+    // 桌面端返回真实文件系统目录。调用方不应依赖此路径做文件系统操作。
     async GetPresetScenesDir(): Promise<string> {
         return 'web://presets/scenes';
     },
@@ -1680,6 +1686,8 @@ export const browserAdapter: BackendService = {
             .filter((k) => k.startsWith('env:'))
             .map((k) => k.slice(4));
     },
+    // [doc:adr-177] 网页端查 IndexedDB key 而非文件系统，经 _resolveIdbKey 映射路径语义。
+    // 桌面端 `FileExists` 查真实文件系统。调用方应注意此行为差异。
     async FileExists(path: string): Promise<boolean> {
         // [doc:adr-177] 经 _resolveIdbKey 映射，对齐 readFileBytes 路径语义
         const key = _resolveIdbKey(path);
@@ -1700,6 +1708,7 @@ export const browserAdapter: BackendService = {
         const cur = await this.GetUIState();
         await this.SetUIState({ ...cur, animations: v });
     },
+    // [doc:adr-195] 网页端无自动更新（CheckForUpdate 永远返回无更新），此设置仅保持在 UIState 中无实际效果。
     async SetUIAutoUpdate(v: boolean): Promise<void> {
         const cur = await this.GetUIState();
         await this.SetUIState({ ...cur, autoUpdateEnabled: v });
@@ -1731,6 +1740,9 @@ export const browserAdapter: BackendService = {
     async SetDownloadAutoImport(v: boolean): Promise<void> {
         await idbSet('config', 'dl.autoImport', v);
     },
+    // [doc:adr-195] 网页端 `SetDownloadWatchDir` 抛 NotSupportedError（line 2099），
+    // 故下载监听无法实际启动。以下 Get/Set watchEnabled 设置仅保持无实际效果，
+    // 调用方不应期望网页端有目录监听能力。capabilities().watchDir 已如实反映。
     async GetDownloadWatchEnabled(): Promise<boolean> {
         return (await idbGet<boolean>('config', 'dl.watchEnabled')) ?? false;
     },
@@ -1775,6 +1787,8 @@ export const browserAdapter: BackendService = {
     async SetDisplayNamePriority(v: string): Promise<void> {
         await this.SetConfig({ display_name_priority: v } as Partial<Config>);
     },
+    // [doc:adr-177] 网页端读 IndexedDB 而非文件系统（经 _resolveIdbKey 映射）。
+    // 桌面端 `ReadTextFile` 读取真实文件。调用方应注意此行为差异。
     async ReadTextFile(path: string): Promise<string | null> {
         // [doc:adr-177] 经 _resolveIdbKey 映射（场景存档 JSON / outfit JSON 等）
         const key = _resolveIdbKey(path);
@@ -1788,6 +1802,8 @@ export const browserAdapter: BackendService = {
         }
         return null;
     },
+    // [doc:adr-177] 网页端写 IndexedDB 而非文件系统（经 _resolveIdbKey 映射）。
+    // 桌面端 `WriteTextFile` 写入真实文件。调用方应注意此行为差异。
     async WriteTextFile(path: string, content: string): Promise<void> {
         const key = _resolveIdbKey(path);
         await idbSet('models', key, new TextEncoder().encode(content));
@@ -1947,6 +1963,8 @@ export const browserAdapter: BackendService = {
 
     // ============ ② File System Access API 对话框替代 ============
     // [doc:adr-177] SelectDir：浏览器端根目录设置入口。
+    // [doc:adr-195] 以下 Select* 系列均走 FSA picker（showDirectoryPicker / showSaveFilePicker / showOpenFilePicker），
+    // 返回固定虚拟路径（如 'web://save'），非 Go 端真实文件系统路径。调用方不应依赖返回路径做文件系统操作。
     // 调用 showDirectoryPicker 获取句柄 → 保存到 _fsaRootHandle → 递归扫描写 IndexedDB。
     // 返回 'web://selected-dir' 作为虚拟根路径，供 SetResourceRoot 持久化。
     async SelectDir(): Promise<string> {

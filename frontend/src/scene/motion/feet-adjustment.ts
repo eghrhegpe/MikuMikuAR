@@ -1,17 +1,19 @@
-// [doc:adr-085] Feet Adjustment — 脚部地面跟随（MMD-native IK）
+// [doc:adr-085] Feet Adjustment — 脚部地面跟随（MMD-native IK + 方案C WASM 手动 IK）
 // 职责: 每帧驱动左/右足IK 骨骼世界坐标到地面 + 重解该腿 IK
 // 注册为 MotionPipeline bone-override 层（order=5），在帧钩子（RIDING=10）之前执行，
 // 脚 IK 为自动约束基础，手动 Override 叠加其上。
 // 依赖: env-impl.getGroundHeightAt / proc-motion-shared 骨骼候选 / babylon-mmd IkSolver
+//       / two-bone-ik（WASM 模式手动 IK）
 //
-// 关键机制（2026-07-11 复核）:
+// 关键机制（2026-07-11 复核, 2026-07-27 方案C补充）:
 //   MMD 模型自带腿部 IK —— 左足IK/右足IK 是 IK 目标骨骼，babylon-mmd 的 IkSolver 在
 //   MmdRuntimeModel._update() 内、动画应用后同帧解出。本模块在动画解算后，把 IK 目标骨骼的
-//   世界坐标 setWorldTranslation 到地面，再调用 ikSolver.solve() 重解该腿 IK（solve 内部回写
-//   踝 + 链骨骼 worldMatrix）。逐帧「覆盖→重解」与 bone-override 同构，VMD 下一帧覆盖 IK 骨骼
-//   后由本模块再次重解，渲染帧内生效。
+//   世界坐标 setWorldTranslation 到地面，再重解该腿 IK。
+//   - JS 模式：调用 ikSolver.solve()（solve 内部回写踝 + 链骨骼 worldMatrix）
+//   - WASM 模式：ikSolver 不可用（始终为 null），改用方案C手动两骨骼 IK（余弦定理求解
+//     髋/膝增量旋转 + 递归传播子骨骼 worldMatrix）。详见 ADR-085 方案C。
 
-import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { Vector3, Matrix } from '@babylonjs/core/Maths/math.vector';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 import type { MmdRuntimeBoneExtended, FeetState } from '@/core/types';
 import { getGroundHeightAt } from '@/scene/env/env-impl';
@@ -20,12 +22,15 @@ import {
     BONE_LEG_IK_R_CANDIDATES,
     matchBone,
 } from '@/motion-algos/proc-motion-shared';
+// [doc:adr-085 方案C] WASM 手动两骨骼 IK 求解（ikSolver 不可用时的临时替代）
+import { solveTwoBoneIK, applyRotationToWorldMatrix } from '@/motion-algos/two-bone-ik';
 // 纯数学解算（无 Babylon 依赖，便于单测）见 motion-algos/feet-adjustment-math.ts
 import { solveFootTarget } from '@/motion-algos/feet-adjustment-math';
 // 落地判定（无 Babylon 依赖，便于单测）见 motion-algos/footstep-detect.ts
 import { detectFootLanding } from '@/motion-algos/footstep-detect';
 import { logWarn } from '../../core/logger';
 import { getMotionPipeline } from './motion-pipeline';
+import { isWasmRuntime } from './perception-shared';
 export { solveFootTarget };
 export type { SolveFootInput, SolveFootOutput } from '@/motion-algos/feet-adjustment-math';
 
@@ -84,6 +89,10 @@ const BONE_THIGH_R = [
     'RightThigh',
     'right thigh',
 ];
+
+// [doc:adr-085 方案C] 膝盖骨候选（两骨骼 IK 的 knee 端）
+const BONE_KNEE_L = ['左ひざ', '左膝', 'left knee', 'LeftKnee', 'L_Knee', '左ひざＩＫ'];
+const BONE_KNEE_R = ['右ひざ', '右膝', 'right knee', 'RightKnee', 'R_Knee', '右ひざＩＫ'];
 
 const _vFoot = new Vector3();
 const _vHip = new Vector3();
@@ -165,6 +174,126 @@ function _findHip(
         cur = cur.parentBone;
     }
     return cur;
+}
+
+/** [doc:adr-085 方案C] 找膝盖骨骼（两骨骼 IK 的 knee 端）。
+ *  沿 IK 骨 parent 链向上找（MMD 标准：左足ＩＫ → 左足首 → 左ひざ → 左足）；
+ *  降级到全量 bone list 按名匹配。 */
+function _findKnee(
+    ik: IMmdRuntimeBone,
+    allBones: readonly IMmdRuntimeBone[],
+    side: 'L' | 'R'
+): IMmdRuntimeBone | null {
+    const cands = side === 'L' ? BONE_KNEE_L : BONE_KNEE_R;
+
+    // 1) 沿 IK 骨 parent 链向上
+    let cur: IMmdRuntimeBone | null = ik.parentBone;
+    let depth = 0;
+    while (cur && depth < 6) {
+        if (cands.includes(cur.name)) {
+            return cur;
+        }
+        cur = cur.parentBone;
+        depth++;
+    }
+
+    // 2) 全量搜索
+    for (const b of allBones) {
+        if (cands.includes(b.name)) {
+            return b;
+        }
+    }
+    return null;
+}
+
+// ── [doc:adr-085 方案C] WASM 手动两骨骼 IK ──
+
+// 复用 Vector3（_solveWasmLegIK 每帧调用 2 次，避免重复分配）
+const _vHipPos = new Vector3();
+const _vKneePos = new Vector3();
+
+/**
+ * 递归传播子骨骼变换（WASM 模式，非池版本）。
+ * 与 bone-override._propagateChildrenWasm 等价，但使用临时 Matrix 分配
+ * （feet-adjustment 在 order=5 执行，不能复用 bone-override 的帧级 _mPool）。
+ * 腿链深度 ≤4（髋→膝→踝→趾），每帧 2 条腿 × 2 次传播，分配量可控。
+ */
+function _propagateChildrenWasmSimple(
+    parent: IMmdRuntimeBone,
+    parentOldMat: Matrix,
+    parentNewMat: Matrix
+): void {
+    const invMat = parentOldMat.clone();
+    invMat.invert();
+    for (const child of parent.childBones) {
+        const childBuf = (child as MmdRuntimeBoneExtended).worldMatrix;
+        if (!childBuf) {
+            continue;
+        }
+        const childOldMat = Matrix.FromArray(childBuf, 0);
+        const localMat = childOldMat.multiply(invMat);
+        const childNewMat = localMat.multiply(parentNewMat);
+        childNewMat.copyToArray(childBuf, 0);
+        _propagateChildrenWasmSimple(child, childOldMat, childNewMat);
+    }
+}
+
+/**
+ * [doc:adr-085 方案C] WASM 模式手动两骨骼 IK 求解。
+ * 在 feet-adjustment order=5 层独立求解，不依赖 bone-override 的 overrideMap / _mPool。
+ *
+ * 流程（与 bone-override._solveManualLegIK 等价，非池版本）：
+ *   1. 读 hip/knee worldMatrix buffer
+ *   2. solveTwoBoneIK → hipDelta, kneeDelta
+ *   3. 应用 hipDelta + 传播子骨骼（含 knee、踝、趾）
+ *   4. 应用 kneeDelta + 传播子骨骼（含踝、趾）
+ *
+ * @param endEffectorPos IK 骨动画位置（setWorldTranslation 之前的值 = _vFoot）
+ * @param targetPos     IK 骨目标位置（setWorldTranslation 写入的值 = _vTarget）
+ */
+function _solveWasmLegIK(
+    bones: readonly IMmdRuntimeBone[],
+    ikBone: IMmdRuntimeBone,
+    hipBone: IMmdRuntimeBone | null,
+    side: 'L' | 'R',
+    endEffectorPos: Readonly<Vector3>,
+    targetPos: Readonly<Vector3>
+): void {
+    if (!hipBone) {
+        return;
+    }
+    const kneeBone = _findKnee(ikBone, bones, side);
+    if (!kneeBone) {
+        return;
+    }
+
+    const hipBuf = (hipBone as MmdRuntimeBoneExtended).worldMatrix;
+    const kneeBuf = (kneeBone as MmdRuntimeBoneExtended).worldMatrix;
+    if (!hipBuf || !kneeBuf) {
+        return;
+    }
+
+    // 提取 translation 作为 IK 输入位置（列主序：m[12..14] = translation）
+    _vHipPos.set(hipBuf[12], hipBuf[13], hipBuf[14]);
+    _vKneePos.set(kneeBuf[12], kneeBuf[13], kneeBuf[14]);
+
+    const result = solveTwoBoneIK({ hipPos: _vHipPos, kneePos: _vKneePos, endEffectorPos, targetPos });
+    if (!result.changed) {
+        return;
+    }
+
+    // —— 应用 hipDelta 并传播 ——
+    const hipOldMat = Matrix.FromArray(hipBuf, 0);
+    applyRotationToWorldMatrix(hipBuf, result.hipDelta);
+    const hipNewMat = Matrix.FromArray(hipBuf, 0);
+    _propagateChildrenWasmSimple(hipBone, hipOldMat, hipNewMat);
+
+    // —— 应用 kneeDelta 并传播 ——
+    // 此时 kneeBuf 已被 hip 传播更新为 kneeLocalMat × hipNewMat
+    const kneeOldMat = Matrix.FromArray(kneeBuf, 0);
+    applyRotationToWorldMatrix(kneeBuf, result.kneeDelta);
+    const kneeNewMat = Matrix.FromArray(kneeBuf, 0);
+    _propagateChildrenWasmSimple(kneeBone, kneeOldMat, kneeNewMat);
 }
 
 function _adjustFoot(
@@ -282,14 +411,18 @@ function _adjustFoot(
     _vTarget.set(_vFoot.x, res.targetY, _vFoot.z);
     ik.setWorldTranslation(_vTarget);
 
-    // 重解该腿 IK（solve 内部回写踝 + 链骨骼 worldMatrix）
-    // WASM 调试要点：solver 在 WASM 模式下为 null，此处不会重解 IK 链；
-    // setWorldTranslation 直接写入 WASM matrix buffer，渲染可见。
-    const solver = (ik as MmdRuntimeBoneExtended).ikSolver;
-    if (solver) {
-        // 腿部链通常为 FollowBone（骨骼驱动刚体），usePhysics=false 即正确；
-        // 物理驱动模式下 canSkipWhenPhysicsEnabled=true → solve 自动跳过（已知限制）
-        solver.solve(false);
+    // [doc:adr-085 方案C] 重解该腿 IK
+    // JS 模式：原版 ikSolver.solve()（solve 内部回写踝 + 链骨骼 worldMatrix）
+    // WASM 模式：ikSolver 不可用（始终为 null），手动两骨骼 IK 求解
+    if (isWasmRuntime(bones[0])) {
+        _solveWasmLegIK(bones, ik, hip, side, _vFoot, _vTarget);
+    } else {
+        const solver = (ik as MmdRuntimeBoneExtended).ikSolver;
+        if (solver) {
+            // 腿部链通常为 FollowBone（骨骼驱动刚体），usePhysics=false 即正确；
+            // 物理驱动模式下 canSkipWhenPhysicsEnabled=true → solve 自动跳过（已知限制）
+            solver.solve(false);
+        }
     }
 
     // JS 运行时：通知 skeleton 重算蒙皮（WASM 直写 worldTransformMatrices buffer，无需）
