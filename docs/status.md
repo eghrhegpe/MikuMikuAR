@@ -15,6 +15,7 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
+| ADR-196 | 内置 AI 诊断助手（LLM Diagnostic Assistant） | 🔄 规划中（推荐，基于 ADR-154 传输层）（2026-07-28） |
 | ADR-195 | 下载文件夹统一修订（三平台系统下载目录 + 消除"二扫"） | 已完成（代码落地 + 单测 + 全量验证通过 2026-07-27；设计偏差与已知限制见 §实施记录与已知限制）（2026-07-27（初版）） |
 | ADR-194 | 风物理系统修复 — 从「假风」到真实风场 | 已完成（2026-07-27 — tsc 零错误，env-bridge 80 + wind-physics 1 + app.contract 17 全绿；P2 修复后全量 2174/2174 全绿）（2026-07-27（初版）/ 2026-07-27（P2 修复 — 水面 `uWindSpeed` 加 `windEnabled` 守卫）） |
 | ADR-193 | 模型稳定身份（inst.id = 持久化 uuid） | 已立项 · 已实现（2026-07-27 — tsc 零错误；resolve-model-id 5 + replace-model-inherit 16 + material-editor 50 + lighting-follow 8 + env-lighting 22 + scene-serialize-undo 6 全绿）（2026-07-27（初版）） |

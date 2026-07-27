@@ -2,6 +2,7 @@ import { dom } from './dom';
 import { addDisposableListener } from './dom';
 import { uiState } from './state';
 import { t } from './i18n/t';
+import { updateMmarStatus } from './mmar-globals';
 
 let hintActive = false;
 let savedStatusText = '';
@@ -81,6 +82,9 @@ export function setStatus(text: string, ok: boolean, hold = false): void {
             }, 500);
         }, delay);
     }
+
+    // 同步更新 __mmar.status（LLM 可读）
+    updateMmarStatus(ok ? 'idle' : 'error', text);
 }
 
 export function showHint(text: string): void {
@@ -183,6 +187,8 @@ export function setLoadingStatus(text: string, hold = true): void {
     const spinner = _getOrCreateSpinner();
     spinner.style.display = '';
     setStatus(text, false, hold);
+    // 覆盖 phase：setStatus 中因 ok=false 被设为 'error'，但这里是加载中，不是错误
+    updateMmarStatus('scanning', text);
 }
 
 /**
