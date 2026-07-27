@@ -1,7 +1,7 @@
 # ADR-130: 场景 UI 整体设计与前后端发展方向路线图
 
 > **日期**: 2026-07-18
-> **状态**: 规划中（Phase 1 技术债 ✅1.1 已完成（实质达成，载体 ADR-138 + env 子系统大拆分；env-impl.ts 227 行、edgeFade 纹理独立接入 dispose、循环依赖破除、env 子系统 8 个测试文件 70+ it），✅1.2 已完成（popUndoSnapshot 已实现 + Ctrl+Z + 菜单撤销按钮接入 + 测试覆盖），✅1.3 已完成（ADR-128 首部 2026-07-20 标注 5 语种无残留）；Phase 2 ✅2.1/2.2/2.3/2.4/2.5 已完成，✅2.7 已完成，⚠️2.6 基本完成（已加载列表统一组件 + 撤销 toast 全面接入：8 处破坏性操作 + 列表路径卸载舞台/道具（06ca6cb6, 07-26）+ 详情页 danger card 卸载 + 删除舞台灯（07-27）；残余缺口：异步操作状态反馈覆盖不均——模型/动作加载已有 loading 反馈，道具/预设路径未统一），✅2.7 已完成（ADR-176 收口传输/存储层统一；环境预设导入/导出已闭合；新增 core/preset-meta.ts 读侧 PresetMeta 信封 + listPresets() 归一，单元测试覆盖；写侧信封化待需求驱动）；Phase 3 能力扩展待推进；ADR-093 P3 已关闭（2026-07-27 裁定非死代码））
+> **状态**: 规划中（Phase 1 技术债 ✅1.1 已完成（实质达成，载体 ADR-138 + env 子系统大拆分；env-impl.ts 227 行、edgeFade 纹理独立接入 dispose、循环依赖破除、env 子系统 8 个测试文件 70+ it），✅1.2 已完成（popUndoSnapshot 已实现 + Ctrl+Z + 菜单撤销按钮接入 + 测试覆盖），✅1.3 已完成（ADR-128 首部 2026-07-20 标注 5 语种无残留）；Phase 2 ✅2.1/2.2/2.3/2.4/2.5 已完成，✅2.6 已完成（2026-07-27 核对确认：撤销保护已全覆盖——卸载舞台 scene-stage-levels.ts:188-196 + 卸载道具 scene-stage-levels.ts:247-259 + 加载列表统一组件 scene-prop-levels.ts 已接入 offerSceneUndo，共 10 处破坏性操作均有 pushUndoSnapshot + offerSceneUndo/AndRefresh；异步操作反馈统一用 feedbackStatus/feedbackInfo/feedbackError，覆盖 env-preset-levels.ts、library-setup.ts 等关键路径），✅2.7 已完成（ADR-176 收口传输/存储层统一；环境预设导入/导出已闭合；新增 core/preset-meta.ts 读侧 PresetMeta 信封 + listPresets() 归一，单元测试覆盖；写侧信封化待需求驱动）；Phase 3 能力扩展待推进；ADR-093 P3 已关闭（2026-07-27 裁定非死代码））
 
 ## 背景
 

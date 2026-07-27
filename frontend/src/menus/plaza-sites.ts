@@ -8,6 +8,8 @@ export interface PlazaSite {
     group?: string;
     searchUrl?: string;
     presetSearches?: { label: string; q?: string }[];
+    /** [doc:plaza-spa] 跳过代理直连真实域名。用于独立 API 域 SPA，避免代理 origin 触发 API CORS 白屏。 */
+    directNavigate?: boolean;
 }
 
 export const PLAZA_SITES: PlazaSite[] = [
@@ -16,6 +18,7 @@ export const PLAZA_SITES: PlazaSite[] = [
         name: '模之屋',
         url: 'https://www.aplaybox.com/',
         mode: 'external',
+        directNavigate: true,
         icon: 'lucide:box',
         desc: 'MMD/VRC 模型分享平台',
         group: 'search',

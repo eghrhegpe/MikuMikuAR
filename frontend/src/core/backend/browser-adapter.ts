@@ -1946,7 +1946,7 @@ export const browserAdapter: BackendService = {
     async LaunchSoftware(_path: string, _args: string): Promise<void> {
         throw new NotSupportedError('LaunchSoftware');
     },
-    async NavigatePlazaWindow(_targetURL: string): Promise<void> {
+    async NavigatePlazaWindow(_targetURL: string, _direct: boolean): Promise<void> {
         throw new NotSupportedError('NavigatePlazaWindow');
     },
     async OpenCacheDir(_subDir: string): Promise<void> {

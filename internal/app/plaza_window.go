@@ -74,11 +74,21 @@ func (a *App) prewarmPlazaWindow() {
 // startup, avoiding the 1–3s WebView2 cold-start cost of NewWithOptions per
 // call.
 //
-// [ADR-087 P0] The window navigates to the local reverse-proxy URL (not the
-// raw target) so the injected download-intercept script can fetch
+// [ADR-087 P0] The window normally navigates to the local reverse-proxy URL
+// (not the raw target) so the injected download-intercept script can fetch
 // /__plaza_dl__ same-origin to trigger DownloadFromPlaza. StartProxy is
 // called with mode="window" so plazaInjectScript emits the fetch variant.
-func (a *App) NavigatePlazaWindow(targetURL string) error {
+//
+// [doc:plaza-spa] When direct==true the window navigates straight to targetURL
+// (real origin, no proxy). This is required for SPA sites that fetch a separate
+// API domain (e.g. aplaybox.com → api.aplaybox.com): going through the proxy
+// would make the page origin 127.0.0.1:PORT, and the API's CORS preflight
+// fails (no Access-Control-Allow-Origin for that origin), leaving only a loading
+// shell. Direct navigation restores the real origin so the API CORS whitelist
+// passes. Trade-off: download interception (/__plaza_dl__) is unavailable in
+// direct mode; such sites fall back to system-browser download + fsnotify
+// (ADR-003).
+func (a *App) NavigatePlazaWindow(targetURL string, direct bool) error {
 	a.plazaWinMu.Lock()
 	defer a.plazaWinMu.Unlock()
 
@@ -87,6 +97,17 @@ func (a *App) NavigatePlazaWindow(targetURL string) error {
 	}
 	if targetURL == "" {
 		return fmt.Errorf("empty URL")
+	}
+
+	if direct {
+		// [doc:plaza-spa] 直连真实域名：修复独立 API 域 SPA 经代理后 origin
+		// =127.0.0.1:PORT 触发 api CORS 白屏的问题。
+		a.plazaWin.SetURL(targetURL)
+		a.plazaWin.SetTitle("模型广场 — " + targetURL)
+		a.plazaWin.Show()
+		a.plazaWin.Focus()
+		a.safeLogInfo("NavigatePlazaWindow: %s (direct, no proxy)", targetURL)
+		return nil
 	}
 
 	// 走代理桥接：注入脚本才能 fetch /__plaza_dl__ 拦截下载（ADR-087 P0）。
