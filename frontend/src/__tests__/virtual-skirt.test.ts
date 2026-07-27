@@ -711,13 +711,37 @@ describe('VirtualSkirtController — P3a build 异常清理', () => {
         expect(ok).toBe(false);
         expect(ctrl.segmentCount).toBe(0);
         expect(ctrl.constraintCount).toBe(0);
-        // 锚定体（唯一成功加入的刚体）被 remove + dispose，无悬空资源
-        expect(impl.removeRigidBody).toHaveBeenCalledTimes(1);
-        expect(hoisted.callOrder.filter((c) => c === 'rb.dispose').length).toBe(1);
-        expect(hoisted.callOrder.filter((c) => c === 'info.dispose').length).toBe(1);
-        expect(hoisted.callOrder.filter((c) => c === 'shape.dispose').length).toBe(1);
+        // 锚定体 + 已 push 的第一个骨节（add 抛异常前已分配）均被 remove + dispose，无悬空资源
+        expect(impl.removeRigidBody).toHaveBeenCalledTimes(2);
+        expect(hoisted.callOrder.filter((c) => c === 'rb.dispose').length).toBe(2);
+        expect(hoisted.callOrder.filter((c) => c === 'info.dispose').length).toBe(2);
+        expect(hoisted.callOrder.filter((c) => c === 'shape.dispose').length).toBe(2);
         // 清理后再次 build 直接返回 false（已 dispose，避免重复分配）
         expect(ctrl.build()).toBe(false);
+    });
+
+    it('addRigidBody 返回 false（非抛异常）→ build 返回 false 且清理已分配资源', () => {
+        const mesh = createOpenBottomCylinder(1.0, 2.0, 12, 6);
+        const model = makeModel(mesh, [{ name: 'Waist', worldMatrix: new Float32Array(16) }]);
+        const { physics, impl } = makePhysics();
+        const runtime = makeRuntime(physics);
+        const { scene } = makeScene();
+
+        // 锚定体 addRigidBody 成功（第 1 次），第一个骨节 addRigidBody 返回 false
+        let calls = 0;
+        impl.addRigidBody.mockImplementation(() => {
+            calls++;
+            return calls < 2;
+        });
+
+        const ctrl = new VirtualSkirtController(model, scene, runtime, testConfig());
+        const ok = ctrl.build();
+
+        expect(ok).toBe(false);
+        // 锚定体 + 第一个骨节（已 push）被 remove + dispose
+        expect(impl.removeRigidBody).toHaveBeenCalledTimes(2);
+        expect(ctrl.segmentCount).toBe(0);
+        expect(ctrl.constraintCount).toBe(0);
     });
 });
 

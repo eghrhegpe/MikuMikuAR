@@ -6,7 +6,8 @@ scope:
   - frontend/src/scene/physics/**
 source_files:
   - frontend/src/scene/physics/ground-collision.ts
-adr: []
+adr:
+  - ADR-192
 ---
 
 ## 系统概览
@@ -23,6 +24,8 @@ adr: []
 
 ## 与其他子系统关系
 - 驱动方：`env-bridge.setGroundCollisionEnabled`
+- 物理 impl 经 `@/core/mmd-adapter` 的 `getPhysicsImpl(runtime)` 访问（ADR-192 适配层网关，原散落 `as unknown as {physics?...}` 反射已收口）
 - 仅 WASM 运行时生效；JS 运行时空转
 - 释放顺序：removeRigidBodyFromGlobal → rb.dispose → info.dispose → shape.dispose
+- dispose 异常契约：`removeRigidBodyFromGlobal` 抛错时 `logWarn` 但不阻断后续 `safeDispose`（try/finally，避免 impl 已销毁时资源链路断裂）
 - 地板半尺寸 2000m（覆盖全场景），碰撞组/掩码全开，friction 0.9
