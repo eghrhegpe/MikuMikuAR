@@ -14,6 +14,9 @@ class GoAiAdapter implements AiService {
             provider: 'go-bridge',
             streaming: true,
             models: [],
+            apiKeyConfigured: false, // go 侧密钥由 Go 持有，前端不可见，恒 false
+            corsRisk: 'none', // 桌面走 Go 代理，无浏览器 CORS 问题
+            endpointReachable: false,
         };
     }
 

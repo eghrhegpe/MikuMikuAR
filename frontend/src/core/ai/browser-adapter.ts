@@ -47,12 +47,28 @@ export class BrowserAiAdapter implements AiService {
 
     capabilities(): AiCapabilities {
         const cfg = loadConfig();
-        const available = !!cfg.endpoint && cfg.endpoint.length > 0;
+        const endpoint = cfg.endpoint.trim();
+        const available = endpoint.length > 0;
+        // CORS 风险判定：localhost/127.0.0.1 → none；https 远程 → possible；http 远程 → high
+        let corsRisk: 'none' | 'possible' | 'high' = 'none';
+        if (endpoint) {
+            const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/i.test(endpoint);
+            if (isLocal) {
+                corsRisk = 'none';
+            } else if (/^https:\/\//i.test(endpoint)) {
+                corsRisk = 'possible';
+            } else if (/^http:\/\//i.test(endpoint)) {
+                corsRisk = 'high';
+            }
+        }
         return {
             available,
-            provider: cfg.endpoint.includes('localhost') ? 'ollama' : 'openai-compat',
+            provider: /localhost|127\.0\.0\.1/i.test(endpoint) ? 'ollama' : 'openai-compat',
             streaming: true,
             models: [cfg.model],
+            apiKeyConfigured: !!cfg.apiKey,
+            corsRisk,
+            endpointReachable: 'pending',
         };
     }
 

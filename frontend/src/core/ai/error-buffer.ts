@@ -114,11 +114,80 @@ export function captureError(
     return entry;
 }
 
-// ======== logError 包装 ========
+// ======== console.error 补丁（零业务文件改动的入环方案）========
+//
+// [doc:adr-196] 替代原导出的 logError：业务文件从 @/core/logger 导入 logError，
+// 仅打 console.error 不会自动入环。改用 patch console.error 后，所有 console.error
+// 调用（含 logger.ts 的 logError）自动入环，零业务文件改动（满足 AC-10）。
+// patch 幂等（_loggingPatched 守卫），重复调用不双重包装。
 
-export function logError(tag: string, message: string, err?: unknown): void {
-    console.error(`[${tag}] ${message}`, err);
+let _origConsoleError: typeof console.error | null = null;
+let _loggingPatched = false;
+
+function _stringifyArg(a: unknown): string {
+    if (typeof a === 'string') return a;
+    if (a instanceof Error) return `${a.name}: ${a.message}`;
+    try {
+        return JSON.stringify(a);
+    } catch {
+        return String(a);
+    }
+}
+
+/** 把 console.error(...args) 归一化为一条环形缓冲条目。 */
+function _captureConsoleError(args: unknown[]): void {
+    const first = typeof args[0] === 'string' ? (args[0] as string) : '';
+    // 末位若为 Error 对象，作为 err 传入以便提取 name/stack，且不重复计入 message
+    const last = args[args.length - 1];
+    const err = last instanceof Error ? last : undefined;
+    const bodyArgs = err ? args.slice(0, -1) : args;
+
+    let tag = 'console';
+    let message = bodyArgs.map((a) => _stringifyArg(a)).join(' ');
+
+    // 兼容 logger.ts 形态：[tag] message —— 提取 tag，剩余归入 message
+    const m = /^\s*\[([^\]]+)\]\s*([\s\S]*)$/.exec(first);
+    if (m) {
+        tag = m[1];
+        const rest = bodyArgs.slice(1).map((a) => _stringifyArg(a)).join(' ');
+        message = m[2] ? (rest ? `${m[2]} ${rest}` : m[2]) : rest;
+    }
+
     captureError(tag, message, err, 'log');
+}
+
+/**
+ * 幂等地 patch console.error，使其所有输出自动入环（保留原始 console.error 行为）。
+ * 重复调用不双重包装（_loggingPatched 守卫）。
+ */
+export function installLoggingPatch(): void {
+    if (_loggingPatched) return;
+    _loggingPatched = true;
+    _origConsoleError = console.error.bind(console);
+    const patched: typeof console.error = (...args: unknown[]) => {
+        // 原始行为必须保留（即便捕获抛错也不影响业务日志）
+        try {
+            _origConsoleError?.(...args);
+        } catch {
+            // 原始 console.error 不应失败；极端情况下忽略
+        }
+        try {
+            _captureConsoleError(args);
+        } catch {
+            // 捕获逻辑异常绝不应影响业务
+        }
+    };
+    console.error = patched;
+}
+
+/** 卸载 console.error 补丁，恢复原始实现。 */
+export function uninstallLoggingPatch(): void {
+    if (!_loggingPatched) return;
+    if (_origConsoleError) {
+        console.error = _origConsoleError;
+    }
+    _origConsoleError = null;
+    _loggingPatched = false;
 }
 
 // ======== 便捷存取 ========
