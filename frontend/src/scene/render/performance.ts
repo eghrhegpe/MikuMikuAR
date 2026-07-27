@@ -6,7 +6,7 @@ import type { LightState } from './lighting';
 import type { RenderState } from './renderer';
 import type { EnvState } from '@/core/config';
 import { envState } from '@/core/config';
-import { formatTimestamp } from '@/core/utils';
+import { formatTimestamp } from '@/core/format-timestamp';
 import { uiState, setUIState } from '@/core/state';
 import type { UIState } from '@/core/types';
 import { setAutoDegradingReflection, setEnvStateForPerformance } from './performance-env-bridge';

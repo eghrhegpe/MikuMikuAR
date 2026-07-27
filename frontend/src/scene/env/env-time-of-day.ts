@@ -10,11 +10,9 @@ import {
     lerp as lerpUtil,
     lerpArray,
 } from '@/core/clamp';
-import {
-    formatTimestamp,
-    logWarn,
-    setKey,
-} from '@/core/utils';
+import { formatTimestamp } from '@/core/format-timestamp';
+import { logWarn } from '@/core/logger';
+import { setKey } from '@/core/set-key';
 import { AUTO_LINK_THRESHOLD_DEG } from '@/core/ui-constants';
 import { deriveLighting, TIME_OF_DAY_PRESETS, type CategorizedEnvPreset } from './env-lighting';
 import { ensureEnvUpdateObserver } from './env-impl';

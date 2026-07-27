@@ -14,7 +14,7 @@ import { observe } from '@/core/observer-handle';
 import { initTransformGizmo } from './transform-gizmo';
 import { scheduleRefresh } from '@/core/reactivity';
 import { resetPerformanceSnapshot, isSnapshotResetSuppressed } from './performance';
-import { setKey } from '@/core/utils';
+import { setKey } from '@/core/set-key';
 import { safeDispose } from '@/core/dispose-helpers';
 import { col3FromTriple } from '@/core/color-helpers';
 import { envState } from '@/core/config';

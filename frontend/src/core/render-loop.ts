@@ -5,7 +5,7 @@ import { engine, scene, applyFrameControl } from '../scene/scene';
 import { updatePerformance, getPerfRenderScaleMul } from '../scene/render/performance';
 import { recalcPerformanceReference } from '../scene/render/performance';
 import { uiState, dom } from './config';
-import { formatTimestamp } from './utils';
+import { formatTimestamp } from '@/core/format-timestamp';
 import { logWarn } from './logger';
 import { observe, type ObserverHandle } from './observer-handle';
 import { safeDispose } from './dispose-helpers';

@@ -1,6 +1,5 @@
 # ADR-191: 神桶 `@/core/utils` 去桶化（零依赖叶下沉）
-
-> **状态**: 实施中（A/B/C 档已完成 2026-07-27；D 档待议）
+> **状态**: 已完成（2026-07-27）
 > **日期**: 2026-07-27（初版）
 > **关联**: ADR-177（Web Loader 统一路径 — 测试 EXIT=124 根因）、cf264937（clamp 叶抽取地基）
 > **来源**: `virtual-skirt.test.ts`「一改就炸」根因调查——纯几何模块 `skirt-analyzer.ts` 从 `@/core/utils` 桶导入 `clampInt`，整桶 ESM 组合求值留下 pending 微任务，致 vitest fork worker 永不退（EXIT=124）。
@@ -30,7 +29,40 @@
 | A 档 | 抽 `@/core/clamp` 叶（`clamp`/`clampInt`/`clamp01`），14 个纯模块改引叶 | ✅ 已完成（cf264937 地基 + 14 模块本提交） |
 | B 档 | 抽 `@/core/path` 叶（纯路径符号），迁移路径调用方 | ✅ 已完成（2026-07-27） |
 | C 档 | 抽 `@/core/async` 叶（纯异步符号）+ `clampPct`/`lerp`/`lerpArray` 并入 `clamp.ts`，迁移调用方 | ✅ 已完成（2026-07-27） |
-| D 档 | 应用耦合符号（`triggerAutoSave`/`canvasToBase64`/`withLoadingIndicator`/`logWarn`/`deepClone`/`debounce`/`setKey`/`formatTimestamp`/`computeLibraryRef`/`resolveLibraryRef` 等）单独收口或留桶 | ⏳ 待议 |
+| D 档 | 应用耦合符号（`triggerAutoSave`/`canvasToBase64`/`withLoadingIndicator`/`logWarn`/`deepClone`/`debounce`/`setKey`/`formatTimestamp`/`computeLibraryRef`/`resolveLibraryRef` 等）单独收口或留桶 | ✅ 已完成（2026-07-27） |
+
+## D档决策（2026-07-27 已完成）
+
+| 符号 | 分类 | 决策 | 文件 |
+|------|------|------|------|
+| `deepClone` | 纯函数 | ✅ 下沉为叶模块 | `@/core/deep-clone` |
+| `debounce` | 纯函数 | ✅ 下沉为叶模块 | `@/core/debounce` |
+| `setKey` | 纯函数 | ✅ 下沉为叶模块 | `@/core/set-key` |
+| `formatTimestamp` | 纯函数 | ✅ 下沉为叶模块 | `@/core/format-timestamp` |
+| `triggerAutoSave` | app 耦合 | 保留桶内（依赖 `logWarn`）| `@/core/utils` |
+| `canvasToBase64` | app 耦合 | 保留桶内（依赖 `Toast`）| `@/core/utils` |
+| `withLoadingIndicator` | app 耦合 | 保留桶内（依赖 `UI`）| `@/core/utils` |
+| `logWarn` | app 耦合 | 保留桶内（依赖 `Feedback`）| `@/core/utils` |
+| `computeLibraryRef` | app 耦合 | 保留桶内（依赖 `libraryRoot`）| `@/core/utils` |
+| `resolveLibraryRef` | app 耦合 | 保留桶内（依赖 `libraryRoot`）| `@/core/utils` |
+
+### D档实施说明
+
+对四个纯函数执行 **叶下沉**：
+1. 在 `src/core/` 分别创建 `deep-clone.ts`、`debounce.ts`、`set-key.ts`、`format-timestamp.ts`
+2. 将函数体移入新文件，添加 JSDoc 文档
+3. 在 `utils.ts` 中移除对应导出
+4. 更新所有引用调用方的 `import` 为新路径
+
+对 app 耦合符号 **保留桶内**：
+- 这些函数依赖 `dom`、`state`、`feedback`、`i18n` 等应用层模块，无法作为纯叶存在
+- 但它们的调用方已明确识别（见下方混引模块表），后续可考虑进一步解耦
+
+### 实施后验证
+
+- 所有 D档符号的引用已全部迁移至新叶模块或确认保留桶内
+- `virtual-skirt.test.ts` 恢复正常运行，无 EXIT=124 错误
+- `npm run check:funcmap` 函数索引校验通过
 
 **A 档落地后，仍从桶导入的 21 个混引模块**（按符号分类）：
 

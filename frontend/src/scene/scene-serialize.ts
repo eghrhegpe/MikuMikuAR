@@ -20,7 +20,8 @@ import {
 } from '../core/config';
 import { showInfoToast } from '../core/toast';
 import { feedbackError, feedbackInfo } from '../core/feedback';
-import { debounce, generateUuid, swallowError } from '../core/utils';
+import { debounce } from '../core/debounce';
+import { generateUuid, swallowError } from '../core/utils';
 import { logWarn } from '../core/logger';
 import {
     getActiveMotionId,

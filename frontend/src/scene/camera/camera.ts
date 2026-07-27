@@ -20,7 +20,8 @@ import { Scene } from '@babylonjs/core/scene';
 import { focusedModelId, modelRegistry, triggerAutoSave, uiState } from '@/core/config';
 import { feedbackStatus } from '@/core/feedback';
 import { clamp } from '@/core/clamp';
-import { debounce, deepClone } from '@/core/utils';
+import { debounce } from '@/core/debounce';
+import { deepClone } from '@/core/deep-clone';
 import { logWarn } from '@/core/logger';
 import { focusModel, reattachPipeline, setARMode } from '../scene';
 
