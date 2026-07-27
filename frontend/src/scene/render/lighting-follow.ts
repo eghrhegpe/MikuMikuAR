@@ -64,9 +64,9 @@ const _tmpPos = Vector3.Zero();
 const WAIST_CANDIDATES = ['Waist', 'センター', 'Center', '腰', '上半身'];
 
 export const DEFAULT_PERSONAL_LIGHT: PersonalLightSettings = {
-    // P2-fix: 默认关闭，避免多角色场景 N 模型 = N 盏自动灯导致光照过度
-    // 由预设或用户在舞台灯光面板主动启用
-    enabled: false,
+    // 默认开启个人灯：当前默认参数（强度 1.2 / 角度 0.7 / 仅 actor、跟随腰骨候选）
+    // 已避免多角色互相照射过度曝光，故解除历史 P2-fix 的默认关闭限制
+    enabled: true,
     intensity: 1.2,
     color: [1, 1, 1],
     angle: 0.7,

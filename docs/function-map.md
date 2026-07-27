@@ -7,9 +7,9 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 79 | 571 |
+| 核心基础设施 | 79 | 579 |
 | 3D 场景 | 105 | 1058 |
-| 菜单 & UI | 66 | 304 |
+| 菜单 & UI | 66 | 303 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 18 | 131 |
 | 物理系统 | 2 | 13 |
@@ -41,14 +41,22 @@
 | `browserAdapter()` | `core/backend/browser-adapter` | — |
 | `dismissFsaAuthPrompt()` | `core/backend/browser-adapter` | — |
 | `getFsaAuthState()` | `core/backend/browser-adapter` | [doc:adr-183] 查询 FSA 根目录授权状态，供 UI 启动引导（不触发任何权限弹窗）。 |
+| `getFsaDownloadAuthState()` | `core/backend/browser-adapter` | 查询下载文件夹 FSA 授权状态（不触发权限弹窗），供 UI 引导。 |
+| `getFsaDownloadHandle()` | `core/backend/browser-adapter` | 读取持久化的下载文件夹句柄（供扫描使用），不触发权限弹窗；无句柄返回 null。 |
+| `ingestModelBytes()` | `core/backend/browser-adapter` | [doc:adr-195] 写入单文件（名+字节）到资源库，不加载到场景。供下载面板批量摄入复用。 |
+| `ingestModelFile()` | `core/backend/browser-adapter` | 写入单个模型/动作文件（File）到 IndexedDB 资源库（file:+entry:），不加载到场景。 |
+| `ingestModelFiles()` | `core/backend/browser-adapter` | [doc:adr-195] P3 批量摄入：单事务写入该批次所有 file:/entry: 键，避免逐条 idbSet 并发写竞态。 |
 | `isFsaAuthPromptDismissed()` | `core/backend/browser-adapter` | [doc:adr-183] 用户跳过启动授权引导后写入「已跳过」标志，避免纯导入用户每次启动被弹窗骚扰。 |
+| `reauthorizeFsaDownload()` | `core/backend/browser-adapter` | 对持久化的下载文件夹句柄重新请求授权（须用户手势上下文）。成功返回 true。 |
 | `reauthorizeFsaRoot()` | `core/backend/browser-adapter` | [doc:adr-183] 对持久化的 FSA 句柄重新请求授权（不重选目录）。 |
+| `selectFsaDownloadDir()` | `core/backend/browser-adapter` | 选择下载文件夹（独立 FSA 句柄），持久化到 _FSA_DOWNLOAD_KEY。 |
 | `setScanProgressCallback()` | `core/backend/browser-adapter` | [doc:adr-183] 注册扫描进度回调，供 UI 层节流增量刷新。 |
 | `goAdapter()` | `core/backend/go-adapter` | — |
 | `STORES()` | `core/backend/idb` | — |
 | `Store()` | `core/backend/idb` | — |
 | `WebModelEntry()` | `core/backend/idb` | — |
 | `closeIDB()` | `core/backend/idb` | 释放连接（页面卸载/切换时调用），与联邦资源配对纪律对齐。 |
+| `idbBatchSet()` | `core/backend/idb` | 单事务批量写入（键/值对），避免逐条 idbSet 的并发写竞态。 |
 | `idbDelete()` | `core/backend/idb` | — |
 | `idbGet()` | `core/backend/idb` | — |
 | `idbKeys()` | `core/backend/idb` | — |
@@ -587,8 +595,8 @@
 | `UpdateCustomSoftware()` | `core/wails-bindings` | — |
 | `WriteTextFile()` | `core/wails-bindings` | — |
 | `readFileBytes()` | `core/wails-bindings` | 读取文件为 Uint8Array（go：自动解码 Wails v3 base64；browser：IndexedDB/FSA 直读）。 |
-| `getWindVector()` | `core/wind-utils` | 返回当前风矢量（方向 × 速度），windEnabled=false 时返回零向量。 |
-| `isWindActive()` | `core/wind-utils` | 风向是否生效（快捷判空，避免 Vector3.Zero() 比较开销）。 |
+| `getWindVector()` | `core/wind-utils` | 返回当前风矢量（方向 × 速度），风未生效时返回零向量。 |
+| `isWindActive()` | `core/wind-utils` | 风向是否生效（windEnabled 且 windSpeed > 0.01，过滤浮点噪声 / 滑条零位残留）。 |
 
 ## 3D 场景
 
@@ -1369,7 +1377,7 @@
 | `updateWasmLayerWeight()` | `scene/motion/wasm-layers-blender` | — |
 | `DEFAULT_LAYER_BONE_FILTER()` | `scene/motion/wasm-layers-config` | — |
 | `applyGroundCollision()` | `scene/physics/ground-collision` | 根据当前 envState 还原地面碰撞状态（运行时就绪 / 场景加载后调用） |
-| `disableGroundCollision()` | `scene/physics/ground-collision` | 禁用地面碰撞：从所有世界移除并释放资源 |
+| `disableGroundCollision()` | `scene/physics/ground-collision` | 禁用地面碰撞：从所有世界移除并释放资源。 |
 | `enableGroundCollision()` | `scene/physics/ground-collision` | 启用地面碰撞：注入静态地板刚体到所有物理世界。幂等。 |
 | `isGroundCollisionEnabled()` | `scene/physics/ground-collision` | 地面碰撞是否处于启用状态 |
 | `SkirtAnalysisResult()` | `scene/physics/skirt-analyzer` | — |
@@ -1829,7 +1837,6 @@
 | `normalizeCreator()` | `menus/plaza-browser` | — |
 | `normalizeSite()` | `menus/plaza-browser` | — |
 | `openExternal()` | `menus/plaza-browser` | — |
-| `openInSystemBrowser()` | `menus/plaza-browser` | 调用操作系统的默认浏览器打开站点（Browser.OpenURL 或 window.open）。 |
 | `openInWindow()` | `menus/plaza-browser` | — |
 | `openSiteByMode()` | `menus/plaza-browser` | — |
 | `preserveBuiltinRouting()` | `menus/plaza-browser` | — |
@@ -2156,5 +2163,5 @@
 
 ---
 
-> 共 273 个文件，2110 个导出符号。
+> 共 273 个文件，2117 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。

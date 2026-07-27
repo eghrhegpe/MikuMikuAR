@@ -381,10 +381,10 @@ export type PopupRow = {
     wrapLabel?: boolean;
 };
 
-// ======== Resource Browse Selection Outcome (ADR-131) ========
+// ======== Resource Browse Selection Outcome (ADR-131 / ADR-195) ========
 // 资源浏览「选中后行为」统一契约：取代散落的全局绑定标志位（layerBindingTargetId /
-// motionBindingTargetId / modelReplaceTargetId）与硬编码 closeAllOverlays，使所有资源
-// 类型（模型 / 动作 / 音频 / 相机 VMD）具备一致的「选中后该干嘛」能力。
+// motionBindingTargetId）与硬编码 closeAllOverlays，使所有资源类型（模型 / 动作 / 音频 /
+// 相机 VMD）具备一致的「选中后该干嘛」能力。模型替换已从 jumpToDir 合并至 stay 模式。
 export type BrowseOutcome =
     | { mode: 'close' } // 默认：加载即完成，关闭浏览器（一次性绑定 / 加载即完成）
     | {
@@ -393,7 +393,6 @@ export type BrowseOutcome =
           onVmdPick?: (path: string, name: string) => void;
           onVmdReplace?: (path: string, name: string) => void;
       } // 连续预览：加载后保持浏览器打开
-    | { mode: 'jumpToDir'; modelId?: string; dir?: string } // 加载后回到指定目录（模型替换，旧 ADR-094 自动跳转）
     | { mode: 'bindLayer'; modelId: string } // 绑定到图层（一次性，关闭）
     | { mode: 'bindMotion'; modelId: string } // 绑定到动作槽（一次性，关闭）
     | { mode: 'bindCameraVmd' }; // 绑定到相机 VMD 槽（一次性，关闭；motion-camera-levels 入口）

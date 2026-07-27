@@ -227,7 +227,7 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                     });
                     return;
                 }
-                if (outcome.mode === 'jumpToDir' && outcome.modelId) {
+                if (outcome.mode === 'stay' && outcome.modelId && row.model.format !== 'vmd') {
                     onModelRowClick(row.model, outcome.modelId);
                     return;
                 }

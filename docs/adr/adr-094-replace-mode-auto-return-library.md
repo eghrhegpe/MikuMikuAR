@@ -1,6 +1,6 @@
 # ADR-094: 资源库替换模式 — 加载后自动保持替换状态并回到模型列表
 
-> **状态**: 已完成
+> **状态**: 已完成（2026-07-27 简化：自动跳转机制已替换为 `stay` 模式，见下方 §变更记录）
 > **模型记忆接入**: 见 ADR-097（更换模型路径已接入 RecentModels 驱动的模型记忆恢复）
 
 ## 1. 背景
@@ -66,3 +66,32 @@ stackRegistry.modelStack?.push(
 
 - ADR-094 独立改动，不依赖其他 ADR
 - 涉及的 `setModelReplaceTargetId` / `buildLevel` / `getBrowseDir` 为已有 API，无需新增
+
+## 6. 变更记录（2026-07-27）
+
+### 背景
+ADR-094 原始方案在替换成功后使用 `resetToRoot()` + `push(buildLevel(..., { mode: 'jumpToDir' }))` 重建浏览层，每次替换后重置到根目录。用户反馈此跳转过于折腾，且与动作资源库的 `stay` 模式体验不一致。
+
+### 变更
+替换模式已将 `jumpToDir` 契约完全移除，统一使用 `stay` 模式：
+
+1. **`startReplaceModel`**：加载新模型后不再 `resetToRoot()` + `push(buildLevel)`，改为直接更新当前层的 `outcome.modelId` 指向新模型，浏览器保持原位不动。
+2. **`activateItem` / `onItemClick`**：`stay` 模式增加 PMX 模型分支，选中模型时通过 `outcome.modelId` 传参替换，与 VMD 连续预览共用同一契约。
+3. **`BrowseOutcome` 类型**：移除 `jumpToDir` 变体，`stay` 成为唯一的连续/替换模式契约。
+
+### 动因
+- 替换角色不需要跳转重置，保持当前浏览目录即可连续替换
+- 与动作资源库的 `stay` 模式保持一致，降低用户心智负担
+- 消除 `resetToRoot` + 重建浏览层的冗余操作，简化代码
+
+### 涉及文件
+| 文件 | 操作 |
+|------|------|
+| `menus/library-actions.ts` | `startReplaceModel` 移除 `resetToRoot` + `buildLevel`，改为更新 `currentLevel.outcome` |
+| `menus/library-core.ts` | `activateItem` 中 `jumpToDir` 分支替换为 `stay` + PMX 分支 |
+| `menus/library-browse.ts` | `onItemClick` 中 `jumpToDir` 分支替换为 `stay` + PMX 分支 |
+| `core/types.ts` | 移除 `BrowseOutcome` 中的 `jumpToDir` 类型 |
+
+### 关联
+- ADR-131：`jumpToDir` 从契约中移除，相关描述已更新
+- ADR-094：本 ADR 所有原始决策仍有效（替换后保持浏览器打开），仅实现方式简化

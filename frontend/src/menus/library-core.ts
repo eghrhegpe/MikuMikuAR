@@ -516,8 +516,8 @@ function renderItemsWithRAF(
                 });
                 return;
             }
-            // [doc:adr-131] 替换模式：显式传 jumpToDir modelId，取代 modelReplaceTargetId 全局反推
-            if (outcome.mode === 'jumpToDir' && outcome.modelId) {
+            // [doc:adr-195] 替换模式使用 stay 契约：选中模型时传当前 modelId 替换
+            if (outcome.mode === 'stay' && outcome.modelId && item.model.format !== 'vmd') {
                 onModelRowClick(item.model, outcome.modelId);
                 return;
             }
