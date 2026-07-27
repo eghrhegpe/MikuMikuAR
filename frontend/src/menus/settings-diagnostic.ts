@@ -123,11 +123,11 @@ function buildContextSchema(): MenuNode[] {
                 c.appendChild(snapshotEl);
 
                 const btnRow = document.createElement('div');
-                btnRow.style.cssText = 'display:flex;gap:8px;margin-top:8px';
+                btnRow.className = 'diag-hint-row';
 
                 const clearBtn = document.createElement('button');
                 clearBtn.textContent = t('ai.errors.clear');
-                clearBtn.className = 'menu-btn';
+                clearBtn.className = 'preset-chip';
                 clearBtn.addEventListener('click', () => {
                     clearErrors();
                     _addAssistantMessage(t('ai.errors.cleared'));
@@ -137,7 +137,7 @@ function buildContextSchema(): MenuNode[] {
 
                 const refreshBtn = document.createElement('button');
                 refreshBtn.textContent = t('ai.snapshot.refresh');
-                refreshBtn.className = 'menu-btn';
+                refreshBtn.className = 'preset-chip';
                 refreshBtn.addEventListener('click', () => {
                     const snap = captureSceneSnapshot();
                     const hint = c.querySelector('.setting-hint:last-of-type');
@@ -153,30 +153,31 @@ function buildContextSchema(): MenuNode[] {
 
 function _createErrorRow(err: ErrorEntry): HTMLElement {
     const row = document.createElement('div');
-    row.style.cssText = 'padding:4px 6px;margin:2px 0;border-radius:4px;cursor:pointer;font-size:12px;background:var(--bg-secondary,#1a1a2e)';
+    row.className = 'diag-error-row';
     row.setAttribute('role', 'button');
     row.setAttribute('tabindex', '0');
     row.setAttribute('aria-label', `Error: ${err.tag}`);
 
     const tag = document.createElement('span');
     tag.textContent = `[${err.tag}]`;
-    tag.style.cssText = 'color:var(--accent-color,#6cf);margin-right:4px';
+    tag.className = 'diag-error-tag';
     row.appendChild(tag);
 
     const msg = document.createElement('span');
     msg.textContent = err.message;
+    msg.className = 'diag-error-msg';
     row.appendChild(msg);
 
     if (err.stack) {
         const expandIcon = document.createElement('span');
         expandIcon.textContent = ' ▶';
-        expandIcon.style.cssText = 'color:var(--text-secondary,#999);margin-left:4px';
+        expandIcon.className = 'diag-error-expand';
         row.appendChild(expandIcon);
 
         const stackEl = document.createElement('pre');
         const stackLines = err.stack.split('\n').slice(0, 5).join('\n');
         stackEl.textContent = stackLines;
-        stackEl.style.cssText = 'display:none;margin:4px 0 0;padding:4px;font-size:11px;background:var(--bg-primary,#111);border-radius:2px;white-space:pre-wrap;color:var(--text-secondary,#999)';
+        stackEl.className = 'diag-error-stack';
 
         let expanded = false;
         const toggle = (): void => {
@@ -207,21 +208,27 @@ function buildModeSwitchSchema(): MenuNode[] {
             renderCustom: (c) => {
                 const group = document.createElement('div');
                 group.setAttribute('role', 'tablist');
-                group.style.cssText = 'display:flex;gap:4px;margin-bottom:8px';
+                group.className = 'diag-mode-row';
 
                 const diagBtn = document.createElement('button');
                 diagBtn.setAttribute('role', 'tab');
                 diagBtn.setAttribute('aria-selected', String(_mode === 'diagnostic'));
                 diagBtn.textContent = t('ai.mode.diagnostic');
-                diagBtn.className = 'menu-btn' + (_mode === 'diagnostic' ? ' menu-btn--primary' : '');
-                diagBtn.addEventListener('click', () => { _mode = 'diagnostic'; _refreshModeUI(group, diagBtn, chatBtn); });
+                diagBtn.className = 'mode-btn' + (_mode === 'diagnostic' ? ' active' : '');
+                diagBtn.addEventListener('click', () => {
+                    _mode = 'diagnostic';
+                    _refreshModeUI(diagBtn, chatBtn);
+                });
 
                 const chatBtn = document.createElement('button');
                 chatBtn.setAttribute('role', 'tab');
                 chatBtn.setAttribute('aria-selected', String(_mode === 'chat'));
                 chatBtn.textContent = t('ai.mode.chat');
-                chatBtn.className = 'menu-btn' + (_mode === 'chat' ? ' menu-btn--primary' : '');
-                chatBtn.addEventListener('click', () => { _mode = 'chat'; _refreshModeUI(group, diagBtn, chatBtn); });
+                chatBtn.className = 'mode-btn' + (_mode === 'chat' ? ' active' : '');
+                chatBtn.addEventListener('click', () => {
+                    _mode = 'chat';
+                    _refreshModeUI(diagBtn, chatBtn);
+                });
 
                 group.appendChild(diagBtn);
                 group.appendChild(chatBtn);
@@ -231,9 +238,9 @@ function buildModeSwitchSchema(): MenuNode[] {
     ];
 }
 
-function _refreshModeUI(group: HTMLElement, diagBtn: HTMLButtonElement, chatBtn: HTMLButtonElement): void {
-    diagBtn.className = 'menu-btn' + (_mode === 'diagnostic' ? ' menu-btn--primary' : '');
-    chatBtn.className = 'menu-btn' + (_mode === 'chat' ? ' menu-btn--primary' : '');
+function _refreshModeUI(diagBtn: HTMLButtonElement, chatBtn: HTMLButtonElement): void {
+    diagBtn.className = 'mode-btn' + (_mode === 'diagnostic' ? ' active' : '');
+    chatBtn.className = 'mode-btn' + (_mode === 'chat' ? ' active' : '');
     diagBtn.setAttribute('aria-selected', String(_mode === 'diagnostic'));
     chatBtn.setAttribute('aria-selected', String(_mode === 'chat'));
 }
@@ -245,16 +252,16 @@ function _renderChat(): void {
     _chatContainer.innerHTML = '';
     for (const msg of _messages) {
         const row = document.createElement('div');
-        row.className = `chat-row chat-row--${msg.role}`;
-        row.style.cssText = 'padding:4px 0;border-bottom:1px solid var(--border-color, #333);font-size:13px';
+        row.className = `diag-chat-row chat-row--${msg.role}`;
 
         const label = document.createElement('strong');
         label.textContent = msg.role === 'user' ? t('ai.chat.you') : t('ai.chat.assistant');
-        label.style.cssText = 'display:block;margin-bottom:2px;color:var(--accent-color, #6cf)';
+        label.className = 'diag-chat-label';
         row.appendChild(label);
 
         const content = document.createElement('div');
         content.textContent = msg.content;
+        content.className = 'diag-chat-content';
         row.appendChild(content);
         _chatContainer.appendChild(row);
     }
@@ -267,14 +274,14 @@ function _renderStreamingChunk(chunk: ChatChunk): void {
         let lastRow = _chatContainer.lastElementChild;
         if (!lastRow || !lastRow.classList.contains('chat-row--streaming')) {
             const row = document.createElement('div');
-            row.className = 'chat-row chat-row--streaming chat-row--assistant';
-            row.style.cssText = 'padding:4px 0;border-bottom:1px solid var(--border-color, #333);font-size:13px';
+            row.className = 'diag-chat-row chat-row--streaming chat-row--assistant';
             const label = document.createElement('strong');
             label.textContent = t('ai.chat.assistant');
-            label.style.cssText = 'display:block;margin-bottom:2px;color:var(--accent-color, #6cf)';
+            label.className = 'diag-chat-label';
             row.appendChild(label);
             const content = document.createElement('div');
             content.textContent = '';
+            content.className = 'diag-chat-content';
             row.appendChild(content);
             _chatContainer.appendChild(row);
             lastRow = row;
@@ -307,7 +314,9 @@ function _buildSystemMessage(): ChatMessage {
     const contextParts: string[] = [];
     const errors = getErrors();
     if (errors.length > 0) {
-        contextParts.push(t('ai.context.errors') + errors.map((e) => `[${e.tag}] ${e.message}`).join('\n'));
+        contextParts.push(
+            t('ai.context.errors') + errors.map((e) => `[${e.tag}] ${e.message}`).join('\n')
+        );
     }
     const snapshot = captureSceneSnapshot();
     if (snapshot !== '(场景未初始化)') {
@@ -364,7 +373,9 @@ async function _sendMessage(): Promise<void> {
             }
         }
     } catch (err) {
-        _addAssistantMessage(t('ai.errors.apiError', { msg: err instanceof Error ? err.message : String(err) }));
+        _addAssistantMessage(
+            t('ai.errors.apiError', { msg: err instanceof Error ? err.message : String(err) })
+        );
         _renderChat();
     } finally {
         _finalizeStream(fullResponse);
@@ -400,17 +411,16 @@ function buildChatSchema(): MenuNode[] {
                 _chatContainer = document.createElement('div');
                 _chatContainer.setAttribute('aria-live', 'polite');
                 _chatContainer.setAttribute('aria-relevant', 'additions');
-                _chatContainer.style.cssText =
-                    'max-height:300px;overflow-y:auto;margin-bottom:8px;padding:4px;background:var(--bg-secondary, #1a1a2e);border-radius:4px';
+                _chatContainer.className = 'diag-chat-box';
                 c.appendChild(_chatContainer);
 
                 const inputRow = document.createElement('div');
-                inputRow.style.cssText = 'display:flex;gap:6px;align-items:flex-start';
+                inputRow.className = 'diag-input-row';
 
                 _inputEl = document.createElement('textarea');
                 _inputEl.placeholder = t('ai.chat.placeholder');
                 _inputEl.setAttribute('aria-label', t('ai.chat.placeholder'));
-                _inputEl.style.cssText = 'flex:1;min-height:36px;resize:vertical;padding:6px;border-radius:4px;border:1px solid var(--border-color,#444);background:var(--bg-primary,#111);color:var(--text-primary,#eee);font-size:13px';
+                _inputEl.className = 'diag-textarea';
                 _inputEl.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
@@ -422,7 +432,7 @@ function buildChatSchema(): MenuNode[] {
                 const sendBtn = document.createElement('button');
                 sendBtn.id = 'diag-send-btn';
                 sendBtn.textContent = t('ai.chat.send');
-                sendBtn.className = 'menu-btn menu-btn--primary';
+                sendBtn.className = 'mode-btn active';
                 sendBtn.setAttribute('aria-label', t('ai.chat.send'));
                 sendBtn.addEventListener('click', () => void _sendMessage());
                 inputRow.appendChild(sendBtn);
@@ -430,7 +440,7 @@ function buildChatSchema(): MenuNode[] {
                 const stopBtn = document.createElement('button');
                 stopBtn.id = 'diag-stop-btn';
                 stopBtn.textContent = t('ai.chat.stop');
-                stopBtn.className = 'menu-btn';
+                stopBtn.className = 'preset-chip';
                 stopBtn.setAttribute('aria-label', t('ai.chat.stop'));
                 stopBtn.style.display = 'none';
                 stopBtn.addEventListener('click', _stopStreaming);
@@ -439,7 +449,7 @@ function buildChatSchema(): MenuNode[] {
                 const clearBtn = document.createElement('button');
                 clearBtn.id = 'diag-clear-btn';
                 clearBtn.textContent = t('ai.chat.clear');
-                clearBtn.className = 'menu-btn';
+                clearBtn.className = 'preset-chip';
                 clearBtn.setAttribute('aria-label', t('ai.chat.clear'));
                 clearBtn.addEventListener('click', _clearChat);
                 inputRow.appendChild(clearBtn);
@@ -468,24 +478,24 @@ function _saveGoConfig(partial: { baseUrl?: string; model?: string; aiKey?: stri
 async function _testConnection(statusEl: HTMLElement): Promise<void> {
     if (!_ai) {
         statusEl.textContent = t('ai.config.notResolved');
-        statusEl.style.color = 'var(--warning-color, #fa0)';
+        statusEl.style.color = 'var(--warn)';
         return;
     }
     statusEl.textContent = t('ai.config.testing');
-    statusEl.style.color = 'var(--text-secondary, #999)';
+    statusEl.style.color = 'var(--text-muted)';
 
     try {
         const result = await _ai.testConnection();
         if (result.ok) {
             statusEl.textContent = t('ai.config.connected');
-            statusEl.style.color = 'var(--success-color, #5a5)';
+            statusEl.style.color = 'var(--success)';
         } else {
             statusEl.textContent = result.message;
-            statusEl.style.color = 'var(--error-color, #f55)';
+            statusEl.style.color = 'var(--danger)';
         }
     } catch (err) {
         statusEl.textContent = err instanceof Error ? err.message : String(err);
-        statusEl.style.color = 'var(--error-color, #f55)';
+        statusEl.style.color = 'var(--danger)';
     }
 }
 
@@ -500,8 +510,7 @@ function buildConfigSchema(): MenuNode[] {
                 // CORS 风险提示条
                 _corsWarningEl = document.createElement('div');
                 _corsWarningEl.textContent = t('ai.config.corsWarning');
-                _corsWarningEl.style.cssText =
-                    'display:none;padding:6px 8px;margin-bottom:8px;border-radius:4px;font-size:12px;background:var(--warning-bg, #332800);color:var(--warning-color, #fa0);border:1px solid var(--warning-border, #554400)';
+                _corsWarningEl.className = 'diag-warning';
                 _corsWarningEl.setAttribute('role', 'alert');
                 c.appendChild(_corsWarningEl);
 
@@ -509,20 +518,20 @@ function buildConfigSchema(): MenuNode[] {
                     label: string,
                     type: string,
                     defaultValue: string,
-                    onSave: (val: string) => void,
+                    onSave: (val: string) => void
                 ): HTMLDivElement => {
                     const row = document.createElement('div');
-                    row.style.cssText = 'margin-bottom:8px';
+                    row.className = 'diag-field-row';
 
                     const lbl = document.createElement('div');
                     lbl.textContent = label;
-                    lbl.style.cssText = 'font-size:12px;margin-bottom:2px;color:var(--text-secondary,#999)';
+                    lbl.className = 'diag-field-label';
                     row.appendChild(lbl);
 
                     const input = document.createElement('input');
                     input.type = type;
                     input.value = defaultValue;
-                    input.style.cssText = 'width:100%;padding:6px;border-radius:4px;border:1px solid var(--border-color,#444);background:var(--bg-primary,#111);color:var(--text-primary,#eee);font-size:13px;box-sizing:border-box';
+                    input.className = 'diag-input';
                     input.addEventListener('blur', () => {
                         onSave(input.value);
                     });
@@ -531,38 +540,46 @@ function buildConfigSchema(): MenuNode[] {
                 };
 
                 _configEndpoint = createField(
-                    t('ai.config.endpoint'), 'text', cfg.endpoint,
+                    t('ai.config.endpoint'),
+                    'text',
+                    cfg.endpoint,
                     (v) => {
-                        if (_ai?.kind === 'go') { _saveGoConfig({ baseUrl: v }); } else { saveAiConfig({ endpoint: v }); }
-                    },
+                        if (_ai?.kind === 'go') {
+                            _saveGoConfig({ baseUrl: v });
+                        } else {
+                            saveAiConfig({ endpoint: v });
+                        }
+                    }
                 ).querySelector('input') as HTMLInputElement;
 
-                _configApiKey = createField(
-                    t('ai.config.apiKey'), 'password', cfg.apiKey,
-                    (v) => {
-                        if (_ai?.kind === 'go') { _saveGoConfig({ aiKey: v }); } else { saveAiConfig({ apiKey: v }); }
-                    },
-                ).querySelector('input') as HTMLInputElement;
+                _configApiKey = createField(t('ai.config.apiKey'), 'password', cfg.apiKey, (v) => {
+                    if (_ai?.kind === 'go') {
+                        _saveGoConfig({ aiKey: v });
+                    } else {
+                        saveAiConfig({ apiKey: v });
+                    }
+                }).querySelector('input') as HTMLInputElement;
 
-                _configModel = createField(
-                    t('ai.config.model'), 'text', cfg.model,
-                    (v) => {
-                        if (_ai?.kind === 'go') { _saveGoConfig({ model: v }); } else { saveAiConfig({ model: v }); }
-                    },
-                ).querySelector('input') as HTMLInputElement;
+                _configModel = createField(t('ai.config.model'), 'text', cfg.model, (v) => {
+                    if (_ai?.kind === 'go') {
+                        _saveGoConfig({ model: v });
+                    } else {
+                        saveAiConfig({ model: v });
+                    }
+                }).querySelector('input') as HTMLInputElement;
 
                 const testRow = document.createElement('div');
-                testRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-top:8px';
+                testRow.className = 'diag-hint-row';
 
                 const testBtn = document.createElement('button');
                 testBtn.id = 'diag-test-btn';
                 testBtn.textContent = t('ai.config.test');
-                testBtn.className = 'menu-btn';
+                testBtn.className = 'preset-chip';
                 testBtn.setAttribute('aria-label', t('ai.config.test'));
                 testRow.appendChild(testBtn);
 
                 const statusEl = document.createElement('span');
-                statusEl.style.cssText = 'font-size:12px';
+                statusEl.className = 'diag-status';
                 testRow.appendChild(statusEl);
 
                 testBtn.addEventListener('click', () => void _testConnection(statusEl));
@@ -623,7 +640,7 @@ function buildDiagnosticSchema(): MenuNode[] {
 }
 
 export function buildSettingsDiagnosticLevel(
-    getSettingsMenu: () => SettingsMenuHandle,
+    getSettingsMenu: () => SettingsMenuHandle
 ): PopupLevel {
     return {
         label: t('settings.diagnostic'),
