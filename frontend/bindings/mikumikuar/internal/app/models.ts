@@ -125,6 +125,11 @@ export interface Config {
      * 对话框最后目录记忆，优先相对路径（./前缀），详见 ADR-090
      */
     "last_dirs"?: { [_ in string]?: string } | null;
+
+    /**
+     * LLM 端点配置（ADR-196），含 baseUrl/model；apiKey 存同字段（Go 仅持有，不暴露给前端）
+     */
+    "llm_config"?: LLMConfig | null;
 }
 
 /**
@@ -360,6 +365,16 @@ export interface KeyBindingOverride {
     "ctrl"?: boolean;
     "shift"?: boolean;
     "alt"?: boolean;
+}
+
+export interface LLMConfig {
+    "baseUrl": string;
+    "model": string;
+
+    /**
+     * 仅写入时接收；读取时不返回给前端
+     */
+    "aiKey"?: string;
 }
 
 /**

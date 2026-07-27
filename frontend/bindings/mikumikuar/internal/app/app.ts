@@ -13,6 +13,9 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as application$0 from "../../../github.com/wailsapp/wails/v3/pkg/application/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as llm$0 from "./llm/models.js";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -38,6 +41,26 @@ export function AddRecentModel(libraryRef: string): $CancellablePromise<void> {
  */
 export function AddTag(libraryRef: string, tag: string): $CancellablePromise<void> {
     return $Call.ByID(210682570, libraryRef, tag);
+}
+
+export function AiCancelStream(): $CancellablePromise<void> {
+    return $Call.ByID(4185100799);
+}
+
+export function AiGetLLMConfig(): $CancellablePromise<$models.LLMConfig> {
+    return $Call.ByID(2848110132);
+}
+
+export function AiSetLLMConfig(cfg: $models.LLMConfig): $CancellablePromise<void> {
+    return $Call.ByID(3818917064, cfg);
+}
+
+export function AiStreamChat(req: llm$0.ChatRequest): $CancellablePromise<void> {
+    return $Call.ByID(669797351, req);
+}
+
+export function AiTestLLMConnection(): $CancellablePromise<[boolean, string]> {
+    return $Call.ByID(4285751244);
 }
 
 /**
