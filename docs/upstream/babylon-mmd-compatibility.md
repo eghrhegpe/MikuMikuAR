@@ -81,7 +81,7 @@ export interface MmdRuntimeBoneExtended extends IMmdRuntimeBone {
 
 ---
 
-### 3. `_rigidBodyBundleMap` 反射访问 —— 风物理需要读内部字段  **[Phase 2 内化中 → ADR-192]**
+### 3. `_rigidBodyBundleMap` 反射访问 —— 风物理需要读内部字段  **[已内化（公开 API）→ ADR-192]**
 
 **文件**: `frontend/src/physics/wind-physics.ts`，第 39–68 行
 
@@ -222,7 +222,7 @@ return (mmdRuntime as unknown as MmdWasmRuntime) ?? null;
 
 ---
 
-### 9. `StreamAudioPlayer._audio` 反射 —— 直接控制音频播放  **[Phase 2 内化中 → ADR-192]**
+### 9. `StreamAudioPlayer._audio` 反射 —— 直接控制音频播放  **[守卫式反射（能力内化经调研不可行）→ ADR-192]**
 
 **文件**: `frontend/src/outfit/audio.ts`，第 55、134、351 行
 

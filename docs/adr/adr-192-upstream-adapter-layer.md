@@ -1,6 +1,6 @@
 # ADR-192: 上游适配层重构（MmdAdapter）
 
-> **状态**: 已立项 · Phase 1 已完成（2026-07-27 — BoneFrameClock 时序/坐标系契约 + PlaybackContract 切换契约落地，契约测试 16 用例全绿；Phase 2 能力内化待启动）
+> **状态**: 已立项 · Phase 2 已完成（2026-07-27 — 条目 3 用公开 API 真正内化、条目 9 经调研确认能力内化不可行改为守卫式反射；tsc 零错误，契约测试 13 + wind-physics 1 + audio 48 全绿）
 > **日期**: 2026-07-27（初版）
 > **关联**: ADR-110（上游差异登记册，已转为永久自治台账）、ADR-186（bone-override-frame-timing）、ADR-187（babylon-mmd 剩余 API 分析）、`docs/upstream/babylon-mmd-compatibility.md`（23 处应对清单 + 逆向审计）
 > **来源**: 上游 PR #94/#95/#96 全关后战略转「永久自治下游」；`compatibility.md` 逆向审计识别出 4 处仅缓解、未根治的应对
@@ -110,7 +110,19 @@ A 类 `as unknown as` cast 收敛到适配层边界的**类型网关**一处，�
 
 1. **本次**：ADR-192 立项，更新 `docs/upstream/README.md` 关联索引、在 `compatibility.md` 标注 3/9/12/14 为「适配层根治中」。
 2. **Phase 0 启动**：✅ 已完成 — 建 `frontend/src/core/mmd-adapter.ts`（`getPhysicsImpl` / `getRigidBodyBundleMap` / `getStreamAudio` 类型网关 + `CapabilityProbe` 骨架 + `BoneFrameClock`/`PlaybackContract` 占位），迁移 wind-physics/audio 私有字段访问，新增 `mmd-adapter.contract.test.ts`；`npm run check` 零错误、受影响单测全绿。
-3. **Phase 1/2**：按上表分阶段推进，每阶段独立 commit + 单测回归。
+3. **Phase 1**：✅ 已完成 — BoneFrameClock 时序/坐标系契约 + PlaybackContract 切换契约固化（条目 12/14）。
+4. **Phase 2**：✅ 已完成 — 见下方「Phase 2 实施记录」。
+
+---
+
+## Phase 2 实施记录（2026-07-27）
+
+**关键调研结论（推翻原 ADR 的"能力内化"预设）**：Phase 2 启动前先核验上游源码（`node_modules/babylon-mmd`），发现两条目可行性不对称：
+
+- **条目 3 可真正内化**：`MmdWasmPhysicsRuntimeImpl` 提供**公开属性** `rigidBodyBundleReferenceCountMap: ReadonlyMap<RigidBodyBundle, number>`（d.ts:233），其 key 与私有 `_rigidBodyBundleMap` 同为 `RigidBodyBundle`；`RigidBodyBundle` 的 `count` / `applyCentralForce` 亦为公开 API。`getRigidBodyBundleMap` 改为 `return impl.rigidBodyBundleReferenceCountMap.keys()`，**彻底脱离私有字段反射**，并删除内部 `RigidBodyBundleLike` 接口与 `CapabilityProbe.hasRigidBodyBundleMap`（已无私有依赖可探测）。
+- **条目 9 能力内化不可行**：`StreamAudioPlayer` 构造不接收外部 `HTMLAudioElement` 注入，`_audio` 全程由内部持有且不暴露；联邦的 fade（WebAudio `MediaElementSource`）、`beatDetector.attach`、ended 监听均绑定在内部 `_audio` 上，上游无公开替代 API。故**降级为守卫式反射**：`getStreamAudio` 保留 `_audio` 反射，但首次探测缺失时打一次 dev 警告（`logWarn`），使 babylon-mmd 升级回归立即可见，不再静默失效。`CapabilityProbe.hasStreamAudio` 保留用于探测。
+
+**验证**：`npm run check` 零错误；契约测试 13 + wind-physics 1 + audio 48 全绿（守卫式反射日志已测试触发）。ADR-192 全部 4 处缓解型（3/9/12/14）已收口至 `MmdAdapter` 适配层，联邦对 babylon-mmd 的脆弱依赖收敛完毕。
 
 ---
 
