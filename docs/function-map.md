@@ -7,9 +7,9 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 78 | 567 |
+| 核心基础设施 | 79 | 571 |
 | 3D 场景 | 105 | 1058 |
-| 菜单 & UI | 66 | 308 |
+| 菜单 & UI | 66 | 304 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 18 | 131 |
 | 物理系统 | 2 | 13 |
@@ -201,6 +201,10 @@
 | `setIsPlaying()` | `core/playback-state` | — |
 | `setSeekDragging()` | `core/playback-state` | — |
 | `parsePmxComment()` | `core/pmx-meta` | 从 PMX 文件的 Uint8Array 中提取 comment（日本语说明/使用规约）。 |
+| `PresetCategory()` | `core/preset-meta` | — |
+| `PresetMeta()` | `core/preset-meta` | — |
+| `listPresets()` | `core/preset-meta` | 跨系统枚举预设，归一为 `PresetMeta[]`。 |
+| `toPresetMeta()` | `core/preset-meta` | 由单条记录构造 `PresetMeta`。`extra` 仅承载 envelope 字段，不触碰各系统原生 payload。 |
 | `reactive()` | `core/reactivity` | — |
 | `readonly()` | `core/reactivity` | Passthrough readonly — store 层通过约定保证不可变，不做深冻结。 |
 | `scheduleRefresh()` | `core/reactivity` | 安排一次刷新（RAF 去抖）。 |
@@ -1828,9 +1832,9 @@
 | `openInSystemBrowser()` | `menus/plaza-browser` | 调用操作系统的默认浏览器打开站点（Browser.OpenURL 或 window.open）。 |
 | `openInWindow()` | `menus/plaza-browser` | — |
 | `openSiteByMode()` | `menus/plaza-browser` | — |
+| `preserveBuiltinRouting()` | `menus/plaza-browser` | — |
 | `renderEmbed()` | `menus/plaza-browser` | — |
 | `renderHome()` | `menus/plaza-browser` | — |
-| `renderRemote()` | `menus/plaza-browser` | — |
 | `renderSiteContent()` | `menus/plaza-browser` | — |
 | `saveCustomPresets()` | `menus/plaza-browser` | — |
 | `savePlazaCache()` | `menus/plaza-browser` | 将当前站点 + 创作者写入本地缓存文件。 |
@@ -1863,8 +1867,6 @@
 | `observer()` | `menus/plaza-state` | — |
 | `plazaIframe()` | `menus/plaza-state` | — |
 | `plazaProxyActive()` | `menus/plaza-state` | — |
-| `remoteProgress()` | `menus/plaza-state` | — |
-| `remoteURLDisplay()` | `menus/plaza-state` | — |
 | `saveGlobalMode()` | `menus/plaza-state` | — |
 | `setAllCreators()` | `menus/plaza-state` | — |
 | `setAllSites()` | `menus/plaza-state` | — |
@@ -1874,8 +1876,6 @@
 | `setObserver()` | `menus/plaza-state` | — |
 | `setPlazaIframe()` | `menus/plaza-state` | — |
 | `setPlazaProxyActive()` | `menus/plaza-state` | — |
-| `setRemoteProgress()` | `menus/plaza-state` | — |
-| `setRemoteURLDisplay()` | `menus/plaza-state` | — |
 | `setShortcutsRegistered()` | `menus/plaza-state` | — |
 | `shortcutsRegistered()` | `menus/plaza-state` | — |
 | `stopProxy()` | `menus/plaza-state` | — |
@@ -2147,8 +2147,8 @@
 | `PerFrameUpdateRegistry()` | `physics/physics-bridge` | 单一 onBeforeRenderObservable 调度多个按 key 注册的每帧回调。 |
 | `autoFitAttachment()` | `physics/physics-bridge` | 从模型尺寸启发式推算挂件几何参数。 |
 | `findRuntimeBone()` | `physics/physics-bridge` | 在模型 runtimeBones 中按名查找。WASM / JS runtime 都暴露 runtimeBones，故后端无关。 |
-| `getBoneWorldMatrix()` | `physics/physics-bridge` | 取骨骼世界矩阵（列主序 Float32Array[16]），用于挂件锚点跟随。 |
-| `getBoneWorldPosition()` | `physics/physics-bridge` | 从骨骼世界矩阵提取世界位置（米，场景单位）。 |
+| `getBoneLocalMatrix()` | `physics/physics-bridge` | 取骨骼在 rootMesh **局部坐标系**下的矩阵（列主序 Float32Array[16]），用于挂件锚点跟随。 |
+| `getBoneWorldPosition()` | `physics/physics-bridge` | 从骨骼局部矩阵提取世界位置（米，场景单位）。 |
 | `_getBundles()` | `physics/wind-physics` | — |
 | `disposeWindPhysics()` | `physics/wind-physics` | 销毁风力物理注入。 |
 | `initWindPhysics()` | `physics/wind-physics` | 初始化风力物理注入。 |
@@ -2156,5 +2156,5 @@
 
 ---
 
-> 共 272 个文件，2110 个导出符号。
+> 共 273 个文件，2110 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。

@@ -1032,6 +1032,46 @@ describe('ModelManager physics', function () {
         }).not.toThrow();
     });
 
+    // [fix:physics-cat-persist] serialize→reload→restore 回合：分类开关跨重载还原
+    it('physics category state survives serialize->reload roundtrip via stable id', function () {
+        const stableId = 'uuid-1234-stable';
+
+        // —— 会话 1：用户关掉裙子物理 ——
+        const states1 = new Uint8Array([1, 1, 1]);
+        const mmd1 = makeMmdModel([makeBone('skirt', [1]), makeBone('hair', [2])], [], states1);
+        mgr.register(makeModelInstance(stableId, { mmdModel: mmd1 }));
+        mgr.storeRigidBodyState(stableId, new Uint8Array([1, 1, 1]));
+        mgr.setPhysicsCategory(stableId, 'skirt', false);
+
+        // 序列化侧：getPhysicsCatState 差异化落盘（仅 false 项）
+        const pcs = mgr.getPhysicsCatState(stableId);
+        expect(pcs).toEqual({ skirt: false });
+        const saved = {};
+        for (const cat of Object.keys(pcs)) {
+            if (!pcs[cat]) {
+                saved[cat] = false;
+            }
+        }
+        expect(saved).toEqual({ skirt: false });
+
+        // —— 会话 2：全新 manager（重载），模型以同一稳定 id 注册（ADR-193）——
+        const mgr2 = new ModelManager(makeObservableScene(), vi.fn(), vi.fn());
+        const states2 = new Uint8Array([1, 1, 1]);
+        const mmd2 = makeMmdModel([makeBone('skirt', [1]), makeBone('hair', [2])], [], states2);
+        mgr2.register(makeModelInstance(stableId, { mmdModel: mmd2 }));
+        mgr2.storeRigidBodyState(stableId, new Uint8Array([1, 1, 1]));
+
+        // 恢复侧：deserializeModels 回放 physicsCategories
+        for (const cat of Object.keys(saved)) {
+            mgr2.setPhysicsCategory(stableId, cat, saved[cat]);
+        }
+
+        expect(mgr2.isPhysicsCategoryEnabled(stableId, 'skirt')).toBe(false);
+        expect(mgr2.isPhysicsCategoryEnabled(stableId, 'hair')).toBe(true);
+        expect(states2[1]).toBe(0); // 裙子刚体已停用
+        expect(states2[2]).toBe(1); // 头发刚体保持
+    });
+
     // Bone classification tests via getPhysicsCategories
     it('classifyBonePhysics matches skirt patterns', function () {
         const id = setupModelWithBones([
