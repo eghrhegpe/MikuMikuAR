@@ -1,52 +1,16 @@
 // [doc:adr-196] 浏览器 AI 适配器 — 直接 fetch OpenAI 兼容端点
 // 零 key 默认路径：Ollama localhost:11434（大模型零 key，小模型零成本）
-// 配置存储于 localStorage，用户可覆盖
+// 配置经 config-store（IndexedDB）持久化，不再使用 Web Storage（FR-9 / AC-5）
 
 import type { AiService, AiCapabilities, ChatRequest, ChatChunk } from './types';
 import { parseSseStream } from './sse';
-
-const STORAGE_KEY = 'ai.config';
-
-interface AiConfig {
-    endpoint: string;
-    apiKey: string;
-    model: string;
-}
-
-const DEFAULT_CONFIG: AiConfig = {
-    endpoint: 'http://localhost:11434/v1/chat/completions',
-    apiKey: '',
-    model: 'llama3.2',
-};
-
-function loadConfig(): AiConfig {
-    try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-            const parsed = JSON.parse(raw) as Partial<AiConfig>;
-            return { ...DEFAULT_CONFIG, ...parsed };
-        }
-    } catch {
-        // localStorage 不可用（隐私模式 / Android WebView 限制）
-    }
-    return { ...DEFAULT_CONFIG };
-}
-
-export function saveAiConfig(config: Partial<AiConfig>): void {
-    const current = loadConfig();
-    const merged = { ...current, ...config };
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-    } catch {
-        // 静默失败
-    }
-}
+import { loadAiConfig } from './config-store';
 
 export class BrowserAiAdapter implements AiService {
     readonly kind = 'browser' as const;
 
     capabilities(): AiCapabilities {
-        const cfg = loadConfig();
+        const cfg = loadAiConfig();
         const endpoint = cfg.endpoint.trim();
         const available = endpoint.length > 0;
         // CORS 风险判定：localhost/127.0.0.1 → none；https 远程 → possible；http 远程 → high
@@ -73,7 +37,7 @@ export class BrowserAiAdapter implements AiService {
     }
 
     async *streamChat(req: ChatRequest): AsyncIterable<ChatChunk> {
-        const cfg = loadConfig();
+        const cfg = loadAiConfig();
         if (!cfg.endpoint) {
             yield { type: 'error', error: 'AI 端点未配置，请在诊断面板中设置' };
             return;
@@ -94,12 +58,17 @@ export class BrowserAiAdapter implements AiService {
             headers['Authorization'] = `Bearer ${cfg.apiKey}`;
         }
 
+        // 内部 AbortController：转发 req.signal，并在 generator 退出（break/return）时强制中止底层 fetch（FR-10 / AC-6）
+        const ac = new AbortController();
+        const onAbort = (): void => ac.abort();
+        req.signal?.addEventListener('abort', onAbort);
+
         try {
             const response = await fetch(cfg.endpoint, {
                 method: 'POST',
                 headers,
                 body: JSON.stringify(body),
-                signal: req.signal,
+                signal: ac.signal,
             });
 
             if (!response.ok) {
@@ -111,18 +80,30 @@ export class BrowserAiAdapter implements AiService {
                 return;
             }
 
-            yield* parseSseStream(response.body, req.signal);
+            yield* parseSseStream(response.body, ac.signal);
         } catch (err) {
             if (err instanceof DOMException && err.name === 'AbortError') {
                 yield { type: 'done' };
                 return;
             }
-            yield {
-                type: 'error',
-                error: err instanceof Error ? err.message : String(err),
-            };
+            // CORS / 网络错误友好提示（FR-13）
+            yield { type: 'error', error: _friendlyError(err) };
+        } finally {
+            req.signal?.removeEventListener('abort', onAbort);
+            ac.abort(); // 确保外部 break/return 时底层请求被中止
         }
     }
+}
+
+/** CORS / 网络错误友好提示（FR-13）：本地 Ollama 需 OLLAMA_ORIGINS=*；远程 API 建议自建同源 relay。 */
+function _friendlyError(err: unknown): string {
+    const isNetwork =
+        err instanceof TypeError ||
+        (err instanceof Error && /Failed to fetch|NetworkError|CORS/i.test(err.message));
+    if (isNetwork) {
+        return '连接端点失败（可能为 CORS/网络限制）。本地 Ollama 请设置环境变量 OLLAMA_ORIGINS=* 后重启；远程 API 建议自建同源 relay 代理。';
+    }
+    return err instanceof Error ? err.message : String(err);
 }
 
 export const browserAiAdapter = new BrowserAiAdapter();

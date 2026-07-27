@@ -67,6 +67,11 @@ export async function* parseSseStream(
             }
         }
     } catch (err) {
+        // 中止信号（底层 fetch/reader 被 abort）统一归并为 done，不渲染为 error（FR-10）
+        if (err instanceof DOMException && err.name === 'AbortError') {
+            yield { type: 'done' };
+            return;
+        }
         yield { type: 'error', error: err instanceof Error ? err.message : String(err) };
         return;
     } finally {

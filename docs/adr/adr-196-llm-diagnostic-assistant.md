@@ -1,6 +1,6 @@
 # ADR-196: 内置 AI 诊断助手（LLM Diagnostic Assistant）
 
-- **状态**: 🔄 实施中（Phase 0 骨架已搭建，P1 缺陷修复进行中；见 `.trae/specs/adr-196-audit-and-refine/`）
+- **状态**: 🔄 实施中（Phase 0 骨架 + Batch A(P1) + Batch B(P2) 已落地；待诊断面板 UI 与 Go 侧对接；见 `.trae/specs/adr-196-audit-and-refine/`）
 - **日期**: 2026-07-28
 - **相关**: ADR-154（聊天面板·推荐路线，传输层上游）、ADR-155（NL 控场景，未来应用入口）、ADR-156（角色台词，兄弟用例）、ADR-176（BackendService 双适配器，镜像模板）、ADR-192（上游适配层，适配器术语）、ADR-093（声明式菜单 Schema，面板挂载）、`docs/ai-new/ai-news-2026-07-27.md`（安全护栏情报）
 
@@ -21,7 +21,7 @@ LLM 能力已在 2026-07-20 经 ADR-154/155/156 决议，但**全部 0 代码落
 | AI 依赖 | `grep` package.json / frontend/package.json 的 openai/anthropic/ollama/langchain/ai-sdk/groq/cohere | **零匹配** | 现状 0 代码，greenfield |
 | AI 代码 | `grep` frontend/src 的 SDK 字面量 + `\bllm\b` | **零匹配**（首轮广匹配系 `llm` 子串误报） | 无需清理旧实现 |
 | 适配器模板 | 读 `frontend/src/core/backend/{types,index,go-adapter}.ts` | `BackendService = Omit<GoApp,排除集> & {kind, capabilities(), readFileBytes()}`；`resolveBackend()` Tier0/1/2 惰性探测 + 动态 import go-adapter | `AiService` 直接镜像此形 |
-| 错误缓冲 | 读 `frontend/src/core/logger.ts` + `grep` 全局 `onerror`/`unhandledrejection` | logger 仅打 console，**无内存缓冲**；全局错误钩子**零处** | 诊断缓冲层须**新增**全局捕获 + 包装 logError 入环 |
+| 错误缓冲 | 读 `frontend/src/core/logger.ts` + `grep` 全局 `onerror`/`unhandledrejection` | logger 仅打 console，**无内存缓冲**；全局错误钩子**零处** | 诊断缓冲层须**新增**全局捕获；采用「patch console.error」方案使所有 `console.error`（含 `logger` 的 `logError`）自动入环，零业务文件改动（Batch A 已落地 `installLoggingPatch`） |
 | 菜单挂载 | 读 `frontend/src/menus/settings.ts` + `settings-targets.ts` | `SETTINGS` 枚举 + `SETTINGS_FOLDER_ROUTES: Record<target, ()=>PopupLevel>` builder 表 + `buildSettingsRootItems` 推送 folder 项 | 诊断面板复用同形（加 `SETTINGS.DIAGNOSTIC` + builder + 表项） |
 | 运行时状态探针 | 现有 `detectKtx2Support` / 质量档位 / `engine.getFps` / activeMotion | 已存在，可快照 | 引擎快照源无需新造 |
 | 绑定契约 | ADR-176 契约测试 139 函数 | `AiService` 为**新增独立服务** | 不触碰 139 函数契约，无需改 `app.contract` |
@@ -58,7 +58,7 @@ LLM 能力已在 2026-07-20 经 ADR-154/155/156 决议，但**全部 0 代码落
 | AiService 接口 | `frontend/src/core/ai/types.ts` | 镜像 `BackendService`：`{ kind:'go'\|'browser'; capabilities(): AiCapabilities; streamChat(req): AsyncIterable<ChatChunk> }` |
 | 解析单例 | `frontend/src/core/ai/index.ts` | `resolveAi()` 复用后端 Tier0/1/2 探测（同源 `__MMKU_BACKEND__`，避免重复逻辑） |
 | Go 适配器 | `frontend/src/core/ai/go-adapter.ts` + `internal/app/llm/client.go` | Go 持有 HTTP 客户端 + key 保管（Wails 安全配置/IndexedDB）+ SSE 流式 |
-| 浏览器适配器 | `frontend/src/core/ai/browser-adapter.ts` | OpenAI 兼容直连 / 本地 Ollama；CORS 受限降级提示 |
+| 浏览器适配器 | `frontend/src/core/ai/browser-adapter.ts` + `config-store.ts` | OpenAI 兼容直连 / 本地 Ollama；配置经 `config-store.ts` 走 IndexedDB 持久化（废弃 localStorage，FR-9）；CORS 友好提示（FR-13） |
 | 错误缓冲 | `frontend/src/core/ai/error-buffer.ts` + `installGlobalErrorCapture()` | 全局 `onerror`/`unhandledrejection` 监听 + 包装 `logError` 入最近 N 条（默认 50，带 tag/stack/时间戳）环形缓冲 |
 | 引擎快照 | `frontend/src/core/ai/scene-snapshot.ts` | 复用 `detectKtx2Support` / 质量档位 / `engine.getFps` / activeMotion |
 | 诊断面板 | `frontend/src/menus/settings-diagnostic.ts` + `SETTINGS.DIAGNOSTIC` | 复用 `SETTINGS_FOLDER_ROUTES` 形态：folder 项 + builder + 路由表三项追加 |
@@ -103,8 +103,73 @@ LLM 能力已在 2026-07-20 经 ADR-154/155/156 决议，但**全部 0 代码落
 
 ---
 
-## 开放问题（待议会裁定）
+## 开放问题裁定结论（2026-07-28 议会裁定）
 
-1. 诊断面板是否同时承载 ADR-154 聊天（合并为一个「AI 助手」面板）？**建议合并**，减少菜单噪音。
-2. 是否将本地 Ollama 设为零 key 默认端点？**建议是**，降低首用门槛。
-3. 错误缓冲是否持久化到 IndexedDB（跨会话复盘）？默认仅内存环，持久化列为后续增强。
+| # | 问题 | 裁定 | 理由 |
+|---|------|------|------|
+| 1 | 诊断面板是否同时承载 ADR-154 聊天？ | **是，合并为单一「AI 助手」面板** | 诊断为默认模式，闲聊为切换模式，减少菜单噪音（FR-11 Q1） |
+| 2 | 本地 Ollama 是否为零 key 默认端点？ | **是，默认 `http://localhost:11434/v1/chat/completions`，模型 `llama3.2`** | 零 key 零成本，降低首用门槛；端点留空时面板提示配置（FR-11 Q2） |
+| 3 | 错误缓冲是否持久化到 IndexedDB？ | **Phase 0 不做，仅内存环（上限 50 条）** | 持久化列为后续增强；跨会话复盘需求弱，避免隐私面扩大（FR-11 Q3） |
+
+### Go 侧 LLM 客户端接口契约（FR-6）
+
+- **目录**：`internal/app/llm/client.go`（HTTP 客户端 + 流式读取）、`internal/app/llm/binding.go`（Wails binding 暴露给前端）。
+- **流式函数签名**：
+  ```go
+  // LLMStreamChat 启动流式对话，逐 chunk 通过 Wails Event "ai:chunk" 推送
+  func (c *LLMClient) LLMStreamChat(req LLMChatRequest) error
+
+  type LLMChatRequest struct {
+      Model       string        `json:"model"`
+      Messages    []ChatMessage `json:"messages"`
+      Temperature float64       `json:"temperature"`
+      MaxTokens   int           `json:"max_tokens"`
+  }
+  type ChatMessage struct {
+      Role    string `json:"role"`    // system | user | assistant
+      Content string `json:"content"`
+  }
+  ```
+- **API key 存储**：`config.json` 字段 `ai_api_key` + 环境变量 `MIKUAI_API_KEY` 兜底（优先级：环境变量 > config.json）。**key 仅 Go 侧持有，绝不通过 binding 暴露给 WebView（ADR-154 核心原则）**。
+- **流式传输**：Wails Events 逐 token 推送事件名 `ai:chunk`（payload `{delta string}`）；前端 go-adapter 经 binding 订阅并 yield `ChatChunk`。备选：若 Events 不可行，改用 Wails 流式 binding 或 polling（.trae spec 的 Open Question 待实施时验证）。
+- **安全**：Go 侧统一加 `Authorization` 头，前端不可见密钥。
+
+### 诊断 system prompt（FR-7）
+
+> **角色**：你是《MikuMikuAR 联邦》内置诊断助手，专门帮助开发者排查 Babylon.js / TypeScript 3D 应用运行问题。
+> **输出要求**：1) 全程中文；2) 先给结论，再分点给出建议；3) 每条建议标注置信度（高 / 中 / 低）；4) 涉及代码改动时给出最小 diff 片段，不要整文件重写。
+> **上下文约束**：你会收到「错误缓冲摘要」与「场景快照」两段上下文（已截断）；不要假设未提供的上下文；不要编造 API。
+> **安全边界**：只给只读文本建议；绝不输出可执行命令、不要求用户自动运行脚本、不诱导关闭安全机制。
+> **token 预算**：system ≤ 1KB，错误上下文 ≤ 4KB，场景快照 ≤ 2KB，历史保留最近 10 轮，单次 `max_tokens=2048`（对应 NFR-3/4）。
+
+### 诊断面板 UI 布局规范（FR-8，ADR-093 Schema + ADR-153 无障碍）
+
+- **分区**（自上而下，可切换）：
+  - **上下文信息区**：展示错误缓冲最近 N 条（默认折叠，可展开 stack）+ 场景快照摘要；更新用 `aria-live` 提示。
+  - **对话区**：消息气泡（用户 / 助手），流式渲染逐字追加；底部「发送 / 中止 / 清空」三按钮；中止调用 `AbortController.abort()`。
+  - **配置区**：端点 / API key（password 输入）/ 模型 三字段 + 「连通性测试」按钮（触发一次最小请求验证，不进入对话）。
+- **空状态引导**：未配置端点时显示「设置本地 Ollama 或 OpenAI 兼容端点以启用诊断」。
+- **流式渲染**：首字延迟目标 < 500ms（NFR-5）；chunk 到达立即渲染，不缓冲整句。
+
+### logError 集成方案（已落地，满足 AC-10）
+
+- 采用「patch console.error」：`init` 早期安装 `installLoggingPatch()`，所有 `console.error`（含 `@/core/logger` 的 `logError`）自动入环；**零业务文件改动**。
+- `error-buffer.ts` 不再导出 `logError`；手动入环走 `captureError`（供 `unhandledrejection` 等路径）。
+
+---
+
+## 实施记录
+
+### Phase 0 — Batch A（2026-07-28 01:09–01:30）：修复 4 个 P1 缺陷
+- `error-buffer`：`logError` 导出移除 → 改幂等 `installLoggingPatch` patch `console.error`（零业务文件改动）
+- `index.ts`：`resolveAi()` 镜像 `resolveBackend()` 的 Tier0/1/2 + `awaitWailsBridge()` 惰性探测，消除 Android 冷启动竞态
+- `init.ts`：早期安装 `installLoggingPatch` + `installGlobalErrorCapture`，disposer 纳入 `_initDisposables`（HMR 幂等）
+- `scene-snapshot.ts`：新增 bridge 模式引擎快照，`scene.ts` `initScene` 注入
+- `types`/adapter：`AiCapabilities` 补齐 `apiKeyConfigured`/`corsRisk`/`endpointReachable`
+- 验证：tsc 0 错误；全量单测 2245 通过；`check:docs` 无 ERROR 漂移
+
+### Phase 0 — Batch B（2026-07-28 01:41–）：修复 P2 缺陷 + 文档裁定
+- `config-store.ts`：新增 IndexedDB 配置持久化（复用 `backend/idb` 的 `config` store + key `ai`），`browser-adapter` 废弃 localStorage（FR-9 / AC-5）
+- `browser-adapter` / `sse.ts`：`streamChat` 改用内部 `AbortController` 转发 `signal`，generator `finally` 强制 abort 底层 fetch（FR-10 / AC-6）；`sse` `AbortError`→`done`；CORS/网络错误友好提示（FR-13 / AC-8）
+- 文档：裁定 3 个开放问题；补全 Go 侧契约、system prompt、面板规范、token 预算；修正前置探测描述
+- 验证：tsc 0 错误；ai 相关单测 9 项新增/适配通过

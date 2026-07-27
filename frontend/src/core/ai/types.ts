@@ -7,7 +7,7 @@ export interface AiCapabilities {
     provider: 'ollama' | 'openai-compat' | 'go-bridge' | 'none';
     streaming: boolean;
     models: string[];
-    /** 是否已配置 API key（浏览器端 localStorage/IndexedDB 非空即 true；go 侧由 Go 持有恒 false 前端不可见） */
+    /** 是否已配置 API key（浏览器端 IndexedDB 配置非空即 true；go 侧由 Go 持有恒 false 前端不可见） */
     apiKeyConfigured: boolean;
     /** CORS 风险等级：localhost/127.0.0.1 为 none，https 远程为 possible，http 远程为 high */
     corsRisk: 'none' | 'possible' | 'high';
