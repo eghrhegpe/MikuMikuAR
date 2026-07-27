@@ -7,9 +7,8 @@
  * 设计约束：
  * - 仅 WASM 运行时生效（JS 运行时无 Bullet 物理，风仍影响 XPBD 布料/粒子）
  * - Kinematic 刚体（骨骼跟随）不受力，Bullet 自动忽略
- * - 通过反射访问 babylon-mmd 内部字段（_rigidBodyBundleMap），
- *   babylon-mmd 升级时若字段重命名会静默降级（空数组→风力消失），
- *   此时需检查 babylon-mmd Physics/Bind/Impl/physicsRuntime.d.ts 更新适配
+ * - 刚体索引经 @/core/mmd-adapter 的 getRigidBodyBundleMap 走公开 API
+ *   `rigidBodyBundleReferenceCountMap`（ADR-192 Phase 2 已内化），无私有字段依赖
  */
 
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
@@ -35,11 +34,6 @@ interface _WindSub {
     observer: ObserverHandle | null;
 }
 const _subs = new Map<IMmdRuntime, _WindSub>();
-
-/**
- * 从 PhysicsRuntimeImpl 获取所有 RigidBodyBundle。
- * 反射访问逻辑已收口至 @/core/mmd-adapter（ADR-192），本处仅保留导出名兼容测试。
- */
 
 /**
  * physics sync 回调 — 在 Bullet 评估前施加风力。
