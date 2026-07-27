@@ -299,3 +299,4 @@ use_when:
 | [结构化反馈 API](./feedback.md) | `core/feedback.ts` | — |
 | [模型加载/库扫描完成后菜单刷新注册表](./load-refresh-registry.md) | `core/load-refresh-registry.ts` | — |
 | [@wailsio/runtime 浏览器桩](./runtime-stub.md) | `core/runtime-stub.ts` | ADR-176/177 |
+| [安卓文件访问（shared 模式）](./android-file-access.md) | `internal/app/fileaccess_android.go` 等 | ADR-017/180/183/194 |

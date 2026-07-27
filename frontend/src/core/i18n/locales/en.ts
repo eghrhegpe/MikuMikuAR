@@ -1634,8 +1634,6 @@ export const en: Record<string, string> = {
     'plaza.opening': 'Opening {name}...',
     'plaza.openFail': 'Failed to open window: {err}',
     'plaza.viewLibrary': 'View Model Library',
-    'plaza.loading': 'Loading...',
-    'plaza.remoteHint': 'Plaza window is open, download links will be auto-imported',
     'plaza.title': 'Model Plaza',
     'plaza.back': '‹ Back',
     'plaza.openInBrowser': 'Browser',

@@ -60,6 +60,8 @@ async function pickStagingDirWeb(): Promise<string | null> {
 }
 
 async function pickStagingDirDesktop(): Promise<string | null> {
+    // ⚠️ 安卓缺陷（待 ADR-194）：安卓走 go-adapter（!isWebPlatform 命中），此处 SelectDir() 会被 Wails v3 翻译成 SAF 建树。
+    // 安卓应使用 shared 模式直读 /sdcard/Download，而非弹 SAF。逻辑改动见 ADR-194，勿在此静默加守卫前先改行为。
     const dir = await SelectDir();
     if (!dir) return null;
     _desktopStagingPath = dir;

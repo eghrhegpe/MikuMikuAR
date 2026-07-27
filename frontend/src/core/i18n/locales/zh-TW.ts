@@ -1766,8 +1766,6 @@ export const zhTW: Record<string, string> = {
     'plaza.openFail': '開啟視窗失敗: {err}',
     'plaza.opening': '正在開啟 {name}...',
     'plaza.viewLibrary': '查看模型庫',
-    'plaza.loading': '載入中...',
-    'plaza.remoteHint': '廣場視窗已開啟，點擊下載連結會自動入庫',
     'plaza.title': '模型廣場',
     'plaza.back': '‹ 返回',
     'plaza.openInBrowser': '瀏覽器',

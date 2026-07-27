@@ -17,8 +17,6 @@ import {
     getLayer,
     setPlazaProxyActive,
     setPlazaIframe,
-    setRemoteURLDisplay,
-    setRemoteProgress,
     loadGlobalMode,
     saveGlobalMode,
     effectiveMode,
@@ -32,13 +30,6 @@ import {
     ReadTextFile,
     WriteTextFile,
     StartProxy,
-    ClosePlazaWindow,
-    PlazaGoBack,
-    PlazaGoForward,
-    PlazaReload,
-    PlazaZoomIn,
-    PlazaZoomOut,
-    PlazaZoomReset,
 } from '../core/wails-bindings';
 import { NavigatePlazaWindow } from '@bindings/mikumikuar/internal/app/app';
 import { getCachedCapabilities } from '../core/backend';
@@ -336,7 +327,6 @@ export function openInWindow(site: PlazaSite, url?: string): void {
     if (!direct) {
         setPlazaProxyActive(true);
     }
-    renderRemote(site);
     safeCallAsync('plaza', '', () => NavigatePlazaWindow(url ?? site.url, direct)).catch(() => {
         setPlazaProxyActive(false);
     });
@@ -971,65 +961,6 @@ export function renderEmbed(site: PlazaSite): void {
         });
 }
 
-export function renderRemote(site: PlazaSite): void {
-    const el = getLayer();
-    if (!el) {
-        return;
-    }
-    el.innerHTML = '';
-    const root = document.createElement('div');
-    root.className = 'plaza-root plaza-remote';
-    root.appendChild(
-        buildToolbar({
-            title: site.name,
-            onBack: async () => {
-                setPlazaProxyActive(false);
-                await safeCallAsync('plaza', '', () => ClosePlazaWindow());
-                renderHome();
-            },
-            onClose: async () => {
-                setPlazaProxyActive(false);
-                await safeCallAsync('plaza', '', () => ClosePlazaWindow());
-                closePlaza();
-            },
-        })
-    );
-    const body = document.createElement('div');
-    body.className = 'plaza-remote-body';
-    const hint = document.createElement('div');
-    hint.className = 'plaza-remote-hint';
-    hint.textContent = t('plaza.remoteHint');
-    body.appendChild(hint);
-    const urlDisplay = document.createElement('div');
-    urlDisplay.className = 'plaza-remote-url';
-    urlDisplay.textContent = t('plaza.loading');
-    setRemoteURLDisplay(urlDisplay);
-    body.appendChild(urlDisplay);
-    const progress = document.createElement('div');
-    progress.className = 'plaza-remote-progress';
-    setRemoteProgress(progress);
-    body.appendChild(progress);
-    const controls = document.createElement('div');
-    controls.className = 'plaza-remote-controls';
-    const addBtn = (label: string, fn: () => Promise<unknown>): void => {
-        const b = document.createElement('button');
-        b.className = 'plaza-btn plaza-remote-btn';
-        b.textContent = label;
-        b.onclick = () => {
-            swallowError(fn());
-        };
-        controls.appendChild(b);
-    };
-    addBtn(t('plaza.goBack'), () => PlazaGoBack());
-    addBtn(t('plaza.goForward'), () => PlazaGoForward());
-    addBtn(t('plaza.refresh'), () => PlazaReload());
-    addBtn(t('plaza.zoomIn'), () => PlazaZoomIn());
-    addBtn(t('plaza.zoomOut'), () => PlazaZoomOut());
-    addBtn(t('plaza.zoomReset'), () => PlazaZoomReset());
-    body.appendChild(controls);
-    root.appendChild(body);
-    el.appendChild(root);
-}
 
 // ======== 入口函数 ========
 

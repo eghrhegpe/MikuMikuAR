@@ -55,7 +55,10 @@ export const goAdapter: BackendService = {
             installApk: isAndroidPlatform(), // 仅安卓原生下载后拉起 APK
             installLocal: true, // 桌面/安卓均有本地安装器路径
             inAppBrowser: !isAndroidPlatform(), // 桌面 Wails 原生窗口可内嵌；安卓走系统浏览器
-            fsSelectDir: !isAndroidPlatform(), // 桌面原生对话框；安卓 WebView 无目录选择
+            // 安卓禁用目录选择：因安卓走 shared 模式（MANAGE_EXTERNAL_STORAGE 授权后 os.ReadDir 直读 /sdcard），
+            // 已废弃 SAF（Storage Access Framework）。请勿对安卓调用 SelectDir()——框架会翻译成 SAF 建树（ACTION_OPEN_DOCUMENT_TREE）。
+            // 网页端 FSA（File System Access API，ADR-180/183）是另一套机制，与此正交。
+            fsSelectDir: !isAndroidPlatform(), // 桌面原生对话框；安卓 WebView 无目录选择（shared 模式，无 SAF）
             localStaging: !isAndroidPlatform(), // 桌面级暂存目录；安卓走文档沙箱
             androidStorageMode: isAndroidPlatform(), // 仅安卓专属存储模式切换
         };

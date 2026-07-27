@@ -97,17 +97,6 @@ export function setPlazaIframe(el: HTMLIFrameElement | null): void {
     plazaIframe = el;
 }
 
-// ======== 遥控面板 ========
-
-export let remoteURLDisplay: HTMLElement | null = null;
-export let remoteProgress: HTMLElement | null = null;
-export function setRemoteURLDisplay(el: HTMLElement | null): void {
-    remoteURLDisplay = el;
-}
-export function setRemoteProgress(el: HTMLElement | null): void {
-    remoteProgress = el;
-}
-
 // ======== 打开模式 ========
 
 export type OpenMode = 'embed' | 'external' | 'window' | 'browser';
