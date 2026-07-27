@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 73 | 559 |
+| 核心基础设施 | 77 | 559 |
 | 3D 场景 | 104 | 1057 |
 | 菜单 & UI | 66 | 308 |
 | 换装 & 音频 | 3 | 33 |
@@ -72,6 +72,8 @@
 | `hexToRgb()` | `core/color-helpers` | 将 #rrggbb 解析为 {r,g,b}（0–255）。非法输入回退主题默认 74,108,247。 |
 | `rgbString()` | `core/color-helpers` | 将 Color3 转为 CSS `rgb(r, g, b)` 字符串（0–255 整数）。 |
 | `rgbToString()` | `core/color-helpers` | 将 {r,g,b} 转为 CSS rgb 字符串 "r, g, b"（供 --accent-rgb 等 CSS 变量）。 |
+| `debounce()` | `core/debounce` | 函数防抖：在等待指定时间后才执行函数，如果在等待期间再次调用则重置计时器。 |
+| `deepClone()` | `core/deep-clone` | 深拷贝对象（基于 JSON 序列化）。 |
 | `setupE2ECapture()` | `core/dev-hooks` | — |
 | `DialogOptions()` | `core/dialog` | — |
 | `Prompt2Options()` | `core/dialog` | — |
@@ -105,6 +107,7 @@
 | `normPath()` | `core/fileservice` | — |
 | `resolveFileUrl()` | `core/fileservice` | 从文件路径解析出 HTTP URL 及对应服务器信息。 |
 | `resolveModelDir()` | `core/fileservice` | 从文件路径解析出隔离后的目录路径（不启动 HTTP 服务器）。 |
+| `formatTimestamp()` | `core/format-timestamp` | 格式化日期为 HH:MM:SS.mmm 字符串。 |
 | `freeflyInput()` | `core/freefly-state` | — |
 | `Ktx2Capability()` | `core/gpu-capabilities` | — |
 | `Ktx2PreferredFormat()` | `core/gpu-capabilities` | — |
@@ -231,6 +234,7 @@
 | `setMmdRuntimeType()` | `core/scene-state` | — |
 | `setModelRegistry()` | `core/scene-state` | — |
 | `setPropRegistry()` | `core/scene-state` | — |
+| `setKey()` | `core/set-key` | 泛型键值写入工具，避免大量 `obj[key] = value` 重复。 |
 | `registerAppShortcuts()` | `core/shortcut-app` | — |
 | `KeyBindingOverride()` | `core/shortcut-registry` | — |
 | `ShortcutDef()` | `core/shortcut-registry` | — |
@@ -420,8 +424,6 @@
 | `clearAllMenuWrappers()` | `core/utils` | — |
 | `closeAllOverlays()` | `core/utils` | — |
 | `computeLibraryRef()` | `core/utils` | — |
-| `debounce()` | `core/utils` | — |
-| `deepClone()` | `core/utils` | — |
 | `degToRad()` | `core/utils` | 角度 → 弧度。 |
 | `delay()` | `core/utils` | — |
 | `disposeMenuWrapper()` | `core/utils` | — |
@@ -433,7 +435,6 @@
 | `fireAndForget()` | `core/utils` | — |
 | `formatError()` | `core/utils` | — |
 | `formatTime()` | `core/utils` | — |
-| `formatTimestamp()` | `core/utils` | — |
 | `generateUuid()` | `core/utils` | — |
 | `getBaseName()` | `core/utils` | — |
 | `getBrowseDir()` | `core/utils` | 统一的资源浏览目录解析。 |
@@ -450,11 +451,10 @@
 | `normPath()` | `core/utils` | — |
 | `radToDeg()` | `core/utils` | 弧度 → 角度。 |
 | `resolveLibraryRef()` | `core/utils` | — |
-| `setKey()` | `core/utils` | 泛型键值写入工具，避免大量 `obj[key] = value` 重复。 |
 | `setOnCloseAllOverlays()` | `core/utils` | — |
 | `setTriggerAutoSave()` | `core/utils` | — |
 | `showErrorToast()` | `core/utils` | — |
-| `stackRegistry()` | `core/utils` | — |
+| `stackRegistry()` | `core/utils` | 泛型键值写入工具，避免大量 `obj[key] = value` 重复。 |
 | `swallowError()` | `core/utils` | — |
 | `thumbDataUrl()` | `core/utils` | base64 缩略图数据的 MIME 嗅探：PNG/JPEG/WebP 头部字节不同 |
 | `toBase64()` | `core/utils` | — |
@@ -2147,5 +2147,5 @@
 
 ---
 
-> 共 266 个文件，2101 个导出符号。
+> 共 270 个文件，2101 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。

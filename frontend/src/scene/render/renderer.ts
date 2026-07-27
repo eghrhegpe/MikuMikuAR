@@ -16,7 +16,7 @@ import { safeDispose } from '@/core/dispose-helpers';
 import { scheduleRefresh } from '@/core/reactivity';
 import { resetPerformanceSnapshot, isSnapshotResetSuppressed } from './performance';
 import { clamp, clamp01, lerp, lerpArray } from '@/core/clamp';
-import { setKey } from '@/core/utils';
+import { setKey } from '@/core/set-key';
 import { logWarn } from '@/core/logger';
 import type { EnvState } from '@/core/config';
 import { getDirLight } from './lighting';

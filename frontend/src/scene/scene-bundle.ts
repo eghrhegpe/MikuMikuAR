@@ -6,7 +6,8 @@ import { libraryRoot, setStatus, setLibraryRoot } from '../core/config';
 import { feedbackInfo, feedbackStatus } from '../core/feedback';
 import { showInfoToast } from '../core/toast';
 import { t } from '../core/i18n/t';
-import { computeLibraryRef, getBaseName, normPath, deepClone } from '../core/utils';
+import { computeLibraryRef } from '../core/utils';
+import { getBaseName, normPath, deepClone } from '@//core/deep-clone';
 import {
     serializeScene,
     deserializeScene,

@@ -178,54 +178,11 @@ import { swallowError, fireAndForget, delay, waitForFrame, LoadingGuard, Debounc
 export { clamp, clampInt, clamp01, lerp, lerpArray, clampPct };
 export { swallowError, fireAndForget, delay, waitForFrame, LoadingGuard, DebouncedTimer, Abortable };
 
-export function formatTimestamp(d: Date = new Date()): string {
-    const h = String(d.getHours()).padStart(2, '0');
-    const m = String(d.getMinutes()).padStart(2, '0');
-    const s = String(d.getSeconds()).padStart(2, '0');
-    const ms = String(d.getMilliseconds()).padStart(3, '0');
-    return `${h}:${m}:${s}.${ms}`;
-}
-
-export function debounce<A extends unknown[]>(
-    fn: (...args: A) => void,
-    ms: number
-): {
-    (...args: A): void;
-    cancel(): void;
-} {
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    const debounced = (...args: A): void => {
-        if (timer !== null) {
-            clearTimeout(timer);
-        }
-        timer = setTimeout(() => {
-            timer = null;
-            fn(...args);
-        }, ms);
-    };
-    debounced.cancel = (): void => {
-        if (timer !== null) {
-            clearTimeout(timer);
-            timer = null;
-        }
-    };
-    return debounced;
-}
-
-export function deepClone<T>(x: T): T {
-    return JSON.parse(JSON.stringify(x)) as T;
-}
-
 
 // ======== Object Helpers ========
 
 /** 泛型键值写入工具，避免大量 `obj[key] = value` 重复。 */
-export function setKey<T extends object, K extends keyof T>(obj: T, key: K, value: T[K]): void {
-    obj[key] = value;
-}
-
-// ======== Library Reference Utilities ========
-
+// ======== Resource Path Resolution =========
 export const stackRegistry: {
     modelStack: SlideMenu | null;
     sceneStackGetter: (() => SlideMenu | null) | null;
