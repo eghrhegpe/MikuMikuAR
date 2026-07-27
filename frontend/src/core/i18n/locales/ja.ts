@@ -1794,9 +1794,6 @@ export const ja: Record<string, string> = {
     'plaza.openFail': 'ウィンドウのオープンに失敗: {err}',
     'plaza.opening': '{name} をオープン中...',
     'plaza.viewLibrary': 'モデルライブラリを表示',
-    'plaza.loading': '読み込み中...',
-    'plaza.remoteHint':
-        '広場ウィンドウが開いています。ダウンロードリンクは自動的にインポートされます',
     'plaza.title': 'モデル広場',
     'plaza.back': '‹ 戻る',
     'plaza.openInBrowser': 'ブラウザ',

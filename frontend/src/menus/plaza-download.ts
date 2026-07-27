@@ -28,8 +28,6 @@ import {
     shortcutsRegistered,
     setShortcutsRegistered,
     plazaIframe,
-    remoteURLDisplay,
-    remoteProgress,
     observer,
     setObserver,
     getLayer,
@@ -147,39 +145,8 @@ export function installEventListeners(): void {
         return;
     }
     setEventListenersInstalled(true);
-    events.on('plaza:urlChanged', (data) => {
-        const d = data as unknown as { url: string; title: string };
-        if (remoteURLDisplay) {
-            remoteURLDisplay.textContent = d.title || d.url || t('plaza.loading');
-        }
-    });
-    events.on('plaza:downloadProgress', (data) => {
-        const d = data as unknown as {
-            fileName: string;
-            read: number;
-            total: number;
-            percent: number;
-        };
-        if (remoteProgress) {
-            const percent =
-                d.percent > 0 ? `${d.percent.toFixed(0)}%` : `${(d.read / 1024).toFixed(0)} KB`;
-            remoteProgress.textContent =
-                t('plaza.downloading', { name: d.fileName }) + `: ${percent}`;
-        }
-    });
     events.on('plaza:downloadComplete', (data) => {
         const d = data as unknown as { fileName: string; size: number };
-        if (remoteProgress) {
-            remoteProgress.textContent = t('plaza.downloaded', {
-                name: d.fileName,
-                size: (d.size / 1024).toFixed(1),
-            });
-        }
-        setTimeout(() => {
-            if (remoteProgress) {
-                remoteProgress.textContent = '';
-            }
-        }, 3000);
         showErrorToast(
             t('plaza.downloaded', { name: d.fileName, size: (d.size / 1024).toFixed(1) }),
             undefined,

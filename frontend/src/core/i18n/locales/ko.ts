@@ -1790,8 +1790,6 @@ export const ko: Record<string, string> = {
     'plaza.openFail': '윈도우 열기 실패: {err}',
     'plaza.opening': '{name} 열기 중...',
     'plaza.viewLibrary': '모델 라이브러리 보기',
-    'plaza.loading': '로딩 중...',
-    'plaza.remoteHint': '플라자 창이 열려 있습니다. 다운로드 링크가 자동으로 가져와집니다',
     'plaza.title': '모델 광장',
     'plaza.back': '‹ 뒤로',
     'plaza.openInBrowser': '브라우저',

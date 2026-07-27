@@ -470,6 +470,8 @@ function buildWatchSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                             );
                         },
                         async () => {
+                            // ⚠️ 安卓缺陷（待 ADR-194）：同 settings-downloads 的 SelectDir()，安卓会落到 SAF（Storage Access Framework）建树。
+                            // 安卓应走 shared 模式（os.ReadDir 直读 /sdcard），勿在此静默改行为。
                             const dir = await SelectDir();
                             if (!dir) {
                                 return undefined;
