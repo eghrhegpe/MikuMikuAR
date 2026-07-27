@@ -29,7 +29,7 @@ import {
     stackRegistry,
 } from '../core/config';
 import { feedbackStatus } from '../core/feedback';
-import { showInfoToast } from '../core/toast';
+import { showLoadingToast, showInfoToast } from '../core/toast';
 import { tryCatchStatus, isUnderRoot } from '../core/utils';
 import { logWarn } from '../core/logger';
 import { safeCallAsync } from '../core/safe-call';
@@ -233,59 +233,66 @@ export async function switchStorageMode(mode: 'private' | 'shared'): Promise<voi
 
 export async function rescanAndSync(): Promise<LibraryModel[]> {
     console.info('[debug] rescanAndSync called');
-    // [doc:adr-183] 注册节流进度回调：扫描中每扫完一个子目录触发，
-    // 节流 500ms 增量读 IDB 刷新 setAllModels，避免「扫完才一次性显示」的体感问题。
-    // 浏览器端走 browserAdapter（有进度回调），桌面端走 Go binding（无回调，UI 不刷新直至完成）。
-    let lastFlushTs = 0;
-    let pendingFlush = false;
-    const flush = async () => {
-        pendingFlush = false;
-        try {
-            // 增量读 IDB 当前已扫到的 entry，刷新 UI
-            const models = (await GetLibraryIndex()) || [];
-            setAllModels(models);
-            window.dispatchEvent(new CustomEvent('mmar:library-scanned'));
-        } catch (e) {
-            console.warn('[web-scan] 增量刷新失败', e);
-        }
-    };
-    const throttledCb = (scannedDirs: number) => {
-        const now = Date.now();
-        if (now - lastFlushTs < 500) {
-            // 节流窗口内，调度延迟刷新
-            if (!pendingFlush) {
-                pendingFlush = true;
-                setTimeout(() => {
-                    lastFlushTs = Date.now();
-                    flush();
-                }, 500 - (now - lastFlushTs));
+    // 显示顶部 loading toast：旋转图标 + 正在扫描目录
+    const dir = libraryRoot || t('library.title');
+    const loadingToast = showLoadingToast(t('library.scanning'), t('library.scanningDir', { dir }));
+    try {
+        // [doc:adr-183] 注册节流进度回调：扫描中每扫完一个子目录触发，
+        // 节流 500ms 增量读 IDB 刷新 setAllModels，避免「扫完才一次性显示」的体感问题。
+        // 浏览器端走 browserAdapter（有进度回调），桌面端走 Go binding（无回调，UI 不刷新直至完成）。
+        let lastFlushTs = 0;
+        let pendingFlush = false;
+        const flush = async () => {
+            pendingFlush = false;
+            try {
+                // 增量读 IDB 当前已扫到的 entry，刷新 UI
+                const models = (await GetLibraryIndex()) || [];
+                setAllModels(models);
+                window.dispatchEvent(new CustomEvent('mmar:library-scanned'));
+            } catch (e) {
+                console.warn('[web-scan] 增量刷新失败', e);
             }
-            return;
+        };
+        const throttledCb = (scannedDirs: number) => {
+            const now = Date.now();
+            if (now - lastFlushTs < 500) {
+                // 节流窗口内，调度延迟刷新
+                if (!pendingFlush) {
+                    pendingFlush = true;
+                    setTimeout(() => {
+                        lastFlushTs = Date.now();
+                        flush();
+                    }, 500 - (now - lastFlushTs));
+                }
+                return;
+            }
+            lastFlushTs = now;
+            flush();
+        };
+        try {
+            const { setScanProgressCallback } = await import('../core/backend/browser-adapter');
+            setScanProgressCallback(throttledCb);
+        } catch {
+            /* 桌面端无 browser-adapter 模块，忽略 */
         }
-        lastFlushTs = now;
-        flush();
-    };
-    try {
-        const { setScanProgressCallback } = await import('../core/backend/browser-adapter');
-        setScanProgressCallback(throttledCb);
-    } catch {
-        /* 桌面端无 browser-adapter 模块，忽略 */
+        const models = (await ScanModelDir()) || [];
+        console.info('[debug] rescanAndSync: ScanModelDir returned', models?.length, 'models');
+        if (models && models.length > 0) {
+            console.info('[debug] first model:', models[0].file_path, 'dir:', models[0].dir);
+        }
+        setAllModels(models);
+        // 注销回调，避免后续误触发
+        try {
+            const { setScanProgressCallback } = await import('../core/backend/browser-adapter');
+            setScanProgressCallback(null);
+        } catch {
+            /* 桌面端忽略 */
+        }
+        window.dispatchEvent(new CustomEvent('mmar:library-scanned'));
+        return models;
+    } finally {
+        loadingToast.dismiss();
     }
-    const models = (await ScanModelDir()) || [];
-    console.info('[debug] rescanAndSync: ScanModelDir returned', models?.length, 'models');
-    if (models && models.length > 0) {
-        console.info('[debug] first model:', models[0].file_path, 'dir:', models[0].dir);
-    }
-    setAllModels(models);
-    // 注销回调，避免后续误触发
-    try {
-        const { setScanProgressCallback } = await import('../core/backend/browser-adapter');
-        setScanProgressCallback(null);
-    } catch {
-        /* 桌面端忽略 */
-    }
-    window.dispatchEvent(new CustomEvent('mmar:library-scanned'));
-    return models;
 }
 
 export async function reloadConfig(): Promise<void> {

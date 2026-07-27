@@ -63,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String WAILS_HOST = "wails.localhost";
     private static final int FILE_PICKER_REQUEST = 7001;
     private static final int MANAGE_STORAGE_REQUEST = 7011;
-    static final int SAF_TREE_REQUEST = 7012;
+    static final int SAF_TREE_REQUEST = 7012; // @deprecated SAF 已废弃 (ADR-194)，安卓走 shared 模式
 
     private WebView webView;
     private WailsBridge bridge;
@@ -636,6 +636,8 @@ public class MainActivity extends AppCompatActivity {
             }
             return;
         }
+        // @deprecated SAF 已废弃 (ADR-194)：安卓走 shared 模式，GO 侧 fileaccess_android.go 拒绝 content://。
+        // 保留以避 JNI 签名变更风险，下一轮可移除。当前 SAF 建树由 Wails v3 框架对话框隐式触发。
         if (requestCode == SAF_TREE_REQUEST) {
             if (bridge != null) {
                 bridge.handleSafTreeResult(resultCode, data);

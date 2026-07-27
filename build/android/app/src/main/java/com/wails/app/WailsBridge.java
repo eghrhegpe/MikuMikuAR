@@ -295,12 +295,10 @@ public class WailsBridge {
 
     // Facilities called from Go via JNI
 
-    /**
-     * Launch SAF tree picker (ACTION_OPEN_DOCUMENT_TREE).
-     * The selected tree URI is returned via nativeFilePickerResult as a
-     * content:// string, then nativeFilePickerDone signals completion.
-     * Returns immediately; result arrives asynchronously.
-     */
+    /** @deprecated SAF 已废弃（ADR-194）：安卓改为 shared 模式（MANAGE_EXTERNAL_STORAGE 授权后 os.ReadDir 直读 /sdcard）。
+     * Go 侧（fileaccess_android.go）对 content:// 返回 ErrContentUriNotSupported，无调用者。
+     * 当前 SAF 建树由 Wails v3 框架目录对话框在安卓端隐式弹出（经 SelectDir→Dialog.OpenFile），非此桥。
+     * 保留以避免改签名带来的 JNI 注册风险，下一轮清理可移除整个方法及相关字段。 */
     public void openDocumentTree(int callbackID) {
         if (pendingSafTreeCallbackID != -1) {
             // Already one in flight — fail fast
