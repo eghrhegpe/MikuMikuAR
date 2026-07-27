@@ -1,5 +1,5 @@
 // settings-resources.ts — 资源设置子菜单（ADR-157：合并原 library + paths 的存储/路径/监听部分）
-// 页面流：存储位置 → 模型库 → 路径覆盖 → 下载监听。路径行直接调用 SETTINGS_ACTIONS，消除假 PopupRow 套娃。
+// 页面流：存储位置 → 模型库 → 路径覆盖 → 下载监听。路径行委托 executeActionById，消除假 PopupRow 套娃。
 
 import {
     GetStorageMode,
@@ -38,7 +38,7 @@ import { t, bundles } from '../core/i18n/t';
 import { CATEGORY_DIR } from '../core/utils';
 import { logWarn } from '../core/logger';
 import { SETTINGS_ACTION } from './settings-targets';
-import { SETTINGS_ACTIONS } from './settings-actions';
+import { executeActionById } from '../core/action-executor';
 import { getCachedCapabilities } from '../core/backend';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
@@ -209,7 +209,7 @@ function buildStorageSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode
                             'lucide:folder',
                             t('settings.paths.resourceRoot'),
                             false,
-                            () => SETTINGS_ACTIONS[SETTINGS_ACTION.RESOURCE_ROOT](),
+                            () => void executeActionById('settings:set:resourceroot', {}),
                             rootSub
                         );
                     });
@@ -357,7 +357,7 @@ function buildLibrarySchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode
     ];
 }
 
-// ======== 卡片 3：路径覆盖（直接调用 SETTINGS_ACTIONS，无套娃） ========
+// ======== 卡片 3：路径覆盖（委托 executeActionById，无套娃） ========
 function buildOverrideSchema(): MenuNode[] {
     const root = resourceRoot;
     const paths = overridePaths || {};
@@ -426,7 +426,7 @@ function buildOverrideSchema(): MenuNode[] {
                             r.icon,
                             t(r.labelKey),
                             false,
-                            () => SETTINGS_ACTIONS[r.action](),
+                            () => void executeActionById('settings:' + r.action, {}),
                             pathSub(r.key, t('settings.paths.default'))
                         );
                     }

@@ -76,13 +76,16 @@ export class BrowserAiAdapter implements AiService {
             return;
         }
 
-        const body = {
+        const body: Record<string, unknown> = {
             model: req.model ?? cfg.model,
             messages: req.messages,
             temperature: req.temperature ?? 0.7,
             max_tokens: req.maxTokens ?? 2048,
             stream: true,
         };
+        if (req.tools && req.tools.length > 0) {
+            body.tools = req.tools;
+        }
 
         const headers: Record<string, string> = {
             'Content-Type': 'application/json',

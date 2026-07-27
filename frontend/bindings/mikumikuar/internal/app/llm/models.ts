@@ -11,4 +11,19 @@ export interface ChatRequest {
     "messages": ChatMessage[] | null;
     "temperature": number;
     "max_tokens": number;
+    "tools"?: ToolSchema[] | null;
+}
+
+export interface ToolFunction {
+    "name": string;
+    "description": string;
+    "parameters": any;
+}
+
+/**
+ * ToolSchema 表示一个 LLM 函数调用工具（OpenAI function_calling 格式）。
+ */
+export interface ToolSchema {
+    "type": string;
+    "function": ToolFunction;
 }

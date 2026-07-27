@@ -3,5 +3,7 @@
 
 export type {
     ChatMessage,
-    ChatRequest
+    ChatRequest,
+    ToolFunction,
+    ToolSchema
 } from "./models.js";

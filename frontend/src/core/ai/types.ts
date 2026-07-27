@@ -21,6 +21,16 @@ export interface ChatMessage {
     content: string;
 }
 
+/** JSON Schema 工具定义（OpenAI function_calling 格式） */
+export interface ToolSchema {
+    type: 'function';
+    function: {
+        name: string;
+        description: string;
+        parameters: Record<string, unknown>;
+    };
+}
+
 /** 流式聊天请求参数 */
 export interface ChatRequest {
     messages: ChatMessage[];
@@ -28,13 +38,21 @@ export interface ChatRequest {
     temperature?: number;
     maxTokens?: number;
     signal?: AbortSignal;
+    /** 工具定义（函数调用），仅 browser-adapter 直接传递；go-adapter 走 prompt 约束 */
+    tools?: ToolSchema[];
 }
 
 /** 流式聊天响应块 */
 export interface ChatChunk {
-    type: 'text' | 'error' | 'done';
+    type: 'text' | 'error' | 'done' | 'tool_call';
     content?: string;
     error?: string;
+    /** function_call 名称（tool_call 类型时） */
+    toolName?: string;
+    /** function_call 参数 JSON 字符串（tool_call 类型时） */
+    toolArgs?: string;
+    /** function_call id */
+    toolId?: string;
 }
 
 /** AI 服务统一抽象，镜像 BackendService 双适配器模式 */
