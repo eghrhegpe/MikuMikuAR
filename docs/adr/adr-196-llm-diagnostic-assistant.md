@@ -1,0 +1,110 @@
+# ADR-196: 内置 AI 诊断助手（LLM Diagnostic Assistant）
+
+- **状态**: 🔄 规划中（推荐，基于 ADR-154 传输层）
+- **日期**: 2026-07-28
+- **相关**: ADR-154（聊天面板·推荐路线，传输层上游）、ADR-155（NL 控场景，未来应用入口）、ADR-156（角色台词，兄弟用例）、ADR-176（BackendService 双适配器，镜像模板）、ADR-192（上游适配层，适配器术语）、ADR-093（声明式菜单 Schema，面板挂载）、`docs/ai-new/ai-news-2026-07-27.md`（安全护栏情报）
+
+---
+
+## 背景与问题
+
+LLM 能力已在 2026-07-20 经 ADR-154/155/156 决议，但**全部 0 代码落地**，且三份都偏「创作/交互」（聊天、NL 控场景、角色台词），漏掉了 ROI 最高、也最贴合用户诉求的用例：**内置 AI 帮忙排错**。
+
+用户原问：「内置 AI 后，有没有办法让他帮忙排错？」结论：能，且可完全骑在现有架构与资产上，不引入新架构风险。本 ADR 将其确立为 LLM 能力的**第一个生产性用例**，以 ADR-154 聊天面板为传输底座。
+
+## 前置探测（2026-07-28 实测，作为决议依据）
+
+> 起草前已对仓库做实地探测，以下结论均为磁盘事实，非推测。
+
+| 探测项 | 方法 | 结果 | 对设计的影响 |
+|--------|------|------|--------------|
+| AI 依赖 | `grep` package.json / frontend/package.json 的 openai/anthropic/ollama/langchain/ai-sdk/groq/cohere | **零匹配** | 现状 0 代码，greenfield |
+| AI 代码 | `grep` frontend/src 的 SDK 字面量 + `\bllm\b` | **零匹配**（首轮广匹配系 `llm` 子串误报） | 无需清理旧实现 |
+| 适配器模板 | 读 `frontend/src/core/backend/{types,index,go-adapter}.ts` | `BackendService = Omit<GoApp,排除集> & {kind, capabilities(), readFileBytes()}`；`resolveBackend()` Tier0/1/2 惰性探测 + 动态 import go-adapter | `AiService` 直接镜像此形 |
+| 错误缓冲 | 读 `frontend/src/core/logger.ts` + `grep` 全局 `onerror`/`unhandledrejection` | logger 仅打 console，**无内存缓冲**；全局错误钩子**零处** | 诊断缓冲层须**新增**全局捕获 + 包装 logError 入环 |
+| 菜单挂载 | 读 `frontend/src/menus/settings.ts` + `settings-targets.ts` | `SETTINGS` 枚举 + `SETTINGS_FOLDER_ROUTES: Record<target, ()=>PopupLevel>` builder 表 + `buildSettingsRootItems` 推送 folder 项 | 诊断面板复用同形（加 `SETTINGS.DIAGNOSTIC` + builder + 表项） |
+| 运行时状态探针 | 现有 `detectKtx2Support` / 质量档位 / `engine.getFps` / activeMotion | 已存在，可快照 | 引擎快照源无需新造 |
+| 绑定契约 | ADR-176 契约测试 139 函数 | `AiService` 为**新增独立服务** | 不触碰 139 函数契约，无需改 `app.contract` |
+
+---
+
+## 决策
+
+1. **以 ADR-154 聊天面板为传输层**，在其上叠加**诊断助手**作为核心交付；诊断助手是 LLM 能力的第一个生产性用例，聊天闲聊为其子集。
+2. **引入 `AiService` 抽象，镜像 `BackendService` 双适配器**（ADR-176）：
+   - 桌面（go-adapter）经 Go 侧 `internal/app/llm/client.go`（ADR-154 已点名）持有 HTTP 客户端与密钥；
+   - 网页（browser-adapter）直连用户配置的 OpenAI 兼容端点（含本地 Ollama `localhost`，免 key）。
+3. **诊断上下文严格限定三源**（均在 App 运行时内，不依赖仓库 `docs/`）：
+   - 错误环形缓冲（新增）、引擎快照（复用现有探针）、用户附加上下文（可选）。
+4. **安全护栏为硬约束**（依据 `ai-news-2026-07-27`）：
+   - 默认**只读咨询**：AI 输出为文本建议，绝不自动改代码 / 自动执行命令 / 直接 mutate 场景；
+   - 「应用建议」必须经 ADR-155 的 NL 控场景闭集（ADR-093 菜单动作）且用户显式确认，不开放自由函数调用；
+   - 密钥前端不可见（桌面走 Go；网页仅用户自带 key；本地 Ollama 零 key）；
+   - 检索优于长上下文：诊断上下文严格上限 + 截断，不 dumping 全仓库。
+
+### 核心原则
+
+- **加性不侵入**：`AiService` 是新增服务，不修改 `BackendService` 接口、不动 139 函数绑定契约、不改动既有菜单文件（仅追加）。
+- **复用 > 新造**：适配器形状、解析单例、菜单注册、运行时探针全部复用既有范式。
+- **只读优先**：诊断助手默认不产生任何副作用；副作用一律升级到 ADR-155 闭集并显式确认。
+- **零 key 默认路径**：默认提供本地 Ollama（`http://localhost:11434`）零 key 选项，降低隐私/成本门槛。
+
+---
+
+## 第一步交付（Phase 0 → 2）
+
+| 模块 | 建议落点 | 内容 |
+|------|----------|------|
+| AiService 接口 | `frontend/src/core/ai/types.ts` | 镜像 `BackendService`：`{ kind:'go'\|'browser'; capabilities(): AiCapabilities; streamChat(req): AsyncIterable<ChatChunk> }` |
+| 解析单例 | `frontend/src/core/ai/index.ts` | `resolveAi()` 复用后端 Tier0/1/2 探测（同源 `__MMKU_BACKEND__`，避免重复逻辑） |
+| Go 适配器 | `frontend/src/core/ai/go-adapter.ts` + `internal/app/llm/client.go` | Go 持有 HTTP 客户端 + key 保管（Wails 安全配置/IndexedDB）+ SSE 流式 |
+| 浏览器适配器 | `frontend/src/core/ai/browser-adapter.ts` | OpenAI 兼容直连 / 本地 Ollama；CORS 受限降级提示 |
+| 错误缓冲 | `frontend/src/core/ai/error-buffer.ts` + `installGlobalErrorCapture()` | 全局 `onerror`/`unhandledrejection` 监听 + 包装 `logError` 入最近 N 条（默认 50，带 tag/stack/时间戳）环形缓冲 |
+| 引擎快照 | `frontend/src/core/ai/scene-snapshot.ts` | 复用 `detectKtx2Support` / 质量档位 / `engine.getFps` / activeMotion |
+| 诊断面板 | `frontend/src/menus/settings-diagnostic.ts` + `SETTINGS.DIAGNOSTIC` | 复用 `SETTINGS_FOLDER_ROUTES` 形态：folder 项 + builder + 路由表三项追加 |
+| 契约 | `app.contract` | **不改动**（AiService 为新增服务，不触碰 139 函数绑定契约） |
+
+### 诊断数据流（只读咨询默认路径）
+
+```
+[运行时] 全局 onerror/unhandledrejection + logError ─┐
+[引擎]   scene-snapshot（mesh/材质/activeMotion/FPS/GPU）├─→ error-buffer(环) + snapshot
+[用户]   可选粘贴报错文本 ──────────────────────────────┘
+                        │
+                        ▼
+              AiService.streamChat({ system: 诊断约束, context: 三源截断 })
+                        │
+                        ▼
+              AsyncIterable<ChatChunk> ──→ 诊断面板流式渲染（仅文本建议）
+                        │
+            [可选·升级] 用户点「应用」→ ADR-155 NL 控场景闭集 + 显式确认（非默认）
+```
+
+---
+
+## 风险与缓解
+
+| 风险 | 等级 | 缓解 |
+|------|------|------|
+| 流式中断 / 超时 | 🟡 | go-adapter SSE + 浏览器 fetch streaming + 断点续收；超时不丢已收 token |
+| 隐私 / key 泄漏 | 🟢 | 桌面 key 仅 Go 侧；网页仅用户自带 key；本地 Ollama 零 key |
+| 长上下文成本 | 🟢 | 严格三源上限 + 截断；不 dumping 全仓库（遵循 ai-news 检索优于长上下文） |
+| auto-exec 攻击面 | 🔴→🟢 | 默认只读；应用经 ADR-155 闭集 + 显式确认，禁自由函数调用 |
+| 网页 CORS | 🟡 | 提示用户配置 CORS / 走本地 Ollama / 自建 relay |
+| 错误缓冲内存膨胀 | 🟢 | 环形上限 50 条 + 单条 stack 截断（如 4KB） |
+
+---
+
+## 范围边界
+
+- **本 ADR 只做「诊断助手」**：聊天闲聊（ADR-154）、NL 控场景（ADR-155）、角色台词（ADR-156）为兄弟用例，共享 `AiService` 与面板。
+- **不自动执行**：任何副作用（改文件 / 跑命令 / mutate 场景）均不在本 ADR 默认路径内。
+- **不引入新架构范式**：严格镜像 ADR-176，不另起炉灶。
+
+---
+
+## 开放问题（待议会裁定）
+
+1. 诊断面板是否同时承载 ADR-154 聊天（合并为一个「AI 助手」面板）？**建议合并**，减少菜单噪音。
+2. 是否将本地 Ollama 设为零 key 默认端点？**建议是**，降低首用门槛。
+3. 错误缓冲是否持久化到 IndexedDB（跨会话复盘）？默认仅内存环，持久化列为后续增强。
