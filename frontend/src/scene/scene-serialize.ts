@@ -70,6 +70,8 @@ import {
     setModelBoneLinesVis,
     setModelBoneJointsVis,
     setModelPhysics,
+    getPhysicsCatState,
+    setPhysicsCategory,
     loadVMDFromPath,
     getMatState,
     applyMatState,
@@ -180,6 +182,8 @@ export interface SceneFile {
         showBoneLines?: boolean;
         showBoneJoints?: boolean;
         physicsEnabled?: boolean;
+        /** [fix:physics-cat-persist] 物理分类开关（仅存 false 项，默认开不落盘） */
+        physicsCategories?: Record<string, boolean>;
         outfitVariant?: string;
         /** [doc:adr-049] 球面坐标轨道控制：坐标模式，缺省按 'cartesian' 处理 */
         positionMode?: 'cartesian' | 'orbit';
@@ -393,6 +397,20 @@ export function serializeScene(): SceneFile {
             showBoneLines: inst.showBoneLines,
             showBoneJoints: inst.showBoneJoints,
             physicsEnabled: inst.physicsEnabled,
+            // [fix:physics-cat-persist] 落盘物理分类开关（仅存 false 项，避免默认值噪声）
+            ...(() => {
+                const pcs = getPhysicsCatState(inst.id);
+                if (!pcs) {
+                    return {};
+                }
+                const diff: Record<string, boolean> = {};
+                for (const [cat, enabled] of Object.entries(pcs)) {
+                    if (!enabled) {
+                        diff[cat] = false;
+                    }
+                }
+                return Object.keys(diff).length > 0 ? { physicsCategories: diff } : {};
+            })(),
             outfitVariant: inst.activeVariant,
             positionMode: inst.positionMode,
             orbitAzimuth: inst.orbitAzimuth,
@@ -683,6 +701,12 @@ async function deserializeModels(modelsData: SceneFile['models']): Promise<[Arra
             if (m.physicsEnabled !== undefined) {
                 inst.physicsEnabled = m.physicsEnabled;
                 setModelPhysics(inst.id, m.physicsEnabled);
+            }
+            // [fix:physics-cat-persist] 恢复物理分类开关（须在模型加载完成后，setPhysicsCategory 依赖 inst.mmdModel）
+            if (m.physicsCategories) {
+                for (const [cat, enabled] of Object.entries(m.physicsCategories)) {
+                    setPhysicsCategory(inst.id, cat, enabled);
+                }
             }
             if (m.boneOverrides) {
                 inst.boneOverrides = m.boneOverrides.map((b) => ({
