@@ -1,7 +1,7 @@
 # ADR-130: 场景 UI 整体设计与前后端发展方向路线图
 
 > **日期**: 2026-07-18
-> **状态**: 规划中（Phase 1 技术债 ✅1.1 已完成（实质达成，载体 ADR-138 + env 子系统大拆分；env-impl.ts 227 行、edgeFade 纹理独立接入 dispose、循环依赖破除、env 子系统 8 个测试文件 70+ it），✅1.2 已完成（popUndoSnapshot 已实现 + Ctrl+Z + 菜单撤销按钮接入 + 测试覆盖），✅1.3 已完成（ADR-128 首部 2026-07-20 标注 5 语种无残留）；Phase 2 ✅2.1/2.2/2.3/2.4/2.5 已完成，✅2.7 已完成，⚠️2.6 部分完成（已加载列表统一组件 + 8 处撤销 toast 接入；缺口：卸载舞台/道具未接入撤销、异步操作状态反馈不均），⚠️2.7 部分完成（环境预设导入/导出 + UI 层 PresetListViewer 通用组件；缺口：PresetManager 抽象不存在、4 个预设系统未统一 API、元数据未跨系统统一）；Phase 3 能力扩展待推进）
+> **状态**: 规划中（Phase 1 技术债 ✅1.1 已完成（实质达成，载体 ADR-138 + env 子系统大拆分；env-impl.ts 227 行、edgeFade 纹理独立接入 dispose、循环依赖破除、env 子系统 8 个测试文件 70+ it），✅1.2 已完成（popUndoSnapshot 已实现 + Ctrl+Z + 菜单撤销按钮接入 + 测试覆盖），✅1.3 已完成（ADR-128 首部 2026-07-20 标注 5 语种无残留）；Phase 2 ✅2.1/2.2/2.3/2.4/2.5 已完成，✅2.7 已完成，⚠️2.6 部分完成（已加载列表统一组件 + 8 处撤销 toast 接入；缺口：卸载舞台/道具未接入撤销、异步操作状态反馈不均），⚠️2.7 部分完成（环境预设导入/导出 + UI 层 PresetListViewer 通用组件；缺口：PresetManager 抽象不存在、4 个预设系统未统一 API、元数据未跨系统统一）；Phase 3 能力扩展待推进；ADR-093 P3 已关闭（2026-07-27 裁定非死代码））
 
 ## 背景
 
@@ -49,7 +49,7 @@
 | 🔴 P1 | audit round-3-facade-terrain | `env-impl.ts` 1065 行无直接单测 + `_edgeFadeTexCache` 无 dispose（~25MB 泄漏上限）+ env-impl ↔ env-water 循环依赖 | ✅ 已解决（Phase 1.1，载体 ADR-138 + env 子系统大拆分） |
 | 🟠 P2 | audit water-reflection-boundary | 水面 RT 分辨率 high=512（建议 1024） | ✅ 已超出建议（env-water.ts:148 当前 high=2048, medium=1024, low=512） |
 | 🟠 P2 | ADR-127 | `_undoStack`/`canUndo` 死代码遗留（栈只 push 不 pop） | ✅ 已解决（Phase 1.2，`popUndoSnapshot` 已实现 + Ctrl+Z + 撤销按钮接入 + 测试覆盖） |
-| 🟡 P3 | ADR-093 | P3 收尾待推进 | ⚠️ 仍待推进（移除死 builder、删 barrel re-export、全量类型化） |
+| 🟡 P3 | ADR-093 | P3 收尾（移除死 builder、删除 barrel re-export） | ✅ 已关闭（2026-07-27 裁定：`library.ts`/`library-core.ts` barrel re-export 被 5 处活跃消费者依赖，非死代码，无需移除；全量类型化由 ADR-190 声明式收口自然完成） |
 | 🟡 P3 | ADR-120 | 分类预设导入/导出待定；待真机验证 | ✅ 导入/导出已完成（env-lighting.ts:308-325 `exportCategorizedEnvPreset`/`importCategorizedEnvPreset` + env-lighting.test.ts 往返/v2 兼容/异常测试）；⚠️ 真机验证仍待推进 |
 | 🟡 P3 | audit env-review-triage | 3 处 `createCanvasTexture` 直调绕过缓存 | ✅ 已不构成问题（4 处直调均有合理设计理由：env-particles 模块自管缓存、env-water 单实例+safeDispose、env-ground `_updateGroundTexture` dispose-then-replace 模式） |
 | 🟡 P3 | env-bridge.ts:421/543/700/716 | `SetEnvState({ ...envState })` 全量覆盖，无 partial update | ✅ 已解决（Phase 2.4，双端 partial update：前端 env-bridge.ts:589 Proxy 局部更新 + Go config.go:277 JSON merge） |
@@ -207,7 +207,7 @@ const migrators: Migrator[] = [
 
 ## 相关文档
 
-- ADR-093 — 菜单声明式 Schema（P3 收尾待推进）
+- ADR-093 — 菜单声明式 Schema（P3 已关闭，2026-07-27 裁定非死代码）
 - ADR-111 — 场景/环境菜单重划分（已修订：灯光提到根级）
 - ADR-115 — 风格化水体（P1-P4 已完成）
 - ADR-118 — 刷新率感知自动降级（Phase 2 待推进）

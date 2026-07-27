@@ -32,6 +32,12 @@ const boneOverrideState = vi.hoisted(() => ({
     setBoneOverride: vi.fn(),
 }));
 
+const lightingFollowState = vi.hoisted(() => ({
+    getPersonalLightState: vi.fn(() => null),
+    setPersonalLightState: vi.fn(),
+    attachPersonalLight: vi.fn(),
+}));
+
 vi.mock('../../core/config', () => ({
     modelRegistry: new Map(),
     focusedModelId: null,
@@ -68,12 +74,18 @@ vi.mock('../../scene/transform/transform-adapter', () => ({ registerTransformAda
 vi.mock('../../scene/motion/bone-override', () => ({
     setBoneOverride: boneOverrideState.setBoneOverride,
 }));
+vi.mock('../../scene/render/lighting-follow', () => ({
+    getPersonalLightState: lightingFollowState.getPersonalLightState,
+    setPersonalLightState: lightingFollowState.setPersonalLightState,
+    attachPersonalLight: lightingFollowState.attachPersonalLight,
+}));
 
 import { captureInheritedState, applyInheritedState } from '../../scene/manager/model-ops';
 import type { ReplaceSnapshot } from '../../scene/manager/model-ops';
 import type { ModelInstance } from '@/core/types';
 import { modelRegistry } from '../../core/config';
 import { setBoneOverride } from '../../scene/motion/bone-override';
+import { getPersonalLightState, setPersonalLightState, attachPersonalLight } from '../../scene/render/lighting-follow';
 import { setOrbitBoneLock } from '../../scene/camera/camera';
 import { modelManager } from '../../scene/scene';
 
@@ -199,9 +211,27 @@ describe('captureInheritedState', () => {
     });
 });
 
+describe('captureInheritedState — 个人灯 (ADR-168)', () => {
+    it('旧角色已开个人灯时捕获 personalLight', () => {
+        const plSettings = { enabled: true, intensity: 1.5 } as any;
+        lightingFollowState.getPersonalLightState.mockReturnValueOnce(plSettings);
+        const inst = makeMockInst();
+        const snap = captureInheritedState(inst);
+        expect(lightingFollowState.getPersonalLightState).toHaveBeenCalledWith('old-1');
+        expect(snap.personalLight).toEqual(plSettings);
+    });
+
+    it('旧角色无个人灯时 personalLight 为 undefined', () => {
+        lightingFollowState.getPersonalLightState.mockReturnValueOnce(null);
+        const snap = captureInheritedState(makeMockInst());
+        expect(snap.personalLight).toBeUndefined();
+    });
+});
+
 describe('applyInheritedState', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        lightingFollowState.getPersonalLightState.mockReturnValue(null);
         (modelRegistry as Map<string, unknown>).set('new-1', {
             id: 'new-1',
             feet: {},
@@ -300,5 +330,30 @@ describe('applyInheritedState', () => {
         // 深拷贝验证
         newInst.feet.enabled = false;
         expect(snap.feet.enabled).toBe(true);
+    });
+
+    it('旧角色开灯 + 新模型 entry 已存在 → 调用 setPersonalLightState 点亮', () => {
+        const plSettings = { enabled: true, intensity: 1.2 } as any;
+        const snap = makeBaseSnap({ personalLight: plSettings });
+        lightingFollowState.getPersonalLightState.mockReturnValueOnce(plSettings); // 模拟 onModelLoaded 已建 entry
+        applyInheritedState('new-1', snap);
+        expect(setPersonalLightState).toHaveBeenCalledWith('new-1', plSettings);
+        expect(attachPersonalLight).not.toHaveBeenCalled();
+    });
+
+    it('旧角色开灯 + 新模型 entry 尚未建 → 调用 attachPersonalLight 带 overrides 点亮', () => {
+        const plSettings = { enabled: true, intensity: 1.2 } as any;
+        const snap = makeBaseSnap({ personalLight: plSettings });
+        lightingFollowState.getPersonalLightState.mockReturnValueOnce(null); // entry 未建
+        applyInheritedState('new-1', snap);
+        expect(attachPersonalLight).toHaveBeenCalledWith('new-1', plSettings);
+        expect(setPersonalLightState).not.toHaveBeenCalled();
+    });
+
+    it('无 personalLight 时不触碰个人灯 API', () => {
+        const snap = makeBaseSnap(); // 无 personalLight
+        applyInheritedState('new-1', snap);
+        expect(setPersonalLightState).not.toHaveBeenCalled();
+        expect(attachPersonalLight).not.toHaveBeenCalled();
     });
 });
