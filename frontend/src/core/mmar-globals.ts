@@ -1,9 +1,11 @@
 // [doc:architecture] __mmar — 运行时结构化状态暴露
 // 挂载到 window.__mmar，供外置 AI（LLM）直接读取快照。
-// 轻量架子，无外部依赖，不引入新架构范式。
+// 轻量叶子模块：仅依赖普通 JS 全局与动态 import，无静态内部模块耦合，不引入新架构范式。
+
+export type MmarPhase = 'idle' | 'scanning' | 'loading' | 'playing' | 'error';
 
 export interface MmarStatus {
-    phase: 'idle' | 'scanning' | 'loading' | 'playing' | 'error';
+    phase: MmarPhase;
     text: string;
     detail?: string;
     updatedAt: number;
@@ -27,18 +29,15 @@ export interface MmarGlobal {
 
 declare global {
     interface Window {
-        __mmar: MmarGlobal;
+        /** 可选：模块加载时由 ensureMmar() 自动初始化，读取方无需先判存在性。 */
+        __mmar?: MmarGlobal;
     }
 }
 
-// ======== 初始化（幂等，模块加载时自动执行） ========
+// ======== 初始化（幂等；模块加载时自动执行，保证 window.__mmar 始终就绪） ========
 
 function createInitialStatus(): MmarStatus {
-    return {
-        phase: 'idle',
-        text: '',
-        updatedAt: Date.now(),
-    };
+    return { phase: 'idle', text: '', updatedAt: Date.now() };
 }
 
 function createInitialSceneSnapshot(): MmarSceneSnapshot {
@@ -52,23 +51,28 @@ function createInitialSceneSnapshot(): MmarSceneSnapshot {
     };
 }
 
-function ensureMmar(): void {
-    if (window.__mmar) return;
+/** 幂等地确保 window.__mmar 就绪，返回已就绪的实例（消除对 `!` 断言的依赖）。 */
+function ensureMmar(): MmarGlobal {
+    if (window.__mmar) return window.__mmar;
     window.__mmar = {
         status: createInitialStatus(),
         scene: createInitialSceneSnapshot(),
     };
+    return window.__mmar;
 }
+
+// 模块加载即初始化：任何读取方（含启动时序更早的模块）都能拿到合法对象。
+ensureMmar();
 
 // ======== 状态更新（由 setStatus / setLoadingStatus 内部串联） ========
 
 export function updateMmarStatus(
-    phase: MmarStatus['phase'],
+    phase: MmarPhase,
     text: string,
     detail?: string,
 ): void {
-    ensureMmar();
-    window.__mmar.status = {
+    const g = ensureMmar();
+    g.status = {
         phase,
         text: text || '',
         detail,
@@ -76,43 +80,42 @@ export function updateMmarStatus(
     };
 }
 
-// ======== 场景快照（由外部或定时器按需刷新） ========
+// ======== 场景快照（caller 驱动；可用 startSceneSnapshotPolling 周期刷新） ========
+
+interface GlLike {
+    VENDOR: number;
+    RENDERER: number;
+    getParameter(p: number): string;
+}
 
 /**
  * 刷新 window.__mmar.scene 快照。
- * 使用动态 import 避免与 scene/ 模块的循环依赖。
- * 引擎未就绪时静默跳过。
+ * 使用动态 import 避免与 scene/ 模块的静态循环依赖。
+ * 引擎 / 配置 / 能力探测未就绪时，对应字段静默保持零值，不抛错。
  */
 export async function refreshSceneSnapshot(): Promise<void> {
-    ensureMmar();
+    const g = ensureMmar();
 
-    let engine: any;
-    let scene: any;
-    try {
-        const m = await import('../scene/scene');
-        engine = m.engine;
-        scene = m.scene;
-    } catch {
-        return; // 引擎未初始化
-    }
+    const m = await import('../scene/scene');
+    const engine = m.engine;
+    const scene = m.scene;
+    const modelManager = m.modelManager;
     if (!engine || !scene) return;
 
     const snapshot: MmarSceneSnapshot = {
         fps: Math.round(engine.getFps()),
         meshCount: scene.meshes?.length ?? 0,
-        modelCount: 0,
+        modelCount: modelManager?.getAll().length ?? 0,
         gpu: '',
         ktxSupported: false,
         qualityTier: 'medium',
     };
 
-    // GPU 渲染器信息（从底层 WebGL context 读取）
+    // GPU 渲染器信息（从底层 WebGL context 读取；WebGPU 下 _gl 为 undefined）
     try {
-        const gl = (engine as any)._gl;
+        const gl = (engine as unknown as { _gl?: GlLike })._gl;
         if (gl) {
-            const vendor = gl.getParameter(gl.VENDOR);
-            const renderer = gl.getParameter(gl.RENDERER);
-            snapshot.gpu = `${vendor} ${renderer}`;
+            snapshot.gpu = `${gl.getParameter(gl.VENDOR)} ${gl.getParameter(gl.RENDERER)}`;
         }
     } catch {
         // 非 WebGL 环境（WebGPU / 引擎未初始化）
@@ -121,16 +124,15 @@ export async function refreshSceneSnapshot(): Promise<void> {
     // KTX2 压缩纹理支持
     try {
         const { detectKtx2Support } = await import('./gpu-capabilities');
-        const ktx = detectKtx2Support();
-        snapshot.ktxSupported = ktx.supported;
+        snapshot.ktxSupported = detectKtx2Support().supported;
     } catch {
         // 探测失败（无 canvas / 浏览器不支持）
     }
 
-    // 质量档位
+    // 质量档位（envState.qualityProfile 为真实字段，无需 as any）
     try {
         const { envState } = await import('./config');
-        const qp = (envState as any).qualityProfile;
+        const qp = envState.qualityProfile;
         if (qp === 'high' || qp === 'medium' || qp === 'low') {
             snapshot.qualityTier = qp;
         }
@@ -138,14 +140,11 @@ export async function refreshSceneSnapshot(): Promise<void> {
         // config 未就绪
     }
 
-    // 活跃模型
+    // 活跃模型（真实加载数已在上方由 modelManager 填充；此处补全名称）
     try {
         const { focusedModel } = await import('../scene/manager/model-ops');
         const model = focusedModel();
-        if (model) {
-            snapshot.modelCount = 1;
-            snapshot.activeModel = model.name;
-        }
+        if (model) snapshot.activeModel = model.name;
     } catch {
         // model-ops 未初始化
     }
@@ -154,12 +153,30 @@ export async function refreshSceneSnapshot(): Promise<void> {
     try {
         const { getActiveMotion } = await import('../scene/motion/motion-intent');
         const motion = getActiveMotion();
-        if (motion) {
-            snapshot.activeMotion = motion.vmdName;
-        }
+        if (motion) snapshot.activeMotion = motion.vmdName;
     } catch {
         // motion-intent 未初始化
     }
 
-    window.__mmar.scene = snapshot;
+    g.scene = snapshot;
+}
+
+// ======== 周期轮询（幂等；由应用初始化入口启动，HMR 重复注册安全） ========
+
+let _snapshotTimer: ReturnType<typeof setInterval> | null = null;
+
+/** 启动周期快照刷新；重复调用安全（仅注册一个 timer）。 */
+export function startSceneSnapshotPolling(intervalMs = 1000): void {
+    if (_snapshotTimer !== null) return;
+    _snapshotTimer = setInterval(() => {
+        void refreshSceneSnapshot();
+    }, intervalMs);
+}
+
+/** 停止周期快照刷新；未启动或重复调用均安全。 */
+export function stopSceneSnapshotPolling(): void {
+    if (_snapshotTimer !== null) {
+        clearInterval(_snapshotTimer);
+        _snapshotTimer = null;
+    }
 }
