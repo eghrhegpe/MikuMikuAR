@@ -16,6 +16,7 @@ export type {
     FileInfo,
     InstallResult,
     KeyBindingOverride,
+    LLMConfig,
     ModelEntry,
     ModelMeta,
     ModelPresetEntry,

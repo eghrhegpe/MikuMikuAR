@@ -1,6 +1,6 @@
 # ADR-196: 内置 AI 诊断助手（LLM Diagnostic Assistant）
 
-- **状态**: 🔄 实施中（Phase 0 Batch A(P1) + Batch B(P2) + Batch C(面板 UI) 已落地；待 Go 侧 `internal/app/llm/` 对接；见 `.trae/specs/adr-196-audit-and-refine/`）
+- **状态**: 🔄 实施中（Phase 0 Batch A(P1) + Batch B(P2) + Batch C(面板 UI) + Batch D(Go 侧 LLM 客户端 + 绑定) 已落地；`go-adapter.ts` 从占位升级为真实实现，Wails bindings 自动生成）
 - **日期**: 2026-07-28
 - **相关**: ADR-154（聊天面板·推荐路线，传输层上游）、ADR-155（NL 控场景，未来应用入口）、ADR-156（角色台词，兄弟用例）、ADR-176（BackendService 双适配器，镜像模板）、ADR-192（上游适配层，适配器术语）、ADR-093（声明式菜单 Schema，面板挂载）、`docs/ai-new/ai-news-2026-07-27.md`（安全护栏情报）
 
@@ -180,3 +180,16 @@ LLM 能力已在 2026-07-20 经 ADR-154/155/156 决议，但**全部 0 代码落
 - `settings.ts`：导入 + 路由表 + 根菜单项（`lucide:bot` 图标）
 - i18n：5 语言（en/zh-CN/ja/zh-TW/ko）各加 20 条 `ai.*` 键 + 1 条 `settings.diagnostic`
 - 验证：tsc 0 错误；error-buffer 单测 24/24 通过
+
+### Phase 0 — Batch D（2026-07-28）：Go 侧 LLM 客户端 + Wails 绑定
+- `internal/app/llm/client.go`：新建 `package llm`，纯 HTTP 客户端（无 Wails 依赖），`StreamChat` 采用 callback 模式逐 token 回调，支持 `context.Context` 取消；`TestConnection` 同步连通性测试
+- `internal/app/ai_binding.go`：`package app`，5 个 Wails 绑定方法：
+  - `AiStreamChat(req)` — 启动 goroutine 做流式 SSE 请求，通过 `a.wailsApp.Event.Emit` 推送 `ai:chunk`/`ai:done`/`ai:error` 事件
+  - `AiCancelStream()` — 取消当前流式请求（`context.WithCancel`）
+  - `AiSetLLMConfig(cfg)` — 持久化 `LLMConfig`（含 apiKey）到 `config.json`
+  - `AiGetLLMConfig()` — 读取端点/model（不返回 apiKey）
+  - `AiTestLLMConnection()` — 最小请求验证连通性
+- `app.go`：`App` 结构体新增 `llmCancel context.CancelFunc` + `llmMu sync.Mutex`；`Config` 新增 `LLMConfig *LLMConfig`
+- `go-adapter.ts`：从占位升级为真实实现，订阅 `ai:*` 事件 + 调用 `AiStreamChat` binding，基于 Promise waiter 将 push 事件转换为 `AsyncIterable<ChatChunk>`
+- Wails bindings 自动生成（`frontend/bindings/mikumikuar/internal/app/llm/`）
+- 验证：`go build ./...` 通过；tsc --noEmit 0 错误

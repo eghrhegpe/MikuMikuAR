@@ -62,6 +62,9 @@ type App struct {
 	watchTimer   *time.Timer         // debounce 定时器
 	watchPending map[string]struct{} // debounce 期间暂存的文件路径
 
+	llmCancel context.CancelFunc // 正在进行的 LLM 流式请求取消函数
+	llmMu     sync.Mutex
+
 	// 模型广场预热窗口（ADR-075 §预热单实例）
 	// App 启动时创建隐藏 WebView2 窗口，用户点击站点时 Show + SetURL，
 	// 避免 NewWithOptions 的 WebView2 冷启动（1–3s → 200ms）。
@@ -423,6 +426,7 @@ type Config struct {
 	RecentModels             []string            `json:"recent_models"`                        // libraryRef 数组，最近打开的模型（最多20条）
 	Env                      *EnvState           `json:"env,omitempty"`                        // 环境状态（天空/地面/粒子等），nil=使用前端默认
 	LastDirs                 map[string]string   `json:"last_dirs,omitempty"`                  // 对话框最后目录记忆，优先相对路径（./前缀），详见 ADR-090
+	LLMConfig                *LLMConfig          `json:"llm_config,omitempty"`                 // LLM 端点配置（ADR-196），含 baseUrl/model；apiKey 存同字段（Go 仅持有，不暴露给前端）
 }
 
 // EnvState stores the full environment configuration (sky, ground, particles, fog, etc.).
