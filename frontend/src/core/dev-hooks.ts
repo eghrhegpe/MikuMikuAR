@@ -5,6 +5,8 @@
 // layer's hot import graph.
 import { scene, engine, focusedModel } from '../scene/scene';
 import { loadOutfits, applyOutfitVariant } from '../outfit/outfit';
+import { envState, mmdRuntime } from './config';
+import { isWindPhysicsActive } from '../physics/wind-physics';
 import { logInfo } from './logger';
 
 export function setupE2ECapture(): void {
@@ -145,6 +147,49 @@ export function setupE2ECapture(): void {
                     m.dispose();
                 }
             }
+        },
+
+        // ======== 物理健康检查钩子 (E2E @webgl) ========
+        /** WASM 物理刚体 Bundle 数（0 = 物理未运行或 JS 运行时） */
+        get rigidBodyBundleCount(): number {
+            const rt = mmdRuntime;
+            if (!rt) return 0;
+            const physics = (rt as unknown as { physics?: { impl?: { rigidBodyBundleReferenceCountMap?: ReadonlyMap<unknown, number> } } }).physics;
+            const impl = physics?.impl;
+            return impl?.rigidBodyBundleReferenceCountMap?.size ?? 0;
+        },
+
+        /** 风力物理是否已实际订阅（WASM Bullet onSyncObservable） */
+        get windPhysicsActive(): boolean {
+            return isWindPhysicsActive();
+        },
+
+        /** 临时设置风速（E2E 测试用，不持久化） */
+        setWindSpeed: (speed: number): void => {
+            envState.windSpeed = speed;
+            envState.windEnabled = speed > 0;
+        },
+
+        /** 获取指定骨骼名的世界位置（用于验证物理是否真的动了骨骼） */
+        getBoneWorldPositions: (boneNames: string[]): Record<string, { x: number; y: number; z: number } | null> => {
+            const inst = focusedModel();
+            if (!inst?.mmdModel?.runtimeBones) return {};
+            const bones = inst.mmdModel.runtimeBones;
+            const result: Record<string, { x: number; y: number; z: number } | null> = {};
+            for (const name of boneNames) {
+                const bone = bones.find((b: { name: string }) => b.name === name);
+                if (!bone) {
+                    result[name] = null;
+                    continue;
+                }
+                const wm = (bone as unknown as { worldMatrix: Float32Array }).worldMatrix;
+                if (!wm) {
+                    result[name] = null;
+                    continue;
+                }
+                result[name] = { x: wm[12], y: wm[13], z: wm[14] };
+            }
+            return result;
         },
     };
 }
