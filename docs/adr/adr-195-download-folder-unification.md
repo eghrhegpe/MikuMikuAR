@@ -1,6 +1,6 @@
 # ADR-195: 下载文件夹统一修订（三平台系统下载目录 + 消除"二扫"）
 
-> **状态**: 已立项 · 规划中（设计文档，待代码落地与单测）
+> **状态**: 已完成（代码落地 + 单测 + 全量验证通过 2026-07-27；设计偏差与已知限制见 §实施记录与已知限制）
 > **日期**: 2026-07-27（初版）
 > **关联**: ADR-181（下载管理面板，本 ADR 修订其定位与行为）、ADR-180 / ADR-183（网页 FSA 根目录授权）、ADR-176（BackendService 双实现 + 绞杀者模式）、ADR-182（纹理命名空间化）、ADR-057 / ADR-058（Shift-JIS 文件名兜底）
 > **来源**: 用户复现①「下载管理面板扫描导入全部往场景里塞」②「暂存目录语义迷惑（暂存=会被清，实际保留原地）」③「根目录扫描逻辑混乱，该扫的不扫、二扫 UI 不一致」④「安卓/网页都应请求系统下载文件夹，而非自建暂存」。
@@ -71,7 +71,7 @@ ADR-181 的动机成立：取代脆弱的 `watchDir` fsnotify 机制，提供统
 |------|--------------|---------|--------|
 | 桌面 | 系统 `~/Downloads`（`pathmgr_desktop.go:44` `DownloadsDir()`） | 无需授权（桌面有 FS 权） | **零**（直接读，移除"选暂存目录"强制步骤，保留"改用其他目录"可选） |
 | 网页 | 系统 Downloads（用户 FSA 选一次 + 句柄持久化） | **复用 ADR-180/183**：`getFsaAuthState` / `restoreFsaRootHandle` / `reauthorizeFsaRoot`；下载面板**不再单独持有 `_stagingFsaIdbKey`**，与模型库共用 FSA 授权 | **复用** |
-| 安卓 | `/sdcard/Download` | **复用 shared 模式**（`MANAGE_EXTERNAL_STORAGE` 已声明）+ 标准 `os.ReadDir` 直读；`pathmgr_android.go` 新增 `DownloadDir()` 返回 `/sdcard/Download` | **低**（加路径定位 + 前端绑定，无需 SAF） |
+| 安卓 | `/sdcard/Download` | **复用 shared 模式**（`MANAGE_EXTERNAL_STORAGE` 已声明）+ 标准 `os.ReadDir` 直读；`pathmgr_android.go` 新增 `DownloadsDir()` 返回 `/sdcard/Download` | **低**（加路径定位 + 前端绑定，无需 SAF） |
 
 **安卓代价（诚实说明）**：下载面板依赖 shared 模式开启（`SetStorageMode("shared")` + 权限已授予）。private 模式下 `/sdcard/Download` 不可达，UI 需提示"需开启共享存储模式"或引导切换。
 
@@ -81,7 +81,7 @@ ADR-181 的动机成立：取代脆弱的 `watchDir` fsnotify 机制，提供统
 
 下载面板扫描到的文件，**不再写 `dl:file:` 旁路 + `imported:<hash>` 独立账本**，改为直接复用模型库的入库函数与键空间：
 
-- **网页**：裸 `.pmx/.vmd` → 复用 `_writeModelFile`（`browser-adapter.ts:467`，写 `file:`+`entry:` 键，**不加载场景**）；`.zip` → 复用 `ImportZip`（写 `dir:`/`outfit:` 键）。删除 `_stagingFsaIdbKey` + `dl:file:` 写入。
+- **网页**：裸 `.pmx/.vmd` → 复用 `ingestModelFiles([{name,bytes}])`（`browser-adapter.ts`，内部 `_buildIngestPairs` 计算 `file:`+`entry:` 键值对，经 `idbBatchSet` **单事务**写入，**不加载场景**）；`.zip` → 复用 `ImportZip`（写 `dir:`/`outfit:` 键）。删除 `_stagingFsaIdbKey` + `dl:file:` 写入。原私有 `_writeModelFile` 已重构为公开 `ingestModelFile(File)` / `ingestModelBytes(name,bytes)` / `ingestModelFiles(...)` 三入口。
 - **桌面 / 安卓**：扫描下载文件夹后，将文件**复制到库的扫描根（resource-root）**，由现有的 `ScanModelDir` / 磁盘扫描统一发现。删除 `.imported.json` 独立账本。
 - **去重统一**：以 `entry:` 键存在性（网页）或 resource-root 内文件已存在（桌面/安卓）为唯一判据，删除 `imported:<hash>` / `.imported.json` 第二套账本。
 
@@ -95,15 +95,15 @@ ADR-181 的动机成立：取代脆弱的 `watchDir` fsnotify 机制，提供统
 - 批量摄入语义 = **注册进资源库**（写 `entry:`/`dir:` 键或复制进 resource-root），**不** `loadManager.load` 进场景。用户从模型库点选再加载。
 - `importFileByPath` 单文件拖放/点击导入行为**保持不变**（仍加载进场景，符合其交互契约）。
 
-### 决策 5 — 倒入源语义（移动 / 复制 / 原地注册）— 待议会拍板
+### 决策 5 — 倒入源语义（移动 / 复制 / 原地注册）— 已默认落 A
 
 下载文件夹是"倒入源"，库是"目的地"。文件如何从源到目的地，三选项：
 
-- **A（推荐）：复制到库根**——网页写 `entry:`/`dir:` 键（已是复制语义）；桌面/安卓复制到 resource-root。源文件保留在下载文件夹。库立即可见，零破坏，双份空间占用可接受（模型文件通常不大）。
+- **A（推荐，已落地）：复制到库根**——网页写 `entry:`/`dir:` 键（已是复制语义）；桌面/安卓复制到 resource-root。源文件保留在下载文件夹。库立即可见，零破坏，双份空间占用可接受（模型文件通常不大）。
 - **B：移动到库根**——源文件移出下载文件夹，释放空间；但破坏用户下载目录，且中断其他下载工具对该文件的引用。
 - **C：原地注册（仅网页可行）**——网页写 `entry:` 键指向原 `file:` 字节（不复制）；桌面/安卓需让库扫描包含下载文件夹（又引入"二扫"风险，不推荐）。
 
-> 默认落 A。B/C 待用户确认是否采用。
+> 实施期已默认落 A（见 §实施记录）。B/C 若后续用户反馈需要，再行评估。
 
 ---
 
@@ -111,10 +111,11 @@ ADR-181 的动机成立：取代脆弱的 `watchDir` fsnotify 机制，提供统
 
 | 改动文件 | 内容 |
 |---------|------|
-| `frontend/src/menus/settings-downloads.ts` | 删除全部 `importFileByPath` 调用（`:203/:260/:263`）；裸文件改调 `_writeModelFile` / 复制逻辑；删 `dl:file:` 写入（`:194`）；删 `imported:<hash>` 账本（`:104/:289`）；接入三平台下载文件夹来源（决策 2）；扫描前预览（决策 1） |
-| `frontend/src/core/backend/browser-adapter.ts` | `_writeModelFile`（`:467`）提升为公开 `ingestModelFile`（供下载面板复用，已写 `entry:` 不加载场景）；删 `_stagingFsaIdbKey` 独立授权，改读 ADR-180/183 FSA 句柄；`ImportZip` 保留（写库不加载场景） |
+| `frontend/src/menus/settings-downloads.ts` | 删除全部 `importFileByPath` 调用（批量摄入只入库、不进场景）；裸文件网页改调 `ingestModelFiles`、桌面/安卓改调 `ImportLocalFile`/`ImportZip`（复制到资源根）；删 `dl:file:` 写入 + `imported:<hash>` 账本；新增会话内去重 `_ingestedStems`（**按完整文件名**，见 §实施记录 F1）；接入三平台下载文件夹来源（决策 2）；扫描前预览（决策 1）；网页独立"选择下载文件夹"按钮（`selectFsaDownloadDir`） |
+| `frontend/src/core/backend/browser-adapter.ts` | 原私有 `_writeModelFile` 重构为公开 `ingestModelFile(File)` / `ingestModelBytes(name,bytes)` / `ingestModelFiles([{name,bytes}])`（内部 `_buildIngestPairs` + `idbBatchSet` 单事务，P3 满足）；新增 FSA 下载文件夹**独立**句柄 `getFsaDownloadAuthState` / `reauthorizeFsaDownload` / `selectFsaDownloadDir` / `getFsaDownloadHandle`（key=`fsaDownloadHandle`，与 `fsaRootHandle` 分离，P3 满足）；`ImportZip` 保留（写库不加载场景） |
+| `frontend/src/core/backend/idb.ts` | 新增 `idbBatchSet(store, entries)` 单事务批量写（P3 批量摄入事务化约束落地） |
 | `frontend/src/core/backend/go-adapter.ts` | 桌面/安卓路径：扫 `DownloadsDir()` / `pathmgr_android.DownloadDir()`；复制进 resource-root；删 `.imported.json` 账本；`localStaging` 改为安卓 shared 模式下可用 |
-| `internal/app/pathmgr_android.go` | 新增 `DownloadDir() string { return "/sdcard/Download" }`（shared 模式下经 `MANAGE_EXTERNAL_STORAGE` 可访问） |
+| `internal/app/pathmgr_android.go` | 修正 `DownloadsDir() string { return "/sdcard/Download" }`（shared 模式下经 `MANAGE_EXTERNAL_STORAGE` 可访问；原返回 `""` 为未接路径） |
 | `frontend/src/core/i18n/locales/*` | 决策 1 正名键（`downloads.stagingDir`→下载文件夹 等）+ 新增 `downloads.supportedHint` |
 | `docs/adr/adr-181-download-manager-panel.md` | **加修订标记**（标题/状态注明"经 ADR-195 修订定位与行为"）；§决策 第 3 步补"批量摄入仅入库、不加载到场景"；命名澄清 |
 
@@ -134,3 +135,28 @@ ADR-181 的动机成立：取代脆弱的 `watchDir` fsnotify 机制，提供统
 - **与 ADR-181 关系**：本 ADR 是 ADR-181 的**定位与行为修订**，非推翻；ADR-181 的"取代 watchDir、统一摄入入口"动机与架构保留。
 - **扫描前预览 UX**：决策 1 的"N 个文件"清单需从递归扫描结果聚合，不增加 O(n) 之外的开销（扫描本就 O(n)）。
 - **落地前评审约束（来源：ADR-194 编号冲突复盘时的独立审核）**：已写入对应决策——① 决策 2 网页下载文件夹支持独立于 resource-root 的第二个 FSA 授权（P3）；② 决策 3 批量摄入须 `idbBatchSet` 事务化避免 IDB 写竞态（P3）；③ 影响面 ADR-181 原文加修订标记（P4）。三项均不阻塞本 ADR 立项，为实施期的强约束。
+
+---
+
+## 实施记录与已知限制
+
+> 代码于 2026-07-27 落地，全量验证通过（`vitest run` 2174 测试绿 / `tsc --noEmit` 零错误 / `go build ./internal/...` 通过 / `npm run check:docs` 通过）。以下为实施期偏差与审计发现。
+
+### 实施期偏差（已落实，非回归）
+- **ingest API 形态**：设计稿写"提升 `_writeModelFile` 为公开 `ingestModelFile`"。实际落地拆为三入口——`ingestModelFile(File)`（拖放/点击单文件）、`ingestModelBytes(name,bytes)`（备用）、`ingestModelFiles([{name,bytes}])`（批量，下载面板用此入口）。下载面板避免 `new File()`（TS 5.x 严格 `SharedArrayBuffer` 类型下 `Uint8Array` 不兼容 `BlobPart`），故采用 `name+bytes` 形式。
+- **去重机制**：ADR-195 有意移除 `imported:<hash>` 持久账本，改用会话内 `_ingestedStems` Set。
+- **P3 约束全部满足**：① 网页下载文件夹独立 `fsaDownloadHandle`（`showDirectoryPicker` 持久化第二个句柄，与 `fsaRootHandle` 键空间分离）；② `ingestModelFiles` 经 `idbBatchSet` 单事务原子写入；③ ADR-181 已加【经 ADR-195 修订】标记。
+
+### 审计发现（2026-07-27 代码审计）
+| 项 | 严重度 | 说明 | 处置 |
+|----|--------|------|------|
+| **F1 去重按裸 stem 误判同名不同扩展名** | 🟡 确定性缺陷（已修复） | 去重键原用 `stem = name.replace(/\.[^.]+$/,'')`，`miku.pmx` 与 `miku.vmd` 同名词对会被判为重复而**静默跳过**动作文件。已改为按**完整文件名**去重（`_ingestedStems` 存 `f.name`/`e.name`），`stem` 仅保留给 zip 落库键 `file:${stem}`。 | ✅ 修复于 `settings-downloads.ts` 网页流 + 本地流 |
+| **F2 仅会话内去重，重载后重扫产生库内重复** | 🟡 已知权衡 | 移除持久账本后，重载首扫同目录时 `ingestModelBytes` 经 `_resolveUniqueStem` 对既有 `entry:miku` 追加 `(2)` 后缀，库内出现重复条目。属 ADR-195 既定权衡，非回归。 | 记录限制；后续可用 `GetLibraryIndex()` 现存 `entry:` 做跨会话去重（待办，不阻塞） |
+| **F3 `listFilesWeb` 全量读入内存** | 🟡 边界提示 | `new Uint8Array(await file.arrayBuffer())` 一次性载入所有文件；zip 有 500MB 单文件守卫但无总量上限。沿用 ADR-181 旧模式，用户手动触发，可接受。 | 仅提示，不改 |
+| **F4 `reauthorizeFsaDownload` 手势窗口** | 🟡 边界提示 | `requestPermission` 须在用户手势窗口内调用，但此前已有多个 `await`（句柄读取、状态查询）。与现有 `reauthorizeFsaRoot` 行为完全一致（非新引入），若实测被浏览器拦截，需将 `reauthorize` 提前到首个 `await` 前。 | 仅提示，不改 |
+
+### 验证覆盖
+- `browser-adapter.test.ts`：新增 4 用例（file:/entry: 键写入、`_listModels` 可见、批量单事务、`_resolveUniqueStem` 同名序号后缀）→ 24/24。
+- `download-manager.test.ts`：25/25（扫描→解压→入库全链路）。
+- 全量 `vitest run`：2174 测试 / 107 文件全绿。
+- `go build ./internal/...` / `tsc --noEmit` / `npm run check:docs`：均通过。

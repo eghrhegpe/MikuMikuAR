@@ -8,6 +8,8 @@ source_files:
   - frontend/src/physics/wind-physics.ts
 adr:
   - ADR-104
+  - ADR-192
+  - ADR-194
 ---
 
 ## 系统概览
@@ -25,5 +27,5 @@ adr:
 ## 与其他子系统关系
 - 依赖 `core/wind-utils`（`getWindVector` / `isWindActive`）
 - 由 `scene.ts` 创建运行时后调用 `init`，`model-loader` 加载成功后 `retry`
-- 反射访问 babylon-mmd 内部 `_rigidBodyBundleMap`（升级若重命名会抛错提示版本兼容性）
-- 风力系数 `WIND_FORCE_SCALE = 0.15`（Bullet 刚体惯性大，需比 XPBD 布料更大）
+- 经 `@/core/mmd-adapter` 的 `getRigidBodyBundleMap` 走**公开 API** `rigidBodyBundleReferenceCountMap.keys()`（ADR-192 Phase 2 内化，已脱离私有字段反射）
+- 风力系数 `WIND_FORCE_SCALE = 1.0`（ADR-194 从 0.15 调至 1.0，使头发/裙子等 Dynamic 刚体摆动明显）

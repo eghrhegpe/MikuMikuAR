@@ -507,8 +507,8 @@ model as unknown as IMmdModel
 
 | ID | 位置 | 风险 | 缓解 |
 |----|------|------|------|
-| 3 | `wind-physics.ts` 反射 `_rigidBodyBundleMap` | 字段重命名 → 返回 undefined → 风物理静默降级 | 代码中有显式的类型检查 + 抛错提示，升级时若触发错误会引导检查 |
-| 9 | `audio.ts` 反射 `_audio` | 字段重命名 → audio 功能异常 | 无显式守卫，依赖开发者自查 |
+| 3 | ~~`wind-physics.ts` 反射 `_rigidBodyBundleMap`~~ | 字段重命名 → 返回 undefined → 风物理静默降级 | ✅ **ADR-192 Phase 2 已内化**：改走公开属性 `rigidBodyBundleReferenceCountMap.keys()`，彻底脱离私有字段反射；本条已从🔴降为🟢 |
+| 9 | `audio.ts` 反射 `_audio` | 字段重命名 → audio 功能异常 | ADR-192 Phase 2 已加守卫式反射 + `logWarn` 提示，不再静默失效 |
 
 ### 🟡 中等脆弱性
 
