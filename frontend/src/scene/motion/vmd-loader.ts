@@ -22,6 +22,7 @@ import { encodeFileRef } from '@/core/fileservice';
 import { readFileBytes } from '@/core/wails-bindings';
 import { t } from '@/core/i18n/t';
 import { feedbackInfo, feedbackStatus } from '@/core/feedback';
+import { switchAnimation } from '@/core/mmd-adapter';
 import { showInfoToast } from '@/core/toast';
 import { replaceDefaultMotion, getActiveMotion } from './motion-intent';
 import { loadCameraVmd } from '../camera/camera';
@@ -141,37 +142,9 @@ export async function loadVMDMotion(
             feedbackStatus('scene.vmd.stageNoVmd', undefined, false);
             return;
         }
-        // 释放旧动画句柄，防止切换 VMD 时 WASM 内存泄漏
-        // setRuntimeAnimation(null) 仅解绑、不释放 WASM buffer；必须显式 dispose 旧
-        // runtime animation（其内部 onDispose 回调触发 _destroyRuntimeAnimation，从
-        // _animationHandleMap 删除并回收 WASM AnimCurve 资源），否则每次换 VMD 都泄漏一份。
-        // babylon-mmd 类型声明未暴露 currentAnimation 属性（内部实现），
-        // 需要取出旧动画句柄显式 dispose 以释放 WASM AnimCurve 资源
-        const prevAnim =
-            (inst.mmdModel as { currentAnimation?: { dispose?: () => void } | null })
-                .currentAnimation ?? null;
-        inst.mmdModel.setRuntimeAnimation(null);
-        if (prevAnim) {
-            try {
-                prevAnim.dispose?.();
-            } catch {
-                // 旧动画句柄清理失败不影响本次绑定
-            }
-        }
-        const handle = inst.mmdModel.createRuntimeAnimation(runtimeAnimation);
-        inst.mmdModel.setRuntimeAnimation(handle);
-
-        // [fix] 切换动作时将 runtime 全局时钟归零到第 0 帧：setRuntimeAnimation 只换动画句柄，
-        // 不会重置 _currentFrameTime。若上一动作播到 50s、新动作仅 10s，currentTime 仍滞留 50s，
-        // 缩略图 renderInstanceThumbnail 内部 rt.render() 触发的 beforePhysics 会判定
-        // elapsedFrameTime(50s) > 新动作时长(10s) → 立即置 _animationPaused 并 onPause →
-        // setIsPlaying(false)，表现为「点击动作 0.01s 后被重置为无动作」。
-        // seekAnimation(0, true) 同步归零时钟+摆到第 0 帧，且不改变 _animationPaused（播放中则继续播、暂停则停留）。
-        try {
-            await mmdRuntime.seekAnimation(0, true);
-        } catch {
-            // 归零失败不影响动作绑定，下一帧主循环会纠正
-        }
+        // 切换 VMD：释放旧句柄 + 绑定新动画 + 归零时钟（封装于 mmd-adapter PlaybackContract，见 ADR-192）。
+        // 固化 setRuntimeAnimation 不重置时钟 + WASM 句柄需显式 dispose 的 babylon-mmd 行为缺陷。
+        await switchAnimation(mmdRuntime, inst.mmdModel, runtimeAnimation);
 
         inst.vmdData = data;
         // 停止程序化动作（延迟到 vmdData 赋值后，确保 stopProcMotion 内 userVmdPresent=true，

@@ -11,6 +11,7 @@ import type { Scene } from '@babylonjs/core/scene';
 import type { ShadowGenerator } from '@babylonjs/core/Lights/Shadows/shadowGenerator';
 
 import { observe } from '@/core/observer-handle';
+import { onBoneMatricesUpdated } from '@/core/mmd-adapter';
 import { initTransformGizmo } from './transform-gizmo';
 import { scheduleRefresh } from '@/core/reactivity';
 import { resetPerformanceSnapshot, isSnapshotResetSuppressed } from './performance';
@@ -193,11 +194,10 @@ export function initLighting(
         }
     });
 
-    // [doc:adr-168] 个人灯 tick：onBeforeRender 而非 onAfterAnimations，
-    // 因为 babylon-mmd 的骨骼 worldMatrix 是在 onBeforeRenderObservable 中更新的，
-    // 而 onAfterAnimationsObservable 在此之『前』触发，读到的 worldMatrix 是上一帧旧值。
-    lightingState.personalLightTickHandle = observe(
-        lightingState.scene.onBeforeRenderObservable,
+    // [doc:adr-192] 个人灯 tick 必须在骨骼 worldMatrix 更新后读取（onBeforeRender 时序）。
+    // 时序契约固化于 mmd-adapter BoneFrameClock.onBoneMatricesUpdated（原逆工程注释已收口）。
+    lightingState.personalLightTickHandle = onBoneMatricesUpdated(
+        lightingState.scene,
         tickPersonalLights
     );
 

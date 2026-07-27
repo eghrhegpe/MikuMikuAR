@@ -81,7 +81,7 @@ export interface MmdRuntimeBoneExtended extends IMmdRuntimeBone {
 
 ---
 
-### 3. `_rigidBodyBundleMap` 反射访问 —— 风物理需要读内部字段  **[适配层根治中 → ADR-192]**
+### 3. `_rigidBodyBundleMap` 反射访问 —— 风物理需要读内部字段  **[Phase 2 内化中 → ADR-192]**
 
 **文件**: `frontend/src/physics/wind-physics.ts`，第 39–68 行
 
@@ -222,7 +222,7 @@ return (mmdRuntime as unknown as MmdWasmRuntime) ?? null;
 
 ---
 
-### 9. `StreamAudioPlayer._audio` 反射 —— 直接控制音频播放  **[适配层根治中 → ADR-192]**
+### 9. `StreamAudioPlayer._audio` 反射 —— 直接控制音频播放  **[Phase 2 内化中 → ADR-192]**
 
 **文件**: `frontend/src/outfit/audio.ts`，第 55、134、351 行
 
@@ -270,7 +270,7 @@ referenceFiles: textureFiles as unknown as File[],
 
 ---
 
-### 12. `worldMatrix` 时序与坐标系文档 —— 逆工程的运行时行为  **[适配层根治中 → ADR-192]**
+### 12. `worldMatrix` 时序与坐标系文档 —— 逆工程的运行时行为  **[已固化 → ADR-192 Phase 1]**
 
 **文件**:
 - `frontend/src/scene/render/lighting.ts`，第 196–202 行
@@ -315,7 +315,7 @@ referenceFiles: textureFiles as unknown as File[],
 
 ---
 
-### 14. `seekAnimation(0)` —— `setRuntimeAnimation` 不重置时钟  **[适配层根治中 → ADR-192]**
+### 14. `seekAnimation(0)` —— `setRuntimeAnimation` 不重置时钟  **[已固化 → ADR-192 Phase 1]**
 
 **文件**: `frontend/src/scene/motion/vmd-loader.ts`，第 164–174 行（缩略图渲染场景）；同模式散落 `playback.ts:101`、`vmd-layers.ts:721`（切换重置），以及 `shortcut-app.ts:153/175`（快进快退，合法 seek 非补丁）
 
