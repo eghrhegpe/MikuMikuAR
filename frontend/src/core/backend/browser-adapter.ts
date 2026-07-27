@@ -37,7 +37,7 @@ import type {
 } from '@bindings/mikumikuar/internal/app/models';
 import { NotSupportedError } from './types';
 import type { BackendService, BackendCapabilities } from './types';
-import { idbGet, idbSet, idbDelete, idbKeys, closeIDB, type Store } from './idb';
+import { idbGet, idbSet, idbDelete, idbKeys, idbBatchSet, closeIDB, type Store } from './idb';
 import { detectKtx2Support } from '../gpu-capabilities';
 
 // —— 路径工具函数（消除 6 处 "split + pop + replace" 重复）——
@@ -463,52 +463,92 @@ async function _resolveUniqueStem(baseStem: string): Promise<string> {
     return stem;
 }
 
-/** 写入单个模型/动作文件到 IndexedDB，返回加载路径。 */
-async function _writeModelFile(file: File): Promise<string> {
-    const lower = file.name.toLowerCase();
-    const bytes = new Uint8Array(await file.arrayBuffer());
-    const baseStem = _stripExt(file.name);
+/**
+ * [doc:adr-195] 将单个模型/动作文件写入 IndexedDB 资源库（file:<stem> + entry:<stem>），
+ * **不加载到场景**。供下载面板批量摄入复用——与 importFileByPath（会 loadManager.load 进场景）解耦。
+ * 返回的 loadPath 仅供调用方按需加载；批量摄入场景不应调用 loadManager.load。
+ */
+interface _IngestPair {
+    key: string;
+    value: unknown;
+}
+
+/** 计算写入键值对（不落库），供单条/批量摄入复用，避免逻辑重复。
+ *  [doc:adr-182] 同名冲突检测 + 序号后缀，防止 FSA 多选同名 PMX 覆盖。 */
+async function _buildIngestPairs(
+    name: string,
+    bytes: Uint8Array
+): Promise<{ pairs: [string, unknown][]; loadPath: string }> {
+    const lower = name.toLowerCase();
+    const baseStem = _stripExt(name);
     if (lower.endsWith('.pmx')) {
-        // [doc:adr-182] 同名冲突检测 + 序号后缀，防止 FSA 多选同名 PMX 覆盖
         const pmxStem = await _resolveUniqueStem(baseStem);
         const encStem = _encModelStem(pmxStem);
-        await idbSet('models', `file:${encStem}`, bytes);
         const modelDir = 'web://model';
         const filePath = `${modelDir}/${encStem}`;
-        await idbSet('models', `entry:${encStem}`, {
+        const entry = {
             dir: modelDir,
             file_path: filePath,
             name_jp: pmxStem,
             name_en: pmxStem,
             comment: '',
             has_thumb: false,
-            type: 'actor',
-            format: 'pmx',
-            container: 'file',
+            type: 'actor' as const,
+            format: 'pmx' as const,
+            container: 'file' as const,
             zip_inner: '',
             category: '',
             source: '',
             name: pmxStem,
-            fileName: file.name,
-            kind: 'pmx',
+            fileName: name,
+            kind: 'pmx' as const,
             size: bytes.byteLength,
             savedAt: Date.now(),
-        });
-        return filePath;
+        };
+        return { pairs: [[`file:${encStem}`, bytes], [`entry:${encStem}`, entry]], loadPath: filePath };
     }
     // zip / vmd 保持原有裸 stem 行为（无冲突检测，由上层 ExtractZip/drop-import 管理）
     const stem = baseStem;
-    await idbSet('models', `file:${stem}`, bytes);
+    const pairs: [string, unknown][] = [[`file:${stem}`, bytes]];
     if (lower.endsWith('.zip')) {
-        await idbSet('models', `entry:${stem}`, {
-            name: stem,
-            fileName: file.name,
-            kind: 'zip',
-            size: bytes.byteLength,
-            savedAt: Date.now(),
-        });
+        pairs.push([
+            `entry:${stem}`,
+            {
+                name: stem,
+                fileName: name,
+                kind: 'zip' as const,
+                size: bytes.byteLength,
+                savedAt: Date.now(),
+            },
+        ]);
     }
-    return file.name;
+    return { pairs, loadPath: name };
+}
+
+/** 写入单个模型/动作文件（File）到 IndexedDB 资源库（file:+entry:），不加载到场景。 */
+export async function ingestModelFile(file: File): Promise<string> {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const { pairs, loadPath } = await _buildIngestPairs(file.name, bytes);
+    for (const [k, v] of pairs) await idbSet('models', k, v);
+    return loadPath;
+}
+
+/** [doc:adr-195] 写入单文件（名+字节）到资源库，不加载到场景。供下载面板批量摄入复用。 */
+export async function ingestModelBytes(name: string, bytes: Uint8Array): Promise<string> {
+    const { pairs, loadPath } = await _buildIngestPairs(name, bytes);
+    for (const [k, v] of pairs) await idbSet('models', k, v);
+    return loadPath;
+}
+
+/** [doc:adr-195] P3 批量摄入：单事务写入该批次所有 file:/entry: 键，避免逐条 idbSet 并发写竞态。 */
+export async function ingestModelFiles(files: { name: string; bytes: Uint8Array }[]): Promise<number> {
+    const all: [string, unknown][] = [];
+    for (const f of files) {
+        const { pairs } = await _buildIngestPairs(f.name, f.bytes);
+        all.push(...pairs);
+    }
+    await idbBatchSet('models', all);
+    return files.length;
 }
 
 const TEXTURE_EXTS_RE = /\.(png|jpg|jpeg|bmp|tga|dds|tif|tiff)$/i;
@@ -690,7 +730,7 @@ function _relPathFrom(childRelIdCategory: string, pmxRelPath: string): string {
 /** [doc:adr-180] 清掉上一次 FSA 扫描写入的模型库 entry（dir 以 web://selected-dir 开头），根目录重扫前调用，
  * 保证层级彻底自愈且旧塌缩 entry 被清除。设计可靠性：
  * - 扫描器(_scanDirIntoIDB)写入的 entry 含 dir 字段，值为 'web://selected-dir/...'。
- * - 手动导入(SelectImportFile/_writeModelFile)写入的 entry dir 为 'web://model'（[doc:adr-182] 补齐），不匹配前缀，得以保留。
+ * - 手动导入(SelectImportFile/ingestModelFile)写入的 entry dir 为 'web://model'（[doc:adr-182] 补齐），不匹配前缀，得以保留。
  * - bundle entry 的 dir 为 'web://bundle/...'，不匹配前缀，得以保留。 */
 async function _clearScannedEntries(): Promise<void> {
     const keys = (await idbKeys('models')).filter((k) => k.startsWith('entry:'));
@@ -780,6 +820,76 @@ export async function reauthorizeFsaRoot(): Promise<boolean> {
         /* 用户拒绝 / 句柄失效 → 降级为手动 SelectDir */
     }
     return false;
+}
+
+// [doc:adr-195] 下载文件夹独立 FSA 句柄（P3：不得强制共用 root 句柄）。
+// 与 _fsaRootHandle / fsaRootHandle 完全独立，支持用户把下载文件夹与模型库根目录设为不同目录
+// （如下载在桌面 Downloads、库在移动硬盘）。复用 ADR-180/183 的持久化/授权机制，仅键空间分离。
+let _fsaDownloadHandle: FileSystemDirectoryHandle | null = null;
+const _FSA_DOWNLOAD_KEY = 'fsaDownloadHandle';
+
+/** 查询下载文件夹 FSA 授权状态（不触发权限弹窗），供 UI 引导。 */
+export async function getFsaDownloadAuthState(): Promise<FsaAuthState> {
+    if (!_cap().fsAccess) return 'unsupported';
+    const h = await idbGet<FileSystemDirectoryHandle>('config', _FSA_DOWNLOAD_KEY);
+    if (!h) return 'none';
+    const permHandle = h as FileSystemDirectoryHandle & {
+        queryPermission?: (o: { mode: 'readwrite' }) => Promise<PermissionState>;
+    };
+    if (typeof permHandle.queryPermission === 'function') {
+        try {
+            return (await permHandle.queryPermission({ mode: 'readwrite' })) === 'granted'
+                ? 'granted'
+                : 'revoked';
+        } catch {
+            return 'revoked';
+        }
+    }
+    return 'revoked';
+}
+
+/** 对持久化的下载文件夹句柄重新请求授权（须用户手势上下文）。成功返回 true。 */
+export async function reauthorizeFsaDownload(): Promise<boolean> {
+    const h = await idbGet<FileSystemDirectoryHandle>('config', _FSA_DOWNLOAD_KEY);
+    if (!h) return false;
+    const permHandle = h as FileSystemDirectoryHandle & {
+        requestPermission?: (o: { mode: 'readwrite' }) => Promise<PermissionState>;
+    };
+    if (typeof permHandle.requestPermission !== 'function') return false;
+    try {
+        const perm = await permHandle.requestPermission({ mode: 'readwrite' });
+        if (perm === 'granted') {
+            _fsaDownloadHandle = h;
+            return true;
+        }
+    } catch {
+        /* 用户拒绝 / 句柄失效 → 降级为手动重选 */
+    }
+    return false;
+}
+
+/** 选择下载文件夹（独立 FSA 句柄），持久化到 _FSA_DOWNLOAD_KEY。 */
+export async function selectFsaDownloadDir(): Promise<string | null> {
+    const picker = (
+        window as { showDirectoryPicker?: () => Promise<FileSystemDirectoryHandle> }
+    ).showDirectoryPicker;
+    if (typeof picker !== 'function') return null;
+    try {
+        const h = await picker();
+        await idbSet('config', _FSA_DOWNLOAD_KEY, h);
+        _fsaDownloadHandle = h;
+        return h.name;
+    } catch {
+        return null;
+    }
+}
+
+/** 读取持久化的下载文件夹句柄（供扫描使用），不触发权限弹窗；无句柄返回 null。 */
+export async function getFsaDownloadHandle(): Promise<FileSystemDirectoryHandle | null> {
+    const h = await idbGet<FileSystemDirectoryHandle>('config', _FSA_DOWNLOAD_KEY);
+    if (!h) return null;
+    _fsaDownloadHandle = h;
+    return h;
 }
 
 /** FSA 目录递归扫描：保留目录结构，按目录约定分类（对齐桌面端） */
@@ -1866,7 +1976,7 @@ export const browserAdapter: BackendService = {
             const handles = await _pickFilesMultiple(true);
             if (!handles || handles.length === 0) {
                 // 用户只选了 PMX 但没选纹理，降级：只写 PMX
-                return await _writeModelFile(singleFile);
+                return await ingestModelFile(singleFile);
             }
             return await _writeModelWithTextures(singleFile, handles);
         }

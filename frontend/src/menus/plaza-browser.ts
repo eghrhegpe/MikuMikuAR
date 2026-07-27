@@ -34,7 +34,6 @@ import {
 import { NavigatePlazaWindow } from '@bindings/mikumikuar/internal/app/app';
 import { getCachedCapabilities } from '../core/backend';
 import { openExternalURL } from '../core/platform';
-import { browser } from '../core/runtime-bridge';
 import { swallowError, escapeHtml } from '../core/utils';
 import { logWarn } from '../core/logger';
 import { safeCallAsync } from '../core/safe-call';
@@ -90,7 +89,8 @@ export function normalizeSite(raw: RawSiteInput): PlazaSite | null {
     if (!name || !url) {
         return null;
     }
-    const mode: 'embed' | 'external' = raw.mode === 'embed' ? 'embed' : 'external';
+    const mode: 'embed' | 'external' | 'window' =
+        raw.mode === 'window' ? 'window' : raw.mode === 'embed' ? 'embed' : 'external';
     let icon = raw.icon;
     if (icon && /^[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]$/u.test(icon)) {
         icon = `data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><text y=%2220%22 font-size=%2220%22>${icon}</text></svg>`;
@@ -297,9 +297,6 @@ export function openSiteByMode(site: PlazaSite, url?: string): void {
         case 'window':
             openInWindow(site, url);
             break;
-        case 'browser':
-            openInSystemBrowser(site, url);
-            break;
     }
 }
 
@@ -314,19 +311,11 @@ export function openExternal(site: PlazaSite, url?: string): void {
     }
 }
 
-/** 调用操作系统的默认浏览器打开站点（Browser.OpenURL 或 window.open）。 */
-export function openInSystemBrowser(site: PlazaSite, url?: string): void {
-    const target = url ?? site.url;
-    swallowError(browser.openURL(target));
-}
-
 export function openInWindow(site: PlazaSite, url?: string): void {
     // [doc:plaza-spa] directNavigate 站点（独立 API 域 SPA）直连真实域名，
     // 否则代理 origin (127.0.0.1:PORT) 触发 api CORS 白屏。
     const direct = site.directNavigate ?? false;
-    if (!direct) {
-        setPlazaProxyActive(true);
-    }
+    setPlazaProxyActive(!direct);
     safeCallAsync('plaza', '', () => NavigatePlazaWindow(url ?? site.url, direct)).catch(() => {
         setPlazaProxyActive(false);
     });
@@ -798,8 +787,7 @@ export function showActionsMenu(site: PlazaSite, anchor: HTMLElement): void {
                   ...(getCachedCapabilities().plazaWindow
                       ? [{ key: 'window' as const, label: '独立窗口' }]
                       : []),
-                  { key: 'external' as const, label: '第二窗口浏览器' },
-                  { key: 'browser' as const, label: '直接打开浏览器' },
+                  { key: 'external' as const, label: '系统浏览器' },
               ]
             : [{ key: 'external' as const, label: '系统浏览器' }]),
     ];

@@ -75,6 +75,8 @@ ADR-181 的动机成立：取代脆弱的 `watchDir` fsnotify 机制，提供统
 
 **安卓代价（诚实说明）**：下载面板依赖 shared 模式开启（`SetStorageMode("shared")` + 权限已授予）。private 模式下 `/sdcard/Download` 不可达，UI 需提示"需开启共享存储模式"或引导切换。
 
+**约束（P3，落地前评审）— 网页下载文件夹允许独立于 resource-root 授权**：本决策"与模型库共用 FSA 授权"为**默认推荐**，但**不得强制共用单一句柄**。若用户希望下载文件夹与模型库根目录为不同目录（如下载在桌面、库在移动硬盘），网页端应支持**第二个独立 FSA 授权**（持久化第二个 `showDirectoryPicker` 句柄），而非把下载文件夹句柄强制等同于 resource-root 句柄。实现上：`getFsaAuthState` / `restoreFsaRootHandle` / `reauthorizeFsaRoot`（ADR-180/183）应支持**多句柄按用途 key 区分**（如 `root` vs `download`），避免"下载文件夹"语义被"模型库根"吞并。
+
 ### 决策 3 — 消除"二扫"：合并键空间，复用模型库入库逻辑
 
 下载面板扫描到的文件，**不再写 `dl:file:` 旁路 + `imported:<hash>` 独立账本**，改为直接复用模型库的入库函数与键空间：
@@ -84,6 +86,8 @@ ADR-181 的动机成立：取代脆弱的 `watchDir` fsnotify 机制，提供统
 - **去重统一**：以 `entry:` 键存在性（网页）或 resource-root 内文件已存在（桌面/安卓）为唯一判据，删除 `imported:<hash>` / `.imported.json` 第二套账本。
 
 结果：下载文件夹的内容**直接进模型库列表可见**，与"手动导入"行为完全一致，且只有一套扫描、一套键空间、一套去重。
+
+**约束（P3，落地前评审）— 批量入库须事务化**：裸文件复用 `_writeModelFile`（逐条 `idbSet`）在**批量扫描并发摄入**场景下存在 IndexedDB 写竞态（`idbSet` 非事务级，多文件同时写 `file:`/`entry:` 可能交错或覆盖）。落地时批量摄入应包入 **`idbBatchSet` 事务**（一次性写入该批次所有 `file:`+`entry:` 键），或在外层加串行化队列，杜绝并发写竞态。单文件拖放/点击（原 `importFileByPath` 路径）维持逐条写入即可。
 
 ### 决策 4 — 行为解耦：批量摄入只入库、不加载到场景
 
@@ -112,7 +116,7 @@ ADR-181 的动机成立：取代脆弱的 `watchDir` fsnotify 机制，提供统
 | `frontend/src/core/backend/go-adapter.ts` | 桌面/安卓路径：扫 `DownloadsDir()` / `pathmgr_android.DownloadDir()`；复制进 resource-root；删 `.imported.json` 账本；`localStaging` 改为安卓 shared 模式下可用 |
 | `internal/app/pathmgr_android.go` | 新增 `DownloadDir() string { return "/sdcard/Download" }`（shared 模式下经 `MANAGE_EXTERNAL_STORAGE` 可访问） |
 | `frontend/src/core/i18n/locales/*` | 决策 1 正名键（`downloads.stagingDir`→下载文件夹 等）+ 新增 `downloads.supportedHint` |
-| `docs/adr/adr-181-download-manager-panel.md` | §决策 第 3 步补"批量摄入仅入库、不加载到场景"；命名澄清 |
+| `docs/adr/adr-181-download-manager-panel.md` | **加修订标记**（标题/状态注明"经 ADR-195 修订定位与行为"）；§决策 第 3 步补"批量摄入仅入库、不加载到场景"；命名澄清 |
 
 **验证计划**：
 - 网页：`browser-adapter.test.ts` 扩展（ingestModelFile 入库后 `_listModels` 可见、不触发 loadManager）。
@@ -129,3 +133,4 @@ ADR-181 的动机成立：取代脆弱的 `watchDir` fsnotify 机制，提供统
 - **历史 `dl:file:` / `imported:` 残留数据**：迁移时旧键可保留（无害，库不读），或加一次性清理；不阻塞本 ADR 落地。
 - **与 ADR-181 关系**：本 ADR 是 ADR-181 的**定位与行为修订**，非推翻；ADR-181 的"取代 watchDir、统一摄入入口"动机与架构保留。
 - **扫描前预览 UX**：决策 1 的"N 个文件"清单需从递归扫描结果聚合，不增加 O(n) 之外的开销（扫描本就 O(n)）。
+- **落地前评审约束（来源：ADR-194 编号冲突复盘时的独立审核）**：已写入对应决策——① 决策 2 网页下载文件夹支持独立于 resource-root 的第二个 FSA 授权（P3）；② 决策 3 批量摄入须 `idbBatchSet` 事务化避免 IDB 写竞态（P3）；③ 影响面 ADR-181 原文加修订标记（P4）。三项均不阻塞本 ADR 立项，为实施期的强约束。

@@ -2,7 +2,7 @@ export interface PlazaSite {
     id: string;
     name: string;
     url: string;
-    mode: 'embed' | 'external';
+    mode: 'embed' | 'external' | 'window';
     icon?: string;
     desc?: string;
     group?: string;
@@ -17,7 +17,7 @@ export const PLAZA_SITES: PlazaSite[] = [
         id: 'mzhouse',
         name: '模之屋',
         url: 'https://www.aplaybox.com/',
-        mode: 'external',
+        mode: 'window',
         directNavigate: true,
         icon: 'lucide:box',
         desc: 'MMD/VRC 模型分享平台',
@@ -36,7 +36,7 @@ export const PLAZA_SITES: PlazaSite[] = [
         id: 'bowlroll',
         name: 'Bowlroll',
         url: 'https://bowlroll.net/',
-        mode: 'embed',
+        mode: 'window',
         directNavigate: true,
         icon: 'lucide:package',
         desc: '日系老牌 MMD 模型仓库',
@@ -53,7 +53,7 @@ export const PLAZA_SITES: PlazaSite[] = [
         id: 'booth',
         name: 'BOOTH',
         url: 'https://booth.pm/zh-cn/browse/3D%20Models',
-        mode: 'external',
+        mode: 'window',
         directNavigate: true,
         icon: 'lucide:shopping-bag',
         desc: '同人 3D 模型通贩市场',

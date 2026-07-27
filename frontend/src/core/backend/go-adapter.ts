@@ -32,7 +32,7 @@ export const goAdapter: BackendService = {
             ar: true,
             externalApps: true,
             plazaWindow: true,
-            fsAccess: false, // 原生对话框，非 FSA
+            fsAccess: false, // 原生桌面/安卓用原生对话框，不走 FSA（File System Access API）；fsAccess 仅指 FSA 能力，非"文件系统不可用"
             watchDir: !isAndroidPlatform(), // 桌面应用可监听目录；安卓应用 WebView 无此能力（与历史 !isAndroidPlatform() 门控一致）
             proxyServer: true,
             fileServer: true,
@@ -46,7 +46,7 @@ export const goAdapter: BackendService = {
             crossOriginIsolated:
                 typeof window !== 'undefined' &&
                 (window as { crossOriginIsolated?: boolean }).crossOriginIsolated === true,
-            clipboardReliable: !isAndroidPlatform(), // 安卓 WebView 部分版本需手势/API 缺失（A2-06 根因）
+            clipboardReliable: !isAndroidPlatform(), // 安卓 WebView 部分版本需手势/API 缺失（A2-06 根因）；调用点已用 try/catch 兜底（toast.ts:141），勿加额外 if (!clipboardReliable) 守卫
             arScope: isAndroidPlatform() ? 'android-app' : 'none', // 仅安卓应用走 ARCore 原生路由
             // [doc:adr-189] GPU 压缩纹理能力探测（运行时，与后端无关）
             ktx2Supported: ktx2.supported,
@@ -59,7 +59,7 @@ export const goAdapter: BackendService = {
             // 已废弃 SAF（Storage Access Framework）。请勿对安卓调用 SelectDir()——框架会翻译成 SAF 建树（ACTION_OPEN_DOCUMENT_TREE）。
             // 网页端 FSA（File System Access API，ADR-180/183）是另一套机制，与此正交。
             fsSelectDir: !isAndroidPlatform(), // 桌面原生对话框；安卓 WebView 无目录选择（shared 模式，无 SAF）
-            localStaging: !isAndroidPlatform(), // 桌面级暂存目录；安卓走文档沙箱
+            localStaging: true, // 桌面原生目录 + 安卓 shared 模式 /sdcard/Download（[doc:adr-195] 下载文件夹统一摄入）
             androidStorageMode: isAndroidPlatform(), // 仅安卓专属存储模式切换
         };
     },

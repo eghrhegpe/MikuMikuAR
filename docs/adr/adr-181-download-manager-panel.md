@@ -1,6 +1,7 @@
-# ADR-181: 下载管理面板（扫描→解压→入库→processed 标记）
+# ADR-181: 下载管理面板（扫描→解压→入库→processed 标记）【经 ADR-195 修订定位与行为】
 
 > **状态**: 已完成（代码+测试 2026-07-26 全部落地；settings-downloads.ts 422 行 + download-manager.test.ts 25 测试 + 全量 2100+ 通过）
+> **修订**: 经 **ADR-195（下载文件夹统一修订，2026-07-27）** 修订——① 命名"暂存目录/staging"统一改为"**下载文件夹**"；② 批量摄入**仅写资源库、不加载到场景**（与 `importFileByPath` 解耦）；③ 安卓不再走 SAF，改复用 shared 模式 `/sdcard/Download`（`pathmgr_android.DownloadsDir()` 返回该路径）。下文标注【ADR-195 修订】处为变更点，详细动机见 ADR-195。
 > **日期**: 2026-07-25
 > **关联**: ADR-176（前端 Backend 适配器双实现）、ADR-177（Web Loader 与主应用统一路径）、ADR-178（能力矩阵宿主键 —— 本 ADR 实施后 `watchDir` 键随之废弃）、ADR-179（更新安装拉起，平台分级）、ADR-180（FSA 句柄持久化 —— 本面板网页/安卓端 staging 持久化直接复用其句柄恢复机制）、ADR-017（安卓适配，platform 探测范式）、ADR-018（pathmgr 抽象）
 > **前置**: zip 解压管线已具备（网页 `browser-adapter.ts` JSZip / Go `ExtractZip`）；资源库写入已具备（IndexedDB `dir:/outfit:` 路由 / Go 落盘）；fsnotify watch 现状（`internal/app/watch.go`）；ADR-180（FSA 句柄持久化）已落地，提供网页/安卓端 staging 句柄持久化能力
@@ -31,7 +32,7 @@
 
 1. **扫描（scan）**：枚举暂存目录（staging）下的文件，按现有扩展名过滤（`ExtractZip` 内部已按 PMX stem 分组、`dir:/outfit:` / `bundle:` 路由，见 `browser-adapter.ts:20/:739`，面板无需新写分类器）。
 2. **解压（decompress）**：遇到 `.zip` → 复用 `ExtractZip`（`browser-adapter.ts:802–845` 网页 JSZip / Go `ExtractZip`）；非 zip 资源直接进第 3 步。
-3. **入库（import）**：解压产物 / 裸资源写入对应资源库——网页落 IndexedDB `dir:/outfit:` 等键，桌面/安卓经 Go 扫描落盘；复用 `library-actions.ts:614 importFile()` 抽出的路由函数 `importFileByPath(path)`（见 §精确改法②，避免 `importFile()` 内部 `SelectImportFile()` 弹窗）。
+3. **入库（import）**：解压产物 / 裸资源写入对应资源库——网页落 IndexedDB `dir:/outfit:` 等键，桌面/安卓经 Go 扫描落盘；复用 `library-actions.ts:614 importFile()` 抽出的路由函数 `importFileByPath(path)`（见 §精确改法②，避免 `importFile()` 内部 `SelectImportFile()` 弹窗）。**【ADR-195 修订】批量摄入路径（下载面板）只调用资源库写入（`ingestModelBytes` / `ImportLocalFile` / `ImportZip`），不调用 `loadManager.load` 进场景；`importFileByPath` 仍保留"选区即加载"语义，二者职责分离。**
 4. **标记已处理（mark processed）**：写入成功的源文件移入 `<staging>/_imported/`（非系统级回收站，仅 staging 内子目录），并追加 `.imported.json` 清单（已处理文件 hash/相对路径），防重复导入。
 
 **跨端暂存目录获取（复用 ADR-180 句柄持久化，不再单列子能力）：**
@@ -41,6 +42,8 @@
 | 桌面应用 | Go 自动取 `pathmgr.DownloadsDir()`（非安卓有值） | 全自动，面板直接扫 | 无需 |
 | 安卓应用 | `pathmgr_android.go:29` 返回 `""` → **无法自动枚举 OS 下载目录**；需用户经 SAF 授权一个暂存位置（或 app 自有 MMD 文件夹） | 首次需手势 | SAF URI 持久化（待定位：安卓 WailsBridge 持久化点） |
 | 网页模式 | FSA `showDirectoryPicker` 选暂存目录 | 首次需手势，之后复用 | `FileSystemHandle` 持久化（**ADR-180** `restoreFsaRootHandle` 句柄恢复） |
+
+> **【ADR-195 修订】上方「跨端暂存目录获取」表已部分过时**：命名由"暂存目录/staging"改为"**下载文件夹**"；安卓行不再要求 SAF 授权——改走 shared 存储模式直接枚举 `/sdcard/Download`（`pathmgr_android.DownloadsDir()` 现返回该路径，原返回 `""` 的注释已作废）；网页行"复用 ADR-180 根句柄"改为**可独立第二个 FSA 授权**（下载文件夹专用，不强制共享 resource-root 句柄）。以 ADR-195 为准。
 
 **能力层影响**：`watchDir` 能力键（`go-adapter.ts:33`，ADR-178 落地为 `!isAndroidPlatform()`）在 watch 机制移除后**失去意义**，标记废弃；UI 不再依赖 `getCachedCapabilities().watchDir` 隐藏/显示任何卡片。
 

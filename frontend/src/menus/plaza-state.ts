@@ -99,12 +99,12 @@ export function setPlazaIframe(el: HTMLIFrameElement | null): void {
 
 // ======== 打开模式 ========
 
-export type OpenMode = 'embed' | 'external' | 'window' | 'browser';
+export type OpenMode = 'embed' | 'external' | 'window';
 
 export function loadGlobalMode(): OpenMode | null {
     try {
         const v = localStorage.getItem(GLOBAL_MODE_KEY);
-        if (v === 'embed' || v === 'external' || v === 'window' || v === 'browser') {
+        if (v === 'embed' || v === 'external' || v === 'window') {
             return v;
         }
     } catch (e) {
@@ -125,7 +125,7 @@ export function effectiveMode(site: PlazaSite): OpenMode {
     try {
         const key = `miku.plaza.mode.${site.name}`;
         const saved = localStorage.getItem(key);
-        if (saved === 'embed' || saved === 'external' || saved === 'window' || saved === 'browser') {
+        if (saved === 'embed' || saved === 'external' || saved === 'window') {
             // [doc:adr-177] A5 能力门控：plazaWindow===false 时 'window' 降级为 'embed'，
             // 避免 NavigatePlazaWindow/ClosePlazaWindow 抛 NotSupportedError。
             if (saved === 'window' && !getCachedCapabilities().plazaWindow) {
