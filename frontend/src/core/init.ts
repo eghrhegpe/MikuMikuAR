@@ -122,10 +122,16 @@ async function init(): Promise<void> {
         initShortcutDispatcher();
         setStatus(t('main.initializing'), false);
         // [doc:adr-177] Phase 2 A5：web 入口预热 capabilities 缓存
-        // 桌面 capabilities 全 true，fallback 全 true 已正确，无需阻塞 awaitWailsBridge；
-        // web 入口短路快，await 无延迟，确保菜单 visibleWhen 首次渲染读到真实 capabilities。
+        // web 入口短路快，await 无延迟；桌面 fallback 全 true 已正确，无需阻塞。
+        // Android 必须预热：缺少真实 capabilities 时 ALL_TRUE_CAPS 的 fsSelectDir=true
+        // 会误导 settings-resources 走桌面路径，隐藏私有/共享存储切换 UI。
         if (isWebPlatform()) {
             await getCapabilities();
+        } else if (isAndroidPlatform()) {
+            // Android 异步预热，不阻塞首屏（awaitWailsBridge 最长 3s）
+            fireAndForget(async () => {
+                await getCapabilities();
+            });
         }
         // [doc:adr-176] 后台解析后端并把实际选中的 kind（go/browser）写进运行时徽标，
         // 不阻塞首屏渲染；消除「网页壳参杂 Go 逻辑」的歧义（9245 等 webview 场景一眼可辨）。
