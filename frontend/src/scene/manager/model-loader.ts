@@ -25,6 +25,7 @@ import { showInfoToast } from '@/core/toast';
 import type { ModelMotionSlots } from '@/core/types';
 import { getBaseName, isUnderRoot } from '@/core/path';
 import { swallowError } from '@/core/async';
+import { resolveModelId } from './model-id';
 import { logWarn } from '@/core/logger';
 import { parsePmxComment } from '@/core/pmx-meta';
 import {
@@ -428,7 +429,9 @@ export async function loadPMXFile(
     skipAutoApply?: boolean,
     libraryPath?: string,
     innerPath?: string,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    /** [doc:stable-identity] 恢复场景时传入存档 uuid，使 runtime id 稳定、可跨会话复用（材质/个人灯等状态按此 id 落盘） */
+    preferredId?: string
 ): Promise<string | null> {
     if (!_scene || !_mmdRuntime) {
         return null;
@@ -519,7 +522,9 @@ export async function loadPMXFile(
             return null;
         }
 
-        const id = `model_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        // [doc:stable-identity] 稳定身份：优先复用存档 uuid（恢复路径传入），否则生成稳定 uuid。
+        // 替代原 `model_${Date.now()}_${random}`，避免 id 每次加载重生导致材质/outfit/个人灯状态孤儿化。
+        const id = resolveModelId(preferredId);
         const displayName = _displayNameFromBase(fileName);
 
         if (asStage) {
