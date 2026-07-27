@@ -190,7 +190,6 @@ function renderAndroidStorage(
 function buildStorageSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
     const root = resourceRoot;
     const rootSub = root ? truncatePath(root) : t('settings.paths.notSet');
-    const showNativePath = getCachedCapabilities().fsSelectDir;
 
     return [
         {
@@ -199,7 +198,10 @@ function buildStorageSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode
             // [doc:adr-177] A5 能力门控：storageMode===false 时隐藏存储模式卡片（浏览器固定 web 模式）
             visibleWhen: () => getCachedCapabilities().storageMode,
             renderCustom: (c) => {
-                if (showNativePath) {
+                // [doc:adr-177] fsSelectDir 延迟求值：Android 端 capabilities 异步预热，
+                // 若在 buildStorageSchema 时求值可能拿到 ALL_TRUE_CAPS 的 fsSelectDir=true
+                // 导致走桌面路径，隐藏 Android 私有/共享存储切换 UI。
+                if (getCachedCapabilities().fsSelectDir) {
                     cardContainer(c, (inner) => {
                         addSectionTitle(inner, t('settings.paths.storage'));
                         slideRow(
