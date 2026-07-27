@@ -92,7 +92,7 @@ use_when:
 
 跑法：`node scripts/check-doc-drift.mjs`（或 `--json`）。可接 CI 卡点。
 
-## 卡片索引（198 张，按 category 分组）
+## 卡片索引（212 张，按 category 分组）
 
 ### 环境系统（env）
 
@@ -250,6 +250,7 @@ use_when:
 | [资源库操作](./library-actions.md) | `menus/library-actions.ts` | — |
 | [资源库核心](./library-core.md) | `menus/library-core.ts` | — |
 | [资源库初始化](./library-setup.md) | `menus/library-setup.ts` | — |
+| [AI 诊断助手面板](./settings-diagnostic.md) | `menus/settings-diagnostic.ts` | ADR-196/093 |
 
 ### 核心基础设施（core）
 
@@ -305,3 +306,14 @@ use_when:
 | [预设元数据归一化](./preset-meta.md) | `core/preset-meta.ts` | ADR-130 |
 | [核心零依赖叶模块](./core-leaf-modules.md) | `core/async.ts` 等 7 个叶模块 | ADR-191 |
 | [安卓文件访问（shared 模式）](./android-file-access.md) | `internal/app/fileaccess_android.go` 等 | ADR-017/180/183/194 |
+| [window.__mmar 状态暴露](./mmar-globals.md) | `core/mmar-globals.ts` | — |
+
+### 内置 AI 诊断助手（ai，ADR-196）
+
+| 卡片 | 模块 | 关联 ADR |
+|------|------|----------|
+| [AI 双适配器服务层](./ai-service.md) | `core/ai/{types,index,browser-adapter,go-adapter}.ts` | ADR-196/176 |
+| [AI 配置持久化](./ai-config-store.md) | `core/ai/config-store.ts` | ADR-196 |
+| [错误环形缓冲与全局捕获](./ai-error-buffer.md) | `core/ai/error-buffer.ts` | ADR-196 |
+| [场景运行时快照](./ai-scene-snapshot.md) | `core/ai/scene-snapshot.ts` | ADR-196 |
+| [SSE 流式解析器](./ai-sse.md) | `core/ai/sse.ts` | ADR-196 |

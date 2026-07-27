@@ -338,6 +338,15 @@ MikuMikuAR/
     └── src/
         ├── core/                     # ★ 基础设施
         │   ├── audio-bus.ts          # 音效总线（ADR-088）
+        │   ├── ai/                   # 内置 AI 诊断助手（ADR-196 双适配器）
+        │   │   ├── index.ts          # resolveAi() 适配器选型单例（Tier 分层）
+        │   │   ├── types.ts          # AiService 契约 + 消息/能力接口
+        │   │   ├── browser-adapter.ts# 浏览器端 OpenAI 兼容 fetch 适配器
+        │   │   ├── go-adapter.ts     # Go 侧 LLM 桥接适配器（events 订阅）
+        │   │   ├── config-store.ts   # AI 配置持久化（IndexedDB）
+        │   │   ├── error-buffer.ts   # 错误环形缓冲 + 全局捕获
+        │   │   ├── scene-snapshot.ts # 场景快照 bridge（AI 上下文）
+        │   │   └── sse.ts            # SSE 流式解析（纯函数）
         │   ├── backend/              # Wails 后端适配器（ADR-177 Web/Desktop 统一）
         │   │   ├── browser-adapter.ts
         │   │   ├── go-adapter.ts
@@ -359,6 +368,7 @@ MikuMikuAR/
         │   ├── reactivity.ts         # 简易响应式（signal / effect）
         │   ├── render-loop.ts        # 渲染循环控制
         │   ├── runtime-bridge.ts     # 运行时桥接
+        │   ├── mmar-globals.ts       # window.__mmar 结构化状态暴露（供外置 LLM 读取）
         │   ├── safe-call.ts          # 安全调用包装
         │   ├── scene-state.ts        # 场景状态（ADR-149 解耦）
         │   ├── shortcut-registry.ts  # 快捷键注册表

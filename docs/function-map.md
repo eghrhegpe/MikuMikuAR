@@ -7,9 +7,9 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 79 | 580 |
+| 核心基础设施 | 87 | 620 |
 | 3D 场景 | 105 | 1058 |
-| 菜单 & UI | 66 | 303 |
+| 菜单 & UI | 67 | 304 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 18 | 131 |
 | 物理系统 | 2 | 14 |
@@ -18,6 +18,37 @@
 
 | 符号 | 文件 | 说明 |
 |------|------|------|
+| `BrowserAiAdapter()` | `core/ai/browser-adapter` | — |
+| `browserAiAdapter()` | `core/ai/browser-adapter` | — |
+| `AiConfig()` | `core/ai/config-store` | — |
+| `DEFAULT_AI_CONFIG()` | `core/ai/config-store` | 零 key 默认路径：本地 Ollama（大模型零 key，小模型零成本）。见 ADR-196 开放问题 Q2 裁定。 |
+| `ensureAiConfigLoaded()` | `core/ai/config-store` | 主动预加载（建议 init 后台调用，使首次读取即命中缓存，避免回退默认窗口）。 |
+| `loadAiConfig()` | `core/ai/config-store` | 同步读取：优先内存缓存；未加载时回退默认并触发异步回源（不阻塞调用方）。 |
+| `saveAiConfig()` | `core/ai/config-store` | 同步保存：写内存缓存 + 异步落盘 IndexedDB（fire-and-forget）。返回合并后的配置。 |
+| `ErrorEntry()` | `core/ai/error-buffer` | — |
+| `ErrorRingBuffer()` | `core/ai/error-buffer` | — |
+| `GlobalErrorTarget()` | `core/ai/error-buffer` | — |
+| `captureError()` | `core/ai/error-buffer` | — |
+| `clearErrors()` | `core/ai/error-buffer` | — |
+| `errorBuffer()` | `core/ai/error-buffer` | — |
+| `getErrors()` | `core/ai/error-buffer` | — |
+| `installErrorCaptureOn()` | `core/ai/error-buffer` | — |
+| `installGlobalErrorCapture()` | `core/ai/error-buffer` | — |
+| `installLoggingPatch()` | `core/ai/error-buffer` | 幂等地 patch console.error，使其所有输出自动入环（保留原始 console.error 行为）。 |
+| `toDiagnosticContext()` | `core/ai/error-buffer` | — |
+| `uninstallLoggingPatch()` | `core/ai/error-buffer` | 卸载 console.error 补丁，恢复原始实现。 |
+| `goAiAdapter()` | `core/ai/go-adapter` | — |
+| `resolveAi()` | `core/ai/index` | — |
+| `SceneSnapshotBridge()` | `core/ai/scene-snapshot` | AI 快照所需的引擎运行时读取桥接（由 scene.ts 注入）。 |
+| `SceneSnapshotData()` | `core/ai/scene-snapshot` | 格式化后的快照数据（纯数据，便于测试）。 |
+| `captureSceneSnapshot()` | `core/ai/scene-snapshot` | 采集当前场景快照文本；未初始化时返回占位符。 |
+| `formatSceneSnapshot()` | `core/ai/scene-snapshot` | 将快照数据格式化为紧凑文本（≤ NFR-3 的 2048 字符预算）。 |
+| `registerAiSnapshotBridge()` | `core/ai/scene-snapshot` | 由 scene.ts 在 initScene() 时注入引擎引用（单向依赖，避免 ai → scene 静态耦合）。 |
+| `AiCapabilities()` | `core/ai/types` | AI 后端能力描述 |
+| `AiService()` | `core/ai/types` | AI 服务统一抽象，镜像 BackendService 双适配器模式 |
+| `ChatChunk()` | `core/ai/types` | 流式聊天响应块 |
+| `ChatMessage()` | `core/ai/types` | 聊天消息角色 |
+| `ChatRequest()` | `core/ai/types` | 流式聊天请求参数 |
 | `Abortable()` | `core/async` | 可复用的 AbortController 封装——abort 后自动重置，使对象可重复使用。 |
 | `DebouncedTimer()` | `core/async` | 防抖定时器——封装 setTimeout 的 schedule/cancel 样板。 |
 | `LoadingGuard()` | `core/async` | 并发加载守卫——防止同一 key 的异步操作重复触发。 |
@@ -175,6 +206,14 @@
 | `logError()` | `core/logger` | 统一标签格式的 error 日志（走 console.error）。 |
 | `logInfo()` | `core/logger` | 统一标签格式的 info 日志（走 console.info）。 |
 | `logWarn()` | `core/logger` | 统一标签格式的 warn 日志。message 为空时省略中间空格；err 为空时不传第二个参数。 |
+| `MmarGlobal()` | `core/mmar-globals` | — |
+| `MmarPhase()` | `core/mmar-globals` | — |
+| `MmarSceneSnapshot()` | `core/mmar-globals` | — |
+| `MmarStatus()` | `core/mmar-globals` | — |
+| `refreshSceneSnapshot()` | `core/mmar-globals` | 刷新 window.__mmar.scene 快照。 |
+| `startSceneSnapshotPolling()` | `core/mmar-globals` | 启动周期快照刷新；重复调用安全（仅注册一个 timer）。 |
+| `stopSceneSnapshotPolling()` | `core/mmar-globals` | 停止周期快照刷新；未启动或重复调用均安全。 |
+| `updateMmarStatus()` | `core/mmar-globals` | — |
 | `CapabilityProbe()` | `core/mmd-adapter` | CapabilityProbe — 升级回归探测（ADR-192 Phase 2 守卫式反射）。 |
 | `getBoneWorldMatrix()` | `core/mmd-adapter` | 返回骨骼在世界坐标系下的 worldMatrix（固化自 adr-071 坐标系契约）。 |
 | `getPhysicsImpl()` | `core/mmd-adapter` | 从 IMmdRuntime 获取底层 MmdWasmPhysicsRuntimeImpl。 |
@@ -275,7 +314,9 @@
 | `applyHudVisibility()` | `core/status-bar` | 按 uiState 开关应用顶部 HUD 显隐：帧率时钟（#fpsClock）与多线程徽标（#runtimeBadge）。 |
 | `disposeStatusBar()` | `core/status-bar` | 清理 status 定时器（供 HMR 清理入口调用）。 |
 | `hideHint()` | `core/status-bar` | — |
+| `hideLoadingStatus()` | `core/status-bar` | 隐藏底部状态栏的旋转加载图标，不改变当前文本。 |
 | `initHints()` | `core/status-bar` | — |
+| `setLoadingStatus()` | `core/status-bar` | 在底部状态栏显示带旋转图标的加载文本，用于消解用户"卡住焦虑"。 |
 | `setStatus()` | `core/status-bar` | — |
 | `showHint()` | `core/status-bar` | — |
 | `registerServiceWorker()` | `core/sw-register` | — |
@@ -283,7 +324,6 @@
 | `ToastVariant()` | `core/toast` | — |
 | `showErrorToast()` | `core/toast` | — |
 | `showInfoToast()` | `core/toast` | — |
-| `showLoadingToast()` | `core/toast` | 显示一个持续旋转的 loading toast，不自动消失。 |
 | `showToast()` | `core/toast` | — |
 | `BoneOverrideEntry()` | `core/types` | [doc:adr-061] Motion Override — 持久化的单条骨骼覆盖配置 |
 | `BrowseOutcome()` | `core/types` | — |
@@ -1931,6 +1971,7 @@
 | `handleSettingsAction()` | `menus/settings-actions` | 全局设置项点击分发：语言切换 + 动作表。settings.ts 的 onItemClick 使用。 |
 | `buildSettingsAppearanceLevel()` | `menus/settings-appearance` | — |
 | `buildSettingsControlsLevel()` | `menus/settings-controls` | — |
+| `buildSettingsDiagnosticLevel()` | `menus/settings-diagnostic` | — |
 | `buildSettingsDownloadsLevel()` | `menus/settings-downloads` | — |
 | `buildSettingsGraphicsLevel()` | `menus/settings-graphics` | — |
 | `buildSettingsLanguageLevel()` | `menus/settings-language` | — |
@@ -2165,5 +2206,5 @@
 
 ---
 
-> 共 273 个文件，2119 个导出符号。
+> 共 282 个文件，2160 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。
