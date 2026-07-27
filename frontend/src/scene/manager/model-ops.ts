@@ -341,7 +341,7 @@ export interface ReplaceSnapshot {
     sceneMotionId?: string;
     /** [doc:adr-150] 轨道相机骨骼锁定骨名；新模型无同名骨则解锁 */
     boneLockBoneName?: string;
-    /** [doc:adr-168] 个人灯状态；undefined=旧模型无个人灯，新模型用默认（关） */
+    /** [doc:adr-168] 个人灯状态；undefined=旧模型无个人灯，新模型用默认（开） */
     personalLight?: PersonalLightSettings;
 }
 

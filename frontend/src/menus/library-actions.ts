@@ -43,7 +43,6 @@ import {
 import {
     withLoadingStatus,
     withLoadingStatusTargeted,
-    getBrowseDir,
     isUnderRoot,
     getBaseName,
     logWarn,
@@ -53,7 +52,6 @@ import { safeCallAsync } from '@/core/safe-call';
 import { t } from '../core/i18n/t';
 import { createIconifyIcon } from '../core/icons';
 import {
-    buildLevel,
     modelToRow,
     splitSubdirSegments,
     computeRestoreSegments,
@@ -208,17 +206,11 @@ function startReplaceModel(m: LibraryModel, replaceId: string): void {
         const snapshot = oldInst ? captureInheritedState(oldInst) : null;
         const undoSnap = pushUndoSnapshot();
         feedbackStatus('library.loadingModel', getBaseName(m.file_path));
-        let browseCategory: 'pmx' | 'stage' | 'prop' = 'pmx';
         let loadKind: 'actor' | 'stage' | 'prop' = 'actor';
-        let filter: (model: LibraryModel) => boolean = (model) => model.format === 'pmx';
         if (m.type === 'prop') {
-            browseCategory = 'prop';
             loadKind = 'prop';
-            filter = (model) => model.type === 'prop';
         } else if (m.type === 'stage' || m.type === 'scene') {
-            browseCategory = 'stage';
             loadKind = 'stage';
-            filter = (model) => model.type === 'stage' || model.type === 'scene';
         }
 
         loadManager
@@ -251,27 +243,12 @@ function startReplaceModel(m: LibraryModel, replaceId: string): void {
                     stackRegistry.modelStack?.reRender()
                 );
                 try {
-                    stackRegistry.modelStack?.resetToRoot();
-                    let newName = handle.name;
-                    if (loadKind === 'prop') {
-                        const { propRegistry } = await import('../core/config');
-                        newName = propRegistry.get(handle.id)?.name ?? handle.name;
-                    } else {
-                        newName = modelRegistry.get(handle.id)?.name ?? handle.name;
+                    // [doc:adr-195] 替换后保持浏览器打开，更新 outcome.modelId 指向新模型
+                    const stack = stackRegistry.modelStack;
+                    if (stack?.currentLevel) {
+                        stack.currentLevel.outcome = { mode: 'stay', modelId: handle.id };
                     }
-                    await prepareModelRestore(getBrowseDir(browseCategory), browseCategory);
-                    // [doc:adr-131] 替换模式自动跳转收敛为契约实例：声明 jumpToDir outcome，
-                    // 后续在该浏览层选中模型时由 activateItem/onItemClick 按 outcome 派发。
-                    stackRegistry.modelStack?.push(
-                        buildLevel(
-                            getBrowseDir(browseCategory),
-                            t('model-detail.replaceModelTo', { name: newName }),
-                            filter,
-                            stackRegistry.modelStack!,
-                            [],
-                            { mode: 'jumpToDir', modelId: handle.id }
-                        )
-                    );
+                    stack?.reRender();
                     // [doc:adr-feedback] 最终态已由 offerSceneUndoAndRefresh 给出带撤销的 toast，
                     // 这里不再补一条 "完成" toast，避免重复反馈。
                 } catch (uiErr) {

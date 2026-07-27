@@ -1,8 +1,8 @@
 # ADR-131: 资源浏览选中结果统一契约（BrowseOutcome）
 
-- **状态**：✅ 已完成（2026-07-20 代码核查确认：BrowseOutcome 类型定义、`activateItem` 派发（stay/jumpToDir/close）、grid 模式适配、`buildLevel` outcome 参数均已落地；旧全局标志位 `modelReplaceTargetId`/`layerBindingTargetId`/`motionBindingTargetId` 已移除）
+- **状态**：✅ 已完成（2026-07-27 更新：`jumpToDir` 模式已移除，模型替换合并至 `stay` 模式，详见下方 §变更记录）
 - **日期**：2026-07-18
-- **相关**：ADR-094（模型替换自动返回资源库）、ADR-065（纯 items 层级语言热刷新）
+- **相关**：ADR-094（模型替换自动返回资源库）、ADR-065（纯 items 层级语言热刷新）、ADR-195（模型替换简化：`jumpToDir` → `stay`）
 
 ## 背景与问题
 
@@ -28,8 +28,7 @@
 ```ts
 export type BrowseOutcome =
     | { mode: 'close' }                                  // 默认：加载即完成，关闭浏览器
-    | { mode: 'stay'; modelId?: string }                 // 连续预览：加载后保持浏览器打开
-    | { mode: 'jumpToDir'; modelId?: string; dir?: string } // 加载后回到指定目录（模型替换）
+    | { mode: 'stay'; modelId?: string }                 // 连续预览/模型替换：加载后保持浏览器打开
     | { mode: 'bindLayer'; modelId: string }             // 绑定到图层（一次性，关闭）
     | { mode: 'bindMotion'; modelId: string };           // 绑定到动作槽（一次性，关闭）
 ```
@@ -53,7 +52,7 @@ export type BrowseOutcome =
 
 ### 4. 入口迁移（契约实例）
 - **动作库场景浏览**（`motion-popup.ts` `__scene_motion_browse__`）：用 `buildLevel(..., { mode: 'stay', modelId: target.id })` 取代 `setLayerBindingTargetId(target.id)`。
-- **模型库替换**（`library-actions.ts` `replaceModel` / `onModelRowClick`）：在当前浏览层声明 `{ mode: 'jumpToDir', modelId }` 取代单靠 `modelReplaceTargetId` 反推；全局标志位保留为兼容回退。这把 ADR-094 的"自动跳转"机制**收敛为契约实例**，行为完全不变。
+- **模型库替换**（`library-actions.ts` `startReplaceModel`）：替换成功后更新当前层 `outcome = { mode: 'stay', modelId: handle.id }`，取代旧的 `resetToRoot()` + `buildLevel(..., { mode: 'jumpToDir' })` 重建浏览层。`jumpToDir` 模式已于 2026-07-27 移除，模型替换统一使用 `stay` 契约（见 ADR-094 §变更记录）。
 
 ## 影响与风险
 
