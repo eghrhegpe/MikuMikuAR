@@ -8,7 +8,7 @@ export interface PlazaSite {
     group?: string;
     searchUrl?: string;
     presetSearches?: { label: string; q?: string }[];
-    /** [doc:plaza-spa] 跳过代理直连真实域名。用于独立 API 域 SPA，避免代理 origin 触发 API CORS 白屏。 */
+    /** [doc:plaza-spa] 直连真实域名（默认 true）。代理仅作 frame-hostile 站点的 opt-in 兜底：置 false 才走代理剥离 X-Frame/CSP 头。直连可规避代理 origin 触发的 API CORS 白屏、保留真实登录态。 */
     directNavigate?: boolean;
 }
 
@@ -37,6 +37,7 @@ export const PLAZA_SITES: PlazaSite[] = [
         name: 'Bowlroll',
         url: 'https://bowlroll.net/',
         mode: 'embed',
+        directNavigate: true,
         icon: 'lucide:package',
         desc: '日系老牌 MMD 模型仓库',
         group: 'search',
@@ -53,6 +54,7 @@ export const PLAZA_SITES: PlazaSite[] = [
         name: 'BOOTH',
         url: 'https://booth.pm/zh-cn/browse/3D%20Models',
         mode: 'external',
+        directNavigate: true,
         icon: 'lucide:shopping-bag',
         desc: '同人 3D 模型通贩市场',
         group: 'search',

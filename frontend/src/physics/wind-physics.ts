@@ -48,12 +48,6 @@ function _onPhysicsSync(impl: MmdWasmPhysicsRuntimeImpl): void {
     }
 
     const wind = getWindVector();
-    console.warn(
-        '[wind] physics _onPhysicsSync: wind=',
-        wind.asArray(),
-        ' scale=',
-        WIND_FORCE_SCALE
-    );
     _tmpWind.copyFrom(wind).scaleInPlace(WIND_FORCE_SCALE);
 
     for (const bundle of getRigidBodyBundleMap(impl)) {

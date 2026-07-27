@@ -114,7 +114,7 @@ export function normalizeSite(raw: RawSiteInput): PlazaSite | null {
         group: raw.group || 'search',
         searchUrl: raw.searchUrl,
         presetSearches: raw.presetSearches || [],
-        directNavigate: raw.directNavigate,
+        directNavigate: raw.directNavigate ?? true,
     };
 }
 
@@ -944,10 +944,12 @@ export function renderEmbed(site: PlazaSite): void {
     root.appendChild(body);
     el.appendChild(root);
 
-    // [doc:plaza-spa] 直连站点：iframe 直接加载真实域名，跳过代理。
+    // [doc:plaza-spa] 直连是默认路径：iframe 直接加载真实域名，跳过代理。
     // 独立 API 域 SPA（如 aplaybox）以真实 origin 发 API 请求，CORS 才放行；
     // 代理 origin (127.0.0.1:PORT) 会被 api CORS 拦死，只剩壳子转圈。
     // 代价：无代理注入，应用内下载接管（/__plaza_dl__）失效，下载退化为系统浏览器 + fsnotify 兜底（ADR-003）。
+    // 仅 frame-hostile 站点（发 X-Frame-Options/CSP frame-ancestors 拒绝被框）应置 directNavigate:false 走代理剥离头，
+    // 否则 embed 会白屏；window 模式不受此限，始终直连真实域名。
     if (site.directNavigate) {
         setPlazaProxyActive(false);
         iframe.src = site.url;
