@@ -2,7 +2,6 @@
 // 从 scene-render-levels.ts 拆分
 
 import { cardContainer, envState, modelRegistry } from '../core/config';
-import { feedbackInfo } from '../core/feedback';
 import type { PopupLevel } from '../core/config';
 import { showConfirm } from '../core/dialog';
 import {
@@ -21,6 +20,8 @@ import {
     removeStageLight,
     getActiveStageLightId,
     setActiveStageLightId,
+    pushUndoSnapshot,
+    offerSceneUndo,
     type StageLightState,
 } from '../scene/scene';
 import { buildTransformCard } from './resource-detail-helpers';
@@ -772,9 +773,13 @@ function buildStageLightSchema(): MenuNode[] {
                                 reRenderSceneMenu();
                                 return;
                             }
+                            // [doc:adr-127] 场景级撤销保护：快照含 stageLights，可完整还原（ADR-130 Phase 2.6 缺口 B）
+                            const snap = pushUndoSnapshot();
                             removeStageLight(state.id);
                             reRenderSceneMenu();
-                            feedbackInfo('scene.statusLightDeleted', undefined);
+                            offerSceneUndo(t('scene.statusLightDeleted'), snap, () =>
+                                reRenderSceneMenu()
+                            );
                         }
                     );
                 });

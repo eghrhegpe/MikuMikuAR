@@ -18,7 +18,8 @@ import {
 } from '../core/ui-helpers';
 import { Quaternion } from '@babylonjs/core/Maths/math.vector';
 import { resetModelTransform, removeModel } from '../scene/manager/model-ops';
-import { removeProp } from '../scene/scene';
+import { removeProp, pushUndoSnapshot, offerSceneUndo } from '../scene/scene';
+import { reRenderSceneMenu } from './scene-menu-state';
 import { attachPropToBone, detachPropFromBone } from '../scene/env/accessory';
 import {
     attachGizmoForKind,
@@ -279,13 +280,15 @@ export function buildDangerCard(
                 ),
             }),
             () => {
+                // [doc:adr-127] 场景级撤销保护：详情页卸载与列表路径行为一致（ADR-130 Phase 2.6 缺口 A）
+                const snap = pushUndoSnapshot();
                 if (kind === 'prop') {
                     removeProp(id);
                 } else {
                     removeModel(id);
                 }
                 onRemoved?.();
-                showInfoToast(t('settings.unloaded', { name }));
+                offerSceneUndo(t('settings.unloaded', { name }), snap, () => reRenderSceneMenu());
             }
         );
     });

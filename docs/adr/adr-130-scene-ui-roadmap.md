@@ -1,7 +1,7 @@
 # ADR-130: 场景 UI 整体设计与前后端发展方向路线图
 
 > **日期**: 2026-07-18
-> **状态**: 规划中（Phase 1 技术债 ✅1.1 已完成（实质达成，载体 ADR-138 + env 子系统大拆分；env-impl.ts 227 行、edgeFade 纹理独立接入 dispose、循环依赖破除、env 子系统 8 个测试文件 70+ it），✅1.2 已完成（popUndoSnapshot 已实现 + Ctrl+Z + 菜单撤销按钮接入 + 测试覆盖），✅1.3 已完成（ADR-128 首部 2026-07-20 标注 5 语种无残留）；Phase 2 ✅2.1/2.2/2.3/2.4/2.5 已完成，✅2.7 已完成，⚠️2.6 部分完成（已加载列表统一组件 + 8 处撤销 toast 接入；缺口：卸载舞台/道具未接入撤销、异步操作状态反馈不均），⚠️2.7 部分完成（环境预设导入/导出 + UI 层 PresetListViewer 通用组件；缺口：PresetManager 抽象不存在、4 个预设系统未统一 API、元数据未跨系统统一）；Phase 3 能力扩展待推进；ADR-093 P3 已关闭（2026-07-27 裁定非死代码））
+> **状态**: 规划中（Phase 1 技术债 ✅1.1 已完成（实质达成，载体 ADR-138 + env 子系统大拆分；env-impl.ts 227 行、edgeFade 纹理独立接入 dispose、循环依赖破除、env 子系统 8 个测试文件 70+ it），✅1.2 已完成（popUndoSnapshot 已实现 + Ctrl+Z + 菜单撤销按钮接入 + 测试覆盖），✅1.3 已完成（ADR-128 首部 2026-07-20 标注 5 语种无残留）；Phase 2 ✅2.1/2.2/2.3/2.4/2.5 已完成，✅2.7 已完成，⚠️2.6 基本完成（已加载列表统一组件 + 撤销 toast 全面接入：8 处破坏性操作 + 列表路径卸载舞台/道具（06ca6cb6, 07-26）+ 详情页 danger card 卸载 + 删除舞台灯（07-27）；残余缺口：异步操作状态反馈覆盖不均——模型/动作加载已有 loading 反馈，道具/预设路径未统一），✅2.7 已完成（ADR-176 收口传输/存储层统一；环境预设导入/导出已闭合；新增 core/preset-meta.ts 读侧 PresetMeta 信封 + listPresets() 归一，单元测试覆盖；写侧信封化待需求驱动）；Phase 3 能力扩展待推进；ADR-093 P3 已关闭（2026-07-27 裁定非死代码））
 
 ## 背景
 
@@ -132,9 +132,9 @@ const migrators: Migrator[] = [
 
 #### 2.7 预设系统统一 API
 
-- 抽 `PresetManager` 统一接口：`List/Save/Load/Delete/Import/Export`
-- 环境预设补导入/导出（ADR-120 未解决问题）
-- 预设元数据统一：Name/Label/Category/CreatedAt/Tags
+- ⚠️ 原「抽 `PresetManager` 统一接口（`List/Save/Load/Delete/Import/Export`）」**撤回**：ADR-176 已落地 `BackendService` + `resolveBackend()` 代理，传输层与存储层本就统一（四类预设共 `presets` IndexedDB store，键前缀 `env:/render:/scene:/model:`），再抽 Manager 反而丢失类型安全，属为抽象而抽象。
+- 环境预设导入/导出：**已完成**（ADR-120 已闭合，非本 Phase 缺口）。
+- 元数据统一（Name/Label/Category/CreatedAt/Tags）：**读侧归一已落地** —— 新增 `frontend/src/core/preset-meta.ts`，定义 `PresetMeta` 信封 + `listPresets(category?)`（包裹 4 个 list 函数归一为 `PresetMeta[]`，对 Go nullable 返回做 `?? []` 守卫），配套单元测试覆盖。写侧信封化（`{meta,data}`）保持各系统独立写路径，待确有跨类浏览器 / 标签筛选需求时再做。
 
 ### Phase 3：能力扩展（P3）
 
@@ -183,8 +183,8 @@ const migrators: Migrator[] = [
 | Phase 2.3 性能降级统一 | P2 | 中 | ADR-118 | ✅ 完成（qualityProfile 全链路 + Go 已补齐） |
 | Phase 2.4 SetEnvState partial | P2 | 中 | Phase 2.1 | ✅ 已完成（2026-07-25，双端实现：前端 env-bridge.ts:589 Proxy 局部更新 + Go config.go:277 JSON merge；无需 `map[string]any`/field mask） |
 | Phase 2.5 菜单扁平化 | P2 | 小 | 决策岔路 3 | ✅ 完成（「高级」folder 已拆解，预设场景/镜像/撤销/保存场景提至根级，scene-menu.ts:257 注释标注；渲染预设留场景、环境预设留环境归属明确） |
-| Phase 2.6 交互模式统一 | P2 | 中 | 无 | ⚠️ 部分完成（已加载舞台/道具列表用 slideRow+leading/trailing icon 模式语义等价 addListItemRow；8 处破坏性操作接入撤销 toast：卸载模型/删图层/清相机VMD/清骨骼覆盖/清动作/删音乐/替换模型动作；缺口：卸载舞台/道具未接入 offerSceneUndo、异步操作状态反馈覆盖不均） |
-| Phase 2.7 预设系统统一 | P2 | 大 | 决策岔路 2 | ⚠️ 部分完成（环境预设导入/导出已完成；UI 层有 PresetListViewer 通用组件；缺口：PresetManager 统一 API 抽象不存在、4 个预设系统各自直接调 Wails bindings、元数据 Name/Label/Category/CreatedAt/Tags 未跨系统统一） |
+| Phase 2.6 交互模式统一 | P2 | 中 | 无 | ⚠️ 基本完成（已加载舞台/道具列表用 slideRow+leading/trailing icon 模式语义等价 addListItemRow；撤销 toast 全面接入：8 处破坏性操作（卸载模型/删图层/清相机VMD/清骨骼覆盖/清动作/删音乐/替换模型动作）+ 列表路径卸载舞台/道具（scene-stage-levels.ts:186/255，06ca6cb6）+ 详情页 danger card 卸载（resource-detail-helpers.ts buildDangerCard）+ 删除舞台灯（scene-stage-lights.ts）；残余缺口：异步操作状态反馈覆盖不均——library-actions.ts 模型/动作已有 feedbackStatus/withLoadingStatus，道具/预设加载路径未统一） |
+| Phase 2.7 预设系统统一 | P2 | 大 | 决策岔路 2 | ✅ 已完成（ADR-176 收口传输/存储层统一；环境预设导入/导出已闭合；新增 `core/preset-meta.ts` 读侧 `PresetMeta` 信封 + `listPresets()` 归一，单元测试覆盖；写侧信封化待需求驱动） |
 | Phase 3.1-3.5 能力扩展 | P3 | 大 | Phase 2 完成 | 待推进 |
 
 ## 需决策的岔路
