@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 87 | 620 |
+| 核心基础设施 | 88 | 630 |
 | 3D 场景 | 105 | 1058 |
 | 菜单 & UI | 67 | 304 |
 | 换装 & 音频 | 3 | 33 |
@@ -18,6 +18,16 @@
 
 | 符号 | 文件 | 说明 |
 |------|------|------|
+| `ActionDef()` | `core/action-registry` | — |
+| `ParamDef()` | `core/action-registry` | — |
+| `ParamType()` | `core/action-registry` | — |
+| `_resetActionRegistry()` | `core/action-registry` | 清空注册表（测试/重置用） |
+| `_setStrictMode()` | `core/action-registry` | 设置严格模式 |
+| `getAction()` | `core/action-registry` | 按 id 获取动作定义 |
+| `listActions()` | `core/action-registry` | 列出全部或指定域的动作 |
+| `registerAction()` | `core/action-registry` | 注册一条动作。遇重复 id 时 console.warn + 覆盖（默认）。 |
+| `registerActions()` | `core/action-registry` | 批量注册 |
+| `unregisterAction()` | `core/action-registry` | 按 id 撤销注册 |
 | `BrowserAiAdapter()` | `core/ai/browser-adapter` | — |
 | `browserAiAdapter()` | `core/ai/browser-adapter` | — |
 | `AiConfig()` | `core/ai/config-store` | — |
@@ -2206,5 +2216,5 @@
 
 ---
 
-> 共 282 个文件，2160 个导出符号。
+> 共 283 个文件，2170 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。
