@@ -1889,4 +1889,12 @@ export const zhCN: Record<string, string> = {
     'ai.system.role': '你是 MikuMikuAR AI 诊断助手。你的职责是帮助用户诊断 3D 场景、模型和应用的问题。',
     'ai.system.format': '用中文回复。先给出结论，再提供可操作的建议。标记置信度为高/中/低。',
     'ai.system.safety': '你处于只读诊断模式，不能修改场景或文件。只提供分析和建议。',
+    'ai.system.chat': '你是 MikuMikuAR AI 助手，可以和用户自由聊天。用中文回复。',
+    'ai.mode.title': '模式',
+    'ai.mode.diagnostic': '🔍 诊断',
+    'ai.mode.chat': '💬 闲聊',
+    'ai.config.corsWarning': '⚠ 远程端点可能存在 CORS 限制。本地 Ollama 请设置 OLLAMA_ORIGINS=* 后重启。',
+    'ai.chat.clear': '清空',
+    'ai.errors.resolveFailed': 'AI 服务初始化失败，请查看控制台获取详情。',
+    'ai.config.notResolved': 'AI 服务尚未就绪，请稍候...',
 };

@@ -36,6 +36,36 @@ export class BrowserAiAdapter implements AiService {
         };
     }
 
+    async testConnection(): Promise<{ ok: boolean; message: string }> {
+        const cfg = loadAiConfig();
+        if (!cfg.endpoint) {
+            return { ok: false, message: 'AI 端点未配置，请在诊断面板中设置' };
+        }
+        try {
+            const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+            if (cfg.apiKey) {
+                headers['Authorization'] = `Bearer ${cfg.apiKey}`;
+            }
+            const response = await fetch(cfg.endpoint, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                    model: cfg.model,
+                    messages: [{ role: 'user', content: 'ping' }],
+                    max_tokens: 1,
+                    stream: false,
+                }),
+            });
+            if (response.ok) {
+                return { ok: true, message: '连接成功' };
+            }
+            const errText = await response.text().catch(() => '');
+            return { ok: false, message: `HTTP ${response.status}: ${errText || response.statusText}` };
+        } catch (err) {
+            return { ok: false, message: _friendlyError(err) };
+        }
+    }
+
     async *streamChat(req: ChatRequest): AsyncIterable<ChatChunk> {
         const cfg = loadAiConfig();
         if (!cfg.endpoint) {

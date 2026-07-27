@@ -42,4 +42,7 @@ export interface AiService {
     readonly kind: 'go' | 'browser';
     capabilities(): AiCapabilities;
     streamChat(req: ChatRequest): AsyncIterable<ChatChunk>;
+    testConnection(): Promise<{ ok: boolean; message: string }>;
+    /** 异步刷新能力探测（go 适配器需调用 Go binding 获取配置后更新缓存） */
+    refreshCapabilities?(): Promise<void>;
 }

@@ -1,8 +1,11 @@
 import type { AiService, AiCapabilities, ChatRequest, ChatChunk } from './types';
 import { events } from '../runtime-bridge';
+import type * as AppBindings from '@bindings/mikumikuar/internal/app/app';
+import type { LLMConfig } from '@bindings/mikumikuar/internal/app/models';
+import type { ChatRequest as LLMChatRequest } from '@bindings/mikumikuar/internal/app/llm/models';
 
-let _bindings: typeof import('@bindings/mikumikuar/internal/app/app') | null = null;
-async function _getB(): Promise<typeof import('@bindings/mikumikuar/internal/app/app')> {
+let _bindings: typeof AppBindings | null = null;
+async function _getB(): Promise<typeof AppBindings> {
     if (!_bindings) {
         _bindings = await import('@bindings/mikumikuar/internal/app/app');
     }
@@ -12,9 +15,16 @@ async function _getB(): Promise<typeof import('@bindings/mikumikuar/internal/app
 class GoAiAdapter implements AiService {
     readonly kind = 'go' as const;
 
+    private _capCache: AiCapabilities | null = null;
+    private _capsPromise: Promise<void> | null = null;
+
     capabilities(): AiCapabilities {
+        if (this._capCache) return this._capCache;
+        if (!this._capsPromise) {
+            this._refreshCapabilities().catch(() => undefined);
+        }
         return {
-            available: true,
+            available: false,
             provider: 'go-bridge',
             streaming: true,
             models: [],
@@ -22,6 +32,63 @@ class GoAiAdapter implements AiService {
             corsRisk: 'none',
             endpointReachable: 'pending',
         };
+    }
+
+    refreshCapabilities(): Promise<void> {
+        return this._refreshCapabilities();
+    }
+
+    private async _refreshCapabilities(): Promise<void> {
+        if (this._capsPromise) return this._capsPromise;
+        this._capsPromise = (async () => {
+            try {
+                const b = await _getB();
+                const cfg: LLMConfig = await b.AiGetLLMConfig();
+                const baseUrl = cfg.baseUrl?.trim() ?? '';
+                const available = baseUrl.length > 0;
+                let corsRisk: AiCapabilities['corsRisk'] = 'none';
+                if (baseUrl) {
+                    const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/i.test(baseUrl);
+                    if (isLocal) {
+                        corsRisk = 'none';
+                    } else if (/^https:\/\//i.test(baseUrl)) {
+                        corsRisk = 'possible';
+                    } else if (/^http:\/\//i.test(baseUrl)) {
+                        corsRisk = 'high';
+                    }
+                }
+                this._capCache = {
+                    available,
+                    provider: 'go-bridge',
+                    streaming: true,
+                    models: cfg.model ? [cfg.model] : [],
+                    apiKeyConfigured: false,
+                    corsRisk,
+                    endpointReachable: 'pending',
+                };
+            } catch {
+                this._capCache = {
+                    available: false,
+                    provider: 'go-bridge',
+                    streaming: true,
+                    models: [],
+                    apiKeyConfigured: false,
+                    corsRisk: 'none',
+                    endpointReachable: 'pending',
+                };
+            }
+        })();
+        await this._capsPromise;
+    }
+
+    async testConnection(): Promise<{ ok: boolean; message: string }> {
+        const b = await _getB();
+        try {
+            const [ok, message] = await b.AiTestLLMConnection();
+            return { ok, message };
+        } catch (err) {
+            return { ok: false, message: err instanceof Error ? err.message : String(err) };
+        }
     }
 
     async *streamChat(req: ChatRequest): AsyncIterable<ChatChunk> {
@@ -62,12 +129,13 @@ class GoAiAdapter implements AiService {
         req.signal?.addEventListener('abort', onAbort);
 
         try {
-            await b.AiStreamChat({
+            const llmReq: LLMChatRequest = {
                 model: req.model ?? '',
-                messages: req.messages as any,
+                messages: req.messages.map(m => ({ role: m.role, content: m.content })),
                 temperature: req.temperature ?? 0.7,
                 max_tokens: req.maxTokens ?? 2048,
-            });
+            };
+            await b.AiStreamChat(llmReq);
 
             while (!done || queue.length > 0) {
                 if (queue.length > 0) {

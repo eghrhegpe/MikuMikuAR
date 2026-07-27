@@ -1913,4 +1913,12 @@ export const en: Record<string, string> = {
     'ai.system.role': 'You are the MikuMikuAR AI Diagnostic Assistant. Your role is to help users diagnose issues with the 3D scene, models, and application.',
     'ai.system.format': 'Respond in the user\'s language. Start with a conclusion, then provide actionable suggestions. Mark confidence as high/medium/low.',
     'ai.system.safety': 'You are in read-only diagnostic mode. You cannot modify the scene or files. Only provide analysis and advice.',
+    'ai.system.chat': 'You are a MikuMikuAR AI assistant. Chat freely with the user. Keep responses concise and helpful.',
+    'ai.mode.title': 'Mode',
+    'ai.mode.diagnostic': '🔍 Diagnostic',
+    'ai.mode.chat': '💬 Chat',
+    'ai.config.corsWarning': '⚠ Remote endpoint may have CORS restrictions. For local Ollama, set OLLAMA_ORIGINS=* and restart.',
+    'ai.chat.clear': 'Clear',
+    'ai.errors.resolveFailed': 'AI service failed to initialize. Check console for details.',
+    'ai.config.notResolved': 'AI service not ready yet, please wait...',
 };
