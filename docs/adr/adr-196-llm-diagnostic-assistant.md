@@ -1,6 +1,6 @@
 # ADR-196: 内置 AI 诊断助手（LLM Diagnostic Assistant）
 
-- **状态**: 🔄 规划中（推荐，基于 ADR-154 传输层）
+- **状态**: 🔄 实施中（Phase 0 骨架已搭建，P1 缺陷修复进行中；见 `.trae/specs/adr-196-audit-and-refine/`）
 - **日期**: 2026-07-28
 - **相关**: ADR-154（聊天面板·推荐路线，传输层上游）、ADR-155（NL 控场景，未来应用入口）、ADR-156（角色台词，兄弟用例）、ADR-176（BackendService 双适配器，镜像模板）、ADR-192（上游适配层，适配器术语）、ADR-093（声明式菜单 Schema，面板挂载）、`docs/ai-new/ai-news-2026-07-27.md`（安全护栏情报）
 

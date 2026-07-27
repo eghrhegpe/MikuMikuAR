@@ -38,6 +38,7 @@ import { hexToRgb, rgbToString } from './color-helpers';
 import { fireAndForget, swallowError } from './utils';
 import { showInfoToast } from './toast';
 import { safeCallAsync } from './safe-call';
+import { installGlobalErrorCapture, installLoggingPatch, uninstallLoggingPatch } from './ai/error-buffer';
 import { setPerformanceMode } from '../scene/render/performance';
 import { initLibrary, showModelPopup, showMotionPopup, refreshLibrary } from '../menus/library';
 import { showPlaza } from '../menus/plaza-browser';
@@ -112,6 +113,17 @@ async function init(): Promise<void> {
         // 注册本地图标 bundle，使 iconify 离线可用
         registerIconBundle();
         initI18n(); // [doc:adr-059] 在菜单渲染前确定语言并同步 <html lang>
+        // [doc:adr-196] 启动早期安装 AI 诊断上下文采集：先 patch console.error 使所有
+        // console.error（含 @/core/logger 的 logError）自动入环，再注册全局未捕获异常监听。
+        // disposer 纳入 _initDisposables，HMR 重跑 init 时幂等清理旧监听器、重新安装。
+        installLoggingPatch();
+        const _aiErrDisposer = installGlobalErrorCapture();
+        _initDisposables.push({
+            dispose() {
+                _aiErrDisposer();
+                uninstallLoggingPatch();
+            },
+        });
         _applySystemA11y(); // [doc:adr-153] 启动时应用系统无障碍设置（暗色/高对比度）
         _updateStaticHtmlTexts(); // 更新 HTML 模板中的硬编码文案
         initRuntimeBadge(); // [adr-099] 立即渲染持久化的运行时模式徽标（刷新不丢）

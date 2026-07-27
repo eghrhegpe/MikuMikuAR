@@ -3,11 +3,12 @@ import {
     ErrorRingBuffer,
     errorBuffer,
     captureError,
-    logError,
     getErrors,
     clearErrors,
     installErrorCaptureOn,
     installGlobalErrorCapture,
+    installLoggingPatch,
+    uninstallLoggingPatch,
     toDiagnosticContext,
     type ErrorEntry,
     type GlobalErrorTarget,
@@ -137,20 +138,52 @@ describe('captureError 归一化', () => {
     });
 });
 
-describe('logError 包装', () => {
+describe('installLoggingPatch（console.error 自动入环）', () => {
     beforeEach(() => clearErrors());
 
-    it('调用原始 console.error 且同时入环', () => {
+    it('patch 后 console.error 自动入环且保留原始输出', () => {
         const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
-        const err = new Error('boom');
-        logError('test', 'failed', err);
-        expect(spy).toHaveBeenCalledWith('[test] failed', err);
-        const entries = getErrors();
-        expect(entries).toHaveLength(1);
-        expect(entries[0].kind).toBe('log');
-        expect(entries[0].name).toBe('Error');
-        expect(entries[0].message).toBe('failed');
-        spy.mockRestore();
+        try {
+            installLoggingPatch();
+            const err = new Error('boom');
+            console.error('[test] failed', err);
+            // 原始 console.error 仍被调用（此处被 spy 接收）
+            expect(spy).toHaveBeenCalled();
+            const entries = getErrors();
+            expect(entries).toHaveLength(1);
+            expect(entries[0].kind).toBe('log');
+            expect(entries[0].tag).toBe('test');
+            expect(entries[0].message).toBe('failed');
+            expect(entries[0].name).toBe('Error');
+        } finally {
+            uninstallLoggingPatch();
+            spy.mockRestore();
+        }
+    });
+
+    it('installLoggingPatch 幂等：重复调用不双重入环', () => {
+        const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        try {
+            installLoggingPatch();
+            installLoggingPatch();
+            console.error('[test] once');
+            expect(getErrors()).toHaveLength(1);
+        } finally {
+            uninstallLoggingPatch();
+            spy.mockRestore();
+        }
+    });
+
+    it('uninstallLoggingPatch 后 console.error 不再入环', () => {
+        const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        try {
+            installLoggingPatch();
+            uninstallLoggingPatch();
+            console.error('[test] nope');
+            expect(getErrors()).toHaveLength(0);
+        } finally {
+            spy.mockRestore();
+        }
     });
 });
 

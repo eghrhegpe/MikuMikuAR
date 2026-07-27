@@ -96,12 +96,14 @@ import {
     setRenderState,
     getRenderState,
 } from './render/renderer';
-import { registerRenderBridge } from './render/performance';
+import { registerRenderBridge, getPerformanceMode } from './render/performance';
 import { onModelMeshesReady, disposeReflection } from './env/env-reflection';
 import { initLoader, setOnMeshesReady, setOnModelLoaded } from './manager/model-loader';
 import { isDragModeEnabled } from './transform/transform-mode';
 import { tryAttachGizmoFromPick } from './transform/transform-pick';
 import { isGizmoDragging } from './transform/transform-adapter';
+import { registerAiSnapshotBridge } from '@/core/ai/scene-snapshot';
+import { detectKtx2Support } from '@/core/gpu-capabilities';
 
 // Re-export material system (extracted to material.ts for file size)
 export {
@@ -263,6 +265,27 @@ export { focusedMmdModel, focusedModel } from './manager/model-ops';
 // ======== Init Scene ========
 
 /**
+ * 读取 WebGL 渲染器厂商/型号信息（供 AI 诊断快照）。
+ * Babylon Engine 未直接暴露 vendor/renderer，需从底层 GL 上下文读取；
+ * 访问私有 `_gl` 属异常安全，headless/上下文缺失时回退 unknown。
+ */
+function _getRendererInfo(): { vendor: string; renderer: string } {
+    try {
+        const gl = (engine as unknown as { _gl?: WebGLRenderingContext | WebGL2RenderingContext })
+            ._gl;
+        if (gl) {
+            return {
+                vendor: (gl.getParameter(gl.VENDOR) as string) || 'unknown',
+                renderer: (gl.getParameter(gl.RENDERER) as string) || 'unknown',
+            };
+        }
+    } catch {
+        // 读取 GL 上下文失败（如 headless），回退 unknown
+    }
+    return { vendor: 'unknown', renderer: 'unknown' };
+}
+
+/**
  * 场景初始化入口。首次调用时创建 Scene/Engine/运行时；
  * HMR 重入时先调用 _reinitSceneForHMR() 清理旧资源再重建。
  */
@@ -303,6 +326,19 @@ export async function initScene(): Promise<void> {
     applyEnvState(envState);
     _updateSunDisc();
     registerRenderBridge({ engine, setLightState, setRenderState, getLightState, getRenderState });
+    // [doc:adr-196] 注入 AI 快照桥接：getter 惰性读取当前 engine/scene/modelManager，
+    // HMR 重初始化新实例后仍能读到最新值（单向依赖，ai 模块不反向依赖 scene）。
+    registerAiSnapshotBridge({
+        getFps: () => engine.getFps(),
+        getModelCount: () => modelManager?.getAll().length ?? 0,
+        getMeshCount: () => scene.meshes.length,
+        getMaterialCount: () => scene.materials.length,
+        getActiveMotions: () =>
+            scene.animationGroups.filter((ag) => ag.isPlaying).map((ag) => ag.name),
+        getPerformanceMode: () => getPerformanceMode(),
+        getRendererInfo: () => _getRendererInfo(),
+        getKtx2Support: () => detectKtx2Support(),
+    });
     _sceneInitialized = true;
     setTriggerAutoSave(triggerAutoSaveImpl);
 }
