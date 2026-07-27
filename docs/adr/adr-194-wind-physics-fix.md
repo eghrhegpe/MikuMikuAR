@@ -178,3 +178,4 @@ envState (config.ts)
 
 - `env-impl.ts` 的 `ensureEnvUpdateObserver` 在非粒子天气下（如 `particleType = 'none'`）可能未被调用。当前依赖 `createParticleEmitter` 或 `applyGround`/`createClouds` 触发。若用户只开水面不开粒子，水面风幅不进行每帧更新（但 `_syncWaterUniforms` 在 `setEnvState` 响应时已写入，静态下不影响效果）。
 - 雪/樱花瓣/落叶等粒子纹理非方向性，未启用 `BILLBOARDMODE_STRETCHED`。若未来有方向性纹理（细长花瓣等），同理处理。
+- ~~`isWindActive()` 与 `getWindVector()` 在 `windSpeed=0.01` 边界行为不对称~~ → ✅ **P4 已修复**：`getWindVector()` 守卫委托 `isWindActive()`，两者共用 `windEnabled && windSpeed > 0.01` 阈值，边界完全对称。
