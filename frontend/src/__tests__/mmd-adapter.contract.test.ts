@@ -21,7 +21,7 @@ import {
 
 // 最小 mock 模拟上游私有字段（与生产逻辑解耦，不引入真实 babylon-mmd 实例）
 function mockPhysicsImpl(overrides: Record<string, unknown> = {}): MmdWasmPhysicsRuntimeImpl {
-    return { _rigidBodyBundleMap: new Map(), ...overrides } as unknown as MmdWasmPhysicsRuntimeImpl;
+    return { rigidBodyBundleReferenceCountMap: new Map(), ...overrides } as unknown as MmdWasmPhysicsRuntimeImpl;
 }
 function mockRuntime(impl?: MmdWasmPhysicsRuntimeImpl | null): IMmdRuntime {
     const physics = impl === undefined ? undefined : { impl };
@@ -32,22 +32,12 @@ function mockPlayer(audio?: HTMLAudioElement): StreamAudioPlayer {
 }
 
 describe('MmdAdapter — babylon-mmd 私有字段网关（ADR-192）', () => {
-    describe('getRigidBodyBundleMap', () => {
-        it('返回 _rigidBodyBundleMap 的 keys 迭代器', () => {
+    describe('getRigidBodyBundleMap（条目3 内化：公开 API）', () => {
+        it('返回公开属性 rigidBodyBundleReferenceCountMap 的 keys', () => {
             const a = {};
             const b = {};
-            const impl = mockPhysicsImpl({ _rigidBodyBundleMap: new Map([[a, 1], [b, 2]]) });
+            const impl = mockPhysicsImpl({ rigidBodyBundleReferenceCountMap: new Map([[a, 1], [b, 2]]) });
             expect([...getRigidBodyBundleMap(impl)]).toEqual([a, b]);
-        });
-
-        it('字段缺失（undefined）时抛升级回归错误', () => {
-            const impl = mockPhysicsImpl({ _rigidBodyBundleMap: undefined });
-            expect(() => [...getRigidBodyBundleMap(impl)]).toThrow(/_rigidBodyBundleMap 不存在/);
-        });
-
-        it('字段类型异常（非 Map）时抛错误', () => {
-            const impl = mockPhysicsImpl({ _rigidBodyBundleMap: 123 });
-            expect(() => [...getRigidBodyBundleMap(impl)]).toThrow(/类型异常/);
         });
     });
 
@@ -75,11 +65,6 @@ describe('MmdAdapter — babylon-mmd 私有字段网关（ADR-192）', () => {
     });
 
     describe('CapabilityProbe', () => {
-        it('hasRigidBodyBundleMap 探测字段存在性', () => {
-            expect(CapabilityProbe.hasRigidBodyBundleMap(mockPhysicsImpl())).toBe(true);
-            expect(CapabilityProbe.hasRigidBodyBundleMap(mockPhysicsImpl({ _rigidBodyBundleMap: undefined }))).toBe(false);
-        });
-
         it('hasStreamAudio 探测字段存在性', () => {
             expect(CapabilityProbe.hasStreamAudio(mockPlayer(new Audio()))).toBe(true);
             expect(CapabilityProbe.hasStreamAudio(mockPlayer(undefined))).toBe(false);

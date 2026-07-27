@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 
-// 隔离 babylon-mmd / babylon 真实依赖，仅验证 _getBundles 的反射降级行为
+// 隔离 babylon-mmd / babylon 真实依赖，验证 _getBundles 从公开属性读取 bundle
 vi.mock('@babylonjs/core/Maths/math.vector', () => ({
     Vector3: class {
         constructor(
@@ -29,22 +29,12 @@ vi.mock('../core/utils', () => ({
 
 import { _getBundles } from '../physics/wind-physics';
 
-describe('_getBundles reflection degradation', () => {
-    it('throws when _rigidBodyBundleMap is missing (renamed field)', () => {
-        const impl: any = {};
-        expect(() => [..._getBundles(impl)]).toThrow();
-    });
-
-    it('throws when field type is wrong', () => {
-        const impl: any = { _rigidBodyBundleMap: { not: 'a map' } };
-        expect(() => [..._getBundles(impl)]).toThrow();
-    });
-
-    it('returns bundle keys when map is present', () => {
+describe('_getBundles reads public rigidBodyBundleReferenceCountMap', () => {
+    it('returns bundle keys from public API', () => {
         const a = { count: 1, applyCentralForce() {} };
         const b = { count: 2, applyCentralForce() {} };
         const impl: any = {
-            _rigidBodyBundleMap: new Map([
+            rigidBodyBundleReferenceCountMap: new Map([
                 [a, 0],
                 [b, 1],
             ]),
