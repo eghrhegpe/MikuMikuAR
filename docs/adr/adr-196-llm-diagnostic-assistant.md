@@ -1,6 +1,6 @@
 # ADR-196: 内置 AI 诊断助手（LLM Diagnostic Assistant）
 
-- **状态**: 🔄 实施中（Phase 0 骨架 + Batch A(P1) + Batch B(P2) 已落地；待诊断面板 UI 与 Go 侧对接；见 `.trae/specs/adr-196-audit-and-refine/`）
+- **状态**: 🔄 实施中（Phase 0 Batch A(P1) + Batch B(P2) + Batch C(面板 UI) 已落地；待 Go 侧 `internal/app/llm/` 对接；见 `.trae/specs/adr-196-audit-and-refine/`）
 - **日期**: 2026-07-28
 - **相关**: ADR-154（聊天面板·推荐路线，传输层上游）、ADR-155（NL 控场景，未来应用入口）、ADR-156（角色台词，兄弟用例）、ADR-176（BackendService 双适配器，镜像模板）、ADR-192（上游适配层，适配器术语）、ADR-093（声明式菜单 Schema，面板挂载）、`docs/ai-new/ai-news-2026-07-27.md`（安全护栏情报）
 
@@ -173,3 +173,10 @@ LLM 能力已在 2026-07-20 经 ADR-154/155/156 决议，但**全部 0 代码落
 - `browser-adapter` / `sse.ts`：`streamChat` 改用内部 `AbortController` 转发 `signal`，generator `finally` 强制 abort 底层 fetch（FR-10 / AC-6）；`sse` `AbortError`→`done`；CORS/网络错误友好提示（FR-13 / AC-8）
 - 文档：裁定 3 个开放问题；补全 Go 侧契约、system prompt、面板规范、token 预算；修正前置探测描述
 - 验证：tsc 0 错误；ai 相关单测 9 项新增/适配通过
+
+### Phase 0 — Batch C（2026-07-28）：诊断面板 UI + 菜单挂载 + i18n
+- `settings-diagnostic.ts`：新建三分区面板（上下文信息 / 流式对话 / 端点配置），含「清除错误」「刷新快照」「测试连接」交互控件
+- `settings-targets.ts`：追加 `SETTINGS.DIAGNOSTIC` 枚举
+- `settings.ts`：导入 + 路由表 + 根菜单项（`lucide:bot` 图标）
+- i18n：5 语言（en/zh-CN/ja/zh-TW/ko）各加 20 条 `ai.*` 键 + 1 条 `settings.diagnostic`
+- 验证：tsc 0 错误；error-buffer 单测 24/24 通过
