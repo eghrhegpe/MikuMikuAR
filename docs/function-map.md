@@ -12,7 +12,7 @@
 | 菜单 & UI | 66 | 303 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 18 | 131 |
-| 物理系统 | 2 | 13 |
+| 物理系统 | 2 | 14 |
 
 ## 核心基础设施
 
@@ -2159,9 +2159,10 @@
 | `_getBundles()` | `physics/wind-physics` | — |
 | `disposeWindPhysics()` | `physics/wind-physics` | 销毁风力物理注入。 |
 | `initWindPhysics()` | `physics/wind-physics` | 初始化风力物理注入。 |
+| `isWindPhysicsActive()` | `physics/wind-physics` | 当前运行时是否实际启用了风力物理（WASM Bullet）。 |
 | `retryWindPhysicsSubscription()` | `physics/wind-physics` | [adr-104] 模型加载成功后由 model-loader 显式调用，重试订阅 physics impl （此时 physics impl 已就绪）。替代原 monkey-pa |
 
 ---
 
-> 共 273 个文件，2117 个导出符号。
+> 共 273 个文件，2118 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。
