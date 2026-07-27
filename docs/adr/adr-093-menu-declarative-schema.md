@@ -1,6 +1,6 @@
 # ADR-093: 菜单声明式 Schema —— 单一数据源 + 单渲染器，根治「大」与「AI 难改」
 
-> **状态**: 已完成 P0+P1+P2（57 个面板迁移完成，env/motion/scene/model/settings 全域覆盖；library/language 为动态列表/纯导航性质，非面板类面板，无需 schema 化）；P3 收尾（移除死 builder、删除 barrel 兼容 re-export、全量类型化）待推进
+> **状态**: 已完成 P0+P1+P2（57 个面板迁移完成，env/motion/scene/model/settings 全域覆盖）；P3 收尾（2026-07-27 裁定：`library.ts`/`library-core.ts:986` 的 barrel re-export 为有意为之的公共 API 入口，被 `events.ts`/`drop-import.ts`/`init.ts`/`plaza-download.ts`/`model-preset.test.ts` 5 处活跃消费者依赖，**不属死代码，无需移除**；全量类型化 P3 目标由 ADR-190 声明式收口自然完成，P3 整体关闭）
 
 ## 1. 背景
 

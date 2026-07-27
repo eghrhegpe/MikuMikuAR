@@ -15,6 +15,7 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
+| ADR-192 | 上游适配层重构（MmdAdapter） | 已立项 · Phase 0（2026-07-27 — 方案确认，尚未落代码）（2026-07-27（初版）） |
 | ADR-191 | 神桶 `@/core/utils` 去桶化（零依赖叶下沉） | 已完成（2026-07-27）（2026-07-27（初版）） |
 | ADR-190 | 端能力声明式收口（淘汰散落 isAndroidPlatform 分支） | 已完成（代码 + 测试 2026-07-26 落地；tsc --noEmit + vitest 全绿）（2026-07-26（初版）） |
 | ADR-189 | 纹理加载路径优化（并行读取 + basename 共享 + LRU + KTX2 基础设施） | 实施中（Phase 0 代码已落地，3 项运行时验证随 Phase 1 完成；Phase 1 代码已落地 2026-07-26 — 并行读取 + basename 共享 + LRU 接线，全量 2133/2133）（2026-07-26（初版）/ 2026-07-26（修订 — 方向调整）/ 2026-07-26（审核修订 — AbortSignal/LRU/数值一致性）/ 2026-07-26（修复 — LRU 接入 collectTextureFiles）） |
@@ -77,7 +78,7 @@
 | ADR-133 | Android MPR 多线程物理缺失——构建门控与架构障碍 | 部分落地（构建门控已补）、架构障碍延期（2026-07-18） |
 | ADR-132 | 环境亮度统一标量（EnvBrightness Unification） | 已实施（2026-07-21 UI/i18n/预设层补齐闭环）（2026-07-18） |
 | ADR-131 | 资源浏览选中结果统一契约（BrowseOutcome） | ✅ 已完成（2026-07-20 代码核查确认：BrowseOutcome 类型定义、`activateItem` 派发（stay/jumpToDir/close）、grid 模式适配、`buildLevel` outcome 参数均已落地；旧全局标志位 `modelReplaceTargetId`/`layerBindingTargetId`/`motionBindingTargetId` 已移除）（2026-07-18） |
-| ADR-130 | 场景 UI 整体设计与前后端发展方向路线图 | 规划中（Phase 1 技术债 ✅1.1 已完成（实质达成，载体 ADR-138 + env 子系统大拆分；env-impl.ts 227 行、edgeFade 纹理独立接入 dispose、循环依赖破除、env 子系统 8 个测试文件 70+ it），✅1.2 已完成（popUndoSnapshot 已实现 + Ctrl+Z + 菜单撤销按钮接入 + 测试覆盖），✅1.3 已完成（ADR-128 首部 2026-07-20 标注 5 语种无残留）；Phase 2 ✅2.1/2.2/2.3/2.4/2.5 已完成，✅2.7 已完成，⚠️2.6 部分完成（已加载列表统一组件 + 8 处撤销 toast 接入；缺口：卸载舞台/道具未接入撤销、异步操作状态反馈不均），⚠️2.7 部分完成（环境预设导入/导出 + UI 层 PresetListViewer 通用组件；缺口：PresetManager 抽象不存在、4 个预设系统未统一 API、元数据未跨系统统一）；Phase 3 能力扩展待推进）（2026-07-18） |
+| ADR-130 | 场景 UI 整体设计与前后端发展方向路线图 | 规划中（Phase 1 技术债 ✅1.1 已完成（实质达成，载体 ADR-138 + env 子系统大拆分；env-impl.ts 227 行、edgeFade 纹理独立接入 dispose、循环依赖破除、env 子系统 8 个测试文件 70+ it），✅1.2 已完成（popUndoSnapshot 已实现 + Ctrl+Z + 菜单撤销按钮接入 + 测试覆盖），✅1.3 已完成（ADR-128 首部 2026-07-20 标注 5 语种无残留）；Phase 2 ✅2.1/2.2/2.3/2.4/2.5 已完成，✅2.7 已完成，⚠️2.6 部分完成（已加载列表统一组件 + 8 处撤销 toast 接入；缺口：卸载舞台/道具未接入撤销、异步操作状态反馈不均），⚠️2.7 部分完成（环境预设导入/导出 + UI 层 PresetListViewer 通用组件；缺口：PresetManager 抽象不存在、4 个预设系统未统一 API、元数据未跨系统统一）；Phase 3 能力扩展待推进；ADR-093 P3 已关闭（2026-07-27 裁定非死代码））（2026-07-18） |
 | ADR-129 | 动作菜单场景级重设计（Scene-level Motion UI） | 已完成—最终实现偏离设计（2026-07-18） |
 | ADR-128 | 镜面道具化重命名（debugMirror → mirror） | ✅ 已完成（2026-07-20 代码核查确认：全部 debugMirror 重命名已迁移，仅 env-bridge.ts 迁移代码维持旧字段兼容引用；i18n 5 语种无残留） |
 | ADR-127 | 场景级破坏性操作撤销 — Memento 快照 + 撤销 Toast | 已实现（2026-07-18） |
@@ -114,7 +115,7 @@
 | ADR-96 | 通用 Helper 单点收敛 | 已完成（2026-07-13） |
 | ADR-95 | 路径归一化与归属判定统一 | 已完成（批次 1–5 全落地，2026-07-13） |
 | ADR-94 | 资源库替换模式 — 加载后自动保持替换状态并回到模型列表 | 已完成 |
-| ADR-93 | 菜单声明式 Schema —— 单一数据源 + 单渲染器，根治「大」与「AI 难改」 | 已完成 P0+P1+P2（57 个面板迁移完成，env/motion/scene/model/settings 全域覆盖；library/language 为动态列表/纯导航性质，非面板类面板，无需 schema 化）；P3 收尾（移除死 builder、删除 barrel 兼容 re-export、全量类型化）待推进 |
+| ADR-93 | 菜单声明式 Schema —— 单一数据源 + 单渲染器，根治「大」与「AI 难改」 | 已完成 P0+P1+P2（57 个面板迁移完成，env/motion/scene/model/settings 全域覆盖）；P3 收尾（2026-07-27 裁定：`library.ts`/`library-core.ts:986` 的 barrel re-export 为有意为之的公共 API 入口，被 `events.ts`/`drop-import.ts`/`init.ts`/`plaza-download.ts`/`model-preset.test.ts` 5 处活跃消费者依赖，**不属死代码，无需移除**；全量类型化 P3 目标由 ADR-190 声明式收口自然完成，P3 整体关闭） |
 | ADR-92 | 贴图与反射统一 —— 单一纹理工厂 + 单一平面反射引擎 | 已完成 |
 | ADR-91 | 地面纹理统一 —— 4 种样式合并为单一 canvas + StandardMaterial 路径 | 已完成 |
 | ADR-90 | 对话框默认目录记忆（按资源类型）—— 双端可用 | 已完成（2026-07-12）（2026-07-11 / 2026-07-12（双端重构 + 浏览器扩展）） |

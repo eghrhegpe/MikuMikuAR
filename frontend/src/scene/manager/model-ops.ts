@@ -30,6 +30,12 @@ import { Vector3, Quaternion } from '@babylonjs/core/Maths/math.vector';
 import type { VPDBoneData, VPDMorphData } from '@/motion-algos/vpd-parser';
 import { t } from '@/core/i18n/t';
 import { createDefaultFeetState } from '@/core/state'; // [doc:adr-150]
+import {
+    getPersonalLightState,
+    setPersonalLightState,
+    attachPersonalLight,
+    type PersonalLightSettings,
+} from '../render/lighting-follow';
 
 // ======== Model Lifecycle ========
 
@@ -335,6 +341,8 @@ export interface ReplaceSnapshot {
     sceneMotionId?: string;
     /** [doc:adr-150] 轨道相机骨骼锁定骨名；新模型无同名骨则解锁 */
     boneLockBoneName?: string;
+    /** [doc:adr-168] 个人灯状态；undefined=旧模型无个人灯，新模型用默认（关） */
+    personalLight?: PersonalLightSettings;
 }
 
 /** [doc:adr-150] 从旧 ModelInstance 提取可继承状态（深拷贝，不引用原 inst 字段）。 */
@@ -363,6 +371,8 @@ export function captureInheritedState(inst: ModelInstance): ReplaceSnapshot {
         feet: inst.feet ? { ...inst.feet } : createDefaultFeetState(),
         sceneMotionId: inst.motionSlots?.primary?.sceneMotionId,
         boneLockBoneName: getOrbitBoneLock().boneName ?? undefined,
+        // [doc:adr-168] 继承旧角色个人灯状态（仅当旧模型已开/有个人灯 entry）
+        personalLight: getPersonalLightState(inst.id) ?? undefined,
     };
 }
 
@@ -431,5 +441,17 @@ export function applyInheritedState(newId: string, snap: ReplaceSnapshot): void 
             'adr-150',
             `bone lock '${snap.boneLockBoneName}' not found on new model, lock cleared`
         );
+    }
+
+    // 6. [doc:adr-168] 个人灯继承：旧角色开过灯则新角色自动点亮
+    //    兼容 onModelLoaded→attachPersonalLight 的 fire-and-forget 时序：
+    //    - entry 已由 onModelLoaded 创建（默认关）→ 直接覆写点亮；
+    //    - entry 尚未创建 → 带 overrides 直接建已点亮灯，后续 attach 因 _entries.has 早退保留。
+    if (snap.personalLight) {
+        if (getPersonalLightState(newId)) {
+            setPersonalLightState(newId, snap.personalLight);
+        } else {
+            attachPersonalLight(newId, snap.personalLight);
+        }
     }
 }

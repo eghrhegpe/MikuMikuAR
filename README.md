@@ -1,44 +1,30 @@
 # 🎵 MikuMikuAR
 
-> 不只是 MMD 查看器——从模型浏览、动作播放到 AR 实拍合成，MMD 创作的全链路桌面工作站。
-
-![CI](https://img.shields.io/github/actions/workflow/status/eghrhegpe/MikuMikuAR/ci.yml?logo=github)
-
-![Release](https://img.shields.io/github/v/release/eghrhegpe/MikuMikuAR?logo=github)
-
-![Go](https://img.shields.io/badge/Go-1.25-00ADD8?logo=go)
-
-![Wails](https://img.shields.io/badge/Wails-v3-DF0000?logo=wails)
-
 ![Babylon.js](https://img.shields.io/badge/Babylon.js-9.16-AD1F23?logo=babylondotjs)
-
+![Go](https://img.shields.io/badge/Go-1.25-00ADD8?logo=go)
+![Wails](https://img.shields.io/badge/Wails-v3-DF0000?logo=wails)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript)
-
 ![Vite](https://img.shields.io/badge/Vite-6.4-646CFF?logo=vite)
 
+![CI](https://img.shields.io/github/actions/workflow/status/eghrhegpe/MikuMikuAR/ci.yml?logo=github)
+![Release](https://img.shields.io/github/v/release/eghrhegpe/MikuMikuAR?logo=github)
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue)
-
-| 平台                | 状态                          |
-| ----------------- | --------------------------- |
-| 🪟 Windows + 浏览器       | ✅ 已验证                       |
-| 🤖 Android        | ✅ 已验证（c-shared + WebView）   |
-| 🍎 iOS / 🐧 Linux | 🟡 理论兼容（Wails v3 任务已配置，未实测） |
 
 [简体中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · [繁體中文](README.zh-TW.md)
 
+模型浏览、动作播放，MMD 的全链路查看器。
+
+| 平台                | 状态                          |
+| ----------------- | --------------------------- |
+| 🪟 Windows      | ✅ 已验证                       |
+| 🤖 Android        | ✅ 已验证（c-shared + WebView）   |
+| 🍎 iOS / 🐧 Linux | 🟡 理论兼容（Wails v3 任务已配置，未实测） |
+| [🌐 网页版](https://eghrhegpe.github.io/MikuMikuAR/) | 🟡 还在折腾安卓端的edog浏览器 |
+
+
 ---
 
-## 🌐 网页版 & 🖥️ 桌面版
-
-- **🌐 网页版** — 无需安装，浏览器直接打开 **[https://eghrhegpe.github.io/MikuMikuAR/](https://eghrhegpe.github.io/MikuMikuAR/)**。
-- **🖥️ 桌面版（Wails v3）** — Windows / Android，原生安装运行。
-
-同一套 TypeScript + Babylon.js 9.16 代码，两种运行形态，功能一致。
-已解决授权问题，可读取您存储的模型。
-
----
-
-## 为什么选择 MikuMikuAR
+## 关于 MikuMikuAR
 
 大多数 MMD 工具要么是单一查看器（只能看），要么是重型 DCC 插件（必须会 Blender）。MikuMikuAR 填补了中间地带：
 
@@ -46,6 +32,9 @@
 - **程序化生命力** — 呼吸、眨眼、视线追踪、节拍驱动律动（动作覆盖还在修）
 - **AR 实拍合成** — 摄像头画面叠加 3D 模型，一键截图，手机也能用（大概）
 - **跨平台** — Windows 桌面 + Android 移动 + 浏览器，同一套代码，统一桥接读取路径。
+
+模型加载功能由![Babylon.js](https://img.shields.io/badge/Babylon.js-9.16-AD1F23?logo=babylondotjs)提供。
+文件读取功能、各种场景功能由此项目完善。
 
 ---
 
