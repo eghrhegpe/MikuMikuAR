@@ -126,6 +126,22 @@ A 类 `as unknown as` cast 收敛到适配层边界的**类型网关**一处（P
 
 ---
 
+## 审核补遗（2026-07-27）：Phase 0 漏检 ground-collision.ts
+
+**用户预感**："抛开上游处理模型物理的情况，巨容易失效+不可控"。审核 `frontend/src/scene/physics/` + `frontend/src/physics/` 后**部分证实**，并发现 Phase 0 盘点遗漏。
+
+**漏检事实**：ADR-192 Phase 0 记录「`frontend/src` 中真正触及 babylon-mmd 私有字段的散落 cast 仅 2 个生产文件（`wind-physics.ts` / `outfit/audio.ts`）」。实测审核发现第 3 处——`ground-collision.ts:38-40` 的 `(mmdRuntime as unknown as { physics?: { impl?: MmdWasmPhysicsRuntimeImpl } }).physics`，与 `wind-physics` 同性质反射但未收口到适配层。
+
+**判定**：`mmdRuntime` 类型为 `IMmdRuntime | null`（最小接口），不暴露 `.physics`；业务侧直接 `as unknown as` 反射读 `.physics.impl`，babylon-mmd 升级若改字段名即静默失效。**完全命中 ADR-192 立项动机 §22.1「静默降级风险」**，属 Phase 0 漏检。
+
+**修复**：`_getImpl()` 改走 `getPhysicsImpl(mmdRuntime)`，删除散落反射；JS 运行时下 `getPhysicsImpl` 返回 null（因 `.impl` 不存在），与原 `instanceof MmdWasmRuntime` 空转行为等价。`ground-collision.test.ts` 6 测试全绿。
+
+**附带修复（virtual-skirt.ts）**：审核同时发现 `impl.addRigidBody` / `addConstraint` 返回值未检查（上游签名 `boolean`，失败返回 false 不抛异常），表现为"开了虚拟裙骨但裙摆不动"——正是用户预感的"巨容易失效+不可控"。已补返回值检查 + `logWarn` + `dispose()` + `return false`，并补 dispose 异常守卫（impl 已销毁时单个 remove 失败不阻断后续 dispose）。virtual-skirt 23 测试全绿。
+
+**结论**：ADR-192 Phase 0 盘点应补「`ground-collision.ts` 反射收口」为本次审核补遗。物理子系统全量审核见会话记录。
+
+---
+
 ## 审核记录（2026-07-27）
 
 **总体结论：有条件通过** — 方向正确、分阶段合理，但需补 4 项细化后启动 Phase 0。
