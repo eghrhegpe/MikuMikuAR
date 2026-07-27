@@ -18,6 +18,10 @@ import { MmdWasmRuntime as MmdWasmRuntimeClass } from 'babylon-mmd/esm/Runtime/O
 import type { MmdWasmPhysicsRuntimeImpl } from 'babylon-mmd/esm/Runtime/Optimized/Physics/mmdWasmPhysicsRuntimeImpl';
 import { getWindVector, isWindActive } from '../core/wind-utils';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
+import { getPhysicsImpl, getRigidBodyBundleMap } from '@/core/mmd-adapter';
+
+// 薄转发：保留历史导出名 _getBundles，避免 wind-physics.test.ts 改动（ADR-192 双轨过渡）
+export { getRigidBodyBundleMap as _getBundles } from '@/core/mmd-adapter';
 
 /** 风力系数 — Bullet 刚体质量惯性大，需要比 XPBD 布料更大的系数 */
 const WIND_FORCE_SCALE = 0.15;
@@ -33,40 +37,9 @@ interface _WindSub {
 const _subs = new Map<IMmdRuntime, _WindSub>();
 
 /**
- * 尝试从 MmdWasmRuntime 获取 PhysicsRuntimeImpl。
- * physics impl 在首个模型加载前为 null，需延迟获取。
- */
-function _getPhysicsImpl(runtime: IMmdRuntime): MmdWasmPhysicsRuntimeImpl | null {
-    const physics = (runtime as unknown as Record<string, unknown>).physics as
-        Record<string, unknown> | undefined;
-    if (!physics) {
-        return null;
-    }
-    // MmdWasmPhysicsRuntime.impl 是 public getter
-    const impl = physics.impl as MmdWasmPhysicsRuntimeImpl | undefined;
-    return impl ?? null;
-}
-
-/**
  * 从 PhysicsRuntimeImpl 获取所有 RigidBodyBundle。
- * 反射访问 _rigidBodyBundleMap（Map<RigidBodyBundle, number>）。
- * babylon-mmd 升级若重命名此字段，直接抛错。
+ * 反射访问逻辑已收口至 @/core/mmd-adapter（ADR-192），本处仅保留导出名兼容测试。
  */
-export function _getBundles(
-    impl: MmdWasmPhysicsRuntimeImpl
-): Iterable<{ count: number; applyCentralForce(index: number, force: Vector3): void }> {
-    const map = (impl as unknown as Record<string, unknown>)._rigidBodyBundleMap;
-    if (map instanceof Map) {
-        return map.keys();
-    }
-    // babylon-mmd 升级可能重命名/移除该字段：直接抛错
-    if (map === undefined) {
-        throw new Error(
-            'wind-physics: _rigidBodyBundleMap 不存在（可能已被 babylon-mmd 重命名）。检查 babylon-mmd 版本兼容性'
-        );
-    }
-    throw new Error('wind-physics: _rigidBodyBundleMap 类型异常。检查 babylon-mmd 版本兼容性');
-}
 
 /**
  * physics sync 回调 — 在 Bullet 评估前施加风力。
@@ -80,7 +53,7 @@ function _onPhysicsSync(impl: MmdWasmPhysicsRuntimeImpl): void {
     const wind = getWindVector();
     _tmpWind.copyFrom(wind).scaleInPlace(WIND_FORCE_SCALE);
 
-    for (const bundle of _getBundles(impl)) {
+    for (const bundle of getRigidBodyBundleMap(impl)) {
         const count = bundle.count;
         for (let i = 0; i < count; i++) {
             bundle.applyCentralForce(i, _tmpWind);
@@ -135,7 +108,7 @@ function _trySubscribe(runtime: IMmdRuntime): void {
         return;
     } // 已订阅
 
-    const impl = _getPhysicsImpl(runtime);
+    const impl = getPhysicsImpl(runtime);
     if (!impl) {
         return;
     }

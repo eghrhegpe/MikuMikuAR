@@ -15,6 +15,7 @@ import { logWarn } from '@/core/logger';
 import { safeCallAsync } from '@/core/safe-call';
 import { safeDispose } from '@/core/dispose-helpers';
 import type { BeatDetector } from '../motion-algos/beat-detector';
+import { getStreamAudio } from '@/core/mmd-adapter';
 import { uiState } from '../core/state';
 
 let streamPlayer: StreamAudioPlayer | null = null;
@@ -52,7 +53,7 @@ function _ensureFadeGain(): void {
     if (!streamPlayer) {
         return;
     }
-    const audio = (streamPlayer as unknown as { _audio?: HTMLAudioElement })._audio;
+    const audio = getStreamAudio(streamPlayer);
     if (!audio) {
         return;
     }
@@ -131,7 +132,7 @@ function _attachEndedListener(): void {
     if (!streamPlayer) {
         return;
     }
-    const audio = (streamPlayer as unknown as { _audio?: HTMLAudioElement })._audio;
+    const audio = getStreamAudio(streamPlayer);
     if (!audio) {
         return;
     }
@@ -348,7 +349,7 @@ function _tryAttachBeatDetector(player: StreamAudioPlayer): void {
     if (beatDetectorAttached || !beatDetector) {
         return;
     }
-    const el = (player as unknown as { _audio?: HTMLAudioElement })._audio;
+    const el = getStreamAudio(player);
     if (el) {
         beatDetectorAttached = beatDetector.attach(el);
     }
