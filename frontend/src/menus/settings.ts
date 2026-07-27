@@ -26,6 +26,7 @@ import { buildSettingsDownloadsLevel } from './settings-downloads';
 import { buildSettingsMediaLevel } from './settings-media';
 import { buildSettingsSystemLevel, buildSoftwareDetailLevel } from './settings-system';
 import { buildSettingsAboutLevel } from './settings-about';
+import { buildSettingsDiagnosticLevel } from './settings-diagnostic';
 import { handleSettingsAction } from './settings-actions';
 
 // ======== Menu registration ========
@@ -94,6 +95,12 @@ function buildSettingsRootItems(): PopupRow[] {
     });
     items.push({
         kind: 'folder',
+        label: t('settings.diagnostic'),
+        icon: 'lucide:bot',
+        target: SETTINGS.DIAGNOSTIC,
+    });
+    items.push({
+        kind: 'folder',
         label: t('settings.about'),
         icon: 'lucide:info',
         target: SETTINGS.ABOUT,
@@ -140,4 +147,5 @@ const SETTINGS_FOLDER_ROUTES: Record<SettingsFolderTarget, () => PopupLevel> = {
     [SETTINGS.MEDIA]: () => buildSettingsMediaLevel(getSettingsMenu),
     [SETTINGS.SYSTEM]: () => buildSettingsSystemLevel(getSettingsMenu),
     [SETTINGS.ABOUT]: () => buildSettingsAboutLevel(getSettingsMenu),
+    [SETTINGS.DIAGNOSTIC]: () => buildSettingsDiagnosticLevel(getSettingsMenu),
 };

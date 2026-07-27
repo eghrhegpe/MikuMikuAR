@@ -11,6 +11,7 @@ export const SETTINGS = {
     MEDIA: 'settings:media',
     SYSTEM: 'settings:system',
     ABOUT: 'settings:about',
+    DIAGNOSTIC: 'settings:diagnostic',
 } as const;
 
 /** 设置菜单动作 target（点击后执行操作，不导航） */
