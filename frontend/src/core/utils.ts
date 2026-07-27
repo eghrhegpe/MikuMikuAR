@@ -252,6 +252,7 @@ export function setOnCloseAllOverlays(fn: (() => void) | null): void {
 export function closeAllOverlays(): void {
     document.querySelectorAll<HTMLElement>('[data-overlay].visible').forEach((el) => {
         el.classList.remove('visible', 'overlay-fade-out');
+        el.inert = true; // 关闭时从 Tab 顺序中移除，防止 AI/键盘聚焦到不可见元素
     });
     setPopupOpen(false);
     document.querySelectorAll<HTMLElement>('[aria-controls]').forEach((btn) => {

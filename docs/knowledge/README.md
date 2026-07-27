@@ -92,7 +92,7 @@ use_when:
 
 跑法：`node scripts/check-doc-drift.mjs`（或 `--json`）。可接 CI 卡点。
 
-## 卡片索引（194 张，按 category 分组）
+## 卡片索引（198 张，按 category 分组）
 
 ### 环境系统（env）
 
@@ -141,6 +141,7 @@ use_when:
 | [模型注册表与生命周期管理](./model-manager.md) | `scene/manager/model-manager.ts` | — |
 | [模型生命周期操作](./model-ops.md) | `scene/manager/model-ops.ts` | ADR-116 |
 | [分类材质系统](./material.md) | `scene/manager/material.ts` | — |
+| [纹理 LRU 缓存](./texture-lru.md) | `scene/manager/texture-lru.ts` | ADR-189 |
 | [姿势多角度预设系统](./camera-angle.md) | `scene/pose/camera-angle.ts` | — |
 | [AR 摄像头视频透传](./ar-camera.md) | `scene/ar/ar-camera.ts` | ADR-055 |
 | [AR 模式场景级协调](./ar-scene.md) | `scene/ar/ar-scene.ts` | ADR-055 |
@@ -187,6 +188,7 @@ use_when:
 | [性能监控与自动降级](./performance.md) | `scene/render/performance.ts` | ADR-159 |
 | [3D 拖拽 Gizmo 统一抽象](./transform-gizmo.md) | `scene/render/transform-gizmo.ts` | ADR-048/126 |
 | [灯光预设系统](./lighting-presets.md) | `scene/render/lighting-presets.ts` | — |
+| [GPU 压缩纹理能力探测](./gpu-capabilities.md) | `core/gpu-capabilities.ts` | ADR-189 |
 
 ### 动作系统（motion）
 
@@ -299,4 +301,7 @@ use_when:
 | [结构化反馈 API](./feedback.md) | `core/feedback.ts` | — |
 | [模型加载/库扫描完成后菜单刷新注册表](./load-refresh-registry.md) | `core/load-refresh-registry.ts` | — |
 | [@wailsio/runtime 浏览器桩](./runtime-stub.md) | `core/runtime-stub.ts` | ADR-176/177 |
+| [babylon-mmd 适配边界](./mmd-adapter.md) | `core/mmd-adapter.ts` | ADR-192 |
+| [预设元数据归一化](./preset-meta.md) | `core/preset-meta.ts` | ADR-130 |
+| [核心零依赖叶模块](./core-leaf-modules.md) | `core/async.ts` 等 7 个叶模块 | ADR-191 |
 | [安卓文件访问（shared 模式）](./android-file-access.md) | `internal/app/fileaccess_android.go` 等 | ADR-017/180/183/194 |
