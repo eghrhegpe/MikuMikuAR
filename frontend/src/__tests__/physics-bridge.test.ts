@@ -3,7 +3,7 @@ import type { Scene } from '@babylonjs/core/scene';
 import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
 import {
     findRuntimeBone,
-    getBoneWorldMatrix,
+    getBoneLocalMatrix,
     getBoneWorldPosition,
     autoFitAttachment,
     PerFrameUpdateRegistry,
@@ -38,13 +38,13 @@ describe('physics-bridge bone read bridge', () => {
         expect(findRuntimeBone(undefined, 'x')).toBeNull();
     });
 
-    it('getBoneWorldMatrix returns the bone matrix or null', () => {
-        const mm = getBoneWorldMatrix(model, 'Waist');
+    it('getBoneLocalMatrix returns the bone matrix or null', () => {
+        const mm = getBoneLocalMatrix(model, 'Waist');
         expect(mm).not.toBeNull();
         expect(mm![12]).toBe(1);
         expect(mm![13]).toBe(2);
         expect(mm![14]).toBe(3);
-        expect(getBoneWorldMatrix(model, 'Nope')).toBeNull();
+        expect(getBoneLocalMatrix(model, 'Nope')).toBeNull();
     });
 
     it('getBoneWorldPosition extracts translation', () => {
