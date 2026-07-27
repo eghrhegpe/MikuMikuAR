@@ -134,7 +134,10 @@ export async function startARCamera(facing: CameraFacing = 'user'): Promise<bool
     // Android WebView：进入 AR 前必须持有 CAMERA 运行时权限，否则 getUserMedia
     // 会被 WebChromeClient 静默拒绝（NotAllowedError）。这里在按钮点击链路里显式
     // 判断授权状态——已授权则继续，未授权则弹系统授权框并等待用户决策。
-    if (getCachedCapabilities().arScope === 'android-app' && !(await ensureAndroidCameraPermission())) {
+    if (
+        getCachedCapabilities().arScope === 'android-app' &&
+        !(await ensureAndroidCameraPermission())
+    ) {
         _active = false;
         _hideVideo();
         feedbackStatus('scene.ar.cameraDenied', undefined, false);

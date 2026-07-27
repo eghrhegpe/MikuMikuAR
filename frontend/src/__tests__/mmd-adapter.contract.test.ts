@@ -21,7 +21,10 @@ import {
 
 // 最小 mock 模拟上游私有字段（与生产逻辑解耦，不引入真实 babylon-mmd 实例）
 function mockPhysicsImpl(overrides: Record<string, unknown> = {}): MmdWasmPhysicsRuntimeImpl {
-    return { rigidBodyBundleReferenceCountMap: new Map(), ...overrides } as unknown as MmdWasmPhysicsRuntimeImpl;
+    return {
+        rigidBodyBundleReferenceCountMap: new Map(),
+        ...overrides,
+    } as unknown as MmdWasmPhysicsRuntimeImpl;
 }
 function mockRuntime(impl?: MmdWasmPhysicsRuntimeImpl | null): IMmdRuntime {
     const physics = impl === undefined ? undefined : { impl };
@@ -36,7 +39,12 @@ describe('MmdAdapter — babylon-mmd 私有字段网关（ADR-192）', () => {
         it('返回公开属性 rigidBodyBundleReferenceCountMap 的 keys', () => {
             const a = {};
             const b = {};
-            const impl = mockPhysicsImpl({ rigidBodyBundleReferenceCountMap: new Map([[a, 1], [b, 2]]) });
+            const impl = mockPhysicsImpl({
+                rigidBodyBundleReferenceCountMap: new Map([
+                    [a, 1],
+                    [b, 2],
+                ]),
+            });
             expect([...getRigidBodyBundleMap(impl)]).toEqual([a, b]);
         });
     });
@@ -89,7 +97,9 @@ describe('MmdAdapter — Phase 1 时序/坐标系契约 + 切换契约（ADR-192
         it('注册回调到 onBeforeRenderObservable，触发时调用一次', () => {
             const { scene, obs } = mockScene();
             let called = 0;
-            const handle = onBoneMatricesUpdated(scene, () => { called++; });
+            const handle = onBoneMatricesUpdated(scene, () => {
+                called++;
+            });
             expect(handle).toBeDefined();
             obs._notify();
             expect(called).toBe(1);
@@ -131,21 +141,35 @@ describe('MmdAdapter — Phase 1 时序/坐标系契约 + 切换契约（ADR-192
             const prev = hasPrev ? { dispose: () => seq.push('dispose') } : null;
             const model = {
                 currentAnimation: prev,
-                setRuntimeAnimation: (h: unknown) => seq.push(`set:${h === null ? 'null' : 'handle'}`),
-                createRuntimeAnimation: () => { seq.push('create'); return 'handle'; },
+                setRuntimeAnimation: (h: unknown) =>
+                    seq.push(`set:${h === null ? 'null' : 'handle'}`),
+                createRuntimeAnimation: () => {
+                    seq.push('create');
+                    return 'handle';
+                },
             } as unknown as RuntimeModel;
             return { model, seq };
         }
         function mockRuntime(seq: string[]) {
             return {
-                seekAnimation: () => { seq.push('seek'); return Promise.resolve(); },
+                seekAnimation: () => {
+                    seq.push('seek');
+                    return Promise.resolve();
+                },
             } as unknown as IMmdRuntime;
         }
 
         it('执行 解绑 → dispose 旧 → 创建 → 绑定 → seek(0,true) 序列', async () => {
             const { model, seq } = mockModel(['__init__'], true);
             await switchAnimation(mockRuntime(seq), model, {} as IMmdBindableModelAnimation);
-            expect(seq).toEqual(['__init__', 'set:null', 'dispose', 'create', 'set:handle', 'seek']);
+            expect(seq).toEqual([
+                '__init__',
+                'set:null',
+                'dispose',
+                'create',
+                'set:handle',
+                'seek',
+            ]);
         });
 
         it('currentAnimation 为 null 时跳过 dispose', async () => {
@@ -157,9 +181,14 @@ describe('MmdAdapter — Phase 1 时序/坐标系契约 + 切换契约（ADR-192
         it('seekAnimation 抛错不阻断切换', async () => {
             const { model, seq } = mockModel(['__init__'], false);
             const runtime = {
-                seekAnimation: () => { seq.push('seek'); return Promise.reject(new Error('boom')); },
+                seekAnimation: () => {
+                    seq.push('seek');
+                    return Promise.reject(new Error('boom'));
+                },
             } as unknown as IMmdRuntime;
-            await expect(switchAnimation(runtime, model, {} as IMmdBindableModelAnimation)).resolves.toBeUndefined();
+            await expect(
+                switchAnimation(runtime, model, {} as IMmdBindableModelAnimation)
+            ).resolves.toBeUndefined();
             expect(seq).toEqual(['__init__', 'set:null', 'create', 'set:handle', 'seek']);
         });
     });

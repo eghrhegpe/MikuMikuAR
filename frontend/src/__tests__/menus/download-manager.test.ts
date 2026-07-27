@@ -70,8 +70,12 @@ describe('download-manager', () => {
             const bytes2 = new Uint8Array([1, 2, 4]);
             const h1 = await crypto.subtle.digest('SHA-256', bytes1 as BufferSource);
             const h2 = await crypto.subtle.digest('SHA-256', bytes2 as BufferSource);
-            const hex1 = Array.from(new Uint8Array(h1)).map(b => b.toString(16).padStart(2, '0')).join('');
-            const hex2 = Array.from(new Uint8Array(h2)).map(b => b.toString(16).padStart(2, '0')).join('');
+            const hex1 = Array.from(new Uint8Array(h1))
+                .map((b) => b.toString(16).padStart(2, '0'))
+                .join('');
+            const hex2 = Array.from(new Uint8Array(h2))
+                .map((b) => b.toString(16).padStart(2, '0'))
+                .join('');
             expect(hex1).not.toBe(hex2);
         });
 
@@ -79,8 +83,12 @@ describe('download-manager', () => {
             const bytes = new Uint8Array([42, 99, 255]);
             const h1 = await crypto.subtle.digest('SHA-256', bytes as BufferSource);
             const h2 = await crypto.subtle.digest('SHA-256', bytes as BufferSource);
-            const hex1 = Array.from(new Uint8Array(h1)).map(b => b.toString(16).padStart(2, '0')).join('');
-            const hex2 = Array.from(new Uint8Array(h2)).map(b => b.toString(16).padStart(2, '0')).join('');
+            const hex1 = Array.from(new Uint8Array(h1))
+                .map((b) => b.toString(16).padStart(2, '0'))
+                .join('');
+            const hex2 = Array.from(new Uint8Array(h2))
+                .map((b) => b.toString(16).padStart(2, '0'))
+                .join('');
             expect(hex1).toBe(hex2);
         });
     });
@@ -109,7 +117,7 @@ describe('download-manager', () => {
         });
 
         it('manifest should deduplicate by stem lookup', () => {
-            const manifest: Record<string, string[]> = { 'miku': ['tex/miku.pmx'] };
+            const manifest: Record<string, string[]> = { miku: ['tex/miku.pmx'] };
             const stem = 'miku.pmx'.replace(/\.[^.]+$/, '');
             expect(stem in manifest).toBe(true); // already imported
 

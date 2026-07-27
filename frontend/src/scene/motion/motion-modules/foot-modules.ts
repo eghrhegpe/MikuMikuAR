@@ -72,18 +72,22 @@ function createFootModuleFactory(cfg: FootSideConfig) {
             if (_footFrameHooks.has(modelId)) return;
             bake(modelId);
 
-            const unregister = registerBoneOverrideFrameHook((_t, mid) => {
-                if (mid !== modelId) return;
-                const st = getModuleState(modelId, cfg.moduleId);
-                if (!st.enabled) return;
+            const unregister = registerBoneOverrideFrameHook(
+                (_t, mid) => {
+                    if (mid !== modelId) return;
+                    const st = getModuleState(modelId, cfg.moduleId);
+                    if (!st.enabled) return;
 
-                const fx = (st.params.footPosX as number) ?? 0;
-                const fy = (st.params.footPosY as number) ?? 0;
-                const fz = (st.params.footPosZ as number) ?? 0;
-                if (fx === 0 && fy === 0 && fz === 0) return;
+                    const fx = (st.params.footPosX as number) ?? 0;
+                    const fy = (st.params.footPosY as number) ?? 0;
+                    const fz = (st.params.footPosZ as number) ?? 0;
+                    if (fx === 0 && fy === 0 && fz === 0) return;
 
-                setBoneOverridePosition(cfg.ikBone, [fx, fy, fz], 1, true, modelId);
-            }, FRAME_HOOK_ORDER.FEET, cfg.moduleId);
+                    setBoneOverridePosition(cfg.ikBone, [fx, fy, fz], 1, true, modelId);
+                },
+                FRAME_HOOK_ORDER.FEET,
+                cfg.moduleId
+            );
             _footFrameHooks.set(modelId, unregister);
         }
 

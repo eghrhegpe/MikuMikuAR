@@ -28,19 +28,28 @@ import { initSync, init } from 'babylon-mmd/esm/Runtime/Optimized/wasm/spr';
 import * as sprWasm from 'babylon-mmd/esm/Runtime/Optimized/wasm/spr';
 
 const WASM_PATH = path.resolve(
-  __dirname,
-  '..', '..', '..',
-  'node_modules', 'babylon-mmd', 'esm', 'Runtime', 'Optimized', 'wasm', 'spr', 'index_bg.wasm',
+    __dirname,
+    '..',
+    '..',
+    '..',
+    'node_modules',
+    'babylon-mmd',
+    'esm',
+    'Runtime',
+    'Optimized',
+    'wasm',
+    'spr',
+    'index_bg.wasm'
 );
 
 let _initialized = false;
 let _memory: WebAssembly.Memory | null = null;
 
 export interface MinimalPhysicsImpl {
-  /** WASM 物理 API 命名空间（createPhysicsWorld, createBoxShape 等） */
-  api: typeof sprWasm;
-  /** WASM 线性内存，用于手动读写刚体构造信息等 */
-  memory: WebAssembly.Memory;
+    /** WASM 物理 API 命名空间（createPhysicsWorld, createBoxShape 等） */
+    api: typeof sprWasm;
+    /** WASM 线性内存，用于手动读写刚体构造信息等 */
+    memory: WebAssembly.Memory;
 }
 
 /**
@@ -48,16 +57,16 @@ export interface MinimalPhysicsImpl {
  * 幂等：多次调用返回同一实例。
  */
 export function createMinimalPhysicsImpl(): MinimalPhysicsImpl {
-  if (_initialized && _memory) return { api: sprWasm, memory: _memory };
+    if (_initialized && _memory) return { api: sprWasm, memory: _memory };
 
-  const wasmBuffer = fs.readFileSync(WASM_PATH);
-  const module = new WebAssembly.Module(wasmBuffer);
-  const output = initSync({ module });
-  init();
+    const wasmBuffer = fs.readFileSync(WASM_PATH);
+    const module = new WebAssembly.Module(wasmBuffer);
+    const output = initSync({ module });
+    init();
 
-  _initialized = true;
-  _memory = output.memory;
-  return { api: sprWasm, memory: output.memory };
+    _initialized = true;
+    _memory = output.memory;
+    return { api: sprWasm, memory: output.memory };
 }
 
 /**
@@ -65,6 +74,6 @@ export function createMinimalPhysicsImpl(): MinimalPhysicsImpl {
  * 注意：WASM 模块本身无法卸载，此函数仅重置内部标志。
  */
 export function resetMinimalPhysicsImpl(): void {
-  _initialized = false;
-  _memory = null;
+    _initialized = false;
+    _memory = null;
 }

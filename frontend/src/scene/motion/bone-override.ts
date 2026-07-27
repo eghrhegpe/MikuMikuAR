@@ -937,9 +937,7 @@ export function startBoneOverride(
         }
 
         // IK 位置保护：快照受保护骨骼的原始 worldMatrix（帧钩子已注册保护集合）
-        const ikSnapshots = isWasm
-            ? _snapshotProtectedPositions(boneMap)
-            : null;
+        const ikSnapshots = isWasm ? _snapshotProtectedPositions(boneMap) : null;
 
         for (const [boneName, slot] of overrideMap) {
             if (!slot.enabled) {

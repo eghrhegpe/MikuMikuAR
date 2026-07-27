@@ -766,14 +766,8 @@ export {
 } from './camera-state';
 // @knipkeep — 测试通过 vi.importActual 动态访问，knip 静态分析无法识别
 export { defaultCameraPreset, setCameraPreset } from './camera-state';
-export {
-    loadCameraVmd,
-    clearCameraVmd,
-    animateCameraVmd,
-} from './camera-vmd';
-export {
-    refreshCameraUserSettings,
-} from './camera-factory';
+export { loadCameraVmd, clearCameraVmd, animateCameraVmd } from './camera-vmd';
+export { refreshCameraUserSettings } from './camera-factory';
 export {
     setOrbitBoneLock,
     getOrbitBoneLock,

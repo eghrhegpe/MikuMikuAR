@@ -687,7 +687,9 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
             const primarySrc = sources[0];
             const { loadVMDMotion } = await import('./vmd-loader');
             await loadVMDMotion(primarySrc.data, primarySrc.name, modelId);
-            feedbackStatus('scene.vmd.wasmSingleLayer', undefined, false, { name: primarySrc.name });
+            feedbackStatus('scene.vmd.wasmSingleLayer', undefined, false, {
+                name: primarySrc.name,
+            });
             return;
         }
 

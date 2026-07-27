@@ -131,7 +131,9 @@ export function resetPersonalLightDefault(): void {
 
 /** 返回实际生效的默认值：用户覆盖 > 硬编码。 */
 function _effectivePersonalLightDefault(): PersonalLightSettings {
-    return _userPersonalLightDefault ? { ..._userPersonalLightDefault } : { ...DEFAULT_PERSONAL_LIGHT };
+    return _userPersonalLightDefault
+        ? { ..._userPersonalLightDefault }
+        : { ...DEFAULT_PERSONAL_LIGHT };
 }
 
 /** 取个人灯跟随基准点：用户指定骨骼 → 腰骨候选 → 根节点（兜底） */

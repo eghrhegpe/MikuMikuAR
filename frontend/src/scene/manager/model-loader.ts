@@ -278,10 +278,10 @@ async function collectTextureFiles(modelDir: string, signal?: AbortSignal): Prom
         const CONCURRENCY = 8;
         let running = 0;
         const tasks = entries
-            .filter(e => TEXTURE_EXTS.test(e.name))
-            .map(async entry => {
+            .filter((e) => TEXTURE_EXTS.test(e.name))
+            .map(async (entry) => {
                 while (running >= CONCURRENCY) {
-                    await new Promise(r => setTimeout(r, 0)); // yield
+                    await new Promise((r) => setTimeout(r, 0)); // yield
                 }
                 running++;
                 try {
@@ -289,7 +289,11 @@ async function collectTextureFiles(modelDir: string, signal?: AbortSignal): Prom
                     // [doc:adr-189] LRU 缓存命中直接返回，未命中则 readFileBytes + 缓存
                     const data = await readTextureWithLRU(modelDir, entry.relativePath, signal);
                     if (!data) {
-                        logWarn('model-loader', 'texture read failed, skipped:', entry.relativePath);
+                        logWarn(
+                            'model-loader',
+                            'texture read failed, skipped:',
+                            entry.relativePath
+                        );
                         return null;
                     }
                     return {
@@ -391,12 +395,9 @@ async function _applySceneMotion(
                     } else {
                         logWarn('model-loader', 'VMD 加载失败，模型已保留:', vmdErr);
                         appliedVmd = '';
-                        feedbackStatus(
-                            'scene.loader.vmdFailedModelLoaded',
-                            undefined,
-                            false,
-                            { name: inst.name }
-                        );
+                        feedbackStatus('scene.loader.vmdFailedModelLoaded', undefined, false, {
+                            name: inst.name,
+                        });
                         inst.motionSlots = {
                             primary: {
                                 source: 'inherit',

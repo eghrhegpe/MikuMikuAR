@@ -7,7 +7,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // 受控的 modelRegistry（material.ts 按 id 查 meshes）—— 用 vi.hoisted 避免 hoist 引用错误
 const hoisted = vi.hoisted(() => ({
-    registry: new Map<string, { id: string; meshes: Array<{ setEnabled: ReturnType<typeof vi.fn> }> }>(),
+    registry: new Map<
+        string,
+        { id: string; meshes: Array<{ setEnabled: ReturnType<typeof vi.fn> }> }
+    >(),
 }));
 
 vi.mock('@/core/config', () => ({

@@ -157,44 +157,48 @@ function createHandModuleFactory(cfg: HandSideConfig) {
             if (_handFrameHooks.has(modelId)) return;
             bake(modelId);
 
-            const unregister = registerBoneOverrideFrameHook((_t, mid) => {
-                if (mid !== modelId) return;
-                const st = getModuleState(modelId, cfg.moduleId);
-                if (!st.enabled) return;
-                const inst = modelRegistry.get(modelId);
-                const bones = inst?.mmdModel?.runtimeBones;
-                if (!bones?.length) return;
+            const unregister = registerBoneOverrideFrameHook(
+                (_t, mid) => {
+                    if (mid !== modelId) return;
+                    const st = getModuleState(modelId, cfg.moduleId);
+                    if (!st.enabled) return;
+                    const inst = modelRegistry.get(modelId);
+                    const bones = inst?.mmdModel?.runtimeBones;
+                    if (!bones?.length) return;
 
-                const hx = (st.params.handPosX as number) ?? 0;
-                const hy = (st.params.handPosY as number) ?? 0;
-                const hz = (st.params.handPosZ as number) ?? 0;
-                if (hx === 0 && hy === 0 && hz === 0) return;
+                    const hx = (st.params.handPosX as number) ?? 0;
+                    const hy = (st.params.handPosY as number) ?? 0;
+                    const hz = (st.params.handPosZ as number) ?? 0;
+                    if (hx === 0 && hy === 0 && hz === 0) return;
 
-                const cache = _getArmIkCache(modelId);
-                const ikCandidates =
-                    cfg.side === 'L' ? BONE_ARM_IK_L_CANDIDATES : BONE_ARM_IK_R_CANDIDATES;
-                const shoulderCandidates =
-                    cfg.side === 'L' ? BONE_SHOULDER_L_CANDIDATES : BONE_SHOULDER_R_CANDIDATES;
+                    const cache = _getArmIkCache(modelId);
+                    const ikCandidates =
+                        cfg.side === 'L' ? BONE_ARM_IK_L_CANDIDATES : BONE_ARM_IK_R_CANDIDATES;
+                    const shoulderCandidates =
+                        cfg.side === 'L' ? BONE_SHOULDER_L_CANDIDATES : BONE_SHOULDER_R_CANDIDATES;
 
-                const ikKey = cfg.side === 'L' ? 'lIk' : 'rIk';
-                const rootKey = cfg.side === 'L' ? 'lRoot' : 'rRoot';
+                    const ikKey = cfg.side === 'L' ? 'lIk' : 'rIk';
+                    const rootKey = cfg.side === 'L' ? 'lRoot' : 'rRoot';
 
-                if (cache[ikKey] === undefined) {
-                    cache[ikKey] = matchBone(
-                        bones.map((b) => b.name),
-                        ikCandidates
-                    );
-                }
-                if (cache[rootKey] === undefined) {
-                    cache[rootKey] = matchBone(
-                        bones.map((b) => b.name),
-                        shoulderCandidates
-                    );
-                }
+                    if (cache[ikKey] === undefined) {
+                        cache[ikKey] = matchBone(
+                            bones.map((b) => b.name),
+                            ikCandidates
+                        );
+                    }
+                    if (cache[rootKey] === undefined) {
+                        cache[rootKey] = matchBone(
+                            bones.map((b) => b.name),
+                            shoulderCandidates
+                        );
+                    }
 
-                const rootName = cache[rootKey] ?? cfg.shoulderBone;
-                _driveArm(bones, cache[ikKey], rootName, [hx, hy, hz], modelId);
-            }, FRAME_HOOK_ORDER.HAND_SYMMETRY, cfg.moduleId);
+                    const rootName = cache[rootKey] ?? cfg.shoulderBone;
+                    _driveArm(bones, cache[ikKey], rootName, [hx, hy, hz], modelId);
+                },
+                FRAME_HOOK_ORDER.HAND_SYMMETRY,
+                cfg.moduleId
+            );
             _handFrameHooks.set(modelId, unregister);
         }
 

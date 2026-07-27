@@ -50,25 +50,54 @@ describe('plaza 导出契约', () => {
 // 否则会静默退回代理 origin → API CORS 白屏。
 describe('preserveBuiltinRouting（缓存不得丢弃内置站点路由标记）', () => {
     it('缓存缺失 directNavigate 时，内置站点仍以源码 PLAZA_SITES 为准', () => {
-        const cached = [{ id: 'mzhouse', name: '模之屋', url: 'https://www.aplaybox.com/', mode: 'external' as const }];
+        const cached = [
+            {
+                id: 'mzhouse',
+                name: '模之屋',
+                url: 'https://www.aplaybox.com/',
+                mode: 'external' as const,
+            },
+        ];
         const out = preserveBuiltinRouting(cached);
         expect(out[0].directNavigate).toBe(true);
     });
 
     it('缓存显式 false 不覆盖内置 true（路由标记为代码级决策）', () => {
-        const cached = [{ id: 'mzhouse', name: '模之屋', url: 'https://www.aplaybox.com/', mode: 'external' as const, directNavigate: false }];
+        const cached = [
+            {
+                id: 'mzhouse',
+                name: '模之屋',
+                url: 'https://www.aplaybox.com/',
+                mode: 'external' as const,
+                directNavigate: false,
+            },
+        ];
         const out = preserveBuiltinRouting(cached);
         expect(out[0].directNavigate).toBe(true);
     });
 
     it('自定义站点（无内置项）保留自身 directNavigate', () => {
-        const custom = [{ id: 'mysite', name: 'X', url: 'https://x.test/', mode: 'external' as const, directNavigate: true }];
+        const custom = [
+            {
+                id: 'mysite',
+                name: 'X',
+                url: 'https://x.test/',
+                mode: 'external' as const,
+                directNavigate: true,
+            },
+        ];
         const out = preserveBuiltinRouting(custom);
         expect(out[0].directNavigate).toBe(true);
     });
 
     it('normalizeSite 圆整 directNavigate 字段', () => {
-        const s = normalizeSite({ id: 'a', name: 'A', url: 'https://a.test/', mode: 'external', directNavigate: true });
+        const s = normalizeSite({
+            id: 'a',
+            name: 'A',
+            url: 'https://a.test/',
+            mode: 'external',
+            directNavigate: true,
+        });
         expect(s?.directNavigate).toBe(true);
     });
 
@@ -78,7 +107,13 @@ describe('preserveBuiltinRouting（缓存不得丢弃内置站点路由标记）
     });
 
     it('normalizeSite 自定义站点可显式 false 回退代理（frame-hostile 站点兜底）', () => {
-        const s = normalizeSite({ id: 'c', name: 'C', url: 'https://c.test/', mode: 'embed', directNavigate: false });
+        const s = normalizeSite({
+            id: 'c',
+            name: 'C',
+            url: 'https://c.test/',
+            mode: 'embed',
+            directNavigate: false,
+        });
         expect(s?.directNavigate).toBe(false);
     });
 });

@@ -170,8 +170,9 @@ export async function switchAnimation(
     animation: IMmdBindableModelAnimation
 ): Promise<void> {
     // 1. 取出并释放旧句柄（私有字段 currentAnimation，A 类 augmentation）
-    const prevAnim = (model as unknown as { currentAnimation?: { dispose?: () => void } | null })
-        .currentAnimation ?? null;
+    const prevAnim =
+        (model as unknown as { currentAnimation?: { dispose?: () => void } | null })
+            .currentAnimation ?? null;
     // 2. 解绑旧动画（不释放 WASM buffer）
     model.setRuntimeAnimation(null);
     // 3. 释放旧句柄，回收 WASM AnimCurve 资源

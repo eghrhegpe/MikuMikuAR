@@ -10,11 +10,7 @@ import { clamp } from '@/core/clamp';
 import { focusedModelId, modelRegistry } from '@/core/config';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { safeDispose } from '@/core/dispose-helpers';
-import {
-    getCameraMode,
-    getCameraScene,
-    getCurrentCamera,
-} from './camera-state';
+import { getCameraMode, getCameraScene, getCurrentCamera } from './camera-state';
 
 // ======== Bone Lock — 轨道相机锁定到骨骼 ========
 // 启用时：每帧将相机 target 设为目标骨骼的世界位置，同时禁用平移。

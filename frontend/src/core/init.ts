@@ -38,7 +38,11 @@ import { hexToRgb, rgbToString } from './color-helpers';
 import { fireAndForget, swallowError } from './utils';
 import { showInfoToast } from './toast';
 import { safeCallAsync } from './safe-call';
-import { installGlobalErrorCapture, installLoggingPatch, uninstallLoggingPatch } from './ai/error-buffer';
+import {
+    installGlobalErrorCapture,
+    installLoggingPatch,
+    uninstallLoggingPatch,
+} from './ai/error-buffer';
 import { setPerformanceMode } from '../scene/render/performance';
 import { initLibrary, showModelPopup, showMotionPopup, refreshLibrary } from '../menus/library';
 import { showPlaza } from '../menus/plaza-browser';

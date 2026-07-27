@@ -159,7 +159,8 @@ function _getOrCreateSpinner(): HTMLElement {
     if (!_loadingSpinner) {
         _loadingSpinner = document.createElement('span');
         _loadingSpinner.id = 'statusLoadingSpinner';
-        _loadingSpinner.style.cssText = 'display:none;flex-shrink:0;width:14px;height:14px;margin-right:6px';
+        _loadingSpinner.style.cssText =
+            'display:none;flex-shrink:0;width:14px;height:14px;margin-right:6px';
         _loadingSpinner.innerHTML = [
             '<svg viewBox="0 0 24 24" width="14" height="14" fill="none"',
             '  stroke="currentColor" stroke-width="2.5" stroke-linecap="round"',

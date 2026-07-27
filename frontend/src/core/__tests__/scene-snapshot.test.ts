@@ -54,7 +54,11 @@ describe('formatSceneSnapshot（纯函数）', () => {
     });
 
     it('KTX2 不支持时显示 不支持', () => {
-        const text = formatSceneSnapshot({ ...data, ktx2Supported: false, ktx2PreferredFormat: null });
+        const text = formatSceneSnapshot({
+            ...data,
+            ktx2Supported: false,
+            ktx2PreferredFormat: null,
+        });
         expect(text).toContain('KTX2: 不支持');
     });
 });

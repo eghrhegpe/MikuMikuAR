@@ -70,14 +70,19 @@ function makeBone(opts: MakeBoneOpts): IMmdRuntimeBone & Partial<MmdRuntimeBoneE
 
 function identityWorldMatrix(): Float32Array {
     const m = new Float32Array(16);
-    m[0] = 1; m[5] = 1; m[10] = 1; m[15] = 1;
+    m[0] = 1;
+    m[5] = 1;
+    m[10] = 1;
+    m[15] = 1;
     return m;
 }
 
 /** 构造一个头部骨骼：位置 (0,1.5,0)，正前方 +Z（MMD 默认朝向） */
 function makeHeadBone(opts?: { js?: boolean; parentBone?: any }): IMmdRuntimeBone {
     const wm = identityWorldMatrix();
-    wm[12] = 0; wm[13] = 1.5; wm[14] = 0;
+    wm[12] = 0;
+    wm[13] = 1.5;
+    wm[14] = 0;
     return makeBone({ name: '頭', js: opts?.js, parentBone: opts?.parentBone, worldMatrix: wm });
 }
 
@@ -232,7 +237,7 @@ describe('_applyHeadGazeWasm 写入策略', () => {
 describe('_applyGaze 调度自动分支', () => {
     it('JS bone（提供 updateWorldMatrix）→ 走 JS 路径：改 linkedBone 不改 worldMatrix', () => {
         const head = makeHeadBone({ js: true });
-        const beforeBuf = [...(head as any).worldMatrix as Float32Array];
+        const beforeBuf = [...((head as any).worldMatrix as Float32Array)];
         const beforeQ = (head.linkedBone as any).rotationQuaternion.clone();
         gaze._applyGaze(
             { runtimeBones: [head], mesh: {} } as any,
@@ -245,7 +250,9 @@ describe('_applyGaze 调度自动分支', () => {
             { headWorldQ: null, eyeLocalQ: new Map() }
         );
         // JS 路径：linkedBone 被改
-        expect((head.linkedBone as any).rotationQuaternion.equalsWithEpsilon(beforeQ, 1e-6)).toBe(false);
+        expect((head.linkedBone as any).rotationQuaternion.equalsWithEpsilon(beforeQ, 1e-6)).toBe(
+            false
+        );
         // JS 路径：worldMatrix 缓冲区不变（mock updateWorldMatrix 为空）
         expect([...((head as any).worldMatrix as Float32Array)]).toEqual(beforeBuf);
     });
@@ -267,7 +274,9 @@ describe('_applyGaze 调度自动分支', () => {
         // WASM 路径：worldMatrix 缓冲区被改
         expect((head as any).worldMatrix).not.toEqual(beforeBuf);
         // WASM 路径：linkedBone 不变
-        expect((head.linkedBone as any).rotationQuaternion.equalsWithEpsilon(beforeQ, 1e-6)).toBe(true);
+        expect((head.linkedBone as any).rotationQuaternion.equalsWithEpsilon(beforeQ, 1e-6)).toBe(
+            true
+        );
     });
 });
 

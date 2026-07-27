@@ -504,14 +504,8 @@ describe('ADR-177 Phase 2 A4 p2-5：虚拟目录 + 伴生文件加载', () => {
             const texA = new Uint8Array([0xa2]);
             const pmxB = new Uint8Array([0xb1]);
             const texB = new Uint8Array([0xb2]);
-            _idbStore.set(
-                'file:packA',
-                await makeZip({ 'Miku.pmx': pmxA, 'tex/face.png': texA })
-            );
-            _idbStore.set(
-                'file:packB',
-                await makeZip({ 'Miku.pmx': pmxB, 'tex/face.png': texB })
-            );
+            _idbStore.set('file:packA', await makeZip({ 'Miku.pmx': pmxA, 'tex/face.png': texA }));
+            _idbStore.set('file:packB', await makeZip({ 'Miku.pmx': pmxB, 'tex/face.png': texB }));
 
             const rA = await browserAdapter.ExtractZip('packA.zip', '');
             const rB = await browserAdapter.ExtractZip('packB.zip', '');

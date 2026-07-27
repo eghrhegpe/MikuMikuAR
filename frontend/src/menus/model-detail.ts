@@ -1328,8 +1328,7 @@ export function buildPersonalLightLevel(id: string): PopupLevel {
                 }
                 // 设为默认 / 重置默认按钮行
                 const defaultRow = document.createElement('div');
-                defaultRow.style.cssText =
-                    'display:flex;gap:8px;margin-top:8px;';
+                defaultRow.style.cssText = 'display:flex;gap:8px;margin-top:8px;';
                 const setDefBtn = document.createElement('button');
                 setDefBtn.className = 'preset-chip';
                 setDefBtn.textContent = t('model-detail.personalLightSetDefault');

@@ -9,7 +9,9 @@ describe('parseSseStream', () => {
         ac.abort();
         const stream = new ReadableStream<Uint8Array>({
             start(controller) {
-                controller.enqueue(new TextEncoder().encode('data: {"choices":[{"delta":{"content":"hi"}}]}\n\n'));
+                controller.enqueue(
+                    new TextEncoder().encode('data: {"choices":[{"delta":{"content":"hi"}}]}\n\n')
+                );
                 controller.close();
             },
         });

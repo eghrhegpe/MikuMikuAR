@@ -131,11 +131,7 @@ export function solveTwoBoneIK(input: SolveTwoBoneIKInput): SolveTwoBoneIKResult
     }
     _curDir.scaleInPlace(1 / curLen);
 
-    _targetDir.set(
-        targetPos.x - hipPos.x,
-        targetPos.y - hipPos.y,
-        targetPos.z - hipPos.z
-    );
+    _targetDir.set(targetPos.x - hipPos.x, targetPos.y - hipPos.y, targetPos.z - hipPos.z);
     const targetLen = _targetDir.length();
     if (targetLen < 1e-6) {
         return { changed: false, hipDelta: _identity, kneeDelta: _identity };
@@ -149,11 +145,7 @@ export function solveTwoBoneIK(input: SolveTwoBoneIKInput): SolveTwoBoneIKResult
     //     使用腿平面法线 (knee-hip) × (endEffector-hip) 作为旋转轴。
     //     典型场景：脚部纯 Y 偏移（抬起/下沉），hip→endEffector 与 hip→target 同向。
     if (axisLen < 1e-6) {
-        _hipToKnee.set(
-            kneePos.x - hipPos.x,
-            kneePos.y - hipPos.y,
-            kneePos.z - hipPos.z
-        );
+        _hipToKnee.set(kneePos.x - hipPos.x, kneePos.y - hipPos.y, kneePos.z - hipPos.z);
         Vector3.CrossToRef(_hipToKnee, _curDir, _axis);
         axisLen = _axis.length();
         if (axisLen < 1e-6) {
@@ -188,10 +180,7 @@ const _trans = new Vector3();
  * @param mat 16 元素 worldMatrix buffer（就地修改）
  * @param delta 增量旋转四元数（世界空间）
  */
-export function applyRotationToWorldMatrix(
-    mat: Float32Array | number[],
-    delta: Quaternion
-): void {
+export function applyRotationToWorldMatrix(mat: Float32Array | number[], delta: Quaternion): void {
     // 提取当前 translation
     _trans.set(mat[12], mat[13], mat[14]);
 

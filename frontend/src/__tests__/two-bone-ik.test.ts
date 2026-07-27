@@ -21,7 +21,12 @@ describe('solveTwoBoneIK', () => {
         const knee = new Vector3(0, 1, 0); // 与 hip 重合
         const endEffector = new Vector3(0, 0, 0);
         const target = new Vector3(0, 0.1, 0);
-        const r = solveTwoBoneIK({ hipPos: hip, kneePos: knee, endEffectorPos: endEffector, targetPos: target });
+        const r = solveTwoBoneIK({
+            hipPos: hip,
+            kneePos: knee,
+            endEffectorPos: endEffector,
+            targetPos: target,
+        });
         expect(r.changed).toBe(false);
     });
 
@@ -30,7 +35,12 @@ describe('solveTwoBoneIK', () => {
         const knee = new Vector3(0, 0.5, 0);
         const endEffector = new Vector3(0, 0.5, 0); // 与 knee 重合
         const target = new Vector3(0, 0.4, 0);
-        const r = solveTwoBoneIK({ hipPos: hip, kneePos: knee, endEffectorPos: endEffector, targetPos: target });
+        const r = solveTwoBoneIK({
+            hipPos: hip,
+            kneePos: knee,
+            endEffectorPos: endEffector,
+            targetPos: target,
+        });
         expect(r.changed).toBe(false);
     });
 
@@ -39,7 +49,12 @@ describe('solveTwoBoneIK', () => {
         const knee = new Vector3(0, 0.5, 0);
         const endEffector = new Vector3(0, 0, 0); // 与 hip 重合
         const target = new Vector3(0, 0.1, 0);
-        const r = solveTwoBoneIK({ hipPos: hip, kneePos: knee, endEffectorPos: endEffector, targetPos: target });
+        const r = solveTwoBoneIK({
+            hipPos: hip,
+            kneePos: knee,
+            endEffectorPos: endEffector,
+            targetPos: target,
+        });
         expect(r.changed).toBe(false);
     });
 
@@ -48,7 +63,12 @@ describe('solveTwoBoneIK', () => {
         const knee = new Vector3(0, 0.5, 0.1);
         const endEffector = new Vector3(0, 0, 0);
         const target = new Vector3(0, 1, 0); // 与 hip 重合
-        const r = solveTwoBoneIK({ hipPos: hip, kneePos: knee, endEffectorPos: endEffector, targetPos: target });
+        const r = solveTwoBoneIK({
+            hipPos: hip,
+            kneePos: knee,
+            endEffectorPos: endEffector,
+            targetPos: target,
+        });
         expect(r.changed).toBe(false);
     });
 
@@ -60,7 +80,12 @@ describe('solveTwoBoneIK', () => {
         const knee = new Vector3(0, 0.5, 0); // 在 Y 轴上
         const endEffector = new Vector3(0, 0, 0);
         const target = new Vector3(0, 0.1, 0);
-        const r = solveTwoBoneIK({ hipPos: hip, kneePos: knee, endEffectorPos: endEffector, targetPos: target });
+        const r = solveTwoBoneIK({
+            hipPos: hip,
+            kneePos: knee,
+            endEffectorPos: endEffector,
+            targetPos: target,
+        });
         expect(r.changed).toBe(false);
     });
 
@@ -70,7 +95,12 @@ describe('solveTwoBoneIK', () => {
         const knee = new Vector3(0, 0.5, 0.1);
         const endEffector = new Vector3(0, 0, 0); // 动画位置
         const target = new Vector3(0, 0.1, 0); // 脚抬起 0.1
-        const r = solveTwoBoneIK({ hipPos: hip, kneePos: knee, endEffectorPos: endEffector, targetPos: target });
+        const r = solveTwoBoneIK({
+            hipPos: hip,
+            kneePos: knee,
+            endEffectorPos: endEffector,
+            targetPos: target,
+        });
         expect(r.changed).toBe(true);
         expect(quatAbsSum(r.hipDelta)).toBeGreaterThan(1e-6);
         expect(quatAbsSum(r.kneeDelta)).toBeGreaterThan(1e-6);
@@ -81,7 +111,12 @@ describe('solveTwoBoneIK', () => {
         const knee = new Vector3(0, 0.5, 0.1);
         const endEffector = new Vector3(0, 0, 0);
         const target = new Vector3(0.3, 0, 0); // 脚侧移 0.3
-        const r = solveTwoBoneIK({ hipPos: hip, kneePos: knee, endEffectorPos: endEffector, targetPos: target });
+        const r = solveTwoBoneIK({
+            hipPos: hip,
+            kneePos: knee,
+            endEffectorPos: endEffector,
+            targetPos: target,
+        });
         expect(r.changed).toBe(true);
         expect(quatAbsSum(r.hipDelta)).toBeGreaterThan(1e-6);
         expect(quatAbsSum(r.kneeDelta)).toBeGreaterThan(1e-6);
@@ -92,7 +127,12 @@ describe('solveTwoBoneIK', () => {
         const knee = new Vector3(0, 0.5, 0.1);
         const endEffector = new Vector3(0, 0, 0);
         const target = new Vector3(0, 0, 0); // 无偏移
-        const r = solveTwoBoneIK({ hipPos: hip, kneePos: knee, endEffectorPos: endEffector, targetPos: target });
+        const r = solveTwoBoneIK({
+            hipPos: hip,
+            kneePos: knee,
+            endEffectorPos: endEffector,
+            targetPos: target,
+        });
         expect(r.changed).toBe(false);
     });
 
@@ -101,7 +141,12 @@ describe('solveTwoBoneIK', () => {
         const knee = new Vector3(0, 0.5, 0.1); // L1≈0.51, L2≈0.51
         const endEffector = new Vector3(0, 0, 0);
         const target = new Vector3(0, 10, 0); // 远超腿长（L1+L2≈1.02）
-        const r = solveTwoBoneIK({ hipPos: hip, kneePos: knee, endEffectorPos: endEffector, targetPos: target });
+        const r = solveTwoBoneIK({
+            hipPos: hip,
+            kneePos: knee,
+            endEffectorPos: endEffector,
+            targetPos: target,
+        });
         // 不崩溃即可；超出范围时 DClamped=DMax，增量非零（腿尽量伸直朝目标）
         expect(r.changed).toBe(true);
     });
@@ -111,7 +156,12 @@ describe('solveTwoBoneIK', () => {
         const knee = new Vector3(0, 0.5, 0.1);
         const endEffector = new Vector3(0, 0, 0);
         const target = new Vector3(0, 0.99, 0); // 几乎与 hip 重合
-        const r = solveTwoBoneIK({ hipPos: hip, kneePos: knee, endEffectorPos: endEffector, targetPos: target });
+        const r = solveTwoBoneIK({
+            hipPos: hip,
+            kneePos: knee,
+            endEffectorPos: endEffector,
+            targetPos: target,
+        });
         // 不崩溃即可（可能 changed=true 或 false，取决于增量）
         expect(typeof r.changed).toBe('boolean');
     });
@@ -122,8 +172,18 @@ describe('solveTwoBoneIK', () => {
         const endEffector = new Vector3(0, 0, 0);
         const targetLeft = new Vector3(0.2, 0, 0);
         const targetRight = new Vector3(-0.2, 0, 0);
-        const rLeft = solveTwoBoneIK({ hipPos: hip, kneePos: knee, endEffectorPos: endEffector, targetPos: targetLeft });
-        const rRight = solveTwoBoneIK({ hipPos: hip, kneePos: knee, endEffectorPos: endEffector, targetPos: targetRight });
+        const rLeft = solveTwoBoneIK({
+            hipPos: hip,
+            kneePos: knee,
+            endEffectorPos: endEffector,
+            targetPos: targetLeft,
+        });
+        const rRight = solveTwoBoneIK({
+            hipPos: hip,
+            kneePos: knee,
+            endEffectorPos: endEffector,
+            targetPos: targetRight,
+        });
         expect(rLeft.changed).toBe(true);
         expect(rRight.changed).toBe(true);
         // 旋转轴方向相反 → hipDelta 的某个分量符号相反

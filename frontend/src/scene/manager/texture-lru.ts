@@ -33,7 +33,7 @@ function evictOldest(): void {
 export async function readTextureWithLRU(
     modelDir: string,
     relativePath: string,
-    signal?: AbortSignal,
+    signal?: AbortSignal
 ): Promise<ArrayBuffer | null> {
     const key = `${modelDir}${KEY_SEP}${relativePath}`;
     const cached = _textureLRU.get(key);

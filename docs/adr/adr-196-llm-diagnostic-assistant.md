@@ -1,6 +1,6 @@
 # ADR-196: 内置 AI 诊断助手（LLM Diagnostic Assistant）
 
-- **状态**: 🔄 实施中（Phase 0 Batch A-D 已落地；Phase 1 集成打通与体验打磨已落地）
+- **状态**: ✅ 已完成（Phase 0 基础设施 + Phase 1 集成打通与体验打磨）
 - **日期**: 2026-07-28
 - **相关**: ADR-154（聊天面板·推荐路线，传输层上游）、ADR-155（NL 控场景，未来应用入口）、ADR-156（角色台词，兄弟用例）、ADR-176（BackendService 双适配器，镜像模板）、ADR-192（上游适配层，适配器术语）、ADR-093（声明式菜单 Schema，面板挂载）、`docs/ai-new/ai-news-2026-07-27.md`（安全护栏情报）
 
@@ -100,6 +100,16 @@ LLM 能力已在 2026-07-20 经 ADR-154/155/156 决议，但**全部 0 代码落
 - **本 ADR 只做「诊断助手」**：聊天闲聊（ADR-154）、NL 控场景（ADR-155）、角色台词（ADR-156）为兄弟用例，共享 `AiService` 与面板。
 - **不自动执行**：任何副作用（改文件 / 跑命令 / mutate 场景）均不在本 ADR 默认路径内。
 - **不引入新架构范式**：严格镜像 ADR-176，不另起炉灶。
+
+---
+
+## Phase 1 已知限制（P4）
+
+| 限制 | 文件 | 说明 | 影响评估 |
+|------|------|------|----------|
+| 诊断/闲聊模式状态不持久 | `settings-diagnostic.ts:26` | `_mode` 为模块级变量，面板销毁重建（如切换设置页面再返回）后重置为 `diagnostic` | 用户每次进入需重新切换模式，不丢消息历史 |
+| ensureAiConfigLoaded 异步竞争 | `settings-diagnostic.ts:37` | 模块顶层 fire-and-forget 调用，若 IndexedDB 返回慢，首次 `loadAiConfig()` 回退默认值 | 已有 `_cache` 兜底 `DEFAULT_AI_CONFIG`，仅首屏可能短暂显示默认端点 |
+| TypeError 错误归并近似 | `browser-adapter.ts:127-137` | `_friendlyError` 将所有 `TypeError` 统一判为 CORS/网络问题，忽略其他 `TypeError` 成因 | 极少数场景提示可能偏差，不影响功能 |
 
 ---
 

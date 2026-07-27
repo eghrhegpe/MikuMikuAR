@@ -17,7 +17,8 @@ describe('config-store（IndexedDB 持久化）', () => {
     it('saveAiConfig 后 loadAiConfig 返回合并配置（内存优先）', async () => {
         vi.resetModules();
         vi.mocked(idbGet).mockResolvedValue(undefined);
-        const { loadAiConfig, saveAiConfig, DEFAULT_AI_CONFIG } = await import('../ai/config-store');
+        const { loadAiConfig, saveAiConfig, DEFAULT_AI_CONFIG } =
+            await import('../ai/config-store');
 
         // 首次读取回退默认并触发（未阻塞的）异步回源
         expect(loadAiConfig()).toEqual(DEFAULT_AI_CONFIG);
@@ -41,7 +42,8 @@ describe('config-store（IndexedDB 持久化）', () => {
             endpoint: 'https://x/v1/chat/completions',
             apiKey: 'k',
         });
-        const { loadAiConfig, ensureAiConfigLoaded, DEFAULT_AI_CONFIG } = await import('../ai/config-store');
+        const { loadAiConfig, ensureAiConfigLoaded, DEFAULT_AI_CONFIG } =
+            await import('../ai/config-store');
 
         await ensureAiConfigLoaded();
         const cfg = loadAiConfig();
@@ -53,7 +55,8 @@ describe('config-store（IndexedDB 持久化）', () => {
     it('IndexedDB 不可用时静默回退默认，不抛错', async () => {
         vi.resetModules();
         vi.mocked(idbGet).mockRejectedValue(new Error('IndexedDB 不可用'));
-        const { ensureAiConfigLoaded, loadAiConfig, DEFAULT_AI_CONFIG } = await import('../ai/config-store');
+        const { ensureAiConfigLoaded, loadAiConfig, DEFAULT_AI_CONFIG } =
+            await import('../ai/config-store');
 
         await expect(ensureAiConfigLoaded()).resolves.toBeUndefined();
         expect(loadAiConfig()).toEqual(DEFAULT_AI_CONFIG);

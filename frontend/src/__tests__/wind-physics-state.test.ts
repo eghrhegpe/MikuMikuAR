@@ -15,8 +15,12 @@ const mocks = vi.hoisted(() => {
     const onSyncObservable = {
         add: vi.fn(() => ({ tag: 'wind-obs' })),
         remove: vi.fn(),
-        get _notify() { return _notifyFn ?? (() => {}); },
-        set _notify(fn: () => void) { _notifyFn = fn; },
+        get _notify() {
+            return _notifyFn ?? (() => {});
+        },
+        set _notify(fn: () => void) {
+            _notifyFn = fn;
+        },
     };
     const observerHandle = { dispose: vi.fn(), tag: 'wind-obs' };
 
@@ -47,12 +51,24 @@ const mocks = vi.hoisted(() => {
         bundleA,
         bundleB,
         bundles,
-        get implReturn() { return implReturn; },
-        set implReturn(v: typeof mockImpl | null) { implReturn = v; },
-        get windActive() { return windActive; },
-        set windActive(v: boolean) { windActive = v; },
-        get windRaw() { return windRaw; },
-        set windRaw(v: { x: number; y: number; z: number }) { windRaw = v; },
+        get implReturn() {
+            return implReturn;
+        },
+        set implReturn(v: typeof mockImpl | null) {
+            implReturn = v;
+        },
+        get windActive() {
+            return windActive;
+        },
+        set windActive(v: boolean) {
+            windActive = v;
+        },
+        get windRaw() {
+            return windRaw;
+        },
+        set windRaw(v: { x: number; y: number; z: number }) {
+            windRaw = v;
+        },
     };
 });
 

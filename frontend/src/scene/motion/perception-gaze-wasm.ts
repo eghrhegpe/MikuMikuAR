@@ -6,12 +6,7 @@ import { Vector3, Matrix } from '@babylonjs/core/Maths/math.vector';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 
 import type { MmdRuntimeBoneExtended } from '@/core/types';
-import {
-    _m,
-    _writeMatToBuffer,
-    _propagateChildrenWasm,
-    type GazeCache,
-} from './perception-shared';
+import { _m, _writeMatToBuffer, _propagateChildrenWasm, type GazeCache } from './perception-shared';
 import {
     _applyHeadGazeCore,
     _applyEyeGazeCore,

@@ -514,7 +514,8 @@ export const zhCN: Record<string, string> = {
     // [doc:adr-186] 管线时序一览 UI
     'motion.boneOverride.pipelineOrder': '管线时序一览',
     'motion.boneOverride.pipelineEmpty': '暂无帧钩子注册（启用模块后此处将显示执行顺序）',
-    'motion.boneOverride.pipelineNote': '数字越小越早执行；后执行层可覆盖前一层写入。顺序由声明决定，与注册先后无关。',
+    'motion.boneOverride.pipelineNote':
+        '数字越小越早执行；后执行层可覆盖前一层写入。顺序由声明决定，与注册先后无关。',
     // [doc:adr-116] 动作覆盖模块化 UI
     'motion.override.title': '动作覆盖',
     'motion.override.enabled': '✓ 已启用模块',
@@ -951,7 +952,8 @@ export const zhCN: Record<string, string> = {
     'library.modelTools': '模型工具',
     'library.firstUseHint': '📦 首次使用：点击这里打开模型库 → 加载模型，模型目录请在 ⚙ 设置中配置',
     'library.fsaAuthTitle': '授权模型根目录',
-    'library.fsaAuthPrompt': '为像桌面端一样自动扫描并加载模型，请在浏览器中选择你的模型文件夹。是否现在授权？',
+    'library.fsaAuthPrompt':
+        '为像桌面端一样自动扫描并加载模型，请在浏览器中选择你的模型文件夹。是否现在授权？',
     'library.fsaRevokedHint': '模型根目录授权已失效，部分模型可能无法加载，请重新设置根目录。',
     'library.browseHint2': '📦 点击这里浏览模型 · 💃 点击这里加载动作 · 拖拽旋转 · 滚轮缩放',
     'library.loadLibraryFailed': '✗ 模型库加载失败: ',
@@ -1703,6 +1705,8 @@ export const zhCN: Record<string, string> = {
     'settings.about.shortcuts.freefly': '自由飞行相机移动',
     'settings.about.shortcuts.freeflyUpDown': '自由飞行相机下降/上升',
     'settings.about.links': '链接',
+    'settings.about.communityTools': '社区工具',
+    'about.nanoemCn': 'nanoem 中文版 (nanoem-cn)',
     'settings.about.cache': '缓存占用',
     'settings.about.cache.total': '总计',
     'settings.about.cache.extracted': '解压缓存',
@@ -1886,14 +1890,16 @@ export const zhCN: Record<string, string> = {
     'ai.errors.noEndpoint': 'AI 端点未配置，请在下方配置区设置。',
     'ai.errors.apiError': 'API 错误：{msg}',
     'ai.snapshot.refresh': '刷新快照',
-    'ai.system.role': '你是 MikuMikuAR AI 诊断助手。你的职责是帮助用户诊断 3D 场景、模型和应用的问题。',
+    'ai.system.role':
+        '你是 MikuMikuAR AI 诊断助手。你的职责是帮助用户诊断 3D 场景、模型和应用的问题。',
     'ai.system.format': '用中文回复。先给出结论，再提供可操作的建议。标记置信度为高/中/低。',
     'ai.system.safety': '你处于只读诊断模式，不能修改场景或文件。只提供分析和建议。',
     'ai.system.chat': '你是 MikuMikuAR AI 助手，可以和用户自由聊天。用中文回复。',
     'ai.mode.title': '模式',
     'ai.mode.diagnostic': '🔍 诊断',
     'ai.mode.chat': '💬 闲聊',
-    'ai.config.corsWarning': '⚠ 远程端点可能存在 CORS 限制。本地 Ollama 请设置 OLLAMA_ORIGINS=* 后重启。',
+    'ai.config.corsWarning':
+        '⚠ 远程端点可能存在 CORS 限制。本地 Ollama 请设置 OLLAMA_ORIGINS=* 后重启。',
     'ai.chat.clear': '清空',
     'ai.errors.resolveFailed': 'AI 服务初始化失败，请查看控制台获取详情。',
     'ai.config.notResolved': 'AI 服务尚未就绪，请稍候...',

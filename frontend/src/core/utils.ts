@@ -174,10 +174,25 @@ export function escapeHtml(s: string): string {
 
 // [doc:adr-190-followup] 数学钳制收敛至零依赖叶子 clamp.ts，避免纯模块拖入整桶 @/core/utils
 import { clamp, clampInt, clamp01, lerp, lerpArray, clampPct } from './clamp';
-import { swallowError, fireAndForget, delay, waitForFrame, LoadingGuard, DebouncedTimer, Abortable } from './async';
+import {
+    swallowError,
+    fireAndForget,
+    delay,
+    waitForFrame,
+    LoadingGuard,
+    DebouncedTimer,
+    Abortable,
+} from './async';
 export { clamp, clampInt, clamp01, lerp, lerpArray, clampPct };
-export { swallowError, fireAndForget, delay, waitForFrame, LoadingGuard, DebouncedTimer, Abortable };
-
+export {
+    swallowError,
+    fireAndForget,
+    delay,
+    waitForFrame,
+    LoadingGuard,
+    DebouncedTimer,
+    Abortable,
+};
 
 // ======== Object Helpers ========
 
