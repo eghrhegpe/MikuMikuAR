@@ -22,8 +22,6 @@ import {
     isARModeActive,
     takeARScreenshot,
     setEnvState,
-    popUndoSnapshot,
-    restoreUndoSnapshot,
 } from '../scene/scene';
 import { SelectDir, SaveScreenshot, SaveScenePreset } from '../core/wails-bindings';
 import {
@@ -96,7 +94,7 @@ import { setMirrorSize, getMirrorInfo, toggleMirror, isMirrorActive } from '../s
 import { isDragModeEnabled, setDragModeEnabled } from '../scene/transform/transform-mode';
 import { attachGizmoForKind, detachGizmo } from '../scene/transform/transform-adapter';
 import { addSliderRow } from '../core/ui-helpers';
-import { SCENE_EVENTS } from '../core/ui-constants';
+import { executeActionById } from '../core/action-executor';
 
 // ======== Barrel Re-Exports ========
 // 保持向后兼容——外部文件引用路径不变
@@ -399,7 +397,7 @@ export async function screenshotCurrent(): Promise<void> {
 }
 
 /** 批量截图所有已加载模型 */
-async function screenshotBatch(): Promise<void> {
+export async function screenshotBatch(): Promise<void> {
     if (modelRegistry.size === 0) {
         feedbackStatus('scene.statusNoModels', undefined, false);
         return;
@@ -456,7 +454,7 @@ async function screenshotBatch(): Promise<void> {
 }
 
 /** 保存场景（自动编号到预设目录） */
-async function saveScene(): Promise<void> {
+export async function saveScene(): Promise<void> {
     const json = JSON.stringify(serializeScene(), null, 2);
     try {
         const filename = await SaveScenePreset(json);
@@ -474,32 +472,17 @@ async function saveScene(): Promise<void> {
     }
 }
 
-/** 场景动作映射表——替代原 handleSceneAction 的 if 链 */
-const SCENE_ACTIONS: Record<string, () => void> = {
-    'screenshot:current': () => {
-        void screenshotCurrent();
-    },
-    'screenshot:batch': () => {
-        void screenshotBatch();
-    },
-    [SCENE_EVENTS.SAVE]: () => {
-        void saveScene();
-    },
-    'scene:undo': () => {
-        const snap = popUndoSnapshot();
-        if (!snap) {
-            feedbackStatus('scene.statusNoUndo', undefined, false);
-            return;
-        }
-        void restoreUndoSnapshot(snap).then((ok) => {
-            if (ok) {
-                feedbackInfo('scene.undoApplied', undefined);
-            }
-        });
-    },
-};
+let _sceneRegistered = false;
+
+function _ensureSceneActions(): void {
+    if (!_sceneRegistered) {
+        import('../core/action-defs/scene-actions').then((m) => m.registerSceneActions());
+        _sceneRegistered = true;
+    }
+}
 
 function handleSceneAction(row: PopupRow): void {
+    _ensureSceneActions();
     // 处理文件浏览器选择（环境纹理绑定）
     if (row.model) {
         const IMAGE_FORMATS = ['png', 'jpg', 'jpeg', 'hdr', 'dds'];
@@ -519,7 +502,7 @@ function handleSceneAction(row: PopupRow): void {
         }
     }
     if (row.target) {
-        SCENE_ACTIONS[row.target]?.();
+        void executeActionById(row.target, {});
     }
 }
 
