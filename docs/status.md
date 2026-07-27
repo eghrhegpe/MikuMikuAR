@@ -29,7 +29,7 @@
 | ADR-184 | 网页端 ZIP 嵌套识别能力补齐（多编码检测 + 炸弹防护对齐 Go 端） | 已完成（2026-07-26） |
 | ADR-183 | 网页端 FSA 根目录授权引导（四态探针 + 重授权兜底） | 已完成（代码已落地 + 单测 14/14，2026-07-26） |
 | ADR-182 | 网页端 ZIP 导入键规约命名空间化（消除同名 PMX 纹理碰撞） | 已完成（代码+测试 2026-07-25 已落地：_encModelStem 命名空间 + IsolateModelDir 幂等 + 契约/单测覆盖） |
-| ADR-181 | 下载管理面板（扫描→解压→入库→processed 标记） | 已完成（代码+测试 2026-07-26 全部落地；settings-downloads.ts 422 行 + download-manager.test.ts 25 测试 + 全量 2100+ 通过）（2026-07-25） |
+| ADR-181 | 下载管理面板（扫描→解压→入库→processed 标记）【经 ADR-195 修订定位与行为】 | 已完成（代码+测试 2026-07-26 全部落地；settings-downloads.ts 422 行 + download-manager.test.ts 25 测试 + 全量 2100+ 通过）（2026-07-25） |
 | ADR-180 | Web 资源库 FSA 句柄持久化与启动自动重扫 | 已完成（代码已落地 + P1 回归已修复，2026-07-25） |
 | ADR-179 | 更新安装拉起（按平台分级） | 已完成（阶段 1 安卓优先完整拉起 + 阶段 2 桌面下载器 DownloadAndRunInstaller 均于 2026-07-26 落地；全量 2127/2127 通过）（2026-07-25） |
 | ADR-178 | 能力矩阵补全宿主级键（四端统一收口） | 已完成（Phase 1-3 全部落地 2026-07-24/07-25——virtual-skirt.ts/fileservice.ts/settings-resources.ts:412 三处已迁移至能力层，其中 settings-resources.ts:412 配套修正 go-adapter `watchDir` 改为 `!isAndroidPlatform()` 自报（修复 ADR 草案宿主盲点）；其余 5 处判定为平台特有逻辑保留不动；Phase 3 已落地 2026-07-26——CI 四端制品矩阵固化：e2e-web-smoke job 跑 @web smoke（web-smoke.spec.ts + web-resources.spec.ts），验证浏览器能力门控、PMX/ZIP/VMD 加载闭环；桌面/安卓构建保留在 release.yml；网页部署由 web-pages.yml 自动触发） |

@@ -12,7 +12,7 @@ ADR-176/177 为 Web 端建立了 `BackendService` 双实现，`_scanDirIntoIDB`�
 
 ### 缺陷 1：条目名按 UTF-8 硬解码 → 嵌套识别失败
 
-`JSZip.loadAsync(bytes)` 未传 `decodeFileName` 选项，JSZip 默认按 UTF-8 解码非 UTF-8 条目名。MMD 圈 zip 条目名常用 Shift-JIS（日文）或 GBK（中文 Windows）编码，UTF-8 解码后：
+`JSZip.loadAsync(bytes)` 未传 `decodeFileName` 选项，JSZip 默认按 UTF-8 解码非 UTF-8 条目名。MMD 圈**部分/历史上** zip 条目名可能用 Shift-JIS（日文）或 GBK（中文 Windows）编码（zip 规范未强制 UTF-8）；**但本仓库实测的两个 CJK 模型 zip（【阿卡夏之眼】/【少女前线2】）内部条目名均为纯 ASCII，无高位字节，不存在 Shift-JIS/GBK 条目名乱码**——非 UTF-8 编码 zip 在本仓库无真实素材佐证。UTF-8 硬解码后：
 
 1. 条目名出现 `U+FFFD` 替换字符或乱码字节
 2. `.pmx` 扩展名字节被破坏
@@ -20,7 +20,7 @@ ADR-176/177 为 Web 端建立了 `BackendService` 双实现，`_scanDirIntoIDB`�
 4. `innerFiles` 为空 → 走 else 分支作为整体 entry 保留（`format: 'zip'`、`zip_inner: ''`）
 5. UI 层显示为空文件夹，点击无内容
 
-**表现**：用户截图所示【阿卡夏之眼】.zip 显示为 folder 但展开为空，而【少女前线2】.zip（条目名恰好运为 UTF-8/ASCII）能展开出 `ALL.pmx`。编码不一致导致"识别能力不足"。
+**表现（实测校正 · 2026-07-27）**：本仓库 `text-model/PMX/分类1/` 下真实模型 zip（【阿卡夏之眼】/【少女前线2】）经剥包核验，内部条目名**全部为纯 ASCII**（如 `data/xxx.png`、`normalmap/c_Nikketa...png`），`utf8_flag=False` 但无高位字节——**不存在 Shift-JIS/GBK 条目名乱码**。故原"用户截图空文件夹"复现叙事**不成立**：这两个 zip 在修复前后均能正常展开（ASCII 经 UTF-8 解码保持不变）。本 ADR 的多编码检测属**防御性增强**（行业确有非 UTF-8 条目名 zip），其必要性由下方"缺陷 2 炸弹防护"与"缺陷 3 扫描/解压期解码一致性"两条**真实收益**支撑，而非由本仓库具体复现佐证。实测脚本：`scripts/probe-zip-encoding.py`。
 
 ### 缺陷 2：无 ZIP 炸弹防护
 
@@ -107,6 +107,6 @@ const MAX_ZIP_TOTAL_BYTES = 2 * 1024 * 1024 * 1024; // 对齐 maxZipTotalBytes
 ## 向后兼容
 
 - **UTF-8 编码的 zip**：行为不变。`bestDecodeZipName` 对 UTF-8 合法字节流，三种编码解码都会产生 `U+FFFD` 或低分结果，最终兜底 UTF-8 解码（与 JSZip 默认行为一致）。
-- **非 UTF-8 编码的 zip**：之前展开失败（显示空文件夹），修复后能正确展开。是**修复**而非破坏——这些 zip 之前对用户不可见，现在可见。
+- **非 UTF-8 编码的 zip（行业真实存在，本仓库无素材）**：理论上之前会因 UTF-8 硬解码而展开失败（显示空文件夹），修复后正确展开。本仓库实测的 CJK 模型 zip 内部条目名均为 ASCII，不触发此路径；该分支属**防御性修复**。
 - **IndexedDB 键**：无变化。`entry:` 键的 `zip_inner` 字段从乱码变为正确解码后的条目名，但键名本身是 `${relIdStem}__${innerPath.replace(...)}`
   ，`relIdStem` 不依赖 zip 内条目名，`innerPath` 变化只影响 entry 内容不影响键碰撞。
