@@ -1909,6 +1909,17 @@ export const ja: Record<string, string> = {
     'ai.mode.title': 'モード',
     'ai.mode.diagnostic': '🔍 診断',
     'ai.mode.chat': '💬 チャット',
+    'ai.mode.control': '🎮 コントロール',
+    'ai.system.control':
+        'あなたは MikuMikuAR シーン制御アシスタントです。以下のツールを使用して、ユーザーの要求に応じてシーンを変更してください。',
+    'ai.system.controlFormat':
+        'JSON 形式で応答してください：{"action": "ツール名", "params": {"パラメータ名": "値"}}。上記のリストにあるツールのみ使用してください。サポートされていない操作が要求された場合は、何ができるかを説明してください。',
+    'ai.control.pending': '⏳ 実行待ち操作 — 確認して適用',
+    'ai.control.apply': '適用',
+    'ai.control.cancel': 'キャンセル',
+    'ai.control.unsupported': 'この操作はまだサポートされていません。別の方法で変更内容を説明してみてください。',
+    'ai.control.executing': '実行中...',
+    'ai.control.cancelled': '操作がキャンセルされました。',
     'ai.config.corsWarning':
         '⚠ リモートエンドポイントにCORS制限がある可能性があります。ローカルOllamaは OLLAMA_ORIGINS=* を設定して再起動してください。',
     'ai.chat.clear': 'クリア',

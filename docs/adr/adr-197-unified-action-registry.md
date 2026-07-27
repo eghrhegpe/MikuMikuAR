@@ -79,7 +79,6 @@ Phase 2+ 时向 `MenuKind` 加回 `'action'` 类型，对应 `MenuNode.actionId:
 
 ADR-155 的 `action-catalog.ts` 退化为 registry 的"NL 视图"：`buildToolSchemas() = listActions().map(toToolSchema)`，其中 `ParamDef` 即 JSON Schema 来源，`param-adapters.ts` 的 4 类适配器直接认 `ParamDef.type`。单一真相源确立后，ADR-155 的"代码事实核对"类失真不再可能发生。
 
-## 实施计划（分阶段，不阻塞 ADR-155）
 ## 实施计划（Phase 0/1 并行启动，Phase 2+ 滚动）
 
 | Phase | 范围 | 内容 | 估计 |

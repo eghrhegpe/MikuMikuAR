@@ -677,6 +677,28 @@ export async function importFile(): Promise<void> {
 
 // ======== 供 library-browse 使用的内部函数 ========
 
+/** 按名称模糊搜索模型库并加载。供 NL 控场景（ADR-155）使用，fire-and-forget。 */
+function loadLibraryModel(name: string, isStage?: boolean): boolean {
+    const model = allModels.find(
+        (m) => getBaseName(m.file_path).toLowerCase().includes(name.toLowerCase())
+    );
+    if (!model) return false;
+    onModelRowClick(model);
+    return true;
+}
+
+/** 按名称模糊搜索 VMD 动作并替换聚焦模型的基础动作。 */
+function loadLibraryMotion(name: string): boolean {
+    const model = allModels.find(
+        (m) =>
+            m.format === 'vmd' &&
+            getBaseName(m.file_path).toLowerCase().includes(name.toLowerCase())
+    );
+    if (!model) return false;
+    replaceMotion(model);
+    return true;
+}
+
 export {
     onModelRowClick,
     replaceModel,
@@ -684,4 +706,6 @@ export {
     buildTagsOverviewLevel,
     buildTagDetailLevel,
     highlightRow,
+    loadLibraryModel,
+    loadLibraryMotion,
 };

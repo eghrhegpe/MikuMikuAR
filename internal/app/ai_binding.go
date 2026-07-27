@@ -71,6 +71,12 @@ func (a *App) AiStreamChat(req llm.ChatRequest) error {
 				a.wailsApp.Event.Emit("ai:done", map[string]string{})
 			case "error":
 				a.wailsApp.Event.Emit("ai:error", map[string]string{"error": ev.Error})
+			case "tool_call":
+				a.wailsApp.Event.Emit("ai:tool_call", map[string]string{
+					"toolName": ev.ToolName,
+					"toolArgs": ev.ToolArgs,
+					"toolId":   ev.ToolId,
+				})
 			}
 		})
 	}()

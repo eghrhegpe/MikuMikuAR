@@ -1926,6 +1926,17 @@ export const en: Record<string, string> = {
     'ai.mode.title': 'Mode',
     'ai.mode.diagnostic': '🔍 Diagnostic',
     'ai.mode.chat': '💬 Chat',
+    'ai.mode.control': '🎮 Control',
+    'ai.system.control':
+        'You are a MikuMikuAR scene control assistant. Use the following tools to modify the scene as requested by the user.',
+    'ai.system.controlFormat':
+        'Respond with a JSON object: {"action": "tool_name", "params": {"param1": "value1"}}. Only use tools from the list above. If the user asks for something not supported, explain what you can do.',
+    'ai.control.pending': '⏳ Pending Action — review and apply',
+    'ai.control.apply': 'Apply',
+    'ai.control.cancel': 'Cancel',
+    'ai.control.unsupported': 'This action is not supported yet. Try describing what you want to change differently.',
+    'ai.control.executing': 'Executing...',
+    'ai.control.cancelled': 'Action cancelled.',
     'ai.config.corsWarning':
         '⚠ Remote endpoint may have CORS restrictions. For local Ollama, set OLLAMA_ORIGINS=* and restart.',
     'ai.chat.clear': 'Clear',

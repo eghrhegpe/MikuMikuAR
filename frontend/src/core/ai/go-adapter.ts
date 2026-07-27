@@ -119,6 +119,18 @@ class GoAiAdapter implements AiService {
             streamActive = false;
             resolveWaiter?.();
         });
+        const unsubToolCall = events.on('ai:tool_call', (data: unknown) => {
+            const d = data as { toolName?: string; toolArgs?: string; toolId?: string };
+            if (d?.toolName) {
+                queue.push({
+                    type: 'tool_call',
+                    toolName: d.toolName,
+                    toolArgs: d.toolArgs ?? '',
+                    toolId: d.toolId ?? '',
+                });
+                resolveWaiter?.();
+            }
+        });
 
         const onAbort = (): void => {
             streamActive = false;
@@ -129,11 +141,20 @@ class GoAiAdapter implements AiService {
         req.signal?.addEventListener('abort', onAbort);
 
         try {
+            const tools = req.tools?.length ? req.tools.map((t) => ({
+                type: t.type,
+                function: {
+                    name: t.function.name,
+                    description: t.function.description,
+                    parameters: t.function.parameters,
+                },
+            })) : undefined;
             const llmReq: LLMChatRequest = {
                 model: req.model ?? '',
                 messages: req.messages.map((m) => ({ role: m.role, content: m.content })),
                 temperature: req.temperature ?? 0.7,
                 max_tokens: req.maxTokens ?? 2048,
+                tools: tools as any,
             };
             await b.AiStreamChat(llmReq);
 
@@ -153,6 +174,7 @@ class GoAiAdapter implements AiService {
             unsubChunk();
             unsubDone();
             unsubError();
+            unsubToolCall();
             req.signal?.removeEventListener('abort', onAbort);
             if (streamActive) {
                 b.AiCancelStream().catch(() => undefined);

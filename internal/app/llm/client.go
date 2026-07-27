@@ -21,6 +21,7 @@ type ChatRequest struct {
 	Messages    []ChatMessage  `json:"messages"`
 	Temperature float64        `json:"temperature"`
 	MaxTokens   int            `json:"max_tokens"`
+	Tools       []ToolSchema   `json:"tools,omitempty"`
 }
 
 type Config struct {
@@ -30,9 +31,22 @@ type Config struct {
 }
 
 type StreamEvent struct {
-	Type  string // "chunk" | "done" | "error"
-	Delta string // for "chunk"
-	Error string // for "error"
+	Type     string // "chunk" | "done" | "error" | "tool_call"
+	Delta    string // for "chunk"
+	Error    string // for "error"
+	ToolName string // for "tool_call"
+	ToolArgs string // for "tool_call"
+	ToolId   string // for "tool_call"
+}
+
+type deltaToolCall struct {
+	Index    *int   `json:"index"`
+	ID       string `json:"id,omitempty"`
+	Type     string `json:"type,omitempty"`
+	Function *struct {
+		Name      string `json:"name,omitempty"`
+		Arguments string `json:"arguments,omitempty"`
+	} `json:"function,omitempty"`
 }
 
 type Client struct {
@@ -67,6 +81,9 @@ func (c *Client) StreamChat(ctx context.Context, req ChatRequest, emit func(Stre
 		"temperature": req.Temperature,
 		"max_tokens":  req.MaxTokens,
 		"stream":      true,
+	}
+	if len(req.Tools) > 0 {
+		body["tools"] = req.Tools
 	}
 
 	bodyJSON, err := json.Marshal(body)
@@ -109,6 +126,23 @@ func (c *Client) StreamChat(ctx context.Context, req ChatRequest, emit func(Stre
 	scanner := bufio.NewScanner(resp.Body)
 	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
 
+	type streamChunk struct {
+		Choices []struct {
+			Delta struct {
+				Content   string           `json:"content,omitempty"`
+				ToolCalls []deltaToolCall  `json:"tool_calls,omitempty"`
+			} `json:"delta"`
+			FinishReason *string `json:"finish_reason"`
+		} `json:"choices"`
+	}
+
+	type toolCallAcc struct {
+		id        string
+		name      string
+		arguments string
+	}
+	toolAccums := make(map[int]*toolCallAcc)
+
 	for scanner.Scan() {
 		line := scanner.Text()
 		if !strings.HasPrefix(line, "data:") {
@@ -120,26 +154,61 @@ func (c *Client) StreamChat(ctx context.Context, req ChatRequest, emit func(Stre
 			return
 		}
 
-		var chunk struct {
-			Choices []struct {
-				Delta struct {
-					Content string `json:"content"`
-				} `json:"delta"`
-				FinishReason *string `json:"finish_reason"`
-			} `json:"choices"`
-		}
+		var chunk streamChunk
 		if err := json.Unmarshal([]byte(data), &chunk); err != nil {
 			continue
 		}
-		if len(chunk.Choices) > 0 {
-			if chunk.Choices[0].FinishReason != nil {
+		if len(chunk.Choices) == 0 {
+			continue
+		}
+
+		// Accumulate tool_calls delta by index
+		for _, tc := range chunk.Choices[0].Delta.ToolCalls {
+			idx := 0
+			if tc.Index != nil {
+				idx = *tc.Index
+			}
+			acc, exists := toolAccums[idx]
+			if !exists {
+				acc = &toolCallAcc{}
+				toolAccums[idx] = acc
+			}
+			if tc.ID != "" {
+				acc.id = tc.ID
+			}
+			if tc.Function != nil {
+				if tc.Function.Name != "" {
+					acc.name = tc.Function.Name
+				}
+				if tc.Function.Arguments != "" {
+					acc.arguments += tc.Function.Arguments
+				}
+			}
+		}
+
+		// Handle finish_reason
+		if chunk.Choices[0].FinishReason != nil {
+			reason := *chunk.Choices[0].FinishReason
+			if reason == "tool_calls" {
+				for _, acc := range toolAccums {
+					emit(StreamEvent{
+						Type:     "tool_call",
+						ToolName: acc.name,
+						ToolArgs: acc.arguments,
+						ToolId:   acc.id,
+					})
+				}
 				emit(StreamEvent{Type: "done"})
 				return
 			}
-			content := chunk.Choices[0].Delta.Content
-			if content != "" {
-				emit(StreamEvent{Type: "chunk", Delta: content})
-			}
+			emit(StreamEvent{Type: "done"})
+			return
+		}
+
+		// Emit text content
+		content := chunk.Choices[0].Delta.Content
+		if content != "" {
+			emit(StreamEvent{Type: "chunk", Delta: content})
 		}
 	}
 

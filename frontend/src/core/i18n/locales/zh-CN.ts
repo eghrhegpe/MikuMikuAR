@@ -1898,6 +1898,17 @@ export const zhCN: Record<string, string> = {
     'ai.mode.title': '模式',
     'ai.mode.diagnostic': '🔍 诊断',
     'ai.mode.chat': '💬 闲聊',
+    'ai.mode.control': '🎮 控制',
+    'ai.system.control':
+        '你是 MikuMikuAR 场景控制助手。使用以下工具根据用户要求修改场景。',
+    'ai.system.controlFormat':
+        '请用 JSON 格式回复：{"action": "工具名", "params": {"参数名": "值"}}。只使用上方列表中的工具。如果用户要求不支持的操作，请说明你能做什么。',
+    'ai.control.pending': '⏳ 待执行操作 — 请审阅后应用',
+    'ai.control.apply': '应用',
+    'ai.control.cancel': '取消',
+    'ai.control.unsupported': '暂不支持该操作。请尝试用不同方式描述你想要更改的内容。',
+    'ai.control.executing': '执行中...',
+    'ai.control.cancelled': '操作已取消。',
     'ai.config.corsWarning':
         '⚠ 远程端点可能存在 CORS 限制。本地 Ollama 请设置 OLLAMA_ORIGINS=* 后重启。',
     'ai.chat.clear': '清空',

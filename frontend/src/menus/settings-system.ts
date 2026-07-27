@@ -38,8 +38,7 @@ import { engine, applyFrameControl } from '../scene/scene';
 import { calcHardwareScaling } from '../core/render-loop';
 import { refreshCameraUserSettings } from '../scene/camera/camera';
 import { setVolume, getVolume, setAudioOffset, getAudioOffset } from '../outfit/audio';
-import { SETTINGS_ACTION } from './settings-targets';
-import { SETTINGS_ACTIONS } from './settings-actions';
+import { executeActionById } from '../core/action-executor';
 import { applyUIAppearanceDom, formatBytes } from './settings-shared';
 import type { SlideMenu } from './menu';
 import { renderMenu } from './render-menu';
@@ -328,7 +327,7 @@ function buildCacheSchema(): MenuNode[] {
                         'lucide:trash-2',
                         t('settings.about.maintenance.clearExtract'),
                         false,
-                        () => SETTINGS_ACTIONS[SETTINGS_ACTION.CLEAR_EXTRACT_CACHE]()
+                        () => void executeActionById('settings:set:clearextractcache', {})
                     );
                     if (getCachedCapabilities().systemDirOpen) {
                         slideRow(
@@ -352,14 +351,14 @@ function buildCacheSchema(): MenuNode[] {
                         'lucide:image',
                         t('settings.about.maintenance.clearThumbnail'),
                         false,
-                        () => SETTINGS_ACTIONS[SETTINGS_ACTION.CLEAR_THUMBNAIL]()
+                        () => void executeActionById('settings:set:clearthumbnail', {})
                     );
                     slideRow(
                         inner,
                         'lucide:trash',
                         t('settings.about.maintenance.clearAll'),
                         false,
-                        () => SETTINGS_ACTIONS[SETTINGS_ACTION.CLEAR_ALL_CACHE]()
+                        () => void executeActionById('settings:set:clearallcache', {})
                     );
                 });
 

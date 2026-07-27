@@ -14,6 +14,9 @@ import type { PopupLevel } from '../core/config';
 import type { SettingsMenuHandle } from './settings-shared';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
+import { buildToolCatalogText, buildToolSchemas } from '../core/ai/action-catalog';
+import { executeAction } from '../core/ai/intent-dispatcher';
+import { getAction } from '../core/action-registry';
 
 // ======== 模块级状态 ========
 
@@ -23,7 +26,7 @@ let _aiResolved = false;
 let _messages: ChatMessage[] = [];
 let _isStreaming = false;
 let _abortController: AbortController | null = null;
-let _mode: 'diagnostic' | 'chat' = 'diagnostic';
+let _mode: 'diagnostic' | 'chat' | 'control' = 'diagnostic';
 
 let _chatContainer: HTMLElement | null = null;
 let _inputEl: HTMLTextAreaElement | null = null;
@@ -31,6 +34,10 @@ let _corsWarningEl: HTMLElement | null = null;
 let _configEndpoint: HTMLInputElement | null = null;
 let _configApiKey: HTMLInputElement | null = null;
 let _configModel: HTMLInputElement | null = null;
+
+let _controlRegistered = false;
+let _pendingAction: { actionId: string; params: Record<string, unknown> } | null = null;
+let _pendingContainer: HTMLElement | null = null;
 
 // ======== 生命周期 ========
 
@@ -200,6 +207,13 @@ function _createErrorRow(err: ErrorEntry): HTMLElement {
 
 // ======== 模式切换卡片 ========
 
+function _ensureControlActions(): void {
+    if (!_controlRegistered) {
+        import('../core/ai/action-registry-defs').then((m) => m.registerControlActions());
+        _controlRegistered = true;
+    }
+}
+
 function buildModeSwitchSchema(): MenuNode[] {
     return [
         {
@@ -217,7 +231,7 @@ function buildModeSwitchSchema(): MenuNode[] {
                 diagBtn.className = 'mode-btn' + (_mode === 'diagnostic' ? ' active' : '');
                 diagBtn.addEventListener('click', () => {
                     _mode = 'diagnostic';
-                    _refreshModeUI(diagBtn, chatBtn);
+                    _refreshModeUI(diagBtn, chatBtn, ctrlBtn);
                 });
 
                 const chatBtn = document.createElement('button');
@@ -227,22 +241,43 @@ function buildModeSwitchSchema(): MenuNode[] {
                 chatBtn.className = 'mode-btn' + (_mode === 'chat' ? ' active' : '');
                 chatBtn.addEventListener('click', () => {
                     _mode = 'chat';
-                    _refreshModeUI(diagBtn, chatBtn);
+                    _refreshModeUI(diagBtn, chatBtn, ctrlBtn);
+                });
+
+                const ctrlBtn = document.createElement('button');
+                ctrlBtn.setAttribute('role', 'tab');
+                ctrlBtn.setAttribute('aria-selected', String(_mode === 'control'));
+                ctrlBtn.textContent = t('ai.mode.control');
+                ctrlBtn.className = 'mode-btn' + (_mode === 'control' ? ' active' : '');
+                ctrlBtn.addEventListener('click', () => {
+                    _mode = 'control';
+                    _refreshModeUI(diagBtn, chatBtn, ctrlBtn);
+                    _ensureControlActions();
                 });
 
                 group.appendChild(diagBtn);
                 group.appendChild(chatBtn);
+                group.appendChild(ctrlBtn);
                 c.appendChild(group);
             },
         },
     ];
 }
 
-function _refreshModeUI(diagBtn: HTMLButtonElement, chatBtn: HTMLButtonElement): void {
+function _refreshModeUI(
+    diagBtn: HTMLButtonElement,
+    chatBtn: HTMLButtonElement,
+    ctrlBtn: HTMLButtonElement
+): void {
     diagBtn.className = 'mode-btn' + (_mode === 'diagnostic' ? ' active' : '');
     chatBtn.className = 'mode-btn' + (_mode === 'chat' ? ' active' : '');
+    ctrlBtn.className = 'mode-btn' + (_mode === 'control' ? ' active' : '');
     diagBtn.setAttribute('aria-selected', String(_mode === 'diagnostic'));
     chatBtn.setAttribute('aria-selected', String(_mode === 'chat'));
+    ctrlBtn.setAttribute('aria-selected', String(_mode === 'control'));
+    if (_pendingContainer) {
+        _pendingContainer.style.display = _mode === 'control' ? '' : 'none';
+    }
 }
 
 // ======== 对话卡片 ========
@@ -302,6 +337,91 @@ function _finalizeStream(fullText: string): void {
     _abortController = null;
     _renderChat();
     _updateSendButton();
+
+    if (_mode === 'control' && !_pendingAction && fullText) {
+        _messages.push({ role: 'assistant', content: t('ai.control.unsupported') });
+        _renderChat();
+    }
+}
+
+function _renderPendingAction(): void {
+    if (!_pendingContainer || !_pendingAction) return;
+    _pendingContainer.innerHTML = '';
+    _pendingContainer.style.display = '';
+
+    const action = getAction(_pendingAction.actionId);
+    if (!action) {
+        _pendingContainer.textContent = t('ai.control.unsupported');
+        return;
+    }
+
+    const card = document.createElement('div');
+    card.className = 'diag-pending-card';
+    card.setAttribute('role', 'alert');
+    card.setAttribute('data-testid', 'ai:control:pending-action');
+
+    const title = document.createElement('div');
+    title.className = 'diag-pending-title';
+    title.textContent = t('ai.control.pending');
+    card.appendChild(title);
+
+    const desc = document.createElement('div');
+    desc.className = 'diag-pending-desc';
+    desc.textContent = action.label;
+    card.appendChild(desc);
+
+    const paramsList = document.createElement('div');
+    paramsList.className = 'diag-pending-params';
+    for (const [key, val] of Object.entries(_pendingAction.params)) {
+        const paramRow = document.createElement('span');
+        paramRow.textContent = `${key}: ${JSON.stringify(val)}`;
+        paramsList.appendChild(paramRow);
+    }
+    card.appendChild(paramsList);
+
+    const btnRow = document.createElement('div');
+    btnRow.className = 'diag-hint-row';
+
+    const applyBtn = document.createElement('button');
+    applyBtn.textContent = t('ai.control.apply');
+    applyBtn.className = 'mode-btn active';
+    applyBtn.addEventListener('click', () => _applyPendingAction(applyBtn));
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = t('ai.control.cancel');
+    cancelBtn.className = 'preset-chip';
+    cancelBtn.addEventListener('click', _cancelPendingAction);
+
+    btnRow.appendChild(applyBtn);
+    btnRow.appendChild(cancelBtn);
+    card.appendChild(btnRow);
+
+    _pendingContainer.appendChild(card);
+}
+
+async function _applyPendingAction(btn: HTMLButtonElement): Promise<void> {
+    if (!_pendingAction) return;
+    btn.disabled = true;
+    btn.textContent = t('ai.control.executing');
+
+    const result = await executeAction(_pendingAction.actionId, _pendingAction.params);
+    _messages.push({
+        role: 'assistant',
+        content: result.success ? result.message : `❌ ${result.message}`,
+    });
+    _pendingAction = null;
+    if (_pendingContainer) _pendingContainer.style.display = 'none';
+    _renderChat();
+}
+
+function _cancelPendingAction(): void {
+    _pendingAction = null;
+    if (_pendingContainer) {
+        _pendingContainer.style.display = 'none';
+        _pendingContainer.innerHTML = '';
+    }
+    _messages.push({ role: 'assistant', content: t('ai.control.cancelled') });
+    _renderChat();
 }
 
 function _buildSystemMessage(): ChatMessage {
@@ -309,6 +429,18 @@ function _buildSystemMessage(): ChatMessage {
         return {
             role: 'system',
             content: t('ai.system.role') + '\n\n' + t('ai.system.chat'),
+        };
+    }
+    if (_mode === 'control') {
+        const catalog = buildToolCatalogText();
+        return {
+            role: 'system',
+            content: [
+                t('ai.system.role'),
+                t('ai.system.control'),
+                catalog,
+                t('ai.system.controlFormat'),
+            ].join('\n\n'),
         };
     }
     const contextParts: string[] = [];
@@ -356,14 +488,23 @@ async function _sendMessage(): Promise<void> {
     let fullResponse = '';
 
     try {
+        const requestTools = _mode === 'control' ? buildToolSchemas() : undefined;
         const chunks = _ai.streamChat({
             messages: chatMessages,
             signal: _abortController.signal,
+            tools: requestTools,
         });
         for await (const chunk of chunks) {
             if (chunk.type === 'text' && chunk.content) {
                 fullResponse += chunk.content;
                 _renderStreamingChunk(chunk);
+            } else if (chunk.type === 'tool_call') {
+                let params: Record<string, unknown> = {};
+                try {
+                    params = JSON.parse(chunk.toolArgs ?? '{}');
+                } catch { /* ignore parse failure */ }
+                _pendingAction = { actionId: chunk.toolName ?? '', params };
+                _renderPendingAction();
             } else if (chunk.type === 'error') {
                 _addAssistantMessage(t('ai.errors.apiError', { msg: chunk.error ?? '' }));
                 _renderChat();
@@ -455,6 +596,12 @@ function buildChatSchema(): MenuNode[] {
                 inputRow.appendChild(clearBtn);
 
                 c.appendChild(inputRow);
+
+                _pendingContainer = document.createElement('div');
+                _pendingContainer.className = 'diag-pending-area';
+                _pendingContainer.style.display = 'none';
+                _pendingContainer.setAttribute('data-testid', 'ai:control:pending-action');
+                c.appendChild(_pendingContainer);
 
                 _renderChat();
                 _updateSendButton();
