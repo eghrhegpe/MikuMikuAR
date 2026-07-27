@@ -22,11 +22,25 @@ vi.mock('./idb', () => ({
     idbDelete: async (store: string, key: string) => {
         mem.get(store)?.delete(key);
     },
+    // [doc:adr-195] 批量事务写入：注入内存实现，供 ingestModelFiles 验证
+    idbBatchSet: async (store: string, entries: [string, unknown][]) => {
+        if (!mem.has(store)) mem.set(store, new Map());
+        for (const [k, v] of entries) mem.get(store)!.set(k, v);
+    },
     openDB: async () => ({}) as unknown,
     closeIDB: () => {},
 }));
 
-import { browserAdapter, getFsaAuthState, isFsaAuthPromptDismissed, dismissFsaAuthPrompt, reauthorizeFsaRoot } from './browser-adapter';
+import {
+    browserAdapter,
+    getFsaAuthState,
+    isFsaAuthPromptDismissed,
+    dismissFsaAuthPrompt,
+    reauthorizeFsaRoot,
+    ingestModelFile,
+    ingestModelBytes,
+    ingestModelFiles,
+} from './browser-adapter';
 
 function setStore(store: string, entries: Record<string, unknown>): void {
     mem.set(store, new Map(Object.entries(entries)));
@@ -397,5 +411,82 @@ describe('FSA 多选同名 PMX 冲突检测与序号后缀', () => {
         const manualEntry = lib.find((e) => e.name_jp === 'miku');
         expect(manualEntry).toBeDefined();
         expect(manualEntry?.dir).toBe('web://model');
+    });
+});
+
+describe('[doc:adr-195] 下载文件夹统一摄入：ingestModelFile / ingestModelBytes / ingestModelFiles', () => {
+    beforeEach(() => {
+        mem.clear();
+    });
+
+    const mkFile = (name: string, bytes: number[]): File =>
+        new File([new Uint8Array(bytes)], name);
+
+    it('ingestModelBytes(pmx) 写入 file:<encStem>+entry:<encStem>，且入库可见（不进场景）', async () => {
+        const loadPath = await ingestModelBytes('miku.pmx', new Uint8Array([1, 2, 3]));
+
+        // ① 返回 web://model/<encStem> 加载路径（供按需加载，本函数不 load）
+        expect(loadPath).toBe('web://model/miku');
+
+        // ② file:<encStem> 写入原始字节
+        const stored = mem.get('models')?.get('file:miku');
+        expect(stored).toBeInstanceOf(Uint8Array);
+        expect(Array.from(stored as Uint8Array)).toEqual([1, 2, 3]);
+
+        // ③ entry:<encStem> 入库，dir/file_path 齐全 → 模型库可见
+        const entry = mem.get('models')?.get('entry:miku') as { dir: string; file_path: string; kind: string };
+        expect(entry).toBeDefined();
+        expect(entry.dir).toBe('web://model');
+        expect(entry.file_path).toBe('web://model/miku');
+        expect(entry.kind).toBe('pmx');
+
+        const lib = await browserAdapter.GetLibraryIndex();
+        const found = lib.find((e) => e.name_jp === 'miku');
+        expect(found).toBeDefined();
+        expect(found?.dir).toBe('web://model');
+    });
+
+    it('ingestModelFile(pmx, File 形态) 行为与 bytes 形态一致', async () => {
+        const loadPath = await ingestModelFile(mkFile('miku.pmx', [4, 5, 6]));
+        expect(loadPath).toBe('web://model/miku');
+        expect(Array.from(mem.get('models')?.get('file:miku') as Uint8Array)).toEqual([4, 5, 6]);
+        expect((mem.get('models')?.get('entry:miku') as { kind: string }).kind).toBe('pmx');
+    });
+
+    it('ingestModelFiles 批量单事务写入：pmx/vmd/zip 全部落库，且不触发 loadManager.load', async () => {
+        const count = await ingestModelFiles([
+            { name: 'miku.pmx', bytes: new Uint8Array([1]) },
+            { name: 'dance.vmd', bytes: new Uint8Array([2]) },
+            { name: 'pack.zip', bytes: new Uint8Array([3]) },
+        ]);
+
+        // ① 返回批次条目数
+        expect(count).toBe(3);
+
+        // ② pmx → file:+entry:；vmd → 仅 file:（无 entry）；zip → file:+entry:(kind=zip)
+        expect(mem.get('models')?.has('file:miku')).toBe(true);
+        expect(mem.get('models')?.has('entry:miku')).toBe(true);
+        expect((mem.get('models')?.get('entry:miku') as { kind: string }).kind).toBe('pmx');
+
+        expect(mem.get('models')?.has('file:dance')).toBe(true);
+        expect(mem.get('models')?.has('entry:dance')).toBe(false); // vmd 无 entry
+
+        expect(mem.get('models')?.has('file:pack')).toBe(true);
+        expect((mem.get('models')?.get('entry:pack') as { kind: string }).kind).toBe('zip');
+    });
+
+    it('同名 PMX 冲突追加序号后缀，不覆盖既有 entry', async () => {
+        await ingestModelBytes('miku.pmx', new Uint8Array([1]));
+        await ingestModelBytes('miku.pmx', new Uint8Array([2]));
+
+        // 第二次写入应得到 miku (2)，而非覆盖 file:miku / entry:miku
+        expect(Array.from(mem.get('models')?.get('file:miku') as Uint8Array)).toEqual([1]);
+        expect(mem.get('models')?.has('file:miku%20(2)')).toBe(true);
+        expect(mem.get('models')?.has('entry:miku%20(2)')).toBe(true);
+
+        const lib = await browserAdapter.GetLibraryIndex();
+        const names = lib.filter((e) => e.name_jp?.startsWith('miku')).map((e) => e.name_jp);
+        expect(names).toContain('miku');
+        expect(names).toContain('miku (2)');
     });
 });

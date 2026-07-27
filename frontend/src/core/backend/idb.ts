@@ -77,6 +77,20 @@ export async function idbDelete(store: Store, key: string): Promise<void> {
     });
 }
 
+/** 单事务批量写入（键/值对），避免逐条 idbSet 的并发写竞态。
+ *  [doc:adr-195] P3 约束：批量摄入（下载文件夹扫描）须包入事务，一次性写该批次所有 file:/entry: 键。 */
+export async function idbBatchSet(store: Store, entries: [string, unknown][]): Promise<void> {
+    const db = await openDB();
+    return new Promise<void>((resolve, reject) => {
+        const tx = db.transaction(store, 'readwrite');
+        for (const [key, value] of entries) {
+            tx.objectStore(store).put(value, key);
+        }
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+    });
+}
+
 export async function idbKeys(store: Store): Promise<string[]> {
     const db = await openDB();
     return new Promise<string[]>((resolve, reject) => {
