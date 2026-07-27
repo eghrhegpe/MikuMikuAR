@@ -135,3 +135,62 @@ export function initHints(): void {
         _hintDisposables.push(addDisposableListener(el, 'mouseleave', () => hideHint()));
     });
 }
+
+// ======== 加载状态旋转图标（底部状态栏） ========
+
+/** 注入 status-spin CSS keyframes（仅首次调用时） */
+let _statusSpinInjected = false;
+
+function _ensureStatusSpinStyle(): void {
+    if (_statusSpinInjected) return;
+    _statusSpinInjected = true;
+    const style = document.createElement('style');
+    style.textContent = '@keyframes status-spin{to{transform:rotate(360deg)}}';
+    document.head.appendChild(style);
+}
+
+let _loadingSpinner: HTMLElement | null = null;
+
+function _getOrCreateSpinner(): HTMLElement {
+    if (!_loadingSpinner) {
+        _loadingSpinner = document.createElement('span');
+        _loadingSpinner.id = 'statusLoadingSpinner';
+        _loadingSpinner.style.cssText = 'display:none;flex-shrink:0;width:14px;height:14px;margin-right:6px';
+        _loadingSpinner.innerHTML = [
+            '<svg viewBox="0 0 24 24" width="14" height="14" fill="none"',
+            '  stroke="currentColor" stroke-width="2.5" stroke-linecap="round"',
+            '  stroke-linejoin="round"',
+            '  style="animation:status-spin 1s linear infinite">',
+            '  <path d="M21 12a9 9 0 1 1-6.219-8.56"/>',
+            '  <path d="M21 3v5h-5"/>',
+            '</svg>',
+        ].join('');
+        _ensureStatusSpinStyle();
+        // 插入到 statusText 前面
+        if (dom.statusBar && dom.statusText) {
+            dom.statusBar.insertBefore(_loadingSpinner, dom.statusText);
+        }
+    }
+    return _loadingSpinner;
+}
+
+/**
+ * 在底部状态栏显示带旋转图标的加载文本，用于消解用户"卡住焦虑"。
+ * hold=true 时不自动淡出，需调用 hideLoadingStatus() 或新的 setStatus() 清除。
+ * 内部调用 setStatus(text, false, hold) 设置白色文本。
+ */
+export function setLoadingStatus(text: string, hold = true): void {
+    const spinner = _getOrCreateSpinner();
+    spinner.style.display = '';
+    setStatus(text, false, hold);
+}
+
+/**
+ * 隐藏底部状态栏的旋转加载图标，不改变当前文本。
+ * 文本由 setStatus 的自动淡出机制或后续调用清除。
+ */
+export function hideLoadingStatus(): void {
+    if (_loadingSpinner) {
+        _loadingSpinner.style.display = 'none';
+    }
+}
