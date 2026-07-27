@@ -17,24 +17,28 @@
 
 ## 文档索引
 
-- **[ADR-110](../adr/adr-110-immdmodel-upstream-pr.md)** — 上游贡献登记册总入口（条目 1 已立项：`IMmdModel` 接口补全）
+- **[ADR-110](../adr/adr-110-immdmodel-upstream-pr.md)** — 上游贡献登记册总入口（条目 1 已关闭：AI 代理 + 设计分歧，见兼容性报告）
+- **[babylon-mmd 兼容性分析报告](babylon-mmd-compatibility.md)** — 联邦项目全部 23 处 babylon-mmd 限制应对措施的完整清单与风险评估**
 - 来源研究：`docs/research/babylon-mmd-api-analysis.md` §3.1 接口缺口 / §五 P0
-- 来源研究（已决策不追，登记为条目 11）：`docs/research/wind-affect-wasm-physics.md`（WASM Bullet `setWind` API，本地方案 A+C 已覆盖，fork/PR 仅兜底）
+- 来源研究（已决策不追，登记为条目 11）：`docs/research/wind-affect-wasm-physics.md`
 - 关联 ADR：`064` / `098` / `187` / `188` / `056` / `058` / `029` / `083` / `024` / `054` / `016` / `085`
 
 ## 执行跟踪
 
-| 条目 | 内容 | 决策 | 状态 | 执行仓库 / 分支 | PR 链接 |
-|------|------|------|------|----------------|---------|
-| 1 | `IMmdModel` 补全 `setRuntimeAnimation` / `createRuntimeAnimation` / `currentAnimation` | ✅ 已立项 | 📋 待启动（规划完成） | babylon-mmd `feat/immdmodel-api-completion` | — |
-| 2–11 | 见 ADR-110 登记册 | 延期 / 否决 / 阻塞（各异） | 按各决策冻结 | — | — |
+| 条目 | 内容 | 原决策 | 最终状态 | 说明 |
+|------|------|--------|---------|------|
+| 1 | `IMmdModel` 补全 | ✅ 已立项 | ❌ 已关闭 | PR #94 被拒（AI 代理 + 设计分歧）。本地 `RuntimeModel` augmentation 保留 |
+| 2–11 | 登记册全部条目 | 延期/否决/阻塞 | ❌ 冻结 | 上游 PR 路径已关闭。所有差异改由本地方案解决 |
 
-## 工作流
+## 工作流（已废弃）
 
-1. **规划在 MikuMikuAR**（本目录 + ADR-110 登记册）
-2. **执行切到 babylon-mmd fork**，开特性分支改代码（前置：`npm install` + `wasm-pack`）
-3. 本地验证（类型检查 / build，消除 3 处 cast） → 向 `noname0310/babylon-mmd` 提 PR
-4. 上游合并后回 MikuMikuAR 按 ADR-110「步骤四」清理 `core/types.ts` 的 augmentation
+> ⚠️ 上游 `noname0310/babylon-mmd` 不接受 AI 代理编写的 PR，且设计立场与联邦项目有分歧。
+> 以下工作流仅作历史参考，不再执行。
+
+1. ~~规划在 MikuMikuAR（本目录 + ADR-110 登记册）~~
+2. ~~执行切到 babylon-mmd fork，开特性分支改代码~~
+3. ~~本地验证 → 向上游提 PR~~
+4. ~~上游合并后回联邦清 augmentation~~
 
 ---
 

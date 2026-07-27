@@ -1,13 +1,13 @@
 # 函数映射表
 
 > AI 找代码用。改前端功能时先 grep 此表定位文件。
-> **自动生成**（2026-07-26）— 由 `scripts/gen-funcmap.mjs` 生成。
+> **自动生成**（2026-07-27）— 由 `scripts/gen-funcmap.mjs` 生成。
 
 ## 总览
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 71 | 544 |
+| 核心基础设施 | 73 | 559 |
 | 3D 场景 | 104 | 1057 |
 | 菜单 & UI | 66 | 308 |
 | 换装 & 音频 | 3 | 33 |
@@ -18,6 +18,13 @@
 
 | 符号 | 文件 | 说明 |
 |------|------|------|
+| `Abortable()` | `core/async` | 可复用的 AbortController 封装——abort 后自动重置，使对象可重复使用。 |
+| `DebouncedTimer()` | `core/async` | 防抖定时器——封装 setTimeout 的 schedule/cancel 样板。 |
+| `LoadingGuard()` | `core/async` | 并发加载守卫——防止同一 key 的异步操作重复触发。 |
+| `delay()` | `core/async` | Promise 包装的延迟。 |
+| `fireAndForget()` | `core/async` | 启动一个异步操作但不等待，异常由 swallowError 兜底。 |
+| `swallowError()` | `core/async` | 吞掉 promise 的异常并记录日志（比空 `.catch(() => {})` 可调试）。 |
+| `waitForFrame()` | `core/async` | Promise 包装的等待下一帧。 |
 | `PlaySfxOptions()` | `core/audio-bus` | — |
 | `disposeAudioBus()` | `core/audio-bus` | 释放总线资源（context 关闭、缓存清空）。 |
 | `getAudioContext()` | `core/audio-bus` | 惰性创建共享 AudioContext（SFX 总线与未来音效共用）。 |
@@ -58,6 +65,9 @@
 | `clamp()` | `core/clamp` | — |
 | `clamp01()` | `core/clamp` | — |
 | `clampInt()` | `core/clamp` | — |
+| `clampPct()` | `core/clamp` | 百分比钳制到 [0, 100]。 |
+| `lerp()` | `core/clamp` | 线性插值。 |
+| `lerpArray()` | `core/clamp` | 逐元素线性插值数组。 |
 | `col3FromTriple()` | `core/color-helpers` | 从 `[r, g, b]` 三元组构造 Color3。 |
 | `hexToRgb()` | `core/color-helpers` | 将 #rrggbb 解析为 {r,g,b}（0–255）。非法输入回退主题默认 74,108,247。 |
 | `rgbString()` | `core/color-helpers` | 将 Color3 转为 CSS `rgb(r, g, b)` 字符串（0–255 整数）。 |
@@ -92,7 +102,7 @@
 | `feedbackInfo()` | `core/feedback` | Info 级 toast 反馈。标题 =「动作 + 目标」。 |
 | `feedbackStatus()` | `core/feedback` | 通用状态栏反馈。auto-detect 成功与否：title 以 ✗ 开头则为失败。 |
 | `encodeFileRef()` | `core/fileservice` | 编码文件名为查询参数值（base64url 无填充）。 |
-| `normPath()` | `core/fileservice` | 标准化路径：反斜杠 → 正斜杠，去掉尾部斜杠。 |
+| `normPath()` | `core/fileservice` | — |
 | `resolveFileUrl()` | `core/fileservice` | 从文件路径解析出 HTTP URL 及对应服务器信息。 |
 | `resolveModelDir()` | `core/fileservice` | 从文件路径解析出隔离后的目录路径（不启动 HTTP 服务器）。 |
 | `freeflyInput()` | `core/freefly-state` | — |
@@ -163,6 +173,11 @@
 | `cartesianToOrbit()` | `core/orbit` | 笛卡尔坐标 → 球面坐标。 |
 | `normalizeOrbit()` | `core/orbit` | 钳制一组原始轨道参数为合法值域。 |
 | `orbitToCartesian()` | `core/orbit` | 球面坐标 → 笛卡尔坐标。 |
+| `getBaseName()` | `core/path` | 跨平台取路径末段文件名。 |
+| `getDirPath()` | `core/path` | 跨平台取父目录路径。根目录（无 `/`）返回空字符串。 |
+| `isStageLike()` | `core/path` | 判断给定 kind/type 是否为「舞台类」（缩略图使用横屏 16:9 宽高比）。 |
+| `isUnderRoot()` | `core/path` | [doc:adr-090][doc:adr-095] 路径归属判定（唯一实现，基于 normPath）。 |
+| `normPath()` | `core/path` | 标准化路径：反斜杠 → 正斜杠，去掉尾部斜杠。 |
 | `awaitWailsBridge()` | `core/platform` | Waits for the Wails bridge (window.wails) to be injected by the WebView. |
 | `guardExternalAction()` | `core/platform` | Guards an external application action (Blender, MMD, etc.) that is not available on Androi |
 | `isAndroidPlatform()` | `core/platform` | Returns true when running inside the Android WebView (Wails v3). |
@@ -390,42 +405,42 @@
 | `VirtualGridHandle()` | `core/ui-virtual-grid` | — |
 | `VirtualGridOptions()` | `core/ui-virtual-grid` | — |
 | `createVirtualGrid()` | `core/ui-virtual-grid` | — |
-| `Abortable()` | `core/utils` | 可复用的 AbortController 封装——abort 后自动重置，使对象可重复使用。 |
+| `Abortable()` | `core/utils` | — |
 | `CATEGORY_DIR()` | `core/utils` | — |
 | `Cache()` | `core/utils` | 轻量泛型缓存——Map 封装，统一 get/set/has/delete/clear 接口。 |
-| `DebouncedTimer()` | `core/utils` | 防抖定时器——封装 setTimeout 的 schedule/cancel 样板。 |
-| `LoadingGuard()` | `core/utils` | 并发加载守卫——防止同一 key 的异步操作重复触发。 |
+| `DebouncedTimer()` | `core/utils` | — |
+| `LoadingGuard()` | `core/utils` | — |
 | `allSettledFilter()` | `core/utils` | 等待全部 promise 结束，仅返回 fulfilled 结果（rejected 被静默丢弃）。 |
 | `canvasToBase64()` | `core/utils` | — |
 | `cardContainer()` | `core/utils` | Card container helper: removes render-card bg, wraps content in an lcard. |
 | `clamp()` | `core/utils` | — |
 | `clamp01()` | `core/utils` | — |
 | `clampInt()` | `core/utils` | — |
-| `clampPct()` | `core/utils` | 百分比钳制到 [0, 100]。 |
+| `clampPct()` | `core/utils` | — |
 | `clearAllMenuWrappers()` | `core/utils` | — |
 | `closeAllOverlays()` | `core/utils` | — |
 | `computeLibraryRef()` | `core/utils` | — |
 | `debounce()` | `core/utils` | — |
 | `deepClone()` | `core/utils` | — |
 | `degToRad()` | `core/utils` | 角度 → 弧度。 |
-| `delay()` | `core/utils` | Promise 包装的延迟。 |
+| `delay()` | `core/utils` | — |
 | `disposeMenuWrapper()` | `core/utils` | — |
 | `dist2d()` | `core/utils` | 2D 欧几里得距离。 |
 | `dist3d()` | `core/utils` | 3D 欧几里得距离。 |
 | `ensureArray()` | `core/utils` | 确保值为数组；非数组则包裹为单元素数组。 |
 | `escapeHtml()` | `core/utils` | — |
 | `filterKeys()` | `core/utils` | 按谓词过滤对象键，返回仅含满足条件键值对的新对象。 |
-| `fireAndForget()` | `core/utils` | 启动一个异步操作但不等待，异常由 swallowError 兜底。 |
+| `fireAndForget()` | `core/utils` | — |
 | `formatError()` | `core/utils` | — |
 | `formatTime()` | `core/utils` | — |
 | `formatTimestamp()` | `core/utils` | — |
 | `generateUuid()` | `core/utils` | — |
-| `getBaseName()` | `core/utils` | 跨平台取路径末段文件名。 |
+| `getBaseName()` | `core/utils` | — |
 | `getBrowseDir()` | `core/utils` | 统一的资源浏览目录解析。 |
-| `getDirPath()` | `core/utils` | 跨平台取父目录路径。根目录（无 `/`）返回空字符串。 |
+| `getDirPath()` | `core/utils` | — |
 | `getMenuWrapper()` | `core/utils` | — |
-| `isStageLike()` | `core/utils` | 判断给定 kind/type 是否为「舞台类」（缩略图使用横屏 16:9 宽高比）。 |
-| `isUnderRoot()` | `core/utils` | [doc:adr-090][doc:adr-095] 路径归属判定（唯一实现，基于 normPath）。 |
+| `isStageLike()` | `core/utils` | — |
+| `isUnderRoot()` | `core/utils` | — |
 | `jsonParse()` | `core/utils` | 安全 JSON 解析；解析失败返回 null。 |
 | `jsonStringify()` | `core/utils` | 格式化 JSON 字符串（2 空格缩进）。 |
 | `lerp()` | `core/utils` | — |
@@ -440,12 +455,12 @@
 | `setTriggerAutoSave()` | `core/utils` | — |
 | `showErrorToast()` | `core/utils` | — |
 | `stackRegistry()` | `core/utils` | — |
-| `swallowError()` | `core/utils` | 吞掉 promise 的异常并记录日志（比空 `.catch(() => {})` 可调试）。 |
+| `swallowError()` | `core/utils` | — |
 | `thumbDataUrl()` | `core/utils` | base64 缩略图数据的 MIME 嗅探：PNG/JPEG/WebP 头部字节不同 |
 | `toBase64()` | `core/utils` | — |
 | `triggerAutoSave()` | `core/utils` | — |
 | `tryCatchStatus()` | `core/utils` | Execute a function with automatic error handling that shows errors in the status bar. |
-| `waitForFrame()` | `core/utils` | Promise 包装的等待下一帧。 |
+| `waitForFrame()` | `core/utils` | — |
 | `withLoadingIndicator()` | `core/utils` | 加载指示器包裹器：显示 loading 遮罩 → 执行 fn → `finally` 隐藏。 |
 | `withLoadingStatus()` | `core/utils` | 包装一个异步操作，自动管理 loading → success → error 三态状态栏。 |
 | `withLoadingStatusTargeted()` | `core/utils` | 包装异步操作并附带目标名（target-aware 版本）。 |
@@ -2132,5 +2147,5 @@
 
 ---
 
-> 共 264 个文件，2086 个导出符号。
+> 共 266 个文件，2101 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。
