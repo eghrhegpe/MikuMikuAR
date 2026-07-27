@@ -16,10 +16,24 @@ import { envState } from './config';
 const WIND_STRENGTH_SCALE = 1.0;
 
 /**
- * 返回当前风矢量（方向 × 速度），windEnabled=false 时返回零向量。
+ * 风向是否生效（windEnabled 且 windSpeed > 0.01，过滤浮点噪声 / 滑条零位残留）。
+ *
+ * 作为 getWindVector() 的统一守卫，保证两者在所有边界（包括 windSpeed=0.01）
+ * 行为完全对称——isWindActive()=false 时 getWindVector() 必返回零向量。
+ */
+export function isWindActive(): boolean {
+    return envState.windEnabled && envState.windSpeed > 0.01;
+}
+
+/**
+ * 返回当前风矢量（方向 × 速度），风未生效时返回零向量。
+ *
+ * 守卫委托 isWindActive()，确保与 Bullet/粒子/云的跳过判断共用同一阈值，
+ * 消除原 getWindVector 只查 windEnabled 而 isWindActive 额外查 windSpeed>0.01
+ * 的边界不对称（P4 修复，ADR-194）。
  */
 export function getWindVector(): Vector3 {
-    if (!envState.windEnabled) {
+    if (!isWindActive()) {
         return Vector3.Zero();
     }
     const { windDirection, windSpeed } = envState;
@@ -28,11 +42,4 @@ export function getWindVector(): Vector3 {
         windDirection[1] * windSpeed * WIND_STRENGTH_SCALE,
         windDirection[2] * windSpeed * WIND_STRENGTH_SCALE
     );
-}
-
-/**
- * 风向是否生效（快捷判空，避免 Vector3.Zero() 比较开销）。
- */
-export function isWindActive(): boolean {
-    return envState.windEnabled && envState.windSpeed > 0.01;
 }

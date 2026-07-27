@@ -5,7 +5,7 @@
  * 对所有 Dynamic 刚体施加风力，使头发/裙子等物理部件受风影响。
  *
  * 设计约束：
- * - 仅 WASM 运行时生效（JS 运行时无 Bullet 物理，风仍影响 XPBD 布料/粒子）
+ * - 仅 WASM 运行时生效（JS 运行时无 Bullet 物理，风仍影响粒子/水面）
  * - Kinematic 刚体（骨骼跟随）不受力，Bullet 自动忽略
  * - 刚体索引经 @/core/mmd-adapter 的 getRigidBodyBundleMap 走公开 API
  *   `rigidBodyBundleReferenceCountMap`（ADR-192 Phase 2 已内化），无私有字段依赖

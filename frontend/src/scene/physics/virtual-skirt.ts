@@ -328,7 +328,13 @@ export class VirtualSkirtController {
             this.anchorInfo.mass = 0;
             this.anchorInfo.setInitialTransform(Matrix.Translation(ax, ay, az));
             this.anchorRb = new RigidBody(impl, this.anchorInfo);
-            impl.addRigidBody(this.anchorRb, this.worldId);
+            if (!impl.addRigidBody(this.anchorRb, this.worldId)) {
+                logWarn('virtual-skirt', 'addRigidBody(anchor) failed', {
+                    worldId: this.worldId,
+                });
+                this.dispose();
+                return false;
+            }
 
             // --- 链身：Dynamic 球体 + 弹簧约束 ---
             const radius =
@@ -360,10 +366,18 @@ export class VirtualSkirtController {
                         Matrix.Translation(this._tmpVec.x, this._tmpVec.y, this._tmpVec.z)
                     );
                     const rb = new RigidBody(impl, info);
-                    impl.addRigidBody(rb, this.worldId);
+                    // 先 push 到数组，addRigidBody 失败时 dispose 能清理已分配资源
                     this.segmentRbs.push(rb);
                     this.segmentInfos.push(info);
                     this.segmentShapes.push(shape);
+                    if (!impl.addRigidBody(rb, this.worldId)) {
+                        logWarn('virtual-skirt', 'addRigidBody(segment) failed', {
+                            worldId: this.worldId,
+                            idx: this.segmentRbs.length - 1,
+                        });
+                        this.dispose();
+                        return false;
+                    }
 
                     const spring = new Generic6DofSpringConstraint(
                         impl,
@@ -387,8 +401,15 @@ export class VirtualSkirtController {
                     spring.setDamping(0, this.config.damping);
                     spring.setDamping(1, this.config.damping);
                     spring.setDamping(2, this.config.damping);
-                    impl.addConstraint(spring, this.worldId, true);
                     this.constraints.push(spring);
+                    if (!impl.addConstraint(spring, this.worldId, true)) {
+                        logWarn('virtual-skirt', 'addConstraint failed', {
+                            worldId: this.worldId,
+                            idx: this.constraints.length - 1,
+                        });
+                        this.dispose();
+                        return false;
+                    }
 
                     parent = rb;
                 }
@@ -509,14 +530,28 @@ export class VirtualSkirtController {
         }
         const worldId = this.worldId;
 
+        // remove 阶段：impl 可能已被 WASM runtime 销毁（场景切换/HMR），
+        // 单个 remove 失败不阻断后续 dispose，避免资源链路断裂
         for (const c of this.constraints) {
-            impl.removeConstraint(c, worldId);
+            try {
+                impl.removeConstraint(c, worldId);
+            } catch (e) {
+                logWarn('virtual-skirt', 'removeConstraint failed', e);
+            }
         }
         for (const rb of this.segmentRbs) {
-            impl.removeRigidBody(rb, worldId);
+            try {
+                impl.removeRigidBody(rb, worldId);
+            } catch (e) {
+                logWarn('virtual-skirt', 'removeRigidBody failed', e);
+            }
         }
         if (this.anchorRb) {
-            impl.removeRigidBody(this.anchorRb, worldId);
+            try {
+                impl.removeRigidBody(this.anchorRb, worldId);
+            } catch (e) {
+                logWarn('virtual-skirt', 'removeRigidBody(anchor) failed', e);
+            }
         }
 
         for (const c of this.constraints) {

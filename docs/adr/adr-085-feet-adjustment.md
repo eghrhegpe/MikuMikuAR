@@ -111,7 +111,9 @@ VMD 动画解算 → (WASM Bullet 物理) → [Feet Adjustment: 驱动足IK骨�
 7. 应用 `kneeDelta` 到膝盖 worldMatrix + `_propagateChildrenWasm` 传播子骨骼（含踝、趾）
 
 **纯函数实现**：`motion-algos/two-bone-ik.ts`（仅依赖 Babylon 数学库，无运行时依赖，可单测）。
-**引擎集成**：`scene/motion/bone-override.ts:_solveManualLegIK`，在 ADR-186 步骤⑥执行。
+**引擎集成**（两处独立调用，非池版本各自管理 Matrix 分配）：
+- `scene/motion/bone-override.ts:_solveManualLegIK`：在 ADR-186 步骤⑥执行，读 `overrideMap` 的 `slot.pos` 作为偏移量，用 `_mPool`（帧级池）管理 Matrix。
+- `scene/motion/feet-adjustment.ts:_solveWasmLegIK`：在 MotionPipeline bone-override 层 order=5 执行（脚部贴地），`setWorldTranslation` 写 IK 骨位置后直接调用，用 `_propagateChildrenWasmSimple`（非池版本，因 order=5 在 bone-override 主回调之后，不能复用 `_mPool`）。
 **单测**：`__tests__/two-bone-ik.test.ts`，15 例覆盖退化场景、正常偏移、对称性、可达范围 clamp、矩阵旋转应用。
 
 **已知限制**（待方案A解决）：
@@ -119,6 +121,21 @@ VMD 动画解算 → (WASM Bullet 物理) → [Feet Adjustment: 驱动足IK骨�
 - 不迭代（一次求解，非收敛）
 - 不处理物理（与 `canSkipWhenPhysicsEnabled` 无关）
 - 适用于脚部位置偏移等小偏移场景；大偏移可能产生不自然姿态
+
+**方案B 调研结论（2026-07-27，已否决）**：尝试不 fork、通过 babylon-mmd 公开 API 在 WASM 模式下触发 IK 重解，经核实不可行。
+
+| 公开 API | 实际行为 | 能触发 IK 重解？ |
+|----------|---------|-----------------|
+| `model.afterPhysics()` | 仅 `_markAsDirty()` | ❌ |
+| `model.afterPhysicsAndWasm()` | 仅 `syncBones()` | ❌ |
+| `model.beforePhysicsAndWasm(null)` | 同步 bone states 到 WASM buffer | ❌ |
+| `runtime.afterPhysics()` | 调 `wasmInternal.afterPhysics()` + `swapWorldMatrixBuffer()` | ⚠️ 能，但重复调用破坏 buffer 一致性、影响所有模型 |
+| `model.ikSolverStates` | Uint8Array 开关 IK（0/1） | ❌ 只能开关，不能手动触发 solve |
+| `wasmInternal.afterPhysics()` | WASM 侧 IK 求解 | ❌ `@internal`，直接调会破坏 buffer 一致性 |
+
+**根因**：WASM IK solver 运行时机在 `wasmInternal.beforePhysics()` / `wasmInternal.afterPhysics()` 内部，JS 侧没有「只跑 IK」的公开入口。`ikSolver` 字段在 WASM 运行时（`MmdWasmRuntimeBone`）上根本不存在（仅有 `ikSolverIndex`，是 WASM 内部索引，无法 JS 调用）。
+
+**结论**：方案B 否决。近期走方案C（feet-adjustment 在 WASM 模式下自调 `solveTwoBoneIK` + `_propagateChildrenWasmSimple`，不依赖 bone-override 的 overrideMap / _mPool），远期走方案A（fork）。
 
 **方案A（长期）**：fork babylon-mmd，在 WASM 运行时暴露 `ikSolver` 字段及 `solve()` 方法，使 JS 路径与 WASM 路径统一走原版 IK 求解器。落地后删除方案C。
 
