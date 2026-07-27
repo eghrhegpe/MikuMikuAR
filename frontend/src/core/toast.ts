@@ -5,7 +5,7 @@ export interface ToastAction {
     onClick: () => void;
 }
 
-export type ToastVariant = 'error' | 'info' | 'loading';
+export type ToastVariant = 'error' | 'info';
 
 const MAX_VISIBLE_TOASTS = 5;
 let _toastIdCounter = 0;
@@ -97,12 +97,7 @@ function buildToastElement(
     variant: ToastVariant = 'error'
 ): HTMLElement {
     const toast = document.createElement('div');
-    const borderMap: Record<ToastVariant, string> = {
-        info: 'var(--toast-border-info)',
-        error: 'var(--toast-border-error)',
-        loading: 'rgba(var(--accent-rgb), 0.35)',
-    };
-    const borderVar = borderMap[variant];
+    const borderVar = variant === 'info' ? 'var(--toast-border-info)' : 'var(--toast-border-error)';
     toast.style.cssText = [
         'pointer-events:auto',
         'background:var(--bg-scene)',
@@ -112,22 +107,6 @@ function buildToastElement(
         'width:100%;backdrop-filter:blur(8px)',
         'transition:opacity 0.3s ease,transform 0.3s ease',
     ].join(';');
-
-    // loading variant: 左侧旋转 SVG 图标
-    if (variant === 'loading') {
-        const spinner = document.createElement('span');
-        spinner.style.cssText = 'flex-shrink:0;display:flex;align-items:center;margin-top:1px;color:var(--accent)';
-        spinner.innerHTML = [
-            '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"',
-            '  stroke="currentColor" stroke-width="2" stroke-linecap="round"',
-            '  stroke-linejoin="round"',
-            '  style="animation:toast-spin 1s linear infinite">',
-            '  <path d="M21 12a9 9 0 1 1-6.219-8.56"/>',
-            '  <path d="M21 3v5h-5"/>',
-            '</svg>',
-        ].join('');
-        toast.appendChild(spinner);
-    }
 
     const body = document.createElement('div');
     body.style.cssText = 'flex:1;min-width:0';
@@ -145,11 +124,6 @@ function buildToastElement(
         body.appendChild(detailEl);
     }
     toast.appendChild(body);
-
-    // loading toast 不显示操作按钮（关闭/复制）
-    if (variant === 'loading') {
-        return toast;
-    }
 
     const actionsEl = document.createElement('div');
     actionsEl.style.cssText =
@@ -262,58 +236,4 @@ export function showInfoToast(
     duration = 3000
 ): void {
     showToast(title, detail, actions, duration, 'info');
-}
-
-// ======== Loading Toast（持续显示，不自动消失） ========
-
-/** 注入 toast-spin CSS keyframes（仅首次调用时） */
-let _spinStyleInjected = false;
-
-function _ensureSpinStyle(): void {
-    if (_spinStyleInjected) return;
-    _spinStyleInjected = true;
-    const style = document.createElement('style');
-    style.textContent = '@keyframes toast-spin{to{transform:rotate(360deg)}}';
-    document.head.appendChild(style);
-}
-
-/**
- * 显示一个持续旋转的 loading toast，不自动消失。
- * 返回 { dismiss } 用于扫描/操作完成后关闭。
- * 同一时间最多只有一个 loading toast（新的会替换旧的）。
- */
-export function showLoadingToast(
-    title: string,
-    detail?: string,
-): { dismiss: () => void } {
-    // 清理旧的 loading toast，避免重叠
-    for (const t of _activeToasts) {
-        if (t.variant === 'loading') {
-            removeToast(t.id);
-        }
-    }
-
-    // 确保容量
-    while (_activeToasts.length >= MAX_VISIBLE_TOASTS) {
-        removeToast(_activeToasts[0].id);
-    }
-
-    _ensureSpinStyle();
-
-    const id = ++_toastIdCounter;
-    const el = buildToastElement(title, detail, undefined, id, 'loading');
-    const container = getToastContainer();
-    container.appendChild(el);
-
-    // 不设 timer，永不自动消失
-    _activeToasts.push({ id, el, timer: null, fadeTimer: null, variant: 'loading' });
-
-    return {
-        dismiss: () => {
-            const entry = _activeToasts.find((t) => t.id === id);
-            if (entry) {
-                fadeAndRemoveToast(id, el);
-            }
-        },
-    };
 }

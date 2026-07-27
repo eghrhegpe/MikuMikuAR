@@ -16,6 +16,8 @@ import {
 import {
     dom,
     setStatus,
+    setLoadingStatus,
+    hideLoadingStatus,
     setLibraryRoot,
     libraryRoot,
     setResourceRoot,
@@ -29,7 +31,7 @@ import {
     stackRegistry,
 } from '../core/config';
 import { feedbackStatus } from '../core/feedback';
-import { showLoadingToast, showInfoToast } from '../core/toast';
+import { showInfoToast } from '../core/toast';
 import { tryCatchStatus, isUnderRoot } from '../core/utils';
 import { logWarn } from '../core/logger';
 import { safeCallAsync } from '../core/safe-call';
@@ -233,9 +235,9 @@ export async function switchStorageMode(mode: 'private' | 'shared'): Promise<voi
 
 export async function rescanAndSync(): Promise<LibraryModel[]> {
     console.info('[debug] rescanAndSync called');
-    // 显示顶部 loading toast：旋转图标 + 正在扫描目录
+    // 底部状态栏：旋转图标 + 正在扫描目录
     const dir = libraryRoot || t('library.title');
-    const loadingToast = showLoadingToast(t('library.scanning'), t('library.scanningDir', { dir }));
+    setLoadingStatus(t('library.scanningDir', { dir }));
     try {
         // [doc:adr-183] 注册节流进度回调：扫描中每扫完一个子目录触发，
         // 节流 500ms 增量读 IDB 刷新 setAllModels，避免「扫完才一次性显示」的体感问题。
@@ -291,7 +293,9 @@ export async function rescanAndSync(): Promise<LibraryModel[]> {
         window.dispatchEvent(new CustomEvent('mmar:library-scanned'));
         return models;
     } finally {
-        loadingToast.dismiss();
+        hideLoadingStatus();
+        // 清除"正在扫描"文本，状态栏自动隐藏（空文本 → syncStatusBarVisibility → display:none）
+        setStatus('', false, false);
     }
 }
 
@@ -383,14 +387,12 @@ export async function refreshLibrary(): Promise<void> {
             feedbackStatus('library.fsaRevokedHint', undefined, false);
         }
     }
-    feedbackStatus('library.scanning', undefined, false);
     const models = await tryCatchStatus(async () => {
         return await rescanAndSync();
     }, t('library.scanFailed'));
     if (models === undefined) {
         return;
     }
-    showInfoToast(t('library.entriesCount', { n: (models || []).length }));
     CleanOrphanCache().catch((err) =>
         logWarn('library-setup', 'CleanOrphanCache (background):', err)
     );
