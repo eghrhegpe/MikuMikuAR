@@ -1,8 +1,8 @@
 # ADR-194: 风物理系统修复 — 从「假风」到真实风场
 
-> **状态**: 已完成（2026-07-27 — tsc 零错误，env-bridge 80 + wind-physics 1 + app.contract 17 全绿）
-> **日期**: 2026-07-27（初版）
-> **关联**: ADR-028（风场系统统一）、ADR-138（env-dispatcher 破循环依赖）
+> **状态**: 已完成（2026-07-27 — tsc 零错误，env-bridge 80 + wind-physics 1 + app.contract 17 全绿；P2 修复后全量 2174/2174 全绿）
+> **日期**: 2026-07-27（初版）/ 2026-07-27（P2 修复 — 水面 `uWindSpeed` 加 `windEnabled` 守卫）
+> **关联**: ADR-028（风场系统统一）、ADR-138（env-dispatcher 破循环依赖）、ADR-192（wind-physics.ts 私有字段反射经 Phase 2 内化为 mmd-adapter 公开 API，本 ADR 的 `WIND_FORCE_SCALE` 修改在同一文件）
 
 ---
 
@@ -164,7 +164,7 @@ envState (config.ts)
 
 - `tsc --noEmit`：零错误
 - `vitest`：env-bridge 80 + wind-physics 1 + app.contract 17 全绿
-- 全量 2167 测试通过
+- 全量 2167 测试通过（初版）；P2 修复后全量 2174/2174 全绿
 
 运行时验证（需模型加载 + 粒子 + 水面）：
 1. **粒子**：风速调至 10 → 雨/雪有明显斜飞角度，纹理顺风对齐
