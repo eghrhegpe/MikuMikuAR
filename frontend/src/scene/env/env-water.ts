@@ -764,7 +764,9 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     const windDirs = computeWaveDirs(state.windDirection);
     mat.setArray2('uWindDir', windDirs);
     // 风速调制波幅度（0 级风时 0.4 倍平静海面，10 级风时 1.4 倍汹涌涌浪）
-    mat.setFloat('uWindSpeed', state.windSpeed);
+    // windEnabled 守卫：对齐其他三系统（粒子/Bullet/云）行为，风关则浪静（wind-physics-fix P2）
+    const effectiveWindSpeed = state.windEnabled ? state.windSpeed : 0;
+    mat.setFloat('uWindSpeed', effectiveWindSpeed);
     // 细节法线滚动方向：取 Gerstner 主波（第一波）风向
     mat.setVector3('uDetailWindDir', new Vector3(windDirs[0], windDirs[1], 0));
 
