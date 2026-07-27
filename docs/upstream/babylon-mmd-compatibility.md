@@ -37,7 +37,7 @@
  * （这两个方法在 MmdModel 和 MmdWasmModel 具体类上）。
  * 此扩展类型补上运行时动画相关方法，供 ModelInstance.mmdModel 使用。
  * 类型签名与 MmdModel / MmdWasmModel 实际实现一致。
- * 待 ADR-110 上游 PR 合并后移除此本地 augmentation。
+ * 永久本地维护：上游 IMmdModel 保持最小接口策略，本地交集类型（RuntimeModel）是上游推荐的消费方模式，不向上游推进。
  */
 export type RuntimeModel = IMmdModel & {
     setRuntimeAnimation(
@@ -81,7 +81,7 @@ export interface MmdRuntimeBoneExtended extends IMmdRuntimeBone {
 
 ---
 
-### 3. `_rigidBodyBundleMap` 反射访问 —— 风物理需要读内部字段
+### 3. `_rigidBodyBundleMap` 反射访问 —— 风物理需要读内部字段  **[适配层根治中 → ADR-192]**
 
 **文件**: `frontend/src/physics/wind-physics.ts`，第 39–68 行
 
@@ -222,7 +222,7 @@ return (mmdRuntime as unknown as MmdWasmRuntime) ?? null;
 
 ---
 
-### 9. `StreamAudioPlayer._audio` 反射 —— 直接控制音频播放
+### 9. `StreamAudioPlayer._audio` 反射 —— 直接控制音频播放  **[适配层根治中 → ADR-192]**
 
 **文件**: `frontend/src/outfit/audio.ts`，第 55、134、351 行
 
@@ -270,7 +270,7 @@ referenceFiles: textureFiles as unknown as File[],
 
 ---
 
-### 12. `worldMatrix` 时序与坐标系文档 —— 逆工程的运行时行为
+### 12. `worldMatrix` 时序与坐标系文档 —— 逆工程的运行时行为  **[适配层根治中 → ADR-192]**
 
 **文件**:
 - `frontend/src/scene/render/lighting.ts`，第 196–202 行
@@ -315,9 +315,9 @@ referenceFiles: textureFiles as unknown as File[],
 
 ---
 
-### 14. `seekAnimation(0)` —— `setRuntimeAnimation` 不重置时钟
+### 14. `seekAnimation(0)` —— `setRuntimeAnimation` 不重置时钟  **[适配层根治中 → ADR-192]**
 
-**文件**: `frontend/src/scene/motion/vmd-loader.ts`，第 164–174 行
+**文件**: `frontend/src/scene/motion/vmd-loader.ts`，第 164–174 行（缩略图渲染场景）；同模式散落 `playback.ts:101`、`vmd-layers.ts:721`（切换重置），以及 `shortcut-app.ts:153/175`（快进快退，合法 seek 非补丁）
 
 ```typescript
 // [fix] 切换动作时将 runtime 全局时钟归零到第 0 帧：setRuntimeAnimation 只换动画句柄，
@@ -541,7 +541,42 @@ model as unknown as IMmdModel
 
 ---
 
-## 五、附录：上游 PR 尝试记录
+## 五、逆向审计（官方文档交叉验证）
+
+> 审计日期：2026-07-27。基于 `babylon-mmd-docs/reference/overview`、`reference/runtime/mmd-webassembly-runtime` 等官方文档，对 23 处应对做必要性反向验证。
+
+### 审计证据（官方文档锚点）
+
+| 官方文档锚点 | 内容 | 印证条目 |
+|------|------|---------|
+| overview §286 | "MmdRuntimeAnimation ... generally not recommended for direct access, so createRuntimeAnimation returns a handle" | 1, 5 |
+| overview §142–146 | 从根导入是 side-effect 入口；tree-shakable 应 import `.pure` 模块 | 21 |
+| overview §207 | SPR/SR/SPD 等 WASM 实例类型命名 | 22 |
+| mmd-wasm-runtime §74 | MmdWasmRuntime "provides almost the same API" as MmdRuntime（非完全一致） | 1, 2 |
+| mmd-wasm-runtime §82 | 用 MmdWasmRuntime 后类型自动传播为 MmdWasmModel | 1, 2 |
+| mmd-wasm-runtime §117–118 | MmdWasmModel.createRuntimeAnimation / setRuntimeAnimation | 1 |
+| mmd-wasm-runtime §153–155 | WASM Limitations：不能改 prototype/继承；高度定制建议用 JS runtime | 13 |
+
+### 审计结论
+
+23 处应对全部与上游设计立场一致，**无冗余、无误判**：
+
+- **A 类 — 类型层必要补充（上游推荐模式）**：条目 1/2/4/5/6/7/9/10/11/19/20/23。因 IMmdModel 最小化 + 两 runtime 不可互换，本地交集类型（`RuntimeModel`）/接口扩展（`MmdRuntimeBoneExtended`）/`as unknown as` cast 是上游设计下的正确消费方模式（官方 §286/§74/§82/§117 印证）。
+- **B 类 — 上游行为/约束的 workaround**：条目 12/13/14/17。worldMatrix 时序未文档化（逆工程）、WASM ikSolver=null（§153–155 解释）、setRuntimeAnimation 不重置时钟、onPause 代替 onFinish。
+- **C 类 — 构建/测试/架构决策**：条目 3/8/15/16/18/21/22。side-effect 导入（§142 印证）、MPR 动态导入（§207 印证）、测试 mock、移除 monkey-patch、模块增强、无 dispose API、反射内部字段。
+
+### 升级回归重点（高脆弱点）
+
+| ID | 字段 | 失效模式 | 回归动作 |
+|----|------|---------|---------|
+| 3 | `_rigidBodyBundleMap` | 重命名 → 风物理静默降级 | 代码有显式检查 + 抛错；bump 时若报错即查 |
+| 9 | `_audio` | 重命名 → 音频异常 | 无守卫，依赖开发者 bump 时自查 |
+
+**建议**：将本表纳入 `babylon-mmd` 版本升级前的必查清单（对应 README 定位「永久自治维护台账」）。
+
+---
+
+## 六、附录：上游 PR 尝试记录
 
 | PR | 内容 | 提交日期 | 合并状态 | 关闭原因 |
 |----|------|---------|---------|---------|
