@@ -1,6 +1,6 @@
 # ADR-192: 上游适配层重构（MmdAdapter）
 
-> **状态**: 已立项 · Phase 0 已完成（2026-07-27 — MmdAdapter 骨架 + 类型网关 + 契约测试落地）
+> **状态**: 已立项 · Phase 1 已完成（2026-07-27 — BoneFrameClock 时序/坐标系契约 + PlaybackContract 切换契约落地，契约测试 16 用例全绿；Phase 2 能力内化待启动）
 > **日期**: 2026-07-27（初版）
 > **关联**: ADR-110（上游差异登记册，已转为永久自治台账）、ADR-186（bone-override-frame-timing）、ADR-187（babylon-mmd 剩余 API 分析）、`docs/upstream/babylon-mmd-compatibility.md`（23 处应对清单 + 逆向审计）
 > **来源**: 上游 PR #94/#95/#96 全关后战略转「永久自治下游」；`compatibility.md` 逆向审计识别出 4 处仅缓解、未根治的应对

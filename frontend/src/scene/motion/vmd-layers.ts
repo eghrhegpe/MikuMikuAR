@@ -20,6 +20,7 @@ import {
     setIsPlaying,
 } from '@/core/config';
 import { feedbackInfo, feedbackStatus } from '@/core/feedback';
+import { switchAnimation } from '@/core/mmd-adapter';
 import { showInfoToast } from '@/core/toast';
 import { readFileBytes } from '@/core/wails-bindings';
 import { getBaseName } from '@/core/path';
@@ -693,35 +694,10 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
         // MmdCompositeAnimation 经类型增强已实现 IMmdBindableModelAnimation（babylon-mmd 在
         // mmdCompositeRuntimeModelAnimation 中声明的 module augmentation），可直接传入，无需双重 cast
 
-        // 绑定到模型
-        // 释放旧动画句柄，防止切换 VMD 图层时 WASM 内存泄漏。
-        // setRuntimeAnimation(null) 仅解绑、不释放 WASM buffer；必须显式 dispose 旧
-        // runtime animation（其内部 onDispose 回调触发 _destroyRuntimeAnimation，从
-        // _animationHandleMap 删除并回收 WASM AnimCurve 资源）。
-        // 与 vmd-loader.ts:148-158 对齐。
-        const prevAnim =
-            (inst.mmdModel as { currentAnimation?: { dispose?: () => void } | null })
-                .currentAnimation ?? null;
-        inst.mmdModel.setRuntimeAnimation(null);
-        if (prevAnim) {
-            try {
-                prevAnim.dispose?.();
-            } catch {
-                // 旧动画句柄清理失败不影响本次绑定
-            }
-        }
-        const handle = inst.mmdModel.createRuntimeAnimation(composite);
-        inst.mmdModel.setRuntimeAnimation(handle);
-
-        // 切换动作归零运行时全局时钟到第 0 帧：setRuntimeAnimation 只换动画句柄，不重置
-        // _currentFrameTime。若上一动作播到 50s、本合成动作仅 10s，陈旧时钟越过新时长 →
-        // 下一帧 beforePhysics 立即 pause → 表现为「0.01s 后被重置为无动作」。
+        // 绑定到模型（切换 VMD 图层）：释放旧句柄 + 绑定合成动画 + 归零时钟。
+        // 封装于 mmd-adapter PlaybackContract.switchAnimation（见 ADR-192）；
         // 与 loadVMDMotion 的修复对齐（ADR-106 生命周期隔离：仅改时钟，不破坏主视图）。
-        try {
-            await mmdRuntime.seekAnimation(0, true);
-        } catch {
-            // 归零失败不影响绑定，下一帧主循环纠正
-        }
+        await switchAnimation(mmdRuntime, inst.mmdModel, composite);
         // 绑定后确保播放：原本在播放则 seek 后从第 0 帧续播；暂停且开启循环则启动。
         // 与 loadVMDMotion 末尾逻辑对齐（autoLoop 关闭且本就暂停时保持静止，符合预期）。
         if (!isPlaying && autoLoop) {

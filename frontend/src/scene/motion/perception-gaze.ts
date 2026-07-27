@@ -8,6 +8,7 @@ import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 
 import type { MmdRuntimeBoneExtended } from '@/core/types';
 import { isARActive } from '../ar/ar-camera';
+import { transformWorldToRootLocal } from '@/core/mmd-adapter';
 import type {
     MeshMetadata,
     GazeConfig,
@@ -154,18 +155,9 @@ export function _getGazeTarget(cam: Camera, out: Vector3): Vector3 {
  * 此函数原地修改 target，使其与骨骼 worldMatrix 在同一坐标系。
  */
 function _worldToLocalGazeTarget(mmdModel: MmdModelLike, target: Vector3): void {
-    const getWM = mmdModel.mesh.getWorldMatrix;
-    if (!getWM) {
-        return;
-    }
-    // Babylon.js Mesh.getWorldMatrix() 返回 Matrix（含 scaling/rotation/translation）
-    const rootWorld = getWM.call(mmdModel.mesh) as Matrix;
-    if (!rootWorld) {
-        return;
-    }
-    const invRoot = _m().copyFrom(rootWorld).invert();
-    // target = invRoot × target（把世界坐标转到 rootMesh 局部坐标）
-    Vector3.TransformCoordinatesToRef(target, invRoot, target);
+    // [adr-071] 坐标系对齐：骨骼 worldMatrix 是 rootMesh 局部坐标系，相机是世界系，
+    // 需把 gazeTarget 转到 rootMesh 局部坐标系（固化于 mmd-adapter BoneFrameClock）。
+    transformWorldToRootLocal(mmdModel.mesh, target);
 }
 
 /** 头部专用包装（维持已有回归测试签名不变） */
