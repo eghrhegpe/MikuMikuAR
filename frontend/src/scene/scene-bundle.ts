@@ -7,7 +7,8 @@ import { feedbackInfo, feedbackStatus } from '../core/feedback';
 import { showInfoToast } from '../core/toast';
 import { t } from '../core/i18n/t';
 import { computeLibraryRef } from '../core/utils';
-import { getBaseName, normPath, deepClone } from '@//core/deep-clone';
+import { getBaseName, normPath } from '@/core/path';
+import { deepClone } from '@/core/deep-clone';
 import {
     serializeScene,
     deserializeScene,
