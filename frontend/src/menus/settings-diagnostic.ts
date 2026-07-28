@@ -933,6 +933,12 @@ function _renderControlHint(): void {
     hint.textContent = t('ai.control.emptyHint');
     wrapper.appendChild(hint);
 
+    // [doc:adr-199 P1-1] 模型能力分级提示：控制模式依赖 function-calling / 稳定 JSON，弱模型易失败。
+    const modelHint = document.createElement('div');
+    modelHint.className = 'diag-control-hint-note';
+    modelHint.textContent = t('ai.control.modelHint');
+    wrapper.appendChild(modelHint);
+
     const catalog = buildToolCatalogText();
     if (catalog) {
         const title = document.createElement('div');

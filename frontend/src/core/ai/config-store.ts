@@ -12,7 +12,16 @@ export interface AiConfig {
     endpoint: string;
     apiKey: string;
     model: string;
+    /** [doc:adr-199 P2-3] 请求超时（毫秒）。本地 Ollama 冷启动可能 10–60s，故可配；缺省 30000。 */
+    timeoutMs: number;
 }
+
+/** [doc:adr-199 P2-3] 超时下限（防误设过小掐断正常请求）。 */
+export const MIN_TIMEOUT_MS = 5000;
+/** 超时上限（防误设导致挂死请求永不释放）。 */
+export const MAX_TIMEOUT_MS = 300000;
+/** 缺省超时。 */
+export const DEFAULT_TIMEOUT_MS = 30000;
 
 export interface ProviderPreset {
     endpoint: string;
@@ -67,6 +76,7 @@ export const DEFAULT_AI_CONFIG: AiConfig = {
     endpoint: PROVIDER_PRESETS.ollama.endpoint,
     apiKey: '',
     model: PROVIDER_PRESETS.ollama.model,
+    timeoutMs: DEFAULT_TIMEOUT_MS,
 };
 
 const CONFIG_STORE: Store = 'config';
@@ -99,7 +109,13 @@ export async function ensureAiConfigLoaded(): Promise<void> {
     await _hydrate();
 }
 
-/** 迁移旧配置：无 provider 字段时按 endpoint 推断，无法推断则回退 ollama。 */
+/** [doc:adr-199 P2-3] 将超时值归一到 [MIN, MAX]；非法/缺失回落缺省。 */
+export function normalizeTimeout(v: unknown): number {
+    const n = typeof v === 'number' && Number.isFinite(v) ? v : DEFAULT_TIMEOUT_MS;
+    return Math.min(MAX_TIMEOUT_MS, Math.max(MIN_TIMEOUT_MS, n));
+}
+
+/** 迁移旧配置：无 provider 字段时按 endpoint 推断，无法推断则回落 ollama。 */
 function migrateAiConfig(stored: Partial<AiConfig>): AiConfig {
     const base = { ...DEFAULT_AI_CONFIG, ...stored };
     if (!base.provider || !PROVIDER_PRESETS[base.provider]) {
@@ -112,6 +128,8 @@ function migrateAiConfig(stored: Partial<AiConfig>): AiConfig {
             );
         base.provider = matched ?? 'custom';
     }
+    // [doc:adr-199 P2-3] 旧配置无 timeoutMs 或值非法时归一
+    base.timeoutMs = normalizeTimeout(base.timeoutMs);
     return base;
 }
 
