@@ -16,6 +16,7 @@ import { logWarn } from '../core/logger';
 import { safeCallAsync } from '../core/safe-call';
 import { safeDispose } from '../core/dispose-helpers';
 import { addDisposableListener, type Disposable } from '../core/dom';
+import { createKeyboardNav } from '../core/ui-keyboard-nav';
 
 /** 菜单过渡时间常量（与 app.css :root --menu-transition-duration 同步） */
 const TRANSITION_DURATION = '0.15s';
@@ -51,8 +52,6 @@ export class SlideMenu {
     private _cachedExtraBtns: HTMLElement[] | null = null;
     /** 记录未决的 RAF reRender，用于去抖 */
     private _reRenderPending = false;
-    /** keydown 监听器引用，供 dispose 清理 */
-    private _keydownHandler: ((e: KeyboardEvent) => void) | null = null;
     /** 触屏滑动手势起始坐标 */
     private _swipeStartX = 0;
     private _swipeStartY = 0;
@@ -133,47 +132,33 @@ export class SlideMenu {
         this.headerEl.className = 'slide-header';
         this.container.appendChild(this.headerEl);
 
-        // 键盘导航
+        // 键盘导航（ADR-153 全大统一：接入 createKeyboardNav 公共工具，
+        // 用 focusIndex 作为焦点真相源，保留 →/Enter 激活、← pop 返回手感）
         this.container.tabIndex = -1;
-        this._keydownHandler = (e) => {
-            if (this.transitioning) {
-                return;
-            }
-            const _inSlider =
-                e.target instanceof HTMLElement &&
-                !!e.target.closest('.cs-slider, .color-slider, .cs-bar, .cs-row, .cs-top');
-            const _inTablist =
-                e.target instanceof HTMLElement && !!e.target.closest('[role="tablist"]');
-            const _onNative =
-                e.target instanceof HTMLElement &&
-                !!e.target.closest('button, input, textarea, select, [contenteditable]');
-
-            switch (e.key) {
-                case 'ArrowDown':
-                    if (_inSlider || _inTablist) return;
-                    e.preventDefault();
-                    this.focusNext();
-                    break;
-                case 'ArrowUp':
-                    if (_inSlider || _inTablist) return;
-                    e.preventDefault();
-                    this.focusPrev();
-                    break;
-                case 'ArrowRight':
-                case 'Enter':
-                case ' ':
-                    if (_onNative || _inTablist || _inSlider) return;
-                    e.preventDefault();
-                    this.activateFocused();
-                    break;
-                case 'ArrowLeft':
-                    if (_onNative || _inTablist || _inSlider) return;
-                    e.preventDefault();
-                    this.pop();
-                    break;
-            }
-        };
-        this._keydownDisp = addDisposableListener(this.container, 'keydown', this._keydownHandler);
+        this._keydownDisp = createKeyboardNav(this.container, {
+            selector: '.slide-item, .collapsible-header',
+            transitioningGuard: () => this.transitioning,
+            // ↑↓（vertical）仅跳 slider/tablist；→←/Enter（horizontal）还要跳原生 button
+            perKeySkip: (target, kind) => {
+                if (!target) return false;
+                if (target.closest('.cs-slider, .color-slider, .cs-bar, .cs-row, .cs-top')) return true;
+                if (target.closest('[role="tablist"]')) return true;
+                if (kind === 'horizontal') {
+                    return !!target.closest('button, input, textarea, select, [contenteditable]');
+                }
+                return false;
+            },
+            // 焦点真相源桥接到 focusIndex + .slide-focused（非原生 :focus）
+            getActiveIndex: () => this.focusIndex,
+            setActiveIndex: (_items, nextIdx) => {
+                this.focusIndex = nextIdx;
+                this.applyFocus();
+            },
+            arrowRightActivate: true, // → = 激活（层级进入）
+            onEnter: () => this.activateFocused(),
+            onArrowBack: () => this.pop(), // ← = 返回上一层级
+            wrap: true,
+        });
 
         // 触屏手势：右滑返回上一层级
         this._swipeStartX = 0;
@@ -684,6 +669,10 @@ export class SlideMenu {
         }
     }
 
+    /**
+     * 程序化焦点后移（循环）。键盘导航已改由 createKeyboardNav 驱动（走 setActiveIndex），
+     * 保留此方法作为程序化 API + 单测契约。
+     */
     private focusPrev(): void {
         const len = this.panelItems.length;
         if (len === 0) {
@@ -693,6 +682,7 @@ export class SlideMenu {
         this.applyFocus();
     }
 
+    /** 程序化焦点前移（循环），同 focusPrev。 */
     private focusNext(): void {
         const len = this.panelItems.length;
         if (len === 0) {
@@ -950,7 +940,6 @@ export class SlideMenu {
         }
         this._keydownDisp?.dispose();
         this._keydownDisp = null;
-        this._keydownHandler = null;
         this._swipeTouchStartDisp?.dispose();
         this._swipeTouchStartDisp = null;
         this._swipeTouchStartHandler = null;
