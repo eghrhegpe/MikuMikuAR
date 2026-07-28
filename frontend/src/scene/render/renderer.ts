@@ -556,6 +556,9 @@ uniform float intensity;      // 阴影强度 0-1
 uniform float nearZ;
 uniform float farZ;
 uniform float tanHalfFov;     // tan(camera.fov / 2)，用于视图空间↔屏幕空间变换
+uniform mat4 invView;         // 逆视图矩阵：视图坐标 → 世界坐标（近地 mask 用）
+uniform float groundLevel;    // 世界地面高度
+uniform float viewForwardZ;   // 相机前向与世界光方向的对齐度（对准光源降权）
 
 varying vec2 vUV;
 
@@ -579,7 +582,21 @@ vec3 viewPosFromDepth(vec2 uv, float depth) {
 float contactShadow(vec2 uv, float depth) {
     vec3 viewPos = viewPosFromDepth(uv, depth);
 
-    // 光线步进方向与步长
+    // 以世界为参系：还原当前像素的世界坐标，仅对近地几何生效。
+    // 天空盒/太阳圆盘/光锥世界 Y 远高于地面 → mask 为 0 → 不压暗，
+    // 从根上消除旧方案“全屏无差别压暗”导致的对准太阳变灰。
+    vec4 worldPos = invView * vec4(viewPos, 1.0);
+    float heightAboveGround = worldPos.y - groundLevel;
+    // 近地带：地面上方 8 世界单位内线性淑出，超过即不参与接触阴影。
+    float groundMask = 1.0 - smoothstep(0.0, 8.0, max(0.0, heightAboveGround));
+    if (groundMask < 0.01) return 1.0;
+
+    // 对准光源降权：相机前向与世界光方向越平行（viewForwardZ→1），
+    // 屏幕空间 march 越退化为沿视线，易误判 → 降低阴影权重。
+    float alignFade = 1.0 - clamp(abs(viewForwardZ), 0.0, 1.0);
+    if (alignFade < 0.01) return 1.0;
+
+    // 光线步进方向与步长（视图空间）
     float stepLen = shadowDistance / 16.0;
     vec3 rayStep = normalize(lightDirVS) * stepLen;
     vec3 rayPos = viewPos;
@@ -607,7 +624,8 @@ float contactShadow(vec2 uv, float depth) {
             shadow += 1.0 / 16.0;
         }
     }
-    return 1.0 - shadow * intensity;
+    // 近地 mask 与对准光源降权双重约束，避免误伤非地面几何与正对太阳时的全屏压暗。
+    return 1.0 - shadow * intensity * groundMask * alignFade;
 }
 
 void main(void) {
@@ -781,6 +799,16 @@ export function setContactShadow(state: EnvState): void {
             const vlz =
                 viewMat.m[2] * lightDir.x + viewMat.m[6] * lightDir.y + viewMat.m[10] * lightDir.z;
             effect.setVector3('lightDirVS', { x: vlx, y: vly, z: vlz });
+            // 逆视图矩阵：供 shader 将视图坐标还原为世界坐标，做近地 mask。
+            effect.setMatrix('invView', viewMat.clone().invert());
+            effect.setFloat('groundLevel', state.groundLevel);
+            // 相机前向（世界）= 视图矩阵第三行反向；与世界光方向点乘得对齐度。
+            // 越接近 ±1 表示越正对/背对太阳，用于对准光源降权。
+            const fwdX = -viewMat.m[2];
+            const fwdY = -viewMat.m[6];
+            const fwdZ = -viewMat.m[10];
+            const viewForwardZ = fwdX * lightDir.x + fwdY * lightDir.y + fwdZ * lightDir.z;
+            effect.setFloat('viewForwardZ', viewForwardZ);
             effect.setFloat('shadowDistance', state.groundContactShadowDistance);
             effect.setFloat('intensity', state.groundContactShadowIntensity);
             effect.setFloat('nearZ', camera.minZ);
@@ -802,6 +830,9 @@ export function setContactShadow(state: EnvState): void {
                         'nearZ',
                         'farZ',
                         'tanHalfFov',
+                        'invView',
+                        'groundLevel',
+                        'viewForwardZ',
                     ],
                     ['depthSampler'],
                     1.0, // scaling
