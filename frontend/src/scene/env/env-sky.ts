@@ -229,13 +229,16 @@ function createProceduralSky(state: EnvState): void {
     sphere.material = mat;
     _envSys.sky.skyMesh = sphere;
 
-    // 跟随相机，与云层同心（同 center），确保深度测试正确
+    // 跟随相机，与云层同心（同 center），确保深度测试正确。
+    // Y 也跟随：天空盒是钉在眼球上的无限远背景，仅跟 X/Z 时相机抬升/远离
+    // 会越过有限球壳边界，露出 clearColor 灰底（俯视天顶 / 转身）。
     _skyFollowHandle = observe(scene.onBeforeRenderObservable, () => {
         const cam = scene.activeCamera;
         if (!cam) {
             return;
         }
         sphere.position.x = cam.position.x;
+        sphere.position.y = cam.position.y;
         sphere.position.z = cam.position.z;
     });
 
@@ -355,13 +358,15 @@ function loadSkyCube(path: string, rotationY: number, intensity: number): void {
     sphere.material = mat;
     _envSys.sky.skyMesh = sphere;
 
-    // 跟随相机，与云层同心（同 center），确保深度测试正确
+    // 跟随相机，与云层同心（同 center），确保深度测试正确。
+    // Y 同步跟随（见 procedural 分支说明），避免高空/远离原点时露灰底。
     _skyFollowHandle = observe(scene.onBeforeRenderObservable, () => {
         const cam = scene.activeCamera;
         if (!cam) {
             return;
         }
         sphere.position.x = cam.position.x;
+        sphere.position.y = cam.position.y;
         sphere.position.z = cam.position.z;
     });
 }

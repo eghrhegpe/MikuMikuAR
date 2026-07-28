@@ -656,7 +656,10 @@ export function createClouds(state: EnvState): void {
         if (!cam) {
             return;
         }
+        // Y 也跟随，与天空盒保持完全同心（相机抬升/远离时不被甲壳边界剪掉）。
+        // 云高度由 shader 的世界坐标 cloudBaseY/cloudTopY 决定，与球心无关，故不漂移。
         mesh.position.x = cam.position.x;
+        mesh.position.y = cam.position.y;
         mesh.position.z = cam.position.z;
     });
 

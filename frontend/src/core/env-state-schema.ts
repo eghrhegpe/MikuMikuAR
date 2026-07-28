@@ -121,8 +121,9 @@ export const ENV_STATE_SCHEMA = {
     groundMetallic: { type: 'number', default: 0.0, group: 'ground' },
     groundReflectionBlur: { type: 'number', default: 0.0, group: 'ground' },
     groundReflectionDistort: { type: 'number', default: 0.3, group: 'ground' },
-    // ADR-114 契合度修复：默认开启，配合 qualityOk 守卫（low/off 仍自动禁用），medium+ 即获得落地感
-    groundContactShadowEnabled: { type: 'boolean', default: true, group: 'ground' },
+    // 默认关闭：旧屏幕空间方案对准太阳会全屏变灰；shader 已改为世界参系+近地 mask，
+    // 但默认保守关闭，避免新用户/默认场景意外遭遇阴影；cel-shading 运行时仍按需临时开启。
+    groundContactShadowEnabled: { type: 'boolean', default: false, group: 'ground' },
     groundContactShadowIntensity: { type: 'number', default: 0.5, group: 'ground' },
     groundContactShadowDistance: { type: 'number', default: 0.5, group: 'ground' },
     groundLevel: { type: 'number', default: 0, group: 'ground' },

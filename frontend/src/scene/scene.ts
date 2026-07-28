@@ -528,7 +528,10 @@ function _initModelManager(
         );
     };
     setModelRegistry(modelManager.modelRegistry);
-    setTriggerAutoSave(triggerAutoSave);
+    // 必须注册真实实现 triggerAutoSaveImpl（scene-serialize 内的防抖存盘），
+    // 而非 @/core/utils 的 triggerAutoSave 包装器本身——后者会令 _triggerAutoSaveImpl
+    // 指回包装器自身，触发无限自递归（Maximum call stack size exceeded）。
+    setTriggerAutoSave(triggerAutoSaveImpl);
 }
 
 /** 注入模型生命周期回调（聚焦 / 加载完成）。 */
