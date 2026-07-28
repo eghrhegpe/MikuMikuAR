@@ -1,26 +1,32 @@
 /**
  * ADR-153 Phase 3: 键盘导航公共工具
  *
- * 从 menu.ts / ui-fullscreen-overlay.ts 抽取共享的 Arrow 键 + Enter 列表导航逻辑。
- * 支持 focusable 元素选择器 + 循环 wrap + Enter 激活 + Escape 回调。
+ * 统一 Arrow 键 + Enter/Space + Escape 列表导航。
+ * 被 `menu.ts`（CSS-highlight 模型）和 `settings-diagnostic.ts`（tablist）等使用。
  */
 import { addDisposableListener, type Disposable } from './dom';
 
 export interface KeyboardNavOptions {
     /** 容器内可聚焦元素的选择器，默认 '[tabindex]' */
     selector?: string;
-    /** Enter 激活回调，默认触发 click() */
+    /** Enter/Space 激活回调，默认触发 click() */
     onEnter?: (el: HTMLElement) => void;
     /** Escape 回调 */
     onEscape?: () => void;
+    /** ArrowLeft 返回回调（菜单返回用） */
+    onArrowBack?: () => void;
+    /** 每次箭头键移动焦点后触发（tablist 用） */
+    onArrowActivate?: (el: HTMLElement) => void;
+    /** 跳过选择器：焦点在此类元素内时箭头键不触发导航 */
+    skipSelector?: string;
+    /** 过渡锁：为 true 时所有键盘操作被忽略 */
+    transitioningGuard?: () => boolean;
     /** 是否循环 wrap（默认 true） */
     wrap?: boolean;
+    /** roving tabindex：箭头移动后设置新元素 tabIndex=0、旧元素 tabIndex=-1 */
+    rovingTabIndex?: boolean;
 }
 
-/**
- * 创建列表键盘导航监听器。
- * @returns Disposable，调用 `.dispose()` 移除监听
- */
 export function createKeyboardNav(
     container: HTMLElement,
     options: KeyboardNavOptions = {}
@@ -29,10 +35,13 @@ export function createKeyboardNav(
     const wrap = options.wrap !== false;
 
     const handler = (e: KeyboardEvent) => {
+        if (options.transitioningGuard?.()) return;
+
+        const target = e.target instanceof HTMLElement ? e.target : null;
+        if (target && options.skipSelector && target.closest(options.skipSelector)) return;
+
         const items = container.querySelectorAll<HTMLElement>(selector);
-        if (items.length === 0) {
-            return;
-        }
+        if (items.length === 0) return;
 
         const focused = container.querySelector<HTMLElement>(`${selector}:focus`);
         const idx = focused ? Array.from(items).indexOf(focused) : -1;
@@ -42,17 +51,23 @@ export function createKeyboardNav(
             case 'ArrowRight': {
                 e.preventDefault();
                 const next = wrap ? (idx + 1) % items.length : Math.min(idx + 1, items.length - 1);
-                items[next].focus();
+                _moveFocus(items, idx, next, options);
                 break;
             }
             case 'ArrowUp':
             case 'ArrowLeft': {
+                if (e.key === 'ArrowLeft' && options.onArrowBack) {
+                    e.preventDefault();
+                    options.onArrowBack();
+                    break;
+                }
                 e.preventDefault();
                 const prev = wrap ? (idx - 1 + items.length) % items.length : Math.max(idx - 1, 0);
-                items[prev].focus();
+                _moveFocus(items, idx, prev, options);
                 break;
             }
-            case 'Enter': {
+            case 'Enter':
+            case ' ': {
                 if (focused) {
                     e.preventDefault();
                     if (options.onEnter) {
@@ -74,4 +89,20 @@ export function createKeyboardNav(
     };
 
     return addDisposableListener(container, 'keydown', handler);
+}
+
+function _moveFocus(
+    items: NodeListOf<HTMLElement>,
+    prevIdx: number,
+    nextIdx: number,
+    options: KeyboardNavOptions
+): void {
+    if (options.rovingTabIndex && prevIdx >= 0) {
+        items[prevIdx].tabIndex = -1;
+    }
+    items[nextIdx].focus();
+    if (options.rovingTabIndex) {
+        items[nextIdx].tabIndex = 0;
+    }
+    options.onArrowActivate?.(items[nextIdx]);
 }

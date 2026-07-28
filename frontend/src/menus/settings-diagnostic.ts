@@ -28,6 +28,7 @@ import type { PopupLevel } from '../core/config';
 import type { SettingsMenuHandle } from './settings-shared';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
+import { createKeyboardNav } from '../core/ui-keyboard-nav';
 import { buildToolCatalogText, buildToolSchemas } from '../core/ai/action-catalog';
 import { executeAction, parseActionFromLLM } from '../core/ai/intent-dispatcher';
 import { getAction } from '../core/action-registry';
@@ -438,58 +439,21 @@ function _selectTab(
 ): void {
     _mode = mode;
     _refreshModeUI(...btns);
-    if (mode === 'control') {
-        _ensureControlActions();
-    }
+    if (mode === 'control') _ensureControlActions();
 }
 
-function _buildTab(mode: 'diagnostic' | 'chat' | 'control'): HTMLButtonElement {
+function _buildTab(
+    mode: 'diagnostic' | 'chat' | 'control',
+    btns: [HTMLButtonElement, HTMLButtonElement, HTMLButtonElement]
+): HTMLButtonElement {
     const labelKey =
-        mode === 'diagnostic'
-            ? 'ai.mode.diagnostic'
-            : mode === 'chat'
-              ? 'ai.mode.chat'
-              : 'ai.mode.control';
+        mode === 'diagnostic' ? 'ai.mode.diagnostic' : mode === 'chat' ? 'ai.mode.chat' : 'ai.mode.control';
     const btn = document.createElement('button');
     btn.setAttribute('role', 'tab');
     btn.textContent = t(labelKey);
     btn.className = 'mode-btn' + (_mode === mode ? ' active' : '');
-    return btn;
-}
-
-function _attachTabBehavior(
-    mode: 'diagnostic' | 'chat' | 'control',
-    btn: HTMLButtonElement,
-    btns: [HTMLButtonElement, HTMLButtonElement, HTMLButtonElement]
-): void {
     btn.addEventListener('click', () => _selectTab(mode, btns));
-    btn.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            _selectTab(mode, btns);
-        }
-    });
-}
-
-function _onTablistKeydown(
-    e: KeyboardEvent,
-    btns: [HTMLButtonElement, HTMLButtonElement, HTMLButtonElement]
-): void {
-    let idx = btns.findIndex((b) => b === document.activeElement);
-    if (idx < 0) {
-        return;
-    }
-    if (e.key === 'ArrowRight') {
-        idx = (idx + 1) % btns.length;
-    } else if (e.key === 'ArrowLeft') {
-        idx = (idx + btns.length - 1) % btns.length;
-    } else {
-        return;
-    }
-    e.preventDefault();
-    const modes: ['diagnostic', 'chat', 'control'] = ['diagnostic', 'chat', 'control'];
-    _selectTab(modes[idx], btns);
-    btns[idx].focus();
+    return btn;
 }
 
 function buildModeSwitchSchema(): MenuNode[] {
@@ -502,22 +466,32 @@ function buildModeSwitchSchema(): MenuNode[] {
                 group.setAttribute('role', 'tablist');
                 group.className = 'diag-mode-row';
 
-                const diagBtn = _buildTab('diagnostic');
-                const chatBtn = _buildTab('chat');
-                const ctrlBtn = _buildTab('control');
-                const btns: [HTMLButtonElement, HTMLButtonElement, HTMLButtonElement] = [
-                    diagBtn,
-                    chatBtn,
-                    ctrlBtn,
-                ];
-                _attachTabBehavior('diagnostic', diagBtn, btns);
-                _attachTabBehavior('chat', chatBtn, btns);
-                _attachTabBehavior('control', ctrlBtn, btns);
-                group.addEventListener('keydown', (e) => _onTablistKeydown(e, btns));
+                const btns = [null, null, null] as unknown as [HTMLButtonElement, HTMLButtonElement, HTMLButtonElement];
+                btns[0] = _buildTab('diagnostic', btns);
+                btns[1] = _buildTab('chat', btns);
+                btns[2] = _buildTab('control', btns);
 
-                for (const btn of btns) {
-                    group.appendChild(btn);
-                }
+                createKeyboardNav(group, {
+                    selector: 'button[role="tab"]',
+                    onEnter: (el) => {
+                        const idx = btns.indexOf(el as HTMLButtonElement);
+                        if (idx >= 0) {
+                            const modes = ['diagnostic', 'chat', 'control'] as const;
+                            _selectTab(modes[idx], btns);
+                        }
+                    },
+                    onArrowActivate: (el) => {
+                        const idx = btns.indexOf(el as HTMLButtonElement);
+                        if (idx >= 0) {
+                            const modes = ['diagnostic', 'chat', 'control'] as const;
+                            _selectTab(modes[idx], btns);
+                        }
+                    },
+                    rovingTabIndex: true,
+                    wrap: true,
+                });
+
+                for (const btn of btns) group.appendChild(btn);
                 c.appendChild(group);
             },
         },
