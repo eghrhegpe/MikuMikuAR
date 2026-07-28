@@ -7,7 +7,7 @@ import { feedbackInfo } from '../feedback';
 export function registerLibraryActions(): void {
     registerAction({
         id: 'library:rescan',
-        label: '重新扫描模型库',
+        label: 'ai.actions.library.rescan',
         domain: 'library',
         params: [],
         destructive: false,
@@ -17,7 +17,7 @@ export function registerLibraryActions(): void {
     });
     registerAction({
         id: 'library:import-file',
-        label: '导入模型文件',
+        label: 'ai.actions.library.importFile',
         domain: 'library',
         params: [],
         destructive: false,
@@ -27,7 +27,7 @@ export function registerLibraryActions(): void {
     });
     registerAction({
         id: 'library:set-formation',
-        label: '设置队形',
+        label: 'ai.actions.library.setFormation',
         domain: 'library',
         params: [
             {

@@ -1,6 +1,7 @@
 # ADR-192: 上游适配层重构（MmdAdapter）
 
 > **状态**: 已立项 · Phase 2 已完成（2026-07-27 — 条目 3 用公开 API 真正内化、条目 9 经调研确认能力内化不可行改为守卫式反射；tsc 零错误，契约测试 13 + wind-physics 1 + audio 48 全绿）
+> **⚠️ 条目 3 后续勘误（ADR-200）**: 条目 3 将 `getRigidBodyBundleMap` 改为读公开 `rigidBodyBundleReferenceCountMap` 属性正确，但隐含假设「该 map 含模型自带刚体」是错的——模型 PMX 刚体走 buildPhysics 在 WASM C++ 侧独立构建，从不进此 map。详见 ADR-200。
 > **日期**: 2026-07-27（初版）
 > **关联**: ADR-110（上游差异登记册，已转为永久自治台账）、ADR-186（bone-override-frame-timing）、ADR-187（babylon-mmd 剩余 API 分析）、`docs/upstream/babylon-mmd-compatibility.md`（23 处应对清单 + 逆向审计）
 > **来源**: 上游 PR #94/#95/#96 全关后战略转「永久自治下游」；`compatibility.md` 逆向审计识别出 4 处仅缓解、未根治的应对

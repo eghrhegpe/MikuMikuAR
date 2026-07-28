@@ -6,7 +6,7 @@ import { feedbackStatus, feedbackInfo } from '../feedback';
 export function registerSceneActions(): void {
     registerAction({
         id: 'screenshot:current',
-        label: '截图当前模型',
+        label: 'ai.actions.scene.screenshotCurrent',
         domain: 'scene',
         icon: 'lucide:camera',
         params: [],
@@ -18,7 +18,7 @@ export function registerSceneActions(): void {
 
     registerAction({
         id: 'screenshot:batch',
-        label: '批量截图',
+        label: 'ai.actions.scene.screenshotBatch',
         domain: 'scene',
         icon: 'lucide:camera',
         params: [],
@@ -30,7 +30,7 @@ export function registerSceneActions(): void {
 
     registerAction({
         id: 'scene:save',
-        label: '保存场景预设',
+        label: 'ai.actions.scene.save',
         domain: 'scene',
         icon: 'lucide:save',
         params: [],
@@ -42,7 +42,7 @@ export function registerSceneActions(): void {
 
     registerAction({
         id: 'scene:undo',
-        label: '撤销操作',
+        label: 'ai.actions.scene.undo',
         domain: 'scene',
         icon: 'lucide:undo-2',
         params: [],
