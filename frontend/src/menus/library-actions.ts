@@ -682,7 +682,9 @@ function loadLibraryModel(name: string, isStage?: boolean): boolean {
     const model = allModels.find((m) =>
         getBaseName(m.file_path).toLowerCase().includes(name.toLowerCase())
     );
-    if (!model) return false;
+    if (!model) {
+        return false;
+    }
     onModelRowClick(model);
     return true;
 }
@@ -694,7 +696,9 @@ function loadLibraryMotion(name: string): boolean {
             m.format === 'vmd' &&
             getBaseName(m.file_path).toLowerCase().includes(name.toLowerCase())
     );
-    if (!model) return false;
+    if (!model) {
+        return false;
+    }
     replaceMotion(model);
     return true;
 }

@@ -59,7 +59,9 @@ export function buildToolSchemas(): ToolSchema[] {
 
 export function buildToolCatalogText(): string {
     const actions = listActions();
-    if (actions.length === 0) return '';
+    if (actions.length === 0) {
+        return '';
+    }
     const lines: string[] = ['可用工具（仅以下操作支持）：'];
     for (const a of actions) {
         const paramsDesc = a.params.map((p) => {

@@ -13,7 +13,9 @@ import { normPath } from './path';
 let _cachedBackend: Promise<BackendService> | null = null;
 /** 惰性缓存 resolveBackend 结果（避免每请求重路由）。 */
 function getBackend(): Promise<BackendService> {
-    if (!_cachedBackend) _cachedBackend = resolveBackend();
+    if (!_cachedBackend) {
+        _cachedBackend = resolveBackend();
+    }
     return _cachedBackend;
 }
 
@@ -63,8 +65,9 @@ export async function resolveFileUrl(
     // `backend.kind === 'browser'` 为保底：避免带 COOP/COEP 的网页部署误判 crossOriginIsolated=true 而走 http 崩溃。
     if (backend.kind === 'browser' || !getCachedCapabilities().crossOriginIsolated) {
         const bytes = await backend.readFileBytes(safeDir + '/' + fileName);
-        if (!bytes)
+        if (!bytes) {
             throw new Error(`[fileservice] readFileBytes failed for ${safeDir}/${fileName}`);
+        }
         const blobUrl = URL.createObjectURL(
             new Blob([bytes as BlobPart], { type: 'application/octet-stream' })
         );

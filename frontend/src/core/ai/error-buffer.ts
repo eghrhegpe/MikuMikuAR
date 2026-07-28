@@ -44,7 +44,9 @@ export class ErrorRingBuffer {
     }
 
     get newest(): ErrorEntry | undefined {
-        if (this._count === 0) return undefined;
+        if (this._count === 0) {
+            return undefined;
+        }
         const tail = (this._head + this._count - 1) % this.capacity;
         return this._buffer[tail];
     }
@@ -98,7 +100,9 @@ export function captureError(
         entry.stack = err.stack;
     } else if (err && typeof err === 'object') {
         const obj = err as Record<string, unknown>;
-        if (typeof obj.name === 'string') entry.name = obj.name;
+        if (typeof obj.name === 'string') {
+            entry.name = obj.name;
+        }
         if (typeof obj.stack === 'string') {
             entry.stack = obj.stack;
         }
@@ -125,8 +129,12 @@ let _origConsoleError: typeof console.error | null = null;
 let _loggingPatched = false;
 
 function _stringifyArg(a: unknown): string {
-    if (typeof a === 'string') return a;
-    if (a instanceof Error) return `${a.name}: ${a.message}`;
+    if (typeof a === 'string') {
+        return a;
+    }
+    if (a instanceof Error) {
+        return `${a.name}: ${a.message}`;
+    }
     try {
         return JSON.stringify(a);
     } catch {
@@ -164,7 +172,9 @@ function _captureConsoleError(args: unknown[]): void {
  * 重复调用不双重包装（_loggingPatched 守卫）。
  */
 export function installLoggingPatch(): void {
-    if (_loggingPatched) return;
+    if (_loggingPatched) {
+        return;
+    }
     _loggingPatched = true;
     _origConsoleError = console.error.bind(console);
     const patched: typeof console.error = (...args: unknown[]) => {
@@ -185,7 +195,9 @@ export function installLoggingPatch(): void {
 
 /** 卸载 console.error 补丁，恢复原始实现。 */
 export function uninstallLoggingPatch(): void {
-    if (!_loggingPatched) return;
+    if (!_loggingPatched) {
+        return;
+    }
     if (_origConsoleError) {
         console.error = _origConsoleError;
     }
@@ -243,7 +255,9 @@ export function installErrorCaptureOn(
 }
 
 export function installGlobalErrorCapture(): () => void {
-    if (_globalDisposer) return _globalDisposer;
+    if (_globalDisposer) {
+        return _globalDisposer;
+    }
 
     let originalDisposer: () => void;
     if (typeof globalThis !== 'undefined') {
@@ -267,7 +281,9 @@ export function installGlobalErrorCapture(): () => void {
 
 export function toDiagnosticContext(options?: { maxBytes?: number }): string {
     const entries = errorBuffer.toArray();
-    if (entries.length === 0) return '(无捕获错误)';
+    if (entries.length === 0) {
+        return '(无捕获错误)';
+    }
 
     const maxBytes = options?.maxBytes ?? 4096;
     const lines: string[] = [];

@@ -89,7 +89,9 @@ export function registerAppShortcuts(): void {
             defaultCtrl: true,
             prevent: true,
             handler: () => {
-                if (!getCachedCapabilities().ar) return;
+                if (!getCachedCapabilities().ar) {
+                    return;
+                }
                 const currentMode = getCameraMode();
                 if (currentMode === 'ar') {
                     switchCameraMode('orbit');

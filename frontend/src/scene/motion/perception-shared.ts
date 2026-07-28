@@ -448,7 +448,7 @@ export class PerceptionPerfMonitor {
 // ── Gaze 收敛日志（调试用，窗口设 window.__GAZE_LOG = true 启用） ──
 
 let _gazeLogFrame = 0;
-let _gazeLogEnabled = false;
+const _gazeLogEnabled = false;
 
 export function _incGazeLogFrame(): void {
     _gazeLogFrame++;

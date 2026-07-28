@@ -119,7 +119,9 @@ function createHandModuleFactory(cfg: HandSideConfig) {
         // ── bake：手腕旋转 + 手指姿势 ──
         function bake(modelId: string): void {
             const prep = prepareBake(modelId, cfg.moduleId, managedBones);
-            if (!prep) return;
+            if (!prep) {
+                return;
+            }
             const { state, claimed } = prep;
 
             // 手腕旋转
@@ -154,22 +156,32 @@ function createHandModuleFactory(cfg: HandSideConfig) {
 
         // ── 帧钩子：手臂位置偏移（FK 父根骨平移 / IK 重解）──
         function ensureActive(modelId: string): void {
-            if (_handFrameHooks.has(modelId)) return;
+            if (_handFrameHooks.has(modelId)) {
+                return;
+            }
             bake(modelId);
 
             const unregister = registerBoneOverrideFrameHook(
                 (_t, mid) => {
-                    if (mid !== modelId) return;
+                    if (mid !== modelId) {
+                        return;
+                    }
                     const st = getModuleState(modelId, cfg.moduleId);
-                    if (!st.enabled) return;
+                    if (!st.enabled) {
+                        return;
+                    }
                     const inst = modelRegistry.get(modelId);
                     const bones = inst?.mmdModel?.runtimeBones;
-                    if (!bones?.length) return;
+                    if (!bones?.length) {
+                        return;
+                    }
 
                     const hx = (st.params.handPosX as number) ?? 0;
                     const hy = (st.params.handPosY as number) ?? 0;
                     const hz = (st.params.handPosZ as number) ?? 0;
-                    if (hx === 0 && hy === 0 && hz === 0) return;
+                    if (hx === 0 && hy === 0 && hz === 0) {
+                        return;
+                    }
 
                     const cache = _getArmIkCache(modelId);
                     const ikCandidates =

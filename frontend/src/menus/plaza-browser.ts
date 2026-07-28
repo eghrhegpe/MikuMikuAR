@@ -163,9 +163,13 @@ export async function loadPlazaCache(): Promise<{
 } | null> {
     try {
         const raw = await ReadTextFile(PLAZA_CACHE_PATH);
-        if (!raw) return null;
+        if (!raw) {
+            return null;
+        }
         const parsed = JSON.parse(raw) as PlazaCache;
-        if (!parsed.sites?.length && !parsed.creators?.length) return null;
+        if (!parsed.sites?.length && !parsed.creators?.length) {
+            return null;
+        }
         return {
             sites: (parsed.sites?.map(normalizeSite).filter(Boolean) as PlazaSite[]) ?? [],
             creators:

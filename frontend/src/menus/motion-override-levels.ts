@@ -601,7 +601,9 @@ function buildBoneOverrideSchema(): MenuNode[] {
                     // [doc:timing T1 fix] 实时预览：拖拽滑块时立即写入 _overrideMaps，下一帧 3D 反映。
                     // 不在此触发 autoSave/sync（由 Apply 按钮统一收尾），避免每帧磁盘写入。
                     const _livePreview = (): void => {
-                        if (!formState.boneName) return;
+                        if (!formState.boneName) {
+                            return;
+                        }
                         setBoneOverride(
                             formState.boneName,
                             [formState.pitch, formState.yaw, formState.roll],

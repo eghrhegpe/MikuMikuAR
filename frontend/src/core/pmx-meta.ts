@@ -22,30 +22,40 @@ export function parsePmxComment(bytes: Uint8Array): string {
 
 function _parsePmxCommentUnsafe(bytes: Uint8Array): string {
     // PMX 格式：signature(4) + version(4 float32) + globalsCount(1) + flags(N) + text段×4
-    if (bytes.length < 9) return '';
+    if (bytes.length < 9) {
+        return '';
+    }
 
     // 检查签名 "PMX "
     const sig = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]);
-    if (sig !== 'PMX ') return '';
+    if (sig !== 'PMX ') {
+        return '';
+    }
 
     let offset = 8; // 跳过 signature(4) + version(4)
     const globalsCount = bytes[offset];
     offset++;
-    if (offset + globalsCount > bytes.length) return '';
+    if (offset + globalsCount > bytes.length) {
+        return '';
+    }
 
     const encoding = bytes[offset]; // 0=UTF-16LE, 1=UTF-8
     offset += globalsCount;
 
     // 读取四个文本段，只取第三个（CommentJp, index=2）
     for (let i = 0; i < 4; i++) {
-        if (offset + 4 > bytes.length) return '';
+        if (offset + 4 > bytes.length) {
+            return '';
+        }
         const textLen =
             (bytes[offset + 3] << 24) |
             (bytes[offset + 2] << 16) |
             (bytes[offset + 1] << 8) |
             bytes[offset];
         offset += 4;
-        if (textLen < 0 || offset + textLen > bytes.length) return '';
+        if (textLen < 0 || offset + textLen > bytes.length) {
+            return '';
+        }
 
         if (i === 2) {
             // CommentJp
@@ -61,7 +71,9 @@ function _parsePmxCommentUnsafe(bytes: Uint8Array): string {
 }
 
 function decodeUTF16LE(bytes: Uint8Array): string {
-    if (bytes.length % 2 !== 0) return '';
+    if (bytes.length % 2 !== 0) {
+        return '';
+    }
     const codeUnits: number[] = [];
     for (let i = 0; i < bytes.length; i += 2) {
         codeUnits.push(bytes[i] | (bytes[i + 1] << 8));

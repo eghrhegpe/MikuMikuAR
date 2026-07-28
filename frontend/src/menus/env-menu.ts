@@ -60,7 +60,9 @@ export { getEnvMenu, refreshEnvRoot, showEnvMenu };
 
 // [doc:P4] 加载模型后刷新根菜单 items（使模型依赖列表、纹理库等即时更新）
 const _unregisterLoadRefresh = registerLoadRefreshHook(() => {
-    if (getEnvMenu()) refreshEnvRoot();
+    if (getEnvMenu()) {
+        refreshEnvRoot();
+    }
 });
 
 // 库扫描完成时刷新菜单（通过注册表统一监听，替代独立 addDisposableListener）

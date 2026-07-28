@@ -57,7 +57,9 @@ export function formatSceneSnapshot(d: SceneSnapshotData): string {
 
 /** 采集当前场景快照文本；未初始化时返回占位符。 */
 export function captureSceneSnapshot(): string {
-    if (!_bridge) return '(场景未初始化)';
+    if (!_bridge) {
+        return '(场景未初始化)';
+    }
     const data: SceneSnapshotData = {
         fps: _bridge.getFps(),
         modelCount: _bridge.getModelCount(),

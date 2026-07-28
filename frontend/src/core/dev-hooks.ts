@@ -20,7 +20,7 @@ export function setupE2ECapture(): void {
     // 用法：在控制台调用 window.__dumpBones() 获取当前模型的骨骼层级 JSON
     (window as unknown as Record<string, unknown>).__dumpBones = (): unknown => {
         // 动态导入避免循环依赖 + 仅在需要时加载
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         return import('../scene/motion/bone-override').then((m) => {
             const dump = m.dumpBoneHierarchy();
             if (!dump) {
@@ -153,7 +153,9 @@ export function setupE2ECapture(): void {
         /** WASM 物理刚体 Bundle 数（0 = 物理未运行或 JS 运行时） */
         get rigidBodyBundleCount(): number {
             const rt = mmdRuntime;
-            if (!rt) return 0;
+            if (!rt) {
+                return 0;
+            }
             const physics = (
                 rt as unknown as {
                     physics?: {
@@ -181,7 +183,9 @@ export function setupE2ECapture(): void {
             boneNames: string[]
         ): Record<string, { x: number; y: number; z: number } | null> => {
             const inst = focusedModel();
-            if (!inst?.mmdModel?.runtimeBones) return {};
+            if (!inst?.mmdModel?.runtimeBones) {
+                return {};
+            }
             const bones = inst.mmdModel.runtimeBones;
             const result: Record<string, { x: number; y: number; z: number } | null> = {};
             for (const name of boneNames) {

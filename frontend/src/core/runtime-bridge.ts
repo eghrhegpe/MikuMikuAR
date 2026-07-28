@@ -83,7 +83,9 @@ class WailsRuntimeBridge implements RuntimeBridge {
     private _unsubscribers: Unsubscribe[] = [];
 
     private async _load(): Promise<void> {
-        if (this._events) return;
+        if (this._events) {
+            return;
+        }
         const rt = await import('@wailsio/runtime');
         this._events = {
             on: (name: string, cb: EventCallback): Unsubscribe => {
@@ -156,7 +158,9 @@ let _bridge: RuntimeBridge | null = null;
 let _wailsBridge: WailsRuntimeBridge | null = null;
 
 export function getRuntimeBridge(): RuntimeBridge {
-    if (_bridge) return _bridge;
+    if (_bridge) {
+        return _bridge;
+    }
     if (isWebPlatform()) {
         _bridge = new WebRuntimeBridge();
     } else {

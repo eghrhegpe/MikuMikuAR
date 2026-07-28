@@ -53,7 +53,9 @@ function createInitialSceneSnapshot(): MmarSceneSnapshot {
 
 /** 幂等地确保 window.__mmar 就绪，返回已就绪的实例（消除对 `!` 断言的依赖）。 */
 function ensureMmar(): MmarGlobal {
-    if (window.__mmar) return window.__mmar;
+    if (window.__mmar) {
+        return window.__mmar;
+    }
     window.__mmar = {
         status: createInitialStatus(),
         scene: createInitialSceneSnapshot(),
@@ -96,7 +98,9 @@ export async function refreshSceneSnapshot(): Promise<void> {
     const engine = m.engine;
     const scene = m.scene;
     const modelManager = m.modelManager;
-    if (!engine || !scene) return;
+    if (!engine || !scene) {
+        return;
+    }
 
     const snapshot: MmarSceneSnapshot = {
         fps: Math.round(engine.getFps()),
@@ -140,7 +144,9 @@ export async function refreshSceneSnapshot(): Promise<void> {
     try {
         const { focusedModel } = await import('../scene/manager/model-ops');
         const model = focusedModel();
-        if (model) snapshot.activeModel = model.name;
+        if (model) {
+            snapshot.activeModel = model.name;
+        }
     } catch {
         // model-ops 未初始化
     }
@@ -149,7 +155,9 @@ export async function refreshSceneSnapshot(): Promise<void> {
     try {
         const { getActiveMotion } = await import('../scene/motion/motion-intent');
         const motion = getActiveMotion();
-        if (motion) snapshot.activeMotion = motion.vmdName;
+        if (motion) {
+            snapshot.activeMotion = motion.vmdName;
+        }
     } catch {
         // motion-intent 未初始化
     }
@@ -163,7 +171,9 @@ let _snapshotTimer: ReturnType<typeof setInterval> | null = null;
 
 /** 启动周期快照刷新；重复调用安全（仅注册一个 timer）。 */
 export function startSceneSnapshotPolling(intervalMs = 1000): void {
-    if (_snapshotTimer !== null) return;
+    if (_snapshotTimer !== null) {
+        return;
+    }
     _snapshotTimer = setInterval(() => {
         void refreshSceneSnapshot();
     }, intervalMs);

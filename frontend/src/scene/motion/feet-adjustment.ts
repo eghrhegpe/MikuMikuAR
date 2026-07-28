@@ -494,7 +494,7 @@ export function startFeetAdjustment(getModels: FeetModelProvider): void {
                 // 启动诊断：始终输出，不论 debug 开关
                 const lMatchResult = cache.lName ?? '<null>';
                 const rMatchResult = cache.rName ?? '<null>';
-                let centerYStr = cache.centerY !== null ? cache.centerY.toFixed(3) : '?';
+                const centerYStr = cache.centerY !== null ? cache.centerY.toFixed(3) : '?';
                 logWarn(
                     'feet',
                     `[WASM] IK 匹配结果 for ${m.id}: L="${lMatchResult}" R="${rMatchResult}" ` +
@@ -505,7 +505,7 @@ export function startFeetAdjustment(getModels: FeetModelProvider): void {
                     const hints = names
                         .filter((n) => /足|ＩＫ|IK|Leg|leg|Foot|foot/.test(n))
                         .slice(0, 16);
-                    logWarn('feet', `  模型中含"足/IK"的骨骼名：`, hints);
+                    logWarn('feet', '  模型中含"足/IK"的骨骼名：', hints);
                 }
             }
             _adjustFoot(m.runtimeBones, cache.lName, 'L', cache, feet, m.id, dt);

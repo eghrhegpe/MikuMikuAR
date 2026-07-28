@@ -46,7 +46,9 @@ function removeToast(id: number): void {
     if (entry.fadeTimer) {
         clearTimeout(entry.fadeTimer);
     }
-    if (entry.timer !== null) clearTimeout(entry.timer);
+    if (entry.timer !== null) {
+        clearTimeout(entry.timer);
+    }
     if (entry.el.parentNode) {
         entry.el.remove();
     }
@@ -75,7 +77,9 @@ function fadeAndRemoveToast(id: number, el: HTMLElement, fadeDuration = 300): vo
     if (!entry) {
         return;
     }
-    if (entry.timer !== null) clearTimeout(entry.timer);
+    if (entry.timer !== null) {
+        clearTimeout(entry.timer);
+    }
     if (entry.fadeTimer) {
         clearTimeout(entry.fadeTimer);
     }

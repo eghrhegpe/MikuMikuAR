@@ -362,7 +362,9 @@ function _resolveVariant<T>(
     cat: string,
     access: (slot: OutfitSlot | undefined) => T | undefined
 ): T | undefined {
-    if (!variant) return undefined;
+    if (!variant) {
+        return undefined;
+    }
     return (
         access(variant.byMaterial?.[smName]) ??
         access(variant.byCategory?.[cat]) ??

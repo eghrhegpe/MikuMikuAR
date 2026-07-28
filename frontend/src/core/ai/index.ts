@@ -36,14 +36,20 @@ function _declaredBackend(): 'go' | 'browser' | undefined {
 
 /** Tier 1：旧 web 短路标记 / 构建模式。 */
 function _isWebEntry(): boolean {
-    if ((globalThis as { __MMKU_WEB__?: boolean }).__MMKU_WEB__ === true) return true;
+    if ((globalThis as { __MMKU_WEB__?: boolean }).__MMKU_WEB__ === true) {
+        return true;
+    }
     const meta = import.meta as unknown as { env?: { MODE?: string } };
     return meta.env?.MODE === 'web';
 }
 
 export function resolveAi(): Promise<AiService> {
-    if (_resolved) return Promise.resolve(_resolved);
-    if (_resolving) return _resolving;
+    if (_resolved) {
+        return Promise.resolve(_resolved);
+    }
+    if (_resolving) {
+        return _resolving;
+    }
 
     _resolving = (async (): Promise<AiService> => {
         // Tier 0 — 入口显式声明（最高优先级）。

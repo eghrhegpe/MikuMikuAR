@@ -20,7 +20,9 @@ const _textureLRU = new Map<string, TextureCacheEntry>();
 const TEXTURE_LRU_MAX_ENTRIES = 5 * 30;
 
 function evictOldest(): void {
-    if (_textureLRU.size === 0) return;
+    if (_textureLRU.size === 0) {
+        return;
+    }
     _textureLRU.delete(_textureLRU.keys().next().value!);
 }
 
@@ -44,10 +46,16 @@ export async function readTextureWithLRU(
         _textureLRU.set(key, cached);
         return cached.data;
     }
-    if (signal?.aborted) return null;
+    if (signal?.aborted) {
+        return null;
+    }
     const data = await readFileBytes(modelDir + '/' + relativePath);
-    if (!data || signal?.aborted) return null;
-    if (_textureLRU.size >= TEXTURE_LRU_MAX_ENTRIES) evictOldest();
+    if (!data || signal?.aborted) {
+        return null;
+    }
+    if (_textureLRU.size >= TEXTURE_LRU_MAX_ENTRIES) {
+        evictOldest();
+    }
     const entry: TextureCacheEntry = { data: data.buffer as ArrayBuffer, lastUsed: Date.now() };
     _textureLRU.set(key, entry);
     return entry.data;

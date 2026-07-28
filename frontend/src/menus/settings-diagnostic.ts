@@ -498,11 +498,10 @@ function buildModeSwitchSchema(): MenuNode[] {
                 group.setAttribute('role', 'tablist');
                 group.className = 'diag-mode-row';
 
-                const btns: [HTMLButtonElement, HTMLButtonElement, HTMLButtonElement] = [
-                    _buildTab('diagnostic', btns),
-                    _buildTab('chat', btns),
-                    _buildTab('control', btns),
-                ];
+                const btns = [null, null, null] as unknown as [HTMLButtonElement, HTMLButtonElement, HTMLButtonElement];
+                btns[0] = _buildTab('diagnostic', btns);
+                btns[1] = _buildTab('chat', btns);
+                btns[2] = _buildTab('control', btns);
                 group.addEventListener('keydown', (e) => _onTablistKeydown(e, btns));
 
                 for (const btn of btns) {

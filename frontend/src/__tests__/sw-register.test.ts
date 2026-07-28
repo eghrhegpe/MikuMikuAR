@@ -13,7 +13,9 @@ describe('registerServiceWorker', () => {
             configurable: true,
         });
         vi.spyOn(window, 'addEventListener').mockImplementation((ev, cb) => {
-            if (ev === 'load') loadCb = cb as () => void;
+            if (ev === 'load') {
+                loadCb = cb as () => void;
+            }
         });
     });
 

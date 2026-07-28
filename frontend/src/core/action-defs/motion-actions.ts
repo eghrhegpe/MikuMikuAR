@@ -293,7 +293,9 @@ export function registerMotionActions(): void {
                         const menu = getMotionMenu();
                         if (menu) {
                             const root = menu.getLevel(0);
-                            if (root) root.items = buildMotionRootItems();
+                            if (root) {
+                                root.items = buildMotionRootItems();
+                            }
                         }
                     },
                     onVmdReplace: (path: string, name: string) => {
@@ -307,7 +309,9 @@ export function registerMotionActions(): void {
                         const menu = getMotionMenu();
                         if (menu) {
                             const root = menu.getLevel(0);
-                            if (root) root.items = buildMotionRootItems();
+                            if (root) {
+                                root.items = buildMotionRootItems();
+                            }
                         }
                     },
                 }

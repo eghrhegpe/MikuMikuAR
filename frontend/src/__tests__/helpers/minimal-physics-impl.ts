@@ -57,7 +57,9 @@ export interface MinimalPhysicsImpl {
  * 幂等：多次调用返回同一实例。
  */
 export function createMinimalPhysicsImpl(): MinimalPhysicsImpl {
-    if (_initialized && _memory) return { api: sprWasm, memory: _memory };
+    if (_initialized && _memory) {
+        return { api: sprWasm, memory: _memory };
+    }
 
     const wasmBuffer = fs.readFileSync(WASM_PATH);
     const module = new WebAssembly.Module(wasmBuffer);

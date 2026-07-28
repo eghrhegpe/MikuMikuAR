@@ -750,7 +750,9 @@ describe('FSA 目录扫描嵌套结构（保留目录层级 + 同名不覆盖）
                 const c = (node.children ?? []).find(
                     (x) => x.name === name && x.kind === 'directory'
                 );
-                if (!c) throw new Error('no such dir ' + name);
+                if (!c) {
+                    throw new Error('no such dir ' + name);
+                }
                 return buildFakeTree(c);
             },
         };
