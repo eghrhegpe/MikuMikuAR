@@ -38,6 +38,7 @@ import { parseDialogueLines, type DialogueLine } from '../core/ai/character-bibl
 import { speakLines, cancelSpeech } from '../core/ai/dialogue-speech';
 import { getAction } from '../core/action-registry';
 import { showConfirm } from '../core/dialog';
+import { logWarn } from '../core/logger';
 import { DebouncedTimer } from '../core/async';
 
 // ======== 模块级状态 ========
@@ -91,6 +92,8 @@ let _lastUndoable: { label: string } | null = null;
 
 /** 台词模式：是否朗读出声（默认开，环境不支持时 speakLines 自静默）。 */
 let _speakEnabled = true;
+/** 台词模式朗读开关按钮引用（仅 dialogue 模式可见，由 _refreshModeUI 控制显隐）。 */
+let _speakToggleBtn: HTMLButtonElement | null = null;
 
 /** 当前面板编辑态的配置副本，blur 时同步到持久化层。 */
 let _localConfig: AiConfig = { ...loadAiConfig() };
@@ -453,8 +456,16 @@ function _createErrorRow(err: ErrorEntry): HTMLElement {
 
 function _ensureControlActions(): void {
     if (!_controlRegistered) {
-        import('../core/ai/action-registry-defs').then((m) => m.registerAllActions());
-        _controlRegistered = true;
+        // 置位移入成功回调：import 失败时保持 false 以便下次进入 control 模式重试；
+        // 补 catch 避免 rejection 静默丢弃（AGENTS.md「Promise 链断裂」反模式）。
+        import('../core/ai/action-registry-defs')
+            .then((m) => {
+                m.registerAllActions();
+                _controlRegistered = true;
+            })
+            .catch((err) => {
+                logWarn('diagnostic', '动作注册表加载失败，控制模式动作将不可用', err);
+            });
     }
 }
 
@@ -1291,6 +1302,21 @@ function buildChatSchema(): MenuNode[] {
                 clearBtn.addEventListener('click', _clearChat);
                 inputRow.appendChild(clearBtn);
 
+                // [doc:adr-156/199] 台词模式朗读开关（仅 dialogue 模式可见）。
+                _speakToggleBtn = document.createElement('button');
+                _speakToggleBtn.id = 'diag-speak-toggle';
+                _speakToggleBtn.className = 'preset-chip';
+                _speakToggleBtn.setAttribute('role', 'switch');
+                _speakToggleBtn.addEventListener('click', () => {
+                    _speakEnabled = !_speakEnabled;
+                    if (!_speakEnabled) {
+                        cancelSpeech(); // 关闭时立即停掉当前朗读
+                    }
+                    _updateSpeakToggle();
+                });
+                inputRow.appendChild(_speakToggleBtn);
+                _updateSpeakToggle();
+
                 c.appendChild(inputRow);
 
                 _pendingContainer = document.createElement('div');
@@ -1647,7 +1673,13 @@ export function buildSettingsDiagnosticLevel(
         dir: '',
         items: [],
         renderCustom: (container) => {
-            return renderMenu(buildDiagnosticSchema(), container);
+            const dispose = renderMenu(buildDiagnosticSchema(), container);
+            // [doc:adr-199] 关面板时收场：停朗读 + 中止流式请求，避免语音播到结束 / fetch 悬挂。
+            return () => {
+                cancelSpeech();
+                _abortController?.abort();
+                dispose();
+            };
         },
     };
 }
