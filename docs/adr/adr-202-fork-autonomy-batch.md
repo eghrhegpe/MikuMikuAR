@@ -85,6 +85,15 @@
 
 条目 12/18/21/22：时序文档、移除 monkey-patch、side-effect 导入、MPR 动态导入。**改 fork 无意义。**
 
+### D 类 — 上游健壮性缺失（ADR-192 审核补遗发现，不在原 23 处台账）
+
+> 2026-07-28 增补。来源：用户预感"抛开上游处理模型物理的情况，巨容易失效+不可控"→ 审核物理子系统发现。原 23 处台账是"接口缺口"，D 类是"运行时健壮性缺失"，属新类别。
+
+| 缺口 | 现状（本地兜底） | fork 根治 | 编译路径 | 划算度 | 批次优先级 |
+|------|----------------|----------|---------|--------|-----------|
+| **`MmdWasmPhysicsRuntimeImpl` 无 disposed 守卫** | virtual-skirt/ground-collision 的 `dispose()` 靠 try/catch 兜底 impl 已销毁时的调用 | impl 加 `isDisposed` 标志，方法调用自动 no-op | `build-wasm-mpr` + `build-esm` | 🟡 中（HMR/场景切换触发，非高频） | **P2 搭车** |
+| **`addRigidBody`/`addConstraint` 返回 boolean 不抛异常** | virtual-skirt 调用方手动检查返回值 + `logWarn`（ADR-192 审核补遗刚补） | 失败抛异常或返回详细原因，消除"静默失效"根源 | `build-wasm-mpr` + `build-esm` | 🟡 中（已是适配层补丁，fork 根治可删调用方检查） | **P2 搭车** |
+
 ---
 
 ## 三、批次执行计划
@@ -93,7 +102,7 @@
 |------|------|---------|------|
 | **P0** | ✅ 已落地：vendored 方案——fork 重编 spr/mpr → 拷进 `frontend/vendor/` commit → postinstall 注入 → spr/mpr 含导出、真机风力起效 | — | 无（已完成） |
 | **P1** | 原生刚体施力导出（ADR-201，`mmdModelRigidBodyApplyCentralForce` 等，**注：fork 源码里私有字段访问需改用 `physics_model_context()` 访问器，否则 E0616 编译失败**）+ `physics.impl`/`_rigidBodyBundleMap` 提公开 getter | `build-wasm-mpr` + `build-esm` | P0 |
-| **P2** | `StreamAudioPlayer` 加 `get audio()` | `build-esm` | P0 |
+| **P2** | `StreamAudioPlayer` 加 `get audio()`（条目 9）+ D 类两项：`MmdWasmPhysicsRuntimeImpl` 加 `isDisposed` 守卫 / `addRigidBody`/`addConstraint` 失败抛异常（均纯 TS `build-esm`，ADR-192 审核补遗发现） | `build-esm` | P0 |
 | **P3（可选）** | `setRuntimeAnimation` reset 时钟 / `onFinishObservable` | `build-esm` | P0 |
 
 > **关键顺序**：P0 是所有 fork 改动能进发版的**共同前提**。建议 P0 单独先跑通（哪怕先只带 P1 一项），验证「改 fork → 编译 → tag → CI 可复现」整条链，再一次性把 P2/P3 搭上，避免为未验证的链路提前铺摊子。
@@ -113,5 +122,9 @@
 1. ~~P0 拍板~~ ✅ 已定：vendored 方案落地，真机风力起效。
 2. **CI 干净验证**（🔴 待做）：跑一次完整 `npm ci` 坐实 postinstall 在干净重装后自动注入 spr/mpr（当前仅手动跑脚本验证）。
 3. **P2 搭车**（🟡）：`StreamAudioPlayer` 加 `get audio()` ——纯 TS `build-esm`，下次 fork 改动时搭车，消除条目 9 的 `_audio` 反射。
-4. **`MODEL_WIND_FORCE_SCALE` 标定**（🟢）：现风力已起效，按实测摆幅调系数。
-5. **vendor/fork 漂移防护**（🟡）：fork 每次改 wasm 后必须重拷 vendor，否则两者静默不一致。
+4. **P2 搭车（D 类，ADR-192 审核补遗）**（🟡）：
+   - `MmdWasmPhysicsRuntimeImpl` 加 `isDisposed` 标志 + 方法 no-op 守卫 → 删 virtual-skirt/ground-collision 的 try/catch 兜底。
+   - `addRigidBody`/`addConstraint` 失败抛异常 → 删 virtual-skirt 调用方手动 boolean 检查。
+   两项均纯 TS `build-esm`，与条目 9 同批搭车，消除"开了但裙摆不动"的不可控失效根源。
+5. **`MODEL_WIND_FORCE_SCALE` 标定**（🟢）：现风力已起效，按实测摆幅调系数。
+6. **vendor/fork 漂移防护**（🟡）：fork 每次改 wasm 后必须重拷 vendor，否则两者静默不一致。
