@@ -165,15 +165,16 @@ renderCustom: (c) => {
 | `.cs-row` (含 `.cs-bar`) | 聚焦滑块轨道，←→ 调值 | 滑条行 |
 | `.type-row` + `.mode-btn` | 二维组导航，←→ 组内移动 | 模式切换 |
 | `.preset-group` + `.preset-chip` | 二维组导航，←→ 组内移动 | 预设芯片 |
+| `.morph-row`（含 `.morph-slider`） | 聚焦原生 range input，←→ 调值 | Morph 滑条行 |
 
-**已知缺口（未覆盖的非标准类名）：**
+**已修复的历史缺口（现已纳入标准映射）：**
 
-| 位置 | 自定义类名 | 问题 | 建议 |
-|------|----------|------|------|
-| `model-detail.ts` | `.morph-row` | 变形的滑条行使用独立类名 | 改为 `.cs-row` + `.cs-bar` 标准模式 |
-| `settings-diagnostic.ts` | `.diag-mode-row` | mode-btn 在非标准父容器中 | 改为 `.type-row` 或注册 `.diag-mode-row` 映射 |
-| `motion-pose-levels.ts` 等 | `.btn-group` | preset-chip 在 `.btn-group` 中 | 改为 `.preset-group` |
-| `model-detail.ts` | `.model-detail-tab-btn` | 详情 tab 无键盘导航 | 统一为 `.type-row` + `.mode-btn` |
+| 原位置 | 原自定义类名 | 修复方式 |
+|------|----------|------|
+| `model-detail.ts` | `.morph-row` | 在 `_ensureNavMarkers` 注册映射 |
+| `settings-diagnostic.ts` | `.diag-mode-row` | 改为 `.type-row`，移除手写 `createKeyboardNav` |
+| `motion-pose-levels.ts` 等 | `.btn-group`（内含 preset-chip） | 改为 `.preset-group` |
+| `model-detail.ts` | `.model-detail-tab-btn` | 容器加 `.type-row`，按钮加 `.mode-btn` |
 
 **给新面板开发者的规则：** 交互行优先使用标准类名（`.slide-item` / `.cs-row` + `.cs-bar` / `.type-row` + `.mode-btn`），即可零成本获得键盘导航。如果必须使用自定义类名，则需在 `_ensureNavMarkers` 中增加映射，否则该行无法被键盘导航到达。
 

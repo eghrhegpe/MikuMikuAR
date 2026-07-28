@@ -87,7 +87,7 @@ function buildPoseStudioSchema(): MenuNode[] {
 
                     const currentMode = getGuideMode();
                     const btnGroup = document.createElement('div');
-                    btnGroup.className = 'btn-group';
+                    btnGroup.className = 'preset-group';
                     for (const m of modes) {
                         addPresetChip(btnGroup, m.label, m.key === currentMode, () => {
                             setGuideMode(m.key);
@@ -107,7 +107,7 @@ function buildPoseStudioSchema(): MenuNode[] {
                     addCardTitle(inner, t('motion.poseStudio.posePreset'));
 
                     const btnGroup = document.createElement('div');
-                    btnGroup.className = 'btn-group';
+                    btnGroup.className = 'preset-group';
 
                     const poseTypes: Array<{ key: 'tpose' | 'apose' | 'rest'; label: string }> = [
                         { key: 'tpose', label: t('motion.poseStudio.tPose') },
@@ -194,7 +194,7 @@ function buildPoseStudioSchema(): MenuNode[] {
 
                     const presets = getAllPresets();
                     const btnGroup = document.createElement('div');
-                    btnGroup.className = 'btn-group';
+                    btnGroup.className = 'preset-group';
                     btnGroup.style.padding = '4px 14px';
                     for (const preset of presets) {
                         addPresetChip(
