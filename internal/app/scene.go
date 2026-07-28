@@ -35,26 +35,50 @@ func (a *App) SelectSceneOpenFile() (string, error) {
 // ======== Scene Auto-Save ========
 
 // SaveLastScene stores the current scene state for auto-recovery on next launch.
+// Atomic write (temp file + rename) under sceneMu prevents concurrent auto-save
+// calls (debounce fire / visibilitychange flush / undo restore) from truncating
+// or interleaving into last_scene.json — a half-written file would fail JSON.parse
+// on next launch and silently drop the saved character/motion state.
 func (a *App) SaveLastScene(jsonStr string) error {
+	a.sceneMu.Lock()
+	defer a.sceneMu.Unlock()
+
 	dir, err := configDir()
 	if err != nil {
 		a.safeLogError("[auto-save] SaveLastScene: configDir error: %v", err)
 		return err
 	}
 	path := filepath.Join(dir, "last_scene.json")
+	tmp := path + ".tmp"
 	a.safeLogInfo("[auto-save] SaveLastScene: writing %d bytes to %s", len(jsonStr), path)
-	f, err := os.Create(path)
+
+	f, err := os.Create(tmp)
 	if err != nil {
 		a.safeLogError("[auto-save] SaveLastScene: os.Create error: %v", err)
 		return err
 	}
-	defer f.Close()
 	if _, err := f.WriteString(jsonStr); err != nil {
 		a.safeLogError("[auto-save] SaveLastScene: WriteString error: %v", err)
+		f.Close()
+		os.Remove(tmp)
 		return err
 	}
 	if err := f.Sync(); err != nil {
 		a.safeLogError("[auto-save] SaveLastScene: Sync error: %v", err)
+		f.Close()
+		os.Remove(tmp)
+		return err
+	}
+	if err := f.Close(); err != nil {
+		a.safeLogError("[auto-save] SaveLastScene: Close error: %v", err)
+		os.Remove(tmp)
+		return err
+	}
+	// Rename within the same directory is atomic — readers always see either the
+	// complete previous version or the complete new version, never a torn write.
+	if err := os.Rename(tmp, path); err != nil {
+		a.safeLogError("[auto-save] SaveLastScene: Rename error: %v", err)
+		os.Remove(tmp)
 		return err
 	}
 	a.safeLogInfo("[auto-save] SaveLastScene: completed successfully")

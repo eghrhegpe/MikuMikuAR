@@ -54,6 +54,7 @@ type App struct {
 	httpSrvMu   sync.Mutex
 	configMu    sync.RWMutex // guards GetConfig/writeConfig sequences
 	cachedCfg   *Config      // in-memory cache, invalidated by writeConfig
+	sceneMu     sync.Mutex   // serialises SaveLastScene writes to prevent concurrent truncate/interleave
 
 	// 下载目录监听
 	watcher      *fsnotify.Watcher
