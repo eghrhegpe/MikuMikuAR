@@ -38,6 +38,15 @@ const mocks = vi.hoisted(() => {
     };
     const bundles = [bundleA, bundleB];
 
+    // 单数 RigidBody 集合（虚拟裙骨/地面经 addRigidBody 进入的容器）
+    const bodyA = {
+        applyCentralForce: vi.fn(),
+    };
+    const bodyB = {
+        applyCentralForce: vi.fn(),
+    };
+    const singularBodies = [bodyA, bodyB];
+
     // 模型注册表 mock：一个 actor（有 mmdModel）+ 一个 stage（应被跳过）
     const actorModel = { _tag: 'actorModel' };
     const applyForceToModelRigidBodies = vi.fn(
@@ -61,6 +70,9 @@ const mocks = vi.hoisted(() => {
         bundleA,
         bundleB,
         bundles,
+        bodyA,
+        bodyB,
+        singularBodies,
         actorModel,
         applyForceToModelRigidBodies,
         modelRegistry,
@@ -94,6 +106,7 @@ vi.mock('babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime', () => ({
 vi.mock('@/core/mmd-adapter', () => ({
     getPhysicsImpl: vi.fn(() => mocks.implReturn),
     getRigidBodyBundleMap: vi.fn(() => mocks.bundles),
+    getRigidBodyMap: vi.fn(() => mocks.singularBodies),
     applyForceToModelRigidBodies: mocks.applyForceToModelRigidBodies,
 }));
 
@@ -117,7 +130,7 @@ vi.mock('@/core/observer-handle', () => ({
     observe: mockObserve,
 }));
 
-import { getPhysicsImpl, getRigidBodyBundleMap } from '@/core/mmd-adapter';
+import { getPhysicsImpl, getRigidBodyBundleMap, getRigidBodyMap } from '@/core/mmd-adapter';
 import { observe } from '@/core/observer-handle';
 import { getWindVector, isWindActive } from '@/core/wind-utils';
 import {
@@ -144,6 +157,8 @@ beforeEach(() => {
     mocks.onSyncObservable._notify = () => {};
     mocks.bundleA.applyCentralForce.mockClear();
     mocks.bundleB.applyCentralForce.mockClear();
+    mocks.bodyA.applyCentralForce.mockClear();
+    mocks.bodyB.applyCentralForce.mockClear();
     mocks.applyForceToModelRigidBodies.mockClear();
     // 将 observe mock 连接到 _notify 回调机制
     mockObserve.mockImplementation((_obs: unknown, cb: () => void) => {
@@ -278,17 +293,25 @@ describe('wind-physics 状态机', () => {
             // 手动触发 onSync 回调
             mocks.onSyncObservable._notify();
 
+            // 验证风力向量 = 方向 × 速度 × WIND_FORCE_SCALE(1.0)
+            const expectedForce = new Vector3(3, 0, 4);
+
             // bundleA 有 3 个刚体，bundleB 有 2 个
             expect(mocks.bundleA.applyCentralForce).toHaveBeenCalledTimes(3);
             expect(mocks.bundleB.applyCentralForce).toHaveBeenCalledTimes(2);
-
-            // 验证风力向量 = 方向 × 速度 × WIND_FORCE_SCALE(1.0)
-            const expectedForce = new Vector3(3, 0, 4);
             const call0 = mocks.bundleA.applyCentralForce.mock.calls[0];
             expect(call0[0]).toBe(0); // 第 0 个刚体
             expect(call0[1].x).toBeCloseTo(expectedForce.x);
             expect(call0[1].y).toBeCloseTo(expectedForce.y);
             expect(call0[1].z).toBeCloseTo(expectedForce.z);
+
+            // 路径1 修正：单数容器（虚拟裙骨/地面）也受风，每个刚体调用 1 次
+            expect(mocks.bodyA.applyCentralForce).toHaveBeenCalledTimes(1);
+            expect(mocks.bodyB.applyCentralForce).toHaveBeenCalledTimes(1);
+            const sCall0 = mocks.bodyA.applyCentralForce.mock.calls[0];
+            expect(sCall0[0].x).toBeCloseTo(expectedForce.x);
+            expect(sCall0[0].y).toBeCloseTo(expectedForce.y);
+            expect(sCall0[0].z).toBeCloseTo(expectedForce.z);
         });
 
         it('风力不活跃时跳过（不施加力）', () => {
@@ -300,6 +323,8 @@ describe('wind-physics 状态机', () => {
 
             expect(mocks.bundleA.applyCentralForce).not.toHaveBeenCalled();
             expect(mocks.bundleB.applyCentralForce).not.toHaveBeenCalled();
+            expect(mocks.bodyA.applyCentralForce).not.toHaveBeenCalled();
+            expect(mocks.bodyB.applyCentralForce).not.toHaveBeenCalled();
         });
 
         it('Bundle 列表为空时不抛异常', () => {

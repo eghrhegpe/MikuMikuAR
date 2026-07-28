@@ -5,10 +5,14 @@
  * 不依赖像素截图，全部基于 window.__scene 数值钩子断言。
  *
  * 验证项：
- * 1. 模型加载后物理 Bundle 数 > 0（WASM 物理已运行）
+ * 1. 模型加载后物理单数刚体数 > 0（WASM 物理已运行 + 联邦自建刚体已登记）
  * 2. 风力订阅状态检查
  * 3. 设置风速后风力物理被激活
  * 4. 物理真正动了骨骼（位置变化检测）
+ *
+ * ⚠️ 关于断言目标：联邦自建刚体（虚拟裙骨 ADR-084 / 地面碰撞）经 `addRigidBody`
+ * 进入 `rigidBodyReferenceCountMap`（单数容器），**不进** bundle 容器。故
+ * `rigidBodyBundleCount` 恒为 0 属正常，断言须用单数 `rigidBodyCount`。
  *
  * @requires 已加载一个带物理（头发/裙子）的 PMX 模型
  */
@@ -17,12 +21,15 @@ import { test, expect } from "./wails-fixture";
 import { waitForSceneHook, loadFirstModel } from "./helpers";
 
 test.describe("物理子系统健康检查", { tag: ["@webgl"] }, () => {
-    test("加载模型后 rigidBodyBundleCount > 0（WASM 物理已运行）", async ({ wailsPage: page }) => {
+    test("加载模型后 rigidBodyCount > 0（WASM 物理已运行 + 联邦自建刚体已登记）", async ({ wailsPage: page }) => {
         await waitForSceneHook(page);
         await loadFirstModel(page);
 
-        const bundleCount = await page.evaluate(() => (window as any).__scene.rigidBodyBundleCount);
-        expect(bundleCount).toBeGreaterThan(0);
+        // 注意：联邦自建刚体（地面碰撞默认开启 / 虚拟裙骨）走单数容器
+        // rigidBodyReferenceCountMap，不进 bundle 容器，故须断言 rigidBodyCount（>0），
+        // 而非恒为 0 的 rigidBodyBundleCount。
+        const bodyCount = await page.evaluate(() => (window as any).__scene.rigidBodyCount);
+        expect(bodyCount).toBeGreaterThan(0);
     });
 
     test("加载模型后风力物理初始未订阅（windEnabled 默认 false）", async ({ wailsPage: page }) => {
