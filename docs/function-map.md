@@ -1,15 +1,15 @@
 # 函数映射表
 
 > AI 找代码用。改前端功能时先 grep 此表定位文件。
-> **自动生成**（2026-07-27）— 由 `scripts/gen-funcmap.mjs` 生成。
+> **自动生成**（2026-07-28）— 由 `scripts/gen-funcmap.mjs` 生成。
 
 ## 总览
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 88 | 630 |
+| 核心基础设施 | 98 | 651 |
 | 3D 场景 | 105 | 1058 |
-| 菜单 & UI | 67 | 304 |
+| 菜单 & UI | 67 | 307 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 18 | 131 |
 | 物理系统 | 2 | 14 |
@@ -18,6 +18,13 @@
 
 | 符号 | 文件 | 说明 |
 |------|------|------|
+| `registerEnvActions()` | `core/action-defs/env-actions` | — |
+| `registerLibraryActions()` | `core/action-defs/library-actions-def` | — |
+| `registerMotionActions()` | `core/action-defs/motion-actions` | — |
+| `registerSceneActions()` | `core/action-defs/scene-actions` | — |
+| `registerSettingsActions()` | `core/action-defs/settings-actions` | — |
+| `ActionResult()` | `core/action-executor` | — |
+| `executeActionById()` | `core/action-executor` | — |
 | `ActionDef()` | `core/action-registry` | — |
 | `ParamDef()` | `core/action-registry` | — |
 | `ParamType()` | `core/action-registry` | — |
@@ -28,6 +35,11 @@
 | `registerAction()` | `core/action-registry` | 注册一条动作。遇重复 id 时 console.warn + 覆盖（默认）。 |
 | `registerActions()` | `core/action-registry` | 批量注册 |
 | `unregisterAction()` | `core/action-registry` | 按 id 撤销注册 |
+| `ToolFunction()` | `core/ai/action-catalog` | — |
+| `ToolSchema()` | `core/ai/action-catalog` | — |
+| `buildToolCatalogText()` | `core/ai/action-catalog` | — |
+| `buildToolSchemas()` | `core/ai/action-catalog` | — |
+| `registerControlActions()` | `core/ai/action-registry-defs` | — |
 | `BrowserAiAdapter()` | `core/ai/browser-adapter` | — |
 | `browserAiAdapter()` | `core/ai/browser-adapter` | — |
 | `AiConfig()` | `core/ai/config-store` | — |
@@ -49,6 +61,14 @@
 | `uninstallLoggingPatch()` | `core/ai/error-buffer` | 卸载 console.error 补丁，恢复原始实现。 |
 | `goAiAdapter()` | `core/ai/go-adapter` | — |
 | `resolveAi()` | `core/ai/index` | — |
+| `executeAction()` | `core/ai/intent-dispatcher` | — |
+| `parseActionFromLLM()` | `core/ai/intent-dispatcher` | — |
+| `AdapterResult()` | `core/ai/param-adapters` | — |
+| `adaptParam()` | `core/ai/param-adapters` | — |
+| `colorAdapter()` | `core/ai/param-adapters` | — |
+| `entityAdapter()` | `core/ai/param-adapters` | — |
+| `enumAdapter()` | `core/ai/param-adapters` | — |
+| `rangeAdapter()` | `core/ai/param-adapters` | — |
 | `SceneSnapshotBridge()` | `core/ai/scene-snapshot` | AI 快照所需的引擎运行时读取桥接（由 scene.ts 注入）。 |
 | `SceneSnapshotData()` | `core/ai/scene-snapshot` | 格式化后的快照数据（纯数据，便于测试）。 |
 | `captureSceneSnapshot()` | `core/ai/scene-snapshot` | 采集当前场景快照文本；未初始化时返回占位符。 |
@@ -59,6 +79,7 @@
 | `ChatChunk()` | `core/ai/types` | 流式聊天响应块 |
 | `ChatMessage()` | `core/ai/types` | 聊天消息角色 |
 | `ChatRequest()` | `core/ai/types` | 流式聊天请求参数 |
+| `ToolSchema()` | `core/ai/types` | JSON Schema 工具定义（OpenAI function_calling 格式） |
 | `Abortable()` | `core/async` | 可复用的 AbortController 封装——abort 后自动重置，使对象可重复使用。 |
 | `DebouncedTimer()` | `core/async` | 防抖定时器——封装 setTimeout 的 schedule/cancel 样板。 |
 | `LoadingGuard()` | `core/async` | 并发加载守卫——防止同一 key 的异步操作重复触发。 |
@@ -1747,6 +1768,8 @@
 | `highlightRow()` | `menus/library-actions` | — |
 | `importFile()` | `menus/library-actions` | — |
 | `importFileByPath()` | `menus/library-actions` | — |
+| `loadLibraryModel()` | `menus/library-actions` | 按名称模糊搜索模型库并加载。供 NL 控场景（ADR-155）使用，fire-and-forget。 |
+| `loadLibraryMotion()` | `menus/library-actions` | 按名称模糊搜索 VMD 动作并替换聚焦模型的基础动作。 |
 | `onModelRowClick()` | `menus/library-actions` | — |
 | `prepareModelRestore()` | `menus/library-actions` | — |
 | `replaceModel()` | `menus/library-actions` | — |
@@ -1960,6 +1983,8 @@
 | `disposeSceneMenu()` | `menus/scene-menu` | 释放 scene-menu 模块资源（取消注册 hooks + HMR/清理时调用） |
 | `getSceneMenu()` | `menus/scene-menu` | — |
 | `refreshSceneRoot()` | `menus/scene-menu` | — |
+| `saveScene()` | `menus/scene-menu` | 保存场景（自动编号到预设目录） |
+| `screenshotBatch()` | `menus/scene-menu` | 批量截图所有已加载模型 |
 | `screenshotCurrent()` | `menus/scene-menu` | 截图当前焦点模型 |
 | `showSceneMenu()` | `menus/scene-menu` | — |
 | `buildPhysicsDebugLevel()` | `menus/scene-physics-levels` | 构建物理调试子页（材质线框/骨骼 — WASM 相关，由模型详情页调用） |
@@ -1977,7 +2002,6 @@
 | `buildStageTransformLevel()` | `menus/scene-stage-levels` | — |
 | `buildStageLightLevel()` | `menus/scene-stage-lights` | — |
 | `buildSettingsAboutLevel()` | `menus/settings-about` | — |
-| `SETTINGS_ACTIONS()` | `menus/settings-actions` | 设置动作映射表——替代原 handleSettingsAction 的 switch 链 |
 | `handleSettingsAction()` | `menus/settings-actions` | 全局设置项点击分发：语言切换 + 动作表。settings.ts 的 onItemClick 使用。 |
 | `buildSettingsAppearanceLevel()` | `menus/settings-appearance` | — |
 | `buildSettingsControlsLevel()` | `menus/settings-controls` | — |
@@ -2216,5 +2240,5 @@
 
 ---
 
-> 共 283 个文件，2170 个导出符号。
+> 共 293 个文件，2194 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。
