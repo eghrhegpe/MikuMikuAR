@@ -158,6 +158,7 @@ export class SlideMenu {
                     break;
                 case 'ArrowRight':
                 case 'Enter':
+                case ' ':
                     e.preventDefault();
                     this.activateFocused();
                     break;

@@ -104,6 +104,12 @@ export function addCollapsible(
         isOpen = !isOpen;
         applyState(isOpen);
     });
+    header.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            header.click();
+        }
+    });
 
     wrapper.appendChild(header);
     wrapper.appendChild(panel);
