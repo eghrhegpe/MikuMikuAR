@@ -538,6 +538,37 @@ describe('SlideMenu — 焦点全面 (setupFocus/clearFocus/applyFocus/activateF
         expect(modeItem.getAttribute('data-nav-focus')).toBe('.cs-top[role="listbox"]');
     });
 
+    it('preset-group chips 组标记为二维导航站（data-nav-group）', async () => {
+        const level: PopupLevel = {
+            label: 'F',
+            dir: '',
+            items: [],
+            renderCustom: (c) => {
+                const group = document.createElement('div');
+                group.className = 'preset-group';
+                for (let i = 0; i < 3; i++) {
+                    const chip = document.createElement('button');
+                    chip.className = 'preset-chip' + (i === 1 ? ' active' : '');
+                    chip.textContent = `chip-${i}`;
+                    group.appendChild(chip);
+                }
+                c.appendChild(group);
+            },
+        };
+        const p = new Promise<void>((resolve) => {
+            (menu as any).onAfterRender = () => resolve();
+        });
+        menu.reset(level);
+        await p;
+
+        const items = (menu as any).panelItems as HTMLElement[];
+        const groupRow = items.find((el) => el.classList.contains('preset-group'))!;
+        expect(groupRow).toBeTruthy();
+        expect(groupRow.getAttribute('data-nav-group')).toBe('.preset-chip:not(.badge)');
+        // 组行隐含 ←→ 让位
+        expect(groupRow.getAttribute('data-nav-adjust')).toBe('horizontal');
+    });
+
     it('applyFocus 给当前焦点索引添加样式', async () => {
         await initWithItems([
             { kind: 'action' as const, label: 'A', icon: 'i', target: 'a' },
