@@ -38,7 +38,8 @@ invariants:
   - param-adapters 的 entity 类型必须配 ParamDef.resolve；string 类型直通透传不校验
   - destructive 动作的确认 UI 由调用方自行处理，注册表本身不弹 showConfirm
   - registerAction 遇重复 id 默认 console.warn + 覆盖；strictMode 下抛错
-tests: []
+tests:
+  - frontend/src/core/__tests__/action-executor.test.ts
 use_when:
   - 动作注册
   - NL 控场
@@ -77,4 +78,6 @@ ADR-197 引入的统一动作注册表：把 settings/scene/motion/env/library �
 - 见 frontmatter `invariants`
 
 ## 验证入口
-- 契约见 ADR-197 / ADR-155；动作定义暂无专门单测，间接经菜单与 NL 路径覆盖
+- 契约见 ADR-197 / ADR-155
+- 测试：`frontend/src/core/__tests__/action-executor.test.ts`（回归 8 个 control 动作的参数校验/单次加载/同义词不变量；`action-defs/*` 各域动作被 mock，未直接测试）
+- 命令：`cd frontend && npm run test -- src/core/__tests__/action-executor.test.ts`
