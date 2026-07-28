@@ -26,7 +26,7 @@
 | 方案 | CI 可复现 | 代价 | 采纳 |
 |------|----------|------|------|
 | `file:` 本地路径 | ❌ CI 无 `C:\Users\...\babylon-mmd`，发版直接挂 | — | ❌ |
-| git 依赖（`github:eghrhegpe/babylon-mmd#<tag>`，dist 提交进 fork） | ✅ `npm ci` 可复现拉取 | fork 需 commit 编译产物、打 tag；切版会连带 1.2→1.3 API 跳变 | 🟡 未选 |
+| git 依赖（`github:eghrhegpe/babylon-mmd#<tag>`，dist 提交进 fork） | ✅ `npm ci` 可复现拉取 | fork 需 commit 编译产物、打 tag；切版会连带 1.2→1.3 API 跳变 | ❌ 已探明不可行（见 §1.4） |
 | **vendored 进 app 仓库**（`frontend/vendor/babylon-mmd-wasm/` + postinstall 注入） | ✅ | app 仓库体积涨、wasm 二进制入 git | ✅ **已采纳** |
 
 ### 1.3 已落地：vendored + postinstall（方案 3）
@@ -38,6 +38,26 @@
 3. `postinstall`（`scripts/apply-vendored-wasm.mjs`）在 `npm i`/`npm ci` 后把 vendor 产物 `cpSync` 覆盖进 `node_modules/babylon-mmd/esm/Runtime/Optimized/wasm/{spr,mpr}`。
 4. `npm ci` 先清空 node_modules 再装，postinstall 在装完后执行 → 注入不会被清掉，可复现。
 5. 同时解决「原仓拒 AI PR」——不发 PR，fork 产物随 app 仓走。
+
+### 1.4 修订：路线 A（git 依赖）实跑探明 — 包结构错位，不可行
+
+> 2026-07-28 增补。fork 侧 build-esm 已修通（工具链三因修复），但 git 依赖方案因 fork 包结构天生为 npm publish 设计而落不了地。
+
+**起因**：P0 vendored 落地后，为消除 vendor 目录维护负担，重启路线 A 评估。先扫 1.2→1.3 API 破坏面（结论：安全，CHANGELOG 仅附加 + bugfix，`mmd-adapter.ts` 的私有字段访问均带守卫降级），再修通 fork 的 `build-esm`，打 tag `v1.3.0-mmar1`，准备 app 侧切版本。
+
+**build-esm 修通的三因修复**（fork commit `64a94ce`）：
+1. `Cargo.toml` 加 `wasm-opt = false` — wasm-pack 从 GitHub releases 下载 binaryen 失败（CN 网络），在生成 `package.json` 前退出，导致 spr/mpr 缺 package.json → `typeof import("./wasm/spr")` 在 `moduleResolution: "bundler"` 下解析失败 → TS2312。
+2. `tsconfig.lib.json` 关 `experimentalDecorators` + `emitDecoratorMetadata` — babylon.js 9.18 的 `@serialize` 已迁 TC39 标准装饰器签名，旧版冲突 → TS1240（`.pure.ts` 全挂）。
+3. `.gitignore` 开例外让 `dist/esm/` + `wasm/` 入 git，忽略 wasm-pack 每次重建生成的子目录 `.gitignore`。
+
+**为何仍不可行 — 三层结构性错位**：
+1. **main 字段错位**：fork `package.json` 的 `main: "esm/index.js"` 指仓库根，`publish-lib` 发 `./dist`（产物提升为包根）→ registry 包有 `esm/`，git clone 没有（只有 `dist/esm/`）→ `import 'babylon-mmd'` 404。
+2. **深路径 import 错位（致命）**：app **94 处**（38 个文件）`import "babylon-mmd/esm/Runtime/..."` 走深路径解析，不经过 `main`。git 依赖下 `node_modules/babylon-mmd/esm/Runtime/...` 不存在（产物在 `dist/esm/`），94 条全挂。`exports` map 重映射在 vite/webpack 下行为参差，不稳。
+3. **postinstall 会崩**：fork `package.json` 的 `postinstall: "ts-node postInstallScript.ts && patch-package"` 依赖 devDeps，git 依赖不装 devDeps → `ts-node: command not found`。
+
+**唯一干净解（`-dist` 分支）的代价**：建只放 dist 内容的分支，包根即 dist，`esm/` 和深路径都对。但每次 fork 重建产物需 force push `-dist`，双轨维护，代价高于 vendored（vendor 目录 ~200KB binary + 一个 postinstall 脚本）。
+
+**结论**：路线 A 暂不采用。build-esm 修通 + tag `v1.3.0-mmar1` 保留在 fork 作为技术储备（证明 fork TS 可编译，为未来 upstream 修复后切 registry 1.3.0 扫清障碍）。P0 维持 vendored。
 
 ---
 
