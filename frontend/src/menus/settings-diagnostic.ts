@@ -76,6 +76,14 @@ let _pendingAction: {
     params: Record<string, unknown>;
     toolCallId?: string;
 } | null = null;
+// [doc:adr-155] 多 tool_call 复合指令：_pendingAction 为“当前待确认”，其余排队于 _pendingQueue。
+// 逐条弹卡，用户应用/取消一条后自动弹下一条。
+let _pendingQueue: Array<{ actionId: string; params: Record<string, unknown>; toolCallId?: string }> =
+    [];
+// 当前批次全部 tool_call 的元数据（按 OpenAI 协议，每个 tool_call 均需回填 tool 消息，
+// 否则下一轮请求报错）。队列清空后统一回填 + 触发后续 stream。
+let _pendingToolResults: Array<{ toolCallId: string; content: string }> = [];
+let _pendingBatchHasToolCalls = false;
 let _pendingContainer: HTMLElement | null = null;
 // [doc:adr-155] 破坏性动作执行成功后的可撤销引用（复用 scene:undo 快照能力）。
 // 仅保留最近一个；下一个 pending 动作入列或撤销执行后清空。
@@ -764,21 +772,33 @@ async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
         }
 
         if (pendingToolCalls.length > 0) {
-            const first = pendingToolCalls[0];
-            let params: Record<string, unknown> = {};
-            try {
-                params = JSON.parse(first.args);
-            } catch {
-                /* ignore */
+            // [doc:adr-155] 将全部 tool_call 入队（首条进 _pendingAction，其余进 _pendingQueue），
+            // 逐条弹卡确认。无论单/多都需把全部 tool_call 写入对话历史，
+            // 并在队列清空后为每个 tool_call 回填 tool 消息（保障协议完整）。
+            const parsed = pendingToolCalls.map((tc) => {
+                let params: Record<string, unknown> = {};
+                try {
+                    params = JSON.parse(tc.args);
+                } catch {
+                    /* ignore */
+                }
+                return { actionId: tc.name, params, toolCallId: tc.id };
+            });
+            // 过滤不支持的动作：不支持项直接回填失败 tool 消息，不入待确认队列。
+            const supported: typeof parsed = [];
+            _pendingToolResults = [];
+            _pendingBatchHasToolCalls = true;
+            for (const p of parsed) {
+                if (getAction(p.actionId)) {
+                    supported.push(p);
+                } else {
+                    _pendingToolResults.push({
+                        toolCallId: p.toolCallId ?? '',
+                        content: JSON.stringify({ success: false, message: '不支持的操作' }),
+                    });
+                }
             }
-            if (!_tryQueuePendingAction(first.name, params, first.id)) {
-                _isStreaming = false;
-                _abortController = null;
-                _updateSendButton();
-                _renderChat();
-                _renderControlHint();
-                return;
-            }
+
             const assistantMsg: ChatMessage = {
                 role: 'assistant',
                 content: null,
@@ -793,6 +813,16 @@ async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
             _abortController = null;
             _updateSendButton();
             _renderChat();
+
+            if (supported.length === 0) {
+                // 全部不支持：直接收尾（回填 tool 消息 + 提示）。
+                _addAssistantMessage(t('ai.control.unsupported'));
+                await _finalizePendingBatch();
+                return;
+            }
+            _pendingAction = supported[0];
+            _pendingQueue = supported.slice(1);
+            _lastUndoable = null;
             _renderPendingAction();
             return;
         }
@@ -858,6 +888,11 @@ function _tryQueuePendingAction(
         return false;
     }
     _pendingAction = { actionId, params, toolCallId: toolCallId ?? undefined };
+    // prompt 回退路径（单动作、无 tool_call）：重置队列批次状态，
+    // 避免残留的 _pendingBatchHasToolCalls 导致收尾时误触发后续 stream。
+    _pendingQueue = [];
+    _pendingToolResults = [];
+    _pendingBatchHasToolCalls = false;
     // 新 pending 动作入列，旧的可撤销引用失效（避免跨操作误撤销）。
     _lastUndoable = null;
     return true;
@@ -953,12 +988,23 @@ function _renderPendingAction(): void {
 
     const title = document.createElement('div');
     title.className = 'diag-pending-title';
-    title.textContent = t('ai.control.pending');
+    // [doc:adr-155] 多条待确认时显示进度（当前/总数）。
+    // 总数 = 已处理（_pendingToolResults） + 当前 1 条 + 剩余队列。
+    const total = _pendingToolResults.length + 1 + _pendingQueue.length;
+    if (total > 1) {
+        const current = _pendingToolResults.length + 1;
+        title.textContent = t('ai.control.pendingProgress', {
+            current: String(current),
+            total: String(total),
+        });
+    } else {
+        title.textContent = t('ai.control.pending');
+    }
     card.appendChild(title);
 
     const desc = document.createElement('div');
     desc.className = 'diag-pending-desc';
-    desc.textContent = action.label;
+    desc.textContent = t(action.label);
     card.appendChild(desc);
 
     const paramsList = document.createElement('div');
@@ -996,7 +1042,9 @@ async function _applyPendingAction(btn: HTMLButtonElement): Promise<void> {
     }
     const action = getAction(_pendingAction.actionId);
     if (action?.destructive) {
-        const ok = await showConfirm(t('ai.control.confirmDestructive', { action: action.label }));
+        const ok = await showConfirm(
+            t('ai.control.confirmDestructive', { action: t(action.label) })
+        );
         if (!ok) {
             btn.disabled = false;
             btn.textContent = t('ai.control.apply');
@@ -1009,16 +1057,17 @@ async function _applyPendingAction(btn: HTMLButtonElement): Promise<void> {
     const result = await executeAction(_pendingAction.actionId, _pendingAction.params);
     // [doc:adr-155] 破坏性动作执行成功后记录可撤销引用，供 hint 区渲染“撤销”按钮。
     if (result.success && action?.destructive) {
-        _lastUndoable = { label: action.label };
+        _lastUndoable = { label: t(action.label) };
     }
     const toolCallId = _pendingAction.toolCallId;
-    const toolContent = JSON.stringify({
-        success: result.success,
-        message: result.message,
-    });
     if (toolCallId) {
-        _messages.push({ role: 'tool', content: toolContent, tool_call_id: toolCallId });
+        // 多 tool_call：攒存结果，待队列清空后统一回填 tool 消息。
+        _pendingToolResults.push({
+            toolCallId,
+            content: JSON.stringify({ success: result.success, message: result.message }),
+        });
     } else {
+        // prompt 回退路径（无 tool_call）：直接写入助手文本。
         _messages.push({
             role: 'assistant',
             content: result.success
@@ -1026,34 +1075,58 @@ async function _applyPendingAction(btn: HTMLButtonElement): Promise<void> {
                 : t('ai.control.resultFailed', { message: result.message }),
         });
     }
-    _pendingAction = null;
-    _renderControlHint();
-    btn.disabled = false;
-    btn.textContent = t('ai.control.apply');
     _renderChat();
-
-    if (toolCallId) {
-        if (result.success) {
-            await _runStream({ allowTools: false });
-        } else {
-            _addAssistantMessage(t('ai.control.resultFailed', { message: result.message }));
-            _renderChat();
-        }
-    }
+    await _advancePendingQueue();
 }
 
-function _cancelPendingAction(): void {
-    const last = _messages[_messages.length - 1];
-    if (last && last.role === 'assistant' && 'tool_calls' in last && last.tool_calls) {
-        _messages.pop();
+async function _cancelPendingAction(): Promise<void> {
+    if (!_pendingAction) {
+        return;
+    }
+    const toolCallId = _pendingAction.toolCallId;
+    if (toolCallId) {
+        // 取消也需为该 tool_call 回填一条结果，避免悬空导致下一轮请求报错。
+        _pendingToolResults.push({
+            toolCallId,
+            content: JSON.stringify({ success: false, message: '用户已取消' }),
+        });
+    } else {
+        _messages.push({ role: 'assistant', content: t('ai.control.cancelled') });
+    }
+    _renderChat();
+    await _advancePendingQueue();
+}
+
+// [doc:adr-155] 弹出队列中下一条待确认动作；队列空时收尾。
+async function _advancePendingQueue(): Promise<void> {
+    if (_pendingQueue.length > 0) {
+        _pendingAction = _pendingQueue.shift() ?? null;
+        _renderPendingAction();
+        return;
     }
     _pendingAction = null;
-    if (_pendingContainer) {
-        _pendingContainer.style.display = 'none';
-        _pendingContainer.innerHTML = '';
+    await _finalizePendingBatch();
+}
+
+// [doc:adr-155] 当前批次全部处理完毕：为每个 tool_call 回填 tool 消息（保障协议完整），
+// 若本批含 tool_call 则触发一次后续 stream（不再带 tools，避免无限递归）。
+async function _finalizePendingBatch(): Promise<void> {
+    const hadToolCalls = _pendingBatchHasToolCalls;
+    const results = _pendingToolResults;
+    _pendingToolResults = [];
+    _pendingBatchHasToolCalls = false;
+
+    for (const r of results) {
+        if (r.toolCallId) {
+            _messages.push({ role: 'tool', content: r.content, tool_call_id: r.toolCallId });
+        }
     }
-    _messages.push({ role: 'assistant', content: t('ai.control.cancelled') });
+    _renderControlHint();
     _renderChat();
+
+    if (hadToolCalls && results.some((r) => r.toolCallId)) {
+        await _runStream({ allowTools: false });
+    }
 }
 
 function _buildSystemMessage(): ChatMessage {

@@ -1921,7 +1921,16 @@ export const ja: Record<string, string> = {
         'あなたは MikuMikuAR シーン制御アシスタントです。以下のツールを使用して、ユーザーの要求に応じてシーンを変更してください。',
     'ai.system.controlFormat':
         'JSON 形式で応答してください：{"action": "ツール名", "params": {"パラメータ名": "値"}}。上記のリストにあるツールのみ使用してください。サポートされていない操作が要求された場合は、何ができるかを説明してください。',
+    'ai.actions.control.setLightIntensity': 'ライト強度を設定',
+    'ai.actions.control.setLightColor': 'ライトの色を設定',
+    'ai.actions.control.setCameraMode': 'カメラモードを切り替え',
+    'ai.actions.control.setEnvPreset': '環境プリセットを切り替え',
+    'ai.actions.control.toggleGround': '地面の表示を切り替え',
+    'ai.actions.control.loadModel': 'モデルを読み込む',
+    'ai.actions.control.loadMotion': 'モーションを置換',
+    'ai.actions.control.setPerformance': 'パフォーマンスモードを切り替え',
     'ai.control.pending': '⏳ 実行待ち操作 — 確認して適用',
+    'ai.control.pendingProgress': '⏳ 実行待ち操作 ({current}/{total}) — 確認して適用',
     'ai.control.apply': '適用',
     'ai.control.cancel': 'キャンセル',
     'ai.control.unsupported':

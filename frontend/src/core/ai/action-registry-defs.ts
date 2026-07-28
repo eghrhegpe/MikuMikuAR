@@ -31,7 +31,7 @@ export function registerControlActions(): void {
     // light:dirIntensity
     registerAction({
         id: 'ai:control:setLightIntensity',
-        label: '设置灯光强度',
+        label: 'ai.actions.control.setLightIntensity',
         domain: 'scene',
         params: [{ name: 'dirIntensity', type: 'range', min: 0, max: 1, step: 0.05 }],
         execute: (p) => setLightState({ dirIntensity: p.dirIntensity as number }),
@@ -40,7 +40,7 @@ export function registerControlActions(): void {
     // light:color
     registerAction({
         id: 'ai:control:setLightColor',
-        label: '设置灯光颜色',
+        label: 'ai.actions.control.setLightColor',
         domain: 'scene',
         params: [{ name: 'dirColor', type: 'color' }],
         execute: (p) => setLightState({ dirColor: p.dirColor as [number, number, number] }),
@@ -49,7 +49,7 @@ export function registerControlActions(): void {
     // camera:mode
     registerAction({
         id: 'ai:control:setCameraMode',
-        label: '切换相机模式',
+        label: 'ai.actions.control.setCameraMode',
         domain: 'scene',
         params: [
             {
@@ -65,7 +65,7 @@ export function registerControlActions(): void {
     // env:preset
     registerAction({
         id: 'ai:control:setEnvPreset',
-        label: '切换环境预设',
+        label: 'ai.actions.control.setEnvPreset',
         domain: 'env',
         params: [
             {
@@ -85,7 +85,7 @@ export function registerControlActions(): void {
     // env:toggleGround
     registerAction({
         id: 'ai:control:toggleGround',
-        label: '切换地面可见性',
+        label: 'ai.actions.control.toggleGround',
         domain: 'env',
         params: [],
         execute: () => setEnvState({ groundVisible: !envState.groundVisible }),
@@ -94,7 +94,7 @@ export function registerControlActions(): void {
     // model:load
     registerAction({
         id: 'ai:control:loadModel',
-        label: '加载模型',
+        label: 'ai.actions.control.loadModel',
         domain: 'library',
         params: [
             {
@@ -112,7 +112,7 @@ export function registerControlActions(): void {
     // motion:load
     registerAction({
         id: 'ai:control:loadMotion',
-        label: '替换动作',
+        label: 'ai.actions.control.loadMotion',
         domain: 'motion',
         params: [
             {
@@ -130,7 +130,7 @@ export function registerControlActions(): void {
     // render:performance
     registerAction({
         id: 'ai:control:setPerformance',
-        label: '切换性能模式',
+        label: 'ai.actions.control.setPerformance',
         domain: 'scene',
         params: [
             {

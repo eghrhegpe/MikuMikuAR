@@ -1,5 +1,6 @@
 import { listActions } from '../action-registry';
 import type { ParamDef } from '../action-registry';
+import { t } from '../i18n/t';
 
 export interface ToolFunction {
     name: string;
@@ -58,7 +59,8 @@ export function buildToolSchemas(): ToolSchema[] {
             type: 'function' as const,
             function: {
                 name: a.id,
-                description: a.label,
+                // [doc:adr-155] label 可为 i18n key，过 t() 得到当前 UI 语言文本（LLM 描述随语言切换）。
+                description: t(a.label),
                 parameters: {
                     type: 'object',
                     properties,
