@@ -21,7 +21,9 @@ let _frozenTarget: HTMLElement | null = null;
 
 function freezeBackground(exceptEl: HTMLElement): void {
     const app = document.getElementById('app');
-    if (!app) return;
+    if (!app) {
+        return;
+    }
     _frozenTarget = app;
     app.inert = true;
     // 弹窗自身及其 overlay 需要可交互，显式取消 inert
@@ -224,7 +226,9 @@ function _showDialogInner(opts: DialogOptions): Promise<string | boolean | null>
         // [bugfix:dialog-escape] 不用 { once: true }：任何按键（Tab/方向键）都会移除监听器，
         // 导致后续 Escape 失效。改为在 cleanup 中显式移除。
         const onBackdropClick = (e: MouseEvent) => {
-            if (e.target === overlay) onCancel();
+            if (e.target === overlay) {
+                onCancel();
+            }
         };
         document.addEventListener('keydown', onKeyDown);
         overlay.addEventListener('click', onBackdropClick);
@@ -404,7 +408,9 @@ export function showPrompt2(opts: Prompt2Options): Promise<[string, string] | nu
         _replaceButtonListeners(confirmBtn, cancelBtn, onConfirm, onCancel);
         // [bugfix:dialog-escape] 不用 { once: true }，改为 cleanup 显式移除
         const onBackdropClick = (e: MouseEvent) => {
-            if (e.target === overlay) onCancel();
+            if (e.target === overlay) {
+                onCancel();
+            }
         };
         document.addEventListener('keydown', onKeyDown);
         overlay.addEventListener('click', onBackdropClick);

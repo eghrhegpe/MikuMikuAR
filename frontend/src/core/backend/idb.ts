@@ -21,7 +21,9 @@ export type Store = (typeof STORES)[number];
 let dbPromise: Promise<IDBDatabase> | null = null;
 
 export function openDB(): Promise<IDBDatabase> {
-    if (dbPromise) return dbPromise;
+    if (dbPromise) {
+        return dbPromise;
+    }
     dbPromise = new Promise<IDBDatabase>((resolve, reject) => {
         if (typeof indexedDB === 'undefined') {
             reject(new Error('[idb] IndexedDB 不可用（非浏览器环境）'));
@@ -38,7 +40,9 @@ export function openDB(): Promise<IDBDatabase> {
 
             // 首次创建或补建缺失 store
             for (const s of STORES) {
-                if (!db.objectStoreNames.contains(s)) db.createObjectStore(s);
+                if (!db.objectStoreNames.contains(s)) {
+                    db.createObjectStore(s);
+                }
             }
         };
         req.onsuccess = () => resolve(req.result);

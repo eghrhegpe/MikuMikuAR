@@ -52,7 +52,9 @@ import { showModelPopup } from './library-browse';
 /** [doc:adr-180] 启动授权引导：弹确认框（用户手势）→ 对已有句柄 requestPermission 重新授权（不重选目录）。
  * 返回 true 表示 _fsaRootHandle 已有效、可继续真扫；false 表示用户跳过/拒绝/无句柄。 */
 async function promptReauthorize(): Promise<boolean> {
-    if (await isFsaAuthPromptDismissed()) return false;
+    if (await isFsaAuthPromptDismissed()) {
+        return false;
+    }
     const ok = await showConfirm(t('library.fsaAuthPrompt'), t('library.fsaAuthTitle'));
     if (!ok) {
         await dismissFsaAuthPrompt();

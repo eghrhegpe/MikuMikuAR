@@ -15,7 +15,9 @@ const { mem } = vi.hoisted(() => {
 vi.mock('./idb', () => ({
     idbGet: async (store: string, key: string) => mem.get(store)?.get(key) ?? undefined,
     idbSet: async (store: string, key: string, value: unknown) => {
-        if (!mem.has(store)) mem.set(store, new Map());
+        if (!mem.has(store)) {
+            mem.set(store, new Map());
+        }
         mem.get(store)!.set(key, value);
     },
     idbKeys: async (store: string) => [...(mem.get(store)?.keys() ?? [])],
@@ -24,8 +26,12 @@ vi.mock('./idb', () => ({
     },
     // [doc:adr-195] 批量事务写入：注入内存实现，供 ingestModelFiles 验证
     idbBatchSet: async (store: string, entries: [string, unknown][]) => {
-        if (!mem.has(store)) mem.set(store, new Map());
-        for (const [k, v] of entries) mem.get(store)!.set(k, v);
+        if (!mem.has(store)) {
+            mem.set(store, new Map());
+        }
+        for (const [k, v] of entries) {
+            mem.get(store)!.set(k, v);
+        }
     },
     openDB: async () => ({}) as unknown,
     closeIDB: () => {},
@@ -157,8 +163,11 @@ describe('getFsaAuthState 四态（adr-177 启动引导）', () => {
     });
     afterEach(() => {
         // 还原 window，避免污染其他测试
-        if (realWindow === undefined) delete (globalThis as { window?: unknown }).window;
-        else (globalThis as { window?: unknown }).window = realWindow;
+        if (realWindow === undefined) {
+            delete (globalThis as { window?: unknown }).window;
+        } else {
+            (globalThis as { window?: unknown }).window = realWindow;
+        }
     });
 
     it('unsupported: 有 window 但不暴露 FSA API → 不引导', async () => {
@@ -278,7 +287,9 @@ describe('FSA 多选同名 PMX 冲突检测与序号后缀', () => {
         texName: string
     ): string {
         // 确保 models store 存在（idbSet mock 自动创建，但这里直接操作 mem 需手动初始化）
-        if (!mem.has('models')) mem.set('models', new Map());
+        if (!mem.has('models')) {
+            mem.set('models', new Map());
+        }
         const store = mem.get('models')!;
         const stem = suffixN === 1 ? baseName : `${baseName} (${suffixN})`;
         const encStem = encodeURIComponent(stem);

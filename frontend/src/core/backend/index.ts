@@ -34,7 +34,9 @@ let _resolved: BackendService | null = null;
 let _resolving: Promise<BackendService> | null = null;
 
 function _isWebEntry(): boolean {
-    if ((globalThis as { __MMKU_WEB__?: boolean }).__MMKU_WEB__ === true) return true;
+    if ((globalThis as { __MMKU_WEB__?: boolean }).__MMKU_WEB__ === true) {
+        return true;
+    }
     const meta = import.meta as unknown as { env?: { MODE?: string } };
     return meta.env?.MODE === 'web';
 }
@@ -46,8 +48,12 @@ function _declaredBackend(): 'go' | 'browser' | undefined {
 }
 
 export function resolveBackend(): Promise<BackendService> {
-    if (_resolved) return Promise.resolve(_resolved);
-    if (_resolving) return _resolving;
+    if (_resolved) {
+        return Promise.resolve(_resolved);
+    }
+    if (_resolving) {
+        return _resolving;
+    }
 
     _resolving = (async (): Promise<BackendService> => {
         // Tier 0 — 入口显式声明（最高优先级）。
@@ -123,7 +129,9 @@ const ALL_TRUE_CAPS: BackendCapabilities = {
 };
 
 export async function getCapabilities(): Promise<BackendCapabilities> {
-    if (_caps) return _caps;
+    if (_caps) {
+        return _caps;
+    }
     const b = await resolveBackend();
     _caps = b.capabilities();
     return _caps;

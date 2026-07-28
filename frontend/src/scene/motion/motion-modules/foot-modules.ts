@@ -56,7 +56,9 @@ function createFootModuleFactory(cfg: FootSideConfig) {
         /** 烘焙：将旋转覆盖写入足 IK 骨骼 */
         function bake(modelId: string): void {
             const prep = prepareBake(modelId, cfg.moduleId, managedBones);
-            if (!prep) return;
+            if (!prep) {
+                return;
+            }
             const { state, claimed } = prep;
 
             if (claimed.includes(cfg.ikBone)) {
@@ -69,19 +71,27 @@ function createFootModuleFactory(cfg: FootSideConfig) {
 
         /** 启用时注册帧钩子，每帧写入位置偏移（在 feet-adjustment 之前执行） */
         function ensureActive(modelId: string): void {
-            if (_footFrameHooks.has(modelId)) return;
+            if (_footFrameHooks.has(modelId)) {
+                return;
+            }
             bake(modelId);
 
             const unregister = registerBoneOverrideFrameHook(
                 (_t, mid) => {
-                    if (mid !== modelId) return;
+                    if (mid !== modelId) {
+                        return;
+                    }
                     const st = getModuleState(modelId, cfg.moduleId);
-                    if (!st.enabled) return;
+                    if (!st.enabled) {
+                        return;
+                    }
 
                     const fx = (st.params.footPosX as number) ?? 0;
                     const fy = (st.params.footPosY as number) ?? 0;
                     const fz = (st.params.footPosZ as number) ?? 0;
-                    if (fx === 0 && fy === 0 && fz === 0) return;
+                    if (fx === 0 && fy === 0 && fz === 0) {
+                        return;
+                    }
 
                     setBoneOverridePosition(cfg.ikBone, [fx, fy, fz], 1, true, modelId);
                 },

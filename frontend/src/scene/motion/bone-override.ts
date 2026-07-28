@@ -512,7 +512,9 @@ function _snapshotProtectedPositions(
     const snapshots = new Map<string, Float32Array>();
     for (const boneName of _protectedIkBoneNames) {
         const rb = boneMap.get(boneName);
-        if (!rb) continue;
+        if (!rb) {
+            continue;
+        }
         const buf = (rb as MmdRuntimeBoneExtended).worldMatrix;
         if (buf) {
             const snap = new Float32Array(16);
@@ -531,9 +533,13 @@ function _restoreProtectedPositions(
 ): void {
     for (const [boneName, snap] of snapshots) {
         const rb = boneMap.get(boneName);
-        if (!rb) continue;
+        if (!rb) {
+            continue;
+        }
         const buf = (rb as MmdRuntimeBoneExtended).worldMatrix;
-        if (!buf) continue;
+        if (!buf) {
+            continue;
+        }
 
         const slot = overrideMap.get(boneName);
         if (slot?.enabled && slot.pos) {
@@ -602,7 +608,9 @@ const _legChainCache = new Map<string, _ResolvedLegChain[]>();
 function _resolveLegChains(boneNames: string[]): _ResolvedLegChain[] {
     const cacheKey = boneNames.join('|');
     const cached = _legChainCache.get(cacheKey);
-    if (cached) return cached;
+    if (cached) {
+        return cached;
+    }
 
     const resolved: _ResolvedLegChain[] = [];
     for (const cfg of LEG_IK_CHAIN_CONFIG) {
@@ -615,7 +623,9 @@ function _resolveLegChains(boneNames: string[]): _ResolvedLegChain[] {
     }
 
     // 缓存上限：避免骨名组合爆炸（虽然实际不会发生）
-    if (_legChainCache.size > 16) _legChainCache.clear();
+    if (_legChainCache.size > 16) {
+        _legChainCache.clear();
+    }
     _legChainCache.set(cacheKey, resolved);
     return resolved;
 }
@@ -645,22 +655,30 @@ function _solveManualLegIK(
 ): void {
     const boneNames = Array.from(boneMap.keys());
     const chains = _resolveLegChains(boneNames);
-    if (chains.length === 0) return;
+    if (chains.length === 0) {
+        return;
+    }
 
     for (const chain of chains) {
         const slot = overrideMap.get(chain.ikBoneName);
         // 仅在 IK 目标骨有启用的位置覆盖时求解（纯旋转覆盖不触发）
-        if (!slot?.enabled || !slot.pos) continue;
+        if (!slot?.enabled || !slot.pos) {
+            continue;
+        }
 
         const ikBone = boneMap.get(chain.ikBoneName);
         const thighBone = boneMap.get(chain.thighBoneName);
         const kneeBone = boneMap.get(chain.kneeBoneName);
-        if (!ikBone || !thighBone || !kneeBone) continue;
+        if (!ikBone || !thighBone || !kneeBone) {
+            continue;
+        }
 
         const hipMat = (thighBone as MmdRuntimeBoneExtended).worldMatrix;
         const kneeMat = (kneeBone as MmdRuntimeBoneExtended).worldMatrix;
         const ankleMat = (ikBone as MmdRuntimeBoneExtended).worldMatrix;
-        if (!hipMat || !kneeMat || !ankleMat) continue;
+        if (!hipMat || !kneeMat || !ankleMat) {
+            continue;
+        }
 
         // 提取 translation 作为 IK 输入位置（列主序：m[12..14] = translation）
         // - hipPos / kneePos：动画驱动位置（未受 IK 偏移影响，因为 hip/knee 是 IK 目标骨的祖先）
@@ -672,7 +690,9 @@ function _solveManualLegIK(
         const endEffectorPos = _v().copyFrom(targetPos).subtractInPlace(slot.pos);
 
         const result = solveTwoBoneIK({ hipPos, kneePos, endEffectorPos, targetPos });
-        if (!result.changed) continue;
+        if (!result.changed) {
+            continue;
+        }
 
         // —— 应用 hipDelta 并传播 ——
         // 快照 hipOldMat（用于 _propagateChildrenWasm 的相对变换计算）

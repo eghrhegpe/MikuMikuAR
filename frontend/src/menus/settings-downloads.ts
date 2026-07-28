@@ -70,7 +70,9 @@ async function listFilesWeb(
         ).values()) {
             const entryRel = relPath ? `${relPath}/${entry.name}` : entry.name;
             if (entry.kind === 'file') {
-                if (!_SUPPORTED_RE.test(entry.name)) continue;
+                if (!_SUPPORTED_RE.test(entry.name)) {
+                    continue;
+                }
                 const fileHandle = entry as FileSystemFileHandle;
                 try {
                     const file = await fileHandle.getFile();
@@ -163,11 +165,15 @@ async function runDownloadManagerWeb(
                 fail++;
                 continue;
             }
-            if (_ingestedStems.has(f.name)) continue;
+            if (_ingestedStems.has(f.name)) {
+                continue;
+            }
             zipTasks.push({ stem, bytes: f.bytes });
             _ingestedStems.add(f.name);
         } else {
-            if (_ingestedStems.has(f.name)) continue;
+            if (_ingestedStems.has(f.name)) {
+                continue;
+            }
             modelFiles.push({ name: f.name, bytes: f.bytes });
             _ingestedStems.add(f.name);
         }
@@ -243,7 +249,9 @@ async function runDownloadManagerLocal(
         const fullPath = `${downloadPath}/${e.relativePath}`;
         // [doc:adr-195] stem 仅用于日志/上下文；去重用完整文件名（见网页流同款修正）。
         const stem = e.name.replace(/\.[^.]+$/, '');
-        if (_ingestedStems.has(e.name)) continue;
+        if (_ingestedStems.has(e.name)) {
+            continue;
+        }
         try {
             if (e.name.toLowerCase().endsWith('.zip')) {
                 // [doc:adr-195] zip 解压入库（ImportZip 写 dir:/outfit: 键，不加载场景）
@@ -274,7 +282,9 @@ async function clearImported(
     getSettingsMenu: () => SettingsMenuHandle,
     onDone: () => void
 ): Promise<void> {
-    if (!confirm(t('downloads.clearConfirm'))) return;
+    if (!confirm(t('downloads.clearConfirm'))) {
+        return;
+    }
 
     // 重置本会话去重
     _ingestedStems.clear();
@@ -283,11 +293,15 @@ async function clearImported(
     if (isWebPlatform()) {
         const cfgKeys = await idbKeys('config');
         for (const k of cfgKeys) {
-            if (k.startsWith('imported:') || k.startsWith('dl:file:')) await idbDelete('config', k);
+            if (k.startsWith('imported:') || k.startsWith('dl:file:')) {
+                await idbDelete('config', k);
+            }
         }
         const modelKeys = await idbKeys('models');
         for (const k of modelKeys) {
-            if (k.startsWith('dl:file:')) await idbDelete('models', k);
+            if (k.startsWith('dl:file:')) {
+                await idbDelete('models', k);
+            }
         }
     } else if (getCachedCapabilities().localStaging && _desktopDownloadPath) {
         try {
@@ -352,7 +366,9 @@ function buildDownloadSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
                             false,
                             async () => {
                                 const picked = await selectFsaDownloadDir();
-                                if (picked) updateStatus();
+                                if (picked) {
+                                    updateStatus();
+                                }
                                 getSettingsMenu()?.reRender();
                             }
                         );
@@ -395,7 +411,9 @@ function buildDownloadSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
                         t('downloads.scanAndImport'),
                         false,
                         async () => {
-                            if (running) return;
+                            if (running) {
+                                return;
+                            }
                             running = true;
                             msgEl.textContent = t('downloads.running');
                             getSettingsMenu()?.updateControls();

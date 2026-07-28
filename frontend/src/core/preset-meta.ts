@@ -73,12 +73,16 @@ export async function listPresets(category?: PresetCategory): Promise<PresetMeta
             }
             case 'render': {
                 const presets = (await GetRenderPresets()) ?? [];
-                for (const p of presets) out.push(toPresetMeta('render', p.name));
+                for (const p of presets) {
+                    out.push(toPresetMeta('render', p.name));
+                }
                 break;
             }
             case 'scene': {
                 const names = (await GetPresetScenes()) ?? [];
-                for (const n of names) out.push(toPresetMeta('scene', n));
+                for (const n of names) {
+                    out.push(toPresetMeta('scene', n));
+                }
                 break;
             }
             case 'model': {

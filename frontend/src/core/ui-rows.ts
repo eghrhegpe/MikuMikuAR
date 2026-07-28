@@ -864,7 +864,9 @@ export function addBoneSelectRow(
             for (const opt of Array.from(g.querySelectorAll('option'))) {
                 const hit = !q || (opt.textContent ?? '').toLowerCase().includes(q);
                 (opt as HTMLElement).style.display = hit ? '' : 'none';
-                if (hit) visible++;
+                if (hit) {
+                    visible++;
+                }
             }
             (g as HTMLElement).style.display = visible > 0 ? '' : 'none';
         }

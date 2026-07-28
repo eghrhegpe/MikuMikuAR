@@ -73,14 +73,18 @@ function _encModelStem(stem: string): string {
 function _base64ToBytes(b64: string): Uint8Array {
     const bin = atob(b64);
     const bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    for (let i = 0; i < bin.length; i++) {
+        bytes[i] = bin.charCodeAt(i);
+    }
     return bytes;
 }
 
 /** Uint8Array → base64 字符串（兼容浏览器 btoa） */
 function _bytesToBase64(bytes: Uint8Array): string {
     let bin = '';
-    for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    for (let i = 0; i < bytes.length; i++) {
+        bin += String.fromCharCode(bytes[i]);
+    }
     return btoa(bin);
 }
 
@@ -122,8 +126,12 @@ function bestDecodeZipName(bytes: Uint8Array): string {
                 score -= 1; // 全角/半角（疑似损坏）
             }
         }
-        if (ffiCount === 0) score += 10; // 无替换字符（对齐 Go 的 err==nil +10）
-        if (enc === 'shift_jis') score += 3; // SJIS 偏置（MMD 主流编码）
+        if (ffiCount === 0) {
+            score += 10;
+        } // 无替换字符（对齐 Go 的 err==nil +10）
+        if (enc === 'shift_jis') {
+            score += 3;
+        } // SJIS 偏置（MMD 主流编码）
         if (score > bestScore) {
             bestScore = score;
             best = decoded;
@@ -324,7 +332,9 @@ function _classifyPath(path: string): _PathInfo {
 
     // 2. 选中目录资源：web://selected-dir/<catSeg>/<relPath>
     const selMatch = path.match(/^web:\/\/selected-dir\/(.+)$/);
-    if (selMatch) return { kind: 'selected-dir', stem: _stripExt(_stripCategorySeg(selMatch[1])) };
+    if (selMatch) {
+        return { kind: 'selected-dir', stem: _stripExt(_stripCategorySeg(selMatch[1])) };
+    }
 
     // 3. 已是 IDB key 前缀（含裸 'recent'）
     if (/^(file|entry|recent|dir|outfit):/.test(path) || path === 'recent') {
@@ -395,7 +405,9 @@ async function _listModels(): Promise<ModelEntry[]> {
     for (const k of keys) {
         const m = await idbGet<ModelEntry>('models', k);
         // [bugfix:stale-entry] 过滤无效 entry（旧版扫描残留的缺 dir/file_path 字段数据）
-        if (m && m.dir && m.file_path) out.push(m);
+        if (m && m.dir && m.file_path) {
+            out.push(m);
+        }
     }
     console.info(`[web-scan] _listModels: 返回 ${out.length} 个 ModelEntry`);
     return out;
@@ -407,7 +419,9 @@ async function _pickFilesMultiple(acceptPmx: boolean): Promise<FileSystemFileHan
     const picker = (
         window as { showOpenFilePicker?: (o?: unknown) => Promise<FileSystemFileHandle[]> }
     ).showOpenFilePicker;
-    if (typeof picker !== 'function') return null;
+    if (typeof picker !== 'function') {
+        return null;
+    }
     // .pmx 场景：多选模式让用户 Ctrl+选同目录的纹理
     // 需要同时支持 pmx + 纹理扩展名，但 FSA showOpenFilePicker 的 accept 是"或"语义，
     // 用 application/octet-stream 兜底接收所有文件，靠后缀在 SelectImportFile 内部分流
@@ -439,7 +453,9 @@ async function _pickFile(accept?: string): Promise<FileSystemFileHandle | null> 
     const picker = (
         window as { showOpenFilePicker?: (o?: unknown) => Promise<FileSystemFileHandle[]> }
     ).showOpenFilePicker;
-    if (typeof picker !== 'function') return null;
+    if (typeof picker !== 'function') {
+        return null;
+    }
     const handles = await picker(
         accept ? { types: [{ accept: { 'application/octet-stream': [accept] } }] } : undefined
     );
@@ -535,14 +551,18 @@ async function _buildIngestPairs(
 export async function ingestModelFile(file: File): Promise<string> {
     const bytes = new Uint8Array(await file.arrayBuffer());
     const { pairs, loadPath } = await _buildIngestPairs(file.name, bytes);
-    for (const [k, v] of pairs) await idbSet('models', k, v);
+    for (const [k, v] of pairs) {
+        await idbSet('models', k, v);
+    }
     return loadPath;
 }
 
 /** [doc:adr-195] 写入单文件（名+字节）到资源库，不加载到场景。供下载面板批量摄入复用。 */
 export async function ingestModelBytes(name: string, bytes: Uint8Array): Promise<string> {
     const { pairs, loadPath } = await _buildIngestPairs(name, bytes);
-    for (const [k, v] of pairs) await idbSet('models', k, v);
+    for (const [k, v] of pairs) {
+        await idbSet('models', k, v);
+    }
     return loadPath;
 }
 
@@ -603,8 +623,12 @@ async function _writeModelWithTextures(
     // 写纹理文件到 dir:<encStem>:<filename>
     for (const handle of allHandles) {
         const f = await handle.getFile();
-        if (!TEXTURE_EXTS_RE.test(f.name.toLowerCase())) continue;
-        if (f.name === pmxFile.name) continue; // 跳过 PMX 本身
+        if (!TEXTURE_EXTS_RE.test(f.name.toLowerCase())) {
+            continue;
+        }
+        if (f.name === pmxFile.name) {
+            continue;
+        } // 跳过 PMX 本身
         const texBytes = new Uint8Array(await f.arrayBuffer());
         const dirKey = `dir:${encStem}:${f.name}`;
         await idbSet('models', dirKey, texBytes);
@@ -698,7 +722,9 @@ const _SUPPORTED_EXTS_RE = /\.(pmx|vmd|mp3|wav|ogg|flac|wma|x|vpd|zip)$/i;
  * 返回值不含前缀；为空串时表示根（无子路径）。
  */
 function _computeCategoryRelPath(byDir: boolean, ext: string, relPath: string): string {
-    if (byDir) return relPath;
+    if (byDir) {
+        return relPath;
+    }
     const byExt = _CATEGORY_BY_EXT[ext];
     const catSub = byExt?.subdir;
     return catSub ? (relPath ? `${catSub}/${relPath}` : catSub) : relPath;
@@ -711,7 +737,9 @@ function _computeCategoryRelPath(byDir: boolean, ext: string, relPath: string): 
  */
 function _stripCategorySeg(p: string): string {
     const seg = p.split('/')[0];
-    if (!seg) return p;
+    if (!seg) {
+        return p;
+    }
     return _CATEGORY_SUBDIRS.has(seg.toLowerCase()) ? p.slice(seg.length + 1) : p;
 }
 
@@ -727,8 +755,12 @@ function _stripCategorySeg(p: string): string {
  *     PMX 在 `分类1`（pmxRelPath='分类1'），纹理在 `分类1/tex/face.png` → `tex`。
  */
 function _relPathFrom(childRelIdCategory: string, pmxRelPath: string): string {
-    if (!pmxRelPath) return childRelIdCategory;
-    if (childRelIdCategory === pmxRelPath) return '';
+    if (!pmxRelPath) {
+        return childRelIdCategory;
+    }
+    if (childRelIdCategory === pmxRelPath) {
+        return '';
+    }
     if (childRelIdCategory.startsWith(pmxRelPath + '/')) {
         return childRelIdCategory.slice(pmxRelPath.length + 1);
     }
@@ -755,14 +787,18 @@ async function _clearScannedEntries(): Promise<void> {
  * 未授权 / 无句柄 / 句柄失效返回 null，调用方降级为手动 SelectDir。 */
 async function restoreFsaRootHandle(): Promise<FileSystemDirectoryHandle | null> {
     const h = await idbGet<FileSystemDirectoryHandle>('config', 'fsaRootHandle');
-    if (!h) return null;
+    if (!h) {
+        return null;
+    }
     const permHandle = h as FileSystemDirectoryHandle & {
         queryPermission?: (o: { mode: 'readwrite' }) => Promise<PermissionState>;
     };
     if (typeof permHandle.queryPermission === 'function') {
         try {
             const perm = await permHandle.queryPermission({ mode: 'readwrite' });
-            if (perm === 'granted') return h;
+            if (perm === 'granted') {
+                return h;
+            }
         } catch {
             /* 句柄失效（权限撤销 / 隐私模式）→ 降级为手动 SelectDir */
         }
@@ -779,9 +815,13 @@ export type FsaAuthState = 'unsupported' | 'none' | 'granted' | 'revoked';
  *  - granted: 持久化句柄仍有效 → 启动自愈，不引导
  *  - revoked: 曾授权但失效（权限撤销/隐私模式/句柄损坏）→ 应提示重新授权 */
 export async function getFsaAuthState(): Promise<FsaAuthState> {
-    if (!_cap().fsAccess) return 'unsupported';
+    if (!_cap().fsAccess) {
+        return 'unsupported';
+    }
     const h = await idbGet<FileSystemDirectoryHandle>('config', 'fsaRootHandle');
-    if (!h) return 'none';
+    if (!h) {
+        return 'none';
+    }
     const permHandle = h as FileSystemDirectoryHandle & {
         queryPermission?: (o: { mode: 'readwrite' }) => Promise<PermissionState>;
     };
@@ -813,11 +853,15 @@ export async function dismissFsaAuthPrompt(): Promise<void> {
  * 与 restoreFsaRootHandle 的区别：后者仅 queryPermission（无手势），本函数主动 requestPermission（需手势）。 */
 export async function reauthorizeFsaRoot(): Promise<boolean> {
     const h = await idbGet<FileSystemDirectoryHandle>('config', 'fsaRootHandle');
-    if (!h) return false;
+    if (!h) {
+        return false;
+    }
     const permHandle = h as FileSystemDirectoryHandle & {
         requestPermission?: (o: { mode: 'readwrite' }) => Promise<PermissionState>;
     };
-    if (typeof permHandle.requestPermission !== 'function') return false;
+    if (typeof permHandle.requestPermission !== 'function') {
+        return false;
+    }
     try {
         const perm = await permHandle.requestPermission({ mode: 'readwrite' });
         if (perm === 'granted') {
@@ -838,9 +882,13 @@ const _FSA_DOWNLOAD_KEY = 'fsaDownloadHandle';
 
 /** 查询下载文件夹 FSA 授权状态（不触发权限弹窗），供 UI 引导。 */
 export async function getFsaDownloadAuthState(): Promise<FsaAuthState> {
-    if (!_cap().fsAccess) return 'unsupported';
+    if (!_cap().fsAccess) {
+        return 'unsupported';
+    }
     const h = await idbGet<FileSystemDirectoryHandle>('config', _FSA_DOWNLOAD_KEY);
-    if (!h) return 'none';
+    if (!h) {
+        return 'none';
+    }
     const permHandle = h as FileSystemDirectoryHandle & {
         queryPermission?: (o: { mode: 'readwrite' }) => Promise<PermissionState>;
     };
@@ -859,11 +907,15 @@ export async function getFsaDownloadAuthState(): Promise<FsaAuthState> {
 /** 对持久化的下载文件夹句柄重新请求授权（须用户手势上下文）。成功返回 true。 */
 export async function reauthorizeFsaDownload(): Promise<boolean> {
     const h = await idbGet<FileSystemDirectoryHandle>('config', _FSA_DOWNLOAD_KEY);
-    if (!h) return false;
+    if (!h) {
+        return false;
+    }
     const permHandle = h as FileSystemDirectoryHandle & {
         requestPermission?: (o: { mode: 'readwrite' }) => Promise<PermissionState>;
     };
-    if (typeof permHandle.requestPermission !== 'function') return false;
+    if (typeof permHandle.requestPermission !== 'function') {
+        return false;
+    }
     try {
         const perm = await permHandle.requestPermission({ mode: 'readwrite' });
         if (perm === 'granted') {
@@ -880,7 +932,9 @@ export async function reauthorizeFsaDownload(): Promise<boolean> {
 export async function selectFsaDownloadDir(): Promise<string | null> {
     const picker = (window as { showDirectoryPicker?: () => Promise<FileSystemDirectoryHandle> })
         .showDirectoryPicker;
-    if (typeof picker !== 'function') return null;
+    if (typeof picker !== 'function') {
+        return null;
+    }
     try {
         const h = await picker();
         await idbSet('config', _FSA_DOWNLOAD_KEY, h);
@@ -894,7 +948,9 @@ export async function selectFsaDownloadDir(): Promise<string | null> {
 /** 读取持久化的下载文件夹句柄（供扫描使用），不触发权限弹窗；无句柄返回 null。 */
 export async function getFsaDownloadHandle(): Promise<FileSystemDirectoryHandle | null> {
     const h = await idbGet<FileSystemDirectoryHandle>('config', _FSA_DOWNLOAD_KEY);
-    if (!h) return null;
+    if (!h) {
+        return null;
+    }
     _fsaDownloadHandle = h;
     return h;
 }
@@ -980,7 +1036,9 @@ async function _scanDirIntoIDB(
                     }
                     return;
                 }
-                if (!_SUPPORTED_EXTS_RE.test(lower)) return;
+                if (!_SUPPORTED_EXTS_RE.test(lower)) {
+                    return;
+                }
                 const file = await handle.getFile();
                 const bytes = new Uint8Array(await file.arrayBuffer());
                 const stem = _stripExt(name);
@@ -1039,7 +1097,9 @@ async function _scanDirIntoIDB(
                             if (typeof zf._data?.uncompressedSize === 'number') {
                                 totalUncompressed += zf._data.uncompressedSize;
                             }
-                            if (totalUncompressed > MAX_ZIP_TOTAL_BYTES) break;
+                            if (totalUncompressed > MAX_ZIP_TOTAL_BYTES) {
+                                break;
+                            }
                         }
                         if (totalUncompressed > MAX_ZIP_TOTAL_BYTES) {
                             console.warn(`[web-scan] zip ${name} 总未压缩大小超限，疑似 zip 炸弹`);
@@ -1219,7 +1279,9 @@ async function _scanRootGuarded(): Promise<void> {
         console.info('[web-scan] 扫描进行中，复用现有 Promise 避免并发清空');
         return _scanningPromise;
     }
-    if (!_fsaRootHandle) return;
+    if (!_fsaRootHandle) {
+        return;
+    }
     _scannedDirCount = 0; // [doc:adr-183] 重置计数器
     _scanningPromise = (async () => {
         try {
@@ -1240,7 +1302,9 @@ export const browserAdapter: BackendService = {
     async readFileBytes(path: string): Promise<Uint8Array | null> {
         const key = _resolveIdbKey(path);
         const bytes = (await idbGet<Uint8Array>('models', key)) ?? null;
-        if (bytes) return bytes;
+        if (bytes) {
+            return bytes;
+        }
         // 兜底 1：bare stem fallback（FSA 扫描场景，路径含类别前缀）
         // _classifyPath regex 只取第一个 / 前段作为 stem，尝试所有可能的 bare stem 边界
         const modelMatch = path.match(/^web:\/\/model\/(.+)$/);
@@ -1252,7 +1316,9 @@ export const browserAdapter: BackendService = {
                 const candidateRest = segments.slice(i + 1).join('/');
                 const candidateKey = `dir:${candidateStem}:${candidateRest}`;
                 const candidateBytes = (await idbGet<Uint8Array>('models', candidateKey)) ?? null;
-                if (candidateBytes) return candidateBytes;
+                if (candidateBytes) {
+                    return candidateBytes;
+                }
             }
         }
         // 兜底 2：dir:<stem>:<relPath> 未命中时，按 ExtractZip 扁平键 file:<stem>（去扩展名）再查一次
@@ -1260,7 +1326,9 @@ export const browserAdapter: BackendService = {
         if (baseName && baseName !== path) {
             const stem = _stripExt(baseName);
             const fallback = (await idbGet<Uint8Array>('models', `file:${stem}`)) ?? null;
-            if (fallback) return fallback;
+            if (fallback) {
+                return fallback;
+            }
         }
         return null;
     },
@@ -1277,7 +1345,9 @@ export const browserAdapter: BackendService = {
         // [doc:adr-177] 优先从 Config.ui_state 读（对齐主应用 restoreUIState 路径），
         // 兜底从 uistate store 读（向后兼容），最后用 _defaultUIState
         const cfg = await this.GetConfig();
-        if (cfg.ui_state) return cfg.ui_state;
+        if (cfg.ui_state) {
+            return cfg.ui_state;
+        }
         return (await idbGet<UIState>('uistate', 'state')) ?? _defaultUIState();
     },
     // [doc:adr-176] 对齐 Go 签名：SetUIState(ui: UIState)。
@@ -1353,7 +1423,9 @@ export const browserAdapter: BackendService = {
         // 否则写入 `dir:<nsStem>:subdir/tex/face.png` 与读取 `dir:<nsStem>:tex/face.png` 维度失配 → 贴图读不到。
         // 多 PMX 场景下还需仅处理 mainPmx 同子目录的文件，避免其他 PMX 子目录的贴图污染命名空间。
         const buf = await this.readFileBytes(zipPath);
-        if (!buf) return null;
+        if (!buf) {
+            return null;
+        }
         // [doc:adr-006] 传入 decodeFileName：与扫描期 _scanDirIntoIDB 一致的条目名解码，
         // 保证 n === _inner_path 比较两端解码一致（避免扫描期乱码、解压期又乱码导致找不到目标 pmx）
         const zip = await JSZip.loadAsync(buf, { decodeFileName: bestDecodeZipName });
@@ -1474,7 +1546,9 @@ export const browserAdapter: BackendService = {
     async GetThumbnail(modelPath: string): Promise<string> {
         const key = _resolveIdbKey(modelPath);
         const bytes = await idbGet<Uint8Array>('thumbnails', key);
-        if (!bytes) return '';
+        if (!bytes) {
+            return '';
+        }
         return _bytesToBase64(bytes);
     },
     // [doc:adr-177] 对齐 Go 契约（scene.go:38/65）：SaveLastScene(jsonStr) 单参、
@@ -1526,21 +1600,29 @@ export const browserAdapter: BackendService = {
         };
     },
     async ClearAllCaches(): Promise<void> {
-        for (const k of await idbKeys('caches')) await idbDelete('caches', k);
+        for (const k of await idbKeys('caches')) {
+            await idbDelete('caches', k);
+        }
     },
     async CleanOrphanCache(): Promise<void> {
         for (const k of await idbKeys('caches')) {
             const v = await idbGet('caches', k);
-            if (!v) await idbDelete('caches', k);
+            if (!v) {
+                await idbDelete('caches', k);
+            }
         }
     },
     async ClearExtractCache(): Promise<void> {
         for (const k of await idbKeys('caches')) {
-            if (k.startsWith('extract:')) await idbDelete('caches', k);
+            if (k.startsWith('extract:')) {
+                await idbDelete('caches', k);
+            }
         }
     },
     async ClearThumbnailCache(): Promise<void> {
-        for (const k of await idbKeys('thumbnails')) await idbDelete('thumbnails', k);
+        for (const k of await idbKeys('thumbnails')) {
+            await idbDelete('thumbnails', k);
+        }
     },
     async GetAllTags(): Promise<string[]> {
         return (await idbGet<string[]>('tags', 'all')) ?? [];
@@ -1640,7 +1722,9 @@ export const browserAdapter: BackendService = {
         let name = `preset-${Date.now()}`;
         try {
             const parsed = JSON.parse(jsonStr) as { name?: string };
-            if (parsed.name) name = parsed.name;
+            if (parsed.name) {
+                name = parsed.name;
+            }
         } catch {
             /* 解析失败用默认名 */
         }
@@ -1656,7 +1740,9 @@ export const browserAdapter: BackendService = {
         const out: RenderPreset[] = [];
         for (const k of keys) {
             const p = await idbGet<RenderPreset>('presets', k);
-            if (p) out.push(p);
+            if (p) {
+                out.push(p);
+            }
         }
         return out;
     },
@@ -1666,7 +1752,9 @@ export const browserAdapter: BackendService = {
         let name = `scene-${Date.now()}`;
         try {
             const parsed = JSON.parse(jsonStr) as { name?: string };
-            if (parsed.name) name = parsed.name;
+            if (parsed.name) {
+                name = parsed.name;
+            }
         } catch {
             /* 解析失败用默认名 */
         }
@@ -1688,7 +1776,9 @@ export const browserAdapter: BackendService = {
         let name = `env-${Date.now()}`;
         try {
             const parsed = JSON.parse(jsonStr) as { name?: string };
-            if (parsed.name) name = parsed.name;
+            if (parsed.name) {
+                name = parsed.name;
+            }
         } catch {
             /* 解析失败用默认名 */
         }
@@ -1708,7 +1798,9 @@ export const browserAdapter: BackendService = {
     async FileExists(path: string): Promise<boolean> {
         // [doc:adr-177] 经 _resolveIdbKey 映射，对齐 readFileBytes 路径语义
         const key = _resolveIdbKey(path);
-        if ((await idbGet('models', key)) !== undefined) return true;
+        if ((await idbGet('models', key)) !== undefined) {
+            return true;
+        }
         const baseName = _baseName(path);
         if (baseName && baseName !== path) {
             return (await idbGet('models', `file:${baseName}`)) !== undefined;
@@ -1810,12 +1902,16 @@ export const browserAdapter: BackendService = {
         // [doc:adr-177] 经 _resolveIdbKey 映射（场景存档 JSON / outfit JSON 等）
         const key = _resolveIdbKey(path);
         const bytes = await idbGet<Uint8Array>('models', key);
-        if (bytes) return new TextDecoder().decode(bytes);
+        if (bytes) {
+            return new TextDecoder().decode(bytes);
+        }
         // 兜底：尝试完整文件名
         const baseName = _baseName(path);
         if (baseName && baseName !== path) {
             const alt = await idbGet<Uint8Array>('models', `file:${baseName}`);
-            if (alt) return new TextDecoder().decode(alt);
+            if (alt) {
+                return new TextDecoder().decode(alt);
+            }
         }
         return null;
     },
@@ -1867,7 +1963,9 @@ export const browserAdapter: BackendService = {
         if (assetPaths) {
             for (const p of assetPaths) {
                 const bytes = await this.readFileBytes(p);
-                if (bytes) zip.file(_baseName(p), bytes);
+                if (bytes) {
+                    zip.file(_baseName(p), bytes);
+                }
             }
         }
         const blob = await zip.generateAsync({ type: 'blob' });
@@ -1899,7 +1997,9 @@ export const browserAdapter: BackendService = {
         // 双重编码（A%2Fmiku → A%252Fmiku）或 model-dir 全路径二次编码致 ListDirRecursive
         // 前缀失配。正则捕获整段 path（含可选 /rest），匹配即视为已编码、原样返回。
         const already = pmxPath.match(/^web:\/\/model\/([^/?#]+)(?:\/(.+))?$/);
-        if (already) return pmxPath;
+        if (already) {
+            return pmxPath;
+        }
         return `web://model/${_encModelStem(_extractStem(pmxPath))}`;
     },
     async ListDirRecursive(dirPath: string): Promise<FileInfo[]> {
@@ -1970,7 +2070,9 @@ export const browserAdapter: BackendService = {
         // 使「已授权源」启动即自愈，无需用户手动重选目录。未授权 / 无句柄降级为只读现有 entry。
         if (!_fsaRootHandle) {
             const restored = await restoreFsaRootHandle();
-            if (!restored) return _listModels();
+            if (!restored) {
+                return _listModels();
+            }
             _fsaRootHandle = restored;
             console.info('[web-scan] ScanModelDir: 自动恢复持久化句柄并重扫');
         }
@@ -1988,7 +2090,9 @@ export const browserAdapter: BackendService = {
         const picker = (
             window as { showDirectoryPicker?: () => Promise<FileSystemDirectoryHandle> }
         ).showDirectoryPicker;
-        if (typeof picker !== 'function') throw new NotSupportedError('SelectDir');
+        if (typeof picker !== 'function') {
+            throw new NotSupportedError('SelectDir');
+        }
         // [doc:adr-183] 若扫描进行中，等其完成再让用户重选——避免 _clearScannedEntries
         // 清空正在进行的扫描写入。用户在 zip 展开慢时反复点击是常见误操作。
         if (_scanningPromise) {
@@ -2012,7 +2116,9 @@ export const browserAdapter: BackendService = {
         // 避免 babylon-mmd 因 referenceFiles 为空 fallback 到 HTTP 404。
         // 先试单文件选择（兼容不支持多选的浏览器）
         const single = await _pickFile();
-        if (!single) return '';
+        if (!single) {
+            return '';
+        }
         const singleFile = await single.getFile();
         const singleLower = singleFile.name.toLowerCase();
         if (singleLower.endsWith('.pmx')) {
@@ -2042,7 +2148,9 @@ export const browserAdapter: BackendService = {
     async SelectBundleSaveFile(): Promise<string> {
         const picker = (window as { showSaveFilePicker?: () => Promise<FileSystemFileHandle> })
             .showSaveFilePicker;
-        if (typeof picker !== 'function') throw new NotSupportedError('SelectBundleSaveFile');
+        if (typeof picker !== 'function') {
+            throw new NotSupportedError('SelectBundleSaveFile');
+        }
         await picker();
         return 'web://save';
     },
@@ -2057,7 +2165,9 @@ export const browserAdapter: BackendService = {
     async SelectPresetSaveFile(): Promise<string> {
         const picker = (window as { showSaveFilePicker?: () => Promise<FileSystemFileHandle> })
             .showSaveFilePicker;
-        if (typeof picker !== 'function') throw new NotSupportedError('SelectPresetSaveFile');
+        if (typeof picker !== 'function') {
+            throw new NotSupportedError('SelectPresetSaveFile');
+        }
         await picker();
         return 'web://preset-save';
     },

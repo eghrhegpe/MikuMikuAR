@@ -76,7 +76,9 @@ let _cache: AiConfig | null = null;
 
 /** 同步读取：优先内存缓存；未加载时回退默认并触发异步回源（不阻塞调用方）。 */
 export function loadAiConfig(): AiConfig {
-    if (_cache) return _cache;
+    if (_cache) {
+        return _cache;
+    }
     void _hydrate();
     return DEFAULT_AI_CONFIG;
 }
@@ -91,7 +93,9 @@ export function saveAiConfig(partial: Partial<AiConfig>): AiConfig {
 
 /** 主动预加载（建议 init 后台调用，使首次读取即命中缓存，避免回退默认窗口）。 */
 export async function ensureAiConfigLoaded(): Promise<void> {
-    if (_cache) return;
+    if (_cache) {
+        return;
+    }
     await _hydrate();
 }
 

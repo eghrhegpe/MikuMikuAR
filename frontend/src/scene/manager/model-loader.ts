@@ -70,7 +70,9 @@ function _displayNameFromBase(fileName: string): string {
             /* 非法百分号编码（如真实文件名 "50%off"）→ 保持原样 */
         }
     }
-    if (name.includes('/')) name = name.split('/').pop() ?? name;
+    if (name.includes('/')) {
+        name = name.split('/').pop() ?? name;
+    }
     return name.replace(/\.pmx$/i, '');
 }
 
@@ -266,14 +268,18 @@ function getMimeType(name: string): string {
  *  [doc:adr-189] Phase 1: 并行读取 + basename 共享引用 + AbortSignal。
  *  @param signal 传入 loadPMXFile 的 effectiveSignal，abort 后立即停止读取 */
 async function collectTextureFiles(modelDir: string, signal?: AbortSignal): Promise<TextureFile[]> {
-    if (signal?.aborted) return [];
+    if (signal?.aborted) {
+        return [];
+    }
     const files: TextureFile[] = [];
     try {
         const entries = await ListDirRecursive(modelDir);
         if (!entries) {
             return files;
         }
-        if (signal?.aborted) return [];
+        if (signal?.aborted) {
+            return [];
+        }
         // [doc:adr-189] 串行 → 并行读取（手写 semaphore，限制 8 并发，复用 outfit.ts 模式）
         const CONCURRENCY = 8;
         let running = 0;
@@ -285,7 +291,9 @@ async function collectTextureFiles(modelDir: string, signal?: AbortSignal): Prom
                 }
                 running++;
                 try {
-                    if (signal?.aborted) return null;
+                    if (signal?.aborted) {
+                        return null;
+                    }
                     // [doc:adr-189] LRU 缓存命中直接返回，未命中则 readFileBytes + 缓存
                     const data = await readTextureWithLRU(modelDir, entry.relativePath, signal);
                     if (!data) {
@@ -306,7 +314,9 @@ async function collectTextureFiles(modelDir: string, signal?: AbortSignal): Prom
                 }
             });
         const results = await Promise.all(tasks);
-        if (signal?.aborted) return []; // 提前退出，避免浪费 basename fallback 计算
+        if (signal?.aborted) {
+            return [];
+        } // 提前退出，避免浪费 basename fallback 计算
         files.push(...results.filter((r): r is TextureFile => r !== null));
     } catch (err) {
         logWarn('model-loader', 'texture scan failed, falling back to HTTP:', err);
@@ -474,7 +484,9 @@ export async function loadPMXFile(
         // [doc:adr-124] Phase 2: 递归收集模型目录下纹理 → referenceFiles 直传 babylon-mmd
         // [doc:adr-189] 传入 effectiveSignal，模型切换时 abort 并行读取
         const textureFiles = await collectTextureFiles(modelDir, effectiveSignal);
-        if (effectiveSignal.aborted) return null;
+        if (effectiveSignal.aborted) {
+            return null;
+        }
 
         const pmxBytes = await readFileBytes(filePath);
         if (!pmxBytes || effectiveSignal.aborted) {

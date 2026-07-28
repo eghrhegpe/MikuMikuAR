@@ -62,7 +62,7 @@ export function setRecentModels(r: string[]): void {
 // ======== Display Name Priority（Deprecated：始终显示文件名）========
 
 /** @deprecated 始终显示文件名，保留以防外部引用 */
-export let displayNamePriority = 'filename' as const;
+export const displayNamePriority = 'filename' as const;
 export function setDisplayNamePriority(_p: string): void {
     // no-op: 始终使用文件名
 }

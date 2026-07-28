@@ -38,7 +38,9 @@ export async function* parseSseStream(
             }
 
             const { done, value } = await reader.read();
-            if (done) break;
+            if (done) {
+                break;
+            }
 
             buffer += decoder.decode(value, { stream: true });
             const lines = buffer.split('\n');
@@ -46,7 +48,9 @@ export async function* parseSseStream(
 
             for (const line of lines) {
                 const trimmed = line.trim();
-                if (!trimmed || trimmed.startsWith(':')) continue;
+                if (!trimmed || trimmed.startsWith(':')) {
+                    continue;
+                }
 
                 if (trimmed === 'data: [DONE]') {
                     yield { type: 'done' };
@@ -81,9 +85,15 @@ export async function* parseSseStream(
                                     acc = { id: '', name: '', arguments: '' };
                                     toolAccums.set(idx, acc);
                                 }
-                                if (tc.id) acc.id = tc.id;
-                                if (tc.function?.name) acc.name = tc.function.name;
-                                if (tc.function?.arguments) acc.arguments += tc.function.arguments;
+                                if (tc.id) {
+                                    acc.id = tc.id;
+                                }
+                                if (tc.function?.name) {
+                                    acc.name = tc.function.name;
+                                }
+                                if (tc.function?.arguments) {
+                                    acc.arguments += tc.function.arguments;
+                                }
                             }
                         }
 

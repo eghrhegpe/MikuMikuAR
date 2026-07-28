@@ -146,7 +146,9 @@ export function initHints(): void {
 let _statusSpinInjected = false;
 
 function _ensureStatusSpinStyle(): void {
-    if (_statusSpinInjected) return;
+    if (_statusSpinInjected) {
+        return;
+    }
     _statusSpinInjected = true;
     const style = document.createElement('style');
     style.textContent = '@keyframes status-spin{to{transform:rotate(360deg)}}';

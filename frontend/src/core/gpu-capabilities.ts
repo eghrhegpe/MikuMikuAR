@@ -18,7 +18,9 @@ let _cached: Ktx2Capability | null = null;
  * 探测结果缓存，避免重复创建 WebGL context。
  */
 export function detectKtx2Support(): Ktx2Capability {
-    if (_cached) return _cached;
+    if (_cached) {
+        return _cached;
+    }
     _cached = _doDetect();
     return _cached;
 }

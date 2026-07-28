@@ -766,11 +766,13 @@ function buildModelInfoSchema(id: string): MenuNode[] {
                                 setModelMetaCache(merged);
                             }
                             // 无论是否有新数据，都更新已渲染的 comment card
-                            let el = container.querySelector('[data-comment-card]');
+                            const el = container.querySelector('[data-comment-card]');
                             if (el) {
                                 const labelEl = el.querySelector('.info-card-label');
                                 const valEl = el.querySelector('.info-card-value');
-                                if (labelEl) labelEl.textContent = t('model-detail.fComment');
+                                if (labelEl) {
+                                    labelEl.textContent = t('model-detail.fComment');
+                                }
                                 if (valEl) {
                                     valEl.textContent =
                                         commentText || t('model-detail.fCommentEmpty');
@@ -872,7 +874,9 @@ function buildModelInfoSchema(id: string): MenuNode[] {
                         ) {
                             cardEl.setAttribute('data-comment-card', '');
                             const valEl = cardEl.querySelector('.info-card-value');
-                            if (valEl) (valEl as HTMLElement).style.whiteSpace = 'pre-wrap';
+                            if (valEl) {
+                                (valEl as HTMLElement).style.whiteSpace = 'pre-wrap';
+                            }
                         }
                     }
                 });
