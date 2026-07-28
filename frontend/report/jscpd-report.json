@@ -290,11 +290,11 @@
     },
     {
       "firstFile": {
-        "end": 242,
+        "end": 243,
         "endLoc": {
-          "column": 9,
-          "line": 242,
-          "position": 7934
+          "column": 7,
+          "line": 243,
+          "position": 8165
         },
         "name": "scene\\env\\env-sky.ts",
         "start": 226,
@@ -306,23 +306,23 @@
       },
       "format": "typescript",
       "fragment": "",
-      "lines": 17,
+      "lines": 18,
       "secondFile": {
-        "end": 367,
+        "end": 371,
         "endLoc": {
-          "column": 1,
-          "line": 367,
-          "position": 12948
+          "column": 7,
+          "line": 371,
+          "position": 13333
         },
         "name": "scene\\env\\env-sky.ts",
-        "start": 353,
+        "start": 356,
         "startLoc": {
           "column": 30,
-          "line": 353,
-          "position": 12511
+          "line": 356,
+          "position": 12753
         }
       },
-      "tokens": 76
+      "tokens": 88
     },
     {
       "firstFile": {
@@ -470,7 +470,7 @@
     }
   ],
   "statistics": {
-    "detectionDate": "2026-07-28T11:24:25.486Z",
+    "detectionDate": "2026-07-28T13:42:08.175Z",
     "formats": {
       "txt": {
         "clones": 0,
@@ -486,28 +486,28 @@
       },
       "typescript": {
         "clones": 13,
-        "duplicatedLines": 237,
-        "duplicatedTokens": 1063,
-        "lines": 43467,
+        "duplicatedLines": 238,
+        "duplicatedTokens": 1075,
+        "lines": 43473,
         "newClones": 0,
         "newDuplicatedLines": 0,
-        "percentage": 0.5452412174753261,
-        "percentageTokens": 0.5089777352166627,
+        "percentage": 0.5474662434154532,
+        "percentageTokens": 0.5146643430967952,
         "sources": 235,
-        "tokens": 208850
+        "tokens": 208874
       }
     },
     "total": {
       "clones": 13,
-      "duplicatedLines": 237,
-      "duplicatedTokens": 1063,
-      "lines": 43560,
+      "duplicatedLines": 238,
+      "duplicatedTokens": 1075,
+      "lines": 43566,
       "newClones": 0,
       "newDuplicatedLines": 0,
-      "percentage": 0.5440771349862259,
-      "percentageTokens": 0.5053194017930995,
+      "percentage": 0.5462975715007116,
+      "percentageTokens": 0.5109655585447701,
       "sources": 236,
-      "tokens": 210362
+      "tokens": 210386
     }
   }
 }
