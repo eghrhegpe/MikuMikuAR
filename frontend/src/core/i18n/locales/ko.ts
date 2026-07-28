@@ -1905,6 +1905,7 @@ export const ko: Record<string, string> = {
     'ai.mode.diagnostic': '🔍 진단',
     'ai.mode.chat': '💬 대화',
     'ai.mode.control': '🎮 제어',
+    'ai.mode.dialogue': '🎭 대사',
     'ai.system.control':
         '당신은 MikuMikuAR 씬 제어 어시스턴트입니다. 다음 도구를 사용하여 사용자의 요청에 따라 씬을 수정하세요.',
     'ai.system.controlFormat':

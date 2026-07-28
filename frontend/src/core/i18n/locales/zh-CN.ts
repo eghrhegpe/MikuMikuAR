@@ -1900,6 +1900,7 @@ export const zhCN: Record<string, string> = {
     'ai.mode.diagnostic': '🔍 诊断',
     'ai.mode.chat': '💬 闲聊',
     'ai.mode.control': '🎮 控制',
+    'ai.mode.dialogue': '🎭 台词',
     'ai.system.control': '你是 MikuMikuAR 场景控制助手。使用以下工具根据用户要求修改场景。',
     'ai.system.controlFormat':
         '请用 JSON 格式回复：{"action": "工具名", "params": {"参数名": "值"}}。只使用上方列表中的工具。如果用户要求不支持的操作，请说明你能做什么。',
