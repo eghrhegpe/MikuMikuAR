@@ -21,16 +21,16 @@ vi.mock('../action-defs/library-actions-def', () => ({ registerLibraryActions: v
 // 完全 mock library-actions：绝不可 importOriginal，否则会加载真实模块并连带拉起 Babylon Scene（happy-dom 下崩溃）。
 vi.mock('../../menus/library-actions', () => ({
     findLibraryModelByName: vi.fn(() => ({ file_path: 'dummy.pmx' }) as never),
-    loadLibraryModel: vi.fn(() => true),
+    replaceModel: vi.fn(),
     findLibraryMotionByName: vi.fn(() => ({ file_path: 'dummy.vmd' }) as never),
-    loadLibraryMotion: vi.fn(() => true),
+    replaceMotion: vi.fn(),
 }));
 
 import { executeActionById } from '../action-executor';
 import { registerControlActions } from '../ai/action-registry-defs';
 import {
-    loadLibraryModel,
-    loadLibraryMotion,
+    replaceModel,
+    replaceMotion,
     findLibraryModelByName,
     findLibraryMotionByName,
 } from '../../menus/library-actions';
@@ -43,18 +43,21 @@ beforeEach(() => {
 });
 
 describe('action-executor：P1 双重加载回归（真实 control 动作）', () => {
-    it('loadModel 仅加载一次（resolve 不触发加载）', async () => {
+    it('loadModel 仅加载一次（resolve 返回实体对象，execute 调 replaceModel 一次）', async () => {
         const res = await executeActionById('ai:control:loadModel', { name: 'miku' });
         expect(res.success).toBe(true);
         expect(findLibraryModelByName).toHaveBeenCalledTimes(1);
-        expect(loadLibraryModel).toHaveBeenCalledTimes(1);
+        expect(replaceModel).toHaveBeenCalledTimes(1);
+        // entity 语义名副其实：execute 拿到的是 resolve 返回的实体对象，而非字符串名
+        expect(replaceModel).toHaveBeenCalledWith({ file_path: 'dummy.pmx' });
     });
 
-    it('loadMotion 仅加载一次（resolve 不触发替换）', async () => {
+    it('loadMotion 仅加载一次（resolve 返回实体对象，execute 调 replaceMotion 一次）', async () => {
         const res = await executeActionById('ai:control:loadMotion', { name: 'dance' });
         expect(res.success).toBe(true);
         expect(findLibraryMotionByName).toHaveBeenCalledTimes(1);
-        expect(loadLibraryMotion).toHaveBeenCalledTimes(1);
+        expect(replaceMotion).toHaveBeenCalledTimes(1);
+        expect(replaceMotion).toHaveBeenCalledWith({ file_path: 'dummy.vmd' });
     });
 
     it('实体未找到时返回失败且不调用加载器', async () => {
@@ -62,7 +65,7 @@ describe('action-executor：P1 双重加载回归（真实 control 动作）', (
         const res = await executeActionById('ai:control:loadModel', { name: 'nope' });
         expect(res.success).toBe(false);
         expect(res.message).toContain('未找到');
-        expect(loadLibraryModel).not.toHaveBeenCalled();
+        expect(replaceModel).not.toHaveBeenCalled();
     });
 });
 

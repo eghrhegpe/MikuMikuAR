@@ -5,11 +5,12 @@ import { applyEnvPreset } from '../../scene/env/env-time-of-day';
 import { setEnvState } from '../../scene/env/env-bridge';
 import { setPerformanceMode } from '../../scene/render/performance';
 import {
-    loadLibraryModel,
-    loadLibraryMotion,
+    replaceModel,
+    replaceMotion,
     findLibraryModelByName,
     findLibraryMotionByName,
 } from '../../menus/library-actions';
+import type { LibraryModel } from '../../core/types';
 import { envState } from '../state';
 import { registerSettingsActions } from '../action-defs/settings-actions';
 import { registerSceneActions } from '../action-defs/scene-actions';
@@ -99,12 +100,12 @@ export function registerControlActions(): void {
             {
                 name: 'name',
                 type: 'entity',
-                resolve: async (name: string) => (findLibraryModelByName(name) ? name : null),
+                resolve: async (name: string) => findLibraryModelByName(name),
             },
         ],
         destructive: true,
         execute: async (p) => {
-            loadLibraryModel(p.name as string);
+            replaceModel(p.name as LibraryModel);
         },
     });
 
@@ -117,12 +118,12 @@ export function registerControlActions(): void {
             {
                 name: 'name',
                 type: 'entity',
-                resolve: async (name: string) => (findLibraryMotionByName(name) ? name : null),
+                resolve: async (name: string) => findLibraryMotionByName(name),
             },
         ],
         destructive: true,
         execute: async (p) => {
-            loadLibraryMotion(p.name as string);
+            replaceMotion(p.name as LibraryModel);
         },
     });
 
