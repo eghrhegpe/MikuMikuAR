@@ -21,8 +21,11 @@ import {
     markNavItem,
     navFocusTarget,
     navHasHorizontalAdjust,
+    navGroupSelector,
+    navGroupMove,
     NAV_ITEM_ATTR,
     NAV_ITEM_SELECTOR,
+    type NavItemOptions,
 } from '../core/ui-nav-item';
 
 /** 菜单过渡时间常量（与 app.css :root --menu-transition-duration 同步） */
@@ -69,6 +72,8 @@ export class SlideMenu {
     private _swipeTouchStartHandler: ((e: TouchEvent) => void) | null = null;
     private _swipeTouchEndHandler: ((e: TouchEvent) => void) | null = null;
     private _keydownDisp: Disposable | null = null;
+    /** 组内导航（chips/mode-btn 一排按钮）的 ←→ 处理器 */
+    private _groupNavDisp: Disposable | null = null;
     private _swipeTouchStartDisp: Disposable | null = null;
     private _swipeTouchEndDisp: Disposable | null = null;
     /**
@@ -174,6 +179,21 @@ export class SlideMenu {
             onArrowBack: () => this.pop(), // ← = 返回上一层级
             wrap: true,
         });
+
+        // 组内导航：停在组行（data-nav-group，如 chips/type-row）时，←→ 在组内子项间移动。
+        // createKeyboardNav 对组行的 ←→ 经 perKeySkip 让位（不 preventDefault），事件传到此处理。
+        const groupNavHandler = (e: KeyboardEvent) => {
+            if (this.transitioning) return;
+            if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+            const target = e.target instanceof HTMLElement ? e.target : null;
+            const row = target?.closest<HTMLElement>(NAV_ITEM_SELECTOR);
+            if (!row || !navGroupSelector(row)) return;
+            const dir = e.key === 'ArrowRight' ? 1 : -1;
+            if (navGroupMove(row, dir)) {
+                e.preventDefault();
+            }
+        };
+        this._groupNavDisp = addDisposableListener(this.container, 'keydown', groupNavHandler);
 
         // 触屏手势：右滑返回上一层级
         this._swipeStartX = 0;
@@ -663,7 +683,7 @@ export class SlideMenu {
      * 新控件若沿用既有行类（.cs-row/.toggle-row 等）自动纳入；全新类型在此加一条映射即可。
      */
     private _ensureNavMarkers(): void {
-        const mark = (el: HTMLElement, opts?: { focusSelector?: string; horizontalAdjust?: boolean }) => {
+        const mark = (el: HTMLElement, opts?: NavItemOptions) => {
             if (!el.hasAttribute(NAV_ITEM_ATTR)) {
                 markNavItem(el, opts);
             }
@@ -685,11 +705,17 @@ export class SlideMenu {
                 mark(el, { focusSelector: '.cs-top[role="listbox"]', horizontalAdjust: true });
             }
         });
-        // 模式切换行 .type-row：内部为 <button> 子元素（行本身不可聚焦），
-        // 聚焦首个按钮；←→ 让给控件内部循环切换。
+        // 模式切换行 .type-row：一排 .mode-btn 按钮 → 二维组导航（←→ 组内移动、Enter 触发）。
         this.panel
             .querySelectorAll<HTMLElement>('.type-row')
-            .forEach((el) => mark(el, { focusSelector: 'button', horizontalAdjust: true }));
+            .forEach((el) => mark(el, { groupSelector: '.mode-btn' }));
+        // 预设 chips 组 .preset-group：一排 .preset-chip 按钮 → 二维组导航。
+        // badge chip（只读）不可点击，若整组均为 badge 则组内无可聚焦子项 → navGroupMove 自然空转。
+        this.panel.querySelectorAll<HTMLElement>('.preset-group').forEach((el) => {
+            if (el.querySelector('.preset-chip:not(.badge)')) {
+                mark(el, { groupSelector: '.preset-chip:not(.badge)' });
+            }
+        });
     }
 
     private clearFocus(): void {
@@ -997,6 +1023,8 @@ export class SlideMenu {
         }
         this._keydownDisp?.dispose();
         this._keydownDisp = null;
+        this._groupNavDisp?.dispose();
+        this._groupNavDisp = null;
         this._swipeTouchStartDisp?.dispose();
         this._swipeTouchStartDisp = null;
         this._swipeTouchStartHandler = null;
