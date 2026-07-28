@@ -91,6 +91,8 @@ import {
     initFreeflyUpdate,
     initFreeflyTouch,
     stopFreefly,
+    initOrbitUpdate,
+    stopOrbit,
     startSurround,
     stopSurround,
     startConcert,
@@ -337,6 +339,8 @@ export function initCameraSystem(scene: Scene, canvas: HTMLCanvasElement): Camer
     setCameraMode('orbit');
     _syncAxesFromMode('orbit');
     scene.activeCamera = cam;
+    // 默认 orbit 模式：启动键盘环绕的渲染循环积分（丝滑 WSAD）
+    initOrbitUpdate(scene);
     return cam;
 }
 
@@ -371,6 +375,7 @@ export function switchCameraMode(mode: CameraMode): void {
         }
         if (getCameraMode() === 'orbit') {
             stopBoneLock();
+            stopOrbit();
         }
     }
 
@@ -506,6 +511,9 @@ export function switchCameraMode(mode: CameraMode): void {
     if (mode === 'freefly') {
         initFreeflyUpdate(scene);
         initFreeflyTouch(canvas);
+    }
+    if (mode === 'orbit') {
+        initOrbitUpdate(scene);
     }
     if (mode === 'concert') {
         startConcert(scene);

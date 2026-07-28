@@ -20,6 +20,7 @@ import {
 } from './config';
 import { updatePlaybackUI, seekFromEvent, focusedMmdModel } from '../scene/scene';
 import { freeflyInput } from './freefly-state';
+import { orbitInput } from './orbit-state';
 import { getCameraMode } from '../scene/camera/camera';
 import { t } from './i18n/t';
 import { openExternalURL } from './platform';
@@ -59,9 +60,6 @@ import { closePlaza } from '../menus/plaza-state';
 import { handleDroppedFile } from './drop-import';
 import { focusModel } from '../scene/manager/model-ops';
 import { getAllShortcuts, getAriaKeyshortcuts } from './shortcut-registry';
-import { getCurrentCamera } from '../scene/camera/camera';
-import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
-import { clamp } from './utils';
 
 // ======== Module-level state ========
 const _lastOverlayFn = new Map<string, () => void>();
@@ -281,58 +279,60 @@ export function registerEventHandlers(): void {
     });
 
     // ======== orbit 模式 WSAD 环绕旋转（与 freefly WSAD 统一相机键位） ========
-    // W/S = 仰角 beta、A/D = 环绕 alpha、+/- = 缩放。
+    // W/S = 仰角 beta、A/D = 环绕 alpha、+/- = 缩放。丝滑：keydown/keyup 只置位，
+    // 实际积分由 camera-behaviors.ts 的 initOrbitUpdate 渲染循环逐帧推进（同 freefly）。
     // 方向键从相机控制让出：菜单开 = 导航，菜单关 = 播放 seek。
-    // 旧实现靠 `activeElement === canvas` 才触发，用户难以聚焦 canvas 导致「没效果」；
-    // 现改为与 freefly 一致的模式守卫 + 焦点不在菜单/输入框。
-    _reg(window, 'keydown', (e) => {
-        if (getCameraMode() !== 'orbit') {
-            return;
-        }
-        const t = e.target as HTMLElement;
+    const _orbitKeyActive = (t: HTMLElement | null): boolean => {
+        if (getCameraMode() !== 'orbit') return false;
         if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) {
-            return;
+            return false;
         }
         // 菜单打开时 WSAD 交给菜单导航（避免相机与列表导航抢键）
         if (t && (t.closest('.slide-menu') || t.closest('.menu-container'))) {
-            return;
+            return false;
         }
-        const cam = getCurrentCamera();
-        if (!cam || !(cam instanceof ArcRotateCamera)) {
-            return;
-        }
-        const shift = e.shiftKey ? 3 : 1;
-        const yawStep = ((5 * Math.PI) / 180) * shift; // 5° per press
-        const pitchStep = ((5 * Math.PI) / 180) * shift;
-        const zoomFactor = shift > 1 ? 0.7 : 0.9; // 30% vs 10% per press
-
-        switch (e.code) {
+        return true;
+    };
+    const _orbitKeyFlag = (code: string, down: boolean): boolean => {
+        switch (code) {
             case 'KeyA':
-                cam.alpha -= yawStep;
-                e.preventDefault();
-                break;
+                orbitInput.left = down;
+                return true;
             case 'KeyD':
-                cam.alpha += yawStep;
-                e.preventDefault();
-                break;
+                orbitInput.right = down;
+                return true;
             case 'KeyW':
-                cam.beta = clamp(cam.beta - pitchStep, 0.1, Math.PI - 0.1);
-                e.preventDefault();
-                break;
+                orbitInput.up = down;
+                return true;
             case 'KeyS':
-                cam.beta = clamp(cam.beta + pitchStep, 0.1, Math.PI - 0.1);
-                e.preventDefault();
-                break;
+                orbitInput.down = down;
+                return true;
             case 'Equal':
             case 'NumpadAdd':
-                cam.radius *= zoomFactor;
-                e.preventDefault();
-                break;
+                orbitInput.zoomIn = down;
+                return true;
             case 'Minus':
             case 'NumpadSubtract':
-                cam.radius /= zoomFactor;
-                e.preventDefault();
-                break;
+                orbitInput.zoomOut = down;
+                return true;
+        }
+        return false;
+    };
+    _reg(window, 'keydown', (e) => {
+        if (!_orbitKeyActive(e.target as HTMLElement)) {
+            return;
+        }
+        if (_orbitKeyFlag(e.code, true)) {
+            e.preventDefault();
+        }
+    });
+    _reg(window, 'keyup', (e) => {
+        // keyup 不受菜单守卫限制：保证松键总能清标记，避免相机“卡住”持续旋转
+        if (getCameraMode() !== 'orbit') {
+            return;
+        }
+        if (_orbitKeyFlag(e.code, false)) {
+            e.preventDefault();
         }
     });
 
