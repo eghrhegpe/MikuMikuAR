@@ -41,7 +41,7 @@ vi.mock('./idb', () => ({
     closeIDB: vi.fn(),
 }));
 
-import JSZip from 'jszip';
+import { zipSync, strToU8 } from 'fflate';
 import { browserAdapter } from './browser-adapter';
 import type { UIState, EnvState } from '@bindings/mikumikuar/internal/app/models';
 import { isWebPlatform, isAndroidPlatform, guardExternalAction } from '../platform';
@@ -333,13 +333,9 @@ describe('ADR-177 Phase 2 A4 p2-5：虚拟目录 + 伴生文件加载', () => {
         _idbStore.clear();
     });
 
-    /** 用 JSZip 构造测试 zip 字节。 */
+    /** 用 fflate zipSync 构造测试 zip 字节。 */
     async function makeZip(files: Record<string, Uint8Array>): Promise<Uint8Array> {
-        const zip = new JSZip();
-        for (const [name, data] of Object.entries(files)) {
-            zip.file(name, data);
-        }
-        return new Uint8Array(await zip.generateAsync({ type: 'arraybuffer' }));
+        return zipSync(files);
     }
 
     describe('IsolateModelDir 虚拟目录', () => {
