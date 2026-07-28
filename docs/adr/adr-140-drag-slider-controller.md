@@ -1,8 +1,8 @@
 # ADR-140: DragSliderController 统一滑块输入
 
-- **状态**: 完成（已实施）
+- **状态**: 完成（已实施）；2026-07-28 修订——键盘调值仅保留 ←→（↑↓ 让给菜单列表遍历，见下方行为变更记录）。
 - **日期**: 2026-07-19
-- **相关**: ADR-093（菜单声明式 Schema）、ADR-096（通用 Helper 收敛）
+- **相关**: ADR-093（菜单声明式 Schema）、ADR-096（通用 Helper 收敛）、ADR-153（无障碍/键盘导航——滑块 ↑↓ 让位的上游决策）
 
 ## 背景与问题
 
@@ -136,6 +136,14 @@ export class DragSliderController {
 | `addModeSlider` | 键盘 `shift` 由「四分位跳 `floor(total/4)`」改为「`step*10` = 跳 10 个索引」；纯点击（mousedown→mouseup 无移动）由「循环微移」改为「绝对跳转到点击位置」；内部以 `value=currentIndex, min=0, max=total-1, step=1` 映射 | 多选项模式下 shift / 点击语义更规整，但与旧版不同，需目检 |
 | `addColorSliderRow` / `addVector3SliderRow` | 行为基本一致（step 派生、拖拽 / 键盘 / 点击统一）；控制器新增 `ctrl` 步进（×100）作为增强 | 无破坏，仅新增能力 |
 | 全部 builder | 初始化不再触发用户 `onChange`（与原实现一致，避免误触发） | 无 |
+
+## 行为变更记录二（实施于 2026-07-28，键盘 ↑↓ 让位）
+
+> 配合 ADR-153 菜单方向键导航纳入滑块/开关行：菜单靠 ↑↓ 在各行间遍历，若滑块也用 ↑↓ 调值则与菜单抢键。只能二选一，因此滑块放弃 ↑↓。
+
+| Builder | 变更 | 影响 |
+|---------|------|------|
+| 全部滑块（`DragSliderController.handleKeyDown`） | 键盘调值仅保留 `ArrowLeft`/`ArrowRight`（+ `Home`/`End`）；移除 `ArrowUp`/`ArrowDown` 调值分支 | 滑块聚焦时 ↑↓ 不再调值，而是冒泡到菜单做列表遍历；符合 WAI-ARIA slider 允许仅水平键的规范。shift/ctrl 倍率、Home/End 不变 |
 
 ## 决策修正（关于「标记 @deprecated」）
 

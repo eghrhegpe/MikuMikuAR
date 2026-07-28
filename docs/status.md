@@ -76,7 +76,7 @@
 | ADR-143 | 可统一代码收敛（P1 之外剩余项） | 已完成（2026-07-19） |
 | ADR-142 | withLoadingStatus 加载状态机统一 | 已完成（2026-07-19） |
 | ADR-141 | state.ts 拆分 — 状态基座重构 | 实施完成（2026-07-19） |
-| ADR-140 | DragSliderController 统一滑块输入 | 完成（已实施）（2026-07-19） |
+| ADR-140 | DragSliderController 统一滑块输入 | 完成（已实施）；2026-07-28 修订——键盘调值仅保留 ←→（↑↓ 让给菜单列表遍历，见下方行为变更记录）。（2026-07-19） |
 | ADR-139 | Observer 生命周期统一管理 | ✅ 已完成（2026-07-19） |
 | ADR-138 | env-dispatcher 破循环依赖 | 已完成（2026-07-19 Phase 3 完成：env-water/clouds/particles 各自注册回调 + env-bridge → env-impl 依赖消除） |
 | ADR-137 | EnvState 单一源 Schema | 已实施（2026-07-19） |
