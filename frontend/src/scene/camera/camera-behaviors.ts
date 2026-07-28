@@ -10,9 +10,11 @@ import { Scene } from '@babylonjs/core/scene';
 
 import { focusedModelId, modelRegistry } from '@/core/config';
 import { freeflyInput } from '@/core/freefly-state';
+import { orbitInput } from '@/core/orbit-state';
 import { addDisposableListener, type Disposable } from '@/core/dom';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { safeDispose } from '@/core/dispose-helpers';
+import { clamp } from '@/core/clamp';
 import {
     getCameraMode,
     getCameraPreset,
@@ -21,10 +23,11 @@ import {
     isTouchDevice,
 } from './camera-state';
 
-// 模块级 handle：surround/concert/freefly 的 onBeforeRender 回调
+// 模块级 handle：surround/concert/freefly/orbit 的 onBeforeRender 回调
 let _concertUpdateHandle: ObserverHandle | null = null;
 let _surroundUpdateHandle: ObserverHandle | null = null;
 let _freeflyUpdateHandle: ObserverHandle | null = null;
+let _orbitUpdateHandle: ObserverHandle | null = null;
 let _concertT = 0;
 let _surroundAngle = 0;
 // Cached target vector for concert/surround modes (avoids per-frame Vector3 allocation)
@@ -168,6 +171,62 @@ export function stopFreefly(): void {
 
     if (_freeflyUpdateHandle) {
         _freeflyUpdateHandle = safeDispose(_freeflyUpdateHandle);
+    }
+}
+
+// ======== Orbit 键盘环绕 — 渲染循环连续积分（丝滑）========
+// 仅 orbit 模式生效：读 events.ts 置位的 orbitInput 标记，每帧按帧率归一的
+// 角速度/缩放率积分 alpha/beta/radius。取代旧的 keydown 离散步进（每次跳 5°）。
+const _ORBIT_ANGULAR_SPEED = (90 * Math.PI) / 180; // 90°/s
+const _ORBIT_ZOOM_SPEED = 4; // radius 单位/s
+
+export function initOrbitUpdate(scene: Scene): void {
+    if (_orbitUpdateHandle) {
+        _orbitUpdateHandle.dispose();
+    }
+    _orbitUpdateHandle = observe(scene.onBeforeRenderObservable, () => {
+        if (getCameraMode() !== 'orbit') {
+            return;
+        }
+        const cam = getCurrentCamera();
+        if (!cam || !(cam instanceof ArcRotateCamera)) {
+            return;
+        }
+        // getAnimationRatio() ≈ 当前帧相对 60fps 的时长倍数，保证不同帧率下速度一致
+        const ratio = scene.getAnimationRatio();
+        const angStep = (_ORBIT_ANGULAR_SPEED / 60) * ratio;
+        const zoomStep = (_ORBIT_ZOOM_SPEED / 60) * ratio;
+
+        if (orbitInput.left) {
+            cam.alpha -= angStep;
+        }
+        if (orbitInput.right) {
+            cam.alpha += angStep;
+        }
+        if (orbitInput.up) {
+            cam.beta = clamp(cam.beta - angStep, 0.1, Math.PI - 0.1);
+        }
+        if (orbitInput.down) {
+            cam.beta = clamp(cam.beta + angStep, 0.1, Math.PI - 0.1);
+        }
+        if (orbitInput.zoomIn) {
+            cam.radius = Math.max(cam.lowerRadiusLimit ?? 0, cam.radius - zoomStep);
+        }
+        if (orbitInput.zoomOut) {
+            cam.radius = Math.min(cam.upperRadiusLimit ?? Infinity, cam.radius + zoomStep);
+        }
+    });
+}
+
+export function stopOrbit(): void {
+    orbitInput.left = false;
+    orbitInput.right = false;
+    orbitInput.up = false;
+    orbitInput.down = false;
+    orbitInput.zoomIn = false;
+    orbitInput.zoomOut = false;
+    if (_orbitUpdateHandle) {
+        _orbitUpdateHandle = safeDispose(_orbitUpdateHandle);
     }
 }
 
