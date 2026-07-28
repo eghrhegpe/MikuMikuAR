@@ -112,7 +112,13 @@ func (a *App) AiGetLLMConfig() LLMConfig {
 	return a.getLLMConfig()
 }
 
-func (a *App) AiTestLLMConnection() (bool, string) {
+type LLMConnectionResult struct {
+	OK      bool   `json:"ok"`
+	Kind    string `json:"kind"`
+	Message string `json:"message"`
+}
+
+func (a *App) AiTestLLMConnection() LLMConnectionResult {
 	cfg := a.getLLMConfig()
 
 	apiKey := cfg.AIKey
@@ -129,5 +135,10 @@ func (a *App) AiTestLLMConnection() (bool, string) {
 	ctx, cancel := context.WithTimeout(context.Background(), testConnTimeout)
 	defer cancel()
 
-	return llm.TestConnection(ctx, clientCfg)
+	res := llm.TestConnection(ctx, clientCfg)
+	return LLMConnectionResult{
+		OK:      res.OK,
+		Kind:    res.Kind,
+		Message: res.Message,
+	}
 }

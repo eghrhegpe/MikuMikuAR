@@ -1,4 +1,10 @@
-import type { AiService, AiCapabilities, ChatRequest, ChatChunk } from './types';
+import type {
+    AiService,
+    AiCapabilities,
+    ChatRequest,
+    ChatChunk,
+    AiConnectionResult,
+} from './types';
 import { events } from '../runtime-bridge';
 import type * as AppBindings from '@bindings/mikumikuar/internal/app/app';
 import type { LLMConfig } from '@bindings/mikumikuar/internal/app/models';
@@ -81,13 +87,21 @@ class GoAiAdapter implements AiService {
         await this._capsPromise;
     }
 
-    async testConnection(): Promise<{ ok: boolean; message: string }> {
+    async testConnection(): Promise<AiConnectionResult> {
         const b = await _getB();
         try {
-            const [ok, message] = await b.AiTestLLMConnection();
-            return { ok, message };
+            const res = await b.AiTestLLMConnection();
+            return {
+                ok: res.ok,
+                kind: (res.kind as AiConnectionResult['kind']) || 'unknown',
+                message: res.message,
+            };
         } catch (err) {
-            return { ok: false, message: err instanceof Error ? err.message : String(err) };
+            return {
+                ok: false,
+                kind: 'unknown',
+                message: err instanceof Error ? err.message : String(err),
+            };
         }
     }
 

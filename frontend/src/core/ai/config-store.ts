@@ -4,7 +4,7 @@
 
 import { idbGet, idbSet } from '../backend/idb';
 import type { Store } from '../backend/idb';
-import type { AiConfigProvider, AiErrorKind, AiValidationResult } from './types';
+import type { AiConfigProvider, AiErrorKind, AiValidationResult, AiValidationError } from './types';
 export type { AiConfigProvider } from './types';
 
 export interface AiConfig {
@@ -121,17 +121,23 @@ async function _hydrate(): Promise<void> {
     }
 }
 
-/** 校验配置是否足够发起一次对话。 */
+/** 校验配置是否足够发起一次对话。全量收集所有错误，一次性返回。 */
 export function validateAiConfig(config: AiConfig): AiValidationResult {
     const preset = PROVIDER_PRESETS[config.provider];
+    const errors: AiValidationError[] = [];
+
     if (!config.endpoint.trim()) {
-        return { ok: false, kind: 'missingEndpoint', message: 'ai.validation.missingEndpoint' };
+        errors.push({ kind: 'missingEndpoint', message: 'ai.validation.missingEndpoint' });
     }
     if (preset.needsKey && !config.apiKey.trim()) {
-        return { ok: false, kind: 'missingKey', message: 'ai.validation.missingKey' };
+        errors.push({ kind: 'missingKey', message: 'ai.validation.missingKey' });
     }
     if (!config.model.trim()) {
-        return { ok: false, kind: 'missingEndpoint', message: 'ai.validation.missingModel' };
+        errors.push({ kind: 'missingModel', message: 'ai.validation.missingModel' });
+    }
+
+    if (errors.length > 0) {
+        return { ok: false, kind: errors[0].kind, message: errors[0].message, errors };
     }
     return { ok: true, message: 'ai.validation.ok' };
 }

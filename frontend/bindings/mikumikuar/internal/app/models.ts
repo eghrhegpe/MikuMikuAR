@@ -377,6 +377,12 @@ export interface LLMConfig {
     "aiKey"?: string;
 }
 
+export interface LLMConnectionResult {
+    "ok": boolean;
+    "kind": string;
+    "message": string;
+}
+
 /**
  * ModelEntry represents a model, motion, or zip entry found during library scan.
  */

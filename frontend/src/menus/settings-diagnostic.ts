@@ -13,7 +13,6 @@ import {
     ensureAiConfigLoaded,
     PROVIDER_PRESETS,
     validateAiConfig,
-    classifyAiError,
     type AiConfig,
     type AiConfigProvider,
 } from '../core/ai/config-store';
@@ -54,6 +53,7 @@ let _statusBadgeEl: HTMLElement | null = null;
 let _adviceEl: HTMLElement | null = null;
 let _statusTextEl: HTMLElement | null = null;
 let _lastConnectionOk: boolean | null = null;
+let _testing = false;
 
 let _controlRegistered = false;
 let _pendingAction: {
@@ -835,23 +835,29 @@ function _saveGoConfig(partial: { baseUrl?: string; model?: string; aiKey?: stri
 }
 
 async function _testConnection(statusEl: HTMLElement): Promise<void> {
+    if (_testing) return;
+    _testing = true;
     if (!_ai) {
         statusEl.textContent = t('ai.config.notResolved');
         statusEl.style.color = 'var(--warn)';
         _lastConnectionOk = false;
         _updateStatusBadge();
+        _testing = false;
         return;
     }
 
     const validation = validateAiConfig(_localConfig);
     if (!validation.ok) {
-        statusEl.textContent = t(validation.message);
+        statusEl.textContent = validation.errors
+            ? validation.errors.map((e) => t(e.message)).join('; ')
+            : t(validation.message);
         statusEl.style.color = 'var(--warn)';
         if (validation.kind) {
             _setStatusBadge(validation.kind);
             _renderAdvice(validation.kind);
         }
         _lastConnectionOk = false;
+        _testing = false;
         return;
     }
 
@@ -868,21 +874,21 @@ async function _testConnection(statusEl: HTMLElement): Promise<void> {
             _lastConnectionOk = true;
             _renderAdvice(undefined);
         } else {
-            const kind = classifyAiError(result.message, _caps?.corsRisk ?? 'none');
             statusEl.textContent = result.message;
             statusEl.style.color = 'var(--danger)';
-            _setStatusBadge(kind === 'cors' ? 'cors' : 'error');
-            _renderAdvice(kind);
+            _setStatusBadge(result.kind === 'cors' ? 'cors' : 'error');
+            _renderAdvice(result.kind);
             _lastConnectionOk = false;
         }
     } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        const kind = classifyAiError(msg, _caps?.corsRisk ?? 'none');
         statusEl.textContent = msg;
         statusEl.style.color = 'var(--danger)';
-        _setStatusBadge(kind === 'cors' ? 'cors' : 'error');
-        _renderAdvice(kind);
+        _setStatusBadge('error');
+        _renderAdvice('unknown');
         _lastConnectionOk = false;
+    } finally {
+        _testing = false;
     }
     _updateStatusBadge();
 }
@@ -964,7 +970,8 @@ function buildConfigSchema(): MenuNode[] {
                     label: string,
                     type: string,
                     value: string,
-                    onChange: (val: string) => void
+                    onChange: (val: string) => void,
+                    fieldKey?: keyof AiConfig
                 ): HTMLDivElement => {
                     const row = document.createElement('div');
                     row.className = 'diag-field-row';
@@ -979,7 +986,9 @@ function buildConfigSchema(): MenuNode[] {
                     input.value = value;
                     input.className = 'diag-input';
                     input.addEventListener('input', () => onChange(input.value));
-                    input.addEventListener('blur', () => _persistConfig(_localConfig));
+                    input.addEventListener('blur', () => {
+                        _persistConfig(fieldKey ? { [fieldKey]: input.value } : _localConfig);
+                    });
                     row.appendChild(input);
                     return row;
                 };
@@ -990,7 +999,8 @@ function buildConfigSchema(): MenuNode[] {
                     _localConfig.endpoint,
                     (v) => {
                         _localConfig.endpoint = v;
-                    }
+                    },
+                    'endpoint'
                 );
                 c.appendChild(endpointRow);
                 _configEndpoint = endpointRow.querySelector('input') as HTMLInputElement;
@@ -1001,7 +1011,8 @@ function buildConfigSchema(): MenuNode[] {
                     _localConfig.apiKey,
                     (v) => {
                         _localConfig.apiKey = v;
-                    }
+                    },
+                    'apiKey'
                 );
                 c.appendChild(apiKeyRow);
                 _configApiKey = apiKeyRow.querySelector('input') as HTMLInputElement;
@@ -1012,7 +1023,8 @@ function buildConfigSchema(): MenuNode[] {
                     _localConfig.model,
                     (v) => {
                         _localConfig.model = v;
-                    }
+                    },
+                    'model'
                 );
                 c.appendChild(modelRow);
                 _configModel = modelRow.querySelector('input') as HTMLInputElement;

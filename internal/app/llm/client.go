@@ -52,6 +52,52 @@ type StreamEvent struct {
 	ToolId   string // for "tool_call"
 }
 
+type ConnectionResult struct {
+	OK      bool   `json:"ok"`
+	Kind    string `json:"kind"`
+	Message string `json:"message"`
+}
+
+func classifyConnectionError(err error, statusCode int, body string) ConnectionResult {
+	msg := strings.TrimSpace(body)
+	if err != nil {
+		msg = err.Error()
+	}
+	lower := strings.ToLower(msg)
+
+	if statusCode == 0 && err != nil {
+		if strings.Contains(lower, "connection refused") ||
+			strings.Contains(lower, "no connection could be made") ||
+			strings.Contains(lower, "dial tcp") ||
+			strings.Contains(lower, "timeout") ||
+			strings.Contains(lower, "no such host") {
+			return ConnectionResult{OK: false, Kind: "network", Message: msg}
+		}
+		return ConnectionResult{OK: false, Kind: "unknown", Message: msg}
+	}
+
+	switch statusCode {
+	case http.StatusUnauthorized:
+		return ConnectionResult{OK: false, Kind: "unauthorized", Message: fmt.Sprintf("HTTP %d: %s", statusCode, msg)}
+	case http.StatusForbidden:
+		return ConnectionResult{OK: false, Kind: "unauthorized", Message: fmt.Sprintf("HTTP %d: %s", statusCode, msg)}
+	case http.StatusNotFound:
+		return ConnectionResult{OK: false, Kind: "notFound", Message: fmt.Sprintf("HTTP %d: %s", statusCode, msg)}
+	case http.StatusTooManyRequests:
+		return ConnectionResult{OK: false, Kind: "rateLimit", Message: fmt.Sprintf("HTTP %d: %s", statusCode, msg)}
+	}
+
+	if statusCode >= 500 {
+		return ConnectionResult{OK: false, Kind: "server", Message: fmt.Sprintf("HTTP %d: %s", statusCode, msg)}
+	}
+
+	if statusCode >= 400 {
+		return ConnectionResult{OK: false, Kind: "unknown", Message: fmt.Sprintf("HTTP %d: %s", statusCode, msg)}
+	}
+
+	return ConnectionResult{OK: true, Kind: "", Message: ""}
+}
+
 type deltaToolCall struct {
 	Index    *int   `json:"index"`
 	ID       string `json:"id,omitempty"`
@@ -233,25 +279,25 @@ func (c *Client) StreamChat(ctx context.Context, req ChatRequest, emit func(Stre
 	emit(StreamEvent{Type: "done"})
 }
 
-func TestConnection(ctx context.Context, cfg Config) (bool, string) {
+func TestConnection(ctx context.Context, cfg Config) ConnectionResult {
 	if cfg.BaseURL == "" {
-		return false, "端点为空"
+		return ConnectionResult{OK: false, Kind: "missingEndpoint", Message: "端点为空"}
 	}
 
 	body := map[string]interface{}{
-		"model":    cfg.Model,
-		"messages": []ChatMessage{{Role: "user", Content: "ping"}},
+		"model":      cfg.Model,
+		"messages":   []ChatMessage{{Role: "user", Content: "ping"}},
 		"max_tokens": 1,
-		"stream":   false,
+		"stream":     false,
 	}
 	bodyJSON, err := json.Marshal(body)
 	if err != nil {
-		return false, fmt.Sprintf("序列化失败: %v", err)
+		return ConnectionResult{OK: false, Kind: "unknown", Message: fmt.Sprintf("序列化失败: %v", err)}
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", cfg.BaseURL, bytes.NewReader(bodyJSON))
 	if err != nil {
-		return false, fmt.Sprintf("创建请求失败: %v", err)
+		return ConnectionResult{OK: false, Kind: "unknown", Message: fmt.Sprintf("创建请求失败: %v", err)}
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
@@ -262,14 +308,14 @@ func TestConnection(ctx context.Context, cfg Config) (bool, string) {
 	client := &http.Client{}
 	resp, err := client.Do(httpReq)
 	if err != nil {
-		return false, fmt.Sprintf("连接失败: %v", err)
+		return classifyConnectionError(err, 0, "")
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
-		return false, fmt.Sprintf("HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(respBody)))
+		return classifyConnectionError(nil, resp.StatusCode, string(respBody))
 	}
 
-	return true, ""
+	return ConnectionResult{OK: true, Kind: "", Message: ""}
 }

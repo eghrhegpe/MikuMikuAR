@@ -66,12 +66,19 @@ export interface ChatChunk {
     toolId?: string;
 }
 
+/** AI 连接测试结果，镜像 Go LLMConnectionResult 结构 */
+export interface AiConnectionResult {
+    ok: boolean;
+    kind: AiErrorKind;
+    message: string;
+}
+
 /** AI 服务统一抽象，镜像 BackendService 双适配器模式 */
 export interface AiService {
     readonly kind: 'go' | 'browser';
     capabilities(): AiCapabilities;
     streamChat(req: ChatRequest): AsyncIterable<ChatChunk>;
-    testConnection(): Promise<{ ok: boolean; message: string }>;
+    testConnection(): Promise<AiConnectionResult>;
     /** 异步刷新能力探测（go 适配器需调用 Go binding 获取配置后更新缓存） */
     refreshCapabilities?(): Promise<void>;
 }
@@ -83,6 +90,7 @@ export type AiConfigProvider = 'ollama' | 'deepseek' | 'openai' | 'openrouter' |
 export type AiErrorKind =
     | 'missingEndpoint'
     | 'missingKey'
+    | 'missingModel'
     | 'network'
     | 'cors'
     | 'unauthorized'
@@ -91,9 +99,17 @@ export type AiErrorKind =
     | 'server'
     | 'unknown';
 
+/** 校验错误条目（全量收集用） */
+export interface AiValidationError {
+    kind: AiErrorKind;
+    message: string;
+}
+
 /** 配置校验结果 */
 export interface AiValidationResult {
     ok: boolean;
     kind?: AiErrorKind;
     message: string;
+    /** 全部校验错误（非 undefined 表示有多个错误；undefined 表示无或单错误） */
+    errors?: AiValidationError[];
 }
