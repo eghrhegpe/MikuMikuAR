@@ -1,7 +1,7 @@
 # ADR-153: 无障碍（a11y）支持总体方案
 
 - **状态**: ✅ 全部完成（2026-07-21）— 三阶段全部落地：焦点环、`aria-live`、focus trap/restore、canvas ARIA（P1）；`prefers-*` 媒体查询、Android 返回键、3D 键盘轨道控制、模型 alt（P2）；aria-label 补全、`aria-keyshortcuts`、axe E2E 扫描、`ui-keyboard-nav.ts` 公共工具、Go 系统主题桥接（P3）。
-  - ⚠️ Phase 3.4 例外：`menu.ts` 导航使用自有 `focusIndex` 状态机（Enter/ArrowRight→activate、ArrowLeft→pop），与 `createKeyboardNav` 语义不兼容，按「零业务侵入」原则保留不动；`ui-advanced-rows.ts` 的 mode-slider 是 cycle 逻辑，非列表导航，不适用。仅 `ui-fullscreen-overlay.ts` 已迁移到 `createKeyboardNav`。
+  - ✅ **2026-07-28 全大统一收编**：`menu.ts` 已接入 `createKeyboardNav`。此前判定的「语义不兼容」实为公共工具**参数表达力缺口**，非语义无法调和。通过给 `createKeyboardNav` 增补三项能力边界解决：`perKeySkip`（按键相关的差异化跳过：↑↓ 仅跳 slider/tablist，→←/Enter 还跳原生 button）、`getActiveIndex`/`setActiveIndex`（焦点真相源抽象，menu 用 `.slide-focused` + `focusIndex` 而非原生 `:focus`）、`arrowRightActivate`（→ = 层级激活而非平级移动）。返回手感（→/Enter 激活、← pop）完整保留，ADR-196 tablist/fullscreen-overlay 两处调用向后兼容。新增 `ui-keyboard-nav.test.ts`（11 例）覆盖默认路径 + roving + 增强路径。`ui-advanced-rows.ts` 的 mode-slider 仍为 cycle 逻辑，非列表导航，确认不适用。
 - **日期**: 2026-07-20
 - **相关**: ADR-017（Android 适配，A2-02 返回键待实施）、ADR-036（快捷键注册表）、ADR-059（i18n 框架）、ADR-060（E2E 测试策略）、ADR-140（DragSliderController 统一方向键步进）
 
@@ -54,7 +54,7 @@
 | 🟡 P3 | i18n 无 `a11y.*` 命名空间 | ✅ 按决策原则 7 不引入，复用 `common.close`/`common.delete` |
 | 🟡 P3 | E2E 无 axe-core 扫描 | ✅ `frontend/e2e/a11y.spec.ts` 已落地 |
 | 🟡 P3 | 快捷键无 `aria-keyshortcuts` | ✅ `shortcut-registry.ts` + `events.ts` 已落地 |
-| 🟢 P4 | 三处方向键导航逻辑互相独立 | ⚠️ `ui-fullscreen-overlay.ts` 已迁移到 `createKeyboardNav`；`menu.ts` 因语义不兼容（ArrowRight→activate、ArrowLeft→pop）保留自有实现；`ui-advanced-rows.ts` 为 cycle 逻辑，非列表导航，不适用 |
+| 🟢 P4 | 三处方向键导航逻辑互相独立 | ✅ 三处全部统一（2026-07-28）：`ui-fullscreen-overlay.ts` + `settings-diagnostic.ts`（tablist）+ `menu.ts` 均接入 `createKeyboardNav`；`menu.ts` 经 `perKeySkip`/`getActiveIndex`/`setActiveIndex`/`arrowRightActivate` 四项能力桥接，保留 →激活/←pop 手感。`ui-advanced-rows.ts` 为 cycle 逻辑，非列表导航，确认不适用 |
 | 🟢 P4 | Wails Go 端无系统主题/高对比度桥接 | ✅ `internal/app/a11y.go` + `a11y_windows.go` + 前端接入已落地 |
 | 🟢 P4 | Space 键激活未明确支持 | ⚠️ 仅依赖原生 button（语义够用），不额外处理 |
 
@@ -276,9 +276,9 @@ expect(results.violations).toEqual([]);
 - [x] 所有快捷键按钮有 `aria-keyshortcuts`
 - [x] 3 处 `✕` 按钮有 `aria-label`（复用 `common.close` / `common.delete`）
 - [x] 三处方向键导航共用同一工具
-  - ⚠️ `menu.ts` 因语义不兼容（ArrowRight→activate、ArrowLeft→pop）保留自有 `focusIndex` 状态机
+  - ✅ `menu.ts` 已接入 `createKeyboardNav`（2026-07-28），通过 `perKeySkip` + `getActiveIndex`/`setActiveIndex` + `arrowRightActivate` + `onArrowBack` 桥接，保留 ArrowRight→activate / ArrowLeft→pop 语义
   - ⚠️ `ui-advanced-rows.ts` 为 cycle 逻辑，非列表导航，不适用
-  - ✅ `ui-fullscreen-overlay.ts` 迁移到 `createKeyboardNav`
+  - ✅ `ui-fullscreen-overlay.ts` + `settings-diagnostic.ts` 均使用 `createKeyboardNav`
 - [x] Windows 高对比度切换时应用主题跟随
 
 ## 风险与回退
@@ -308,3 +308,4 @@ expect(results.violations).toEqual([]);
 |------|------|
 | 2026-07-20 | 初版，三阶段路线图 |
 | 2026-07-20 | 修订：核心原则补「不重复造 accessible name」「i18n 沿用现有 key」两条；Phase 3.1 从「新建 `a11y.*` 命名空间 + 10 个 key」精简为「3 处 `✕` 按钮复用 `common.close`/`common.delete`」；Phase 1.4 canvas aria-label 改为拼接现有 key + 模型名，不硬编码描述文字 |
+| 2026-07-28 | 全大统一收编：`menu.ts` 接入 `createKeyboardNav`。增强公共工具三项能力边界（`perKeySkip` / `getActiveIndex`+`setActiveIndex` / `arrowRightActivate`），Phase 3.4「语义不兼容」例外解除；新增 `ui-keyboard-nav.test.ts` 11 例。三处方向键导航真正统一 |
