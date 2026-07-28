@@ -90,6 +90,7 @@ import { isDragModeEnabled, setDragModeEnabled } from '../scene/transform/transf
 import { attachGizmoForKind, detachGizmo } from '../scene/transform/transform-adapter';
 import { addSliderRow } from '../core/ui-helpers';
 import { executeActionById } from '../core/action-executor';
+import { registerSceneActions } from '../core/action-defs/scene-actions';
 
 // ======== Barrel Re-Exports ========
 // 保持向后兼容——外部文件引用路径不变
@@ -469,11 +470,14 @@ export async function saveScene(): Promise<void> {
     }
 }
 
+// [doc:adr-155] 动作注册：由于 scene-menu 与 scene-actions 存在循环依赖，
+// 不能在模块加载期顶层调用（此时 scene-actions 依赖未初始化）。
+// 改为首次点击时同步注册（则所有模块已就绪），既破环又消除异步竞态。
 let _sceneRegistered = false;
 
 function _ensureSceneActions(): void {
     if (!_sceneRegistered) {
-        import('../core/action-defs/scene-actions').then((m) => m.registerSceneActions());
+        registerSceneActions();
         _sceneRegistered = true;
     }
 }
