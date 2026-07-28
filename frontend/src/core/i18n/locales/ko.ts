@@ -1912,10 +1912,12 @@ export const ko: Record<string, string> = {
     'ai.control.pending': '⏳ 대기 중인 작업 — 검토 후 적용',
     'ai.control.apply': '적용',
     'ai.control.cancel': '취소',
-    'ai.control.unsupported': '아직 지원되지 않는 작업입니다. 변경하려는 내용을 다른 방식으로 설명해보세요.',
+    'ai.control.unsupported':
+        '아직 지원되지 않는 작업입니다. 변경하려는 내용을 다른 방식으로 설명해보세요.',
     'ai.control.executing': '실행 중...',
     'ai.control.cancelled': '작업이 취소되었습니다.',
-    'ai.control.confirmDestructive': '이 작업은 현재 장면 상태를 변경합니다({action}). 계속하시겠습니까?',
+    'ai.control.confirmDestructive':
+        '이 작업은 현재 장면 상태를 변경합니다({action}). 계속하시겠습니까?',
     'ai.config.corsWarning':
         '⚠ 원격 엔드포인트에 CORS 제한이 있을 수 있습니다. 로컬 Ollama는 OLLAMA_ORIGINS=*를 설정하고 다시 시작하세요.',
     'ai.chat.clear': '지우기',

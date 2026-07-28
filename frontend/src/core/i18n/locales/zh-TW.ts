@@ -1870,8 +1870,7 @@ export const zhTW: Record<string, string> = {
     'ai.mode.diagnostic': '🔍 診斷',
     'ai.mode.chat': '💬 閒聊',
     'ai.mode.control': '🎮 控制',
-    'ai.system.control':
-        '你是 MikuMikuAR 場景控制助手。使用以下工具根據用戶要求修改場景。',
+    'ai.system.control': '你是 MikuMikuAR 場景控制助手。使用以下工具根據用戶要求修改場景。',
     'ai.system.controlFormat':
         '請用 JSON 格式回覆：{"action": "工具名", "params": {"參數名": "值"}}。只使用上方列表中的工具。如果用戶要求不支援的操作，請說明你能做什麼。',
     'ai.control.pending': '⏳ 待執行操作 — 請審閱後應用',

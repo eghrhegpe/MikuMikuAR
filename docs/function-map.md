@@ -7,9 +7,9 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 98 | 651 |
+| 核心基础设施 | 98 | 659 |
 | 3D 场景 | 105 | 1058 |
-| 菜单 & UI | 67 | 307 |
+| 菜单 & UI | 67 | 308 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 18 | 131 |
 | 物理系统 | 2 | 14 |
@@ -44,9 +44,13 @@
 | `browserAiAdapter()` | `core/ai/browser-adapter` | — |
 | `AiConfig()` | `core/ai/config-store` | — |
 | `DEFAULT_AI_CONFIG()` | `core/ai/config-store` | 零 key 默认路径：本地 Ollama（大模型零 key，小模型零成本）。见 ADR-196 开放问题 Q2 裁定。 |
+| `PROVIDER_PRESETS()` | `core/ai/config-store` | 服务商预设：端点、默认模型、是否需要 Key、文案 key、文档链接。 |
+| `ProviderPreset()` | `core/ai/config-store` | — |
+| `classifyAiError()` | `core/ai/config-store` | 根据 testConnection / streamChat 的错误消息分类错误类型。 |
 | `ensureAiConfigLoaded()` | `core/ai/config-store` | 主动预加载（建议 init 后台调用，使首次读取即命中缓存，避免回退默认窗口）。 |
 | `loadAiConfig()` | `core/ai/config-store` | 同步读取：优先内存缓存；未加载时回退默认并触发异步回源（不阻塞调用方）。 |
 | `saveAiConfig()` | `core/ai/config-store` | 同步保存：写内存缓存 + 异步落盘 IndexedDB（fire-and-forget）。返回合并后的配置。 |
+| `validateAiConfig()` | `core/ai/config-store` | 校验配置是否足够发起一次对话。 |
 | `ErrorEntry()` | `core/ai/error-buffer` | — |
 | `ErrorRingBuffer()` | `core/ai/error-buffer` | — |
 | `GlobalErrorTarget()` | `core/ai/error-buffer` | — |
@@ -75,10 +79,14 @@
 | `formatSceneSnapshot()` | `core/ai/scene-snapshot` | 将快照数据格式化为紧凑文本（≤ NFR-3 的 2048 字符预算）。 |
 | `registerAiSnapshotBridge()` | `core/ai/scene-snapshot` | 由 scene.ts 在 initScene() 时注入引擎引用（单向依赖，避免 ai → scene 静态耦合）。 |
 | `AiCapabilities()` | `core/ai/types` | AI 后端能力描述 |
+| `AiConfigProvider()` | `core/ai/types` | 用户选择的服务商配置项 |
+| `AiErrorKind()` | `core/ai/types` | 错误分类，用于面板给出可操作建议 |
 | `AiService()` | `core/ai/types` | AI 服务统一抽象，镜像 BackendService 双适配器模式 |
+| `AiValidationResult()` | `core/ai/types` | 配置校验结果 |
 | `ChatChunk()` | `core/ai/types` | 流式聊天响应块 |
 | `ChatMessage()` | `core/ai/types` | 聊天消息角色 |
 | `ChatRequest()` | `core/ai/types` | 流式聊天请求参数 |
+| `ToolCall()` | `core/ai/types` | 工具调用（assistant 消息中） |
 | `ToolSchema()` | `core/ai/types` | JSON Schema 工具定义（OpenAI function_calling 格式） |
 | `Abortable()` | `core/async` | 可复用的 AbortController 封装——abort 后自动重置，使对象可重复使用。 |
 | `DebouncedTimer()` | `core/async` | 防抖定时器——封装 setTimeout 的 schedule/cancel 样板。 |
@@ -1829,6 +1837,7 @@
 | `RegisteredPopupMenuConfig()` | `menus/menu-factory` | 注册式菜单配置——工厂内部维护引用，返回 handle |
 | `registerPopupMenu()` | `menus/menu-factory` | 注册弹窗菜单——工厂内部维护引用，返回统一的 handle。 |
 | `showPopupMenu()` | `menus/menu-factory` | — |
+| `ActionMenuCtx()` | `menus/menu-schema` | — |
 | `ControlSpec()` | `menus/menu-schema` | — |
 | `MenuKind()` | `menus/menu-schema` | — |
 | `MenuNode()` | `menus/menu-schema` | — |
@@ -2240,5 +2249,5 @@
 
 ---
 
-> 共 293 个文件，2194 个导出符号。
+> 共 293 个文件，2203 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。

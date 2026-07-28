@@ -90,7 +90,12 @@ export async function* parseSseStream(
                         // finish_reason='tool_calls' — flush all accumulated tool calls
                         if (finishReason === 'tool_calls') {
                             for (const [, acc] of toolAccums) {
-                                yield { type: 'tool_call', toolId: acc.id, toolName: acc.name, toolArgs: acc.arguments };
+                                yield {
+                                    type: 'tool_call',
+                                    toolId: acc.id,
+                                    toolName: acc.name,
+                                    toolArgs: acc.arguments,
+                                };
                             }
                             toolAccums.clear();
                             yield { type: 'done' };

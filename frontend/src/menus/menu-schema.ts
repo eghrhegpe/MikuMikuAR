@@ -23,6 +23,15 @@ export type StatePath =
     | `perception.${string}`
     | `motionModule.${string}`;
 
+export interface ActionMenuCtx {
+    /** 通知 toast */
+    toast: (message: string) => void;
+    /** 设置状态栏文本 */
+    setStatus: (message: string) => void;
+    /** 关闭所有覆盖层 */
+    closeAllOverlays: () => void;
+}
+
 export type MenuKind =
     | 'folder'
     | 'slider'
@@ -31,6 +40,7 @@ export type MenuKind =
     | 'modeSlider'
     | 'modeRow'
     | 'sectionTitle'
+    | 'action'
     | 'divider'
     | 'custom';
 
@@ -70,6 +80,8 @@ export interface MenuNode {
     renderCustom?: (container: HTMLElement) => (() => void) | void;
     /** 条件守卫：返回 false 时该节点不渲染（如 groundType !== 'terrain' 时隐藏 pitch/roll） */
     visibleWhen?: () => boolean;
+    /** action 类型节点的回调（含 toast/setStatus/closeOverlays 上下文） */
+    action?: (ctx: ActionMenuCtx) => void | Promise<void>;
     /** [doc:adr-163] 冲突提示：对应感知层/模块层 moduleId，渲染时若该模块骨骼被抢占则显示警告图标 */
     conflictHint?: string;
     /** [doc:adr-166] 模型 ID 覆写：感知层 path 时优先读/写指定模型的 ctx.state，而非焦点模型 */

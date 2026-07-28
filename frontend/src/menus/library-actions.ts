@@ -679,8 +679,8 @@ export async function importFile(): Promise<void> {
 
 /** 按名称模糊搜索模型库并加载。供 NL 控场景（ADR-155）使用，fire-and-forget。 */
 function loadLibraryModel(name: string, isStage?: boolean): boolean {
-    const model = allModels.find(
-        (m) => getBaseName(m.file_path).toLowerCase().includes(name.toLowerCase())
+    const model = allModels.find((m) =>
+        getBaseName(m.file_path).toLowerCase().includes(name.toLowerCase())
     );
     if (!model) return false;
     onModelRowClick(model);
