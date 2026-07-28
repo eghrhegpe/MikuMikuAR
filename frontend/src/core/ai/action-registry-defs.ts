@@ -6,6 +6,20 @@ import { setEnvState } from '../../scene/env/env-bridge';
 import { setPerformanceMode } from '../../scene/render/performance';
 import { loadLibraryModel, loadLibraryMotion } from '../../menus/library-actions';
 import { envState } from '../state';
+import { registerSettingsActions } from '../action-defs/settings-actions';
+import { registerSceneActions } from '../action-defs/scene-actions';
+import { registerMotionActions } from '../action-defs/motion-actions';
+import { registerEnvActions } from '../action-defs/env-actions';
+import { registerLibraryActions } from '../action-defs/library-actions-def';
+
+export function registerAllActions(): void {
+    registerControlActions();
+    registerSettingsActions();
+    registerSceneActions();
+    registerMotionActions();
+    registerEnvActions();
+    registerLibraryActions();
+}
 
 export function registerControlActions(): void {
     // light:dirIntensity
