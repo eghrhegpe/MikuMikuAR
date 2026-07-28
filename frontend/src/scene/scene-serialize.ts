@@ -1409,14 +1409,18 @@ export function offerSceneUndoAndRefresh(
 }
 
 /** Save scene immediately (no debounce). Used in visibilitychange / beforeunload.
- *  @param suppressToast  When true (visibilitychange scenario), skip toast on error. */
+ *  @param suppressToast  When true (visibilitychange scenario), skip toast on error.
+ *  @param force  When true (exit-flush scenario), bypass the reentrancy guard so a
+ *    save in flight cannot swallow the final change into the never-flushed pending
+ *    slot (the process is about to exit, no trailing save will ever run). */
 let _saving = false;
 let _savePending = false;
-export async function saveSceneImmediate(suppressToast = false): Promise<void> {
+export async function saveSceneImmediate(suppressToast = false, force = false): Promise<void> {
     // Reentrancy guard: undo-restore / visibilitychange flush / debounce fire can
     // all call this concurrently. Serialise them so serializeScene() never reads a
     // scene mutated mid-write, and coalesce overlapping calls into one trailing save.
-    if (_saving) {
+    // `force` opts out of coalescing for the exit path (see doc above).
+    if (_saving && !force) {
         _savePending = true;
         return;
     }
@@ -1459,14 +1463,30 @@ export async function saveSceneImmediate(suppressToast = false): Promise<void> {
 /** Clean up pending timers and save state. Must be called before window unload. */
 function cleanupAndFlushSave(): void {
     console.info('[auto-save] cleanupAndFlushSave() — visibilitychange/beforeunload triggered');
-    // Clear any pending debounced save — we're about to flush immediately
+    // Cancel the debounce timer — we serialise + dispatch the write synchronously
+    // below, so the pending debounced save (if any) would only duplicate this one.
     _autoSaveDebounced.cancel();
     // flushEnvState/flushUIState 是 async，但此处是 visibilitychange/beforeunload 回调，
     // 不能 await（浏览器不等待 Promise）。用 void 标记 fire-and-forget，
     // 函数内部已有 try/catch + setStatus，不会产生 unhandled rejection。
     void flushEnvState();
     void flushUIState();
-    swallowError(saveSceneImmediate(true));
+    // Exit-flush must NOT rely on saveSceneImmediate's async body — the WebView does
+    // not await the returned Promise, so a save that yields at `await SaveLastScene`
+    // would never land before the window closes. Instead serialise synchronously
+    // here and dispatch the write request before returning: the Go binding call is
+    // issued (and the backend write is synchronous) within this same tick.
+    if (_suppressAutoSave) {
+        console.info('[auto-save] cleanupAndFlushSave: suppressed (deserialize in progress)');
+        return;
+    }
+    try {
+        const json = JSON.stringify(serializeScene());
+        swallowError(SaveLastScene(json));
+        console.info(`[auto-save] cleanupAndFlushSave: dispatched SaveLastScene (${json.length} bytes)`);
+    } catch (_err) {
+        console.warn('[auto-save] cleanupAndFlushSave: serialize/dispatch FAILED:', _err);
+    }
 }
 
 // Flush save when page becomes hidden (covers app close / Alt+F4 / refresh).
