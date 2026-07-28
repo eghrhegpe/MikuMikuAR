@@ -36,9 +36,6 @@ export interface GroundPreset {
     groundNormalStrength: number;
     groundReflectionBlur: number;
     groundReflectionDistort: number;
-    groundContactShadowEnabled: boolean;
-    groundContactShadowIntensity: number;
-    groundContactShadowDistance: number;
     // Terrain
     groundElevationColoring: boolean;
     // Enhancement
@@ -72,9 +69,6 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
         groundNormalStrength: 1,
         groundReflectionBlur: 0,
         groundReflectionDistort: 0.3,
-        groundContactShadowEnabled: false,
-        groundContactShadowIntensity: 0.5,
-        groundContactShadowDistance: 0.5,
         groundElevationColoring: false,
         groundEdgeFade: 0,
         groundPitch: 0,
@@ -104,9 +98,6 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
         groundNormalStrength: 1.2,
         groundReflectionBlur: 0,
         groundReflectionDistort: 0.2,
-        groundContactShadowEnabled: false,
-        groundContactShadowIntensity: 0.5,
-        groundContactShadowDistance: 0.5,
         groundElevationColoring: false,
         groundEdgeFade: 0,
         groundPitch: 0,
@@ -136,9 +127,6 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
         groundNormalStrength: 0.8,
         groundReflectionBlur: 0,
         groundReflectionDistort: 0.3,
-        groundContactShadowEnabled: false,
-        groundContactShadowIntensity: 0.5,
-        groundContactShadowDistance: 0.5,
         groundElevationColoring: false,
         groundEdgeFade: 0.3,
         groundPitch: 0,
@@ -168,9 +156,6 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
         groundNormalStrength: 0.6,
         groundReflectionBlur: 0.1,
         groundReflectionDistort: 0.3,
-        groundContactShadowEnabled: true,
-        groundContactShadowIntensity: 0.4,
-        groundContactShadowDistance: 0.6,
         groundElevationColoring: false,
         groundEdgeFade: 0,
         groundPitch: 0,
@@ -200,9 +185,6 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
         groundNormalStrength: 0.7,
         groundReflectionBlur: 0.1,
         groundReflectionDistort: 0.25,
-        groundContactShadowEnabled: true,
-        groundContactShadowIntensity: 0.5,
-        groundContactShadowDistance: 0.5,
         groundElevationColoring: false,
         groundEdgeFade: 0,
         groundPitch: 0,
@@ -232,9 +214,6 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
         groundNormalStrength: 1,
         groundReflectionBlur: 0,
         groundReflectionDistort: 0,
-        groundContactShadowEnabled: false,
-        groundContactShadowIntensity: 0.5,
-        groundContactShadowDistance: 0.5,
         groundElevationColoring: false,
         groundEdgeFade: 0,
         groundPitch: 0,
@@ -264,9 +243,6 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
         groundNormalStrength: 1.5,
         groundReflectionBlur: 0.1,
         groundReflectionDistort: 0.3,
-        groundContactShadowEnabled: true,
-        groundContactShadowIntensity: 0.4,
-        groundContactShadowDistance: 0.5,
         groundElevationColoring: false,
         groundEdgeFade: 0,
         groundPitch: 0,
@@ -299,9 +275,6 @@ export function buildGroundPresetEnvState(preset: GroundPreset): Partial<EnvStat
         groundNormalStrength: preset.groundNormalStrength,
         groundReflectionBlur: preset.groundReflectionBlur,
         groundReflectionDistort: preset.groundReflectionDistort,
-        groundContactShadowEnabled: preset.groundContactShadowEnabled,
-        groundContactShadowIntensity: preset.groundContactShadowIntensity,
-        groundContactShadowDistance: preset.groundContactShadowDistance,
         groundElevationColoring: preset.groundElevationColoring,
         groundEdgeFade: preset.groundEdgeFade,
         groundPitch: preset.groundPitch,

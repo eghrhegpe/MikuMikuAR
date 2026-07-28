@@ -502,49 +502,6 @@ export function buildGroundLevel(): PopupLevel {
                         },
                         icon: 'lucide:layers',
                     },
-                    // ── 接触阴影（反射质量 ≥ medium）──
-                    {
-                        id: 'env:ground:contactShadow',
-                        kind: 'toggle',
-                        label: 'env.contactShadow',
-                        control: { bind: 'env.groundContactShadowEnabled' },
-                        icon: 'lucide:contact',
-                        visibleWhen: () =>
-                            envState.reflectionQuality === 'medium' ||
-                            envState.reflectionQuality === 'high',
-                    },
-                    {
-                        id: 'env:ground:contactShadowIntensity',
-                        kind: 'slider',
-                        label: 'env.contactShadowIntensity',
-                        control: {
-                            bind: 'env.groundContactShadowIntensity',
-                            min: 0,
-                            max: 1,
-                            step: 0.05,
-                        },
-                        icon: 'lucide:contrast',
-                        visibleWhen: () =>
-                            envState.groundContactShadowEnabled &&
-                            (envState.reflectionQuality === 'medium' ||
-                                envState.reflectionQuality === 'high'),
-                    },
-                    {
-                        id: 'env:ground:contactShadowDistance',
-                        kind: 'slider',
-                        label: 'env.contactShadowDistance',
-                        control: {
-                            bind: 'env.groundContactShadowDistance',
-                            min: 0.1,
-                            max: 2,
-                            step: 0.05,
-                        },
-                        icon: 'lucide:ruler',
-                        visibleWhen: () =>
-                            envState.groundContactShadowEnabled &&
-                            (envState.reflectionQuality === 'medium' ||
-                                envState.reflectionQuality === 'high'),
-                    },
                     // ── 地形专属（terrain 模式）──
                     {
                         id: 'env:ground:elevationColoring',
@@ -559,24 +516,6 @@ export function buildGroundLevel(): PopupLevel {
         ];
         disposes.push(renderMenu(mergedSchema, c));
 
-        // ===== 接触阴影提示（反射质量不足时显示）=====
-        const csHintSchema: MenuNode[] = [
-            {
-                id: 'env:ground:contactShadowHint',
-                kind: 'custom',
-                visibleWhen: () =>
-                    envState.reflectionQuality !== 'medium' &&
-                    envState.reflectionQuality !== 'high',
-                renderCustom: (cc) => {
-                    const hint = document.createElement('div');
-                    hint.textContent = t('env.contactShadowHint');
-                    hint.style.cssText =
-                        'font-size:11px;color:var(--text-dim);padding:4px 12px;opacity:0.7;';
-                    cc.appendChild(hint);
-                },
-            },
-        ];
-        disposes.push(renderMenu(csHintSchema, c));
         return () => {
             for (const d of disposes) {
                 d();
