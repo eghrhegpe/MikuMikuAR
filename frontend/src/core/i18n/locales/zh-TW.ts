@@ -1877,6 +1877,9 @@ export const zhTW: Record<string, string> = {
     'ai.dialogue.emotion.angry': '生氣',
     'ai.dialogue.emotion.surprised': '驚訝',
     'ai.dialogue.emotion.shy': '害羞',
+    'ai.dialogue.speakOn': '🔊 朗讀開',
+    'ai.dialogue.speakOff': '🔇 朗讀關',
+    'ai.dialogue.speakToggle': '切換台詞朗讀',
     'ai.system.control': '你是 MikuMikuAR 場景控制助手。使用以下工具根據用戶要求修改場景。',
     'ai.system.controlFormat':
         '請用 JSON 格式回覆：{"action": "工具名", "params": {"參數名": "值"}}。只使用上方列表中的工具。如果用戶要求不支援的操作，請說明你能做什麼。',

@@ -1935,6 +1935,9 @@ export const en: Record<string, string> = {
     'ai.dialogue.emotion.angry': 'Angry',
     'ai.dialogue.emotion.surprised': 'Surprised',
     'ai.dialogue.emotion.shy': 'Shy',
+    'ai.dialogue.speakOn': '🔊 Voice On',
+    'ai.dialogue.speakOff': '🔇 Voice Off',
+    'ai.dialogue.speakToggle': 'Toggle dialogue voice',
     'ai.system.control':
         'You are a MikuMikuAR scene control assistant. Use the following tools to modify the scene as requested by the user.',
     'ai.system.controlFormat':

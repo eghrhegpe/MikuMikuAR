@@ -1912,6 +1912,9 @@ export const ko: Record<string, string> = {
     'ai.dialogue.emotion.angry': '화남',
     'ai.dialogue.emotion.surprised': '놀람',
     'ai.dialogue.emotion.shy': '수줍음',
+    'ai.dialogue.speakOn': '🔊 낭독 켜기',
+    'ai.dialogue.speakOff': '🔇 낭독 끄기',
+    'ai.dialogue.speakToggle': '대사 낭독 전환',
     'ai.system.control':
         '당신은 MikuMikuAR 씬 제어 어시스턴트입니다. 다음 도구를 사용하여 사용자의 요청에 따라 씬을 수정하세요.',
     'ai.system.controlFormat':
