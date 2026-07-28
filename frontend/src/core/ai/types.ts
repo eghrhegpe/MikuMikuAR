@@ -73,6 +73,19 @@ export interface AiConnectionResult {
     message: string;
 }
 
+/**
+ * 持久化配置的回读结构，供诊断面板初始化时回填输入框。
+ * 桌面端配置由 Go 持有，key 出于安全不回读（keyConfigured 仅告知是否已配置）。
+ */
+export interface AiPersistedConfig {
+    endpoint: string;
+    model: string;
+    /** key 是否已配置（浏览器端可直接给出明文长度>0；go 端仅布尔标志，不含明文） */
+    keyConfigured: boolean;
+    /** 浏览器端可回读明文 key；go 端恒为空（不暴露） */
+    apiKey?: string;
+}
+
 /** AI 服务统一抽象，镜像 BackendService 双适配器模式 */
 export interface AiService {
     readonly kind: 'go' | 'browser';
@@ -83,6 +96,8 @@ export interface AiService {
     refreshCapabilities?(): Promise<void>;
     /** 从当前端点发现可用模型列表；浏览器适配器直接 HTTP GET /models 或 /api/tags；Go 适配器返回 capabilities 缓存 */
     fetchModels?(): Promise<string[]>;
+    /** 回读持久化配置以初始化 UI（go 端从 Go 后端读，browser 端从 IndexedDB 读）。 */
+    loadConfig?(): Promise<AiPersistedConfig>;
 }
 
 /** 用户选择的服务商配置项 */

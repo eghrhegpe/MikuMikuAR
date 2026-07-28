@@ -4,6 +4,7 @@ import type {
     ChatRequest,
     ChatChunk,
     AiConnectionResult,
+    AiPersistedConfig,
 } from './types';
 import { events } from '../runtime-bridge';
 import type * as AppBindings from '@bindings/mikumikuar/internal/app/app';
@@ -118,6 +119,21 @@ class GoAiAdapter implements AiService {
             return [...this._capCache.models];
         }
         return [];
+    }
+
+    async loadConfig(): Promise<AiPersistedConfig> {
+        try {
+            const b = await _getB();
+            const cfg: LLMConfig = await b.AiGetLLMConfig();
+            return {
+                endpoint: cfg.baseUrl?.trim() ?? '',
+                model: cfg.model?.trim() ?? '',
+                // Go 侧为安全不回读 key 明文，仅用 aiKeyConfigured 布尔标志
+                keyConfigured: cfg.aiKeyConfigured === true,
+            };
+        } catch {
+            return { endpoint: '', model: '', keyConfigured: false };
+        }
     }
 
     async *streamChat(req: ChatRequest): AsyncIterable<ChatChunk> {

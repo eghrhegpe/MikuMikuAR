@@ -8,6 +8,7 @@ import type {
     ChatRequest,
     ChatChunk,
     AiConnectionResult,
+    AiPersistedConfig,
 } from './types';
 import { parseSseStream } from './sse';
 import { loadAiConfig, classifyAiError } from './config-store';
@@ -93,7 +94,6 @@ export class BrowserAiAdapter implements AiService {
         if (!endpoint) {
             return [];
         }
-
         // 从聊天端点推导 API 基础路径
         const base = endpoint.replace('/chat/completions', '');
         const candidates: string[] = [];
@@ -153,6 +153,16 @@ export class BrowserAiAdapter implements AiService {
             }
         }
         return [];
+    }
+
+    async loadConfig(): Promise<AiPersistedConfig> {
+        const cfg = loadAiConfig();
+        return {
+            endpoint: cfg.endpoint,
+            model: cfg.model,
+            keyConfigured: cfg.apiKey.length > 0,
+            apiKey: cfg.apiKey,
+        };
     }
 
     async *streamChat(req: ChatRequest): AsyncIterable<ChatChunk> {
