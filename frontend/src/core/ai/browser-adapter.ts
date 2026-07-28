@@ -87,6 +87,74 @@ export class BrowserAiAdapter implements AiService {
         }
     }
 
+    async fetchModels(): Promise<string[]> {
+        const cfg = loadAiConfig();
+        const endpoint = cfg.endpoint.trim();
+        if (!endpoint) {
+            return [];
+        }
+
+        // 从聊天端点推导 API 基础路径
+        const base = endpoint.replace('/chat/completions', '');
+        const candidates: string[] = [];
+
+        // OpenAI 兼容格式：{base}/models
+        candidates.push(`${base}/models`);
+
+        // 若 base 以 /v1 结尾，也尝试去 /v1 的 /models
+        if (base.endsWith('/v1')) {
+            candidates.push(`${base.slice(0, -3)}/models`);
+        }
+
+        // Ollama 原生 API：{origin}/api/tags（仅限 localhost）
+        if (/localhost|127\.0\.0\.1/i.test(base)) {
+            try {
+                const u = new URL(base);
+                candidates.push(`${u.origin}/api/tags`);
+            } catch {
+                /* ignore */
+            }
+        }
+
+        const headers: Record<string, string> = { Accept: 'application/json' };
+        if (cfg.apiKey) {
+            headers['Authorization'] = `Bearer ${cfg.apiKey}`;
+        }
+
+        for (const url of candidates) {
+            try {
+                const res = await fetch(url, { headers, signal: AbortSignal.timeout(5000) });
+                if (!res.ok) {
+                    continue;
+                }
+                const data = await res.json();
+                // OpenAI 兼容：{ data: [{ id: string }] }
+                if (data?.data && Array.isArray(data.data)) {
+                    const models = data.data
+                        .map((m: { id?: string }) => m.id)
+                        .filter(Boolean)
+                        .sort();
+                    if (models.length > 0) {
+                        return models;
+                    }
+                }
+                // Ollama：{ models: [{ name: string }] }
+                if (data?.models && Array.isArray(data.models)) {
+                    const models = data.models
+                        .map((m: { name?: string }) => m.name)
+                        .filter(Boolean)
+                        .sort();
+                    if (models.length > 0) {
+                        return models;
+                    }
+                }
+            } catch {
+                continue;
+            }
+        }
+        return [];
+    }
+
     async *streamChat(req: ChatRequest): AsyncIterable<ChatChunk> {
         const cfg = loadAiConfig();
         if (!cfg.endpoint) {

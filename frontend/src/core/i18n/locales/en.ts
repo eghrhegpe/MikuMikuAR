@@ -1902,6 +1902,7 @@ export const en: Record<string, string> = {
     'ai.config.endpoint': 'API Endpoint',
     'ai.config.apiKey': 'API Key',
     'ai.config.model': 'Model',
+    'ai.config.refreshModels': 'Discover Models',
     'ai.config.test': 'Test Connection',
     'ai.config.testing': 'Testing...',
     'ai.config.connected': '✓ Connected',
@@ -1934,11 +1935,14 @@ export const en: Record<string, string> = {
     'ai.control.pending': '⏳ Pending action — review before applying',
     'ai.control.apply': 'Apply',
     'ai.control.cancel': 'Cancel',
-    'ai.control.unsupported': 'This action is not supported. Try describing what you want to change differently.',
+    'ai.control.unsupported':
+        'This action is not supported. Try describing what you want to change differently.',
     'ai.control.executing': 'Executing...',
     'ai.control.cancelled': 'Action cancelled.',
-    'ai.control.confirmDestructive': 'This will change the current scene state ({action}). Continue?',
-    'ai.control.emptyHint': 'Tell me what you want to adjust, e.g. "dim the lights" or "switch to night environment".',
+    'ai.control.confirmDestructive':
+        'This will change the current scene state ({action}). Continue?',
+    'ai.control.emptyHint':
+        'Tell me what you want to adjust, e.g. "dim the lights" or "switch to night environment".',
     'ai.control.availableTools': 'Available controls:',
     'ai.control.resultSuccess': '✅ Applied: {message}',
     'ai.control.resultFailed': '❌ Failed: {message}',

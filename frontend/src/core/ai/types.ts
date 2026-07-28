@@ -81,6 +81,8 @@ export interface AiService {
     testConnection(): Promise<AiConnectionResult>;
     /** 异步刷新能力探测（go 适配器需调用 Go binding 获取配置后更新缓存） */
     refreshCapabilities?(): Promise<void>;
+    /** 从当前端点发现可用模型列表；浏览器适配器直接 HTTP GET /models 或 /api/tags；Go 适配器返回 capabilities 缓存 */
+    fetchModels?(): Promise<string[]>;
 }
 
 /** 用户选择的服务商配置项 */

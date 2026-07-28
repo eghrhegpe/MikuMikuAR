@@ -39,7 +39,7 @@ import { DebouncedTimer } from '../core/async';
 let _ai: AiService | null = null;
 let _caps: AiCapabilities | null = null;
 let _aiResolved = false;
-let _messages: ChatMessage[] = [];
+const _messages: ChatMessage[] = [];
 let _isStreaming = false;
 let _abortController: AbortController | null = null;
 let _mode: 'diagnostic' | 'chat' | 'control' = 'diagnostic';
@@ -50,6 +50,7 @@ let _corsWarningEl: HTMLElement | null = null;
 let _configEndpoint: HTMLInputElement | null = null;
 let _configApiKey: HTMLInputElement | null = null;
 let _configModel: HTMLInputElement | null = null;
+let _configModelDatalist: HTMLDataListElement | null = null;
 let _statusBadgeEl: HTMLElement | null = null;
 let _adviceEl: HTMLElement | null = null;
 let _statusTextEl: HTMLElement | null = null;
@@ -100,7 +101,9 @@ function _addAssistantMessage(text: string): void {
 }
 
 async function _refreshCaps(): Promise<void> {
-    if (_refreshingCaps || !_ai) return;
+    if (_refreshingCaps || !_ai) {
+        return;
+    }
     _refreshingCaps = true;
     try {
         await _ai.refreshCapabilities?.();
@@ -124,7 +127,9 @@ function _refreshConfigUI(): void {
 
 /** 配置稳定后自动触发一次连接测试，避免用户手动点击。 */
 function _scheduleAutoTest(): void {
-    if (!_aiResolved || _testing) return;
+    if (!_aiResolved || _testing) {
+        return;
+    }
     if (!_autoTestTimer) {
         _autoTestTimer = new DebouncedTimer();
     }
@@ -132,7 +137,9 @@ function _scheduleAutoTest(): void {
 }
 
 async function _runAutoTest(): Promise<void> {
-    if (!_ai || _testing || _autoTesting) return;
+    if (!_ai || _testing || _autoTesting) {
+        return;
+    }
     const validation = validateAiConfig(_localConfig);
     if (!validation.ok) {
         // 配置不完整时 badge/advice 已由校验结果接管，无需覆盖
@@ -160,21 +167,29 @@ async function _runAutoTest(): Promise<void> {
 }
 
 function _updateApiKeyVisibility(): void {
-    if (!_configApiKey) return;
+    if (!_configApiKey) {
+        return;
+    }
     const row = _configApiKey.closest('.diag-field-row') as HTMLElement | null;
-    if (!row) return;
+    if (!row) {
+        return;
+    }
     const needsKey = PROVIDER_PRESETS[_localConfig.provider].needsKey;
     row.style.display = needsKey ? '' : 'none';
 }
 
 function _updateControlsEnabled(): void {
     const testBtn = document.getElementById('diag-test-btn') as HTMLButtonElement | null;
-    if (testBtn) testBtn.disabled = !_aiResolved;
+    if (testBtn) {
+        testBtn.disabled = !_aiResolved;
+    }
     _updateSendButton();
 }
 
 function _updateCorsWarning(): void {
-    if (!_corsWarningEl) return;
+    if (!_corsWarningEl) {
+        return;
+    }
     if (_caps && _caps.corsRisk !== 'none') {
         _corsWarningEl.style.display = '';
     } else {
@@ -203,15 +218,21 @@ function _applyProvider(provider: AiConfigProvider): void {
     _localConfig.provider = provider;
     _localConfig.endpoint = preset.endpoint;
     _localConfig.model = preset.model;
-    if (_configEndpoint) _configEndpoint.value = preset.endpoint;
-    if (_configModel) _configModel.value = preset.model;
+    if (_configEndpoint) {
+        _configEndpoint.value = preset.endpoint;
+    }
+    if (_configModel) {
+        _configModel.value = preset.model;
+    }
     _persistConfig({ provider, endpoint: preset.endpoint, model: preset.model });
     _updateProviderButtons(provider);
     _updateDocLink(provider);
 }
 
 function _updateStatusBadge(): void {
-    if (!_statusBadgeEl || !_statusTextEl) return;
+    if (!_statusBadgeEl || !_statusTextEl) {
+        return;
+    }
     const validation = validateAiConfig(_localConfig);
     if (!validation.ok && validation.kind) {
         _setStatusBadge(validation.kind);
@@ -232,7 +253,9 @@ function _updateStatusBadge(): void {
 function _setStatusBadge(
     state: AiErrorKind | 'connected' | 'disconnected' | 'testing' | 'error' | 'initializing'
 ): void {
-    if (!_statusBadgeEl || !_statusTextEl) return;
+    if (!_statusBadgeEl || !_statusTextEl) {
+        return;
+    }
     const badgeState: string =
         state === 'connected' ||
         state === 'disconnected' ||
@@ -257,7 +280,9 @@ function _setStatusBadge(
 }
 
 function _renderAdvice(kind?: AiErrorKind): void {
-    if (!_adviceEl) return;
+    if (!_adviceEl) {
+        return;
+    }
     if (!kind) {
         _adviceEl.style.display = 'none';
         _adviceEl.textContent = '';
@@ -279,7 +304,9 @@ function _updateProviderButtons(active: AiConfigProvider): void {
 }
 
 function _updateDocLink(provider: AiConfigProvider): void {
-    if (!_activeDocLink) return;
+    if (!_activeDocLink) {
+        return;
+    }
     const preset = PROVIDER_PRESETS[provider];
     if (preset.docUrl) {
         _activeDocLink.href = preset.docUrl;
@@ -335,7 +362,9 @@ function buildContextSchema(): MenuNode[] {
                 refreshBtn.addEventListener('click', () => {
                     const snap = captureSceneSnapshot();
                     const hint = c.querySelector('.setting-hint:last-of-type');
-                    if (hint) hint.textContent = snap;
+                    if (hint) {
+                        hint.textContent = snap;
+                    }
                 });
                 btnRow.appendChild(refreshBtn);
 
@@ -403,6 +432,62 @@ function _ensureControlActions(): void {
     }
 }
 
+function _selectTab(
+    mode: 'diagnostic' | 'chat' | 'control',
+    btns: [HTMLButtonElement, HTMLButtonElement, HTMLButtonElement]
+): void {
+    _mode = mode;
+    _refreshModeUI(...btns);
+    if (mode === 'control') {
+        _ensureControlActions();
+    }
+}
+
+function _buildTab(
+    mode: 'diagnostic' | 'chat' | 'control',
+    btns: [HTMLButtonElement, HTMLButtonElement, HTMLButtonElement]
+): HTMLButtonElement {
+    const labelKey =
+        mode === 'diagnostic'
+            ? 'ai.mode.diagnostic'
+            : mode === 'chat'
+              ? 'ai.mode.chat'
+              : 'ai.mode.control';
+    const btn = document.createElement('button');
+    btn.setAttribute('role', 'tab');
+    btn.textContent = t(labelKey);
+    btn.className = 'mode-btn' + (_mode === mode ? ' active' : '');
+    btn.addEventListener('click', () => _selectTab(mode, btns));
+    btn.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            _selectTab(mode, btns);
+        }
+    });
+    return btn;
+}
+
+function _onTablistKeydown(
+    e: KeyboardEvent,
+    btns: [HTMLButtonElement, HTMLButtonElement, HTMLButtonElement]
+): void {
+    let idx = btns.findIndex((b) => b === document.activeElement);
+    if (idx < 0) {
+        return;
+    }
+    if (e.key === 'ArrowRight') {
+        idx = (idx + 1) % btns.length;
+    } else if (e.key === 'ArrowLeft') {
+        idx = (idx + btns.length - 1) % btns.length;
+    } else {
+        return;
+    }
+    e.preventDefault();
+    const modes: ['diagnostic', 'chat', 'control'] = ['diagnostic', 'chat', 'control'];
+    _selectTab(modes[idx], btns);
+    btns[idx].focus();
+}
+
 function buildModeSwitchSchema(): MenuNode[] {
     return [
         {
@@ -413,40 +498,16 @@ function buildModeSwitchSchema(): MenuNode[] {
                 group.setAttribute('role', 'tablist');
                 group.className = 'diag-mode-row';
 
-                const diagBtn = document.createElement('button');
-                diagBtn.setAttribute('role', 'tab');
-                diagBtn.setAttribute('aria-selected', String(_mode === 'diagnostic'));
-                diagBtn.textContent = t('ai.mode.diagnostic');
-                diagBtn.className = 'mode-btn' + (_mode === 'diagnostic' ? ' active' : '');
-                diagBtn.addEventListener('click', () => {
-                    _mode = 'diagnostic';
-                    _refreshModeUI(diagBtn, chatBtn, ctrlBtn);
-                });
+                const btns: [HTMLButtonElement, HTMLButtonElement, HTMLButtonElement] = [
+                    _buildTab('diagnostic', btns),
+                    _buildTab('chat', btns),
+                    _buildTab('control', btns),
+                ];
+                group.addEventListener('keydown', (e) => _onTablistKeydown(e, btns));
 
-                const chatBtn = document.createElement('button');
-                chatBtn.setAttribute('role', 'tab');
-                chatBtn.setAttribute('aria-selected', String(_mode === 'chat'));
-                chatBtn.textContent = t('ai.mode.chat');
-                chatBtn.className = 'mode-btn' + (_mode === 'chat' ? ' active' : '');
-                chatBtn.addEventListener('click', () => {
-                    _mode = 'chat';
-                    _refreshModeUI(diagBtn, chatBtn, ctrlBtn);
-                });
-
-                const ctrlBtn = document.createElement('button');
-                ctrlBtn.setAttribute('role', 'tab');
-                ctrlBtn.setAttribute('aria-selected', String(_mode === 'control'));
-                ctrlBtn.textContent = t('ai.mode.control');
-                ctrlBtn.className = 'mode-btn' + (_mode === 'control' ? ' active' : '');
-                ctrlBtn.addEventListener('click', () => {
-                    _mode = 'control';
-                    _refreshModeUI(diagBtn, chatBtn, ctrlBtn);
-                    _ensureControlActions();
-                });
-
-                group.appendChild(diagBtn);
-                group.appendChild(chatBtn);
-                group.appendChild(ctrlBtn);
+                for (const btn of btns) {
+                    group.appendChild(btn);
+                }
                 c.appendChild(group);
             },
         },
@@ -462,8 +523,11 @@ function _refreshModeUI(
     chatBtn.className = 'mode-btn' + (_mode === 'chat' ? ' active' : '');
     ctrlBtn.className = 'mode-btn' + (_mode === 'control' ? ' active' : '');
     diagBtn.setAttribute('aria-selected', String(_mode === 'diagnostic'));
+    diagBtn.tabIndex = _mode === 'diagnostic' ? 0 : -1;
     chatBtn.setAttribute('aria-selected', String(_mode === 'chat'));
+    chatBtn.tabIndex = _mode === 'chat' ? 0 : -1;
     ctrlBtn.setAttribute('aria-selected', String(_mode === 'control'));
+    ctrlBtn.tabIndex = _mode === 'control' ? 0 : -1;
     if (_pendingContainer) {
         _pendingContainer.style.display = _mode === 'control' ? '' : 'none';
         if (_mode === 'control') {
@@ -479,11 +543,17 @@ function _refreshModeUI(
 // ======== 对话卡片 ========
 
 function _renderChat(): void {
-    if (!_chatContainer) return;
+    if (!_chatContainer) {
+        return;
+    }
     _chatContainer.innerHTML = '';
     for (const msg of _messages) {
-        if (msg.role === 'tool') continue;
-        if (msg.role === 'assistant' && 'tool_calls' in msg && msg.tool_calls) continue;
+        if (msg.role === 'tool') {
+            continue;
+        }
+        if (msg.role === 'assistant' && 'tool_calls' in msg && msg.tool_calls) {
+            continue;
+        }
 
         const row = document.createElement('div');
         row.className = `diag-chat-row chat-row--${msg.role}`;
@@ -504,7 +574,9 @@ function _renderChat(): void {
 }
 
 function _renderStreamingChunk(chunk: ChatChunk): void {
-    if (!_chatContainer) return;
+    if (!_chatContainer) {
+        return;
+    }
     if (chunk.type === 'text' && chunk.content) {
         let lastRow = _chatContainer.lastElementChild;
         if (!lastRow || !lastRow.classList.contains('chat-row--streaming')) {
@@ -543,7 +615,9 @@ function _finalizeStream(fullText: string): void {
             const contentDiv = streamingRow.querySelector(
                 '.diag-chat-content'
             ) as HTMLElement | null;
-            if (contentDiv) contentDiv.textContent = fullText;
+            if (contentDiv) {
+                contentDiv.textContent = fullText;
+            }
             _chatContainer.scrollTop = _chatContainer.scrollHeight;
         } else {
             _renderChat();
@@ -558,7 +632,9 @@ function _finalizeStream(fullText: string): void {
 function _pruneHistory(messages: ChatMessage[], maxPairs: number = 10): ChatMessage[] {
     const systemMsg = messages[0]?.role === 'system' ? messages[0] : null;
     const body = systemMsg ? messages.slice(1) : messages;
-    if (body.length <= maxPairs * 2) return messages;
+    if (body.length <= maxPairs * 2) {
+        return messages;
+    }
 
     const keepFromIdx = body.length - maxPairs * 2;
     let start = keepFromIdx;
@@ -568,7 +644,9 @@ function _pruneHistory(messages: ChatMessage[], maxPairs: number = 10): ChatMess
     if (start > 0 && body[start]?.role === 'assistant') {
         const asst = body[start] as Extract<ChatMessage, { role: 'assistant' }>;
         if (asst.tool_calls) {
-            while (start > 0 && body[start - 1]?.role === 'tool') start--;
+            while (start > 0 && body[start - 1]?.role === 'tool') {
+                start--;
+            }
         }
     }
     const pruned = body.slice(start);
@@ -576,7 +654,9 @@ function _pruneHistory(messages: ChatMessage[], maxPairs: number = 10): ChatMess
 }
 
 async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
-    if (_isStreaming || !_ai) return;
+    if (_isStreaming || !_ai) {
+        return;
+    }
     const allowTools = opts?.allowTools ?? _mode === 'control';
 
     _isStreaming = true;
@@ -610,7 +690,9 @@ async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
                 streamErrorSeen = true;
                 if (_chatContainer) {
                     const streamingRow = _chatContainer.querySelector('.chat-row--streaming');
-                    if (streamingRow) streamingRow.remove();
+                    if (streamingRow) {
+                        streamingRow.remove();
+                    }
                 }
                 _addAssistantMessage(t('ai.errors.apiError', { msg: chunk.error ?? '' }));
                 _renderChat();
@@ -633,6 +715,7 @@ async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
                 _abortController = null;
                 _updateSendButton();
                 _renderChat();
+                _renderControlHint();
                 return;
             }
             const assistantMsg: ChatMessage = {
@@ -656,7 +739,9 @@ async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
         streamErrorSeen = true;
         if (_chatContainer) {
             const streamingRow = _chatContainer.querySelector('.chat-row--streaming');
-            if (streamingRow) streamingRow.remove();
+            if (streamingRow) {
+                streamingRow.remove();
+            }
         }
         _addAssistantMessage(
             t('ai.errors.apiError', { msg: err instanceof Error ? err.message : String(err) })
@@ -664,33 +749,47 @@ async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
         _renderChat();
     } finally {
         if (_isStreaming) {
-            if (!streamErrorSeen && _mode === 'control' && fullResponse && !_pendingAction) {
-                const fallback = parseActionFromLLM(fullResponse);
-                if (fallback) {
-                    _tryQueuePendingAction(fallback.action, fallback.params, null);
+            const handledAsControlFallback =
+                !streamErrorSeen &&
+                _mode === 'control' &&
+                fullResponse &&
+                !_pendingAction &&
+                _handleControlFallback(fullResponse);
+            if (!handledAsControlFallback) {
+                if (streamErrorSeen) {
                     _isStreaming = false;
                     _abortController = null;
                     _updateSendButton();
-                    _renderChat();
-                    _renderPendingAction();
-                    return;
+                } else {
+                    _finalizeStream(fullResponse);
                 }
-            }
-            if (streamErrorSeen) {
-                _isStreaming = false;
-                _abortController = null;
-                _updateSendButton();
-            } else {
-                _finalizeStream(fullResponse);
             }
         }
     }
 }
 
+function _handleControlFallback(fullResponse: string): boolean {
+    const fallback = parseActionFromLLM(fullResponse);
+    if (!fallback) {
+        return false;
+    }
+    const queued = _tryQueuePendingAction(fallback.action, fallback.params, null);
+    _isStreaming = false;
+    _abortController = null;
+    _updateSendButton();
+    _renderChat();
+    if (queued) {
+        _renderPendingAction();
+    } else {
+        _renderControlHint();
+    }
+    return true;
+}
+
 function _tryQueuePendingAction(
     actionId: string,
     params: Record<string, unknown>,
-    toolCallId: string | null,
+    toolCallId: string | null
 ): boolean {
     const action = getAction(actionId);
     if (!action) {
@@ -702,7 +801,9 @@ function _tryQueuePendingAction(
 }
 
 function _renderControlHint(): void {
-    if (!_pendingContainer || _pendingAction || _mode !== 'control') return;
+    if (!_pendingContainer || _pendingAction || _mode !== 'control') {
+        return;
+    }
     _pendingContainer.innerHTML = '';
     _pendingContainer.style.display = '';
 
@@ -731,7 +832,9 @@ function _renderControlHint(): void {
 }
 
 function _renderPendingAction(): void {
-    if (!_pendingContainer || !_pendingAction) return;
+    if (!_pendingContainer || !_pendingAction) {
+        return;
+    }
     _pendingContainer.innerHTML = '';
     _pendingContainer.style.display = '';
 
@@ -786,7 +889,9 @@ function _renderPendingAction(): void {
 }
 
 async function _applyPendingAction(btn: HTMLButtonElement): Promise<void> {
-    if (!_pendingAction) return;
+    if (!_pendingAction) {
+        return;
+    }
     const action = getAction(_pendingAction.actionId);
     if (action?.destructive) {
         const ok = await showConfirm(t('ai.control.confirmDestructive', { action: action.label }));
@@ -889,9 +994,13 @@ function _buildSystemMessage(): ChatMessage {
 }
 
 async function _sendMessage(): Promise<void> {
-    if (_isStreaming || !_inputEl || !_ai) return;
+    if (_isStreaming || !_inputEl || !_ai) {
+        return;
+    }
     const text = _inputEl.value.trim();
-    if (!text) return;
+    if (!text) {
+        return;
+    }
 
     const validation = validateAiConfig(_localConfig);
     if (!validation.ok) {
@@ -920,7 +1029,9 @@ function _stopStreaming(): void {
 
 async function _clearChat(): Promise<void> {
     const ok = await showConfirm(t('ai.chat.clearConfirm'));
-    if (!ok) return;
+    if (!ok) {
+        return;
+    }
     _messages.length = 0;
     _addAssistantMessage(t('ai.welcome'));
     _renderChat();
@@ -929,8 +1040,12 @@ async function _clearChat(): Promise<void> {
 function _updateSendButton(): void {
     const sendBtn = document.getElementById('diag-send-btn') as HTMLButtonElement | null;
     const stopBtn = document.getElementById('diag-stop-btn') as HTMLButtonElement | null;
-    if (sendBtn) sendBtn.disabled = _isStreaming || !_aiResolved;
-    if (stopBtn) stopBtn.style.display = _isStreaming ? '' : 'none';
+    if (sendBtn) {
+        sendBtn.disabled = _isStreaming || !_aiResolved;
+    }
+    if (stopBtn) {
+        stopBtn.style.display = _isStreaming ? '' : 'none';
+    }
 }
 
 function buildChatSchema(): MenuNode[] {
@@ -1013,7 +1128,9 @@ function _saveGoConfig(partial: { baseUrl?: string; model?: string; aiKey?: stri
 }
 
 async function _testConnection(statusEl: HTMLElement): Promise<void> {
-    if (_testing) return;
+    if (_testing) {
+        return;
+    }
     _testing = true;
     if (!_ai) {
         statusEl.textContent = t('ai.config.notResolved');
@@ -1195,17 +1312,69 @@ function buildConfigSchema(): MenuNode[] {
                 c.appendChild(apiKeyRow);
                 _configApiKey = apiKeyRow.querySelector('input') as HTMLInputElement;
 
-                const modelRow = createField(
-                    t('ai.config.model'),
-                    'text',
-                    _localConfig.model,
-                    (v) => {
-                        _localConfig.model = v;
-                    },
-                    'model'
+                const modelRow = document.createElement('div');
+                modelRow.className = 'diag-field-row';
+                const modelLabel = document.createElement('div');
+                modelLabel.textContent = t('ai.config.model');
+                modelLabel.className = 'diag-field-label';
+                modelRow.appendChild(modelLabel);
+                const modelInput = document.createElement('input');
+                modelInput.type = 'text';
+                modelInput.className = 'diag-input';
+                modelInput.value = _localConfig.model;
+                modelInput.setAttribute('list', 'diag-model-list');
+                modelInput.setAttribute('aria-label', t('ai.config.model'));
+                modelInput.addEventListener('input', () => {
+                    _localConfig.model = modelInput.value;
+                });
+                modelInput.addEventListener('blur', () =>
+                    _persistConfig({ model: modelInput.value })
                 );
+                modelRow.appendChild(modelInput);
+                const modelRefresh = document.createElement('button');
+                modelRefresh.textContent = '↻';
+                modelRefresh.className = 'preset-chip';
+                modelRefresh.setAttribute('title', t('ai.config.refreshModels'));
+                modelRefresh.setAttribute('aria-label', t('ai.config.refreshModels'));
+                modelRefresh.style.padding = '2px 10px';
+                modelRefresh.style.fontSize = 'var(--font-ui-sm)';
+                let _refreshing = false;
+                modelRefresh.addEventListener('click', async () => {
+                    if (_refreshing || !_ai) {
+                        return;
+                    }
+                    _refreshing = true;
+                    modelRefresh.disabled = true;
+                    modelRefresh.textContent = '…';
+                    try {
+                        const models = (await _ai.fetchModels?.()) ?? [];
+                        if (_configModelDatalist) {
+                            _configModelDatalist.innerHTML = '';
+                            for (const m of models) {
+                                const opt = document.createElement('option');
+                                opt.value = m;
+                                _configModelDatalist.appendChild(opt);
+                            }
+                        }
+                        if (models.length > 0 && !_localConfig.model) {
+                            _localConfig.model = models[0];
+                            modelInput.value = models[0];
+                        }
+                    } catch {
+                        /* 静默失败，用户仍可手动输入 */
+                    } finally {
+                        _refreshing = false;
+                        modelRefresh.disabled = false;
+                        modelRefresh.textContent = '↻';
+                    }
+                });
+                modelRow.appendChild(modelRefresh);
+                const modelDatalist = document.createElement('datalist');
+                modelDatalist.id = 'diag-model-list';
+                modelRow.appendChild(modelDatalist);
                 c.appendChild(modelRow);
-                _configModel = modelRow.querySelector('input') as HTMLInputElement;
+                _configModel = modelInput;
+                _configModelDatalist = modelDatalist;
 
                 const testRow = document.createElement('div');
                 testRow.className = 'diag-hint-row';

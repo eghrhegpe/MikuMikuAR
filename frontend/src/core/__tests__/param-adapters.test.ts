@@ -162,7 +162,9 @@ describe('entityAdapter', () => {
         const r = await entityAdapter(
             def({
                 type: 'entity',
-                resolve: async () => { throw new Error('db error'); },
+                resolve: async () => {
+                    throw new Error('db error');
+                },
             }),
             'miku'
         );
