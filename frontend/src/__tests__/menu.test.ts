@@ -713,14 +713,14 @@ describe('SlideMenu — 生命周期 (dispose / 动画)', () => {
     });
 
     describe('dispose', () => {
-        it('清理 _keydownHandler 和触摸监听器', () => {
-            expect((menu as any)._keydownHandler).not.toBeNull();
+        it('清理 _keydownDisp 和触摸监听器', () => {
+            expect((menu as any)._keydownDisp).not.toBeNull();
             expect((menu as any)._swipeTouchStartHandler).not.toBeNull();
             expect((menu as any)._swipeTouchEndHandler).not.toBeNull();
 
             menu.dispose();
 
-            expect((menu as any)._keydownHandler).toBeNull();
+            expect((menu as any)._keydownDisp).toBeNull();
             expect((menu as any)._swipeTouchStartHandler).toBeNull();
             expect((menu as any)._swipeTouchEndHandler).toBeNull();
         });
