@@ -3,6 +3,7 @@
 // 通过 resolveAi() 获取适配器实例，双路径（browser-adapter / go-adapter）统一分发
 
 import { t } from '../core/i18n/t';
+import { getLang } from '../core/i18n/locale';
 import { cardContainer } from '../core/config';
 import { addSectionTitle } from '../core/ui-helpers';
 import { getErrors, clearErrors, type ErrorEntry } from '../core/ai/error-buffer';
@@ -33,6 +34,8 @@ import type { Disposable } from '../core/dom';
 import { buildToolCatalogText, buildToolSchemas } from '../core/ai/action-catalog';
 import { executeAction, parseActionFromLLM } from '../core/ai/intent-dispatcher';
 import { getActiveBible, buildDialogueSystemPrompt } from '../core/ai/dialogue-session';
+import { parseDialogueLines, type DialogueLine } from '../core/ai/character-bible';
+import { speakLines, cancelSpeech } from '../core/ai/dialogue-speech';
 import { getAction } from '../core/action-registry';
 import { showConfirm } from '../core/dialog';
 import { DebouncedTimer } from '../core/async';
@@ -74,6 +77,9 @@ let _pendingAction: {
     toolCallId?: string;
 } | null = null;
 let _pendingContainer: HTMLElement | null = null;
+
+/** 台词模式：是否朗读出声（默认开，环境不支持时 speakLines 自静默）。 */
+let _speakEnabled = true;
 
 /** 当前面板编辑态的配置副本，blur 时同步到持久化层。 */
 let _localConfig: AiConfig = { ...loadAiConfig() };
@@ -442,6 +448,9 @@ function _ensureControlActions(): void {
 }
 
 function _selectTab(mode: DiagMode, btns: HTMLButtonElement[]): void {
+    if (_mode === 'dialogue' && mode !== 'dialogue') {
+        cancelSpeech(); // 离开台词模式时停掉未读完的语音
+    }
     _mode = mode;
     _refreshModeUI(btns);
     if (mode === 'control') _ensureControlActions();
@@ -602,6 +611,18 @@ function _finalizeStream(fullText: string): void {
     _isStreaming = false;
     _abortController = null;
 
+    // 台词模式：解析结构化对白 → 情绪卡片渲染 + 语音朗读（Step 2a）。
+    if (_mode === 'dialogue' && fullText) {
+        const lines = parseDialogueLines(fullText);
+        _renderChat();
+        _renderDialogueCards(lines);
+        if (_speakEnabled) {
+            speakLines(lines, _speechLang());
+        }
+        _updateSendButton();
+        return;
+    }
+
     if (_chatContainer && fullText) {
         const streamingRow = _chatContainer.querySelector('.chat-row--streaming');
         if (streamingRow) {
@@ -621,6 +642,49 @@ function _finalizeStream(fullText: string): void {
     }
 
     _updateSendButton();
+}
+
+/** i18n LangCode → SpeechSynthesis 的 BCP-47 语言标签。 */
+function _speechLang(): string {
+    switch (getLang()) {
+        case 'ja':
+            return 'ja-JP';
+        case 'ko':
+            return 'ko-KR';
+        case 'en':
+            return 'en-US';
+        case 'zh-TW':
+            return 'zh-TW';
+        default:
+            return 'zh-CN';
+    }
+}
+
+/** 情绪 → 卡片 CSS 修饰类（与 emotion 同名，样式在 CSS 层控制）。 */
+function _renderDialogueCards(lines: DialogueLine[]): void {
+    if (!_chatContainer || lines.length === 0) {
+        return;
+    }
+    const wrap = document.createElement('div');
+    wrap.className = 'diag-dialogue-cards';
+    for (const { line, emotion } of lines) {
+        const card = document.createElement('div');
+        card.className = `diag-dialogue-card diag-emotion--${emotion}`;
+
+        const tag = document.createElement('span');
+        tag.className = 'diag-dialogue-emotion';
+        tag.textContent = t('ai.dialogue.emotion.' + emotion);
+        card.appendChild(tag);
+
+        const body = document.createElement('div');
+        body.className = 'diag-dialogue-line';
+        body.textContent = line;
+        card.appendChild(body);
+
+        wrap.appendChild(card);
+    }
+    _chatContainer.appendChild(wrap);
+    _chatContainer.scrollTop = _chatContainer.scrollHeight;
 }
 
 function _pruneHistory(messages: ChatMessage[], maxPairs: number = 10): ChatMessage[] {

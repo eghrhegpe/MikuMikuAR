@@ -1929,6 +1929,12 @@ export const en: Record<string, string> = {
     'ai.mode.chat': '💬 Chat',
     'ai.mode.control': '🎮 Control',
     'ai.mode.dialogue': '🎭 Dialogue',
+    'ai.dialogue.emotion.neutral': 'Neutral',
+    'ai.dialogue.emotion.happy': 'Happy',
+    'ai.dialogue.emotion.sad': 'Sad',
+    'ai.dialogue.emotion.angry': 'Angry',
+    'ai.dialogue.emotion.surprised': 'Surprised',
+    'ai.dialogue.emotion.shy': 'Shy',
     'ai.system.control':
         'You are a MikuMikuAR scene control assistant. Use the following tools to modify the scene as requested by the user.',
     'ai.system.controlFormat':

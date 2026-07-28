@@ -3349,6 +3349,57 @@ textarea,
     line-height: 1.4;
 }
 
+/* [doc:adr-156] 台词模式：情绪对白卡片 */
+.diag-dialogue-cards {
+    display: flex;
+    flex-direction: column;
+    gap: calc(6px * var(--ui-scale));
+    padding: calc(6px * var(--ui-scale)) 0;
+}
+
+.diag-dialogue-card {
+    padding: calc(6px * var(--ui-scale)) calc(8px * var(--ui-scale));
+    background: var(--card-bg);
+    border-left: calc(3px * var(--ui-scale)) solid var(--emotion-color, var(--accent));
+    border-radius: calc(4px * var(--ui-scale));
+}
+
+.diag-dialogue-emotion {
+    display: inline-block;
+    margin-bottom: calc(2px * var(--ui-scale));
+    padding: 0 calc(6px * var(--ui-scale));
+    border-radius: calc(8px * var(--ui-scale));
+    background: var(--emotion-color, var(--accent));
+    color: var(--on-accent, #fff);
+    font-size: var(--font-ui-xs);
+}
+
+.diag-dialogue-line {
+    color: var(--text);
+    word-break: break-word;
+    line-height: 1.5;
+}
+
+/* 情绪配色（复用语义色，缺省回落 accent） */
+.diag-emotion--neutral {
+    --emotion-color: var(--text-muted);
+}
+.diag-emotion--happy {
+    --emotion-color: var(--ok, #4caf50);
+}
+.diag-emotion--sad {
+    --emotion-color: var(--info, #5b8def);
+}
+.diag-emotion--angry {
+    --emotion-color: var(--danger, #e5534b);
+}
+.diag-emotion--surprised {
+    --emotion-color: var(--warn, #e0a030);
+}
+.diag-emotion--shy {
+    --emotion-color: #d67ab1;
+}
+
 .diag-input-row {
     display: flex;
     gap: calc(6px * var(--ui-scale));
