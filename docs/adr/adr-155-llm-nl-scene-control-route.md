@@ -92,6 +92,22 @@
 - `env-menu.ts`: envOnItemClick 委托 executeActionById
 - `library-browse.ts`: onItemClick 3 个动作分支委托 executeActionById
 
+### Phase 6（控制模式体验闭环：执行反馈 + 破坏性动作撤销）
+
+> 兑现 UX「操作结果可理解」与「操作结果可撤销」两项。均在 `menus/settings-diagnostic.ts`，标 `[doc:adr-155]`。
+
+- **执行结果反馈**：`executeAction()` 返回 `{success, message}`；应用后按路径分发——
+  - prompt 回退路径（无 tool_call）：直接写入助手消息 `ai.control.resultSuccess` / `resultFailed`；
+  - tool_call 路径：结果攒入 `_pendingToolResults`，队列清空后统一回填 tool 消息（与 Phase 6‑前的多 tool_call 回填机制一致）。
+- **破坏性动作撤销**：仅当 `action.destructive` 且执行成功时记录 `_lastUndoable = { label }`；hint 区（`_renderControlHint`）置顶渲染「撤销」入口（`ai.control.undoHint` + `undo` 按钮，`data-testid=ai:control:undo-row`）；点击调 `executeAction('scene:undo', {})`，成功后清 `_lastUndoable` 并写 `ai.control.undone`。
+- **destructive 二次确认**：应用前对 `action.destructive` 调 `showConfirm(ai.control.confirmDestructive)`。
+- **i18n**：新增 `ai.control.resultSuccess` / `resultFailed` / `undo` / `undoHint` / `undone`（五语言）。
+
+### 已知遗留
+
+- NL 动作 `label` 本体仍硬编码中文（NL label 国际化需单独 ADR）。
+- i18n-check 历史缺失 key 待专项补齐（非本路线引入）。
+
 ---
 
 ## 总动作清单（41 个）
@@ -130,4 +146,5 @@
 | 2026-07-28 | 重写：对齐 ADR-196，追加命名约定/ARIA/E2E 规格 |
 | 2026-07-28 | 终版：对齐 Phase 1–5 实现完成态，更新动作清单、实施记录、8 动作表 |
 | 2026-07-21 | 修复菜单首次点击竞态：各菜单模块原用 `import().then()` 异步注册动作，却在同步栈立即 dispatch，首次点击注册未就绪→“不支持的操作”。改为顶层静态 import 注册函数；scene/motion/library 因与其 action-defs 存在循环依赖，注册调用保留于首次点击同步执行点（破环）；env-actions 无回边→顶层静态注册。 |
-| 2026-07-21 | 遗留待办——破坏性动作撤销入口已完成：pending 卡执行成功且为 destructive 动作时，记录 `_lastUndoable`，hint 区置顶渲染“撤销”按钮（复用 `scene:undo` 快照能力）；下一 pending 入列或撤销后引用失效，避免跨操作误撤销。同时发现并修复 i18n 缺口：ja/ko/zh-TW 三语言的 `ai.control.*` 块缺失 emptyHint/availableTools/resultSuccess/resultFailed（原 5 语言仅 zh-CN/en 完整），已补齐 + 新增 undo/undoHint/undone 共 5 语言一致。**剩余遗留**：（a）多 tool_call 复合指令仍被单例 `_pendingAction` 截断（仅取 [0]）；（b）label 本体仍硬编码中文（NL 系统 label 国际化需单独 ADR）；（c）i18n-check 暴露历史遗留 171 个缺失 key（ja/ko/zh-TW 各 56：ai.config/ai.status/ai.errorAdvice/downloads 等；en 3），非本轮引入，运行时 fallback 到 zh-CN，待专项补齐。 |
+| 2026-07-28 | 回填漏记的 Phase 6（控制模式体验闭环）：代码已落地的「执行结果反馈（resultSuccess/resultFailed）」与「破坏性动作撤销入口（_lastUndoable + scene:undo）」之前未记入本 ADR，现据 `[doc:adr-155]` 代码事实客观补记。 |
+| 2026-07-21 | 遗留待办——多 tool_call 复合指令已完成：`_pendingAction` 单例改为“当前待确认 + `_pendingQueue` 队列”，LLM 一次返回多个 tool_call 时逐条弹卡（卡题显示 `({current}/{total})` 进度），逐条应用/取消。**同时修复一个隐藏协议破损**：原实现把全部 tool_call 写入 assistant.tool_calls 历史，却只为首条回填 tool 消息，其余悬空→下一轮请求报错；现改为队列清空后为**每个** tool_call 回填 tool 消息（应用/取消/不支持均回填对应结果），再触发一次后续 stream（不带 tools，防递归）。新增 `ai.control.pendingProgress` 共 5 语言。**剩余遗留**：（a）label 本体仍硬编码中文（NL label 国际化需单独 ADR）；（b）i18n-check 历史 171 个缺失 key待专项补齐。 |
