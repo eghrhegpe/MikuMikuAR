@@ -2,7 +2,7 @@
 // 从 env-feature-levels.ts 拆分
 
 import { envState } from '../core/config';
-import type { PopupLevel } from '../core/config';
+import type { PopupLevel, EnvState } from '../core/config';
 import { slideRow, addSliderRow, addClearRow, buildPresetChipGroup } from '../core/ui-helpers';
 import { setEnvState } from '../scene/scene';
 import { t } from '../core/i18n/t';
@@ -10,7 +10,6 @@ import { GROUND_PRESETS, buildGroundPresetEnvState } from '../scene/env/env-grou
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 import { buildLevel, openTexturePicker } from './env-level-helpers';
-import { getEnvMenu } from './env-menu-state';
 import { getSceneMenu } from './scene-menu-state';
 
 /** 预设 key → i18n key 映射 */
@@ -36,12 +35,13 @@ export function buildGroundLevel(): PopupLevel {
                         cc,
                         Object.entries(GROUND_PRESETS).map(([key, gp]) => ({
                             label: t(GROUND_PRESET_I18N[key] ?? gp.label),
+                            isActive: () => envState.groundPreset === key,
                             onClick: () => {
                                 setEnvState({
                                     ...buildGroundPresetEnvState(gp),
                                     groundVisible: true,
+                                    groundPreset: key as EnvState['groundPreset'],
                                 });
-                                getEnvMenu()?.reRender();
                             },
                         }))
                     );

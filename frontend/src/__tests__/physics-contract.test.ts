@@ -12,7 +12,15 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { createMinimalPhysicsImpl } from './helpers/minimal-physics-impl';
+import {
+    createMinimalPhysicsImpl,
+    buildRigidBodyInfo as _buildRigidBodyInfo,
+    buildBundleInfoList as _buildBundleInfoList,
+    readLinearVelocity as _readLinearVelocity,
+    readBundleLinearVelocity as _readBundleLinearVelocity,
+    PHYSICS_INFO_SIZE,
+    PHYSICS_OFF,
+} from './helpers/minimal-physics-impl';
 import type { MinimalPhysicsImpl } from './helpers/minimal-physics-impl';
 import type * as sprWasm from 'babylon-mmd/esm/Runtime/Optimized/wasm/spr';
 
@@ -27,112 +35,12 @@ beforeAll(() => {
     memory = phys.memory;
 });
 
-// ======== 辅助函数：手动构造 RigidBodyConstructionInfo ========
-
-/** RigidBodyConstructionInfo 大小（字节） */
-const INFO_SIZE = 144;
-
-/** 刚体构造信息偏移量 */
-const OFF = {
-    Shape: 0, // uint32
-    InitialTransform: 16, // float32[16]
-    DataMask: 80, // uint16
-    MotionType: 82, // uint8
-    Mass: 84, // float32
-    LocalInertia: 88, // float32[3]
-    LinearDamping: 100, // float32
-    AngularDamping: 104, // float32
-    Friction: 108, // float32
-    Restitution: 112, // float32
-    LinearSleepingThreshold: 116, // float32
-    AngularSleepingThreshold: 120, // float32
-    CollisionGroup: 124, // uint16
-    CollisionMask: 126, // uint16
-    AdditionalDamping: 128, // uint8
-    NoContactResponse: 129, // uint8
-    DisableDeactivation: 130, // uint8
-} as const;
-
-/**
- * 在 WASM 内存中手动构造一个 RigidBodyConstructionInfo。
- * 返回 info 指针（调用方负责 deallocateBuffer）。
- */
-function buildRigidBodyInfo(
-  shapePtr: number,
-  overrides?: { mass?: number; disableDeactivation?: boolean; motionType?: number },
-): number {
-    const infoPtr = api.allocateBuffer(INFO_SIZE);
-    const buf = new DataView(memory.buffer, infoPtr, INFO_SIZE);
-
-    // shape pointer (uint32, little-endian)
-    buf.setUint32(OFF.Shape, shapePtr, true);
-
-    // initial transform: identity matrix (float32[16])
-    const tf = new Float32Array(memory.buffer, infoPtr + OFF.InitialTransform, 16);
-    tf[0] = 1;
-    tf[1] = 0;
-    tf[2] = 0;
-    tf[3] = 0;
-    tf[4] = 0;
-    tf[5] = 1;
-    tf[6] = 0;
-    tf[7] = 0;
-    tf[8] = 0;
-    tf[9] = 0;
-    tf[10] = 1;
-    tf[11] = 0;
-    tf[12] = 0;
-    tf[13] = 0;
-    tf[14] = 0;
-    tf[15] = 1;
-
-    // dataMask: 0 (no optional fields)
-    buf.setUint16(OFF.DataMask, 0, true);
-
-    // motionType: 0 = Dynamic, 1 = Static, 2 = Kinematic
-  buf.setUint8(OFF.MotionType, overrides?.motionType ?? 0);
-
-    // mass (default 1.0)
-    buf.setFloat32(OFF.Mass, overrides?.mass ?? 1.0, true);
-
-    // localInertia: leave as 0 (auto-calculate from shape)
-
-    // linear/angular damping
-    buf.setFloat32(OFF.LinearDamping, 0.0, true);
-    buf.setFloat32(OFF.AngularDamping, 0.0, true);
-
-    // friction / restitution
-    buf.setFloat32(OFF.Friction, 0.5, true);
-    buf.setFloat32(OFF.Restitution, 0.0, true);
-
-    // sleeping thresholds
-    buf.setFloat32(OFF.LinearSleepingThreshold, 0.0, true);
-    buf.setFloat32(OFF.AngularSleepingThreshold, 1.0, true);
-
-    // collision group / mask
-    buf.setUint16(OFF.CollisionGroup, 1, true);
-    buf.setUint16(OFF.CollisionMask, 0xffff, true);
-
-    // flags
-    buf.setUint8(OFF.AdditionalDamping, 0);
-    buf.setUint8(OFF.NoContactResponse, 0);
-    buf.setUint8(OFF.DisableDeactivation, overrides?.disableDeactivation ? 1 : 0);
-
-    return infoPtr;
-}
-
-/** 读取刚体线速度（返回 [vx, vy, vz]） */
-function readLinearVelocity(bodyPtr: number): [number, number, number] {
-    // 分配 12 字节输出缓冲区（3 个 float32）
-    const outPtr = api.allocateBuffer(12);
-    try {
-        api.rigidBodyGetLinearVelocity(bodyPtr, outPtr);
-        const view = new Float32Array(memory.buffer, outPtr, 3);
-        return [view[0], view[1], view[2]];
-    } finally {
-        api.deallocateBuffer(outPtr, 12);
-    }
-}
+// ======== 本地薄包装（保持调用代码不变，实现体共享） ========
+const INFO_SIZE = PHYSICS_INFO_SIZE;
+const OFF = PHYSICS_OFF;
+const buildRigidBodyInfo = (shapePtr: number, overrides?: Parameters<typeof _buildRigidBodyInfo>[2]) =>
+    _buildRigidBodyInfo(phys, shapePtr, overrides);
+const readLinearVelocity = (bodyPtr: number) => _readLinearVelocity(phys, bodyPtr);
 
 // ======== 测试套件 ========
 
@@ -351,69 +259,10 @@ describe('WASM 物理契约测试', () => {
     });
 
     describe('7. RigidBodyBundle — 批量刚体（对齐 wind-physics 实际场景）', () => {
-        /**
-         * 在 WASM 内存中构造 count 个连续的 RigidBodyConstructionInfo，
-         * 返回 info 列表指针（调用方负责 deallocateBuffer）。
-         * 所有刚体共用同一个形状，但可指定不同质量。
-         */
-        function buildBundleInfoList(
-            shapePtr: number,
-            count: number,
-            masses?: number[],
-        ): number {
-            const totalSize = INFO_SIZE * count;
-            const listPtr = api.allocateBuffer(totalSize);
-
-            for (let i = 0; i < count; i++) {
-                const offset = i * INFO_SIZE;
-                const buf = new DataView(memory.buffer, listPtr + offset, INFO_SIZE);
-
-                // shape pointer
-                buf.setUint32(OFF.Shape, shapePtr, true);
-
-                // identity matrix
-                const tf = new Float32Array(memory.buffer, listPtr + offset + OFF.InitialTransform, 16);
-                tf[0] = 1; tf[1] = 0; tf[2] = 0; tf[3] = 0;
-                tf[4] = 0; tf[5] = 1; tf[6] = 0; tf[7] = 0;
-                tf[8] = 0; tf[9] = 0; tf[10] = 1; tf[11] = 0;
-                tf[12] = 0; tf[13] = 0; tf[14] = 0; tf[15] = 1;
-
-                buf.setUint16(OFF.DataMask, 0, true);
-                buf.setUint8(OFF.MotionType, 0); // Dynamic
-
-                const mass = masses?.[i] ?? 1.0;
-                buf.setFloat32(OFF.Mass, mass, true);
-
-                buf.setFloat32(OFF.LinearDamping, 0.0, true);
-                buf.setFloat32(OFF.AngularDamping, 0.0, true);
-                buf.setFloat32(OFF.Friction, 0.5, true);
-                buf.setFloat32(OFF.Restitution, 0.0, true);
-                buf.setFloat32(OFF.LinearSleepingThreshold, 0.0, true);
-                buf.setFloat32(OFF.AngularSleepingThreshold, 1.0, true);
-                buf.setUint16(OFF.CollisionGroup, 1, true);
-                buf.setUint16(OFF.CollisionMask, 0xFFFF, true);
-                buf.setUint8(OFF.AdditionalDamping, 0);
-                buf.setUint8(OFF.NoContactResponse, 0);
-                buf.setUint8(OFF.DisableDeactivation, 1); // 始终禁用休眠，避免测试不稳定
-            }
-
-            return listPtr;
-        }
-
-        /** 读取 bundle 中第 index 个刚体的线速度 */
-        function readBundleLinearVelocity(
-            bundlePtr: number,
-            index: number,
-        ): [number, number, number] {
-            const outPtr = api.allocateBuffer(12);
-            try {
-                api.rigidBodyBundleGetLinearVelocity(bundlePtr, index, outPtr);
-                const view = new Float32Array(memory.buffer, outPtr, 3);
-                return [view[0], view[1], view[2]];
-            } finally {
-                api.deallocateBuffer(outPtr, 12);
-            }
-        }
+        const buildBundleInfoList = (shapePtr: number, count: number, masses?: number[]) =>
+            _buildBundleInfoList(phys, shapePtr, count, masses);
+        const readBundleLinearVelocity = (bundlePtr: number, index: number) =>
+            _readBundleLinearVelocity(phys, bundlePtr, index);
 
         it('createRigidBodyBundle 创建 3 个刚体的束，返回非零指针', () => {
             const shape = api.createBoxShape(1, 1, 1);

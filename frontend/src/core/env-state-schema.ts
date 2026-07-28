@@ -49,6 +49,22 @@ export const ENV_STATE_SCHEMA = {
 
     // --- Ground ---
     groundVisible: { type: 'boolean', default: true, group: 'ground' },
+    // 当前生效的地面预设 key（顶部 chips 高亮判据）；用户手动微调任一 ground 字段时重置为 'custom'
+    groundPreset: {
+        type: 'enum',
+        values: [
+            'custom',
+            'cleanGray',
+            'mirrorStage',
+            'grass',
+            'stoneTile',
+            'woodStage',
+            'cyberGrid',
+            'metalStage',
+        ] as const,
+        default: 'custom' as const,
+        group: 'ground',
+    },
     groundType: {
         type: 'enum',
         values: ['flat', 'terrain'] as const,
