@@ -330,7 +330,7 @@ function _createErrorRow(err: ErrorEntry): HTMLElement {
 
 function _ensureControlActions(): void {
     if (!_controlRegistered) {
-        import('../core/ai/action-registry-defs').then((m) => m.registerControlActions());
+        import('../core/ai/action-registry-defs').then((m) => m.registerAllActions());
         _controlRegistered = true;
     }
 }
