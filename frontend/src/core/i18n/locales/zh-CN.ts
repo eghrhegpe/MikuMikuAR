@@ -1912,6 +1912,7 @@ export const zhCN: Record<string, string> = {
     'ai.config.corsWarning':
         '⚠ 远程端点可能存在 CORS 限制。本地 Ollama 请设置 OLLAMA_ORIGINS=* 后重启。',
     'ai.chat.clear': '清空',
+    'ai.chat.clearConfirm': '清除聊天记录？',
     'ai.errors.resolveFailed': 'AI 服务初始化失败，请查看控制台获取详情。',
 
     // 服务商预设与状态反馈
@@ -1933,6 +1934,7 @@ export const zhCN: Record<string, string> = {
     'ai.status.connected': '已连接',
     'ai.status.disconnected': '未连接',
     'ai.status.testing': '测试中',
+    'ai.status.initializing': '正在连接 AI 后端...',
     'ai.status.error': '连接失败',
     'ai.errorAdvice.missingEndpoint': '请选择服务商或填写 API 端点。',
     'ai.errorAdvice.missingKey': '该服务商需要 API Key，请填写。',

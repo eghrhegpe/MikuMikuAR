@@ -1883,6 +1883,8 @@ export const zhTW: Record<string, string> = {
     'ai.config.corsWarning':
         '⚠ 遠程端點可能存在 CORS 限制。本地 Ollama 請設置 OLLAMA_ORIGINS=* 後重啟。',
     'ai.chat.clear': '清空',
+    'ai.chat.clearConfirm': '清除聊天記錄？',
     'ai.errors.resolveFailed': 'AI 服務初始化失敗，請查看控制台獲取詳情。',
     'ai.config.notResolved': 'AI 服務尚未就緒，請稍候...',
+    'ai.status.initializing': '正在連接 AI 後端...',
 };

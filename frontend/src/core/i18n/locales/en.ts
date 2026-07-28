@@ -1943,6 +1943,7 @@ export const en: Record<string, string> = {
     'ai.config.corsWarning':
         '⚠ Remote endpoint may have CORS restrictions. For local Ollama, set OLLAMA_ORIGINS=* and restart.',
     'ai.chat.clear': 'Clear',
+    'ai.chat.clearConfirm': 'Clear chat history?',
     'ai.errors.resolveFailed': 'AI service failed to initialize. Check console for details.',
 
     // Provider presets and status feedback
@@ -1964,6 +1965,7 @@ export const en: Record<string, string> = {
     'ai.status.connected': 'Connected',
     'ai.status.disconnected': 'Disconnected',
     'ai.status.testing': 'Testing',
+    'ai.status.initializing': 'Connecting to AI backend...',
     'ai.status.error': 'Connection failed',
     'ai.errorAdvice.missingEndpoint': 'Please select a provider or enter the API endpoint.',
     'ai.errorAdvice.missingKey': 'This provider requires an API key.',
