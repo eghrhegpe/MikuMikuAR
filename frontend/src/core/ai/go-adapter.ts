@@ -84,7 +84,11 @@ class GoAiAdapter implements AiService {
                 };
             }
         })();
-        await this._capsPromise;
+        try {
+            await this._capsPromise;
+        } finally {
+            this._capsPromise = null;
+        }
     }
 
     async testConnection(): Promise<AiConnectionResult> {

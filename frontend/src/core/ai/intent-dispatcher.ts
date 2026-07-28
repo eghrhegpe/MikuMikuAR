@@ -5,15 +5,9 @@ export type { ActionResult };
 
 const CONTROL_NAMESPACE = 'ai:control:';
 
-export function parseActionFromLLM(text: string): {
-    action: string;
-    params: Record<string, unknown>;
-} | null {
-    const jsonMatch = text.match(/\{[\s\S]*?"action"[\s\S]*?"params"[\s\S]*?\}/);
-    if (!jsonMatch) return null;
-
+function _tryParse(text: string): { action: string; params: Record<string, unknown> } | null {
     try {
-        const parsed = JSON.parse(jsonMatch[0]);
+        const parsed = JSON.parse(text);
         if (typeof parsed.action !== 'string') return null;
         const actionId = parsed.action.startsWith(CONTROL_NAMESPACE)
             ? parsed.action
@@ -22,6 +16,33 @@ export function parseActionFromLLM(text: string): {
     } catch {
         return null;
     }
+}
+
+export function parseActionFromLLM(text: string): {
+    action: string;
+    params: Record<string, unknown>;
+} | null {
+    let result: ReturnType<typeof _tryParse>;
+
+    // Priority 1: 如果全文就是合法 JSON，直接解析
+    result = _tryParse(text);
+    if (result) return result;
+
+    // Priority 2: 提取 ```json 代码块
+    const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (codeBlockMatch) {
+        result = _tryParse(codeBlockMatch[1].trim());
+        if (result) return result;
+    }
+
+    // Priority 3: 正则回退 —— 匹配含 action + params 的 JSON 对象
+    const jsonMatch = text.match(/\{[\s\S]*?"action"[\s\S]*?"params"[\s\S]*?\}/);
+    if (jsonMatch) {
+        result = _tryParse(jsonMatch[0]);
+        if (result) return result;
+    }
+
+    return null;
 }
 
 export async function executeAction(
