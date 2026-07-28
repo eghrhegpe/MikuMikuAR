@@ -75,6 +75,9 @@ const ADAPTERS: Record<
     color: colorAdapter,
     range: rangeAdapter,
     entity: entityAdapter,
+    // string：直通适配器（原样透传字符串，不做实体解析/校验）。
+    // 与 entity 的区别：entity 必须配 resolve 做模糊匹配，string 用于任意自由文本（如文件路径）。
+    string: (_def, raw) => ({ ok: true, value: String(raw) }) as AdapterResult,
     boolean: (_def, raw) => ({ ok: true, value: Boolean(raw) }) as AdapterResult,
     toggle: (_def, raw) => ({ ok: true, value: Boolean(raw) }) as AdapterResult,
 };

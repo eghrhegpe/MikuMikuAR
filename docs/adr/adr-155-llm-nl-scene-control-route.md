@@ -130,3 +130,4 @@
 | 2026-07-28 | 重写：对齐 ADR-196，追加命名约定/ARIA/E2E 规格 |
 | 2026-07-28 | 终版：对齐 Phase 1–5 实现完成态，更新动作清单、实施记录、8 动作表 |
 | 2026-07-21 | 修复菜单首次点击竞态：各菜单模块原用 `import().then()` 异步注册动作，却在同步栈立即 dispatch，首次点击注册未就绪→“不支持的操作”。改为顶层静态 import 注册函数；scene/motion/library 因与其 action-defs 存在循环依赖，注册调用保留于首次点击同步执行点（破环）；env-actions 无回边→顶层静态注册。 |
+| 2026-07-21 | 可维护性收口（后来者视角）：（1）env 三个纹理绑定动作的 `entity` 类型配恰用恒等 resolve（假解析器，无校验），正名为 `string` 类型；同时补齐 param-adapters 缺失的 `string` 直通适配器（`ParamType` 声明了 string 但 ADAPTERS 未实现，属类型与实现不一致）。（2）修正 `ActionDef.label` 注释契约：原写“i18n key 或显示文本”但实际 41 动作均为硬编码中文，且消费端（LLM description / pending 卡）未过 `t()`——注释改为诚实描述。**待办**：NL 系统国际化（label 改 i18n key + 消费端包 t() + 5 语言补 41 key）需单独立 ADR。**遗留待办**：破坏性动作执行后无撤销入口（scene:undo 能力与 pending 卡脱节）；多 tool_call 复合指令被单例 `_pendingAction` 静默截断（仅取 [0]）。 |
