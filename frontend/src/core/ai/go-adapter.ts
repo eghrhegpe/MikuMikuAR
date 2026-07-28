@@ -151,10 +151,33 @@ class GoAiAdapter implements AiService {
             })) : undefined;
             const llmReq: LLMChatRequest = {
                 model: req.model ?? '',
-                messages: req.messages.map((m) => ({ role: m.role, content: m.content })),
+                messages: req.messages.map((m) => {
+                    if (m.role === 'tool') {
+                        return {
+                            role: m.role,
+                            content: m.content,
+                            tool_call_id: m.tool_call_id,
+                        };
+                    }
+                    if (m.role === 'assistant' && m.tool_calls) {
+                        return {
+                            role: m.role,
+                            content: m.content,
+                            tool_calls: m.tool_calls.map((tc) => ({
+                                id: tc.id,
+                                type: tc.type,
+                                function: {
+                                    name: tc.function.name,
+                                    arguments: tc.function.arguments,
+                                },
+                            })),
+                        };
+                    }
+                    return { role: m.role, content: m.content as string };
+                }),
                 temperature: req.temperature ?? 0.7,
                 max_tokens: req.maxTokens ?? 2048,
-                tools: tools as any,
+                ...(tools ? { tools } : {}),
             };
             await b.AiStreamChat(llmReq);
 

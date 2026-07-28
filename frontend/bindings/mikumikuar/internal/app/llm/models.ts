@@ -3,7 +3,9 @@
 
 export interface ChatMessage {
     "role": string;
-    "content": string;
+    "content": any;
+    "tool_call_id"?: string;
+    "tool_calls"?: ToolCall[] | null;
 }
 
 export interface ChatRequest {
@@ -12,6 +14,17 @@ export interface ChatRequest {
     "temperature": number;
     "max_tokens": number;
     "tools"?: ToolSchema[] | null;
+}
+
+export interface ToolCall {
+    "id": string;
+    "type": string;
+    "function": ToolCallFunc;
+}
+
+export interface ToolCallFunc {
+    "name": string;
+    "arguments": string;
 }
 
 export interface ToolFunction {

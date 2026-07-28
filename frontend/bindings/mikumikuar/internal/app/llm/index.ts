@@ -4,6 +4,8 @@
 export type {
     ChatMessage,
     ChatRequest,
+    ToolCall,
+    ToolCallFunc,
     ToolFunction,
     ToolSchema
 } from "./models.js";

@@ -94,10 +94,11 @@ export class BrowserAiAdapter implements AiService {
             headers['Authorization'] = `Bearer ${cfg.apiKey}`;
         }
 
-        // 内部 AbortController：转发 req.signal，并在 generator 退出（break/return）时强制中止底层 fetch（FR-10 / AC-6）
+        // 内部 AbortController：转发 req.signal + 30s 超时，并在 generator 退出（break/return）时强制中止底层 fetch（FR-10 / AC-6）
         const ac = new AbortController();
         const onAbort = (): void => ac.abort();
         req.signal?.addEventListener('abort', onAbort);
+        const timeoutId = setTimeout(() => ac.abort(), 30000);
 
         try {
             const response = await fetch(cfg.endpoint, {
@@ -125,6 +126,7 @@ export class BrowserAiAdapter implements AiService {
             // CORS / 网络错误友好提示（FR-13）
             yield { type: 'error', error: _friendlyError(err) };
         } finally {
+            clearTimeout(timeoutId);
             req.signal?.removeEventListener('abort', onAbort);
             ac.abort(); // 确保外部 break/return 时底层请求被中止
         }
