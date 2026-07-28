@@ -2,75 +2,75 @@
   "duplicates": [
     {
       "firstFile": {
-        "end": 196,
+        "end": 198,
         "endLoc": {
           "column": 31,
-          "line": 196,
-          "position": 6918
+          "line": 198,
+          "position": 6934
         },
         "name": "core\\dialog.ts",
-        "start": 179,
+        "start": 181,
         "startLoc": {
           "column": 44,
-          "line": 179,
-          "position": 6356
+          "line": 181,
+          "position": 6372
         }
       },
       "format": "typescript",
       "fragment": "",
       "lines": 18,
       "secondFile": {
-        "end": 387,
+        "end": 391,
         "endLoc": {
           "column": 31,
-          "line": 387,
-          "position": 13638
+          "line": 391,
+          "position": 13686
         },
         "name": "core\\dialog.ts",
-        "start": 370,
+        "start": 374,
         "startLoc": {
           "column": 58,
-          "line": 370,
-          "position": 13076
+          "line": 374,
+          "position": 13124
         }
       },
       "tokens": 55
     },
     {
       "firstFile": {
-        "end": 234,
+        "end": 238,
         "endLoc": {
           "column": 34,
-          "line": 234,
-          "position": 8226
+          "line": 238,
+          "position": 8274
         },
         "name": "core\\dialog.ts",
-        "start": 213,
+        "start": 215,
         "startLoc": {
           "column": 47,
-          "line": 213,
-          "position": 7363
+          "line": 215,
+          "position": 7379
         }
       },
       "format": "typescript",
       "fragment": "",
-      "lines": 22,
+      "lines": 24,
       "secondFile": {
-        "end": 413,
+        "end": 419,
         "endLoc": {
           "column": 34,
-          "line": 413,
-          "position": 14602
+          "line": 419,
+          "position": 14682
         },
         "name": "core\\dialog.ts",
-        "start": 395,
+        "start": 399,
         "startLoc": {
           "column": 33,
-          "line": 395,
-          "position": 13918
+          "line": 399,
+          "position": 13966
         }
       },
-      "tokens": 92
+      "tokens": 94
     },
     {
       "firstFile": {
@@ -110,36 +110,36 @@
     },
     {
       "firstFile": {
-        "end": 149,
+        "end": 151,
         "endLoc": {
           "column": 17,
-          "line": 149,
-          "position": 5648
+          "line": 151,
+          "position": 5688
         },
         "name": "menus\\settings-downloads.ts",
-        "start": 132,
+        "start": 134,
         "startLoc": {
           "column": 43,
-          "line": 132,
-          "position": 5101
+          "line": 134,
+          "position": 5141
         }
       },
       "format": "typescript",
       "fragment": "",
       "lines": 18,
       "secondFile": {
-        "end": 240,
+        "end": 246,
         "endLoc": {
           "column": 17,
-          "line": 240,
-          "position": 8833
+          "line": 246,
+          "position": 8937
         },
         "name": "menus\\settings-downloads.ts",
-        "start": 224,
+        "start": 230,
         "startLoc": {
           "column": 66,
-          "line": 224,
-          "position": 8397
+          "line": 230,
+          "position": 8501
         }
       },
       "tokens": 95
@@ -218,108 +218,72 @@
     },
     {
       "firstFile": {
-        "end": 210,
+        "end": 269,
         "endLoc": {
           "column": 15,
-          "line": 210,
-          "position": 7281
+          "line": 269,
+          "position": 9461
         },
         "name": "scene\\camera\\camera-behaviors.ts",
-        "start": 193,
+        "start": 252,
         "startLoc": {
           "column": 30,
-          "line": 193,
-          "position": 6756
+          "line": 252,
+          "position": 8936
         }
       },
       "format": "typescript",
       "fragment": "",
       "lines": 18,
       "secondFile": {
-        "end": 255,
+        "end": 314,
         "endLoc": {
           "column": 15,
-          "line": 255,
-          "position": 9086
+          "line": 314,
+          "position": 11266
         },
         "name": "scene\\camera\\camera-behaviors.ts",
-        "start": 238,
+        "start": 297,
         "startLoc": {
           "column": 29,
-          "line": 238,
-          "position": 8561
+          "line": 297,
+          "position": 10741
         }
       },
       "tokens": 109
     },
     {
       "firstFile": {
-        "end": 123,
+        "end": 167,
         "endLoc": {
           "column": 15,
-          "line": 123,
-          "position": 4918
+          "line": 167,
+          "position": 6442
         },
         "name": "scene\\camera\\camera-factory.ts",
-        "start": 102,
-        "startLoc": {
-          "column": 57,
-          "line": 102,
-          "position": 4369
-        }
-      },
-      "format": "typescript",
-      "fragment": "",
-      "lines": 22,
-      "secondFile": {
-        "end": 210,
-        "endLoc": {
-          "column": 15,
-          "line": 210,
-          "position": 7656
-        },
-        "name": "scene\\camera\\camera-factory.ts",
-        "start": 188,
-        "startLoc": {
-          "column": 24,
-          "line": 188,
-          "position": 7039
-        }
-      },
-      "tokens": 90
-    },
-    {
-      "firstFile": {
-        "end": 161,
-        "endLoc": {
-          "column": 15,
-          "line": 161,
-          "position": 6166
-        },
-        "name": "scene\\camera\\camera-factory.ts",
-        "start": 145,
+        "start": 151,
         "startLoc": {
           "column": 19,
-          "line": 145,
-          "position": 5685
+          "line": 151,
+          "position": 5961
         }
       },
       "format": "typescript",
       "fragment": "",
       "lines": 17,
       "secondFile": {
-        "end": 181,
+        "end": 187,
         "endLoc": {
           "column": 15,
-          "line": 181,
-          "position": 6745
+          "line": 187,
+          "position": 7021
         },
         "name": "scene\\camera\\camera-factory.ts",
-        "start": 166,
+        "start": 172,
         "startLoc": {
           "column": 18,
-          "line": 166,
-          "position": 6360
+          "line": 172,
+          "position": 6636
         }
       },
       "tokens": 55
@@ -364,9 +328,9 @@
       "firstFile": {
         "end": 62,
         "endLoc": {
-          "column": 14,
+          "column": 44,
           "line": 62,
-          "position": 2034
+          "position": 2050
         },
         "name": "scene\\motion\\motion-modules\\foot-modules.ts",
         "start": 47,
@@ -380,11 +344,11 @@
       "fragment": "",
       "lines": 16,
       "secondFile": {
-        "end": 126,
+        "end": 125,
         "endLoc": {
-          "column": 17,
-          "line": 126,
-          "position": 4039
+          "column": 44,
+          "line": 125,
+          "position": 4024
         },
         "name": "scene\\motion\\motion-modules\\hand-modules.ts",
         "start": 110,
@@ -394,40 +358,76 @@
           "position": 3578
         }
       },
-      "tokens": 67
+      "tokens": 69
     },
     {
       "firstFile": {
-        "end": 395,
+        "end": 89,
         "endLoc": {
-          "column": 13,
-          "line": 395,
-          "position": 14981
+          "column": 25,
+          "line": 89,
+          "position": 3056
         },
-        "name": "scene\\motion\\motion-modules\\hand-modules.ts",
-        "start": 380,
+        "name": "scene\\motion\\motion-modules\\foot-modules.ts",
+        "start": 74,
         "startLoc": {
-          "column": 51,
-          "line": 380,
-          "position": 14638
+          "column": 31,
+          "line": 74,
+          "position": 2594
         }
       },
       "format": "typescript",
       "fragment": "",
       "lines": 16,
       "secondFile": {
-        "end": 423,
+        "end": 173,
         "endLoc": {
-          "column": 13,
-          "line": 423,
-          "position": 15677
+          "column": 25,
+          "line": 173,
+          "position": 6098
         },
         "name": "scene\\motion\\motion-modules\\hand-modules.ts",
-        "start": 408,
+        "start": 159,
+        "startLoc": {
+          "column": 31,
+          "line": 159,
+          "position": 5637
+        }
+      },
+      "tokens": 61
+    },
+    {
+      "firstFile": {
+        "end": 407,
+        "endLoc": {
+          "column": 13,
+          "line": 407,
+          "position": 15237
+        },
+        "name": "scene\\motion\\motion-modules\\hand-modules.ts",
+        "start": 392,
+        "startLoc": {
+          "column": 51,
+          "line": 392,
+          "position": 14894
+        }
+      },
+      "format": "typescript",
+      "fragment": "",
+      "lines": 16,
+      "secondFile": {
+        "end": 435,
+        "endLoc": {
+          "column": 13,
+          "line": 435,
+          "position": 15933
+        },
+        "name": "scene\\motion\\motion-modules\\hand-modules.ts",
+        "start": 420,
         "startLoc": {
           "column": 52,
-          "line": 408,
-          "position": 15334
+          "line": 420,
+          "position": 15590
         }
       },
       "tokens": 55
@@ -470,7 +470,7 @@
     }
   ],
   "statistics": {
-    "detectionDate": "2026-07-28T02:54:03.306Z",
+    "detectionDate": "2026-07-28T06:31:31.145Z",
     "formats": {
       "txt": {
         "clones": 0,
@@ -486,28 +486,28 @@
       },
       "typescript": {
         "clones": 13,
-        "duplicatedLines": 241,
-        "duplicatedTokens": 1088,
-        "lines": 42391,
+        "duplicatedLines": 237,
+        "duplicatedTokens": 1063,
+        "lines": 43197,
         "newClones": 0,
         "newDuplicatedLines": 0,
-        "percentage": 0.568516902172631,
-        "percentageTokens": 0.5309389029865313,
-        "sources": 231,
-        "tokens": 204920
+        "percentage": 0.548649211750816,
+        "percentageTokens": 0.5113305658308039,
+        "sources": 235,
+        "tokens": 207889
       }
     },
     "total": {
       "clones": 13,
-      "duplicatedLines": 241,
-      "duplicatedTokens": 1088,
-      "lines": 42484,
+      "duplicatedLines": 237,
+      "duplicatedTokens": 1063,
+      "lines": 43290,
       "newClones": 0,
       "newDuplicatedLines": 0,
-      "percentage": 0.5672723848978439,
-      "percentageTokens": 0.5270500697566268,
-      "sources": 232,
-      "tokens": 206432
+      "percentage": 0.5474705474705475,
+      "percentageTokens": 0.5076384544486415,
+      "sources": 236,
+      "tokens": 209401
     }
   }
 }

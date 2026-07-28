@@ -16,6 +16,7 @@ import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 import type { IMmdBindableModelAnimation } from 'babylon-mmd/esm/Runtime/Animation/IMmdBindableAnimation';
 import type { MmdWasmPhysicsRuntimeImpl } from 'babylon-mmd/esm/Runtime/Optimized/Physics/mmdWasmPhysicsRuntimeImpl';
+import { MmdWasmPhysicsRuntimeImpl as MmdWasmPhysicsRuntimeImplClass } from 'babylon-mmd/esm/Runtime/Optimized/Physics/mmdWasmPhysicsRuntimeImpl';
 import type { RigidBodyBundle } from 'babylon-mmd/esm/Runtime/Optimized/Physics/Bind/rigidBodyBundle';
 import type { StreamAudioPlayer } from 'babylon-mmd/esm/Runtime/Audio/streamAudioPlayer';
 import type { RuntimeModel } from '@/core/types';
@@ -26,15 +27,32 @@ import { logWarn } from '@/core/logger';
  * 从 IMmdRuntime 获取底层 MmdWasmPhysicsRuntimeImpl。
  * `.physics` 不在 IMmdRuntime 公开接口（上游最小接口策略，overview §74/§82）。
  * physics 在首个模型加载前可能为 null，需延迟获取。
+ *
+ * 【主动创建】WASM 内建物理下，`MmdWasmPhysicsRuntime._impl` 是 lazy 的（nullPhysicsClock
+ * 构造时为 null），只有首次 `getImpl(ctor)` 才创建（mmdWasmPhysicsRuntime.js:103-110）。
+ * 模型刷开后若无人主动取 impl，被动 `.impl` getter 恒返回 null——这正是 wind-physics
+ * `windPhysicsActive === false` 的真因（ADR-200）。故这里若被动 `.impl` 为 null，主动
+ * `getImpl(MmdWasmPhysicsRuntimeImpl)` 强制创建（同 virtual-skirt.ts:289 的做法）。
+ * 导入的 impl 类其依赖均在 WASM 运行时图内（scene.ts 已加载 MmdWasmRuntime/MmdWasmPhysics），零新增 bundle。
  */
 export function getPhysicsImpl(runtime: IMmdRuntime): MmdWasmPhysicsRuntimeImpl | null {
     const physics = (runtime as unknown as Record<string, unknown>).physics as
-        Record<string, unknown> | undefined;
+        | (Record<string, unknown> & {
+              getImpl?: (ctor: typeof MmdWasmPhysicsRuntimeImplClass) => MmdWasmPhysicsRuntimeImpl;
+          })
+        | undefined;
     if (!physics) {
         return null;
     }
-    const impl = physics.impl as MmdWasmPhysicsRuntimeImpl | undefined;
-    return impl ?? null;
+    const passive = physics.impl as MmdWasmPhysicsRuntimeImpl | undefined | null;
+    if (passive) {
+        return passive;
+    }
+    // 被动 impl 为 null：主动触发 lazy 创建（与 virtual-skirt 一致）
+    if (typeof physics.getImpl === 'function') {
+        return physics.getImpl(MmdWasmPhysicsRuntimeImplClass) ?? null;
+    }
+    return null;
 }
 
 /**
@@ -81,6 +99,67 @@ export function getStreamAudio(player: StreamAudioPlayer): HTMLAudioElement | nu
 }
 
 /**
+ * 向模型自带的真物理刚体（头发/裙子等）施加中心力（ADR-200 守卫式反射）。
+ *
+ * 【背景】模型 PMX 刚体经 `MmdWasmModel._physicsModel.buildPhysics(...)` 在 WASM 侧构建，
+ * 不进 `rigidBodyBundleReferenceCountMap`（详见 getRigidBodyBundleMap 注释），且 `MmdWasmModel`
+ * 只暴露只读 `rigidBodyStates`，无公开施力 API。故必须反射两层私有字段
+ * `_physicsModel`（MmdBulletPhysicsModel）→ `._bundle`（MmdRigidBodyBundle，含公开 `count` /
+ * `applyCentralForce` + `rigidBodyData[]`）。属「守卫式反射」，同条目9 `_audio`。
+ *
+ * 【筛选】仅对真物理刚体施力：`physicsMode !== FollowBone(0)`（即 Physics(1) /
+ * PhysicsWithBone(2)）。FollowBone 刚体每帧被骨骼位置拉回（syncBodies），施力无效。
+ * 判据来源：mmdBulletPhysics.js:150-151 官方注释 + :331-346 syncBodies 分支。
+ * FollowBone=0 常量本地定义（避免引 pmxObject loader 深路径），来源 PmxObject.RigidBody.PhysicsMode。
+ *
+ * 【降级】`_physicsModel` 或 `._bundle` 缺失（上游重命名/物理未构建）→ 返回 0，
+ * 首次仅打一次 dev 警告，使 babylon-mmd 升级回归立即可见（绝不静默失效）。
+ *
+ * @returns 实际施力的刚体数（降级或无真物理刚体时为 0）
+ */
+const FOLLOW_BONE = 0; // PmxObject.RigidBody.PhysicsMode.FollowBone
+
+interface _ModelBundleLike {
+    count: number;
+    rigidBodyData: ReadonlyArray<{ physicsMode: number }>;
+    applyCentralForce(index: number, force: Vector3): void;
+}
+interface _PhysicsModelLike {
+    _bundle: _ModelBundleLike | null;
+}
+
+function _getModelBundle(model: RuntimeModel): _ModelBundleLike | null {
+    const pm = (model as unknown as { _physicsModel?: _PhysicsModelLike })._physicsModel;
+    return pm?._bundle ?? null;
+}
+
+let _modelPhysicsMissingWarned = false;
+export function applyForceToModelRigidBodies(model: RuntimeModel, force: Vector3): number {
+    const bundle = _getModelBundle(model);
+    if (!bundle) {
+        if (!_modelPhysicsMissingWarned) {
+            _modelPhysicsMissingWarned = true;
+            logWarn(
+                'mmd-adapter',
+                'MmdWasmModel._physicsModel._bundle 缺失（可能已被 babylon-mmd 重命名，或模型未构建物理）。风力将不作用于模型原生刚体。检查 babylon-mmd 版本兼容性'
+            );
+        }
+        return 0;
+    }
+    let applied = 0;
+    const count = bundle.count;
+    const data = bundle.rigidBodyData;
+    for (let i = 0; i < count; i++) {
+        // 仅真物理刚体（Physics/PhysicsWithBone）受力；FollowBone 每帧被骨骼拉回，跳过
+        if (data[i]?.physicsMode !== FOLLOW_BONE) {
+            bundle.applyCentralForce(i, force);
+            applied++;
+        }
+    }
+    return applied;
+}
+
+/**
  * CapabilityProbe — 升级回归探测（ADR-192 Phase 2 守卫式反射）。
  * 条目 3 已通过公开 API 内化，不再需要探测；
  * 条目 9 仍依赖私有 _audio，探测用于在升级时确认字段存在。
@@ -88,6 +167,9 @@ export function getStreamAudio(player: StreamAudioPlayer): HTMLAudioElement | nu
 export const CapabilityProbe = {
     hasStreamAudio(player: StreamAudioPlayer): boolean {
         return (player as unknown as { _audio?: HTMLAudioElement })._audio !== undefined;
+    },
+    hasModelPhysicsBundle(model: RuntimeModel): boolean {
+        return _getModelBundle(model) !== null;
     },
 };
 
