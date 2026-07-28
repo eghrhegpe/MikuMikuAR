@@ -8,12 +8,17 @@
  * - 仅 WASM 运行时生效（JS 运行时无 Bullet 物理，风仍影响粒子/水面）
  * - Kinematic / FollowBone 刚体（骨骼跟随）不受力：Bullet 自动忽略或每帧被骨骼变换覆盖
  *
- * 作用范围（ADR-200）：风力同时作用于两类刚体：
+ * 作用范围（ADR-200 + 路径1 修正）：风力同时作用于两类刚体：
  *   1. **自建刚体**（虚拟裙骨 ADR-084 / 地面碰撞）——经 @/core/mmd-adapter 的
- *      getRigidBodyBundleMap 遍历公开 `rigidBodyBundleReferenceCountMap`（无私有依赖）。
+ *      getRigidBodyMap 遍历公开 `rigidBodyReferenceCountMap`（单数 RigidBody）。
+ *      注意：虚拟裙骨/地面经 `addRigidBody`（单数）注入，**进单数容器而非 bundle 容器**；
+ *      getRigidBodyBundleMap（bundle 容器）在联邦当前无任何 addRigidBodyBundle 调用，
+ *      恒为空，不可作为施力目标（见 getRigidBodyMap 注释）。
  *   2. **模型原生真物理刚体**（头发/裙子 Physics/PhysicsWithBone）——经
  *      applyForceToModelRigidBodies 守卫式反射（FollowBone 跳过）。
- *   虚拟裙骨只对无裙骨模型生效，主流正经模型靠路径 2 受风。
+ *      注意：WASM 内建物理下 MmdWasmModel._physicsModel 为 null，此路径当前返回 0
+ *      （见 mmd-adapter 注释），属 Path 2 未来 ADR 范畴，非本次路径1 修复范围。
+ *   虚拟裙骨只对无裙骨模型生效；本次修复使**联邦自建 Dynamic 刚体**真正受风。
  */
 
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
@@ -22,7 +27,7 @@ import { MmdWasmRuntime as MmdWasmRuntimeClass } from 'babylon-mmd/esm/Runtime/O
 import type { MmdWasmPhysicsRuntimeImpl } from 'babylon-mmd/esm/Runtime/Optimized/Physics/mmdWasmPhysicsRuntimeImpl';
 import { getWindVector, isWindActive } from '../core/wind-utils';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
-import { getPhysicsImpl, getRigidBodyBundleMap, applyForceToModelRigidBodies } from '@/core/mmd-adapter';
+import { getPhysicsImpl, getRigidBodyBundleMap, getRigidBodyMap, applyForceToModelRigidBodies } from '@/core/mmd-adapter';
 import { modelRegistry } from '@/core/config';
 
 // 薄转发：保留历史导出名 _getBundles，避免 wind-physics.test.ts 改动（ADR-192 双轨过渡）
@@ -64,12 +69,22 @@ function _onPhysicsSync(impl: MmdWasmPhysicsRuntimeImpl): void {
     const wind = getWindVector();
     _tmpWind.copyFrom(wind).scaleInPlace(WIND_FORCE_SCALE);
 
-    // (1) 自建刚体（虚拟裙骨/地面）：经公开 map 遍历
+    // (1a) 自建刚体（bundle 类）：经公开 bundle map 遍历。
+    // 联邦当前无 addRigidBodyBundle 调用，此循环通常为空，保留以兼容未来 bundle 类自建体。
     for (const bundle of getRigidBodyBundleMap(impl)) {
         const count = bundle.count;
         for (let i = 0; i < count; i++) {
             bundle.applyCentralForce(i, _tmpWind);
         }
+    }
+
+    // (1b) 自建**单数**刚体（虚拟裙骨链节 / 地面）：经公开单数 map 遍历（路径1 修正）。
+    // 虚拟裙骨 ADR-084 / 地面碰撞走 addRigidBody（单数 RigidBody），进
+    // rigidBodyReferenceCountMap（非 bundle 容器）。原实现只遍历 bundle 容器，
+    // 导致自建刚体恒为 0 施力目标（见 mmd-adapter.getRigidBodyMap 注释）。
+    // 单数 RigidBody.applyCentralForce(force) 无 index 参数。
+    for (const body of getRigidBodyMap(impl)) {
+        body.applyCentralForce(_tmpWind);
     }
 
     // (2) 模型原生真物理刚体（头发/裙子）：经守卫式反射施力（ADR-200），用独立更大系数。

@@ -150,7 +150,11 @@ export function setupE2ECapture(): void {
         },
 
         // ======== 物理健康检查钩子 (E2E @webgl) ========
-        /** WASM 物理刚体 Bundle 数（0 = 物理未运行或 JS 运行时） */
+        /** WASM 物理刚体 Bundle 数（0 = 无 bundle 类刚体）。
+         *  ⚠️ 联邦的自建刚体（虚拟裙骨 ADR-084 / 地面碰撞）走 `addRigidBody`（单数
+         *  RigidBody），进入 `rigidBodyReferenceCountMap`（单数容器），**不进** bundle 容器。
+         *  故本数值恒为 0 属正常，不可作为"物理已运行"的断言目标——
+         *  改用下方 rigidBodyCount（单数容器）。保留此探针仅供调试观测。 */
         get rigidBodyBundleCount(): number {
             const rt = mmdRuntime;
             if (!rt) {
@@ -165,6 +169,28 @@ export function setupE2ECapture(): void {
             ).physics;
             const impl = physics?.impl;
             return impl?.rigidBodyBundleReferenceCountMap?.size ?? 0;
+        },
+
+        /** WASM 物理**单数**刚体数（0 = 无自建刚体或 JS 运行时）。
+         *  联邦自建刚体（地面碰撞默认开启 / 虚拟裙骨 ADR-084）经 `addRigidBody`
+         *  进入 `rigidBodyReferenceCountMap`（单数容器）。注意：虚拟裙骨/地面走的是
+         *  单数 RigidBody，**不进** bundle 容器，故 rigidBodyBundleCount 恒为 0 属正常。
+         *  此数值 > 0 表示 WASM 物理已运行且联邦自建刚体已登记——
+         *  与路径1 风力（getRigidBodyMap）一致，是 e2e 物理健康检查的可靠断言目标。 */
+        get rigidBodyCount(): number {
+            const rt = mmdRuntime;
+            if (!rt) {
+                return 0;
+            }
+            const physics = (
+                rt as unknown as {
+                    physics?: {
+                        impl?: { rigidBodyReferenceCountMap?: ReadonlyMap<unknown, number> };
+                    };
+                }
+            ).physics;
+            const impl = physics?.impl;
+            return impl?.rigidBodyReferenceCountMap?.size ?? 0;
         },
 
         /** 风力物理是否已实际订阅（WASM Bullet onSyncObservable） */

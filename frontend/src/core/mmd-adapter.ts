@@ -18,6 +18,7 @@ import type { IMmdBindableModelAnimation } from 'babylon-mmd/esm/Runtime/Animati
 import type { MmdWasmPhysicsRuntimeImpl } from 'babylon-mmd/esm/Runtime/Optimized/Physics/mmdWasmPhysicsRuntimeImpl';
 import { MmdWasmPhysicsRuntimeImpl as MmdWasmPhysicsRuntimeImplClass } from 'babylon-mmd/esm/Runtime/Optimized/Physics/mmdWasmPhysicsRuntimeImpl';
 import type { RigidBodyBundle } from 'babylon-mmd/esm/Runtime/Optimized/Physics/Bind/rigidBodyBundle';
+import type { RigidBody } from 'babylon-mmd/esm/Runtime/Optimized/Physics/Bind/rigidBody';
 import type { StreamAudioPlayer } from 'babylon-mmd/esm/Runtime/Audio/streamAudioPlayer';
 import type { RuntimeModel } from '@/core/types';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
@@ -73,6 +74,27 @@ export function getPhysicsImpl(runtime: IMmdRuntime): MmdWasmPhysicsRuntimeImpl 
  */
 export function getRigidBodyBundleMap(impl: MmdWasmPhysicsRuntimeImpl): Iterable<RigidBodyBundle> {
     return impl.rigidBodyBundleReferenceCountMap.keys();
+}
+
+/**
+ * 返回所有**单数** RigidBody 迭代器（路径1 修正，ADR-200）。
+ *
+ * 与 getRigidBodyBundleMap **平行但作用于不同的容器**：
+ * - `rigidBodyBundleReferenceCountMap`（bundle 容器）：仅含 JS 侧经 `addRigidBodyBundle`
+ *   手动加入的刚体。联邦当前**无任何处**调用 `addRigidBodyBundle`（virtual-skirt.ts /
+ *   ground-collision.ts 均用单数 `addRigidBody` / `addRigidBodyToGlobal`），
+ *   故该容器恒空——这正是 `window.__scene.rigidBodyBundleCount === 0` 的真因。
+ * - `rigidBodyReferenceCountMap`（单数容器）：含经 `addRigidBody` /
+ *   `addRigidBodyToGlobal` 加入的刚体——**虚拟裙骨 ADR-084 与地面碰撞正是走这里**。
+ *
+ * 原 wind-physics 仅遍历 bundle 容器，导致联邦自建刚体恒为 0 施力目标。
+ * 本访问器补齐单数侧，使风力能作用于联邦自建 Dynamic 刚体（体/地面）。
+ *
+ * 属性 `rigidBodyReferenceCountMap` 是上游公开契约（mmdWasmPhysicsRuntimeImpl.d.ts），
+ * 与 bundle 容器同源，升级稳定。
+ */
+export function getRigidBodyMap(impl: MmdWasmPhysicsRuntimeImpl): Iterable<RigidBody> {
+    return impl.rigidBodyReferenceCountMap.keys();
 }
 
 /**
