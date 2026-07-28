@@ -684,7 +684,7 @@ function openModelDetailFullscreen(id: string): void {
             container.style.gap = '12px';
 
             const tabs = document.createElement('div');
-            tabs.className = 'model-detail-tabs';
+            tabs.className = 'type-row model-detail-tabs';
 
             const content = document.createElement('div');
             content.className = 'model-detail-tab-content';
@@ -705,7 +705,7 @@ function openModelDetailFullscreen(id: string): void {
 
             const createTabButton = (tab: 'info' | 'bones', label: string): HTMLButtonElement => {
                 const btn = document.createElement('button');
-                btn.className = 'model-detail-tab-btn';
+                btn.className = 'model-detail-tab-btn mode-btn';
                 btn.type = 'button';
                 btn.textContent = label;
                 btn.addEventListener('click', () => {

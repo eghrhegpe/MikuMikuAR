@@ -161,8 +161,13 @@ export class SlideMenu {
                     const row = target.closest<HTMLElement>(NAV_ITEM_SELECTOR);
                     if (row && navHasHorizontalAdjust(row)) return true;
                     // 契约之外的原生可输入控件（开关 checkbox 除外——需 →/Enter 切换）
-                    const native = target.closest('button, input, textarea, select, [contenteditable]');
-                    if (native && !(native instanceof HTMLInputElement && native.type === 'checkbox')) {
+                    const native = target.closest(
+                        'button, input, textarea, select, [contenteditable]'
+                    );
+                    if (
+                        native &&
+                        !(native instanceof HTMLInputElement && native.type === 'checkbox')
+                    ) {
                         return true;
                     }
                 }
@@ -716,6 +721,10 @@ export class SlideMenu {
                 mark(el, { groupSelector: '.preset-chip:not(.badge)' });
             }
         });
+        // morph slider rows: 聚焦内部原生 range input，←→ 让给 slider 调值
+        this.panel
+            .querySelectorAll<HTMLElement>('.morph-row')
+            .forEach((el) => mark(el, { focusSelector: '.morph-slider', horizontalAdjust: true }));
     }
 
     private clearFocus(): void {

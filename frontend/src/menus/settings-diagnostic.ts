@@ -29,8 +29,6 @@ import type { PopupLevel } from '../core/config';
 import type { SettingsMenuHandle } from './settings-shared';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
-import { createKeyboardNav } from '../core/ui-keyboard-nav';
-import type { Disposable } from '../core/dom';
 import { buildToolCatalogText, buildToolSchemas } from '../core/ai/action-catalog';
 import { executeAction, parseActionFromLLM } from '../core/ai/intent-dispatcher';
 import { getActiveBible, buildDialogueSystemPrompt } from '../core/ai/dialogue-session';
@@ -79,8 +77,11 @@ let _pendingAction: {
 } | null = null;
 // [doc:adr-155] 多 tool_call 复合指令：_pendingAction 为“当前待确认”，其余排队于 _pendingQueue。
 // 逐条弹卡，用户应用/取消一条后自动弹下一条。
-let _pendingQueue: Array<{ actionId: string; params: Record<string, unknown>; toolCallId?: string }> =
-    [];
+let _pendingQueue: Array<{
+    actionId: string;
+    params: Record<string, unknown>;
+    toolCallId?: string;
+}> = [];
 // 当前批次全部 tool_call 的元数据（按 OpenAI 协议，每个 tool_call 均需回填 tool 消息，
 // 否则下一轮请求报错）。队列清空后统一回填 + 触发后续 stream。
 let _pendingToolResults: Array<{ toolCallId: string; content: string }> = [];
@@ -564,38 +565,15 @@ function buildModeSwitchSchema(): MenuNode[] {
             kind: 'custom',
             renderCustom: (c) => {
                 const group = document.createElement('div');
-                group.setAttribute('role', 'tablist');
-                group.className = 'diag-mode-row';
+                group.className = 'type-row';
 
                 const btns: HTMLButtonElement[] = [];
                 for (const mode of DIAG_MODES) {
                     btns.push(_buildTab(mode, btns));
                 }
 
-                const navDisp: Disposable = createKeyboardNav(group, {
-                    selector: 'button[role="tab"]',
-                    onEnter: (el) => {
-                        const idx = btns.indexOf(el as HTMLButtonElement);
-                        if (idx >= 0) {
-                            _selectTab(DIAG_MODES[idx], btns);
-                        }
-                    },
-                    onArrowActivate: (el) => {
-                        const idx = btns.indexOf(el as HTMLButtonElement);
-                        if (idx >= 0) {
-                            _selectTab(DIAG_MODES[idx], btns);
-                        }
-                    },
-                    rovingTabIndex: true,
-                    wrap: true,
-                });
-
                 for (const btn of btns) group.appendChild(btn);
                 c.appendChild(group);
-
-                return () => {
-                    navDisp.dispose();
-                };
             },
         },
     ];
@@ -1303,7 +1281,9 @@ function _updateSpeakToggle(): void {
         return;
     }
     _speakToggleBtn.style.display = _mode === 'dialogue' ? '' : 'none';
-    _speakToggleBtn.textContent = _speakEnabled ? t('ai.dialogue.speakOn') : t('ai.dialogue.speakOff');
+    _speakToggleBtn.textContent = _speakEnabled
+        ? t('ai.dialogue.speakOn')
+        : t('ai.dialogue.speakOff');
     _speakToggleBtn.setAttribute('aria-checked', String(_speakEnabled));
     _speakToggleBtn.setAttribute('aria-label', t('ai.dialogue.speakToggle'));
 }
