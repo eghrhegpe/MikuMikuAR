@@ -111,6 +111,9 @@ resolveAi()
     .then(async (ai) => {
         _ai = ai;
         _aiResolved = true;
+        // 先从持久化层回读配置并回填 UI（修复桌面端重载后回退默认服务商：
+        // 桌面配置存在 Go 后端，而 _localConfig 仅从前端 IndexedDB 初始化为空）。
+        await _loadPersistedConfig();
         await _refreshCaps();
         _updateControlsEnabled();
         if (_messages.length === 0) {
@@ -127,6 +130,59 @@ resolveAi()
 
 function _addAssistantMessage(text: string): void {
     _messages.push({ role: 'assistant', content: text });
+}
+
+/** 从端点推断服务商（复用 config-store 的匹配逻辑），无法匹配回落 custom。 */
+function _inferProvider(endpoint: string): AiConfigProvider {
+    if (!endpoint) {
+        return 'custom';
+    }
+    const matched = (Object.keys(PROVIDER_PRESETS) as AiConfigProvider[])
+        .filter((p) => p !== 'custom')
+        .find((p) =>
+            endpoint.includes(PROVIDER_PRESETS[p].endpoint.replace('/v1/chat/completions', ''))
+        );
+    return matched ?? 'custom';
+}
+
+/**
+ * 从持久化层回读配置并回填 _localConfig 与输入框。
+ * 桌面端配置存于 Go 后端，若不回读则重载后 _localConfig 为空 → UI 回退默认 Ollama。
+ * key 出于安全 go 端不回读明文，仅用 keyConfigured 标志显示占位。
+ */
+async function _loadPersistedConfig(): Promise<void> {
+    if (!_ai?.loadConfig) {
+        return;
+    }
+    let persisted;
+    try {
+        persisted = await _ai.loadConfig();
+    } catch {
+        return;
+    }
+    if (!persisted.endpoint && !persisted.model) {
+        return; // 后端无配置，保持默认
+    }
+    _localConfig = {
+        ..._localConfig,
+        provider: _inferProvider(persisted.endpoint),
+        endpoint: persisted.endpoint,
+        model: persisted.model,
+        apiKey: persisted.apiKey ?? _localConfig.apiKey,
+    };
+    // 输入框可能已在 renderCustom 中创建，同步其显示值
+    if (_configEndpoint) {
+        _configEndpoint.value = persisted.endpoint;
+    }
+    if (_configModel) {
+        _configModel.value = persisted.model;
+    }
+    // key 已配置但明文不可回读时，用占位提示用户无需重填（仅 go 端）
+    if (_configApiKey && !persisted.apiKey && persisted.keyConfigured) {
+        _configApiKey.placeholder = t('ai.config.keyConfigured');
+    }
+    _updateProviderButtons(_localConfig.provider);
+    _updateDocLink(_localConfig.provider);
 }
 
 async function _refreshCaps(): Promise<void> {
@@ -319,7 +375,8 @@ function _renderAdvice(kind?: AiErrorKind): void {
     }
     _adviceEl.textContent = t(`ai.errorAdvice.${kind}`);
     _adviceEl.className = 'diag-advice diag-advice--' + kind;
-    _adviceEl.style.display = '';
+    // 基础类 .diag-advice 写死 display:none，空字符串会回落到该层叠值仍不可见，需显式设块级
+    _adviceEl.style.display = 'block';
 }
 
 let _activeProviderButtons: HTMLButtonElement[] = [];
