@@ -710,6 +710,10 @@ export function SaveEnvPresetAuto(jsonStr: string): $CancellablePromise<string> 
 
 /**
  * SaveLastScene stores the current scene state for auto-recovery on next launch.
+ * Atomic write (temp file + rename) under sceneMu prevents concurrent auto-save
+ * calls (debounce fire / visibilitychange flush / undo restore) from truncating
+ * or interleaving into last_scene.json — a half-written file would fail JSON.parse
+ * on next launch and silently drop the saved character/motion state.
  */
 export function SaveLastScene(jsonStr: string): $CancellablePromise<void> {
     return $Call.ByID(764740646, jsonStr);
