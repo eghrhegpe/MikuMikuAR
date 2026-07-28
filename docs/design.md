@@ -663,6 +663,87 @@ perKeySkip: (target, kind) => {
 | 行式操作 | 可获得焦点的行需响应 `Enter`/`Space` 触发主操作 | — |
 | 输入框 | 保留默认 `Tab` 顺序；`Enter` 可提交（如搜索、聊天发送） | — |
 
+### 自定义面板接入示例
+
+`renderCustom` 是最常见的键盘导航接入点。以下模板可直接复制到 `buildXxxLevel` 中：
+
+```ts
+import { renderMenu } from './render-menu';
+import { createKeyboardNav } from '../core/ui-keyboard-nav';
+import type { Disposable } from '../core/dom';
+import type { MenuNode, PopupLevel } from '../core/config';
+
+function buildExampleListSchema(items: string[]): MenuNode[] {
+    return [
+        {
+            id: 'example:search',
+            kind: 'custom',
+            renderCustom: (c) => {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.placeholder = t('example.searchPlaceholder');
+                input.className = 'diag-input';
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        // 触发搜索
+                    }
+                });
+                c.appendChild(input);
+            },
+        },
+        {
+            id: 'example:list',
+            kind: 'custom',
+            renderCustom: (c) => {
+                const listEl = document.createElement('div');
+                listEl.className = 'example-list';
+
+                for (const item of items) {
+                    const row = document.createElement('div');
+                    row.className = 'example-list-item';
+                    row.tabIndex = 0;
+                    row.role = 'button';
+                    row.textContent = item;
+                    row.addEventListener('click', () => onSelect(item));
+                    listEl.appendChild(row);
+                }
+
+                // 接入键盘导航：Arrow 上下移动焦点，Enter/Space 触发 click
+                const navDisp: Disposable = createKeyboardNav(listEl, {
+                    selector: '.example-list-item',
+                    rovingTabIndex: true,
+                    wrap: true,
+                });
+
+                c.appendChild(listEl);
+
+                return () => {
+                    navDisp.dispose();
+                };
+            },
+        },
+    ];
+}
+
+export function buildExampleLevel(items: string[]): PopupLevel {
+    return {
+        label: t('example.title'),
+        dir: '',
+        items: [],
+        renderCustom: (container) => {
+            return cardContainer(container, (inner) => {
+                return renderMenu(buildExampleListSchema(items), inner);
+            });
+        },
+    };
+}
+```
+
+**注意**：
+- 列表行必须设置 `tabIndex = 0` 与 `role = 'button'`，才能被 `createKeyboardNav` 选中并触发默认 `click()`。
+- `renderCustom` 返回的 cleanup 必须释放 `createKeyboardNav` 的 `Disposable`。
+- 外层 `cardContainer` 的返回值也要一并 `return`，让 `renderMenu` 的 dispose 链路上传。
+
 ### UI 设计验收 Checklist
 
 新增菜单或面板前，确认以下条目：
