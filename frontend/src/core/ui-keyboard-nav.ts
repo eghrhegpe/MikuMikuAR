@@ -107,7 +107,11 @@ export function createKeyboardNav(
                 if (options.arrowRightActivate) {
                     if (activeEl) {
                         e.preventDefault();
-                        options.onEnter ? options.onEnter(activeEl) : activeEl.click();
+                        if (options.onEnter) {
+                            options.onEnter(activeEl);
+                        } else {
+                            activeEl.click();
+                        }
                     }
                     break;
                 }
@@ -140,7 +144,11 @@ export function createKeyboardNav(
                 if (options.perKeySkip?.(target, 'horizontal')) return;
                 if (activeEl) {
                     e.preventDefault();
-                    options.onEnter ? options.onEnter(activeEl) : activeEl.click();
+                    if (options.onEnter) {
+                        options.onEnter(activeEl);
+                    } else {
+                        activeEl.click();
+                    }
                 }
                 break;
             }
