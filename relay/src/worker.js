@@ -11,18 +11,19 @@
 //   2) 环境变量 `DEFAULT_TARGET`：wrangler.toml 里配置的默认目标
 //
 // 允许的源（防滥用）：环境变量 `ALLOWED_ORIGINS`，逗号分隔；缺省为 '*'（宽松，仅建议开发期）。
+//
+// 目标不做厂商白名单：用户可在前端自由填任意第三方 OpenAI 兼容 API。
+// 防滥用完全交给 `ALLOWED_ORIGINS`——只有来自本站点的页面能用本 Worker，
+// 别人拿去转发其他目标也无意义（其页面 Origin 过不了校验）。
 
-/** 目标 URL 白名单前缀：仅允许转发到已知大模型域名，杜绝被当作开放代理滥用。 */
-const TARGET_ALLOWLIST = [
-    'https://token.sensenova.cn/',
-    'https://api.sensenova.cn/',
-    'https://api.deepseek.com/',
-    'https://api.openai.com/',
-    'https://openrouter.ai/',
-];
-
+/** 目标 URL 合法性校验：仅要求是合法的 http(s) URL；不限制域名。 */
 function isAllowedTarget(url) {
-    return TARGET_ALLOWLIST.some((prefix) => url.startsWith(prefix));
+    try {
+        const u = new URL(url);
+        return u.protocol === 'https:' || u.protocol === 'http:';
+    } catch {
+        return false;
+    }
 }
 
 /** 计算允许的 Origin：命中白名单回显该 Origin，否则回退第一个/`*`。 */
@@ -84,8 +85,8 @@ export default {
         }
         if (!isAllowedTarget(target)) {
             return json(
-                { error: `relay: 目标不在白名单内: ${target}` },
-                403,
+                { error: `relay: 目标不是合法的 http(s) URL: ${target}` },
+                400,
                 reqOrigin,
                 env,
             );

@@ -19,7 +19,7 @@ wrangler deploy            # 上线，产出形如 https://mikumikuar-ai-relay.<
 - `DEFAULT_TARGET`：默认转发目标（前端未带 `X-Target-Url` 头时用）。
 - `ALLOWED_ORIGINS`：允许的前端来源，逗号分隔。**上线后务必收紧为你的站点**，杜绝被当作开放代理滥用。
 
-安全约束：`src/worker.js` 里的 `TARGET_ALLOWLIST` 限定只能转发到已知大模型域名（商汤 / DeepSeek / OpenAI / OpenRouter）。新增 provider 时在此追加前缀。
+安全约束：目标**不做厂商白名单**，用户可在前端自由填任意第三方 OpenAI 兼容 API（只要是合法 http(s) URL）。防滥用完全靠 `ALLOWED_ORIGINS` 锁死来源——只有你自己站点的页面能用本 Worker，别人拿去转发其他目标也过不了 Origin 校验。
 
 ## 前端接入（无需改代码）
 
@@ -30,7 +30,7 @@ https://mikumikuar-ai-relay.<你的子域>.workers.dev
 ```
 
 - key 照常填在设置里，前端 `browser-adapter` 会自动带 `Authorization` 头，Worker 原样转发。
-- 若要一个 Worker 对接多个 provider，可让前端额外带 `X-Target-Url` 头指定真实目标（需在 `TARGET_ALLOWLIST` 白名单内）；否则走 `DEFAULT_TARGET`。
+- 若要一个 Worker 对接多个 provider，可让前端额外带 `X-Target-Url` 头指定真实目标（任意合法 http(s) URL）；否则走 `DEFAULT_TARGET`。
 
 ## 本地调试
 
