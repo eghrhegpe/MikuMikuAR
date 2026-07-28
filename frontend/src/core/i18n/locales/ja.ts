@@ -1911,6 +1911,12 @@ export const ja: Record<string, string> = {
     'ai.mode.chat': '💬 チャット',
     'ai.mode.control': '🎮 コントロール',
     'ai.mode.dialogue': '🎭 セリフ',
+    'ai.dialogue.emotion.neutral': '平静',
+    'ai.dialogue.emotion.happy': '楽しい',
+    'ai.dialogue.emotion.sad': '悲しい',
+    'ai.dialogue.emotion.angry': '怒り',
+    'ai.dialogue.emotion.surprised': '驚き',
+    'ai.dialogue.emotion.shy': '照れ',
     'ai.system.control':
         'あなたは MikuMikuAR シーン制御アシスタントです。以下のツールを使用して、ユーザーの要求に応じてシーンを変更してください。',
     'ai.system.controlFormat':

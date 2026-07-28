@@ -1906,6 +1906,12 @@ export const ko: Record<string, string> = {
     'ai.mode.chat': '💬 대화',
     'ai.mode.control': '🎮 제어',
     'ai.mode.dialogue': '🎭 대사',
+    'ai.dialogue.emotion.neutral': '평온',
+    'ai.dialogue.emotion.happy': '기쁨',
+    'ai.dialogue.emotion.sad': '슬픔',
+    'ai.dialogue.emotion.angry': '화남',
+    'ai.dialogue.emotion.surprised': '놀람',
+    'ai.dialogue.emotion.shy': '수줍음',
     'ai.system.control':
         '당신은 MikuMikuAR 씬 제어 어시스턴트입니다. 다음 도구를 사용하여 사용자의 요청에 따라 씬을 수정하세요.',
     'ai.system.controlFormat':
