@@ -18,8 +18,6 @@ import { resetPerformanceSnapshot, isSnapshotResetSuppressed } from './performan
 import { clamp, clamp01, lerp, lerpArray } from '@/core/clamp';
 import { setKey } from '@/core/set-key';
 import { logWarn } from '@/core/logger';
-import type { EnvState } from '@/core/config';
-import { getDirLight } from './lighting';
 import { clearTextureLRU } from '../manager/texture-lru';
 
 // ======== Tone Mapping Modes ========
@@ -90,10 +88,6 @@ let _glowLayer: GlowLayer | null = null;
 let _ssrPipeline: SSRRenderingPipeline | null = null;
 let _ssaoPipeline: SSAO2RenderingPipeline | null = null;
 // ADR-151: ReflectionProbe 已迁移至 env-reflection.ts
-// ADR-114 Phase 3: 接触阴影后处理（屏幕空间 ray marching）
-let _contactShadowPP: PostProcess | null = null;
-/** ADR-114 Phase 3: 接触阴影 onApply handler 句柄，用于 update 路径精确移除而非 clear() */
-let _contactShadowHandle: ObserverHandle | null = null;
 // 卡通化渲染预设状态
 let _celShadingMode = false;
 let _originalRenderState: RenderState | null = null;
@@ -104,7 +98,7 @@ let _celColorLevels = 4;
 let _celEdgeThreshold = 0.2;
 let _celEdgeStrength = 0.6;
 
-// ADR-114 契合度修复：cel 激活时强制地面哑光 + 接触阴影，避免「cel 角色踩镜面地板」割裂。
+// cel 激活时强制地面哑光（关 PBR 镜面），避免「cel 角色踩镜面地板」割裂。
 // 通过注册回调解耦（renderer 不反向依赖 env-bridge，避免循环依赖）。
 type CelGroundCoupling = (celActive: boolean) => void;
 let _celGroundCoupling: CelGroundCoupling | null = null;
@@ -145,10 +139,6 @@ export function disposeRenderer(): void {
     _glowLayer = safeDispose(_glowLayer);
     _ssrPipeline = safeDispose(_ssrPipeline);
     _ssaoPipeline = safeDispose(_ssaoPipeline);
-    if (_contactShadowPP) {
-        _contactShadowPP = safeDispose(_contactShadowPP);
-        _contactShadowHandle = null;
-    }
     if (_celPP) {
         _celPP = safeDispose(_celPP);
         _celHandle = null;
@@ -502,7 +492,7 @@ function _applyRenderState(s: Partial<RenderState>): void {
             });
             // 真 cel-shading：开启时创建并挂接 cel 后处理（posterize + Sobel）
             _ensureCelPostProcess(true);
-            // ADR-114 契合度修复：强制地面哑光 + 接触阴影，消除与 PBR 镜面地板的视觉割裂
+            // cel 激活：强制地面哑光（关 PBR 镜面），消除与 PBR 镜面地板的视觉割裂
             try {
                 _celGroundCoupling?.(true);
             } catch (e) {
@@ -511,7 +501,7 @@ function _applyRenderState(s: Partial<RenderState>): void {
         } else {
             // 恢复到快照状态
             _celShadingMode = false;
-            // ADR-114 契合度修复：恢复地面 PBR / 接触阴影到 cel 开启前状态
+            // cel 关闭：恢复地面 PBR 到 cel 开启前状态
             try {
                 _celGroundCoupling?.(false);
             } catch (e) {
@@ -533,109 +523,6 @@ function _applyRenderState(s: Partial<RenderState>): void {
         }
     }
 }
-
-// ======== ADR-114 Phase 3: 接触阴影（屏幕空间 ray marching 后处理）========
-
-/**
- * 接触阴影后处理：从每个像素出发，沿方向光反向在屏幕空间做有限步长 ray marching，
- * 检查深度缓冲是否有遮挡物，填补方向光阴影贴图分辨率不足导致的「悬浮感」。
- *
- * 约束：
- * - 仅在 groundContactShadowEnabled 且 groundReflectionQuality ≥ medium 时启用
- * - 输出与方向光阴影相乘（darken 现有颜色）
- * - 16 步 ray marching + 深度采样，性能预算 <3% FPS
- */
-// 注册接触阴影 fragment shader
-Effect.ShadersStore['contactShadowFragmentShader'] = `
-uniform sampler2D depthSampler;
-uniform sampler2D textureSampler;
-uniform vec2 resolution;
-uniform vec3 lightDirVS;      // 视图空间光线方向（方向光反向）
-uniform float shadowDistance; // 光线步进最大距离（视图空间）
-uniform float intensity;      // 阴影强度 0-1
-uniform float nearZ;
-uniform float farZ;
-uniform float tanHalfFov;     // tan(camera.fov / 2)，用于视图空间↔屏幕空间变换
-uniform mat4 invView;         // 逆视图矩阵：视图坐标 → 世界坐标（近地 mask 用）
-uniform float groundLevel;    // 世界地面高度
-uniform float viewForwardZ;   // 相机前向与世界光方向的对齐度（对准光源降权）
-
-varying vec2 vUV;
-
-// 非线性深度 → 线性深度（视图空间 z 正值）
-float linearizeDepth(float d) {
-    return (2.0 * nearZ * farZ) / (farZ + nearZ - (2.0 * d - 1.0) * (farZ - nearZ));
-}
-
-// 屏幕空间 UV → 视图空间位置
-vec3 viewPosFromDepth(vec2 uv, float depth) {
-    float z = linearizeDepth(depth);
-    vec2 ndc = uv * 2.0 - 1.0;
-    float aspect = resolution.x / resolution.y;
-    vec3 pos;
-    pos.x = ndc.x * z * tanHalfFov * aspect;
-    pos.y = ndc.y * z * tanHalfFov;
-    pos.z = -z;
-    return pos;
-}
-
-float contactShadow(vec2 uv, float depth) {
-    vec3 viewPos = viewPosFromDepth(uv, depth);
-
-    // 以世界为参系：还原当前像素的世界坐标，仅对近地几何生效。
-    // 天空盒/太阳圆盘/光锥世界 Y 远高于地面 → mask 为 0 → 不压暗，
-    // 从根上消除旧方案“全屏无差别压暗”导致的对准太阳变灰。
-    vec4 worldPos = invView * vec4(viewPos, 1.0);
-    float heightAboveGround = worldPos.y - groundLevel;
-    // 近地带：地面上方 8 世界单位内线性淑出，超过即不参与接触阴影。
-    float groundMask = 1.0 - smoothstep(0.0, 8.0, max(0.0, heightAboveGround));
-    if (groundMask < 0.01) return 1.0;
-
-    // 对准光源降权：相机前向与世界光方向越平行（viewForwardZ→1），
-    // 屏幕空间 march 越退化为沿视线，易误判 → 降低阴影权重。
-    float alignFade = 1.0 - clamp(abs(viewForwardZ), 0.0, 1.0);
-    if (alignFade < 0.01) return 1.0;
-
-    // 光线步进方向与步长（视图空间）
-    float stepLen = shadowDistance / 16.0;
-    vec3 rayStep = normalize(lightDirVS) * stepLen;
-    vec3 rayPos = viewPos;
-    float shadow = 0.0;
-    float aspect = resolution.x / resolution.y;
-
-    for (int i = 0; i < 16; i++) {
-        rayPos += rayStep;
-        // 投影回屏幕空间（透视投影）
-        vec2 screenUV = vec2(
-            (rayPos.x / -rayPos.z) / (tanHalfFov * aspect) * 0.5 + 0.5,
-            (rayPos.y / -rayPos.z) / tanHalfFov * 0.5 + 0.5
-        );
-
-        if (screenUV.x < 0.0 || screenUV.x > 1.0 ||
-            screenUV.y < 0.0 || screenUV.y > 1.0) break;
-
-        float sampleDepth = texture2D(depthSampler, screenUV).r;
-        float rayDepth = -rayPos.z;
-        float sampleDepthLinear = linearizeDepth(sampleDepth);
-
-        // 采样深度比光线深度小（更靠近相机），且差值在范围内 → 被遮挡
-        float diff = rayDepth - sampleDepthLinear;
-        if (diff > 0.0 && diff < shadowDistance) {
-            shadow += 1.0 / 16.0;
-        }
-    }
-    // 近地 mask 与对准光源降权双重约束，避免误伤非地面几何与正对太阳时的全屏压暗。
-    return 1.0 - shadow * intensity * groundMask * alignFade;
-}
-
-void main(void) {
-    vec4 baseColor = texture2D(textureSampler, vUV);
-    float depth = texture2D(depthSampler, vUV).r;
-    float shadow = contactShadow(vUV, depth);
-    // 阴影因子 darken 现有颜色
-    gl_FragColor = vec4(baseColor.rgb * shadow, baseColor.a);
-}
-`;
 
 // ======== ADR-076 方向 2: 真 cel-shading 后处理（posterize + Sobel，挂管线末尾）========
 
@@ -689,7 +576,7 @@ void main(void) {
 
 /**
  * 创建/销毁 cel-shading 后处理（由 celShadingMode 开关驱动）。
- * 复用 ADR-114 接触阴影 PostProcess 范式：相机 attachPostProcess 挂链末尾，
+ * 挂相机 PostProcess 链末尾，
  * 运行于 DefaultRenderingPipeline（色调映射 + bloom 等）之后。
  */
 function _ensureCelPostProcess(enabled: boolean): void {
@@ -723,8 +610,6 @@ function _ensureCelPostProcess(enabled: boolean): void {
                     effect.setFloat('edgeStrength', _celEdgeStrength);
                 });
                 camera.attachPostProcess(_celPP);
-                // ADR-114 契合度修复：保证接触阴影先于 cel 执行（阴影被量化，与 anime 一致）
-                _ensurePostProcessOrder(camera);
             } catch (err) {
                 logWarn('renderer', 'CelShading PostProcess 创建失败:', err);
                 _celPP = null;
@@ -736,135 +621,6 @@ function _ensureCelPostProcess(enabled: boolean): void {
             camera.detachPostProcess(_celPP);
             _celPP = safeDispose(_celPP);
             _celHandle = null;
-        }
-    }
-}
-
-/**
- * ADR-114 契合度修复：当接触阴影与 cel-shading 后处理同时存在时，
- * 强制接触阴影在 cel 之前执行。接触阴影 darken 地面后，cel 的 posterize + Sobel
- * 再量化整图，使阴影边缘与 anime 色块感一致；反之 cel 先量化、接触阴影后叠加会割裂。
- * 仅当两者均存在时重排，单后处理时顺序无关。
- */
-function _ensurePostProcessOrder(camera: Camera): void {
-    if (_contactShadowPP && _celPP) {
-        camera.detachPostProcess(_contactShadowPP);
-        camera.detachPostProcess(_celPP);
-        camera.attachPostProcess(_contactShadowPP);
-        camera.attachPostProcess(_celPP);
-    }
-}
-
-/**
- * 应用接触阴影后处理（由 env-bridge 转发 envState 变化调用）。
- * - enabled 且质量 ≥ medium：创建/更新 PostProcess
- * - 否则：销毁 PostProcess
- */
-export function setContactShadow(state: EnvState): void {
-    if (!_scene) {
-        return;
-    }
-
-    // 中/高质量守卫：low/off 时自动关闭
-    const qualityOk = state.reflectionQuality === 'medium' || state.reflectionQuality === 'high';
-    const shouldEnable = state.groundContactShadowEnabled && qualityOk;
-
-    if (shouldEnable) {
-        const camera = _pipelineCamera ?? _scene.activeCamera;
-        if (!camera) {
-            logWarn('renderer', 'setContactShadow: 无可用相机，跳过创建');
-            return;
-        }
-
-        // 构造 onApply handler（创建和更新路径共用）
-        const handler = (effect: Effect) => {
-            effect.setTexture(
-                'depthSampler',
-                _scene!.enableDepthRenderer(_scene!.activeCamera).getDepthMap()
-            );
-            // setVector2/setVector3 接受 plain {x,y} / {x,y,z} 对象（Babylon 内部解构，不要求 Vector2/Vector3 实例）
-            effect.setVector2('resolution', {
-                x: _scene!.getEngine().getRenderWidth(),
-                y: _scene!.getEngine().getRenderHeight(),
-            });
-            // 方向光反向作为光线方向；转换到视图空间
-            const dl = getDirLight();
-            const lightDir = dl ? dl.direction : { x: 0, y: -1, z: 0 };
-            const viewMat = camera.getViewMatrix();
-            // 视图空间 = viewMatrix * worldDir（仅方向，忽略平移）
-            const vlx =
-                viewMat.m[0] * lightDir.x + viewMat.m[4] * lightDir.y + viewMat.m[8] * lightDir.z;
-            const vly =
-                viewMat.m[1] * lightDir.x + viewMat.m[5] * lightDir.y + viewMat.m[9] * lightDir.z;
-            const vlz =
-                viewMat.m[2] * lightDir.x + viewMat.m[6] * lightDir.y + viewMat.m[10] * lightDir.z;
-            effect.setVector3('lightDirVS', { x: vlx, y: vly, z: vlz });
-            // 逆视图矩阵：供 shader 将视图坐标还原为世界坐标，做近地 mask。
-            effect.setMatrix('invView', viewMat.clone().invert());
-            effect.setFloat('groundLevel', state.groundLevel);
-            // 相机前向（世界）= 视图矩阵第三行反向；与世界光方向点乘得对齐度。
-            // 越接近 ±1 表示越正对/背对太阳，用于对准光源降权。
-            const fwdX = -viewMat.m[2];
-            const fwdY = -viewMat.m[6];
-            const fwdZ = -viewMat.m[10];
-            const viewForwardZ = fwdX * lightDir.x + fwdY * lightDir.y + fwdZ * lightDir.z;
-            effect.setFloat('viewForwardZ', viewForwardZ);
-            effect.setFloat('shadowDistance', state.groundContactShadowDistance);
-            effect.setFloat('intensity', state.groundContactShadowIntensity);
-            effect.setFloat('nearZ', camera.minZ);
-            effect.setFloat('farZ', camera.maxZ);
-            effect.setFloat('tanHalfFov', Math.tan(camera.fov / 2));
-        };
-
-        if (!_contactShadowPP) {
-            // 创建 PostProcess
-            try {
-                _contactShadowPP = new PostProcess(
-                    'contactShadow',
-                    'contactShadow', // shader name
-                    [
-                        'resolution',
-                        'lightDirVS',
-                        'shadowDistance',
-                        'intensity',
-                        'nearZ',
-                        'farZ',
-                        'tanHalfFov',
-                        'invView',
-                        'groundLevel',
-                        'viewForwardZ',
-                    ],
-                    ['depthSampler'],
-                    1.0, // scaling
-                    null, // sampler
-                    0, // texture type
-                    _scene.getEngine()
-                );
-                _contactShadowHandle = observe(_contactShadowPP.onApplyObservable, handler);
-                camera.attachPostProcess(_contactShadowPP);
-                // ADR-114 契合度修复：保证接触阴影先于 cel 执行
-                _ensurePostProcessOrder(camera);
-            } catch (err) {
-                logWarn('renderer', 'ContactShadow PostProcess 创建失败:', err);
-                _contactShadowPP = null;
-                _contactShadowHandle = null;
-            }
-        } else {
-            // 更新参数：精确替换 handler，不误清其他 observable
-            if (_contactShadowHandle) {
-                _contactShadowHandle.dispose();
-            }
-            _contactShadowHandle = observe(_contactShadowPP.onApplyObservable, handler);
-        }
-    } else {
-        // 销毁
-        if (_contactShadowPP) {
-            const cam = _pipelineCamera ?? _scene.activeCamera;
-            if (cam) {
-                cam.detachPostProcess(_contactShadowPP);
-            }
-            _contactShadowPP = safeDispose(_contactShadowPP);
-            _contactShadowHandle = null;
         }
     }
 }

@@ -19,42 +19,15 @@ import {
     rebakeEnvBrightness,
 } from '../render/lighting';
 import { applyLightingPresetFromEnv } from '../render/lighting';
-import { setContactShadow, registerCelGroundCoupling } from '../render/renderer';
+import { registerCelGroundCoupling } from '../render/renderer';
 import { resolveQualityProfile, type QualityProfile } from '../render/quality-profile';
 import { scene } from '../scene';
 import { isAutoDegradingReflection, registerSetEnvState } from '../render/performance-env-bridge';
 import { setPerformanceMode, getPerformanceMode } from '../render/performance';
 import { schedulePersistEnvState } from './env-persist';
 
-/**
- * 条件执行辅助：仅当 changed 包含 keys 中任意一个（或 changed 为 null 表示全量）时执行 fn。
- * 统一 try/catch + logWarn，消除子系统分支的重复模式。
- */
-function _applyIfChanged(
-    changed: Set<string> | null,
-    keys: string[],
-    label: string,
-    fn: () => void
-): void {
-    if (changed && !keys.some((k) => changed.has(k))) {
-        return;
-    }
-    try {
-        fn();
-    } catch (e) {
-        logWarn('env', `${label} fail:`, e);
-    }
-}
-
 // [doc:adr-132] 上一次 envBrightness 值，用于变化时 rebake 光照强度
 let _prevEnvBrightness = 1;
-
-// ADR-114 Phase 3: 接触阴影后处理（转发到 renderer.setContactShadow）
-const _CONTACT_SHADOW_KEYS = [
-    'groundContactShadowEnabled',
-    'groundContactShadowIntensity',
-    'groundContactShadowDistance',
-];
 
 // ======== Preset Anim Active Flag ========
 // [ADR-148 Phase 5] 预设动画运行标志，供 _applyEnvStateFacade 的方向光同步守卫使用。
@@ -80,11 +53,6 @@ export function applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>
 
     // [ADR-138] 通过 env-dispatcher 分发变化给各子系统，破除 env-bridge → env-impl 循环依赖
     dispatchEnvChange(changed, state);
-
-    // ADR-114 Phase 3: 接触阴影后处理（转发到 renderer）
-    _applyIfChanged(changed, _CONTACT_SHADOW_KEYS, 'contactShadow', () => {
-        setContactShadow(state);
-    });
 
     // 半球光 — 强度跟随当前灯光状态，颜色随天空色（灯光未初始化时跳过）
     const skyMid = state.skyColorMid ?? [
@@ -301,25 +269,16 @@ registerEnvStateMiddleware({
 // ADR-130 Phase 2.3: 注册 setEnvState 到 performance 桥接模块
 registerSetEnvState(setEnvState);
 
-// ADR-114 契合度修复：cel-shading 激活时强制地面哑光 + 接触阴影，消除视觉割裂。
-let _celGroundSnapshot: { pbr: boolean; contact: boolean } | null = null;
+// cel-shading 激活时强制地面哑光（关 PBR 镜面），消除「cel 角色踩镜面地板」割裂。
+let _celGroundSnapshot: { pbr: boolean } | null = null;
 registerCelGroundCoupling((celActive: boolean) => {
     if (celActive) {
-        _celGroundSnapshot = {
-            pbr: envState.groundPbrEnabled,
-            contact: envState.groundContactShadowEnabled,
-        };
-        if (_celGroundSnapshot.pbr || !_celGroundSnapshot.contact) {
-            setEnvState({ groundPbrEnabled: false, groundContactShadowEnabled: true }, true);
+        _celGroundSnapshot = { pbr: envState.groundPbrEnabled };
+        if (_celGroundSnapshot.pbr) {
+            setEnvState({ groundPbrEnabled: false }, true);
         }
     } else if (_celGroundSnapshot) {
-        setEnvState(
-            {
-                groundPbrEnabled: _celGroundSnapshot.pbr,
-                groundContactShadowEnabled: _celGroundSnapshot.contact,
-            },
-            true
-        );
+        setEnvState({ groundPbrEnabled: _celGroundSnapshot.pbr }, true);
         _celGroundSnapshot = null;
     }
 });
