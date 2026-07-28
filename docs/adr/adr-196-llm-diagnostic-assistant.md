@@ -1,6 +1,6 @@
 # ADR-196: 内置 AI 诊断助手（LLM Diagnostic Assistant）
 
-- **状态**: ✅ 已完成（Phase 0 基础设施 + Phase 1 集成打通与体验打磨）
+- **状态**: ✅ 已完成（Phase 0 基础设施 + Phase 1 集成打通与体验打磨 + Phase 2 审计修复与测试覆盖）
 - **日期**: 2026-07-28
 - **相关**: ADR-154（聊天面板·推荐路线，传输层上游）、ADR-155（NL 控场景，未来应用入口）、ADR-156（角色台词，兄弟用例）、ADR-176（BackendService 双适配器，镜像模板）、ADR-192（上游适配层，适配器术语）、ADR-093（声明式菜单 Schema，面板挂载）、`docs/ai-new/ai-news-2026-07-27.md`（安全护栏情报）
 
@@ -217,3 +217,23 @@ LLM 能力已在 2026-07-20 经 ADR-154/155/156 决议，但**全部 0 代码落
 - **无障碍**：`aria-live="polite"` 对话区、输入框 `aria-label`、按钮 `aria-label`、模式按钮 `role="tablist"/"tab"/"aria-selected"`
 - **i18n 补全**：5 语言新增 `ai.mode.*` / `ai.system.chat` / `ai.config.corsWarning` / `ai.chat.clear` / `ai.errors.resolveFailed` / `ai.config.notResolved` 共 8 条/语言
 - **验证**：`tsc --noEmit` 0 错误；全量 2254 测试通过；`go build ./...` 通过；`check:docs` 无 ERROR；`grep as any` 在 `ai/` 目录 0 处
+
+### Phase 2 — 审计修复与测试覆盖（2026-07-28）
+- **`AiCapabilities.provider` → `adapter` 重命名**（语义纠正：描述适配器模式而非配置服务商）：`types.ts`、`browser-adapter.ts`、`go-adapter.ts` 三处同步；tsc + 2268 tests 通过
+- **P1 `_capsPromise` 永不复位修复**（`go-adapter.ts`）：`_capsPromise` 加 `try/finally` 复位，并发 dedup 保留、完成后 guard 释放——用户改 Go LLM 配置后面板不再僵死
+- **P2 `parseActionFromLLM` 正则脆弱修复**（`intent-dispatcher.ts`）：三优先级策略 ①直接 `JSON.parse` 全文 ② `\`\`\`json` 代码块提取 ③ 正则回退
+- **P3 `_testConnection` 并发守卫**（`settings-diagnostic.ts`）：新增 `_testing` 标志、`try/finally` 包围、所有 return 路径释放，防双击竞态
+- **P3 `validateAiConfig` 全量错误收集**（`config-store.ts`）：`AiValidationResult` 新增大数组 `errors[]` + `AiValidationError` 接口；`validateAiConfig` 遍历全部规则一次返回；`AiErrorKind` 补齐 `missingModel` 类型
+- **P4 `createField` blur 按字段保存**（`settings-diagnostic.ts`）：blur handler 仅保存当前字段，不再写整个 `_localConfig`
+- **测试覆盖**：SSE 解析器从 3→8 tests（tool_calls 增量聚合/多索引/空响应体/JSON 回退/Ollama 格式）；`param-adapters` 新建 26 tests 覆盖全部 5 类适配器（boolean/color/enum/range/entity）；全量 2299 tests 通过
+- **UX 审核与打磨**（7 项修复）：
+  - 徽章 flash 修复：`_caps` 为 null 时跳过 `_updateStatusBadge` 避免 transient disconnected→missingEndpoint 跳变
+  - 初始化加载状态：新增 `_setStatusBadge('initializing')`，5 语言文件加 `ai.status.initializing`
+  - `_refreshingCaps` 并发守卫：`_applyProvider` try/finally guard（同 `_testing` 模式）
+  - Streaming DOM 增量更新：`_finalizeStream` 改 in-place 操作（移除 `.chat-row--streaming` class + 设 textContent），免全量重建闪烁
+  - apiKey 条件隐藏：新增 `_updateApiKeyVisibility`，`needsKey=false` 时隐藏整行
+  - `aria-expanded` 同步：错误行展开图标初始 `false`，toggle 时同步
+  - 清除聊天确认：`_clearChat` 加 `await showConfirm`，5 语言加 `ai.chat.clearConfirm`
+- **i18n 补齐**：`ai.status.missingModel`、`ai.errorAdvice.missingModel`、`ai.status.initializing`、`ai.chat.clearConfirm`，覆盖 zh-CN/en/zh-TW/ja/ko
+- **知识卡同步**：`settings-diagnostic.md` 补充「面板重建时 DOM 清空但模块级状态保留」不变量；`ai-service.md`/`ai-config-store.md` 同步 `adapter` 字段名
+- **验证**：`tsc --noEmit` 0 错误；全量 2299 tests 通过；`check:docs` 无 ERROR

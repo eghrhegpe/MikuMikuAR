@@ -15,6 +15,7 @@ invariants:
   - 面板三分区：上下文信息 / 聊天对话 / 端点配置，经 resolveAi() 统一分发双路径
   - 模块加载即 ensureAiConfigLoaded()；面板打开时异步 resolveAi 并刷新 capabilities
   - 流式对话受 req.signal 控制，外部 break/return 时底层 fetch 被中止（FR-10/AC-6）
+  - 面板重建时 DOM 清空但模块级状态（_chatHistory/_ai/_caps）保留，面板为单会话持久化设计
 tests: []
 use_when:
   - AI 诊断面板

@@ -3538,3 +3538,78 @@ textarea,
 .diag-link:hover {
     text-decoration: underline;
 }
+
+/* 控制模式：待执行操作区与空状态提示 */
+.diag-pending-area {
+    margin-top: calc(8px * var(--ui-scale));
+}
+
+.diag-control-hint {
+    padding: calc(10px * var(--ui-scale));
+    border-radius: calc(6px * var(--ui-scale));
+    background: var(--surface2);
+    border: calc(1px * var(--ui-scale)) solid var(--border);
+    color: var(--text);
+}
+
+.diag-control-hint-text {
+    font-size: var(--font-ui-sm);
+    line-height: 1.5;
+    color: var(--text);
+    margin-bottom: calc(8px * var(--ui-scale));
+}
+
+.diag-control-hint-title {
+    font-size: var(--font-ui-xs);
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: calc(4px * var(--ui-scale));
+}
+
+.diag-control-hint-list {
+    margin: 0;
+    padding: calc(6px * var(--ui-scale));
+    font-size: var(--font-ui-xs);
+    line-height: 1.5;
+    background: var(--card-bg);
+    border-radius: calc(2px * var(--ui-scale));
+    color: var(--text-muted);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.diag-pending-card {
+    padding: calc(10px * var(--ui-scale));
+    border-radius: calc(6px * var(--ui-scale));
+    background: var(--card-bg);
+    border: calc(1px * var(--ui-scale)) solid var(--accent);
+    color: var(--text);
+}
+
+.diag-pending-title {
+    font-size: var(--font-ui-xs);
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: calc(4px * var(--ui-scale));
+}
+
+.diag-pending-desc {
+    font-size: var(--font-ui-sm);
+    font-weight: 500;
+    margin-bottom: calc(8px * var(--ui-scale));
+}
+
+.diag-pending-params {
+    display: flex;
+    flex-wrap: wrap;
+    gap: calc(4px * var(--ui-scale));
+    margin-bottom: calc(8px * var(--ui-scale));
+}
+
+.diag-pending-params span {
+    padding: calc(2px * var(--ui-scale)) calc(6px * var(--ui-scale));
+    border-radius: calc(2px * var(--ui-scale));
+    background: var(--surface2);
+    font-size: var(--font-ui-xs);
+    color: var(--text-muted);
+}

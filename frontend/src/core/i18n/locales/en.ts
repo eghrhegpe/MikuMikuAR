@@ -1931,15 +1931,17 @@ export const en: Record<string, string> = {
         'You are a MikuMikuAR scene control assistant. Use the following tools to modify the scene as requested by the user.',
     'ai.system.controlFormat':
         'Respond with a JSON object: {"action": "tool_name", "params": {"param1": "value1"}}. Only use tools from the list above. If the user asks for something not supported, explain what you can do.',
-    'ai.control.pending': '⏳ Pending Action — review and apply',
+    'ai.control.pending': '⏳ Pending action — review before applying',
     'ai.control.apply': 'Apply',
     'ai.control.cancel': 'Cancel',
-    'ai.control.unsupported':
-        'This action is not supported yet. Try describing what you want to change differently.',
+    'ai.control.unsupported': 'This action is not supported. Try describing what you want to change differently.',
     'ai.control.executing': 'Executing...',
     'ai.control.cancelled': 'Action cancelled.',
-    'ai.control.confirmDestructive':
-        'This action will change the current scene state ({action}). Continue?',
+    'ai.control.confirmDestructive': 'This will change the current scene state ({action}). Continue?',
+    'ai.control.emptyHint': 'Tell me what you want to adjust, e.g. "dim the lights" or "switch to night environment".',
+    'ai.control.availableTools': 'Available controls:',
+    'ai.control.resultSuccess': '✅ Applied: {message}',
+    'ai.control.resultFailed': '❌ Failed: {message}',
     'ai.config.corsWarning':
         '⚠ Remote endpoint may have CORS restrictions. For local Ollama, set OLLAMA_ORIGINS=* and restart.',
     'ai.chat.clear': 'Clear',

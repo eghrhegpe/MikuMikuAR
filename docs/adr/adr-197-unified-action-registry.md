@@ -112,3 +112,4 @@ ADR-155 的 `action-catalog.ts` 退化为 registry 的"NL 视图"：`buildToolSc
 |------|------|
 | 2026-07-28 | 初版，作为 ADR-155 暴露的菜单可维护性问题的归一化规划；确立 `ActionRegistry` + `ParamDef` 单一真相源路线 |
 | 2026-07-28 | 审核修订：修正 `replaceMotion`/`dirColor` 事实偏差；补充冲突策略、`registerAction` 返回 `unregister` 闭包、`destructive` 语义、`MenuKind.action` 路线图；Phase 0→并行启动；Phase 0 已实施 |
+| 2026-07-28 | `parseActionFromLLM` 三优先级 JSON 提取（`intent-dispatcher.ts`），处理 markdown code block 嵌套；`param-adapters` 新建 26 测试覆盖全部适配器类型（boolean/color/enum/range/entity）；`action-catalog`、`action-registry-defs` 经审计无缺陷 |

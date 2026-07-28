@@ -29,7 +29,7 @@ import type { SettingsMenuHandle } from './settings-shared';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 import { buildToolCatalogText, buildToolSchemas } from '../core/ai/action-catalog';
-import { executeAction } from '../core/ai/intent-dispatcher';
+import { executeAction, parseActionFromLLM } from '../core/ai/intent-dispatcher';
 import { getAction } from '../core/action-registry';
 import { showConfirm } from '../core/dialog';
 import { DebouncedTimer } from '../core/async';
@@ -466,6 +466,13 @@ function _refreshModeUI(
     ctrlBtn.setAttribute('aria-selected', String(_mode === 'control'));
     if (_pendingContainer) {
         _pendingContainer.style.display = _mode === 'control' ? '' : 'none';
+        if (_mode === 'control') {
+            if (_pendingAction) {
+                _renderPendingAction();
+            } else {
+                _renderControlHint();
+            }
+        }
     }
 }
 
@@ -580,6 +587,7 @@ async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
     const chatMessages: ChatMessage[] = _pruneHistory([systemMessage, ..._messages]);
     let fullResponse = '';
     const pendingToolCalls: Array<{ id: string; name: string; args: string }> = [];
+    let streamErrorSeen = false;
 
     try {
         const requestTools = allowTools ? buildToolSchemas() : undefined;
@@ -599,6 +607,11 @@ async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
                     args: chunk.toolArgs ?? '{}',
                 });
             } else if (chunk.type === 'error') {
+                streamErrorSeen = true;
+                if (_chatContainer) {
+                    const streamingRow = _chatContainer.querySelector('.chat-row--streaming');
+                    if (streamingRow) streamingRow.remove();
+                }
                 _addAssistantMessage(t('ai.errors.apiError', { msg: chunk.error ?? '' }));
                 _renderChat();
                 break;
@@ -615,6 +628,13 @@ async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
             } catch {
                 /* ignore */
             }
+            if (!_tryQueuePendingAction(first.name, params, first.id)) {
+                _isStreaming = false;
+                _abortController = null;
+                _updateSendButton();
+                _renderChat();
+                return;
+            }
             const assistantMsg: ChatMessage = {
                 role: 'assistant',
                 content: null,
@@ -625,7 +645,6 @@ async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
                 })),
             };
             _messages.push(assistantMsg);
-            _pendingAction = { actionId: first.name, params, toolCallId: first.id };
             _isStreaming = false;
             _abortController = null;
             _updateSendButton();
@@ -634,15 +653,81 @@ async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
             return;
         }
     } catch (err) {
+        streamErrorSeen = true;
+        if (_chatContainer) {
+            const streamingRow = _chatContainer.querySelector('.chat-row--streaming');
+            if (streamingRow) streamingRow.remove();
+        }
         _addAssistantMessage(
             t('ai.errors.apiError', { msg: err instanceof Error ? err.message : String(err) })
         );
         _renderChat();
     } finally {
         if (_isStreaming) {
-            _finalizeStream(fullResponse);
+            if (!streamErrorSeen && _mode === 'control' && fullResponse && !_pendingAction) {
+                const fallback = parseActionFromLLM(fullResponse);
+                if (fallback) {
+                    _tryQueuePendingAction(fallback.action, fallback.params, null);
+                    _isStreaming = false;
+                    _abortController = null;
+                    _updateSendButton();
+                    _renderChat();
+                    _renderPendingAction();
+                    return;
+                }
+            }
+            if (streamErrorSeen) {
+                _isStreaming = false;
+                _abortController = null;
+                _updateSendButton();
+            } else {
+                _finalizeStream(fullResponse);
+            }
         }
     }
+}
+
+function _tryQueuePendingAction(
+    actionId: string,
+    params: Record<string, unknown>,
+    toolCallId: string | null,
+): boolean {
+    const action = getAction(actionId);
+    if (!action) {
+        _addAssistantMessage(t('ai.control.unsupported'));
+        return false;
+    }
+    _pendingAction = { actionId, params, toolCallId: toolCallId ?? undefined };
+    return true;
+}
+
+function _renderControlHint(): void {
+    if (!_pendingContainer || _pendingAction || _mode !== 'control') return;
+    _pendingContainer.innerHTML = '';
+    _pendingContainer.style.display = '';
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'diag-control-hint';
+
+    const hint = document.createElement('div');
+    hint.className = 'diag-control-hint-text';
+    hint.textContent = t('ai.control.emptyHint');
+    wrapper.appendChild(hint);
+
+    const catalog = buildToolCatalogText();
+    if (catalog) {
+        const title = document.createElement('div');
+        title.className = 'diag-control-hint-title';
+        title.textContent = t('ai.control.availableTools');
+        wrapper.appendChild(title);
+
+        const list = document.createElement('pre');
+        list.className = 'diag-control-hint-list';
+        list.textContent = catalog;
+        wrapper.appendChild(list);
+    }
+
+    _pendingContainer.appendChild(wrapper);
 }
 
 function _renderPendingAction(): void {
@@ -659,7 +744,7 @@ function _renderPendingAction(): void {
     const card = document.createElement('div');
     card.className = 'diag-pending-card';
     card.setAttribute('role', 'alert');
-    card.setAttribute('data-testid', 'ai:control:pending-action');
+    card.setAttribute('data-testid', 'ai:control:pending-card');
 
     const title = document.createElement('div');
     title.className = 'diag-pending-title';
@@ -725,17 +810,24 @@ async function _applyPendingAction(btn: HTMLButtonElement): Promise<void> {
     } else {
         _messages.push({
             role: 'assistant',
-            content: result.success ? result.message : `❌ ${result.message}`,
+            content: result.success
+                ? t('ai.control.resultSuccess', { message: result.message })
+                : t('ai.control.resultFailed', { message: result.message }),
         });
     }
     _pendingAction = null;
-    if (_pendingContainer) _pendingContainer.style.display = 'none';
+    _renderControlHint();
     btn.disabled = false;
     btn.textContent = t('ai.control.apply');
     _renderChat();
 
-    if (toolCallId && result.success) {
-        await _runStream({ allowTools: false });
+    if (toolCallId) {
+        if (result.success) {
+            await _runStream({ allowTools: false });
+        } else {
+            _addAssistantMessage(t('ai.control.resultFailed', { message: result.message }));
+            _renderChat();
+        }
     }
 }
 

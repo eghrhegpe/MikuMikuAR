@@ -1909,6 +1909,10 @@ export const zhCN: Record<string, string> = {
     'ai.control.executing': '执行中...',
     'ai.control.cancelled': '操作已取消。',
     'ai.control.confirmDestructive': '此操作会更改当前场景状态（{action}），是否继续？',
+    'ai.control.emptyHint': '在下方输入框用自然语言告诉我你想调整什么，例如“把灯光调暗一点”或“切换到夜晚环境”。',
+    'ai.control.availableTools': '当前可控制：',
+    'ai.control.resultSuccess': '✅ 已执行：{message}',
+    'ai.control.resultFailed': '❌ 执行失败：{message}',
     'ai.config.corsWarning':
         '⚠ 远程端点可能存在 CORS 限制。本地 Ollama 请设置 OLLAMA_ORIGINS=* 后重启。',
     'ai.chat.clear': '清空',
