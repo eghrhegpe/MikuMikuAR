@@ -307,6 +307,8 @@ use_when:
 | [核心零依赖叶模块](./core-leaf-modules.md) | `core/async.ts` 等 7 个叶模块 | ADR-191 |
 | [安卓文件访问（shared 模式）](./android-file-access.md) | `internal/app/fileaccess_android.go` 等 | ADR-017/180/183/194 |
 | [window.__mmar 状态暴露](./mmar-globals.md) | `core/mmar-globals.ts` | — |
+| [统一动作注册表](./action-registry.md) | `core/action-registry.ts` + `action-executor`/`action-defs/*`/`ai/{param-adapters,action-catalog,action-registry-defs}` | ADR-197/155 |
+| [轨道相机键盘输入状态](./orbit-state.md) | `core/orbit-state.ts` | — |
 
 ### 内置 AI 诊断助手（ai，ADR-196）
 
@@ -317,3 +319,5 @@ use_when:
 | [错误环形缓冲与全局捕获](./ai-error-buffer.md) | `core/ai/error-buffer.ts` | ADR-196 |
 | [场景运行时快照](./ai-scene-snapshot.md) | `core/ai/scene-snapshot.ts` | ADR-196 |
 | [SSE 流式解析器](./ai-sse.md) | `core/ai/sse.ts` | ADR-196 |
+| [角色台词生成（人设/情绪/TTS）](./character-bible.md) | `core/ai/{character-bible,dialogue-session,dialogue-speech}.ts` | ADR-156 |
+| [NL 意图解析（LLM→动作）](./ai-intent-dispatcher.md) | `core/ai/intent-dispatcher.ts` | ADR-155/197 |

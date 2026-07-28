@@ -22,6 +22,8 @@
 | 状态栏、HUD、FPS、鼠标提示、加载反馈 | [status-bar.md](./status-bar.md) | [ui-state.md](./ui-state.md)、[ui-keyboard-nav.md](./ui-keyboard-nav.md) |
 | 性能、渲染循环、FPS、质量档位、资源释放 | [performance.md](./performance.md)、[render-loop.md](./render-loop.md)、[dispose-helpers.md](./dispose-helpers.md) | [quality-profile.md](./quality-profile.md)、[renderer.md](./renderer.md) |
 | 资源库、浏览、会话、预设、缩略图 | [library.md](./library.md)、[library-browse.md](./library-browse.md) | [library-session-store.md](./library-session-store.md)、[preset-manager.md](./preset-manager.md)、[thumbnail-key.md](./thumbnail-key.md) |
+| 自然语言控场、NL 动作、动作注册、快捷键动作 | [action-registry.md](./action-registry.md)、[ai-intent-dispatcher.md](./ai-intent-dispatcher.md) | [ai-service.md](./ai-service.md)、[settings-diagnostic.md](./settings-diagnostic.md) |
+| 角色台词、大模型交流、人设、情绪、台词朗读 TTS | [character-bible.md](./character-bible.md) | [ai-service.md](./ai-service.md)、[lipsync-bridge.md](./lipsync-bridge.md) |
 
 ## 标准执行模板
 
