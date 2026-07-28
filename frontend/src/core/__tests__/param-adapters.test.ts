@@ -178,9 +178,14 @@ describe('adaptParam', () => {
         expect(r).toEqual({ ok: true, value: 0.5 });
     });
 
-    it('不支持的参数类型', () => {
+    it('string 直通适配器（原样透传字符串，不校验）', () => {
         const r = adaptParam(def({ type: 'string' }), 'hello');
-        expect(r).toEqual({ ok: false, error: '不支持的参数类型: string' });
+        expect(r).toEqual({ ok: true, value: 'hello' });
+    });
+
+    it('不支持的参数类型', () => {
+        const r = adaptParam(def({ type: 'nonexistent' as ParamDef['type'] }), 'hello');
+        expect(r).toEqual({ ok: false, error: '不支持的参数类型: nonexistent' });
     });
 
     it('boolean 适配器', () => {
