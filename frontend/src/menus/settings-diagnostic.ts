@@ -443,10 +443,7 @@ function _selectTab(
     }
 }
 
-function _buildTab(
-    mode: 'diagnostic' | 'chat' | 'control',
-    btns: [HTMLButtonElement, HTMLButtonElement, HTMLButtonElement]
-): HTMLButtonElement {
+function _buildTab(mode: 'diagnostic' | 'chat' | 'control'): HTMLButtonElement {
     const labelKey =
         mode === 'diagnostic'
             ? 'ai.mode.diagnostic'
@@ -457,6 +454,14 @@ function _buildTab(
     btn.setAttribute('role', 'tab');
     btn.textContent = t(labelKey);
     btn.className = 'mode-btn' + (_mode === mode ? ' active' : '');
+    return btn;
+}
+
+function _attachTabBehavior(
+    mode: 'diagnostic' | 'chat' | 'control',
+    btn: HTMLButtonElement,
+    btns: [HTMLButtonElement, HTMLButtonElement, HTMLButtonElement]
+): void {
     btn.addEventListener('click', () => _selectTab(mode, btns));
     btn.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -464,7 +469,6 @@ function _buildTab(
             _selectTab(mode, btns);
         }
     });
-    return btn;
 }
 
 function _onTablistKeydown(
@@ -498,10 +502,17 @@ function buildModeSwitchSchema(): MenuNode[] {
                 group.setAttribute('role', 'tablist');
                 group.className = 'diag-mode-row';
 
-                const btns = [null, null, null] as unknown as [HTMLButtonElement, HTMLButtonElement, HTMLButtonElement];
-                btns[0] = _buildTab('diagnostic', btns);
-                btns[1] = _buildTab('chat', btns);
-                btns[2] = _buildTab('control', btns);
+                const diagBtn = _buildTab('diagnostic');
+                const chatBtn = _buildTab('chat');
+                const ctrlBtn = _buildTab('control');
+                const btns: [HTMLButtonElement, HTMLButtonElement, HTMLButtonElement] = [
+                    diagBtn,
+                    chatBtn,
+                    ctrlBtn,
+                ];
+                _attachTabBehavior('diagnostic', diagBtn, btns);
+                _attachTabBehavior('chat', chatBtn, btns);
+                _attachTabBehavior('control', ctrlBtn, btns);
                 group.addEventListener('keydown', (e) => _onTablistKeydown(e, btns));
 
                 for (const btn of btns) {
