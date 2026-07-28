@@ -183,6 +183,64 @@ export function applyForceToModelRigidBodies(model: RuntimeModel, force: Vector3
 }
 
 /**
+ * 向模型原生真物理刚体（头发/裙子）施加中心力 —— P2（ADR-201）。
+ *
+ * 旧版 applyForceToModelRigidBodies 经反射 `_physicsModel._bundle`，
+ * 在 WASM 内建物理下 _physicsModel 恒为 null → 返回 0（死路，见 ADR-200）。
+ *
+ * 本函数改走 fork 新增的 wasm 导出（getMmdModelRigidBodyBundleLen /
+ * mmdModelRigidBodyApplyCentralForce，ADR-201）：从 model.ptr 直接在 wasm 侧
+ * 解析原生 bundle 并施力，JS 不持有 bundle ptr——彻底避开 RigidBodyBundle
+ * 析构调 destroyRigidBodyBundle 摧毁模型原生物理的隐患（2B 方案）。
+ *
+ * FollowBone 刚体由 wasm 侧跳过（其变换由骨骼驱动，施力每帧被覆盖）。
+ *
+ * 升级回归：若 wasm 实例缺少这两个导出（babylon-mmd 未含 P2 补丁），
+ * 首次仅打一次 dev 警告并返回 0（绝不静默失效，使升级回归立即可见）。
+ *
+ * @param wasmInstance  MmdWasmPhysicsRuntimeImpl.wasmInstance（含 P2 导出）
+ * @param model          RuntimeModel（MmdWasmModel，需有 .ptr）
+ * @param force         世界坐标系下的风力向量
+ * @returns 原生刚体总数（含 FollowBone；其施力在 wasm 侧被跳过）
+ */
+let _nativeMissingWarned = false;
+export function applyForceToModelRigidBodiesNative(
+    wasmInstance: unknown,
+    model: RuntimeModel,
+    force: Vector3
+): number {
+    const wi = wasmInstance as Record<string, unknown> | null;
+    if (
+        !wi ||
+        typeof wi.getMmdModelRigidBodyBundleLen !== 'function' ||
+        typeof wi.mmdModelRigidBodyApplyCentralForce !== 'function'
+    ) {
+        if (!_nativeMissingWarned) {
+            _nativeMissingWarned = true;
+            logWarn(
+                'mmd-adapter',
+                'wasm 实例缺少 getMmdModelRigidBodyBundleLen / mmdModelRigidBodyApplyCentralForce 导出（babylon-mmd 未含 P2 补丁）。风力将不作用于模型原生刚体。检查 babylon-mmd 构建是否含 ADR-201。'
+            );
+        }
+        return 0;
+    }
+    const ptr = (model as unknown as { ptr?: number }).ptr;
+    if (typeof ptr !== 'number') {
+        return 0;
+    }
+    const len = (wi.getMmdModelRigidBodyBundleLen as (p: number) => number)(ptr);
+    if (len <= 0) {
+        return 0;
+    }
+    const apply = wi.mmdModelRigidBodyApplyCentralForce as
+        (p: number, i: number, x: number, y: number, z: number) => void;
+    for (let i = 0; i < len; i++) {
+        apply(ptr, i, force.x, force.y, force.z);
+    }
+    return len;
+}
+
+/**
  * CapabilityProbe — 升级回归探测（ADR-192 Phase 2 守卫式反射）。
  * 条目 3 已通过公开 API 内化，不再需要探测；
  * 条目 9 仍依赖私有 _audio，探测用于在升级时确认字段存在。
