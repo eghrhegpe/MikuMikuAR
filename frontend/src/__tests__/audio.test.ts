@@ -101,6 +101,11 @@ function createMockStreamPlayer(): Record<string, any> {
             addEventListener: vi.fn(),
             removeEventListener: vi.fn(),
         } as unknown as HTMLAudioElement,
+        // ADR-202 P2: fork 在 _audio 基础上加了公开 get audio()（不改 _audio），
+        // mmd-adapter.getStreamAudio 现读 player.audio；mock 镜像此行为。
+        get audio() {
+            return this._audio;
+        },
     };
 }
 

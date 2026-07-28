@@ -109,12 +109,15 @@ export function getRigidBodyMap(impl: MmdWasmPhysicsRuntimeImpl): Iterable<Rigid
  */
 let _streamAudioMissingWarned = false;
 export function getStreamAudio(player: StreamAudioPlayer): HTMLAudioElement | null {
-    const audio = (player as unknown as { _audio?: HTMLAudioElement })._audio;
+    // ADR-202 P2（条目 9）: fork 已暴露 `get audio()`（postinstall 注入到 1.2.0），
+    // 改用公开只读 getter 替代 `_audio` 反射。保留降级：若 patch 未生效（纯官方版）
+    // 则 player.audio 为 undefined → 首次打一次 dev 警告，升级回归可见。
+    const audio = (player as unknown as { audio?: HTMLAudioElement }).audio;
     if (audio === undefined && !_streamAudioMissingWarned) {
         _streamAudioMissingWarned = true;
         logWarn(
             'mmd-adapter',
-            'StreamAudioPlayer._audio 缺失（可能已被 babylon-mmd 重命名）。音频 WebAudio 处理（fade/beat/ended）将降级。检查 babylon-mmd 版本兼容性'
+            'StreamAudioPlayer.audio 缺失（postinstall patch 未生效或上游移除）。音频 WebAudio 处理（fade/beat/ended）将降级。检查 apply-vendored-wasm.mjs 与 babylon-mmd 版本兼容性'
         );
     }
     return audio ?? null;
@@ -247,7 +250,7 @@ export function applyForceToModelRigidBodiesNative(
  */
 export const CapabilityProbe = {
     hasStreamAudio(player: StreamAudioPlayer): boolean {
-        return (player as unknown as { _audio?: HTMLAudioElement })._audio !== undefined;
+        return (player as unknown as { audio?: HTMLAudioElement }).audio !== undefined;
     },
     hasModelPhysicsBundle(model: RuntimeModel): boolean {
         return _getModelBundle(model) !== null;
