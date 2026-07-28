@@ -649,8 +649,10 @@ export class SlideMenu {
     // ======== 内部方法 ========
 
     private get panelItems(): HTMLElement[] {
-        // 契约制：只认 [data-nav-item] 标记（由 _ensureNavMarkers 统一打上）。
-        // menu.ts 不再枚举控件类名，新增控件只需在渲染后被 _ensureNavMarkers 覆盖。
+        // 契约制：只认 [data-nav-item] 标记。每次读前先补打标记，
+        // 确保增量渲染（patchPanel/reRenderCustom 等不走 setupFocus 的路径）新增的行也被纳入。
+        // markNavItem 内部 hasAttribute 短路，重复扫描成本极低。
+        this._ensureNavMarkers();
         const all = this.panel.querySelectorAll<HTMLElement>(NAV_ITEM_SELECTOR);
         return Array.from(all).filter((el) => !el.closest('[inert]'));
     }
@@ -683,10 +685,11 @@ export class SlideMenu {
                 mark(el, { focusSelector: '.cs-top[role="listbox"]', horizontalAdjust: true });
             }
         });
-        // 模式切换行 .type-row：聚焦可聚焦子元素（缺省行本身），←→ 让给控件循环
+        // 模式切换行 .type-row：内部为 <button> 子元素（行本身不可聚焦），
+        // 聚焦首个按钮；←→ 让给控件内部循环切换。
         this.panel
             .querySelectorAll<HTMLElement>('.type-row')
-            .forEach((el) => mark(el, { horizontalAdjust: true }));
+            .forEach((el) => mark(el, { focusSelector: 'button', horizontalAdjust: true }));
     }
 
     private clearFocus(): void {
@@ -713,7 +716,6 @@ export class SlideMenu {
     }
 
     private setupFocus(): void {
-        this._ensureNavMarkers();
         this.focusIndex = -1;
         this.clearFocus();
         if (this.panelItems.length > 0) {

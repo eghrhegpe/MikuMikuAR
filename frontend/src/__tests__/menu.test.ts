@@ -1485,6 +1485,34 @@ describe('SlideMenu — ADR-065 纯 items 层级语言热刷新', () => {
         expect(container.querySelectorAll('.slide-item').length).toBe(1);
     });
 
+    it('增量 patch 新增的行也被打上导航标记（P2 回归防护）', async () => {
+        let extra = false;
+        const level: PopupLevel = {
+            label: '根',
+            dir: '',
+            items: [{ kind: 'action' as const, label: 'A', icon: 'i', target: 'a' }],
+            itemBuilder: () =>
+                extra
+                    ? [
+                          { kind: 'action' as const, label: 'A', icon: 'i', target: 'a' },
+                          { kind: 'action' as const, label: 'B', icon: 'i', target: 'b' },
+                      ]
+                    : [{ kind: 'action' as const, label: 'A', icon: 'i', target: 'a' }],
+        };
+        menu.reset(level);
+        await new Promise((r) => requestAnimationFrame(r));
+        // 初始 1 行，已标记
+        expect((menu as any).panelItems.length).toBe(1);
+
+        // 增量 patch 追加第 2 行（不走 setupFocus）
+        extra = true;
+        menu.updateControls();
+        // panelItems getter 重扫时为新行补标记 → 方向键可选中
+        const items = (menu as any).panelItems as HTMLElement[];
+        expect(items.length).toBe(2);
+        expect(items.every((el) => el.hasAttribute('data-nav-item'))).toBe(true);
+    });
+
     it('无 itemBuilder 时 updateControls 不会刷新纯 items 标签（回归基线）', async () => {
         const level: PopupLevel = {
             label: '根',
