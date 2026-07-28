@@ -18,8 +18,18 @@ export interface ToolSchema {
 
 function paramToJsonSchema(def: ParamDef): Record<string, unknown> {
     switch (def.type) {
-        case 'enum':
-            return { type: 'string', enum: [...(def.enum ?? [])], description: def.name };
+        case 'enum': {
+            const synonymNote = def.synonyms
+                ? `；同义词: ${Object.entries(def.synonyms)
+                      .map(([k, v]) => `${k}→${v}`)
+                      .join(', ')}`
+                : '';
+            return {
+                type: 'string',
+                enum: [...(def.enum ?? [])],
+                description: `${def.name}${synonymNote}`,
+            };
+        }
         case 'color':
             return { type: 'string', description: `${def.name} — hex #rrggbb` };
         case 'range':
@@ -30,6 +40,8 @@ function paramToJsonSchema(def: ParamDef): Record<string, unknown> {
             return { type: 'boolean', description: def.name };
         case 'toggle':
             return { type: 'boolean', description: def.name };
+        case 'string':
+            return { type: 'string', description: def.name };
     }
 }
 
@@ -65,8 +77,13 @@ export function buildToolCatalogText(): string {
     const lines: string[] = ['可用工具（仅以下操作支持）：'];
     for (const a of actions) {
         const paramsDesc = a.params.map((p) => {
-            const typeHint = p.type === 'enum' ? `(${(p.enum ?? []).join('|')})` : `:${p.type}`;
-            return `${p.name}${typeHint}`;
+            if (p.type === 'enum') {
+                const synonyms = p.synonyms
+                    ? '; ' + Object.entries(p.synonyms).map(([k, v]) => `${k}=${v}`).join(', ')
+                    : '';
+                return `${p.name}(${(p.enum ?? []).join('|')}${synonyms})`;
+            }
+            return `${p.name}:${p.type}`;
         });
         lines.push(`- ${a.id}: ${paramsDesc.length ? paramsDesc.join(', ') : '无参'}`);
     }

@@ -677,6 +677,26 @@ export async function importFile(): Promise<void> {
 
 // ======== 供 library-browse 使用的内部函数 ========
 
+/** 按名称模糊搜索模型（纯查询，不触发加载）。供 ADR-155/197 NL 控制 resolve 使用，避免 resolve 阶段误触发真实加载。 */
+function findLibraryModelByName(name: string): LibraryModel | null {
+    return (
+        allModels.find((m) =>
+            getBaseName(m.file_path).toLowerCase().includes(name.toLowerCase())
+        ) ?? null
+    );
+}
+
+/** 按名称模糊搜索 VMD 动作（纯查询，不触发替换）。 */
+function findLibraryMotionByName(name: string): LibraryModel | null {
+    return (
+        allModels.find(
+            (m) =>
+                m.format === 'vmd' &&
+                getBaseName(m.file_path).toLowerCase().includes(name.toLowerCase())
+        ) ?? null
+    );
+}
+
 /** 按名称模糊搜索模型库并加载。供 NL 控场景（ADR-155）使用，fire-and-forget。 */
 function loadLibraryModel(name: string, isStage?: boolean): boolean {
     const model = allModels.find((m) =>
@@ -710,6 +730,8 @@ export {
     buildTagsOverviewLevel,
     buildTagDetailLevel,
     highlightRow,
+    findLibraryModelByName,
+    findLibraryMotionByName,
     loadLibraryModel,
     loadLibraryMotion,
 };
