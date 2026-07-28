@@ -46,8 +46,22 @@ describe('applyForceToModelRigidBodiesNative (P2 / ADR-201)', () => {
         expect(wi.getMmdModelRigidBodyBundleLen).toHaveBeenCalledTimes(1);
         expect(wi.getMmdModelRigidBodyBundleLen).toHaveBeenCalledWith(4242);
         expect(wi.mmdModelRigidBodyApplyCentralForce).toHaveBeenCalledTimes(5);
-        expect(wi.mmdModelRigidBodyApplyCentralForce).toHaveBeenNthCalledWith(1, 4242, 0, 1.5, 0, -2.5);
-        expect(wi.mmdModelRigidBodyApplyCentralForce).toHaveBeenNthCalledWith(5, 4242, 4, 1.5, 0, -2.5);
+        expect(wi.mmdModelRigidBodyApplyCentralForce).toHaveBeenNthCalledWith(
+            1,
+            4242,
+            0,
+            1.5,
+            0,
+            -2.5
+        );
+        expect(wi.mmdModelRigidBodyApplyCentralForce).toHaveBeenNthCalledWith(
+            5,
+            4242,
+            4,
+            1.5,
+            0,
+            -2.5
+        );
     });
 
     it('守卫：wasm 实例缺导出 → 返回 0 并仅警告一次（绝不静默失效）', () => {

@@ -37,8 +37,10 @@ beforeAll(() => {
 
 // ======== 本地薄包装（保持调用代码不变，实现体共享） ========
 const INFO_SIZE = PHYSICS_INFO_SIZE;
-const buildRigidBodyInfo = (shapePtr: number, overrides?: Parameters<typeof _buildRigidBodyInfo>[2]) =>
-    _buildRigidBodyInfo(phys, shapePtr, overrides);
+const buildRigidBodyInfo = (
+    shapePtr: number,
+    overrides?: Parameters<typeof _buildRigidBodyInfo>[2]
+) => _buildRigidBodyInfo(phys, shapePtr, overrides);
 const buildBundleInfoList = (shapePtr: number, count: number, masses?: number[]) =>
     _buildBundleInfoList(phys, shapePtr, count, masses);
 const readBundleLinearVelocity = (bundlePtr: number, index: number) =>

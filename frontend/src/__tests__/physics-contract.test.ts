@@ -38,8 +38,10 @@ beforeAll(() => {
 // ======== 本地薄包装（保持调用代码不变，实现体共享） ========
 const INFO_SIZE = PHYSICS_INFO_SIZE;
 const OFF = PHYSICS_OFF;
-const buildRigidBodyInfo = (shapePtr: number, overrides?: Parameters<typeof _buildRigidBodyInfo>[2]) =>
-    _buildRigidBodyInfo(phys, shapePtr, overrides);
+const buildRigidBodyInfo = (
+    shapePtr: number,
+    overrides?: Parameters<typeof _buildRigidBodyInfo>[2]
+) => _buildRigidBodyInfo(phys, shapePtr, overrides);
 const readLinearVelocity = (bodyPtr: number) => _readLinearVelocity(phys, bodyPtr);
 
 // ======== 测试套件 ========
@@ -410,10 +412,22 @@ describe('WASM 物理契约测试', () => {
         function allocIdentityMatrix(): number {
             const ptr = api.allocateBuffer(64); // 16 floats × 4 bytes
             const m = new Float32Array(memory.buffer, ptr, 16);
-            m[0] = 1; m[1] = 0; m[2] = 0; m[3] = 0;
-            m[4] = 0; m[5] = 1; m[6] = 0; m[7] = 0;
-            m[8] = 0; m[9] = 0; m[10] = 1; m[11] = 0;
-            m[12] = 0; m[13] = 0; m[14] = 0; m[15] = 1;
+            m[0] = 1;
+            m[1] = 0;
+            m[2] = 0;
+            m[3] = 0;
+            m[4] = 0;
+            m[5] = 1;
+            m[6] = 0;
+            m[7] = 0;
+            m[8] = 0;
+            m[9] = 0;
+            m[10] = 1;
+            m[11] = 0;
+            m[12] = 0;
+            m[13] = 0;
+            m[14] = 0;
+            m[15] = 1;
             return ptr;
         }
 
@@ -430,7 +444,11 @@ describe('WASM 物理契约测试', () => {
             const frameB = allocIdentityMatrix();
 
             const constraint = api.createGeneric6DofSpringConstraint(
-                anchor, body, frameA, frameB, true,
+                anchor,
+                body,
+                frameA,
+                frameB,
+                true
             );
             expect(constraint).toBeGreaterThan(0);
 
@@ -454,7 +472,11 @@ describe('WASM 物理契约测试', () => {
             const frameB = allocIdentityMatrix();
 
             const constraint = api.createGeneric6DofSpringConstraint(
-                anchor, body, frameA, frameB, true,
+                anchor,
+                body,
+                frameA,
+                frameB,
+                true
             );
 
             // 在 Y 轴线性方向启用弹簧（index 0=X, 1=Y, 2=Z linear; 3=AngX, 4=AngY, 5=AngZ）
@@ -482,12 +504,18 @@ describe('WASM 物理契约测试', () => {
             const frameB = allocIdentityMatrix();
 
             const constraint = api.createGeneric6DofSpringConstraint(
-                anchor, body, frameA, frameB, true,
+                anchor,
+                body,
+                frameA,
+                frameB,
+                true
             );
 
             expect(() => api.constraintSetLinearLowerLimit(constraint, -1, -2, -1)).not.toThrow();
             expect(() => api.constraintSetLinearUpperLimit(constraint, 1, 2, 1)).not.toThrow();
-            expect(() => api.constraintSetAngularLowerLimit(constraint, -0.5, -1, -0.5)).not.toThrow();
+            expect(() =>
+                api.constraintSetAngularLowerLimit(constraint, -0.5, -1, -0.5)
+            ).not.toThrow();
             expect(() => api.constraintSetAngularUpperLimit(constraint, 0.5, 1, 0.5)).not.toThrow();
 
             api.destroyConstraint(constraint);
@@ -523,7 +551,11 @@ describe('WASM 物理契约测试', () => {
             const frameA = allocIdentityMatrix();
             const frameB = allocIdentityMatrix();
             const constraint = api.createGeneric6DofSpringConstraint(
-                anchor, body, frameA, frameB, true,
+                anchor,
+                body,
+                frameA,
+                frameB,
+                true
             );
             api.physicsWorldAddConstraint(world, constraint, false);
 
@@ -572,7 +604,11 @@ describe('WASM 物理契约测试', () => {
             const frameB = allocIdentityMatrix();
 
             const constraint = api.createGeneric6DofSpringConstraint(
-                anchor, body, frameA, frameB, true,
+                anchor,
+                body,
+                frameA,
+                frameB,
+                true
             );
             expect(() => api.destroyConstraint(constraint)).not.toThrow();
 

@@ -170,8 +170,7 @@ describe('createKeyboardNav — 全大统一增强（menu.ts 接入路径）', (
             setActiveIndex,
             arrowRightActivate: true,
             onEnter,
-            perKeySkip: (target, kind) =>
-                kind === 'horizontal' && !!target?.closest('button'),
+            perKeySkip: (target, kind) => kind === 'horizontal' && !!target?.closest('button'),
         });
         // 焦点在 button 上：horizontal（Enter/→）被跳过，事件透传
         const enterEv = key(btn, 'Enter');

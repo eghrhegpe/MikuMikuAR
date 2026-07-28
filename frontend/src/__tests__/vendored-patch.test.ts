@@ -19,14 +19,14 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const audioDir = join(
-  __dirname,
-  '..',
-  '..',
-  'node_modules',
-  'babylon-mmd',
-  'esm',
-  'Runtime',
-  'Audio'
+    __dirname,
+    '..',
+    '..',
+    'node_modules',
+    'babylon-mmd',
+    'esm',
+    'Runtime',
+    'Audio'
 );
 const jsPath = join(audioDir, 'streamAudioPlayer.js');
 const dtsPath = join(audioDir, 'streamAudioPlayer.d.ts');
@@ -36,24 +36,24 @@ const JS_ANCHOR = '\n    _audio;\n';
 const DTS_ANCHOR = '\n    private _audio;\n';
 
 describe('ADR-202 P2: vendored patch 生效性守护', () => {
-  it('streamAudioPlayer.js 已被 postinstall 注入 get audio()（否则 P2 音频桥失效）', () => {
-    expect(existsSync(jsPath)).toBe(true);
-    const js = readFileSync(jsPath, 'utf8');
-    expect(js).toContain('get audio()');
-  });
+    it('streamAudioPlayer.js 已被 postinstall 注入 get audio()（否则 P2 音频桥失效）', () => {
+        expect(existsSync(jsPath)).toBe(true);
+        const js = readFileSync(jsPath, 'utf8');
+        expect(js).toContain('get audio()');
+    });
 
-  it('streamAudioPlayer.d.ts 已被注入 get audio() 声明（否则 player.audio 类型缺失）', () => {
-    expect(existsSync(dtsPath)).toBe(true);
-    const dts = readFileSync(dtsPath, 'utf8');
-    expect(dts).toContain('get audio(): Nullable<HTMLAudioElement>');
-  });
+    it('streamAudioPlayer.d.ts 已被注入 get audio() 声明（否则 player.audio 类型缺失）', () => {
+        expect(existsSync(dtsPath)).toBe(true);
+        const dts = readFileSync(dtsPath, 'utf8');
+        expect(dts).toContain('get audio(): Nullable<HTMLAudioElement>');
+    });
 
-  it('patch 锚点在源文件中仍存在 — 升级漂移的早期警报', () => {
-    // patch 为「插入」而非「替换」，注入后锚点行仍在；若某次升级删/改了
-    // _audio 字段声明，此断言先红，先于运行时音频静默降级暴露问题。
-    const js = readFileSync(jsPath, 'utf8');
-    const dts = readFileSync(dtsPath, 'utf8');
-    expect(js).toContain(JS_ANCHOR);
-    expect(dts).toContain(DTS_ANCHOR);
-  });
+    it('patch 锚点在源文件中仍存在 — 升级漂移的早期警报', () => {
+        // patch 为「插入」而非「替换」，注入后锚点行仍在；若某次升级删/改了
+        // _audio 字段声明，此断言先红，先于运行时音频静默降级暴露问题。
+        const js = readFileSync(jsPath, 'utf8');
+        const dts = readFileSync(dtsPath, 'utf8');
+        expect(js).toContain(JS_ANCHOR);
+        expect(dts).toContain(DTS_ANCHOR);
+    });
 });

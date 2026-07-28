@@ -10,7 +10,11 @@
 
 /** 环境是否支持语音合成。 */
 export function isSpeechSupported(): boolean {
-    return typeof window !== 'undefined' && 'speechSynthesis' in window && typeof window.SpeechSynthesisUtterance === 'function';
+    return (
+        typeof window !== 'undefined' &&
+        'speechSynthesis' in window &&
+        typeof window.SpeechSynthesisUtterance === 'function'
+    );
 }
 
 /** 情绪 → 语音参数映射（rate/pitch），让不同情绪的朗读有区分度。 */

@@ -326,7 +326,7 @@ describe('wind-physics 状态机', () => {
             expect(mocks.applyForceToModelRigidBodiesNative).toHaveBeenCalledTimes(1);
             const nCall0 = mocks.applyForceToModelRigidBodiesNative.mock.calls[0];
             expect(nCall0[0]).toBe(mocks.wasmInstance); // 传入 wasm 实例
-            expect(nCall0[1]).toBe(mocks.actorModel);   // 传入 actor 的 mmdModel
+            expect(nCall0[1]).toBe(mocks.actorModel); // 传入 actor 的 mmdModel
             expect(nCall0[2].x).toBeCloseTo(15); // 独立系数 MODEL_WIND_FORCE_SCALE(5.0)：(3,0,4)×5
             expect(nCall0[2].z).toBeCloseTo(20);
         });
@@ -363,7 +363,7 @@ describe('wind-physics 状态机', () => {
             expect(mocks.applyForceToModelRigidBodiesNative).toHaveBeenCalledTimes(1);
             const call0 = mocks.applyForceToModelRigidBodiesNative.mock.calls[0];
             expect(call0[0]).toBe(mocks.wasmInstance); // 传入 wasm 实例
-            expect(call0[1]).toBe(mocks.actorModel);   // 传入 actor 的 mmdModel
+            expect(call0[1]).toBe(mocks.actorModel); // 传入 actor 的 mmdModel
             // 模型原生刚体用独立系数 MODEL_WIND_FORCE_SCALE(5.0)：(3,0,4) × 5 = (15,0,20)
             expect(call0[2].x).toBeCloseTo(15);
             expect(call0[2].z).toBeCloseTo(20);

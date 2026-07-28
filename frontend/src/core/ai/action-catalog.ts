@@ -81,7 +81,10 @@ export function buildToolCatalogText(): string {
         const paramsDesc = a.params.map((p) => {
             if (p.type === 'enum') {
                 const synonyms = p.synonyms
-                    ? '; ' + Object.entries(p.synonyms).map(([k, v]) => `${k}=${v}`).join(', ')
+                    ? '; ' +
+                      Object.entries(p.synonyms)
+                          .map(([k, v]) => `${k}=${v}`)
+                          .join(', ')
                     : '';
                 return `${p.name}(${(p.enum ?? []).join('|')}${synonyms})`;
             }
