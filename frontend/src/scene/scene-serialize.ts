@@ -1410,7 +1410,17 @@ export function offerSceneUndoAndRefresh(
 
 /** Save scene immediately (no debounce). Used in visibilitychange / beforeunload.
  *  @param suppressToast  When true (visibilitychange scenario), skip toast on error. */
+let _saving = false;
+let _savePending = false;
 export async function saveSceneImmediate(suppressToast = false): Promise<void> {
+    // Reentrancy guard: undo-restore / visibilitychange flush / debounce fire can
+    // all call this concurrently. Serialise them so serializeScene() never reads a
+    // scene mutated mid-write, and coalesce overlapping calls into one trailing save.
+    if (_saving) {
+        _savePending = true;
+        return;
+    }
+    _saving = true;
     try {
         const _sStart = performance.now();
         const data = serializeScene();
@@ -1434,6 +1444,14 @@ export async function saveSceneImmediate(suppressToast = false): Promise<void> {
         console.warn('[auto-save] SaveLastScene FAILED:', _err);
         if (!suppressToast) {
             feedbackError('scene.serialize.autosaveFailed', undefined, _err);
+        }
+    } finally {
+        _saving = false;
+        // A save was requested while this one was in flight — flush a trailing save
+        // so the final state is never lost to the coalescing above.
+        if (_savePending) {
+            _savePending = false;
+            swallowError(saveSceneImmediate(suppressToast));
         }
     }
 }
