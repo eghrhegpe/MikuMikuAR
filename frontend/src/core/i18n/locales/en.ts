@@ -1953,6 +1953,9 @@ export const en: Record<string, string> = {
     'ai.control.availableTools': 'Available controls:',
     'ai.control.resultSuccess': '✅ Applied: {message}',
     'ai.control.resultFailed': '❌ Failed: {message}',
+    'ai.control.undo': 'Undo',
+    'ai.control.undoHint': 'Applied "{action}", you can undo it',
+    'ai.control.undone': '↩️ Last action undone.',
     'ai.config.corsWarning':
         '⚠ Remote endpoint may have CORS restrictions. For local Ollama, set OLLAMA_ORIGINS=* and restart.',
     'ai.chat.clear': 'Clear',

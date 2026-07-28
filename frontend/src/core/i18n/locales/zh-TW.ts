@@ -1887,6 +1887,14 @@ export const zhTW: Record<string, string> = {
     'ai.control.executing': '執行中...',
     'ai.control.cancelled': '操作已取消。',
     'ai.control.confirmDestructive': '此操作會變更目前場景狀態（{action}），是否繼續？',
+    'ai.control.emptyHint':
+        '在下方輸入框用自然語言告訴我你想調整什麼，例如「把燈光調暗一點」或「切換到夜晚環境」。',
+    'ai.control.availableTools': '目前可控制：',
+    'ai.control.resultSuccess': '✅ 已執行：{message}',
+    'ai.control.resultFailed': '❌ 執行失敗：{message}',
+    'ai.control.undo': '撤銷',
+    'ai.control.undoHint': '已執行「{action}」，可撤銷',
+    'ai.control.undone': '↩️ 已撤銷上一步操作。',
     'ai.config.corsWarning':
         '⚠ 遠程端點可能存在 CORS 限制。本地 Ollama 請設置 OLLAMA_ORIGINS=* 後重啟。',
     'ai.chat.clear': '清空',
