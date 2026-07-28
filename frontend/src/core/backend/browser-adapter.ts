@@ -1379,11 +1379,17 @@ export const browserAdapter: BackendService = {
             }
         }
         // 兜底 2：dir:<stem>:<relPath> 未命中时，按 ExtractZip 扁平键 file:<stem>（去扩展名）再查一次
+        // ⚠️ [doc:adr-182] file:<stem> 是裸文件名键，不同 ZIP 的同名文件会互相覆盖。
+        // 此处若命中可能是「错的纹理被误返回」(静默错渲染)，加 warn 使排查可追踪。
         const baseName = _baseName(path);
         if (baseName && baseName !== path) {
             const stem = _stripExt(baseName);
             const fallback = (await idbGet<Uint8Array>('models', `file:${stem}`)) ?? null;
             if (fallback) {
+                console.warn(
+                    `[readFileBytes] ${path} 未命中 dir: 命名空间键，` +
+                    `经 file:${stem} 兜底返回数据——该数据可能来自其他 ZIP 的同名文件，非期望来源`
+                );
                 return fallback;
             }
         }
