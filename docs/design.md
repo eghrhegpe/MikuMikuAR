@@ -583,6 +583,100 @@ function addEmptyRow(parent: HTMLElement, text: string): HTMLElement
 
 ---
 
+## 键盘导航与无障碍
+
+> 新增 UI 必须同时考虑键盘可达性与焦点可见性。本章节把 ADR-153/196 沉淀的键盘导航能力纳入规范。
+
+### 设计原则
+
+1. **键盘等价**：所有可通过鼠标触发的交互，必须能通过键盘触发。
+2. **焦点可见**：聚焦状态必须使用 `:focus-visible` 或项目级高亮类（如 `.slide-focused`），不得隐藏焦点环。
+3. **语义正确**：可交互元素尽量使用原生语义标签；不得已用 `div`/`span` 时，必须补充 `role`、`tabIndex`、`aria-*`。
+4. **不抢键**：内嵌控件（滑条、输入框、原生按钮）在获得焦点时，应优先使用自身键盘语义；外层导航只在合适时机接管。
+
+### 公共工具 `createKeyboardNav`
+
+入口：[`frontend/src/core/ui-keyboard-nav.ts`](file:///c:/Users/zhujieling11/MikuMikuAR/frontend/src/core/ui-keyboard-nav.ts)
+
+```ts
+import { createKeyboardNav } from '../core/ui-keyboard-nav';
+import type { Disposable } from '../core/dom';
+
+const navDisp: Disposable = createKeyboardNav(container, {
+    selector: 'button[role="tab"]',
+    rovingTabIndex: true,
+    wrap: true,
+});
+```
+
+**资源契约**：返回的 `Disposable` 必须在对应层级卸载时释放。
+- `renderCustom` 中创建 → 在 `renderCustom` 返回的 cleanup 中 `navDisp.dispose()`。
+- 类组件中创建 → 在类 dispose 方法中释放（如 `this._keydownDisp?.dispose()`）。
+
+### 三种推荐接入模式
+
+| 场景 | 关键选项 | 典型文件 |
+|------|---------|---------|
+| **菜单列表 / 弹层面板** | `getItems` + `getActiveIndex`/`setActiveIndex` + `arrowRightActivate: true` | [menu.ts](file:///c:/Users/zhujieling11/MikuMikuAR/frontend/src/menus/menu.ts#L150) |
+| **Tablist / 模式切换** | `selector` + `rovingTabIndex: true` | [settings-diagnostic.ts](file:///c:/Users/zhujieling11/MikuMikuAR/frontend/src/menus/settings-diagnostic.ts#L518) |
+| **卡片网格 / 全屏覆盖层** | `selector`，默认 `:focus` 反查 | [ui-fullscreen-overlay.ts](file:///c:/Users/zhujieling11/MikuMikuAR/frontend/src/core/ui-fullscreen-overlay.ts#L242) |
+
+### 焦点真相源
+
+`createKeyboardNav` 支持两种焦点定位方式：
+
+1. **原生 `:focus` 反查**（默认）：容器内可聚焦元素自己持有焦点。适合 tablist、覆盖层等 DOM 焦点即用户焦点的场景。
+2. **外部索引**（`getActiveIndex`/`setActiveIndex`）：由外部状态机（如 `focusIndex`）维护当前项，配合 CSS 类（如 `.slide-focused`）做视觉高亮。适合 `menu.ts` 这种焦点与原生 `:focus` 不完全一致的弹层列表。
+
+选择原则：如果列表项本身就是原生可聚焦元素且视觉焦点与 DOM 焦点一致，用默认路径；否则用外部索引。
+
+### 与内嵌控件共存
+
+当导航容器内嵌滑条、输入框、原生按钮时，使用 `perKeySkip` 让内嵌控件保留自身语义：
+
+```ts
+perKeySkip: (target, kind) => {
+    if (!target) return false;
+    // tablist 内部箭头不触发外层菜单导航
+    if (target.closest('[role="tablist"]')) return true;
+    // 水平方向：含有 data-nav-adjust=horizontal 的行让控件自身调值
+    if (kind === 'horizontal') {
+        const row = target.closest<HTMLElement>('.slide-item');
+        if (row && row.dataset.navAdjust === 'horizontal') return true;
+    }
+    return false;
+},
+```
+
+**约定**：
+- `vertical`（↑↓）：仅在 tablist 内跳过；列表行的上下遍历保留给外层导航。
+- `horizontal`（→←/Enter/Space）：行声明 `data-nav-adjust="horizontal"` 或目标为原生可输入控件时跳过。
+
+### 原子组件键盘支持
+
+不需要 `createKeyboardNav` 的独立交互元素，遵循以下最小集：
+
+| 元素 | 要求 | 示例 |
+|------|------|------|
+| 折叠头 | `tabIndex = 0`、`role = 'button'`、`aria-expanded`；`Enter`/`Space` 触发展开/收起 | [ui-collapsible.ts](file:///c:/Users/zhujieling11/MikuMikuAR/frontend/src/core/ui-collapsible.ts#L107) |
+| 按钮 | 尽量用原生 `<button>`；若用其他标签需补 `role` 与 `tabIndex` | — |
+| 行式操作 | 可获得焦点的行需响应 `Enter`/`Space` 触发主操作 | — |
+| 输入框 | 保留默认 `Tab` 顺序；`Enter` 可提交（如搜索、聊天发送） | — |
+
+### UI 设计验收 Checklist
+
+新增菜单或面板前，确认以下条目：
+
+- [ ] 所有可点击元素可通过 `Tab` 或箭头键获得焦点。
+- [ ] 焦点在视觉上可见（outline 或高亮类）。
+- [ ] `Enter`/`Space` 可触发按钮、折叠头、行操作。
+- [ ] 列表/弹层使用 `createKeyboardNav` 而非手写 `keydown` 监听。
+- [ ] `createKeyboardNav` 返回的 `Disposable` 在卸载时释放。
+- [ ] 内嵌滑条/输入框在获得焦点时不被外层导航误拦截。
+- [ ] 复杂组件补充 `role`、`aria-expanded`、`aria-selected` 等语义属性。
+
+---
+
 ## 命名约定
 
 | 概念 | 命名 | 示例 |
