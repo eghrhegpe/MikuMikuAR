@@ -1787,7 +1787,8 @@ textarea,
 .slide-item:active {
     background: var(--card-active);
 }
-.slide-item.slide-focused {
+.slide-item.slide-focused,
+.collapsible-header.slide-focused {
     background: var(--card-hover);
     outline: calc(1px * var(--ui-scale)) solid var(--accent-dim);
     outline-offset: calc(-1px * var(--ui-scale));

@@ -643,8 +643,9 @@ export class SlideMenu {
 
     // ======== 内部方法 ========
 
-    private get panelItems(): NodeListOf<HTMLElement> {
-        return this.panel.querySelectorAll<HTMLElement>('.slide-item');
+    private get panelItems(): HTMLElement[] {
+        const all = this.panel.querySelectorAll<HTMLElement>('.slide-item, .collapsible-header');
+        return Array.from(all).filter((el) => !el.closest('[inert]'));
     }
 
     private clearFocus(): void {
