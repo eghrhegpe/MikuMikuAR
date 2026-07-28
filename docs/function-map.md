@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 103 | 692 |
+| 核心基础设施 | 103 | 698 |
 | 3D 场景 | 105 | 1060 |
 | 菜单 & UI | 67 | 308 |
 | 换装 & 音频 | 3 | 33 |
@@ -277,9 +277,12 @@
 | `stopSceneSnapshotPolling()` | `core/mmar-globals` | 停止周期快照刷新；未启动或重复调用均安全。 |
 | `updateMmarStatus()` | `core/mmar-globals` | — |
 | `CapabilityProbe()` | `core/mmd-adapter` | CapabilityProbe — 升级回归探测（ADR-192 Phase 2 守卫式反射）。 |
+| `applyForceToModelRigidBodies()` | `core/mmd-adapter` | — |
+| `applyForceToModelRigidBodiesNative()` | `core/mmd-adapter` | — |
 | `getBoneWorldMatrix()` | `core/mmd-adapter` | 返回骨骼在世界坐标系下的 worldMatrix（固化自 adr-071 坐标系契约）。 |
 | `getPhysicsImpl()` | `core/mmd-adapter` | 从 IMmdRuntime 获取底层 MmdWasmPhysicsRuntimeImpl。 |
 | `getRigidBodyBundleMap()` | `core/mmd-adapter` | 返回所有 RigidBodyBundle 迭代器（条目 3 内化，ADR-192 Phase 2）。 |
+| `getRigidBodyMap()` | `core/mmd-adapter` | 返回所有**单数** RigidBody 迭代器（路径1 修正，ADR-200）。 |
 | `getStreamAudio()` | `core/mmd-adapter` | — |
 | `onBoneMatricesUpdated()` | `core/mmd-adapter` | 在骨骼 worldMatrix 已被 babylon-mmd 更新之后、渲染之前注册回调。 |
 | `switchAnimation()` | `core/mmd-adapter` | 切换模型当前动画到新动画，并归零运行时全局时钟到第 0 帧。 |
@@ -487,11 +490,14 @@
 | `createKeyboardNav()` | `core/ui-keyboard-nav` | — |
 | `NAV_ADJUST_ATTR()` | `core/ui-nav-item` | — |
 | `NAV_FOCUS_ATTR()` | `core/ui-nav-item` | — |
+| `NAV_GROUP_ATTR()` | `core/ui-nav-item` | — |
 | `NAV_ITEM_ATTR()` | `core/ui-nav-item` | 导航项标记属性名 |
 | `NAV_ITEM_SELECTOR()` | `core/ui-nav-item` | 方向键导航项统一选择器（panelItems 用） |
 | `NavItemOptions()` | `core/ui-nav-item` | — |
 | `markNavItem()` | `core/ui-nav-item` | 给一个行元素打上方向键导航项标记。控件工厂在创建行后调用一次即可， 无需再改 menu.ts。 |
 | `navFocusTarget()` | `core/ui-nav-item` | 读取行的内部聚焦目标（缺省返回行本身） |
+| `navGroupMove()` | `core/ui-nav-item` | 组内 ←→ 移动焦点：在 row 的组内子项间循环移动，返回是否处理了该键。 |
+| `navGroupSelector()` | `core/ui-nav-item` | 读取组行的组内子项 selector（非组行返回 null） |
 | `navHasHorizontalAdjust()` | `core/ui-nav-item` | 该行是否声明了 ←→ 水平调值（菜单应让位） |
 | `PresetChipItem()` | `core/ui-preset` | 单个预设芯片的描述。 |
 | `addClearRow()` | `core/ui-preset` | 渲染一行右对齐的「清除」按钮（统一 cs-btn cs-btn-sm 样式）。 |
@@ -2284,5 +2290,5 @@
 
 ---
 
-> 共 298 个文件，2238 个导出符号。
+> 共 298 个文件，2244 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。
