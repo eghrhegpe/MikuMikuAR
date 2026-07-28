@@ -1,9 +1,5 @@
 import { registerAction } from '../action-registry';
-import {
-    screenshotCurrent,
-    screenshotBatch,
-    saveScene,
-} from '../../menus/scene-menu';
+import { screenshotCurrent, screenshotBatch, saveScene } from '../../menus/scene-menu';
 import { popUndoSnapshot, restoreUndoSnapshot } from '../../scene/scene';
 import { feedbackStatus, feedbackInfo } from '../feedback';
 

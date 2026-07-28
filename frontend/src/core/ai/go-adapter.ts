@@ -141,14 +141,16 @@ class GoAiAdapter implements AiService {
         req.signal?.addEventListener('abort', onAbort);
 
         try {
-            const tools = req.tools?.length ? req.tools.map((t) => ({
-                type: t.type,
-                function: {
-                    name: t.function.name,
-                    description: t.function.description,
-                    parameters: t.function.parameters,
-                },
-            })) : undefined;
+            const tools = req.tools?.length
+                ? req.tools.map((t) => ({
+                      type: t.type,
+                      function: {
+                          name: t.function.name,
+                          description: t.function.description,
+                          parameters: t.function.parameters,
+                      },
+                  }))
+                : undefined;
             const llmReq: LLMChatRequest = {
                 model: req.model ?? '',
                 messages: req.messages.map((m) => {

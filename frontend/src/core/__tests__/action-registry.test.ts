@@ -72,7 +72,7 @@ describe('registerAction', () => {
                 domain: 'scene',
                 params: [],
                 execute: () => {},
-            }),
+            })
         ).toThrow('test:strict');
     });
 });
@@ -101,9 +101,7 @@ describe('getAction', () => {
             label: '完整信息',
             domain: 'settings',
             icon: 'lucide:settings-2',
-            params: [
-                { name: 'value', type: 'range', min: 0, max: 1, step: 0.05 },
-            ],
+            params: [{ name: 'value', type: 'range', min: 0, max: 1, step: 0.05 }],
             execute: () => {},
             destructive: true,
         };

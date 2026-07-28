@@ -11,12 +11,16 @@ import {
     addModeSlider,
     addModeRow,
     addCollapsible,
+    addActionRow,
     addSectionTitle,
 } from '../core/ui-helpers';
 import { t } from '../core/i18n/t';
 import { getModuleConflicts } from '../scene/motion/motion-modules/registry';
 import { createIconifyIcon } from '../core/icons';
 import { focusedModelId } from '../core/state';
+import { showInfoToast } from '../core/toast';
+import { closeAllOverlays } from '../core/utils';
+import { feedbackStatus } from '../core/feedback';
 
 /** 渲染一个 MenuNode 树到 container 中。返回 dispose 函数，调用时级联释放所有 renderCustom 资源 */
 export function renderMenu(schema: MenuNode[], container: HTMLElement): () => void {
@@ -59,8 +63,11 @@ function renderNode(node: MenuNode, container: HTMLElement): (() => void) | unde
         case 'sectionTitle':
             renderSectionTitle(node, container);
             return undefined;
+        case 'action':
+            renderAction(node, container);
+            return undefined;
         case 'divider':
-            // 无操作，未来可添加分隔线 DOM
+            // 无操作
             return undefined;
         case 'custom': {
             const d = node.renderCustom?.(container);
@@ -285,6 +292,23 @@ function renderSectionTitle(node: MenuNode, container: HTMLElement): void {
         return;
     }
     addSectionTitle(container, t(node.label), node.id);
+}
+
+// ======== Action ========
+
+function renderAction(node: MenuNode, container: HTMLElement): void {
+    addActionRow(
+        container,
+        node.label ? t(node.label) : '',
+        () => {
+            void node.action?.({
+                toast: showInfoToast,
+                setStatus: (msg: string) => feedbackStatus(msg, undefined, true),
+                closeAllOverlays,
+            });
+        },
+        { icon: node.icon, testId: node.id }
+    );
 }
 
 /**

@@ -1917,10 +1917,12 @@ export const ja: Record<string, string> = {
     'ai.control.pending': '⏳ 実行待ち操作 — 確認して適用',
     'ai.control.apply': '適用',
     'ai.control.cancel': 'キャンセル',
-    'ai.control.unsupported': 'この操作はまだサポートされていません。別の方法で変更内容を説明してみてください。',
+    'ai.control.unsupported':
+        'この操作はまだサポートされていません。別の方法で変更内容を説明してみてください。',
     'ai.control.executing': '実行中...',
     'ai.control.cancelled': '操作がキャンセルされました。',
-    'ai.control.confirmDestructive': 'この操作は現在のシーン状態を変更します（{action}）。続行しますか？',
+    'ai.control.confirmDestructive':
+        'この操作は現在のシーン状態を変更します（{action}）。続行しますか？',
     'ai.config.corsWarning':
         '⚠ リモートエンドポイントにCORS制限がある可能性があります。ローカルOllamaは OLLAMA_ORIGINS=* を設定して再起動してください。',
     'ai.chat.clear': 'クリア',

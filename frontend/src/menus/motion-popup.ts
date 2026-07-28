@@ -2,37 +2,17 @@
 // 拆分后保留: registerPopupMenu 注册 / MOTION_FOLDER_ROUTES / motionOnItemClick 路由
 // 子文件: motion-binding-ui / motion-detail-ui / motion-root-ui
 
-import {
-    PopupLevel,
-    PopupRow,
-    getBrowseDir,
-    stackRegistry,
-} from '../core/config';
-import { feedbackStatus } from '../core/feedback';
-import { showInfoToast } from '../core/toast';
+import type { PopupLevel, PopupRow } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
-import { loadManager } from '../core/load-manager';
 import { registerLoadRefreshHook, registerLibraryScannedHook } from '../core/load-refresh-registry';
-import { loadVPDPose } from '../scene/scene';
-import { getAudioName } from '../outfit/audio';
+import { executeActionById } from '../core/action-executor';
 import { buildProcMotionLevel } from './motion-procmotion-levels';
 import { buildGazeTrackingLevel } from './motion-gaze-levels';
 import { buildCameraLevel } from './motion-camera-levels';
 import { buildPoseStudioLevel } from './motion-pose-levels';
-import { t } from '../core/i18n/t';
-import { executeActionById } from '../core/action-executor';
-import {
-    addSceneMotion,
-    replaceDefaultMotion,
-} from '../scene/motion/motion-intent';
-import { logWarn } from '../core/logger';
 
 // ── 子文件导入 ──
-import {
-    resetFocusedLayerId,
-    buildActionBindingLevel,
-} from './motion-binding-ui';
-import { buildMotionDetailLevel, buildPlaybackSpeedLevel } from './motion-detail-ui';
+import { buildPlaybackSpeedLevel } from './motion-detail-ui';
 import {
     buildMotionRootLevel,
     buildMotionRootItems,
@@ -127,70 +107,37 @@ function _ensureMotionActions(): void {
 function motionOnItemClick(row: PopupRow): void {
     _ensureMotionActions();
     if (row.model) {
-        // [doc:adr-131] 相机 VMD 加载入口
         const outcome = getMotionMenu()?.currentLevel?.outcome;
         if (row.model.format === 'vmd' && outcome?.mode === 'bindCameraVmd') {
-            loadManager
-                .load({ kind: 'camera-vmd', path: row.model.file_path })
-                .then(() => {
-                    const menu = getMotionMenu();
-                    if (menu) {
-                        menu.pop();
-                        menu.reRender();
-                    }
-                })
-                .catch((err) => {
-                    logWarn('motion-popup', 'Load camera VMD failed:', err);
-                    feedbackStatus('motion.loadFailed', undefined, false);
-                });
+            void executeActionById('motion:load-camera-vmd', { path: row.model.file_path });
             return;
         }
-        // 场景级 VMD 加载（ADR-167：每次都加入场景库，不再 1+5 混合）
         if (row.model.format === 'vmd') {
-            addSceneMotion({
-                vmdPath: row.model.file_path,
-                vmdName:
+            void executeActionById('motion:add-scene-vmd', {
+                path: row.model.file_path,
+                name:
                     row.model.file_path
                         .split(/[/\\]/)
                         .pop()
                         ?.replace(/\.\w+$/, '') || '',
-                vmdLayers: [],
-                source: 'vmd',
             });
-            const menu = getMotionMenu();
-            if (menu) {
-                const root = menu.getLevel(0);
-                if (root) {
-                    root.items = buildMotionRootItems();
-                }
-                menu.pop();
-            }
             return;
         }
         hideMotionPopup();
         if (row.model.format === 'audio') {
-            loadManager.load({ kind: 'audio', path: row.model.file_path });
-            showInfoToast(t('motion.musicLoaded', { name: getAudioName() }));
-            if (getMotionMenu()) {
-                getMotionMenu()?.reRender();
-            }
+            void executeActionById('motion:load-audio', { path: row.model.file_path });
             return;
         }
         if (row.model.format === 'vpd') {
-            loadVPDPose(row.model.file_path);
+            void executeActionById('motion:load-vpd', { path: row.model.file_path });
             return;
         }
         return;
     }
-    // per-model 动作绑定面板入口
     if (row.target && row.target.startsWith('action:binding:')) {
-        const id = row.target.replace('action:binding:', '');
-        resetFocusedLayerId();
-        const lvl = buildActionBindingLevel(id);
-        lvl.itemBuilder = () => buildActionBindingLevel(id).items;
-        if (getMotionMenu()) {
-            getMotionMenu()?.push(lvl);
-        }
+        void executeActionById('motion:open-binding', {
+            modelId: row.target.replace('action:binding:', ''),
+        });
         return;
     }
     if (row.target && row.target.startsWith('procmotion:set-mode:')) {
@@ -215,74 +162,17 @@ function motionOnItemClick(row: PopupRow): void {
         return;
     }
     if (row.target === '__music_browse__') {
-        const level = stackRegistry.buildLevel!(
-            getBrowseDir('audio'),
-            t('motion.musicLibrary'),
-            (m) => m.format === 'audio',
-            getMotionMenu() ?? undefined
-        );
-        if (getMotionMenu()) {
-            getMotionMenu()?.push(level);
-        }
+        void executeActionById('motion:browse-music', {});
         return;
     }
-    // [doc:adr-129] 场景级动作库浏览
     if (row.target === '__scene_motion_browse__') {
-        resetFocusedLayerId();
-        const level = stackRegistry.buildLevel!(
-            getBrowseDir('vmd'),
-            t('motion.browseMotionLibrary'),
-            (m) => m.format === 'vmd',
-            getMotionMenu() ?? undefined,
-            undefined,
-            {
-                mode: 'stay',
-                onVmdPick: (path: string, name: string) => {
-                    // [doc:adr-167] 每次选择都作为新主动作加入场景库（非 1+5 叠加）
-                    const vmdName = name.replace(/\.vmd$/i, '');
-                    addSceneMotion({
-                        vmdPath: path,
-                        vmdName,
-                        vmdLayers: [],
-                        source: 'vmd',
-                    });
-                    const menu = getMotionMenu();
-                    if (menu) {
-                        const root = menu.getLevel(0);
-                        if (root) {
-                            root.items = buildMotionRootItems();
-                        }
-                    }
-                },
-                onVmdReplace: (path: string, name: string) => {
-                    const vmdName = name.replace(/\.vmd$/i, '');
-                    replaceDefaultMotion({
-                        vmdPath: path,
-                        vmdName,
-                        vmdLayers: [],
-                        source: 'vmd',
-                    });
-                    const menu = getMotionMenu();
-                    if (menu) {
-                        const root = menu.getLevel(0);
-                        if (root) {
-                            root.items = buildMotionRootItems();
-                        }
-                    }
-                },
-            }
-        );
-        if (getMotionMenu()) {
-            getMotionMenu()?.push(level);
-        }
+        void executeActionById('motion:browse-scene-motions', {});
         return;
     }
-    // [doc:adr-167] 动作详情入口：target 编码 sceneMotionId（__motion_detail__:<id>）
     if (row.target === '__motion_detail__' || row.target.startsWith('__motion_detail__:')) {
-        const sceneMotionId = row.target.split(':')[1] || undefined;
-        const lvl = buildMotionDetailLevel(sceneMotionId);
-        lvl.itemBuilder = () => [];
-        getMotionMenu()?.push(lvl);
+        void executeActionById('motion:open-detail', {
+            sceneMotionId: row.target.split(':')[1] || undefined,
+        });
         return;
     }
     // 清除场景级动作（ADR-167：清空整个场景库 + 默认动作）
