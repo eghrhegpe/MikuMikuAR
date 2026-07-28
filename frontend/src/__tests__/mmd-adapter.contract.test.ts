@@ -32,7 +32,8 @@ function mockRuntime(impl?: MmdWasmPhysicsRuntimeImpl | null): IMmdRuntime {
     return { physics } as unknown as IMmdRuntime;
 }
 function mockPlayer(audio?: HTMLAudioElement): StreamAudioPlayer {
-    return { _audio: audio } as unknown as StreamAudioPlayer;
+    // ADR-202 P2: fork 暴露公开 get audio()，adapter 现读 player.audio（不再反射 _audio）
+    return { audio } as unknown as StreamAudioPlayer;
 }
 
 describe('MmdAdapter — babylon-mmd 私有字段网关（ADR-192）', () => {
@@ -111,12 +112,12 @@ describe('MmdAdapter — babylon-mmd 私有字段网关（ADR-192）', () => {
     });
 
     describe('getStreamAudio', () => {
-        it('_audio 存在时返回', () => {
+        it('audio 存在时返回', () => {
             const el = new Audio();
             expect(getStreamAudio(mockPlayer(el))).toBe(el);
         });
 
-        it('_audio 缺失时返回 null（降级）', () => {
+        it('audio 缺失时返回 null（降级）', () => {
             expect(getStreamAudio(mockPlayer(undefined))).toBeNull();
         });
     });
