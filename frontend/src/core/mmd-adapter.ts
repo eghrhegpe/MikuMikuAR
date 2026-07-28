@@ -235,8 +235,13 @@ export function applyForceToModelRigidBodiesNative(
     if (len <= 0) {
         return 0;
     }
-    const apply = wi.mmdModelRigidBodyApplyCentralForce as
-        (p: number, i: number, x: number, y: number, z: number) => void;
+    const apply = wi.mmdModelRigidBodyApplyCentralForce as (
+        p: number,
+        i: number,
+        x: number,
+        y: number,
+        z: number
+    ) => void;
     for (let i = 0; i < len; i++) {
         apply(ptr, i, force.x, force.y, force.z);
     }

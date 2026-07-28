@@ -97,8 +97,9 @@ describe('MmdAdapter — babylon-mmd 私有字段网关（ADR-192）', () => {
             const force = new Vector3(1, 0, 0);
             const applied = applyForceToModelRigidBodies(model, force);
             expect(applied).toBe(2);
-            const bundle = (model as unknown as { __bundle: { applyCentralForce: ReturnType<typeof vi.fn> } })
-                .__bundle;
+            const bundle = (
+                model as unknown as { __bundle: { applyCentralForce: ReturnType<typeof vi.fn> } }
+            ).__bundle;
             expect(bundle.applyCentralForce).toHaveBeenCalledTimes(2);
             // 施力的 index 为 1 和 2
             expect(bundle.applyCentralForce.mock.calls[0][0]).toBe(1);

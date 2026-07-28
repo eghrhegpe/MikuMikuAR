@@ -91,22 +91,22 @@ export const PHYSICS_INFO_SIZE = 144;
 
 /** 刚体构造信息偏移量 */
 export const PHYSICS_OFF = {
-    Shape: 0,                // uint32
-    InitialTransform: 16,    // float32[16]
-    DataMask: 80,            // uint16
-    MotionType: 82,          // uint8
-    Mass: 84,                // float32
-    LocalInertia: 88,        // float32[3]
-    LinearDamping: 100,      // float32
-    AngularDamping: 104,     // float32
-    Friction: 108,           // float32
-    Restitution: 112,        // float32
+    Shape: 0, // uint32
+    InitialTransform: 16, // float32[16]
+    DataMask: 80, // uint16
+    MotionType: 82, // uint8
+    Mass: 84, // float32
+    LocalInertia: 88, // float32[3]
+    LinearDamping: 100, // float32
+    AngularDamping: 104, // float32
+    Friction: 108, // float32
+    Restitution: 112, // float32
     LinearSleepingThreshold: 116, // float32
     AngularSleepingThreshold: 120, // float32
-    CollisionGroup: 124,     // uint16
-    CollisionMask: 126,      // uint16
-    AdditionalDamping: 128,  // uint8
-    NoContactResponse: 129,  // uint8
+    CollisionGroup: 124, // uint16
+    CollisionMask: 126, // uint16
+    AdditionalDamping: 128, // uint8
+    NoContactResponse: 129, // uint8
     DisableDeactivation: 130, // uint8
 } as const;
 
@@ -117,7 +117,7 @@ export const PHYSICS_OFF = {
 export function buildRigidBodyInfo(
     { api, memory }: MinimalPhysicsImpl,
     shapePtr: number,
-    overrides?: { mass?: number; disableDeactivation?: boolean; motionType?: number },
+    overrides?: { mass?: number; disableDeactivation?: boolean; motionType?: number }
 ): number {
     const SZ = PHYSICS_INFO_SIZE;
     const infoPtr = api.allocateBuffer(SZ);
@@ -126,10 +126,22 @@ export function buildRigidBodyInfo(
     buf.setUint32(PHYSICS_OFF.Shape, shapePtr, true);
 
     const tf = new Float32Array(memory.buffer, infoPtr + PHYSICS_OFF.InitialTransform, 16);
-    tf[0] = 1;  tf[1] = 0;  tf[2] = 0;  tf[3] = 0;
-    tf[4] = 0;  tf[5] = 1;  tf[6] = 0;  tf[7] = 0;
-    tf[8] = 0;  tf[9] = 0;  tf[10] = 1; tf[11] = 0;
-    tf[12] = 0; tf[13] = 0; tf[14] = 0; tf[15] = 1;
+    tf[0] = 1;
+    tf[1] = 0;
+    tf[2] = 0;
+    tf[3] = 0;
+    tf[4] = 0;
+    tf[5] = 1;
+    tf[6] = 0;
+    tf[7] = 0;
+    tf[8] = 0;
+    tf[9] = 0;
+    tf[10] = 1;
+    tf[11] = 0;
+    tf[12] = 0;
+    tf[13] = 0;
+    tf[14] = 0;
+    tf[15] = 1;
 
     buf.setUint16(PHYSICS_OFF.DataMask, 0, true);
     buf.setUint8(PHYSICS_OFF.MotionType, overrides?.motionType ?? 0);
@@ -141,7 +153,7 @@ export function buildRigidBodyInfo(
     buf.setFloat32(PHYSICS_OFF.LinearSleepingThreshold, 0.0, true);
     buf.setFloat32(PHYSICS_OFF.AngularSleepingThreshold, 1.0, true);
     buf.setUint16(PHYSICS_OFF.CollisionGroup, 1, true);
-    buf.setUint16(PHYSICS_OFF.CollisionMask, 0xFFFF, true);
+    buf.setUint16(PHYSICS_OFF.CollisionMask, 0xffff, true);
     buf.setUint8(PHYSICS_OFF.AdditionalDamping, 0);
     buf.setUint8(PHYSICS_OFF.NoContactResponse, 0);
     buf.setUint8(PHYSICS_OFF.DisableDeactivation, overrides?.disableDeactivation ? 1 : 0);
@@ -158,7 +170,7 @@ export function buildBundleInfoList(
     { api, memory }: MinimalPhysicsImpl,
     shapePtr: number,
     count: number,
-    masses?: number[],
+    masses?: number[]
 ): number {
     const SZ = PHYSICS_INFO_SIZE;
     const totalSize = SZ * count;
@@ -170,11 +182,27 @@ export function buildBundleInfoList(
 
         buf.setUint32(PHYSICS_OFF.Shape, shapePtr, true);
 
-        const tf = new Float32Array(memory.buffer, listPtr + offset + PHYSICS_OFF.InitialTransform, 16);
-        tf[0] = 1;  tf[1] = 0;  tf[2] = 0;  tf[3] = 0;
-        tf[4] = 0;  tf[5] = 1;  tf[6] = 0;  tf[7] = 0;
-        tf[8] = 0;  tf[9] = 0;  tf[10] = 1; tf[11] = 0;
-        tf[12] = 0; tf[13] = 0; tf[14] = 0; tf[15] = 1;
+        const tf = new Float32Array(
+            memory.buffer,
+            listPtr + offset + PHYSICS_OFF.InitialTransform,
+            16
+        );
+        tf[0] = 1;
+        tf[1] = 0;
+        tf[2] = 0;
+        tf[3] = 0;
+        tf[4] = 0;
+        tf[5] = 1;
+        tf[6] = 0;
+        tf[7] = 0;
+        tf[8] = 0;
+        tf[9] = 0;
+        tf[10] = 1;
+        tf[11] = 0;
+        tf[12] = 0;
+        tf[13] = 0;
+        tf[14] = 0;
+        tf[15] = 1;
 
         buf.setUint16(PHYSICS_OFF.DataMask, 0, true);
         buf.setUint8(PHYSICS_OFF.MotionType, 0); // Dynamic
@@ -188,7 +216,7 @@ export function buildBundleInfoList(
         buf.setFloat32(PHYSICS_OFF.LinearSleepingThreshold, 0.0, true);
         buf.setFloat32(PHYSICS_OFF.AngularSleepingThreshold, 1.0, true);
         buf.setUint16(PHYSICS_OFF.CollisionGroup, 1, true);
-        buf.setUint16(PHYSICS_OFF.CollisionMask, 0xFFFF, true);
+        buf.setUint16(PHYSICS_OFF.CollisionMask, 0xffff, true);
         buf.setUint8(PHYSICS_OFF.AdditionalDamping, 0);
         buf.setUint8(PHYSICS_OFF.NoContactResponse, 0);
         buf.setUint8(PHYSICS_OFF.DisableDeactivation, 1); // 始终禁用休眠，避免测试不稳定
@@ -200,7 +228,7 @@ export function buildBundleInfoList(
 /** 读取单数刚体线速度（返回 [vx, vy, vz]） */
 export function readLinearVelocity(
     { api, memory }: MinimalPhysicsImpl,
-    bodyPtr: number,
+    bodyPtr: number
 ): [number, number, number] {
     const outPtr = api.allocateBuffer(12);
     try {
@@ -216,7 +244,7 @@ export function readLinearVelocity(
 export function readBundleLinearVelocity(
     { api, memory }: MinimalPhysicsImpl,
     bundlePtr: number,
-    index: number,
+    index: number
 ): [number, number, number] {
     const outPtr = api.allocateBuffer(12);
     try {

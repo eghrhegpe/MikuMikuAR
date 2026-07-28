@@ -1483,7 +1483,9 @@ function cleanupAndFlushSave(): void {
     try {
         const json = JSON.stringify(serializeScene());
         swallowError(SaveLastScene(json));
-        console.info(`[auto-save] cleanupAndFlushSave: dispatched SaveLastScene (${json.length} bytes)`);
+        console.info(
+            `[auto-save] cleanupAndFlushSave: dispatched SaveLastScene (${json.length} bytes)`
+        );
     } catch (_err) {
         console.warn('[auto-save] cleanupAndFlushSave: serialize/dispatch FAILED:', _err);
     }

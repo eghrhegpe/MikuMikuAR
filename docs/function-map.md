@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 103 | 698 |
+| 核心基础设施 | 103 | 699 |
 | 3D 场景 | 105 | 1059 |
 | 菜单 & UI | 67 | 308 |
 | 换装 & 音频 | 3 | 33 |
@@ -103,6 +103,7 @@
 | `AiConfigProvider()` | `core/ai/types` | 用户选择的服务商配置项 |
 | `AiConnectionResult()` | `core/ai/types` | AI 连接测试结果，镜像 Go LLMConnectionResult 结构 |
 | `AiErrorKind()` | `core/ai/types` | 错误分类，用于面板给出可操作建议 |
+| `AiPersistedConfig()` | `core/ai/types` | 持久化配置的回读结构，供诊断面板初始化时回填输入框。 |
 | `AiService()` | `core/ai/types` | AI 服务统一抽象，镜像 BackendService 双适配器模式 |
 | `AiValidationError()` | `core/ai/types` | 校验错误条目（全量收集用） |
 | `AiValidationResult()` | `core/ai/types` | 配置校验结果 |
@@ -2289,5 +2290,5 @@
 
 ---
 
-> 共 298 个文件，2243 个导出符号。
+> 共 298 个文件，2244 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。

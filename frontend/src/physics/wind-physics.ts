@@ -29,7 +29,12 @@ import { MmdWasmRuntime as MmdWasmRuntimeClass } from 'babylon-mmd/esm/Runtime/O
 import type { MmdWasmPhysicsRuntimeImpl } from 'babylon-mmd/esm/Runtime/Optimized/Physics/mmdWasmPhysicsRuntimeImpl';
 import { getWindVector, isWindActive } from '../core/wind-utils';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
-import { getPhysicsImpl, getRigidBodyBundleMap, getRigidBodyMap, applyForceToModelRigidBodiesNative } from '@/core/mmd-adapter';
+import {
+    getPhysicsImpl,
+    getRigidBodyBundleMap,
+    getRigidBodyMap,
+    applyForceToModelRigidBodiesNative,
+} from '@/core/mmd-adapter';
 import { modelRegistry } from '@/core/config';
 
 // 薄转发：保留历史导出名 _getBundles，避免 wind-physics.test.ts 改动（ADR-192 双轨过渡）

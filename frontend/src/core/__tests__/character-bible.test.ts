@@ -42,7 +42,8 @@ describe('buildDialogueSystemPrompt（纯函数）', () => {
 
 describe('parseDialogueLines（容错解析）', () => {
     it('解析标准 JSON 数组', () => {
-        const raw = '[{"line":"你好呀～","emotion":"happy"},{"line":"今天也要加油！","emotion":"neutral"}]';
+        const raw =
+            '[{"line":"你好呀～","emotion":"happy"},{"line":"今天也要加油！","emotion":"neutral"}]';
         const lines = parseDialogueLines(raw);
         expect(lines).toHaveLength(2);
         expect(lines[0]).toEqual({ line: '你好呀～', emotion: 'happy' });

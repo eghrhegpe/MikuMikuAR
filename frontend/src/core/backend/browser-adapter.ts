@@ -180,7 +180,13 @@ function parseZipCentralDir(raw: Uint8Array): ZipEntryInfo[] {
         // 边界守护：中央目录条目固定头 46 字节 + 文件名必须不越界
         if (pos + 46 > raw.length) break;
         // 中央目录条目签名 0x02014b50
-        if (raw[pos] !== 0x50 || raw[pos + 1] !== 0x4b || raw[pos + 2] !== 0x01 || raw[pos + 3] !== 0x02) break;
+        if (
+            raw[pos] !== 0x50 ||
+            raw[pos + 1] !== 0x4b ||
+            raw[pos + 2] !== 0x01 ||
+            raw[pos + 3] !== 0x02
+        )
+            break;
 
         const entry = new DataView(raw.buffer, raw.byteOffset + pos, 46);
         const gpf = entry.getUint16(8, true); // general purpose bit flag
@@ -1162,9 +1168,7 @@ async function _scanDirIntoIDB(
                             return;
                         }
                         const INNER_RE = /\.(pmx|vmd|mp3|wav|ogg|flac|wma|vpd)$/i;
-                        const innerFiles = entries.filter(
-                            (e) => !e.isDir && INNER_RE.test(e.name)
-                        );
+                        const innerFiles = entries.filter((e) => !e.isDir && INNER_RE.test(e.name));
                         if (innerFiles.length > 0) {
                             const zipDir = `${virtualDir}/${stem}`;
                             for (const entry of innerFiles) {
@@ -1388,7 +1392,7 @@ export const browserAdapter: BackendService = {
             if (fallback) {
                 console.warn(
                     `[readFileBytes] ${path} 未命中 dir: 命名空间键，` +
-                    `经 file:${stem} 兜底返回数据——该数据可能来自其他 ZIP 的同名文件，非期望来源`
+                        `经 file:${stem} 兜底返回数据——该数据可能来自其他 ZIP 的同名文件，非期望来源`
                 );
                 return fallback;
             }
