@@ -1899,8 +1899,7 @@ export const zhCN: Record<string, string> = {
     'ai.mode.diagnostic': '🔍 诊断',
     'ai.mode.chat': '💬 闲聊',
     'ai.mode.control': '🎮 控制',
-    'ai.system.control':
-        '你是 MikuMikuAR 场景控制助手。使用以下工具根据用户要求修改场景。',
+    'ai.system.control': '你是 MikuMikuAR 场景控制助手。使用以下工具根据用户要求修改场景。',
     'ai.system.controlFormat':
         '请用 JSON 格式回复：{"action": "工具名", "params": {"参数名": "值"}}。只使用上方列表中的工具。如果用户要求不支持的操作，请说明你能做什么。',
     'ai.control.pending': '⏳ 待执行操作 — 请审阅后应用',
@@ -1914,5 +1913,36 @@ export const zhCN: Record<string, string> = {
         '⚠ 远程端点可能存在 CORS 限制。本地 Ollama 请设置 OLLAMA_ORIGINS=* 后重启。',
     'ai.chat.clear': '清空',
     'ai.errors.resolveFailed': 'AI 服务初始化失败，请查看控制台获取详情。',
+
+    // 服务商预设与状态反馈
+    'ai.provider.ollama': 'Ollama',
+    'ai.provider.deepseek': 'DeepSeek',
+    'ai.provider.openai': 'OpenAI',
+    'ai.provider.openrouter': 'OpenRouter',
+    'ai.provider.custom': '自定义',
+    'ai.config.providerHint': '选择服务商，填入 API Key 即可使用',
+    'ai.config.doc': '{provider} 官网 →',
+    'ai.validation.missingEndpoint': '缺少 API 端点',
+    'ai.validation.missingKey': '缺少 API 密钥',
+    'ai.validation.missingModel': '缺少模型名称',
+    'ai.validation.ok': '配置完整',
+    'ai.status.missingEndpoint': '未配置端点',
+    'ai.status.missingKey': '缺少 API Key',
+    'ai.status.cors': 'CORS 风险',
+    'ai.status.connected': '已连接',
+    'ai.status.disconnected': '未连接',
+    'ai.status.testing': '测试中',
+    'ai.status.error': '连接失败',
+    'ai.errorAdvice.missingEndpoint': '请选择服务商或填写 API 端点。',
+    'ai.errorAdvice.missingKey': '该服务商需要 API Key，请填写。',
+    'ai.errorAdvice.cors':
+        '本地 Ollama 请设置 OLLAMA_ORIGINS=* 后重启；远程 API 建议配置同源代理。',
+    'ai.errorAdvice.unauthorized': 'API Key 无效或已过期，请检查。',
+    'ai.errorAdvice.notFound': '端点或模型不存在，请检查模型名。',
+    'ai.errorAdvice.rateLimit': '请求过于频繁，请稍后再试。',
+    'ai.errorAdvice.server': '服务商服务器错误，请稍后再试。',
+    'ai.errorAdvice.network': '网络连接失败，请检查端点地址或服务是否运行。',
+    'ai.errorAdvice.unknown': '发生未知错误，请检查配置或查看控制台。',
+
     'ai.config.notResolved': 'AI 服务尚未就绪，请稍候...',
 };

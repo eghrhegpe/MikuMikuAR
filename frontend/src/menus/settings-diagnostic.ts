@@ -7,9 +7,24 @@ import { cardContainer } from '../core/config';
 import { addSectionTitle } from '../core/ui-helpers';
 import { getErrors, clearErrors, type ErrorEntry } from '../core/ai/error-buffer';
 import { captureSceneSnapshot } from '../core/ai/scene-snapshot';
-import { loadAiConfig, saveAiConfig, ensureAiConfigLoaded } from '../core/ai/config-store';
+import {
+    loadAiConfig,
+    saveAiConfig,
+    ensureAiConfigLoaded,
+    PROVIDER_PRESETS,
+    validateAiConfig,
+    classifyAiError,
+    type AiConfig,
+    type AiConfigProvider,
+} from '../core/ai/config-store';
 import { resolveAi } from '../core/ai';
-import type { AiService, AiCapabilities, ChatMessage, ChatChunk } from '../core/ai/types';
+import type {
+    AiService,
+    AiCapabilities,
+    ChatMessage,
+    ChatChunk,
+    AiErrorKind,
+} from '../core/ai/types';
 import type { PopupLevel } from '../core/config';
 import type { SettingsMenuHandle } from './settings-shared';
 import { renderMenu } from './render-menu';
@@ -35,10 +50,21 @@ let _corsWarningEl: HTMLElement | null = null;
 let _configEndpoint: HTMLInputElement | null = null;
 let _configApiKey: HTMLInputElement | null = null;
 let _configModel: HTMLInputElement | null = null;
+let _statusBadgeEl: HTMLElement | null = null;
+let _adviceEl: HTMLElement | null = null;
+let _statusTextEl: HTMLElement | null = null;
+let _lastConnectionOk: boolean | null = null;
 
 let _controlRegistered = false;
-let _pendingAction: { actionId: string; params: Record<string, unknown>; toolCallId?: string } | null = null;
+let _pendingAction: {
+    actionId: string;
+    params: Record<string, unknown>;
+    toolCallId?: string;
+} | null = null;
 let _pendingContainer: HTMLElement | null = null;
+
+/** 当前面板编辑态的配置副本，blur 时同步到持久化层。 */
+let _localConfig: AiConfig = { ...loadAiConfig() };
 
 // ======== 生命周期 ========
 
@@ -71,15 +97,18 @@ async function _refreshCaps(): Promise<void> {
     if (!_ai) return;
     await _ai.refreshCapabilities?.();
     _caps = _ai.capabilities();
+    _refreshConfigUI();
+}
+
+function _refreshConfigUI(): void {
     _updateCorsWarning();
-    _updateConfigFields();
+    _updateStatusBadge();
 }
 
 function _updateControlsEnabled(): void {
-    const sendBtn = document.getElementById('diag-send-btn') as HTMLButtonElement | null;
     const testBtn = document.getElementById('diag-test-btn') as HTMLButtonElement | null;
-    if (sendBtn) sendBtn.disabled = !_aiResolved;
     if (testBtn) testBtn.disabled = !_aiResolved;
+    _updateSendButton();
 }
 
 function _updateCorsWarning(): void {
@@ -91,17 +120,107 @@ function _updateCorsWarning(): void {
     }
 }
 
-function _updateConfigFields(): void {
-    if (!_caps) return;
-    if (_configEndpoint && _caps.available) {
-        // go-adapter 从 AiGetLLMConfig 返回 baseUrl；browser-adapter 在 capabilities 中无 endpoint 字段
-        // 对于 browser adapter，保持从 loadAiConfig 读取
-        if (_ai?.kind === 'browser') {
-            const cfg = loadAiConfig();
-            _configEndpoint.value = cfg.endpoint;
-            _configApiKey.value = cfg.apiKey;
-            _configModel.value = cfg.model;
-        }
+/** 把面板当前编辑态同步到对应持久化层，并刷新能力探测。 */
+function _persistConfig(partial: Partial<AiConfig>): void {
+    _localConfig = { ..._localConfig, ...partial };
+    if (_ai?.kind === 'go') {
+        _saveGoConfig({
+            baseUrl: _localConfig.endpoint,
+            model: _localConfig.model,
+            aiKey: _localConfig.apiKey,
+        });
+    } else {
+        saveAiConfig(_localConfig);
+    }
+    void _refreshCaps();
+}
+
+/** 应用服务商预设，更新本地编辑态与输入框。 */
+function _applyProvider(provider: AiConfigProvider): void {
+    const preset = PROVIDER_PRESETS[provider];
+    _localConfig.provider = provider;
+    _localConfig.endpoint = preset.endpoint;
+    _localConfig.model = preset.model;
+    if (_configEndpoint) _configEndpoint.value = preset.endpoint;
+    if (_configModel) _configModel.value = preset.model;
+    _persistConfig({ provider, endpoint: preset.endpoint, model: preset.model });
+    _updateProviderButtons(provider);
+    _updateDocLink(provider);
+}
+
+function _updateStatusBadge(): void {
+    if (!_statusBadgeEl || !_statusTextEl) return;
+    const validation = validateAiConfig(_localConfig);
+    if (!validation.ok && validation.kind) {
+        _setStatusBadge(validation.kind);
+        _renderAdvice(validation.kind);
+        return;
+    }
+    if (_lastConnectionOk === true) {
+        _setStatusBadge('connected');
+        _renderAdvice(undefined);
+    } else if (_lastConnectionOk === false) {
+        _setStatusBadge('error');
+    } else {
+        _setStatusBadge(_caps?.available ? 'disconnected' : 'missingEndpoint');
+        _renderAdvice(undefined);
+    }
+}
+
+function _setStatusBadge(
+    state: AiErrorKind | 'connected' | 'disconnected' | 'testing' | 'error'
+): void {
+    if (!_statusBadgeEl || !_statusTextEl) return;
+    const badgeState: string =
+        state === 'connected' || state === 'disconnected' || state === 'testing'
+            ? state
+            : state === 'cors' || state === 'missingEndpoint' || state === 'missingKey'
+              ? state
+              : 'error';
+    _statusBadgeEl.className = 'diag-status-badge diag-status-badge--' + badgeState;
+    const textKey =
+        state === 'connected' ||
+        state === 'disconnected' ||
+        state === 'testing' ||
+        state === 'cors' ||
+        state === 'missingEndpoint' ||
+        state === 'missingKey'
+            ? `ai.status.${state}`
+            : 'ai.status.error';
+    _statusTextEl.textContent = t(textKey);
+}
+
+function _renderAdvice(kind?: AiErrorKind): void {
+    if (!_adviceEl) return;
+    if (!kind) {
+        _adviceEl.style.display = 'none';
+        _adviceEl.textContent = '';
+        return;
+    }
+    _adviceEl.textContent = t(`ai.errorAdvice.${kind}`);
+    _adviceEl.className = 'diag-advice diag-advice--' + kind;
+    _adviceEl.style.display = '';
+}
+
+let _activeProviderButtons: HTMLButtonElement[] = [];
+let _activeDocLink: HTMLAnchorElement | null = null;
+
+function _updateProviderButtons(active: AiConfigProvider): void {
+    for (const btn of _activeProviderButtons) {
+        const provider = btn.dataset.provider as AiConfigProvider;
+        btn.className = 'preset-chip' + (provider === active ? ' active' : '');
+    }
+}
+
+function _updateDocLink(provider: AiConfigProvider): void {
+    if (!_activeDocLink) return;
+    const preset = PROVIDER_PRESETS[provider];
+    if (preset.docUrl) {
+        _activeDocLink.href = preset.docUrl;
+        _activeDocLink.textContent = t('ai.config.doc', { provider: t(preset.labelKey) });
+        _activeDocLink.style.display = '';
+    } else {
+        _activeDocLink.style.display = 'none';
     }
 }
 
@@ -367,7 +486,7 @@ function _pruneHistory(messages: ChatMessage[], maxPairs: number = 10): ChatMess
 
 async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
     if (_isStreaming || !_ai) return;
-    const allowTools = opts?.allowTools ?? (_mode === 'control');
+    const allowTools = opts?.allowTools ?? _mode === 'control';
 
     _isStreaming = true;
     _updateSendButton();
@@ -407,7 +526,11 @@ async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
         if (pendingToolCalls.length > 0) {
             const first = pendingToolCalls[0];
             let params: Record<string, unknown> = {};
-            try { params = JSON.parse(first.args); } catch { /* ignore */ }
+            try {
+                params = JSON.parse(first.args);
+            } catch {
+                /* ignore */
+            }
             const assistantMsg: ChatMessage = {
                 role: 'assistant',
                 content: null,
@@ -594,6 +717,17 @@ async function _sendMessage(): Promise<void> {
     const text = _inputEl.value.trim();
     if (!text) return;
 
+    const validation = validateAiConfig(_localConfig);
+    if (!validation.ok) {
+        if (validation.kind) {
+            _setStatusBadge(validation.kind);
+            _renderAdvice(validation.kind);
+        }
+        _addAssistantMessage(t('ai.errorAdvice.' + (validation.kind ?? 'unknown')));
+        _renderChat();
+        return;
+    }
+
     _messages.push({ role: 'user', content: text });
     _inputEl.value = '';
     _renderChat();
@@ -704,24 +838,53 @@ async function _testConnection(statusEl: HTMLElement): Promise<void> {
     if (!_ai) {
         statusEl.textContent = t('ai.config.notResolved');
         statusEl.style.color = 'var(--warn)';
+        _lastConnectionOk = false;
+        _updateStatusBadge();
         return;
     }
+
+    const validation = validateAiConfig(_localConfig);
+    if (!validation.ok) {
+        statusEl.textContent = t(validation.message);
+        statusEl.style.color = 'var(--warn)';
+        if (validation.kind) {
+            _setStatusBadge(validation.kind);
+            _renderAdvice(validation.kind);
+        }
+        _lastConnectionOk = false;
+        return;
+    }
+
     statusEl.textContent = t('ai.config.testing');
     statusEl.style.color = 'var(--text-muted)';
+    _setStatusBadge('testing');
+    _lastConnectionOk = null;
 
     try {
         const result = await _ai.testConnection();
         if (result.ok) {
             statusEl.textContent = t('ai.config.connected');
             statusEl.style.color = 'var(--success)';
+            _lastConnectionOk = true;
+            _renderAdvice(undefined);
         } else {
+            const kind = classifyAiError(result.message, _caps?.corsRisk ?? 'none');
             statusEl.textContent = result.message;
             statusEl.style.color = 'var(--danger)';
+            _setStatusBadge(kind === 'cors' ? 'cors' : 'error');
+            _renderAdvice(kind);
+            _lastConnectionOk = false;
         }
     } catch (err) {
-        statusEl.textContent = err instanceof Error ? err.message : String(err);
+        const msg = err instanceof Error ? err.message : String(err);
+        const kind = classifyAiError(msg, _caps?.corsRisk ?? 'none');
+        statusEl.textContent = msg;
         statusEl.style.color = 'var(--danger)';
+        _setStatusBadge(kind === 'cors' ? 'cors' : 'error');
+        _renderAdvice(kind);
+        _lastConnectionOk = false;
     }
+    _updateStatusBadge();
 }
 
 function buildConfigSchema(): MenuNode[] {
@@ -730,42 +893,65 @@ function buildConfigSchema(): MenuNode[] {
             id: 'diagnostic:config',
             kind: 'custom',
             renderCustom: (c) => {
-                const cfg = loadAiConfig();
+                _localConfig = { ...loadAiConfig() };
+                _activeProviderButtons = [];
+                _activeDocLink = null;
+
+                // 状态徽章
+                const statusBadge = document.createElement('div');
+                statusBadge.className = 'diag-status-badge diag-status-badge--disconnected';
+                const statusText = document.createElement('span');
+                statusText.textContent = t('ai.status.disconnected');
+                statusBadge.appendChild(statusText);
+                c.appendChild(statusBadge);
+                _statusBadgeEl = statusBadge;
+                _statusTextEl = statusText;
+
+                // 可操作的建议条
+                const adviceEl = document.createElement('div');
+                adviceEl.className = 'diag-advice';
+                adviceEl.style.display = 'none';
+                adviceEl.setAttribute('role', 'status');
+                c.appendChild(adviceEl);
+                _adviceEl = adviceEl;
 
                 // 快速配置提示
                 const hintEl = document.createElement('div');
                 hintEl.className = 'setting-hint';
-                hintEl.textContent = '选择服务商，填入 API Key 即可使用';
+                hintEl.textContent = t('ai.config.providerHint');
                 c.appendChild(hintEl);
 
-                const quickRow = document.createElement('div');
-                quickRow.className = 'diag-hint-row';
+                // 服务商选择 + 文档链接
+                const providerRow = document.createElement('div');
+                providerRow.className = 'diag-provider-row';
 
-                const deepseekBtn = document.createElement('button');
-                deepseekBtn.textContent = '使用 DeepSeek';
-                deepseekBtn.className = 'preset-chip';
-                deepseekBtn.addEventListener('click', () => {
-                    const ep = 'https://api.deepseek.com';
-                    const mdl = 'deepseek-chat';
-                    if (_ai?.kind === 'go') {
-                        _saveGoConfig({ baseUrl: ep, model: mdl });
-                    } else {
-                        saveAiConfig({ endpoint: ep, model: mdl });
-                    }
-                    if (_configEndpoint) _configEndpoint.value = ep;
-                    if (_configModel) _configModel.value = mdl;
-                });
-                quickRow.appendChild(deepseekBtn);
+                const providers: AiConfigProvider[] = [
+                    'ollama',
+                    'deepseek',
+                    'openai',
+                    'openrouter',
+                    'custom',
+                ];
+                for (const provider of providers) {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.textContent = t(PROVIDER_PRESETS[provider].labelKey);
+                    btn.className =
+                        'preset-chip' + (provider === _localConfig.provider ? ' active' : '');
+                    btn.dataset.provider = provider;
+                    btn.addEventListener('click', () => _applyProvider(provider));
+                    providerRow.appendChild(btn);
+                    _activeProviderButtons.push(btn);
+                }
 
-                const dsLink = document.createElement('a');
-                dsLink.textContent = 'DeepSeek 官网 →';
-                dsLink.href = 'https://platform.deepseek.com/api_keys';
-                dsLink.target = '_blank';
-                dsLink.className = 'diag-link';
-                dsLink.setAttribute('aria-label', 'DeepSeek 官网（新标签页）');
-                quickRow.appendChild(dsLink);
+                const docLink = document.createElement('a');
+                docLink.target = '_blank';
+                docLink.className = 'diag-link';
+                docLink.setAttribute('aria-label', t('ai.config.doc', { provider: '' }));
+                providerRow.appendChild(docLink);
+                _activeDocLink = docLink;
 
-                c.appendChild(quickRow);
+                c.appendChild(providerRow);
 
                 // CORS 风险提示条
                 _corsWarningEl = document.createElement('div');
@@ -777,8 +963,8 @@ function buildConfigSchema(): MenuNode[] {
                 const createField = (
                     label: string,
                     type: string,
-                    defaultValue: string,
-                    onSave: (val: string) => void
+                    value: string,
+                    onChange: (val: string) => void
                 ): HTMLDivElement => {
                     const row = document.createElement('div');
                     row.className = 'diag-field-row';
@@ -790,11 +976,10 @@ function buildConfigSchema(): MenuNode[] {
 
                     const input = document.createElement('input');
                     input.type = type;
-                    input.value = defaultValue;
+                    input.value = value;
                     input.className = 'diag-input';
-                    input.addEventListener('blur', () => {
-                        onSave(input.value);
-                    });
+                    input.addEventListener('input', () => onChange(input.value));
+                    input.addEventListener('blur', () => _persistConfig(_localConfig));
                     row.appendChild(input);
                     return row;
                 };
@@ -802,35 +987,33 @@ function buildConfigSchema(): MenuNode[] {
                 const endpointRow = createField(
                     t('ai.config.endpoint'),
                     'text',
-                    cfg.endpoint,
+                    _localConfig.endpoint,
                     (v) => {
-                        if (_ai?.kind === 'go') {
-                            _saveGoConfig({ baseUrl: v });
-                        } else {
-                            saveAiConfig({ endpoint: v });
-                        }
+                        _localConfig.endpoint = v;
                     }
                 );
                 c.appendChild(endpointRow);
                 _configEndpoint = endpointRow.querySelector('input') as HTMLInputElement;
 
-                const apiKeyRow = createField(t('ai.config.apiKey'), 'password', cfg.apiKey, (v) => {
-                    if (_ai?.kind === 'go') {
-                        _saveGoConfig({ aiKey: v });
-                    } else {
-                        saveAiConfig({ apiKey: v });
+                const apiKeyRow = createField(
+                    t('ai.config.apiKey'),
+                    'password',
+                    _localConfig.apiKey,
+                    (v) => {
+                        _localConfig.apiKey = v;
                     }
-                });
+                );
                 c.appendChild(apiKeyRow);
                 _configApiKey = apiKeyRow.querySelector('input') as HTMLInputElement;
 
-                const modelRow = createField(t('ai.config.model'), 'text', cfg.model, (v) => {
-                    if (_ai?.kind === 'go') {
-                        _saveGoConfig({ model: v });
-                    } else {
-                        saveAiConfig({ model: v });
+                const modelRow = createField(
+                    t('ai.config.model'),
+                    'text',
+                    _localConfig.model,
+                    (v) => {
+                        _localConfig.model = v;
                     }
-                });
+                );
                 c.appendChild(modelRow);
                 _configModel = modelRow.querySelector('input') as HTMLInputElement;
 
@@ -851,7 +1034,8 @@ function buildConfigSchema(): MenuNode[] {
                 testBtn.addEventListener('click', () => void _testConnection(statusEl));
                 c.appendChild(testRow);
 
-                _updateCorsWarning();
+                _updateDocLink(_localConfig.provider);
+                _refreshConfigUI();
                 _updateControlsEnabled();
             },
         },

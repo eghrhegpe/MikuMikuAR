@@ -75,3 +75,25 @@ export interface AiService {
     /** 异步刷新能力探测（go 适配器需调用 Go binding 获取配置后更新缓存） */
     refreshCapabilities?(): Promise<void>;
 }
+
+/** 用户选择的服务商配置项 */
+export type AiConfigProvider = 'ollama' | 'deepseek' | 'openai' | 'openrouter' | 'custom';
+
+/** 错误分类，用于面板给出可操作建议 */
+export type AiErrorKind =
+    | 'missingEndpoint'
+    | 'missingKey'
+    | 'network'
+    | 'cors'
+    | 'unauthorized'
+    | 'notFound'
+    | 'rateLimit'
+    | 'server'
+    | 'unknown';
+
+/** 配置校验结果 */
+export interface AiValidationResult {
+    ok: boolean;
+    kind?: AiErrorKind;
+    message: string;
+}
