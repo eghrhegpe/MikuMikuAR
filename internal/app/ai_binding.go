@@ -16,7 +16,7 @@ type LLMConfig struct {
 	AIKey   string `json:"aiKey,omitempty"` // 仅写入时接收；读取时不返回给前端
 	// AIKeyConfigured 仅读取时返回：告知前端 key 是否已配置（不暴露 key 本身），
 	// 供 UI 回填时显示"已配置"占位，避免前端误判为未设置。
-	AIKeyConfigured bool `json:"aiKeyConfigured"`
+	AIKeyConfigured bool `json:"aiKeyConfigured,omitempty"`
 }
 
 func (a *App) getLLMConfig() LLMConfig {

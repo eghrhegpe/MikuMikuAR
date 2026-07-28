@@ -373,7 +373,7 @@ export interface LLMConfig {
      * AIKeyConfigured 仅读取时返回：告知前端 key 是否已配置（不暴露 key 本身），
      * 供 UI 回填时显示"已配置"占位，避免前端误判为未设置。
      */
-    "aiKeyConfigured": boolean;
+    "aiKeyConfigured"?: boolean;
 }
 
 export interface LLMConnectionResult {

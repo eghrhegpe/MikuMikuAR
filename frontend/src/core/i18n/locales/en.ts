@@ -1899,6 +1899,7 @@ export const en: Record<string, string> = {
     'ai.config.apiKey': 'API Key',
     'ai.config.model': 'Model',
     'ai.config.refreshModels': 'Discover Models',
+    'ai.config.keyConfigured': 'Configured (re-enter to update)',
     'ai.config.test': 'Test Connection',
     'ai.config.testing': 'Testing...',
     'ai.config.connected': '✓ Connected',
