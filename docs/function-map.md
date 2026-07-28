@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 103 | 698 |
-| 3D 场景 | 105 | 1060 |
+| 3D 场景 | 105 | 1059 |
 | 菜单 & UI | 67 | 308 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 18 | 131 |
@@ -1627,7 +1627,6 @@
 | `reattachPipeline()` | `scene/render/renderer` | Re-attach the rendering pipeline to the current active camera (call after camera switch). |
 | `rebuildOutlineState()` | `scene/render/renderer` | 当模型注册表更新时，重新应用边缘高亮状态。 |
 | `registerCelGroundCoupling()` | `scene/render/renderer` | — |
-| `setContactShadow()` | `scene/render/renderer` | 应用接触阴影后处理（由 env-bridge 转发 envState 变化调用）。 |
 | `setRenderState()` | `scene/render/renderer` | — |
 | `setSSRFromReflection()` | `scene/render/renderer` | 反射系统专用 SSR 控制接口（不触发 auto-save）。 |
 | `transitionRenderState()` | `scene/render/renderer` | 平滑过渡渲染状态到目标值，默认 2 秒。 |
@@ -2290,5 +2289,5 @@
 
 ---
 
-> 共 298 个文件，2244 个导出符号。
+> 共 298 个文件，2243 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。

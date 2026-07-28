@@ -201,13 +201,6 @@ export interface EnvState {
      */
     "groundReflectionBlur": number;
     "groundReflectionDistort": number;
-
-    /**
-     * ADR-114 Phase 3: 接触阴影
-     */
-    "groundContactShadowEnabled": boolean;
-    "groundContactShadowIntensity": number;
-    "groundContactShadowDistance": number;
     "groundLevel": number;
     "groundSize": number;
     "groundEdgeFade": number;
