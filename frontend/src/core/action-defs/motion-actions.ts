@@ -32,7 +32,7 @@ import { stackRegistry, getBrowseDir } from '../config';
 export function registerMotionActions(): void {
     registerAction({
         id: 'motion:lipsync:toggle',
-        label: '切换口型同步',
+        label: 'ai.actions.motion.lipsync.toggle',
         domain: 'motion',
         icon: 'lucide:languages',
         params: [],
@@ -44,7 +44,7 @@ export function registerMotionActions(): void {
 
     registerAction({
         id: 'motion:clear-all',
-        label: '清除全部动作',
+        label: 'ai.actions.motion.clearAll',
         domain: 'motion',
         icon: 'lucide:eraser',
         params: [],
@@ -68,7 +68,7 @@ export function registerMotionActions(): void {
 
     registerAction({
         id: 'motion:retarget:mixamo',
-        label: '导入 Mixamo 动画',
+        label: 'ai.actions.motion.retarget.mixamo',
         domain: 'motion',
         icon: 'lucide:upload',
         params: [],
@@ -80,7 +80,7 @@ export function registerMotionActions(): void {
 
     registerAction({
         id: 'motion:retarget:vrm',
-        label: '导入 VRM 动画',
+        label: 'ai.actions.motion.retarget.vrm',
         domain: 'motion',
         icon: 'lucide:upload',
         params: [],
@@ -92,7 +92,7 @@ export function registerMotionActions(): void {
 
     registerAction({
         id: 'motion:retarget:custom',
-        label: '导入自定义动画',
+        label: 'ai.actions.motion.retarget.custom',
         domain: 'motion',
         icon: 'lucide:upload',
         params: [],
@@ -104,7 +104,7 @@ export function registerMotionActions(): void {
 
     registerAction({
         id: 'motion:model:pause',
-        label: '暂停/继续播放',
+        label: 'ai.actions.motion.model.pause',
         domain: 'motion',
         icon: 'lucide:play',
         params: [{ name: 'modelId', type: 'entity' }],
@@ -116,7 +116,7 @@ export function registerMotionActions(): void {
 
     registerAction({
         id: 'motion:model:reset',
-        label: '重置动画',
+        label: 'ai.actions.motion.model.reset',
         domain: 'motion',
         icon: 'lucide:refresh-cw',
         params: [{ name: 'modelId', type: 'entity' }],
@@ -128,7 +128,7 @@ export function registerMotionActions(): void {
 
     registerAction({
         id: 'motion:model:pose',
-        label: '打开展示库',
+        label: 'ai.actions.motion.model.pose',
         domain: 'motion',
         icon: 'lucide:palette',
         params: [{ name: 'modelId', type: 'entity' }],
@@ -140,7 +140,7 @@ export function registerMotionActions(): void {
 
     registerAction({
         id: 'motion:model:loop',
-        label: '切换循环播放',
+        label: 'ai.actions.motion.model.loop',
         domain: 'motion',
         icon: 'lucide:repeat',
         params: [{ name: 'modelId', type: 'entity' }],
@@ -152,7 +152,7 @@ export function registerMotionActions(): void {
 
     registerAction({
         id: 'motion:procmotion:set-mode',
-        label: '设置程序化动作模式',
+        label: 'ai.actions.motion.procmotion.setMode',
         domain: 'motion',
         icon: 'lucide:bot',
         params: [
@@ -173,7 +173,7 @@ export function registerMotionActions(): void {
 
     registerAction({
         id: 'motion:load-camera-vmd',
-        label: '加载相机 VMD',
+        label: 'ai.actions.motion.loadCameraVmd',
         domain: 'motion',
         icon: 'lucide:video',
         params: [{ name: 'path', type: 'string' }],
@@ -185,7 +185,7 @@ export function registerMotionActions(): void {
 
     registerAction({
         id: 'motion:add-scene-vmd',
-        label: '添加场景 VMD',
+        label: 'ai.actions.motion.addSceneVmd',
         domain: 'motion',
         icon: 'lucide:film',
         params: [
@@ -211,7 +211,7 @@ export function registerMotionActions(): void {
 
     registerAction({
         id: 'motion:load-audio',
-        label: '加载音频',
+        label: 'ai.actions.motion.loadAudio',
         domain: 'motion',
         icon: 'lucide:music',
         params: [{ name: 'path', type: 'string' }],
@@ -224,7 +224,7 @@ export function registerMotionActions(): void {
 
     registerAction({
         id: 'motion:load-vpd',
-        label: '加载 VPD 姿势',
+        label: 'ai.actions.motion.loadVpd',
         domain: 'motion',
         icon: 'lucide:figma',
         params: [{ name: 'path', type: 'string' }],
@@ -238,7 +238,7 @@ export function registerMotionActions(): void {
 
     registerAction({
         id: 'motion:open-binding',
-        label: '打开动作绑定面板',
+        label: 'ai.actions.motion.openBinding',
         domain: 'motion',
         icon: 'lucide:link',
         params: [{ name: 'modelId', type: 'entity' }],

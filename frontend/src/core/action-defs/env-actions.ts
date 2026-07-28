@@ -4,7 +4,7 @@ import { setEnvState } from '../../scene/scene';
 export function registerEnvActions(): void {
     registerAction({
         id: 'env:bind-particle-texture',
-        label: '绑定粒子纹理',
+        label: 'ai.actions.env.bindParticleTexture',
         domain: 'env',
         params: [{ name: 'filePath', type: 'string' }],
         destructive: false,
@@ -14,7 +14,7 @@ export function registerEnvActions(): void {
     });
     registerAction({
         id: 'env:bind-sky-texture',
-        label: '绑定天空纹理',
+        label: 'ai.actions.env.bindSkyTexture',
         domain: 'env',
         params: [{ name: 'filePath', type: 'string' }],
         destructive: false,
@@ -24,7 +24,7 @@ export function registerEnvActions(): void {
     });
     registerAction({
         id: 'env:bind-stars-texture',
-        label: '绑定星空纹理',
+        label: 'ai.actions.env.bindStarsTexture',
         domain: 'env',
         params: [{ name: 'filePath', type: 'string' }],
         destructive: false,

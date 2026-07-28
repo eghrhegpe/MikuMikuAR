@@ -9,6 +9,11 @@
  * - Kinematic 刚体（骨骼跟随）不受力，Bullet 自动忽略
  * - 刚体索引经 @/core/mmd-adapter 的 getRigidBodyBundleMap 走公开 API
  *   `rigidBodyBundleReferenceCountMap`（ADR-192 Phase 2 已内化），无私有字段依赖
+ *
+ * ⚠️ 作用范围（ADR-200）：本模块**只作用于 JS 侧手动加入的自建刚体**（虚拟裙骨
+ *   ADR-084 / 地面碰撞），**不作用于角色原生头发/裙子刚体**——后者由 buildPhysics
+ *   在 WASM C++ 侧独立构建，不进 rigidBodyBundleReferenceCountMap，JS 无施力句柄。
+ *   若想让原生头发受风，须走虚拟裙骨路径，而非调大 WIND_FORCE_SCALE（对空 map 无意义）。
  */
 
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';

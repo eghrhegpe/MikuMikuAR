@@ -9,7 +9,7 @@ import { setLang, type LangCode } from '../i18n/locale';
 export function registerSettingsActions(): void {
     registerAction({
         id: 'settings:set:clearextractcache',
-        label: '清理解压缓存',
+        label: 'ai.actions.settings.clearExtractCache',
         domain: 'settings',
         params: [],
         destructive: true,
@@ -22,7 +22,7 @@ export function registerSettingsActions(): void {
 
     registerAction({
         id: 'settings:set:clearthumbnail',
-        label: '清理缩略图缓存',
+        label: 'ai.actions.settings.clearThumbnail',
         domain: 'settings',
         params: [],
         destructive: true,
@@ -37,7 +37,7 @@ export function registerSettingsActions(): void {
 
     registerAction({
         id: 'settings:set:clearallcache',
-        label: '清理全部缓存',
+        label: 'ai.actions.settings.clearAllCache',
         domain: 'settings',
         params: [],
         destructive: true,
@@ -52,7 +52,7 @@ export function registerSettingsActions(): void {
 
     registerAction({
         id: 'settings:set:resourceroot',
-        label: '选择资源根目录',
+        label: 'ai.actions.settings.resourceRoot',
         domain: 'settings',
         params: [],
         destructive: false,
@@ -63,7 +63,7 @@ export function registerSettingsActions(): void {
 
     registerAction({
         id: 'settings:set:path:pmx',
-        label: '选择 PMX 覆盖路径',
+        label: 'ai.actions.settings.path.pmx',
         domain: 'settings',
         params: [],
         destructive: false,
@@ -74,7 +74,7 @@ export function registerSettingsActions(): void {
 
     registerAction({
         id: 'settings:set:path:vmd',
-        label: '选择 VMD 覆盖路径',
+        label: 'ai.actions.settings.path.vmd',
         domain: 'settings',
         params: [],
         destructive: false,
@@ -85,7 +85,7 @@ export function registerSettingsActions(): void {
 
     registerAction({
         id: 'settings:set:path:audio',
-        label: '选择音频覆盖路径',
+        label: 'ai.actions.settings.path.audio',
         domain: 'settings',
         params: [],
         destructive: false,
@@ -96,7 +96,7 @@ export function registerSettingsActions(): void {
 
     registerAction({
         id: 'settings:set:path:prop',
-        label: '选择道具覆盖路径',
+        label: 'ai.actions.settings.path.prop',
         domain: 'settings',
         params: [],
         destructive: false,
@@ -107,7 +107,7 @@ export function registerSettingsActions(): void {
 
     registerAction({
         id: 'settings:set:path:stage',
-        label: '选择舞台覆盖路径',
+        label: 'ai.actions.settings.path.stage',
         domain: 'settings',
         params: [],
         destructive: false,
@@ -118,7 +118,7 @@ export function registerSettingsActions(): void {
 
     registerAction({
         id: 'settings:set:path:environment',
-        label: '选择环境覆盖路径',
+        label: 'ai.actions.settings.path.environment',
         domain: 'settings',
         params: [],
         destructive: false,
@@ -129,7 +129,7 @@ export function registerSettingsActions(): void {
 
     registerAction({
         id: 'settings:set:path:md_dress',
-        label: '选择 MD 服装覆盖路径',
+        label: 'ai.actions.settings.path.mdDress',
         domain: 'settings',
         params: [],
         destructive: false,
@@ -140,7 +140,7 @@ export function registerSettingsActions(): void {
 
     registerAction({
         id: 'settings:set:path:setting',
-        label: '选择设置覆盖路径',
+        label: 'ai.actions.settings.path.setting',
         domain: 'settings',
         params: [],
         destructive: false,
@@ -151,7 +151,7 @@ export function registerSettingsActions(): void {
 
     registerAction({
         id: 'settings:set-lang',
-        label: '切换语言',
+        label: 'ai.actions.settings.setLang',
         domain: 'settings',
         params: [{ name: 'code', type: 'enum', enum: ['en', 'zh-CN', 'zh-TW', 'ja', 'ko'] }],
         destructive: false,

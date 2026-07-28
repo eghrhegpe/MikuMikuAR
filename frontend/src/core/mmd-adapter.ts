@@ -46,6 +46,12 @@ export function getPhysicsImpl(runtime: IMmdRuntime): MmdWasmPhysicsRuntimeImpl 
  * wind-physics 直接调用其公开 `count` / `applyCentralForce`。
  *
  * 该属性是上游公开契约（mmdWasmPhysicsRuntimeImpl.d.ts:233），babylon-mmd 升级时稳定。
+ *
+ * ⚠️ 语义澄清（ADR-200）：此 map **只含 JS 侧经 `addRigidBodyBundle` 手动加入的刚体**
+ * （虚拟裙骨 ADR-084 / 地面碰撞 ground-collision.ts）。模型自带的 PMX 刚体走
+ * `MmdWasmModel._physicsModel.buildPhysics(...)` 独立构建，绕过本 map，恒不在此。
+ * 故 wind-physics 遍历此 map 施力对**角色原生头发/裙子无效**——那些刚体在 WASM C++ 侧，
+ * JS 无公开句柄。切勿假设本 map 含模型刚体（ADR-192 条目 3 内化时的隐含误解）。
  */
 export function getRigidBodyBundleMap(impl: MmdWasmPhysicsRuntimeImpl): Iterable<RigidBodyBundle> {
     return impl.rigidBodyBundleReferenceCountMap.keys();
