@@ -1921,6 +1921,8 @@ export const ko: Record<string, string> = {
     'ai.config.corsWarning':
         '⚠ 원격 엔드포인트에 CORS 제한이 있을 수 있습니다. 로컬 Ollama는 OLLAMA_ORIGINS=*를 설정하고 다시 시작하세요.',
     'ai.chat.clear': '지우기',
+    'ai.chat.clearConfirm': '채팅 기록을 지우시겠습니까?',
     'ai.errors.resolveFailed': 'AI 서비스 초기화에 실패했습니다. 자세한 내용은 콘솔을 확인하세요.',
     'ai.config.notResolved': 'AI 서비스가 아직 준비되지 않았습니다. 잠시 기다려주세요...',
+    'ai.status.initializing': 'AI 백엔드에 연결 중...',
 };

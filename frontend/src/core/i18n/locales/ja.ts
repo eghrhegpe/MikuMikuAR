@@ -1926,7 +1926,9 @@ export const ja: Record<string, string> = {
     'ai.config.corsWarning':
         '⚠ リモートエンドポイントにCORS制限がある可能性があります。ローカルOllamaは OLLAMA_ORIGINS=* を設定して再起動してください。',
     'ai.chat.clear': 'クリア',
+    'ai.chat.clearConfirm': 'チャット履歴をクリアしますか？',
     'ai.errors.resolveFailed':
         'AI サービスの初期化に失敗しました。詳細はコンソールを確認してください。',
     'ai.config.notResolved': 'AI サービスが準備できていません。お待ちください...',
+    'ai.status.initializing': 'AI バックエンドに接続中...',
 };
