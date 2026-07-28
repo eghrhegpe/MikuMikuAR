@@ -1,0 +1,13 @@
+name = "mikumikuar-ai-relay"
+main = "src/worker.js"
+compatibility_date = "2024-11-01"
+
+# 默认转发目标（前端未带 X-Target-Url 头时使用）。
+# 前端也可通过 X-Target-Url 头动态指定，仅限 worker.js 中 TARGET_ALLOWLIST 白名单内的域名。
+[vars]
+DEFAULT_TARGET = "https://token.sensenova.cn/v1/chat/completions"
+
+# 允许的前端来源，逗号分隔。上线后建议收紧为你的站点，杜绝被当作开放代理。
+# 缺省 '*' 仅建议开发期使用。
+# 例：ALLOWED_ORIGINS = "https://eghrhegpe.github.io"
+ALLOWED_ORIGINS = "https://eghrhegpe.github.io"
