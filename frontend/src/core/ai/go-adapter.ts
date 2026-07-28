@@ -25,7 +25,7 @@ class GoAiAdapter implements AiService {
         }
         return {
             available: false,
-            provider: 'go-bridge',
+            adapter: 'go-bridge',
             streaming: true,
             models: [],
             apiKeyConfigured: false,
@@ -59,7 +59,7 @@ class GoAiAdapter implements AiService {
                 }
                 this._capCache = {
                     available,
-                    provider: 'go-bridge',
+                    adapter: 'go-bridge',
                     streaming: true,
                     models: cfg.model ? [cfg.model] : [],
                     apiKeyConfigured: false,
@@ -69,7 +69,7 @@ class GoAiAdapter implements AiService {
             } catch {
                 this._capCache = {
                     available: false,
-                    provider: 'go-bridge',
+                    adapter: 'go-bridge',
                     streaming: true,
                     models: [],
                     apiKeyConfigured: false,

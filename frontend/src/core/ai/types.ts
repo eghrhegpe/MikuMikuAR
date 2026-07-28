@@ -4,7 +4,7 @@
 /** AI 后端能力描述 */
 export interface AiCapabilities {
     available: boolean;
-    provider: 'ollama' | 'openai-compat' | 'go-bridge' | 'none';
+    adapter: 'ollama' | 'openai-compat' | 'go-bridge' | 'none';
     streaming: boolean;
     models: string[];
     /** 是否已配置 API key（浏览器端 IndexedDB 配置非空即 true；go 侧由 Go 持有恒 false 前端不可见） */
