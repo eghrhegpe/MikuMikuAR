@@ -553,6 +553,7 @@ function _refreshModeUI(btns: HTMLButtonElement[]): void {
         btn.setAttribute('aria-selected', String(active));
         btn.tabIndex = active ? 0 : -1;
     });
+    _updateSpeakToggle(); // [doc:adr-156] 台词模式切换时同步朗读开关显隐
     if (_pendingContainer) {
         _pendingContainer.style.display = _mode === 'control' ? '' : 'none';
         if (_mode === 'control') {
@@ -1237,6 +1238,17 @@ async function _clearChat(): Promise<void> {
     _messages.length = 0;
     _addAssistantMessage(t('ai.welcome'));
     _renderChat();
+}
+
+// [doc:adr-156/199] 更新朗读开关的文案/状态/显隐（仅 dialogue 模式可见）。
+function _updateSpeakToggle(): void {
+    if (!_speakToggleBtn) {
+        return;
+    }
+    _speakToggleBtn.style.display = _mode === 'dialogue' ? '' : 'none';
+    _speakToggleBtn.textContent = _speakEnabled ? t('ai.dialogue.speakOn') : t('ai.dialogue.speakOff');
+    _speakToggleBtn.setAttribute('aria-checked', String(_speakEnabled));
+    _speakToggleBtn.setAttribute('aria-label', t('ai.dialogue.speakToggle'));
 }
 
 function _updateSendButton(): void {

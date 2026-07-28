@@ -1917,6 +1917,9 @@ export const ja: Record<string, string> = {
     'ai.dialogue.emotion.angry': '怒り',
     'ai.dialogue.emotion.surprised': '驚き',
     'ai.dialogue.emotion.shy': '照れ',
+    'ai.dialogue.speakOn': '🔊 読み上げ ON',
+    'ai.dialogue.speakOff': '🔇 読み上げ OFF',
+    'ai.dialogue.speakToggle': 'セリフ読み上げを切替',
     'ai.system.control':
         'あなたは MikuMikuAR シーン制御アシスタントです。以下のツールを使用して、ユーザーの要求に応じてシーンを変更してください。',
     'ai.system.controlFormat':

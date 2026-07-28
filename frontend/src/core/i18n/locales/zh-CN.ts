@@ -1907,6 +1907,9 @@ export const zhCN: Record<string, string> = {
     'ai.dialogue.emotion.angry': '生气',
     'ai.dialogue.emotion.surprised': '惊讶',
     'ai.dialogue.emotion.shy': '害羞',
+    'ai.dialogue.speakOn': '🔊 朗读开',
+    'ai.dialogue.speakOff': '🔇 朗读关',
+    'ai.dialogue.speakToggle': '切换台词朗读',
     'ai.system.control': '你是 MikuMikuAR 场景控制助手。使用以下工具根据用户要求修改场景。',
     'ai.system.controlFormat':
         '请用 JSON 格式回复：{"action": "工具名", "params": {"参数名": "值"}}。只使用上方列表中的工具。如果用户要求不支持的操作，请说明你能做什么。',
