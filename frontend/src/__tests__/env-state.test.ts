@@ -16,6 +16,7 @@ const defaultEnv: EnvState = {
     starsEnabled: false,
     starsTexture: '',
     groundVisible: true,
+    groundPreset: 'custom',
     groundType: 'flat',
     groundStyle: 'solid',
     groundOverlay: 'none',

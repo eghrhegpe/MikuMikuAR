@@ -1442,4 +1442,22 @@ describe('ADR-173: setEnvState middleware', () => {
         // post-facade 已触发灯光预设
         expect(mockApplyLightingPresetFromEnv).toHaveBeenCalledWith('studio');
     });
+
+    it('pre-facade: 手动改 ground 字段 → groundPreset 重置为 custom', () => {
+        mockConfigEnvState.groundPreset = 'stoneTile';
+        setEnvState({ groundColor: [0.1, 0.1, 0.1] });
+        expect(mockConfigEnvState.groundPreset).toBe('custom');
+    });
+
+    it('pre-facade: 点击预设（带 groundPreset）不被误清为 custom', () => {
+        mockConfigEnvState.groundPreset = 'custom';
+        setEnvState({ groundColor: [0.2, 0.2, 0.22], groundPreset: 'cleanGray' });
+        expect(mockConfigEnvState.groundPreset).toBe('cleanGray');
+    });
+
+    it('pre-facade: 仅改非 ground 字段时不动 groundPreset', () => {
+        mockConfigEnvState.groundPreset = 'grass';
+        setEnvState({ sunAngle: 30 });
+        expect(mockConfigEnvState.groundPreset).toBe('grass');
+    });
 });

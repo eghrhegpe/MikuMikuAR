@@ -266,6 +266,25 @@ registerEnvStateMiddleware({
     },
 });
 
+// 用户手动微调任一 ground 字段（且本次未显式指定 groundPreset）→ 脱离预设，重置为 'custom'。
+// 预设点击会同时带 groundPreset，故不会被误清；无关字段的 set 也不触发（仅检测 ground* 字段）。
+registerEnvStateMiddleware({
+    name: 'resetGroundPresetOnManualEdit',
+    phase: 'pre-facade',
+    fn: (envState, migrated) => {
+        if (migrated.groundPreset !== undefined) {
+            return;
+        }
+        const touchedGround = Object.keys(migrated).some(
+            (k) => k.startsWith('ground') && k !== 'groundVisible'
+        );
+        if (touchedGround && envState.groundPreset !== 'custom') {
+            envState.groundPreset = 'custom';
+            migrated.groundPreset = 'custom';
+        }
+    },
+});
+
 // ADR-130 Phase 2.3: 注册 setEnvState 到 performance 桥接模块
 registerSetEnvState(setEnvState);
 

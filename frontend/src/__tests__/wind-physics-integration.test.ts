@@ -13,7 +13,14 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { createMinimalPhysicsImpl } from './helpers/minimal-physics-impl';
+import {
+    createMinimalPhysicsImpl,
+    buildRigidBodyInfo as _buildRigidBodyInfo,
+    buildBundleInfoList as _buildBundleInfoList,
+    readLinearVelocity as _readLinearVelocity,
+    readBundleLinearVelocity as _readBundleLinearVelocity,
+    PHYSICS_INFO_SIZE,
+} from './helpers/minimal-physics-impl';
 import type { MinimalPhysicsImpl } from './helpers/minimal-physics-impl';
 import type * as sprWasm from 'babylon-mmd/esm/Runtime/Optimized/wasm/spr';
 
@@ -28,127 +35,15 @@ beforeAll(() => {
     memory = phys.memory;
 });
 
-// ======== 辅助函数（复用 physics-contract 的刚体构造模式） ========
-
-const INFO_SIZE = 144;
-
-const OFF = {
-    Shape: 0,
-    InitialTransform: 16,
-    DataMask: 80,
-    MotionType: 82,
-    Mass: 84,
-    LocalInertia: 88,
-    LinearDamping: 100,
-    AngularDamping: 104,
-    Friction: 108,
-    Restitution: 112,
-    LinearSleepingThreshold: 116,
-    AngularSleepingThreshold: 120,
-    CollisionGroup: 124,
-    CollisionMask: 126,
-    AdditionalDamping: 128,
-    NoContactResponse: 129,
-    DisableDeactivation: 130,
-} as const;
-
-function buildRigidBodyInfo(
-    shapePtr: number,
-    overrides?: { mass?: number; disableDeactivation?: boolean; motionType?: number },
-): number {
-    const infoPtr = api.allocateBuffer(INFO_SIZE);
-    const buf = new DataView(memory.buffer, infoPtr, INFO_SIZE);
-
-    buf.setUint32(OFF.Shape, shapePtr, true);
-
-    const tf = new Float32Array(memory.buffer, infoPtr + OFF.InitialTransform, 16);
-    tf[0] = 1; tf[1] = 0; tf[2] = 0; tf[3] = 0;
-    tf[4] = 0; tf[5] = 1; tf[6] = 0; tf[7] = 0;
-    tf[8] = 0; tf[9] = 0; tf[10] = 1; tf[11] = 0;
-    tf[12] = 0; tf[13] = 0; tf[14] = 0; tf[15] = 1;
-
-    buf.setUint16(OFF.DataMask, 0, true);
-    buf.setUint8(OFF.MotionType, overrides?.motionType ?? 0);
-    buf.setFloat32(OFF.Mass, overrides?.mass ?? 1.0, true);
-    buf.setFloat32(OFF.LinearDamping, 0.0, true);
-    buf.setFloat32(OFF.AngularDamping, 0.0, true);
-    buf.setFloat32(OFF.Friction, 0.5, true);
-    buf.setFloat32(OFF.Restitution, 0.0, true);
-    buf.setFloat32(OFF.LinearSleepingThreshold, 0.0, true);
-    buf.setFloat32(OFF.AngularSleepingThreshold, 1.0, true);
-    buf.setUint16(OFF.CollisionGroup, 1, true);
-    buf.setUint16(OFF.CollisionMask, 0xFFFF, true);
-    buf.setUint8(OFF.AdditionalDamping, 0);
-    buf.setUint8(OFF.NoContactResponse, 0);
-    buf.setUint8(OFF.DisableDeactivation, overrides?.disableDeactivation ? 1 : 0);
-
-    return infoPtr;
-}
-
-function buildBundleInfoList(
-    shapePtr: number,
-    count: number,
-    masses?: number[],
-): number {
-    const totalSize = INFO_SIZE * count;
-    const listPtr = api.allocateBuffer(totalSize);
-
-    for (let i = 0; i < count; i++) {
-        const offset = i * INFO_SIZE;
-        const buf = new DataView(memory.buffer, listPtr + offset, INFO_SIZE);
-
-        buf.setUint32(OFF.Shape, shapePtr, true);
-
-        const tf = new Float32Array(memory.buffer, listPtr + offset + OFF.InitialTransform, 16);
-        tf[0] = 1; tf[1] = 0; tf[2] = 0; tf[3] = 0;
-        tf[4] = 0; tf[5] = 1; tf[6] = 0; tf[7] = 0;
-        tf[8] = 0; tf[9] = 0; tf[10] = 1; tf[11] = 0;
-        tf[12] = 0; tf[13] = 0; tf[14] = 0; tf[15] = 1;
-
-        buf.setUint16(OFF.DataMask, 0, true);
-        buf.setUint8(OFF.MotionType, 0);
-        const mass = masses?.[i] ?? 1.0;
-        buf.setFloat32(OFF.Mass, mass, true);
-        buf.setFloat32(OFF.LinearDamping, 0.0, true);
-        buf.setFloat32(OFF.AngularDamping, 0.0, true);
-        buf.setFloat32(OFF.Friction, 0.5, true);
-        buf.setFloat32(OFF.Restitution, 0.0, true);
-        buf.setFloat32(OFF.LinearSleepingThreshold, 0.0, true);
-        buf.setFloat32(OFF.AngularSleepingThreshold, 1.0, true);
-        buf.setUint16(OFF.CollisionGroup, 1, true);
-        buf.setUint16(OFF.CollisionMask, 0xFFFF, true);
-        buf.setUint8(OFF.AdditionalDamping, 0);
-        buf.setUint8(OFF.NoContactResponse, 0);
-        buf.setUint8(OFF.DisableDeactivation, 1);
-    }
-
-    return listPtr;
-}
-
-function readBundleLinearVelocity(
-    bundlePtr: number,
-    index: number,
-): [number, number, number] {
-    const outPtr = api.allocateBuffer(12);
-    try {
-        api.rigidBodyBundleGetLinearVelocity(bundlePtr, index, outPtr);
-        const view = new Float32Array(memory.buffer, outPtr, 3);
-        return [view[0], view[1], view[2]];
-    } finally {
-        api.deallocateBuffer(outPtr, 12);
-    }
-}
-
-function readLinearVelocity(bodyPtr: number): [number, number, number] {
-    const outPtr = api.allocateBuffer(12);
-    try {
-        api.rigidBodyGetLinearVelocity(bodyPtr, outPtr);
-        const view = new Float32Array(memory.buffer, outPtr, 3);
-        return [view[0], view[1], view[2]];
-    } finally {
-        api.deallocateBuffer(outPtr, 12);
-    }
-}
+// ======== 本地薄包装（保持调用代码不变，实现体共享） ========
+const INFO_SIZE = PHYSICS_INFO_SIZE;
+const buildRigidBodyInfo = (shapePtr: number, overrides?: Parameters<typeof _buildRigidBodyInfo>[2]) =>
+    _buildRigidBodyInfo(phys, shapePtr, overrides);
+const buildBundleInfoList = (shapePtr: number, count: number, masses?: number[]) =>
+    _buildBundleInfoList(phys, shapePtr, count, masses);
+const readBundleLinearVelocity = (bundlePtr: number, index: number) =>
+    _readBundleLinearVelocity(phys, bundlePtr, index);
+const readLinearVelocity = (bodyPtr: number) => _readLinearVelocity(phys, bodyPtr);
 
 // ======== 风力常量（对齐 wind-physics.ts） ========
 const WIND_FORCE_SCALE = 1.0;

@@ -39,6 +39,7 @@ function buildDefaultEnvState(): EnvState {
         envIntensity: s.envIntensity.default,
         envBrightness: s.envBrightness.default,
         groundVisible: s.groundVisible.default,
+        groundPreset: s.groundPreset.default,
         groundType: s.groundType.default,
         groundStyle: s.groundStyle.default,
         groundOverlay: s.groundOverlay.default,
