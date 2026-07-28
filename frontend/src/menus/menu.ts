@@ -139,33 +139,35 @@ export class SlideMenu {
             if (this.transitioning) {
                 return;
             }
-            // [a11y] 当焦点在原生交互元素或滑块等控件上时，键盘事件由元素自身处理，
-            // 菜单不应劫持
-            if (
+            const _inSlider =
                 e.target instanceof HTMLElement &&
-                e.target.closest(
-                    'button, input, textarea, select, [contenteditable], ' +
-                    '.cs-slider, .color-slider, .cs-bar, .cs-row, .cs-top'
-                )
-            ) {
-                return;
-            }
+                !!e.target.closest('.cs-slider, .color-slider, .cs-bar, .cs-row, .cs-top');
+            const _inTablist =
+                e.target instanceof HTMLElement && !!e.target.closest('[role="tablist"]');
+            const _onNative =
+                e.target instanceof HTMLElement &&
+                !!e.target.closest('button, input, textarea, select, [contenteditable]');
+
             switch (e.key) {
                 case 'ArrowDown':
+                    if (_inSlider || _inTablist) return;
                     e.preventDefault();
                     this.focusNext();
                     break;
                 case 'ArrowUp':
+                    if (_inSlider || _inTablist) return;
                     e.preventDefault();
                     this.focusPrev();
                     break;
                 case 'ArrowRight':
                 case 'Enter':
                 case ' ':
+                    if (_onNative || _inTablist || _inSlider) return;
                     e.preventDefault();
                     this.activateFocused();
                     break;
                 case 'ArrowLeft':
+                    if (_onNative || _inTablist || _inSlider) return;
                     e.preventDefault();
                     this.pop();
                     break;
@@ -663,8 +665,12 @@ export class SlideMenu {
         if (this.focusIndex < 0 || this.focusIndex >= items.length) {
             return;
         }
-        items[this.focusIndex].classList.add('slide-focused');
-        items[this.focusIndex].scrollIntoView({ block: 'nearest' });
+        const el = items[this.focusIndex];
+        el.classList.add('slide-focused');
+        el.scrollIntoView({ block: 'nearest' });
+        if (document.activeElement !== el) {
+            el.focus({ preventScroll: true });
+        }
     }
 
     private setupFocus(): void {
@@ -673,8 +679,9 @@ export class SlideMenu {
         if (this.panelItems.length > 0) {
             this.focusIndex = 0;
             this.applyFocus();
+        } else {
+            this.container.focus({ preventScroll: true });
         }
-        this.container.focus({ preventScroll: true });
     }
 
     private focusPrev(): void {
