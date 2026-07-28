@@ -658,6 +658,28 @@ describe('ADR-177 Phase 2 A4 p2-5：虚拟目录 + 伴生文件加载', () => {
             expect(result?.file_path).toBe(`web://model/${ns}`);
             expect(_idbStore.get(`dir:${ns}:tex/face.png`)).toEqual(tex);
         });
+
+        it('[fflate-migration] UTF-8 中文文件名的 ZIP 能正确解压（gpf bit 11 设置 → UTF-8 键）', async () => {
+            // 验证 parseZipCentralDir 的 fflateKey 对齐 fflate unzipSync 的键生成逻辑。
+            // fflate zipSync 构造的 ZIP 默认设置 gpf bit 11（UTF-8），unzipSync 用 UTF-8 解码键。
+            // 旧代码始终用 Latin-1 解码 rawName 作为键 → 对 UTF-8 多字节字符匹配失败。
+            // 修复后 fflateKey 检查 bit 11，选择 UTF-8 解码，与 unzipSync 一致。
+            const pmx = new Uint8Array([1, 2, 3]);
+            const tex = new Uint8Array([4, 5]);
+            const zipBytes = zipSync({
+                '美希.pmx': pmx,
+                'tex/face.png': tex,
+            });
+            _idbStore.set('file:CnPack', zipBytes);
+
+            const result = await browserAdapter.ExtractZip('CnPack.zip', '');
+            // bit 11 设置 → parseZipCentralDir 用 UTF-8 解码 → 正确文件名「美希」
+            const ns = encodeURIComponent('CnPack/美希');
+            expect(result?.file_path).toBe(`web://model/${ns}`);
+            // fflateKey = UTF-8 解码 → 与 unzipSync 键匹配 → 数据取回成功
+            expect(_idbStore.get(`dir:${ns}:tex/face.png`)).toEqual(tex);
+            expect(_idbStore.get(`file:${ns}`)).toEqual(pmx);
+        });
     });
 });
 

@@ -144,17 +144,24 @@ function bestDecodeZipName(bytes: Uint8Array): string {
 //
 // 从 ZIP 原始字节中解析中央目录，提取文件名（原始字节经 bestDecodeZipName 解码）、
 // 未压缩大小、目录标记等元数据。不解压任何条目数据，用于扫描阶段快速获取文件列表。
+// fflateKey 模拟 fflate unzipSync 的键生成逻辑（bit 11 → UTF-8 / Latin-1），用于
+// 从 unzipSync 结果中按键取回数据。
 interface ZipEntryInfo {
     name: string; // 经 bestDecodeZipName 解码的文件名
-    rawName: Uint8Array; // 原始文件名字节（用于 garbled→correct 映射）
+    rawName: Uint8Array; // 原始文件名字节
+    fflateKey: string; // 模拟 fflate unzipSync 的键（UTF-8 或 Latin-1，取决于 gpf bit 11）
     uncompressedSize: number;
     isDir: boolean;
 }
+// TextDecoder 单例（避免循环内反复创建）
+const _latin1Decoder = new TextDecoder('iso-8859-1');
+const _utf8Decoder = new TextDecoder('utf-8', { fatal: false });
 function parseZipCentralDir(raw: Uint8Array): ZipEntryInfo[] {
+    if (raw.length < 22) return []; // 最小 ZIP（空 EOCD）也需要 22 字节
     // EOCD 签名 0x06054b50，从文件末尾向前搜索（ZIP 注释长度不定）
     let eocdPos = -1;
     const limit = Math.min(raw.length, 65557); // 最大 EOCD 搜索范围 64KB + 固定头
-    for (let i = raw.length - 22; i >= raw.length - limit; i--) {
+    for (let i = raw.length - 22; i >= raw.length - limit && i >= 0; i--) {
         if (raw[i] === 0x50 && raw[i + 1] === 0x4b && raw[i + 2] === 0x05 && raw[i + 3] === 0x06) {
             eocdPos = i;
             break;
@@ -169,26 +176,32 @@ function parseZipCentralDir(raw: Uint8Array): ZipEntryInfo[] {
 
     const entries: ZipEntryInfo[] = [];
     let pos = cdOffset;
-    const sigView = new Uint8Array(4);
     for (let i = 0; i < cdEntries; i++) {
+        // 边界守护：中央目录条目固定头 46 字节 + 文件名必须不越界
+        if (pos + 46 > raw.length) break;
         // 中央目录条目签名 0x02014b50
-        sigView[0] = raw[pos];
-        sigView[1] = raw[pos + 1];
-        sigView[2] = raw[pos + 2];
-        sigView[3] = raw[pos + 3];
-        if (sigView[0] !== 0x50 || sigView[1] !== 0x4b || sigView[2] !== 0x01 || sigView[3] !== 0x02) break;
+        if (raw[pos] !== 0x50 || raw[pos + 1] !== 0x4b || raw[pos + 2] !== 0x01 || raw[pos + 3] !== 0x02) break;
 
         const entry = new DataView(raw.buffer, raw.byteOffset + pos, 46);
+        const gpf = entry.getUint16(8, true); // general purpose bit flag
         const filenameLength = entry.getUint16(28, true);
         const extraLength = entry.getUint16(30, true);
         const commentLength = entry.getUint16(32, true);
         const uncompressedSize = entry.getUint32(24, true);
 
-        const rawName = raw.slice(pos + 46, pos + 46 + filenameLength);
-        const name = bestDecodeZipName(rawName);
-        const isDir = filenameLength > 0 && rawName[filenameLength - 1] === 0x2f; // 以 '/' 结尾
+        // 文件名越界守护
+        if (pos + 46 + filenameLength > raw.length) break;
 
-        entries.push({ name, rawName, uncompressedSize, isDir });
+        const rawName = raw.slice(pos + 46, pos + 46 + filenameLength);
+        // [doc:adr-006] 对齐 JSZip 行为：gpf bit 11 设置时文件名为 UTF-8，直接解码；
+        // 未设置时为 SJIS/GBK/Big5，走 bestDecodeZipName 评分检测。
+        // fflateKey 必须与 fflate unzipSync 的键生成逻辑一致（同上 bit 11 判断）。
+        const isUtf8 = (gpf & 0x800) !== 0;
+        const name = isUtf8 ? _utf8Decoder.decode(rawName) : bestDecodeZipName(rawName);
+        const isDir = filenameLength > 0 && rawName[filenameLength - 1] === 0x2f; // 以 '/' 结尾
+        const fflateKey = isUtf8 ? _utf8Decoder.decode(rawName) : _latin1Decoder.decode(rawName);
+
+        entries.push({ name, rawName, fflateKey, uncompressedSize, isDir });
         pos += 46 + filenameLength + extraLength + commentLength;
     }
     return entries;
@@ -1471,17 +1484,11 @@ export const browserAdapter: BackendService = {
             return null;
         }
         // [doc:adr-006] 用 fflate 替代 JSZip：先解析中央目录得正确文件名（经 bestDecodeZipName），
-        // 再用 unzipSync 解压全部条目。因 unzipSync 对非 UTF-8 ZIP 返回 Latin-1 乱码键，
-        // 需建立 Latin-1 乱码→正确文件名映射。
+        // 再用 unzipSync 解压全部条目。unzipSync 返回的键由 gpf bit 11 决定编码（UTF-8 或 Latin-1），
+        // parseZipCentralDir 已预计算 fflateKey 与此对齐，直接按键取回数据。
         const entries = parseZipCentralDir(buf);
         const fileEntries = entries.filter((e) => !e.isDir);
         const ASSET_RE = /\.(pmx|vmd|vpd|png|jpg|jpeg|bmp|tga|dds|tif|tiff|wav|mp3|ogg|flac|glb)$/i;
-        // 建立 Latin-1 乱码名 → 正确文件名映射（用于 unzipSync 结果键查找）
-        const latin1 = new TextDecoder('iso-8859-1');
-        const nameMap = new Map<string, string>();
-        for (const e of entries) {
-            nameMap.set(latin1.decode(e.rawName), e.name);
-        }
         // 第一遍：确定目标文件（优先使用 innerPath，兜底找第一个 PMX）
         let mainPmxName = '';
         let mainPmxStem = '';
@@ -1527,9 +1534,8 @@ export const browserAdapter: BackendService = {
         await Promise.all(
             fileEntries.map(async (entry) => {
                 const name = entry.name;
-                // 通过 Latin-1 乱码键从 unzipSync 结果中取数据
-                const garbledKey = latin1.decode(entry.rawName);
-                const raw = unzipped[garbledKey];
+                // 用 parseZipCentralDir 预计算的 fflateKey 从 unzipSync 结果中取数据
+                const raw = unzipped[entry.fflateKey];
                 if (!raw) return; // 极罕见：unzipSync 未解出该条目，跳过
                 const bytes = new Uint8Array(raw);
                 const baseName = _baseName(name);
