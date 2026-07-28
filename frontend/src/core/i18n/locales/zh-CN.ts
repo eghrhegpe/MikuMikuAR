@@ -1878,6 +1878,7 @@ export const zhCN: Record<string, string> = {
     'ai.config.endpoint': 'API 端点',
     'ai.config.apiKey': 'API 密钥',
     'ai.config.model': '模型',
+    'ai.config.refreshModels': '发现模型',
     'ai.config.test': '测试连接',
     'ai.config.testing': '测试中...',
     'ai.config.connected': '✓ 已连接',
@@ -1909,7 +1910,8 @@ export const zhCN: Record<string, string> = {
     'ai.control.executing': '执行中...',
     'ai.control.cancelled': '操作已取消。',
     'ai.control.confirmDestructive': '此操作会更改当前场景状态（{action}），是否继续？',
-    'ai.control.emptyHint': '在下方输入框用自然语言告诉我你想调整什么，例如“把灯光调暗一点”或“切换到夜晚环境”。',
+    'ai.control.emptyHint':
+        '在下方输入框用自然语言告诉我你想调整什么，例如“把灯光调暗一点”或“切换到夜晚环境”。',
     'ai.control.availableTools': '当前可控制：',
     'ai.control.resultSuccess': '✅ 已执行：{message}',
     'ai.control.resultFailed': '❌ 执行失败：{message}',

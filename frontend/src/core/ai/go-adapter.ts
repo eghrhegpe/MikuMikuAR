@@ -25,7 +25,9 @@ class GoAiAdapter implements AiService {
     private _capsPromise: Promise<void> | null = null;
 
     capabilities(): AiCapabilities {
-        if (this._capCache) return this._capCache;
+        if (this._capCache) {
+            return this._capCache;
+        }
         if (!this._capsPromise) {
             this._refreshCapabilities().catch(() => undefined);
         }
@@ -45,7 +47,9 @@ class GoAiAdapter implements AiService {
     }
 
     private async _refreshCapabilities(): Promise<void> {
-        if (this._capsPromise) return this._capsPromise;
+        if (this._capsPromise) {
+            return this._capsPromise;
+        }
         this._capsPromise = (async () => {
             try {
                 const b = await _getB();
@@ -107,6 +111,13 @@ class GoAiAdapter implements AiService {
                 message: err instanceof Error ? err.message : String(err),
             };
         }
+    }
+
+    async fetchModels(): Promise<string[]> {
+        if (this._capCache?.models && this._capCache.models.length > 0) {
+            return [...this._capCache.models];
+        }
+        return [];
     }
 
     async *streamChat(req: ChatRequest): AsyncIterable<ChatChunk> {

@@ -43,7 +43,9 @@ describe('parseSseStream', () => {
         ];
         const stream = new ReadableStream<Uint8Array>({
             start(controller) {
-                for (const c of chunks) controller.enqueue(new TextEncoder().encode(c));
+                for (const c of chunks) {
+                    controller.enqueue(new TextEncoder().encode(c));
+                }
                 controller.close();
             },
         });
@@ -52,10 +54,13 @@ describe('parseSseStream', () => {
         const out: string[] = [];
         let type = '';
         for await (const chunk of gen) {
-            if (chunk.type === 'text') out.push(chunk.content ?? '');
-            else if (chunk.type === 'tool_call') {
+            if (chunk.type === 'text') {
+                out.push(chunk.content ?? '');
+            } else if (chunk.type === 'tool_call') {
                 out.push(`tool:${chunk.toolName}(${chunk.toolArgs})`);
-            } else if (chunk.type === 'done') type = 'done';
+            } else if (chunk.type === 'done') {
+                type = 'done';
+            }
         }
         expect(out).toEqual(['tool:setLightIntensity({"dirIntensity":0.5})']);
         expect(type).toBe('done');
@@ -68,7 +73,9 @@ describe('parseSseStream', () => {
         ];
         const stream = new ReadableStream<Uint8Array>({
             start(controller) {
-                for (const c of chunks) controller.enqueue(new TextEncoder().encode(c));
+                for (const c of chunks) {
+                    controller.enqueue(new TextEncoder().encode(c));
+                }
                 controller.close();
             },
         });
@@ -97,7 +104,9 @@ describe('parseSseStream', () => {
         ];
         const stream = new ReadableStream<Uint8Array>({
             start(controller) {
-                for (const c of chunks) controller.enqueue(new TextEncoder().encode(c));
+                for (const c of chunks) {
+                    controller.enqueue(new TextEncoder().encode(c));
+                }
                 controller.close();
             },
         });
@@ -105,19 +114,20 @@ describe('parseSseStream', () => {
         const gen = parseSseStream(stream);
         const texts: string[] = [];
         for await (const chunk of gen) {
-            if (chunk.type === 'text') texts.push(chunk.content ?? '');
+            if (chunk.type === 'text') {
+                texts.push(chunk.content ?? '');
+            }
         }
         expect(texts).toEqual(['{invalid-json}', '修复后']);
     });
 
     it('Ollama 兼容响应 (no choices[].delta)', async () => {
-        const chunks = [
-            'data: {"response":"Hello"}\n\n',
-            'data: [DONE]\n\n',
-        ];
+        const chunks = ['data: {"response":"Hello"}\n\n', 'data: [DONE]\n\n'];
         const stream = new ReadableStream<Uint8Array>({
             start(controller) {
-                for (const c of chunks) controller.enqueue(new TextEncoder().encode(c));
+                for (const c of chunks) {
+                    controller.enqueue(new TextEncoder().encode(c));
+                }
                 controller.close();
             },
         });
@@ -125,7 +135,9 @@ describe('parseSseStream', () => {
         const gen = parseSseStream(stream);
         const texts: string[] = [];
         for await (const chunk of gen) {
-            if (chunk.type === 'text') texts.push(chunk.content ?? '');
+            if (chunk.type === 'text') {
+                texts.push(chunk.content ?? '');
+            }
         }
         expect(texts).toEqual(['Hello']);
     });
@@ -138,7 +150,9 @@ describe('parseSseStream', () => {
         ];
         const stream = new ReadableStream<Uint8Array>({
             start(controller) {
-                for (const c of chunks) controller.enqueue(new TextEncoder().encode(c));
+                for (const c of chunks) {
+                    controller.enqueue(new TextEncoder().encode(c));
+                }
                 controller.close();
             },
         });
@@ -147,8 +161,11 @@ describe('parseSseStream', () => {
         const out: string[] = [];
         let type = '';
         for await (const chunk of gen) {
-            if (chunk.type === 'text') out.push(chunk.content ?? '');
-            else if (chunk.type === 'done') type = 'done';
+            if (chunk.type === 'text') {
+                out.push(chunk.content ?? '');
+            } else if (chunk.type === 'done') {
+                type = 'done';
+            }
         }
         expect(out.join('')).toBe('你好');
         expect(type).toBe('done');
