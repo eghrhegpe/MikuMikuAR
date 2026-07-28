@@ -349,4 +349,210 @@ describe('WASM 物理契约测试', () => {
             api.destroyShape(shape);
         });
     });
+
+    describe('7. RigidBodyBundle — 批量刚体（对齐 wind-physics 实际场景）', () => {
+        /**
+         * 在 WASM 内存中构造 count 个连续的 RigidBodyConstructionInfo，
+         * 返回 info 列表指针（调用方负责 deallocateBuffer）。
+         * 所有刚体共用同一个形状，但可指定不同质量。
+         */
+        function buildBundleInfoList(
+            shapePtr: number,
+            count: number,
+            masses?: number[],
+        ): number {
+            const totalSize = INFO_SIZE * count;
+            const listPtr = api.allocateBuffer(totalSize);
+
+            for (let i = 0; i < count; i++) {
+                const offset = i * INFO_SIZE;
+                const buf = new DataView(memory.buffer, listPtr + offset, INFO_SIZE);
+
+                // shape pointer
+                buf.setUint32(OFF.Shape, shapePtr, true);
+
+                // identity matrix
+                const tf = new Float32Array(memory.buffer, listPtr + offset + OFF.InitialTransform, 16);
+                tf[0] = 1; tf[1] = 0; tf[2] = 0; tf[3] = 0;
+                tf[4] = 0; tf[5] = 1; tf[6] = 0; tf[7] = 0;
+                tf[8] = 0; tf[9] = 0; tf[10] = 1; tf[11] = 0;
+                tf[12] = 0; tf[13] = 0; tf[14] = 0; tf[15] = 1;
+
+                buf.setUint16(OFF.DataMask, 0, true);
+                buf.setUint8(OFF.MotionType, 0); // Dynamic
+
+                const mass = masses?.[i] ?? 1.0;
+                buf.setFloat32(OFF.Mass, mass, true);
+
+                buf.setFloat32(OFF.LinearDamping, 0.0, true);
+                buf.setFloat32(OFF.AngularDamping, 0.0, true);
+                buf.setFloat32(OFF.Friction, 0.5, true);
+                buf.setFloat32(OFF.Restitution, 0.0, true);
+                buf.setFloat32(OFF.LinearSleepingThreshold, 0.0, true);
+                buf.setFloat32(OFF.AngularSleepingThreshold, 1.0, true);
+                buf.setUint16(OFF.CollisionGroup, 1, true);
+                buf.setUint16(OFF.CollisionMask, 0xFFFF, true);
+                buf.setUint8(OFF.AdditionalDamping, 0);
+                buf.setUint8(OFF.NoContactResponse, 0);
+                buf.setUint8(OFF.DisableDeactivation, 1); // 始终禁用休眠，避免测试不稳定
+            }
+
+            return listPtr;
+        }
+
+        /** 读取 bundle 中第 index 个刚体的线速度 */
+        function readBundleLinearVelocity(
+            bundlePtr: number,
+            index: number,
+        ): [number, number, number] {
+            const outPtr = api.allocateBuffer(12);
+            try {
+                api.rigidBodyBundleGetLinearVelocity(bundlePtr, index, outPtr);
+                const view = new Float32Array(memory.buffer, outPtr, 3);
+                return [view[0], view[1], view[2]];
+            } finally {
+                api.deallocateBuffer(outPtr, 12);
+            }
+        }
+
+        it('createRigidBodyBundle 创建 3 个刚体的束，返回非零指针', () => {
+            const shape = api.createBoxShape(1, 1, 1);
+            const listPtr = buildBundleInfoList(shape, 3);
+            const bundle = api.createRigidBodyBundle(listPtr, 3);
+            expect(bundle).toBeGreaterThan(0);
+
+            api.destroyRigidBodyBundle(bundle);
+            api.deallocateBuffer(listPtr, INFO_SIZE * 3);
+            api.destroyShape(shape);
+        });
+
+        it('bundle 中每个刚体的质量独立（0.5 / 1.0 / 2.0）', () => {
+            const shape = api.createBoxShape(1, 1, 1);
+            const listPtr = buildBundleInfoList(shape, 3, [0.5, 1.0, 2.0]);
+            const bundle = api.createRigidBodyBundle(listPtr, 3);
+
+            expect(api.rigidBodyBundleGetMass(bundle, 0)).toBeCloseTo(0.5, 1);
+            expect(api.rigidBodyBundleGetMass(bundle, 1)).toBeCloseTo(1.0, 1);
+            expect(api.rigidBodyBundleGetMass(bundle, 2)).toBeCloseTo(2.0, 1);
+
+            api.destroyRigidBodyBundle(bundle);
+            api.deallocateBuffer(listPtr, INFO_SIZE * 3);
+            api.destroyShape(shape);
+        });
+
+        it('批量施力后每个刚体都有速度（轻的飘得更多）', () => {
+            const world = api.createPhysicsWorld();
+            // 无重力，纯粹看风力效果
+            api.physicsWorldSetGravity(world, 0, 0, 0);
+
+            const shape = api.createBoxShape(1, 1, 1);
+            const listPtr = buildBundleInfoList(shape, 3, [0.5, 1.0, 2.0]);
+            const bundle = api.createRigidBodyBundle(listPtr, 3);
+            api.physicsWorldAddRigidBodyBundle(world, bundle);
+
+            // 初始速度全为零
+            for (let i = 0; i < 3; i++) {
+                const [, vy] = readBundleLinearVelocity(bundle, i);
+                expect(vy).toBe(0);
+            }
+
+            // 对每个刚体施加相同的向上力 (0, 10, 0)
+            for (let i = 0; i < 3; i++) {
+                api.rigidBodyBundleApplyCentralForce(bundle, i, 0, 10, 0);
+            }
+
+            // 步进
+            api.physicsWorldStepSimulation(world, 1 / 60, 1, 1 / 60);
+
+            // 读取速度：质量越轻，速度越大
+            const [, vy0] = readBundleLinearVelocity(bundle, 0); // mass 0.5
+            const [, vy1] = readBundleLinearVelocity(bundle, 1); // mass 1.0
+            const [, vy2] = readBundleLinearVelocity(bundle, 2); // mass 2.0
+
+            expect(vy0).toBeGreaterThan(0);
+            expect(vy1).toBeGreaterThan(0);
+            expect(vy2).toBeGreaterThan(0);
+            // 轻的（mass 0.5）比重的（mass 2.0）速度更大
+            expect(vy0).toBeGreaterThan(vy2);
+
+            // 清理
+            api.physicsWorldRemoveRigidBodyBundle(world, bundle);
+            api.destroyRigidBodyBundle(bundle);
+            api.deallocateBuffer(listPtr, INFO_SIZE * 3);
+            api.destroyShape(shape);
+            api.destroyPhysicsWorld(world);
+        });
+
+        it('bundleSetMassProps 可修改质量', () => {
+            const shape = api.createBoxShape(1, 1, 1);
+            const listPtr = buildBundleInfoList(shape, 2, [1.0, 1.0]);
+            const bundle = api.createRigidBodyBundle(listPtr, 2);
+
+            // 把第 0 个刚体质量改为 5.0
+            api.rigidBodyBundleSetMassProps(bundle, 0, 5.0, 1, 1, 1);
+            expect(api.rigidBodyBundleGetMass(bundle, 0)).toBeCloseTo(5.0, 1);
+            // 第 1 个不受影响
+            expect(api.rigidBodyBundleGetMass(bundle, 1)).toBeCloseTo(1.0, 1);
+
+            api.destroyRigidBodyBundle(bundle);
+            api.deallocateBuffer(listPtr, INFO_SIZE * 2);
+            api.destroyShape(shape);
+        });
+
+        it('bundleTranslate 移动刚体位置', () => {
+            const shape = api.createBoxShape(1, 1, 1);
+            const listPtr = buildBundleInfoList(shape, 1);
+            const bundle = api.createRigidBodyBundle(listPtr, 1);
+
+            // 移动前获取世界变换
+            const tfPtr = api.rigidBodyBundleGetWorldTransformPtr(bundle, 0);
+            expect(tfPtr).toBeGreaterThan(0);
+
+            // 平移到 (0, 5, 0)
+            api.rigidBodyBundleTranslate(bundle, 0, 0, 5, 0);
+
+            // 验证平移后的位置
+            const afterTf = new Float32Array(memory.buffer, tfPtr, 16);
+            expect(afterTf[12]).toBeCloseTo(0, 4);
+            expect(afterTf[13]).toBeCloseTo(5, 4);
+            expect(afterTf[14]).toBeCloseTo(0, 4);
+
+            api.destroyRigidBodyBundle(bundle);
+            api.deallocateBuffer(listPtr, INFO_SIZE);
+            api.destroyShape(shape);
+        });
+
+        it('bundleSetLinearVelocity 设置速度，bundleGetLinearVelocity 读取一致', () => {
+            const shape = api.createBoxShape(1, 1, 1);
+            const listPtr = buildBundleInfoList(shape, 2);
+            const bundle = api.createRigidBodyBundle(listPtr, 2);
+
+            api.rigidBodyBundleSetLinearVelocity(bundle, 0, 1, 2, 3);
+            api.rigidBodyBundleSetLinearVelocity(bundle, 1, -1, -2, -3);
+
+            const [vx0, vy0, vz0] = readBundleLinearVelocity(bundle, 0);
+            const [vx1, vy1, vz1] = readBundleLinearVelocity(bundle, 1);
+
+            expect(vx0).toBeCloseTo(1, 4);
+            expect(vy0).toBeCloseTo(2, 4);
+            expect(vz0).toBeCloseTo(3, 4);
+            expect(vx1).toBeCloseTo(-1, 4);
+            expect(vy1).toBeCloseTo(-2, 4);
+            expect(vz1).toBeCloseTo(-3, 4);
+
+            api.destroyRigidBodyBundle(bundle);
+            api.deallocateBuffer(listPtr, INFO_SIZE * 2);
+            api.destroyShape(shape);
+        });
+
+        it('destroyRigidBodyBundle 不抛异常', () => {
+            const shape = api.createBoxShape(1, 1, 1);
+            const listPtr = buildBundleInfoList(shape, 1);
+            const bundle = api.createRigidBodyBundle(listPtr, 1);
+            expect(() => api.destroyRigidBodyBundle(bundle)).not.toThrow();
+
+            api.deallocateBuffer(listPtr, INFO_SIZE);
+            api.destroyShape(shape);
+        });
+    });
 });
