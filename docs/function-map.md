@@ -462,7 +462,7 @@
 | `sliderRow()` | `core/ui-helpers` | — |
 | `toggleRow()` | `core/ui-helpers` | — |
 | `KeyboardNavOptions()` | `core/ui-keyboard-nav` | — |
-| `createKeyboardNav()` | `core/ui-keyboard-nav` | 创建列表键盘导航监听器。 |
+| `createKeyboardNav()` | `core/ui-keyboard-nav` | — |
 | `PresetChipItem()` | `core/ui-preset` | 单个预设芯片的描述。 |
 | `addClearRow()` | `core/ui-preset` | 渲染一行右对齐的「清除」按钮（统一 cs-btn cs-btn-sm 样式）。 |
 | `buildPresetChipGroup()` | `core/ui-preset` | 渲染一组 preset-chip（统一 .preset-group 容器 + addPresetChip 布局）。 |

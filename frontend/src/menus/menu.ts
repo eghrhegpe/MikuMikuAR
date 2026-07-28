@@ -139,11 +139,14 @@ export class SlideMenu {
             if (this.transitioning) {
                 return;
             }
-            // [a11y] 当焦点在滑块/进度条/选择器等控件内部时，箭头键由控件自身处理，
-            // 菜单不应劫持为导航操作
+            // [a11y] 当焦点在原生交互元素或滑块等控件上时，键盘事件由元素自身处理，
+            // 菜单不应劫持
             if (
                 e.target instanceof HTMLElement &&
-                e.target.closest('.cs-slider, .color-slider, .cs-bar, .cs-row, .cs-top')
+                e.target.closest(
+                    'button, input, textarea, select, [contenteditable], ' +
+                    '.cs-slider, .color-slider, .cs-bar, .cs-row, .cs-top'
+                )
             ) {
                 return;
             }
