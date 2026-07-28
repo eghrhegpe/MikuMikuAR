@@ -23,6 +23,8 @@ import {
 } from '../core/config';
 import { feedbackInfo, feedbackStatus } from '../core/feedback';
 import { showInfoToast } from '../core/toast';
+// 确保 action 已注册（slideRow 的 executeActionById 绕过旧的 handleSettingsAction 路径）
+import('../core/action-defs/settings-actions').then((m) => m.registerSettingsActions()).catch(() => {});
 import {
     slideRow,
     addModeRow,
