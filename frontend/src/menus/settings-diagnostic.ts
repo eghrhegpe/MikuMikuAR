@@ -32,6 +32,7 @@ import { buildToolCatalogText, buildToolSchemas } from '../core/ai/action-catalo
 import { executeAction } from '../core/ai/intent-dispatcher';
 import { getAction } from '../core/action-registry';
 import { showConfirm } from '../core/dialog';
+import { DebouncedTimer } from '../core/async';
 
 // ======== 模块级状态 ========
 
@@ -54,6 +55,7 @@ let _adviceEl: HTMLElement | null = null;
 let _statusTextEl: HTMLElement | null = null;
 let _lastConnectionOk: boolean | null = null;
 let _testing = false;
+let _refreshingCaps = false;
 
 let _controlRegistered = false;
 let _pendingAction: {
@@ -65,6 +67,10 @@ let _pendingContainer: HTMLElement | null = null;
 
 /** 当前面板编辑态的配置副本，blur 时同步到持久化层。 */
 let _localConfig: AiConfig = { ...loadAiConfig() };
+
+/** 自动连接测试防抖定时器 */
+let _autoTestTimer: DebouncedTimer | null = null;
+let _autoTesting = false;
 
 // ======== 生命周期 ========
 
@@ -94,15 +100,71 @@ function _addAssistantMessage(text: string): void {
 }
 
 async function _refreshCaps(): Promise<void> {
-    if (!_ai) return;
-    await _ai.refreshCapabilities?.();
-    _caps = _ai.capabilities();
-    _refreshConfigUI();
+    if (_refreshingCaps || !_ai) return;
+    _refreshingCaps = true;
+    try {
+        await _ai.refreshCapabilities?.();
+        _caps = _ai.capabilities();
+        _refreshConfigUI();
+    } finally {
+        _refreshingCaps = false;
+    }
 }
 
 function _refreshConfigUI(): void {
     _updateCorsWarning();
-    _updateStatusBadge();
+    _updateApiKeyVisibility();
+    if (_caps === null) {
+        _setStatusBadge('initializing');
+    } else {
+        _updateStatusBadge();
+        _scheduleAutoTest();
+    }
+}
+
+/** 配置稳定后自动触发一次连接测试，避免用户手动点击。 */
+function _scheduleAutoTest(): void {
+    if (!_aiResolved || _testing) return;
+    if (!_autoTestTimer) {
+        _autoTestTimer = new DebouncedTimer();
+    }
+    _autoTestTimer.schedule(() => void _runAutoTest(), 600);
+}
+
+async function _runAutoTest(): Promise<void> {
+    if (!_ai || _testing || _autoTesting) return;
+    const validation = validateAiConfig(_localConfig);
+    if (!validation.ok) {
+        // 配置不完整时 badge/advice 已由校验结果接管，无需覆盖
+        return;
+    }
+
+    _autoTesting = true;
+    _setStatusBadge('testing');
+    try {
+        const result = await _ai.testConnection();
+        if (result.ok) {
+            _lastConnectionOk = true;
+            _renderAdvice(undefined);
+        } else {
+            _lastConnectionOk = false;
+            _renderAdvice(result.kind);
+        }
+    } catch (err) {
+        _lastConnectionOk = false;
+        _renderAdvice('unknown');
+    } finally {
+        _autoTesting = false;
+        _updateStatusBadge();
+    }
+}
+
+function _updateApiKeyVisibility(): void {
+    if (!_configApiKey) return;
+    const row = _configApiKey.closest('.diag-field-row') as HTMLElement | null;
+    if (!row) return;
+    const needsKey = PROVIDER_PRESETS[_localConfig.provider].needsKey;
+    row.style.display = needsKey ? '' : 'none';
 }
 
 function _updateControlsEnabled(): void {
@@ -168,11 +230,14 @@ function _updateStatusBadge(): void {
 }
 
 function _setStatusBadge(
-    state: AiErrorKind | 'connected' | 'disconnected' | 'testing' | 'error'
+    state: AiErrorKind | 'connected' | 'disconnected' | 'testing' | 'error' | 'initializing'
 ): void {
     if (!_statusBadgeEl || !_statusTextEl) return;
     const badgeState: string =
-        state === 'connected' || state === 'disconnected' || state === 'testing'
+        state === 'connected' ||
+        state === 'disconnected' ||
+        state === 'testing' ||
+        state === 'initializing'
             ? state
             : state === 'cors' || state === 'missingEndpoint' || state === 'missingKey'
               ? state
@@ -182,6 +247,7 @@ function _setStatusBadge(
         state === 'connected' ||
         state === 'disconnected' ||
         state === 'testing' ||
+        state === 'initializing' ||
         state === 'cors' ||
         state === 'missingEndpoint' ||
         state === 'missingKey'
@@ -300,6 +366,7 @@ function _createErrorRow(err: ErrorEntry): HTMLElement {
         const expandIcon = document.createElement('span');
         expandIcon.textContent = ' ▶';
         expandIcon.className = 'diag-error-expand';
+        expandIcon.setAttribute('aria-expanded', 'false');
         row.appendChild(expandIcon);
 
         const stackEl = document.createElement('pre');
@@ -312,6 +379,7 @@ function _createErrorRow(err: ErrorEntry): HTMLElement {
             expanded = !expanded;
             stackEl.style.display = expanded ? '' : 'none';
             expandIcon.textContent = expanded ? ' ▼' : ' ▶';
+            expandIcon.setAttribute('aria-expanded', String(expanded));
         };
         row.addEventListener('click', toggle);
         row.addEventListener('keydown', (e) => {
@@ -460,7 +528,23 @@ function _finalizeStream(fullText: string): void {
     }
     _isStreaming = false;
     _abortController = null;
-    _renderChat();
+
+    if (_chatContainer && fullText) {
+        const streamingRow = _chatContainer.querySelector('.chat-row--streaming');
+        if (streamingRow) {
+            streamingRow.classList.remove('chat-row--streaming');
+            const contentDiv = streamingRow.querySelector(
+                '.diag-chat-content'
+            ) as HTMLElement | null;
+            if (contentDiv) contentDiv.textContent = fullText;
+            _chatContainer.scrollTop = _chatContainer.scrollHeight;
+        } else {
+            _renderChat();
+        }
+    } else {
+        _renderChat();
+    }
+
     _updateSendButton();
 }
 
@@ -742,7 +826,9 @@ function _stopStreaming(): void {
     }
 }
 
-function _clearChat(): void {
+async function _clearChat(): Promise<void> {
+    const ok = await showConfirm(t('ai.chat.clearConfirm'));
+    if (!ok) return;
     _messages.length = 0;
     _addAssistantMessage(t('ai.welcome'));
     _renderChat();
