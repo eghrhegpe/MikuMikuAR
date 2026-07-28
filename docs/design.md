@@ -621,6 +621,37 @@ const navDisp: Disposable = createKeyboardNav(container, {
 | **Tablist / 模式切换** | `selector` + `rovingTabIndex: true` | [settings-diagnostic.ts](file:///c:/Users/zhujieling11/MikuMikuAR/frontend/src/menus/settings-diagnostic.ts#L518) |
 | **卡片网格 / 全屏覆盖层** | `selector`，默认 `:focus` 反查 | [ui-fullscreen-overlay.ts](file:///c:/Users/zhujieling11/MikuMikuAR/frontend/src/core/ui-fullscreen-overlay.ts#L242) |
 
+### 何时不需要自己加键盘导航
+
+**大多数业务面板不需要各自接入 `createKeyboardNav`**，因为 `SlideMenu` 框架已经全局覆盖。
+
+`menu.ts` 在初始化时以 `selector: '.slide-item, .collapsible-header'` 注册了框架级键盘导航，渲染后自动通过 `_ensureNavMarkers()` 给所有 `.slide-item` / `.collapsible-header` / `.cs-row` / `.toggle-row` / `.mode-btn` 打上 `[data-nav-item]` 标记。这些行自动获得 Arrow 键上下移动、Enter/Space 激活、← 返回上层的完整导航能力。
+
+**以下场景无需额外接入：**
+
+| 面板特征 | 是否需要 `createKeyboardNav` |
+|----------|:---:|
+| 全部使用 schema `slider` / `toggle` / `modeRow` / `modeSlider` / `folder` 节点 | ❌ 不需要 |
+| `renderCustom` 内部只调用 `slideRow()` / `addSliderRow()` / `addToggleRow()` 等 builder 函数 | ❌ 不需要 |
+| 面板为空或仅有静态文本 | ❌ 不需要 |
+
+**以下场景必须自己接入：**
+
+| 面板特征 | 示例 |
+|----------|------|
+| `renderCustom` 内创建了**自定义 DOM 元素**，不属于 `.slide-item` / `.collapsible-header` | 模式切换 tablist（`settings-diagnostic.ts`） |
+| 全屏覆盖层内资源卡片网格，需 Arrow 遍历 | `ui-fullscreen-overlay.ts` |
+| 长列表未使用 `slideRow` 构建，而是自定义 `div` 行 | 参考「自定义面板接入示例」 |
+
+**判断流：**
+```
+你的 renderCustom 里创建了可交互元素？
+  ├─ 是 → 它用了 slideRow / addSliderRow / addToggleRow 等 builder？
+  │        ├─ 是 → ✅ 完成，无需额外操作
+  │        └─ 否 → ⚠️ 接入 createKeyboardNav
+  └─ 否 → ✅ 完成
+```
+
 ### 焦点真相源
 
 `createKeyboardNav` 支持两种焦点定位方式：
@@ -744,6 +775,31 @@ export function buildExampleLevel(items: string[]): PopupLevel {
 - `renderCustom` 返回的 cleanup 必须释放 `createKeyboardNav` 的 `Disposable`。
 - 外层 `cardContainer` 的返回值也要一并 `return`，让 `renderMenu` 的 dispose 链路上传。
 
+### 焦点生命周期
+
+**面板打开时：** `SlideMenu.buildPanel()` 完成后自动调用 `setupFocus()`，将 `focusIndex` 设为 0（列表首项），打上 `.slide-focused` 高亮。若面板为空，焦点回落到容器 `.container` 自身。
+
+**面板关闭（pop）时：** 焦点自动回到前一层级的首项（同样走 `setupFocus()`）。框架保障了焦点不会丢失到 document body 或幕后元素。
+
+**内嵌输入框/搜索框：** 获得焦点时不触发外层导航（`perKeySkip` 对原生 `input`/`textarea` 返回 `true`）。用户按 `Escape` 或 `Tab` 退出输入框后，框架导航恢复。
+
+**无交互元素的面板**（纯展示/静态文本）：无需任何焦点处理。框架在 `setupFocus()` 中检测到 `panelItems.length === 0`，自动将焦点归到容器。
+
+### 手写 `keydown` 分类指南
+
+框架级键盘导航覆盖了列表行上下移动和激活，但以下场景需要**局部的、元素级**手写 `keydown`：
+
+| 场景 | 正确做法 | 错误做法 |
+|------|---------|---------|
+| 搜索框/输入框 `Enter` 提交 | `input.addEventListener('keydown', (e) => { if (e.key === 'Enter') ... })` ✅ | 在外面套一层 `createKeyboardNav` 接管输入框 ❌ |
+| 展开/折叠自定义行（非 `.slide-item`） | `row.addEventListener('keydown', (e) => { if (e.key === 'Enter') toggle(); })` ✅ | 不做键盘支持 ❌ |
+| 聊天输入框 `Enter` 发送、`Shift+Enter` 换行 | `textarea.addEventListener('keydown', handler)` ✅ | — |
+| 列表行 Arrow 移动 | 交给框架 `createKeyboardNav` ✅ | 手写 Arrow 键路径 ❌ |
+
+**判断原则：**
+- 按键是**全局导航**（Arrow 移焦点、← 返回）→ 用 `createKeyboardNav`
+- 按键是**局部交互**（输入框提交、行展开、快捷键）→ 手写 `keydown`，不用 `createKeyboardNav`
+
 ### UI 设计验收 Checklist
 
 新增菜单或面板前，确认以下条目：
@@ -751,9 +807,11 @@ export function buildExampleLevel(items: string[]): PopupLevel {
 - [ ] 所有可点击元素可通过 `Tab` 或箭头键获得焦点。
 - [ ] 焦点在视觉上可见（outline 或高亮类）。
 - [ ] `Enter`/`Space` 可触发按钮、折叠头、行操作。
-- [ ] 列表/弹层使用 `createKeyboardNav` 而非手写 `keydown` 监听。
-- [ ] `createKeyboardNav` 返回的 `Disposable` 在卸载时释放。
+- [ ] 列表行：使用 `.slide-item` / collapsible header / schema 行 → 自动纳入框架导航。
+- [ ] 自定义列表（非 `.slide-item`）：接入 `createKeyboardNav` 并释放 `Disposable`。
+- [ ] 局部输入框：手写 `keydown` 处理提交/取消，不抢夺全局导航 Arrow 键。
 - [ ] 内嵌滑条/输入框在获得焦点时不被外层导航误拦截。
+- [ ] 面板关闭后焦点回到前一层级首项（框架自动处理，`renderCustom` 自行接入的例外需手动归还）。
 - [ ] 复杂组件补充 `role`、`aria-expanded`、`aria-selected` 等语义属性。
 
 ---
