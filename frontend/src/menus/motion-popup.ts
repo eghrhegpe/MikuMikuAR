@@ -6,39 +6,23 @@ import {
     PopupLevel,
     PopupRow,
     getBrowseDir,
-    isPlaying,
-    setIsPlaying,
-    mmdRuntime,
     stackRegistry,
 } from '../core/config';
-import { feedbackInfo, feedbackStatus } from '../core/feedback';
+import { feedbackStatus } from '../core/feedback';
 import { showInfoToast } from '../core/toast';
 import { registerPopupMenu } from './menu-factory';
 import { loadManager } from '../core/load-manager';
 import { registerLoadRefreshHook, registerLibraryScannedHook } from '../core/load-refresh-registry';
-import {
-    updatePlaybackUI,
-    loadVPDPose,
-    triggerAutoSave,
-    pushUndoSnapshot,
-    offerSceneUndoAndRefresh,
-} from '../scene/scene';
+import { loadVPDPose } from '../scene/scene';
 import { getAudioName } from '../outfit/audio';
-import {
-    setProcMotionMode,
-    regenerateProcMotion,
-    getLipSyncState,
-    setLipSyncEnabled,
-} from '../scene/scene';
-import type { ProcMotionMode } from '../motion-algos/procedural-motion';
 import { buildProcMotionLevel } from './motion-procmotion-levels';
 import { buildGazeTrackingLevel } from './motion-gaze-levels';
 import { buildCameraLevel } from './motion-camera-levels';
 import { buildPoseStudioLevel } from './motion-pose-levels';
 import { t } from '../core/i18n/t';
+import { executeActionById } from '../core/action-executor';
 import {
     addSceneMotion,
-    clearAllSceneMotions,
     replaceDefaultMotion,
 } from '../scene/motion/motion-intent';
 import { logWarn } from '../core/logger';
@@ -47,14 +31,12 @@ import { logWarn } from '../core/logger';
 import {
     resetFocusedLayerId,
     buildActionBindingLevel,
-    handleModelAction,
 } from './motion-binding-ui';
 import { buildMotionDetailLevel, buildPlaybackSpeedLevel } from './motion-detail-ui';
 import {
     buildMotionRootLevel,
     buildMotionRootItems,
     buildRetargetLevel,
-    importExternalAnimation,
     hideMotionPopup,
 } from './motion-root-ui';
 
@@ -133,7 +115,17 @@ function motionOnFolderEnter(row: PopupRow): PopupLevel | null {
 // 点击路由
 // ═══════════════════════════════════════════════════════════
 
+let _motionRegistered = false;
+
+function _ensureMotionActions(): void {
+    if (!_motionRegistered) {
+        import('../core/action-defs/motion-actions').then((m) => m.registerMotionActions());
+        _motionRegistered = true;
+    }
+}
+
 function motionOnItemClick(row: PopupRow): void {
+    _ensureMotionActions();
     if (row.model) {
         // [doc:adr-131] 相机 VMD 加载入口
         const outcome = getMotionMenu()?.currentLevel?.outcome;
@@ -202,22 +194,23 @@ function motionOnItemClick(row: PopupRow): void {
         return;
     }
     if (row.target && row.target.startsWith('procmotion:set-mode:')) {
-        setProcMotionMode(row.target.replace('procmotion:set-mode:', '') as ProcMotionMode);
-        regenerateProcMotion();
+        void executeActionById('motion:procmotion:set-mode', {
+            mode: row.target.replace('procmotion:set-mode:', ''),
+        });
         return;
     }
     if (row.target === 'lipsync:toggle') {
-        setLipSyncEnabled(!getLipSyncState().enabled);
+        void executeActionById('motion:lipsync:toggle', {});
         getMotionMenu()?.reRender();
         return;
     }
-    // per-model 播放控制（委托到 motion-binding-ui）
+    // per-model 播放控制（委托到注册表）
     if (row.target && row.target.startsWith('action:motion:')) {
         const parts = row.target.split(':');
         const action = parts[2];
         const id = parts.slice(3).join(':');
         if (id) {
-            handleModelAction(action, id);
+            void executeActionById(`motion:model:${action}`, { modelId: id });
         }
         return;
     }
@@ -294,31 +287,19 @@ function motionOnItemClick(row: PopupRow): void {
     }
     // 清除场景级动作（ADR-167：清空整个场景库 + 默认动作）
     if (row.target === '__motion_clear__') {
-        const snap = pushUndoSnapshot();
-        clearAllSceneMotions();
-        if (isPlaying && mmdRuntime) {
-            mmdRuntime.pauseAnimation();
-            setIsPlaying(false);
-        }
-        updatePlaybackUI();
-        refreshMotionRoot();
-        triggerAutoSave();
-        feedbackInfo('motion.motionCleared', undefined);
-        offerSceneUndoAndRefresh(t('motion.motionCleared'), snap, () => {
-            refreshMotionRoot();
-        });
+        void executeActionById('motion:clear-all', {});
         return;
     }
     if (row.target === '__retarget_mixamo__') {
-        importExternalAnimation('mixamo');
+        void executeActionById('motion:retarget:mixamo', {});
         return;
     }
     if (row.target === '__retarget_vrm__') {
-        importExternalAnimation('vrm');
+        void executeActionById('motion:retarget:vrm', {});
         return;
     }
     if (row.target === '__retarget_custom__') {
-        importExternalAnimation('custom');
+        void executeActionById('motion:retarget:custom', {});
         return;
     }
 }
