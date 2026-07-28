@@ -29,6 +29,7 @@ import type { SettingsMenuHandle } from './settings-shared';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 import { createKeyboardNav } from '../core/ui-keyboard-nav';
+import type { Disposable } from '../core/dom';
 import { buildToolCatalogText, buildToolSchemas } from '../core/ai/action-catalog';
 import { executeAction, parseActionFromLLM } from '../core/ai/intent-dispatcher';
 import { getAction } from '../core/action-registry';
@@ -471,7 +472,7 @@ function buildModeSwitchSchema(): MenuNode[] {
                 btns[1] = _buildTab('chat', btns);
                 btns[2] = _buildTab('control', btns);
 
-                createKeyboardNav(group, {
+                const navDisp: Disposable = createKeyboardNav(group, {
                     selector: 'button[role="tab"]',
                     onEnter: (el) => {
                         const idx = btns.indexOf(el as HTMLButtonElement);
@@ -493,6 +494,10 @@ function buildModeSwitchSchema(): MenuNode[] {
 
                 for (const btn of btns) group.appendChild(btn);
                 c.appendChild(group);
+
+                return () => {
+                    navDisp.dispose();
+                };
             },
         },
     ];
@@ -1393,7 +1398,7 @@ function buildDiagnosticSchema(): MenuNode[] {
             id: 'diagnostic:mode-card',
             kind: 'custom',
             renderCustom: (c) => {
-                cardContainer(c, (inner) => {
+                return cardContainer(c, (inner) => {
                     addSectionTitle(inner, t('ai.mode.title'));
                     return renderMenu(buildModeSwitchSchema(), inner);
                 });
