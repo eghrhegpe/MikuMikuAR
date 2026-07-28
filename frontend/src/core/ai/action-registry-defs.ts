@@ -4,7 +4,12 @@ import { setCameraMode } from '../../scene/camera/camera-state';
 import { applyEnvPreset } from '../../scene/env/env-time-of-day';
 import { setEnvState } from '../../scene/env/env-bridge';
 import { setPerformanceMode } from '../../scene/render/performance';
-import { loadLibraryModel, loadLibraryMotion } from '../../menus/library-actions';
+import {
+    loadLibraryModel,
+    loadLibraryMotion,
+    findLibraryModelByName,
+    findLibraryMotionByName,
+} from '../../menus/library-actions';
 import { envState } from '../state';
 import { registerSettingsActions } from '../action-defs/settings-actions';
 import { registerSceneActions } from '../action-defs/scene-actions';
@@ -69,7 +74,10 @@ export function registerControlActions(): void {
             },
         ],
         execute: (p) => {
-            applyEnvPreset(p.preset as string);
+            const ok = applyEnvPreset(p.preset as string);
+            if (!ok) {
+                throw new Error(`环境预设 "${p.preset}" 应用失败`);
+            }
         },
     });
 
@@ -91,7 +99,7 @@ export function registerControlActions(): void {
             {
                 name: 'name',
                 type: 'entity',
-                resolve: async (name: string) => (loadLibraryModel(name) ? name : null),
+                resolve: async (name: string) => (findLibraryModelByName(name) ? name : null),
             },
         ],
         destructive: true,
@@ -109,7 +117,7 @@ export function registerControlActions(): void {
             {
                 name: 'name',
                 type: 'entity',
-                resolve: async (name: string) => (loadLibraryMotion(name) ? name : null),
+                resolve: async (name: string) => (findLibraryMotionByName(name) ? name : null),
             },
         ],
         destructive: true,
