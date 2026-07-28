@@ -32,11 +32,18 @@ import { createKeyboardNav } from '../core/ui-keyboard-nav';
 import type { Disposable } from '../core/dom';
 import { buildToolCatalogText, buildToolSchemas } from '../core/ai/action-catalog';
 import { executeAction, parseActionFromLLM } from '../core/ai/intent-dispatcher';
+import { getActiveBible, buildDialogueSystemPrompt } from '../core/ai/dialogue-session';
 import { getAction } from '../core/action-registry';
 import { showConfirm } from '../core/dialog';
 import { DebouncedTimer } from '../core/async';
 
 // ======== 模块级状态 ========
+
+/** 面板四态：诊断 / 闲聊 / 控制 / 台词（ADR-196 + ADR-156）。 */
+type DiagMode = 'diagnostic' | 'chat' | 'control' | 'dialogue';
+
+/** tab 顺序单一数据源，驱动 tab 构建、键盘导航与刷新。 */
+const DIAG_MODES: readonly DiagMode[] = ['diagnostic', 'chat', 'control', 'dialogue'];
 
 let _ai: AiService | null = null;
 let _caps: AiCapabilities | null = null;
@@ -44,7 +51,7 @@ let _aiResolved = false;
 const _messages: ChatMessage[] = [];
 let _isStreaming = false;
 let _abortController: AbortController | null = null;
-let _mode: 'diagnostic' | 'chat' | 'control' = 'diagnostic';
+let _mode: DiagMode = 'diagnostic';
 
 let _chatContainer: HTMLElement | null = null;
 let _inputEl: HTMLTextAreaElement | null = null;
@@ -434,24 +441,29 @@ function _ensureControlActions(): void {
     }
 }
 
-function _selectTab(
-    mode: 'diagnostic' | 'chat' | 'control',
-    btns: [HTMLButtonElement, HTMLButtonElement, HTMLButtonElement]
-): void {
+function _selectTab(mode: DiagMode, btns: HTMLButtonElement[]): void {
     _mode = mode;
-    _refreshModeUI(...btns);
+    _refreshModeUI(btns);
     if (mode === 'control') _ensureControlActions();
 }
 
-function _buildTab(
-    mode: 'diagnostic' | 'chat' | 'control',
-    btns: [HTMLButtonElement, HTMLButtonElement, HTMLButtonElement]
-): HTMLButtonElement {
-    const labelKey =
-        mode === 'diagnostic' ? 'ai.mode.diagnostic' : mode === 'chat' ? 'ai.mode.chat' : 'ai.mode.control';
+function _modeLabelKey(mode: DiagMode): string {
+    switch (mode) {
+        case 'diagnostic':
+            return 'ai.mode.diagnostic';
+        case 'chat':
+            return 'ai.mode.chat';
+        case 'control':
+            return 'ai.mode.control';
+        case 'dialogue':
+            return 'ai.mode.dialogue';
+    }
+}
+
+function _buildTab(mode: DiagMode, btns: HTMLButtonElement[]): HTMLButtonElement {
     const btn = document.createElement('button');
     btn.setAttribute('role', 'tab');
-    btn.textContent = t(labelKey);
+    btn.textContent = t(_modeLabelKey(mode));
     btn.className = 'mode-btn' + (_mode === mode ? ' active' : '');
     btn.addEventListener('click', () => _selectTab(mode, btns));
     return btn;
@@ -467,25 +479,23 @@ function buildModeSwitchSchema(): MenuNode[] {
                 group.setAttribute('role', 'tablist');
                 group.className = 'diag-mode-row';
 
-                const btns = [null, null, null] as unknown as [HTMLButtonElement, HTMLButtonElement, HTMLButtonElement];
-                btns[0] = _buildTab('diagnostic', btns);
-                btns[1] = _buildTab('chat', btns);
-                btns[2] = _buildTab('control', btns);
+                const btns: HTMLButtonElement[] = [];
+                for (const mode of DIAG_MODES) {
+                    btns.push(_buildTab(mode, btns));
+                }
 
                 const navDisp: Disposable = createKeyboardNav(group, {
                     selector: 'button[role="tab"]',
                     onEnter: (el) => {
                         const idx = btns.indexOf(el as HTMLButtonElement);
                         if (idx >= 0) {
-                            const modes = ['diagnostic', 'chat', 'control'] as const;
-                            _selectTab(modes[idx], btns);
+                            _selectTab(DIAG_MODES[idx], btns);
                         }
                     },
                     onArrowActivate: (el) => {
                         const idx = btns.indexOf(el as HTMLButtonElement);
                         if (idx >= 0) {
-                            const modes = ['diagnostic', 'chat', 'control'] as const;
-                            _selectTab(modes[idx], btns);
+                            _selectTab(DIAG_MODES[idx], btns);
                         }
                     },
                     rovingTabIndex: true,
@@ -503,20 +513,15 @@ function buildModeSwitchSchema(): MenuNode[] {
     ];
 }
 
-function _refreshModeUI(
-    diagBtn: HTMLButtonElement,
-    chatBtn: HTMLButtonElement,
-    ctrlBtn: HTMLButtonElement
-): void {
-    diagBtn.className = 'mode-btn' + (_mode === 'diagnostic' ? ' active' : '');
-    chatBtn.className = 'mode-btn' + (_mode === 'chat' ? ' active' : '');
-    ctrlBtn.className = 'mode-btn' + (_mode === 'control' ? ' active' : '');
-    diagBtn.setAttribute('aria-selected', String(_mode === 'diagnostic'));
-    diagBtn.tabIndex = _mode === 'diagnostic' ? 0 : -1;
-    chatBtn.setAttribute('aria-selected', String(_mode === 'chat'));
-    chatBtn.tabIndex = _mode === 'chat' ? 0 : -1;
-    ctrlBtn.setAttribute('aria-selected', String(_mode === 'control'));
-    ctrlBtn.tabIndex = _mode === 'control' ? 0 : -1;
+function _refreshModeUI(btns: HTMLButtonElement[]): void {
+    DIAG_MODES.forEach((mode, i) => {
+        const btn = btns[i];
+        if (!btn) return;
+        const active = _mode === mode;
+        btn.className = 'mode-btn' + (active ? ' active' : '');
+        btn.setAttribute('aria-selected', String(active));
+        btn.tabIndex = active ? 0 : -1;
+    });
     if (_pendingContainer) {
         _pendingContainer.style.display = _mode === 'control' ? '' : 'none';
         if (_mode === 'control') {
@@ -956,6 +961,12 @@ function _buildSystemMessage(): ChatMessage {
                 catalog,
                 t('ai.system.controlFormat'),
             ].join('\n\n'),
+        };
+    }
+    if (_mode === 'dialogue') {
+        return {
+            role: 'system',
+            content: buildDialogueSystemPrompt(getActiveBible()),
         };
     }
     const contextParts: string[] = [];

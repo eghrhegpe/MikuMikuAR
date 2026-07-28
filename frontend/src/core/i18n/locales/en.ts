@@ -1928,6 +1928,7 @@ export const en: Record<string, string> = {
     'ai.mode.diagnostic': '🔍 Diagnostic',
     'ai.mode.chat': '💬 Chat',
     'ai.mode.control': '🎮 Control',
+    'ai.mode.dialogue': '🎭 Dialogue',
     'ai.system.control':
         'You are a MikuMikuAR scene control assistant. Use the following tools to modify the scene as requested by the user.',
     'ai.system.controlFormat':

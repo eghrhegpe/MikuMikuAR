@@ -1910,6 +1910,7 @@ export const ja: Record<string, string> = {
     'ai.mode.diagnostic': '🔍 診断',
     'ai.mode.chat': '💬 チャット',
     'ai.mode.control': '🎮 コントロール',
+    'ai.mode.dialogue': '🎭 セリフ',
     'ai.system.control':
         'あなたは MikuMikuAR シーン制御アシスタントです。以下のツールを使用して、ユーザーの要求に応じてシーンを変更してください。',
     'ai.system.controlFormat':
