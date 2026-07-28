@@ -2,9 +2,15 @@
 // 零 key 默认路径：Ollama localhost:11434（大模型零 key，小模型零成本）
 // 配置经 config-store（IndexedDB）持久化，不再使用 Web Storage（FR-9 / AC-5）
 
-import type { AiService, AiCapabilities, ChatRequest, ChatChunk } from './types';
+import type {
+    AiService,
+    AiCapabilities,
+    ChatRequest,
+    ChatChunk,
+    AiConnectionResult,
+} from './types';
 import { parseSseStream } from './sse';
-import { loadAiConfig } from './config-store';
+import { loadAiConfig, classifyAiError } from './config-store';
 
 export class BrowserAiAdapter implements AiService {
     readonly kind = 'browser' as const;
@@ -36,10 +42,15 @@ export class BrowserAiAdapter implements AiService {
         };
     }
 
-    async testConnection(): Promise<{ ok: boolean; message: string }> {
+    async testConnection(): Promise<AiConnectionResult> {
         const cfg = loadAiConfig();
+        const corsRisk = this.capabilities().corsRisk;
         if (!cfg.endpoint) {
-            return { ok: false, message: 'AI 端点未配置，请在诊断面板中设置' };
+            return {
+                ok: false,
+                kind: 'missingEndpoint',
+                message: 'AI 端点未配置，请在诊断面板中设置',
+            };
         }
         try {
             const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -57,15 +68,22 @@ export class BrowserAiAdapter implements AiService {
                 }),
             });
             if (response.ok) {
-                return { ok: true, message: '连接成功' };
+                return { ok: true, kind: 'unknown', message: '连接成功' };
             }
             const errText = await response.text().catch(() => '');
+            const message = `HTTP ${response.status}: ${errText || response.statusText}`;
             return {
                 ok: false,
-                message: `HTTP ${response.status}: ${errText || response.statusText}`,
+                kind: classifyAiError(message, corsRisk),
+                message,
             };
         } catch (err) {
-            return { ok: false, message: _friendlyError(err) };
+            const message = _friendlyError(err);
+            return {
+                ok: false,
+                kind: classifyAiError(message, corsRisk),
+                message,
+            };
         }
     }
 

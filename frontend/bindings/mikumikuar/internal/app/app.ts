@@ -59,7 +59,7 @@ export function AiStreamChat(req: llm$0.ChatRequest): $CancellablePromise<void> 
     return $Call.ByID(669797351, req);
 }
 
-export function AiTestLLMConnection(): $CancellablePromise<[boolean, string]> {
+export function AiTestLLMConnection(): $CancellablePromise<$models.LLMConnectionResult> {
     return $Call.ByID(4285751244);
 }
 

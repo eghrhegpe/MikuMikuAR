@@ -1959,6 +1959,7 @@ export const en: Record<string, string> = {
     'ai.validation.ok': 'Configuration complete',
     'ai.status.missingEndpoint': 'Endpoint not configured',
     'ai.status.missingKey': 'API key required',
+    'ai.status.missingModel': 'Model not set',
     'ai.status.cors': 'CORS risk',
     'ai.status.connected': 'Connected',
     'ai.status.disconnected': 'Disconnected',
@@ -1966,6 +1967,7 @@ export const en: Record<string, string> = {
     'ai.status.error': 'Connection failed',
     'ai.errorAdvice.missingEndpoint': 'Please select a provider or enter the API endpoint.',
     'ai.errorAdvice.missingKey': 'This provider requires an API key.',
+    'ai.errorAdvice.missingModel': 'A model name is required to start a conversation.',
     'ai.errorAdvice.cors':
         'For local Ollama set OLLAMA_ORIGINS=* and restart; remote APIs may need a same-origin proxy.',
     'ai.errorAdvice.unauthorized': 'API key invalid or expired.',

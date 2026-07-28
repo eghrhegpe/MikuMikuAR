@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 98 | 659 |
+| 核心基础设施 | 98 | 662 |
 | 3D 场景 | 105 | 1058 |
 | 菜单 & UI | 67 | 308 |
 | 换装 & 音频 | 3 | 33 |
@@ -39,6 +39,7 @@
 | `ToolSchema()` | `core/ai/action-catalog` | — |
 | `buildToolCatalogText()` | `core/ai/action-catalog` | — |
 | `buildToolSchemas()` | `core/ai/action-catalog` | — |
+| `registerAllActions()` | `core/ai/action-registry-defs` | — |
 | `registerControlActions()` | `core/ai/action-registry-defs` | — |
 | `BrowserAiAdapter()` | `core/ai/browser-adapter` | — |
 | `browserAiAdapter()` | `core/ai/browser-adapter` | — |
@@ -50,7 +51,7 @@
 | `ensureAiConfigLoaded()` | `core/ai/config-store` | 主动预加载（建议 init 后台调用，使首次读取即命中缓存，避免回退默认窗口）。 |
 | `loadAiConfig()` | `core/ai/config-store` | 同步读取：优先内存缓存；未加载时回退默认并触发异步回源（不阻塞调用方）。 |
 | `saveAiConfig()` | `core/ai/config-store` | 同步保存：写内存缓存 + 异步落盘 IndexedDB（fire-and-forget）。返回合并后的配置。 |
-| `validateAiConfig()` | `core/ai/config-store` | 校验配置是否足够发起一次对话。 |
+| `validateAiConfig()` | `core/ai/config-store` | 校验配置是否足够发起一次对话。全量收集所有错误，一次性返回。 |
 | `ErrorEntry()` | `core/ai/error-buffer` | — |
 | `ErrorRingBuffer()` | `core/ai/error-buffer` | — |
 | `GlobalErrorTarget()` | `core/ai/error-buffer` | — |
@@ -80,8 +81,10 @@
 | `registerAiSnapshotBridge()` | `core/ai/scene-snapshot` | 由 scene.ts 在 initScene() 时注入引擎引用（单向依赖，避免 ai → scene 静态耦合）。 |
 | `AiCapabilities()` | `core/ai/types` | AI 后端能力描述 |
 | `AiConfigProvider()` | `core/ai/types` | 用户选择的服务商配置项 |
+| `AiConnectionResult()` | `core/ai/types` | AI 连接测试结果，镜像 Go LLMConnectionResult 结构 |
 | `AiErrorKind()` | `core/ai/types` | 错误分类，用于面板给出可操作建议 |
 | `AiService()` | `core/ai/types` | AI 服务统一抽象，镜像 BackendService 双适配器模式 |
+| `AiValidationError()` | `core/ai/types` | 校验错误条目（全量收集用） |
 | `AiValidationResult()` | `core/ai/types` | 配置校验结果 |
 | `ChatChunk()` | `core/ai/types` | 流式聊天响应块 |
 | `ChatMessage()` | `core/ai/types` | 聊天消息角色 |
@@ -2249,5 +2252,5 @@
 
 ---
 
-> 共 293 个文件，2203 个导出符号。
+> 共 293 个文件，2206 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。

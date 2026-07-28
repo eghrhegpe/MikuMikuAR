@@ -1928,6 +1928,7 @@ export const zhCN: Record<string, string> = {
     'ai.validation.ok': '配置完整',
     'ai.status.missingEndpoint': '未配置端点',
     'ai.status.missingKey': '缺少 API Key',
+    'ai.status.missingModel': '未设置模型',
     'ai.status.cors': 'CORS 风险',
     'ai.status.connected': '已连接',
     'ai.status.disconnected': '未连接',
@@ -1935,6 +1936,7 @@ export const zhCN: Record<string, string> = {
     'ai.status.error': '连接失败',
     'ai.errorAdvice.missingEndpoint': '请选择服务商或填写 API 端点。',
     'ai.errorAdvice.missingKey': '该服务商需要 API Key，请填写。',
+    'ai.errorAdvice.missingModel': '需要填写模型名称才能开始对话。',
     'ai.errorAdvice.cors':
         '本地 Ollama 请设置 OLLAMA_ORIGINS=* 后重启；远程 API 建议配置同源代理。',
     'ai.errorAdvice.unauthorized': 'API Key 无效或已过期，请检查。',
