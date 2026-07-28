@@ -1875,6 +1875,7 @@ export const zhCN: Record<string, string> = {
     'ai.config.apiKey': 'API 密钥',
     'ai.config.model': '模型',
     'ai.config.refreshModels': '发现模型',
+    'ai.config.keyConfigured': '已配置（重填以更新）',
     'ai.config.test': '测试连接',
     'ai.config.testing': '测试中...',
     'ai.config.connected': '✓ 已连接',
