@@ -104,7 +104,11 @@ func (a *App) AiSetLLMConfig(cfg LLMConfig) error {
 		if cfg.Model != "" {
 			c.LLMConfig.Model = cfg.Model
 		}
-		c.LLMConfig.AIKey = cfg.AIKey
+		// AIKey 与 BaseURL/Model 一致：空值不覆盖。否则改模型/切 provider 等不带 key 的
+		// 局部更新会把已存的 key 清空，导致 testConnection 报 Authorization Not Found。
+		if cfg.AIKey != "" {
+			c.LLMConfig.AIKey = cfg.AIKey
+		}
 	}, false)
 }
 
@@ -119,16 +123,22 @@ type LLMConnectionResult struct {
 }
 
 func (a *App) AiTestLLMConnection() LLMConnectionResult {
-	cfg := a.getLLMConfig()
+	// 注意：不能用 getLLMConfig()，它出于"不向前端暴露 key"会剥离 AIKey，
+	// 导致此处 apiKey 恒为空 → 商汤等返回 401 Authorization Not Found。
+	// 与 getLLMClient 一致，直接读内部 Config 的 AIKey。
+	cfg, err := a.GetConfig()
+	if err != nil || cfg.LLMConfig == nil {
+		return LLMConnectionResult{OK: false, Kind: "missingEndpoint", Message: "LLM 配置未设置"}
+	}
 
-	apiKey := cfg.AIKey
+	apiKey := cfg.LLMConfig.AIKey
 	if envKey := os.Getenv("MIKUAI_API_KEY"); envKey != "" {
 		apiKey = envKey
 	}
 
 	clientCfg := llm.Config{
-		BaseURL: cfg.BaseURL,
-		Model:   cfg.Model,
+		BaseURL: cfg.LLMConfig.BaseURL,
+		Model:   cfg.LLMConfig.Model,
 		ApiKey:  apiKey,
 	}
 
