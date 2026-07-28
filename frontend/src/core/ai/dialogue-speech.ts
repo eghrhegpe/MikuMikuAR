@@ -1,7 +1,10 @@
 // [doc:adr-156] 台词语音朗读 — 浏览器原生 SpeechSynthesis 封装（Step 2a）
 //
 // 零依赖叶子：封装 Web Speech API 的 SpeechSynthesis，供台词模式将对白朗读出声。
-// 出声后经现有音频链路，LipSync（perception.ts 振幅驱动）即可自动驱动口型。
+// ⚠️ 注意：SpeechSynthesis 走浏览器独立音频输出，不经 HTMLAudioElement/AudioContext，
+// 因此【无法】被 LipSync 的 BeatDetector（createMediaElementSource 绑定 MMD 音乐元素）采样，
+// 口型不会自动跟随 TTS。口型闭环需独立方案（见 ADR-156 §Step 2b：A 后端 TTS blob / B 时长估算伪振幅）。
+// 本模块职责仅限「出声」。
 // 优雅降级：环境不支持（无 window.speechSynthesis，如部分 WebView）时静默 no-op，
 // isSpeechSupported() 供 UI 决定是否展示朗读开关。
 
