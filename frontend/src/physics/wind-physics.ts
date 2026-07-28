@@ -1,17 +1,16 @@
 /**
  * wind-physics.ts — 风力注入 WASM Bullet 物理
  *
- * 通过 MmdWasmPhysicsRuntimeImpl.onSyncObservable 在每次物理步进前
- * 对所有 Dynamic 刚体施加风力，使头发/裙子等物理部件受风影响。
+ * 通过 MmdWasmPhysicsRuntimeImpl.onSyncObservable 在每次物理步进前对真物理刚体施加风力，
+ * 使头发/裙子等物理部件受风影响。
  *
  * 设计约束：
  * - 仅 WASM 运行时生效（JS 运行时无 Bullet 物理，风仍影响粒子/水面）
- * - Kinematic 刚体（骨骼跟随）不受力，Bullet 自动忽略
- * - 刚体索引经 @/core/mmd-adapter 的 getRigidBodyBundleMap 走公开 API
- *   `rigidBodyBundleReferenceCountMap`（ADR-192 Phase 2 已内化），无私有字段依赖
+ * - Kinematic / FollowBone 刚体（骨骼跟随）不受力：Bullet 自动忽略或每帧被骨骼变换覆盖
  *
  * 作用范围（ADR-200）：风力同时作用于两类刚体：
- *   1. **自建刚体**（虚拟裙骨 ADR-084 / 地面碰撞）——经 getRigidBodyBundleMap 遍历
+ *   1. **自建刚体**（虚拟裙骨 ADR-084 / 地面碰撞）——经 @/core/mmd-adapter 的
+ *      getRigidBodyBundleMap 遍历公开 `rigidBodyBundleReferenceCountMap`（无私有依赖）。
  *   2. **模型原生真物理刚体**（头发/裙子 Physics/PhysicsWithBone）——经
  *      applyForceToModelRigidBodies 守卫式反射（FollowBone 跳过）。
  *   虚拟裙骨只对无裙骨模型生效，主流正经模型靠路径 2 受风。

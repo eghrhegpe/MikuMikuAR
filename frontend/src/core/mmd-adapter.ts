@@ -108,8 +108,9 @@ export function getStreamAudio(player: StreamAudioPlayer): HTMLAudioElement | nu
  * `applyCentralForce` + `rigidBodyData[]`）。属「守卫式反射」，同条目9 `_audio`。
  *
  * 【筛选】仅对真物理刚体施力：`physicsMode !== FollowBone(0)`（即 Physics(1) /
- * PhysicsWithBone(2)）。FollowBone 刚体每帧被骨骼位置拉回（syncBodies），施力无效。
- * 判据来源：mmdBulletPhysics.js:150-151 官方注释 + :331-346 syncBodies 分支。
+ * PhysicsWithBone(2)）。FollowBone 刚体每帧被 syncBodies 的 `setTransformMatrix` 强制设为
+ * 骨骼变换，施力立即被覆盖（无效）。判据来源：mmdBulletPhysics.js:150-151 官方注释 +
+ * :335-346 syncBodies 分支（正常播放时 Physics/PhysicsWithBone 仅 break，纯 Bullet 自解算）。
  * FollowBone=0 常量本地定义（避免引 pmxObject loader 深路径），来源 PmxObject.RigidBody.PhysicsMode。
  *
  * 【降级】`_physicsModel` 或 `._bundle` 缺失（上游重命名/物理未构建）→ 返回 0，
@@ -150,7 +151,7 @@ export function applyForceToModelRigidBodies(model: RuntimeModel, force: Vector3
     const count = bundle.count;
     const data = bundle.rigidBodyData;
     for (let i = 0; i < count; i++) {
-        // 仅真物理刚体（Physics/PhysicsWithBone）受力；FollowBone 每帧被骨骼拉回，跳过
+        // 仅真物理刚体（Physics/PhysicsWithBone）受力；FollowBone 每帧被骨骼变换覆盖，跳过
         if (data[i]?.physicsMode !== FOLLOW_BONE) {
             bundle.applyCentralForce(i, force);
             applied++;
