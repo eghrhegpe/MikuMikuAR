@@ -15,11 +15,22 @@ export interface AiCapabilities {
     endpointReachable: boolean | 'pending';
 }
 
-/** 聊天消息角色 */
-export interface ChatMessage {
-    role: 'system' | 'user' | 'assistant';
-    content: string;
+/** 工具调用（assistant 消息中） */
+export interface ToolCall {
+    id: string;
+    type: 'function';
+    function: {
+        name: string;
+        arguments: string;
+    };
 }
+
+/** 聊天消息角色 */
+export type ChatMessage =
+    | { role: 'system'; content: string }
+    | { role: 'user'; content: string }
+    | { role: 'assistant'; content: string | null; tool_calls?: ToolCall[] }
+    | { role: 'tool'; content: string; tool_call_id: string };
 
 /** JSON Schema 工具定义（OpenAI function_calling 格式） */
 export interface ToolSchema {

@@ -1880,6 +1880,7 @@ export const zhTW: Record<string, string> = {
     'ai.control.unsupported': '暫不支援該操作。請嘗試用不同方式描述你想要更改的內容。',
     'ai.control.executing': '執行中...',
     'ai.control.cancelled': '操作已取消。',
+    'ai.control.confirmDestructive': '此操作會變更目前場景狀態（{action}），是否繼續？',
     'ai.config.corsWarning':
         '⚠ 遠程端點可能存在 CORS 限制。本地 Ollama 請設置 OLLAMA_ORIGINS=* 後重啟。',
     'ai.chat.clear': '清空',

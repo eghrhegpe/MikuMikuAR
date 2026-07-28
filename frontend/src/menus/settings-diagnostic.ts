@@ -17,6 +17,7 @@ import type { MenuNode } from './menu-schema';
 import { buildToolCatalogText, buildToolSchemas } from '../core/ai/action-catalog';
 import { executeAction } from '../core/ai/intent-dispatcher';
 import { getAction } from '../core/action-registry';
+import { showConfirm } from '../core/dialog';
 
 // ======== 模块级状态 ========
 
@@ -36,7 +37,7 @@ let _configApiKey: HTMLInputElement | null = null;
 let _configModel: HTMLInputElement | null = null;
 
 let _controlRegistered = false;
-let _pendingAction: { actionId: string; params: Record<string, unknown> } | null = null;
+let _pendingAction: { actionId: string; params: Record<string, unknown>; toolCallId?: string } | null = null;
 let _pendingContainer: HTMLElement | null = null;
 
 // ======== 生命周期 ========
@@ -59,6 +60,7 @@ resolveAi()
         _aiResolved = false;
         _addAssistantMessage(t('ai.errors.resolveFailed'));
         _renderChat();
+        _updateControlsEnabled();
     });
 
 function _addAssistantMessage(text: string): void {
@@ -286,6 +288,9 @@ function _renderChat(): void {
     if (!_chatContainer) return;
     _chatContainer.innerHTML = '';
     for (const msg of _messages) {
+        if (msg.role === 'tool') continue;
+        if (msg.role === 'assistant' && 'tool_calls' in msg && msg.tool_calls) continue;
+
         const row = document.createElement('div');
         row.className = `diag-chat-row chat-row--${msg.role}`;
 
@@ -295,7 +300,8 @@ function _renderChat(): void {
         row.appendChild(label);
 
         const content = document.createElement('div');
-        content.textContent = msg.content;
+        const textContent = typeof msg.content === 'string' ? msg.content : '';
+        content.textContent = textContent;
         content.className = 'diag-chat-content';
         row.appendChild(content);
         _chatContainer.appendChild(row);
@@ -337,10 +343,98 @@ function _finalizeStream(fullText: string): void {
     _abortController = null;
     _renderChat();
     _updateSendButton();
+}
 
-    if (_mode === 'control' && !_pendingAction && fullText) {
-        _messages.push({ role: 'assistant', content: t('ai.control.unsupported') });
+function _pruneHistory(messages: ChatMessage[], maxPairs: number = 10): ChatMessage[] {
+    const systemMsg = messages[0]?.role === 'system' ? messages[0] : null;
+    const body = systemMsg ? messages.slice(1) : messages;
+    if (body.length <= maxPairs * 2) return messages;
+
+    const keepFromIdx = body.length - maxPairs * 2;
+    let start = keepFromIdx;
+    while (start > 0 && body[start]?.role === 'tool') {
+        start--;
+    }
+    if (start > 0 && body[start]?.role === 'assistant') {
+        const asst = body[start] as Extract<ChatMessage, { role: 'assistant' }>;
+        if (asst.tool_calls) {
+            while (start > 0 && body[start - 1]?.role === 'tool') start--;
+        }
+    }
+    const pruned = body.slice(start);
+    return systemMsg ? [systemMsg, ...pruned] : pruned;
+}
+
+async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
+    if (_isStreaming || !_ai) return;
+    const allowTools = opts?.allowTools ?? (_mode === 'control');
+
+    _isStreaming = true;
+    _updateSendButton();
+    _abortController = new AbortController();
+
+    const systemMessage = _buildSystemMessage();
+    const chatMessages: ChatMessage[] = _pruneHistory([systemMessage, ..._messages]);
+    let fullResponse = '';
+    const pendingToolCalls: Array<{ id: string; name: string; args: string }> = [];
+
+    try {
+        const requestTools = allowTools ? buildToolSchemas() : undefined;
+        const chunks = _ai.streamChat({
+            messages: chatMessages,
+            signal: _abortController.signal,
+            tools: requestTools,
+        });
+        for await (const chunk of chunks) {
+            if (chunk.type === 'text' && chunk.content) {
+                fullResponse += chunk.content;
+                _renderStreamingChunk(chunk);
+            } else if (chunk.type === 'tool_call' && allowTools) {
+                pendingToolCalls.push({
+                    id: chunk.toolId ?? `call_${Date.now()}_${pendingToolCalls.length}`,
+                    name: chunk.toolName ?? '',
+                    args: chunk.toolArgs ?? '{}',
+                });
+            } else if (chunk.type === 'error') {
+                _addAssistantMessage(t('ai.errors.apiError', { msg: chunk.error ?? '' }));
+                _renderChat();
+                break;
+            } else if (chunk.type === 'done') {
+                break;
+            }
+        }
+
+        if (pendingToolCalls.length > 0) {
+            const first = pendingToolCalls[0];
+            let params: Record<string, unknown> = {};
+            try { params = JSON.parse(first.args); } catch { /* ignore */ }
+            const assistantMsg: ChatMessage = {
+                role: 'assistant',
+                content: null,
+                tool_calls: pendingToolCalls.map((tc) => ({
+                    id: tc.id,
+                    type: 'function',
+                    function: { name: tc.name, arguments: tc.args },
+                })),
+            };
+            _messages.push(assistantMsg);
+            _pendingAction = { actionId: first.name, params, toolCallId: first.id };
+            _isStreaming = false;
+            _abortController = null;
+            _updateSendButton();
+            _renderChat();
+            _renderPendingAction();
+            return;
+        }
+    } catch (err) {
+        _addAssistantMessage(
+            t('ai.errors.apiError', { msg: err instanceof Error ? err.message : String(err) })
+        );
         _renderChat();
+    } finally {
+        if (_isStreaming) {
+            _finalizeStream(fullResponse);
+        }
     }
 }
 
@@ -401,20 +495,48 @@ function _renderPendingAction(): void {
 
 async function _applyPendingAction(btn: HTMLButtonElement): Promise<void> {
     if (!_pendingAction) return;
+    const action = getAction(_pendingAction.actionId);
+    if (action?.destructive) {
+        const ok = await showConfirm(t('ai.control.confirmDestructive', { action: action.label }));
+        if (!ok) {
+            btn.disabled = false;
+            btn.textContent = t('ai.control.apply');
+            return;
+        }
+    }
     btn.disabled = true;
     btn.textContent = t('ai.control.executing');
 
     const result = await executeAction(_pendingAction.actionId, _pendingAction.params);
-    _messages.push({
-        role: 'assistant',
-        content: result.success ? result.message : `❌ ${result.message}`,
+    const toolCallId = _pendingAction.toolCallId;
+    const toolContent = JSON.stringify({
+        success: result.success,
+        message: result.message,
     });
+    if (toolCallId) {
+        _messages.push({ role: 'tool', content: toolContent, tool_call_id: toolCallId });
+    } else {
+        _messages.push({
+            role: 'assistant',
+            content: result.success ? result.message : `❌ ${result.message}`,
+        });
+    }
     _pendingAction = null;
     if (_pendingContainer) _pendingContainer.style.display = 'none';
+    btn.disabled = false;
+    btn.textContent = t('ai.control.apply');
     _renderChat();
+
+    if (toolCallId && result.success) {
+        await _runStream({ allowTools: false });
+    }
 }
 
 function _cancelPendingAction(): void {
+    const last = _messages[_messages.length - 1];
+    if (last && last.role === 'assistant' && 'tool_calls' in last && last.tool_calls) {
+        _messages.pop();
+    }
     _pendingAction = null;
     if (_pendingContainer) {
         _pendingContainer.style.display = 'none';
@@ -476,51 +598,7 @@ async function _sendMessage(): Promise<void> {
     _inputEl.value = '';
     _renderChat();
 
-    _isStreaming = true;
-    _updateSendButton();
-    _abortController = new AbortController();
-
-    const systemMessage = _buildSystemMessage();
-
-    // 只保留最近 10 轮 user+assistant 对（不含 system）
-    const recentMessages = _messages.slice(-20);
-    const chatMessages: ChatMessage[] = [systemMessage, ...recentMessages];
-    let fullResponse = '';
-
-    try {
-        const requestTools = _mode === 'control' ? buildToolSchemas() : undefined;
-        const chunks = _ai.streamChat({
-            messages: chatMessages,
-            signal: _abortController.signal,
-            tools: requestTools,
-        });
-        for await (const chunk of chunks) {
-            if (chunk.type === 'text' && chunk.content) {
-                fullResponse += chunk.content;
-                _renderStreamingChunk(chunk);
-            } else if (chunk.type === 'tool_call') {
-                let params: Record<string, unknown> = {};
-                try {
-                    params = JSON.parse(chunk.toolArgs ?? '{}');
-                } catch { /* ignore parse failure */ }
-                _pendingAction = { actionId: chunk.toolName ?? '', params };
-                _renderPendingAction();
-            } else if (chunk.type === 'error') {
-                _addAssistantMessage(t('ai.errors.apiError', { msg: chunk.error ?? '' }));
-                _renderChat();
-                break;
-            } else if (chunk.type === 'done') {
-                break;
-            }
-        }
-    } catch (err) {
-        _addAssistantMessage(
-            t('ai.errors.apiError', { msg: err instanceof Error ? err.message : String(err) })
-        );
-        _renderChat();
-    } finally {
-        _finalizeStream(fullResponse);
-    }
+    await _runStream();
 }
 
 function _stopStreaming(): void {
@@ -654,6 +732,41 @@ function buildConfigSchema(): MenuNode[] {
             renderCustom: (c) => {
                 const cfg = loadAiConfig();
 
+                // 快速配置提示
+                const hintEl = document.createElement('div');
+                hintEl.className = 'setting-hint';
+                hintEl.textContent = '选择服务商，填入 API Key 即可使用';
+                c.appendChild(hintEl);
+
+                const quickRow = document.createElement('div');
+                quickRow.className = 'diag-hint-row';
+
+                const deepseekBtn = document.createElement('button');
+                deepseekBtn.textContent = '使用 DeepSeek';
+                deepseekBtn.className = 'preset-chip';
+                deepseekBtn.addEventListener('click', () => {
+                    const ep = 'https://api.deepseek.com';
+                    const mdl = 'deepseek-chat';
+                    if (_ai?.kind === 'go') {
+                        _saveGoConfig({ baseUrl: ep, model: mdl });
+                    } else {
+                        saveAiConfig({ endpoint: ep, model: mdl });
+                    }
+                    if (_configEndpoint) _configEndpoint.value = ep;
+                    if (_configModel) _configModel.value = mdl;
+                });
+                quickRow.appendChild(deepseekBtn);
+
+                const dsLink = document.createElement('a');
+                dsLink.textContent = 'DeepSeek 官网 →';
+                dsLink.href = 'https://platform.deepseek.com/api_keys';
+                dsLink.target = '_blank';
+                dsLink.className = 'diag-link';
+                dsLink.setAttribute('aria-label', 'DeepSeek 官网（新标签页）');
+                quickRow.appendChild(dsLink);
+
+                c.appendChild(quickRow);
+
                 // CORS 风险提示条
                 _corsWarningEl = document.createElement('div');
                 _corsWarningEl.textContent = t('ai.config.corsWarning');
@@ -686,7 +799,7 @@ function buildConfigSchema(): MenuNode[] {
                     return row;
                 };
 
-                _configEndpoint = createField(
+                const endpointRow = createField(
                     t('ai.config.endpoint'),
                     'text',
                     cfg.endpoint,
@@ -697,23 +810,29 @@ function buildConfigSchema(): MenuNode[] {
                             saveAiConfig({ endpoint: v });
                         }
                     }
-                ).querySelector('input') as HTMLInputElement;
+                );
+                c.appendChild(endpointRow);
+                _configEndpoint = endpointRow.querySelector('input') as HTMLInputElement;
 
-                _configApiKey = createField(t('ai.config.apiKey'), 'password', cfg.apiKey, (v) => {
+                const apiKeyRow = createField(t('ai.config.apiKey'), 'password', cfg.apiKey, (v) => {
                     if (_ai?.kind === 'go') {
                         _saveGoConfig({ aiKey: v });
                     } else {
                         saveAiConfig({ apiKey: v });
                     }
-                }).querySelector('input') as HTMLInputElement;
+                });
+                c.appendChild(apiKeyRow);
+                _configApiKey = apiKeyRow.querySelector('input') as HTMLInputElement;
 
-                _configModel = createField(t('ai.config.model'), 'text', cfg.model, (v) => {
+                const modelRow = createField(t('ai.config.model'), 'text', cfg.model, (v) => {
                     if (_ai?.kind === 'go') {
                         _saveGoConfig({ model: v });
                     } else {
                         saveAiConfig({ model: v });
                     }
-                }).querySelector('input') as HTMLInputElement;
+                });
+                c.appendChild(modelRow);
+                _configModel = modelRow.querySelector('input') as HTMLInputElement;
 
                 const testRow = document.createElement('div');
                 testRow.className = 'diag-hint-row';

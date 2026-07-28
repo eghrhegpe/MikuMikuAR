@@ -1909,6 +1909,7 @@ export const zhCN: Record<string, string> = {
     'ai.control.unsupported': '暂不支持该操作。请尝试用不同方式描述你想要更改的内容。',
     'ai.control.executing': '执行中...',
     'ai.control.cancelled': '操作已取消。',
+    'ai.control.confirmDestructive': '此操作会更改当前场景状态（{action}），是否继续？',
     'ai.config.corsWarning':
         '⚠ 远程端点可能存在 CORS 限制。本地 Ollama 请设置 OLLAMA_ORIGINS=* 后重启。',
     'ai.chat.clear': '清空',

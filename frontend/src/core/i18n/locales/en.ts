@@ -1937,6 +1937,7 @@ export const en: Record<string, string> = {
     'ai.control.unsupported': 'This action is not supported yet. Try describing what you want to change differently.',
     'ai.control.executing': 'Executing...',
     'ai.control.cancelled': 'Action cancelled.',
+    'ai.control.confirmDestructive': 'This action will change the current scene state ({action}). Continue?',
     'ai.config.corsWarning':
         '⚠ Remote endpoint may have CORS restrictions. For local Ollama, set OLLAMA_ORIGINS=* and restart.',
     'ai.chat.clear': 'Clear',
