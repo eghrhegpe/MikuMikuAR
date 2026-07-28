@@ -4,18 +4,69 @@
 
 import { idbGet, idbSet } from '../backend/idb';
 import type { Store } from '../backend/idb';
+import type { AiConfigProvider, AiErrorKind, AiValidationResult } from './types';
+export type { AiConfigProvider } from './types';
 
 export interface AiConfig {
+    provider: AiConfigProvider;
     endpoint: string;
     apiKey: string;
     model: string;
 }
 
+export interface ProviderPreset {
+    endpoint: string;
+    model: string;
+    needsKey: boolean;
+    labelKey: string;
+    docUrl: string;
+}
+
+/** 服务商预设：端点、默认模型、是否需要 Key、文案 key、文档链接。 */
+export const PROVIDER_PRESETS: Record<AiConfigProvider, ProviderPreset> = {
+    ollama: {
+        endpoint: 'http://localhost:11434/v1/chat/completions',
+        model: 'llama3.2',
+        needsKey: false,
+        labelKey: 'ai.provider.ollama',
+        docUrl: 'https://ollama.com/',
+    },
+    deepseek: {
+        endpoint: 'https://api.deepseek.com/v1/chat/completions',
+        model: 'deepseek-chat',
+        needsKey: true,
+        labelKey: 'ai.provider.deepseek',
+        docUrl: 'https://platform.deepseek.com/api_keys',
+    },
+    openai: {
+        endpoint: 'https://api.openai.com/v1/chat/completions',
+        model: 'gpt-4o-mini',
+        needsKey: true,
+        labelKey: 'ai.provider.openai',
+        docUrl: 'https://platform.openai.com/api-keys',
+    },
+    openrouter: {
+        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        model: 'openai/gpt-4o-mini',
+        needsKey: true,
+        labelKey: 'ai.provider.openrouter',
+        docUrl: 'https://openrouter.ai/keys',
+    },
+    custom: {
+        endpoint: '',
+        model: '',
+        needsKey: true,
+        labelKey: 'ai.provider.custom',
+        docUrl: '',
+    },
+};
+
 /** 零 key 默认路径：本地 Ollama（大模型零 key，小模型零成本）。见 ADR-196 开放问题 Q2 裁定。 */
 export const DEFAULT_AI_CONFIG: AiConfig = {
-    endpoint: 'http://localhost:11434/v1/chat/completions',
+    provider: 'ollama',
+    endpoint: PROVIDER_PRESETS.ollama.endpoint,
     apiKey: '',
-    model: 'llama3.2',
+    model: PROVIDER_PRESETS.ollama.model,
 };
 
 const CONFIG_STORE: Store = 'config';
@@ -44,12 +95,98 @@ export async function ensureAiConfigLoaded(): Promise<void> {
     await _hydrate();
 }
 
+/** 迁移旧配置：无 provider 字段时按 endpoint 推断，无法推断则回退 ollama。 */
+function migrateAiConfig(stored: Partial<AiConfig>): AiConfig {
+    const base = { ...DEFAULT_AI_CONFIG, ...stored };
+    if (!base.provider || !PROVIDER_PRESETS[base.provider]) {
+        const matched = (Object.keys(PROVIDER_PRESETS) as AiConfigProvider[])
+            .filter((p) => p !== 'custom')
+            .find((p) =>
+                base.endpoint.includes(
+                    PROVIDER_PRESETS[p].endpoint.replace('/v1/chat/completions', '')
+                )
+            );
+        base.provider = matched ?? 'custom';
+    }
+    return base;
+}
+
 async function _hydrate(): Promise<void> {
     try {
         const stored = await idbGet<AiConfig>(CONFIG_STORE, CONFIG_KEY);
-        _cache = stored ? { ...DEFAULT_AI_CONFIG, ...stored } : DEFAULT_AI_CONFIG;
+        _cache = stored ? migrateAiConfig(stored) : DEFAULT_AI_CONFIG;
     } catch {
         // IndexedDB 不可用（隐私模式 / 非浏览器环境）时静默回退默认
         _cache = DEFAULT_AI_CONFIG;
     }
+}
+
+/** 校验配置是否足够发起一次对话。 */
+export function validateAiConfig(config: AiConfig): AiValidationResult {
+    const preset = PROVIDER_PRESETS[config.provider];
+    if (!config.endpoint.trim()) {
+        return { ok: false, kind: 'missingEndpoint', message: 'ai.validation.missingEndpoint' };
+    }
+    if (preset.needsKey && !config.apiKey.trim()) {
+        return { ok: false, kind: 'missingKey', message: 'ai.validation.missingKey' };
+    }
+    if (!config.model.trim()) {
+        return { ok: false, kind: 'missingEndpoint', message: 'ai.validation.missingModel' };
+    }
+    return { ok: true, message: 'ai.validation.ok' };
+}
+
+/** 根据 testConnection / streamChat 的错误消息分类错误类型。 */
+export function classifyAiError(
+    message: string,
+    corsRisk: 'none' | 'possible' | 'high'
+): AiErrorKind {
+    const m = message.toLowerCase();
+    if (m.includes('cors') || m.includes('access-control') || m.includes('failed to fetch')) {
+        return 'cors';
+    }
+    if (
+        m.includes('401') ||
+        m.includes('unauthorized') ||
+        m.includes('invalid authentication') ||
+        m.includes('incorrect api key')
+    ) {
+        return 'unauthorized';
+    }
+    if (
+        m.includes('404') ||
+        m.includes('not found') ||
+        (m.includes('model') && m.includes('not'))
+    ) {
+        return 'notFound';
+    }
+    if (m.includes('429') || m.includes('rate limit') || m.includes('too many requests')) {
+        return 'rateLimit';
+    }
+    if (
+        m.includes('500') ||
+        m.includes('502') ||
+        m.includes('503') ||
+        m.includes('504') ||
+        m.includes('internal server')
+    ) {
+        return 'server';
+    }
+    if (
+        m.includes('network') ||
+        m.includes('dial tcp') ||
+        m.includes('connection refused') ||
+        m.includes('connectex') ||
+        m.includes('err_connection') ||
+        m.includes('etimedout')
+    ) {
+        return 'network';
+    }
+    if (
+        corsRisk !== 'none' &&
+        (m.includes('fetch') || m.includes('networkerror') || m.includes('typeerror'))
+    ) {
+        return 'cors';
+    }
+    return 'unknown';
 }

@@ -3454,3 +3454,86 @@ textarea,
 .diag-status {
     font-size: var(--font-ui-xs);
 }
+
+.diag-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: calc(4px * var(--ui-scale));
+    padding: calc(4px * var(--ui-scale)) calc(8px * var(--ui-scale));
+    margin-bottom: calc(8px * var(--ui-scale));
+    border-radius: calc(4px * var(--ui-scale));
+    font-size: var(--font-ui-xs);
+    font-weight: 600;
+    border: calc(1px * var(--ui-scale)) solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+}
+
+.diag-status-badge--missingEndpoint,
+.diag-status-badge--missingKey {
+    background: color-mix(in srgb, var(--warn) 12%, transparent);
+    color: var(--warn);
+    border-color: color-mix(in srgb, var(--warn) 25%, transparent);
+}
+
+.diag-status-badge--cors,
+.diag-status-badge--error {
+    background: color-mix(in srgb, var(--danger) 12%, transparent);
+    color: var(--danger);
+    border-color: color-mix(in srgb, var(--danger) 25%, transparent);
+}
+
+.diag-status-badge--connected {
+    background: color-mix(in srgb, var(--success) 12%, transparent);
+    color: var(--success);
+    border-color: color-mix(in srgb, var(--success) 25%, transparent);
+}
+
+.diag-status-badge--disconnected,
+.diag-status-badge--testing {
+    background: var(--surface2);
+    color: var(--text-muted);
+}
+
+.diag-advice {
+    display: none;
+    padding: calc(6px * var(--ui-scale)) calc(8px * var(--ui-scale));
+    margin-bottom: calc(8px * var(--ui-scale));
+    border-radius: calc(4px * var(--ui-scale));
+    font-size: var(--font-ui-xs);
+    line-height: 1.5;
+    background: color-mix(in srgb, var(--warn) 10%, transparent);
+    color: var(--warn);
+    border: calc(1px * var(--ui-scale)) solid color-mix(in srgb, var(--warn) 20%, transparent);
+}
+
+.diag-advice--unauthorized,
+.diag-advice--notFound,
+.diag-advice--rateLimit,
+.diag-advice--server,
+.diag-advice--network,
+.diag-advice--cors,
+.diag-advice--unknown {
+    background: color-mix(in srgb, var(--danger) 10%, transparent);
+    color: var(--danger);
+    border-color: color-mix(in srgb, var(--danger) 20%, transparent);
+}
+
+.diag-provider-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: calc(6px * var(--ui-scale));
+    align-items: center;
+    margin-bottom: calc(8px * var(--ui-scale));
+}
+
+.diag-link {
+    font-size: var(--font-ui-xs);
+    color: var(--accent);
+    text-decoration: none;
+    margin-left: calc(4px * var(--ui-scale));
+}
+
+.diag-link:hover {
+    text-decoration: underline;
+}

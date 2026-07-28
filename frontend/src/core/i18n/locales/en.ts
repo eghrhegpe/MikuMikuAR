@@ -1934,13 +1934,46 @@ export const en: Record<string, string> = {
     'ai.control.pending': '⏳ Pending Action — review and apply',
     'ai.control.apply': 'Apply',
     'ai.control.cancel': 'Cancel',
-    'ai.control.unsupported': 'This action is not supported yet. Try describing what you want to change differently.',
+    'ai.control.unsupported':
+        'This action is not supported yet. Try describing what you want to change differently.',
     'ai.control.executing': 'Executing...',
     'ai.control.cancelled': 'Action cancelled.',
-    'ai.control.confirmDestructive': 'This action will change the current scene state ({action}). Continue?',
+    'ai.control.confirmDestructive':
+        'This action will change the current scene state ({action}). Continue?',
     'ai.config.corsWarning':
         '⚠ Remote endpoint may have CORS restrictions. For local Ollama, set OLLAMA_ORIGINS=* and restart.',
     'ai.chat.clear': 'Clear',
     'ai.errors.resolveFailed': 'AI service failed to initialize. Check console for details.',
+
+    // Provider presets and status feedback
+    'ai.provider.ollama': 'Ollama',
+    'ai.provider.deepseek': 'DeepSeek',
+    'ai.provider.openai': 'OpenAI',
+    'ai.provider.openrouter': 'OpenRouter',
+    'ai.provider.custom': 'Custom',
+    'ai.config.providerHint': 'Choose a provider and enter your API key',
+    'ai.config.doc': '{provider} docs →',
+    'ai.validation.missingEndpoint': 'Missing API endpoint',
+    'ai.validation.missingKey': 'Missing API key',
+    'ai.validation.missingModel': 'Missing model name',
+    'ai.validation.ok': 'Configuration complete',
+    'ai.status.missingEndpoint': 'Endpoint not configured',
+    'ai.status.missingKey': 'API key required',
+    'ai.status.cors': 'CORS risk',
+    'ai.status.connected': 'Connected',
+    'ai.status.disconnected': 'Disconnected',
+    'ai.status.testing': 'Testing',
+    'ai.status.error': 'Connection failed',
+    'ai.errorAdvice.missingEndpoint': 'Please select a provider or enter the API endpoint.',
+    'ai.errorAdvice.missingKey': 'This provider requires an API key.',
+    'ai.errorAdvice.cors':
+        'For local Ollama set OLLAMA_ORIGINS=* and restart; remote APIs may need a same-origin proxy.',
+    'ai.errorAdvice.unauthorized': 'API key invalid or expired.',
+    'ai.errorAdvice.notFound': 'Endpoint or model not found; check the model name.',
+    'ai.errorAdvice.rateLimit': 'Too many requests; please try again later.',
+    'ai.errorAdvice.server': 'Provider server error; please try again later.',
+    'ai.errorAdvice.network': 'Network connection failed; check the endpoint or service status.',
+    'ai.errorAdvice.unknown': 'Unknown error; check configuration or console.',
+
     'ai.config.notResolved': 'AI service not ready yet, please wait...',
 };
