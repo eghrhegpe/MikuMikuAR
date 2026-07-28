@@ -107,15 +107,75 @@ function renderMenu(schema: MenuNode[], container: HTMLElement): () => void
     kind: 'custom',
     renderCustom: (c) => {
         cardContainer(c, (inner) => { /* 自由渲染 DOM */ });
-        return () => { /* 可选 dispose：释放监听器/计时器 */ };
+        // 返回 cleanup 仅在有需要手动释放的资源时必要（见下方决策表）
     },
 }
 ```
 
-**dispose 契约**（ADR-093 §5 P1 风险项）：
-- `renderCustom` 返回的函数会被 `renderMenu` 收集并在层级卸载时调用
-- 内部创建的子控件**必须**通过 `getCurrentRenderingMenu()?.registerControl(update)` 注册，使 `SlideMenu.dispose()` 能级联释放
-- 未返回 dispose 且未注册控件的 `renderCustom`，其 DOM/监听器在层级切换时泄漏
+**cleanup 要不要返回？** 按实际情况分三类：
+
+| 场景 | 是否需要返回 cleanup | 原因 |
+|------|:---:|------|
+| `return renderMenu(schema, container)` | ✅ 自动有 | `renderMenu` 永远返回 cleanup |
+| 仅调用 `slideRow` / `addToggleRow` / `addSliderRow` 等 builder，无手写 `addEventListener` | ❌ 不需要 | DOM 被 `innerHTML = ''` 清零即可，无持久引用 |
+| 手写了 `addEventListener` / `setInterval` / `createKeyboardNav` / AbortController | ⚠️ 必须返回 cleanup | 否则层级切换后监听器泄漏 |
+
+**现状：** 84 个 renderCustom 中，17 个（20%）返回了 cleanup，67 个（80%）无返回值。无返回值的绝大多数属于上述第二类（纯 builder 调用），这是合理的。
+
+**例外需要关注：** 如果 renderCustom 内创建了自定义 DOM 并绑定了事件监听，但没有返回 cleanup，则在 SlideMenu 重渲染时监听器会泄漏。这类代码在规范上是不合规的，需要在 code review 中标记。
+
+**最佳实践：**
+
+```ts
+// 模式 A：纯 builder — 不需要 cleanup（最常见，80% 的 renderCustom 属于此类）
+renderCustom: (c) => {
+    cardContainer(c, (inner) => {
+        addSectionTitle(inner, t('section.title'));
+        slideRow(inner, 'lucide:cog', t('btn.action'), true, () => handleAction());
+    });
+    // 无需 return
+},
+
+// 模式 B：renderMenu — 自动获得 cleanup
+renderCustom: (container) => {
+    return renderMenu(buildXxxSchema(), container);
+},
+
+// 模式 C：手写监听器 / keyboard nav — 必须手动返回 cleanup
+renderCustom: (c) => {
+    const navDisp = createKeyboardNav(listEl, { selector: '.my-item' });
+    cardContainer(c, (inner) => { inner.appendChild(listEl); });
+    return () => navDisp.dispose();
+},
+```
+
+**cardContainer 返回值：** `cardContainer(fn)` 返回 `fn` 的回调结果。仅在你需要将内部 `renderMenu` 的 cleanup 对外传递时才写 `return cardContainer(...)`。否则作为语句调用即可。当前代码库中 135 处调用仅 5 处利用了返回值——这是正常的。
+
+### 自定义类名导航契约
+
+`SlideMenu._ensureNavMarkers()` 在每次读取 `panelItems` 时自动扫描 panel 内的 DOM，给匹配标准类名的元素打上 `[data-nav-item]`。如果新增的面板使用了**非标准类名**做交互行，需要在 `_ensureNavMarkers` 中注册映射。
+
+**已覆盖的标准类名：**
+
+| CSS 选择器 | 聚焦策略 | 用途 |
+|-----------|---------|------|
+| `.slide-item` | 聚焦行本身 | 通用导航行 |
+| `.collapsible-header` | 聚焦折叠头 | 折叠面板 |
+| `.toggle-row` | 聚焦内部 checkbox | 开关行 |
+| `.cs-row` (含 `.cs-bar`) | 聚焦滑块轨道，←→ 调值 | 滑条行 |
+| `.type-row` + `.mode-btn` | 二维组导航，←→ 组内移动 | 模式切换 |
+| `.preset-group` + `.preset-chip` | 二维组导航，←→ 组内移动 | 预设芯片 |
+
+**已知缺口（未覆盖的非标准类名）：**
+
+| 位置 | 自定义类名 | 问题 | 建议 |
+|------|----------|------|------|
+| `model-detail.ts` | `.morph-row` | 变形的滑条行使用独立类名 | 改为 `.cs-row` + `.cs-bar` 标准模式 |
+| `settings-diagnostic.ts` | `.diag-mode-row` | mode-btn 在非标准父容器中 | 改为 `.type-row` 或注册 `.diag-mode-row` 映射 |
+| `motion-pose-levels.ts` 等 | `.btn-group` | preset-chip 在 `.btn-group` 中 | 改为 `.preset-group` |
+| `model-detail.ts` | `.model-detail-tab-btn` | 详情 tab 无键盘导航 | 统一为 `.type-row` + `.mode-btn` |
+
+**给新面板开发者的规则：** 交互行优先使用标准类名（`.slide-item` / `.cs-row` + `.cs-bar` / `.type-row` + `.mode-btn`），即可零成本获得键盘导航。如果必须使用自定义类名，则需在 `_ensureNavMarkers` 中增加映射，否则该行无法被键盘导航到达。
 
 ### folder 节点 vs PopupRow 导航
 
