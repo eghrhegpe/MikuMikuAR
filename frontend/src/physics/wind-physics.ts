@@ -15,10 +15,12 @@
  *      getRigidBodyBundleMap（bundle 容器）在联邦当前无任何 addRigidBodyBundle 调用，
  *      恒为空，不可作为施力目标（见 getRigidBodyMap 注释）。
  *   2. **模型原生真物理刚体**（头发/裙子 Physics/PhysicsWithBone）——经
- *      applyForceToModelRigidBodies 守卫式反射（FollowBone 跳过）。
- *      注意：WASM 内建物理下 MmdWasmModel._physicsModel 为 null，此路径当前返回 0
- *      （见 mmd-adapter 注释），属 Path 2 未来 ADR 范畴，非本次路径1 修复范围。
- *   虚拟裙骨只对无裙骨模型生效；本次修复使**联邦自建 Dynamic 刚体**真正受风。
+ *      applyForceToModelRigidBodiesNative 走 P2 wasm 导出（ADR-201），
+ *      从 model.ptr 在 wasm 侧解析原生 bundle 施力，FollowBone 由 wasm 跳过。
+ *      旧版反射 _physicsModel._bundle 在 WASM 内建物理下为 null（见 mmd-adapter），
+ *      已由 P2 导出替代，原生发丝/裙摆现在真实受风。
+ *   虚拟裙骨只对无裙骨模型生效；路径1 使**联邦自建 Dynamic 刚体**受风，
+ *   路径2（本文件）使**模型原生发丝/裙摆**受风——两者并存。
  */
 
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
@@ -27,7 +29,7 @@ import { MmdWasmRuntime as MmdWasmRuntimeClass } from 'babylon-mmd/esm/Runtime/O
 import type { MmdWasmPhysicsRuntimeImpl } from 'babylon-mmd/esm/Runtime/Optimized/Physics/mmdWasmPhysicsRuntimeImpl';
 import { getWindVector, isWindActive } from '../core/wind-utils';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
-import { getPhysicsImpl, getRigidBodyBundleMap, getRigidBodyMap, applyForceToModelRigidBodies } from '@/core/mmd-adapter';
+import { getPhysicsImpl, getRigidBodyBundleMap, getRigidBodyMap, applyForceToModelRigidBodiesNative } from '@/core/mmd-adapter';
 import { modelRegistry } from '@/core/config';
 
 // 薄转发：保留历史导出名 _getBundles，避免 wind-physics.test.ts 改动（ADR-192 双轨过渡）
@@ -87,14 +89,15 @@ function _onPhysicsSync(impl: MmdWasmPhysicsRuntimeImpl): void {
         body.applyCentralForce(_tmpWind);
     }
 
-    // (2) 模型原生真物理刚体（头发/裙子）：经守卫式反射施力（ADR-200），用独立更大系数。
-    // 只对 actor（stage 无需风）；applyForceToModelRigidBodies 内部按 physicsMode 筛 Dynamic。
+    // (2) 模型原生真物理刚体（头发/裙子）：经 P2 wasm 导出施力（ADR-201），用独立更大系数。
+    // 只对 actor（stage 无需风）；applyForceToModelRigidBodiesNative 内部从 model.ptr
+    // 在 wasm 侧解析原生 bundle 并施力，FollowBone 由 wasm 跳过。
     _tmpModelWind.copyFrom(wind).scaleInPlace(MODEL_WIND_FORCE_SCALE);
     for (const inst of modelRegistry.values()) {
         if (inst.kind !== 'actor' || !inst.mmdModel) {
             continue;
         }
-        applyForceToModelRigidBodies(inst.mmdModel, _tmpModelWind);
+        applyForceToModelRigidBodiesNative(impl.wasmInstance, inst.mmdModel, _tmpModelWind);
     }
 }
 
