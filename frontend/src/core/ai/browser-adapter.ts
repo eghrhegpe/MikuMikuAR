@@ -27,7 +27,7 @@ export class BrowserAiAdapter implements AiService {
         }
         return {
             available,
-            provider: /localhost|127\.0\.0\.1/i.test(endpoint) ? 'ollama' : 'openai-compat',
+            adapter: /localhost|127\.0\.0\.1/i.test(endpoint) ? 'ollama' : 'openai-compat',
             streaming: true,
             models: [cfg.model],
             apiKeyConfigured: !!cfg.apiKey,
