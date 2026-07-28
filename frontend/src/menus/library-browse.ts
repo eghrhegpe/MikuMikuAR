@@ -26,7 +26,7 @@ import { logWarn } from '../core/logger';
 import { SetLastBrowseDir } from '../core/wails-bindings';
 import { buildModelLevel } from './model-detail';
 import { buildStageTransformLevel } from './scene-menu';
-import { setModelFormation, type FormationType } from '../scene/scene';
+import { executeActionById } from '../core/action-executor';
 import {
     buildLevel,
     modelToRow,
@@ -42,14 +42,21 @@ import {
     buildTagDetailLevel,
     highlightRow,
     prepareModelRestore,
-    importFile,
 } from './library-actions';
-import { refreshLibrary } from './library-setup';
 import { librarySessionStore } from './library-session-store';
 
 // [修复] 数据未就绪时撤销本次 autoExpand，轮询等待 allModels 扫描/解压完成后
 // 再补做 push，避免解压未完成时进入空层（用户感知的"分类1为空/未刷新就进菜单"）。
 // [doc:adr-135] 计时器引用已迁入 LibrarySessionStore.restore.timer，由 store 统一管理。
+
+let _libraryActionsRegistered = false;
+
+function _ensureLibraryActions(): void {
+    if (!_libraryActionsRegistered) {
+        import('../core/action-defs/library-actions-def').then((m) => m.registerLibraryActions());
+        _libraryActionsRegistered = true;
+    }
+}
 
 function _isDirDataReady(targetDir: string): boolean {
     const t = normPath(targetDir);
@@ -200,6 +207,7 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
             return null;
         },
         onItemClick: (row: PopupRow) => {
+            _ensureLibraryActions();
             if (row.target && row.target.startsWith('scene:')) {
                 const id = row.target.replace('scene:', '');
                 const inst = modelRegistry.get(id);
@@ -237,16 +245,16 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                 return;
             }
             if (row.target === 'models:rescan') {
-                refreshLibrary();
+                void executeActionById('library:rescan', {});
                 return;
             }
             if (row.target === 'models:import-file') {
-                importFile();
+                void executeActionById('library:import-file', {});
                 return;
             }
             if (row.target && row.target.startsWith('formation:set:')) {
                 const type = row.target.replace('formation:set:', '');
-                setModelFormation(type as FormationType);
+                void executeActionById('library:set-formation', { type });
                 feedbackInfo('scene.formationStatus.' + type, undefined);
                 return;
             }

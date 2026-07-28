@@ -15,6 +15,7 @@ import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import { registerLoadRefreshHook, registerLibraryScannedHook } from '../core/load-refresh-registry';
 import type { MenuNode } from './menu-schema';
+import { executeActionById } from '../core/action-executor';
 // ======== 从子文件导入 ========
 import { buildSkyLevel } from './env-sky-levels';
 import { buildWindLevel } from './env-wind-levels';
@@ -252,6 +253,15 @@ export function buildParticleLevel(): PopupLevel {
 
 // ======== Env Stack onFolderEnter ========
 
+let _envActionsRegistered = false;
+
+function _ensureEnvActions(): void {
+    if (!_envActionsRegistered) {
+        import('../core/action-defs/env-actions').then((m) => m.registerEnvActions());
+        _envActionsRegistered = true;
+    }
+}
+
 function envOnItemClick(row: PopupRow): void {
     if (!row.model) {
         return;
@@ -266,19 +276,10 @@ function envOnItemClick(row: PopupRow): void {
     clearEnvTextureBindingTarget();
     closeAllOverlays();
 
-    switch (target) {
-        case 'particle':
-            setEnvState({ particleCustomTexture: row.model.file_path });
-            break;
-        case 'sky':
-            setEnvState({ skyTexture: row.model.file_path });
-            break;
-        case 'stars':
-            setEnvState({ starsTexture: row.model.file_path });
-            break;
-        default:
-            break;
-    }
+    _ensureEnvActions();
+
+    const actionId = `env:bind-${target}-texture`;
+    void executeActionById(actionId, { filePath: row.model.file_path });
 
     getEnvMenu()?.reRender();
 }
