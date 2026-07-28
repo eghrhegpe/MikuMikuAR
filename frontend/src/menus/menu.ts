@@ -137,14 +137,22 @@ export class SlideMenu {
         this.container.tabIndex = -1;
         this._keydownDisp = createKeyboardNav(this.container, {
             selector: '.slide-item, .collapsible-header',
+            // 自定义项源：与 panelItems 完全对齐（含滑块/开关行过滤），保证 wrap 边界正确
+            getItems: () => this.panelItems,
             transitioningGuard: () => this.transitioning,
-            // ↑↓（vertical）仅跳 slider/tablist；→←/Enter（horizontal）还要跳原生 button
+            // ↑↓(vertical)：仅跳 tablist（滑块/开关行也要能上下遍历）；
+            // →←/Enter(horizontal)：停在滑块上时让给滑块调值（跳 .cs-bar），其余原生控件也跳。
             perKeySkip: (target, kind) => {
                 if (!target) return false;
-                if (target.closest('.cs-slider, .color-slider, .cs-bar, .cs-row, .cs-top')) return true;
                 if (target.closest('[role="tablist"]')) return true;
                 if (kind === 'horizontal') {
-                    return !!target.closest('button, input, textarea, select, [contenteditable]');
+                    // 滑块：←→ 由 .cs-bar 自身调值，菜单不抢
+                    if (target.closest('.cs-slider, .color-slider, .cs-bar')) return true;
+                    // 其余原生可输入控件（开关 checkbox 除外——需 →/Enter 切换）
+                    const native = target.closest('button, input, textarea, select, [contenteditable]');
+                    if (native && !(native instanceof HTMLInputElement && native.type === 'checkbox')) {
+                        return true;
+                    }
                 }
                 return false;
             },
@@ -634,8 +642,20 @@ export class SlideMenu {
     // ======== 内部方法 ========
 
     private get panelItems(): HTMLElement[] {
-        const all = this.panel.querySelectorAll<HTMLElement>('.slide-item, .collapsible-header');
-        return Array.from(all).filter((el) => !el.closest('[inert]'));
+        // 导航行：可点击行(.slide-item)/折叠头(.collapsible-header)/滑块行(.cs-row)/开关行(.toggle-row)。
+        // 滑块行只取含可聚焦 .cs-bar 的（排除提示行/按钮行等无控件的 .cs-row）。
+        const all = this.panel.querySelectorAll<HTMLElement>(
+            '.slide-item, .collapsible-header, .toggle-row'
+        );
+        const sliderRows = Array.from(
+            this.panel.querySelectorAll<HTMLElement>('.cs-row')
+        ).filter((r) => r.querySelector('.cs-bar'));
+        // 按 DOM 顺序合并（querySelectorAll 已按文档顺序，两集合并后按位置重排）
+        const merged = [...Array.from(all), ...sliderRows];
+        const inDomOrder = merged.sort((a, b) =>
+            a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1
+        );
+        return inDomOrder.filter((el) => !el.closest('[inert]'));
     }
 
     private clearFocus(): void {
@@ -653,8 +673,12 @@ export class SlideMenu {
         const el = items[this.focusIndex];
         el.classList.add('slide-focused');
         el.scrollIntoView({ block: 'nearest' });
-        if (document.activeElement !== el) {
-            el.focus({ preventScroll: true });
+        // 滑块行/开关行：焦点落到内部可聚焦控件（.cs-bar / input），
+        // 否则 ←→ 调值、Enter 切换无法触发（控件的 keydown 监听在内部元素上）。
+        const focusTarget =
+            el.querySelector<HTMLElement>('.cs-bar, input[type="checkbox"]') ?? el;
+        if (document.activeElement !== focusTarget) {
+            focusTarget.focus({ preventScroll: true });
         }
     }
 
