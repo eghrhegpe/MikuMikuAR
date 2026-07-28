@@ -1922,6 +1922,9 @@ export const zhCN: Record<string, string> = {
     'ai.control.availableTools': '当前可控制：',
     'ai.control.resultSuccess': '✅ 已执行：{message}',
     'ai.control.resultFailed': '❌ 执行失败：{message}',
+    'ai.control.undo': '撤销',
+    'ai.control.undoHint': '已执行「{action}」，可撤销',
+    'ai.control.undone': '↩️ 已撤销上一步操作。',
     'ai.config.corsWarning':
         '⚠ 远程端点可能存在 CORS 限制。本地 Ollama 请设置 OLLAMA_ORIGINS=* 后重启。',
     'ai.chat.clear': '清空',

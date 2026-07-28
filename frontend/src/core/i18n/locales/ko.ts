@@ -1925,6 +1925,14 @@ export const ko: Record<string, string> = {
     'ai.control.cancelled': '작업이 취소되었습니다.',
     'ai.control.confirmDestructive':
         '이 작업은 현재 장면 상태를 변경합니다({action}). 계속하시겠습니까?',
+    'ai.control.emptyHint':
+        '조정하고 싶은 내용을 자연어로 아래 입력란에 입력하세요. 예: "조명을 어둡게" 또는 "밤 환경으로 전환".',
+    'ai.control.availableTools': '현재 제어 가능:',
+    'ai.control.resultSuccess': '✅ 실행됨: {message}',
+    'ai.control.resultFailed': '❌ 실행 실패: {message}',
+    'ai.control.undo': '되돌리기',
+    'ai.control.undoHint': '"{action}"을(를) 실행했습니다. 되돌릴 수 있습니다',
+    'ai.control.undone': '↩️ 이전 작업을 되돌렸습니다.',
     'ai.config.corsWarning':
         '⚠ 원격 엔드포인트에 CORS 제한이 있을 수 있습니다. 로컬 Ollama는 OLLAMA_ORIGINS=*를 설정하고 다시 시작하세요.',
     'ai.chat.clear': '지우기',

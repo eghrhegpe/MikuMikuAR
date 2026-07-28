@@ -77,6 +77,9 @@ let _pendingAction: {
     toolCallId?: string;
 } | null = null;
 let _pendingContainer: HTMLElement | null = null;
+// [doc:adr-155] 破坏性动作执行成功后的可撤销引用（复用 scene:undo 快照能力）。
+// 仅保留最近一个；下一个 pending 动作入列或撤销执行后清空。
+let _lastUndoable: { label: string } | null = null;
 
 /** 台词模式：是否朗读出声（默认开，环境不支持时 speakLines 自静默）。 */
 let _speakEnabled = true;
@@ -855,6 +858,8 @@ function _tryQueuePendingAction(
         return false;
     }
     _pendingAction = { actionId, params, toolCallId: toolCallId ?? undefined };
+    // 新 pending 动作入列，旧的可撤销引用失效（避免跨操作误撤销）。
+    _lastUndoable = null;
     return true;
 }
 
@@ -867,6 +872,26 @@ function _renderControlHint(): void {
 
     const wrapper = document.createElement('div');
     wrapper.className = 'diag-control-hint';
+
+    // [doc:adr-155] 上一个破坏性动作可撤销时，置顶渲染“撤销”入口（兑现 UX“操作结果可撤销”）。
+    if (_lastUndoable) {
+        const undoRow = document.createElement('div');
+        undoRow.className = 'diag-control-undo-row';
+        undoRow.setAttribute('data-testid', 'ai:control:undo-row');
+
+        const undoHint = document.createElement('span');
+        undoHint.className = 'diag-control-undo-hint';
+        undoHint.textContent = t('ai.control.undoHint', { action: _lastUndoable.label });
+        undoRow.appendChild(undoHint);
+
+        const undoBtn = document.createElement('button');
+        undoBtn.textContent = t('ai.control.undo');
+        undoBtn.className = 'preset-chip';
+        undoBtn.addEventListener('click', () => _undoLastAction(undoBtn));
+        undoRow.appendChild(undoBtn);
+
+        wrapper.appendChild(undoRow);
+    }
 
     const hint = document.createElement('div');
     hint.className = 'diag-control-hint-text';
@@ -887,6 +912,25 @@ function _renderControlHint(): void {
     }
 
     _pendingContainer.appendChild(wrapper);
+}
+
+async function _undoLastAction(btn: HTMLButtonElement): Promise<void> {
+    if (!_lastUndoable) {
+        return;
+    }
+    btn.disabled = true;
+    btn.textContent = t('ai.control.executing');
+    // scene:undo 内部已处理“无快照可撤销”的反馈（feedbackStatus）。
+    const result = await executeAction('scene:undo', {});
+    _lastUndoable = null;
+    _messages.push({
+        role: 'assistant',
+        content: result.success
+            ? t('ai.control.undone')
+            : t('ai.control.resultFailed', { message: result.message }),
+    });
+    _renderControlHint();
+    _renderChat();
 }
 
 function _renderPendingAction(): void {
@@ -963,6 +1007,10 @@ async function _applyPendingAction(btn: HTMLButtonElement): Promise<void> {
     btn.textContent = t('ai.control.executing');
 
     const result = await executeAction(_pendingAction.actionId, _pendingAction.params);
+    // [doc:adr-155] 破坏性动作执行成功后记录可撤销引用，供 hint 区渲染“撤销”按钮。
+    if (result.success && action?.destructive) {
+        _lastUndoable = { label: action.label };
+    }
     const toolCallId = _pendingAction.toolCallId;
     const toolContent = JSON.stringify({
         success: result.success,

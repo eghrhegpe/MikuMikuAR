@@ -1930,6 +1930,14 @@ export const ja: Record<string, string> = {
     'ai.control.cancelled': '操作がキャンセルされました。',
     'ai.control.confirmDestructive':
         'この操作は現在のシーン状態を変更します（{action}）。続行しますか？',
+    'ai.control.emptyHint':
+        '調整したい内容を自然言語で下の入力欄に入力してください。例：「照明を暗く」または「夜の環境に切り替え」。',
+    'ai.control.availableTools': '現在制御可能：',
+    'ai.control.resultSuccess': '✅ 実行しました：{message}',
+    'ai.control.resultFailed': '❌ 実行に失敗：{message}',
+    'ai.control.undo': '元に戻す',
+    'ai.control.undoHint': '「{action}」を実行しました。元に戻せます',
+    'ai.control.undone': '↩️ 前の操作を元に戻しました。',
     'ai.config.corsWarning':
         '⚠ リモートエンドポイントにCORS制限がある可能性があります。ローカルOllamaは OLLAMA_ORIGINS=* を設定して再起動してください。',
     'ai.chat.clear': 'クリア',
