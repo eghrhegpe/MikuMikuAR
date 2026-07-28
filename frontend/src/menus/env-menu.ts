@@ -16,6 +16,7 @@ import { renderMenu } from './render-menu';
 import { registerLoadRefreshHook, registerLibraryScannedHook } from '../core/load-refresh-registry';
 import type { MenuNode } from './menu-schema';
 import { executeActionById } from '../core/action-executor';
+import { registerEnvActions } from '../core/action-defs/env-actions';
 // ======== 从子文件导入 ========
 import { buildSkyLevel } from './env-sky-levels';
 import { buildWindLevel } from './env-wind-levels';
@@ -255,14 +256,9 @@ export function buildParticleLevel(): PopupLevel {
 
 // ======== Env Stack onFolderEnter ========
 
-let _envActionsRegistered = false;
-
-function _ensureEnvActions(): void {
-    if (!_envActionsRegistered) {
-        import('../core/action-defs/env-actions').then((m) => m.registerEnvActions());
-        _envActionsRegistered = true;
-    }
-}
+// [doc:adr-155] 动作定义为纯叶子模块，模块加载即静态注册，
+// 避免异步 import().then() 与同步 dispatch 的首次点击竞态。
+registerEnvActions();
 
 function envOnItemClick(row: PopupRow): void {
     if (!row.model) {
@@ -277,8 +273,6 @@ function envOnItemClick(row: PopupRow): void {
     const target = getEnvTextureBindingTarget();
     clearEnvTextureBindingTarget();
     closeAllOverlays();
-
-    _ensureEnvActions();
 
     const actionId = `env:bind-${target}-texture`;
     void executeActionById(actionId, { filePath: row.model.file_path });

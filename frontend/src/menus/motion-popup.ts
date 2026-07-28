@@ -6,6 +6,7 @@ import type { PopupLevel, PopupRow } from '../core/config';
 import { registerPopupMenu } from './menu-factory';
 import { registerLoadRefreshHook, registerLibraryScannedHook } from '../core/load-refresh-registry';
 import { executeActionById } from '../core/action-executor';
+import { registerMotionActions } from '../core/action-defs/motion-actions';
 import { buildProcMotionLevel } from './motion-procmotion-levels';
 import { buildGazeTrackingLevel } from './motion-gaze-levels';
 import { buildCameraLevel } from './motion-camera-levels';
@@ -97,11 +98,15 @@ function motionOnFolderEnter(row: PopupRow): PopupLevel | null {
 // 点击路由
 // ═══════════════════════════════════════════════════════════
 
+// [doc:adr-155] 动作注册：由于 scene/motion 与其 action-defs 存在循环依赖，
+// 不能在模块加载期顶层调用（此时 action-defs 依赖未初始化）。
+// 改为首次点击时同步注册（则所有模块已就绪），同步 registerMotionActions
+// 已完成后才 dispatch，既破环又消除异步竞态。
 let _motionRegistered = false;
 
 function _ensureMotionActions(): void {
     if (!_motionRegistered) {
-        import('../core/action-defs/motion-actions').then((m) => m.registerMotionActions());
+        registerMotionActions();
         _motionRegistered = true;
     }
 }

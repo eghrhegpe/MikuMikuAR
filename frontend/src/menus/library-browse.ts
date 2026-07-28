@@ -27,6 +27,7 @@ import { SetLastBrowseDir } from '../core/wails-bindings';
 import { buildModelLevel } from './model-detail';
 import { buildStageTransformLevel } from './scene-menu';
 import { executeActionById } from '../core/action-executor';
+import { registerLibraryActions } from '../core/action-defs/library-actions-def';
 import {
     buildLevel,
     modelToRow,
@@ -49,11 +50,14 @@ import { librarySessionStore } from './library-session-store';
 // 再补做 push，避免解压未完成时进入空层（用户感知的"分类1为空/未刷新就进菜单"）。
 // [doc:adr-135] 计时器引用已迁入 LibrarySessionStore.restore.timer，由 store 统一管理。
 
+// [doc:adr-155] 动作注册：由于 library-browse 与 library-actions-def 依赖链存在循环，
+// 不能在模块加载期顶层调用（此时依赖未初始化）。
+// 改为首次点击时同步注册（则所有模块已就绪），既破环又消除异步竞态。
 let _libraryActionsRegistered = false;
 
 function _ensureLibraryActions(): void {
     if (!_libraryActionsRegistered) {
-        import('../core/action-defs/library-actions-def').then((m) => m.registerLibraryActions());
+        registerLibraryActions();
         _libraryActionsRegistered = true;
     }
 }
