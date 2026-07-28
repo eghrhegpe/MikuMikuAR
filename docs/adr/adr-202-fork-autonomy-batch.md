@@ -1,6 +1,7 @@
 # ADR-202: fork 自治改动批次 — 一次回灌批量根治可改 fork 的上游缺口
 
-> **状态**: 🟡 草案（承重项 P0「fork 产物 CI 可复现分发」未解决前，任何 fork 改动不得进发版）
+> **状态**: 🟢 P0 已落地（vendored + postinstall 方案，spr/mpr 生产变体经真机验证风力起效）；P2/P3 搭车项待续
+> **P0 实现**: 采纳 vendored 方案（非初版推荐的 git 依赖）——fork 重编译的 spr/mpr wasm 产物提交进 `frontend/vendor/babylon-mmd-wasm/`，`postinstall`（`scripts/apply-vendored-wasm.mjs`）在 `npm ci` 后注入 `node_modules/babylon-mmd`。生产仅加载 spr/mpr（`InstanceType/*.js` 的 `../wasm/{spr,mpr}` import），mpd 为 debug 变体不分发。真机实测：模型原生发丝/裙摆随风摆动。
 > **关联**: ADR-201（原生刚体施力导出，本批次 P1 受益项）、ADR-200（路径1 已采纳）、ADR-192（永久自治下游）、`docs/upstream/babylon-mmd-compatibility.md`（23 处应对台账，本 ADR 在「自治路径解锁」新前提下重评）
 > **背景**: ADR-192 时代「fork 改动只能走 PR、PR 被上游拒」→ 全部本地应对。ADR-201 证明 **fork 本地可编译回灌**，分类前提翻转：对**运行时功能类**缺口，「改 fork」首次成为比「JS 反射/绕路」更根治的选项。本 ADR 把值得改 fork 的收敛为一个批次，避免零散决策。
 
@@ -25,17 +26,18 @@
 | 方案 | CI 可复现 | 代价 | 采纳 |
 |------|----------|------|------|
 | `file:` 本地路径 | ❌ CI 无 `C:\Users\...\babylon-mmd`，发版直接挂 | — | ❌ |
-| **git 依赖**（`github:eghrhegpe/babylon-mmd#<tag>`，dist 提交进 fork） | ✅ `npm ci` 可复现拉取 | fork 需 commit 编译产物、打 tag | ✅ **推荐** |
-| vendored 进 app 仓库（`frontend/vendor/babylon-mmd` + `file:./vendor/...`） | ✅ | app 仓库体积涨、wasm 二进制入 git | 🟡 折中 |
+| git 依赖（`github:eghrhegpe/babylon-mmd#<tag>`，dist 提交进 fork） | ✅ `npm ci` 可复现拉取 | fork 需 commit 编译产物、打 tag；切版会连带 1.2→1.3 API 跳变 | 🟡 未选 |
+| **vendored 进 app 仓库**（`frontend/vendor/babylon-mmd-wasm/` + postinstall 注入） | ✅ | app 仓库体积涨、wasm 二进制入 git | ✅ **已采纳** |
 
-### 1.3 推荐：git 依赖（方案 2）
+### 1.3 已落地：vendored + postinstall（方案 3）
 
-1. fork 里编译 `dist/`（`build-esm`）+ `wasm/mpr`（`build-wasm-mpr`），**commit 编译产物**，打 tag（如 `v1.2.0-mmar1`）。
-2. app `package.json` 改 `"babylon-mmd": "github:eghrhegpe/babylon-mmd#v1.2.0-mmar1"`，`npm i` 重新生成 lockfile（resolved 指向 git tarball + commit-ish）。
-3. CI `npm ci` 按新 lockfile 从 GitHub 拉 fork tag → 产物含新导出，可复现。
-4. 此路径同时解决「原仓库拒 AI PR」——不发 PR，吃自己 fork 的 tag。
+> 未选 git 依赖的原因：fork 是 1.3.0 源、app 装 1.2.0，切 git 依赖等于强制版本跳变（1.2→1.3），需先扫 API 破坏面；vendored 仅注入 wasm 产物，不动 JS 版本，风险更小。
 
-> **注**：git 依赖需 fork 仓库把编译产物 commit 进版本（默认 `.gitignore` 排除 `dist/`/`wasm/`，需为分发 tag 例外）。或建独立 `-dist` 分支只放产物。
+1. fork 重编译 `build-wasm-spr` + `build-wasm-mpr`（生产变体）。
+2. app 将 `spr/`+`mpr/` 产物拷进 `frontend/vendor/babylon-mmd-wasm/`（整目录，删 `.gitignore`），**commit 入 git**（`*.wasm` 已由 `.gitattributes` 标 binary）。
+3. `postinstall`（`scripts/apply-vendored-wasm.mjs`）在 `npm i`/`npm ci` 后把 vendor 产物 `cpSync` 覆盖进 `node_modules/babylon-mmd/esm/Runtime/Optimized/wasm/{spr,mpr}`。
+4. `npm ci` 先清空 node_modules 再装，postinstall 在装完后执行 → 注入不会被清掉，可复现。
+5. 同时解决「原仓拒 AI PR」——不发 PR，fork 产物随 app 仓走。
 
 ---
 
@@ -69,7 +71,7 @@
 
 | 阶段 | 内容 | 编译路径 | 依赖 |
 |------|------|---------|------|
-| **P0** | 定分发方案（git 依赖）→ fork commit 产物 + 打 tag → app 改 `package.json` + 重生 lockfile → **CI `npm ci` 验证拉到 fork 版** | — | 无（最先做） |
+| **P0** | ✅ 已落地：vendored 方案——fork 重编 spr/mpr → 拷进 `frontend/vendor/` commit → postinstall 注入 → spr/mpr 含导出、真机风力起效 | — | 无（已完成） |
 | **P1** | 原生刚体施力导出（ADR-201，`mmdModelRigidBodyApplyCentralForce` 等，**注：fork 源码里私有字段访问需改用 `physics_model_context()` 访问器，否则 E0616 编译失败**）+ `physics.impl`/`_rigidBodyBundleMap` 提公开 getter | `build-wasm-mpr` + `build-esm` | P0 |
 | **P2** | `StreamAudioPlayer` 加 `get audio()` | `build-esm` | P0 |
 | **P3（可选）** | `setRuntimeAnimation` reset 时钟 / `onFinishObservable` | `build-esm` | P0 |
@@ -80,15 +82,16 @@
 
 ## 四、对 CI / 发版的影响（本 ADR 核心结论）
 
-- **P0 未解决前**：任何 fork 改动**不得**合入 app 发版路径——CI 拿官方版，改动蒸发，调用即崩。
-- **P0 解决后**：CI 影响可控——`npm ci` 拉 fork tag（git 依赖），无本地机器依赖；lockfile 锁定 commit-ish，可复现；升级 fork = 换 tag + 重生 lockfile，与普通依赖升级同构。
-- **软风险**：git 依赖下 `npm ci` 需能访问 GitHub（CI 已联网，无碍）；fork tag 一旦被引用不可移动（同 npm 版本不可变约定）。
+- **P0 已解决（vendored）**：CI `npm ci` 后 postinstall 自动注入 vendor 的 spr/mpr → 产物含 P2 导出，无本地机器依赖，可复现；babylon-mmd 仍锁 1.2.0，无版本跳变风险。
+- **升级路径**：fork 再改 → 重编 spr/mpr → 重拷 vendor → commit；postinstall 不变。
+- **软风险**：vendor 的 wasm 二进制与 fork 源可能逐渐漂移（手工拷贝），需在 fork 改动后纪律重拷；app 仓体积因 wasm 二进制增长（可接受）。
 
 ---
 
 ## 五、待办
 
-1. **P0 拍板**：确认走 git 依赖（方案 2）还是 vendored（方案 3）。
-2. fork 分发 tag 的产物提交策略（`.gitignore` 例外 or 独立 `-dist` 分支）。
-3. P0 链路验证：改 `package.json` → 重生 lockfile → 本地 `npm ci` 模拟 CI 拉取 → 确认 `node_modules/babylon-mmd` 含新导出。
-4. 验证通过后按 P1 → P2 实现（fork 改动需终端跨目录操作，工作区外沙箱限制，见 ADR-201）。
+1. ~~P0 拍板~~ ✅ 已定：vendored 方案落地，真机风力起效。
+2. **CI 干净验证**（🔴 待做）：跑一次完整 `npm ci` 坐实 postinstall 在干净重装后自动注入 spr/mpr（当前仅手动跑脚本验证）。
+3. **P2 搭车**（🟡）：`StreamAudioPlayer` 加 `get audio()` ——纯 TS `build-esm`，下次 fork 改动时搭车，消除条目 9 的 `_audio` 反射。
+4. **`MODEL_WIND_FORCE_SCALE` 标定**（🟢）：现风力已起效，按实测摆幅调系数。
+5. **vendor/fork 漂移防护**（🟡）：fork 每次改 wasm 后必须重拷 vendor，否则两者静默不一致。
