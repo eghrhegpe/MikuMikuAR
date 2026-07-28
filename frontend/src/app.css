@@ -238,6 +238,14 @@
     outline-offset: calc(1px * var(--ui-scale));
 }
 
+/* 文本输入框使用更 subtle 的焦点环，避免与控件本身边框冲突 */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+    outline: calc(2px * var(--ui-scale)) solid var(--accent-dim);
+    outline-offset: calc(1px * var(--ui-scale));
+}
+
 /* ===== 移动端适配：窄屏缩小弹窗宽度 ===== */
 @media (max-width: 480px) {
     :root {
