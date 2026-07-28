@@ -22,7 +22,11 @@ export interface ParamDef {
 export interface ActionDef {
     /** 命名空间化 ID，如 'light:dirIntensity' */
     id: string;
-    /** i18n key 或 显示文本 */
+    /**
+     * 显示文本。注意：当前为硬编码中文，非 i18n key。
+     * 消费端（action-catalog 发给 LLM 的 description、pending 卡 UI）直接原样使用，未过 t()。
+     * NL 系统国际化为待办（见 ADR-155 修订记录），届时需改为 i18n key 并消费端包 t()。
+     */
     label: string;
     /** 所属域 */
     domain: 'settings' | 'scene' | 'motion' | 'env' | 'library';
