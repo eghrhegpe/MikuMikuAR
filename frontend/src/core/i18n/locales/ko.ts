@@ -1916,7 +1916,16 @@ export const ko: Record<string, string> = {
         '당신은 MikuMikuAR 씬 제어 어시스턴트입니다. 다음 도구를 사용하여 사용자의 요청에 따라 씬을 수정하세요.',
     'ai.system.controlFormat':
         'JSON 형식으로 응답하세요: {"action": "도구명", "params": {"매개변수명": "값"}}. 위 목록의 도구만 사용하세요. 지원되지 않는 작업이 요청되면 할 수 있는 작업을 설명하세요.',
+    'ai.actions.control.setLightIntensity': '조명 강도 설정',
+    'ai.actions.control.setLightColor': '조명 색상 설정',
+    'ai.actions.control.setCameraMode': '카메라 모드 전환',
+    'ai.actions.control.setEnvPreset': '환경 프리셋 전환',
+    'ai.actions.control.toggleGround': '바닥 표시 전환',
+    'ai.actions.control.loadModel': '모델 불러오기',
+    'ai.actions.control.loadMotion': '모션 교체',
+    'ai.actions.control.setPerformance': '성능 모드 전환',
     'ai.control.pending': '⏳ 대기 중인 작업 — 검토 후 적용',
+    'ai.control.pendingProgress': '⏳ 대기 중인 작업 ({current}/{total}) — 검토 후 적용',
     'ai.control.apply': '적용',
     'ai.control.cancel': '취소',
     'ai.control.unsupported':

@@ -23,9 +23,10 @@ export interface ActionDef {
     /** 命名空间化 ID，如 'light:dirIntensity' */
     id: string;
     /**
-     * 显示文本。注意：当前为硬编码中文，非 i18n key。
-     * 消费端（action-catalog 发给 LLM 的 description、pending 卡 UI）直接原样使用，未过 t()。
-     * NL 系统国际化为待办（见 ADR-155 修订记录），届时需改为 i18n key 并消费端包 t()。
+     * 显示文本。推荐填 i18n key（如 'ai.actions.control.setLightIntensity'），
+     * 消费端（action-catalog 发给 LLM 的 description、pending 卡 UI、撤销 hint）均过 t()。
+     * 过渡期兼容：未迁移的硬编码中文仍可用（t() 对非 key 字符串回退返回原文），
+     * 但新增动作应统一使用 ai.actions.<domain>.<name> 命名的 i18n key。
      */
     label: string;
     /** 所属域 */

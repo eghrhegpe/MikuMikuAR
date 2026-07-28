@@ -1939,7 +1939,16 @@ export const en: Record<string, string> = {
         'You are a MikuMikuAR scene control assistant. Use the following tools to modify the scene as requested by the user.',
     'ai.system.controlFormat':
         'Respond with a JSON object: {"action": "tool_name", "params": {"param1": "value1"}}. Only use tools from the list above. If the user asks for something not supported, explain what you can do.',
+    'ai.actions.control.setLightIntensity': 'Set light intensity',
+    'ai.actions.control.setLightColor': 'Set light color',
+    'ai.actions.control.setCameraMode': 'Switch camera mode',
+    'ai.actions.control.setEnvPreset': 'Switch environment preset',
+    'ai.actions.control.toggleGround': 'Toggle ground visibility',
+    'ai.actions.control.loadModel': 'Load model',
+    'ai.actions.control.loadMotion': 'Replace motion',
+    'ai.actions.control.setPerformance': 'Switch performance mode',
     'ai.control.pending': '⏳ Pending action — review before applying',
+    'ai.control.pendingProgress': '⏳ Pending action ({current}/{total}) — review before applying',
     'ai.control.apply': 'Apply',
     'ai.control.cancel': 'Cancel',
     'ai.control.unsupported':
