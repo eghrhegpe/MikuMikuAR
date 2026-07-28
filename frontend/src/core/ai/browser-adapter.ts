@@ -180,11 +180,11 @@ export class BrowserAiAdapter implements AiService {
             headers['Authorization'] = `Bearer ${cfg.apiKey}`;
         }
 
-        // 内部 AbortController：转发 req.signal + 30s 超时，并在 generator 退出（break/return）时强制中止底层 fetch（FR-10 / AC-6）
+        // 内部 AbortController：转发 req.signal + 可配超时（[doc:adr-199 P2-3]，先前硬编码 30s），并在 generator 退出（break/return）时强制中止底层 fetch（FR-10 / AC-6）
         const ac = new AbortController();
         const onAbort = (): void => ac.abort();
         req.signal?.addEventListener('abort', onAbort);
-        const timeoutId = setTimeout(() => ac.abort(), 30000);
+        const timeoutId = setTimeout(() => ac.abort(), cfg.timeoutMs);
 
         try {
             const response = await fetch(cfg.endpoint, {

@@ -3611,6 +3611,17 @@ textarea,
     margin-bottom: calc(8px * var(--ui-scale));
 }
 
+/* [doc:adr-199 P1-1] 模型能力分级提示（次要、弱化色） */
+.diag-control-hint-note {
+    font-size: var(--font-ui-xs);
+    line-height: 1.5;
+    color: var(--text-muted);
+    margin-bottom: calc(8px * var(--ui-scale));
+    padding: calc(6px * var(--ui-scale)) calc(8px * var(--ui-scale));
+    background: var(--surface2);
+    border-radius: calc(4px * var(--ui-scale));
+}
+
 .diag-control-hint-title {
     font-size: var(--font-ui-xs);
     font-weight: 600;
