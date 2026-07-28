@@ -1,8 +1,8 @@
 # ADR-154: 引入大模型交流能力 — 推荐路线（聊天面板打底）
 
-- **状态**: 🔄 规划中（推荐）
-- **日期**: 2026-07-20
-- **相关**: ADR-093（声明式菜单 Schema，NL 控场景上游）、ADR-153（无障碍，面板需 a11y）、app.contract（Go↔TS 绑定桥，116 函数契约）
+- **状态**: 🗑️ 已被 ADR-196 取代（Superseded）—— 本路线的技术目标（Go LLM 客户端 + 流式管线 + 聊天面板）已由 ADR-196 提前达成，架构合并（聊天 = 诊断面板「闲聊」tab 子集），无独立落点存续
+- **日期**: 2026-07-20（初版），2026-07-28（归档为被取代）
+- **相关**: ADR-196（AI 诊断助手，实际实现本路线目标的传输底座）、ADR-155（NL 控场景，叠加于同一管线）、ADR-093（声明式菜单 Schema，NL 控场景上游）、ADR-153（无障碍，面板需 a11y）、app.contract（Go↔TS 绑定桥）
 
 ---
 
@@ -13,6 +13,8 @@
 用户希望在 MikuMikuAR 中引入「大模型交流」能力，但有两个顾虑：(1) 市面编程器（Cursor / Claude Code 等）复杂度高，担心路线难走；(2) 范围不清导致 scope 膨胀。
 
 本 ADR 与 ADR-155（激进）、ADR-156（创意）并列给出三条候选路线，本文为**推荐路线**。
+
+> **⚠️ 归档说明（2026-07-28）**：本 ADR 的核心目标已由 [ADR-196](adr-196-llm-diagnostic-assistant.md) 提前实现且架构更优——ADR-196 起草时即声明「以 ADR-154 聊天面板为传输底座……聊天闲聊为其子集」。规划的 4 个落点无一按原样创建（详见下方「第一步交付」表的落地对照），继续挂「规划中」会误导后来者照原落点表重复实现 `ai-chat-panel.ts` / `llm-client.ts`，与现有 `core/ai/` 双适配器架构冲突。故归档为被取代，不再独立实施。
 
 ## 路线对照
 
@@ -33,14 +35,16 @@
 3. **纯增量、零侵入**：新增独立模块，不改动 Babylon 渲染循环、不改动 ADR-093 菜单动作层的既有实现；NL 控场景仅「调用已有菜单 handler」，不新增动作逻辑。
 4. **复用现有桥与面板机制**：走现成 Go↔TS Wails 绑定（116 函数契约）+ ADR-093 声明式面板，不从零造。
 
-### 第一步交付（聊天面板）
+### 第一步交付（聊天面板）——落地对照（2026-07-28 核实）
 
-| 模块 | 建议落点（规划，尚未创建） | 内容 |
-|------|--------------------------|------|
-| Go LLM 客户端 | `internal/app/llm/client.go` | `net/http` 调 OpenAI 兼容 `/v1/chat/completions`，SSE 流式解析，约 100–200 行 |
-| Go 绑定 | `internal/app/llm/binding.go` | 暴露 `LLMChat(stream bool, msgs) (<-chan string, error)` 给前端 |
-| TS 客户端封装 | `frontend/src/core/llm-client.ts` | 封装 Wails 绑定调用 + SSE 分片渲染 |
-| TS 面板 | `frontend/src/menus/ai-chat-panel.ts` | ADR-093 声明式面板，聊天 UI（输入框 + 消息流 + 流式占位） |
+> 下表左侧为本 ADR 原规划落点，右侧为 ADR-196 实际落地位置。**无一按原样创建**，全部合并或架构升级。
+
+| 模块 | 原规划落点 | 实际落地（ADR-196） | 说明 |
+|------|-----------|--------------------|------|
+| Go LLM 客户端 | `internal/app/llm/client.go` | ✅ `internal/app/llm/client.go`（321 行） | 落点一致，已实现 |
+| Go 绑定 | `internal/app/llm/binding.go` | ✅ `internal/app/ai_binding.go` + `internal/app/llm/tools.go` | 落点名不同，能力已具 |
+| TS 客户端封装 | `frontend/src/core/llm-client.ts` | ✅ `core/ai/{index,go-adapter,browser-adapter,sse}.ts` | **架构升级**：单 client → 双适配器（镜像 ADR-176） |
+| TS 面板 | `frontend/src/menus/ai-chat-panel.ts` | ✅ `menus/settings-diagnostic.ts` 的「闲聊」tab | **合并**：聊天面板从未独立创建，长进诊断面板 |
 
 ### 后续扩展（叠 NL 控场景）
 
@@ -67,3 +71,4 @@
 | 日期 | 修订 |
 |------|------|
 | 2026-07-20 | 初版，推荐路线定稿 |
+| 2026-07-28 | 归档为「已被 ADR-196 取代」：核心目标由 ADR-196 提前达成，架构合并（聊天 = 诊断面板闲聊 tab 子集），4 个规划落点全部合并/升级，无独立落点存续。补落地对照表，防后来者照原落点重复实现。 |
