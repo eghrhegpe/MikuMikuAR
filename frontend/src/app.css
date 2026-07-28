@@ -3490,7 +3490,8 @@ textarea,
 }
 
 .diag-status-badge--disconnected,
-.diag-status-badge--testing {
+.diag-status-badge--testing,
+.diag-status-badge--initializing {
     background: var(--surface2);
     color: var(--text-muted);
 }
