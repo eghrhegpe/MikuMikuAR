@@ -460,6 +460,47 @@ describe('SlideMenu — 焦点全面 (setupFocus/clearFocus/applyFocus/activateF
         expect(container.querySelector('.slide-focused')).toBeFalsy();
     });
 
+    it('panelItems 纳入滑块行(.cs-row 含 .cs-bar)与开关行(.toggle-row)', async () => {
+        // 用 renderCustom 注入真实控件行 DOM，验证方向键导航范围已扩展
+        const level: PopupLevel = {
+            label: 'F',
+            dir: '',
+            items: [],
+            renderCustom: (c) => {
+                const sliderRow = document.createElement('div');
+                sliderRow.className = 'cs-row';
+                const bar = document.createElement('div');
+                bar.className = 'cs-bar';
+                bar.tabIndex = 0;
+                sliderRow.appendChild(bar);
+                c.appendChild(sliderRow);
+                const toggleRow = document.createElement('div');
+                toggleRow.className = 'toggle-row';
+                const input = document.createElement('input');
+                input.type = 'checkbox';
+                toggleRow.appendChild(input);
+                c.appendChild(toggleRow);
+                // 无控件的提示行（.cs-row 但无 .cs-bar）—— 不应被纳入
+                const hintRow = document.createElement('div');
+                hintRow.className = 'cs-row';
+                c.appendChild(hintRow);
+            },
+        };
+        const p = new Promise<void>((resolve) => {
+            (menu as any).onAfterRender = () => resolve();
+        });
+        menu.reset(level);
+        await p;
+
+        const items = (menu as any).panelItems as HTMLElement[];
+        expect(
+            items.some((el) => el.classList.contains('cs-row') && el.querySelector('.cs-bar'))
+        ).toBe(true);
+        expect(items.some((el) => el.classList.contains('toggle-row'))).toBe(true);
+        // 无 .cs-bar 的提示行被排除
+        expect(items.filter((el) => el.classList.contains('cs-row')).length).toBe(1);
+    });
+
     it('applyFocus 给当前焦点索引添加样式', async () => {
         await initWithItems([
             { kind: 'action' as const, label: 'A', icon: 'i', target: 'a' },

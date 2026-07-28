@@ -132,14 +132,14 @@ export class DragSliderController {
         const delta = this.opts.step * mult;
 
         let next: number;
+        // ADR-140/153：仅 ←→ 调值。↑↓ 让给菜单列表遍历（滑块聚焦时上下键移动焦点，
+        // 而非调值），符合 WAI-ARIA slider 允许仅水平键的规范，避免与菜单导航抢键。
         switch (e.key) {
             case 'ArrowLeft':
-            case 'ArrowDown':
                 e.preventDefault();
                 next = Math.max(this.opts.min, this.snapToStep(this.opts.value - delta));
                 break;
             case 'ArrowRight':
-            case 'ArrowUp':
                 e.preventDefault();
                 next = Math.min(this.opts.max, this.snapToStep(this.opts.value + delta));
                 break;

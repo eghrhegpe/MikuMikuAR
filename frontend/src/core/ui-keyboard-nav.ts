@@ -56,6 +56,12 @@ export interface KeyboardNavOptions {
      * 为 true 时 ArrowRight 走 onEnter 路径；ArrowDown 仍为平级移动。
      */
     arrowRightActivate?: boolean;
+    /**
+     * 自定义导航项来源：提供后取代默认的 `container.querySelectorAll(selector)`。
+     * 用于 menu.ts —— 其 panelItems 含纯 CSS 无法表达的过滤（如“仅含 .cs-bar 的 .cs-row”），
+     * 保证焦点真相源（getActiveIndex 的索引）与 list.length 完全一致，避免 wrap 边界错位。
+     */
+    getItems?: () => HTMLElement[];
 }
 
 export function createKeyboardNav(
@@ -71,9 +77,11 @@ export function createKeyboardNav(
         const target = e.target instanceof HTMLElement ? e.target : null;
         if (target && options.skipSelector && target.closest(options.skipSelector)) return;
 
-        const items = container.querySelectorAll<HTMLElement>(selector);
+        const items = options.getItems
+            ? options.getItems()
+            : Array.from(container.querySelectorAll<HTMLElement>(selector));
         if (items.length === 0) return;
-        const list = Array.from(items);
+        const list = items;
 
         // 焦点真相源：优先外部 getActiveIndex（如 menu.ts 的 focusIndex），
         // 否则回退原生 `:focus` 反查（tablist / fullscreen-overlay 路径不变）。
