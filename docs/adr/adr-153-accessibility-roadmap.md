@@ -191,18 +191,18 @@ renderCanvas.setAttribute('aria-label', t('menu.canvasLabel'));
 
 实施 ADR-017 A2-02：在 `events.ts` 注册 `popstate` / `backbutton` 监听，按 MenuStack 深度逐层关闭，最外层才退出 App。Wails Go 端通过 `runtime.OnBackPress`（Android）转 JS 事件。
 
-#### 2.3 3D 场景键盘轨道控制
+#### 2.3 3D 场景键盘相机控制
 
-[events.ts](../../frontend/src/core/events.ts) 扩展：canvas 聚焦时启用 Arrow 键轨道控制（与 freefly WASD 并存）：
+[events.ts](../../frontend/src/core/events.ts) 扩展：orbit 模式下启用 **WSAD 环绕控制**（与 freefly WSAD 统一相机键位）：
 
 | 键 | 行为 |
 |----|------|
-| ←/→ | 相机 yaw ±5° |
-| ↑/↓ | 相机 pitch ±5° |
+| A/D | 相机环绕 alpha ±5° |
+| W/S | 相机仰角 beta ±5° |
 | + / - | 缩放 ±10% |
-| Shift+方向键 | 步长 ×3 |
+| Shift+键 | 步长 ×3 |
 
-shortcut-registry 增加守卫：canvas 聚焦时 Arrow 不触发全局快捷键。
+> **2026-07-28 修订（相机键位统一）**：初版用方向键 + `activeElement === canvas` 门，但用户难以聚焦 canvas，且与 freefly 的 WSAD 割裂、与播放 seek（←→）潜在抢键 —— 实测表现为「轨道模式下 WSAD 无效果」的困惑。现改为：相机控制统一用 **WSAD**（orbit=环绕、freefly=平移），**方向键从相机彻底让出**（菜单开=列表导航、菜单关=播放 seek）。触发门从「canvas 聚焦」改为与 freefly 一致的模式守卫 + 焦点不在菜单/输入框；orbit 相机工厂同步清空 Babylon 内置方向键输入（`keysUp/Down/Left/Right = []`）避免双路。
 
 #### 2.4 模型 alt text
 
@@ -309,3 +309,4 @@ expect(results.violations).toEqual([]);
 | 2026-07-20 | 初版，三阶段路线图 |
 | 2026-07-20 | 修订：核心原则补「不重复造 accessible name」「i18n 沿用现有 key」两条；Phase 3.1 从「新建 `a11y.*` 命名空间 + 10 个 key」精简为「3 处 `✕` 按钮复用 `common.close`/`common.delete`」；Phase 1.4 canvas aria-label 改为拼接现有 key + 模型名，不硬编码描述文字 |
 | 2026-07-28 | 全大统一收编：`menu.ts` 接入 `createKeyboardNav`。增强公共工具三项能力边界（`perKeySkip` / `getActiveIndex`+`setActiveIndex` / `arrowRightActivate`），Phase 3.4「语义不兼容」例外解除；新增 `ui-keyboard-nav.test.ts` 11 例。三处方向键导航真正统一 |
+| 2026-07-28 | 相机键位统一（Phase 2.3 修订）：orbit 键盘控制从方向键改为 WSAD（与 freefly 统一），移除难触发的 canvas 聚焦门；方向键从相机控制彻底让出（UI 导航/播放 seek）；orbit 相机工厂清空内置方向键输入。解决「轨道模式 WSAD 无效」的体验割裂 |

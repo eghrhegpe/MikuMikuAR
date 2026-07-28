@@ -107,6 +107,12 @@ export function createOrbitCamera(scene: Scene, canvas: HTMLCanvasElement): ArcR
     cam.upperRadiusLimit = 50;
     installInvertablePointers(cam);
     cam.attachControl(canvas, true);
+    // 方向键从相机控制让出（给菜单导航/播放 seek）；orbit 键盘环绕由
+    // events.ts 的 WSAD 统一接管，避免与 Babylon 内置方向键输入双路。
+    cam.keysUp = [];
+    cam.keysDown = [];
+    cam.keysLeft = [];
+    cam.keysRight = [];
     applyCameraUserSettings(cam);
     if (isTouchDevice()) {
         cam.pinchPrecision = 8;

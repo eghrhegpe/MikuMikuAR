@@ -280,13 +280,21 @@ export function registerEventHandlers(): void {
         }
     });
 
-    // ======== ADR-153: 3D camera keyboard orbit (canvas focused) ========
+    // ======== orbit 模式 WSAD 环绕旋转（与 freefly WSAD 统一相机键位） ========
+    // W/S = 仰角 beta、A/D = 环绕 alpha、+/- = 缩放。
+    // 方向键从相机控制让出：菜单开 = 导航，菜单关 = 播放 seek。
+    // 旧实现靠 `activeElement === canvas` 才触发，用户难以聚焦 canvas 导致「没效果」；
+    // 现改为与 freefly 一致的模式守卫 + 焦点不在菜单/输入框。
     _reg(window, 'keydown', (e) => {
-        if (document.activeElement !== dom.canvas) {
+        if (getCameraMode() !== 'orbit') {
             return;
         }
         const t = e.target as HTMLElement;
         if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) {
+            return;
+        }
+        // 菜单打开时 WSAD 交给菜单导航（避免相机与列表导航抢键）
+        if (t && (t.closest('.slide-menu') || t.closest('.menu-container'))) {
             return;
         }
         const cam = getCurrentCamera();
@@ -299,19 +307,19 @@ export function registerEventHandlers(): void {
         const zoomFactor = shift > 1 ? 0.7 : 0.9; // 30% vs 10% per press
 
         switch (e.code) {
-            case 'ArrowLeft':
+            case 'KeyA':
                 cam.alpha -= yawStep;
                 e.preventDefault();
                 break;
-            case 'ArrowRight':
+            case 'KeyD':
                 cam.alpha += yawStep;
                 e.preventDefault();
                 break;
-            case 'ArrowUp':
+            case 'KeyW':
                 cam.beta = clamp(cam.beta - pitchStep, 0.1, Math.PI - 0.1);
                 e.preventDefault();
                 break;
-            case 'ArrowDown':
+            case 'KeyS':
                 cam.beta = clamp(cam.beta + pitchStep, 0.1, Math.PI - 0.1);
                 e.preventDefault();
                 break;
