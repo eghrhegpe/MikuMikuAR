@@ -17,6 +17,13 @@ import { safeCallAsync } from '../core/safe-call';
 import { safeDispose } from '../core/dispose-helpers';
 import { addDisposableListener, type Disposable } from '../core/dom';
 import { createKeyboardNav } from '../core/ui-keyboard-nav';
+import {
+    markNavItem,
+    navFocusTarget,
+    navHasHorizontalAdjust,
+    NAV_ITEM_ATTR,
+    NAV_ITEM_SELECTOR,
+} from '../core/ui-nav-item';
 
 /** 菜单过渡时间常量（与 app.css :root --menu-transition-duration 同步） */
 const TRANSITION_DURATION = '0.15s';
@@ -140,15 +147,15 @@ export class SlideMenu {
             // 自定义项源：与 panelItems 完全对齐（含滑块/开关行过滤），保证 wrap 边界正确
             getItems: () => this.panelItems,
             transitioningGuard: () => this.transitioning,
-            // ↑↓(vertical)：仅跳 tablist（滑块/开关行也要能上下遍历）；
-            // →←/Enter(horizontal)：停在滑块上时让给滑块调值（跳 .cs-bar），其余原生控件也跳。
+            // ↑↓(vertical)：仅跳 tablist（控件行也要能上下遍历）；
+            // →←/Enter(horizontal)：行声明 data-nav-adjust=horizontal 时让给控件自身调值。
             perKeySkip: (target, kind) => {
                 if (!target) return false;
                 if (target.closest('[role="tablist"]')) return true;
                 if (kind === 'horizontal') {
-                    // 滑块：←→ 由 .cs-bar 自身调值，菜单不抢
-                    if (target.closest('.cs-slider, .color-slider, .cs-bar')) return true;
-                    // 其余原生可输入控件（开关 checkbox 除外——需 →/Enter 切换）
+                    const row = target.closest<HTMLElement>(NAV_ITEM_SELECTOR);
+                    if (row && navHasHorizontalAdjust(row)) return true;
+                    // 契约之外的原生可输入控件（开关 checkbox 除外——需 →/Enter 切换）
                     const native = target.closest('button, input, textarea, select, [contenteditable]');
                     if (native && !(native instanceof HTMLInputElement && native.type === 'checkbox')) {
                         return true;
@@ -642,20 +649,44 @@ export class SlideMenu {
     // ======== 内部方法 ========
 
     private get panelItems(): HTMLElement[] {
-        // 导航行：可点击行(.slide-item)/折叠头(.collapsible-header)/滑块行(.cs-row)/开关行(.toggle-row)。
-        // 滑块行只取含可聚焦 .cs-bar 的（排除提示行/按钮行等无控件的 .cs-row）。
-        const all = this.panel.querySelectorAll<HTMLElement>(
-            '.slide-item, .collapsible-header, .toggle-row'
-        );
-        const sliderRows = Array.from(
-            this.panel.querySelectorAll<HTMLElement>('.cs-row')
-        ).filter((r) => r.querySelector('.cs-bar'));
-        // 按 DOM 顺序合并（querySelectorAll 已按文档顺序，两集合并后按位置重排）
-        const merged = [...Array.from(all), ...sliderRows];
-        const inDomOrder = merged.sort((a, b) =>
-            a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1
-        );
-        return inDomOrder.filter((el) => !el.closest('[inert]'));
+        // 契约制：只认 [data-nav-item] 标记（由 _ensureNavMarkers 统一打上）。
+        // menu.ts 不再枚举控件类名，新增控件只需在渲染后被 _ensureNavMarkers 覆盖。
+        const all = this.panel.querySelectorAll<HTMLElement>(NAV_ITEM_SELECTOR);
+        return Array.from(all).filter((el) => !el.closest('[inert]'));
+    }
+
+    /**
+     * 渲染后统一给面板内可交互行补打导航标记（data-nav-item + 聚焦目标 + 调值语义）。
+     * 集中一处「类名→契约」映射，applyFocus/perKeySkip 只读契约、不关心类名。
+     * 新控件若沿用既有行类（.cs-row/.toggle-row 等）自动纳入；全新类型在此加一条映射即可。
+     */
+    private _ensureNavMarkers(): void {
+        const mark = (el: HTMLElement, opts?: { focusSelector?: string; horizontalAdjust?: boolean }) => {
+            if (!el.hasAttribute(NAV_ITEM_ATTR)) {
+                markNavItem(el, opts);
+            }
+        };
+        // 可点击行 / 折叠头：聚焦行本身，←→ 走激活/pop
+        this.panel
+            .querySelectorAll<HTMLElement>('.slide-item, .collapsible-header')
+            .forEach((el) => mark(el));
+        // 开关行：聚焦内部 checkbox，←→ 不让位（→/Enter 切换）
+        this.panel
+            .querySelectorAll<HTMLElement>('.toggle-row')
+            .forEach((el) => mark(el, { focusSelector: 'input[type="checkbox"]' }));
+        // 控件行 .cs-row：滑块聚焦 .cs-bar、模式切换器聚焦 .cs-top[role="listbox"]，
+        // 二者 ←→ 均让给控件自身调值；无控件的提示行（都不含）跳过不标记。
+        this.panel.querySelectorAll<HTMLElement>('.cs-row').forEach((el) => {
+            if (el.querySelector('.cs-bar')) {
+                mark(el, { focusSelector: '.cs-bar', horizontalAdjust: true });
+            } else if (el.querySelector('.cs-top[role="listbox"]')) {
+                mark(el, { focusSelector: '.cs-top[role="listbox"]', horizontalAdjust: true });
+            }
+        });
+        // 模式切换行 .type-row：聚焦可聚焦子元素（缺省行本身），←→ 让给控件循环
+        this.panel
+            .querySelectorAll<HTMLElement>('.type-row')
+            .forEach((el) => mark(el, { horizontalAdjust: true }));
     }
 
     private clearFocus(): void {
@@ -673,16 +704,16 @@ export class SlideMenu {
         const el = items[this.focusIndex];
         el.classList.add('slide-focused');
         el.scrollIntoView({ block: 'nearest' });
-        // 滑块行/开关行：焦点落到内部可聚焦控件（.cs-bar / input），
-        // 否则 ←→ 调值、Enter 切换无法触发（控件的 keydown 监听在内部元素上）。
-        const focusTarget =
-            el.querySelector<HTMLElement>('.cs-bar, input[type="checkbox"]') ?? el;
+        // 契约制：聚焦目标由行的 data-nav-focus 声明（缺省行本身），
+        // 保证 ←→ 调值/Enter 切换能落到内部控件。
+        const focusTarget = navFocusTarget(el);
         if (document.activeElement !== focusTarget) {
             focusTarget.focus({ preventScroll: true });
         }
     }
 
     private setupFocus(): void {
+        this._ensureNavMarkers();
         this.focusIndex = -1;
         this.clearFocus();
         if (this.panelItems.length > 0) {
