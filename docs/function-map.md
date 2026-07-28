@@ -7,8 +7,8 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 98 | 662 |
-| 3D 场景 | 105 | 1058 |
+| 核心基础设施 | 103 | 692 |
+| 3D 场景 | 105 | 1060 |
 | 菜单 & UI | 67 | 308 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 18 | 131 |
@@ -43,15 +43,35 @@
 | `registerControlActions()` | `core/ai/action-registry-defs` | — |
 | `BrowserAiAdapter()` | `core/ai/browser-adapter` | — |
 | `browserAiAdapter()` | `core/ai/browser-adapter` | — |
+| `BUILTIN_BIBLES()` | `core/ai/character-bible` | 内置角色圣经（可扩展；后续支持用户自定义导入）。 |
+| `CharacterBible()` | `core/ai/character-bible` | 单个角色的人设定义。 |
+| `DIALOGUE_EMOTIONS()` | `core/ai/character-bible` | 台词生成的输出情绪标签闭集（用于后续 TTS/表情映射，Step 2）。 |
+| `DialogueEmotion()` | `core/ai/character-bible` | — |
+| `DialogueLine()` | `core/ai/character-bible` | 一条解析后的台词。 |
+| `buildDialogueSystemPrompt()` | `core/ai/character-bible` | 组装台词模式的 system prompt：固定人设 + 结构化输出契约。 |
+| `getBible()` | `core/ai/character-bible` | 按 id 查角色圣经；未命中返回第一个内置角色兜底。 |
+| `parseDialogueLines()` | `core/ai/character-bible` | 从 LLM 文本响应解析台词数组；容错：非法情绪归一到 neutral， 解析失败时将整段文本作为单条 neutral 台词兜底（保证 UI 永远有内容渲染）。 |
 | `AiConfig()` | `core/ai/config-store` | — |
 | `DEFAULT_AI_CONFIG()` | `core/ai/config-store` | 零 key 默认路径：本地 Ollama（大模型零 key，小模型零成本）。见 ADR-196 开放问题 Q2 裁定。 |
+| `DEFAULT_TIMEOUT_MS()` | `core/ai/config-store` | 缺省超时。 |
+| `MAX_TIMEOUT_MS()` | `core/ai/config-store` | 超时上限（防误设导致挂死请求永不释放）。 |
+| `MIN_TIMEOUT_MS()` | `core/ai/config-store` | [doc:adr-199 P2-3] 超时下限（防误设过小掐断正常请求）。 |
 | `PROVIDER_PRESETS()` | `core/ai/config-store` | 服务商预设：端点、默认模型、是否需要 Key、文案 key、文档链接。 |
 | `ProviderPreset()` | `core/ai/config-store` | — |
 | `classifyAiError()` | `core/ai/config-store` | 根据 testConnection / streamChat 的错误消息分类错误类型。 |
 | `ensureAiConfigLoaded()` | `core/ai/config-store` | 主动预加载（建议 init 后台调用，使首次读取即命中缓存，避免回退默认窗口）。 |
 | `loadAiConfig()` | `core/ai/config-store` | 同步读取：优先内存缓存；未加载时回退默认并触发异步回源（不阻塞调用方）。 |
+| `normalizeTimeout()` | `core/ai/config-store` | [doc:adr-199 P2-3] 将超时值归一到 [MIN, MAX]；非法/缺失回落缺省。 |
 | `saveAiConfig()` | `core/ai/config-store` | 同步保存：写内存缓存 + 异步落盘 IndexedDB（fire-and-forget）。返回合并后的配置。 |
 | `validateAiConfig()` | `core/ai/config-store` | 校验配置是否足够发起一次对话。全量收集所有错误，一次性返回。 |
+| `buildDialogueSystemPrompt()` | `core/ai/dialogue-session` | 转发：为当前角色构建台词 system prompt。 |
+| `getActiveBible()` | `core/ai/dialogue-session` | 当前选中的角色圣经。 |
+| `listBibles()` | `core/ai/dialogue-session` | 可选角色列表（供 UI 下拉/切换）。 |
+| `setActiveBible()` | `core/ai/dialogue-session` | 切换当前角色（唯一写入点）。 |
+| `SpeakLine()` | `core/ai/dialogue-speech` | 一条待朗读台词。 |
+| `cancelSpeech()` | `core/ai/dialogue-speech` | 停止当前所有朗读（切换角色/取消/面板关闭时调用）。 |
+| `isSpeechSupported()` | `core/ai/dialogue-speech` | 环境是否支持语音合成。 |
+| `speakLines()` | `core/ai/dialogue-speech` | 依次朗读多条台词（按情绪调整语速/音高）。 |
 | `ErrorEntry()` | `core/ai/error-buffer` | — |
 | `ErrorRingBuffer()` | `core/ai/error-buffer` | — |
 | `GlobalErrorTarget()` | `core/ai/error-buffer` | — |
@@ -268,6 +288,7 @@
 | `ObserverRegistry()` | `core/observer-handle` | 管理器：收集多个 ObserverHandle，支持一次性 disposeAll()。 |
 | `observe()` | `core/observer-handle` | 订阅 Observable 并返回自动管理的句柄。 |
 | `observeOnce()` | `core/observer-handle` | 一次性订阅：回调执行后自动移除，等价于 observable.addOnce()。 |
+| `orbitInput()` | `core/orbit-state` | — |
 | `MIN_ORBIT_DISTANCE()` | `core/orbit` | 轨道距离下限：distance<=0 或非有限时钳制到此值，避免塌缩到原点或 NaN。 |
 | `OrbitCoords()` | `core/orbit` | — |
 | `cartesianToOrbit()` | `core/orbit` | 笛卡尔坐标 → 球面坐标。 |
@@ -462,7 +483,16 @@
 | `sliderRow()` | `core/ui-helpers` | — |
 | `toggleRow()` | `core/ui-helpers` | — |
 | `KeyboardNavOptions()` | `core/ui-keyboard-nav` | — |
+| `NavKeyKind()` | `core/ui-keyboard-nav` | 导航按键分类：垂直移动 / 水平移动，供 perKeySkip 差异化判断 |
 | `createKeyboardNav()` | `core/ui-keyboard-nav` | — |
+| `NAV_ADJUST_ATTR()` | `core/ui-nav-item` | — |
+| `NAV_FOCUS_ATTR()` | `core/ui-nav-item` | — |
+| `NAV_ITEM_ATTR()` | `core/ui-nav-item` | 导航项标记属性名 |
+| `NAV_ITEM_SELECTOR()` | `core/ui-nav-item` | 方向键导航项统一选择器（panelItems 用） |
+| `NavItemOptions()` | `core/ui-nav-item` | — |
+| `markNavItem()` | `core/ui-nav-item` | 给一个行元素打上方向键导航项标记。控件工厂在创建行后调用一次即可， 无需再改 menu.ts。 |
+| `navFocusTarget()` | `core/ui-nav-item` | 读取行的内部聚焦目标（缺省返回行本身） |
+| `navHasHorizontalAdjust()` | `core/ui-nav-item` | 该行是否声明了 ←→ 水平调值（菜单应让位） |
 | `PresetChipItem()` | `core/ui-preset` | 单个预设芯片的描述。 |
 | `addClearRow()` | `core/ui-preset` | 渲染一行右对齐的「清除」按钮（统一 cs-btn cs-btn-sm 样式）。 |
 | `buildPresetChipGroup()` | `core/ui-preset` | 渲染一组 preset-chip（统一 .preset-group 容器 + addPresetChip 布局）。 |
@@ -709,10 +739,12 @@
 | `setSyncAxesCallback()` | `scene/camera/camera-auto` | camera.ts 启动时注入 _syncAxesFromMode 回调。 |
 | `initFreeflyTouch()` | `scene/camera/camera-behaviors` | — |
 | `initFreeflyUpdate()` | `scene/camera/camera-behaviors` | — |
+| `initOrbitUpdate()` | `scene/camera/camera-behaviors` | — |
 | `startConcert()` | `scene/camera/camera-behaviors` | — |
 | `startSurround()` | `scene/camera/camera-behaviors` | — |
 | `stopConcert()` | `scene/camera/camera-behaviors` | — |
 | `stopFreefly()` | `scene/camera/camera-behaviors` | — |
+| `stopOrbit()` | `scene/camera/camera-behaviors` | — |
 | `stopSurround()` | `scene/camera/camera-behaviors` | — |
 | `getBoneLockDamping()` | `scene/camera/camera-bone-lock` | 获取骨骼锁定跟随阻尼（0 = 刚性，越大越平滑）。 |
 | `getFocusedModelBoneNames()` | `scene/camera/camera-bone-lock` | 获取当前焦点模型的所有骨骼名称列表。 |
@@ -1621,7 +1653,7 @@
 | `pushUndoSnapshot()` | `scene/scene-serialize` | 破坏性操作前调用：抓当前整场景快照压栈（环形，上限 UNDO_LIMIT），返回快照字符串供撤销绑定。 |
 | `resolvePathFromRef()` | `scene/scene-serialize` | Resolve a file path from either a libraryRef or a raw absolute path. |
 | `restoreUndoSnapshot()` | `scene/scene-serialize` | 恢复特定快照到整场景。返回是否成功恢复。 |
-| `saveSceneImmediate()` | `scene/scene-serialize` | Save scene immediately (no debounce). |
+| `saveSceneImmediate()` | `scene/scene-serialize` | — |
 | `serializeScene()` | `scene/scene-serialize` | — |
 | `setSuppressAutoSave()` | `scene/scene-serialize` | — |
 | `triggerAutoSaveImpl()` | `scene/scene-serialize` | — |
@@ -1776,11 +1808,11 @@
 | `buildWindLevel()` | `menus/env-wind-levels` | — |
 | `buildTagDetailLevel()` | `menus/library-actions` | — |
 | `buildTagsOverviewLevel()` | `menus/library-actions` | — |
+| `findLibraryModelByName()` | `menus/library-actions` | 按名称模糊搜索模型（纯查询，不触发加载）。供 ADR-155/197 NL 控制 resolve 使用，避免 resolve 阶段误触发真实加载。 |
+| `findLibraryMotionByName()` | `menus/library-actions` | 按名称模糊搜索 VMD 动作（纯查询，不触发替换）。 |
 | `highlightRow()` | `menus/library-actions` | — |
 | `importFile()` | `menus/library-actions` | — |
 | `importFileByPath()` | `menus/library-actions` | — |
-| `loadLibraryModel()` | `menus/library-actions` | 按名称模糊搜索模型库并加载。供 NL 控场景（ADR-155）使用，fire-and-forget。 |
-| `loadLibraryMotion()` | `menus/library-actions` | 按名称模糊搜索 VMD 动作并替换聚焦模型的基础动作。 |
 | `onModelRowClick()` | `menus/library-actions` | — |
 | `prepareModelRestore()` | `menus/library-actions` | — |
 | `replaceModel()` | `menus/library-actions` | — |
@@ -2252,5 +2284,5 @@
 
 ---
 
-> 共 293 个文件，2206 个导出符号。
+> 共 298 个文件，2238 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。

@@ -302,6 +302,35 @@ expect(results.violations).toEqual([]);
 
 每阶段独立可交付、可回退（git revert 单阶段不影响其他阶段）。
 
+## 键盘导航范式演进（2026-07-28 系列）
+
+> Phase 3.4 完成后，围绕“键盘/Tab 大统一”的实际使用又满了三轮演进，一并记录如下。
+
+### 1. 菜单导航纳入控件行（滑块/开关/模式切换）
+
+之前方向键仅遍历 `.slide-item`/`.collapsible-header`，滑块行/开关行/模式切换行只能 Tab 聚焦。现纳入导航：
+- **↑↓**：在所有行（含控件行）间移焦
+- **停在滑块/模式切换行**：←→ 调值（让给控件自身，见 ADR-140 行为变更记录二）
+- **停在开关行**：Enter/→ 切换
+- **停在普通行**：→/Enter 激活、← pop（原手感不变）
+
+### 2. 契约制取代类名枚举（核心架构改进）
+
+开发中发现“逐个补 selector”会反复遗漏（mode-slider、type-row 先后漏掉），根因是 `menu.ts` 靠控件类名枚举识别导航项，新控件需回改三处（selector/聚焦目标/调值让位）。因此转为**能力契约制**（[ui-nav-item.ts](../../frontend/src/core/ui-nav-item.ts)叶子模块）：
+- `data-nav-item`：标记“我是方向键导航项”
+- `data-nav-focus`：内部聚焦目标 selector（缺省行本身）
+- `data-nav-adjust="horizontal"`：←→ 让给控件自身调值
+
+`menu.ts` 三个方法全部解耦：`panelItems` 只查 `[data-nav-item]`、`applyFocus` 读 `navFocusTarget`、`perKeySkip` 读 `navHasHorizontalAdjust`。“类名→契约”映射收敛到单一 `_ensureNavMarkers`；且该方法在 `panelItems` getter 里调用，保证**增量渲染**（patchPanel/reRenderCustom 等不走 setupFocus 的路径）新行也被纳入。mode-slider/type-row 遗漏一并修复。
+
+### 3. orbit 相机 WSAD 丝滑化
+
+Phase 2.3 初版的 orbit WSAD 是 keydown 离散步进（每次跳 5°，依赖 OS 按键重复，卡顿）。改为复用 freefly 的“状态标记 + 渲染循环积分”：[orbit-state.ts](../../frontend/src/core/orbit-state.ts) 叶子模块存标记，events.ts keydown/keyup 只置位，camera-behaviors.ts 的 `initOrbitUpdate` 每帧按 `getAnimationRatio()` 帧率归一地积分 alpha/beta/radius。
+
+### 测试覆盖
+
+`ui-nav-item.test.ts`（5）、`ui-keyboard-nav.test.ts`（11）、`menu.test.ts`（含 panelItems 纳入滑块/开关/mode-slider + 增量 patch 回归防护）、`slider-controller.test.ts`（17）均全绿。
+
 ## 修订记录
 
 | 日期 | 修订 |
@@ -310,3 +339,6 @@ expect(results.violations).toEqual([]);
 | 2026-07-20 | 修订：核心原则补「不重复造 accessible name」「i18n 沿用现有 key」两条；Phase 3.1 从「新建 `a11y.*` 命名空间 + 10 个 key」精简为「3 处 `✕` 按钮复用 `common.close`/`common.delete`」；Phase 1.4 canvas aria-label 改为拼接现有 key + 模型名，不硬编码描述文字 |
 | 2026-07-28 | 全大统一收编：`menu.ts` 接入 `createKeyboardNav`。增强公共工具三项能力边界（`perKeySkip` / `getActiveIndex`+`setActiveIndex` / `arrowRightActivate`），Phase 3.4「语义不兼容」例外解除；新增 `ui-keyboard-nav.test.ts` 11 例。三处方向键导航真正统一 |
 | 2026-07-28 | 相机键位统一（Phase 2.3 修订）：orbit 键盘控制从方向键改为 WSAD（与 freefly 统一），移除难触发的 canvas 聚焦门；方向键从相机控制彻底让出（UI 导航/播放 seek）；orbit 相机工厂清空内置方向键输入。解决「轨道模式 WSAD 无效」的体验割裂 |
+| 2026-07-28 | orbit WSAD 丝滑化：由 keydown 离散步进改为“状态标记 + 渲染循环积分”（复用 freefly 模式），新增 orbit-state.ts 叶子模块 + camera-behaviors.ts initOrbitUpdate（见键盘导航范式演进 §3） |
+| 2026-07-28 | 菜单导航纳入滑块/开关行：↑↓ 遍历全行、滑块 ←→ 调值（ADR-140 同步 ↑↓ 让位）、开关 Enter/→ 切换（见范式演进 §1） |
+| 2026-07-28 | 导航项改为 data-nav-item 契约制（ui-nav-item.ts），取代类名枚举；menu.ts 三方法解耦；_ensureNavMarkers 在 panelItems getter 内兵底增量渲染；修复 mode-slider/type-row 遗漏（见范式演进 §2） |
