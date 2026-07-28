@@ -10,10 +10,11 @@
  * - 刚体索引经 @/core/mmd-adapter 的 getRigidBodyBundleMap 走公开 API
  *   `rigidBodyBundleReferenceCountMap`（ADR-192 Phase 2 已内化），无私有字段依赖
  *
- * ⚠️ 作用范围（ADR-200）：本模块**只作用于 JS 侧手动加入的自建刚体**（虚拟裙骨
- *   ADR-084 / 地面碰撞），**不作用于角色原生头发/裙子刚体**——后者由 buildPhysics
- *   在 WASM C++ 侧独立构建，不进 rigidBodyBundleReferenceCountMap，JS 无施力句柄。
- *   若想让原生头发受风，须走虚拟裙骨路径，而非调大 WIND_FORCE_SCALE（对空 map 无意义）。
+ * 作用范围（ADR-200）：风力同时作用于两类刚体：
+ *   1. **自建刚体**（虚拟裙骨 ADR-084 / 地面碰撞）——经 getRigidBodyBundleMap 遍历
+ *   2. **模型原生真物理刚体**（头发/裙子 Physics/PhysicsWithBone）——经
+ *      applyForceToModelRigidBodies 守卫式反射（FollowBone 跳过）。
+ *   虚拟裙骨只对无裙骨模型生效，主流正经模型靠路径 2 受风。
  */
 
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
@@ -22,19 +23,28 @@ import { MmdWasmRuntime as MmdWasmRuntimeClass } from 'babylon-mmd/esm/Runtime/O
 import type { MmdWasmPhysicsRuntimeImpl } from 'babylon-mmd/esm/Runtime/Optimized/Physics/mmdWasmPhysicsRuntimeImpl';
 import { getWindVector, isWindActive } from '../core/wind-utils';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
-import { getPhysicsImpl, getRigidBodyBundleMap } from '@/core/mmd-adapter';
+import { getPhysicsImpl, getRigidBodyBundleMap, applyForceToModelRigidBodies } from '@/core/mmd-adapter';
+import { modelRegistry } from '@/core/config';
 
 // 薄转发：保留历史导出名 _getBundles，避免 wind-physics.test.ts 改动（ADR-192 双轨过渡）
 export { getRigidBodyBundleMap as _getBundles } from '@/core/mmd-adapter';
 
 /** 风力系数 — Bullet 刚体质量惯性大，需要比 XPBD 布料更大的系数。
  *  0.15 过小（风速 10 时仅 1.5N，对 1kg 刚体加速度 1.5m/s²，肉眼难辨）；
- *  1.0 时风速 10 产生 10N，头发/裙子等 Dynamic 刚体摆动明显。
- *  Kinematic 刚体（骨骼跟随）Bullet 自动忽略，无需额外跳过。 */
+ *  1.0 时风速 10 产生 10N，联邦自建 Dynamic 刚体（虚拟裙骨/地面）摆动明显。
+ *  Kinematic 刚体（骨骼跟随）Bullet 自动忽略，无需额外跳过。
+ *  此系数用于**自建刚体**（虚拟裙骨 ADR-084 / 地面），其质量/阻尼由联邦自设，1.0 已调好。 */
 const WIND_FORCE_SCALE = 1.0;
+
+/** 模型原生刚体专用风力系数（ADR-200）。
+ *  MMD 头发/裙子刚体的质量/阻尼由模型作者设定，通常阻尼较高（防抖），
+ *  1.0 系数下稳态摆幅偏弱。故原生刚体用独立更大系数，与自建刚体解耦，
+ *  互不影响各自已调好的手感。5.0 为经验起点，可按实测在 §ADR-200 §5.1 调整。 */
+const MODEL_WIND_FORCE_SCALE = 5.0;
 
 /** 临时向量，避免每帧分配 */
 const _tmpWind = new Vector3();
+const _tmpModelWind = new Vector3();
 
 /** 每运行时订阅状态：支持多 MmdWasmRuntime 场景（多场景/多窗口） */
 interface _WindSub {
@@ -55,11 +65,22 @@ function _onPhysicsSync(impl: MmdWasmPhysicsRuntimeImpl): void {
     const wind = getWindVector();
     _tmpWind.copyFrom(wind).scaleInPlace(WIND_FORCE_SCALE);
 
+    // (1) 自建刚体（虚拟裙骨/地面）：经公开 map 遍历
     for (const bundle of getRigidBodyBundleMap(impl)) {
         const count = bundle.count;
         for (let i = 0; i < count; i++) {
             bundle.applyCentralForce(i, _tmpWind);
         }
+    }
+
+    // (2) 模型原生真物理刚体（头发/裙子）：经守卫式反射施力（ADR-200），用独立更大系数。
+    // 只对 actor（stage 无需风）；applyForceToModelRigidBodies 内部按 physicsMode 筛 Dynamic。
+    _tmpModelWind.copyFrom(wind).scaleInPlace(MODEL_WIND_FORCE_SCALE);
+    for (const inst of modelRegistry.values()) {
+        if (inst.kind !== 'actor' || !inst.mmdModel) {
+            continue;
+        }
+        applyForceToModelRigidBodies(inst.mmdModel, _tmpModelWind);
     }
 }
 

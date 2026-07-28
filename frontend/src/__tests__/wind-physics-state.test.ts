@@ -38,6 +38,16 @@ const mocks = vi.hoisted(() => {
     };
     const bundles = [bundleA, bundleB];
 
+    // 模型注册表 mock：一个 actor（有 mmdModel）+ 一个 stage（应被跳过）
+    const actorModel = { _tag: 'actorModel' };
+    const applyForceToModelRigidBodies = vi.fn(
+        (_model: unknown, _force: { x: number; y: number; z: number }): number => 5
+    );
+    const modelRegistry = new Map<string, { kind: string; mmdModel: unknown }>([
+        ['actor1', { kind: 'actor', mmdModel: actorModel }],
+        ['stage1', { kind: 'stage', mmdModel: { _tag: 'stageModel' } }],
+    ]);
+
     // 控制 getPhysicsImpl 返回值
     let implReturn: typeof mockImpl | null = mockImpl;
     // 控制 wind-utils 返回值（不能用 Vector3，hoisted 在 import 之前执行）
@@ -51,6 +61,9 @@ const mocks = vi.hoisted(() => {
         bundleA,
         bundleB,
         bundles,
+        actorModel,
+        applyForceToModelRigidBodies,
+        modelRegistry,
         get implReturn() {
             return implReturn;
         },
@@ -81,6 +94,12 @@ vi.mock('babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime', () => ({
 vi.mock('@/core/mmd-adapter', () => ({
     getPhysicsImpl: vi.fn(() => mocks.implReturn),
     getRigidBodyBundleMap: vi.fn(() => mocks.bundles),
+    applyForceToModelRigidBodies: mocks.applyForceToModelRigidBodies,
+}));
+
+// ======== mock config（modelRegistry） ========
+vi.mock('@/core/config', () => ({
+    modelRegistry: mocks.modelRegistry,
 }));
 
 // ======== mock wind-utils ========
@@ -125,6 +144,7 @@ beforeEach(() => {
     mocks.onSyncObservable._notify = () => {};
     mocks.bundleA.applyCentralForce.mockClear();
     mocks.bundleB.applyCentralForce.mockClear();
+    mocks.applyForceToModelRigidBodies.mockClear();
     // 将 observe mock 连接到 _notify 回调机制
     mockObserve.mockImplementation((_obs: unknown, cb: () => void) => {
         mocks.onSyncObservable._notify = () => cb();
@@ -289,6 +309,31 @@ describe('wind-physics 状态机', () => {
             initWindPhysics(runtime);
 
             expect(() => mocks.onSyncObservable._notify()).not.toThrow();
+        });
+
+        it('对 actor 模型的原生刚体施力，跳过 stage（ADR-200）', () => {
+            const runtime = makeWasmRuntime();
+            initWindPhysics(runtime);
+
+            mocks.onSyncObservable._notify();
+
+            // modelRegistry 有 1 actor + 1 stage，仅 actor 被施力
+            expect(mocks.applyForceToModelRigidBodies).toHaveBeenCalledTimes(1);
+            const call0 = mocks.applyForceToModelRigidBodies.mock.calls[0];
+            expect(call0[0]).toBe(mocks.actorModel); // 传入 actor 的 mmdModel
+            // 模型原生刚体用独立系数 MODEL_WIND_FORCE_SCALE(5.0)：(3,0,4) × 5 = (15,0,20)
+            expect(call0[1].x).toBeCloseTo(15);
+            expect(call0[1].z).toBeCloseTo(20);
+        });
+
+        it('风力不活跃时不对模型原生刚体施力', () => {
+            mocks.windActive = false;
+            const runtime = makeWasmRuntime();
+            initWindPhysics(runtime);
+
+            mocks.onSyncObservable._notify();
+
+            expect(mocks.applyForceToModelRigidBodies).not.toHaveBeenCalled();
         });
     });
 });

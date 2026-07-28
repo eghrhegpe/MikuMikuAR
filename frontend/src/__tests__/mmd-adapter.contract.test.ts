@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { Matrix, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import type { Scene } from '@babylonjs/core/scene';
 import { observe } from '@/core/observer-handle';
@@ -12,6 +12,7 @@ import {
     getPhysicsImpl,
     getRigidBodyBundleMap,
     getStreamAudio,
+    applyForceToModelRigidBodies,
     CapabilityProbe,
     onBoneMatricesUpdated,
     transformWorldToRootLocal,
@@ -58,6 +59,54 @@ describe('MmdAdapter — babylon-mmd 私有字段网关（ADR-192）', () => {
         it('physics 为 null/undefined 时返回 null', () => {
             expect(getPhysicsImpl(mockRuntime(undefined))).toBeNull();
             expect(getPhysicsImpl(mockRuntime(null))).toBeNull();
+        });
+
+        it('被动 .impl 为 null 但有 getImpl 时主动创建（ADR-200 lazy impl 修复）', () => {
+            const created = mockPhysicsImpl();
+            const getImpl = vi.fn(() => created);
+            const runtime = {
+                physics: { impl: null, getImpl },
+            } as unknown as IMmdRuntime;
+            expect(getPhysicsImpl(runtime)).toBe(created);
+            expect(getImpl).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe('applyForceToModelRigidBodies（条目 — ADR-200 守卫式反射施力）', () => {
+        function mockModel(rigidBodyData: Array<{ physicsMode: number }> | null): RuntimeModel {
+            if (rigidBodyData === null) {
+                return {} as unknown as RuntimeModel; // 无 _physicsModel
+            }
+            const applyCentralForce = vi.fn();
+            const bundle = { count: rigidBodyData.length, rigidBodyData, applyCentralForce };
+            return {
+                _physicsModel: { _bundle: bundle },
+                // 暴露供断言
+                __bundle: bundle,
+            } as unknown as RuntimeModel;
+        }
+
+        it('仅对真物理刚体施力（Physics=1 / PhysicsWithBone=2），跳过 FollowBone=0', () => {
+            const model = mockModel([
+                { physicsMode: 0 }, // FollowBone — 跳过
+                { physicsMode: 1 }, // Physics — 施力
+                { physicsMode: 2 }, // PhysicsWithBone — 施力
+                { physicsMode: 0 }, // FollowBone — 跳过
+            ]);
+            const force = new Vector3(1, 0, 0);
+            const applied = applyForceToModelRigidBodies(model, force);
+            expect(applied).toBe(2);
+            const bundle = (model as unknown as { __bundle: { applyCentralForce: ReturnType<typeof vi.fn> } })
+                .__bundle;
+            expect(bundle.applyCentralForce).toHaveBeenCalledTimes(2);
+            // 施力的 index 为 1 和 2
+            expect(bundle.applyCentralForce.mock.calls[0][0]).toBe(1);
+            expect(bundle.applyCentralForce.mock.calls[1][0]).toBe(2);
+        });
+
+        it('_physicsModel 缺失时返回 0（降级，不抛异常）', () => {
+            const model = mockModel(null);
+            expect(applyForceToModelRigidBodies(model, new Vector3(1, 0, 0))).toBe(0);
         });
     });
 

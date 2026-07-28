@@ -1,7 +1,7 @@
 # ADR-200: 风力对模型自带刚体无效 — 遍历 map 恒空的架构误解
 
-> **状态**: ✅ 已确认（根因定位，2026-07-28 — 经 babylon-mmd 源码逐层核实，wind-physics 遍历的 `rigidBodyBundleReferenceCountMap` 从不含模型自带刚体）
-> **关联**: ADR-192（条目 3「rigidBody 索引内化」，本 ADR 推翻其等价性假设）、ADR-194（风力系数 0.15→1.0，建立在同一错误假设上）、ADR-084（虚拟裙骨 — 唯一真正受风的自建 Dynamic 刚体）
+> **状态**: ✅ 已实施（2026-07-28 — 根因定位后经守卫式反射扩展风力至模型原生真物理刚体 + 修复 lazy impl 订阅；tsc 零错误，wind-physics 16 + mmd-adapter 契约 16 + app.contract 17 全绿）
+> **关联**: ADR-192（条目 3「rigidBody 索引内化」，本 ADR 推翻其等价性假设 + 复用条目9 守卫式反射范式）、ADR-194（风力系数 0.15→1.0，建立在同一错误假设上）、ADR-084（虚拟裙骨 — 仅对无裙骨模型生效，非主流模型可行替代）
 > **症状**: WASM 物理运行完全正常，粒子/水面随风飘动明显，但对角色施加 10× 风力，头发/裙子纹丝不动。`window.__scene.rigidBodyBundleCount === 0`、`windPhysicsActive === false`。
 
 ---
@@ -62,50 +62,53 @@ if (physicsParams !== null) {
 | **必须按 physicsMode 筛选** | bundle 内混合 `FollowBone`（Kinematic，骨骼跟随）与 Dynamic 刚体（mmdBulletPhysics.js:163）。MMD 头发/裙子多为 `FollowBone` 或物理+骨骼对齐型，对其 `applyCentralForce` 被 Bullet 忽略或每帧被骨骼位置拉回。无脑全施力仍看不出效果。 |
 | **力对抗骨骼对齐** | 物理+骨骼对齐型刚体每帧被 `syncBodies` 拉向骨骼位置（js:193），瞬时 central force 对抗不过位置约束，须改用持续 velocity 或改物理模式。 |
 
-**判定**：技术上可行，但需（a）反射两层私有字段拿 bundle，（b）读 `rigidBodyData[i].physicsMode` 筛 Dynamic，（c）可能改施力方式。综合脆弱度 + 收益，直接对模型刚体施力**不推荐**。
+**判定**：技术上可行，需（a）反射两层私有字段拿 bundle，（b）读 `rigidBodyData[i].physicsMode` 筛真物理刚体（Physics/PhysicsWithBone），（c）施力方式。虚拟裙骨（ADR-084）要求「模型无裙骨」，对主流正经模型 `build() 返回 false`，**非可行替代**。故最终决策：采用守卫式反射施力（详见 §四），套 ADR-192 条目9 已有先例。
 
 ---
 
-## 四、决策
+## 四、决策（已实施）
 
-**推翻 ADR-192 条目 3 / ADR-194 的隐含前提「wind-physics 能作用于模型自带刚体」，将其如实标注为「仅作用于联邦自建刚体」。不改动风力系统的目标刚体范围。**
+**经守卫式反射扩展风力至模型原生真物理刚体，套用 ADR-192 条目9「反射 + 探测降级」范式。** 不引入散落私有反射——统一收口到 `mmd-adapter` 适配层一处。
 
-### 4.1 事实澄清（写入相关模块注释）
+### 4.1 实施内容
 
-- `rigidBodyBundleReferenceCountMap` 的语义 = 「JS 侧经 `addRigidBodyBundle` 手动加入的刚体」，**不含模型自带 PMX 刚体**。
-- 风力（ADR-194）对**虚拟裙骨（ADR-084）与地面碰撞刚体**有效——它们才是真正进入该 map 的联邦自建 Dynamic 刚体。这解释了为何虚拟裙骨受风、模型原生头发不受风。
-- 角色原生头发/裙子的摆动，应由 **VMD 动画 + WASM 内建物理**驱动（模型自带刚体在 WASM C++ 侧自解算），而非外部风力注入。
+- **`mmd-adapter.applyForceToModelRigidBodies(model, force)`**：反射 `model._physicsModel._bundle`（MmdRigidBodyBundle），遍历 `bundle.count`，仅对 `rigidBodyData[i].physicsMode !== FollowBone(0)`（即 Physics(1)/PhysicsWithBone(2)）的真物理刚体 `applyCentralForce`。`_physicsModel`/`_bundle` 缺失 → 返回 0 + 一次性 dev 警告（升级回归可见）。
+- **`wind-physics._onPhysicsSync`**：在原自建刚体（虚拟裙骨/地面）施力后，新增遍历 `modelRegistry` 对每个 `kind === 'actor'` 模型调 `applyForceToModelRigidBodies`。
+- **`mmd-adapter.getPhysicsImpl` lazy impl 修复**：被动 `.impl` 为 null 时主动 `getImpl(MmdWasmPhysicsRuntimeImpl)` 强制创建（同 virtual-skirt），解决 §4.3 的 `windPhysicsActive === false`。
+- **`CapabilityProbe.hasModelPhysicsBundle`**：升级回归探测。
 
-### 4.2 非目标
+### 4.2 判据来源
 
-- ❌ 不引入 `model._physicsModel._bundle` 两层私有字段反射（违背 ADR-192 收口原则）。
-- ❌ 不为「风吹原生头发」加大 `WIND_FORCE_SCALE`（对空 map 无意义）。
-- ❌ 不推动上游为 `MmdWasmModel` 增开施力 API（留作远期 Option）。
+`physicsMode` 筛选依据 mmdBulletPhysics.js:150-151 官方注释 + :331-346 `syncBodies` 分支：Physics/PhysicsWithBone 在 syncBodies 中 `break`（纯 Bullet 自解算，施力生效）；FollowBone 每帧被骨骼位置拉回（施力无效，跳过）。
 
-### 4.3 `windPhysicsActive === false` 的次要问题
+### 4.3 lazy impl 订阅修复（原次要问题，已解决）
 
-即便 map 非空，现场 `windPhysicsActive === false` 说明 observer 未订阅。`_trySubscribe` 依赖 `getPhysicsImpl(runtime)` 返回非 null，且由 model-loader 在模型加载后 `retryWindPhysicsSubscription` 重试。此问题独立于主根因（订阅上了也是遍历空 map），本 ADR 不展开；若后续要让风作用于虚拟裙骨/地面刚体，需一并核查订阅时机。
+现场 `windPhysicsActive === false` 真因：WASM 内建物理下 `MmdWasmPhysicsRuntime._impl` 是 lazy 的（mmdWasmPhysicsRuntime.js:103-110），只有首次 `getImpl(ctor)` 才创建。wind-physics 经 `getPhysicsImpl` 走被动 `.impl` getter，无人主动取则恒 null → observer 订阅失败。已在 `getPhysicsImpl` 内改为被动 null 时主动 `getImpl`。
 
 ---
 
-## 五、后续方向（按优先级）
+## 五、后续方向
 
-1. **文档止血（本 ADR + 注释）**：立即消除「风能吹角色头发」的错误预期，防后人再调系数。
-2. **风只作用虚拟裙骨（ADR-084 路径）**：若产品需要「可被风吹的头发/裙」，走联邦自建 Dynamic 刚体（虚拟裙骨），它天然进 map、天然受风。这是已验证可行的正道。
-3. **上游 Option（远期）**：向 babylon-mmd fork 暴露 `MmdWasmModel.applyForceToRigidBody(index, force)` 公开 API，绕开私有反射。仅在 2 无法满足需求时启动。
+1. **实测调优（P1）**：`wails3 dev` 加载正经模型验证头发/裙子摆动幅度。**实测发现 1.0 系数下摆幅偏弱**（MMD 头发刚体阻尼高），已为模型原生刚体引入**独立系数 `MODEL_WIND_FORCE_SCALE`（起点 5.0）**，与自建刚体 `WIND_FORCE_SCALE=1.0` 解耦（互不影响手感）。若 5.0 仍偏弱/过强，直接调该常量；若因 Bullet 阻尼持续耗散导致稳态摆幅不足，改用 `setLinearVelocity` 增量替代 `applyCentralForce`。
+
+> **syncBodies 核实纠正**：原担心「PhysicsWithBone 每帧被骨骼拉回」——实测 mmdBulletPhysics.js:324-346，正常播放（无物理开关禁用）时 Physics/PhysicsWithBone 在 syncBodies 中仅 `break`（不拉回，纯Bullet 自解算）。摆幅偏弱是力 vs 阻尼/惯性的量级问题，非拉回，故调大系数有效。
+2. **风力系数复核**：ADR-194 的 `WIND_FORCE_SCALE=1.0` 原针对空 map 无意义，现真正作用于模型刚体后需按实测手感重新标定。
+3. **上游 Option（远期）**：向 babylon-mmd fork 暴露 `MmdWasmModel.applyForceToRigidBody(index, force)` 公开 API，绕开私有反射。仅在反射路径因上游变更频繁失效时启动。
+
+### 虚拟裙骨（ADR-084）定位澄清
+
+虚拟裙骨要求「模型无裙骨」（i18n `cloth.hint`：仅对无裙骨模型生效；`build()` 对已有裙骨模型返回 false）。故它**仅救简陋无骨模型**，非主流正经模型（自带裙骨+物理刚体）的风力方案。本 ADR 的反射施力才是正经模型受风的主路径。
 
 ---
 
 ## 六、验证方法
 
-复现（WASM runtime，加载角色，无虚拟裙骨/地面碰撞）：
+**修复前复现**（WASM runtime，加载角色，无虚拟裙骨/地面碰撞）：`rigidBodyBundleCount === 0`、`windPhysicsActive === false`，10× 风力头发纹丝不动。
 
-```js
-window.__scene.rigidBodyBundleCount   // 0（证实 map 空）
-window.__scene.windPhysicsActive      // false
-```
-
-反证（加载虚拟裙骨或开地面碰撞后）：`rigidBodyBundleCount` 应 > 0，此时风力对这些自建刚体生效。
+**修复后验证**（`wails3 dev` 加载正经模型、开风、风速拉满）：
+- `window.__scene.windPhysicsActive` 应为 `true`（lazy impl 主动创建、observer 订阅生效）
+- 现象：头发/裙子随风摆动（对比修复前纹丝不动）
+- 单测：`applyForceToModelRigidBodies` 仅对 Physics/PhysicsWithBone 施力、跳过 FollowBone（mmd-adapter 契约测试）；`_onPhysicsSync` 对 actor 模型调施力、跳过 stage（wind-physics 测试）
 
 ---
 
@@ -113,8 +116,8 @@ window.__scene.windPhysicsActive      // false
 
 | 文件 | 角色 |
 |------|------|
-| [wind-physics.ts](../../frontend/src/physics/wind-physics.ts) | 遍历 map 施力（目标集为空的受害方） |
-| [mmd-adapter.ts](../../frontend/src/core/mmd-adapter.ts) | `getRigidBodyBundleMap` = `rigidBodyBundleReferenceCountMap.keys()`（语义需在注释澄清） |
-| [virtual-skirt.ts](../../frontend/src/scene/physics/virtual-skirt.ts) | 唯一真正进 map 的自建 Dynamic 刚体（ADR-084） |
+| [wind-physics.ts](../../frontend/src/physics/wind-physics.ts) | `_onPhysicsSync` 双路径施力：自建刚体（map）+ 模型原生刚体（actor 遍历） |
+| [mmd-adapter.ts](../../frontend/src/core/mmd-adapter.ts) | 新增 `applyForceToModelRigidBodies`（守卫式反射施力）+ `getPhysicsImpl` lazy impl 主动创建 + `CapabilityProbe.hasModelPhysicsBundle` |
+| [virtual-skirt.ts](../../frontend/src/scene/physics/virtual-skirt.ts) | 自建 Dynamic 刚体（ADR-084，仅无裙骨模型） |
 | [ground-collision.ts](../../frontend/src/scene/physics/ground-collision.ts) | 自建静态刚体，进 map |
-| adr-192 / adr-194 | 隐含错误前提，需交叉引用本 ADR |
+| adr-192 / adr-194 | 隐含错误前提，已交叉引用本 ADR |
