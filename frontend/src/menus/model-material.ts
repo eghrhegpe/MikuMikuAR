@@ -201,28 +201,6 @@ function buildPerMatSchema(
     ];
 }
 
-function buildPerMatLevel(
-    id: string,
-    modelName: string,
-    matName: string,
-    mat: Material,
-    matIndex: number,
-    targetStack?: SlideMenu | null
-): PopupLevel {
-    const shortName = matName.length > 24 ? matName.slice(0, 24) + '…' : matName;
-    return {
-        label: shortName,
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            return renderMenu(
-                buildPerMatSchema(id, modelName, matName, matIndex, targetStack),
-                container
-            );
-        },
-    };
-}
-
 function buildMatRootSchema(
     id: string,
     modelName: string,

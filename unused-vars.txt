@@ -35,15 +35,115 @@ C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\perception.perf.test.ts
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\physics-contract.test.ts
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\scene\lighting-follow.test.ts
   35:5  warning  'addStageLight' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
-C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\scene\motion-modules-registry.test.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\scene\motion-modules-registry.conflict.test.ts
+  11:10  warning  'makeModel' is defined but never used. Allowed unused vars must match /^_/u                                                                            @typescript-eslint/no-unused-vars
+  11:21  warning  'makeModelWithBones' is defined but never used. Allowed unused vars must match /^_/u                                                                   @typescript-eslint/no-unused-vars
+  11:41  warning  'setActiveMotionWithModules' is defined but never used. Allowed unused vars must match /^_/u                                                           @typescript-eslint/no-unused-vars
+  14:5   warning  'getRegisteredModules' is defined but never used. Allowed unused vars must match /^_/u                                                                 @typescript-eslint/no-unused-vars
+  15:5   warning  'createModule' is defined but never used. Allowed unused vars must match /^_/u                                                                         @typescript-eslint/no-unused-vars
+  16:5   warning  'getModuleState' is defined but never used. Allowed unused vars must match /^_/u                                                                       @typescript-eslint/no-unused-vars
+  17:5   warning  'setModuleParam' is defined but never used. Allowed unused vars must match /^_/u                                                                       @typescript-eslint/no-unused-vars
+  18:5   warning  'setModuleEnabled' is defined but never used. Allowed unused vars must match /^_/u                                                                     @typescript-eslint/no-unused-vars
+  26:5   warning  'clearAllModulesForModel' is defined but never used. Allowed unused vars must match /^_/u                                                              @typescript-eslint/no-unused-vars
+  30:10  warning  'applyModuleSnapshot' is defined but never used. Allowed unused vars must match /^_/u                                                                  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\scene\motion-modules-registry.create.test.ts
+  11:21  warning  'makeModelWithBones' is defined but never used. Allowed unused vars must match /^_/u                                                                   @typescript-eslint/no-unused-vars
+  14:5   warning  'getRegisteredModules' is defined but never used. Allowed unused vars must match /^_/u                                                                 @typescript-eslint/no-unused-vars
+  17:5   warning  'setModuleParam' is defined but never used. Allowed unused vars must match /^_/u                                                                       @typescript-eslint/no-unused-vars
+  18:5   warning  'setModuleEnabled' is defined but never used. Allowed unused vars must match /^_/u                                                                     @typescript-eslint/no-unused-vars
+  19:5   warning  'claimBones' is defined but never used. Allowed unused vars must match /^_/u                                                                           @typescript-eslint/no-unused-vars
+  20:5   warning  'getOwnedBones' is defined but never used. Allowed unused vars must match /^_/u                                                                        @typescript-eslint/no-unused-vars
+  21:5   warning  'releaseOwnedBones' is defined but never used. Allowed unused vars must match /^_/u                                                                    @typescript-eslint/no-unused-vars
+  22:5   warning  'getModuleConflicts' is defined but never used. Allowed unused vars must match /^_/u                                                                   @typescript-eslint/no-unused-vars
+  23:5   warning  'getAllConflicts' is defined but never used. Allowed unused vars must match /^_/u                                                                      @typescript-eslint/no-unused-vars
+  24:5   warning  'getConflictCount' is defined but never used. Allowed unused vars must match /^_/u                                                                     @typescript-eslint/no-unused-vars
+  26:5   warning  'clearAllModulesForModel' is defined but never used. Allowed unused vars must match /^_/u                                                              @typescript-eslint/no-unused-vars
+  27:5   warning  'registerModule' is defined but never used. Allowed unused vars must match /^_/u                                                                       @typescript-eslint/no-unused-vars
+  28:5   warning  'unregisterModule' is defined but never used. Allowed unused vars must match /^_/u                                                                     @typescript-eslint/no-unused-vars
+  30:10  warning  'applyModuleSnapshot' is defined but never used. Allowed unused vars must match /^_/u                                                                  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\scene\motion-modules-registry.disable.test.ts
+  11:21  warning  'makeModelWithBones' is defined but never used. Allowed unused vars must match /^_/u                                                                   @typescript-eslint/no-unused-vars
+  14:5   warning  'getRegisteredModules' is defined but never used. Allowed unused vars must match /^_/u                                                                 @typescript-eslint/no-unused-vars
+  17:5   warning  'setModuleParam' is defined but never used. Allowed unused vars must match /^_/u                                                                       @typescript-eslint/no-unused-vars
+  19:5   warning  'claimBones' is defined but never used. Allowed unused vars must match /^_/u                                                                           @typescript-eslint/no-unused-vars
+  20:5   warning  'getOwnedBones' is defined but never used. Allowed unused vars must match /^_/u                                                                        @typescript-eslint/no-unused-vars
+  21:5   warning  'releaseOwnedBones' is defined but never used. Allowed unused vars must match /^_/u                                                                    @typescript-eslint/no-unused-vars
+  22:5   warning  'getModuleConflicts' is defined but never used. Allowed unused vars must match /^_/u                                                                   @typescript-eslint/no-unused-vars
+  23:5   warning  'getAllConflicts' is defined but never used. Allowed unused vars must match /^_/u                                                                      @typescript-eslint/no-unused-vars
+  24:5   warning  'getConflictCount' is defined but never used. Allowed unused vars must match /^_/u                                                                     @typescript-eslint/no-unused-vars
+  27:5   warning  'registerModule' is defined but never used. Allowed unused vars must match /^_/u                                                                       @typescript-eslint/no-unused-vars
+  28:5   warning  'unregisterModule' is defined but never used. Allowed unused vars must match /^_/u                                                                     @typescript-eslint/no-unused-vars
+  30:10  warning  'applyModuleSnapshot' is defined but never used. Allowed unused vars must match /^_/u                                                                  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\scene\motion-modules-registry.ik.test.ts
+  11:10  warning  'makeModel' is defined but never used. Allowed unused vars must match /^_/u                                                                            @typescript-eslint/no-unused-vars
+  14:5   warning  'getRegisteredModules' is defined but never used. Allowed unused vars must match /^_/u                                                                 @typescript-eslint/no-unused-vars
+  16:5   warning  'getModuleState' is defined but never used. Allowed unused vars must match /^_/u                                                                       @typescript-eslint/no-unused-vars
+  17:5   warning  'setModuleParam' is defined but never used. Allowed unused vars must match /^_/u                                                                       @typescript-eslint/no-unused-vars
+  18:5   warning  'setModuleEnabled' is defined but never used. Allowed unused vars must match /^_/u                                                                     @typescript-eslint/no-unused-vars
+  19:5   warning  'claimBones' is defined but never used. Allowed unused vars must match /^_/u                                                                           @typescript-eslint/no-unused-vars
+  20:5   warning  'getOwnedBones' is defined but never used. Allowed unused vars must match /^_/u                                                                        @typescript-eslint/no-unused-vars
+  21:5   warning  'releaseOwnedBones' is defined but never used. Allowed unused vars must match /^_/u                                                                    @typescript-eslint/no-unused-vars
+  22:5   warning  'getModuleConflicts' is defined but never used. Allowed unused vars must match /^_/u                                                                   @typescript-eslint/no-unused-vars
+  23:5   warning  'getAllConflicts' is defined but never used. Allowed unused vars must match /^_/u                                                                      @typescript-eslint/no-unused-vars
+  24:5   warning  'getConflictCount' is defined but never used. Allowed unused vars must match /^_/u                                                                     @typescript-eslint/no-unused-vars
+  26:5   warning  'clearAllModulesForModel' is defined but never used. Allowed unused vars must match /^_/u                                                              @typescript-eslint/no-unused-vars
+  27:5   warning  'registerModule' is defined but never used. Allowed unused vars must match /^_/u                                                                       @typescript-eslint/no-unused-vars
+  28:5   warning  'unregisterModule' is defined but never used. Allowed unused vars must match /^_/u                                                                     @typescript-eslint/no-unused-vars
+  30:10  warning  'applyModuleSnapshot' is defined but never used. Allowed unused vars must match /^_/u                                                                  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\scene\motion-modules-registry.init.test.ts
+  11:10  warning  'makeModel' is defined but never used. Allowed unused vars must match /^_/u                                                                            @typescript-eslint/no-unused-vars
+  11:21  warning  'makeModelWithBones' is defined but never used. Allowed unused vars must match /^_/u                                                                   @typescript-eslint/no-unused-vars
+  11:41  warning  'setActiveMotionWithModules' is defined but never used. Allowed unused vars must match /^_/u                                                           @typescript-eslint/no-unused-vars
+  15:5   warning  'createModule' is defined but never used. Allowed unused vars must match /^_/u                                                                         @typescript-eslint/no-unused-vars
+  16:5   warning  'getModuleState' is defined but never used. Allowed unused vars must match /^_/u                                                                       @typescript-eslint/no-unused-vars
+  17:5   warning  'setModuleParam' is defined but never used. Allowed unused vars must match /^_/u                                                                       @typescript-eslint/no-unused-vars
+  18:5   warning  'setModuleEnabled' is defined but never used. Allowed unused vars must match /^_/u                                                                     @typescript-eslint/no-unused-vars
+  19:5   warning  'claimBones' is defined but never used. Allowed unused vars must match /^_/u                                                                           @typescript-eslint/no-unused-vars
+  20:5   warning  'getOwnedBones' is defined but never used. Allowed unused vars must match /^_/u                                                                        @typescript-eslint/no-unused-vars
+  21:5   warning  'releaseOwnedBones' is defined but never used. Allowed unused vars must match /^_/u                                                                    @typescript-eslint/no-unused-vars
+  22:5   warning  'getModuleConflicts' is defined but never used. Allowed unused vars must match /^_/u                                                                   @typescript-eslint/no-unused-vars
+  23:5   warning  'getAllConflicts' is defined but never used. Allowed unused vars must match /^_/u                                                                      @typescript-eslint/no-unused-vars
+  24:5   warning  'getConflictCount' is defined but never used. Allowed unused vars must match /^_/u                                                                     @typescript-eslint/no-unused-vars
+  26:5   warning  'clearAllModulesForModel' is defined but never used. Allowed unused vars must match /^_/u                                                              @typescript-eslint/no-unused-vars
+  30:10  warning  'applyModuleSnapshot' is defined but never used. Allowed unused vars must match /^_/u                                                                  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\scene\motion-modules-registry.param.test.ts
+  11:21  warning  'makeModelWithBones' is defined but never used. Allowed unused vars must match /^_/u                                                                   @typescript-eslint/no-unused-vars
+  14:5   warning  'getRegisteredModules' is defined but never used. Allowed unused vars must match /^_/u                                                                 @typescript-eslint/no-unused-vars
+  19:5   warning  'claimBones' is defined but never used. Allowed unused vars must match /^_/u                                                                           @typescript-eslint/no-unused-vars
+  20:5   warning  'getOwnedBones' is defined but never used. Allowed unused vars must match /^_/u                                                                        @typescript-eslint/no-unused-vars
+  21:5   warning  'releaseOwnedBones' is defined but never used. Allowed unused vars must match /^_/u                                                                    @typescript-eslint/no-unused-vars
+  22:5   warning  'getModuleConflicts' is defined but never used. Allowed unused vars must match /^_/u                                                                   @typescript-eslint/no-unused-vars
+  23:5   warning  'getAllConflicts' is defined but never used. Allowed unused vars must match /^_/u                                                                      @typescript-eslint/no-unused-vars
+  24:5   warning  'getConflictCount' is defined but never used. Allowed unused vars must match /^_/u                                                                     @typescript-eslint/no-unused-vars
+  26:5   warning  'clearAllModulesForModel' is defined but never used. Allowed unused vars must match /^_/u                                                              @typescript-eslint/no-unused-vars
+  27:5   warning  'registerModule' is defined but never used. Allowed unused vars must match /^_/u                                                                       @typescript-eslint/no-unused-vars
+  28:5   warning  'unregisterModule' is defined but never used. Allowed unused vars must match /^_/u                                                                     @typescript-eslint/no-unused-vars
+  30:10  warning  'applyModuleSnapshot' is defined but never used. Allowed unused vars must match /^_/u                                                                  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\scene\motion-modules-registry.snapshot.test.ts
+  11:21  warning  'makeModelWithBones' is defined but never used. Allowed unused vars must match /^_/u                                                                   @typescript-eslint/no-unused-vars
+  14:5   warning  'getRegisteredModules' is defined but never used. Allowed unused vars must match /^_/u                                                                 @typescript-eslint/no-unused-vars
+  17:5   warning  'setModuleParam' is defined but never used. Allowed unused vars must match /^_/u                                                                       @typescript-eslint/no-unused-vars
+  19:5   warning  'claimBones' is defined but never used. Allowed unused vars must match /^_/u                                                                           @typescript-eslint/no-unused-vars
+  20:5   warning  'getOwnedBones' is defined but never used. Allowed unused vars must match /^_/u                                                                        @typescript-eslint/no-unused-vars
+  21:5   warning  'releaseOwnedBones' is defined but never used. Allowed unused vars must match /^_/u                                                                    @typescript-eslint/no-unused-vars
+  22:5   warning  'getModuleConflicts' is defined but never used. Allowed unused vars must match /^_/u                                                                   @typescript-eslint/no-unused-vars
+  23:5   warning  'getAllConflicts' is defined but never used. Allowed unused vars must match /^_/u                                                                      @typescript-eslint/no-unused-vars
+  24:5   warning  'getConflictCount' is defined but never used. Allowed unused vars must match /^_/u                                                                     @typescript-eslint/no-unused-vars
+  26:5   warning  'clearAllModulesForModel' is defined but never used. Allowed unused vars must match /^_/u                                                              @typescript-eslint/no-unused-vars
+  27:5   warning  'registerModule' is defined but never used. Allowed unused vars must match /^_/u                                                                       @typescript-eslint/no-unused-vars
+  28:5   warning  'unregisterModule' is defined but never used. Allowed unused vars must match /^_/u                                                                     @typescript-eslint/no-unused-vars
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\scene\replace-model-inherit.test.ts
   89:5  warning  'getPersonalLightState' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\ui-helpers.test.ts
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\virtual-skirt-helpers.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\virtual-skirt.build-cleanup.test.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\virtual-skirt.coord.test.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\virtual-skirt.coordspace.test.ts
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\virtual-skirt.dispose.test.ts
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\virtual-skirt.inject.test.ts
-C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\virtual-skirt.test.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\virtual-skirt.quality.test.ts
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\virtual-skirt.update.test.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\virtual-skirt.waist-cache.test.ts
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\vmd-evaluator.regression.spec.ts
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\wind-physics-integration.test.ts
   30:5  warning  'memory' is assigned a value but never used. Allowed unused vars must match /^_/u            @typescript-eslint/no-unused-vars
@@ -77,7 +177,6 @@ C:\Users\zhujieling11\MikuMikuAR\frontend\src\core\ui-keyboard-nav.ts
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\core\ui-rows.ts
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\core\ui-slide-row.ts
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\diagnostic-config.ts
-  418:16  warning  'saveGoConfig' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\env-ground-levels.ts
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\env-water-levels.ts
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\library-actions.ts
@@ -86,17 +185,13 @@ C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\library-setup.ts
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\menu.ts
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\model-detail.ts
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\model-material.ts
-  204:10  warning  'buildPerMatLevel' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+    3:10  warning  'Material' is defined but never used. Allowed unused vars must match /^_/u           @typescript-eslint/no-unused-vars
+  155:10  warning  'buildPerMatSchema' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\model-preset.ts
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\motion-camera-levels.ts
-   67:10  warning  'renderMenu' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
-C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\motion-cloth-levels.ts
-  18:10  warning  'renderMenu' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\motion-override-levels.ts
-  739:35  warning  'snap' is assigned a value but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\motion-popup.ts
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\plaza-browser.ts
-   37:10  warning  'swallowError' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\scene-render-levels.ts
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\scene-stage-lights.ts
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\settings-about.ts
@@ -113,23 +208,13 @@ C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\settings-diagnostic.ts
   291:10  warning  'stopStreaming' is defined but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
   296:16  warning  'clearChat' is defined but never used. Allowed unused vars must match /^_/u            @typescript-eslint/no-unused-vars
   457:5   warning  'getSettingsMenu' is defined but never used. Allowed unused args must match /^_/u      @typescript-eslint/no-unused-vars
-C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\settings-downloads.ts
-  252:15  warning  'stem' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
-C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\settings-resources.ts
-  36:5  warning  'addSliderRow' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\settings-system.ts
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\settings-targets.ts
-  42:6  warning  'SettingsTarget' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\motion-algos\proc-motion-autodance.ts
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\motion-algos\proc-motion-idle.ts
-C:\Users\zhujieling11\MikuMikuAR\frontend\src\motion-algos\vmd-writer.ts
-  33:7  warning  'INTERP_EASE_IN' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\outfit\audio.ts
-  291:10  warning  'setPlaylist' is defined but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
-  297:10  warning  'addToPlaylist' is defined but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
-  305:10  warning  'getPlaylist' is defined but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
-  310:10  warning  'getPlaylistIndex' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
-  324:16  warning  'prevTrack' is defined but never used. Allowed unused vars must match /^_/u         @typescript-eslint/no-unused-vars
+  289:10  warning  'getPlaylistIndex' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  303:16  warning  'prevTrack' is defined but never used. Allowed unused vars must match /^_/u         @typescript-eslint/no-unused-vars
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\outfit\outfit-overlay.ts
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\outfit\outfit.ts
 C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\ar\ar-camera.ts

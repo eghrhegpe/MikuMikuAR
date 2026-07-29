@@ -285,27 +285,6 @@ export async function loadAudioFile(filePath: string, signal?: AbortSignal): Pro
     triggerAutoSave();
 }
 
-// ======== Phase C: 播放列表控制 ========
-
-/** 设置播放列表（替换当前列表，重置索引）。 */
-function setPlaylist(urls: string[]): void {
-    _playlist = [...urls];
-    _playlistIndex = _playlist.length > 0 ? 0 : -1;
-}
-
-/** 追加到播放列表末尾。 */
-function addToPlaylist(url: string): void {
-    _playlist.push(url);
-    if (_playlistIndex < 0) {
-        _playlistIndex = 0;
-    }
-}
-
-/** 获取当前播放列表。 */
-function getPlaylist(): string[] {
-    return [..._playlist];
-}
-
 /** 获取当前播放列表索引（-1 = 无）。 */
 function getPlaylistIndex(): number {
     return _playlistIndex;

@@ -736,7 +736,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
                             inst.boneOverrides = inst.boneOverrides.map((b) =>
                                 b.boneName === ov.boneName ? updated : b
                             );
-                            const snap = pushUndoSnapshot(); // [fix] 骨骼覆盖 toggle 可撤销
+                            pushUndoSnapshot(); // [fix] 骨骼覆盖 toggle 可撤销
                             if (updated.enabled) {
                                 setBoneOverride(
                                     ov.boneName,
