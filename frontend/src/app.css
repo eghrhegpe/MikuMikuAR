@@ -3113,8 +3113,10 @@ textarea,
     color: var(--text-bright);
 }
 .model-detail-tab-btn.active {
-    color: var(--accent);
+    color: var(--text-bright);
     border-bottom-color: var(--accent);
+    /* 覆盖 .mode-btn.active 的填充背景，保持下划线指示风格 */
+    background: transparent;
 }
 .model-detail-tab-content {
     min-height: 0;
