@@ -694,10 +694,10 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     mat.setInt('uWaterFlip', state.waterFlip ? 1 : 0);
 
     const hasEnv = !!scene.environmentTexture;
-    // envIntensity 随日照缩放（与 per-frame tickWater 同公式）
+    // envIntensity 随日照微缩放（与 per-frame 同公式）：高底线保留夕阳暖色
     const _initDl = scene.getLightByName('dir') as DirectionalLight | null;
     const _initSunI = _initDl ? _initDl.intensity : 0.4;
-    mat.setFloat('envIntensity', hasEnv ? Math.max(0.05, Math.min(1, _initSunI * 0.7 + 0.1)) : 0);
+    mat.setFloat('envIntensity', hasEnv ? Math.max(0.6, Math.min(1, _initSunI * 0.4 + 0.6)) : 0);
     if (hasEnv && scene.environmentTexture) {
         mat.setTexture('envTexture', scene.environmentTexture);
     }
@@ -1004,8 +1004,8 @@ function _waterUpdateCallback(scene: Scene): void {
         m.setVector3('lightDir', dl.direction);
         m.setColor3('lightColor', dl.diffuse);
         m.setFloat('lightIntensity', dl.intensity);
-        // envIntensity 随日照缩放：避免 environmentTexture 始终满强度导致水面不受日照明暗影响
-        m.setFloat('envIntensity', Math.max(0.05, Math.min(1, dl.intensity * 0.7 + 0.1)));
+        // envIntensity 随日照微缩放：高底线 0.6 保留夕阳暖色，避免水面颜色随天空大幅变化
+        m.setFloat('envIntensity', Math.max(0.6, Math.min(1, dl.intensity * 0.4 + 0.6)));
     }
 
     // 涟漪衰减 + 清理死亡 slot

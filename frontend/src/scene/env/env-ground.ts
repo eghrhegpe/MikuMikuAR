@@ -136,10 +136,11 @@ function createGroundMaterial(state: EnvState, scene: Scene): GroundMat {
     // PBR 自动使用 scene.environmentTexture 作为 IBL，无需手动赋值
     mat.useSpecularOverAlpha = false;
     mat.useRadianceOverAlpha = false;
-    // IBL 随日照明暗缩放（与 _syncPbrProperties 同公式），避免新建时 environmentIntensity=1 导致地面不受日照影响
+    // IBL 随日照微缩放：高底线 0.6 + 缓曲线，保留夕阳暖色同时让地面有日照响应
+    // noon(sunI≈1.2)→1.0, sunset(0.18)→0.67, night(0)→0.6
     const dir = scene.getLightByName('dir') as DirectionalLight | null;
     const sunI = dir ? dir.intensity : 0.4;
-    mat.environmentIntensity = Math.max(0.08, Math.min(1, sunI * 0.7 + 0.1));
+    mat.environmentIntensity = Math.max(0.6, Math.min(1, sunI * 0.4 + 0.6));
     // ADR-114: 透明模式下显式设置 transparencyMode，PBRMaterial 依赖显式队列
     mat.transparencyMode = _needAlphaBlend(state)
         ? Material.MATERIAL_ALPHABLEND
@@ -1088,12 +1089,11 @@ function _syncPbrProperties(mat: PBRMaterial, state: EnvState): void {
     if (mat.bumpTexture) {
         mat.bumpTexture.level = _effectiveBumpLevel(state);
     }
-    // IBL 随日照明暗缩放：dirLight.intensity 已由 deriveLighting 按太阳角度推算，
-    // 不缩放则 environmentTexture 始终满强度，地面不会随日落变暗（看起来"不受光照影响"）。
+    // IBL 随日照微缩放：高底线 0.6 保留夕阳暖色，避免地面颜色随天空大幅变化
     const scene = getScene();
     const dir = scene.getLightByName('dir') as DirectionalLight | null;
     const sunI = dir ? dir.intensity : 0.4;
-    mat.environmentIntensity = Math.max(0.08, Math.min(1, sunI * 0.7 + 0.1));
+    mat.environmentIntensity = Math.max(0.6, Math.min(1, sunI * 0.4 + 0.6));
 }
 
 // ======== applyGround (public) ========

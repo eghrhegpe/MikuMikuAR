@@ -194,9 +194,15 @@ void main() {
     // 反射（占主导）与环境光都应按日照变暗；sun=0 时水面显著变暗而非不变
     float lightExposure = clamp(lightIntensity * 1.3 + ambientIntensity * 0.5 + 0.06, 0.04, 1.8);
 
+    // 低太阳角度反射压制：太阳接近地平线时，反射方向朝地平线，
+    // cubemap 地平线因大气散射极亮 → 水面泛白。用 sun elevation 压制反射强度
+    float sunElev = max(normalize(lightDir).y, 0.0);
+    float reflDampen = mix(0.4, 1.0, sunElev);
+
     // 天空-水面颜色联动：reflection 也朝天空色偏移，让"天空色联动"真正可见
     vec3 reflected = reflection * foamDamp;
-    reflected = mix(reflected, uSkyBlendColor * (0.5 + lightIntensity), uSkyColorBlend);
+    reflected = mix(reflected, uSkyBlendColor * 0.6, uSkyColorBlend);
+    reflected *= reflDampen;
 
     // ======== 波高驱动水色调制 + 焦散：在反射混合之前应用 ========
     // 这样图案 baked 进 base 水色，Fresnel 高时反射虽主导但 base 仍带图案
@@ -256,7 +262,7 @@ void main() {
 
     float depth = length(vWorldPos - cameraPosition);
     float waterFog = smoothstep(waterFogStart, waterFogEnd, depth);
-    color = mix(color, finalFogColor, waterFog);
+    color = mix(color, finalFogColor * lightExposure, waterFog);
 
     // ======== ADR-115 P3: 地平线淡出 ========
     // uHorizonFade=0 时 horizonFade=1，完全不混合（零回归）
