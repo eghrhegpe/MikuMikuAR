@@ -285,29 +285,10 @@ export async function loadAudioFile(filePath: string, signal?: AbortSignal): Pro
     triggerAutoSave();
 }
 
-/** 获取当前播放列表索引（-1 = 无）。 */
-function getPlaylistIndex(): number {
-    return _playlistIndex;
-}
-
 /** 切换到下一曲。 */
 export async function nextTrack(): Promise<void> {
     const idx = _nextIndex();
     if (idx < 0) {
-        return;
-    }
-    await _playIndex(idx);
-}
-
-/** 切换到上一曲。 */
-async function prevTrack(): Promise<void> {
-    const idx = _prevIndex();
-    if (idx < 0) {
-        return;
-    }
-    // 若当前曲目已播放超过 3s，先重播当前曲目
-    if (streamPlayer && streamPlayer.currentTime > 3) {
-        streamPlayer.currentTime = 0;
         return;
     }
     await _playIndex(idx);

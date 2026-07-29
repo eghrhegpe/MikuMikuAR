@@ -1,6 +1,5 @@
 // [doc:architecture] Model Material — 材质调节 UI 层（batch/per-mat/root/list）
 
-import { Material } from '@babylonjs/core/Materials/material';
 import { cardContainer, PopupLevel, stackRegistry } from '../core/config';
 import { feedbackInfo } from '../core/feedback';
 import { showInfoToast } from '../core/toast';
@@ -150,55 +149,6 @@ function buildMatToggle(
     });
     toggle.style.marginLeft = 'auto';
     return toggle;
-}
-
-function buildPerMatSchema(
-    id: string,
-    modelName: string,
-    matName: string,
-    matIndex: number,
-    targetStack?: SlideMenu | null
-): MenuNode[] {
-    const current = getMatParams(id, matIndex);
-    const params = current ?? { ...DEFAULT_MAT_PARAMS };
-    const isModified = current !== null;
-
-    return [
-        {
-            id: 'perMat:main',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    const nameEl = document.createElement('div');
-                    nameEl.style.cssText =
-                        'font-size:11px;color:var(--white-65);margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
-                    nameEl.textContent = modelName + ' > ' + matName;
-                    inner.appendChild(nameEl);
-
-                    const stackingHint = document.createElement('div');
-                    stackingHint.className = 'accent-hint';
-                    stackingHint.textContent = t('model-material.stackingHint');
-                    inner.appendChild(stackingHint);
-
-                    _renderMatParamSliders(inner, id, matIndex, params, false);
-
-                    if (isModified) {
-                        slideRow(
-                            inner,
-                            'lucide:rotate-ccw',
-                            t('model-material.resetThis'),
-                            false,
-                            () => {
-                                resetSingleMatParams(id, matIndex);
-                                (targetStack ?? stackRegistry.modelStack)?.reRender();
-                                showInfoToast(t('model-material.resetDone', { name: matName }));
-                            }
-                        );
-                    }
-                });
-            },
-        },
-    ];
 }
 
 function buildMatRootSchema(
