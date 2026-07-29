@@ -305,6 +305,12 @@ export const en: Record<string, string> = {
     'motion.library.emptyHint': 'Scene library is empty, load a motion first',
     'motion.library.followDefault': 'Follow Default',
     'motion.library.currentPick': 'Current',
+    // [doc:adr-207] Motion menu section headers
+    'motion.section.loadedMotion': 'Loaded Motions',
+    'motion.section.loadedMotionEmpty': 'No motions yet, load from library',
+    'motion.section.loadedProc': 'Loaded Procedural Motions',
+    'motion.section.library': 'Motion Library',
+    'motion.section.more': 'More',
     'motion.undoApplied': '✓ Undone',
     'motion.undo.appliedPreset': 'Undo: Apply preset "{name}"',
     'motion.music': 'Music',

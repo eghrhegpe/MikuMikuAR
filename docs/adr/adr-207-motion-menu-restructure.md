@@ -1,6 +1,6 @@
 # ADR-207: 动作菜单重构 —— 程序化动作可加载化 + 双面板对称
 
-- **状态**: 📋 规划中
+- **状态**: 🚧 实施中（Phase 1-2 已完成，Phase 3 待后续）
 - **日期**: 2026-07-30
 - **相关**: ADR-167（场景级动作库）、ADR-170（选中范式）、ADR-169（装载语义统一）、ADR-121（双槽位动作分配）
 - **源码锚点**: `menus/motion-root-ui.ts:buildMotionRootItems`、`menus/model-detail.ts:buildMotionSlotLevel`、`core/types.ts:MotionSlotConfig.procRole`、`scene/motion/proc-motion-bridge.ts:ProcMotionController`

@@ -460,6 +460,12 @@ export const zhTW: Record<string, string> = {
     'motion.library.emptyHint': '場景庫為空，請先載入動作',
     'motion.library.followDefault': '跟隨預設動作',
     'motion.library.currentPick': '目前選擇',
+    // [doc:adr-207] 動作選單分區標題
+    'motion.section.loadedMotion': '已載入動作',
+    'motion.section.loadedMotionEmpty': '尚無動作，從動作庫載入',
+    'motion.section.loadedProc': '已載入程序化動作',
+    'motion.section.library': '動作庫',
+    'motion.section.more': '更多',
     'motion.undoApplied': '✓ 已撤銷',
     'motion.undo.appliedPreset': '撤銷：套用預設「{name}」',
     'motion.music': '音樂',

@@ -303,6 +303,12 @@ export const zhCN: Record<string, string> = {
     'motion.library.emptyHint': '场景库为空，请先加载动作',
     'motion.library.followDefault': '跟随默认动作',
     'motion.library.currentPick': '当前选择',
+    // [doc:adr-207] 动作菜单分区标题
+    'motion.section.loadedMotion': '已加载动作',
+    'motion.section.loadedMotionEmpty': '暂无动作，从动作库加载',
+    'motion.section.loadedProc': '已加载程序化动作',
+    'motion.section.library': '动作库',
+    'motion.section.more': '更多',
     'motion.undoApplied': '✓ 已撤销',
     'motion.undo.appliedPreset': '撤销：应用预设「{name}」',
     'motion.music': '音乐',

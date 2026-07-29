@@ -41,27 +41,31 @@ export function buildMotionRootItems(): PopupRow[] {
     const sceneMotions = getSceneMotions();
     const activeId = getActiveMotionId();
 
-    // ===== Card 1: 场景动作库（ADR-167：所有主动作平等共存） =====
+    // ===== [doc:adr-207] Section 1: 已加载动作 =====
+    items.push({
+        kind: 'sectionTitle',
+        label: t('motion.section.loadedMotion'),
+        icon: '',
+        target: '',
+    });
     if (sceneMotions.length === 0) {
+        // 空提示行（非交互，仅告知用户从动作库加载）
         items.push({
             kind: 'action',
-            label: t('motion.noMotionHint'),
-            icon: 'lucide:circle-slash',
-            target: '__motion_detail__:',
-            sublabel: t('motion.browseMotionLibrary'),
+            label: t('motion.section.loadedMotionEmpty'),
+            icon: 'lucide:inbox',
+            target: '',
             wrapLabel: true,
         });
     } else {
         for (const motion of sceneMotions) {
-            // [doc:adr-170] 选中范式：对齐模型焦点——行首 check-circle「选中」，行尾 settings-2「动作工具」；
-            // 删除/设为默认等低频操作收入详情页
+            // [doc:adr-170] 选中范式：行首 check-circle「选中」，行尾 settings-2「动作工具」
             const isSelected = motion.id === activeId;
             const radioIcon = isSelected ? 'lucide:check-circle' : 'lucide:circle';
             items.push({
                 kind: 'action',
                 label: motion.vmdName || t('motion.intent.none'),
                 icon: radioIcon,
-                // [doc:adr-167] target 编码 sceneMotionId，路由侧解析后进对应详情页
                 target: `__motion_detail__:${motion.id ?? ''}`,
                 sublabel: isSelected ? t('motion.defaultMotion') : undefined,
                 wrapLabel: true,
@@ -99,8 +103,34 @@ export function buildMotionRootItems(): PopupRow[] {
         }
     }
 
-    // ===== Card 2: 库 =====
-    items.push({ kind: 'divider', label: '', icon: '', target: '' });
+    // ===== [doc:adr-207] Section 2: 已加载程序化动作 =====
+    items.push({
+        kind: 'sectionTitle',
+        label: t('motion.section.loadedProc'),
+        icon: '',
+        target: '',
+    });
+    // Phase 1 硬编码两行；Phase 3 改为集合驱动
+    items.push({
+        kind: 'folder',
+        label: t('motion.modeIdle'),
+        icon: 'lucide:wand-sparkles',
+        target: 'motion:procmotion',
+    });
+    items.push({
+        kind: 'folder',
+        label: t('motion.modeAutodance'),
+        icon: 'lucide:wand-sparkles',
+        target: 'motion:procmotion',
+    });
+
+    // ===== [doc:adr-207] Section 3: 动作库 =====
+    items.push({
+        kind: 'sectionTitle',
+        label: t('motion.section.library'),
+        icon: '',
+        target: '',
+    });
     items.push({
         kind: 'action',
         label: t('motion.browseMotionLibrary'),
@@ -132,8 +162,13 @@ export function buildMotionRootItems(): PopupRow[] {
             : undefined,
     });
 
-    // ===== Card 3: 场景工具 =====
-    items.push({ kind: 'divider', label: '', icon: '', target: '' });
+    // ===== [doc:adr-207] Section 4: 更多（正交工具） =====
+    items.push({
+        kind: 'sectionTitle',
+        label: t('motion.section.more'),
+        icon: '',
+        target: '',
+    });
     items.push({
         kind: 'folder',
         label: t('motion.camera'),

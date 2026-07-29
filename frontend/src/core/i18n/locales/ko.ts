@@ -469,6 +469,12 @@ export const ko: Record<string, string> = {
     'motion.library.emptyHint': '장면 라이브러리가 비어 있습니다. 먼저 모션을 로드하세요',
     'motion.library.followDefault': '기본값 따르기',
     'motion.library.currentPick': '현재 선택',
+    // [doc:adr-207] 모션 메뉴 섹션 제목
+    'motion.section.loadedMotion': '불러온 모션',
+    'motion.section.loadedMotionEmpty': '모션 없음, 라이브러리에서 불러오기',
+    'motion.section.loadedProc': '불러온 절차적 모션',
+    'motion.section.library': '모션 라이브러리',
+    'motion.section.more': '더보기',
     'motion.undoApplied': '✓ 실행 취소됨',
     'motion.undo.appliedPreset': '실행 취소: 프리셋 "{name}" 적용',
     'motion.music': '음악',
