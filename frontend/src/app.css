@@ -3462,6 +3462,22 @@ textarea,
     flex-wrap: wrap;
 }
 
+/* 模型发现下拉芯片组：flex 换行布局，面板内缩进与输入框对齐 */
+.diag-model-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: calc(4px * var(--ui-scale));
+    margin: calc(4px * var(--ui-scale)) 0 calc(8px * var(--ui-scale))
+        calc(0px * var(--ui-scale));
+    padding: calc(4px * var(--ui-scale));
+    background: var(--surface2);
+    border-radius: calc(4px * var(--ui-scale));
+}
+.diag-model-chips .preset-chip {
+    font-size: var(--font-ui-xs);
+    padding: calc(2px * var(--ui-scale)) calc(8px * var(--ui-scale));
+}
+
 .diag-warning {
     display: none;
     padding: calc(6px * var(--ui-scale)) calc(8px * var(--ui-scale));

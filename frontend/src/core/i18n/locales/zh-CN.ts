@@ -1877,6 +1877,7 @@ export const zhCN: Record<string, string> = {
     'ai.config.refreshModels': '发现模型',
     'ai.config.modelsFound': '发现 {n} 个模型',
     'ai.config.modelsNone': '未发现模型，请手动填写（如 sensenova-6.7-flash-lite）',
+    'ai.config.showModels': '显示模型列表',
     'ai.config.keyConfigured': '已配置（重填以更新）',
     'ai.config.save': '保存',
     'ai.config.saving': '保存中...',
