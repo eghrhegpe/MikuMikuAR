@@ -319,3 +319,71 @@ func TestConnection(ctx context.Context, cfg Config) ConnectionResult {
 
 	return ConnectionResult{OK: true, Kind: "", Message: ""}
 }
+
+// FetchModels 从端点发现可用模型列表（OpenAI 兼容 {base}/models）。
+// 镜像前端 browser-adapter 的候选 URL 逻辑：先试 {base}/models，
+// 若 base 以 /v1 结尾再试去 /v1 的 /models。全部失败返回最后一个错误。
+func FetchModels(ctx context.Context, cfg Config) ([]string, error) {
+	if cfg.BaseURL == "" {
+		return nil, fmt.Errorf("端点为空")
+	}
+	base := strings.TrimSuffix(cfg.BaseURL, "/chat/completions")
+	candidates := []string{base + "/models"}
+	if strings.HasSuffix(base, "/v1") {
+		candidates = append(candidates, strings.TrimSuffix(base, "/v1")+"/models")
+	}
+
+	client := &http.Client{}
+	var lastErr error
+	for _, url := range candidates {
+		models, err := fetchModelsFrom(ctx, client, url, cfg.ApiKey)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		if len(models) > 0 {
+			return models, nil
+		}
+		lastErr = fmt.Errorf("响应无有效模型列表")
+	}
+	return nil, lastErr
+}
+
+// fetchModelsFrom 请求单个候选 URL 并解析 OpenAI 兼容的 {data:[{id}]} 结构。
+func fetchModelsFrom(ctx context.Context, client *http.Client, url, apiKey string) ([]string, error) {
+	httpReq, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	httpReq.Header.Set("Accept", "application/json")
+	if apiKey != "" {
+		httpReq.Header.Set("Authorization", "Bearer "+apiKey)
+	}
+	resp, err := client.Do(httpReq)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
+	}
+
+	var parsed struct {
+		Data []struct {
+			ID string `json:"id"`
+		} `json:"data"`
+	}
+	data, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err := json.Unmarshal(data, &parsed); err != nil {
+		return nil, err
+	}
+	models := make([]string, 0, len(parsed.Data))
+	for _, m := range parsed.Data {
+		if m.ID != "" {
+			models = append(models, m.ID)
+		}
+	}
+	return models, nil
+}

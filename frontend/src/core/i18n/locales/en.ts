@@ -1899,6 +1899,8 @@ export const en: Record<string, string> = {
     'ai.config.apiKey': 'API Key',
     'ai.config.model': 'Model',
     'ai.config.refreshModels': 'Discover Models',
+    'ai.config.modelsFound': 'Found {n} models',
+    'ai.config.modelsNone': 'No models found, enter manually (e.g. sensenova-6.7-flash-lite)',
     'ai.config.keyConfigured': 'Configured (re-enter to update)',
     'ai.config.save': 'Save',
     'ai.config.saving': 'Saving...',

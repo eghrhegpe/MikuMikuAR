@@ -47,6 +47,14 @@ export function AiCancelStream(): $CancellablePromise<void> {
     return $Call.ByID(4185100799);
 }
 
+/**
+ * AiFetchModels 从当前配置端点联网发现可用模型列表（OpenAI 兼容 /models）。
+ * 读内部 Config 的 key（不经剥离版 getLLMConfig），失败返回空列表 + error。
+ */
+export function AiFetchModels(): $CancellablePromise<string[] | null> {
+    return $Call.ByID(1185084637);
+}
+
 export function AiGetLLMConfig(): $CancellablePromise<$models.LLMConfig> {
     return $Call.ByID(2848110132);
 }
