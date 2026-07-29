@@ -1,56 +1,71 @@
 // perception/perception-mocks.ts — perception 系测试共享桩（ADR-204 P3，上抬自旧 perception.test.ts 前导）
 //
-// 用法（每个拆分测试文件顶部 18 连 vi.mock，工厂经动态 import 取本模块导出）：
-//   vi.mock('../../scene/scene', async () => (await import('./perception-mocks')).sceneModuleMock);
-// 断言/状态句柄（mockState / mockPipeline / setupPerceptionTest 等）从本模块正常 import。
-// vitest 按测试文件隔离模块图：每个测试文件拿到独立的本模块实例，mockState 等状态不跨文件串扰。
+// 关键约束：旧 perception.test.ts 在 beforeEach 里 `vi.resetModules()` 后动态重导 SUT，
+// 以保证用例间模块级状态隔离。resetModules 会清空模块缓存，若 mockState/mockPipeline 放在本模块，
+// 重导时本模块被重新求值 → 生成「新实例」，与测试文件持有的 mockState 脱节（SUT 调新实例的 vi.fn，
+// 断言看旧实例 → 误报 0 调用）。故 mockState/mockPipeline 必须用 vi.hoisted 留在各测试文件内，
+// 本模块只导出「纯工厂函数」接收测试文件的 mockState，resetModules 重导时引用仍一致。
+//
+// 用法（每个拆分测试文件顶部）：
+//   import { vi } from 'vitest';
+//   const mockState = vi.hoisted(() => createMockState());
+//   const mockPipeline = vi.hoisted(() => createMockPipeline());
+//   vi.mock('../../scene/scene', () => sceneModuleFactory(mockState));
+//   ...（其余 17 个 vi.mock 同理）
+// 断言/共享助手（setupPerceptionTest / makeMockMorphManager 等）从本模块正常 import。
 //
 // NOTE: vi.mock specifier 必须与 SUT 导入解析到同一绝对路径；
 // 拆分文件位于 src/__tests__/perception/，相对前缀为 '../../'（= src/）。
 
 import { vi } from 'vitest';
 
-export const mockState = {
-    focusedModelId: null as string | null,
-    triggerAutoSave: vi.fn(),
-    modelManager: {
-        get: vi.fn(),
-        modelRegistry: new Map<string, any>(),
-    },
-    scene: {
-        onBeforeRenderObservable: {
-            add: vi.fn(() => ({})),
-            remove: vi.fn(),
+export function createMockState() {
+    return {
+        focusedModelId: null as string | null,
+        triggerAutoSave: vi.fn(),
+        modelManager: {
+            get: vi.fn(),
+            modelRegistry: new Map<string, any>(),
         },
-        activeCamera: null,
-        isDisposed: false,
-    },
-    // Lip-sync 依赖 mock（audio 管道 + 口型算法）
-    isAudioPlaying: vi.fn(() => false),
-    getAudioPath: vi.fn(() => ''),
-    getProcBeatDetector: vi.fn(() => null),
-    findLipMorph: vi.fn(() => null),
-    findAllLipMorphs: vi.fn(() => ({ open: null, close: null, pucker: null, smile: null })),
-    amplitudeToWeight: vi.fn(() => 0),
-};
+        scene: {
+            onBeforeRenderObservable: {
+                add: vi.fn(() => ({})),
+                remove: vi.fn(),
+            },
+            activeCamera: null,
+            isDisposed: false,
+        },
+        // Lip-sync 依赖 mock（audio 管道 + 口型算法）
+        isAudioPlaying: vi.fn(() => false),
+        getAudioPath: vi.fn(() => ''),
+        getProcBeatDetector: vi.fn(() => null),
+        findLipMorph: vi.fn(() => null),
+        findAllLipMorphs: vi.fn(() => ({ open: null, close: null, pucker: null, smile: null })),
+        amplitudeToWeight: vi.fn(() => 0),
+    };
+}
 
 // ADR-147 管线 mock：perception 通过 getMotionPipeline().register() 注册帧回调
-export const mockPipeline = {
-    register: vi.fn(),
-    unregister: vi.fn(),
-    lastRunCallback: null as null | ((ctx?: any) => void),
-};
+export function createMockPipeline() {
+    return {
+        register: vi.fn(),
+        unregister: vi.fn(),
+        lastRunCallback: null as null | ((ctx?: any) => void),
+    };
+}
 
-// ── vi.mock 工厂模块对象（供各拆分文件的 vi.mock 工厂返回）──
+// ── vi.mock 工厂函数（接收测试文件的 mockState / mockPipeline）──
 
-export const sceneModuleMock = {
-    get focusedModelId() {
-        return mockState.focusedModelId;
-    },
-    modelManager: mockState.modelManager,
-    scene: mockState.scene,
-    triggerAutoSave: mockState.triggerAutoSave,
-};
+export function sceneModuleFactory(ms: any) {
+    return {
+        get focusedModelId() {
+            return ms.focusedModelId;
+        },
+        modelManager: ms.modelManager,
+        scene: ms.scene,
+        triggerAutoSave: ms.triggerAutoSave,
+    };
+}
 
 export const arCameraModuleMock = { isARActive: () => false };
 
@@ -59,19 +74,23 @@ export const wailsBindingsModuleMock = {};
 export const i18nTModuleMock = { t: (k: string) => k };
 export const standardMaterialModuleMock = {};
 
-export const configModuleMock = {
-    get focusedModelId() {
-        return mockState.focusedModelId;
-    },
-};
+export function configModuleFactory(ms: any) {
+    return {
+        get focusedModelId() {
+            return ms.focusedModelId;
+        },
+    };
+}
 
 export const cameraModuleMock = {};
 export const vmdLoaderModuleMock = {};
 
-export const outfitAudioModuleMock = {
-    isAudioPlaying: mockState.isAudioPlaying,
-    getAudioPath: mockState.getAudioPath,
-};
+export function outfitAudioModuleFactory(ms: any) {
+    return {
+        isAudioPlaying: ms.isAudioPlaying,
+        getAudioPath: ms.getAudioPath,
+    };
+}
 export const outfitModuleMock = {};
 export const envPropsModuleMock = {};
 
@@ -84,31 +103,43 @@ export const envBridgeModuleMock = {
 
 // perception.ts 通过 getScene() 延迟获取 scene 实例（避免与 scene.ts 形成静态循环依赖），
 // 测试侧用 mockState.scene 复用同一份 mock，与 vi.mock('../../scene/scene') 行为一致
-export const envImplModuleMock = {
-    getScene: () => mockState.scene,
-};
+export function envImplModuleFactory(ms: any) {
+    return {
+        getScene: () => ms.scene,
+    };
+}
 
-export const motionPipelineModuleMock = {
-    getMotionPipeline: () => mockPipeline,
-};
+export function motionPipelineModuleFactory(mp: any) {
+    return {
+        getMotionPipeline: () => mp,
+    };
+}
 
-export const procMotionBridgeModuleMock = {
-    getProcBeatDetector: mockState.getProcBeatDetector,
-};
+export function procMotionBridgeModuleFactory(ms: any) {
+    return {
+        getProcBeatDetector: ms.getProcBeatDetector,
+    };
+}
 
 export const lipsyncBridgeModuleMock = {};
 export const proceduralMotionModuleMock = {};
 
-export const lipsyncAlgosModuleMock = {
-    findLipMorph: mockState.findLipMorph,
-    findAllLipMorphs: mockState.findAllLipMorphs,
-    amplitudeToWeight: mockState.amplitudeToWeight,
-};
+export function lipsyncAlgosModuleFactory(ms: any) {
+    return {
+        findLipMorph: ms.findLipMorph,
+        findAllLipMorphs: ms.findAllLipMorphs,
+        amplitudeToWeight: ms.amplitudeToWeight,
+    };
+}
 
 // ── 共享 setup：vi.resetModules + 动态重导 SUT + 重置共享状态 ──
+// 注意：mockState / mockPipeline 由调用方通过 vi.hoisted 提供（见上方约束）
 export type PerceptionSut = typeof import('../../scene/motion/perception');
 
-export async function setupPerceptionTest(): Promise<PerceptionSut> {
+export async function setupPerceptionTest(
+    mockState: ReturnType<typeof createMockState>,
+    mockPipeline: ReturnType<typeof createMockPipeline>
+): Promise<PerceptionSut> {
     vi.resetModules();
     const sut = await import('../../scene/motion/perception');
 
@@ -183,7 +214,7 @@ export function makeMockModelWithMorphManager(
 }
 
 // 触发 perception 管线层回调（ADR-147 管线架构）
-export function triggerLastObserver(): void {
+export function triggerLastObserver(mockPipeline: ReturnType<typeof createMockPipeline>): void {
     mockPipeline.lastRunCallback?.();
 }
 

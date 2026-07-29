@@ -1,28 +1,73 @@
 // perception/perf-tier.int.test.ts — ADR-164 全员感知 + PerceptionPerfMonitor 性能档位（ADR-204 P3，拆自旧 perception.test.ts）
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../../scene/scene', async () => (await import('./perception-mocks')).sceneModuleMock);
-vi.mock('../../ar/ar-camera', async () => (await import('./perception-mocks')).arCameraModuleMock);
-vi.mock('../../core/wails-bindings', async () => (await import('./perception-mocks')).wailsBindingsModuleMock);
-vi.mock('../../core/i18n/t', async () => (await import('./perception-mocks')).i18nTModuleMock);
-vi.mock('@babylonjs/core/Materials/standardMaterial', async () => (await import('./perception-mocks')).standardMaterialModuleMock);
-vi.mock('../../core/config', async () => (await import('./perception-mocks')).configModuleMock);
-vi.mock('../../scene/camera/camera', async () => (await import('./perception-mocks')).cameraModuleMock);
-vi.mock('../../scene/motion/vmd-loader', async () => (await import('./perception-mocks')).vmdLoaderModuleMock);
-vi.mock('../../outfit/audio', async () => (await import('./perception-mocks')).outfitAudioModuleMock);
-vi.mock('../../outfit/outfit', async () => (await import('./perception-mocks')).outfitModuleMock);
-vi.mock('../../scene/env/props', async () => (await import('./perception-mocks')).envPropsModuleMock);
-vi.mock('../../scene/env/env-bridge', async () => (await import('./perception-mocks')).envBridgeModuleMock);
-vi.mock('../../scene/env/env-impl', async () => (await import('./perception-mocks')).envImplModuleMock);
-vi.mock('../../scene/motion/motion-pipeline', async () => (await import('./perception-mocks')).motionPipelineModuleMock);
-vi.mock('../../scene/motion/proc-motion-bridge', async () => (await import('./perception-mocks')).procMotionBridgeModuleMock);
-vi.mock('../../scene/motion/lipsync-bridge', async () => (await import('./perception-mocks')).lipsyncBridgeModuleMock);
-vi.mock('../../motion-algos/procedural-motion', async () => (await import('./perception-mocks')).proceduralMotionModuleMock);
-vi.mock('../../motion-algos/lipsync', async () => (await import('./perception-mocks')).lipsyncAlgosModuleMock);
+const mockState = vi.hoisted(() => ({
+    focusedModelId: null as string | null,
+    triggerAutoSave: vi.fn(),
+    modelManager: {
+        get: vi.fn(),
+        modelRegistry: new Map<string, any>(),
+    },
+    scene: {
+        onBeforeRenderObservable: {
+            add: vi.fn(() => ({})),
+            remove: vi.fn(),
+        },
+        activeCamera: null,
+        isDisposed: false,
+    },
+    isAudioPlaying: vi.fn(() => false),
+    getAudioPath: vi.fn(() => ''),
+    getProcBeatDetector: vi.fn(() => null),
+    findLipMorph: vi.fn(() => null),
+    findAllLipMorphs: vi.fn(() => ({ open: null, close: null, pucker: null, smile: null })),
+    amplitudeToWeight: vi.fn(() => 0),
+}));
+const mockPipeline = vi.hoisted(() => ({
+    register: vi.fn(),
+    unregister: vi.fn(),
+    lastRunCallback: null as null | ((ctx?: any) => void),
+}));
+
+vi.mock('../../scene/scene', () => sceneModuleFactory(mockState));
+vi.mock('../../ar/ar-camera', () => arCameraModuleMock);
+vi.mock('../../core/wails-bindings', () => wailsBindingsModuleMock);
+vi.mock('../../core/i18n/t', () => i18nTModuleMock);
+vi.mock('@babylonjs/core/Materials/standardMaterial', () => standardMaterialModuleMock);
+vi.mock('../../core/config', () => configModuleFactory(mockState));
+vi.mock('../../scene/camera/camera', () => cameraModuleMock);
+vi.mock('../../scene/motion/vmd-loader', () => vmdLoaderModuleMock);
+vi.mock('../../outfit/audio', () => outfitAudioModuleFactory(mockState));
+vi.mock('../../outfit/outfit', () => outfitModuleMock);
+vi.mock('../../scene/env/props', () => envPropsModuleMock);
+vi.mock('../../scene/env/env-bridge', () => envBridgeModuleMock);
+vi.mock('../../scene/env/env-impl', () => envImplModuleFactory(mockState));
+vi.mock('../../scene/motion/motion-pipeline', () => motionPipelineModuleFactory(mockPipeline));
+vi.mock('../../scene/motion/proc-motion-bridge', () => procMotionBridgeModuleFactory(mockState));
+vi.mock('../../scene/motion/lipsync-bridge', () => lipsyncBridgeModuleMock);
+vi.mock('../../motion-algos/procedural-motion', () => proceduralMotionModuleMock);
+vi.mock('../../motion-algos/lipsync', () => lipsyncAlgosModuleFactory(mockState));
 
 import {
     setupPerceptionTest,
-    mockState,
+    sceneModuleFactory,
+    arCameraModuleMock,
+    wailsBindingsModuleMock,
+    i18nTModuleMock,
+    standardMaterialModuleMock,
+    configModuleFactory,
+    cameraModuleMock,
+    vmdLoaderModuleMock,
+    outfitAudioModuleFactory,
+    outfitModuleMock,
+    envPropsModuleMock,
+    envBridgeModuleMock,
+    envImplModuleFactory,
+    motionPipelineModuleFactory,
+    procMotionBridgeModuleFactory,
+    lipsyncBridgeModuleMock,
+    proceduralMotionModuleMock,
+    lipsyncAlgosModuleFactory,
     makeMockMorphManager,
     makeMockModelWithMorphManager,
     triggerLastObserver,
@@ -35,7 +80,7 @@ import { _getActiveContextsByTier } from '../../scene/motion/perception-observer
 let sut: PerceptionSut;
 
 beforeEach(async () => {
-    sut = await setupPerceptionTest();
+    sut = await setupPerceptionTest(mockState, mockPipeline);
 });
 
 describe('ADR-164 enableAllPerception / disableAllPerception', () => {
@@ -97,7 +142,7 @@ describe('ADR-164 enableAllPerception / disableAllPerception', () => {
 
         // 第 3 步：触发 observer，m2 的 lastOffsets.breath 应被写入非 0 值
         vi.spyOn(performance, 'now').mockReturnValue(1000);
-        triggerLastObserver();
+        triggerLastObserver(mockPipeline);
         const ctxBefore = sut.__testOnlyGetContext('m2');
         expect(ctxBefore?.lastOffsets.breath).not.toBe(0);
 
@@ -141,7 +186,7 @@ describe('ADR-164 PerceptionPerfMonitor tier', () => {
         sut.setPerceptionPerfTier('low');
 
         // 触发 observer
-        triggerLastObserver();
+        triggerLastObserver(mockPipeline);
 
         // low 档下 expression 应被跳过（morph 权重为 0）
         expect(mockMorphManager.getInfluence('笑み')).toBe(0);
@@ -160,13 +205,13 @@ describe('ADR-164 PerceptionPerfMonitor tier', () => {
         sut.setPerceptionPerfTier('medium');
 
         // 第 1 帧（frameCounter=1）：expression 不运行（1%4!==0）
-        triggerLastObserver();
+        triggerLastObserver(mockPipeline);
         const inf1 = mockMorphManager.getInfluence('笑み');
 
         // 第 4 帧（frameCounter=4）：expression 运行（4%4===0）
         // 需要再触发 3 次 observer 使 frameCounter 增加到 4
         for (let i = 0; i < 3; i++) {
-            triggerLastObserver();
+            triggerLastObserver(mockPipeline);
         }
         const inf4 = mockMorphManager.getInfluence('笑み');
 

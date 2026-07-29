@@ -1,31 +1,83 @@
 // perception/state-lifecycle.int.test.ts — 默认状态 + 4 setter + setPerceptionState + 生命周期（ADR-204 P3，拆自旧 perception.test.ts）
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../../scene/scene', async () => (await import('./perception-mocks')).sceneModuleMock);
-vi.mock('../../ar/ar-camera', async () => (await import('./perception-mocks')).arCameraModuleMock);
-vi.mock('../../core/wails-bindings', async () => (await import('./perception-mocks')).wailsBindingsModuleMock);
-vi.mock('../../core/i18n/t', async () => (await import('./perception-mocks')).i18nTModuleMock);
-vi.mock('@babylonjs/core/Materials/standardMaterial', async () => (await import('./perception-mocks')).standardMaterialModuleMock);
-vi.mock('../../core/config', async () => (await import('./perception-mocks')).configModuleMock);
-vi.mock('../../scene/camera/camera', async () => (await import('./perception-mocks')).cameraModuleMock);
-vi.mock('../../scene/motion/vmd-loader', async () => (await import('./perception-mocks')).vmdLoaderModuleMock);
-vi.mock('../../outfit/audio', async () => (await import('./perception-mocks')).outfitAudioModuleMock);
-vi.mock('../../outfit/outfit', async () => (await import('./perception-mocks')).outfitModuleMock);
-vi.mock('../../scene/env/props', async () => (await import('./perception-mocks')).envPropsModuleMock);
-vi.mock('../../scene/env/env-bridge', async () => (await import('./perception-mocks')).envBridgeModuleMock);
-vi.mock('../../scene/env/env-impl', async () => (await import('./perception-mocks')).envImplModuleMock);
-vi.mock('../../scene/motion/motion-pipeline', async () => (await import('./perception-mocks')).motionPipelineModuleMock);
-vi.mock('../../scene/motion/proc-motion-bridge', async () => (await import('./perception-mocks')).procMotionBridgeModuleMock);
-vi.mock('../../scene/motion/lipsync-bridge', async () => (await import('./perception-mocks')).lipsyncBridgeModuleMock);
-vi.mock('../../motion-algos/procedural-motion', async () => (await import('./perception-mocks')).proceduralMotionModuleMock);
-vi.mock('../../motion-algos/lipsync', async () => (await import('./perception-mocks')).lipsyncAlgosModuleMock);
+// mockState / mockPipeline 必须 vi.hoisted 留在本文件：beforeEach 的 vi.resetModules() 会驱逐
+// 外部模块，若放 perception-mocks.ts 会生成「新实例」与测试持有的 mockState 脱节（SUT 调新实例的
+// vi.fn，断言看旧实例 → 误报 0 调用）。
+const mockState = vi.hoisted(() => ({
+    focusedModelId: null as string | null,
+    triggerAutoSave: vi.fn(),
+    modelManager: {
+        get: vi.fn(),
+        modelRegistry: new Map<string, any>(),
+    },
+    scene: {
+        onBeforeRenderObservable: {
+            add: vi.fn(() => ({})),
+            remove: vi.fn(),
+        },
+        activeCamera: null,
+        isDisposed: false,
+    },
+    isAudioPlaying: vi.fn(() => false),
+    getAudioPath: vi.fn(() => ''),
+    getProcBeatDetector: vi.fn(() => null),
+    findLipMorph: vi.fn(() => null),
+    findAllLipMorphs: vi.fn(() => ({ open: null, close: null, pucker: null, smile: null })),
+    amplitudeToWeight: vi.fn(() => 0),
+}));
+const mockPipeline = vi.hoisted(() => ({
+    register: vi.fn(),
+    unregister: vi.fn(),
+    lastRunCallback: null as null | ((ctx?: any) => void),
+}));
 
-import { setupPerceptionTest, mockState, mockPipeline, type PerceptionSut } from './perception-mocks';
+vi.mock('../../scene/scene', () => sceneModuleFactory(mockState));
+vi.mock('../../ar/ar-camera', () => arCameraModuleMock);
+vi.mock('../../core/wails-bindings', () => wailsBindingsModuleMock);
+vi.mock('../../core/i18n/t', () => i18nTModuleMock);
+vi.mock('@babylonjs/core/Materials/standardMaterial', () => standardMaterialModuleMock);
+vi.mock('../../core/config', () => configModuleFactory(mockState));
+vi.mock('../../scene/camera/camera', () => cameraModuleMock);
+vi.mock('../../scene/motion/vmd-loader', () => vmdLoaderModuleMock);
+vi.mock('../../outfit/audio', () => outfitAudioModuleFactory(mockState));
+vi.mock('../../outfit/outfit', () => outfitModuleMock);
+vi.mock('../../scene/env/props', () => envPropsModuleMock);
+vi.mock('../../scene/env/env-bridge', () => envBridgeModuleMock);
+vi.mock('../../scene/env/env-impl', () => envImplModuleFactory(mockState));
+vi.mock('../../scene/motion/motion-pipeline', () => motionPipelineModuleFactory(mockPipeline));
+vi.mock('../../scene/motion/proc-motion-bridge', () => procMotionBridgeModuleFactory(mockState));
+vi.mock('../../scene/motion/lipsync-bridge', () => lipsyncBridgeModuleMock);
+vi.mock('../../motion-algos/procedural-motion', () => proceduralMotionModuleMock);
+vi.mock('../../motion-algos/lipsync', () => lipsyncAlgosModuleFactory(mockState));
+
+import {
+    setupPerceptionTest,
+    sceneModuleFactory,
+    arCameraModuleMock,
+    wailsBindingsModuleMock,
+    i18nTModuleMock,
+    standardMaterialModuleMock,
+    configModuleFactory,
+    cameraModuleMock,
+    vmdLoaderModuleMock,
+    outfitAudioModuleFactory,
+    outfitModuleMock,
+    envPropsModuleMock,
+    envBridgeModuleMock,
+    envImplModuleFactory,
+    motionPipelineModuleFactory,
+    procMotionBridgeModuleFactory,
+    lipsyncBridgeModuleMock,
+    proceduralMotionModuleMock,
+    lipsyncAlgosModuleFactory,
+    type PerceptionSut,
+} from './perception-mocks';
 
 let sut: PerceptionSut;
 
 beforeEach(async () => {
-    sut = await setupPerceptionTest();
+    sut = await setupPerceptionTest(mockState, mockPipeline);
 });
 
 describe('默认 PerceptionState', () => {
