@@ -3530,14 +3530,21 @@ textarea,
 }
 
 .diag-status-badge--missingEndpoint,
-.diag-status-badge--missingKey {
+.diag-status-badge--missingKey,
+.diag-status-badge--missingModel {
     background: color-mix(in srgb, var(--warn) 12%, transparent);
     color: var(--warn);
     border-color: color-mix(in srgb, var(--warn) 25%, transparent);
 }
 
 .diag-status-badge--cors,
-.diag-status-badge--error {
+.diag-status-badge--error,
+.diag-status-badge--network,
+.diag-status-badge--unauthorized,
+.diag-status-badge--notFound,
+.diag-status-badge--rateLimit,
+.diag-status-badge--server,
+.diag-status-badge--unknown {
     background: color-mix(in srgb, var(--danger) 12%, transparent);
     color: var(--danger);
     border-color: color-mix(in srgb, var(--danger) 25%, transparent);
