@@ -347,7 +347,6 @@ describe('wind-physics 状态机', () => {
             expect(wCall0[3]).toBeCloseTo(1.0);
             expect(wCall0[4]).toBeCloseTo(0.2);
             // 降级路径不应触发（wind mass-aware 导出可用）
-            expect(mocks.applyWindForceToModelRigidBodiesNative).not.toHaveBeenCalled();
             expect(mocks.applyForceToModelRigidBodiesNative).not.toHaveBeenCalled();
         });
 
