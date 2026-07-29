@@ -1624,6 +1624,8 @@ export const ko: Record<string, string> = {
         '모든 썸네일 캐시를 지우시겠습니까? 다음 모델 로드 시 다시 생성됩니다.',
     'settings.paths.clearAllConfirm':
         '모든 캐시를 지우시겠습니까? 추출 캐시, 썸네일, HTTP 격리 디렉터리가 포함됩니다. 다음 모델 로드 시 다시 생성됩니다.',
+    'settings.paths.clearExtractConfirm':
+        '압축 해제 캐시를 지우시겠습니까? 다음 모델 로드 시 다시 생성됩니다.',
 
     // shortcuts.* (ADR-059 Phase 3)
     'shortcuts.label.models': '모델 라이브러리',
@@ -1685,6 +1687,7 @@ export const ko: Record<string, string> = {
     'motion.boneOverride.axisHint': 'P:피치 Y:요 R:롤 W:가중치',
     'motion.boneOverride.clearAllConfirm':
         '모든 본 오버라이드를 삭제할까요? 실행 취소할 수 있습니다.',
+    'motion.clearAllConfirm': '모든 모션을 지우시겠습니까? 실행 취소할 수 있습니다.',
     'motion.boneOverride.exportHierarchy': '본 계층 내보내기',
     'motion.boneOverride.exportCopied': '✓ 본 계층이 클립보드에 복사되었습니다',
     'motion.boneOverride.exportFailed': '✕ 내보내기 실패: 모델 또는 본이 없습니다',
@@ -1949,6 +1952,9 @@ export const ko: Record<string, string> = {
     'ai.actions.motion.loadAudio': '오디오 불러오기',
     'ai.actions.motion.loadVpd': 'VPD 포즈 불러오기',
     'ai.actions.motion.openBinding': '모션 바인딩 패널 열기',
+    'ai.actions.motion.browseMusic': '오디오 라이브러리 찾아보기',
+    'ai.actions.motion.browseSceneMotions': '씬 모션 찾아보기',
+    'ai.actions.motion.openDetail': '모션 상세 열기',
     'ai.actions.settings.clearExtractCache': '압축 해제 캐시 지우기',
     'ai.actions.settings.clearThumbnail': '썸네일 캐시 지우기',
     'ai.actions.settings.clearAllCache': '모든 캐시 지우기',

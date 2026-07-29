@@ -512,6 +512,7 @@ export const en: Record<string, string> = {
     'motion.boneOverride.weight': 'Weight',
     'motion.boneOverride.axisHint': 'P:Pitch Y:Yaw R:Roll W:Weight',
     'motion.boneOverride.clearAllConfirm': 'Clear all bone overrides? This can be undone.',
+    'motion.clearAllConfirm': 'Clear all motions? This can be undone.',
     'motion.boneOverride.exportHierarchy': 'Export Bone Hierarchy',
     'motion.boneOverride.exportCopied': '✓ Bone hierarchy copied to clipboard',
     'motion.boneOverride.exportFailed': '✕ Export failed: no model or bones available',
@@ -1784,6 +1785,8 @@ export const en: Record<string, string> = {
         'Clear all thumbnail cache? Will regenerate on next model load.',
     'settings.paths.clearAllConfirm':
         'Clear all cache? Includes extract cache, thumbnails, HTTP isolate directory. Will regenerate on next model load.',
+    'settings.paths.clearExtractConfirm':
+        'Clear extract cache? Will regenerate on next model load.',
 
     // shortcuts.* (ADR-059 Phase 3 — shortcut registry labels/groups/UI)
     'shortcuts.label.models': 'Model Library',
@@ -1980,6 +1983,9 @@ export const en: Record<string, string> = {
     'ai.actions.motion.loadAudio': 'Load audio',
     'ai.actions.motion.loadVpd': 'Load VPD pose',
     'ai.actions.motion.openBinding': 'Open motion binding panel',
+    'ai.actions.motion.browseMusic': 'Browse audio library',
+    'ai.actions.motion.browseSceneMotions': 'Browse scene motions',
+    'ai.actions.motion.openDetail': 'Open motion detail',
     'ai.actions.settings.clearExtractCache': 'Clear extract cache',
     'ai.actions.settings.clearThumbnail': 'Clear thumbnail cache',
     'ai.actions.settings.clearAllCache': 'Clear all caches',

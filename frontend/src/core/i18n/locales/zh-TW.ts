@@ -1603,6 +1603,8 @@ export const zhTW: Record<string, string> = {
     'settings.paths.clearThumbConfirm': '確定要清除所有縮圖快取嗎？下次載入模型時將自動重新生成。',
     'settings.paths.clearAllConfirm':
         '確定要清除全部快取嗎？包括解壓快取、縮圖。下次載入模型時將自動重新生成，不影響原始素材。',
+    'settings.paths.clearExtractConfirm':
+        '確定要清理解壓快取嗎？下次載入模型時將自動重新生成。',
 
     // shortcuts.* (ADR-059 Phase 3)
     'shortcuts.label.models': '模型庫',
@@ -1662,6 +1664,7 @@ export const zhTW: Record<string, string> = {
     'motion.boneOverride.weight': '權重',
     'motion.boneOverride.axisHint': 'P:俯仰 Y:偏航 R:翻滾 W:權重',
     'motion.boneOverride.clearAllConfirm': '確定清除所有骨骼覆蓋？此操作可透過撤銷恢復。',
+    'motion.clearAllConfirm': '確定要清除全部動作嗎？此操作可透過撤銷恢復。',
     'motion.boneOverride.exportHierarchy': '匯出骨骼層級',
     'motion.boneOverride.exportCopied': '✓ 骨骼層級已複製到剪貼簿',
     'motion.boneOverride.exportFailed': '✕ 匯出失敗：無可用模型或骨骼',
@@ -1913,6 +1916,9 @@ export const zhTW: Record<string, string> = {
     'ai.actions.motion.loadAudio': '載入音訊',
     'ai.actions.motion.loadVpd': '載入 VPD 姿勢',
     'ai.actions.motion.openBinding': '打開動作綁定面板',
+    'ai.actions.motion.browseMusic': '瀏覽音訊庫',
+    'ai.actions.motion.browseSceneMotions': '瀏覽場景動作庫',
+    'ai.actions.motion.openDetail': '打開動作詳情',
     'ai.actions.settings.clearExtractCache': '清理解壓快取',
     'ai.actions.settings.clearThumbnail': '清理縮圖快取',
     'ai.actions.settings.clearAllCache': '清理全部快取',
