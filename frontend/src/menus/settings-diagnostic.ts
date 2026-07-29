@@ -2144,7 +2144,13 @@ export function buildSettingsDiagnosticLevel(
                 _lastUndoable = null;
                 _autoTestTimer?.cancel();
                 _autoTestTimer = null;
+                _autoTesting = false;
+                _testing = false;
+                _refreshingCaps = false;
                 _fetchedModels = [];
+                _lastConnectionOk = null;
+                _lastConnectionKind = null;
+                _goKeyConfigured = false;
                 // 关面板时重置模型芯片列表引用
                 _modelListEl = null;
             };
