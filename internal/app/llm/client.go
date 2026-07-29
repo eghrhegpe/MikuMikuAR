@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	neturl "net/url"
 	"net/http"
 	"strings"
 	"time"
@@ -366,9 +367,10 @@ func TestConnection(ctx context.Context, cfg Config) ConnectionResult {
 	return ConnectionResult{OK: true, Kind: "", Message: ""}
 }
 
-// FetchModels 从端点发现可用模型列表（OpenAI 兼容 {base}/models）。
+// FetchModels 从端点发现可用模型列表（OpenAI 兼容 {base}/models + Ollama /api/tags）。
 // 镜像前端 browser-adapter 的候选 URL 逻辑：先试 {base}/models，
-// 若 base 以 /v1 结尾再试去 /v1 的 /models。全部失败返回最后一个错误。
+// 若 base 以 /v1 结尾再试去 /v1 的 /models；localhost 时额外尝试 {origin}/api/tags（Ollama 原生）。
+// 全部失败返回最后一个错误。
 func FetchModels(ctx context.Context, cfg Config) ([]string, error) {
 	if cfg.BaseURL == "" {
 		return nil, fmt.Errorf("端点为空")
@@ -377,6 +379,12 @@ func FetchModels(ctx context.Context, cfg Config) ([]string, error) {
 	candidates := []string{base + "/models"}
 	if strings.HasSuffix(base, "/v1") {
 		candidates = append(candidates, strings.TrimSuffix(base, "/v1")+"/models")
+	}
+	// Ollama 原生 API：{origin}/api/tags（仅限 localhost，与 browser-adapter 对齐）
+	if isLocalhost(base) {
+		if origin := urlOrigin(base); origin != "" {
+			candidates = append(candidates, origin+"/api/tags")
+		}
 	}
 
 	client := &http.Client{}
@@ -395,7 +403,9 @@ func FetchModels(ctx context.Context, cfg Config) ([]string, error) {
 	return nil, lastErr
 }
 
-// fetchModelsFrom 请求单个候选 URL 并解析 OpenAI 兼容的 {data:[{id}]} 结构。
+// fetchModelsFrom 请求单个候选 URL 并解析两种格式：
+//   - OpenAI 兼容：{ data: [{ id: string }] }
+//   - Ollama 原生：{ models: [{ name: string }] }
 func fetchModelsFrom(ctx context.Context, client *http.Client, url, apiKey string) ([]string, error) {
 	httpReq, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
@@ -416,20 +426,51 @@ func fetchModelsFrom(ctx context.Context, client *http.Client, url, apiKey strin
 		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
 	}
 
-	var parsed struct {
+	data, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	// 双格式解析：先试 OpenAI {data:[{id}]}，再试 Ollama {models:[{name}]}
+	var openai struct {
 		Data []struct {
 			ID string `json:"id"`
 		} `json:"data"`
 	}
-	data, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
-	if err := json.Unmarshal(data, &parsed); err != nil {
-		return nil, err
-	}
-	models := make([]string, 0, len(parsed.Data))
-	for _, m := range parsed.Data {
-		if m.ID != "" {
-			models = append(models, m.ID)
+	if err := json.Unmarshal(data, &openai); err == nil && len(openai.Data) > 0 {
+		models := make([]string, 0, len(openai.Data))
+		for _, m := range openai.Data {
+			if m.ID != "" {
+				models = append(models, m.ID)
+			}
+		}
+		if len(models) > 0 {
+			return models, nil
 		}
 	}
-	return models, nil
+	var ollama struct {
+		Models []struct {
+			Name string `json:"name"`
+		} `json:"models"`
+	}
+	if err := json.Unmarshal(data, &ollama); err == nil && len(ollama.Models) > 0 {
+		models := make([]string, 0, len(ollama.Models))
+		for _, m := range ollama.Models {
+			if m.Name != "" {
+				models = append(models, m.Name)
+			}
+		}
+		return models, nil
+	}
+	return nil, fmt.Errorf("响应不是 OpenAI 或 Ollama 格式")
+}
+
+// isLocalhost 判断 URL 是否指向本机（localhost / 127.0.0.1）。
+func isLocalhost(rawURL string) bool {
+	return strings.Contains(rawURL, "localhost") || strings.Contains(rawURL, "127.0.0.1")
+}
+
+// urlOrigin 提取 URL 的 origin（scheme://host[:port]），失败返回空串。
+func urlOrigin(rawURL string) string {
+	u, err := neturl.Parse(rawURL)
+	if err != nil || u.Host == "" {
+		return ""
+	}
+	return u.Scheme + "://" + u.Host
 }

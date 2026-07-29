@@ -638,9 +638,21 @@ async function _refreshModelList(): Promise<void> {
         const models = await _ai.fetchModels?.() ?? [];
         _fetchedModels = models;
         _populateModelDatalist(models);
+        // 失败后恢复成功时刷新按钮 title，避免上次失败的提示残留
+        const btn = document.getElementById('diag-model-refresh-btn');
+        if (btn) {
+            btn.title =
+                models.length > 0
+                    ? t('ai.config.modelsFound', { n: String(models.length) })
+                    : t('ai.config.modelsNone');
+        }
     } catch (err) {
-        // 与手动刷新按钮对齐：失败时不更新 _fetchedModels，仅记录警告
+        // 与手动刷新按钮对齐：失败时不更新 _fetchedModels，记录警告 + 按钮 title 提示
         logWarn('ai-config', 'fetchModels failed:', err);
+        const btn = document.getElementById('diag-model-refresh-btn');
+        if (btn) {
+            btn.title = t('ai.config.modelsNone');
+        }
     }
 }
 
@@ -2007,6 +2019,7 @@ function _renderConfigCard(c: HTMLElement): void {
     modelBtnRow.className = 'diag-hint-row';
 
                 const modelRefresh = document.createElement('button');
+                modelRefresh.id = 'diag-model-refresh-btn';
                 modelRefresh.textContent = t('ai.config.refreshModels');
                 modelRefresh.className = 'preset-chip';
                 modelRefresh.setAttribute('title', t('ai.config.refreshModels'));

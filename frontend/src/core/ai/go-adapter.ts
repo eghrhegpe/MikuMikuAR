@@ -86,7 +86,8 @@ class GoAiAdapter implements AiService {
                     corsRisk,
                     endpointReachable: 'pending',
                 };
-            } catch {
+            } catch (err) {
+                logWarn('ai-config', 'Go _refreshCapabilities 失败:', err);
                 this._capCache = {
                     available: false,
                     adapter: 'go-bridge',
@@ -117,10 +118,15 @@ class GoAiAdapter implements AiService {
                 message: res.message,
             };
         } catch (err) {
+            // Wails IPC 断开/binding 未注册时给出可操作提示，而非笼统的"未知错误"
+            const msg = err instanceof Error ? err.message : String(err);
+            logWarn('ai-connection', 'Go AiTestLLMConnection binding 调用失败:', err);
             return {
                 ok: false,
                 kind: 'unknown',
-                message: err instanceof Error ? err.message : String(err),
+                message: /connection refused|not available|binding/i.test(msg)
+                    ? '桌面端 AI 桥接不可用，请重启应用；若问题持续请检查 Wails 后端日志'
+                    : `桥接调用失败：${msg}`,
             };
         }
     }
@@ -132,10 +138,14 @@ class GoAiAdapter implements AiService {
             const b = await _getB();
             const models = await b.AiFetchModels();
             if (Array.isArray(models) && models.length > 0) {
+                // P2-3: 同步更新 _capCache.models，让 capabilities() 反映真实列表
+                if (this._capCache) {
+                    this._capCache = { ...this._capCache, models: [...models].sort() };
+                }
                 return [...models].sort();
             }
-        } catch {
-            /* 网络/鉴权失败静默回退缓存 */
+        } catch (err) {
+            logWarn('ai-config', 'Go AiFetchModels 失败，回退到配置缓存:', err);
         }
         if (this._capCache?.models && this._capCache.models.length > 0) {
             return [...this._capCache.models];

@@ -12,9 +12,13 @@ import type {
 } from './types';
 import { parseSseStream } from './sse';
 import { loadAiConfig, classifyAiError } from './config-store';
+import { logWarn } from '../logger';
 
 export class BrowserAiAdapter implements AiService {
     readonly kind = 'browser' as const;
+
+    // P2-3: fetchModels 成功后缓存真实列表，让 capabilities() 不再只返回 [cfg.model]
+    private _fetchedModelsCache: string[] | null = null;
 
     capabilities(): AiCapabilities {
         const cfg = loadAiConfig();
@@ -32,11 +36,13 @@ export class BrowserAiAdapter implements AiService {
                 corsRisk = 'high';
             }
         }
+        // 优先用 fetchModels 缓存的真实列表，否则回退配置单模型
+        const models = this._fetchedModelsCache ?? (cfg.model ? [cfg.model] : []);
         return {
             available,
             adapter: /localhost|127\.0\.0\.1/i.test(endpoint) ? 'ollama' : 'openai-compat',
             streaming: true,
-            models: [cfg.model],
+            models,
             apiKeyConfigured: !!cfg.apiKey,
             corsRisk,
             endpointReachable: 'pending',
@@ -122,10 +128,12 @@ export class BrowserAiAdapter implements AiService {
             headers['Authorization'] = `Bearer ${cfg.apiKey}`;
         }
 
+        let lastErr: unknown = null;
         for (const url of candidates) {
             try {
                 const res = await fetch(url, { headers, signal: AbortSignal.timeout(5000) });
                 if (!res.ok) {
+                    lastErr = new Error(`HTTP ${res.status}: ${url}`);
                     continue;
                 }
                 const data = await res.json();
@@ -136,6 +144,7 @@ export class BrowserAiAdapter implements AiService {
                         .filter(Boolean)
                         .sort();
                     if (models.length > 0) {
+                        this._fetchedModelsCache = models;
                         return models;
                     }
                 }
@@ -146,13 +155,16 @@ export class BrowserAiAdapter implements AiService {
                         .filter(Boolean)
                         .sort();
                     if (models.length > 0) {
+                        this._fetchedModelsCache = models;
                         return models;
                     }
                 }
-            } catch {
+            } catch (err) {
+                lastErr = err;
                 continue;
             }
         }
+        logWarn('ai-config', `fetchModels 全部候选失败 endpoint=${endpoint}`, lastErr);
         return [];
     }
 
@@ -230,13 +242,20 @@ export class BrowserAiAdapter implements AiService {
     }
 }
 
-/** CORS / 网络错误友好提示（FR-13）：本地 Ollama 需 OLLAMA_ORIGINS=*；远程 API 建议自建同源 relay。 */
+/** CORS / 网络错误友好提示（FR-13）：本地 Ollama 需 OLLAMA_ORIGINS=*；远程 API 建议自建同源 relay。
+ *  P3-5: 细化 TypeError 分类 — 同源 fetch 失败多为 CORS，跨源 TypeError 可能是 DNS/服务未启动。 */
 function _friendlyError(err: unknown): string {
-    const isNetwork =
-        err instanceof TypeError ||
-        (err instanceof Error && /Failed to fetch|NetworkError|CORS/i.test(err.message));
+    const isTypeError = err instanceof TypeError;
+    const isNetwork = isTypeError ||
+        (err instanceof Error && /Failed to fetch|NetworkError/i.test(err.message));
     if (isNetwork) {
-        return '连接端点失败（可能为 CORS/网络限制）。本地 Ollama 请设置环境变量 OLLAMA_ORIGINS=* 后重启；远程 API 建议自建同源 relay 代理。';
+        // 尝试从错误堆栈/消息判断是否含 CORS 提示（Chrome 在 CORS 时会带 'CORS' / 'Access-Control'）
+        const isCORS = err instanceof Error && /CORS|Access-Control/i.test(err.message);
+        if (isCORS) {
+            return '连接端点失败（CORS 限制）。本地 Ollama 请设置环境变量 OLLAMA_ORIGINS=* 后重启；远程 API 建议自建同源 relay 代理。';
+        }
+        // 纯 TypeError 无 CORS 提示：多为服务未启动 / DNS 解析失败 / 端口拒绝
+        return '连接端点失败（服务可能未启动或网络不通）。请检查端点地址与服务状态；本地服务确认端口已监听，远程服务确认 DNS 可解析。';
     }
     return err instanceof Error ? err.message : String(err);
 }
