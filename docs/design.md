@@ -120,9 +120,19 @@ function renderMenu(schema: MenuNode[], container: HTMLElement): () => void
 | 仅调用 `slideRow` / `addToggleRow` / `addSliderRow` 等 builder，无手写 `addEventListener` | ❌ 不需要 | DOM 被 `innerHTML = ''` 清零即可，无持久引用 |
 | 手写了 `addEventListener` / `setInterval` / `createKeyboardNav` / AbortController | ⚠️ 必须返回 cleanup | 否则层级切换后监听器泄漏 |
 
-**现状：** 84 个 renderCustom 中，17 个（20%）返回了 cleanup，67 个（80%）无返回值。无返回值的绝大多数属于上述第二类（纯 builder 调用），这是合理的。
+**现状：** 203 个 renderCustom 中，78 个（38%）返回了 cleanup，125 个（62%）无返回值。无返回值的绝大多数属于上述第二类（纯 builder 调用），这是合理的。
 
-**例外需要关注：** 如果 renderCustom 内创建了自定义 DOM 并绑定了事件监听，但没有返回 cleanup，则在 SlideMenu 重渲染时监听器会泄漏。这类代码在规范上是不合规的，需要在 code review 中标记。
+**已知技术债 — cardContainer 返回值传播断裂：** 17 处 renderCustom 内部通过 `addEventListener` 注册了事件监听器，但没有返回 cleanup（或调用 `cardContainer(...)` 时未 `return` 其返回值），导致 `renderMenu` 的 dispose 链路断裂。主要分布：
+
+| 文件 | 违规数 | 典型问题 |
+|------|--------|---------|
+| `settings-diagnostic.ts` | 3 | context/chat/config 卡内大量 `addEventListener` 无 cleanup |
+| `model-detail.ts` | 3 | morph-preview/tags-picker/personal-light |
+| `settings-appearance.ts` | 2 | theme-presets/theme-custom |
+| `scene-stage-lights.ts` | 1 | followTarget 折叠面板内 3 个 `<select>` change 监听 |
+| 其他 8 个文件 | 各 1 | outfit-ui / motion-override / model-material / settings-media / settings-system / preset-list-viewer / library-actions / library-core |
+
+**修复模式：** 将裸 `addEventListener` 替换为 `addDisposableListener`（来自 `core/dom.ts`），在 `renderCustom` 末尾聚合释放；或对 `cardContainer(c, cb)` 调用加 `return` 前缀以传播内部 cleanup。参考 `env-level-helpers.ts:buildLevel` 的聚合 disposes 范式。
 
 **最佳实践：**
 
@@ -149,7 +159,7 @@ renderCustom: (c) => {
 },
 ```
 
-**cardContainer 返回值：** `cardContainer(fn)` 返回 `fn` 的回调结果。仅在你需要将内部 `renderMenu` 的 cleanup 对外传递时才写 `return cardContainer(...)`。否则作为语句调用即可。当前代码库中 135 处调用仅 5 处利用了返回值——这是正常的。
+**cardContainer 返回值：** `cardContainer(fn)` 返回 `fn` 的回调结果。仅在你需要将内部 `renderMenu` 的 cleanup 对外传递时才写 `return cardContainer(...)`。否则作为语句调用即可。当前代码库中 137 处调用仅 2 处利用了返回值——大部分场景下内部不需要 cleanup 透传，但需注意上方技术债中 `addEventListener` 未传播的情况。
 
 ### 自定义类名导航契约
 
@@ -679,7 +689,7 @@ const navDisp: Disposable = createKeyboardNav(container, {
 | 场景 | 关键选项 | 典型文件 |
 |------|---------|---------|
 | **菜单列表 / 弹层面板** | `getItems` + `getActiveIndex`/`setActiveIndex` + `arrowRightActivate: true` | [menu.ts](file:///c:/Users/zhujieling11/MikuMikuAR/frontend/src/menus/menu.ts#L150) |
-| **Tablist / 模式切换** | `selector` + `rovingTabIndex: true` | [settings-diagnostic.ts](file:///c:/Users/zhujieling11/MikuMikuAR/frontend/src/menus/settings-diagnostic.ts#L518) |
+| **Tablist / 模式切换** | 优先用 `.type-row` + `.mode-btn` 标准类名（框架自动覆盖）；仅自定义 DOM 才需 `selector` + `rovingTabIndex` | [model-detail.ts](file:///c:/Users/zhujieling11/MikuMikuAR/frontend/src/menus/model-detail.ts#L686)（标准类名） / [ui-fullscreen-overlay.ts](file:///c:/Users/zhujieling11/MikuMikuAR/frontend/src/core/ui-fullscreen-overlay.ts#L242)（自定义） |
 | **卡片网格 / 全屏覆盖层** | `selector`，默认 `:focus` 反查 | [ui-fullscreen-overlay.ts](file:///c:/Users/zhujieling11/MikuMikuAR/frontend/src/core/ui-fullscreen-overlay.ts#L242) |
 
 ### 何时不需要自己加键盘导航
@@ -700,7 +710,7 @@ const navDisp: Disposable = createKeyboardNav(container, {
 
 | 面板特征 | 示例 |
 |----------|------|
-| `renderCustom` 内创建了**自定义 DOM 元素**，不属于 `.slide-item` / `.collapsible-header` | 模式切换 tablist（`settings-diagnostic.ts`） |
+| `renderCustom` 内创建了**自定义 DOM 元素**，不属于 `.slide-item` / `.collapsible-header` / `.type-row` 等标准类名 | 全屏覆盖层内资源卡片网格（`ui-fullscreen-overlay.ts`） |
 | 全屏覆盖层内资源卡片网格，需 Arrow 遍历 | `ui-fullscreen-overlay.ts` |
 | 长列表未使用 `slideRow` 构建，而是自定义 `div` 行 | 参考「自定义面板接入示例」 |
 
