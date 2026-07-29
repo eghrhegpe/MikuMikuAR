@@ -15,7 +15,6 @@ import {
     GetPresetScenes,
     GetModelPresets,
 } from '@/core/wails-bindings';
-import type { EnvPresetEntry, ModelPresetEntry } from '@/core/wails-bindings';
 
 export type PresetCategory = 'env' | 'render' | 'scene' | 'model';
 

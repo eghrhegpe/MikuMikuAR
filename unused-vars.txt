@@ -1,0 +1,256 @@
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\bindings\app.contract.test.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\camera.adr100.test.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\env-bridge\env-mocks.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\library-core.subdir-file.test.ts
+  12:5   warning  'makeModel' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  42:13  warning  'icon' is defined but never used. Allowed unused args must match /^_/u       @typescript-eslint/no-unused-vars
+  43:13  warning  'label' is defined but never used. Allowed unused args must match /^_/u      @typescript-eslint/no-unused-vars
+  46:13  warning  'sublabel' is defined but never used. Allowed unused args must match /^_/u   @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\material-editor-mocks.ts
+  4:10  warning  'vi' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\material-editor.apply-all.test.ts
+  95:5  warning  'resetSingleMatParams' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\menu-schema.conflict.test.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\menu-schema.header-toggle.test.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\menu\focus.test.ts
+  4:10  warning  'makeTestLevel' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\menu\lifecycle.test.ts
+  8:9  warning  'container' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\menu\nav-touch.test.ts
+  3:15  warning  'PopupLevel' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+  9:9   warning  'container' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\menu\register-popup.test.ts
+  2:15  warning  'SlideMenu' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\menu\rows.test.ts
+  8:9  warning  'container' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\menu\stack-render.test.ts
+  11:9  warning  'container' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\mocks\babylon-classes.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\model-preset-mocks.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\model-preset.test.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\perception.perf.test.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\physics-contract.test.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\scene\lighting-follow.test.ts
+  35:5  warning  'addStageLight' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\scene\motion-modules-registry.test.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\scene\replace-model-inherit.test.ts
+  89:5  warning  'getPersonalLightState' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\ui-helpers.test.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\virtual-skirt.test.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\vmd-evaluator.regression.spec.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\wind-physics-integration.test.ts
+  30:5  warning  'memory' is assigned a value but never used. Allowed unused vars must match /^_/u            @typescript-eslint/no-unused-vars
+  51:7  warning  'WIND_FORCE_SCALE' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\__tests__\wind-physics-state.test.ts
+  155:49  warning  'getRigidBodyMap' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  157:10  warning  'getWindVector' is defined but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+  157:25  warning  'isWindActive' is defined but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\core\__tests__\error-buffer.test.ts
+  212:15  warning  'dispose' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\core\action-defs\motion-actions.ts
+  11:24  warning  'feedbackStatus' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+  14:35  warning  'setAutoLoop' is defined but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+  30:10  warning  'logWarn' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\core\action-executor.ts
+  5:15  warning  'ActionDef' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  5:26  warning  'ParamDef' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\core\ai\config-store.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\core\ai\go-adapter.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\core\ai\markdown.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\core\ai\sse.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\core\backend\backend.test.ts
+   44:19  warning  'strToU8' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+  638:19  warning  'result' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\core\backend\browser-adapter.ts
+  1781:29  warning  'paths' is defined but never used. Allowed unused args must match /^_/u            @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\core\events.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\core\i18n\locales\en.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\core\i18n\locales\ja.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\core\i18n\locales\ko.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\core\i18n\locales\zh-CN.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\core\i18n\locales\zh-TW.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\core\icons-bundle.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\core\init.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\core\pmx-meta.ts
+  7:11  warning  'PmxMeta' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\core\preset-meta.ts
+  18:15  warning  'EnvPresetEntry' is defined but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+  18:31  warning  'ModelPresetEntry' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\core\shortcut-app.ts
+  7:10  warning  'getCameraMode' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+  7:25  warning  'switchCameraMode' is defined but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+  9:10  warning  'getCachedCapabilities' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\core\ui-collapsible.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\core\ui-constants.ts
+  35:6  warning  'SceneEventKey' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\core\ui-keyboard-nav.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\core\ui-rows.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\core\ui-slide-row.ts
+   5:10  warning  'getCurrentRenderingMenu' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\diagnostic-chat.ts
+   6:39  warning  'AiErrorKind' is defined but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+  17:10  warning  'cardContainer' is defined but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+  18:10  warning  'addSectionTitle' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\diagnostic-config.ts
+   17:15  warning  'AiService' is defined but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+   17:26  warning  'AiCapabilities' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  418:16  warning  'saveGoConfig' is defined but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\diagnostic-control.ts
+  7:15  warning  'ChatMessage' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\env-ground-levels.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\env-preset-levels.ts
+   9:26  warning  'showErrorToast' is defined but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+  13:10  warning  'translateGoError' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\env-water-levels.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\library-actions.ts
+   16:5  warning  'formatError' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\library-core.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\library-setup.ts
+  34:10  warning  'showInfoToast' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\menu.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\model-detail.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\model-material.ts
+    9:5   warning  'getMatCatParams' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+   10:5   warning  'setMatCatParams' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+  206:10  warning  'buildPerMatLevel' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\model-preset.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\motion-camera-levels.ts
+   67:10  warning  'renderMenu' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\motion-cloth-levels.ts
+  18:10  warning  'renderMenu' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\motion-override-levels.ts
+  739:35  warning  'snap' is assigned a value but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\motion-popup.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\plaza-browser.ts
+   37:10  warning  'swallowError' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\plaza-download.ts
+  7:10  warning  'translateGoError' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  9:41  warning  'feedbackInfo' is defined but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\scene-menu.ts
+  17:10  warning  'feedbackInfo' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\scene-render-levels.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\scene-stage-lights.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\settings-about.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\settings-actions.ts
+  7:10  warning  'setLang' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+  8:10  warning  'SETTINGS_ACTION' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\settings-appearance.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\settings-diagnostic.ts
+    4:15  warning  'AiService' is defined but never used. Allowed unused vars must match /^_/u            @typescript-eslint/no-unused-vars
+    4:26  warning  'AiCapabilities' is defined but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+    4:55  warning  'AiErrorKind' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+   38:5   warning  'updateSpeakToggle' is defined but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+   47:5   warning  'applyPendingAction' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+   48:5   warning  'cancelPendingAction' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+   49:5   warning  'advancePendingQueue' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+   53:5   warning  'loadInitialConfig' is defined but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+   57:5   warning  'refreshModelList' is defined but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
+  264:16  warning  'sendMessage' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+  291:10  warning  'stopStreaming' is defined but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
+  296:16  warning  'clearChat' is defined but never used. Allowed unused vars must match /^_/u            @typescript-eslint/no-unused-vars
+  457:5   warning  'getSettingsMenu' is defined but never used. Allowed unused args must match /^_/u      @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\settings-downloads.ts
+  252:15  warning  'stem' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\settings-resources.ts
+  36:5  warning  'addSliderRow' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\settings-system.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\menus\settings-targets.ts
+  42:6  warning  'SettingsTarget' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\motion-algos\proc-motion-autodance.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\motion-algos\proc-motion-idle.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\motion-algos\vmd-writer.ts
+  33:7  warning  'INTERP_EASE_IN' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\outfit\audio.ts
+  291:10  warning  'setPlaylist' is defined but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+  297:10  warning  'addToPlaylist' is defined but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
+  305:10  warning  'getPlaylist' is defined but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+  310:10  warning  'getPlaylistIndex' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  324:16  warning  'prevTrack' is defined but never used. Allowed unused vars must match /^_/u         @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\outfit\outfit-overlay.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\outfit\outfit.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\ar\ar-camera.ts
+   8:10  warning  't' is defined but never used. Allowed unused vars must match /^_/u              @typescript-eslint/no-unused-vars
+  24:11  warning  'ARCameraState' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\ar\ar-webxr-probe.ts
+  347:10  warning  'resetProbeCache' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\camera\camera.ts
+   44:5  warning  'getConcertPaused' is defined but never used. Allowed unused vars must match /^_/u             @typescript-eslint/no-unused-vars
+   45:5  warning  'setCameraVmdState' is defined but never used. Allowed unused vars must match /^_/u            @typescript-eslint/no-unused-vars
+   46:5  warning  'clearCameraVmdState' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+   50:5  warning  'isTouchDevice' is defined but never used. Allowed unused vars must match /^_/u                @typescript-eslint/no-unused-vars
+   72:5  warning  'loadCameraVmd' is defined but never used. Allowed unused vars must match /^_/u                @typescript-eslint/no-unused-vars
+   73:5  warning  'clearCameraVmd' is defined but never used. Allowed unused vars must match /^_/u               @typescript-eslint/no-unused-vars
+   74:5  warning  'animateCameraVmd' is defined but never used. Allowed unused vars must match /^_/u             @typescript-eslint/no-unused-vars
+   85:5  warning  'applyCameraUserSettings' is defined but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+   86:5  warning  'refreshCameraUserSettings' is defined but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+  102:5  warning  'setOrbitBoneLock' is defined but never used. Allowed unused vars must match /^_/u             @typescript-eslint/no-unused-vars
+  103:5  warning  'getOrbitBoneLock' is defined but never used. Allowed unused vars must match /^_/u             @typescript-eslint/no-unused-vars
+  104:5  warning  'setBoneLockDamping' is defined but never used. Allowed unused vars must match /^_/u           @typescript-eslint/no-unused-vars
+  105:5  warning  'getBoneLockDamping' is defined but never used. Allowed unused vars must match /^_/u           @typescript-eslint/no-unused-vars
+  106:5  warning  'getFocusedModelBoneNames' is defined but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
+  114:5  warning  'getAutoCameraBeatsPerSwitch' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\env\env-bridge.ts
+  10:10  warning  'logWarn' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\env\env-clouds.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\env\env-ground.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\env\env-particles.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\env\env-persist.ts
+  8:20  warning  'triggerAutoSave' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\env\env-reflection.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\env\env-water.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\env\props.ts
+  12:24  warning  'setStatus' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\manager\material.ts
+   40:10  warning  'getMaterialMeshes' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\manager\model-loader.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\manager\model-manager.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\manager\thumbnail-capture.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\manager\thumbnail-key.ts
+  62:10  warning  'thumbnailKeyForKind' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\motion\animation-retargeter.ts
+  70:10  warning  'getBoneMapPresets' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\motion\bone-override.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\motion\feet-adjustment.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\motion\motion-intent.ts
+  133:10  warning  'updateSceneMotion' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\motion\motion-modules\hand-modules.ts
+  14:5   warning  'clearBoneOverride' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\motion\motion-modules\preset-types.ts
+   9:11  warning  'MotionPresetFile' is defined but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+  25:10  warning  'presetMapToModules' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\motion\motion-modules\registry.ts
+  224:10  warning  'isBoneOwnedByOther' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\motion\perception-balance.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\motion\perception-gaze-js.ts
+  20:59  warning  'parentWorldQ' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\motion\perception-gaze.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\motion\perception-lipsync.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\motion\perception-observer.ts
+  31:10  warning  'setMediumMaxOthers' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\motion\perception.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\motion\proc-motion-bridge.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\motion\vmd-layers.ts
+   22:10  warning  'feedbackInfo' is defined but never used. Allowed unused vars must match /^_/u             @typescript-eslint/no-unused-vars
+  169:16  warning  'addVmdLayerFromPath' is defined but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+  407:16  warning  'clearVmdLayers' is defined but never used. Allowed unused vars must match /^_/u           @typescript-eslint/no-unused-vars
+  429:16  warning  'replaceVmdLayerVmd' is defined but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\motion\vmd-loader.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\motion\wasm-layers-blender.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\physics\skirt-analyzer.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\physics\virtual-skirt.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\render\lighting-follow.ts
+  396:11  warning  'SerializedPersonalLight' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\render\lighting-stage.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\render\lighting-tween.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\render\lighting.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\render\performance.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\render\renderer.ts
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\scene-serialize.ts
+    8:10  warning  'translateGoError' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+   19:5   warning  'showErrorToast' is defined but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
+  932:12  warning  'modelIds' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\scene.ts
+  538:60  warning  'runtime' is defined but never used. Allowed unused args must match /^_/u       @typescript-eslint/no-unused-vars
+  559:52  warning  'modelManager' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+C:\Users\zhujieling11\MikuMikuAR\frontend\src\scene\transform\transform-mode.ts
+  20:10  warning  'toggleDragMode' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars

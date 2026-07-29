@@ -13,7 +13,6 @@ import {
     setRecentModels,
     computeLibraryRef,
     cardContainer,
-    formatError,
     stackRegistry,
 } from '../core/config';
 import { loadManager } from '../core/load-manager';

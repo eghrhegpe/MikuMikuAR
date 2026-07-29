@@ -4,8 +4,6 @@
 // 路由使用 executeActionById 查注册表；SETTINGS_ACTIONS Record 已移除。
 
 import { type PopupRow } from '../core/config';
-import { setLang } from '../core/i18n/locale';
-import { SETTINGS_ACTION } from './settings-targets';
 import { buildSettingsLanguageLevel } from './settings-language';
 import type { SlideMenu } from './menu';
 import { executeActionById } from '../core/action-executor';

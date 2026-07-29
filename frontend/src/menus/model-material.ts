@@ -6,8 +6,6 @@ import { feedbackInfo } from '../core/feedback';
 import { showInfoToast } from '../core/toast';
 import {
     getMatCatGroups,
-    getMatCatParams,
-    setMatCatParams,
     resetMatCatParams,
     getMatDetailList,
     getMatParams,
