@@ -93,9 +93,22 @@ export function loadAiConfig(): AiConfig {
     return DEFAULT_AI_CONFIG;
 }
 
+/** 补全 chat completions 路径：输入 `/v1` 自动补全为 `/v1/chat/completions`，已有完整路径则原样返回。
+ *  使预设备注简短、用户少打字。 */
+export function normalizeEndpoint(endpoint: string): string {
+    const trimmed = endpoint.trim();
+    if (!trimmed) return '';
+    if (trimmed.endsWith('/chat/completions')) return trimmed;
+    const base = trimmed.endsWith('/') ? trimmed.slice(0, -1) : trimmed;
+    return `${base}/chat/completions`;
+}
+
 /** 同步保存：写内存缓存 + 异步落盘 IndexedDB（fire-and-forget）。返回合并后的配置。 */
 export function saveAiConfig(partial: Partial<AiConfig>): AiConfig {
     const merged: AiConfig = { ...(_cache ?? DEFAULT_AI_CONFIG), ...partial };
+    if (merged.endpoint) {
+        merged.endpoint = normalizeEndpoint(merged.endpoint);
+    }
     _cache = merged;
     void idbSet(CONFIG_STORE, CONFIG_KEY, merged).catch(() => undefined);
     return merged;
@@ -137,6 +150,9 @@ async function _hydrate(): Promise<void> {
     try {
         const stored = await idbGet<AiConfig>(CONFIG_STORE, CONFIG_KEY);
         _cache = stored ? migrateAiConfig(stored) : DEFAULT_AI_CONFIG;
+        if (_cache.endpoint) {
+            _cache.endpoint = normalizeEndpoint(_cache.endpoint);
+        }
     } catch {
         // IndexedDB 不可用（隐私模式 / 非浏览器环境）时静默回退默认
         _cache = DEFAULT_AI_CONFIG;
