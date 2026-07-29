@@ -45,7 +45,7 @@ function mkSession(id: string, updatedAt: number, msgs: ChatMessage[] = []): Cha
     return {
         id,
         title: `会话${id}`,
-        mode: 'diagnostic',
+        dialogueMode: false,
         createdAt: updatedAt,
         updatedAt,
         messages: msgs,
@@ -65,7 +65,7 @@ describe('chat-store', () => {
         const loaded = await loadSession('a');
         expect(loaded?.id).toBe('a');
         expect(loaded?.messages).toEqual(msgs);
-        expect(loaded?.mode).toBe('diagnostic');
+        expect(loaded?.dialogueMode).toBe(false);
     });
 
     it('listSessions 按 updatedAt 倒序', async () => {

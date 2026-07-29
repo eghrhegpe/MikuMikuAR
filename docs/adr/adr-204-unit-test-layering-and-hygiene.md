@@ -1,6 +1,6 @@
 # ADR-204: 单测分层与治理规范（拆上帝文件 · 降 mock 密度 · fixtures 复用 · unit/integration 分层）
 
-> **状态**: 🟡 规划
+> **状态**: 🟢 实施中
 > **关联**: [ADR-060](adr-060-e2e-testing-strategy.md)（E2E 策略，本 ADR 补齐其下方的单元/集成层）、[AGENTS.md](../../AGENTS.md)（测试路由、代码审核七维、`npm run test` 入口）、[frontend/AGENTS.md](../../frontend/AGENTS.md)（前端子模块纪律）
 > **背景**: 单测已达 **131 个文件 / ~2000 用例**（`frontend/src/**/*.test.ts`，grep 实测）。总量本身不致命，致命的是**结构未分层**：用例挤在少数「上帝测试文件」里，mock 密度畸高，且已有的共享 mock 基础设施几乎无人复用。本 ADR 锁定单测层的分层模型、拆分阈值、mock 治理与 fixtures 复用规范，供多 AI 协同渐进落地——**只治理结构，不推倒重来**。
 
@@ -93,11 +93,13 @@ L1/L2 均为 Vitest，通过**文件命名后缀**区分：L2 使用 `*.int.test
 | Phase | 内容 | 验收 |
 |-------|------|------|
 | **P0 规范落地** | 本 ADR + 更新 `frontend/AGENTS.md` 测试小节（分层/阈值/mock 治理） | 文档就位，`npm run check:docs` 绿 |
-| **P1 试点拆分** | 选 `menu.test.ts`（1551 行）垂直拆为 3~4 个 `menu/*.test.ts`，抽 `fixtures/scene.ts` 做样板 | 用例数守恒、`npm run test` 全绿、单文件 ≤300 行 |
+| **P1 试点拆分** | ✅ 已完成（2026-07-29）：`menu.test.ts`（1551 行 / 95 用例）垂直拆为 8 个 `menu/*.test.ts`（均 ≤287 行），抽 `fixtures/menu.ts` 收敛 `makeLevel` + `new SlideMenu(...vi.fn())` 桩；旧 `menu.test.ts` 已删 | 用例数守恒（95→95）、`npm run test` 全绿（2437 passed / 0 failed）、单文件 ≤287 行 |
 | **P2 fixtures 推广 + 脚本** | 建 `fixtures/backend.ts`；加 `test:unit`/`test:int` 脚本；下一个上帝文件（`env-bridge`/`perception`）迁移到共享桩 | 复用率上升、L1 可独立秒级跑 |
 | **P3 触碰即改善** | 后续任何触碰超阈值测试文件的改动，顺带拆分 + 上抬 mock；不设独立回填任务 | 存量单调下降，无新增上帝文件 |
 
 **用例数守恒是拆分的硬验收**：拆分前后 `npm run test` 报告的 pass 数必须一致，防止拆分中丢用例。
+
+> **P1 实施记录（2026-07-29）**：`menu.test.ts` 是纯 DOM 组件测试（SlideMenu / showPopupMenu / registerPopupMenu），不依赖 Babylon，故抽出的共享设施为 `src/__tests__/fixtures/menu.ts`（`makeTestLevel` + `makeTestMenu`，收敛 `makeLevel` 辅助函数与重复的 `new SlideMenu({...})` 桩），而非 ADR 示例中的 `fixtures/scene.ts`（`makeTestScene` 基于 `mocks/babylon-classes`，面向 Babylon 依赖测试，留待 P2 触碰 `env-bridge` / `perception` 等上帝文件时引入）。拆分比 ADR 示例的「3~4 个」更细（8 个文件），因为 ADR 自身的「单文件 ≤300 行」硬阈值优先于「3~4」的软建议——3~4 个文件会迫使部分文件超过 300 行。验收：95 用例守恒、全量 2437 passed / 0 failed、单文件最大 287 行。
 
 ---
 

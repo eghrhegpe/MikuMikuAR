@@ -17,9 +17,11 @@ import { registerSceneActions } from '../action-defs/scene-actions';
 import { registerMotionActions } from '../action-defs/motion-actions';
 import { registerEnvActions } from '../action-defs/env-actions';
 import { registerLibraryActions } from '../action-defs/library-actions-def';
+import { registerDiagnosticActions } from '../action-defs/diagnostic-actions';
 
 export function registerAllActions(): void {
     registerControlActions();
+    registerDiagnosticActions();
     registerSettingsActions();
     registerSceneActions();
     registerMotionActions();
