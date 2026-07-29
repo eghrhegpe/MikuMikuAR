@@ -159,12 +159,10 @@ export function persistConfig(partial: Partial<AiConfig>): void {
     void doSaveConfig();
 }
 
-export let saveChain: Promise<void> = Promise.resolve();
-
 async function doSaveConfig(): Promise<void> {
     const snapshot: AiConfig = { ...diagState.localConfig };
     const kind = diagState.ai?.kind;
-    saveChain = saveChain.then(async () => {
+    diagState.saveChain = diagState.saveChain.then(async () => {
         try {
             if (kind === 'go') {
                 const normalizedEndpoint = normalizeEndpoint(snapshot.endpoint);
@@ -182,7 +180,7 @@ async function doSaveConfig(): Promise<void> {
             console.warn('[ai-config] 持久化失败', err);
         }
     });
-    return saveChain;
+    return diagState.saveChain;
 }
 
 export function applyProvider(provider: AiConfigProvider): void {
@@ -373,8 +371,13 @@ export function buildConfigSchema(): MenuNode[] {
                 loadingEl.textContent = '\u231B ' + t('ai.config.loading');
                 c.appendChild(loadingEl);
                 void (async () => {
-                    await loadInitialConfig();
-                    loadingEl.remove();
+                    try {
+                        await loadInitialConfig();
+                    } catch (err) {
+                        console.warn('[ai-config] loadInitialConfig failed', err);
+                    } finally {
+                        loadingEl.remove();
+                    }
                     renderConfigCard(c);
                 })();
             },

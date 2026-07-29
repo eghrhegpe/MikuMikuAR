@@ -7,7 +7,8 @@ import type { ChatMessage, ChatChunk, AiErrorKind } from '../core/ai/types';
 import { diagState } from './diagnostic-state';
 import { speakLines, cancelSpeech } from '../core/ai/dialogue-speech';
 import { parseDialogueLines, type DialogueLine } from '../core/ai/character-bible';
-import { getActiveBible, buildDialogueSystemPrompt } from '../core/ai/dialogue-session';
+import { getActiveBible, buildDialogueSystemPrompt, listBibles, setActiveBible } from '../core/ai/dialogue-session';
+import { renderPendingAction, renderControlHint } from './diagnostic-control';
 import { cardContainer } from '../core/config';
 import { addSectionTitle } from '../core/ui-helpers';
 import type { MenuNode } from './menu-schema';
@@ -296,6 +297,43 @@ export function buildChatSchema(): MenuNode[] {
                 dialogueToggle.setAttribute('aria-label', t('ai.mode.dialogue'));
                 dialogueToggle.innerHTML = '\uD83D\uDCAC';
                 btnRow.appendChild(dialogueToggle);
+
+                const roleSelect = document.createElement('select');
+                roleSelect.className = 'diag-role-select';
+                roleSelect.style.display = 'none';
+                roleSelect.setAttribute('aria-label', t('ai.dialogue.roleSelect'));
+                for (const bible of listBibles()) {
+                    const opt = document.createElement('option');
+                    opt.value = bible.id;
+                    opt.textContent = bible.name;
+                    if (bible.id === getActiveBible().id) opt.selected = true;
+                    roleSelect.appendChild(opt);
+                }
+                roleSelect.addEventListener('change', () => setActiveBible(roleSelect.value));
+                btnRow.appendChild(roleSelect);
+
+                dialogueToggle.addEventListener('click', () => {
+                    diagState.dialogueMode = !diagState.dialogueMode;
+                    roleSelect.style.display = diagState.dialogueMode ? '' : 'none';
+                    dialogueToggle.setAttribute('aria-pressed', String(diagState.dialogueMode));
+                    if (diagState.dialogueMode) {
+                        diagState.callbacks.ensureActionsRegistered?.();
+                    } else {
+                        cancelSpeech();
+                    }
+                    updateSpeakToggle();
+                    if (diagState.pendingContainer) {
+                        diagState.pendingContainer.style.display = diagState.dialogueMode ? 'none' : '';
+                        if (!diagState.dialogueMode) {
+                            if (diagState.pendingAction) {
+                                renderPendingAction();
+                            } else {
+                                renderControlHint();
+                            }
+                        }
+                    }
+                    diagState.callbacks.updateControlsEnabled?.();
+                });
 
                 diagState.speakToggleBtn = document.createElement('button');
                 diagState.speakToggleBtn.id = 'diag-speak-toggle';

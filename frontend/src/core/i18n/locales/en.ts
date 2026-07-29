@@ -1956,6 +1956,7 @@ export const en: Record<string, string> = {
     'ai.dialogue.speakOn': '🔊 Voice On',
     'ai.dialogue.speakOff': '🔇 Voice Off',
     'ai.dialogue.speakToggle': 'Toggle dialogue voice',
+    'ai.dialogue.roleSelect': 'Select character',
     'ai.system.control':
         'You are a MikuMikuAR scene control assistant. Use the following tools to modify the scene as requested by the user.',
     'ai.system.controlFormat':
@@ -2038,6 +2039,7 @@ export const en: Record<string, string> = {
         '⚠ Remote endpoint may have CORS restrictions. For local Ollama, set OLLAMA_ORIGINS=* and restart.',
     'ai.chat.clear': 'Clear',
     'ai.chat.clearConfirm': 'Clear chat history?',
+    'ai.chat.pendingBlocked': 'Confirm or cancel the pending action first.',
     'ai.errors.resolveFailed': 'AI service failed to initialize. Check console for details.',
 
     // Provider presets and status feedback

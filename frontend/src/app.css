@@ -3619,6 +3619,15 @@ textarea,
     align-items: center;
     margin-top: calc(6px * var(--ui-scale));
 }
+.diag-role-select {
+    font-size: calc(12px * var(--ui-scale));
+    max-width: calc(120px * var(--ui-scale));
+    background: rgba(0, 0, 0, 0.3);
+    color: var(--white-85);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: calc(4px * var(--ui-scale));
+    padding: calc(2px * var(--ui-scale)) calc(4px * var(--ui-scale));
+}
 .diag-btn-spacer {
     flex: 1;
 }
