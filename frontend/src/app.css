@@ -615,6 +615,11 @@ textarea,
 .sceneOverlay-settings {
     width: calc(340px * var(--ui-scale));
 }
+/* [doc:adr-202] AI 助手独立面板：更宽、更高，承载会话历史 + 对话 */
+.sceneOverlay-assistant {
+    width: min(calc(560px * var(--ui-scale)), 92vw);
+    max-height: 85vh;
+}
 /* 移动端：Modifier 类也缩小 */
 @media (max-width: 480px) {
     .sceneOverlay-model {
@@ -626,6 +631,60 @@ textarea,
     .sceneOverlay-settings {
         width: calc(240px * var(--ui-scale));
     }
+    .sceneOverlay-assistant {
+        width: 92vw;
+    }
+}
+
+/* [doc:adr-202] 独立面板下对话框放宽（覆盖默认 300px 限制） */
+.sceneOverlay-assistant .diag-chat-box {
+    max-height: 50vh;
+}
+
+/* [doc:adr-202] 会话历史列表 */
+.diag-session-list {
+    display: flex;
+    flex-direction: column;
+    gap: calc(4px * var(--ui-scale));
+    max-height: calc(160px * var(--ui-scale));
+    overflow-y: auto;
+}
+.diag-session-new {
+    align-self: flex-start;
+}
+.diag-session-row {
+    display: flex;
+    align-items: center;
+    gap: calc(4px * var(--ui-scale));
+    padding: calc(2px * var(--ui-scale)) calc(4px * var(--ui-scale));
+    border-radius: calc(4px * var(--ui-scale));
+}
+.diag-session-row--active {
+    background: var(--surface2, rgba(127, 127, 127, 0.15));
+}
+.diag-session-title {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+    font-size: var(--font-ui-sm);
+    color: var(--text);
+}
+.diag-session-btn {
+    flex: none;
+    padding: 0 calc(6px * var(--ui-scale));
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: var(--font-ui-sm);
+}
+.diag-session-btn:hover {
+    color: var(--text);
+}
+.diag-session-btn--danger:hover {
+    color: var(--danger);
 }
 
 /* ===== 模型广场：独立全屏视图层（#webviewLayer，非 SlideMenu 弹窗，见 ADR-075） ===== */
