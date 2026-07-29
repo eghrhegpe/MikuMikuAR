@@ -1,165 +1,50 @@
-// @ts-nocheck — vi.mock 工厂 + 纯数据 helper（material-editor 拆分测试用）
-// mock 类静态导入自 ./mocks/babylon-classes/./mocks/babylon-mmd-mocks，
-// 保证与 SUT 被 mock 的导入同一引用。
-import { vi } from 'vitest';
+// material-editor-mocks.ts — 共享 vi.mock 工厂 re-export（ADR-206 Phase 1）
+// Babylon/BMD 工厂统一来自 model-preset-mocks.ts（单一规范源），
+// 本文件保留别名映射 + 将「值类型 mock」求值为 plain object（消费者按值引用，非函数调用）。
+// 原 165 行 → 42 行。
+
 import {
-    MockEngine,
-    MockScene,
-    MockNode,
-    MockLight,
-    MockHemisphericLight,
-    MockDirectionalLight,
-    MockArcRotateCamera,
-    MockCamera,
-    MockColor3,
-    MockColor4,
-    MockVector3,
-    MockMatrix,
-    MockQuaternion,
-    MockStandardMaterial,
-    MockMaterial,
-    MockAbstractMesh,
-    MockMesh,
-    MockPostProcess,
-    MockImportMeshAsync,
-    MockDefaultRenderingPipeline,
-} from './mocks/babylon-classes';
-import {
-    MockMmdCamera,
-    MockRegisterMmdModelLoaders,
-    MockRegisterDxBmpTextureLoader,
-    MockGetMmdWasmInstance,
-    MockMmdWasmRuntime,
-    MockVmdLoader,
-    MockMmdWasmAnimation,
-    MockMmdStandardMaterialProxy,
-    MockMmdRuntimeShared,
-} from './mocks/babylon-mmd-mocks';
+    mockPhysicsEngineComponent,
+    mockTgaTextureLoader,
+    mockSinglePhysicsRelease,
+    mockMmdWasmRuntimeModelAnimation,
+    mockMmdModelLoaderDefault,
+} from './mocks/babylon-factories';
 
-// ---- vi.mock 工厂 ----
+// ---- 函数工厂 → 别名 re-export（消费者按函数引用使用） ----
+export {
+    mockEngine as engineModuleFactory,
+    mockScene as sceneModuleFactory,
+    mockNode as nodeModuleFactory,
+    mockLight as lightModuleFactory,
+    mockHemisphericLight as hemiLightModuleFactory,
+    mockDirectionalLight as dirLightModuleFactory,
+    mockArcRotateCamera as arcRotCamModuleFactory,
+    mockCamera as cameraModuleFactory,
+    mockMathColor as mathColorModuleFactory,
+    mockMathVector as mathVectorModuleFactory,
+    mockStandardMaterial as stdMatModuleFactory,
+    mockMaterial as materialModuleFactory,
+    mockMesh as meshModuleFactory,
+    mockPostProcess as postProcessModuleFactory,
+    mockSceneLoader as sceneLoaderModuleFactory,
+    mockDefaultRenderingPipeline as defaultRenderingPipelineModuleFactory,
+    mockMmdCamera as mmdCameraModuleFactory,
+    mockMmdDynamic as mmdRegisterLoadersFactory,
+    mockDxBmpTextureLoader as mmdRegisterDxBmpFactory,
+    mockMmdWasmInstance as mmdGetWasmInstanceFactory,
+    mockMmdWasmRuntime as mmdWasmRuntimeFactory,
+    mockVmdLoader as mmdVmdLoaderFactory,
+    mockMmdWasmAnimation as mmdWasmAnimationFactory,
+    mockMmdStandardMaterialProxy as mmdStdMaterialProxyFactory,
+    mockMmdRuntimeShared as mmdRuntimeSharedFactory,
+} from './mocks/babylon-factories';
 
-export function engineModuleFactory() {
-    return { Engine: MockEngine };
-}
-export function sceneModuleFactory() {
-    return { Scene: MockScene };
-}
-export function nodeModuleFactory() {
-    return { Node: MockNode };
-}
-export function lightModuleFactory() {
-    return { Light: MockLight };
-}
-export function hemiLightModuleFactory() {
-    return { HemisphericLight: MockHemisphericLight };
-}
-export function dirLightModuleFactory() {
-    return { DirectionalLight: MockDirectionalLight };
-}
-export function arcRotCamModuleFactory() {
-    return { ArcRotateCamera: MockArcRotateCamera };
-}
-export function cameraModuleFactory() {
-    return { Camera: MockCamera };
-}
-export function mathColorModuleFactory() {
-    return { Color3: MockColor3, Color4: MockColor4, TmpColors: { Color3: [] } };
-}
-export function mathVectorModuleFactory() {
-    return {
-        Vector3: MockVector3,
-        Matrix: MockMatrix,
-        Quaternion: MockQuaternion,
-        TmpVectors: { Vector3: [] },
-    };
-}
-export function stdMatModuleFactory() {
-    return { StandardMaterial: MockStandardMaterial };
-}
-export function materialModuleFactory() {
-    return { Material: MockMaterial };
-}
-export function meshModuleFactory() {
-    return { AbstractMesh: MockAbstractMesh, Mesh: MockMesh };
-}
-export function postProcessModuleFactory() {
-    return { PostProcess: MockPostProcess };
-}
-export function sceneLoaderModuleFactory() {
-    return { ImportMeshAsync: MockImportMeshAsync };
-}
-export function defaultRenderingPipelineModuleFactory() {
-    return { DefaultRenderingPipeline: MockDefaultRenderingPipeline };
-}
-export const physicsEngineModuleMock = {};
-export const tgaLoaderModuleMock = {};
-
-// ---- babylon-mmd 工厂 ----
-export function mmdCameraModuleFactory() {
-    return { MmdCamera: MockMmdCamera };
-}
-export function mmdRegisterLoadersFactory() {
-    return { RegisterMmdModelLoaders: MockRegisterMmdModelLoaders };
-}
-export function mmdRegisterDxBmpFactory() {
-    return { RegisterDxBmpTextureLoader: MockRegisterDxBmpTextureLoader };
-}
-export function mmdGetWasmInstanceFactory() {
-    return { GetMmdWasmInstance: MockGetMmdWasmInstance };
-}
-export const mmdSinglePhysicsReleaseMock = { MmdWasmInstanceTypeSPR: class Mock {} };
-export function mmdWasmRuntimeFactory() {
-    return { MmdWasmRuntime: MockMmdWasmRuntime };
-}
-export function mmdVmdLoaderFactory() {
-    return { VmdLoader: MockVmdLoader };
-}
-export function mmdWasmAnimationFactory() {
-    return { MmdWasmAnimation: MockMmdWasmAnimation };
-}
-export const mmdRuntimeModelAnimMock = {};
-export function mmdStdMaterialProxyFactory() {
-    return { MmdStandardMaterialProxy: MockMmdStandardMaterialProxy };
-}
-export function mmdRuntimeSharedFactory() {
-    return { MmdRuntimeShared: MockMmdRuntimeShared };
-}
-export const mmdModelLoaderDefaultMock = {};
+// ---- 空模块桩（消费者按值引用，非函数调用） ----
+export const physicsEngineModuleMock = mockPhysicsEngineComponent();
+export const tgaLoaderModuleMock = mockTgaTextureLoader();
+export const mmdSinglePhysicsReleaseMock = mockSinglePhysicsRelease();
+export const mmdRuntimeModelAnimMock = mockMmdWasmRuntimeModelAnimation();
+export const mmdModelLoaderDefaultMock = mockMmdModelLoaderDefault();
 export const mmdTextureAlphaVertexMock = {};
 export const mmdTextureAlphaFragmentMock = {};
-
-// ---- 纯数据 helper（无 import 依赖，可直接在各拆分文件引用）----
-
-export function _mockMat(name: string) {
-    return {
-        name,
-        diffuseColor: {
-            r: 1,
-            g: 1,
-            b: 1,
-            set() {},
-            clone() {
-                return { r: 1, g: 1, b: 1 };
-            },
-        },
-        specularColor: {
-            r: 0.8,
-            g: 0.8,
-            b: 0.8,
-            set() {},
-            clone() {
-                return { r: 0.8, g: 0.8, b: 0.8 };
-            },
-        },
-        specularPower: 50,
-        ambientColor: {
-            r: 0.3,
-            g: 0.3,
-            b: 0.3,
-            set() {},
-            clone() {
-                return { r: 0.3, g: 0.3, b: 0.3 };
-            },
-        },
-    };
-}
