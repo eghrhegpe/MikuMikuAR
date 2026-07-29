@@ -14,6 +14,7 @@ import {
     ensureAiConfigLoaded,
     PROVIDER_PRESETS,
     validateAiConfig,
+    normalizeEndpoint,
     type AiConfig,
     type AiConfigProvider,
 } from '../core/ai/config-store';
@@ -352,13 +353,15 @@ function _doSaveConfig(): Promise<void> {
     _saveChain = _saveChain.then(async () => {
         try {
             if (kind === 'go') {
+                // Go 模式必须发送归一化的端点（含 /chat/completions），否则 testConnection 发到裸 URL 返回 404
+                const normalizedEndpoint = normalizeEndpoint(snapshot.endpoint);
                 await _saveGoConfig({
-                    baseUrl: snapshot.endpoint,
+                    baseUrl: normalizedEndpoint,
                     model: snapshot.model,
                     aiKey: snapshot.apiKey,
                 });
                 // 同步 endpoint/model 到 IndexedDB 镜像，保证重开面板时 _loadInitialConfig 有可读回退
-                saveAiConfig({ ...snapshot, apiKey: '' });
+                saveAiConfig({ ...snapshot, endpoint: normalizedEndpoint, apiKey: '' });
             } else {
                 saveAiConfig(snapshot);
             }
