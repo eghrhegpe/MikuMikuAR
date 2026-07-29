@@ -2151,8 +2151,23 @@ export function buildSettingsDiagnosticLevel(
                 _lastConnectionOk = null;
                 _lastConnectionKind = null;
                 _goKeyConfigured = false;
-                // 关面板时重置模型芯片列表引用
+                // 关面板时清理 DOM 引用：避免面板关闭后异步回调（如 resolveAi.then）
+                // 持有旧引用向已移除元素写入。重新渲染时 renderCustom 会重新赋值。
+                _chatContainer = null;
+                _inputEl = null;
+                _corsWarningEl = null;
+                _configEndpoint = null;
+                _configApiKey = null;
+                _configModel = null;
+                _configModelDatalist = null;
                 _modelListEl = null;
+                _statusBadgeEl = null;
+                _adviceEl = null;
+                _statusTextEl = null;
+                _pendingContainer = null;
+                _speakToggleBtn = null;
+                _activeProviderButtons = [];
+                _activeDocLink = null;
             };
         },
     };
