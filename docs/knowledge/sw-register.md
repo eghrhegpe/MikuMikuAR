@@ -8,7 +8,7 @@ source_files:
   - frontend/src/core/sw-register.ts
 adr: []
 symbols:
-  - registerSW
+  - registerServiceWorker
 invariants:
   - PWA 支持
 tests: []

@@ -8,6 +8,27 @@ source_files:
   - frontend/src/scene/env/mirror-debug.ts
 adr:
   - ADR-128
+symbols:
+  - createMirror
+  - disposeMirror
+  - isMirrorActive
+  - toggleMirror
+  - updateMirrorClearColor
+  - refreshMirrorRenderList
+  - setMirrorSize
+  - setMirrorPosition
+  - setMirrorRotationY
+  - setMirrorResolution
+  - getMirrorInfo
+invariants:
+  - 反射列表包含场景全部 mesh，通过 onNewMeshAddedObservable 自动刷新
+  - 分辨率映射到 reflectionQuality 枚举，分辨率变更需重建 MirrorTexture
+  - disposeMirror 销毁镜面及其观察者
+tests: []
+use_when:
+  - 镜面反射
+  - 反射道具
+  - MirrorTexture
 ---
 
 ## 系统概览
