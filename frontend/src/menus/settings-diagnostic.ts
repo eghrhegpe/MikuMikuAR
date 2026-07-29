@@ -387,10 +387,11 @@ function _applyProvider(provider: AiConfigProvider): void {
     }
     _updateProviderButtons(provider);
     _updateDocLink(provider);
-    // 清空旧 datalist，避免跨服务商残留旧发现模型
+    // 清空旧 datalist + _fetchedModels，避免跨服务商残留旧发现模型
     if (_configModelDatalist) {
         _configModelDatalist.innerHTML = '';
     }
+    _fetchedModels = [];
     // [doc:adr-196] 切换服务商：await 保存完成后再刷新能力/模型，避免 _refreshCaps 读到旧配置
     void (async () => {
         await _doSaveConfig();
