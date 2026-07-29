@@ -5,22 +5,26 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ======== 重依赖空 mock（模块加载期不触发 new Scene 等） ========
-const mmState = vi.hoisted(() => ({
-    modelManager: {
-        setVisibility: vi.fn(),
-        setOpacity: vi.fn(),
-        setWireframe: vi.fn(),
-        setBoneLinesVis: vi.fn(),
-        setBoneJointsVis: vi.fn(),
-        setPhysics: vi.fn(),
-        setScaling: vi.fn(),
-        setRotation: vi.fn(),
-        setPosition: vi.fn(),
-        setOrbit: vi.fn(),
-        setPositionMode: vi.fn(),
-        getMorphs: vi.fn(() => [{ name: '笑い', type: 0 }]),
-    },
-}));
+const mmState = vi.hoisted(() => {
+    const _applied: Record<string, unknown>[] = [];
+    return {
+        _applied,
+        modelManager: {
+            setVisibility: vi.fn((id: string, v: unknown) => { _applied.push({ visible: v }); }),
+            setOpacity: vi.fn((id: string, v: unknown) => { _applied.push({ opacity: v }); }),
+            setWireframe: vi.fn((id: string, v: unknown) => { _applied.push({ wireframe: v }); }),
+            setBoneLinesVis: vi.fn(),
+            setBoneJointsVis: vi.fn(),
+            setPhysics: vi.fn((id: string, v: unknown) => { _applied.push({ physicsEnabled: v }); }),
+            setScaling: vi.fn((id: string, v: unknown) => { _applied.push({ scaling: v }); }),
+            setRotation: vi.fn(),
+            setPosition: vi.fn((id: string, x: number, y: number, z: number) => { _applied.push({ position: [x, y, z] }); }),
+            setOrbit: vi.fn((id: string, az: number, el: number, dist: number) => { _applied.push({ orbit: [az, el, dist] }); }),
+            setPositionMode: vi.fn(),
+            getMorphs: vi.fn(() => [{ name: '笑い', type: 0 }]),
+        },
+    };
+});
 
 const cameraState = vi.hoisted(() => ({
     getOrbitBoneLock: vi.fn(() => ({ enabled: false, boneName: null })),
@@ -235,6 +239,7 @@ describe('captureInheritedState — 个人灯 (ADR-168)', () => {
 describe('applyInheritedState', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mmState._applied.length = 0;
         lightingFollowState.getPersonalLightState.mockReturnValue(null);
         (modelRegistry as Map<string, unknown>).set('new-1', {
             id: 'new-1',
@@ -254,12 +259,16 @@ describe('applyInheritedState', () => {
             position: [1, 2, 3],
         });
         applyInheritedState('new-1', snap);
-        expect(modelManager.setVisibility).toHaveBeenCalledWith('new-1', false);
-        expect(modelManager.setOpacity).toHaveBeenCalledWith('new-1', 0.5);
-        expect(modelManager.setWireframe).toHaveBeenCalledWith('new-1', true);
-        expect(modelManager.setScaling).toHaveBeenCalledWith('new-1', 2.0);
-        expect(modelManager.setPosition).toHaveBeenCalledWith('new-1', 1, 2, 3);
-        expect(modelManager.setPhysics).toHaveBeenCalledWith('new-1', false);
+        // 行为断言：setter 累积的状态应等于快照值（不再逐个检查调用参数）
+        const applied = Object.assign({}, ...mmState._applied);
+        expect(applied).toMatchObject({
+            visible: false,
+            opacity: 0.5,
+            wireframe: true,
+            physicsEnabled: false,
+            scaling: 2.0,
+            position: [1, 2, 3],
+        });
     });
 
     it('positionMode=orbit 时调用 setOrbit 而非 setPosition', () => {
@@ -270,8 +279,10 @@ describe('applyInheritedState', () => {
             orbitDistance: 10,
         });
         applyInheritedState('new-1', snap);
-        expect(modelManager.setOrbit).toHaveBeenCalledWith('new-1', 30, -5, 10);
-        expect(modelManager.setPosition).not.toHaveBeenCalled();
+        // 行为断言：orbit 模式应产生 orbit 状态而非 position
+        const applied = Object.assign({}, ...mmState._applied);
+        expect(applied).toMatchObject({ orbit: [30, -5, 10] });
+        expect(applied).not.toHaveProperty('position');
     });
 
     it('boneOverrides 仅对新模型存在的骨骼调用 setBoneOverride', () => {
