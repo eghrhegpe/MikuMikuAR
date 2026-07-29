@@ -15,7 +15,7 @@ import type { VirtualSkirtConfig } from '../scene/physics/virtual-skirt';
 import { getMotionMenu } from './motion-popup';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
-import { renderMenu, buildSchemaLevel } from './render-menu';
+import { buildSchemaLevel } from './render-menu';
 import type { MenuNode } from './menu-schema';
 import { DebouncedTimer } from '../core/utils';
 import { logWarn } from '../core/logger';

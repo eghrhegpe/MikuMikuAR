@@ -64,7 +64,7 @@ import {
     type WebXRProbeResult,
 } from '../scene/ar/ar-webxr-probe';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
-import { renderMenu, buildSchemaLevel } from './render-menu';
+import { buildSchemaLevel } from './render-menu';
 import { addDisabledRow } from '../core/ui-helpers';
 import { getCachedCapabilities } from '../core/backend';
 import type { MenuNode } from './menu-schema';

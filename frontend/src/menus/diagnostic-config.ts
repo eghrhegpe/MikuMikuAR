@@ -415,19 +415,6 @@ function renderAdvice(kind?: AiErrorKind): void {
     diagState.adviceEl.style.display = 'block';
 }
 
-async function saveGoConfig(partial: {
-    baseUrl: string;
-    model: string;
-    aiKey: string;
-}): Promise<void> {
-    const b = await import('@bindings/mikumikuar/internal/app/app');
-    await b.AiSetLLMConfig({
-        baseUrl: partial.baseUrl,
-        model: partial.model,
-        aiKey: partial.aiKey,
-    });
-}
-
 async function flushAndSave(): Promise<{ ok: boolean; error?: string }> {
     if (diagState.configEndpoint) {
         diagState.localConfig.endpoint = diagState.configEndpoint.value;
