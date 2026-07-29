@@ -98,6 +98,7 @@ export async function switchSession(id: string): Promise<void> {
     diagState.messages.push(...session.messages);
     await setActiveId(id);
     diagState.callbacks.renderChat?.();
+    diagState.callbacks.updateSendButton?.();
     diagState.callbacks.refreshSessionList?.();
 }
 
