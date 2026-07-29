@@ -23,6 +23,8 @@ import {
 } from '@/motion-algos/proc-motion-shared';
 // [ADR-202 §六] WASM 模式经 mmdModelSolveIk 重解原生 IK 链
 import { getWasmIkResolver, getOverride } from './bone-override';
+// 运动模块状态查询（用于 feet-adjustment 感知用户手动覆盖）
+import { getModuleState } from './motion-modules/registry';
 // 纯数学解算（无 Babylon 依赖，便于单测）见 motion-algos/feet-adjustment-math.ts
 import { solveFootTarget } from '@/motion-algos/feet-adjustment-math';
 // 落地判定（无 Babylon 依赖，便于单测）见 motion-algos/footstep-detect.ts
@@ -75,6 +77,8 @@ const FOOT_STEP_MIN_INTERVAL = 120;
 
 let _feetDbgFrame = 0;
 let _feetTick = 0;
+/** [ADR-202 §六] 一次性诊断已输出标记（避免刷屏） */
+let _feetWarnOnce = false;
 
 // 大腿根候选（用于估算髋位置与腿长）
 // 日文 PMX 标准名：左足/右足（MMD 惯例）；部分模型用 左大腿/右大腿 或 左腿/右腿
@@ -273,13 +277,38 @@ function _adjustFoot(
         );
     }
 
-    // [ADR-202 §六] 如果 IK 目标骨有激活的 bone override，跳过自动贴地
-    // （用户手动覆盖优先于 feet-adjustment 的 always-on 自动地面跟随）
-    if (ikName) {
-        const existingOverride = getOverride(ikName, modelId);
-        if (existingOverride?.enabled) {
-            return;
+    // [ADR-202 §六] 如果对应脚的运动模块有非零参数，或 IK 目标骨有激活的 bone override，
+    // 跳过自动贴地（用户手动覆盖优先于 always-on 地面跟随）
+    const moduleId = side === 'L' ? 'left-foot' : 'right-foot';
+    const st = getModuleState(modelId, moduleId);
+    const fp = st?.params;
+    const hasModParams = fp && ((fp.pitch as number) !== 0 || (fp.yaw as number) !== 0 || (fp.roll as number) !== 0 ||
+        (fp.footPosX as number) !== 0 || (fp.footPosY as number) !== 0 || (fp.footPosZ as number) !== 0);
+    if (hasModParams) {
+        return;
+    }
+    // 二重检查：遍历所有候选骨名，检测 _overrideMaps 是否有激活的覆盖
+    const cands = side === 'L' ? BONE_LEG_IK_L_CANDIDATES : BONE_LEG_IK_R_CANDIDATES;
+    let foundOverride = false;
+    for (const cand of cands as string[]) {
+        const ov = getOverride(cand, modelId);
+        if (ov?.enabled) {
+            foundOverride = true;
+            break;
         }
+    }
+    if (foundOverride) {
+        return;
+    }
+    // [ADR-202 §六 debug] 仅在 feetDebug 开启时输出一次诊断（_feetWarnOnce 跨帧复用）
+    if (feetDebug.value && !_feetWarnOnce) {
+        _feetWarnOnce = true;
+        logWarn('feet',
+            `[A-skip] ${side} modParams=${hasModParams} cands=${cands.length} ` +
+            `pitch=${fp?.pitch} yaw=${fp?.yaw} roll=${fp?.roll} ` +
+            `posY=${fp?.footPosY} overrideFound=${foundOverride} ` +
+            `skip=${res.skip}`
+        );
     }
 
     if (res.skip) {
