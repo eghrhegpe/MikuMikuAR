@@ -8,6 +8,21 @@ source_files:
   - frontend/src/scene/physics/ground-collision.ts
 adr:
   - ADR-192
+symbols:
+  - isGroundCollisionEnabled
+  - enableGroundCollision
+  - disableGroundCollision
+  - applyGroundCollision
+invariants:
+  - 仅 WASM 运行时生效；JS 运行时空转
+  - enableGroundCollision 幂等；失败释放已分配资源，保持未启用态
+  - 地板半尺寸 2000m，碰撞组/掩码全开，friction 0.9
+  - dispose 异常契约：removeRigidBodyFromGlobal 抛错时 logWarn 但不阻断后续 safeDispose
+tests: []
+use_when:
+  - 地面碰撞
+  - 物理碰撞
+  - WASM Bullet
 ---
 
 ## 系统概览

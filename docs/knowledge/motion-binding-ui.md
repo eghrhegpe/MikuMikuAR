@@ -7,6 +7,22 @@ scope:
 source_files:
   - frontend/src/menus/motion-binding-ui.ts
 adr: []
+symbols:
+  - renderModuleToggleList
+  - resetFocusedLayerId
+  - ensureMotionSlots
+  - applyIntentToModel
+  - initMotionBroadcast
+  - buildActionBindingLevel
+  - handleModelAction
+invariants:
+  - applyIntentToModel 含 generation 防过期机制
+  - 动作槽位经 ensureMotionSlots 确保模型实例具有动作槽位
+tests: []
+use_when:
+  - 动作绑定 UI
+  - 动作槽位管理
+  - 模块切换列表
 ---
 
 ## 系统概览

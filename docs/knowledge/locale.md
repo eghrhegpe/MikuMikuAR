@@ -8,6 +8,20 @@ source_files:
   - frontend/src/core/i18n/locale.ts
 adr:
   - ADR-059
+symbols:
+  - getLang
+  - setLang
+  - initI18n
+  - LangCode
+invariants:
+  - 模块加载时即从 localStorage 读取语言偏好，确保菜单首帧即正确
+  - setLang 持久化到 localStorage + 更新 <html lang> + scheduleRefresh() 刷新菜单
+  - SUPPORTED_LANGS 是规划清单，真正可切换语言由 t.ts 的 AVAILABLE_LANGS 决定
+tests: []
+use_when:
+  - 语言切换
+  - 国际化
+  - locale
 ---
 
 ## 系统概览

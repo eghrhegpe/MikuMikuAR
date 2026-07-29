@@ -11,7 +11,8 @@ source_files:
 adr: []
 symbols:
   - createIconifyIcon
-  - getIconBundle
+  - createIconButton
+  - softwareKindIcon
 invariants:
   - 图标按需加载
 tests: []

@@ -8,6 +8,16 @@ source_files:
   - frontend/src/core/i18n/goerr.ts
 adr:
   - ADR-117
+symbols:
+  - translateGoError
+invariants:
+  - Go 端错误编码为 <可读msg>\n@@GOERR@@<json信封> 格式，前端按哨兵提取 JSON 信封
+  - 无法解析时回退原始文本
+tests: []
+use_when:
+  - Go 错误翻译
+  - 后端错误
+  - 错误国际化
 ---
 
 ## 系统概览

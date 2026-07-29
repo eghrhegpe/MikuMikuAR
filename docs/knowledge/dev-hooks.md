@@ -8,6 +8,17 @@ source_files:
   - frontend/src/core/dev-hooks.ts
 adr:
   - ADR-102
+symbols:
+  - setupE2ECapture
+invariants:
+  - DEV 仅有 E2E capture + scene inspection 钩子
+  - 生产构建下默认不注入（设 VITE_E2E_MODE=true 后可编入）
+  - window.__capture 与 window.__scene 供 Playwright 数值断言
+tests: []
+use_when:
+  - E2E 测试
+  - Playwright
+  - 截图断言
 ---
 
 ## 系统概览

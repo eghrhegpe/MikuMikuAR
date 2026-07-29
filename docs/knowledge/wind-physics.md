@@ -10,6 +10,21 @@ adr:
   - ADR-104
   - ADR-192
   - ADR-194
+symbols:
+  - initWindPhysics
+  - retryWindPhysicsSubscription
+  - disposeWindPhysics
+  - isWindPhysicsActive
+invariants:
+  - 仅 WASM 运行时生效；Kinematic 刚体不受力
+  - initWindPhysics 幂等；physics impl 延迟就绪时由 retry 补齐
+  - disposeWindPhysics 仅移除自身 observer，不影响其他 onSyncObservable 订阅者
+  - 经 mmd-adapter 公开 API 访问骨架，不依赖私有字段反射
+tests: []
+use_when:
+  - 风力物理
+  - 风力注入
+  - 头发/裙子物理
 ---
 
 ## 系统概览
