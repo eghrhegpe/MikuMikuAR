@@ -9,6 +9,8 @@ import {
     mockSinglePhysicsRelease,
     mockMmdWasmRuntimeModelAnimation,
     mockMmdModelLoaderDefault,
+    mockTextureAlphaCheckerVertex,
+    mockTextureAlphaCheckerFragment,
 } from './mocks/babylon-factories';
 
 // ---- 函数工厂 → 别名 re-export（消费者按函数引用使用） ----
@@ -46,5 +48,5 @@ export const tgaLoaderModuleMock = mockTgaTextureLoader();
 export const mmdSinglePhysicsReleaseMock = mockSinglePhysicsRelease();
 export const mmdRuntimeModelAnimMock = mockMmdWasmRuntimeModelAnimation();
 export const mmdModelLoaderDefaultMock = mockMmdModelLoaderDefault();
-export const mmdTextureAlphaVertexMock = {};
-export const mmdTextureAlphaFragmentMock = {};
+export const mmdTextureAlphaVertexMock = mockTextureAlphaCheckerVertex();
+export const mmdTextureAlphaFragmentMock = mockTextureAlphaCheckerFragment();

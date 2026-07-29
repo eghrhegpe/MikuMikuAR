@@ -9,6 +9,7 @@
 // 拆分文件位于 src/__tests__/env-bridge/，相对前缀为 '../../'。
 
 import { vi } from 'vitest';
+import { MockVector3, MockColor3 } from '../mocks/babylon-classes';
 import { makeMockBackend } from '../fixtures/backend';
 
 // ── MmdWasmRuntime mock class (for instanceof check) ──
@@ -109,54 +110,9 @@ export const backendModule = {
         ),
 };
 
-class Vec3 {
-    x = 0;
-    y = 0;
-    z = 0;
-    constructor(x = 0, y = 0, z = 0) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-    }
-    clone() {
-        return new Vec3(this.x, this.y, this.z);
-    }
-    set(x: number, y: number, z: number) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-        return this;
-    }
-    setAll(v: number) {
-        this.x = this.y = this.z = v;
-        return this;
-    }
-    static Zero() {
-        return new Vec3(0, 0, 0);
-    }
-}
-export const babylonVectorModule = { Vector3: Vec3 };
+export const babylonVectorModule = { Vector3: MockVector3 };
 
-class Col3 {
-    r = 0;
-    g = 0;
-    b = 0;
-    constructor(r = 0, g = 0, b = 0) {
-        this.r = r;
-        this.g = g;
-        this.b = b;
-    }
-    set(r: number, g: number, b: number) {
-        this.r = r;
-        this.g = g;
-        this.b = b;
-        return this;
-    }
-    clone() {
-        return new Col3(this.r, this.g, this.b);
-    }
-}
-export const babylonColorModule = { Color3: Col3 };
+export const babylonColorModule = { Color3: MockColor3 };
 
 // Create envState as a plain mutable object so Object.assign in setEnvState works
 const es: Record<string, any> = {
