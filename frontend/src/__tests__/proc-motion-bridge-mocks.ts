@@ -32,6 +32,26 @@ export function createProcMockState() {
             },
             activeCamera: null,
         } as any,
+
+        // --- perception mocks ---
+        setGazeConfig: vi.fn(),
+        onPerceptionModelRemoved: vi.fn(),
+        activatePerception: vi.fn(),
+
+        // --- motion-intent mock ---
+        getActiveMotion: vi.fn(() => null),
+
+        // --- beat-detector mock ---
+        beatDetectorInst: {
+            getBPM: vi.fn(() => 0),
+            getBpmQuantizeEnabled: vi.fn(() => false),
+            setBpmQuantizeEnabled: vi.fn(),
+            dispose: vi.fn(),
+        },
+
+        // --- procedural-motion mocks (vi.fn 实例跨 resetModules 持久) ---
+        generateIdleVmd: vi.fn(() => new ArrayBuffer(0)),
+        generateAutoDanceVmd: vi.fn(() => new ArrayBuffer(0)),
     };
 }
 
@@ -50,6 +70,29 @@ export function resetProcMockState(s: ReturnType<typeof createProcMockState>): v
     s.loadVMDMotion.mockResolvedValue(undefined);
     s.scene.onBeforeRenderObservable.add.mockReset();
     s.scene.onBeforeRenderObservable.remove.mockReset();
+
+    // perception
+    s.setGazeConfig.mockReset();
+    s.onPerceptionModelRemoved.mockReset();
+    s.activatePerception.mockReset();
+
+    // motion-intent
+    s.getActiveMotion.mockReset();
+    s.getActiveMotion.mockReturnValue(null);
+
+    // beat-detector
+    s.beatDetectorInst.getBPM.mockReset();
+    s.beatDetectorInst.getBPM.mockReturnValue(0);
+    s.beatDetectorInst.getBpmQuantizeEnabled.mockReset();
+    s.beatDetectorInst.getBpmQuantizeEnabled.mockReturnValue(false);
+    s.beatDetectorInst.setBpmQuantizeEnabled.mockReset();
+    s.beatDetectorInst.dispose.mockReset();
+
+    // procedural-motion
+    s.generateIdleVmd.mockReset();
+    s.generateIdleVmd.mockReturnValue(new ArrayBuffer(0));
+    s.generateAutoDanceVmd.mockReset();
+    s.generateAutoDanceVmd.mockReturnValue(new ArrayBuffer(0));
 }
 
 export function mockConfig(s: ReturnType<typeof createProcMockState>) {
@@ -89,5 +132,79 @@ export function mockScene(s: ReturnType<typeof createProcMockState>) {
 export function mockVmdLayers() {
     return {
         rebuildCompositeAnimation: vi.fn(),
+    };
+}
+
+// --- 以下为切断传递依赖链新增的 mock 工厂（ADR-206 后续优化） ---
+
+type ProcMockState = ReturnType<typeof createProcMockState>;
+
+// perception — 3 个 void 函数，bridge 只调用不读返回值
+export function mockPerception(s: ProcMockState) {
+    return {
+        setGazeConfig: ((...args: any[]) => (s.setGazeConfig as any)(...args)) as any,
+        onPerceptionModelRemoved: ((...args: any[]) => (s.onPerceptionModelRemoved as any)(...args)) as any,
+        activatePerception: ((...args: any[]) => (s.activatePerception as any)(...args)) as any,
+    };
+}
+
+// motion-intent — 1 个函数，bridge 读取返回值的 procMotion 字段
+export function mockMotionIntent(s: ProcMockState) {
+    return {
+        getActiveMotion: ((...args: any[]) => (s.getActiveMotion as any)(...args)) as any,
+    };
+}
+
+// beat-detector — 类 mock（单例模式：所有 new 返回同一 mock 实例）
+export function mockBeatDetector(s: ProcMockState) {
+    class MockBeatDetector {
+        constructor() {
+            return s.beatDetectorInst as any;
+        }
+    }
+    return { BeatDetector: MockBeatDetector as any };
+}
+
+// procedural-motion — 常量 + 纯函数 + vi.fn 代理混合
+// shouldAutoDance/shouldIdle 提供真实实现（纯函数，无外部依赖，bridge 用返回值做分支控制）
+export function mockProceduralMotion(s: ProcMockState) {
+    return {
+        // 常量（从 proc-motion-shared.ts 复制，已确认）
+        PROC_VMD_NAME_IDLE: 'IdleMotion',
+        PROC_VMD_NAME_AUTODANCE: 'AutoDance',
+        PROC_MOTION_BONE_CATEGORIES: [
+            'center', 'upper', 'upper2', 'waist', 'head', 'arm',
+            'groove', 'shoulder', 'allParent', 'wrist', 'footIk', 'blink', 'emotion',
+        ] as const,
+        get DEFAULT_PROC_STATE() {
+            return {
+                mode: 'off' as const,
+                intensity: 0.5,
+                speed: 1.0,
+                boneToggles: {
+                    center: true, upper: true, upper2: true, waist: true,
+                    head: true, arm: true, groove: true, shoulder: true,
+                    allParent: true, wrist: true, footIk: true, blink: true, emotion: true,
+                },
+                bpmQuantizeEnabled: true,
+                vpdApplyEnabled: false,
+                interpOverride: 'auto' as const,
+                multiMorphEnabled: false,
+                eyeTrackingEnabled: true,
+                headTrackingEnabled: true,
+            };
+        },
+        // 纯函数 — 真实实现
+        shouldAutoDance(audioPlaying: boolean, mode: string): boolean {
+            if (mode === 'idle') return false;
+            if (mode === 'autodance') return true;
+            return audioPlaying;
+        },
+        shouldIdle(audioPlaying: boolean, hasUserVmd: boolean, mode: string): boolean {
+            return !audioPlaying && !hasUserVmd && (mode === 'idle' || mode === 'off' || mode === 'autodance');
+        },
+        // vi.fn 代理（测试可通过 mockState 配置返回值 + 断言调用）
+        get generateIdleVmd() { return s.generateIdleVmd; },
+        get generateAutoDanceVmd() { return s.generateAutoDanceVmd; },
     };
 }

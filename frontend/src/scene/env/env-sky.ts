@@ -30,7 +30,7 @@ let _skyFollowHandle: ObserverHandle | null = null;
 let _proceduralEnvTexture: RawCubeTexture | null = null;
 
 /** 天空渐变 canvas 尺寸 */
-const SKY_TEX_SIZE = 256;
+const SKY_TEX_SIZE = 512;
 
 // ======== 星空贴图异步加载缓存 ========
 let _texStarsImg: HTMLImageElement | null = null;
