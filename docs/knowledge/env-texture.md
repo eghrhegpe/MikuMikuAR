@@ -8,6 +8,24 @@ source_files:
   - frontend/src/scene/env/env-texture.ts
 adr:
   - ADR-092
+symbols:
+  - createCanvasTexture
+  - getOrCreateCanvasTexture
+  - isCacheOwnedTexture
+  - disposeTextureCache
+  - createCanvasDataURL
+  - CanvasTextureOptions
+invariants:
+  - 优先使用 DynamicTexture（无 PNG 编码开销），失败回退 canvas → toDataURL → Texture
+  - 缓存按 key 复用，key 不变不重建，避免拖动滑块时反复生成
+  - disposeTextureCache 释放全部缓存贴图，由 disposeEnv 统一清理
+  - WeakSet 缓存所有权机制确保 disposeGround 等路径不错误释放缓存贴图
+tests: []
+use_when:
+  - 贴图工厂
+  - canvas 贴图
+  - 程序化纹理
+  - 高度图 URL
 ---
 
 ## 系统概览

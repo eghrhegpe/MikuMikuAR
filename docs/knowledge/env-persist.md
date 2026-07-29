@@ -9,6 +9,23 @@ source_files:
 adr:
   - ADR-148
   - ADR-176
+symbols:
+  - persistEnvState
+  - flushEnvState
+  - schedulePersistEnvState
+  - cancelEnvPersistTimer
+  - persistUIState
+  - flushUIState
+  - schedulePersistUI
+invariants:
+  - 防抖 500ms 调度（DebouncedTimer），立即 flush 在关闭/隐藏页面时调用
+  - 持久化载荷传普通对象副本，避免 JSON.stringify 对 reactive Proxy 枚举不完整
+  - HMR 重入清理：cancelEnvPersistTimer
+tests: []
+use_when:
+  - 环境持久化
+  - 防抖保存
+  - envState 持久化
 ---
 
 ## 系统概览

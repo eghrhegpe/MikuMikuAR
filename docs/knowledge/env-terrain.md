@@ -8,6 +8,23 @@ source_files:
   - frontend/src/scene/env/env-terrain.ts
 adr:
   - ADR-073
+symbols:
+  - hash2
+  - valueNoise
+  - fbm
+  - generateTerrainHeightmapURL
+  - createHeightmapGround
+  - applyTerrainMaterial
+invariants:
+  - 确定性整数哈希，相同 seed 产生相同地形
+  - fbm 使用分形布朗运动叠加，返回 ~[-1,1] 范围
+  - 高度图 256² 灰度图，亮=高峰，暗=低谷
+  - createHeightmapGround 创建 isPickable=true 的可拾取地形网格
+tests: []
+use_when:
+  - 地形生成
+  - 高度图
+  - 程序化地形
 ---
 
 ## 系统概览

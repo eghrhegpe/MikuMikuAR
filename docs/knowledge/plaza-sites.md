@@ -9,8 +9,8 @@ source_files:
 adr:
   - ADR-087
 symbols:
-  - PlazaSiteConfig
-  - SITES
+  - PlazaSite
+  - PLAZA_SITES
 invariants:
   - 被 plaza-browser/plaza-state 引用
 tests: []

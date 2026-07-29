@@ -8,6 +8,17 @@ source_files:
   - frontend/src/menus/plaza-thumbnail.ts
 adr:
   - ADR-087
+symbols:
+  - _plazaBtn
+  - _plazaSectionHeader
+invariants:
+  - 纯 UI 辅助函数，无业务逻辑
+  - _plazaBtn 支持 innerHTML 内容、className、title 参数
+tests: []
+use_when:
+  - 广场 UI
+  - 按钮工厂
+  - 节头部
 ---
 
 ## 系统概览

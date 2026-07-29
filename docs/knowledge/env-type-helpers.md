@@ -7,6 +7,18 @@ scope:
 source_files:
   - frontend/src/scene/env/env-type-helpers.ts
 adr: []
+symbols:
+  - getCanvasCtx
+  - FrozenCamera
+  - REFRESHRATE_RENDER_ONCE
+invariants:
+  - 每个 helper 对应一处 babylon 私有字段/未导出常量的访问，降低升级时断裂风险
+  - getCanvasCtx 封装 DynamicTexture.getContext() → CanvasRenderingContext2D 的类型断言
+tests: []
+use_when:
+  - 类型逃逸
+  - babylon 私有 API
+  - 类型断言封装
 ---
 
 ## 系统概览

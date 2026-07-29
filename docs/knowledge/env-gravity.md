@@ -8,6 +8,24 @@ source_files:
   - frontend/src/scene/env/env-gravity.ts
 adr:
   - ADR-148
+symbols:
+  - setGravityStrength
+  - getGravityStrength
+  - setCollisionEnabled
+  - getCollisionEnabled
+  - setBodyCollisionEnabled
+  - getBodyCollisionEnabled
+  - setGroundCollisionEnabled
+  - getGroundCollisionEnabled
+invariants:
+  - 重力强度始终钳制在 [0, 2] 范围
+  - setGroundCollisionEnabled 值未变化时直接返回（幂等优化）
+  - 仅 WASM 路径生效，JS 版无物理引擎
+tests: []
+use_when:
+  - 重力控制
+  - 碰撞开关
+  - 身体/地面碰撞
 ---
 
 ## 系统概览

@@ -7,6 +7,17 @@ scope:
 source_files:
   - frontend/src/menus/library-browse.ts
 adr: []
+symbols:
+  - showModelPopup
+invariants:
+  - 延迟恢复上次浏览位置（deferRestore 轮询等待 allModels 就绪）
+  - 按目录分组渲染模型列表，支持模型点击打开详情、舞台变换、编队模式
+  - 依赖 library-session-store 的恢复链路状态
+tests: []
+use_when:
+  - 模型库浏览
+  - 模型弹窗
+  - 浏览恢复
 ---
 
 ## 系统概览
