@@ -7,6 +7,21 @@ scope:
 source_files:
   - frontend/src/scene/render/lighting-shadow.ts
 adr: []
+symbols:
+  - _addAllMeshesToShadow
+  - _ensureShadow
+  - rebuildShadowCasters
+  - _ensureStageShadow
+  - _disposeStageShadow
+invariants:
+  - 阴影状态集中于 lightingState，子模块共享
+  - rebuildShadowCasters 在模型/道具注册表更新时重新生成阴影投射者列表
+  - _ensureShadow 创建/重建环境主光级联阴影（CSM）
+tests: []
+use_when:
+  - 阴影
+  - 级联阴影
+  - 阴影投射者
 ---
 
 ## 系统概览

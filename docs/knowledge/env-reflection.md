@@ -9,6 +9,27 @@ source_files:
 adr:
   - ADR-151
   - ADR-152
+symbols:
+  - resolveReflectionMode
+  - setReflectionARSuspended
+  - getQualityPreset
+  - getPlanarQualityOverride
+  - bindProbeToMeshes
+  - onModelMeshesReady
+  - applyReflection
+  - disposeReflection
+  - ReflectionMode
+invariants:
+  - 反射模式五态：none / planar / ssr / probe / hybrid
+  - 反射探针需与模型加载时序对齐（onModelMeshesReady），避免网格未就绪时绑定失败
+  - disposeReflection 释放探针与渲染目标
+  - setReflectionARSuspended 在 AR/性能受限时挂起反射
+tests: []
+use_when:
+  - 反射系统
+  - 平面反射
+  - SSR
+  - 探针
 ---
 
 ## 系统概览

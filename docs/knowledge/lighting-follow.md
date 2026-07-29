@@ -8,6 +8,29 @@ source_files:
   - frontend/src/scene/render/lighting-follow.ts
 adr:
   - ADR-168
+symbols:
+  - attachPersonalLight
+  - detachPersonalLight
+  - setPersonalLightState
+  - getPersonalLightState
+  - setPersonalLightDefault
+  - getPersonalLightDefault
+  - resetPersonalLightDefault
+  - tickPersonalLights
+  - tickStageLightFollow
+  - disposeAllPersonalLights
+  - getAllPersonalLights
+  - restorePersonalLights
+invariants:
+  - 个人灯光跟随模型腰部骨骼，每帧由 tickPersonalLights 更新位置
+  - disposeAllPersonalLights 释放所有个人灯光及其光锥
+  - tickStageLightFollow 每帧更新舞台灯光跟随（舞台目标骨骼跟随）
+  - 个人灯光附加时自动创建光锥（_ensurePersonalCone）
+tests: []
+use_when:
+  - 个人灯光
+  - 灯光跟随
+  - 跟随聚光灯
 ---
 
 ## 系统概览
