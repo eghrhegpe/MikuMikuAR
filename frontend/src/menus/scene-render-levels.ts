@@ -193,7 +193,7 @@ function _renderAntiAliasingControl(container: HTMLElement): void {
                 updates.msaaSamples = 1;
             } else {
                 updates.fxaaEnabled = false;
-                updates.msaaSamples = parseInt(v);
+                updates.msaaSamples = parseInt(v, 10);
             }
             setRenderState(updates);
             triggerAutoSave();

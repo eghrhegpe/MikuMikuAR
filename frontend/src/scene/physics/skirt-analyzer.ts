@@ -255,7 +255,10 @@ export function analyzeSkirt(
     for (const [key, count] of edgeCounts) {
         if (count === 1) {
             const sep = key.indexOf('_');
-            boundaryEdges.push([parseInt(key.slice(0, sep)), parseInt(key.slice(sep + 1))]);
+            boundaryEdges.push([
+                parseInt(key.slice(0, sep), 10),
+                parseInt(key.slice(sep + 1), 10),
+            ]);
         }
     }
 

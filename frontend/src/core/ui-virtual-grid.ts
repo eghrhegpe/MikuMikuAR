@@ -147,7 +147,7 @@ export function createVirtualGrid<T>(
     if (responsiveColumnWidth) {
         const computeColumns = () => {
             const gap =
-                parseInt(getComputedStyle(container).getPropertyValue('--resource-gap')) || 8;
+                parseInt(getComputedStyle(container).getPropertyValue('--resource-gap'), 10) || 8;
             const availableWidth = container.clientWidth;
             const cols = Math.max(
                 1,
