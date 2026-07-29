@@ -92,7 +92,7 @@ use_when:
 
 跑法：`node scripts/check-doc-drift.mjs`（或 `--json`）。可接 CI 卡点。
 
-## 卡片索引（212 张，按 category 分组）
+## 卡片索引（223 张，按 category 分组）
 
 ### 环境系统（env）
 
@@ -251,6 +251,12 @@ use_when:
 | [资源库核心](./library-core.md) | `menus/library-core.ts` | — |
 | [资源库初始化](./library-setup.md) | `menus/library-setup.ts` | — |
 | [AI 诊断助手面板](./settings-diagnostic.md) | `menus/settings-diagnostic.ts` | ADR-196/093 |
+| [AI 助手独立面板入口](./assistant-panel.md) | `menus/assistant-panel.ts` | ADR-203/093 |
+| [诊断面板聊天 UI](./diagnostic-chat.md) | `menus/diagnostic-chat.ts` | ADR-196/203 |
+| [诊断面板配置 UI](./diagnostic-config.md) | `menus/diagnostic-config.ts` | ADR-196/203 |
+| [诊断面板 tool call 控制](./diagnostic-control.md) | `menus/diagnostic-control.ts` | ADR-197/155/203 |
+| [诊断面板会话管理](./diagnostic-session.md) | `menus/diagnostic-session.ts` | ADR-203 |
+| [诊断面板单例状态](./diagnostic-state.md) | `menus/diagnostic-state.ts` | ADR-196/203 |
 
 ### 核心基础设施（core）
 
@@ -309,6 +315,8 @@ use_when:
 | [window.__mmar 状态暴露](./mmar-globals.md) | `core/mmar-globals.ts` | — |
 | [统一动作注册表](./action-registry.md) | `core/action-registry.ts` + `action-executor`/`action-defs/*`/`ai/{param-adapters,action-catalog,action-registry-defs}` | ADR-197/155 |
 | [轨道相机键盘输入状态](./orbit-state.md) | `core/orbit-state.ts` | — |
+| [诊断用动作注册](./diagnostic-actions.md) | `core/action-defs/diagnostic-actions.ts` | ADR-197/196 |
+| [菜单导航项契约](./ui-nav-item.md) | `core/ui-nav-item.ts` | ADR-153 |
 
 ### 内置 AI 诊断助手（ai，ADR-196）
 
@@ -321,3 +329,6 @@ use_when:
 | [SSE 流式解析器](./ai-sse.md) | `core/ai/sse.ts` | ADR-196 |
 | [角色台词生成（人设/情绪/TTS）](./character-bible.md) | `core/ai/{character-bible,dialogue-session,dialogue-speech}.ts` | ADR-156 |
 | [NL 意图解析（LLM→动作）](./ai-intent-dispatcher.md) | `core/ai/intent-dispatcher.ts` | ADR-155/197 |
+| [AI 会话 IndexedDB 存储](./chat-store.md) | `core/ai/chat-store.ts` | ADR-203 |
+| [Go 桌面端 key 放行判断](./go-key-allows-proceed.md) | `core/ai/go-key-allows-proceed.ts` | ADR-196 |
+| [轻量 Markdown→DOM 渲染器](./markdown.md) | `core/ai/markdown.ts` | ADR-196 |
