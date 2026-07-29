@@ -2040,6 +2040,7 @@ export const en: Record<string, string> = {
     'ai.chat.clear': 'Clear',
     'ai.chat.clearConfirm': 'Clear chat history?',
     'ai.chat.pendingBlocked': 'Confirm or cancel the pending action first.',
+    'ai.errorAdvice.ollamaNotInstalled': 'Local Ollama not detected — download from https://ollama.com or configure a remote API provider.',
     'ai.errors.resolveFailed': 'AI service failed to initialize. Check console for details.',
 
     // Provider presets and status feedback

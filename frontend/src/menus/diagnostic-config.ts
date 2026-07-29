@@ -412,7 +412,7 @@ function renderConfigCard(c: HTMLElement): void {
 
     const providerRow = document.createElement('div');
     providerRow.className = 'diag-provider-row';
-    const providers: AiConfigProvider[] = ['ollama', 'deepseek', 'openai', 'openrouter', 'custom'];
+    const providers: AiConfigProvider[] = ['deepseek', 'openai', 'openrouter', 'custom', 'ollama'];
     for (const provider of providers) {
         const btn = document.createElement('button');
         btn.type = 'button';
@@ -652,6 +652,8 @@ async function testConnection(statusEl: HTMLElement): Promise<void> {
     statusEl.style.color = 'var(--text-muted)';
     setStatusBadge('testing');
     diagState.lastConnectionOk = null;
+    const isLocalOllama = /localhost|127\.0\.0\.1/i.test(diagState.localConfig.endpoint)
+        && diagState.localConfig.provider === 'ollama';
     try {
         const result = await diagState.ai.testConnection();
         if (result.ok) {
@@ -661,7 +663,10 @@ async function testConnection(statusEl: HTMLElement): Promise<void> {
             diagState.lastConnectionKind = null;
             renderAdvice(undefined);
         } else {
-            statusEl.textContent = result.message;
+            const msg = isLocalOllama
+                ? t('ai.errorAdvice.ollamaNotInstalled') + ' ' + result.message
+                : result.message;
+            statusEl.textContent = msg;
             statusEl.style.color = 'var(--danger)';
             captureError('ai-connection', result.message, undefined);
             diagState.lastConnectionKind = result.kind;
@@ -671,7 +676,10 @@ async function testConnection(statusEl: HTMLElement): Promise<void> {
         }
     } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        statusEl.textContent = msg;
+        const display = isLocalOllama
+            ? t('ai.errorAdvice.ollamaNotInstalled') + ' ' + msg
+            : msg;
+        statusEl.textContent = display;
         statusEl.style.color = 'var(--danger)';
         captureError('ai-connection', msg, err);
         diagState.lastConnectionKind = 'unknown';
