@@ -1,5 +1,5 @@
 // perception/micro-expression.int.test.ts — 微表情状态 + _applyMicroExpression 实时叠加（ADR-204 P3，拆自旧 perception.test.ts）
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const mockState = vi.hoisted(() => ({
     focusedModelId: null as string | null,

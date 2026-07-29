@@ -1,5 +1,5 @@
 // perception/lipsync.int.test.ts — 旧档迁移（perception/lipSync）+ lipSync 状态 + _applyLipSync（ADR-204 P3，拆自旧 perception.test.ts）
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const mockState = vi.hoisted(() => ({
     focusedModelId: null as string | null,
