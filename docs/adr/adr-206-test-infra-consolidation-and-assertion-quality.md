@@ -135,6 +135,14 @@ ADR-204 §2.2 的「单文件 `vi.mock/fn/spyOn` 计数」阈值保留为**参�
 > **Phase 1**：`material-editor-mocks.ts`（165→50 行）删除全部重复 Babylon/BMD 工厂定义，改为从 `model-preset-mocks` 的别名 re-export + 6 个空模块桩求值为 plain object（`physicsEngineModuleMock`/`tgaLoaderModuleMock`/`mmdSinglePhysicsReleaseMock`/`mmdRuntimeModelAnimMock`/`mmdModelLoaderDefaultMock`/`mmdTextureAlpha*Mock`——消费者按值引用而非函数调用，故必须求值）。`outfit-mocks.ts`（55→33 行）同理，保留换装特有 `mockEmpty`/`mockSceneModule`/`mockT`。关键踩坑：`model-preset-mocks` 的工厂是**函数** `() => ({})`，而 material-editor 消费者按**值**引用 `{}`——re-export 函数名会改变语义，必须对空模块桩单独求值。`_mockMat` 函数在 material-editor 测试中零引用，确认为死代码，随重构一并清除。补充 `mockTexture` 工厂至规范源（原 `model-preset-mocks` 缺失，`outfit` 测试依赖）。验收：215 passed / 2428 tests passed / 0 failed。
 >
 > **Phase 2**：新建 `mocks/babylon-factories.ts`（95 行），将全部 Babylon/BMD 工厂从 `model-preset-mocks.ts` 提升至此，形成 `babylon-classes`（类定义 683 行）→ `babylon-factories`（工厂函数 95 行）两层架构。`model-preset-mocks.ts` 降级为薄 re-export shim（46 行：33 个 Babylon re-export + 2 个 app mock `mockToast`/`mockPlayback`），7 个消费者无需改 import 路径。`material-editor-mocks.ts` 和 `outfit-mocks.ts` 改为直接从 `./mocks/babylon-factories` 导入（`mockToast` 仍经 `./model-preset-mocks`）。验收：215 passed / 2428 tests passed / 0 failed。
+>
+> **Phase 4 实施记录（2026-07-29）**：拆分最后 2 个 >500 行功能测试文件（契约/perf 测试保持整体）：
+>
+> **browser-adapter.test.ts**（512 行 / 24 用例）拆为 4 个文件 + 共享 mock：`browser-adapter-mocks.ts`（17 行，`mem` Map + `setStore`/`eqBytes`/`resetMem`）+ `browser-adapter.texture-collision.test.ts`（109 行 / 4 用例）+ `browser-adapter.fsa-auth.test.ts`（124 行 / 10 用例）+ `browser-adapter.fsa-conflict.test.ts`（175 行 / 6 用例，含 `writeSimulatedImport` 领域 helper）+ `browser-adapter.ingest.test.ts`（98 行 / 4 用例）。vi.mock('./idb') 因 hoist 约束各文件内联，但共享 `mem` 实例（普通 const export，非 vi.hoisted）。
+>
+> **backend.test.ts**（984 行 / 71 用例）拆为 7 个文件 + 共享 mock：`backend-mocks.ts`（44 行，`idbStore` Map + `setWindow`/`clearWebFlag`/`resetIdb` + `goAdapterMock`）+ `backend.capabilities.test.ts`（98 行 / 15 用例）+ `backend.data-chain.test.ts`（204 行 / 20 用例）+ `backend.virtual-dir.test.ts`（100 行 / 9 用例）+ `backend.extract.test.ts`（290 行 / 12 用例）+ `backend.resolve.test.ts`（66 行 / 5 用例，保留 `vi.resetModules()`）+ `backend.fsa.test.ts`（230 行 / 6 用例）+ `backend.update.test.ts`（43 行 / 2 用例）。原 `for` 循环生成 7 个 `it` 块使实际用例数为 71（非 grep 估算的 65）。
+>
+> 验收：224 passed / 2428 tests passed / 0 failed。剩余 >500 行文件仅 `perception.perf.test.ts`（741，perf 基准）+ `app.contract.test.ts`（646，契约校验），均为 ADR-206 §Phase 4 标注的「保持整体」类型。
 
 ### Phase 3：断言质量改善（持续，触碰即改善）
 
