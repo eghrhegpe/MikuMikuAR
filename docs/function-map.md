@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 107 | 723 |
+| 核心基础设施 | 109 | 732 |
 | 3D 场景 | 105 | 1061 |
 | 菜单 & UI | 73 | 354 |
 | 换装 & 音频 | 3 | 33 |
@@ -150,6 +150,15 @@
 | `setFootstepVolume()` | `core/audio-bus` | — |
 | `setSfxEnabled()` | `core/audio-bus` | — |
 | `setSfxVolume()` | `core/audio-bus` | — |
+| `clearWebFlag()` | `core/backend/backend-mocks` | — |
+| `goAdapterMock()` | `core/backend/backend-mocks` | — |
+| `idbStore()` | `core/backend/backend-mocks` | — |
+| `resetIdb()` | `core/backend/backend-mocks` | — |
+| `setWindow()` | `core/backend/backend-mocks` | — |
+| `eqBytes()` | `core/backend/browser-adapter-mocks` | — |
+| `mem()` | `core/backend/browser-adapter-mocks` | — |
+| `resetMem()` | `core/backend/browser-adapter-mocks` | — |
+| `setStore()` | `core/backend/browser-adapter-mocks` | — |
 | `FsaAuthState()` | `core/backend/browser-adapter` | — |
 | `browserAdapter()` | `core/backend/browser-adapter` | — |
 | `dismissFsaAuthPrompt()` | `core/backend/browser-adapter` | — |
@@ -2358,5 +2367,5 @@
 
 ---
 
-> 共 307 个文件，2312 个导出符号。
+> 共 309 个文件，2321 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。
