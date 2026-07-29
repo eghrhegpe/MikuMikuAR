@@ -251,11 +251,13 @@ async function _runAutoTest(): Promise<void> {
         } else {
             _lastConnectionOk = false;
             _lastConnectionKind = result.kind;
+            captureError('ai-connection', result.message, undefined);
             _renderAdvice(result.kind);
         }
     } catch (err) {
         _lastConnectionOk = false;
         _lastConnectionKind = 'unknown';
+        captureError('ai-connection', err instanceof Error ? err.message : String(err), err);
         _renderAdvice('unknown');
     } finally {
         _autoTesting = false;
@@ -302,23 +304,28 @@ function _persistConfig(partial: Partial<AiConfig>): void {
 }
 
 /** 共享持久化逻辑：go 模式写 Go 后端 + IndexedDB 镜像（不含 key），browser 模式写 IndexedDB。
- *  (async 但内部已 catch，调用方可 void 丢弃) */
-async function _doSaveConfig(): Promise<void> {
-    try {
-        if (_ai?.kind === 'go') {
-            await _saveGoConfig({
-                baseUrl: _localConfig.endpoint,
-                model: _localConfig.model,
-                aiKey: _localConfig.apiKey,
-            });
-            // 同步 endpoint/model 到 IndexedDB 镜像，保证重开面板时 _loadInitialConfig 有可读回退
-            saveAiConfig({ ..._localConfig, apiKey: '' });
-        } else {
-            saveAiConfig(_localConfig);
+ *  串行化：通过 Promise 链确保多次 blur 触发的保存按序执行，
+ *  后者总是读取最新 _localConfig，根除 last-write-wins 竞态。 */
+let _saveChain: Promise<void> = Promise.resolve();
+function _doSaveConfig(): Promise<void> {
+    _saveChain = _saveChain.then(async () => {
+        try {
+            if (_ai?.kind === 'go') {
+                await _saveGoConfig({
+                    baseUrl: _localConfig.endpoint,
+                    model: _localConfig.model,
+                    aiKey: _localConfig.apiKey,
+                });
+                // 同步 endpoint/model 到 IndexedDB 镜像，保证重开面板时 _loadInitialConfig 有可读回退
+                saveAiConfig({ ..._localConfig, apiKey: '' });
+            } else {
+                saveAiConfig(_localConfig);
+            }
+        } catch (err) {
+            console.warn('[ai-config] 持久化失败', err);
         }
-    } catch (err) {
-        console.warn('[ai-config] 持久化失败', err);
-    }
+    });
+    return _saveChain;
 }
 
 /** 应用服务商预设，更新本地编辑态与输入框。 */
@@ -1890,6 +1897,17 @@ export function buildSettingsDiagnosticLevel(
             return () => {
                 cancelSpeech();
                 _abortController?.abort();
+                // 关面板前 flush 输入框当前值到 _localConfig，避免未 blur 的编辑丢失
+                if (_configEndpoint) {
+                    _localConfig.endpoint = _configEndpoint.value;
+                }
+                if (_configModel) {
+                    _localConfig.model = _configModel.value;
+                }
+                if (_configApiKey) {
+                    _localConfig.apiKey = _configApiKey.value;
+                }
+                void _doSaveConfig();
                 dispose();
                 // [doc:adr-196 P5] 关面板时重置会话状态，保证下次打开为干净初始态
                 _messages.length = 0;
