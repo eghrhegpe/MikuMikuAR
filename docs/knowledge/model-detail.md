@@ -6,6 +6,25 @@ scope:
   - frontend/src/menus/model-detail.ts
 source_files:
   - frontend/src/menus/model-detail.ts
+symbols:
+  - buildModelLevel
+  - buildModelInfoLevel
+  - buildModelToolsLevel
+  - buildModelTagsLevel
+  - buildMorphPreviewLevel
+  - buildPersonalLightLevel
+  - buildBoneHierarchyLevel
+  - buildMotionSlotLevel
+  - buildOpenWithLevel
+invariants:
+  - 详情页复用 buildTransformCard 统一变换交互
+  - 表情 morph 写回经 model-ops 集中管理
+  - 各层级经声明式 Schema 渲染
+tests: []
+use_when:
+  - 模型详情
+  - 模型子菜单
+  - 模型信息/标签/表情/个人灯光
 ---
 
 ## 系统概览

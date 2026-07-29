@@ -13,8 +13,10 @@ symbols:
   - RetargetResult
   - RetargetPlayState
   - getRetargetPlayState
-  - retargetAndPlay
-  - stopRetarget
+  - loadAndRetargetAnimation
+  - playRetargetedAnimation
+  - stopCurrentRetarget
+  - restoreRetargetAnimation
 invariants:
   - 同时只允许一个 retarget 动画活跃（_currentRetarget 单例）
   - retarget 动画以 additive 模式叠加在 VMD 之上，不替换

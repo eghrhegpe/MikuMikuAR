@@ -29,6 +29,7 @@ symbols:
   - buildWindLevel
   - EnvTextureBindingTarget
   - setEnvTextureBindingTarget
+  - clearEnvTextureBindingTarget
   - getEnvMenu
   - reRenderEnvMenu
 invariants:

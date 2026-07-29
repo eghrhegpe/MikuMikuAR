@@ -8,10 +8,7 @@ source_files:
   - frontend/src/menus/model-material.ts
 adr: []
 symbols:
-  - buildMatBatchLevel
-  - buildPerMatLevel
   - buildMatRootLevel
-  - buildMatListLevel
 invariants:
   - Schema 驱动 UI
 tests: []

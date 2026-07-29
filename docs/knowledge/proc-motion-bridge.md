@@ -21,7 +21,9 @@ symbols:
   - activateGazeTracking
   - setGazeLayerActive
   - regenerateProcMotion
+  - stopProcMotion
   - disposeProcMotion
+  - onModelRemoved
   - isProcVmdActive
   - getProcBeatDetector
   - createProcBeatDetector

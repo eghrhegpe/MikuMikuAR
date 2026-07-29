@@ -17,26 +17,21 @@ adr:
   - ADR-071
 symbols:
   - getMotionMenu
-  - reRenderMotionMenu
-  - buildCameraLevel
-  - buildClothLevel
+  - refreshMotionRoot
+  - showMotionPopup
+  - disposeMotionPopup
   - buildGazeLevel
   - buildOverrideLevel
   - buildPoseLevel
   - buildProcMotionLevel
 invariants:
   - Schema 驱动 UI，数据绑定到 motionState
-  - 与程序化动作解耦
+  - 感知层（ADR-071）与程序化动作解耦，独立文件
 tests: []
 use_when:
   - 动作菜单
   - 动作层级
   - 感知面板
-  - 相机动作
-  - 布料动作
-  - 视线面板
-  - 动作覆盖
-  - 姿势面板
   - 程序化动作面板
 ---
 
