@@ -101,3 +101,22 @@ export function guardExternalAction(_label: string): boolean {
     }
     return true;
 }
+
+// ======== 适配器选型共享函数（ADR-176/196 双适配器共用） ========
+
+/** [doc:adr-196/176] 运行时判定是否为 web 入口（短路标记或构建模式）。
+ *  纯函数，无运行时副作用。 */
+export function isWebEntryMode(): boolean {
+    if ((globalThis as { __MMKU_WEB__?: boolean }).__MMKU_WEB__ === true) {
+        return true;
+    }
+    const meta = import.meta as unknown as { env?: { MODE?: string } };
+    return meta.env?.MODE === 'web';
+}
+
+/** [doc:adr-196/176] 读取 globalThis 上声明的适配器身份（'go' | 'browser'）。
+ *  key 参数为全局变量名（如 '__MMKU_BACKEND__' / '__MMKU_AI_BACKEND__'）。 */
+export function readDeclaredAdapter(globalKey: string): 'go' | 'browser' | undefined {
+    const v = (globalThis as Record<string, unknown>)[globalKey];
+    return v === 'go' || v === 'browser' ? v : undefined;
+}
