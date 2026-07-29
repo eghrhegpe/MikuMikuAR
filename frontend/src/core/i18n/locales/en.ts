@@ -1920,6 +1920,7 @@ export const en: Record<string, string> = {
     'ai.errors.noEndpoint':
         'AI endpoint not configured. Please set it in the configuration section below.',
     'ai.errors.apiError': 'API error: {msg}',
+    'ai.errors.aborted': 'Generation stopped',
     'ai.snapshot.refresh': 'Refresh Snapshot',
     'ai.system.role':
         'You are the MikuMikuAR AI Diagnostic Assistant. Your role is to help users diagnose issues with the 3D scene, models, and application.',

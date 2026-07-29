@@ -1894,6 +1894,7 @@ export const ja: Record<string, string> = {
     'ai.errors.noEndpoint':
         'AIエンドポイントが設定されていません。設定セクションで設定してください。',
     'ai.errors.apiError': 'APIエラー：{msg}',
+    'ai.errors.aborted': '生成を停止しました',
     'ai.snapshot.refresh': 'スナップショットを更新',
     'ai.system.role':
         'あなたはMikuMikuAR AI診断アシスタントです。3Dシーン、モデル、アプリケーションの問題診断を支援します。',
