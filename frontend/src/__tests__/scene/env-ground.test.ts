@@ -165,6 +165,24 @@ describe('applyGround 原地更新 — 程序化纹理防覆盖守卫', () => {
         // 清理：applyGround 建立了 mesh + 反射单例引用，须显式 dispose 避免污染后续用例
         disposeGround();
     });
+
+    it('极端组合 groundStyle:solid + proc:metal 下，守卫本身（非数据改值）仍拦截覆盖', () => {
+        clearGroundTexCache();
+        // 模拟「未来有人把 metalStage.groundStyle 改回 solid」的退化场景：
+        // 此时旧式 if(groundStyle!=='texture') 守卫会放行覆盖，唯有新守卫的
+        // groundProceduralTexture==='none' 条件才是真防线。锁死守卫本身而非数据。
+        applyGround(fullEnvState({ groundStyle: 'solid' }));
+        const mat = _envSys.ground.mesh!.material as any;
+        expect(mat?.metallicTexture, '首次应生成程序化三件套').toBeTruthy();
+        const albedoBefore = mat?.albedoTexture ?? mat?.diffuseTexture;
+
+        applyGround(fullEnvState({ groundStyle: 'solid', groundRoughness: 0.9 }));
+        const matAfter = _envSys.ground.mesh!.material as any;
+        const albedoAfter = matAfter?.albedoTexture ?? matAfter?.diffuseTexture;
+        expect(albedoAfter, 'proc≠none 守卫应拦截覆盖，即便 groundStyle=solid').toBe(albedoBefore);
+
+        disposeGround();
+    });
 });
 
 // ──────────────── clearGroundTexCache 幂等 ────────────────

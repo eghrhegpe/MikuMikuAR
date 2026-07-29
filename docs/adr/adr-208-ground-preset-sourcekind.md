@@ -1,9 +1,9 @@
-# ADR-208: 地面预设贴图设计统一 —— sourceKind 判别式 + 程序化纹理防覆盖
+# ADR-208: 地面预设贴图设计统一 —— sourceKind 语义标注（预留）+ 程序化纹理防覆盖
 
 - **状态**: ✅ 已完成
 - **日期**: 2026-07-30
 - **相关**: ADR-114（地面 PBR/反射合并）、ADR-134（无限地面）、ADR-137（EnvState 单一源 Schema）、ADR-173（setEnvState middleware）
-- **源码锚点**: `scene/env/env-ground-presets.ts:GroundPreset.sourceKind`、`scene/env/env-ground.ts:applyGround`（原地更新守卫 ~L1096）、`core/env-state-schema.ts:groundPreset`
+- **源码锚点**: `scene/env/env-ground-presets.ts:GroundPreset.sourceKind`、`scene/env/env-ground.ts:applyGround`（原地更新守卫 ~L1096）
 
 ## 背景
 
@@ -31,7 +31,7 @@
 
 ## 设计决策
 
-### 1. 引入 sourceKind 判别式（预设层单一语义标注）
+### 1. 引入 sourceKind 语义标注（预设层，预留字段，本次未接 UI 消费）
 
 `GroundPreset` 新增 `sourceKind: 'solid' | 'canvas' | 'texture' | 'procedural'`：
 
@@ -43,7 +43,7 @@
 | `procedural` | 运行时程序化 PBR 三件套 | 木纹舞台、金属舞台 |
 
 **边界决策**：`sourceKind` **仅存于预设层**，不进 `buildGroundPresetEnvState` 返回、不进 `GROUND_PRESET_KEYS`、不写 `envState`。
-因此旧存档零迁移、`applyGround` 渲染热路径与 `typeKey` 构造完全不动。它服务于「预设意图可读性 + 未来 UI 分组/图标」，不驱动渲染。
+因此旧存档零迁移、`applyGround` 渲染热路径与 `typeKey` 构造完全不动。它服务于「预设意图可读性」，不驱动渲染，也不参与 `applyGround` 分派。本次**未接入任何 UI 消费方**——chip 高亮已由 `groundPreset` 字段驱动（与 sourceKind 无关）；按贴图来源给 chip 分组/加图标的展示增强为**未来预留增强**，本 ADR 不实现。
 
 ### 2. 清理程序化预设死字段
 
