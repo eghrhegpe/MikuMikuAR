@@ -16,8 +16,12 @@ import { diagState } from './diagnostic-state';
 import type { MenuNode } from './menu-schema';
 
 export async function doPersistSession(): Promise<void> {
-    if (!diagState.sessionLoaded) return;
-    if (diagState.messages.length === 0) return;
+    if (!diagState.sessionLoaded) {
+        return;
+    }
+    if (diagState.messages.length === 0) {
+        return;
+    }
     if (!diagState.activeSessionId) {
         diagState.activeSessionId = newSessionId();
         diagState.sessionCreatedAt = Date.now();
@@ -39,7 +43,7 @@ export function schedulePersistSession(): void {
 }
 
 export async function flushSession(): Promise<void> {
-        diagState.persistTimer.cancel();
+    diagState.persistTimer.cancel();
     await doPersistSession();
 }
 
@@ -52,9 +56,8 @@ export async function loadActiveSession(): Promise<void> {
                 diagState.activeSessionId = session.id;
                 diagState.sessionCreatedAt = session.createdAt;
                 const raw = session as unknown as Record<string, unknown>;
-                diagState.dialogueMode = raw.dialogueMode !== undefined
-                    ? !!raw.dialogueMode
-                    : raw.mode === 'dialogue';
+                diagState.dialogueMode =
+                    raw.dialogueMode !== undefined ? !!raw.dialogueMode : raw.mode === 'dialogue';
                 diagState.messages.length = 0;
                 diagState.messages.push(...session.messages);
             }
@@ -79,7 +82,9 @@ export async function createSession(): Promise<void> {
 }
 
 export async function switchSession(id: string): Promise<void> {
-    if (id === diagState.activeSessionId) return;
+    if (id === diagState.activeSessionId) {
+        return;
+    }
     if (diagState.isStreaming) {
         diagState.abortController?.abort();
         diagState.isStreaming = false;
@@ -87,13 +92,14 @@ export async function switchSession(id: string): Promise<void> {
     }
     await flushSession();
     const session = await loadSession(id);
-    if (!session) return;
+    if (!session) {
+        return;
+    }
     diagState.activeSessionId = session.id;
     diagState.sessionCreatedAt = session.createdAt;
     const raw = session as unknown as Record<string, unknown>;
-    diagState.dialogueMode = raw.dialogueMode !== undefined
-        ? !!raw.dialogueMode
-        : raw.mode === 'dialogue';
+    diagState.dialogueMode =
+        raw.dialogueMode !== undefined ? !!raw.dialogueMode : raw.mode === 'dialogue';
     diagState.messages.length = 0;
     diagState.messages.push(...session.messages);
     await setActiveId(id);
@@ -149,7 +155,9 @@ export async function renderSessionList(container: HTMLElement): Promise<void> {
 
 function createSessionRow(s: ChatSession): HTMLElement {
     const row = document.createElement('div');
-    row.className = 'diag-session-row' + (s.id === diagState.activeSessionId ? ' diag-session-row--active' : '');
+    row.className =
+        'diag-session-row' +
+        (s.id === diagState.activeSessionId ? ' diag-session-row--active' : '');
     row.setAttribute('role', 'button');
     row.setAttribute('tabindex', '0');
     row.setAttribute('aria-label', s.title || t('ai.chat.untitled'));

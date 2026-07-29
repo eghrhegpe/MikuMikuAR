@@ -4,9 +4,14 @@ import { logWarn } from '../core/logger';
 import { DebouncedTimer } from '../core/async';
 import { captureError } from '../core/ai/error-buffer';
 import {
-    loadAiConfig, saveAiConfig, ensureAiConfigLoaded,
-    PROVIDER_PRESETS, validateAiConfig, normalizeEndpoint,
-    type AiConfig, type AiConfigProvider,
+    loadAiConfig,
+    saveAiConfig,
+    ensureAiConfigLoaded,
+    PROVIDER_PRESETS,
+    validateAiConfig,
+    normalizeEndpoint,
+    type AiConfig,
+    type AiConfigProvider,
 } from '../core/ai/config-store';
 import { resolveAi } from '../core/ai';
 import type { AiService, AiCapabilities, AiErrorKind } from '../core/ai/types';
@@ -16,16 +21,26 @@ import { diagState } from './diagnostic-state';
 import type { MenuNode } from './menu-schema';
 
 export function goKeyAllowsProceed(validation: ReturnType<typeof validateAiConfig>): boolean {
-    if (validation.ok) return true;
-    if (diagState.ai?.kind !== 'go') return false;
-    if (!diagState.goKeyConfigured) return false;
+    if (validation.ok) {
+        return true;
+    }
+    if (diagState.ai?.kind !== 'go') {
+        return false;
+    }
+    if (!diagState.goKeyConfigured) {
+        return false;
+    }
     // go 模式 key 不可回读但已配置：允许 missingKey 通过
-    if (validation.kind === 'missingKey') return true;
+    if (validation.kind === 'missingKey') {
+        return true;
+    }
     return false;
 }
 
 async function ensureTestModel(): Promise<void> {
-    if (diagState.localConfig.model.trim()) return;
+    if (diagState.localConfig.model.trim()) {
+        return;
+    }
     if (diagState.fetchedModels.length === 0) {
         await refreshModelList();
     }
@@ -39,15 +54,23 @@ async function ensureTestModel(): Promise<void> {
 }
 
 function inferProvider(endpoint: string): AiConfigProvider {
-    if (!endpoint) return 'custom';
+    if (!endpoint) {
+        return 'custom';
+    }
     let hostname: string;
-    try { hostname = new URL(endpoint).hostname; }
-    catch { return 'custom'; }
+    try {
+        hostname = new URL(endpoint).hostname;
+    } catch {
+        return 'custom';
+    }
     const matched = (Object.keys(PROVIDER_PRESETS) as AiConfigProvider[])
         .filter((p) => p !== 'custom')
         .find((p) => {
-            try { return new URL(PROVIDER_PRESETS[p].endpoint).hostname === hostname; }
-            catch { return false; }
+            try {
+                return new URL(PROVIDER_PRESETS[p].endpoint).hostname === hostname;
+            } catch {
+                return false;
+            }
         });
     return matched ?? 'custom';
 }
@@ -72,12 +95,16 @@ export async function loadInitialConfig(): Promise<void> {
             if (diagState.ai.kind === 'go' && persisted.keyConfigured && !persisted.apiKey) {
                 diagState.goKeyConfigured = true;
             }
-        } catch { /* keep defaults */ }
+        } catch {
+            /* keep defaults */
+        }
     }
 }
 
 export async function refreshCaps(): Promise<void> {
-    if (diagState.refreshingCaps || !diagState.ai) return;
+    if (diagState.refreshingCaps || !diagState.ai) {
+        return;
+    }
     diagState.refreshingCaps = true;
     try {
         await diagState.ai.refreshCapabilities?.();
@@ -100,7 +127,9 @@ function refreshConfigUI(): void {
 }
 
 function scheduleAutoTest(): void {
-    if (!diagState.aiResolved || diagState.testing) return;
+    if (!diagState.aiResolved || diagState.testing) {
+        return;
+    }
     if (!diagState.autoTestTimer) {
         diagState.autoTestTimer = new DebouncedTimer();
     }
@@ -109,10 +138,14 @@ function scheduleAutoTest(): void {
 }
 
 async function runAutoTest(): Promise<void> {
-    if (!diagState.ai || diagState.testing || diagState.autoTesting) return;
+    if (!diagState.ai || diagState.testing || diagState.autoTesting) {
+        return;
+    }
     await ensureTestModel();
     const validation = validateAiConfig(diagState.localConfig);
-    if (!validation.ok && !goKeyAllowsProceed(validation)) return;
+    if (!validation.ok && !goKeyAllowsProceed(validation)) {
+        return;
+    }
     diagState.autoTesting = true;
     setStatusBadge('testing');
     try {
@@ -139,15 +172,21 @@ async function runAutoTest(): Promise<void> {
 }
 
 function updateApiKeyVisibility(): void {
-    if (!diagState.configApiKey) return;
+    if (!diagState.configApiKey) {
+        return;
+    }
     const row = diagState.configApiKey.closest('.diag-field-row') as HTMLElement | null;
-    if (!row) return;
+    if (!row) {
+        return;
+    }
     const needsKey = PROVIDER_PRESETS[diagState.localConfig.provider].needsKey;
     row.style.display = needsKey ? '' : 'none';
 }
 
 function updateCorsWarning(): void {
-    if (!diagState.corsWarningEl) return;
+    if (!diagState.corsWarningEl) {
+        return;
+    }
     diagState.corsWarningEl.style.display =
         diagState.caps && diagState.caps.corsRisk !== 'none' ? '' : 'none';
 }
@@ -186,11 +225,17 @@ export function applyProvider(provider: AiConfigProvider): void {
     diagState.localConfig.provider = provider;
     diagState.localConfig.endpoint = preset.endpoint;
     diagState.localConfig.model = preset.model;
-    if (diagState.configEndpoint) diagState.configEndpoint.value = preset.endpoint;
-    if (diagState.configModel) diagState.configModel.value = preset.model;
+    if (diagState.configEndpoint) {
+        diagState.configEndpoint.value = preset.endpoint;
+    }
+    if (diagState.configModel) {
+        diagState.configModel.value = preset.model;
+    }
     updateProviderButtons(provider);
     updateDocLink(provider);
-    if (diagState.configModelDatalist) diagState.configModelDatalist.innerHTML = '';
+    if (diagState.configModelDatalist) {
+        diagState.configModelDatalist.innerHTML = '';
+    }
     diagState.fetchedModels = [];
     void (async () => {
         await doSaveConfig();
@@ -207,7 +252,9 @@ function updateProviderButtons(active: AiConfigProvider): void {
 }
 
 function updateDocLink(provider: AiConfigProvider): void {
-    if (!diagState.activeDocLink) return;
+    if (!diagState.activeDocLink) {
+        return;
+    }
     const preset = PROVIDER_PRESETS[provider];
     if (preset.docUrl) {
         diagState.activeDocLink.href = preset.docUrl;
@@ -219,31 +266,41 @@ function updateDocLink(provider: AiConfigProvider): void {
 }
 
 export async function refreshModelList(): Promise<void> {
-    if (!diagState.ai) return;
+    if (!diagState.ai) {
+        return;
+    }
     try {
-        const models = await diagState.ai.fetchModels?.() ?? [];
+        const models = (await diagState.ai.fetchModels?.()) ?? [];
         diagState.fetchedModels = models;
         populateModelDatalist(models);
         if (models.length > 0 && diagState.configModel) {
             populateModelChips(models, diagState.configModel);
-            if (diagState.modelListEl) diagState.modelListEl.style.display = '';
+            if (diagState.modelListEl) {
+                diagState.modelListEl.style.display = '';
+            }
         }
         const btn = document.getElementById('diag-model-refresh-btn');
         if (btn) {
-            btn.setAttribute('title',
+            btn.setAttribute(
+                'title',
                 models.length > 0
                     ? t('ai.config.modelsFound', { n: String(models.length) })
-                    : t('ai.config.modelsNone'));
+                    : t('ai.config.modelsNone')
+            );
         }
     } catch (err) {
         logWarn('ai-config', 'fetchModels failed:', err);
         const btn = document.getElementById('diag-model-refresh-btn');
-        if (btn) btn.setAttribute('title', t('ai.config.modelsNone'));
+        if (btn) {
+            btn.setAttribute('title', t('ai.config.modelsNone'));
+        }
     }
 }
 
 function populateModelDatalist(models: string[]): void {
-    if (!diagState.configModelDatalist) return;
+    if (!diagState.configModelDatalist) {
+        return;
+    }
     diagState.configModelDatalist.innerHTML = '';
     for (const m of models) {
         const opt = document.createElement('option');
@@ -253,7 +310,9 @@ function populateModelDatalist(models: string[]): void {
 }
 
 function populateModelChips(models: string[], inputEl: HTMLInputElement): void {
-    if (!diagState.modelListEl) return;
+    if (!diagState.modelListEl) {
+        return;
+    }
     diagState.modelListEl.innerHTML = '';
     for (const m of models) {
         const chip = document.createElement('button');
@@ -264,14 +323,18 @@ function populateModelChips(models: string[], inputEl: HTMLInputElement): void {
             diagState.localConfig.model = m;
             inputEl.value = m;
             persistConfig({ model: m });
-            if (diagState.modelListEl) diagState.modelListEl.style.display = 'none';
+            if (diagState.modelListEl) {
+                diagState.modelListEl.style.display = 'none';
+            }
         });
         diagState.modelListEl.appendChild(chip);
     }
 }
 
 export function updateStatusBadge(): void {
-    if (!diagState.statusBadgeEl || !diagState.statusTextEl) return;
+    if (!diagState.statusBadgeEl || !diagState.statusTextEl) {
+        return;
+    }
     const validation = validateAiConfig(diagState.localConfig);
     if (!validation.ok && !goKeyAllowsProceed(validation) && validation.kind) {
         setStatusBadge(validation.kind);
@@ -294,19 +357,25 @@ export function updateStatusBadge(): void {
 function setStatusBadge(
     state: AiErrorKind | 'connected' | 'disconnected' | 'testing' | 'error' | 'initializing'
 ): void {
-    if (!diagState.statusBadgeEl || !diagState.statusTextEl) return;
+    if (!diagState.statusBadgeEl || !diagState.statusTextEl) {
+        return;
+    }
     diagState.statusBadgeEl.className = 'diag-status-badge diag-status-badge--' + state;
     diagState.statusTextEl.textContent = t(`ai.status.${state}`);
 }
 
 function focusInput(el: HTMLInputElement | null): void {
-    if (!el) return;
+    if (!el) {
+        return;
+    }
     el.closest('.diag-field-row')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     el.focus();
 }
 
 function renderAdvice(kind?: AiErrorKind): void {
-    if (!diagState.adviceEl) return;
+    if (!diagState.adviceEl) {
+        return;
+    }
     if (!kind) {
         diagState.adviceEl.style.display = 'none';
         diagState.adviceEl.innerHTML = '';
@@ -340,19 +409,35 @@ function renderAdvice(kind?: AiErrorKind): void {
         btn.addEventListener('click', () => focusInput(diagState.configModel));
         actions.appendChild(btn);
     }
-    if (actions.children.length > 0) diagState.adviceEl.appendChild(actions);
+    if (actions.children.length > 0) {
+        diagState.adviceEl.appendChild(actions);
+    }
     diagState.adviceEl.style.display = 'block';
 }
 
-async function saveGoConfig(partial: { baseUrl: string; model: string; aiKey: string }): Promise<void> {
+async function saveGoConfig(partial: {
+    baseUrl: string;
+    model: string;
+    aiKey: string;
+}): Promise<void> {
     const b = await import('@bindings/mikumikuar/internal/app/app');
-    await b.AiSetLLMConfig({ baseUrl: partial.baseUrl, model: partial.model, aiKey: partial.aiKey });
+    await b.AiSetLLMConfig({
+        baseUrl: partial.baseUrl,
+        model: partial.model,
+        aiKey: partial.aiKey,
+    });
 }
 
 async function flushAndSave(): Promise<{ ok: boolean; error?: string }> {
-    if (diagState.configEndpoint) diagState.localConfig.endpoint = diagState.configEndpoint.value;
-    if (diagState.configModel) diagState.localConfig.model = diagState.configModel.value;
-    if (diagState.configApiKey) diagState.localConfig.apiKey = diagState.configApiKey.value;
+    if (diagState.configEndpoint) {
+        diagState.localConfig.endpoint = diagState.configEndpoint.value;
+    }
+    if (diagState.configModel) {
+        diagState.localConfig.model = diagState.configModel.value;
+    }
+    if (diagState.configApiKey) {
+        diagState.localConfig.apiKey = diagState.configApiKey.value;
+    }
     try {
         await doSaveConfig();
         void refreshCaps();
@@ -419,7 +504,8 @@ function renderConfigCard(c: HTMLElement): void {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.textContent = t(PROVIDER_PRESETS[provider].labelKey);
-        btn.className = 'preset-chip' + (provider === diagState.localConfig.provider ? ' active' : '');
+        btn.className =
+            'preset-chip' + (provider === diagState.localConfig.provider ? ' active' : '');
         btn.dataset.provider = provider;
         btn.addEventListener('click', () => applyProvider(provider));
         providerRow.appendChild(btn);
@@ -465,15 +551,25 @@ function renderConfigCard(c: HTMLElement): void {
     };
 
     const endpointGroup = createField(
-        t('ai.config.endpoint'), 'text', diagState.localConfig.endpoint,
-        (v) => { diagState.localConfig.endpoint = v; }, 'endpoint'
+        t('ai.config.endpoint'),
+        'text',
+        diagState.localConfig.endpoint,
+        (v) => {
+            diagState.localConfig.endpoint = v;
+        },
+        'endpoint'
     );
     c.appendChild(endpointGroup.row);
     diagState.configEndpoint = endpointGroup.input;
 
     const apiKeyGroup = createField(
-        t('ai.config.apiKey'), 'password', diagState.localConfig.apiKey,
-        (v) => { diagState.localConfig.apiKey = v; }, 'apiKey'
+        t('ai.config.apiKey'),
+        'password',
+        diagState.localConfig.apiKey,
+        (v) => {
+            diagState.localConfig.apiKey = v;
+        },
+        'apiKey'
     );
     c.appendChild(apiKeyGroup.row);
     diagState.configApiKey = apiKeyGroup.input;
@@ -496,7 +592,9 @@ function renderConfigCard(c: HTMLElement): void {
     modelInput.setAttribute('aria-label', t('ai.config.model'));
     modelInput.addEventListener('input', () => {
         diagState.localConfig.model = modelInput.value;
-        if (diagState.modelListEl) diagState.modelListEl.style.display = 'none';
+        if (diagState.modelListEl) {
+            diagState.modelListEl.style.display = 'none';
+        }
     });
     modelInput.addEventListener('blur', () => persistConfig({ model: modelInput.value }));
     modelRow.appendChild(modelInput);
@@ -569,7 +667,9 @@ function renderConfigCard(c: HTMLElement): void {
 
     // Wire up model refresh click (event handler set by entry point via data attributes)
     modelRefresh.addEventListener('click', async () => {
-        if (modelRefresh.dataset.refreshing === 'true' || !diagState.ai) return;
+        if (modelRefresh.dataset.refreshing === 'true' || !diagState.ai) {
+            return;
+        }
         modelRefresh.dataset.refreshing = 'true';
         modelRefresh.disabled = true;
         modelRefresh.textContent = '\u2026';
@@ -582,10 +682,12 @@ function renderConfigCard(c: HTMLElement): void {
                 diagState.localConfig.model = models[0];
                 modelInput.value = models[0];
             }
-            modelRefresh.setAttribute('title',
+            modelRefresh.setAttribute(
+                'title',
                 models.length > 0
                     ? t('ai.config.modelsFound', { n: String(models.length) })
-                    : t('ai.config.modelsNone'));
+                    : t('ai.config.modelsNone')
+            );
             if (models.length > 0) {
                 populateModelChips(models, modelInput);
                 modelListWrap.style.display = '';
@@ -602,15 +704,21 @@ function renderConfigCard(c: HTMLElement): void {
 
     let saving = false;
     saveBtn.addEventListener('click', async () => {
-        if (saving) return;
+        if (saving) {
+            return;
+        }
         saving = true;
         saveBtn.disabled = true;
         statusEl.textContent = t('ai.config.saving');
         statusEl.style.color = 'var(--text-muted)';
         const res = await flushAndSave();
-        statusEl.textContent = res.ok ? t('ai.config.saved') : `${t('ai.config.saveFailed')}: ${res.error ?? ''}`;
+        statusEl.textContent = res.ok
+            ? t('ai.config.saved')
+            : `${t('ai.config.saveFailed')}: ${res.error ?? ''}`;
         statusEl.style.color = res.ok ? 'var(--success)' : 'var(--danger)';
-        if (!res.ok) captureError('ai-config', res.error ?? 'save failed', undefined);
+        if (!res.ok) {
+            captureError('ai-config', res.error ?? 'save failed', undefined);
+        }
         saving = false;
         saveBtn.disabled = false;
     });
@@ -622,7 +730,9 @@ function renderConfigCard(c: HTMLElement): void {
 }
 
 async function testConnection(statusEl: HTMLElement): Promise<void> {
-    if (diagState.testing || diagState.autoTesting) return;
+    if (diagState.testing || diagState.autoTesting) {
+        return;
+    }
     diagState.testing = true;
     if (!diagState.ai) {
         statusEl.textContent = t('ai.config.notResolved');
@@ -654,8 +764,9 @@ async function testConnection(statusEl: HTMLElement): Promise<void> {
     statusEl.style.color = 'var(--text-muted)';
     setStatusBadge('testing');
     diagState.lastConnectionOk = null;
-    const isLocalOllama = /localhost|127\.0\.0\.1/i.test(diagState.localConfig.endpoint)
-        && diagState.localConfig.provider === 'ollama';
+    const isLocalOllama =
+        /localhost|127\.0\.0\.1/i.test(diagState.localConfig.endpoint) &&
+        diagState.localConfig.provider === 'ollama';
     try {
         const result = await diagState.ai.testConnection();
         if (result.ok) {
@@ -678,9 +789,7 @@ async function testConnection(statusEl: HTMLElement): Promise<void> {
         }
     } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        const display = isLocalOllama
-            ? t('ai.errorAdvice.ollamaNotInstalled') + ' ' + msg
-            : msg;
+        const display = isLocalOllama ? t('ai.errorAdvice.ollamaNotInstalled') + ' ' + msg : msg;
         statusEl.textContent = display;
         statusEl.style.color = 'var(--danger)';
         captureError('ai-connection', msg, err);

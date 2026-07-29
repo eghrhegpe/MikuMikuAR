@@ -605,9 +605,13 @@ async function _initMotionSubsystems(scene: Scene, modelManager: ModelManager): 
     const { solveIkNative, getPhysicsImpl } = await import('@/core/mmd-adapter');
     setWasmIkResolver((modelId: string, ikSolverIndex: number, usePhysics: boolean) => {
         const inst = modelRegistry.get(modelId);
-        if (!inst?.mmdModel) return;
+        if (!inst?.mmdModel) {
+            return;
+        }
         const impl = getPhysicsImpl(mmdRuntime);
-        if (!impl) return;
+        if (!impl) {
+            return;
+        }
         solveIkNative(impl.wasmInstance, inst.mmdModel, ikSolverIndex, usePhysics);
     });
 

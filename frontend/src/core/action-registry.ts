@@ -37,7 +37,9 @@ export interface ActionDef {
     params: ParamDef[];
     /** 执行函数。注意：destructive 动作的确认 UI 由调用方自行处理。
      *  可返回可选数据对象（{data?: unknown}），供只读工具传递结构化结果。 */
-    execute: (params: Record<string, unknown>) => void | Promise<void> | { data?: unknown } | Promise<{ data?: unknown }>;
+    execute: (
+        params: Record<string, unknown>
+    ) => void | Promise<void> | { data?: unknown } | Promise<{ data?: unknown }>;
     /** 是否为破坏性操作（清除/删除等），由调用方决定是否 showConfirm */
     destructive?: boolean;
     /** 只读操作（读取状态/日志/快照），自动执行跳过 pending 确认队列（ADR-205） */

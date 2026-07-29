@@ -162,7 +162,14 @@ export function statusBarFactory() {
 export function uiHelpersFactory(capturedRows: any[]) {
     return {
         slideRow: vi.fn(
-            (_card: any, icon: string, label: string, _isFolder: boolean, _onClick: any, sublabel?: string) => {
+            (
+                _card: any,
+                icon: string,
+                label: string,
+                _isFolder: boolean,
+                _onClick: any,
+                sublabel?: string
+            ) => {
                 capturedRows.push({ icon, label, isFolder: _isFolder, sublabel });
             }
         ),

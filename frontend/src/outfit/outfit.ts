@@ -39,7 +39,9 @@ export function setSceneRef(scene: Scene): void {
 }
 
 async function _getScene(): Promise<Scene> {
-    if (_sceneRef) return _sceneRef;
+    if (_sceneRef) {
+        return _sceneRef;
+    }
     if (!_sceneLoading) {
         _sceneLoading = (async () => {
             const mod = await import('../scene/scene');

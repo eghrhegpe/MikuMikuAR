@@ -1603,8 +1603,7 @@ export const zhTW: Record<string, string> = {
     'settings.paths.clearThumbConfirm': '確定要清除所有縮圖快取嗎？下次載入模型時將自動重新生成。',
     'settings.paths.clearAllConfirm':
         '確定要清除全部快取嗎？包括解壓快取、縮圖。下次載入模型時將自動重新生成，不影響原始素材。',
-    'settings.paths.clearExtractConfirm':
-        '確定要清理解壓快取嗎？下次載入模型時將自動重新生成。',
+    'settings.paths.clearExtractConfirm': '確定要清理解壓快取嗎？下次載入模型時將自動重新生成。',
 
     // shortcuts.* (ADR-059 Phase 3)
     'shortcuts.label.models': '模型庫',

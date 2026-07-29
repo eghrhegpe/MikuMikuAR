@@ -247,7 +247,9 @@ function _friendlyError(err: unknown): string {
     const msg = err instanceof Error ? err.message : String(err);
     const isTypeError = err instanceof TypeError;
     const isNetwork = isTypeError || /Failed to fetch|NetworkError/i.test(msg);
-    if (!isNetwork) return msg;
+    if (!isNetwork) {
+        return msg;
+    }
 
     // CORS 关键词判定
     if (/CORS|Access-Control/i.test(msg)) {

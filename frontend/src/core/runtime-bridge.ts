@@ -183,14 +183,16 @@ export async function initRuntimeBridge(): Promise<void> {
     const isWails = bridge instanceof WailsRuntimeBridge;
     // 诊断：确认桌面端是否走到了真实 Wails 桥（否则 events 全 no-op，AI 流式收不到事件）。
     // 仅用 console 直连，避免 logger 依赖尚未就绪。
-    // eslint-disable-next-line no-console
+
     console.info(
         `[runtime-bridge] initRuntimeBridge: isWebPlatform=${isWebPlatform()} bridge=${isWails ? 'Wails' : 'Web'} window.wails=${typeof (window as { wails?: unknown }).wails}`
     );
     if (isWails) {
         await bridge.init();
-        // eslint-disable-next-line no-console
-        console.info('[runtime-bridge] WailsRuntimeBridge.init() 完成，events 已绑定真实 @wailsio/runtime');
+
+        console.info(
+            '[runtime-bridge] WailsRuntimeBridge.init() 完成，events 已绑定真实 @wailsio/runtime'
+        );
     }
 }
 

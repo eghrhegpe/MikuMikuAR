@@ -1767,8 +1767,7 @@ export const zhCN: Record<string, string> = {
         '确定要清除所有缩略图缓存吗？下次加载模型时将自动重新生成。',
     'settings.paths.clearAllConfirm':
         '确定要清除全部缓存吗？包括解压缓存、缩略图。下次加载模型时将自动重新生成，不影响原始素材。',
-    'settings.paths.clearExtractConfirm':
-        '确定要清理解压缓存吗？下次加载模型时将自动重新生成。',
+    'settings.paths.clearExtractConfirm': '确定要清理解压缓存吗？下次加载模型时将自动重新生成。',
 
     // shortcuts.* (ADR-059 Phase 3 — 快捷键注册表标签/分组/UI 文案)
     'shortcuts.label.models': '模型库',
@@ -1998,7 +1997,8 @@ export const zhCN: Record<string, string> = {
         '在下方输入框用自然语言告诉我你想调整什么，例如“把灯光调暗一点”或“切换到夜晚环境”。',
     'ai.control.modelHint':
         '💡 控制模式需模型支持函数调用（function-calling）。建议用 GPT-4o-mini / DeepSeek / Qwen2.5+ 等；本地小模型可能无法解析指令。',
-    'ai.control.toolSummary': 'AI 可操作 {count} 个场景工具（灯光/相机/动作/环境/模型等），直接描述你的需求即可。',
+    'ai.control.toolSummary':
+        'AI 可操作 {count} 个场景工具（灯光/相机/动作/环境/模型等），直接描述你的需求即可。',
     'ai.control.resultSuccess': '✅ 已执行：{message}',
     'ai.control.resultFailed': '❌ 执行失败：{message}',
     'ai.control.undo': '撤销',
@@ -2009,7 +2009,8 @@ export const zhCN: Record<string, string> = {
     'ai.chat.clear': '清空',
     'ai.chat.clearConfirm': '清除聊天记录？',
     'ai.chat.pendingBlocked': '请先确认或取消待处理操作。',
-    'ai.errorAdvice.ollamaNotInstalled': '未检测到本地 Ollama — 请从 https://ollama.com 下载，或配置远程 API 服务商。',
+    'ai.errorAdvice.ollamaNotInstalled':
+        '未检测到本地 Ollama — 请从 https://ollama.com 下载，或配置远程 API 服务商。',
     'ai.errors.resolveFailed': 'AI 服务初始化失败，请查看控制台获取详情。',
 
     // 服务商预设与状态反馈

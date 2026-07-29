@@ -20,22 +20,43 @@ import type { MenuNode } from './menu-schema';
 import type { SettingsMenuHandle } from './settings-shared';
 import { diagState } from './diagnostic-state';
 import {
-    loadActiveSession, schedulePersistSession,
-    flushSession, renderSessionList, fmtTime, buildSessionsSchema,
+    loadActiveSession,
+    schedulePersistSession,
+    flushSession,
+    renderSessionList,
+    fmtTime,
+    buildSessionsSchema,
 } from './diagnostic-session';
 import {
-    renderChat, showPendingBubble, renderStreamingChunk,
-    finalizeStreamRow, finalizeStream, pruneHistory, buildSystemMessage,
-    updateSpeakToggle, updateSendButton, addAssistantMessage, buildChatSchema,
+    renderChat,
+    showPendingBubble,
+    renderStreamingChunk,
+    finalizeStreamRow,
+    finalizeStream,
+    pruneHistory,
+    buildSystemMessage,
+    updateSpeakToggle,
+    updateSendButton,
+    addAssistantMessage,
+    buildChatSchema,
 } from './diagnostic-chat';
 import {
-    renderControlHint, renderPendingAction,
-    handleControlFallback, applyPendingAction,
-    cancelPendingAction, advancePendingQueue, finalizePendingBatch,
+    renderControlHint,
+    renderPendingAction,
+    handleControlFallback,
+    applyPendingAction,
+    cancelPendingAction,
+    advancePendingQueue,
+    finalizePendingBatch,
 } from './diagnostic-control';
 import {
-    loadInitialConfig, refreshCaps, persistConfig, buildConfigSchema,
-    refreshModelList, updateStatusBadge, goKeyAllowsProceed,
+    loadInitialConfig,
+    refreshCaps,
+    persistConfig,
+    buildConfigSchema,
+    refreshModelList,
+    updateStatusBadge,
+    goKeyAllowsProceed,
 } from './diagnostic-config';
 
 // ======== 生命周期 ========
@@ -59,13 +80,17 @@ resolveAi()
 // ======== Callback 注册 ========
 diagState.callbacks.renderChat = renderChat;
 diagState.callbacks.refreshSessionList = () => {
-    if (diagState.sessionListEl) void renderSessionList(diagState.sessionListEl);
+    if (diagState.sessionListEl) {
+        void renderSessionList(diagState.sessionListEl);
+    }
 };
 diagState.callbacks.renderControlHint = renderControlHint;
 diagState.callbacks.ensureActionsRegistered = () => void ensureActionsRegistered();
 diagState.callbacks.updateControlsEnabled = () => {
     const testBtn = document.getElementById('diag-test-btn') as HTMLButtonElement | null;
-    if (testBtn) testBtn.disabled = !diagState.aiResolved;
+    if (testBtn) {
+        testBtn.disabled = !diagState.aiResolved;
+    }
     updateSendButton();
 };
 diagState.callbacks.updateSendButton = updateSendButton;
@@ -73,14 +98,19 @@ diagState.callbacks.continueStream = () => void runStream({ allowTools: false })
 
 // ======== 核心协调函数 ========
 async function runStream(opts?: { allowTools?: boolean }): Promise<void> {
-    if (diagState.isStreaming || !diagState.ai) return;
+    if (diagState.isStreaming || !diagState.ai) {
+        return;
+    }
     await ensureActionsRegistered();
     const allowTools = opts?.allowTools ?? !diagState.dialogueMode;
     diagState.isStreaming = true;
     updateSendButton();
     diagState.abortController = new AbortController();
     showPendingBubble();
-    logInfo('ai-stream', `dialogueMode=${diagState.dialogueMode} allowTools=${allowTools} msgs=${diagState.messages.length}`);
+    logInfo(
+        'ai-stream',
+        `dialogueMode=${diagState.dialogueMode} allowTools=${allowTools} msgs=${diagState.messages.length}`
+    );
     const systemMessage = buildSystemMessage();
     const chatMessages: ChatMessage[] = pruneHistory([systemMessage, ...diagState.messages]);
     let fullResponse = '';
@@ -122,7 +152,11 @@ async function runStream(opts?: { allowTools?: boolean }): Promise<void> {
         if (pendingToolCalls.length > 0) {
             const parsed = pendingToolCalls.map((tc) => {
                 let params: Record<string, unknown> = {};
-                try { params = JSON.parse(tc.args); } catch { /* ignore */ }
+                try {
+                    params = JSON.parse(tc.args);
+                } catch {
+                    /* ignore */
+                }
                 return { actionId: tc.name, params, toolCallId: tc.id };
             });
             const writable: typeof parsed = [];
@@ -172,7 +206,10 @@ async function runStream(opts?: { allowTools?: boolean }): Promise<void> {
             return;
         }
     } catch (err) {
-        if (diagState.abortController?.signal.aborted || (err instanceof Error && err.name === 'AbortError')) {
+        if (
+            diagState.abortController?.signal.aborted ||
+            (err instanceof Error && err.name === 'AbortError')
+        ) {
             abortedByUser = true;
             interruptMessage = t('ai.errors.aborted');
         } else {
@@ -184,19 +221,28 @@ async function runStream(opts?: { allowTools?: boolean }): Promise<void> {
         }
     } finally {
         if (diagState.isStreaming) {
-            const handledAsFallback = !streamErrorSeen && !abortedByUser && !diagState.dialogueMode
-                && fullResponse && !diagState.pendingAction
-                && handleControlFallback(fullResponse, (queued) => {
+            const handledAsFallback =
+                !streamErrorSeen &&
+                !abortedByUser &&
+                !diagState.dialogueMode &&
+                fullResponse &&
+                !diagState.pendingAction &&
+                handleControlFallback(fullResponse, (queued) => {
                     diagState.isStreaming = false;
                     diagState.abortController = null;
                     updateSendButton();
                     renderChat();
-                    if (queued) renderPendingAction();
-                    else renderControlHint();
+                    if (queued) {
+                        renderPendingAction();
+                    } else {
+                        renderControlHint();
+                    }
                 });
             if (!handledAsFallback) {
                 if (streamErrorSeen || abortedByUser) {
-                    if (fullResponse) diagState.messages.push({ role: 'assistant', content: fullResponse });
+                    if (fullResponse) {
+                        diagState.messages.push({ role: 'assistant', content: fullResponse });
+                    }
                     diagState.isStreaming = false;
                     diagState.abortController = null;
                     finalizeStreamRow(fullResponse);
@@ -206,7 +252,9 @@ async function runStream(opts?: { allowTools?: boolean }): Promise<void> {
                     }
                     updateSendButton();
                 } else {
-                    finalizeStream(fullResponse, () => { updateSendButton(); });
+                    finalizeStream(fullResponse, () => {
+                        updateSendButton();
+                    });
                 }
             }
         }
@@ -215,14 +263,20 @@ async function runStream(opts?: { allowTools?: boolean }): Promise<void> {
 
 async function sendMessage(): Promise<void> {
     if (diagState.isStreaming || diagState.pendingAction || !diagState.inputEl || !diagState.ai) {
-        if (diagState.pendingAction) showErrorToast(t('ai.chat.pendingBlocked'));
+        if (diagState.pendingAction) {
+            showErrorToast(t('ai.chat.pendingBlocked'));
+        }
         return;
     }
     const text = diagState.inputEl.value.trim();
-    if (!text) return;
+    if (!text) {
+        return;
+    }
     const validation = validateAiConfig(diagState.localConfig);
     if (!validation.ok && !goKeyAllowsProceed(validation)) {
-        if (validation.kind) updateStatusBadge();
+        if (validation.kind) {
+            updateStatusBadge();
+        }
         addAssistantMessage(t('ai.errorAdvice.' + (validation.kind ?? 'unknown')));
         renderChat();
         return;
@@ -241,7 +295,9 @@ function stopStreaming(): void {
 
 async function clearChat(): Promise<void> {
     const ok = await showConfirm(t('ai.chat.clearConfirm'));
-    if (!ok) return;
+    if (!ok) {
+        return;
+    }
     const id = diagState.activeSessionId;
     diagState.messages.length = 0;
     diagState.activeSessionId = null;
@@ -254,7 +310,9 @@ async function clearChat(): Promise<void> {
 }
 
 async function ensureActionsRegistered(): Promise<void> {
-    if (diagState.controlRegistered) return;
+    if (diagState.controlRegistered) {
+        return;
+    }
     try {
         const m = await import('../core/ai/action-registry-defs');
         m.registerAllActions();
@@ -268,9 +326,15 @@ async function ensureActionsRegistered(): Promise<void> {
 function disposeDiagnosticPanel(): void {
     cancelSpeech();
     diagState.abortController?.abort();
-    if (diagState.configEndpoint) diagState.localConfig.endpoint = diagState.configEndpoint.value;
-    if (diagState.configModel) diagState.localConfig.model = diagState.configModel.value;
-    if (diagState.configApiKey) diagState.localConfig.apiKey = diagState.configApiKey.value;
+    if (diagState.configEndpoint) {
+        diagState.localConfig.endpoint = diagState.configEndpoint.value;
+    }
+    if (diagState.configModel) {
+        diagState.localConfig.model = diagState.configModel.value;
+    }
+    if (diagState.configApiKey) {
+        diagState.localConfig.apiKey = diagState.configApiKey.value;
+    }
     persistConfig(diagState.localConfig);
     void flushSession();
     diagState.isStreaming = false;
@@ -361,7 +425,9 @@ export function buildDiagnosticSchema(opts?: { withSessions?: boolean }): MenuNo
                 c.appendChild(container);
 
                 function switchTab(tabId: PanelTab) {
-                    if (activeTab === tabId) return;
+                    if (activeTab === tabId) {
+                        return;
+                    }
                     activeTab = tabId;
                     for (let i = 0; i < tabs.length; i++) {
                         const isActive = tabs[i].id === tabId;

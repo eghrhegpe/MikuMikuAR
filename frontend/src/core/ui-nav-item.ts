@@ -88,9 +88,13 @@ export function navGroupSelector(row: HTMLElement): string | null {
  */
 export function navGroupMove(row: HTMLElement, dir: -1 | 1): boolean {
     const group = row.getAttribute(NAV_GROUP_ATTR);
-    if (!group) return false;
+    if (!group) {
+        return false;
+    }
     const items = Array.from(row.querySelectorAll<HTMLElement>(group));
-    if (items.length === 0) return false;
+    if (items.length === 0) {
+        return false;
+    }
     const cur = items.findIndex((el) => el === document.activeElement);
     const from = cur < 0 ? 0 : cur;
     const next = (from + dir + items.length) % items.length;

@@ -155,11 +155,17 @@ export class SlideMenu {
             // ↑↓(vertical)：仅跳 tablist（控件行也要能上下遍历）；
             // →←/Enter(horizontal)：行声明 data-nav-adjust=horizontal 时让给控件自身调值。
             perKeySkip: (target, kind) => {
-                if (!target) return false;
-                if (target.closest('[role="tablist"]')) return true;
+                if (!target) {
+                    return false;
+                }
+                if (target.closest('[role="tablist"]')) {
+                    return true;
+                }
                 if (kind === 'horizontal') {
                     const row = target.closest<HTMLElement>(NAV_ITEM_SELECTOR);
-                    if (row && navHasHorizontalAdjust(row)) return true;
+                    if (row && navHasHorizontalAdjust(row)) {
+                        return true;
+                    }
                     // 契约之外的原生可输入控件（开关 checkbox 除外——需 →/Enter 切换）
                     const native = target.closest(
                         'button, input, textarea, select, [contenteditable]'
@@ -188,11 +194,17 @@ export class SlideMenu {
         // 组内导航：停在组行（data-nav-group，如 chips/type-row）时，←→ 在组内子项间移动。
         // createKeyboardNav 对组行的 ←→ 经 perKeySkip 让位（不 preventDefault），事件传到此处理。
         const groupNavHandler = (e: KeyboardEvent) => {
-            if (this.transitioning) return;
-            if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+            if (this.transitioning) {
+                return;
+            }
+            if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') {
+                return;
+            }
             const target = e.target instanceof HTMLElement ? e.target : null;
             const row = target?.closest<HTMLElement>(NAV_ITEM_SELECTOR);
-            if (!row || !navGroupSelector(row)) return;
+            if (!row || !navGroupSelector(row)) {
+                return;
+            }
             const dir = e.key === 'ArrowRight' ? 1 : -1;
             if (navGroupMove(row, dir)) {
                 e.preventDefault();

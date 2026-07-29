@@ -161,7 +161,9 @@ export function slideRow(
         }
 
         row.addEventListener('click', () => {
-            if (window.getSelection()?.toString()) return;
+            if (window.getSelection()?.toString()) {
+                return;
+            }
             onClick();
         });
     } else {
@@ -244,7 +246,9 @@ export function slideRow(
         }
 
         row.addEventListener('click', () => {
-            if (window.getSelection()?.toString()) return;
+            if (window.getSelection()?.toString()) {
+                return;
+            }
             onClick();
         });
     }

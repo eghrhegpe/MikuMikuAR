@@ -49,7 +49,10 @@ describe('renderMarkdownInto', () => {
     });
 
     it('XSS 安全：script/标签作为纯文本，不生成脚本节点', () => {
-        renderMarkdownInto(container, '正常 <script>alert(1)</script> 文本 <img src=x onerror=alert(1)>');
+        renderMarkdownInto(
+            container,
+            '正常 <script>alert(1)</script> 文本 <img src=x onerror=alert(1)>'
+        );
         // 纯 DOM 构建 + textContent：不会解析出 script/img 元素
         expect(container.querySelector('script')).toBeNull();
         expect(container.querySelector('img')).toBeNull();

@@ -51,7 +51,9 @@ export function registerMotionActions(): void {
         params: [],
         destructive: true,
         execute: async () => {
-            if (!(await showConfirm(t('motion.clearAllConfirm')))) return;
+            if (!(await showConfirm(t('motion.clearAllConfirm')))) {
+                return;
+            }
             const snap = pushUndoSnapshot();
             clearAllSceneMotions();
             if (isPlaying && mmdRuntime) {

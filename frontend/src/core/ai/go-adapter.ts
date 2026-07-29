@@ -20,13 +20,11 @@ import type { ChatRequest as LLMChatRequest } from '@bindings/mikumikuar/interna
 // 加载，直接依赖 @wailsio/runtime 安全且可靠。
 const _getEvents = makeLazyLoader(async () => (await import('@wailsio/runtime')).Events);
 
-
 const _getB = makeLazyLoader(async () => import('@bindings/mikumikuar/internal/app/app'));
 
 // [doc:adr-199] 首字节看门狗：streamChat 发起后若长时间无任何事件（chunk/done/error），
 // 主动注入一条 error 让流收尾，避免前端按钮永久卡在 streaming、用户干等黑盒。
 const _FIRST_EVENT_TIMEOUT_MS = 30000;
-
 
 class GoAiAdapter implements AiService {
     readonly kind = 'go' as const;
@@ -221,7 +219,8 @@ class GoAiAdapter implements AiService {
             resolveWaiter?.();
         });
         const unsubToolCall = evt.On('ai:tool_call', (ev) => {
-            const d = ev.data as { toolName?: string; toolArgs?: string; toolId?: string } | undefined;
+            const d = ev.data as
+                { toolName?: string; toolArgs?: string; toolId?: string } | undefined;
             if (d?.toolName) {
                 markFirstEvent('tool_call');
                 queue.push({
@@ -257,7 +256,6 @@ class GoAiAdapter implements AiService {
             resolveWaiter?.();
         };
         req.signal?.addEventListener('abort', onAbort);
-
 
         try {
             const tools = req.tools?.length
@@ -306,7 +304,10 @@ class GoAiAdapter implements AiService {
             );
             try {
                 await b.AiStreamChat(llmReq);
-                logInfo('ai-stream', `AiStreamChat 已提交，等待后端事件… 耗时=${Date.now() - t0}ms`);
+                logInfo(
+                    'ai-stream',
+                    `AiStreamChat 已提交，等待后端事件… 耗时=${Date.now() - t0}ms`
+                );
             } catch (submitErr) {
                 // binding 调用本身失败（IPC/序列化）：直接注入 error 收尾，不干等看门狗。
                 const msg = submitErr instanceof Error ? submitErr.message : String(submitErr);

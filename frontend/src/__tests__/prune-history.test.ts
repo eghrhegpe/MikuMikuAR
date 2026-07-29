@@ -10,7 +10,9 @@ function msg(role: ChatMessage['role'], content?: string, toolId?: string): Chat
         return {
             role: 'assistant',
             content: content ?? null,
-            tool_calls: [{ id: toolId, type: 'function', function: { name: 'test', arguments: '{}' } }],
+            tool_calls: [
+                { id: toolId, type: 'function', function: { name: 'test', arguments: '{}' } },
+            ],
         } as ChatMessage;
     }
     return { role, content: content ?? null } as ChatMessage;
@@ -34,7 +36,10 @@ describe('pruneHistory', () => {
     });
 
     it('保留 system 消息', () => {
-        const msgs = [msg('system', 'you are'), ...Array.from({ length: 25 }, (_, i) => msg('user', `msg${i}`))];
+        const msgs = [
+            msg('system', 'you are'),
+            ...Array.from({ length: 25 }, (_, i) => msg('user', `msg${i}`)),
+        ];
         const pruned = pruneHistory(msgs, 10);
         expect(pruned[0].role).toBe('system');
         expect(pruned[0].content).toBe('you are');
