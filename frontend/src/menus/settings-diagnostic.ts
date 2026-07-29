@@ -41,6 +41,7 @@ import { showErrorToast } from '../core/toast';
 import { logWarn, logInfo } from '../core/logger';
 import { DebouncedTimer } from '../core/async';
 import { goKeyAllowsProceed } from '../core/ai/go-key-allows-proceed';
+import { renderMarkdownInto } from '../core/ai/markdown';
 
 // ======== 模块级状态 ========
 
@@ -910,7 +911,8 @@ function _finalizeStreamRow(fullText: string): void {
                 '.diag-chat-content'
             ) as HTMLElement | null;
             if (contentDiv) {
-                contentDiv.textContent = fullText;
+                // 定格时把流式纯文本重渲染为 Markdown（加粗/列表/标题等）。
+                renderMarkdownInto(contentDiv, fullText);
             }
             _chatContainer.scrollTop = _chatContainer.scrollHeight;
         } else {
@@ -1423,9 +1425,11 @@ async function _advancePendingQueue(): Promise<void> {
     if (_pendingQueue.length > 0) {
         _pendingAction = _pendingQueue.shift() ?? null;
         _renderPendingAction();
+        _updateSendButton();
         return;
     }
     _pendingAction = null;
+    _updateSendButton();
     await _finalizePendingBatch();
 }
 
