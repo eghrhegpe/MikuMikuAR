@@ -609,7 +609,7 @@ export function createClouds(state: EnvState): void {
             disposeClouds();
             // 走完整重建路径
         } else {
-            const halfThick = (state.cloudThickness ?? 40) / 2;
+            const halfThick = (state.cloudThickness ?? 30) / 2;
             _volCloudMat.setFloat('cloudDensity', state.cloudCover * CLOUD_DENSITY_SCALE);
             _volCloudMat.setVector3(
                 'windDirection',
@@ -718,7 +718,7 @@ export function createClouds(state: EnvState): void {
         mat.setTexture('blueNoiseTex', blueNoise);
     }
 
-    const halfThick = (state.cloudThickness ?? 40) / 2;
+    const halfThick = (state.cloudThickness ?? 30) / 2;
     mat.setFloat('cloudDensity', state.cloudCover * CLOUD_DENSITY_SCALE);
     mat.setFloat('cloudBaseY', state.cloudHeight - halfThick);
     mat.setFloat('cloudTopY', state.cloudHeight + halfThick);

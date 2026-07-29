@@ -151,7 +151,6 @@ describe('binding contract: interface shapes', () => {
             waterWaveHeight: expect.any(Number),
             bigWaveHeight: expect.any(Number),
             smallWaveHeight: expect.any(Number),
-            waterSize: expect.any(Number),
             waterAnimSpeed: expect.any(Number),
             fresnelBias: expect.any(Number),
             fresnelPower: expect.any(Number),

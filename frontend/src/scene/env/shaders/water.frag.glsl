@@ -198,6 +198,19 @@ void main() {
     vec3 reflected = reflection * foamDamp;
     reflected = mix(reflected, uSkyBlendColor * (0.5 + lightIntensity), uSkyColorBlend);
 
+    // ======== 波高驱动水色调制 + 焦散：在反射混合之前应用 ========
+    // 这样图案 baked 进 base 水色，Fresnel 高时反射虽主导但 base 仍带图案
+    // 不受相机朝向影响（解决转180°波纹消失的问题）
+    float waveDisp = vHeight - waterLevel;
+    float waveNorm = clamp(waveDisp / max(waveHeight, 0.1), -1.0, 1.0);
+    float waveBright = 1.0 + waveNorm * (0.1 + 0.15 * waveHeight);
+    base *= waveBright;
+
+    vec2 causticUV = vWorldPos.xz * uCausticScale + vec2(time * uCausticSpeed * causticScrollX, time * uCausticSpeed * causticScrollY);
+    float caustic = texture2D(uCausticTex, causticUV).r;
+    float causticMod = 1.0 + (caustic - 0.5) * 2.0 * uCausticIntensity;
+    base *= causticMod;
+
     // 反射受泡沫衰减：泡沫区反射减弱；整体乘曝光因子联动日照明暗
     vec3 color = mix(base, reflected, fresnel) * lightExposure;
 
@@ -240,21 +253,6 @@ void main() {
     normal = normalize(normal + rippleN);
     float rippleGlint = max(0.0, rippleSum * rippleGlintStrength);
     color += vec3(rippleGlint);
-
-    vec2 causticUV = vWorldPos.xz * uCausticScale + vec2(time * uCausticSpeed * causticScrollX, time * uCausticSpeed * causticScrollY);
-    float caustic = texture2D(uCausticTex, causticUV).r;
-    // 焦散乘法调制：从灰度纹理提取亮度，映射到 [1-强度, 1+强度]
-    // 亮区提亮水面、暗区压暗水面，图案不依赖地面底色
-    float causticMod = 1.0 + (caustic - 0.5) * 2.0 * uCausticIntensity;
-    color *= causticMod;
-
-    // ======== 波高驱动水色调制：波纹不依赖地面底色 ========
-    // 波谷变暗、波峰微亮，让 Gerstner 波纹理在水色自身中可见
-    // 效果强度随 waveHeight 缩放：平静(0.15)几乎无感，风暴(3.0)显著
-    float waveDisp = vHeight - waterLevel;
-    float waveNorm = clamp(waveDisp / max(waveHeight, 0.1), -1.0, 1.0);
-    float waveBright = 1.0 + waveNorm * (0.1 + 0.15 * waveHeight);
-    color *= waveBright;
 
     float depth = length(vWorldPos - cameraPosition);
     float waterFog = smoothstep(waterFogStart, waterFogEnd, depth);
