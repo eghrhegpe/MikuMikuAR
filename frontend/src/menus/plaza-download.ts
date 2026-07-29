@@ -8,6 +8,7 @@ import { showErrorToast } from '../core/toast';
 import { feedbackError, feedbackStatus } from '../core/feedback';
 import { refreshLibrary } from './library';
 import { registerShortcuts } from '../core/shortcut-registry';
+import { swallowError } from '../core/utils';
 import { safeCallAsync } from '../core/safe-call';
 import {
     PlazaGoBack,
