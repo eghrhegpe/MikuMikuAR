@@ -121,7 +121,8 @@ function _goKeyAllowsProceed(validation: ReturnType<typeof validateAiConfig>): b
 }
 
 /** 测试前确保 model 非空：若 model 为空且有已发现模型，自动取第一个并持久化。
- *  若还未获取过模型，主动触发一次 fetchModels。避免因 model 未填导致测试 404。 */
+ *  若还未获取过模型，主动触发一次 fetchModels。await 落盘后才返回，
+ *  保证 Go 端已收到更新后再执行测试。 */
 async function _ensureTestModel(): Promise<void> {
     if (_localConfig.model.trim()) {
         return;
@@ -135,7 +136,8 @@ async function _ensureTestModel(): Promise<void> {
         if (_configModel) {
             _configModel.value = _fetchedModels[0];
         }
-        void _persistConfig({ model: _localConfig.model });
+        // 必须 await，确保 Go 端配置已更新（含 model）后再进行连接测试
+        await _doSaveConfig();
     }
 }
 
@@ -277,6 +279,7 @@ async function _runAutoTest(): Promise<void> {
 
     _autoTesting = true;
     _setStatusBadge('testing');
+    console.log('[ai-test] 连接测试配置:', { endpoint: _localConfig.endpoint, model: _localConfig.model });
     try {
         const result = await _ai.testConnection();
         if (result.ok) {
@@ -1601,11 +1604,11 @@ async function _testConnection(statusEl: HTMLElement): Promise<void> {
         return;
     }
 
-    // 测试前先 flush 保存输入框当前值，避免测的是 blur 未触发的旧配置（尤其是刚填的 key）
-    await _flushAndSave();
-
-    // 若 model 未填但已有发现模型列表，自动取第一个
+    // 测试前先确保 model 非空（若已获取过模型列表，自动填入第一个）
     await _ensureTestModel();
+
+    // flush 保存输入框当前值（含 _ensureTestModel 填入的 model）到 Go 后端
+    await _flushAndSave();
 
     const validation = validateAiConfig(_localConfig);
     if (!validation.ok && !_goKeyAllowsProceed(validation)) {
@@ -1628,6 +1631,7 @@ async function _testConnection(statusEl: HTMLElement): Promise<void> {
     statusEl.style.color = 'var(--text-muted)';
     _setStatusBadge('testing');
     _lastConnectionOk = null;
+    console.log('[ai-test] 手动测试配置:', { endpoint: _localConfig.endpoint, model: _localConfig.model });
 
     try {
         const result = await _ai.testConnection();
