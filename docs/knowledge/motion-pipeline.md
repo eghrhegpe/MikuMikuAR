@@ -9,6 +9,23 @@ source_files:
 adr:
   - ADR-147
   - ADR-116
+symbols:
+  - MotionPipeline
+  - getMotionPipeline
+  - FrameContext
+  - PipelineStage
+  - PipelineLayer
+invariants:
+  - 管线按 (stageIndex, order) 升序统一执行，与注册时序彻底解耦
+  - 阶段常量：vmd-base / vmd-layers / proc-motion / bone-override / perception（Ragdoll 已永久移除）
+  - 骨骼占用经 bone-override-store 仲裁，避免多动作源写同一骨骼
+  - register 返回 unregister 函数，用于 HMR/测试 teardown
+tests: []
+use_when:
+  - 动作管线
+  - 逐帧合成
+  - 骨骼写入顺序
+  - PipelineStage / PipelineLayer
 ---
 
 ## 系统概览

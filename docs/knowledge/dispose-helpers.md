@@ -8,6 +8,17 @@ source_files:
   - frontend/src/core/dispose-helpers.ts
 adr:
   - ADR-146
+symbols:
+  - safeDispose
+invariants:
+  - safeDispose(obj, ...args) 与 obj?.dispose(...args) 语义严格等价，始终返回 null
+  - 调用方应将原引用赋值为返回值以完成置空
+  - 若原代码置 undefined（如 pipeline = undefined），类型不兼容，勿用此函数
+tests: []
+use_when:
+  - 安全释放
+  - dispose 置空
+  - 资源清理
 ---
 
 ## 系统概览
