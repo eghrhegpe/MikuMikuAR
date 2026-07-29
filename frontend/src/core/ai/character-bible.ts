@@ -22,7 +22,7 @@ export interface CharacterBible {
 }
 
 /** 台词生成的输出情绪标签闭集（用于后续 TTS/表情映射，Step 2）。 */
-export const DIALOGUE_EMOTIONS = ['neutral', 'happy', 'sad', 'angry', 'surprised', 'shy'] as const;
+export const DIALOGUE_EMOTIONS = ['neutral', 'happy', 'sad', 'angry', 'surprised', 'shy', 'curious'] as const;
 
 export type DialogueEmotion = (typeof DIALOGUE_EMOTIONS)[number];
 

@@ -1953,6 +1953,7 @@ export const en: Record<string, string> = {
     'ai.dialogue.emotion.angry': 'Angry',
     'ai.dialogue.emotion.surprised': 'Surprised',
     'ai.dialogue.emotion.shy': 'Shy',
+    'ai.dialogue.emotion.curious': 'Curious',
     'ai.dialogue.speakOn': '🔊 Voice On',
     'ai.dialogue.speakOff': '🔇 Voice Off',
     'ai.dialogue.speakToggle': 'Toggle dialogue voice',

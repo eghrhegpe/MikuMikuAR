@@ -128,7 +128,7 @@
 | 4b | A-class：WASM 骨骼覆盖后 IK 重解（条目 13） | ✅ | 全链路：fork `7edf759`（`MmdModel::solve_ik` → wasm-bindgen `mmdModelSolveIk`）+ 重编 spr/mpr（导出已核实四处 True）+ vendor 同步注入 + app 6 处补丁（`solveIkNative` / bone-override 4 处 / scene.ts resolver 注入）。**与本地 `TwoBoneIKSolver` 共存**：后者仍服务 feet-adjustment；本项补的是 bone-override 覆盖后重解**原生 IK 链**这块缺口。tsc 0 错、2417 单测全绿。 |
 | 5 | `MODEL_WIND_FORCE_SCALE` 标定 | 🟢 待真机 | 风力已起效，按实测摆幅调系数 |
 | 6 | vendor/fork 漂移防护 | 🟡 待探明 | fork 每次改 wasm 后必须重拷 vendor，否则两者静默不一致；`vendored-patch.test.ts` 已部分缓解（锚点漂移会报红） |
-| **7** | **feet-adjustment WASM 路径迁移（方案C→方案A）** | 🟡 部分完成 | 见 §六。**feet-adjustment 已迁移**（2026-07-29）：`_solveWasmLegIK`/`_findKnee`/`_propagateChildrenWasmSimple`/`BONE_KNEE_L/R`/`two-bone-ik` 导入已移除，WASM 分支走 `getWasmIkResolver() → mmdModelSolveIk`。§6.3 两项关键验证均通过。**bone-override 的 `_solveManualLegIK`（POS slot WASM）仍用方案C**，待后续迁移后完整删除 `two-bone-ik.ts`。2444 单测全绿。 |
+| **7** | **feet-adjustment WASM 路径迁移（方案C→方案A）** | ✅ | 见 §六。两处方案C 全部迁移完成（2026-07-29）：①feet-adjustment 的 `_solveWasmLegIK`/`_findKnee`/`_propagateChildrenWasmSimple`/`BONE_KNEE_L/R` 已移除，WASM 分支走 `getWasmIkResolver() → mmdModelSolveIk`；②bone-override 的 `_solveManualLegIK`/`_resolveLegChains`/`_legChainCache`/`LEG_IK_CHAIN_CONFIG`/`invalidateLegChainCache`/`_ResolvedLegChain` 已移除，替换为 `_solvePosSlotIkWasm`（经 `_wasmIkResolver` 重解原生 IK 链）。`motion-algos/two-bone-ik.ts` + 测试已删除。§6.3 两项关键验证均通过。2441 单测全绿。 |
 
 ---
 

@@ -3,6 +3,7 @@ import { t } from '../core/i18n/t';
 import { getAction, listActions } from '../core/action-registry';
 import { executeAction, parseActionFromLLM } from '../core/ai/intent-dispatcher';
 import { showConfirm } from '../core/dialog';
+import { showErrorToast } from '../core/toast';
 import type { ChatMessage } from '../core/ai/types';
 import { diagState } from './diagnostic-state';
 
@@ -160,6 +161,9 @@ export async function applyPendingAction(
         if (!ok) return;
     }
     const result = await executeAction(diagState.pendingAction.actionId, diagState.pendingAction.params);
+    if (!result.success) {
+        showErrorToast(result.message ?? t('ai.control.executeFailed'));
+    }
     if (result.success && action?.destructive) {
         diagState.lastUndoable = { label: t(action.label) };
     }

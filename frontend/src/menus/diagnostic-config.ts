@@ -1,20 +1,18 @@
+// Core
 import { t } from '../core/i18n/t';
+import { logWarn } from '../core/logger';
+import { DebouncedTimer } from '../core/async';
 import { captureError } from '../core/ai/error-buffer';
 import {
-    loadAiConfig,
-    saveAiConfig,
-    ensureAiConfigLoaded,
-    PROVIDER_PRESETS,
-    validateAiConfig,
-    normalizeEndpoint,
-    type AiConfig,
-    type AiConfigProvider,
+    loadAiConfig, saveAiConfig, ensureAiConfigLoaded,
+    PROVIDER_PRESETS, validateAiConfig, normalizeEndpoint,
+    type AiConfig, type AiConfigProvider,
 } from '../core/ai/config-store';
 import { resolveAi } from '../core/ai';
 import type { AiService, AiCapabilities, AiErrorKind } from '../core/ai/types';
+
+// Local
 import { diagState } from './diagnostic-state';
-import { logWarn } from '../core/logger';
-import { DebouncedTimer } from '../core/async';
 import type { MenuNode } from './menu-schema';
 
 export function goKeyAllowsProceed(validation: ReturnType<typeof validateAiConfig>): boolean {
@@ -226,6 +224,10 @@ export async function refreshModelList(): Promise<void> {
         const models = await diagState.ai.fetchModels?.() ?? [];
         diagState.fetchedModels = models;
         populateModelDatalist(models);
+        if (models.length > 0 && diagState.configModel) {
+            populateModelChips(models, diagState.configModel);
+            if (diagState.modelListEl) diagState.modelListEl.style.display = '';
+        }
         const btn = document.getElementById('diag-model-refresh-btn');
         if (btn) {
             btn.setAttribute('title',

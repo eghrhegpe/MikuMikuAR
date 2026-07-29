@@ -110,7 +110,8 @@ export function saveAiConfig(partial: Partial<AiConfig>): AiConfig {
         merged.endpoint = normalizeEndpoint(merged.endpoint);
     }
     _cache = merged;
-    void idbSet(CONFIG_STORE, CONFIG_KEY, merged).catch((err) => {
+    const { apiKey: _key, ...rest } = merged;
+    void idbSet(CONFIG_STORE, CONFIG_KEY, rest).catch((err) => {
         if (import.meta.env.DEV) {
             console.warn('[ai-config] IndexedDB 写入失败', err);
         }
