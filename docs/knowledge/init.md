@@ -7,13 +7,16 @@ scope:
 source_files:
   - frontend/src/core/init.ts
   - frontend/src/core/main.ts
+  - frontend/src/core/sw-register.ts
 adr: []
 symbols:
   - bootstrap
+  - registerServiceWorker
 invariants:
   - bootstrap 是前端唯一启动入口，串联 init → 场景初始化 → 渲染循环
   - init 内部按序执行：配置加载 → i18n → 图标 → 场景创建 → 环境恢复 → UI 恢复 → 快捷键 → 渲染循环
   - restoreEnvState / restoreUIState 从持久化配置恢复状态，异常时降级不阻塞启动
+  - Service Worker 只在浏览器模式下注册（sw-register.ts）
 tests: []
 use_when:
   - 启动引导
@@ -22,13 +25,15 @@ use_when:
 ---
 
 ## 系统概览
-MikuMikuAR 前端应用的启动引导入口。`bootstrap()` 在 Wails 就绪后执行完整的初始化流水线：加载配置、初始化场景/渲染、注册快捷键、恢复环境状态与 UI 状态、检查更新、启动渲染循环。
+MikuMikuAR 前端应用的启动引导入口。`bootstrap()` 在 Wails 就绪后执行完整的初始化流水线：加载配置、初始化场景/渲染、注册快捷键、恢复环境状态与 UI 状态、检查更新、启动渲染循环。浏览器模式下额外注册 Service Worker（`registerServiceWorker`）提供离线缓存能力。
 
 ## 核心职责
 - `init.ts` — 应用启动编排、场景初始化、状态恢复、平台适配。
+- `sw-register.ts` — Service Worker 注册（浏览器模式）。
 
 ## 对外 API（节选）
 - `bootstrap()` — 启动入口，串联所有初始化步骤。
+- `registerServiceWorker(enabled)` — 注册 Service Worker。
 
 ## 内部协作
 - `init()` — 核心异步初始化：获取配置、初始化 i18n、注册图标、创建场景与引擎、恢复环境/UI 状态、注册快捷键、启动渲染循环。

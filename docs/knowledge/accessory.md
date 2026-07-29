@@ -1,7 +1,7 @@
 ---
 kind: accessory
 name: 道具骨骼锚定系统
-category: env
+category: scene
 scope:
   - frontend/src/scene/env/**
 source_files:

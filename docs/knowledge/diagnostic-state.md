@@ -1,6 +1,6 @@
 ---
 kind: diagnostic_state
-name: 诊断面板单例状态
+name: 诊断助手 → 单例状态（子模块）
 category: ui
 scope:
   - frontend/src/menus

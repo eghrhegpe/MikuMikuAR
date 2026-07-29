@@ -1,6 +1,6 @@
 ---
 kind: diagnostic_control
-name: 诊断面板 tool call 控制
+name: 诊断助手 → tool call 控制（子模块）
 category: ui
 scope:
   - frontend/src/menus

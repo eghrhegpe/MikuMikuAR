@@ -1,6 +1,6 @@
 ---
 kind: diagnostic_config
-name: 诊断面板配置 UI
+name: 诊断助手 → 配置 UI（子模块）
 category: ui
 scope:
   - frontend/src/menus
