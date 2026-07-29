@@ -111,11 +111,32 @@ let _localConfig: AiConfig = { ...loadAiConfig() };
 /** 自动连接测试防抖定时器 */
 let _autoTestTimer: DebouncedTimer | null = null;
 let _autoTesting = false;
+/** 上次 fetchModels 获取到的模型列表，供测试填充缺省 model 使用。 */
+let _fetchedModels: string[] = [];
 
 /** Go 桌面端 key 不可回读，_goKeyConfigured=true 时 missingKey 不应阻止请求。
  *  委托给 core/ai/go-key-allows-proceed 纯函数。 */
 function _goKeyAllowsProceed(validation: ReturnType<typeof validateAiConfig>): boolean {
     return goKeyAllowsProceed(validation, _ai?.kind === 'go', _goKeyConfigured);
+}
+
+/** 测试前确保 model 非空：若 model 为空且有已发现模型，自动取第一个并持久化。
+ *  若还未获取过模型，主动触发一次 fetchModels。避免因 model 未填导致测试 404。 */
+async function _ensureTestModel(): Promise<void> {
+    if (_localConfig.model.trim()) {
+        return;
+    }
+    // 首次无缓存：主动获取一次
+    if (_fetchedModels.length === 0) {
+        await _refreshModelList();
+    }
+    if (_fetchedModels.length > 0) {
+        _localConfig.model = _fetchedModels[0];
+        if (_configModel) {
+            _configModel.value = _fetchedModels[0];
+        }
+        void _persistConfig({ model: _localConfig.model });
+    }
 }
 
 // ======== 生命周期 ========
@@ -230,7 +251,8 @@ function _refreshConfigUI(): void {
     }
 }
 
-/** 配置稳定后自动触发一次连接测试，避免用户手动点击。 */
+/** 配置稳定后自动触发一次连接测试，避免用户手动点击。
+ *  先触发模型发现，让 auto-test 的 _ensureTestModel 有缓存可用。 */
 function _scheduleAutoTest(): void {
     if (!_aiResolved || _testing) {
         return;
@@ -238,6 +260,7 @@ function _scheduleAutoTest(): void {
     if (!_autoTestTimer) {
         _autoTestTimer = new DebouncedTimer();
     }
+    void _refreshModelList();
     _autoTestTimer.schedule(() => void _runAutoTest(), 600);
 }
 
@@ -245,6 +268,7 @@ async function _runAutoTest(): Promise<void> {
     if (!_ai || _testing || _autoTesting) {
         return;
     }
+    await _ensureTestModel();
     const validation = validateAiConfig(_localConfig);
     if (!validation.ok && !_goKeyAllowsProceed(validation)) {
         // 配置不完整时 badge/advice 已由校验结果接管，无需覆盖
@@ -373,6 +397,7 @@ async function _refreshModelList(): Promise<void> {
         return;
     }
     const models = await _ai.fetchModels?.() ?? [];
+    _fetchedModels = models;
     _populateModelDatalist(models);
 }
 
@@ -1579,6 +1604,9 @@ async function _testConnection(statusEl: HTMLElement): Promise<void> {
     // 测试前先 flush 保存输入框当前值，避免测的是 blur 未触发的旧配置（尤其是刚填的 key）
     await _flushAndSave();
 
+    // 若 model 未填但已有发现模型列表，自动取第一个
+    await _ensureTestModel();
+
     const validation = validateAiConfig(_localConfig);
     if (!validation.ok && !_goKeyAllowsProceed(validation)) {
         const errMsg = validation.errors
@@ -1816,6 +1844,7 @@ function _renderConfigCard(c: HTMLElement): void {
         try {
             await _flushAndSave();
             const models = (await _ai.fetchModels?.()) ?? [];
+            _fetchedModels = models;
             _populateModelDatalist(models);
             if (models.length > 0 && !_localConfig.model) {
                 _localConfig.model = models[0];
@@ -2005,6 +2034,7 @@ export function buildSettingsDiagnosticLevel(
                 _lastUndoable = null;
                 _autoTestTimer?.cancel();
                 _autoTestTimer = null;
+                _fetchedModels = [];
                 // 关面板时重置模型芯片列表引用
                 _modelListEl = null;
             };
