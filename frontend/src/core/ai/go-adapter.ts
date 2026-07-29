@@ -10,10 +10,16 @@ import type {
 import { AI_ERROR_KINDS } from './types';
 import { events } from '../runtime-bridge';
 import { makeLazyLoader } from '../async';
+import { logInfo, logWarn } from '../logger';
 import type { LLMConfig } from '@bindings/mikumikuar/internal/app/models';
 import type { ChatRequest as LLMChatRequest } from '@bindings/mikumikuar/internal/app/llm/models';
 
 const _getB = makeLazyLoader(async () => import('@bindings/mikumikuar/internal/app/app'));
+
+// [doc:adr-199] 首字节看门狗：streamChat 发起后若长时间无任何事件（chunk/done/error），
+// 主动注入一条 error 让流收尾，避免前端按钮永久卡在 streaming、用户干等黑盒。
+const _FIRST_EVENT_TIMEOUT_MS = 30000;
+
 
 class GoAiAdapter implements AiService {
     readonly kind = 'go' as const;
@@ -153,22 +159,44 @@ class GoAiAdapter implements AiService {
         let err: string | null = null;
         let resolveWaiter: (() => void) | null = null;
         let streamActive = true;
+        // 可观测性：记录首事件到达耗时、累计事件数，便于定位"发出请求后长时间无响应"卡点。
+        const t0 = Date.now();
+        let firstEventSeen = false;
+        let eventCount = 0;
+        let watchdog: ReturnType<typeof setTimeout> | null = null;
+
+        const markFirstEvent = (kind: string): void => {
+            eventCount++;
+            if (!firstEventSeen) {
+                firstEventSeen = true;
+                logInfo('ai-stream', `首事件到达 kind=${kind} 耗时=${Date.now() - t0}ms`);
+                if (watchdog) {
+                    clearTimeout(watchdog);
+                    watchdog = null;
+                }
+            }
+        };
 
         const unsubChunk = events.on('ai:chunk', (data: unknown) => {
             const d = data as { delta?: string };
             if (d?.delta) {
+                markFirstEvent('chunk');
                 queue.push({ type: 'text', content: d.delta });
                 resolveWaiter?.();
             }
         });
         const unsubDone = events.on('ai:done', () => {
+            markFirstEvent('done');
+            logInfo('ai-stream', `收到 done 总耗时=${Date.now() - t0}ms 事件数=${eventCount}`);
             done = true;
             streamActive = false;
             resolveWaiter?.();
         });
         const unsubError = events.on('ai:error', (data: unknown) => {
             const d = data as { error?: string };
+            markFirstEvent('error');
             err = d?.error ?? '未知错误';
+            logWarn('ai-stream', `收到 error 事件 耗时=${Date.now() - t0}ms: ${err}`);
             done = true;
             streamActive = false;
             resolveWaiter?.();
@@ -176,6 +204,7 @@ class GoAiAdapter implements AiService {
         const unsubToolCall = events.on('ai:tool_call', (data: unknown) => {
             const d = data as { toolName?: string; toolArgs?: string; toolId?: string };
             if (d?.toolName) {
+                markFirstEvent('tool_call');
                 queue.push({
                     type: 'tool_call',
                     toolName: d.toolName,
@@ -186,13 +215,30 @@ class GoAiAdapter implements AiService {
             }
         });
 
+        // 首事件看门狗：超时未收到任何事件 → 注入 error 让流收尾（防永久挂起黑盒）。
+        watchdog = setTimeout(() => {
+            if (!firstEventSeen && !done) {
+                logWarn(
+                    'ai-stream',
+                    `${_FIRST_EVENT_TIMEOUT_MS}ms 内未收到任何后端事件，判定超时并收尾`
+                );
+                err = `等待响应超时（${Math.round(_FIRST_EVENT_TIMEOUT_MS / 1000)}s 无任何数据）`;
+                done = true;
+                streamActive = false;
+                b.AiCancelStream().catch(() => undefined);
+                resolveWaiter?.();
+            }
+        }, _FIRST_EVENT_TIMEOUT_MS);
+
         const onAbort = (): void => {
+            logInfo('ai-stream', `用户中断 abort 耗时=${Date.now() - t0}ms`);
             streamActive = false;
             done = true;
             b.AiCancelStream().catch(() => undefined);
             resolveWaiter?.();
         };
         req.signal?.addEventListener('abort', onAbort);
+
 
         try {
             const tools = req.tools?.length
@@ -235,7 +281,22 @@ class GoAiAdapter implements AiService {
                 max_tokens: req.maxTokens ?? 2048,
                 ...(tools ? { tools } : {}),
             };
-            await b.AiStreamChat(llmReq);
+            logInfo(
+                'ai-stream',
+                `发起 AiStreamChat model=${llmReq.model || '(默认)'} 消息数=${llmReq.messages.length} tools=${tools?.length ?? 0}`
+            );
+            try {
+                await b.AiStreamChat(llmReq);
+                logInfo('ai-stream', `AiStreamChat 已提交，等待后端事件… 耗时=${Date.now() - t0}ms`);
+            } catch (submitErr) {
+                // binding 调用本身失败（IPC/序列化）：直接注入 error 收尾，不干等看门狗。
+                const msg = submitErr instanceof Error ? submitErr.message : String(submitErr);
+                logWarn('ai-stream', `AiStreamChat 提交失败: ${msg}`);
+                err = `请求提交失败：${msg}`;
+                done = true;
+                streamActive = false;
+                resolveWaiter?.();
+            }
 
             while (!done || queue.length > 0) {
                 if (queue.length > 0) {
@@ -250,6 +311,10 @@ class GoAiAdapter implements AiService {
                 yield { type: 'error', error: err };
             }
         } finally {
+            if (watchdog) {
+                clearTimeout(watchdog);
+                watchdog = null;
+            }
             unsubChunk();
             unsubDone();
             unsubError();
