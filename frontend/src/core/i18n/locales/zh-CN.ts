@@ -1871,6 +1871,7 @@ export const zhCN: Record<string, string> = {
     'ai.chat.send': '发送',
     'ai.chat.stop': '停止',
     'ai.chat.thinking': '思考中…',
+    'ai.chat.reasoning': '思考过程',
     'ai.config.title': '配置',
     'ai.config.endpoint': 'API 端点',
     'ai.config.apiKey': 'API 密钥',

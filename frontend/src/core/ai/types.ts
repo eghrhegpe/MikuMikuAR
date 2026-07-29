@@ -57,6 +57,8 @@ export interface ChatRequest {
 export interface ChatChunk {
     type: 'text' | 'error' | 'done' | 'tool_call';
     content?: string;
+    /** text 类型时：true 表示这是推理模型的思考过程（reasoning），供 UI 折叠展示 */
+    reasoning?: boolean;
     error?: string;
     /** function_call 名称（tool_call 类型时） */
     toolName?: string;

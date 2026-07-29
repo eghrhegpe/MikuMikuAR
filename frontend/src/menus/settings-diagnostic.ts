@@ -798,8 +798,14 @@ function _renderChat(): void {
 
         const content = document.createElement('div');
         const textContent = typeof msg.content === 'string' ? msg.content : '';
-        content.textContent = textContent;
         content.className = 'diag-chat-content';
+        if (msg.role === 'assistant') {
+            // 助手回复按 Markdown 渲染（加粗/列表/标题/代码等）；纯 DOM 构建，免疫 XSS。
+            renderMarkdownInto(content, textContent);
+        } else {
+            // 用户消息保持纯文本。
+            content.textContent = textContent;
+        }
         row.appendChild(content);
         _chatContainer.appendChild(row);
     }
@@ -836,37 +842,61 @@ function _renderStreamingChunk(chunk: ChatChunk): void {
     if (!_chatContainer) {
         return;
     }
-    if (chunk.type === 'text' && chunk.content) {
-        let lastRow = _chatContainer.lastElementChild;
-        if (!lastRow || !lastRow.classList.contains('chat-row--streaming')) {
-            const row = document.createElement('div');
-            row.className = 'diag-chat-row chat-row--streaming chat-row--assistant';
-            const label = document.createElement('strong');
-            label.textContent = t('ai.chat.assistant');
-            label.className = 'diag-chat-label';
-            row.appendChild(label);
-            const content = document.createElement('div');
-            content.textContent = '';
-            content.className = 'diag-chat-content';
-            row.appendChild(content);
-            _chatContainer.appendChild(row);
-            lastRow = row;
-        } else if ((lastRow as HTMLElement).dataset.pending === 'true') {
-            // 复用占位气泡：清除 pending 标记与占位文本/样式，转为真实流式内容。
-            const el = lastRow as HTMLElement;
-            delete el.dataset.pending;
-            const pendingContent = el.querySelector('.diag-chat-pending') as HTMLElement | null;
-            if (pendingContent) {
-                pendingContent.textContent = '';
-                pendingContent.classList.remove('diag-chat-pending');
-            }
+    if (chunk.type !== 'text' || !chunk.content) {
+        return;
+    }
+    let lastRow = _chatContainer.lastElementChild as HTMLElement | null;
+    if (!lastRow || !lastRow.classList.contains('chat-row--streaming')) {
+        const row = document.createElement('div');
+        row.className = 'diag-chat-row chat-row--streaming chat-row--assistant';
+        const label = document.createElement('strong');
+        label.textContent = t('ai.chat.assistant');
+        label.className = 'diag-chat-label';
+        row.appendChild(label);
+        const content = document.createElement('div');
+        content.textContent = '';
+        content.className = 'diag-chat-content';
+        row.appendChild(content);
+        _chatContainer.appendChild(row);
+        lastRow = row;
+    } else if (lastRow.dataset.pending === 'true') {
+        // 复用占位气泡：清除 pending 标记与占位文本/样式，转为真实流式内容。
+        delete lastRow.dataset.pending;
+        const pendingContent = lastRow.querySelector('.diag-chat-pending') as HTMLElement | null;
+        if (pendingContent) {
+            pendingContent.textContent = '';
+            pendingContent.classList.remove('diag-chat-pending');
         }
-        const contentDiv = lastRow.querySelector('div:last-child') as HTMLElement;
+    }
+
+    if (chunk.reasoning) {
+        // 思考过程：追加到可折叠的 <details>（默认展开以便实时看到进度），置于正文之前。
+        let details = lastRow.querySelector('.diag-reasoning') as HTMLDetailsElement | null;
+        if (!details) {
+            details = document.createElement('details');
+            details.className = 'diag-reasoning';
+            details.open = true;
+            const summary = document.createElement('summary');
+            summary.textContent = t('ai.chat.reasoning');
+            details.appendChild(summary);
+            const body = document.createElement('div');
+            body.className = 'diag-reasoning-body';
+            details.appendChild(body);
+            // 插到正文 div 之前
+            const contentDiv = lastRow.querySelector('.diag-chat-content');
+            lastRow.insertBefore(details, contentDiv);
+        }
+        const body = details.querySelector('.diag-reasoning-body') as HTMLElement;
+        if (body) {
+            body.textContent += chunk.content;
+        }
+    } else {
+        const contentDiv = lastRow.querySelector('.diag-chat-content') as HTMLElement | null;
         if (contentDiv) {
             contentDiv.textContent += chunk.content;
         }
-        _chatContainer.scrollTop = _chatContainer.scrollHeight;
     }
+    _chatContainer.scrollTop = _chatContainer.scrollHeight;
 }
 
 /** 把 streaming row 转正：移除 streaming class、回填完整文本。
@@ -1015,8 +1045,13 @@ async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
         });
         for await (const chunk of chunks) {
             if (chunk.type === 'text' && chunk.content) {
-                fullResponse += chunk.content;
-                _renderStreamingChunk(chunk);
+                if (chunk.reasoning) {
+                    // 思考过程：只用于流式实时展示（折叠区），不累积进正式回答、不入对话历史。
+                    _renderStreamingChunk(chunk);
+                } else {
+                    fullResponse += chunk.content;
+                    _renderStreamingChunk(chunk);
+                }
             } else if (chunk.type === 'tool_call' && allowTools) {
                 pendingToolCalls.push({
                     id: chunk.toolId ?? `call_${Date.now()}_${pendingToolCalls.length}`,
@@ -1465,7 +1500,9 @@ function _buildSystemMessage(): ChatMessage {
 }
 
 async function _sendMessage(): Promise<void> {
-    if (_isStreaming || !_inputEl || !_ai) {
+    // [doc:adr-155] 有待确认的 pending action 时禁止发新消息：
+    // 否则新 stream 会与 _finalizePendingBatch 的后续 stream 竞态，导致工具结果回填后 LLM 不再继续生成。
+    if (_isStreaming || _pendingAction || !_inputEl || !_ai) {
         return;
     }
     const text = _inputEl.value.trim();
@@ -1525,7 +1562,8 @@ function _updateSendButton(): void {
     const sendBtn = document.getElementById('diag-send-btn') as HTMLButtonElement | null;
     const stopBtn = document.getElementById('diag-stop-btn') as HTMLButtonElement | null;
     if (sendBtn) {
-        sendBtn.disabled = _isStreaming || !_aiResolved;
+        // pending action 期间也禁用 send，避免与工具确认流程竞态
+        sendBtn.disabled = _isStreaming || _pendingAction !== null || !_aiResolved;
     }
     if (stopBtn) {
         stopBtn.style.display = _isStreaming ? '' : 'none';

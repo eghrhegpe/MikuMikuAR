@@ -1878,6 +1878,7 @@ export const ja: Record<string, string> = {
     'ai.chat.send': '送信',
     'ai.chat.stop': '停止',
     'ai.chat.thinking': '思考中…',
+    'ai.chat.reasoning': '思考プロセス',
     'ai.config.title': '設定',
     'ai.config.endpoint': 'APIエンドポイント',
     'ai.config.apiKey': 'APIキー',
