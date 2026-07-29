@@ -1,6 +1,6 @@
 # ADR-206: 测试基础设施收敛与断言质量治理
 
-> **状态**: 🟢 实施中（Phase 0-2 已完成，Phase 3-4 触碰即改善）
+> **状态**: 🟢 已完成（Phase 0-4 全部完成）
 > **关联**: [ADR-204](adr-204-unit-test-layering-and-hygiene.md)（单测分层与治理规范，本 ADR 在其拆分成果之上收敛 mock 基础设施）、[ADR-060](adr-060-e2e-testing-strategy.md)（E2E 策略）
 > **背景**: ADR-204 P1-P3 已完成 15 个上帝文件拆分（207 文件 / 2428 用例 / 全绿），但拆分暴露了一个认知偏差：**mock 密度高不完全是卫生问题，而是 vitest hoist 的结构性约束**——拆分后 3 个文件各带 44 个 `vi.mock` = 132 处，原来一个文件只有 92 处。真正该治的不是 `vi.mock` 调用数（不可消除），而是**工厂代码的水平重复**与**共享基础设施的空转**。
 
@@ -135,6 +135,16 @@ ADR-204 §2.2 的「单文件 `vi.mock/fn/spyOn` 计数」阈值保留为**参�
 > **Phase 1**：`material-editor-mocks.ts`（165→50 行）删除全部重复 Babylon/BMD 工厂定义，改为从 `model-preset-mocks` 的别名 re-export + 6 个空模块桩求值为 plain object（`physicsEngineModuleMock`/`tgaLoaderModuleMock`/`mmdSinglePhysicsReleaseMock`/`mmdRuntimeModelAnimMock`/`mmdModelLoaderDefaultMock`/`mmdTextureAlpha*Mock`——消费者按值引用而非函数调用，故必须求值）。`outfit-mocks.ts`（55→33 行）同理，保留换装特有 `mockEmpty`/`mockSceneModule`/`mockT`。关键踩坑：`model-preset-mocks` 的工厂是**函数** `() => ({})`，而 material-editor 消费者按**值**引用 `{}`——re-export 函数名会改变语义，必须对空模块桩单独求值。`_mockMat` 函数在 material-editor 测试中零引用，确认为死代码，随重构一并清除。补充 `mockTexture` 工厂至规范源（原 `model-preset-mocks` 缺失，`outfit` 测试依赖）。验收：215 passed / 2428 tests passed / 0 failed。
 >
 > **Phase 2**：新建 `mocks/babylon-factories.ts`（95 行），将全部 Babylon/BMD 工厂从 `model-preset-mocks.ts` 提升至此，形成 `babylon-classes`（类定义 683 行）→ `babylon-factories`（工厂函数 95 行）两层架构。`model-preset-mocks.ts` 降级为薄 re-export shim（46 行：33 个 Babylon re-export + 2 个 app mock `mockToast`/`mockPlayback`），7 个消费者无需改 import 路径。`material-editor-mocks.ts` 和 `outfit-mocks.ts` 改为直接从 `./mocks/babylon-factories` 导入（`mockToast` 仍经 `./model-preset-mocks`）。验收：215 passed / 2428 tests passed / 0 failed。
+>
+> **Phase 3 实施记录（2026-07-30）**：
+>
+> `replace-model-inherit.test.ts`（16 用例）断言质量改善：将 6 处 `toHaveBeenCalledWith` setter 调用断言收敛为 1 处 `toMatchObject` 行为断言。
+>
+> 方法：在 `mmState` hoisted 块中注入 `_applied` 数组，setter mock 每次调用时 push 状态快照（`{ visible: v }`/`{ opacity: v }`/`{ wireframe: v }`/`{ physicsEnabled: v }`/`{ scaling: v }`/`{ position: [x,y,z] }`/`{ orbit: [az,el,dist] }`）。测试用例改为 `Object.assign({}, ...mmState._applied)` 合并后 `toMatchObject` 验证最终状态。orbit 测试同理转为 `toMatchObject({ orbit: [30, -5, 10] })` + `not.toHaveProperty('position')` 互斥验证。
+>
+> 另外两个候选文件（`drop-import.test.ts` 27 处、`playback.observables.test.ts` 18 处）经审查确认调用断言合理（dispatcher/observable 模式，调用 = 行为），不转换。
+>
+> 验收：224 passed / 2428 tests passed / 0 failed。
 >
 > **Phase 4 实施记录（2026-07-29）**：拆分最后 2 个 >500 行功能测试文件（契约/perf 测试保持整体）：
 >
