@@ -2,33 +2,82 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Quaternion } from '@babylonjs/core';
 
-vi.mock('../../scene/scene', async () => (await import('./perception-mocks')).sceneModuleMock);
-vi.mock('../../ar/ar-camera', async () => (await import('./perception-mocks')).arCameraModuleMock);
-vi.mock('../../core/wails-bindings', async () => (await import('./perception-mocks')).wailsBindingsModuleMock);
-vi.mock('../../core/i18n/t', async () => (await import('./perception-mocks')).i18nTModuleMock);
-vi.mock('@babylonjs/core/Materials/standardMaterial', async () => (await import('./perception-mocks')).standardMaterialModuleMock);
-vi.mock('../../core/config', async () => (await import('./perception-mocks')).configModuleMock);
-vi.mock('../../scene/camera/camera', async () => (await import('./perception-mocks')).cameraModuleMock);
-vi.mock('../../scene/motion/vmd-loader', async () => (await import('./perception-mocks')).vmdLoaderModuleMock);
-vi.mock('../../outfit/audio', async () => (await import('./perception-mocks')).outfitAudioModuleMock);
-vi.mock('../../outfit/outfit', async () => (await import('./perception-mocks')).outfitModuleMock);
-vi.mock('../../scene/env/props', async () => (await import('./perception-mocks')).envPropsModuleMock);
-vi.mock('../../scene/env/env-bridge', async () => (await import('./perception-mocks')).envBridgeModuleMock);
-vi.mock('../../scene/env/env-impl', async () => (await import('./perception-mocks')).envImplModuleMock);
-vi.mock('../../scene/motion/motion-pipeline', async () => (await import('./perception-mocks')).motionPipelineModuleMock);
-vi.mock('../../scene/motion/proc-motion-bridge', async () => (await import('./perception-mocks')).procMotionBridgeModuleMock);
-vi.mock('../../scene/motion/lipsync-bridge', async () => (await import('./perception-mocks')).lipsyncBridgeModuleMock);
-vi.mock('../../motion-algos/procedural-motion', async () => (await import('./perception-mocks')).proceduralMotionModuleMock);
-vi.mock('../../motion-algos/lipsync', async () => (await import('./perception-mocks')).lipsyncAlgosModuleMock);
+const mockState = vi.hoisted(() => ({
+    focusedModelId: null as string | null,
+    triggerAutoSave: vi.fn(),
+    modelManager: {
+        get: vi.fn(),
+        modelRegistry: new Map<string, any>(),
+    },
+    scene: {
+        onBeforeRenderObservable: {
+            add: vi.fn(() => ({})),
+            remove: vi.fn(),
+        },
+        activeCamera: null,
+        isDisposed: false,
+    },
+    isAudioPlaying: vi.fn(() => false),
+    getAudioPath: vi.fn(() => ''),
+    getProcBeatDetector: vi.fn(() => null),
+    findLipMorph: vi.fn(() => null),
+    findAllLipMorphs: vi.fn(() => ({ open: null, close: null, pucker: null, smile: null })),
+    amplitudeToWeight: vi.fn(() => 0),
+}));
+const mockPipeline = vi.hoisted(() => ({
+    register: vi.fn(),
+    unregister: vi.fn(),
+    lastRunCallback: null as null | ((ctx?: any) => void),
+}));
+
+vi.mock('../../scene/scene', () => sceneModuleFactory(mockState));
+vi.mock('../../ar/ar-camera', () => arCameraModuleMock);
+vi.mock('../../core/wails-bindings', () => wailsBindingsModuleMock);
+vi.mock('../../core/i18n/t', () => i18nTModuleMock);
+vi.mock('@babylonjs/core/Materials/standardMaterial', () => standardMaterialModuleMock);
+vi.mock('../../core/config', () => configModuleFactory(mockState));
+vi.mock('../../scene/camera/camera', () => cameraModuleMock);
+vi.mock('../../scene/motion/vmd-loader', () => vmdLoaderModuleMock);
+vi.mock('../../outfit/audio', () => outfitAudioModuleFactory(mockState));
+vi.mock('../../outfit/outfit', () => outfitModuleMock);
+vi.mock('../../scene/env/props', () => envPropsModuleMock);
+vi.mock('../../scene/env/env-bridge', () => envBridgeModuleMock);
+vi.mock('../../scene/env/env-impl', () => envImplModuleFactory(mockState));
+vi.mock('../../scene/motion/motion-pipeline', () => motionPipelineModuleFactory(mockPipeline));
+vi.mock('../../scene/motion/proc-motion-bridge', () => procMotionBridgeModuleFactory(mockState));
+vi.mock('../../scene/motion/lipsync-bridge', () => lipsyncBridgeModuleMock);
+vi.mock('../../motion-algos/procedural-motion', () => proceduralMotionModuleMock);
+vi.mock('../../motion-algos/lipsync', () => lipsyncAlgosModuleFactory(mockState));
 
 // _gazeAlpha 为纯函数，静态导入
 import { _gazeAlpha } from '../../scene/motion/perception-shared';
-import { setupPerceptionTest, mockState, type PerceptionSut } from './perception-mocks';
+import {
+    setupPerceptionTest,
+    sceneModuleFactory,
+    arCameraModuleMock,
+    wailsBindingsModuleMock,
+    i18nTModuleMock,
+    standardMaterialModuleMock,
+    configModuleFactory,
+    cameraModuleMock,
+    vmdLoaderModuleMock,
+    outfitAudioModuleFactory,
+    outfitModuleMock,
+    envPropsModuleMock,
+    envBridgeModuleMock,
+    envImplModuleFactory,
+    motionPipelineModuleFactory,
+    procMotionBridgeModuleFactory,
+    lipsyncBridgeModuleMock,
+    proceduralMotionModuleMock,
+    lipsyncAlgosModuleFactory,
+    type PerceptionSut,
+} from './perception-mocks';
 
 let sut: PerceptionSut;
 
 beforeEach(async () => {
-    sut = await setupPerceptionTest();
+    sut = await setupPerceptionTest(mockState, mockPipeline);
 });
 
 // ── 视线追踪锥形限位回归（防止"背后翻转 180°"悄悄回潮）──
