@@ -96,6 +96,9 @@ let _speakEnabled = true;
 /** 台词模式朗读开关按钮引用（仅 dialogue 模式可见，由 _refreshModeUI 控制显隐）。 */
 let _speakToggleBtn: HTMLButtonElement | null = null;
 
+/** Go 桌面端后端 key 已配置标志（前端不可读明文，用于输入框占位提示）。 */
+let _goKeyConfigured = false;
+
 /** 当前面板编辑态的配置副本，blur 时同步到持久化层。
  *  模块加载时为占位值，建配置卡前由 _loadInitialConfig() 覆写（见 buildConfigSchema 两阶段渲染）。 */
 let _localConfig: AiConfig = { ...loadAiConfig() };
@@ -155,10 +158,13 @@ function _inferProvider(endpoint: string): AiConfigProvider {
 }
 
 /** 合并 IndexedDB + 适配器持久化配置，确保 _localConfig 为真实保存值。
- *  key 出于安全 go 端不回读明文，仅用 keyConfigured 标志由 _renderConfigCard 显示占位。 */
+ *  key 出于安全 go 端不回读明文，仅用 keyConfigured 标志由 _renderConfigCard 显示占位。
+ *  内部 await resolveAi() 以保证适配器已就绪，消除"遗漏适配器配置"的时序窗口。 */
 async function _loadInitialConfig(): Promise<void> {
     await ensureAiConfigLoaded();
     _localConfig = { ...loadAiConfig() };
+    // 等待适配器就绪，确保后续 _ai?.loadConfig 可用
+    await resolveAi();
     if (_ai?.loadConfig) {
         try {
             const persisted = await _ai.loadConfig();
@@ -170,6 +176,10 @@ async function _loadInitialConfig(): Promise<void> {
                     model: persisted.model,
                     apiKey: persisted.apiKey ?? _localConfig.apiKey,
                 };
+            }
+            // [doc:adr-196] Go 桌面端 key 已配置但明文不可回读，记标志供占位提示
+            if (_ai.kind === 'go' && persisted.keyConfigured && !persisted.apiKey) {
+                _goKeyConfigured = true;
             }
         } catch {
             /* keep IndexedDB defaults */
@@ -274,19 +284,31 @@ function _updateCorsWarning(): void {
     }
 }
 
-/** 把面板当前编辑态同步到对应持久化层，并刷新能力探测。 */
+/** 把面板当前编辑态同步到对应持久化层。
+ *  不调用 _refreshCaps（blur 频次高避免过刷），调用方按需自行刷新。 */
 function _persistConfig(partial: Partial<AiConfig>): void {
     _localConfig = { ..._localConfig, ...partial };
-    if (_ai?.kind === 'go') {
-        void _saveGoConfig({
-            baseUrl: _localConfig.endpoint,
-            model: _localConfig.model,
-            aiKey: _localConfig.apiKey,
-        }).catch((err) => console.warn('[ai-config] blur 保存失败', err));
-    } else {
-        saveAiConfig(_localConfig);
+    void _doSaveConfig();
+}
+
+/** 共享持久化逻辑：go 模式写 Go 后端 + IndexedDB 镜像（不含 key），browser 模式写 IndexedDB。
+ *  (async 但内部已 catch，调用方可 void 丢弃) */
+async function _doSaveConfig(): Promise<void> {
+    try {
+        if (_ai?.kind === 'go') {
+            await _saveGoConfig({
+                baseUrl: _localConfig.endpoint,
+                model: _localConfig.model,
+                aiKey: _localConfig.apiKey,
+            });
+            // 同步 endpoint/model 到 IndexedDB 镜像，保证重开面板时 _loadInitialConfig 有可读回退
+            saveAiConfig({ ..._localConfig, apiKey: '' });
+        } else {
+            saveAiConfig(_localConfig);
+        }
+    } catch (err) {
+        console.warn('[ai-config] 持久化失败', err);
     }
-    void _refreshCaps();
 }
 
 /** 应用服务商预设，更新本地编辑态与输入框。 */
@@ -1427,15 +1449,7 @@ async function _flushAndSave(): Promise<{ ok: boolean; error?: string }> {
         _localConfig.apiKey = _configApiKey.value;
     }
     try {
-        if (_ai?.kind === 'go') {
-            await _saveGoConfig({
-                baseUrl: _localConfig.endpoint,
-                model: _localConfig.model,
-                aiKey: _localConfig.apiKey,
-            });
-        } else {
-            saveAiConfig(_localConfig);
-        }
+        await _doSaveConfig();
         void _refreshCaps();
         return { ok: true };
     } catch (err) {
@@ -1444,7 +1458,7 @@ async function _flushAndSave(): Promise<{ ok: boolean; error?: string }> {
 }
 
 async function _testConnection(statusEl: HTMLElement): Promise<void> {
-    if (_testing) {
+    if (_testing || _autoTesting) {
         return;
     }
     _testing = true;
@@ -1639,16 +1653,9 @@ function _renderConfigCard(c: HTMLElement): void {
     c.appendChild(apiKeyRow);
     _configApiKey = apiKeyRow.querySelector('input') as HTMLInputElement;
 
-    // Go 桌面端 key 已配置但明文不可回读时，占位提示无需重填
-    if (_ai?.kind === 'go') {
-        void (async () => {
-            try {
-                const persisted = await _ai.loadConfig?.();
-                if (_configApiKey && persisted?.keyConfigured && !persisted.apiKey) {
-                    _configApiKey.placeholder = t('ai.config.keyConfigured');
-                }
-            } catch { /* ignore */ }
-        })();
+    // Go 桌面端 key 已配置但明文不可回读，占位提示无需重填（_goKeyConfigured 由 _loadInitialConfig 填充）
+    if (_ai?.kind === 'go' && _goKeyConfigured && _configApiKey) {
+        _configApiKey.placeholder = t('ai.config.keyConfigured');
     }
 
     const modelRow = document.createElement('div');
