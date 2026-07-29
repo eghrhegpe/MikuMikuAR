@@ -8,8 +8,8 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 109 | 732 |
-| 3D 场景 | 105 | 1061 |
-| 菜单 & UI | 73 | 354 |
+| 3D 场景 | 105 | 1067 |
+| 菜单 & UI | 73 | 355 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 127 |
 | 物理系统 | 2 | 14 |
@@ -1297,19 +1297,25 @@
 | `setLipSyncSensitivity()` | `scene/motion/lipsync-bridge` | — |
 | `setLipSyncState()` | `scene/motion/lipsync-bridge` | — |
 | `updateLipSync()` | `scene/motion/lipsync-bridge` | 保留空壳避免外部引用断裂，实际逻辑已由 perception observer 调度。 |
+| `LoadableProcId()` | `scene/motion/motion-intent` | — |
 | `addSceneMotion()` | `scene/motion/motion-intent` | 新增主动作到场景库。 |
 | `clearAllSceneMotions()` | `scene/motion/motion-intent` | 清空整个场景动作库 + 默认动作。 |
 | `findOrCreateModuleState()` | `scene/motion/motion-intent` | [doc:adr-121 P4-1] 在 intent.motionModules 中查找或创建模块状态。 |
 | `getActiveMotion()` | `scene/motion/motion-intent` | 获取当前默认动作（派生自 _activeMotionId）。 |
 | `getActiveMotionId()` | `scene/motion/motion-intent` | 获取当前默认动作 id。null = 无默认。 |
+| `getAllLoadableProcMotions()` | `scene/motion/motion-intent` | 获取全部可加载的程序化动作 ID 列表（含未加载的）。 |
+| `getLoadedProceduralMotions()` | `scene/motion/motion-intent` | 获取当前已加载的程序化动作集合。 |
 | `getMotionGen()` | `scene/motion/motion-intent` | 获取当前 generation 值。用于异步操作中判断是否为最新广播。 |
 | `getSceneMotions()` | `scene/motion/motion-intent` | 获取场景级动作库（所有主动作列表）。 |
 | `initMotionIntent()` | `scene/motion/motion-intent` | 初始化广播回调。由 bootstrap 点（如 scene.ts initScene）调用一次。 |
+| `loadProceduralMotion()` | `scene/motion/motion-intent` | 加载一个程序化动作到集合。 |
 | `removeSceneMotion()` | `scene/motion/motion-intent` | 移除场景库中的某个主动作。 |
 | `replaceDefaultMotion()` | `scene/motion/motion-intent` | [adr-169] 原位替换默认动作。 |
 | `resolveCompatibility()` | `scene/motion/motion-intent` | 兼容性解析：判断指定模型的骨骼列表是否兼容某 VMD 动作。 |
 | `setBroadcastCallback()` | `scene/motion/motion-intent` | 测试用例间需 setBroadcastCallback(null) 隔离回调，而 initMotionIntent 的幂等守卫不允许置空。 |
 | `setDefaultMotion()` | `scene/motion/motion-intent` | 设置默认动作 id。 |
+| `setLoadedProceduralMotions()` | `scene/motion/motion-intent` | 设置已加载集合（用于场景反序列化）。始终保证 'none' 存在。 |
+| `unloadProceduralMotion()` | `scene/motion/motion-intent` | 卸载一个程序化动作。'none' 不可卸载。 |
 | `BODY_POSTURE_DEF()` | `scene/motion/motion-modules/body-posture` | 身体姿态模块注册定义（供 registry BUILTIN_MODULE_DEFS 批量注册） |
 | `createBodyPostureModule()` | `scene/motion/motion-modules/body-posture` | 创建身体姿态模块实例 |
 | `LEFT_FOOT_DEF()` | `scene/motion/motion-modules/foot-modules` | — |
@@ -2022,6 +2028,7 @@
 | `showMotionPopup()` | `menus/motion-popup` | — |
 | `syncPlaybackSpeedToRuntime()` | `menus/motion-popup` | — |
 | `buildPoseStudioLevel()` | `menus/motion-pose-levels` | — |
+| `buildProcLibraryLevel()` | `menus/motion-procmotion-levels` | — |
 | `buildProcMotionLevel()` | `menus/motion-procmotion-levels` | — |
 | `buildMotionRootItems()` | `menus/motion-root-ui` | — |
 | `buildMotionRootLevel()` | `menus/motion-root-ui` | — |
@@ -2367,5 +2374,5 @@
 
 ---
 
-> 共 309 个文件，2321 个导出符号。
+> 共 309 个文件，2328 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。

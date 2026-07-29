@@ -153,6 +153,18 @@ ADR-204 §2.2 的「单文件 `vi.mock/fn/spyOn` 计数」阈值保留为**参�
 > **backend.test.ts**（984 行 / 71 用例）拆为 7 个文件 + 共享 mock：`backend-mocks.ts`（44 行，`idbStore` Map + `setWindow`/`clearWebFlag`/`resetIdb` + `goAdapterMock`）+ `backend.capabilities.test.ts`（98 行 / 15 用例）+ `backend.data-chain.test.ts`（204 行 / 20 用例）+ `backend.virtual-dir.test.ts`（100 行 / 9 用例）+ `backend.extract.test.ts`（290 行 / 12 用例）+ `backend.resolve.test.ts`（66 行 / 5 用例，保留 `vi.resetModules()`）+ `backend.fsa.test.ts`（230 行 / 6 用例）+ `backend.update.test.ts`（43 行 / 2 用例）。原 `for` 循环生成 7 个 `it` 块使实际用例数为 71（非 grep 估算的 65）。
 >
 > 验收：224 passed / 2428 tests passed / 0 failed。剩余 >500 行文件仅 `perception.perf.test.ts`（741，perf 基准）+ `app.contract.test.ts`（646，契约校验），均为 ADR-206 §Phase 4 标注的「保持整体」类型。
+>
+> **后续收敛记录（2026-07-30）**：
+>
+> **死代码清理**：删除 `camera-mocks.ts`（268 行，0 消费者），其 8 个 Mock 类已被 `babylon-classes.ts`/`babylon-mmd-mocks.ts`/`camera-adr100-mocks.ts` 完全覆盖。
+>
+> **工厂去重**：`model-manager-mocks.ts`（272→267 行）3 个与 `babylon-factories.ts` 逻辑完全重复的工厂（`babylonSceneModule`→`mockScene`、`babylonMathColorModule`→`mockMathColor`、`babylonStandardMaterialModule`→`mockStandardMaterial`）改为 re-export。保留 4 个独有定制（MergeMeshes 副作用、Vector3 原型补丁、MeshBuilder/Observable 独有工厂）。
+>
+> **内部类替换**：`env-mocks.ts`（438→392 行）删除内部 `Vec3`（26 行）和 `Col3`（19 行）类定义，改用 `babylon-classes.ts` 的 `MockVector3`/`MockColor3`（严格超集，6 个消费者仅用构造函数 + 属性读取，完全兼容）。
+>
+> **空桩收敛**：`material-editor-mocks.ts` 2 个本地 `{}` 空桩改为调用 `babylon-factories` 的 `mockTextureAlphaCheckerVertex()`/`mockTextureAlphaCheckerFragment()`，消除绕过工厂层的硬编码。
+>
+> 验收：224 passed / 2428 tests passed / 0 failed。至此 `babylon-classes` → `babylon-factories` 两层架构辐射 5 个模块级 mocks 文件，所有 Babylon Mock 类定义和工厂函数收归单一规范源。
 
 ### Phase 3：断言质量改善（持续，触碰即改善）
 
