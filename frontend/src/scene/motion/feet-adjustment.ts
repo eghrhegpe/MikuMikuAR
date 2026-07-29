@@ -22,7 +22,7 @@ import {
     matchBone,
 } from '@/motion-algos/proc-motion-shared';
 // [ADR-202 §六] WASM 模式经 mmdModelSolveIk 重解原生 IK 链
-import { getWasmIkResolver } from './bone-override';
+import { getWasmIkResolver, getOverride } from './bone-override';
 // 纯数学解算（无 Babylon 依赖，便于单测）见 motion-algos/feet-adjustment-math.ts
 import { solveFootTarget } from '@/motion-algos/feet-adjustment-math';
 // 落地判定（无 Babylon 依赖，便于单测）见 motion-algos/footstep-detect.ts
@@ -271,6 +271,15 @@ function _adjustFoot(
                 `centerY=${cache.centerY !== null ? cache.centerY.toFixed(3) : '?'} ` +
                 `legLen=${legLength.toFixed(3)}`
         );
+    }
+
+    // [ADR-202 §六] 如果 IK 目标骨有激活的 bone override，跳过自动贴地
+    // （用户手动覆盖优先于 feet-adjustment 的 always-on 自动地面跟随）
+    if (ikName) {
+        const existingOverride = getOverride(ikName, modelId);
+        if (existingOverride?.enabled) {
+            return;
+        }
     }
 
     if (res.skip) {

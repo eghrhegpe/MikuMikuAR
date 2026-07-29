@@ -193,6 +193,7 @@ bone-override 路径验证的是**被覆盖骨（如膝 `左ひざ`）** 有 `ik
 | `mmdModelSolveIk` 对含 toe 链模型的处理 | 方案A 会传播到趾骨，方案C 不会 | 正向收益（更精确），但需确认 toe 链旋转方向正确（实测验证） |
 | debug 日志 `solver=null` 假阴性 | WASM 迁移后 `ikSolver` 仍为 null（WASM 运行时不暴露此字段），调试者可能误以为 IK 未生效 | 步骤 5 修复：改为输出 `ikSolverIndex` 存在性 |
 | `two-bone-ik.ts` 有多处 import | 漏删一处则编译失败 | 步骤 6 前全局 grep 确认 `two-bone-ik` 所有引用点：`grep -r "two-bone-ik" frontend/src frontend/src/__tests__` |
+| `mmdModelSolveIk` 回写 IK 目标骨 worldMatrix（含旋转），与 bone-override 冲突 | bone-override order=0 写入用户旋转/位置覆盖 → feet-adjustment order=5 调 `setWorldTranslation(groundY)` 踩掉位置覆盖 + `mmdModelSolveIk` 踩掉旋转覆盖 → 动作覆盖失效 | feet-adjustment 在 `setWorldTranslation` 前检查 `getOverride(ikName, modelId)?.enabled`，有激活的覆盖时跳过自动贴地（`feet-adjustment.ts` line 285-293）。用户覆盖始终优先于 always-on 地面跟随 |
 
 ### 6.6 验收标准
 
