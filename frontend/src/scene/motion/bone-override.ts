@@ -934,6 +934,14 @@ export function setWasmIkResolver(
     _wasmIkResolver = resolver;
 }
 
+/**
+ * [ADR-202 §六] 获取 WASM IK 重解回调（供 feet-adjustment 等外部模块调用）。
+ * 返回 null 表示未注入（JS 模式或未初始化）。
+ */
+export function getWasmIkResolver(): ((modelId: string, ikSolverIndex: number, usePhysics: boolean) => void) | null {
+    return _wasmIkResolver;
+}
+
 export function startBoneOverride(
     getRuntimeBones: () => readonly IMmdRuntimeBone[],
     scene: import('@babylonjs/core/scene').Scene

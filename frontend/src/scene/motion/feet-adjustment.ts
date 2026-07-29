@@ -24,6 +24,8 @@ import {
 } from '@/motion-algos/proc-motion-shared';
 // [doc:adr-085 方案C] WASM 手动两骨骼 IK 求解（ikSolver 不可用时的临时替代）
 import { solveTwoBoneIK, applyRotationToWorldMatrix } from '@/motion-algos/two-bone-ik';
+// [ADR-202 §六] 方案A 新路径：经 mmdModelSolveIk 重解原生 IK 链
+import { getWasmIkResolver } from './bone-override';
 // 纯数学解算（无 Babylon 依赖，便于单测）见 motion-algos/feet-adjustment-math.ts
 import { solveFootTarget } from '@/motion-algos/feet-adjustment-math';
 // 落地判定（无 Babylon 依赖，便于单测）见 motion-algos/footstep-detect.ts
@@ -418,9 +420,51 @@ function _adjustFoot(
 
     // [doc:adr-085 方案C] 重解该腿 IK
     // JS 模式：原版 ikSolver.solve()（solve 内部回写踝 + 链骨骼 worldMatrix）
-    // WASM 模式：ikSolver 不可用（始终为 null），手动两骨骼 IK 求解
+    // WASM 模式：ikSolver 不可用（始终为 null）
     if (isWasmRuntime(bones[0])) {
-        _solveWasmLegIK(bones, ik, hip, side, _vFoot, _vTarget);
+        // [ADR-202 §六] 验证：方案C→A 迁移的关键环节
+        // 1. 验证 setWorldTranslation 写入后，WASM bone buffer 是否同步更新
+        const ikSolverIndex = (ik as { ikSolverIndex?: number }).ikSolverIndex;
+        const buf = (ik as MmdRuntimeBoneExtended).worldMatrix;
+        const bufAfter = buf ? [buf[12], buf[13], buf[14]] : null;
+        const resolver = getWasmIkResolver();
+
+        if (feetDebug.value) {
+            logWarn(
+                'feet',
+                `[A-verify] ${side} setWorldTranslation后: ` +
+                    `target=(${_vTarget.x.toFixed(3)}, ${_vTarget.y.toFixed(3)}, ${_vTarget.z.toFixed(3)}) ` +
+                    `buf=(${bufAfter?.[0]?.toFixed(3)}, ${bufAfter?.[1]?.toFixed(3)}, ${bufAfter?.[2]?.toFixed(3)}) ` +
+                    `match=${bufAfter ? _vTarget.y === bufAfter[1] : '?'} ` +
+                    `ikSolverIndex=${ikSolverIndex ?? 'null'} ` +
+                    `resolver=${resolver ? 'present' : 'null'}`
+            );
+        }
+
+        // 2. 方案A 新路径：经 mmdModelSolveIk 重解原生 IK 链
+        //    与方案C（TwoBoneIK 余弦定理）并列执行，便于对比验证。
+        //    debug 模式下两条路径都跑；非 debug 模式仅跑方案A（新路径），
+        //    旧方案C 逐步淘汰。
+        if (resolver && typeof ikSolverIndex === 'number' && ikSolverIndex >= 0) {
+            // 方案A：mmdModelSolveIk 直接读 WASM bone buffer（setWorldTranslation 已写入同一 buffer）
+            const resolvedMid = modelId; // _adjustFoot 已收到 modelId，直接透传
+            resolver(resolvedMid, ikSolverIndex, false);
+
+            if (feetDebug.value) {
+                // 重解后读 buffer 验证结果
+                const postBuf = buf ? [buf[12], buf[13], buf[14]] : null;
+                logWarn(
+                    'feet',
+                    `[A-verify] ${side} mmdModelSolveIk后 buf=(${postBuf?.[0]?.toFixed(3)}, ${postBuf?.[1]?.toFixed(3)}, ${postBuf?.[2]?.toFixed(3)})`
+                );
+            }
+        } else {
+            if (feetDebug.value) {
+                logWarn('feet', `[A-verify] ${side} 方案A 不可用: resolver=${resolver ? 'ok' : 'null'}, ikSolverIndex=${ikSolverIndex ?? 'null'}`);
+            }
+            // 回退：方案C TwoBoneIK
+            _solveWasmLegIK(bones, ik, hip, side, _vFoot, _vTarget);
+        }
     } else {
         const solver = (ik as MmdRuntimeBoneExtended).ikSolver;
         if (solver) {

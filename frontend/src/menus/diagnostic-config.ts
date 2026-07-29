@@ -1,0 +1,682 @@
+import { t } from '../core/i18n/t';
+import { captureError } from '../core/ai/error-buffer';
+import {
+    loadAiConfig,
+    saveAiConfig,
+    ensureAiConfigLoaded,
+    PROVIDER_PRESETS,
+    validateAiConfig,
+    normalizeEndpoint,
+    type AiConfig,
+    type AiConfigProvider,
+} from '../core/ai/config-store';
+import { resolveAi } from '../core/ai';
+import type { AiService, AiCapabilities, AiErrorKind } from '../core/ai/types';
+import { diagState } from './diagnostic-state';
+import { logWarn } from '../core/logger';
+import { DebouncedTimer } from '../core/async';
+import type { MenuNode } from './menu-schema';
+
+export function goKeyAllowsProceed(validation: ReturnType<typeof validateAiConfig>): boolean {
+    if (validation.ok) return true;
+    if (diagState.ai?.kind !== 'go') return false;
+    if (!diagState.goKeyConfigured) return false;
+    // go 模式 key 不可回读但已配置：允许 missingKey 通过
+    if (validation.kind === 'missingKey') return true;
+    return false;
+}
+
+async function ensureTestModel(): Promise<void> {
+    if (diagState.localConfig.model.trim()) return;
+    if (diagState.fetchedModels.length === 0) {
+        await refreshModelList();
+    }
+    if (diagState.fetchedModels.length > 0) {
+        diagState.localConfig.model = diagState.fetchedModels[0];
+        if (diagState.configModel) {
+            diagState.configModel.value = diagState.fetchedModels[0];
+        }
+        await doSaveConfig();
+    }
+}
+
+function inferProvider(endpoint: string): AiConfigProvider {
+    if (!endpoint) return 'custom';
+    let hostname: string;
+    try { hostname = new URL(endpoint).hostname; }
+    catch { return 'custom'; }
+    const matched = (Object.keys(PROVIDER_PRESETS) as AiConfigProvider[])
+        .filter((p) => p !== 'custom')
+        .find((p) => {
+            try { return new URL(PROVIDER_PRESETS[p].endpoint).hostname === hostname; }
+            catch { return false; }
+        });
+    return matched ?? 'custom';
+}
+
+export async function loadInitialConfig(): Promise<void> {
+    await diagState.saveChain;
+    await ensureAiConfigLoaded();
+    diagState.localConfig = { ...loadAiConfig() };
+    await resolveAi();
+    if (diagState.ai?.loadConfig) {
+        try {
+            const persisted = await diagState.ai.loadConfig();
+            if (persisted.endpoint || persisted.model) {
+                diagState.localConfig = {
+                    ...diagState.localConfig,
+                    provider: inferProvider(persisted.endpoint),
+                    endpoint: persisted.endpoint,
+                    model: persisted.model,
+                    apiKey: persisted.apiKey ?? diagState.localConfig.apiKey,
+                };
+            }
+            if (diagState.ai.kind === 'go' && persisted.keyConfigured && !persisted.apiKey) {
+                diagState.goKeyConfigured = true;
+            }
+        } catch { /* keep defaults */ }
+    }
+}
+
+export async function refreshCaps(): Promise<void> {
+    if (diagState.refreshingCaps || !diagState.ai) return;
+    diagState.refreshingCaps = true;
+    try {
+        await diagState.ai.refreshCapabilities?.();
+        diagState.caps = diagState.ai.capabilities();
+        refreshConfigUI();
+    } finally {
+        diagState.refreshingCaps = false;
+    }
+}
+
+function refreshConfigUI(): void {
+    updateCorsWarning();
+    updateApiKeyVisibility();
+    if (diagState.caps === null) {
+        setStatusBadge('initializing');
+    } else {
+        updateStatusBadge();
+        scheduleAutoTest();
+    }
+}
+
+function scheduleAutoTest(): void {
+    if (!diagState.aiResolved || diagState.testing) return;
+    if (!diagState.autoTestTimer) {
+        diagState.autoTestTimer = new DebouncedTimer();
+    }
+    void refreshModelList();
+    diagState.autoTestTimer.schedule(() => void runAutoTest(), 600);
+}
+
+async function runAutoTest(): Promise<void> {
+    if (!diagState.ai || diagState.testing || diagState.autoTesting) return;
+    await ensureTestModel();
+    const validation = validateAiConfig(diagState.localConfig);
+    if (!validation.ok && !goKeyAllowsProceed(validation)) return;
+    diagState.autoTesting = true;
+    setStatusBadge('testing');
+    try {
+        const result = await diagState.ai.testConnection();
+        if (result.ok) {
+            diagState.lastConnectionOk = true;
+            diagState.lastConnectionKind = null;
+            renderAdvice(undefined);
+        } else {
+            diagState.lastConnectionOk = false;
+            diagState.lastConnectionKind = result.kind;
+            captureError('ai-connection', result.message, undefined);
+            renderAdvice(result.kind);
+        }
+    } catch (err) {
+        diagState.lastConnectionOk = false;
+        diagState.lastConnectionKind = 'unknown';
+        captureError('ai-connection', err instanceof Error ? err.message : String(err), err);
+        renderAdvice('unknown');
+    } finally {
+        diagState.autoTesting = false;
+        updateStatusBadge();
+    }
+}
+
+function updateApiKeyVisibility(): void {
+    if (!diagState.configApiKey) return;
+    const row = diagState.configApiKey.closest('.diag-field-row') as HTMLElement | null;
+    if (!row) return;
+    const needsKey = PROVIDER_PRESETS[diagState.localConfig.provider].needsKey;
+    row.style.display = needsKey ? '' : 'none';
+}
+
+function updateCorsWarning(): void {
+    if (!diagState.corsWarningEl) return;
+    diagState.corsWarningEl.style.display =
+        diagState.caps && diagState.caps.corsRisk !== 'none' ? '' : 'none';
+}
+
+export function persistConfig(partial: Partial<AiConfig>): void {
+    diagState.localConfig = { ...diagState.localConfig, ...partial };
+    void doSaveConfig();
+}
+
+export let saveChain: Promise<void> = Promise.resolve();
+
+async function doSaveConfig(): Promise<void> {
+    const snapshot: AiConfig = { ...diagState.localConfig };
+    const kind = diagState.ai?.kind;
+    saveChain = saveChain.then(async () => {
+        try {
+            if (kind === 'go') {
+                const normalizedEndpoint = normalizeEndpoint(snapshot.endpoint);
+                const b = await import('@bindings/mikumikuar/internal/app/app');
+                await b.AiSetLLMConfig({
+                    baseUrl: normalizedEndpoint,
+                    model: snapshot.model,
+                    aiKey: snapshot.apiKey,
+                });
+                saveAiConfig({ ...snapshot, endpoint: normalizedEndpoint, apiKey: '' });
+            } else {
+                saveAiConfig(snapshot);
+            }
+        } catch (err) {
+            console.warn('[ai-config] 持久化失败', err);
+        }
+    });
+    return saveChain;
+}
+
+export function applyProvider(provider: AiConfigProvider): void {
+    const preset = PROVIDER_PRESETS[provider];
+    diagState.localConfig.provider = provider;
+    diagState.localConfig.endpoint = preset.endpoint;
+    diagState.localConfig.model = preset.model;
+    if (diagState.configEndpoint) diagState.configEndpoint.value = preset.endpoint;
+    if (diagState.configModel) diagState.configModel.value = preset.model;
+    updateProviderButtons(provider);
+    updateDocLink(provider);
+    if (diagState.configModelDatalist) diagState.configModelDatalist.innerHTML = '';
+    diagState.fetchedModels = [];
+    void (async () => {
+        await doSaveConfig();
+        void refreshCaps();
+        void refreshModelList();
+    })();
+}
+
+function updateProviderButtons(active: AiConfigProvider): void {
+    for (const btn of diagState.activeProviderButtons) {
+        const provider = btn.dataset.provider as AiConfigProvider;
+        btn.className = 'preset-chip' + (provider === active ? ' active' : '');
+    }
+}
+
+function updateDocLink(provider: AiConfigProvider): void {
+    if (!diagState.activeDocLink) return;
+    const preset = PROVIDER_PRESETS[provider];
+    if (preset.docUrl) {
+        diagState.activeDocLink.href = preset.docUrl;
+        diagState.activeDocLink.textContent = t('ai.config.doc', { provider: t(preset.labelKey) });
+        diagState.activeDocLink.style.display = '';
+    } else {
+        diagState.activeDocLink.style.display = 'none';
+    }
+}
+
+export async function refreshModelList(): Promise<void> {
+    if (!diagState.ai) return;
+    try {
+        const models = await diagState.ai.fetchModels?.() ?? [];
+        diagState.fetchedModels = models;
+        populateModelDatalist(models);
+        const btn = document.getElementById('diag-model-refresh-btn');
+        if (btn) {
+            btn.setAttribute('title',
+                models.length > 0
+                    ? t('ai.config.modelsFound', { n: String(models.length) })
+                    : t('ai.config.modelsNone'));
+        }
+    } catch (err) {
+        logWarn('ai-config', 'fetchModels failed:', err);
+        const btn = document.getElementById('diag-model-refresh-btn');
+        if (btn) btn.setAttribute('title', t('ai.config.modelsNone'));
+    }
+}
+
+function populateModelDatalist(models: string[]): void {
+    if (!diagState.configModelDatalist) return;
+    diagState.configModelDatalist.innerHTML = '';
+    for (const m of models) {
+        const opt = document.createElement('option');
+        opt.value = m;
+        diagState.configModelDatalist.appendChild(opt);
+    }
+}
+
+function populateModelChips(models: string[], inputEl: HTMLInputElement): void {
+    if (!diagState.modelListEl) return;
+    diagState.modelListEl.innerHTML = '';
+    for (const m of models) {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.textContent = m;
+        chip.className = 'preset-chip';
+        chip.addEventListener('click', () => {
+            diagState.localConfig.model = m;
+            inputEl.value = m;
+            persistConfig({ model: m });
+            if (diagState.modelListEl) diagState.modelListEl.style.display = 'none';
+        });
+        diagState.modelListEl.appendChild(chip);
+    }
+}
+
+export function updateStatusBadge(): void {
+    if (!diagState.statusBadgeEl || !diagState.statusTextEl) return;
+    const validation = validateAiConfig(diagState.localConfig);
+    if (!validation.ok && !goKeyAllowsProceed(validation) && validation.kind) {
+        setStatusBadge(validation.kind);
+        renderAdvice(validation.kind);
+        return;
+    }
+    if (diagState.lastConnectionOk === true) {
+        setStatusBadge('connected');
+        renderAdvice(undefined);
+    } else if (diagState.lastConnectionOk === false) {
+        const kind = diagState.lastConnectionKind ?? 'unknown';
+        setStatusBadge(kind);
+        renderAdvice(kind);
+    } else {
+        setStatusBadge(diagState.caps?.available ? 'disconnected' : 'missingEndpoint');
+        renderAdvice(undefined);
+    }
+}
+
+function setStatusBadge(
+    state: AiErrorKind | 'connected' | 'disconnected' | 'testing' | 'error' | 'initializing'
+): void {
+    if (!diagState.statusBadgeEl || !diagState.statusTextEl) return;
+    diagState.statusBadgeEl.className = 'diag-status-badge diag-status-badge--' + state;
+    diagState.statusTextEl.textContent = t(`ai.status.${state}`);
+}
+
+function focusInput(el: HTMLInputElement | null): void {
+    if (!el) return;
+    el.closest('.diag-field-row')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.focus();
+}
+
+function renderAdvice(kind?: AiErrorKind): void {
+    if (!diagState.adviceEl) return;
+    if (!kind) {
+        diagState.adviceEl.style.display = 'none';
+        diagState.adviceEl.innerHTML = '';
+        return;
+    }
+    diagState.adviceEl.className = 'diag-advice diag-advice--' + kind;
+    diagState.adviceEl.innerHTML = '';
+    const textSpan = document.createElement('span');
+    textSpan.textContent = t(`ai.errorAdvice.${kind}`);
+    diagState.adviceEl.appendChild(textSpan);
+    const actions = document.createElement('div');
+    actions.className = 'diag-advice-actions';
+    if (kind === 'missingEndpoint' || kind === 'notFound') {
+        const btn = document.createElement('button');
+        btn.className = 'preset-chip';
+        btn.textContent = t('ai.config.endpoint');
+        btn.addEventListener('click', () => focusInput(diagState.configEndpoint));
+        actions.appendChild(btn);
+    }
+    if (kind === 'missingKey' || kind === 'unauthorized') {
+        const btn = document.createElement('button');
+        btn.className = 'preset-chip';
+        btn.textContent = t('ai.config.apiKey');
+        btn.addEventListener('click', () => focusInput(diagState.configApiKey));
+        actions.appendChild(btn);
+    }
+    if (kind === 'missingModel') {
+        const btn = document.createElement('button');
+        btn.className = 'preset-chip';
+        btn.textContent = t('ai.config.model');
+        btn.addEventListener('click', () => focusInput(diagState.configModel));
+        actions.appendChild(btn);
+    }
+    if (actions.children.length > 0) diagState.adviceEl.appendChild(actions);
+    diagState.adviceEl.style.display = 'block';
+}
+
+async function saveGoConfig(partial: { baseUrl: string; model: string; aiKey: string }): Promise<void> {
+    const b = await import('@bindings/mikumikuar/internal/app/app');
+    await b.AiSetLLMConfig({ baseUrl: partial.baseUrl, model: partial.model, aiKey: partial.aiKey });
+}
+
+async function flushAndSave(): Promise<{ ok: boolean; error?: string }> {
+    if (diagState.configEndpoint) diagState.localConfig.endpoint = diagState.configEndpoint.value;
+    if (diagState.configModel) diagState.localConfig.model = diagState.configModel.value;
+    if (diagState.configApiKey) diagState.localConfig.apiKey = diagState.configApiKey.value;
+    try {
+        await doSaveConfig();
+        void refreshCaps();
+        return { ok: true };
+    } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : String(err) };
+    }
+}
+
+export function buildConfigSchema(): MenuNode[] {
+    return [
+        {
+            id: 'diagnostic:config',
+            kind: 'custom',
+            renderCustom: (c) => {
+                const loadingEl = document.createElement('div');
+                loadingEl.className = 'setting-hint';
+                loadingEl.textContent = '\u231B ' + t('ai.config.loading');
+                c.appendChild(loadingEl);
+                void (async () => {
+                    await loadInitialConfig();
+                    loadingEl.remove();
+                    renderConfigCard(c);
+                })();
+            },
+        },
+    ];
+}
+
+function renderConfigCard(c: HTMLElement): void {
+    diagState.activeProviderButtons = [];
+    diagState.activeDocLink = null;
+
+    const statusBadge = document.createElement('div');
+    statusBadge.className = 'diag-status-badge diag-status-badge--disconnected';
+    const statusText = document.createElement('span');
+    statusText.textContent = t('ai.status.disconnected');
+    statusBadge.appendChild(statusText);
+    c.appendChild(statusBadge);
+    diagState.statusBadgeEl = statusBadge;
+    diagState.statusTextEl = statusText;
+
+    const adviceEl = document.createElement('div');
+    adviceEl.className = 'diag-advice';
+    adviceEl.style.display = 'none';
+    adviceEl.setAttribute('role', 'status');
+    c.appendChild(adviceEl);
+    diagState.adviceEl = adviceEl;
+
+    const hintEl = document.createElement('div');
+    hintEl.className = 'setting-hint';
+    hintEl.textContent = t('ai.config.providerHint');
+    c.appendChild(hintEl);
+
+    const providerRow = document.createElement('div');
+    providerRow.className = 'diag-provider-row';
+    const providers: AiConfigProvider[] = ['ollama', 'deepseek', 'openai', 'openrouter', 'custom'];
+    for (const provider of providers) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = t(PROVIDER_PRESETS[provider].labelKey);
+        btn.className = 'preset-chip' + (provider === diagState.localConfig.provider ? ' active' : '');
+        btn.dataset.provider = provider;
+        btn.addEventListener('click', () => applyProvider(provider));
+        providerRow.appendChild(btn);
+        diagState.activeProviderButtons.push(btn);
+    }
+    const docLink = document.createElement('a');
+    docLink.target = '_blank';
+    docLink.className = 'diag-link';
+    docLink.setAttribute('aria-label', t('ai.config.doc', { provider: '' }));
+    providerRow.appendChild(docLink);
+    diagState.activeDocLink = docLink;
+    c.appendChild(providerRow);
+
+    diagState.corsWarningEl = document.createElement('div');
+    diagState.corsWarningEl.textContent = t('ai.config.corsWarning');
+    diagState.corsWarningEl.className = 'diag-warning';
+    diagState.corsWarningEl.setAttribute('role', 'alert');
+    c.appendChild(diagState.corsWarningEl);
+
+    const createField = (
+        label: string,
+        type: string,
+        value: string,
+        onChange: (val: string) => void,
+        fieldKey?: keyof AiConfig
+    ): { row: HTMLDivElement; input: HTMLInputElement } => {
+        const row = document.createElement('div');
+        row.className = 'diag-field-row';
+        const lbl = document.createElement('div');
+        lbl.textContent = label;
+        lbl.className = 'diag-field-label';
+        row.appendChild(lbl);
+        const input = document.createElement('input');
+        input.type = type;
+        input.value = value;
+        input.className = 'diag-input';
+        input.addEventListener('input', () => onChange(input.value));
+        input.addEventListener('blur', () => {
+            persistConfig(fieldKey ? { [fieldKey]: input.value } : diagState.localConfig);
+        });
+        row.appendChild(input);
+        return { row, input };
+    };
+
+    const endpointGroup = createField(
+        t('ai.config.endpoint'), 'text', diagState.localConfig.endpoint,
+        (v) => { diagState.localConfig.endpoint = v; }, 'endpoint'
+    );
+    c.appendChild(endpointGroup.row);
+    diagState.configEndpoint = endpointGroup.input;
+
+    const apiKeyGroup = createField(
+        t('ai.config.apiKey'), 'password', diagState.localConfig.apiKey,
+        (v) => { diagState.localConfig.apiKey = v; }, 'apiKey'
+    );
+    c.appendChild(apiKeyGroup.row);
+    diagState.configApiKey = apiKeyGroup.input;
+
+    if (diagState.ai?.kind === 'go' && diagState.goKeyConfigured && diagState.configApiKey) {
+        diagState.configApiKey.placeholder = t('ai.config.keyConfigured');
+    }
+
+    const modelRow = document.createElement('div');
+    modelRow.className = 'diag-field-row';
+    const modelLabel = document.createElement('div');
+    modelLabel.textContent = t('ai.config.model');
+    modelLabel.className = 'diag-field-label';
+    modelRow.appendChild(modelLabel);
+    const modelInput = document.createElement('input');
+    modelInput.type = 'text';
+    modelInput.className = 'diag-input';
+    modelInput.value = diagState.localConfig.model;
+    modelInput.setAttribute('list', 'diag-model-list');
+    modelInput.setAttribute('aria-label', t('ai.config.model'));
+    modelInput.addEventListener('input', () => {
+        diagState.localConfig.model = modelInput.value;
+        if (diagState.modelListEl) diagState.modelListEl.style.display = 'none';
+    });
+    modelInput.addEventListener('blur', () => persistConfig({ model: modelInput.value }));
+    modelRow.appendChild(modelInput);
+
+    const modelBtnRow = document.createElement('div');
+    modelBtnRow.className = 'diag-hint-row';
+
+    const modelRefresh = document.createElement('button');
+    modelRefresh.id = 'diag-model-refresh-btn';
+    modelRefresh.textContent = t('ai.config.refreshModels');
+    modelRefresh.className = 'preset-chip';
+    modelRefresh.setAttribute('title', t('ai.config.refreshModels'));
+    modelRefresh.setAttribute('aria-label', t('ai.config.refreshModels'));
+    modelRefresh.style.padding = '2px 10px';
+    modelRefresh.style.fontSize = 'var(--font-ui-sm)';
+    modelBtnRow.appendChild(modelRefresh);
+
+    const modelToggleBtn = document.createElement('button');
+    modelToggleBtn.textContent = '\u25BC';
+    modelToggleBtn.className = 'preset-chip';
+    modelToggleBtn.setAttribute('title', t('ai.config.showModels'));
+    modelToggleBtn.setAttribute('aria-label', t('ai.config.showModels'));
+    modelToggleBtn.style.padding = '2px 10px';
+    modelToggleBtn.style.fontSize = 'var(--font-ui-sm)';
+    modelToggleBtn.addEventListener('click', () => {
+        if (diagState.modelListEl && diagState.modelListEl.style.display !== 'none') {
+            diagState.modelListEl.style.display = 'none';
+        } else if (diagState.modelListEl && diagState.modelListEl.children.length > 0) {
+            diagState.modelListEl.style.display = '';
+        } else {
+            modelRefresh.click();
+        }
+    });
+    modelBtnRow.appendChild(modelToggleBtn);
+    modelRow.appendChild(modelBtnRow);
+
+    const modelDatalist = document.createElement('datalist');
+    modelDatalist.id = 'diag-model-list';
+    modelRow.appendChild(modelDatalist);
+    c.appendChild(modelRow);
+
+    const modelListWrap = document.createElement('div');
+    modelListWrap.className = 'diag-model-chips';
+    modelListWrap.style.display = 'none';
+    c.appendChild(modelListWrap);
+    diagState.configModel = modelInput;
+    diagState.configModelDatalist = modelDatalist;
+    diagState.modelListEl = modelListWrap;
+
+    const testRow = document.createElement('div');
+    testRow.className = 'diag-hint-row';
+
+    const saveBtn = document.createElement('button');
+    saveBtn.textContent = t('ai.config.save');
+    saveBtn.className = 'preset-chip';
+    saveBtn.setAttribute('aria-label', t('ai.config.save'));
+    testRow.appendChild(saveBtn);
+
+    const testBtn = document.createElement('button');
+    testBtn.id = 'diag-test-btn';
+    testBtn.textContent = t('ai.config.test');
+    testBtn.className = 'preset-chip';
+    testBtn.setAttribute('aria-label', t('ai.config.test'));
+    testRow.appendChild(testBtn);
+
+    const statusEl = document.createElement('span');
+    statusEl.className = 'diag-status';
+    testRow.appendChild(statusEl);
+    c.appendChild(testRow);
+
+    // Wire up model refresh click (event handler set by entry point via data attributes)
+    modelRefresh.addEventListener('click', async () => {
+        if (modelRefresh.dataset.refreshing === 'true' || !diagState.ai) return;
+        modelRefresh.dataset.refreshing = 'true';
+        modelRefresh.disabled = true;
+        modelRefresh.textContent = '\u2026';
+        try {
+            await flushAndSave();
+            const models = (await diagState.ai.fetchModels?.()) ?? [];
+            diagState.fetchedModels = models;
+            populateModelDatalist(models);
+            if (models.length > 0 && !diagState.localConfig.model) {
+                diagState.localConfig.model = models[0];
+                modelInput.value = models[0];
+            }
+            modelRefresh.setAttribute('title',
+                models.length > 0
+                    ? t('ai.config.modelsFound', { n: String(models.length) })
+                    : t('ai.config.modelsNone'));
+            if (models.length > 0) {
+                populateModelChips(models, modelInput);
+                modelListWrap.style.display = '';
+            }
+        } catch (err) {
+            console.warn('[ai-config] 发现模型失败', err);
+            modelRefresh.setAttribute('title', t('ai.config.modelsNone'));
+        } finally {
+            delete modelRefresh.dataset.refreshing;
+            modelRefresh.disabled = false;
+            modelRefresh.textContent = t('ai.config.refreshModels');
+        }
+    });
+
+    let saving = false;
+    saveBtn.addEventListener('click', async () => {
+        if (saving) return;
+        saving = true;
+        saveBtn.disabled = true;
+        statusEl.textContent = t('ai.config.saving');
+        statusEl.style.color = 'var(--text-muted)';
+        const res = await flushAndSave();
+        statusEl.textContent = res.ok ? t('ai.config.saved') : `${t('ai.config.saveFailed')}: ${res.error ?? ''}`;
+        statusEl.style.color = res.ok ? 'var(--success)' : 'var(--danger)';
+        if (!res.ok) captureError('ai-config', res.error ?? 'save failed', undefined);
+        saving = false;
+        saveBtn.disabled = false;
+    });
+
+    testBtn.addEventListener('click', () => void testConnection(statusEl));
+
+    updateDocLink(diagState.localConfig.provider);
+    refreshConfigUI();
+}
+
+async function testConnection(statusEl: HTMLElement): Promise<void> {
+    if (diagState.testing || diagState.autoTesting) return;
+    diagState.testing = true;
+    if (!diagState.ai) {
+        statusEl.textContent = t('ai.config.notResolved');
+        statusEl.style.color = 'var(--warn)';
+        diagState.lastConnectionOk = false;
+        updateStatusBadge();
+        diagState.testing = false;
+        return;
+    }
+    await ensureTestModel();
+    await flushAndSave();
+    const validation = validateAiConfig(diagState.localConfig);
+    if (!validation.ok && !goKeyAllowsProceed(validation)) {
+        const errMsg = validation.errors
+            ? validation.errors.map((e) => t(e.message)).join('; ')
+            : t(validation.message);
+        statusEl.textContent = errMsg;
+        statusEl.style.color = 'var(--warn)';
+        captureError('ai-config', errMsg, undefined);
+        if (validation.kind) {
+            setStatusBadge(validation.kind);
+            renderAdvice(validation.kind);
+        }
+        diagState.lastConnectionOk = false;
+        diagState.testing = false;
+        return;
+    }
+    statusEl.textContent = t('ai.config.testing');
+    statusEl.style.color = 'var(--text-muted)';
+    setStatusBadge('testing');
+    diagState.lastConnectionOk = null;
+    try {
+        const result = await diagState.ai.testConnection();
+        if (result.ok) {
+            statusEl.textContent = t('ai.config.connected');
+            statusEl.style.color = 'var(--success)';
+            diagState.lastConnectionOk = true;
+            diagState.lastConnectionKind = null;
+            renderAdvice(undefined);
+        } else {
+            statusEl.textContent = result.message;
+            statusEl.style.color = 'var(--danger)';
+            captureError('ai-connection', result.message, undefined);
+            diagState.lastConnectionKind = result.kind;
+            setStatusBadge(result.kind);
+            renderAdvice(result.kind);
+            diagState.lastConnectionOk = false;
+        }
+    } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        statusEl.textContent = msg;
+        statusEl.style.color = 'var(--danger)';
+        captureError('ai-connection', msg, err);
+        diagState.lastConnectionKind = 'unknown';
+        setStatusBadge('unknown');
+        renderAdvice('unknown');
+        diagState.lastConnectionOk = false;
+    } finally {
+        diagState.testing = false;
+    }
+    updateStatusBadge();
+}
