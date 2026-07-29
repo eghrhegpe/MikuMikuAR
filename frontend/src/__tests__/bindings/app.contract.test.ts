@@ -461,6 +461,7 @@ describe('binding contract: method IDs', () => {
         'AddRecentModel',
         'AddTag',
         'AiCancelStream',
+        'AiFetchModels',
         'AiGetLLMConfig',
         'AiSetLLMConfig',
         'AiStreamChat',
