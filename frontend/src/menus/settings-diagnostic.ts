@@ -63,6 +63,8 @@ let _configEndpoint: HTMLInputElement | null = null;
 let _configApiKey: HTMLInputElement | null = null;
 let _configModel: HTMLInputElement | null = null;
 let _configModelDatalist: HTMLDataListElement | null = null;
+/** 模型芯片列表容器（可见下拉，替代不可见的 datalist）。 */
+let _modelListEl: HTMLElement | null = null;
 let _statusBadgeEl: HTMLElement | null = null;
 let _adviceEl: HTMLElement | null = null;
 let _statusTextEl: HTMLElement | null = null;
@@ -108,6 +110,17 @@ let _localConfig: AiConfig = { ...loadAiConfig() };
 /** 自动连接测试防抖定时器 */
 let _autoTestTimer: DebouncedTimer | null = null;
 let _autoTesting = false;
+
+/** Go 桌面端 key 不可回读，_goKeyConfigured=true 时 missingKey 不应阻止请求。
+ *  返回「去掉 missingKey 后是否仍有阻碍性错误」。 */
+function _goKeyAllowsProceed(validation: ReturnType<typeof validateAiConfig>): boolean {
+    if (validation.ok) return true;
+    if (_ai?.kind === 'go' && _goKeyConfigured) {
+        const nonKey = validation.errors?.filter((e) => e.kind !== 'missingKey') ?? [];
+        return nonKey.length === 0;
+    }
+    return false;
+}
 
 // ======== 生命周期 ========
 
@@ -237,7 +250,7 @@ async function _runAutoTest(): Promise<void> {
         return;
     }
     const validation = validateAiConfig(_localConfig);
-    if (!validation.ok) {
+    if (!validation.ok && !_goKeyAllowsProceed(validation)) {
         // 配置不完整时 badge/advice 已由校验结果接管，无需覆盖
         return;
     }
@@ -380,12 +393,36 @@ function _populateModelDatalist(models: string[]): void {
     }
 }
 
+/** 将模型列表渲染为可见的芯片按钮组（桌面端 datalist 不可见时的备用下拉）。 */
+function _populateModelChips(models: string[], inputEl: HTMLInputElement): void {
+    if (!_modelListEl) {
+        return;
+    }
+    _modelListEl.innerHTML = '';
+    for (const m of models) {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.textContent = m;
+        chip.className = 'preset-chip';
+        chip.addEventListener('click', () => {
+            _localConfig.model = m;
+            inputEl.value = m;
+            void _persistConfig({ model: m });
+            if (_modelListEl) {
+                _modelListEl.style.display = 'none';
+            }
+        });
+        _modelListEl.appendChild(chip);
+    }
+}
+
 function _updateStatusBadge(): void {
     if (!_statusBadgeEl || !_statusTextEl) {
         return;
     }
     const validation = validateAiConfig(_localConfig);
-    if (!validation.ok && validation.kind) {
+    // Go 模式 key 不可见：missingKey 不阻止，按连接状态显示
+    if (!validation.ok && !_goKeyAllowsProceed(validation) && validation.kind) {
         _setStatusBadge(validation.kind);
         _renderAdvice(validation.kind);
         return;
@@ -1349,7 +1386,7 @@ async function _sendMessage(): Promise<void> {
     }
 
     const validation = validateAiConfig(_localConfig);
-    if (!validation.ok) {
+    if (!validation.ok && !_goKeyAllowsProceed(validation)) {
         if (validation.kind) {
             _setStatusBadge(validation.kind);
             _renderAdvice(validation.kind);
@@ -1547,7 +1584,7 @@ async function _testConnection(statusEl: HTMLElement): Promise<void> {
     await _flushAndSave();
 
     const validation = validateAiConfig(_localConfig);
-    if (!validation.ok) {
+    if (!validation.ok && !_goKeyAllowsProceed(validation)) {
         const errMsg = validation.errors
             ? validation.errors.map((e) => t(e.message)).join('; ')
             : t(validation.message);
@@ -1747,9 +1784,14 @@ function _renderConfigCard(c: HTMLElement): void {
     modelInput.setAttribute('aria-label', t('ai.config.model'));
     modelInput.addEventListener('input', () => {
         _localConfig.model = modelInput.value;
+        _hideModelChips(); // 用户手动输入时收起芯片列表
     });
     modelInput.addEventListener('blur', () => _persistConfig({ model: modelInput.value }));
     modelRow.appendChild(modelInput);
+
+    const modelBtnRow = document.createElement('div');
+    modelBtnRow.className = 'diag-hint-row';
+
     const modelRefresh = document.createElement('button');
     modelRefresh.textContent = '↻';
     modelRefresh.className = 'preset-chip';
@@ -1758,6 +1800,16 @@ function _renderConfigCard(c: HTMLElement): void {
     modelRefresh.style.padding = '2px 10px';
     modelRefresh.style.fontSize = 'var(--font-ui-sm)';
     let _refreshing = false;
+    const _showModelChips = () => {
+        if (_modelListEl) {
+            _modelListEl.style.display = '';
+        }
+    };
+    const _hideModelChips = () => {
+        if (_modelListEl) {
+            _modelListEl.style.display = 'none';
+        }
+    };
     modelRefresh.addEventListener('click', async () => {
         if (_refreshing || !_ai) {
             return;
@@ -1777,6 +1829,10 @@ function _renderConfigCard(c: HTMLElement): void {
                 models.length > 0
                     ? t('ai.config.modelsFound', { n: String(models.length) })
                     : t('ai.config.modelsNone');
+            if (models.length > 0) {
+                _populateModelChips(models, modelInput);
+                _showModelChips();
+            }
         } catch (err) {
             console.warn('[ai-config] 发现模型失败', err);
             modelRefresh.title = t('ai.config.modelsNone');
@@ -1786,13 +1842,41 @@ function _renderConfigCard(c: HTMLElement): void {
             modelRefresh.textContent = '↻';
         }
     });
-    modelRow.appendChild(modelRefresh);
+    modelBtnRow.appendChild(modelRefresh);
+
+    const modelToggleBtn = document.createElement('button');
+    modelToggleBtn.textContent = '▼';
+    modelToggleBtn.className = 'preset-chip';
+    modelToggleBtn.setAttribute('title', t('ai.config.showModels'));
+    modelToggleBtn.setAttribute('aria-label', t('ai.config.showModels'));
+    modelToggleBtn.style.padding = '2px 10px';
+    modelToggleBtn.style.fontSize = 'var(--font-ui-sm)';
+    modelToggleBtn.addEventListener('click', () => {
+        if (_modelListEl && _modelListEl.style.display !== 'none') {
+            _hideModelChips();
+        } else if (_modelListEl && _modelListEl.children.length > 0) {
+            _showModelChips();
+        } else {
+            // 未获取过则触发刷新
+            modelRefresh.click();
+        }
+    });
+    modelBtnRow.appendChild(modelToggleBtn);
+
+    modelRow.appendChild(modelBtnRow);
     const modelDatalist = document.createElement('datalist');
     modelDatalist.id = 'diag-model-list';
     modelRow.appendChild(modelDatalist);
     c.appendChild(modelRow);
+
+    // 模型芯片列表容器（可见下拉，替代不可见的 datalist）
+    const modelListWrap = document.createElement('div');
+    modelListWrap.className = 'diag-model-chips';
+    modelListWrap.style.display = 'none';
+    c.appendChild(modelListWrap);
     _configModel = modelInput;
     _configModelDatalist = modelDatalist;
+    _modelListEl = modelListWrap;
 
     const testRow = document.createElement('div');
     testRow.className = 'diag-hint-row';
@@ -1925,6 +2009,8 @@ export function buildSettingsDiagnosticLevel(
                 _lastUndoable = null;
                 _autoTestTimer?.cancel();
                 _autoTestTimer = null;
+                // 关面板时重置模型芯片列表引用
+                _modelListEl = null;
             };
         },
     };
