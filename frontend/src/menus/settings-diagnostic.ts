@@ -1424,10 +1424,12 @@ function _saveGoConfig(partial: {
     model?: string;
     aiKey?: string;
 }): Promise<void> {
+    // 信息源唯一：只认入参（调用方均从 _localConfig 传入），不再偷读输入框，
+    // 避免"以 _localConfig 还是输入框为准"的二义性。
     return import('@bindings/mikumikuar/internal/app/app').then((b) =>
         b.AiSetLLMConfig({
-            baseUrl: partial.baseUrl ?? _configEndpoint?.value ?? '',
-            model: partial.model ?? _configModel?.value ?? '',
+            baseUrl: partial.baseUrl ?? '',
+            model: partial.model ?? '',
             aiKey: partial.aiKey,
         })
     );
