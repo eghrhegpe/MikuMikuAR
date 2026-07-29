@@ -8,6 +8,22 @@ source_files:
   - frontend/src/menus/settings-system.ts
 adr:
   - ADR-157
+symbols:
+  - buildSettingsSystemLevel
+  - setBlenderPath
+  - setMMDPath
+  - addCustomSoftware
+  - scanSoftwareDir
+  - buildSoftwareDetailLevel
+invariants:
+  - Schema 驱动 UI，经声明式 MenuNode 构建
+  - 设置导入时 sanitizeImportedSettings 校验字段类型
+tests: []
+use_when:
+  - 设置系统
+  - 缓存清理
+  - 软件管理
+  - 设置导入/导出/重置
 ---
 
 ## 系统概览

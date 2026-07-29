@@ -11,7 +11,6 @@ adr:
 symbols:
   - _resetBalanceSwayState
   - _applyBalanceSway
-  - BalanceSwayState
 invariants:
   - 被 perception-observer/perception 引用
 tests: []

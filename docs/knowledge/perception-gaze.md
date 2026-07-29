@@ -11,9 +11,14 @@ adr:
   - ADR-162
   - ADR-166
 symbols:
-  - initGazeTracking
-  - setGazeConfig
-  - getGazeConfig
+  - _applyGaze
+  - applyGazeWasm
+  - _applyHeadGazeCore
+  - _applyEyeGazeCore
+  - _clampGazeTargetInParentFrame
+  - _getGazeTarget
+  - _clampHeadGazeTarget
+  - _clampEyeGazeTarget
 invariants:
   - 视线追踪主模块
   - JS/WASM 调度

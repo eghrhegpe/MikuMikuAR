@@ -10,7 +10,6 @@ adr:
   - ADR-157
 symbols:
   - buildSettingsLanguageLevel
-  - AVAILABLE_LANGS
 invariants:
   - 被 settings.ts 引用
 tests: []

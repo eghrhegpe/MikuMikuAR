@@ -8,6 +8,16 @@ source_files:
   - frontend/src/menus/settings-media.ts
 adr:
   - ADR-157
+symbols:
+  - buildSettingsMediaLevel
+invariants:
+  - Schema 驱动 UI，经声明式 MenuNode 构建
+tests: []
+use_when:
+  - 设置媒体
+  - 音频设置
+  - 音效设置
+  - 截图设置
 ---
 
 ## 系统概览

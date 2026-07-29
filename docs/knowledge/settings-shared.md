@@ -11,8 +11,11 @@ adr:
 symbols:
   - applyUIAppearanceDom
   - formatBytes
-  - SETTINGS_THEME_DEFAULTS
-  - SETTINGS_UI_DEFAULTS
+  - truncatePath
+  - setTheme
+  - generateTextColors
+  - preloadAutoImportState
+  - preloadDownloadWatchState
 invariants:
   - 被所有设置子页面引用（约 10 次）
 tests: []

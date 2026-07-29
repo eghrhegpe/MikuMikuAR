@@ -9,9 +9,8 @@ source_files:
 adr:
   - ADR-157
 symbols:
-  - SETTINGS_ACTION
   - SETTINGS
-  - SETTINGS_RESOURCE
+  - SETTINGS_ACTION
 invariants:
   - 被 settings-actions/settings-resources/settings-system/settings 引用（约 4 次）
 tests: []
