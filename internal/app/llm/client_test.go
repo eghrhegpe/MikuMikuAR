@@ -58,6 +58,40 @@ func TestFetchModels_HTTPError(t *testing.T) {
 	}
 }
 
+// TestFetchModels_ParsesOllamaFormat 验证 {models:[{name}]} 解析（Ollama /api/tags 格式）。
+// 回归背景：Go 端原先只解析 OpenAI 格式，桌面 Ollama 用户永远拿不到模型列表。
+func TestFetchModels_ParsesOllamaFormat(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// /v1/models 返回 OpenAI 格式空数组 → 失败；/api/tags 返回 Ollama 格式
+		if r.URL.Path == "/v1/models" {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"data":[]}`))
+			return
+		}
+		if r.URL.Path == "/api/tags" {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"models":[{"name":"llama3.2:3b"},{"name":"qwen2.5:7b"}]}`))
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+
+	// httptest 服务器地址是 127.0.0.1，触发 isLocalhost 分支加入 /api/tags 候选
+	models, err := FetchModels(context.Background(), Config{
+		BaseURL: srv.URL + "/v1/chat/completions",
+	})
+	if err != nil {
+		t.Fatalf("FetchModels failed: %v", err)
+	}
+	if len(models) != 2 {
+		t.Fatalf("expected 2 Ollama models, got %d: %v", len(models), models)
+	}
+	if models[0] != "llama3.2:3b" && models[1] != "llama3.2:3b" {
+		t.Errorf("expected llama3.2:3b in result, got %v", models)
+	}
+}
+
 // captureStreamModel 起一个 SSE 桩服务器，捕获 StreamChat 请求体里的 model 字段。
 func captureStreamModel(t *testing.T, cfg Config, reqModel string) string {
 	t.Helper()
