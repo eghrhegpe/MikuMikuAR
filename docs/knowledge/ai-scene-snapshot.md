@@ -10,8 +10,10 @@ adr:
   - ADR-196
 symbols:
   - SceneSnapshotBridge
+  - SceneSnapshotData
   - registerAiSnapshotBridge
   - formatSceneSnapshot
+  - captureSceneSnapshotData
   - captureSceneSnapshot
 invariants:
   - 采用 bridge 模式（对齐 performance.ts 的 registerRenderBridge），scene.ts 在 initScene() 注入引擎引用

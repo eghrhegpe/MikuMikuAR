@@ -12,7 +12,6 @@ symbols:
   - showConfirm
   - showPrompt
   - showPrompt2
-  - showErrorAction
   - disposeOverlay2
 invariants:
   - 对话框请求串行排队，不能因并发调用覆盖 DOM 导致 Promise 永不结束

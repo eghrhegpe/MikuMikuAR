@@ -9,6 +9,21 @@ source_files:
 adr:
   - ADR-130
   - ADR-174
+symbols:
+  - resolveQualityProfile
+  - inferQualityProfile
+  - QualityProfile
+  - QualityDimension
+  - QualityProfileSettings
+invariants:
+  - QUALITY_DIMENSIONS 注册表驱动：新增维度只需追加一条，resolve/infer 自动派生
+  - default 必须与 env-state-schema.ts 对应字段 default 一致（编译期校验）
+  - 性能系统写入 qualityProfile 作为单一聚合源，各域从此解析派生产出
+tests: []
+use_when:
+  - 质量档位
+  - 性能降级
+  - quality profile
 ---
 
 ## 系统概览

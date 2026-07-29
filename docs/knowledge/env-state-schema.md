@@ -9,6 +9,23 @@ source_files:
 adr:
   - ADR-137
   - ADR-132
+symbols:
+  - ENV_STATE_SCHEMA
+  - EnvStateSchema
+  - EnvDispatchGroup
+  - getEnvKeys
+invariants:
+  - 新增字段只需在此追加一处（type + default + group），types.ts / state.ts 自动派生
+  - 各子系统通过 getEnvKeys(group) 获取 key 列表，无需手工维护 key 数组
+  - enum 类型附带 values 白名单（如 skyMode: color|texture|procedural）
+  - tuple3 类型用于颜色/向量，写入需整体替换
+  - dispatch 分组决定字段变化时触发哪些子系统回调；未指定则不触发
+tests: []
+use_when:
+  - EnvState
+  - 环境状态 schema
+  - getEnvKeys
+  - dispatch group
 ---
 
 ## 系统概览

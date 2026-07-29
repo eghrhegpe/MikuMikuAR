@@ -1,7 +1,7 @@
 // settings-diagnostic.ts — AI 助手面板入口（协调各子模块）
 import { t } from '../core/i18n/t';
 import { resolveAi } from '../core/ai';
-import type { ChatMessage, AiErrorKind } from '../core/ai/types';
+import type { ChatMessage } from '../core/ai/types';
 import { validateAiConfig } from '../core/ai/config-store';
 import { buildToolSchemas } from '../core/ai/action-catalog';
 import { captureError } from '../core/ai/error-buffer';

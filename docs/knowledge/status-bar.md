@@ -15,6 +15,8 @@ symbols:
   - applyHudVisibility
   - disposeStatusBar
   - initHints
+  - setLoadingStatus
+  - hideLoadingStatus
 invariants:
   - 新状态到来时取消旧的隐藏与淡出定时器
   - HMR 或销毁时清理所有 timer 与 hint listener

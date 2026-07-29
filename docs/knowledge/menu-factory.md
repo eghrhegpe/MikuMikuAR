@@ -13,8 +13,12 @@ symbols:
   - PopupMenuHandle
   - registerPopupMenu
   - PopupMenuConfig
+  - showPopupMenu
 invariants:
-  - 弹窗菜单通过注册表管理
+  - 弹窗菜单通过注册表管理，registerPopupMenu 返回 handle（含 show 函数），不暴露 SlideMenu 实例
+  - 支持两种入口：buildRoot 回调（惰性构造）和事先构造的 PopupLevel
+  - overlayClass 自定义弹窗覆盖层 CSS 类，支持多种弹窗样式共存
+  - showPopupMenu 为简化版单次入口（无需注册表），创建即显示
 tests: []
 use_when:
   - 菜单工厂

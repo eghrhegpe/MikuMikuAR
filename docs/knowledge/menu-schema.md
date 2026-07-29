@@ -8,6 +8,26 @@ source_files:
   - frontend/src/menus/menu-schema.ts
 adr:
   - ADR-093
+symbols:
+  - StatePath
+  - ActionMenuCtx
+  - MenuKind
+  - ControlSpec
+  - MenuNode
+  - getStateValue
+  - setStateValue
+  - getBindFn
+invariants:
+  - StatePath 由解析器按前缀映射到 reactive state 对象（env/render/light/ui/perception/motionModule）
+  - getStateValue/setStateValue 经 get/set 衍生转换（如 windDirection→角度），避免硬编码转换逻辑散落
+  - onChange 副作用需幂等（重复触发安全）
+  - MenuNode 构成声明式树，由 renderMenu（render-menu.ts）统一渲染，本模块只定义类型与解析
+tests: []
+use_when:
+  - 菜单声明
+  - 控件配置
+  - 状态绑定
+  - 菜单节点
 ---
 
 ## 系统概览
