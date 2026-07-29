@@ -1,0 +1,166 @@
+# ADR-205: AI 工具体系全景 — 从写操作到读写闭环
+
+- **状态**: 🟡 规划中
+- **日期**: 2026-07-29
+- **相关**: ADR-155（NL 控场景，动作注册表消费者）、ADR-196（内置 AI 诊断助手，诊断 prompt 注入源）、ADR-197（统一动作注册表，动作定义规范）、ADR-203（AI 助手会话持久化，面板载体）、ADR-191（禁止神桶，模块导入规则）
+
+---
+
+## 背景
+
+ADR-196 + ADR-197 + ADR-155 三阶段演进后，AI 助手已具备 41 个 tool_call 工具，覆盖灯光/相机/环境/动作/设置/场景/模型库 7 个域。但所有工具均为**写操作**（mutate 场景），LLM 无法主动查询前端状态、后端日志、错误记录——只能在 diagnostic 模式被动接收 system prompt 注入的静态快照。用户需要手动填写报错信息，体验断裂。
+
+**核心矛盾**：LLM 能「做」但不能「看」，读写能力不对称。
+
+---
+
+## 现有工具清单（41 个写操作）
+
+| 域 | 数量 | 动作 ID 范围 | 功能概述 |
+|----|------|-------------|---------|
+| **控制** | 8 | `ai:control:setLightIntensity` … `ai:control:setPerformance` | 灯光强度/颜色、相机模式、环境预设、地面开关、模型加载、动作加载、性能模式 |
+| **设置** | 13 | `settings:set:clearextractcache` … `settings:set-lang` | 清缓存、语言切换等系统设置 |
+| **场景** | 4 | `screenshot:current/batch`、`scene:save/undo` | 截图、场景保存/撤销 |
+| **动作** | 19 | `lipsync:toggle`、`motion:model:pause/reset/…` | 唇同步、动作播放控制、姿态重置 |
+| **环境** | 3 | `env:bind-particle-texture` … `env:bind-stars-texture` | 粒子/天空/星空纹理绑定 |
+| **模型库** | 3 | `library:rescan`、`library:import-file`、`library:set-formation` | 资源扫描、导入、队形编排 |
+
+**所有工具共性**：
+- 均通过 `executeActionById()` 执行，返回 `ActionResult = { success: boolean; message: string }`
+- 均需用户在 pending 卡确认后执行（控制模式）
+- 均为场景侧 mutation，不涉及后端查询
+
+---
+
+## 缺失能力分析
+
+### 1. 后端状态不可见
+
+| 缺失 | 影响 |
+|------|------|
+| Go `slog` 日志仅写 stdout | LLM 看不到 HTTP 请求耗时、连接错误、API 调用失败详情 |
+| 无 Wails binding 暴露后端状态 | LLM 无法查询 LLM 连接配置、API key 有效性、模型列表缓存 |
+| 用户需手动复制报错信息 | 诊断效率低，上下文易丢失 |
+
+### 2. 前端状态不可查
+
+| 缺失 | 影响 |
+|------|------|
+| `ErrorRingBuffer` 仅在 diagnostic 模式静态注入 | chat/control 模式下 LLM 无法主动查询错误 |
+| `captureSceneSnapshot()` 仅在 diagnostic 模式调用 | LLM 无法按需获取 FPS/模型数/材质数等运行时指标 |
+| 无 read-only tool 注册 | LLM 无法主动「问」，只能被动「听」 |
+
+### 3. 单向交互瓶颈
+
+```
+用户报错 → 手动填信息 → LLM 诊断 → 给建议 → 用户手动执行
+                    ↑                              ↓
+              （断裂点：LLM 不能自己查）      （LLM 不能自己做——需用户确认）
+```
+
+---
+
+## 规划方案：读写闭环
+
+### 阶段 1：只读诊断工具（前端侧）
+
+在 `action-registry` 注册 `readonly: true` 的只读工具，自动执行（跳过 pending 卡）。
+
+| 工具 ID | 参数 | 返回 | 说明 |
+|---------|------|------|------|
+| `diagnostic:getSceneSnapshot` | 无 | `{ fps, modelCount, meshCount, materialCount, animationCount, gpuMemory, ktx2Used }` | 复用 `captureSceneSnapshot()` |
+| `diagnostic:getFrontendErrors` | `{ limit?: number }` | `Array<{ timestamp, message, source, stack? }>` | 复用 `errorBuffer.toDiagnosticContext()` |
+| `diagnostic:getFrontendState` | 无 | `{ envPreset, cameraMode, performanceMode, groundVisible, modelCount, activeMotion? }` | 聚合 `envState` + `sceneState` |
+
+**关键设计**：
+- `ActionDef` 新增 `readonly?: boolean` 字段
+- `action-executor.ts` 检测 `readonly` → 直接执行，不进 pending 队列
+- `ActionResult` 扩展为 `{ success, message, data?: unknown }`，readonly 工具填充 `data`
+- `action-catalog.ts` 的 `buildToolSchemas()` 为 readonly 工具生成只读 description
+
+### 阶段 2：后端状态绑定（Go 侧）
+
+| 组件 | 说明 |
+|------|------|
+| `LogRing` | Go 侧环形缓冲（容量 200），存储最近 200 条 slog 记录 |
+| `SlogRingHandler` | 自定义 slog handler，写入 LogRing + 原 stderr 双写 |
+| `AiGetBackendLogs` binding | 返回最近 N 条日志（按 level 过滤） |
+| `AiGetBackendState` binding | 返回 `{ llmConnected, llmProvider, model, apiEndpoint, configValid }` |
+
+注册为前端 readonly 工具：
+
+| 工具 ID | 参数 | 返回 |
+|---------|------|------|
+| `diagnostic:getBackendLogs` | `{ level?: 'info'\|'warn'\|'error', limit?: number }` | `Array<{ time, level, msg, attrs? }>` |
+| `diagnostic:getBackendState` | 无 | `{ llmConnected, llmProvider, model, apiEndpoint, configValid }` |
+
+### 阶段 3：闭环交互模式
+
+```
+用户："为什么场景卡了？"
+  → LLM 调 diagnostic:getSceneSnapshot → 发现 FPS=12
+  → LLM 调 diagnostic:getFrontendErrors → 发现 Texture load timeout ×3
+  → LLM 调 diagnostic:getBackendLogs → 发现 KTX2 decompress failed
+  → LLM 自动诊断："纹理加载超时导致，建议降低纹理质量或预加载"
+  → 用户确认 → LLM 调 ai:control:setPerformance(mode:"balanced")
+```
+
+**UX 变化**：
+- 控制模式下，readonly 工具自动执行，用户无需确认
+- 工具结果以折叠卡片形式展示在对话流中（不阻塞对话）
+- system prompt 仍在 diagnostic 模式保留作为「首屏快照」，tool_call 作为「按需深查」互补
+
+---
+
+## ActionDef 扩展契约
+
+```typescript
+interface ActionDef {
+  id: string;
+  label: string;          // i18n key
+  domain: string;
+  icon: string;
+  params: ParamDef[];
+  execute: (params) => Promise<ActionResult>;
+  destructive?: boolean;
+  readonly?: boolean;     // 新增：true 时自动执行，不进 pending
+}
+
+interface ActionResult {
+  success: boolean;
+  message: string;
+  data?: unknown;         // 新增：readonly 工具返回结构化数据
+}
+```
+
+---
+
+## 影响范围
+
+| 文件 | 变更 |
+|------|------|
+| `core/action-registry.ts` | ActionDef 加 `readonly` 字段 |
+| `core/action-executor.ts` | 检测 `readonly` → 跳过 pending |
+| `core/ai/action-catalog.ts` | readonly 工具 prompt 标记为「自动执行，无需确认」 |
+| `core/ai/types.ts` | ActionResult 加 `data` |
+| `menus/settings-diagnostic.ts` | readonly 结果渲染折叠卡片 |
+| `internal/app/ai_binding.go` | 新增 AiGetBackendLogs / AiGetBackendState |
+| `internal/app/llm/client.go` | 日志双写到 LogRing |
+| `core/action-defs/diagnostic-actions.ts` | 新建，注册 5 个 readonly 工具 |
+
+---
+
+## 假设与边界
+
+- 假设 LogRing 容量 200 条足够覆盖典型诊断窗口（~10 分钟操作日志）
+- readonly 工具不走 pending 确认——用户显式信任 LLM 读取状态（不修改任何东西）
+- 后端 LogRing 不落盘，重启清空——诊断是实时场景，不需要历史回溯
+- 不影响现有 41 个写操作工具的行为
+
+---
+
+## 修订记录
+
+| 日期 | 修订 |
+|------|------|
+| 2026-07-29 | 初版：基于 ADR-196/197/155 现状分析 + 用户反馈，规划读写闭环 |

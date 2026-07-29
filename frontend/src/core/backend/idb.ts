@@ -3,7 +3,9 @@
 // 资源配对：openDB 惰性单例，closeIDB() 在页面卸载/切换时释放连接。
 
 const DB_NAME = 'mikumikuar-web';
-const DB_VERSION = 1;
+// [doc:adr-203] v2：补建 'chats' store（AI 助手多会话持久化）。
+// onupgradeneeded 仅在版本号提升时触发，对已有 v1 数据库必须升版本才能补建缺失 store。
+const DB_VERSION = 2;
 
 export const STORES = [
     'config',
@@ -15,8 +17,8 @@ export const STORES = [
     'presets',
     'tags',
     'meta',
-    // [doc:adr-202] AI 助手多会话历史：meta:<id> 存会话元信息，msgs:<id> 存消息数组。
-    // onupgradeneeded 会自动补建缺失 store，无需升 DB_VERSION（沿用 idbGet/Set 键值模型）。
+    // [doc:adr-203] AI 助手多会话历史：meta:<id> 存会话元信息，msgs:<id> 存消息数组。
+    // onupgradeneeded 在 DB_VERSION 提升时补建（见 openDB 升级钩子）。
     'chats',
 ] as const;
 export type Store = (typeof STORES)[number];
@@ -36,12 +38,15 @@ export function openDB(): Promise<IDBDatabase> {
         req.onupgradeneeded = (event) => {
             // [doc:adr-177] Phase 4 IndexedDB 迁移框架
             // v1：历史 web-loader（已删除）与主应用共享同一 schema，键规约一致（file:<name>），无需迁移。
+            // v2：[doc:adr-203] 新增 'chats' store（AI 助手多会话持久化）。
+            //     老用户已有 v1 数据库无 chats store，必须升版本号触发 onupgradeneeded 才能补建。
+            //     下方统一遍历 STORES 补建缺失项，对 v1→v2 与全新安装均覆盖。
             // 未来 schema 变更在此追加 if (oldVersion < N) { ... } 分支。
             const db = req.result;
             const oldVersion = event.oldVersion;
-            void oldVersion; // 当前 v1 无迁移逻辑，预留钩子
+            void oldVersion; // 当前 v2 仅依赖 STORES 遍历补建，无需 oldVersion 分支；预留钩子供未来迁移使用
 
-            // 首次创建或补建缺失 store
+            // 首次创建或补建缺失 store（覆盖 v1→v2 升级与全新安装两种路径）
             for (const s of STORES) {
                 if (!db.objectStoreNames.contains(s)) {
                     db.createObjectStore(s);

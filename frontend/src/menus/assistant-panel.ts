@@ -1,4 +1,4 @@
-// [doc:adr-202] AI 助手独立面板 —— 从设置菜单拆出的主窗口内独立 overlay 入口。
+// [doc:adr-203] AI 助手独立面板 —— 从设置菜单拆出的主窗口内独立 overlay 入口。
 //
 // 复用 registerPopupMenu 工厂 + 诊断面板 schema（buildDiagnosticSchema），
 // 以更宽的 overlayClass('sceneOverlay-assistant') 承载会话历史 + 对话。
