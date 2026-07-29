@@ -1,6 +1,6 @@
 // diagnostic-control.ts — 纯 tool call UI（无 chat/config 协调逻辑）
 import { t } from '../core/i18n/t';
-import { getAction, listActions } from '../core/action-registry';
+import { getAction } from '../core/action-registry';
 import { executeAction, parseActionFromLLM } from '../core/ai/intent-dispatcher';
 import { showConfirm } from '../core/dialog';
 import { showErrorToast } from '../core/toast';
@@ -40,48 +40,35 @@ export function handleControlFallback(
     return true;
 }
 
-/** 渲染 pending 区域（无待确认时显示 hint） */
+/** 渲染 pending 区域（仅有可撤销操作时显示） */
 export function renderControlHint(): void {
     if (!diagState.pendingContainer || diagState.pendingAction || diagState.dialogueMode) {
         return;
     }
     diagState.pendingContainer.innerHTML = '';
-    diagState.pendingContainer.style.display = '';
 
+    if (!diagState.lastUndoable) {
+        diagState.pendingContainer.style.display = 'none';
+        return;
+    }
+
+    diagState.pendingContainer.style.display = '';
     const wrapper = document.createElement('div');
     wrapper.className = 'diag-control-hint';
 
-    if (diagState.lastUndoable) {
-        const undoRow = document.createElement('div');
-        undoRow.className = 'diag-control-undo-row';
-        undoRow.setAttribute('data-testid', 'ai:control:undo-row');
-        const undoHint = document.createElement('span');
-        undoHint.className = 'diag-control-undo-hint';
-        undoHint.textContent = t('ai.control.undoHint', { action: diagState.lastUndoable.label });
-        undoRow.appendChild(undoHint);
-        const undoBtn = document.createElement('button');
-        undoBtn.textContent = t('ai.control.undo');
-        undoBtn.className = 'preset-chip';
-        undoBtn.addEventListener('click', () => void undoLastAction(undoBtn));
-        undoRow.appendChild(undoBtn);
-        wrapper.appendChild(undoRow);
-    }
-
-    const hint = document.createElement('div');
-    hint.className = 'diag-control-hint-text';
-    hint.textContent = t('ai.control.emptyHint');
-    wrapper.appendChild(hint);
-
-    const modelHint = document.createElement('div');
-    modelHint.className = 'diag-control-hint-note';
-    modelHint.textContent = t('ai.control.modelHint');
-    wrapper.appendChild(modelHint);
-
-    const toolCount = listActions().length;
-    const toolSummary = document.createElement('div');
-    toolSummary.className = 'diag-control-hint-note';
-    toolSummary.textContent = t('ai.control.toolSummary', { count: String(toolCount) });
-    wrapper.appendChild(toolSummary);
+    const undoRow = document.createElement('div');
+    undoRow.className = 'diag-control-undo-row';
+    undoRow.setAttribute('data-testid', 'ai:control:undo-row');
+    const undoHint = document.createElement('span');
+    undoHint.className = 'diag-control-undo-hint';
+    undoHint.textContent = t('ai.control.undoHint', { action: diagState.lastUndoable.label });
+    undoRow.appendChild(undoHint);
+    const undoBtn = document.createElement('button');
+    undoBtn.textContent = t('ai.control.undo');
+    undoBtn.className = 'preset-chip';
+    undoBtn.addEventListener('click', () => void undoLastAction(undoBtn));
+    undoRow.appendChild(undoBtn);
+    wrapper.appendChild(undoRow);
 
     diagState.pendingContainer.appendChild(wrapper);
 }

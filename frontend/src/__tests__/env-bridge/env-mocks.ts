@@ -143,7 +143,7 @@ const es: Record<string, any> = {
     waterWaveHeight: 0.15,
     bigWaveHeight: 1.0,
     smallWaveHeight: 1.0,
-    waterSize: 50,
+    waterSize: 200,
     waterAnimSpeed: 0.2,
     skyTexture: '',
     skyRotationY: 0,

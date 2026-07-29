@@ -27,27 +27,118 @@ export function renderChat(): void {
         return;
     }
     diagState.chatContainer.innerHTML = '';
+
+    // 预处理：tool_call_id → 结果文本，供助手消息渲染时反查
+    const toolResults = new Map<string, string>();
     for (const msg of diagState.messages) {
         if (msg.role === 'tool') {
+            toolResults.set(msg.tool_call_id, msg.content);
+        }
+    }
+
+    for (const msg of diagState.messages) {
+        // ── tool 结果：作为紧凑指示器渲染（不再跳过） ──
+        if (msg.role === 'tool') {
+            const row = document.createElement('div');
+            row.className = 'diag-chat-row chat-row--tool';
+            const label = document.createElement('strong');
+            label.textContent = t('ai.chat.tool');
+            label.className = 'diag-chat-label';
+            row.appendChild(label);
+            const content = document.createElement('div');
+            content.className = 'diag-chat-content diag-tool-result';
+            const details = document.createElement('details');
+            const summary = document.createElement('summary');
+            summary.textContent = t('ai.chat.toolResult');
+            summary.className = 'diag-tool-summary';
+            details.appendChild(summary);
+            const body = document.createElement('div');
+            body.className = 'diag-tool-result-body';
+            body.textContent =
+                msg.content.length > 200 ? msg.content.slice(0, 200) + '…' : msg.content;
+            details.appendChild(body);
+            content.appendChild(details);
+            row.appendChild(content);
+            diagState.chatContainer.appendChild(row);
             continue;
         }
-        if (msg.role === 'assistant' && 'tool_calls' in msg && msg.tool_calls) {
+
+        // ── 助手消息（可能含 tool_calls） ──
+        const hasToolCalls =
+            msg.role === 'assistant' && 'tool_calls' in msg && Array.isArray(msg.tool_calls) && msg.tool_calls!.length > 0;
+        const textContent = typeof msg.content === 'string' ? msg.content : '';
+
+        // 纯文本助手消息（无 tool_calls）：正常渲染
+        // 含 tool_calls 但无文本：只渲染工具调用区
+        // 含 tool_calls 且有文本：文本 + 工具调用区
+        if (!hasToolCalls && !textContent) {
             continue;
         }
+
         const row = document.createElement('div');
         row.className = `diag-chat-row chat-row--${msg.role}`;
         const label = document.createElement('strong');
-        label.textContent = msg.role === 'user' ? t('ai.chat.you') : t('ai.chat.assistant');
+        label.textContent = t('ai.chat.assistant');
         label.className = 'diag-chat-label';
         row.appendChild(label);
         const content = document.createElement('div');
-        const textContent = typeof msg.content === 'string' ? msg.content : '';
         content.className = 'diag-chat-content';
-        if (msg.role === 'assistant') {
+
+        // 渲染文本内容
+        if (textContent) {
             renderMarkdownInto(content, textContent);
-        } else {
-            content.textContent = textContent;
         }
+
+        // 渲染工具调用折叠区
+        if (hasToolCalls) {
+            const toolDetails = document.createElement('details');
+            toolDetails.className = 'diag-tool-calls';
+            const toolSummary = document.createElement('summary');
+            toolSummary.className = 'diag-tool-summary';
+            toolSummary.textContent = t('ai.chat.toolCalls', { count: msg.tool_calls!.length });
+            toolDetails.appendChild(toolSummary);
+            for (const tc of msg.tool_calls!) {
+                const tcDiv = document.createElement('div');
+                tcDiv.className = 'diag-tool-call-item';
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'diag-tool-call-name';
+                nameSpan.textContent = tc.function.name;
+                tcDiv.appendChild(nameSpan);
+                // 尝试解析参数做简要展示
+                try {
+                    const args = JSON.parse(tc.function.arguments);
+                    const argText = Object.entries(args)
+                        .map(([k, v]) => `${k}: ${typeof v === 'string' && v.length > 40 ? v.slice(0, 40) + '…' : v}`)
+                        .join(', ');
+                    if (argText) {
+                        const argSpan = document.createElement('span');
+                        argSpan.className = 'diag-tool-call-args';
+                        argSpan.textContent = `(${argText})`;
+                        tcDiv.appendChild(argSpan);
+                    }
+                } catch {
+                    /* 参数解析失败则跳过 */
+                }
+                // 对应的工具结果状态
+                const result = toolResults.get(tc.id);
+                if (result !== undefined) {
+                    const status = document.createElement('span');
+                    status.className = 'diag-tool-call-status';
+                    try {
+                        const parsed = JSON.parse(result);
+                        status.textContent = parsed.success ? '✓' : '✗';
+                        status.title = typeof parsed.message === 'string' ? parsed.message : result;
+                    } catch {
+                        status.textContent = '✓';
+                        status.title = result;
+                    }
+                    tcDiv.appendChild(status);
+                }
+                toolDetails.appendChild(tcDiv);
+            }
+            content.appendChild(toolDetails);
+        }
+
         row.appendChild(content);
         diagState.chatContainer.appendChild(row);
     }

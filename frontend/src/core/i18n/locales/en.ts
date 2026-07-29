@@ -1458,7 +1458,8 @@ export const en: Record<string, string> = {
     'env.foamAlpha': 'Foam alpha influence',
     'env.foamOpacity': 'Foam opacity',
     'env.waterFogColor': 'Water fog color',
-    'env.waterFogDensity': 'Water fog density',
+    'env.waterFogStart': 'Fog start distance',
+    'env.waterFogEnd': 'Fog end distance',
     'env.waterFogOpacityInfluence': 'Water fog opacity influence',
     'env.reflection': 'Reflection',
     'env.reflectionIntensity': 'Reflection Intensity',
@@ -1911,6 +1912,9 @@ export const en: Record<string, string> = {
     'ai.chat.stop': 'Stop',
     'ai.chat.thinking': 'Thinking…',
     'ai.chat.reasoning': 'Reasoning',
+    'ai.chat.tool': 'Tool',
+    'ai.chat.toolCalls': 'Called {count} tool(s)',
+    'ai.chat.toolResult': 'Tool result',
     'ai.chat.untitled': 'Untitled chat',
     'ai.chat.newSession': 'New chat',
     'ai.chat.history': 'History',
@@ -2022,6 +2026,7 @@ export const en: Record<string, string> = {
     'ai.actions.library.rescan': 'Rescan model library',
     'ai.actions.library.importFile': 'Import model file',
     'ai.actions.library.setFormation': 'Set formation',
+    'ai.actions.library.list': 'List available models',
     'ai.actions.diagnostic.getErrors': 'Get frontend error log',
     'ai.actions.diagnostic.getSceneSnapshot': 'Get scene runtime snapshot',
     'ai.actions.diagnostic.getFrontendState': 'Get frontend state summary',
@@ -2037,12 +2042,6 @@ export const en: Record<string, string> = {
     'ai.control.cancelled': 'Action cancelled.',
     'ai.control.confirmDestructive':
         'This will change the current scene state ({action}). Continue?',
-    'ai.control.emptyHint':
-        'Tell me what you want to adjust, e.g. "dim the lights" or "switch to night environment".',
-    'ai.control.modelHint':
-        '💡 Control mode needs a model with function-calling. Recommended: GPT-4o-mini / DeepSeek / Qwen2.5+; small local models may fail to parse commands.',
-    'ai.control.toolSummary':
-        'AI can operate {count} scene tools (light/camera/motion/environment/model, etc.). Describe what you want naturally.',
     'ai.control.resultSuccess': '✅ Applied: {message}',
     'ai.control.resultFailed': '❌ Failed: {message}',
     'ai.control.undo': 'Undo',

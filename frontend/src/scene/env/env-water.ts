@@ -757,7 +757,8 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     mat.setFloat('causticScrollY', state.causticScrollY);
     mat.setFloat('fresnelAlphaInfluence', state.fresnelAlphaInfluence);
     mat.setColor3('waterFogColor', col3FromTriple(state.waterFogColor));
-    mat.setFloat('waterFogDensity', state.waterFogDensity);
+    mat.setFloat('waterFogStart', state.waterFogStart);
+    mat.setFloat('waterFogEnd', state.waterFogEnd);
     mat.setFloat('waterFogOpacityInfluence', state.waterFogOpacityInfluence);
 
     // ——— 波方向（风向联动）———
@@ -884,7 +885,8 @@ const WATER_UNIFORMS = [
     'fresnelAlphaInfluence',
     'foamOpacity',
     'waterFogColor',
-    'waterFogDensity',
+    'waterFogStart',
+    'waterFogEnd',
     'waterFogOpacityInfluence',
     'uWindDir',
     'uWindSpeed',
@@ -1256,7 +1258,8 @@ export interface WaterPreset {
     smallWaveHeight: number;
     waterAnimSpeed: number;
     waterFogColor: [number, number, number];
-    waterFogDensity: number;
+    waterFogStart: number;
+    waterFogEnd: number;
     waterFogOpacityInfluence: number;
     // 新增：从着色器硬编码提取的可调参数（可选，使用默认值如未定义）
     fresnelBias?: number;
@@ -1291,7 +1294,8 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         smallWaveHeight: 0.5,
         waterAnimSpeed: 0.2,
         waterFogColor: [0.5, 0.52, 0.62],
-        waterFogDensity: 0.006,
+        waterFogStart: 80,
+        waterFogEnd: 500,
         waterFogOpacityInfluence: 0,
         fresnelAlphaInfluence: 0.35,
         causticIntensity: 0.1,
@@ -1312,7 +1316,8 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         smallWaveHeight: 1.0,
         waterAnimSpeed: 1.0,
         waterFogColor: [0.48, 0.5, 0.6],
-        waterFogDensity: 0.009,
+        waterFogStart: 50,
+        waterFogEnd: 300,
         waterFogOpacityInfluence: 0,
         fresnelAlphaInfluence: 0.4,
         causticIntensity: 0.15,
@@ -1332,7 +1337,8 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         smallWaveHeight: 0.8,
         waterAnimSpeed: 2.5,
         waterFogColor: [0.4, 0.42, 0.55],
-        waterFogDensity: 0.014,
+        waterFogStart: 20,
+        waterFogEnd: 150,
         waterFogOpacityInfluence: 0,
         fresnelAlphaInfluence: 0.5,
         causticIntensity: 0.2,
@@ -1352,7 +1358,8 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         smallWaveHeight: 0.5,
         waterAnimSpeed: 5.0,
         waterFogColor: [0.35, 0.36, 0.48],
-        waterFogDensity: 0.022,
+        waterFogStart: 5,
+        waterFogEnd: 80,
         waterFogOpacityInfluence: 0,
         fresnelAlphaInfluence: 0.6,
         causticIntensity: 0.25,
@@ -1372,7 +1379,8 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         smallWaveHeight: 1.2,
         waterAnimSpeed: 1.2,
         waterFogColor: [0.45, 0.58, 0.62],
-        waterFogDensity: 0.008,
+        waterFogStart: 60,
+        waterFogEnd: 400,
         waterFogOpacityInfluence: 0,
         fresnelAlphaInfluence: 0.42,
         causticIntensity: 0.2,
@@ -1408,7 +1416,8 @@ export function buildWaterPresetEnvState(preset: WaterPreset): Partial<EnvState>
         smallWaveHeight: preset.smallWaveHeight ?? 1.0,
         waterAnimSpeed: preset.waterAnimSpeed,
         waterFogColor: preset.waterFogColor,
-        waterFogDensity: preset.waterFogDensity,
+        waterFogStart: preset.waterFogStart,
+        waterFogEnd: preset.waterFogEnd,
         waterFogOpacityInfluence: preset.waterFogOpacityInfluence,
         causticIntensity: preset.causticIntensity,
         // 扩展参数一并写入：setEnvState 同步触发的 _syncWaterUniforms 据此应用并持久化，
@@ -1488,8 +1497,11 @@ export function applyWaterPresetToCurrent(preset: Partial<WaterPreset>): void {
     if (preset.waterFogColor !== undefined) {
         mat.setColor3('waterFogColor', col3FromTriple(preset.waterFogColor));
     }
-    if (preset.waterFogDensity !== undefined) {
-        mat.setFloat('waterFogDensity', preset.waterFogDensity);
+    if (preset.waterFogStart !== undefined) {
+        mat.setFloat('waterFogStart', preset.waterFogStart);
+    }
+    if (preset.waterFogEnd !== undefined) {
+        mat.setFloat('waterFogEnd', preset.waterFogEnd);
     }
     if (preset.waterFogOpacityInfluence !== undefined) {
         mat.setFloat('waterFogOpacityInfluence', preset.waterFogOpacityInfluence);

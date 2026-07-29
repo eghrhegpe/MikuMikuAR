@@ -3,6 +3,8 @@ import { setModelFormation } from '../../scene/scene';
 import { refreshLibrary } from '../../menus/library-setup';
 import { importFile } from '../../menus/library-actions';
 import { feedbackInfo } from '../feedback';
+import { allModels } from '../config';
+import { getBaseName } from '@/core/path';
 
 export function registerLibraryActions(): void {
     registerAction({
@@ -43,6 +45,19 @@ export function registerLibraryActions(): void {
                 p.type as 'line' | 'v-shape' | 'circle' | 'grid' | 'diagonal' | 'arc'
             );
             feedbackInfo('scene.formationStatus.' + p.type, undefined);
+        },
+    });
+    registerAction({
+        id: 'library:list',
+        label: 'ai.actions.library.list',
+        domain: 'library',
+        params: [],
+        readonly: true,
+        execute: async () => {
+            const models = allModels
+                .filter((m) => m.format !== 'vmd')
+                .map((m) => getBaseName(m.file_path));
+            return { data: { models, count: models.length } };
         },
     });
 }
