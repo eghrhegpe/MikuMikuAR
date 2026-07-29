@@ -135,6 +135,11 @@ function _addAssistantMessage(text: string): void {
     _messages.push({ role: 'assistant', content: text });
 }
 
+function _fmtTime(ts: number): string {
+    const d = new Date(ts);
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
 /** 从端点 hostname 精确推断服务商，避免 substring 误匹配。 */
 function _inferProvider(endpoint: string): AiConfigProvider {
     if (!endpoint) {
@@ -832,7 +837,8 @@ async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
                         streamingRow.remove();
                     }
                 }
-                _addAssistantMessage(t('ai.errors.apiError', { msg: chunk.error ?? '' }));
+                const errTime = _fmtTime(Date.now());
+                _addAssistantMessage(`${t('ai.errors.apiError', { msg: chunk.error ?? '' })} · ${errTime}`);
                 _renderChat();
                 break;
             } else if (chunk.type === 'done') {
@@ -906,7 +912,8 @@ async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
                 streamingRow.remove();
             }
         }
-        _addAssistantMessage(t('ai.errors.apiError', { msg: errMsg }));
+        const errTime = _fmtTime(Date.now());
+        _addAssistantMessage(`${t('ai.errors.apiError', { msg: errMsg })} · ${errTime}`);
         _renderChat();
     } finally {
         if (_isStreaming) {
