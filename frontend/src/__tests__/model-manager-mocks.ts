@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-nocheck — Babylon.js mock 类型由 vi.mock 运行时替换（供 model-manager 拆分测试复用）
 // Shared Babylon.js mock factories + test helpers for the model-manager split tests.
 //
 // Mock classes are imported directly from ./mocks/babylon-classes — the same source the

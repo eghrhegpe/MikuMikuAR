@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-nocheck — vi.hoisted mock 类运行时替换（camera 拆分测试用）
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 const MockCamera = vi.hoisted(() => { return class { fov = 0.8; position = { x: 0, y: 0, z: 0 }; name = ''; constructor(..._a: any[]) {} getClassName() { return 'Camera'; } attachControl() {} detachControl() {} dispose() {} } as any; });
 const MockArcRotateCamera = vi.hoisted(() => { return class { alpha = 0; beta = 0; radius = 0; lowerRadiusLimit = 0; upperRadiusLimit = 0; panningSensibility = 50; inertia = 0; angularSensibilityX = 0; angularSensibilityY = 0; pinchPrecision = 0; _panningMouseButton = 0; fov = 0.8; position = { x: 0, y: 0, z: 0 }; target = { x: 0, y: 8, z: 0 }; _scene: any; _cameraRotation = { x: 0, y: 0 }; inputs = { addGamepad: () => {} }; name = ''; constructor(..._a: any[]) {} getClassName() { return 'ArcRotateCamera'; } attachControl() {} detachControl() {} setTarget(_t: any) { this.target.x = _t.x; this.target.y = _t.y; this.target.z = _t.z; } dispose() {} } as any; });
