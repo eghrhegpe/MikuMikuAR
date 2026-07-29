@@ -116,7 +116,8 @@ function buildToastElement(
     body.style.cssText = 'flex:1;min-width:0';
 
     const titleEl = document.createElement('div');
-    titleEl.style.cssText = 'font-weight:600;color:var(--text-bright);margin-bottom:2px';
+    titleEl.style.cssText =
+        'font-weight:600;color:var(--text-bright);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
     titleEl.textContent = title;
     body.appendChild(titleEl);
 
