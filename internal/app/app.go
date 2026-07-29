@@ -155,10 +155,9 @@ func (a *App) ServiceStartup(ctx context.Context, options application.ServiceOpt
 func (a *App) SetWailsApp(wailsApp *application.App) {
 	a.wailsApp = wailsApp
 
-	// Set up dual-write slog handler: ring buffer + stderr
-	defaultHandler := slog.Default().Handler()
-	ringHandler := NewSlogRingHandler(a.logRing, defaultHandler)
-	slog.SetDefault(slog.New(ringHandler))
+	// Set up dual-write slog handler: ring buffer + stderr BEFORE prewarm
+	// ADR-205: must use io.Writer, NOT custom slog.Handler wrapper (wrapping causes hang in wails3 production build)
+	slog.SetDefault(slog.New(slog.NewTextHandler(NewDualWriter(a.logRing, os.Stderr), nil)))
 
 	a.prewarmPlazaWindow()
 }
