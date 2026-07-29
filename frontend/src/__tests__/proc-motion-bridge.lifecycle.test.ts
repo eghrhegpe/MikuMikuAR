@@ -8,6 +8,10 @@ import {
     mockAudio,
     mockScene,
     mockVmdLayers,
+    mockPerception,
+    mockMotionIntent,
+    mockBeatDetector,
+    mockProceduralMotion,
 } from './proc-motion-bridge-mocks';
 
 const mockState = createProcMockState();
@@ -16,6 +20,10 @@ vi.mock('../core/config', () => mockConfig(mockState));
 vi.mock('../outfit/audio', () => mockAudio(mockState));
 vi.mock('../scene/scene', () => mockScene(mockState));
 vi.mock('../scene/motion/vmd-layers', () => mockVmdLayers());
+vi.mock('../scene/motion/perception', () => mockPerception(mockState));
+vi.mock('../scene/motion/motion-intent', () => mockMotionIntent(mockState));
+vi.mock('../motion-algos/beat-detector', () => mockBeatDetector(mockState));
+vi.mock('../motion-algos/procedural-motion', () => mockProceduralMotion(mockState));
 
 type Sut = typeof import('../scene/motion/proc-motion-bridge');
 let sut: Sut;
