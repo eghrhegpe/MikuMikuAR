@@ -24,6 +24,9 @@ export async function executeActionById(
     for (const paramDef of def.params) {
         const raw = rawParams[paramDef.name];
         if (raw === undefined) {
+            if (paramDef.optional) {
+                continue; // 可选参数未传，跳过
+            }
             if (paramDef.type !== 'boolean' && paramDef.type !== 'toggle') {
                 return { success: false, message: `缺少必要参数: ${paramDef.name}` };
             }

@@ -7,6 +7,8 @@ export type ParamType = 'string' | 'enum' | 'color' | 'range' | 'entity' | 'bool
 export interface ParamDef {
     name: string;
     type: ParamType;
+    /** 可选参数：未传时跳过校验，不报"缺少必要参数" */
+    optional?: boolean;
     /** enum 类型：代码侧合法值数组 */
     enum?: readonly string[];
     /** NL 同义词映射（可选，供 ADR-155 param-adapters 消费） */
