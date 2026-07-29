@@ -9,7 +9,6 @@ source_files:
 adr: []
 symbols:
   - freeflyInput
-  - FreeflyState
 invariants:
   - 被 camera/props 引用
 tests: []

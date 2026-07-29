@@ -7,6 +7,19 @@ scope:
 source_files:
   - frontend/src/menus/scene-menu-state.ts
 adr: []
+symbols:
+  - setSceneMenu
+  - getSceneMenu
+  - reRenderSceneMenu
+  - setRefreshSceneRoot
+  - refreshSceneRoot
+invariants:
+  - 纯状态模块，零 UI 依赖
+  - 从 scene-menu.ts 拆分，切断 scene-menu ↔ env-ground-levels 双向 import
+tests: []
+use_when:
+  - 场景菜单状态
+  - 场景菜单实例
 ---
 
 ## 系统概览

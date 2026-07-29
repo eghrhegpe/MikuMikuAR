@@ -10,6 +10,7 @@ adr: []
 symbols:
   - orbitToCartesian
   - cartesianToOrbit
+  - normalizeOrbit
 invariants:
   - 被 props/model-manager 引用
 tests: []

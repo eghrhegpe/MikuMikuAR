@@ -13,8 +13,9 @@ symbols:
   - ModelPresetFile
   - serializeModelPreset
   - applyModelPreset
-  - selectAndSavePreset
-  - selectAndLoadPreset
+  - savePresetToLibDialog
+  - applyPresetFromLib
+  - tryAutoApplyPreset
   - buildPresetListLevel
 invariants:
   - Schema 驱动 UI
