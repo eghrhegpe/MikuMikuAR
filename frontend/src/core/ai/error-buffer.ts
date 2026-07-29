@@ -8,11 +8,29 @@ export interface ErrorEntry {
     name?: string;
     stack?: string;
     timestamp: number;
+    severity: 'error' | 'warn' | 'info';
 }
 
 export interface GlobalErrorTarget {
     addEventListener(type: string, fn: (ev: unknown) => void): void;
     removeEventListener(type: string, fn: (ev: unknown) => void): void;
+}
+
+/** 根据 ErrorEntry 的 kind + tag 推导严重级别。 */
+export function inferSeverity(kind: ErrorEntry['kind'], tag: string): ErrorEntry['severity'] {
+    // 运行时全局异常（未捕获/未处理 rejection）视为最严重
+    if (kind === 'uncaught' || kind === 'unhandledrejection') {
+        return 'error';
+    }
+    // AI 流式/连接错误视为 error
+    if (tag === 'ai-stream' || tag === 'ai-connection') {
+        return 'error';
+    }
+    // 配置问题视为 warn
+    if (tag === 'ai-config') {
+        return 'warn';
+    }
+    return 'warn';
 }
 
 // ======== ErrorRingBuffer 类 ========
@@ -93,6 +111,7 @@ export function captureError(
         tag,
         message,
         timestamp: Date.now(),
+        severity: inferSeverity(kind, tag),
     };
 
     if (err instanceof Error) {
