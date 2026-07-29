@@ -10,10 +10,10 @@ adr:
   - ADR-085
 symbols:
   - FeetModelProvider
-  - FeetState
-  - solveFootTarget
-  - detectFootLanding
   - isFeetAdjustmentRunning
+  - startFeetAdjustment
+  - stopFeetAdjustment
+  - setOnFootLand
 invariants:
   - 脚 IK 为自动约束基础，手动 Override 叠加其上
   - 注册为 MotionPipeline bone-override 层（order=5）

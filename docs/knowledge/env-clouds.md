@@ -9,9 +9,10 @@ source_files:
 adr:
   - ADR-113
 symbols:
-  - initClouds
+  - createClouds
   - disposeClouds
-  - updateClouds
+  - resolveCloudShaderParams
+  - buildJitterSource
 invariants:
   - 云层对象在 dispose 时全部释放
 tests: []

@@ -6,6 +6,34 @@ scope:
   - frontend/src/scene/manager/material.ts
 source_files:
   - frontend/src/scene/manager/material.ts
+symbols:
+  - registerMaterialTarget
+  - unregisterMaterialTarget
+  - MaterialStateManager
+  - _capture
+  - isMatEnabled
+  - setMatEnabled
+  - getMatCatParams
+  - setMatCatParams
+  - resetMatCatParams
+  - getMatParams
+  - setMatParams
+  - getMatDetailList
+  - applyMatState
+  - getMatState
+  - disposeModelMaterialState
+  - applyUnlitFallback
+invariants:
+  - 资源卸载必须 unregisterMaterialTarget 以释放 _externalMeshes 与材质状态
+  - 写入触发 triggerAutoSave
+  - _getMeshesById 先查 modelRegistry，后查外部注册表兜底
+  - 材质分类参数按网格/材质名归类批量调参
+tests: []
+use_when:
+  - 材质系统
+  - 分类材质
+  - 材质参数调节
+  - 材质状态管理
 ---
 
 ## 系统概览

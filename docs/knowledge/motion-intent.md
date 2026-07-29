@@ -10,14 +10,19 @@ adr:
   - ADR-121
   - ADR-167
 symbols:
-  - SceneMotionIntent
-  - MotionModuleState
   - getActiveMotion
   - getSceneMotions
   - getActiveMotionId
-  - setActiveMotion
+  - getMotionGen
   - addSceneMotion
   - removeSceneMotion
+  - setDefaultMotion
+  - replaceDefaultMotion
+  - clearAllSceneMotions
+  - findOrCreateModuleState
+  - resolveCompatibility
+  - initMotionIntent
+  - setBroadcastCallback
 invariants:
   - _sceneMotions 为场景级动作库，多主动作平等共存（ADR-167）
   - _motionGen 每次变更递增，守护异步广播竞态

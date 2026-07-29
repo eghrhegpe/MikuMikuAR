@@ -9,9 +9,22 @@ source_files:
 adr:
   - ADR-062
 symbols:
-  - initWater
+  - createWater
   - disposeWater
-  - updateWater
+  - refreshWaterRenderList
+  - updateWaterAnimSpeed
+  - addRipple
+  - clearRipples
+  - addGroundRipple
+  - clearGroundRipples
+  - updateUnderwaterTransition
+  - resetUnderwaterState
+  - isUnderwaterActive
+  - selectWaterLOD
+  - getWaterPhase
+  - computeWaveDirs
+  - buildWaterPresetEnvState
+  - applyWaterPresetToCurrent
 invariants:
   - 水面 RT 在 dispose 时释放
 tests: []

@@ -7,6 +7,18 @@ scope:
 source_files:
   - frontend/src/scene/render/lighting-sun.ts
 adr: []
+symbols:
+  - _updateSunDisc
+  - _disposeSunDisc
+invariants:
+  - 圆盘在光线来源方向 SUN_DISC_DISTANCE=1000 处，不参与光照计算
+  - 可见性受方向光强度与地平线高度控制（低于地平线或强度过低时隐藏）
+  - 状态集中于 lightingState.sunDisc
+tests: []
+use_when:
+  - 太阳圆盘
+  - 方向光可视化
+  - 调光参照
 ---
 
 ## 系统概览

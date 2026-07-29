@@ -7,6 +7,21 @@ scope:
 source_files:
   - frontend/src/scene/render/lighting-tween.ts
 adr: []
+symbols:
+  - _cancelAllLightingTweens
+  - _tweenValue
+  - _tweenColor3
+  - applyLightingPresetFromEnv
+invariants:
+  - 动画期间 skipLightAutoSave = true 抑制自动保存
+  - 使用 scene.onBeforeRenderObservable.addOnce(tick) 驱动动画帧
+  - 通过 lightingState.activeTweens Map 追踪所有活跃 tween
+  - 切换预设时先 _cancelAllLightingTweens 取消旧补间防冲突
+tests: []
+use_when:
+  - 灯光过渡
+  - 预设切换动画
+  - 灯光 tween
 ---
 
 ## 系统概览

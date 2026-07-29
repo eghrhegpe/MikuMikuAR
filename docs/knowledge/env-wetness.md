@@ -8,6 +8,20 @@ source_files:
   - frontend/src/scene/env/env-wetness.ts
 adr:
   - ADR-172
+symbols:
+  - applyWetnessToAllModels
+  - removeWetnessFromAllModels
+  - isWetnessActive
+  - applyWetnessToInst
+invariants:
+  - 湿身本质是对模型材质参数的临时覆盖，需在 dispose/换装时正确清理
+  - applyWetnessToInst 保存材质原始状态（_WetnessOrigState），恢复时回写
+  - isWetnessActive 查询全局湿身是否激活
+tests: []
+use_when:
+  - 湿身效果
+  - 淋雨湿润
+  - 涉水反光
 ---
 
 ## 系统概览

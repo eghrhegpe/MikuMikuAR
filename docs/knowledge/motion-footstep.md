@@ -11,8 +11,9 @@ adr:
 symbols:
   - GroundSfxKind
   - SynthCfg
-  - SYNTH_CFG
-  - _synthCache
+  - resolveGroundSfxKind
+  - startFootstep
+  - stopFootstep
 invariants:
   - 合成 buffer 缓存按音色 kind → 3 个变体
   - 每步随机选变体 + detune 音高随机化
