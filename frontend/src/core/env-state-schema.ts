@@ -257,7 +257,7 @@ export const ENV_STATE_SCHEMA = {
     cloudCover: { type: 'number', default: 0.5, group: 'cloud' },
     cloudScale: { type: 'number', default: 0.55, group: 'cloud' },
     cloudHeight: { type: 'number', default: 300, group: 'cloud' },
-    cloudThickness: { type: 'number', default: 60, group: 'cloud' },
+    cloudThickness: { type: 'number', default: 30, group: 'cloud' },
     cloudVisibility: { type: 'number', default: 8000, group: 'cloud' },
     cloudGap: { type: 'number', default: 0.1, group: 'cloud' },
     cloudErosion: { type: 'number', default: 0.4, group: 'cloud' },

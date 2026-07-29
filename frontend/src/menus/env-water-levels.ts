@@ -134,8 +134,8 @@ export function buildWaterLevel(): PopupLevel {
                             control: {
                                 bind: 'env.waterFogStart',
                                 min: 0,
-                                max: 200,
-                                step: 5,
+                                max: 500,
+                                step: 10,
                             },
                             icon: 'lucide:cloud-fog',
                         },

@@ -109,7 +109,7 @@ afterEach(() => {
 });
 
 function makeWaterState(overrides: Partial<typeof envState> = {}) {
-    return { ...envState, waterEnabled: true, waterSize: 120, ...overrides };
+    return { ...envState, waterEnabled: true, ...overrides };
 }
 
 function setCameraDistance(z: number) {

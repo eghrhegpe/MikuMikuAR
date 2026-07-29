@@ -1853,7 +1853,7 @@
 | `cancelPendingAction()` | `menus/diagnostic-control` | 取消 pending action |
 | `finalizePendingBatch()` | `menus/diagnostic-control` | 本批处理完成：回填 tool 消息，触发后续 stream |
 | `handleControlFallback()` | `menus/diagnostic-control` | 处理 LLM 文本回退（无 tool_call 时） |
-| `renderControlHint()` | `menus/diagnostic-control` | 渲染 pending 区域（无待确认时显示 hint） |
+| `renderControlHint()` | `menus/diagnostic-control` | 渲染 pending 区域（仅有可撤销操作时显示） |
 | `renderPendingAction()` | `menus/diagnostic-control` | 渲染待确认操作卡 |
 | `tryQueuePendingAction()` | `menus/diagnostic-control` | 将 LLM 文本回退解析的 action 入待确认队列 |
 | `undoLastAction()` | `menus/diagnostic-control` | 撤销上一个破坏性动作 |
