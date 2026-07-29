@@ -467,6 +467,12 @@ export const ja: Record<string, string> = {
     'motion.library.emptyHint': 'シーンライブラリが空です。先にモーションを読み込んでください',
     'motion.library.followDefault': 'デフォルトに追従',
     'motion.library.currentPick': '現在の選択',
+    // [doc:adr-207] 動作メニューセクション見出し
+    'motion.section.loadedMotion': '読み込み済みモーション',
+    'motion.section.loadedMotionEmpty': 'モーションなし、ライブラリから読み込み',
+    'motion.section.loadedProc': '読み込み済み手続き型モーション',
+    'motion.section.library': 'モーションライブラリ',
+    'motion.section.more': 'その他',
     'motion.undoApplied': '✓ 元に戻しました',
     'motion.undo.appliedPreset': '元に戻す：プリセット「{name}」を適用',
     'motion.music': '音楽',

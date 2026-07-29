@@ -416,9 +416,8 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
         items: [],
         renderCustom: (container) => {
             cardContainer(container, (c) => {
-                // ── [doc:adr-167] 从场景库选择主动作 ──
-                // 角色从此处选用场景库中某个主动作；未选 = 跟随默认动作
-                addSectionTitle(c, t('motion.library.title'));
+                // ── [doc:adr-207] Section 1: 已加载动作 ──
+                addSectionTitle(c, t('motion.section.loadedMotion'));
                 {
                     const sceneMotions = getSceneMotions();
                     const activeId = getActiveMotionId();
@@ -427,9 +426,9 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
                             ? (inst.motionSlots.primary.sceneMotionId ?? null)
                             : null;
                     if (sceneMotions.length === 0) {
-                        addEmptyRow(c, t('motion.library.emptyHint'));
+                        addEmptyRow(c, t('motion.section.loadedMotionEmpty'));
                     } else {
-                        // 「跟随默认」选项 = sceneMotionId 置空
+                        // 「跟随默认」= 取消本角色覆盖，跟随场景默认动作
                         slideRow(
                             c,
                             'lucide:circle-slash',
@@ -446,7 +445,6 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
                         for (const motion of sceneMotions) {
                             const isCurrent = currentPick === motion.id;
                             const isDefault = motion.id === activeId;
-                            // sublabel 优先级：当前选择 > 默认动作徽标
                             const sublabel = isCurrent
                                 ? t('motion.library.currentPick')
                                 : isDefault
@@ -473,57 +471,9 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
                     }
                 }
 
-                // ── 已加载动作（仅程序化激活时展示，作为快捷回退入口）──
+                // ── [doc:adr-207] Section 2: 已加载程序化动作 ──
                 const slots0 = _ensureMotionSlots(inst);
-                const active = getActiveMotion();
-                const isPinned = slots0.primary.source === 'pinned';
-                const isProc = slots0.primary.source === 'procedural';
-                // 非程序化激活时不显示此板块（场景动作库已提供全部信息）
-                if (!isProc && !isPinned) {
-                    // nothing to show
-                } else if (isProc) {
-                    addSectionTitle(c, t('model-detail.loadedMotion'));
-                    // 程序化激活时仍显示「已加载动作」本名，而非程序化模式名——
-                    // 这样用户随时能点它切回原动作，无需先「取消程序化」。
-                    const loadedName =
-                        slots0.primary.pinned?.vmdName ||
-                        active?.vmdName ||
-                        inst.vmdName ||
-                        t('model-detail.noMotion');
-
-                    const loadedRow = slideRow(c, 'lucide:clapperboard', loadedName, true, () => {
-                        _applyLoadedMotion(id, inst);
-                        stackRegistry.modelStack?.reRender();
-                    });
-                    // 程序化激活时右侧显示状态徽标（仅指示，点击整行即切回已加载动作）
-                    addPresetChip(
-                        loadedRow,
-                        slots0.primary.procRole === 'autodance'
-                            ? t('motion.modeAutodance')
-                            : t('motion.modeIdle'),
-                        false,
-                        () => {},
-                        {
-                            variant: 'badge',
-                            marginLeft: 'auto',
-                            title: t('model-detail.procActive'),
-                        }
-                    );
-                } else {
-                    // isPinned 但非程序化：显示取消固定行
-                    addSectionTitle(c, t('model-detail.loadedMotion'));
-                    slideRow(c, 'lucide:pin-off', t('motion.context.unpin'), false, () => {
-                        _ensureMotionSlots(inst).primary = { source: 'inherit', status: 'idle' };
-                        if (active) {
-                            applyIntentToModel(id, active, getMotionGen());
-                        }
-                        feedbackInfo('motion.override.redoApplied', undefined);
-                        stackRegistry.modelStack?.reRender();
-                    });
-                }
-
-                // ── 程序化动作 ──
-                addSectionTitle(c, t('model-detail.procActions'));
+                addSectionTitle(c, t('motion.section.loadedProc'));
 
                 // 待机呼吸
                 const isIdleActive =
