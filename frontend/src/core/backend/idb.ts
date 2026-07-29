@@ -15,6 +15,9 @@ export const STORES = [
     'presets',
     'tags',
     'meta',
+    // [doc:adr-202] AI 助手多会话历史：meta:<id> 存会话元信息，msgs:<id> 存消息数组。
+    // onupgradeneeded 会自动补建缺失 store，无需升 DB_VERSION（沿用 idbGet/Set 键值模型）。
+    'chats',
 ] as const;
 export type Store = (typeof STORES)[number];
 

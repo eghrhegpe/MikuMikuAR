@@ -36,12 +36,23 @@ import { getActiveBible, buildDialogueSystemPrompt } from '../core/ai/dialogue-s
 import { parseDialogueLines, type DialogueLine } from '../core/ai/character-bible';
 import { speakLines, cancelSpeech } from '../core/ai/dialogue-speech';
 import { getAction } from '../core/action-registry';
-import { showConfirm } from '../core/dialog';
+import { showConfirm, showPrompt } from '../core/dialog';
 import { showErrorToast } from '../core/toast';
 import { logWarn, logInfo } from '../core/logger';
 import { DebouncedTimer } from '../core/async';
 import { goKeyAllowsProceed } from '../core/ai/go-key-allows-proceed';
 import { renderMarkdownInto } from '../core/ai/markdown';
+import {
+    listSessions,
+    loadSession,
+    saveSession,
+    deleteSession,
+    getActiveId,
+    setActiveId,
+    newSessionId,
+    deriveTitle,
+    type ChatSession,
+} from '../core/ai/chat-store';
 
 // ======== 模块级状态 ========
 
@@ -58,6 +69,14 @@ const _messages: ChatMessage[] = [];
 let _isStreaming = false;
 let _abortController: AbortController | null = null;
 let _mode: DiagMode = 'diagnostic';
+
+// [doc:adr-202] 多会话持久化状态
+let _activeSessionId: string | null = null;
+let _sessionCreatedAt = 0;
+/** 会话历史加载完成前避免持久化空会话覆盖磁盘。 */
+let _sessionLoaded = false;
+/** 会话列表容器（Phase 2 独立面板会话卡）引用，切换后刷新高亮。 */
+let _sessionListEl: HTMLElement | null = null;
 
 let _chatContainer: HTMLElement | null = null;
 let _inputEl: HTMLTextAreaElement | null = null;
@@ -150,24 +169,229 @@ resolveAi()
     .then(async (ai) => {
         _ai = ai;
         _aiResolved = true;
+        // 先恢复持久化的活动会话（_messages/_mode），再渲染，避免空会话闪切。
+        await _loadActiveSession();
         // 配置回填在 config-card 两阶段渲染中完成（_loadInitialConfig），
         // 先 resolve 再渲染，消除"默认值闪切"时序竞态。
         await _refreshCaps();
         _updateControlsEnabled();
-        // 欢迎语由 _renderChat 以纯 UI 引导行呈现（不进 _messages、不发给 AI）。
-        if (_messages.length === 0) {
-            _renderChat();
-        }
+        _renderChat();
+        _refreshSessionList();
     })
     .catch(() => {
         _aiResolved = false;
-        _addAssistantMessage(t('ai.errors.resolveFailed'));
+        _sessionLoaded = true;
         _renderChat();
         _updateControlsEnabled();
     });
 
 function _addAssistantMessage(text: string): void {
     _messages.push({ role: 'assistant', content: text });
+}
+
+// ======== [doc:adr-202] 会话持久化 ========
+
+const _persistTimer = new DebouncedTimer();
+
+/** 立即把当前 _messages/_mode 写入活动会话（无 id 则新建）。降级静默。 */
+async function _doPersistSession(): Promise<void> {
+    if (!_sessionLoaded) {
+        return;
+    }
+    // 空会话（无任何消息）不落盘，避免历史列表堆积空条目。
+    if (_messages.length === 0) {
+        return;
+    }
+    if (!_activeSessionId) {
+        _activeSessionId = newSessionId();
+        _sessionCreatedAt = Date.now();
+        await setActiveId(_activeSessionId);
+    }
+    const title = deriveTitle(_messages) || t('ai.chat.untitled');
+    await saveSession({
+        id: _activeSessionId,
+        title,
+        mode: _mode,
+        createdAt: _sessionCreatedAt || Date.now(),
+        updatedAt: Date.now(),
+        messages: [..._messages],
+    });
+    _refreshSessionList();
+}
+
+/** 防抖持久化（对话流式频繁触发时合并写）。 */
+function _persistSession(): void {
+    _persistTimer.schedule(() => void _doPersistSession(), 500);
+}
+
+/** flush 防抖并同步落盘（关面板 / 切换会话前调用）。 */
+async function _flushSession(): Promise<void> {
+    _persistTimer.cancel();
+    await _doPersistSession();
+}
+
+/** 面板打开时恢复活动会话到 _messages/_mode。无活动会话则保持空（首用）。 */
+async function _loadActiveSession(): Promise<void> {
+    try {
+        const activeId = await getActiveId();
+        if (activeId) {
+            const session = await loadSession(activeId);
+            if (session) {
+                _activeSessionId = session.id;
+                _sessionCreatedAt = session.createdAt;
+                _mode = session.mode;
+                _messages.length = 0;
+                _messages.push(...session.messages);
+            }
+        }
+    } catch {
+        /* 恢复失败保持空会话 */
+    } finally {
+        _sessionLoaded = true;
+    }
+}
+
+/** 新建会话：先存旧会话，再切到全新空会话。 */
+async function _createSession(): Promise<void> {
+    await _flushSession();
+    _activeSessionId = newSessionId();
+    _sessionCreatedAt = Date.now();
+    await setActiveId(_activeSessionId);
+    _messages.length = 0;
+    _mode = 'diagnostic';
+    _renderChat();
+    _refreshSessionList();
+}
+
+/** 切换到指定会话：先存旧，再加载目标。 */
+async function _switchSession(id: string): Promise<void> {
+    if (id === _activeSessionId) {
+        return;
+    }
+    await _flushSession();
+    const session = await loadSession(id);
+    if (!session) {
+        return;
+    }
+    _activeSessionId = session.id;
+    _sessionCreatedAt = session.createdAt;
+    _mode = session.mode;
+    _messages.length = 0;
+    _messages.push(...session.messages);
+    await setActiveId(id);
+    _renderChat();
+    _refreshSessionList();
+}
+
+/** 删除会话；若删的是当前会话，切到最近的其它会话或新建空会话。 */
+async function _deleteSessionAndAdjust(id: string): Promise<void> {
+    await deleteSession(id);
+    if (id === _activeSessionId) {
+        const remaining = await listSessions();
+        if (remaining.length > 0) {
+            await _switchSession(remaining[0].id);
+        } else {
+            _activeSessionId = null;
+            _messages.length = 0;
+            _renderChat();
+        }
+    }
+    _refreshSessionList();
+}
+
+/** 刷新会话列表 UI（Phase 2 会话卡存在时）。Phase 1 为 no-op。 */
+function _refreshSessionList(): void {
+    if (_sessionListEl) {
+        void _renderSessionList(_sessionListEl);
+    }
+}
+
+/** 渲染会话历史列表：新建按钮 + 每个会话项（点击切换 / 重命名 / 删除）。 */
+async function _renderSessionList(container: HTMLElement): Promise<void> {
+    container.innerHTML = '';
+
+    const newBtn = document.createElement('button');
+    newBtn.className = 'preset-chip diag-session-new';
+    newBtn.textContent = '＋ ' + t('ai.chat.newSession');
+    newBtn.setAttribute('aria-label', t('ai.chat.newSession'));
+    newBtn.addEventListener('click', () => void _createSession());
+    container.appendChild(newBtn);
+
+    const sessions = await listSessions();
+    for (const s of sessions) {
+        container.appendChild(_createSessionRow(s));
+    }
+}
+
+function _createSessionRow(s: ChatSession): HTMLElement {
+    const row = document.createElement('div');
+    row.className =
+        'diag-session-row' + (s.id === _activeSessionId ? ' diag-session-row--active' : '');
+
+    const title = document.createElement('span');
+    title.className = 'diag-session-title';
+    title.textContent = s.title || t('ai.chat.untitled');
+    title.setAttribute('role', 'button');
+    title.setAttribute('tabindex', '0');
+    title.setAttribute('aria-label', s.title || t('ai.chat.untitled'));
+    title.addEventListener('click', () => void _switchSession(s.id));
+    title.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            void _switchSession(s.id);
+        }
+    });
+    row.appendChild(title);
+
+    const renameBtn = document.createElement('button');
+    renameBtn.className = 'diag-session-btn';
+    renameBtn.textContent = '✎';
+    renameBtn.setAttribute('title', t('ai.chat.rename'));
+    renameBtn.setAttribute('aria-label', t('ai.chat.rename'));
+    renameBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const name = await showPrompt(t('ai.chat.rename'), s.title);
+        if (name && name.trim()) {
+            const full = await loadSession(s.id);
+            if (full) {
+                await saveSession({ ...full, title: name.trim(), updatedAt: Date.now() });
+                _refreshSessionList();
+            }
+        }
+    });
+    row.appendChild(renameBtn);
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'diag-session-btn diag-session-btn--danger';
+    delBtn.textContent = '✕';
+    delBtn.setAttribute('title', t('ai.chat.delete'));
+    delBtn.setAttribute('aria-label', t('ai.chat.delete'));
+    delBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const ok = await showConfirm(t('ai.chat.deleteConfirm', { title: s.title }));
+        if (ok) {
+            await _deleteSessionAndAdjust(s.id);
+        }
+    });
+    row.appendChild(delBtn);
+
+    return row;
+}
+
+/** 会话历史卡 schema（Phase 2 独立面板顶部）。 */
+function buildSessionsSchema(): MenuNode[] {
+    return [
+        {
+            id: 'diagnostic:sessions',
+            kind: 'custom',
+            renderCustom: (c) => {
+                _sessionListEl = document.createElement('div');
+                _sessionListEl.className = 'diag-session-list';
+                c.appendChild(_sessionListEl);
+                void _renderSessionList(_sessionListEl);
+            },
+        },
+    ];
 }
 
 function _fmtTime(ts: number): string {
@@ -929,6 +1153,7 @@ function _finalizeStreamRow(fullText: string): void {
 function _finalizeStream(fullText: string): void {
     if (fullText) {
         _messages.push({ role: 'assistant', content: fullText });
+        _persistSession(); // [doc:adr-202] 一轮完成后持久化会话
     }
     _isStreaming = false;
     _abortController = null;
@@ -1539,6 +1764,7 @@ async function _sendMessage(): Promise<void> {
 
     _messages.push({ role: 'user', content: text });
     _inputEl.value = '';
+    _persistSession(); // [doc:adr-202] 用户消息发出即持久化
     _renderChat();
 
     await _runStream();
@@ -1556,9 +1782,16 @@ async function _clearChat(): Promise<void> {
     if (!ok) {
         return;
     }
+    // [doc:adr-202] 清空当前会话：内存清空 + 删除该会话的磁盘记录（变空后不再保留）。
+    _persistTimer.cancel();
+    const id = _activeSessionId;
     _messages.length = 0;
-    // 清空后欢迎引导行由 _renderChat 在 _messages 为空时自动呈现（不进 _messages）。
+    _activeSessionId = null;
+    if (id) {
+        await deleteSession(id);
+    }
     _renderChat();
+    _refreshSessionList();
 }
 
 // [doc:adr-156/199] 更新朗读开关的文案/状态/显隐（仅 dialogue 模式可见）。
@@ -1938,13 +2171,13 @@ function _renderConfigCard(c: HTMLElement): void {
     const modelBtnRow = document.createElement('div');
     modelBtnRow.className = 'diag-hint-row';
 
-    const modelRefresh = document.createElement('button');
-    modelRefresh.textContent = '↻';
-    modelRefresh.className = 'preset-chip';
-    modelRefresh.setAttribute('title', t('ai.config.refreshModels'));
-    modelRefresh.setAttribute('aria-label', t('ai.config.refreshModels'));
-    modelRefresh.style.padding = '2px 10px';
-    modelRefresh.style.fontSize = 'var(--font-ui-sm)';
+                const modelRefresh = document.createElement('button');
+                modelRefresh.textContent = t('ai.config.refreshModels');
+                modelRefresh.className = 'preset-chip';
+                modelRefresh.setAttribute('title', t('ai.config.refreshModels'));
+                modelRefresh.setAttribute('aria-label', t('ai.config.refreshModels'));
+                modelRefresh.style.padding = '2px 10px';
+                modelRefresh.style.fontSize = 'var(--font-ui-sm)';
     let _refreshing = false;
     const _showModelChips = () => {
         if (_modelListEl) {
@@ -1986,7 +2219,7 @@ function _renderConfigCard(c: HTMLElement): void {
         } finally {
             _refreshing = false;
             modelRefresh.disabled = false;
-            modelRefresh.textContent = '↻';
+            modelRefresh.textContent = t('ai.config.refreshModels');
         }
     });
     modelBtnRow.appendChild(modelRefresh);
@@ -2075,8 +2308,22 @@ function _renderConfigCard(c: HTMLElement): void {
 
 // ======== 首次进入清空对话并显示欢迎 ========
 
-function buildDiagnosticSchema(): MenuNode[] {
-    return [
+export function buildDiagnosticSchema(opts?: { withSessions?: boolean }): MenuNode[] {
+    const nodes: MenuNode[] = [];
+    // [doc:adr-202] 独立面板顶部展示会话历史卡；设置菜单内入口不含（保持轻量）。
+    if (opts?.withSessions) {
+        nodes.push({
+            id: 'diagnostic:sessions-card',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    addSectionTitle(inner, t('ai.chat.history'));
+                    return renderMenu(buildSessionsSchema(), inner);
+                });
+            },
+        });
+    }
+    nodes.push(
         {
             id: 'diagnostic:mode-card',
             kind: 'custom',
@@ -2116,8 +2363,76 @@ function buildDiagnosticSchema(): MenuNode[] {
                     return renderMenu(buildConfigSchema(), inner);
                 });
             },
-        },
-    ];
+        }
+    );
+    return nodes;
+}
+
+/** 关面板收场：停朗读 + 中止流式 + flush 配置/会话 + 清理运行态与 DOM 引用。
+ *  设置菜单入口与独立面板共用。 */
+function _disposeDiagnosticPanel(): void {
+    cancelSpeech();
+    _abortController?.abort();
+    // 关面板前 flush 输入框当前值到 _localConfig，避免未 blur 的编辑丢失
+    if (_configEndpoint) {
+        _localConfig.endpoint = _configEndpoint.value;
+    }
+    if (_configModel) {
+        _localConfig.model = _configModel.value;
+    }
+    if (_configApiKey) {
+        _localConfig.apiKey = _configApiKey.value;
+    }
+    void _doSaveConfig();
+    // [doc:adr-202] flush 会话到 IndexedDB，关面板不再清空 _messages（重开恢复）。
+    void _flushSession();
+    // 会话内容（_messages/_mode/_activeSessionId）保留在内存，重开面板直接复用；
+    // 磁盘已由 _flushSession 落盘。仅重置瞬态运行状态。
+    _isStreaming = false;
+    _pendingAction = null;
+    _pendingQueue = [];
+    _pendingToolResults = [];
+    _pendingBatchHasToolCalls = false;
+    _lastUndoable = null;
+    _autoTestTimer?.cancel();
+    _autoTestTimer = null;
+    _autoTesting = false;
+    _testing = false;
+    _refreshingCaps = false;
+    _fetchedModels = [];
+    _lastConnectionOk = null;
+    _lastConnectionKind = null;
+    _goKeyConfigured = false;
+    // 关面板时清理 DOM 引用：避免面板关闭后异步回调（如 resolveAi.then）
+    // 持有旧引用向已移除元素写入。重新渲染时 renderCustom 会重新赋值。
+    _chatContainer = null;
+    _inputEl = null;
+    _corsWarningEl = null;
+    _configEndpoint = null;
+    _configApiKey = null;
+    _configModel = null;
+    _configModelDatalist = null;
+    _modelListEl = null;
+    _statusBadgeEl = null;
+    _adviceEl = null;
+    _statusTextEl = null;
+    _pendingContainer = null;
+    _speakToggleBtn = null;
+    _sessionListEl = null;
+    _activeProviderButtons = [];
+    _activeDocLink = null;
+}
+
+/** 渲染诊断面板内容并返回 dispose。供设置菜单入口与独立面板复用。 */
+export function renderDiagnosticPanel(
+    container: HTMLElement,
+    opts?: { withSessions?: boolean }
+): () => void {
+    const dispose = renderMenu(buildDiagnosticSchema(opts), container);
+    return () => {
+        dispose();
+        _disposeDiagnosticPanel();
+    };
 }
 
 export function buildSettingsDiagnosticLevel(
@@ -2127,60 +2442,6 @@ export function buildSettingsDiagnosticLevel(
         label: t('settings.diagnostic'),
         dir: '',
         items: [],
-        renderCustom: (container) => {
-            const dispose = renderMenu(buildDiagnosticSchema(), container);
-            // [doc:adr-199] 关面板时收场：停朗读 + 中止流式请求，避免语音播到结束 / fetch 悬挂。
-            return () => {
-                cancelSpeech();
-                _abortController?.abort();
-                // 关面板前 flush 输入框当前值到 _localConfig，避免未 blur 的编辑丢失
-                if (_configEndpoint) {
-                    _localConfig.endpoint = _configEndpoint.value;
-                }
-                if (_configModel) {
-                    _localConfig.model = _configModel.value;
-                }
-                if (_configApiKey) {
-                    _localConfig.apiKey = _configApiKey.value;
-                }
-                void _doSaveConfig();
-                dispose();
-                // [doc:adr-196 P5] 关面板时重置会话状态，保证下次打开为干净初始态
-                _messages.length = 0;
-                _isStreaming = false;
-                _mode = 'diagnostic';
-                _pendingAction = null;
-                _pendingQueue = [];
-                _pendingToolResults = [];
-                _pendingBatchHasToolCalls = false;
-                _lastUndoable = null;
-                _autoTestTimer?.cancel();
-                _autoTestTimer = null;
-                _autoTesting = false;
-                _testing = false;
-                _refreshingCaps = false;
-                _fetchedModels = [];
-                _lastConnectionOk = null;
-                _lastConnectionKind = null;
-                _goKeyConfigured = false;
-                // 关面板时清理 DOM 引用：避免面板关闭后异步回调（如 resolveAi.then）
-                // 持有旧引用向已移除元素写入。重新渲染时 renderCustom 会重新赋值。
-                _chatContainer = null;
-                _inputEl = null;
-                _corsWarningEl = null;
-                _configEndpoint = null;
-                _configApiKey = null;
-                _configModel = null;
-                _configModelDatalist = null;
-                _modelListEl = null;
-                _statusBadgeEl = null;
-                _adviceEl = null;
-                _statusTextEl = null;
-                _pendingContainer = null;
-                _speakToggleBtn = null;
-                _activeProviderButtons = [];
-                _activeDocLink = null;
-            };
-        },
+        renderCustom: (container) => renderDiagnosticPanel(container),
     };
 }

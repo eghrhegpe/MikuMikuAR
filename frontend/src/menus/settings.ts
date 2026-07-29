@@ -120,6 +120,11 @@ function buildSettingsRoot() {
 
 function settingsOnFolderEnter(row: PopupRow) {
     if (row.target) {
+        // [doc:adr-202] AI 诊断入口改为打开独立助手面板（含会话历史），不再作为设置子层。
+        if (row.target === SETTINGS.DIAGNOSTIC) {
+            void import('./assistant-panel').then((m) => m.showAssistant());
+            return null;
+        }
         const builder = SETTINGS_FOLDER_ROUTES[row.target as SettingsFolderTarget];
         if (builder) {
             // [doc:adr-065] 挂 itemBuilder 使纯 items 子层随语言热刷新
