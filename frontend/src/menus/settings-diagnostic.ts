@@ -402,9 +402,14 @@ async function _refreshModelList(): Promise<void> {
     if (!_ai) {
         return;
     }
-    const models = await _ai.fetchModels?.() ?? [];
-    _fetchedModels = models;
-    _populateModelDatalist(models);
+    try {
+        const models = await _ai.fetchModels?.() ?? [];
+        _fetchedModels = models;
+        _populateModelDatalist(models);
+    } catch (err) {
+        // 与手动刷新按钮对齐：失败时不更新 _fetchedModels，仅记录警告
+        logWarn('ai-config', 'fetchModels failed:', err);
+    }
 }
 
 /** 将模型列表写入 datalist DOM，供 _refreshModelList / 手动刷新按钮共享。 */
@@ -829,6 +834,28 @@ function _renderStreamingChunk(chunk: ChatChunk): void {
     }
 }
 
+/** 把 streaming row 转正：移除 streaming class、回填完整文本。
+ *  供正常收尾与中断收尾复用，避免 streaming row 残留或被误删。 */
+function _finalizeStreamRow(fullText: string): void {
+    if (_chatContainer && fullText) {
+        const streamingRow = _chatContainer.querySelector('.chat-row--streaming');
+        if (streamingRow) {
+            streamingRow.classList.remove('chat-row--streaming');
+            const contentDiv = streamingRow.querySelector(
+                '.diag-chat-content'
+            ) as HTMLElement | null;
+            if (contentDiv) {
+                contentDiv.textContent = fullText;
+            }
+            _chatContainer.scrollTop = _chatContainer.scrollHeight;
+        } else {
+            _renderChat();
+        }
+    } else {
+        _renderChat();
+    }
+}
+
 function _finalizeStream(fullText: string): void {
     if (fullText) {
         _messages.push({ role: 'assistant', content: fullText });
@@ -848,24 +875,7 @@ function _finalizeStream(fullText: string): void {
         return;
     }
 
-    if (_chatContainer && fullText) {
-        const streamingRow = _chatContainer.querySelector('.chat-row--streaming');
-        if (streamingRow) {
-            streamingRow.classList.remove('chat-row--streaming');
-            const contentDiv = streamingRow.querySelector(
-                '.diag-chat-content'
-            ) as HTMLElement | null;
-            if (contentDiv) {
-                contentDiv.textContent = fullText;
-            }
-            _chatContainer.scrollTop = _chatContainer.scrollHeight;
-        } else {
-            _renderChat();
-        }
-    } else {
-        _renderChat();
-    }
-
+    _finalizeStreamRow(fullText);
     _updateSendButton();
 }
 
@@ -951,6 +961,11 @@ async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
     let fullResponse = '';
     const pendingToolCalls: Array<{ id: string; name: string; args: string }> = [];
     let streamErrorSeen = false;
+    // [doc:adr-199] 用户主动 stop 触发的 abort 不应按错误处理：
+    // 不入错误环、不弹 toast、不加错误消息；已生成内容保留到 _messages。
+    let abortedByUser = false;
+    // 中断时追加到对话历史的提示文本（错误消息或"已停止"），由 finally 统一渲染。
+    let interruptMessage: string | null = null;
 
     try {
         const requestTools = allowTools ? buildToolSchemas() : undefined;
@@ -970,18 +985,13 @@ async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
                     args: chunk.toolArgs ?? '{}',
                 });
             } else if (chunk.type === 'error') {
+                // [doc:adr-199] 错误 chunk：只标记 + 入环 + toast，不删 streaming row、不加错误消息。
+                // 已生成的 fullResponse 保留给 finally 统一收尾（避免用户等半天内容全丢）。
                 streamErrorSeen = true;
-                captureError('ai-stream', chunk.error ?? 'AI stream error', undefined);
-                showErrorToast(t('ai.errors.apiError', { msg: chunk.error ?? '' }));
-                if (_chatContainer) {
-                    const streamingRow = _chatContainer.querySelector('.chat-row--streaming');
-                    if (streamingRow) {
-                        streamingRow.remove();
-                    }
-                }
-                const errTime = _fmtTime(Date.now());
-                _addAssistantMessage(`${t('ai.errors.apiError', { msg: chunk.error ?? '' })} · ${errTime}`);
-                _renderChat();
+                const errText = chunk.error ?? '';
+                captureError('ai-stream', errText || 'AI stream error', undefined);
+                showErrorToast(t('ai.errors.apiError', { msg: errText }));
+                interruptMessage = t('ai.errors.apiError', { msg: errText });
                 break;
             } else if (chunk.type === 'done') {
                 break;
@@ -1044,31 +1054,43 @@ async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
             return;
         }
     } catch (err) {
-        streamErrorSeen = true;
-        const errMsg = err instanceof Error ? err.message : String(err);
-        captureError('ai-stream', errMsg, err);
-        showErrorToast(t('ai.errors.apiError', { msg: errMsg }));
-        if (_chatContainer) {
-            const streamingRow = _chatContainer.querySelector('.chat-row--streaming');
-            if (streamingRow) {
-                streamingRow.remove();
-            }
+        // [doc:adr-199] 区分用户主动 abort 与真实错误：
+        // abort 静默收尾（保留已生成内容，不污染错误环、不弹 toast）；
+        // 其他错误入环 + toast，但同样保留已生成内容（不删 row、不加错误消息到历史）。
+        if (_abortController?.signal.aborted || (err instanceof Error && err.name === 'AbortError')) {
+            abortedByUser = true;
+            interruptMessage = t('ai.errors.aborted');
+        } else {
+            streamErrorSeen = true;
+            const errMsg = err instanceof Error ? err.message : String(err);
+            captureError('ai-stream', errMsg, err);
+            showErrorToast(t('ai.errors.apiError', { msg: errMsg }));
+            interruptMessage = t('ai.errors.apiError', { msg: errMsg });
         }
-        const errTime = _fmtTime(Date.now());
-        _addAssistantMessage(`${t('ai.errors.apiError', { msg: errMsg })} · ${errTime}`);
-        _renderChat();
     } finally {
         if (_isStreaming) {
             const handledAsControlFallback =
                 !streamErrorSeen &&
+                !abortedByUser &&
                 _mode === 'control' &&
                 fullResponse &&
                 !_pendingAction &&
                 _handleControlFallback(fullResponse);
             if (!handledAsControlFallback) {
-                if (streamErrorSeen) {
+                if (streamErrorSeen || abortedByUser) {
+                    // 中断收尾：保留已生成内容（用户等了半天，内容不该丢），
+                    // 但不朗读残缺台词、不重复 push（避免 _finalizeStream 的 dialogue 分支副作用）。
+                    if (fullResponse) {
+                        _messages.push({ role: 'assistant', content: fullResponse });
+                    }
                     _isStreaming = false;
                     _abortController = null;
+                    _finalizeStreamRow(fullResponse);
+                    if (interruptMessage) {
+                        const errTime = _fmtTime(Date.now());
+                        _addAssistantMessage(`${interruptMessage} · ${errTime}`);
+                        _renderChat();
+                    }
                     _updateSendButton();
                 } else {
                     _finalizeStream(fullResponse);

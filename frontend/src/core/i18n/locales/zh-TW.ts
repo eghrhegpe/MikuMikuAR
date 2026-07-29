@@ -1857,6 +1857,7 @@ export const zhTW: Record<string, string> = {
     'ai.errors.cleared': '錯誤緩衝已清空。',
     'ai.errors.noEndpoint': 'AI 端點未配置，請在下方配置區設定。',
     'ai.errors.apiError': 'API 錯誤：{msg}',
+    'ai.errors.aborted': '已停止生成',
     'ai.snapshot.refresh': '重新整理快照',
     'ai.system.role':
         '你是 MikuMikuAR AI 診斷助手。你的職責是幫助用戶診斷 3D 場景、模型和應用的問題。',

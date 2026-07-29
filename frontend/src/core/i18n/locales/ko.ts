@@ -1889,6 +1889,7 @@ export const ko: Record<string, string> = {
     'ai.errors.cleared': '오류 버퍼가 지워졌습니다.',
     'ai.errors.noEndpoint': 'AI 엔드포인트가 설정되지 않았습니다. 설정 섹션에서 설정하세요.',
     'ai.errors.apiError': 'API 오류: {msg}',
+    'ai.errors.aborted': '생성이 중지되었습니다',
     'ai.snapshot.refresh': '스냅샷 새로고침',
     'ai.system.role':
         '당신은 MikuMikuAR AI 진단 어시스턴트입니다. 3D 씬, 모델 및 애플리케이션 문제 진단을 지원합니다.',

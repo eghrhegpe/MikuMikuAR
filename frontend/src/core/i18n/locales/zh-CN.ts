@@ -1895,6 +1895,7 @@ export const zhCN: Record<string, string> = {
     'ai.errors.cleared': '错误缓冲已清空。',
     'ai.errors.noEndpoint': 'AI 端点未配置，请在下方配置区设置。',
     'ai.errors.apiError': 'API 错误：{msg}',
+    'ai.errors.aborted': '已停止生成',
     'ai.snapshot.refresh': '刷新快照',
     'ai.system.role':
         '你是 MikuMikuAR AI 诊断助手。你的职责是帮助用户诊断 3D 场景、模型和应用的问题。',
