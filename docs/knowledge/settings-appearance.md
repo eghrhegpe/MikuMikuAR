@@ -9,8 +9,7 @@ source_files:
 adr:
   - ADR-157
 symbols:
-  - buildAppearanceLevel
-  - AppearanceConfig
+  - buildSettingsAppearanceLevel
 invariants:
   - Schema 驱动 UI
   - UI 尺寸/主题颜色/字体/动画/屏幕控制

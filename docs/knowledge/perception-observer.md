@@ -9,6 +9,20 @@ source_files:
 adr:
   - ADR-162
   - ADR-166
+symbols:
+  - getMediumMaxOthers
+  - setMediumMaxOthers
+  - _getActiveContextsByTier
+  - _applyPerceptionForContext
+invariants:
+  - 感知修正按层级（tier）收集活跃上下文，逐层施加
+  - 单模型外最多可见其他实例数由 setMediumMaxOthers 管控
+  - 骨骼占用经 bone-override-store 仲裁
+tests: []
+use_when:
+  - 感知观察者
+  - 感知修正
+  - 视线/口型/表情等感知
 ---
 
 ## 系统概览

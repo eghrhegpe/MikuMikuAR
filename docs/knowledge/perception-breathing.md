@@ -11,7 +11,7 @@ adr:
   - ADR-162
 symbols:
   - _applyBreathing
-  - BreathingConfig
+  - _updateBoneChain
 invariants:
   - 被 perception-gaze-js/perception-observer 引用
 tests: []

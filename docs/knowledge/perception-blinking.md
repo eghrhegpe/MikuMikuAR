@@ -11,7 +11,6 @@ adr:
   - ADR-162
 symbols:
   - _applyBlinking
-  - BlinkingConfig
 invariants:
   - 被 perception-observer 引用
 tests: []

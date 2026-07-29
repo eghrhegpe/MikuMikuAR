@@ -8,6 +8,16 @@ source_files:
   - frontend/src/menus/settings-resources.ts
 adr:
   - ADR-157
+symbols:
+  - buildSettingsResourcesLevel
+invariants:
+  - Schema 驱动 UI，经声明式 MenuNode 构建
+tests: []
+use_when:
+  - 设置资源
+  - 存储设置
+  - 库设置
+  - 路径覆盖
 ---
 
 ## 系统概览
