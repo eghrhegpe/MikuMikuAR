@@ -9,17 +9,11 @@ import type {
 } from './types';
 import { AI_ERROR_KINDS } from './types';
 import { events } from '../runtime-bridge';
-import type * as AppBindings from '@bindings/mikumikuar/internal/app/app';
+import { makeLazyLoader } from '../async';
 import type { LLMConfig } from '@bindings/mikumikuar/internal/app/models';
 import type { ChatRequest as LLMChatRequest } from '@bindings/mikumikuar/internal/app/llm/models';
 
-let _bindings: typeof AppBindings | null = null;
-async function _getB(): Promise<typeof AppBindings> {
-    if (!_bindings) {
-        _bindings = await import('@bindings/mikumikuar/internal/app/app');
-    }
-    return _bindings;
-}
+const _getB = makeLazyLoader(async () => import('@bindings/mikumikuar/internal/app/app'));
 
 class GoAiAdapter implements AiService {
     readonly kind = 'go' as const;

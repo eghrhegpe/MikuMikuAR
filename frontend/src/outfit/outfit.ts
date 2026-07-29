@@ -31,6 +31,7 @@ const RESET_VARIANT = '默认';
 // 破除 outfit → scene → scene-serialize → outfit 的循环依赖（原靠动态 import 解耦，
 // 有运行时开销且难测试）。保留动态 import 作为未注入时的兜底兼容路径。
 let _sceneRef: Scene | null = null;
+let _sceneLoading: Promise<Scene> | null = null;
 
 /** 由 scene.ts 在场景初始化完成后注入当前 scene 实例 */
 export function setSceneRef(scene: Scene): void {
@@ -38,11 +39,19 @@ export function setSceneRef(scene: Scene): void {
 }
 
 async function _getScene(): Promise<Scene> {
-    if (!_sceneRef) {
-        const mod = await import('../scene/scene');
-        _sceneRef = mod.scene;
+    if (_sceneRef) return _sceneRef;
+    if (!_sceneLoading) {
+        _sceneLoading = (async () => {
+            const mod = await import('../scene/scene');
+            _sceneRef = mod.scene;
+            _sceneLoading = null;
+            return _sceneRef;
+        })().catch((err) => {
+            _sceneLoading = null;
+            throw err;
+        });
     }
-    return _sceneRef;
+    return _sceneLoading;
 }
 
 type TextureSlotKey =
