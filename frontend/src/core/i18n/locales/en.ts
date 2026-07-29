@@ -1912,6 +1912,7 @@ export const en: Record<string, string> = {
     'ai.config.noEndpoint': 'Please configure an endpoint first',
     'ai.config.httpError': 'HTTP {code}',
     'ai.config.connectionFailed': 'Connection failed (CORS/network)',
+    'ai.config.loading': 'Loading configuration…',
     'ai.errors.count': 'Captured errors: {count}',
     'ai.errors.clear': 'Clear Errors',
     'ai.errors.cleared': 'Error buffer cleared.',

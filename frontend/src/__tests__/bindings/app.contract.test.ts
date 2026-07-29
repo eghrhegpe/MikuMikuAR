@@ -290,6 +290,7 @@ describe('binding contract: function exports', () => {
         'AddRecentModel',
         'AddTag',
         'AiCancelStream',
+        'AiFetchModels',
         'AiGetLLMConfig',
         'AiSetLLMConfig',
         'AiStreamChat',
