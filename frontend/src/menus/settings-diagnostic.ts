@@ -96,7 +96,8 @@ let _speakEnabled = true;
 /** 台词模式朗读开关按钮引用（仅 dialogue 模式可见，由 _refreshModeUI 控制显隐）。 */
 let _speakToggleBtn: HTMLButtonElement | null = null;
 
-/** 当前面板编辑态的配置副本，blur 时同步到持久化层。 */
+/** 当前面板编辑态的配置副本，blur 时同步到持久化层。
+ *  模块加载时为占位值，建配置卡前由 _loadInitialConfig() 覆写（见 buildConfigSchema 两阶段渲染）。 */
 let _localConfig: AiConfig = { ...loadAiConfig() };
 
 /** 自动连接测试防抖定时器 */
@@ -105,16 +106,13 @@ let _autoTesting = false;
 
 // ======== 生命周期 ========
 
-void ensureAiConfigLoaded();
-
 // 面板打开时异步 resolve AiService
 resolveAi()
     .then(async (ai) => {
         _ai = ai;
         _aiResolved = true;
-        // 先从持久化层回读配置并回填 UI（修复桌面端重载后回退默认服务商：
-        // 桌面配置存在 Go 后端，而 _localConfig 仅从前端 IndexedDB 初始化为空）。
-        await _loadPersistedConfig();
+        // 配置回填在 config-card 两阶段渲染中完成（_loadInitialConfig），
+        // 先 resolve 再渲染，消除"默认值闪切"时序竞态。
         await _refreshCaps();
         _updateControlsEnabled();
         if (_messages.length === 0) {
@@ -133,57 +131,50 @@ function _addAssistantMessage(text: string): void {
     _messages.push({ role: 'assistant', content: text });
 }
 
-/** 从端点推断服务商（复用 config-store 的匹配逻辑），无法匹配回落 custom。 */
+/** 从端点 hostname 精确推断服务商，避免 substring 误匹配。 */
 function _inferProvider(endpoint: string): AiConfigProvider {
     if (!endpoint) {
         return 'custom';
     }
+    let hostname: string;
+    try {
+        hostname = new URL(endpoint).hostname;
+    } catch {
+        return 'custom';
+    }
     const matched = (Object.keys(PROVIDER_PRESETS) as AiConfigProvider[])
         .filter((p) => p !== 'custom')
-        .find((p) =>
-            endpoint.includes(PROVIDER_PRESETS[p].endpoint.replace('/v1/chat/completions', ''))
-        );
+        .find((p) => {
+            try {
+                return new URL(PROVIDER_PRESETS[p].endpoint).hostname === hostname;
+            } catch {
+                return false;
+            }
+        });
     return matched ?? 'custom';
 }
 
-/**
- * 从持久化层回读配置并回填 _localConfig 与输入框。
- * 桌面端配置存于 Go 后端，若不回读则重载后 _localConfig 为空 → UI 回退默认 Ollama。
- * key 出于安全 go 端不回读明文，仅用 keyConfigured 标志显示占位。
- */
-async function _loadPersistedConfig(): Promise<void> {
-    if (!_ai?.loadConfig) {
-        return;
+/** 合并 IndexedDB + 适配器持久化配置，确保 _localConfig 为真实保存值。
+ *  key 出于安全 go 端不回读明文，仅用 keyConfigured 标志由 _renderConfigCard 显示占位。 */
+async function _loadInitialConfig(): Promise<void> {
+    await ensureAiConfigLoaded();
+    _localConfig = { ...loadAiConfig() };
+    if (_ai?.loadConfig) {
+        try {
+            const persisted = await _ai.loadConfig();
+            if (persisted.endpoint || persisted.model) {
+                _localConfig = {
+                    ..._localConfig,
+                    provider: _inferProvider(persisted.endpoint),
+                    endpoint: persisted.endpoint,
+                    model: persisted.model,
+                    apiKey: persisted.apiKey ?? _localConfig.apiKey,
+                };
+            }
+        } catch {
+            /* keep IndexedDB defaults */
+        }
     }
-    let persisted;
-    try {
-        persisted = await _ai.loadConfig();
-    } catch {
-        return;
-    }
-    if (!persisted.endpoint && !persisted.model) {
-        return; // 后端无配置，保持默认
-    }
-    _localConfig = {
-        ..._localConfig,
-        provider: _inferProvider(persisted.endpoint),
-        endpoint: persisted.endpoint,
-        model: persisted.model,
-        apiKey: persisted.apiKey ?? _localConfig.apiKey,
-    };
-    // 输入框可能已在 renderCustom 中创建，同步其显示值
-    if (_configEndpoint) {
-        _configEndpoint.value = persisted.endpoint;
-    }
-    if (_configModel) {
-        _configModel.value = persisted.model;
-    }
-    // key 已配置但明文不可回读时，用占位提示用户无需重填（仅 go 端）
-    if (_configApiKey && !persisted.apiKey && persisted.keyConfigured) {
-        _configApiKey.placeholder = t('ai.config.keyConfigured');
-    }
-    _updateProviderButtons(_localConfig.provider);
-    _updateDocLink(_localConfig.provider);
 }
 
 async function _refreshCaps(): Promise<void> {
@@ -316,6 +307,24 @@ function _applyProvider(provider: AiConfigProvider): void {
     // 清空旧 datalist，避免跨服务商残留旧发现模型
     if (_configModelDatalist) {
         _configModelDatalist.innerHTML = '';
+    }
+    // [doc:adr-196 P6] 切换服务商后自动发现模型列表
+    void _refreshModelList();
+}
+
+async function _refreshModelList(): Promise<void> {
+    if (!_ai) {
+        return;
+    }
+    await _flushAndSave();
+    const models = await _ai.fetchModels?.();
+    if (_configModelDatalist && models && models.length > 0) {
+        _configModelDatalist.innerHTML = '';
+        for (const m of models) {
+            const opt = document.createElement('option');
+            opt.value = m;
+            _configModelDatalist.appendChild(opt);
+        }
     }
 }
 
@@ -1503,246 +1512,251 @@ function buildConfigSchema(): MenuNode[] {
             id: 'diagnostic:config',
             kind: 'custom',
             renderCustom: (c) => {
-                _localConfig = { ...loadAiConfig() };
-                _activeProviderButtons = [];
-                _activeDocLink = null;
+                // Phase 1: 加载占位（配置卡需先异步加载持久化配置，避免默认值闪切）
+                const loadingEl = document.createElement('div');
+                loadingEl.className = 'setting-hint';
+                loadingEl.textContent = '⌛ ' + t('ai.config.loading');
+                c.appendChild(loadingEl);
 
-                // 状态徽章
-                const statusBadge = document.createElement('div');
-                statusBadge.className = 'diag-status-badge diag-status-badge--disconnected';
-                const statusText = document.createElement('span');
-                statusText.textContent = t('ai.status.disconnected');
-                statusBadge.appendChild(statusText);
-                c.appendChild(statusBadge);
-                _statusBadgeEl = statusBadge;
-                _statusTextEl = statusText;
-
-                // 可操作的建议条
-                const adviceEl = document.createElement('div');
-                adviceEl.className = 'diag-advice';
-                adviceEl.style.display = 'none';
-                adviceEl.setAttribute('role', 'status');
-                c.appendChild(adviceEl);
-                _adviceEl = adviceEl;
-
-                // 快速配置提示
-                const hintEl = document.createElement('div');
-                hintEl.className = 'setting-hint';
-                hintEl.textContent = t('ai.config.providerHint');
-                c.appendChild(hintEl);
-
-                // 服务商选择 + 文档链接
-                const providerRow = document.createElement('div');
-                providerRow.className = 'diag-provider-row';
-
-                const providers: AiConfigProvider[] = [
-                    'ollama',
-                    'deepseek',
-                    'openai',
-                    'openrouter',
-                    'custom',
-                ];
-                for (const provider of providers) {
-                    const btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.textContent = t(PROVIDER_PRESETS[provider].labelKey);
-                    btn.className =
-                        'preset-chip' + (provider === _localConfig.provider ? ' active' : '');
-                    btn.dataset.provider = provider;
-                    btn.addEventListener('click', () => _applyProvider(provider));
-                    providerRow.appendChild(btn);
-                    _activeProviderButtons.push(btn);
-                }
-
-                const docLink = document.createElement('a');
-                docLink.target = '_blank';
-                docLink.className = 'diag-link';
-                docLink.setAttribute('aria-label', t('ai.config.doc', { provider: '' }));
-                providerRow.appendChild(docLink);
-                _activeDocLink = docLink;
-
-                c.appendChild(providerRow);
-
-                // CORS 风险提示条
-                _corsWarningEl = document.createElement('div');
-                _corsWarningEl.textContent = t('ai.config.corsWarning');
-                _corsWarningEl.className = 'diag-warning';
-                _corsWarningEl.setAttribute('role', 'alert');
-                c.appendChild(_corsWarningEl);
-
-                const createField = (
-                    label: string,
-                    type: string,
-                    value: string,
-                    onChange: (val: string) => void,
-                    fieldKey?: keyof AiConfig
-                ): HTMLDivElement => {
-                    const row = document.createElement('div');
-                    row.className = 'diag-field-row';
-
-                    const lbl = document.createElement('div');
-                    lbl.textContent = label;
-                    lbl.className = 'diag-field-label';
-                    row.appendChild(lbl);
-
-                    const input = document.createElement('input');
-                    input.type = type;
-                    input.value = value;
-                    input.className = 'diag-input';
-                    input.addEventListener('input', () => onChange(input.value));
-                    input.addEventListener('blur', () => {
-                        _persistConfig(fieldKey ? { [fieldKey]: input.value } : _localConfig);
-                    });
-                    row.appendChild(input);
-                    return row;
-                };
-
-                const endpointRow = createField(
-                    t('ai.config.endpoint'),
-                    'text',
-                    _localConfig.endpoint,
-                    (v) => {
-                        _localConfig.endpoint = v;
-                    },
-                    'endpoint'
-                );
-                c.appendChild(endpointRow);
-                _configEndpoint = endpointRow.querySelector('input') as HTMLInputElement;
-
-                const apiKeyRow = createField(
-                    t('ai.config.apiKey'),
-                    'password',
-                    _localConfig.apiKey,
-                    (v) => {
-                        _localConfig.apiKey = v;
-                    },
-                    'apiKey'
-                );
-                c.appendChild(apiKeyRow);
-                _configApiKey = apiKeyRow.querySelector('input') as HTMLInputElement;
-
-                const modelRow = document.createElement('div');
-                modelRow.className = 'diag-field-row';
-                const modelLabel = document.createElement('div');
-                modelLabel.textContent = t('ai.config.model');
-                modelLabel.className = 'diag-field-label';
-                modelRow.appendChild(modelLabel);
-                const modelInput = document.createElement('input');
-                modelInput.type = 'text';
-                modelInput.className = 'diag-input';
-                modelInput.value = _localConfig.model;
-                modelInput.setAttribute('list', 'diag-model-list');
-                modelInput.setAttribute('aria-label', t('ai.config.model'));
-                modelInput.addEventListener('input', () => {
-                    _localConfig.model = modelInput.value;
-                });
-                modelInput.addEventListener('blur', () =>
-                    _persistConfig({ model: modelInput.value })
-                );
-                modelRow.appendChild(modelInput);
-                const modelRefresh = document.createElement('button');
-                modelRefresh.textContent = '↻';
-                modelRefresh.className = 'preset-chip';
-                modelRefresh.setAttribute('title', t('ai.config.refreshModels'));
-                modelRefresh.setAttribute('aria-label', t('ai.config.refreshModels'));
-                modelRefresh.style.padding = '2px 10px';
-                modelRefresh.style.fontSize = 'var(--font-ui-sm)';
-                let _refreshing = false;
-                modelRefresh.addEventListener('click', async () => {
-                    if (_refreshing || !_ai) {
-                        return;
-                    }
-                    _refreshing = true;
-                    modelRefresh.disabled = true;
-                    modelRefresh.textContent = '…';
-                    try {
-                        // 先 flush 保存当前输入（走 go/browser 正确分支），确保后端读到最新 endpoint/key
-                        await _flushAndSave();
-                        const models = (await _ai.fetchModels?.()) ?? [];
-                        if (_configModelDatalist) {
-                            _configModelDatalist.innerHTML = '';
-                            for (const m of models) {
-                                const opt = document.createElement('option');
-                                opt.value = m;
-                                _configModelDatalist.appendChild(opt);
-                            }
-                        }
-                        if (models.length > 0 && !_localConfig.model) {
-                            _localConfig.model = models[0];
-                            modelInput.value = models[0];
-                        }
-                        // 可见反馈：发现数量 / 无结果（title 悬浮提示）
-                        modelRefresh.title =
-                            models.length > 0
-                                ? t('ai.config.modelsFound', { n: String(models.length) })
-                                : t('ai.config.modelsNone');
-                    } catch (err) {
-                        console.warn('[ai-config] 发现模型失败', err);
-                        modelRefresh.title = t('ai.config.modelsNone');
-                    } finally {
-                        _refreshing = false;
-                        modelRefresh.disabled = false;
-                        modelRefresh.textContent = '↻';
-                    }
-                });
-                modelRow.appendChild(modelRefresh);
-                const modelDatalist = document.createElement('datalist');
-                modelDatalist.id = 'diag-model-list';
-                modelRow.appendChild(modelDatalist);
-                c.appendChild(modelRow);
-                _configModel = modelInput;
-                _configModelDatalist = modelDatalist;
-
-                const testRow = document.createElement('div');
-                testRow.className = 'diag-hint-row';
-
-                const saveBtn = document.createElement('button');
-                saveBtn.textContent = t('ai.config.save');
-                saveBtn.className = 'preset-chip';
-                saveBtn.setAttribute('aria-label', t('ai.config.save'));
-                testRow.appendChild(saveBtn);
-
-                const testBtn = document.createElement('button');
-                testBtn.id = 'diag-test-btn';
-                testBtn.textContent = t('ai.config.test');
-                testBtn.className = 'preset-chip';
-                testBtn.setAttribute('aria-label', t('ai.config.test'));
-                testRow.appendChild(testBtn);
-
-                const statusEl = document.createElement('span');
-                statusEl.className = 'diag-status';
-                testRow.appendChild(statusEl);
-
-                let _saving = false;
-                saveBtn.addEventListener('click', async () => {
-                    if (_saving) {
-                        return;
-                    }
-                    _saving = true;
-                    saveBtn.disabled = true;
-                    statusEl.textContent = t('ai.config.saving');
-                    statusEl.style.color = 'var(--text-muted)';
-                    const res = await _flushAndSave();
-                    statusEl.textContent = res.ok
-                        ? t('ai.config.saved')
-                        : `${t('ai.config.saveFailed')}: ${res.error ?? ''}`;
-                    statusEl.style.color = res.ok ? 'var(--success)' : 'var(--danger)';
-                    _saving = false;
-                    saveBtn.disabled = false;
-                });
-                testBtn.addEventListener('click', () => void _testConnection(statusEl));
-                c.appendChild(testRow);
-
-                _updateDocLink(_localConfig.provider);
-                _refreshConfigUI();
-                _updateControlsEnabled();
-                // 每次渲染卡片时从持久化层回读并回填（输入框此刻已创建）。
-                // 修复：回填原本仅在模块加载时执行一次，与面板渲染生命周期解耦，
-                // 导致重开面板显示默认值。_ai 未就绪时守卫内部会跳过。
-                void _loadPersistedConfig();
+                // Phase 2: 异步加载配置 → 构建真实 UI
+                void (async () => {
+                    await _loadInitialConfig();
+                    loadingEl.remove();
+                    _renderConfigCard(c);
+                })();
             },
         },
     ];
+}
+
+function _renderConfigCard(c: HTMLElement): void {
+    _activeProviderButtons = [];
+    _activeDocLink = null;
+
+    // 状态徽章
+    const statusBadge = document.createElement('div');
+    statusBadge.className = 'diag-status-badge diag-status-badge--disconnected';
+    const statusText = document.createElement('span');
+    statusText.textContent = t('ai.status.disconnected');
+    statusBadge.appendChild(statusText);
+    c.appendChild(statusBadge);
+    _statusBadgeEl = statusBadge;
+    _statusTextEl = statusText;
+
+    // 可操作的建议条
+    const adviceEl = document.createElement('div');
+    adviceEl.className = 'diag-advice';
+    adviceEl.style.display = 'none';
+    adviceEl.setAttribute('role', 'status');
+    c.appendChild(adviceEl);
+    _adviceEl = adviceEl;
+
+    // 快速配置提示
+    const hintEl = document.createElement('div');
+    hintEl.className = 'setting-hint';
+    hintEl.textContent = t('ai.config.providerHint');
+    c.appendChild(hintEl);
+
+    // 服务商选择 + 文档链接
+    const providerRow = document.createElement('div');
+    providerRow.className = 'diag-provider-row';
+
+    const providers: AiConfigProvider[] = ['ollama', 'deepseek', 'openai', 'openrouter', 'custom'];
+    for (const provider of providers) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = t(PROVIDER_PRESETS[provider].labelKey);
+        btn.className = 'preset-chip' + (provider === _localConfig.provider ? ' active' : '');
+        btn.dataset.provider = provider;
+        btn.addEventListener('click', () => _applyProvider(provider));
+        providerRow.appendChild(btn);
+        _activeProviderButtons.push(btn);
+    }
+
+    const docLink = document.createElement('a');
+    docLink.target = '_blank';
+    docLink.className = 'diag-link';
+    docLink.setAttribute('aria-label', t('ai.config.doc', { provider: '' }));
+    providerRow.appendChild(docLink);
+    _activeDocLink = docLink;
+
+    c.appendChild(providerRow);
+
+    // CORS 风险提示条
+    _corsWarningEl = document.createElement('div');
+    _corsWarningEl.textContent = t('ai.config.corsWarning');
+    _corsWarningEl.className = 'diag-warning';
+    _corsWarningEl.setAttribute('role', 'alert');
+    c.appendChild(_corsWarningEl);
+
+    const createField = (
+        label: string,
+        type: string,
+        value: string,
+        onChange: (val: string) => void,
+        fieldKey?: keyof AiConfig
+    ): HTMLDivElement => {
+        const row = document.createElement('div');
+        row.className = 'diag-field-row';
+        const lbl = document.createElement('div');
+        lbl.textContent = label;
+        lbl.className = 'diag-field-label';
+        row.appendChild(lbl);
+        const input = document.createElement('input');
+        input.type = type;
+        input.value = value;
+        input.className = 'diag-input';
+        input.addEventListener('input', () => onChange(input.value));
+        input.addEventListener('blur', () => {
+            _persistConfig(fieldKey ? { [fieldKey]: input.value } : _localConfig);
+        });
+        row.appendChild(input);
+        return row;
+    };
+
+    const endpointRow = createField(
+        t('ai.config.endpoint'),
+        'text',
+        _localConfig.endpoint,
+        (v) => { _localConfig.endpoint = v; },
+        'endpoint'
+    );
+    c.appendChild(endpointRow);
+    _configEndpoint = endpointRow.querySelector('input') as HTMLInputElement;
+
+    const apiKeyRow = createField(
+        t('ai.config.apiKey'),
+        'password',
+        _localConfig.apiKey,
+        (v) => { _localConfig.apiKey = v; },
+        'apiKey'
+    );
+    c.appendChild(apiKeyRow);
+    _configApiKey = apiKeyRow.querySelector('input') as HTMLInputElement;
+
+    // Go 桌面端 key 已配置但明文不可回读时，占位提示无需重填
+    if (_ai?.kind === 'go') {
+        void (async () => {
+            try {
+                const persisted = await _ai.loadConfig?.();
+                if (_configApiKey && persisted?.keyConfigured && !persisted.apiKey) {
+                    _configApiKey.placeholder = t('ai.config.keyConfigured');
+                }
+            } catch { /* ignore */ }
+        })();
+    }
+
+    const modelRow = document.createElement('div');
+    modelRow.className = 'diag-field-row';
+    const modelLabel = document.createElement('div');
+    modelLabel.textContent = t('ai.config.model');
+    modelLabel.className = 'diag-field-label';
+    modelRow.appendChild(modelLabel);
+    const modelInput = document.createElement('input');
+    modelInput.type = 'text';
+    modelInput.className = 'diag-input';
+    modelInput.value = _localConfig.model;
+    modelInput.setAttribute('list', 'diag-model-list');
+    modelInput.setAttribute('aria-label', t('ai.config.model'));
+    modelInput.addEventListener('input', () => {
+        _localConfig.model = modelInput.value;
+    });
+    modelInput.addEventListener('blur', () => _persistConfig({ model: modelInput.value }));
+    modelRow.appendChild(modelInput);
+    const modelRefresh = document.createElement('button');
+    modelRefresh.textContent = '↻';
+    modelRefresh.className = 'preset-chip';
+    modelRefresh.setAttribute('title', t('ai.config.refreshModels'));
+    modelRefresh.setAttribute('aria-label', t('ai.config.refreshModels'));
+    modelRefresh.style.padding = '2px 10px';
+    modelRefresh.style.fontSize = 'var(--font-ui-sm)';
+    let _refreshing = false;
+    modelRefresh.addEventListener('click', async () => {
+        if (_refreshing || !_ai) {
+            return;
+        }
+        _refreshing = true;
+        modelRefresh.disabled = true;
+        modelRefresh.textContent = '…';
+        try {
+            await _flushAndSave();
+            const models = (await _ai.fetchModels?.()) ?? [];
+            if (_configModelDatalist) {
+                _configModelDatalist.innerHTML = '';
+                for (const m of models) {
+                    const opt = document.createElement('option');
+                    opt.value = m;
+                    _configModelDatalist.appendChild(opt);
+                }
+            }
+            if (models.length > 0 && !_localConfig.model) {
+                _localConfig.model = models[0];
+                modelInput.value = models[0];
+            }
+            modelRefresh.title =
+                models.length > 0
+                    ? t('ai.config.modelsFound', { n: String(models.length) })
+                    : t('ai.config.modelsNone');
+        } catch (err) {
+            console.warn('[ai-config] 发现模型失败', err);
+            modelRefresh.title = t('ai.config.modelsNone');
+        } finally {
+            _refreshing = false;
+            modelRefresh.disabled = false;
+            modelRefresh.textContent = '↻';
+        }
+    });
+    modelRow.appendChild(modelRefresh);
+    const modelDatalist = document.createElement('datalist');
+    modelDatalist.id = 'diag-model-list';
+    modelRow.appendChild(modelDatalist);
+    c.appendChild(modelRow);
+    _configModel = modelInput;
+    _configModelDatalist = modelDatalist;
+
+    const testRow = document.createElement('div');
+    testRow.className = 'diag-hint-row';
+
+    const saveBtn = document.createElement('button');
+    saveBtn.textContent = t('ai.config.save');
+    saveBtn.className = 'preset-chip';
+    saveBtn.setAttribute('aria-label', t('ai.config.save'));
+    testRow.appendChild(saveBtn);
+
+    const testBtn = document.createElement('button');
+    testBtn.id = 'diag-test-btn';
+    testBtn.textContent = t('ai.config.test');
+    testBtn.className = 'preset-chip';
+    testBtn.setAttribute('aria-label', t('ai.config.test'));
+    testRow.appendChild(testBtn);
+
+    const statusEl = document.createElement('span');
+    statusEl.className = 'diag-status';
+    testRow.appendChild(statusEl);
+
+    let _saving = false;
+    saveBtn.addEventListener('click', async () => {
+        if (_saving) {
+            return;
+        }
+        _saving = true;
+        saveBtn.disabled = true;
+        statusEl.textContent = t('ai.config.saving');
+        statusEl.style.color = 'var(--text-muted)';
+        const res = await _flushAndSave();
+        statusEl.textContent = res.ok
+            ? t('ai.config.saved')
+            : `${t('ai.config.saveFailed')}: ${res.error ?? ''}`;
+        statusEl.style.color = res.ok ? 'var(--success)' : 'var(--danger)';
+        _saving = false;
+        saveBtn.disabled = false;
+    });
+    testBtn.addEventListener('click', () => void _testConnection(statusEl));
+    c.appendChild(testRow);
+
+    _updateDocLink(_localConfig.provider);
+    _refreshConfigUI();
+    _updateControlsEnabled();
 }
 
 // ======== 首次进入清空对话并显示欢迎 ========
@@ -1806,6 +1820,17 @@ export function buildSettingsDiagnosticLevel(
                 cancelSpeech();
                 _abortController?.abort();
                 dispose();
+                // [doc:adr-196 P5] 关面板时重置会话状态，保证下次打开为干净初始态
+                _messages.length = 0;
+                _isStreaming = false;
+                _mode = 'diagnostic';
+                _pendingAction = null;
+                _pendingQueue = [];
+                _pendingToolResults = [];
+                _pendingBatchHasToolCalls = false;
+                _lastUndoable = null;
+                _autoTestTimer?.cancel();
+                _autoTestTimer = null;
             };
         },
     };

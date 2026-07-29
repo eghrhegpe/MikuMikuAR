@@ -1887,6 +1887,7 @@ export const ja: Record<string, string> = {
     'ai.config.noEndpoint': '先にエンドポイントを設定してください',
     'ai.config.httpError': 'HTTP {code}',
     'ai.config.connectionFailed': '接続失敗（CORS/ネットワーク）',
+    'ai.config.loading': '設定を読み込み中…',
     'ai.errors.count': '捕捉されたエラー：{count}',
     'ai.errors.clear': 'エラーをクリア',
     'ai.errors.cleared': 'エラーバッファをクリアしました。',

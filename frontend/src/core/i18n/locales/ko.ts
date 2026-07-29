@@ -1883,6 +1883,7 @@ export const ko: Record<string, string> = {
     'ai.config.noEndpoint': '먼저 엔드포인트를 설정하세요',
     'ai.config.httpError': 'HTTP {code}',
     'ai.config.connectionFailed': '연결 실패 (CORS/네트워크)',
+    'ai.config.loading': '설정 로딩 중…',
     'ai.errors.count': '캡처된 오류: {count}',
     'ai.errors.clear': '오류 지우기',
     'ai.errors.cleared': '오류 버퍼가 지워졌습니다.',

@@ -1851,6 +1851,7 @@ export const zhTW: Record<string, string> = {
     'ai.config.noEndpoint': '請先配置端點',
     'ai.config.httpError': 'HTTP {code}',
     'ai.config.connectionFailed': '連線失敗（CORS/網路問題）',
+    'ai.config.loading': '配置載入中…',
     'ai.errors.count': '已捕獲錯誤：{count}',
     'ai.errors.clear': '清除錯誤',
     'ai.errors.cleared': '錯誤緩衝已清空。',

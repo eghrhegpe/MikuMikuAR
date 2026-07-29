@@ -1888,6 +1888,7 @@ export const zhCN: Record<string, string> = {
     'ai.config.noEndpoint': '请先配置端点',
     'ai.config.httpError': 'HTTP {code}',
     'ai.config.connectionFailed': '连接失败（CORS/网络问题）',
+    'ai.config.loading': '配置加载中…',
     'ai.errors.count': '已捕获错误：{count}',
     'ai.errors.clear': '清除错误',
     'ai.errors.cleared': '错误缓冲已清空。',
