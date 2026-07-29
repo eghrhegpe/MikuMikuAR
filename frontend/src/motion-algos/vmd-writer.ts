@@ -30,7 +30,6 @@ export interface InterpCurve {
 export const INTERP_LINEAR: InterpCurve = { x1: 20, y1: 20, x2: 107, y2: 107 };
 export const INTERP_EASE_IN_OUT: InterpCurve = { x1: 20, y1: 40, x2: 80, y2: 107 };
 export const INTERP_EASE_OUT: InterpCurve = { x1: 20, y1: 80, x2: 107, y2: 107 };
-const INTERP_EASE_IN: InterpCurve = { x1: 20, y1: 20, x2: 40, y2: 107 };
 export const INTERP_SHARP: InterpCurve = { x1: 30, y1: 10, x2: 90, y2: 107 };
 
 export const BONE_FRAME_SIZE = 111;

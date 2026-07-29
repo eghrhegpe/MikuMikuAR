@@ -38,5 +38,3 @@ export type SettingsFolderTarget = (typeof SETTINGS)[keyof typeof SETTINGS];
 /** 所有动作 target 的联合类型 */
 export type SettingsActionTarget = (typeof SETTINGS_ACTION)[keyof typeof SETTINGS_ACTION];
 
-/** 所有（静态）settings target 的联合类型 */
-type SettingsTarget = SettingsFolderTarget | SettingsActionTarget;

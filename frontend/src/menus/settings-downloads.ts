@@ -248,8 +248,6 @@ async function runDownloadManagerLocal(
 
     for (const e of files) {
         const fullPath = `${downloadPath}/${e.relativePath}`;
-        // [doc:adr-195] stem 仅用于日志/上下文；去重用完整文件名（见网页流同款修正）。
-        const stem = e.name.replace(/\.[^.]+$/, '');
         if (_ingestedStems.has(e.name)) {
             continue;
         }

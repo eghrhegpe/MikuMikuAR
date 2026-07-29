@@ -33,7 +33,6 @@ import {
     addToggleRow,
     addWatchDirRow,
     addSectionTitle,
-    addSliderRow,
 } from '../core/ui-helpers';
 import { showPrompt2 } from '../core/dialog';
 import { getCurrentRenderingMenu } from './menu';

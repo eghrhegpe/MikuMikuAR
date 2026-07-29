@@ -34,7 +34,7 @@ import {
 import { NavigatePlazaWindow } from '@bindings/mikumikuar/internal/app/app';
 import { getCachedCapabilities } from '../core/backend';
 import { openExternalURL } from '../core/platform';
-import { swallowError, escapeHtml } from '../core/utils';
+import { escapeHtml } from '../core/utils';
 import { logWarn } from '../core/logger';
 import { safeCallAsync } from '../core/safe-call';
 import { t } from '../core/i18n/t';
