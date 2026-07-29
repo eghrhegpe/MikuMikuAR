@@ -5,7 +5,7 @@ import { renderMarkdownInto } from '../core/ai/markdown';
 import { buildToolCatalogText } from '../core/ai/action-catalog';
 import type { ChatMessage, ChatChunk, AiErrorKind } from '../core/ai/types';
 import { diagState } from './diagnostic-state';
-import { speakLines, cancelSpeech } from '../core/ai/dialogue-speech';
+import { speakLines, cancelSpeech, isSpeechSupported } from '../core/ai/dialogue-speech';
 import { parseDialogueLines, type DialogueLine } from '../core/ai/character-bible';
 import { getActiveBible, buildDialogueSystemPrompt, listBibles, setActiveBible } from '../core/ai/dialogue-session';
 import { renderPendingAction, renderControlHint } from './diagnostic-control';
@@ -109,7 +109,12 @@ export function renderStreamingChunk(chunk: ChatChunk): void {
         if (body) body.textContent += chunk.content;
     } else {
         const contentDiv = lastRow.querySelector('.diag-chat-content') as HTMLElement | null;
-        if (contentDiv) contentDiv.textContent += chunk.content;
+        if (contentDiv) {
+            const fullText = (contentDiv.dataset.fullText ?? '') + chunk.content;
+            contentDiv.dataset.fullText = fullText;
+            contentDiv.innerHTML = '';
+            renderMarkdownInto(contentDiv, fullText);
+        }
     }
     diagState.chatContainer.scrollTop = diagState.chatContainer.scrollHeight;
 }
@@ -218,9 +223,13 @@ export function buildSystemMessage(): ChatMessage {
     };
 }
 
-/** 更新朗读开关 UI */
+/** 更新朗读开关 UI（不支持时隐藏） */
 export function updateSpeakToggle(): void {
     if (!diagState.speakToggleBtn) return;
+    if (!isSpeechSupported() && diagState.dialogueMode) {
+        diagState.speakToggleBtn.style.display = 'none';
+        return;
+    }
     diagState.speakToggleBtn.style.display = diagState.dialogueMode ? '' : 'none';
     diagState.speakToggleBtn.textContent = diagState.speakEnabled
         ? t('ai.dialogue.speakOn')
