@@ -6,7 +6,7 @@ import { t } from '../core/i18n/t';
 import { getLang } from '../core/i18n/locale';
 import { cardContainer } from '../core/config';
 import { addSectionTitle } from '../core/ui-helpers';
-import { getErrors, clearErrors, type ErrorEntry } from '../core/ai/error-buffer';
+import { getErrors, clearErrors, captureError, type ErrorEntry } from '../core/ai/error-buffer';
 import { captureSceneSnapshot } from '../core/ai/scene-snapshot';
 import {
     loadAiConfig,
@@ -817,6 +817,7 @@ async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
                 });
             } else if (chunk.type === 'error') {
                 streamErrorSeen = true;
+                captureError('ai-stream', chunk.error ?? 'AI stream error', undefined);
                 if (_chatContainer) {
                     const streamingRow = _chatContainer.querySelector('.chat-row--streaming');
                     if (streamingRow) {
@@ -888,15 +889,15 @@ async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
         }
     } catch (err) {
         streamErrorSeen = true;
+        const errMsg = err instanceof Error ? err.message : String(err);
+        captureError('ai-stream', errMsg, err);
         if (_chatContainer) {
             const streamingRow = _chatContainer.querySelector('.chat-row--streaming');
             if (streamingRow) {
                 streamingRow.remove();
             }
         }
-        _addAssistantMessage(
-            t('ai.errors.apiError', { msg: err instanceof Error ? err.message : String(err) })
-        );
+        _addAssistantMessage(t('ai.errors.apiError', { msg: errMsg }));
         _renderChat();
     } finally {
         if (_isStreaming) {
@@ -1461,10 +1462,12 @@ async function _testConnection(statusEl: HTMLElement): Promise<void> {
 
     const validation = validateAiConfig(_localConfig);
     if (!validation.ok) {
-        statusEl.textContent = validation.errors
+        const errMsg = validation.errors
             ? validation.errors.map((e) => t(e.message)).join('; ')
             : t(validation.message);
+        statusEl.textContent = errMsg;
         statusEl.style.color = 'var(--warn)';
+        captureError('ai-config', errMsg, undefined);
         if (validation.kind) {
             _setStatusBadge(validation.kind);
             _renderAdvice(validation.kind);
@@ -1489,6 +1492,7 @@ async function _testConnection(statusEl: HTMLElement): Promise<void> {
         } else {
             statusEl.textContent = result.message;
             statusEl.style.color = 'var(--danger)';
+            captureError('ai-connection', result.message, undefined);
             _setStatusBadge(result.kind === 'cors' ? 'cors' : 'error');
             _renderAdvice(result.kind);
             _lastConnectionOk = false;
@@ -1497,6 +1501,7 @@ async function _testConnection(statusEl: HTMLElement): Promise<void> {
         const msg = err instanceof Error ? err.message : String(err);
         statusEl.textContent = msg;
         statusEl.style.color = 'var(--danger)';
+        captureError('ai-connection', msg, err);
         _setStatusBadge('error');
         _renderAdvice('unknown');
         _lastConnectionOk = false;
@@ -1748,6 +1753,9 @@ function _renderConfigCard(c: HTMLElement): void {
             ? t('ai.config.saved')
             : `${t('ai.config.saveFailed')}: ${res.error ?? ''}`;
         statusEl.style.color = res.ok ? 'var(--success)' : 'var(--danger)';
+        if (!res.ok) {
+            captureError('ai-config', res.error ?? 'save failed', undefined);
+        }
         _saving = false;
         saveBtn.disabled = false;
     });
