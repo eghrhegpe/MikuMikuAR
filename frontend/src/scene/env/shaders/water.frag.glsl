@@ -36,7 +36,8 @@ uniform float causticScrollY;   // 焦散UV滚动速度Y（默认 0.15）
 uniform float fresnelAlphaInfluence;  // Fresnel 对 alpha 的影响（默认 0.5）
 uniform float foamOpacity;           // 泡沫独立透明度（默认 0.8）
 uniform vec3 waterFogColor;          // 水面雾色（默认灰蓝色，模拟大气雾效果）
-uniform float waterFogDensity;       // 水面雾密度（深度感，默认 0.012）
+uniform float waterFogStart;         // 水面雾起始距离（从此距离开始混入雾色，默认 50）
+uniform float waterFogEnd;           // 水面雾终止距离（到此距离完全混入雾色，默认 300）
 uniform float waterFogOpacityInfluence; // 雾对透明度的影响（默认 0，即只混颜色）
 
 // ======== ADR-115 P1: 高频法线扰动层 + Sun Glitter ========
@@ -246,7 +247,7 @@ void main() {
     color += causticCol * caustic * uCausticIntensity;
 
     float depth = length(vWorldPos - cameraPosition);
-    float waterFog = 1.0 - exp(-waterFogDensity * depth);
+    float waterFog = smoothstep(waterFogStart, waterFogEnd, depth);
     color = mix(color, finalFogColor, waterFog);
 
     // ======== ADR-115 P3: 地平线淡出 ========
