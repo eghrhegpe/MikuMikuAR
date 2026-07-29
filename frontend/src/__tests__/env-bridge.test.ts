@@ -1460,4 +1460,12 @@ describe('ADR-173: setEnvState middleware', () => {
         setEnvState({ sunAngle: 30 });
         expect(mockConfigEnvState.groundPreset).toBe('grass');
     });
+
+    it('pre-facade: 改预设不管的 ground 字段（碰撞/无限）不清 groundPreset', () => {
+        mockConfigEnvState.groundPreset = 'woodStage';
+        setEnvState({ groundCollisionEnabled: true });
+        expect(mockConfigEnvState.groundPreset).toBe('woodStage');
+        setEnvState({ groundInfinite: true });
+        expect(mockConfigEnvState.groundPreset).toBe('woodStage');
+    });
 });

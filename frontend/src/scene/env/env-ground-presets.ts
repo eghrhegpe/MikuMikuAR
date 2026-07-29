@@ -250,6 +250,42 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
     },
 };
 
+/**
+ * 预设「关心」的 EnvState 字段集合（单一真相源）。
+ * - buildGroundPresetEnvState 据此映射预设 → patch；
+ * - env-bridge 的 resetGroundPresetOnManualEdit middleware 据此判断「用户手动微调是否脱离预设」。
+ * 刻意排除 groundCollisionEnabled、groundInfinite、groundType、groundLevel、groundSize、
+ * groundScrollSpeedX/Z、groundTerrain 系列等预设不管的字段，避免改这些时误清预设标记。
+ */
+export const GROUND_PRESET_KEYS = [
+    'groundStyle',
+    'groundOverlay',
+    'groundColor',
+    'groundAlpha',
+    'groundPattern',
+    'groundTexture',
+    'groundTextureEnabled',
+    'groundTextureScale',
+    'groundTextureRotation',
+    'groundGridSize',
+    'groundLineColor',
+    'groundPbrEnabled',
+    'groundMetallic',
+    'groundRoughness',
+    'groundProceduralTexture',
+    'groundProceduralSeed',
+    'groundProceduralScale',
+    'reflectionQuality',
+    'groundReflectionBlend',
+    'groundNormalStrength',
+    'groundReflectionBlur',
+    'groundReflectionDistort',
+    'groundElevationColoring',
+    'groundEdgeFade',
+    'groundPitch',
+    'groundRoll',
+] as const satisfies readonly (keyof EnvState)[];
+
 /** 预设 → EnvState 字段映射，供 UI chip handler 调用并持久化。 */
 export function buildGroundPresetEnvState(preset: GroundPreset): Partial<EnvState> {
     return {
