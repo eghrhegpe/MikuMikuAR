@@ -137,7 +137,7 @@ VMD 动画解算 → (WASM Bullet 物理) → [Feet Adjustment: 驱动足IK骨�
 
 **结论**：方案B 否决。近期走方案C（feet-adjustment 在 WASM 模式下自调 `solveTwoBoneIK` + `_propagateChildrenWasmSimple`，不依赖 bone-override 的 overrideMap / _mPool），远期走方案A（fork）。
 
-**方案A（长期）**：fork babylon-mmd，在 WASM 运行时暴露 `ikSolver` 字段及 `solve()` 方法，使 JS 路径与 WASM 路径统一走原版 IK 求解器。落地后删除方案C。
+> **方案A 补充（2026-07-29）**：ADR-202 §六 已规划 feet-adjustment WASM 路径方案C→A 迁移。方案A 的核心导出 `mmdModelSolveIk` 已在 ADR-202 待办 #4b 为 bone-override 路径落地；feet-adjustment 路径迁移设计见 ADR-202 §六。迁移完成后方案C 代码（`_solveWasmLegIK` / `_propagateChildrenWasmSimple` / two-bone-ik 导入）从本模块移除，JS/WASM 统一走原生 IK 求解器。迁移关键验证点：`setWorldTranslation` → WASM bone buffer 同步（见 ADR-202 §6.3）。**迁移待办状态：🔴 待实施。**
 
 ### 脚部 IK 解算算法（MMD-native）
 
