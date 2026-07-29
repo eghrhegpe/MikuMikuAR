@@ -12,7 +12,9 @@ adr:
 symbols:
   - _applyBlinking
 invariants:
-  - 被 perception-observer 引用
+  - 眨眼频率约 15-20 次/分钟（自然眨眼范围）
+  - _applyBlinking 为私有函数，仅被 perception-observer 调用
+  - 眨眼不修改骨骼变换，仅操作 morph 权重
 tests: []
 use_when:
   - 眨眼模拟

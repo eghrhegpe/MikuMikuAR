@@ -13,7 +13,9 @@ symbols:
   - _applyHeadGazeJS
   - _applyEyeGazeJS
 invariants:
-  - 被 perception-gaze 引用
+  - JS 模式与 WASM 模式互斥，由 _isWasmRuntime() 自动分支
+  - 写入策略：linkedBone.rotationQuaternion + _updateBoneChain + skeleton._markAsDirty()
+  - 仅用于 VITE_MMD_RUNTIME=js 调试模式
 tests: []
 use_when:
   - JS 视线追踪

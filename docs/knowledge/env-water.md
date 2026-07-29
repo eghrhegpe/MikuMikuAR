@@ -26,7 +26,9 @@ symbols:
   - buildWaterPresetEnvState
   - applyWaterPresetToCurrent
 invariants:
-  - 水面 RT 在 dispose 时释放
+  - disposeWater 级联释放水面 RT + 材质 + 镜像相机
+  - 涟漪（ripple）独立于水面主体
+  - 水下过渡效果与水面可见性联动
 tests: []
 use_when:
   - 水面

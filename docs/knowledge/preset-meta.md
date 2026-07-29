@@ -3,7 +3,7 @@ kind: preset_meta
 name: 预设元数据归一化
 category: core
 scope:
-  - core/preset-meta.ts
+  - frontend/src/core/preset-meta.ts
 source_files:
   - frontend/src/core/preset-meta.ts
 adr:

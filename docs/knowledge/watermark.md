@@ -13,7 +13,9 @@ symbols:
   - setWatermarkConfig
   - applyWatermark
 invariants:
-  - 水印在渲染后处理阶段添加
+  - 水印在渲染后处理阶段添加，不影响场景渲染
+  - 水印可配置为可选（默认关闭）
+  - applyWatermark 操作 RenderTargetTexture，不修改场景网格
 tests: []
 use_when:
   - 水印

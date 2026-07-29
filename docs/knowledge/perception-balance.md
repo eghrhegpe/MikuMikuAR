@@ -12,7 +12,9 @@ symbols:
   - _resetBalanceSwayState
   - _applyBalanceSway
 invariants:
-  - 被 perception-observer/perception 引用
+  - 重心微动幅度在 [-1, 1] 范围内
+  - 微动频率与呼吸频率联动
+  - _applyBalanceSway 为私有函数，仅被 perception-observer 调用
 tests: []
 use_when:
   - 重心微动

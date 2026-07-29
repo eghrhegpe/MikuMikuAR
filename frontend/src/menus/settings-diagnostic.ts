@@ -95,6 +95,23 @@ diagState.callbacks.updateControlsEnabled = () => {
 };
 diagState.callbacks.updateSendButton = updateSendButton;
 diagState.callbacks.continueStream = () => void runStream({ allowTools: false });
+diagState.callbacks.sendMessage = () => void sendMessage();
+diagState.callbacks.applyPending = () =>
+    void applyPendingAction(
+        () => {
+            renderChat();
+            renderControlHint();
+        },
+        () => {
+            renderChat();
+            renderControlHint();
+        }
+    );
+diagState.callbacks.cancelPending = () =>
+    void cancelPendingAction(() => {
+        renderChat();
+        renderControlHint();
+    });
 
 // ======== 核心协调函数 ========
 async function runStream(opts?: { allowTools?: boolean }): Promise<void> {
@@ -181,7 +198,7 @@ async function runStream(opts?: { allowTools?: boolean }): Promise<void> {
             }
             diagState.messages.push({
                 role: 'assistant',
-                content: null,
+                content: fullResponse || null,
                 tool_calls: pendingToolCalls.map((tc) => ({
                     id: tc.id,
                     type: 'function',
@@ -398,7 +415,9 @@ export function buildDiagnosticSchema(opts?: { withSessions?: boolean }): MenuNo
                     tabBar.appendChild(btn);
                     tabBtns.push(btn);
                 }
-                container.appendChild(tabBar);
+                cardContainer(container, (card) => {
+                    card.appendChild(tabBar);
+                });
 
                 const chatPane = document.createElement('div');
                 chatPane.className = 'diag-tab-pane';
@@ -447,6 +466,25 @@ export function renderDiagnosticPanel(
     opts?: { withSessions?: boolean }
 ): () => void {
     const dispose = renderMenu(buildDiagnosticSchema(opts), container);
+
+    // 接线发送 / 停止 / 清空按钮（schema 只建 DOM，事件由入口统一挂载）
+    // 注意：renderCustom 阶段 container 可能尚未挂载到 document，
+    // 必须用 container.querySelector 而非 document.getElementById。
+    const sendBtn = container.querySelector<HTMLButtonElement>('#diag-send-btn');
+    if (sendBtn) {
+        sendBtn.addEventListener('click', () => {
+            if (diagState.isStreaming) {
+                stopStreaming();
+            } else {
+                void sendMessage();
+            }
+        });
+    }
+    const clearBtn = container.querySelector<HTMLButtonElement>('#diag-clear-btn');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => void clearChat());
+    }
+
     return () => {
         dispose();
         disposeDiagnosticPanel();

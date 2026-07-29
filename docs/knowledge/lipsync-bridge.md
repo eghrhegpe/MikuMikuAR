@@ -19,6 +19,8 @@ symbols:
   - updateLipSync
 invariants:
   - 口型同步开关可运行时切换
+  - 口型参数在 [-1, 1] 范围内
+  - 音频信号驱动口型，非 VMD 动作覆盖
 tests: []
 use_when:
   - 口型同步

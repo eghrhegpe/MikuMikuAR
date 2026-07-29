@@ -12,7 +12,9 @@ symbols:
   - SETTINGS
   - SETTINGS_ACTION
 invariants:
-  - 被 settings-actions/settings-resources/settings-system/settings 引用（约 4 次）
+  - 常量与设置主菜单的路由保持一致
+  - 新设置页面需同步添加常量
+  - SETTINGS 含 7 分类信息架构路由（appearance/graphics/controls 等）
 tests: []
 use_when:
   - 设置目标

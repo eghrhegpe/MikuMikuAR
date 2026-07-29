@@ -3,7 +3,7 @@ kind: gpu_capabilities
 name: GPU 压缩纹理能力探测
 category: rendering
 scope:
-  - core/gpu-capabilities.ts
+  - frontend/src/core/gpu-capabilities.ts
 source_files:
   - frontend/src/core/gpu-capabilities.ts
 adr:

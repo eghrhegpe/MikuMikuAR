@@ -13,12 +13,12 @@ uniform int uWaterFlip;
 
 // Gerstner 波参数
 // WAVE_DIR 由外部 uniform uWindDir[4] 驱动（风向联动），在 createWater 时计算并传入
-// uWindSpeed 调制波幅度：风速 0 时平静（0.4 倍），风速 10 时汹涌（1.4 倍）
+// uWindSpeed 调制波幅度：风速 0 时平静（0.3 倍），风速 10 时汹涌（1.8 倍）
 const int WAVE_COUNT = 4;
 uniform vec2 uWindDir[4];
 uniform float uWindSpeed;
 const float WAVE_FREQ[4] = float[4](0.07, 0.11, 0.25, 0.3); // ADR-115 P5: 层 0/1 拉长波长（42→90/57 单位），制造连绵涌浪
-const float WAVE_AMP[4] = float[4](0.3, 0.25, 0.2, 0.15);
+const float WAVE_AMP[4] = float[4](0.5, 0.4, 0.32, 0.25);
 const float WAVE_SPEED[4] = float[4](0.7, 0.9, 0.5, 1.2);
 
 varying vec2 vUV;
@@ -39,9 +39,9 @@ void main() {
         vec2 dir = uWindDir[i];
         float f = WAVE_FREQ[i];
         // ADR-115 P4: 双层尺度拆分 — 层 0,1 大波组 / 层 2,3 小波组，再乘全局 waveHeight
-        // 风速调制波幅度：0 级风时 0.4 倍（平静海面），10 级风时 1.4 倍（汹涌涌浪）
+        // 风速调制波幅度：0 级风时 0.3 倍（平静海面），10 级风时 1.8 倍（汹涌涌浪）
         float h = (i < 2) ? bigWaveHeight : smallWaveHeight;
-        float windAmp = 0.4 + 0.1 * uWindSpeed;
+        float windAmp = 0.3 + 0.15 * uWindSpeed;
         float a = WAVE_AMP[i] * h * waveHeight * windAmp;
         float th = f * dot(dir, p.xz) + WAVE_SPEED[i] * wavePhase;
         float c = cos(th), s = sin(th);

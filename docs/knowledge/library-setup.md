@@ -16,7 +16,9 @@ symbols:
   - reloadConfig
   - refreshLibrary
 invariants:
-  - 初始化在应用启动时执行
+  - 初始化在应用启动时执行一次
+  - 初始化失败时降级为最小可用状态
+  - rescanAndSync 含防抖，避免频繁触发全量扫描
 tests: []
 use_when:
   - 资源库初始化

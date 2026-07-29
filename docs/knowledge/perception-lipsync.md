@@ -13,7 +13,9 @@ adr:
 symbols:
   - _applyLipSync
 invariants:
-  - 被 perception-observer 引用
+  - 口型参数与音频信号联动
+  - 口型同步与 VMD 口型动作互补
+  - _applyLipSync 为私有函数，仅被 perception-observer 调用
 tests: []
 use_when:
   - 感知口型

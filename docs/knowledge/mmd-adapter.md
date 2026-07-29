@@ -3,7 +3,7 @@ kind: mmd_adapter
 name: babylon-mmd 适配边界
 category: core
 scope:
-  - core/mmd-adapter.ts
+  - frontend/src/core/mmd-adapter.ts
 source_files:
   - frontend/src/core/mmd-adapter.ts
 adr:

@@ -13,7 +13,9 @@ symbols:
   - _applyBreathing
   - _updateBoneChain
 invariants:
-  - 被 perception-gaze-js/perception-observer 引用
+  - 呼吸频率约 12-20 次/分钟（自然呼吸范围）
+  - 呼吸幅度与模型体型联动
+  - _applyBreathing 为私有函数，仅被 perception-observer 和 perception-gaze-js 调用
 tests: []
 use_when:
   - 呼吸模拟

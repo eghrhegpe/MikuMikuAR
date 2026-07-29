@@ -12,6 +12,7 @@ symbols:
   - setGuideMode
 invariants:
   - 构图模式在 off/ruleOfThirds/goldenRatio/diagonal 之间切换
+  - 构图覆盖层经 disposeGuides 释放，不残留 DOM/Babylon 元素
 tests: []
 use_when:
   - 构图指南

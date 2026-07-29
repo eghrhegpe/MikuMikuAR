@@ -315,6 +315,7 @@ export function buildChatSchema(): MenuNode[] {
                 diagState.inputEl.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
+                        diagState.callbacks.sendMessage?.();
                     }
                 });
                 inputRow.appendChild(diagState.inputEl);
@@ -395,6 +396,13 @@ export function buildChatSchema(): MenuNode[] {
                 diagState.speakToggleBtn.className = 'preset-chip diag-btn-icon';
                 diagState.speakToggleBtn.setAttribute('role', 'switch');
                 diagState.speakToggleBtn.innerHTML = '\uD83D\uDD0A';
+                diagState.speakToggleBtn.addEventListener('click', () => {
+                    diagState.speakEnabled = !diagState.speakEnabled;
+                    if (!diagState.speakEnabled) {
+                        cancelSpeech();
+                    }
+                    updateSpeakToggle();
+                });
                 btnRow.appendChild(diagState.speakToggleBtn);
                 updateSpeakToggle();
 

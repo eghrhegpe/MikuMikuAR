@@ -12,7 +12,9 @@ adr:
 symbols:
   - _applyMicroExpression
 invariants:
-  - 被 perception-observer 引用
+  - 微表情随机触发，不干扰主要表情
+  - 微表情幅度在 [-0.5, 0.5] 范围内
+  - _applyMicroExpression 为私有函数，仅被 perception-observer 调用
 tests: []
 use_when:
   - 微表情

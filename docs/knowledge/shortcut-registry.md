@@ -13,7 +13,9 @@ symbols:
   - registerShortcut
   - unregisterShortcut
 invariants:
-  - 快捷键 ID 唯一
+  - 快捷键 ID 唯一，由 shortcut-app.ts 定义
+  - 快捷键注册映射到 action-registry 动作 ID
+  - 快捷键编辑后经 settings-controls.ts 持久化
 tests: []
 use_when:
   - 快捷键

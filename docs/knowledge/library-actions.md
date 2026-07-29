@@ -17,6 +17,8 @@ symbols:
   - replaceMotion
 invariants:
   - 缩略图异步加载，不阻塞 UI
+  - importFile 触发文件导入对话框，不直接操作 DOM
+  - prepareModelRestore 含 generation 防过期逻辑
 tests: []
 use_when:
   - 资源库操作
