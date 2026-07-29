@@ -12,7 +12,6 @@ adr:
   - ADR-166
 symbols:
   - _applyLipSync
-  - LipSyncConfig
 invariants:
   - 被 perception-observer 引用
 tests: []

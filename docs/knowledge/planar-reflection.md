@@ -8,6 +8,22 @@ source_files:
   - frontend/src/scene/env/planar-reflection.ts
 adr:
   - ADR-092
+symbols:
+  - PlanarReflection
+  - registerReflectionSurface
+  - resetReflectionSurfaces
+  - PlanarReflectionConfig
+  - ReflectionMode
+invariants:
+  - 两模式（mirrorTexture / screenSpace）共用帧跳过：high 每帧、medium 每2帧、low 每4帧
+  - 互斥可恢复：启用某面 requestExclusive 关闭另一面，关闭时 releaseExclusive 按 envState 重建
+  - dispose 级联释放 RT + 镜像相机 + 材质
+tests: []
+use_when:
+  - 平面反射
+  - 水面反射
+  - 地面反射
+  - MirrorTexture
 ---
 
 ## 系统概览

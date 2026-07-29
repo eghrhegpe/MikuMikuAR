@@ -9,8 +9,10 @@ source_files:
 adr:
   - ADR-145
 symbols:
-  - MotionPreset
-  - PresetModuleState
+  - MotionPresetFile
+  - applyMotionPreset
+  - modulesToPresetMap
+  - generatePresetId
 invariants:
   - 被 registry/ui-preset 引用
 tests: []

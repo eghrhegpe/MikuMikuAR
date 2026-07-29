@@ -7,6 +7,24 @@ scope:
 source_files:
   - frontend/src/scene/env/props.ts
 adr: []
+symbols:
+  - loadProp
+  - removeProp
+  - setPropTransform
+  - setPropOrbit
+  - getPropOrbit
+  - setPropPositionMode
+  - getPropPositionMode
+  - getPropList
+invariants:
+  - 道具通过 propRegistry 统一管理实例生命周期
+  - 支持笛卡尔坐标与轨道（orbit）两种定位模式
+  - 道具加载通过 readFileBytes（wails 绑定）读取文件
+tests: []
+use_when:
+  - 道具系统
+  - 场景道具
+  - 道具加载/移除/变换
 ---
 
 ## 系统概览

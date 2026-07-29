@@ -8,6 +8,16 @@ source_files:
   - frontend/src/menus/scene-drag-levels.ts
 adr:
   - ADR-171
+symbols:
+  - buildDragModeLevel
+invariants:
+  - 菜单采用声明式 Schema（ADR-093），PopupLevel 由菜单架构统一渲染
+  - 选择的拖拽模式驱动场景内 Gizmo/指针交互逻辑
+tests: []
+use_when:
+  - 场景拖拽
+  - 拖拽模式
+  - 模型交互
 ---
 
 ## 系统概览
