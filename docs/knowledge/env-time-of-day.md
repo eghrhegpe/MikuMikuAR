@@ -8,6 +8,30 @@ source_files:
   - frontend/src/scene/env/env-time-of-day.ts
 adr:
   - ADR-148
+symbols:
+  - setEnvSunAngle
+  - getEnvSunAngle
+  - startTimeOfDay
+  - stopTimeOfDay
+  - isTimeOfDayActive
+  - getTimeOfDaySpeed
+  - setTimeOfDaySpeed
+  - syncTimeOfDayFromEnv
+  - applyEnvPreset
+  - applyEnvPresetObject
+  - applyEnvPresetByCategory
+invariants:
+  - envSunAngle 始终钳制在 [-15, 90] 范围内，超出时环绕
+  - _timeOfDayTick 在 !envState.timeOfDayActive 或 _timeOfDayPaused 时直接返回
+  - tick 中 sunAngle 变化 ≥ AUTO_LINK_THRESHOLD_DEG 时才触发 applyEnvStateFacade（防抖动）
+  - 预设动画期间 _timeOfDayPaused = true，新调用会取消上一帧的动画 observer
+  - stopTimeOfDay 注销 _unregisterTimeOfDay 后置空，防重复注销
+tests: []
+use_when:
+  - 时间流转
+  - 太阳角
+  - 预设动画
+  - 环境预设
 ---
 
 ## 系统概览

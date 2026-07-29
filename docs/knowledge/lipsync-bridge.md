@@ -14,6 +14,9 @@ symbols:
   - setLipSyncSensitivity
   - setLipSyncIntensity
   - setLipSyncMultiMorphEnabled
+  - getLipSyncState
+  - setLipSyncState
+  - updateLipSync
 invariants:
   - 口型同步开关可运行时切换
 tests: []

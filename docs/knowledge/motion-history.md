@@ -18,6 +18,8 @@ symbols:
   - canRedo
   - getHistoryEntries
   - getHistoryCursor
+  - jumpToHistory
+  - clearHistory
 invariants:
   - 动作历史管理
   - 可撤销/重做
