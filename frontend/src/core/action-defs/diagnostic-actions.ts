@@ -56,7 +56,12 @@ export function registerDiagnosticActions(): void {
         label: 'ai.actions.diagnostic.getBackendLogs',
         domain: 'diagnostic',
         params: [
-            { name: 'level', type: 'enum', enum: ['info', 'warn', 'error'], synonyms: { warning: 'warn' } },
+            {
+                name: 'level',
+                type: 'enum',
+                enum: ['info', 'warn', 'error'],
+                synonyms: { warning: 'warn' },
+            },
             { name: 'limit', type: 'range', min: 1, max: 200, step: 1 },
         ],
         readonly: true,

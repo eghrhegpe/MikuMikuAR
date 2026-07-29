@@ -34,7 +34,12 @@ vi.mock('../core/status-bar', () => statusBarFactory());
 vi.mock('../core/config', () => configModuleFactory(mockState));
 vi.mock('../core/ui-helpers', () => ({ slideRow: vi.fn() }));
 
-import { buildResourceItemsForDir, isLeafFlattenDir, resolveDisplayBrowseDir, computeRestoreSegments } from '../menus/library-core';
+import {
+    buildResourceItemsForDir,
+    isLeafFlattenDir,
+    resolveDisplayBrowseDir,
+    computeRestoreSegments,
+} from '../menus/library-core';
 
 describe('buildResourceItemsForDir', () => {
     beforeEach(() => {
@@ -211,8 +216,12 @@ describe('isLeafFlattenDir', () => {
                 format: 'vmd',
             }),
         ];
-        expect(isLeafFlattenDir('/test/models/sub', models, (m: any) => m.format === 'pmx')).toBe(true);
-        expect(isLeafFlattenDir('/test/models/sub', models, (m: any) => m.format === 'vmd')).toBe(true);
+        expect(isLeafFlattenDir('/test/models/sub', models, (m: any) => m.format === 'pmx')).toBe(
+            true
+        );
+        expect(isLeafFlattenDir('/test/models/sub', models, (m: any) => m.format === 'vmd')).toBe(
+            true
+        );
     });
 });
 
@@ -317,10 +326,20 @@ describe('computeRestoreSegments', () => {
             }),
         ];
         expect(
-            computeRestoreSegments('/test/models', '/test/models/sub', models, (m: any) => m.format === 'pmx')
+            computeRestoreSegments(
+                '/test/models',
+                '/test/models/sub',
+                models,
+                (m: any) => m.format === 'pmx'
+            )
         ).toEqual([]);
         expect(
-            computeRestoreSegments('/test/models', '/test/models/sub', models, (m: any) => m.format === 'vmd')
+            computeRestoreSegments(
+                '/test/models',
+                '/test/models/sub',
+                models,
+                (m: any) => m.format === 'vmd'
+            )
         ).toEqual([]);
     });
 });

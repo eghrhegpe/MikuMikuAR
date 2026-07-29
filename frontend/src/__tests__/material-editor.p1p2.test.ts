@@ -1,16 +1,38 @@
 // @ts-nocheck — vi.mock 运行时替换（见 ./material-editor-mocks）
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
-    engineModuleFactory, sceneModuleFactory, nodeModuleFactory, lightModuleFactory,
-    hemiLightModuleFactory, dirLightModuleFactory, arcRotCamModuleFactory, cameraModuleFactory,
-    mathColorModuleFactory, mathVectorModuleFactory, stdMatModuleFactory, materialModuleFactory,
-    meshModuleFactory, postProcessModuleFactory, sceneLoaderModuleFactory,
-    defaultRenderingPipelineModuleFactory, physicsEngineModuleMock, tgaLoaderModuleMock,
-    mmdCameraModuleFactory, mmdRegisterLoadersFactory, mmdRegisterDxBmpFactory,
-    mmdGetWasmInstanceFactory, mmdSinglePhysicsReleaseMock, mmdWasmRuntimeFactory,
-    mmdVmdLoaderFactory, mmdWasmAnimationFactory, mmdRuntimeModelAnimMock,
-    mmdStdMaterialProxyFactory, mmdRuntimeSharedFactory, mmdModelLoaderDefaultMock,
-    mmdTextureAlphaVertexMock, mmdTextureAlphaFragmentMock,
+    engineModuleFactory,
+    sceneModuleFactory,
+    nodeModuleFactory,
+    lightModuleFactory,
+    hemiLightModuleFactory,
+    dirLightModuleFactory,
+    arcRotCamModuleFactory,
+    cameraModuleFactory,
+    mathColorModuleFactory,
+    mathVectorModuleFactory,
+    stdMatModuleFactory,
+    materialModuleFactory,
+    meshModuleFactory,
+    postProcessModuleFactory,
+    sceneLoaderModuleFactory,
+    defaultRenderingPipelineModuleFactory,
+    physicsEngineModuleMock,
+    tgaLoaderModuleMock,
+    mmdCameraModuleFactory,
+    mmdRegisterLoadersFactory,
+    mmdRegisterDxBmpFactory,
+    mmdGetWasmInstanceFactory,
+    mmdSinglePhysicsReleaseMock,
+    mmdWasmRuntimeFactory,
+    mmdVmdLoaderFactory,
+    mmdWasmAnimationFactory,
+    mmdRuntimeModelAnimMock,
+    mmdStdMaterialProxyFactory,
+    mmdRuntimeSharedFactory,
+    mmdModelLoaderDefaultMock,
+    mmdTextureAlphaVertexMock,
+    mmdTextureAlphaFragmentMock,
 } from './material-editor-mocks';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { modelRegistry } from '../core/config';
@@ -30,37 +52,66 @@ vi.mock('@babylonjs/core/Materials/material', () => materialModuleFactory());
 vi.mock('@babylonjs/core/Meshes/mesh', () => meshModuleFactory());
 vi.mock('@babylonjs/core/PostProcesses/postProcess', () => postProcessModuleFactory());
 vi.mock('@babylonjs/core/Loading/sceneLoader', () => sceneLoaderModuleFactory());
-vi.mock('@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline', () => defaultRenderingPipelineModuleFactory());
+vi.mock('@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline', () =>
+    defaultRenderingPipelineModuleFactory()
+);
 vi.mock('@babylonjs/core/Physics/v2/physicsEngineComponent', () => physicsEngineModuleMock);
 vi.mock('@babylonjs/core/Materials/Textures/Loaders/tgaTextureLoader', () => tgaLoaderModuleMock);
 vi.mock('babylon-mmd/esm/Runtime/mmdCamera', () => mmdCameraModuleFactory());
 vi.mock('babylon-mmd/esm/Loader/dynamic', () => mmdRegisterLoadersFactory());
 vi.mock('babylon-mmd/esm/Loader/registerDxBmpTextureLoader', () => mmdRegisterDxBmpFactory());
 vi.mock('babylon-mmd/esm/Runtime/Optimized/mmdWasmInstance', () => mmdGetWasmInstanceFactory());
-vi.mock('babylon-mmd/esm/Runtime/Optimized/InstanceType/singlePhysicsRelease', () => mmdSinglePhysicsReleaseMock);
+vi.mock(
+    'babylon-mmd/esm/Runtime/Optimized/InstanceType/singlePhysicsRelease',
+    () => mmdSinglePhysicsReleaseMock
+);
 vi.mock('babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime', () => mmdWasmRuntimeFactory());
 vi.mock('babylon-mmd/esm/Loader/vmdLoader', () => mmdVmdLoaderFactory());
-vi.mock('babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmAnimation', () => mmdWasmAnimationFactory());
-vi.mock('babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmRuntimeModelAnimation', () => mmdRuntimeModelAnimMock);
+vi.mock('babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmAnimation', () =>
+    mmdWasmAnimationFactory()
+);
+vi.mock(
+    'babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmRuntimeModelAnimation',
+    () => mmdRuntimeModelAnimMock
+);
 vi.mock('babylon-mmd/esm/Runtime/mmdStandardMaterialProxy', () => mmdStdMaterialProxyFactory());
 vi.mock('babylon-mmd/esm/Runtime/mmdRuntimeShared', () => mmdRuntimeSharedFactory());
 vi.mock('babylon-mmd/esm/Loader/mmdModelLoader.default', () => mmdModelLoaderDefaultMock);
-vi.mock('babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.vertex', () => mmdTextureAlphaVertexMock);
-vi.mock('babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.fragment', () => mmdTextureAlphaFragmentMock);
+vi.mock(
+    'babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.vertex',
+    () => mmdTextureAlphaVertexMock
+);
+vi.mock(
+    'babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.fragment',
+    () => mmdTextureAlphaFragmentMock
+);
 
-import { _catState, _matState, _matEnabled, setMatCatParams, setMatParams, resetSingleMatParams } from '../scene/scene';
+import {
+    _catState,
+    _matState,
+    _matEnabled,
+    setMatCatParams,
+    setMatParams,
+    resetSingleMatParams,
+} from '../scene/scene';
 
 describe('P2 emissiveMul parameter', () => {
     const TEST_ID = 'emissive_test';
 
     beforeEach(() => {
-        _catState.clear(); _matState.clear(); _matEnabled.clear();
+        _catState.clear();
+        _matState.clear();
+        _matEnabled.clear();
         const old = modelRegistry.get(TEST_ID);
-        if (old) modelRegistry.delete(TEST_ID);
+        if (old) {
+            modelRegistry.delete(TEST_ID);
+        }
     });
 
     afterEach(() => {
-        if (modelRegistry.get(TEST_ID)) modelRegistry.delete(TEST_ID);
+        if (modelRegistry.get(TEST_ID)) {
+            modelRegistry.delete(TEST_ID);
+        }
     });
 
     it('setMatCatParams applies emissiveMul to emissiveColor', () => {
@@ -68,7 +119,13 @@ describe('P2 emissiveMul parameter', () => {
         mat.emissiveColor.set(0.2, 0.3, 0.4);
         // @ts-expect-error duck-typed mock
         modelRegistry.set(TEST_ID, { meshes: [{ material: mat }] });
-        setMatCatParams(TEST_ID, '皮肤', { diffuseMul: 1, specularMul: 1, shininess: 50, ambientMul: 1, emissiveMul: 2 });
+        setMatCatParams(TEST_ID, '皮肤', {
+            diffuseMul: 1,
+            specularMul: 1,
+            shininess: 50,
+            ambientMul: 1,
+            emissiveMul: 2,
+        });
         expect(mat.emissiveColor.r).toBeCloseTo(0.4);
         expect(mat.emissiveColor.g).toBeCloseTo(0.6);
         expect(mat.emissiveColor.b).toBeCloseTo(0.8);
@@ -89,13 +146,19 @@ describe('P1 texture level parameters', () => {
     const TEST_ID = 'texture_test';
 
     beforeEach(() => {
-        _catState.clear(); _matState.clear(); _matEnabled.clear();
+        _catState.clear();
+        _matState.clear();
+        _matEnabled.clear();
         const old = modelRegistry.get(TEST_ID);
-        if (old) modelRegistry.delete(TEST_ID);
+        if (old) {
+            modelRegistry.delete(TEST_ID);
+        }
     });
 
     afterEach(() => {
-        if (modelRegistry.get(TEST_ID)) modelRegistry.delete(TEST_ID);
+        if (modelRegistry.get(TEST_ID)) {
+            modelRegistry.delete(TEST_ID);
+        }
     });
 
     it('setMatCatParams applies diffuseTexLevel to diffuseTexture', () => {
@@ -161,7 +224,9 @@ describe('P1 texture level parameters', () => {
         const mat = new StandardMaterial('skin');
         // @ts-expect-error duck-typed mock
         modelRegistry.set(TEST_ID, { meshes: [{ material: mat }] });
-        expect(() => { setMatCatParams(TEST_ID, '皮肤', { diffuseTexLevel: 2 }); }).not.toThrow();
+        expect(() => {
+            setMatCatParams(TEST_ID, '皮肤', { diffuseTexLevel: 2 });
+        }).not.toThrow();
     });
 });
 
@@ -169,13 +234,19 @@ describe('resetMatCatParams restores P1+P2 values', () => {
     const TEST_ID = 'reset_test';
 
     beforeEach(() => {
-        _catState.clear(); _matState.clear(); _matEnabled.clear();
+        _catState.clear();
+        _matState.clear();
+        _matEnabled.clear();
         const old = modelRegistry.get(TEST_ID);
-        if (old) modelRegistry.delete(TEST_ID);
+        if (old) {
+            modelRegistry.delete(TEST_ID);
+        }
     });
 
     afterEach(() => {
-        if (modelRegistry.get(TEST_ID)) modelRegistry.delete(TEST_ID);
+        if (modelRegistry.get(TEST_ID)) {
+            modelRegistry.delete(TEST_ID);
+        }
     });
 
     it('restores emissiveColor to original', () => {

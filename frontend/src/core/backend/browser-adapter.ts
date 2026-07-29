@@ -157,7 +157,9 @@ interface ZipEntryInfo {
 const _latin1Decoder = new TextDecoder('iso-8859-1');
 const _utf8Decoder = new TextDecoder('utf-8', { fatal: false });
 function parseZipCentralDir(raw: Uint8Array): ZipEntryInfo[] {
-    if (raw.length < 22) return []; // 最小 ZIP（空 EOCD）也需要 22 字节
+    if (raw.length < 22) {
+        return [];
+    } // 最小 ZIP（空 EOCD）也需要 22 字节
     // EOCD 签名 0x06054b50，从文件末尾向前搜索（ZIP 注释长度不定）
     let eocdPos = -1;
     const limit = Math.min(raw.length, 65557); // 最大 EOCD 搜索范围 64KB + 固定头
@@ -167,7 +169,9 @@ function parseZipCentralDir(raw: Uint8Array): ZipEntryInfo[] {
             break;
         }
     }
-    if (eocdPos < 0) return [];
+    if (eocdPos < 0) {
+        return [];
+    }
 
     // 解析 EOCD 字段（全部小端序）
     const eocd = new DataView(raw.buffer, raw.byteOffset + eocdPos, 22);
@@ -178,15 +182,18 @@ function parseZipCentralDir(raw: Uint8Array): ZipEntryInfo[] {
     let pos = cdOffset;
     for (let i = 0; i < cdEntries; i++) {
         // 边界守护：中央目录条目固定头 46 字节 + 文件名必须不越界
-        if (pos + 46 > raw.length) break;
+        if (pos + 46 > raw.length) {
+            break;
+        }
         // 中央目录条目签名 0x02014b50
         if (
             raw[pos] !== 0x50 ||
             raw[pos + 1] !== 0x4b ||
             raw[pos + 2] !== 0x01 ||
             raw[pos + 3] !== 0x02
-        )
+        ) {
             break;
+        }
 
         const entry = new DataView(raw.buffer, raw.byteOffset + pos, 46);
         const gpf = entry.getUint16(8, true); // general purpose bit flag
@@ -196,7 +203,9 @@ function parseZipCentralDir(raw: Uint8Array): ZipEntryInfo[] {
         const uncompressedSize = entry.getUint32(24, true);
 
         // 文件名越界守护
-        if (pos + 46 + filenameLength > raw.length) break;
+        if (pos + 46 + filenameLength > raw.length) {
+            break;
+        }
 
         const rawName = raw.slice(pos + 46, pos + 46 + filenameLength);
         // [doc:adr-006] 对齐 JSZip 行为：gpf bit 11 设置时文件名为 UTF-8，直接解码；
@@ -1161,7 +1170,9 @@ async function _scanDirIntoIDB(
                         let totalUncompressed = 0;
                         for (const entry of entries) {
                             totalUncompressed += entry.uncompressedSize;
-                            if (totalUncompressed > MAX_ZIP_TOTAL_BYTES) break;
+                            if (totalUncompressed > MAX_ZIP_TOTAL_BYTES) {
+                                break;
+                            }
                         }
                         if (totalUncompressed > MAX_ZIP_TOTAL_BYTES) {
                             console.warn(`[web-scan] zip ${name} 总未压缩大小超限，疑似 zip 炸弹`);
@@ -1546,7 +1557,9 @@ export const browserAdapter: BackendService = {
                 const name = entry.name;
                 // 用 parseZipCentralDir 预计算的 fflateKey 从 unzipSync 结果中取数据
                 const raw = unzipped[entry.fflateKey];
-                if (!raw) return; // 极罕见：unzipSync 未解出该条目，跳过
+                if (!raw) {
+                    return;
+                } // 极罕见：unzipSync 未解出该条目，跳过
                 const bytes = new Uint8Array(raw);
                 const baseName = _baseName(name);
                 const stem = _stripExt(baseName);

@@ -282,8 +282,14 @@ function _adjustFoot(
     const moduleId = side === 'L' ? 'left-foot' : 'right-foot';
     const st = getModuleState(modelId, moduleId);
     const fp = st?.params;
-    const hasModParams = fp && ((fp.pitch as number) !== 0 || (fp.yaw as number) !== 0 || (fp.roll as number) !== 0 ||
-        (fp.footPosX as number) !== 0 || (fp.footPosY as number) !== 0 || (fp.footPosZ as number) !== 0);
+    const hasModParams =
+        fp &&
+        ((fp.pitch as number) !== 0 ||
+            (fp.yaw as number) !== 0 ||
+            (fp.roll as number) !== 0 ||
+            (fp.footPosX as number) !== 0 ||
+            (fp.footPosY as number) !== 0 ||
+            (fp.footPosZ as number) !== 0);
     if (hasModParams) {
         return;
     }
@@ -303,11 +309,12 @@ function _adjustFoot(
     // [ADR-202 §六 debug] 仅在 feetDebug 开启时输出一次诊断（_feetWarnOnce 跨帧复用）
     if (feetDebug.value && !_feetWarnOnce) {
         _feetWarnOnce = true;
-        logWarn('feet',
+        logWarn(
+            'feet',
             `[A-skip] ${side} modParams=${hasModParams} cands=${cands.length} ` +
-            `pitch=${fp?.pitch} yaw=${fp?.yaw} roll=${fp?.roll} ` +
-            `posY=${fp?.footPosY} overrideFound=${foundOverride} ` +
-            `skip=${res.skip}`
+                `pitch=${fp?.pitch} yaw=${fp?.yaw} roll=${fp?.roll} ` +
+                `posY=${fp?.footPosY} overrideFound=${foundOverride} ` +
+                `skip=${res.skip}`
         );
     }
 
@@ -333,7 +340,10 @@ function _adjustFoot(
         if (resolver && typeof ikSolverIndex === 'number' && ikSolverIndex >= 0) {
             resolver(modelId, ikSolverIndex, false);
         } else if (feetDebug.value && _feetDbgFrame % 60 === 0) {
-            logWarn('feet', `[WASM] ${modelId} ${side} IK 未重解: resolver=${resolver ? 'ok' : 'null'}, ikSolverIndex=${ikSolverIndex ?? 'null'}`);
+            logWarn(
+                'feet',
+                `[WASM] ${modelId} ${side} IK 未重解: resolver=${resolver ? 'ok' : 'null'}, ikSolverIndex=${ikSolverIndex ?? 'null'}`
+            );
         }
     } else {
         const solver = (ik as MmdRuntimeBoneExtended).ikSolver;

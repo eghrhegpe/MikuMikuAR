@@ -132,7 +132,7 @@ describe('createKeyboardNav — 全大统一增强（menu.ts 接入路径）', (
     });
 
     it('arrowRightActivate=true 时 ArrowRight 走 onEnter 而非移动', () => {
-        let active = 1;
+        const active = 1;
         const onEnter = vi.fn();
         const setActiveIndex = vi.fn();
         disp = createKeyboardNav(container, {

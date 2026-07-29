@@ -71,10 +71,7 @@ import {
     type PerceptionSut,
 } from './perception-mocks';
 // 迁移函数为纯函数，静态导入
-import {
-    migratePerceptionFromProcMotion,
-    migratePerceptionData,
-} from '../../scene/scene-migrate';
+import { migratePerceptionFromProcMotion, migratePerceptionData } from '../../scene/scene-migrate';
 
 let sut: PerceptionSut;
 

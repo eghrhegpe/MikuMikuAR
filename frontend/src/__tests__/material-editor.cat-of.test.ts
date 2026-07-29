@@ -1,16 +1,38 @@
 // @ts-nocheck — vi.mock 运行时替换（见 ./material-editor-mocks）
 import { describe, it, expect, vi } from 'vitest';
 import {
-    engineModuleFactory, sceneModuleFactory, nodeModuleFactory, lightModuleFactory,
-    hemiLightModuleFactory, dirLightModuleFactory, arcRotCamModuleFactory, cameraModuleFactory,
-    mathColorModuleFactory, mathVectorModuleFactory, stdMatModuleFactory, materialModuleFactory,
-    meshModuleFactory, postProcessModuleFactory, sceneLoaderModuleFactory,
-    defaultRenderingPipelineModuleFactory, physicsEngineModuleMock, tgaLoaderModuleMock,
-    mmdCameraModuleFactory, mmdRegisterLoadersFactory, mmdRegisterDxBmpFactory,
-    mmdGetWasmInstanceFactory, mmdSinglePhysicsReleaseMock, mmdWasmRuntimeFactory,
-    mmdVmdLoaderFactory, mmdWasmAnimationFactory, mmdRuntimeModelAnimMock,
-    mmdStdMaterialProxyFactory, mmdRuntimeSharedFactory, mmdModelLoaderDefaultMock,
-    mmdTextureAlphaVertexMock, mmdTextureAlphaFragmentMock,
+    engineModuleFactory,
+    sceneModuleFactory,
+    nodeModuleFactory,
+    lightModuleFactory,
+    hemiLightModuleFactory,
+    dirLightModuleFactory,
+    arcRotCamModuleFactory,
+    cameraModuleFactory,
+    mathColorModuleFactory,
+    mathVectorModuleFactory,
+    stdMatModuleFactory,
+    materialModuleFactory,
+    meshModuleFactory,
+    postProcessModuleFactory,
+    sceneLoaderModuleFactory,
+    defaultRenderingPipelineModuleFactory,
+    physicsEngineModuleMock,
+    tgaLoaderModuleMock,
+    mmdCameraModuleFactory,
+    mmdRegisterLoadersFactory,
+    mmdRegisterDxBmpFactory,
+    mmdGetWasmInstanceFactory,
+    mmdSinglePhysicsReleaseMock,
+    mmdWasmRuntimeFactory,
+    mmdVmdLoaderFactory,
+    mmdWasmAnimationFactory,
+    mmdRuntimeModelAnimMock,
+    mmdStdMaterialProxyFactory,
+    mmdRuntimeSharedFactory,
+    mmdModelLoaderDefaultMock,
+    mmdTextureAlphaVertexMock,
+    mmdTextureAlphaFragmentMock,
 } from './material-editor-mocks';
 
 vi.mock('@babylonjs/core/Engines/engine', () => engineModuleFactory());
@@ -28,23 +50,39 @@ vi.mock('@babylonjs/core/Materials/material', () => materialModuleFactory());
 vi.mock('@babylonjs/core/Meshes/mesh', () => meshModuleFactory());
 vi.mock('@babylonjs/core/PostProcesses/postProcess', () => postProcessModuleFactory());
 vi.mock('@babylonjs/core/Loading/sceneLoader', () => sceneLoaderModuleFactory());
-vi.mock('@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline', () => defaultRenderingPipelineModuleFactory());
+vi.mock('@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline', () =>
+    defaultRenderingPipelineModuleFactory()
+);
 vi.mock('@babylonjs/core/Physics/v2/physicsEngineComponent', () => physicsEngineModuleMock);
 vi.mock('@babylonjs/core/Materials/Textures/Loaders/tgaTextureLoader', () => tgaLoaderModuleMock);
 vi.mock('babylon-mmd/esm/Runtime/mmdCamera', () => mmdCameraModuleFactory());
 vi.mock('babylon-mmd/esm/Loader/dynamic', () => mmdRegisterLoadersFactory());
 vi.mock('babylon-mmd/esm/Loader/registerDxBmpTextureLoader', () => mmdRegisterDxBmpFactory());
 vi.mock('babylon-mmd/esm/Runtime/Optimized/mmdWasmInstance', () => mmdGetWasmInstanceFactory());
-vi.mock('babylon-mmd/esm/Runtime/Optimized/InstanceType/singlePhysicsRelease', () => mmdSinglePhysicsReleaseMock);
+vi.mock(
+    'babylon-mmd/esm/Runtime/Optimized/InstanceType/singlePhysicsRelease',
+    () => mmdSinglePhysicsReleaseMock
+);
 vi.mock('babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime', () => mmdWasmRuntimeFactory());
 vi.mock('babylon-mmd/esm/Loader/vmdLoader', () => mmdVmdLoaderFactory());
-vi.mock('babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmAnimation', () => mmdWasmAnimationFactory());
-vi.mock('babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmRuntimeModelAnimation', () => mmdRuntimeModelAnimMock);
+vi.mock('babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmAnimation', () =>
+    mmdWasmAnimationFactory()
+);
+vi.mock(
+    'babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmRuntimeModelAnimation',
+    () => mmdRuntimeModelAnimMock
+);
 vi.mock('babylon-mmd/esm/Runtime/mmdStandardMaterialProxy', () => mmdStdMaterialProxyFactory());
 vi.mock('babylon-mmd/esm/Runtime/mmdRuntimeShared', () => mmdRuntimeSharedFactory());
 vi.mock('babylon-mmd/esm/Loader/mmdModelLoader.default', () => mmdModelLoaderDefaultMock);
-vi.mock('babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.vertex', () => mmdTextureAlphaVertexMock);
-vi.mock('babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.fragment', () => mmdTextureAlphaFragmentMock);
+vi.mock(
+    'babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.vertex',
+    () => mmdTextureAlphaVertexMock
+);
+vi.mock(
+    'babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.fragment',
+    () => mmdTextureAlphaFragmentMock
+);
 
 import { _catOf } from '../scene/scene';
 

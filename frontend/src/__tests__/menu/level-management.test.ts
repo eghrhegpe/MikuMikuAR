@@ -107,7 +107,9 @@ describe('SlideMenu — 层级管理 (getLevel/setLevel/updateRow/refreshHeader)
 
     it('updateRow 无 panel 时正常跳过', () => {
         (menu as any).levels = [
-            makeTestLevel('根', '', [{ kind: 'action' as const, label: 'A', icon: 'i', target: 'a' }]),
+            makeTestLevel('根', '', [
+                { kind: 'action' as const, label: 'A', icon: 'i', target: 'a' },
+            ]),
         ];
         // 不调用 reset/buildPanel，panel 无 .slide-list
         // 应正常跳过 DOM 操作

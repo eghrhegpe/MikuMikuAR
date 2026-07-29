@@ -290,7 +290,11 @@ export function solveIkNative(
     if (typeof ptr !== 'number') {
         return false;
     }
-    (wi.mmdModelSolveIk as (p: number, i: number, u: boolean) => void)(ptr, ikSolverIndex, usePhysics);
+    (wi.mmdModelSolveIk as (p: number, i: number, u: boolean) => void)(
+        ptr,
+        ikSolverIndex,
+        usePhysics
+    );
     return true;
 }
 
@@ -341,14 +345,16 @@ export function applyWindForceToModelRigidBodiesNative(
     if (len <= 0) {
         return 0;
     }
-    (wi.mmdModelRigidBodyApplyWindForce as (
-        p: number,
-        fx: number,
-        fy: number,
-        fz: number,
-        rm: number,
-        ms: number
-    ) => void)(ptr, force.x, force.y, force.z, referenceMass, minScale);
+    (
+        wi.mmdModelRigidBodyApplyWindForce as (
+            p: number,
+            fx: number,
+            fy: number,
+            fz: number,
+            rm: number,
+            ms: number
+        ) => void
+    )(ptr, force.x, force.y, force.z, referenceMass, minScale);
     return len;
 }
 

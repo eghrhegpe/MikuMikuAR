@@ -37,11 +37,23 @@ vi.mock('../core/status-bar', async () => {
 vi.mock('../core/config', () => configModuleFactory(mockState));
 vi.mock('../core/ui-helpers', () => ({
     slideRow: vi.fn(
-        (_card: any, icon: string, label: string, _isFolder: boolean, _onClick: any, sublabel?: string) => {}
+        (
+            _card: any,
+            icon: string,
+            label: string,
+            _isFolder: boolean,
+            _onClick: any,
+            sublabel?: string
+        ) => {}
     ),
 }));
 
-import { splitSubdirSegments, importFile, getResourceViewMode, setResourceViewMode } from '../menus/library-core';
+import {
+    splitSubdirSegments,
+    importFile,
+    getResourceViewMode,
+    setResourceViewMode,
+} from '../menus/library-core';
 
 describe('splitSubdirSegments', () => {
     it('returns [] when dir equals root', () => {

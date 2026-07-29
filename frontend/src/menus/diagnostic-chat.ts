@@ -7,7 +7,12 @@ import type { ChatMessage, ChatChunk, AiErrorKind } from '../core/ai/types';
 import { diagState } from './diagnostic-state';
 import { speakLines, cancelSpeech, isSpeechSupported } from '../core/ai/dialogue-speech';
 import { parseDialogueLines, type DialogueLine } from '../core/ai/character-bible';
-import { getActiveBible, buildDialogueSystemPrompt, listBibles, setActiveBible } from '../core/ai/dialogue-session';
+import {
+    getActiveBible,
+    buildDialogueSystemPrompt,
+    listBibles,
+    setActiveBible,
+} from '../core/ai/dialogue-session';
 import { renderPendingAction, renderControlHint } from './diagnostic-control';
 import { cardContainer } from '../core/config';
 import { addSectionTitle } from '../core/ui-helpers';
@@ -20,11 +25,17 @@ export function addAssistantMessage(text: string): void {
 
 /** 全量重绘对话区 */
 export function renderChat(): void {
-    if (!diagState.chatContainer) return;
+    if (!diagState.chatContainer) {
+        return;
+    }
     diagState.chatContainer.innerHTML = '';
     for (const msg of diagState.messages) {
-        if (msg.role === 'tool') continue;
-        if (msg.role === 'assistant' && 'tool_calls' in msg && msg.tool_calls) continue;
+        if (msg.role === 'tool') {
+            continue;
+        }
+        if (msg.role === 'assistant' && 'tool_calls' in msg && msg.tool_calls) {
+            continue;
+        }
         const row = document.createElement('div');
         row.className = `diag-chat-row chat-row--${msg.role}`;
         const label = document.createElement('strong');
@@ -47,8 +58,12 @@ export function renderChat(): void {
 
 /** 显示"思考中"占位气泡 */
 export function showPendingBubble(): void {
-    if (!diagState.chatContainer) return;
-    if (diagState.chatContainer.querySelector('.chat-row--streaming')) return;
+    if (!diagState.chatContainer) {
+        return;
+    }
+    if (diagState.chatContainer.querySelector('.chat-row--streaming')) {
+        return;
+    }
     const row = document.createElement('div');
     row.className = 'diag-chat-row chat-row--streaming chat-row--assistant';
     row.dataset.pending = 'true';
@@ -66,8 +81,12 @@ export function showPendingBubble(): void {
 
 /** 流式追加 chunk 到当前 streaming row */
 export function renderStreamingChunk(chunk: ChatChunk): void {
-    if (!diagState.chatContainer) return;
-    if (chunk.type !== 'text' || !chunk.content) return;
+    if (!diagState.chatContainer) {
+        return;
+    }
+    if (chunk.type !== 'text' || !chunk.content) {
+        return;
+    }
     let lastRow = diagState.chatContainer.lastElementChild as HTMLElement | null;
     if (!lastRow || !lastRow.classList.contains('chat-row--streaming')) {
         const row = document.createElement('div');
@@ -106,7 +125,9 @@ export function renderStreamingChunk(chunk: ChatChunk): void {
             lastRow.insertBefore(details, contentDiv);
         }
         const body = details.querySelector('.diag-reasoning-body') as HTMLElement;
-        if (body) body.textContent += chunk.content;
+        if (body) {
+            body.textContent += chunk.content;
+        }
     } else {
         const contentDiv = lastRow.querySelector('.diag-chat-content') as HTMLElement | null;
         if (contentDiv) {
@@ -125,8 +146,12 @@ export function finalizeStreamRow(fullText: string): void {
         const streamingRow = diagState.chatContainer.querySelector('.chat-row--streaming');
         if (streamingRow) {
             streamingRow.classList.remove('chat-row--streaming');
-            const contentDiv = streamingRow.querySelector('.diag-chat-content') as HTMLElement | null;
-            if (contentDiv) renderMarkdownInto(contentDiv, fullText);
+            const contentDiv = streamingRow.querySelector(
+                '.diag-chat-content'
+            ) as HTMLElement | null;
+            if (contentDiv) {
+                renderMarkdownInto(contentDiv, fullText);
+            }
             diagState.chatContainer.scrollTop = diagState.chatContainer.scrollHeight;
         } else {
             renderChat();
@@ -158,17 +183,24 @@ export function finalizeStream(fullText: string, afterFinalize: () => void): voi
 
 function speechLang(): string {
     switch (getLang()) {
-        case 'ja': return 'ja-JP';
-        case 'ko': return 'ko-KR';
-        case 'en': return 'en-US';
-        case 'zh-TW': return 'zh-TW';
-        default: return 'zh-CN';
+        case 'ja':
+            return 'ja-JP';
+        case 'ko':
+            return 'ko-KR';
+        case 'en':
+            return 'en-US';
+        case 'zh-TW':
+            return 'zh-TW';
+        default:
+            return 'zh-CN';
     }
 }
 
 /** 渲染情绪卡片（台词模式） */
 export function renderDialogueCards(lines: DialogueLine[]): void {
-    if (!diagState.chatContainer || lines.length === 0) return;
+    if (!diagState.chatContainer || lines.length === 0) {
+        return;
+    }
     const wrap = document.createElement('div');
     wrap.className = 'diag-dialogue-cards';
     for (const { line, emotion } of lines) {
@@ -192,14 +224,20 @@ export function renderDialogueCards(lines: DialogueLine[]): void {
 export function pruneHistory(messages: ChatMessage[], maxPairs = 10): ChatMessage[] {
     const systemMsg = messages[0]?.role === 'system' ? messages[0] : null;
     const body = systemMsg ? messages.slice(1) : messages;
-    if (body.length <= maxPairs * 2) return messages;
+    if (body.length <= maxPairs * 2) {
+        return messages;
+    }
     const keepFromIdx = body.length - maxPairs * 2;
     let start = keepFromIdx;
-    while (start > 0 && body[start]?.role === 'tool') start--;
+    while (start > 0 && body[start]?.role === 'tool') {
+        start--;
+    }
     if (start > 0 && body[start]?.role === 'assistant') {
         const asst = body[start] as Extract<ChatMessage, { role: 'assistant' }>;
         if (asst.tool_calls) {
-            while (start > 0 && body[start - 1]?.role === 'tool') start--;
+            while (start > 0 && body[start - 1]?.role === 'tool') {
+                start--;
+            }
         }
     }
     const pruned = body.slice(start);
@@ -225,7 +263,9 @@ export function buildSystemMessage(): ChatMessage {
 
 /** 更新朗读开关 UI（不支持时隐藏） */
 export function updateSpeakToggle(): void {
-    if (!diagState.speakToggleBtn) return;
+    if (!diagState.speakToggleBtn) {
+        return;
+    }
     if (!isSpeechSupported() && diagState.dialogueMode) {
         diagState.speakToggleBtn.style.display = 'none';
         return;
@@ -241,7 +281,9 @@ export function updateSpeakToggle(): void {
 /** 更新发送/停止按钮 */
 export function updateSendButton(): void {
     const sendBtn = document.getElementById('diag-send-btn') as HTMLButtonElement | null;
-    if (!sendBtn) return;
+    if (!sendBtn) {
+        return;
+    }
     if (diagState.isStreaming) {
         sendBtn.innerHTML = '\u25A0';
         sendBtn.setAttribute('aria-label', t('ai.chat.stop'));
@@ -273,7 +315,9 @@ export function buildChatSchema(): MenuNode[] {
                 diagState.inputEl.setAttribute('aria-label', t('ai.chat.placeholder'));
                 diagState.inputEl.className = 'diag-textarea';
                 diagState.inputEl.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); }
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                    }
                 });
                 inputRow.appendChild(diagState.inputEl);
                 c.appendChild(inputRow);
@@ -315,7 +359,9 @@ export function buildChatSchema(): MenuNode[] {
                     const opt = document.createElement('option');
                     opt.value = bible.id;
                     opt.textContent = bible.name;
-                    if (bible.id === getActiveBible().id) opt.selected = true;
+                    if (bible.id === getActiveBible().id) {
+                        opt.selected = true;
+                    }
                     roleSelect.appendChild(opt);
                 }
                 roleSelect.addEventListener('change', () => setActiveBible(roleSelect.value));
@@ -332,7 +378,9 @@ export function buildChatSchema(): MenuNode[] {
                     }
                     updateSpeakToggle();
                     if (diagState.pendingContainer) {
-                        diagState.pendingContainer.style.display = diagState.dialogueMode ? 'none' : '';
+                        diagState.pendingContainer.style.display = diagState.dialogueMode
+                            ? 'none'
+                            : '';
                         if (!diagState.dialogueMode) {
                             if (diagState.pendingAction) {
                                 renderPendingAction();

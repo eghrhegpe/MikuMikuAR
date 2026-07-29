@@ -287,7 +287,9 @@ export function registerEventHandlers(): void {
     // 实际积分由 camera-behaviors.ts 的 initOrbitUpdate 渲染循环逐帧推进（同 freefly）。
     // 方向键从相机控制让出：菜单开 = 导航，菜单关 = 播放 seek。
     const _orbitKeyActive = (t: HTMLElement | null): boolean => {
-        if (getCameraMode() !== 'orbit') return false;
+        if (getCameraMode() !== 'orbit') {
+            return false;
+        }
         if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) {
             return false;
         }

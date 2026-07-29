@@ -14,7 +14,9 @@ export function tryQueuePendingAction(
     toolCallId: string | null
 ): boolean {
     const action = getAction(actionId);
-    if (!action) return false;
+    if (!action) {
+        return false;
+    }
     diagState.pendingAction = { actionId, params, toolCallId: toolCallId ?? undefined };
     diagState.pendingQueue = [];
     diagState.pendingToolResults = [];
@@ -24,9 +26,14 @@ export function tryQueuePendingAction(
 }
 
 /** 处理 LLM 文本回退（无 tool_call 时） */
-export function handleControlFallback(fullResponse: string, afterFallback: (queued: boolean) => void): boolean {
+export function handleControlFallback(
+    fullResponse: string,
+    afterFallback: (queued: boolean) => void
+): boolean {
     const fallback = parseActionFromLLM(fullResponse);
-    if (!fallback) return false;
+    if (!fallback) {
+        return false;
+    }
     const queued = tryQueuePendingAction(fallback.action, fallback.params, null);
     diagState.isStreaming = false;
     diagState.abortController = null;
@@ -36,7 +43,9 @@ export function handleControlFallback(fullResponse: string, afterFallback: (queu
 
 /** 渲染 pending 区域（无待确认时显示 hint） */
 export function renderControlHint(): void {
-    if (!diagState.pendingContainer || diagState.pendingAction || diagState.dialogueMode) return;
+    if (!diagState.pendingContainer || diagState.pendingAction || diagState.dialogueMode) {
+        return;
+    }
     diagState.pendingContainer.innerHTML = '';
     diagState.pendingContainer.style.display = '';
 
@@ -80,21 +89,27 @@ export function renderControlHint(): void {
 
 /** 撤销上一个破坏性动作 */
 export async function undoLastAction(btn: HTMLButtonElement): Promise<void> {
-    if (!diagState.lastUndoable) return;
+    if (!diagState.lastUndoable) {
+        return;
+    }
     btn.disabled = true;
     btn.textContent = t('ai.control.executing');
     const result = await executeAction('scene:undo', {});
     diagState.lastUndoable = null;
     diagState.messages.push({
         role: 'assistant',
-        content: result.success ? t('ai.control.undone') : t('ai.control.resultFailed', { message: result.message }),
+        content: result.success
+            ? t('ai.control.undone')
+            : t('ai.control.resultFailed', { message: result.message }),
     });
     renderControlHint();
 }
 
 /** 渲染待确认操作卡 */
 export function renderPendingAction(): void {
-    if (!diagState.pendingContainer || !diagState.pendingAction) return;
+    if (!diagState.pendingContainer || !diagState.pendingAction) {
+        return;
+    }
     diagState.pendingContainer.innerHTML = '';
     diagState.pendingContainer.style.display = '';
 
@@ -113,9 +128,13 @@ export function renderPendingAction(): void {
     title.className = 'diag-pending-title';
     const totalWritable = 1 + diagState.pendingQueue.length;
     const processedCount = diagState.pendingToolResults.length;
-    title.textContent = totalWritable > 1
-        ? t('ai.control.pendingProgress', { current: String(processedCount + 1), total: String(totalWritable) })
-        : t('ai.control.pending');
+    title.textContent =
+        totalWritable > 1
+            ? t('ai.control.pendingProgress', {
+                  current: String(processedCount + 1),
+                  total: String(totalWritable),
+              })
+            : t('ai.control.pending');
     card.appendChild(title);
 
     const desc = document.createElement('div');
@@ -154,13 +173,22 @@ export async function applyPendingAction(
     onComplete: () => void,
     onQueueAdvance: () => void
 ): Promise<void> {
-    if (!diagState.pendingAction) return;
+    if (!diagState.pendingAction) {
+        return;
+    }
     const action = getAction(diagState.pendingAction.actionId);
     if (action?.destructive) {
-        const ok = await showConfirm(t('ai.control.confirmDestructive', { action: t(action.label) }));
-        if (!ok) return;
+        const ok = await showConfirm(
+            t('ai.control.confirmDestructive', { action: t(action.label) })
+        );
+        if (!ok) {
+            return;
+        }
     }
-    const result = await executeAction(diagState.pendingAction.actionId, diagState.pendingAction.params);
+    const result = await executeAction(
+        diagState.pendingAction.actionId,
+        diagState.pendingAction.params
+    );
     if (!result.success) {
         showErrorToast(result.message ?? t('ai.control.executeFailed'));
     }
@@ -187,7 +215,9 @@ export async function applyPendingAction(
 
 /** 取消 pending action */
 export async function cancelPendingAction(onQueueAdvance: () => void): Promise<void> {
-    if (!diagState.pendingAction) return;
+    if (!diagState.pendingAction) {
+        return;
+    }
     const toolCallId = diagState.pendingAction.toolCallId;
     if (toolCallId) {
         diagState.pendingToolResults.push({
@@ -212,9 +242,7 @@ export async function advancePendingQueue(onAdvance: () => void): Promise<void> 
 }
 
 /** 本批处理完成：回填 tool 消息，触发后续 stream */
-export async function finalizePendingBatch(
-    onComplete: () => void
-): Promise<void> {
+export async function finalizePendingBatch(onComplete: () => void): Promise<void> {
     const hadToolCalls = diagState.pendingBatchHasToolCalls;
     const results = diagState.pendingToolResults;
     diagState.pendingToolResults = [];
@@ -222,7 +250,11 @@ export async function finalizePendingBatch(
 
     for (const r of results) {
         if (r.toolCallId) {
-            diagState.messages.push({ role: 'tool', content: r.content, tool_call_id: r.toolCallId });
+            diagState.messages.push({
+                role: 'tool',
+                content: r.content,
+                tool_call_id: r.toolCallId,
+            });
         }
     }
     renderControlHint();

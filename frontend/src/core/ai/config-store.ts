@@ -97,8 +97,12 @@ export function loadAiConfig(): AiConfig {
  *  使预设备注简短、用户少打字。 */
 export function normalizeEndpoint(endpoint: string): string {
     const trimmed = endpoint.trim();
-    if (!trimmed) return '';
-    if (trimmed.endsWith('/chat/completions')) return trimmed;
+    if (!trimmed) {
+        return '';
+    }
+    if (trimmed.endsWith('/chat/completions')) {
+        return trimmed;
+    }
     const base = trimmed.endsWith('/') ? trimmed.slice(0, -1) : trimmed;
     return `${base}/chat/completions`;
 }

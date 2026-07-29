@@ -1,16 +1,38 @@
 // @ts-nocheck — vi.mock 运行时替换（见 ./material-editor-mocks）
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
-    engineModuleFactory, sceneModuleFactory, nodeModuleFactory, lightModuleFactory,
-    hemiLightModuleFactory, dirLightModuleFactory, arcRotCamModuleFactory, cameraModuleFactory,
-    mathColorModuleFactory, mathVectorModuleFactory, stdMatModuleFactory, materialModuleFactory,
-    meshModuleFactory, postProcessModuleFactory, sceneLoaderModuleFactory,
-    defaultRenderingPipelineModuleFactory, physicsEngineModuleMock, tgaLoaderModuleMock,
-    mmdCameraModuleFactory, mmdRegisterLoadersFactory, mmdRegisterDxBmpFactory,
-    mmdGetWasmInstanceFactory, mmdSinglePhysicsReleaseMock, mmdWasmRuntimeFactory,
-    mmdVmdLoaderFactory, mmdWasmAnimationFactory, mmdRuntimeModelAnimMock,
-    mmdStdMaterialProxyFactory, mmdRuntimeSharedFactory, mmdModelLoaderDefaultMock,
-    mmdTextureAlphaVertexMock, mmdTextureAlphaFragmentMock,
+    engineModuleFactory,
+    sceneModuleFactory,
+    nodeModuleFactory,
+    lightModuleFactory,
+    hemiLightModuleFactory,
+    dirLightModuleFactory,
+    arcRotCamModuleFactory,
+    cameraModuleFactory,
+    mathColorModuleFactory,
+    mathVectorModuleFactory,
+    stdMatModuleFactory,
+    materialModuleFactory,
+    meshModuleFactory,
+    postProcessModuleFactory,
+    sceneLoaderModuleFactory,
+    defaultRenderingPipelineModuleFactory,
+    physicsEngineModuleMock,
+    tgaLoaderModuleMock,
+    mmdCameraModuleFactory,
+    mmdRegisterLoadersFactory,
+    mmdRegisterDxBmpFactory,
+    mmdGetWasmInstanceFactory,
+    mmdSinglePhysicsReleaseMock,
+    mmdWasmRuntimeFactory,
+    mmdVmdLoaderFactory,
+    mmdWasmAnimationFactory,
+    mmdRuntimeModelAnimMock,
+    mmdStdMaterialProxyFactory,
+    mmdRuntimeSharedFactory,
+    mmdModelLoaderDefaultMock,
+    mmdTextureAlphaVertexMock,
+    mmdTextureAlphaFragmentMock,
 } from './material-editor-mocks';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { modelRegistry } from '../core/config';
@@ -30,25 +52,53 @@ vi.mock('@babylonjs/core/Materials/material', () => materialModuleFactory());
 vi.mock('@babylonjs/core/Meshes/mesh', () => meshModuleFactory());
 vi.mock('@babylonjs/core/PostProcesses/postProcess', () => postProcessModuleFactory());
 vi.mock('@babylonjs/core/Loading/sceneLoader', () => sceneLoaderModuleFactory());
-vi.mock('@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline', () => defaultRenderingPipelineModuleFactory());
+vi.mock('@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline', () =>
+    defaultRenderingPipelineModuleFactory()
+);
 vi.mock('@babylonjs/core/Physics/v2/physicsEngineComponent', () => physicsEngineModuleMock);
 vi.mock('@babylonjs/core/Materials/Textures/Loaders/tgaTextureLoader', () => tgaLoaderModuleMock);
 vi.mock('babylon-mmd/esm/Runtime/mmdCamera', () => mmdCameraModuleFactory());
 vi.mock('babylon-mmd/esm/Loader/dynamic', () => mmdRegisterLoadersFactory());
 vi.mock('babylon-mmd/esm/Loader/registerDxBmpTextureLoader', () => mmdRegisterDxBmpFactory());
 vi.mock('babylon-mmd/esm/Runtime/Optimized/mmdWasmInstance', () => mmdGetWasmInstanceFactory());
-vi.mock('babylon-mmd/esm/Runtime/Optimized/InstanceType/singlePhysicsRelease', () => mmdSinglePhysicsReleaseMock);
+vi.mock(
+    'babylon-mmd/esm/Runtime/Optimized/InstanceType/singlePhysicsRelease',
+    () => mmdSinglePhysicsReleaseMock
+);
 vi.mock('babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime', () => mmdWasmRuntimeFactory());
 vi.mock('babylon-mmd/esm/Loader/vmdLoader', () => mmdVmdLoaderFactory());
-vi.mock('babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmAnimation', () => mmdWasmAnimationFactory());
-vi.mock('babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmRuntimeModelAnimation', () => mmdRuntimeModelAnimMock);
+vi.mock('babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmAnimation', () =>
+    mmdWasmAnimationFactory()
+);
+vi.mock(
+    'babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmRuntimeModelAnimation',
+    () => mmdRuntimeModelAnimMock
+);
 vi.mock('babylon-mmd/esm/Runtime/mmdStandardMaterialProxy', () => mmdStdMaterialProxyFactory());
 vi.mock('babylon-mmd/esm/Runtime/mmdRuntimeShared', () => mmdRuntimeSharedFactory());
 vi.mock('babylon-mmd/esm/Loader/mmdModelLoader.default', () => mmdModelLoaderDefaultMock);
-vi.mock('babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.vertex', () => mmdTextureAlphaVertexMock);
-vi.mock('babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.fragment', () => mmdTextureAlphaFragmentMock);
+vi.mock(
+    'babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.vertex',
+    () => mmdTextureAlphaVertexMock
+);
+vi.mock(
+    'babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.fragment',
+    () => mmdTextureAlphaFragmentMock
+);
 
-import { _catState, _matState, _matEnabled, getMatParams, setMatParams, resetSingleMatParams, resetPerMaterialParams, getMatCatParams, setMatCatParams, getMatDetailList, applyMatState } from '../scene/scene';
+import {
+    _catState,
+    _matState,
+    _matEnabled,
+    getMatParams,
+    setMatParams,
+    resetSingleMatParams,
+    resetPerMaterialParams,
+    getMatCatParams,
+    setMatCatParams,
+    getMatDetailList,
+    applyMatState,
+} from '../scene/scene';
 
 function regModel(id: string, meshCount: number, names?: string[]): void {
     const meshes = Array.from({ length: meshCount }, (_, i) => {
@@ -82,7 +132,9 @@ describe('per-material parameter state management', () => {
         regModel('model2', 2);
     });
 
-    afterEach(() => { cleanupModels(); });
+    afterEach(() => {
+        cleanupModels();
+    });
 
     describe('getMatParams', () => {
         it('returns null for unset material', () => {
@@ -149,7 +201,9 @@ describe('per-material parameter state management', () => {
 
     describe('resetSingleMatParams', () => {
         beforeEach(() => {
-            _catState.clear(); _matState.clear(); _matEnabled.clear();
+            _catState.clear();
+            _matState.clear();
+            _matEnabled.clear();
             regModel('model1', 3);
             regModel('model2', 2);
         });
@@ -191,7 +245,9 @@ describe('per-material parameter state management', () => {
 
     describe('model removal cleans up state', () => {
         beforeEach(() => {
-            _catState.clear(); _matState.clear(); _matEnabled.clear();
+            _catState.clear();
+            _matState.clear();
+            _matEnabled.clear();
             regModel('model_rm', 2);
         });
 
@@ -201,9 +257,16 @@ describe('per-material parameter state management', () => {
             _catState.delete('model_rm');
             _matState.delete('model_rm');
             expect(getMatCatParams('model_rm', '皮肤')).toEqual({
-                diffuseMul: 1, specularMul: 1, shininess: 50, ambientMul: 1,
-                emissiveMul: 1, diffuseTexLevel: 1, bumpTexLevel: 1, toonTexLevel: 1,
-                sphereTexLevel: 1, emissiveTexLevel: 1,
+                diffuseMul: 1,
+                specularMul: 1,
+                shininess: 50,
+                ambientMul: 1,
+                emissiveMul: 1,
+                diffuseTexLevel: 1,
+                bumpTexLevel: 1,
+                toonTexLevel: 1,
+                sphereTexLevel: 1,
+                emissiveTexLevel: 1,
             });
             expect(getMatParams('model_rm', 0)).toBeNull();
         });
@@ -211,8 +274,15 @@ describe('per-material parameter state management', () => {
 });
 
 describe('category-level parameter state', () => {
-    beforeEach(() => { _catState.clear(); _matState.clear(); _matEnabled.clear(); regModel('model_c', 2); });
-    afterEach(() => { cleanupModels(); });
+    beforeEach(() => {
+        _catState.clear();
+        _matState.clear();
+        _matEnabled.clear();
+        regModel('model_c', 2);
+    });
+    afterEach(() => {
+        cleanupModels();
+    });
 
     it('setMatCatParams and getMatCatParams roundtrip', () => {
         setMatCatParams('model_c', '皮肤', { diffuseMul: 1.2, specularMul: 0.8 });
@@ -231,12 +301,32 @@ describe('category-level parameter state', () => {
 });
 
 describe('applyMatState MaterialCategory cast', () => {
-    beforeEach(() => { _catState.clear(); _matState.clear(); _matEnabled.clear(); regModel('model_as', 5); });
-    afterEach(() => { cleanupModels(); });
+    beforeEach(() => {
+        _catState.clear();
+        _matState.clear();
+        _matEnabled.clear();
+        regModel('model_as', 5);
+    });
+    afterEach(() => {
+        cleanupModels();
+    });
 
     it('applies category params from preset state', () => {
         applyMatState('model_as', {
-            categories: { 皮肤: { diffuseMul: 1.5, specularMul: 0.8, shininess: 30, ambientMul: 1, emissiveMul: 1, diffuseTexLevel: 1, bumpTexLevel: 1, toonTexLevel: 1, sphereTexLevel: 1, emissiveTexLevel: 1 } },
+            categories: {
+                皮肤: {
+                    diffuseMul: 1.5,
+                    specularMul: 0.8,
+                    shininess: 30,
+                    ambientMul: 1,
+                    emissiveMul: 1,
+                    diffuseTexLevel: 1,
+                    bumpTexLevel: 1,
+                    toonTexLevel: 1,
+                    sphereTexLevel: 1,
+                    emissiveTexLevel: 1,
+                },
+            },
         });
         const p = getMatCatParams('model_as', '皮肤');
         expect(p.diffuseMul).toBe(1.5);
@@ -244,7 +334,20 @@ describe('applyMatState MaterialCategory cast', () => {
 
     it('applies override params from preset state', () => {
         applyMatState('model_as', {
-            overrides: { 3: { diffuseMul: 1.5, specularMul: 0.5, shininess: 10, ambientMul: 1.2, emissiveMul: 1, diffuseTexLevel: 1, bumpTexLevel: 1, toonTexLevel: 1, sphereTexLevel: 1, emissiveTexLevel: 1 } },
+            overrides: {
+                3: {
+                    diffuseMul: 1.5,
+                    specularMul: 0.5,
+                    shininess: 10,
+                    ambientMul: 1.2,
+                    emissiveMul: 1,
+                    diffuseTexLevel: 1,
+                    bumpTexLevel: 1,
+                    toonTexLevel: 1,
+                    sphereTexLevel: 1,
+                    emissiveTexLevel: 1,
+                },
+            },
         });
         const p = getMatParams('model_as', 3);
         expect(p!.shininess).toBe(10);

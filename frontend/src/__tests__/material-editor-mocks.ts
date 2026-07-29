@@ -38,37 +38,92 @@ import {
 
 // ---- vi.mock 工厂 ----
 
-export function engineModuleFactory() { return { Engine: MockEngine }; }
-export function sceneModuleFactory() { return { Scene: MockScene }; }
-export function nodeModuleFactory() { return { Node: MockNode }; }
-export function lightModuleFactory() { return { Light: MockLight }; }
-export function hemiLightModuleFactory() { return { HemisphericLight: MockHemisphericLight }; }
-export function dirLightModuleFactory() { return { DirectionalLight: MockDirectionalLight }; }
-export function arcRotCamModuleFactory() { return { ArcRotateCamera: MockArcRotateCamera }; }
-export function cameraModuleFactory() { return { Camera: MockCamera }; }
-export function mathColorModuleFactory() { return { Color3: MockColor3, Color4: MockColor4, TmpColors: { Color3: [] } }; }
-export function mathVectorModuleFactory() { return { Vector3: MockVector3, Matrix: MockMatrix, Quaternion: MockQuaternion, TmpVectors: { Vector3: [] } }; }
-export function stdMatModuleFactory() { return { StandardMaterial: MockStandardMaterial }; }
-export function materialModuleFactory() { return { Material: MockMaterial }; }
-export function meshModuleFactory() { return { AbstractMesh: MockAbstractMesh, Mesh: MockMesh }; }
-export function postProcessModuleFactory() { return { PostProcess: MockPostProcess }; }
-export function sceneLoaderModuleFactory() { return { ImportMeshAsync: MockImportMeshAsync }; }
-export function defaultRenderingPipelineModuleFactory() { return { DefaultRenderingPipeline: MockDefaultRenderingPipeline }; }
+export function engineModuleFactory() {
+    return { Engine: MockEngine };
+}
+export function sceneModuleFactory() {
+    return { Scene: MockScene };
+}
+export function nodeModuleFactory() {
+    return { Node: MockNode };
+}
+export function lightModuleFactory() {
+    return { Light: MockLight };
+}
+export function hemiLightModuleFactory() {
+    return { HemisphericLight: MockHemisphericLight };
+}
+export function dirLightModuleFactory() {
+    return { DirectionalLight: MockDirectionalLight };
+}
+export function arcRotCamModuleFactory() {
+    return { ArcRotateCamera: MockArcRotateCamera };
+}
+export function cameraModuleFactory() {
+    return { Camera: MockCamera };
+}
+export function mathColorModuleFactory() {
+    return { Color3: MockColor3, Color4: MockColor4, TmpColors: { Color3: [] } };
+}
+export function mathVectorModuleFactory() {
+    return {
+        Vector3: MockVector3,
+        Matrix: MockMatrix,
+        Quaternion: MockQuaternion,
+        TmpVectors: { Vector3: [] },
+    };
+}
+export function stdMatModuleFactory() {
+    return { StandardMaterial: MockStandardMaterial };
+}
+export function materialModuleFactory() {
+    return { Material: MockMaterial };
+}
+export function meshModuleFactory() {
+    return { AbstractMesh: MockAbstractMesh, Mesh: MockMesh };
+}
+export function postProcessModuleFactory() {
+    return { PostProcess: MockPostProcess };
+}
+export function sceneLoaderModuleFactory() {
+    return { ImportMeshAsync: MockImportMeshAsync };
+}
+export function defaultRenderingPipelineModuleFactory() {
+    return { DefaultRenderingPipeline: MockDefaultRenderingPipeline };
+}
 export const physicsEngineModuleMock = {};
 export const tgaLoaderModuleMock = {};
 
 // ---- babylon-mmd 工厂 ----
-export function mmdCameraModuleFactory() { return { MmdCamera: MockMmdCamera }; }
-export function mmdRegisterLoadersFactory() { return { RegisterMmdModelLoaders: MockRegisterMmdModelLoaders }; }
-export function mmdRegisterDxBmpFactory() { return { RegisterDxBmpTextureLoader: MockRegisterDxBmpTextureLoader }; }
-export function mmdGetWasmInstanceFactory() { return { GetMmdWasmInstance: MockGetMmdWasmInstance }; }
+export function mmdCameraModuleFactory() {
+    return { MmdCamera: MockMmdCamera };
+}
+export function mmdRegisterLoadersFactory() {
+    return { RegisterMmdModelLoaders: MockRegisterMmdModelLoaders };
+}
+export function mmdRegisterDxBmpFactory() {
+    return { RegisterDxBmpTextureLoader: MockRegisterDxBmpTextureLoader };
+}
+export function mmdGetWasmInstanceFactory() {
+    return { GetMmdWasmInstance: MockGetMmdWasmInstance };
+}
 export const mmdSinglePhysicsReleaseMock = { MmdWasmInstanceTypeSPR: class Mock {} };
-export function mmdWasmRuntimeFactory() { return { MmdWasmRuntime: MockMmdWasmRuntime }; }
-export function mmdVmdLoaderFactory() { return { VmdLoader: MockVmdLoader }; }
-export function mmdWasmAnimationFactory() { return { MmdWasmAnimation: MockMmdWasmAnimation }; }
+export function mmdWasmRuntimeFactory() {
+    return { MmdWasmRuntime: MockMmdWasmRuntime };
+}
+export function mmdVmdLoaderFactory() {
+    return { VmdLoader: MockVmdLoader };
+}
+export function mmdWasmAnimationFactory() {
+    return { MmdWasmAnimation: MockMmdWasmAnimation };
+}
 export const mmdRuntimeModelAnimMock = {};
-export function mmdStdMaterialProxyFactory() { return { MmdStandardMaterialProxy: MockMmdStandardMaterialProxy }; }
-export function mmdRuntimeSharedFactory() { return { MmdRuntimeShared: MockMmdRuntimeShared }; }
+export function mmdStdMaterialProxyFactory() {
+    return { MmdStandardMaterialProxy: MockMmdStandardMaterialProxy };
+}
+export function mmdRuntimeSharedFactory() {
+    return { MmdRuntimeShared: MockMmdRuntimeShared };
+}
 export const mmdModelLoaderDefaultMock = {};
 export const mmdTextureAlphaVertexMock = {};
 export const mmdTextureAlphaFragmentMock = {};
@@ -78,9 +133,33 @@ export const mmdTextureAlphaFragmentMock = {};
 export function _mockMat(name: string) {
     return {
         name,
-        diffuseColor: { r: 1, g: 1, b: 1, set() {}, clone() { return { r: 1, g: 1, b: 1 }; } },
-        specularColor: { r: 0.8, g: 0.8, b: 0.8, set() {}, clone() { return { r: 0.8, g: 0.8, b: 0.8 }; } },
+        diffuseColor: {
+            r: 1,
+            g: 1,
+            b: 1,
+            set() {},
+            clone() {
+                return { r: 1, g: 1, b: 1 };
+            },
+        },
+        specularColor: {
+            r: 0.8,
+            g: 0.8,
+            b: 0.8,
+            set() {},
+            clone() {
+                return { r: 0.8, g: 0.8, b: 0.8 };
+            },
+        },
         specularPower: 50,
-        ambientColor: { r: 0.3, g: 0.3, b: 0.3, set() {}, clone() { return { r: 0.3, g: 0.3, b: 0.3 }; } },
+        ambientColor: {
+            r: 0.3,
+            g: 0.3,
+            b: 0.3,
+            set() {},
+            clone() {
+                return { r: 0.3, g: 0.3, b: 0.3 };
+            },
+        },
     };
 }

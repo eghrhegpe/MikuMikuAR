@@ -72,15 +72,21 @@ export function createKeyboardNav(
     const wrap = options.wrap !== false;
 
     const handler = (e: KeyboardEvent) => {
-        if (options.transitioningGuard?.()) return;
+        if (options.transitioningGuard?.()) {
+            return;
+        }
 
         const target = e.target instanceof HTMLElement ? e.target : null;
-        if (target && options.skipSelector && target.closest(options.skipSelector)) return;
+        if (target && options.skipSelector && target.closest(options.skipSelector)) {
+            return;
+        }
 
         const items = options.getItems
             ? options.getItems()
             : Array.from(container.querySelectorAll<HTMLElement>(selector));
-        if (items.length === 0) return;
+        if (items.length === 0) {
+            return;
+        }
         const list = items;
 
         // 焦点真相源：优先外部 getActiveIndex（如 menu.ts 的 focusIndex），
@@ -95,14 +101,18 @@ export function createKeyboardNav(
 
         switch (e.key) {
             case 'ArrowDown': {
-                if (options.perKeySkip?.(target, 'vertical')) return;
+                if (options.perKeySkip?.(target, 'vertical')) {
+                    return;
+                }
                 e.preventDefault();
                 const next = wrap ? (idx + 1) % list.length : Math.min(idx + 1, list.length - 1);
                 _moveFocus(list, idx, next, options);
                 break;
             }
             case 'ArrowRight': {
-                if (options.perKeySkip?.(target, 'horizontal')) return;
+                if (options.perKeySkip?.(target, 'horizontal')) {
+                    return;
+                }
                 // menu.ts 语义：ArrowRight = 激活当前项（层级进入），非平级移动
                 if (options.arrowRightActivate) {
                     if (activeEl) {
@@ -121,14 +131,18 @@ export function createKeyboardNav(
                 break;
             }
             case 'ArrowUp': {
-                if (options.perKeySkip?.(target, 'vertical')) return;
+                if (options.perKeySkip?.(target, 'vertical')) {
+                    return;
+                }
                 e.preventDefault();
                 const prev = wrap ? (idx - 1 + list.length) % list.length : Math.max(idx - 1, 0);
                 _moveFocus(list, idx, prev, options);
                 break;
             }
             case 'ArrowLeft': {
-                if (options.perKeySkip?.(target, 'horizontal')) return;
+                if (options.perKeySkip?.(target, 'horizontal')) {
+                    return;
+                }
                 if (options.onArrowBack) {
                     e.preventDefault();
                     options.onArrowBack();
@@ -141,7 +155,9 @@ export function createKeyboardNav(
             }
             case 'Enter':
             case ' ': {
-                if (options.perKeySkip?.(target, 'horizontal')) return;
+                if (options.perKeySkip?.(target, 'horizontal')) {
+                    return;
+                }
                 if (activeEl) {
                     e.preventDefault();
                     if (options.onEnter) {

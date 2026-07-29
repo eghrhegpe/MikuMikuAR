@@ -17,7 +17,10 @@ vi.mock(
     async () => (await import('./env-mocks')).babylonColorModule
 );
 vi.mock('../../core/config', async () => (await import('./env-mocks')).configModule);
-vi.mock('../../scene/env/env-lighting', async () => (await import('./env-mocks')).envLightingModule);
+vi.mock(
+    '../../scene/env/env-lighting',
+    async () => (await import('./env-mocks')).envLightingModule
+);
 vi.mock('../../scene/env/env-impl', async () => (await import('./env-mocks')).envImplModule);
 vi.mock(
     '../../scene/env/env-dispatcher',

@@ -44,7 +44,9 @@ export function makeLazyLoader<T>(loader: () => Promise<T>): () => Promise<T> {
     let _cached: T | null = null;
     let _loading: Promise<T> | null = null;
     return async () => {
-        if (_cached) return _cached;
+        if (_cached) {
+            return _cached;
+        }
         if (!_loading) {
             _loading = loader().then(
                 (mod) => {

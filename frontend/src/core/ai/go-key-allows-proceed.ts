@@ -13,7 +13,9 @@ export function goKeyAllowsProceed(
     isGo: boolean,
     keyConfigured: boolean
 ): boolean {
-    if (validation.ok) return true;
+    if (validation.ok) {
+        return true;
+    }
     if (isGo && keyConfigured) {
         const nonKey = validation.errors?.filter((e) => e.kind !== 'missingKey') ?? [];
         return nonKey.length === 0;

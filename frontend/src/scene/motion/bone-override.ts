@@ -77,7 +77,8 @@ let _getRuntimeBones: (() => readonly IMmdRuntimeBone[]) | null = null;
  * applyBoneOverrideIK 在 ikSolver 缺失时经此回调调用 mmdModelSolveIk 导出重解 IK。
  * 签名：(modelId, ikSolverIndex, usePhysics) => void；null=未注入（JS 模式或未初始化）。
  */
-let _wasmIkResolver: ((modelId: string, ikSolverIndex: number, usePhysics: boolean) => void) | null = null;
+let _wasmIkResolver:
+    ((modelId: string, ikSolverIndex: number, usePhysics: boolean) => void) | null = null;
 /** [doc:adr-116 P3] 每帧钩子条目：由时间驱动模块（riding/left-hand/right-hand）注册，渲染回调每帧调用。
  *  原实现用 Set 按插入序遍历，钩子间同骨获胜者依赖模块注册次序（隐式定序，R2 病灶）。
  *  改为带 order 的数组并按 order 升序执行，顺序由声明决定，与注册时序解耦。 */
@@ -829,7 +830,8 @@ export function setWasmIkResolver(
  * [ADR-202 §六] 获取 WASM IK 重解回调（供 feet-adjustment 等外部模块调用）。
  * 返回 null 表示未注入（JS 模式或未初始化）。
  */
-export function getWasmIkResolver(): ((modelId: string, ikSolverIndex: number, usePhysics: boolean) => void) | null {
+export function getWasmIkResolver():
+    ((modelId: string, ikSolverIndex: number, usePhysics: boolean) => void) | null {
     return _wasmIkResolver;
 }
 

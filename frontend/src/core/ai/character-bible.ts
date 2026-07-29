@@ -22,7 +22,15 @@ export interface CharacterBible {
 }
 
 /** 台词生成的输出情绪标签闭集（用于后续 TTS/表情映射，Step 2）。 */
-export const DIALOGUE_EMOTIONS = ['neutral', 'happy', 'sad', 'angry', 'surprised', 'shy', 'curious'] as const;
+export const DIALOGUE_EMOTIONS = [
+    'neutral',
+    'happy',
+    'sad',
+    'angry',
+    'surprised',
+    'shy',
+    'curious',
+] as const;
 
 export type DialogueEmotion = (typeof DIALOGUE_EMOTIONS)[number];
 
@@ -60,10 +68,10 @@ export function buildDialogueSystemPrompt(bible: CharacterBible): string {
         `人设：${bible.persona}`,
         `说话风格：${bible.speechStyle}`,
         `禁忌（必须遵守）：${bible.taboos.map((x) => `- ${x}`).join('\n')}`,
-        `请始终保持该角色的口吻与身份，不要跳出角色（不要以 AI 助手身份说话）。`,
+        '请始终保持该角色的口吻与身份，不要跳出角色（不要以 AI 助手身份说话）。',
         `每次回复请用如下 JSON 数组格式输出一段或多段台词，情绪标签仅限：${emotions}：`,
-        `[{"line": "台词内容", "emotion": "情绪标签"}]`,
-        `只输出 JSON，不要额外解释。`,
+        '[{"line": "台词内容", "emotion": "情绪标签"}]',
+        '只输出 JSON，不要额外解释。',
     ].join('\n');
 }
 
