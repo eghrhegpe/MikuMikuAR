@@ -111,19 +111,16 @@ L1/L2 均为 Vitest，通过**文件命名后缀**区分：L2 使用 `*.int.test
 
 > **P3 补充实施记录（2026-07-29 续六）**：`model-ops.test.ts`（574 行 / 36 用例 / 6 处 `vi.mock` + 真实 `config` 模块依赖预建 DOM）拆为 5 个 `model-ops.*.test.ts`（focus 7 / physics 10 / morph 8 / vpd 3 / remove 8，均 ≤~190 行）+ `model-ops-mocks.ts`（`modelOpsShared` 模块加载期单例含 `mockModelManager` + `mockSceneModule`/`mockMaterial`/`mockEnv`/`mockCamera`/`mockPlayback`/`mockAudio` 六个同步工厂）+ `model-ops-helpers.ts`（`makeInst`/`resetState` 纯 fixture，导入真实 `config`）。关键约束（踩坑）：① `vi.mock` 工厂**只能引用 imported 绑定**，不能引用局部 const——初版 `const mockModelManager = createMockModelManager()` 被 hoist 的 `vi.mock('../scene/scene')` 工厂在求值时以 `Cannot access 'mockModelManager' before initialization` 报 TDZ；改以 `modelOpsShared.mockModelManager`（`modelOpsShared` 是 imported 绑定，模块图求值阶段即就绪）直接喂给工厂；② 不能把 `createMockModelManager()` 塞进 `vi.hoisted` 回调，因该回调在 hoist 阶段执行、所调用的函数为跨文件 import（`__vi_import_0__` 尚未初始化）；③ 各测试文件保留**自包含内联**的 `vi.hoisted(() => { document.createElement... })` DOM 预建块（happy-dom 下 `config` 的 `dom.ts` 顶层读 DOM，必须在 import `../core/config`/`model-ops` 之前完成，且不可引用 import 故不抽进 mocks）；④ `resetState` 复用原 `vi.clearAllMocks()` + `setModelRegistry(new Map())` + `setIsPlaying(false)` + `setMmdRuntime(null)`，且 `vi.clearAllMocks()` 保留 `mockReturnValue([])` 等默认实现，行为与原一致。验收：36 用例守恒、全量 0 failed、单文件 ≤300 行。
 
-> **P3 剩余 backlog（移交简报 2026-07-29）**：上帝文件拆分至 12 个后，剩余 >500 行上帝文件 **9 个（约 4600 行）**，按风险排序：
+> **P3 补充实施记录（2026-07-29 续拆 model-detail-ui）**：`model-detail-ui.test.ts`（536 行 / 13 用例 / ~45 处 `vi.mock`）拆为 3 个 `model-detail-ui.*.test.ts`（model 4 / info 4 / tags-morph 5）+ `model-detail-ui-mocks.ts`（仅补 `model-preset-mocks.ts` 未覆盖的缺口：ShadowGenerator/粒子/GridMaterial/纹理三件套 + 应用模块桩 scene/scene-menu/outfit/lipsync/procedural-motion/beat-detector/audio）+ `model-detail-ui-helpers.ts`（`fakeMesh`/`createModel`/`cleanup`/`hasRenderCustom` 纯 fixture）。关键点：① **通用 Babylon/babylon-mmd 工厂直接复用 `model-preset-mocks.ts`**（Engine/Scene/灯光/相机/数学/材质/网格/加载器等 28 个），mocks 文件不重复造轮子——后续拆同类 scene 依赖测试照此复用；② 原文件 `mockModelManager` 经 `vi.hoisted` 定义、scene mock 用 getter 引用，拆分后改为 mocks 文件普通 `const` 单例（imported 绑定，`() => mockSceneScene()` 延迟调用时已就绪），`cleanup()` 在每文件 `beforeEach` 里 `mockReset` 其 `get`；③ SUT（`../menus/model-detail`）静态 import 置于 helpers/mocks 之后（audio 拆分发现的 TDZ 变体）。验收：13 用例守恒、全量 0 failed、单文件 ≤~230 行。
+
+> **P3 剩余 backlog（2026-07-29，续拆 model-detail-ui 后）**：上帝文件已拆 **17 个**，剩余 >500 行上帝文件 **4 个（约 2870 行）**，按风险排序：
 
 | 文件 | 行 | 拆分建议 |
 |------|-----|----------|
 | `physics-contract.test.ts` | 961 | 契约测试，拆分需谨慎（验证 WASM/Bullet 契约） |
 | `perception.perf.test.ts` | 741 | perf 基准，可能刻意整体保留 |
 | `bindings/app.contract.test.ts` | 646 | 契约测试，AGENTS 指定校验入口 |
-| `audio.test.ts` | 552 | 可拆 |
-| `model-detail-ui.test.ts` | 536 | 可拆 |
-| `utils.test.ts` | 524 | 纯函数工具，最易拆（优先） |
 | `camera.adr100.test.ts` | 523 | 可拆 |
-| `playback.test.ts` | 513 | 可拆 |
-| `outfit.test.ts` | 503 | 可拆 |
 
 > **P3 标准拆分配方（已跨 12 个文件验证）**：① `vi.mock` 工厂收敛进 `*-mocks.ts` 同步导出，Mock 类静态 `import`，禁用 `vi.importActual` 包裹（hoist 期 `__vi_import_X__ not initialized`）；② 跨用例共享状态用普通 `const shared` 单例（imported 绑定），`vi.mock` 工厂直接引用它——**禁止引用局部 const 或 `vi.hoisted` 内调用 import 函数（两类 TDZ）**；③ `vi.resetModules()`+动态 `import` 取 fresh SUT 的场景（如 proc-motion-bridge）：每文件本地 `const s = createX()`，工厂以参数接收；④ DOM 预建（`config` 顶层读 DOM）保留各文件自包含内联 `vi.hoisted(() => createElement...)`；⑤ 每文件 `beforeEach` 复位 `shared` + config setters，复刻原 `resetAll`；⑥ 提交前 `npx vitest run <dir>` 验用例守恒 + `npm run check:docs`。
 
