@@ -18,9 +18,9 @@ ADR-196 落地的 AI 诊断助手将对话历史（`_messages`）作为模块级
 ## 决策
 
 ### 1. 多会话持久化，统一走 IndexedDB
-- 复用 `frontend/src/core/backend/idb.ts`，`STORES` 新增 `'chats'` store（`onupgradeneeded` 自动补建，无需升 `DB_VERSION`）。
+- 复用 `frontend/src/core/backend/idb.ts`，`STORES` 新增 `'chats'` store，并将 `DB_VERSION` 从 1 升到 2（**必须升版本号**：IndexedDB 的 `onupgradeneeded` 仅在版本号提升时触发，对已存在 v1 数据库必须升版本才能补建缺失 store，否则老用户 `chats` store 永不创建、所有 chat-store 操作抛 NotFoundError 而被静默降级，功能完全失效）。
 - 桌面（WebView2）与网页统一走 IndexedDB（项目已共用 idb.ts），**不新增 Go binding**、**不落 config.json**——避免与 LLM 配置混存、避免 Go 侧序列化对话历史、避免双端存储分叉。
-- 会话拆两键存储：`meta:<id>`（元信息 `{id,title,mode,createdAt,updatedAt}`，供列表快速枚举）+ `msgs:<id>`（消息数组，懒加载）。活动会话 id 存 `meta` store 的 `chat:activeId`。
+- 会话拆两键存储：`meta:<id>`（元信息 `{id,title,mode,createdAt,updatedAt}`，供列表快速枚举）+ `msgs:<id>`（消息数组，懒加载）。活动会话 id 存 `meta` store 的 `chat:activeId`；`chat-store.ts` 暴露 `clearActiveId` 供清空会话 / 删除当前会话且无剩余时清除指针，避免陈旧 activeId 残留。
 - 封装在新增 `frontend/src/core/ai/chat-store.ts`，所有读操作对损坏/缺失数据降级（返回 undefined/空数组），不向上抛污染 UI。
 
 ### 2. 多会话模型（新建/切换/删除/重命名）
@@ -62,6 +62,16 @@ ADR-196 落地的 AI 诊断助手将对话历史（`_messages`）作为模块级
 - `shortcut-app.ts`：注册 `toggle:assistant`（Ctrl+8）。
 - i18n 5 语言新增 `'shortcuts.label.assistant'`。
 - 验证：`tsc --noEmit` 0 错；全量 tests 通过；`check:docs` 无 ERROR。
+
+### 审核修复（2026-07-29）
+
+- **P1 升 `DB_VERSION` 至 2**：原决策「`onupgradeneeded` 自动补建，无需升 `DB_VERSION`」错误。IndexedDB 规范规定 `onupgradeneeded` 仅在版本号提升时触发；老用户已有 v1 数据库（无 `chats` store），新代码不升版本号则 store 永不补建，chat-store 所有操作抛 NotFoundError 被静默降级，功能完全失效。`idb.ts` 升 `DB_VERSION=2` + onupgradeneeded 注释说明 v1→v2 路径。
+- **P1 修复 `_deleteSessionAndAdjust` 复活已删除会话**：原实现先 `deleteSession(id)` 再 `_switchSession(remaining[0].id)`，但 `_switchSession` 内的 `_flushSession` 会把当前 `_messages`（仍属于已删除会话）回写 `_activeSessionId`（已删除会话 id），复活磁盘记录。修复：删除前先清空 `_messages` + `_activeSessionId`，使 `_flushSession` 走空会话早退分支。
+- **P2 `_clearChat` / `_deleteSessionAndAdjust` 清除 `chat:activeId`**：原实现仅清内存 `_activeSessionId`，未清磁盘 `meta:chat:activeId`，留下陈旧指针。新增 `chat-store.clearActiveId()`，两处调用同步清除。
+- **P3 文档锚点 `[doc:adr-202]` → `[doc:adr-203]`**：13 处代码注释锚点编号错误（ADR 实际编号 203），批量修正。
+- **P3 `events.ts` navActions[8] 风格统一**：原 `.then()` 回调不捕获错误且与同文件 [3-5] 的 `async/await` 风格不一致，统一为 `async/await`。
+- **P4 测试补充**：`chat-store.test.ts` 增 3 项——`listSessions` 跳过缺 id 的腐败 meta、`loadSession` 对 messages 非数组降级为空数组、`clearActiveId` 往返。共 11 项。
+- 验证：`tsc` 我相关 0 错（工作区原有 `nav-touch.test.ts:132/164` TS1361 与本审核无关）；`chat-store` 11/11 通过；全量 2499/2501 通过（2 失败均 `nav-touch.test.ts` 预存在）；`check:docs` 无 ERROR。
 
 ## 假设与边界
 

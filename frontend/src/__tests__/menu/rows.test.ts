@@ -1,0 +1,179 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import type { SlideMenu } from '../../menus/menu';
+import { makeTestLevel, makeTestMenu } from '../fixtures/menu';
+
+// ─── SlideMenu 测试：创建行 (createRow DOM 类型) ───
+
+describe('SlideMenu — 创建行 (createRow DOM 类型)', () => {
+    let container: HTMLElement;
+    let menu: SlideMenu;
+
+    beforeEach(() => {
+        const m = makeTestMenu();
+        container = m.container;
+        menu = m.menu;
+        // 确保有一个根层级，使 currentLevel 可用
+        menu.reset(makeTestLevel('根'));
+    });
+
+    // createRow 是 private，通过 (menu as any).createRow(row) 访问
+
+    it('divider 行生成分隔线 DOM', () => {
+        const el = (menu as any).createRow({
+            kind: 'divider' as const,
+            label: '',
+            icon: '',
+            target: '',
+        });
+        expect(el).toBeTruthy();
+        expect(el.className).toBe('slide-divider');
+    });
+
+    it('action 行生成 slide-item', () => {
+        const el = (menu as any).createRow({
+            kind: 'action' as const,
+            label: '测试项',
+            icon: 'test-icon',
+            target: 'test-target',
+        });
+        expect(el).toBeTruthy();
+        expect(el.className).toContain('slide-item');
+        expect(el.querySelector('.slide-label')?.textContent).toBe('测试项');
+        expect(el.dataset.rowKey).toBe('action:test-target');
+    });
+
+    it('action 行带 onAddClick 生成添加按钮', () => {
+        const addClick = vi.fn();
+        const el = (menu as any).createRow({
+            kind: 'action' as const,
+            label: '可添加',
+            icon: 'i',
+            target: 't',
+            onAddClick: addClick,
+        });
+        const addBtn = el.querySelector('.slide-add-btn');
+        expect(addBtn).toBeTruthy();
+        // `+` 现渲染为 lucide:plus 图标（iconify-icon），不再用文本 textContent
+        expect(addBtn?.querySelector('iconify-icon')).toBeTruthy();
+        addBtn?.click();
+        expect(addClick).toHaveBeenCalledTimes(1);
+    });
+
+    it('folder 行生成含右箭头的 slide-item', () => {
+        const el = (menu as any).createRow({
+            kind: 'folder' as const,
+            label: '子菜单',
+            icon: 'folder',
+            target: 'sub',
+        });
+        expect(el.className).toContain('slide-item');
+        expect(el.querySelector('.slide-arrow')?.textContent).toBe('>');
+        expect(el.dataset.rowKey).toBe('folder:sub');
+    });
+
+    it('folder 行点击触发 onFolderEnter', () => {
+        const folderEnter = vi.fn(() => makeTestLevel('进入'));
+        (menu as any).onFolderEnter = folderEnter;
+        const el = (menu as any).createRow({
+            kind: 'folder' as const,
+            label: '子菜单',
+            icon: 'folder',
+            target: 'sub',
+        });
+        el.click();
+        expect(folderEnter).toHaveBeenCalledTimes(1);
+    });
+
+    it('folder 行带 headerToggle 生成折叠式行', () => {
+        const toggleChange = vi.fn();
+        const el = (menu as any).createRow({
+            kind: 'folder' as const,
+            label: '可折叠菜单',
+            icon: 'f',
+            target: 'coll',
+            headerToggle: {
+                value: true,
+                onChange: toggleChange,
+            },
+        });
+        // headerToggle 路径使用 collapsible-header
+        expect(el).toBeTruthy();
+        // el 是 slideRow wrapper 中的 firstChild
+        expect(el.className).toBe('collapsible-header');
+        expect(el.querySelector('.collapsible-label')?.textContent).toBe('可折叠菜单');
+    });
+
+    it('slider 行生成滑块控件 wrapper', () => {
+        const onChange = vi.fn();
+        const el = (menu as any).createRow({
+            kind: 'slider' as const,
+            label: '滑块',
+            icon: 'slider',
+            target: 'sl',
+            sliderValue: 0.5,
+            sliderMin: 0,
+            sliderMax: 1,
+            sliderStep: 0.1,
+            onSliderChange: onChange,
+        });
+        expect(el).toBeTruthy();
+        expect(el.dataset.rowKey).toBe('slider:sl');
+        // 内部有 cs-row 结构（由 addSliderRow 生成）
+        expect(el.querySelector('.cs-row') || el.querySelector('.cs-label')).toBeTruthy();
+    });
+
+    it('toggle 行生成开关控件 wrapper', () => {
+        const onChange = vi.fn();
+        const el = (menu as any).createRow({
+            kind: 'toggle' as const,
+            label: '开关',
+            icon: 'tog',
+            target: 'tg',
+            toggleValue: true,
+            onToggleChange: onChange,
+        });
+        expect(el).toBeTruthy();
+        expect(el.dataset.rowKey).toBe('toggle:tg');
+        // 内部有 toggle-row 结构
+        expect(el.querySelector('.toggle-row') || el.querySelector('.toggle-label')).toBeTruthy();
+    });
+
+    it('chips 行生成芯片组', () => {
+        const chipClick = vi.fn();
+        const el = (menu as any).createRow({
+            kind: 'chips' as const,
+            label: '芯片',
+            icon: '',
+            target: 'ch',
+            chips: [
+                { label: 'Chip A', active: true, onClick: chipClick },
+                { label: 'Chip B', active: false, onClick: chipClick },
+            ],
+        });
+        expect(el).toBeTruthy();
+        expect(el.className).toBe('preset-group');
+        const chips = el.querySelectorAll('.preset-chip');
+        expect(chips.length).toBe(2);
+        expect(chips[0].classList.contains('active')).toBe(true);
+        expect(chips[1].classList.contains('active')).toBe(false);
+        chips[1].click();
+        expect(chipClick).toHaveBeenCalledTimes(1);
+    });
+
+    it('鼠标悬停 action 行触发 onHover', () => {
+        const onHover = vi.fn();
+        (menu as any).onHover = onHover;
+        const el = (menu as any).createRow({
+            kind: 'action' as const,
+            label: '悬停测试',
+            icon: 'i',
+            target: 'h',
+            sublabel: '提示文本',
+        });
+        el.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+        expect(onHover).toHaveBeenCalledWith(expect.objectContaining({ label: '悬停测试' }), true);
+
+        el.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
+        expect(onHover).toHaveBeenCalledWith(expect.objectContaining({ label: '悬停测试' }), false);
+    });
+});

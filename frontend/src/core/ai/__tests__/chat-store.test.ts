@@ -33,10 +33,12 @@ import {
     deleteSession,
     getActiveId,
     setActiveId,
+    clearActiveId,
     newSessionId,
     deriveTitle,
     type ChatSessionFull,
 } from '../chat-store';
+import { idbSet } from '../../backend/idb';
 import type { ChatMessage } from '../types';
 
 function mkSession(id: string, updatedAt: number, msgs: ChatMessage[] = []): ChatSessionFull {
@@ -107,5 +109,35 @@ describe('chat-store', () => {
     it('deriveTitle 无 user 消息返回空串', () => {
         expect(deriveTitle([{ role: 'assistant', content: '你好' }])).toBe('');
         expect(deriveTitle([])).toBe('');
+    });
+
+    it('listSessions 跳过缺少 id 的腐败 meta 记录', async () => {
+        // 直接写入不含 id 的腐败 meta，模拟磁盘损坏/旧版残留
+        await idbSet('chats', 'meta:bad', { title: '无 id 的鬼影' });
+        await saveSession(mkSession('good', 100));
+        const list = await listSessions();
+        expect(list.map((s) => s.id)).toEqual(['good']);
+    });
+
+    it('loadSession 对 messages 非数组降级为空数组', async () => {
+        // meta 合法但 msgs 损坏为字符串（旧版/磁盘错误）
+        await idbSet('chats', 'meta:x', {
+            id: 'x',
+            title: '坏消息',
+            mode: 'chat',
+            createdAt: 1,
+            updatedAt: 2,
+        });
+        await idbSet('chats', 'msgs:x', 'not-an-array');
+        const loaded = await loadSession('x');
+        expect(loaded?.id).toBe('x');
+        expect(loaded?.messages).toEqual([]);
+    });
+
+    it('clearActiveId 清除 setActiveId 写入的指针', async () => {
+        await setActiveId('sess-1');
+        expect(await getActiveId()).toBe('sess-1');
+        await clearActiveId();
+        expect(await getActiveId()).toBeUndefined();
     });
 });
