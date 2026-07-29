@@ -1611,6 +1611,7 @@ export const zhTW: Record<string, string> = {
     'shortcuts.label.env': '環境',
     'shortcuts.label.settings': '設定',
     'shortcuts.label.plaza': '模型廣場',
+    'shortcuts.label.assistant': 'AI 助手',
     'shortcuts.label.arCamera': 'AR 相機',
     'shortcuts.label.playPause': '播放/暫停',
     'shortcuts.label.closePopup': '關閉彈窗',

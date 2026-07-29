@@ -1774,6 +1774,7 @@ export const zhCN: Record<string, string> = {
     'shortcuts.label.env': '环境',
     'shortcuts.label.settings': '设置',
     'shortcuts.label.plaza': '模型广场',
+    'shortcuts.label.assistant': 'AI 助手',
     'shortcuts.label.arCamera': 'AR 相机',
     'shortcuts.label.playPause': '播放/暂停',
     'shortcuts.label.closePopup': '关闭弹窗',

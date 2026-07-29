@@ -197,6 +197,12 @@ async function init(): Promise<void> {
             })
         );
         _initDisposables.push(
+            addDisposableListener(dom.btnAssistant, 'click', async () => {
+                const m = await import('../menus/assistant-panel');
+                toggleOverlay('sceneOverlay', m.showAssistant);
+            })
+        );
+        _initDisposables.push(
             addDisposableListener(dom.btnPlaza, 'click', () => {
                 const layer = document.getElementById('webviewLayer');
                 if (layer && layer.classList.contains('visible')) {

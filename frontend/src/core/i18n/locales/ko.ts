@@ -1632,6 +1632,7 @@ export const ko: Record<string, string> = {
     'shortcuts.label.env': '환경',
     'shortcuts.label.settings': '설정',
     'shortcuts.label.plaza': '모델 광장',
+    'shortcuts.label.assistant': 'AI 어시스턴트',
     'shortcuts.label.arCamera': 'AR 카메라',
     'shortcuts.label.playPause': '재생/일시 정지',
     'shortcuts.label.closePopup': '팝업 닫기',

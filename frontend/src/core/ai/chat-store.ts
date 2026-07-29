@@ -1,4 +1,4 @@
-// [doc:adr-202] AI 助手多会话历史存储 —— IndexedDB 'chats' store 封装。
+// [doc:adr-203] AI 助手多会话历史存储 —— IndexedDB 'chats' store 封装。
 //
 // 设计：
 // - 桌面（WebView2）与网页统一走 IndexedDB（项目已共用 backend/idb），不新增 Go binding、

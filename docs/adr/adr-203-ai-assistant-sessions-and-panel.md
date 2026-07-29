@@ -32,8 +32,9 @@ ADR-196 落地的 AI 诊断助手将对话历史（`_messages`）作为模块级
 ### 3. 主窗口内独立面板（不开新 WebView 窗口）
 - 新增 `frontend/src/menus/assistant-panel.ts`，用 `registerPopupMenu` 注册独立 overlay（`overlayClass: 'sceneOverlay-assistant'`，宽 `min(560px, 92vw)`、`max-height: 85vh`），复用 `settings-diagnostic.ts` 导出的 `renderDiagnosticPanel({ withSessions: true })`。
 - **不开新 WebView 窗口**：虽项目已有 Wails 多窗口先例（plaza 预热窗口），但独立窗口需新 Go binding + 跨窗口配置同步 + bundle 加载模式，复杂度高且违反「单一主应用」直觉；主窗口内独立 overlay 以最小代价满足「独立大界面」诉求。
-- 设置菜单 `SETTINGS.DIAGNOSTIC` 入口改为 `showAssistant()` 打开独立面板（保留发现性），不再作为设置子层。
-- 独立面板顶部含会话历史卡（`buildDiagnosticSchema({ withSessions: true })`）；设置无关的轻量入口不含。
+- AI 助手在底部导航栏占据独立按钮（`#btnAssistant`，键 8，Ctrl+8），与模型/动作/场景/环境/设置并列，覆盖 ADR-196 的 P4「操作路径深度」——核心功能单次点击可达。
+- 设置菜单不再含「AI 诊断助手」条目（`SETTINGS.DIAGNOSTIC` 枚举保留已备引用，folder/route 均移除）。
+- 独立面板顶部含会话历史卡（`buildDiagnosticSchema({ withSessions: true })`）。
 
 ## 覆盖 ADR-196 的既有决策
 
@@ -49,14 +50,21 @@ ADR-196 落地的 AI 诊断助手将对话历史（`_messages`）作为模块级
 - 新增 `core/ai/chat-store.ts`：`listSessions/loadSession/saveSession/deleteSession/getActiveId/setActiveId/newSessionId/deriveTitle` + 类型 `ChatSession/ChatSessionFull/ChatMode`。
 - `settings-diagnostic.ts`：新增会话状态（`_activeSessionId` 等）+ `_persistSession`（防抖）/`_flushSession`/`_loadActiveSession`/`_createSession`/`_switchSession`/`_deleteSessionAndAdjust`/`_renderSessionList`；接入发送/收尾/清空/关面板；`buildDiagnosticSchema` 加 `withSessions` 选项 + `export`；抽 `renderDiagnosticPanel`/`_disposeDiagnosticPanel` 供两入口复用。
 - 新增 `menus/assistant-panel.ts`：独立面板入口 `showAssistant`。
-- `settings.ts`：`settingsOnFolderEnter` 拦截 DIAGNOSTIC → 动态 import `showAssistant`。
+- `settings.ts`：移除 DIAGNOSTIC folder 项 + routes 表项 + 拦截逻辑。
 - `app.css`：`.sceneOverlay-assistant` 布局 + 对话框放宽 + 会话列表样式。
 - i18n 5 语言新增 `ai.chat.untitled/newSession/history/rename/delete/deleteConfirm`。
 - 测试：`chat-store.test.ts` 8 项（CRUD/排序/标题派生/降级）。
 - 验证：`tsc --noEmit` 0 错；前端 238 tests 通过；`npm run build:dev` 通过；`go build ./...` 通过（Go 未改，仅回归）。
 
+- `settings.ts`：移除 DIAGNOSTIC folder 项 + routes 表项 + 拦截逻辑。
+- 3×HTML + `dom.ts` + `init.ts`：新增独立 nav 按钮 `#btnAssistant` 并注册 click handler。
+- `events.ts`：`navActions[8]` 映射到 `showAssistant`，`buildNavMaps` 自动拾取 data-shortcut="8"。
+- `shortcut-app.ts`：注册 `toggle:assistant`（Ctrl+8）。
+- i18n 5 语言新增 `'shortcuts.label.assistant'`。
+- 验证：`tsc --noEmit` 0 错；全量 tests 通过；`check:docs` 无 ERROR。
+
 ## 假设与边界
 
 - 假设 WebView2 IndexedDB 配额足够存对话历史（纯文本，量小）；不做 LRU 淘汰（后续再议）。
 - 不做跨设备同步、不做云端存储、不新开 WebView 窗口。
-- HUD 快捷入口按钮暂未加（需配套 navLabels/图标/快捷键，作为后续发现性增强）；当前经设置菜单可达独立面板。
+- 底部导航栏 `#btnAssistant` 为发现性入口（图标 lucide:bot + 标签 "AI" + 快捷键 Ctrl+8），覆盖「HUD 快捷入口」需求。

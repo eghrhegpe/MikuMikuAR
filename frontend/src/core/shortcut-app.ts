@@ -114,6 +114,18 @@ export function registerAppShortcuts(): void {
             group: 'shortcuts.group.popupNav',
         },
         {
+            id: 'toggle:assistant',
+            label: 'shortcuts.label.assistant',
+            defaultKey: 'Digit8',
+            defaultCtrl: true,
+            prevent: true,
+            handler: () => {
+                navActions[8]();
+                setStatus(navLabels[8] || '', false);
+            },
+            group: 'shortcuts.group.popupNav',
+        },
+        {
             id: 'playback:toggle',
             label: 'shortcuts.label.playPause',
             defaultKey: 'Space',
