@@ -38,7 +38,7 @@ import { speakLines, cancelSpeech } from '../core/ai/dialogue-speech';
 import { getAction } from '../core/action-registry';
 import { showConfirm } from '../core/dialog';
 import { showErrorToast } from '../core/toast';
-import { logWarn } from '../core/logger';
+import { logWarn, logInfo } from '../core/logger';
 import { DebouncedTimer } from '../core/async';
 import { goKeyAllowsProceed } from '../core/ai/go-key-allows-proceed';
 
@@ -806,6 +806,32 @@ function _renderChat(): void {
     _chatContainer.scrollTop = _chatContainer.scrollHeight;
 }
 
+/** 显示"等待响应中"占位气泡：streaming 发起后立即调用，给用户即时反馈，
+ *  避免请求耗时长时界面完全无动静。收到首个文本 chunk 时由 _renderStreamingChunk
+ *  复用同一行（复用 chat-row--streaming）覆盖占位文本。 */
+function _showPendingBubble(): void {
+    if (!_chatContainer) {
+        return;
+    }
+    // 已有 streaming 行则不重复插入
+    if (_chatContainer.querySelector('.chat-row--streaming')) {
+        return;
+    }
+    const row = document.createElement('div');
+    row.className = 'diag-chat-row chat-row--streaming chat-row--assistant';
+    row.dataset.pending = 'true';
+    const label = document.createElement('strong');
+    label.textContent = t('ai.chat.assistant');
+    label.className = 'diag-chat-label';
+    row.appendChild(label);
+    const content = document.createElement('div');
+    content.textContent = t('ai.chat.thinking');
+    content.className = 'diag-chat-content diag-chat-pending';
+    row.appendChild(content);
+    _chatContainer.appendChild(row);
+    _chatContainer.scrollTop = _chatContainer.scrollHeight;
+}
+
 function _renderStreamingChunk(chunk: ChatChunk): void {
     if (!_chatContainer) {
         return;
@@ -825,6 +851,15 @@ function _renderStreamingChunk(chunk: ChatChunk): void {
             row.appendChild(content);
             _chatContainer.appendChild(row);
             lastRow = row;
+        } else if ((lastRow as HTMLElement).dataset.pending === 'true') {
+            // 复用占位气泡：清除 pending 标记与占位文本/样式，转为真实流式内容。
+            const el = lastRow as HTMLElement;
+            delete el.dataset.pending;
+            const pendingContent = el.querySelector('.diag-chat-pending') as HTMLElement | null;
+            if (pendingContent) {
+                pendingContent.textContent = '';
+                pendingContent.classList.remove('diag-chat-pending');
+            }
         }
         const contentDiv = lastRow.querySelector('div:last-child') as HTMLElement;
         if (contentDiv) {
@@ -955,6 +990,10 @@ async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
     _isStreaming = true;
     _updateSendButton();
     _abortController = new AbortController();
+
+    // 立即给出"思考中"占位反馈：请求可能耗时数秒到数十秒，界面不能无动静。
+    _showPendingBubble();
+    logInfo('ai-stream', `发送消息 mode=${_mode} allowTools=${allowTools} 历史条数=${_messages.length}`);
 
     const systemMessage = _buildSystemMessage();
     const chatMessages: ChatMessage[] = _pruneHistory([systemMessage, ..._messages]);

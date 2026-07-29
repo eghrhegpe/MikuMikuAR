@@ -19,7 +19,7 @@ import { translateGoError } from './i18n/goerr';
 import { registerIconBundle } from './icons-bundle';
 import { initI18n } from './i18n/locale';
 import { GetConfig, CheckForUpdate, GetSystemA11ySettings } from './wails-bindings';
-import { events } from './runtime-bridge';
+import { events, initRuntimeBridge } from './runtime-bridge';
 import { isAndroidPlatform, isWebPlatform } from './platform';
 import { getCapabilities, resolveBackend } from './backend';
 import { generateTextColors } from '../menus/settings';
@@ -117,6 +117,10 @@ async function init(): Promise<void> {
         // 注册本地图标 bundle，使 iconify 离线可用
         registerIconBundle();
         initI18n(); // [doc:adr-059] 在菜单渲染前确定语言并同步 <html lang>
+        // 桌面/Android 侧强制加载 @wailsio/runtime 并绑定 events 实例，必须先于任何
+        // events.on(...) 订阅——否则 events 回落到 no-op WebEvents，Wails 后端事件
+        // （ai:chunk/ai:done/ai:error、android:* 等）全部收不到，AI 流式会永久挂起。
+        await initRuntimeBridge();
         // [doc:adr-196] 启动早期安装 AI 诊断上下文采集：先 patch console.error 使所有
         // console.error（含 @/core/logger 的 logError）自动入环，再注册全局未捕获异常监听。
         // disposer 纳入 _initDisposables，HMR 重跑 init 时幂等清理旧监听器、重新安装。
