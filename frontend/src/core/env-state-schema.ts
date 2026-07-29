@@ -49,7 +49,8 @@ export const ENV_STATE_SCHEMA = {
 
     // --- Ground ---
     groundVisible: { type: 'boolean', default: true, group: 'ground' },
-    // 当前生效的地面预设 key（顶部 chips 高亮判据）；用户手动微调任一 ground 字段时重置为 'custom'
+    // 当前生效的地面预设 key（顶部 chips 高亮判据）；用户手动微调任一 ground 字段时重置为 'custom'。
+    // 无 group：纯 UI 标记，不得进 _GROUND_KEYS 驱动 applyGround 重渲染（参照 _WATER_KEYS 教训）。
     groundPreset: {
         type: 'enum',
         values: [
@@ -63,7 +64,6 @@ export const ENV_STATE_SCHEMA = {
             'metalStage',
         ] as const,
         default: 'custom' as const,
-        group: 'ground',
     },
     groundType: {
         type: 'enum',

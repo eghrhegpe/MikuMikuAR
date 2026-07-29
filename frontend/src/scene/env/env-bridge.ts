@@ -12,6 +12,7 @@ import { ENV_LIGHT_MAX } from '@/core/ui-constants';
 import { col3FromTriple } from '@/core/color-helpers';
 import { deriveLighting } from './env-lighting';
 import { dispatchEnvChange } from './env-dispatcher';
+import { GROUND_PRESET_KEYS } from './env-ground-presets';
 import {
     setLightState,
     getLightState,
@@ -266,8 +267,9 @@ registerEnvStateMiddleware({
     },
 });
 
-// 用户手动微调任一 ground 字段（且本次未显式指定 groundPreset）→ 脱离预设，重置为 'custom'。
-// 预设点击会同时带 groundPreset，故不会被误清；无关字段的 set 也不触发（仅检测 ground* 字段）。
+// 用户手动微调预设关心的任一 ground 字段（且本次未显式指定 groundPreset）→ 脱离预设，重置为 'custom'。
+// 预设点击会同时带 groundPreset，故不会被误清；用 GROUND_PRESET_KEYS 精确白名单而非前缀匹配，
+// 避免碰撞/无限/滚动/地形等「预设不管的字段」被改时误清预设标记（参照 _WATER_KEYS 精确清单教训）。
 registerEnvStateMiddleware({
     name: 'resetGroundPresetOnManualEdit',
     phase: 'pre-facade',
@@ -275,10 +277,8 @@ registerEnvStateMiddleware({
         if (migrated.groundPreset !== undefined) {
             return;
         }
-        const touchedGround = Object.keys(migrated).some(
-            (k) => k.startsWith('ground') && k !== 'groundVisible'
-        );
-        if (touchedGround && envState.groundPreset !== 'custom') {
+        const touchedPreset = GROUND_PRESET_KEYS.some((k) => migrated[k] !== undefined);
+        if (touchedPreset && envState.groundPreset !== 'custom') {
             envState.groundPreset = 'custom';
             migrated.groundPreset = 'custom';
         }

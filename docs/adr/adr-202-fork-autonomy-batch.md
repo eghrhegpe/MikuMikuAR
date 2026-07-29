@@ -119,12 +119,11 @@
 
 ## 五、待办
 
-1. ~~P0 拍板~~ ✅ 已定：vendored 方案落地，真机风力起效。
-2. **CI 干净验证**（🔴 待做）：跑一次完整 `npm ci` 坐实 postinstall 在干净重装后自动注入 spr/mpr（当前仅手动跑脚本验证）。
-3. **P2 搭车**（🟡）：`StreamAudioPlayer` 加 `get audio()` ——纯 TS `build-esm`，下次 fork 改动时搭车，消除条目 9 的 `_audio` 反射。
-4. **P2 搭车（D 类，ADR-192 审核补遗）**（🟡）：
-   - `MmdWasmPhysicsRuntimeImpl` 加 `isDisposed` 标志 + 方法 no-op 守卫 → 删 virtual-skirt/ground-collision 的 try/catch 兜底。
-   - `addRigidBody`/`addConstraint` 失败抛异常 → 删 virtual-skirt 调用方手动 boolean 检查。
-   两项均纯 TS `build-esm`，与条目 9 同批搭车，消除"开了但裙摆不动"的不可控失效根源。
-5. **`MODEL_WIND_FORCE_SCALE` 标定**（🟢）：现风力已起效，按实测摆幅调系数。
-6. **vendor/fork 漂移防护**（🟡）：fork 每次改 wasm 后必须重拷 vendor，否则两者静默不一致。
+| # | 待办 | 状态 | 备注 |
+|---|------|------|------|
+| 1 | P0 拍板 | ✅ | vendored 方案落地，真机风力起效 |
+| 2 | CI 干净验证 | ✅ | 完整 `npm ci`（清残留 node/esbuild 僵尸后重跑）已坐实：postinstall 自动注入 spr/mpr，`vendored-patch.test.ts` 3 断言钉结实 patch 生效（含负向验证） |
+| 3 | P2 搭车（条目9 audio） | ✅ | fork `0b54302`（`get audio()`）+ app 4 文件（postinstall patch / mmd-adapter / 两个测试 mock）+ 守护测试；2400 单测全绿 |
+| 4 | P2 搭车（D 类，ADR-192 审核补遗） | 🟡 fork 已储备 / app 暂缓 | **`isDisposed` 守卫**：fork 侧 getter 已加（技术储备）；app 暂不 patch——virtual-skirt/ground-collision 已通过返回 false 降级，无反射 `isDisposed` 的代码，patch 进去是死代码，等将来 setup 前需主动探测 disposed 时再扩展 postinstall。**"失败抛异常"**：经评估不适用——app 已降级，fork 改抛异常反而破坏 app 的降级契约，不做。 |
+| 5 | `MODEL_WIND_FORCE_SCALE` 标定 | 🟢 待真机 | 风力已起效，按实测摆幅调系数 |
+| 6 | vendor/fork 漂移防护 | 🟡 待探明 | fork 每次改 wasm 后必须重拷 vendor，否则两者静默不一致；`vendored-patch.test.ts` 已部分缓解（锚点漂移会报红） |
