@@ -113,14 +113,15 @@ L1/L2 均为 Vitest，通过**文件命名后缀**区分：L2 使用 `*.int.test
 
 > **P3 补充实施记录（2026-07-29 续拆 model-detail-ui）**：`model-detail-ui.test.ts`（536 行 / 13 用例 / ~45 处 `vi.mock`）拆为 3 个 `model-detail-ui.*.test.ts`（model 4 / info 4 / tags-morph 5）+ `model-detail-ui-mocks.ts`（仅补 `model-preset-mocks.ts` 未覆盖的缺口：ShadowGenerator/粒子/GridMaterial/纹理三件套 + 应用模块桩 scene/scene-menu/outfit/lipsync/procedural-motion/beat-detector/audio）+ `model-detail-ui-helpers.ts`（`fakeMesh`/`createModel`/`cleanup`/`hasRenderCustom` 纯 fixture）。关键点：① **通用 Babylon/babylon-mmd 工厂直接复用 `model-preset-mocks.ts`**（Engine/Scene/灯光/相机/数学/材质/网格/加载器等 28 个），mocks 文件不重复造轮子——后续拆同类 scene 依赖测试照此复用；② 原文件 `mockModelManager` 经 `vi.hoisted` 定义、scene mock 用 getter 引用，拆分后改为 mocks 文件普通 `const` 单例（imported 绑定，`() => mockSceneScene()` 延迟调用时已就绪），`cleanup()` 在每文件 `beforeEach` 里 `mockReset` 其 `get`；③ SUT（`../menus/model-detail`）静态 import 置于 helpers/mocks 之后（audio 拆分发现的 TDZ 变体）。验收：13 用例守恒、全量 0 failed、单文件 ≤~230 行。
 
-> **P3 剩余 backlog（2026-07-29，续拆 model-detail-ui 后）**：上帝文件已拆 **17 个**，剩余 >500 行上帝文件 **4 个（约 2870 行）**，按风险排序：
+> **P3 补充实施记录（2026-07-29 续拆 camera.adr100）**：`camera.adr100.test.ts`（523 行 / 14 用例 / 9 个 `vi.hoisted` Mock 类 + SUT 经 `beforeAll` 动态 `vi.importActual('../scene/camera/camera')` 加载）拆为 2 个 `camera.adr100.*.test.ts`（serialization 7 / guards 7）+ `camera-adr100-mocks.ts`（Mock 类 + `mockUiState`/`mockPBD` 共享状态 + 4 个模块工厂）。关键点：① 原文件的 `vi.hoisted` Mock 类**降级为普通导出类**——因 SUT 是动态 `vi.importActual` 加载，`vi.mock` 工厂延迟到 beforeAll 时才执行，imported 绑定彼时已就绪，无需 hoisted（与 model-ops 的 `modelOpsShared` 同理）；② 这些 Mock 类为 camera SUT 定制（`setTarget` 拷贝语义、`_panningMouseButton` 等），不并入通用 `mocks/babylon-classes`；③ 两文件各自保留 `beforeAll` 加载 SUT + `setSyncAxesCallback` 装配 + `beforeEach` 复位序（preset/fov/autoCam/uiState/clearAllMocks）。验收：14 用例守恒、全量 0 failed、单文件 ≤~180 行。
+
+> **P3 剩余 backlog（2026-07-29，续拆 camera.adr100 后）**：上帝文件已拆 **18 个**，剩余 >500 行上帝文件 **3 个（约 2350 行）**，均为契约/perf 性质，需单独评估：
 
 | 文件 | 行 | 拆分建议 |
 |------|-----|----------|
 | `physics-contract.test.ts` | 961 | 契约测试，拆分需谨慎（验证 WASM/Bullet 契约） |
 | `perception.perf.test.ts` | 741 | perf 基准，可能刻意整体保留 |
 | `bindings/app.contract.test.ts` | 646 | 契约测试，AGENTS 指定校验入口 |
-| `camera.adr100.test.ts` | 523 | 可拆 |
 
 > **P3 标准拆分配方（已跨 12 个文件验证）**：① `vi.mock` 工厂收敛进 `*-mocks.ts` 同步导出，Mock 类静态 `import`，禁用 `vi.importActual` 包裹（hoist 期 `__vi_import_X__ not initialized`）；② 跨用例共享状态用普通 `const shared` 单例（imported 绑定），`vi.mock` 工厂直接引用它——**禁止引用局部 const 或 `vi.hoisted` 内调用 import 函数（两类 TDZ）**；③ `vi.resetModules()`+动态 `import` 取 fresh SUT 的场景（如 proc-motion-bridge）：每文件本地 `const s = createX()`，工厂以参数接收；④ DOM 预建（`config` 顶层读 DOM）保留各文件自包含内联 `vi.hoisted(() => createElement...)`；⑤ 每文件 `beforeEach` 复位 `shared` + config setters，复刻原 `resetAll`；⑥ 提交前 `npx vitest run <dir>` 验用例守恒 + `npm run check:docs`。
 
