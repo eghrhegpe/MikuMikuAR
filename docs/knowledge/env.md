@@ -6,6 +6,32 @@ scope:
   - frontend/src/scene/env/env.ts
 source_files:
   - frontend/src/scene/env/env.ts
+symbols:
+  - initEnvFacade
+  - applyEnvState
+  - applySky
+  - applyGround
+  - createWater
+  - disposeWater
+  - createClouds
+  - disposeClouds
+  - startTimeOfDay
+  - stopTimeOfDay
+  - isTimeOfDayActive
+  - getTimeOfDaySpeed
+  - setTimeOfDaySpeed
+  - addRipple
+  - createParticleEmitter
+invariants:
+  - 外部禁止直接 import env-impl/env-bridge 内部符号，统一走本门面
+  - initEnvFacade 由 scene.ts 调用一次，全部委托给 env-impl
+  - Time-of-Day 实际使用 env-bridge 的 observer 实现，经本模块透传
+  - applyEnvState 为批量应用入口，遍历 envState 依次调度 applySky/applyGround 等
+tests: []
+use_when:
+  - 环境系统
+  - 环境门面
+  - env facade
 ---
 
 ## 系统概览

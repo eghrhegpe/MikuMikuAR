@@ -8,6 +8,25 @@ source_files:
   - frontend/src/scene/render/lighting-state.ts
 adr:
   - ADR-159
+symbols:
+  - lightingState
+  - LightingStateValues
+  - StageLightEntry
+  - LightingTween
+  - SHADOW_REBUILD_KEYS
+  - CONE_UPDATE_KEYS
+  - SUN_DISC_DISTANCE
+  - SUN_DISC_MIN_INTENSITY
+invariants:
+  - 所有灯光子模块（stage/shadow/sun/tween/follow/cone）共享此单例，消除跨文件幽灵状态
+  - 属性可变、无绑定重赋值问题，子文件一律通过 lightingState.xxx 访问
+  - SHADOW_REBUILD_KEYS / CONE_UPDATE_KEYS 为 Set 常量，避免每次 setStageLightState 重建 Set
+tests: []
+use_when:
+  - 灯光状态
+  - lightingState
+  - 舞台灯光
+  - 阴影键
 ---
 
 ## 系统概览

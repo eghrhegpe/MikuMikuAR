@@ -8,6 +8,14 @@ source_files:
   - frontend/src/menus/plaza-creators.ts
 adr:
   - ADR-087
+symbols:
+  - PlazaCreator
+invariants:
+  - PLAZA_CREATORS 当前为空列表，预留供后续填充
+tests: []
+use_when:
+  - 创作者列表
+  - 模型广场创作者
 ---
 
 ## 系统概览

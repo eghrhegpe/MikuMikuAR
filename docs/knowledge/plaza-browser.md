@@ -9,12 +9,25 @@ source_files:
 adr:
   - ADR-087
 symbols:
-  - openPlaza
-  - closePlaza
-  - PlazaSite
-  - buildPlazaLevel
+  - showPlaza
+  - buildSiteTabs
+  - renderSiteContent
+  - renderHome
+  - renderEmbed
+  - buildToolbar
+  - showActionsMenu
+  - normalizeSite
+  - normalizeCreator
+  - loadCustomSites
+  - ensureSitesLoaded
+  - openSiteByMode
+  - openExternal
+  - openInWindow
+  - mergeSites
 invariants:
-  - 广场浏览器核心（~34KB/29 导出）
+  - 广场状态集中在 plaza-state.ts，不分散到各子模块
+  - showPlaza 为统一打开入口，closePlaza 在 plaza-state.ts 中
+  - 自定义站点经 loadCustomSites / savePlazaCache 持久化
 tests: []
 use_when:
   - 模型广场
@@ -32,10 +45,11 @@ use_when:
 - `plaza-browser.ts` — 广场浏览器 UI 构建、站点管理、搜索、渲染。
 
 ## 对外 API（节选）
-- `openPlaza()` — 打开广场浏览器。
-- `closePlaza()` — 关闭广场浏览器。
-- `interface PlazaSite` — 广场站点描述。
-- `buildPlazaLevel()` — 构建广场层级。
+- `showPlaza()` — 打开广场浏览器。
+- `buildSiteTabs()` — 构建站点标签页。
+- `renderSiteContent()` — 渲染站点内容。
+- `renderHome()` / `renderEmbed()` — 首页/嵌入式渲染。
+- `buildToolbar()` / `showActionsMenu()` — 工具栏与操作菜单。
 
 ## 与其他子系统关系
 - 广场状态：`./plaza-state.ts`。
@@ -46,4 +60,4 @@ use_when:
 
 ## 不变量
 - 广场状态在 `plaza-state.ts` 中管理，不分散到各子模块。
-- 广场打开/关闭通过 `openPlaza` / `closePlaza` 统一控制。
+- 广场打开/关闭通过 `showPlaza` / `closePlaza` 统一控制。

@@ -9,12 +9,23 @@ source_files:
 adr:
   - ADR-087
 symbols:
-  - PlazaState
   - closePlaza
   - setAllSites
-  - setLayer
+  - setAllCreators
+  - setCurrentSiteId
+  - getCurrentSite
+  - getLayer
+  - loadGlobalMode
+  - saveGlobalMode
+  - effectiveMode
+  - setPlazaProxyActive
+  - setObserver
+  - setPlazaIframe
+  - stopProxy
 invariants:
-  - 被 plaza-browser/plaza-download/events/init 引用（约 5 次）
+  - 广场状态在关闭时重置为初始值
+  - 站点列表变更时通知 plaza-browser 重渲染
+  - 打开/关闭通过 closePlaza 统一控制，open 在 plaza-browser.showPlaza
 tests: []
 use_when:
   - 广场状态

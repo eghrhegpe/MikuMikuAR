@@ -18,6 +18,11 @@ symbols:
   - transformWorldToRootLocal
   - getBoneWorldMatrix
   - switchAnimation
+  - getRigidBodyMap
+  - applyForceToModelRigidBodies
+  - applyForceToModelRigidBodiesNative
+  - solveIkNative
+  - applyWindForceToModelRigidBodiesNative
 invariants:
   - 本模块是联邦接触 babylon-mmd 私有/未公开字段的唯一适配边界
   - 所有对 babylon-mmd 私有字段的反射访问集中在此，不散落多个业务文件

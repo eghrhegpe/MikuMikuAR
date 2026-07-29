@@ -9,6 +9,24 @@ source_files:
 adr:
   - ADR-084
   - ADR-081
+symbols:
+  - VirtualSkirtController
+  - resolveVirtualSkirtQuality
+  - localToWorld
+  - worldDeltaToLocal
+  - QUALITY_PRESETS
+invariants:
+  - 不被 scene.ts 启动期 eager 导入，仅由用户显式开启虚拟裙骨时按需 await import()
+  - build 中途异常时安全释放半初始化资源，通过 addRigidBody/addConstraint 返回 false 时 logWarn+dispose+return false
+  - 坐标转换纯函数 localToWorld / worldDeltaToLocal 处理 WASM 世界坐标↔mesh 局部顶点
+  - 使用专用 worldId（不与 PMX 刚体同 world，规避坐标系/碰撞干扰）
+  - dispose 每项独立 try/catch（impl 可能已被 WASM runtime 销毁），移除失败 logWarn 不阻断后续
+tests: []
+use_when:
+  - 虚拟裙骨
+  - 物理裙摆
+  - Bullet 弹簧链
+  - skirt analyzer
 ---
 
 ## 系统概览

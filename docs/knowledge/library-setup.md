@@ -13,6 +13,8 @@ symbols:
   - selectOverridePath
   - switchStorageMode
   - rescanAndSync
+  - reloadConfig
+  - refreshLibrary
 invariants:
   - 初始化在应用启动时执行
 tests: []
