@@ -14,6 +14,9 @@ symbols:
   - loadAiConfig
   - saveAiConfig
   - ensureAiConfigLoaded
+  - normalizeEndpoint
+  - validateAiConfig
+  - classifyAiError
 invariants:
   - 仅服务浏览器适配器；桌面端配置由 Go 侧持有，前端不暴露 key
   - 默认零 key 路径：本地 Ollama（http://localhost:11434/v1/chat/completions，model llama3.2）

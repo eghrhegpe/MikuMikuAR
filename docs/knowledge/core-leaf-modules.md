@@ -29,6 +29,7 @@ symbols:
   - LoadingGuard
   - DebouncedTimer
   - Abortable
+  - makeLazyLoader
   - clamp
   - clamp01
   - clampInt
@@ -45,7 +46,7 @@ symbols:
   - isStageLike
   - setKey
 invariants:
-  - 所有模块为零依赖叶，不引入 dom/state/fileservice/status-bar/i18n/feedback/menus/logger 等应用层
+  - 所有模块不引入 dom/state/fileservice/status-bar/i18n/feedback/menus 等应用层；async.ts 仅依赖同属叶层的 logger
   - 从这些模块导入不会拖起应用层，避免 vitest fork worker 挂死（ADR-191）
   - normPath 有缓存机制，缓存上限 5000 条目
   - 禁止从 @/core/utils 神桶导入这些模块——纯模块应直接引用本叶

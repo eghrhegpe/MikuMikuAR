@@ -15,6 +15,9 @@ symbols:
   - installLoggingPatch
   - uninstallLoggingPatch
   - installGlobalErrorCapture
+  - installErrorCaptureOn
+  - getErrors
+  - clearErrors
   - toDiagnosticContext
 invariants:
   - ErrorRingBuffer 容量必须为正整数（构造期校验），默认单例容量 50

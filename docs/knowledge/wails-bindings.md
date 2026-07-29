@@ -8,6 +8,20 @@ source_files:
   - frontend/src/core/wails-bindings.ts
 adr:
   - ADR-176
+symbols:
+  - readFileBytes
+  - _p
+invariants:
+  - 禁止在此新增绕过 resolveBackend 的直连导出（Android 冷启动竞态，ADR-176）
+  - go-adapter 直连 @bindings（不经本文件），无循环依赖
+  - 本地具名导出优先于 export *（ESM 规则覆盖星号透传）
+  - 每个代理 _p(name) 先 await resolveBackend() 再转发，绑定函数全部返回 Promise
+tests: []
+use_when:
+  - 后端绑定
+  - 后端代理
+  - resolveBackend
+  - Wails bindings
 ---
 
 ## 系统概览

@@ -6,6 +6,30 @@ scope:
   - frontend/src/scene/render/renderer.ts
 source_files:
   - frontend/src/scene/render/renderer.ts
+symbols:
+  - initRenderer
+  - disposeRenderer
+  - isRendererReady
+  - getRenderState
+  - setRenderState
+  - defaultRenderState
+  - transitionRenderState
+  - reattachPipeline
+  - isSSRActive
+  - setSSRFromReflection
+  - rebuildOutlineState
+  - registerCelGroundCoupling
+invariants:
+  - disposeRenderer 级联释放 DefaultRenderingPipeline / 后处理 / GlowLayer / 模块级 observer
+  - RenderState 通过 setRenderState patch 合并，而非整体替换
+  - SSR / SSAO / bloom 等后处理在 pipeline 重建后重新附着（reattachPipeline）
+  - 接触阴影与 cel-ground 通过 registerCelGroundCoupling 解耦，由 env-bridge 注入
+tests: []
+use_when:
+  - 渲染管线
+  - 后处理
+  - tone mapping
+  - SSR / SSAO
 ---
 
 ## 系统概览

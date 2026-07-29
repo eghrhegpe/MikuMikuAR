@@ -8,6 +8,29 @@ source_files:
   - frontend/src/scene/render/performance.ts
 adr:
   - ADR-159
+symbols:
+  - registerRenderBridge
+  - updatePerformance
+  - getPerfRenderScaleMul
+  - recalcPerformanceReference
+  - setPerformanceMode
+  - getPerformanceMode
+  - getCurrentDegradeLevel
+  - resetPerformanceSnapshot
+  - isSnapshotResetSuppressed
+  - RenderBridge
+  - PerformanceMode
+invariants:
+  - bridge 未就绪时各成员为安全默认，避免未初始化时调用崩溃
+  - 自动降级按 DegradeLevel 阶梯（0-3），低帧率时经 bridge 调 setRenderState / setLightState
+  - getPerfRenderScaleMul（Level 2/3 时降至 0.7）被 render-loop 用于 applyScaling
+  - resetPerformanceSnapshot 被 renderer/lighting 引用，确保降级前后状态一致
+tests: []
+use_when:
+  - FPS 监控
+  - 自动降级
+  - 性能模式
+  - RenderBridge
 ---
 
 ## 系统概览

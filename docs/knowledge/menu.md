@@ -6,6 +6,22 @@ scope:
   - frontend/src/menus/menu.ts
 source_files:
   - frontend/src/menus/menu.ts
+symbols:
+  - SlideMenu
+  - getCurrentRenderingMenu
+  - getOpenMenus
+invariants:
+  - dispose 必须释放 keydown / 触摸监听器 / 未决 timeout，杜绝 HMR 与多次开关的监听器泄漏
+  - 过渡期间 transitioning 锁防止动画竞态
+  - RAF 去抖 _reRenderPending 避免连续 reRender 重复构建面板
+  - 键盘导航经 data-nav-* 标记统一处理（ui-nav-item.ts 契约），menu.ts 只认标记不靠类名枚举
+  - 控件自动注册：ui-helpers 控件函数通过 getCurrentRenderingMenu() 获取当前菜单实例
+tests: []
+use_when:
+  - 菜单引擎
+  - SlideMenu
+  - 弹窗菜单
+  - 键盘导航
 ---
 
 ## 系统概览
