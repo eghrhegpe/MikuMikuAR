@@ -71,7 +71,7 @@ let _isStreaming = false;
 let _abortController: AbortController | null = null;
 let _mode: DiagMode = 'diagnostic';
 
-// [doc:adr-202] 多会话持久化状态
+// [doc:adr-203] 多会话持久化状态
 let _activeSessionId: string | null = null;
 let _sessionCreatedAt = 0;
 /** 会话历史加载完成前避免持久化空会话覆盖磁盘。 */
@@ -190,7 +190,7 @@ function _addAssistantMessage(text: string): void {
     _messages.push({ role: 'assistant', content: text });
 }
 
-// ======== [doc:adr-202] 会话持久化 ========
+// ======== [doc:adr-203] 会话持久化 ========
 
 const _persistTimer = new DebouncedTimer();
 
@@ -1158,7 +1158,7 @@ function _finalizeStreamRow(fullText: string): void {
 function _finalizeStream(fullText: string): void {
     if (fullText) {
         _messages.push({ role: 'assistant', content: fullText });
-        _persistSession(); // [doc:adr-202] 一轮完成后持久化会话
+        _persistSession(); // [doc:adr-203] 一轮完成后持久化会话
     }
     _isStreaming = false;
     _abortController = null;
@@ -1769,7 +1769,7 @@ async function _sendMessage(): Promise<void> {
 
     _messages.push({ role: 'user', content: text });
     _inputEl.value = '';
-    _persistSession(); // [doc:adr-202] 用户消息发出即持久化
+    _persistSession(); // [doc:adr-203] 用户消息发出即持久化
     _renderChat();
 
     await _runStream();
@@ -2316,7 +2316,7 @@ function _renderConfigCard(c: HTMLElement): void {
 
 export function buildDiagnosticSchema(opts?: { withSessions?: boolean }): MenuNode[] {
     const nodes: MenuNode[] = [];
-    // [doc:adr-202] 独立面板顶部展示会话历史卡；设置菜单内入口不含（保持轻量）。
+    // [doc:adr-203] 独立面板顶部展示会话历史卡；设置菜单内入口不含（保持轻量）。
     if (opts?.withSessions) {
         nodes.push({
             id: 'diagnostic:sessions-card',
@@ -2390,7 +2390,7 @@ function _disposeDiagnosticPanel(): void {
         _localConfig.apiKey = _configApiKey.value;
     }
     void _doSaveConfig();
-    // [doc:adr-202] flush 会话到 IndexedDB，关面板不再清空 _messages（重开恢复）。
+    // [doc:adr-203] flush 会话到 IndexedDB，关面板不再清空 _messages（重开恢复）。
     void _flushSession();
     // 会话内容（_messages/_mode/_activeSessionId）保留在内存，重开面板直接复用；
     // 磁盘已由 _flushSession 落盘。仅重置瞬态运行状态。

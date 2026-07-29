@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { SlideMenu } from '../../menus/menu';
+import type { PopupLevel } from '../../core/config';
 import { makeTestLevel, makeTestMenu } from '../fixtures/menu';
 
 // ─── SlideMenu 测试：层级栈管理 + 渲染 ─────────────────────────────

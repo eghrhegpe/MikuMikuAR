@@ -8,6 +8,8 @@ import { adaptParam } from './ai/param-adapters';
 export interface ActionResult {
     success: boolean;
     message: string;
+    /** 只读工具的执行结果结构化数据（ADR-205），供诊断上下文注入 */
+    data?: unknown;
 }
 
 export async function executeActionById(

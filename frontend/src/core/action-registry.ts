@@ -39,6 +39,8 @@ export interface ActionDef {
     execute: (params: Record<string, unknown>) => void | Promise<void>;
     /** 是否为破坏性操作（清除/删除等），由调用方决定是否 showConfirm */
     destructive?: boolean;
+    /** 只读操作（读取状态/日志/快照），自动执行跳过 pending 确认队列（ADR-205） */
+    readonly?: boolean;
 }
 
 /** 注册表内部存储 */
