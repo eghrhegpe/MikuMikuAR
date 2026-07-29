@@ -597,6 +597,20 @@ async function _initMotionSubsystems(scene: Scene, modelManager: ModelManager): 
         return inst?.mmdModel?.runtimeBones ?? [];
     }, scene);
 
+    // [ADR-202 A-class] WASM IK 重解回调注入
+    // 在 WASM 模式下，applyBoneOverrideIK 通过此回调调用 mmdModelSolveIk 导出重解 IK。
+    // mmdRuntime 是 @/core/config 的 live binding（setMmdRuntime 后即指向当前运行时实例；
+    // HMR 重入时 stopBoneOverride 清除旧 resolver，_initMmdRuntime 设新 mmdRuntime 后重注）。
+    const { setWasmIkResolver } = await import('./motion/bone-override');
+    const { solveIkNative, getPhysicsImpl } = await import('@/core/mmd-adapter');
+    setWasmIkResolver((modelId: string, ikSolverIndex: number, usePhysics: boolean) => {
+        const inst = modelRegistry.get(modelId);
+        if (!inst?.mmdModel) return;
+        const impl = getPhysicsImpl(mmdRuntime);
+        if (!impl) return;
+        solveIkNative(impl.wasmInstance, inst.mmdModel, ikSolverIndex, usePhysics);
+    });
+
     // [doc:adr-116] 9. Motion Override Modules 注册（主初始化路径）
     // 必须在 focusModel 可能被调用之前完成；registry 内 setTargetModel/createModule 也有幂等兜底
     const { initMotionModules } = await import('./motion/motion-modules/registry');
