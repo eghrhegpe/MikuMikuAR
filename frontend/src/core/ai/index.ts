@@ -12,7 +12,7 @@
 
 import type { AiService } from './types';
 import { browserAiAdapter } from './browser-adapter';
-import { awaitWailsBridge } from '../platform';
+import { awaitWailsBridge, isWebEntryMode, readDeclaredAdapter } from '../platform';
 
 // go-adapter 动态加载：web 入口短路路径完全不拉进 bundle，
 // 避免把 Go 侧 Wails 调用链带入纯浏览器构建。桌面/安卓路径首次调用时按需加载。
@@ -28,21 +28,6 @@ async function _getGoAdapter(): Promise<AiService> {
 let _resolved: AiService | null = null;
 let _resolving: Promise<AiService> | null = null;
 
-/** Tier 0：入口 HTML 显式声明的 AI 后端身份（权威、不可被 window.wails 存在性覆盖）。 */
-function _declaredBackend(): 'go' | 'browser' | undefined {
-    const v = (globalThis as { __MMKU_AI_BACKEND__?: unknown }).__MMKU_AI_BACKEND__;
-    return v === 'go' || v === 'browser' ? v : undefined;
-}
-
-/** Tier 1：旧 web 短路标记 / 构建模式。 */
-function _isWebEntry(): boolean {
-    if ((globalThis as { __MMKU_WEB__?: boolean }).__MMKU_WEB__ === true) {
-        return true;
-    }
-    const meta = import.meta as unknown as { env?: { MODE?: string } };
-    return meta.env?.MODE === 'web';
-}
-
 export function resolveAi(): Promise<AiService> {
     if (_resolved) {
         return Promise.resolve(_resolved);
@@ -53,7 +38,7 @@ export function resolveAi(): Promise<AiService> {
 
     _resolving = (async (): Promise<AiService> => {
         // Tier 0 — 入口显式声明（最高优先级）。
-        const declared = _declaredBackend();
+        const declared = readDeclaredAdapter('__MMKU_AI_BACKEND__');
         if (declared === 'browser') {
             _resolved = browserAiAdapter;
             return _resolved;
@@ -68,7 +53,7 @@ export function resolveAi(): Promise<AiService> {
         }
 
         // Tier 1 — 旧 web 短路标记 / 构建模式。
-        if (_isWebEntry()) {
+        if (isWebEntryMode()) {
             _resolved = browserAiAdapter;
             return _resolved;
         }

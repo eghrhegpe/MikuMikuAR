@@ -16,7 +16,7 @@
 
 import type { BackendService, BackendCapabilities } from './types';
 import { browserAdapter } from './browser-adapter';
-import { awaitWailsBridge } from '../platform';
+import { awaitWailsBridge, isWebEntryMode, readDeclaredAdapter } from '../platform';
 
 // go-adapter 动态加载：web 入口短路路径完全不拉进 bundle，
 // 避免 @wailsio/runtime 初始化触发 /wails/custom.js 404（ADR-176 web 侧干净运行）。
@@ -33,20 +33,6 @@ async function _getGoAdapter(): Promise<BackendService> {
 let _resolved: BackendService | null = null;
 let _resolving: Promise<BackendService> | null = null;
 
-function _isWebEntry(): boolean {
-    if ((globalThis as { __MMKU_WEB__?: boolean }).__MMKU_WEB__ === true) {
-        return true;
-    }
-    const meta = import.meta as unknown as { env?: { MODE?: string } };
-    return meta.env?.MODE === 'web';
-}
-
-/** Tier 0：入口 HTML 显式声明的后端身份（权威、不可被 window.wails 存在性覆盖）。 */
-function _declaredBackend(): 'go' | 'browser' | undefined {
-    const v = (globalThis as { __MMKU_BACKEND__?: unknown }).__MMKU_BACKEND__;
-    return v === 'go' || v === 'browser' ? v : undefined;
-}
-
 export function resolveBackend(): Promise<BackendService> {
     if (_resolved) {
         return Promise.resolve(_resolved);
@@ -57,7 +43,7 @@ export function resolveBackend(): Promise<BackendService> {
 
     _resolving = (async (): Promise<BackendService> => {
         // Tier 0 — 入口显式声明（最高优先级）。
-        const declared = _declaredBackend();
+        const declared = readDeclaredAdapter('__MMKU_BACKEND__');
         if (declared === 'browser') {
             _resolved = browserAdapter;
             return _resolved;
@@ -70,7 +56,7 @@ export function resolveBackend(): Promise<BackendService> {
         }
 
         // Tier 1 — 旧 web 短路标记 / 构建模式。
-        if (_isWebEntry()) {
+        if (isWebEntryMode()) {
             _resolved = browserAdapter;
             return _resolved;
         }
