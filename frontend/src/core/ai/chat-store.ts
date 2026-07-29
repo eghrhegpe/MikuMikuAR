@@ -11,13 +11,13 @@ import { idbGet, idbSet, idbBatchSet, idbDelete, idbKeys } from '../backend/idb'
 import type { ChatMessage } from './types';
 
 /** 会话模式，值与 settings-diagnostic 的 DiagMode 一致（此处独立定义以免 UI→存储反向依赖）。 */
-export type ChatMode = 'diagnostic' | 'chat' | 'control' | 'dialogue';
-
-/** 会话元信息（供列表展示，不含消息体）。 */
+/** 会话元信息（供列表展示，不含消息体）。
+ *  dialogueMode=true 为台词模式，false 为统一 AI 助手模式。
+ *  兼容旧字段 mode（'diagnostic'|'chat'|'control'|'dialogue'），加载时迁移。 */
 export interface ChatSession {
     id: string;
     title: string;
-    mode: ChatMode;
+    dialogueMode: boolean;
     createdAt: number;
     updatedAt: number;
 }
@@ -89,7 +89,7 @@ export async function saveSession(session: ChatSessionFull): Promise<void> {
         const meta: ChatSession = {
             id: session.id,
             title: session.title,
-            mode: session.mode,
+            dialogueMode: session.dialogueMode,
             createdAt: session.createdAt,
             updatedAt: session.updatedAt,
         };

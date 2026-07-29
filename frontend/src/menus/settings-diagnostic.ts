@@ -32,6 +32,7 @@ import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 import { buildToolCatalogText, buildToolSchemas } from '../core/ai/action-catalog';
 import { executeAction, parseActionFromLLM } from '../core/ai/intent-dispatcher';
+import { executeActionById } from '../core/action-executor';
 import { getActiveBible, buildDialogueSystemPrompt } from '../core/ai/dialogue-session';
 import { parseDialogueLines, type DialogueLine } from '../core/ai/character-bible';
 import { speakLines, cancelSpeech } from '../core/ai/dialogue-speech';
@@ -57,19 +58,14 @@ import {
 
 // ======== 模块级状态 ========
 
-/** 面板四态：诊断 / 闲聊 / 控制 / 台词（ADR-196 + ADR-156）。 */
-type DiagMode = 'diagnostic' | 'chat' | 'control' | 'dialogue';
-
-/** tab 顺序单一数据源，驱动 tab 构建、键盘导航与刷新。 */
-const DIAG_MODES: readonly DiagMode[] = ['diagnostic', 'chat', 'control', 'dialogue'];
-
 let _ai: AiService | null = null;
 let _caps: AiCapabilities | null = null;
 let _aiResolved = false;
 const _messages: ChatMessage[] = [];
 let _isStreaming = false;
 let _abortController: AbortController | null = null;
-let _mode: DiagMode = 'diagnostic';
+/** 台词模式开关（合并后唯一模式差异化：on=角色扮演，off=统一 AI 助手） */
+let _dialogueMode = false;
 
 // [doc:adr-203] 多会话持久化状态
 let _activeSessionId: string | null = null;
@@ -170,7 +166,7 @@ resolveAi()
     .then(async (ai) => {
         _ai = ai;
         _aiResolved = true;
-        // 先恢复持久化的活动会话（_messages/_mode），再渲染，避免空会话闪切。
+        // 先恢复持久化的活动会话（_messages/_dialogueMode），再渲染，避免空会话闪切。
         await _loadActiveSession();
         // 配置回填在 config-card 两阶段渲染中完成（_loadInitialConfig），
         // 先 resolve 再渲染，消除"默认值闪切"时序竞态。
@@ -194,7 +190,7 @@ function _addAssistantMessage(text: string): void {
 
 const _persistTimer = new DebouncedTimer();
 
-/** 立即把当前 _messages/_mode 写入活动会话（无 id 则新建）。降级静默。 */
+/** 立即把当前 _messages/_dialogueMode 写入活动会话（无 id 则新建）。降级静默。 */
 async function _doPersistSession(): Promise<void> {
     if (!_sessionLoaded) {
         return;
@@ -212,7 +208,7 @@ async function _doPersistSession(): Promise<void> {
     await saveSession({
         id: _activeSessionId,
         title,
-        mode: _mode,
+        dialogueMode: _dialogueMode,
         createdAt: _sessionCreatedAt || Date.now(),
         updatedAt: Date.now(),
         messages: [..._messages],
@@ -231,7 +227,7 @@ async function _flushSession(): Promise<void> {
     await _doPersistSession();
 }
 
-/** 面板打开时恢复活动会话到 _messages/_mode。无活动会话则保持空（首用）。 */
+/** 面板打开时恢复活动会话到 _messages/_dialogueMode。无活动会话则保持空（首用）。 */
 async function _loadActiveSession(): Promise<void> {
     try {
         const activeId = await getActiveId();
@@ -240,7 +236,7 @@ async function _loadActiveSession(): Promise<void> {
             if (session) {
                 _activeSessionId = session.id;
                 _sessionCreatedAt = session.createdAt;
-                _mode = session.mode;
+                _dialogueMode = 'dialogueMode' in session ? !!session.dialogueMode : session.mode === 'dialogue';
                 _messages.length = 0;
                 _messages.push(...session.messages);
             }
@@ -259,7 +255,7 @@ async function _createSession(): Promise<void> {
     _sessionCreatedAt = Date.now();
     await setActiveId(_activeSessionId);
     _messages.length = 0;
-    _mode = 'diagnostic';
+    _dialogueMode = false;
     _renderChat();
     _refreshSessionList();
 }
@@ -276,7 +272,7 @@ async function _switchSession(id: string): Promise<void> {
     }
     _activeSessionId = session.id;
     _sessionCreatedAt = session.createdAt;
-    _mode = session.mode;
+    _dialogueMode = 'dialogueMode' in session ? !!session.dialogueMode : session.mode === 'dialogue';
     _messages.length = 0;
     _messages.push(...session.messages);
     await setActiveId(id);
@@ -915,94 +911,17 @@ function _createErrorRow(err: ErrorEntry): HTMLElement {
 
 // ======== 模式切换卡片 ========
 
-function _ensureControlActions(): void {
+/** 注册动作注册表（合并后 AI 始终有完整工具集）。 */
+function _ensureActionsRegistered(): void {
     if (!_controlRegistered) {
-        // 置位移入成功回调：import 失败时保持 false 以便下次进入 control 模式重试；
-        // 补 catch 避免 rejection 静默丢弃（AGENTS.md「Promise 链断裂」反模式）。
         import('../core/ai/action-registry-defs')
             .then((m) => {
                 m.registerAllActions();
                 _controlRegistered = true;
             })
             .catch((err) => {
-                logWarn('diagnostic', '动作注册表加载失败，控制模式动作将不可用', err);
+                logWarn('diagnostic', '动作注册表加载失败，AI 工具将不可用', err);
             });
-    }
-}
-
-function _selectTab(mode: DiagMode, btns: HTMLButtonElement[]): void {
-    if (_mode === 'dialogue' && mode !== 'dialogue') {
-        cancelSpeech(); // 离开台词模式时停掉未读完的语音
-    }
-    _mode = mode;
-    _refreshModeUI(btns);
-    if (mode === 'control') _ensureControlActions();
-}
-
-function _modeLabelKey(mode: DiagMode): string {
-    switch (mode) {
-        case 'diagnostic':
-            return 'ai.mode.diagnostic';
-        case 'chat':
-            return 'ai.mode.chat';
-        case 'control':
-            return 'ai.mode.control';
-        case 'dialogue':
-            return 'ai.mode.dialogue';
-    }
-}
-
-function _buildTab(mode: DiagMode, btns: HTMLButtonElement[]): HTMLButtonElement {
-    const btn = document.createElement('button');
-    btn.setAttribute('role', 'tab');
-    btn.textContent = t(_modeLabelKey(mode));
-    btn.className = 'mode-btn' + (_mode === mode ? ' active' : '');
-    btn.addEventListener('click', () => _selectTab(mode, btns));
-    return btn;
-}
-
-function buildModeSwitchSchema(): MenuNode[] {
-    return [
-        {
-            id: 'diagnostic:mode-switch',
-            kind: 'custom',
-            renderCustom: (c) => {
-                const group = document.createElement('div');
-                group.className = 'type-row';
-
-                const btns: HTMLButtonElement[] = [];
-                for (const mode of DIAG_MODES) {
-                    btns.push(_buildTab(mode, btns));
-                }
-
-                for (const btn of btns) group.appendChild(btn);
-                c.appendChild(group);
-            },
-        },
-    ];
-}
-
-function _refreshModeUI(btns: HTMLButtonElement[]): void {
-    DIAG_MODES.forEach((mode, i) => {
-        const btn = btns[i];
-        if (!btn) return;
-        const active = _mode === mode;
-        btn.className = 'mode-btn' + (active ? ' active' : '');
-        btn.setAttribute('aria-selected', String(active));
-        btn.tabIndex = active ? 0 : -1;
-    });
-    _updateSpeakToggle(); // [doc:adr-156] 台词模式切换时同步朗读开关显隐
-    if (_pendingContainer) {
-        // diagnostic 与 control 都可能产生工具调用待确认卡，需显示 pending 容器。
-        const toolCapable = _mode === 'control' || _mode === 'diagnostic';
-        _pendingContainer.style.display = toolCapable ? '' : 'none';
-        if (toolCapable) {
-            if (_pendingAction) {
-                _renderPendingAction();
-            } else {
-                _renderControlHint();
-            }
-        }
     }
 }
 
@@ -1164,7 +1083,7 @@ function _finalizeStream(fullText: string): void {
     _abortController = null;
 
     // 台词模式：解析结构化对白 → 情绪卡片渲染 + 语音朗读（Step 2a）。
-    if (_mode === 'dialogue' && fullText) {
+    if (_dialogueMode && fullText) {
         const lines = parseDialogueLines(fullText);
         _renderChat();
         _renderDialogueCards(lines);
@@ -1250,10 +1169,10 @@ async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
     if (_isStreaming || !_ai) {
         return;
     }
-    // diagnostic 与 control 模式都给 AI 发工具：诊断顾问既能分析场景、也能直接操作修复。
-    // chat/dialogue 为纯对话/角色扮演，不发工具。显式传入的 opts.allowTools 优先
+    // 统一 AI 助手始终发工具（含只读诊断工具与控制工具）。
+    // dialogue 模式不发工具。显式传入的 opts.allowTools 优先
     // （如工具执行后续跑时传 false，避免连环调用）。
-    const allowTools = opts?.allowTools ?? (_mode === 'control' || _mode === 'diagnostic');
+    const allowTools = opts?.allowTools ?? !_dialogueMode;
 
     _isStreaming = true;
     _updateSendButton();
@@ -1261,7 +1180,7 @@ async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
 
     // 立即给出"思考中"占位反馈：请求可能耗时数秒到数十秒，界面不能无动静。
     _showPendingBubble();
-    logInfo('ai-stream', `发送消息 mode=${_mode} allowTools=${allowTools} 历史条数=${_messages.length}`);
+    logInfo('ai-stream', `发送消息 dialogueMode=${_dialogueMode} allowTools=${allowTools} 历史条数=${_messages.length}`);
 
     const systemMessage = _buildSystemMessage();
     const chatMessages: ChatMessage[] = _pruneHistory([systemMessage, ..._messages]);
@@ -1323,18 +1242,25 @@ async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
                 }
                 return { actionId: tc.name, params, toolCallId: tc.id };
             });
-            // 过滤不支持的动作：不支持项直接回填失败 tool 消息，不入待确认队列。
-            const supported: typeof parsed = [];
+            // 过滤不支持的动作 + 分离 readonly/writable。
+            const writable: typeof parsed = [];
             _pendingToolResults = [];
             _pendingBatchHasToolCalls = true;
             for (const p of parsed) {
-                if (getAction(p.actionId)) {
-                    supported.push(p);
-                } else {
+                const def = getAction(p.actionId);
+                if (!def) {
                     _pendingToolResults.push({
                         toolCallId: p.toolCallId ?? '',
                         content: JSON.stringify({ success: false, message: '不支持的操作' }),
                     });
+                } else if (def.readonly) {
+                    const result = await executeActionById(p.actionId, p.params);
+                    _pendingToolResults.push({
+                        toolCallId: p.toolCallId ?? '',
+                        content: JSON.stringify(result),
+                    });
+                } else {
+                    writable.push(p);
                 }
             }
 
@@ -1353,14 +1279,13 @@ async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
             _updateSendButton();
             _renderChat();
 
-            if (supported.length === 0) {
-                // 全部不支持：直接收尾（回填 tool 消息 + 提示）。
-                _addAssistantMessage(t('ai.control.unsupported'));
+            if (writable.length === 0) {
+                // 全部不支持或全部只读：直接收尾（回填 tool 消息 + 继续对话）。
                 await _finalizePendingBatch();
                 return;
             }
-            _pendingAction = supported[0];
-            _pendingQueue = supported.slice(1);
+            _pendingAction = writable[0];
+            _pendingQueue = writable.slice(1);
             _lastUndoable = null;
             _renderPendingAction();
             return;
@@ -1384,7 +1309,7 @@ async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
             const handledAsControlFallback =
                 !streamErrorSeen &&
                 !abortedByUser &&
-                _mode === 'control' &&
+                !_dialogueMode &&
                 fullResponse &&
                 !_pendingAction &&
                 _handleControlFallback(fullResponse);
@@ -1452,7 +1377,8 @@ function _tryQueuePendingAction(
 }
 
 function _renderControlHint(): void {
-    if (!_pendingContainer || _pendingAction || _mode !== 'control') {
+    // 统一面板始终显示 pending 区域（仅 dialogue 模式隐藏）。
+    if (!_pendingContainer || _pendingAction || _dialogueMode) {
         return;
     }
     _pendingContainer.innerHTML = '';
@@ -1691,57 +1617,23 @@ async function _finalizePendingBatch(): Promise<void> {
 }
 
 function _buildSystemMessage(): ChatMessage {
-    if (_mode === 'chat') {
-        return {
-            role: 'system',
-            content: t('ai.system.role') + '\n\n' + t('ai.system.chat'),
-        };
-    }
-    if (_mode === 'control') {
-        const catalog = buildToolCatalogText();
-        return {
-            role: 'system',
-            content: [
-                t('ai.system.role'),
-                t('ai.system.control'),
-                catalog,
-                t('ai.system.controlFormat'),
-            ].join('\n\n'),
-        };
-    }
-    if (_mode === 'dialogue') {
+    if (_dialogueMode) {
         return {
             role: 'system',
             content: buildDialogueSystemPrompt(getActiveBible()),
         };
     }
-    const contextParts: string[] = [];
-    const errors = getErrors();
-    if (errors.length > 0) {
-        contextParts.push(
-            t('ai.context.errors') + errors.map((e) => `[${e.tag}] ${e.message}`).join('\n')
-        );
-    }
-    const snapshot = captureSceneSnapshot();
-    if (snapshot !== '(场景未初始化)') {
-        contextParts.push(t('ai.context.scene') + snapshot);
-    }
-    // diagnostic 模式同时具备"分析场景 + 调用工具操作"能力：注入工具目录与调用格式，
-    // 让 AI 既能基于场景快照/错误诊断，也能直接发起工具调用修复（与 _runStream 的
-    // allowTools 对齐）。
+    // 统一 AI 助手：角色 + 工具目录 + 调用格式（无预注入错误/快照——AI 通过
+    // getErrors/getSnapshot 只读工具按需获取诊断上下文）。
+    const catalog = buildToolCatalogText();
     return {
         role: 'system',
         content: [
             t('ai.system.role'),
-            t('ai.system.format'),
-            t('ai.system.safety'),
             t('ai.system.control'),
-            buildToolCatalogText(),
+            catalog,
             t('ai.system.controlFormat'),
-            contextParts.length > 0 ? t('ai.context.header') + contextParts.join('\n\n') : '',
-        ]
-            .filter(Boolean)
-            .join('\n\n'),
+        ].join('\n\n'),
     };
 }
 
@@ -1805,7 +1697,7 @@ function _updateSpeakToggle(): void {
     if (!_speakToggleBtn) {
         return;
     }
-    _speakToggleBtn.style.display = _mode === 'dialogue' ? '' : 'none';
+    _speakToggleBtn.style.display = _dialogueMode ? '' : 'none';
     _speakToggleBtn.textContent = _speakEnabled
         ? t('ai.dialogue.speakOn')
         : t('ai.dialogue.speakOff');
@@ -1876,6 +1768,36 @@ function buildChatSchema(): MenuNode[] {
                 clearBtn.setAttribute('aria-label', t('ai.chat.clear'));
                 clearBtn.addEventListener('click', _clearChat);
                 inputRow.appendChild(clearBtn);
+
+                // 台词模式切换（合并后：统一 AI 助手 ↔ 角色台词）。
+                const dialogueToggle = document.createElement('button');
+                dialogueToggle.id = 'diag-dialogue-toggle';
+                dialogueToggle.className = 'preset-chip';
+                dialogueToggle.addEventListener('click', () => {
+                    _dialogueMode = !_dialogueMode;
+                    if (_dialogueMode) {
+                        _ensureActionsRegistered();
+                    } else {
+                        cancelSpeech();
+                    }
+                    dialogueToggle.textContent = t(_dialogueMode ? 'ai.mode.dialogue' : 'ai.mode.unified');
+                    dialogueToggle.setAttribute('aria-pressed', String(_dialogueMode));
+                    _updateSpeakToggle();
+                    if (_pendingContainer) {
+                        _pendingContainer.style.display = _dialogueMode ? 'none' : '';
+                        if (!_dialogueMode) {
+                            if (_pendingAction) {
+                                _renderPendingAction();
+                            } else {
+                                _renderControlHint();
+                            }
+                        }
+                    }
+                    _updateControlsEnabled();
+                });
+                dialogueToggle.textContent = t('ai.mode.unified');
+                dialogueToggle.setAttribute('aria-pressed', 'false');
+                inputRow.appendChild(dialogueToggle);
 
                 // [doc:adr-156/199] 台词模式朗读开关（仅 dialogue 模式可见）。
                 _speakToggleBtn = document.createElement('button');
@@ -2331,16 +2253,6 @@ export function buildDiagnosticSchema(opts?: { withSessions?: boolean }): MenuNo
     }
     nodes.push(
         {
-            id: 'diagnostic:mode-card',
-            kind: 'custom',
-            renderCustom: (c) => {
-                return cardContainer(c, (inner) => {
-                    addSectionTitle(inner, t('ai.mode.title'));
-                    return renderMenu(buildModeSwitchSchema(), inner);
-                });
-            },
-        },
-        {
             id: 'diagnostic:context-card',
             kind: 'custom',
             renderCustom: (c) => {
@@ -2392,7 +2304,7 @@ function _disposeDiagnosticPanel(): void {
     void _doSaveConfig();
     // [doc:adr-203] flush 会话到 IndexedDB，关面板不再清空 _messages（重开恢复）。
     void _flushSession();
-    // 会话内容（_messages/_mode/_activeSessionId）保留在内存，重开面板直接复用；
+    // 会话内容（_messages/_dialogueMode/_activeSessionId）保留在内存，重开面板直接复用；
     // 磁盘已由 _flushSession 落盘。仅重置瞬态运行状态。
     _isStreaming = false;
     _pendingAction = null;

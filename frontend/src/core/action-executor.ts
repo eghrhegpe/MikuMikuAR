@@ -40,11 +40,12 @@ export async function executeActionById(
     }
 
     try {
-        await def.execute(translated);
+        const execResult = await def.execute(translated);
         const paramsDesc = def.params.length
             ? ` (${def.params.map((p) => `${p.name}=${JSON.stringify(translated[p.name])}`).join(', ')})`
             : '';
-        return { success: true, message: `✓ ${def.label}${paramsDesc}` };
+        const data = (execResult as { data?: unknown } | undefined)?.data;
+        return { success: true, message: `✓ ${def.label}${paramsDesc}`, data };
     } catch (err) {
         return {
             success: false,
