@@ -1,6 +1,6 @@
 # ADR-196: 内置 AI 诊断助手（LLM Diagnostic Assistant）
 
-- **状态**: ✅ 已完成（Phase 0 基础设施 + Phase 1 集成打通与体验打磨 + Phase 2 审计修复与测试覆盖）
+- **状态**: ✅ 已完成（Phase 0 基础设施 + Phase 1 集成打通与体验打磨 + Phase 2 审计修复与测试覆盖 + Phase 2 模式合并 + Phase 3 只读工具）
 - **日期**: 2026-07-28
 - **相关**: ADR-154（聊天面板·推荐路线，传输层上游）、ADR-155（NL 控场景，未来应用入口）、ADR-156（角色台词，兄弟用例）、ADR-176（BackendService 双适配器，镜像模板）、ADR-192（上游适配层，适配器术语）、ADR-093（声明式菜单 Schema，面板挂载）、`docs/ai-new/ai-news-2026-07-27.md`（安全护栏情报）
 
@@ -237,3 +237,25 @@ LLM 能力已在 2026-07-20 经 ADR-154/155/156 决议，但**全部 0 代码落
 - **i18n 补齐**：`ai.status.missingModel`、`ai.errorAdvice.missingModel`、`ai.status.initializing`、`ai.chat.clearConfirm`，覆盖 zh-CN/en/zh-TW/ja/ko
 - **知识卡同步**：`settings-diagnostic.md` 补充「面板重建时 DOM 清空但模块级状态保留」不变量；`ai-service.md`/`ai-config-store.md` 同步 `adapter` 字段名
 - **验证**：`tsc --noEmit` 0 错误；全量 2299 tests 通过；`check:docs` 无 ERROR
+
+### Phase 2b — 模式合并：四模式 → 统一对话模式（2026-07-29）
+- **合并诊断/聊天/控制三模式**：移除 `DiagMode` 类型 + `DIAG_MODES` 常量 + 全部 tab 切换函数（`_selectTab`/`_buildTab`/`buildModeSwitchSchema`/`_modeLabelKey`/`_refreshModeUI`）
+- **`_mode: DiagMode` → `_dialogueMode: boolean`**：默认 `false` = 统一模式；`true` = 角色台词模式
+- **`_buildSystemMessage` 简化为两支**：统一模式 = 角色 + 控制 + 工具 + 格式（无预注入上下文）；台词模式 = 角色扮演 prompt
+- **`_runStream`**：`allowTools` 统一为 `!_dialogueMode`，readonly 工具自动执行
+- **工具调用处理**：只读工具（`getAction(tc.name)?.readonly`）自动执行并回填 tool 消息，不入 pending 卡
+- **会话持久化**：`ChatSession.mode` → `dialogueMode: boolean`，旧 `mode` 字段兼容加载
+- **UI**：移除 mode tab switcher；对话输入行加台词模式 toggle 按钮
+- **`chat-store.ts`**：`ChatSession` 接口迁移，旧数据自动兼容
+- **验证**：tsc 0 错误；全量 2437 tests 通过
+
+### Phase 3 — 只读诊断工具（2026-07-29，对应 ADR-205 Phase 1）
+- **`action-registry.ts`**：`ActionDef` 新增 `readonly?: boolean` 字段
+- **`action-executor.ts`**：`ActionResult` 新增 `data?: unknown`，`executeActionById` 捕获返回值 `.data`
+- **`action-defs/diagnostic-actions.ts`**：新建，注册两个只读工具
+  - `diagnostic:getFrontendErrors` → 调用 `toDiagnosticContext()`
+  - `diagnostic:getSceneSnapshot` → 调用 `captureSceneSnapshot()`
+- **`action-registry-defs.ts`**：导入 `registerDiagnosticActions` 并在 `registerAllActions` 中调用
+- **`settings-diagnostic.ts`**：tool_call 处理分支检测 `readonly` → 自动执行不进 pending
+- **ADR-205 状态更新**：🟡 规划中 → ✅ Phase 1 已完成 + 🟡 Phase 2 待实施
+- **验证**：tsc 0 错误；全量 2437 tests 通过

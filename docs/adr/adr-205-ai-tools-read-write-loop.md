@@ -1,6 +1,6 @@
 # ADR-205: AI 工具体系全景 — 从写操作到读写闭环
 
-- **状态**: 🟡 规划中
+- **状态**: ✅ Phase 1 已完成 + 🟡 Phase 2+ 待实施
 - **日期**: 2026-07-29
 - **相关**: ADR-155（NL 控场景，动作注册表消费者）、ADR-196（内置 AI 诊断助手，诊断 prompt 注入源）、ADR-197（统一动作注册表，动作定义规范）、ADR-203（AI 助手会话持久化，面板载体）、ADR-191（禁止神桶，模块导入规则）
 
@@ -62,21 +62,24 @@ ADR-196 + ADR-197 + ADR-155 三阶段演进后，AI 助手已具备 41 个 tool_
 
 ## 规划方案：读写闭环
 
-### 阶段 1：只读诊断工具（前端侧）
+### 阶段 1：只读诊断工具（前端侧）✅ 已完成
 
 在 `action-registry` 注册 `readonly: true` 的只读工具，自动执行（跳过 pending 卡）。
 
 | 工具 ID | 参数 | 返回 | 说明 |
 |---------|------|------|------|
-| `diagnostic:getSceneSnapshot` | 无 | `{ fps, modelCount, meshCount, materialCount, animationCount, gpuMemory, ktx2Used }` | 复用 `captureSceneSnapshot()` |
-| `diagnostic:getFrontendErrors` | `{ limit?: number }` | `Array<{ timestamp, message, source, stack? }>` | 复用 `errorBuffer.toDiagnosticContext()` |
-| `diagnostic:getFrontendState` | 无 | `{ envPreset, cameraMode, performanceMode, groundVisible, modelCount, activeMotion? }` | 聚合 `envState` + `sceneState` |
+| `diagnostic:getSceneSnapshot` | 无 | 文本快照（FPS/模型数/等） | 复用 `captureSceneSnapshot()` |
+| `diagnostic:getFrontendErrors` | 无 | 文本格式错误摘要 | 复用 `toDiagnosticContext()` |
+| `diagnostic:getFrontendState` | 无 | — | **🟡 延后实施**；当前与 getSceneSnapshot 部分重叠 |
 
-**关键设计**：
-- `ActionDef` 新增 `readonly?: boolean` 字段
-- `action-executor.ts` 检测 `readonly` → 直接执行，不进 pending 队列
-- `ActionResult` 扩展为 `{ success, message, data?: unknown }`，readonly 工具填充 `data`
+**实现细节**：
+- `ActionDef` 已新增 `readonly?: boolean` 字段（`action-registry.ts`）
+- `action-executor.ts` 检测 `readonly` → 直接执行，不进 pending 队列；返回值 `data` 填入 `ActionResult.data`
+- `ActionResult` 已扩展为 `{ success, message, data?: unknown }`
 - `action-catalog.ts` 的 `buildToolSchemas()` 为 readonly 工具生成只读 description
+- 注册文件：`action-defs/diagnostic-actions.ts`，在 `registerAllActions()` 中调用
+- `settings-diagnostic.ts` tool_call 处理分支：检测 `getAction(tc.name)?.readonly` → 自动执行并追加 tool 消息，不走 pending 卡
+- **system prompt 不再预注入错误/快照上下文**：统一模式（见 ADR-196 Phase 2）下 LLM 按需通过 tool_call 获取诊断信息
 
 ### 阶段 2：后端状态绑定（Go 侧）
 
@@ -106,9 +109,9 @@ ADR-196 + ADR-197 + ADR-155 三阶段演进后，AI 助手已具备 41 个 tool_
 ```
 
 **UX 变化**：
-- 控制模式下，readonly 工具自动执行，用户无需确认
-- 工具结果以折叠卡片形式展示在对话流中（不阻塞对话）
-- system prompt 仍在 diagnostic 模式保留作为「首屏快照」，tool_call 作为「按需深查」互补
+- 统一模式下，readonly 工具自动执行，用户无需确认
+- 工具结果以 tool 消息回填到对话历史，LLM 可引用结果继续推理
+- system prompt 预注入消除（ADR-196 Phase 2 模式合并）：统一 mode 下不再预填错误/快照上下文，LLM 按需通过 readonly tool 查询——减少首轮 token 消耗，且诊断信息始终最新
 
 ---
 
@@ -137,16 +140,19 @@ interface ActionResult {
 
 ## 影响范围
 
-| 文件 | 变更 |
-|------|------|
-| `core/action-registry.ts` | ActionDef 加 `readonly` 字段 |
-| `core/action-executor.ts` | 检测 `readonly` → 跳过 pending |
-| `core/ai/action-catalog.ts` | readonly 工具 prompt 标记为「自动执行，无需确认」 |
-| `core/ai/types.ts` | ActionResult 加 `data` |
-| `menus/settings-diagnostic.ts` | readonly 结果渲染折叠卡片 |
-| `internal/app/ai_binding.go` | 新增 AiGetBackendLogs / AiGetBackendState |
-| `internal/app/llm/client.go` | 日志双写到 LogRing |
-| `core/action-defs/diagnostic-actions.ts` | 新建，注册 5 个 readonly 工具 |
+| 文件 | 变更 | 状态 |
+|------|------|------|
+| `core/action-registry.ts` | ActionDef 加 `readonly` 字段 | ✅ 已完成 |
+| `core/action-executor.ts` | 检测 `readonly` → 跳过 pending | ✅ 已完成 |
+| `core/ai/action-catalog.ts` | readonly 工具 prompt 标记 | ✅ 已完成 |
+| `core/ai/types.ts` | ActionResult 加 `data` | ✅ 已完成 |
+| `menus/settings-diagnostic.ts` | readonly 结果自动执行 + tool 消息回填 | ✅ 已完成 |
+| `core/action-defs/diagnostic-actions.ts` | 新建，注册 2 个 readonly 工具 | ✅ 已完成 |
+| `core/action-registry-defs.ts` | 导入 `registerDiagnosticActions` | ✅ 已完成 |
+| `internal/app/ai_binding.go` | 新增 AiGetBackendLogs / AiGetBackendState | 🟡 Phase 2 |
+| `internal/app/llm/client.go` | 日志双写到 LogRing | 🟡 Phase 2 |
+| `core/action-defs/diagnostic-actions.ts` | getBackendLogs / getBackendState 工具 | 🟡 Phase 2 |
+| `diagnostic:getFrontendState` | 聚合 envState + sceneState | 🟡 延后 |
 
 ---
 
@@ -164,3 +170,4 @@ interface ActionResult {
 | 日期 | 修订 |
 |------|------|
 | 2026-07-29 | 初版：基于 ADR-196/197/155 现状分析 + 用户反馈，规划读写闭环 |
+| 2026-07-29 | Phase 1 实施完成：`readonly` 字段 + `ActionResult.data` + 2 个前端诊断工具注册 + `settings-diagnostic.ts` readonly 自动执行；同步 ADR-196 Phase 2 模式合并消除 system prompt 预注入 |

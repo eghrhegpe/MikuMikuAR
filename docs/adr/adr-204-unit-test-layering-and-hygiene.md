@@ -94,11 +94,13 @@ L1/L2 均为 Vitest，通过**文件命名后缀**区分：L2 使用 `*.int.test
 |-------|------|------|
 | **P0 规范落地** | 本 ADR + 更新 `frontend/AGENTS.md` 测试小节（分层/阈值/mock 治理） | 文档就位，`npm run check:docs` 绿 |
 | **P1 试点拆分** | ✅ 已完成（2026-07-29）：`menu.test.ts`（1551 行 / 95 用例）垂直拆为 8 个 `menu/*.test.ts`（均 ≤287 行），抽 `fixtures/menu.ts` 收敛 `makeLevel` + `new SlideMenu(...vi.fn())` 桩；旧 `menu.test.ts` 已删 | 用例数守恒（95→95）、`npm run test` 全绿（2437 passed / 0 failed）、单文件 ≤287 行 |
-| **P2 fixtures 推广 + 脚本** | 建 `fixtures/backend.ts`；加 `test:unit`/`test:int` 脚本；下一个上帝文件（`env-bridge`/`perception`）迁移到共享桩 | 复用率上升、L1 可独立秒级跑 |
+| **P2 fixtures 推广 + 脚本** | ✅ 已完成（2026-07-29）：建 `fixtures/backend.ts`（`makeMockBackend` + `makeMockCapabilities`）；`package.json` 加 `test:unit`/`test:int`；`env-bridge.test.ts`（1471 行 / 84 用例 / 54 处打桩）拆为 6 个 `env-bridge/*.int.test.ts`（≤286 行），581 行 mock 前导上抬为共享桩 `env-bridge/env-mocks.ts` | 用例数守恒（84→84，全量 2437 passed）、`test:int` 精确命中 84、`test:unit` 2353 例独立可跑 |
 | **P3 触碰即改善** | 后续任何触碰超阈值测试文件的改动，顺带拆分 + 上抬 mock；不设独立回填任务 | 存量单调下降，无新增上帝文件 |
 
 **用例数守恒是拆分的硬验收**：拆分前后 `npm run test` 报告的 pass 数必须一致，防止拆分中丢用例。
 
+> **P2 实施记录（2026-07-29）**：三点与 ADR 原文的实现差异——① `test:int` 脚本用 vitest 位置过滤子串 `.int.test`（而非 glob `'**/*.int.test.ts'`），因 Windows npm script 单引号不剥离且位置参数按子串匹配语义更可靠；`test:unit` 用 `--exclude`（追加语义，不覆盖 config 的 e2e/perf 排除）。② env-bridge 的模块桩集（config/env-impl/env-dispatcher/lighting/scene 等 10 模块）与 SUT 强绑定，故收敛为 `env-bridge/env-mocks.ts` 就近共享（拆分文件的 `vi.mock` 工厂经 `await import('./env-mocks')` 取桩，vitest 按测试文件隔离模块图、状态不串扰），而非塞进通用 `mocks/`；其中 backend 桩改用 `fixtures/backend.ts` 的 `makeMockBackend`（跨模块通用层）。③ 拆分文件首次落地 `*.int.test.ts` L2 命名约定；P1 的 `menu/*.test.ts`（依赖 happy-dom，属 L2）留待 P3 触碰时顺带改名。旧文件里 hoisted 的 `_defaults` 对象为死代码，未搬运。
+>
 > **P1 实施记录（2026-07-29）**：`menu.test.ts` 是纯 DOM 组件测试（SlideMenu / showPopupMenu / registerPopupMenu），不依赖 Babylon，故抽出的共享设施为 `src/__tests__/fixtures/menu.ts`（`makeTestLevel` + `makeTestMenu`，收敛 `makeLevel` 辅助函数与重复的 `new SlideMenu({...})` 桩），而非 ADR 示例中的 `fixtures/scene.ts`（`makeTestScene` 基于 `mocks/babylon-classes`，面向 Babylon 依赖测试，留待 P2 触碰 `env-bridge` / `perception` 等上帝文件时引入）。拆分比 ADR 示例的「3~4 个」更细（8 个文件），因为 ADR 自身的「单文件 ≤300 行」硬阈值优先于「3~4」的软建议——3~4 个文件会迫使部分文件超过 300 行。验收：95 用例守恒、全量 2437 passed / 0 failed、单文件最大 287 行。
 
 ---

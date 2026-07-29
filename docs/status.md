@@ -15,8 +15,8 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
-| ADR-205 | AI 工具体系全景 — 从写操作到读写闭环 | 🟡 规划中（2026-07-29） |
-| ADR-204 | 单测分层与治理规范（拆上帝文件 · 降 mock 密度 · fixtures 复用 · unit/integration 分层） | 🟡 规划 |
+| ADR-205 | AI 工具体系全景 — 从写操作到读写闭环 | ✅ Phase 1 已完成 + 🟡 Phase 2+ 待实施（2026-07-29） |
+| ADR-204 | 单测分层与治理规范（拆上帝文件 · 降 mock 密度 · fixtures 复用 · unit/integration 分层） | 🟢 实施中 |
 | ADR-203 | AI 助手会话持久化与独立面板 | 🟢 已完成（Phase 1 多会话 IndexedDB 持久化 + Phase 2 主窗口内独立面板）（2026-07-29） |
 | ADR-202 | fork 自治改动批次 — 一次回灌批量根治可改 fork 的上游缺口 | 🟢 P0 已落地（vendored + postinstall 方案，spr/mpr 生产变体经真机验证风力起效）；P2/P3 搭车项待续 |
 | ADR-201 | 路径2 — 给 babylon-mmd fork 增加原生刚体施力导出（wasm 侧解析） | ✅ 已实施（2026-07-28，2B 变体，见 §九 实施记录；e2e test #4 待本地回归） |
@@ -24,7 +24,7 @@
 | ADR-199 | LLM 能力边界与缓解策略（归档） | 📋 归档登记（缺陷与缓解方向盘点，未强制排期）（2026-07-28） |
 | ADR-198 | 场景序列化异常的保存韧性 | 提案（2026-07-28） |
 | ADR-197 | 统一动作注册表 — 菜单可维护性归一化 | 🟢 已完成（Phase 0–5 全域迁移完成，共 41 动作）（2026-07-28） |
-| ADR-196 | 内置 AI 诊断助手（LLM Diagnostic Assistant） | ✅ 已完成（Phase 0 基础设施 + Phase 1 集成打通与体验打磨 + Phase 2 审计修复与测试覆盖）（2026-07-28） |
+| ADR-196 | 内置 AI 诊断助手（LLM Diagnostic Assistant） | ✅ 已完成（Phase 0 基础设施 + Phase 1 集成打通与体验打磨 + Phase 2 审计修复与测试覆盖 + Phase 2 模式合并 + Phase 3 只读工具）（2026-07-28） |
 | ADR-195 | 下载文件夹统一修订（三平台系统下载目录 + 消除"二扫"） | 已完成（代码落地 + 单测 + 全量验证通过 2026-07-27；设计偏差与已知限制见 §实施记录与已知限制）（2026-07-27（初版）） |
 | ADR-194 | 风物理系统修复 — 从「假风」到真实风场 | 已完成（2026-07-27 — tsc 零错误，env-bridge 80 + wind-physics 1 + app.contract 17 全绿；P2 修复后全量 2174/2174 全绿）（2026-07-27（初版）/ 2026-07-27（P2 修复 — 水面 `uWindSpeed` 加 `windEnabled` 守卫）） |
 | ADR-193 | 模型稳定身份（inst.id = 持久化 uuid） | 已立项 · 已实现（2026-07-27 — tsc 零错误；resolve-model-id 5 + replace-model-inherit 16 + material-editor 50 + lighting-follow 8 + env-lighting 22 + scene-serialize-undo 6 全绿）（2026-07-27（初版）） |

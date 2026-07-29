@@ -6,8 +6,7 @@ import { t } from '../core/i18n/t';
 import { getLang } from '../core/i18n/locale';
 import { cardContainer } from '../core/config';
 import { addSectionTitle } from '../core/ui-helpers';
-import { getErrors, clearErrors, captureError, type ErrorEntry } from '../core/ai/error-buffer';
-import { captureSceneSnapshot } from '../core/ai/scene-snapshot';
+import { captureError } from '../core/ai/error-buffer';
 import {
     loadAiConfig,
     saveAiConfig,
@@ -36,7 +35,7 @@ import { executeActionById } from '../core/action-executor';
 import { getActiveBible, buildDialogueSystemPrompt } from '../core/ai/dialogue-session';
 import { parseDialogueLines, type DialogueLine } from '../core/ai/character-bible';
 import { speakLines, cancelSpeech } from '../core/ai/dialogue-speech';
-import { getAction } from '../core/action-registry';
+import { getAction, listActions } from '../core/action-registry';
 import { showConfirm, showPrompt } from '../core/dialog';
 import { showErrorToast } from '../core/toast';
 import { logWarn, logInfo } from '../core/logger';
@@ -236,7 +235,10 @@ async function _loadActiveSession(): Promise<void> {
             if (session) {
                 _activeSessionId = session.id;
                 _sessionCreatedAt = session.createdAt;
-                _dialogueMode = 'dialogueMode' in session ? !!session.dialogueMode : session.mode === 'dialogue';
+                const raw = session as unknown as Record<string, unknown>;
+                _dialogueMode = raw.dialogueMode !== undefined
+                    ? !!raw.dialogueMode
+                    : raw.mode === 'dialogue';
                 _messages.length = 0;
                 _messages.push(...session.messages);
             }
@@ -272,7 +274,10 @@ async function _switchSession(id: string): Promise<void> {
     }
     _activeSessionId = session.id;
     _sessionCreatedAt = session.createdAt;
-    _dialogueMode = 'dialogueMode' in session ? !!session.dialogueMode : session.mode === 'dialogue';
+    const raw = session as unknown as Record<string, unknown>;
+    _dialogueMode = raw.dialogueMode !== undefined
+        ? !!raw.dialogueMode
+        : raw.mode === 'dialogue';
     _messages.length = 0;
     _messages.push(...session.messages);
     await setActiveId(id);
@@ -328,20 +333,20 @@ function _createSessionRow(s: ChatSession): HTMLElement {
     const row = document.createElement('div');
     row.className =
         'diag-session-row' + (s.id === _activeSessionId ? ' diag-session-row--active' : '');
-
-    const title = document.createElement('span');
-    title.className = 'diag-session-title';
-    title.textContent = s.title || t('ai.chat.untitled');
-    title.setAttribute('role', 'button');
-    title.setAttribute('tabindex', '0');
-    title.setAttribute('aria-label', s.title || t('ai.chat.untitled'));
-    title.addEventListener('click', () => void _switchSession(s.id));
-    title.addEventListener('keydown', (e) => {
+    row.setAttribute('role', 'button');
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('aria-label', s.title || t('ai.chat.untitled'));
+    row.addEventListener('click', () => void _switchSession(s.id));
+    row.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             void _switchSession(s.id);
         }
     });
+
+    const title = document.createElement('span');
+    title.className = 'diag-session-title';
+    title.textContent = s.title || t('ai.chat.untitled');
     row.appendChild(title);
 
     const renameBtn = document.createElement('button');
@@ -805,123 +810,16 @@ function _updateDocLink(provider: AiConfigProvider): void {
 
 // ======== 上下文卡片 ========
 
-function buildContextSchema(): MenuNode[] {
-    return [
-        {
-            id: 'diagnostic:context',
-            kind: 'custom',
-            renderCustom: (c) => {
-                const errors = getErrors();
-                const snapshot = captureSceneSnapshot();
-
-                const errCount = document.createElement('div');
-                errCount.className = 'setting-hint';
-                errCount.textContent = t('ai.errors.count', { count: String(errors.length) });
-                c.appendChild(errCount);
-
-                for (const err of errors) {
-                    const errRow = _createErrorRow(err);
-                    c.appendChild(errRow);
-                }
-
-                const snapshotEl = document.createElement('div');
-                snapshotEl.className = 'setting-hint';
-                snapshotEl.textContent = snapshot;
-                c.appendChild(snapshotEl);
-
-                const btnRow = document.createElement('div');
-                btnRow.className = 'diag-hint-row';
-
-                const clearBtn = document.createElement('button');
-                clearBtn.textContent = t('ai.errors.clear');
-                clearBtn.className = 'preset-chip';
-                clearBtn.addEventListener('click', () => {
-                    clearErrors();
-                    _addAssistantMessage(t('ai.errors.cleared'));
-                    _renderChat();
-                });
-                btnRow.appendChild(clearBtn);
-
-                const refreshBtn = document.createElement('button');
-                refreshBtn.textContent = t('ai.snapshot.refresh');
-                refreshBtn.className = 'preset-chip';
-                refreshBtn.addEventListener('click', () => {
-                    const snap = captureSceneSnapshot();
-                    const hint = c.querySelector('.setting-hint:last-of-type');
-                    if (hint) {
-                        hint.textContent = snap;
-                    }
-                });
-                btnRow.appendChild(refreshBtn);
-
-                c.appendChild(btnRow);
-            },
-        },
-    ];
-}
-
-function _createErrorRow(err: ErrorEntry): HTMLElement {
-    const row = document.createElement('div');
-    row.className = 'diag-error-row diag-error-row--' + err.severity;
-    row.setAttribute('role', 'button');
-    row.setAttribute('tabindex', '0');
-    row.setAttribute('aria-label', `Error: ${err.tag}`);
-
-    const tag = document.createElement('span');
-    tag.textContent = `[${err.tag}]`;
-    tag.className = 'diag-error-tag';
-    row.appendChild(tag);
-
-    const msg = document.createElement('span');
-    msg.textContent = err.message;
-    msg.className = 'diag-error-msg';
-    row.appendChild(msg);
-
-    if (err.stack) {
-        const expandIcon = document.createElement('span');
-        expandIcon.textContent = ' ▶';
-        expandIcon.className = 'diag-error-expand';
-        expandIcon.setAttribute('aria-expanded', 'false');
-        row.appendChild(expandIcon);
-
-        const stackEl = document.createElement('pre');
-        const stackLines = err.stack.split('\n').slice(0, 5).join('\n');
-        stackEl.textContent = stackLines;
-        stackEl.className = 'diag-error-stack';
-
-        let expanded = false;
-        const toggle = (): void => {
-            expanded = !expanded;
-            stackEl.style.display = expanded ? '' : 'none';
-            expandIcon.textContent = expanded ? ' ▼' : ' ▶';
-            expandIcon.setAttribute('aria-expanded', String(expanded));
-        };
-        row.addEventListener('click', toggle);
-        row.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                toggle();
-            }
-        });
-        row.appendChild(stackEl);
-    }
-
-    return row;
-}
-
-// ======== 模式切换卡片 ========
-
-/** 注册动作注册表（合并后 AI 始终有完整工具集）。 */
-function _ensureActionsRegistered(): void {
-    if (!_controlRegistered) {
-        import('../core/ai/action-registry-defs')
-            .then((m) => {
-                m.registerAllActions();
-                _controlRegistered = true;
-            })
-            .catch((err) => {
-                logWarn('diagnostic', '动作注册表加载失败，AI 工具将不可用', err);
-            });
+/** 注册动作注册表（合并后 AI 始终有完整工具集）。
+ *  返回 Promise 以便调用方 await 确保注册完成后继续。 */
+async function _ensureActionsRegistered(): Promise<void> {
+    if (_controlRegistered) return;
+    try {
+        const m = await import('../core/ai/action-registry-defs');
+        m.registerAllActions();
+        _controlRegistered = true;
+    } catch (err) {
+        logWarn('diagnostic', '动作注册表加载失败，AI 工具将不可用', err);
     }
 }
 
@@ -1169,6 +1067,8 @@ async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
     if (_isStreaming || !_ai) {
         return;
     }
+    // 确保工具注册表已加载（首次通话前 async import 完成）。
+    await _ensureActionsRegistered();
     // 统一 AI 助手始终发工具（含只读诊断工具与控制工具）。
     // dialogue 模式不发工具。显式传入的 opts.allowTools 优先
     // （如工具执行后续跑时传 false，避免连环调用）。
@@ -1418,18 +1318,11 @@ function _renderControlHint(): void {
     modelHint.textContent = t('ai.control.modelHint');
     wrapper.appendChild(modelHint);
 
-    const catalog = buildToolCatalogText();
-    if (catalog) {
-        const title = document.createElement('div');
-        title.className = 'diag-control-hint-title';
-        title.textContent = t('ai.control.availableTools');
-        wrapper.appendChild(title);
-
-        const list = document.createElement('pre');
-        list.className = 'diag-control-hint-list';
-        list.textContent = catalog;
-        wrapper.appendChild(list);
-    }
+    const toolCount = listActions().length;
+    const toolSummary = document.createElement('div');
+    toolSummary.className = 'diag-control-hint-note';
+    toolSummary.textContent = t('ai.control.toolSummary', { count: String(toolCount) });
+    wrapper.appendChild(toolSummary);
 
     _pendingContainer.appendChild(wrapper);
 }
@@ -1707,13 +1600,16 @@ function _updateSpeakToggle(): void {
 
 function _updateSendButton(): void {
     const sendBtn = document.getElementById('diag-send-btn') as HTMLButtonElement | null;
-    const stopBtn = document.getElementById('diag-stop-btn') as HTMLButtonElement | null;
-    if (sendBtn) {
+    if (!sendBtn) return;
+    if (_isStreaming) {
+        sendBtn.innerHTML = '\u25A0';       // ■ 停止图标
+        sendBtn.setAttribute('aria-label', t('ai.chat.stop'));
+        sendBtn.disabled = false;
+    } else {
+        sendBtn.innerHTML = '\u25B6';       // ▶ 发送图标
+        sendBtn.setAttribute('aria-label', t('ai.chat.send'));
         // pending action 期间也禁用 send，避免与工具确认流程竞态
-        sendBtn.disabled = _isStreaming || _pendingAction !== null || !_aiResolved;
-    }
-    if (stopBtn) {
-        stopBtn.style.display = _isStreaming ? '' : 'none';
+        sendBtn.disabled = _pendingAction !== null || !_aiResolved;
     }
 }
 
@@ -1729,6 +1625,7 @@ function buildChatSchema(): MenuNode[] {
                 _chatContainer.className = 'diag-chat-box';
                 c.appendChild(_chatContainer);
 
+                // --- Row 1: textarea 独占一行 ---
                 const inputRow = document.createElement('div');
                 inputRow.className = 'diag-input-row';
 
@@ -1743,36 +1640,48 @@ function buildChatSchema(): MenuNode[] {
                     }
                 });
                 inputRow.appendChild(_inputEl);
+                c.appendChild(inputRow);
 
+                // --- Row 2: 图标按钮行 ---
+                const btnRow = document.createElement('div');
+                btnRow.className = 'diag-btn-row';
+
+                // 发送/停止同一按钮（图标切换）
                 const sendBtn = document.createElement('button');
                 sendBtn.id = 'diag-send-btn';
-                sendBtn.textContent = t('ai.chat.send');
-                sendBtn.className = 'mode-btn active';
+                sendBtn.className = 'preset-chip diag-btn-icon';
                 sendBtn.setAttribute('aria-label', t('ai.chat.send'));
-                sendBtn.addEventListener('click', () => void _sendMessage());
-                inputRow.appendChild(sendBtn);
-
-                const stopBtn = document.createElement('button');
-                stopBtn.id = 'diag-stop-btn';
-                stopBtn.textContent = t('ai.chat.stop');
-                stopBtn.className = 'preset-chip';
-                stopBtn.setAttribute('aria-label', t('ai.chat.stop'));
-                stopBtn.style.display = 'none';
-                stopBtn.addEventListener('click', _stopStreaming);
-                inputRow.appendChild(stopBtn);
+                // 空闲态 = 发送图标；流式态由 _updateSendButton 切为停止图标
+                sendBtn.innerHTML = '\u25B6';
+                sendBtn.addEventListener('click', () => {
+                    if (_isStreaming) {
+                        _stopStreaming();
+                    } else {
+                        void _sendMessage();
+                    }
+                });
+                btnRow.appendChild(sendBtn);
 
                 const clearBtn = document.createElement('button');
                 clearBtn.id = 'diag-clear-btn';
-                clearBtn.textContent = t('ai.chat.clear');
-                clearBtn.className = 'preset-chip';
+                clearBtn.className = 'preset-chip diag-btn-icon';
                 clearBtn.setAttribute('aria-label', t('ai.chat.clear'));
+                clearBtn.innerHTML = '\u2715';
                 clearBtn.addEventListener('click', _clearChat);
-                inputRow.appendChild(clearBtn);
+                btnRow.appendChild(clearBtn);
 
-                // 台词模式切换（合并后：统一 AI 助手 ↔ 角色台词）。
+                // spacer 将台词/朗读按钮推到右侧
+                const spacer = document.createElement('div');
+                spacer.className = 'diag-btn-spacer';
+                btnRow.appendChild(spacer);
+
+                // 台词模式切换
                 const dialogueToggle = document.createElement('button');
                 dialogueToggle.id = 'diag-dialogue-toggle';
-                dialogueToggle.className = 'preset-chip';
+                dialogueToggle.className = 'preset-chip diag-btn-icon';
+                dialogueToggle.setAttribute('aria-pressed', 'false');
+                dialogueToggle.setAttribute('aria-label', t('ai.mode.dialogue'));
+                dialogueToggle.innerHTML = '\uD83D\uDCAC';
                 dialogueToggle.addEventListener('click', () => {
                     _dialogueMode = !_dialogueMode;
                     if (_dialogueMode) {
@@ -1780,7 +1689,6 @@ function buildChatSchema(): MenuNode[] {
                     } else {
                         cancelSpeech();
                     }
-                    dialogueToggle.textContent = t(_dialogueMode ? 'ai.mode.dialogue' : 'ai.mode.unified');
                     dialogueToggle.setAttribute('aria-pressed', String(_dialogueMode));
                     _updateSpeakToggle();
                     if (_pendingContainer) {
@@ -1795,26 +1703,25 @@ function buildChatSchema(): MenuNode[] {
                     }
                     _updateControlsEnabled();
                 });
-                dialogueToggle.textContent = t('ai.mode.unified');
-                dialogueToggle.setAttribute('aria-pressed', 'false');
-                inputRow.appendChild(dialogueToggle);
+                btnRow.appendChild(dialogueToggle);
 
-                // [doc:adr-156/199] 台词模式朗读开关（仅 dialogue 模式可见）。
+                // 台词朗读开关
                 _speakToggleBtn = document.createElement('button');
                 _speakToggleBtn.id = 'diag-speak-toggle';
-                _speakToggleBtn.className = 'preset-chip';
+                _speakToggleBtn.className = 'preset-chip diag-btn-icon';
                 _speakToggleBtn.setAttribute('role', 'switch');
+                _speakToggleBtn.innerHTML = '\uD83D\uDD0A';
                 _speakToggleBtn.addEventListener('click', () => {
                     _speakEnabled = !_speakEnabled;
                     if (!_speakEnabled) {
-                        cancelSpeech(); // 关闭时立即停掉当前朗读
+                        cancelSpeech();
                     }
                     _updateSpeakToggle();
                 });
-                inputRow.appendChild(_speakToggleBtn);
+                btnRow.appendChild(_speakToggleBtn);
                 _updateSpeakToggle();
 
-                c.appendChild(inputRow);
+                c.appendChild(btnRow);
 
                 _pendingContainer = document.createElement('div');
                 _pendingContainer.className = 'diag-pending-area';
@@ -2237,53 +2144,81 @@ function _renderConfigCard(c: HTMLElement): void {
 // ======== 首次进入清空对话并显示欢迎 ========
 
 export function buildDiagnosticSchema(opts?: { withSessions?: boolean }): MenuNode[] {
-    const nodes: MenuNode[] = [];
-    // [doc:adr-203] 独立面板顶部展示会话历史卡；设置菜单内入口不含（保持轻量）。
-    if (opts?.withSessions) {
-        nodes.push({
-            id: 'diagnostic:sessions-card',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    addSectionTitle(inner, t('ai.chat.history'));
-                    return renderMenu(buildSessionsSchema(), inner);
-                });
-            },
-        });
-    }
-    nodes.push(
+    return [
         {
-            id: 'diagnostic:context-card',
+            id: 'diagnostic:panel',
             kind: 'custom',
             renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    addSectionTitle(inner, t('ai.context.title'));
-                    return renderMenu(buildContextSchema(), inner);
-                });
-            },
-        },
-        {
-            id: 'diagnostic:chat-card',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
+                const container = document.createElement('div');
+                container.className = 'diag-panel-layout';
+
+                // --- Tab bar ---
+                const tabBar = document.createElement('div');
+                tabBar.className = 'type-row';
+
+                type PanelTab = 'chat' | 'config';
+                const tabs: { id: PanelTab; label: string }[] = [
+                    { id: 'chat', label: t('ai.chat.title') },
+                    { id: 'config', label: t('ai.config.title') },
+                ];
+
+                let activeTab: PanelTab = 'chat';
+                const tabBtns: HTMLButtonElement[] = [];
+
+                for (const tab of tabs) {
+                    const btn = document.createElement('button');
+                    btn.textContent = tab.label;
+                    btn.className = 'mode-btn' + (activeTab === tab.id ? ' active' : '');
+                    btn.setAttribute('role', 'tab');
+                    btn.setAttribute('aria-selected', String(activeTab === tab.id));
+                    btn.addEventListener('click', () => switchTab(tab.id));
+                    tabBar.appendChild(btn);
+                    tabBtns.push(btn);
+                }
+                container.appendChild(tabBar);
+
+                // --- 对话 tab pane（始终渲染，tab 切换仅 toggle display） ---
+                const chatPane = document.createElement('div');
+                chatPane.className = 'diag-tab-pane';
+
+                if (opts?.withSessions) {
+                    cardContainer(chatPane, (inner) => {
+                        addSectionTitle(inner, t('ai.chat.history'));
+                        return renderMenu(buildSessionsSchema(), inner);
+                    });
+                }
+                cardContainer(chatPane, (inner) => {
                     addSectionTitle(inner, t('ai.chat.title'));
                     return renderMenu(buildChatSchema(), inner);
                 });
-            },
-        },
-        {
-            id: 'diagnostic:config-card',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
+                container.appendChild(chatPane);
+
+                // --- 配置 tab pane ---
+                const configPane = document.createElement('div');
+                configPane.className = 'diag-tab-pane';
+                configPane.style.display = 'none';
+                cardContainer(configPane, (inner) => {
                     addSectionTitle(inner, t('ai.config.title'));
                     return renderMenu(buildConfigSchema(), inner);
                 });
+                container.appendChild(configPane);
+
+                c.appendChild(container);
+
+                function switchTab(tabId: PanelTab) {
+                    if (activeTab === tabId) return;
+                    activeTab = tabId;
+                    for (let i = 0; i < tabs.length; i++) {
+                        const isActive = tabs[i].id === tabId;
+                        tabBtns[i].className = 'mode-btn' + (isActive ? ' active' : '');
+                        tabBtns[i].setAttribute('aria-selected', String(isActive));
+                    }
+                    chatPane.style.display = tabId === 'chat' ? '' : 'none';
+                    configPane.style.display = tabId === 'config' ? '' : 'none';
+                }
             },
-        }
-    );
-    return nodes;
+        },
+    ];
 }
 
 /** 关面板收场：停朗读 + 中止流式 + flush 配置/会话 + 清理运行态与 DOM 引用。
