@@ -328,7 +328,7 @@ export function registerMotionActions(): void {
         label: 'ai.actions.motion.openDetail',
         domain: 'motion',
         icon: 'lucide:info',
-        params: [{ name: 'sceneMotionId', type: 'string' }],
+        params: [{ name: 'sceneMotionId', type: 'string', optional: true }],
         destructive: false,
         execute: async (p) => {
             const sceneMotionId = p.sceneMotionId as string | undefined;
