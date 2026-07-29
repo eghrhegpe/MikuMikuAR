@@ -120,6 +120,26 @@ func (a *App) AiGetLLMConfig() LLMConfig {
 	return a.getLLMConfig()
 }
 
+// AiFetchModels 从当前配置端点联网发现可用模型列表（OpenAI 兼容 /models）。
+// 读内部 Config 的 key（不经剥离版 getLLMConfig），失败返回空列表 + error。
+func (a *App) AiFetchModels() ([]string, error) {
+	cfg, err := a.GetConfig()
+	if err != nil || cfg.LLMConfig == nil {
+		return nil, nil
+	}
+	apiKey := cfg.LLMConfig.AIKey
+	if envKey := os.Getenv("MIKUAI_API_KEY"); envKey != "" {
+		apiKey = envKey
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), testConnTimeout)
+	defer cancel()
+	return llm.FetchModels(ctx, llm.Config{
+		BaseURL: cfg.LLMConfig.BaseURL,
+		Model:   cfg.LLMConfig.Model,
+		ApiKey:  apiKey,
+	})
+}
+
 type LLMConnectionResult struct {
 	OK      bool   `json:"ok"`
 	Kind    string `json:"kind"`

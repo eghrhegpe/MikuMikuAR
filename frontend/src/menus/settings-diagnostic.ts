@@ -1656,14 +1656,8 @@ function buildConfigSchema(): MenuNode[] {
                     modelRefresh.disabled = true;
                     modelRefresh.textContent = '…';
                     try {
-                        // 同步输入值到缓存，确保 fetchModels 读到最新 endpoint
-                        if (_configEndpoint) {
-                            _localConfig.endpoint = _configEndpoint.value;
-                        }
-                        if (_configModel) {
-                            _localConfig.model = _configModel.value;
-                        }
-                        saveAiConfig({ endpoint: _localConfig.endpoint, model: _localConfig.model });
+                        // 先 flush 保存当前输入（走 go/browser 正确分支），确保后端读到最新 endpoint/key
+                        await _flushAndSave();
                         const models = (await _ai.fetchModels?.()) ?? [];
                         if (_configModelDatalist) {
                             _configModelDatalist.innerHTML = '';
@@ -1677,8 +1671,14 @@ function buildConfigSchema(): MenuNode[] {
                             _localConfig.model = models[0];
                             modelInput.value = models[0];
                         }
-                    } catch {
-                        /* 静默失败，用户仍可手动输入 */
+                        // 可见反馈：发现数量 / 无结果（title 悬浮提示）
+                        modelRefresh.title =
+                            models.length > 0
+                                ? t('ai.config.modelsFound', { n: String(models.length) })
+                                : t('ai.config.modelsNone');
+                    } catch (err) {
+                        console.warn('[ai-config] 发现模型失败', err);
+                        modelRefresh.title = t('ai.config.modelsNone');
                     } finally {
                         _refreshing = false;
                         modelRefresh.disabled = false;

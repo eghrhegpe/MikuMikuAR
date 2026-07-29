@@ -115,6 +115,17 @@ class GoAiAdapter implements AiService {
     }
 
     async fetchModels(): Promise<string[]> {
+        // 桌面端联网发现模型：调 Go binding 真正请求 {baseUrl}/models（带 key）。
+        // 先前仅回显 _capCache.models（配置里的单个 model），并非真实发现。
+        try {
+            const b = await _getB();
+            const models = await b.AiFetchModels();
+            if (Array.isArray(models) && models.length > 0) {
+                return [...models].sort();
+            }
+        } catch {
+            /* 网络/鉴权失败静默回退缓存 */
+        }
         if (this._capCache?.models && this._capCache.models.length > 0) {
             return [...this._capCache.models];
         }

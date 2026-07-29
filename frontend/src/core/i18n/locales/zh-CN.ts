@@ -1875,6 +1875,8 @@ export const zhCN: Record<string, string> = {
     'ai.config.apiKey': 'API 密钥',
     'ai.config.model': '模型',
     'ai.config.refreshModels': '发现模型',
+    'ai.config.modelsFound': '发现 {n} 个模型',
+    'ai.config.modelsNone': '未发现模型，请手动填写（如 sensenova-6.7-flash-lite）',
     'ai.config.keyConfigured': '已配置（重填以更新）',
     'ai.config.save': '保存',
     'ai.config.saving': '保存中...',
