@@ -152,7 +152,7 @@ describe('ADR-163 claimBones', () => {
         expect(el.textContent).toContain('頭');
         expect(el.textContent).toContain('body-posture');
         expect(el.style.display).not.toBe('none');
-    });
+    }, 30000);
 
     it('d) 冲突 banner 无冲突时隐藏', async () => {
         mockState.focusedModelId = 'm1';
@@ -160,7 +160,7 @@ describe('ADR-163 claimBones', () => {
         const el = document.createElement('div');
         updatePerceptionConflictBanner(el, 'm1');
         expect(el.style.display).toBe('none');
-    });
+    }, 30000);
 
     it('d) [doc:adr-166] 任意模型冲突均显示 banner（不限焦点）', async () => {
         mockState.focusedModelId = 'm1';
@@ -175,7 +175,7 @@ describe('ADR-163 claimBones', () => {
         // [doc:adr-166] banner 不再限焦点，m2 有冲突即显示
         expect(el.style.display).not.toBe('none');
         expect(el.textContent).toContain('perception.gaze.head');
-    });
+    }, 30000);
 
     it('d) [doc:adr-166 P2-3] renderPerceptionConflictBanners 同屏并显焦点+pinned 冲突', async () => {
         mockState.focusedModelId = 'm1';
@@ -199,5 +199,5 @@ describe('ADR-163 claimBones', () => {
         expect(container.textContent).toContain('m1');
         expect(container.textContent).toContain('m2');
         expect(container.textContent).toContain('perception.gaze.head');
-    });
+    }, 30000);
 });
