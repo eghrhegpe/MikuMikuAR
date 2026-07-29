@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"time"
 
@@ -64,16 +65,34 @@ func (a *App) AiStreamChat(req llm.ChatRequest) error {
 	a.llmMu.Unlock()
 
 	client := a.getLLMClient(req)
+	a.safeLogInfo("[ai-stream][go] AiStreamChat 启动 model=%q 消息数=%d tools=%d", req.Model, len(req.Messages), len(req.Tools))
 
 	go func() {
 		defer cancel()
+		// goroutine 内 panic 不会被外层捕获，会导致事件永不 emit、前端永久挂起。
+		// 兜底：recover 后主动 emit error，保证前端能收尾。
+		defer func() {
+			if r := recover(); r != nil {
+				a.safeLogError("[ai-stream][go] StreamChat goroutine panic: %v", r)
+				if a.wailsApp != nil {
+					a.wailsApp.Event.Emit("ai:error", map[string]string{"error": fmt.Sprintf("后端处理异常: %v", r)})
+				}
+			}
+		}()
+		eventCount := 0
 		client.StreamChat(ctx, req, func(ev llm.StreamEvent) {
+			eventCount++
 			switch ev.Type {
 			case "chunk":
-				a.wailsApp.Event.Emit("ai:chunk", map[string]string{"delta": ev.Delta})
+				a.wailsApp.Event.Emit("ai:chunk", map[string]string{
+					"delta":     ev.Delta,
+					"reasoning": boolToStr(ev.Reasoning),
+				})
 			case "done":
+				a.safeLogInfo("[ai-stream][go] StreamChat 完成 事件数=%d", eventCount)
 				a.wailsApp.Event.Emit("ai:done", map[string]string{})
 			case "error":
+				a.safeLogWarning("[ai-stream][go] StreamChat 错误: %s", ev.Error)
 				a.wailsApp.Event.Emit("ai:error", map[string]string{"error": ev.Error})
 			case "tool_call":
 				a.wailsApp.Event.Emit("ai:tool_call", map[string]string{
@@ -95,6 +114,14 @@ func (a *App) AiCancelStream() {
 		a.llmCancel()
 		a.llmCancel = nil
 	}
+}
+
+// boolToStr 将 bool 序列化为事件负载用的字符串（事件 map 统一 string 值）。
+func boolToStr(b bool) string {
+	if b {
+		return "true"
+	}
+	return "false"
 }
 
 func (a *App) AiSetLLMConfig(cfg LLMConfig) error {
