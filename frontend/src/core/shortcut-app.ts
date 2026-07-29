@@ -83,25 +83,6 @@ export function registerAppShortcuts(): void {
             group: 'shortcuts.group.popupNav',
         },
         {
-            id: 'camera:ar',
-            label: 'shortcuts.label.arCamera',
-            defaultKey: 'Digit6',
-            defaultCtrl: true,
-            prevent: true,
-            handler: () => {
-                if (!getCachedCapabilities().ar) {
-                    return;
-                }
-                const currentMode = getCameraMode();
-                if (currentMode === 'ar') {
-                    switchCameraMode('orbit');
-                } else {
-                    switchCameraMode('ar');
-                }
-            },
-            group: 'shortcuts.group.cameraControl',
-        },
-        {
             id: 'toggle:plaza',
             label: 'shortcuts.label.plaza',
             defaultKey: 'Digit7',
@@ -194,8 +175,8 @@ export function registerAppShortcuts(): void {
         {
             id: 'screenshot:current',
             label: 'shortcuts.label.screenshot',
-            defaultKey: 'F6',
-            defaultCtrl: true,
+            defaultKey: 'F2',
+            defaultCtrl: false,
             prevent: true,
             handler: () => void screenshotCurrent(),
             group: 'shortcuts.group.screenshot',

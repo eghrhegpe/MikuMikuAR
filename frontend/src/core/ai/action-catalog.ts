@@ -90,7 +90,8 @@ export function buildToolCatalogText(): string {
             }
             return `${p.name}:${p.type}`;
         });
-        lines.push(`- ${a.id}: ${paramsDesc.length ? paramsDesc.join(', ') : '无参'}`);
+        const suffix = a.readonly ? ' [只读，自动执行]' : '';
+        lines.push(`- ${a.id}: ${paramsDesc.length ? paramsDesc.join(', ') : '无参'}${suffix}`);
     }
     return lines.join('\n');
 }

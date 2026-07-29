@@ -254,7 +254,7 @@ export function registerMotionActions(): void {
 
     registerAction({
         id: 'motion:browse-music',
-        label: '浏览音频库',
+        label: 'ai.actions.motion.browseMusic',
         domain: 'motion',
         icon: 'lucide:library',
         params: [],
@@ -272,7 +272,7 @@ export function registerMotionActions(): void {
 
     registerAction({
         id: 'motion:browse-scene-motions',
-        label: '浏览场景动作库',
+        label: 'ai.actions.motion.browseSceneMotions',
         domain: 'motion',
         icon: 'lucide:folder-open',
         params: [],
@@ -322,7 +322,7 @@ export function registerMotionActions(): void {
 
     registerAction({
         id: 'motion:open-detail',
-        label: '打开动作详情',
+        label: 'ai.actions.motion.openDetail',
         domain: 'motion',
         icon: 'lucide:info',
         params: [{ name: 'sceneMotionId', type: 'string' }],

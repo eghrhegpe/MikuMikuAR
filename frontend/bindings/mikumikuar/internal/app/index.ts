@@ -18,6 +18,7 @@ export type {
     KeyBindingOverride,
     LLMConfig,
     LLMConnectionResult,
+    LogEntry,
     ModelEntry,
     ModelMeta,
     ModelPresetEntry,

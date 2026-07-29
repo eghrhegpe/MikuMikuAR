@@ -55,6 +55,20 @@ export function AiFetchModels(): $CancellablePromise<string[] | null> {
     return $Call.ByID(1185084637);
 }
 
+/**
+ * AiGetBackendLogs returns recent backend log entries.
+ */
+export function AiGetBackendLogs(level: string, limit: number): $CancellablePromise<$models.LogEntry[] | null> {
+    return $Call.ByID(3385675994, level, limit);
+}
+
+/**
+ * AiGetBackendState returns current backend configuration state.
+ */
+export function AiGetBackendState(): $CancellablePromise<{ [_ in string]?: any } | null> {
+    return $Call.ByID(2109479170);
+}
+
 export function AiGetLLMConfig(): $CancellablePromise<$models.LLMConfig> {
     return $Call.ByID(2848110132);
 }
