@@ -270,8 +270,13 @@ describe('modelToRow', () => {
         });
     });
 
-    it('sublabel is always undefined', () => {
-        const row = modelToRow(makeModel({ comment: 'Any comment' }));
+    it('uses model comment as sublabel', () => {
+        const row = modelToRow(makeModel({ comment: 'Miku model' }));
+        expect(row.sublabel).toBe('Miku model');
+    });
+
+    it('sets sublabel to undefined when comment is empty', () => {
+        const row = modelToRow(makeModel({ comment: '' }));
         expect(row.sublabel).toBeUndefined();
     });
 
