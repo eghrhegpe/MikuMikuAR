@@ -39,6 +39,7 @@ import { showConfirm } from '../core/dialog';
 import { showErrorToast } from '../core/toast';
 import { logWarn } from '../core/logger';
 import { DebouncedTimer } from '../core/async';
+import { goKeyAllowsProceed } from '../core/ai/go-key-allows-proceed';
 
 // ======== 模块级状态 ========
 
@@ -112,14 +113,9 @@ let _autoTestTimer: DebouncedTimer | null = null;
 let _autoTesting = false;
 
 /** Go 桌面端 key 不可回读，_goKeyConfigured=true 时 missingKey 不应阻止请求。
- *  返回「去掉 missingKey 后是否仍有阻碍性错误」。 */
+ *  委托给 core/ai/go-key-allows-proceed 纯函数。 */
 function _goKeyAllowsProceed(validation: ReturnType<typeof validateAiConfig>): boolean {
-    if (validation.ok) return true;
-    if (_ai?.kind === 'go' && _goKeyConfigured) {
-        const nonKey = validation.errors?.filter((e) => e.kind !== 'missingKey') ?? [];
-        return nonKey.length === 0;
-    }
-    return false;
+    return goKeyAllowsProceed(validation, _ai?.kind === 'go', _goKeyConfigured);
 }
 
 // ======== 生命周期 ========

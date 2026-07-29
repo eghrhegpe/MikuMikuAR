@@ -348,7 +348,7 @@ export function modelToRow(m: LibraryModel): PopupRow {
         label: resolveModelLabel(m, t('library.unknown')),
         icon: resolveModelIcon(m),
         target: m.file_path,
-        sublabel: undefined,
+        sublabel: m.name || undefined,
         model: m,
         editable: m.format === 'pmx',
         wrapLabel: true,
