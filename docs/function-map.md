@@ -7,17 +7,18 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 106 | 721 |
+| 核心基础设施 | 107 | 723 |
 | 3D 场景 | 105 | 1061 |
-| 菜单 & UI | 68 | 311 |
+| 菜单 & UI | 73 | 354 |
 | 换装 & 音频 | 3 | 33 |
-| 动作算法 | 18 | 131 |
+| 动作算法 | 17 | 127 |
 | 物理系统 | 2 | 14 |
 
 ## 核心基础设施
 
 | 符号 | 文件 | 说明 |
 |------|------|------|
+| `registerDiagnosticActions()` | `core/action-defs/diagnostic-actions` | — |
 | `registerEnvActions()` | `core/action-defs/env-actions` | — |
 | `registerLibraryActions()` | `core/action-defs/library-actions-def` | — |
 | `registerMotionActions()` | `core/action-defs/motion-actions` | — |
@@ -51,9 +52,9 @@
 | `buildDialogueSystemPrompt()` | `core/ai/character-bible` | 组装台词模式的 system prompt：固定人设 + 结构化输出契约。 |
 | `getBible()` | `core/ai/character-bible` | 按 id 查角色圣经；未命中返回第一个内置角色兜底。 |
 | `parseDialogueLines()` | `core/ai/character-bible` | 从 LLM 文本响应解析台词数组；容错：非法情绪归一到 neutral， 解析失败时将整段文本作为单条 neutral 台词兜底（保证 UI 永远有内容渲染）。 |
-| `ChatMode()` | `core/ai/chat-store` | 会话模式，值与 settings-diagnostic 的 DiagMode 一致（此处独立定义以免 UI→存储反向依赖）。 |
 | `ChatSession()` | `core/ai/chat-store` | 会话元信息（供列表展示，不含消息体）。 |
 | `ChatSessionFull()` | `core/ai/chat-store` | 完整会话（元信息 + 消息数组）。 |
+| `clearActiveId()` | `core/ai/chat-store` | 清除当前活动会话 id（清空会话 / 删除当前会话且无剩余时调用，避免陈旧指针）。 |
 | `deleteSession()` | `core/ai/chat-store` | 删除会话（元信息 + 消息两键）。 |
 | `deriveTitle()` | `core/ai/chat-store` | 从消息派生标题：取首条 user 消息前 20 字；无则返回空串（调用方回退 i18n 未命名）。 |
 | `getActiveId()` | `core/ai/chat-store` | 读当前活动会话 id。 |
@@ -112,6 +113,7 @@
 | `SceneSnapshotBridge()` | `core/ai/scene-snapshot` | AI 快照所需的引擎运行时读取桥接（由 scene.ts 注入）。 |
 | `SceneSnapshotData()` | `core/ai/scene-snapshot` | 格式化后的快照数据（纯数据，便于测试）。 |
 | `captureSceneSnapshot()` | `core/ai/scene-snapshot` | 采集当前场景快照文本；未初始化时返回占位符。 |
+| `captureSceneSnapshotData()` | `core/ai/scene-snapshot` | 采集当前场景快照结构化数据；未初始化时返回 null。 |
 | `formatSceneSnapshot()` | `core/ai/scene-snapshot` | 将快照数据格式化为紧凑文本（≤ NFR-3 的 2048 字符预算）。 |
 | `registerAiSnapshotBridge()` | `core/ai/scene-snapshot` | 由 scene.ts 在 initScene() 时注入引擎引用（单向依赖，避免 ai → scene 静态耦合）。 |
 | `AI_ERROR_KINDS()` | `core/ai/types` | [doc:adr-196] AiErrorKind 运行时值数组，供 Go kind 白名单校验等需要运行时遍历的场景使用。 |
@@ -1256,7 +1258,7 @@
 | `getFrameHooksSnapshot()` | `scene/motion/bone-override` | 按 order 升序返回当前注册的所有帧钩子快照（不含 hook 函数本身）。 |
 | `getOverride()` | `scene/motion/bone-override` | [doc:adr-116] 读取单条骨骼的覆盖条目（用于 UI 回填）。不存在返回 undefined。 |
 | `getOverrideType()` | `scene/motion/bone-override` | 查询骨骼覆盖类型（零分配）。 |
-| `invalidateLegChainCache()` | `scene/motion/bone-override` | 缓存失效：模型卸载或骨骼重建时调用 |
+| `getWasmIkResolver()` | `scene/motion/bone-override` | [ADR-202 §六] 获取 WASM IK 重解回调（供 feet-adjustment 等外部模块调用）。 |
 | `protectIkPosition()` | `scene/motion/bone-override` | 注册骨骼位置保护（帧钩子内调用）。 |
 | `registerBoneOverrideFrameHook()` | `scene/motion/bone-override` | — |
 | `restoreOverrides()` | `scene/motion/bone-override` | 从持久化的条目列表批量恢复覆盖。 |
@@ -1811,6 +1813,49 @@
 | 符号 | 文件 | 说明 |
 |------|------|------|
 | `showAssistant()` | `menus/assistant-panel` | — |
+| `addAssistantMessage()` | `menus/diagnostic-chat` | 添加助手消息 |
+| `buildChatSchema()` | `menus/diagnostic-chat` | 构建 chat schema（纯 DOM 构建） |
+| `buildSystemMessage()` | `menus/diagnostic-chat` | 构造 system message |
+| `finalizeStream()` | `menus/diagnostic-chat` | 流式完成收尾（非 dialogue 模式） |
+| `finalizeStreamRow()` | `menus/diagnostic-chat` | 定格 streaming row（移除 streaming class + Markdown 渲染） |
+| `pruneHistory()` | `menus/diagnostic-chat` | 历史截断 |
+| `renderChat()` | `menus/diagnostic-chat` | 全量重绘对话区 |
+| `renderDialogueCards()` | `menus/diagnostic-chat` | 渲染情绪卡片（台词模式） |
+| `renderStreamingChunk()` | `menus/diagnostic-chat` | 流式追加 chunk 到当前 streaming row |
+| `showPendingBubble()` | `menus/diagnostic-chat` | 显示"思考中"占位气泡 |
+| `updateSendButton()` | `menus/diagnostic-chat` | 更新发送/停止按钮 |
+| `updateSpeakToggle()` | `menus/diagnostic-chat` | 更新朗读开关 UI（不支持时隐藏） |
+| `applyProvider()` | `menus/diagnostic-config` | — |
+| `buildConfigSchema()` | `menus/diagnostic-config` | — |
+| `goKeyAllowsProceed()` | `menus/diagnostic-config` | — |
+| `loadInitialConfig()` | `menus/diagnostic-config` | — |
+| `persistConfig()` | `menus/diagnostic-config` | — |
+| `refreshCaps()` | `menus/diagnostic-config` | — |
+| `refreshModelList()` | `menus/diagnostic-config` | — |
+| `updateStatusBadge()` | `menus/diagnostic-config` | — |
+| `advancePendingQueue()` | `menus/diagnostic-control` | 推进队列 |
+| `applyPendingAction()` | `menus/diagnostic-control` | 应用 pending action |
+| `cancelPendingAction()` | `menus/diagnostic-control` | 取消 pending action |
+| `finalizePendingBatch()` | `menus/diagnostic-control` | 本批处理完成：回填 tool 消息，触发后续 stream |
+| `handleControlFallback()` | `menus/diagnostic-control` | 处理 LLM 文本回退（无 tool_call 时） |
+| `renderControlHint()` | `menus/diagnostic-control` | 渲染 pending 区域（无待确认时显示 hint） |
+| `renderPendingAction()` | `menus/diagnostic-control` | 渲染待确认操作卡 |
+| `tryQueuePendingAction()` | `menus/diagnostic-control` | 将 LLM 文本回退解析的 action 入待确认队列 |
+| `undoLastAction()` | `menus/diagnostic-control` | 撤销上一个破坏性动作 |
+| `buildSessionsSchema()` | `menus/diagnostic-session` | — |
+| `createSession()` | `menus/diagnostic-session` | 由 entry point 调用——通过 callbacks 通知 UI 更新 |
+| `deleteSessionAndAdjust()` | `menus/diagnostic-session` | — |
+| `doPersistSession()` | `menus/diagnostic-session` | — |
+| `flushSession()` | `menus/diagnostic-session` | — |
+| `fmtTime()` | `menus/diagnostic-session` | — |
+| `loadActiveSession()` | `menus/diagnostic-session` | — |
+| `renderSessionList()` | `menus/diagnostic-session` | — |
+| `schedulePersistSession()` | `menus/diagnostic-session` | — |
+| `switchSession()` | `menus/diagnostic-session` | — |
+| `DiagnosticState()` | `menus/diagnostic-state` | — |
+| `PendingAction()` | `menus/diagnostic-state` | — |
+| `PendingToolResult()` | `menus/diagnostic-state` | — |
+| `diagState()` | `menus/diagnostic-state` | — |
 | `buildCloudLevel()` | `menus/env-cloud-levels` | — |
 | `buildExperimentalLevel()` | `menus/env-experimental-levels` | — |
 | `buildFogLevel()` | `menus/env-fog-levels` | — |
@@ -2082,7 +2127,7 @@
 | `buildSettingsControlsLevel()` | `menus/settings-controls` | — |
 | `buildDiagnosticSchema()` | `menus/settings-diagnostic` | — |
 | `buildSettingsDiagnosticLevel()` | `menus/settings-diagnostic` | — |
-| `renderDiagnosticPanel()` | `menus/settings-diagnostic` | 渲染诊断面板内容并返回 dispose。供设置菜单入口与独立面板复用。 |
+| `renderDiagnosticPanel()` | `menus/settings-diagnostic` | — |
 | `buildSettingsDownloadsLevel()` | `menus/settings-downloads` | — |
 | `buildSettingsGraphicsLevel()` | `menus/settings-graphics` | — |
 | `buildSettingsLanguageLevel()` | `menus/settings-language` | — |
@@ -2267,10 +2312,6 @@
 | `generateIdleVmd()` | `motion-algos/procedural-motion` | — |
 | `shouldAutoDance()` | `motion-algos/procedural-motion` | — |
 | `shouldIdle()` | `motion-algos/procedural-motion` | — |
-| `SolveTwoBoneIKInput()` | `motion-algos/two-bone-ik` | 两骨骼 IK 求解输入（所有位置为世界空间） |
-| `SolveTwoBoneIKResult()` | `motion-algos/two-bone-ik` | 两骨骼 IK 求解结果 |
-| `applyRotationToWorldMatrix()` | `motion-algos/two-bone-ik` | 将增量旋转应用到 worldMatrix buffer（保持 translation 不变，仅替换旋转部分）。 |
-| `solveTwoBoneIK()` | `motion-algos/two-bone-ik` | 求解两骨骼 IK，返回髋、膝的世界空间增量旋转。 |
 | `VmdBoneFrame()` | `motion-algos/vmd-evaluator` | — |
 | `VmdEvaluator()` | `motion-algos/vmd-evaluator` | — |
 | `createVmdEvaluator()` | `motion-algos/vmd-evaluator` | — |
@@ -2317,5 +2358,5 @@
 
 ---
 
-> 共 302 个文件，2271 个导出符号。
+> 共 307 个文件，2312 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。

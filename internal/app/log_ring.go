@@ -1,9 +1,8 @@
 package app
 
 import (
-	"context"
 	"fmt"
-	"log/slog"
+	"io"
 	"sync"
 	"time"
 )
@@ -48,6 +47,25 @@ func (r *LogRing) Append(entry LogEntry) {
 	}
 }
 
+// AppendLine parses a pre-formatted slog line and appends it to the ring.
+func (r *LogRing) AppendLine(text string) {
+	level := "info"
+	if len(text) > 5 {
+		tag := text[0:5]
+		switch {
+		case tag == "ERROR" || tag == "ERRO ":
+			level = "error"
+		case tag == "WARN ":
+			level = "warn"
+		}
+	}
+	r.Append(LogEntry{
+		Time:  time.Now().Format(time.RFC3339),
+		Level: level,
+		Msg:   text,
+	})
+}
+
 // Recent returns the last n entries (most recent first).
 // If n <= 0 or n > size, returns all entries.
 func (r *LogRing) Recent(n int) []LogEntry {
@@ -83,53 +101,23 @@ func (r *LogRing) RecentByLevel(level string, n int) []LogEntry {
 	return filtered
 }
 
-// SlogRingHandler is a custom slog.Handler that writes to a LogRing + original handler.
-type SlogRingHandler struct {
+// DualWriter implements io.Writer for slog: writes to ring buffer AND stderr (forwarded io.Writer).
+type DualWriter struct {
 	ring    *LogRing
-	inner   slog.Handler
+	forward io.Writer
 }
 
-// NewSlogRingHandler creates a handler that dual-writes to ring and inner handler.
-func NewSlogRingHandler(ring *LogRing, inner slog.Handler) *SlogRingHandler {
-	return &SlogRingHandler{ring: ring, inner: inner}
+// NewDualWriter creates a writer that captures slog output to the ring buffer.
+func NewDualWriter(ring *LogRing, forward io.Writer) *DualWriter {
+	return &DualWriter{ring: ring, forward: forward}
 }
 
-func (h *SlogRingHandler) Enabled(_ context.Context, _ slog.Level) bool {
-	return true
-}
-
-func (h *SlogRingHandler) Handle(_ context.Context, r slog.Record) error {
-	attrs := make(map[string]any)
-	r.Attrs(func(a slog.Attr) bool {
-		attrs[a.Key] = a.Value.Any()
-		return true
-	})
-
-	entry := LogEntry{
-		Time:  r.Time.Format(time.RFC3339),
-		Level: r.Level.String(),
-		Msg:   r.Message,
+func (w *DualWriter) Write(p []byte) (int, error) {
+	n, err := w.forward.Write(p)
+	if w.ring != nil && n > 0 {
+		w.ring.AppendLine(string(p[:n]))
 	}
-	if len(attrs) > 0 {
-		entry.Attrs = attrs
-	}
-
-	h.ring.Append(entry)
-
-	// Forward to inner handler
-	if h.inner != nil {
-		return h.inner.Handle(context.Background(), r)
-	}
-	return nil
-}
-
-func (h *SlogRingHandler) WithAttrs(_ []slog.Attr) slog.Handler {
-	// Simplified: return self (inner handler handles its own attrs)
-	return h
-}
-
-func (h *SlogRingHandler) WithGroup(_ string) slog.Handler {
-	return h
+	return n, err
 }
 
 // App diagnostic bindings for the AI assistant.
