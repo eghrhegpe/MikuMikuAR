@@ -656,18 +656,24 @@ textarea,
     display: flex;
     align-items: center;
     gap: calc(4px * var(--ui-scale));
-    padding: calc(2px * var(--ui-scale)) calc(4px * var(--ui-scale));
+    padding: calc(4px * var(--ui-scale)) calc(6px * var(--ui-scale));
     border-radius: calc(4px * var(--ui-scale));
+    cursor: pointer;
+}
+.diag-session-row:hover {
+    background: var(--white-08, rgba(255, 255, 255, 0.08));
 }
 .diag-session-row--active {
     background: var(--surface2, rgba(127, 127, 127, 0.15));
+}
+.diag-session-row--active:hover {
+    background: var(--surface2, rgba(127, 127, 127, 0.2));
 }
 .diag-session-title {
     flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    cursor: pointer;
     font-size: var(--font-ui-sm);
     color: var(--text);
 }
@@ -3605,6 +3611,25 @@ textarea,
     align-items: center;
     margin-top: calc(8px * var(--ui-scale));
     flex-wrap: wrap;
+}
+/* 聊天输入按钮行：图标按钮，与 textarea 分离 */
+.diag-btn-row {
+    display: flex;
+    gap: calc(6px * var(--ui-scale));
+    align-items: center;
+    margin-top: calc(6px * var(--ui-scale));
+}
+.diag-btn-spacer {
+    flex: 1;
+}
+.diag-btn-icon {
+    font-size: calc(14px * var(--ui-scale));
+    min-width: calc(32px * var(--ui-scale));
+    padding: var(--preset-chip-pad-y) calc(4px * var(--ui-scale));
+}
+.diag-btn-icon:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
 }
 
 /* 模型发现下拉芯片组：flex 换行布局，面板内缩进与输入框对齐 */

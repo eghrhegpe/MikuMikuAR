@@ -3,6 +3,7 @@ import type { SlideMenu } from '../../menus/menu';
 import { makeTestLevel, makeTestMenu } from '../fixtures/menu';
 import { setLang } from '../../core/i18n/locale';
 import { t } from '../../core/i18n/t';
+import type { PopupLevel } from '../../core/config';
 
 // ─── SlideMenu 测试：层级管理 (getLevel/setLevel/updateRow/refreshHeader) ───
 
