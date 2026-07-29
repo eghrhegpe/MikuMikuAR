@@ -55,7 +55,9 @@ import {
     GROUND_PRESETS,
     buildGroundPresetEnvState,
     disposeGround,
+    applyGround,
 } from '../../scene/env/env-ground';
+import type { EnvState } from '../../core/types';
 
 let engine: NullEngine;
 let scene: Scene;
@@ -98,6 +100,70 @@ describe('Ground Presets — 字段完整性', () => {
         expect(state).toHaveProperty('groundColor');
         expect(state).toHaveProperty('groundAlpha');
         expect(state).toHaveProperty('reflectionQuality');
+    });
+
+    it('每个预设含合法 sourceKind，且不落入 buildGroundPresetEnvState 返回', () => {
+        const kinds = new Set(['solid', 'canvas', 'texture', 'procedural']);
+        for (const [name, preset] of Object.entries(GROUND_PRESETS)) {
+            expect(kinds.has(preset.sourceKind), `preset "${name}" sourceKind 非法`).toBe(true);
+            // sourceKind 是纯预设层语义标注，不得写入 envState
+            expect(buildGroundPresetEnvState(preset)).not.toHaveProperty('sourceKind');
+        }
+    });
+
+    it('procedural 预设(金属/木纹)不残留误导性 groundStyle:solid', () => {
+        expect(GROUND_PRESETS.metalStage.sourceKind).toBe('procedural');
+        expect(GROUND_PRESETS.woodStage.sourceKind).toBe('procedural');
+        // 死字段已修正：程序化来源不再声明 solid（避免原地路径误判为 canvas）
+        expect(GROUND_PRESETS.metalStage.groundStyle).not.toBe('solid');
+        expect(GROUND_PRESETS.woodStage.groundStyle).not.toBe('solid');
+    });
+});
+
+// ──────────────── 覆盖 bug 守护：程序化纹理不被原地更新覆盖 ────────────────
+describe('applyGround 原地更新 — 程序化纹理防覆盖守卫', () => {
+    function fullEnvState(overrides: Partial<EnvState> = {}): EnvState {
+        // 以程序化预设(metalStage)为基底，补齐 applyGround 读取但预设未含的字段。
+        // reflectionQuality 强制 off：避免 buildGroundReflection 拉起水面/planar 单例
+        // （本测试未 mock 水面子系统）；程序化纹理生成与反射无关，不影响守护断言。
+        return {
+            ...buildGroundPresetEnvState(GROUND_PRESETS.metalStage),
+            groundVisible: true,
+            groundPreset: 'metalStage',
+            groundType: 'flat',
+            groundInfinite: false,
+            groundSize: 500,
+            groundLevel: 0,
+            reflectionQuality: 'off',
+            groundReflectionQuality: 'off',
+            groundReflectionBlend: 0,
+            ...overrides,
+        } as EnvState;
+    }
+
+    it('改 groundRoughness 触发原地更新后，albedo 纹理对象未被替换（防程序化覆盖）', () => {
+        clearGroundTexCache();
+        // 首次：走重建路径，生成程序化 PBR 三件套
+        applyGround(fullEnvState());
+        const mesh = _envSys.ground.mesh;
+        expect(mesh, 'applyGround 应已构建地面网格').not.toBeNull();
+        const mat = mesh!.material as any;
+        // 程序化分支专属证据：PBRMaterial 挂了 metallicTexture（canvas 路径不设）
+        expect(mat?.metallicTexture, '首次构建应生成程序化 PBR 三件套').toBeTruthy();
+        const albedoBefore = mat?.albedoTexture ?? mat?.diffuseTexture;
+        expect(albedoBefore, '首次应有 albedo 纹理').toBeTruthy();
+
+        // 二次：仅改 groundRoughness（不在 typeKey 内 → keyChanged=false → 走原地更新路径）
+        applyGround(fullEnvState({ groundRoughness: 0.9 }));
+        const matAfter = _envSys.ground.mesh!.material as any;
+        const albedoAfter = matAfter?.albedoTexture ?? matAfter?.diffuseTexture;
+        // 守卫生效：程序化 albedo 对象未被 _updateGroundTexture 换成新的 canvas 纹理
+        expect(albedoAfter, '原地更新不得替换程序化 albedo 纹理对象').toBe(albedoBefore);
+        // metallicTexture（程序化专属）仍在
+        expect(matAfter?.metallicTexture, 'metallicTexture 不应丢失').toBeTruthy();
+
+        // 清理：applyGround 建立了 mesh + 反射单例引用，须显式 dispose 避免污染后续用例
+        disposeGround();
     });
 });
 

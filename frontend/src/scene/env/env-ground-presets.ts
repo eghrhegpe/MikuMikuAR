@@ -8,6 +8,9 @@ export type GroundProceduralKind = EnvState['groundProceduralTexture'];
 
 export interface GroundPreset {
     label: string;
+    // 贴图来源判别式（单一语义标注，不落 envState）：
+    // solid=无图案纯色 / canvas=运行时 canvas 图案(grid/checker) / texture=文件贴图 / procedural=运行时程序化 PBR 三件套
+    sourceKind: 'solid' | 'canvas' | 'texture' | 'procedural';
     // Style
     groundStyle: 'solid' | 'grid' | 'checker' | 'texture';
     groundOverlay: 'none' | 'grid' | 'checker';
@@ -47,6 +50,7 @@ export interface GroundPreset {
 export const GROUND_PRESETS: Record<string, GroundPreset> = {
     cleanGray: {
         label: '素净灰',
+        sourceKind: 'solid',
         groundStyle: 'solid',
         groundOverlay: 'none',
         groundColor: [0.2, 0.2, 0.22],
@@ -76,6 +80,7 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
     },
     mirrorStage: {
         label: '镜面舞台',
+        sourceKind: 'solid',
         groundStyle: 'solid',
         groundOverlay: 'none',
         groundColor: [0.05, 0.05, 0.08],
@@ -105,6 +110,7 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
     },
     grass: {
         label: '草地',
+        sourceKind: 'texture',
         groundStyle: 'texture',
         groundOverlay: 'none',
         groundColor: [0.3, 0.5, 0.25],
@@ -134,6 +140,7 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
     },
     stoneTile: {
         label: '石板',
+        sourceKind: 'texture',
         groundStyle: 'texture',
         groundOverlay: 'none',
         groundColor: [0.35, 0.33, 0.3],
@@ -163,7 +170,8 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
     },
     woodStage: {
         label: '木纹舞台',
-        groundStyle: 'solid',
+        sourceKind: 'procedural',
+        groundStyle: 'texture',
         groundOverlay: 'none',
         groundColor: [0.55, 0.4, 0.25],
         groundAlpha: 1,
@@ -192,6 +200,7 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
     },
     cyberGrid: {
         label: '赛博网格',
+        sourceKind: 'canvas',
         groundStyle: 'grid',
         groundOverlay: 'grid',
         groundColor: [0.02, 0.02, 0.06],
@@ -221,7 +230,8 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
     },
     metalStage: {
         label: '金属舞台',
-        groundStyle: 'solid',
+        sourceKind: 'procedural',
+        groundStyle: 'texture',
         groundOverlay: 'none',
         groundColor: [0.55, 0.55, 0.57],
         groundAlpha: 1,
