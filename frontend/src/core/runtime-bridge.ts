@@ -170,6 +170,21 @@ export function getRuntimeBridge(): RuntimeBridge {
     return _bridge;
 }
 
+/**
+ * bootstrap 早期调用：桌面/Android 侧强制加载 @wailsio/runtime 并绑定 events 实例。
+ *
+ * 必须在任何 `events.on(...)` 订阅之前完成——否则 WailsRuntimeBridge._events 仍为 null，
+ * `get events` 会静默回落到 no-op 的 WebEvents，导致所有 Wails 后端事件订阅失效
+ * （典型症状：AI streamChat 收不到 ai:chunk/ai:done/ai:error，流永久挂起、发送按钮卡死）。
+ * web 平台无需加载（WebRuntimeBridge 自带同步 events），直接 no-op。
+ */
+export async function initRuntimeBridge(): Promise<void> {
+    const bridge = getRuntimeBridge();
+    if (bridge instanceof WailsRuntimeBridge) {
+        await bridge.init();
+    }
+}
+
 // ======== 便捷导出（业务侧直接消费，无需每次 getRuntimeBridge()） ========
 export const events: RuntimeEvents = new Proxy({} as RuntimeEvents, {
     get(_target, prop: string) {
