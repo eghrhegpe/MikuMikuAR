@@ -1,26 +1,30 @@
 // @ts-nocheck — Babylon.js mock 类型由 vi.mock 运行时替换（供 model-manager 拆分测试复用）
 // Shared Babylon.js mock factories + test helpers for the model-manager split tests.
 //
-// Mock classes are imported directly from ./mocks/babylon-classes — the same source the
-// original vi.mock factories used via `vi.importActual(...)` — so the classes the SUT
-// (model-manager.ts) sees through vi.mock are identical to the ones the helpers below
-// instantiate (new Mesh(...) etc.). This keeps behavior 1:1 with the pre-split file.
+// ADR-206: Babylon 工厂函数统一来自 mocks/babylon-factories.ts（单一规范源），
+// 本文件仅保留 model-manager 独有的定制（MergeMeshes 副作用、Vector3 原型补丁）
+// 和领域特有 helper（makeModelInstance / createTestMesh 等）。
 import { vi } from 'vitest';
 import {
     MockScene,
     MockMesh,
-    MockStandardMaterial,
     MockVector3,
     MockQuaternion,
     MockMatrix,
-    MockColor3,
+    MockStandardMaterial,
 } from './mocks/babylon-classes';
+import {
+    mockScene,
+    mockMathColor,
+    mockStandardMaterial,
+} from './mocks/babylon-factories';
 
 // ---- vi.mock factories (passed by reference into each split file's vi.mock) ----
 
-export function babylonSceneModule() {
-    return { Scene: MockScene };
-}
+// 直接复用 babylon-factories（无定制）
+export const babylonSceneModule = mockScene;
+export const babylonMathColorModule = mockMathColor;
+export const babylonStandardMaterialModule = mockStandardMaterial;
 
 export function babylonMeshModule() {
     MockMesh.MergeMeshes = vi.fn(() => null);
@@ -87,14 +91,6 @@ export function babylonMathVectorModule() {
         return new V3(this.x - v.x, this.y - v.y, this.z - v.z);
     };
     return { Vector3: V3, Quaternion: MockQuaternion, Matrix: MockMatrix };
-}
-
-export function babylonMathColorModule() {
-    return { Color3: MockColor3 };
-}
-
-export function babylonStandardMaterialModule() {
-    return { StandardMaterial: MockStandardMaterial };
 }
 
 // ---- Helpers ----
