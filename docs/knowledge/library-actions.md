@@ -8,10 +8,13 @@ source_files:
   - frontend/src/menus/library-actions.ts
 adr: []
 symbols:
-  - loadThumbnailsForLevel
-  - ensureModelMeta
   - prepareModelRestore
   - importFile
+  - importFileByPath
+  - startReplaceModel
+  - onModelRowClick
+  - loadModelNormal
+  - replaceMotion
 invariants:
   - 缩略图异步加载，不阻塞 UI
 tests: []

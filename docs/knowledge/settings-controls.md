@@ -8,6 +8,17 @@ source_files:
   - frontend/src/menus/settings-controls.ts
 adr:
   - ADR-157
+symbols:
+  - buildSettingsControlsLevel
+invariants:
+  - 快捷键编辑支持可交互式按键绑定，显示冲突检测
+  - 快捷键绑定修改后经 shortcut-registry 持久化
+  - buildCameraSchema 构建灵敏度/反转Y轴/自动居中 UI
+tests: []
+use_when:
+  - 设置操控
+  - 快捷键编辑
+  - 相机设置
 ---
 
 ## 系统概览

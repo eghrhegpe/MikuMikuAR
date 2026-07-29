@@ -6,6 +6,28 @@ scope:
   - frontend/src/scene/render/lighting.ts
 source_files:
   - frontend/src/scene/render/lighting.ts
+symbols:
+  - initLighting
+  - disposeLighting
+  - getLightState
+  - setLightState
+  - transitionLighting
+  - getHemiLight
+  - getDirLight
+  - setSkipLightAutoSave
+  - rebakeEnvBrightness
+  - LightState
+invariants:
+  - setLightState 为光照唯一写入入口，被 env-bridge 调用 applyLightingPresetFromEnv
+  - 切换预设时 _cancelAllLightingTweens 取消旧补间防冲突
+  - disposeLighting 级联释放方向光、半球光、舞台灯、阴影、太阳盘、光锥等全部子资源
+  - 子模块共享 lightingState 单例，避免状态碎片
+tests: []
+use_when:
+  - 场景光照
+  - 方向光/半球光
+  - 灯光状态
+  - 灯光补间
 ---
 
 ## 系统概览

@@ -8,6 +8,26 @@ source_files:
   - frontend/src/scene/motion/bone-override-store.ts
 adr:
   - ADR-084
+symbols:
+  - BoneOverrideStore
+  - InMemoryBoneOverrideStore
+  - getBoneOverrideStore
+  - OverrideSlot
+  - BoneOwnership
+  - BoneConflict
+  - ModuleRuntimeState
+  - ReleaseListener
+invariants:
+  - 骨骼所有权按模块隔离，claimBones 记录哪个模块占用了哪些骨骼
+  - 冲突检测：同一骨骼被两模块同时占用时记录到 conflicts map，不上抛异常
+  - releaseBones 时触发所有 ReleaseListener，供感知层/虚拟裙骨响应式释放
+  - disposeModel 级联释放该模型所有骨骼所有权
+tests: []
+use_when:
+  - 骨骼覆盖存储
+  - 骨骼仲裁
+  - 虚拟裙骨
+  - 感知层冲突
 ---
 
 ## 系统概览

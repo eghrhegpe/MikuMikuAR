@@ -13,6 +13,19 @@ symbols:
   - setResourceViewMode
   - isModelDirTarget
   - getPendingMetaGuard
+  - splitSubdirSegments
+  - isLeafFlattenDir
+  - resolveDisplayBrowseDir
+  - computeRestoreSegments
+  - thumbnailKeyForModel
+  - loadThumbnailsStreaming
+  - abortThumbnailStreaming
+  - modelToRow
+  - modelToResourceItem
+  - buildResourceItemsForDir
+  - buildLevel
+  - buildModelRootItems
+  - refreshModelRoot
 invariants:
   - 视图模式在 list/grid 之间切换
 tests: []

@@ -8,6 +8,21 @@ source_files:
   - frontend/src/menus/library-session-store.ts
 adr:
   - ADR-135
+symbols:
+  - LibrarySessionStore
+  - LibraryRestoreStatus
+  - LibraryRestoreState
+  - LibraryLoadingState
+invariants:
+  - 收敛 library-core / library-actions / library-browse 三模块散落的隐式状态，提供唯一权威读写入口
+  - 恢复状态机：'idle' → 'polling' → 'ready' / 'timeout'
+  - isExtracting 支持 per-model 精确守卫（P1.2），非解压模型直接放行
+  - reset 重置恢复链路状态但不重置 loading 状态（弹窗关闭时调用）
+tests: []
+use_when:
+  - 资源库会话
+  - 恢复状态
+  - 加载守卫
 ---
 
 ## 系统概览

@@ -8,6 +8,17 @@ source_files:
   - frontend/src/menus/settings-graphics.ts
 adr:
   - ADR-157
+symbols:
+  - buildSettingsGraphicsLevel
+invariants:
+  - 性能预设 Schema 支持自动/质量优先/平衡/性能优先/自定义五档
+  - 渲染效果 Schema 管理阴影/泛光/FXAA/DOF/SSAO/辉光/色差/颗粒等开关
+  - 设置变更经 wails-bindings.SetPerformanceMode / renderer/setRenderState 写入
+tests: []
+use_when:
+  - 设置画面
+  - 性能预设
+  - 渲染效果
 ---
 
 ## 系统概览

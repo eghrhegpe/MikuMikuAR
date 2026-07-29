@@ -11,8 +11,13 @@ adr:
 symbols:
   - handlePlazaDownload
   - installDownloadListener
+  - installShortcuts
+  - installEventListeners
+  - ensureObserver
 invariants:
-  - 被 plaza-browser import
+  - 下载拦截监听在广场打开时安装，关闭时移除
+  - 下载成功后自动触发模型加载
+  - installShortcuts 注册键盘快捷键（经 visibleGuard 守卫仅广场可见时响应）
 tests: []
 use_when:
   - 广场下载

@@ -8,6 +8,22 @@ source_files:
   - frontend/src/physics/physics-bridge.ts
 adr:
   - ADR-081
+symbols:
+  - findRuntimeBone
+  - getBoneLocalMatrix
+  - getBoneWorldPosition
+  - autoFitAttachment
+  - PerFrameUpdateRegistry
+invariants:
+  - 本模块不被任何启动期代码 eager 导入，仅作为将来挂载布料/ragdoll/attachment 时的基础设施备用
+  - PerFrameUpdateRegistry 为单一 onBeforeRenderObservable 调度多个按 key 注册的每帧回调
+  - dt 做非有限值/后台恢复钳制（上限 50ms）
+  - getBoneLocalMatrix 返回局部矩阵（不含 rootMesh 变换）；世界矩阵请走 mmd-adapter.getBoneWorldMatrix
+tests: []
+use_when:
+  - 物理桥
+  - 骨骼读取
+  - 每帧更新注册表
 ---
 
 ## 系统概览

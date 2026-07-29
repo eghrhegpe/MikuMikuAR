@@ -14,6 +14,8 @@ symbols:
   - awaitWailsBridge
   - openExternalURL
   - guardExternalAction
+  - isWebEntryMode
+  - readDeclaredAdapter
 invariants:
   - 平台探测函数保持无副作用；启动期桥接选择必须使用 awaitWailsBridge 或 resolveBackend
   - Android 与纯浏览器均禁止外部桌面应用动作

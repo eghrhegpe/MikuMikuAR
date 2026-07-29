@@ -8,6 +8,17 @@ source_files:
   - frontend/src/core/init.ts
   - frontend/src/core/main.ts
 adr: []
+symbols:
+  - bootstrap
+invariants:
+  - bootstrap 是前端唯一启动入口，串联 init → 场景初始化 → 渲染循环
+  - init 内部按序执行：配置加载 → i18n → 图标 → 场景创建 → 环境恢复 → UI 恢复 → 快捷键 → 渲染循环
+  - restoreEnvState / restoreUIState 从持久化配置恢复状态，异常时降级不阻塞启动
+tests: []
+use_when:
+  - 启动引导
+  - 初始化
+  - bootstrap
 ---
 
 ## 系统概览

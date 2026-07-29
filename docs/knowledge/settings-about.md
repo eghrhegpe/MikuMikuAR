@@ -8,6 +8,17 @@ source_files:
   - frontend/src/menus/settings-about.ts
 adr:
   - ADR-157
+symbols:
+  - buildSettingsAboutLevel
+invariants:
+  - 版本信息从 Go 后端 GetBuildInfo 获取，非硬编码
+  - 链接为 GitHub 仓库/许可证/问题反馈，经 platform.openExternalURL 打开
+  - 更新支持自动检查（CheckForUpdate）与手动触发
+tests: []
+use_when:
+  - 设置关于
+  - 版本信息
+  - 更新检查
 ---
 
 ## 系统概览

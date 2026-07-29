@@ -6,6 +6,21 @@ scope:
   - frontend/src/scene/env/env-impl.ts
 source_files:
   - frontend/src/scene/env/env-impl.ts
+symbols:
+  - ensureEnvUpdateObserver
+  - disposeEnvUpdateObserver
+  - applyFog
+invariants:
+  - 本文件为 barrel 重导出枢纽：汇聚 env-water/env-clouds/env-sky/env-ground/env-terrain/env-context/env-dispatcher 的各子系统符号
+  - dispose 链路级联释放 water/clouds/mirror 子资源；observer 句柄经 observer-handle 管理
+  - disposeEnvUpdateObserver 中调用 clearSceneTickCallbacks 清除所有 tick 回调
+  - 外部模块只应经 env.ts 门面访问本文件导出的符号
+tests: []
+use_when:
+  - 环境实现
+  - observer
+  - fog
+  - barrel 重导出
 ---
 
 ## 系统概览
