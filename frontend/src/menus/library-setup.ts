@@ -265,8 +265,12 @@ export async function rescanAndSync(): Promise<LibraryModel[]> {
                 console.warn('[web-scan] 增量刷新失败', e);
             }
         };
-        const throttledCb = (scannedDirs: number) => {
+        const throttledCb = (scannedDirs: number, currentDir: string) => {
             const now = Date.now();
+            // 更新当前扫描目录到状态栏（子目录名，如 PMX/subdir）
+            if (currentDir) {
+                setLoadingStatus(t('library.scanningDir', { dir: currentDir }));
+            }
             if (now - lastFlushTs < 500) {
                 // 节流窗口内，调度延迟刷新
                 if (!pendingFlush) {

@@ -722,7 +722,7 @@ let _scanningPromise: Promise<void> | null = null;
 // [doc:adr-183] 扫描进度回调（节流刷新 UI 用）。
 // 每扫完一个子目录调用一次，调用方据此节流 dispatch 事件增量刷新 UI，
 // 避免「扫描中 UI 不更新，扫完才一次性显示」的体感问题。
-type ScanProgressCallback = (scannedDirs: number) => void;
+type ScanProgressCallback = (scannedDirs: number, currentDir: string) => void;
 let _scanProgressCb: ScanProgressCallback | null = null;
 
 /** [doc:adr-183] 注册扫描进度回调，供 UI 层节流增量刷新。 */
@@ -1320,7 +1320,7 @@ async function _scanDirIntoIDB(
             // 回调在 try 外部，子目录扫描失败已 return 不会到此处。
             if (_scanProgressCb) {
                 try {
-                    _scanProgressCb(++_scannedDirCount);
+                    _scanProgressCb(++_scannedDirCount, subRelPath);
                 } catch {
                     /* 回调失败不影响扫描 */
                 }

@@ -1,13 +1,13 @@
 # 函数映射表
 
 > AI 找代码用。改前端功能时先 grep 此表定位文件。
-> **自动生成**（2026-07-28）— 由 `scripts/gen-funcmap.mjs` 生成。
+> **自动生成**（2026-07-29）— 由 `scripts/gen-funcmap.mjs` 生成。
 
 ## 总览
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 103 | 699 |
+| 核心基础设施 | 103 | 704 |
 | 3D 场景 | 105 | 1059 |
 | 菜单 & UI | 67 | 308 |
 | 换装 & 音频 | 3 | 33 |
@@ -61,6 +61,7 @@
 | `classifyAiError()` | `core/ai/config-store` | 根据 testConnection / streamChat 的错误消息分类错误类型。 |
 | `ensureAiConfigLoaded()` | `core/ai/config-store` | 主动预加载（建议 init 后台调用，使首次读取即命中缓存，避免回退默认窗口）。 |
 | `loadAiConfig()` | `core/ai/config-store` | 同步读取：优先内存缓存；未加载时回退默认并触发异步回源（不阻塞调用方）。 |
+| `normalizeEndpoint()` | `core/ai/config-store` | 补全 chat completions 路径：输入 `/v1` 自动补全为 `/v1/chat/completions`，已有完整路径则原样返回。 |
 | `normalizeTimeout()` | `core/ai/config-store` | [doc:adr-199 P2-3] 将超时值归一到 [MIN, MAX]；非法/缺失回落缺省。 |
 | `saveAiConfig()` | `core/ai/config-store` | 同步保存：写内存缓存 + 异步落盘 IndexedDB（fire-and-forget）。返回合并后的配置。 |
 | `validateAiConfig()` | `core/ai/config-store` | 校验配置是否足够发起一次对话。全量收集所有错误，一次性返回。 |
@@ -79,6 +80,7 @@
 | `clearErrors()` | `core/ai/error-buffer` | — |
 | `errorBuffer()` | `core/ai/error-buffer` | — |
 | `getErrors()` | `core/ai/error-buffer` | — |
+| `inferSeverity()` | `core/ai/error-buffer` | 根据 ErrorEntry 的 kind + tag 推导严重级别。 |
 | `installErrorCaptureOn()` | `core/ai/error-buffer` | — |
 | `installGlobalErrorCapture()` | `core/ai/error-buffer` | — |
 | `installLoggingPatch()` | `core/ai/error-buffer` | 幂等地 patch console.error，使其所有输出自动入环（保留原始 console.error 行为）。 |
@@ -99,6 +101,7 @@
 | `captureSceneSnapshot()` | `core/ai/scene-snapshot` | 采集当前场景快照文本；未初始化时返回占位符。 |
 | `formatSceneSnapshot()` | `core/ai/scene-snapshot` | 将快照数据格式化为紧凑文本（≤ NFR-3 的 2048 字符预算）。 |
 | `registerAiSnapshotBridge()` | `core/ai/scene-snapshot` | 由 scene.ts 在 initScene() 时注入引擎引用（单向依赖，避免 ai → scene 静态耦合）。 |
+| `AI_ERROR_KINDS()` | `core/ai/types` | [doc:adr-196] AiErrorKind 运行时值数组，供 Go kind 白名单校验等需要运行时遍历的场景使用。 |
 | `AiCapabilities()` | `core/ai/types` | AI 后端能力描述 |
 | `AiConfigProvider()` | `core/ai/types` | 用户选择的服务商配置项 |
 | `AiConnectionResult()` | `core/ai/types` | AI 连接测试结果，镜像 Go LLMConnectionResult 结构 |
@@ -306,8 +309,10 @@
 | `awaitWailsBridge()` | `core/platform` | Waits for the Wails bridge (window.wails) to be injected by the WebView. |
 | `guardExternalAction()` | `core/platform` | Guards an external application action (Blender, MMD, etc.) that is not available on Androi |
 | `isAndroidPlatform()` | `core/platform` | Returns true when running inside the Android WebView (Wails v3). |
+| `isWebEntryMode()` | `core/platform` | [doc:adr-196/176] 运行时判定是否为 web 入口（短路标记或构建模式）。 |
 | `isWebPlatform()` | `core/platform` | Returns true when running in a pure browser (no Wails bridge). |
 | `openExternalURL()` | `core/platform` | Opens a URL in the system browser. |
+| `readDeclaredAdapter()` | `core/platform` | [doc:adr-196/176] 读取 globalThis 上声明的适配器身份（'go' | 'browser'）。 |
 | `autoLoop()` | `core/playback-state` | — |
 | `isPlaying()` | `core/playback-state` | [doc:architecture] Playback control store — ADR-141 split from core/state.ts. |
 | `seekDragging()` | `core/playback-state` | — |
@@ -2290,5 +2295,5 @@
 
 ---
 
-> 共 298 个文件，2244 个导出符号。
+> 共 298 个文件，2249 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。
