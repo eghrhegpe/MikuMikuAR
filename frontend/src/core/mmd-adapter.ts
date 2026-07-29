@@ -249,6 +249,52 @@ export function applyForceToModelRigidBodiesNative(
 }
 
 /**
+ * [ADR-202 A-class] WASM 模式下手工触发 IK 重解。
+ *
+ * WASM 运行时的 MmdWasmRuntimeBone 暴露 ikSolverIndex（而非 ikSolver 字段），
+ * 故 bone-override 的 applyBoneOverrideIK 无法像 JS 模式那样调用 solver.solve()。
+ * 本函数经 fork 新增的 mmdModelSolveIk 导出，从 model.ptr 直接在 wasm 侧调用
+ * MmdModel::solve_ik，使骨骼覆盖后能重解 IK（如骑乘姿势覆盖膝盖后重解足部 IK）。
+ *
+ * 升级回归守卫：若 wasm 实例缺少 mmdModelSolveIk 导出（babylon-mmd 未含 ADR-202
+ * A-class 补丁），首次仅打一次 dev 警告并返回 false（绝不静默失效）。
+ *
+ * @param wasmInstance   MmdWasmPhysicsRuntimeImpl.wasmInstance（含 ADR-202 导出）
+ * @param model          RuntimeModel（MmdWasmModel，需有 .ptr）
+ * @param ikSolverIndex  目标骨骼的 ikSolverIndex（来自 MmdWasmRuntimeBone.ikSolverIndex；-1=无求解器）
+ * @param usePhysics     是否启用物理感知 IK（false 匹配 JS solver.solve(false) 语义）
+ * @returns true=已调用 wasm 侧 solve_ik；false=缺导出或 model.ptr 不可用
+ */
+let _solveIkMissingWarned = false;
+export function solveIkNative(
+    wasmInstance: unknown,
+    model: RuntimeModel,
+    ikSolverIndex: number,
+    usePhysics: boolean
+): boolean {
+    const wi = wasmInstance as Record<string, unknown> | null;
+    if (!wi || typeof wi.mmdModelSolveIk !== 'function') {
+        if (!_solveIkMissingWarned) {
+            _solveIkMissingWarned = true;
+            logWarn(
+                'mmd-adapter',
+                'wasm 实例缺少 mmdModelSolveIk 导出（babylon-mmd 未含 ADR-202 A-class 补丁）。骨骼覆盖后无法重解 IK。检查 vendor wasm 是否已同步至含 mmdModelSolveIk 的构建。'
+            );
+        }
+        return false;
+    }
+    if (ikSolverIndex < 0) {
+        return false; // 无 IK 求解器挂载（哨兵值 -1），非错误
+    }
+    const ptr = (model as unknown as { ptr?: number }).ptr;
+    if (typeof ptr !== 'number') {
+        return false;
+    }
+    (wi.mmdModelSolveIk as (p: number, i: number, u: boolean) => void)(ptr, ikSolverIndex, usePhysics);
+    return true;
+}
+
+/**
  * CapabilityProbe — 升级回归探测（ADR-192 Phase 2 守卫式反射）。
  * 条目 3 已通过公开 API 内化，不再需要探测；
  * 条目 9 仍依赖私有 _audio，探测用于在升级时确认字段存在。

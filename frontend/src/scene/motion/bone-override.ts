@@ -76,6 +76,13 @@ let _driverScene: import('@babylonjs/core/scene').Scene | null = null; // 驱动
 const _overrideMaps = new Map<string, Map<string, _OverrideSlot>>();
 /** 运行时骨骼查询回调（由 startBoneOverride 注入，供 dumpBoneHierarchy 使用） */
 let _getRuntimeBones: (() => readonly IMmdRuntimeBone[]) | null = null;
+/**
+ * [ADR-202 A-class] WASM IK 重解回调（由 scene 注入）。
+ * WASM 模式下 MmdWasmRuntimeBone 无 ikSolver 字段（仅有 ikSolverIndex），
+ * applyBoneOverrideIK 在 ikSolver 缺失时经此回调调用 mmdModelSolveIk 导出重解 IK。
+ * 签名：(modelId, ikSolverIndex, usePhysics) => void；null=未注入（JS 模式或未初始化）。
+ */
+let _wasmIkResolver: ((modelId: string, ikSolverIndex: number, usePhysics: boolean) => void) | null = null;
 /** [doc:adr-116 P3] 每帧钩子条目：由时间驱动模块（riding/left-hand/right-hand）注册，渲染回调每帧调用。
  *  原实现用 Set 按插入序遍历，钩子间同骨获胜者依赖模块注册次序（隐式定序，R2 病灶）。
  *  改为带 order 的数组并按 order 升序执行，顺序由声明决定，与注册时序解耦。 */
@@ -303,6 +310,15 @@ export function applyBoneOverrideIK(
         const solver = (rb as MmdRuntimeBoneExtended).ikSolver;
         if (solver) {
             solver.solve(false);
+        } else if (_wasmIkResolver) {
+            // [ADR-202 A-class] WASM 模式：ikSolver 字段缺失，改用 ikSolverIndex 经 mmdModelSolveIk 导出重解
+            const resolvedMid = _resolveModelId(modelId);
+            if (resolvedMid) {
+                const ikSolverIndex = (rb as { ikSolverIndex?: number }).ikSolverIndex;
+                if (typeof ikSolverIndex === 'number' && ikSolverIndex >= 0) {
+                    _wasmIkResolver(resolvedMid, ikSolverIndex, false);
+                }
+            }
         }
     }
 }
@@ -906,6 +922,18 @@ function _applyJsOverride(slot: _OverrideSlot, rb: IMmdRuntimeBone): void {
  * 启动覆盖系统：注册 onBeforeRenderObservable 回调。
  * 必须在动画写入之后执行，因此注册在 gaze tracking 之后。
  */
+/**
+ * [ADR-202 A-class] 注入 WASM IK 重解回调。
+ * 由 scene 在 startBoneOverride 后调用，注入一个 (modelId, ikSolverIndex, usePhysics) => void
+ * 的回调，内部解析 wasmInstance + model.ptr 并调用 mmdModelSolveIk 导出。
+ * 传 null 清除（场景销毁时）。
+ */
+export function setWasmIkResolver(
+    resolver: ((modelId: string, ikSolverIndex: number, usePhysics: boolean) => void) | null
+): void {
+    _wasmIkResolver = resolver;
+}
+
 export function startBoneOverride(
     getRuntimeBones: () => readonly IMmdRuntimeBone[],
     scene: import('@babylonjs/core/scene').Scene
@@ -1021,6 +1049,7 @@ export function stopBoneOverride(): void {
     _jsPathWarned = false;
     _overrideTypeDiagnosed = false;
     _getRuntimeBones = null;
+    _wasmIkResolver = null;
     // 清空前自动保存当前覆盖配置，避免场景重建时丢失未存盘的覆盖修改（审计 P3 fix）
     triggerAutoSave();
     clearAllOverrides();

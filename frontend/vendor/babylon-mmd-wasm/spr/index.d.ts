@@ -157,6 +157,18 @@ export function init(): void;
  */
 export function mmdModelRigidBodyApplyCentralForce(model_ptr: number, index: number, force_x: number, force_y: number, force_z: number): void;
 
+/**
+ * Manually trigger IK re-solution for the model's IK solver at `ik_solver_index`.
+ *
+ * Pass the target bone's `ikSolverIndex` (from `MmdWasmRuntimeBone.ikSolverIndex`).
+ * A negative index (no IK solver attached) is a no-op. `use_physics` mirrors the
+ * internal update path's parameter; `false` matches the JS `solver.solve(false)` call.
+ *
+ * # Safety
+ * `model_ptr` must be a valid `MmdModel` pointer obtained from `MmdRuntime.createMmdModel`.
+ */
+export function mmdModelSolveIk(model_ptr: number, ik_solver_index: number, use_physics: boolean): void;
+
 export function multiPhysicsRuntimeGetLockStatePtr(runtime: number): number;
 
 export function multiPhysicsWorldAddConstraint(world: number, world_id: number, constraint: number, disable_collisions_between_linked_bodies: boolean): void;
@@ -440,74 +452,6 @@ export interface InitOutput {
     readonly rigidBodyBundleSetShape: (a: number, b: number, c: number) => void;
     readonly rigidBodyBundleSetTurnVelocity: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly rigidBodyBundleTranslate: (a: number, b: number, c: number, d: number, e: number) => void;
-    readonly __cxa_pure_virtual: () => void;
-    readonly bw_free: (a: number) => void;
-    readonly bw_malloc: (a: number) => number;
-    readonly constraintEnableSpring: (a: number, b: number, c: number) => void;
-    readonly constraintSetAngularLowerLimit: (a: number, b: number, c: number, d: number) => void;
-    readonly constraintSetAngularUpperLimit: (a: number, b: number, c: number, d: number) => void;
-    readonly constraintSetDamping: (a: number, b: number, c: number) => void;
-    readonly constraintSetLinearLowerLimit: (a: number, b: number, c: number, d: number) => void;
-    readonly constraintSetLinearUpperLimit: (a: number, b: number, c: number, d: number) => void;
-    readonly constraintSetParam: (a: number, b: number, c: number, d: number) => void;
-    readonly constraintSetStiffness: (a: number, b: number, c: number) => void;
-    readonly constraintUseFrameOffset: (a: number, b: number) => void;
-    readonly createGeneric6DofConstraint: (a: number, b: number, c: number, d: number, e: number) => number;
-    readonly createGeneric6DofConstraintFromBundle: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
-    readonly createGeneric6DofSpringConstraint: (a: number, b: number, c: number, d: number, e: number) => number;
-    readonly createGeneric6DofSpringConstraintFromBundle: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
-    readonly destroyConstraint: (a: number) => void;
-    readonly __wbg_mmdruntime_free: (a: number, b: number) => void;
-    readonly mmdruntime_acquireDiagnosticErrorResult: (a: number) => number;
-    readonly mmdruntime_acquireDiagnosticInfoResult: (a: number) => number;
-    readonly mmdruntime_acquireDiagnosticWarningResult: (a: number) => number;
-    readonly mmdruntime_afterPhysics: (a: number) => void;
-    readonly mmdruntime_beforePhysics: (a: number, b: number, c: number) => void;
-    readonly mmdruntime_createBoneWorldMatrixBackBuffer: (a: number, b: number) => number;
-    readonly mmdruntime_createMmdModel: (a: number, b: number, c: number) => number;
-    readonly mmdruntime_destroyMmdModel: (a: number, b: number) => void;
-    readonly mmdruntime_getAnimationArena: (a: number, b: number) => number;
-    readonly mmdruntime_getAnimationIkSolverStateArena: (a: number, b: number) => number;
-    readonly mmdruntime_getAnimationMorphArena: (a: number, b: number) => number;
-    readonly mmdruntime_getAnimationRigidBodyStateArena: (a: number, b: number) => number;
-    readonly mmdruntime_getAnimationRigidBodyStateArenaSize: (a: number, b: number) => number;
-    readonly mmdruntime_getBoneWorldMatrixArena: (a: number, b: number) => number;
-    readonly mmdruntime_getLockStatePtr: (a: number) => number;
-    readonly mmdruntime_getMultiPhysicsWorld: (a: number) => number;
-    readonly mmdruntime_markMmdModelPhysicsAsNeedInit: (a: number, b: number) => void;
-    readonly mmdruntime_releaseDiagnosticResult: (a: number) => void;
-    readonly mmdruntime_setMmdModelWorldMatrix: (a: number, b: number, c: number) => void;
-    readonly mmdruntime_setPhysicsFixedTimeStep: (a: number, b: number) => void;
-    readonly mmdruntime_setPhysicsMaxSubSteps: (a: number, b: number) => void;
-    readonly mmdruntime_setRuntimeAnimation: (a: number, b: number, c: number) => void;
-    readonly mmdruntime_swapWorldMatrixBuffer: (a: number) => void;
-    readonly mmdruntime_useExternalPhysics: (a: number, b: number, c: number) => void;
-    readonly getMmdModelRigidBodyBundleLen: (a: number) => number;
-    readonly mmdModelRigidBodyApplyCentralForce: (a: number, b: number, c: number, d: number, e: number) => void;
-    readonly allocateBuffer: (a: number) => number;
-    readonly bw_acosf: (a: number) => number;
-    readonly bw_asinf: (a: number) => number;
-    readonly bw_atan2f: (a: number, b: number) => number;
-    readonly bw_atanf: (a: number) => number;
-    readonly bw_ceil: (a: number) => number;
-    readonly bw_cosf: (a: number) => number;
-    readonly bw_expf: (a: number) => number;
-    readonly bw_fabs: (a: number) => number;
-    readonly bw_fabsf: (a: number) => number;
-    readonly bw_floor: (a: number) => number;
-    readonly bw_fmodf: (a: number, b: number) => number;
-    readonly bw_isinf: (a: number) => number;
-    readonly bw_isnan: (a: number) => number;
-    readonly bw_logf: (a: number) => number;
-    readonly bw_powf: (a: number, b: number) => number;
-    readonly bw_sinf: (a: number) => number;
-    readonly bw_sqrt: (a: number) => number;
-    readonly bw_sqrtf: (a: number) => number;
-    readonly bw_tanf: (a: number) => number;
-    readonly createAnimationPool: () => number;
-    readonly createMmdRuntime: () => number;
-    readonly deallocateBuffer: (a: number, b: number) => void;
-    readonly init: () => void;
     readonly bw_cond_broadcast: (a: number) => number;
     readonly bw_cond_init: () => number;
     readonly bw_cond_wait: (a: number, b: number) => number;
@@ -573,6 +517,75 @@ export interface InitOutput {
     readonly physicsWorldSetGravity: (a: number, b: number, c: number, d: number) => void;
     readonly physicsWorldStepSimulation: (a: number, b: number, c: number, d: number) => void;
     readonly physicsWorldUseMotionStateBuffer: (a: number, b: number) => void;
+    readonly allocateBuffer: (a: number) => number;
+    readonly createAnimationPool: () => number;
+    readonly createMmdRuntime: () => number;
+    readonly deallocateBuffer: (a: number, b: number) => void;
+    readonly mmdModelSolveIk: (a: number, b: number, c: number) => void;
+    readonly init: () => void;
+    readonly bw_acosf: (a: number) => number;
+    readonly bw_asinf: (a: number) => number;
+    readonly bw_atan2f: (a: number, b: number) => number;
+    readonly bw_atanf: (a: number) => number;
+    readonly bw_ceil: (a: number) => number;
+    readonly bw_cosf: (a: number) => number;
+    readonly bw_expf: (a: number) => number;
+    readonly bw_fabs: (a: number) => number;
+    readonly bw_fabsf: (a: number) => number;
+    readonly bw_floor: (a: number) => number;
+    readonly bw_fmodf: (a: number, b: number) => number;
+    readonly bw_isinf: (a: number) => number;
+    readonly bw_isnan: (a: number) => number;
+    readonly bw_logf: (a: number) => number;
+    readonly bw_powf: (a: number, b: number) => number;
+    readonly bw_sinf: (a: number) => number;
+    readonly bw_sqrt: (a: number) => number;
+    readonly bw_sqrtf: (a: number) => number;
+    readonly bw_tanf: (a: number) => number;
+    readonly getMmdModelRigidBodyBundleLen: (a: number) => number;
+    readonly mmdModelRigidBodyApplyCentralForce: (a: number, b: number, c: number, d: number, e: number) => void;
+    readonly __cxa_pure_virtual: () => void;
+    readonly constraintEnableSpring: (a: number, b: number, c: number) => void;
+    readonly constraintSetAngularLowerLimit: (a: number, b: number, c: number, d: number) => void;
+    readonly constraintSetAngularUpperLimit: (a: number, b: number, c: number, d: number) => void;
+    readonly constraintSetDamping: (a: number, b: number, c: number) => void;
+    readonly constraintSetLinearLowerLimit: (a: number, b: number, c: number, d: number) => void;
+    readonly constraintSetLinearUpperLimit: (a: number, b: number, c: number, d: number) => void;
+    readonly constraintSetParam: (a: number, b: number, c: number, d: number) => void;
+    readonly constraintSetStiffness: (a: number, b: number, c: number) => void;
+    readonly constraintUseFrameOffset: (a: number, b: number) => void;
+    readonly createGeneric6DofConstraint: (a: number, b: number, c: number, d: number, e: number) => number;
+    readonly createGeneric6DofConstraintFromBundle: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
+    readonly createGeneric6DofSpringConstraint: (a: number, b: number, c: number, d: number, e: number) => number;
+    readonly createGeneric6DofSpringConstraintFromBundle: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
+    readonly destroyConstraint: (a: number) => void;
+    readonly __wbg_mmdruntime_free: (a: number, b: number) => void;
+    readonly mmdruntime_acquireDiagnosticErrorResult: (a: number) => number;
+    readonly mmdruntime_acquireDiagnosticInfoResult: (a: number) => number;
+    readonly mmdruntime_acquireDiagnosticWarningResult: (a: number) => number;
+    readonly mmdruntime_afterPhysics: (a: number) => void;
+    readonly mmdruntime_beforePhysics: (a: number, b: number, c: number) => void;
+    readonly mmdruntime_createBoneWorldMatrixBackBuffer: (a: number, b: number) => number;
+    readonly mmdruntime_createMmdModel: (a: number, b: number, c: number) => number;
+    readonly mmdruntime_destroyMmdModel: (a: number, b: number) => void;
+    readonly mmdruntime_getAnimationArena: (a: number, b: number) => number;
+    readonly mmdruntime_getAnimationIkSolverStateArena: (a: number, b: number) => number;
+    readonly mmdruntime_getAnimationMorphArena: (a: number, b: number) => number;
+    readonly mmdruntime_getAnimationRigidBodyStateArena: (a: number, b: number) => number;
+    readonly mmdruntime_getAnimationRigidBodyStateArenaSize: (a: number, b: number) => number;
+    readonly mmdruntime_getBoneWorldMatrixArena: (a: number, b: number) => number;
+    readonly mmdruntime_getLockStatePtr: (a: number) => number;
+    readonly mmdruntime_getMultiPhysicsWorld: (a: number) => number;
+    readonly mmdruntime_markMmdModelPhysicsAsNeedInit: (a: number, b: number) => void;
+    readonly mmdruntime_releaseDiagnosticResult: (a: number) => void;
+    readonly mmdruntime_setMmdModelWorldMatrix: (a: number, b: number, c: number) => void;
+    readonly mmdruntime_setPhysicsFixedTimeStep: (a: number, b: number) => void;
+    readonly mmdruntime_setPhysicsMaxSubSteps: (a: number, b: number) => void;
+    readonly mmdruntime_setRuntimeAnimation: (a: number, b: number, c: number) => void;
+    readonly mmdruntime_swapWorldMatrixBuffer: (a: number) => void;
+    readonly mmdruntime_useExternalPhysics: (a: number, b: number, c: number) => void;
+    readonly bw_free: (a: number) => void;
+    readonly bw_malloc: (a: number) => number;
     readonly __wbindgen_externrefs: WebAssembly.Table;
     readonly __wbindgen_start: () => void;
 }

@@ -834,6 +834,23 @@ export function mmdModelRigidBodyApplyCentralForce(model_ptr, index, force_x, fo
 }
 
 /**
+ * Manually trigger IK re-solution for the model's IK solver at `ik_solver_index`.
+ *
+ * Pass the target bone's `ikSolverIndex` (from `MmdWasmRuntimeBone.ikSolverIndex`).
+ * A negative index (no IK solver attached) is a no-op. `use_physics` mirrors the
+ * internal update path's parameter; `false` matches the JS `solver.solve(false)` call.
+ *
+ * # Safety
+ * `model_ptr` must be a valid `MmdModel` pointer obtained from `MmdRuntime.createMmdModel`.
+ * @param {number} model_ptr
+ * @param {number} ik_solver_index
+ * @param {boolean} use_physics
+ */
+export function mmdModelSolveIk(model_ptr, ik_solver_index, use_physics) {
+    wasm.mmdModelSolveIk(model_ptr, ik_solver_index, use_physics);
+}
+
+/**
  * @param {number} runtime
  * @returns {number}
  */
