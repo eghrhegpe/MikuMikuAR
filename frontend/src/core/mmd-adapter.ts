@@ -295,6 +295,64 @@ export function solveIkNative(
 }
 
 /**
+ * [ADR-200 wind mass-aware] 质量感知批量风力施加。
+ *
+ * 旧版 applyForceToModelRigidBodiesNative 对所有原生刚体施加相同风力，
+ * 轻质量头发刚体（0.05-0.2kg）被放大成发散摆动（"乱飘、拉到最长"）。
+ * 本函数改走 fork 新增的 mmdModelRigidBodyApplyWindForce 导出，wasm 侧遍历
+ * 所有原生刚体，按 mass/reference_mass 缩放风力：重质量（衣服）满力，
+ * 轻质量（头发）自动降力，min_scale 兜底避免极轻刚体完全无力。
+ *
+ * 升级回归守卫：若 wasm 实例缺少 mmdModelRigidBodyApplyWindForce 导出，
+ * 首次仅打一次 dev 警告并返回 0（绝不静默失效）。
+ *
+ * @param wasmInstance    MmdWasmPhysicsRuntimeImpl.wasmInstance（含 wind mass-aware 导出）
+ * @param model           RuntimeModel（MmdWasmModel，需有 .ptr）
+ * @param force           世界坐标系下的风力向量（已含全局系数，如 MODEL_WIND_FORCE_SCALE）
+ * @param referenceMass   参考质量（kg），mass >= 此值的刚体获满力；典型 1.0（衣服质量）
+ * @param minScale        最小缩放系数，避免极轻刚体完全无力；典型 0.2
+ * @returns wasm 侧处理的刚体总数（含 FollowBone，其施力在 wasm 侧被跳过）；0=缺导出或无 bundle
+ */
+let _windForceMissingWarned = false;
+export function applyWindForceToModelRigidBodiesNative(
+    wasmInstance: unknown,
+    model: RuntimeModel,
+    force: Vector3,
+    referenceMass: number,
+    minScale: number
+): number {
+    const wi = wasmInstance as Record<string, unknown> | null;
+    if (!wi || typeof wi.mmdModelRigidBodyApplyWindForce !== 'function') {
+        if (!_windForceMissingWarned) {
+            _windForceMissingWarned = true;
+            logWarn(
+                'mmd-adapter',
+                'wasm 实例缺少 mmdModelRigidBodyApplyWindForce 导出（babylon-mmd 未含 wind mass-aware 补丁）。降级为无质量感知风力，头发可能乱飘。检查 vendor wasm 是否已同步。'
+            );
+        }
+        return 0;
+    }
+    const ptr = (model as unknown as { ptr?: number }).ptr;
+    if (typeof ptr !== 'number') {
+        return 0;
+    }
+    // 先取 bundle len 用于返回值（wasm 导出不返回数量，需另调 getMmdModelRigidBodyBundleLen）
+    const len = (wi.getMmdModelRigidBodyBundleLen as (p: number) => number)(ptr);
+    if (len <= 0) {
+        return 0;
+    }
+    (wi.mmdModelRigidBodyApplyWindForce as (
+        p: number,
+        fx: number,
+        fy: number,
+        fz: number,
+        rm: number,
+        ms: number
+    ) => void)(ptr, force.x, force.y, force.z, referenceMass, minScale);
+    return len;
+}
+
+/**
  * CapabilityProbe — 升级回归探测（ADR-192 Phase 2 守卫式反射）。
  * 条目 3 已通过公开 API 内化，不再需要探测；
  * 条目 9 仍依赖私有 _audio，探测用于在升级时确认字段存在。

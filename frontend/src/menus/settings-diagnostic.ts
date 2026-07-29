@@ -764,8 +764,10 @@ function _refreshModeUI(btns: HTMLButtonElement[]): void {
     });
     _updateSpeakToggle(); // [doc:adr-156] 台词模式切换时同步朗读开关显隐
     if (_pendingContainer) {
-        _pendingContainer.style.display = _mode === 'control' ? '' : 'none';
-        if (_mode === 'control') {
+        // diagnostic 与 control 都可能产生工具调用待确认卡，需显示 pending 容器。
+        const toolCapable = _mode === 'control' || _mode === 'diagnostic';
+        _pendingContainer.style.display = toolCapable ? '' : 'none';
+        if (toolCapable) {
             if (_pendingAction) {
                 _renderPendingAction();
             } else {
@@ -1018,7 +1020,10 @@ async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
     if (_isStreaming || !_ai) {
         return;
     }
-    const allowTools = opts?.allowTools ?? _mode === 'control';
+    // diagnostic 与 control 模式都给 AI 发工具：诊断顾问既能分析场景、也能直接操作修复。
+    // chat/dialogue 为纯对话/角色扮演，不发工具。显式传入的 opts.allowTools 优先
+    // （如工具执行后续跑时传 false，避免连环调用）。
+    const allowTools = opts?.allowTools ?? (_mode === 'control' || _mode === 'diagnostic');
 
     _isStreaming = true;
     _updateSendButton();
@@ -1491,12 +1496,18 @@ function _buildSystemMessage(): ChatMessage {
     if (snapshot !== '(场景未初始化)') {
         contextParts.push(t('ai.context.scene') + snapshot);
     }
+    // diagnostic 模式同时具备"分析场景 + 调用工具操作"能力：注入工具目录与调用格式，
+    // 让 AI 既能基于场景快照/错误诊断，也能直接发起工具调用修复（与 _runStream 的
+    // allowTools 对齐）。
     return {
         role: 'system',
         content: [
             t('ai.system.role'),
             t('ai.system.format'),
             t('ai.system.safety'),
+            t('ai.system.control'),
+            buildToolCatalogText(),
+            t('ai.system.controlFormat'),
             contextParts.length > 0 ? t('ai.context.header') + contextParts.join('\n\n') : '',
         ]
             .filter(Boolean)

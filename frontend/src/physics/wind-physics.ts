@@ -34,6 +34,7 @@ import {
     getRigidBodyBundleMap,
     getRigidBodyMap,
     applyForceToModelRigidBodiesNative,
+    applyWindForceToModelRigidBodiesNative,
 } from '@/core/mmd-adapter';
 import { modelRegistry } from '@/core/config';
 
@@ -52,6 +53,13 @@ const WIND_FORCE_SCALE = 1.0;
  *  1.0 系数下稳态摆幅偏弱。故原生刚体用独立更大系数，与自建刚体解耦，
  *  互不影响各自已调好的手感。5.0 为经验起点，可按实测在 §ADR-200 §5.1 调整。 */
 const MODEL_WIND_FORCE_SCALE = 5.0;
+
+/** [ADR-200 wind mass-aware] 质量感知风力参数。
+ *  头发刚体质量 0.05-0.2kg，衣服 1-3kg。referenceMass=1.0 使 mass>=1kg 的衣服
+ *  获满力（scale=1.0），0.1kg 的头发 scale=0.1（降 10 倍），避免轻链发散。
+ *  minScale=0.2 兜底，极轻刚体仍保留 20% 风力（完全无力会显得头发"死板"）。 */
+const MODEL_WIND_REFERENCE_MASS = 1.0;
+const MODEL_WIND_MIN_SCALE = 0.2;
 
 /** 临时向量，避免每帧分配 */
 const _tmpWind = new Vector3();
@@ -94,15 +102,26 @@ function _onPhysicsSync(impl: MmdWasmPhysicsRuntimeImpl): void {
         body.applyCentralForce(_tmpWind);
     }
 
-    // (2) 模型原生真物理刚体（头发/裙子）：经 P2 wasm 导出施力（ADR-201），用独立更大系数。
-    // 只对 actor（stage 无需风）；applyForceToModelRigidBodiesNative 内部从 model.ptr
-    // 在 wasm 侧解析原生 bundle 并施力，FollowBone 由 wasm 跳过。
+    // (2) 模型原生真物理刚体（头发/裙子）：经 wind mass-aware wasm 导出施力（ADR-200）。
+    // 只对 actor（stage 无需风）；applyWindForceToModelRigidBodiesNative 在 wasm 侧按
+    // mass/referenceMass 缩放，重质量（衣服）满力、轻质量（头发）降力，避免头发乱飘。
+    // FollowBone 由 wasm 跳过。降级：若缺 wind mass-aware 导出，回退旧版等力施力。
     _tmpModelWind.copyFrom(wind).scaleInPlace(MODEL_WIND_FORCE_SCALE);
     for (const inst of modelRegistry.values()) {
         if (inst.kind !== 'actor' || !inst.mmdModel) {
             continue;
         }
-        applyForceToModelRigidBodiesNative(impl.wasmInstance, inst.mmdModel, _tmpModelWind);
+        const applied = applyWindForceToModelRigidBodiesNative(
+            impl.wasmInstance,
+            inst.mmdModel,
+            _tmpModelWind,
+            MODEL_WIND_REFERENCE_MASS,
+            MODEL_WIND_MIN_SCALE
+        );
+        if (applied === 0) {
+            // 降级：wind mass-aware 导出缺失，回退旧版等力施力
+            applyForceToModelRigidBodiesNative(impl.wasmInstance, inst.mmdModel, _tmpModelWind);
+        }
     }
 }
 

@@ -3358,9 +3358,50 @@ textarea,
     color: var(--text);
     word-break: break-word;
     line-height: 1.4;
-    /* 保留 AI 回复里的换行/空行（textContent 里的 \n）：默认 white-space:normal 会把
-       换行折叠成空格，导致多段内容挤成一行。pre-wrap 保留换行同时正常自动折行。 */
+    /* 用户消息（textContent）保留换行：assistant 走 Markdown 渲染为 block 元素不受影响。 */
     white-space: pre-wrap;
+}
+
+/* 对话内 Markdown 渲染元素：紧凑间距，适配窄对话框 */
+.diag-chat-content .md-paragraph {
+    margin: 0 0 calc(6px * var(--ui-scale));
+    white-space: normal;
+}
+.diag-chat-content .md-paragraph:last-child {
+    margin-bottom: 0;
+}
+.diag-chat-content .md-heading {
+    margin: calc(8px * var(--ui-scale)) 0 calc(4px * var(--ui-scale));
+    font-weight: 600;
+    line-height: 1.3;
+    white-space: normal;
+}
+.diag-chat-content .md-list {
+    margin: calc(4px * var(--ui-scale)) 0;
+    padding-left: calc(20px * var(--ui-scale));
+    white-space: normal;
+}
+.diag-chat-content .md-list li {
+    margin: calc(2px * var(--ui-scale)) 0;
+}
+.diag-chat-content .md-code-inline {
+    padding: 0 calc(4px * var(--ui-scale));
+    background: var(--surface2, rgba(127, 127, 127, 0.15));
+    border-radius: calc(3px * var(--ui-scale));
+    font-family: var(--font-mono, monospace);
+    font-size: 0.92em;
+}
+.diag-chat-content .md-code-block {
+    margin: calc(6px * var(--ui-scale)) 0;
+    padding: calc(6px * var(--ui-scale)) calc(8px * var(--ui-scale));
+    background: var(--surface2, rgba(127, 127, 127, 0.15));
+    border-radius: calc(4px * var(--ui-scale));
+    overflow-x: auto;
+    white-space: pre;
+}
+.diag-chat-content .md-code-block code {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.9em;
 }
 
 /* 推理模型思考过程折叠区：弱化显示，与正式回答区分，可点击 summary 折叠/展开 */
