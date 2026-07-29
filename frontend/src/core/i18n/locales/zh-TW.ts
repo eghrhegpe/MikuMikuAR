@@ -466,6 +466,11 @@ export const zhTW: Record<string, string> = {
     'motion.section.loadedProc': '已載入程序化動作',
     'motion.section.library': '動作庫',
     'motion.section.more': '更多',
+    // [doc:adr-207] 程序化動作可載入化
+    'motion.proc.none': '無動作',
+    'motion.proc.load': '載入',
+    'motion.proc.unload': '移除',
+    'motion.proc.alwaysLoaded': '系統保底，不可移除',
     'motion.undoApplied': '✓ 已撤銷',
     'motion.undo.appliedPreset': '撤銷：套用預設「{name}」',
     'motion.music': '音樂',

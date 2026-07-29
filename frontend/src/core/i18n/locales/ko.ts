@@ -475,6 +475,11 @@ export const ko: Record<string, string> = {
     'motion.section.loadedProc': '불러온 절차적 모션',
     'motion.section.library': '모션 라이브러리',
     'motion.section.more': '더보기',
+    // [doc:adr-207] 절차적 모션 로드 가능화
+    'motion.proc.none': '모션 없음',
+    'motion.proc.load': '불러오기',
+    'motion.proc.unload': '제거',
+    'motion.proc.alwaysLoaded': '시스템 보장, 제거 불가',
     'motion.undoApplied': '✓ 실행 취소됨',
     'motion.undo.appliedPreset': '실행 취소: 프리셋 "{name}" 적용',
     'motion.music': '음악',

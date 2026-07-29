@@ -311,6 +311,11 @@ export const en: Record<string, string> = {
     'motion.section.loadedProc': 'Loaded Procedural Motions',
     'motion.section.library': 'Motion Library',
     'motion.section.more': 'More',
+    // [doc:adr-207] Procedural motion loadable
+    'motion.proc.none': 'No Motion',
+    'motion.proc.load': 'Load',
+    'motion.proc.unload': 'Unload',
+    'motion.proc.alwaysLoaded': 'System default, cannot unload',
     'motion.undoApplied': '✓ Undone',
     'motion.undo.appliedPreset': 'Undo: Apply preset "{name}"',
     'motion.music': 'Music',

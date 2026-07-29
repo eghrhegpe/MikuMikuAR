@@ -17,7 +17,9 @@ import {
     getSceneMotions,
     getActiveMotionId,
     setDefaultMotion,
+    getLoadedProceduralMotions,
 } from '../scene/motion/motion-intent';
+import type { LoadableProcId } from '../scene/motion/motion-intent';
 // [doc:adr-170] 行尾「动作工具」推进独立工具页；循环依赖安全：仅在函数体内调用
 import { buildMotionToolsLevel } from './motion-detail-ui';
 import { clearAudio, getAudioName } from '../outfit/audio';
@@ -103,26 +105,22 @@ export function buildMotionRootItems(): PopupRow[] {
         }
     }
 
-    // ===== [doc:adr-207] Section 2: 已加载程序化动作 =====
+    // ===== [doc:adr-207] Section 2: 已加载程序化动作（集合驱动） =====
     items.push({
         kind: 'sectionTitle',
         label: t('motion.section.loadedProc'),
         icon: '',
         target: '',
     });
-    // Phase 1 硬编码两行；Phase 3 改为集合驱动
-    items.push({
-        kind: 'folder',
-        label: t('motion.modeIdle'),
-        icon: 'lucide:wand-sparkles',
-        target: 'motion:procmotion',
-    });
-    items.push({
-        kind: 'folder',
-        label: t('motion.modeAutodance'),
-        icon: 'lucide:wand-sparkles',
-        target: 'motion:procmotion',
-    });
+    const loadedProc = getLoadedProceduralMotions();
+    for (const procId of loadedProc) {
+        items.push({
+            kind: 'folder',
+            label: _procLabel(procId),
+            icon: procId === 'none' ? 'lucide:circle-slash' : 'lucide:wand-sparkles',
+            target: 'motion:procmotion',
+        });
+    }
 
     // ===== [doc:adr-207] Section 3: 动作库 =====
     items.push({
@@ -136,6 +134,13 @@ export function buildMotionRootItems(): PopupRow[] {
         label: t('motion.browseMotionLibrary'),
         icon: 'lucide:folder-search',
         target: '__scene_motion_browse__',
+    });
+    // [doc:adr-207] 程序化动作子页入口
+    items.push({
+        kind: 'folder',
+        label: t('motion.procMotion'),
+        icon: 'lucide:wand-sparkles',
+        target: 'motion:proc-library',
     });
     items.push({
         kind: 'action',
@@ -229,6 +234,18 @@ export function buildMotionRootLevel(): PopupLevel {
 
 export function hideMotionPopup(): void {
     closeAllOverlays();
+}
+
+/** [doc:adr-207] 程序化动作 ID → 显示名 */
+function _procLabel(id: LoadableProcId): string {
+    switch (id) {
+        case 'none':
+            return t('motion.proc.none');
+        case 'idle':
+            return t('motion.modeIdle');
+        case 'autodance':
+            return t('motion.modeAutodance');
+    }
 }
 
 // ═══════════════════════════════════════════════════════════

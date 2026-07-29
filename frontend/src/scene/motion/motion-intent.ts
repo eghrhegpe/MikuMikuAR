@@ -13,6 +13,12 @@ let _sceneMotions: SceneMotionIntent[] = []; // 场景级主动作库（多主�
 let _activeMotionId: string | null = null; // 默认动作 id；null = 无默认（新角色静止）
 let _motionGen = 0; // generation counter，每次变更递增，用于守护异步广播竞态
 
+// [doc:adr-207] 场景级程序化动作可加载集合
+// 'none' 始终存在且不可卸载（系统保底状态）
+export type LoadableProcId = 'none' | 'idle' | 'autodance';
+const ALL_LOADABLE_PROC: LoadableProcId[] = ['none', 'idle', 'autodance'];
+let _loadedProceduralMotions: Set<LoadableProcId> = new Set(['none', 'idle', 'autodance']);
+
 /** 生成场景动作 id（稳定唯一，用于引用与序列化） */
 function genMotionId(): string {
     return `motion_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -43,6 +49,37 @@ export function getActiveMotionId(): string | null {
 /** 获取当前 generation 值。用于异步操作中判断是否为最新广播。 */
 export function getMotionGen(): number {
     return _motionGen;
+}
+
+// ── [doc:adr-207] 程序化动作可加载集合 API ──
+
+/** 获取全部可加载的程序化动作 ID 列表（含未加载的）。 */
+export function getAllLoadableProcMotions(): LoadableProcId[] {
+    return ALL_LOADABLE_PROC;
+}
+
+/** 获取当前已加载的程序化动作集合。 */
+export function getLoadedProceduralMotions(): Set<LoadableProcId> {
+    return _loadedProceduralMotions;
+}
+
+/** 加载一个程序化动作到集合。 */
+export function loadProceduralMotion(id: LoadableProcId): void {
+    _loadedProceduralMotions.add(id);
+}
+
+/** 卸载一个程序化动作。'none' 不可卸载。 */
+export function unloadProceduralMotion(id: LoadableProcId): void {
+    if (id === 'none') {
+        return;
+    }
+    _loadedProceduralMotions.delete(id);
+}
+
+/** 设置已加载集合（用于场景反序列化）。始终保证 'none' 存在。 */
+export function setLoadedProceduralMotions(ids: LoadableProcId[]): void {
+    _loadedProceduralMotions = new Set(ids);
+    _loadedProceduralMotions.add('none');
 }
 
 // ── 广播回调（调用方注册，避免循环依赖）──

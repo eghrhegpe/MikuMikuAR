@@ -473,6 +473,11 @@ export const ja: Record<string, string> = {
     'motion.section.loadedProc': '読み込み済み手続き型モーション',
     'motion.section.library': 'モーションライブラリ',
     'motion.section.more': 'その他',
+    // [doc:adr-207] 手続き型モーション可加载化
+    'motion.proc.none': 'モーションなし',
+    'motion.proc.load': '読み込み',
+    'motion.proc.unload': '削除',
+    'motion.proc.alwaysLoaded': 'システム保証、削除不可',
     'motion.undoApplied': '✓ 元に戻しました',
     'motion.undo.appliedPreset': '元に戻す：プリセット「{name}」を適用',
     'motion.music': '音楽',
