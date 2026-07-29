@@ -67,6 +67,7 @@ let _statusBadgeEl: HTMLElement | null = null;
 let _adviceEl: HTMLElement | null = null;
 let _statusTextEl: HTMLElement | null = null;
 let _lastConnectionOk: boolean | null = null;
+let _lastConnectionKind: AiErrorKind | null = null;
 let _testing = false;
 let _refreshingCaps = false;
 
@@ -245,13 +246,16 @@ async function _runAutoTest(): Promise<void> {
         const result = await _ai.testConnection();
         if (result.ok) {
             _lastConnectionOk = true;
+            _lastConnectionKind = null;
             _renderAdvice(undefined);
         } else {
             _lastConnectionOk = false;
+            _lastConnectionKind = result.kind;
             _renderAdvice(result.kind);
         }
     } catch (err) {
         _lastConnectionOk = false;
+        _lastConnectionKind = 'unknown';
         _renderAdvice('unknown');
     } finally {
         _autoTesting = false;
@@ -348,13 +352,19 @@ async function _refreshModelList(): Promise<void> {
         return;
     }
     const models = await _ai.fetchModels?.() ?? [];
-    if (_configModelDatalist && models.length > 0) {
-        _configModelDatalist.innerHTML = '';
-        for (const m of models) {
-            const opt = document.createElement('option');
-            opt.value = m;
-            _configModelDatalist.appendChild(opt);
-        }
+    _populateModelDatalist(models);
+}
+
+/** 将模型列表写入 datalist DOM，供 _refreshModelList / 手动刷新按钮共享。 */
+function _populateModelDatalist(models: string[]): void {
+    if (!_configModelDatalist) {
+        return;
+    }
+    _configModelDatalist.innerHTML = '';
+    for (const m of models) {
+        const opt = document.createElement('option');
+        opt.value = m;
+        _configModelDatalist.appendChild(opt);
     }
 }
 
@@ -372,7 +382,9 @@ function _updateStatusBadge(): void {
         _setStatusBadge('connected');
         _renderAdvice(undefined);
     } else if (_lastConnectionOk === false) {
-        _setStatusBadge('error');
+        const kind = _lastConnectionKind ?? 'unknown';
+        _setStatusBadge(kind);
+        _renderAdvice(kind);
     } else {
         _setStatusBadge(_caps?.available ? 'disconnected' : 'missingEndpoint');
         _renderAdvice(undefined);
@@ -441,11 +453,13 @@ function _renderAdvice(kind?: AiErrorKind): void {
         actions.appendChild(btn);
     }
     if (kind === 'cors' && _activeDocLink?.href) {
+        const docHref = _activeDocLink.href;
+        const docLabel = _activeDocLink.textContent ?? '';
         const btn = document.createElement('button');
         btn.className = 'preset-chip';
-        btn.textContent = t('ai.config.doc', { provider: _activeDocLink.textContent ?? '' });
+        btn.textContent = t('ai.config.doc', { provider: docLabel });
         btn.addEventListener('click', () => {
-            window.open(_activeDocLink!.href, '_blank');
+            window.open(docHref, '_blank');
         });
         actions.appendChild(btn);
     }
@@ -1548,11 +1562,13 @@ async function _testConnection(statusEl: HTMLElement): Promise<void> {
             statusEl.textContent = t('ai.config.connected');
             statusEl.style.color = 'var(--success)';
             _lastConnectionOk = true;
+            _lastConnectionKind = null;
             _renderAdvice(undefined);
         } else {
             statusEl.textContent = result.message;
             statusEl.style.color = 'var(--danger)';
             captureError('ai-connection', result.message, undefined);
+            _lastConnectionKind = result.kind;
             _setStatusBadge(result.kind);
             _renderAdvice(result.kind);
             _lastConnectionOk = false;
@@ -1562,7 +1578,8 @@ async function _testConnection(statusEl: HTMLElement): Promise<void> {
         statusEl.textContent = msg;
         statusEl.style.color = 'var(--danger)';
         captureError('ai-connection', msg, err);
-        _setStatusBadge('error');
+        _lastConnectionKind = 'unknown';
+        _setStatusBadge('unknown');
         _renderAdvice('unknown');
         _lastConnectionOk = false;
     } finally {
@@ -1739,14 +1756,7 @@ function _renderConfigCard(c: HTMLElement): void {
         try {
             await _flushAndSave();
             const models = (await _ai.fetchModels?.()) ?? [];
-            if (_configModelDatalist) {
-                _configModelDatalist.innerHTML = '';
-                for (const m of models) {
-                    const opt = document.createElement('option');
-                    opt.value = m;
-                    _configModelDatalist.appendChild(opt);
-                }
-            }
+            _populateModelDatalist(models);
             if (models.length > 0 && !_localConfig.model) {
                 _localConfig.model = models[0];
                 modelInput.value = models[0];
