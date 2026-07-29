@@ -158,6 +158,23 @@ export function init(): void;
 export function mmdModelRigidBodyApplyCentralForce(model_ptr: number, index: number, force_x: number, force_y: number, force_z: number): void;
 
 /**
+ * Applies a central force to ALL native rigid bodies with per-body mass-aware scaling.
+ *
+ * Solves the "hair blow-away" problem: hair chains have tiny per-link mass
+ * (0.05–0.2 kg) while cloth rigid bodies are 1–3 kg. A fixed force coefficient
+ * that looks right on cloth makes light hair links diverge and stretch the
+ * constraint chain to full length. This export scales each body's force by
+ * `clamp(mass / reference_mass, min_scale, 1.0)`, so heavy bodies (cloth)
+ * receive the full force while light bodies (hair) are damped automatically.
+ *
+ * `FollowBone` bodies are skipped (bone-driven, not physics-driven).
+ *
+ * # Safety
+ * `model_ptr` must be a valid `MmdModel` pointer obtained from `MmdRuntime.createMmdModel`.
+ */
+export function mmdModelRigidBodyApplyWindForce(model_ptr: number, force_x: number, force_y: number, force_z: number, reference_mass: number, min_scale: number): void;
+
+/**
  * Manually trigger IK re-solution for the model's IK solver at `ik_solver_index`.
  *
  * Pass the target bone's `ikSolverIndex` (from `MmdWasmRuntimeBone.ikSolverIndex`).
@@ -452,6 +469,62 @@ export interface InitOutput {
     readonly rigidBodyBundleSetShape: (a: number, b: number, c: number) => void;
     readonly rigidBodyBundleSetTurnVelocity: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly rigidBodyBundleTranslate: (a: number, b: number, c: number, d: number, e: number) => void;
+    readonly allocateBuffer: (a: number) => number;
+    readonly constraintEnableSpring: (a: number, b: number, c: number) => void;
+    readonly constraintSetAngularLowerLimit: (a: number, b: number, c: number, d: number) => void;
+    readonly constraintSetAngularUpperLimit: (a: number, b: number, c: number, d: number) => void;
+    readonly constraintSetDamping: (a: number, b: number, c: number) => void;
+    readonly constraintSetLinearLowerLimit: (a: number, b: number, c: number, d: number) => void;
+    readonly constraintSetLinearUpperLimit: (a: number, b: number, c: number, d: number) => void;
+    readonly constraintSetParam: (a: number, b: number, c: number, d: number) => void;
+    readonly constraintSetStiffness: (a: number, b: number, c: number) => void;
+    readonly constraintUseFrameOffset: (a: number, b: number) => void;
+    readonly createAnimationPool: () => number;
+    readonly createGeneric6DofConstraint: (a: number, b: number, c: number, d: number, e: number) => number;
+    readonly createGeneric6DofConstraintFromBundle: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
+    readonly createGeneric6DofSpringConstraint: (a: number, b: number, c: number, d: number, e: number) => number;
+    readonly createGeneric6DofSpringConstraintFromBundle: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
+    readonly createMmdRuntime: () => number;
+    readonly deallocateBuffer: (a: number, b: number) => void;
+    readonly destroyConstraint: (a: number) => void;
+    readonly mmdModelSolveIk: (a: number, b: number, c: number) => void;
+    readonly init: () => void;
+    readonly __cxa_pure_virtual: () => void;
+    readonly bw_free: (a: number) => void;
+    readonly bw_malloc: (a: number) => number;
+    readonly getMmdModelRigidBodyBundleLen: (a: number) => number;
+    readonly mmdModelRigidBodyApplyCentralForce: (a: number, b: number, c: number, d: number, e: number) => void;
+    readonly mmdModelRigidBodyApplyWindForce: (a: number, b: number, c: number, d: number, e: number, f: number) => void;
+    readonly bw_acosf: (a: number) => number;
+    readonly bw_asinf: (a: number) => number;
+    readonly bw_atan2f: (a: number, b: number) => number;
+    readonly bw_atanf: (a: number) => number;
+    readonly bw_ceil: (a: number) => number;
+    readonly bw_cosf: (a: number) => number;
+    readonly bw_expf: (a: number) => number;
+    readonly bw_fabs: (a: number) => number;
+    readonly bw_fabsf: (a: number) => number;
+    readonly bw_floor: (a: number) => number;
+    readonly bw_fmodf: (a: number, b: number) => number;
+    readonly bw_isinf: (a: number) => number;
+    readonly bw_isnan: (a: number) => number;
+    readonly bw_logf: (a: number) => number;
+    readonly bw_powf: (a: number, b: number) => number;
+    readonly bw_sinf: (a: number) => number;
+    readonly bw_sqrt: (a: number) => number;
+    readonly bw_sqrtf: (a: number) => number;
+    readonly bw_tanf: (a: number) => number;
+    readonly createPhysicsWorld: () => number;
+    readonly destroyPhysicsWorld: (a: number) => void;
+    readonly physicsWorldAddConstraint: (a: number, b: number, c: number) => void;
+    readonly physicsWorldAddRigidBody: (a: number, b: number) => void;
+    readonly physicsWorldAddRigidBodyBundle: (a: number, b: number) => void;
+    readonly physicsWorldRemoveConstraint: (a: number, b: number) => void;
+    readonly physicsWorldRemoveRigidBody: (a: number, b: number) => void;
+    readonly physicsWorldRemoveRigidBodyBundle: (a: number, b: number) => void;
+    readonly physicsWorldSetGravity: (a: number, b: number, c: number, d: number) => void;
+    readonly physicsWorldStepSimulation: (a: number, b: number, c: number, d: number) => void;
+    readonly physicsWorldUseMotionStateBuffer: (a: number, b: number) => void;
     readonly bw_cond_broadcast: (a: number) => number;
     readonly bw_cond_init: () => number;
     readonly bw_cond_wait: (a: number, b: number) => number;
@@ -506,59 +579,6 @@ export interface InitOutput {
     readonly createPhysicsRuntime: (a: number) => number;
     readonly physicsRuntimeGetLockStatePtr: (a: number) => number;
     readonly destroyPhysicsRuntime: (a: number) => void;
-    readonly createPhysicsWorld: () => number;
-    readonly destroyPhysicsWorld: (a: number) => void;
-    readonly physicsWorldAddConstraint: (a: number, b: number, c: number) => void;
-    readonly physicsWorldAddRigidBody: (a: number, b: number) => void;
-    readonly physicsWorldAddRigidBodyBundle: (a: number, b: number) => void;
-    readonly physicsWorldRemoveConstraint: (a: number, b: number) => void;
-    readonly physicsWorldRemoveRigidBody: (a: number, b: number) => void;
-    readonly physicsWorldRemoveRigidBodyBundle: (a: number, b: number) => void;
-    readonly physicsWorldSetGravity: (a: number, b: number, c: number, d: number) => void;
-    readonly physicsWorldStepSimulation: (a: number, b: number, c: number, d: number) => void;
-    readonly physicsWorldUseMotionStateBuffer: (a: number, b: number) => void;
-    readonly allocateBuffer: (a: number) => number;
-    readonly createAnimationPool: () => number;
-    readonly createMmdRuntime: () => number;
-    readonly deallocateBuffer: (a: number, b: number) => void;
-    readonly mmdModelSolveIk: (a: number, b: number, c: number) => void;
-    readonly init: () => void;
-    readonly bw_acosf: (a: number) => number;
-    readonly bw_asinf: (a: number) => number;
-    readonly bw_atan2f: (a: number, b: number) => number;
-    readonly bw_atanf: (a: number) => number;
-    readonly bw_ceil: (a: number) => number;
-    readonly bw_cosf: (a: number) => number;
-    readonly bw_expf: (a: number) => number;
-    readonly bw_fabs: (a: number) => number;
-    readonly bw_fabsf: (a: number) => number;
-    readonly bw_floor: (a: number) => number;
-    readonly bw_fmodf: (a: number, b: number) => number;
-    readonly bw_isinf: (a: number) => number;
-    readonly bw_isnan: (a: number) => number;
-    readonly bw_logf: (a: number) => number;
-    readonly bw_powf: (a: number, b: number) => number;
-    readonly bw_sinf: (a: number) => number;
-    readonly bw_sqrt: (a: number) => number;
-    readonly bw_sqrtf: (a: number) => number;
-    readonly bw_tanf: (a: number) => number;
-    readonly getMmdModelRigidBodyBundleLen: (a: number) => number;
-    readonly mmdModelRigidBodyApplyCentralForce: (a: number, b: number, c: number, d: number, e: number) => void;
-    readonly __cxa_pure_virtual: () => void;
-    readonly constraintEnableSpring: (a: number, b: number, c: number) => void;
-    readonly constraintSetAngularLowerLimit: (a: number, b: number, c: number, d: number) => void;
-    readonly constraintSetAngularUpperLimit: (a: number, b: number, c: number, d: number) => void;
-    readonly constraintSetDamping: (a: number, b: number, c: number) => void;
-    readonly constraintSetLinearLowerLimit: (a: number, b: number, c: number, d: number) => void;
-    readonly constraintSetLinearUpperLimit: (a: number, b: number, c: number, d: number) => void;
-    readonly constraintSetParam: (a: number, b: number, c: number, d: number) => void;
-    readonly constraintSetStiffness: (a: number, b: number, c: number) => void;
-    readonly constraintUseFrameOffset: (a: number, b: number) => void;
-    readonly createGeneric6DofConstraint: (a: number, b: number, c: number, d: number, e: number) => number;
-    readonly createGeneric6DofConstraintFromBundle: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
-    readonly createGeneric6DofSpringConstraint: (a: number, b: number, c: number, d: number, e: number) => number;
-    readonly createGeneric6DofSpringConstraintFromBundle: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
-    readonly destroyConstraint: (a: number) => void;
     readonly __wbg_mmdruntime_free: (a: number, b: number) => void;
     readonly mmdruntime_acquireDiagnosticErrorResult: (a: number) => number;
     readonly mmdruntime_acquireDiagnosticInfoResult: (a: number) => number;
@@ -584,8 +604,6 @@ export interface InitOutput {
     readonly mmdruntime_setRuntimeAnimation: (a: number, b: number, c: number) => void;
     readonly mmdruntime_swapWorldMatrixBuffer: (a: number) => void;
     readonly mmdruntime_useExternalPhysics: (a: number, b: number, c: number) => void;
-    readonly bw_free: (a: number) => void;
-    readonly bw_malloc: (a: number) => number;
     readonly __wbindgen_externrefs: WebAssembly.Table;
     readonly __wbindgen_start: () => void;
 }

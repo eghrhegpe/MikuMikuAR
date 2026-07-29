@@ -28,6 +28,7 @@ const mocks = vi.hoisted(() => {
     const wasmInstance = {
         getMmdModelRigidBodyBundleLen: vi.fn(() => 7),
         mmdModelRigidBodyApplyCentralForce: vi.fn(),
+        mmdModelRigidBodyApplyWindForce: vi.fn(),
     };
 
     const mockImpl = {
@@ -60,6 +61,16 @@ const mocks = vi.hoisted(() => {
     const applyForceToModelRigidBodiesNative = vi.fn(
         (_wasm: unknown, _model: unknown, _force: { x: number; y: number; z: number }): number => 7
     );
+    // wind mass-aware（ADR-200）：默认返回 7 表示新导出可用；返回 0 触发降级
+    const applyWindForceToModelRigidBodiesNative = vi.fn(
+        (
+            _wasm: unknown,
+            _model: unknown,
+            _force: { x: number; y: number; z: number },
+            _refMass: number,
+            _minScale: number
+        ): number => 7
+    );
     const modelRegistry = new Map<string, { kind: string; mmdModel: unknown }>([
         ['actor1', { kind: 'actor', mmdModel: actorModel }],
         ['stage1', { kind: 'stage', mmdModel: { _tag: 'stageModel' } }],
@@ -84,6 +95,7 @@ const mocks = vi.hoisted(() => {
         actorModel,
         wasmInstance,
         applyForceToModelRigidBodiesNative,
+        applyWindForceToModelRigidBodiesNative,
         modelRegistry,
         get implReturn() {
             return implReturn;
@@ -117,6 +129,7 @@ vi.mock('@/core/mmd-adapter', () => ({
     getRigidBodyBundleMap: vi.fn(() => mocks.bundles),
     getRigidBodyMap: vi.fn(() => mocks.singularBodies),
     applyForceToModelRigidBodiesNative: mocks.applyForceToModelRigidBodiesNative,
+    applyWindForceToModelRigidBodiesNative: mocks.applyWindForceToModelRigidBodiesNative,
 }));
 
 // ======== mock config（modelRegistry） ========
@@ -169,6 +182,7 @@ beforeEach(() => {
     mocks.bodyA.applyCentralForce.mockClear();
     mocks.bodyB.applyCentralForce.mockClear();
     mocks.applyForceToModelRigidBodiesNative.mockClear();
+    mocks.applyWindForceToModelRigidBodiesNative.mockClear();
     // 将 observe mock 连接到 _notify 回调机制
     mockObserve.mockImplementation((_obs: unknown, cb: () => void) => {
         mocks.onSyncObservable._notify = () => cb();
@@ -322,13 +336,19 @@ describe('wind-physics 状态机', () => {
             expect(sCall0[0].y).toBeCloseTo(expectedForce.y);
             expect(sCall0[0].z).toBeCloseTo(expectedForce.z);
 
-            // 路径2（ADR-201）：原生刚体走 wasm 导出桥接，actor 模型调用 1 次
-            expect(mocks.applyForceToModelRigidBodiesNative).toHaveBeenCalledTimes(1);
-            const nCall0 = mocks.applyForceToModelRigidBodiesNative.mock.calls[0];
-            expect(nCall0[0]).toBe(mocks.wasmInstance); // 传入 wasm 实例
-            expect(nCall0[1]).toBe(mocks.actorModel); // 传入 actor 的 mmdModel
-            expect(nCall0[2].x).toBeCloseTo(15); // 独立系数 MODEL_WIND_FORCE_SCALE(5.0)：(3,0,4)×5
-            expect(nCall0[2].z).toBeCloseTo(20);
+            // 路径2（ADR-200 wind mass-aware）：原生刚体走 wasm 质量感知导出，actor 模型调用 1 次
+            expect(mocks.applyWindForceToModelRigidBodiesNative).toHaveBeenCalledTimes(1);
+            const wCall0 = mocks.applyWindForceToModelRigidBodiesNative.mock.calls[0];
+            expect(wCall0[0]).toBe(mocks.wasmInstance); // 传入 wasm 实例
+            expect(wCall0[1]).toBe(mocks.actorModel); // 传入 actor 的 mmdModel
+            expect(wCall0[2].x).toBeCloseTo(15); // 独立系数 MODEL_WIND_FORCE_SCALE(5.0)：(3,0,4)×5
+            expect(wCall0[2].z).toBeCloseTo(20);
+            // 质量感知参数：referenceMass=1.0, minScale=0.2
+            expect(wCall0[3]).toBeCloseTo(1.0);
+            expect(wCall0[4]).toBeCloseTo(0.2);
+            // 降级路径不应触发（wind mass-aware 导出可用）
+            expect(mocks.applyWindForceToModelRigidBodiesNative).not.toHaveBeenCalled();
+            expect(mocks.applyForceToModelRigidBodiesNative).not.toHaveBeenCalled();
         });
 
         it('风力不活跃时跳过（不施加力）', () => {
@@ -359,14 +379,33 @@ describe('wind-physics 状态机', () => {
 
             mocks.onSyncObservable._notify();
 
-            // modelRegistry 有 1 actor + 1 stage，仅 actor 被施力（原生桥接签名：wasmInstance, model, force）
-            expect(mocks.applyForceToModelRigidBodiesNative).toHaveBeenCalledTimes(1);
-            const call0 = mocks.applyForceToModelRigidBodiesNative.mock.calls[0];
+            // modelRegistry 有 1 actor + 1 stage，仅 actor 被施力（wind mass-aware 签名：wasmInstance, model, force, refMass, minScale）
+            expect(mocks.applyWindForceToModelRigidBodiesNative).toHaveBeenCalledTimes(1);
+            const call0 = mocks.applyWindForceToModelRigidBodiesNative.mock.calls[0];
             expect(call0[0]).toBe(mocks.wasmInstance); // 传入 wasm 实例
             expect(call0[1]).toBe(mocks.actorModel); // 传入 actor 的 mmdModel
             // 模型原生刚体用独立系数 MODEL_WIND_FORCE_SCALE(5.0)：(3,0,4) × 5 = (15,0,20)
             expect(call0[2].x).toBeCloseTo(15);
             expect(call0[2].z).toBeCloseTo(20);
+            // 降级路径不应触发
+            expect(mocks.applyForceToModelRigidBodiesNative).not.toHaveBeenCalled();
+        });
+
+        it('wind mass-aware 导出缺失时降级到旧版等力施力', () => {
+            // 模拟 wind mass-aware 导出返回 0（缺导出/无 bundle）
+            mocks.applyWindForceToModelRigidBodiesNative.mockReturnValueOnce(0);
+            const runtime = makeWasmRuntime();
+            initWindPhysics(runtime);
+
+            mocks.onSyncObservable._notify();
+
+            // wind mass-aware 被调用一次
+            expect(mocks.applyWindForceToModelRigidBodiesNative).toHaveBeenCalledTimes(1);
+            // 降级：旧版 applyForceToModelRigidBodiesNative 也被调用一次
+            expect(mocks.applyForceToModelRigidBodiesNative).toHaveBeenCalledTimes(1);
+            const fallCall = mocks.applyForceToModelRigidBodiesNative.mock.calls[0];
+            expect(fallCall[0]).toBe(mocks.wasmInstance);
+            expect(fallCall[1]).toBe(mocks.actorModel);
         });
 
         it('风力不活跃时不对模型原生刚体施力', () => {

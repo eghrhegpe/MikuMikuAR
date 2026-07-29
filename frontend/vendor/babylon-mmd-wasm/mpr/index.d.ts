@@ -162,6 +162,23 @@ export function initThreadPool(num_threads: number): Promise<any>;
 export function mmdModelRigidBodyApplyCentralForce(model_ptr: number, index: number, force_x: number, force_y: number, force_z: number): void;
 
 /**
+ * Applies a central force to ALL native rigid bodies with per-body mass-aware scaling.
+ *
+ * Solves the "hair blow-away" problem: hair chains have tiny per-link mass
+ * (0.05–0.2 kg) while cloth rigid bodies are 1–3 kg. A fixed force coefficient
+ * that looks right on cloth makes light hair links diverge and stretch the
+ * constraint chain to full length. This export scales each body's force by
+ * `clamp(mass / reference_mass, min_scale, 1.0)`, so heavy bodies (cloth)
+ * receive the full force while light bodies (hair) are damped automatically.
+ *
+ * `FollowBone` bodies are skipped (bone-driven, not physics-driven).
+ *
+ * # Safety
+ * `model_ptr` must be a valid `MmdModel` pointer obtained from `MmdRuntime.createMmdModel`.
+ */
+export function mmdModelRigidBodyApplyWindForce(model_ptr: number, force_x: number, force_y: number, force_z: number, reference_mass: number, min_scale: number): void;
+
+/**
  * Manually trigger IK re-solution for the model's IK solver at `ik_solver_index`.
  *
  * Pass the target bone's `ikSolverIndex` (from `MmdWasmRuntimeBone.ikSolverIndex`).
@@ -415,40 +432,38 @@ export interface InitOutput {
     readonly animationpool_getPropertyTrackFrameNumbers: (a: number, b: number) => number;
     readonly animationpool_getPropertyTrackIkStates: (a: number, b: number, c: number) => number;
     readonly animationpool_getNthMorphBindIndexMap: (a: number, b: number, c: number) => number;
+    readonly bw_acosf: (a: number) => number;
+    readonly bw_asinf: (a: number) => number;
+    readonly bw_atan2f: (a: number, b: number) => number;
+    readonly bw_atanf: (a: number) => number;
+    readonly bw_ceil: (a: number) => number;
+    readonly bw_cosf: (a: number) => number;
+    readonly bw_expf: (a: number) => number;
+    readonly bw_fabs: (a: number) => number;
+    readonly bw_fabsf: (a: number) => number;
+    readonly bw_floor: (a: number) => number;
+    readonly bw_fmodf: (a: number, b: number) => number;
+    readonly bw_isinf: (a: number) => number;
+    readonly bw_isnan: (a: number) => number;
+    readonly bw_logf: (a: number) => number;
+    readonly bw_powf: (a: number, b: number) => number;
+    readonly bw_sinf: (a: number) => number;
+    readonly bw_sqrt: (a: number) => number;
+    readonly bw_sqrtf: (a: number) => number;
+    readonly bw_tanf: (a: number) => number;
     readonly createBoxShape: (a: number, b: number, c: number) => number;
     readonly createCapsuleShape: (a: number, b: number) => number;
     readonly createSphereShape: (a: number) => number;
     readonly createStaticPlaneShape: (a: number, b: number, c: number, d: number) => number;
     readonly destroyShape: (a: number) => void;
-    readonly createMultiPhysicsWorld: (a: number) => number;
-    readonly destroyMultiPhysicsWorld: (a: number) => void;
-    readonly multiPhysicsWorldAddConstraint: (a: number, b: number, c: number, d: number) => void;
-    readonly multiPhysicsWorldAddRigidBody: (a: number, b: number, c: number) => void;
-    readonly multiPhysicsWorldAddRigidBodyBundle: (a: number, b: number, c: number) => void;
-    readonly multiPhysicsWorldAddRigidBodyBundleShadow: (a: number, b: number, c: number) => void;
-    readonly multiPhysicsWorldAddRigidBodyBundleToGlobal: (a: number, b: number) => void;
-    readonly multiPhysicsWorldAddRigidBodyShadow: (a: number, b: number, c: number) => void;
-    readonly multiPhysicsWorldAddRigidBodyToGlobal: (a: number, b: number) => void;
-    readonly multiPhysicsWorldRemoveConstraint: (a: number, b: number, c: number) => void;
-    readonly multiPhysicsWorldRemoveRigidBody: (a: number, b: number, c: number) => void;
-    readonly multiPhysicsWorldRemoveRigidBodyBundle: (a: number, b: number, c: number) => void;
-    readonly multiPhysicsWorldRemoveRigidBodyBundleFromGlobal: (a: number, b: number) => void;
-    readonly multiPhysicsWorldRemoveRigidBodyBundleShadow: (a: number, b: number, c: number) => void;
-    readonly multiPhysicsWorldRemoveRigidBodyFromGlobal: (a: number, b: number) => void;
-    readonly multiPhysicsWorldRemoveRigidBodyShadow: (a: number, b: number, c: number) => void;
-    readonly multiPhysicsWorldSetGravity: (a: number, b: number, c: number, d: number) => void;
-    readonly multiPhysicsWorldStepSimulation: (a: number, b: number, c: number, d: number) => void;
-    readonly multiPhysicsWorldUseMotionStateBuffer: (a: number, b: number) => void;
-    readonly __cxa_pure_virtual: () => void;
-    readonly allocateBuffer: (a: number) => number;
+    readonly getMmdModelRigidBodyBundleLen: (a: number) => number;
+    readonly mmdModelRigidBodyApplyCentralForce: (a: number, b: number, c: number, d: number, e: number) => void;
+    readonly mmdModelRigidBodyApplyWindForce: (a: number, b: number, c: number, d: number, e: number, f: number) => void;
     readonly bw_free: (a: number) => void;
     readonly bw_malloc: (a: number) => number;
-    readonly createAnimationPool: () => number;
-    readonly createMmdRuntime: () => number;
+    readonly __cxa_pure_virtual: () => void;
     readonly createRigidBodyBundle: (a: number, b: number) => number;
-    readonly deallocateBuffer: (a: number, b: number) => void;
     readonly destroyRigidBodyBundle: (a: number) => void;
-    readonly mmdModelSolveIk: (a: number, b: number, c: number) => void;
     readonly rigidBodyBundleApplyCentralForce: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly rigidBodyBundleApplyCentralImpulse: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly rigidBodyBundleApplyCentralPushImpulse: (a: number, b: number, c: number, d: number, e: number) => void;
@@ -483,7 +498,17 @@ export interface InitOutput {
     readonly rigidBodyBundleSetShape: (a: number, b: number, c: number) => void;
     readonly rigidBodyBundleSetTurnVelocity: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly rigidBodyBundleTranslate: (a: number, b: number, c: number, d: number, e: number) => void;
-    readonly init: () => void;
+    readonly createPhysicsWorld: () => number;
+    readonly destroyPhysicsWorld: (a: number) => void;
+    readonly physicsWorldAddConstraint: (a: number, b: number, c: number) => void;
+    readonly physicsWorldAddRigidBody: (a: number, b: number) => void;
+    readonly physicsWorldAddRigidBodyBundle: (a: number, b: number) => void;
+    readonly physicsWorldRemoveConstraint: (a: number, b: number) => void;
+    readonly physicsWorldRemoveRigidBody: (a: number, b: number) => void;
+    readonly physicsWorldRemoveRigidBodyBundle: (a: number, b: number) => void;
+    readonly physicsWorldSetGravity: (a: number, b: number, c: number, d: number) => void;
+    readonly physicsWorldStepSimulation: (a: number, b: number, c: number, d: number) => void;
+    readonly physicsWorldUseMotionStateBuffer: (a: number, b: number) => void;
     readonly constraintEnableSpring: (a: number, b: number, c: number) => void;
     readonly constraintSetAngularLowerLimit: (a: number, b: number, c: number, d: number) => void;
     readonly constraintSetAngularUpperLimit: (a: number, b: number, c: number, d: number) => void;
@@ -534,6 +559,46 @@ export interface InitOutput {
     readonly rigidBodySetShape: (a: number, b: number) => void;
     readonly rigidBodySetTurnVelocity: (a: number, b: number, c: number, d: number) => void;
     readonly rigidBodyTranslate: (a: number, b: number, c: number, d: number) => void;
+    readonly allocateBuffer: (a: number) => number;
+    readonly bw_cond_broadcast: (a: number) => number;
+    readonly bw_cond_init: () => number;
+    readonly bw_cond_wait: (a: number, b: number) => number;
+    readonly bw_get_thread_id: () => number;
+    readonly bw_mutex_init: () => number;
+    readonly bw_mutex_lock: (a: number) => number;
+    readonly bw_mutex_unlock: (a: number) => number;
+    readonly createAnimationPool: () => number;
+    readonly createMmdRuntime: () => number;
+    readonly createMultiPhysicsRuntime: (a: number) => number;
+    readonly deallocateBuffer: (a: number, b: number) => void;
+    readonly destroyMultiPhysicsRuntime: (a: number) => void;
+    readonly mmdModelSolveIk: (a: number, b: number, c: number) => void;
+    readonly multiPhysicsRuntimeBufferedStepSimulation: (a: number, b: number, c: number, d: number) => void;
+    readonly multiPhysicsRuntimeGetLockStatePtr: (a: number) => number;
+    readonly physicsRuntimeBufferedStepSimulation: (a: number, b: number, c: number, d: number) => void;
+    readonly createPhysicsRuntime: (a: number) => number;
+    readonly physicsRuntimeGetLockStatePtr: (a: number) => number;
+    readonly init: () => void;
+    readonly destroyPhysicsRuntime: (a: number) => void;
+    readonly createMultiPhysicsWorld: (a: number) => number;
+    readonly destroyMultiPhysicsWorld: (a: number) => void;
+    readonly multiPhysicsWorldAddConstraint: (a: number, b: number, c: number, d: number) => void;
+    readonly multiPhysicsWorldAddRigidBody: (a: number, b: number, c: number) => void;
+    readonly multiPhysicsWorldAddRigidBodyBundle: (a: number, b: number, c: number) => void;
+    readonly multiPhysicsWorldAddRigidBodyBundleShadow: (a: number, b: number, c: number) => void;
+    readonly multiPhysicsWorldAddRigidBodyBundleToGlobal: (a: number, b: number) => void;
+    readonly multiPhysicsWorldAddRigidBodyShadow: (a: number, b: number, c: number) => void;
+    readonly multiPhysicsWorldAddRigidBodyToGlobal: (a: number, b: number) => void;
+    readonly multiPhysicsWorldRemoveConstraint: (a: number, b: number, c: number) => void;
+    readonly multiPhysicsWorldRemoveRigidBody: (a: number, b: number, c: number) => void;
+    readonly multiPhysicsWorldRemoveRigidBodyBundle: (a: number, b: number, c: number) => void;
+    readonly multiPhysicsWorldRemoveRigidBodyBundleFromGlobal: (a: number, b: number) => void;
+    readonly multiPhysicsWorldRemoveRigidBodyBundleShadow: (a: number, b: number, c: number) => void;
+    readonly multiPhysicsWorldRemoveRigidBodyFromGlobal: (a: number, b: number) => void;
+    readonly multiPhysicsWorldRemoveRigidBodyShadow: (a: number, b: number, c: number) => void;
+    readonly multiPhysicsWorldSetGravity: (a: number, b: number, c: number, d: number) => void;
+    readonly multiPhysicsWorldStepSimulation: (a: number, b: number, c: number, d: number) => void;
+    readonly multiPhysicsWorldUseMotionStateBuffer: (a: number, b: number) => void;
     readonly __wbg_mmdruntime_free: (a: number, b: number) => void;
     readonly mmdruntime_acquireDiagnosticErrorResult: (a: number) => number;
     readonly mmdruntime_acquireDiagnosticInfoResult: (a: number) => number;
@@ -561,53 +626,6 @@ export interface InitOutput {
     readonly mmdruntime_setRuntimeAnimation: (a: number, b: number, c: number) => void;
     readonly mmdruntime_swapWorldMatrixBuffer: (a: number) => void;
     readonly mmdruntime_useExternalPhysics: (a: number, b: number, c: number) => void;
-    readonly bw_acosf: (a: number) => number;
-    readonly bw_asinf: (a: number) => number;
-    readonly bw_atan2f: (a: number, b: number) => number;
-    readonly bw_atanf: (a: number) => number;
-    readonly bw_ceil: (a: number) => number;
-    readonly bw_cosf: (a: number) => number;
-    readonly bw_expf: (a: number) => number;
-    readonly bw_fabs: (a: number) => number;
-    readonly bw_fabsf: (a: number) => number;
-    readonly bw_floor: (a: number) => number;
-    readonly bw_fmodf: (a: number, b: number) => number;
-    readonly bw_isinf: (a: number) => number;
-    readonly bw_isnan: (a: number) => number;
-    readonly bw_logf: (a: number) => number;
-    readonly bw_powf: (a: number, b: number) => number;
-    readonly bw_sinf: (a: number) => number;
-    readonly bw_sqrt: (a: number) => number;
-    readonly bw_sqrtf: (a: number) => number;
-    readonly bw_tanf: (a: number) => number;
-    readonly createPhysicsWorld: () => number;
-    readonly destroyPhysicsWorld: (a: number) => void;
-    readonly physicsWorldAddConstraint: (a: number, b: number, c: number) => void;
-    readonly physicsWorldAddRigidBody: (a: number, b: number) => void;
-    readonly physicsWorldAddRigidBodyBundle: (a: number, b: number) => void;
-    readonly physicsWorldRemoveConstraint: (a: number, b: number) => void;
-    readonly physicsWorldRemoveRigidBody: (a: number, b: number) => void;
-    readonly physicsWorldRemoveRigidBodyBundle: (a: number, b: number) => void;
-    readonly physicsWorldSetGravity: (a: number, b: number, c: number, d: number) => void;
-    readonly physicsWorldStepSimulation: (a: number, b: number, c: number, d: number) => void;
-    readonly physicsWorldUseMotionStateBuffer: (a: number, b: number) => void;
-    readonly bw_cond_broadcast: (a: number) => number;
-    readonly bw_cond_init: () => number;
-    readonly bw_cond_wait: (a: number, b: number) => number;
-    readonly bw_get_thread_id: () => number;
-    readonly bw_mutex_init: () => number;
-    readonly bw_mutex_lock: (a: number) => number;
-    readonly bw_mutex_unlock: (a: number) => number;
-    readonly createMultiPhysicsRuntime: (a: number) => number;
-    readonly destroyMultiPhysicsRuntime: (a: number) => void;
-    readonly getMmdModelRigidBodyBundleLen: (a: number) => number;
-    readonly mmdModelRigidBodyApplyCentralForce: (a: number, b: number, c: number, d: number, e: number) => void;
-    readonly multiPhysicsRuntimeBufferedStepSimulation: (a: number, b: number, c: number, d: number) => void;
-    readonly multiPhysicsRuntimeGetLockStatePtr: (a: number) => number;
-    readonly physicsRuntimeBufferedStepSimulation: (a: number, b: number, c: number, d: number) => void;
-    readonly createPhysicsRuntime: (a: number) => number;
-    readonly physicsRuntimeGetLockStatePtr: (a: number) => number;
-    readonly destroyPhysicsRuntime: (a: number) => void;
     readonly __wbg_wbg_rayon_poolbuilder_free: (a: number, b: number) => void;
     readonly initThreadPool: (a: number) => any;
     readonly wbg_rayon_poolbuilder_build: (a: number) => void;

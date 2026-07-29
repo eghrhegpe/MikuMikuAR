@@ -834,6 +834,31 @@ export function mmdModelRigidBodyApplyCentralForce(model_ptr, index, force_x, fo
 }
 
 /**
+ * Applies a central force to ALL native rigid bodies with per-body mass-aware scaling.
+ *
+ * Solves the "hair blow-away" problem: hair chains have tiny per-link mass
+ * (0.05–0.2 kg) while cloth rigid bodies are 1–3 kg. A fixed force coefficient
+ * that looks right on cloth makes light hair links diverge and stretch the
+ * constraint chain to full length. This export scales each body's force by
+ * `clamp(mass / reference_mass, min_scale, 1.0)`, so heavy bodies (cloth)
+ * receive the full force while light bodies (hair) are damped automatically.
+ *
+ * `FollowBone` bodies are skipped (bone-driven, not physics-driven).
+ *
+ * # Safety
+ * `model_ptr` must be a valid `MmdModel` pointer obtained from `MmdRuntime.createMmdModel`.
+ * @param {number} model_ptr
+ * @param {number} force_x
+ * @param {number} force_y
+ * @param {number} force_z
+ * @param {number} reference_mass
+ * @param {number} min_scale
+ */
+export function mmdModelRigidBodyApplyWindForce(model_ptr, force_x, force_y, force_z, reference_mass, min_scale) {
+    wasm.mmdModelRigidBodyApplyWindForce(model_ptr, force_x, force_y, force_z, reference_mass, min_scale);
+}
+
+/**
  * Manually trigger IK re-solution for the model's IK solver at `ik_solver_index`.
  *
  * Pass the target bone's `ikSolverIndex` (from `MmdWasmRuntimeBone.ikSolverIndex`).
