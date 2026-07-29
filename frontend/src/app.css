@@ -110,7 +110,7 @@
     /* ===== 组件级变量 ===== */
 
     /* 全局水平内边距基准 */
-    --content-px: calc(14px * var(--ui-scale));
+    --content-px: calc(12px * var(--ui-scale));
 
     /* Slide Item（列表行） */
     --slide-item-gap: calc(8px * var(--ui-scale));
@@ -1840,8 +1840,7 @@ textarea,
 }
 .slide-label {
     flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    flex-shrink: 0;
     white-space: nowrap;
     font-size: calc(16px * var(--ui-scale));
 }
@@ -1856,6 +1855,10 @@ textarea,
     color: var(--text);
     margin-left: auto;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 1;
+    min-width: 0;
 }
 .slide-sublabel-inline {
     margin-left: 0;

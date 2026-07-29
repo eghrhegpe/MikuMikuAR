@@ -343,12 +343,13 @@ function resolveModelLabel(m: LibraryModel, filenameFallback: string): string {
 }
 
 export function modelToRow(m: LibraryModel): PopupRow {
+    const cached = modelMetaCache.get(m.file_path);
     return {
         kind: 'model',
         label: resolveModelLabel(m, t('library.unknown')),
         icon: resolveModelIcon(m),
         target: m.file_path,
-        sublabel: m.name || undefined,
+        sublabel: cached?.comment || m.comment || undefined,
         model: m,
         editable: m.format === 'pmx',
         wrapLabel: true,
