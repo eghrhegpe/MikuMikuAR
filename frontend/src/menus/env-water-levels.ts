@@ -68,13 +68,6 @@ export function buildWaterLevel(): PopupLevel {
                             icon: 'lucide:arrow-up',
                         },
                         {
-                            id: 'env:water:size',
-                            kind: 'slider',
-                            label: 'env.range',
-                            control: { bind: 'env.waterSize', min: 10, max: 200, step: 5 },
-                            icon: 'lucide:maximize',
-                        },
-                        {
                             id: 'env:water:bigWaveHeight',
                             kind: 'slider',
                             label: 'env.bigWaveHeight',

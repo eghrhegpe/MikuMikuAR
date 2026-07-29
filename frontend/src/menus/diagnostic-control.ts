@@ -210,7 +210,7 @@ export async function cancelPendingAction(onQueueAdvance: () => void): Promise<v
     if (toolCallId) {
         diagState.pendingToolResults.push({
             toolCallId,
-            content: JSON.stringify({ success: false, message: '用户已取消' }),
+            content: JSON.stringify({ success: false, message: t('ai.control.cancelled') }),
         });
     } else {
         diagState.messages.push({ role: 'assistant', content: t('ai.control.cancelled') });

@@ -41,9 +41,6 @@ const WAVE_DIR_OFFSETS: [number, number, number, number] = [0, 0.6, -0.4, 1.2];
 const RIPPLE_MIN_RADIUS = 0.1;
 const RIPPLE_MIN_SPEED = 0.1;
 const RIPPLE_INFINITY_LIFE = 9999;
-// 焦散着色系数（暗部底色 / 亮部增量）
-const CAUSTIC_DARK_FACTOR = 0.3;
-const CAUSTIC_BRIGHT_FACTOR = 0.9;
 // deltaTime 钳制上限（秒），防止切后台返回时跳变
 const DT_CLAMP_MAX = 0.1;
 // 水下雾密度系数
@@ -515,40 +512,62 @@ function regenerateCausticTexture(scene: Scene, waterColor: [number, number, num
         const imgData = ctx.createImageData(s, s);
         const data = imgData.data;
 
-        // 用水色对灰度焦散图案着色：暗部用水色×0.5，亮部用水色
-        const [wr, wg, wb] = waterColor;
+        // Voronoi 焦散：不规则网状亮纹，模拟折射光汇聚线
+        const hash2 = (ix: number, iy: number): [number, number] => {
+            let h = (ix * 374761393 + iy * 668265263) | 0;
+            h = (h ^ (h >> 13)) * 1274126177;
+            const r0 = ((h >>> 0) & 0xffff) / 65535;
+            h = (h ^ (h >> 16)) * 2654435769;
+            const r1 = ((h >>> 0) & 0xffff) / 65535;
+            return [r0, r1];
+        };
 
+        const TILE = 4; // 瓦片数（值越小细胞越大）
         for (let y = 0; y < s; y++) {
             for (let x = 0; x < s; x++) {
-                const u = x / s,
-                    v = y / s;
-                let n = 0,
-                    total = 0,
-                    amp = 1,
-                    freq = 4;
-                for (let o = 0; o < 3; o++) {
-                    n += amp * (Math.sin(u * freq * Math.PI) * Math.cos(v * freq * Math.PI));
-                    total += amp;
-                    amp *= 0.5;
-                    freq *= 2;
+                const px = (x / s) * TILE;
+                const py = (y / s) * TILE;
+                const ix = Math.floor(px),
+                    iy = Math.floor(py);
+                let f1 = 10,
+                    f2 = 10;
+                for (let dy = -1; dy <= 1; dy++) {
+                    for (let dx = -1; dx <= 1; dx++) {
+                        // 环形坐标：边缘细胞与对面无缝衔接，消除纹理接缝
+                        const wx = ((ix + dx) % TILE + TILE) % TILE;
+                        const wy = ((iy + dy) % TILE + TILE) % TILE;
+                        const [rx, ry] = hash2(wx, wy);
+                        // 特征点在世界空间的位置（未包装）
+                        const ptX = ix + dx + rx;
+                        const ptY = iy + dy + ry;
+                        // 环形距离：考虑纹理边缘的绕回
+                        let ddx = px - ptX;
+                        let ddy = py - ptY;
+                        if (ddx > TILE / 2) ddx -= TILE;
+                        else if (ddx < -TILE / 2) ddx += TILE;
+                        if (ddy > TILE / 2) ddy -= TILE;
+                        else if (ddy < -TILE / 2) ddy += TILE;
+                        const d = Math.hypot(ddx, ddy);
+                        if (d < f1) {
+                            f2 = f1;
+                            f1 = d;
+                        } else if (d < f2) {
+                            f2 = d;
+                        }
+                    }
                 }
-                n = (n / total) * 0.5 + 0.5; // 灰度 0~1
+                // 焦散图案：细胞中心亮、边缘微暗，模拟水下自然光斑
+                // 基础亮度 0.65，边缘处根据 f2-f1 对比度适度压暗
+                const edge = f2 - f1;
+                const baseBright = 0.65 + 0.3 * (1 - f1); // 距核心越近越亮
+                const edgeDark = Math.pow(edge, 0.6) * 0.25; // 边缘柔和压暗
+                const g = Math.min(1, Math.max(0, baseBright - edgeDark));
 
-                // 灰度映射到 [水色×DARK, 水色×BRIGHT]，让暗部偏水色，亮部更亮
                 const i = (y * s + x) * 4;
-                const t = n; // 0=暗纹, 1=亮纹
-                data[i] = Math.min(
-                    255,
-                    Math.floor((wr * CAUSTIC_DARK_FACTOR + t * wr * CAUSTIC_BRIGHT_FACTOR) * 255)
-                );
-                data[i + 1] = Math.min(
-                    255,
-                    Math.floor((wg * CAUSTIC_DARK_FACTOR + t * wg * CAUSTIC_BRIGHT_FACTOR) * 255)
-                );
-                data[i + 2] = Math.min(
-                    255,
-                    Math.floor((wb * CAUSTIC_DARK_FACTOR + t * wb * CAUSTIC_BRIGHT_FACTOR) * 255)
-                );
+                const b = Math.floor(g * 255);
+                data[i] = b;
+                data[i + 1] = b;
+                data[i + 2] = b;
                 data[i + 3] = 255;
             }
         }
@@ -675,7 +694,10 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     mat.setInt('uWaterFlip', state.waterFlip ? 1 : 0);
 
     const hasEnv = !!scene.environmentTexture;
-    mat.setFloat('envIntensity', hasEnv ? (scene.environmentIntensity ?? 0.8) : 0);
+    // envIntensity 随日照缩放（与 per-frame tickWater 同公式）
+    const _initDl = scene.getLightByName('dir') as DirectionalLight | null;
+    const _initSunI = _initDl ? _initDl.intensity : 0.4;
+    mat.setFloat('envIntensity', hasEnv ? Math.max(0.05, Math.min(1, _initSunI * 0.7 + 0.1)) : 0);
     if (hasEnv && scene.environmentTexture) {
         mat.setTexture('envTexture', scene.environmentTexture);
     }
@@ -730,8 +752,8 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     const skyBot = state.skyColorBot ?? state.waterFogColor;
     mat.setVector3('uSkyBlendColor', new Vector3(skyBot[0], skyBot[1], skyBot[2]));
     mat.setFloat('uSkyColorBlend', state.waterSkyColorBlend ?? 0);
-    // 地平线淡出距离按 waterSize 自动计算
-    const ws = state.waterSize;
+    // 地平线淡出距离按地面尺寸自动计算
+    const ws = state.groundSize;
     mat.setFloat('uHorizonFade', state.waterHorizonFade ?? 0);
     mat.setFloat('uHorizonStart', ws * 0.7);
     mat.setFloat('uHorizonEnd', ws * 0.95);
@@ -793,7 +815,7 @@ function _setupMirrorRT(scene: Scene, state: EnvState): void {
  * 更新水面网格的位置和缩放（非破坏性）。所有 LOD 层同步变换。
  */
 function _updateWaterMesh(state: EnvState): void {
-    const scale = Math.max(1, state.waterSize / WATER_BASE_SIZE);
+    const scale = Math.max(1, state.groundSize / WATER_BASE_SIZE);
     const rotX = state.waterFlip ? Math.PI : 0;
     const meshes: Mesh[] = [];
     if (_envSys.water.mesh) {
@@ -982,6 +1004,8 @@ function _waterUpdateCallback(scene: Scene): void {
         m.setVector3('lightDir', dl.direction);
         m.setColor3('lightColor', dl.diffuse);
         m.setFloat('lightIntensity', dl.intensity);
+        // envIntensity 随日照缩放：避免 environmentTexture 始终满强度导致水面不受日照明暗影响
+        m.setFloat('envIntensity', Math.max(0.05, Math.min(1, dl.intensity * 0.7 + 0.1)));
     }
 
     // 涟漪衰减 + 清理死亡 slot
@@ -1054,7 +1078,7 @@ export function createWater(state: EnvState): void {
         return;
     }
 
-    const scale = Math.max(1, state.waterSize / WATER_BASE_SIZE);
+    const scale = Math.max(1, state.groundSize / WATER_BASE_SIZE);
     const rotX = state.waterFlip ? Math.PI : 0;
     const makeGround = (name: string, subdivisions: number): Mesh => {
         const m = MeshBuilder.CreateGround(
@@ -1294,8 +1318,8 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         smallWaveHeight: 0.5,
         waterAnimSpeed: 0.2,
         waterFogColor: [0.5, 0.52, 0.62],
-        waterFogStart: 80,
-        waterFogEnd: 500,
+        waterFogStart: 150,
+        waterFogEnd: 800,
         waterFogOpacityInfluence: 0,
         fresnelAlphaInfluence: 0.35,
         causticIntensity: 0.1,
@@ -1316,8 +1340,8 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         smallWaveHeight: 1.0,
         waterAnimSpeed: 1.0,
         waterFogColor: [0.48, 0.5, 0.6],
-        waterFogStart: 50,
-        waterFogEnd: 300,
+        waterFogStart: 100,
+        waterFogEnd: 500,
         waterFogOpacityInfluence: 0,
         fresnelAlphaInfluence: 0.4,
         causticIntensity: 0.15,
@@ -1337,8 +1361,8 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         smallWaveHeight: 0.8,
         waterAnimSpeed: 2.5,
         waterFogColor: [0.4, 0.42, 0.55],
-        waterFogStart: 20,
-        waterFogEnd: 150,
+        waterFogStart: 50,
+        waterFogEnd: 300,
         waterFogOpacityInfluence: 0,
         fresnelAlphaInfluence: 0.5,
         causticIntensity: 0.2,
@@ -1358,8 +1382,8 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         smallWaveHeight: 0.5,
         waterAnimSpeed: 5.0,
         waterFogColor: [0.35, 0.36, 0.48],
-        waterFogStart: 5,
-        waterFogEnd: 80,
+        waterFogStart: 15,
+        waterFogEnd: 150,
         waterFogOpacityInfluence: 0,
         fresnelAlphaInfluence: 0.6,
         causticIntensity: 0.25,
@@ -1379,8 +1403,8 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         smallWaveHeight: 1.2,
         waterAnimSpeed: 1.2,
         waterFogColor: [0.45, 0.58, 0.62],
-        waterFogStart: 60,
-        waterFogEnd: 400,
+        waterFogStart: 120,
+        waterFogEnd: 600,
         waterFogOpacityInfluence: 0,
         fresnelAlphaInfluence: 0.42,
         causticIntensity: 0.2,

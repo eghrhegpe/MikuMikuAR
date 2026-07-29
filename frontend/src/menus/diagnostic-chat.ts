@@ -342,7 +342,6 @@ export function buildSystemMessage(): ChatMessage {
     return {
         role: 'system',
         content: [
-            t('ai.system.role'),
             t('ai.system.control'),
             catalog,
             t('ai.system.controlFormat'),

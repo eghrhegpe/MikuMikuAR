@@ -96,7 +96,6 @@ function buildDefaultEnvState(): EnvState {
         waterWaveHeight: s.waterWaveHeight.default,
         bigWaveHeight: s.bigWaveHeight.default,
         smallWaveHeight: s.smallWaveHeight.default,
-        waterSize: s.waterSize.default,
         waterAnimSpeed: s.waterAnimSpeed.default,
         planarReflectBlend: s.planarReflectBlend.default,
         reflectionQuality: s.reflectionQuality.default,

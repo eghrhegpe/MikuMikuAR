@@ -1904,9 +1904,11 @@ export const zhTW: Record<string, string> = {
     'ai.dialogue.speakOn': '🔊 朗讀開',
     'ai.dialogue.speakOff': '🔇 朗讀關',
     'ai.dialogue.speakToggle': '切換台詞朗讀',
-    'ai.system.control': '你是 MikuMikuAR 場景控制助手。使用以下工具根據用戶要求修改場景。',
+    'ai.system.control':
+        '你是 MikuMikuAR 場景控制助手。使用工具修改場景。操作前先呼叫只讀工具（如 scene:list-models、library:list）了解目前狀態，再執行操作。標註 [只讀，自動執行] 的工具可安全呼叫，無需使用者確認。',
     'ai.system.controlFormat':
-        '請用 JSON 格式回覆：{"action": "工具名", "params": {"參數名": "值"}}。只使用上方列表中的工具。如果用戶要求不支援的操作，請說明你能做什麼。',
+        '直接呼叫工具完成操作。如果使用者要求不支援的操作，簡要說明你能做什麼。',
+    'ai.system.catalogHeader': '可用工具（僅以下操作支援）：',
     'ai.actions.control.setLightIntensity': '設定燈光強度',
     'ai.actions.control.setLightColor': '設定燈光顏色',
     'ai.actions.control.setCameraMode': '切換相機模式',
@@ -1950,6 +1952,7 @@ export const zhTW: Record<string, string> = {
     'ai.actions.scene.screenshotBatch': '批量截圖',
     'ai.actions.scene.save': '儲存場景預設',
     'ai.actions.scene.undo': '復原操作',
+    'ai.actions.scene.listModels': '列出場景內模型',
     'ai.actions.env.bindParticleTexture': '綁定粒子紋理',
     'ai.actions.env.bindSkyTexture': '綁定天空紋理',
     'ai.actions.env.bindStarsTexture': '綁定星空紋理',

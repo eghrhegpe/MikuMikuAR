@@ -18,6 +18,7 @@ import {
     Plane,
     Vector3,
     Matrix,
+    DirectionalLight,
 } from '@babylonjs/core';
 import { EnvState, envState } from '@/core/config';
 import { col3FromTriple, rgbString } from '@/core/color-helpers';
@@ -135,6 +136,10 @@ function createGroundMaterial(state: EnvState, scene: Scene): GroundMat {
     // PBR 自动使用 scene.environmentTexture 作为 IBL，无需手动赋值
     mat.useSpecularOverAlpha = false;
     mat.useRadianceOverAlpha = false;
+    // IBL 随日照明暗缩放（与 _syncPbrProperties 同公式），避免新建时 environmentIntensity=1 导致地面不受日照影响
+    const dir = scene.getLightByName('dir') as DirectionalLight | null;
+    const sunI = dir ? dir.intensity : 0.4;
+    mat.environmentIntensity = Math.max(0.08, Math.min(1, sunI * 0.7 + 0.1));
     // ADR-114: 透明模式下显式设置 transparencyMode，PBRMaterial 依赖显式队列
     mat.transparencyMode = _needAlphaBlend(state)
         ? Material.MATERIAL_ALPHABLEND
@@ -480,6 +485,11 @@ function generateProceduralGroundTextures(
  * 释放材质及其所有纹理（PBR 和 Standard 共用 opacity/bump/reflection，差异在 albedo/diffuse）。
  * 缓存所有的贴图（程序化三件套 / 边缘淡出）跳过——由 disposeTextureCache 统一释放，
  * 避免提前 dispose 后 getOrCreateCanvasTexture 复用已失效贴图导致地面空白。
+ *
+ * 关键：mat.dispose() 前必须先将缓存贴图从材质上脱离（设 null），
+ * 否则 PBRMaterial.dispose() / StandardMaterial.dispose() 内部可能连带释放附着纹理，
+ * 导致缓存中的 DynamicTexture GPU 资源失效、重建后地面变黑（金属预设尤其敏感：
+ * PBR + 缓存程序化三件套 + 中反射，是唯一同时命中三个条件的预设）。
  */
 function disposeGroundMaterial(mat: Material | null): void {
     if (!mat) {
@@ -490,6 +500,7 @@ function disposeGroundMaterial(mat: Material | null): void {
             tex.dispose();
         }
     };
+    // Step 1: 手动释放非缓存纹理
     if (mat instanceof PBRMaterial) {
         disposeTex(mat.albedoTexture);
         disposeTex(mat.metallicTexture);
@@ -501,6 +512,19 @@ function disposeGroundMaterial(mat: Material | null): void {
         disposeTex(mat.bumpTexture);
         disposeTex(mat.opacityTexture);
         disposeTex(mat.reflectionTexture);
+    }
+    // Step 2: 脱离缓存贴图，防止 mat.dispose() 连带释放
+    if (mat instanceof PBRMaterial) {
+        if (isCacheOwnedTexture(mat.albedoTexture)) mat.albedoTexture = null;
+        if (isCacheOwnedTexture(mat.metallicTexture)) mat.metallicTexture = null;
+    }
+    if (mat instanceof StandardMaterial) {
+        if (isCacheOwnedTexture(mat.diffuseTexture)) mat.diffuseTexture = null;
+    }
+    if (mat instanceof PBRMaterial || mat instanceof StandardMaterial) {
+        if (isCacheOwnedTexture(mat.bumpTexture)) mat.bumpTexture = null;
+        if (isCacheOwnedTexture(mat.opacityTexture)) mat.opacityTexture = null;
+        if (isCacheOwnedTexture(mat.reflectionTexture)) mat.reflectionTexture = null;
     }
     mat.dispose();
 }
@@ -1064,6 +1088,12 @@ function _syncPbrProperties(mat: PBRMaterial, state: EnvState): void {
     if (mat.bumpTexture) {
         mat.bumpTexture.level = _effectiveBumpLevel(state);
     }
+    // IBL 随日照明暗缩放：dirLight.intensity 已由 deriveLighting 按太阳角度推算，
+    // 不缩放则 environmentTexture 始终满强度，地面不会随日落变暗（看起来"不受光照影响"）。
+    const scene = getScene();
+    const dir = scene.getLightByName('dir') as DirectionalLight | null;
+    const sunI = dir ? dir.intensity : 0.4;
+    mat.environmentIntensity = Math.max(0.08, Math.min(1, sunI * 0.7 + 0.1));
 }
 
 // ======== applyGround (public) ========

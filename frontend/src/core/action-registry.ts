@@ -46,6 +46,8 @@ export interface ActionDef {
     destructive?: boolean;
     /** 只读操作（读取状态/日志/快照），自动执行跳过 pending 确认队列（ADR-205） */
     readonly?: boolean;
+    /** 纯 UI 操作（弹菜单/文件选择器），AI 无法完成交互，从工具 catalog 中排除 */
+    uiOnly?: boolean;
 }
 
 /** 注册表内部存储 */

@@ -1946,9 +1946,10 @@ export const ja: Record<string, string> = {
     'ai.dialogue.speakOff': '🔇 読み上げ OFF',
     'ai.dialogue.speakToggle': 'セリフ読み上げを切替',
     'ai.system.control':
-        'あなたは MikuMikuAR シーン制御アシスタントです。以下のツールを使用して、ユーザーの要求に応じてシーンを変更してください。',
+        'あなたは MikuMikuAR シーン制御アシスタントです。ツールを使ってシーンを変更します。操作前に先に読み取り専用ツール（scene:list-models、library:list など）を呼び出して現在の状態を把握してください。[只読，自動実行] とマークされたツールは確認なしで安全に呼び出せます。',
     'ai.system.controlFormat':
-        'JSON 形式で応答してください：{"action": "ツール名", "params": {"パラメータ名": "値"}}。上記のリストにあるツールのみ使用してください。サポートされていない操作が要求された場合は、何ができるかを説明してください。',
+        '直接ツールを呼び出して操作を完了してください。サポートされていない操作が要求された場合は、何ができるかを簡潔に説明してください。',
+    'ai.system.catalogHeader': '利用可能なツール（以下の操作のみ対応）：',
     'ai.actions.control.setLightIntensity': 'ライト強度を設定',
     'ai.actions.control.setLightColor': 'ライトの色を設定',
     'ai.actions.control.setCameraMode': 'カメラモードを切り替え',
@@ -1992,6 +1993,7 @@ export const ja: Record<string, string> = {
     'ai.actions.scene.screenshotBatch': '一括スクリーンショット',
     'ai.actions.scene.save': 'シーンプリセットを保存',
     'ai.actions.scene.undo': '操作を元に戻す',
+    'ai.actions.scene.listModels': 'シーン内モデル一覧',
     'ai.actions.env.bindParticleTexture': 'パーティクルテクスチャをバインド',
     'ai.actions.env.bindSkyTexture': '空テクスチャをバインド',
     'ai.actions.env.bindStarsTexture': '星空テクスチャをバインド',

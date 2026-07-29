@@ -232,6 +232,11 @@ func (c *Client) StreamChat(ctx context.Context, req ChatRequest, emit func(Stre
 	}
 	toolAccums := make(map[int]*toolCallAcc)
 
+	// 诊断计数：区分 content / reasoning / tool_call delta，排查分类错误
+	contentChunks := 0
+	reasoningChunks := 0
+	toolCallChunks := 0
+
 	rawLineCount := 0
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -245,6 +250,8 @@ func (c *Client) StreamChat(ctx context.Context, req ChatRequest, emit func(Stre
 		}
 		data := strings.TrimSpace(line[5:])
 		if data == "" || data == "[DONE]" {
+			slog.Info(fmt.Sprintf("[ai-stream][llm] 收到 %q 哨兵 finish_reason=空 content=%d reasoning=%d toolCallDelta=%d",
+				data, contentChunks, reasoningChunks, toolCallChunks))
 			emit(StreamEvent{Type: "done"})
 			return
 		}
@@ -287,11 +294,17 @@ func (c *Client) StreamChat(ctx context.Context, req ChatRequest, emit func(Stre
 		// （思考过程折叠、正式回答直显）。
 		delta := chunk.Choices[0].Delta
 		if delta.Content != "" {
+			contentChunks++
 			emit(StreamEvent{Type: "chunk", Delta: delta.Content, Reasoning: false})
 		} else if delta.Reasoning != "" {
+			reasoningChunks++
 			emit(StreamEvent{Type: "chunk", Delta: delta.Reasoning, Reasoning: true})
 		} else if delta.ReasoningContent != "" {
+			reasoningChunks++
 			emit(StreamEvent{Type: "chunk", Delta: delta.ReasoningContent, Reasoning: true})
+		}
+		if len(chunk.Choices[0].Delta.ToolCalls) > 0 {
+			toolCallChunks++
 		}
 
 		// Handle finish_reason
@@ -302,7 +315,14 @@ func (c *Client) StreamChat(ctx context.Context, req ChatRequest, emit func(Stre
 		if fr := chunk.Choices[0].FinishReason; fr != nil && *fr != "" {
 			reason := *fr
 			if reason == "tool_calls" {
-				for _, acc := range toolAccums {
+				// 诊断：打印每个累积的 tool_call（名称 + 参数截断）
+				for idx, acc := range toolAccums {
+					argsPreview := acc.arguments
+					if len(argsPreview) > 80 {
+						argsPreview = argsPreview[:80] + "…"
+					}
+					slog.Info(fmt.Sprintf("[ai-stream][llm] tool_call#%d name=%s args=%s id=%s",
+						idx, acc.name, argsPreview, acc.id))
 					emit(StreamEvent{
 						Type:     "tool_call",
 						ToolName: acc.name,
@@ -310,9 +330,14 @@ func (c *Client) StreamChat(ctx context.Context, req ChatRequest, emit func(Stre
 						ToolId:   acc.id,
 					})
 				}
+				slog.Info(fmt.Sprintf("[ai-stream][llm] finish_reason=tool_calls tools=%d content=%d reasoning=%d toolCallDelta=%d",
+					len(toolAccums), contentChunks, reasoningChunks, toolCallChunks))
 				emit(StreamEvent{Type: "done"})
 				return
 			}
+			// stop / length / 其他未知值
+			slog.Info(fmt.Sprintf("[ai-stream][llm] finish_reason=%s content=%d reasoning=%d toolCallDelta=%d",
+				reason, contentChunks, reasoningChunks, toolCallChunks))
 			emit(StreamEvent{Type: "done"})
 			return
 		}
@@ -323,6 +348,9 @@ func (c *Client) StreamChat(ctx context.Context, req ChatRequest, emit func(Stre
 		return
 	}
 
+	// 兜底：SSE 流结束但未收到显式 finish_reason（连接被关闭 / 网关异常截断）
+	slog.Info(fmt.Sprintf("[ai-stream][llm] 流结束无 finish_reason（兜底） content=%d reasoning=%d toolCallDelta=%d",
+		contentChunks, reasoningChunks, toolCallChunks))
 	emit(StreamEvent{Type: "done"})
 }
 
