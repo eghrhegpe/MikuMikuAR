@@ -1636,6 +1636,7 @@ export const ja: Record<string, string> = {
     'shortcuts.label.env': '環境',
     'shortcuts.label.settings': '設定',
     'shortcuts.label.plaza': 'モデル広場',
+    'shortcuts.label.assistant': 'AI アシスタント',
     'shortcuts.label.arCamera': 'ARカメラ',
     'shortcuts.label.playPause': '再生/一時停止',
     'shortcuts.label.closePopup': 'ポップアップを閉じる',

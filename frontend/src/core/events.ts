@@ -176,6 +176,10 @@ export const navActions: Record<number, () => void | Promise<void>> = {
             toggleOverlay('webviewLayer', showPlaza);
         }
     },
+    8: async () => {
+        const m = await import('../menus/assistant-panel');
+        toggleOverlay('sceneOverlay', m.showAssistant);
+    },
 };
 
 function _toggleOverlays(): void {

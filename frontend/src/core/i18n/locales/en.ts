@@ -1792,6 +1792,7 @@ export const en: Record<string, string> = {
     'shortcuts.label.env': 'Environment',
     'shortcuts.label.settings': 'Settings',
     'shortcuts.label.plaza': 'Model Plaza',
+    'shortcuts.label.assistant': 'AI Assistant',
     'shortcuts.label.arCamera': 'AR Camera',
     'shortcuts.label.playPause': 'Play/Pause',
     'shortcuts.label.closePopup': 'Close Popup',

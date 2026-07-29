@@ -22,6 +22,7 @@ export const dom = {
     btnSettings: document.getElementById('btnSettings') as HTMLButtonElement,
     btnScene: document.getElementById('btnScene') as HTMLButtonElement,
     btnEnv: document.getElementById('btnEnv') as HTMLButtonElement,
+    btnAssistant: document.getElementById('btnAssistant') as HTMLButtonElement,
     btnPlaza: document.getElementById('btnPlaza') as HTMLButtonElement,
     sceneOverlay: document.getElementById('sceneOverlay') as HTMLElement,
     webviewLayer: document.getElementById('webviewLayer') as HTMLElement,

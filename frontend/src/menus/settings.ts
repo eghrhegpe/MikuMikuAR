@@ -26,7 +26,6 @@ import { buildSettingsDownloadsLevel } from './settings-downloads';
 import { buildSettingsMediaLevel } from './settings-media';
 import { buildSettingsSystemLevel, buildSoftwareDetailLevel } from './settings-system';
 import { buildSettingsAboutLevel } from './settings-about';
-import { buildSettingsDiagnosticLevel } from './settings-diagnostic';
 import { handleSettingsAction } from './settings-actions';
 
 // ======== Menu registration ========
@@ -95,12 +94,6 @@ function buildSettingsRootItems(): PopupRow[] {
     });
     items.push({
         kind: 'folder',
-        label: t('settings.diagnostic'),
-        icon: 'lucide:bot',
-        target: SETTINGS.DIAGNOSTIC,
-    });
-    items.push({
-        kind: 'folder',
         label: t('settings.about'),
         icon: 'lucide:info',
         target: SETTINGS.ABOUT,
@@ -120,11 +113,6 @@ function buildSettingsRoot() {
 
 function settingsOnFolderEnter(row: PopupRow) {
     if (row.target) {
-        // [doc:adr-202] AI 诊断入口改为打开独立助手面板（含会话历史），不再作为设置子层。
-        if (row.target === SETTINGS.DIAGNOSTIC) {
-            void import('./assistant-panel').then((m) => m.showAssistant());
-            return null;
-        }
         const builder = SETTINGS_FOLDER_ROUTES[row.target as SettingsFolderTarget];
         if (builder) {
             // [doc:adr-065] 挂 itemBuilder 使纯 items 子层随语言热刷新
@@ -152,5 +140,4 @@ const SETTINGS_FOLDER_ROUTES: Record<SettingsFolderTarget, () => PopupLevel> = {
     [SETTINGS.MEDIA]: () => buildSettingsMediaLevel(getSettingsMenu),
     [SETTINGS.SYSTEM]: () => buildSettingsSystemLevel(getSettingsMenu),
     [SETTINGS.ABOUT]: () => buildSettingsAboutLevel(getSettingsMenu),
-    [SETTINGS.DIAGNOSTIC]: () => buildSettingsDiagnosticLevel(getSettingsMenu),
 };
