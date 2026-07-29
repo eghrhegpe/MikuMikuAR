@@ -41,6 +41,10 @@ export type { SolveFootInput, SolveFootOutput } from '@/motion-algos/feet-adjust
 // 本文件加载后自动挂到 window.__feetDebug
 export const feetDebug = { value: false };
 (window as unknown as Record<string, unknown>).__feetDebug = feetDebug;
+// [ADR-202 §六] 强制 IK 运行开关（验证方案A 用）：绕过 jumpThreshold skip，
+// 从控制台启用：__feetForceIk.value = true
+export const feetForceIk = { value: false };
+(window as unknown as Record<string, unknown>).__feetForceIk = feetForceIk;
 
 // ======== 引擎钩子 ========
 
@@ -405,7 +409,7 @@ function _adjustFoot(
         );
     }
 
-    if (res.skip) {
+    if (res.skip && !feetForceIk.value) {
         if (side === 'L') {
             cache.lTargetY = null;
         } else {
@@ -414,8 +418,11 @@ function _adjustFoot(
         return;
     }
 
+    // [ADR-202 §六] feetForceIk 模式：绕过 skip，强制把脚拉到地面验证 IK 路径
+    const forceTargetY = feetForceIk.value ? groundY + feet.soleHeight : res.targetY;
+
     // 驱动 IK 目标骨骼世界坐标（保留 XZ，仅调整 Y）
-    _vTarget.set(_vFoot.x, res.targetY, _vFoot.z);
+    _vTarget.set(_vFoot.x, forceTargetY, _vFoot.z);
     ik.setWorldTranslation(_vTarget);
 
     // [doc:adr-085 方案C] 重解该腿 IK
@@ -429,7 +436,7 @@ function _adjustFoot(
         const bufAfter = buf ? [buf[12], buf[13], buf[14]] : null;
         const resolver = getWasmIkResolver();
 
-        if (feetDebug.value) {
+        if (feetDebug.value && _feetDbgFrame % 60 === 0) {
             logWarn(
                 'feet',
                 `[A-verify] ${side} setWorldTranslation后: ` +
@@ -450,7 +457,7 @@ function _adjustFoot(
             const resolvedMid = modelId; // _adjustFoot 已收到 modelId，直接透传
             resolver(resolvedMid, ikSolverIndex, false);
 
-            if (feetDebug.value) {
+            if (feetDebug.value && _feetDbgFrame % 60 === 0) {
                 // 重解后读 buffer 验证结果
                 const postBuf = buf ? [buf[12], buf[13], buf[14]] : null;
                 logWarn(
@@ -459,7 +466,7 @@ function _adjustFoot(
                 );
             }
         } else {
-            if (feetDebug.value) {
+            if (feetDebug.value && _feetDbgFrame % 60 === 0) {
                 logWarn('feet', `[A-verify] ${side} 方案A 不可用: resolver=${resolver ? 'ok' : 'null'}, ikSolverIndex=${ikSolverIndex ?? 'null'}`);
             }
             // 回退：方案C TwoBoneIK

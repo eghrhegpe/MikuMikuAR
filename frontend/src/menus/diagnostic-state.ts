@@ -78,6 +78,8 @@ export class DiagnosticState {
         updateSendButton?: () => void;
         /** finalizePendingBatch 后触发后续 stream */
         continueStream?: () => void;
+        /** 确保动作注册表已加载（dialogue toggle 需切换 mode 时调用） */
+        ensureActionsRegistered?: () => void;
     } = {};
 }
 

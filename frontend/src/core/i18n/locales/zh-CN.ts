@@ -1928,6 +1928,7 @@ export const zhCN: Record<string, string> = {
     'ai.dialogue.speakOn': '🔊 朗读开',
     'ai.dialogue.speakOff': '🔇 朗读关',
     'ai.dialogue.speakToggle': '切换台词朗读',
+    'ai.dialogue.roleSelect': '选择角色',
     'ai.system.control': '你是 MikuMikuAR 场景控制助手。使用以下工具根据用户要求修改场景。',
     'ai.system.controlFormat':
         '请用 JSON 格式回复：{"action": "工具名", "params": {"参数名": "值"}}。只使用上方列表中的工具。如果用户要求不支持的操作，请说明你能做什么。',
@@ -2007,6 +2008,7 @@ export const zhCN: Record<string, string> = {
         '⚠ 远程端点可能存在 CORS 限制。本地 Ollama 请设置 OLLAMA_ORIGINS=* 后重启。',
     'ai.chat.clear': '清空',
     'ai.chat.clearConfirm': '清除聊天记录？',
+    'ai.chat.pendingBlocked': '请先确认或取消待处理操作。',
     'ai.errors.resolveFailed': 'AI 服务初始化失败，请查看控制台获取详情。',
 
     // 服务商预设与状态反馈

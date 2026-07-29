@@ -80,6 +80,11 @@ export async function createSession(): Promise<void> {
 
 export async function switchSession(id: string): Promise<void> {
     if (id === diagState.activeSessionId) return;
+    if (diagState.isStreaming) {
+        diagState.abortController?.abort();
+        diagState.isStreaming = false;
+        diagState.abortController = null;
+    }
     await flushSession();
     const session = await loadSession(id);
     if (!session) return;

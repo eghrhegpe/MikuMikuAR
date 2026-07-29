@@ -242,22 +242,31 @@ export class BrowserAiAdapter implements AiService {
     }
 }
 
-/** CORS / 网络错误友好提示（FR-13）：本地 Ollama 需 OLLAMA_ORIGINS=*；远程 API 建议自建同源 relay。
- *  P3-5: 细化 TypeError 分类 — 同源 fetch 失败多为 CORS，跨源 TypeError 可能是 DNS/服务未启动。 */
+/** CORS / 网络错误友好提示（FR-13）：本地 Ollama 需 OLLAMA_ORIGINS=*；远程 API 建议自建同源 relay。 */
 function _friendlyError(err: unknown): string {
+    const msg = err instanceof Error ? err.message : String(err);
     const isTypeError = err instanceof TypeError;
-    const isNetwork = isTypeError ||
-        (err instanceof Error && /Failed to fetch|NetworkError/i.test(err.message));
-    if (isNetwork) {
-        // 尝试从错误堆栈/消息判断是否含 CORS 提示（Chrome 在 CORS 时会带 'CORS' / 'Access-Control'）
-        const isCORS = err instanceof Error && /CORS|Access-Control/i.test(err.message);
-        if (isCORS) {
-            return '连接端点失败（CORS 限制）。本地 Ollama 请设置环境变量 OLLAMA_ORIGINS=* 后重启；远程 API 建议自建同源 relay 代理。';
-        }
-        // 纯 TypeError 无 CORS 提示：多为服务未启动 / DNS 解析失败 / 端口拒绝
-        return '连接端点失败（服务可能未启动或网络不通）。请检查端点地址与服务状态；本地服务确认端口已监听，远程服务确认 DNS 可解析。';
+    const isNetwork = isTypeError || /Failed to fetch|NetworkError/i.test(msg);
+    if (!isNetwork) return msg;
+
+    // CORS 关键词判定
+    if (/CORS|Access-Control/i.test(msg)) {
+        return '连接端点失败（CORS 限制）。本地 Ollama 请设置环境变量 OLLAMA_ORIGINS=* 后重启；远程 API 建议自建同源 relay 代理。';
     }
-    return err instanceof Error ? err.message : String(err);
+    // Chromium 网络错误代码细分
+    if (/ERR_NAME_NOT_RESOLVED/i.test(msg)) {
+        return 'DNS 解析失败，域名不存在或无法访问。请检查端点地址拼写。';
+    }
+    if (/ERR_CONNECTION_REFUSED/i.test(msg)) {
+        return '连接被拒绝，服务可能未启动或端口未监听。请确认服务已运行。';
+    }
+    if (/ERR_CONNECTION_TIMED_OUT|ERR_CONNECTION_RESET/i.test(msg)) {
+        return '连接超时，网络不通或服务无响应。请检查网络连接与防火墙设置。';
+    }
+    if (/ERR_CERT/i.test(msg)) {
+        return 'TLS 证书验证失败。请检查服务器证书配置，或在局域网内使用 HTTP。';
+    }
+    return '连接端点失败（服务可能未启动或网络不通）。请检查端点地址与服务状态；本地服务确认端口已监听，远程服务确认 DNS 可解析。';
 }
 
 export const browserAiAdapter = new BrowserAiAdapter();

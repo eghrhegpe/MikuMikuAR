@@ -62,6 +62,7 @@ diagState.callbacks.refreshSessionList = () => {
     if (diagState.sessionListEl) void renderSessionList(diagState.sessionListEl);
 };
 diagState.callbacks.renderControlHint = renderControlHint;
+diagState.callbacks.ensureActionsRegistered = () => void ensureActionsRegistered();
 diagState.callbacks.updateControlsEnabled = () => {
     const testBtn = document.getElementById('diag-test-btn') as HTMLButtonElement | null;
     if (testBtn) testBtn.disabled = !diagState.aiResolved;
@@ -213,7 +214,10 @@ async function runStream(opts?: { allowTools?: boolean }): Promise<void> {
 }
 
 async function sendMessage(): Promise<void> {
-    if (diagState.isStreaming || diagState.pendingAction || !diagState.inputEl || !diagState.ai) return;
+    if (diagState.isStreaming || diagState.pendingAction || !diagState.inputEl || !diagState.ai) {
+        if (diagState.pendingAction) showErrorToast(t('ai.chat.pendingBlocked'));
+        return;
+    }
     const text = diagState.inputEl.value.trim();
     if (!text) return;
     const validation = validateAiConfig(diagState.localConfig);

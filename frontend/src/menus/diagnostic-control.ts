@@ -110,9 +110,10 @@ export function renderPendingAction(): void {
 
     const title = document.createElement('div');
     title.className = 'diag-pending-title';
-    const total = diagState.pendingToolResults.length + 1 + diagState.pendingQueue.length;
-    title.textContent = total > 1
-        ? t('ai.control.pendingProgress', { current: String(diagState.pendingToolResults.length + 1), total: String(total) })
+    const totalWritable = 1 + diagState.pendingQueue.length;
+    const processedCount = diagState.pendingToolResults.length;
+    title.textContent = totalWritable > 1
+        ? t('ai.control.pendingProgress', { current: String(processedCount + 1), total: String(totalWritable) })
         : t('ai.control.pending');
     card.appendChild(title);
 
