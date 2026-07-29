@@ -287,11 +287,11 @@ function _updateCorsWarning(): void {
 function _persistConfig(partial: Partial<AiConfig>): void {
     _localConfig = { ..._localConfig, ...partial };
     if (_ai?.kind === 'go') {
-        _saveGoConfig({
+        void _saveGoConfig({
             baseUrl: _localConfig.endpoint,
             model: _localConfig.model,
             aiKey: _localConfig.apiKey,
-        });
+        }).catch((err) => console.warn('[ai-config] blur 保存失败', err));
     } else {
         saveAiConfig(_localConfig);
     }
@@ -313,6 +313,10 @@ function _applyProvider(provider: AiConfigProvider): void {
     _persistConfig({ provider, endpoint: preset.endpoint, model: preset.model });
     _updateProviderButtons(provider);
     _updateDocLink(provider);
+    // 清空旧 datalist，避免跨服务商残留旧发现模型
+    if (_configModelDatalist) {
+        _configModelDatalist.innerHTML = '';
+    }
 }
 
 function _updateStatusBadge(): void {
@@ -1383,14 +1387,50 @@ function buildChatSchema(): MenuNode[] {
 
 // ======== 配置卡片 ========
 
-function _saveGoConfig(partial: { baseUrl?: string; model?: string; aiKey?: string }): void {
-    import('@bindings/mikumikuar/internal/app/app').then((b) => {
+function _saveGoConfig(partial: {
+    baseUrl?: string;
+    model?: string;
+    aiKey?: string;
+}): Promise<void> {
+    return import('@bindings/mikumikuar/internal/app/app').then((b) =>
         b.AiSetLLMConfig({
             baseUrl: partial.baseUrl ?? _configEndpoint?.value ?? '',
             model: partial.model ?? _configModel?.value ?? '',
             aiKey: partial.aiKey,
-        }).catch(() => undefined);
-    });
+        })
+    );
+}
+
+/**
+ * 显式保存：强制 flush 三个输入框当前值→await 持久化→返回成败。
+ * 不依赖 blur 时机，避免"填完 key 直接点测试→key 未保存"的坑。
+ */
+async function _flushAndSave(): Promise<{ ok: boolean; error?: string }> {
+    // 从输入框同步最新值到编辑态（blur 可能未触发）
+    if (_configEndpoint) {
+        _localConfig.endpoint = _configEndpoint.value;
+    }
+    if (_configModel) {
+        _localConfig.model = _configModel.value;
+    }
+    if (_configApiKey) {
+        _localConfig.apiKey = _configApiKey.value;
+    }
+    try {
+        if (_ai?.kind === 'go') {
+            await _saveGoConfig({
+                baseUrl: _localConfig.endpoint,
+                model: _localConfig.model,
+                aiKey: _localConfig.apiKey,
+            });
+        } else {
+            saveAiConfig(_localConfig);
+        }
+        void _refreshCaps();
+        return { ok: true };
+    } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : String(err) };
+    }
 }
 
 async function _testConnection(statusEl: HTMLElement): Promise<void> {
@@ -1406,6 +1446,9 @@ async function _testConnection(statusEl: HTMLElement): Promise<void> {
         _testing = false;
         return;
     }
+
+    // 测试前先 flush 保存输入框当前值，避免测的是 blur 未触发的旧配置（尤其是刚填的 key）
+    await _flushAndSave();
 
     const validation = validateAiConfig(_localConfig);
     if (!validation.ok) {
@@ -1613,6 +1656,14 @@ function buildConfigSchema(): MenuNode[] {
                     modelRefresh.disabled = true;
                     modelRefresh.textContent = '…';
                     try {
+                        // 同步输入值到缓存，确保 fetchModels 读到最新 endpoint
+                        if (_configEndpoint) {
+                            _localConfig.endpoint = _configEndpoint.value;
+                        }
+                        if (_configModel) {
+                            _localConfig.model = _configModel.value;
+                        }
+                        saveAiConfig({ endpoint: _localConfig.endpoint, model: _localConfig.model });
                         const models = (await _ai.fetchModels?.()) ?? [];
                         if (_configModelDatalist) {
                             _configModelDatalist.innerHTML = '';
@@ -1645,6 +1696,12 @@ function buildConfigSchema(): MenuNode[] {
                 const testRow = document.createElement('div');
                 testRow.className = 'diag-hint-row';
 
+                const saveBtn = document.createElement('button');
+                saveBtn.textContent = t('ai.config.save');
+                saveBtn.className = 'preset-chip';
+                saveBtn.setAttribute('aria-label', t('ai.config.save'));
+                testRow.appendChild(saveBtn);
+
                 const testBtn = document.createElement('button');
                 testBtn.id = 'diag-test-btn';
                 testBtn.textContent = t('ai.config.test');
@@ -1656,12 +1713,33 @@ function buildConfigSchema(): MenuNode[] {
                 statusEl.className = 'diag-status';
                 testRow.appendChild(statusEl);
 
+                let _saving = false;
+                saveBtn.addEventListener('click', async () => {
+                    if (_saving) {
+                        return;
+                    }
+                    _saving = true;
+                    saveBtn.disabled = true;
+                    statusEl.textContent = t('ai.config.saving');
+                    statusEl.style.color = 'var(--text-muted)';
+                    const res = await _flushAndSave();
+                    statusEl.textContent = res.ok
+                        ? t('ai.config.saved')
+                        : `${t('ai.config.saveFailed')}: ${res.error ?? ''}`;
+                    statusEl.style.color = res.ok ? 'var(--success)' : 'var(--danger)';
+                    _saving = false;
+                    saveBtn.disabled = false;
+                });
                 testBtn.addEventListener('click', () => void _testConnection(statusEl));
                 c.appendChild(testRow);
 
                 _updateDocLink(_localConfig.provider);
                 _refreshConfigUI();
                 _updateControlsEnabled();
+                // 每次渲染卡片时从持久化层回读并回填（输入框此刻已创建）。
+                // 修复：回填原本仅在模块加载时执行一次，与面板渲染生命周期解耦，
+                // 导致重开面板显示默认值。_ai 未就绪时守卫内部会跳过。
+                void _loadPersistedConfig();
             },
         },
     ];
