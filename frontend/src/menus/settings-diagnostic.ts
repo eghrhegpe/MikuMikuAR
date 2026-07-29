@@ -49,6 +49,7 @@ import {
     deleteSession,
     getActiveId,
     setActiveId,
+    clearActiveId,
     newSessionId,
     deriveTitle,
     type ChatSession,
@@ -287,12 +288,16 @@ async function _switchSession(id: string): Promise<void> {
 async function _deleteSessionAndAdjust(id: string): Promise<void> {
     await deleteSession(id);
     if (id === _activeSessionId) {
+        // 先清空当前会话内存状态，避免下方 _switchSession 内的 _flushSession 把
+        // 已删除会话的 _messages 回写磁盘、复活已删除会话（P1 修复）。
+        _messages.length = 0;
+        _activeSessionId = null;
         const remaining = await listSessions();
         if (remaining.length > 0) {
             await _switchSession(remaining[0].id);
         } else {
-            _activeSessionId = null;
-            _messages.length = 0;
+            // 无剩余会话：清除 activeId 指针，避免下次打开读到陈旧 id。
+            await clearActiveId();
             _renderChat();
         }
     }
@@ -1782,13 +1787,14 @@ async function _clearChat(): Promise<void> {
     if (!ok) {
         return;
     }
-    // [doc:adr-202] 清空当前会话：内存清空 + 删除该会话的磁盘记录（变空后不再保留）。
+    // [doc:adr-203] 清空当前会话：内存清空 + 删除该会话的磁盘记录 + 清除 activeId 指针。
     _persistTimer.cancel();
     const id = _activeSessionId;
     _messages.length = 0;
     _activeSessionId = null;
     if (id) {
         await deleteSession(id);
+        await clearActiveId();
     }
     _renderChat();
     _refreshSessionList();

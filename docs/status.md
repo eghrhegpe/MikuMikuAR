@@ -15,6 +15,7 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
+| ADR-204 | 单测分层与治理规范（拆上帝文件 · 降 mock 密度 · fixtures 复用 · unit/integration 分层） | 🟡 规划 |
 | ADR-203 | AI 助手会话持久化与独立面板 | 🟢 已完成（Phase 1 多会话 IndexedDB 持久化 + Phase 2 主窗口内独立面板）（2026-07-29） |
 | ADR-202 | fork 自治改动批次 — 一次回灌批量根治可改 fork 的上游缺口 | 🟢 P0 已落地（vendored + postinstall 方案，spr/mpr 生产变体经真机验证风力起效）；P2/P3 搭车项待续 |
 | ADR-201 | 路径2 — 给 babylon-mmd fork 增加原生刚体施力导出（wasm 侧解析） | ✅ 已实施（2026-07-28，2B 变体，见 §九 实施记录；e2e test #4 待本地回归） |

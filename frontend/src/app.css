@@ -615,7 +615,7 @@ textarea,
 .sceneOverlay-settings {
     width: calc(340px * var(--ui-scale));
 }
-/* [doc:adr-202] AI 助手独立面板：更宽、更高，承载会话历史 + 对话 */
+/* [doc:adr-203] AI 助手独立面板：更宽、更高，承载会话历史 + 对话 */
 .sceneOverlay-assistant {
     width: min(calc(560px * var(--ui-scale)), 92vw);
     max-height: 85vh;
@@ -636,12 +636,12 @@ textarea,
     }
 }
 
-/* [doc:adr-202] 独立面板下对话框放宽（覆盖默认 300px 限制） */
+/* [doc:adr-203] 独立面板下对话框放宽（覆盖默认 300px 限制） */
 .sceneOverlay-assistant .diag-chat-box {
     max-height: 50vh;
 }
 
-/* [doc:adr-202] 会话历史列表 */
+/* [doc:adr-203] 会话历史列表 */
 .diag-session-list {
     display: flex;
     flex-direction: column;

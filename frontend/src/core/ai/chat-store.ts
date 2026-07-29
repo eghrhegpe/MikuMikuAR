@@ -129,3 +129,12 @@ export async function setActiveId(id: string): Promise<void> {
         /* 忽略 */
     }
 }
+
+/** 清除当前活动会话 id（清空会话 / 删除当前会话且无剩余时调用，避免陈旧指针）。 */
+export async function clearActiveId(): Promise<void> {
+    try {
+        await idbDelete('meta', _ACTIVE_KEY);
+    } catch {
+        /* 忽略 */
+    }
+}
