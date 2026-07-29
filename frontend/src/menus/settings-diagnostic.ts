@@ -36,6 +36,7 @@ import { parseDialogueLines, type DialogueLine } from '../core/ai/character-bibl
 import { speakLines, cancelSpeech } from '../core/ai/dialogue-speech';
 import { getAction } from '../core/action-registry';
 import { showConfirm } from '../core/dialog';
+import { showErrorToast } from '../core/toast';
 import { logWarn } from '../core/logger';
 import { DebouncedTimer } from '../core/async';
 
@@ -323,24 +324,26 @@ function _applyProvider(provider: AiConfigProvider): void {
     if (_configModel) {
         _configModel.value = preset.model;
     }
-    _persistConfig({ provider, endpoint: preset.endpoint, model: preset.model });
     _updateProviderButtons(provider);
     _updateDocLink(provider);
     // 清空旧 datalist，避免跨服务商残留旧发现模型
     if (_configModelDatalist) {
         _configModelDatalist.innerHTML = '';
     }
-    // [doc:adr-196 P6] 切换服务商后自动发现模型列表
-    void _refreshModelList();
+    // [doc:adr-196] 切换服务商：await 保存完成后再刷新能力/模型，避免 _refreshCaps 读到旧配置
+    void (async () => {
+        await _doSaveConfig();
+        void _refreshCaps();
+        void _refreshModelList();
+    })();
 }
 
 async function _refreshModelList(): Promise<void> {
     if (!_ai) {
         return;
     }
-    await _flushAndSave();
-    const models = await _ai.fetchModels?.();
-    if (_configModelDatalist && models && models.length > 0) {
+    const models = await _ai.fetchModels?.() ?? [];
+    if (_configModelDatalist && models.length > 0) {
         _configModelDatalist.innerHTML = '';
         for (const m of models) {
             const opt = document.createElement('option');
@@ -377,27 +380,9 @@ function _setStatusBadge(
     if (!_statusBadgeEl || !_statusTextEl) {
         return;
     }
-    const badgeState: string =
-        state === 'connected' ||
-        state === 'disconnected' ||
-        state === 'testing' ||
-        state === 'initializing'
-            ? state
-            : state === 'cors' || state === 'missingEndpoint' || state === 'missingKey'
-              ? state
-              : 'error';
-    _statusBadgeEl.className = 'diag-status-badge diag-status-badge--' + badgeState;
-    const textKey =
-        state === 'connected' ||
-        state === 'disconnected' ||
-        state === 'testing' ||
-        state === 'initializing' ||
-        state === 'cors' ||
-        state === 'missingEndpoint' ||
-        state === 'missingKey'
-            ? `ai.status.${state}`
-            : 'ai.status.error';
-    _statusTextEl.textContent = t(textKey);
+    // 所有状态直接映射到对应的 CSS class 和 i18n key，不再做信息压缩
+    _statusBadgeEl.className = 'diag-status-badge diag-status-badge--' + state;
+    _statusTextEl.textContent = t(`ai.status.${state}`);
 }
 
 function _renderAdvice(kind?: AiErrorKind): void {
@@ -840,6 +825,7 @@ async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
             } else if (chunk.type === 'error') {
                 streamErrorSeen = true;
                 captureError('ai-stream', chunk.error ?? 'AI stream error', undefined);
+                showErrorToast(t('ai.errors.apiError', { msg: chunk.error ?? '' }));
                 if (_chatContainer) {
                     const streamingRow = _chatContainer.querySelector('.chat-row--streaming');
                     if (streamingRow) {
@@ -913,6 +899,7 @@ async function _runStream(opts?: { allowTools?: boolean }): Promise<void> {
         streamErrorSeen = true;
         const errMsg = err instanceof Error ? err.message : String(err);
         captureError('ai-stream', errMsg, err);
+        showErrorToast(t('ai.errors.apiError', { msg: errMsg }));
         if (_chatContainer) {
             const streamingRow = _chatContainer.querySelector('.chat-row--streaming');
             if (streamingRow) {
@@ -1420,16 +1407,14 @@ function buildChatSchema(): MenuNode[] {
 // ======== 配置卡片 ========
 
 function _saveGoConfig(partial: {
-    baseUrl?: string;
-    model?: string;
-    aiKey?: string;
+    baseUrl: string;
+    model: string;
+    aiKey: string;
 }): Promise<void> {
-    // 信息源唯一：只认入参（调用方均从 _localConfig 传入），不再偷读输入框，
-    // 避免"以 _localConfig 还是输入框为准"的二义性。
     return import('@bindings/mikumikuar/internal/app/app').then((b) =>
         b.AiSetLLMConfig({
-            baseUrl: partial.baseUrl ?? '',
-            model: partial.model ?? '',
+            baseUrl: partial.baseUrl,
+            model: partial.model,
             aiKey: partial.aiKey,
         })
     );
@@ -1509,7 +1494,7 @@ async function _testConnection(statusEl: HTMLElement): Promise<void> {
             statusEl.textContent = result.message;
             statusEl.style.color = 'var(--danger)';
             captureError('ai-connection', result.message, undefined);
-            _setStatusBadge(result.kind === 'cors' ? 'cors' : 'error');
+            _setStatusBadge(result.kind);
             _renderAdvice(result.kind);
             _lastConnectionOk = false;
         }
