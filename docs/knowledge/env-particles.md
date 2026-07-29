@@ -19,7 +19,9 @@ symbols:
   - applyWindToParticles
   - disposeSplash
 invariants:
-  - 粒子发射器在 dispose 时释放
+  - disposeParticles 可选保留湿身效果（keepWetness）
+  - 粒子数量根据性能等级动态调整
+  - splash 粒子（水滴溅射）独立于主粒子发射器管理
 tests: []
 use_when:
   - 粒子

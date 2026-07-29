@@ -156,11 +156,13 @@ export function renderPendingAction(): void {
     applyBtn.textContent = t('ai.control.apply');
     applyBtn.className = 'mode-btn active';
     applyBtn.id = 'diag-pending-apply';
+    applyBtn.addEventListener('click', () => diagState.callbacks.applyPending?.());
     btnRow.appendChild(applyBtn);
     const cancelBtn = document.createElement('button');
     cancelBtn.textContent = t('ai.control.cancel');
     cancelBtn.className = 'preset-chip';
     cancelBtn.id = 'diag-pending-cancel';
+    cancelBtn.addEventListener('click', () => diagState.callbacks.cancelPending?.());
     btnRow.appendChild(cancelBtn);
     card.appendChild(btnRow);
 

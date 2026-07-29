@@ -13,7 +13,9 @@ symbols:
   - LIGHTING_PRESETS
   - PRESET_NAMES
 invariants:
-  - 预设参数在合理范围内
+  - 预设参数在合理范围内，避免过曝或过暗
+  - 预设切换时保留用户自定义的细微调整
+  - LIGHTING_PRESETS 约 16 套内置方案，PRESET_NAMES 为有序列表
 tests: []
 use_when:
   - 灯光预设

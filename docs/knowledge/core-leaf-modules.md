@@ -3,13 +3,13 @@ kind: core_leaf_modules
 name: 核心零依赖叶模块
 category: core
 scope:
-  - core/async.ts
-  - core/clamp.ts
-  - core/debounce.ts
-  - core/deep-clone.ts
-  - core/format-timestamp.ts
-  - core/path.ts
-  - core/set-key.ts
+  - frontend/src/core/async.ts
+  - frontend/src/core/clamp.ts
+  - frontend/src/core/debounce.ts
+  - frontend/src/core/deep-clone.ts
+  - frontend/src/core/format-timestamp.ts
+  - frontend/src/core/path.ts
+  - frontend/src/core/set-key.ts
 source_files:
   - frontend/src/core/async.ts
   - frontend/src/core/clamp.ts

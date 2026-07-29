@@ -184,14 +184,7 @@ func (a *App) writeConfig(cfg *Config) error {
 	if err != nil {
 		return err
 	}
-	// 写入 bootstrap config（内部存储，供 getConfigUnsafe 定位 setting/ 目录）
-	if bootDir, bErr := configDir(); bErr == nil {
-		bootPath := filepath.Join(bootDir, "config.json")
-		if wErr := os.WriteFile(bootPath+".tmp", data, 0644); wErr == nil {
-			os.Rename(bootPath+".tmp", bootPath)
-		}
-	}
-	// 写入完整 config（setting/ 目录，与 bootstrap 内容一致）
+	// 先写权威源 setting/ 目录；若失败则 bootstrap 不动，避免两文件不一致。
 	dir, err := settingDir(cfg)
 	if err != nil {
 		return err
@@ -203,6 +196,14 @@ func (a *App) writeConfig(cfg *Config) error {
 	}
 	if err := os.Rename(tmpPath, path); err != nil {
 		return err
+	}
+	// 再写 bootstrap config（内部存储，供 getConfigUnsafe 定位 setting/ 目录）；
+	// 非致命：setting/ 已是权威源，bootstrap 落后不影响正确性。
+	if bootDir, bErr := configDir(); bErr == nil {
+		bootPath := filepath.Join(bootDir, "config.json")
+		if wErr := os.WriteFile(bootPath+".tmp", data, 0644); wErr == nil {
+			os.Rename(bootPath+".tmp", bootPath)
+		}
 	}
 	// 写入后缓存，防止后续 GetConfig 因 bootstrap 不存在而读到空配置
 	a.cachedCfg = cfg

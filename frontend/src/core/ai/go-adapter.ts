@@ -31,6 +31,8 @@ class GoAiAdapter implements AiService {
 
     private _capCache: AiCapabilities | null = null;
     private _capsPromise: Promise<void> | null = null;
+    /** 仅缓存真正联网发现过的模型列表，区别于 _capCache.models（可能只是配置回显）。 */
+    private _discoveredModels: string[] | null = null;
 
     capabilities(): AiCapabilities {
         if (this._capCache) {
@@ -131,22 +133,24 @@ class GoAiAdapter implements AiService {
 
     async fetchModels(): Promise<string[]> {
         // 桌面端联网发现模型：调 Go binding 真正请求 {baseUrl}/models（带 key）。
-        // 先前仅回显 _capCache.models（配置里的单个 model），并非真实发现。
         try {
             const b = await _getB();
             const models = await b.AiFetchModels();
             if (Array.isArray(models) && models.length > 0) {
+                const sorted = [...models].sort();
                 // P2-3: 同步更新 _capCache.models，让 capabilities() 反映真实列表
                 if (this._capCache) {
-                    this._capCache = { ...this._capCache, models: [...models].sort() };
+                    this._capCache = { ...this._capCache, models: sorted };
                 }
-                return [...models].sort();
+                this._discoveredModels = sorted;
+                return sorted;
             }
         } catch (err) {
-            logWarn('ai-config', 'Go AiFetchModels 失败，回退到配置缓存:', err);
+            logWarn('ai-config', 'Go AiFetchModels 失败:', err);
         }
-        if (this._capCache?.models && this._capCache.models.length > 0) {
-            return [...this._capCache.models];
+        // 回退到上一次真正发现的列表（非配置回显），避免把配置单模型伪装成“发现”。
+        if (this._discoveredModels && this._discoveredModels.length > 0) {
+            return [...this._discoveredModels];
         }
         return [];
     }

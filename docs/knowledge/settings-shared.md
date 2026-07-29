@@ -17,7 +17,10 @@ symbols:
   - preloadAutoImportState
   - preloadDownloadWatchState
 invariants:
-  - 被所有设置子页面引用（约 10 次）
+  - 默认值与 ui-state.ts 的默认值保持一致
+  - applyUIAppearanceDom 将外观配置应用到 DOM（CSS 变量）
+  - formatBytes 返回人类可读格式（KB/MB/GB）
+  - setTheme 修改 CSS 变量，不直接操作 DOM 元素
 tests: []
 use_when:
   - 设置共享

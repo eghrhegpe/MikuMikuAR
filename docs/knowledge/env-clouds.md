@@ -14,7 +14,9 @@ symbols:
   - resolveCloudShaderParams
   - buildJitterSource
 invariants:
-  - 云层对象在 dispose 时全部释放
+  - disposeClouds 释放云层所有资源
+  - 云层使用程序化噪声纹理驱动形状，非静态 mesh
+  - 云层参数经 envState.clouds 动态更新
 tests: []
 use_when:
   - 云层

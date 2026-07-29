@@ -28,6 +28,9 @@ symbols:
   - refreshModelRoot
 invariants:
   - 视图模式在 list/grid 之间切换
+  - 资源索引在后台构建，避免阻塞 UI
+  - isLeafFlattenDir 递归判定目录是否为纯叶子目录
+  - buildResourceItemsForDir 使用 RAF 分批渲染避免长列表卡顿
 tests: []
 use_when:
   - 资源库核心

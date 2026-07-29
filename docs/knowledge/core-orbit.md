@@ -12,7 +12,9 @@ symbols:
   - cartesianToOrbit
   - normalizeOrbit
 invariants:
-  - 被 props/model-manager 引用
+  - 坐标转换使用右手坐标系（与 Babylon.js 一致）
+  - 球面坐标范围：pitch [-90, 90]、yaw [-180, 180]、distance [0, +∞)
+  - normalizeOrbit 对角度做环绕修正避免累积误差
 tests: []
 use_when:
   - 轨道坐标

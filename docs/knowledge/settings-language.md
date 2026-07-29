@@ -11,7 +11,9 @@ adr:
 symbols:
   - buildSettingsLanguageLevel
 invariants:
-  - 被 settings.ts 引用
+  - 语言列表与 i18n/locales/ 目录同步
+  - 语言切换立即生效，无需重启
+  - setLang 持久化到 localStorage + 更新 <html lang> + 菜单刷新
 tests: []
 use_when:
   - 语言设置

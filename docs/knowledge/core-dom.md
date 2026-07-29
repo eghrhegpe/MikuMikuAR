@@ -13,7 +13,9 @@ symbols:
   - Disposable
   - addDisposableListener
 invariants:
-  - 被 events/init/shortcut-registry/menu/plaza 等大量模块引用
+  - addDisposableListener 返回的 Disposable 必须调用 dispose() 释放
+  - dom 引用为全局单例，初始化时一次性赋值
+  - dom.ts 引用了 i18n/t，非零依赖叶（与 async.ts/clamp.ts 不同）
 tests: []
 use_when:
   - DOM 工具

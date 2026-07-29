@@ -13,7 +13,9 @@ symbols:
   - _applyHeadGazeWasm
   - _applyEyeGazeWasm
 invariants:
-  - 被 perception-gaze 引用
+  - WASM 模式与 JS 模式互斥，由 _isWasmRuntime() 自动分支
+  - 写入策略：直写 frontBuffer + _propagateChildrenWasm，无需 _markAsDirty()
+  - 生产默认路径（VITE_MMD_RUNTIME 未设或非 js 时）
 tests: []
 use_when:
   - WASM 视线追踪

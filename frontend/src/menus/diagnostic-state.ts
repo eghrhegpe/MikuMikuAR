@@ -80,6 +80,12 @@ export class DiagnosticState {
         continueStream?: () => void;
         /** 确保动作注册表已加载（dialogue toggle 需切换 mode 时调用） */
         ensureActionsRegistered?: () => void;
+        /** 发送消息（entry point 接线，chat 模块调用） */
+        sendMessage?: () => void;
+        /** 应用待确认操作 */
+        applyPending?: () => void;
+        /** 取消待确认操作 */
+        cancelPending?: () => void;
     } = {};
 }
 

@@ -35,8 +35,8 @@ const LOD_HIGH_DISTANCE = 30; // LOD 切换距离（近）
 const LOD_LOW_DISTANCE = 80; // LOD 切换距离（远）
 const UNDERWATER_TRANSITION_SPEED = 0.8; // 水下过渡速度（秒）
 
-// 波方向偏移（Gerstner 波 4 层）
-const WAVE_DIR_OFFSETS: [number, number, number, number] = [0, 0.3, -0.2, 0.1];
+// 波方向偏移（Gerstner 波 4 层）— 四风归一后加宽偏移，制造交叉浪
+const WAVE_DIR_OFFSETS: [number, number, number, number] = [0, 0.6, -0.4, 1.2];
 // 涟漪参数
 const RIPPLE_MIN_RADIUS = 0.1;
 const RIPPLE_MIN_SPEED = 0.1;
@@ -763,7 +763,7 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     // ——— 波方向（风向联动）———
     const windDirs = computeWaveDirs(state.windDirection);
     mat.setArray2('uWindDir', windDirs);
-    // 风速调制波幅度（0 级风时 0.4 倍平静海面，10 级风时 1.4 倍汹涌涌浪）
+    // 风速调制波幅度（0 级风时 0.3 倍平静海面，10 级风时 1.8 倍汹涌涌浪）
     // windEnabled 守卫：对齐其他三系统（粒子/Bullet/云）行为，风关则浪静（wind-physics-fix P2）
     const effectiveWindSpeed = state.windEnabled ? state.windSpeed : 0;
     mat.setFloat('uWindSpeed', effectiveWindSpeed);

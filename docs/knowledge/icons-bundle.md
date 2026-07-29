@@ -14,7 +14,9 @@ symbols:
   - createIconButton
   - softwareKindIcon
 invariants:
-  - 图标按需加载
+  - 图标按需加载，只在需要时加载图标数据
+  - createIconifyIcon 返回 DOM 元素，由调用方管理生命周期
+  - softwareKindIcon 从规范名推导 lucide 图标名
 tests: []
 use_when:
   - 图标
