@@ -1093,7 +1093,14 @@ export function applyGround(state: EnvState): void {
     if (_envSys.ground.mesh && state.groundVisible && !keyChanged) {
         const mat = _envSys.ground.mesh.material as GroundMat | null;
         if (mat && (mat instanceof StandardMaterial || mat instanceof PBRMaterial)) {
-            if (state.groundStyle !== 'texture') {
+            // 仅 canvas 图案/纯色来源才在原地更新时重生成 canvas 纹理；
+            // 程序化(proc≠none)与文件贴图来源须跳过，否则程序化 PBR 三件套会被 canvas 纯色覆盖
+            // （典型触发：改 groundRoughness/groundAlpha 走原地路径，见 ADR）。
+            if (
+                state.groundStyle !== 'texture' &&
+                state.groundProceduralTexture === 'none' &&
+                !(state.groundTextureEnabled && state.groundTexture)
+            ) {
                 _updateGroundTexture(mat, state);
             }
             mat.alpha = state.groundAlpha;
