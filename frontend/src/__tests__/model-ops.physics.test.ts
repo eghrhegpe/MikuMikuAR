@@ -1,7 +1,7 @@
 // model-ops 拆分 — Physics + Transform
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import {
-    createMockModelManager,
+    modelOpsShared,
     mockSceneModule,
     mockMaterial,
     mockEnv,
@@ -43,7 +43,7 @@ import * as materialModule from '../scene/manager/material';
 import * as envModule from '../scene/env/env';
 import * as audioModule from '../outfit/audio';
 
-const { mockModelManager } = vi.hoisted(() => ({ mockModelManager: createMockModelManager() }));
+const mockModelManager = modelOpsShared.mockModelManager;
 
 vi.hoisted(() => {
     const ids = [
@@ -70,7 +70,9 @@ vi.hoisted(() => {
     }
 });
 
-vi.mock('../scene/scene', () => mockSceneModule(mockModelManager));
+vi.mock('../scene/scene', () => mockSceneModule(modelOpsShared.mockModelManager));
+// 注意：vi.mock 工厂必须直接引用 imported 绑定 modelOpsShared.mockModelManager，
+// 不能引用下方局部 const mockModelManager（vi.mock 被 hoist，工厂求值时局部 const 尚未初始化）。
 vi.mock('../scene/manager/material', () => mockMaterial());
 vi.mock('../scene/env/env', () => mockEnv());
 vi.mock('../scene/camera/camera', () => mockCamera());

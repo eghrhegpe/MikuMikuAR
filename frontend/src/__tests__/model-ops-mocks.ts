@@ -1,8 +1,9 @@
 // model-ops 拆分共享 mock
 //
 // 关键约束（沿用 motion-modules-registry / model-preset 已验证模式）：
-//  - mockModelManager 用普通 const（createMockModelManager()）而非 vi.hoisted，工厂延迟调用引用它，
-//    规避 vi.hoisted 结果不能 export 跨文件。每个测试文件各自持有独立实例（vitest 文件隔离）。
+//  - mockModelManager 在模块加载期创建为 modelOpsShared.mockModelManager（imported 绑定），
+//    vi.mock 工厂与用例都引用它，规避：① vi.hoisted 内调用导入函数致 __vi_import_0__ TDZ；
+//    ② 局部 const 被 vi.mock 工厂 hoist 引用致 'before initialization' TDZ。
 //  - DOM 元素预建必须在 import '../core/config'（其 dom.ts 顶层读 DOM）之前完成，故各测试文件保留
 //    自包含的内联 vi.hoisted(() => {...createElement...}) 块（不能引用 import，故不抽进本模块）。
 //  - babylon math 用 vi.importActual 加载本地 mock 类，特殊性保留在各测试文件内联 vi.mock。
