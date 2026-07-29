@@ -111,6 +111,22 @@ L1/L2 均为 Vitest，通过**文件命名后缀**区分：L2 使用 `*.int.test
 
 > **P3 补充实施记录（2026-07-29 续六）**：`model-ops.test.ts`（574 行 / 36 用例 / 6 处 `vi.mock` + 真实 `config` 模块依赖预建 DOM）拆为 5 个 `model-ops.*.test.ts`（focus 7 / physics 10 / morph 8 / vpd 3 / remove 8，均 ≤~190 行）+ `model-ops-mocks.ts`（`modelOpsShared` 模块加载期单例含 `mockModelManager` + `mockSceneModule`/`mockMaterial`/`mockEnv`/`mockCamera`/`mockPlayback`/`mockAudio` 六个同步工厂）+ `model-ops-helpers.ts`（`makeInst`/`resetState` 纯 fixture，导入真实 `config`）。关键约束（踩坑）：① `vi.mock` 工厂**只能引用 imported 绑定**，不能引用局部 const——初版 `const mockModelManager = createMockModelManager()` 被 hoist 的 `vi.mock('../scene/scene')` 工厂在求值时以 `Cannot access 'mockModelManager' before initialization` 报 TDZ；改以 `modelOpsShared.mockModelManager`（`modelOpsShared` 是 imported 绑定，模块图求值阶段即就绪）直接喂给工厂；② 不能把 `createMockModelManager()` 塞进 `vi.hoisted` 回调，因该回调在 hoist 阶段执行、所调用的函数为跨文件 import（`__vi_import_0__` 尚未初始化）；③ 各测试文件保留**自包含内联**的 `vi.hoisted(() => { document.createElement... })` DOM 预建块（happy-dom 下 `config` 的 `dom.ts` 顶层读 DOM，必须在 import `../core/config`/`model-ops` 之前完成，且不可引用 import 故不抽进 mocks）；④ `resetState` 复用原 `vi.clearAllMocks()` + `setModelRegistry(new Map())` + `setIsPlaying(false)` + `setMmdRuntime(null)`，且 `vi.clearAllMocks()` 保留 `mockReturnValue([])` 等默认实现，行为与原一致。验收：36 用例守恒、全量 0 failed、单文件 ≤300 行。
 
+> **P3 剩余 backlog（移交简报 2026-07-29）**：上帝文件拆分至 12 个后，剩余 >500 行上帝文件 **9 个（约 4600 行）**，按风险排序：
+
+| 文件 | 行 | 拆分建议 |
+|------|-----|----------|
+| `physics-contract.test.ts` | 961 | 契约测试，拆分需谨慎（验证 WASM/Bullet 契约） |
+| `perception.perf.test.ts` | 741 | perf 基准，可能刻意整体保留 |
+| `bindings/app.contract.test.ts` | 646 | 契约测试，AGENTS 指定校验入口 |
+| `audio.test.ts` | 552 | 可拆 |
+| `model-detail-ui.test.ts` | 536 | 可拆 |
+| `utils.test.ts` | 524 | 纯函数工具，最易拆（优先） |
+| `camera.adr100.test.ts` | 523 | 可拆 |
+| `playback.test.ts` | 513 | 可拆 |
+| `outfit.test.ts` | 503 | 可拆 |
+
+> **P3 标准拆分配方（已跨 12 个文件验证）**：① `vi.mock` 工厂收敛进 `*-mocks.ts` 同步导出，Mock 类静态 `import`，禁用 `vi.importActual` 包裹（hoist 期 `__vi_import_X__ not initialized`）；② 跨用例共享状态用普通 `const shared` 单例（imported 绑定），`vi.mock` 工厂直接引用它——**禁止引用局部 const 或 `vi.hoisted` 内调用 import 函数（两类 TDZ）**；③ `vi.resetModules()`+动态 `import` 取 fresh SUT 的场景（如 proc-motion-bridge）：每文件本地 `const s = createX()`，工厂以参数接收；④ DOM 预建（`config` 顶层读 DOM）保留各文件自包含内联 `vi.hoisted(() => createElement...)`；⑤ 每文件 `beforeEach` 复位 `shared` + config setters，复刻原 `resetAll`；⑥ 提交前 `npx vitest run <dir>` 验用例守恒 + `npm run check:docs`。
+
 **用例数守恒是拆分的硬验收**：拆分前后 `npm run test` 报告的 pass 数必须一致，防止拆分中丢用例。
 
 > **P2 实施记录（2026-07-29）**：三点与 ADR 原文的实现差异——① `test:int` 脚本用 vitest 位置过滤子串 `.int.test`（而非 glob `'**/*.int.test.ts'`），因 Windows npm script 单引号不剥离且位置参数按子串匹配语义更可靠；`test:unit` 用 `--exclude`（追加语义，不覆盖 config 的 e2e/perf 排除）。② env-bridge 的模块桩集（config/env-impl/env-dispatcher/lighting/scene 等 10 模块）与 SUT 强绑定，故收敛为 `env-bridge/env-mocks.ts` 就近共享（拆分文件的 `vi.mock` 工厂经 `await import('./env-mocks')` 取桩，vitest 按测试文件隔离模块图、状态不串扰），而非塞进通用 `mocks/`；其中 backend 桩改用 `fixtures/backend.ts` 的 `makeMockBackend`（跨模块通用层）。③ 拆分文件首次落地 `*.int.test.ts` L2 命名约定；P1 的 `menu/*.test.ts`（依赖 happy-dom，属 L2）留待 P3 触碰时顺带改名。旧文件里 hoisted 的 `_defaults` 对象为死代码，未搬运。
