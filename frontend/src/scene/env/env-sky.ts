@@ -90,11 +90,12 @@ function drawSkyGradient(
     const grad = ctx.createLinearGradient(0, 0, 0, H);
     const scale = (c: Color3) =>
         `rgb(${(c.r * brightness * 255) | 0},${(c.g * brightness * 255) | 0},${(c.b * brightness * 255) | 0})`;
-    grad.addColorStop(0, scale(bot));
-    grad.addColorStop(0.35, scale(bot));
-    grad.addColorStop(0.5, scale(mid));
-    grad.addColorStop(0.65, scale(top));
-    grad.addColorStop(1, scale(top));
+    // 渐变方向：canvas 顶 → 天顶(top)，canvas 底 → 天底(bot)
+    // BACKSIDE 球体映射：canvas top = 天顶，canvas bottom = 地平/脚下
+    grad.addColorStop(0, scale(top));
+    grad.addColorStop(0.55, scale(mid));
+    grad.addColorStop(0.85, scale(bot));
+    grad.addColorStop(1, scale(bot));
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, W, H);
 
@@ -113,17 +114,27 @@ function drawSkyGradient(
                     h ^= h >>> 13;
                     return (h & 0x7fffffff) / 0x7fffffff;
                 };
-                const starCount = Math.round(200 + starAlpha * 100);
+                // 星星画在 canvas 上半 → 映射到球体可见天空半球
+                const starCount = Math.round(400 + starAlpha * 200);
                 for (let i = 0; i < starCount; i++) {
                     const sx = hash(i * 3) * W;
                     const sy = hash(i * 3 + 1) * H * 0.55;
-                    const sr = 0.5 + hash(i * 3 + 2) * 2.0;
-                    const sa = starAlpha * (0.3 + hash(i + 1000) * 0.7);
+                    const sr = 0.8 + hash(i * 3 + 2) * 2.2;
+                    const sa = starAlpha * (0.4 + hash(i + 1000) * 0.6);
                     const twinkle = 0.7 + hash(i + 2000) * 0.3;
                     const r = (220 + hash(i + 3000) * 35) | 0;
                     const g = (210 + hash(i + 4000) * 45) | 0;
                     const b = (200 + hash(i + 5000) * 55) | 0;
-                    ctx.fillStyle = `rgba(${r},${g},${b},${(sa * twinkle).toFixed(2)})`;
+                    const alpha = sa * twinkle;
+                    // 辉光晕圈（较大星星才有）
+                    if (sr > 1.5) {
+                        ctx.fillStyle = `rgba(${r},${g},${b},${(alpha * 0.12).toFixed(3)})`;
+                        ctx.beginPath();
+                        ctx.arc(sx, sy, sr * 3, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    // 星体
+                    ctx.fillStyle = `rgba(${r},${g},${b},${alpha.toFixed(2)})`;
                     ctx.beginPath();
                     ctx.arc(sx, sy, sr, 0, Math.PI * 2);
                     ctx.fill();
