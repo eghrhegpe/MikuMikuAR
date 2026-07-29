@@ -8,10 +8,10 @@ import {
 import { pushUndoSnapshot, offerSceneUndoAndRefresh } from '../../scene/scene-serialize';
 import { updatePlaybackUI } from '../../scene/motion/playback';
 import { triggerAutoSave } from '../utils';
-import { feedbackInfo, feedbackStatus } from '../feedback';
+import { feedbackInfo } from '../feedback';
 import { showInfoToast } from '../toast';
 import { showConfirm } from '../dialog';
-import { isPlaying, setIsPlaying, setAutoLoop } from '../playback-state';
+import { isPlaying, setIsPlaying } from '../playback-state';
 import { mmdRuntime } from '../scene-state';
 import { getMotionMenu, refreshMotionRoot } from '../../menus/motion-popup';
 import { buildMotionRootItems, importExternalAnimation } from '../../menus/motion-root-ui';
@@ -27,7 +27,6 @@ import { loadManager } from '../load-manager';
 import { loadVPDPose } from '../../scene/scene';
 import { getAudioName } from '../../outfit/audio';
 import { t } from '../i18n/t';
-import { logWarn } from '../logger';
 import { stackRegistry, getBrowseDir } from '../config';
 
 export function registerMotionActions(): void {

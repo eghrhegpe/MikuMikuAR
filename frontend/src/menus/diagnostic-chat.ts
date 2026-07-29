@@ -3,7 +3,7 @@ import { t } from '../core/i18n/t';
 import { getLang } from '../core/i18n/locale';
 import { renderMarkdownInto } from '../core/ai/markdown';
 import { buildToolCatalogText } from '../core/ai/action-catalog';
-import type { ChatMessage, ChatChunk, AiErrorKind } from '../core/ai/types';
+import type { ChatMessage, ChatChunk } from '../core/ai/types';
 import { diagState } from './diagnostic-state';
 import { speakLines, cancelSpeech, isSpeechSupported } from '../core/ai/dialogue-speech';
 import { parseDialogueLines, type DialogueLine } from '../core/ai/character-bible';
@@ -14,8 +14,6 @@ import {
     setActiveBible,
 } from '../core/ai/dialogue-session';
 import { renderPendingAction, renderControlHint } from './diagnostic-control';
-import { cardContainer } from '../core/config';
-import { addSectionTitle } from '../core/ui-helpers';
 import type { MenuNode } from './menu-schema';
 
 /** 添加助手消息 */

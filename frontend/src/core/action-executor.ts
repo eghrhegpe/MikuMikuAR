@@ -2,7 +2,6 @@
 // 纯叶子模块，不依赖 ai:control: 命名空间。供菜单/NL/快捷键统一调用。
 
 import { getAction } from './action-registry';
-import type { ActionDef, ParamDef } from './action-registry';
 import { adaptParam } from './ai/param-adapters';
 
 export interface ActionResult {

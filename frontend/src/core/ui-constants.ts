@@ -32,4 +32,3 @@ export const SCENE_EVENTS = {
 } as const;
 
 /** SCENE_EVENTS 各取值的联合类型 */
-type SceneEventKey = (typeof SCENE_EVENTS)[keyof typeof SCENE_EVENTS];

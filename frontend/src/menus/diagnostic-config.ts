@@ -14,7 +14,7 @@ import {
     type AiConfigProvider,
 } from '../core/ai/config-store';
 import { resolveAi } from '../core/ai';
-import type { AiService, AiCapabilities, AiErrorKind } from '../core/ai/types';
+import type { AiErrorKind } from '../core/ai/types';
 
 // Local
 import { diagState } from './diagnostic-state';

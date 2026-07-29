@@ -14,7 +14,7 @@ import {
     uiState,
     setUIState,
 } from '../core/config';
-import { feedbackInfo, feedbackStatus } from '../core/feedback';
+import { feedbackStatus } from '../core/feedback';
 import { showInfoToast } from '../core/toast';
 import { registerPopupMenu } from './menu-factory';
 import { serializeScene, isARModeActive, takeARScreenshot, setEnvState } from '../scene/scene';

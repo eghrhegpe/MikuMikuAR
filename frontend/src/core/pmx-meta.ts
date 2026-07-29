@@ -4,10 +4,6 @@
  * 只读前 8KB，足够覆盖头部四个文本段（name_jp/name_en/comment_jp/comment_en）。
  */
 
-interface PmxMeta {
-    comment: string;
-}
-
 /**
  * 从 PMX 文件的 Uint8Array 中提取 comment（日本语说明/使用规约）。
  * 解析失败时返回空 comment（不抛异常）。

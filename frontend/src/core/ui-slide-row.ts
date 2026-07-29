@@ -2,7 +2,6 @@
 // 带图标+标签+箭头+可选 sublabel/tag/headerToggle + actionBtn + variant 的通用菜单行
 
 import { createIconifyIcon } from './icons';
-import { getCurrentRenderingMenu } from '../menus/menu';
 import { createHeaderToggle, type HeaderToggleConfig } from './ui-rows';
 
 export type { HeaderToggleConfig };

@@ -4,7 +4,6 @@ import { getAction, listActions } from '../core/action-registry';
 import { executeAction, parseActionFromLLM } from '../core/ai/intent-dispatcher';
 import { showConfirm } from '../core/dialog';
 import { showErrorToast } from '../core/toast';
-import type { ChatMessage } from '../core/ai/types';
 import { diagState } from './diagnostic-state';
 
 /** 将 LLM 文本回退解析的 action 入待确认队列 */
