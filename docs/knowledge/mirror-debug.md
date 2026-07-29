@@ -1,7 +1,7 @@
 ---
 kind: mirror_debug
 name: 镜面道具
-category: env
+category: rendering
 scope:
   - frontend/src/scene/env/**
 source_files:

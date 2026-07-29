@@ -1,6 +1,6 @@
 ---
 kind: env_bridge
-name: 环境系统核心调度与 facade
+name: 环境状态写入入口（setEnvState + 中间件链）
 category: env
 scope:
   - frontend/src/scene/env/env-bridge.ts

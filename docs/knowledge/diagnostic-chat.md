@@ -1,6 +1,6 @@
 ---
 kind: diagnostic_chat
-name: 诊断面板聊天 UI
+name: 诊断助手 → 聊天 UI（子模块）
 category: ui
 scope:
   - frontend/src/menus

@@ -1,7 +1,7 @@
 ---
 kind: props
 name: 道具系统
-category: env
+category: scene
 scope:
   - frontend/src/scene/env/**
 source_files:

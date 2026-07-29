@@ -1,7 +1,7 @@
 ---
 kind: thumbnail_capture
 name: 缩略图渲染
-category: rendering
+category: scene
 scope:
   - frontend/src/scene/manager/**
 source_files:

@@ -6,6 +6,7 @@ scope:
   - frontend/src/scene/camera/camera-state.ts
 source_files:
   - frontend/src/scene/camera/camera-state.ts
+  - frontend/src/core/freefly-state.ts
 adr:
   - ADR-100
   - ADR-148
@@ -21,10 +22,12 @@ symbols:
   - setCameraScene
   - getCameraCanvas
   - setCameraCanvas
+  - freeflyInput
 invariants:
   - 相机状态在模型切换时保持
   - scene/canvas 引用是运行时上下文（非纯状态），下沉到此处的目的是切断 camera 子模块间的循环依赖
   - 双轴（CameraControl × CameraBehavior）是 ADR-100 后的权威状态，CameraMode 降为兼容别名
+  - freeflyInput 为双方共享状态（camera.ts 读/写，events.ts 键盘写入），定义在此切断循环依赖
 tests:
   - frontend/src/__tests__/camera.test.ts
 use_when:
@@ -32,12 +35,15 @@ use_when:
   - 相机模式
   - 相机位置保存
   - scene/canvas 引用共享
+  - freefly 输入状态
 ---
 
 ## 系统概览
 **相机纯状态 + 运行时上下文模块**。承担两类职责：
 1. 纯状态变量：`_currentPreset` / `_fov` / `_cameraMode` / `_cameraControl` / `_cameraBehavior` / `_scriptedSubMode` / `_currentCamera` / `_focusCenterY` / `_concertPaused` / `_surroundPaused` / `_cameraVmdName` / `_cameraVmdPath` / `_autoCameraEnabled` / `_autoCameraBeatCount` / `_autoCameraPresetIdx`
 2. 运行时上下文：`_scene` / `_canvas` / `_previousMode` / `_viewMatrixHandle`——供所有 camera-*.ts 子模块共享，避免互相 import
+
+`freeflyInput`（核心零依赖叶）作为自由飞行键盘输入状态，由 camera.ts 和 events.ts 共享，定义在此切断二者间的循环依赖。
 
 ADR-148 阶段 3（2026-07-20 抽离）：原本只为 camera.ts 内部状态；阶段 3 续拆（2026-07-26）后承担"运行时上下文共享层"职责，让 camera-vmd/factory/behaviors/bone-lock/auto 单向依赖 camera-state，不再回引 camera.ts。
 

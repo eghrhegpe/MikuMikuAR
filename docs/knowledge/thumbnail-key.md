@@ -1,7 +1,7 @@
 ---
 kind: thumbnail_key
 name: 缩略图缓存 key 推导
-category: core
+category: scene
 scope:
   - frontend/src/scene/manager/**
 source_files:

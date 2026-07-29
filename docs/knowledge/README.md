@@ -108,11 +108,9 @@ use_when:
 | [统一贴图工厂](./env-texture.md) | `scene/env/env-texture.ts` | ADR-092 |
 | [Babylon.js 类型逃逸封装](./env-type-helpers.md) | `scene/env/env-type-helpers.ts` | — |
 | [湿身效果系统](./env-wetness.md) | `scene/env/env-wetness.ts` | ADR-172 |
-| [镜面道具](./mirror-debug.md) | `scene/env/mirror-debug.ts` | ADR-128 |
-| [道具系统](./props.md) | `scene/env/props.ts` | — |
 | [环境系统门面](./env.md) | `scene/env/env.ts` | — |
 | [环境系统实现核心](./env-impl.md) | `scene/env/env-impl.ts` | — |
-| [环境系统桥接层](./env-bridge.md) | `scene/env/env-bridge.ts` | ADR-138/148 |
+| [环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md) | `scene/env/env-bridge.ts` | ADR-138/148 |
 | [环境重力与碰撞控制](./env-gravity.md) | `scene/env/env-gravity.ts` | ADR-148 |
 | [环境状态防抖持久化](./env-persist.md) | `scene/env/env-persist.ts` | ADR-148/176 |
 | [时间流转与太阳角系统](./env-time-of-day.md) | `scene/env/env-time-of-day.ts` | ADR-148 |
@@ -142,6 +140,10 @@ use_when:
 | [模型生命周期操作](./model-ops.md) | `scene/manager/model-ops.ts` | ADR-116 |
 | [分类材质系统](./material.md) | `scene/manager/material.ts` | — |
 | [纹理 LRU 缓存](./texture-lru.md) | `scene/manager/texture-lru.ts` | ADR-189 |
+| [道具系统](./props.md) | `scene/env/props.ts` | — |
+| [道具骨骼锚定系统](./accessory.md) | `scene/env/accessory.ts` | — |
+| [缩略图渲染](./thumbnail-capture.md) | `scene/manager/thumbnail-capture.ts` | — |
+| [缩略图缓存 key 推导](./thumbnail-key.md) | `scene/manager/thumbnail-key.ts` | — |
 | [姿势多角度预设系统](./camera-angle.md) | `scene/pose/camera-angle.ts` | — |
 | [AR 摄像头视频透传](./ar-camera.md) | `scene/ar/ar-camera.ts` | ADR-055 |
 | [AR 模式场景级协调](./ar-scene.md) | `scene/ar/ar-scene.ts` | ADR-055 |
@@ -180,7 +182,7 @@ use_when:
 | [灯光预设过渡动画](./lighting-tween.md) | `scene/render/lighting-tween.ts` | — |
 | [性能降级 — 环境桥接](./performance-env-bridge.md) | `scene/render/performance-env-bridge.ts` | ADR-130 |
 | [质量维度与配置系统](./quality-profile.md) | `scene/render/quality-profile.ts` | ADR-130/174 |
-| [缩略图渲染](./thumbnail-capture.md) | `scene/manager/thumbnail-capture.ts` | — |
+| [镜面道具](./mirror-debug.md) | `scene/env/mirror-debug.ts` | ADR-128 |
 | [变换适配器注册表](./transform-adapter.md) | `scene/transform/transform-adapter.ts` | ADR-121/126 |
 | [变换拾取系统](./transform-pick.md) | `scene/transform/transform-pick.ts` | — |
 | [场景渲染管线与后处理](./renderer.md) | `scene/render/renderer.ts` | — |
@@ -252,11 +254,11 @@ use_when:
 | [资源库初始化](./library-setup.md) | `menus/library-setup.ts` | — |
 | [AI 诊断助手面板](./settings-diagnostic.md) | `menus/settings-diagnostic.ts` | ADR-196/093 |
 | [AI 助手独立面板入口](./assistant-panel.md) | `menus/assistant-panel.ts` | ADR-203/093 |
-| [诊断面板聊天 UI](./diagnostic-chat.md) | `menus/diagnostic-chat.ts` | ADR-196/203 |
-| [诊断面板配置 UI](./diagnostic-config.md) | `menus/diagnostic-config.ts` | ADR-196/203 |
-| [诊断面板 tool call 控制](./diagnostic-control.md) | `menus/diagnostic-control.ts` | ADR-197/155/203 |
-| [诊断面板会话管理](./diagnostic-session.md) | `menus/diagnostic-session.ts` | ADR-203 |
-| [诊断面板单例状态](./diagnostic-state.md) | `menus/diagnostic-state.ts` | ADR-196/203 |
+| [诊断助手 → 聊天 UI（子模块）](./diagnostic-chat.md) | `menus/diagnostic-chat.ts` | ADR-196/203 |
+| [诊断助手 → 配置 UI（子模块）](./diagnostic-config.md) | `menus/diagnostic-config.ts` | ADR-196/203 |
+| [诊断助手 → tool call 控制（子模块）](./diagnostic-control.md) | `menus/diagnostic-control.ts` | ADR-197/155/203 |
+| [诊断助手 → 会话管理（子模块）](./diagnostic-session.md) | `menus/diagnostic-session.ts` | ADR-203 |
+| [诊断助手 → 单例状态（子模块）](./diagnostic-state.md) | `menus/diagnostic-state.ts` | ADR-196/203 |
 
 ### 核心基础设施（core）
 
@@ -284,7 +286,6 @@ use_when:
 | [轻量日志工具](./logger.md) | `core/logger.ts` | ADR-141 |
 | [安全调用工具](./safe-call.md) | `core/safe-call.ts` | ADR-146 |
 | [应用快捷键定义](./shortcut-app.md) | `core/shortcut-app.ts` | ADR-102 |
-| [缩略图缓存 key 推导](./thumbnail-key.md) | `scene/manager/thumbnail-key.ts` | — |
 | [UI 与场景常量](./ui-constants.md) | `core/ui-constants.ts` | ADR-143 |
 | [焦点陷阱工具](./ui-focus-trap.md) | `core/ui-focus-trap.ts` | ADR-153 |
 | [键盘导航工具](./ui-keyboard-nav.md) | `core/ui-keyboard-nav.ts` | ADR-153 |
@@ -330,5 +331,4 @@ use_when:
 | [角色台词生成（人设/情绪/TTS）](./character-bible.md) | `core/ai/{character-bible,dialogue-session,dialogue-speech}.ts` | ADR-156 |
 | [NL 意图解析（LLM→动作）](./ai-intent-dispatcher.md) | `core/ai/intent-dispatcher.ts` | ADR-155/197 |
 | [AI 会话 IndexedDB 存储](./chat-store.md) | `core/ai/chat-store.ts` | ADR-203 |
-| [Go 桌面端 key 放行判断](./go-key-allows-proceed.md) | `core/ai/go-key-allows-proceed.ts` | ADR-196 |
 | [轻量 Markdown→DOM 渲染器](./markdown.md) | `core/ai/markdown.ts` | ADR-196 |

@@ -10,8 +10,16 @@
 | 天空、地面、地形、湿身、反射、水面、云 | [env-sky.md](./env-sky.md)、[env-ground.md](./env-ground.md)、[env-wetness.md](./env-wetness.md)、[planar-reflection.md](./planar-reflection.md) | [env-texture.md](./env-texture.md)、[env-state-schema.md](./env-state-schema.md) |
 | 灯光、太阳、阴影、跟随灯、灯光渐变 | [lighting.md](./lighting.md)、[lighting-state.md](./lighting-state.md) | [lighting-sun.md](./lighting-sun.md)、[lighting-shadow.md](./lighting-shadow.md)、[lighting-tween.md](./lighting-tween.md) |
 | 模型加载、模型管理、模型替换、模型操作 | [model-loader.md](./model-loader.md)、[model-manager.md](./model-manager.md)、[model-ops.md](./model-ops.md) | [model-detail.md](./model-detail.md)、[scene.md](./scene.md) |
+| 拖拽、Gizmo、变换 | [transform-mode.md](./transform-mode.md)、[transform-adapter.md](./transform-adapter.md) | [transform-gizmo.md](./transform-gizmo.md)、[transform-pick.md](./transform-pick.md) |
 | 动作、骨骼、绑定、逐帧合成、物理裙摆 | [motion-pipeline.md](./motion-pipeline.md)、[bone-override-store.md](./bone-override-store.md) | [motion-binding-ui.md](./motion-binding-ui.md)、[virtual-skirt.md](./virtual-skirt.md)、[wind-physics.md](./wind-physics.md) |
+| 个人灯光、跟随灯 | [lighting-follow.md](./lighting-follow.md) | [lighting-state.md](./lighting-state.md)、[light-cone.md](./light-cone.md) |
+| 水印、截图、缩略图 | [watermark.md](./watermark.md)、[thumbnail-capture.md](./thumbnail-capture.md) | [thumbnail-key.md](./thumbnail-key.md) |
+| 换装、outfit、配饰 | [outfit-ui.md](./outfit-ui.md) | [props.md](./props.md)、[accessory.md](./accessory.md) |
+| 世界矩阵、骨骼矩阵、坐标系转换 | [mmd-adapter.md](./mmd-adapter.md)、[physics-bridge.md](./physics-bridge.md) | [core-orbit.md](./core-orbit.md)、[env-type-helpers.md](./env-type-helpers.md) |
+| 撤销、undo、redo、回退 | [scene-serialize.md](./scene-serialize.md)、[motion-history.md](./motion-history.md) | [action-registry.md](./action-registry.md)（scene:undo 动作） |
 | 场景保存、加载、迁移、序列化、场景菜单 | [scene.md](./scene.md)、[scene-serialize.md](./scene-serialize.md) | [scene-bundle.md](./scene-bundle.md)、[scene-migrate.md](./scene-migrate.md)、[scene-menu.md](./scene-menu.md) |
+| 快捷键、按键绑定、快捷键编辑 | [settings-controls.md](./settings-controls.md) | [shortcut-app.md](./shortcut-app.md)、[shortcut-registry.md](./shortcut-registry.md) |
+| 表演、auto dance、程序化动作、节拍联动 | [proc-motion-bridge.md](./proc-motion-bridge.md) | [motion-pipeline.md](./motion-pipeline.md)、[motion-modules-registry.md](./motion-modules-registry.md) |
 | 菜单、设置、按钮、滑块、键盘导航、焦点 | [menu.md](./menu.md)、[menu-schema.md](./menu-schema.md) | [settings.md](./settings.md)、[ui-slider-controller.md](./ui-slider-controller.md)、[ui-keyboard-nav.md](./ui-keyboard-nav.md)、[ui-focus-trap.md](./ui-focus-trap.md) |
 | 全局状态、响应式、UI 持久化、环境状态 | [state.md](./state.md)、[env-state-schema.md](./env-state-schema.md) | [reactivity.md](./reactivity.md)、[ui-state.md](./ui-state.md) |
 | Wails、运行时桥、绑定、Go 错误、后端调用 | [runtime-bridge.md](./runtime-bridge.md)、[wails-bindings.md](./wails-bindings.md) | [goerr.md](./goerr.md)、[safe-call.md](./safe-call.md) |
