@@ -2009,6 +2009,7 @@ export const zhCN: Record<string, string> = {
     'ai.chat.clear': '清空',
     'ai.chat.clearConfirm': '清除聊天记录？',
     'ai.chat.pendingBlocked': '请先确认或取消待处理操作。',
+    'ai.errorAdvice.ollamaNotInstalled': '未检测到本地 Ollama — 请从 https://ollama.com 下载，或配置远程 API 服务商。',
     'ai.errors.resolveFailed': 'AI 服务初始化失败，请查看控制台获取详情。',
 
     // 服务商预设与状态反馈

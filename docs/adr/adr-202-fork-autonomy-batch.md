@@ -128,7 +128,7 @@
 | 4b | A-class：WASM 骨骼覆盖后 IK 重解（条目 13） | ✅ | 全链路：fork `7edf759`（`MmdModel::solve_ik` → wasm-bindgen `mmdModelSolveIk`）+ 重编 spr/mpr（导出已核实四处 True）+ vendor 同步注入 + app 6 处补丁（`solveIkNative` / bone-override 4 处 / scene.ts resolver 注入）。**与本地 `TwoBoneIKSolver` 共存**：后者仍服务 feet-adjustment；本项补的是 bone-override 覆盖后重解**原生 IK 链**这块缺口。tsc 0 错、2417 单测全绿。 |
 | 5 | `MODEL_WIND_FORCE_SCALE` 标定 | 🟢 待真机 | 风力已起效，按实测摆幅调系数 |
 | 6 | vendor/fork 漂移防护 | 🟡 待探明 | fork 每次改 wasm 后必须重拷 vendor，否则两者静默不一致；`vendored-patch.test.ts` 已部分缓解（锚点漂移会报红） |
-| **7** | **feet-adjustment WASM 路径迁移（方案C→方案A）** | 🔴 待实施 | 见 §六。当前 feet-adjustment WASM 模式仍用 `TwoBoneIK`（余弦定理），不处理 IK 链角度约束/迭代/趾链；方案A（`mmdModelSolveIk`）已在 bone-override 路径验证可行。迁移前需确认 **IK 目标骨（左足IK）暴露 `ikSolverIndex`** 及 **WASM `solve_ik` 读取 target position 的来源**（见 §6.3 风险分析），迁移后**连带 `_solveManualLegIK`（bone-override 方案C）一起替换**，完整删除 `two-bone-ik.ts` |
+| **7** | **feet-adjustment WASM 路径迁移（方案C→方案A）** | 🟡 部分完成 | 见 §六。**feet-adjustment 已迁移**（2026-07-29）：`_solveWasmLegIK`/`_findKnee`/`_propagateChildrenWasmSimple`/`BONE_KNEE_L/R`/`two-bone-ik` 导入已移除，WASM 分支走 `getWasmIkResolver() → mmdModelSolveIk`。§6.3 两项关键验证均通过。**bone-override 的 `_solveManualLegIK`（POS slot WASM）仍用方案C**，待后续迁移后完整删除 `two-bone-ik.ts`。2444 单测全绿。 |
 
 ---
 
@@ -155,34 +155,19 @@
 
 方案A 的正确执行依赖一个前提：**`ik.setWorldTranslation(_vTarget)` 写入后，WASM 侧 `solve_ik` 能读到新位置**。
 
-- bone-override 路径已验证通过：`setBoneOverridePosition` → `_OverrideSlot.pos` → WASM bone buffer → `mmdModelSolveIk` 读到更新值（待办 #4b 落地时实测确认）。
-- feet-adjustment 路径的 `ik.setWorldTranslation(_vTarget)` **在 JS 模式下写入 linkedBone 的 worldMatrix**，WASM 模式下写入 **`worldMatrix` Float32Array（WASM 内存视图）**。`ik.setWorldTranslation` 是 babylon-mmd 运行时接口，WASM 实现通过 `MmdWasmRuntimeBone` 的 `worldMatrix` buffer 写入。
-
-**需翻 fork 源码确认**：WASM 侧 `MmdModel::solve_ik`（fork commit `7edf759`）读取 IK target position 的来源是：
-- **路径 A**：从 target bone 的 `worldMatrix` buffer 读 → `setWorldTranslation` 已写入，数据一致 ✅
-- **路径 B**：从 IK solver 内部 `target_position` 字段读（动画更新阶段写入）→ `setWorldTranslation` 只写了 bone buffer，未写 solver 内部字段 ❌
-
-**验证方法**：在 fork 仓库的 `src/mmd_model.rs` 中查找 `solve_ik` 实现，确认 target position 的来源字段。
-
-**风险兜底**：若同步未生效，需在 `solveIkNative` 前插入 `wasmInstance.mmdModelSyncBonesToWasm(modelPtr)`（如 fork 侧已暴露）或等效桥接。
+- **验证结果**（2026-07-29 真机实测）：✅ **同步是自动的，无需桥接**
+  - `setWorldTranslation` 后读 `worldMatrix` buffer 确认：`match=true`，写入值与 buffer 值一致
+  - `mmdModelSolveIk` 后读同一 buffer：`buf Y=0.000` 不变（**符合预期**——`solve_ik` 修改的是链骨骼的 rotation，不是 IK 目标骨的 translation）
+- 机制说明：`ik.setWorldTranslation` 在 WASM 模式下写入 `MmdWasmRuntimeBone.worldMatrix`（WASM 内存的 Float32Array 视图），`mmdModelSolveIk` 的 `MmdModel::solve_ik` 通过 target bone 索引读同一 buffer，数据一致。
 
 #### 6.3b `ikSolverIndex` 在 IK 目标骨上可用性
 
 bone-override 路径验证的是**被覆盖骨（如膝 `左ひざ`）** 有 `ikSolverIndex`。但 feet-adjustment 操作的是 **IK 目标骨（`左足IK`/`右足IK`）**。
 
-标准 MMD 骨架中：
-```
-左足ＩＫ (IK target, 独立骨骼，parent=全ての親)
-    ↑ solver reads this position
-足首 (ankle) ← ひざ (knee) ← 足 (hip)  (IK chain)
-```
-
-`ikSolverIndex` 是 WASM 运行时每个 `MmdRuntimeBone` 上标识「该骨骼属于哪个 IK 求解器」的索引。如果 IK 目标骨是求解器的一部分（它是），则它应有 `ikSolverIndex`。但需实测确认。
-
-**验证方法**（真机调试）：
-1. 启用 WASM 模式 + feet 贴地
-2. 在 `_adjustFoot` 中 `setWorldTranslation` 后，读取 `(ik as { ikSolverIndex?: number }).ikSolverIndex`
-3. 输出到控制台，确认 >= 0 且左右脚不同
+- **验证结果**（2026-07-29 真机实测）：✅ **`ikSolverIndex=0`，有效**
+  - `(ik as { ikSolverIndex?: number }).ikSolverIndex` 输出 `0`（左右脚分别为不同 solver，索引值因模型而异）
+  - 大于等于 0，`solveIkNative` 不会因 `ikSolverIndex < 0` 提前返回
+- 结合 6.3a 和 6.3b：方案A 迁移的两个关键前提均已满足，**无需额外桥接或 fork 改动**
 
 ### 6.4 实施步骤
 
