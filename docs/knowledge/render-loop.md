@@ -8,6 +8,21 @@ source_files:
   - frontend/src/core/render-loop.ts
 adr:
   - ADR-102
+symbols:
+  - startRenderLoop
+  - stopRenderLoop
+  - calcHardwareScaling
+invariants:
+  - startRenderLoop 先幂等 stopRenderLoop 再启动，防止 Vite HMR 泄漏
+  - stopRenderLoop 移除 observer 句柄、FPS 时钟、resize 处理器（幂等）
+  - calcHardwareScaling 含 DPR + GL 钳位 + 降级乘数（getPerfRenderScaleMul）
+  - 所有模块级句柄（_fpsClockId/_beforeObs/_afterObs/_resizeHandler）在 stop 时全部释放
+tests: []
+use_when:
+  - 渲染循环
+  - FPS 时钟
+  - 硬件缩放
+  - 渲染启停
 ---
 
 ## 系统概览

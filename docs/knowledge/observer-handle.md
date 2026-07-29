@@ -6,6 +6,21 @@ scope:
   - frontend/src/core/observer-handle.ts
 source_files:
   - frontend/src/core/observer-handle.ts
+symbols:
+  - ObserverHandle
+  - observe
+  - observeOnce
+  - ObserverRegistry
+invariants:
+  - ObserverHandle.dispose() 移除 observer 并释放引用，幂等（isDisposed 可读）
+  - observe(observable, cb) 等价于 add() 但返回 ObserverHandle（add 返回 null 时抛错）
+  - ObserverRegistry.disposeAll() 一次性清理所有句柄，幂等
+  - 模块有多个 observer 时统一用 ObserverRegistry，dispose 时 disposeAll()
+tests: []
+use_when:
+  - observer 管理
+  - 事件订阅
+  - 生命周期
 ---
 
 ## 系统概览

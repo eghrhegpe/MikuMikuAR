@@ -13,6 +13,13 @@ symbols:
   - getRegisteredModules
   - createModule
   - getModuleState
+  - setModuleParam
+  - setModuleEnabled
+  - claimBones
+  - setTargetModel
+  - clearAllModulesForModel
+  - applyMotionModulesToModel
+  - initMotionModules
 invariants:
   - 模块注册后按 priority 排序执行
   - 每个模块有唯一 name 标识
