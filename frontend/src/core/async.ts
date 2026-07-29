@@ -29,6 +29,39 @@ export function waitForFrame(): Promise<void> {
     return new Promise((resolve) => requestAnimationFrame(() => resolve()));
 }
 
+/**
+ * 创建惰性动态 import 加载器（带并发守卫 + 失败重试）。
+ * 首次调用执行 loader() 并缓存结果，并发调用共享同一 Promise，
+ * 失败后自动清锁使下次调用可重试。
+ *
+ * 消除以下四处重复的 `_cache + _getXxx()` 模式：
+ *  - backend/index.ts:_getGoAdapter()
+ *  - ai/index.ts:_getGoAdapter()
+ *  - ai/go-adapter.ts:_getB()
+ *  - outfit/outfit.ts:_getScene()
+ */
+export function makeLazyLoader<T>(loader: () => Promise<T>): () => Promise<T> {
+    let _cached: T | null = null;
+    let _loading: Promise<T> | null = null;
+    return async () => {
+        if (_cached) return _cached;
+        if (!_loading) {
+            _loading = loader().then(
+                (mod) => {
+                    _cached = mod;
+                    _loading = null;
+                    return mod;
+                },
+                (err) => {
+                    _loading = null;
+                    throw err;
+                }
+            );
+        }
+        return _loading;
+    };
+}
+
 // ======== Lifecycle Guards ========
 
 /**

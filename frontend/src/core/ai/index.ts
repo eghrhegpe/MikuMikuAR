@@ -13,17 +13,14 @@
 import type { AiService } from './types';
 import { browserAiAdapter } from './browser-adapter';
 import { awaitWailsBridge, isWebEntryMode, readDeclaredAdapter } from '../platform';
+import { makeLazyLoader } from '../async';
 
 // go-adapter 动态加载：web 入口短路路径完全不拉进 bundle，
 // 避免把 Go 侧 Wails 调用链带入纯浏览器构建。桌面/安卓路径首次调用时按需加载。
-let _goAdapter: AiService | null = null;
-async function _getGoAdapter(): Promise<AiService> {
-    if (!_goAdapter) {
-        const mod = await import('./go-adapter');
-        _goAdapter = mod.goAiAdapter;
-    }
-    return _goAdapter;
-}
+const _getGoAdapter = makeLazyLoader(async () => {
+    const mod = await import('./go-adapter');
+    return mod.goAiAdapter;
+});
 
 let _resolved: AiService | null = null;
 let _resolving: Promise<AiService> | null = null;

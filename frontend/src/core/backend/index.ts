@@ -17,18 +17,15 @@
 import type { BackendService, BackendCapabilities } from './types';
 import { browserAdapter } from './browser-adapter';
 import { awaitWailsBridge, isWebEntryMode, readDeclaredAdapter } from '../platform';
+import { makeLazyLoader } from '../async';
 
 // go-adapter 动态加载：web 入口短路路径完全不拉进 bundle，
 // 避免 @wailsio/runtime 初始化触发 /wails/custom.js 404（ADR-176 web 侧干净运行）。
 // 桌面/安卓路径首次调用时按需加载 go-adapter chunk。
-let _goAdapter: BackendService | null = null;
-async function _getGoAdapter(): Promise<BackendService> {
-    if (!_goAdapter) {
-        const mod = await import('./go-adapter');
-        _goAdapter = mod.goAdapter;
-    }
-    return _goAdapter;
-}
+const _getGoAdapter = makeLazyLoader(async () => {
+    const mod = await import('./go-adapter');
+    return mod.goAdapter;
+});
 
 let _resolved: BackendService | null = null;
 let _resolving: Promise<BackendService> | null = null;
