@@ -1628,6 +1628,8 @@ export const ja: Record<string, string> = {
         'すべてのサムネイルキャッシュをクリアしますか？次回のモデル読み込み時に再生成されます。',
     'settings.paths.clearAllConfirm':
         'すべてのキャッシュをクリアしますか？抽出キャッシュ、サムネイル、HTTP分離ディレクトリが含まれます。次回のモデル読み込み時に再生成されます。',
+    'settings.paths.clearExtractConfirm':
+        '展開キャッシュをクリアしますか？次回のモデル読み込み時に再生成されます。',
 
     // shortcuts.* (ADR-059 Phase 3)
     'shortcuts.label.models': 'モデルライブラリ',
@@ -1689,6 +1691,7 @@ export const ja: Record<string, string> = {
     'motion.boneOverride.axisHint': 'P:ピッチ Y:ヨー R:ロール W:ウェイト',
     'motion.boneOverride.clearAllConfirm':
         'すべてのボーンオーバーライドを削除しますか？元に戻せます。',
+    'motion.clearAllConfirm': 'すべてのモーションをクリアしますか？元に戻せます。',
     'motion.boneOverride.exportHierarchy': 'ボーン階層をエクスポート',
     'motion.boneOverride.exportCopied': '✓ ボーン階層をクリップボードにコピーしました',
     'motion.boneOverride.exportFailed': '✕ エクスポート失敗：モデルまたはボーンがありません',
@@ -1954,6 +1957,9 @@ export const ja: Record<string, string> = {
     'ai.actions.motion.loadAudio': 'オーディオを読み込む',
     'ai.actions.motion.loadVpd': 'VPD ポーズを読み込む',
     'ai.actions.motion.openBinding': 'モーションバインディングパネルを開く',
+    'ai.actions.motion.browseMusic': '音声ライブラリを閲覧',
+    'ai.actions.motion.browseSceneMotions': 'シーンモーションを閲覧',
+    'ai.actions.motion.openDetail': 'モーション詳細を開く',
     'ai.actions.settings.clearExtractCache': '展開キャッシュをクリア',
     'ai.actions.settings.clearThumbnail': 'サムネイルキャッシュをクリア',
     'ai.actions.settings.clearAllCache': 'すべてのキャッシュをクリア',

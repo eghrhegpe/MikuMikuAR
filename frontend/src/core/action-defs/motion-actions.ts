@@ -10,6 +10,7 @@ import { updatePlaybackUI } from '../../scene/motion/playback';
 import { triggerAutoSave } from '../utils';
 import { feedbackInfo, feedbackStatus } from '../feedback';
 import { showInfoToast } from '../toast';
+import { showConfirm } from '../dialog';
 import { isPlaying, setIsPlaying, setAutoLoop } from '../playback-state';
 import { mmdRuntime } from '../scene-state';
 import { getMotionMenu, refreshMotionRoot } from '../../menus/motion-popup';
@@ -50,6 +51,7 @@ export function registerMotionActions(): void {
         params: [],
         destructive: true,
         execute: async () => {
+            if (!(await showConfirm(t('motion.clearAllConfirm')))) return;
             const snap = pushUndoSnapshot();
             clearAllSceneMotions();
             if (isPlaying && mmdRuntime) {

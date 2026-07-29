@@ -14,9 +14,11 @@ export function registerSettingsActions(): void {
         params: [],
         destructive: true,
         execute: async () => {
-            await ClearExtractCache();
-            feedbackInfo('settings.extractCacheCleared', undefined);
-            window.dispatchEvent(new CustomEvent('mmar:cache-cleared'));
+            if (await showConfirm(t('settings.paths.clearExtractConfirm'))) {
+                await ClearExtractCache();
+                feedbackInfo('settings.extractCacheCleared', undefined);
+                window.dispatchEvent(new CustomEvent('mmar:cache-cleared'));
+            }
         },
     });
 

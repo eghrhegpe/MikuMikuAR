@@ -1,20 +1,53 @@
 
 [1m[30m[46m RUN [49m[39m[22m [36mv4.1.9 [39m[90mC:/Users/zhujieling11/MikuMikuAR/frontend[39m
 
-[33m[39m[32m·[39m[33m[39m[32m·[39m[90mstderr[2m | src/__tests__/perception/perf-tier.int.test.ts[2m > [22m[2mADR-164 enableAllPerception / disableAllPerception[2m > [22m[2m1. enableAllPerception 后所有已加载模型有 context
-[22m[39m[perception] activate: 模型未加载或无 mmdModel
+[90mstderr[2m | src/__tests__/perception/perf-tier.int.test.ts[2m > [22m[2mADR-164 enableAllPerception / disableAllPerception[2m > [22m[2m1. enableAllPerception 后所有已加载模型有 context
+[22m[39m[perception] 已注销
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m1 呼吸=true 眨眼=true 头=true 眼=true
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
 [perception] 全员感知已开启
-
-[90mstderr[2m | src/__tests__/perception/claim-bones.int.test.ts[2m > [22m[2mADR-163 claimBones[2m > [22m[2ma) activatePerception 后感知层骨骼被正确认领
-[22m[39m[perception] activate: 模型未加载或无 mmdModel
 
 [90mstderr[2m | src/__tests__/perception/multi-model.int.test.ts[2m > [22m[2mADR-164 模型加载自动激活[2m > [22m[2m8. 全员感知模式下新模型加载时自动激活
-[22m[39m[perception] activate: 模型未加载或无 mmdModel
+[22m[39m[perception] 已注销
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m1 呼吸=true 眨眼=true 头=true 眼=true
 [perception] 全员感知已开启
-[perception] activate: 模型未加载或无 mmdModel
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+
+[90mstderr[2m | src/__tests__/perception/claim-bones.int.test.ts[2m > [22m[2mADR-163 claimBones[2m > [22m[2ma) activatePerception 后感知层骨骼被正确认领
+[22m[39m[perception] 已注销
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m1 呼吸=true 眨眼=true 头=true 眼=true
 
 [90mstderr[2m | src/__tests__/perception/perf-tier.int.test.ts[2m > [22m[2mADR-164 enableAllPerception / disableAllPerception[2m > [22m[2m2. disableAllPerception 后仅焦点保留
-[22m[39m[perception] activate: 模型未加载或无 mmdModel
+[22m[39m[perception] 已注销
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m1 呼吸=true 眨眼=true 头=true 眼=true
 [adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
 [adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
 [adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
@@ -24,16 +57,43 @@
 [perception] 全员感知已关闭
 
 [90mstderr[2m | src/__tests__/perception/claim-bones.int.test.ts[2m > [22m[2mADR-163 claimBones[2m > [22m[2mb) P1 抢占后感知层 ownedBones 不再包含被抢占骨骼
-[22m[39m[perception] activate: 模型未加载或无 mmdModel
+[22m[39m[perception] 已注销
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m1 呼吸=true 眨眼=true 头=true 眼=true
 
-[90mstderr[2m | src/__tests__/perception/perf-tier.int.test.ts[2m > [22m[2mADR-164 enableAllPerception / disableAllPerception[2m > [22m[2m3. enable→disable→enable toggle 后 lastOffsets 正确重置
-[22m[39m[perception] activate: 模型未加载或无 mmdModel
+[90mstdout[2m | src/__tests__/perception/claim-bones.int.test.ts[2m > [22m[2mADR-163 claimBones[2m > [22m[2mb) P1 抢占后感知层 ownedBones 不再包含被抢占骨骼
+[22m[39m[bone-override] _getOverrideMap 首次为模型创建覆盖索引 {"modelId":"m1","existingModels":["m1"]}
+
+[90mstderr[2m | src/__tests__/perception/claim-bones.int.test.ts[2m > [22m[2mADR-163 claimBones[2m > [22m[2mb) P1 抢占后感知层 ownedBones 不再包含被抢占骨骼
+[22m[39m[adr-147] bone "頭" 被模块 "body-posture"(priority=1) 从 "perception.gaze.head"(priority=92) 抢占
 
 [90mstderr[2m | src/__tests__/perception/claim-bones.int.test.ts[2m > [22m[2mADR-163 claimBones[2m > [22m[2mc) deactivatePerception 后 ownedBones 被释放
-[22m[39m[perception] activate: 模型未加载或无 mmdModel
+[22m[39m[perception] 已注销
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m1 呼吸=true 眨眼=true 头=true 眼=true
+
+[90mstdout[2m | src/__tests__/perception/claim-bones.int.test.ts[2m > [22m[2mADR-163 claimBones[2m > [22m[2mc) deactivatePerception 后 ownedBones 被释放
+[22m[39m[bone-override] _getOverrideMap 首次为模型创建覆盖索引 {"modelId":"m1","existingModels":["m1"]}
+
+[90mstderr[2m | src/__tests__/perception/claim-bones.int.test.ts[2m > [22m[2mADR-163 claimBones[2m > [22m[2mc) deactivatePerception 后 ownedBones 被释放
+[22m[39m[perception] 已注销
 
 [90mstderr[2m | src/__tests__/perception/multi-model.int.test.ts[2m > [22m[2mADR-166 多模型隔离[2m > [22m[2m2. 焦点 setBreathFrequency 不污染 pinned 模型 ctx.state
-[22m[39m[perception] activate: 模型未加载或无 mmdModel
+[22m[39m[perception] 已注销
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m1 呼吸=true 眨眼=true 头=true 眼=true
 [adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
 [adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
 [adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
@@ -41,11 +101,50 @@
 [adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
 [perception] pin: 模型=m2
 
-[90mstderr[2m | src/__tests__/perception/micro-expression.int.test.ts[2m > [22m[2m_applyMicroExpression[2m > [22m[2mneutral 情绪不写入任何 morph
-[22m[39m[perception] activate: 模型未加载或无 mmdModel
+[90mstdout[2m | src/__tests__/perception/perf-tier.int.test.ts[2m > [22m[2mADR-164 enableAllPerception / disableAllPerception[2m > [22m[2m3. enable→disable→enable toggle 后 lastOffsets 正确重置
+[22m[39m[bone-override] _getOverrideMap 首次为模型创建覆盖索引 {"modelId":"m2","existingModels":["m2"]}
+
+[90mstderr[2m | src/__tests__/perception/perf-tier.int.test.ts[2m > [22m[2mADR-164 enableAllPerception / disableAllPerception[2m > [22m[2m3. enable→disable→enable toggle 后 lastOffsets 正确重置
+[22m[39m[perception] 已注销
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m1 呼吸=true 眨眼=true 头=true 眼=true
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 全员感知已开启
+[perception] 全员感知已关闭
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 全员感知已开启
 
 [90mstderr[2m | src/__tests__/perception/multi-model.int.test.ts[2m > [22m[2mADR-166 多模型隔离[2m > [22m[2m3. 非感知模块释放骨骼时触发感知层自动 reclaim
-[22m[39m[perception] activate: 模型未加载或无 mmdModel
+[22m[39m[perception] 已注销
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m1 呼吸=true 眨眼=true 头=true 眼=true
+
+[90mstdout[2m | src/__tests__/perception/multi-model.int.test.ts[2m > [22m[2mADR-166 多模型隔离[2m > [22m[2m3. 非感知模块释放骨骼时触发感知层自动 reclaim
+[22m[39m[bone-override] _getOverrideMap 首次为模型创建覆盖索引 {"modelId":"m1","existingModels":["m1"]}
+
+[90mstderr[2m | src/__tests__/perception/multi-model.int.test.ts[2m > [22m[2mADR-166 多模型隔离[2m > [22m[2m3. 非感知模块释放骨骼时触发感知层自动 reclaim
+[22m[39m[adr-147] bone "頭" 被模块 "body-posture"(priority=1) 从 "perception.gaze.head"(priority=92) 抢占
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
 
 [90mstdout[2m | src/__tests__/perception/claim-bones.int.test.ts[2m > [22m[2mADR-163 claimBones[2m > [22m[2md) 冲突 banner 文本内容正确（仅焦点模型显示）
 [22m[39m[bone-override] _getOverrideMap 首次为模型创建覆盖索引 {"modelId":"m1","existingModels":["m1"]}
@@ -53,26 +152,68 @@
 [90mstderr[2m | src/__tests__/perception/claim-bones.int.test.ts[2m > [22m[2mADR-163 claimBones[2m > [22m[2md) 冲突 banner 文本内容正确（仅焦点模型显示）
 [22m[39m[adr-147] bone "頭" 被模块 "body-posture"(priority=1) 从 "perception.gaze.head"(priority=100) 抢占
 
-[90mstdout[2m | src/__tests__/perception/multi-model.int.test.ts[2m > [22m[2mADR-166 多模型隔离[2m > [22m[2m3. 非感知模块释放骨骼时触发感知层自动 reclaim
-[22m[39m[bone-override] _getOverrideMap 首次为模型创建覆盖索引 {"modelId":"m1","existingModels":["m1"]}
+[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[90mstderr[2m | src/__tests__/perception/micro-expression.int.test.ts[2m > [22m[2m_applyMicroExpression[2m > [22m[2mneutral 情绪不写入任何 morph
+[22m[39m[perception] 已注销
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m1 呼吸=true 眨眼=true 头=true 眼=true
 
 [90mstderr[2m | src/__tests__/perception/micro-expression.int.test.ts[2m > [22m[2m_applyMicroExpression[2m > [22m[2mhappy 情绪周期性脉冲笑み morph
-[22m[39m[perception] activate: 模型未加载或无 mmdModel
+[22m[39m[perception] 已注销
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m1 呼吸=true 眨眼=true 头=true 眼=true
 
-[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[31mx[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[31mx[39m[33m[39m[32m·[39m[90mstderr[2m | src/__tests__/perception/perf-tier.int.test.ts[2m > [22m[2mADR-164 PerceptionPerfMonitor tier[2m > [22m[2m5. 手动 tier=low 时 gaze/balance/expression/lipsync 在 observer 中跳过
-[22m[39m[perception] activate: 模型未加载或无 mmdModel
+[90mstderr[2m | src/__tests__/perception/perf-tier.int.test.ts[2m > [22m[2mADR-164 PerceptionPerfMonitor tier[2m > [22m[2m5. 手动 tier=low 时 gaze/balance/expression/lipsync 在 observer 中跳过
+[22m[39m[perception] 已注销
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m1 呼吸=true 眨眼=true 头=true 眼=true
 
 [90mstderr[2m | src/__tests__/perception/micro-expression.int.test.ts[2m > [22m[2m_applyMicroExpression[2m > [22m[2mmicroExpressionEnabled=false 时不写入
-[22m[39m[perception] activate: 模型未加载或无 mmdModel
+[22m[39m[perception] 已注销
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m1 呼吸=true 眨眼=true 头=true 眼=true
 
-[90mstderr[2m | src/__tests__/perception/perf-tier.int.test.ts[2m > [22m[2mADR-164 PerceptionPerfMonitor tier[2m > [22m[2m6. 手动 tier=medium 时 gaze 每 2 帧一次、expression 每 4 帧一次
-[22m[39m[perception] activate: 模型未加载或无 mmdModel
+[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[90mstderr[2m | src/__tests__/perception/perf-tier.int.test.ts[2m > [22m[2mADR-164 PerceptionPerfMonitor tier[2m > [22m[2m6. 手动 tier=medium 时 gaze 每 2 帧一次、expression 每 4 帧一次
+[22m[39m[perception] 已注销
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m1 呼吸=true 眨眼=true 头=true 眼=true
 
-[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[31mx[39m[33m[39m[32m·[39m[90mstderr[2m | src/__tests__/perception/micro-expression.int.test.ts[2m > [22m[2m_applyMicroExpression[2m > [22m[2mmorph 不存在时静默跳过
-[22m[39m[perception] activate: 模型未加载或无 mmdModel
+[90mstderr[2m | src/__tests__/perception/micro-expression.int.test.ts[2m > [22m[2m_applyMicroExpression[2m > [22m[2mmorph 不存在时静默跳过
+[22m[39m[perception] 已注销
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m1 呼吸=true 眨眼=true 头=true 眼=true
 
 [90mstderr[2m | src/__tests__/perception/perf-tier.int.test.ts[2m > [22m[2mADR-164 PerceptionPerfMonitor tier[2m > [22m[2m7. pinPerception + tier=low 时 pinned 模型保留感知
-[22m[39m[perception] activate: 模型未加载或无 mmdModel
+[22m[39m[perception] 已注销
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m1 呼吸=true 眨眼=true 头=true 眼=true
 [adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
 [adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
 [adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
@@ -80,32 +221,55 @@
 [adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
 [perception] pin: 模型=m2
 
-[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[31mx[39m[33m[39m[31mx[39m[33m[39m[31mx[39m[90mstderr[2m | src/__tests__/perception/micro-expression.int.test.ts[2m > [22m[2m_applyMicroExpression[2m > [22m[2m开启写入后关闭 → 旧 morph influence 归零（防冻结）
-[22m[39m[perception] activate: 模型未加载或无 mmdModel
-
-[33m[39m[32m·[39m[33m[39m[31mx[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[31mx[39m[33m[39m[32m·[39m[90mstderr[2m | src/__tests__/perception/micro-expression.int.test.ts[2m > [22m[2m_applyMicroExpression[2m > [22m[2m切换情绪时旧 morph 归零（防串味）
-[22m[39m[perception] activate: 模型未加载或无 mmdModel
-
-[90mstderr[2m | src/__tests__/perception/micro-expression.int.test.ts[2m > [22m[2m_applyMicroExpression[2m > [22m[2m切换到 neutral 时旧 morph 归零
-[22m[39m[perception] activate: 模型未加载或无 mmdModel
-
-[33m[39m[32m·[39m[33m[39m[31mx[39m[33m[39m[31mx[39m[33m[39m[31mx[39m[90mstderr[2m | src/__tests__/perception/lipsync.int.test.ts[2m > [22m[2m_applyLipSync[2m > [22m[2mlipSyncEnabled=false 时不写入任何 morph
-[22m[39m[perception] activate: 模型未加载或无 mmdModel
+[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[90mstderr[2m | src/__tests__/perception/lipsync.int.test.ts[2m > [22m[2m_applyLipSync[2m > [22m[2mlipSyncEnabled=false 时不写入任何 morph
+[22m[39m[perception] 已注销
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m1 呼吸=true 眨眼=true 头=true 眼=true
 
 [90mstderr[2m | src/__tests__/perception/balance-sway-pin.int.test.ts[2m > [22m[2mpinPerception[2m > [22m[2mpin 模型后焦点切换时 pinned 仍激活
-[22m[39m[perception] activate: 模型未加载或无 mmdModel
+[22m[39m[perception] 已注销
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m1 呼吸=true 眨眼=true 头=true 眼=true
 [adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
 [adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
 [adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
 [adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
 [adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
 [perception] pin: 模型=m1
-[perception] activate: 模型未加载或无 mmdModel
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m2 呼吸=true 眨眼=true 头=true 眼=true
+
+[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[90mstderr[2m | src/__tests__/perception/micro-expression.int.test.ts[2m > [22m[2m_applyMicroExpression[2m > [22m[2m开启写入后关闭 → 旧 morph influence 归零（防冻结）
+[22m[39m[perception] 已注销
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m1 呼吸=true 眨眼=true 头=true 眼=true
 
 [90mstderr[2m | src/__tests__/perception/lipsync.int.test.ts[2m > [22m[2m_applyLipSync[2m > [22m[2m开启且音频播放时写入 あ morph
-[22m[39m[perception] activate: 模型未加载或无 mmdModel
+[22m[39m[perception] 已注销
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m1 呼吸=true 眨眼=true 头=true 眼=true
 
-[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[90mstderr[2m | src/__tests__/perception/balance-sway-pin.int.test.ts[2m > [22m[2mpinPerception[2m > [22m[2m[doc:adr-164] pin 上限已移除，可 pin 超过 5 个模型
+[90mstderr[2m | src/__tests__/perception/balance-sway-pin.int.test.ts[2m > [22m[2mpinPerception[2m > [22m[2m[doc:adr-164] pin 上限已移除，可 pin 超过 5 个模型
 [22m[39m[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
 [adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
 [adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
@@ -143,13 +307,37 @@
 [adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
 [perception] pin: 模型=m6
 
+[90mstderr[2m | src/__tests__/perception/micro-expression.int.test.ts[2m > [22m[2m_applyMicroExpression[2m > [22m[2m切换情绪时旧 morph 归零（防串味）
+[22m[39m[perception] 已注销
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m1 呼吸=true 眨眼=true 头=true 眼=true
+
 [90mstderr[2m | src/__tests__/perception/lipsync.int.test.ts[2m > [22m[2m_applyLipSync[2m > [22m[2mmorph 不存在时静默跳过
-[22m[39m[perception] activate: 模型未加载或无 mmdModel
+[22m[39m[perception] 已注销
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m1 呼吸=true 眨眼=true 头=true 眼=true
+
+[90mstderr[2m | src/__tests__/perception/micro-expression.int.test.ts[2m > [22m[2m_applyMicroExpression[2m > [22m[2m切换到 neutral 时旧 morph 归零
+[22m[39m[perception] 已注销
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m1 呼吸=true 眨眼=true 头=true 眼=true
 
 [90mstdout[2m | src/__tests__/perception/balance-sway-pin.int.test.ts[2m > [22m[2mpinPerception[2m > [22m[2munpin 非焦点模型后该模型从 pinned 列表移除
 [22m[39m[bone-override] _getOverrideMap 首次为模型创建覆盖索引 {"modelId":"m1","existingModels":["m1"]}
 
-[90mstderr[2m | src/__tests__/perception/balance-sway-pin.int.test.ts[2m > [22m[2mpinPerception[2m > [22m[2munpin 非焦点模型后该模型从 pinned 列表移除
+[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[90mstderr[2m | src/__tests__/perception/balance-sway-pin.int.test.ts[2m > [22m[2mpinPerception[2m > [22m[2munpin 非焦点模型后该模型从 pinned 列表移除
 [22m[39m[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
 [adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
 [adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
@@ -158,43 +346,109 @@
 [perception] pin: 模型=m1
 
 [90mstderr[2m | src/__tests__/perception/lipsync.int.test.ts[2m > [22m[2m_applyLipSync[2m > [22m[2m关闭后 morph influence 归零（防残留）
-[22m[39m[perception] activate: 模型未加载或无 mmdModel
+[22m[39m[perception] 已注销
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m1 呼吸=true 眨眼=true 头=true 眼=true
 
-[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[31mx[39m[33m[39m[32m·[39m[33m[39m[31mx[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[31mx[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[90mstderr[2m | src/__tests__/perception/state-lifecycle.int.test.ts[2m > [22m[2mactivatePerception[2m > [22m[2m无目标模型 ID 时 warn 并返回
+[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[90mstderr[2m | src/__tests__/perception/state-lifecycle.int.test.ts[2m > [22m[2mactivatePerception[2m > [22m[2m无目标模型 ID 时 warn 并返回
 [22m[39m[perception] activate: 无目标模型 ID
 
 [90mstderr[2m | src/__tests__/perception/state-lifecycle.int.test.ts[2m > [22m[2mactivatePerception[2m > [22m[2m模型未加载时 warn 并返回
-[22m[39m[perception] activate: 无目标模型 ID
+[22m[39m[perception] activate: 模型未加载或无 mmdModel
 
-[90mstderr[2m | src/__tests__/perception/state-lifecycle.int.test.ts[2m > [22m[2mactivatePerception[2m > [22m[2m模型已加载时注册 observer
-[22m[39m[perception] activate: 无目标模型 ID
+[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[90mstderr[2m | src/__tests__/perception/state-lifecycle.int.test.ts[2m > [22m[2mactivatePerception[2m > [22m[2m模型已加载时注册 observer
+[22m[39m[perception] 已注销
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m1 呼吸=true 眨眼=true 头=true 眼=true
 
-[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[31mx[39m[33m[39m[31mx[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[90mstderr[2m | src/__tests__/perception/state-lifecycle.int.test.ts[2m > [22m[2mactivatePerception[2m > [22m[2m重复激活同一模型不重复注册
-[22m[39m[perception] activate: 无目标模型 ID
-[perception] activate: 无目标模型 ID
+[90mstderr[2m | src/__tests__/perception/state-lifecycle.int.test.ts[2m > [22m[2mactivatePerception[2m > [22m[2m重复激活同一模型不重复注册
+[22m[39m[perception] 已注销
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m1 呼吸=true 眨眼=true 头=true 眼=true
 
-[33m[39m[31mx[39m[33m[39m[32m·[39m[33m[39m[31mx[39m[33m[39m[32m·[39m[33m[39m[31mx[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[31mx[39m[90mstderr[2m | src/__tests__/perception/state-lifecycle.int.test.ts[2m > [22m[2mactivatePerception[2m > [22m[2m切换模型时先注销旧 observer 再注册新 observer
-[22m[39m[perception] activate: 无目标模型 ID
-[perception] activate: 模型未加载或无 mmdModel
+[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[90mstdout[2m | src/__tests__/perception/state-lifecycle.int.test.ts[2m > [22m[2mactivatePerception[2m > [22m[2m切换模型时先注销旧 observer 再注册新 observer
+[22m[39m[bone-override] _getOverrideMap 首次为模型创建覆盖索引 {"modelId":"m1","existingModels":["m1"]}
+
+[90mstderr[2m | src/__tests__/perception/state-lifecycle.int.test.ts[2m > [22m[2mactivatePerception[2m > [22m[2m切换模型时先注销旧 observer 再注册新 observer
+[22m[39m[perception] 已注销
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m1 呼吸=true 眨眼=true 头=true 眼=true
+[perception] 已注销
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m2 呼吸=true 眨眼=true 头=true 眼=true
+
+[90mstdout[2m | src/__tests__/perception/state-lifecycle.int.test.ts[2m > [22m[2mdeactivatePerception[2m > [22m[2m注销 observer
+[22m[39m[bone-override] _getOverrideMap 首次为模型创建覆盖索引 {"modelId":"m1","existingModels":["m1"]}
 
 [90mstderr[2m | src/__tests__/perception/state-lifecycle.int.test.ts[2m > [22m[2mdeactivatePerception[2m > [22m[2m注销 observer
-[22m[39m[perception] activate: 无目标模型 ID
+[22m[39m[perception] 已注销
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m1 呼吸=true 眨眼=true 头=true 眼=true
 [perception] 已注销
 
-[90mstderr[2m | src/__tests__/perception/state-lifecycle.int.test.ts[2m > [22m[2mdeactivatePerception[2m > [22m[2m未激活时调用不抛错
+[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[90mstderr[2m | src/__tests__/perception/state-lifecycle.int.test.ts[2m > [22m[2mdeactivatePerception[2m > [22m[2m未激活时调用不抛错
 [22m[39m[perception] 已注销
 
+[90mstdout[2m | src/__tests__/perception/state-lifecycle.int.test.ts[2m > [22m[2monPerceptionModelRemoved[2m > [22m[2m移除当前感知模型时注销 observer
+[22m[39m[bone-override] _getOverrideMap 首次为模型创建覆盖索引 {"modelId":"m1","existingModels":["m1"]}
+
 [90mstderr[2m | src/__tests__/perception/state-lifecycle.int.test.ts[2m > [22m[2monPerceptionModelRemoved[2m > [22m[2m移除当前感知模型时注销 observer
-[22m[39m[perception] activate: 无目标模型 ID
-
-[90mstderr[2m | src/__tests__/perception/state-lifecycle.int.test.ts[2m > [22m[2monPerceptionModelRemoved[2m > [22m[2m移除其他模型时不影响当前 observer
-[22m[39m[perception] activate: 无目标模型 ID
-
-[33m[39m[31mx[39m[33m[39m[31mx[39m[33m[39m[32m·[39m[33m[39m[31mx[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[90mstderr[2m | src/__tests__/perception/gaze.int.test.ts[2m > [22m[2mgaze reset[2m > [22m[2mdeactivatePerception 时调用 _resetGazeState
-[22m[39m[perception] activate: 模型未加载或无 mmdModel
+[22m[39m[perception] 已注销
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m1 呼吸=true 眨眼=true 头=true 眼=true
 [perception] 已注销
 
-[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[31mx[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[90mstdout[2m | src/__tests__/perception/claim-bones.int.test.ts[2m > [22m[2mADR-163 claimBones[2m > [22m[2md) [doc:adr-166] 任意模型冲突均显示 banner（不限焦点）
+[90mstderr[2m | src/__tests__/perception/state-lifecycle.int.test.ts[2m > [22m[2monPerceptionModelRemoved[2m > [22m[2m移除其他模型时不影响当前 observer
+[22m[39m[perception] 已注销
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m1 呼吸=true 眨眼=true 头=true 眼=true
+
+[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[90mstdout[2m | src/__tests__/perception/gaze.int.test.ts[2m > [22m[2mgaze reset[2m > [22m[2mdeactivatePerception 时调用 _resetGazeState
+[22m[39m[bone-override] _getOverrideMap 首次为模型创建覆盖索引 {"modelId":"m1","existingModels":["m1"]}
+
+[90mstderr[2m | src/__tests__/perception/gaze.int.test.ts[2m > [22m[2mgaze reset[2m > [22m[2mdeactivatePerception 时调用 _resetGazeState
+[22m[39m[perception] 已注销
+[adr-147] bone "首" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "頭" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "Head" 已被模块 "perception.gaze.head"(priority=92) 占用，模块 "perception.breath"(priority=93) 跳过该骨骼
+[adr-147] bone "上半身2" 已被模块 "perception.breath"(priority=93) 占用，模块 "perception.balance.upper"(priority=95) 跳过该骨骼
+[perception] 激活: 模型=m1 呼吸=true 眨眼=true 头=true 眼=true
+[perception] 已注销
+
+[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[90mstdout[2m | src/__tests__/perception/claim-bones.int.test.ts[2m > [22m[2mADR-163 claimBones[2m > [22m[2md) [doc:adr-166] 任意模型冲突均显示 banner（不限焦点）
 [22m[39m[bone-override] _getOverrideMap 首次为模型创建覆盖索引 {"modelId":"m2","existingModels":["m2"]}
 
 [90mstderr[2m | src/__tests__/perception/claim-bones.int.test.ts[2m > [22m[2mADR-163 claimBones[2m > [22m[2md) [doc:adr-166] 任意模型冲突均显示 banner（不限焦点）
@@ -214,352 +468,11 @@
 [perception] pin: 模型=m2
 [adr-147] bone "頭" 被模块 "body-posture"(priority=1) 从 "perception.gaze.head"(priority=100) 抢占
 
-[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[31mx[39m
+[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m
 
-[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 25 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+[2m Test Files [22m [1m[32m8 passed[39m[22m[90m (8)[39m
+[2m      Tests [22m [1m[32m100 passed[39m[22m[90m (100)[39m
+[2m   Start at [22m 17:38:40
+[2m   Duration [22m 3.85s[2m (transform 3.79s, setup 167ms, import 2.57s, tests 6.78s, environment 2.89s)[22m
 
-[41m[1m FAIL [22m[49m src/__tests__/perception/balance-sway-pin.int.test.ts[2m > [22msetBalanceSwayEnabled[2m > [22m调用 triggerAutoSave
-[31m[1mAssertionError[22m: expected "vi.fn()" to be called once, but got 0 times[39m
-[36m [2m❯[22m src/__tests__/perception/balance-sway-pin.int.test.ts:[2m44:43[22m[39m
-    [90m 42|[39m     [34mit[39m([32m'调用 triggerAutoSave'[39m[33m,[39m () [33m=>[39m {
-    [90m 43|[39m         sut[33m.[39m[34msetBalanceSwayEnabled[39m([35mfalse[39m)[33m;[39m
-    [90m 44|[39m         [34mexpect[39m(mockState[33m.[39mtriggerAutoSave)[33m.[39m[34mtoHaveBeenCalledOnce[39m()[33m;[39m
-    [90m   |[39m                                           [31m^[39m
-    [90m 45|[39m     })[33m;[39m
-    [90m 46|[39m })[33m;[39m
-
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/25]⎯[22m[39m
-
-[41m[1m FAIL [22m[49m src/__tests__/perception/balance-sway-pin.int.test.ts[2m > [22mbalanceSway 可调参数[2m > [22m调用 triggerAutoSave
-[31m[1mAssertionError[22m: expected "vi.fn()" to be called at least once[39m
-[36m [2m❯[22m src/__tests__/perception/balance-sway-pin.int.test.ts:[2m96:43[22m[39m
-    [90m 94|[39m     [34mit[39m([32m'调用 triggerAutoSave'[39m[33m,[39m () [33m=>[39m {
-    [90m 95|[39m         sut[33m.[39m[34msetBalanceSwayPeriod[39m([34m3.0[39m)[33m;[39m
-    [90m 96|[39m         [34mexpect[39m(mockState[33m.[39mtriggerAutoSave)[33m.[39m[34mtoHaveBeenCalled[39m()[33m;[39m
-    [90m   |[39m                                           [31m^[39m
-    [90m 97|[39m         sut[33m.[39m[34msetBalanceSwayAmplitude[39m([34m0.5[39m)[33m;[39m
-    [90m 98|[39m         [34mexpect[39m(mockState[33m.[39mtriggerAutoSave)[33m.[39m[34mtoHaveBeenCalled[39m()[33m;[39m
-
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/25]⎯[22m[39m
-
-[41m[1m FAIL [22m[49m src/__tests__/perception/balance-sway-pin.int.test.ts[2m > [22mpinPerception[2m > [22mpin 模型后焦点切换时 pinned 仍激活
-[31m[1mAssertionError[22m: expected "vi.fn()" to be called 1 times, but got 0 times[39m
-[36m [2m❯[22m src/__tests__/perception/balance-sway-pin.int.test.ts:[2m120:39[22m[39m
-    [90m118|[39m         [34mexpect[39m(sut[33m.[39m[34mgetPinnedModelIds[39m())[33m.[39m[34mtoContain[39m([32m'm1'[39m)[33m;[39m
-    [90m119|[39m         [90m// m1 pinned 后切换焦点到 m2，observer 保留运行（不注销再注册）[39m
-    [90m120|[39m         [34mexpect[39m(mockPipeline[33m.[39mregister)[33m.[39m[34mtoHaveBeenCalledTimes[39m([34m1[39m)[33m;[39m
-    [90m   |[39m                                       [31m^[39m
-    [90m121|[39m         [90m// m2 成为新焦点[39m
-    [90m122|[39m         expect(sut.getPerceptionStateFor('m2').breathEnabled).toBe(tru…
-
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/25]⎯[22m[39m
-
-[41m[1m FAIL [22m[49m src/__tests__/perception/claim-bones.int.test.ts[2m > [22mADR-163 claimBones[2m > [22ma) activatePerception 后感知层骨骼被正确认领
-[31m[1mAssertionError[22m: expected 0 to be greater than 0[39m
-[36m [2m❯[22m src/__tests__/perception/claim-bones.int.test.ts:[2m50:72[22m[39m
-    [90m 48|[39m         sut[33m.[39m[34mactivatePerception[39m([32m'm1'[39m)[33m;[39m
-    [90m 49|[39m         [35mconst[39m store [33m=[39m [35mawait[39m [34mgetStore[39m()[33m;[39m
-    [90m 50|[39m         expect(store.getOwnedBones('m1', 'perception.gaze.head').size)…
-    [90m   |[39m                                                                        [31m^[39m
-    [90m 51|[39m         expect(store.getOwnedBones('m1', 'perception.gaze.eye').size).…
-    [90m 52|[39m         expect(store.getOwnedBones('m1', 'perception.breath').size).to…
-
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/25]⎯[22m[39m
-
-[41m[1m FAIL [22m[49m src/__tests__/perception/claim-bones.int.test.ts[2m > [22mADR-163 claimBones[2m > [22mb) P1 抢占后感知层 ownedBones 不再包含被抢占骨骼
-[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
-
-[32m- Expected[39m
-[31m+ Received[39m
-
-[32m- true[39m
-[31m+ false[39m
-
-[36m [2m❯[22m src/__tests__/perception/claim-bones.int.test.ts:[2m65:33[22m[39m
-    [90m 63|[39m         [35mconst[39m store [33m=[39m [35mawait[39m [34mgetStore[39m()[33m;[39m
-    [90m 64|[39m         const before = store.getOwnedBones('m1', 'perception.gaze.head…
-    [90m 65|[39m         [34mexpect[39m(before[33m.[39m[34mhas[39m([32m'頭'[39m))[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
-    [90m   |[39m                                 [31m^[39m
-    [90m 66|[39m
-    [90m 67|[39m         [90m// P1 模块抢占 頭[39m
-
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/25]⎯[22m[39m
-
-[41m[1m FAIL [22m[49m src/__tests__/perception/claim-bones.int.test.ts[2m > [22mADR-163 claimBones[2m > [22mc) deactivatePerception 后 ownedBones 被释放
-[31m[1mAssertionError[22m: expected 0 to be greater than 0[39m
-[36m [2m❯[22m src/__tests__/perception/claim-bones.int.test.ts:[2m82:72[22m[39m
-    [90m 80|[39m
-    [90m 81|[39m         [35mconst[39m store [33m=[39m [35mawait[39m [34mgetStore[39m()[33m;[39m
-    [90m 82|[39m         expect(store.getOwnedBones('m1', 'perception.gaze.head').size)…
-    [90m   |[39m                                                                        [31m^[39m
-    [90m 83|[39m
-    [90m 84|[39m         sut[33m.[39m[34mdeactivatePerception[39m()[33m;[39m
-
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/25]⎯[22m[39m
-
-[41m[1m FAIL [22m[49m src/__tests__/perception/claim-bones.int.test.ts[2m > [22mADR-163 claimBones[2m > [22md) [doc:adr-166 P2-3] renderPerceptionConflictBanners 同屏并显焦点+pinned 冲突
-[31m[1mAssertionError[22m: expected 'motion.perceptionDegraded (3)\n⚠ perc…' to contain 'm1'[39m
-
-[32m- Expected[39m
-[31m+ Received[39m
-
-[32m- m[7m1[27m[39m
-[31m+ m[7motion.perceptionDegraded (3)[27m[39m
-[31m+ ⚠ perception.gaze.head: 頭←body-posture[39m
-[31m+ ⚠ perception.breath: 首←perception.gaze.head、頭←perception.gaze.head、head←perception.gaze.head、Head←perception.gaze.head[39m
-[31m+ ⚠ perception.balance.upper: 上半身2←perception.breath[39m
-
-[36m [2m❯[22m src/__tests__/perception/claim-bones.int.test.ts:[2m149:39[22m[39m
-    [90m147|[39m
-    [90m148|[39m         [90m// 多模型场景：焦点 + pinned 冲突均显示，且带 modelId 前缀区分归属[39m
-    [90m149|[39m         [34mexpect[39m(container[33m.[39mtextContent)[33m.[39m[34mtoContain[39m([32m'm1'[39m)[33m;[39m
-    [90m   |[39m                                       [31m^[39m
-    [90m150|[39m         [34mexpect[39m(container[33m.[39mtextContent)[33m.[39m[34mtoContain[39m([32m'm2'[39m)[33m;[39m
-    [90m151|[39m         expect(container.textContent).toContain('perception.gaze.head'…
-
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/25]⎯[22m[39m
-
-[41m[1m FAIL [22m[49m src/__tests__/perception/gaze.int.test.ts[2m > [22mgaze reset[2m > [22mdeactivatePerception 时调用 _resetGazeState
-[31m[1mAssertionError[22m: expected +0 to be 2 // Object.is equality[39m
-
-[32m- Expected[39m
-[31m+ Received[39m
-
-[32m- 2[39m
-[31m+ 0[39m
-
-[36m [2m❯[22m src/__tests__/perception/gaze.int.test.ts:[2m127:31[22m[39m
-    [90m125|[39m         [35mconst[39m afterDeactivate [33m=[39m sut[33m.[39m[34m_getGazeResetTick[39m()[33m;[39m
-    [90m126|[39m         // activatePerception 内部先调 deactivatePerception（+1），再直接调 _rese…
-    [90m127|[39m         [34mexpect[39m(afterActivate)[33m.[39m[34mtoBe[39m(before [33m+[39m [34m2[39m)[33m;[39m
-    [90m   |[39m                               [31m^[39m
-    [90m128|[39m         [34mexpect[39m(afterDeactivate)[33m.[39m[34mtoBe[39m(afterActivate [33m+[39m [34m1[39m)[33m;[39m
-    [90m129|[39m     })[33m;[39m
-
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/25]⎯[22m[39m
-
-[41m[1m FAIL [22m[49m src/__tests__/perception/lipsync.int.test.ts[2m > [22m_applyLipSync[2m > [22m开启且音频播放时写入 あ morph
-[31m[1mAssertionError[22m: expected 0 to be greater than 0[39m
-[36m [2m❯[22m src/__tests__/perception/lipsync.int.test.ts:[2m155:52[22m[39m
-    [90m153|[39m         sut[33m.[39m[34mactivatePerception[39m([32m'm1'[39m)[33m;[39m
-    [90m154|[39m         [34mtriggerLastObserver[39m()[33m;[39m
-    [90m155|[39m         [34mexpect[39m(mockMorphManager[33m.[39m[34mgetInfluence[39m([32m'あ'[39m))[33m.[39m[34mtoBeGreaterThan[39m([34m0[39m)[33m;[39m
-    [90m   |[39m                                                    [31m^[39m
-    [90m156|[39m     })[33m;[39m
-    [90m157|[39m
-
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/25]⎯[22m[39m
-
-[41m[1m FAIL [22m[49m src/__tests__/perception/lipsync.int.test.ts[2m > [22m_applyLipSync[2m > [22m关闭后 morph influence 归零（防残留）
-[31m[1mAssertionError[22m: expected 0 to be greater than 0[39m
-[36m [2m❯[22m src/__tests__/perception/lipsync.int.test.ts:[2m188:52[22m[39m
-    [90m186|[39m         sut[33m.[39m[34mactivatePerception[39m([32m'm1'[39m)[33m;[39m
-    [90m187|[39m         [34mtriggerLastObserver[39m()[33m;[39m
-    [90m188|[39m         [34mexpect[39m(mockMorphManager[33m.[39m[34mgetInfluence[39m([32m'あ'[39m))[33m.[39m[34mtoBeGreaterThan[39m([34m0[39m)[33m;[39m
-    [90m   |[39m                                                    [31m^[39m
-    [90m189|[39m         [90m// 关闭[39m
-    [90m190|[39m         sut[33m.[39m[34msetLipSyncEnabled[39m([35mfalse[39m)[33m;[39m
-
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/25]⎯[22m[39m
-
-[41m[1m FAIL [22m[49m src/__tests__/perception/micro-expression.int.test.ts[2m > [22m_applyMicroExpression[2m > [22mhappy 情绪周期性脉冲笑み morph
-[31m[1mAssertionError[22m: expected 0 to be greater than 0[39m
-[36m [2m❯[22m src/__tests__/perception/micro-expression.int.test.ts:[2m83:53[22m[39m
-    [90m 81|[39m         vi[33m.[39m[34mmocked[39m(performance[33m.[39mnow)[33m.[39m[34mmockReturnValue[39m([34m1000[39m)[33m;[39m
-    [90m 82|[39m         [34mtriggerLastObserver[39m()[33m;[39m
-    [90m 83|[39m         [34mexpect[39m(mockMorphManager[33m.[39m[34mgetInfluence[39m([32m'笑み'[39m))[33m.[39m[34mtoBeGreaterThan[39m([34m0[39m)[33m;[39m
-    [90m   |[39m                                                     [31m^[39m
-    [90m 84|[39m         expect(mockMorphManager.getInfluence('笑み')).toBeLessThanOrEqua…
-    [90m 85|[39m     })[33m;[39m
-
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/25]⎯[22m[39m
-
-[41m[1m FAIL [22m[49m src/__tests__/perception/micro-expression.int.test.ts[2m > [22m_applyMicroExpression[2m > [22m开启写入后关闭 → 旧 morph influence 归零（防冻结）
-[31m[1mAssertionError[22m: expected 0 to be greater than 0[39m
-[36m [2m❯[22m src/__tests__/perception/micro-expression.int.test.ts:[2m117:53[22m[39m
-    [90m115|[39m         vi[33m.[39m[34mmocked[39m(performance[33m.[39mnow)[33m.[39m[34mmockReturnValue[39m([34m1000[39m)[33m;[39m
-    [90m116|[39m         [34mtriggerLastObserver[39m()[33m;[39m
-    [90m117|[39m         [34mexpect[39m(mockMorphManager[33m.[39m[34mgetInfluence[39m([32m'笑み'[39m))[33m.[39m[34mtoBeGreaterThan[39m([34m0[39m)[33m;[39m
-    [90m   |[39m                                                     [31m^[39m
-    [90m118|[39m         [90m// 2. 关闭开关[39m
-    [90m119|[39m         sut[33m.[39m[34msetPerceptionState[39m({ microExpressionEnabled[33m:[39m [35mfalse[39m })[33m;[39m
-
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/25]⎯[22m[39m
-
-[41m[1m FAIL [22m[49m src/__tests__/perception/micro-expression.int.test.ts[2m > [22m_applyMicroExpression[2m > [22m切换情绪时旧 morph 归零（防串味）
-[31m[1mAssertionError[22m: expected 0 to be greater than 0[39m
-[36m [2m❯[22m src/__tests__/perception/micro-expression.int.test.ts:[2m134:53[22m[39m
-    [90m132|[39m         vi[33m.[39m[34mmocked[39m(performance[33m.[39mnow)[33m.[39m[34mmockReturnValue[39m([34m1000[39m)[33m;[39m
-    [90m133|[39m         [34mtriggerLastObserver[39m()[33m;[39m
-    [90m134|[39m         [34mexpect[39m(mockMorphManager[33m.[39m[34mgetInfluence[39m([32m'笑み'[39m))[33m.[39m[34mtoBeGreaterThan[39m([34m0[39m)[33m;[39m
-    [90m   |[39m                                                     [31m^[39m
-    [90m135|[39m         [90m// 2. 切换为 angry[39m
-    [90m136|[39m         sut[33m.[39m[34msetPerceptionState[39m({ emotion[33m:[39m [32m'angry'[39m })[33m;[39m
-
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/25]⎯[22m[39m
-
-[41m[1m FAIL [22m[49m src/__tests__/perception/micro-expression.int.test.ts[2m > [22m_applyMicroExpression[2m > [22m切换到 neutral 时旧 morph 归零
-[31m[1mAssertionError[22m: expected 0 to be greater than 0[39m
-[36m [2m❯[22m src/__tests__/perception/micro-expression.int.test.ts:[2m151:53[22m[39m
-    [90m149|[39m         vi[33m.[39m[34mmocked[39m(performance[33m.[39mnow)[33m.[39m[34mmockReturnValue[39m([34m1000[39m)[33m;[39m
-    [90m150|[39m         [34mtriggerLastObserver[39m()[33m;[39m
-    [90m151|[39m         [34mexpect[39m(mockMorphManager[33m.[39m[34mgetInfluence[39m([32m'笑み'[39m))[33m.[39m[34mtoBeGreaterThan[39m([34m0[39m)[33m;[39m
-    [90m   |[39m                                                     [31m^[39m
-    [90m152|[39m         [90m// 切换为 neutral[39m
-    [90m153|[39m         sut[33m.[39m[34msetPerceptionState[39m({ emotion[33m:[39m [32m'neutral'[39m })[33m;[39m
-
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/25]⎯[22m[39m
-
-[41m[1m FAIL [22m[49m src/__tests__/perception/multi-model.int.test.ts[2m > [22mADR-166 多模型隔离[2m > [22m3. 非感知模块释放骨骼时触发感知层自动 reclaim
-[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
-
-[32m- Expected[39m
-[31m+ Received[39m
-
-[32m- true[39m
-[31m+ false[39m
-
-[36m [2m❯[22m src/__tests__/perception/multi-model.int.test.ts:[2m99:76[22m[39m
-    [90m 97|[39m
-    [90m 98|[39m         [90m// 感知层应自动 reclaim → 重新拥有 頭[39m
-    [90m 99|[39m         expect(store.getOwnedBones('m1', 'perception.gaze.head').has('…
-    [90m   |[39m                                                                            [31m^[39m
-    [90m100|[39m     })[33m;[39m
-    [90m101|[39m })[33m;[39m
-
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/25]⎯[22m[39m
-
-[41m[1m FAIL [22m[49m src/__tests__/perception/perf-tier.int.test.ts[2m > [22mADR-164 enableAllPerception / disableAllPerception[2m > [22m3. enable→disable→enable toggle 后 lastOffsets 正确重置
-[31m[1mAssertionError[22m: expected undefined to be +0 // Object.is equality[39m
-
-[32m- Expected:[39m
-0
-
-[31m+ Received:[39m
-undefined
-
-[36m [2m❯[22m src/__tests__/perception/perf-tier.int.test.ts:[2m92:68[22m[39m
-    [90m 90|[39m         [90m// 第 1 步：激活 m1[39m
-    [90m 91|[39m         sut[33m.[39m[34mactivatePerception[39m([32m'm1'[39m)[33m;[39m
-    [90m 92|[39m         expect(sut.__testOnlyGetContext('m1')?.lastOffsets.breath).toB…
-    [90m   |[39m                                                                    [31m^[39m
-    [90m 93|[39m
-    [90m 94|[39m         [90m// 第 2 步：全员开启，m2 也激活[39m
-
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/25]⎯[22m[39m
-
-[41m[1m FAIL [22m[49m src/__tests__/perception/perf-tier.int.test.ts[2m > [22mADR-164 PerceptionPerfMonitor tier[2m > [22m6. 手动 tier=medium 时 gaze 每 2 帧一次、expression 每 4 帧一次
-[31m[1mAssertionError[22m: expected 0 to be greater than 0[39m
-[36m [2m❯[22m src/__tests__/perception/perf-tier.int.test.ts:[2m175:22[22m[39m
-    [90m173|[39m         [90m// 第 1 帧应为 0，第 4 帧应 >0[39m
-    [90m174|[39m         [34mexpect[39m(inf1)[33m.[39m[34mtoBe[39m([34m0[39m)[33m;[39m
-    [90m175|[39m         [34mexpect[39m(inf4)[33m.[39m[34mtoBeGreaterThan[39m([34m0[39m)[33m;[39m
-    [90m   |[39m                      [31m^[39m
-    [90m176|[39m         nowSpy[33m.[39m[34mmockRestore[39m()[33m;[39m
-    [90m177|[39m     })[33m;[39m
-
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/25]⎯[22m[39m
-
-[41m[1m FAIL [22m[49m src/__tests__/perception/state-lifecycle.int.test.ts[2m > [22msetBreathEnabled[2m > [22m调用 triggerAutoSave
-[31m[1mAssertionError[22m: expected "vi.fn()" to be called once, but got 0 times[39m
-[36m [2m❯[22m src/__tests__/perception/state-lifecycle.int.test.ts:[2m62:43[22m[39m
-    [90m 60|[39m     [34mit[39m([32m'调用 triggerAutoSave'[39m[33m,[39m () [33m=>[39m {
-    [90m 61|[39m         sut[33m.[39m[34msetBreathEnabled[39m([35mfalse[39m)[33m;[39m
-    [90m 62|[39m         [34mexpect[39m(mockState[33m.[39mtriggerAutoSave)[33m.[39m[34mtoHaveBeenCalledOnce[39m()[33m;[39m
-    [90m   |[39m                                           [31m^[39m
-    [90m 63|[39m     })[33m;[39m
-    [90m 64|[39m })[33m;[39m
-
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/25]⎯[22m[39m
-
-[41m[1m FAIL [22m[49m src/__tests__/perception/state-lifecycle.int.test.ts[2m > [22msetBlinkEnabled[2m > [22m调用 triggerAutoSave
-[31m[1mAssertionError[22m: expected "vi.fn()" to be called once, but got 0 times[39m
-[36m [2m❯[22m src/__tests__/perception/state-lifecycle.int.test.ts:[2m74:43[22m[39m
-    [90m 72|[39m     [34mit[39m([32m'调用 triggerAutoSave'[39m[33m,[39m () [33m=>[39m {
-    [90m 73|[39m         sut[33m.[39m[34msetBlinkEnabled[39m([35mfalse[39m)[33m;[39m
-    [90m 74|[39m         [34mexpect[39m(mockState[33m.[39mtriggerAutoSave)[33m.[39m[34mtoHaveBeenCalledOnce[39m()[33m;[39m
-    [90m   |[39m                                           [31m^[39m
-    [90m 75|[39m     })[33m;[39m
-    [90m 76|[39m })[33m;[39m
-
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/25]⎯[22m[39m
-
-[41m[1m FAIL [22m[49m src/__tests__/perception/state-lifecycle.int.test.ts[2m > [22msetHeadTrackingEnabled[2m > [22m调用 triggerAutoSave
-[31m[1mAssertionError[22m: expected "vi.fn()" to be called once, but got 0 times[39m
-[36m [2m❯[22m src/__tests__/perception/state-lifecycle.int.test.ts:[2m86:43[22m[39m
-    [90m 84|[39m     [34mit[39m([32m'调用 triggerAutoSave'[39m[33m,[39m () [33m=>[39m {
-    [90m 85|[39m         sut[33m.[39m[34msetHeadTrackingEnabled[39m([35mfalse[39m)[33m;[39m
-    [90m 86|[39m         [34mexpect[39m(mockState[33m.[39mtriggerAutoSave)[33m.[39m[34mtoHaveBeenCalledOnce[39m()[33m;[39m
-    [90m   |[39m                                           [31m^[39m
-    [90m 87|[39m     })[33m;[39m
-    [90m 88|[39m })[33m;[39m
-
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/25]⎯[22m[39m
-
-[41m[1m FAIL [22m[49m src/__tests__/perception/state-lifecycle.int.test.ts[2m > [22msetEyeTrackingEnabled[2m > [22m调用 triggerAutoSave
-[31m[1mAssertionError[22m: expected "vi.fn()" to be called once, but got 0 times[39m
-[36m [2m❯[22m src/__tests__/perception/state-lifecycle.int.test.ts:[2m98:43[22m[39m
-    [90m 96|[39m     [34mit[39m([32m'调用 triggerAutoSave'[39m[33m,[39m () [33m=>[39m {
-    [90m 97|[39m         sut[33m.[39m[34msetEyeTrackingEnabled[39m([35mfalse[39m)[33m;[39m
-    [90m 98|[39m         [34mexpect[39m(mockState[33m.[39mtriggerAutoSave)[33m.[39m[34mtoHaveBeenCalledOnce[39m()[33m;[39m
-    [90m   |[39m                                           [31m^[39m
-    [90m 99|[39m     })[33m;[39m
-    [90m100|[39m })[33m;[39m
-
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/25]⎯[22m[39m
-
-[41m[1m FAIL [22m[49m src/__tests__/perception/state-lifecycle.int.test.ts[2m > [22mactivatePerception[2m > [22m重复激活同一模型不重复注册
-[31m[1mAssertionError[22m: expected "vi.fn()" to be called once, but got 0 times[39m
-[36m [2m❯[22m src/__tests__/perception/state-lifecycle.int.test.ts:[2m155:39[22m[39m
-    [90m153|[39m         sut[33m.[39m[34mactivatePerception[39m()[33m;[39m
-    [90m154|[39m         sut[33m.[39m[34mactivatePerception[39m()[33m;[39m
-    [90m155|[39m         [34mexpect[39m(mockPipeline[33m.[39mregister)[33m.[39m[34mtoHaveBeenCalledOnce[39m()[33m;[39m
-    [90m   |[39m                                       [31m^[39m
-    [90m156|[39m     })[33m;[39m
-    [90m157|[39m
-
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/25]⎯[22m[39m
-
-[41m[1m FAIL [22m[49m src/__tests__/perception/state-lifecycle.int.test.ts[2m > [22mactivatePerception[2m > [22m切换模型时先注销旧 observer 再注册新 observer
-[31m[1mAssertionError[22m: expected "vi.fn()" to be called at least once[39m
-[36m [2m❯[22m src/__tests__/perception/state-lifecycle.int.test.ts:[2m165:41[22m[39m
-    [90m163|[39m         sut[33m.[39m[34mactivatePerception[39m()[33m;[39m
-    [90m164|[39m         sut[33m.[39m[34mactivatePerception[39m([32m'm2'[39m)[33m;[39m
-    [90m165|[39m         [34mexpect[39m(mockPipeline[33m.[39munregister)[33m.[39m[34mtoHaveBeenCalled[39m()[33m;[39m
-    [90m   |[39m                                         [31m^[39m
-    [90m166|[39m         [34mexpect[39m(mockPipeline[33m.[39mregister)[33m.[39m[34mtoHaveBeenCalledTimes[39m([34m2[39m)[33m;[39m
-    [90m167|[39m     })[33m;[39m
-
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/25]⎯[22m[39m
-
-[41m[1m FAIL [22m[49m src/__tests__/perception/state-lifecycle.int.test.ts[2m > [22mdeactivatePerception[2m > [22m注销 observer
-[31m[1mAssertionError[22m: expected "vi.fn()" to be called once, but got 0 times[39m
-[36m [2m❯[22m src/__tests__/perception/state-lifecycle.int.test.ts:[2m178:41[22m[39m
-    [90m176|[39m         sut[33m.[39m[34mactivatePerception[39m()[33m;[39m
-    [90m177|[39m         sut[33m.[39m[34mdeactivatePerception[39m()[33m;[39m
-    [90m178|[39m         [34mexpect[39m(mockPipeline[33m.[39munregister)[33m.[39m[34mtoHaveBeenCalledOnce[39m()[33m;[39m
-    [90m   |[39m                                         [31m^[39m
-    [90m179|[39m     })[33m;[39m
-    [90m180|[39m
-
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/25]⎯[22m[39m
-
-[41m[1m FAIL [22m[49m src/__tests__/perception/state-lifecycle.int.test.ts[2m > [22monPerceptionModelRemoved[2m > [22m移除当前感知模型时注销 observer
-[31m[1mAssertionError[22m: expected "vi.fn()" to be called once, but got 0 times[39m
-[36m [2m❯[22m src/__tests__/perception/state-lifecycle.int.test.ts:[2m194:41[22m[39m
-    [90m192|[39m         sut[33m.[39m[34mactivatePerception[39m()[33m;[39m
-    [90m193|[39m         sut[33m.[39m[34monPerceptionModelRemoved[39m([32m'm1'[39m)[33m;[39m
-    [90m194|[39m         [34mexpect[39m(mockPipeline[33m.[39munregister)[33m.[39m[34mtoHaveBeenCalledOnce[39m()[33m;[39m
-    [90m   |[39m                                         [31m^[39m
-    [90m195|[39m     })[33m;[39m
-    [90m196|[39m
-
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/25]⎯[22m[39m
-
-
-[2m Test Files [22m [1m[31m8 failed[39m[22m[2m | [22m[1m[32m2 passed[39m[22m[90m (10)[39m
-[2m      Tests [22m [1m[31m25 failed[39m[22m[2m | [22m[1m[32m93 passed[39m[22m[90m (118)[39m
-[2m   Start at [22m 17:22:20
-[2m   Duration [22m 4.10s[2m (transform 5.03s, setup 259ms, import 3.34s, tests 8.33s, environment 4.72s)[22m
-
-EXIT=1
+EXIT=0

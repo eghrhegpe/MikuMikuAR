@@ -508,6 +508,7 @@ export const zhCN: Record<string, string> = {
     'motion.boneOverride.weight': '权重',
     'motion.boneOverride.axisHint': 'P:俯仰 Y:偏航 R:翻滚 W:权重',
     'motion.boneOverride.clearAllConfirm': '确定清除所有骨骼覆盖？此操作可通过撤销恢复。',
+    'motion.clearAllConfirm': '确定要清除全部动作吗？此操作可通过撤销恢复。',
     'motion.boneOverride.exportHierarchy': '导出骨骼层级',
     'motion.boneOverride.exportCopied': '✓ 骨骼层级已复制到剪贴板',
     'motion.boneOverride.exportFailed': '✕ 导出失败：无可用模型或骨骼',
@@ -1766,6 +1767,8 @@ export const zhCN: Record<string, string> = {
         '确定要清除所有缩略图缓存吗？下次加载模型时将自动重新生成。',
     'settings.paths.clearAllConfirm':
         '确定要清除全部缓存吗？包括解压缓存、缩略图。下次加载模型时将自动重新生成，不影响原始素材。',
+    'settings.paths.clearExtractConfirm':
+        '确定要清理解压缓存吗？下次加载模型时将自动重新生成。',
 
     // shortcuts.* (ADR-059 Phase 3 — 快捷键注册表标签/分组/UI 文案)
     'shortcuts.label.models': '模型库',
@@ -1951,6 +1954,9 @@ export const zhCN: Record<string, string> = {
     'ai.actions.motion.loadAudio': '加载音频',
     'ai.actions.motion.loadVpd': '加载 VPD 姿势',
     'ai.actions.motion.openBinding': '打开动作绑定面板',
+    'ai.actions.motion.browseMusic': '浏览音频库',
+    'ai.actions.motion.browseSceneMotions': '浏览场景动作库',
+    'ai.actions.motion.openDetail': '打开动作详情',
     'ai.actions.settings.clearExtractCache': '清理解压缓存',
     'ai.actions.settings.clearThumbnail': '清理缩略图缓存',
     'ai.actions.settings.clearAllCache': '清理全部缓存',
