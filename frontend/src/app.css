@@ -3363,6 +3363,28 @@ textarea,
     white-space: pre-wrap;
 }
 
+/* 推理模型思考过程折叠区：弱化显示，与正式回答区分，可点击 summary 折叠/展开 */
+.diag-reasoning {
+    margin-bottom: calc(4px * var(--ui-scale));
+    border-left: calc(2px * var(--ui-scale)) solid var(--border);
+    padding-left: calc(6px * var(--ui-scale));
+}
+
+.diag-reasoning > summary {
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: var(--font-ui-xs);
+    user-select: none;
+}
+
+.diag-reasoning-body {
+    color: var(--text-muted);
+    font-size: var(--font-ui-sm);
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
 /* 等待响应占位气泡：弱化+脉冲呼吸，提示"AI 正在思考"（首个 chunk 到达即被覆盖） */
 .diag-chat-pending {
     color: var(--text-muted);

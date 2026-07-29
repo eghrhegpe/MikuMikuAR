@@ -187,10 +187,10 @@ class GoAiAdapter implements AiService {
 
         // @wailsio/runtime 的 On 回调收到 WailsEvent，实际数据在 ev.data（Go 端 Emit 的 map）。
         const unsubChunk = evt.On('ai:chunk', (ev) => {
-            const d = ev.data as { delta?: string } | undefined;
+            const d = ev.data as { delta?: string; reasoning?: string } | undefined;
             if (d?.delta) {
                 markFirstEvent('chunk');
-                queue.push({ type: 'text', content: d.delta });
+                queue.push({ type: 'text', content: d.delta, reasoning: d.reasoning === 'true' });
                 resolveWaiter?.();
             }
         });

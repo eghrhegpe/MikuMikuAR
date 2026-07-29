@@ -140,14 +140,31 @@ func TestStreamChat_EmptyFinishReasonNotDone(t *testing.T) {
 	}
 }
 
-// TestStreamChat_ReasoningEmitted 验证纯 reasoning 字段（无 content）也作为文本输出。
+// TestStreamChat_ReasoningEmitted 验证纯 reasoning 字段（无 content）也作为文本输出，
+// 且带 Reasoning=true 标志（供前端折叠展示）。
 func TestStreamChat_ReasoningEmitted(t *testing.T) {
-	lines := []string{
-		`data: {"choices":[{"index":0,"delta":{"reasoning":"思考"},"finish_reason":""}]}`,
-		`data: [DONE]`,
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = w.Write([]byte(`data: {"choices":[{"index":0,"delta":{"reasoning":"思考"},"finish_reason":""}]}` + "\n"))
+		_, _ = w.Write([]byte(`data: {"choices":[{"index":0,"delta":{"content":"答案"},"finish_reason":"stop"}]}` + "\n"))
+	}))
+	defer srv.Close()
+
+	c := NewClient(Config{BaseURL: srv.URL + "/v1/chat/completions", Model: "m"})
+	var reasoningText, contentText string
+	c.StreamChat(context.Background(), ChatRequest{Messages: []ChatMessage{{Role: "user", Content: "hi"}}}, func(ev StreamEvent) {
+		if ev.Type == "chunk" {
+			if ev.Reasoning {
+				reasoningText += ev.Delta
+			} else {
+				contentText += ev.Delta
+			}
+		}
+	})
+	if reasoningText != "思考" {
+		t.Errorf("reasoning 应标记 Reasoning=true，got reasoning=%q", reasoningText)
 	}
-	text, _ := collectStreamText(t, lines)
-	if text != "思考" {
-		t.Errorf("reasoning 应作为文本输出，got %q", text)
+	if contentText != "答案" {
+		t.Errorf("content 应标记 Reasoning=false，got content=%q", contentText)
 	}
 }
