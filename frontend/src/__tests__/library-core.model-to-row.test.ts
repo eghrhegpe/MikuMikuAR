@@ -105,13 +105,8 @@ describe('modelToRow', () => {
         });
     });
 
-    it('uses model comment as sublabel', () => {
+    it('does not set sublabel from comment (comment is shown in detail page)', () => {
         const row = modelToRow(makeModel({ comment: 'Miku model' }));
-        expect(row.sublabel).toBe('Miku model');
-    });
-
-    it('sets sublabel to undefined when comment is empty', () => {
-        const row = modelToRow(makeModel({ comment: '' }));
         expect(row.sublabel).toBeUndefined();
     });
 

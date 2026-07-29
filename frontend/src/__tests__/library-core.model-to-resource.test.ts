@@ -131,14 +131,13 @@ describe('modelToResourceItem', () => {
         });
         const item = modelToResourceItem(model);
         expect(item.label).toBe('a.pmx');
-        expect(item.sublabel).toBe('Cached comment');
     });
 
-    it('sets sublabel to undefined when both cached and model comment are empty', () => {
+    it('does not set sublabel from comment (comment is shown in detail page)', () => {
         const model = makeModel({
             file_path: '/test/a.pmx',
             dir: '/test',
-            comment: '',
+            comment: 'Some description',
         });
         const item = modelToResourceItem(model);
         expect(item.sublabel).toBeUndefined();

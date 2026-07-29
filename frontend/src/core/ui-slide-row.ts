@@ -160,7 +160,10 @@ export function slideRow(
             row.appendChild(arrowSpan);
         }
 
-        row.addEventListener('click', onClick);
+        row.addEventListener('click', () => {
+            if (window.getSelection()?.toString()) return;
+            onClick();
+        });
     } else {
         // 原始 slide-item 样式（无 toggle）
         const variant = extra?.variant ?? 'default';
@@ -240,7 +243,10 @@ export function slideRow(
             row.appendChild(arrowSpan);
         }
 
-        row.addEventListener('click', onClick);
+        row.addEventListener('click', () => {
+            if (window.getSelection()?.toString()) return;
+            onClick();
+        });
     }
 
     container.appendChild(row);

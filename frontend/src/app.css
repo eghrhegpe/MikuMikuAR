@@ -292,9 +292,6 @@ body {
     font-family: var(--font);
     /* 阻止浏览器默认手势（双指缩放/平移），全部交给 Babylon.js 处理 */
     touch-action: none;
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    user-select: none;
 }
 /* 输入框/文本区域恢复文字选中能力 */
 input,
@@ -314,6 +311,8 @@ textarea,
     height: 100%;
     display: block;
     touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
     /* 定位 + z-index:1 使透明 canvas 叠在 #arVideo(z-index:0) 之上。
        否则静态 canvas 会被定位的 video 覆盖，AR 模式下模型被相机画面完全遮挡。 */
     position: relative;
