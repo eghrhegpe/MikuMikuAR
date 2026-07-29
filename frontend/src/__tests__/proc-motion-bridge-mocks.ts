@@ -43,11 +43,12 @@ export function createProcMockState() {
 
         // --- beat-detector mock ---
         beatDetectorInst: {
+            _bpmQEnabled: false,
             getBPM: vi.fn(() => 0),
-            getBpmQuantizeEnabled: vi.fn(() => false),
+            getBpmQuantizeEnabled: vi.fn(),
             setBpmQuantizeEnabled: vi.fn(),
             dispose: vi.fn(),
-        },
+        } as any,
 
         // --- procedural-motion mocks (vi.fn 实例跨 resetModules 持久) ---
         generateIdleVmd: vi.fn(() => new ArrayBuffer(0)),
@@ -81,11 +82,13 @@ export function resetProcMockState(s: ReturnType<typeof createProcMockState>): v
     s.getActiveMotion.mockReturnValue(null);
 
     // beat-detector
+    s.beatDetectorInst._bpmQEnabled = false;
     s.beatDetectorInst.getBPM.mockReset();
     s.beatDetectorInst.getBPM.mockReturnValue(0);
     s.beatDetectorInst.getBpmQuantizeEnabled.mockReset();
-    s.beatDetectorInst.getBpmQuantizeEnabled.mockReturnValue(false);
+    s.beatDetectorInst.getBpmQuantizeEnabled.mockImplementation(() => s.beatDetectorInst._bpmQEnabled);
     s.beatDetectorInst.setBpmQuantizeEnabled.mockReset();
+    s.beatDetectorInst.setBpmQuantizeEnabled.mockImplementation((v: boolean) => { s.beatDetectorInst._bpmQEnabled = v; });
     s.beatDetectorInst.dispose.mockReset();
 
     // procedural-motion
@@ -140,9 +143,10 @@ export function mockVmdLayers() {
 type ProcMockState = ReturnType<typeof createProcMockState>;
 
 // perception — 3 个 void 函数，bridge 只调用不读返回值
+// 注意：真实 setGazeConfig 内部调用 triggerAutoSave，mock 须保持此行为
 export function mockPerception(s: ProcMockState) {
     return {
-        setGazeConfig: ((...args: any[]) => (s.setGazeConfig as any)(...args)) as any,
+        setGazeConfig: ((..._args: any[]) => { s.triggerAutoSave(); }) as any,
         onPerceptionModelRemoved: ((...args: any[]) => (s.onPerceptionModelRemoved as any)(...args)) as any,
         activatePerception: ((...args: any[]) => (s.activatePerception as any)(...args)) as any,
     };
