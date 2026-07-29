@@ -1,6 +1,6 @@
 import { registerAction } from '../action-registry';
 import { screenshotCurrent, screenshotBatch, saveScene } from '../../menus/scene-menu';
-import { popUndoSnapshot, restoreUndoSnapshot } from '../../scene/scene';
+import { popUndoSnapshot, restoreUndoSnapshot, modelManager } from '../../scene/scene';
 import { feedbackStatus, feedbackInfo } from '../feedback';
 
 export function registerSceneActions(): void {
@@ -57,6 +57,17 @@ export function registerSceneActions(): void {
             if (ok) {
                 feedbackInfo('scene.undoApplied', undefined);
             }
+        },
+    });
+    registerAction({
+        id: 'scene:list-models',
+        label: 'ai.actions.scene.listModels',
+        domain: 'scene',
+        params: [],
+        readonly: true,
+        execute: async () => {
+            const models = modelManager.getAll().map((m) => ({ id: m.id, name: m.name }));
+            return { data: { models, count: models.length } };
         },
     });
 }

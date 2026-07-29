@@ -1974,9 +1974,10 @@ export const en: Record<string, string> = {
     'ai.dialogue.speakToggle': 'Toggle dialogue voice',
     'ai.dialogue.roleSelect': 'Select character',
     'ai.system.control':
-        'You are a MikuMikuAR scene control assistant. Use the following tools to modify the scene as requested by the user.',
+        'You are a MikuMikuAR scene control assistant. Use tools to modify the scene. Before acting, call readonly tools (e.g. scene:list-models, library:list) to discover current state. Tools marked [只读，自动执行] are safe to call without user confirmation.',
     'ai.system.controlFormat':
-        'Respond with a JSON object: {"action": "tool_name", "params": {"param1": "value1"}}. Only use tools from the list above. If the user asks for something not supported, explain what you can do.',
+        'Call tools directly to complete the operation. If the user asks for something unsupported, briefly explain what you can do.',
+    'ai.system.catalogHeader': 'Available tools (only the following operations are supported):',
     'ai.actions.control.setLightIntensity': 'Set light intensity',
     'ai.actions.control.setLightColor': 'Set light color',
     'ai.actions.control.setCameraMode': 'Switch camera mode',
@@ -2020,6 +2021,7 @@ export const en: Record<string, string> = {
     'ai.actions.scene.screenshotBatch': 'Batch screenshot',
     'ai.actions.scene.save': 'Save scene preset',
     'ai.actions.scene.undo': 'Undo action',
+    'ai.actions.scene.listModels': 'List scene models',
     'ai.actions.env.bindParticleTexture': 'Bind particle texture',
     'ai.actions.env.bindSkyTexture': 'Bind sky texture',
     'ai.actions.env.bindStarsTexture': 'Bind stars texture',

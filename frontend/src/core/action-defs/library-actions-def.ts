@@ -23,6 +23,7 @@ export function registerLibraryActions(): void {
         domain: 'library',
         params: [],
         destructive: false,
+        uiOnly: true,
         execute: async () => {
             importFile();
         },

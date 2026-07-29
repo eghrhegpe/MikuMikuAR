@@ -183,7 +183,6 @@ export const ENV_STATE_SCHEMA = {
     waterWaveHeight: { type: 'number', default: 0.15, group: 'water' },
     bigWaveHeight: { type: 'number', default: 1.0, group: 'water' },
     smallWaveHeight: { type: 'number', default: 1.0, group: 'water' },
-    waterSize: { type: 'number', default: 200, group: 'water' },
     waterAnimSpeed: { type: 'number', default: 0.2, group: 'water' },
     planarReflectBlend: { type: 'number', default: 0.5, group: 'water' },
     reflectionQuality: {
@@ -213,8 +212,8 @@ export const ENV_STATE_SCHEMA = {
         default: [0.5, 0.52, 0.62] as [number, number, number],
         group: 'water',
     },
-    waterFogStart: { type: 'number', default: 80, group: 'water' },
-    waterFogEnd: { type: 'number', default: 500, group: 'water' },
+    waterFogStart: { type: 'number', default: 150, group: 'water' },
+    waterFogEnd: { type: 'number', default: 800, group: 'water' },
     waterFogOpacityInfluence: { type: 'number', default: 0, group: 'water' },
     waterHorizonFade: { type: 'number', default: 0.8, group: 'water' },
     waterSkyColorBlend: { type: 'number', default: 0.2, group: 'water' },

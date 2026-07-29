@@ -1,9 +1,7 @@
 import { registerAction } from '../action-registry';
 import { ClearExtractCache, ClearThumbnailCache, ClearAllCaches } from '../wails-bindings';
 import { feedbackInfo } from '../feedback';
-import { showConfirm } from '../dialog';
 import { selectResourceRoot, selectOverridePath } from '../../menus/library-core';
-import { t } from '../i18n/t';
 import { setLang, type LangCode } from '../i18n/locale';
 
 export function registerSettingsActions(): void {
@@ -14,11 +12,9 @@ export function registerSettingsActions(): void {
         params: [],
         destructive: true,
         execute: async () => {
-            if (await showConfirm(t('settings.paths.clearExtractConfirm'))) {
-                await ClearExtractCache();
-                feedbackInfo('settings.extractCacheCleared', undefined);
-                window.dispatchEvent(new CustomEvent('mmar:cache-cleared'));
-            }
+            await ClearExtractCache();
+            feedbackInfo('settings.extractCacheCleared', undefined);
+            window.dispatchEvent(new CustomEvent('mmar:cache-cleared'));
         },
     });
 
@@ -29,11 +25,9 @@ export function registerSettingsActions(): void {
         params: [],
         destructive: true,
         execute: async () => {
-            if (await showConfirm(t('settings.paths.clearThumbConfirm'))) {
-                await ClearThumbnailCache();
-                feedbackInfo('settings.thumbnailCacheCleared', undefined);
-                window.dispatchEvent(new CustomEvent('mmar:cache-cleared'));
-            }
+            await ClearThumbnailCache();
+            feedbackInfo('settings.thumbnailCacheCleared', undefined);
+            window.dispatchEvent(new CustomEvent('mmar:cache-cleared'));
         },
     });
 
@@ -44,11 +38,9 @@ export function registerSettingsActions(): void {
         params: [],
         destructive: true,
         execute: async () => {
-            if (await showConfirm(t('settings.paths.clearAllConfirm'))) {
-                await ClearAllCaches();
-                feedbackInfo('settings.allCacheCleared', undefined);
-                window.dispatchEvent(new CustomEvent('mmar:cache-cleared'));
-            }
+            await ClearAllCaches();
+            feedbackInfo('settings.allCacheCleared', undefined);
+            window.dispatchEvent(new CustomEvent('mmar:cache-cleared'));
         },
     });
 
@@ -58,6 +50,7 @@ export function registerSettingsActions(): void {
         domain: 'settings',
         params: [],
         destructive: false,
+        uiOnly: true,
         execute: async () => {
             await selectResourceRoot();
         },
@@ -69,6 +62,7 @@ export function registerSettingsActions(): void {
         domain: 'settings',
         params: [],
         destructive: false,
+        uiOnly: true,
         execute: async () => {
             await selectOverridePath('pmx');
         },
@@ -80,6 +74,7 @@ export function registerSettingsActions(): void {
         domain: 'settings',
         params: [],
         destructive: false,
+        uiOnly: true,
         execute: async () => {
             await selectOverridePath('vmd');
         },
@@ -91,6 +86,7 @@ export function registerSettingsActions(): void {
         domain: 'settings',
         params: [],
         destructive: false,
+        uiOnly: true,
         execute: async () => {
             await selectOverridePath('audio');
         },
@@ -102,6 +98,7 @@ export function registerSettingsActions(): void {
         domain: 'settings',
         params: [],
         destructive: false,
+        uiOnly: true,
         execute: async () => {
             await selectOverridePath('prop');
         },
@@ -113,6 +110,7 @@ export function registerSettingsActions(): void {
         domain: 'settings',
         params: [],
         destructive: false,
+        uiOnly: true,
         execute: async () => {
             await selectOverridePath('stage');
         },
@@ -124,6 +122,7 @@ export function registerSettingsActions(): void {
         domain: 'settings',
         params: [],
         destructive: false,
+        uiOnly: true,
         execute: async () => {
             await selectOverridePath('environment');
         },
@@ -135,6 +134,7 @@ export function registerSettingsActions(): void {
         domain: 'settings',
         params: [],
         destructive: false,
+        uiOnly: true,
         execute: async () => {
             await selectOverridePath('md_dress');
         },
@@ -146,6 +146,7 @@ export function registerSettingsActions(): void {
         domain: 'settings',
         params: [],
         destructive: false,
+        uiOnly: true,
         execute: async () => {
             await selectOverridePath('setting');
         },

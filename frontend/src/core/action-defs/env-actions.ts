@@ -8,6 +8,7 @@ export function registerEnvActions(): void {
         domain: 'env',
         params: [{ name: 'filePath', type: 'string' }],
         destructive: false,
+        uiOnly: true,
         execute: (p) => {
             setEnvState({ particleCustomTexture: p.filePath as string });
         },
@@ -18,6 +19,7 @@ export function registerEnvActions(): void {
         domain: 'env',
         params: [{ name: 'filePath', type: 'string' }],
         destructive: false,
+        uiOnly: true,
         execute: (p) => {
             setEnvState({ skyTexture: p.filePath as string });
         },
@@ -28,6 +30,7 @@ export function registerEnvActions(): void {
         domain: 'env',
         params: [{ name: 'filePath', type: 'string' }],
         destructive: false,
+        uiOnly: true,
         execute: (p) => {
             setEnvState({ starsTexture: p.filePath as string });
         },

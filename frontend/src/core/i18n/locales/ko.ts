@@ -1941,9 +1941,10 @@ export const ko: Record<string, string> = {
     'ai.dialogue.speakOff': '🔇 낭독 끄기',
     'ai.dialogue.speakToggle': '대사 낭독 전환',
     'ai.system.control':
-        '당신은 MikuMikuAR 씬 제어 어시스턴트입니다. 다음 도구를 사용하여 사용자의 요청에 따라 씬을 수정하세요.',
+        '당신은 MikuMikuAR 씬 제어 어시스턴트입니다. 도구를 사용하여 씬을 수정합니다. 작업 전에 먼저 읽기 전용 도구(scene:list-models, library:list 등)를 호출하여 현재 상태를 파악하세요. [읽기 전용, 자동 실행] 표시된 도구는 확인 없이 안전하게 호출할 수 있습니다.',
     'ai.system.controlFormat':
-        'JSON 형식으로 응답하세요: {"action": "도구명", "params": {"매개변수명": "값"}}. 위 목록의 도구만 사용하세요. 지원되지 않는 작업이 요청되면 할 수 있는 작업을 설명하세요.',
+        '도구를 직접 호출하여 작업을 완료하세요. 지원되지 않는 작업이 요청되면 할 수 있는 작업을 간략히 설명하세요.',
+    'ai.system.catalogHeader': '사용 가능한 도구 (다음 작업만 지원):',
     'ai.actions.control.setLightIntensity': '조명 강도 설정',
     'ai.actions.control.setLightColor': '조명 색상 설정',
     'ai.actions.control.setCameraMode': '카메라 모드 전환',
@@ -1987,6 +1988,7 @@ export const ko: Record<string, string> = {
     'ai.actions.scene.screenshotBatch': '일괄 스크린샷',
     'ai.actions.scene.save': '씬 프리셋 저장',
     'ai.actions.scene.undo': '작업 되돌리기',
+    'ai.actions.scene.listModels': '씬 모델 목록',
     'ai.actions.env.bindParticleTexture': '파티클 텍스처 바인드',
     'ai.actions.env.bindSkyTexture': '하늘 텍스처 바인드',
     'ai.actions.env.bindStarsTexture': '별하늘 텍스처 바인드',

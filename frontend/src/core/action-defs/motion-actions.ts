@@ -24,10 +24,19 @@ import { buildMotionDetailLevel } from '../../menus/motion-detail-ui';
 import { setProcMotionMode, regenerateProcMotion } from '../../scene/motion/proc-motion-bridge';
 import type { ProcMotionMode } from '../../motion-algos/procedural-motion';
 import { loadManager } from '../load-manager';
-import { loadVPDPose } from '../../scene/scene';
+import { loadVPDPose, modelManager } from '../../scene/scene';
 import { getAudioName } from '../../outfit/audio';
 import { t } from '../i18n/t';
 import { stackRegistry, getBrowseDir } from '../config';
+
+/** 按名称模糊搜索场景内已加载模型（供 entity resolve 消费）。 */
+async function findSceneModelByName(name: string): Promise<unknown> {
+    return (
+        modelManager.getAll().find((m) =>
+            m.name.toLowerCase().includes(name.toLowerCase())
+        ) ?? null
+    );
+}
 
 export function registerMotionActions(): void {
     registerAction({
@@ -76,6 +85,7 @@ export function registerMotionActions(): void {
         icon: 'lucide:upload',
         params: [],
         destructive: false,
+        uiOnly: true,
         execute: async () => {
             importExternalAnimation('mixamo');
         },
@@ -88,6 +98,7 @@ export function registerMotionActions(): void {
         icon: 'lucide:upload',
         params: [],
         destructive: false,
+        uiOnly: true,
         execute: async () => {
             importExternalAnimation('vrm');
         },
@@ -100,6 +111,7 @@ export function registerMotionActions(): void {
         icon: 'lucide:upload',
         params: [],
         destructive: false,
+        uiOnly: true,
         execute: async () => {
             importExternalAnimation('custom');
         },
@@ -110,7 +122,7 @@ export function registerMotionActions(): void {
         label: 'ai.actions.motion.model.pause',
         domain: 'motion',
         icon: 'lucide:play',
-        params: [{ name: 'modelId', type: 'entity' }],
+        params: [{ name: 'modelId', type: 'entity', resolve: findSceneModelByName }],
         destructive: false,
         execute: async (p) => {
             await handleModelAction('pause', p.modelId as string);
@@ -122,7 +134,7 @@ export function registerMotionActions(): void {
         label: 'ai.actions.motion.model.reset',
         domain: 'motion',
         icon: 'lucide:refresh-cw',
-        params: [{ name: 'modelId', type: 'entity' }],
+        params: [{ name: 'modelId', type: 'entity', resolve: findSceneModelByName }],
         destructive: true,
         execute: async (p) => {
             await handleModelAction('reset', p.modelId as string);
@@ -134,7 +146,7 @@ export function registerMotionActions(): void {
         label: 'ai.actions.motion.model.pose',
         domain: 'motion',
         icon: 'lucide:palette',
-        params: [{ name: 'modelId', type: 'entity' }],
+        params: [{ name: 'modelId', type: 'entity', resolve: findSceneModelByName }],
         destructive: false,
         execute: async (p) => {
             await handleModelAction('pose', p.modelId as string);
@@ -146,7 +158,7 @@ export function registerMotionActions(): void {
         label: 'ai.actions.motion.model.loop',
         domain: 'motion',
         icon: 'lucide:repeat',
-        params: [{ name: 'modelId', type: 'entity' }],
+        params: [{ name: 'modelId', type: 'entity', resolve: findSceneModelByName }],
         destructive: false,
         execute: async (p) => {
             await handleModelAction('loop', p.modelId as string);
@@ -181,6 +193,7 @@ export function registerMotionActions(): void {
         icon: 'lucide:video',
         params: [{ name: 'path', type: 'string' }],
         destructive: false,
+        uiOnly: true,
         execute: async (p) => {
             await loadManager.load({ kind: 'camera-vmd', path: p.path as string });
         },
@@ -196,6 +209,7 @@ export function registerMotionActions(): void {
             { name: 'name', type: 'string' },
         ],
         destructive: false,
+        uiOnly: true,
         execute: async (p) => {
             addSceneMotion({
                 vmdPath: p.path as string,
@@ -219,6 +233,7 @@ export function registerMotionActions(): void {
         icon: 'lucide:music',
         params: [{ name: 'path', type: 'string' }],
         destructive: false,
+        uiOnly: true,
         execute: async (p) => {
             loadManager.load({ kind: 'audio', path: p.path as string });
             showInfoToast(t('motion.musicLoaded', { name: getAudioName() }));
@@ -232,6 +247,7 @@ export function registerMotionActions(): void {
         icon: 'lucide:figma',
         params: [{ name: 'path', type: 'string' }],
         destructive: false,
+        uiOnly: true,
         execute: async (p) => {
             loadVPDPose(p.path as string);
         },
@@ -244,8 +260,9 @@ export function registerMotionActions(): void {
         label: 'ai.actions.motion.openBinding',
         domain: 'motion',
         icon: 'lucide:link',
-        params: [{ name: 'modelId', type: 'entity' }],
+        params: [{ name: 'modelId', type: 'entity', resolve: findSceneModelByName }],
         destructive: false,
+        uiOnly: true,
         execute: async (p) => {
             resetFocusedLayerId();
             const id = p.modelId as string;
@@ -262,6 +279,7 @@ export function registerMotionActions(): void {
         icon: 'lucide:library',
         params: [],
         destructive: false,
+        uiOnly: true,
         execute: async () => {
             const level = stackRegistry.buildLevel!(
                 getBrowseDir('audio'),
@@ -280,6 +298,7 @@ export function registerMotionActions(): void {
         icon: 'lucide:folder-open',
         params: [],
         destructive: false,
+        uiOnly: true,
         execute: async () => {
             resetFocusedLayerId();
             const level = stackRegistry.buildLevel!(
@@ -330,6 +349,7 @@ export function registerMotionActions(): void {
         icon: 'lucide:info',
         params: [{ name: 'sceneMotionId', type: 'string', optional: true }],
         destructive: false,
+        uiOnly: true,
         execute: async (p) => {
             const sceneMotionId = p.sceneMotionId as string | undefined;
             const lvl = buildMotionDetailLevel(sceneMotionId);
