@@ -465,8 +465,14 @@ function createListRow(
             font-size: var(--font-ui-sm);
             color: var(--text-dim);
             margin-left: 8px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex-shrink: 1;
+            min-width: 0;
         `;
         sub.textContent = item.sublabel;
+        sub.title = item.sublabel;
         label.appendChild(sub);
     }
 

@@ -343,13 +343,11 @@ function resolveModelLabel(m: LibraryModel, filenameFallback: string): string {
 }
 
 export function modelToRow(m: LibraryModel): PopupRow {
-    const cached = modelMetaCache.get(m.file_path);
     return {
         kind: 'model',
         label: resolveModelLabel(m, t('library.unknown')),
         icon: resolveModelIcon(m),
         target: m.file_path,
-        sublabel: cached?.comment || m.comment || undefined,
         model: m,
         editable: m.format === 'pmx',
         wrapLabel: true,
@@ -362,7 +360,6 @@ export function modelToRow(m: LibraryModel): PopupRow {
 
 export function modelToResourceItem(m: LibraryModel): ResourceItem {
     const fp = m.file_path || '';
-    const cached = modelMetaCache.get(fp);
     const isStage = isStageLike(m.type);
     return {
         id: fp,
@@ -372,7 +369,6 @@ export function modelToResourceItem(m: LibraryModel): ResourceItem {
         thumbAspect: isStage ? '16/9' : '2/3',
         icon: resolveModelIcon(m),
         isFolder: false,
-        sublabel: cached?.comment || m.comment || undefined,
         data: m,
     };
 }
