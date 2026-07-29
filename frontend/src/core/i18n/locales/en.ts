@@ -1894,6 +1894,7 @@ export const en: Record<string, string> = {
     'ai.chat.placeholder': 'Describe the issue or ask a question...',
     'ai.chat.send': 'Send',
     'ai.chat.stop': 'Stop',
+    'ai.chat.thinking': 'Thinking…',
     'ai.config.title': 'Configuration',
     'ai.config.endpoint': 'API Endpoint',
     'ai.config.apiKey': 'API Key',

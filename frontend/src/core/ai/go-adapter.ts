@@ -8,11 +8,18 @@ import type {
     AiErrorKind,
 } from './types';
 import { AI_ERROR_KINDS } from './types';
-import { events } from '../runtime-bridge';
 import { makeLazyLoader } from '../async';
 import { logInfo, logWarn } from '../logger';
 import type { LLMConfig } from '@bindings/mikumikuar/internal/app/models';
 import type { ChatRequest as LLMChatRequest } from '@bindings/mikumikuar/internal/app/llm/models';
+
+// 直接惰性加载 @wailsio/runtime 的 Events：Events.On 是纯静态函数（模块 import 即注册
+// 全局 dispatchWailsEvent），无需实例初始化。此前经 core/runtime-bridge 的 events Proxy
+// 订阅，因 WailsRuntimeBridge 惰性 _load 时序问题会静默回落到 no-op WebEvents，导致 Go
+// 后端事件（ai:chunk/done/error）全部收不到、流式永久超时。go-adapter 仅在桌面 go 模式
+// 加载，直接依赖 @wailsio/runtime 安全且可靠。
+const _getEvents = makeLazyLoader(async () => (await import('@wailsio/runtime')).Events);
+
 
 const _getB = makeLazyLoader(async () => import('@bindings/mikumikuar/internal/app/app'));
 
@@ -153,6 +160,7 @@ class GoAiAdapter implements AiService {
 
     async *streamChat(req: ChatRequest): AsyncIterable<ChatChunk> {
         const b = await _getB();
+        const evt = await _getEvents();
 
         const queue: ChatChunk[] = [];
         let done = false;
@@ -177,23 +185,24 @@ class GoAiAdapter implements AiService {
             }
         };
 
-        const unsubChunk = events.on('ai:chunk', (data: unknown) => {
-            const d = data as { delta?: string };
+        // @wailsio/runtime 的 On 回调收到 WailsEvent，实际数据在 ev.data（Go 端 Emit 的 map）。
+        const unsubChunk = evt.On('ai:chunk', (ev) => {
+            const d = ev.data as { delta?: string } | undefined;
             if (d?.delta) {
                 markFirstEvent('chunk');
                 queue.push({ type: 'text', content: d.delta });
                 resolveWaiter?.();
             }
         });
-        const unsubDone = events.on('ai:done', () => {
+        const unsubDone = evt.On('ai:done', () => {
             markFirstEvent('done');
             logInfo('ai-stream', `收到 done 总耗时=${Date.now() - t0}ms 事件数=${eventCount}`);
             done = true;
             streamActive = false;
             resolveWaiter?.();
         });
-        const unsubError = events.on('ai:error', (data: unknown) => {
-            const d = data as { error?: string };
+        const unsubError = evt.On('ai:error', (ev) => {
+            const d = ev.data as { error?: string } | undefined;
             markFirstEvent('error');
             err = d?.error ?? '未知错误';
             logWarn('ai-stream', `收到 error 事件 耗时=${Date.now() - t0}ms: ${err}`);
@@ -201,8 +210,8 @@ class GoAiAdapter implements AiService {
             streamActive = false;
             resolveWaiter?.();
         });
-        const unsubToolCall = events.on('ai:tool_call', (data: unknown) => {
-            const d = data as { toolName?: string; toolArgs?: string; toolId?: string };
+        const unsubToolCall = evt.On('ai:tool_call', (ev) => {
+            const d = ev.data as { toolName?: string; toolArgs?: string; toolId?: string } | undefined;
             if (d?.toolName) {
                 markFirstEvent('tool_call');
                 queue.push({

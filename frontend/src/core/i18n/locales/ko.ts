@@ -1873,6 +1873,7 @@ export const ko: Record<string, string> = {
     'ai.chat.placeholder': '문제 설명 또는 질문 입력...',
     'ai.chat.send': '전송',
     'ai.chat.stop': '중지',
+    'ai.chat.thinking': '생각 중…',
     'ai.config.title': '설정',
     'ai.config.endpoint': 'API 엔드포인트',
     'ai.config.apiKey': 'API 키',

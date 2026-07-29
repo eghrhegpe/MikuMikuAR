@@ -1841,6 +1841,7 @@ export const zhTW: Record<string, string> = {
     'ai.chat.placeholder': '描述問題或提問...',
     'ai.chat.send': '發送',
     'ai.chat.stop': '停止',
+    'ai.chat.thinking': '思考中…',
     'ai.config.title': '配置',
     'ai.config.endpoint': 'API 端點',
     'ai.config.apiKey': 'API 金鑰',

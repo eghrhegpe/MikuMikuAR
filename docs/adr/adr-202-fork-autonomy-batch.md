@@ -78,7 +78,7 @@
 | **9** | `StreamAudioPlayer._audio` 私有反射 | TS `build-esm`（纯 JS 类，非 wasm） | ⚠️ 加 `get audio()` 即可 | **P2（搭车）** |
 | **14** | `setRuntimeAnimation` 不重置时钟 | TS `build-esm` | 🟡 reset 时钟根治，但本地 `seekAnimation(0)` 已稳 | **P3（可选）** |
 | **17** | 无 `onFinish`，用 `onPause` 代替 | TS `build-esm` | 🟡 加 `onFinishObservable`，但 `onPause` 兜底已稳 | **P3（可选）** |
-| **13** | WASM 模式 `ikSolver = null`，自建 2-bone IK | — | ❌ 逆上游设计（§153-155 数据竞争），本地方案已完全独立稳定 | **不碰** |
+| **13** | WASM 模式 `ikSolver = null`，骨骼覆盖后无法重解 IK | `build-wasm-spr/mpr` + `build-esm` | ✅ 已落地（A-class）：fork 暴露 `mmdModelSolveIk` 导出，app 经 `ikSolverIndex` 回退重解，比自建 2-bone IK 更根治 | **已完成（见 §五）** |
 | **15** | `VmdLoader` 无 `dispose()` | — | 🟢 无状态需释放，非缺陷 | **忽略** |
 
 ### C 类 — 构建/副作用/知识（与源码改动无关）
@@ -125,5 +125,6 @@
 | 2 | CI 干净验证 | ✅ | 完整 `npm ci`（清残留 node/esbuild 僵尸后重跑）已坐实：postinstall 自动注入 spr/mpr，`vendored-patch.test.ts` 3 断言钉结实 patch 生效（含负向验证） |
 | 3 | P2 搭车（条目9 audio） | ✅ | fork `0b54302`（`get audio()`）+ app 4 文件（postinstall patch / mmd-adapter / 两个测试 mock）+ 守护测试；2400 单测全绿 |
 | 4 | P2 搭车（D 类，ADR-192 审核补遗） | 🟡 fork 已储备 / app 暂缓 | **`isDisposed` 守卫**：fork 侧 getter 已加（技术储备）；app 暂不 patch——virtual-skirt/ground-collision 已通过返回 false 降级，无反射 `isDisposed` 的代码，patch 进去是死代码，等将来 setup 前需主动探测 disposed 时再扩展 postinstall。**"失败抛异常"**：经评估不适用——app 已降级，fork 改抛异常反而破坏 app 的降级契约，不做。 |
+| 4b | A-class：WASM 骨骼覆盖后 IK 重解（条目 13） | ✅ | 全链路：fork `7edf759`（`MmdModel::solve_ik` → wasm-bindgen `mmdModelSolveIk`）+ 重编 spr/mpr（导出已核实四处 True）+ vendor 同步注入 + app 6 处补丁（`solveIkNative` / bone-override 4 处 / scene.ts resolver 注入）。**与本地 `TwoBoneIKSolver` 共存**：后者仍服务 feet-adjustment；本项补的是 bone-override 覆盖后重解**原生 IK 链**这块缺口。tsc 0 错、2417 单测全绿。 |
 | 5 | `MODEL_WIND_FORCE_SCALE` 标定 | 🟢 待真机 | 风力已起效，按实测摆幅调系数 |
 | 6 | vendor/fork 漂移防护 | 🟡 待探明 | fork 每次改 wasm 后必须重拷 vendor，否则两者静默不一致；`vendored-patch.test.ts` 已部分缓解（锚点漂移会报红） |

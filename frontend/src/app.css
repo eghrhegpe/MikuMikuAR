@@ -3358,6 +3358,26 @@ textarea,
     color: var(--text);
     word-break: break-word;
     line-height: 1.4;
+    /* 保留 AI 回复里的换行/空行（textContent 里的 \n）：默认 white-space:normal 会把
+       换行折叠成空格，导致多段内容挤成一行。pre-wrap 保留换行同时正常自动折行。 */
+    white-space: pre-wrap;
+}
+
+/* 等待响应占位气泡：弱化+脉冲呼吸，提示"AI 正在思考"（首个 chunk 到达即被覆盖） */
+.diag-chat-pending {
+    color: var(--text-muted);
+    font-style: italic;
+    animation: diag-pending-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes diag-pending-pulse {
+    0%,
+    100% {
+        opacity: 0.45;
+    }
+    50% {
+        opacity: 1;
+    }
 }
 
 /* [doc:adr-156] 台词模式：情绪对白卡片 */
