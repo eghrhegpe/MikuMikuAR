@@ -7,6 +7,21 @@ scope:
 source_files:
   - frontend/src/scene/scene.ts
 adr: []
+symbols:
+  - initScene
+  - disposeScene
+  - getScene
+  - applyFrameControl
+invariants:
+  - initScene 是场景唯一初始化入口，按固定顺序装配 env/motion/camera/physics/render 各子系统
+  - disposeScene 负责级联释放各子系统；HMR 时调用 _reinitSceneForHMR 重建
+  - MMD 运行时初始化含原生描边补丁 + SdefInjector 球面变形改写 engine.createEffect
+  - WASM 物理运行时 SPR/MPR 由 VITE_MMD_WASM_MT 编译时标记决定
+tests: []
+use_when:
+  - 场景初始化
+  - 场景编排
+  - 场景生命周期
 ---
 
 ## 系统概览

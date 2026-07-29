@@ -8,6 +8,23 @@ source_files:
   - frontend/src/core/reactivity.ts
 adr:
   - ADR-106
+symbols:
+  - scheduleRefresh
+  - subscribe
+  - unsubscribeAll
+  - reactive
+  - readonly
+invariants:
+  - Proxy 不代理数组/Map/Set，写入 tuple3 必须整体替换（不依赖内部索引赋值触发刷新）
+  - set 拦截做同值短路（Object.is），避免无意义刷新（P3 防御）
+  - scheduleRefresh 使用 requestAnimationFrame 去抖，同帧多次调用只触发一次
+  - unsubscribeAll 供 initScene 重入（HMR）时清理所有订阅者
+tests: []
+use_when:
+  - 响应式系统
+  - Proxy 刷新
+  - 状态订阅
+  - scheduleRefresh
 ---
 
 ## 系统概览

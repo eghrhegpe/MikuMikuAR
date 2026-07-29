@@ -6,6 +6,21 @@ scope:
   - frontend/src/scene/manager/model-manager.ts
 source_files:
   - frontend/src/scene/manager/model-manager.ts
+symbols:
+  - ModelManager
+  - getFormationLabels
+invariants:
+  - 模型状态完全封装，外部只能经 ModelManager 方法访问，不直接读写 modelRegistry
+  - 物理分类规则 PHYSICS_CAT_RULES（skirt/chest/hair/accessory 多语言关键词），可被 uiState.physicsCategoryMap 覆盖
+  - 不直接 import triggerAutoSave / scene.ts → 经构造函数注入回调，防循环依赖
+  - dispose 级联释放所有模型实例、骨骼覆盖 observer、清除 VMD 数据
+tests: []
+use_when:
+  - 模型注册表
+  - 模型生命周期
+  - 模型属性
+  - 骨骼覆盖
+  - 物理分类
 ---
 
 ## 系统概览

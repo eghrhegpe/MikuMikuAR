@@ -7,6 +7,31 @@ scope:
 source_files:
   - frontend/src/scene/scene-serialize.ts
 adr: []
+symbols:
+  - serializeScene
+  - deserializeScene
+  - saveSceneImmediate
+  - tryRestoreLastScene
+  - triggerAutoSaveImpl
+  - setSuppressAutoSave
+  - pushUndoSnapshot
+  - popUndoSnapshot
+  - restoreUndoSnapshot
+  - canUndo
+  - offerSceneUndo
+  - offerSceneUndoAndRefresh
+  - resolvePathFromRef
+invariants:
+  - 自动保存防抖由 scene.ts 的 viewMatrix observer/change observer 触发 scheduleAutoSave
+  - undo/redo 使用栈式快照（pushUndoSnapshot → popUndoSnapshot），栈满丢弃最旧
+  - deserializeScene 调用 scene-migrate 处理旧档格式迁移
+  - tryRestoreLastScene 在启动时经 Go 后端 LoadLastScene 恢复上次关闭场景
+tests: []
+use_when:
+  - 场景序列化
+  - 场景保存
+  - 场景恢复
+  - 撤销/重做
 ---
 
 ## 系统概览

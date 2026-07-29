@@ -6,6 +6,40 @@ scope:
   - frontend/src/scene/manager/model-ops.ts
 source_files:
   - frontend/src/scene/manager/model-ops.ts
+symbols:
+  - removeModel
+  - removeFocusedModel
+  - focusModel
+  - focusedModel
+  - focusedMmdModel
+  - arrangeModels
+  - setModelFormation
+  - setModelVisibility
+  - setModelOpacity
+  - setModelWireframe
+  - setModelPhysics
+  - setModelScaling
+  - setModelRotation
+  - setModelPosition
+  - resetModelTransform
+  - stopVMD
+  - getModelMorphs
+  - setModelMorphWeight
+  - applyVPDPose
+  - captureInheritedState
+  - applyInheritedState
+invariants:
+  - removeModel 删除后刷新水面渲染列表；模型清空时复位播放态（setIsPlaying(false) / setAutoLoop(true)）
+  - 最后一个模型移除且处于 concert 模式时退回 orbit
+  - 模型清空时强制复位播放态，避免「无模型仍显示播放条」的幽灵 UI
+  - applyVPDPose 解析 VPDBoneData / VPDMorphData 后写回模型姿态
+  - captureInheritedState / applyInheritedState 用于场景打包时继承模型状态
+tests: []
+use_when:
+  - 删除模型
+  - 聚焦模型
+  - 模型变换（位置/旋转/缩放）
+  - VPD 姿态应用
 ---
 
 ## 系统概览

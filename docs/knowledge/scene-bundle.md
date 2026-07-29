@@ -8,6 +8,19 @@ source_files:
   - frontend/src/scene/scene-bundle.ts
 adr:
   - ADR-037
+symbols:
+  - exportSceneBundle
+  - importSceneBundle
+  - collectSceneAssets
+invariants:
+  - collectSceneAssets 收集模型/VMD/相机VMD/道具引用资源的绝对路径并去重
+  - 打包时调用 Go 后端 BundleScene/SelectBundleSaveFile；解包调用 ExtractZip/SelectSceneOpenFile/LoadSceneFile
+  - libraryRef 在打包/解包时重写以适配目标机器路径
+tests: []
+use_when:
+  - 场景打包
+  - 场景解包
+  - 资产收集
 ---
 
 ## 系统概览
