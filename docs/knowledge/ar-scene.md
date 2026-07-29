@@ -8,6 +8,19 @@ source_files:
   - frontend/src/scene/ar/ar-scene.ts
 adr:
   - ADR-055
+symbols:
+  - setARMode
+  - takeARScreenshot
+  - isARModeActive
+invariants:
+  - 进入 AR 保存原清屏色、隐藏天空、挂起反射、激活视线追踪
+  - 退出 AR 恢复清屏色、天空可见性、视线追踪原状态（_prevGazeState）
+  - 接触阴影 mesh 退出 AR 时经 safeDispose 释放
+tests: []
+use_when:
+  - AR 模式协调
+  - 接触阴影
+  - AR 截图
 ---
 
 ## 系统概览

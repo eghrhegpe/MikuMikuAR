@@ -6,6 +6,19 @@ scope:
   - frontend/src/scene/pose/camera-angle.ts
 source_files:
   - frontend/src/scene/pose/camera-angle.ts
+symbols:
+  - CameraAnglePreset
+  - applyCameraPreset
+  - presetCameraAlpha
+  - getAllPresets
+invariants:
+  - 预设方位角相对模型朝向（FRONT_BASE_RAD = -π/2），再减去模型当前偏航
+  - 切换经 setOrbitParams 驱动相机
+tests: []
+use_when:
+  - 相机角度预设
+  - 多角度截图
+  - Pose Studio
 ---
 
 ## 系统概览

@@ -8,6 +8,19 @@ source_files:
   - frontend/src/scene/ar/ar-webxr-probe.ts
 adr:
   - ADR-072
+symbols:
+  - probeWebXR
+  - probeWebXRFeatures
+  - formatProbeReport
+  - resetProbeCache
+invariants:
+  - 探测结果缓存，resetProbeCache 可重置
+  - 按平台 + session 支持检查 + 特性探测三级进行
+tests: []
+use_when:
+  - WebXR
+  - AR 能力探测
+  - 平台检测
 ---
 
 ## 系统概览

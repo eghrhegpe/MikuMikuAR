@@ -7,6 +7,19 @@ scope:
 source_files:
   - frontend/src/scene/env/accessory.ts
 adr: []
+symbols:
+  - attachPropToBone
+  - detachPropFromBone
+  - reattachAllAccessories
+  - detachModelAccessories
+invariants:
+  - 利用 Babylon.js 原生 attachToBone 实现
+  - detachModelAccessories 在 destroyMmdModel 之后调用，不访问已销毁的模型实例
+tests: []
+use_when:
+  - 道具骨骼锚定
+  - 骨骼附着
+  - 配件挂载
 ---
 
 ## 系统概览

@@ -7,6 +7,20 @@ scope:
 source_files:
   - frontend/src/menus/motion-detail-ui.ts
 adr: []
+symbols:
+  - buildLayerLevel
+  - buildMotionDetailLevel
+  - buildMotionToolsLevel
+  - buildPlaybackSpeedLevel
+  - syncPlaybackSpeedToRuntime
+invariants:
+  - 依赖 motion-intent 获取场景动作列表
+  - Schema 驱动 UI，经声明式 MenuNode 构建
+tests: []
+use_when:
+  - 动作详情
+  - 图层管理
+  - 播放速度
 ---
 
 ## 系统概览
