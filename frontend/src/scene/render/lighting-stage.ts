@@ -384,7 +384,7 @@ export function loadStageLights(states: StageLightState[]): void {
         _registerStageLight(migrated.id, entry);
         const m = migrated.id.match(/light-(\d+)/);
         if (m) {
-            maxNum = Math.max(maxNum, parseInt(m[1]));
+            maxNum = Math.max(maxNum, parseInt(m[1], 10));
         }
     }
     lightingState.stageLightCounter = maxNum;

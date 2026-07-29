@@ -19,7 +19,7 @@ const _envPersistTimer = new DebouncedTimer();
  * 上抛错误——调用方（防抖回调/flush）负责 catch + setStatus 提示。 */
 export async function persistEnvState(payload: UIState | Record<string, unknown>): Promise<void> {
     const backend = await resolveBackend();
-    await backend.SetEnvState(payload as any);
+    await backend.SetEnvState(payload as unknown as Parameters<typeof backend.SetEnvState>[0]);
 }
 
 /** 立即刷写 env state 到后端（无防抖）。关闭/隐藏页面时调用。

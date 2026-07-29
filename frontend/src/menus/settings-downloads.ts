@@ -4,6 +4,7 @@
 
 import { cardContainer } from '../core/config';
 import { addSectionTitle, slideRow } from '../core/ui-helpers';
+import { showConfirm } from '../core/dialog';
 import { t } from '../core/i18n/t';
 import {
     ImportZip,
@@ -140,7 +141,7 @@ async function runDownloadManagerWeb(
     }
 
     // [doc:adr-195] 决策 1：扫描前预览——确认将导入 N 个文件（不自动加载到场景）
-    if (!confirm(t('downloads.scanConfirm', { count: files.length }))) {
+    if (!(await showConfirm(t('downloads.scanConfirm', { count: files.length })))) {
         onProgress(t('downloads.canceled'));
         getSettingsMenu()?.updateControls();
         return;
@@ -235,7 +236,7 @@ async function runDownloadManagerLocal(
         return;
     }
 
-    if (!confirm(t('downloads.scanConfirm', { count: files.length }))) {
+    if (!(await showConfirm(t('downloads.scanConfirm', { count: files.length })))) {
         onProgress(t('downloads.canceled'));
         getSettingsMenu()?.updateControls();
         return;
@@ -282,7 +283,7 @@ async function clearImported(
     getSettingsMenu: () => SettingsMenuHandle,
     onDone: () => void
 ): Promise<void> {
-    if (!confirm(t('downloads.clearConfirm'))) {
+    if (!(await showConfirm(t('downloads.clearConfirm')))) {
         return;
     }
 
