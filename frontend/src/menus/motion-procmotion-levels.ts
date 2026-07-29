@@ -2,7 +2,7 @@
 // 从 scene-menu.ts 拆分
 
 import { cardContainer, modelRegistry } from '../core/config';
-import type { PopupLevel } from '../core/config';
+import type { PopupLevel, PopupRow } from '../core/config';
 import { addSliderRow, addToggleRow, addModeSlider, addSectionTitle } from '../core/ui-helpers';
 import {
     setProcMotionMode,
@@ -19,6 +19,14 @@ import { DEFAULT_PROC_STATE } from '../motion-algos/procedural-motion';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
+import {
+    getAllLoadableProcMotions,
+    getLoadedProceduralMotions,
+    loadProceduralMotion,
+    unloadProceduralMotion,
+} from '../scene/motion/motion-intent';
+import type { LoadableProcId } from '../scene/motion/motion-intent';
+import { getMotionMenu } from './motion-popup';
 
 // [doc:adr-059] 骨骼微动类别 → i18n key（模块级，运行时 t() 支持热切换）
 const BONE_LABEL_KEYS: Record<string, string> = {
@@ -299,4 +307,65 @@ export function buildProcMotionLevel(modelId?: string): PopupLevel {
             return renderMenu(buildProcMotionSchema(modelId), container);
         },
     };
+}
+
+// ═══════════════════════════════════════════════════════════
+// [doc:adr-207] 程序化动作库子页（加载/卸载）
+// ═══════════════════════════════════════════════════════════
+
+const PROC_LABELS: Record<LoadableProcId, () => string> = {
+    none: () => t('motion.proc.none'),
+    idle: () => t('motion.modeIdle'),
+    autodance: () => t('motion.modeAutodance'),
+};
+
+export function buildProcLibraryLevel(): PopupLevel {
+    return {
+        label: t('motion.procMotion'),
+        dir: '',
+        items: [],
+        itemBuilder: () => _buildProcLibraryItems(),
+    };
+}
+
+function _buildProcLibraryItems(): PopupRow[] {
+    const items: PopupRow[] = [];
+    const loaded = getLoadedProceduralMotions();
+    for (const procId of getAllLoadableProcMotions()) {
+        const isLoaded = loaded.has(procId);
+        const isNone = procId === 'none';
+        items.push({
+            kind: 'action',
+            label: PROC_LABELS[procId](),
+            icon: isNone ? 'lucide:circle-slash' : 'lucide:wand-sparkles',
+            target: '',
+            sublabel: isLoaded
+                ? isNone
+                    ? t('motion.proc.alwaysLoaded')
+                    : undefined
+                : undefined,
+            rowKey: `proc-lib:${procId}:${isLoaded ? 'on' : 'off'}`,
+            trailing: isLoaded
+                ? isNone
+                    ? undefined // 'none' 不可卸载
+                    : {
+                          icon: 'lucide:minus-circle',
+                          title: t('motion.proc.unload'),
+                          danger: true,
+                          onClick: () => {
+                              unloadProceduralMotion(procId);
+                              getMotionMenu()?.reRender();
+                          },
+                      }
+                : {
+                      icon: 'lucide:plus-circle',
+                      title: t('motion.proc.load'),
+                      onClick: () => {
+                          loadProceduralMotion(procId);
+                          getMotionMenu()?.reRender();
+                      },
+                  },
+        });
+    }
+    return items;
 }

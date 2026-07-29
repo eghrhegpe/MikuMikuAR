@@ -309,6 +309,11 @@ export const zhCN: Record<string, string> = {
     'motion.section.loadedProc': '已加载程序化动作',
     'motion.section.library': '动作库',
     'motion.section.more': '更多',
+    // [doc:adr-207] 程序化动作可加载化
+    'motion.proc.none': '无动作',
+    'motion.proc.load': '加载',
+    'motion.proc.unload': '卸载',
+    'motion.proc.alwaysLoaded': '系统保底，不可卸载',
     'motion.undoApplied': '✓ 已撤销',
     'motion.undo.appliedPreset': '撤销：应用预设「{name}」',
     'motion.music': '音乐',

@@ -65,7 +65,9 @@ import {
     getMotionGen,
     getSceneMotions,
     getActiveMotionId,
+    getLoadedProceduralMotions,
 } from '../scene/motion/motion-intent';
+import type { LoadableProcId } from '../scene/motion/motion-intent';
 import { applyIntentToModel } from './motion-popup';
 import {
     regenerateProcMotion,
@@ -471,63 +473,55 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
                     }
                 }
 
-                // ── [doc:adr-207] Section 2: 已加载程序化动作 ──
+                // ── [doc:adr-207] Section 2: 已加载程序化动作（集合驱动） ──
                 const slots0 = _ensureMotionSlots(inst);
                 addSectionTitle(c, t('motion.section.loadedProc'));
-
-                // 待机呼吸
-                const isIdleActive =
-                    slots0.primary.source === 'procedural' && slots0.primary.procRole === 'idle';
-                const idleRow = slideRow(
-                    c,
-                    'lucide:wand-sparkles',
-                    t('motion.modeIdle'),
-                    true,
-                    () => {
-                        _setProcForModel(id, inst, 'idle');
-                        stackRegistry.modelStack?.reRender();
-                    },
-                    isIdleActive ? t('model-detail.procActive') : undefined
-                );
-                if (!isIdleActive) {
-                    addPresetChip(
-                        idleRow,
-                        t('model-detail.procEdit'),
-                        false,
-                        () => {
-                            _setProcForModel(id, inst, 'idle');
-                            stackRegistry.modelStack?.push(buildProcMotionLevel(id));
-                        },
-                        { marginLeft: 'auto', stopPropagation: true }
-                    );
-                }
-
-                // 自动舞蹈
-                const isAutodanceActive =
-                    slots0.primary.source === 'procedural' &&
-                    slots0.primary.procRole === 'autodance';
-                const autodanceRow = slideRow(
-                    c,
-                    'lucide:wand-sparkles',
-                    t('motion.modeAutodance'),
-                    true,
-                    () => {
-                        _setProcForModel(id, inst, 'autodance');
-                        stackRegistry.modelStack?.reRender();
-                    },
-                    isAutodanceActive ? t('model-detail.procActive') : undefined
-                );
-                if (!isAutodanceActive) {
-                    addPresetChip(
-                        autodanceRow,
-                        t('model-detail.procEdit'),
-                        false,
-                        () => {
-                            _setProcForModel(id, inst, 'autodance');
-                            stackRegistry.modelStack?.push(buildProcMotionLevel(id));
-                        },
-                        { marginLeft: 'auto', stopPropagation: true }
-                    );
+                const loadedProc = getLoadedProceduralMotions();
+                for (const procId of loadedProc) {
+                    if (procId === 'none') {
+                        // “无动作”= 取消程序化，回到 inherit
+                        const isNoneActive = slots0.primary.source === 'inherit' && !slots0.primary.sceneMotionId;
+                        slideRow(
+                            c,
+                            'lucide:circle-slash',
+                            t('motion.proc.none'),
+                            true,
+                            () => {
+                                const slots = _ensureMotionSlots(inst);
+                                slots.primary = { source: 'inherit', status: 'idle' };
+                                applyIntentToModel(id, getActiveMotion(), getMotionGen());
+                                stackRegistry.modelStack?.reRender();
+                            },
+                            isNoneActive ? t('model-detail.procActive') : undefined
+                        );
+                    } else {
+                        // idle / autodance
+                        const isActive =
+                            slots0.primary.source === 'procedural' && slots0.primary.procRole === procId;
+                        const row = slideRow(
+                            c,
+                            'lucide:wand-sparkles',
+                            procId === 'idle' ? t('motion.modeIdle') : t('motion.modeAutodance'),
+                            true,
+                            () => {
+                                _setProcForModel(id, inst, procId);
+                                stackRegistry.modelStack?.reRender();
+                            },
+                            isActive ? t('model-detail.procActive') : undefined
+                        );
+                        if (!isActive) {
+                            addPresetChip(
+                                row,
+                                t('model-detail.procEdit'),
+                                false,
+                                () => {
+                                    _setProcForModel(id, inst, procId);
+                                    stackRegistry.modelStack?.push(buildProcMotionLevel(id));
+                                },
+                                { marginLeft: 'auto', stopPropagation: true }
+                            );
+                        }
+                    }
                 }
             });
         },

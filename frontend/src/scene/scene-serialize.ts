@@ -29,7 +29,10 @@ import {
     addSceneMotion,
     setDefaultMotion,
     clearAllSceneMotions,
+    getLoadedProceduralMotions,
+    setLoadedProceduralMotions,
 } from './motion/motion-intent';
+import type { LoadableProcId } from './motion/motion-intent';
 import {
     getCameraState,
     setCameraState,
@@ -327,6 +330,8 @@ export interface SceneFile {
             procMotion?: Partial<ProcMotionState>;
         }>;
         activeMotionId?: string | null;
+        // [doc:adr-207] 程序化动作可加载集合
+        loadedProceduralMotions?: string[];
         // ── 旧格式字段（ADR-121；仅反序列化兼容，新存档不写）──
         vmdPath?: string | null;
         vmdName?: string;
@@ -585,6 +590,8 @@ export function serializeScene(): SceneFile {
                     procMotion: m.procMotion,
                 })),
                 activeMotionId,
+                // [doc:adr-207] 程序化动作可加载集合
+                loadedProceduralMotions: [...getLoadedProceduralMotions()],
             };
         })(),
         // [doc:adr-108] 序列化当前活跃的 retarget 动画状态
@@ -1239,6 +1246,10 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
             // addSceneMotion 首次添加自动设为默认
         }
         // 否则（motion 存在但字段全空）= 显式清空状态，保持 clearAllSceneMotions 结果
+        // [doc:adr-207] 恢复程序化动作可加载集合
+        if (data.motion.loadedProceduralMotions) {
+            setLoadedProceduralMotions(data.motion.loadedProceduralMotions as LoadableProcId[]);
+        }
     } else {
         // 旧场景文件无 motion 块 → 保持已有 vmdPath 缓存（与当前行为一致）
         // 不调用 clearAllSceneMotions 避免覆盖每模型独立 VMD
