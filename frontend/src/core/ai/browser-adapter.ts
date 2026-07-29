@@ -69,6 +69,7 @@ export class BrowserAiAdapter implements AiService {
                 }),
             });
             if (response.ok) {
+                // ok=true 时 kind 不被消费方读取，'unknown' 仅占位
                 return { ok: true, kind: 'unknown', message: '连接成功' };
             }
             const errText = await response.text().catch(() => '');
