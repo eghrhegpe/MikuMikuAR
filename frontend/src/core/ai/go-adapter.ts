@@ -5,7 +5,9 @@ import type {
     ChatChunk,
     AiConnectionResult,
     AiPersistedConfig,
+    AiErrorKind,
 } from './types';
+import { AI_ERROR_KINDS } from './types';
 import { events } from '../runtime-bridge';
 import type * as AppBindings from '@bindings/mikumikuar/internal/app/app';
 import type { LLMConfig } from '@bindings/mikumikuar/internal/app/models';
@@ -102,7 +104,9 @@ class GoAiAdapter implements AiService {
             const res = await b.AiTestLLMConnection();
             return {
                 ok: res.ok,
-                kind: (res.kind as AiConnectionResult['kind']) || 'unknown',
+                kind: (AI_ERROR_KINDS as readonly string[]).includes(res.kind)
+                    ? (res.kind as AiErrorKind)
+                    : 'unknown',
                 message: res.message,
             };
         } catch (err) {

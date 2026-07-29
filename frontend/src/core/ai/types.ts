@@ -116,6 +116,21 @@ export type AiErrorKind =
     | 'server'
     | 'unknown';
 
+/** [doc:adr-196] AiErrorKind 运行时值数组，供 Go kind 白名单校验等需要运行时遍历的场景使用。
+ *  与类型定义保持同步；新增错误种类时须两处同时更新。 */
+export const AI_ERROR_KINDS: readonly AiErrorKind[] = [
+    'missingEndpoint',
+    'missingKey',
+    'missingModel',
+    'network',
+    'cors',
+    'unauthorized',
+    'notFound',
+    'rateLimit',
+    'server',
+    'unknown',
+];
+
 /** 校验错误条目（全量收集用） */
 export interface AiValidationError {
     kind: AiErrorKind;
