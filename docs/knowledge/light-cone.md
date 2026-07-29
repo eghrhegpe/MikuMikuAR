@@ -8,6 +8,24 @@ source_files:
   - frontend/src/scene/render/light-cone.ts
 adr:
   - ADR-152
+symbols:
+  - createLightCone
+  - updateLightConeTransform
+  - updateLightConeUniforms
+  - rebuildLightConeGeometry
+  - setLightConeEnabled
+  - disposeLightCone
+  - LightConeEntry
+invariants:
+  - 使用锥体 Mesh + 自定义 ShaderMaterial（additive blending、距离衰减 + Fresnel 边缘辉光）
+  - updateLightConeTransform 复用模块级临时向量避免 GC 压力
+  - disposeLightCone 先 mesh.dispose() 后 material.dispose()
+  - 不写深度，避免遮挡其他透明物体
+tests: []
+use_when:
+  - 光锥
+  - 体积光替代
+  - SpotLight 可视化
 ---
 
 ## 系统概览

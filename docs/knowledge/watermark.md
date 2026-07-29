@@ -9,6 +9,8 @@ source_files:
 adr: []
 symbols:
   - WatermarkConfig
+  - getWatermarkConfig
+  - setWatermarkConfig
   - applyWatermark
 invariants:
   - 水印在渲染后处理阶段添加

@@ -8,6 +8,20 @@ source_files:
   - frontend/src/core/ui-keyboard-nav.ts
 adr:
   - ADR-153
+symbols:
+  - createKeyboardNav
+  - KeyboardNavOptions
+  - NavKeyKind
+invariants:
+  - ArrowUp/Down/Left/Right 移动焦点，可选循环 wrap
+  - Enter 触发 click 或自定义 onEnter 回调
+  - Escape 触发 onEscape 回调
+  - createKeyboardNav 返回 Disposable 用于移除监听
+tests: []
+use_when:
+  - 键盘导航
+  - 列表导航
+  - 箭头键导航
 ---
 
 ## 系统概览

@@ -10,7 +10,7 @@ adr:
   - ADR-045
   - ADR-135
 symbols:
-  - loadManager
+  - LoadManager
   - LoadRequest
   - ResourceHandle
   - LibraryLoadError
