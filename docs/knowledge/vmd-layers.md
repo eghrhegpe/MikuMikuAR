@@ -9,11 +9,14 @@ source_files:
 adr:
   - ADR-051
 symbols:
-  - VmdLayer
   - addVmdLayer
+  - addVmdLayersFromPaths
+  - addGazeLayer
   - removeVmdLayer
+  - toggleVmdLayer
+  - setVmdLayerWeight
   - rebuildCompositeAnimation
-  - _nextLayerId
+  - getVmdLayers
 invariants:
   - MmdCompositeAnimation 在每次层变更时重建
   - 层 ID 唯一（crypto.randomUUID 前缀）

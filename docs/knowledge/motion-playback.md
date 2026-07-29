@@ -9,9 +9,8 @@ source_files:
 adr: []
 symbols:
   - initPlaybackObservables
-  - disposePlayback
   - updatePlaybackUI
-  - _loopPending
+  - seekFromEvent
 invariants:
   - _disposed 双清理防护：dispose 后不再执行任何回调
   - _manager 引用在 initPlaybackObservables 中注入，dispose 后清零

@@ -7,6 +7,19 @@ scope:
 source_files:
   - frontend/src/scene/env/env-sky.ts
 adr: []
+symbols:
+  - applySky
+  - disposeSky
+  - clearStarsTexCache
+invariants:
+  - 三种天空模式：color 渐变色 / procedural 程序化天空盒 / cube 六面体 HDR 贴图
+  - disposeSky 销毁天空球、环境贴图、太阳光晕与 observer
+  - 恒星纹理缓存经 clearStarsTexCache 清理，避免 HMR/mode 切换时累积
+tests: []
+use_when:
+  - 天空系统
+  - 天空模式
+  - 恒星纹理
 ---
 
 ## 系统概览

@@ -8,6 +8,22 @@ source_files:
   - frontend/src/scene/env/env-dispatcher.ts
 adr:
   - ADR-138
+symbols:
+  - registerEnvCallback
+  - clearAllEnvCallbacks
+  - dispatchEnvChange
+  - registerSceneTickCallback
+  - clearSceneTickCallbacks
+  - runSceneTickCallbacks
+invariants:
+  - 纯调度、无状态——env-bridge 只 import dispatcher，不 import env-impl/env-water，破除循环依赖
+  - 回调异常被 console.warn 吞掉，不影响其他子系统调度（容错但可观测）
+  - registerEnvCallback 返回反注册函数，dispose 时调用防泄漏
+tests: []
+use_when:
+  - 环境调度
+  - 破循环依赖
+  - dispatch
 ---
 
 ## 系统概览

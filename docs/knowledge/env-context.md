@@ -7,6 +7,22 @@ scope:
 source_files:
   - frontend/src/scene/env/env-context.ts
 adr: []
+symbols:
+  - initEnvImpl
+  - getScene
+  - getPipeline
+  - isInitialized
+  - resolveStaticAsset
+  - _envSys
+invariants:
+  - 初始化顺序须在场景与渲染管线就绪后调用，否则 getScene() 返回未定义
+  - _envSys 为环境系统内部聚合对象，各 env 子模块运行时句柄集中于此
+tests: []
+use_when:
+  - 环境上下文
+  - 场景引用
+  - 渲染管线引用
+  - 资源路径解析
 ---
 
 ## 系统概览

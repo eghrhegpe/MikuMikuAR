@@ -10,7 +10,7 @@ adr:
   - ADR-093
 symbols:
   - renderMenu
-  - MenuNode
+  - buildSchemaLevel
 invariants:
   - Schema 驱动渲染，不硬编码 DOM
   - 支持多种控件类型（slider/toggle/dropdown 等）

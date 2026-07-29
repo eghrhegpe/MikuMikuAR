@@ -9,6 +9,27 @@ source_files:
   - frontend/src/scene/env/env-ground-presets.ts
 adr:
   - ADR-114
+symbols:
+  - applyGround
+  - tickGround
+  - getGroundHeightAt
+  - disposeGround
+  - clearGroundTexCache
+  - setOnTerrainReady
+  - setOnGroundChanged
+  - _effectiveRoughness
+  - _effectiveBumpLevel
+invariants:
+  - disposeGround 释放地面材质、网格、反射与涟漪资源，经 safeDispose 安全清理
+  - 程序化纹理 6 种预设（木材/大理石/混凝土/瓷砖/地毯/金属），每类含 albedo + roughness + normal 三通道
+  - UV 滚动动画每帧由 tickGround(dt) 驱动
+  - 高度查询 getGroundHeightAt 含倾斜平面插值
+tests: []
+use_when:
+  - 地面系统
+  - 程序化纹理
+  - 涟漪
+  - 地面高度查询
 ---
 
 ## 系统概览

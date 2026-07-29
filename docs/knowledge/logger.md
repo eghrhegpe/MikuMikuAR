@@ -8,6 +8,20 @@ source_files:
   - frontend/src/core/logger.ts
 adr:
   - ADR-141
+symbols:
+  - logInfo
+  - logWarn
+  - logError
+invariants:
+  - 无依赖模块，不引入循环依赖（ADR-141 从 utils.ts 剥离）
+  - 前缀格式固定为 [tag] message，message 为空时退化为 [tag]
+  - warn/error 的 err 为 undefined 时不传入，避免控制台出现多余 undefined
+tests: []
+use_when:
+  - 日志工具
+  - logWarn
+  - logInfo
+  - logError
 ---
 
 ## 系统概览

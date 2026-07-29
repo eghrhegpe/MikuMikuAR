@@ -8,6 +8,19 @@ source_files:
   - frontend/src/core/safe-call.ts
 adr:
   - ADR-146
+symbols:
+  - safeCall
+  - safeCallVoid
+  - safeCallAsync
+invariants:
+  - safeCall/safeCallVoid 异常时 logWarn(tag, msg, err) 记录并返回 undefined
+  - safeCallAsync 异常时 Promise 解析为 undefined（不 reject）
+  - 与 swallowError 区别：保留调用方传入的 tag/msg 上下文
+tests: []
+use_when:
+  - 安全调用
+  - 异常吞没
+  - 安全执行
 ---
 
 ## 系统概览
