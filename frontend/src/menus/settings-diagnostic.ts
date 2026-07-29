@@ -390,18 +390,70 @@ function _setStatusBadge(
     _statusTextEl.textContent = t(`ai.status.${state}`);
 }
 
+function _focusInput(el: HTMLInputElement | null): void {
+    if (!el) {
+        return;
+    }
+    el.closest('.diag-field-row')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.focus();
+}
+
 function _renderAdvice(kind?: AiErrorKind): void {
     if (!_adviceEl) {
         return;
     }
     if (!kind) {
         _adviceEl.style.display = 'none';
-        _adviceEl.textContent = '';
+        _adviceEl.innerHTML = '';
         return;
     }
-    _adviceEl.textContent = t(`ai.errorAdvice.${kind}`);
     _adviceEl.className = 'diag-advice diag-advice--' + kind;
-    // 基础类 .diag-advice 写死 display:none，空字符串会回落到该层叠值仍不可见，需显式设块级
+
+    // 清空并填入建议文本
+    _adviceEl.innerHTML = '';
+    const textSpan = document.createElement('span');
+    textSpan.textContent = t(`ai.errorAdvice.${kind}`);
+    _adviceEl.appendChild(textSpan);
+
+    // 根据错误类型添加可操作入口
+    const actions = document.createElement('div');
+    actions.className = 'diag-advice-actions';
+
+    if (kind === 'missingEndpoint' || kind === 'notFound') {
+        const btn = document.createElement('button');
+        btn.className = 'preset-chip';
+        btn.textContent = t('ai.config.endpoint');
+        btn.addEventListener('click', () => _focusInput(_configEndpoint));
+        actions.appendChild(btn);
+    }
+    if (kind === 'missingKey' || kind === 'unauthorized') {
+        const btn = document.createElement('button');
+        btn.className = 'preset-chip';
+        btn.textContent = t('ai.config.apiKey');
+        btn.addEventListener('click', () => _focusInput(_configApiKey));
+        actions.appendChild(btn);
+    }
+    if (kind === 'missingModel') {
+        const btn = document.createElement('button');
+        btn.className = 'preset-chip';
+        btn.textContent = t('ai.config.model');
+        btn.addEventListener('click', () => _focusInput(_configModel));
+        actions.appendChild(btn);
+    }
+    if (kind === 'cors' && _activeDocLink?.href) {
+        const btn = document.createElement('button');
+        btn.className = 'preset-chip';
+        btn.textContent = t('ai.config.doc', { provider: _activeDocLink.textContent ?? '' });
+        btn.addEventListener('click', () => {
+            window.open(_activeDocLink!.href, '_blank');
+        });
+        actions.appendChild(btn);
+    }
+
+    if (actions.children.length > 0) {
+        _adviceEl.appendChild(actions);
+    }
+
     _adviceEl.style.display = 'block';
 }
 
@@ -488,7 +540,7 @@ function buildContextSchema(): MenuNode[] {
 
 function _createErrorRow(err: ErrorEntry): HTMLElement {
     const row = document.createElement('div');
-    row.className = 'diag-error-row';
+    row.className = 'diag-error-row diag-error-row--' + err.severity;
     row.setAttribute('role', 'button');
     row.setAttribute('tabindex', '0');
     row.setAttribute('aria-label', `Error: ${err.tag}`);

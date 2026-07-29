@@ -40,8 +40,8 @@ describe('ErrorRingBuffer 环形语义', () => {
 
     it('push 后 size / toArray 顺序 / newest / oldest 正确', () => {
         const buf = new ErrorRingBuffer(3);
-        buf.push({ kind: 'log', tag: 'a', message: 'm1', timestamp: 1 });
-        buf.push({ kind: 'log', tag: 'b', message: 'm2', timestamp: 2 });
+        buf.push({ kind: 'log', tag: 'a', message: 'm1', timestamp: 1, severity: 'warn' });
+        buf.push({ kind: 'log', tag: 'b', message: 'm2', timestamp: 2, severity: 'warn' });
         expect(buf.size).toBe(2);
         expect(buf.full).toBe(false);
         const arr = buf.toArray();
@@ -53,7 +53,7 @@ describe('ErrorRingBuffer 环形语义', () => {
     it('超过容量时覆盖最旧条目，size 封顶', () => {
         const buf = new ErrorRingBuffer(3);
         for (let i = 1; i <= 5; i++) {
-            buf.push({ kind: 'log', tag: 't', message: `m${i}`, timestamp: i });
+            buf.push({ kind: 'log', tag: 't', message: `m${i}`, timestamp: i, severity: 'warn' });
         }
         expect(buf.size).toBe(3);
         expect(buf.full).toBe(true);
@@ -64,7 +64,7 @@ describe('ErrorRingBuffer 环形语义', () => {
 
     it('clear 后 size 归零、toArray 为空', () => {
         const buf = new ErrorRingBuffer(2);
-        buf.push({ kind: 'log', tag: 't', message: 'x', timestamp: 1 });
+        buf.push({ kind: 'log', tag: 't', message: 'x', timestamp: 1, severity: 'warn' });
         buf.clear();
         expect(buf.size).toBe(0);
         expect(buf.toArray()).toEqual([]);
@@ -74,7 +74,7 @@ describe('ErrorRingBuffer 环形语义', () => {
 
     it('toArray 返回新数组，不暴露内部存储（外部修改不影响缓冲）', () => {
         const buf = new ErrorRingBuffer(2);
-        buf.push({ kind: 'log', tag: 't', message: 'x', timestamp: 1 });
+        buf.push({ kind: 'log', tag: 't', message: 'x', timestamp: 1, severity: 'warn' });
         const arr = buf.toArray();
         arr.push({} as ErrorEntry);
         expect(buf.size).toBe(1);

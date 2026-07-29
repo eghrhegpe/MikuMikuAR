@@ -3482,6 +3482,18 @@ textarea,
     background: var(--surface2);
 }
 
+.diag-error-row--error {
+    border-left: calc(3px * var(--ui-scale)) solid color-mix(in srgb, var(--danger) 60%, transparent);
+}
+
+.diag-error-row--warn {
+    border-left: calc(3px * var(--ui-scale)) solid color-mix(in srgb, var(--warn) 60%, transparent);
+}
+
+.diag-error-row--info {
+    border-left: calc(3px * var(--ui-scale)) solid color-mix(in srgb, var(--accent) 60%, transparent);
+}
+
 .diag-error-row:hover {
     background: var(--card-hover);
 }
@@ -3573,6 +3585,13 @@ textarea,
     background: color-mix(in srgb, var(--warn) 10%, transparent);
     color: var(--warn);
     border: calc(1px * var(--ui-scale)) solid color-mix(in srgb, var(--warn) 20%, transparent);
+}
+
+.diag-advice-actions {
+    display: flex;
+    gap: calc(6px * var(--ui-scale));
+    margin-top: calc(4px * var(--ui-scale));
+    flex-wrap: wrap;
 }
 
 .diag-advice--unauthorized,
