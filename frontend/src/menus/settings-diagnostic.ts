@@ -153,8 +153,8 @@ resolveAi()
         // 先 resolve 再渲染，消除"默认值闪切"时序竞态。
         await _refreshCaps();
         _updateControlsEnabled();
+        // 欢迎语由 _renderChat 以纯 UI 引导行呈现（不进 _messages、不发给 AI）。
         if (_messages.length === 0) {
-            _addAssistantMessage(t('ai.welcome'));
             _renderChat();
         }
     })
@@ -1443,7 +1443,7 @@ async function _clearChat(): Promise<void> {
         return;
     }
     _messages.length = 0;
-    _addAssistantMessage(t('ai.welcome'));
+    // 清空后欢迎引导行由 _renderChat 在 _messages 为空时自动呈现（不进 _messages）。
     _renderChat();
 }
 
