@@ -7,9 +7,9 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 103 | 704 |
-| 3D 场景 | 105 | 1059 |
-| 菜单 & UI | 67 | 308 |
+| 核心基础设施 | 106 | 721 |
+| 3D 场景 | 105 | 1061 |
+| 菜单 & UI | 68 | 311 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 18 | 131 |
 | 物理系统 | 2 | 14 |
@@ -51,6 +51,17 @@
 | `buildDialogueSystemPrompt()` | `core/ai/character-bible` | 组装台词模式的 system prompt：固定人设 + 结构化输出契约。 |
 | `getBible()` | `core/ai/character-bible` | 按 id 查角色圣经；未命中返回第一个内置角色兜底。 |
 | `parseDialogueLines()` | `core/ai/character-bible` | 从 LLM 文本响应解析台词数组；容错：非法情绪归一到 neutral， 解析失败时将整段文本作为单条 neutral 台词兜底（保证 UI 永远有内容渲染）。 |
+| `ChatMode()` | `core/ai/chat-store` | 会话模式，值与 settings-diagnostic 的 DiagMode 一致（此处独立定义以免 UI→存储反向依赖）。 |
+| `ChatSession()` | `core/ai/chat-store` | 会话元信息（供列表展示，不含消息体）。 |
+| `ChatSessionFull()` | `core/ai/chat-store` | 完整会话（元信息 + 消息数组）。 |
+| `deleteSession()` | `core/ai/chat-store` | 删除会话（元信息 + 消息两键）。 |
+| `deriveTitle()` | `core/ai/chat-store` | 从消息派生标题：取首条 user 消息前 20 字；无则返回空串（调用方回退 i18n 未命名）。 |
+| `getActiveId()` | `core/ai/chat-store` | 读当前活动会话 id。 |
+| `listSessions()` | `core/ai/chat-store` | 列出全部会话元信息，按 updatedAt 倒序（最近的在前）。降级返回空数组。 |
+| `loadSession()` | `core/ai/chat-store` | 加载完整会话（元信息 + 消息）。缺失或损坏返回 undefined。 |
+| `newSessionId()` | `core/ai/chat-store` | 生成新会话 id。crypto.randomUUID 在 WebView2 / 现代浏览器均可用。 |
+| `saveSession()` | `core/ai/chat-store` | 保存完整会话（元信息 + 消息，单事务批量写）。降级静默失败。 |
+| `setActiveId()` | `core/ai/chat-store` | 写当前活动会话 id。 |
 | `AiConfig()` | `core/ai/config-store` | — |
 | `DEFAULT_AI_CONFIG()` | `core/ai/config-store` | 零 key 默认路径：本地 Ollama（大模型零 key，小模型零成本）。见 ADR-196 开放问题 Q2 裁定。 |
 | `DEFAULT_TIMEOUT_MS()` | `core/ai/config-store` | 缺省超时。 |
@@ -87,9 +98,11 @@
 | `toDiagnosticContext()` | `core/ai/error-buffer` | — |
 | `uninstallLoggingPatch()` | `core/ai/error-buffer` | 卸载 console.error 补丁，恢复原始实现。 |
 | `goAiAdapter()` | `core/ai/go-adapter` | — |
+| `goKeyAllowsProceed()` | `core/ai/go-key-allows-proceed` | Go 桌面端 key 不可回读，当 isGo=true && keyConfigured=true 时， missingKey 不应阻止前端发起请求（key 由 Go 后端持有）。 |
 | `resolveAi()` | `core/ai/index` | — |
 | `executeAction()` | `core/ai/intent-dispatcher` | — |
 | `parseActionFromLLM()` | `core/ai/intent-dispatcher` | — |
+| `renderMarkdownInto()` | `core/ai/markdown` | 把 Markdown 文本渲染为 DOM 片段，追加进目标容器。 |
 | `AdapterResult()` | `core/ai/param-adapters` | — |
 | `adaptParam()` | `core/ai/param-adapters` | — |
 | `colorAdapter()` | `core/ai/param-adapters` | — |
@@ -120,6 +133,7 @@
 | `LoadingGuard()` | `core/async` | 并发加载守卫——防止同一 key 的异步操作重复触发。 |
 | `delay()` | `core/async` | Promise 包装的延迟。 |
 | `fireAndForget()` | `core/async` | 启动一个异步操作但不等待，异常由 swallowError 兜底。 |
+| `makeLazyLoader()` | `core/async` | 创建惰性动态 import 加载器（带并发守卫 + 失败重试）。 |
 | `swallowError()` | `core/async` | 吞掉 promise 的异常并记录日志（比空 `.catch(() => {})` 可调试）。 |
 | `waitForFrame()` | `core/async` | Promise 包装的等待下一帧。 |
 | `PlaySfxOptions()` | `core/audio-bus` | — |
@@ -283,12 +297,14 @@
 | `CapabilityProbe()` | `core/mmd-adapter` | CapabilityProbe — 升级回归探测（ADR-192 Phase 2 守卫式反射）。 |
 | `applyForceToModelRigidBodies()` | `core/mmd-adapter` | — |
 | `applyForceToModelRigidBodiesNative()` | `core/mmd-adapter` | — |
+| `applyWindForceToModelRigidBodiesNative()` | `core/mmd-adapter` | — |
 | `getBoneWorldMatrix()` | `core/mmd-adapter` | 返回骨骼在世界坐标系下的 worldMatrix（固化自 adr-071 坐标系契约）。 |
 | `getPhysicsImpl()` | `core/mmd-adapter` | 从 IMmdRuntime 获取底层 MmdWasmPhysicsRuntimeImpl。 |
 | `getRigidBodyBundleMap()` | `core/mmd-adapter` | 返回所有 RigidBodyBundle 迭代器（条目 3 内化，ADR-192 Phase 2）。 |
 | `getRigidBodyMap()` | `core/mmd-adapter` | 返回所有**单数** RigidBody 迭代器（路径1 修正，ADR-200）。 |
 | `getStreamAudio()` | `core/mmd-adapter` | — |
 | `onBoneMatricesUpdated()` | `core/mmd-adapter` | 在骨骼 worldMatrix 已被 babylon-mmd 更新之后、渲染之前注册回调。 |
+| `solveIkNative()` | `core/mmd-adapter` | — |
 | `switchAnimation()` | `core/mmd-adapter` | 切换模型当前动画到新动画，并归零运行时全局时钟到第 0 帧。 |
 | `transformWorldToRootLocal()` | `core/mmd-adapter` | 把世界坐标系下的点转换到 rootMesh 局部坐标系（固化自 perception-gaze.ts / adr-071）。 |
 | `ObserverHandle()` | `core/observer-handle` | 可释放的 Observer 句柄。 |
@@ -340,6 +356,7 @@
 | `browser()` | `core/runtime-bridge` | — |
 | `events()` | `core/runtime-bridge` | — |
 | `getRuntimeBridge()` | `core/runtime-bridge` | — |
+| `initRuntimeBridge()` | `core/runtime-bridge` | bootstrap 早期调用：桌面/Android 侧强制加载 @wailsio/runtime 并绑定 events 实例。 |
 | `RuntimeMode()` | `core/runtime-mode` | — |
 | `detectRuntimeMode()` | `core/runtime-mode` | — |
 | `initRuntimeBadge()` | `core/runtime-mode` | bootstrap 早期调用：立即渲染上次持久化的模式，刷新后不丢失 |
@@ -920,6 +937,7 @@
 | `setGravityStrength()` | `scene/env/env-gravity` | — |
 | `setGroundCollisionEnabled()` | `scene/env/env-gravity` | — |
 | `GROUND_PRESETS()` | `scene/env/env-ground-presets` | — |
+| `GROUND_PRESET_KEYS()` | `scene/env/env-ground-presets` | 预设「关心」的 EnvState 字段集合（单一真相源）。 |
 | `GroundPreset()` | `scene/env/env-ground-presets` | — |
 | `GroundProceduralKind()` | `scene/env/env-ground-presets` | 程序化地面纹理类型 |
 | `buildGroundPresetEnvState()` | `scene/env/env-ground-presets` | 预设 → EnvState 字段映射，供 UI chip handler 调用并持久化。 |
@@ -1245,7 +1263,8 @@
 | `setBoneOverride()` | `scene/motion/bone-override` | 设置单条骨骼覆盖。 |
 | `setBoneOverridePosition()` | `scene/motion/bone-override` | [doc:adr-116] 设置单条骨骼的位置覆盖（P2 引擎扩展）。 |
 | `setBoneOverrideQuat()` | `scene/motion/bone-override` | 设置单条骨骼覆盖（直接传四元数）。 |
-| `startBoneOverride()` | `scene/motion/bone-override` | 启动覆盖系统：注册 onBeforeRenderObservable 回调。 |
+| `setWasmIkResolver()` | `scene/motion/bone-override` | [ADR-202 A-class] 注入 WASM IK 重解回调。 |
+| `startBoneOverride()` | `scene/motion/bone-override` | — |
 | `stopBoneOverride()` | `scene/motion/bone-override` | 停止覆盖系统。 |
 | `FeetModelProvider()` | `scene/motion/feet-adjustment` | 注入：返回需要处理脚部调整的模型及其 runtime bones |
 | `FootLandEvent()` | `scene/motion/feet-adjustment` | 落地事件：脚从空中接触地面的瞬间（ADR-088 供脚步声消费）。 |
@@ -1791,6 +1810,7 @@
 
 | 符号 | 文件 | 说明 |
 |------|------|------|
+| `showAssistant()` | `menus/assistant-panel` | — |
 | `buildCloudLevel()` | `menus/env-cloud-levels` | — |
 | `buildExperimentalLevel()` | `menus/env-experimental-levels` | — |
 | `buildFogLevel()` | `menus/env-fog-levels` | — |
@@ -2060,7 +2080,9 @@
 | `handleSettingsAction()` | `menus/settings-actions` | 全局设置项点击分发：语言切换 + 动作表。settings.ts 的 onItemClick 使用。 |
 | `buildSettingsAppearanceLevel()` | `menus/settings-appearance` | — |
 | `buildSettingsControlsLevel()` | `menus/settings-controls` | — |
+| `buildDiagnosticSchema()` | `menus/settings-diagnostic` | — |
 | `buildSettingsDiagnosticLevel()` | `menus/settings-diagnostic` | — |
+| `renderDiagnosticPanel()` | `menus/settings-diagnostic` | 渲染诊断面板内容并返回 dispose。供设置菜单入口与独立面板复用。 |
 | `buildSettingsDownloadsLevel()` | `menus/settings-downloads` | — |
 | `buildSettingsGraphicsLevel()` | `menus/settings-graphics` | — |
 | `buildSettingsLanguageLevel()` | `menus/settings-language` | — |
@@ -2295,5 +2317,5 @@
 
 ---
 
-> 共 298 个文件，2249 个导出符号。
+> 共 302 个文件，2271 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。
