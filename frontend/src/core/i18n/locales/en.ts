@@ -2017,7 +2017,7 @@ export const en: Record<string, string> = {
         'Tell me what you want to adjust, e.g. "dim the lights" or "switch to night environment".',
     'ai.control.modelHint':
         '💡 Control mode needs a model with function-calling. Recommended: GPT-4o-mini / DeepSeek / Qwen2.5+; small local models may fail to parse commands.',
-    'ai.control.availableTools': 'Available controls:',
+    'ai.control.toolSummary': 'AI can operate {count} scene tools (light/camera/motion/environment/model, etc.). Describe what you want naturally.',
     'ai.control.resultSuccess': '✅ Applied: {message}',
     'ai.control.resultFailed': '❌ Failed: {message}',
     'ai.control.undo': 'Undo',
