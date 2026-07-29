@@ -9,15 +9,14 @@ source_files:
 adr:
   - ADR-141
 symbols:
-  - types
-  - state
-  - dom
-  - utils
-  - ui-helpers
-  - status-bar
-  - toast
+  - export * from './state'
+  - export * from './dom'
+  - export * from './ui-helpers'
+  - export * from './status-bar'
+  - export * from './toast'
 invariants:
-  - Barrel re-export，保持向后兼容
+  - Barrel re-export，保持 @/core/config 的 import 路径不变
+  - 子模块拆分后 config.ts 仅聚合，不实现逻辑
 tests: []
 use_when:
   - 配置聚合

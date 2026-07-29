@@ -8,6 +8,20 @@ source_files:
   - frontend/src/scene/render/performance-env-bridge.ts
 adr:
   - ADR-130
+symbols:
+  - setAutoDegradingReflection
+  - isAutoDegradingReflection
+  - registerSetEnvState
+  - setEnvStateForPerformance
+invariants:
+  - 打破 performance.ts ↔ env-bridge.ts 循环依赖的桥接模块
+  - performance.ts 调用 setAutoDegradingReflection / setEnvStateForPerformance
+  - env-bridge.ts 调用 isAutoDegradingReflection / registerSetEnvState
+tests: []
+use_when:
+  - 性能降级
+  - 自动降级反射
+  - 循环依赖桥接
 ---
 
 ## 系统概览

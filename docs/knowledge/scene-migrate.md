@@ -8,6 +8,18 @@ source_files:
   - frontend/src/scene/scene-migrate.ts
 adr:
   - ADR-166
+symbols:
+  - migrateLipSyncFromOldState
+  - migratePerceptionData
+  - migratePerceptionFromProcMotion
+invariants:
+  - 纯函数，无 scene 依赖，从 scene-serialize.ts 拆分
+  - 负责把历史存档字段映射到当前 PerceptionState / ProcMotion 等状态结构
+tests: []
+use_when:
+  - 存档迁移
+  - 旧存档兼容
+  - 格式升级
 ---
 
 ## 系统概览

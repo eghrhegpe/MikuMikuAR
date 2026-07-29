@@ -8,14 +8,19 @@ source_files:
   - frontend/src/core/audio-bus.ts
 adr: []
 symbols:
-  - AudioBus
   - playSfx
   - getAudioContext
   - getSfxEnabled
+  - setSfxEnabled
+  - getSfxVolume
+  - setSfxVolume
   - getFootstepVolume
+  - setFootstepVolume
+  - setFootstepEnabled
+  - disposeAudioBus
 invariants:
-  - 音频上下文单例
-  - SFX 音量归一化
+  - 音频上下文单例：只创建一个 AudioContext
+  - SFX 音量归一化 0..1
 tests: []
 use_when:
   - 音频总线

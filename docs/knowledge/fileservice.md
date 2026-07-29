@@ -11,6 +11,7 @@ adr:
 symbols:
   - encodeFileRef
   - resolveFileUrl
+  - resolveModelDir
   - _toBase64Url
 invariants:
   - base64url（无填充）编码文件名，避免 URL 路径段编码歧义

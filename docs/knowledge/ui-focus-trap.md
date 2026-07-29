@@ -8,6 +8,17 @@ source_files:
   - frontend/src/core/ui-focus-trap.ts
 adr:
   - ADR-153
+symbols:
+  - createFocusTrap
+invariants:
+  - Tab 在容器内可聚焦元素间循环，Shift+Tab 反向循环
+  - Escape 触发 onEscape 回调
+  - restore() 移除 keydown 监听，若 previousFocus 仍可聚焦则回打焦点
+tests: []
+use_when:
+  - 焦点陷阱
+  - 弹窗焦点
+  - 无障碍导航
 ---
 
 ## 系统概览

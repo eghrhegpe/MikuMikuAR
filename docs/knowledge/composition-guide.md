@@ -10,8 +10,6 @@ adr: []
 symbols:
   - getGuideMode
   - setGuideMode
-  - cycleGuideMode
-  - disposeGuides
 invariants:
   - 构图模式在 off/ruleOfThirds/goldenRatio/diagonal 之间切换
 tests: []

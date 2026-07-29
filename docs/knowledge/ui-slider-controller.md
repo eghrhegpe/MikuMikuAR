@@ -7,6 +7,18 @@ scope:
 source_files:
   - frontend/src/core/ui-slider-controller.ts
 adr: []
+symbols:
+  - DragSliderController
+  - DragSliderOptions
+invariants:
+  - 封装 mousedown→mousemove→mouseup 拖拽 + 键盘方向键步进 + 游标点击跳转
+  - 键盘支持 Ctrl×100 / Shift×10 倍数加速，Home/End 跳转边界
+  - bind 返回 Disposable 用于移除监听
+tests: []
+use_when:
+  - 滑块控制器
+  - 拖拽滑块
+  - 键盘步进
 ---
 
 ## 系统概览
