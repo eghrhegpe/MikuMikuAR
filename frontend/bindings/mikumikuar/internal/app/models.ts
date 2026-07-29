@@ -383,6 +383,16 @@ export interface LLMConnectionResult {
 }
 
 /**
+ * LogEntry holds a single log record for the diagnostic ring buffer.
+ */
+export interface LogEntry {
+    "time": string;
+    "level": string;
+    "msg": string;
+    "attrs"?: { [_ in string]?: any } | null;
+}
+
+/**
  * ModelEntry represents a model, motion, or zip entry found during library scan.
  */
 export interface ModelEntry {

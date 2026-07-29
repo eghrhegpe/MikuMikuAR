@@ -30,7 +30,7 @@ export interface ActionDef {
      */
     label: string;
     /** 所属域 */
-    domain: 'settings' | 'scene' | 'motion' | 'env' | 'library';
+    domain: 'settings' | 'scene' | 'motion' | 'env' | 'library' | 'diagnostic';
     /** 显示图标（lucide 名） */
     icon?: string;
     /** 参数定义，无参动作为空数组 */

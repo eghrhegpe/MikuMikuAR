@@ -66,6 +66,9 @@ type App struct {
 	llmCancel context.CancelFunc // 正在进行的 LLM 流式请求取消函数
 	llmMu     sync.Mutex
 
+	// AI 诊断日志环形缓冲（ADR-205）
+	logRing *LogRing
+
 	// 模型广场预热窗口（ADR-075 §预热单实例）
 	// App 启动时创建隐藏 WebView2 窗口，用户点击站点时 Show + SetURL，
 	// 避免 NewWithOptions 的 WebView2 冷启动（1–3s → 200ms）。
@@ -90,6 +93,7 @@ func NewApp(version, buildTime, commitHash string) *App {
 		buildTime:   buildTime,
 		commitHash:  commitHash,
 		httpServers: make(map[string]*httpServerInfo),
+		logRing:     NewLogRing(200),
 	}
 }
 
@@ -150,6 +154,12 @@ func (a *App) ServiceStartup(ctx context.Context, options application.ServiceOpt
 // ServiceShutdown implements application.ServiceShutdown interface.
 func (a *App) SetWailsApp(wailsApp *application.App) {
 	a.wailsApp = wailsApp
+
+	// Set up dual-write slog handler: ring buffer + stderr
+	defaultHandler := slog.Default().Handler()
+	ringHandler := NewSlogRingHandler(a.logRing, defaultHandler)
+	slog.SetDefault(slog.New(ringHandler))
+
 	a.prewarmPlazaWindow()
 }
 

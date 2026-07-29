@@ -55,6 +55,25 @@ export function formatSceneSnapshot(d: SceneSnapshotData): string {
     return lines.join('\n');
 }
 
+/** 采集当前场景快照结构化数据；未初始化时返回 null。 */
+export function captureSceneSnapshotData(): SceneSnapshotData | null {
+    if (!_bridge) {
+        return null;
+    }
+    return {
+        fps: _bridge.getFps(),
+        modelCount: _bridge.getModelCount(),
+        meshCount: _bridge.getMeshCount(),
+        materialCount: _bridge.getMaterialCount(),
+        activeMotions: _bridge.getActiveMotions(),
+        performanceMode: _bridge.getPerformanceMode(),
+        ktx2Supported: _bridge.getKtx2Support().supported,
+        ktx2PreferredFormat: _bridge.getKtx2Support().preferredFormat,
+        rendererVendor: _bridge.getRendererInfo().vendor,
+        rendererName: _bridge.getRendererInfo().renderer,
+    };
+}
+
 /** 采集当前场景快照文本；未初始化时返回占位符。 */
 export function captureSceneSnapshot(): string {
     if (!_bridge) {
