@@ -414,6 +414,19 @@ function slideRow(
 ): HTMLElement
 ```
 
+**`sublabel` 用途约束：**
+
+sublabel 是行右侧的**短辅助文本**，CSS 已兜底 `white-space: nowrap; overflow: hidden; text-overflow: ellipsis`（超出自动截断）。
+
+| ✅ 适合 | ❌ 不适合 |
+|--------|----------|
+| 文件路径 (`ep.path`) | 模型 comment / 描述（多句、含换行）→ 放详情页 |
+| 数值/单位 (`2.4MB`, `60fps`) | 长 URL |
+| 状态标签 (`已加载`, `未缓存`) | 任何超过 ~20 字符的文本 |
+| 简短分类 (`PMX`, `舞台`) | |
+
+**规则：** 如果文本可能超过一行或包含换行符，不要塞进 sublabel——改用详情页 `addFieldRow` 或 `addSectionTitle` 展示。
+
 **变体**：
 | variant | 效果 | 场景 |
 |---------|------|------|
@@ -573,6 +586,7 @@ function addEmptyRow(parent: HTMLElement, text: string): HTMLElement
 | `.field-label` / `.field-value` | 键值布局 | `addFieldRow` / `rightLabel` |
 | `.slide-act-btn` / `.slide-act-danger` | 操作按钮 | `actionIcon` / `actionIcons[]` |
 | `.slide-item-muted` | 空状态占位 | `addEmptyRow` |
+| `.slide-sublabel` | 行右侧短辅助文本（自动截断，≤20 字符） | `slideRow` sublabel 参数 |
 | `.slide-sublabel-inline` | 内联 sublabel | `inlineSub: true` |
 | `.toggle-row` | toggle 行容器 | `addToggleRow` |
 | `.mode-btn` / `.mode-btn.active` | 模式按钮 | `addModeRow` |
@@ -871,6 +885,26 @@ export function buildExampleLevel(items: string[]): PopupLevel {
 - 按键是**全局导航**（Arrow 移焦点、← 返回）→ 用 `createKeyboardNav`
 - 按键是**局部交互**（输入框提交、行展开、快捷键）→ 手写 `keydown`，不用 `createKeyboardNav`
 
+### 文字选中与行点击共存
+
+全局已取消 `user-select: none`，所有 UI 文字默认可选中复制。仅在以下元素保留禁止：
+
+| 元素 | 原因 |
+|------|------|
+| `#renderCanvas` | 3D 画布拖选无意义，禁止 |
+| `.slide-item` 行容器 | 整行可点击，选中会干扰点击——但 `.slide-label` 内的文字可选中 |
+| `.preset-chip` / `.collapsible-header` / `.cs-row` | 交互控件，禁止选中防止误触 |
+
+**`slideRow` 点击守卫：** `slideRow` 的 click handler 内置 `window.getSelection()?.toString()` 检测——如果用户正在选中文字，不触发行点击。这允许模型名等文本被选中复制，松开鼠标后不会误触导航。
+
+```ts
+// slideRow 内置逻辑（无需调用方处理）：
+row.addEventListener('click', () => {
+    if (window.getSelection()?.toString()) return;  // 选中文字时跳过
+    onClick();
+});
+```
+
 ### UI 设计验收 Checklist
 
 新增菜单或面板前，确认以下条目：
@@ -884,6 +918,8 @@ export function buildExampleLevel(items: string[]): PopupLevel {
 - [ ] 内嵌滑条/输入框在获得焦点时不被外层导航误拦截。
 - [ ] 面板关闭后焦点回到前一层级首项（框架自动处理，`renderCustom` 自行接入的例外需手动归还）。
 - [ ] 复杂组件补充 `role`、`aria-expanded`、`aria-selected` 等语义属性。
+- [ ] `sublabel` 不超过 ~20 字符，不含换行；长文本放详情页。
+- [ ] 需要选中的文字不被 `user-select: none` 覆盖（仅交互控件禁止选中）。
 
 ---
 
