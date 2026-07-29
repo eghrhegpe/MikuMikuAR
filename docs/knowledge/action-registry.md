@@ -20,6 +20,7 @@ source_files:
   - frontend/src/core/action-defs/motion-actions.ts
   - frontend/src/core/action-defs/env-actions.ts
   - frontend/src/core/action-defs/library-actions-def.ts
+  - frontend/src/core/action-defs/diagnostic-actions.ts
 adr:
   - ADR-197
   - ADR-155
