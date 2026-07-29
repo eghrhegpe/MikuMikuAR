@@ -166,8 +166,10 @@ function _inferProvider(endpoint: string): AiConfigProvider {
 
 /** 合并 IndexedDB + 适配器持久化配置，确保 _localConfig 为真实保存值。
  *  key 出于安全 go 端不回读明文，仅用 keyConfigured 标志由 _renderConfigCard 显示占位。
- *  内部 await resolveAi() 以保证适配器已就绪，消除"遗漏适配器配置"的时序窗口。 */
+ *  内部 await resolveAi() 以保证适配器已就绪，消除"遗漏适配器配置"的时序窗口。
+ *  先 await _saveChain：确保上一轮关面板触发的挂起保存已落盘，再读取，避免读到旧值。 */
 async function _loadInitialConfig(): Promise<void> {
+    await _saveChain;
     await ensureAiConfigLoaded();
     _localConfig = { ...loadAiConfig() };
     // 等待适配器就绪，确保后续 _ai?.loadConfig 可用
@@ -304,22 +306,25 @@ function _persistConfig(partial: Partial<AiConfig>): void {
 }
 
 /** 共享持久化逻辑：go 模式写 Go 后端 + IndexedDB 镜像（不含 key），browser 模式写 IndexedDB。
- *  串行化：通过 Promise 链确保多次 blur 触发的保存按序执行，
- *  后者总是读取最新 _localConfig，根除 last-write-wins 竞态。 */
+ *  串行化：通过 Promise 链确保多次 blur 触发的保存按序执行。
+ *  入队时快照 _localConfig，而非执行时读取 — 根除「关面板→重开→_loadInitialConfig 覆写
+ *  _localConfig→挂起 save 读到旧值写回」的数据丢失竞态（Go IPC 慢时尤其明显）。 */
 let _saveChain: Promise<void> = Promise.resolve();
 function _doSaveConfig(): Promise<void> {
+    const snapshot: AiConfig = { ..._localConfig };
+    const kind = _ai?.kind;
     _saveChain = _saveChain.then(async () => {
         try {
-            if (_ai?.kind === 'go') {
+            if (kind === 'go') {
                 await _saveGoConfig({
-                    baseUrl: _localConfig.endpoint,
-                    model: _localConfig.model,
-                    aiKey: _localConfig.apiKey,
+                    baseUrl: snapshot.endpoint,
+                    model: snapshot.model,
+                    aiKey: snapshot.apiKey,
                 });
                 // 同步 endpoint/model 到 IndexedDB 镜像，保证重开面板时 _loadInitialConfig 有可读回退
-                saveAiConfig({ ..._localConfig, apiKey: '' });
+                saveAiConfig({ ...snapshot, apiKey: '' });
             } else {
-                saveAiConfig(_localConfig);
+                saveAiConfig(snapshot);
             }
         } catch (err) {
             console.warn('[ai-config] 持久化失败', err);
