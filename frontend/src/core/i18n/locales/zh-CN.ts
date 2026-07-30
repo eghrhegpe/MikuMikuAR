@@ -1366,6 +1366,7 @@ export const zhCN: Record<string, string> = {
     'env.foamThreshold': '泡沫阈值',
     'env.foamIntensity': '泡沫强度',
     'env.animSpeed': '动画速度',
+    'env.waterDispersionEnabled': '物理波速（色散）',
     'env.range': '范围',
     'env.edgeFade': '边缘淡出',
     'env.groundEnhance': '地面增强',

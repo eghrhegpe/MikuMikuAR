@@ -1383,6 +1383,7 @@ export const en: Record<string, string> = {
     'env.foamThreshold': 'Foam threshold',
     'env.foamIntensity': 'Foam intensity',
     'env.animSpeed': 'Animation speed',
+    'env.waterDispersionEnabled': 'Physical wave speed (dispersion)',
     'env.range': 'Range',
     'env.edgeFade': 'Edge Fade',
     'env.groundEnhance': 'Ground Enhance',
