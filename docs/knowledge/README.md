@@ -92,7 +92,7 @@ use_when:
 
 跑法：`node scripts/check-doc-drift.mjs`（或 `--json`）。可接 CI 卡点。
 
-## 卡片索引（223 张，按 category 分组）
+## 卡片索引（225 张，按 category 分组）
 
 ### 环境系统（env）
 
@@ -111,7 +111,8 @@ use_when:
 | [环境系统门面](./env.md) | `scene/env/env.ts` | — |
 | [环境系统实现核心](./env-impl.md) | `scene/env/env-impl.ts` | — |
 | [环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md) | `scene/env/env-bridge.ts` | ADR-138/148 |
-| [环境重力与碰撞控制](./env-gravity.md) | `scene/env/env-gravity.ts` | ADR-148 |
+| [环境重力控制](./env-gravity.md) | `scene/env/env-gravity.ts` | ADR-148/212 |
+| [环境碰撞控制](./env-collision.md) | `scene/env/env-collision.ts` | ADR-212 |
 | [环境状态防抖持久化](./env-persist.md) | `scene/env/env-persist.ts` | ADR-148/176 |
 | [时间流转与太阳角系统](./env-time-of-day.md) | `scene/env/env-time-of-day.ts` | ADR-148 |
 | [统一预设系统接口](./preset-manager.md) | `scene/env/preset-manager.ts` | ADR-130 |
@@ -277,6 +278,7 @@ use_when:
 | [轻量响应式刷新系统](./reactivity.md) | `core/reactivity.ts` | — |
 | [渲染循环与 FPS 时钟](./render-loop.md) | `core/render-loop.ts` | ADR-102 |
 | [颜色工具函数](./color-helpers.md) | `core/color-helpers.ts` | — |
+| [确定性哈希与值噪声](./hash-noise.md) | `core/math/hash-noise.ts` | ADR-212 |
 | [开发环境 E2E 钩子](./dev-hooks.md) | `core/dev-hooks.ts` | ADR-102 |
 | [安全释放工具](./dispose-helpers.md) | `core/dispose-helpers.ts` | ADR-146 |
 | [事件处理与导航系统](./events.md) | `core/events.ts` | — |
