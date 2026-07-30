@@ -116,11 +116,11 @@ export function installShortcuts(): void {
     }> = [
         { id: 'plaza:reload', key: 'F5', handler: PlazaReload },
         { id: 'plaza:reload-ctrl', key: 'KeyR', ctrl: true, handler: PlazaReload },
-        { id: 'plaza:goBack', key: 'ArrowLeft', alt: true, handler: PlazaGoBack },
-        { id: 'plaza:goForward', key: 'ArrowRight', alt: true, handler: PlazaGoForward },
-        { id: 'plaza:zoomIn', key: 'Equal', ctrl: true, handler: PlazaZoomIn },
-        { id: 'plaza:zoomOut', key: 'Minus', ctrl: true, handler: PlazaZoomOut },
-        { id: 'plaza:closeWindow', key: 'KeyW', ctrl: true, handler: ClosePlazaWindow },
+        { id: 'plaza:go-back', key: 'ArrowLeft', alt: true, handler: PlazaGoBack },
+        { id: 'plaza:go-forward', key: 'ArrowRight', alt: true, handler: PlazaGoForward },
+        { id: 'plaza:zoom-in', key: 'Equal', ctrl: true, handler: PlazaZoomIn },
+        { id: 'plaza:zoom-out', key: 'Minus', ctrl: true, handler: PlazaZoomOut },
+        { id: 'plaza:close-window', key: 'KeyW', ctrl: true, handler: ClosePlazaWindow },
     ];
 
     registerShortcuts(

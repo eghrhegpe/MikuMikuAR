@@ -76,7 +76,7 @@ export function buildShadowLevel(): PopupLevel {
                 ],
             },
             {
-                id: 'env:shadow:charHint',
+                id: 'env:shadow:char-hint',
                 kind: 'custom',
                 renderCustom: (cc) => {
                     const charRow = document.createElement('div');
@@ -102,7 +102,7 @@ export function buildShadowLevel(): PopupLevel {
                 },
             },
             {
-                id: 'env:shadow:stageHint',
+                id: 'env:shadow:stage-hint',
                 kind: 'custom',
                 renderCustom: (cc) => {
                     slideRow(

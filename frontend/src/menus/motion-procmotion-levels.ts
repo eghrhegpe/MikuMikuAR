@@ -157,14 +157,14 @@ function buildProcMotionSchema(modelId?: string): MenuNode[] {
         },
         // 卡片 3：骨骼微动（folder 折叠）
         {
-            id: 'procmotion:boneMicro',
+            id: 'procmotion:bone-micro',
             kind: 'folder',
             label: 'motion.boneMicro',
             icon: 'lucide:activity',
             defaultOpen: false,
             children: [
                 {
-                    id: 'procmotion:boneMicro-content',
+                    id: 'procmotion:bone-micro-content',
                     kind: 'custom',
                     renderCustom: (c) => {
                         cardContainer(c, (inner) => {

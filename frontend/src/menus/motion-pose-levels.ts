@@ -176,7 +176,7 @@ function buildPoseStudioSchema(): MenuNode[] {
                         undefined,
                         undefined,
                         undefined,
-                        { testId: 'menu.pose.openLensSettings' }
+                        { testId: 'menu:pose:open-lens-settings' }
                     );
                 });
             },

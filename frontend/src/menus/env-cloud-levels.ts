@@ -31,7 +31,7 @@ export function buildCloudLevel(): PopupLevel {
                 icon: 'lucide:columns',
             },
             {
-                id: 'env:cloud:sectionDetail',
+                id: 'env:cloud:section-detail',
                 kind: 'sectionTitle',
                 label: 'env.cloudDetail',
             },
@@ -102,7 +102,7 @@ export function buildCloudLevel(): PopupLevel {
                 icon: 'lucide:eye',
             },
             {
-                id: 'env:cloud:sectionLighting',
+                id: 'env:cloud:section-lighting',
                 kind: 'sectionTitle',
                 label: 'env.cloudLighting',
             },

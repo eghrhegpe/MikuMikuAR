@@ -92,7 +92,7 @@ function buildStageSchema(): MenuNode[] {
                     undefined,
                     undefined,
                     undefined,
-                    { testId: 'menu.scene.loadStage' }
+                    { testId: 'menu:scene:load-stage' }
                 );
                 slideRow(
                     inner,
@@ -130,7 +130,7 @@ function buildStageSchema(): MenuNode[] {
                     undefined,
                     undefined,
                     undefined,
-                    { testId: 'menu.scene.loadProp' }
+                    { testId: 'menu:scene:load-prop' }
                 );
             });
         },

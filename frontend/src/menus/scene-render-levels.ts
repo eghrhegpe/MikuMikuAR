@@ -512,7 +512,7 @@ function buildPostProcessColorSchema(): MenuNode[] {
                     },
                 },
                 {
-                    id: 'postprocess:tonemapping:celLevels',
+                    id: 'postprocess:tonemapping:cel-levels',
                     kind: 'slider',
                     label: 'scene.celColorLevels',
                     icon: 'lucide:layers',
@@ -526,7 +526,7 @@ function buildPostProcessColorSchema(): MenuNode[] {
                     },
                 },
                 {
-                    id: 'postprocess:tonemapping:celEdgeThreshold',
+                    id: 'postprocess:tonemapping:cel-edge-threshold',
                     kind: 'slider',
                     label: 'scene.celEdgeThreshold',
                     icon: 'lucide:scan-line',
@@ -540,7 +540,7 @@ function buildPostProcessColorSchema(): MenuNode[] {
                     },
                 },
                 {
-                    id: 'postprocess:tonemapping:celEdgeStrength',
+                    id: 'postprocess:tonemapping:cel-edge-strength',
                     kind: 'slider',
                     label: 'scene.celEdgeStrength',
                     icon: 'lucide:pen-line',

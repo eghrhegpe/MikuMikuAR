@@ -342,7 +342,7 @@ export function syncPlaybackSpeedToRuntime(runtime: { timeScale: number }): void
 function buildPlaybackSpeedSchema(): MenuNode[] {
     return [
         {
-            id: 'playbackSpeed:slider',
+            id: 'playback-speed:slider',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
