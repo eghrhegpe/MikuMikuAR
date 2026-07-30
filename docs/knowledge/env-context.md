@@ -5,7 +5,7 @@ category: env
 scope:
   - frontend/src/scene/env/**
 source_files:
-  - frontend/src/scene/env/env-context.ts
+  - frontend/src/scene/env/_shared/env-context.ts
 adr: []
 symbols:
   - initEnvImpl

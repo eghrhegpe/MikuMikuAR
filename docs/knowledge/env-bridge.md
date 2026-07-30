@@ -3,9 +3,9 @@ kind: env_bridge
 name: 环境状态写入入口（setEnvState + 中间件链）
 category: env
 scope:
-  - frontend/src/scene/env/env-bridge.ts
+  - frontend/src/scene/env/_bridge/env-bridge.ts
 source_files:
-  - frontend/src/scene/env/env-bridge.ts
+  - frontend/src/scene/env/_bridge/env-bridge.ts
 adr:
   - ADR-138
   - ADR-148

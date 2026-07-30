@@ -10,7 +10,7 @@ import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 
 import {
-    computeLibraryRef,
+    libraryRoot,
     resolveLibraryRef,
     envState,
     EnvState,
@@ -21,7 +21,9 @@ import {
 import { showInfoToast } from '../core/toast';
 import { feedbackError, feedbackInfo } from '../core/feedback';
 import { debounce } from '../core/debounce';
-import { generateUuid, swallowError } from '../core/utils';
+import { generateUuid } from '../core/utils';
+import { swallowError } from '../core/async';
+import { computeLibraryRef } from '@/core/path';
 import { logWarn } from '../core/logger';
 import {
     getActiveMotionId,
@@ -372,12 +374,12 @@ export function serializeScene(): SceneFile {
         const uuid = inst.id;
         return {
             filePath: inst.filePath,
-            libraryRef: computeLibraryRef(inst.filePath) || undefined,
+            libraryRef: computeLibraryRef(inst.filePath, libraryRoot) || undefined,
             uuid,
             name: inst.name,
             kind: inst.kind,
             vmdPath: inst.vmdPath,
-            vmdLibraryRef: inst.vmdPath ? computeLibraryRef(inst.vmdPath) || undefined : undefined,
+            vmdLibraryRef: inst.vmdPath ? computeLibraryRef(inst.vmdPath, libraryRoot) || undefined : undefined,
             vmdName: inst.vmdName,
             vmdLayers:
                 inst.vmdLayers.length > 0
@@ -503,7 +505,7 @@ export function serializeScene(): SceneFile {
             ? {
                   path: getCameraVmdPath(),
                   libraryRef: getCameraVmdPath()
-                      ? computeLibraryRef(getCameraVmdPath()) || undefined
+                      ? computeLibraryRef(getCameraVmdPath(), libraryRoot) || undefined
                       : undefined,
                   name: getCameraVmdName(),
                   active: getCameraMode() === 'vmd',
@@ -513,7 +515,7 @@ export function serializeScene(): SceneFile {
             ? {
                   path: getAudioPath(),
                   libraryRef: getAudioPath()
-                      ? computeLibraryRef(getAudioPath()) || undefined
+                      ? computeLibraryRef(getAudioPath(), libraryRoot) || undefined
                       : undefined,
                   name: getAudioName(),
                   volume: getVolume(),
@@ -541,7 +543,7 @@ export function serializeScene(): SceneFile {
             }
             return {
                 filePath: p.filePath,
-                libraryRef: computeLibraryRef(p.filePath) || undefined,
+                libraryRef: computeLibraryRef(p.filePath, libraryRoot) || undefined,
                 uuid,
                 name: p.name,
                 positionX: p.position[0],
@@ -602,7 +604,7 @@ export function serializeScene(): SceneFile {
             }
             return {
                 filePath: state.filePath,
-                libraryRef: computeLibraryRef(state.filePath) || undefined,
+                libraryRef: computeLibraryRef(state.filePath, libraryRoot) || undefined,
                 boneMapPreset: state.boneMapPreset,
             };
         })(),
@@ -935,7 +937,8 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
     // 等函数触发级联保存覆盖 last_scene.json。
     _suppressAutoSave = true;
 
-    // --- Load all models and apply post-load config ---
+    try {
+        // --- Load all models and apply post-load config ---
     const [modelIds, errors] = await deserializeModels(data.models);
 
     // --- Formation: re-apply if saved ---
@@ -1286,10 +1289,10 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                 })
             );
         }
+    } finally {
+        // 恢复完成，允许 auto-save 再次触发
+        _suppressAutoSave = false;
     }
-
-    // 恢复完成，允许 auto-save 再次触发
-    _suppressAutoSave = false;
     return errors.length;
 }
 

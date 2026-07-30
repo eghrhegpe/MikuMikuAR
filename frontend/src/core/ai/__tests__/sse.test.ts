@@ -164,4 +164,70 @@ describe('parseSseStream', () => {
         const chunks = await collect(parseSseStream(stream, ac.signal));
         expect(chunks).toEqual([{ type: 'done' }]);
     });
+
+    // ── 畸形 JSON 回退 ──
+
+    it('畸形 JSON 回退为文本（catch 降级）', async () => {
+        const stream = toStream('data: {invalid}\n\ndata: {"choices":[{"delta":{"content":"ok"}}]}\n\n');
+        const chunks = await collect(parseSseStream(stream));
+        // 第一条 JSON.parse 失败 → catch 降级为纯文本
+        expect(chunks[0]).toEqual({ type: 'text', content: '{invalid}' });
+        // 第二条正常解析
+        expect(chunks[1]).toEqual({ type: 'text', content: 'ok' });
+        expect(chunks[2]).toEqual({ type: 'done' });
+    });
+
+    it('空字符串 data 行跳过（json="" → catch 不 yield）', async () => {
+        const stream = toStream('data: \n\n');
+        const chunks = await collect(parseSseStream(stream));
+        // data: 后是空串，slice(6) = ''，catch 中 `if (json)` 为 false，跳过
+        expect(chunks).toEqual([{ type: 'done' }]);
+    });
+
+    it('data: 后有多余空白时 JSON.parse 容错', async () => {
+        // slice(6) 后得到 ' {"choices":...}'，JSON.parse 会跳过前导空白
+        const stream = toStream('data:  {"choices":[{"delta":{"content":"ok"}}]}\n\n');
+        const chunks = await collect(parseSseStream(stream));
+        expect(chunks).toHaveLength(2);
+        expect(chunks[0]).toEqual({ type: 'text', content: 'ok' });
+        expect(chunks[1]).toEqual({ type: 'done' });
+    });
+
+    // ── reader 异常 ──
+
+    it('reader.read() 抛出 DOMException AbortError → yield done', async () => {
+        let readCount = 0;
+        const stream = new ReadableStream({
+            pull(controller) {
+                readCount++;
+                if (readCount === 1) {
+                    controller.enqueue(new TextEncoder().encode('data: {"choices":[{"delta":{"content":"a"}}]}\n\n'));
+                } else {
+                    throw new DOMException('The operation was aborted', 'AbortError');
+                }
+            },
+        });
+        const chunks = await collect(parseSseStream(stream));
+        expect(chunks).toHaveLength(2);
+        expect(chunks[0]).toEqual({ type: 'text', content: 'a' });
+        expect(chunks[1]).toEqual({ type: 'done' });
+    });
+
+    it('reader.read() 抛出普通 Error → yield error 块', async () => {
+        let readCount = 0;
+        const stream = new ReadableStream({
+            pull(controller) {
+                readCount++;
+                if (readCount === 1) {
+                    controller.enqueue(new TextEncoder().encode('data: {"choices":[{"delta":{"content":"a"}}]}\n\n'));
+                } else {
+                    throw new Error('stream corrupted');
+                }
+            },
+        });
+        const chunks = await collect(parseSseStream(stream));
+        expect(chunks).toHaveLength(2);
+        expect(chunks[0]).toEqual({ type: 'text', content: 'a' });
+        expect(chunks[1]).toEqual({ type: 'error', error: 'stream corrupted' });
+    });
 });

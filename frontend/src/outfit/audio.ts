@@ -12,7 +12,7 @@ import { readFileBytes } from '../core/wails-bindings';
 import { triggerAutoSave, setUIState } from '../core/config';
 import { clamp01 } from '@/core/clamp';
 import { logWarn } from '@/core/logger';
-import { safeCallAsync } from '@/core/safe-call';
+import { safeCallAsync, safeCallVoid } from '@/core/safe-call';
 import { safeDispose } from '@/core/dispose-helpers';
 import type { BeatDetector } from '../motion-algos/beat-detector';
 import { getStreamAudio } from '@/core/mmd-adapter';
@@ -32,8 +32,17 @@ let _playlist: string[] = [];
 let _playlistIndex = -1;
 /** 跨淡入淡出用的 GainNode（串联在 StreamAudioPlayer 的 _audio 之后）。 */
 let _fadeGain: GainNode | null = null;
+/**
+ * 唯一的 AudioContext 与 MediaElementAudioSourceNode。
+ * pool:false 下 StreamAudioPlayer 的 _audio 元素稳定，故只需创建一次；
+ * 该 source 被淡入链路与节拍检测共享，避免对同一 <audio> 重复 createMediaElementSource。
+ */
+let _audioCtx: AudioContext | null = null;
+let _audioSourceNode: MediaElementAudioSourceNode | null = null;
 /** 上次 _attachEndedListener 注册的 ended 回调，用于清理。 */
 let _lastEndedHandler: (() => void) | null = null;
+/** loadAudioFile 创建的、需在本模块负责回收的 blob: URL。 */
+const _ownedBlobUrls = new Set<string>();
 
 /** 获取或创建 StreamAudioPlayer 单例。 */
 function ensurePlayer(): StreamAudioPlayer {
@@ -57,29 +66,39 @@ function _ensureFadeGain(): void {
     if (!audio) {
         return;
     }
-    // 若已有 GainNode 且 audio 已连接，跳过
-    // 每次 source 变化后 _audio 是新的，所以需要重新连接
+    // 已建立过（pool:false 下 _audio 元素稳定，无需重建）：直接复用
+    if (_fadeGain && _audioSourceNode && _audioCtx) {
+        return;
+    }
     try {
-        const ctx = new (
+        const Ctx =
             window.AudioContext ??
-            (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
-        )();
-        if (_fadeGain) {
-            _fadeGain.disconnect();
-            _fadeGain = null;
+            (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        if (!Ctx) {
+            return;
         }
-        const source = ctx.createMediaElementSource(audio);
-        _fadeGain = ctx.createGain();
+        _audioCtx = new Ctx();
+        // 唯一 source：同一 <audio> 只能有一个 MediaElementSource，淡入与节拍检测共享
+        _audioSourceNode = _audioCtx.createMediaElementSource(audio);
+        _fadeGain = _audioCtx.createGain();
         _fadeGain.gain.value = 1;
-        source.connect(_fadeGain);
-        _fadeGain.connect(ctx.destination);
-        // 关闭 StreamAudioPlayer 内部对 audio 的默认连接（通过 volume 属性控制）
-        // 注：StreamAudioPlayer 不直接操作 audio 的 connect，它只设 volume 属性；
-        // 创建 MediaElementSource 后 audio 自动从默认输出断开，需手动重连 destination。
-        // ctx.destination 已通过 _fadeGain 连接；audio 的默认输出被 MediaElementSource 取代。
+        _audioSourceNode.connect(_fadeGain);
+        _fadeGain.connect(_audioCtx.destination);
+        // 创建 MediaElementSource 后 audio 自动从默认输出断开，经 _fadeGain 重连到 destination。
     } catch {
-        // MediaElementSource 只能创建一次，若已创建则静默跳过
+        // MediaElementSource 对同一 <audio> 只能创建一次；失败时降级为无淡入
         _fadeGain = null;
+        _audioSourceNode = null;
+        _closeAudioCtx();
+    }
+}
+
+function _closeAudioCtx(): void {
+    if (_audioCtx) {
+        safeCallVoid('audio', 'closeCtx', () => {
+            void _audioCtx?.close();
+        });
+        _audioCtx = null;
     }
 }
 
@@ -257,6 +276,13 @@ export async function loadAudioFile(filePath: string, signal?: AbortSignal): Pro
     const url = URL.createObjectURL(blob);
 
     const fileName = filePath.split(/[\\/]/).pop() || '';
+    // 回收被替换的旧 blob（已非播放源），避免句柄/内存泄漏
+    const prevUrl = _playlist[_playlistIndex];
+    if (prevUrl && prevUrl !== url && _ownedBlobUrls.has(prevUrl)) {
+        URL.revokeObjectURL(prevUrl);
+        _ownedBlobUrls.delete(prevUrl);
+    }
+    _ownedBlobUrls.add(url);
     // 添加到播放列表
     const existingIdx = _playlist.indexOf(url);
     if (existingIdx >= 0) {
@@ -311,7 +337,13 @@ function _tryAttachBeatDetector(player: StreamAudioPlayer): void {
     }
     const el = getStreamAudio(player);
     if (el) {
-        beatDetectorAttached = beatDetector.attach(el);
+        // 复用 audio.ts 持有的唯一 source 节点（同一 <audio> 只能有一个 MediaElementSource），
+        // 并共享同一 AudioContext，避免跨 ctx 连接抛错。
+        const shared =
+            _audioCtx && _audioSourceNode
+                ? { ctx: _audioCtx, sourceNode: _audioSourceNode }
+                : undefined;
+        beatDetectorAttached = beatDetector.attach(el, shared);
     }
 }
 
@@ -361,6 +393,13 @@ export function disposeAudio(): void {
     audioPath = '';
     _playlist = [];
     _playlistIndex = -1;
+
+    // 先释放 beatDetector（断开其 analyser/gain 与共享 source，但不关闭共享 ctx）
+    if (beatDetector) {
+        beatDetector = safeDispose(beatDetector);
+        beatDetectorAttached = false;
+    }
+    // 断开淡入链路与共享 source（beatDetector 已断开，此处安全）
     if (_fadeGain) {
         try {
             _fadeGain.disconnect();
@@ -369,11 +408,22 @@ export function disposeAudio(): void {
         }
         _fadeGain = null;
     }
-
-    if (beatDetector) {
-        beatDetector = safeDispose(beatDetector);
-        beatDetectorAttached = false;
+    if (_audioSourceNode) {
+        try {
+            _audioSourceNode.disconnect();
+        } catch {
+            /* cleanup, ignore errors */
+        }
+        _audioSourceNode = null;
     }
+    if (_audioCtx) {
+        _closeAudioCtx();
+    }
+    // 回收本模块持有的 blob: URL，避免句柄/内存泄漏
+    for (const url of _ownedBlobUrls) {
+        URL.revokeObjectURL(url);
+    }
+    _ownedBlobUrls.clear();
 }
 
 // ======== 音量 / 偏移 ========

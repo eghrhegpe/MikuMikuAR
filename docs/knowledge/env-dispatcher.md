@@ -3,9 +3,9 @@ kind: env_dispatcher
 name: 环境变更分发回调（破循环依赖）
 category: env
 scope:
-  - frontend/src/scene/env/env-dispatcher.ts
+  - frontend/src/scene/env/_bridge/env-dispatcher.ts
 source_files:
-  - frontend/src/scene/env/env-dispatcher.ts
+  - frontend/src/scene/env/_bridge/env-dispatcher.ts
 adr:
   - ADR-138
 symbols:

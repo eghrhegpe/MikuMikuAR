@@ -3,9 +3,9 @@ kind: env_persist
 name: 环境状态防抖持久化
 category: env
 scope:
-  - frontend/src/scene/env/env-persist.ts
+  - frontend/src/scene/env/_bridge/env-persist.ts
 source_files:
-  - frontend/src/scene/env/env-persist.ts
+  - frontend/src/scene/env/_bridge/env-persist.ts
 adr:
   - ADR-148
   - ADR-176

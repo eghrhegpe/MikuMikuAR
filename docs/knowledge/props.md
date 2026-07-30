@@ -5,7 +5,7 @@ category: scene
 scope:
   - frontend/src/scene/env/**
 source_files:
-  - frontend/src/scene/env/props.ts
+  - frontend/src/scene/env/props/props.ts
 adr: []
 symbols:
   - loadProp

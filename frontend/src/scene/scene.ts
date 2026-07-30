@@ -369,7 +369,7 @@ async function _reinitSceneForHMR(): Promise<void> {
     (await import('./motion/footstep')).stopFootstep();
     (await import('../core/audio-bus')).disposeAudioBus();
     (await import('../core/reactivity')).unsubscribeAll();
-    (await import('./env/env-persist')).cancelEnvPersistTimer();
+    (await import('./env/_bridge/env-persist')).cancelEnvPersistTimer();
     (await import('./env/env')).stopTimeOfDay();
 }
 

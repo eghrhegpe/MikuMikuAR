@@ -9,7 +9,7 @@ import type { Scene } from '@babylonjs/core/scene';
 
 import { type ModelInstance } from '../core/config';
 import { readFileBytes } from '../core/wails-bindings';
-import { normPath } from '../core/utils';
+import { normPath } from '@/core/path';
 import { logWarn } from '../core/logger';
 import { safeCallVoid } from '../core/safe-call';
 

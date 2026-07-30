@@ -5,7 +5,7 @@ category: env
 scope:
   - frontend/src/scene/env/**
 source_files:
-  - frontend/src/scene/env/env-texture.ts
+  - frontend/src/scene/env/_shared/env-texture.ts
 adr:
   - ADR-092
 symbols:

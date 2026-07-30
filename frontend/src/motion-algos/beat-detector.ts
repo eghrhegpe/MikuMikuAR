@@ -42,25 +42,36 @@ export class BeatDetector {
     private bpmQuantizeEnabled = true; // P1 开关：BPM 量化（默认开）
     private _onBeatCallbacks: Array<() => void> = [];
     private _lastError: string | null = null;
+    /** ctx 是否由本实例自建。外部共享 ctx 时为 false，由调用方负责关闭。 */
+    private _ownsCtx = false;
 
-    /** 接入音频元素。惰性创建 AudioContext + GainNode。
-     *  注意：createMediaElementSource 后音频路由经 AudioContext，
+    /**
+     * 接入音频元素。惰性创建 AudioContext + GainNode。
+     * 可传入外部已创建的 `ctx` 与 `sourceNode` 以共享（避免对同一 <audio>
+     * 重复 createMediaElementSource，且保证节点接入同一 AudioContext）。
+     * 注意：createMediaElementSource 后音频路由经 AudioContext，
      *  须 resume() 否则浏览器自动播放策略下静音。
      *  @returns true 表示成功初始化；false 表示失败，可通过 getLastError() 查询原因 */
-    attach(audioElement: HTMLAudioElement): boolean {
+    attach(
+        audioElement: HTMLAudioElement,
+        opts?: { ctx?: AudioContext; sourceNode?: MediaElementAudioSourceNode }
+    ): boolean {
         if (this.ctx) {
             return true;
         }
         const AudioCtx =
             window.AudioContext ||
             (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-        if (!AudioCtx) {
+        const sharedCtx = opts?.ctx;
+        const sharedSource = opts?.sourceNode;
+        if (!sharedCtx && !AudioCtx) {
             this._lastError = 'AudioContext API 不可用';
             logWarn('beat-detector', 'BeatDetector:', this._lastError);
             return false;
         }
+        this._ownsCtx = !sharedCtx;
         try {
-            this.ctx = new AudioCtx();
+            this.ctx = sharedCtx ?? new AudioCtx();
         } catch (err) {
             this._lastError = `AudioContext 创建失败: ${err}`;
             logWarn('beat-detector', 'BeatDetector:', this._lastError);
@@ -70,7 +81,7 @@ export class BeatDetector {
             swallowError(this.ctx.resume());
         }
         try {
-            this.source = this.ctx.createMediaElementSource(audioElement);
+            this.source = sharedSource ?? this.ctx.createMediaElementSource(audioElement);
             this.analyser = this.ctx.createAnalyser();
             this.analyser.fftSize = 256;
             this.analyser.smoothingTimeConstant = 0.3;
@@ -86,8 +97,16 @@ export class BeatDetector {
         } catch (err) {
             this._lastError = `音频节点连接失败: ${err}`;
             logWarn('beat-detector', 'BeatDetector:', this._lastError);
-            // 清理已创建的资源，防止泄露
-            this.dispose();
+            // 自建 ctx 时关闭以防泄漏；共享 ctx 仅清空本实例节点（不关、不断开共享 source）
+            if (this._ownsCtx && this.ctx) {
+                safeCallVoid('beat-detector', 'closeCtx', () => {
+                    void this.ctx?.close();
+                });
+            }
+            this.analyser = null;
+            this.gain = null;
+            this.source = null;
+            this.ctx = null;
             return false;
         }
     }
@@ -114,7 +133,12 @@ export class BeatDetector {
             this.source = null;
         }
         if (this.ctx) {
-            this.ctx.close();
+            // 共享 ctx（来自 audio.ts）由调用方关闭，此处不关以防中断淡入链路
+            if (this._ownsCtx) {
+                safeCallVoid('beat-detector', 'closeCtx', () => {
+                    void this.ctx?.close();
+                });
+            }
             this.ctx = null;
         }
         this.freqData = new Uint8Array(0);
