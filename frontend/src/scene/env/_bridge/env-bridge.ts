@@ -224,6 +224,36 @@ function migrateGroundElevationColoringEnabled(
     return false;
 }
 
+/**
+ * planarReflectBlend → planarReflectionBlend 迁移（ADR-212：缩写统一 Reflect→Reflection）
+ */
+function migratePlanarReflectionBlend(
+    raw: Record<string, unknown>,
+    out: Record<string, unknown>
+): boolean {
+    if (typeof raw.planarReflectBlend === 'number') {
+        out.planarReflectionBlend = raw.planarReflectBlend;
+        delete out.planarReflectBlend;
+        return true;
+    }
+    return false;
+}
+
+/**
+ * cloudsEnabled → cloudEnabled 迁移（ADR-212：单复数统一）
+ */
+function migrateCloudEnabled(
+    raw: Record<string, unknown>,
+    out: Record<string, unknown>
+): boolean {
+    if (typeof raw.cloudsEnabled === 'boolean') {
+        out.cloudEnabled = raw.cloudsEnabled;
+        delete out.cloudsEnabled;
+        return true;
+    }
+    return false;
+}
+
 /** 迁移注册表：新增迁移在此追加。 */
 const _migrators: Migrator[] = [
     migrateGroundMode,
@@ -234,6 +264,8 @@ const _migrators: Migrator[] = [
     migrateDebugCloudsEnabled,
     migrateGroundInfiniteEnabled,
     migrateGroundElevationColoringEnabled,
+    migratePlanarReflectionBlend,
+    migrateCloudEnabled,
 ];
 
 function migrateEnvState(input: Partial<EnvState>): Partial<EnvState> {

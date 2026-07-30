@@ -114,7 +114,7 @@ uniform samplerCube envTexture;
 
 #ifdef PLANAR_REFLECTION
 uniform sampler2D reflectionTexture;
-uniform float planarReflectBlend;
+uniform float planarReflectionBlend;
 #endif
 
 void main() {
@@ -174,7 +174,7 @@ void main() {
             texture2D(reflectionTexture, reflUV - blurOff.yx).rgb
         ) * 0.2;
         #ifdef ENV_TEXTURE
-            reflection = mix(cubemapRefl, planarRefl, planarReflectBlend);
+            reflection = mix(cubemapRefl, planarRefl, planarReflectionBlend);
         #else
             reflection = planarRefl;
         #endif

@@ -185,7 +185,7 @@ export function applyEnvState(state: EnvState): void {
 
     // Clouds
     try {
-        if (state.cloudsEnabled) {
+        if (state.cloudEnabled) {
             impl.createClouds(state);
         } else {
             impl.disposeClouds();

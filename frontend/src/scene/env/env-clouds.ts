@@ -574,7 +574,7 @@ export function createClouds(state: EnvState): void {
     // Issue #7: 先清理旧的调试对象，确保 toggle off 时自动移除
     _clearDebugVisuals();
 
-    if (!state.cloudsEnabled) {
+    if (!state.cloudEnabled) {
         disposeClouds();
         return;
     }
@@ -805,7 +805,7 @@ const _CLOUD_KEYS = getEnvKeys('cloud');
 
 registerEnvCallback((changed, state) => {
     if (!changed || [...changed].some((k) => _CLOUD_KEYS.includes(k))) {
-        if (state.cloudsEnabled) {
+        if (state.cloudEnabled) {
             createClouds(state);
         } else {
             disposeClouds();

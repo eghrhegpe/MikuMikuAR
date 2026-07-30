@@ -102,7 +102,7 @@ const defaultEnv: EnvState = {
     underwaterChromaticAmount: 20,
     underwaterToneIntensity: 0.5,
     underwaterFogMultiplier: 2,
-    cloudsEnabled: false,
+    cloudEnabled: false,
     debugCloudsEnabled: false,
     mirrorEnabled: false,
     cloudCover: 0.5,
@@ -132,7 +132,7 @@ const defaultEnv: EnvState = {
     timeOfDaySpeed: 3,
 
     // [adr-074] 平面反射孤儿字段（当前无消费方，仅满足 EnvState 类型约束）
-    planarReflectBlend: 0.5,
+    planarReflectionBlend: 0.5,
     reflectionQuality: 'low',
     reflectionMode: 'planar',
     qualityProfile: 'high',
@@ -220,7 +220,7 @@ describe('EnvState defaults', () => {
             'waterFogEnd',
             'waterFogOpacityInfluence',
             'qualityProfile',
-            'cloudsEnabled',
+            'cloudEnabled',
             'cloudCover',
             'cloudScale',
             'cloudHeight',

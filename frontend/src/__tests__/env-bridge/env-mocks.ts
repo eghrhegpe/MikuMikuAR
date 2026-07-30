@@ -127,7 +127,7 @@ const es: Record<string, any> = {
     waterEnabled: false,
     particleEnabled: false,
     particleType: 'none',
-    cloudsEnabled: false,
+    cloudEnabled: false,
     windEnabled: true,
     fogEnabled: false,
     groundVisible: true,
@@ -277,7 +277,7 @@ const _PARTICLE_KEYS_M = [
     'windDirection',
 ];
 const _CLOUD_KEYS_M = [
-    'cloudsEnabled',
+    'cloudEnabled',
     'cloudCover',
     'cloudSpeed',
     'cloudHeight',
@@ -323,7 +323,7 @@ export const envDispatcherModule = {
         } catch (_) {}
         try {
             if (!c || _CLOUD_KEYS_M.some((k) => c.includes(k))) {
-                if (state.cloudsEnabled) {
+                if (state.cloudEnabled) {
                     mockImplCreateClouds(state);
                 } else {
                     mockImplDisposeClouds();
