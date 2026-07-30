@@ -77,6 +77,24 @@ export function isUnderRoot(base: string, child: string): boolean {
 }
 
 /**
+ * 纯函数：计算文件路径相对于 libraryRoot 的引用标识（相对路径）。
+ * 大小写不敏感比较（Windows 文件系统语义），与 isUnderRoot 保持一致。
+ * 返回的 ref 保留 filePath 的原始大小写，确保标签匹配不受影响。
+ * 不自动读取 libraryRoot——由调用方传入，保证零依赖叶约束。
+ */
+export function computeLibraryRef(filePath: string, root: string | null | undefined): string | null {
+    if (!root) {
+        return null;
+    }
+    const normalized = normPath(filePath);
+    const normalizedRoot = normPath(root);
+    if (normalized.toLowerCase().startsWith((normalizedRoot + '/').toLowerCase())) {
+        return normalized.substring(normalizedRoot.length + 1);
+    }
+    return null;
+}
+
+/**
  * 判断给定 kind/type 是否为「舞台类」（缩略图使用横屏 16:9 宽高比）。
  * 写侧（thumbnail-capture.ts，基于 inst.kind）与读侧（library-core.ts / library-actions.ts，
  * 基于 m.type）共用此谓词，消除宽高比缓存键的双重定义导致的潜在不一致。

@@ -449,7 +449,7 @@ describe('BrowserAiAdapter', () => {
             expect(models).toEqual([]);
         });
 
-        it('成功时缓存结果到 _fetchedModelsCache', async () => {
+        it('成功时缓存结果到 _fetchedModelsCache 并影响 capabilities()', async () => {
             mockConfig.endpoint = 'https://api.openai.com/v1/chat/completions';
             mockFetch.mockResolvedValue({
                 ok: true,
@@ -462,17 +462,27 @@ describe('BrowserAiAdapter', () => {
             // 访问私有属性验证缓存
             const cached = (adapter as unknown as { _fetchedModelsCache: string[] | null })._fetchedModelsCache;
             expect(cached).toEqual(['gpt-3.5', 'gpt-4']);
+
+            // capabilities() 优先使用缓存而非配置单模型
+            const caps = adapter.capabilities();
+            expect(caps.models).toEqual(['gpt-3.5', 'gpt-4']);
         });
 
-        it('后续 fetchModels 优先返回缓存（不重复请求）', async () => {
+        it('fetchModels 失败时缓存不变，capabilities 回退配置模型', async () => {
             mockConfig.endpoint = 'https://api.openai.com/v1/chat/completions';
-            // 直接注入缓存
-            (adapter as unknown as { _fetchedModelsCache: string[] | null })._fetchedModelsCache = ['cached-model'];
+            mockConfig.model = 'fallback-model';
+            mockFetch.mockResolvedValue({
+                ok: false,
+                status: 404,
+            });
 
-            const models = await adapter.fetchModels();
-            expect(models).toEqual(['cached-model']);
-            // 不应发请求
-            expect(mockFetch).not.toHaveBeenCalled();
+            await adapter.fetchModels();
+            const cached = (adapter as unknown as { _fetchedModelsCache: string[] | null })._fetchedModelsCache;
+            expect(cached).toBeNull();
+
+            // capabilities 回退配置单模型
+            const caps = adapter.capabilities();
+            expect(caps.models).toEqual(['fallback-model']);
         });
 
         it('携带 apiKey 时请求头带 Authorization', async () => {
