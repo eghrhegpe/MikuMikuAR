@@ -368,6 +368,13 @@ body.app-booting #bottomNav #btnPlaza {
 body.app-booting #bottomNav > .nav-tab:not(#btnAssistant):not(#btnPlaza) {
     opacity: 0.35;
 }
+/* 镂空不只适用于按钮，连它们打开的面板宿主也需提到遮罩之上，
+   否则面板已 visible 却被 #loading(z-index:10000) 盖住，表现为“点了打不开”。
+   #sceneOverlay 承载 AI 助手面板（sceneOverlay-assistant），#webviewLayer 承载广场。 */
+body.app-booting #sceneOverlay,
+body.app-booting #webviewLayer {
+    z-index: 10001;
+}
 .nav-btn {
     width: calc(48px * var(--ui-scale));
     height: calc(48px * var(--ui-scale));

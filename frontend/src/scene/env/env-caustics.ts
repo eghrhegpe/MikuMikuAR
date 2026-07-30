@@ -18,6 +18,13 @@ import { hash2v } from '@/core/math/hash-noise';
 const CAUSTIC_TEX_SIZE = 512;
 const DEFAULT_SCROLL_SPEED = 0.05; // 焦散光斑每秒滚动 UV 速率
 
+// 焦散 world→UV 尺度系数（单源）：每 1 世界单位对应的 UV 增量。
+// 与 water.frag.glsl 主焦散层 `camXZ * 0.15` 严格一致 → 水面与地面焦散光斑物理尺寸对齐。
+// 地面消费方按 `groundSize * CAUSTIC_WORLD_SCALE` 派生 Babylon Texture.uScale，
+// 使无论 groundSize 多大，地面光斑都与世界空间锚定的水面焦散同尺度（消除魔法数硬对齐）。
+// 单 cell 世界尺寸 = TILE / CAUSTIC_WORLD_SCALE ≈ 8 / 0.15 ≈ 53 单位（5.3 米）。
+export const CAUSTIC_WORLD_SCALE = 0.15;
+
 /**
  * Voronoi 焦散纹理生成器（保留 env-water 原版算法，仅换成 callback 工厂签名）。
  * 不规则网状亮纹，模拟折射光汇聚线。

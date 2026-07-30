@@ -14,7 +14,7 @@
 // 穿越水面时切换（避免每帧触发 Babylon 着色器重编译）。
 
 import { Color3, PBRMaterial, Scene, StandardMaterial } from '@babylonjs/core';
-import { causticsController, isCausticsHost } from './env-caustics';
+import { causticsController, isCausticsHost, CAUSTIC_WORLD_SCALE } from './env-caustics';
 import { setUnderwaterFog } from './env-water';
 import { envState } from '@/core/config';
 
@@ -47,13 +47,12 @@ function computeUnderwaterFogColor(): Color3 {
     return Color3.Lerp(UNDERWATER_FOG_BASE, skyCol.scale(0.85), 0.4);
 }
 
-// 焦散 UV 在地面上的重复次数。
-// 共享 causticTex 默认 uScale/vScale=1 → 128×128 整张图直接贴到 60m 地面，
-// 每个 Voronoi cell 覆盖约 15m → 视觉上是一个巨型光斑，看不出"光斑纹路"。
-// 设为 8 后每个 cell 约 1.875m（接近参考图密度）。
-// 水面 shader 不依赖 Babylon Texture.uScale（用自家 uCausticScale uniform），
-// 因此改这一值只影响地面材质，不影响水面焦散。
-const GROUND_CAUSTIC_UV_SCALE = 8;
+// 焦散 UV 在地面上的重复次数（Babylon Texture.uScale/vScale）。
+// 从共享的 world→UV 尺度系数派生：uScale = groundSize * CAUSTIC_WORLD_SCALE，
+// 使地面光斑与世界空间锚定的水面焦散（water.frag `camXZ * 0.15`）同尺度。
+// 旧版写死常量 8 不随 groundSize 变：groundSize 默认 500 unit 时 8 令单 cell≈62.5 unit，
+// 而水面为 6.67 unit，地水焦散差 ~9 倍（地面光斑过粗）——本次改为派生后对齐。
+// 水面 shader 不依赖 Babylon Texture.uScale（直接用 camXZ 世界坐标采样），改此值仅影响地面。
 
 interface InstalledMat {
     mat: PBRMaterial | StandardMaterial;
@@ -106,11 +105,12 @@ class UnderwaterFogControllerImpl {
             // 让水面与地面/角色用同一套雾参数，远处水面也褪入雾色。
             setUnderwaterFog(true, fogColor, FOG_NEAR_CLEAR, FOG_FAR_OPAQUE);
             const causticTex = causticsController.getTexture(scene);
-            // 给 causticTex 在地面上设置合理 UV 缩放（共享纹理的 uScale/vScale 默认 1，
-            // 在 60m 地面上单 cell ≈ 15m，巨大到看不出"光斑"；水面 shader 用自家
-            // uCausticScale uniform，不依赖 Babylon 的 Texture.uScale，所以改这一值安全）。
-            causticTex.uScale = GROUND_CAUSTIC_UV_SCALE;
-            causticTex.vScale = GROUND_CAUSTIC_UV_SCALE;
+            // 给 causticTex 在地面上设置与水面同尺度的 UV 缩放（从 groundSize 派生，
+            // 锚定世界空间）。水面 shader 用 camXZ 世界坐标自采样，不读 Babylon Texture.uScale，
+            // 所以在共享纹理上改 uScale 只影响地面。
+            const groundCausticScale = (envState.groundSize ?? 500) * CAUSTIC_WORLD_SCALE;
+            causticTex.uScale = groundCausticScale;
+            causticTex.vScale = groundCausticScale;
             for (const entry of this._installed) {
                 entry.mat.emissiveTexture = causticTex;
                 entry.mat.emissiveColor = CAUSTIC_TINT;
