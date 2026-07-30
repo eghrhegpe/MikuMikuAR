@@ -689,11 +689,9 @@ export const zhTW: Record<string, string> = {
     'motion.distance': '距離',
     'motion.pitch': '俯仰角',
     'motion.boneLock': '骨骼鎖定',
-    'motion.boneLockEnable': '鎖定到骨骼',
     'motion.boneLockSelect': '選擇骨骼',
     'motion.boneLockDamping': '跟隨平滑',
     'motion.boneLockApplied': '✓ 相機已鎖定到骨骼 {bone}',
-    'motion.boneLockCleared': '✓ 已解除骨骼鎖定',
     'motion.moveSpeed': '移動速度',
     'motion.mouseSens': '滑鼠靈敏度',
     'motion.orbitRadius': '軌道半徑',
@@ -1351,7 +1349,7 @@ export const zhTW: Record<string, string> = {
     'env.cloudPowder': '糖粉效應',
     'env.scale': '縮放',
     'env.thickness': '厚度',
-    'env.visibility': '可見距離',
+    'env.cloudVisibility': '可見距離',
 
     // —— Experimental ——
     'env.experimental': '實驗功能',

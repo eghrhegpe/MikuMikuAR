@@ -91,7 +91,7 @@ export function buildCloudLevel(): PopupLevel {
             {
                 id: 'env:cloud:visibility',
                 kind: 'slider',
-                label: 'env.visibility',
+                label: 'env.cloudVisibility',
                 control: {
                     bind: 'env.cloudVisibility',
                     min: 500,

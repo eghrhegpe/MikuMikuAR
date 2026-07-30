@@ -698,11 +698,9 @@ export const ja: Record<string, string> = {
     'motion.distance': '距離',
     'motion.pitch': 'ピッチ',
     'motion.boneLock': 'ボーン固定',
-    'motion.boneLockEnable': 'ボーンに固定',
     'motion.boneLockSelect': 'ボーン選択',
     'motion.boneLockDamping': '追従スムージング',
     'motion.boneLockApplied': '✓ カメラをボーン {bone} に固定しました',
-    'motion.boneLockCleared': '✓ ボーン固定を解除しました',
     'motion.moveSpeed': '移動速度',
     'motion.mouseSens': 'マウス感度',
     'motion.orbitRadius': 'オービット半径',
@@ -1368,7 +1366,7 @@ export const ja: Record<string, string> = {
     'env.cloudPowder': 'パウダー効果',
     'env.scale': 'スケール',
     'env.thickness': '厚み',
-    'env.visibility': '視程',
+    'env.cloudVisibility': '視程',
 
     // —— Experimental ——
     'env.experimental': '実験的機能',

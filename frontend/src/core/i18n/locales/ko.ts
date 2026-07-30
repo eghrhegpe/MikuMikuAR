@@ -700,11 +700,9 @@ export const ko: Record<string, string> = {
     'motion.distance': '거리',
     'motion.pitch': '피치',
     'motion.boneLock': '본 잠금',
-    'motion.boneLockEnable': '본에 잠금',
     'motion.boneLockSelect': '본 선택',
     'motion.boneLockDamping': '추적 부드러움',
     'motion.boneLockApplied': '✓ 카메라가 본 {bone}에 잠겼습니다',
-    'motion.boneLockCleared': '✓ 본 잠금이 해제되었습니다',
     'motion.moveSpeed': '이동 속도',
     'motion.mouseSens': '마우스 감도',
     'motion.orbitRadius': '궤도 반지름',
@@ -1365,7 +1363,7 @@ export const ko: Record<string, string> = {
     'env.cloudPowder': '파우더 효과',
     'env.scale': '크기',
     'env.thickness': '두께',
-    'env.visibility': '가시 거리',
+    'env.cloudVisibility': '가시 거리',
 
     // —— Experimental ——
     'env.experimental': '실험 기능',
