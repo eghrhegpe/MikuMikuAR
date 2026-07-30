@@ -6,7 +6,7 @@ scope:
   - frontend/src/scene/env/env-water.ts
 source_files:
   - frontend/src/scene/env/env-water.ts
-  - frontend/src/scene/env/env-noise.ts
+  - frontend/src/core/math/hash-noise.ts
 adr:
   - ADR-062
 symbols:
