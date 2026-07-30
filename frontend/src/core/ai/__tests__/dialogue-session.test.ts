@@ -41,7 +41,7 @@ describe('dialogue-session', () => {
         expect(bibles[1].id).toBe('narrator');
     });
 
-    it('setActiveBible(''）空字符串兜底到内置首个', () => {
+    it('setActiveBible 空字符串兜底到内置首个', () => {
         setActiveBible('');
         const bible = getActiveBible();
         expect(bible.id).toBe('miku');
