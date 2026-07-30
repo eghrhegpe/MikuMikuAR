@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 109 | 732 |
-| 3D 场景 | 107 | 1076 |
+| 3D 场景 | 108 | 1079 |
 | 菜单 & UI | 73 | 355 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 127 |
@@ -1008,6 +1008,9 @@
 | `exportCategorizedEnvPreset()` | `scene/env/env-lighting` | 序列化分类预设为 JSON 字符串。 |
 | `importCategorizedEnvPreset()` | `scene/env/env-lighting` | 从 JSON 字符串反序列化分类预设，失败返回 null。 |
 | `snapshotEnvPresetByCategory()` | `scene/env/env-lighting` | 从当前 envState 快照指定类别的字段。数组字段做浅拷贝避免别名。 |
+| `hash2()` | `scene/env/env-noise` | 确定性整数哈希 → [0,1]。seed 相同则结果可复现。 |
+| `hash2v()` | `scene/env/env-noise` | 二元组哈希 → [[0,1],[0,1]]。供 Voronoi 需要两个独立随机偏移的场景（焦散网状亮纹）。 |
+| `valueNoise()` | `scene/env/env-noise` | 平滑值噪声 → [0,1]。四角哈希 + smoothstep 双线性插值。 |
 | `applyWetnessToInst()` | `scene/env/env-particles` | — |
 | `applyWindToParticles()` | `scene/env/env-particles` | — |
 | `createParticleEmitter()` | `scene/env/env-particles` | — |
@@ -2383,5 +2386,5 @@
 
 ---
 
-> 共 311 个文件，2337 个导出符号。
+> 共 312 个文件，2340 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。
