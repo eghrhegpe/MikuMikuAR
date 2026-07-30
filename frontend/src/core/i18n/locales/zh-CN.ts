@@ -1085,8 +1085,6 @@ export const zhCN: Record<string, string> = {
     'scene.serialize.modelPathUnresolved': '模型 {name}: 无法解析文件路径',
     'scene.serialize.modelNoMesh': '模型 {name}: 加载成功但无网格数据',
     'scene.serialize.modelError': '模型 {name}: {error}',
-    'scene.serialize.autosaveFailed': '自动保存失败',
-    'scene.serialize.restoreFailed': '场景恢复失败，已回滚到空场景',
 
     // model-material — 材质调节 UI
     'model-material.batchByPart': '按部位批量 — {name}',

@@ -1018,8 +1018,6 @@ export const zhTW: Record<string, string> = {
     'scene.serialize.modelPathUnresolved': '模型 {name}：路徑無法解析',
     'scene.serialize.modelNoMesh': '模型 {name}：已載入但無網格資料',
     'scene.serialize.modelError': '模型 {name}：{error}',
-    'scene.serialize.autosaveFailed': '自動儲存失敗',
-    'scene.serialize.restoreFailed': '場景恢復失敗，已回滾到空場景',
 
     // —— Library ——
     'library.recent': '最近開啟',
