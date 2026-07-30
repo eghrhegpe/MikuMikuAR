@@ -40,6 +40,26 @@ vi.mock('../sse', () => ({
 // ── mock fetch ────────────────────────────────────────────────────
 // 在全局 mock fetch，在 beforeEach 中创建可控 mockFetch
 
+/** HTTP 200 响应工厂（流式/无 body 通吃）。 */
+function okResponse(body?: ReadableStream | null): Response {
+    return { ok: true, status: 200, body: body ?? null } as unknown as Response;
+}
+
+/** HTTP 错误响应工厂。 */
+function errResponse(status: number, statusText: string, errText?: string): Response {
+    return {
+        ok: false,
+        status,
+        statusText,
+        text: () => (errText ? Promise.resolve(errText) : Promise.reject(new Error('no body'))),
+    } as unknown as Response;
+}
+
+/** JSON 响应工厂（fetchModels 等）。 */
+function jsonResponse(data: unknown): Response {
+    return { ok: true, json: () => Promise.resolve(data) } as unknown as Response;
+}
+
 describe('BrowserAiAdapter', () => {
     let adapter: BrowserAiAdapter;
     let mockFetch: ReturnType<typeof vi.fn>;
@@ -171,10 +191,7 @@ describe('BrowserAiAdapter', () => {
 
         it('HTTP 200 → 透传 parseSseStream 的输出', async () => {
             mockConfig.endpoint = 'https://api.deepseek.com/v1/chat/completions';
-            mockFetch.mockResolvedValue({
-                ok: true,
-                body: new ReadableStream(),
-            });
+            mockFetch.mockResolvedValue(okResponse(new ReadableStream()));
             // parseSseStream 产出一条 text + done
             mockParseSseStream.mockImplementation(async function* () {
                 yield { type: 'text', content: '你好' };
@@ -198,10 +215,7 @@ describe('BrowserAiAdapter', () => {
 
         it('HTTP 200 + tools 参数 → 请求体中包含 tools', async () => {
             mockConfig.endpoint = 'https://api.deepseek.com/v1/chat/completions';
-            mockFetch.mockResolvedValue({
-                ok: true,
-                body: new ReadableStream(),
-            });
+            mockFetch.mockResolvedValue(okResponse(new ReadableStream()));
             mockParseSseStream.mockImplementation(async function* () {
                 yield { type: 'done' };
             });
@@ -218,12 +232,7 @@ describe('BrowserAiAdapter', () => {
 
         it('HTTP 非 200 → 返回 HTTP 错误块', async () => {
             mockConfig.endpoint = 'https://api.deepseek.com/v1/chat/completions';
-            mockFetch.mockResolvedValue({
-                ok: false,
-                status: 401,
-                statusText: 'Unauthorized',
-                text: () => Promise.resolve('Invalid API key'),
-            });
+            mockFetch.mockResolvedValue(errResponse(401, 'Unauthorized', 'Invalid API key'));
 
             const chunks = await collectStream();
             expect(chunks).toHaveLength(1);
@@ -236,12 +245,7 @@ describe('BrowserAiAdapter', () => {
 
         it('HTTP 非 200 + text() 失败 → 兜底用 statusText', async () => {
             mockConfig.endpoint = 'https://api.deepseek.com/v1/chat/completions';
-            mockFetch.mockResolvedValue({
-                ok: false,
-                status: 503,
-                statusText: 'Service Unavailable',
-                text: () => Promise.reject(new Error('stream error')),
-            });
+            mockFetch.mockResolvedValue(errResponse(503, 'Service Unavailable'));
 
             const chunks = await collectStream();
             expect(chunks).toHaveLength(1);
@@ -316,10 +320,7 @@ describe('BrowserAiAdapter', () => {
 
         it('finally 执行 ac.abort() 资源清理（外部 break 后）', async () => {
             mockConfig.endpoint = 'https://api.deepseek.com/v1/chat/completions';
-            mockFetch.mockResolvedValue({
-                ok: true,
-                body: new ReadableStream(),
-            });
+            mockFetch.mockResolvedValue(okResponse(new ReadableStream()));
             // parseSseStream 产出一条后永久挂起
             let hangResolve: () => void;
             const hangPromise = new Promise<void>((r) => { hangResolve = r; });
@@ -344,10 +345,7 @@ describe('BrowserAiAdapter', () => {
 
         it('finally 执行 removeEventListener 清理', async () => {
             mockConfig.endpoint = 'https://api.deepseek.com/v1/chat/completions';
-            mockFetch.mockResolvedValue({
-                ok: true,
-                body: new ReadableStream(),
-            });
+            mockFetch.mockResolvedValue(okResponse(new ReadableStream()));
             mockParseSseStream.mockImplementation(async function* () {
                 yield { type: 'done' };
             });
@@ -402,23 +400,14 @@ describe('BrowserAiAdapter', () => {
 
         it('HTTP 200 → ok=true', async () => {
             mockConfig.endpoint = 'http://localhost:11434/v1/chat/completions';
-            mockFetch.mockResolvedValue({
-                ok: true,
-                status: 200,
-            });
-
+            mockFetch.mockResolvedValue(okResponse());
             const result = await adapter.testConnection();
             expect(result.ok).toBe(true);
         });
 
         it('HTTP 401 → ok=false + classifyAiError', async () => {
             mockConfig.endpoint = 'https://api.deepseek.com/v1/chat/completions';
-            mockFetch.mockResolvedValue({
-                ok: false,
-                status: 401,
-                statusText: 'Unauthorized',
-                text: () => Promise.resolve('Bad credentials'),
-            });
+            mockFetch.mockResolvedValue(errResponse(401, 'Unauthorized', 'Bad credentials'));
 
             const result = await adapter.testConnection();
             expect(result.ok).toBe(false);
@@ -447,15 +436,12 @@ describe('BrowserAiAdapter', () => {
 
         it('OpenAI 兼容格式 → 解析并排序', async () => {
             mockConfig.endpoint = 'https://api.deepseek.com/v1/chat/completions';
-            mockFetch.mockResolvedValue({
-                ok: true,
-                json: () => Promise.resolve({
-                    data: [
-                        { id: 'deepseek-chat' },
-                        { id: 'deepseek-reasoner' },
-                    ],
-                }),
-            });
+            mockFetch.mockResolvedValue(jsonResponse({
+                data: [
+                    { id: 'deepseek-chat' },
+                    { id: 'deepseek-reasoner' },
+                ],
+            }));
 
             const models = await adapter.fetchModels();
             expect(models).toEqual(['deepseek-chat', 'deepseek-reasoner']);
@@ -496,10 +482,7 @@ describe('BrowserAiAdapter', () => {
 
         it('全部候选端点失败 → 返回空数组', async () => {
             mockConfig.endpoint = 'https://api.deepseek.com/v1/chat/completions';
-            mockFetch.mockResolvedValue({
-                ok: false,
-                status: 404,
-            });
+            mockFetch.mockResolvedValue(errResponse(404, 'Not Found'));
 
             const models = await adapter.fetchModels();
             expect(models).toEqual([]);
@@ -507,12 +490,9 @@ describe('BrowserAiAdapter', () => {
 
         it('成功时缓存结果到 _fetchedModelsCache 并影响 capabilities()', async () => {
             mockConfig.endpoint = 'https://api.openai.com/v1/chat/completions';
-            mockFetch.mockResolvedValue({
-                ok: true,
-                json: () => Promise.resolve({
-                    data: [{ id: 'gpt-4' }, { id: 'gpt-3.5' }],
-                }),
-            });
+            mockFetch.mockResolvedValue(jsonResponse({
+                data: [{ id: 'gpt-4' }, { id: 'gpt-3.5' }],
+            }));
 
             await adapter.fetchModels();
             // 访问私有属性验证缓存
@@ -527,10 +507,7 @@ describe('BrowserAiAdapter', () => {
         it('fetchModels 失败时缓存不变，capabilities 回退配置模型', async () => {
             mockConfig.endpoint = 'https://api.openai.com/v1/chat/completions';
             mockConfig.model = 'fallback-model';
-            mockFetch.mockResolvedValue({
-                ok: false,
-                status: 404,
-            });
+            mockFetch.mockResolvedValue(errResponse(404, 'Not Found'));
 
             await adapter.fetchModels();
             const cached = (adapter as unknown as { _fetchedModelsCache: string[] | null })._fetchedModelsCache;
@@ -544,10 +521,7 @@ describe('BrowserAiAdapter', () => {
         it('携带 apiKey 时请求头带 Authorization', async () => {
             mockConfig.apiKey = 'sk-test-key';
             mockConfig.endpoint = 'https://api.deepseek.com/v1/chat/completions';
-            mockFetch.mockResolvedValue({
-                ok: true,
-                json: () => Promise.resolve({ data: [{ id: 'model-1' }] }),
-            });
+            mockFetch.mockResolvedValue(jsonResponse({ data: [{ id: 'model-1' }] }));
 
             await adapter.fetchModels();
             expect(mockFetch).toHaveBeenCalledWith(
@@ -562,10 +536,7 @@ describe('BrowserAiAdapter', () => {
 
         it('fetch 使用 AbortSignal.timeout(5000) 防挂起', async () => {
             mockConfig.endpoint = 'https://api.deepseek.com/v1/chat/completions';
-            mockFetch.mockResolvedValue({
-                ok: true,
-                json: () => Promise.resolve({ data: [{ id: 'm' }] }),
-            });
+            mockFetch.mockResolvedValue(jsonResponse({ data: [{ id: 'm' }] }));
 
             const timeoutSpy = vi.spyOn(AbortSignal, 'timeout');
             await adapter.fetchModels();

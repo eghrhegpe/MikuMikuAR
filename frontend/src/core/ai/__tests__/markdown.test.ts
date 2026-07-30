@@ -42,10 +42,32 @@ describe('renderMarkdownInto', () => {
         expect(ol?.querySelectorAll('li').length).toBe(2);
     });
 
-    it('代码块', () => {
-        renderMarkdownInto(container, '```\nconst x = 1;\n```');
-        const pre = container.querySelector('pre.md-code-block code');
-        expect(pre?.textContent).toBe('const x = 1;');
+    it('斜体（_underscore_ 风格）', () => {
+        renderMarkdownInto(container, '这是 _斜体_ 文本');
+        expect(container.querySelector('em')?.textContent).toBe('斜体');
+    });
+
+    it('水平线 ---', () => {
+        renderMarkdownInto(container, '---');
+        expect(container.querySelector('hr')).not.toBeNull();
+    });
+
+    it('水平线 ***', () => {
+        renderMarkdownInto(container, '***');
+        expect(container.querySelector('hr')).not.toBeNull();
+    });
+
+    it('代码块（标记语言）', () => {
+        renderMarkdownInto(container, '```ts\nconst x: number = 1;\n```');
+        const code = container.querySelector('pre.md-code-block code');
+        expect(code?.textContent).toBe('const x: number = 1;');
+    });
+
+    it('多个标题级别 h1/h2/h3/h4/h5/h6', () => {
+        renderMarkdownInto(container, '# h1\n## h2\n###### h6');
+        expect(container.querySelector('h1')?.textContent).toBe('h1');
+        expect(container.querySelector('h2')?.textContent).toBe('h2');
+        expect(container.querySelector('h6')?.textContent).toBe('h6');
     });
 
     it('XSS 安全：script/标签作为纯文本，不生成脚本节点', () => {
