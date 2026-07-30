@@ -16,7 +16,7 @@ import {
     addRecentMotion,
 } from '@/core/config';
 import { getBaseName } from '@/core/path';
-import { withLoadingIndicator } from '@/core/utils';
+import { withLoadingIndicator } from '@/core/config';
 import { logWarn } from '@/core/logger';
 import { encodeFileRef } from '@/core/fileservice';
 import { readFileBytes } from '@/core/wails-bindings';

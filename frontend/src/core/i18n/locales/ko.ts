@@ -1700,6 +1700,11 @@ export const ko: Record<string, string> = {
     'motion.boneOverride.exportHierarchy': '본 계층 내보내기',
     'motion.boneOverride.exportCopied': '✓ 본 계층이 클립보드에 복사되었습니다',
     'motion.boneOverride.exportFailed': '✕ 내보내기 실패: 모델 또는 본이 없습니다',
+    // [doc:adr-186] 파이프라인 순서 UI
+    'motion.boneOverride.pipelineOrder': '파이프라인 순서 개요',
+    'motion.boneOverride.pipelineEmpty': '등록된 프레임 훅이 없습니다 (모듈을 활성화하면 여기에 표시됩니다)',
+    'motion.boneOverride.pipelineNote':
+        '숫자가 작을수록 먼저 실행됩니다. 이후 레이어가 이전 레이어를 덮어쓸 수 있습니다. 순서는 선언에 의해 결정되며 등록 순서와 무관합니다.',
     // [doc:adr-116] 모션 오버라이드 모듈 UI
     'motion.override.title': '모션 오버라이드',
     'motion.override.enabled': '✓ 모듈 활성화됨',

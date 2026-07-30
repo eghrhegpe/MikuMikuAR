@@ -520,6 +520,11 @@ export const en: Record<string, string> = {
     'motion.boneOverride.exportHierarchy': 'Export Bone Hierarchy',
     'motion.boneOverride.exportCopied': '✓ Bone hierarchy copied to clipboard',
     'motion.boneOverride.exportFailed': '✕ Export failed: no model or bones available',
+    // [doc:adr-186] Pipeline order overview UI
+    'motion.boneOverride.pipelineOrder': 'Pipeline Order Overview',
+    'motion.boneOverride.pipelineEmpty': 'No frame hooks registered (they will appear here once modules are enabled)',
+    'motion.boneOverride.pipelineNote':
+        'Lower numbers execute first; later layers can override earlier ones. Order is determined by declaration, not registration sequence.',
     // [doc:adr-116] Motion override modular UI
     'motion.override.title': 'Motion Override',
     'motion.override.enabled': '✓ Module enabled',

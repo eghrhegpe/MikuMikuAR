@@ -1704,6 +1704,11 @@ export const ja: Record<string, string> = {
     'motion.boneOverride.exportHierarchy': 'ボーン階層をエクスポート',
     'motion.boneOverride.exportCopied': '✓ ボーン階層をクリップボードにコピーしました',
     'motion.boneOverride.exportFailed': '✕ エクスポート失敗：モデルまたはボーンがありません',
+    // [doc:adr-186] パイプライン順序 UI
+    'motion.boneOverride.pipelineOrder': 'パイプライン順序一覧',
+    'motion.boneOverride.pipelineEmpty': 'フレームフックが登録されていません（モジュールを有効にするとここに表示されます）',
+    'motion.boneOverride.pipelineNote':
+        '数字が小さいほど先に実行されます。後のレイヤーは前のレイヤーの書き込みを上書きできます。順序は宣言によって決まり、登録順ではありません。',
     // [doc:adr-116] モーションオーバーライド モジュールUI
     'motion.override.title': 'モーションオーバーライド',
     'motion.override.enabled': '✓ モジュール有効',
