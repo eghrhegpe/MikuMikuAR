@@ -35,6 +35,10 @@ vi.mock('../../scene/env/_shared/env-context', () => {
         initEnvImpl: () => {},
         isInitialized: () => true,
         getPipeline: () => null,
+        // 与真实 env-context 一致：地水共享尺寸单源（ADR-217）
+        INFINITE_GROUND_SIZE: 2000,
+        effectiveGroundSize: (groundSize: number, infiniteEnabled: boolean) =>
+            infiniteEnabled ? 2000 : groundSize,
     };
 });
 // ADR-151: env-water 从 env-reflection 导入 getPlanarQualityOverride，后者会拉入
@@ -319,6 +323,22 @@ describe('Water 大波/焦散开关 — enabled 门控 shader uniform', () => {
 
     it('causticEnabled=false 时 uCausticIntensity 送 0', () => {
         expect(captureUniform('uCausticIntensity', { causticEnabled: false, causticIntensity: 0.3 })).toBe(0);
+    });
+
+    // ADR-217: 地水无限尺寸单源 — 水面地平线淡出距离据 effectiveGroundSize 派生
+    it('groundInfiniteEnabled=false 时 uHorizonStart 基于 groundSize（非无限）', () => {
+        // uHorizonStart = effectiveGroundSize(500, false) * 0.7 = 350
+        expect(
+            captureUniform('uHorizonStart', { groundSize: 500, groundInfiniteEnabled: false })
+        ).toBe(350);
+    });
+
+    it('groundInfiniteEnabled=true 时 uHorizonStart 推到无限尺寸 2000（与地面延伸对齐）', () => {
+        // uHorizonStart = effectiveGroundSize(500, true) * 0.7 = 2000 * 0.7 = 1400
+        // 验证开无限后水面淡出不再卡在 350（消除甜甜圈）
+        expect(
+            captureUniform('uHorizonStart', { groundSize: 500, groundInfiniteEnabled: true })
+        ).toBe(1400);
     });
 });
 

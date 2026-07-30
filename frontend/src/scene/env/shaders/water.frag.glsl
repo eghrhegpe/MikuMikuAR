@@ -234,7 +234,9 @@ void main() {
     // 导致焦散只是亮度叠加，不参与表面视觉起伏。
     // 修复：用焦散纹理的梯度作为额外法线偏移，让焦散亮纹同时产生可见的表面涟漪。
 
-    // 层1：主焦散（scale 0.15，cell ≈ 6.7 单位）
+    // 层1：主焦散（scale 0.15 = CAUSTIC_WORLD_SCALE，cell ≈ 6.7 单位）
+    // ✦ 此 0.15 与 env-caustics.ts 的 CAUSTIC_WORLD_SCALE 单源对齐：地面焦散 uScale 由它派生，
+    //   改此处必须同步改 CAUSTIC_WORLD_SCALE，否则地水焦散尺度再次错配。
     // 用相机相对坐标（camXZ 已在 detail normal 段定义），精度稳定。
     // UV 偏移由 uCausticOffset 提供（causticsController 每帧推进纹理 uOffset/vOffset，
     // 联动用户参数 causticScrollX/Y），让主焦散层持续滚动而非静止。

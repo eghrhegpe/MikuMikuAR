@@ -18,7 +18,7 @@ import { Plane } from '@babylonjs/core/Maths/math.plane';
 const _waterMirrorPlane = new Plane(0, 1, 0, 0);
 import { EnvState, envState } from '@/core/config';
 import { col3FromTriple } from '@/core/color-helpers';
-import { _envSys, getScene } from './_shared/env-context';
+import { _envSys, getScene, effectiveGroundSize } from './_shared/env-context';
 import { PlanarReflection, registerReflectionSurface } from './planar-reflection';
 import { getPlanarQualityOverride } from './env-reflection';
 import { createCanvasTexture } from './_shared/env-texture';
@@ -671,8 +671,8 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     const skyBot = state.skyColorBot ?? state.waterFogColor;
     mat.setVector3('uSkyBlendColor', new Vector3(skyBot[0], skyBot[1], skyBot[2]));
     mat.setFloat('uSkyColorBlend', state.waterSkyColorBlend ?? 0);
-    // 地平线淡出距离按地面尺寸自动计算
-    const ws = state.groundSize;
+    // 地平线淡出距离按生效地面尺寸自动计算（无限地面时同步推到 2000，与地面延伸对齐）
+    const ws = effectiveGroundSize(state.groundSize, state.groundInfiniteEnabled ?? false);
     mat.setFloat('uHorizonFade', state.waterHorizonFade ?? 0);
     mat.setFloat('uHorizonStart', ws * 0.7);
     mat.setFloat('uHorizonEnd', ws * 0.95);
@@ -750,7 +750,7 @@ function _setupMirrorRT(scene: Scene, state: EnvState): void {
  * 更新水面网格的位置和缩放（非破坏性）。所有 LOD 层同步变换。
  */
 function _updateWaterMesh(state: EnvState): void {
-    const scale = Math.max(1, state.groundSize / WATER_BASE_SIZE);
+    const scale = Math.max(1, effectiveGroundSize(state.groundSize, state.groundInfiniteEnabled ?? false) / WATER_BASE_SIZE);
     const rotX = state.waterFlipEnabled ? Math.PI : 0;
     const meshes: Mesh[] = [];
     if (_envSys.water.mesh) {
@@ -1020,7 +1020,7 @@ export function createWater(state: EnvState): void {
         return;
     }
 
-    const scale = Math.max(1, state.groundSize / WATER_BASE_SIZE);
+    const scale = Math.max(1, effectiveGroundSize(state.groundSize, state.groundInfiniteEnabled ?? false) / WATER_BASE_SIZE);
     const rotX = state.waterFlipEnabled ? Math.PI : 0;
     const makeGround = (name: string, subdivisions: number): Mesh => {
         const m = MeshBuilder.CreateGround(

@@ -15,6 +15,7 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
+| ADR-217 | 地水无限尺寸单源化 — 水面跟进 groundInfiniteEnabled | ✅ 已实施（2026-07-30） |
 | ADR-216 | 移除死状态字段 underwaterFogDensity / underwaterFogMultiplier | ✅ 已实施（2026-07-30） |
 | ADR-215 | 取消「道具」资源类型 — 模型附属关系替代 prop + accessory 体系 | 📋 规划（2026-07-30） |
 | ADR-214 | Menu ID 命名规范治理 | ✅ 已完成（Phase 1/2/3 + domain 对齐全部完成）（2026-07-30） |

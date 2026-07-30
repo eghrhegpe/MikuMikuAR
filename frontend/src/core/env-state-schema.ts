@@ -131,7 +131,9 @@ export const ENV_STATE_SCHEMA = {
     groundNormalTexture: { type: 'string', default: '', group: 'ground' },
     groundNormalStrength: { type: 'number', default: 1, group: 'ground' },
     groundElevationColoringEnabled: { type: 'boolean', default: false, group: 'ground' },
-    groundInfiniteEnabled: { type: 'boolean', default: false, group: 'ground' },
+    // [doc:adr-217] group 含 'water'：水面 mesh 缩放与地平线淡出距离据 groundInfiniteEnabled/groundSize
+    // 派生（effectiveGroundSize），故改这两字段须同时触发水面重同步，否则地水延伸范围脱节（甜甜圈）。
+    groundInfiniteEnabled: { type: 'boolean', default: false, group: ['ground', 'water'] },
     groundPbrEnabled: { type: 'boolean', default: false, group: 'ground' },
     groundProceduralTexture: {
         type: 'enum',
@@ -146,7 +148,7 @@ export const ENV_STATE_SCHEMA = {
     groundReflectionBlur: { type: 'number', default: 0.0, group: 'ground' },
     groundReflectionDistort: { type: 'number', default: 0.3, group: 'ground' },
     groundLevel: { type: 'number', default: 0, group: 'ground' },
-    groundSize: { type: 'number', default: 500, group: 'ground' },
+    groundSize: { type: 'number', default: 500, group: ['ground', 'water'] },
     groundEdgeFade: { type: 'number', default: 0, group: 'ground' },
 
     // --- Wind ---

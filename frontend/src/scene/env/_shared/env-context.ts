@@ -39,6 +39,20 @@ export function getPipeline(): DefaultRenderingPipeline {
     return _pipeline;
 }
 
+// ======== 地水共享尺寸单源 ========
+// 无限地面/水面的固定 mesh 尺寸（匹配碰撞体范围，ADR-134）。
+// 放在 env-context（零循环依赖共享层）使 env-ground 与 env-water 共用同一个值，
+// 避免 env-water→env-ground 反向 import 造成循环依赖（env-ground 已 import env-water）。
+export const INFINITE_GROUND_SIZE = 2000;
+
+/**
+ * 当前生效的地面尺寸：开启无限地面时为固定大尺寸，否则为 groundSize。
+ * 地面 mesh、水面 mesh 缩放、水面地平线淡出距离均据此派生，保证地水延伸范围一致。
+ */
+export function effectiveGroundSize(groundSize: number, infiniteEnabled: boolean): number {
+    return infiniteEnabled ? INFINITE_GROUND_SIZE : groundSize;
+}
+
 // ======== Static Asset URL Resolver (Android 安全) ========
 export function resolveStaticAsset(path: string): string {
     if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) {
