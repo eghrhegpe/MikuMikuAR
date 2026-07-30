@@ -1,6 +1,6 @@
 # ADR-059: i18n 多语言切换框架
 
-> **状态**: 已完成（2026-07-10 全部 Phase 落地，奇偶校验脚本已接 CI；2026-07-22 废弃 Go UIState 持久化升级预留路径；剩余 ja/ko/zh-TW 翻译质量为人工/AI 走查任务，非框架范畴）
+> **状态**: 已完成（2026-07-10 全部 Phase 落地，奇偶校验脚本已接 CI；2026-07-22 废弃 Go UIState 持久化升级预留路径；2026-07-30 补齐首访系统语言自动识别；剩余 ja/ko/zh-TW 翻译质量为人工/AI 走查任务，非框架范畴）
 > **关联**: [ADR-043](adr-043-dancexr-gap-analysis.md)（DanceXR 差距分析）、[ADR-044](adr-044-competitive-analysis.md)（竞品分析）
 > **背景**: 当前全仓 UI 字符串为硬编码中文，约 100 个 `.ts` 文件含中文字面量，分布于 `menus/`、`core/ui-*`、`scene/`、`physics/`。无 i18n 框架、无语言偏好入口。竞品 DanceXR 已支持 5 种语言（简/繁中、英、日、韩）。本 ADR 锁定一套与现有 `core/reactivity` 体系对齐的轻量 i18n 方案。
 
@@ -86,16 +86,20 @@ export function setLang(lang: LangCode): void {
   scheduleRefresh();       // 已开 SlideMenu 的 updateControls() 自动重读 t()
 }
 
+// 语言决策优先级：用户手选（localStorage）> 系统语言（navigator）> 基准 zh-CN
 function loadLang(): LangCode {
   try {
     const v = localStorage.getItem(LANG_KEY) as LangCode | null;
-    return v ?? FALLBACK;
-  } catch { return FALLBACK; }
+    if (v && SUPPORTED.includes(v)) return v;   // 用户显式选择最高优先
+  } catch { /* localStorage 不可用：继续尝试系统语言 */ }
+  return detectSystemLang() ?? FALLBACK;         // 首访：读浏览器/WebView 语言偏好
 }
 function saveLang(l: LangCode): void {
   try { localStorage.setItem(LANG_KEY, l); } catch { /* ignore */ }
 }
 ```
+
+**首访系统语言自动识别（2026-07-30 补充，§3.6）**：`loadLang` 在 localStorage 无合法记录时调用 `detectSystemLang()`，按 `navigator.languages` 顺序取首个受支持语言，实现「看客下菜」。详见 §3.6。
 
 **关键**：所有菜单标签在 `updateControls()` 渲染时调用 `t()` 读取，因此 `scheduleRefresh()` 后已开面板标签自动刷新，无需重建菜单树。
 
@@ -182,6 +186,27 @@ locale bundle 为同步导入的 TS 对象（体积小、可 tree-shake），无
   - 运行：`node ../scripts/i18n-check.mjs --strict`；任何缺失即 exit 1。
   - npm：`npm run check:i18n`（在 `frontend/` 内）。
 - **字面量 lint-grep（未来可选）**：新增 eslint / grep 预检，禁止在 `menus/`、`core/ui-*`、`scene/`、`physics/`（非 `locales/`）直接出现未包裹中文字面量。当前未被 i18n 化代码仍含中文（如 `settings-filename.ts` 等命名空间尚未迁移），故暂不强制，避免误伤。
+
+### 3.6 首访系统语言自动识别（2026-07-30 补充）
+
+**背景**：早期 `loadLang` 在 localStorage 无记录时一律回落 `zh-CN`，首访的英/日/韩用户被强制发简体中文。五语 bundle 已备齐，却未“看客下菜”。
+
+**方案**：新增 `detectSystemLang()`（`core/i18n/locale.ts`，已导出供单测），仅在 localStorage 无合法记录时由 `loadLang` 调用。**优先级链：用户手选（localStorage）> 系统语言（navigator）> 基准 zh-CN**，不覆盖任何人已有的显式选择。
+
+**匹配规则**（按 `navigator.languages` 顺序，取首个命中；`languages` 为空时回落 `navigator.language` 单值）：
+
+| navigator 语言标签 | 匹配结果 | 说明 |
+|-------------------|---------|------|
+| `zh-Hant` / `zh-TW` / `zh-HK` / `zh-MO`（含脚本） | `zh-TW` | 繁体：Hant 脚本或港澳台地区码 |
+| 其余 `zh` 变体（`zh` / `zh-CN` / `zh-SG` / `zh-Hans` …） | `zh-CN` | 简体（含新加坡 zh-SG） |
+| `en` / `ja` / `ko` 及地区变体（`en-US`/`ja-JP`…） | 对应基准语言 | 取 `-` 前缀比对 |
+| 其余（`fr`/`de`…） | `null` | 均不命中→ `loadLang` 回落 `FALLBACK` |
+
+**健壮性**：`navigator` 不存在、`languages` 为空、访问抛异常三条路径均有兜底（`try/catch` + `typeof navigator` 守卫），最终稳落 `zh-CN`。
+
+**繁简判定的规则型语义**：采“Hant/TW/HK/MO 判繁，其余 zh 判简”的白名单式规则（非穷举）。若未来接入更多 zh 地区，需回看此表。
+
+**测试**：`core/i18n/locale.detect.test.ts`——`vi.stubGlobal('navigator', ...)` 覆盖偏好，7 项用例覆盖繁/简/基准/顺序优先/无命中回 null/`language` 单值降级/navigator 缺失。
 
 ---
 
