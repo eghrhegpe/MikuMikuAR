@@ -161,6 +161,8 @@ public class MainActivity extends AppCompatActivity {
 
                     if (DEBUG) Log.d(TAG, "Request: " + request.getUrl().getPath());
 
+                    WebResourceResponse response = null;
+
                     // For wails API calls (runtime, capabilities, etc.) pass the
                     // full URL including the query string, because
                     // WebViewAssetLoader.PathHandler strips query params
@@ -181,7 +183,7 @@ public class MainActivity extends AppCompatActivity {
                             headers.put("Cache-Control", "no-cache");
                             headers.put("Content-Type", "application/json");
 
-                            return new WebResourceResponse(
+                            response = new WebResourceResponse(
                                 "application/json",
                                 "UTF-8",
                                 200,
@@ -189,27 +191,40 @@ public class MainActivity extends AppCompatActivity {
                                 headers,
                                 inputStream
                             );
+                        } else {
+                            response = new WebResourceResponse(
+                                "application/json",
+                                "UTF-8",
+                                500,
+                                "Internal Error",
+                                new java.util.HashMap<>(),
+                                new java.io.ByteArrayInputStream("{}".getBytes())
+                            );
                         }
-                        // Return error response if data is null
-                        return new WebResourceResponse(
-                            "application/json",
-                            "UTF-8",
-                            500,
-                            "Internal Error",
-                            new java.util.HashMap<>(),
-                            new java.io.ByteArrayInputStream("{}".getBytes())
-                        );
+                    } else if (path != null && path.startsWith("/__capture__/")) {
+                        // Stream captured photos/videos from the cache with HTTP Range
+                        // support so <video> can seek/stream a clip of any length.
+                        response = serveCaptureFile(path.substring("/__capture__/".length()), request);
+                    } else {
+                        // For regular assets, serve directly through WailsPathHandler
+                        WailsPathHandler handler = new WailsPathHandler(bridge);
+                        response = handler.handle(path);
                     }
 
-                    // Stream captured photos/videos from the cache with HTTP Range
-                    // support so <video> can seek/stream a clip of any length.
-                    if (path != null && path.startsWith("/__capture__/")) {
-                        return serveCaptureFile(path.substring("/__capture__/".length()), request);
+                    // [doc:adr-133] Inject COOP/COEP headers to enable cross-origin
+                    // isolation (SharedArrayBuffer) for WASM multi-threaded physics (MPR).
+                    // Mirrors the Go-side CoopCoepMiddleware (adr-099) which Android's
+                    // WebViewAssetLoader path bypasses entirely.
+                    if (response != null) {
+                        java.util.Map<String, String> h = response.getResponseHeaders();
+                        if (h == null) {
+                            h = new java.util.HashMap<>();
+                        }
+                        h.put("Cross-Origin-Opener-Policy", "same-origin");
+                        h.put("Cross-Origin-Embedder-Policy", "require-corp");
+                        response.setResponseHeaders(h);
                     }
-
-                    // For regular assets, serve directly through WailsPathHandler
-                    WailsPathHandler handler = new WailsPathHandler(bridge);
-                    return handler.handle(path);
+                    return response;
                 }
 
                 return super.shouldInterceptRequest(view, request);
