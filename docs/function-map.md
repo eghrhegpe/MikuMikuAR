@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 110 | 735 |
+| 核心基础设施 | 110 | 737 |
 | 3D 场景 | 109 | 1079 |
 | 菜单 & UI | 73 | 355 |
 | 换装 & 音频 | 3 | 33 |
@@ -112,6 +112,7 @@
 | `rangeAdapter()` | `core/ai/param-adapters` | — |
 | `SceneSnapshotBridge()` | `core/ai/scene-snapshot` | AI 快照所需的引擎运行时读取桥接（由 scene.ts 注入）。 |
 | `SceneSnapshotData()` | `core/ai/scene-snapshot` | 格式化后的快照数据（纯数据，便于测试）。 |
+| `_resetAiSnapshotBridge()` | `core/ai/scene-snapshot` | 仅供测试使用：重置 bridge 缓存。 |
 | `captureSceneSnapshot()` | `core/ai/scene-snapshot` | 采集当前场景快照文本；未初始化时返回占位符。 |
 | `captureSceneSnapshotData()` | `core/ai/scene-snapshot` | 采集当前场景快照结构化数据；未初始化时返回 null。 |
 | `formatSceneSnapshot()` | `core/ai/scene-snapshot` | 将快照数据格式化为紧凑文本（≤ NFR-3 的 2048 字符预算）。 |
@@ -331,6 +332,7 @@
 | `cartesianToOrbit()` | `core/orbit` | 笛卡尔坐标 → 球面坐标。 |
 | `normalizeOrbit()` | `core/orbit` | 钳制一组原始轨道参数为合法值域。 |
 | `orbitToCartesian()` | `core/orbit` | 球面坐标 → 笛卡尔坐标。 |
+| `computeLibraryRef()` | `core/path` | 纯函数：计算文件路径相对于 libraryRoot 的引用标识（相对路径）。 |
 | `getBaseName()` | `core/path` | 跨平台取路径末段文件名。 |
 | `getDirPath()` | `core/path` | 跨平台取父目录路径。根目录（无 `/`）返回空字符串。 |
 | `isStageLike()` | `core/path` | 判断给定 kind/type 是否为「舞台类」（缩略图使用横屏 16:9 宽高比）。 |
@@ -599,7 +601,7 @@
 | `clampPct()` | `core/utils` | — |
 | `clearAllMenuWrappers()` | `core/utils` | — |
 | `closeAllOverlays()` | `core/utils` | — |
-| `computeLibraryRef()` | `core/utils` | — |
+| `computeLibraryRef()` | `core/utils` | 向后兼容包装：从 config 读取 libraryRoot 再委托给 path 模块的纯函数。 |
 | `degToRad()` | `core/utils` | 角度 → 弧度。 |
 | `delay()` | `core/utils` | — |
 | `disposeMenuWrapper()` | `core/utils` | — |
@@ -917,14 +919,41 @@
 | `setSyncAxesCallback()` | `scene/camera/camera` | — |
 | `switchCameraMode()` | `scene/camera/camera` | Switch to a different camera mode, preserving position as much as possible. |
 | `InvertableArcRotateCameraPointersInput()` | `scene/camera/invertablePointersInput` | 可反转 Y 轴的 ArcRotate 相机指针输入。 |
-| `attachPropToBone()` | `scene/env/accessory` | 将道具挂载到指定模型的骨骼上。 |
-| `detachModelAccessories()` | `scene/env/accessory` | 移除指定模型的所有骨骼锚定道具（模型卸载时调用）。 |
-| `detachPropFromBone()` | `scene/env/accessory` | 从骨骼上解除道具挂载，回到场景坐标模式。 |
-| `reattachAllAccessories()` | `scene/env/accessory` | 重新挂载所有骨骼锚定的道具（场景恢复时调用）。 |
-| `applyEnvStateFacade()` | `scene/env/env-bridge` | 等同于 scene-env.ts 的 applyEnvState，但避免循环依赖。 |
-| `registerEnvStateMiddleware()` | `scene/env/env-bridge` | 注册 setEnvState 中间件（供 env-time-of-day/env-gravity 等子模块调用） |
-| `setEnvState()` | `scene/env/env-bridge` | — |
-| `setPresetAnimActive()` | `scene/env/env-bridge` | 标记预设动画是否运行中（供 _applyEnvStateFacade 跳过方向光同步） |
+| `applyEnvStateFacade()` | `scene/env/_bridge/env-bridge` | 等同于 scene-env.ts 的 applyEnvState，但避免循环依赖。 |
+| `registerEnvStateMiddleware()` | `scene/env/_bridge/env-bridge` | 注册 setEnvState 中间件（供 env-time-of-day/env-gravity 等子模块调用） |
+| `setEnvState()` | `scene/env/_bridge/env-bridge` | — |
+| `setPresetAnimActive()` | `scene/env/_bridge/env-bridge` | 标记预设动画是否运行中（供 _applyEnvStateFacade 跳过方向光同步） |
+| `clearAllEnvCallbacks()` | `scene/env/_bridge/env-dispatcher` | 清空所有已注册的 env 回调（场景销毁 / HMR 重入时兜底清理）。 |
+| `clearEnvDtTickCallbacks()` | `scene/env/_bridge/env-dispatcher` | 清空所有 dt 回调（场景销毁 / HMR 重入时清理）。 |
+| `clearSceneTickCallbacks()` | `scene/env/_bridge/env-dispatcher` | 清空所有场景 tick 回调（场景销毁 / HMR 重入时清理）。 |
+| `dispatchEnvChange()` | `scene/env/_bridge/env-dispatcher` | setEnvState 调用此函数分发变化。 |
+| `registerEnvCallback()` | `scene/env/_bridge/env-dispatcher` | 子系统注册响应回调（延迟绑定，避免循环导入）。 |
+| `registerEnvDtTickCallback()` | `scene/env/_bridge/env-dispatcher` | 注册每帧 dt 回调（env-impl 每帧推 dt）。 |
+| `registerSceneTickCallback()` | `scene/env/_bridge/env-dispatcher` | 注册场景每帧 tick 回调。返回的清理函数在 dispose 时调用。 |
+| `runEnvDtTickCallbacks()` | `scene/env/_bridge/env-dispatcher` | 执行所有 dt tick 回调（由 ensureEnvUpdateObserver 推 dt）。 |
+| `runSceneTickCallbacks()` | `scene/env/_bridge/env-dispatcher` | 执行所有已注册的场景 tick 回调（由 ensureEnvUpdateObserver 的 scene observer 每帧调用）。 |
+| `cancelEnvPersistTimer()` | `scene/env/_bridge/env-persist` | 取消挂起的 env state 防抖持久化定时器（HMR 重入清理用，见 ADR-106 D3）。 |
+| `flushEnvState()` | `scene/env/_bridge/env-persist` | 立即刷写 env state 到后端（无防抖）。关闭/隐藏页面时调用。 |
+| `flushUIState()` | `scene/env/_bridge/env-persist` | 立即刷写 UI state 到后端（无防抖）。关闭/隐藏页面时调用。 |
+| `persistEnvState()` | `scene/env/_bridge/env-persist` | 持久化 envState 到后端（ADR-176 第 2 步：经 resolveBackend 路由）。 |
+| `persistUIState()` | `scene/env/_bridge/env-persist` | 与 persistEnvState 对称：持久化 UI state（ADR-176 第 2 步：经 resolveBackend 路由）。 |
+| `schedulePersistEnvState()` | `scene/env/_bridge/env-persist` | 调度 env state 防抖持久化（500ms）。setEnvState 内部调用。 |
+| `schedulePersistUI()` | `scene/env/_bridge/env-persist` | 防抖调度 UIState 持久化。修改 uiState 后调用此函数。 |
+| `_envSys()` | `scene/env/_shared/env-context` | — |
+| `getPipeline()` | `scene/env/_shared/env-context` | — |
+| `getScene()` | `scene/env/_shared/env-context` | — |
+| `initEnvImpl()` | `scene/env/_shared/env-context` | — |
+| `isInitialized()` | `scene/env/_shared/env-context` | — |
+| `resolveStaticAsset()` | `scene/env/_shared/env-context` | — |
+| `CanvasTextureOptions()` | `scene/env/_shared/env-texture` | — |
+| `createCanvasDataURL()` | `scene/env/_shared/env-texture` | 统一创建 canvas 并导出 data URL（供 CreateGroundFromHeightMap 等以 URL 为输入的场景， 与 createCanvasTexture |
+| `createCanvasTexture()` | `scene/env/_shared/env-texture` | 统一创建 canvas 贴图。优先 DynamicTexture（无 toDataURL PNG 编码开销，ADR-091 §6 方向）； 任意环节失败（含 NullEngine |
+| `disposeTextureCache()` | `scene/env/_shared/env-texture` | 释放全部缓存贴图（供 disposeEnv 统一清理）。 |
+| `getOrCreateCanvasTexture()` | `scene/env/_shared/env-texture` | 按 key 获取或创建 canvas 贴图。key 不变则复用；调用方不应手动 dispose 缓存贴图 （统一由 disposeTextureCache 在 disposeEnv |
+| `isCacheOwnedTexture()` | `scene/env/_shared/env-texture` | 判断贴图是否归缓存所有——是则调用方不得手动 dispose（由 disposeTextureCache 统一释放）。 |
+| `FrozenCamera()` | `scene/env/_shared/env-type-helpers` | — |
+| `REFRESHRATE_RENDER_ONCE()` | `scene/env/_shared/env-type-helpers` | — |
+| `getCanvasCtx()` | `scene/env/_shared/env-type-helpers` | — |
 | `CausticsHostMat()` | `scene/env/env-caustics` | 类型守卫：材质是否支持 emissiveTexture（用于焦散投影） |
 | `CausticsScrollConfig()` | `scene/env/env-caustics` | 焦散滚动配置（用户可通过 state.causticScrollX/Y 覆盖） |
 | `causticsController()` | `scene/env/env-caustics` | — |
@@ -940,21 +969,6 @@
 | `setBodyCollisionEnabled()` | `scene/env/env-collision` | — |
 | `setCollisionEnabled()` | `scene/env/env-collision` | — |
 | `setGroundCollisionEnabled()` | `scene/env/env-collision` | — |
-| `_envSys()` | `scene/env/env-context` | — |
-| `getPipeline()` | `scene/env/env-context` | — |
-| `getScene()` | `scene/env/env-context` | — |
-| `initEnvImpl()` | `scene/env/env-context` | — |
-| `isInitialized()` | `scene/env/env-context` | — |
-| `resolveStaticAsset()` | `scene/env/env-context` | — |
-| `clearAllEnvCallbacks()` | `scene/env/env-dispatcher` | 清空所有已注册的 env 回调（场景销毁 / HMR 重入时兜底清理）。 |
-| `clearEnvDtTickCallbacks()` | `scene/env/env-dispatcher` | 清空所有 dt 回调（场景销毁 / HMR 重入时清理）。 |
-| `clearSceneTickCallbacks()` | `scene/env/env-dispatcher` | 清空所有场景 tick 回调（场景销毁 / HMR 重入时清理）。 |
-| `dispatchEnvChange()` | `scene/env/env-dispatcher` | setEnvState 调用此函数分发变化。 |
-| `registerEnvCallback()` | `scene/env/env-dispatcher` | 子系统注册响应回调（延迟绑定，避免循环导入）。 |
-| `registerEnvDtTickCallback()` | `scene/env/env-dispatcher` | 注册每帧 dt 回调（env-impl 每帧推 dt）。 |
-| `registerSceneTickCallback()` | `scene/env/env-dispatcher` | 注册场景每帧 tick 回调。返回的清理函数在 dispose 时调用。 |
-| `runEnvDtTickCallbacks()` | `scene/env/env-dispatcher` | 执行所有 dt tick 回调（由 ensureEnvUpdateObserver 推 dt）。 |
-| `runSceneTickCallbacks()` | `scene/env/env-dispatcher` | 执行所有已注册的场景 tick 回调（由 ensureEnvUpdateObserver 的 scene observer 每帧调用）。 |
 | `getGravityStrength()` | `scene/env/env-gravity` | — |
 | `setGravityStrength()` | `scene/env/env-gravity` | — |
 | `GROUND_PRESETS()` | `scene/env/env-ground-presets` | — |
@@ -1021,17 +1035,10 @@
 | `disposeSplash()` | `scene/env/env-particles` | 销毁 splash burst 池 |
 | `getCurrentParticleType()` | `scene/env/env-particles` | 获取当前粒子类型（用于 particleEnabled 自动启停） |
 | `isWetnessActive()` | `scene/env/env-particles` | — |
-| `syncSplashState()` | `scene/env/env-particles` | 溅射开关切换（由 env-impl 检测 particleSplash 变化时调用） |
+| `syncSplashState()` | `scene/env/env-particles` | 溅射开关切换（由 env-impl 检测 particleSplashEnabled 变化时调用） |
 | `updateParticleParams()` | `scene/env/env-particles` | 运行时更新粒子参数（密度/大小/速度），响应滑条变化 |
 | `updateParticleTexture()` | `scene/env/env-particles` | — |
 | `updateParticleWind()` | `scene/env/env-particles` | — |
-| `cancelEnvPersistTimer()` | `scene/env/env-persist` | 取消挂起的 env state 防抖持久化定时器（HMR 重入清理用，见 ADR-106 D3）。 |
-| `flushEnvState()` | `scene/env/env-persist` | 立即刷写 env state 到后端（无防抖）。关闭/隐藏页面时调用。 |
-| `flushUIState()` | `scene/env/env-persist` | 立即刷写 UI state 到后端（无防抖）。关闭/隐藏页面时调用。 |
-| `persistEnvState()` | `scene/env/env-persist` | 持久化 envState 到后端（ADR-176 第 2 步：经 resolveBackend 路由）。 |
-| `persistUIState()` | `scene/env/env-persist` | 与 persistEnvState 对称：持久化 UI state（ADR-176 第 2 步：经 resolveBackend 路由）。 |
-| `schedulePersistEnvState()` | `scene/env/env-persist` | 调度 env state 防抖持久化（500ms）。setEnvState 内部调用。 |
-| `schedulePersistUI()` | `scene/env/env-persist` | 防抖调度 UIState 持久化。修改 uiState 后调用此函数。 |
 | `ReflectionMode()` | `scene/env/env-reflection` | — |
 | `ResolvedReflectionMode()` | `scene/env/env-reflection` | — |
 | `applyReflection()` | `scene/env/env-reflection` | 反射子系统统一入口。参考 applySky 模式： 1. |
@@ -1051,12 +1058,6 @@
 | `generateTerrainHeightmapURL()` | `scene/env/env-terrain` | 程序化生成灰度高度图（data URL），亮=高峰、暗=低谷。经统一工厂创建（受约束环境返回 ''）。 |
 | `hash2()` | `scene/env/env-terrain` | — |
 | `valueNoise()` | `scene/env/env-terrain` | — |
-| `CanvasTextureOptions()` | `scene/env/env-texture` | — |
-| `createCanvasDataURL()` | `scene/env/env-texture` | 统一创建 canvas 并导出 data URL（供 CreateGroundFromHeightMap 等以 URL 为输入的场景， 与 createCanvasTexture |
-| `createCanvasTexture()` | `scene/env/env-texture` | 统一创建 canvas 贴图。优先 DynamicTexture（无 toDataURL PNG 编码开销，ADR-091 §6 方向）； 任意环节失败（含 NullEngine |
-| `disposeTextureCache()` | `scene/env/env-texture` | 释放全部缓存贴图（供 disposeEnv 统一清理）。 |
-| `getOrCreateCanvasTexture()` | `scene/env/env-texture` | 按 key 获取或创建 canvas 贴图。key 不变则复用；调用方不应手动 dispose 缓存贴图 （统一由 disposeTextureCache 在 disposeEnv |
-| `isCacheOwnedTexture()` | `scene/env/env-texture` | 判断贴图是否归缓存所有——是则调用方不得手动 dispose（由 disposeTextureCache 统一释放）。 |
 | `applyEnvPreset()` | `scene/env/env-time-of-day` | — |
 | `applyEnvPresetByCategory()` | `scene/env/env-time-of-day` | [adr-120] 按类别应用用户自定义预设。 |
 | `applyEnvPresetObject()` | `scene/env/env-time-of-day` | 应用任意 EnvPreset 对象（支持用户自定义预设）。 |
@@ -1068,9 +1069,6 @@
 | `startTimeOfDay()` | `scene/env/env-time-of-day` | — |
 | `stopTimeOfDay()` | `scene/env/env-time-of-day` | — |
 | `syncTimeOfDayFromEnv()` | `scene/env/env-time-of-day` | 从持久化的 envState 恢复 time-of-day 模块变量（启动时调用） |
-| `FrozenCamera()` | `scene/env/env-type-helpers` | — |
-| `REFRESHRATE_RENDER_ONCE()` | `scene/env/env-type-helpers` | — |
-| `getCanvasCtx()` | `scene/env/env-type-helpers` | — |
 | `underwaterFogController()` | `scene/env/env-underwater-fog` | — |
 | `WATER_PRESETS()` | `scene/env/env-water` | — |
 | `WaterPreset()` | `scene/env/env-water` | — |
@@ -1152,14 +1150,18 @@
 | `ReflectionMode()` | `scene/env/planar-reflection` | — |
 | `registerReflectionSurface()` | `scene/env/planar-reflection` | — |
 | `resetReflectionSurfaces()` | `scene/env/planar-reflection` | ADR-114 Phase 2: 是否生成 mipmap（地面 PBR 反射模糊用，水面保持 false） generateMipMaps?: boolean; } // ==== |
-| `getPropList()` | `scene/env/props` | — |
-| `getPropOrbit()` | `scene/env/props` | 读取道具当前球面坐标。orbit 模式下返回存储值，否则从当前笛卡尔位置反推。 |
-| `getPropPositionMode()` | `scene/env/props` | 读取道具当前坐标模式（默认 'cartesian'）。 |
-| `loadProp()` | `scene/env/props` | — |
-| `removeProp()` | `scene/env/props` | — |
-| `setPropOrbit()` | `scene/env/props` | 以球面坐标（方位角/仰角/距离）定位道具，等价于围绕原点旋转。 |
-| `setPropPositionMode()` | `scene/env/props` | 切换坐标模式。切到 orbit 时从当前笛卡尔位置反推球面参数（无跳变）；切回 cartesian 保留当前位置。 |
-| `setPropTransform()` | `scene/env/props` | — |
+| `attachPropToBone()` | `scene/env/props/accessory` | 将道具挂载到指定模型的骨骼上。 |
+| `detachModelAccessories()` | `scene/env/props/accessory` | 移除指定模型的所有骨骼锚定道具（模型卸载时调用）。 |
+| `detachPropFromBone()` | `scene/env/props/accessory` | 从骨骼上解除道具挂载，回到场景坐标模式。 |
+| `reattachAllAccessories()` | `scene/env/props/accessory` | 重新挂载所有骨骼锚定的道具（场景恢复时调用）。 |
+| `getPropList()` | `scene/env/props/props` | — |
+| `getPropOrbit()` | `scene/env/props/props` | 读取道具当前球面坐标。orbit 模式下返回存储值，否则从当前笛卡尔位置反推。 |
+| `getPropPositionMode()` | `scene/env/props/props` | 读取道具当前坐标模式（默认 'cartesian'）。 |
+| `loadProp()` | `scene/env/props/props` | — |
+| `removeProp()` | `scene/env/props/props` | — |
+| `setPropOrbit()` | `scene/env/props/props` | 以球面坐标（方位角/仰角/距离）定位道具，等价于围绕原点旋转。 |
+| `setPropPositionMode()` | `scene/env/props/props` | 切换坐标模式。切到 orbit 时从当前笛卡尔位置反推球面参数（无跳变）；切回 cartesian 保留当前位置。 |
+| `setPropTransform()` | `scene/env/props/props` | — |
 | `DEFAULT_MAT_PARAMS()` | `scene/manager/material` | 材质参数默认值 — 所有新增字段在此维护，消除散落硬编码。 |
 | `MaterialCategory()` | `scene/manager/material` | — |
 | `MaterialCategoryParams()` | `scene/manager/material` | — |
@@ -2389,5 +2391,5 @@
 
 ---
 
-> 共 314 个文件，2343 个导出符号。
+> 共 314 个文件，2345 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。
