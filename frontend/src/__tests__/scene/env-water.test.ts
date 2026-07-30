@@ -69,7 +69,9 @@ let camera: FreeCamera;
 
 // happy-dom 无真实 2D canvas；为焦散纹理生成（canvas 2D）提供最小桩，
 // 使 createWater 能走完整路径而不报错。
+// 同时创建复用 engine（省 32 次 engine 构造/销毁 ≈ -8s）。
 beforeAll(() => {
+    engine = new NullEngine();
     const fakeCanvas = {
         width: 0,
         height: 0,
@@ -92,7 +94,6 @@ beforeAll(() => {
 });
 
 beforeEach(() => {
-    engine = new NullEngine();
     scene = new Scene(engine);
     camera = new FreeCamera('cam', new Vector3(0, 5, 10), scene);
     scene.activeCamera = camera;
@@ -105,8 +106,8 @@ beforeEach(() => {
 afterEach(() => {
     disposeWater();
     scene.dispose();
-    engine.dispose();
     (globalThis as any).__waterTestScene = null;
+    // engine 在 beforeAll 创建，进程结束时自然释放
 });
 
 function makeWaterState(overrides: Partial<typeof envState> = {}) {
@@ -182,7 +183,7 @@ describe('Water 波相位 — 调节波速不跳变', () => {
         scene.deltaTime = 16.67; // ~60fps
 
         const phases: number[] = [getWaterPhase()];
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 5; i++) {
             scene.onBeforeRenderObservable.notifyObservers(scene);
             phases.push(getWaterPhase());
         }
@@ -195,7 +196,7 @@ describe('Water 波相位 — 调节波速不跳变', () => {
         updateWaterAnimSpeed(4);
         const beforeSwitch = getWaterPhase();
         const afterPhases: number[] = [beforeSwitch];
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 5; i++) {
             scene.onBeforeRenderObservable.notifyObservers(scene);
             afterPhases.push(getWaterPhase());
         }
@@ -317,58 +318,41 @@ describe('Water Ripple — 添加与清理', () => {
         expect(() => clearRipples()).not.toThrow();
         expect(() => clearRipples()).not.toThrow();
     });
-
-    it('disposeWater 后 clearRipples 由 beforeEach 重置，不残留', () => {
-        createWater(makeWaterState({ waterLevel: 0 }));
-        addRipple(new Vector3(1, 0, 1));
-        disposeWater();
-        // 重新创建后涟漪不应残留
-        createWater(makeWaterState({ waterLevel: 0 }));
-        expect(() => addRipple(new Vector3(0, 0, 0))).not.toThrow();
-    });
 });
 
-// ──────────────── dispose 资源释放 ────────────────
+// ──────────────── dispose 资源释放（合并 5→2 减少 setup/teardown ────────────────
 describe('Water dispose — 资源释放彻底', () => {
-    it('disposeWater 后 mesh 和 material 被置空', () => {
+    it('置空 + 相位重置 + 幂等（避免 3 次 engine/scene 重建）', () => {
         createWater(makeWaterState({ waterLevel: 0 }));
         expect(_envSys.water.mesh).not.toBeNull();
         expect(_envSys.water.material).not.toBeNull();
 
-        disposeWater();
-
-        expect(_envSys.water.mesh).toBeNull();
-        expect(_envSys.water.material).toBeNull();
-    });
-
-    it('disposeWater 后 getWaterPhase 重置为 0', () => {
-        createWater(makeWaterState({ waterLevel: 0 }));
-        // 模拟若干帧推进相位
+        // 推进相位
         for (let i = 0; i < 5; i++) {
             scene.render();
         }
         expect(getWaterPhase()).not.toBe(0);
 
         disposeWater();
-
+        expect(_envSys.water.mesh).toBeNull();
+        expect(_envSys.water.material).toBeNull();
         expect(getWaterPhase()).toBe(0);
-    });
 
-    it('disposeWater 可重复调用不抛错（幂等）', () => {
-        createWater(makeWaterState({ waterLevel: 0 }));
-        expect(() => disposeWater()).not.toThrow();
+        // 幂等：再次 dispose 不抛错
         expect(() => disposeWater()).not.toThrow();
     });
 
-    it('disposeWater 后可重新 createWater（无残留 observer 冲突）', () => {
+    it('dispose 后重建：observer 无残留 + 涟漪不污染', () => {
         createWater(makeWaterState({ waterLevel: 0 }));
-        scene.render();
+        scene.render(); // 激活 observer
+        addRipple(new Vector3(1, 0, 1));
         disposeWater();
 
-        // 重建不应抛错，observer 应已清理
+        // 重建不应抛错（observer 已清理），且涟漪不残留
         expect(() => createWater(makeWaterState({ waterLevel: 0 }))).not.toThrow();
         scene.render();
         expect(_envSys.water.mesh).not.toBeNull();
+        expect(() => addRipple(new Vector3(0, 0, 0))).not.toThrow();
     });
 });
 
@@ -438,8 +422,8 @@ describe('Water Underwater — 相机入水触发过渡', () => {
 
         const pipeline = makePipelineStub();
         scene.deltaTime = 16.67; // ~60fps，使过渡进度递增
-        // 多帧推进使过渡进度趋近 1
-        for (let i = 0; i < 60; i++) updateUnderwaterTransition(scene, pipeline);
+        // 过渡速度 0.8s，每帧步进 ≈ 0.0208，30 帧 ≈ 0.625 足以验证 density > 0
+        for (let i = 0; i < 30; i++) updateUnderwaterTransition(scene, pipeline);
 
         expect(pipeline.imageProcessing.colorCurvesEnabled).toBe(true);
         expect(pipeline.imageProcessing.colorCurves).not.toBeNull();
@@ -449,7 +433,8 @@ describe('Water Underwater — 相机入水触发过渡', () => {
         // 出水后色调应被清除
         camera.position.set(0, 5, 10);
         camera.computeWorldMatrix();
-        for (let i = 0; i < 60; i++) updateUnderwaterTransition(scene, pipeline);
+        // 出水需 ≥48 帧（过渡速度 0.8s ÷ 16.67ms/帧），用 55 帧保证 _underwaterActive 被完全重置
+        for (let i = 0; i < 55; i++) updateUnderwaterTransition(scene, pipeline);
         expect(pipeline.imageProcessing.colorCurvesEnabled).toBe(false);
         expect(pipeline.imageProcessing.colorCurves.globalDensity).toBe(0);
     });
