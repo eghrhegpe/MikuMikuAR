@@ -306,10 +306,23 @@ async function _applySlot(
             type: mimeMap[ext] || 'application/octet-stream',
         });
         const url = URL.createObjectURL(blob);
-        const newTex = new Texture(url, scene);
         let loaded = false;
         let disposed = false;
+        // onError 仅能通过构造函数选项注册（Texture 类无 onError 属性）；
+        // 用 resolveLoad 桥接，使构造期回调能在 Promise 内 resolve。
+        let resolveLoad: () => void = () => {};
+        const newTex = new Texture(url, scene, {
+            onError: () => {
+                if (!loaded && !disposed) {
+                    disposed = true;
+                    newTex.dispose();
+                    URL.revokeObjectURL(url);
+                }
+                resolveLoad();
+            },
+        });
         await new Promise<void>((resolve) => {
+            resolveLoad = resolve;
             if (newTex.isReady()) {
                 loaded = true;
                 resolve();
@@ -320,16 +333,6 @@ async function _applySlot(
                 loaded = true;
                 resolve();
             });
-            // onError 是回调属性（非 Observable）：加载失败时立即清理，避免 newTex 与 blob URL 泄漏
-            newTex.onError = () => {
-                loadH.dispose();
-                if (!loaded && !disposed) {
-                    disposed = true;
-                    newTex.dispose();
-                    URL.revokeObjectURL(url);
-                }
-                resolve();
-            };
             setTimeout(() => {
                 loadH.dispose();
                 resolve(); // 超时：loaded 保持 false

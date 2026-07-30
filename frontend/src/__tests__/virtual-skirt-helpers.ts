@@ -1,4 +1,5 @@
 // virtual-skirt-helpers.ts — 共享测试 fixture（ADR-204 P3，拆自 virtual-skirt.test.ts）
+import { vi } from 'vitest';
 import { Matrix, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import type { Scene } from '@babylonjs/core/scene';
 import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';

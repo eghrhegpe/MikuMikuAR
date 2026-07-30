@@ -1,5 +1,5 @@
 // menu-schema.i18n.test.ts — i18n 热切换（ADR-065 / ADR-093 §6.6，拆自 menu-schema.test.ts）
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mockScene, mockLighting, mockPerception, mockRegistry } from './menu-schema-mocks';
 
 vi.mock('@/scene/scene', () => mockScene());

@@ -12,13 +12,13 @@ interface GoMockState {
     aiStreamChatError: string | null;
 }
 
-const mockState = vi.hoisted(() => ({
+const mockState = vi.hoisted((): GoMockState => ({
     llmConfig: { baseUrl: 'http://localhost:11434', model: 'llama3.2', aiKeyConfigured: false },
     testResult: { ok: true, kind: 'unknown', message: 'ok' },
     fetchModelsResult: ['llama3.2', 'mistral'],
     aiStreamChatReject: false,
-    aiStreamChatError: null as string | null,
-} satisfies GoMockState));
+    aiStreamChatError: null,
+}));
 
 /** 事件订阅注册表：事件名 → Set<回调>，供测试触发模拟事件。 */
 const eventHandlers = vi.hoisted(() => new Map<string, Set<(...args: unknown[]) => void>>());

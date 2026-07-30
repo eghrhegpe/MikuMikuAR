@@ -1,5 +1,5 @@
 // menu-schema.guards.test.ts — visibleWhen 守卫（ADR-093 §6.2，拆自 menu-schema.test.ts）
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mockScene, mockLighting, mockPerception, mockRegistry } from './menu-schema-mocks';
 
 vi.mock('@/scene/scene', () => mockScene());
