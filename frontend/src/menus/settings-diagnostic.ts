@@ -416,12 +416,12 @@ export function buildDiagnosticSchema(opts?: { withSessions?: boolean }): MenuNo
 
                 const tabBar = document.createElement('div');
                 tabBar.className = 'type-row';
-                type PanelTab = 'chat' | 'config';
+                type PanelTab = 'diagnostic:chat' | 'diagnostic:config';
                 const tabs: { id: PanelTab; label: string }[] = [
-                    { id: 'chat', label: t('ai.chat.title') },
-                    { id: 'config', label: t('ai.config.title') },
+                    { id: 'diagnostic:chat', label: t('ai.chat.title') },
+                    { id: 'diagnostic:config', label: t('ai.config.title') },
                 ];
-                let activeTab: PanelTab = 'chat';
+                let activeTab: PanelTab = 'diagnostic:chat';
                 const tabBtns: HTMLButtonElement[] = [];
                 for (const tab of tabs) {
                     const btn = document.createElement('button');

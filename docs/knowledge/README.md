@@ -92,7 +92,7 @@ use_when:
 
 跑法：`node scripts/check-doc-drift.mjs`（或 `--json`）。可接 CI 卡点。
 
-## 卡片索引（225 张，按 category 分组）
+## 卡片索引（231 张，按 category 分组）
 
 ### 环境系统（env）
 
@@ -119,6 +119,9 @@ use_when:
 | [统一平面反射引擎](./planar-reflection.md) | `scene/env/planar-reflection.ts` | ADR-092 |
 | [云层系统](./env-clouds.md) | `scene/env/env-clouds.ts` | — |
 | [水面系统](./env-water.md) | `scene/env/env-water.ts` | — |
+| [共享焦散纹理系统](./env-caustics.md) | `scene/env/env-caustics.ts` | ADR-115 |
+| [水下视觉系统](./env-underwater-fog.md) | `scene/env/env-underwater-fog.ts` | — |
+| [噪声 barrel 重导出](./env-noise.md) | `scene/env/env-noise.ts` | ADR-212 |
 | [粒子系统](./env-particles.md) | `scene/env/env-particles.ts` | — |
 | [环境灯光包装](./env-lighting.md) | `scene/env/env-lighting.ts` | — |
 
@@ -142,6 +145,7 @@ use_when:
 | [分类材质系统](./material.md) | `scene/manager/material.ts` | — |
 | [纹理 LRU 缓存](./texture-lru.md) | `scene/manager/texture-lru.ts` | ADR-189 |
 | [道具系统](./props.md) | `scene/env/props.ts` | — |
+| [道具模块 barrel 重导出](./props-index.md) | `scene/env/props/index.ts` | — |
 | [道具骨骼锚定系统](./accessory.md) | `scene/env/accessory.ts` | — |
 | [缩略图渲染](./thumbnail-capture.md) | `scene/manager/thumbnail-capture.ts` | — |
 | [缩略图缓存 key 推导](./thumbnail-key.md) | `scene/manager/thumbnail-key.ts` | — |
@@ -303,6 +307,8 @@ use_when:
 | [统一文件服务层](./fileservice.md) | `core/fileservice.ts` | ADR-057 |
 | [配置聚合层](./config-barrel.md) | `core/config.ts` | — |
 | [后端适配层](./core-backend.md) | `core/backend/index.ts` | — |
+| [后端测试共享 Mock 工厂](./backend-mocks.md) | `core/backend/backend-mocks.ts` | ADR-206 |
+| [浏览器适配器测试共享 Mock 工厂](./browser-adapter-mocks.md) | `core/backend/browser-adapter-mocks.ts` | ADR-206 |
 | [音频总线](./audio-bus.md) | `core/audio-bus.ts` | — |
 | [快捷键注册表](./shortcut-registry.md) | `core/shortcut-registry.ts` | — |
 | [图标聚合](./icons-bundle.md) | `core/icons.ts` | — |
