@@ -57,3 +57,5 @@
 ## 备注
 
 局部变量名 `envBrightness`（函数内临时）、`rebakeEnvBrightness`、`_prevEnvBrightness` 保留未改——它们是内部实现命名、不参与持久化 key、语义（"重算亮度"）不误导，改动收益低而波及面大。
+
+> **遗留交叉引用（审核补充）**：`globalBrightness` 名为「全局」但 `group: 'sky'`（env-state-schema.ts:50），dispatch 与命名仍存在错位——修改 `skyColor` 时触发重烘焙，命名说"全局"却和天空绑一起。本 ADR 仅改名未修 `group`，该错位由 ADR-212（命名 vs 功能审计）问题 5 记录为 P2「注释澄清」项，属独立决策链，不在本次范围。
