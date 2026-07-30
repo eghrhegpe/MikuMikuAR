@@ -1936,6 +1936,7 @@ export const ja: Record<string, string> = {
     'ai.dialogue.emotion.angry': '怒り',
     'ai.dialogue.emotion.surprised': '驚き',
     'ai.dialogue.emotion.shy': '照れ',
+    'ai.dialogue.emotion.curious': '好奇心',
     'ai.dialogue.speakOn': '🔊 読み上げ ON',
     'ai.dialogue.speakOff': '🔇 読み上げ OFF',
     'ai.dialogue.speakToggle': 'セリフ読み上げを切替',

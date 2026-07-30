@@ -543,6 +543,8 @@ type EnvState struct {
 	WaterRippleSlots     float64    `json:"waterRippleSlots"`
 	// 水面平面反射质量：'high' | 'medium' | 'low' | 'off'
 	ReflectionQuality string  `json:"reflectionQuality"`
+	// 反射模式：'none' | 'planar' | 'ssr' | 'probe' | 'hybrid'
+	ReflectionMode   string  `json:"reflectionMode"`
 	// ADR-115: 平面反射混合度，对应 TS planarReflectionBlend
 	PlanarReflectionBlend float64 `json:"planarReflectionBlend"`
 	// ADR-130 Phase 2.3: 统一质量档位

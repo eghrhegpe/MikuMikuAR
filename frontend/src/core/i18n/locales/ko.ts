@@ -1931,6 +1931,7 @@ export const ko: Record<string, string> = {
     'ai.dialogue.emotion.angry': '화남',
     'ai.dialogue.emotion.surprised': '놀람',
     'ai.dialogue.emotion.shy': '수줍음',
+    'ai.dialogue.emotion.curious': '호기심',
     'ai.dialogue.speakOn': '🔊 낭독 켜기',
     'ai.dialogue.speakOff': '🔇 낭독 끄기',
     'ai.dialogue.speakToggle': '대사 낭독 전환',

@@ -9,6 +9,7 @@ import {
     ENV_PRESET_FIELDS,
 } from '../scene/env/env-lighting';
 import { createMockEnvState } from './mocks/binding-factories';
+import type { EnvState as FrontendEnvState } from '../core/types';
 
 // ── scene-lighting-smoke: Babylon mocks ──────────────────────────
 vi.mock('@babylonjs/core/Lights/hemisphericLight', () => ({ HemisphericLight: vi.fn() }));
@@ -260,7 +261,7 @@ describe('ADR-120 分类预设', () => {
 
     describe('snapshotEnvPresetByCategory', () => {
         it('sky 类只含 sky 字段', () => {
-            const state = createMockEnvState();
+            const state = createMockEnvState() as unknown as FrontendEnvState;
             const preset = snapshotEnvPresetByCategory('测试天空', 'env:sky', state);
             expect(preset.version).toBe(3);
             expect(preset.category).toBe('env:sky');
@@ -276,7 +277,7 @@ describe('ADR-120 分类预设', () => {
         });
 
         it('ground 类只含 ground 字段', () => {
-            const state = createMockEnvState();
+            const state = createMockEnvState() as unknown as FrontendEnvState;
             const preset = snapshotEnvPresetByCategory('草地', 'env:ground', state);
             expect(preset.category).toBe('env:ground');
             const keys = Object.keys(preset.fields);
@@ -287,7 +288,7 @@ describe('ADR-120 分类预设', () => {
         });
 
         it('数组字段是拷贝（修改原 state 不影响 preset）', () => {
-            const state = createMockEnvState({ skyColorTop: [1, 0, 0] });
+            const state = createMockEnvState({ skyColorTop: [1, 0, 0] }) as unknown as FrontendEnvState;
             const preset = snapshotEnvPresetByCategory('红天', 'env:sky', state);
             expect(preset.fields.skyColorTop).toEqual([1, 0, 0]);
             // 修改原 state
@@ -299,7 +300,7 @@ describe('ADR-120 分类预设', () => {
 
     describe('exportCategorizedEnvPreset / importCategorizedEnvPreset 往返', () => {
         it('v3 序列化 → 反序列化一致', () => {
-            const state = createMockEnvState();
+            const state = createMockEnvState() as unknown as FrontendEnvState;
             const preset = snapshotEnvPresetByCategory('水面预设', 'env:water', state);
             const json = exportCategorizedEnvPreset(preset);
             const restored = importCategorizedEnvPreset(json);
