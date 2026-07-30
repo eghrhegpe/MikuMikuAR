@@ -937,8 +937,7 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
     // 等函数触发级联保存覆盖 last_scene.json。
     _suppressAutoSave = true;
 
-    try {
-        // --- Load all models and apply post-load config ---
+    // --- Load all models and apply post-load config ---
     const [modelIds, errors] = await deserializeModels(data.models);
 
     // --- Formation: re-apply if saved ---
@@ -1150,7 +1149,7 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                 continue;
             }
             try {
-                const { attachPropToBone } = await import('./env/accessory');
+                const { attachPropToBone } = await import('./env/props/accessory');
                 attachPropToBone(
                     propId,
                     p.boneName,
@@ -1289,10 +1288,9 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                 })
             );
         }
-    } finally {
-        // 恢复完成，允许 auto-save 再次触发
-        _suppressAutoSave = false;
     }
+    // 恢复完成，允许 auto-save 再次触发
+    _suppressAutoSave = false;
     return errors.length;
 }
 

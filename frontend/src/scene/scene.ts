@@ -505,7 +505,7 @@ function _initModelManager(
 
         // 解除此模型上的所有骨骼锚定道具
         swallowError(
-            import('./env/accessory').then(({ detachModelAccessories }) => {
+            import('./env/props/accessory').then(({ detachModelAccessories }) => {
                 if (scene.isDisposed) {
                     return;
                 }
