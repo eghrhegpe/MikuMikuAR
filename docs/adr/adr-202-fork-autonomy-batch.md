@@ -1,6 +1,6 @@
 # ADR-202: fork 自治改动批次 — 一次回灌批量根治可改 fork 的上游缺口
 
-> **状态**: 🟢 P0 已落地（vendored + postinstall 方案，spr/mpr 生产变体经真机验证风力起效）；P2/P3 搭车项待续
+> **状态**: ✅ P0 已落地（vendored + postinstall）；P2/P3 搭车项全部完成（audio 条目9 ✅ / IK 重解 ✅ / WASM 迁移 ✅）；🟢 仅余 `MODEL_WIND_FORCE_SCALE` 真机标定与 🟡 vendor/fork 漂移防护待探明
 > **P0 实现**: 采纳 vendored 方案（非初版推荐的 git 依赖）——fork 重编译的 spr/mpr wasm 产物提交进 `frontend/vendor/babylon-mmd-wasm/`，`postinstall`（`scripts/apply-vendored-wasm.mjs`）在 `npm ci` 后注入 `node_modules/babylon-mmd`。生产仅加载 spr/mpr（`InstanceType/*.js` 的 `../wasm/{spr,mpr}` import），mpd 为 debug 变体不分发。真机实测：模型原生发丝/裙摆随风摆动。
 > **关联**: ADR-201（原生刚体施力导出，本批次 P1 受益项）、ADR-200（路径1 已采纳）、ADR-192（永久自治下游）、`docs/upstream/babylon-mmd-compatibility.md`（23 处应对台账，本 ADR 在「自治路径解锁」新前提下重评）
 > **背景**: ADR-192 时代「fork 改动只能走 PR、PR 被上游拒」→ 全部本地应对。ADR-201 证明 **fork 本地可编译回灌**，分类前提翻转：对**运行时功能类**缺口，「改 fork」首次成为比「JS 反射/绕路」更根治的选项。本 ADR 把值得改 fork 的收敛为一个批次，避免零散决策。
