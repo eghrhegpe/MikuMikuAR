@@ -16,6 +16,14 @@ import {
 } from '../error-buffer';
 
 describe('ErrorRingBuffer', () => {
+    /** 快速创建一条错误条目（tag/message 可覆盖）。 */
+    function e(
+        msg: string,
+        overrides: Partial<{ tag: string; timestamp: number; severity: string; kind: string }> = {}
+    ): Parameters<ErrorRingBuffer['push']>[0] {
+        return { kind: 'log', tag: 't', message: msg, timestamp: 1, severity: 'warn', ...overrides };
+    }
+
     it('构造容量必须为正整数', () => {
         expect(() => new ErrorRingBuffer(0)).toThrow('容量必须为正整数');
         expect(() => new ErrorRingBuffer(-1)).toThrow('容量必须为正整数');
@@ -34,7 +42,7 @@ describe('ErrorRingBuffer', () => {
 
     it('push 后 size 增加', () => {
         const buf = new ErrorRingBuffer(5);
-        buf.push({ kind: 'log', tag: 'test', message: 'a', timestamp: 1, severity: 'warn' });
+        buf.push(e('a'));
         expect(buf.size).toBe(1);
         expect(buf.oldest?.message).toBe('a');
         expect(buf.newest?.message).toBe('a');
@@ -43,7 +51,7 @@ describe('ErrorRingBuffer', () => {
     it('超出容量覆盖最旧条目', () => {
         const buf = new ErrorRingBuffer(3);
         for (let i = 1; i <= 5; i++) {
-            buf.push({ kind: 'log', tag: 't', message: `${i}`, timestamp: i, severity: 'warn' });
+            buf.push(e(`${i}`, { timestamp: i }));
         }
         expect(buf.size).toBe(3);
         expect(buf.oldest?.message).toBe('3');
@@ -54,17 +62,17 @@ describe('ErrorRingBuffer', () => {
     it('full 标志正确', () => {
         const buf = new ErrorRingBuffer(2);
         expect(buf.full).toBe(false);
-        buf.push({ kind: 'log', tag: 't', message: '1', timestamp: 1, severity: 'warn' });
+        buf.push(e('1'));
         expect(buf.full).toBe(false);
-        buf.push({ kind: 'log', tag: 't', message: '2', timestamp: 2, severity: 'warn' });
+        buf.push(e('2'));
         expect(buf.full).toBe(true);
-        buf.push({ kind: 'log', tag: 't', message: '3', timestamp: 3, severity: 'warn' });
+        buf.push(e('3'));
         expect(buf.full).toBe(true); // 仍满
     });
 
     it('clear 清空所有条目', () => {
         const buf = new ErrorRingBuffer(5);
-        buf.push({ kind: 'log', tag: 't', message: 'x', timestamp: 1, severity: 'warn' });
+        buf.push(e('x'));
         buf.clear();
         expect(buf.size).toBe(0);
         expect(buf.toArray()).toEqual([]);
@@ -73,7 +81,7 @@ describe('ErrorRingBuffer', () => {
     it('toArray 按插入顺序返回', () => {
         const buf = new ErrorRingBuffer(10);
         for (let i = 1; i <= 4; i++) {
-            buf.push({ kind: 'log', tag: 't', message: `${i}`, timestamp: i, severity: 'warn' });
+            buf.push(e(`${i}`, { timestamp: i }));
         }
         expect(buf.toArray().map((e) => e.message)).toEqual(['1', '2', '3', '4']);
     });
