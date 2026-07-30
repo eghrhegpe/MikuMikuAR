@@ -6,7 +6,6 @@ import {
     LibraryModel,
     PopupLevel,
     normPath,
-    closeAllOverlays,
     modelRegistry,
     focusedModelId,
     recentModels,
@@ -16,6 +15,7 @@ import {
     stackRegistry,
 } from '../core/config';
 import { loadManager } from '../core/load-manager';
+import { closeAllOverlays } from './menu-overlay';
 import {
     removeModel,
     loadVPDPose,

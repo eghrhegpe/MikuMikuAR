@@ -7,13 +7,13 @@
 import {
     dom,
     setStatus,
-    closeAllOverlays,
     initHints,
     UIState,
     EnvState,
     formatError,
     uiState,
 } from './config';
+import { closeAllOverlays } from '../menus/menu-overlay';
 import { t } from './i18n/t';
 import { translateGoError } from './i18n/goerr';
 import { registerIconBundle } from './icons-bundle';

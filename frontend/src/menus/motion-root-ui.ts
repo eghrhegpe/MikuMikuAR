@@ -2,8 +2,8 @@
 // 从 motion-popup.ts 拆出：buildMotionRootItems / buildMotionRootLevel /
 // buildRetargetLevel / _importExternalAnimation
 
-import { closeAllOverlays } from '../core/config';
 import type { PopupLevel, PopupRow } from '../core/config';
+import { closeAllOverlays } from './menu-overlay';
 import { feedbackInfo, feedbackStatus } from '../core/feedback';
 import { showInfoToast } from '../core/toast';
 import {

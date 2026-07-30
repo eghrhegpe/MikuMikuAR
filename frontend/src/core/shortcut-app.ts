@@ -1,6 +1,7 @@
 // [doc:adr-102] App-level shortcut definitions — split from events.ts (P3).
 // 纯定义层：注册快捷键绑定到 ShortcutRegistry，不涉及 DOM 事件绑定。
-import { dom, mmdRuntime, closeAllOverlays, setStatus } from './config';
+import { dom, mmdRuntime, setStatus } from './config';
+import { closeAllOverlays } from '../menus/menu-overlay';
 import { t } from './i18n/t';
 import { focusedModelId } from './state';
 import { focusedModel, updatePlaybackUI, focusedMmdModel } from '../scene/scene';

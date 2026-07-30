@@ -23,9 +23,9 @@ import {
     waitForFrame,
     tryCatchStatus,
     showErrorToast,
-    closeAllOverlays,
     cardContainer,
 } from '../core/utils';
+import { closeAllOverlays } from './menu-overlay';
 import { registerLoadRefreshHook, registerLibraryScannedHook } from '../core/load-refresh-registry';
 import { focusModel } from '../scene/scene';
 import { t } from '../core/i18n/t';

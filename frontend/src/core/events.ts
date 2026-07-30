@@ -11,13 +11,12 @@ import {
     seekDragging,
     setSeekDragging,
     mmdRuntime,
-    closeAllOverlays,
     setPopupOpen,
     focusedModelId,
     stackRegistry,
     setStatus,
-    setOnCloseAllOverlays,
 } from './config';
+import { closeAllOverlays, setOnCloseAllOverlays } from '../menus/menu-overlay';
 import { updatePlaybackUI, seekFromEvent, focusedMmdModel } from '../scene/scene';
 import { freeflyInput } from './freefly-state';
 import { orbitInput } from './orbit-state';
