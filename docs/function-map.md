@@ -7,8 +7,8 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 110 | 737 |
-| 3D 场景 | 109 | 1079 |
+| 核心基础设施 | 112 | 740 |
+| 3D 场景 | 109 | 1080 |
 | 菜单 & UI | 73 | 355 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 127 |
@@ -98,6 +98,7 @@
 | `installLoggingPatch()` | `core/ai/error-buffer` | 幂等地 patch console.error，使其所有输出自动入环（保留原始 console.error 行为）。 |
 | `toDiagnosticContext()` | `core/ai/error-buffer` | — |
 | `uninstallLoggingPatch()` | `core/ai/error-buffer` | 卸载 console.error 补丁，恢复原始实现。 |
+| `GoAiAdapter()` | `core/ai/go-adapter` | — |
 | `goAiAdapter()` | `core/ai/go-adapter` | — |
 | `goKeyAllowsProceed()` | `core/ai/go-key-allows-proceed` | Go 桌面端 key 不可回读，当 isGo=true && keyConfigured=true 时， missingKey 不应阻止前端发起请求（key 由 Go 后端持有）。 |
 | `resolveAi()` | `core/ai/index` | — |
@@ -262,6 +263,7 @@
 | `createIconButton()` | `core/icons` | 创建图标按钮（默认 slide-action 样式）。 |
 | `createIconifyIcon()` | `core/icons` | Create an <iconify-icon> element for the given icon name. |
 | `softwareKindIcon()` | `core/icons` | Map software kind to an iconify icon name. |
+| `canvasToBase64()` | `core/image` | 将 Canvas 编码为 base64 字符串（剥离 data:image/...;base64, 前缀）。 |
 | `bootstrap()` | `core/init` | — |
 | `addRecentMotion()` | `core/library-state` | — |
 | `allModels()` | `core/library-state` | — |
@@ -642,6 +644,7 @@
 | `withLoadingIndicator()` | `core/utils` | 加载指示器包裹器：显示 loading 遮罩 → 执行 fn → `finally` 隐藏。 |
 | `withLoadingStatus()` | `core/utils` | 包装一个异步操作，自动管理 loading → success → error 三态状态栏。 |
 | `withLoadingStatusTargeted()` | `core/utils` | 包装异步操作并附带目标名（target-aware 版本）。 |
+| `generateUuid()` | `core/uuid` | 生成 UUID v4 字符串（格式：xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx）。 |
 | `AddCustomSoftware()` | `core/wails-bindings` | — |
 | `AddRecentModel()` | `core/wails-bindings` | — |
 | `AddTag()` | `core/wails-bindings` | — |
@@ -1019,6 +1022,7 @@
 | `ENV_PRESET_FIELDS()` | `scene/env/env-lighting` | 各类别包含的 EnvState 字段白名单。未列入的字段（如 collision*）不参与任何预设。 |
 | `EnvPreset()` | `scene/env/env-lighting` | — |
 | `EnvPresetCategory()` | `scene/env/env-lighting` | 环境预设分类：天空/地面/水面/大气。 |
+| `LEGACY_CATEGORY_MAP()` | `scene/env/env-lighting` | 旧版 category 值 → 新版 domain 前缀映射（ADR-214 零级 ID 治理）。 |
 | `TIME_OF_DAY_PRESETS()` | `scene/env/env-lighting` | 预设数据表。按时间线排列：黎明 → 正午 → 夕阳 → 夜景 → 阴天 → 霓虹夜 |
 | `calcLuminance()` | `scene/env/env-lighting` | — |
 | `deriveLighting()` | `scene/env/env-lighting` | 从天空色和太阳角度推算光照参数。 |
@@ -2391,5 +2395,5 @@
 
 ---
 
-> 共 314 个文件，2345 个导出符号。
+> 共 316 个文件，2349 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。

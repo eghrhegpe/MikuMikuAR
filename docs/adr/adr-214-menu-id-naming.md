@@ -1,9 +1,10 @@
 # ADR-214: Menu ID 命名规范治理
 
-- **状态**: ✅ 已完成（Phase 1/2/3 全部完成）
+- **状态**: ✅ 已完成（Phase 1/2/3 + domain 对齐全部完成）
 - **日期**: 2026-07-30
+- **最后更新**: 2026-07-30（补充：Go 后端审计发现 `UIState.FrameCapEnabled` JSON tag 仍为 `"vsync"`，已同步修复——改 tag + 加 UnmarshalJSON fallback + 重新生成 TS binding + 契约测试验证通过）
 - **相关**: ADR-093（菜单声明式 Schema）、ADR-212（命名 vs 翻译 vs 功能错位审计）
-- **源码锚点**: `frontend/src/menus/*.ts`（全部菜单文件）、`frontend/src/core/i18n/locales/en.ts`（i18n key 域）
+- **源码锚点**: `frontend/src/menus/*.ts`（全部菜单文件）、`frontend/src/core/i18n/locales/en.ts`（i18n key 域）、`internal/app/app.go`（UIState.FrameCapEnabled JSON tag + UnmarshalJSON）、`frontend/src/core/init.ts`（vsync 迁移清理）
 
 ---
 
@@ -83,18 +84,32 @@ software-detail
 
 菜单系统的 ID 与 i18n 翻译 key 各用一套顶层 domain，互不关联。
 
-#### 对照表
+#### 对照表（修复前 → 修复后）
 
-| 概念 | Menu ID domain | i18n key domain | 矛盾 |
-|------|---------------|----------------|------|
-| 设置画质 | `graphics:*` | `settings.graphics.*` | 菜单用 `graphics`，i18n 用 `settings.graphics` |
-| 设置外观 | `appearance:*` | `settings.appearance.*` | 同上 |
-| 设置控制 | `controls:*` | `settings.perf.*` | 最严重：`controls:autoCenter` 的 i18n key 是 `settings.perf.autoCenterState`——domain 从 `controls` 变为 `perf` |
-| 环境地面 | `env:ground:*` | `env.ground*` | 菜单用 `env:`，i18n 用 `env.`——分隔符不同 |
-| 物理 | `wasm` / `cloth` | `motion.catSkirt` / `cloth.*` | 菜单用 `wasm`（实现词），i18n 用 `motion`（功能词）|
-| 模型广场 | `booth` / `bowlroll` | `plaza.title` / `plaza.*` | 菜单无 `plaza:` 前缀，i18n 有 |
+| 概念 | 修复前 Menu ID | 修复后 Menu ID | i18n key domain | 状态 |
+|------|---------------|---------------|----------------|------|
+| 设置画质 | `graphics:*` | `settings:graphics:*` | `settings.graphics.*` | ✅ 已对齐 |
+| 设置外观 | `appearance:*` | `settings:appearance:*` | `settings.appearance.*` | ✅ 已对齐 |
+| 设置控制 | `controls:*` | `settings:perf:*` | `settings.perf.*` | ✅ 已对齐 |
+| 环境地面 | `env:ground:*` | `env:ground:*` | `env.ground*` | ⚠️ 分隔符差异（`:` vs `.`），属系统级约定，Phase 2 已统一驼峰→连字符 |
+| 物理 | `wasm` / `cloth` | — | `motion.catSkirt` / `cloth.*` | 待后续治理 |
+| 模型广场 | `booth` / `bowlroll` | `plaza:booth` / `plaza:bowlroll` | `plaza.title` / `plaza.*` | ✅ Phase 1 已修复 |
 
 **最突出的断链**：`controls:autoCenter` → 搜 i18n 无果（实际藏在 `settings.perf.autoCenterState`）。开发者必须凭经验知道 `controls` 的 i18n 内容归 `settings.perf`。
+
+#### Domain 对齐收尾（2026-07-30）
+
+在 Phase 1/2/3 完成后，对 §2.4 对照表中剩余 3 个 domain 断链进行了收尾对齐：
+
+| 文件 | 变更 | ID 数量 |
+|------|------|---------|
+| `settings-graphics.ts` | `graphics:*` → `settings:graphics:*` | 12 个 |
+| `settings-appearance.ts` | `appearance:*` → `settings:appearance:*` | 8 个 |
+| `settings-controls.ts` | `controls:*` → `settings:perf:*` | 8 个 |
+
+全局 grep 确认无残留旧 ID 引用。验证：237 测试文件 / 2674 测试全部通过，`check:docs` 零 ERROR 漂移。
+
+现在 `settings:graphics:*` / `settings:appearance:*` / `settings:perf:*` 与 i18n key 域（`settings.graphics.*` / `settings.appearance.*` / `settings.perf.*`）完全对齐，`:` 到 `.` 的映射规则一致。
 
 #### 根因
 
@@ -156,21 +171,24 @@ ADR-093 声明式菜单 Schema 未强制规定 `id` 字段与 i18n key 的命名
 
 ## 四、影响评估
 
-| 阶段 | 改动量 | 运行时风险 | 序列化影响 |
-|------|--------|-----------|-----------|
-| Phase 1（零级补前缀） | ~15 行（9 个 ID 字符串 + 引用更新） | 零 — 纯字符串改名，与持久化/绑定无关 | 无 |
-| Phase 2（驼峰→连字符） | ~80 个 ID × ~2 处（声明+引用）≈ 160 行 | 低 — 纯字符串改名，但单文件改动分散 | 无 |
-| Phase 3（映射公约） | 文档改动 ~10 行 + 未来 Code Review | 低 — 仅影响新代码 | 无 |
+| 阶段 | 改动量 | 运行时风险 | 序列化影响 | 状态 |
+|------|--------|-----------|-----------|------|
+| Phase 1（零级补前缀） | 9 个 ID 字符串 + 引用更新 | 零 — 纯字符串改名 | 无 | ✅ 已完成 |
+| Phase 2（驼峰→连字符） | ~80 个 ID × ~2 处 ≈ 160 行 | 低 — 纯字符串改名 | 无 | ✅ 已完成 |
+| Phase 3（映射公约） | 文档改动 + 未来 Code Review | 低 — 仅影响新代码 | 无 | ✅ 已完成 |
+| Domain 对齐收尾 | 3 文件 28 个 ID | 零 — 纯字符串改名 | 无 | ✅ 已完成 |
 
 ---
 
-## 五、实施步骤
+## 五、实施步骤（全部完成）
 
-1. Phase 1：逐文件修改 9 个零级 ID，grep 确认引用点无遗留
-2. `npm run check` 验证编译通过
-3. Phase 2：在 docs/terminology.md 写入命名公约
-4. Phase 2：批量替换驼峰 ID（分批次 PR，按文件分批，避免冲突）
-5. Phase 3：在 AGENTS.md 写入 i18n ↔ Menu ID 映射公约
+1. ✅ Phase 1：逐文件修改 9 个零级 ID，grep 确认引用点无遗留
+2. ✅ `npm run check` 验证编译通过
+3. ✅ Phase 2：在 docs/terminology.md 写入命名公约
+4. ✅ Phase 2：批量替换驼峰 ID（分批次完成）
+5. ✅ Phase 3：在 AGENTS.md 写入 i18n ↔ Menu ID 映射公约
+6. ✅ Domain 对齐收尾：`graphics:*` → `settings:graphics:*`、`appearance:*` → `settings:appearance:*`、`controls:*` → `settings:perf:*`（3 文件 28 个 ID）
+7. ✅ 全量验证：237 测试文件 / 2674 测试通过，`check:docs` 零 ERROR
 
 ---
 

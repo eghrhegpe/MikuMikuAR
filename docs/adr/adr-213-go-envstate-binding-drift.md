@@ -1,6 +1,6 @@
 # ADR-213: Go 后端 EnvState 命名漂移修复与契约补全
 
-- **状态**: 📝 规划
+- **状态**: ✅ 已完成（Go struct 6 字段 + JSON tag 同步、UnmarshalJSON 6 条 fallback、契约测试补全、mock factory 同步全部落地）
 - **日期**: 2026-07-30
 - **相关**: ADR-210（envIntensity/envBrightness → iblIntensity/globalBrightness 改名）、ADR-212（命名 vs 翻译 vs 功能错位审计与治理）
 - **源码锚点**: `internal/app/app.go`（EnvState struct + UnmarshalJSON）、`frontend/src/__tests__/bindings/app.contract.test.ts`（契约测试）、`frontend/src/__tests__/mocks/binding-factories.ts`（mock factory）
