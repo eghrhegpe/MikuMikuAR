@@ -22,6 +22,45 @@ const LANG_KEY = 'uiLang';
 const FALLBACK: LangCode = 'zh-CN';
 const SUPPORTED: LangCode[] = SUPPORTED_LANGS.map((l) => l.code);
 
+/**
+ * [doc:adr-059] 从浏览器/WebView 语言偏好推断首选语言。
+ * 仅在 localStorage 无显式记录时调用；用户手选优先级永远高于系统语言。
+ * 匹配规则（按 navigator.languages 顺序，取首个命中）：
+ *   - zh-Hant / zh-TW / zh-HK / zh-MO → 繁体 zh-TW
+ *   - 其余 zh 变体（zh / zh-CN / zh-SG …）→ 简体 zh-CN
+ *   - en / ja / ko 及其地区变体 → 对应基准语言
+ * 全部未命中时返回 null，由调用方回落 FALLBACK。
+ */
+export function detectSystemLang(): LangCode | null {
+    try {
+        const nav = typeof navigator !== 'undefined' ? navigator : undefined;
+        const prefs: string[] =
+            nav && Array.isArray(nav.languages) && nav.languages.length > 0
+                ? nav.languages
+                : nav && nav.language
+                  ? [nav.language]
+                  : [];
+        for (const raw of prefs) {
+            const tag = raw.toLowerCase();
+            if (tag.startsWith('zh')) {
+                // 繁体标识：Hant 脚本，或港澳台地区码
+                if (/\bhant\b/.test(tag) || /-(tw|hk|mo)\b/.test(tag)) {
+                    return 'zh-TW';
+                }
+                return 'zh-CN';
+            }
+            const base = tag.split('-')[0];
+            if (base === 'en' || base === 'ja' || base === 'ko') {
+                return base as LangCode;
+            }
+        }
+    } catch {
+        /* navigator 不可用：交由调用方回落基准语言 */
+    }
+    return null;
+}
+
+// 语言决策优先级：用户手选（localStorage）> 系统语言（navigator）> 基准 zh-CN
 function loadLang(): LangCode {
     try {
         const v = localStorage.getItem(LANG_KEY) as LangCode | null;
@@ -29,9 +68,9 @@ function loadLang(): LangCode {
             return v;
         }
     } catch {
-        /* localStorage 不可用：回落基准语言 */
+        /* localStorage 不可用：继续尝试系统语言 */
     }
-    return FALLBACK;
+    return detectSystemLang() ?? FALLBACK;
 }
 
 // 模块加载即确定语言，确保菜单首帧即正确；reactive 使任意赋值自动触发刷新
