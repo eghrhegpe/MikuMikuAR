@@ -480,14 +480,14 @@ type EnvState struct {
 	GroundReflectionQuality string  `json:"groundReflectionQuality"`
 	GroundNormalTexture     string  `json:"groundNormalTexture"`
 	GroundNormalStrength    float64 `json:"groundNormalStrength"`
-	GroundElevationColoring  bool    `json:"groundElevationColoring"`
+	GroundElevationColoringEnabled  bool    `json:"groundElevationColoringEnabled"`
 	GroundPbrEnabled         bool    `json:"groundPbrEnabled"`
 	GroundProceduralTexture  string  `json:"groundProceduralTexture"`
 	GroundProceduralSeed     float64 `json:"groundProceduralSeed"`
 	GroundProceduralScale    float64 `json:"groundProceduralScale"`
 	GroundRoughness          float64 `json:"groundRoughness"`
 	GroundMetallic           float64 `json:"groundMetallic"`
-	GroundInfinite           bool    `json:"groundInfinite"`
+	GroundInfiniteEnabled           bool    `json:"groundInfiniteEnabled"`
 	// ADR-114 Phase 2: 反射模糊 + 法线扭曲
 	GroundReflectionBlur     float64 `json:"groundReflectionBlur"`
 	GroundReflectionDistort  float64 `json:"groundReflectionDistort"`
@@ -504,7 +504,7 @@ type EnvState struct {
 	ParticleEmitRate      float64 `json:"particleEmitRate"`
 	ParticleSize          float64 `json:"particleSize"`
 	ParticleSpeed         float64 `json:"particleSpeed"`
-	ParticleSplash        bool    `json:"particleSplash"`
+	ParticleSplashEnabled       bool    `json:"particleSplashEnabled"`
 	ParticleCustomTexture string  `json:"particleCustomTexture"`
 
 	WaterEnabled      bool       `json:"waterEnabled"`
@@ -519,8 +519,8 @@ type EnvState struct {
 	WaterAnimSpeed    float64    `json:"waterAnimSpeed"`
 	// 水面平面反射质量：'high' | 'medium' | 'low' | 'off'
 	ReflectionQuality string  `json:"reflectionQuality"`
-	// ADR-115: 平面反射混合度，对应 TS planarReflectBlend
-	PlanarReflectBlend float64 `json:"planarReflectBlend"`
+	// ADR-115: 平面反射混合度，对应 TS planarReflectionBlend
+	PlanarReflectionBlend float64 `json:"planarReflectionBlend"`
 	// ADR-130 Phase 2.3: 统一质量档位
 	QualityProfile string `json:"qualityProfile"`
 
@@ -555,7 +555,7 @@ type EnvState struct {
 	UnderwaterFogMultiplier   float64 `json:"underwaterFogMultiplier"`
 	UnderwaterTintStrength    float64 `json:"underwaterTintStrength"`
 
-	CloudsEnabled   bool    `json:"cloudsEnabled"`
+	CloudEnabled   bool    `json:"cloudEnabled"`
 	CloudCover      float64 `json:"cloudCover"`
 	CloudScale      float64 `json:"cloudScale"`
 	CloudHeight     float64 `json:"cloudHeight"`
@@ -567,7 +567,7 @@ type EnvState struct {
 	CloudBacklight  float64 `json:"cloudBacklight"`
 	CloudPowder     float64 `json:"cloudPowder"`
 	CloudQuality    string  `json:"cloudQuality"`
-	DebugClouds     bool    `json:"debugClouds"`
+	DebugCloudsEnabled     bool    `json:"debugCloudsEnabled"`
 	// ADR-128/129: 镜面道具开关，对应 TS mirrorEnabled
 	MirrorEnabled   bool    `json:"mirrorEnabled"`
 
@@ -592,8 +592,9 @@ type EnvState struct {
 }
 
 // UnmarshalJSON reads EnvState while tolerating legacy field names renamed in
-// ADR-210 (envIntensity→iblIntensity, envBrightness→globalBrightness). Old
-// config.json files persisted the legacy keys; without this fallback those two
+// ADR-210 (envIntensity→iblIntensity, envBrightness→globalBrightness) and
+// ADR-212 (6 fields renamed for *Enabled suffix / plural / abbreviation discipline).
+// Old config.json files persisted the legacy keys; without this fallback those
 // settings would silently reset to zero on load. New keys take precedence.
 func (e *EnvState) UnmarshalJSON(data []byte) error {
 	type envStateAlias EnvState // avoid recursion
@@ -601,6 +602,13 @@ func (e *EnvState) UnmarshalJSON(data []byte) error {
 		*envStateAlias
 		LegacyEnvIntensity  *float64 `json:"envIntensity"`
 		LegacyEnvBrightness *float64 `json:"envBrightness"`
+		// ADR-212 legacy keys
+		LegacyParticleSplash        *bool    `json:"particleSplash"`
+		LegacyGroundInfinite        *bool    `json:"groundInfinite"`
+		LegacyGroundElevationColoring *bool  `json:"groundElevationColoring"`
+		LegacyDebugClouds           *bool    `json:"debugClouds"`
+		LegacyCloudsEnabled         *bool    `json:"cloudsEnabled"`
+		LegacyPlanarReflectBlend    *float64 `json:"planarReflectBlend"`
 	}{envStateAlias: (*envStateAlias)(e)}
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
@@ -610,6 +618,25 @@ func (e *EnvState) UnmarshalJSON(data []byte) error {
 	}
 	if e.GlobalBrightness == 0 && aux.LegacyEnvBrightness != nil {
 		e.GlobalBrightness = *aux.LegacyEnvBrightness
+	}
+	// ADR-212: boolean fields — only fall back if new key wasn't set (zero value)
+	if !e.ParticleSplashEnabled && aux.LegacyParticleSplash != nil {
+		e.ParticleSplashEnabled = *aux.LegacyParticleSplash
+	}
+	if !e.GroundInfiniteEnabled && aux.LegacyGroundInfinite != nil {
+		e.GroundInfiniteEnabled = *aux.LegacyGroundInfinite
+	}
+	if !e.GroundElevationColoringEnabled && aux.LegacyGroundElevationColoring != nil {
+		e.GroundElevationColoringEnabled = *aux.LegacyGroundElevationColoring
+	}
+	if !e.DebugCloudsEnabled && aux.LegacyDebugClouds != nil {
+		e.DebugCloudsEnabled = *aux.LegacyDebugClouds
+	}
+	if !e.CloudEnabled && aux.LegacyCloudsEnabled != nil {
+		e.CloudEnabled = *aux.LegacyCloudsEnabled
+	}
+	if e.PlanarReflectionBlend == 0 && aux.LegacyPlanarReflectBlend != nil {
+		e.PlanarReflectionBlend = *aux.LegacyPlanarReflectBlend
 	}
 	return nil
 }

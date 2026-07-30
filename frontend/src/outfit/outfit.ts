@@ -308,19 +308,30 @@ async function _applySlot(
         const url = URL.createObjectURL(blob);
         const newTex = new Texture(url, scene);
         let loaded = false;
+        let disposed = false;
         await new Promise<void>((resolve) => {
             if (newTex.isReady()) {
                 loaded = true;
                 resolve();
                 return;
             }
-            const handle = observe(newTex.onLoadObservable, () => {
-                handle.dispose();
+            const loadH = observe(newTex.onLoadObservable, () => {
+                loadH.dispose();
                 loaded = true;
                 resolve();
             });
+            // onError 是回调属性（非 Observable）：加载失败时立即清理，避免 newTex 与 blob URL 泄漏
+            newTex.onError = () => {
+                loadH.dispose();
+                if (!loaded && !disposed) {
+                    disposed = true;
+                    newTex.dispose();
+                    URL.revokeObjectURL(url);
+                }
+                resolve();
+            };
             setTimeout(() => {
-                handle.dispose();
+                loadH.dispose();
                 resolve(); // 超时：loaded 保持 false
             }, 5000);
         });
@@ -337,14 +348,18 @@ async function _applySlot(
                     return;
                 }
                 done = true;
-                URL.revokeObjectURL(url);
+                if (disposed) {
+                    return; // 已因加载失败被清理
+                }
                 if (mmdSm[slot] === cur) {
                     if (cur && cur !== origTex) {
                         cur.dispose();
                     }
                     mmdSm[slot] = newTex;
+                    URL.revokeObjectURL(url);
                 } else {
                     newTex.dispose();
+                    URL.revokeObjectURL(url); // 修复：丢弃过期贴图时回收 blob URL
                 }
             };
             if (newTex.isReady()) {

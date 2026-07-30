@@ -5,7 +5,7 @@ category: env
 scope:
   - frontend/src/scene/env/**
 source_files:
-  - frontend/src/scene/env/env-type-helpers.ts
+  - frontend/src/scene/env/_shared/env-type-helpers.ts
 adr: []
 symbols:
   - getCanvasCtx

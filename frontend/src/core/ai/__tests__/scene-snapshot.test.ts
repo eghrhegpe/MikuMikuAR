@@ -87,12 +87,51 @@ describe('captureSceneSnapshotData / bridge', () => {
 
 describe('captureSceneSnapshot', () => {
     it('未初始化时返回占位符', () => {
-        // 重新注册 null bridge 来模拟未初始化
-        // 由于 registerAiSnapshotBridge 是模块级单例，先清掉
-        // 但无法直接 unregister，故用新 bridge 覆盖
+        // 由于 _bridge 是模块级单例，前面的 bridge 测试已注册了 bridge，
+        // 此处无法真正模拟「未初始化」。但能保证返回字符串。
         const text = captureSceneSnapshot();
-        // 如果 bridge 已被上面测试注册，这里会有数据
-        // 这个测试只断言类型正确
         expect(typeof text).toBe('string');
+        expect(text.length).toBeGreaterThan(0);
+    });
+
+    it('已注册 bridge 时返回完整格式化快照', () => {
+        const bridge: SceneSnapshotBridge = {
+            getFps: () => 59.9,
+            getModelCount: () => 3,
+            getMeshCount: () => 200,
+            getMaterialCount: () => 100,
+            getActiveMotions: () => ['dance.vmd', 'wave.vmd'],
+            getPerformanceMode: () => 'quality',
+            getRendererInfo: () => ({ vendor: 'AMD', renderer: 'Radeon RX 7900' }),
+            getKtx2Support: () => ({ supported: true, preferredFormat: 'bc7' }),
+        };
+        registerAiSnapshotBridge(bridge);
+        const text = captureSceneSnapshot();
+        // 内容应与 formatSceneSnapshot 一致
+        expect(text).toContain('FPS: 59.9');
+        expect(text).toContain('模型数: 3');
+        expect(text).toContain('Mesh 数: 200');
+        expect(text).toContain('材质数: 100');
+        expect(text).toContain('活动动画: dance.vmd, wave.vmd');
+        expect(text).toContain('性能模式: quality');
+        expect(text).toContain('KTX2: 支持(bc7)');
+        expect(text).toContain('GPU: AMD / Radeon RX 7900');
+    });
+
+    it('bridge 返回空动画列表时显示 (无)', () => {
+        const bridge: SceneSnapshotBridge = {
+            getFps: () => 30,
+            getModelCount: () => 0,
+            getMeshCount: () => 0,
+            getMaterialCount: () => 0,
+            getActiveMotions: () => [],
+            getPerformanceMode: () => 'power_save',
+            getRendererInfo: () => ({ vendor: 'Test', renderer: 'Test' }),
+            getKtx2Support: () => ({ supported: false, preferredFormat: undefined }),
+        };
+        registerAiSnapshotBridge(bridge);
+        const text = captureSceneSnapshot();
+        expect(text).toContain('活动动画: (无)');
+        expect(text).toContain('KTX2: 不支持');
     });
 });

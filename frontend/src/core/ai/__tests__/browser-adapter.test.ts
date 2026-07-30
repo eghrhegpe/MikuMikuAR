@@ -578,5 +578,24 @@ describe('BrowserAiAdapter', () => {
                 })
             );
         });
+
+        it('fetch 使用 AbortSignal.timeout(5000) 防挂起', async () => {
+            mockConfig.endpoint = 'https://api.deepseek.com/v1/chat/completions';
+            mockFetch.mockResolvedValue({
+                ok: true,
+                json: () => Promise.resolve({ data: [{ id: 'm' }] }),
+            });
+
+            const timeoutSpy = vi.spyOn(AbortSignal, 'timeout');
+            await adapter.fetchModels();
+
+            expect(timeoutSpy).toHaveBeenCalledWith(5000);
+            // 且每个 fetch 调用都携带了 signal
+            for (const call of mockFetch.mock.calls) {
+                const opts = call[1] as { signal?: AbortSignal };
+                expect(opts.signal).toBeInstanceOf(AbortSignal);
+            }
+            timeoutSpy.mockRestore();
+        });
     });
 });
