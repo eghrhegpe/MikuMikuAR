@@ -6,7 +6,7 @@
 
 import { dom } from './dom';
 import { libraryRoot, overridePaths, setPopupOpen } from './state';
-import { normPath, getBaseName, getDirPath, isUnderRoot, isStageLike } from './path';
+import { normPath, computeLibraryRef as _pureComputeLibraryRef, getBaseName, getDirPath, isUnderRoot, isStageLike } from './path';
 export { getBaseName, getDirPath, isUnderRoot, isStageLike, normPath };
 import { setStatus } from './status-bar';
 import { t } from './i18n/t';
@@ -217,17 +217,9 @@ export const stackRegistry: {
     buildLevel: null,
 };
 
+/** 向后兼容包装：从 config 读取 libraryRoot 再委托给 path 模块的纯函数。 */
 export function computeLibraryRef(filePath: string): string | null {
-    const normalized = normPath(filePath);
-    if (libraryRoot) {
-        const root = normPath(libraryRoot);
-        // 大小写不敏感比较（Windows 文件系统语义），与 isUnderRoot 保持一致。
-        // 返回的 ref 保留 filePath 的原始大小写，确保标签匹配不受影响。
-        if (normalized.toLowerCase().startsWith((root + '/').toLowerCase())) {
-            return normalized.substring(root.length + 1);
-        }
-    }
-    return null;
+    return _pureComputeLibraryRef(filePath, libraryRoot);
 }
 
 export function resolveLibraryRef(libraryRef: string): string | null {

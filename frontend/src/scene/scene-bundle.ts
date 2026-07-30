@@ -6,8 +6,7 @@ import { libraryRoot, setStatus, setLibraryRoot } from '../core/config';
 import { feedbackInfo, feedbackStatus } from '../core/feedback';
 import { showInfoToast } from '../core/toast';
 import { t } from '../core/i18n/t';
-import { computeLibraryRef } from '../core/utils';
-import { getBaseName, normPath } from '@/core/path';
+import { getBaseName, normPath, computeLibraryRef } from '@/core/path';
 import { deepClone } from '@/core/deep-clone';
 import {
     serializeScene,
@@ -86,7 +85,7 @@ function rewriteRefsForBundle(scene: SceneFile, _libraryRoot: string): SceneFile
         if (!resolved) {
             return undefined;
         }
-        const ref = computeLibraryRef(resolved);
+        const ref = computeLibraryRef(resolved, _libraryRoot);
         return ref ?? getBaseName(resolved);
     }
 
