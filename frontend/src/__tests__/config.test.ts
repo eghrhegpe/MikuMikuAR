@@ -3,7 +3,6 @@ import {
     formatTime,
     formatError,
     toBase64,
-    escapeHtml,
     computeLibraryRef,
     resolveLibraryRef,
     addRecentMotion,
@@ -12,6 +11,7 @@ import {
     expandedFolders,
     setLibraryRoot,
 } from '../core/config';
+import { escapeHtml } from '../core/escape-html';
 import { normPath } from '../core/fileservice';
 import { getBaseName, getDirPath, isUnderRoot } from '../core/utils';
 

@@ -117,14 +117,7 @@ export { canvasToBase64 } from './image';
 
 export { generateUuid } from './uuid';
 
-export function escapeHtml(s: string): string {
-    return s
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-}
+export { escapeHtml } from './escape-html';
 
 // ======== Math Helpers ========
 

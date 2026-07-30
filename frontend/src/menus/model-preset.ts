@@ -5,9 +5,9 @@ import {
     PopupLevel,
     computeLibraryRef,
     stackRegistry,
-    escapeHtml,
     isPlaying,
 } from '../core/config';
+import { escapeHtml } from '../core/escape-html';
 import { feedbackInfo, feedbackStatus } from '../core/feedback';
 import { loadManager } from '../core/load-manager';
 import {
