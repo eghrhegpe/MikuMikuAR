@@ -400,7 +400,7 @@ function _bindSceneEvents(scene: Scene): void {
             return;
         }
         const hit = ray.origin.add(ray.direction.scale(t));
-        const half = envState.waterSize / 2;
+        const half = Math.max(60, envState.groundSize) / 2;
         if (Math.abs(hit.x) > half || Math.abs(hit.z) > half) {
             return;
         }

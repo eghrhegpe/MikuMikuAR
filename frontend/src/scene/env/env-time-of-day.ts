@@ -326,7 +326,7 @@ export function applyEnvPresetByCategory(preset: CategorizedEnvPreset): boolean 
     if (!preset.fields || Object.keys(preset.fields).length === 0) {
         return false;
     }
-    if (preset.category === 'sky' && typeof preset.fields.sunAngle === 'number') {
+    if (preset.category === 'env:sky' && typeof preset.fields.sunAngle === 'number') {
         setEnvSunAngle(preset.fields.sunAngle);
     }
     setEnvState(preset.fields);

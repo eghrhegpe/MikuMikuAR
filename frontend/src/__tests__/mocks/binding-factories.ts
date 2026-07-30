@@ -92,7 +92,7 @@ export function createMockEnvPresetEntry(overrides?: Partial<EnvPresetEntry>): E
     return {
         name: '',
         label: '',
-        category: 'sky',
+        category: 'env:sky',
         createdAt: 0,
         ...overrides,
     };

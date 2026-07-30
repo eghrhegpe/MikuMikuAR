@@ -22,6 +22,7 @@ import {
     snapshotEnvPresetByCategory,
     exportCategorizedEnvPreset,
     importCategorizedEnvPreset,
+    LEGACY_CATEGORY_MAP,
     type EnvPresetCategory,
 } from '../scene/env/env-lighting';
 import {
@@ -38,10 +39,10 @@ import { getLang } from '../core/i18n/locale';
 // ======== 分类元数据 ========
 
 const CATEGORIES: { id: EnvPresetCategory; labelKey: string }[] = [
-    { id: 'sky', labelKey: 'env-preset.category.sky' },
-    { id: 'ground', labelKey: 'env-preset.category.ground' },
-    { id: 'water', labelKey: 'env-preset.category.water' },
-    { id: 'atmosphere', labelKey: 'env-preset.category.atmosphere' },
+    { id: 'env:sky', labelKey: 'env-preset.category.sky' },
+    { id: 'env:ground', labelKey: 'env-preset.category.ground' },
+    { id: 'env:water', labelKey: 'env-preset.category.water' },
+    { id: 'env:atmosphere', labelKey: 'env-preset.category.atmosphere' },
 ];
 
 /** [adr-120] 渲染单个分类的用户预设区域：标题 + 保存按钮 + 预设列表。 */
@@ -77,7 +78,10 @@ function renderCategorizedPresets(
                             ListEnvPresets()
                         )) ?? [];
                     return entries
-                        .filter((e) => (e.category || 'sky') === category)
+                        .filter((e) => {
+                        const resolved = LEGACY_CATEGORY_MAP[e.category] ?? e.category;
+                        return (resolved || 'env:sky') === category;
+                    })
                         .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
                 },
                 onApply: async (e) => {

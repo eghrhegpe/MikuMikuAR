@@ -68,8 +68,8 @@ describe('listPresets', () => {
 
     it('无过滤时聚合全部四类', async () => {
         env.mockResolvedValue([
-            { name: 'a', label: 'A 预设', category: 'sky', createdAt: 100 },
-            { name: 'b', label: 'B 预设', category: 'ground', createdAt: 200 },
+            { name: 'a', label: 'A 预设', category: 'env:sky', createdAt: 100 },
+            { name: 'b', label: 'B 预设', category: 'env:ground', createdAt: 200 },
         ]);
         render.mockResolvedValue([{ name: 'r1', params: '{}' }]);
         scene.mockResolvedValue(['s1']);
@@ -107,7 +107,7 @@ describe('listPresets', () => {
     });
 
     it('按 category 过滤时短路其余 list 调用', async () => {
-        env.mockResolvedValue([{ name: 'a', label: 'A 预设', category: 'sky', createdAt: 1 }]);
+        env.mockResolvedValue([{ name: 'a', label: 'A 预设', category: 'env:sky', createdAt: 1 }]);
         render.mockResolvedValue([]);
         scene.mockResolvedValue(['s1']);
         model.mockResolvedValue([]);

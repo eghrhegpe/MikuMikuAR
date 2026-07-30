@@ -1,6 +1,6 @@
 # ADR-214: Menu ID 命名规范治理
 
-- **状态**: 📝 规划
+- **状态**: 🔄 实施中（Phase 1 完成）
 - **日期**: 2026-07-30
 - **相关**: ADR-093（菜单声明式 Schema）、ADR-212（命名 vs 翻译 vs 功能错位审计）
 - **源码锚点**: `frontend/src/menus/*.ts`（全部菜单文件）、`frontend/src/core/i18n/locales/en.ts`（i18n key 域）

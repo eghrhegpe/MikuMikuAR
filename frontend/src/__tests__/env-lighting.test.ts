@@ -231,10 +231,10 @@ describe('ADR-120 分类预设', () => {
     describe('ENV_PRESET_FIELDS 白名单', () => {
         it('4 个类别', () => {
             expect(Object.keys(ENV_PRESET_FIELDS).sort()).toEqual([
-                'atmosphere',
-                'ground',
-                'sky',
-                'water',
+                'env:atmosphere',
+                'env:ground',
+                'env:sky',
+                'env:water',
             ]);
         });
 
@@ -261,9 +261,9 @@ describe('ADR-120 分类预设', () => {
     describe('snapshotEnvPresetByCategory', () => {
         it('sky 类只含 sky 字段', () => {
             const state = createMockEnvState();
-            const preset = snapshotEnvPresetByCategory('测试天空', 'sky', state);
+            const preset = snapshotEnvPresetByCategory('测试天空', 'env:sky', state);
             expect(preset.version).toBe(3);
-            expect(preset.category).toBe('sky');
+            expect(preset.category).toBe('env:sky');
             expect(preset.label).toBe('测试天空');
             const keys = Object.keys(preset.fields);
             // 不含 ground/water/atmosphere 字段
@@ -277,8 +277,8 @@ describe('ADR-120 分类预设', () => {
 
         it('ground 类只含 ground 字段', () => {
             const state = createMockEnvState();
-            const preset = snapshotEnvPresetByCategory('草地', 'ground', state);
-            expect(preset.category).toBe('ground');
+            const preset = snapshotEnvPresetByCategory('草地', 'env:ground', state);
+            expect(preset.category).toBe('env:ground');
             const keys = Object.keys(preset.fields);
             expect(keys).toContain('groundColor');
             expect(keys).toContain('groundType');
@@ -288,7 +288,7 @@ describe('ADR-120 分类预设', () => {
 
         it('数组字段是拷贝（修改原 state 不影响 preset）', () => {
             const state = createMockEnvState({ skyColorTop: [1, 0, 0] });
-            const preset = snapshotEnvPresetByCategory('红天', 'sky', state);
+            const preset = snapshotEnvPresetByCategory('红天', 'env:sky', state);
             expect(preset.fields.skyColorTop).toEqual([1, 0, 0]);
             // 修改原 state
             state.skyColorTop[0] = 0;
@@ -300,12 +300,12 @@ describe('ADR-120 分类预设', () => {
     describe('exportCategorizedEnvPreset / importCategorizedEnvPreset 往返', () => {
         it('v3 序列化 → 反序列化一致', () => {
             const state = createMockEnvState();
-            const preset = snapshotEnvPresetByCategory('水面预设', 'water', state);
+            const preset = snapshotEnvPresetByCategory('水面预设', 'env:water', state);
             const json = exportCategorizedEnvPreset(preset);
             const restored = importCategorizedEnvPreset(json);
             expect(restored).not.toBeNull();
             expect(restored!.version).toBe(3);
-            expect(restored!.category).toBe('water');
+            expect(restored!.category).toBe('env:water');
             expect(restored!.label).toBe('水面预设');
             expect(restored!.fields.waterColor).toEqual(state.waterColor);
             expect(restored!.fields.fogColor).toBeUndefined(); // fog 属于 atmosphere
@@ -324,7 +324,7 @@ describe('ADR-120 分类预设', () => {
             });
             const preset = importCategorizedEnvPreset(v2Json);
             expect(preset).not.toBeNull();
-            expect(preset!.category).toBe('sky');
+            expect(preset!.category).toBe('env:sky');
             expect(preset!.label).toBe('旧天空预设');
             expect(preset!.fields.skyColorTop).toEqual([0.5, 0.5, 1]);
             expect(preset!.fields.sunAngle).toBe(30);
@@ -351,7 +351,7 @@ describe('ADR-120 分类预设', () => {
 
         it('缺 label 返回 null', () => {
             expect(
-                importCategorizedEnvPreset(JSON.stringify({ version: 3, category: 'sky' }))
+                importCategorizedEnvPreset(JSON.stringify({ version: 3, category: 'env:sky' }))
             ).toBeNull();
         });
 
@@ -366,6 +366,19 @@ describe('ADR-120 分类预设', () => {
                     })
                 )
             ).toBeNull();
+        });
+
+        it('旧版零级 category 值自动迁移为 domain 前缀', () => {
+            const result = importCategorizedEnvPreset(
+                JSON.stringify({
+                    version: 3,
+                    category: 'sky',
+                    label: '旧天空',
+                    fields: { skyColorTop: [0, 0, 0] },
+                })
+            );
+            expect(result).not.toBeNull();
+            expect(result!.category).toBe('env:sky');
         });
     });
 });
