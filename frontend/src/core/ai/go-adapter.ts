@@ -26,7 +26,7 @@ const _getB = makeLazyLoader(async () => import('@bindings/mikumikuar/internal/a
 // 主动注入一条 error 让流收尾，避免前端按钮永久卡在 streaming、用户干等黑盒。
 const _FIRST_EVENT_TIMEOUT_MS = 30000;
 
-class GoAiAdapter implements AiService {
+export class GoAiAdapter implements AiService {
     readonly kind = 'go' as const;
 
     private _capCache: AiCapabilities | null = null;
