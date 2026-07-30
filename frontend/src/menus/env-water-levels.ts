@@ -68,14 +68,14 @@ export function buildWaterLevel(): PopupLevel {
                             icon: 'lucide:arrow-up',
                         },
                         {
-                            id: 'env:water:bigWaveHeight',
+                            id: 'env:water:big-wave-height',
                             kind: 'slider',
                             label: 'env.bigWaveHeight',
                             control: { bind: 'env.bigWaveHeight', min: 0, max: 3, step: 0.1 },
                             icon: 'lucide:mountain',
                         },
                         {
-                            id: 'env:water:smallWave',
+                            id: 'env:water:small-wave',
                             kind: 'folder',
                             label: 'env.smallWaveHeight',
                             icon: 'lucide:waves',
@@ -83,7 +83,7 @@ export function buildWaterLevel(): PopupLevel {
                             headerToggle: { bind: 'env.smallWaveEnabled' },
                             children: [
                                 {
-                                    id: 'env:water:smallWaveHeight',
+                                    id: 'env:water:small-wave-height',
                                     kind: 'slider',
                                     label: 'env.smallWaveHeight',
                                     control: { bind: 'env.smallWaveHeight', min: 0, max: 3, step: 0.1 },
@@ -92,7 +92,7 @@ export function buildWaterLevel(): PopupLevel {
                             ],
                         },
                         {
-                            id: 'env:water:animSpeed',
+                            id: 'env:water:anim-speed',
                             kind: 'slider',
                             label: 'env.animSpeed',
                             control: {
@@ -107,7 +107,7 @@ export function buildWaterLevel(): PopupLevel {
                     ],
                 },
                 {
-                    id: 'env:water:colorFog',
+                    id: 'env:water:color-fog',
                     kind: 'folder',
                     label: 'env.colorAndFog',
                     icon: 'lucide:palette',
@@ -132,13 +132,13 @@ export function buildWaterLevel(): PopupLevel {
                             icon: 'lucide:eye',
                         },
                         {
-                            id: 'env:water:fogColor',
+                            id: 'env:water:fog-color',
                             kind: 'colorSlider',
                             label: 'env.waterFogColor',
                             control: { bind: 'env.waterFogColor' },
                         },
                         {
-                            id: 'env:water:fogStart',
+                            id: 'env:water:fog-start',
                             kind: 'slider',
                             label: 'env.waterFogStart',
                             control: {
@@ -150,7 +150,7 @@ export function buildWaterLevel(): PopupLevel {
                             icon: 'lucide:cloud-fog',
                         },
                         {
-                            id: 'env:water:fogEnd',
+                            id: 'env:water:fog-end',
                             kind: 'slider',
                             label: 'env.waterFogEnd',
                             control: {
@@ -162,7 +162,7 @@ export function buildWaterLevel(): PopupLevel {
                             icon: 'lucide:cloud-fog',
                         },
                         {
-                            id: 'env:water:skyColorBlend',
+                            id: 'env:water:sky-color-blend',
                             kind: 'slider',
                             label: 'env.waterSkyColorBlend',
                             control: {
@@ -177,26 +177,26 @@ export function buildWaterLevel(): PopupLevel {
                 },
                 // —— 波浪与菲涅尔（从原"高级参数"拆出）——
                 {
-                    id: 'env:water:waveFresnel',
+                    id: 'env:water:wave-fresnel',
                     kind: 'folder',
                     label: 'env.waveFresnel',
                     icon: 'lucide:waves',
                     defaultOpen: false,
                     children: [
                         {
-                            id: 'env:water:fresnelBias',
+                            id: 'env:water:fresnel-bias',
                             kind: 'slider',
                             label: 'env.fresnelBias',
                             control: { bind: 'env.fresnelBias', min: 0, max: 1, step: 0.01 },
                         },
                         {
-                            id: 'env:water:fresnelPower',
+                            id: 'env:water:fresnel-power',
                             kind: 'slider',
                             label: 'env.fresnelPower',
                             control: { bind: 'env.fresnelPower', min: 0.5, max: 8, step: 0.1 },
                         },
                         {
-                            id: 'env:water:fresnelAlpha',
+                            id: 'env:water:fresnel-alpha',
                             kind: 'slider',
                             label: 'env.fresnelAlpha',
                             control: {
@@ -207,25 +207,25 @@ export function buildWaterLevel(): PopupLevel {
                             },
                         },
                         {
-                            id: 'env:water:diffuseStrength',
+                            id: 'env:water:diffuse-strength',
                             kind: 'slider',
                             label: 'env.diffuseStrength',
                             control: { bind: 'env.diffuseStrength', min: 0, max: 2, step: 0.05 },
                         },
                         {
-                            id: 'env:water:ambientStrength',
+                            id: 'env:water:ambient-strength',
                             kind: 'slider',
                             label: 'env.ambientStrength',
                             control: { bind: 'env.ambientStrength', min: 0, max: 2, step: 0.05 },
                         },
                         {
-                            id: 'env:water:rippleSlots',
+                            id: 'env:water:ripple-slots',
                             kind: 'slider',
                             label: 'env.waterRippleSlots',
                             control: { bind: 'env.waterRippleSlots', min: 16, max: 1024, step: 16 },
                         },
                         {
-                            id: 'env:water:rippleNormal',
+                            id: 'env:water:ripple-normal',
                             kind: 'slider',
                             label: 'env.rippleNormal',
                             control: {
@@ -236,7 +236,7 @@ export function buildWaterLevel(): PopupLevel {
                             },
                         },
                         {
-                            id: 'env:water:rippleGlint',
+                            id: 'env:water:ripple-glint',
                             kind: 'slider',
                             label: 'env.rippleGlint',
                             control: {
@@ -247,7 +247,7 @@ export function buildWaterLevel(): PopupLevel {
                             },
                         },
                         {
-                            id: 'env:water:normalStrength',
+                            id: 'env:water:normal-strength',
                             kind: 'slider',
                             label: 'env.waterNormalStrength',
                             control: {
@@ -258,7 +258,7 @@ export function buildWaterLevel(): PopupLevel {
                             },
                         },
                         {
-                            id: 'env:water:glintStrength',
+                            id: 'env:water:glint-strength',
                             kind: 'slider',
                             label: 'env.waterGlintStrength',
                             control: {
@@ -269,7 +269,7 @@ export function buildWaterLevel(): PopupLevel {
                             },
                         },
                         {
-                            id: 'env:water:lowFreqNormal',
+                            id: 'env:water:low-freq-normal',
                             kind: 'slider',
                             label: 'env.lowFreqNormalStrength',
                             control: {
@@ -280,7 +280,7 @@ export function buildWaterLevel(): PopupLevel {
                             },
                         },
                         {
-                            id: 'env:water:horizonFade',
+                            id: 'env:water:horizon-fade',
                             kind: 'slider',
                             label: 'env.waterHorizonFade',
                             icon: 'lucide:mountain',
@@ -302,7 +302,7 @@ export function buildWaterLevel(): PopupLevel {
                     defaultOpen: false,
                     children: [
                         {
-                            id: 'env:water:causticIntensity',
+                            id: 'env:water:caustic-intensity',
                             kind: 'slider',
                             label: 'env.causticIntensity',
                             control: {
@@ -314,31 +314,31 @@ export function buildWaterLevel(): PopupLevel {
                             icon: 'lucide:sun',
                         },
                         {
-                            id: 'env:water:causticColor1',
+                            id: 'env:water:caustic-color-1',
                             kind: 'colorSlider',
                             label: 'env.causticColor1',
                             control: { bind: 'env.causticColor1' },
                         },
                         {
-                            id: 'env:water:causticColor2',
+                            id: 'env:water:caustic-color-2',
                             kind: 'colorSlider',
                             label: 'env.causticColor2',
                             control: { bind: 'env.causticColor2' },
                         },
                         {
-                            id: 'env:water:causticScrollX',
+                            id: 'env:water:caustic-scroll-x',
                             kind: 'slider',
                             label: 'env.causticScrollX',
                             control: { bind: 'env.causticScrollX', min: -2, max: 2, step: 0.05 },
                         },
                         {
-                            id: 'env:water:causticScrollY',
+                            id: 'env:water:caustic-scroll-y',
                             kind: 'slider',
                             label: 'env.causticScrollY',
                             control: { bind: 'env.causticScrollY', min: -2, max: 2, step: 0.05 },
                         },
                         {
-                            id: 'env:water:fogOpacity',
+                            id: 'env:water:fog-opacity',
                             kind: 'slider',
                             label: 'env.waterFogOpacityInfluence',
                             control: {
@@ -364,7 +364,7 @@ export function buildWaterLevel(): PopupLevel {
                     defaultOpen: false,
                     children: [
                         {
-                            id: 'env:water:underFogDensity',
+                            id: 'env:water:under-fog-density',
                             kind: 'slider',
                             label: 'env.fogDensity',
                             control: {
@@ -375,7 +375,7 @@ export function buildWaterLevel(): PopupLevel {
                             },
                         },
                         {
-                            id: 'env:water:toneIntensity',
+                            id: 'env:water:tone-intensity',
                             kind: 'slider',
                             label: 'env.toneIntensity',
                             control: {
@@ -387,7 +387,7 @@ export function buildWaterLevel(): PopupLevel {
                             icon: 'lucide:palette',
                         },
                         {
-                            id: 'env:water:tintStrength',
+                            id: 'env:water:tint-strength',
                             kind: 'slider',
                             label: 'env.underwaterTintStrength',
                             control: {
@@ -408,7 +408,7 @@ export function buildWaterLevel(): PopupLevel {
             (rc) => {
                 const profileSchema: MenuNode[] = [
                     {
-                        id: 'env:water:qualityProfile',
+                        id: 'env:water:quality-profile',
                         kind: 'modeSlider',
                         label: 'env.qualityProfile',
                         control: {
@@ -439,7 +439,7 @@ export function buildWaterLevel(): PopupLevel {
                         defaultOpen: false,
                         children: [
                             {
-                                id: 'env:water:reflectIntensity',
+                                id: 'env:water:reflect-intensity',
                                 kind: 'slider',
                                 label: 'env.reflectionIntensity',
                                 control: {
