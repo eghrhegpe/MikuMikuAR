@@ -13,7 +13,7 @@ import {
     addModeSlider,
     addBoneSelectRow,
 } from '../core/ui-helpers';
-import { getBrowseDir } from '../core/utils';
+import { getBrowseDir } from '../library/library-path';
 import {
     hasCameraVmd,
     clearCameraVmd,

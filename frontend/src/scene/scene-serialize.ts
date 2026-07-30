@@ -11,7 +11,6 @@ import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 
 import {
     libraryRoot,
-    resolveLibraryRef,
     envState,
     EnvState,
     modelRegistry,
@@ -24,6 +23,7 @@ import { debounce } from '../core/debounce';
 import { generateUuid } from '../core/uuid';
 import { swallowError } from '../core/async';
 import { computeLibraryRef } from '@/core/path';
+import { resolveLibraryRef } from '../library/library-path';
 import { logWarn } from '../core/logger';
 import {
     getActiveMotionId,

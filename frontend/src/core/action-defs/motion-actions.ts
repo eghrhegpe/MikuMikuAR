@@ -27,7 +27,8 @@ import { loadManager } from '../load-manager';
 import { loadVPDPose, modelManager } from '../../scene/scene';
 import { getAudioName } from '../../outfit/audio';
 import { t } from '../i18n/t';
-import { stackRegistry, getBrowseDir } from '../config';
+import { stackRegistry } from '../config';
+import { getBrowseDir } from '../../library/library-path';
 
 /** 按名称模糊搜索场景内已加载模型（供 entity resolve 消费）。 */
 async function findSceneModelByName(name: string): Promise<unknown> {

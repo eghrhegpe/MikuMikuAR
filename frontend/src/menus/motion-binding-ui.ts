@@ -9,9 +9,9 @@ import {
     autoLoop,
     setAutoLoop,
     stackRegistry,
-    getBrowseDir,
     cardContainer,
 } from '../core/config';
+import { getBrowseDir } from '../library/library-path';
 import { feedbackInfo } from '../core/feedback';
 import { showInfoToast } from '../core/toast';
 import { slideRow, addToggleRow, addEmptyRow, addPresetChip } from '../core/ui-helpers';
