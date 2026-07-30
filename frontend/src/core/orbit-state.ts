@@ -4,17 +4,20 @@
 //   - camera-behaviors.ts : orbit render observer 每帧连续积分（读）
 //   - events.ts           : WSAD keydown/keyup 置标记（写）
 // 零 import，两侧同源引入，打断循环。
+//
+// 语义（自由飞行式平移）：WSAD 平移相机注视点（target），相机整体随之位移；
+// 视线朝向的水平投影为前后方向，右轴为左右方向，Q/E 升降。缩放走鼠标滚轮原生。
 export const orbitInput = {
-    /** A：环绕 alpha 减 */
+    /** W：沿视线水平投影前进 */
+    forward: false,
+    /** S：沿视线水平投影后退 */
+    backward: false,
+    /** A：沿相机右轴左移 */
     left: false,
-    /** D：环绕 alpha 加 */
+    /** D：沿相机右轴右移 */
     right: false,
-    /** W：仰角 beta 减 */
+    /** Q：注视点上升 */
     up: false,
-    /** S：仰角 beta 加 */
+    /** E：注视点下降 */
     down: false,
-    /** +：拉近（radius 减） */
-    zoomIn: false,
-    /** -：推远（radius 加） */
-    zoomOut: false,
 };

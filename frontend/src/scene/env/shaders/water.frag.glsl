@@ -31,8 +31,6 @@ uniform float rippleNormalStrength; // 涟漪法线影响强度（默认 0.15）
 uniform float rippleGlintStrength; // 涟漪光泽强度（默认 0.25）
 uniform vec3 causticColor1;     // 焦散颜色1（亮部，默认 vec3(1.0, 0.9, 0.6)）
 uniform vec3 causticColor2;     // 焦散颜色2（暗部，默认 vec3(1.0, 1.0, 0.8)）
-uniform float causticScrollX;   // 焦散UV滚动速度X（默认 0.10）
-uniform float causticScrollY;   // 焦散UV滚动速度Y（默认 0.15）
 uniform float fresnelAlphaInfluence;  // Fresnel 对 alpha 的影响（默认 0.5）
 uniform float foamOpacity;           // 泡沫独立透明度（默认 0.8）
 uniform vec3 waterFogColor;          // 水面雾色（默认灰蓝色，模拟大气雾效果）
@@ -80,8 +78,7 @@ uniform vec2 uDetailWindDir;          // 主风向（归一化），驱动法线
 
 uniform sampler2D uCausticTex;
 uniform float uCausticIntensity;
-uniform float uCausticSpeed;
-uniform float uCausticScale;
+uniform vec2 uCausticOffset;   // 焦散 UV 偏移（每帧由 causticsController 推 uOffset/vOffset，联动 causticScrollX/Y）
 
 uniform vec4 uRipplePosRad[256];
 uniform vec4 uRippleStrSpdLife[256];
@@ -232,7 +229,9 @@ void main() {
 
     // 层1：主焦散（scale 0.15，cell ≈ 6.7 单位）
     // 用相机相对坐标（camXZ 已在 detail normal 段定义），精度稳定。
-    vec2 cuv1 = camXZ * 0.15;
+    // UV 偏移由 uCausticOffset 提供（causticsController 每帧推进纹理 uOffset/vOffset，
+    // 联动用户参数 causticScrollX/Y），让主焦散层持续滚动而非静止。
+    vec2 cuv1 = camXZ * 0.15 + uCausticOffset;
     float c1 = texture2D(uCausticTex, cuv1).r;
 
     // 层2：次焦散（2x scale + 旋转30° + 反向慢速滚动，与层1干涉）
@@ -240,7 +239,7 @@ void main() {
         camXZ.x * 0.866 - camXZ.y * 0.5,
         camXZ.x * 0.5 + camXZ.y * 0.866
     ) * 0.3;
-    cuv2 += vec2(-time * 0.03, time * 0.02);
+    cuv2 += vec2(-time * 0.03, time * 0.02) + uCausticOffset * -0.6;
     float c2 = texture2D(uCausticTex, cuv2).r;
 
     float caustic = c1 * 0.6 + c2 * 0.4;
