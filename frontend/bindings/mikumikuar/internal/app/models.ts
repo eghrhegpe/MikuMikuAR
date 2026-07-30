@@ -187,14 +187,14 @@ export interface EnvState {
     "groundReflectionQuality": string;
     "groundNormalTexture": string;
     "groundNormalStrength": number;
-    "groundElevationColoring": boolean;
+    "groundElevationColoringEnabled": boolean;
     "groundPbrEnabled": boolean;
     "groundProceduralTexture": string;
     "groundProceduralSeed": number;
     "groundProceduralScale": number;
     "groundRoughness": number;
     "groundMetallic": number;
-    "groundInfinite": boolean;
+    "groundInfiniteEnabled": boolean;
 
     /**
      * ADR-114 Phase 2: 反射模糊 + 法线扭曲
@@ -212,7 +212,7 @@ export interface EnvState {
     "particleEmitRate": number;
     "particleSize": number;
     "particleSpeed": number;
-    "particleSplash": boolean;
+    "particleSplashEnabled": boolean;
     "particleCustomTexture": string;
     "waterEnabled": boolean;
     "waterLevel": number;
@@ -231,9 +231,9 @@ export interface EnvState {
     "reflectionQuality": string;
 
     /**
-     * ADR-115: 平面反射混合度，对应 TS planarReflectBlend
+     * ADR-115: 平面反射混合度，对应 TS planarReflectionBlend
      */
-    "planarReflectBlend": number;
+    "planarReflectionBlend": number;
 
     /**
      * ADR-130 Phase 2.3: 统一质量档位
@@ -276,7 +276,7 @@ export interface EnvState {
     "underwaterToneIntensity": number;
     "underwaterFogMultiplier": number;
     "underwaterTintStrength": number;
-    "cloudsEnabled": boolean;
+    "cloudEnabled": boolean;
     "cloudCover": number;
     "cloudScale": number;
     "cloudHeight": number;
@@ -288,7 +288,7 @@ export interface EnvState {
     "cloudBacklight": number;
     "cloudPowder": number;
     "cloudQuality": string;
-    "debugClouds": boolean;
+    "debugCloudsEnabled": boolean;
 
     /**
      * ADR-128/129: 镜面道具开关，对应 TS mirrorEnabled
