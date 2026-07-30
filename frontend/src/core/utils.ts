@@ -445,19 +445,7 @@ export async function allSettledFilter<T>(
     return results.filter((r): r is PromiseFulfilledResult<Awaited<T>> => r.status === 'fulfilled');
 }
 
-/** 格式化 JSON 字符串（2 空格缩进）。 */
-export function jsonStringify(x: unknown): string {
-    return JSON.stringify(x, null, 2);
-}
-
-/** 安全 JSON 解析；解析失败返回 null。 */
-export function jsonParse<T>(s: string): T | null {
-    try {
-        return JSON.parse(s) as T;
-    } catch {
-        return null;
-    }
-}
+export { jsonStringify, jsonParse } from './json-stringify';
 
 // ======== Resource Path Resolution ========
 
