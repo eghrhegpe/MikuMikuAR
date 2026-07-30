@@ -1,6 +1,7 @@
 // [doc:adr-101] P3 工具函数单测：pure math helpers
 import { describe, it, expect } from 'vitest';
-import { clampPct, dist2d, dist3d, degToRad, radToDeg } from '../core/utils';
+import { clampPct } from '../core/clamp';
+import { dist2d, dist3d, degToRad, radToDeg } from '../core/math-geometry';
 
 describe('ADR-101 P3: pure math functions', () => {
     describe('clampPct', () => {
