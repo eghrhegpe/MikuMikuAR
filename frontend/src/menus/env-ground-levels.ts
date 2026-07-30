@@ -86,7 +86,7 @@ export function buildGroundLevel(): PopupLevel {
                         label: 'env.range',
                         control: { bind: 'env.groundSize', min: 10, max: 1000, step: 10 },
                         icon: 'lucide:maximize',
-                        visibleWhen: () => !envState.groundInfinite,
+                        visibleWhen: () => !envState.groundInfiniteEnabled,
                     },
                     {
                         id: 'env:ground:edgeFade',
@@ -415,8 +415,8 @@ export function buildGroundLevel(): PopupLevel {
                     {
                         id: 'env:ground:infinite',
                         kind: 'toggle',
-                        label: 'env.groundInfinite',
-                        control: { bind: 'env.groundInfinite' },
+                        label: 'env.groundInfiniteEnabled',
+                        control: { bind: 'env.groundInfiniteEnabled' },
                         icon: 'lucide:infinity',
                     },
                 ],
@@ -506,8 +506,8 @@ export function buildGroundLevel(): PopupLevel {
                     {
                         id: 'env:ground:elevationColoring',
                         kind: 'toggle',
-                        label: 'env.groundElevationColoring',
-                        control: { bind: 'env.groundElevationColoring' },
+                        label: 'env.groundElevationColoringEnabled',
+                        control: { bind: 'env.groundElevationColoringEnabled' },
                         icon: 'lucide:mountain-snow',
                         visibleWhen: () => envState.groundType === 'terrain',
                     },

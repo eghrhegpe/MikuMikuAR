@@ -131,7 +131,7 @@ vi.mock('../core/config', async (importOriginal) => {
             groundReflectionDistort: 0,
             groundReflectionBlend: 0.5,
             groundNormalStrength: 1,
-            groundElevationColoring: false,
+            groundElevationColoringEnabled: false,
             reflectionQuality: 'medium',
             waterLevel: 0,
             bigWaveHeight: 0.5,

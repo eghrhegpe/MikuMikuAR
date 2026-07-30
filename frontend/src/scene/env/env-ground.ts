@@ -1203,7 +1203,7 @@ export function applyGround(state: EnvState): void {
             if (
                 state.groundProceduralTexture !== 'none' &&
                 !state.groundTextureEnabled &&
-                !state.groundElevationColoring
+                !state.groundElevationColoringEnabled
             ) {
                 const mat = gm.material as GroundMat;
                 const texs = generateProceduralGroundTextures(

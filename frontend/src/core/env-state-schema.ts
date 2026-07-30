@@ -130,7 +130,7 @@ export const ENV_STATE_SCHEMA = {
     },
     groundNormalTexture: { type: 'string', default: '', group: 'ground' },
     groundNormalStrength: { type: 'number', default: 1, group: 'ground' },
-    groundElevationColoring: { type: 'boolean', default: false, group: 'ground' },
+    groundElevationColoringEnabled: { type: 'boolean', default: false, group: 'ground' },
     groundInfiniteEnabled: { type: 'boolean', default: false, group: 'ground' },
     groundPbrEnabled: { type: 'boolean', default: false, group: 'ground' },
     groundProceduralTexture: {

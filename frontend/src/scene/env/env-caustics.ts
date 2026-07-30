@@ -65,8 +65,10 @@ function _drawCausticCanvas(ctx: CanvasRenderingContext2D, s: number): void {
 
 /** 焦散滚动配置（用户可通过 state.causticScrollX/Y 覆盖） */
 export interface CausticsScrollConfig {
-    speedU: number;
-    speedV: number;
+    /** 对应 schema causticScrollX */
+    scrollX: number;
+    /** 对应 schema causticScrollY */
+    scrollY: number;
     /** 焦散 UV 在材质上重复次数（0.5 = 大光斑；2.0 = 细密） */
     scale: number;
     /** 焦散颜色（淡蓝白色，模拟水底折射） */
@@ -76,8 +78,8 @@ export interface CausticsScrollConfig {
 }
 
 const DEFAULT_CONFIG: CausticsScrollConfig = {
-    speedU: DEFAULT_SCROLL_SPEED,
-    speedV: DEFAULT_SCROLL_SPEED * 0.7, // 微微 X/Y 不同步，更像水流
+    scrollX: DEFAULT_SCROLL_SPEED,
+    scrollY: DEFAULT_SCROLL_SPEED * 0.7, // 微微 X/Y 不同步，更像水流
     scale: 1.0,
     color: new Color3(0.7, 0.85, 1.0),
     intensity: 1.0,
@@ -119,8 +121,8 @@ class CausticsControllerImpl {
      * 返回当前 config 供消费者查 scrollSpeed/scrollScale。
      */
     update(dt: number): { offsetU: number; offsetV: number; cfg: CausticsScrollConfig } {
-        this._offsetU = (this._offsetU + this._config.speedU * dt) % 1;
-        this._offsetV = (this._offsetV + this._config.speedV * dt) % 1;
+        this._offsetU = (this._offsetU + this._config.scrollX * dt) % 1;
+        this._offsetV = (this._offsetV + this._config.scrollY * dt) % 1;
         if (this._texture) {
             this._texture.uOffset = this._offsetU;
             this._texture.vOffset = this._offsetV;

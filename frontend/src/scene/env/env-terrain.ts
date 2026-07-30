@@ -115,7 +115,7 @@ export function createHeightmapGround(
 
 /**
  * 地形材质（与其他地面模式一致：纯色或半透明/纹理）。
- * Phase B: 支持 groundElevationColoring（按高程 per-vertex 着色）。
+ * Phase B: 支持 groundElevationColoringEnabled（按高程 per-vertex 着色）。
  * 供 env-impl 在 onReady 与就地更新时复用。
  */
 export function applyTerrainMaterial(ground: GroundMesh, state: EnvState, scene: Scene): void {
@@ -153,7 +153,7 @@ export function applyTerrainMaterial(ground: GroundMesh, state: EnvState, scene:
     };
 
     // Phase B: 高程着色（覆盖纯色/纹理，优先级最高）
-    if (state.groundElevationColoring) {
+    if (state.groundElevationColoringEnabled) {
         applyElevationColoring(ground, state);
         return;
     }

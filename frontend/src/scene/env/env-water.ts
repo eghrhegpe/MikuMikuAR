@@ -1508,8 +1508,8 @@ registerEnvDtTickCallback((_dt) => {
         envState.causticScrollY !== _causticsLastConfig.sy) {
         // 速度比缩放到 (0..0.5) 区间（避免过快）
         causticsController.setConfig({
-            speedU: envState.causticScrollX * 0.5,
-            speedV: envState.causticScrollY * 0.5,
+            scrollX: envState.causticScrollX * 0.5,
+            scrollY: envState.causticScrollY * 0.5,
         });
         _causticsLastConfig = { sx: envState.causticScrollX, sy: envState.causticScrollY };
     }
