@@ -34,8 +34,8 @@ frontend/src/menus/
 │
 ├── env-menu.ts                  # 环境弹窗入口 + 导航
 │   ├── env-sky-levels.ts        #   天空
-│   ├── env-ground-levels.ts     #   地面
-│   ├── env-water-levels.ts      #   水面
+│   ├── env-ground-levels.ts     #   地面（buildGroundLevel；⚠️路由挂在 scene-menu.ts，target=scene:ground）
+│   ├── env-water-levels.ts      #   水面（buildWaterLevel；⚠️路由挂在 scene-menu.ts，target=scene:water）
 │   ├── env-wind-levels.ts       #   风
 │   ├── env-cloud-levels.ts      #   云
 │   ├── env-fog-levels.ts        #   雾

@@ -7,6 +7,7 @@ scope:
 source_files:
   - frontend/src/scene/env/env-ground.ts
   - frontend/src/scene/env/env-ground-presets.ts
+  - frontend/src/menus/env-ground-levels.ts
 adr:
   - ADR-114
 symbols:
@@ -58,3 +59,9 @@ use_when:
 - 依赖 [`env-reflection`](./env-reflection.md) 的平面反射质量预设。
 - 依赖 [`env-context`](./env-context.md) 的上下文与环境系统引用。
 - 地面涟漪与水系统（`env-water`）联动，通过 `env` 外观（facade）注册更新。
+
+## 菜单入口（去哪找 UI）
+- 菜单层文件：`frontend/src/menus/env-ground-levels.ts`，入口函数 `buildGroundLevel(): PopupLevel`。
+- 路由归属：**场景菜单**（`scene-menu.ts`），target = `scene:ground`（注意文件名前缀 `env-` 与路由域 `scene:` 名实错位，历史遗留）。
+- schema 节点 id 以 `env:ground:*` 为前缀（如 `env:ground:presets`/`env:ground:texture`/`env:ground:overlay`）。
+- 添加/修改地面菜单行的规范流程见 [menu-how-to.md](../menu-how-to.md)。

@@ -7,6 +7,7 @@ scope:
 source_files:
   - frontend/src/scene/env/env-water.ts
   - frontend/src/core/math/hash-noise.ts
+  - frontend/src/menus/env-water-levels.ts
 adr:
   - ADR-062
 symbols:
@@ -57,3 +58,9 @@ use_when:
 - 水面反射 RT（RenderTexture）在 `disposeWater` 中释放。
 - 水面对象在场景 dispose 时级联释放。
 - 小波细节波受 `smallWaveEnabled` 门控：关闭时 `_syncWaterUniforms` 向 shader 送 `smallWaveHeight=0`（水面呈纯净反射面），字段缺失时 `?? true` 兜底为开启。此为水面功能开关体系试点，复用地面 `folder + headerToggle` 模式（开关只控 shader 输出，不联动置灰 slider）。
+
+## 菜单入口（去哪找 UI）
+- 菜单层文件：`frontend/src/menus/env-water-levels.ts`，入口函数 `buildWaterLevel(): PopupLevel`。
+- 路由归属：**场景菜单**（`scene-menu.ts`），target = `scene:water`（注意文件名前缀 `env-` 与路由域 `scene:` 名实错位，历史遗留）。
+- schema 节点 id 以 `env:water:*` 为前缀（如 `env:water:presets`/`env:water:bigWave`/`env:water:color-fog`）。
+- 添加/修改水面菜单行的规范流程见 [menu-how-to.md](../menu-how-to.md)。
