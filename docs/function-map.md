@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 120 | 710 |
-| 3D 场景 | 108 | 1077 |
+| 3D 场景 | 108 | 1080 |
 | 菜单 & UI | 75 | 361 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 127 |
@@ -912,7 +912,9 @@
 | `persistUIState()` | `scene/env/_bridge/env-persist` | 与 persistEnvState 对称：持久化 UI state（ADR-176 第 2 步：经 resolveBackend 路由）。 |
 | `schedulePersistEnvState()` | `scene/env/_bridge/env-persist` | 调度 env state 防抖持久化（500ms）。setEnvState 内部调用。 |
 | `schedulePersistUI()` | `scene/env/_bridge/env-persist` | 防抖调度 UIState 持久化。修改 uiState 后调用此函数。 |
+| `INFINITE_GROUND_SIZE()` | `scene/env/_shared/env-context` | — |
 | `_envSys()` | `scene/env/_shared/env-context` | — |
+| `effectiveGroundSize()` | `scene/env/_shared/env-context` | 当前生效的地面尺寸：开启无限地面时为固定大尺寸，否则为 groundSize。 |
 | `getPipeline()` | `scene/env/_shared/env-context` | — |
 | `getScene()` | `scene/env/_shared/env-context` | — |
 | `initEnvImpl()` | `scene/env/_shared/env-context` | — |
@@ -927,6 +929,7 @@
 | `FrozenCamera()` | `scene/env/_shared/env-type-helpers` | — |
 | `REFRESHRATE_RENDER_ONCE()` | `scene/env/_shared/env-type-helpers` | — |
 | `getCanvasCtx()` | `scene/env/_shared/env-type-helpers` | — |
+| `CAUSTIC_WORLD_SCALE()` | `scene/env/env-caustics` | — |
 | `CausticsHostMat()` | `scene/env/env-caustics` | 类型守卫：材质是否支持 emissiveTexture（用于焦散投影） |
 | `CausticsScrollConfig()` | `scene/env/env-caustics` | 焦散滚动配置（用户可通过 state.causticScrollX/Y 覆盖） |
 | `causticsController()` | `scene/env/env-caustics` | — |
@@ -2368,5 +2371,5 @@
 
 ---
 
-> 共 326 个文件，2326 个导出符号。
+> 共 326 个文件，2329 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。
