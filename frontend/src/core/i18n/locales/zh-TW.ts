@@ -1895,6 +1895,7 @@ export const zhTW: Record<string, string> = {
     'ai.dialogue.emotion.angry': '生氣',
     'ai.dialogue.emotion.surprised': '驚訝',
     'ai.dialogue.emotion.shy': '害羞',
+    'ai.dialogue.emotion.curious': '好奇',
     'ai.dialogue.speakOn': '🔊 朗讀開',
     'ai.dialogue.speakOff': '🔇 朗讀關',
     'ai.dialogue.speakToggle': '切換台詞朗讀',

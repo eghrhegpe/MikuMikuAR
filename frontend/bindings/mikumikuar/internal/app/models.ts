@@ -236,6 +236,11 @@ export interface EnvState {
     "reflectionQuality": string;
 
     /**
+     * 反射模式：'none' | 'planar' | 'ssr' | 'probe' | 'hybrid'
+     */
+    "reflectionMode": string;
+
+    /**
      * ADR-115: 平面反射混合度，对应 TS planarReflectionBlend
      */
     "planarReflectionBlend": number;

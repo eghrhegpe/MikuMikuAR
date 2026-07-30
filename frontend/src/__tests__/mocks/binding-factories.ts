@@ -8,6 +8,7 @@ import type {
     CacheStats,
     Config,
     EnvPresetEntry,
+    EnvState,
     ExtractResult,
     ModelEntry,
     ModelMeta,
@@ -17,7 +18,6 @@ import type {
     SoftwareEntry,
     UIState,
 } from '../../../bindings/mikumikuar/internal/app/models';
-import type { EnvState } from '../../core/types';
 
 export function createMockBuildInfo(overrides?: Partial<BuildInfo>): BuildInfo {
     return {
@@ -237,7 +237,7 @@ export function createMockEnvState(overrides?: Partial<EnvState>): EnvState {
         timeOfDayActive: false,
         timeOfDaySpeed: 3,
         ...overrides,
-    };
+    } as EnvState;
 }
 
 export function createMockExtractResult(overrides?: Partial<ExtractResult>): ExtractResult {
