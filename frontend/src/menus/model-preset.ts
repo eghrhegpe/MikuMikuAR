@@ -34,8 +34,8 @@ import {
     getBaseName,
     normPath,
     logWarn,
-    jsonStringify,
 } from '../core/utils';
+import { jsonStringify } from '../core/json-stringify';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
 import { buildPresetListLevel as buildGenericPresetLevel } from './preset-list-viewer';

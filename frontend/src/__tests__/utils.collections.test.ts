@@ -5,9 +5,8 @@ import {
     filterKeys,
     Cache,
     allSettledFilter,
-    jsonStringify,
-    jsonParse,
 } from '../core/utils';
+import { jsonStringify, jsonParse } from '../core/json-stringify';
 
 describe('ADR-101 P3: pure collection & json helpers', () => {
     describe('ensureArray', () => {
