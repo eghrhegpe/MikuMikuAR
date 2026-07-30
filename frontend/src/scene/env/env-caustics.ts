@@ -12,7 +12,7 @@
 import { Color3, Material, PBRMaterial, Scene, StandardMaterial, Texture } from '@babylonjs/core';
 import { createCanvasTexture } from './env-texture';
 
-const CAUSTIC_TEX_SIZE = 128;
+const CAUSTIC_TEX_SIZE = 256;
 const DEFAULT_SCROLL_SPEED = 0.05; // 焦散光斑每秒滚动 UV 速率
 
 /**
@@ -29,7 +29,7 @@ function _drawCausticCanvas(ctx: CanvasRenderingContext2D, s: number): void {
         const r1 = ((h >>> 0) & 0xffff) / 65535;
         return [r0, r1];
     };
-    const TILE = 4;
+    const TILE = 8;
     for (let y = 0; y < s; y++) {
         for (let x = 0; x < s; x++) {
             const px = (x / s) * TILE;
