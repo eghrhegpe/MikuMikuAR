@@ -19,7 +19,7 @@ import {
     setPerceptionPerfTier,
     isAllPerceptionEnabled,
 } from '../scene/motion/perception';
-import { triggerAutoSave } from '../core/utils';
+import { triggerAutoSave } from '../core/auto-save';
 import { getMotionMenu } from './motion-popup';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';

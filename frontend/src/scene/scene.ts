@@ -77,11 +77,10 @@ import {
     setModelRegistry,
     envState,
     uiState,
-    triggerAutoSave,
-    setTriggerAutoSave,
     getMmdRuntimeType,
     focusedModelId,
 } from '../core/config';
+import { triggerAutoSave, setTriggerAutoSave } from '../core/auto-save';
 import { attachBeatDetector, getStreamPlayer } from '../outfit/audio';
 import { detectRuntimeMode, persistRuntimeMode, renderRuntimeBadge } from '../core/runtime-mode';
 import { _catState, _matState, _matEnabled } from './manager/material';
@@ -722,9 +721,8 @@ export {
     setModelRegistry,
     propRegistry,
     envState,
-    triggerAutoSave,
-    setTriggerAutoSave,
 } from '../core/config';
+export { triggerAutoSave, setTriggerAutoSave } from '../core/auto-save';
 export type { EnvState, ModelInstance, PropInstance } from '../core/config';
 export { resolveFileUrl, normPath } from '../core/fileservice';
 export {

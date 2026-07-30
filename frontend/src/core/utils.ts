@@ -66,25 +66,6 @@ export { ensureArray, filterKeys, Cache, allSettledFilter } from './collections'
 
 /** 泛型键值写入工具，避免大量 `obj[key] = value` 重复。 */
 // ======== Resource Path Resolution =========
-export const stackRegistry: {
-    modelStack: SlideMenu | null;
-    sceneStackGetter: (() => SlideMenu | null) | null;
-    buildLevel:
-        | ((
-              dir: string,
-              label: string,
-              filter?: (m: import('./types').LibraryModel) => boolean,
-              targetStack?: SlideMenu,
-              extraFolders?: { label: string; path: string }[],
-              outcome?: import('./types').BrowseOutcome
-          ) => import('./types').PopupLevel)
-        | null;
-} = {
-    modelStack: null,
-    sceneStackGetter: null,
-    buildLevel: null,
-};
-
 export {
     computeLibraryRef,
     resolveLibraryRef,
@@ -100,19 +81,8 @@ export {
     clearAllMenuWrappers,
 } from '../menus/menu-overlay';
 
-// ======== Auto-save Trigger ========
-// 注：防抖下沉到 scene-serialize.ts 的 _autoSaveDebounced（500ms）统一处理，
-// 此处只做函数指针注册，不再叠加 setTimeout，避免 1500ms + 500ms = 2000ms 双层延迟。
-
-let _triggerAutoSaveImpl: (() => void) | null = null;
-
-export function setTriggerAutoSave(fn: () => void): void {
-    _triggerAutoSaveImpl = fn;
-}
-
-export function triggerAutoSave(): void {
-    _triggerAutoSaveImpl?.();
-}
+export { stackRegistry } from '../menus/menu-stack-registry';
+export { triggerAutoSave, setTriggerAutoSave } from './auto-save';
 
 export { tryCatchStatus, withLoadingStatus, withLoadingStatusTargeted } from './status-helpers';
 
