@@ -228,56 +228,60 @@ export function registerEventHandlers(): void {
     _reg(window, 'blur', () => document.body.classList.remove('shortcuts-visible'));
 
     // ======== Freefly WASD (only respond in freefly mode) ========
+    // keydown 完整守卫（模式 + 输入框 + 菜单）：避免在输入框打字或菜单导航时误触发移动。
+    // keyup 只查模式、不受守卫限制：保证松键总能清标记，避免相机“卡住”持续移动（同 orbit 模式）。
+    const _freeflyKeyActive = (t: HTMLElement | null): boolean => {
+        if (getCameraMode() !== 'freefly') {
+            return false;
+        }
+        if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) {
+            return false;
+        }
+        // 菜单打开时 WSAD 交给菜单导航（避免相机与列表导航抢键）
+        if (t && (t.closest('.slide-menu') || t.closest('.menu-container'))) {
+            return false;
+        }
+        return true;
+    };
+    const _freeflyKeyFlag = (code: string, down: boolean): boolean => {
+        switch (code) {
+            case 'KeyW':
+                freeflyInput.forward = down;
+                return true;
+            case 'KeyS':
+                freeflyInput.backward = down;
+                return true;
+            case 'KeyA':
+                freeflyInput.left = down;
+                return true;
+            case 'KeyD':
+                freeflyInput.right = down;
+                return true;
+            case 'KeyQ':
+                freeflyInput.up = down;
+                return true;
+            case 'KeyE':
+                freeflyInput.down = down;
+                return true;
+        }
+        return false;
+    };
     _reg(window, 'keydown', (e) => {
-        if (getCameraMode() === 'freefly') {
-            if (e.code === 'KeyW') {
-                freeflyInput.forward = true;
-                e.preventDefault();
-            } else if (e.code === 'KeyS') {
-                freeflyInput.backward = true;
-                e.preventDefault();
-            } else if (e.code === 'KeyA') {
-                freeflyInput.left = true;
-                e.preventDefault();
-            } else if (e.code === 'KeyD') {
-                freeflyInput.right = true;
-                e.preventDefault();
-            } else if (e.code === 'KeyQ') {
-                freeflyInput.up = true;
-                e.preventDefault();
-            } else if (e.code === 'KeyE') {
-                freeflyInput.down = true;
-                e.preventDefault();
-            }
+        if (!_freeflyKeyActive(e.target as HTMLElement)) {
+            return;
+        }
+        if (_freeflyKeyFlag(e.code, true)) {
+            e.preventDefault();
         }
     });
 
     // Freefly WASD release
     _reg(window, 'keyup', (e) => {
+        // keyup 不受输入框/菜单守卫限制：保证松键总能清标记，避免相机“卡住”持续移动
         if (getCameraMode() !== 'freefly') {
             return;
         }
-        const t = e.target as HTMLElement;
-        if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) {
-            return;
-        }
-        if (e.code === 'KeyW') {
-            freeflyInput.forward = false;
-            e.preventDefault();
-        } else if (e.code === 'KeyS') {
-            freeflyInput.backward = false;
-            e.preventDefault();
-        } else if (e.code === 'KeyA') {
-            freeflyInput.left = false;
-            e.preventDefault();
-        } else if (e.code === 'KeyD') {
-            freeflyInput.right = false;
-            e.preventDefault();
-        } else if (e.code === 'KeyQ') {
-            freeflyInput.up = false;
-            e.preventDefault();
-        } else if (e.code === 'KeyE') {
-            freeflyInput.down = false;
+        if (_freeflyKeyFlag(e.code, false)) {
             e.preventDefault();
         }
     });
