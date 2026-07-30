@@ -367,7 +367,7 @@ function buildAppearanceSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
     const nodes: MenuNode[] = [
         // 卡片 1：UI 尺寸（缩放 + 弹窗宽度）
         {
-            id: 'appearance:size',
+            id: 'settings:appearance:size',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
@@ -377,7 +377,7 @@ function buildAppearanceSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
         },
         // 卡片 2：主题色预设
         {
-            id: 'appearance:theme-presets',
+            id: 'settings:appearance:theme-presets',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
@@ -387,7 +387,7 @@ function buildAppearanceSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
         },
         // 卡片 3：主题色自定义输入（独立卡片，特殊样式）
         {
-            id: 'appearance:theme-custom',
+            id: 'settings:appearance:theme-custom',
             kind: 'custom',
             renderCustom: (c) => {
                 _renderThemeColorInput(c, getSettingsMenu);
@@ -395,7 +395,7 @@ function buildAppearanceSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
         },
         // 卡片 4：字体
         {
-            id: 'appearance:font',
+            id: 'settings:appearance:font',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
@@ -405,7 +405,7 @@ function buildAppearanceSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
         },
         // 卡片 5：动效（滑动动画 + 背景模糊）
         {
-            id: 'appearance:anim',
+            id: 'settings:appearance:anim',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
@@ -415,7 +415,7 @@ function buildAppearanceSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
         },
         // 卡片 6：语言
         {
-            id: 'appearance:language',
+            id: 'settings:appearance:language',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
@@ -465,7 +465,7 @@ function buildAppearanceSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
         },
         // 卡片 7：恢复默认
         {
-            id: 'appearance:reset',
+            id: 'settings:appearance:reset',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
@@ -478,7 +478,7 @@ function buildAppearanceSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
     // 插入到动效卡片之后（index 5），保持「恢复默认」始终位于末尾。
     if (isAndroidPlatform()) {
         nodes.splice(5, 0, {
-            id: 'appearance:screen',
+            id: 'settings:appearance:screen',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
