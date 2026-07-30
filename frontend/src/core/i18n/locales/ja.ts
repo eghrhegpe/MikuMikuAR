@@ -143,9 +143,6 @@ export const ja: Record<string, string> = {
     // ===== ダイアログ =====
     'dialog.confirm': '確認',
     'dialog.cancel': 'キャンセル',
-    'dialog.close': '閉じる',
-    'dialog.copy': 'コピー',
-    'dialog.copied': 'コピー完了 ✓',
     'dialog.confirmTitle': '確認',
     'dialog.inputTitle': '入力',
 
@@ -1118,13 +1115,6 @@ export const ja: Record<string, string> = {
     'outfit.resetFailed': '✗ 衣装のリセットに失敗しました',
     'outfit.resetDone': '✓ 衣装をリセットしました',
 
-    // —— Props ——
-    'props.loading': 'プロップを読み込み中...',
-    'props.noMesh': '✗ プロップにメッシュがありません',
-    'props.loadFailed': '✗ プロップの読み込みに失敗しました',
-    'props.notFound': '✗ プロップが見つかりません',
-    'props.loaded': '✓ プロップを読み込みました',
-
     // —— Env Preset ——
     'env-preset.myPresets': 'マイプリセット',
     'env-preset.noCustom': '（カスタムプリセットはまだありません）',
@@ -1832,16 +1822,6 @@ export const ja: Record<string, string> = {
     'plaza.openInBrowser': 'ブラウザ',
     'plaza.refresh': '更新',
     'plaza.close': '閉じる',
-    'scene.accessory.attachToBone': 'ボーンにアタッチ',
-    'scene.accessory.attached': '✓ {name} を {bone} にアタッチしました',
-    'scene.accessory.boneNoLink': '✗ ボーンにリンクできません（プロキシボーンは未対応）',
-    'scene.accessory.boneNotFound': '✗ ボーン {bone} が見つかりません',
-    'scene.accessory.boneOffset': 'ボーンオフセット',
-    'scene.accessory.boneRotation': 'ボーン回転',
-    'scene.accessory.detachFromBone': 'ボーンからデタッチ',
-    'scene.accessory.detached': '✕ {name} をボーンからデタッチしました',
-    'scene.accessory.selectBone': 'ボーンを選択',
-    'scene.accessory.selectModel': 'モデルを選択',
     'scene.waterReflectionQuality': 'プラナーリフレクション品質',
     'scene.waterReflectionQualityHigh': '高',
     'scene.waterReflectionQualityLow': '低',
@@ -1887,17 +1867,6 @@ export const ja: Record<string, string> = {
     'goerr.watch.addWatchFailed': '監視ディレクトリの追加に失敗しました。',
     'goerr.zip.tooManyEntries':
         '{op}: アーカイブ内のファイル数が {count} 件で、上限の {max} 件を超えています。',
-    // ===== [doc:adr-feedback] 構造化フィードバック モジュール key =====
-    'feedback.loading': '読み込み中...',
-    'feedback.savedSuccess': '✓ 保存完了',
-    'feedback.savedFailed': '✗ 保存失敗',
-    'feedback.loadedSuccess': '✓ 読み込み完了',
-    'feedback.loadedFailed': '✗ 読み込み失敗',
-    'feedback.extractionSuccess': '✓ インポート完了',
-    'feedback.extractionFailed': '✗ インポート失敗',
-    'feedback.restoredSuccess': '✓ 復元完了',
-    'feedback.restoredFailed': '✗ 復元失敗',
-
     // ===== [doc:adr-196] AI診断アシスタント =====
     'ai.welcome':
         'こんにちは！AI診断アシスタントです。エラーやシーンの状態を分析します。問題を説明してください。',

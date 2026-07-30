@@ -145,9 +145,6 @@ export const ko: Record<string, string> = {
     // ===== 대화상자 =====
     'dialog.confirm': '확인',
     'dialog.cancel': '취소',
-    'dialog.close': '닫기',
-    'dialog.copy': '복사',
-    'dialog.copied': '복사됨 ✓',
     'dialog.confirmTitle': '확인',
     'dialog.inputTitle': '입력',
 
@@ -1147,13 +1144,6 @@ export const ko: Record<string, string> = {
     'env-preset.category.atmosphere': '대기',
     'env-preset.saveCurrentCategory': '＋ 현재 {category}를 프리셋으로 저장',
 
-    // —— Props ——
-    'props.loading': '프롭 로드 중...',
-    'props.noMesh': '✗ 프롭에 메시 없음',
-    'props.loadFailed': '✗ 프롭 로드 실패',
-    'props.notFound': '✗ 프롭을 찾을 수 없음',
-    'props.loaded': '✓ 프롭 로드 완료',
-
     // —— Sky ——
     'env.sky': '하늘',
     'env.skyMode': '하늘 모드',
@@ -1828,16 +1818,6 @@ export const ko: Record<string, string> = {
     'plaza.openInBrowser': '브라우저',
     'plaza.refresh': '새로고침',
     'plaza.close': '닫기',
-    'scene.accessory.attachToBone': '뼈에 부착',
-    'scene.accessory.attached': '✓ {name}을(를) {bone}에 부착함',
-    'scene.accessory.boneNoLink': '✗ 뼈에 링크할 수 없음 (프록시 뼈대는 미지원)',
-    'scene.accessory.boneNotFound': '✗ 뼈 {bone}을(를) 찾을 수 없음',
-    'scene.accessory.boneOffset': '뼈대 오프셋',
-    'scene.accessory.boneRotation': '뼈대 회전',
-    'scene.accessory.detachFromBone': '뼈에서 분리',
-    'scene.accessory.detached': '✕ {name}을(를) 뼈에서 분리함',
-    'scene.accessory.selectBone': '뼈 선택',
-    'scene.accessory.selectModel': '모델 선택',
     'scene.waterReflectionQuality': '플라나 반사 품질',
     'scene.waterReflectionQualityHigh': '높음',
     'scene.waterReflectionQualityLow': '낮음',
@@ -1883,17 +1863,6 @@ export const ko: Record<string, string> = {
     'goerr.watch.addWatchFailed': '감시 폴더 추가에 실패했습니다.',
     'goerr.zip.tooManyEntries':
         '{op}: 압축 파일 내 파일 수가 {count}개로, 상한 {max}개를 초과했습니다.',
-    // ===== [doc:adr-feedback] 구조화된 피드백 모듈 key =====
-    'feedback.loading': '로딩 중...',
-    'feedback.savedSuccess': '✓ 저장 완료',
-    'feedback.savedFailed': '✗ 저장 실패',
-    'feedback.loadedSuccess': '✓ 로드 완료',
-    'feedback.loadedFailed': '✗ 로드 실패',
-    'feedback.extractionSuccess': '✓ 가져오기 완료',
-    'feedback.extractionFailed': '✗ 가져오기 실패',
-    'feedback.restoredSuccess': '✓ 복원 완료',
-    'feedback.restoredFailed': '✗ 복원 실패',
-
     // ===== [doc:adr-196] AI 진단 어시스턴트 =====
     'ai.welcome':
         '안녕하세요! AI 진단 어시스턴트입니다. 오류 및 씬 상태 분석을 도와드립니다. 문제를 설명해주세요.',

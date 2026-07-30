@@ -805,16 +805,6 @@ export const en: Record<string, string> = {
     'scene.propTransform': 'Prop Transform',
     'scene.transform': 'Transform',
     'scene.propNotFound': 'Prop does not exist (may have been deleted)',
-    'scene.accessory.boneNotFound': '✗ Bone {bone} not found',
-    'scene.accessory.boneNoLink': '✗ Bone cannot attach (proxy skeleton)',
-    'scene.accessory.attached': '✓ {name} attached to {bone}',
-    'scene.accessory.detached': '✕ {name} detached from bone',
-    'scene.accessory.attachToBone': 'Attach to Bone',
-    'scene.accessory.detachFromBone': 'Detach from Bone',
-    'scene.accessory.boneOffset': 'Bone Offset',
-    'scene.accessory.boneRotation': 'Bone Rotation',
-    'scene.accessory.selectBone': 'Select Bone',
-    'scene.accessory.selectModel': 'Select Model',
 
     // —— Stage lights ——
     'scene.custom': 'Custom',
@@ -999,9 +989,6 @@ export const en: Record<string, string> = {
     // dialog — cross-platform dialog buttons/titles
     'dialog.confirm': 'Confirm',
     'dialog.cancel': 'Cancel',
-    'dialog.close': 'Close',
-    'dialog.copy': 'Copy',
-    'dialog.copied': 'Copied ✓',
     'dialog.confirmTitle': 'Confirm',
     'dialog.inputTitle': 'Input',
 
@@ -1306,13 +1293,6 @@ export const en: Record<string, string> = {
     'env.starsTexture': 'Stars Texture',
     'env.stars': 'Stars',
     'env.shadowHint': 'Go to Scene → Stage Lights to adjust shadow parameters individually',
-
-    // props — prop status
-    'props.loading': 'Loading prop...',
-    'props.noMesh': '✗ Prop loaded no meshes',
-    'props.loadFailed': '✗ Prop load failed',
-    'props.notFound': '✗ Prop not found',
-    'props.loaded': '✓ Prop loaded',
 
     // env-feature-levels — environment feature popups (ground/water/fog/shadow/wind/cloud/experimental; sky block added by other session)
     'env.skyTextureHint':
@@ -1878,17 +1858,6 @@ export const en: Record<string, string> = {
     'goerr.watch.addWatchFailed': 'Failed to add directory to watcher.',
     'goerr.zip.tooManyEntries':
         '{op}: the archive contains {count} files, exceeding the limit of {max}.',
-
-    // ===== [doc:adr-feedback] Structured feedback module keys =====
-    'feedback.loading': 'Loading',
-    'feedback.savedSuccess': '✓ Saved successfully',
-    'feedback.savedFailed': '✗ Save failed',
-    'feedback.loadedSuccess': '✓ Loaded successfully',
-    'feedback.loadedFailed': '✗ Load failed',
-    'feedback.extractionSuccess': '✓ Imported successfully',
-    'feedback.extractionFailed': '✗ Import failed',
-    'feedback.restoredSuccess': '✓ Restored successfully',
-    'feedback.restoredFailed': '✗ Restore failed',
 
     // ===== [doc:adr-196] AI Diagnostic Assistant =====
     'ai.welcome':
