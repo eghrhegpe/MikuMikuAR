@@ -254,6 +254,36 @@ function migrateCloudEnabled(
     return false;
 }
 
+/**
+ * groundVisible → groundVisibleEnabled 迁移（ADR-212 §6.1 boolean 后缀纪律）
+ */
+function migrateGroundVisibleEnabled(
+    raw: Record<string, unknown>,
+    out: Record<string, unknown>
+): boolean {
+    if (typeof raw.groundVisible === 'boolean') {
+        out.groundVisibleEnabled = raw.groundVisible;
+        delete out.groundVisible;
+        return true;
+    }
+    return false;
+}
+
+/**
+ * waterFlip → waterFlipEnabled 迁移（ADR-212 §6.1 boolean 后缀纪律）
+ */
+function migrateWaterFlipEnabled(
+    raw: Record<string, unknown>,
+    out: Record<string, unknown>
+): boolean {
+    if (typeof raw.waterFlip === 'boolean') {
+        out.waterFlipEnabled = raw.waterFlip;
+        delete out.waterFlip;
+        return true;
+    }
+    return false;
+}
+
 /** 迁移注册表：新增迁移在此追加。 */
 const _migrators: Migrator[] = [
     migrateGroundMode,
@@ -266,6 +296,8 @@ const _migrators: Migrator[] = [
     migrateGroundElevationColoringEnabled,
     migratePlanarReflectionBlend,
     migrateCloudEnabled,
+    migrateGroundVisibleEnabled,
+    migrateWaterFlipEnabled,
 ];
 
 function migrateEnvState(input: Partial<EnvState>): Partial<EnvState> {

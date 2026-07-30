@@ -12,8 +12,8 @@ import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { safeDispose } from '@/core/dispose-helpers';
 import { getMotionPipeline } from './motion-pipeline';
 import { focusedModelId } from '@/core/state';
-import { isWasmRuntime } from './perception-shared';
-import { logInfo } from '@/core/logger';
+import { isWasmRuntime, feetDebug } from './perception-shared';
+import { logInfo, logWarn } from '@/core/logger';
 import {
     matchBone,
     BONE_LEG_IK_L_CANDIDATES,
@@ -79,6 +79,54 @@ let _getRuntimeBones: (() => readonly IMmdRuntimeBone[]) | null = null;
  */
 let _wasmIkResolver:
     ((modelId: string, ikSolverIndex: number, usePhysics: boolean) => void) | null = null;
+
+/**
+ * [ADR-202 §六] WASM IK 重解守护：检测同帧内同一 (modelId, ikSolverIndex) 重复调用。
+ * 仅在 feetDebug.value=true 时启用。日志节流：每帧最多 warn 1 次 + 每 2 秒最多 1 条，
+ * 避免刷爆控制台（互斥被持续破坏时，60fps 下每秒最多 0.5 条 warn）。
+ * 互斥不变量由编排层保证（POS slot 有覆盖 → feet-adjustment skip），守护是运行时断言，
+ * 触发即说明编排层互斥被破坏。
+ */
+const _ikResolveFrameLog = new Map<string, number>();
+let _ikResolveWarnSuppressed = false;
+let _ikResolveLastWarnTime = 0;
+const _IK_RESOLVE_WARN_INTERVAL_MS = 2000; // 时间窗口节流：2 秒最多 1 条 warn
+
+/** 帧首重置守护状态（bone-override callback order=0 调用，覆盖整个 bone-override stage） */
+function _resetIkResolveGuard(): void {
+    if (_ikResolveFrameLog.size > 0) {
+        _ikResolveFrameLog.clear();
+    }
+    _ikResolveWarnSuppressed = false;
+}
+
+/** 包装 resolver：feetDebug 开启时检测同帧重复调用，双重节流（帧内 1 条 + 时间窗口 2 秒 1 条） */
+function _guardedResolve(
+    raw: (modelId: string, ikSolverIndex: number, usePhysics: boolean) => void,
+    modelId: string,
+    ikSolverIndex: number,
+    usePhysics: boolean
+): void {
+    if (feetDebug.value) {
+        const key = `${modelId}:${ikSolverIndex}`;
+        const prev = _ikResolveFrameLog.get(key) ?? 0;
+        if (prev >= 1 && !_ikResolveWarnSuppressed) {
+            const now = performance.now();
+            if (now - _ikResolveLastWarnTime >= _IK_RESOLVE_WARN_INTERVAL_MS) {
+                logWarn(
+                    'bone-override',
+                    `[守护] 同帧重复调用 mmdModelSolveIk: model=${modelId} ikIdx=${ikSolverIndex} ` +
+                        `(第 ${prev + 1} 次)。互斥不变量被破坏：检查 bone-override POS slot 与 ` +
+                        `feet-adjustment 是否同时激活（应满足 POS slot 有覆盖 → feet-adjustment skip）`
+                );
+                _ikResolveLastWarnTime = now;
+            }
+            _ikResolveWarnSuppressed = true; // 本帧后续不再 warn
+        }
+        _ikResolveFrameLog.set(key, prev + 1);
+    }
+    raw(modelId, ikSolverIndex, usePhysics);
+}
 /** [doc:adr-116 P3] 每帧钩子条目：由时间驱动模块（riding/left-hand/right-hand）注册，渲染回调每帧调用。
  *  原实现用 Set 按插入序遍历，钩子间同骨获胜者依赖模块注册次序（隐式定序，R2 病灶）。
  *  改为带 order 的数组并按 order 升序执行，顺序由声明决定，与注册时序解耦。 */
@@ -823,7 +871,14 @@ function _applyJsOverride(slot: _OverrideSlot, rb: IMmdRuntimeBone): void {
 export function setWasmIkResolver(
     resolver: ((modelId: string, ikSolverIndex: number, usePhysics: boolean) => void) | null
 ): void {
-    _wasmIkResolver = resolver;
+    // [ADR-202 §六] 包装守护：所有调用方（bone-override 内部 + feet-adjustment 经 getWasmIkResolver）
+    // 都走 _guardedResolve，统一检测同帧双调用。feetDebug 关闭时守护 no-op（仅多一次 Map.get）。
+    if (resolver) {
+        _wasmIkResolver = (modelId, ikSolverIndex, usePhysics) =>
+            _guardedResolve(resolver, modelId, ikSolverIndex, usePhysics);
+    } else {
+        _wasmIkResolver = null;
+    }
 }
 
 /**
@@ -850,6 +905,8 @@ export function startBoneOverride(
         // 帧首重置 Matrix/Vector3 池（WASM 路径复用，避免每帧分配）
         _mReset();
         _vReset();
+        // [ADR-202 §六] 帧首重置 IK 重解守护状态（覆盖整个 bone-override stage，含 feet-adjustment order=5）
+        _resetIkResolveGuard();
 
         // 只对当前聚焦模型生效（per-model 存储，单模型应用）
         const focusedId = _resolveModelId();

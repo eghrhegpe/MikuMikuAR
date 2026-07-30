@@ -184,7 +184,7 @@ export const ENV_PRESET_FIELDS: Record<EnvPresetCategory, (keyof EnvState)[]> = 
         'timeOfDaySpeed',
     ],
     'env:ground': [
-        'groundVisible',
+        'groundVisibleEnabled',
         'groundType',
         'groundStyle',
         'groundOverlay',
@@ -224,7 +224,7 @@ export const ENV_PRESET_FIELDS: Record<EnvPresetCategory, (keyof EnvState)[]> = 
     'env:water': [
         'waterEnabled',
         'waterLevel',
-        'waterFlip',
+        'waterFlipEnabled',
         'waterColor',
         'waterTransparency',
         'waterWaveHeight',

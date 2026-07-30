@@ -128,7 +128,7 @@ describe('applyGround 原地更新 — 程序化纹理防覆盖守卫', () => {
         // （本测试未 mock 水面子系统）；程序化纹理生成与反射无关，不影响守护断言。
         return {
             ...buildGroundPresetEnvState(GROUND_PRESETS.metalStage),
-            groundVisible: true,
+            groundVisibleEnabled: true,
             groundPreset: 'metalStage',
             groundType: 'flat',
             groundInfiniteEnabled: false,

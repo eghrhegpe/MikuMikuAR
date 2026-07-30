@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 112 | 740 |
-| 3D 场景 | 109 | 1080 |
+| 3D 场景 | 108 | 1077 |
 | 菜单 & UI | 73 | 355 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 127 |
@@ -1029,9 +1029,6 @@
 | `exportCategorizedEnvPreset()` | `scene/env/env-lighting` | 序列化分类预设为 JSON 字符串。 |
 | `importCategorizedEnvPreset()` | `scene/env/env-lighting` | 从 JSON 字符串反序列化分类预设，失败返回 null。 |
 | `snapshotEnvPresetByCategory()` | `scene/env/env-lighting` | 从当前 envState 快照指定类别的字段。数组字段做浅拷贝避免别名。 |
-| `hash2()` | `scene/env/env-noise` | — |
-| `hash2v()` | `scene/env/env-noise` | — |
-| `valueNoise()` | `scene/env/env-noise` | — |
 | `applyWetnessToInst()` | `scene/env/env-particles` | — |
 | `applyWindToParticles()` | `scene/env/env-particles` | — |
 | `createParticleEmitter()` | `scene/env/env-particles` | — |
@@ -2395,5 +2392,5 @@
 
 ---
 
-> 共 316 个文件，2349 个导出符号。
+> 共 315 个文件，2346 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。

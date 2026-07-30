@@ -39,7 +39,7 @@ export function buildGroundLevel(): PopupLevel {
                             onClick: () => {
                                 setEnvState({
                                     ...buildGroundPresetEnvState(gp),
-                                    groundVisible: true,
+                                    groundVisibleEnabled: true,
                                     groundPreset: key as EnvState['groundPreset'],
                                 });
                             },

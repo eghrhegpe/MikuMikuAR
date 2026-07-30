@@ -466,3 +466,12 @@ export function _qAngleDeg(a: Quaternion, b: Quaternion): number {
     const dot = Math.abs(a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w);
     return (2 * Math.acos(Math.min(dot, 1)) * 180) / Math.PI;
 }
+
+// ── 脚部调整调试开关（feet-adjustment / bone-override 共用）──
+// 从控制台启用：__feetDebug.value = true （或 __feetDebug.value = false 关闭）
+// 本文件加载后自动挂到 window.__feetDebug
+// [ADR-202 §六] bone-override 的 IK 重解守护也读此标志，故放共享层避免循环依赖
+export const feetDebug = { value: false };
+if (typeof window !== 'undefined') {
+    (window as unknown as Record<string, unknown>).__feetDebug = feetDebug;
+}

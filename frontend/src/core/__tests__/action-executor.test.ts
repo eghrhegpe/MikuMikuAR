@@ -11,7 +11,7 @@ vi.mock('../../scene/env/_bridge/env-bridge', () => ({ setEnvState: vi.fn() }));
 vi.mock('../../scene/render/performance', () => ({ setPerformanceMode: vi.fn() }));
 vi.mock('../state', async (importOriginal) => {
     const actual = await importOriginal<typeof import('../state')>();
-    return { ...actual, envState: { groundVisible: true } };
+    return { ...actual, envState: { groundVisibleEnabled: true } };
 });
 vi.mock('../action-defs/settings-actions', () => ({ registerSettingsActions: vi.fn() }));
 vi.mock('../action-defs/scene-actions', () => ({ registerSceneActions: vi.fn() }));

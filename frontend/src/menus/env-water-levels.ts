@@ -68,11 +68,21 @@ export function buildWaterLevel(): PopupLevel {
                             icon: 'lucide:arrow-up',
                         },
                         {
-                            id: 'env:water:big-wave-height',
-                            kind: 'slider',
+                            id: 'env:water:bigWave',
+                            kind: 'folder',
                             label: 'env.bigWaveHeight',
-                            control: { bind: 'env.bigWaveHeight', min: 0, max: 3, step: 0.1 },
                             icon: 'lucide:mountain',
+                            defaultOpen: true,
+                            headerToggle: { bind: 'env.bigWaveEnabled' },
+                            children: [
+                                {
+                                    id: 'env:water:big-wave-height',
+                                    kind: 'slider',
+                                    label: 'env.bigWaveHeight',
+                                    control: { bind: 'env.bigWaveHeight', min: 0, max: 3, step: 0.1 },
+                                    icon: 'lucide:mountain',
+                                },
+                            ],
                         },
                         {
                             id: 'env:water:small-wave',
@@ -300,6 +310,7 @@ export function buildWaterLevel(): PopupLevel {
                     label: 'env.caustics',
                     icon: 'lucide:sun',
                     defaultOpen: false,
+                    headerToggle: { bind: 'env.causticEnabled' },
                     children: [
                         {
                             id: 'env:water:caustic-intensity',
@@ -351,8 +362,8 @@ export function buildWaterLevel(): PopupLevel {
                         {
                             id: 'env:water:flip',
                             kind: 'toggle',
-                            label: 'env.waterFlip',
-                            control: { bind: 'env.waterFlip' },
+                            label: 'env.waterFlipEnabled',
+                            control: { bind: 'env.waterFlipEnabled' },
                         },
                     ],
                 },
@@ -362,6 +373,7 @@ export function buildWaterLevel(): PopupLevel {
                     label: 'env.underwaterEffects',
                     icon: 'lucide:waves',
                     defaultOpen: false,
+                    headerToggle: { bind: 'env.underwaterEnabled' },
                     children: [
                         {
                             id: 'env:water:under-fog-density',
