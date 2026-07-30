@@ -1026,8 +1026,6 @@ export const ko: Record<string, string> = {
     'scene.serialize.modelPathUnresolved': '모델 {name}: 경로를 확인할 수 없음',
     'scene.serialize.modelNoMesh': '모델 {name}: 로드됨 but 메시 데이터 없음',
     'scene.serialize.modelError': '모델 {name}: {error}',
-    'scene.serialize.autosaveFailed': '자동 저장 실패',
-    'scene.serialize.restoreFailed': '장면 복원에 실패했습니다. 빈 장면으로 롤백되었습니다',
 
     // —— Library ——
     'library.recent': '최근',

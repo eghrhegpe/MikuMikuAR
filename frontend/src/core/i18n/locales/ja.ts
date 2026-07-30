@@ -1028,8 +1028,6 @@ export const ja: Record<string, string> = {
     'scene.serialize.modelNoMesh':
         'モデル {name}: 読み込み成功しましたがメッシュデータがありません',
     'scene.serialize.modelError': 'モデル {name}: {error}',
-    'scene.serialize.autosaveFailed': '自動保存に失敗しました',
-    'scene.serialize.restoreFailed': 'シーン復元に失敗しました。空のシーンにロールバックしました',
 
     // —— Library ——
     'library.recent': '最近',

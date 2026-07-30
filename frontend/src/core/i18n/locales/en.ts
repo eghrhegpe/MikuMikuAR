@@ -1097,8 +1097,6 @@ export const en: Record<string, string> = {
     'scene.serialize.modelPathUnresolved': 'Model {name}: path could not be resolved',
     'scene.serialize.modelNoMesh': 'Model {name}: loaded but no mesh data',
     'scene.serialize.modelError': 'Model {name}: {error}',
-    'scene.serialize.autosaveFailed': 'Auto-save failed',
-    'scene.serialize.restoreFailed': 'Scene restore failed, rolled back to empty scene',
 
     // model-material — material adjust UI
     'model-material.batchByPart': 'Batch by part — {name}',
