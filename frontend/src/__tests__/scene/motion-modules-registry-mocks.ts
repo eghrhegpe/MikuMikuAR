@@ -29,6 +29,7 @@ export function mockState(): Record<string, any> {
     return {
         modelRegistry: shared.mockModelRegistry,
         setUIPersistCallback: vi.fn(),
+        setThumbnailUpdateCallback: vi.fn(),
     };
 }
 

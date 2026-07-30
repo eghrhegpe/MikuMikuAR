@@ -159,6 +159,34 @@ export function statusBarFactory() {
     return { setStatus: vi.fn() };
 }
 
+/** [fix:de-barreling] library-core 已从 core/config 改引 library/library-path，
+ *  测试需同步 mock 该模块，否则 getBrowseDir / computeLibraryRef 读到真实空状态。 */
+export function libraryPathFactory(ms: any) {
+    return {
+        CATEGORY_DIR: {
+            pmx: 'PMX',
+            vmd: 'VMD',
+            audio: 'audio',
+            stage: 'stage',
+            prop: 'prop',
+            environment: 'environment',
+            md_dress: 'MD-dress',
+            setting: 'setting',
+        },
+        getBrowseDir: (category: string) => {
+            if (category === 'prop') {
+                return '/test/root/props';
+            }
+            if (category === 'stage') {
+                return '/test/root/stages';
+            }
+            return '/test/root/models';
+        },
+        computeLibraryRef: (fp: string) => fp,
+        resolveLibraryRef: (ref: string) => (ref ? `/test/root/${ref}` : null),
+    };
+}
+
 export function uiHelpersFactory(capturedRows: any[]) {
     return {
         slideRow: vi.fn(

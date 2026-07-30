@@ -30,6 +30,7 @@ const data = vi.hoisted(() => {
 vi.mock('@/core/state', () => ({
     modelRegistry: data.mockModelRegistry,
     setUIPersistCallback: vi.fn(),
+    setThumbnailUpdateCallback: vi.fn(),
 }));
 
 vi.mock('@/scene/motion/bone-override', () => ({

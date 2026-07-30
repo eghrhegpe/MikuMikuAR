@@ -12,6 +12,13 @@
 // environment-integration.test.ts uses NullEngine (separate from Engine) and real
 // Scene/MeshBuilder, so those work fine.
 
+// [fix:test-locale] happy-dom 的 navigator.language 默认为 en-US，而项目以中文为
+// 基准语言，大量未显式 setLang('zh-CN') 的用例会因此拿到英文标签而失败。在模块
+// 加载前把 localStorage 写为 zh-CN，让 locale.ts 的 loadLang() 读到正确默认值。
+if (typeof localStorage !== 'undefined') {
+    localStorage.setItem('uiLang', 'zh-CN');
+}
+
 import { vi } from 'vitest';
 
 // ── Wails Runtime ────────────────────────────────────────
