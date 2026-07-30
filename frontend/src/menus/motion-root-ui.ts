@@ -90,7 +90,7 @@ export function buildMotionRootItems(): PopupRow[] {
                         setProcMotionMode('off');
                         getMotionMenu()?.reRender();
                         triggerAutoSave();
-                        showInfoToast(t('motion.defaultMotionSet', { name: motion.vmdName }));
+                        // 单条带撤销的 toast 已足够告知，勿再 showInfoToast 造成重复弹窗
                         offerSceneUndoAndRefresh(
                             t('motion.defaultMotionSet', { name: motion.vmdName }),
                             snap,
@@ -154,7 +154,7 @@ export function buildMotionRootItems(): PopupRow[] {
                     getMotionMenu()?.reRender();
                     triggerAutoSave();
                     const name = _procLabel(procId);
-                    showInfoToast(t('motion.defaultMotionSet', { name }));
+                    // 单条带撤销的 toast 已足够告知，勿再 showInfoToast 造成重复弹窗
                     offerSceneUndoAndRefresh(
                         t('motion.defaultMotionSet', { name }),
                         snap,

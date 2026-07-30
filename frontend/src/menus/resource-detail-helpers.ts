@@ -20,7 +20,7 @@ import { Quaternion } from '@babylonjs/core/Maths/math.vector';
 import { resetModelTransform, removeModel } from '../scene/manager/model-ops';
 import { removeProp, pushUndoSnapshot, offerSceneUndo } from '../scene/scene';
 import { reRenderSceneMenu } from './scene-menu-state';
-import { attachPropToBone, detachPropFromBone } from '../scene/env/accessory';
+import { attachPropToBone, detachPropFromBone } from '../scene/env/props/accessory';
 import {
     attachGizmoForKind,
     getTransformAdapter,
