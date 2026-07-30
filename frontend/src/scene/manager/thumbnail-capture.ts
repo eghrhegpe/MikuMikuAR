@@ -18,7 +18,7 @@ import { SaveThumbnail } from '@/core/wails-bindings';
 import { thumbnailCache, setThumbnailCache, type ModelInstance } from '@/core/config';
 import { uiState } from '@/core/state';
 import { isStageLike } from '@/core/path';
-import { canvasToBase64 } from '@/core/utils';
+import { canvasToBase64 } from '@/core/image';
 import { logWarn } from '@/core/logger';
 import { type PropInstance, type RuntimeModel } from '@/core/types';
 import { buildThumbnailKey } from './thumbnail-key';

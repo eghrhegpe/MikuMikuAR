@@ -1,5 +1,5 @@
 // [doc:stable-identity] 模型运行时 id 解析 —— 独立模块，零 Babylon 依赖，便于单测。
-import { generateUuid } from '@/core/utils';
+import { generateUuid } from '@/core/uuid';
 
 /**
  * 解析模型运行时 id：优先复用存档 uuid（preferredId，由恢复路径传入），

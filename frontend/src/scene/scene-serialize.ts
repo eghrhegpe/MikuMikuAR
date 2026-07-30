@@ -21,7 +21,7 @@ import {
 import { showInfoToast } from '../core/toast';
 import { feedbackError, feedbackInfo } from '../core/feedback';
 import { debounce } from '../core/debounce';
-import { generateUuid } from '../core/utils';
+import { generateUuid } from '../core/uuid';
 import { swallowError } from '../core/async';
 import { computeLibraryRef } from '@/core/path';
 import { logWarn } from '../core/logger';

@@ -254,36 +254,36 @@
     },
     {
       "firstFile": {
-        "end": 269,
+        "end": 290,
         "endLoc": {
           "column": 15,
-          "line": 269,
-          "position": 9461
+          "line": 290,
+          "position": 10316
         },
         "name": "scene\\camera\\camera-behaviors.ts",
-        "start": 252,
+        "start": 273,
         "startLoc": {
           "column": 30,
-          "line": 252,
-          "position": 8936
+          "line": 273,
+          "position": 9791
         }
       },
       "format": "typescript",
       "fragment": "",
       "lines": 18,
       "secondFile": {
-        "end": 314,
+        "end": 335,
         "endLoc": {
           "column": 15,
-          "line": 314,
-          "position": 11266
+          "line": 335,
+          "position": 12121
         },
         "name": "scene\\camera\\camera-behaviors.ts",
-        "start": 297,
+        "start": 318,
         "startLoc": {
           "column": 29,
-          "line": 297,
-          "position": 10741
+          "line": 318,
+          "position": 11596
         }
       },
       "tokens": 109
@@ -326,36 +326,36 @@
     },
     {
       "firstFile": {
-        "end": 243,
+        "end": 254,
         "endLoc": {
           "column": 7,
-          "line": 243,
-          "position": 8165
+          "line": 254,
+          "position": 8803
         },
         "name": "scene\\env\\env-sky.ts",
-        "start": 226,
+        "start": 237,
         "startLoc": {
           "column": 31,
-          "line": 226,
-          "position": 7487
+          "line": 237,
+          "position": 8125
         }
       },
       "format": "typescript",
       "fragment": "",
       "lines": 18,
       "secondFile": {
-        "end": 371,
+        "end": 385,
         "endLoc": {
           "column": 7,
-          "line": 371,
-          "position": 13333
+          "line": 385,
+          "position": 14137
         },
         "name": "scene\\env\\env-sky.ts",
-        "start": 356,
+        "start": 370,
         "startLoc": {
           "column": 30,
-          "line": 356,
-          "position": 12753
+          "line": 370,
+          "position": 13557
         }
       },
       "tokens": 88
@@ -506,7 +506,7 @@
     }
   ],
   "statistics": {
-    "detectionDate": "2026-07-29T19:07:23.565Z",
+    "detectionDate": "2026-07-30T11:30:42.553Z",
     "formats": {
       "txt": {
         "clones": 0,
@@ -524,26 +524,26 @@
         "clones": 14,
         "duplicatedLines": 254,
         "duplicatedTokens": 1143,
-        "lines": 45422,
+        "lines": 46112,
         "newClones": 0,
         "newDuplicatedLines": 0,
-        "percentage": 0.5592003874774338,
-        "percentageTokens": 0.523112128146453,
-        "sources": 244,
-        "tokens": 218500
+        "percentage": 0.5508327550312283,
+        "percentageTokens": 0.5158547483007935,
+        "sources": 248,
+        "tokens": 221574
       }
     },
     "total": {
       "clones": 14,
       "duplicatedLines": 254,
       "duplicatedTokens": 1143,
-      "lines": 45515,
+      "lines": 46205,
       "newClones": 0,
       "newDuplicatedLines": 0,
-      "percentage": 0.5580577831484126,
-      "percentageTokens": 0.5195171172481501,
-      "sources": 245,
-      "tokens": 220012
+      "percentage": 0.5497240558381128,
+      "percentageTokens": 0.5123584626556574,
+      "sources": 249,
+      "tokens": 223086
     }
   }
 }
