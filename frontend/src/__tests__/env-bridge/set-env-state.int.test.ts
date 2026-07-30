@@ -23,7 +23,7 @@ vi.mock(
 );
 vi.mock('../../scene/env/env-impl', async () => (await import('./env-mocks')).envImplModule);
 vi.mock(
-    '../../scene/env/env-dispatcher',
+    '../../scene/env/_bridge/env-dispatcher',
     async () => (await import('./env-mocks')).envDispatcherModule
 );
 vi.mock('../../scene/render/lighting', async () => (await import('./env-mocks')).lightingModule);

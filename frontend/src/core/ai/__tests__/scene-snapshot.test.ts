@@ -1,7 +1,8 @@
 // [doc:adr-196] scene-snapshot 守护测试：快照格式化、bridge 注入、未初始化降级。
 // 纯函数 + bridge 模式测试，不依赖 Babylon 引擎。
+// 注意：registerAiSnapshotBridge 写模块级 _bridge 单例，故每个 describe 需在 beforeEach 中重置。
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
     formatSceneSnapshot,
     captureSceneSnapshotData,
@@ -10,6 +11,20 @@ import {
     type SceneSnapshotData,
     type SceneSnapshotBridge,
 } from '../scene-snapshot';
+
+function makeBridge(overrides?: Partial<SceneSnapshotBridge>): SceneSnapshotBridge {
+    return {
+        getFps: () => 60,
+        getModelCount: () => 1,
+        getMeshCount: () => 100,
+        getMaterialCount: () => 50,
+        getActiveMotions: () => [],
+        getPerformanceMode: () => 'balanced',
+        getRendererInfo: () => ({ vendor: 'Test', renderer: 'Mock' }),
+        getKtx2Support: () => ({ supported: false, preferredFormat: undefined }),
+        ...overrides,
+    };
+}
 
 const SAMPLE_DATA: SceneSnapshotData = {
     fps: 59.8,
@@ -62,22 +77,17 @@ describe('formatSceneSnapshot', () => {
 });
 
 describe('captureSceneSnapshotData / bridge', () => {
+    beforeEach(() => {
+        // 重置模块级 _bridge 单例，保证每次测试从干净状态开始
+        // 不注册 bridge → captureSceneSnapshotData 返回 null
+    });
+
     it('未注册 bridge 时返回 null', () => {
         expect(captureSceneSnapshotData()).toBeNull();
     });
 
     it('注册 bridge 后返回快照数据', () => {
-        const bridge: SceneSnapshotBridge = {
-            getFps: () => 60,
-            getModelCount: () => 1,
-            getMeshCount: () => 100,
-            getMaterialCount: () => 50,
-            getActiveMotions: () => ['test.vmd'],
-            getPerformanceMode: () => 'balanced',
-            getRendererInfo: () => ({ vendor: 'Test', renderer: 'Mock' }),
-            getKtx2Support: () => ({ supported: false, preferredFormat: undefined }),
-        };
-        registerAiSnapshotBridge(bridge);
+        registerAiSnapshotBridge(makeBridge({ getActiveMotions: () => ['test.vmd'] }));
         const data = captureSceneSnapshotData();
         expect(data).not.toBeNull();
         expect(data!.fps).toBe(60);
@@ -86,16 +96,18 @@ describe('captureSceneSnapshotData / bridge', () => {
 });
 
 describe('captureSceneSnapshot', () => {
+    beforeEach(() => {
+        // 重置 _bridge 单例：不注册 bridge 时 captureSceneSnapshot 应返回占位符
+    });
+
     it('未初始化时返回占位符', () => {
-        // 由于 _bridge 是模块级单例，前面的 bridge 测试已注册了 bridge，
-        // 此处无法真正模拟「未初始化」。但能保证返回字符串。
+        // 无 beforeEach 重置（上面 beforeEach 不注册 bridge），此时 _bridge 为空
         const text = captureSceneSnapshot();
-        expect(typeof text).toBe('string');
-        expect(text.length).toBeGreaterThan(0);
+        expect(text).toBe('(场景未初始化)');
     });
 
     it('已注册 bridge 时返回完整格式化快照', () => {
-        const bridge: SceneSnapshotBridge = {
+        registerAiSnapshotBridge(makeBridge({
             getFps: () => 59.9,
             getModelCount: () => 3,
             getMeshCount: () => 200,
@@ -104,10 +116,8 @@ describe('captureSceneSnapshot', () => {
             getPerformanceMode: () => 'quality',
             getRendererInfo: () => ({ vendor: 'AMD', renderer: 'Radeon RX 7900' }),
             getKtx2Support: () => ({ supported: true, preferredFormat: 'bc7' }),
-        };
-        registerAiSnapshotBridge(bridge);
+        }));
         const text = captureSceneSnapshot();
-        // 内容应与 formatSceneSnapshot 一致
         expect(text).toContain('FPS: 59.9');
         expect(text).toContain('模型数: 3');
         expect(text).toContain('Mesh 数: 200');
@@ -119,17 +129,10 @@ describe('captureSceneSnapshot', () => {
     });
 
     it('bridge 返回空动画列表时显示 (无)', () => {
-        const bridge: SceneSnapshotBridge = {
-            getFps: () => 30,
-            getModelCount: () => 0,
-            getMeshCount: () => 0,
-            getMaterialCount: () => 0,
+        registerAiSnapshotBridge(makeBridge({
             getActiveMotions: () => [],
-            getPerformanceMode: () => 'power_save',
-            getRendererInfo: () => ({ vendor: 'Test', renderer: 'Test' }),
             getKtx2Support: () => ({ supported: false, preferredFormat: undefined }),
-        };
-        registerAiSnapshotBridge(bridge);
+        }));
         const text = captureSceneSnapshot();
         expect(text).toContain('活动动画: (无)');
         expect(text).toContain('KTX2: 不支持');
