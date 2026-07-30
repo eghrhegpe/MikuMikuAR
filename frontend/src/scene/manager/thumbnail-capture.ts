@@ -38,7 +38,7 @@ export interface ThumbnailSource {
 // 并发调用会导致 WebGL 状态冲突或截图内容错乱。
 let _thumbMutex: Promise<unknown> = Promise.resolve();
 
-// [doc:adr-dep-graph] thumbDataUrl 已迁移到 core/utils.ts，此处 re-export 保持向后兼容
+// [doc:adr-dep-graph] thumbDataUrl 已迁移到 @/core/image，直接引用该零依赖叶
 /**
  * 用离屏 RenderTargetTexture 渲染指定模型实例的「当前骨骼姿态」并保存为缩略图。
  *

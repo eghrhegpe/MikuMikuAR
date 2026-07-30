@@ -1,4 +1,4 @@
-// 零依赖叶：Canvas 图像工具。
+// 零依赖叶：图像 / base64 工具。
 // 下沉自 @/core/utils（god barrel）；根因与纪律见 ADR-191。
 
 /**
@@ -48,4 +48,29 @@ export function canvasToBase64(
             quality
         );
     });
+}
+
+/** Encode a string as base64 (UTF-8 safe). */
+export function toBase64(s: string): string {
+    const bytes = new TextEncoder().encode(s);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+}
+
+/** Build a data URL from a base64 thumbnail, sniffing PNG/JPEG/WebP from the header. */
+export function thumbDataUrl(base64: string): string {
+    if (base64.startsWith('iVBOR')) {
+        return `data:image/png;base64,${base64}`;
+    }
+    if (base64.startsWith('/9j/')) {
+        return `data:image/jpeg;base64,${base64}`;
+    }
+    if (base64.startsWith('UklGR')) {
+        return `data:image/webp;base64,${base64}`;
+    }
+    // Fallback: assume PNG for empty/unknown thumbnails
+    return `data:image/png;base64,${base64}`;
 }
