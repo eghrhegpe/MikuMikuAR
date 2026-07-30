@@ -100,7 +100,7 @@ vi.mock('../core/config', async (importOriginal) => {
             starsTexture: '',
             starsEnabled: false,
             skyBrightness: 1,
-            envIntensity: 0.5,
+            iblIntensity: 0.5,
             groundColor: '#808080',
             groundAlpha: 1,
             groundLevel: 0,

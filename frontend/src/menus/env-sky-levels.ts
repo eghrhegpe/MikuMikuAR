@@ -138,7 +138,7 @@ export function buildSkyLevel(): PopupLevel {
                         kind: 'slider',
                         label: 'env.skyLighting',
                         control: {
-                            bind: 'env.envIntensity',
+                            bind: 'env.iblIntensity',
                             min: 0,
                             max: 1,
                             step: 0.05,
@@ -151,7 +151,7 @@ export function buildSkyLevel(): PopupLevel {
                         id: 'env:sky:globalBrightness',
                         kind: 'slider',
                         label: 'env.environmentBrightness',
-                        control: { bind: 'env.envBrightness', min: 0.1, max: 3, step: 0.05 },
+                        control: { bind: 'env.globalBrightness', min: 0.1, max: 3, step: 0.05 },
                         icon: 'lucide:sun-dim',
                     },
                     {

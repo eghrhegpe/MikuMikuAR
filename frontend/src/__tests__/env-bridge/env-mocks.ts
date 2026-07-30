@@ -122,7 +122,7 @@ const es: Record<string, any> = {
     skyColorTop: [0.3, 0.5, 0.8],
     skyColorMid: [0.8, 0.8, 0.9],
     skyColorBot: [0.2, 0.2, 0.25],
-    envIntensity: 2,
+    iblIntensity: 2,
     groundColor: [0.15, 0.15, 0.18],
     waterEnabled: false,
     particleEnabled: false,
@@ -193,7 +193,7 @@ const _SKY_KEYS_M = [
     'skyBrightness',
     'starsEnabled',
     'starsTexture',
-    'envIntensity',
+    'iblIntensity',
     'sunAngle',
     'azimuth',
 ];

@@ -43,9 +43,11 @@ export const ENV_STATE_SCHEMA = {
     skyBrightness: { type: 'number', default: 1, group: 'sky' },
     starsEnabled: { type: 'boolean', default: false, group: 'sky' },
     starsTexture: { type: 'string', default: '', group: 'sky' },
-    envIntensity: { type: 'number', default: 2, group: 'sky' },
-    // [doc:adr-132] 环境亮度统一标量：作为天空/IBL/云/主光/环境光的全局明暗基准
-    envBrightness: { type: 'number', default: 1, group: 'sky' },
+    // IBL 环境反射强度：写入 scene.environmentIntensity，控制环境贴图对物体的反射贡献（金属反光/PBR 环境光）。
+    // 注意：与 water shader 的同名 uniform 'envIntensity' 无关（那是水面 cubemap 反射强度，见 water.frag.glsl）。
+    iblIntensity: { type: 'number', default: 2, group: 'sky' },
+    // [doc:adr-132] 全局明暗基准标量：作为天空/IBL/云/主光/环境光的全局明暗总倍数
+    globalBrightness: { type: 'number', default: 1, group: 'sky' },
 
     // --- Ground ---
     groundVisible: { type: 'boolean', default: true, group: 'ground' },
@@ -183,6 +185,7 @@ export const ENV_STATE_SCHEMA = {
     waterWaveHeight: { type: 'number', default: 0.15, group: 'water' },
     bigWaveHeight: { type: 'number', default: 1.0, group: 'water' },
     smallWaveHeight: { type: 'number', default: 1.0, group: 'water' },
+    smallWaveEnabled: { type: 'boolean', default: true, group: 'water' },
     waterAnimSpeed: { type: 'number', default: 0.2, group: 'water' },
     planarReflectBlend: { type: 'number', default: 0.5, group: 'water' },
     reflectionQuality: {

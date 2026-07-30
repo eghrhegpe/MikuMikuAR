@@ -11,8 +11,8 @@ const defaultEnv: EnvState = {
     skyRotationY: 0,
     skyRotationSpeed: 0,
     skyBrightness: 1,
-    envIntensity: 1,
-    envBrightness: 1,
+    iblIntensity: 1,
+    globalBrightness: 1,
     starsEnabled: false,
     starsTexture: '',
     groundVisible: true,
@@ -73,6 +73,7 @@ const defaultEnv: EnvState = {
     waterWaveHeight: 0.15,
     bigWaveHeight: 1.0,
     smallWaveHeight: 1.0,
+    smallWaveEnabled: true,
     waterAnimSpeed: 0.2,
     fresnelBias: 0.02,
     fresnelPower: 3.0,
@@ -149,7 +150,7 @@ describe('EnvState defaults', () => {
             'skyRotationSpeed',
             'skyBrightness',
             'starsEnabled',
-            'envIntensity',
+            'iblIntensity',
             'groundVisible',
             'groundType',
             'groundStyle',
@@ -274,7 +275,7 @@ describe('setEnvState partial merge', () => {
         expect(updated.skyMode).toBe('procedural');
         expect(updated.skyBrightness).toBe(1.5);
         expect(updated.groundVisible).toBe(true);
-        expect(updated.envIntensity).toBe(1);
+        expect(updated.iblIntensity).toBe(1);
     });
 });
 
@@ -321,8 +322,8 @@ describe('envState — color field isolation', () => {
         expect(envState.skyColorBot).toEqual([0.2, 0.8, 0.2]);
     });
 
-    it('envIntensity does not clobber sky colors', () => {
-        setColorField('envIntensity', 0.5 as any);
+    it('iblIntensity does not clobber sky colors', () => {
+        setColorField('iblIntensity', 0.5 as any);
         expect(envState.skyColorTop).toEqual([0.3, 0.5, 0.8]);
     });
 

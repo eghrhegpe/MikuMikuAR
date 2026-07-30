@@ -3,6 +3,7 @@ import { NullEngine } from '@babylonjs/core/Engines/nullEngine';
 import { Scene } from '@babylonjs/core/scene';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { FreeCamera } from '@babylonjs/core/Cameras/freeCamera';
+import { ShaderMaterial } from '@babylonjs/core/Materials/shaderMaterial';
 
 // 隔离 env-impl，避免其重型依赖（clouds/particles/sky 等）干扰；
 // getScene 通过 globalThis 懒返回测试场景，规避 vi.mock 工厂的 TDZ 问题。
@@ -231,6 +232,54 @@ describe('Water 预设 — 扩展参数进入 envState', () => {
             // foam 已移除
             expect(s).toHaveProperty('fresnelAlphaInfluence');
         }
+    });
+});
+
+// ──────────────── 小波开关门控（功能开关体系试点）────────────────
+describe('Water 小波开关 — smallWaveEnabled 门控 shader 振幅', () => {
+    function captureSmallWave(state: Partial<typeof envState>): number | undefined {
+        const calls: Array<[string, number]> = [];
+        const spy = vi
+            .spyOn(ShaderMaterial.prototype, 'setFloat')
+            .mockImplementation(function (this: ShaderMaterial, name: string, value: number) {
+                calls.push([name, value]);
+                return this;
+            });
+        try {
+            createWater(makeWaterState({ waterLevel: 0, smallWaveHeight: 1.0, ...state }));
+        } finally {
+            spy.mockRestore();
+        }
+        // 取最后一次写入（同步函数在 createWater 内被调用）
+        const hit = [...calls].reverse().find(([n]) => n === 'smallWaveHeight');
+        return hit?.[1];
+    }
+
+    it('smallWaveEnabled=true 时 shader 收到原振幅', () => {
+        expect(captureSmallWave({ smallWaveEnabled: true })).toBe(1.0);
+    });
+
+    it('smallWaveEnabled=false 时 shader 收到 0 振幅', () => {
+        expect(captureSmallWave({ smallWaveEnabled: false })).toBe(0);
+    });
+
+    it('字段缺失时兜底为开启（?? true）', () => {
+        const s = makeWaterState({ waterLevel: 0, smallWaveHeight: 0.8 });
+        delete (s as Record<string, unknown>).smallWaveEnabled;
+        const calls: Array<[string, number]> = [];
+        const spy = vi
+            .spyOn(ShaderMaterial.prototype, 'setFloat')
+            .mockImplementation(function (this: ShaderMaterial, name: string, value: number) {
+                calls.push([name, value]);
+                return this;
+            });
+        try {
+            createWater(s);
+        } finally {
+            spy.mockRestore();
+        }
+        const hit = [...calls].reverse().find(([n]) => n === 'smallWaveHeight');
+        expect(hit?.[1]).toBe(0.8);
     });
 });
 

@@ -57,7 +57,7 @@ describe('_applyEnvStateFacade (via setEnvState)', () => {
             skyColorTop: [0.3, 0.5, 0.8],
             skyColorMid: [0.8, 0.8, 0.9],
             skyColorBot: [0.2, 0.2, 0.25],
-            envIntensity: 2,
+            iblIntensity: 2,
             groundColor: [0.15, 0.15, 0.18],
             waterEnabled: false,
             particleEnabled: false,
@@ -176,8 +176,8 @@ describe('_applyEnvStateFacade (via setEnvState)', () => {
         expect(mockGetHemiLight()!.groundColor.b).toBeCloseTo(0.25);
     });
 
-    it('sets scene.ambientColor based on envIntensity (capped at 0.5)', () => {
-        mockConfigEnvState.envIntensity = 2;
+    it('sets scene.ambientColor based on iblIntensity (capped at 0.5)', () => {
+        mockConfigEnvState.iblIntensity = 2;
         mockConfigEnvState.skyColorMid = [0.8, 0.8, 0.9];
         setEnvState({});
         expect(mockSceneInstance.ambientColor.r).toBeGreaterThan(0);

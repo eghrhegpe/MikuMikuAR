@@ -592,7 +592,11 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     mat.setFloat('waveHeight', state.waterWaveHeight);
     // ADR-115 P4: 双层尺度 — 大波/小波独立振幅缩放，?? 1.0 兜底防 NaN
     mat.setFloat('bigWaveHeight', state.bigWaveHeight ?? 1.0);
-    mat.setFloat('smallWaveHeight', state.smallWaveHeight ?? 1.0);
+    // ADR-115 P4 + 功能开关试点：小波受 smallWaveEnabled 门控，关闭时送 0 振幅（水面呈纯净反射面）
+    mat.setFloat(
+        'smallWaveHeight',
+        (state.smallWaveEnabled ?? true) ? (state.smallWaveHeight ?? 1.0) : 0
+    );
     _waterWaveSpeed = (state.waterAnimSpeed ?? 1) * 1.0;
     // wavePhase 由 _waterUpdateCallback 每帧统一写入，此处无需重复赋值
     mat.setColor3('waterColor', col3FromTriple(state.waterColor));

@@ -148,7 +148,7 @@ function drawSkyGradient(
 
 function updateSkyDynamicTexture(state: EnvState): DynamicTexture {
     const scene = getScene();
-    const envBrightness = state.envBrightness ?? 1;
+    const envBrightness = state.globalBrightness ?? 1;
     const effectiveSkyBrightness = state.skyBrightness * envBrightness;
     let tex = _envSys.sky.skyDynamicTex;
     if (!tex) {
@@ -258,7 +258,7 @@ function createProceduralSky(state: EnvState): void {
     // 为 PBR 材质创建简单环境贴图（IBL）
     createProceduralEnvTexture(state, scene);
 
-    const envBrightness = state.envBrightness ?? 1;
+    const envBrightness = state.globalBrightness ?? 1;
     const effectiveSkyBrightness = state.skyBrightness * envBrightness;
     // 过渡区量化 sunAngle 使 skyKey 在星星 alpha 连续变化时正确失效
     const starsPhase = state.starsEnabled
@@ -279,7 +279,7 @@ function createProceduralEnvTexture(state: EnvState, scene: Scene): void {
     const topColor = col3FromTriple(state.skyColorTop);
     const midColor = col3FromTriple(state.skyColorMid);
     const botColor = col3FromTriple(state.skyColorBot);
-    const brightness = state.skyBrightness * (state.envBrightness ?? 1);
+    const brightness = state.skyBrightness * (state.globalBrightness ?? 1);
 
     // 创建 6 个面的像素数据（简单渐变：上=顶色，中=中色，下=底色）
     const faces: Uint8Array[] = [];
@@ -438,7 +438,7 @@ export function applySky(state: EnvState): void {
         if (mesh.material && mesh.material.getClassName() === 'StandardMaterial') {
             const mat = mesh.material as StandardMaterial;
 
-            const envBrightness = state.envBrightness ?? 1;
+            const envBrightness = state.globalBrightness ?? 1;
             const effectiveSkyBrightness = state.skyBrightness * envBrightness;
             // 过渡区量化 sunAngle 使 skyKey 在星星 alpha 连续变化时正确失效
             const starsPhase = state.starsEnabled
@@ -470,7 +470,7 @@ export function applySky(state: EnvState): void {
     }
 
     if (state.skyTexture) {
-        const intensity = state.envIntensity * (state.envBrightness ?? 1);
+        const intensity = state.iblIntensity * (state.globalBrightness ?? 1);
         // 路径未变：仅更新静态旋转与 IBL 强度，避免重复从磁盘加载 CubeTexture
         // （旋转滑块拖动 / 强度微调场景 —— 修复此前每次 sky key 变更都整图重载的隐患）
         if (
