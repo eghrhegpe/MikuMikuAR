@@ -572,6 +572,31 @@ function ensureDetailNormalTexture(scene: Scene): Texture {
 // ======== Water System ========
 
 /**
+ * 水下雾状态：自定义 ShaderMaterial 不参与 Babylon 的 scene.fog，
+ * 因此由 underwaterFogController 在穿越水面时把水下雾参数推给水面，
+ * 让水面与地面/角色用同一套雾（同起始距离 + 同雾色），视觉统一。
+ * enabled=0 时水面不做水下雾混合（出水/陆地）。
+ */
+let _underwaterFog = {
+    enabled: 0,
+    color: new Color3(0.35, 0.58, 0.72),
+    start: 5,
+    end: 80,
+};
+
+/** 由水下雾控制器同步水下雾参数到水面材质（含材质重建后的恢复由 _syncWaterUniforms 负责）。 */
+export function setUnderwaterFog(enabled: boolean, color: Color3, start: number, end: number): void {
+    _underwaterFog = { enabled: enabled ? 1 : 0, color: color.clone(), start, end };
+    const mat = _envSys.water.material as ShaderMaterial | null;
+    if (mat) {
+        mat.setFloat('uUnderwater', _underwaterFog.enabled);
+        mat.setColor3('uUnderwaterFogColor', _underwaterFog.color);
+        mat.setFloat('uUnderwaterFogStart', start);
+        mat.setFloat('uUnderwaterFogEnd', end);
+    }
+}
+
+/**
  * 同步水面材质的全部 uniform 参数（非破坏性，不销毁/重建材质）。
  * 由 createWater 在惰性路径和首次创建后调用。
  */
@@ -629,10 +654,11 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     mat.setTexture('uDetailNormalTex', detailNormalTex);
     mat.setFloat('uDetailNormalStrength', state.waterNormalStrength);
     // 波纹方格尺度：tile 周期 = 1/tiling 世界单位
-    // tiling1=0.5 → 大尺度波纹单元 ≈2 单位（原 0.2 → 5 单位，偏大似角色身高）
-    // tiling2=1.5 → 细尺度 ≈0.67 单位；两层保持 3:1 比例，层次不丢
-    mat.setFloat('uDetailNormalTiling1', 0.5);
-    mat.setFloat('uDetailNormalTiling2', 1.5);
+    // tiling1=3.0 → 细尺度波纹单元 ≈0.33 单位（60 单位水面重复 180 次）
+    // tiling2=6.0 → 高频微纹单元 ≈0.17 单位（重复 360 次）；两层保持 2:1 比例
+    // 原 0.5/1.5 单元过大（2/0.67 单位），高频扰动不可见
+    mat.setFloat('uDetailNormalTiling1', 3.0);
+    mat.setFloat('uDetailNormalTiling2', 6.0);
     // P2 修复：删除 dead code，改为动态计算速度（与 Gerstner 波相位同步）
     const waveAnimSpeed = state.waterAnimSpeed ?? 1;
     const [speed1, speed2] = computeDetailNormalSpeeds(waveAnimSpeed);
@@ -683,6 +709,14 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     mat.setFloat('waterFogStart', state.waterFogStart);
     mat.setFloat('waterFogEnd', state.waterFogEnd);
     mat.setFloat('waterFogOpacityInfluence', state.waterFogOpacityInfluence);
+
+    // ——— 水下雾（与 scene.fog 同源；ShaderMaterial 不参与 Babylon fog，需手动注入）———
+    // 入水时由 underwaterFogController 调 setUnderwaterFog 改写 _underwaterFog；
+    // 此处每帧/重建时兜底写入，保证材质重建后水下雾参数不丢失。
+    mat.setFloat('uUnderwater', _underwaterFog.enabled);
+    mat.setColor3('uUnderwaterFogColor', _underwaterFog.color);
+    mat.setFloat('uUnderwaterFogStart', _underwaterFog.start);
+    mat.setFloat('uUnderwaterFogEnd', _underwaterFog.end);
 
     // ——— 波方向（风向联动）———
     const windDirs = computeWaveDirs(state.windDirection);
@@ -835,6 +869,11 @@ const WATER_UNIFORMS = [
     'uLowFreqNormalTiling',
     'uLowFreqNormalStrength',
     'uLowFreqNormalSpeed',
+    // 水下雾（与 scene.fog 同源；ShaderMaterial 不参与 Babylon fog，需手动注入）
+    'uUnderwater',
+    'uUnderwaterFogColor',
+    'uUnderwaterFogStart',
+    'uUnderwaterFogEnd',
 ];
 
 function _createWaterMaterial(scene: Scene, state: EnvState): ShaderMaterial {
@@ -1236,7 +1275,7 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         waterFogEnd: 800,
         waterFogOpacityInfluence: 0,
         fresnelAlphaInfluence: 0.35,
-        causticIntensity: 0.1,
+        causticIntensity: 0.3,
         waterNormalStrength: 0.35,
         waterGlintStrength: 0.3,
         // ADR-115 P3: 地平线淡出 + 天空联动（原缺失，补全）
@@ -1258,7 +1297,7 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         waterFogEnd: 500,
         waterFogOpacityInfluence: 0,
         fresnelAlphaInfluence: 0.4,
-        causticIntensity: 0.15,
+        causticIntensity: 0.4,
         waterNormalStrength: 0.5,
         waterGlintStrength: 0.6,
         waterHorizonFade: 0.85,
@@ -1279,7 +1318,7 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         waterFogEnd: 300,
         waterFogOpacityInfluence: 0,
         fresnelAlphaInfluence: 0.5,
-        causticIntensity: 0.2,
+        causticIntensity: 0.5,
         waterNormalStrength: 0.6,
         waterGlintStrength: 0.8,
         waterHorizonFade: 0.9,
@@ -1300,7 +1339,7 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         waterFogEnd: 150,
         waterFogOpacityInfluence: 0,
         fresnelAlphaInfluence: 0.6,
-        causticIntensity: 0.25,
+        causticIntensity: 0.6,
         waterNormalStrength: 0.65,
         waterGlintStrength: 0.5,
         waterHorizonFade: 0.9,
@@ -1321,7 +1360,7 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         waterFogEnd: 600,
         waterFogOpacityInfluence: 0,
         fresnelAlphaInfluence: 0.42,
-        causticIntensity: 0.2,
+        causticIntensity: 0.45,
         waterNormalStrength: 0.55,
         waterGlintStrength: 1.0,
         waterHorizonFade: 0.85,

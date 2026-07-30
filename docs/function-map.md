@@ -1,14 +1,14 @@
 # 函数映射表
 
 > AI 找代码用。改前端功能时先 grep 此表定位文件。
-> **自动生成**（2026-07-29）— 由 `scripts/gen-funcmap.mjs` 生成。
+> **自动生成**（2026-07-30）— 由 `scripts/gen-funcmap.mjs` 生成。
 
 ## 总览
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 109 | 732 |
-| 3D 场景 | 105 | 1067 |
+| 3D 场景 | 107 | 1076 |
 | 菜单 & UI | 73 | 355 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 127 |
@@ -922,6 +922,10 @@
 | `registerEnvStateMiddleware()` | `scene/env/env-bridge` | 注册 setEnvState 中间件（供 env-time-of-day/env-gravity 等子模块调用） |
 | `setEnvState()` | `scene/env/env-bridge` | — |
 | `setPresetAnimActive()` | `scene/env/env-bridge` | 标记预设动画是否运行中（供 _applyEnvStateFacade 跳过方向光同步） |
+| `CausticsHostMat()` | `scene/env/env-caustics` | 类型守卫：材质是否支持 emissiveTexture（用于焦散投影） |
+| `CausticsScrollConfig()` | `scene/env/env-caustics` | 焦散滚动配置（用户可通过 state.causticScrollX/Y 覆盖） |
+| `causticsController()` | `scene/env/env-caustics` | — |
+| `isCausticsHost()` | `scene/env/env-caustics` | — |
 | `FRAG_SRC()` | `scene/env/env-clouds` | — |
 | `buildJitterSource()` | `scene/env/env-clouds` | 根据 useBlueNoise 选择 jitter 代码路径（模板注入） |
 | `createClouds()` | `scene/env/env-clouds` | — |
@@ -934,10 +938,13 @@
 | `isInitialized()` | `scene/env/env-context` | — |
 | `resolveStaticAsset()` | `scene/env/env-context` | — |
 | `clearAllEnvCallbacks()` | `scene/env/env-dispatcher` | 清空所有已注册的 env 回调（场景销毁 / HMR 重入时兜底清理）。 |
+| `clearEnvDtTickCallbacks()` | `scene/env/env-dispatcher` | 清空所有 dt 回调（场景销毁 / HMR 重入时清理）。 |
 | `clearSceneTickCallbacks()` | `scene/env/env-dispatcher` | 清空所有场景 tick 回调（场景销毁 / HMR 重入时清理）。 |
 | `dispatchEnvChange()` | `scene/env/env-dispatcher` | setEnvState 调用此函数分发变化。 |
 | `registerEnvCallback()` | `scene/env/env-dispatcher` | 子系统注册响应回调（延迟绑定，避免循环导入）。 |
+| `registerEnvDtTickCallback()` | `scene/env/env-dispatcher` | 注册每帧 dt 回调（env-impl 每帧推 dt）。 |
 | `registerSceneTickCallback()` | `scene/env/env-dispatcher` | 注册场景每帧 tick 回调。返回的清理函数在 dispose 时调用。 |
+| `runEnvDtTickCallbacks()` | `scene/env/env-dispatcher` | 执行所有 dt tick 回调（由 ensureEnvUpdateObserver 推 dt）。 |
 | `runSceneTickCallbacks()` | `scene/env/env-dispatcher` | 执行所有已注册的场景 tick 回调（由 ensureEnvUpdateObserver 的 scene observer 每帧调用）。 |
 | `getBodyCollisionEnabled()` | `scene/env/env-gravity` | — |
 | `getCollisionEnabled()` | `scene/env/env-gravity` | — |
@@ -1058,6 +1065,7 @@
 | `FrozenCamera()` | `scene/env/env-type-helpers` | — |
 | `REFRESHRATE_RENDER_ONCE()` | `scene/env/env-type-helpers` | — |
 | `getCanvasCtx()` | `scene/env/env-type-helpers` | — |
+| `underwaterFogController()` | `scene/env/env-underwater-fog` | — |
 | `WATER_PRESETS()` | `scene/env/env-water` | — |
 | `WaterPreset()` | `scene/env/env-water` | — |
 | `_applyWaterLOD()` | `scene/env/env-water` | 按相机到水面的距离手动切换 LOD 可见性（仅 0/1/2 三层中恰好一层 enabled）， 规避 Babylon addLODLevel 的父子/兄弟重复渲染问题。仅当层级变化 |
@@ -1079,6 +1087,7 @@
 | `resetUnderwaterState()` | `scene/env/env-water` | — |
 | `selectWaterLOD()` | `scene/env/env-water` | 按相机到水面的距离选择 LOD 层级（纯函数，便于单测）。 |
 | `setGroundGeometryProvider()` | `scene/env/env-water` | 注入地面几何提供者（env-ground 在模块初始化时调用一次） |
+| `setUnderwaterFog()` | `scene/env/env-water` | 由水下雾控制器同步水下雾参数到水面材质（含材质重建后的恢复由 _syncWaterUniforms 负责）。 |
 | `updateGroundRipples()` | `scene/env/env-water` | 每帧更新地面涟漪纹理（由 env-ground 的 update observer 驱动） |
 | `updateUnderwaterTransition()` | `scene/env/env-water` | — |
 | `updateWaterAnimSpeed()` | `scene/env/env-water` | — |
@@ -2374,5 +2383,5 @@
 
 ---
 
-> 共 309 个文件，2328 个导出符号。
+> 共 311 个文件，2337 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。

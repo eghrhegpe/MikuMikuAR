@@ -15,24 +15,37 @@
 
 import { Color3, PBRMaterial, Scene, StandardMaterial } from '@babylonjs/core';
 import { causticsController, isCausticsHost } from './env-caustics';
+import { setUnderwaterFog } from './env-water';
+import { envState } from '@/core/config';
 
-// 水下雾色（浅青色，配合 env-water 的 colorCurves 共同营造水下视觉；
-// 不能太深，否则会和 colorCurves 全屏色调旋转叠加成"重墨蓝"，看不清角色）
-const UNDERWATER_FOG_COLOR = new Color3(0.35, 0.58, 0.72);
+// 水下雾色基准（浅青色，配合 env-water 的 colorCurves 共同营造水下视觉）。
+// 实际雾色会再与天空底色（skyColorBot）混合 —— 从水下往上看即天空，
+// 雾色理应跟随天空色（见 computeUnderwaterFogColor）。
+const UNDERWATER_FOG_BASE = new Color3(0.35, 0.58, 0.72);
 // 焦散色（淡蓝白，模拟阳光经水折射后颜色）
 const CAUSTIC_TINT = new Color3(0.78, 0.92, 1.0);
 
+// 雾距离单位说明：场景坐标用的是 babymmd unit（1 unit = 0.1 米，见 AGENTS.md）。
+// groundSize 默认 500 unit = 50 米，所以以下数值都是 unit。
 // Babylon FOGMODE_LINEAR 真实语义（已核对 public/lib/babylon.js）：
 //   真实 fragment shader：
-//     float fog = CalcFogFactor();          // fog = (fogEnd - distance) / (fogEnd - fogStart)
-//     color.rgb = mix(vFogColor, color.rgb, fog);   // fog=0 → fogColor, fog=1 → 原色
+//     float fog = (fogEnd - distance) / (fogEnd - fogStart);  // distance 即到相机的 unit 距离
+//     color.rgb = mix(vFogColor, color.rgb, fog);   // fog=0 → fogColor(满雾), fog=1 → 原色(无雾)
 //   所以：
-//     - distance ≤ fogStart → fog ≥ 1 → clamp 1 → 完全无雾（显示原色）
-//     - distance ≥ fogEnd   → fog ≤ 0 → clamp 0 → 完全满雾（显示 fogColor）
+//     - distance ≤ fogStart → fog ≥ 1 → 完全无雾（显示原色）
+//     - distance ≥ fogEnd   → fog ≤ 0 → 完全满雾（显示 fogColor）
 //     - 命名直觉相反：fogStart 实际是"无雾阈值"，fogEnd 实际是"满雾阈值"
 //   "近处清晰、远处雾" 是 fogStart < fogEnd 的常规方向。
-const FOG_NEAR_CLEAR = 5.0;  // 对应 Babylon fogStart：距离 ≤ 5m 完全无雾（角色 2-3m 永远清晰）
-const FOG_FAR_OPAQUE = 80.0; // 对应 Babylon fogEnd：距离 ≥ 80m 完全满雾（远景褪入深蓝）
+const FOG_NEAR_CLEAR = 40.0;  // 对应 Babylon fogStart：距离 ≤ 40 unit(4m) 完全无雾（角色约 2-3m 永远清晰）
+const FOG_FAR_OPAQUE = 500.0; // 对应 Babylon fogEnd：距离 ≥ 500 unit(50m) 完全满雾（远景褪入深蓝，远处地面隐约可见）
+
+/** 计算水下雾色：基准浅青与天空底色（skyColorBot）混合，让雾色随天空变化（用户反馈"未察觉天空色影响"）。 */
+function computeUnderwaterFogColor(): Color3 {
+    const sky = envState.skyColorBot ?? [0.3, 0.5, 0.8];
+    const skyCol = new Color3(sky[0], sky[1], sky[2]);
+    // 冷化天空底色后轻混基色，保留水下辨识度（不至于被天空色完全同化）。
+    return Color3.Lerp(UNDERWATER_FOG_BASE, skyCol.scale(0.85), 0.4);
+}
 
 // 焦散 UV 在地面上的重复次数。
 // 共享 causticTex 默认 uScale/vScale=1 → 128×128 整张图直接贴到 60m 地面，
@@ -84,10 +97,14 @@ class UnderwaterFogControllerImpl {
 
         if (isUnderwater) {
             // 入水：启用场景雾（远处地面褪入深蓝）+ 给地面注入焦散 emissive
+            const fogColor = computeUnderwaterFogColor();
             scene.fogMode = Scene.FOGMODE_LINEAR;
-            scene.fogColor = UNDERWATER_FOG_COLOR;
-            scene.fogStart = FOG_NEAR_CLEAR; // 距离 ≤ 5m 完全无雾
-            scene.fogEnd = FOG_FAR_OPAQUE;   // 距离 ≥ 80m 完全满雾
+            scene.fogColor = fogColor;
+            scene.fogStart = FOG_NEAR_CLEAR; // 距离 ≤ 40 unit(4m) 完全无雾
+            scene.fogEnd = FOG_FAR_OPAQUE;   // 距离 ≥ 500 unit(50m) 完全满雾
+            // 同步水下雾给水面对应的 ShaderMaterial（它不参与 Babylon scene.fog，需手动注入），
+            // 让水面与地面/角色用同一套雾参数，远处水面也褪入雾色。
+            setUnderwaterFog(true, fogColor, FOG_NEAR_CLEAR, FOG_FAR_OPAQUE);
             const causticTex = causticsController.getTexture(scene);
             // 给 causticTex 在地面上设置合理 UV 缩放（共享纹理的 uScale/vScale 默认 1，
             // 在 60m 地面上单 cell ≈ 15m，巨大到看不出"光斑"；水面 shader 用自家
@@ -101,6 +118,7 @@ class UnderwaterFogControllerImpl {
         } else {
             // 出水：关闭场景雾 + 还原地面原始 emissive
             scene.fogMode = Scene.FOGMODE_NONE;
+            setUnderwaterFog(false, UNDERWATER_FOG_BASE, FOG_NEAR_CLEAR, FOG_FAR_OPAQUE);
             for (const entry of this._installed) {
                 entry.mat.emissiveTexture = entry.origEmissiveTex;
                 entry.mat.emissiveColor = entry.origEmissiveColor;
@@ -110,10 +128,16 @@ class UnderwaterFogControllerImpl {
 
     /** 场景销毁 / HMR 重入时清理。 */
     reset(scene?: Scene): void {
+        // 先还原已安装地面材质的 emissive（即便在水下清场，也避免焦散 emissive 永久残留）
+        for (const entry of this._installed) {
+            entry.mat.emissiveTexture = entry.origEmissiveTex;
+            entry.mat.emissiveColor = entry.origEmissiveColor;
+        }
+        this._installed.clear();
         if (scene) scene.fogMode = Scene.FOGMODE_NONE;
+        setUnderwaterFog(false, UNDERWATER_FOG_BASE, FOG_NEAR_CLEAR, FOG_FAR_OPAQUE);
         this._wasUnderwater = false;
         this._waterLevel = 0;
-        this._installed.clear();
     }
 }
 

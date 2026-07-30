@@ -40,6 +40,14 @@ uniform float waterFogStart;         // 水面雾起始距离（从此距离开�
 uniform float waterFogEnd;           // 水面雾终止距离（到此距离完全混入雾色，默认 300）
 uniform float waterFogOpacityInfluence; // 雾对透明度的影响（默认 0，即只混颜色）
 
+// ======== 水下雾（与 scene.fog 同源；ShaderMaterial 不参与 Babylon fog，由 TS 手动注入）========
+// 水下视角看水面：水面铺满视野，远处水面顶点距相机 depth 大 → 应褪入雾色，
+// 与地面/角色用同一套 fog 参数（start=无雾阈值, end=满雾阈值），视觉统一。
+uniform float uUnderwater;          // 0=关闭, 1=水下
+uniform vec3 uUnderwaterFogColor;   // 水下雾色（联动天空底色）
+uniform float uUnderwaterFogStart;  // 无雾阈值（距相机 ≤ 此值无雾）
+uniform float uUnderwaterFogEnd;    // 满雾阈值（距相机 ≥ 此值满雾）
+
 // ======== ADR-115 P1: 高频法线扰动层 + Sun Glitter ========
 uniform sampler2D uDetailNormalTex;   // 程序化生成的法线细节纹理
 uniform float uDetailNormalStrength;  // 细节法线整体强度（默认 0.3，0=关闭零回归）
@@ -126,16 +134,20 @@ void main() {
     // uDetailNormalStrength == 0 时 gerstnerScale = 1.0，完全恢复 Gerstner 原貌（零回归）
     float gerstnerScale = uDetailNormalStrength > 0.0 ? 0.7 : 1.0;
 
+    // 相机相对坐标：所有纹理采样共用，避免远离原点时 float 精度丢失导致高频波纹消失
+    vec2 camXZ = vWorldPos.xz - cameraPosition.xz;
+
     // 双层法线采样：UV 沿风向滚动，速度由 TS 端基于 WAVE_SPEED/WAVE_FREQ 动态计算
     // 大尺度层（tiling 小）滚动更快，细尺度层（tiling 大）稍慢，符合真实水面
+    // 用相机相对坐标（同焦散），避免远离原点时 float 精度丢失导致高频波纹消失
     vec2 wind = uDetailWindDir;
-    vec2 nUV1 = vWorldPos.xz * uDetailNormalTiling1 + wind * wavePhase * uDetailNormalSpeed1;
-    vec2 nUV2 = vWorldPos.xz * uDetailNormalTiling2 - wind * wavePhase * uDetailNormalSpeed2; // 反向产生交错感
+    vec2 nUV1 = camXZ * uDetailNormalTiling1 + wind * wavePhase * uDetailNormalSpeed1;
+    vec2 nUV2 = camXZ * uDetailNormalTiling2 - wind * wavePhase * uDetailNormalSpeed2; // 反向产生交错感
     // 纹理编码：R=世界X, G=世界Z, B=世界Y(上)
     vec3 n1 = texture2D(uDetailNormalTex, nUV1).rgb * 2.0 - 1.0;
     vec3 n2 = texture2D(uDetailNormalTex, nUV2).rgb * 2.0 - 1.0;
     // ADR-115 P5: 低频滚动法线层 — 大尺度滚动光带（格 ≈25 单位）
-    vec2 nUV3 = vWorldPos.xz * uLowFreqNormalTiling + wind * wavePhase * uLowFreqNormalSpeed;
+    vec2 nUV3 = camXZ * uLowFreqNormalTiling + wind * wavePhase * uLowFreqNormalSpeed;
     vec3 n3 = texture2D(uDetailNormalTex, nUV3).rgb * 2.0 - 1.0;
     vec3 detailNormal = normalize(n1 + n2 * 0.5 + n3 * uLowFreqNormalStrength);
 
@@ -212,10 +224,40 @@ void main() {
     float waveBright = 1.0 + waveNorm * (0.1 + 0.15 * waveHeight);
     base *= waveBright;
 
-    vec2 causticUV = vWorldPos.xz * uCausticScale + vec2(time * uCausticSpeed * causticScrollX, time * uCausticSpeed * causticScrollY);
-    float caustic = texture2D(uCausticTex, causticUV).r;
-    float causticMod = 1.0 + (caustic - 0.5) * 2.0 * uCausticIntensity;
-    base *= causticMod;
+    // ======== 焦散驱动表面法线扰动 + 亮度叠加 ========
+    // 参考设计中，水面波纹就是焦散图案本身——焦散直接驱动表面起伏。
+    // 当前架构把"几何扰动"(detail normal)和"光照图案"(caustic)拆成独立系统，
+    // 导致焦散只是亮度叠加，不参与表面视觉起伏。
+    // 修复：用焦散纹理的梯度作为额外法线偏移，让焦散亮纹同时产生可见的表面涟漪。
+
+    // 层1：主焦散（scale 0.15，cell ≈ 6.7 单位）
+    // 用相机相对坐标（camXZ 已在 detail normal 段定义），精度稳定。
+    vec2 cuv1 = camXZ * 0.15;
+    float c1 = texture2D(uCausticTex, cuv1).r;
+
+    // 层2：次焦散（2x scale + 旋转30° + 反向慢速滚动，与层1干涉）
+    vec2 cuv2 = vec2(
+        camXZ.x * 0.866 - camXZ.y * 0.5,
+        camXZ.x * 0.5 + camXZ.y * 0.866
+    ) * 0.3;
+    cuv2 += vec2(-time * 0.03, time * 0.02);
+    float c2 = texture2D(uCausticTex, cuv2).r;
+
+    float caustic = c1 * 0.6 + c2 * 0.4;
+
+    // 焦散梯度 → 法线扰动：采样相邻像素计算 dcdx/dcdy
+    float eps = 0.02; // 稍大步长，平滑梯度（原 0.005 在 256px 纹理上噪声大）
+    float cx1 = texture2D(uCausticTex, cuv1 + vec2(eps, 0)).r;
+    float cy1 = texture2D(uCausticTex, cuv1 + vec2(0, eps)).r;
+    float dcdx = (cx1 - c1) / eps;
+    float dcdy = (cy1 - c1) / eps;
+    // 将梯度转为法线偏移（强度由 causticIntensity 控制，0.5x 让正常视角也可见涟漪）
+    vec3 causticNormalOffset = vec3(dcdx, 1.0, dcdy) * uCausticIntensity * 0.5;
+    normal = normalize(normal + causticNormalOffset.xyz);
+
+    // 焦散亮度叠加（加法，作为光斑，强度提升到正常视角可见）
+    float causticBright = smoothstep(0.3, 0.85, caustic);
+    base += causticBright * uCausticIntensity * 0.8;
 
     // 反射受泡沫衰减：泡沫区反射减弱；整体乘曝光因子联动日照明暗
     vec3 color = mix(base, reflected, fresnel) * lightExposure;
@@ -273,6 +315,15 @@ void main() {
     float horizonFactor = 1.0 - smoothstep(uHorizonStart, uHorizonEnd, radialDist);
     float horizonMix = (1.0 - horizonFactor) * uHorizonFade;
     color = mix(color, uHorizonColor, horizonMix);
+
+    // ======== 水下雾：让水面也参与 scene.fog 同套参数 ========
+    // depth = 相机到水面顶点距离（上方 waterFog 同变量）。公式与 Babylon FOGMODE_LINEAR 一致：
+    // depth ≤ start 无雾, depth ≥ end 满雾。水下视角远处水面 depth 大 → 褪入雾色，
+    // 与地面/角色统一。乘 lightExposure 保证亮度与水面其余着色一致。
+    if (uUnderwater > 0.5) {
+        float uwFog = clamp((uUnderwaterFogEnd - depth) / (uUnderwaterFogEnd - uUnderwaterFogStart), 0.0, 1.0);
+        color = mix(color, uUnderwaterFogColor * lightExposure, 1.0 - uwFog);
+    }
 
     float alpha = mix(waterTransparency, 1.0, fresnel * fresnelAlphaInfluence + foam * foamIntensity * foamOpacity);
     alpha = mix(alpha, 1.0, waterFog * waterFogOpacityInfluence);
