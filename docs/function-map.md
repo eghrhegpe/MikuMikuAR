@@ -7,9 +7,9 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 112 | 740 |
+| 核心基础设施 | 120 | 710 |
 | 3D 场景 | 108 | 1077 |
-| 菜单 & UI | 73 | 355 |
+| 菜单 & UI | 75 | 361 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 127 |
 | 物理系统 | 2 | 14 |
@@ -152,6 +152,8 @@
 | `setFootstepVolume()` | `core/audio-bus` | — |
 | `setSfxEnabled()` | `core/audio-bus` | — |
 | `setSfxVolume()` | `core/audio-bus` | — |
+| `setTriggerAutoSave()` | `core/auto-save` | 注册自动保存的实现回调（由 scene-serialize.ts 在初始化时调用）。 |
+| `triggerAutoSave()` | `core/auto-save` | 触发自动保存（由动作/菜单/UI 层调用）。 |
 | `clearWebFlag()` | `core/backend/backend-mocks` | — |
 | `goAdapterMock()` | `core/backend/backend-mocks` | — |
 | `idbStore()` | `core/backend/backend-mocks` | — |
@@ -200,6 +202,10 @@
 | `clampPct()` | `core/clamp` | 百分比钳制到 [0, 100]。 |
 | `lerp()` | `core/clamp` | 线性插值。 |
 | `lerpArray()` | `core/clamp` | 逐元素线性插值数组。 |
+| `Cache()` | `core/collections` | 轻量泛型缓存——Map 封装，统一 get/set/has/delete/clear 接口。 |
+| `allSettledFilter()` | `core/collections` | 等待全部 promise 结束，仅返回 fulfilled 结果（rejected 被静默丢弃）。 |
+| `ensureArray()` | `core/collections` | 确保值为数组；非数组则包裹为单元素数组。 |
+| `filterKeys()` | `core/collections` | 按谓词过滤对象键，返回仅含满足条件键值对的新对象。 |
 | `col3FromTriple()` | `core/color-helpers` | 从 `[r, g, b]` 三元组构造 Color3。 |
 | `hexToRgb()` | `core/color-helpers` | 将 #rrggbb 解析为 {r,g,b}（0–255）。非法输入回退主题默认 74,108,247。 |
 | `rgbString()` | `core/color-helpers` | 将 Color3 转为 CSS `rgb(r, g, b)` 字符串（0–255 整数）。 |
@@ -224,6 +230,7 @@
 | `EnvDispatchGroup()` | `core/env-state-schema` | 已定义的 dispatch 分组名称 |
 | `EnvStateSchema()` | `core/env-state-schema` | — |
 | `getEnvKeys()` | `core/env-state-schema` | 从 Schema 派生指定 dispatch 分组的 key 列表。 |
+| `escapeHtml()` | `core/escape-html` | Escape HTML special characters to prevent injection. |
 | `buildNavMaps()` | `core/events` | — |
 | `disposeEventHandlers()` | `core/events` | — |
 | `initDropHandler()` | `core/events` | — |
@@ -240,6 +247,8 @@
 | `resolveFileUrl()` | `core/fileservice` | 从文件路径解析出 HTTP URL 及对应服务器信息。 |
 | `resolveModelDir()` | `core/fileservice` | 从文件路径解析出隔离后的目录路径（不启动 HTTP 服务器）。 |
 | `formatTimestamp()` | `core/format-timestamp` | 格式化日期为 HH:MM:SS.mmm 字符串。 |
+| `formatError()` | `core/format` | 将任意错误值转换为人类可读字符串，带截断保护。 |
+| `formatTime()` | `core/format` | 格式化秒数为 `MM:SS.CC` 字符串（分:秒.百分秒）。 |
 | `freeflyInput()` | `core/freefly-state` | — |
 | `Ktx2Capability()` | `core/gpu-capabilities` | — |
 | `Ktx2PreferredFormat()` | `core/gpu-capabilities` | — |
@@ -248,6 +257,7 @@
 | `translateGoError()` | `core/i18n/goerr` | [doc:adr-117] 将 Go 端返回的 error 翻译为当前语言。 |
 | `LangCode()` | `core/i18n/locale` | — |
 | `SUPPORTED_LANGS()` | `core/i18n/locale` | 规划支持的语言清单（与竞品 DanceXR 对齐：简/繁中、英、日、韩）。 |
+| `detectSystemLang()` | `core/i18n/locale` | [doc:adr-059] 从浏览器/WebView 语言偏好推断首选语言。 |
 | `getLang()` | `core/i18n/locale` | — |
 | `initI18n()` | `core/i18n/locale` | — |
 | `setLang()` | `core/i18n/locale` | — |
@@ -264,7 +274,11 @@
 | `createIconifyIcon()` | `core/icons` | Create an <iconify-icon> element for the given icon name. |
 | `softwareKindIcon()` | `core/icons` | Map software kind to an iconify icon name. |
 | `canvasToBase64()` | `core/image` | 将 Canvas 编码为 base64 字符串（剥离 data:image/...;base64, 前缀）。 |
+| `thumbDataUrl()` | `core/image` | Build a data URL from a base64 thumbnail, sniffing PNG/JPEG/WebP from the header. |
+| `toBase64()` | `core/image` | Encode a string as base64 (UTF-8 safe). |
 | `bootstrap()` | `core/init` | — |
+| `jsonParse()` | `core/json-stringify` | Safely parse JSON; returns null on failure instead of throwing. |
+| `jsonStringify()` | `core/json-stringify` | Format a value as pretty-printed JSON (2-space indent). |
 | `addRecentMotion()` | `core/library-state` | — |
 | `allModels()` | `core/library-state` | — |
 | `displayNamePriority()` | `core/library-state` | 缩略图更新回调（由 ui-resource-panel.ts 注册，避免模块间动态 import 耦合）。 |
@@ -300,6 +314,10 @@
 | `logError()` | `core/logger` | 统一标签格式的 error 日志（走 console.error）。 |
 | `logInfo()` | `core/logger` | 统一标签格式的 info 日志（走 console.info）。 |
 | `logWarn()` | `core/logger` | 统一标签格式的 warn 日志。message 为空时省略中间空格；err 为空时不传第二个参数。 |
+| `degToRad()` | `core/math-geometry` | 角度 → 弧度。 |
+| `dist2d()` | `core/math-geometry` | 2D 欧几里得距离。 |
+| `dist3d()` | `core/math-geometry` | 3D 欧几里得距离。 |
+| `radToDeg()` | `core/math-geometry` | 弧度 → 角度。 |
 | `hash2()` | `core/math/hash-noise` | 确定性整数哈希 → [0,1]。seed 相同则结果可复现。 |
 | `hash2v()` | `core/math/hash-noise` | 二元组哈希 → [[0,1],[0,1]]。供 Voronoi 需要两个独立随机偏移的场景（焦散网状亮纹）。 |
 | `valueNoise()` | `core/math/hash-noise` | 平滑值噪声 → [0,1]。四角哈希 + smoothstep 双线性插值。 |
@@ -426,6 +444,9 @@
 | `setLoadingStatus()` | `core/status-bar` | 在底部状态栏显示带旋转图标的加载文本，用于消解用户"卡住焦虑"。 |
 | `setStatus()` | `core/status-bar` | — |
 | `showHint()` | `core/status-bar` | — |
+| `tryCatchStatus()` | `core/status-helpers` | Execute a function with automatic error handling that shows errors in the status bar. |
+| `withLoadingStatus()` | `core/status-helpers` | 包装一个异步操作，自动管理 loading → success → error 三态状态栏。 |
+| `withLoadingStatusTargeted()` | `core/status-helpers` | 包装异步操作并附带目标名（target-aware 版本）。 |
 | `registerServiceWorker()` | `core/sw-register` | — |
 | `ToastAction()` | `core/toast` | — |
 | `ToastVariant()` | `core/toast` | — |
@@ -473,6 +494,7 @@
 | `addColorSliderRow()` | `core/ui-advanced-rows` | — |
 | `addModeSlider()` | `core/ui-advanced-rows` | — |
 | `addVector3SliderRow()` | `core/ui-advanced-rows` | — |
+| `cardContainer()` | `core/ui-card` | Card container helper: removes render-card bg, wraps content in an lcard. |
 | `addCollapsible()` | `core/ui-collapsible` | 通用折叠面板组件 |
 | `addPresetChip()` | `core/ui-collapsible` | 创建一个 preset-chip 按钮并追加到 container（通常是 .preset-group div）。 |
 | `addSectionTitle()` | `core/ui-collapsible` | 区块标题（section-title），用于 cardContainer 内的视觉分组。 |
@@ -513,6 +535,7 @@
 | `addWatchDirRow()` | `core/ui-helpers` | — |
 | `buildBoneGroups()` | `core/ui-helpers` | — |
 | `buildPresetChipGroup()` | `core/ui-helpers` | — |
+| `cardContainer()` | `core/ui-helpers` | — |
 | `closeFullscreen()` | `core/ui-helpers` | — |
 | `createHeaderToggle()` | `core/ui-helpers` | — |
 | `createIconButton()` | `core/ui-helpers` | — |
@@ -526,9 +549,11 @@
 | `slideRow()` | `core/ui-helpers` | — |
 | `sliderRow()` | `core/ui-helpers` | — |
 | `toggleRow()` | `core/ui-helpers` | — |
+| `withLoadingIndicator()` | `core/ui-helpers` | — |
 | `KeyboardNavOptions()` | `core/ui-keyboard-nav` | — |
 | `NavKeyKind()` | `core/ui-keyboard-nav` | 导航按键分类：垂直移动 / 水平移动，供 perKeySkip 差异化判断 |
 | `createKeyboardNav()` | `core/ui-keyboard-nav` | — |
+| `withLoadingIndicator()` | `core/ui-loading` | 加载指示器包裹器：显示 loading 遮罩 → 执行 fn → `finally` 隐藏。 |
 | `NAV_ADJUST_ATTR()` | `core/ui-nav-item` | — |
 | `NAV_FOCUS_ATTR()` | `core/ui-nav-item` | — |
 | `NAV_GROUP_ATTR()` | `core/ui-nav-item` | — |
@@ -589,61 +614,6 @@
 | `VirtualGridHandle()` | `core/ui-virtual-grid` | — |
 | `VirtualGridOptions()` | `core/ui-virtual-grid` | — |
 | `createVirtualGrid()` | `core/ui-virtual-grid` | — |
-| `Abortable()` | `core/utils` | — |
-| `CATEGORY_DIR()` | `core/utils` | — |
-| `Cache()` | `core/utils` | 轻量泛型缓存——Map 封装，统一 get/set/has/delete/clear 接口。 |
-| `DebouncedTimer()` | `core/utils` | — |
-| `LoadingGuard()` | `core/utils` | — |
-| `allSettledFilter()` | `core/utils` | 等待全部 promise 结束，仅返回 fulfilled 结果（rejected 被静默丢弃）。 |
-| `canvasToBase64()` | `core/utils` | — |
-| `cardContainer()` | `core/utils` | Card container helper: removes render-card bg, wraps content in an lcard. |
-| `clamp()` | `core/utils` | — |
-| `clamp01()` | `core/utils` | — |
-| `clampInt()` | `core/utils` | — |
-| `clampPct()` | `core/utils` | — |
-| `clearAllMenuWrappers()` | `core/utils` | — |
-| `closeAllOverlays()` | `core/utils` | — |
-| `computeLibraryRef()` | `core/utils` | 向后兼容包装：从 config 读取 libraryRoot 再委托给 path 模块的纯函数。 |
-| `degToRad()` | `core/utils` | 角度 → 弧度。 |
-| `delay()` | `core/utils` | — |
-| `disposeMenuWrapper()` | `core/utils` | — |
-| `dist2d()` | `core/utils` | 2D 欧几里得距离。 |
-| `dist3d()` | `core/utils` | 3D 欧几里得距离。 |
-| `ensureArray()` | `core/utils` | 确保值为数组；非数组则包裹为单元素数组。 |
-| `escapeHtml()` | `core/utils` | — |
-| `filterKeys()` | `core/utils` | 按谓词过滤对象键，返回仅含满足条件键值对的新对象。 |
-| `fireAndForget()` | `core/utils` | — |
-| `formatError()` | `core/utils` | — |
-| `formatTime()` | `core/utils` | — |
-| `generateUuid()` | `core/utils` | — |
-| `getBaseName()` | `core/utils` | — |
-| `getBrowseDir()` | `core/utils` | 统一的资源浏览目录解析。 |
-| `getDirPath()` | `core/utils` | — |
-| `getMenuWrapper()` | `core/utils` | — |
-| `isStageLike()` | `core/utils` | — |
-| `isUnderRoot()` | `core/utils` | — |
-| `jsonParse()` | `core/utils` | 安全 JSON 解析；解析失败返回 null。 |
-| `jsonStringify()` | `core/utils` | 格式化 JSON 字符串（2 空格缩进）。 |
-| `lerp()` | `core/utils` | — |
-| `lerpArray()` | `core/utils` | — |
-| `logError()` | `core/utils` | — |
-| `logWarn()` | `core/utils` | — |
-| `normPath()` | `core/utils` | — |
-| `radToDeg()` | `core/utils` | 弧度 → 角度。 |
-| `resolveLibraryRef()` | `core/utils` | — |
-| `setOnCloseAllOverlays()` | `core/utils` | — |
-| `setTriggerAutoSave()` | `core/utils` | — |
-| `showErrorToast()` | `core/utils` | — |
-| `stackRegistry()` | `core/utils` | 泛型键值写入工具，避免大量 `obj[key] = value` 重复。 |
-| `swallowError()` | `core/utils` | — |
-| `thumbDataUrl()` | `core/utils` | base64 缩略图数据的 MIME 嗅探：PNG/JPEG/WebP 头部字节不同 |
-| `toBase64()` | `core/utils` | — |
-| `triggerAutoSave()` | `core/utils` | — |
-| `tryCatchStatus()` | `core/utils` | Execute a function with automatic error handling that shows errors in the status bar. |
-| `waitForFrame()` | `core/utils` | — |
-| `withLoadingIndicator()` | `core/utils` | 加载指示器包裹器：显示 loading 遮罩 → 执行 fn → `finally` 隐藏。 |
-| `withLoadingStatus()` | `core/utils` | 包装一个异步操作，自动管理 loading → success → error 三态状态栏。 |
-| `withLoadingStatusTargeted()` | `core/utils` | 包装异步操作并附带目标名（target-aware 版本）。 |
 | `generateUuid()` | `core/uuid` | 生成 UUID v4 字符串（格式：xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx）。 |
 | `AddCustomSoftware()` | `core/wails-bindings` | — |
 | `AddRecentModel()` | `core/wails-bindings` | — |
@@ -1981,6 +1951,11 @@
 | `RegisteredPopupMenuConfig()` | `menus/menu-factory` | 注册式菜单配置——工厂内部维护引用，返回 handle |
 | `registerPopupMenu()` | `menus/menu-factory` | 注册弹窗菜单——工厂内部维护引用，返回统一的 handle。 |
 | `showPopupMenu()` | `menus/menu-factory` | — |
+| `clearAllMenuWrappers()` | `menus/menu-overlay` | — |
+| `closeAllOverlays()` | `menus/menu-overlay` | Close all visible overlays, reset popup state, and invoke the registered callback. |
+| `disposeMenuWrapper()` | `menus/menu-overlay` | — |
+| `getMenuWrapper()` | `menus/menu-overlay` | — |
+| `setOnCloseAllOverlays()` | `menus/menu-overlay` | — |
 | `ActionMenuCtx()` | `menus/menu-schema` | — |
 | `ControlSpec()` | `menus/menu-schema` | — |
 | `MenuKind()` | `menus/menu-schema` | — |
@@ -1989,6 +1964,7 @@
 | `getBindFn()` | `menus/menu-schema` | 按 StatePath 获取 bind 函数（用于 registerControl 自更新） |
 | `getStateValue()` | `menus/menu-schema` | 按 StatePath 获取当前值 |
 | `setStateValue()` | `menus/menu-schema` | 按 StatePath 设置值 |
+| `stackRegistry()` | `menus/menu-stack-registry` | — |
 | `SlideMenu()` | `menus/menu` | — |
 | `getCurrentRenderingMenu()` | `menus/menu` | 获取当前正在渲染的 SlideMenu 实例（供 ui-helpers 中的控件函数自动注册） |
 | `getOpenMenus()` | `menus/menu` | 获取所有当前存活的 SlideMenu 实例（已 dispose 的会自动移除，调用方仍需自行判断可见性） |
@@ -2392,5 +2368,5 @@
 
 ---
 
-> 共 315 个文件，2346 个导出符号。
+> 共 326 个文件，2326 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。
