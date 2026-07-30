@@ -10,6 +10,10 @@ import {
     adaptParam,
 } from '../param-adapters';
 import type { ParamDef } from '../../action-registry';
+import type { AdapterResult } from '../param-adapters';
+
+/** 提取 error 消息（将 "ok:false" 结果的 error 字段转为 string）。 */
+const errMsg = (r: AdapterResult): string => (r as { error: string }).error;
 
 function def(overrides: Partial<ParamDef> & { name: string; type: ParamDef['type'] }): ParamDef {
     return { name: 'p', ...overrides } as ParamDef;
@@ -43,7 +47,7 @@ describe('enumAdapter', () => {
             'c'
         );
         expect(r.ok).toBe(false);
-        expect((r as { error: string }).error).toContain('不在可选范围');
+        expect(errMsg(r)).toContain('不在可选范围');
     });
 
     it('同义词查找 case-insensitive（val 侧 lowercase）', () => {
@@ -75,7 +79,7 @@ describe('rangeAdapter', () => {
             2
         );
         expect(r.ok).toBe(false);
-        expect((r as { error: string }).error).toContain('超出范围');
+        expect(errMsg(r)).toContain('超出范围');
     });
 
     it('低于下限返回错误', () => {
@@ -92,7 +96,7 @@ describe('rangeAdapter', () => {
             'abc'
         );
         expect(r.ok).toBe(false);
-        expect((r as { error: string }).error).toContain('不是有效数值');
+        expect(errMsg(r)).toContain('不是有效数值');
     });
 
     it('无 min/max 时不过界校验', () => {
@@ -120,7 +124,7 @@ describe('colorAdapter', () => {
     it('非法 hex 返回错误', () => {
         const r = colorAdapter(def({ name: 'c', type: 'color' }), 'not-a-color');
         expect(r.ok).toBe(false);
-        expect((r as { error: string }).error).toContain('不是有效 hex 颜色');
+        expect(errMsg(r)).toContain('不是有效 hex 颜色');
     });
 
     it('RGB 数组长度不为 3 回退 hex 解析', () => {
@@ -146,7 +150,7 @@ describe('entityAdapter', () => {
             ''
         );
         expect(r.ok).toBe(false);
-        expect((r as { error: string }).error).toContain('为空');
+        expect(errMsg(r)).toContain('为空');
     });
 
     it('resolve 返回 null 时返回未找到', async () => {
@@ -156,7 +160,7 @@ describe('entityAdapter', () => {
             'nope'
         );
         expect(r.ok).toBe(false);
-        expect((r as { error: string }).error).toContain('未找到');
+        expect(errMsg(r)).toContain('未找到');
     });
 
     it('无 resolve 函数返回错误', async () => {
@@ -165,7 +169,7 @@ describe('entityAdapter', () => {
             'anything'
         );
         expect(r.ok).toBe(false);
-        expect((r as { error: string }).error).toContain('不支持运行时解析');
+        expect(errMsg(r)).toContain('不支持运行时解析');
     });
 });
 

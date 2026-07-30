@@ -86,52 +86,37 @@ describe('validateAiConfig', () => {
 });
 
 describe('classifyAiError', () => {
-    it('CORS 关键词识别', () => {
-        expect(classifyAiError('CORS error', 'none')).toBe('cors');
-        expect(classifyAiError('Access-Control-Allow-Origin', 'none')).toBe('cors');
-        expect(classifyAiError('Failed to fetch', 'none')).toBe('cors');
+    it.each([
+        // [message, corsRisk, expected]
+        ['CORS error',              'none',     'cors'],
+        ['Access-Control-Allow-Origin', 'none', 'cors'],
+        ['Failed to fetch',         'none',     'cors'],
+        ['401 Unauthorized',        'none',     'unauthorized'],
+        ['invalid authentication',  'none',     'unauthorized'],
+        ['Incorrect API key',       'none',     'unauthorized'],
+        ['404 Not Found',           'none',     'notFound'],
+        ['model not found',         'none',     'notFound'],
+        ['429 Too Many Requests',   'none',     'rateLimit'],
+        ['rate limit exceeded',     'none',     'rateLimit'],
+        ['500 Internal Server Error', 'none',  'server'],
+        ['502 Bad Gateway',         'none',     'server'],
+        ['503 Service Unavailable', 'none',     'server'],
+        ['dial tcp 127.0.0.1:11434','none',     'network'],
+        ['connection refused',      'none',     'network'],
+        ['ERR_CONNECTION_REFUSED',  'none',     'network'],
+        ['etimedout',               'none',     'network'],
+        ['some random error',       'none',     'unknown'],
+    ])('消息 "%s" corsRisk=%s → %s', (msg, risk, expected) => {
+        expect(classifyAiError(msg, risk as 'none' | 'possible' | 'high')).toBe(expected);
     });
 
-    it('401/unauthorized 识别', () => {
-        expect(classifyAiError('401 Unauthorized', 'none')).toBe('unauthorized');
-        expect(classifyAiError('invalid authentication credentials', 'none')).toBe('unauthorized');
-        expect(classifyAiError('Incorrect API key', 'none')).toBe('unauthorized');
-    });
-
-    it('404/not found 识别', () => {
-        expect(classifyAiError('404 Not Found', 'none')).toBe('notFound');
-        expect(classifyAiError('model not found', 'none')).toBe('notFound');
-    });
-
-    it('429/rate limit 识别', () => {
-        expect(classifyAiError('429 Too Many Requests', 'none')).toBe('rateLimit');
-        expect(classifyAiError('rate limit exceeded', 'none')).toBe('rateLimit');
-    });
-
-    it('5xx/server error 识别', () => {
-        expect(classifyAiError('500 Internal Server Error', 'none')).toBe('server');
-        expect(classifyAiError('502 Bad Gateway', 'none')).toBe('server');
-        expect(classifyAiError('503 Service Unavailable', 'none')).toBe('server');
-    });
-
-    it('network error 识别', () => {
-        expect(classifyAiError('dial tcp 127.0.0.1:11434', 'none')).toBe('network');
-        expect(classifyAiError('connection refused', 'none')).toBe('network');
-        expect(classifyAiError('ERR_CONNECTION_REFUSED', 'none')).toBe('network');
-        expect(classifyAiError('etimedout', 'none')).toBe('network');
-    });
-
-    it('corsRisk 非 none 时，fetch/typeerror 归类为 cors', () => {
+    it('corsRisk=possible 时 fetch 类错误归为 cors', () => {
         expect(classifyAiError('TypeError: fetch failed', 'possible')).toBe('cors');
         expect(classifyAiError('typeerror', 'high')).toBe('cors');
     });
 
-    it('corsRisk=none 时，fetch 类错误不归为 cors', () => {
+    it('corsRisk=none 时 fetch 类错误不归为 cors', () => {
         expect(classifyAiError('TypeError: fetch failed', 'none')).toBe('unknown');
-    });
-
-    it('无匹配返回 unknown', () => {
-        expect(classifyAiError('some random error', 'none')).toBe('unknown');
     });
 });
 
