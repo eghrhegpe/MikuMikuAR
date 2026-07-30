@@ -85,6 +85,9 @@ export function buildMotionRootItems(): PopupRow[] {
                         }
                         const snap = pushUndoSnapshot();
                         setDefaultMotion(motion.id);
+                        // [doc:adr-207] 单一指针互斥：VMD 设为默认时清空程序化 mode，
+                        // 避免程序化区残留旧选中态（'off' ↔ 'none'）。
+                        setProcMotionMode('off');
                         getMotionMenu()?.reRender();
                         triggerAutoSave();
                         showInfoToast(t('motion.defaultMotionSet', { name: motion.vmdName }));
@@ -110,6 +113,8 @@ export function buildMotionRootItems(): PopupRow[] {
     }
 
     // ===== [doc:adr-207] Section 2: 已加载程序化动作（集合驱动 + 选中语义） =====
+    // [doc:adr-207] 用 divider 划分 lcard 边界，使各功能区独立成卡（section-title 作为卡片头）
+    items.push({ kind: 'divider', label: '', icon: '', target: '' });
     items.push({
         kind: 'sectionTitle',
         label: t('motion.section.loadedProc'),
@@ -117,12 +122,13 @@ export function buildMotionRootItems(): PopupRow[] {
         target: '',
     });
     const loadedProc = getLoadedProceduralMotions();
-    // [doc:adr-207] 程序化区选中态落在全局 ProcMotionState.mode（与 VMD 默认互斥）；
-    // 'none' ↔ 'off'，其余同名。选中该行即把它设为场景默认程序化动作。
+    // [doc:adr-207] 跨两区选中互斥：场景默认是唯一指针。VMD 默认（activeId 非空）存在时，
+    // 程序化区一律不显选中——'off'/'none' 只在「无 VMD 默认」时才是真正的场景默认。
     const curProcMode = getProcMotionState().mode;
+    const hasVmdDefault = activeId != null;
     for (const procId of loadedProc) {
         const mode = _procIdToMode(procId);
-        const isSelected = mode === curProcMode;
+        const isSelected = !hasVmdDefault && mode === curProcMode;
         const radioIcon = isSelected ? 'lucide:check-circle' : 'lucide:circle';
         const isNone = procId === 'none';
         items.push({
@@ -140,6 +146,9 @@ export function buildMotionRootItems(): PopupRow[] {
                         return;
                     }
                     const snap = pushUndoSnapshot();
+                    // [doc:adr-207] 单一指针互斥：选中程序化行须清除 VMD 默认，
+                    // 否则 activeId 残留使程序化选中态被 hasVmdDefault 压制、视觉跳回 VMD。
+                    setDefaultMotion(null);
                     setProcMotionMode(mode);
                     regenerateProcMotion();
                     getMotionMenu()?.reRender();
@@ -170,6 +179,7 @@ export function buildMotionRootItems(): PopupRow[] {
     }
 
     // ===== [doc:adr-207] Section 3: 动作库 =====
+    items.push({ kind: 'divider', label: '', icon: '', target: '' });
     items.push({
         kind: 'sectionTitle',
         label: t('motion.section.library'),
@@ -215,6 +225,7 @@ export function buildMotionRootItems(): PopupRow[] {
     });
 
     // ===== [doc:adr-207] Section 4: 更多（正交工具） =====
+    items.push({ kind: 'divider', label: '', icon: '', target: '' });
     items.push({
         kind: 'sectionTitle',
         label: t('motion.section.more'),

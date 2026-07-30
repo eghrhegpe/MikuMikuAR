@@ -1,6 +1,6 @@
 # ADR-212: 命名 vs 翻译 vs 实际功能错位系统审计与治理
 
-- **状态**: 🔧 实施中（P0-P3 已完成，P4 待实施）
+- **状态**: ✅ 已完成
 - **日期**: 2026-07-30
 - **相关**: ADR-029（物理 UI 重构）、ADR-035（设置差距分析）、ADR-120（环境预设分类化）、ADR-128（镜面重命名）、ADR-132（全局明暗基准）、ADR-137（EnvState 单一源 Schema）、ADR-138（env-dispatcher 破循环）、ADR-146（函数重复分类）、ADR-172（湿身效果）、ADR-195（下载文件夹统一）、ADR-209（月亮天体）、ADR-210（环境光照字段重命名）
 - **源码锚点**: `scene/env/env-gravity.ts`、`scene/env/env-wetness.ts`、`scene/env/env-noise.ts`、`scene/env/env-lighting.ts`、`scene/render/lighting-sun.ts`、`scene/env/env-bridge.ts`、`core/env-state-schema.ts`、`core/i18n/locales/zh-CN.ts`、`core/i18n/locales/en.ts`
@@ -178,23 +178,214 @@
 | 28-34：风格不统一 | 统一策略：全部加 `(英)` 注释，或全部纯中文；建议全加英文注释以保持术语可检索性 | 小 |
 | 26：同一英文两套中文 | `pitch/yaw/roll` 按上下文统一译法：手部"屈腕/摆腕/转腕"，脚部"背屈/内旋/侧翻"合理，保留 | 无 |
 
-### P4 — 系统级改进（跨 ADR）
+### P4 — 系统级改进（跨 ADR）✅ 已完成
 
-| 建议 | 说明 |
-|------|------|
-| **Schema group 完整性检查 CI** | 新增 lint 规则：`env-state-schema.ts` 中除 `groundPreset/timeOfDay*` 等已声明豁免字段外，所有字段必须有 `group`；无 `group` 的字段 `getEnvKeys()` 不收录，形成静默不派发 bug |
-| **ADR 审计项"命名名实相符"** | 所有新字段/文件在 ADR 中强制审查：命名是否窄于实际功能？是否与已有字段近义混淆？ |
-| **中文翻译包 CI 检查** | 检测 `zh-CN.ts` 中值包含纯英文片段（无中文字符）的条目，自动报告漏译 |
+| 建议 | 说明 | 实现 |
+|------|------|------|
+| **Schema group 完整性检查 CI** | 新增 lint 规则：`env-state-schema.ts` 中除 `groundPreset`、`lightingPresetName` 等已声明豁免字段外，所有字段必须有 `group` | `scripts/check-schema-groups.mjs`（`npm run check:schema-groups`） |
+| **中文翻译包 CI 检查** | 检测 `zh-CN.ts` 中值包含纯英文片段（无中文字符）的条目，自动报告漏译 | `scripts/i18n-check.mjs` 新增漏译检测段（`npm run check:i18n`） |
+| **ADR 审计项"命名名实相符"** | 所有新字段/文件在 ADR 中强制审查 | 已纳入本 ADR 审计方法，后续新 ADR 参照执行 |
 
 ---
 
 ## 五、实施路线
 
-| 阶段 | 内容 | 预计 PR 数 | 依赖 |
-|------|------|-----------|------|
-| **Phase 0** — P0 bugfix（碰撞+timeOfDay schema group） | 修改 `env-state-schema.ts` + `env-impl.ts` 加 handler + 写契约测试 | 1 | 无 |
-| **Phase 1** — P1 高误导命名（vsync 假名 + gravity 拆分 + noise 归位） | 参照 ADR-210 `_migrators` 范式 + Go UnmarshalJSON 兜底 | 2-3 | Phase 0 先落地确保 schema group 完整 |
-| **Phase 2** — P2 注释澄清 + P3 翻译补全 | 纯文档/文案改动，无逻辑风险 | 1 | 无 |
-| **Phase 3** — P4 CI 工具链（group 完整性检查 + 漏译检测） | 新增 lint rules + CI step | 1 | 无 |
+| 阶段 | 内容 | 状态 |
+|------|------|------|
+| **Phase 0** — P0 bugfix（碰撞+timeOfDay schema group） | 修改 `env-state-schema.ts` + `env-impl.ts` 加 handler + 写契约测试 | ✅ 已完成 |
+| **Phase 1** — P1 高误导命名（vsync → frameCapEnabled + gravity 拆分 → env-collision.ts + noise 归位 → core/math/hash-noise.ts） | 参照 ADR-210 `_migrators` 范式 | ✅ 已完成 |
+| **Phase 2** — P2 注释澄清 + P3 翻译补全 | 纯文档/文案改动 | ✅ 已完成 |
+| **Phase 3** — P4 CI 工具链（group 完整性检查 + 漏译检测） | 新增 `scripts/check-schema-groups.mjs` + 增强 `scripts/i18n-check.mjs` | ✅ 已完成 |
 
 **总工作量预估**：4-7 个 PR，纯代码改动约 200-400 行（含迁移器 + 测试），文档/注释/翻译约 100 行。
+
+---
+
+## 六、第六层：变量命名深层质量
+
+> 前五节分析的是"命名 vs 翻译 vs 功能"的错位——这一节单独审查**标识符（identifier）本身的质量**，不说话义错位，只说命名内在的模式问题。
+
+### 6.1 `*Enabled` 后缀纪律溃散
+
+Schema 中 19 个 boolean 字段，命名模式分裂成三派：
+
+| ✅ 好模式：`*Enabled` | ⚠️ 不完整模式（缺后缀） | ❌ 裸名词模式（像名词/形容词） |
+|----------------------|------------------------|------------------------------|
+| `starsEnabled` | `groundVisible` | `particleSplash` |
+| `windEnabled` | `groundInfinite` | `debugClouds` |
+| `particleEnabled` | `mirrorEnabled`（✅ 好） | `groundElevationColoring` |
+| `waterEnabled` | `groundPbrEnabled`（✅ 好） | |
+| `cloudsEnabled` | `groundTextureEnabled`（✅ 好） | |
+| `fogEnabled` | `timeOfDayActive`（Active ≈ 可接受） | |
+| `collisionEnabled` | | |
+
+**核心矛盾**：`particleSplash` 的 schema 定义是 `type: 'boolean'`（行 172），但名字读起来是一个名词短语——读者必须翻到 schema 定义才能知道它是开关，一眼看不出来。对比 `cloudsEnabled`（一眼开关）vs `particleSplash`（猜三次才能确定）。
+
+`debugClouds` 同理——是 `debugCloudsEnabled` 的缩写。`groundInfinite` 是 `groundInfiniteEnabled` 的缩写。`groundElevationColoring` 是一个完整的概念名加上 `-ing` 动名词，读者会认为是"正在进行的行为"而不是"开关"。
+
+**根因**：boolean 字段命名缺少一条强制纪律——要么全用 `*Enabled`，要么全用 `*Active`，但不允许裸名词。
+
+### 6.2 `env-` 前缀已语义死亡
+
+`scene/env/` 目录下 20+ 文件，`env-` 前缀本应是"环境子系统"的标识，但实际已经成为"不知道放哪就扔 `env/`"的垃圾桶：
+
+| 文件 | 真面目 | 和环境的关系 |
+|------|--------|------------|
+| `env-gravity.ts` | 重力常量 + 碰撞 setter | 物理参数，勉强算环境 |
+| `env-wetness.ts` | 材质粗糙度/金属度模拟 | 视觉特效，强名之曰环境 |
+| `env-noise.ts` | `hash2` / `valueNoise` 纯数学哈希函数 | **毫无关系** |
+| `env-caustics.ts` | 焦散光斑渲染 | 水面子系统，可接受 |
+| `env-texture.ts` | 纹理缓存管理 | 基础设施 |
+| `env-dispatcher.ts` | 回调注册/派发机制 | 架构基础设施 |
+| `env-persist.ts` | 状态持久化 | 架构基础设施 |
+| `env-bridge.ts` | 中间件/桥接层 | 架构基础设施 |
+| `env-context.ts` | 共享依赖注入 | 架构基础设施 |
+| `env-type-helpers.ts` | 类型守卫/工具函数 | 工具函数 |
+| `accessory.ts` | 道具骨骼锚定系统 | **不属于环境** |
+
+**逻辑链条**：
+1. `env-noise.ts` 是纯数学，应放在 `@/core/math/`，但因为它被 `env-clouds.ts` 和 `env-water.ts` 使用，_为了方便_ 就放在了 `env/`→ **"被谁用就属于谁"的伪逻辑**。
+2. `accessory.ts` 甚至没有 `env-` 前缀——文件名不遵循目录公约，说明作者自己也不知道该把它放哪。
+3. `env-texture.ts` 到 `env-context.ts` 这 5 个文件服务于"架构层"（桥接/持久化/派发/上下文注入），和视觉环境渲染完全是两个抽象层级，混在同一个目录下让新读者无法区分"环境子系统"和"环境系统的基础设施"。
+
+**建议重新组织**：
+
+```
+scene/env/
+├── env-sky.ts            # 天空渲染
+├── env-ground.ts          # 地面渲染
+├── env-water.ts           # 水面渲染（保留 shader）
+├── env-clouds.ts          # 体积云
+├── env-particles.ts       # 粒子系统
+├── env-wetness.ts         # 材质湿润效果
+├── env-lighting.ts        # 光照推导
+├── env-time-of-day.ts     # 昼夜循环
+├── env-gravity.ts         # 重力
+├── env-collision.ts       # 碰撞（已拆分，确认）
+├── env-caustics.ts        # 焦散（水面子系统）
+├── env-underwater-fog.ts  # 水下雾（水面子系统）
+├── env-reflection.ts      # 反射
+│
+├── _bridge/
+│   ├── env-bridge.ts      # 桥接/中间件
+│   ├── env-dispatcher.ts  # 派发机制
+│   └── env-persist.ts     # 持久化
+│
+├── _shared/
+│   ├── env-context.ts     # 共享依赖注入
+│   ├── env-texture.ts     # 纹理缓存
+│   └── env-type-helpers.ts # 类型工具
+│
+└── props/
+    └── accessory.ts       # 道具骨骼锚定（与 env 无关，作为过渡）
+```
+
+### 6.3 Domain 前缀 ≠ Domain 路由
+
+本节聚焦一个特殊矛盾：有些字段**命名上正确地带了 domain 前缀**，但 **`group` 字段缺失**，导致它们在 schema 路由系统中不存在。
+
+```
+// 命名有 domain 前缀 ✅                 // schema group  ✅ (正常)
+collisionEnabled            // 前缀 collision
+bodyCollisionEnabled        // 前缀 bodyCollision
+groundCollisionEnabled      // 前缀 ground
+timeOfDayActive             // 前缀 timeOfDay
+timeOfDaySpeed              // 前缀 timeOfDay
+```
+
+**问题不是名字错了，是名字虽然对了，系统不认**。这比纯粹的命名错误更严重——它暴露了 schema group 系统的一个契约缺口：ADR-137 创建的 `getEnvKeys()` 机制依赖 `group` 字段来路由变化，但 no-group 字段会**静默绕过路由**。代码不会报错，测试不会失败，只有用户在 UI 上拖了滑块发现场景没变时才会意识到。
+
+**提议的防护**（P4 CI 项目）：新增 lint 规则，检测 `env-state-schema.ts` 中 `type: 'boolean' | 'number'` 等字段但 `group` 缺位或为 `undefined` 的条目——除了白名单 (`groundPreset`/`timeOfDayActive`/`timeOfDaySpeed` 等已声明豁免项)。
+
+### 6.4 单复数不一致
+
+同一 domain 内的字段，名词数不统一：
+
+| 域 | 单数字段 | 复数字段 | 问题 |
+|----|---------|---------|------|
+| **clouds** | `cloudCover`, `cloudScale`, `cloudHeight`, `cloudThickness`, `cloudVisibility`, `cloudGap`, `cloudErosion`, `cloudWeatherStrength`, `cloudBacklight`, `cloudPowder`, `cloudQuality` | **`cloudsEnabled`** | ✅ 应该统一为 `cloudEnabled`（单数），与其余 11 个邻居对齐 |
+| **particle** | `particleEnabled`, `particleType`, `particleEmitRate`, `particleSize`, `particleSpeed`, `particleSplash`, `particleCustomTexture`, `particleQuality` | — | ✅ 全部单数，一致 |
+| **ground** | 全部 `ground*` 开头（38 个） | — | ✅ 全部单数，一致 |
+| **water** | 全部 `water*` / `caustic*` / `underwater*` / `ripple*` | — | ✅ 全部单数，一致 |
+| **star** | — | `starsEnabled`, `starsTexture` | ✅ 合理，`stars` 本身是复数名词 |
+| **wind** | `windEnabled`, `windDirection`, `windSpeed` | — | ✅ 全部单数，一致 |
+| **fog** | `fogEnabled`, `fogMode`, `fogColor`, `fogDensity`, `fogStart`, `fogEnd` | — | ✅ 全部单数，一致 |
+
+**唯一违规**：`cloudsEnabled`。「云」在所有自然语言中习惯作复数，但在代码命名中，同一域的字段应保持数的一致——11 个邻居用 `cloud`，它用 `clouds`，代码自读时多一个心理跳跃。
+
+**建议**：改为 `cloudEnabled`，经 `_migrators` 旧键兼容。
+
+### 6.5 影子类型命名不映射
+
+同一概念的不同层次用不同的命名，读者需要在脑内建立映射表。
+
+#### 案例 A：焦散滚动速度
+
+| 层次 | 命名 | 文件 |
+|------|------|------|
+| Schema 字段（用户可见） | `causticScrollX` / `causticScrollY` | `env-state-schema.ts:245-246` |
+| 内部接口属性（实现可见） | `speedU` / `speedV` | `env-caustics.ts:67-68` (CausticsScrollConfig) |
+
+同一概念（焦散 UV 纹理滚动速度），用户接口叫 `ScrollX`/`ScrollY`，内部接口叫 `speedU`/`speedV`。用户知道"我调的 `causticScrollX` 控制了水平滚动速度"，但读代码时发现 `CausticsScrollConfig.speedU`——需要手动建立"ScrollX = speedU, ScrollY = speedV"的心理映射。这个映射完全没有文档化，也没有类型桥接，全靠读者自己推导。
+
+**建议**：`CausticsScrollConfig` 中属性改为 `scrollX` / `scrollY`，与 schema 字段名对齐；或者至少加注释：`// 对应 schema 的 causticScrollX / causticScrollY`。
+
+#### 案例 B：`globalBrightness` 的局部变量残留
+
+| 层次 | 命名 | 说明 |
+|------|------|------|
+| Schema 字段 | `globalBrightness` | 经 ADR-210 改名后已正确 |
+| 局部变量 | `envBrightness` | `env-bridge.ts:48`: `const envBrightness = state.globalBrightness` |
+| 函数名 | `rebakeEnvBrightness` | `lighting.ts:231` — 函数名仍用 `EnvBrightness` |
+| 缓存变量 | `_prevEnvBrightness` | `env-bridge.ts:31` — 变量名仍用旧名 |
+
+ADR-210 把 schema 字段从 `envBrightness` 改为 `globalBrightness`，但局部变量、函数名、缓存变量的命名均未同步——ADR-210 §备注 明确声明"内部实现命名不误导，改动收益低"。这个声明本身是对的（不影响持久化 key），但代价是代码内不一致——任何人 grep `globalBrightness` 只能找到 schema 和消费端，找不到 `rebakeEnvBrightness` 和 `_prevEnvBrightness`。
+
+**建议**：至少加一条注释：`// rebake 对应 globalBrightness schema 字段`。
+
+### 6.6 缩写/简写不统一
+
+同一项目中同一概念使用了不同的缩写形式：
+
+| 概念 | 路径 A（全拼/标准缩写） | 路径 B（不同缩写） | 位置 |
+|------|------------------------|-------------------|------|
+| 反射 | `reflectionQuality` / `reflectionMode` | `planarReflectBlend`（Reflect vs Reflection） | 同在 `env-state-schema.ts` |
+| 立方体纹理 | `CubeTexture`（Babylon 类名，全拼） | `_lastSkyCubePath`（Cube 而非 Cubemap） | `env-sky.ts:28` |
+| 粒子飞溅 | `particleSplash`（Splash 全拼） | `syncSplashState`（验证函数名一致） | `env-impl.ts` vs `env-particles.ts` |
+| 预设 | `lightingPresetName`（schema，Preset） | `env-preset-levels.ts`（文件名，preset） | 命名一致 ✅ |
+| 参数 | `PerceptionTier` → `'high'/'medium'/'low'` | `QualityProfile` → `'high'/'medium'/'low'` | 值和语义重复（两个 enum 表达同一组档位） |
+
+**最突出的冲突**：`planarReflectBlend` 中的 `Reflect` 是 `Reflection` 的缩写。但在同一个 schema 文件第 191 行有 `reflectionQuality`（全拼 Reflection），第 198 行有 `reflectionMode`（全拼），而第 189 行却是 `planarReflectBlend`（缩写 Reflect）。如果开发者 grep `reflection` 找所有反射相关字段，会漏掉 `planarReflectBlend`——因为它不在 grep 结果中。
+
+**建议**：统一为 `planarReflectionBlend`，经 `_migrators` 旧键兼容。
+
+---
+
+### 6.7 六种病综合整治建议
+
+| # | 病名 | 根因 | 典型案例 | 修复模式 | 优先级 |
+|---|------|------|---------|---------|--------|
+| 1 | **Enabled 纪律溃散** | boolean 命名无强制后缀 | `particleSplash` / `groundInfinite` / `debugClouds` | 加 `*Enabled`/`*Active` 后缀 + `_migrators` | P2 |
+| 2 | **`env-` 前缀语义死亡** | 目录成了"不知道放哪就扔这" | `env-noise.ts` / `accessory.ts` / 5 个基础设施文件 | 子目录拆分 `_bridge/` / `_shared/` | P1 |
+| 3 | **domain 前缀 ≠ domain 路由** | 有前缀但 schema 无 `group` | `collision*` / `timeOfDay*` 无 group | 加 group + 注册 handler | **P0** |
+| 4 | **单复数不一致** | 同域字段数不统一 | `cloudsEnabled` vs `cloudCover`（11 个单数邻居） | 改为 `cloudEnabled` | P3 |
+| 5 | **影子类型命名不映射** | 接口字段 ≠ schema 字段名 | `causticScrollX` ≠ `speedU` / `speedV` | 统一命名或加注释映射 | P2 |
+| 6 | **缩写不统一** | 同一概念不同缩写 | `planarReflectBlend` vs `reflectionQuality` | 全拼 `planarReflectionBlend` | P2 |
+
+**核心诊断**：项目已建立 `env-state-schema.ts` 单一源 + `getEnvKeys()` 路由系统（ADR-137/138），但 schema 的字段名质量没有跟上系统本身的成熟度。问题 3 是功能性 bug（不修则写状态不生效），应优先处理；问题 2 和 6 影响开发者入职效率，建议在目录重组时一并扫清。
+
+---
+
+## 七、附录：命名模式公约（建议）
+
+以下公约提案供评审，可在项目 AGENTS.md 或 `docs/terminology.md` 中固化：
+
+| 规则 | 说明 | 强制方式 |
+|------|------|---------|
+| **Boolean 必须 `*Enabled` 或 `*Active` 后缀** | 禁止裸名词作 boolean | CI lint |
+| **同 domain 字段数一致** | `cloudsEnabled` → `cloudEnabled` | CI lint |
+| **缩写不允许与同文件全拼冲突** | `planarReflectBlend` → `planarReflectionBlend` | CI lint |
+| **`scene/env/`只放视觉渲染子系统** | 基础设施（bridge/dispatcher/persist/context）放 `_bridge/` 子目录 | Code review |
+| **工具函数不放 `env/`** | 纯数学/哈希 → `@/core/math/` | Code review |
+| **影子类型属性名对齐 schema 字段名** | `CausticsScrollConfig.speedU` → `.scrollX` | Code review |
+| **无 `group` 字段必须有白名单注释** | `groundPreset` 已做，其他同理 | CI lint |

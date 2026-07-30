@@ -7,8 +7,8 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 109 | 732 |
-| 3D 场景 | 108 | 1079 |
+| 核心基础设施 | 110 | 735 |
+| 3D 场景 | 109 | 1079 |
 | 菜单 & UI | 73 | 355 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 127 |
@@ -297,6 +297,9 @@
 | `logError()` | `core/logger` | 统一标签格式的 error 日志（走 console.error）。 |
 | `logInfo()` | `core/logger` | 统一标签格式的 info 日志（走 console.info）。 |
 | `logWarn()` | `core/logger` | 统一标签格式的 warn 日志。message 为空时省略中间空格；err 为空时不传第二个参数。 |
+| `hash2()` | `core/math/hash-noise` | 确定性整数哈希 → [0,1]。seed 相同则结果可复现。 |
+| `hash2v()` | `core/math/hash-noise` | 二元组哈希 → [[0,1],[0,1]]。供 Voronoi 需要两个独立随机偏移的场景（焦散网状亮纹）。 |
+| `valueNoise()` | `core/math/hash-noise` | 平滑值噪声 → [0,1]。四角哈希 + smoothstep 双线性插值。 |
 | `MmarGlobal()` | `core/mmar-globals` | — |
 | `MmarPhase()` | `core/mmar-globals` | — |
 | `MmarSceneSnapshot()` | `core/mmar-globals` | — |
@@ -931,6 +934,12 @@
 | `createClouds()` | `scene/env/env-clouds` | — |
 | `disposeClouds()` | `scene/env/env-clouds` | — |
 | `resolveCloudShaderParams()` | `scene/env/env-clouds` | 按质量档派生 shader 注入参数： - high: 200 步主 march + 2 步光照 march + blue-noise jitter - standard: 96 |
+| `getBodyCollisionEnabled()` | `scene/env/env-collision` | — |
+| `getCollisionEnabled()` | `scene/env/env-collision` | — |
+| `getGroundCollisionEnabled()` | `scene/env/env-collision` | — |
+| `setBodyCollisionEnabled()` | `scene/env/env-collision` | — |
+| `setCollisionEnabled()` | `scene/env/env-collision` | — |
+| `setGroundCollisionEnabled()` | `scene/env/env-collision` | — |
 | `_envSys()` | `scene/env/env-context` | — |
 | `getPipeline()` | `scene/env/env-context` | — |
 | `getScene()` | `scene/env/env-context` | — |
@@ -946,14 +955,8 @@
 | `registerSceneTickCallback()` | `scene/env/env-dispatcher` | 注册场景每帧 tick 回调。返回的清理函数在 dispose 时调用。 |
 | `runEnvDtTickCallbacks()` | `scene/env/env-dispatcher` | 执行所有 dt tick 回调（由 ensureEnvUpdateObserver 推 dt）。 |
 | `runSceneTickCallbacks()` | `scene/env/env-dispatcher` | 执行所有已注册的场景 tick 回调（由 ensureEnvUpdateObserver 的 scene observer 每帧调用）。 |
-| `getBodyCollisionEnabled()` | `scene/env/env-gravity` | — |
-| `getCollisionEnabled()` | `scene/env/env-gravity` | — |
 | `getGravityStrength()` | `scene/env/env-gravity` | — |
-| `getGroundCollisionEnabled()` | `scene/env/env-gravity` | — |
-| `setBodyCollisionEnabled()` | `scene/env/env-gravity` | — |
-| `setCollisionEnabled()` | `scene/env/env-gravity` | — |
 | `setGravityStrength()` | `scene/env/env-gravity` | — |
-| `setGroundCollisionEnabled()` | `scene/env/env-gravity` | — |
 | `GROUND_PRESETS()` | `scene/env/env-ground-presets` | — |
 | `GROUND_PRESET_KEYS()` | `scene/env/env-ground-presets` | 预设「关心」的 EnvState 字段集合（单一真相源）。 |
 | `GroundPreset()` | `scene/env/env-ground-presets` | — |
@@ -1008,9 +1011,9 @@
 | `exportCategorizedEnvPreset()` | `scene/env/env-lighting` | 序列化分类预设为 JSON 字符串。 |
 | `importCategorizedEnvPreset()` | `scene/env/env-lighting` | 从 JSON 字符串反序列化分类预设，失败返回 null。 |
 | `snapshotEnvPresetByCategory()` | `scene/env/env-lighting` | 从当前 envState 快照指定类别的字段。数组字段做浅拷贝避免别名。 |
-| `hash2()` | `scene/env/env-noise` | 确定性整数哈希 → [0,1]。seed 相同则结果可复现。 |
-| `hash2v()` | `scene/env/env-noise` | 二元组哈希 → [[0,1],[0,1]]。供 Voronoi 需要两个独立随机偏移的场景（焦散网状亮纹）。 |
-| `valueNoise()` | `scene/env/env-noise` | 平滑值噪声 → [0,1]。四角哈希 + smoothstep 双线性插值。 |
+| `hash2()` | `scene/env/env-noise` | — |
+| `hash2v()` | `scene/env/env-noise` | — |
+| `valueNoise()` | `scene/env/env-noise` | — |
 | `applyWetnessToInst()` | `scene/env/env-particles` | — |
 | `applyWindToParticles()` | `scene/env/env-particles` | — |
 | `createParticleEmitter()` | `scene/env/env-particles` | — |
@@ -2386,5 +2389,5 @@
 
 ---
 
-> 共 312 个文件，2340 个导出符号。
+> 共 314 个文件，2343 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。

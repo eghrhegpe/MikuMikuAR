@@ -120,4 +120,47 @@ if (totalMissing > 0) {
 } else {
     console.log('\n✅ All translation bundles are key-aligned with the base.');
 }
+
+// ======== ADR-212 P4: 漏译检测（zh-CN 中纯英文值）========
+// 检测基准语言包中值不含任何中文字符的条目，这些条目可能是漏译。
+// 不包含中文字符的值通常意味着翻译未完成（直接复制了英文 key 的值）。
+function extractKeyValues(file) {
+    const text = readFileSync(file, 'utf8');
+    const map = new Map();
+    const re = /^\s*['"]([^'"]+)['"]\s*:\s*['"]((?:\\.|[^'\\])*)['"]/gm;
+    let m;
+    while ((m = re.exec(text)) !== null) {
+        map.set(m[1], m[2]);
+    }
+    return map;
+}
+
+const zhCNEntries = extractKeyValues(resolve(LOCALES_DIR, `${BASE_LANG}.ts`));
+const untranslated = [];
+for (const [key, value] of zhCNEntries) {
+    // 检测是否包含中文字符（CJK 统一表意文字范围）
+    if (!/[\u4e00-\u9fff\u3400-\u4dbf]/.test(value) && value.length > 0) {
+        untranslated.push({ key, value });
+    }
+}
+
+if (untranslated.length > 0) {
+    const maxShow = 20;
+    const shown = untranslated.slice(0, maxShow);
+    console.log(`\n⚠ ${untranslated.length} 个 zh-CN 条目疑似漏译（值不含中文字符）:`);
+    for (const { key, value } of shown) {
+        console.log(`  ${key}: '${value}'`);
+    }
+    if (untranslated.length > maxShow) {
+        console.log(`  ... 及其他 ${untranslated.length - maxShow} 个条目`);
+    }
+    console.log('  这些条目在 zh-CN.ts 中为纯英文，可能是翻译遗漏。');
+    if (strict) {
+        console.error(`\n[i18n-check] --strict: ${untranslated.length} untranslated entry(s) → CI fails.`);
+        process.exit(1);
+    }
+    console.log('  (warning mode — non-blocking.)');
+} else {
+    console.log('\n✅ zh-CN 基准包无漏译（所有条目均含中文字符）。');
+}
 process.exit(0);
