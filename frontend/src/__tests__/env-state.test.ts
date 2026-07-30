@@ -82,7 +82,7 @@ const defaultEnv: EnvState = {
     rippleNormalStrength: 0.15,
     rippleGlintStrength: 0.25,
     waterNormalStrength: 0.15,
-    waterGlintStrength: 0,
+    waterGlintStrength: 0.4,
     lowFreqNormalStrength: 0.15,
     waterHorizonFade: 0,
     waterSkyColorBlend: 0,

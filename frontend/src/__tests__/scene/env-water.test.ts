@@ -330,6 +330,10 @@ describe('Water Underwater — 相机入水触发过渡', () => {
         return {
             chromaticAberrationEnabled: false,
             chromaticAberration: { aberrationAmount: 0 },
+            imageProcessing: {
+                colorCurvesEnabled: false,
+                colorCurves: null as any,
+            },
         } as any;
     }
 
@@ -374,6 +378,30 @@ describe('Water Underwater — 相机入水触发过渡', () => {
 
         resetUnderwaterState(scene, pipeline);
         expect(isUnderwaterActive()).toBe(false);
+    });
+
+    it('入水后通过 imageProcessing.colorCurves 叠加蓝绿色调（取代场景雾）', () => {
+        envState.waterEnabled = true;
+        envState.waterLevel = 0;
+        envState.underwaterToneIntensity = 0.5;
+        camera.position.set(0, -3, 10); // 水下
+        camera.computeWorldMatrix();
+
+        const pipeline = makePipelineStub();
+        scene.deltaTime = 16.67; // ~60fps，使过渡进度递增
+        // 多帧推进使过渡进度趋近 1
+        for (let i = 0; i < 60; i++) updateUnderwaterTransition(scene, pipeline);
+
+        expect(pipeline.imageProcessing.colorCurvesEnabled).toBe(true);
+        expect(pipeline.imageProcessing.colorCurves).not.toBeNull();
+        expect(pipeline.imageProcessing.colorCurves.globalHue).toBe(200);
+        expect(pipeline.imageProcessing.colorCurves.globalDensity).toBeGreaterThan(0);
+
+        // 出水后色调应被清除
+        camera.position.set(0, 5, 10);
+        camera.computeWorldMatrix();
+        for (let i = 0; i < 60; i++) updateUnderwaterTransition(scene, pipeline);
+        expect(pipeline.imageProcessing.colorCurves.globalDensity).toBe(0);
     });
 });
 

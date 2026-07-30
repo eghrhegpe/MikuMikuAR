@@ -1,5 +1,6 @@
 import { Scene } from '@babylonjs/core/scene';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
+import { ColorCurves } from '@babylonjs/core/Materials/colorCurves';
 import { Vector3, Matrix } from '@babylonjs/core/Maths/math.vector';
 import { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import { DynamicTexture } from '@babylonjs/core/Materials/Textures/dynamicTexture';
@@ -43,13 +44,14 @@ const RIPPLE_MIN_SPEED = 0.1;
 const RIPPLE_INFINITY_LIFE = 9999;
 // deltaTime 钳制上限（秒），防止切后台返回时跳变
 const DT_CLAMP_MAX = 0.1;
-// 水下雾密度系数
-const UNDERWATER_FOG_DENSITY_FACTOR = 0.5;
+// 水下后处理色调：蓝绿色相（colorCurves 色相旋转滤镜，保亮度，替代原 FOGMODE_EXP2 雾）
+const UNDERWATER_TINT_HUE = 200;
 
 // ======== 水下状态（供 Env Update Observer 和 disposeWater 使用）========
 // 私有化 + getter 导出，消除导出可变绑定（审核 P2-4）
 let _underwaterActive = false;
-let _underwaterSavedFog: { mode: number; color: Color3; density: number } | null = null;
+let _underwaterSavedDirIntensity = 1;
+let _underwaterSavedHemiIntensity = 0.6;
 let _underwaterTransitionProgress = 0;
 let _underwaterTarget = false;
 
@@ -220,9 +222,9 @@ interface RippleSource {
 }
 let _ripples: RippleSource[] = [];
 
-// ======== 水下灯光衰减（入水后降低灯光强度，避免暖光+蓝雾产生脏色）========
-const UNDERWATER_DIR_INTENSITY_SCALE = 0.3;
-const UNDERWATER_HEMI_INTENSITY_SCALE = 0.4;
+// ======== 水下灯光衰减（微降，保留亮度；色调由后处理 colorCurves 负责）========
+const UNDERWATER_DIR_INTENSITY_SCALE = 0.8;
+const UNDERWATER_HEMI_INTENSITY_SCALE = 0.9;
 
 /** slot 数由水效面板控制，确保每秒碰撞率 × rippleLife 可填满启用 slot */
 function _maxSlots(): number {
@@ -1159,7 +1161,6 @@ export function disposeWater(): void {
         _waterScene = null;
     }
     _underwaterActive = false;
-    _underwaterSavedFog = null;
     _underwaterTransitionProgress = 0;
     _underwaterTarget = false;
     // 清理平面反射（委托引擎：释放 RT、镜像相机、移出 customRenderTargets、清材质引用）
@@ -1198,19 +1199,18 @@ export function updateUnderwaterTransition(scene: Scene, pipeline: DefaultRender
 
     if (_underwaterTarget && !_underwaterActive) {
         _underwaterActive = true;
-        _underwaterSavedFog = {
-            mode: scene.fogMode,
-            color: scene.fogColor.clone(),
-            density: scene.fogDensity,
-        };
+        // 保存原始灯光强度（入水首帧，灯光尚未被衰减）
+        const dl0 = scene.getLightByName('dir');
+        if (dl0) _underwaterSavedDirIntensity = dl0.intensity;
+        const hl0 = scene.getLightByName('hemi');
+        if (hl0) _underwaterSavedHemiIntensity = hl0.intensity;
     } else if (!_underwaterTarget && _underwaterActive && _underwaterTransitionProgress < 0.001) {
         _underwaterActive = false;
-        if (_underwaterSavedFog) {
-            scene.fogMode = _underwaterSavedFog.mode;
-            scene.fogColor = _underwaterSavedFog.color;
-            scene.fogDensity = _underwaterSavedFog.density;
-            _underwaterSavedFog = null;
-        }
+        // 恢复原始灯光强度
+        const dl = scene.getLightByName('dir');
+        if (dl) dl.intensity = _underwaterSavedDirIntensity;
+        const hl = scene.getLightByName('hemi');
+        if (hl) hl.intensity = _underwaterSavedHemiIntensity;
     }
 
     const dt = scene.deltaTime / 1000;
@@ -1230,44 +1230,60 @@ export function updateUnderwaterTransition(scene: Scene, pipeline: DefaultRender
         const t = _underwaterTransitionProgress;
         pipeline.chromaticAberrationEnabled = true;
         if (pipeline.chromaticAberration) {
-            pipeline.chromaticAberration.aberrationAmount = envState.underwaterChromaticAmount * t;
+            // 色差默认值从 20 降至 8，避免明显色散条纹（原 20 产生可见红蓝边）
+            pipeline.chromaticAberration.aberrationAmount = envState.underwaterChromaticAmount * t * 0.4;
         }
-        scene.fogMode = Scene.FOGMODE_EXP2;
-        const wc = envState.waterColor;
-        scene.fogColor = new Color3(
-            wc[0] * envState.underwaterTintStrength,
-            wc[1] * envState.underwaterTintStrength,
-            wc[2] * envState.underwaterTintStrength
-        );
-        scene.fogDensity = envState.underwaterFogDensity * t * UNDERWATER_FOG_DENSITY_FACTOR;
 
-        // 水下灯光衰减：降低方向光和半球光强度，避免暖光+蓝雾产生脏色
+        // 后处理色调叠加：用 imageProcessing.colorCurves 做蓝绿色相旋转（保亮度），
+        // 替代原 FOGMODE_EXP2 全局雾（雾会糊掉水面且配合灯光衰减双重压暗画面）。
+        const ip = pipeline.imageProcessing;
+        if (ip) {
+            ip.colorCurvesEnabled = true;
+            const curves = ip.colorCurves ?? (ip.colorCurves = new ColorCurves());
+            curves.globalHue = UNDERWATER_TINT_HUE;
+            // colorCurves 是乘性滤镜（非纯色相旋转），密度过大会压暗画面；
+            // 乘以 0.3 使默认上限≈0.15（近白蓝绿色调），保亮度。
+            curves.globalDensity = t * envState.underwaterToneIntensity * 0.3;
+        }
+
+        // 水下灯光衰减：从保存的原始值计算混合（微降，不再砍到 30%/40%）
         const dl = scene.getLightByName('dir');
         if (dl) {
-            dl.intensity =
-                dl.intensity * (1 - t) + dl.intensity * UNDERWATER_DIR_INTENSITY_SCALE * t;
+            dl.intensity = _underwaterSavedDirIntensity * (
+                (1 - t) + UNDERWATER_DIR_INTENSITY_SCALE * t
+            );
         }
         const hl = scene.getLightByName('hemi');
         if (hl) {
-            hl.intensity =
-                hl.intensity * (1 - t) + hl.intensity * UNDERWATER_HEMI_INTENSITY_SCALE * t;
+            hl.intensity = _underwaterSavedHemiIntensity * (
+                (1 - t) + UNDERWATER_HEMI_INTENSITY_SCALE * t
+            );
         }
     } else if (!_underwaterActive) {
         pipeline.chromaticAberrationEnabled = false;
+        // 完全出水：清除后处理色调，恢复原始观感
+        const ip = pipeline.imageProcessing;
+        if (ip && ip.colorCurves) {
+            ip.colorCurves.globalDensity = 0;
+        }
     }
 }
 
 export function resetUnderwaterState(scene: Scene, pipeline: DefaultRenderingPipeline): void {
     _underwaterActive = false;
-    if (_underwaterSavedFog) {
-        scene.fogMode = _underwaterSavedFog.mode;
-        scene.fogColor = _underwaterSavedFog.color;
-        scene.fogDensity = _underwaterSavedFog.density;
-        _underwaterSavedFog = null;
-    }
+    // 恢复灯光强度
+    const dl = scene.getLightByName('dir');
+    if (dl) dl.intensity = _underwaterSavedDirIntensity;
+    const hl = scene.getLightByName('hemi');
+    if (hl) hl.intensity = _underwaterSavedHemiIntensity;
     _underwaterTransitionProgress = 0;
     _underwaterTarget = false;
     pipeline.chromaticAberrationEnabled = false;
+    // 清除后处理色调
+    const ip = pipeline.imageProcessing;
+    if (ip && ip.colorCurves) {
+        ip.colorCurves.globalDensity = 0;
+    }
 }
 
 // ======== Water Presets (migrated from env-lighting.ts) =======

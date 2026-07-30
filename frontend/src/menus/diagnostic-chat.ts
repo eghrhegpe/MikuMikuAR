@@ -78,7 +78,7 @@ export function renderChat(): void {
         const row = document.createElement('div');
         row.className = `diag-chat-row chat-row--${msg.role}`;
         const label = document.createElement('strong');
-        label.textContent = t('ai.chat.assistant');
+        label.textContent = t(msg.role === 'user' ? 'ai.chat.you' : 'ai.chat.assistant');
         label.className = 'diag-chat-label';
         row.appendChild(label);
         const content = document.createElement('div');
