@@ -803,16 +803,6 @@ export const zhCN: Record<string, string> = {
     'scene.propTransform': '道具变换',
     'scene.transform': '变换',
     'scene.propNotFound': '道具不存在（可能已被删除）',
-    'scene.accessory.boneNotFound': '✗ 骨骼 {bone} 未找到',
-    'scene.accessory.boneNoLink': '✗ 骨骼无法绑定（proxy 骨骼暂不支持）',
-    'scene.accessory.attached': '✓ {name} 已挂载到 {bone}',
-    'scene.accessory.detached': '✕ {name} 已从骨骼解除',
-    'scene.accessory.attachToBone': '挂载到骨骼',
-    'scene.accessory.detachFromBone': '从骨骼解除',
-    'scene.accessory.boneOffset': '骨骼偏移',
-    'scene.accessory.boneRotation': '骨骼旋转',
-    'scene.accessory.selectBone': '选择骨骼',
-    'scene.accessory.selectModel': '选择模型',
 
     // —— 舞台灯光 scene-stage-lights ——
     'scene.custom': '自定义',
@@ -989,9 +979,6 @@ export const zhCN: Record<string, string> = {
     // dialog — 跨平台对话框按钮/标题
     'dialog.confirm': '确定',
     'dialog.cancel': '取消',
-    'dialog.close': '关闭',
-    'dialog.copy': '复制',
-    'dialog.copied': '已复制 ✓',
     'dialog.confirmTitle': '确认',
     'dialog.inputTitle': '输入',
 
@@ -1290,13 +1277,6 @@ export const zhCN: Record<string, string> = {
     'env.starsTexture': '星空贴图',
     'env.stars': '星空',
     'env.shadowHint': '在「场景」→「舞台灯光」中可逐个调节灯光阴影参数',
-
-    // props — 道具状态
-    'props.loading': '加载道具...',
-    'props.noMesh': '✗ 道具未加载到网格',
-    'props.loadFailed': '✗ 道具加载失败',
-    'props.notFound': '✗ 道具不存在',
-    'props.loaded': '✓ 道具已加载',
 
     // env-feature-levels — 环境功能弹窗（地面/水面/风/云/实验/雾/阴影，sky 块已由其他会话补充）
     'env.skyTextureHint': '天空立方图，同时作为场景反射光源（支持 .hdr / .dds / .exr）',
@@ -1833,17 +1813,6 @@ export const zhCN: Record<string, string> = {
     'common.apply': '应用',
     'settings.audio.offsetHint': '正=音频先播，负=音频后播（对所有音乐全局生效）',
     'props.loadingProgress': '加载道具 {pct}%',
-
-    // ===== [doc:adr-feedback] 结构化反馈模块 key =====
-    'feedback.loading': '加载中',
-    'feedback.savedSuccess': '✓ 保存成功',
-    'feedback.savedFailed': '✗ 保存失败',
-    'feedback.loadedSuccess': '✓ 加载成功',
-    'feedback.loadedFailed': '✗ 加载失败',
-    'feedback.extractionSuccess': '✓ 导入成功',
-    'feedback.extractionFailed': '✗ 导入失败',
-    'feedback.restoredSuccess': '✓ 恢复成功',
-    'feedback.restoredFailed': '✗ 恢复失败',
 
     // ===== [doc:adr-117] Go 端用户可见错误（i18n 化） =====
     'goerr.software.notFound': '未找到 {name}，请在设置中配置路径',

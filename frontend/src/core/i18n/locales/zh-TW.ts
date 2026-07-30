@@ -143,9 +143,6 @@ export const zhTW: Record<string, string> = {
     // ===== 對話框 =====
     'dialog.confirm': '確認',
     'dialog.cancel': '取消',
-    'dialog.close': '關閉',
-    'dialog.copy': '複製',
-    'dialog.copied': '已複製 ✓',
     'dialog.confirmTitle': '確認',
     'dialog.inputTitle': '輸入',
 
@@ -1100,13 +1097,6 @@ export const zhTW: Record<string, string> = {
     'outfit.resetFailed': '✗ 重設服裝失敗',
     'outfit.resetDone': '✓ 服裝已重設',
 
-    // —— Props ——
-    'props.loading': '載入道具中...',
-    'props.noMesh': '✗ 道具未載入到網格',
-    'props.loadFailed': '✗ 道具載入失敗',
-    'props.notFound': '✗ 道具不存在',
-    'props.loaded': '✓ 道具已載入',
-
     // —— Env Preset ——
     'env-preset.myPresets': '我的預設',
     'env-preset.noCustom': '（暫無自訂預設）',
@@ -1804,16 +1794,6 @@ export const zhTW: Record<string, string> = {
     'plaza.openInBrowser': '瀏覽器',
     'plaza.refresh': '重新整理',
     'plaza.close': '關閉',
-    'scene.accessory.attachToBone': '附加到骨骼',
-    'scene.accessory.attached': '✓ {name} 已掛載到 {bone}',
-    'scene.accessory.boneNoLink': '✗ 骨骼無法綁定（proxy 骨骼暫不支援）',
-    'scene.accessory.boneNotFound': '✗ 骨骼 {bone} 未找到',
-    'scene.accessory.boneOffset': '骨骼偏移',
-    'scene.accessory.boneRotation': '骨骼旋轉',
-    'scene.accessory.detachFromBone': '從骨骼解除',
-    'scene.accessory.detached': '✕ {name} 已從骨骼解除',
-    'scene.accessory.selectBone': '選擇骨骼',
-    'scene.accessory.selectModel': '選擇模型',
     'settings.autoUpdate': '✓ 自動檢查更新: {state}',
     'settings.bpmQuantOn': '✓ BPM 量化已開啟',
     'settings.bpmQuantOff': '✓ BPM 量化已關閉',
@@ -1851,16 +1831,6 @@ export const zhTW: Record<string, string> = {
     'goerr.watch.createWatcherFailed': '建立檔案監聽器失敗',
     'goerr.watch.addWatchFailed': '加入監聽目錄失敗',
     'goerr.zip.tooManyEntries': '{op}：壓縮包內檔案數 {count} 超過上限 {max}',
-    // ===== [doc:adr-feedback] 結構化回饋模組 key =====
-    'feedback.loading': '載入中…',
-    'feedback.savedSuccess': '✓ 儲存成功',
-    'feedback.savedFailed': '✗ 儲存失敗',
-    'feedback.loadedSuccess': '✓ 載入成功',
-    'feedback.loadedFailed': '✗ 載入失敗',
-    'feedback.extractionSuccess': '✓ 匯入成功',
-    'feedback.extractionFailed': '✗ 匯入失敗',
-    'feedback.restoredSuccess': '✓ 還原成功',
-    'feedback.restoredFailed': '✗ 還原失敗',
 
     // ===== [doc:adr-196] AI 診斷助手 =====
     'ai.welcome': '你好！我是 AI 診斷助手，可以幫助你分析錯誤和場景狀態。請描述你遇到的問題。',

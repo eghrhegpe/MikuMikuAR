@@ -110,36 +110,36 @@
     },
     {
       "firstFile": {
-        "end": 45,
+        "end": 46,
         "endLoc": {
           "column": 6,
-          "line": 45,
-          "position": 1867
+          "line": 46,
+          "position": 1900
         },
         "name": "menus\\menu-factory.ts",
-        "start": 21,
+        "start": 22,
         "startLoc": {
           "column": 4,
-          "line": 21,
-          "position": 1029
+          "line": 22,
+          "position": 1062
         }
       },
       "format": "typescript",
       "fragment": "",
       "lines": 25,
       "secondFile": {
-        "end": 158,
+        "end": 159,
         "endLoc": {
           "column": 6,
-          "line": 158,
-          "position": 5728
+          "line": 159,
+          "position": 5761
         },
         "name": "menus\\menu-factory.ts",
-        "start": 147,
+        "start": 148,
         "startLoc": {
           "column": 4,
-          "line": 147,
-          "position": 5396
+          "line": 148,
+          "position": 5429
         }
       },
       "tokens": 55
@@ -506,7 +506,7 @@
     }
   ],
   "statistics": {
-    "detectionDate": "2026-07-30T15:20:06.860Z",
+    "detectionDate": "2026-07-30T16:45:27.112Z",
     "formats": {
       "txt": {
         "clones": 0,
@@ -524,26 +524,26 @@
         "clones": 14,
         "duplicatedLines": 254,
         "duplicatedTokens": 1143,
-        "lines": 45791,
+        "lines": 46360,
         "newClones": 0,
         "newDuplicatedLines": 0,
-        "percentage": 0.5546941538730318,
-        "percentageTokens": 0.5185860703153711,
-        "sources": 248,
-        "tokens": 220407
+        "percentage": 0.5478861087144089,
+        "percentageTokens": 0.5120623614004436,
+        "sources": 259,
+        "tokens": 223215
       }
     },
     "total": {
       "clones": 14,
       "duplicatedLines": 254,
       "duplicatedTokens": 1143,
-      "lines": 45884,
+      "lines": 46453,
       "newClones": 0,
       "newDuplicatedLines": 0,
-      "percentage": 0.5535698718507541,
-      "percentageTokens": 0.5150527895313155,
-      "sources": 249,
-      "tokens": 221919
+      "percentage": 0.5467892278216692,
+      "percentageTokens": 0.5086171221081579,
+      "sources": 260,
+      "tokens": 224727
     }
   }
 }
