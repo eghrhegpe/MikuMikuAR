@@ -152,11 +152,19 @@ export const TIME_OF_DAY_PRESETS: Record<string, EnvPreset & DerivedLighting> = 
 // ======== 分类预设（ADR-120） ========
 
 /** 环境预设分类：天空/地面/水面/大气。 */
-export type EnvPresetCategory = 'sky' | 'ground' | 'water' | 'atmosphere';
+export type EnvPresetCategory = 'env:sky' | 'env:ground' | 'env:water' | 'env:atmosphere';
+
+/** 旧版 category 值 → 新版 domain 前缀映射（ADR-214 零级 ID 治理）。 */
+const LEGACY_CATEGORY_MAP: Record<string, EnvPresetCategory> = {
+    sky: 'env:sky',
+    ground: 'env:ground',
+    water: 'env:water',
+    atmosphere: 'env:atmosphere',
+};
 
 /** 各类别包含的 EnvState 字段白名单。未列入的字段（如 collision*）不参与任何预设。 */
 export const ENV_PRESET_FIELDS: Record<EnvPresetCategory, (keyof EnvState)[]> = {
-    sky: [
+    'env:sky': [
         'skyMode',
         'skyColorTop',
         'skyColorMid',
@@ -175,7 +183,7 @@ export const ENV_PRESET_FIELDS: Record<EnvPresetCategory, (keyof EnvState)[]> = 
         'timeOfDayActive',
         'timeOfDaySpeed',
     ],
-    ground: [
+    'env:ground': [
         'groundVisible',
         'groundType',
         'groundStyle',
@@ -213,7 +221,7 @@ export const ENV_PRESET_FIELDS: Record<EnvPresetCategory, (keyof EnvState)[]> = 
         'groundSize',
         'groundEdgeFade',
     ],
-    water: [
+    'env:water': [
         'waterEnabled',
         'waterLevel',
         'waterFlip',
@@ -245,7 +253,7 @@ export const ENV_PRESET_FIELDS: Record<EnvPresetCategory, (keyof EnvState)[]> = 
         'underwaterFogMultiplier',
         'underwaterTintStrength',
     ],
-    atmosphere: [
+    'env:atmosphere': [
         'windEnabled',
         'windDirection',
         'windSpeed',
