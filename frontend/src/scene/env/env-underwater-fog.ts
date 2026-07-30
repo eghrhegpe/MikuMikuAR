@@ -16,14 +16,31 @@
 import { Color3, PBRMaterial, Scene, StandardMaterial } from '@babylonjs/core';
 import { causticsController, isCausticsHost } from './env-caustics';
 
-// 水下雾色（深海蓝青，对应"白蓝交替"泳池远处的深色）
-const UNDERWATER_FOG_COLOR = new Color3(0.04, 0.28, 0.40);
+// 水下雾色（浅青色，配合 env-water 的 colorCurves 共同营造水下视觉；
+// 不能太深，否则会和 colorCurves 全屏色调旋转叠加成"重墨蓝"，看不清角色）
+const UNDERWATER_FOG_COLOR = new Color3(0.35, 0.58, 0.72);
 // 焦散色（淡蓝白，模拟阳光经水折射后颜色）
 const CAUSTIC_TINT = new Color3(0.78, 0.92, 1.0);
 
-// 场景雾起止距离（米）：近处清晰、远处褪蓝
-const FOG_START = 1.5;
-const FOG_END = 28;
+// Babylon FOGMODE_LINEAR 真实语义（已核对 public/lib/babylon.js）：
+//   真实 fragment shader：
+//     float fog = CalcFogFactor();          // fog = (fogEnd - distance) / (fogEnd - fogStart)
+//     color.rgb = mix(vFogColor, color.rgb, fog);   // fog=0 → fogColor, fog=1 → 原色
+//   所以：
+//     - distance ≤ fogStart → fog ≥ 1 → clamp 1 → 完全无雾（显示原色）
+//     - distance ≥ fogEnd   → fog ≤ 0 → clamp 0 → 完全满雾（显示 fogColor）
+//     - 命名直觉相反：fogStart 实际是"无雾阈值"，fogEnd 实际是"满雾阈值"
+//   "近处清晰、远处雾" 是 fogStart < fogEnd 的常规方向。
+const FOG_NEAR_CLEAR = 5.0;  // 对应 Babylon fogStart：距离 ≤ 5m 完全无雾（角色 2-3m 永远清晰）
+const FOG_FAR_OPAQUE = 80.0; // 对应 Babylon fogEnd：距离 ≥ 80m 完全满雾（远景褪入深蓝）
+
+// 焦散 UV 在地面上的重复次数。
+// 共享 causticTex 默认 uScale/vScale=1 → 128×128 整张图直接贴到 60m 地面，
+// 每个 Voronoi cell 覆盖约 15m → 视觉上是一个巨型光斑，看不出"光斑纹路"。
+// 设为 8 后每个 cell 约 1.875m（接近参考图密度）。
+// 水面 shader 不依赖 Babylon Texture.uScale（用自家 uCausticScale uniform），
+// 因此改这一值只影响地面材质，不影响水面焦散。
+const GROUND_CAUSTIC_UV_SCALE = 8;
 
 interface InstalledMat {
     mat: PBRMaterial | StandardMaterial;
@@ -69,9 +86,14 @@ class UnderwaterFogControllerImpl {
             // 入水：启用场景雾（远处地面褪入深蓝）+ 给地面注入焦散 emissive
             scene.fogMode = Scene.FOGMODE_LINEAR;
             scene.fogColor = UNDERWATER_FOG_COLOR;
-            scene.fogStart = FOG_START;
-            scene.fogEnd = FOG_END;
+            scene.fogStart = FOG_NEAR_CLEAR; // 距离 ≤ 5m 完全无雾
+            scene.fogEnd = FOG_FAR_OPAQUE;   // 距离 ≥ 80m 完全满雾
             const causticTex = causticsController.getTexture(scene);
+            // 给 causticTex 在地面上设置合理 UV 缩放（共享纹理的 uScale/vScale 默认 1，
+            // 在 60m 地面上单 cell ≈ 15m，巨大到看不出"光斑"；水面 shader 用自家
+            // uCausticScale uniform，不依赖 Babylon 的 Texture.uScale，所以改这一值安全）。
+            causticTex.uScale = GROUND_CAUSTIC_UV_SCALE;
+            causticTex.vScale = GROUND_CAUSTIC_UV_SCALE;
             for (const entry of this._installed) {
                 entry.mat.emissiveTexture = causticTex;
                 entry.mat.emissiveColor = CAUSTIC_TINT;

@@ -15,6 +15,7 @@
 > 翻译文件在此：frontend/src/core/i18n
 > 放弃低效的 `git stash`， `git stash pop`指令吧。
 > **禁止从 `@/core/utils` 神桶导入**——纯/叶子模块须引具体零依赖叶：`@/core/clamp`（clamp/clamp01/clampInt/lerp/lerpArray/clampPct）、`@/core/path`（normPath/getBaseName/getDirPath/isUnderRoot/isStageLike）、`@/core/async`（swallowError/fireAndForget/delay/waitForFrame/LoadingGuard/DebouncedTimer/Abortable）。整桶 import 会拖起 dom/state/fileservice 等应用层，致 vitest fork worker 挂死（见 ADR-191）。
+>babymmd的换算关系是：1 unit = 0.1 米。
 
 ## 去哪里查
 
