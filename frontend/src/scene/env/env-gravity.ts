@@ -1,15 +1,14 @@
-// [doc:architecture] Env Gravity & Collision — 重力强度与碰撞开关
+// [doc:architecture] Env Gravity — 重力强度
 // 从 env-bridge.ts 拆出（ADR-148 Phase 5：env-bridge 瘦身）
-// 职责: 重力向量、碰撞总开关、身体/地面碰撞开关
-// 依赖: env-bridge.setEnvState（单向）
+// 碰撞已迁至 env-collision.ts（ADR-212：命名 vs 功能审计）
+// 职责: 重力向量
+// 依赖: 无（mmdRuntime 直接访问）
 
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
 
-import { envState, triggerAutoSave, mmdRuntime } from '@/core/config';
+import { triggerAutoSave, mmdRuntime } from '@/core/config';
 import { DEFAULT_GRAVITY } from '@/core/ui-constants';
-import { applyGroundCollision } from '../physics/ground-collision';
-import { setEnvState } from './env-bridge';
 
 // ======== Gravity ========
 
@@ -28,37 +27,4 @@ export function setGravityStrength(value: number): void {
 
 export function getGravityStrength(): number {
     return _gravityStrength;
-}
-
-// ======== Collision (WASM Bullet) ========
-
-export function setCollisionEnabled(value: boolean): void {
-    setEnvState({ collisionEnabled: value }, true);
-    triggerAutoSave();
-}
-
-export function getCollisionEnabled(): boolean {
-    return envState.collisionEnabled;
-}
-
-export function setBodyCollisionEnabled(value: boolean): void {
-    setEnvState({ bodyCollisionEnabled: value }, true);
-    triggerAutoSave();
-}
-
-export function getBodyCollisionEnabled(): boolean {
-    return envState.bodyCollisionEnabled;
-}
-
-export function setGroundCollisionEnabled(value: boolean): void {
-    if (envState.groundCollisionEnabled === value) {
-        return;
-    }
-    setEnvState({ groundCollisionEnabled: value }, true);
-    applyGroundCollision();
-    triggerAutoSave();
-}
-
-export function getGroundCollisionEnabled(): boolean {
-    return envState.groundCollisionEnabled;
 }

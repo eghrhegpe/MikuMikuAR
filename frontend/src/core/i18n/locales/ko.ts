@@ -1490,12 +1490,12 @@ export const ko: Record<string, string> = {
     'settings.perf.fpsHint': '0으로 설정 시 무제한. 모바일에서는 절전을 위해 30 권장.',
     'settings.perf.showFpsClock': 'FPS 시계 표시',
     'settings.perf.showRuntimeBadge': '멀티스레드 배지 표시',
-    'settings.perf.vsync': '프레임 제한기',
-    'settings.perf.vsyncHintOn':
+    'settings.perf.frameCap': '프레임 제한기',
+    'settings.perf.frameCapHintOn':
         '활성화 시 babymmd 렌더링 프레임률 제한 (브라우저/WebView 렌더링에 VSync 내장, 별도 설정 불필요)',
-    'settings.perf.vsyncHintOff':
+    'settings.perf.frameCapHintOff':
         '비활성화 시 인위적 제한을 해제하고 디스플레이 주사율로 렌더링. "FPS 상한" 슬라이더는 비활성화됩니다.',
-    'settings.perf.vsyncHintBrowser':
+    'settings.perf.frameCapHintBrowser':
         'babymmd 렌더링 프레임률 제어 (브라우저/WebView 렌더링에 이미 VSync 내장, 별도 설정 불필요)',
     'settings.perf.defaultPhysics': '물리 시뮬레이션',
     'settings.perf.defaultPhysicsHint':
@@ -1612,12 +1612,12 @@ export const ko: Record<string, string> = {
     'settings.paths.override': '경로 재정의',
     'settings.paths.pmx': 'PMX 모델',
     'settings.paths.vmd': 'VMD 모션',
-    'settings.paths.audio': 'Audio 음악',
-    'settings.paths.prop': 'Prop 소품',
-    'settings.paths.stage': 'Stage 씬',
-    'settings.paths.environment': 'Environment',
-    'settings.paths.mdDress': 'MD Dress',
-    'settings.paths.setting': 'Setting',
+    'settings.paths.audio': '음악',
+    'settings.paths.prop': '소품',
+    'settings.paths.stage': '씬',
+    'settings.paths.environment': '환경',
+    'settings.paths.mdDress': 'MD 의상',
+    'settings.paths.setting': '설정',
     'settings.paths.default': '기본값',
     'settings.paths.externalLib': '외부 라이브러리',
     'settings.paths.downloadWatch': '다운로드 감시',

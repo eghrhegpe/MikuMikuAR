@@ -52,6 +52,9 @@ export {
 } from './env-ground';
 import { applyGround, tickGround } from './env-ground';
 
+// ======== Re-exports: Collision ========
+import { applyGroundCollision } from '../physics/ground-collision';
+
 // ======== Re-exports: Particles ========
 import {
     createParticleEmitter,
@@ -78,6 +81,7 @@ import { registerEnvCallback } from './env-dispatcher';
 const _SKY_KEYS = getEnvKeys('sky');
 const _GROUND_KEYS = getEnvKeys('ground');
 const _FOG_KEYS = getEnvKeys('fog');
+const _COLLISION_KEYS = getEnvKeys('collision');
 
 registerEnvCallback((changed, state) => {
     // Sky
@@ -102,6 +106,10 @@ registerEnvCallback((changed, state) => {
         } else if (!state.mirrorEnabled && isMirrorActive()) {
             disposeMirror();
         }
+    }
+    // Collision — 地面碰撞启用/禁用由 groundCollisionEnabled 驱动
+    if (!changed || [...changed].some((k) => _COLLISION_KEYS.includes(k))) {
+        applyGroundCollision();
     }
 });
 

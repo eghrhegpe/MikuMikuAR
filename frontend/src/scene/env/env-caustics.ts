@@ -11,7 +11,7 @@
 
 import { Color3, Material, PBRMaterial, Scene, StandardMaterial, Texture } from '@babylonjs/core';
 import { createCanvasTexture } from './env-texture';
-import { hash2v } from './env-noise';
+import { hash2v } from '@/core/math/hash-noise';
 
 const CAUSTIC_TEX_SIZE = 256;
 const DEFAULT_SCROLL_SPEED = 0.05; // 焦散光斑每秒滚动 UV 速率

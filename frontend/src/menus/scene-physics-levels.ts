@@ -6,9 +6,11 @@ import { focusedModelId, cardContainer } from '../core/config';
 import {
     getGravityStrength,
     setGravityStrength,
+} from '../scene/env/env-gravity';
+import {
     getGroundCollisionEnabled,
     setGroundCollisionEnabled,
-} from '../scene/env/env-gravity';
+} from '../scene/env/env-collision';
 import {
     modelManager,
     setModelWireframe,

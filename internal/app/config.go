@@ -343,7 +343,7 @@ func mergeUIState(dst *UIState, src UIState) {
 	if src.FpsLimit != 0 {
 		dst.FpsLimit = src.FpsLimit
 	}
-	dst.Vsync = src.Vsync
+	dst.FrameCapEnabled = src.FrameCapEnabled
 	dst.DefaultPhysicsEnabled = src.DefaultPhysicsEnabled
 	if src.RenderScale != 0 {
 		dst.RenderScale = src.RenderScale

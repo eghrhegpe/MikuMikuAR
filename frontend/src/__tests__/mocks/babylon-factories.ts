@@ -17,6 +17,7 @@ import {
     MockColor3,
     MockColor4,
     MockVector3,
+    MockVector2,
     MockMatrix,
     MockQuaternion,
     MockStandardMaterial,
@@ -56,6 +57,7 @@ export const mockMathColor = () => ({
 });
 export const mockMathVector = () => ({
     Vector3: MockVector3,
+    Vector2: MockVector2,
     Matrix: MockMatrix,
     Quaternion: MockQuaternion,
     TmpVectors: { Vector3: [] },

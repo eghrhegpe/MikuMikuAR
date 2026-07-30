@@ -71,7 +71,7 @@ const UI_SETTINGS_VALIDATORS: Record<string, SettingValidator> = {
     blurBg: bool,
     performanceMode: enumOf('auto', 'quality', 'balanced', 'performance', 'custom'),
     fpsLimit: num(0, 240),
-    vsync: bool,
+    frameCapEnabled: bool,
     defaultPhysicsEnabled: bool,
     renderScale: num(0.25, 4),
     cameraSensitivity: num(0.1, 10),

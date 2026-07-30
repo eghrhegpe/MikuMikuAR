@@ -23,7 +23,7 @@ import { PlanarReflection, registerReflectionSurface } from './planar-reflection
 import { getPlanarQualityOverride } from './env-reflection';
 import { createCanvasTexture } from './env-texture';
 import { causticsController } from './env-caustics';
-import { valueNoise } from './env-noise';
+import { valueNoise } from '@/core/math/hash-noise';
 import { registerEnvCallback, registerEnvDtTickCallback } from './env-dispatcher';
 import { getEnvKeys } from '@/core/env-state-schema';
 import { clamp01 } from '@/core/clamp';

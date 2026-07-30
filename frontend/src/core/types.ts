@@ -452,7 +452,7 @@ export interface UIState {
     /** 帧率上限（0=不限） */
     fpsLimit?: number;
     /** 垂直同步：开启时按显示器刷新率渲染（默认）；关闭时解除人为限帧。undefined 视为 true */
-    vsync?: boolean;
+    frameCapEnabled?: boolean;
     /** 默认物理开关：新加载的 actor 模型是否默认启用物理模拟（WASM 版）。undefined 视为 true */
     defaultPhysicsEnabled?: boolean;
     /** 渲染分辨率缩放倍数（1=原生，<1 降分辨率提速，>1 超采样更清晰） */
