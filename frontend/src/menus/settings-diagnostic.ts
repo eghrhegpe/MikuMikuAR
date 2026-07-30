@@ -135,6 +135,10 @@ async function runStream(opts?: { allowTools?: boolean }): Promise<void> {
     let streamErrorSeen = false;
     let abortedByUser = false;
     let interruptMessage: string | null = null;
+    // 局部完成标志：tool_call 分支自行收尾后置 true，finally 据此跳过；
+    // 避免全局 isStreaming 被 continueStream 触发的下一次 runStream 改回 true 后，
+    // finally 误判“本次还在 streaming”而重复 push assistant 消息（幽灵消息）。
+    let thisStreamDone = false;
     try {
         const requestTools = allowTools ? buildToolSchemas() : undefined;
         const chunks = diagState.ai.streamChat({
@@ -209,6 +213,10 @@ async function runStream(opts?: { allowTools?: boolean }): Promise<void> {
             diagState.abortController = null;
             updateSendButton();
             renderChat();
+            // tool_call 消息立即落盘，避免后续 pendingAction 确认期间崩溃丢失
+            schedulePersistSession();
+            // 标记本次 stream 已自行收尾，finally 不得再用 fullResponse 二次 push
+            thisStreamDone = true;
             if (writable.length === 0) {
                 await finalizePendingBatch(() => {
                     renderChat();
@@ -237,7 +245,11 @@ async function runStream(opts?: { allowTools?: boolean }): Promise<void> {
             interruptMessage = t('ai.errors.apiError', { msg: errMsg });
         }
     } finally {
-        if (diagState.isStreaming) {
+        // 用局部标志判断，而非全局 diagState.isStreaming：
+        // continueStream 会在 finalizePendingBatch 末尾 fire-and-forget 触发下一次 runStream，
+        // 下一次会把 isStreaming 改回 true；若用全局标志判断，本次 finally 会误判“还在 streaming”，
+        // 用本次 fullResponse 二次 push assistant 消息（幽灵消息），并破坏下一次 runStream 的状态。
+        if (!thisStreamDone) {
             const handledAsFallback =
                 !streamErrorSeen &&
                 !abortedByUser &&
@@ -268,9 +280,13 @@ async function runStream(opts?: { allowTools?: boolean }): Promise<void> {
                         renderChat();
                     }
                     updateSendButton();
+                    // 中断/异常时立即落盘，避免面板关闭或应用退出丢失已收到的 partial
+                    void flushSession();
                 } else {
                     finalizeStream(fullResponse, () => {
                         updateSendButton();
+                        // 正常完成也立即落盘 assistant 回复（finalizeStream 内 push 后）
+                        void flushSession();
                     });
                 }
             }
@@ -354,7 +370,9 @@ function disposeDiagnosticPanel(): void {
     }
     persistConfig(diagState.localConfig);
     void flushSession();
-    diagState.isStreaming = false;
+    // 不在此处设 isStreaming=false：若 streaming 中关闭面板，abort 会触发 runStream 的
+    // catch+finally，finally 内会 push assistant partial 并 flushSession 落盘；提前置
+    // false 会导致 finally 跳过保存分支，已收到的流式内容丢失（ADR-203 持久化触发点）。
     diagState.pendingAction = null;
     diagState.pendingQueue = [];
     diagState.pendingToolResults = [];
