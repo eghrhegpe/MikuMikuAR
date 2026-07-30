@@ -354,6 +354,20 @@ textarea,
     align-items: center;
     justify-content: center;
 }
+/* 加载态镂空：AI(#btnAssistant) 与 广场(#btnPlaza) 不依赖 3D 场景，
+   启动初始化期间提升到 #loading 遮罩(z-index:10000)之上并放行点击，
+   其余导航按钮仍被遮罩压制。showApp() 移除 body.app-booting 后恢复常态。 */
+body.app-booting #bottomNav {
+    z-index: 10001;
+    pointer-events: none;
+}
+body.app-booting #bottomNav #btnAssistant,
+body.app-booting #bottomNav #btnPlaza {
+    pointer-events: auto;
+}
+body.app-booting #bottomNav > .nav-tab:not(#btnAssistant):not(#btnPlaza) {
+    opacity: 0.35;
+}
 .nav-btn {
     width: calc(48px * var(--ui-scale));
     height: calc(48px * var(--ui-scale));

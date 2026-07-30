@@ -35,7 +35,7 @@ import {
 import { initRuntimeBadge, setBackendBadge } from './runtime-mode';
 import { applyHudVisibility, disposeStatusBar } from './status-bar';
 import { hexToRgb, rgbToString } from './color-helpers';
-import { fireAndForget, swallowError } from './utils';
+import { fireAndForget, swallowError } from './async';
 import { showInfoToast } from './toast';
 import { safeCallAsync } from './safe-call';
 import {

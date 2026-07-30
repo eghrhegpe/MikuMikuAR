@@ -7,7 +7,7 @@ import {
 } from '../../scene/motion/motion-intent';
 import { pushUndoSnapshot, offerSceneUndoAndRefresh } from '../../scene/scene-serialize';
 import { updatePlaybackUI } from '../../scene/motion/playback';
-import { triggerAutoSave } from '../utils';
+import { triggerAutoSave } from '../config';
 import { feedbackInfo } from '../feedback';
 import { showInfoToast } from '../toast';
 import { showConfirm } from '../dialog';

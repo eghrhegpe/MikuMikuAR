@@ -33,6 +33,8 @@ export const dom = {
         // 短暂显示"就绪"再隐藏，让用户感知切换
         setTimeout(() => {
             this.loadingEl.style.display = 'none';
+            // 解除加载态镂空：AI/广场按钮恢复常态层级（app.css body.app-booting）
+            document.body.classList.remove('app-booting');
             this.canvas.style.visibility = 'visible';
             this.playbackBar.style.pointerEvents = 'auto';
             this.statusText.textContent = t('boot.readyHint');
@@ -42,6 +44,8 @@ export const dom = {
 
     /** 引擎初始化失败时调用：保留遮罩，显示错误信息 */
     showError(msg: string): void {
+        // 初始化失败仍解除镂空态，让用户能点 AI 诊断/广场自救（二者不依赖 3D 场景）
+        document.body.classList.remove('app-booting');
         this.loadingEl.style.pointerEvents = 'auto';
         this.loadingText.textContent = t('boot.initFailed', { msg });
         this.loadingEl.style.background = 'linear-gradient(135deg, #2d1a1a 0%, #1a1a2e 100%)';
