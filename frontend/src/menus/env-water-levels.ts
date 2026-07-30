@@ -368,6 +368,77 @@ export function buildWaterLevel(): PopupLevel {
                     ],
                 },
                 {
+                    id: 'env:water:foam',
+                    kind: 'folder',
+                    label: 'env.foam',
+                    icon: 'lucide:waves',
+                    defaultOpen: false,
+                    headerToggle: { bind: 'env.foamEnabled' },
+                    children: [
+                        {
+                            id: 'env:water:foam-threshold',
+                            kind: 'slider',
+                            label: 'env.foamThreshold',
+                            control: {
+                                bind: 'env.foamThreshold',
+                                min: 0,
+                                max: 2,
+                                step: 0.05,
+                            },
+                        },
+                        {
+                            id: 'env:water:foam-intensity',
+                            kind: 'slider',
+                            label: 'env.foamIntensity',
+                            control: {
+                                bind: 'env.foamIntensity',
+                                min: 0,
+                                max: 1,
+                                step: 0.05,
+                            },
+                        },
+                        {
+                            id: 'env:water:foam-transition',
+                            kind: 'slider',
+                            label: 'env.foamTransition',
+                            control: {
+                                bind: 'env.foamTransitionRange',
+                                min: 0,
+                                max: 1,
+                                step: 0.05,
+                            },
+                        },
+                        {
+                            id: 'env:water:foam-opacity',
+                            kind: 'slider',
+                            label: 'env.foamOpacity',
+                            control: {
+                                bind: 'env.foamOpacity',
+                                min: 0,
+                                max: 1,
+                                step: 0.05,
+                            },
+                        },
+                        {
+                            id: 'env:water:foam-noise',
+                            kind: 'slider',
+                            label: 'env.foamNoise',
+                            control: {
+                                bind: 'env.foamNoiseStrength',
+                                min: 0,
+                                max: 1,
+                                step: 0.05,
+                            },
+                        },
+                        {
+                            id: 'env:water:foam-color',
+                            kind: 'colorSlider',
+                            label: 'env.foamColor',
+                            control: { bind: 'env.foamColor' },
+                        },
+                    ],
+                },
+                {
                     id: 'env:water:underwater',
                     kind: 'folder',
                     label: 'env.underwaterEffects',
@@ -375,17 +446,6 @@ export function buildWaterLevel(): PopupLevel {
                     defaultOpen: false,
                     headerToggle: { bind: 'env.underwaterEnabled' },
                     children: [
-                        {
-                            id: 'env:water:under-fog-density',
-                            kind: 'slider',
-                            label: 'env.fogDensity',
-                            control: {
-                                bind: 'env.underwaterFogDensity',
-                                min: 0,
-                                max: 0.15,
-                                step: 0.005,
-                            },
-                        },
                         {
                             id: 'env:water:tone-intensity',
                             kind: 'slider',

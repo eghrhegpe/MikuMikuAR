@@ -186,14 +186,14 @@
         "endLoc": {
           "column": 15,
           "line": 314,
-          "position": 12012
+          "position": 12017
         },
         "name": "menus\\settings-media.ts",
         "start": 296,
         "startLoc": {
           "column": 62,
           "line": 296,
-          "position": 11275
+          "position": 11280
         }
       },
       "format": "typescript",
@@ -204,14 +204,14 @@
         "endLoc": {
           "column": 15,
           "line": 395,
-          "position": 15831
+          "position": 15837
         },
         "name": "menus\\settings-media.ts",
         "start": 377,
         "startLoc": {
           "column": 66,
           "line": 377,
-          "position": 15094
+          "position": 15100
         }
       },
       "tokens": 71
@@ -254,36 +254,36 @@
     },
     {
       "firstFile": {
-        "end": 290,
+        "end": 298,
         "endLoc": {
           "column": 15,
-          "line": 290,
-          "position": 10316
+          "line": 298,
+          "position": 11054
         },
         "name": "scene\\camera\\camera-behaviors.ts",
-        "start": 273,
+        "start": 281,
         "startLoc": {
           "column": 30,
-          "line": 273,
-          "position": 9791
+          "line": 281,
+          "position": 10529
         }
       },
       "format": "typescript",
       "fragment": "",
       "lines": 18,
       "secondFile": {
-        "end": 335,
+        "end": 343,
         "endLoc": {
           "column": 15,
-          "line": 335,
-          "position": 12121
+          "line": 343,
+          "position": 12859
         },
         "name": "scene\\camera\\camera-behaviors.ts",
-        "start": 318,
+        "start": 326,
         "startLoc": {
           "column": 29,
-          "line": 318,
-          "position": 11596
+          "line": 326,
+          "position": 12334
         }
       },
       "tokens": 109
@@ -294,14 +294,14 @@
         "endLoc": {
           "column": 15,
           "line": 167,
-          "position": 6442
+          "position": 6496
         },
         "name": "scene\\camera\\camera-factory.ts",
         "start": 151,
         "startLoc": {
           "column": 19,
           "line": 151,
-          "position": 5961
+          "position": 6015
         }
       },
       "format": "typescript",
@@ -312,14 +312,14 @@
         "endLoc": {
           "column": 15,
           "line": 187,
-          "position": 7021
+          "position": 7075
         },
         "name": "scene\\camera\\camera-factory.ts",
         "start": 172,
         "startLoc": {
           "column": 18,
           "line": 172,
-          "position": 6636
+          "position": 6690
         }
       },
       "tokens": 55
@@ -506,7 +506,7 @@
     }
   ],
   "statistics": {
-    "detectionDate": "2026-07-30T11:30:42.553Z",
+    "detectionDate": "2026-07-30T14:53:18.528Z",
     "formats": {
       "txt": {
         "clones": 0,
@@ -524,26 +524,26 @@
         "clones": 14,
         "duplicatedLines": 254,
         "duplicatedTokens": 1143,
-        "lines": 46112,
+        "lines": 46245,
         "newClones": 0,
         "newDuplicatedLines": 0,
-        "percentage": 0.5508327550312283,
-        "percentageTokens": 0.5158547483007935,
-        "sources": 248,
-        "tokens": 221574
+        "percentage": 0.5492485674126932,
+        "percentageTokens": 0.5146539031297982,
+        "sources": 249,
+        "tokens": 222091
       }
     },
     "total": {
       "clones": 14,
       "duplicatedLines": 254,
       "duplicatedTokens": 1143,
-      "lines": 46205,
+      "lines": 46338,
       "newClones": 0,
       "newDuplicatedLines": 0,
-      "percentage": 0.5497240558381128,
-      "percentageTokens": 0.5123584626556574,
-      "sources": 249,
-      "tokens": 223086
+      "percentage": 0.5481462298761276,
+      "percentageTokens": 0.5111738214603561,
+      "sources": 250,
+      "tokens": 223603
     }
   }
 }

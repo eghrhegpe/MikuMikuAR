@@ -33,6 +33,7 @@ uniform vec3 causticColor1;     // 焦散颜色1（亮部，默认 vec3(1.0, 0.9
 uniform vec3 causticColor2;     // 焦散颜色2（暗部，默认 vec3(1.0, 1.0, 0.8)）
 uniform float fresnelAlphaInfluence;  // Fresnel 对 alpha 的影响（默认 0.5）
 uniform float foamOpacity;           // 泡沫独立透明度（默认 0.8）
+uniform float uFoamNoiseStrength;    // 泡沫边缘噪声扰动强度（0=平滑阈值，默认 0.3）
 uniform vec3 waterFogColor;          // 水面雾色（默认灰蓝色，模拟大气雾效果）
 uniform float waterFogStart;         // 水面雾起始距离（从此距离开始混入雾色，默认 50）
 uniform float waterFogEnd;           // 水面雾终止距离（到此距离完全混入雾色，默认 300）
@@ -187,7 +188,13 @@ void main() {
     float foamStart = foamThreshold * waveHeightScale;
     float foamEnd = foamStart + foamTransitionRange * (1.0 + waveHeight * 0.5);
     float foam = smoothstep(foamStart, foamEnd, foamH);
-    foam = clamp(foam, 0.0, 1.0);
+    // 泡沫边缘噪声扰动：用法线纹理 R 通道打破平滑阈值边缘，产生破碎感
+    // uFoamNoiseStrength=0 时 foamNoise=0.5，foam 不变（零回归）
+    float foamNoise = texture2D(uDetailNormalTex, camXZ * 0.1 + wavePhase * 0.02).r;
+    foam = clamp(foam + (foamNoise - 0.5) * uFoamNoiseStrength, 0.0, 1.0);
+    // 次级泡沫：波高略低于主阈值时也有微量泡沫，模拟波浪外围细小气泡
+    float secondaryFoam = smoothstep(foamEnd * 0.7, foamEnd * 0.9, foamH) * 0.3;
+    foam = max(foam, secondaryFoam);
     float foamDamp = 1.0 - foam * foamIntensity;
 
     float fresnel = fresnelBias + (1.0 - fresnelBias) * pow(1.0 - max(dot(viewDir, normal), 0.0), fresnelPower);

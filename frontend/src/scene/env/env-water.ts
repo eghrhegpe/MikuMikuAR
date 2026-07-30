@@ -695,6 +695,16 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
         new Vector3(state.causticColor2[0], state.causticColor2[1], state.causticColor2[2])
     );
     mat.setFloat('fresnelAlphaInfluence', state.fresnelAlphaInfluence);
+
+    // ——— 泡沫系统（foamEnabled=false 零回归：foamIntensity 送 0，mix 因子为 0）———
+    const foamOn = state.foamEnabled ?? false;
+    mat.setFloat('foamThreshold', state.foamThreshold);
+    mat.setFloat('foamIntensity', foamOn ? state.foamIntensity : 0);
+    mat.setFloat('foamOpacity', state.foamOpacity);
+    mat.setFloat('foamTransitionRange', state.foamTransitionRange);
+    mat.setColor3('foamColor', col3FromTriple(state.foamColor));
+    mat.setFloat('uFoamNoiseStrength', foamOn ? state.foamNoiseStrength : 0);
+
     mat.setColor3('waterFogColor', col3FromTriple(state.waterFogColor));
     mat.setFloat('waterFogStart', state.waterFogStart);
     mat.setFloat('waterFogEnd', state.waterFogEnd);
@@ -829,6 +839,7 @@ const WATER_UNIFORMS = [
     'causticColor2',
     'fresnelAlphaInfluence',
     'foamOpacity',
+    'uFoamNoiseStrength',
     'waterFogColor',
     'waterFogStart',
     'waterFogEnd',

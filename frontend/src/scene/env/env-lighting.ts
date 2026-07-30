@@ -246,10 +246,8 @@ export const ENV_PRESET_FIELDS: Record<EnvPresetCategory, (keyof EnvState)[]> = 
         'causticScrollX',
         'causticScrollY',
         'fresnelAlphaInfluence',
-        'underwaterFogDensity',
         'underwaterChromaticAmount',
         'underwaterToneIntensity',
-        'underwaterFogMultiplier',
         'underwaterTintStrength',
     ],
     'env:atmosphere': [

@@ -570,6 +570,15 @@ type EnvState struct {
 	CausticScrollY        float64    `json:"causticScrollY"`
 	FresnelAlphaInfluence float64    `json:"fresnelAlphaInfluence"`
 
+	// 泡沫系统（foamEnabled=false 零回归）
+	FoamEnabled        bool       `json:"foamEnabled"`
+	FoamThreshold      float64    `json:"foamThreshold"`
+	FoamIntensity      float64    `json:"foamIntensity"`
+	FoamOpacity        float64    `json:"foamOpacity"`
+	FoamTransitionRange float64   `json:"foamTransitionRange"`
+	FoamColor          [3]float64 `json:"foamColor"`
+	FoamNoiseStrength  float64    `json:"foamNoiseStrength"`
+
 	// 水面雾效（独立于全局雾）
 	WaterFogColor            [3]float64 `json:"waterFogColor"`
 	WaterFogStart            float64    `json:"waterFogStart"`
