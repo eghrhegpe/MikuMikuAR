@@ -60,10 +60,9 @@ vi.mock('@/core/state', async (importOriginal) => {
     };
 });
 
-vi.mock('@/core/utils', async (importOriginal) => {
-    const actual = await importOriginal<typeof import('@/core/utils')>();
-    return { ...actual, formatTimestamp: () => '00:00:00' };
-});
+vi.mock('@/core/format-timestamp', () => ({
+    formatTimestamp: () => '00:00:00',
+}));
 
 // ======== Helpers ========
 

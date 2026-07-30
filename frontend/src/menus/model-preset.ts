@@ -3,10 +3,10 @@
 import {
     modelRegistry,
     PopupLevel,
-    computeLibraryRef,
     stackRegistry,
     isPlaying,
 } from '../core/config';
+import { computeLibraryRef } from '../library/library-path';
 import { escapeHtml } from '../core/escape-html';
 import { feedbackInfo, feedbackStatus } from '../core/feedback';
 import { loadManager } from '../core/load-manager';
@@ -28,12 +28,9 @@ import {
     LoadModelPresetFromLib,
     DeleteModelPreset,
 } from '../core/wails-bindings';
-import {
-    showErrorToast,
-    getBaseName,
-    normPath,
-    logWarn,
-} from '../core/utils';
+import { getBaseName, normPath } from '../core/path';
+import { logWarn } from '../core/logger';
+import { showErrorToast } from '../core/toast';
 import { tryCatchStatus } from '../core/status-helpers';
 import { jsonStringify } from '../core/json-stringify';
 import { t } from '../core/i18n/t';

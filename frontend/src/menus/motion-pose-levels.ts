@@ -24,7 +24,7 @@ import {
     addPresetChip,
     slideRow,
 } from '../core/ui-helpers';
-import { waitForFrame } from '../core/utils';
+import { waitForFrame } from '../core/async';
 import { logWarn } from '../core/logger';
 import { getMotionMenu } from './motion-popup';
 import { buildCameraLevel } from './motion-camera-levels';

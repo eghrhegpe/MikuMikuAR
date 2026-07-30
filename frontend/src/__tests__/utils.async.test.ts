@@ -1,6 +1,6 @@
 // [doc:adr-101] P1-a 工具函数单测：error & async helpers
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { swallowError, fireAndForget, delay, waitForFrame } from '../core/utils';
+import { swallowError, fireAndForget, delay, waitForFrame } from '../core/async';
 import { logWarn, logError } from '../core/logger';
 
 // 辅助：等待微任务 + 宏任务各刷新一轮，确保 Promise.catch handler 执行完毕

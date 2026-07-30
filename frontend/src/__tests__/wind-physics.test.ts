@@ -23,9 +23,7 @@ vi.mock('../core/wind-utils', () => ({
     getWindVector: () => ({ x: 0, y: 0, z: 0 }),
     isWindActive: () => true,
 }));
-vi.mock('../core/utils', () => ({
-    logWarn: vi.fn(),
-}));
+
 
 import { _getBundles } from '../physics/wind-physics';
 

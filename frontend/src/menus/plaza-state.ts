@@ -3,7 +3,7 @@
 
 import type { PlazaSite } from './plaza-sites';
 import type { PlazaCreator } from './plaza-creators';
-import { swallowError } from '../core/utils';
+import { swallowError } from '../core/async';
 import { closeAllOverlays } from './menu-overlay';
 import { StopProxy } from '../core/wails-bindings';
 import { getCachedCapabilities } from '../core/backend';

@@ -7,7 +7,6 @@
 //   library-state.ts  — library / resource (paths / cache / sort / recent motions)
 //   ui-state.ts       — UI persistent (popupOpen / uiState / activeTimeOfDayPreset)
 //   dom.ts        — DOM element references
-//   utils.ts      — utility functions
 //   ui-helpers.ts — DOM/UI builder helpers
 //   status-bar.ts — status bar + hint system
 //   toast.ts      — error toast notifications
@@ -15,7 +14,6 @@
 export * from './types';
 export * from './state';
 export * from './dom';
-export * from './utils';
 export * from './format';
 export * from './math-geometry';
 export * from './collections';

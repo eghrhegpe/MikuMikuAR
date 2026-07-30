@@ -7,7 +7,7 @@ import type { OutfitFile } from '../core/config';
 import { loadOutfits, applyOutfitVariant, resetOutfit } from '../outfit/outfit';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow } from '../core/ui-helpers';
-import { LoadingGuard } from '../core/utils';
+import { LoadingGuard } from '../core/async';
 import { tryCatchStatus } from '../core/status-helpers';
 import { logWarn } from '../core/logger';
 import { t } from '../core/i18n/t';

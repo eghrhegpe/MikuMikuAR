@@ -17,7 +17,7 @@ import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
 import { buildSchemaLevel } from './render-menu';
 import type { MenuNode } from './menu-schema';
-import { DebouncedTimer } from '../core/utils';
+import { DebouncedTimer } from '../core/async';
 import { logWarn } from '../core/logger';
 
 // 与 virtual-skirt.ts 的 defaultVirtualSkirtConfig 保持同源契约；
