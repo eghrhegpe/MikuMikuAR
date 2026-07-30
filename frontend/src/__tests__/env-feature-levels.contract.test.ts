@@ -160,7 +160,6 @@ vi.mock('../core/config', async (importOriginal) => {
             causticScrollY: 0,
             waterFogOpacityInfluence: 0.5,
             waterFlipEnabled: false,
-            underwaterFogDensity: 0.02,
             underwaterToneIntensity: 0.5,
             underwaterTintStrength: 0.5,
             waterEnabled: false,

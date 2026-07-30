@@ -273,6 +273,17 @@ export interface EnvState {
     "fresnelAlphaInfluence": number;
 
     /**
+     * 泡沫系统（foamEnabled=false 零回归）
+     */
+    "foamEnabled": boolean;
+    "foamThreshold": number;
+    "foamIntensity": number;
+    "foamOpacity": number;
+    "foamTransitionRange": number;
+    "foamColor": number[];
+    "foamNoiseStrength": number;
+
+    /**
      * 水面雾效（独立于全局雾）
      */
     "waterFogColor": number[];

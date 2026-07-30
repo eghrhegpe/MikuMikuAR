@@ -257,13 +257,28 @@ export const ENV_STATE_SCHEMA = {
     causticScrollX: { type: 'number', default: 0.1, group: 'water' },
     causticScrollY: { type: 'number', default: 0.15, group: 'water' },
     fresnelAlphaInfluence: { type: 'number', default: 0.35, group: 'water' },
+    // --- Foam（泡沫系统：shader 已实现但同步未接，此处补全 schema）---
+    // foamEnabled=false 零回归：shader 跳过泡沫计算，水面与改动前一致
+    foamEnabled: { type: 'boolean', default: false, group: 'water' },
+    foamThreshold: { type: 'number', default: 0.6, group: 'water' },
+    foamIntensity: { type: 'number', default: 0.3, group: 'water' },
+    foamOpacity: { type: 'number', default: 0.8, group: 'water' },
+    foamTransitionRange: { type: 'number', default: 0.15, group: 'water' },
+    foamColor: {
+        type: 'tuple3',
+        default: [1.0, 1.0, 1.0] as [number, number, number],
+        group: 'water',
+    },
+    // 泡沫边缘噪声扰动强度（0=平滑阈值，1=强烈破碎边缘）
+    foamNoiseStrength: { type: 'number', default: 0.3, group: 'water' },
 
     // --- Underwater ---
+    // [doc:adr-216] underwaterFogDensity / underwaterFogMultiplier 已随 FOGMODE_EXP2 → colorCurves
+    // 替换（见 env-water.ts）移除：无任何渲染消费点，仅剩色差(underwaterChromaticAmount)与
+    // 色调(underwaterToneIntensity)两参数生效。
     underwaterEnabled: { type: 'boolean', default: true, group: 'water' },
-    underwaterFogDensity: { type: 'number', default: 0.05, group: 'water' },
     underwaterChromaticAmount: { type: 'number', default: 20, group: 'water' },
     underwaterToneIntensity: { type: 'number', default: 0.5, group: 'water' },
-    underwaterFogMultiplier: { type: 'number', default: 2, group: 'water' },
     underwaterTintStrength: { type: 'number', default: 0.5, group: 'water' },
 
     // --- Clouds ---
