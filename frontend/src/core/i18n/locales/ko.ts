@@ -1187,12 +1187,12 @@ export const ko: Record<string, string> = {
     'env.notSelected': '선택 안 됨',
     'env.skyTexture': '하늘 텍스처',
     'env.rotateY': 'Y 회전',
-    'env.brightness': '밝기',
-    'env.environmentBrightness': '환경 밝기',
+    'env.brightness': '하늘 밝기',
+    'env.environmentBrightness': '전역 밝기',
     'env.skyRotationSpeed': '하늘 회전 속도',
     'env.lightControl': '조명 제어',
     'env.sunIntensity': '태양 강도',
-    'env.skyLighting': '하늘 조명',
+    'env.skyLighting': '환경 반사 강도',
 
     // —— Ground ——
     'env.ground': '지면',
