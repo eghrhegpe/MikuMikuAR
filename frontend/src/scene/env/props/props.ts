@@ -14,16 +14,16 @@ import { feedbackStatus } from '@/core/feedback';
 import { showInfoToast } from '@/core/toast';
 import { readFileBytes } from '@/core/wails-bindings';
 import { orbitToCartesian, cartesianToOrbit, normalizeOrbit } from '@/core/orbit';
-import { scene } from '../scene';
-import { _envSys } from './env';
-import { registerMaterialTarget, unregisterMaterialTarget } from '../manager/material';
+import { scene } from '../../scene';
+import { _envSys } from '../env';
+import { registerMaterialTarget, unregisterMaterialTarget } from '../../manager/material';
 import { t } from '@/core/i18n/t';
 import { getBaseName } from '@/core/path';
 import { logWarn, logError } from '@/core/logger';
-import { renderPropThumbnail } from '../manager/thumbnail-capture';
-import { setTransformMetadata } from '../transform/transform-pick';
-import { thumbnailBaseKey } from '../manager/thumbnail-key';
-import { registerTransformAdapter } from '../transform/transform-adapter';
+import { renderPropThumbnail } from '../../manager/thumbnail-capture';
+import { setTransformMetadata } from '../../transform/transform-pick';
+import { thumbnailBaseKey } from '../../manager/thumbnail-key';
+import { registerTransformAdapter } from '../../transform/transform-adapter';
 
 /** babylon-mmd 扩展 ImportMeshAsync 接受 Uint8Array，原类型签名不支持，需手动断言 */
 const importMeshFromBytes = ImportMeshAsync as unknown as (

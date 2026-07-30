@@ -739,12 +739,12 @@ export {
 export { applyEnvState } from './env/env';
 export * from './motion/proc-motion-bridge';
 export * from './motion/lipsync-bridge';
-export * from './env/props';
+export * from './env/props/props';
 export * from './scene-serialize';
-export * from './env/env-bridge';
+export * from './env/_bridge/env-bridge';
 export * from './env/env-gravity';
 export * from './env/env-collision';
-export * from './env/env-persist';
+export * from './env/_bridge/env-persist';
 export * from './env/env-time-of-day';
 export * from './render/lighting';
 export * from './render/renderer';
