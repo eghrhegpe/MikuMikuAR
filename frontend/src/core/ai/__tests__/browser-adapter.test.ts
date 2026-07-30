@@ -148,12 +148,20 @@ describe('BrowserAiAdapter', () => {
             messages: [{ role: 'user' as const, content: '你好' }],
         };
 
-        it('endpoint 为空 → 返回 error 块', async () => {
-            mockConfig.endpoint = '';
+        /** 收集 streamChat 全部产出的辅助函数（消除 8 次重复的 for-await）。 */
+        async function collectStream(
+            r: typeof req = req
+        ): Promise<ChatChunk[]> {
             const chunks: ChatChunk[] = [];
-            for await (const chunk of adapter.streamChat(req)) {
+            for await (const chunk of adapter.streamChat(r)) {
                 chunks.push(chunk);
             }
+            return chunks;
+        }
+
+        it('endpoint 为空 → 返回 error 块', async () => {
+            mockConfig.endpoint = '';
+            const chunks = await collectStream();
             expect(chunks).toHaveLength(1);
             expect(chunks[0].type).toBe('error');
             expect(chunks[0].error).toContain('AI 端点未配置');
@@ -173,10 +181,7 @@ describe('BrowserAiAdapter', () => {
                 yield { type: 'done' };
             });
 
-            const chunks: ChatChunk[] = [];
-            for await (const chunk of adapter.streamChat(req)) {
-                chunks.push(chunk);
-            }
+            const chunks = await collectStream();
             expect(chunks).toHaveLength(2);
             expect(chunks[0]).toEqual({ type: 'text', content: '你好' });
             expect(chunks[1]).toEqual({ type: 'done' });
@@ -205,10 +210,7 @@ describe('BrowserAiAdapter', () => {
                 ...req,
                 tools: [{ name: 'loadModel', description: '加载模型' }],
             };
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            for await (const _ of adapter.streamChat(reqWithTools)) {
-                // consume
-            }
+            await collectStream(reqWithTools);
             const [, opts] = mockFetch.mock.calls[0];
             const body = JSON.parse(opts.body);
             expect(body.tools).toEqual([{ name: 'loadModel', description: '加载模型' }]);
@@ -223,10 +225,7 @@ describe('BrowserAiAdapter', () => {
                 text: () => Promise.resolve('Invalid API key'),
             });
 
-            const chunks: ChatChunk[] = [];
-            for await (const chunk of adapter.streamChat(req)) {
-                chunks.push(chunk);
-            }
+            const chunks = await collectStream();
             expect(chunks).toHaveLength(1);
             expect(chunks[0].type).toBe('error');
             expect(chunks[0].error).toContain('HTTP 401');
@@ -244,10 +243,7 @@ describe('BrowserAiAdapter', () => {
                 text: () => Promise.reject(new Error('stream error')),
             });
 
-            const chunks: ChatChunk[] = [];
-            for await (const chunk of adapter.streamChat(req)) {
-                chunks.push(chunk);
-            }
+            const chunks = await collectStream();
             expect(chunks).toHaveLength(1);
             expect(chunks[0].type).toBe('error');
             expect(chunks[0].error).toContain('HTTP 503');
@@ -257,11 +253,7 @@ describe('BrowserAiAdapter', () => {
         it('fetch 抛出 AbortError → 返回 done 块', async () => {
             mockConfig.endpoint = 'https://api.deepseek.com/v1/chat/completions';
             mockFetch.mockRejectedValue(new DOMException('The operation was aborted', 'AbortError'));
-
-            const chunks: ChatChunk[] = [];
-            for await (const chunk of adapter.streamChat(req)) {
-                chunks.push(chunk);
-            }
+            const chunks = await collectStream();
             expect(chunks).toHaveLength(1);
             expect(chunks[0].type).toBe('done');
         });
@@ -269,11 +261,7 @@ describe('BrowserAiAdapter', () => {
         it('fetch 抛出 TypeError（网络异常）→ 返回友好错误块', async () => {
             mockConfig.endpoint = 'https://remote-api.example.com/v1/chat/completions';
             mockFetch.mockRejectedValue(new TypeError('Failed to fetch'));
-
-            const chunks: ChatChunk[] = [];
-            for await (const chunk of adapter.streamChat(req)) {
-                chunks.push(chunk);
-            }
+            const chunks = await collectStream();
             expect(chunks).toHaveLength(1);
             expect(chunks[0].type).toBe('error');
             // TypeError 无 CORS 关键词时回退到通用友好提示
@@ -283,11 +271,7 @@ describe('BrowserAiAdapter', () => {
         it('fetch 抛出 ERR_CONNECTION_REFUSED → 返回友好错误块', async () => {
             mockConfig.endpoint = 'https://api.deepseek.com/v1/chat/completions';
             mockFetch.mockRejectedValue(new TypeError('ERR_CONNECTION_REFUSED'));
-
-            const chunks: ChatChunk[] = [];
-            for await (const chunk of adapter.streamChat(req)) {
-                chunks.push(chunk);
-            }
+            const chunks = await collectStream();
             expect(chunks).toHaveLength(1);
             expect(chunks[0].type).toBe('error');
             expect(chunks[0].error).toContain('连接被拒绝');
@@ -324,10 +308,7 @@ describe('BrowserAiAdapter', () => {
                 yield { type: 'done' };
             });
 
-            const chunks: ChatChunk[] = [];
-            for await (const chunk of adapter.streamChat(req)) {
-                chunks.push(chunk);
-            }
+            const chunks = await collectStream();
             // 超时应产生 done
             expect(chunks.length).toBeGreaterThanOrEqual(1);
             expect(chunks[chunks.length - 1].type).toBe('done');

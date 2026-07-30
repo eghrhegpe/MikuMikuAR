@@ -195,18 +195,25 @@ describe('parseSseStream', () => {
 
     // ── reader 异常 ──
 
-    it('reader.read() 抛出 DOMException AbortError → yield done', async () => {
+    /** 创建一个 ReadableStream，当 pull 第二次时抛出给定错误。 */
+    function streamThatThrowsAfterFirstChunk(err: unknown): ReadableStream<Uint8Array> {
         let readCount = 0;
-        const stream = new ReadableStream({
+        return new ReadableStream({
             pull(controller) {
                 readCount++;
                 if (readCount === 1) {
                     controller.enqueue(new TextEncoder().encode('data: {"choices":[{"delta":{"content":"a"}}]}\n\n'));
                 } else {
-                    throw new DOMException('The operation was aborted', 'AbortError');
+                    throw err;
                 }
             },
         });
+    }
+
+    it('reader.read() 抛出 DOMException AbortError → yield done', async () => {
+        const stream = streamThatThrowsAfterFirstChunk(
+            new DOMException('The operation was aborted', 'AbortError')
+        );
         const chunks = await collect(parseSseStream(stream));
         expect(chunks).toHaveLength(2);
         expect(chunks[0]).toEqual({ type: 'text', content: 'a' });
@@ -214,17 +221,9 @@ describe('parseSseStream', () => {
     });
 
     it('reader.read() 抛出普通 Error → yield error 块', async () => {
-        let readCount = 0;
-        const stream = new ReadableStream({
-            pull(controller) {
-                readCount++;
-                if (readCount === 1) {
-                    controller.enqueue(new TextEncoder().encode('data: {"choices":[{"delta":{"content":"a"}}]}\n\n'));
-                } else {
-                    throw new Error('stream corrupted');
-                }
-            },
-        });
+        const stream = streamThatThrowsAfterFirstChunk(
+            new Error('stream corrupted')
+        );
         const chunks = await collect(parseSseStream(stream));
         expect(chunks).toHaveLength(2);
         expect(chunks[0]).toEqual({ type: 'text', content: 'a' });
