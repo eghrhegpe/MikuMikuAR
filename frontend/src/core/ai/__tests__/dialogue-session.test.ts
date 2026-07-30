@@ -41,12 +41,10 @@ describe('dialogue-session', () => {
         expect(bibles[1].id).toBe('narrator');
     });
 
-    it('listBibles 返回只读类型数组', () => {
-        const bibles = listBibles();
-        // TypeScript 层面 readonly CharacterBible[]，运行时未 frozen 但不应被修改
-        expect(bibles).toHaveLength(2);
-        expect(bibles[0].id).toBe('miku');
-        expect(bibles[1].id).toBe('narrator');
+    it('setActiveBible(''）空字符串兜底到内置首个', () => {
+        setActiveBible('');
+        const bible = getActiveBible();
+        expect(bible.id).toBe('miku');
     });
 
     it('buildDialogueSystemPrompt 转发给 character-bible', () => {

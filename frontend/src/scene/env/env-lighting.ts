@@ -200,7 +200,7 @@ export const ENV_PRESET_FIELDS: Record<EnvPresetCategory, (keyof EnvState)[]> = 
         'groundReflectionBlend',
         'groundNormalTexture',
         'groundNormalStrength',
-        'groundElevationColoring',
+        'groundElevationColoringEnabled',
         'groundPbrEnabled',
         'groundProceduralTexture',
         'groundProceduralSeed',

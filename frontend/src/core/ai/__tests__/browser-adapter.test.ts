@@ -1,9 +1,10 @@
-// [doc:adr-196] browser-adapter 守护测试：CORS 风险判定、模型缓存、连接测试。
+// [doc:adr-196] browser-adapter 守护测试：CORS 风险判定、模型缓存、连接测试、流式聊天。
 // BrowserAiAdapter 的 capabilities() 是同步纯逻辑，可独立测试。
-// streamChat / testConnection 依赖 fetch mock。
+// streamChat / testConnection / fetchModels 依赖 fetch mock + parseSseStream mock。
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { BrowserAiAdapter } from '../browser-adapter';
+import type { ChatChunk } from '../types';
 
 // ── mock config-store ─────────────────────────────────────────────
 // 让 loadAiConfig() 返回可控配置
@@ -30,8 +31,18 @@ vi.mock('../config-store', () => ({
     DEFAULT_AI_CONFIG: { provider: 'ollama', endpoint: 'http://localhost:11434/v1/chat/completions', apiKey: '', model: '', timeoutMs: 30000 },
 }));
 
+// ── mock sse (parseSseStream) ─────────────────────────────────────
+const mockParseSseStream = vi.hoisted(() => vi.fn());
+vi.mock('../sse', () => ({
+    parseSseStream: mockParseSseStream,
+}));
+
+// ── mock fetch ────────────────────────────────────────────────────
+// 在全局 mock fetch，在 beforeEach 中创建可控 mockFetch
+
 describe('BrowserAiAdapter', () => {
     let adapter: BrowserAiAdapter;
+    let mockFetch: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
         adapter = new BrowserAiAdapter();
@@ -39,6 +50,22 @@ describe('BrowserAiAdapter', () => {
         mockConfig.endpoint = '';
         mockConfig.model = 'llama3.2';
         mockConfig.apiKey = '';
+        mockConfig.timeoutMs = 30000;
+
+        // 创建并注册全局 fetch mock
+        mockFetch = vi.fn();
+        vi.stubGlobal('fetch', mockFetch);
+
+        // 重置 parseSseStream mock
+        mockParseSseStream.mockReset();
+        // 默认：解析成功并立即 done
+        mockParseSseStream.mockImplementation(async function* () {
+            yield { type: 'done' };
+        });
+    });
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
     });
 
     // ── capabilities ──
@@ -112,6 +139,357 @@ describe('BrowserAiAdapter', () => {
         it('endpointReachable 恒为 pending', () => {
             const caps = adapter.capabilities();
             expect(caps.endpointReachable).toBe('pending');
+        });
+    });
+
+    // ── streamChat ──
+    describe('streamChat()', () => {
+        const req = {
+            messages: [{ role: 'user' as const, content: '你好' }],
+        };
+
+        it('endpoint 为空 → 返回 error 块', async () => {
+            mockConfig.endpoint = '';
+            const chunks: ChatChunk[] = [];
+            for await (const chunk of adapter.streamChat(req)) {
+                chunks.push(chunk);
+            }
+            expect(chunks).toHaveLength(1);
+            expect(chunks[0].type).toBe('error');
+            expect(chunks[0].error).toContain('AI 端点未配置');
+            // parseSseStream 不应被调用
+            expect(mockParseSseStream).not.toHaveBeenCalled();
+        });
+
+        it('HTTP 200 → 透传 parseSseStream 的输出', async () => {
+            mockConfig.endpoint = 'https://api.deepseek.com/v1/chat/completions';
+            mockFetch.mockResolvedValue({
+                ok: true,
+                body: new ReadableStream(),
+            });
+            // parseSseStream 产出一条 text + done
+            mockParseSseStream.mockImplementation(async function* () {
+                yield { type: 'text', content: '你好' };
+                yield { type: 'done' };
+            });
+
+            const chunks: ChatChunk[] = [];
+            for await (const chunk of adapter.streamChat(req)) {
+                chunks.push(chunk);
+            }
+            expect(chunks).toHaveLength(2);
+            expect(chunks[0]).toEqual({ type: 'text', content: '你好' });
+            expect(chunks[1]).toEqual({ type: 'done' });
+            // 验证 fetch 参数
+            expect(mockFetch).toHaveBeenCalledTimes(1);
+            const [url, opts] = mockFetch.mock.calls[0];
+            expect(url).toBe('https://api.deepseek.com/v1/chat/completions');
+            expect(opts.method).toBe('POST');
+            const body = JSON.parse(opts.body);
+            expect(body.stream).toBe(true);
+            expect(body.messages).toEqual([{ role: 'user', content: '你好' }]);
+            expect(body.tools).toBeUndefined();
+        });
+
+        it('HTTP 200 + tools 参数 → 请求体中包含 tools', async () => {
+            mockConfig.endpoint = 'https://api.deepseek.com/v1/chat/completions';
+            mockFetch.mockResolvedValue({
+                ok: true,
+                body: new ReadableStream(),
+            });
+            mockParseSseStream.mockImplementation(async function* () {
+                yield { type: 'done' };
+            });
+
+            const reqWithTools = {
+                ...req,
+                tools: [{ name: 'loadModel', description: '加载模型' }],
+            };
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            for await (const _ of adapter.streamChat(reqWithTools)) {
+                // consume
+            }
+            const [, opts] = mockFetch.mock.calls[0];
+            const body = JSON.parse(opts.body);
+            expect(body.tools).toEqual([{ name: 'loadModel', description: '加载模型' }]);
+        });
+
+        it('HTTP 非 200 → 返回 HTTP 错误块', async () => {
+            mockConfig.endpoint = 'https://api.deepseek.com/v1/chat/completions';
+            mockFetch.mockResolvedValue({
+                ok: false,
+                status: 401,
+                statusText: 'Unauthorized',
+                text: () => Promise.resolve('Invalid API key'),
+            });
+
+            const chunks: ChatChunk[] = [];
+            for await (const chunk of adapter.streamChat(req)) {
+                chunks.push(chunk);
+            }
+            expect(chunks).toHaveLength(1);
+            expect(chunks[0].type).toBe('error');
+            expect(chunks[0].error).toContain('HTTP 401');
+            expect(chunks[0].error).toContain('Invalid API key');
+            // HTTP 错误分支不应调 parseSseStream
+            expect(mockParseSseStream).not.toHaveBeenCalled();
+        });
+
+        it('HTTP 非 200 + text() 失败 → 兜底用 statusText', async () => {
+            mockConfig.endpoint = 'https://api.deepseek.com/v1/chat/completions';
+            mockFetch.mockResolvedValue({
+                ok: false,
+                status: 503,
+                statusText: 'Service Unavailable',
+                text: () => Promise.reject(new Error('stream error')),
+            });
+
+            const chunks: ChatChunk[] = [];
+            for await (const chunk of adapter.streamChat(req)) {
+                chunks.push(chunk);
+            }
+            expect(chunks).toHaveLength(1);
+            expect(chunks[0].type).toBe('error');
+            expect(chunks[0].error).toContain('HTTP 503');
+            expect(chunks[0].error).toContain('Service Unavailable');
+        });
+
+        it('fetch 抛出 AbortError → 返回 done 块', async () => {
+            mockConfig.endpoint = 'https://api.deepseek.com/v1/chat/completions';
+            mockFetch.mockRejectedValue(new DOMException('The operation was aborted', 'AbortError'));
+
+            const chunks: ChatChunk[] = [];
+            for await (const chunk of adapter.streamChat(req)) {
+                chunks.push(chunk);
+            }
+            expect(chunks).toHaveLength(1);
+            expect(chunks[0].type).toBe('done');
+        });
+
+        it('fetch 抛出 TypeError（网络异常）→ 返回友好错误块', async () => {
+            mockConfig.endpoint = 'https://remote-api.example.com/v1/chat/completions';
+            mockFetch.mockRejectedValue(new TypeError('Failed to fetch'));
+
+            const chunks: ChatChunk[] = [];
+            for await (const chunk of adapter.streamChat(req)) {
+                chunks.push(chunk);
+            }
+            expect(chunks).toHaveLength(1);
+            expect(chunks[0].type).toBe('error');
+            // 应包含友好提示
+            expect(chunks[0].error).toContain('CORS');
+        });
+
+        it('fetch 抛出 ERR_CONNECTION_REFUSED → 返回友好错误块', async () => {
+            mockConfig.endpoint = 'https://api.deepseek.com/v1/chat/completions';
+            mockFetch.mockRejectedValue(new TypeError('ERR_CONNECTION_REFUSED'));
+
+            const chunks: ChatChunk[] = [];
+            for await (const chunk of adapter.streamChat(req)) {
+                chunks.push(chunk);
+            }
+            expect(chunks).toHaveLength(1);
+            expect(chunks[0].type).toBe('error');
+            expect(chunks[0].error).toContain('连接被拒绝');
+        });
+
+        it('超时触发 AbortSignal.timeout → 返回 done', async () => {
+            mockConfig.endpoint = 'https://api.deepseek.com/v1/chat/completions';
+            mockConfig.timeoutMs = 10; // 极短超时
+
+            // fetch 正常返回，但 parseSseStream 检测到 signal aborted 后 yield done
+            const abortController = new AbortController();
+            mockFetch.mockImplementation((_url: string, opts: { signal?: AbortSignal }) => {
+                // 把外部 signal 转发给内部 AbortController
+                opts.signal?.addEventListener('abort', () => abortController.abort());
+                return Promise.resolve({
+                    ok: true,
+                    body: new ReadableStream(),
+                });
+            });
+
+            // parseSseStream 模拟检测到 signal.aborted
+            mockParseSseStream.mockImplementation(async function* (
+                _body: ReadableStream,
+                signal?: AbortSignal
+            ) {
+                // 等待 signal abort
+                await new Promise<void>((resolve) => {
+                    if (signal?.aborted) {
+                        resolve();
+                    } else {
+                        signal?.addEventListener('abort', () => resolve(), { once: true });
+                    }
+                });
+                yield { type: 'done' };
+            });
+
+            const chunks: ChatChunk[] = [];
+            for await (const chunk of adapter.streamChat(req)) {
+                chunks.push(chunk);
+            }
+            // 超时应产生 done
+            expect(chunks.length).toBeGreaterThanOrEqual(1);
+            expect(chunks[chunks.length - 1].type).toBe('done');
+        }, 10_000); // 给超时留足时间
+    });
+
+    // ── testConnection ──
+    describe('testConnection()', () => {
+        it('endpoint 为空 → missingEndpoint', async () => {
+            mockConfig.endpoint = '';
+            const result = await adapter.testConnection();
+            expect(result.ok).toBe(false);
+            expect(result.kind).toBe('missingEndpoint');
+            expect(result.message).toContain('未配置');
+        });
+
+        it('HTTP 200 → ok=true', async () => {
+            mockConfig.endpoint = 'http://localhost:11434/v1/chat/completions';
+            mockFetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+            });
+
+            const result = await adapter.testConnection();
+            expect(result.ok).toBe(true);
+        });
+
+        it('HTTP 401 → ok=false + classifyAiError', async () => {
+            mockConfig.endpoint = 'https://api.deepseek.com/v1/chat/completions';
+            mockFetch.mockResolvedValue({
+                ok: false,
+                status: 401,
+                statusText: 'Unauthorized',
+                text: () => Promise.resolve('Bad credentials'),
+            });
+
+            const result = await adapter.testConnection();
+            expect(result.ok).toBe(false);
+            expect(result.message).toContain('HTTP 401');
+            expect(result.message).toContain('Bad credentials');
+        });
+
+        it('fetch 抛出 TypeError（网络错误）→ ok=false', async () => {
+            mockConfig.endpoint = 'http://localhost:11434/v1/chat/completions';
+            mockFetch.mockRejectedValue(new TypeError('Failed to fetch'));
+
+            const result = await adapter.testConnection();
+            expect(result.ok).toBe(false);
+            expect(result.message).toContain('Failed to fetch');
+        });
+    });
+
+    // ── fetchModels ──
+    describe('fetchModels()', () => {
+        it('endpoint 为空 → 返回空数组', async () => {
+            mockConfig.endpoint = '';
+            const models = await adapter.fetchModels();
+            expect(models).toEqual([]);
+            expect(mockFetch).not.toHaveBeenCalled();
+        });
+
+        it('OpenAI 兼容格式 → 解析并排序', async () => {
+            mockConfig.endpoint = 'https://api.deepseek.com/v1/chat/completions';
+            mockFetch.mockResolvedValue({
+                ok: true,
+                json: () => Promise.resolve({
+                    data: [
+                        { id: 'deepseek-chat' },
+                        { id: 'deepseek-reasoner' },
+                    ],
+                }),
+            });
+
+            const models = await adapter.fetchModels();
+            expect(models).toEqual(['deepseek-chat', 'deepseek-reasoner']);
+            // 应请求 {base}/models
+            expect(mockFetch).toHaveBeenCalledWith(
+                'https://api.deepseek.com/v1/models',
+                expect.objectContaining({ method: 'GET' })
+            );
+        });
+
+        it('Ollama /api/tags 格式 → 解析并排序', async () => {
+            mockConfig.endpoint = 'http://localhost:11434/v1/chat/completions';
+            mockFetch.mockImplementation(async (url: string) => {
+                if (url.includes('/api/tags')) {
+                    return {
+                        ok: true,
+                        json: () => Promise.resolve({
+                            models: [
+                                { name: 'llama3.2:3b' },
+                                { name: 'mistral:7b' },
+                            ],
+                        }),
+                    };
+                }
+                return { ok: false, status: 404 };
+            });
+
+            const models = await adapter.fetchModels();
+            expect(models).toEqual(['llama3.2:3b', 'mistral:7b']);
+            // 应尝试过 /api/tags
+            expect(mockFetch).toHaveBeenCalledWith(
+                'http://localhost:11434/api/tags',
+                expect.objectContaining({ method: 'GET' })
+            );
+        });
+
+        it('全部候选端点失败 → 返回空数组', async () => {
+            mockConfig.endpoint = 'https://api.deepseek.com/v1/chat/completions';
+            mockFetch.mockResolvedValue({
+                ok: false,
+                status: 404,
+            });
+
+            const models = await adapter.fetchModels();
+            expect(models).toEqual([]);
+        });
+
+        it('成功时缓存结果到 _fetchedModelsCache', async () => {
+            mockConfig.endpoint = 'https://api.openai.com/v1/chat/completions';
+            mockFetch.mockResolvedValue({
+                ok: true,
+                json: () => Promise.resolve({
+                    data: [{ id: 'gpt-4' }, { id: 'gpt-3.5' }],
+                }),
+            });
+
+            await adapter.fetchModels();
+            // 访问私有属性验证缓存
+            const cached = (adapter as unknown as { _fetchedModelsCache: string[] | null })._fetchedModelsCache;
+            expect(cached).toEqual(['gpt-3.5', 'gpt-4']);
+        });
+
+        it('后续 fetchModels 优先返回缓存（不重复请求）', async () => {
+            mockConfig.endpoint = 'https://api.openai.com/v1/chat/completions';
+            // 直接注入缓存
+            (adapter as unknown as { _fetchedModelsCache: string[] | null })._fetchedModelsCache = ['cached-model'];
+
+            const models = await adapter.fetchModels();
+            expect(models).toEqual(['cached-model']);
+            // 不应发请求
+            expect(mockFetch).not.toHaveBeenCalled();
+        });
+
+        it('携带 apiKey 时请求头带 Authorization', async () => {
+            mockConfig.apiKey = 'sk-test-key';
+            mockConfig.endpoint = 'https://api.deepseek.com/v1/chat/completions';
+            mockFetch.mockResolvedValue({
+                ok: true,
+                json: () => Promise.resolve({ data: [{ id: 'model-1' }] }),
+            });
+
+            await adapter.fetchModels();
+            expect(mockFetch).toHaveBeenCalledWith(
+                expect.any(String),
+                expect.objectContaining({
+                    headers: expect.objectContaining({
+                        Authorization: 'Bearer sk-test-key',
+                    }),
+                })
+            );
         });
     });
 });

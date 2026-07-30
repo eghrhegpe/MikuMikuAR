@@ -164,12 +164,76 @@ function migrateGlobalBrightness(
     return true;
 }
 
+/**
+ * particleSplash → particleSplashEnabled 迁移（ADR-212：boolean 字段 *Enabled 后缀纪律）
+ */
+function migrateParticleSplashEnabled(
+    raw: Record<string, unknown>,
+    out: Record<string, unknown>
+): boolean {
+    if (typeof raw.particleSplash === 'boolean') {
+        out.particleSplashEnabled = raw.particleSplash;
+        delete out.particleSplash;
+        return true;
+    }
+    return false;
+}
+
+/**
+ * debugClouds → debugCloudsEnabled 迁移（ADR-212：boolean 字段 *Enabled 后缀纪律）
+ */
+function migrateDebugCloudsEnabled(
+    raw: Record<string, unknown>,
+    out: Record<string, unknown>
+): boolean {
+    if (typeof raw.debugClouds === 'boolean') {
+        out.debugCloudsEnabled = raw.debugClouds;
+        delete out.debugClouds;
+        return true;
+    }
+    return false;
+}
+
+/**
+ * groundInfinite → groundInfiniteEnabled 迁移（ADR-212：boolean 字段 *Enabled 后缀纪律）
+ */
+function migrateGroundInfiniteEnabled(
+    raw: Record<string, unknown>,
+    out: Record<string, unknown>
+): boolean {
+    if (typeof raw.groundInfinite === 'boolean') {
+        out.groundInfiniteEnabled = raw.groundInfinite;
+        delete out.groundInfinite;
+        return true;
+    }
+    return false;
+}
+
+/**
+ * groundElevationColoring → groundElevationColoringEnabled 迁移（ADR-212：boolean 字段 *Enabled 后缀纪律）
+ */
+function migrateGroundElevationColoringEnabled(
+    raw: Record<string, unknown>,
+    out: Record<string, unknown>
+): boolean {
+    if (typeof raw.groundElevationColoring === 'boolean') {
+        out.groundElevationColoringEnabled = raw.groundElevationColoring;
+        delete out.groundElevationColoring;
+        return true;
+    }
+    return false;
+}
+
 /** 迁移注册表：新增迁移在此追加。 */
 const _migrators: Migrator[] = [
     migrateGroundMode,
     migrateDebugMirror,
     migrateIblIntensity,
     migrateGlobalBrightness,
+    migrateParticleSplashEnabled,
+    migrateDebugCloudsEnabled,
+    migrateGroundInfiniteEnabled,
+    migrateGroundElevationColoringEnabled,
 ];
 
 function migrateEnvState(input: Partial<EnvState>): Partial<EnvState> {

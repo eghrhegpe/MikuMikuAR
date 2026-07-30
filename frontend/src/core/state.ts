@@ -64,7 +64,7 @@ function buildDefaultEnvState(): EnvState {
         groundReflectionQuality: s.groundReflectionQuality.default,
         groundNormalTexture: s.groundNormalTexture.default,
         groundNormalStrength: s.groundNormalStrength.default,
-        groundElevationColoring: s.groundElevationColoring.default,
+        groundElevationColoringEnabled: s.groundElevationColoringEnabled.default,
         groundInfiniteEnabled: s.groundInfiniteEnabled.default,
         groundPbrEnabled: s.groundPbrEnabled.default,
         groundProceduralTexture: s.groundProceduralTexture.default,

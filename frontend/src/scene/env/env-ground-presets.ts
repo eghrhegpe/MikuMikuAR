@@ -40,7 +40,7 @@ export interface GroundPreset {
     groundReflectionBlur: number;
     groundReflectionDistort: number;
     // Terrain
-    groundElevationColoring: boolean;
+    groundElevationColoringEnabled: boolean;
     // Enhancement
     groundEdgeFade: number;
     groundPitch: number;
@@ -73,7 +73,7 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
         groundNormalStrength: 1,
         groundReflectionBlur: 0,
         groundReflectionDistort: 0.3,
-        groundElevationColoring: false,
+        groundElevationColoringEnabled: false,
         groundEdgeFade: 0,
         groundPitch: 0,
         groundRoll: 0,
@@ -103,7 +103,7 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
         groundNormalStrength: 1.2,
         groundReflectionBlur: 0,
         groundReflectionDistort: 0.2,
-        groundElevationColoring: false,
+        groundElevationColoringEnabled: false,
         groundEdgeFade: 0,
         groundPitch: 0,
         groundRoll: 0,
@@ -133,7 +133,7 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
         groundNormalStrength: 0.8,
         groundReflectionBlur: 0,
         groundReflectionDistort: 0.3,
-        groundElevationColoring: false,
+        groundElevationColoringEnabled: false,
         groundEdgeFade: 0.3,
         groundPitch: 0,
         groundRoll: 0,
@@ -163,7 +163,7 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
         groundNormalStrength: 0.6,
         groundReflectionBlur: 0.1,
         groundReflectionDistort: 0.3,
-        groundElevationColoring: false,
+        groundElevationColoringEnabled: false,
         groundEdgeFade: 0,
         groundPitch: 0,
         groundRoll: 0,
@@ -193,7 +193,7 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
         groundNormalStrength: 0.7,
         groundReflectionBlur: 0.1,
         groundReflectionDistort: 0.25,
-        groundElevationColoring: false,
+        groundElevationColoringEnabled: false,
         groundEdgeFade: 0,
         groundPitch: 0,
         groundRoll: 0,
@@ -223,7 +223,7 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
         groundNormalStrength: 1,
         groundReflectionBlur: 0,
         groundReflectionDistort: 0,
-        groundElevationColoring: false,
+        groundElevationColoringEnabled: false,
         groundEdgeFade: 0,
         groundPitch: 0,
         groundRoll: 0,
@@ -253,7 +253,7 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
         groundNormalStrength: 1.5,
         groundReflectionBlur: 0.1,
         groundReflectionDistort: 0.3,
-        groundElevationColoring: false,
+        groundElevationColoringEnabled: false,
         groundEdgeFade: 0,
         groundPitch: 0,
         groundRoll: 0,
@@ -290,7 +290,7 @@ export const GROUND_PRESET_KEYS = [
     'groundNormalStrength',
     'groundReflectionBlur',
     'groundReflectionDistort',
-    'groundElevationColoring',
+    'groundElevationColoringEnabled',
     'groundEdgeFade',
     'groundPitch',
     'groundRoll',
@@ -321,7 +321,7 @@ export function buildGroundPresetEnvState(preset: GroundPreset): Partial<EnvStat
         groundNormalStrength: preset.groundNormalStrength,
         groundReflectionBlur: preset.groundReflectionBlur,
         groundReflectionDistort: preset.groundReflectionDistort,
-        groundElevationColoring: preset.groundElevationColoring,
+        groundElevationColoringEnabled: preset.groundElevationColoringEnabled,
         groundEdgeFade: preset.groundEdgeFade,
         groundPitch: preset.groundPitch,
         groundRoll: preset.groundRoll,

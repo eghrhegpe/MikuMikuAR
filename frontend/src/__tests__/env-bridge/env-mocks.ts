@@ -239,7 +239,7 @@ const _GROUND_KEYS_M = [
     'groundReflectionBlend',
     'groundNormalTexture',
     'groundNormalStrength',
-    'groundElevationColoring',
+    'groundElevationColoringEnabled',
 ];
 const _FOG_KEYS_M = ['fogEnabled', 'fogColor', 'fogDensity', 'fogMode', 'fogStart', 'fogEnd'];
 const _WATER_KEYS_M = [
