@@ -6,6 +6,7 @@ scope:
   - frontend/src/scene/env/env-water.ts
 source_files:
   - frontend/src/scene/env/env-water.ts
+  - frontend/src/scene/env/env-noise.ts
 adr:
   - ADR-062
 symbols:
@@ -55,3 +56,4 @@ use_when:
 ## 不变量
 - 水面反射 RT（RenderTexture）在 `disposeWater` 中释放。
 - 水面对象在场景 dispose 时级联释放。
+- 小波细节波受 `smallWaveEnabled` 门控：关闭时 `_syncWaterUniforms` 向 shader 送 `smallWaveHeight=0`（水面呈纯净反射面），字段缺失时 `?? true` 兜底为开启。此为水面功能开关体系试点，复用地面 `folder + headerToggle` 模式（开关只控 shader 输出，不联动置灰 slider）。

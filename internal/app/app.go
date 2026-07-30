@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net"
@@ -451,8 +452,8 @@ type EnvState struct {
 	SkyBrightness    float64    `json:"skyBrightness"`
 	StarsEnabled     bool       `json:"starsEnabled"`
 	StarsTexture     string     `json:"starsTexture"`
-	EnvIntensity     float64    `json:"envIntensity"`
-	EnvBrightness    float64    `json:"envBrightness"`
+	IblIntensity     float64    `json:"iblIntensity"`
+	GlobalBrightness float64    `json:"globalBrightness"`
 
 	GroundVisible         bool       `json:"groundVisible"`
 	GroundType            string     `json:"groundType"`
@@ -588,6 +589,29 @@ type EnvState struct {
 
 	TimeOfDayActive bool    `json:"timeOfDayActive"`
 	TimeOfDaySpeed  float64 `json:"timeOfDaySpeed"`
+}
+
+// UnmarshalJSON reads EnvState while tolerating legacy field names renamed in
+// ADR-210 (envIntensity→iblIntensity, envBrightness→globalBrightness). Old
+// config.json files persisted the legacy keys; without this fallback those two
+// settings would silently reset to zero on load. New keys take precedence.
+func (e *EnvState) UnmarshalJSON(data []byte) error {
+	type envStateAlias EnvState // avoid recursion
+	aux := struct {
+		*envStateAlias
+		LegacyEnvIntensity  *float64 `json:"envIntensity"`
+		LegacyEnvBrightness *float64 `json:"envBrightness"`
+	}{envStateAlias: (*envStateAlias)(e)}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	if e.IblIntensity == 0 && aux.LegacyEnvIntensity != nil {
+		e.IblIntensity = *aux.LegacyEnvIntensity
+	}
+	if e.GlobalBrightness == 0 && aux.LegacyEnvBrightness != nil {
+		e.GlobalBrightness = *aux.LegacyEnvBrightness
+	}
+	return nil
 }
 
 // RenderPreset stores a user-defined rendering preset.

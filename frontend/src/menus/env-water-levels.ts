@@ -75,11 +75,21 @@ export function buildWaterLevel(): PopupLevel {
                             icon: 'lucide:mountain',
                         },
                         {
-                            id: 'env:water:smallWaveHeight',
-                            kind: 'slider',
+                            id: 'env:water:smallWave',
+                            kind: 'folder',
                             label: 'env.smallWaveHeight',
-                            control: { bind: 'env.smallWaveHeight', min: 0, max: 3, step: 0.1 },
                             icon: 'lucide:waves',
+                            defaultOpen: true,
+                            headerToggle: { bind: 'env.smallWaveEnabled' },
+                            children: [
+                                {
+                                    id: 'env:water:smallWaveHeight',
+                                    kind: 'slider',
+                                    label: 'env.smallWaveHeight',
+                                    control: { bind: 'env.smallWaveHeight', min: 0, max: 3, step: 0.1 },
+                                    icon: 'lucide:waves',
+                                },
+                            ],
                         },
                         {
                             id: 'env:water:animSpeed',

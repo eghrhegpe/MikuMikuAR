@@ -45,7 +45,7 @@ export function setPresetAnimActive(active: boolean): void {
  *  env-time-of-day._timeOfDayTick 直接调用本函数（不走 setEnvState 全链路，避免每帧防抖持久化）。 */
 export function applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>): void {
     const changed = partial ? new Set(Object.keys(partial)) : null;
-    const envBrightness = state.envBrightness ?? 1;
+    const envBrightness = state.globalBrightness ?? 1;
 
     // 统一反射质量：reflectionQuality 变化时同步 groundReflectionQuality（Go binding 兼容）
     if (partial?.reflectionQuality !== undefined) {
@@ -67,9 +67,9 @@ export function applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>
         hemi.diffuse = col3FromTriple(skyMid);
         hemi.groundColor = col3FromTriple(state.skyColorBot);
     }
-    // 场景环境色 — envIntensity 控制渗透力度，最大不超过 0.5 以免冲淡方向光
+    // 场景环境色 — iblIntensity 控制渗透力度，最大不超过 0.5 以免冲淡方向光
     const ambientStrength = Math.min(
-        state.envIntensity * 0.15 * envBrightness,
+        state.iblIntensity * 0.15 * envBrightness,
         ENV_LIGHT_MAX * envBrightness
     );
     scene.ambientColor = new Color3(
@@ -78,8 +78,8 @@ export function applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>
         skyMid[2] * ambientStrength
     );
 
-    // [doc:adr-132] envBrightness 变化时 rebake 存储的光照强度
-    if (changed?.has('envBrightness')) {
+    // [doc:adr-132] globalBrightness 变化时 rebake 存储的光照强度
+    if (changed?.has('globalBrightness')) {
         rebakeEnvBrightness(envBrightness / _prevEnvBrightness);
     }
     _prevEnvBrightness = envBrightness;
@@ -137,8 +137,40 @@ function migrateDebugMirror(raw: Record<string, unknown>, out: Record<string, un
     return true;
 }
 
+/**
+ * envIntensity → iblIntensity 迁移（ADR-210：变量名名实相符）
+ */
+function migrateIblIntensity(raw: Record<string, unknown>, out: Record<string, unknown>): boolean {
+    if (typeof raw.envIntensity !== 'number') {
+        return false;
+    }
+    out.iblIntensity = raw.envIntensity;
+    delete out.envIntensity;
+    return true;
+}
+
+/**
+ * envBrightness → globalBrightness 迁移（ADR-210：变量名名实相符）
+ */
+function migrateGlobalBrightness(
+    raw: Record<string, unknown>,
+    out: Record<string, unknown>
+): boolean {
+    if (typeof raw.envBrightness !== 'number') {
+        return false;
+    }
+    out.globalBrightness = raw.envBrightness;
+    delete out.envBrightness;
+    return true;
+}
+
 /** 迁移注册表：新增迁移在此追加。 */
-const _migrators: Migrator[] = [migrateGroundMode, migrateDebugMirror];
+const _migrators: Migrator[] = [
+    migrateGroundMode,
+    migrateDebugMirror,
+    migrateIblIntensity,
+    migrateGlobalBrightness,
+];
 
 function migrateEnvState(input: Partial<EnvState>): Partial<EnvState> {
     const raw = input as Record<string, unknown>;

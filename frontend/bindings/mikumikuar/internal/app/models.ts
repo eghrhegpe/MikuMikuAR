@@ -160,8 +160,8 @@ export interface EnvState {
     "skyBrightness": number;
     "starsEnabled": boolean;
     "starsTexture": string;
-    "envIntensity": number;
-    "envBrightness": number;
+    "iblIntensity": number;
+    "globalBrightness": number;
     "groundVisible": boolean;
     "groundType": string;
     "groundStyle": string;

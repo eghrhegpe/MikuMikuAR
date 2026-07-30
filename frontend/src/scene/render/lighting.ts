@@ -237,7 +237,7 @@ export function rebakeEnvBrightness(ratio: number): void {
 }
 
 export function getLightState(): LightState {
-    const envBrightness = Math.max(0.01, envState.envBrightness ?? 1);
+    const envBrightness = Math.max(0.01, envState.globalBrightness ?? 1);
     if (!lightingState.hemiLight || !lightingState.dirLight || !lightingState.envSysShadow) {
         const base = _defaultLightState();
         return {
@@ -283,7 +283,7 @@ export function setLightState(s: Partial<LightState>): void {
         return;
     }
 
-    const envBrightness = Math.max(0.01, envState.envBrightness ?? 1);
+    const envBrightness = Math.max(0.01, envState.globalBrightness ?? 1);
     if (s.hemiIntensity !== undefined) {
         lightingState.hemiLight.intensity = s.hemiIntensity * envBrightness;
     }

@@ -23,16 +23,19 @@
 
 ### 渐进式三层路径（按投入递增，可逐层落地）
 
-#### P4 · 夜空装饰（最小闭环）
+#### P4 · 夜空装饰（最小闭环）— PIC: （待指派）
 
-- 将 `_ensureSunDisc` 抽象为 `_ensureCelestialDisc(kind: 'sun' | 'moon')`，太阳/月亮共用创建与释放路径（`_disposeSunDisc` 同步扩展为释放两个圆盘）。
-- 月盘挂在太阳**反方向**（`dirLight.direction` 取反），冷色 `emissiveColor(0.8, 0.85, 1.0)`，直径略小于太阳。
-- 显隐规则复用现成的 `aboveHorizon = d.y < 0`：太阳落下（夜间）时月亮升起，天然此消彼长。
+- **抽通用天体盘 helper，避免单函数职责过载**：新增 `_ensureDisc(name: string, color: Color3)` 与 `_updateDisc(dir: Vector3, intensityScaled: number, forceVisible: boolean)`，太阳/月亮各自薄封装。原 `_updateSunDisc`（`lighting-sun.ts:30-49`）内含 `hasIntensity` 门控（行 37-38）、位置在 `-d`；月亮需"不受 intensity 限制、永远可见、位置 `-d`"，**不可直接复用**，否则污染单函数、违反「职责过载」反模式。
+- 月盘挂在太阳**反方向**（`dirLight.direction` 取反，`-d`），冷色 `emissiveColor(0.8, 0.85, 1.0)`，直径略小于太阳（如 45）；`isPickable=false`、`disableLighting=true`，与太阳盘（lighting-sun.ts:22/24）一致，**不参与 IBL/PBR 光照计算**。
+- **月亮方位澄清（P2 落地前必决）**：夜晚 `deriveLighting` 把 `dirY = sunAngle <= 0 ? 0`（`env-lighting.ts:90`），方向光方向是**水平**的；若直接 `-d` 取反，月亮盘会贴在**地平线**而非天穹。落地前二选一：①固定仰角（如 30°）+ 水平方位与太阳相反；②艺术化地平线参照，在本文显式注明"刻意如此"。
+- **状态来源唯一**：月亮盘为纯可视化参照，**不入 `envState`、不序列化、不进任何预设**（`TIME_OF_DAY_PRESETS` / `buildGroundPresetEnvState` 等均不沾），避免引入第二状态源，违背 AGENTS「状态来源唯一」原则。
+- **调用点**：在 `_timeOfDayTick`（`env-time-of-day.ts:74` 调 `_updateSunDisc`）同帧、或 `lighting` 渲染循环注册 `_updateMoonDisc`，保证高频路径每帧更新位置。
+- **释放**：`_disposeSunDisc` 更名为 `_disposeCelestialDiscs`（或在其内级联释放 `lightingState.moonDisc`），`disposeRenderer` 已配对，StandardMaterial 不泄漏。
 - 特点：不改光照、不改 `envState`、无新持久化字段，成本最低。
 
 #### P3 · 月光补光
 
-- 改 `deriveLighting` 夜间分支（`sunAngle < 0`）：不再把方向光强度压到 0，而是给一缕冷色微光（约白天的 3~5%）。
+- 改 `deriveLighting` 夜间分支（`sunAngle <= 0`，与 env-lighting.ts:68/89/90 的 `<= 0` 边界对齐，非 `< 0`）：不再把方向光强度压到 0，而是给一缕冷色微光（约白天的 3~5%）。
 - 收益：夜晚模型不再是纯黑剪影，有月色轮廓，画面耐看。
 
 #### P2 · 完整第二天体
@@ -56,6 +59,32 @@
 
 本 ADR 为规划性质，暂不含实现与测试。落地各层时补充：
 
-- P4：月盘在夜间（`sunAngle < 0`）可见、白天隐藏；`_disposeCelestialDiscs` 释放后无 Mesh/Material 残留。
+- P4：月盘在夜间（`sunAngle <= 0`）可见、白天隐藏；`_disposeCelestialDiscs` 释放后无 Mesh/Material 残留；月亮盘 `isPickable=false`、`disableLighting=true`、不参与 IBL/PBR。
 - P3：夜间方向光强度非 0 且为冷色，白天分支不受影响。
 - P2：`moonPhase`/`moonAngle` 字段序列化往返一致；旧存档缺字段时走默认值迁移。
+
+## 审核记录（2026-07-30）
+
+审核结论：**有条件通过（Conditional Pass）**。状态仍为「规划」，P1–P3 未实施。逐项核对了 ADR 引用的三个源码锚点（`lighting-sun.ts` / `env-lighting.ts` / `env-time-of-day.ts`），事实基本准确，P4 设计有两处需在动手前澄清。
+
+### 事实核对
+
+| 断言 | 代码现状 | 结论 |
+|------|----------|------|
+| 太阳盘直径 60、`emissiveColor(1,0.9,0.7)` | lighting-sun.ts:17,21 | ✅ 准确 |
+| `night: sunAngle=-6`、`neon: sunAngle=-5` | env-lighting.ts:130,146 | ✅ 准确 |
+| 太阳盘显隐由 `aboveHorizon = d.y < 0` 控制 | lighting-sun.ts:36-38 实际为 `aboveHorizon && hasIntensity` | ⚠️ 简化，P4 须牢记月亮绕过 `hasIntensity` |
+| 夜间分支 `sunAngle < 0` 压平方向光 | env-lighting.ts:68/89/90 实际为 `<= 0` | ⚠️ 边界 off-by-one，已统一修正为 `<= 0` |
+
+### 已采纳建议（已写入上文明文）
+
+- 🟠 **P2 月亮方位**：夜晚 `dirY = sunAngle <= 0 ? 0`（`env-lighting.ts:90`）使方向光水平，直接 `-d` 取反会让月亮贴地平线。已在 P4 标「落地前必决」，二选一方位方案。
+- 🟡 **P3 复用 vs 职责过载**：放弃"直接复用 `_updateSunDisc`"，改为抽 `_ensureDisc` / `_updateDisc(dir, intensityScaled, forceVisible)`，日月薄封装。
+- 🟡 **状态来源唯一**：明确月亮盘不入 `envState`、不序列化、不进预设。
+- 🟡 **调用点**：在 `_timeOfDayTick`（`env-time-of-day.ts:74`）同帧注册 `_updateMoonDisc`。
+- 🟢 **PIC / 物理属性 / 边界措辞**：P4 补 PIC 占位；验收补 `isPickable=false`、`disableLighting=true`、不参与 IBL/PBR；全文 `< 0` → `<= 0`。
+
+### 遗留（需作者在 P4 动手前拍板）
+
+1. P2 月亮方位的两种方案选其一（固定仰角 30° vs 地平线参照）。
+2. P2 完整"第二天体"另立 ADR 的编号/标题待补（本文仅引用"另立的第二天体 ADR"）。

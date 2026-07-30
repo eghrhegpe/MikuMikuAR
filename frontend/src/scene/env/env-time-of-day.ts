@@ -206,7 +206,7 @@ function _presetAnimLoop(ctx: PresetAnimCtx, handle: ObserverHandle): void {
                 skyBrightness: 1.0,
                 sunAngle: ctx.preset.sunAngle,
                 azimuth: ctx.preset.azimuth ?? -45,
-                envIntensity: 2,
+                iblIntensity: 2,
             },
             true
         );
