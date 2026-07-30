@@ -164,7 +164,7 @@ function buildMatRootSchema(
     return [
         // 卡片 1：材质组（折叠列表）
         {
-            id: 'matRoot:groups',
+            id: 'mat-root:groups',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
@@ -253,7 +253,7 @@ function buildMatRootSchema(
         // 注意：renderCustom 执行时 list 尚未 appendChild 到 panel，isConnected 为 false，
         // 因此用 requestAnimationFrame 延后首次渲染，确保 _paramCardEl 已挂入 DOM 树。
         {
-            id: 'matRoot:paramCard',
+            id: 'mat-root:param-card',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
@@ -266,7 +266,7 @@ function buildMatRootSchema(
         },
         // 卡片 3：光照兜底（伪 unlit，少数异常模型用）
         {
-            id: 'matRoot:unlitFallback',
+            id: 'mat-root:unlit-fallback',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
@@ -294,7 +294,7 @@ function buildMatRootSchema(
         },
         // 卡片 4：重置全部
         {
-            id: 'matRoot:reset',
+            id: 'mat-root:reset',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {

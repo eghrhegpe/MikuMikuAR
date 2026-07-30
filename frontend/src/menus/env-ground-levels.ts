@@ -89,7 +89,7 @@ export function buildGroundLevel(): PopupLevel {
                         visibleWhen: () => !envState.groundInfiniteEnabled,
                     },
                     {
-                        id: 'env:ground:edgeFade',
+                        id: 'env:ground:edge-fade',
                         kind: 'slider',
                         label: 'env.edgeFade',
                         control: { bind: 'env.groundEdgeFade', min: 0, max: 1, step: 0.01 },
@@ -236,7 +236,7 @@ export function buildGroundLevel(): PopupLevel {
                 },
                 children: [
                     {
-                        id: 'env:ground:overlayStyle',
+                        id: 'env:ground:overlay-style',
                         kind: 'custom',
                         renderCustom: (cc) => {
                             const overlayPresets = [
@@ -254,7 +254,7 @@ export function buildGroundLevel(): PopupLevel {
                         },
                     },
                     {
-                        id: 'env:ground:gridSize',
+                        id: 'env:ground:grid-size',
                         kind: 'slider',
                         label: 'env.gridSize',
                         control: {
@@ -266,7 +266,7 @@ export function buildGroundLevel(): PopupLevel {
                         icon: 'lucide:grid-3x3',
                     },
                     {
-                        id: 'env:ground:lineColor',
+                        id: 'env:ground:line-color',
                         kind: 'colorSlider',
                         label: 'env.gridLineColor',
                         control: { bind: 'env.groundLineColor' },
@@ -307,7 +307,7 @@ export function buildGroundLevel(): PopupLevel {
                 },
                 children: [
                     {
-                        id: 'env:ground:terrainHeight',
+                        id: 'env:ground:terrain-height',
                         kind: 'slider',
                         label: 'env.terrainHeight',
                         control: {
@@ -319,7 +319,7 @@ export function buildGroundLevel(): PopupLevel {
                         icon: 'lucide:mountain',
                     },
                     {
-                        id: 'env:ground:terrainScale',
+                        id: 'env:ground:terrain-scale',
                         kind: 'slider',
                         label: 'env.terrainScale',
                         control: {
@@ -331,7 +331,7 @@ export function buildGroundLevel(): PopupLevel {
                         icon: 'lucide:ruler',
                     },
                     {
-                        id: 'env:ground:terrainSeed',
+                        id: 'env:ground:terrain-seed',
                         kind: 'slider',
                         label: 'env.terrainSeed',
                         control: {
@@ -343,7 +343,7 @@ export function buildGroundLevel(): PopupLevel {
                         icon: 'lucide:hash',
                     },
                     {
-                        id: 'env:ground:terrainOctaves',
+                        id: 'env:ground:terrain-octaves',
                         kind: 'slider',
                         label: 'env.terrainOctaves',
                         control: {
@@ -383,7 +383,7 @@ export function buildGroundLevel(): PopupLevel {
                         icon: 'lucide:rotate-cw',
                     },
                     {
-                        id: 'env:ground:scrollX',
+                        id: 'env:ground:scroll-x',
                         kind: 'slider',
                         label: 'env.groundScrollX',
                         control: {
@@ -398,7 +398,7 @@ export function buildGroundLevel(): PopupLevel {
                             (envState.groundTextureEnabled && !!envState.groundTexture),
                     },
                     {
-                        id: 'env:ground:scrollZ',
+                        id: 'env:ground:scroll-z',
                         kind: 'slider',
                         label: 'env.groundScrollZ',
                         control: {
@@ -452,7 +452,7 @@ export function buildGroundLevel(): PopupLevel {
                         visibleWhen: () => envState.groundPbrEnabled,
                     },
                     {
-                        id: 'env:ground:reflectionBlur',
+                        id: 'env:ground:reflection-blur',
                         kind: 'slider',
                         label: 'env.reflectionBlur',
                         control: {
@@ -465,7 +465,7 @@ export function buildGroundLevel(): PopupLevel {
                         visibleWhen: () => envState.groundPbrEnabled,
                     },
                     {
-                        id: 'env:ground:reflectionDistort',
+                        id: 'env:ground:reflection-distort',
                         kind: 'slider',
                         label: 'env.reflectionDistort',
                         control: {
@@ -479,7 +479,7 @@ export function buildGroundLevel(): PopupLevel {
                     },
                     // ── 反射（始终显示）──
                     {
-                        id: 'env:ground:reflectBlend',
+                        id: 'env:ground:reflect-blend',
                         kind: 'slider',
                         label: 'env.groundReflectBlend',
                         control: {
@@ -491,7 +491,7 @@ export function buildGroundLevel(): PopupLevel {
                         icon: 'lucide:blend',
                     },
                     {
-                        id: 'env:ground:normalStrength',
+                        id: 'env:ground:normal-strength',
                         kind: 'slider',
                         label: 'env.groundNormalStrength',
                         control: {
@@ -504,7 +504,7 @@ export function buildGroundLevel(): PopupLevel {
                     },
                     // ── 地形专属（terrain 模式）──
                     {
-                        id: 'env:ground:elevationColoring',
+                        id: 'env:ground:elevation-coloring',
                         kind: 'toggle',
                         label: 'env.groundElevationColoringEnabled',
                         control: { bind: 'env.groundElevationColoringEnabled' },

@@ -170,7 +170,7 @@ describe('Stage level', () => {
     it('load stage button has testId for E2E', () => {
         const level = buildStageLevel();
         const container = renderLevel(level);
-        const loadStage = container.querySelector('[data-testid="menu.scene.loadStage"]');
+        const loadStage = container.querySelector('[data-testid="menu:scene:load-stage"]');
         expect(loadStage).not.toBeNull();
     });
 });

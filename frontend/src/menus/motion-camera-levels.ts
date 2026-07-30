@@ -162,7 +162,7 @@ function buildCameraSchema(): MenuNode[] {
         },
         // 卡片 2b：行为轴不可用提示（非 orbit 置灰）
         {
-            id: 'camera:behaviorNA',
+            id: 'camera:behavior-na',
             kind: 'custom',
             visibleWhen: () => getCameraControl() !== 'orbit',
             renderCustom: (c) => {
@@ -172,7 +172,7 @@ function buildCameraSchema(): MenuNode[] {
             },
         },
         {
-            id: 'camera:autoInterval',
+            id: 'camera:auto-interval',
             kind: 'custom',
             visibleWhen: () => getCameraBehavior() === 'beatcut',
             renderCustom: (c) => {
@@ -258,7 +258,7 @@ function buildCameraSchema(): MenuNode[] {
                         undefined,
                         undefined,
                         undefined,
-                        { testId: 'menu.motion.loadCamVmd' }
+                        { testId: 'menu:motion:load-cam-vmd' }
                     );
                 });
             },

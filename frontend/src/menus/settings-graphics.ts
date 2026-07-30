@@ -98,7 +98,7 @@ function buildPresetSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[
 function buildFrameQualitySchema(): MenuNode[] {
     return [
         {
-            id: 'graphics:frameCap',
+            id: 'graphics:frame-cap',
             kind: 'toggle',
             label: 'settings.perf.frameCap',
             control: {
@@ -117,7 +117,7 @@ function buildFrameQualitySchema(): MenuNode[] {
             icon: 'lucide:monitor-check',
         },
         {
-            id: 'graphics:frameCapHint',
+            id: 'graphics:frame-cap-hint',
             kind: 'custom',
             renderCustom: (c) => {
                 const hint = document.createElement('div');
@@ -152,7 +152,7 @@ function buildFrameQualitySchema(): MenuNode[] {
             icon: 'lucide:gauge',
         },
         {
-            id: 'graphics:fpsHint',
+            id: 'graphics:fps-hint',
             kind: 'custom',
             renderCustom: (c) => {
                 const hint = document.createElement('div');
@@ -162,7 +162,7 @@ function buildFrameQualitySchema(): MenuNode[] {
             },
         },
         {
-            id: 'graphics:renderScale',
+            id: 'graphics:render-scale',
             kind: 'slider',
             label: 'settings.perf.renderScale',
             control: {
@@ -184,7 +184,7 @@ function buildFrameQualitySchema(): MenuNode[] {
             icon: 'lucide:scan',
         },
         {
-            id: 'graphics:renderScaleHint',
+            id: 'graphics:render-scale-hint',
             kind: 'custom',
             renderCustom: (c) => {
                 const hint = document.createElement('div');
@@ -263,7 +263,7 @@ function buildEffectsSchema(): MenuNode[] {
 function buildPhysicsHudSchema(): MenuNode[] {
     return [
         {
-            id: 'graphics:defaultPhysics',
+            id: 'graphics:default-physics',
             kind: 'toggle',
             label: 'settings.perf.defaultPhysics',
             control: {
@@ -282,7 +282,7 @@ function buildPhysicsHudSchema(): MenuNode[] {
             icon: 'lucide:atom',
         },
         {
-            id: 'graphics:defaultPhysicsHint',
+            id: 'graphics:default-physics-hint',
             kind: 'custom',
             renderCustom: (c) => {
                 const hint = document.createElement('div');
@@ -292,7 +292,7 @@ function buildPhysicsHudSchema(): MenuNode[] {
             },
         },
         {
-            id: 'graphics:showFpsClock',
+            id: 'graphics:show-fps-clock',
             kind: 'toggle',
             label: 'settings.perf.showFpsClock',
             control: {
@@ -312,7 +312,7 @@ function buildPhysicsHudSchema(): MenuNode[] {
             icon: 'lucide:gauge',
         },
         {
-            id: 'graphics:showRuntimeBadge',
+            id: 'graphics:show-runtime-badge',
             kind: 'toggle',
             label: 'settings.perf.showRuntimeBadge',
             control: {

@@ -29,7 +29,7 @@ import type { MenuNode } from './menu-schema';
 function buildCameraSchema(): MenuNode[] {
     return [
         {
-            id: 'controls:camSens',
+            id: 'controls:cam-sens',
             kind: 'slider',
             label: 'settings.perf.camSens',
             control: {
@@ -47,7 +47,7 @@ function buildCameraSchema(): MenuNode[] {
             icon: 'lucide:move',
         },
         {
-            id: 'controls:camSensHint',
+            id: 'controls:cam-sens-hint',
             kind: 'custom',
             renderCustom: (c) => {
                 const hint = document.createElement('div');
@@ -57,7 +57,7 @@ function buildCameraSchema(): MenuNode[] {
             },
         },
         {
-            id: 'controls:invertY',
+            id: 'controls:invert-y',
             kind: 'toggle',
             label: 'settings.perf.invertY',
             control: {
@@ -74,7 +74,7 @@ function buildCameraSchema(): MenuNode[] {
             icon: 'lucide:flip-vertical',
         },
         {
-            id: 'controls:invertYHint',
+            id: 'controls:invert-y-hint',
             kind: 'custom',
             renderCustom: (c) => {
                 const hint = document.createElement('div');
@@ -84,7 +84,7 @@ function buildCameraSchema(): MenuNode[] {
             },
         },
         {
-            id: 'controls:autoCenter',
+            id: 'controls:auto-center',
             kind: 'toggle',
             label: 'settings.perf.autoCenter',
             control: {
@@ -102,7 +102,7 @@ function buildCameraSchema(): MenuNode[] {
             icon: 'lucide:crosshair',
         },
         {
-            id: 'controls:autoCenterHint',
+            id: 'controls:auto-center-hint',
             kind: 'custom',
             renderCustom: (c) => {
                 const hint = document.createElement('div');

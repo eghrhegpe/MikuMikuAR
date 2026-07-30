@@ -819,7 +819,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
         },
         // 卡片 3：全部清除
         {
-            id: 'override:clearAll',
+            id: 'override:clear-all',
             kind: 'custom',
             visibleWhen: () => allEntries.length > 0,
             renderCustom: (c) => {
@@ -858,7 +858,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
         },
         // 卡片 3：管线时序一览（只读展示当前注册的帧钩子顺序）
         {
-            id: 'override:pipelineOrder',
+            id: 'override:pipeline-order',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
@@ -919,7 +919,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
 
         // 卡片 4：导出骨骼层级（调试用）
         {
-            id: 'override:exportHierarchy',
+            id: 'override:export-hierarchy',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {

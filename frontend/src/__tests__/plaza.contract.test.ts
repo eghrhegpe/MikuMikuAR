@@ -52,7 +52,7 @@ describe('preserveBuiltinRouting（缓存不得丢弃内置站点路由标记）
     it('缓存缺失 directNavigate 时，内置站点仍以源码 PLAZA_SITES 为准', () => {
         const cached = [
             {
-                id: 'mzhouse',
+                id: 'plaza:mzhouse',
                 name: '模之屋',
                 url: 'https://www.aplaybox.com/',
                 mode: 'external' as const,
@@ -65,7 +65,7 @@ describe('preserveBuiltinRouting（缓存不得丢弃内置站点路由标记）
     it('缓存显式 false 不覆盖内置 true（路由标记为代码级决策）', () => {
         const cached = [
             {
-                id: 'mzhouse',
+                id: 'plaza:mzhouse',
                 name: '模之屋',
                 url: 'https://www.aplaybox.com/',
                 mode: 'external' as const,

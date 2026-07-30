@@ -41,6 +41,6 @@ test.describe("Scene — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, () =>
         await page.getByTestId("folder:scene:render:stage").click();
         // 舞台灯光 / 加载舞台 live inside the 舞台 sub-level.
         await expect(page.getByTestId("folder:scene:stageLight")).toBeVisible();
-        await expect(page.getByTestId("menu.scene.loadStage")).toBeVisible();
+        await expect(page.getByTestId("menu:scene:load-stage")).toBeVisible();
     });
 });

@@ -83,7 +83,7 @@ function buildAudioCoreSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
             },
         },
         {
-            id: 'media:offsetHint',
+            id: 'media:offset-hint',
             kind: 'custom',
             renderCustom: (c) => {
                 const hint = document.createElement('div');
@@ -93,7 +93,7 @@ function buildAudioCoreSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
             },
         },
         {
-            id: 'media:bpmQuant',
+            id: 'media:bpm-quant',
             kind: 'toggle',
             label: 'settings.audio.bpmQuantize',
             icon: 'lucide:activity',
@@ -125,7 +125,7 @@ function buildAudioCoreSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
             },
         },
         {
-            id: 'media:repeatMode',
+            id: 'media:repeat-mode',
             kind: 'custom',
             renderCustom: (c) => {
                 const row = document.createElement('div');
@@ -198,7 +198,7 @@ function buildSfxSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
             },
         },
         {
-            id: 'media:sfxVol',
+            id: 'media:sfx-vol',
             kind: 'slider',
             label: 'settings.sfx.volume',
             icon: 'lucide:volume-2',
@@ -231,7 +231,7 @@ function buildSfxSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
             },
         },
         {
-            id: 'media:footstepVol',
+            id: 'media:footstep-vol',
             kind: 'slider',
             label: 'settings.footstep.volume',
             icon: 'lucide:footprints',
@@ -338,7 +338,7 @@ function buildScreenshotSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
             },
         },
         {
-            id: 'media:shot-thumbRes',
+            id: 'media:shot-thumb-res',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {

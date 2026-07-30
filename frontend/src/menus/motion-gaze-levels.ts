@@ -54,7 +54,7 @@ function withSaveOnlyLight(_v: unknown): void {
 const gazeSchema: MenuNode[] = [
     // ── [doc:adr-164] 全员感知开关 ──
     {
-        id: 'perception:enableAll',
+        id: 'perception:enable-all',
         kind: 'toggle',
         label: 'motion.perceptionEnableAll',
         control: {
@@ -77,7 +77,7 @@ const gazeSchema: MenuNode[] = [
     },
     // ── [doc:adr-164] 性能档位（手动覆盖 + 降级警示合并为一行） ──
     {
-        id: 'perception:tierOverride',
+        id: 'perception:tier-override',
         kind: 'custom',
         renderCustom: (c) => {
             const row = document.createElement('div');
@@ -126,14 +126,14 @@ const gazeSchema: MenuNode[] = [
     },
     // ── 头部跟随：开关在 header，参数在 folder 内 ──
     {
-        id: 'perception:headFollow',
+        id: 'perception:head-follow',
         kind: 'folder',
         label: 'motion.headFollow',
         icon: 'lucide:mouse-pointer-2',
         headerToggle: { bind: 'perception.headTrackingEnabled', onChange: withActivate },
         children: [
             {
-                id: 'perception:headYawRange',
+                id: 'perception:head-yaw-range',
                 kind: 'slider',
                 label: 'perception.headYawRange',
                 conflictHint: 'perception.gaze.head',
@@ -146,7 +146,7 @@ const gazeSchema: MenuNode[] = [
                 },
             },
             {
-                id: 'perception:headPitchRange',
+                id: 'perception:head-pitch-range',
                 kind: 'slider',
                 label: 'perception.headPitchRange',
                 control: {
@@ -161,14 +161,14 @@ const gazeSchema: MenuNode[] = [
     },
     // ── 眼部跟随 ──
     {
-        id: 'perception:eyeFollow',
+        id: 'perception:eye-follow',
         kind: 'folder',
         label: 'motion.eyeFollow',
         icon: 'lucide:eye',
         headerToggle: { bind: 'perception.eyeTrackingEnabled', onChange: withActivate },
         children: [
             {
-                id: 'perception:eyeYawRange',
+                id: 'perception:eye-yaw-range',
                 kind: 'slider',
                 label: 'perception.eyeYawRange',
                 control: {
@@ -180,7 +180,7 @@ const gazeSchema: MenuNode[] = [
                 },
             },
             {
-                id: 'perception:eyePitchRange',
+                id: 'perception:eye-pitch-range',
                 kind: 'slider',
                 label: 'perception.eyePitchRange',
                 control: {
@@ -192,7 +192,7 @@ const gazeSchema: MenuNode[] = [
                 },
             },
             {
-                id: 'perception:eyeSmooth',
+                id: 'perception:eye-smooth',
                 kind: 'slider',
                 label: 'perception.eyeSmooth',
                 control: {
@@ -214,7 +214,7 @@ const gazeSchema: MenuNode[] = [
         headerToggle: { bind: 'perception.breathEnabled', onChange: withSaveOnly },
         children: [
             {
-                id: 'perception:breathFreq',
+                id: 'perception:breath-freq',
                 kind: 'slider',
                 label: 'perception.breathFreq',
                 control: {
@@ -226,7 +226,7 @@ const gazeSchema: MenuNode[] = [
                 },
             },
             {
-                id: 'perception:breathAmp',
+                id: 'perception:breath-amp',
                 kind: 'slider',
                 label: 'perception.breathAmp',
                 conflictHint: 'perception.breath',
@@ -249,7 +249,7 @@ const gazeSchema: MenuNode[] = [
         headerToggle: { bind: 'perception.blinkEnabled', onChange: withSaveOnly },
         children: [
             {
-                id: 'perception:blinkFreq',
+                id: 'perception:blink-freq',
                 kind: 'slider',
                 label: 'perception.blinkFreq',
                 control: {
@@ -261,7 +261,7 @@ const gazeSchema: MenuNode[] = [
                 },
             },
             {
-                id: 'perception:blinkAmp',
+                id: 'perception:blink-amp',
                 kind: 'slider',
                 label: 'perception.blinkAmp',
                 control: {
@@ -276,7 +276,7 @@ const gazeSchema: MenuNode[] = [
     },
     // ── 微表情 + 情绪（合并为一个 folder） ──
     {
-        id: 'perception:microExpr',
+        id: 'perception:micro-expr',
         kind: 'folder',
         label: 'motion.microExpression',
         icon: 'lucide:smile',
@@ -314,14 +314,14 @@ const gazeSchema: MenuNode[] = [
     },
     // ── 重心微动（[doc:adr-079] Phase 2，从 idle 躯干微晃迁入） ──
     {
-        id: 'perception:balanceSway',
+        id: 'perception:balance-sway',
         kind: 'folder',
         label: 'motion.balanceSway',
         icon: 'lucide:move-3d',
         headerToggle: { bind: 'perception.balanceSwayEnabled', onChange: withActivate },
         children: [
             {
-                id: 'perception:balanceSwayPeriod',
+                id: 'perception:balance-sway-period',
                 kind: 'slider',
                 label: 'motion.balanceSwayPeriod',
                 control: {
@@ -333,7 +333,7 @@ const gazeSchema: MenuNode[] = [
                 },
             },
             {
-                id: 'perception:balanceSwayAmplitude',
+                id: 'perception:balance-sway-amplitude',
                 kind: 'slider',
                 label: 'motion.balanceSwayAmplitude',
                 conflictHint: 'perception.balance.center',
@@ -349,7 +349,7 @@ const gazeSchema: MenuNode[] = [
     },
     // ── Pin / Unpin 当前模型（[doc:adr-162] Phase 3；[doc:adr-166] 加 unpin 按钮） ──
     {
-        id: 'perception:pinModel',
+        id: 'perception:pin-model',
         kind: 'custom',
         renderCustom: (c) => {
             const wrap = document.createElement('div');
@@ -391,7 +391,7 @@ const gazeSchema: MenuNode[] = [
         headerToggle: { bind: 'perception.lipSyncEnabled', onChange: withActivate },
         children: [
             {
-                id: 'perception:lipSyncSens',
+                id: 'perception:lip-sync-sens',
                 kind: 'slider',
                 label: 'motion.lipSyncSensitivity',
                 control: {
@@ -403,7 +403,7 @@ const gazeSchema: MenuNode[] = [
                 },
             },
             {
-                id: 'perception:lipSyncInt',
+                id: 'perception:lip-sync-int',
                 kind: 'slider',
                 label: 'motion.lipSyncIntensity',
                 control: {
@@ -415,7 +415,7 @@ const gazeSchema: MenuNode[] = [
                 },
             },
             {
-                id: 'perception:lipSyncMulti',
+                id: 'perception:lip-sync-multi',
                 kind: 'toggle',
                 label: 'motion.lipSyncMultiMorph',
                 control: { bind: 'perception.lipSyncMultiMorphEnabled', onChange: withSaveOnly },

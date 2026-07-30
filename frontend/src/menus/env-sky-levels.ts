@@ -50,7 +50,7 @@ export function buildSkyLevel(): PopupLevel {
                 icon: 'lucide:sun',
             },
             {
-                id: 'env:sky:colorTop',
+                id: 'env:sky:color-top',
                 kind: 'colorSlider',
                 label: 'env.skyColorTop',
                 control: { bind: 'env.skyColorTop' },
@@ -74,7 +74,7 @@ export function buildSkyLevel(): PopupLevel {
             },
 
             {
-                id: 'env:sky:textureSection',
+                id: 'env:sky:texture-section',
                 kind: 'custom',
                 visibleWhen: () => envState.skyMode === 'texture',
                 renderCustom: (cc) => {
@@ -107,7 +107,7 @@ export function buildSkyLevel(): PopupLevel {
                 },
             },
             {
-                id: 'env:sky:rotationSpeed',
+                id: 'env:sky:rotation-speed',
                 kind: 'slider',
                 label: 'env.skyRotationSpeed',
                 control: {
@@ -127,14 +127,14 @@ export function buildSkyLevel(): PopupLevel {
                 defaultOpen: false,
                 children: [
                     {
-                        id: 'env:sky:sunIntensity',
+                        id: 'env:sky:sun-intensity',
                         kind: 'slider',
                         label: 'env.sunIntensity',
                         control: { bind: 'light.dirIntensity', min: 0, max: 1, step: 0.05 },
                         icon: 'lucide:sun',
                     },
                     {
-                        id: 'env:sky:skyLighting',
+                        id: 'env:sky:sky-lighting',
                         kind: 'slider',
                         label: 'env.skyLighting',
                         control: {
@@ -148,7 +148,7 @@ export function buildSkyLevel(): PopupLevel {
                         icon: 'lucide:sun',
                     },
                     {
-                        id: 'env:sky:globalBrightness',
+                        id: 'env:sky:global-brightness',
                         kind: 'slider',
                         label: 'env.environmentBrightness',
                         control: { bind: 'env.globalBrightness', min: 0.1, max: 3, step: 0.05 },
@@ -170,7 +170,7 @@ export function buildSkyLevel(): PopupLevel {
                         visibleWhen: () => envState.skyMode === 'procedural',
                     },
                     {
-                        id: 'env:sky:starsTexture',
+                        id: 'env:sky:stars-texture',
                         kind: 'custom',
                         visibleWhen: () =>
                             envState.skyMode === 'procedural' && envState.starsEnabled,
