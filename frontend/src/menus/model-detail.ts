@@ -2,7 +2,6 @@
 // 职责: 模型各层级构建（外观/信息/标签/表情/材质）
 
 import {
-    escapeHtml,
     cardContainer,
     PopupLevel,
     modelMetaCache,
@@ -11,6 +10,7 @@ import {
     dom,
     stackRegistry,
 } from '../core/config';
+import { escapeHtml } from '../core/escape-html';
 import { feedbackInfo, feedbackStatus } from '../core/feedback';
 import { showInfoToast } from '../core/toast';
 import { modelManager } from '../scene/scene';

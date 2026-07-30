@@ -21,7 +21,8 @@ import {
     SetMMDPath,
     SelectExeFile,
 } from '../core/wails-bindings';
-import { uiState, cardContainer, escapeHtml, type PopupLevel } from '../core/config';
+import { uiState, cardContainer, type PopupLevel } from '../core/config';
+import { escapeHtml } from '../core/escape-html';
 import { slideRow, addSectionTitle, addDangerRow, addFieldRow } from '../core/ui-helpers';
 import { showConfirm, showPrompt } from '../core/dialog';
 import { addDisposableListener, type Disposable } from '../core/dom';
