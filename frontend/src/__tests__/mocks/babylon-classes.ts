@@ -380,6 +380,49 @@ export class MockVector3 {
     }
 }
 
+export class MockVector2 {
+    x: number;
+    y: number;
+    constructor(x = 0, y = 0) {
+        this.x = x;
+        this.y = y;
+    }
+    clone() {
+        return new MockVector2(this.x, this.y);
+    }
+    add(v: MockVector2) {
+        return new MockVector2(this.x + v.x, this.y + v.y);
+    }
+    subtract(v: MockVector2) {
+        return new MockVector2(this.x - v.x, this.y - v.y);
+    }
+    scale(s: number) {
+        return new MockVector2(this.x * s, this.y * s);
+    }
+    length() {
+        return Math.sqrt(this.x * this.x + this.y * this.y);
+    }
+    normalize() {
+        return this;
+    }
+    set(x: number, y: number) {
+        this.x = x;
+        this.y = y;
+        return this;
+    }
+    setAll(v: number) {
+        this.x = v;
+        this.y = v;
+        return this;
+    }
+    static Zero() {
+        return new MockVector2(0, 0);
+    }
+    static One() {
+        return new MockVector2(1, 1);
+    }
+}
+
 export class MockQuaternion {
     x: number;
     y: number;

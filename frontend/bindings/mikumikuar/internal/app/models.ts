@@ -661,7 +661,7 @@ export interface UIState {
     "fpsLimit"?: number;
 
     /**
-     * 垂直同步（默认 true）
+     * 帧率限制器（默认 true）；JSON tag 保留 "vsync" 兼容旧配置
      */
     "vsync"?: boolean;
 

@@ -179,14 +179,13 @@ let _sceneInitialized = false;
 
 /**
  * 统一应用帧率控制：帧率限制器开关 + 帧率上限。
- * - 限制器关闭（uiState.vsync=false）：不施加任何人为限帧（engine.maxFPS=undefined），
+ * - 限制器关闭（uiState.frameCapEnabled=false）：不施加任何人为限帧（engine.maxFPS=undefined），
  *   渲染以显示器刷新率运行。注意：浏览器/WebView 渲染循环由 requestAnimationFrame 驱动，
- *   天然与显示器刷新同步，Web 层无法真正关闭 vsync。
- *   （状态键沿用历史命名 vsync 以保持设置持久化兼容，UI 已更名为"帧率限制器"。）
+ *   天然与显示器刷新同步，Web 层无法真正关闭垂直同步。
  * - 限制器开启（默认）：应用帧率上限 fpsLimit（0=不限制=原生刷新同步）。
  */
 export function applyFrameControl(): void {
-    if (uiState.vsync === false) {
+    if (uiState.frameCapEnabled === false) {
         engine.maxFPS = undefined; // 关闭限制器：不限帧（0 会被 Babylon 视为"永不渲染"）
         return;
     }
@@ -744,6 +743,7 @@ export * from './env/props';
 export * from './scene-serialize';
 export * from './env/env-bridge';
 export * from './env/env-gravity';
+export * from './env/env-collision';
 export * from './env/env-persist';
 export * from './env/env-time-of-day';
 export * from './render/lighting';

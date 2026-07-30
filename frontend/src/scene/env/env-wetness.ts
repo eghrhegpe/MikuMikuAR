@@ -1,3 +1,9 @@
+// [doc:architecture] Env Wetness — 材质湿润视觉特效
+// 职责: 修改模型材质的 roughness/specular/diffuse 参数模拟被淋湿的外观，
+//       非物理湿度模拟（不涉及水滴、湿度计、物理吸附等）。
+// 依赖: modelRegistry（遍历所有模型材质）
+// 注意: 本模块名"wetness"是历史命名，实际只做视觉层面的材质参数调整。
+
 import { PBRMaterial } from '@babylonjs/core/Materials/PBR/pbrMaterial';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import type { Material } from '@babylonjs/core/Materials/material';

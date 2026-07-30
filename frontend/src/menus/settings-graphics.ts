@@ -94,15 +94,15 @@ function buildPresetSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[
     ];
 }
 
-// ======== 卡片 2：帧率与画质（垂直同步 / 帧率上限 / 渲染缩放） ========
+// ======== 卡片 2：帧率与画质（帧率限制器 / 帧率上限 / 渲染缩放） ========
 function buildFrameQualitySchema(): MenuNode[] {
     return [
         {
-            id: 'graphics:vsync',
+            id: 'graphics:frameCap',
             kind: 'toggle',
-            label: 'settings.perf.vsync',
+            label: 'settings.perf.frameCap',
             control: {
-                bind: 'ui.vsync',
+                bind: 'ui.frameCapEnabled',
                 get: (v) => v !== false,
                 set: (v) => v,
                 onChange: (v) => {
@@ -117,15 +117,15 @@ function buildFrameQualitySchema(): MenuNode[] {
             icon: 'lucide:monitor-check',
         },
         {
-            id: 'graphics:vsyncHint',
+            id: 'graphics:frameCapHint',
             kind: 'custom',
             renderCustom: (c) => {
                 const hint = document.createElement('div');
                 hint.className = 'setting-hint';
                 hint.textContent =
-                    uiState.vsync !== false
-                        ? t('settings.perf.vsyncHintOn')
-                        : t('settings.perf.vsyncHintOff');
+                    uiState.frameCapEnabled !== false
+                        ? t('settings.perf.frameCapHintOn')
+                        : t('settings.perf.frameCapHintOff');
                 c.appendChild(hint);
             },
         },

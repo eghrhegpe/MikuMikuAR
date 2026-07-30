@@ -51,7 +51,7 @@ export interface ControlSpec {
     step?: number;
     icon?: string;
     options?: Array<{ value: string; label: string }>; // modeSlider 用
-    /** 衍生控件：从状态值转控件显示值（如 windDirection→角度，或 vsync 默认值→boolean） */
+    /** 衍生控件：从状态值转控件显示值（如 windDirection→角度，或 frameCapEnabled 默认值→boolean） */
     get?: (v: unknown) => unknown;
     /** 衍生控件：从控件值转状态值（如 角度→[sin,y,cos]，或 boolean→状态值） */
     set?: (v: unknown) => unknown;

@@ -1493,12 +1493,12 @@ export const ja: Record<string, string> = {
     'settings.perf.fpsHint': '0で無制限。モバイルでは省電力のため30推奨。',
     'settings.perf.showFpsClock': 'FPSクロックを表示',
     'settings.perf.showRuntimeBadge': 'マルチスレッドバッジを表示',
-    'settings.perf.vsync': 'フレームレート制限',
-    'settings.perf.vsyncHintOn':
+    'settings.perf.frameCap': 'フレームレート制限',
+    'settings.perf.frameCapHintOn':
         '有効にすると babymmd のレンダリングフレームレートを制限（ブラウザ/WebView レンダリングには VSync が組み込まれているため、別途設定不要）',
-    'settings.perf.vsyncHintOff':
+    'settings.perf.frameCapHintOff':
         '無効にすると人為的な制限を解除し、ディスプレイのリフレッシュレートでレンダリング。「FPS上限」スライダーは無効になります。',
-    'settings.perf.vsyncHintBrowser':
+    'settings.perf.frameCapHintBrowser':
         'babymmd のレンダリングフレームレートを制御（ブラウザ/WebView レンダリングには既に VSync が組み込まれており、別途設定は不要）',
     'settings.perf.defaultPhysics': '物理シミュレーション',
     'settings.perf.defaultPhysicsHint':
@@ -1615,12 +1615,12 @@ export const ja: Record<string, string> = {
     'settings.paths.override': 'パスオーバーライド',
     'settings.paths.pmx': 'PMX モデル',
     'settings.paths.vmd': 'VMD モーション',
-    'settings.paths.audio': 'Audio 音楽',
-    'settings.paths.prop': 'Prop 小道具',
-    'settings.paths.stage': 'Stage シーン',
-    'settings.paths.environment': 'Environment',
-    'settings.paths.mdDress': 'MD Dress',
-    'settings.paths.setting': 'Setting',
+    'settings.paths.audio': '音楽',
+    'settings.paths.prop': '小道具',
+    'settings.paths.stage': 'シーン',
+    'settings.paths.environment': '環境',
+    'settings.paths.mdDress': 'MD ドレス',
+    'settings.paths.setting': '設定',
     'settings.paths.default': 'デフォルト',
     'settings.paths.externalLib': '外部ライブラリ',
     'settings.paths.downloadWatch': 'ダウンロード監視',

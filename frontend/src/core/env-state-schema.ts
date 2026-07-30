@@ -22,6 +22,10 @@ export const ENV_STATE_SCHEMA = {
         default: 'color' as const,
         group: 'sky',
     },
+    // ⚠ skyColorTop/Mid/Bot 虽名为"天空色"，实际通过 deriveLighting() 同时控制：
+    //   - dirDiffuse（方向光颜色）/ dirIntensity（方向光强度）
+    //   - hemiIntensity（半球光强度）/ scene.ambientColor（环境光色）
+    //   修改天空色会触发全场景光照重烘焙。
     skyColorTop: {
         type: 'tuple3',
         default: [0.3, 0.5, 0.8] as [number, number, number],
@@ -45,8 +49,10 @@ export const ENV_STATE_SCHEMA = {
     starsTexture: { type: 'string', default: '', group: 'sky' },
     // IBL 环境反射强度：写入 scene.environmentIntensity，控制环境贴图对物体的反射贡献（金属反光/PBR 环境光）。
     // 注意：与 water shader 的同名 uniform 'envIntensity' 无关（那是水面 cubemap 反射强度，见 water.frag.glsl）。
+    // ⚠ 实际还参与 scene.ambientColor 推导（间接光），命名"IBL"窄于实际功能。
     iblIntensity: { type: 'number', default: 2, group: 'sky' },
     // [doc:adr-132] 全局明暗基准标量：作为天空/IBL/云/主光/环境光的全局明暗总倍数
+    // ⚠ 被归入 'sky' dispatch 组；修改 skyColor 时触发重烘焙，但命名"全局"暗示跨子系统。
     globalBrightness: { type: 'number', default: 1, group: 'sky' },
 
     // --- Ground ---
@@ -295,16 +301,19 @@ export const ENV_STATE_SCHEMA = {
     fogEnd: { type: 'number', default: 100, group: 'fog' },
 
     // --- Collision ---
-    collisionEnabled: { type: 'boolean', default: true },
-    bodyCollisionEnabled: { type: 'boolean', default: true },
-    groundCollisionEnabled: { type: 'boolean', default: true },
+    collisionEnabled: { type: 'boolean', default: true, group: 'collision' },
+    bodyCollisionEnabled: { type: 'boolean', default: true, group: 'collision' },
+    groundCollisionEnabled: { type: 'boolean', default: true, group: 'collision' },
 
     // --- Lighting / Time ---
+    // ⚠ sunAngle（-15~90）虽名为"太阳角度"，实际通过 deriveLighting() 同时决定：
+    //   方向光强度、方向光颜色、半球光补偿。一个浮点数控制了全场景光照。
     sunAngle: { type: 'number', default: 45, group: 'sky' },
+    // azimuth 决定方向光入射方向（dirDirection: [x,y,z]）→ 阴影落点。
     azimuth: { type: 'number', default: -45, group: 'sky' },
     lightingPresetName: { type: 'optional-string', default: undefined },
-    timeOfDayActive: { type: 'boolean', default: false },
-    timeOfDaySpeed: { type: 'number', default: 3 },
+    timeOfDayActive: { type: 'boolean', default: false, group: 'sky' },
+    timeOfDaySpeed: { type: 'number', default: 3, group: 'sky' },
 } as const;
 
 export type EnvStateSchema = typeof ENV_STATE_SCHEMA;
@@ -313,7 +322,7 @@ export type EnvStateSchema = typeof ENV_STATE_SCHEMA;
 
 /** 已定义的 dispatch 分组名称 */
 export type EnvDispatchGroup =
-    'sky' | 'ground' | 'fog' | 'water' | 'particle' | 'cloud' | 'reflection' | 'mirror';
+    'sky' | 'ground' | 'fog' | 'water' | 'particle' | 'cloud' | 'reflection' | 'mirror' | 'collision';
 
 const _groupCache = new Map<string, string[]>();
 

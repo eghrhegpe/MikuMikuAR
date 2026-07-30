@@ -15,9 +15,9 @@ import { clamp01 } from '@/core/clamp';
 import { _effectiveBumpLevel } from './env-ground';
 
 // ======== 确定性值噪声（FBM）========
-// 哈希与值噪声原语统一由 env-noise 叶子模块提供（与 water/caustics 共用，消除重复）；
+// 哈希与值噪声原语统一由 @/core/math/hash-noise 提供（与 water/caustics 共用，消除重复）；
 // re-export 保留 hash2/valueNoise 的对外符号，避免破坏既有 import。
-import { hash2, valueNoise } from './env-noise';
+import { hash2, valueNoise } from '@/core/math/hash-noise';
 export { hash2, valueNoise };
 
 export function fbm(x: number, z: number, seed: number, octaves: number, baseFreq: number): number {

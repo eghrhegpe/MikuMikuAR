@@ -11,7 +11,11 @@ import {
     triggerAutoSave,
     pushUndoSnapshot,
     offerSceneUndoAndRefresh,
+    getProcMotionState,
+    setProcMotionMode,
+    regenerateProcMotion,
 } from '../scene/scene';
+import type { ProcMotionMode } from '../motion-algos/procedural-motion';
 import {
     getActiveMotion,
     getSceneMotions,
@@ -105,7 +109,7 @@ export function buildMotionRootItems(): PopupRow[] {
         }
     }
 
-    // ===== [doc:adr-207] Section 2: 已加载程序化动作（集合驱动） =====
+    // ===== [doc:adr-207] Section 2: 已加载程序化动作（集合驱动 + 选中语义） =====
     items.push({
         kind: 'sectionTitle',
         label: t('motion.section.loadedProc'),
@@ -113,12 +117,55 @@ export function buildMotionRootItems(): PopupRow[] {
         target: '',
     });
     const loadedProc = getLoadedProceduralMotions();
+    // [doc:adr-207] 程序化区选中态落在全局 ProcMotionState.mode（与 VMD 默认互斥）；
+    // 'none' ↔ 'off'，其余同名。选中该行即把它设为场景默认程序化动作。
+    const curProcMode = getProcMotionState().mode;
     for (const procId of loadedProc) {
+        const mode = _procIdToMode(procId);
+        const isSelected = mode === curProcMode;
+        const radioIcon = isSelected ? 'lucide:check-circle' : 'lucide:circle';
+        const isNone = procId === 'none';
         items.push({
-            kind: 'folder',
+            kind: 'action',
             label: _procLabel(procId),
-            icon: procId === 'none' ? 'lucide:circle-slash' : 'lucide:wand-sparkles',
-            target: 'motion:procmotion',
+            icon: radioIcon,
+            target: '',
+            sublabel: isSelected ? t('motion.defaultMotion') : undefined,
+            rowKey: 'proc:' + procId + (isSelected ? ':on' : ':off'),
+            leading: {
+                icon: radioIcon,
+                title: t('motion.selectMotion'),
+                onClick: () => {
+                    if (isSelected) {
+                        return;
+                    }
+                    const snap = pushUndoSnapshot();
+                    setProcMotionMode(mode);
+                    regenerateProcMotion();
+                    getMotionMenu()?.reRender();
+                    triggerAutoSave();
+                    const name = _procLabel(procId);
+                    showInfoToast(t('motion.defaultMotionSet', { name }));
+                    offerSceneUndoAndRefresh(
+                        t('motion.defaultMotionSet', { name }),
+                        snap,
+                        () => getMotionMenu()?.reRender()
+                    );
+                },
+            },
+            // 'none'（无动作）无参数可调，不提供设置页入口
+            trailing: isNone
+                ? undefined
+                : {
+                      icon: 'lucide:settings-2',
+                      title: t('motion.motionTools'),
+                      onClick: () => {
+                          // 循环依赖安全：函数体内动态引入 buildProcMotionLevel
+                          void import('./motion-procmotion-levels').then((m) => {
+                              getMotionMenu()?.push(m.buildProcMotionLevel());
+                          });
+                      },
+                  },
         });
     }
 
@@ -246,6 +293,11 @@ function _procLabel(id: LoadableProcId): string {
         case 'autodance':
             return t('motion.modeAutodance');
     }
+}
+
+/** [doc:adr-207] 程序化动作 ID → 全局 ProcMotionState.mode（'none' ↔ 'off'） */
+function _procIdToMode(id: LoadableProcId): ProcMotionMode {
+    return id === 'none' ? 'off' : id;
 }
 
 // ═══════════════════════════════════════════════════════════

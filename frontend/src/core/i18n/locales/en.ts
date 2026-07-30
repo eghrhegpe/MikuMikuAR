@@ -190,8 +190,8 @@ export const en: Record<string, string> = {
     'model-detail.fBones': 'Bones',
     'model-detail.fMorphs': 'Morphs',
 
-    'model-detail.fComment': 'Readme（readme）',
-    'model-detail.fCommentLoading': 'Readme（readme）',
+    'model-detail.fComment': 'Readme',
+    'model-detail.fCommentLoading': 'Readme',
     'model-detail.fCommentEmpty': '(empty)',
     'model-detail.loading': 'Loading…',
     'model-detail.none': 'None',
@@ -1683,12 +1683,12 @@ export const en: Record<string, string> = {
     'settings.perf.fpsHint': 'Set to 0 for unlimited. Mobile devices recommend 30 to save battery.',
     'settings.perf.showFpsClock': 'Show FPS clock',
     'settings.perf.showRuntimeBadge': 'Show multithreading badge',
-    'settings.perf.vsync': 'Frame Rate Limiter',
-    'settings.perf.vsyncHintOn':
+    'settings.perf.frameCap': 'Frame Rate Limiter',
+    'settings.perf.frameCapHintOn':
         'When on, limits babymmd render frame rate (browser/WebView rendering has built-in VSync, no separate VSync setting needed)',
-    'settings.perf.vsyncHintOff':
+    'settings.perf.frameCapHintOff':
         'When off, no artificial cap is applied; rendering runs at the display refresh rate and the "FPS Cap" slider has no effect.',
-    'settings.perf.vsyncHintBrowser':
+    'settings.perf.frameCapHintBrowser':
         'Controls babymmd render frame rate (browser/WebView rendering already has built-in VSync, no separate VSync setting needed)',
     'settings.perf.defaultPhysics': 'Physics Simulation',
     'settings.perf.defaultPhysicsHint':
@@ -1773,7 +1773,7 @@ export const en: Record<string, string> = {
     'settings.paths.override': 'Path Override',
     'settings.paths.pmx': 'PMX Models',
     'settings.paths.vmd': 'VMD Motions',
-    'settings.paths.audio': 'Audio Music',
+    'settings.paths.audio': 'Music',
     'settings.paths.prop': 'Prop',
     'settings.paths.stage': 'Stage',
     'settings.paths.environment': 'Environment',

@@ -323,7 +323,9 @@ export function buildProcLibraryLevel(): PopupLevel {
     return {
         label: t('motion.procMotion'),
         dir: '',
-        items: [],
+        // items 初值不可留空：motion-popup 的通用路由适配器 (motionOnFolderEnter)
+        // 以 `() => builder().items` 读取行，若仅挂 itemBuilder 则渲染为「暂无内容」。
+        items: _buildProcLibraryItems(),
         itemBuilder: () => _buildProcLibraryItems(),
     };
 }

@@ -1474,12 +1474,12 @@ export const zhTW: Record<string, string> = {
     'settings.perf.fpsHint': '設為 0 表示不限制。行動裝置建議 30 以省電。',
     'settings.perf.showFpsClock': '顯示幀率時鐘',
     'settings.perf.showRuntimeBadge': '顯示多執行緒徽標',
-    'settings.perf.vsync': '幀率限制器',
-    'settings.perf.vsyncHintOn':
+    'settings.perf.frameCap': '幀率限制器',
+    'settings.perf.frameCapHintOn':
         '開啟後限制 babymmd 的渲染幀率（瀏覽器/WebView 渲染自帶垂直同步效果，故無需設定垂直同步）',
-    'settings.perf.vsyncHintOff':
+    'settings.perf.frameCapHintOff':
         '關閉後不施加人為限幀，渲染以顯示器刷新率執行，「幀率上限」滑桿失效。',
-    'settings.perf.vsyncHintBrowser':
+    'settings.perf.frameCapHintBrowser':
         '是否控制 babymmd 的渲染幀率（瀏覽器/WebView 渲染自帶垂直同步效果，無需設定垂直同步）',
     'settings.perf.defaultPhysics': '啟用物理模擬',
     'settings.perf.defaultPhysicsHint': '關閉可提升低配裝置效能；切換後立即對所有已載入模型生效。',
@@ -1593,12 +1593,12 @@ export const zhTW: Record<string, string> = {
     'settings.paths.override': '路徑覆蓋',
     'settings.paths.pmx': 'PMX 模型',
     'settings.paths.vmd': 'VMD 動作',
-    'settings.paths.audio': 'Audio 音樂',
-    'settings.paths.prop': 'Prop 道具',
-    'settings.paths.stage': 'Stage 場景',
-    'settings.paths.environment': 'Environment',
-    'settings.paths.mdDress': 'MD Dress',
-    'settings.paths.setting': 'Setting',
+    'settings.paths.audio': '音樂',
+    'settings.paths.prop': '道具',
+    'settings.paths.stage': '場景',
+    'settings.paths.environment': '環境',
+    'settings.paths.mdDress': 'MD 服裝',
+    'settings.paths.setting': '配置',
     'settings.paths.default': '預設',
     'settings.paths.externalLib': '外部庫管理',
     'settings.paths.downloadWatch': '下載監聽',

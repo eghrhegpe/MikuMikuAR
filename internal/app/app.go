@@ -351,7 +351,7 @@ type UIState struct {
 
 	// --- 以下字段原为前端会话级，2026-07-07 新增持久化支持 ---
 	FpsLimit              int               `json:"fpsLimit,omitempty"`              // 帧率上限；0=不限
-	Vsync                 bool              `json:"vsync,omitempty"`                 // 垂直同步（默认 true）
+	FrameCapEnabled        bool              `json:"vsync,omitempty"`                 // 帧率限制器（默认 true）；JSON tag 保留 "vsync" 兼容旧配置
 	DefaultPhysicsEnabled bool              `json:"defaultPhysicsEnabled,omitempty"` // 新加载 actor 默认物理开关
 	RenderScale           float64           `json:"renderScale,omitempty"`           // 渲染分辨率缩放；1.0=原生
 	CameraSensitivity     float64           `json:"cameraSensitivity,omitempty"`     // 相机灵敏度倍数；1.0=默认
