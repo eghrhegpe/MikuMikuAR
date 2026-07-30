@@ -38,7 +38,7 @@ import 'babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmRuntimeModelAnimation
 import { MmdStandardMaterialProxy } from 'babylon-mmd/esm/Runtime/mmdStandardMaterialProxy';
 import { initWindPhysics, disposeWindPhysics } from '../physics/wind-physics';
 import { applyGroundCollision } from './physics/ground-collision';
-import { swallowError } from '../core/utils';
+import { swallowError } from '../core/async';
 import { logWarn } from '../core/logger';
 import { t } from '../core/i18n/t';
 import { MmdRuntimeShared } from 'babylon-mmd/esm/Runtime/mmdRuntimeShared';
@@ -345,7 +345,6 @@ export async function initScene(): Promise<void> {
         getKtx2Support: () => detectKtx2Support(),
     });
     _sceneInitialized = true;
-    setTriggerAutoSave(triggerAutoSaveImpl);
 }
 
 /** HMR 重入时清理上一轮 Scene/Engine 及子模块资源。 */

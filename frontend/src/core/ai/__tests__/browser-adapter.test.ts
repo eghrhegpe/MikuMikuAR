@@ -276,8 +276,8 @@ describe('BrowserAiAdapter', () => {
             }
             expect(chunks).toHaveLength(1);
             expect(chunks[0].type).toBe('error');
-            // 应包含友好提示
-            expect(chunks[0].error).toContain('CORS');
+            // TypeError 无 CORS 关键词时回退到通用友好提示
+            expect(chunks[0].error).toContain('服务可能未启动');
         });
 
         it('fetch 抛出 ERR_CONNECTION_REFUSED → 返回友好错误块', async () => {
@@ -376,7 +376,7 @@ describe('BrowserAiAdapter', () => {
 
             const result = await adapter.testConnection();
             expect(result.ok).toBe(false);
-            expect(result.message).toContain('Failed to fetch');
+            expect(result.message).toContain('服务可能未启动');
         });
     });
 
@@ -403,10 +403,10 @@ describe('BrowserAiAdapter', () => {
 
             const models = await adapter.fetchModels();
             expect(models).toEqual(['deepseek-chat', 'deepseek-reasoner']);
-            // 应请求 {base}/models
+            // 应请求 {base}/models（method 为隐式的 GET）
             expect(mockFetch).toHaveBeenCalledWith(
                 'https://api.deepseek.com/v1/models',
-                expect.objectContaining({ method: 'GET' })
+                expect.objectContaining({ headers: expect.objectContaining({ Accept: 'application/json' }) })
             );
         });
 
@@ -429,10 +429,12 @@ describe('BrowserAiAdapter', () => {
 
             const models = await adapter.fetchModels();
             expect(models).toEqual(['llama3.2:3b', 'mistral:7b']);
-            // 应尝试过 /api/tags
-            expect(mockFetch).toHaveBeenCalledWith(
+            // 应尝试过 /api/tags（method 为隐式的 GET）
+            // 第三轮调用 URL 应为 /api/tags
+            expect(mockFetch).toHaveBeenNthCalledWith(
+                3,
                 'http://localhost:11434/api/tags',
-                expect.objectContaining({ method: 'GET' })
+                expect.objectContaining({ headers: expect.objectContaining({ Accept: 'application/json' }) })
             );
         });
 
