@@ -40,6 +40,11 @@ export function registerAiSnapshotBridge(bridge: SceneSnapshotBridge): void {
     _bridge = bridge;
 }
 
+/** 仅供测试使用：重置 bridge 缓存。 */
+export function _resetAiSnapshotBridge(): void {
+    _bridge = null;
+}
+
 /** 将快照数据格式化为紧凑文本（≤ NFR-3 的 2048 字符预算）。 */
 export function formatSceneSnapshot(d: SceneSnapshotData): string {
     const lines = [

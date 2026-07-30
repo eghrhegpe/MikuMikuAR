@@ -8,6 +8,7 @@ import {
     captureSceneSnapshotData,
     captureSceneSnapshot,
     registerAiSnapshotBridge,
+    _resetAiSnapshotBridge,
     type SceneSnapshotData,
     type SceneSnapshotBridge,
 } from '../scene-snapshot';
@@ -78,8 +79,7 @@ describe('formatSceneSnapshot', () => {
 
 describe('captureSceneSnapshotData / bridge', () => {
     beforeEach(() => {
-        // 重置模块级 _bridge 单例，保证每次测试从干净状态开始
-        // 不注册 bridge → captureSceneSnapshotData 返回 null
+        _resetAiSnapshotBridge();
     });
 
     it('未注册 bridge 时返回 null', () => {
@@ -97,11 +97,11 @@ describe('captureSceneSnapshotData / bridge', () => {
 
 describe('captureSceneSnapshot', () => {
     beforeEach(() => {
-        // 重置 _bridge 单例：不注册 bridge 时 captureSceneSnapshot 应返回占位符
+        _resetAiSnapshotBridge();
     });
 
     it('未初始化时返回占位符', () => {
-        // 无 beforeEach 重置（上面 beforeEach 不注册 bridge），此时 _bridge 为空
+        // _bridge 已被 beforeEach 重置为 null
         const text = captureSceneSnapshot();
         expect(text).toBe('(场景未初始化)');
     });
