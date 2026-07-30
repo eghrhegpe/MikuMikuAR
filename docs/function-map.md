@@ -1297,7 +1297,6 @@
 | `stopBoneOverride()` | `scene/motion/bone-override` | 停止覆盖系统。 |
 | `FeetModelProvider()` | `scene/motion/feet-adjustment` | 注入：返回需要处理脚部调整的模型及其 runtime bones |
 | `FootLandEvent()` | `scene/motion/feet-adjustment` | 落地事件：脚从空中接触地面的瞬间（ADR-088 供脚步声消费）。 |
-| `feetDebug()` | `scene/motion/feet-adjustment` | — |
 | `isFeetAdjustmentRunning()` | `scene/motion/feet-adjustment` | 查询脚部跟随系统是否正在运行（observer 已注册）。 |
 | `setOnFootLand()` | `scene/motion/feet-adjustment` | 注入落地事件回调（null 取消）。脚步声控制器调用。 |
 | `solveFootTarget()` | `scene/motion/feet-adjustment` | — |
@@ -1451,6 +1450,7 @@
 | `_setContextPool()` | `scene/motion/perception-shared` | 切换到指定 context 的池（进入该 context 感知管线前调用） |
 | `_v3()` | `scene/motion/perception-shared` | — |
 | `_writeMatToBuffer()` | `scene/motion/perception-shared` | 把 Matrix 写回 Float32Array(16) |
+| `feetDebug()` | `scene/motion/perception-shared` | — |
 | `getEyeGazeMaxPitch()` | `scene/motion/perception-shared` | 获取眼部跟随最大俯仰角（弧度） |
 | `getEyeGazeMaxYaw()` | `scene/motion/perception-shared` | 获取眼部跟随最大偏航角（弧度） |
 | `getEyeGazeSmooth()` | `scene/motion/perception-shared` | 获取眼部跟随平滑度 |

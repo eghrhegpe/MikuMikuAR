@@ -1,5 +1,5 @@
 // menu-schema.header-toggle.test.ts — headerToggle get/set 映射（ADR-093 §6.4，拆自 menu-schema.test.ts）
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mockScene, mockLighting, mockPerception, mockRegistry } from './menu-schema-mocks';
 
 vi.mock('@/scene/scene', () => mockScene());

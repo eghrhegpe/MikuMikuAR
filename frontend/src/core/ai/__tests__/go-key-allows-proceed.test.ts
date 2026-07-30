@@ -9,8 +9,9 @@ import type { AiValidationResult } from '../types';
 function validation(
     ok: boolean,
     errors: { kind: string; message: string }[]
-): ReturnType<typeof goKeyAllowsProceed extends (v: infer V, ...a: unknown[]) => unknown ? V : never> {
-    // 用 as any 绕过类型，只关心运行时行为
+): AiValidationResult {
+    // goKeyAllowsProceed 第一参数 = ReturnType<typeof validateAiConfig> = AiValidationResult
+    // 用 as unknown 绕过 message/kind 可选性的差异，只关心运行时行为
     return { ok, errors } as unknown as AiValidationResult;
 }
 

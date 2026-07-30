@@ -13,6 +13,12 @@ const mockSpeak = vi.fn();
 const mockCancel = vi.fn();
 const mockUtterance = vi.fn();
 
+// mock.instances[0] 类型为 unknown，提取为强类型 utterance 访问 rate/pitch/lang
+type UtteranceLike = { rate: number; pitch: number; lang: string };
+function lastUtterance(): UtteranceLike {
+    return mockUtterance.mock.instances[0] as UtteranceLike;
+}
+
 beforeEach(() => {
     mockSpeak.mockClear();
     mockCancel.mockClear();
@@ -90,7 +96,7 @@ describe('speakLines', () => {
         speakLines([{ line: '太好了！', emotion: 'happy' }]);
         expect(mockUtterance).toHaveBeenCalledTimes(1);
         // 获取构造的 utterance 实例
-        const utterance = mockUtterance.mock.instances[0];
+        const utterance = lastUtterance();
         // happy: rate=1.1, pitch=1.2
         expect(utterance.rate).toBe(1.1);
         expect(utterance.pitch).toBe(1.2);
@@ -98,14 +104,14 @@ describe('speakLines', () => {
 
     it('neutral 情绪使用默认语速音高', () => {
         speakLines([{ line: '你好', emotion: 'neutral' }]);
-        const utterance = mockUtterance.mock.instances[0];
+        const utterance = lastUtterance();
         expect(utterance.rate).toBe(1.0);
         expect(utterance.pitch).toBe(1.0);
     });
 
     it('未知情绪降级为 neutral', () => {
         speakLines([{ line: '测试', emotion: 'unknown_emotion' as string }]);
-        const utterance = mockUtterance.mock.instances[0];
+        const utterance = lastUtterance();
         expect(utterance.rate).toBe(1.0);
         expect(utterance.pitch).toBe(1.0);
     });
@@ -130,13 +136,13 @@ describe('speakLines', () => {
 
     it('指定 lang 参数传递给 utterance', () => {
         speakLines([{ line: 'こんにちは', emotion: 'neutral' }], 'ja-JP');
-        const utterance = mockUtterance.mock.instances[0];
+        const utterance = lastUtterance();
         expect(utterance.lang).toBe('ja-JP');
     });
 
     it('默认 lang 为 zh-CN', () => {
         speakLines([{ line: '你好', emotion: 'neutral' }]);
-        const utterance = mockUtterance.mock.instances[0];
+        const utterance = lastUtterance();
         expect(utterance.lang).toBe('zh-CN');
     });
 
