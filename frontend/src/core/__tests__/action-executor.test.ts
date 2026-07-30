@@ -7,7 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('../../scene/render/lighting', () => ({ setLightState: vi.fn() }));
 vi.mock('../../scene/camera/camera-state', () => ({ setCameraMode: vi.fn() }));
 vi.mock('../../scene/env/env-time-of-day', () => ({ applyEnvPreset: vi.fn(() => true) }));
-vi.mock('../../scene/env/env-bridge', () => ({ setEnvState: vi.fn() }));
+vi.mock('../../scene/env/_bridge/env-bridge', () => ({ setEnvState: vi.fn() }));
 vi.mock('../../scene/render/performance', () => ({ setPerformanceMode: vi.fn() }));
 vi.mock('../state', async (importOriginal) => {
     const actual = await importOriginal<typeof import('../state')>();
