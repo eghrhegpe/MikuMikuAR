@@ -15,30 +15,10 @@ import { clamp01 } from '@/core/clamp';
 import { _effectiveBumpLevel } from './env-ground';
 
 // ======== 确定性值噪声（FBM）========
-// 用整数哈希产生可复现的伪随机，seed 相同则地形一致。
-export function hash2(ix: number, iz: number, seed: number): number {
-    let h = Math.imul(ix, 374761393) + Math.imul(iz, 668265263) + Math.imul(seed, 2147483647);
-    h = (h ^ (h >>> 13)) >>> 0;
-    h = Math.imul(h, 1274126177) >>> 0;
-    h = (h ^ (h >>> 16)) >>> 0;
-    return h / 4294967295;
-}
-
-export function valueNoise(x: number, z: number, seed: number): number {
-    const ix = Math.floor(x);
-    const iz = Math.floor(z);
-    const fx = x - ix;
-    const fz = z - iz;
-    const ux = fx * fx * (3 - 2 * fx);
-    const uz = fz * fz * (3 - 2 * fz);
-    const a = hash2(ix, iz, seed);
-    const b = hash2(ix + 1, iz, seed);
-    const c = hash2(ix, iz + 1, seed);
-    const d = hash2(ix + 1, iz + 1, seed);
-    const top = a + (b - a) * ux;
-    const bot = c + (d - c) * ux;
-    return top + (bot - top) * uz; // [0,1]
-}
+// 哈希与值噪声原语统一由 env-noise 叶子模块提供（与 water/caustics 共用，消除重复）；
+// re-export 保留 hash2/valueNoise 的对外符号，避免破坏既有 import。
+import { hash2, valueNoise } from './env-noise';
+export { hash2, valueNoise };
 
 export function fbm(x: number, z: number, seed: number, octaves: number, baseFreq: number): number {
     let amp = 1;

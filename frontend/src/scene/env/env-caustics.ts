@@ -11,6 +11,7 @@
 
 import { Color3, Material, PBRMaterial, Scene, StandardMaterial, Texture } from '@babylonjs/core';
 import { createCanvasTexture } from './env-texture';
+import { hash2v } from './env-noise';
 
 const CAUSTIC_TEX_SIZE = 256;
 const DEFAULT_SCROLL_SPEED = 0.05; // 焦散光斑每秒滚动 UV 速率
@@ -21,14 +22,6 @@ const DEFAULT_SCROLL_SPEED = 0.05; // 焦散光斑每秒滚动 UV 速率
  */
 function _drawCausticCanvas(ctx: CanvasRenderingContext2D, s: number): void {
     const data = ctx.createImageData(s, s).data;
-    const hash2 = (ix: number, iy: number): [number, number] => {
-        let h = (ix * 374761393 + iy * 668265263) | 0;
-        h = (h ^ (h >> 13)) * 1274126177;
-        const r0 = ((h >>> 0) & 0xffff) / 65535;
-        h = (h ^ (h >> 16)) * 2654435769;
-        const r1 = ((h >>> 0) & 0xffff) / 65535;
-        return [r0, r1];
-    };
     const TILE = 8;
     for (let y = 0; y < s; y++) {
         for (let x = 0; x < s; x++) {
@@ -41,7 +34,7 @@ function _drawCausticCanvas(ctx: CanvasRenderingContext2D, s: number): void {
                 for (let dx = -1; dx <= 1; dx++) {
                     const wx = ((ix + dx) % TILE + TILE) % TILE;
                     const wy = ((iy + dy) % TILE + TILE) % TILE;
-                    const [rx, ry] = hash2(wx, wy);
+                    const [rx, ry] = hash2v(wx, wy);
                     const ptX = ix + dx + rx;
                     const ptY = iy + dy + ry;
                     let ddx = px - ptX;

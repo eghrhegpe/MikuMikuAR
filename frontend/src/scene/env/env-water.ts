@@ -23,6 +23,7 @@ import { PlanarReflection, registerReflectionSurface } from './planar-reflection
 import { getPlanarQualityOverride } from './env-reflection';
 import { createCanvasTexture } from './env-texture';
 import { causticsController } from './env-caustics';
+import { valueNoise } from './env-noise';
 import { registerEnvCallback, registerEnvDtTickCallback } from './env-dispatcher';
 import { getEnvKeys } from '@/core/env-state-schema';
 import { clamp01 } from '@/core/clamp';
@@ -85,29 +86,6 @@ export function computeWaveDirs(windDir: [number, number, number]): number[] {
         arr[i * 2 + 1] = Math.cos(a);
     }
     return arr;
-}
-
-// ======== 共享噪声工具（消除焦散与法线纹理间的重复代码）========
-// _hash2d + _valueNoise 供 regenerateDetailNormalTexture 内部使用；
-// 与 env-terrain.ts 的 valueNoise 不同（后者含 seed），此处无状态、不需要 seed。
-function _hash2d(x: number, y: number): number {
-    let h = (x * 374761393 + y * 668265263) | 0;
-    h = (h ^ (h >> 13)) * 1274126177;
-    return ((h ^ (h >> 16)) >>> 0) / 4294967295;
-}
-
-function _valueNoise(x: number, y: number): number {
-    const ix = Math.floor(x);
-    const iy = Math.floor(y);
-    const fx = x - ix;
-    const fy = y - iy;
-    const a = _hash2d(ix, iy);
-    const b = _hash2d(ix + 1, iy);
-    const c = _hash2d(ix, iy + 1);
-    const d = _hash2d(ix + 1, iy + 1);
-    const ux = fx * fx * (3 - 2 * fx);
-    const uy = fy * fy * (3 - 2 * fy);
-    return a * (1 - ux) * (1 - uy) + b * ux * (1 - uy) + c * (1 - ux) * uy + d * ux * uy;
 }
 
 // === LOD 水面：记录所有 LOD 子网格（兄弟根网格），用于同步缩放/位置和手动可见性控制 ===
@@ -519,7 +497,7 @@ function regenerateDetailNormalTexture(scene: Scene): void {
                     amp = 1,
                     freq = 1;
                 for (let oct = 0; oct < 6; oct++) {
-                    h += _valueNoise((x * freq) / s, (y * freq) / s) * amp;
+                    h += valueNoise((x * freq) / s, (y * freq) / s) * amp;
                     amp *= 0.5;
                     freq *= 2;
                 }
