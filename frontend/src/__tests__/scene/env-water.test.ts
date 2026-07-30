@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vite
 import { NullEngine } from '@babylonjs/core/Engines/nullEngine';
 import { Scene } from '@babylonjs/core/scene';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { FreeCamera } from '@babylonjs/core/Cameras/freeCamera';
 import { ShaderMaterial } from '@babylonjs/core/Materials/shaderMaterial';
 
@@ -60,6 +61,7 @@ import {
     updateUnderwaterTransition,
     resetUnderwaterState,
     isUnderwaterActive,
+    setUnderwaterFog,
     applyWaterPresetToCurrent,
 } from '../../scene/env/env-water';
 
@@ -506,6 +508,57 @@ describe('Water Underwater — 相机入水触发过渡', () => {
         for (let i = 0; i < 55; i++) updateUnderwaterTransition(scene, pipeline);
         expect(pipeline.imageProcessing.colorCurvesEnabled).toBe(false);
         expect(pipeline.imageProcessing.colorCurves.globalDensity).toBe(0);
+    });
+});
+
+// ──────────────── 开关×材质生命周期守卫（ADR-211 Part3 回归红线）────────────────
+// 免疫「地面式交叉坏」：四组水面开关的写入路径在材质/网格不存在时都必须安全早返回，
+// 不得因 mat 为 null 而崩。beforeEach 已把 _envSys.water.material/mesh 置 null，
+// 此处不调 createWater，直接在「材质缺席」态触发各开关的写入路径。
+describe('Water 开关材质守卫 — 材质不存在时拨开关不崩', () => {
+    it('setUnderwaterFog 在材质为 null 时安全早返回（水下雾写入路径）', () => {
+        expect(_envSys.water.material).toBeNull();
+        expect(() =>
+            setUnderwaterFog(true, new Color3(0.2, 0.4, 0.6), 40, 500)
+        ).not.toThrow();
+        expect(() =>
+            setUnderwaterFog(false, new Color3(0.5, 0.52, 0.62), 40, 500)
+        ).not.toThrow();
+    });
+
+    it('underwaterEnabled 拨动时 updateUnderwaterTransition 不触碰材质、不崩', () => {
+        envState.waterEnabled = true;
+        envState.waterLevel = 0;
+        camera.position.set(0, -3, 10); // 水下
+        camera.computeWorldMatrix();
+        const pipeline = {
+            chromaticAberrationEnabled: false,
+            chromaticAberration: { aberrationAmount: 0 },
+            imageProcessing: { colorCurvesEnabled: false, colorCurves: null as any },
+        } as any;
+        try {
+            envState.underwaterEnabled = false;
+            expect(() => updateUnderwaterTransition(scene, pipeline)).not.toThrow();
+            expect(isUnderwaterActive()).toBe(false);
+            envState.underwaterEnabled = true;
+            expect(() => updateUnderwaterTransition(scene, pipeline)).not.toThrow();
+        } finally {
+            envState.underwaterEnabled = true;
+        }
+    });
+
+    it('createWater 在被拨开关的污染 state 下仍安全建材质（大波/小波/焦散门控经统一同步）', () => {
+        // 三组 shader 门控字段全关，走 createWater→_syncWaterUniforms 的统一守卫路径
+        expect(() =>
+            createWater(
+                makeWaterState({
+                    waterLevel: 0,
+                    bigWaveEnabled: false,
+                    smallWaveEnabled: false,
+                    causticEnabled: false,
+                })
+            )
+        ).not.toThrow();
     });
 });
 
