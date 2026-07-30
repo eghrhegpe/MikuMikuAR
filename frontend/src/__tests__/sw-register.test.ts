@@ -43,4 +43,35 @@ describe('registerServiceWorker', () => {
         registerServiceWorker(true);
         expect(registerMock).not.toHaveBeenCalled();
     });
+
+    it('[adr-099] crossOriginIsolated=false 且未受控时，controllerchange 触发一次 reload', () => {
+        const swListeners: Record<string, () => void> = {};
+        Object.defineProperty(navigator, 'serviceWorker', {
+            value: {
+                register: registerMock,
+                controller: null,
+                addEventListener: (ev: string, cb: () => void) => {
+                    swListeners[ev] = cb;
+                },
+            },
+            configurable: true,
+        });
+        Object.defineProperty(globalThis, 'crossOriginIsolated', {
+            value: false,
+            configurable: true,
+        });
+        const reloadMock = vi.fn();
+        Object.defineProperty(window, 'location', {
+            value: { reload: reloadMock },
+            configurable: true,
+        });
+
+        registerServiceWorker(true);
+        expect(swListeners.controllerchange).toBeTypeOf('function');
+        swListeners.controllerchange();
+        swListeners.controllerchange(); // 二次触发应被 reloaded 守卫拦截
+        expect(reloadMock).toHaveBeenCalledTimes(1);
+
+        Reflect.deleteProperty(globalThis as Record<string, unknown>, 'crossOriginIsolated');
+    });
 });

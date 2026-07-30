@@ -9,9 +9,42 @@
 //    避免内容更新而 URL 不变导致的 stale。
 //  - Range 请求放行网络（wasm 可能分段）；跨域/非 GET 不拦截。
 //  - activate 阶段清理非当前 cache 名的旧缓存，控制空间。
+//
+// [doc:adr-099][doc:adr-133] 跨源隔离注入（COI Service Worker）：
+//  GitHub Pages 静态托管无法自定义响应头 → 主文档拿不到 COOP/COEP → crossOriginIsolated
+//  恒为 false → SharedArrayBuffer 不可用 → MPR 多线程物理降级 SPR。桌面端由 Go 的
+//  CoopCoepMiddleware 注入、Android 由 MainActivity.shouldInterceptRequest 注入，网页端
+//  唯一手段是让 SW 在响应上补 COOP/COEP，浏览器据此在下次导航解锁跨源隔离。
+//
+//  关键设计——COEP 用 credentialless 而非 require-corp：
+//    require-corp 会硬拦截所有无 CORP 头的跨源资源（AI relay fetch、GitHub API、广场
+//    iframe.src），credentialless 则以「不带凭据」方式放行无 CORP 的跨源子资源，既满足
+//    crossOriginIsolated=true 的前置条件，又不打断现有跨源调用。Chrome 96+/Edge/新
+//    Firefox 支持；不支持的浏览器 SW 注入不生效，自动降级 SPR（scene.ts:650 兜底）。
+//
+//  ENABLE_COI 开关：默认 true。若发现某跨源资源在 credentialless 下仍失败（少数需凭据
+//  的第三方 API），置 false 即整体回退到「无跨源隔离 + SPR 单线程」的安全态，功能不残。
 
 const CACHE = 'mmku-static-v1';
 const ASSET_RE = /\/assets\//;
+
+// 跨源隔离注入总开关。true=注入 COOP/COEP 换取 SharedArrayBuffer/MPR；false=纯缓存模式。
+const ENABLE_COI = true;
+
+// 给同源响应补 COOP/COEP（+CORP），使浏览器判定 crossOriginIsolated=true。
+// 仅处理有实体 body 的正常响应；opaque（status 0）/重定向不动，避免破坏跨源资源。
+function withCoiHeaders(res) {
+    if (!ENABLE_COI) return res;
+    if (!res || res.status === 0 || res.type === 'opaque' || res.type === 'opaqueredirect') {
+        return res;
+    }
+    const h = new Headers(res.headers);
+    h.set('Cross-Origin-Opener-Policy', 'same-origin');
+    h.set('Cross-Origin-Embedder-Policy', 'credentialless');
+    // 让本站资源可被跨源隔离页嵌入（同源资源始终安全，跨源保持 credentialless 放行）
+    h.set('Cross-Origin-Resource-Policy', 'same-origin');
+    return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
+}
 
 self.addEventListener('install', (event) => {
     event.waitUntil(
@@ -46,9 +79,14 @@ self.addEventListener('fetch', (event) => {
             fetch(req)
                 .then((res) => {
                     caches.open(CACHE).then((c) => c.put(req, res.clone())).catch(() => undefined);
-                    return res;
+                    return withCoiHeaders(res);
                 })
-                .catch(() => caches.match(req).then((r) => r || caches.match('./index.html')))
+                .catch(() =>
+                    caches
+                        .match(req)
+                        .then((r) => r || caches.match('./index.html'))
+                        .then((r) => (r ? withCoiHeaders(r) : r))
+                )
         );
         return;
     }
@@ -57,12 +95,12 @@ self.addEventListener('fetch', (event) => {
     if (ASSET_RE.test(url.pathname)) {
         event.respondWith(
             caches.match(req).then((cached) => {
-                if (cached) return cached;
+                if (cached) return withCoiHeaders(cached);
                 return fetch(req).then((res) => {
                     if (res && res.ok) {
                         caches.open(CACHE).then((c) => c.put(req, res.clone())).catch(() => undefined);
                     }
-                    return res;
+                    return withCoiHeaders(res);
                 });
             })
         );
@@ -74,8 +112,8 @@ self.addEventListener('fetch', (event) => {
         fetch(req)
             .then((res) => {
                 caches.open(CACHE).then((c) => c.put(req, res.clone())).catch(() => undefined);
-                return res;
+                return withCoiHeaders(res);
             })
-            .catch(() => caches.match(req))
+            .catch(() => caches.match(req).then((r) => (r ? withCoiHeaders(r) : r)))
     );
 });
