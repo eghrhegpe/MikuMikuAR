@@ -275,7 +275,9 @@ void main() {
         // 用法线微扰反射向量：局部倾斜导致高光位置偏移
         vec3 glintReflect = reflect(-viewDir, normalize(normal + n1 * uDetailNormalStrength * 0.8));
         // hash 噪声决定每个 fragment 的闪烁时刻（不是亮度，而是"是否闪烁"的概率）
-        vec2 glitterUV = vWorldPos.xz * uGlintScale + time * uGlintSpeed;
+        // ADR-115 二轮增强：glitterUV 叠加 vWaveOffset，让闪烁点随波浪斜率漂移，
+        // 避免 hash 格子固定在世界坐标上导致"水面动但星点不动"的视觉假
+        vec2 glitterUV = (vWorldPos.xz + vWaveOffset * 50.0) * uGlintScale + time * uGlintSpeed;
         float spark = hash12(floor(glitterUV));
         // 窄域 specular：微扰后 reflectDir 产生随机偏移的高光
         float spec = pow(max(dot(glintReflect, normalize(lightDir)), 0.0), uGlintPower);

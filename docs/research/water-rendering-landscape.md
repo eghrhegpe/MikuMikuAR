@@ -2,6 +2,7 @@
 
 > **调研日期**: 2026-07-30
 > **背景**: 对自研 Gerstner 水面系统的方向质疑，经联网调研后确认方向正确，此文记录结论并整理开源参考项目。
+> **与 ADR-115 关系**: 本报告第六章的多个"改进方案"是对 [ADR-115](../adr/adr-115-stylized-water-glint-research.md)（P1+P2+P3+P4+P5 已完成）的**二轮增强**，非全新发现。ADR-115 已实施：高频法线扰动层、Sun Glitter（法线微扰版）、低频滚动法线层、地平线淡出、天空-水色联动、双层尺度波高拆分。本报告的 P0 色散关系、P1 Glitter 动态闪烁点、P2 焦散纹理升级是在此基础上的迭代。
 
 ---
 
@@ -128,7 +129,7 @@ Gerstner 4 层 (当前)
 
 | 项目 | 引擎 | 核心方案 | 代码量 | 链接 |
 |------|------|---------|--------|------|
-| **自研 (MikuMikuAR)** | Babylon.js | Gerstner 4 层 + 法线纹理 + 焦散/涟漪/Glitter/泡沫 | 65 行 vert + 337 行 frag + 1518 行 TS | 本仓库 `frontend/src/scene/env/` |
+| **自研 (MikuMikuAR)** | Babylon.js | Gerstner 4 层 + 法线纹理 + 焦散/涟漪/Glitter/泡沫 | 65 行 vert + 337 行 frag + 1417 行 TS | 本仓库 `frontend/src/scene/env/` |
 | **Sean-Bradley/Three.js Ocean** | Three.js | Gerstner 3 层 + 噪声法线 + 菲涅尔 | ~50 行 vert + ~80 行 frag | [GitHub](https://github.com/Sean-Bradley/three.js/blob/gerstner-waves/examples/webgl_shaders_ocean_gerstner.html) |
 | **99-Knots/SimpleBabylon** | Babylon.js | Gerstner/Sine 切换 + Phong 着色 | ~50 行 vert + ~30 行 frag | [GitHub](https://github.com/99-Knots/SimpleBabylonWaterShaders) |
 | **davidar/water (Seascape)** | 独立 GLSL | 噪声波 + 光线步进 + 焦散 | ~200 行 frag (纯 ray marching) | [Shadertoy](https://www.shadertoy.com/view/Ms2SD1) |
@@ -245,13 +246,13 @@ main() 执行顺序：
 |------|------|-------------|----------|
 | fragment 行数 | **337 行** | ~80 行 | ~30 行 |
 | 效果子系统数 | 16 | 5 | 1 |
-| uniform 数量 | **57 个** | ~15 个 | ~8 个 |
+| uniform 数量 | **63 个** | ~15 个 | ~8 个 |
 | 纹理采样次数 | 8-12 次 | 5-6 次 | 0 次 |
 | 循环结构 | 涟漪 1024 次 | 无 | 无 |
 
 **建议：** 不要削减功能，而是**给每个效果更多代码空间**。当前 337 行要处理 16 种效果，平均每种只有 21 行。改善方向：
 
-- **P1: 涟漪 1024 循环** — 当前上限 1024 但实际只用几个。改为动态上限（`min(uRippleCount, 256)`），或直接移除循环（涟漪在舞台场景中极少使用，可改为可选的 RTT 叠加）
+- **P1: 涟漪 1024 循环** — 当前 shader 硬上限 1024（由 `uRipplePosRad[256]` 数组大小决定，GLSL ES 1.00 兼容性需要），TS 端默认 slot `waterRippleSlots ?? 256`。实际改进方向：将数组从 256 收缩到 128，shader 硬上限同步降到 128；或移除循环改 RTT 叠加。`min(uRippleCount, 256)` 已是默认行为，非新建议
 - **P2: 5-tap 反射模糊** — 5 次纹理采样换轻微模糊，性价比低。改为可选的 3-tap 或直接使用 RT 的 mipmap 采样
 - **P3: 焦散与法线采样合并** — 焦散纹理和法线纹理可用同一张纹理的不同通道，减少采样次数
 
@@ -439,18 +440,20 @@ vec3 planarRefl = texture2DLodEXT(reflectionTexture, reflUV, mipLevel).rgb;
 
 ### 6.10 各功能改进优先级总表
 
-| 优先级 | 功能 | 改进内容 | 改动范围 | 预期收益 | 代码量 |
-|--------|------|---------|---------|---------|-------|
-| **P0** | Gerstner 色散关系 | 引入 `c = sqrt(g/k)` | vert + TS 常量 | 波物理真实感提升 | ~10 行 |
-| **P1** | 涟漪循环上限 | 从 1024 降到 256 | frag 数值 | 着色器编译/执行效率 | ~2 行 |
-| **P1** | Sun Glitter 动态 | 闪烁位置随波浪移动 | frag 2 行 | 闪烁更自然 | ~2 行 |
-| **P1** | 法线纹理质量 | 使用预制法线贴图或 2 张纹理 | TS 纹理生成 | 法线细节丰富度提升 | ~30 行 |
-| **P2** | 反射 5→3 tap | 减少采样次数，可选 mipmap | frag + TS RT 配置 | 性能提升 ~40% 反射开销 | ~5 行 |
-| **P2** | 焦散三层 | 增加第三层微焦散 | frag + TS | 焦散细节提升 | ~5 行 |
-| **P2** | 泡沫噪声扰动 | 泡沫边缘加噪声 + 次级泡沫 | frag ~10 行 | 泡沫更自然 | ~10 行 |
-| **P3** | 着色器 uniform 减负 | 合并冗余参数，删除未用 uniform | TS `_syncWaterUniforms` | 维护性提升 | ~50 行 |
-| **P3** | 焦散纹理升级 | 512px + Worley 噪声 | TS 纹理生成 | 焦散视觉提升 | ~30 行 |
-| **P4** | CPU 波高采样 | 暴露 CPU 侧波高计算接口 | TS 新函数 | 模型浮力交互 | ~50 行 |
+> **实施状态（2026-07-30 更新）**：P0 色散、P1 Glitter 动态、P2 焦散纹理升级已落地，其余为待办建议。
+
+| 优先级 | 功能 | 改进内容 | 改动范围 | 预期收益 | 代码量 | 状态 |
+|--------|------|---------|---------|---------|-------|------|
+| **P0** | Gerstner 色散关系 | 引入 `ω = sqrt(g·k)`，`uDispersionEnabled` 开关 | vert + TS 常量 + schema | 波物理真实感提升 | ~10 行 | ✅ 已实施 |
+| **P1** | 涟漪循环上限 | 数组从 256 收缩到 128 | frag + TS | 着色器编译/执行效率 | ~2 行 | 待办（默认已是 256） |
+| **P1** | Sun Glitter 动态 | glitterUV 叠加 `vWaveOffset * 50.0` | frag 2 行 | 闪烁更自然 | ~2 行 | ✅ 已实施 |
+| **P1** | 法线纹理质量 | 使用预制法线贴图或 2 张纹理 | TS 纹理生成 | 法线细节丰富度提升 | ~30 行 | 待办（需美术资源） |
+| **P2** | 反射 5→3 tap | 减少采样次数，可选 mipmap | frag + TS RT 配置 | 性能提升 ~40% 反射开销 | ~5 行 | 待办 |
+| **P2** | 焦散三层 | 增加第三层微焦散 | frag + TS | 焦散细节提升 | ~5 行 | 待办 |
+| **P2** | 泡沫噪声扰动 | 泡沫边缘加噪声 + 次级泡沫 | frag ~10 行 | 泡沫更自然 | ~10 行 | 待办 |
+| **P3** | 着色器 uniform 减负 | 合并冗余参数，删除未用 uniform | TS `_syncWaterUniforms` | 维护性提升 | ~50 行 | 待办 |
+| **P3** | 焦散纹理升级 | 512px + Worley 噪声 | TS 纹理生成 | 焦散视觉提升 | ~30 行 | ✅ 部分实施（256→512 已做，Worley 待办） |
+| **P4** | CPU 波高采样 | 暴露 CPU 侧波高计算接口 | TS 新函数 | 模型浮力交互 | ~50 行 | 待办（无当前需求） |
 
 ### 6.11 代码对比总结
 

@@ -17,9 +17,13 @@ uniform int uWaterFlip;
 const int WAVE_COUNT = 4;
 uniform vec2 uWindDir[4];
 uniform float uWindSpeed;
+// ADR-115 二轮增强：色散关系开关。0=旧硬编码 WAVE_SPEED（零回归），1=物理色散 ω=sqrt(g·k)
+// WAVE_FREQ 语义为空间频率 1/λ，故波数 k = 2π·f；色散 ω=sqrt(g·k) 使长波快、短波慢
+uniform float uDispersionEnabled;
+const float G = 9.8; // 重力加速度（色散关系用）
 const float WAVE_FREQ[4] = float[4](0.07, 0.11, 0.25, 0.3); // ADR-115 P5: 层 0/1 拉长波长（42→90/57 单位），制造连绵涌浪
 const float WAVE_AMP[4] = float[4](0.5, 0.4, 0.32, 0.25);
-const float WAVE_SPEED[4] = float[4](0.7, 0.9, 0.5, 1.2);
+const float WAVE_SPEED[4] = float[4](0.7, 0.9, 0.5, 1.2); // 旧版硬编码 ω（uDispersionEnabled=0 时使用）
 
 varying vec2 vUV;
 varying vec3 vWorldPos;
@@ -43,7 +47,10 @@ void main() {
         float h = (i < 2) ? bigWaveHeight : smallWaveHeight;
         float windAmp = 0.3 + 0.15 * uWindSpeed;
         float a = WAVE_AMP[i] * h * waveHeight * windAmp;
-        float th = f * dot(dir, p.xz) + WAVE_SPEED[i] * wavePhase;
+        // 色散关系：uDispersionEnabled=0 用旧硬编码 ω（零回归），=1 用 ω=sqrt(g·k)
+        float k = 2.0 * 3.14159265 * f;
+        float omega = mix(WAVE_SPEED[i], sqrt(G * k), uDispersionEnabled);
+        float th = f * dot(dir, p.xz) + omega * wavePhase;
         float c = cos(th), s = sin(th);
         p.x += a * dir.x * c; p.z += a * dir.y * c; p.y += a * s;
         n.x -= dir.x * f * a * c; n.z -= dir.y * f * a * c;

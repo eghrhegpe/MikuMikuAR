@@ -474,7 +474,8 @@ type EnvState struct {
 	IblIntensity     float64    `json:"iblIntensity"`
 	GlobalBrightness float64    `json:"globalBrightness"`
 
-	GroundVisible         bool       `json:"groundVisible"`
+	GroundVisibleEnabled  bool       `json:"groundVisibleEnabled"`
+	GroundPreset          string     `json:"groundPreset"`
 	GroundType            string     `json:"groundType"`
 	GroundStyle           string     `json:"groundStyle"`
 	GroundOverlay       string     `json:"groundOverlay"`
@@ -525,17 +526,21 @@ type EnvState struct {
 	ParticleSpeed         float64 `json:"particleSpeed"`
 	ParticleSplashEnabled       bool    `json:"particleSplashEnabled"`
 	ParticleCustomTexture string  `json:"particleCustomTexture"`
+	ParticleQuality        string `json:"particleQuality"`
 
-	WaterEnabled      bool       `json:"waterEnabled"`
-	WaterLevel        float64    `json:"waterLevel"`
-	WaterFlip         bool       `json:"waterFlip"`
-	WaterColor        [3]float64 `json:"waterColor"`
-	WaterTransparency float64    `json:"waterTransparency"`
-	WaterWaveHeight   float64    `json:"waterWaveHeight"`
-	BigWaveHeight     float64    `json:"bigWaveHeight"`
-	SmallWaveHeight   float64    `json:"smallWaveHeight"`
-	WaterSize         float64    `json:"waterSize"`
-	WaterAnimSpeed    float64    `json:"waterAnimSpeed"`
+	WaterEnabled         bool       `json:"waterEnabled"`
+	WaterLevel           float64    `json:"waterLevel"`
+	WaterFlipEnabled     bool       `json:"waterFlipEnabled"`
+	WaterColor           [3]float64 `json:"waterColor"`
+	WaterTransparency    float64    `json:"waterTransparency"`
+	WaterWaveHeight      float64    `json:"waterWaveHeight"`
+	BigWaveHeight        float64    `json:"bigWaveHeight"`
+	SmallWaveHeight      float64    `json:"smallWaveHeight"`
+	BigWaveEnabled       bool       `json:"bigWaveEnabled"`
+	SmallWaveEnabled     bool       `json:"smallWaveEnabled"`
+	WaterAnimSpeed       float64    `json:"waterAnimSpeed"`
+	WaterDispersionEnabled bool    `json:"waterDispersionEnabled"`
+	WaterRippleSlots     float64    `json:"waterRippleSlots"`
 	// 水面平面反射质量：'high' | 'medium' | 'low' | 'off'
 	ReflectionQuality string  `json:"reflectionQuality"`
 	// ADR-115: 平面反射混合度，对应 TS planarReflectionBlend
@@ -556,6 +561,7 @@ type EnvState struct {
 	WaterHorizonFade      float64    `json:"waterHorizonFade"`
 	WaterSkyColorBlend    float64    `json:"waterSkyColorBlend"`
 	CausticIntensity      float64    `json:"causticIntensity"`
+	CausticEnabled        bool       `json:"causticEnabled"`
 	CausticColor1         [3]float64 `json:"causticColor1"`
 	CausticColor2         [3]float64 `json:"causticColor2"`
 	CausticScrollX        float64    `json:"causticScrollX"`
@@ -564,10 +570,13 @@ type EnvState struct {
 
 	// 水面雾效（独立于全局雾）
 	WaterFogColor            [3]float64 `json:"waterFogColor"`
+	WaterFogStart            float64    `json:"waterFogStart"`
+	WaterFogEnd              float64    `json:"waterFogEnd"`
 	WaterFogDensity          float64    `json:"waterFogDensity"`
 	WaterFogOpacityInfluence float64    `json:"waterFogOpacityInfluence"`
 
 	// 水下效果
+	UnderwaterEnabled         bool    `json:"underwaterEnabled"`
 	UnderwaterFogDensity      float64 `json:"underwaterFogDensity"`
 	UnderwaterChromaticAmount float64 `json:"underwaterChromaticAmount"`
 	UnderwaterToneIntensity   float64 `json:"underwaterToneIntensity"`
@@ -611,8 +620,9 @@ type EnvState struct {
 }
 
 // UnmarshalJSON reads EnvState while tolerating legacy field names renamed in
-// ADR-210 (envIntensity→iblIntensity, envBrightness→globalBrightness) and
-// ADR-212 (6 fields renamed for *Enabled suffix / plural / abbreviation discipline).
+// ADR-210 (envIntensity→iblIntensity, envBrightness→globalBrightness),
+// ADR-212 (6 fields renamed for *Enabled suffix / plural / abbreviation discipline),
+// and ADR-212 二轮同步 (groundVisible→groundVisibleEnabled, waterFlip→waterFlipEnabled).
 // Old config.json files persisted the legacy keys; without this fallback those
 // settings would silently reset to zero on load. New keys take precedence.
 func (e *EnvState) UnmarshalJSON(data []byte) error {
@@ -628,6 +638,9 @@ func (e *EnvState) UnmarshalJSON(data []byte) error {
 		LegacyDebugClouds           *bool    `json:"debugClouds"`
 		LegacyCloudsEnabled         *bool    `json:"cloudsEnabled"`
 		LegacyPlanarReflectBlend    *float64 `json:"planarReflectBlend"`
+		// ADR-212 二轮同步 legacy keys
+		LegacyGroundVisible          *bool `json:"groundVisible"`
+		LegacyWaterFlip              *bool `json:"waterFlip"`
 	}{envStateAlias: (*envStateAlias)(e)}
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
@@ -656,6 +669,13 @@ func (e *EnvState) UnmarshalJSON(data []byte) error {
 	}
 	if e.PlanarReflectionBlend == 0 && aux.LegacyPlanarReflectBlend != nil {
 		e.PlanarReflectionBlend = *aux.LegacyPlanarReflectBlend
+	}
+	// ADR-212 二轮同步: groundVisible→groundVisibleEnabled, waterFlip→waterFlipEnabled
+	if !e.GroundVisibleEnabled && aux.LegacyGroundVisible != nil {
+		e.GroundVisibleEnabled = *aux.LegacyGroundVisible
+	}
+	if !e.WaterFlipEnabled && aux.LegacyWaterFlip != nil {
+		e.WaterFlipEnabled = *aux.LegacyWaterFlip
 	}
 	return nil
 }

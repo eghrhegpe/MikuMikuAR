@@ -13,7 +13,9 @@ import { Color3, Material, PBRMaterial, Scene, StandardMaterial, Texture } from 
 import { createCanvasTexture } from './_shared/env-texture';
 import { hash2v } from '@/core/math/hash-noise';
 
-const CAUSTIC_TEX_SIZE = 256;
+// ADR-115 二轮增强: 256→512 提升焦散边缘细节（TILE=8 不变，每 tile 像素 32²→64²）
+// VRAM 占用 256KB→1MB（RGBA8），CPU 一次性生成耗时 ~5ms→~20ms（仅场景创建时跑一次）
+const CAUSTIC_TEX_SIZE = 512;
 const DEFAULT_SCROLL_SPEED = 0.05; // 焦散光斑每秒滚动 UV 速率
 
 /**

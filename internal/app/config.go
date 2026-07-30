@@ -275,8 +275,8 @@ func (a *App) SetPerformanceMode(mode string) error {
 // Uses JSON-based merge (not full-replace) so that callers passing only a subset
 // of fields do not wipe the other persisted env state fields.
 func (a *App) SetEnvState(env EnvState) error {
-	a.safeLogInfo("[env-persist] SetEnvState: skyMode=%s groundVisible=%v waterEnabled=%v",
-		env.SkyMode, env.GroundVisible, env.WaterEnabled)
+	a.safeLogInfo("[env-persist] SetEnvState: skyMode=%s groundVisibleEnabled=%v waterEnabled=%v",
+		env.SkyMode, env.GroundVisibleEnabled, env.WaterEnabled)
 	return a.updateConfig(func(cfg *Config) { mergeEnvState(&cfg.Env, env) }, false)
 }
 

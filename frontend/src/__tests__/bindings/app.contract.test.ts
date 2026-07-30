@@ -157,6 +157,7 @@ describe('binding contract: interface shapes', () => {
             smallWaveEnabled: expect.any(Boolean),
             bigWaveEnabled: expect.any(Boolean),
             waterAnimSpeed: expect.any(Number),
+            waterDispersionEnabled: expect.any(Boolean),
             planarReflectionBlend: expect.any(Number),
             fresnelBias: expect.any(Number),
             fresnelPower: expect.any(Number),

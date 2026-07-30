@@ -96,6 +96,7 @@ let _waterWaveSpeed = 1; // 当前波速，供每帧相位累加使用
 
 // Gerstner 波参数（与 water.vert.glsl 中 WAVE_SPEED/WAVE_FREQ 保持一致）
 // ADR-115 P5: 层 0/1 频率下调（0.15/0.2 → 0.07/0.11），拉长波长制造连绵涌浪
+// ADR-115 二轮增强: WAVE_SPEED 在 uDispersionEnabled=1 时被 ω=sqrt(g·k) 覆盖（见 vert shader）
 const _GERSTNER_WAVE_FREQ = [0.07, 0.11, 0.25, 0.3] as const;
 const _GERSTNER_WAVE_SPEED = [0.7, 0.9, 0.5, 1.2] as const;
 
@@ -602,6 +603,8 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     );
     _waterWaveSpeed = (state.waterAnimSpeed ?? 1) * 1.0;
     // wavePhase 由 _waterUpdateCallback 每帧统一写入，此处无需重复赋值
+    // ADR-115 二轮增强：色散关系开关（0=旧硬编码 ω 零回归，1=物理色散 ω=sqrt(g·k)）
+    mat.setFloat('uDispersionEnabled', state.waterDispersionEnabled ? 1 : 0);
     mat.setColor3('waterColor', col3FromTriple(state.waterColor));
     mat.setFloat('waterTransparency', state.waterTransparency);
     mat.setFloat('waterLevel', state.waterLevel);
@@ -797,6 +800,7 @@ const WATER_UNIFORMS = [
     'bigWaveHeight',
     'smallWaveHeight',
     'wavePhase',
+    'uDispersionEnabled',
     'cameraPosition',
     'waterColor',
     'waterTransparency',
