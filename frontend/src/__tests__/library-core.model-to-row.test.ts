@@ -10,6 +10,7 @@ import {
     iconsFactory,
     statusBarFactory,
     configModuleFactory,
+    libraryPathFactory,
     makeModel,
 } from './library-core-mocks';
 
@@ -32,6 +33,7 @@ vi.mock('./menu', () => menuFactory());
 vi.mock('../core/icons', () => iconsFactory());
 vi.mock('../core/status-bar', () => statusBarFactory());
 vi.mock('../core/config', () => configModuleFactory(mockState));
+vi.mock('../library/library-path', () => libraryPathFactory(mockState));
 
 import { modelToRow } from '../menus/library-core';
 

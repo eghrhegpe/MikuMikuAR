@@ -9,6 +9,7 @@ import {
     menuFactory,
     iconsFactory,
     configModuleFactory,
+    libraryPathFactory,
     makeModel,
 } from './library-core-mocks';
 
@@ -35,6 +36,7 @@ vi.mock('../core/status-bar', async () => {
     return { setStatus: (...args: any[]) => (config as any).setStatus(...args) };
 });
 vi.mock('../core/config', () => configModuleFactory(mockState));
+vi.mock('../library/library-path', () => libraryPathFactory(mockState));
 vi.mock('../core/ui-helpers', () => ({
     slideRow: vi.fn(
         (
